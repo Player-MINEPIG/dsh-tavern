@@ -4,7 +4,7 @@
 
 项目目标不是在 DSH 中复制一套 SillyTavern 前端，而是建立可测试、可扩展的兼容层：理解 SillyTavern 的预设、角色卡和世界书格式，将其归一化，再通过统一加载器映射到 DSH 的 session、system prompt、模型参数与后续消息装配能力。
 
-当前 `0.1.x` 阶段已经完成 **SillyTavern Chat Completion 预设**的首个端到端版本；角色卡和世界书尚在计划中。
+当前 `0.1.x` 阶段已经完成 **SillyTavern Chat Completion 预设**的首个端到端版本。角色卡 feature 已完成格式与管理用例切片，正在等待统一 loader 集成；世界书运行策略仍在独立开发。
 
 角色卡兼容的调研记录与实施方案见：
 
@@ -25,6 +25,7 @@
 - 映射 DSH 当前支持的 `temperature`、`maxTokens`、`reasoningEffort` 和 `stop`。
 - 支持默认“追加到 DSH system prompt”与高级“仅使用预设”两种模式。
 - 提供 Windows、macOS、Linux 通用的安装/卸载脚本；重复安装会刷新本地 `file:` 快照并暂存、恢复插件数据。
+- 角色卡 feature 可解析 V1/V2/V3 JSON 和 PNG `chara`/`ccv3`，保存原件、诊断、per-session binding，并通过稳定资源接口交给 loader/world-book 模块。
 
 预设选择目前是**每个插件安装实例全局共享**的，而不是每个 session 独立选择。
 

@@ -302,3 +302,39 @@ Verification:
 - `npm run pack:check` contained 17 release files including `LICENSE`, all three
   internal layers, and lifecycle scripts; it excluded docs, tests, runtime data,
   caches, and the copyrighted external fixture.
+
+## 2026-08-14 — Stage 13: character-card format and use-case slice
+
+Purpose: add SillyTavern character-card compatibility without reintroducing
+prompt-runtime coupling or duplicating world-book policy.
+
+Changes:
+
+- Added pure V1/V2/V3 JSON normalization and bounded PNG `chara`/`ccv3` tEXt
+  extraction, with V3 precedence and compatibility diagnostics.
+- Preserved the complete source JSON, unknown fields, extensions, embedded
+  character books, V3 assets, and the exact imported artifact bytes.
+- Added an atomic character library, SHA-256 metadata, per-session selection,
+  stable greeting indices, safe selection copy, and deletion cleanup.
+- Added raw-byte import, detail/list, artifact/JSON export, deletion, and
+  selection APIs with structured errors and loader-supplied session-policy hooks.
+- Added a versioned loader resource snapshot and an inert embedded-world-book
+  resource; neither interface compiles prompt text or activates entries.
+- Aligned selection intent with the loader's `characterCardId`/`character`
+  shape and added a `createCharacterAdapter()` whose `resolve()` returns
+  `{ character, diagnostics }` with `id/name/updatedAt/data`.
+- Added the character library UI and a minimal browser composition entry while
+  leaving preset source and `packages/tavern-loader/**` unchanged.
+- Recorded the implementation, API/loader/world-book contracts, scoped
+  acceptance, limitations, and cross-branch merge points under
+  `docs/character-card/`.
+
+Verification:
+
+- `npm run check` rebuilt the combined browser bundle and passed 38/38 tests:
+  the original 21 preset checks plus 17 character format/use-case checks.
+- All new fixtures are synthetic and generated inside tests; no local
+  third-party character artwork or content was copied into the repository.
+- Installed prompt injection, fork/subagent policy, and character-book matching
+  remain explicit loader/world-book follow-up work rather than false positives
+  in this slice's acceptance record.

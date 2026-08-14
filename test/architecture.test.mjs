@@ -16,3 +16,21 @@ test('internal packages keep one-way format to preset to loader boundaries', () 
   assert.match(loader, /systemPrompt/)
   assert.match(loader, /agent\/request/)
 })
+
+test('character adapter and use-case expose resources without becoming a runtime loader', () => {
+  const format = [
+    read('../packages/tavern-format/src/character.js'),
+    read('../packages/tavern-format/src/png-card.js'),
+  ].join('\n')
+  const character = [
+    read('../packages/character/src/index.js'),
+    read('../packages/character/src/store.js'),
+    read('../packages/character/src/server.js'),
+    read('../packages/character/src/resource.js'),
+  ].join('\n')
+
+  assert.doesNotMatch(format, /from ['"]node:|@deepseek-ai|systemPrompt\.section|ctx\.systemPrompt|agent\/request/)
+  assert.doesNotMatch(character, /tavern-loader|systemPrompt\.section|system-prompt\/assemble|agent\/request/)
+  assert.match(character, /tavern-format/)
+  assert.match(character, /character-selection/)
+})

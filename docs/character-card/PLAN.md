@@ -1,6 +1,19 @@
 # 角色卡兼容实施方案
 
-状态：**等待审核，不得开始功能实现。**
+状态：**已获实现授权；角色卡格式/用例切片正在本分支实现。**
+
+> 2026-08-14 范围修订：最初方案同时包含统一 prompt loader 和内嵌
+> character_book 激活引擎。preset 完成拆分并合入 `main` 后，评审决定并行开发必须
+> 保持相同边界：本分支只拥有纯格式适配、`CharacterCardModel`、原件导入导出、
+> 角色卡存储/API/UI 和测试。本文第 10–12 节涉及的 prompt 组合、Host 注入、fork/
+> subagent 运行策略，以及第 11 节的世界书匹配/预算引擎，改由
+> `feature/tavern-loader` 与 `feature/world-book-compat` 消费本分支接口实现。本范围修订
+> 优先于旧方案中的相应实施任务，详见 `IMPLEMENTATION.md`。
+
+> Loader 对接以只读参考的 `feature/tavern-loader/docs/LOADER_CONTRACT.md` 为准：最终
+> session 选择字段为 `characterCardId` 与 `character` 选项；角色分支提供的 adapter
+> `resolve()` 返回 `{ character, diagnostics }`，其中 character 至少包含
+> `id/name/updatedAt/data`。本分支不复制 loader 文件。
 
 分支：`feature/character-card-compat`
 
@@ -195,15 +208,20 @@ data/
 
 `character-state.json`：
 
+> 该文件仅用于角色分支独立验收；最终合并时迁移到 loader 的
+> `session-selections.json`，不能双写。
+
 ```js
 {
   schemaVersion: 1,
   selectedBySessionId: {
     "session-id": {
-      characterId: "uuid",
-      greetingIndex: 0,
-      preferCharacterSystemPrompt: true,
-      preferCharacterPostHistory: true
+      characterCardId: "uuid",
+      character: {
+        greetingIndex: 0,
+        preferCharacterSystemPrompt: true,
+        preferCharacterPostHistory: true
+      }
     }
   }
 }
