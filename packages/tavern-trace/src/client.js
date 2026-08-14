@@ -42,6 +42,20 @@ function formatTime(value) {
   try { return new Date(value).toLocaleString() } catch { return '' }
 }
 
+function formatBytes(value) {
+  return value >= 1024 * 1024
+    ? `${Math.round(value / 1024 / 1024)} MiB`
+    : `${Math.round(value / 1024)} KiB`
+}
+
+function storageStatus(storage) {
+  const parts = [`总计最多 ${formatBytes(storage.maxTotalBytes)}`]
+  if (Number.isSafeInteger(storage.maxRecordsPerSession)) parts.push(`每会话最多 ${storage.maxRecordsPerSession} 条`)
+  if (Number.isSafeInteger(storage.maxSessions)) parts.push(`最多 ${storage.maxSessions} 个会话`)
+  if (Number.isSafeInteger(storage.maxRecordBytes)) parts.push(`单条最多 ${formatBytes(storage.maxRecordBytes)}`)
+  return `插件有界存储：${parts.join('、')}；刷新或宿主重启后可恢复。`
+}
+
 function resourceCard(label, value) {
   return h('div', { className: 'dttrace-card', key: label },
     h('div', { className: 'dttrace-label' }, label),
@@ -160,7 +174,7 @@ export function TavernTraceView({ sessionId, useSession }) {
       h('p', { className: 'dttrace-note' }, '与 Conversation / Trajectory 并列的 loader 审计视图。DSH request/header 始终是最终发送 system、tools 与生效 config 的权威。'),
       error ? h('div', { className: 'dttrace-status', 'data-error': true }, error) : null,
       data === null && !error ? h('div', { className: 'dttrace-status' }, '正在读取审计记录…') : null,
-      data !== null ? h('div', { className: 'dttrace-status' }, `插件有界存储：每会话最多 ${data.storage.maxRecordsPerSession} 条、最多 ${data.storage.maxSessions} 个会话、单条最多 ${Math.round(data.storage.maxRecordBytes / 1024)} KiB；刷新或宿主重启后可恢复。`) : null,
+      data !== null ? h('div', { className: 'dttrace-status' }, storageStatus(data.storage)) : null,
       records.length === 0 && data !== null ? h('div', { className: 'dttrace-status' }, '此会话还没有 Tavern 请求审计记录。发送下一条消息后再查看。') : null,
       ...records.map((record, index) => h(TraceRecord, { record, latest: index === 0, key: record.id })),
     ),

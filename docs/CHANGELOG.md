@@ -76,6 +76,36 @@ avatars or allowing Tavern content to replace the DSH Agent identity.
 
 Verification is recorded in `docs/user/ACCEPTANCE.md`.
 
+## 2026-08-15 — Tavern Trace bounded-persistence hardening
+
+Purpose: cap the aggregate audit footprint and synchronous hot-path work after
+review found that independent session/record limits still admitted a multi-GiB
+theoretical JSON file and response.
+
+- Added an 8 MiB default and hard maximum for the complete canonical Trace
+  state, lowered the per-record default and hard maximum to 64 KiB, and made
+  all four configurable count/byte limits clamp to explicit hard caps.
+- Evict the oldest records by `updatedAt`/`recordedAt` across all sessions until
+  the exact serialized UTF-8 state fits; reject a record that cannot fit even
+  as the only record without changing memory or disk.
+- Made writes transactional and reuse the one budget-checked serialization for
+  atomic replacement. A pending supersede plus its replacement now share one
+  batch write.
+- Added safe startup handling for oversized legacy files, API total/current
+  byte metadata, an independently bounded GET body, and UI total-budget status.
+- Added multi-session synthetic tests for memory, disk, reload, GET response,
+  oldest eviction, newest retention, hard caps and single-record rejection.
+- Documented that normal capture still synchronously serializes/writes/renames
+  the bounded file twice per request (begin and finalize), may block the Node
+  event loop according to storage latency, uses no background Promise, is not
+  `fsync`-durable, and can transiently occupy about twice the budget during
+  atomic replacement.
+
+Verification: the targeted Trace/Host/world-book suite passed 20/20;
+`npm run check` rebuilt the browser bundle and passed 88 tests with 0 failures
+and 1 optional external-fixture skip. `npm run pack:check` succeeded with 40
+release files and excluded docs, tests, runtime data and local fixtures.
+
 ## 2026-08-15 — Tavern Trace audit view
 
 Purpose: explain the exact per-request Tavern resource assembly and world-book
@@ -92,8 +122,9 @@ DSH Session events.
   token cost, requested position, applied position and approximation state.
 - Added plugin-owned atomic bounded JSON persistence and a read-only same-origin
   API because DSH rc.6 has no stable third-party persistent Session event-type
-  registration seam. Defaults are 128 sessions, 128 records per session and
-  256 KiB per record; Trace persistence failure cannot veto a model request.
+  registration seam. Current defaults are 128 sessions, 128 records per
+  session, 64 KiB per record and 8 MiB total after the bounded-persistence
+  hardening above; Trace persistence failure cannot veto a model request.
 - Persisted only resource summaries, matcher metadata and SHA-256 values. Full
   preset/character/user/world-book content, history, system/header bodies,
   tool payloads and model messages are never stored by Trace.

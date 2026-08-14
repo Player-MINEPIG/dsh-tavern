@@ -158,6 +158,9 @@ export function apply(ctx, config = {}) {
   migrateCharacterSelections(characterStore, selections)
   const runtime = new TavernProfileLoader({ presetStore: store, selections })
   const traceStore = new TavernTraceStore(storageDir, config.trace)
+  if (traceStore.resetOversizedFile) {
+    ctx.logger.warn?.('dsh-tavern: oversized legacy Tavern Trace storage exceeded the safe read limit and was reset')
+  }
   const traceRecorder = new TavernTraceRecorder(traceStore)
   runtime.registerCharacterAdapter(createCharacterAdapter(characterStore))
   runtime.registerUserAdapter(createUserAdapter(userStore))

@@ -1359,6 +1359,16 @@ function formatTime(value) {
     return "";
   }
 }
+function formatBytes(value) {
+  return value >= 1024 * 1024 ? `${Math.round(value / 1024 / 1024)} MiB` : `${Math.round(value / 1024)} KiB`;
+}
+function storageStatus(storage) {
+  const parts = [`\u603B\u8BA1\u6700\u591A ${formatBytes(storage.maxTotalBytes)}`];
+  if (Number.isSafeInteger(storage.maxRecordsPerSession)) parts.push(`\u6BCF\u4F1A\u8BDD\u6700\u591A ${storage.maxRecordsPerSession} \u6761`);
+  if (Number.isSafeInteger(storage.maxSessions)) parts.push(`\u6700\u591A ${storage.maxSessions} \u4E2A\u4F1A\u8BDD`);
+  if (Number.isSafeInteger(storage.maxRecordBytes)) parts.push(`\u5355\u6761\u6700\u591A ${formatBytes(storage.maxRecordBytes)}`);
+  return `\u63D2\u4EF6\u6709\u754C\u5B58\u50A8\uFF1A${parts.join("\u3001")}\uFF1B\u5237\u65B0\u6216\u5BBF\u4E3B\u91CD\u542F\u540E\u53EF\u6062\u590D\u3002`;
+}
 function resourceCard(label, value) {
   return (0, import_react5.createElement)(
     "div",
@@ -1500,7 +1510,7 @@ function TavernTraceView({ sessionId, useSession }) {
       (0, import_react5.createElement)("p", { className: "dttrace-note" }, "\u4E0E Conversation / Trajectory \u5E76\u5217\u7684 loader \u5BA1\u8BA1\u89C6\u56FE\u3002DSH request/header \u59CB\u7EC8\u662F\u6700\u7EC8\u53D1\u9001 system\u3001tools \u4E0E\u751F\u6548 config \u7684\u6743\u5A01\u3002"),
       error ? (0, import_react5.createElement)("div", { className: "dttrace-status", "data-error": true }, error) : null,
       data === null && !error ? (0, import_react5.createElement)("div", { className: "dttrace-status" }, "\u6B63\u5728\u8BFB\u53D6\u5BA1\u8BA1\u8BB0\u5F55\u2026") : null,
-      data !== null ? (0, import_react5.createElement)("div", { className: "dttrace-status" }, `\u63D2\u4EF6\u6709\u754C\u5B58\u50A8\uFF1A\u6BCF\u4F1A\u8BDD\u6700\u591A ${data.storage.maxRecordsPerSession} \u6761\u3001\u6700\u591A ${data.storage.maxSessions} \u4E2A\u4F1A\u8BDD\u3001\u5355\u6761\u6700\u591A ${Math.round(data.storage.maxRecordBytes / 1024)} KiB\uFF1B\u5237\u65B0\u6216\u5BBF\u4E3B\u91CD\u542F\u540E\u53EF\u6062\u590D\u3002`) : null,
+      data !== null ? (0, import_react5.createElement)("div", { className: "dttrace-status" }, storageStatus(data.storage)) : null,
       records.length === 0 && data !== null ? (0, import_react5.createElement)("div", { className: "dttrace-status" }, "\u6B64\u4F1A\u8BDD\u8FD8\u6CA1\u6709 Tavern \u8BF7\u6C42\u5BA1\u8BA1\u8BB0\u5F55\u3002\u53D1\u9001\u4E0B\u4E00\u6761\u6D88\u606F\u540E\u518D\u67E5\u770B\u3002") : null,
       ...records.map((record, index) => (0, import_react5.createElement)(TraceRecord, { record, latest: index === 0, key: record.id }))
     )

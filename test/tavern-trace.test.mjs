@@ -1,6 +1,6 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
-import { readFileSync, mkdtempSync, rmSync } from 'node:fs'
+import { mkdirSync, readFileSync, mkdtempSync, rmSync, statSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { Readable } from 'node:stream'
@@ -8,6 +8,7 @@ import {
   TavernTraceRecorder,
   TavernTraceStore,
   createTavernTraceApiHandler,
+  tavernTraceStoreConstants,
 } from '../packages/tavern-trace/src/index.js'
 
 function snapshot(marker = 'SYNTHETIC_PROFILE_MARKER') {
@@ -84,7 +85,11 @@ function invoke(handler, url) {
     const res = {
       statusCode: 200,
       setHeader: () => {},
-      end: payload => resolve({ status: res.statusCode, body: JSON.parse(payload) }),
+      end: payload => resolve({
+        status: res.statusCode,
+        body: JSON.parse(payload),
+        bytes: Buffer.byteLength(payload),
+      }),
     }
     Promise.resolve(handler(req, res)).catch(reject)
   })
@@ -164,13 +169,150 @@ test('Trace bounds records and sessions and the GET API restores the persisted s
       kind: 'plugin-bounded-json',
       maxSessions: 2,
       maxRecordsPerSession: 2,
-      maxRecordBytes: 256 * 1024,
+      maxRecordBytes: 64 * 1024,
+      maxTotalBytes: 8 * 1024 * 1024,
+      persistedBytes: response.body.storage.persistedBytes,
     })
+    assert.ok(response.body.storage.persistedBytes > 0)
 
     const tiny = new TavernTraceStore(join(directory, 'tiny'), { maxRecordBytes: 512 })
     assert.throws(() => tiny.upsert('session-tiny', {
       id: '1:1:1', turn: 1, step: 1, attempt: 1, recordedAt: 1, oversized: 'x'.repeat(1024),
     }), /oversized/)
+  } finally {
+    rmSync(directory, { recursive: true, force: true })
+  }
+})
+
+test('Trace enforces one global byte budget across sessions, reload and GET responses', async () => {
+  const directory = mkdtempSync(join(tmpdir(), 'dsh-tavern-trace-total-budget-'))
+  const maxTotalBytes = 5 * 1024
+  const options = {
+    maxSessions: 12,
+    maxRecordsPerSession: 12,
+    maxRecordBytes: 2 * 1024,
+    maxTotalBytes,
+  }
+  try {
+    const store = new TavernTraceStore(directory, options)
+    for (let index = 1; index <= 18; index += 1) {
+      store.upsert(`session-${index % 3}`, {
+        id: `${index}:1:1`,
+        turn: index,
+        step: 1,
+        attempt: 1,
+        recordedAt: index,
+        updatedAt: index,
+        marker: `fixture-${index}`,
+        padding: `${'界'.repeat(120)}-${'x'.repeat(420)}`,
+      })
+    }
+
+    const stateText = `${JSON.stringify(store.state, null, 2)}\n`
+    const stateBytes = Buffer.byteLength(stateText)
+    const statePath = join(directory, 'tavern-traces.json')
+    const persistedText = readFileSync(statePath, 'utf8')
+    const retained = Object.values(store.state.sessions).flatMap(bucket => bucket.records)
+    assert.ok(retained.length < 18)
+    assert.ok(stateBytes <= maxTotalBytes)
+    assert.equal(store.serializedBytes, stateBytes)
+    assert.equal(store.persistedBytes, stateBytes)
+    assert.equal(statSync(statePath).size, stateBytes)
+    assert.equal(Buffer.byteLength(persistedText), stateBytes)
+    assert.equal(persistedText, stateText)
+    assert.ok(retained.some(record => record.id === '18:1:1'))
+    assert.ok(retained.every(record => record.id !== '1:1:1'))
+    const retainedTurns = retained.map(record => record.turn).toSorted((left, right) => left - right)
+    assert.deepEqual(
+      retainedTurns,
+      Array.from({ length: 19 - retainedTurns[0] }, (_value, offset) => retainedTurns[0] + offset),
+    )
+
+    const reloaded = new TavernTraceStore(directory, options)
+    assert.deepEqual(reloaded.state, store.state)
+    assert.equal(reloaded.serializedBytes, stateBytes)
+    assert.equal(reloaded.persistedBytes, stateBytes)
+    assert.ok(statSync(statePath).size <= maxTotalBytes)
+
+    const tightened = new TavernTraceStore(directory, { ...options, maxTotalBytes: 3 * 1024 })
+    assert.ok(tightened.serializedBytes <= 3 * 1024)
+    assert.equal(statSync(statePath).size, tightened.persistedBytes)
+    assert.ok(tightened.list('session-0').some(record => record.id === '18:1:1'))
+
+    const response = await invoke(
+      createTavernTraceApiHandler(tightened),
+      '/dsh-tavern/api/traces?sessionId=session-0',
+    )
+    assert.equal(response.status, 200)
+    assert.ok(response.bytes <= 3 * 1024)
+    assert.equal(response.body.storage.maxTotalBytes, 3 * 1024)
+    assert.equal(response.body.storage.persistedBytes, tightened.persistedBytes)
+    assert.ok(response.body.records.some(record => record.id === '18:1:1'))
+  } finally {
+    rmSync(directory, { recursive: true, force: true })
+  }
+})
+
+test('Trace GET compacts response metadata before dropping the only latest record', async () => {
+  const directory = mkdtempSync(join(tmpdir(), 'dsh-tavern-trace-response-envelope-'))
+  try {
+    const store = new TavernTraceStore(directory, { maxTotalBytes: 1024, maxRecordBytes: 1024 })
+    store.upsert('session-latest', {
+      id: '9:1:1', turn: 9, step: 1, attempt: 1, recordedAt: 9, updatedAt: 9, padding: 'x'.repeat(670),
+    })
+    const response = await invoke(
+      createTavernTraceApiHandler(store),
+      '/dsh-tavern/api/traces?sessionId=session-latest',
+    )
+    assert.equal(response.status, 200)
+    assert.ok(response.bytes <= store.maxTotalBytes)
+    assert.equal(response.body.responseMetadataTrimmed, true)
+    assert.equal(response.body.records.length, 1)
+    assert.equal(response.body.records[0].id, '9:1:1')
+    assert.equal(response.body.storage.maxTotalBytes, 1024)
+  } finally {
+    rmSync(directory, { recursive: true, force: true })
+  }
+})
+
+test('Trace rejects a record that cannot fit the total budget and clamps every configurable cap', () => {
+  const directory = mkdtempSync(join(tmpdir(), 'dsh-tavern-trace-hard-caps-'))
+  try {
+    const store = new TavernTraceStore(directory, {
+      maxSessions: Number.MAX_SAFE_INTEGER,
+      maxRecordsPerSession: Number.MAX_SAFE_INTEGER,
+      maxRecordBytes: Number.MAX_SAFE_INTEGER,
+      maxTotalBytes: Number.MAX_SAFE_INTEGER,
+    })
+    assert.equal(store.maxSessions, tavernTraceStoreConstants.hardMaxSessions)
+    assert.equal(store.maxRecordsPerSession, tavernTraceStoreConstants.hardMaxRecordsPerSession)
+    assert.equal(store.maxRecordBytes, tavernTraceStoreConstants.hardMaxRecordBytes)
+    assert.equal(store.maxTotalBytes, tavernTraceStoreConstants.hardMaxTotalBytes)
+
+    const tiny = new TavernTraceStore(join(directory, 'tiny-total'), {
+      maxRecordBytes: 2 * 1024,
+      maxTotalBytes: 1024,
+    })
+    tiny.upsert('session-tiny', {
+      id: '1:1:1', turn: 1, step: 1, attempt: 1, recordedAt: 1, updatedAt: 1, padding: 'safe',
+    })
+    const beforeState = structuredClone(tiny.state)
+    const beforeDisk = readFileSync(tiny.statePath, 'utf8')
+    const recordThatCannotFit = {
+      id: '2:1:1', turn: 2, step: 1, attempt: 1, recordedAt: 2, updatedAt: 2, padding: '界'.repeat(260),
+    }
+    assert.ok(Buffer.byteLength(JSON.stringify(recordThatCannotFit)) < tiny.maxRecordBytes)
+    assert.throws(() => tiny.upsert('session-tiny', recordThatCannotFit), /total limit/)
+    assert.deepEqual(tiny.state, beforeState)
+    assert.equal(readFileSync(tiny.statePath, 'utf8'), beforeDisk)
+
+    const blockedTarget = join(directory, 'rename-blocked-by-directory')
+    mkdirSync(blockedTarget)
+    tiny.statePath = blockedTarget
+    assert.throws(() => tiny.upsert('session-tiny', {
+      id: '3:1:1', turn: 3, step: 1, attempt: 1, recordedAt: 3, updatedAt: 3,
+    }))
+    assert.deepEqual(tiny.state, beforeState)
   } finally {
     rmSync(directory, { recursive: true, force: true })
   }

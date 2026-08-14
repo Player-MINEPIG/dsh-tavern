@@ -200,15 +200,17 @@ export class TavernTraceRecorder {
       entersModelHistory: false,
     }
     const previous = this.pending.get(sessionId)
+    const updates = []
     if (previous !== undefined) {
-      this.store.upsert(sessionId, {
+      updates.push({
         ...previous.record,
         status: 'superseded-unconfirmed',
         updatedAt: recordedAt,
       })
-      this.pending.delete(sessionId)
     }
-    this.store.upsert(sessionId, record)
+    updates.push(record)
+    this.store.upsertMany(sessionId, updates)
+    if (previous !== undefined) this.pending.delete(sessionId)
     this.pending.set(sessionId, { id, turn, step, record, expectedSystemText, expectedCallConfig })
     while (this.pending.size > this.store.maxSessions) {
       const oldestSessionId = this.pending.keys().next().value
