@@ -4,7 +4,7 @@
 
 ## 决策结论
 
-`dsh-tavern` 保持为一个可安装的 DSH 插件，在同一仓库和发布包内拆成三个单向依赖的内部层。当前 feature 分支先完成拆分与安装验收，验收通过后再合并 `main`；不先把耦合实现合入 `main`，也不要求用户安装两个互相配套的 DSH 插件。
+`dsh-tavern` 保持为一个可安装的 DSH 插件，在同一仓库和发布包内拆成单向依赖的内部层。preset 拆分已经验收并进入 `main`；角色卡与世界书沿同一边界在各自 feature 分支提供资源，再由统一 loader 集成。不要求用户安装多个互相配套的 DSH 插件。
 
 ```text
 SillyTavern JSON
@@ -14,8 +14,10 @@ packages/tavern-format
 解析、校验、归一化、未知字段保留、ST macro
        │
        ▼
-packages/preset
-预设存储、CRUD、HTTP API、浏览器用例
+packages/preset          packages/character
+预设用例                  角色卡存储、API、资源快照、UI
+          \              /
+           \            /
        │
        ▼
 packages/tavern-loader
@@ -25,7 +27,7 @@ DSH 编译策略、session/request 策略、Host hooks
 DSH system prompt + agent request
 ```
 
-依赖只能向下：`tavern-loader → preset → tavern-format`。格式层不能导入 DSH、文件系统或 UI；preset 层不能注册 `systemPrompt`、`agent/request` 等 Host seam；只有 loader 是根 `main` 入口并允许依赖 DSH 运行时。
+依赖只能向下：`tavern-loader → preset/character → tavern-format`。格式层不能导入 DSH、文件系统或 UI；preset/character 用例层不能注册 `systemPrompt`、`agent/request` 等 Host seam；只有 loader 是根 `main` 入口并允许依赖 DSH 运行时。浏览器侧由 `packages/client` 组合各用例 UI，它不是 Host loader。
 
 ## 各层职责
 
@@ -33,11 +35,12 @@ DSH system prompt + agent request
 | --- | --- | --- | --- |
 | `tavern-format` | “这个 ST 文件表达了什么？” | preset 识别、顺序和启用状态归一化、原字段保留、编辑模型、macro 解释 | session 选择、DSH system 段、模型调用参数、HTTP、磁盘 |
 | `preset` | “用户如何管理预设？” | 原子文件存储、导入/创建/修改/删除/选择、API、侧边栏源代码 | 决定提示词如何进入 agent |
+| `character` | “用户如何管理角色资源？” | JSON/PNG 导入、原件保存/导出、per-session binding、API、UI、loader/world-book 资源快照 | prompt 放置、assistant 历史、世界书激活 |
 | `tavern-loader` | “当前资源怎样影响这次 DSH 请求？” | 编译选中预设、映射支持的 call config、append/replace 策略、Host/API 挂载 | 重新解释 ST 原始字段、实现具体 UI |
 
-角色卡和世界书在 `tavern-format` 增加各自的 adapter/model，在用例层增加管理入口，再由同一个 `tavern-loader` 组合。角色卡不读取预设的 UI 排序逻辑，预设也不决定角色字段插入位置。统一 adapter、session 继承和 marker 契约见 `docs/LOADER_CONTRACT.md`。
+角色卡已经在 `tavern-format` 增加 adapter/model，并在 `character` 用例层提供管理与资源入口；world-book 采用相同模式。三类资源最终由同一个 `tavern-loader` 组合。角色卡不读取预设的 UI 排序逻辑，预设也不决定角色字段插入位置。统一 adapter、session 继承和 marker 契约见 `docs/LOADER_CONTRACT.md`。
 
-当前 loader feature 已把 Host 注册收敛为一个 `dsh-tavern:profile` section，并引入 loader-owned `SessionSelectionStore`：preset、角色和世界书的文档仍由各自模块管理，但“哪个 session 使用哪些资源”由统一策略持久化。普通 fork 复制父选择，subagent 默认空选择。
+统一 loader 把 Host 注册收敛为一个 `dsh-tavern:profile` section，并引入 loader-owned `SessionSelectionStore`：preset、角色和世界书的文档仍由各自模块管理，但“哪个 session 使用哪些资源”由统一策略持久化。普通 fork 复制父选择，subagent 默认空选择。
 
 ## 为什么不是两个 DSH 插件
 
@@ -54,7 +57,7 @@ DSH system prompt + agent request
 - 两个插件都可能争用 API、存储或 UI 生命周期；
 - 安装、卸载、备份和故障排查成本翻倍。
 
-因此发布与安装单位固定为根包 `dsh-tavern`，内部包边界用于代码复用和测试隔离。`package.json` 的 `./format`、`./preset`、`./loader` exports 是程序接口，不代表三个可分别安装的插件。
+因此发布与安装单位固定为根包 `dsh-tavern`，内部包边界用于代码复用和测试隔离。`package.json` 的 `./format`、`./preset`、`./character`、`./loader` exports 是程序接口，不代表可分别安装的插件。
 
 ## 合并顺序与门槛
 

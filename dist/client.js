@@ -22,14 +22,16 @@ var __copyProps = (to, from, except, desc) => {
 };
 var __toCommonJS = (mod) => __copyProps(__defProp({}, "__esModule", { value: true }), mod);
 
-// packages/preset/src/client.js
-var client_exports = {};
-__export(client_exports, {
-  apply: () => apply,
+// packages/client/src/index.js
+var index_exports = {};
+__export(index_exports, {
+  apply: () => apply2,
   inject: () => inject,
   name: () => name
 });
-module.exports = __toCommonJS(client_exports);
+module.exports = __toCommonJS(index_exports);
+
+// packages/preset/src/client.js
 var import_react = require("react");
 
 // packages/preset/src/client-state.js
@@ -512,8 +514,6 @@ function installStyles() {
   style.textContent = css;
   document.head.append(style);
 }
-var name = "dsh-tavern";
-var inject = ["slots", "layout"];
 function apply(ctx) {
   installStyles();
   ctx.slots.inject("details", () => ctx.slots.register({
@@ -547,6 +547,314 @@ function apply(ctx) {
   };
   const timer = window.setTimeout(openDefault, 0);
   ctx.effect(() => () => window.clearTimeout(timer), "dsh-tavern: default right panel");
+}
+
+// packages/character/src/client.js
+var import_react2 = require("react");
+
+// packages/character/src/client-state.js
+function shouldShowCharacterLauncher(sessionState) {
+  const current = sessionState?.current;
+  if (current === void 0 || current === null) return true;
+  return sessionState.byId?.[current]?.blank === true;
+}
+function characterGreetingOptions(character) {
+  if (character === null || typeof character !== "object") return [];
+  const first = typeof character.data?.firstMessage === "string" ? character.data.firstMessage : "";
+  const alternates = Array.isArray(character.data?.alternateGreetings) ? character.data.alternateGreetings.filter((item) => typeof item === "string") : [];
+  return [
+    { index: 0, label: first === "" ? "\u9ED8\u8BA4\u5F00\u573A\uFF08\u7A7A\uFF09" : "\u9ED8\u8BA4\u5F00\u573A", text: first },
+    ...alternates.map((text, index) => ({ index: index + 1, label: `\u5907\u9009\u5F00\u573A ${index + 1}`, text }))
+  ];
+}
+function defaultCharacterSelection(characterCardId) {
+  return {
+    characterCardId,
+    character: {
+      greetingIndex: 0,
+      preferCharacterSystemPrompt: true,
+      preferCharacterPostHistory: true
+    }
+  };
+}
+
+// packages/character/src/client.js
+var API_ROOT2 = "/dsh-tavern/api";
+var css2 = `
+.dcc-layer{position:absolute;inset:0;pointer-events:none;z-index:7}.dcc-launcher{position:absolute;top:14px;right:82px;pointer-events:auto}.dcc-launcher-button,.dcc-header-button{height:32px;border:1px solid var(--dsw-alias-border-l2);border-radius:9px;background:var(--dsw-alias-bg-base);color:var(--dsw-alias-label-primary);font-size:12px;font-weight:600;cursor:pointer;padding:0 12px}.dcc-header-button{height:28px;border-radius:7px;background:transparent;font-size:11px;font-weight:400;padding:0 9px}.dcc-launcher-button:hover,.dcc-header-button:hover{background:var(--dsw-alias-interactive-bg-hover)}
+.dcc-panel{position:absolute;top:0;right:0;bottom:0;width:min(440px,calc(100vw - 56px));pointer-events:auto;border-left:1px solid var(--dsw-alias-border-l2);box-shadow:var(--ds-shadow-3,-8px 0 28px rgba(0,0,0,.18));background:var(--dsw-alias-bg-base);color:var(--dsw-alias-label-primary);display:flex;flex-direction:column;font-family:Inter,var(--dsw-font-family),sans-serif}.dcc-header{height:52px;box-sizing:border-box;display:flex;align-items:center;gap:8px;padding:0 14px;border-bottom:1px solid var(--dsw-alias-border-l2);flex:none}.dcc-title{font-size:14px;font-weight:650;flex:1}.dcc-close{border:0;background:transparent;color:var(--dsw-alias-label-tertiary);cursor:pointer;border-radius:7px;padding:6px 8px}.dcc-body{min-height:0;overflow:auto;padding:12px;display:flex;flex-direction:column;gap:12px}.dcc-toolbar,.dcc-actions{display:grid;grid-template-columns:1fr 1fr;gap:8px}.dcc-button{min-height:34px;border:1px solid var(--dsw-alias-border-l2);border-radius:8px;background:var(--dsw-alias-button-secondary-fill,var(--dsw-alias-bg-base));color:var(--dsw-alias-label-primary);cursor:pointer;padding:7px 10px;font-size:12px}.dcc-button:hover:not(:disabled){background:var(--dsw-alias-interactive-bg-hover)}.dcc-button:disabled{opacity:.5;cursor:default}.dcc-primary{background:var(--dsw-alias-state-business-primary);color:white;border-color:transparent}.dcc-danger{color:var(--dsw-alias-state-error)}.dcc-field{display:flex;flex-direction:column;gap:5px}.dcc-label{font-size:11px;color:var(--dsw-alias-label-tertiary);font-weight:600}.dcc-select{box-sizing:border-box;width:100%;height:34px;padding:0 9px;border:1px solid var(--dsw-alias-border-l2);border-radius:7px;background:var(--dsw-alias-bg-base);color:var(--dsw-alias-label-primary);font:inherit;font-size:12px}.dcc-note,.dcc-meta{font-size:11px;line-height:1.5;color:var(--dsw-alias-label-tertiary);margin:0;overflow-wrap:anywhere}.dcc-status{font-size:11px;line-height:1.45;border-radius:7px;padding:7px 9px;background:var(--dsw-specific-tip);overflow-wrap:anywhere}.dcc-status[data-error=true]{color:var(--dsw-alias-state-error)}.dcc-card{border-top:1px solid var(--dsw-alias-border-l1);padding-top:12px;display:flex;flex-direction:column;gap:10px}.dcc-card-head{display:flex;gap:11px}.dcc-avatar{width:76px;height:100px;object-fit:cover;border-radius:9px;border:1px solid var(--dsw-alias-border-l1);background:var(--dsw-alias-bg-container)}.dcc-card-title{font-size:15px;font-weight:650;margin:0 0 5px}.dcc-tags{display:flex;gap:5px;flex-wrap:wrap}.dcc-tag{font-size:10px;border:1px solid var(--dsw-alias-border-l1);border-radius:999px;padding:2px 7px;color:var(--dsw-alias-label-secondary)}.dcc-check{display:flex;gap:7px;align-items:flex-start;font-size:11px;line-height:1.4}.dcc-detail{border:1px solid var(--dsw-alias-border-l1);border-radius:8px;padding:8px}.dcc-detail summary{cursor:pointer;font-size:12px;font-weight:600}.dcc-text{white-space:pre-wrap;overflow-wrap:anywhere;font-size:11px;line-height:1.5;margin:8px 0 0;max-height:260px;overflow:auto}.dcc-diags{margin:7px 0 0;padding-left:18px;font-size:11px;line-height:1.5}.dcc-footer{position:sticky;bottom:-12px;margin:0 -12px -12px;padding:10px 12px;background:var(--dsw-alias-bg-base);border-top:1px solid var(--dsw-alias-border-l2)}
+`;
+function errorMessage(data, status) {
+  if (typeof data?.error === "string") return data.error;
+  if (typeof data?.error?.message === "string") return data.error.message;
+  return `HTTP ${status}`;
+}
+async function api2(path, options = {}) {
+  const response = await fetch(`${API_ROOT2}${path}`, options);
+  const data = await response.json().catch(() => null);
+  if (!response.ok || data?.ok === false) throw new Error(errorMessage(data, response.status));
+  return data;
+}
+function Field2({ label, children }) {
+  return (0, import_react2.createElement)("label", { className: "dcc-field" }, (0, import_react2.createElement)("span", { className: "dcc-label" }, label), children);
+}
+function TextDetail({ label, value }) {
+  if (typeof value !== "string" || value === "") return null;
+  return (0, import_react2.createElement)(
+    "details",
+    { className: "dcc-detail" },
+    (0, import_react2.createElement)("summary", null, label),
+    (0, import_react2.createElement)("p", { className: "dcc-text" }, value)
+  );
+}
+function DiagnosticList({ title, items }) {
+  if (!Array.isArray(items) || items.length === 0) return null;
+  return (0, import_react2.createElement)(
+    "details",
+    { className: "dcc-detail" },
+    (0, import_react2.createElement)("summary", null, `${title} (${items.length})`),
+    (0, import_react2.createElement)("ul", { className: "dcc-diags" }, ...items.map((item, index) => (0, import_react2.createElement)("li", { key: `${item.code}-${index}` }, `${item.message}${item.path ? ` [${item.path}]` : ""}`)))
+  );
+}
+function CharacterPanel({ sessionId, sessionBlank, close }) {
+  const [catalog, setCatalog] = (0, import_react2.useState)(null);
+  const [detail, setDetail] = (0, import_react2.useState)(null);
+  const [selection, setSelection] = (0, import_react2.useState)(null);
+  const [binding, setBinding] = (0, import_react2.useState)(null);
+  const [busy, setBusy] = (0, import_react2.useState)(false);
+  const [status, setStatus] = (0, import_react2.useState)({ text: "\u52A0\u8F7D\u4E2D\u2026", error: false });
+  const fileRef = (0, import_react2.useRef)(null);
+  const refreshGeneration = (0, import_react2.useRef)(0);
+  const run = (0, import_react2.useCallback)(async (operation, success) => {
+    setBusy(true);
+    try {
+      const result = await operation();
+      setStatus({ text: success, error: false });
+      return result;
+    } catch (error) {
+      setStatus({ text: error instanceof Error ? error.message : String(error), error: true });
+      return null;
+    } finally {
+      setBusy(false);
+    }
+  }, []);
+  const loadDetail = (0, import_react2.useCallback)(async (id) => {
+    const generation = ++refreshGeneration.current;
+    if (id === null || id === void 0 || id === "") {
+      setDetail(null);
+      setBinding(null);
+      return;
+    }
+    const data = await api2(`/characters/${encodeURIComponent(id)}`);
+    if (generation !== refreshGeneration.current) return;
+    setDetail(data.character);
+    setBinding(selection?.characterCardId === id ? selection : defaultCharacterSelection(id));
+  }, [selection]);
+  const refresh = (0, import_react2.useCallback)(async (preferredId) => {
+    const generation = ++refreshGeneration.current;
+    const list = await api2("/characters");
+    let currentSelection = null;
+    if (sessionId) {
+      const selected = await api2(`/character-selection?sessionId=${encodeURIComponent(sessionId)}`);
+      currentSelection = selected.selection;
+    }
+    if (generation !== refreshGeneration.current) return;
+    setCatalog(list);
+    setSelection(currentSelection);
+    const id = preferredId ?? currentSelection?.characterCardId ?? list.characters[0]?.id ?? null;
+    if (id === null) {
+      setDetail(null);
+      setBinding(null);
+      return;
+    }
+    const data = await api2(`/characters/${encodeURIComponent(id)}`);
+    if (generation !== refreshGeneration.current) return;
+    setDetail(data.character);
+    setBinding(currentSelection?.characterCardId === id ? currentSelection : defaultCharacterSelection(id));
+  }, [sessionId]);
+  (0, import_react2.useEffect)(() => {
+    run(() => refresh(), "\u89D2\u8272\u5E93\u5DF2\u52A0\u8F7D");
+    return () => {
+      refreshGeneration.current += 1;
+    };
+  }, [refresh, run]);
+  const importFile = (0, import_react2.useCallback)((file) => run(async () => {
+    const response = await fetch(`${API_ROOT2}/characters/import?filename=${encodeURIComponent(file.name)}`, {
+      method: "POST",
+      headers: { "Content-Type": file.type || "application/octet-stream" },
+      body: file
+    });
+    const data = await response.json().catch(() => null);
+    if (!response.ok || data?.ok === false) throw new Error(errorMessage(data, response.status));
+    await refresh(data.character.id);
+    if (fileRef.current !== null) fileRef.current.value = "";
+  }, "\u89D2\u8272\u5361\u5DF2\u5BFC\u5165\uFF1B\u5C1A\u672A\u7ED1\u5B9A\u5230\u4F1A\u8BDD"), [refresh, run]);
+  const bind = (0, import_react2.useCallback)(() => run(async () => {
+    if (!sessionId) throw new Error("\u8BF7\u5148\u521B\u5EFA\u6216\u6253\u5F00\u4E00\u4E2A\u4F1A\u8BDD\u518D\u7ED1\u5B9A\u89D2\u8272");
+    if (selection?.characterCardId !== binding?.characterCardId && sessionBlank === false && !window.confirm("\u5F53\u524D\u4F1A\u8BDD\u5DF2\u6709\u5386\u53F2\u3002\u66F4\u6362\u89D2\u8272\u53EA\u5F71\u54CD\u540E\u7EED\u8BF7\u6C42\uFF0C\u4E0D\u4F1A\u91CD\u5199\u5DF2\u6709\u6D88\u606F\uFF1B\u7EE7\u7EED\u5417\uFF1F")) return;
+    const data = await api2("/character-selection", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ sessionId, ...binding })
+    });
+    setSelection(data.selection);
+    setBinding(data.selection);
+  }, "\u89D2\u8272\u9009\u62E9\u5DF2\u4FDD\u5B58\uFF1B\u5B9E\u9645\u5BF9\u8BDD\u52A0\u8F7D\u7531 Tavern loader \u7EDF\u4E00\u5904\u7406"), [binding, run, selection, sessionBlank, sessionId]);
+  const unbind = (0, import_react2.useCallback)(() => run(async () => {
+    if (!sessionId) throw new Error("\u5F53\u524D\u6CA1\u6709\u53EF\u89E3\u7ED1\u7684\u4F1A\u8BDD");
+    await api2("/character-selection", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ sessionId, characterCardId: null })
+    });
+    setSelection(null);
+    if (detail !== null) setBinding(defaultCharacterSelection(detail.id));
+  }, "\u5F53\u524D\u4F1A\u8BDD\u5DF2\u89E3\u9664\u89D2\u8272\u7ED1\u5B9A"), [detail, run, sessionId]);
+  const remove = (0, import_react2.useCallback)(() => run(async () => {
+    if (detail === null || !window.confirm(`\u5220\u9664\u89D2\u8272\u5361\u201C${detail.name}\u201D\uFF1F\u539F\u59CB\u5BFC\u5165\u6587\u4EF6\u4E5F\u4F1A\u88AB\u5220\u9664\u3002`)) return;
+    await api2(`/characters/${encodeURIComponent(detail.id)}`, { method: "DELETE" });
+    await refresh(null);
+  }, "\u89D2\u8272\u5361\u5DF2\u5220\u9664\uFF0C\u76F8\u5173\u4F1A\u8BDD\u7ED1\u5B9A\u5DF2\u6E05\u9664"), [detail, refresh, run]);
+  const greetings = characterGreetingOptions(detail);
+  const activeName = selection === null ? "\u672A\u7ED1\u5B9A\u89D2\u8272" : catalog?.characters.find((item) => item.id === selection.characterCardId)?.name ?? selection.characterCardId;
+  return (0, import_react2.createElement)(
+    "div",
+    { className: "dcc-panel" },
+    (0, import_react2.createElement)(
+      "div",
+      { className: "dcc-header" },
+      (0, import_react2.createElement)("div", { className: "dcc-title" }, "Tavern \u89D2\u8272\u5361"),
+      (0, import_react2.createElement)("button", { className: "dcc-close", type: "button", title: "\u5173\u95ED\u89D2\u8272\u5361\u9762\u677F", onClick: close }, "\u2715")
+    ),
+    (0, import_react2.createElement)(
+      "div",
+      { className: "dcc-body" },
+      (0, import_react2.createElement)(
+        "div",
+        { className: "dcc-toolbar" },
+        (0, import_react2.createElement)("button", { className: "dcc-button", type: "button", disabled: busy, onClick: () => fileRef.current?.click() }, "\u5BFC\u5165 JSON / PNG"),
+        (0, import_react2.createElement)("button", { className: "dcc-button", type: "button", disabled: busy, onClick: () => run(() => refresh(detail?.id), "\u89D2\u8272\u5E93\u5DF2\u5237\u65B0") }, "\u5237\u65B0"),
+        (0, import_react2.createElement)("input", { ref: fileRef, hidden: true, type: "file", accept: ".json,.png,application/json,image/png", onChange: (event) => {
+          const file = event.target.files?.[0];
+          if (file !== void 0) importFile(file);
+        } })
+      ),
+      (0, import_react2.createElement)(Field2, { label: "\u6D4F\u89C8\u89D2\u8272\u5E93" }, (0, import_react2.createElement)(
+        "select",
+        {
+          className: "dcc-select",
+          value: detail?.id ?? "",
+          disabled: busy || catalog === null || catalog.characters.length === 0,
+          onChange: (event) => run(() => loadDetail(event.target.value), "\u89D2\u8272\u8BE6\u60C5\u5DF2\u52A0\u8F7D")
+        },
+        ...catalog?.characters.length ? [] : [(0, import_react2.createElement)("option", { key: "empty", value: "" }, "\u89D2\u8272\u5E93\u4E3A\u7A7A")],
+        ...(catalog?.characters ?? []).map((item) => (0, import_react2.createElement)("option", { key: item.id, value: item.id }, `${item.name} \xB7 ${item.sourceFormat}`))
+      )),
+      (0, import_react2.createElement)("p", { className: "dcc-note" }, `\u5F53\u524D\u4F1A\u8BDD\uFF1A${sessionId || "\u65E0"}\uFF1B\u7ED1\u5B9A\uFF1A${activeName}`),
+      (0, import_react2.createElement)("p", { className: "dcc-note" }, `\u5B58\u50A8\u76EE\u5F55\uFF1A${catalog?.storageDir || "\u52A0\u8F7D\u4E2D\u2026"}`),
+      (0, import_react2.createElement)("div", { className: "dcc-status", "data-error": status.error || void 0, role: "status", "aria-live": "polite" }, status.text),
+      detail === null ? (0, import_react2.createElement)("p", { className: "dcc-note" }, catalog === null ? "\u6B63\u5728\u52A0\u8F7D\u89D2\u8272\u5E93\u2026" : "\u5BFC\u5165\u4E00\u5F20\u5408\u6210\u6216\u81EA\u6709\u6388\u6743\u7684 SillyTavern \u89D2\u8272\u5361\u4EE5\u67E5\u770B\u8BE6\u60C5\u3002") : (0, import_react2.createElement)(
+        "div",
+        { className: "dcc-card" },
+        (0, import_react2.createElement)(
+          "div",
+          { className: "dcc-card-head" },
+          detail.source.container === "png" ? (0, import_react2.createElement)("img", { className: "dcc-avatar", src: `${API_ROOT2}/characters/${encodeURIComponent(detail.id)}/artifact`, alt: `${detail.name} \u89D2\u8272\u5361\u56FE\u7247` }) : null,
+          (0, import_react2.createElement)(
+            "div",
+            null,
+            (0, import_react2.createElement)("h3", { className: "dcc-card-title" }, detail.name),
+            (0, import_react2.createElement)("p", { className: "dcc-meta" }, `${detail.source.format}${detail.source.specVersion ? ` \xB7 ${detail.source.specVersion}` : ""} \xB7 ${detail.source.container}`),
+            (0, import_react2.createElement)("p", { className: "dcc-meta" }, `${detail.data.creator || "\u672A\u77E5\u4F5C\u8005"}${detail.data.characterVersion ? ` \xB7 ${detail.data.characterVersion}` : ""}`),
+            (0, import_react2.createElement)("div", { className: "dcc-tags" }, ...detail.data.tags.map((tag, index) => (0, import_react2.createElement)("span", { className: "dcc-tag", key: `${tag}-${index}` }, tag)))
+          )
+        ),
+        (0, import_react2.createElement)(Field2, { label: "\u5F00\u573A\u53C2\u8003" }, (0, import_react2.createElement)("select", {
+          className: "dcc-select",
+          value: binding?.character?.greetingIndex ?? 0,
+          onChange: (event) => setBinding((current) => ({ ...current, character: { ...current.character, greetingIndex: Number(event.target.value) } }))
+        }, ...greetings.map((item) => (0, import_react2.createElement)("option", { key: item.index, value: item.index }, item.label)))),
+        (0, import_react2.createElement)("label", { className: "dcc-check" }, (0, import_react2.createElement)("input", { type: "checkbox", checked: binding?.character?.preferCharacterSystemPrompt !== false, onChange: (event) => setBinding((current) => ({ ...current, character: { ...current.character, preferCharacterSystemPrompt: event.target.checked } })) }), (0, import_react2.createElement)("span", null, "\u5141\u8BB8 loader \u4F18\u5148\u91C7\u7528\u5361\u5185 system_prompt")),
+        (0, import_react2.createElement)("label", { className: "dcc-check" }, (0, import_react2.createElement)("input", { type: "checkbox", checked: binding?.character?.preferCharacterPostHistory !== false, onChange: (event) => setBinding((current) => ({ ...current, character: { ...current.character, preferCharacterPostHistory: event.target.checked } })) }), (0, import_react2.createElement)("span", null, "\u5141\u8BB8 loader \u91C7\u7528 post_history_instructions\uFF08\u5B9E\u9645\u4F4D\u7F6E\u7531 loader \u51B3\u5B9A\uFF09")),
+        (0, import_react2.createElement)(
+          "div",
+          { className: "dcc-actions" },
+          (0, import_react2.createElement)("button", { className: "dcc-button dcc-primary", type: "button", disabled: busy || !sessionId, onClick: bind }, selection?.characterCardId === detail.id ? "\u66F4\u65B0\u4F1A\u8BDD\u7ED1\u5B9A" : "\u7ED1\u5B9A\u5230\u5F53\u524D\u4F1A\u8BDD"),
+          (0, import_react2.createElement)("button", { className: "dcc-button", type: "button", disabled: busy || !sessionId || selection === null, onClick: unbind }, "\u89E3\u9664\u7ED1\u5B9A")
+        ),
+        (0, import_react2.createElement)("p", { className: "dcc-note" }, "\u89D2\u8272\u5361\u6A21\u5757\u53EA\u4FDD\u5B58\u6807\u51C6\u5316\u8D44\u6E90\u548C\u4F1A\u8BDD\u9009\u62E9\uFF0C\u4E0D\u4F1A\u81EA\u884C\u5199\u5165 system prompt\u3001\u4F2A\u9020 assistant \u6D88\u606F\u6216\u6FC0\u6D3B\u4E16\u754C\u4E66\u3002"),
+        (0, import_react2.createElement)(TextDetail, { label: "Creator notes", value: detail.data.creatorNotes }),
+        (0, import_react2.createElement)(TextDetail, { label: "Description", value: detail.data.description }),
+        (0, import_react2.createElement)(TextDetail, { label: "Personality", value: detail.data.personality }),
+        (0, import_react2.createElement)(TextDetail, { label: "Scenario", value: detail.data.scenario }),
+        (0, import_react2.createElement)(TextDetail, { label: "\u5F53\u524D\u5F00\u573A\u53C2\u8003\u5185\u5BB9", value: greetings[binding?.character?.greetingIndex ?? 0]?.text }),
+        (0, import_react2.createElement)(TextDetail, { label: "Message examples", value: detail.data.messageExample }),
+        (0, import_react2.createElement)(TextDetail, { label: "System prompt\uFF08\u4EC5\u4FDD\u5B58\uFF09", value: detail.data.systemPrompt }),
+        (0, import_react2.createElement)(TextDetail, { label: "Post-history instructions\uFF08\u4EC5\u4FDD\u5B58\uFF09", value: detail.data.postHistoryInstructions }),
+        detail.data.characterBook !== null ? (0, import_react2.createElement)("div", { className: "dcc-status" }, `\u5185\u5D4C character_book \u5DF2\u65E0\u635F\u4FDD\u7559\uFF08${Array.isArray(detail.data.characterBook.entries) ? detail.data.characterBook.entries.length : "\u672A\u77E5"} \u6761\uFF09\uFF1B\u672C\u6A21\u5757\u4E0D\u4F1A\u6267\u884C\u5339\u914D\u3002`) : null,
+        (0, import_react2.createElement)(DiagnosticList, { title: "\u517C\u5BB9\u8B66\u544A", items: detail.compatibility.warnings }),
+        (0, import_react2.createElement)(DiagnosticList, { title: "\u9700\u8981 loader/\u5176\u4ED6\u6A21\u5757\u5904\u7406", items: detail.compatibility.unsupportedFeatures }),
+        detail.compatibility.unknownMacroNames.length > 0 ? (0, import_react2.createElement)("div", { className: "dcc-status" }, `\u672A\u77E5\u5B8F\uFF1A${detail.compatibility.unknownMacroNames.join(", ")}`) : null,
+        (0, import_react2.createElement)(
+          "div",
+          { className: "dcc-actions" },
+          (0, import_react2.createElement)("a", { className: "dcc-button", href: `${API_ROOT2}/characters/${encodeURIComponent(detail.id)}/artifact`, download: "" }, "\u5BFC\u51FA\u539F\u4EF6"),
+          (0, import_react2.createElement)("a", { className: "dcc-button", href: `${API_ROOT2}/characters/${encodeURIComponent(detail.id)}/json`, download: "" }, "\u5BFC\u51FA JSON")
+        ),
+        (0, import_react2.createElement)("div", { className: "dcc-footer" }, (0, import_react2.createElement)("button", { className: "dcc-button dcc-danger", type: "button", disabled: busy, onClick: remove }, "\u5220\u9664\u89D2\u8272\u5361"))
+      )
+    )
+  );
+}
+function CharacterHeaderButton() {
+  return (0, import_react2.createElement)("button", { className: "dcc-header-button", type: "button", title: "\u6253\u5F00 Tavern \u89D2\u8272\u5361\u9762\u677F", onClick: () => window.dispatchEvent(new Event("dsh-tavern:open-character")) }, "\u89D2\u8272\u5361");
+}
+function CharacterOverlay({ useSessions }) {
+  const [open, setOpen] = (0, import_react2.useState)(false);
+  const sessionId = useSessions((state) => state.current);
+  const sessionBlank = useSessions((state) => state.current === void 0 || state.current === null ? true : state.byId?.[state.current]?.blank === true);
+  const showLauncher = useSessions(shouldShowCharacterLauncher);
+  (0, import_react2.useEffect)(() => {
+    const onOpen = () => setOpen(true);
+    window.addEventListener("dsh-tavern:open-character", onOpen);
+    return () => window.removeEventListener("dsh-tavern:open-character", onOpen);
+  }, []);
+  return (0, import_react2.createElement)(
+    "div",
+    { className: "dcc-layer" },
+    open ? (0, import_react2.createElement)(CharacterPanel, { sessionId, sessionBlank, close: () => setOpen(false) }) : null,
+    !open && showLauncher ? (0, import_react2.createElement)("div", { className: "dcc-launcher" }, (0, import_react2.createElement)("button", { className: "dcc-launcher-button", type: "button", onClick: () => setOpen(true), title: "\u6253\u5F00 Tavern \u89D2\u8272\u5361\u9762\u677F" }, "\u89D2\u8272\u5361")) : null
+  );
+}
+function installStyles2() {
+  if (document.querySelector('style[data-plugin-css="dsh-tavern-character"]') !== null) return;
+  const style = document.createElement("style");
+  style.dataset.pluginCss = "dsh-tavern-character";
+  style.textContent = css2;
+  document.head.append(style);
+}
+function applyCharacterClient(ctx) {
+  installStyles2();
+  ctx.slots.inject("conversation.session.header.utilities", () => ctx.slots.register({
+    name: "conversation.session.header.utilities",
+    id: "dsh-tavern-character",
+    order: 81,
+    inject: () => ({})
+  }, CharacterHeaderButton));
+  ctx.slots.inject("shell.overlay", () => ctx.slots.register({
+    name: "shell.overlay",
+    id: "dsh-tavern-character-overlay",
+    order: 81,
+    inject: () => ({})
+  }, CharacterOverlay));
+}
+
+// packages/client/src/index.js
+var name = "dsh-tavern";
+var inject = ["slots", "layout"];
+function apply2(ctx) {
+  apply(ctx);
+  applyCharacterClient(ctx);
 }
 
 		return module.exports;
