@@ -73,11 +73,51 @@ test('replace mode removes other system sections but preserves request capabilit
     }))
 
     assert.equal(result.sections.length, 1)
-    assert.equal(result.sections[0].name, 'dsh-tavern:selected-preset')
+    assert.equal(result.sections[0].name, 'dsh-tavern:profile')
     assert.match(result.sections[0].text, /Only this system text/)
     assert.equal(result.tools, tools)
     assert.equal(result.contexts, contexts)
     assert.deepEqual(result.variables, { session: 'kept' })
+  } finally {
+    rmSync(directory, { recursive: true, force: true })
+  }
+})
+
+test('Host resolves profile and call config from the requesting agent session', async () => {
+  const directory = mkdtempSync(join(tmpdir(), 'dsh-tavern-host-sessions-'))
+  const sections = []
+  const listeners = new Map()
+  const ctx = {
+    systemPrompt: { section: (section) => sections.push(section) },
+    on: (name, listener) => listeners.set(name, listener),
+    emit: () => {},
+    get: () => undefined,
+    effect: () => {},
+    logger: { info: () => {} },
+  }
+  const agent = (id) => ({ id, session: { header: {}, deriveMessages: () => [] } })
+
+  try {
+    const store = apply(ctx, { storageDir: directory })
+    const first = store.create({ id: 'first', name: 'First' })
+    const second = store.create({ id: 'second', name: 'Second' })
+    store.update(first.id, {
+      sampling: { temperature: 0.1 },
+      prompts: [{ ...first.prompts[0], content: 'First session prompt' }],
+    })
+    store.update(second.id, {
+      sampling: { temperature: 0.9 },
+      prompts: [{ ...second.prompts[0], content: 'Second session prompt' }],
+    })
+    store.sessionSelections.set('session-a', { presetId: first.id })
+    store.sessionSelections.set('session-b', { presetId: second.id })
+
+    assert.match(sections[0].text({ agent: agent('session-a') }), /First session prompt/)
+    assert.match(sections[0].text({ agent: agent('session-b') }), /Second session prompt/)
+    const firstConfig = await listeners.get('agent/request')({ agent: agent('session-a') }, async () => ({ provider: 'test', model: 'model' }))
+    const secondConfig = await listeners.get('agent/request')({ agent: agent('session-b') }, async () => ({ provider: 'test', model: 'model' }))
+    assert.equal(firstConfig.temperature, 0.1)
+    assert.equal(secondConfig.temperature, 0.9)
   } finally {
     rmSync(directory, { recursive: true, force: true })
   }
