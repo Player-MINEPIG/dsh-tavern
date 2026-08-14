@@ -121,3 +121,18 @@ Verification:
 - Windows execution used the located npm `dsh.ps1` shim through system
   PowerShell with an argument array. No user shell interpolation was involved.
 - The exact temporary lifecycle directory was removed after verification.
+
+## 2026-08-14 — Stage 6: blank-session launcher
+
+Purpose: make preset import and selection reachable before the first message.
+
+Changes:
+
+- Confirmed an installed plugin could have a healthy Host API and mounted client
+  tree while dsh compressed the session-scoped `details` column to zero width.
+- Added an additive `shell.overlay` launcher and drawer, which are root-scoped
+  and therefore usable while the current session is still blank and dsh refuses
+  to expand the session-scoped details column.
+- Hide the overlay surface automatically when the native details column is open;
+  the existing conversation-header button remains the reopen control after a
+  turn.

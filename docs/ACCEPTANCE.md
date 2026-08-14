@@ -40,6 +40,7 @@ release files, including the three lifecycle scripts, and excluded runtime
 | Imported sampling projection | temperature `1`, max tokens `32000`, reasoning effort `high` |
 | Storage | preset JSON and state created below the installed plugin's `data/` directory |
 | Right panel | displayed the imported preset, all 140 prompt editors, roles, markers, and sampling controls |
+| Blank-session access | root overlay showed a visible `预设` launcher before the first message; it opened a 420px drawer and restored the launcher after close |
 
 ## UI create/configure/select results
 

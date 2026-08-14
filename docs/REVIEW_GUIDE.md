@@ -81,7 +81,9 @@ second preset, change its name and sampling controls, save, switch to the import
 and switch back. `docs/ACCEPTANCE.md` records the observed results from the
 completed isolated-profile run.
 
-The Host does not render its normal conversation header for a blank session.
-The preset details occupant is mounted there but dsh may keep that column
-collapsed until the session begins; once a conversation is active it opens by
-default, and the header `预设` button is the stable reopen affordance.
+The Host does not render its normal conversation header for a blank session and
+may keep the session-scoped details column collapsed during bootstrap. A
+root-scoped `shell.overlay` launcher and drawer keep preset import/selection
+reachable before the first message. Once a conversation is active, the overlay
+automatically yields to the native details panel and the header `预设` button is
+the stable reopen affordance.

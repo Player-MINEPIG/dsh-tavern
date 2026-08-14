@@ -32,6 +32,7 @@ const css = `
 .dtt-prompts{display:flex;flex-direction:column;gap:7px}.dtt-prompt{border:1px solid var(--dsw-alias-border-l1);border-radius:8px;overflow:hidden}.dtt-prompt-summary{display:flex;align-items:center;gap:7px;padding:8px;cursor:pointer;font-size:12px}.dtt-prompt-summary::marker{color:var(--dsw-alias-label-tertiary)}.dtt-prompt-name{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.dtt-role{font-size:10px;color:var(--dsw-alias-label-tertiary);text-transform:uppercase}.dtt-prompt-body{padding:0 9px 9px;display:flex;flex-direction:column;gap:8px}.dtt-row-actions{display:flex;gap:6px}.dtt-row-actions .dtt-button{height:28px;padding:0 8px;flex:1}
 .dtt-footer{position:sticky;bottom:-12px;margin:0 -12px -12px;padding:10px 12px;background:var(--dsw-alias-bg-base);border-top:1px solid var(--dsw-alias-border-l2);display:grid;grid-template-columns:1fr auto;gap:8px}
 .dtt-open-button{height:28px;border:1px solid var(--dsw-alias-border-l2);border-radius:7px;background:transparent;color:var(--dsw-alias-label-primary);font-size:11px;cursor:pointer;padding:0 9px}.dtt-open-button:hover{background:var(--dsw-alias-interactive-bg-hover)}
+.dtt-floating-layer{display:none;position:absolute;inset:0;pointer-events:none;z-index:5}[data-details-collapsed] .dtt-floating-layer{display:block}.dtt-floating-launcher{position:absolute;top:14px;right:16px;pointer-events:auto}.dtt-floating-button{height:32px;border:1px solid var(--dsw-alias-border-l2);border-radius:9px;background:var(--dsw-alias-bg-base);box-shadow:var(--ds-shadow-2,0 4px 16px rgba(0,0,0,.16));color:var(--dsw-alias-label-primary);font-size:12px;font-weight:600;cursor:pointer;padding:0 12px}.dtt-floating-button:hover{background:var(--dsw-alias-interactive-bg-hover)}.dtt-overlay-panel{position:absolute;top:0;right:0;bottom:0;width:min(420px,calc(100vw - 56px));pointer-events:auto;border-left:1px solid var(--dsw-alias-border-l2);box-shadow:var(--ds-shadow-3,-8px 0 28px rgba(0,0,0,.18))}
 `
 
 async function api(path, options = {}) {
@@ -322,6 +323,31 @@ function PresetHeaderButton({ openPanel }) {
   return h('button', { className: 'dtt-open-button', type: 'button', onClick: openPanel, title: '打开 Tavern 预设侧边栏' }, '预设')
 }
 
+function PresetFloatingLauncher({ openPanel }) {
+  const [overlayOpen, setOverlayOpen] = useState(false)
+  const open = () => {
+    openPanel()
+    setOverlayOpen(true)
+  }
+
+  return h('div', { className: 'dtt-floating-layer' },
+    overlayOpen
+      ? h('div', { className: 'dtt-overlay-panel' }, h(PresetSidebar, {
+        closePanel: () => setOverlayOpen(false),
+        openPanel: () => setOverlayOpen(true),
+      }))
+      : h('div', { className: 'dtt-floating-launcher' },
+        h('button', {
+          className: 'dtt-floating-button',
+          type: 'button',
+          onClick: open,
+          title: '打开 Tavern 预设侧边栏',
+          'aria-label': '打开 Tavern 预设侧边栏',
+        }, '预设'),
+      ),
+  )
+}
+
 function installStyles() {
   if (document.querySelector('style[data-plugin-css="dsh-tavern"]') !== null) return
   const style = document.createElement('style')
@@ -350,6 +376,13 @@ export function apply(ctx) {
     order: 80,
     inject: () => ({ openPanel: () => ctx.layout.openDetails() }),
   }, PresetHeaderButton))
+
+  ctx.slots.inject('shell.overlay', () => ctx.slots.register({
+    name: 'shell.overlay',
+    id: 'dsh-tavern-preset-launcher',
+    order: 80,
+    inject: () => ({ openPanel: () => ctx.layout.openDetails() }),
+  }, PresetFloatingLauncher))
 
   let attempts = 0
   const openDefault = () => {
