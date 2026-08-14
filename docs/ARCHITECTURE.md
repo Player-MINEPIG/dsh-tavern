@@ -43,7 +43,7 @@ DSH system prompt + agent request
 
 统一 loader 把 Host 注册收敛为一个 `dsh-tavern:profile` section，并引入 loader-owned `SessionSelectionStore`：preset、角色和世界书的文档仍由各自模块管理，但“哪个 session 使用哪些资源”由统一策略持久化。普通 fork 复制父选择，subagent 默认空选择。
 
-统一 adapter、session 继承和 marker 契约见 `docs/LOADER_CONTRACT.md`；世界书格式和投影细节见 `docs/world-book/DESIGN.md`。
+统一 adapter、session 继承和 marker 契约见 `docs/LOADER_CONTRACT.md`；DSH 原生与插件增强消息流见 `docs/DSH_MESSAGE_FLOW.md`；世界书格式和投影细节见 `docs/world-book/DESIGN.md`。
 
 ## 为什么不是两个 DSH 插件
 

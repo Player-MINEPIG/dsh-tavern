@@ -3,14 +3,7 @@ import assert from 'node:assert/strict'
 import {
   characterGreetingOptions,
   defaultCharacterSelection,
-  shouldShowCharacterLauncher,
 } from '../packages/character/src/client-state.js'
-
-test('character launcher is available only before a conversation becomes active', () => {
-  assert.equal(shouldShowCharacterLauncher({ current: undefined, byId: {} }), true)
-  assert.equal(shouldShowCharacterLauncher({ current: 'blank', byId: { blank: { blank: true } } }), true)
-  assert.equal(shouldShowCharacterLauncher({ current: 'active', byId: { active: { blank: false } } }), false)
-})
 
 test('character greeting options keep first_mes at stable index zero', () => {
   assert.deepEqual(characterGreetingOptions({ data: { firstMessage: 'First', alternateGreetings: ['Second', 'Third'] } }), [

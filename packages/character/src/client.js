@@ -8,13 +8,11 @@ import {
 import {
   characterGreetingOptions,
   defaultCharacterSelection,
-  shouldShowCharacterLauncher,
 } from './client-state.js'
 
 const API_ROOT = '/dsh-tavern/api'
 
 const css = `
-.dcc-layer{position:absolute;inset:0;pointer-events:none;z-index:7}.dcc-launcher{position:absolute;top:14px;right:82px;pointer-events:auto}.dcc-launcher-button,.dcc-header-button{height:32px;border:1px solid var(--dsw-alias-border-l2);border-radius:9px;background:var(--dsw-alias-bg-base);color:var(--dsw-alias-label-primary);font-size:12px;font-weight:600;cursor:pointer;padding:0 12px}.dcc-header-button{height:28px;border-radius:7px;background:transparent;font-size:11px;font-weight:400;padding:0 9px}.dcc-launcher-button:hover,.dcc-header-button:hover{background:var(--dsw-alias-interactive-bg-hover)}
 .dcc-panel{position:absolute;top:0;right:0;bottom:0;width:min(440px,calc(100vw - 56px));pointer-events:auto;border-left:1px solid var(--dsw-alias-border-l2);box-shadow:var(--ds-shadow-3,-8px 0 28px rgba(0,0,0,.18));background:var(--dsw-alias-bg-base);color:var(--dsw-alias-label-primary);display:flex;flex-direction:column;font-family:Inter,var(--dsw-font-family),sans-serif}.dcc-header{height:52px;box-sizing:border-box;display:flex;align-items:center;gap:8px;padding:0 14px;border-bottom:1px solid var(--dsw-alias-border-l2);flex:none}.dcc-title{font-size:14px;font-weight:650;flex:1}.dcc-close{border:0;background:transparent;color:var(--dsw-alias-label-tertiary);cursor:pointer;border-radius:7px;padding:6px 8px}.dcc-body{min-height:0;overflow:auto;padding:12px;display:flex;flex-direction:column;gap:12px}.dcc-toolbar,.dcc-actions{display:grid;grid-template-columns:1fr 1fr;gap:8px}.dcc-button{min-height:34px;border:1px solid var(--dsw-alias-border-l2);border-radius:8px;background:var(--dsw-alias-button-secondary-fill,var(--dsw-alias-bg-base));color:var(--dsw-alias-label-primary);cursor:pointer;padding:7px 10px;font-size:12px}.dcc-button:hover:not(:disabled){background:var(--dsw-alias-interactive-bg-hover)}.dcc-button:disabled{opacity:.5;cursor:default}.dcc-primary{background:var(--dsw-alias-state-business-primary);color:white;border-color:transparent}.dcc-danger{color:var(--dsw-alias-state-error)}.dcc-field{display:flex;flex-direction:column;gap:5px}.dcc-label{font-size:11px;color:var(--dsw-alias-label-tertiary);font-weight:600}.dcc-select{box-sizing:border-box;width:100%;height:34px;padding:0 9px;border:1px solid var(--dsw-alias-border-l2);border-radius:7px;background:var(--dsw-alias-bg-base);color:var(--dsw-alias-label-primary);font:inherit;font-size:12px}.dcc-note,.dcc-meta{font-size:11px;line-height:1.5;color:var(--dsw-alias-label-tertiary);margin:0;overflow-wrap:anywhere}.dcc-status{font-size:11px;line-height:1.45;border-radius:7px;padding:7px 9px;background:var(--dsw-specific-tip);overflow-wrap:anywhere}.dcc-status[data-error=true]{color:var(--dsw-alias-state-error)}.dcc-card{border-top:1px solid var(--dsw-alias-border-l1);padding-top:12px;display:flex;flex-direction:column;gap:10px}.dcc-card-head{display:flex;gap:11px}.dcc-avatar{width:76px;height:100px;object-fit:cover;border-radius:9px;border:1px solid var(--dsw-alias-border-l1);background:var(--dsw-alias-bg-container)}.dcc-card-title{font-size:15px;font-weight:650;margin:0 0 5px}.dcc-tags{display:flex;gap:5px;flex-wrap:wrap}.dcc-tag{font-size:10px;border:1px solid var(--dsw-alias-border-l1);border-radius:999px;padding:2px 7px;color:var(--dsw-alias-label-secondary)}.dcc-check{display:flex;gap:7px;align-items:flex-start;font-size:11px;line-height:1.4}.dcc-detail{border:1px solid var(--dsw-alias-border-l1);border-radius:8px;padding:8px}.dcc-detail summary{cursor:pointer;font-size:12px;font-weight:600}.dcc-text{white-space:pre-wrap;overflow-wrap:anywhere;font-size:11px;line-height:1.5;margin:8px 0 0;max-height:260px;overflow:auto}.dcc-diags{margin:7px 0 0;padding-left:18px;font-size:11px;line-height:1.5}.dcc-footer{position:sticky;bottom:-12px;margin:0 -12px -12px;padding:10px 12px;background:var(--dsw-alias-bg-base);border-top:1px solid var(--dsw-alias-border-l2)}
 `
 
@@ -51,7 +49,7 @@ function DiagnosticList({ title, items }) {
   )
 }
 
-function CharacterPanel({ sessionId, sessionBlank, close }) {
+export function CharacterPanel({ sessionId, sessionBlank, close }) {
   const [catalog, setCatalog] = useState(null)
   const [detail, setDetail] = useState(null)
   const [selection, setSelection] = useState(null)
@@ -167,7 +165,7 @@ function CharacterPanel({ sessionId, sessionBlank, close }) {
   return h('div', { className: 'dcc-panel' },
     h('div', { className: 'dcc-header' },
       h('div', { className: 'dcc-title' }, 'Tavern 角色卡'),
-      h('button', { className: 'dcc-close', type: 'button', title: '关闭角色卡面板', onClick: close }, '✕'),
+      h('button', { className: 'dcc-close', type: 'button', title: '关闭角色卡面板', 'aria-label': '关闭角色卡侧边栏', onClick: close }, '✕'),
     ),
     h('div', { className: 'dcc-body' },
       h('div', { className: 'dcc-toolbar' },
@@ -210,16 +208,16 @@ function CharacterPanel({ sessionId, sessionBlank, close }) {
           h('button', { className: 'dcc-button dcc-primary', type: 'button', disabled: busy || !sessionId, onClick: bind }, selection?.characterCardId === detail.id ? '更新会话绑定' : '绑定到当前会话'),
           h('button', { className: 'dcc-button', type: 'button', disabled: busy || !sessionId || selection === null, onClick: unbind }, '解除绑定'),
         ),
-        h('p', { className: 'dcc-note' }, '角色卡模块只保存标准化资源和会话选择，不会自行写入 system prompt、伪造 assistant 消息或激活世界书。'),
+        h('p', { className: 'dcc-note' }, '角色卡模块负责保存标准化资源和会话选择；实际 system profile 与内嵌世界信息匹配由 Tavern loader 在每次请求时统一处理，不会伪造 assistant 历史。'),
         h(TextDetail, { label: 'Creator notes', value: detail.data.creatorNotes }),
         h(TextDetail, { label: 'Description', value: detail.data.description }),
         h(TextDetail, { label: 'Personality', value: detail.data.personality }),
         h(TextDetail, { label: 'Scenario', value: detail.data.scenario }),
         h(TextDetail, { label: '当前开场参考内容', value: greetings[binding?.character?.greetingIndex ?? 0]?.text }),
         h(TextDetail, { label: 'Message examples', value: detail.data.messageExample }),
-        h(TextDetail, { label: 'System prompt（仅保存）', value: detail.data.systemPrompt }),
-        h(TextDetail, { label: 'Post-history instructions（仅保存）', value: detail.data.postHistoryInstructions }),
-        detail.data.characterBook !== null ? h('div', { className: 'dcc-status' }, `内嵌 character_book 已无损保留（${Array.isArray(detail.data.characterBook.entries) ? detail.data.characterBook.entries.length : '未知'} 条）；本模块不会执行匹配。`) : null,
+        h(TextDetail, { label: 'System prompt（由 loader 按绑定设置处理）', value: detail.data.systemPrompt }),
+        h(TextDetail, { label: 'Post-history instructions（由 loader 近似放置）', value: detail.data.postHistoryInstructions }),
+        detail.data.characterBook !== null ? h('div', { className: 'dcc-status' }, `内嵌 character_book 已无损保留（${Array.isArray(detail.data.characterBook.entries) ? detail.data.characterBook.entries.length : '未知'} 条）；绑定角色后由 Tavern loader 调用世界信息 matcher，解绑后不再参与后续请求。`) : null,
         h(DiagnosticList, { title: '兼容警告', items: detail.compatibility.warnings }),
         h(DiagnosticList, { title: '需要 loader/其他模块处理', items: detail.compatibility.unsupportedFeatures }),
         detail.compatibility.unknownMacroNames.length > 0 ? h('div', { className: 'dcc-status' }, `未知宏：${detail.compatibility.unknownMacroNames.join(', ')}`) : null,
@@ -233,48 +231,10 @@ function CharacterPanel({ sessionId, sessionBlank, close }) {
   )
 }
 
-function CharacterHeaderButton() {
-  return h('button', { className: 'dcc-header-button', type: 'button', title: '打开 Tavern 角色卡面板', onClick: () => window.dispatchEvent(new Event('dsh-tavern:open-character')) }, '角色卡')
-}
-
-function CharacterOverlay({ useSessions }) {
-  const [open, setOpen] = useState(false)
-  const sessionId = useSessions((state) => state.current)
-  const sessionBlank = useSessions((state) => state.current === undefined || state.current === null ? true : state.byId?.[state.current]?.blank === true)
-  const showLauncher = useSessions(shouldShowCharacterLauncher)
-
-  useEffect(() => {
-    const onOpen = () => setOpen(true)
-    window.addEventListener('dsh-tavern:open-character', onOpen)
-    return () => window.removeEventListener('dsh-tavern:open-character', onOpen)
-  }, [])
-
-  return h('div', { className: 'dcc-layer' },
-    open ? h(CharacterPanel, { sessionId, sessionBlank, close: () => setOpen(false) }) : null,
-    !open && showLauncher ? h('div', { className: 'dcc-launcher' }, h('button', { className: 'dcc-launcher-button', type: 'button', onClick: () => setOpen(true), title: '打开 Tavern 角色卡面板' }, '角色卡')) : null,
-  )
-}
-
-function installStyles() {
+export function installCharacterStyles() {
   if (document.querySelector('style[data-plugin-css="dsh-tavern-character"]') !== null) return
   const style = document.createElement('style')
   style.dataset.pluginCss = 'dsh-tavern-character'
   style.textContent = css
   document.head.append(style)
-}
-
-export function applyCharacterClient(ctx) {
-  installStyles()
-  ctx.slots.inject('conversation.session.header.utilities', () => ctx.slots.register({
-    name: 'conversation.session.header.utilities',
-    id: 'dsh-tavern-character',
-    order: 81,
-    inject: () => ({}),
-  }, CharacterHeaderButton))
-  ctx.slots.inject('shell.overlay', () => ctx.slots.register({
-    name: 'shell.overlay',
-    id: 'dsh-tavern-character-overlay',
-    order: 81,
-    inject: () => ({}),
-  }, CharacterOverlay))
 }

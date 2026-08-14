@@ -25,11 +25,12 @@ var __toCommonJS = (mod) => __copyProps(__defProp({}, "__esModule", { value: tru
 // packages/client/src/index.js
 var index_exports = {};
 __export(index_exports, {
-  apply: () => apply2,
+  apply: () => apply,
   inject: () => inject,
   name: () => name
 });
 module.exports = __toCommonJS(index_exports);
+var import_react3 = require("react");
 
 // packages/preset/src/client.js
 var import_react = require("react");
@@ -48,11 +49,6 @@ function reorderAtBoundary(items, from, boundary) {
   if (!Number.isSafeInteger(boundary) || boundary < 0 || boundary > items.length) return items;
   const destination = boundary > from ? boundary - 1 : boundary;
   return reorder(items, from, destination);
-}
-function shouldUseFloatingPanel(sessionState) {
-  const current = sessionState?.current;
-  if (current === void 0 || current === null) return true;
-  return sessionState.byId?.[current]?.blank === true;
 }
 
 // packages/preset/src/client.js
@@ -79,8 +75,6 @@ var css = `
 .dtt-note{font-size:11px;line-height:1.45;color:var(--dsw-alias-label-tertiary);margin:0}.dtt-status{font-size:11px;line-height:1.4;border-radius:7px;padding:7px 9px;background:var(--dsw-specific-tip);word-break:break-word}.dtt-status[data-error=true]{color:var(--dsw-alias-state-error)}
 .dtt-prompts{display:flex;flex-direction:column;gap:7px}.dtt-prompt{border:1px solid var(--dsw-alias-border-l1);border-radius:8px;overflow:hidden;transition:border-color .12s,box-shadow .12s}.dtt-prompt[data-dragging=true]{height:4px;min-height:4px;margin:5px 10px;border:0;border-radius:999px;background:var(--dsw-alias-state-business-primary);box-shadow:0 0 0 1px color-mix(in srgb,var(--dsw-alias-state-business-primary) 25%,transparent)}.dtt-prompt[data-dragging=true]>*{opacity:0}.dtt-drop-placeholder{box-sizing:border-box;height:42px;border:2px dashed var(--dsw-alias-state-business-primary);border-radius:8px;background:color-mix(in srgb,var(--dsw-alias-state-business-primary) 7%,transparent);display:flex;align-items:center;justify-content:center;color:var(--dsw-alias-state-business-primary);font-size:11px;font-weight:600;pointer-events:none}.dtt-prompt-summary{display:flex;align-items:center;gap:7px;padding:8px;cursor:pointer;font-size:12px}.dtt-prompt-summary::marker{color:var(--dsw-alias-label-tertiary)}.dtt-drag{border:0;background:transparent;color:var(--dsw-alias-label-tertiary);cursor:grab;padding:1px 2px;font-size:15px;line-height:1;touch-action:none;user-select:none}.dtt-drag:active{cursor:grabbing}.dtt-prompt-name{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.dtt-role{font-size:10px;color:var(--dsw-alias-label-tertiary);text-transform:uppercase}.dtt-prompt-body{padding:0 9px 9px;display:flex;flex-direction:column;gap:8px}.dtt-row-actions{display:flex;gap:6px}.dtt-row-actions .dtt-button{height:28px;padding:0 8px;flex:1}
 .dtt-footer{position:sticky;bottom:-12px;margin:0 -12px -12px;padding:10px 12px;background:var(--dsw-alias-bg-base);border-top:1px solid var(--dsw-alias-border-l2);display:grid;grid-template-columns:1fr auto;gap:8px}
-.dtt-open-button{height:28px;border:1px solid var(--dsw-alias-border-l2);border-radius:7px;background:transparent;color:var(--dsw-alias-label-primary);font-size:11px;cursor:pointer;padding:0 9px}.dtt-open-button:hover{background:var(--dsw-alias-interactive-bg-hover)}
-.dtt-floating-layer{display:none;position:absolute;inset:0;pointer-events:none;z-index:5}[data-details-collapsed] .dtt-floating-layer{display:block}.dtt-floating-launcher{position:absolute;top:14px;right:16px;pointer-events:auto}.dtt-floating-button{height:32px;border:1px solid var(--dsw-alias-border-l2);border-radius:9px;background:var(--dsw-alias-bg-base);box-shadow:var(--ds-shadow-2,0 4px 16px rgba(0,0,0,.16));color:var(--dsw-alias-label-primary);font-size:12px;font-weight:600;cursor:pointer;padding:0 12px}.dtt-floating-button:hover{background:var(--dsw-alias-interactive-bg-hover)}.dtt-overlay-panel{position:absolute;top:0;right:0;bottom:0;width:min(420px,calc(100vw - 56px));pointer-events:auto;border-left:1px solid var(--dsw-alias-border-l2);box-shadow:var(--ds-shadow-3,-8px 0 28px rgba(0,0,0,.18))}
 `;
 async function api(path, options = {}) {
   const response = await fetch(`${API_ROOT}${path}`, {
@@ -325,7 +319,7 @@ function PresetSidebar({ closePanel, openPanel, sessionId, autoOpen = true }) {
       "div",
       { className: "dtt-header" },
       (0, import_react.createElement)("div", { className: "dtt-title" }, "Tavern \u9884\u8BBE", catalog?.selectedId ? (0, import_react.createElement)("span", { className: "dtt-active" }, "\u25CF \u5DF2\u542F\u7528") : null),
-      (0, import_react.createElement)("button", { className: "dtt-icon", type: "button", title: "\u5173\u95ED\u53F3\u4FA7\u680F", onClick: closePanel }, "\u2715")
+      (0, import_react.createElement)("button", { className: "dtt-icon", type: "button", title: "\u5173\u95ED\u53F3\u4FA7\u680F", "aria-label": "\u5173\u95ED\u9884\u8BBE\u4FA7\u8FB9\u680F", onClick: closePanel }, "\u2715")
     ),
     (0, import_react.createElement)(
       "div",
@@ -466,98 +460,18 @@ function PresetSidebar({ closePanel, openPanel, sessionId, autoOpen = true }) {
     )
   );
 }
-function PresetHeaderButton({ openPanel }) {
-  const open = () => {
-    openPanel();
-    window.dispatchEvent(new Event("dsh-tavern:refresh"));
-  };
-  return (0, import_react.createElement)("button", { className: "dtt-open-button", type: "button", onClick: open, title: "\u6253\u5F00 Tavern \u9884\u8BBE\u4FA7\u8FB9\u680F" }, "\u9884\u8BBE");
-}
-function PresetFloatingLauncher({ useSessions }) {
-  const [overlayOpen, setOverlayOpen] = (0, import_react.useState)(false);
-  const sessionId = useSessions((state) => state.current);
-  const floatingAvailable = useSessions(shouldUseFloatingPanel);
-  (0, import_react.useEffect)(() => {
-    if (!floatingAvailable) setOverlayOpen(false);
-  }, [floatingAvailable]);
-  if (!floatingAvailable) return null;
-  const open = () => {
-    setOverlayOpen(true);
-    window.dispatchEvent(new Event("dsh-tavern:refresh"));
-  };
-  return (0, import_react.createElement)(
-    "div",
-    { className: "dtt-floating-layer" },
-    overlayOpen ? (0, import_react.createElement)("div", { className: "dtt-overlay-panel" }, (0, import_react.createElement)(PresetSidebar, {
-      closePanel: () => setOverlayOpen(false),
-      openPanel: () => {
-      },
-      sessionId,
-      autoOpen: false
-    })) : (0, import_react.createElement)(
-      "div",
-      { className: "dtt-floating-launcher" },
-      (0, import_react.createElement)("button", {
-        className: "dtt-floating-button",
-        type: "button",
-        onClick: open,
-        title: "\u6253\u5F00 Tavern \u9884\u8BBE\u4FA7\u8FB9\u680F",
-        "aria-label": "\u6253\u5F00 Tavern \u9884\u8BBE\u4FA7\u8FB9\u680F"
-      }, "\u9884\u8BBE")
-    )
-  );
-}
-function installStyles() {
+function installPresetStyles() {
   if (document.querySelector('style[data-plugin-css="dsh-tavern"]') !== null) return;
   const style = document.createElement("style");
   style.dataset.pluginCss = "dsh-tavern";
   style.textContent = css;
   document.head.append(style);
 }
-function apply(ctx) {
-  installStyles();
-  ctx.slots.inject("details", () => ctx.slots.register({
-    name: "details",
-    priority: -10,
-    inject: () => ({
-      closePanel: () => ctx.layout.closeDetails(),
-      openPanel: () => ctx.layout.openDetails()
-    })
-  }, PresetSidebar));
-  ctx.slots.inject("conversation.session.header.utilities", () => ctx.slots.register({
-    name: "conversation.session.header.utilities",
-    id: "dsh-tavern-preset",
-    order: 80,
-    inject: () => ({ openPanel: () => ctx.layout.openDetails() })
-  }, PresetHeaderButton));
-  ctx.slots.inject("shell.overlay", () => ctx.slots.register({
-    name: "shell.overlay",
-    id: "dsh-tavern-preset-launcher",
-    order: 80,
-    inject: () => ({})
-  }, PresetFloatingLauncher));
-  let attempts = 0;
-  const openDefault = () => {
-    attempts += 1;
-    try {
-      ctx.layout.openDetails();
-    } catch {
-      if (attempts < 20) window.setTimeout(openDefault, 100);
-    }
-  };
-  const timer = window.setTimeout(openDefault, 0);
-  ctx.effect(() => () => window.clearTimeout(timer), "dsh-tavern: default right panel");
-}
 
 // packages/character/src/client.js
 var import_react2 = require("react");
 
 // packages/character/src/client-state.js
-function shouldShowCharacterLauncher(sessionState) {
-  const current = sessionState?.current;
-  if (current === void 0 || current === null) return true;
-  return sessionState.byId?.[current]?.blank === true;
-}
 function characterGreetingOptions(character) {
   if (character === null || typeof character !== "object") return [];
   const first = typeof character.data?.firstMessage === "string" ? character.data.firstMessage : "";
@@ -581,7 +495,6 @@ function defaultCharacterSelection(characterCardId) {
 // packages/character/src/client.js
 var API_ROOT2 = "/dsh-tavern/api";
 var css2 = `
-.dcc-layer{position:absolute;inset:0;pointer-events:none;z-index:7}.dcc-launcher{position:absolute;top:14px;right:82px;pointer-events:auto}.dcc-launcher-button,.dcc-header-button{height:32px;border:1px solid var(--dsw-alias-border-l2);border-radius:9px;background:var(--dsw-alias-bg-base);color:var(--dsw-alias-label-primary);font-size:12px;font-weight:600;cursor:pointer;padding:0 12px}.dcc-header-button{height:28px;border-radius:7px;background:transparent;font-size:11px;font-weight:400;padding:0 9px}.dcc-launcher-button:hover,.dcc-header-button:hover{background:var(--dsw-alias-interactive-bg-hover)}
 .dcc-panel{position:absolute;top:0;right:0;bottom:0;width:min(440px,calc(100vw - 56px));pointer-events:auto;border-left:1px solid var(--dsw-alias-border-l2);box-shadow:var(--ds-shadow-3,-8px 0 28px rgba(0,0,0,.18));background:var(--dsw-alias-bg-base);color:var(--dsw-alias-label-primary);display:flex;flex-direction:column;font-family:Inter,var(--dsw-font-family),sans-serif}.dcc-header{height:52px;box-sizing:border-box;display:flex;align-items:center;gap:8px;padding:0 14px;border-bottom:1px solid var(--dsw-alias-border-l2);flex:none}.dcc-title{font-size:14px;font-weight:650;flex:1}.dcc-close{border:0;background:transparent;color:var(--dsw-alias-label-tertiary);cursor:pointer;border-radius:7px;padding:6px 8px}.dcc-body{min-height:0;overflow:auto;padding:12px;display:flex;flex-direction:column;gap:12px}.dcc-toolbar,.dcc-actions{display:grid;grid-template-columns:1fr 1fr;gap:8px}.dcc-button{min-height:34px;border:1px solid var(--dsw-alias-border-l2);border-radius:8px;background:var(--dsw-alias-button-secondary-fill,var(--dsw-alias-bg-base));color:var(--dsw-alias-label-primary);cursor:pointer;padding:7px 10px;font-size:12px}.dcc-button:hover:not(:disabled){background:var(--dsw-alias-interactive-bg-hover)}.dcc-button:disabled{opacity:.5;cursor:default}.dcc-primary{background:var(--dsw-alias-state-business-primary);color:white;border-color:transparent}.dcc-danger{color:var(--dsw-alias-state-error)}.dcc-field{display:flex;flex-direction:column;gap:5px}.dcc-label{font-size:11px;color:var(--dsw-alias-label-tertiary);font-weight:600}.dcc-select{box-sizing:border-box;width:100%;height:34px;padding:0 9px;border:1px solid var(--dsw-alias-border-l2);border-radius:7px;background:var(--dsw-alias-bg-base);color:var(--dsw-alias-label-primary);font:inherit;font-size:12px}.dcc-note,.dcc-meta{font-size:11px;line-height:1.5;color:var(--dsw-alias-label-tertiary);margin:0;overflow-wrap:anywhere}.dcc-status{font-size:11px;line-height:1.45;border-radius:7px;padding:7px 9px;background:var(--dsw-specific-tip);overflow-wrap:anywhere}.dcc-status[data-error=true]{color:var(--dsw-alias-state-error)}.dcc-card{border-top:1px solid var(--dsw-alias-border-l1);padding-top:12px;display:flex;flex-direction:column;gap:10px}.dcc-card-head{display:flex;gap:11px}.dcc-avatar{width:76px;height:100px;object-fit:cover;border-radius:9px;border:1px solid var(--dsw-alias-border-l1);background:var(--dsw-alias-bg-container)}.dcc-card-title{font-size:15px;font-weight:650;margin:0 0 5px}.dcc-tags{display:flex;gap:5px;flex-wrap:wrap}.dcc-tag{font-size:10px;border:1px solid var(--dsw-alias-border-l1);border-radius:999px;padding:2px 7px;color:var(--dsw-alias-label-secondary)}.dcc-check{display:flex;gap:7px;align-items:flex-start;font-size:11px;line-height:1.4}.dcc-detail{border:1px solid var(--dsw-alias-border-l1);border-radius:8px;padding:8px}.dcc-detail summary{cursor:pointer;font-size:12px;font-weight:600}.dcc-text{white-space:pre-wrap;overflow-wrap:anywhere;font-size:11px;line-height:1.5;margin:8px 0 0;max-height:260px;overflow:auto}.dcc-diags{margin:7px 0 0;padding-left:18px;font-size:11px;line-height:1.5}.dcc-footer{position:sticky;bottom:-12px;margin:0 -12px -12px;padding:10px 12px;background:var(--dsw-alias-bg-base);border-top:1px solid var(--dsw-alias-border-l2)}
 `;
 function errorMessage(data, status) {
@@ -724,7 +637,7 @@ function CharacterPanel({ sessionId, sessionBlank, close }) {
       "div",
       { className: "dcc-header" },
       (0, import_react2.createElement)("div", { className: "dcc-title" }, "Tavern \u89D2\u8272\u5361"),
-      (0, import_react2.createElement)("button", { className: "dcc-close", type: "button", title: "\u5173\u95ED\u89D2\u8272\u5361\u9762\u677F", onClick: close }, "\u2715")
+      (0, import_react2.createElement)("button", { className: "dcc-close", type: "button", title: "\u5173\u95ED\u89D2\u8272\u5361\u9762\u677F", "aria-label": "\u5173\u95ED\u89D2\u8272\u5361\u4FA7\u8FB9\u680F", onClick: close }, "\u2715")
     ),
     (0, import_react2.createElement)(
       "div",
@@ -782,16 +695,16 @@ function CharacterPanel({ sessionId, sessionBlank, close }) {
           (0, import_react2.createElement)("button", { className: "dcc-button dcc-primary", type: "button", disabled: busy || !sessionId, onClick: bind }, selection?.characterCardId === detail.id ? "\u66F4\u65B0\u4F1A\u8BDD\u7ED1\u5B9A" : "\u7ED1\u5B9A\u5230\u5F53\u524D\u4F1A\u8BDD"),
           (0, import_react2.createElement)("button", { className: "dcc-button", type: "button", disabled: busy || !sessionId || selection === null, onClick: unbind }, "\u89E3\u9664\u7ED1\u5B9A")
         ),
-        (0, import_react2.createElement)("p", { className: "dcc-note" }, "\u89D2\u8272\u5361\u6A21\u5757\u53EA\u4FDD\u5B58\u6807\u51C6\u5316\u8D44\u6E90\u548C\u4F1A\u8BDD\u9009\u62E9\uFF0C\u4E0D\u4F1A\u81EA\u884C\u5199\u5165 system prompt\u3001\u4F2A\u9020 assistant \u6D88\u606F\u6216\u6FC0\u6D3B\u4E16\u754C\u4E66\u3002"),
+        (0, import_react2.createElement)("p", { className: "dcc-note" }, "\u89D2\u8272\u5361\u6A21\u5757\u8D1F\u8D23\u4FDD\u5B58\u6807\u51C6\u5316\u8D44\u6E90\u548C\u4F1A\u8BDD\u9009\u62E9\uFF1B\u5B9E\u9645 system profile \u4E0E\u5185\u5D4C\u4E16\u754C\u4FE1\u606F\u5339\u914D\u7531 Tavern loader \u5728\u6BCF\u6B21\u8BF7\u6C42\u65F6\u7EDF\u4E00\u5904\u7406\uFF0C\u4E0D\u4F1A\u4F2A\u9020 assistant \u5386\u53F2\u3002"),
         (0, import_react2.createElement)(TextDetail, { label: "Creator notes", value: detail.data.creatorNotes }),
         (0, import_react2.createElement)(TextDetail, { label: "Description", value: detail.data.description }),
         (0, import_react2.createElement)(TextDetail, { label: "Personality", value: detail.data.personality }),
         (0, import_react2.createElement)(TextDetail, { label: "Scenario", value: detail.data.scenario }),
         (0, import_react2.createElement)(TextDetail, { label: "\u5F53\u524D\u5F00\u573A\u53C2\u8003\u5185\u5BB9", value: greetings[binding?.character?.greetingIndex ?? 0]?.text }),
         (0, import_react2.createElement)(TextDetail, { label: "Message examples", value: detail.data.messageExample }),
-        (0, import_react2.createElement)(TextDetail, { label: "System prompt\uFF08\u4EC5\u4FDD\u5B58\uFF09", value: detail.data.systemPrompt }),
-        (0, import_react2.createElement)(TextDetail, { label: "Post-history instructions\uFF08\u4EC5\u4FDD\u5B58\uFF09", value: detail.data.postHistoryInstructions }),
-        detail.data.characterBook !== null ? (0, import_react2.createElement)("div", { className: "dcc-status" }, `\u5185\u5D4C character_book \u5DF2\u65E0\u635F\u4FDD\u7559\uFF08${Array.isArray(detail.data.characterBook.entries) ? detail.data.characterBook.entries.length : "\u672A\u77E5"} \u6761\uFF09\uFF1B\u672C\u6A21\u5757\u4E0D\u4F1A\u6267\u884C\u5339\u914D\u3002`) : null,
+        (0, import_react2.createElement)(TextDetail, { label: "System prompt\uFF08\u7531 loader \u6309\u7ED1\u5B9A\u8BBE\u7F6E\u5904\u7406\uFF09", value: detail.data.systemPrompt }),
+        (0, import_react2.createElement)(TextDetail, { label: "Post-history instructions\uFF08\u7531 loader \u8FD1\u4F3C\u653E\u7F6E\uFF09", value: detail.data.postHistoryInstructions }),
+        detail.data.characterBook !== null ? (0, import_react2.createElement)("div", { className: "dcc-status" }, `\u5185\u5D4C character_book \u5DF2\u65E0\u635F\u4FDD\u7559\uFF08${Array.isArray(detail.data.characterBook.entries) ? detail.data.characterBook.entries.length : "\u672A\u77E5"} \u6761\uFF09\uFF1B\u7ED1\u5B9A\u89D2\u8272\u540E\u7531 Tavern loader \u8C03\u7528\u4E16\u754C\u4FE1\u606F matcher\uFF0C\u89E3\u7ED1\u540E\u4E0D\u518D\u53C2\u4E0E\u540E\u7EED\u8BF7\u6C42\u3002`) : null,
         (0, import_react2.createElement)(DiagnosticList, { title: "\u517C\u5BB9\u8B66\u544A", items: detail.compatibility.warnings }),
         (0, import_react2.createElement)(DiagnosticList, { title: "\u9700\u8981 loader/\u5176\u4ED6\u6A21\u5757\u5904\u7406", items: detail.compatibility.unsupportedFeatures }),
         detail.compatibility.unknownMacroNames.length > 0 ? (0, import_react2.createElement)("div", { className: "dcc-status" }, `\u672A\u77E5\u5B8F\uFF1A${detail.compatibility.unknownMacroNames.join(", ")}`) : null,
@@ -806,55 +719,198 @@ function CharacterPanel({ sessionId, sessionBlank, close }) {
     )
   );
 }
-function CharacterHeaderButton() {
-  return (0, import_react2.createElement)("button", { className: "dcc-header-button", type: "button", title: "\u6253\u5F00 Tavern \u89D2\u8272\u5361\u9762\u677F", onClick: () => window.dispatchEvent(new Event("dsh-tavern:open-character")) }, "\u89D2\u8272\u5361");
-}
-function CharacterOverlay({ useSessions }) {
-  const [open, setOpen] = (0, import_react2.useState)(false);
-  const sessionId = useSessions((state) => state.current);
-  const sessionBlank = useSessions((state) => state.current === void 0 || state.current === null ? true : state.byId?.[state.current]?.blank === true);
-  const showLauncher = useSessions(shouldShowCharacterLauncher);
-  (0, import_react2.useEffect)(() => {
-    const onOpen = () => setOpen(true);
-    window.addEventListener("dsh-tavern:open-character", onOpen);
-    return () => window.removeEventListener("dsh-tavern:open-character", onOpen);
-  }, []);
-  return (0, import_react2.createElement)(
-    "div",
-    { className: "dcc-layer" },
-    open ? (0, import_react2.createElement)(CharacterPanel, { sessionId, sessionBlank, close: () => setOpen(false) }) : null,
-    !open && showLauncher ? (0, import_react2.createElement)("div", { className: "dcc-launcher" }, (0, import_react2.createElement)("button", { className: "dcc-launcher-button", type: "button", onClick: () => setOpen(true), title: "\u6253\u5F00 Tavern \u89D2\u8272\u5361\u9762\u677F" }, "\u89D2\u8272\u5361")) : null
-  );
-}
-function installStyles2() {
+function installCharacterStyles() {
   if (document.querySelector('style[data-plugin-css="dsh-tavern-character"]') !== null) return;
   const style = document.createElement("style");
   style.dataset.pluginCss = "dsh-tavern-character";
   style.textContent = css2;
   document.head.append(style);
 }
-function applyCharacterClient(ctx) {
-  installStyles2();
-  ctx.slots.inject("conversation.session.header.utilities", () => ctx.slots.register({
-    name: "conversation.session.header.utilities",
-    id: "dsh-tavern-character",
-    order: 81,
-    inject: () => ({})
-  }, CharacterHeaderButton));
-  ctx.slots.inject("shell.overlay", () => ctx.slots.register({
-    name: "shell.overlay",
-    id: "dsh-tavern-character-overlay",
-    order: 81,
-    inject: () => ({})
-  }, CharacterOverlay));
-}
+
+// packages/client/src/state.js
+var TAVERN_MENU_ITEMS = Object.freeze([
+  { id: "preset", label: "\u9884\u8BBE", available: true },
+  { id: "world-info", label: "\u4E16\u754C\u4FE1\u606F", available: true },
+  { id: "character", label: "\u89D2\u8272\u5361", available: true },
+  { id: "user", label: "\u7528\u6237", available: false }
+]);
 
 // packages/client/src/index.js
+var API_ROOT3 = "/dsh-tavern/api";
+var css3 = `
+.dtv-layer{position:absolute;inset:0;z-index:6;pointer-events:none;font-family:Inter,var(--dsw-font-family),sans-serif;color:var(--dsw-alias-label-primary)}
+.dtv-launcher{position:absolute;top:14px;right:16px;pointer-events:auto;display:flex;flex-direction:column;align-items:flex-end;gap:8px}
+.dtv-ball{width:44px;height:44px;border:1px solid var(--dsw-alias-border-l2);border-radius:50%;background:var(--dsw-alias-state-business-primary);box-shadow:var(--ds-shadow-2,0 5px 18px rgba(0,0,0,.22));color:#fff;font-size:17px;font-weight:750;cursor:pointer}.dtv-ball:hover{filter:brightness(1.06)}
+.dtv-menu{width:176px;padding:7px;border:1px solid var(--dsw-alias-border-l2);border-radius:12px;background:var(--dsw-alias-bg-base);box-shadow:var(--ds-shadow-3,0 10px 28px rgba(0,0,0,.22));display:flex;flex-direction:column;gap:4px}
+.dtv-menu-title{padding:5px 8px 7px;font-size:11px;font-weight:650;color:var(--dsw-alias-label-tertiary)}
+.dtv-menu-item{height:36px;border:0;border-radius:8px;padding:0 10px;background:transparent;color:var(--dsw-alias-label-primary);text-align:left;font:inherit;font-size:12px;cursor:pointer;display:flex;align-items:center;justify-content:space-between}.dtv-menu-item:hover{background:var(--dsw-alias-interactive-bg-hover)}.dtv-menu-item[data-available=false]::after{content:'\u89C4\u5212\u4E2D';font-size:10px;color:var(--dsw-alias-label-tertiary)}
+.dtv-panel{position:absolute;top:0;right:0;bottom:0;width:min(440px,calc(100vw - 56px));pointer-events:auto;border-left:1px solid var(--dsw-alias-border-l2);box-shadow:var(--ds-shadow-3,-8px 0 28px rgba(0,0,0,.18));background:var(--dsw-alias-bg-base);display:flex;flex-direction:column}
+.dtv-header{height:52px;box-sizing:border-box;display:flex;align-items:center;gap:8px;padding:0 14px;border-bottom:1px solid var(--dsw-alias-border-l2);flex:none}.dtv-title{font-size:14px;font-weight:650;flex:1}.dtv-close{border:0;background:transparent;color:var(--dsw-alias-label-tertiary);cursor:pointer;border-radius:7px;padding:6px 8px}.dtv-close:hover{background:var(--dsw-alias-interactive-bg-hover)}
+.dtv-body{min-height:0;overflow:auto;padding:12px;display:flex;flex-direction:column;gap:12px}.dtv-note{font-size:11px;line-height:1.5;color:var(--dsw-alias-label-tertiary);margin:0;overflow-wrap:anywhere}.dtv-status{font-size:11px;line-height:1.45;border-radius:7px;padding:8px 10px;background:var(--dsw-specific-tip);overflow-wrap:anywhere}.dtv-status[data-error=true]{color:var(--dsw-alias-state-error)}
+.dtv-actions{display:grid;grid-template-columns:1fr 1fr;gap:8px}.dtv-button{min-height:34px;border:1px solid var(--dsw-alias-border-l2);border-radius:8px;background:var(--dsw-alias-button-secondary-fill,var(--dsw-alias-bg-base));color:var(--dsw-alias-label-primary);cursor:pointer;padding:7px 10px;font-size:12px}.dtv-button:hover:not(:disabled){background:var(--dsw-alias-interactive-bg-hover)}.dtv-button:disabled{opacity:.5;cursor:default}
+.dtv-resource{border:1px solid var(--dsw-alias-border-l1);border-radius:9px;padding:10px;display:flex;flex-direction:column;gap:5px}.dtv-resource-title{font-size:12px;font-weight:650}.dtv-resource-meta{font-size:11px;color:var(--dsw-alias-label-tertiary)}.dtv-list{margin:0;padding-left:18px;font-size:11px;line-height:1.55}
+`;
+async function activeView(sessionId) {
+  const query = sessionId ? `?sessionId=${encodeURIComponent(sessionId)}` : "";
+  const response = await fetch(`${API_ROOT3}/active${query}`);
+  const data = await response.json().catch(() => null);
+  if (!response.ok || data?.ok === false) {
+    const message = typeof data?.error === "string" ? data.error : data?.error?.message;
+    throw new Error(message ?? `HTTP ${response.status}`);
+  }
+  return data;
+}
+function PanelHeader({ title, close }) {
+  return (0, import_react3.createElement)(
+    "div",
+    { className: "dtv-header" },
+    (0, import_react3.createElement)("div", { className: "dtv-title" }, title),
+    (0, import_react3.createElement)("button", { className: "dtv-close", type: "button", title: `\u5173\u95ED${title}\u4FA7\u8FB9\u680F`, "aria-label": `\u5173\u95ED${title}\u4FA7\u8FB9\u680F`, onClick: close }, "\u2715")
+  );
+}
+function WorldInfoPanel({ sessionId, close }) {
+  const [snapshot, setSnapshot] = (0, import_react3.useState)(null);
+  const [error, setError] = (0, import_react3.useState)("");
+  const refresh = (0, import_react3.useCallback)(async () => {
+    try {
+      setSnapshot(await activeView(sessionId));
+      setError("");
+    } catch (reason) {
+      setError(reason instanceof Error ? reason.message : String(reason));
+    }
+  }, [sessionId]);
+  (0, import_react3.useEffect)(() => {
+    refresh();
+    const onRefresh = () => refresh();
+    window.addEventListener("dsh-tavern:refresh", onRefresh);
+    return () => window.removeEventListener("dsh-tavern:refresh", onRefresh);
+  }, [refresh]);
+  const resources = snapshot?.resources?.worldBooks ?? [];
+  const selectedStandalone = snapshot?.selection?.worldBookIds ?? [];
+  const diagnostics = (snapshot?.diagnostics ?? []).filter((item) => String(item?.code ?? "").includes("WORLD_BOOK"));
+  return (0, import_react3.createElement)(
+    "div",
+    { className: "dtv-panel" },
+    (0, import_react3.createElement)(PanelHeader, { title: "\u4E16\u754C\u4FE1\u606F\uFF08Lorebook\uFF09", close }),
+    (0, import_react3.createElement)(
+      "div",
+      { className: "dtv-body" },
+      (0, import_react3.createElement)(
+        "div",
+        { className: "dtv-actions" },
+        (0, import_react3.createElement)("button", { className: "dtv-button", type: "button", onClick: refresh }, "\u5237\u65B0\u8FD0\u884C\u72B6\u6001"),
+        (0, import_react3.createElement)("button", { className: "dtv-button", type: "button", disabled: true, title: "\u72EC\u7ACB\u4E16\u754C\u4FE1\u606F\u5E93\u5C06\u5728\u4E0B\u4E00\u9636\u6BB5\u63A5\u5165" }, "\u5BFC\u5165\uFF08\u89C4\u5212\u4E2D\uFF09")
+      ),
+      (0, import_react3.createElement)("p", { className: "dtv-note" }, `\u5F53\u524D\u4F1A\u8BDD\uFF1A${sessionId || "\u65E0"}\u3002SillyTavern \u7684\u6B63\u5F0F\u529F\u80FD\u540D\u662F World Info\uFF0CLorebook \u662F\u5B98\u65B9\u8BA4\u53EF\u7684\u5E38\u7528\u522B\u540D\u3002`),
+      (0, import_react3.createElement)("div", { className: "dtv-status", "data-error": error !== "" || void 0, role: "status" }, error || (snapshot === null ? "\u6B63\u5728\u8BFB\u53D6 loader \u72B6\u6001\u2026" : `\u5DF2\u8FDE\u63A5 ${resources.length} \u4E2A\u4E16\u754C\u4FE1\u606F\u6765\u6E90\u3002`)),
+      resources.length === 0 ? (0, import_react3.createElement)("p", { className: "dtv-note" }, "\u5F53\u524D\u4F1A\u8BDD\u6CA1\u6709\u53EF\u7528\u4E16\u754C\u4FE1\u606F\u3002\u7ED1\u5B9A\u542B character_book \u7684\u89D2\u8272\u5361\u540E\uFF0C\u5176\u5185\u5D4C\u6761\u76EE\u4F1A\u81EA\u52A8\u7531 loader \u5339\u914D\uFF1B\u89E3\u7ED1\u89D2\u8272\u4F1A\u540C\u65F6\u79FB\u9664\u8BE5\u6765\u6E90\u3002") : resources.map((resource) => (0, import_react3.createElement)(
+        "div",
+        { className: "dtv-resource", key: resource.id },
+        (0, import_react3.createElement)("div", { className: "dtv-resource-title" }, resource.name || "\u672A\u547D\u540D\u4E16\u754C\u4FE1\u606F"),
+        (0, import_react3.createElement)("div", { className: "dtv-resource-meta" }, `${resource.kind === "embedded-character-book" ? "\u89D2\u8272\u5361\u5185\u5D4C" : "\u72EC\u7ACB\u6765\u6E90"} \xB7 ${resource.entryCount ?? 0} \u6761 \xB7 \u683C\u5F0F ${resource.format || "unknown"}`),
+        (0, import_react3.createElement)("div", { className: "dtv-resource-meta" }, `\u672C\u6B21\u65E0\u4F1A\u8BDD\u5386\u53F2\u9884\u89C8\u6FC0\u6D3B ${resource.activeEntryIds?.length ?? 0} \u6761\uFF1B\u5B9E\u9645\u8BF7\u6C42\u6309\u5F53\u65F6\u7684 durable history \u91CD\u65B0\u5339\u914D\u3002`)
+      )),
+      selectedStandalone.length > 0 ? (0, import_react3.createElement)("div", { className: "dtv-status" }, `\u5DF2\u9009\u62E9 ${selectedStandalone.length} \u4E2A\u72EC\u7ACB\u4E16\u754C\u4FE1\u606F ID\uFF0C\u4F46\u72EC\u7ACB\u8D44\u6E90\u5E93/API \u5C1A\u672A\u63A5\u5165\uFF0C\u672C\u9636\u6BB5\u4E0D\u4F1A\u52A0\u8F7D\u8FD9\u4E9B ID\u3002`) : null,
+      diagnostics.length > 0 ? (0, import_react3.createElement)(
+        "div",
+        { className: "dtv-resource" },
+        (0, import_react3.createElement)("div", { className: "dtv-resource-title" }, `\u8FD0\u884C\u8BCA\u65AD\uFF08${diagnostics.length}\uFF09`),
+        (0, import_react3.createElement)("ul", { className: "dtv-list" }, ...diagnostics.map((item, index) => (0, import_react3.createElement)("li", { key: `${item.code}-${index}` }, item.message)))
+      ) : null,
+      (0, import_react3.createElement)("p", { className: "dtv-note" }, "\u5F53\u524D\u516C\u5F00 DSH seam \u53EA\u80FD\u626B\u63CF\u5DF2\u7ECF\u8FDB\u5165 Session \u7684 durable user/assistant \u5386\u53F2\uFF1B\u521A\u63D0\u4EA4\u7684\u540C\u8F6E\u7528\u6237\u8F93\u5165\u53EF\u80FD\u5230\u4E0B\u4E00\u8F6E\u624D\u89E6\u53D1\u5173\u952E\u8BCD\u6761\u76EE\u3002\u6700\u7EC8\u53D1\u9001\u5185\u5BB9\u4EE5\u8BE5\u8F6E request/header \u4E3A\u51C6\u3002")
+    )
+  );
+}
+function UserPanel({ close }) {
+  return (0, import_react3.createElement)(
+    "div",
+    { className: "dtv-panel" },
+    (0, import_react3.createElement)(PanelHeader, { title: "Tavern \u7528\u6237", close }),
+    (0, import_react3.createElement)(
+      "div",
+      { className: "dtv-body" },
+      (0, import_react3.createElement)("div", { className: "dtv-status" }, "\u7528\u6237/persona \u517C\u5BB9\u4ECD\u5728\u89C4\u5212\u4E2D\u3002\u6B64\u5165\u53E3\u5148\u56FA\u5B9A\u7EDF\u4E00\u5BFC\u822A\u4F4D\u7F6E\uFF0C\u4E0D\u4F1A\u5411 agent \u6CE8\u5165\u5360\u4F4D\u6587\u672C\u3002"),
+      (0, import_react3.createElement)("p", { className: "dtv-note" }, "\u540E\u7EED\u5E94\u7531\u72EC\u7ACB\u683C\u5F0F adapter \u7BA1\u7406 persona \u6570\u636E\uFF0C\u518D\u7531\u7EDF\u4E00 loader \u51B3\u5B9A\u5B83\u4E0E DSH agent persona\u3001\u89D2\u8272\u5361\u548C\u9884\u8BBE\u7684\u8986\u76D6\u5173\u7CFB\u3002")
+    )
+  );
+}
+function TavernShell({ useSessions }) {
+  const [menuOpen, setMenuOpen] = (0, import_react3.useState)(false);
+  const [surface, setSurface] = (0, import_react3.useState)(null);
+  const sessionId = useSessions((state) => state.current);
+  const sessionBlank = useSessions((state) => state.current === void 0 || state.current === null ? true : state.byId?.[state.current]?.blank === true);
+  const close = () => setSurface(null);
+  const open = (id) => {
+    setMenuOpen(false);
+    setSurface(id);
+    window.dispatchEvent(new Event("dsh-tavern:refresh"));
+  };
+  let panel = null;
+  if (surface === "preset") {
+    panel = (0, import_react3.createElement)("div", { className: "dtv-panel" }, (0, import_react3.createElement)(PresetSidebar, {
+      closePanel: close,
+      openPanel: () => {
+      },
+      sessionId,
+      autoOpen: false
+    }));
+  } else if (surface === "character") {
+    panel = (0, import_react3.createElement)(CharacterPanel, { sessionId, sessionBlank, close });
+  } else if (surface === "world-info") {
+    panel = (0, import_react3.createElement)(WorldInfoPanel, { sessionId, close });
+  } else if (surface === "user") {
+    panel = (0, import_react3.createElement)(UserPanel, { close });
+  }
+  return (0, import_react3.createElement)(
+    "div",
+    { className: "dtv-layer" },
+    panel,
+    surface === null ? (0, import_react3.createElement)(
+      "div",
+      { className: "dtv-launcher" },
+      (0, import_react3.createElement)("button", {
+        className: "dtv-ball",
+        type: "button",
+        title: "\u6253\u5F00 Tavern \u8D44\u6E90\u83DC\u5355",
+        "aria-label": "\u6253\u5F00 Tavern \u8D44\u6E90\u83DC\u5355",
+        "aria-expanded": menuOpen,
+        onClick: () => setMenuOpen((value) => !value)
+      }, "T"),
+      menuOpen ? (0, import_react3.createElement)(
+        "div",
+        { className: "dtv-menu", role: "menu" },
+        (0, import_react3.createElement)("div", { className: "dtv-menu-title" }, "dsh-tavern"),
+        ...TAVERN_MENU_ITEMS.map((item) => (0, import_react3.createElement)("button", {
+          className: "dtv-menu-item",
+          type: "button",
+          role: "menuitem",
+          key: item.id,
+          "data-available": item.available,
+          onClick: () => open(item.id)
+        }, item.label))
+      ) : null
+    ) : null
+  );
+}
+function installStyles() {
+  if (document.querySelector('style[data-plugin-css="dsh-tavern-shell"]') !== null) return;
+  const style = document.createElement("style");
+  style.dataset.pluginCss = "dsh-tavern-shell";
+  style.textContent = css3;
+  document.head.append(style);
+}
 var name = "dsh-tavern";
 var inject = ["slots", "layout"];
-function apply2(ctx) {
-  apply(ctx);
-  applyCharacterClient(ctx);
+function apply(ctx) {
+  installPresetStyles();
+  installCharacterStyles();
+  installStyles();
+  ctx.slots.inject("shell.overlay", () => ctx.slots.register({
+    name: "shell.overlay",
+    id: "dsh-tavern-launcher",
+    order: 80,
+    inject: () => ({})
+  }, TavernShell));
 }
 
 		return module.exports;

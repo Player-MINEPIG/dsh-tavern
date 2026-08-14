@@ -4,6 +4,26 @@ This is the staged implementation log for the prompt-preset experiment. It is
 kept separately from the product README so reviewers can follow intent,
 decisions, verification, and known limits chronologically.
 
+## 2026-08-15 — Unified Tavern launcher and message-flow audit
+
+Purpose: remove competing preset/character controls, expose the integrated
+World Info runtime honestly, and document the exact DSH request boundary.
+
+- Replaced separate preset and character header/overlay launchers with one
+  round `T` launcher and a single menu for preset, World Info, character card,
+  and the planned user/persona surface.
+- Kept only one shell overlay registration and one z-index owner; all feature
+  panels now open from that owner, eliminating cross-module stacking order.
+- Added a World Info sidebar that reads the loader active view, lists embedded
+  character-book resources and diagnostics, and marks standalone import as a
+  planned capability rather than exposing a non-functional control.
+- Corrected the character-card UI: embedded `character_book` is matched by the
+  unified loader while the card is bound and stops contributing after unbind.
+- Added `docs/DSH_MESSAGE_FLOW.md`, verified against installed DSH rc.6 source,
+  covering Inbox claim, system assembly, durable message projection,
+  `agent/request`, `request/header`, streaming, plugin hooks and same-turn lore
+  limitations.
+
 ## 2026-08-14 — Parallel world-book format and matching slice
 
 Purpose: make ST world-book semantics independently testable while loader and

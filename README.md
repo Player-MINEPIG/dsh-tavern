@@ -18,7 +18,7 @@
 - 导入 SillyTavern Chat Completion preset JSON。
 - 优先采用 `character_id: 100001` 的 `prompt_order`，并保留未知顶层字段和 prompt 扩展字段，方便后续兼容升级。
 - 在插件目录持久化预设，支持创建、选择、修改、删除和重新加载。
-- 在空白会话提供浮动入口；会话建立后使用右侧原生详情栏和对话标题栏入口。
+- 提供一个统一的 Tavern 悬浮球；展开后可进入预设、世界信息、角色卡和预留用户面板，避免多个按钮和侧栏层级竞争。
 - 编辑预设名称、system prompt 策略、常用采样参数和 prompt 块。
 - 直接拖拽 prompt 块排序；拖动来源显示为横杠，落点显示为占位框。
 - 将启用且非 marker 的 prompt 编译为 DSH system section，并在请求记录中保留所选预设标识。
@@ -85,9 +85,10 @@ dsh web --host 127.0.0.1 --port 53101
 ## 使用
 
 1. 启动并打开 DSH Web。
-2. 使用“预设”入口导入或创建 preset；编辑采样参数、system prompt 策略和 prompt 块并选择它。
-3. 使用“角色卡”入口导入 ST JSON/PNG 角色卡，选择 greeting 和两个覆盖开关后绑定到当前 session。
-4. 发送消息。loader 会在每次请求时组合当前 session 的 preset、角色卡与命中的内嵌世界书条目；支持的采样参数进入模型调用配置。
+2. 点击右上角 `T` 悬浮球，选择“预设”导入或创建 preset；编辑采样参数、system prompt 策略和 prompt 块并选择它。
+3. 从同一菜单选择“角色卡”，导入 ST JSON/PNG 角色卡，选择 greeting 和两个覆盖开关后绑定到当前 session。
+4. “世界信息”面板可查看当前角色卡内嵌 Lorebook 的 loader 连接状态；独立 World Info 导入仍在规划中。
+5. 发送消息。loader 会在每次请求时组合当前 session 的 preset、角色卡与命中的内嵌世界书条目；支持的采样参数进入模型调用配置。
 
 切换预设不会改写已有会话历史。旧预设已经影响过的 assistant 回复仍会进入后续上下文，所以需要“干净切换”时，应选择新预设后新建或 fork 会话。
 
@@ -118,7 +119,7 @@ npm run plugin:uninstall
 
 高级“仅使用预设”模式会移除其他模型可见的 DSH system sections，包括 harness identity、agent persona 和工具文字说明；文件沙箱、工具执行策略和审批机制不会因此关闭，但 Code Mode、结构化输出或工具使用可靠性可能下降。
 
-详细的数据流、ST/TT/DSH 差异及安全边界见 [`docs/PROMPT_PIPELINE.md`](docs/PROMPT_PIPELINE.md)，架构决策见 [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md)。
+DSH 原生消息流与插件介入点见 [`docs/DSH_MESSAGE_FLOW.md`](docs/DSH_MESSAGE_FLOW.md)；ST/TT/DSH 差异及安全边界见 [`docs/PROMPT_PIPELINE.md`](docs/PROMPT_PIPELINE.md)，架构决策见 [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md)。
 
 ## 架构
 

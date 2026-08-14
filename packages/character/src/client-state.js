@@ -1,9 +1,3 @@
-export function shouldShowCharacterLauncher(sessionState) {
-  const current = sessionState?.current
-  if (current === undefined || current === null) return true
-  return sessionState.byId?.[current]?.blank === true
-}
-
 export function characterGreetingOptions(character) {
   if (character === null || typeof character !== 'object') return []
   const first = typeof character.data?.firstMessage === 'string' ? character.data.firstMessage : ''
