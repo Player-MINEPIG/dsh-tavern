@@ -1,0 +1,163 @@
+{
+  "description": "",
+  "diagnostics": [],
+  "entries": [
+    {
+      "automationId": "",
+      "caseSensitive": false,
+      "characterFilter": null,
+      "comment": "Harbor facts",
+      "constant": false,
+      "content": "The harbor closes at midnight.",
+      "depth": 2,
+      "displayIndex": 0,
+      "effects": {
+        "cooldown": null,
+        "delay": null,
+        "sticky": null
+      },
+      "enabled": true,
+      "extensions": {
+        "fixture/entry-note": {
+          "colour": "blue"
+        }
+      },
+      "group": {
+        "name": "weather",
+        "override": false,
+        "weight": 25
+      },
+      "ignoreBudget": false,
+      "insertionOrder": 120,
+      "keys": [
+        "Harbor",
+        "/moon\\s+gate/i"
+      ],
+      "matchSources": {
+        "characterDepthPrompt": false,
+        "characterDescription": false,
+        "characterPersonality": false,
+        "creatorNotes": false,
+        "personaDescription": false,
+        "scenario": false
+      },
+      "matchWholeWords": true,
+      "outletName": "",
+      "position": "at_depth",
+      "probability": 75,
+      "recursion": {
+        "delayUntil": false,
+        "exclude": false,
+        "prevent": false
+      },
+      "role": "assistant",
+      "scanDepth": 3,
+      "secondaryKeys": [
+        "night",
+        "storm"
+      ],
+      "selective": true,
+      "selectiveLogic": "and_all",
+      "source": {
+        "index": 0,
+        "key": "chapter-a",
+        "raw": {
+          "caseSensitive": false,
+          "comment": "Harbor facts",
+          "constant": false,
+          "content": "The harbor closes at midnight.",
+          "depth": 2,
+          "disable": false,
+          "extensions": {
+            "fixture/entry-note": {
+              "colour": "blue"
+            }
+          },
+          "fixture_entry_field": "preserve me too",
+          "group": "weather",
+          "groupWeight": 25,
+          "key": [
+            "Harbor",
+            "/moon\\s+gate/i"
+          ],
+          "keysecondary": [
+            "night",
+            "storm"
+          ],
+          "matchWholeWords": true,
+          "order": 120,
+          "position": 4,
+          "probability": 75,
+          "role": 2,
+          "scanDepth": 3,
+          "selective": true,
+          "selectiveLogic": 3,
+          "uid": 7,
+          "useProbability": true
+        }
+      },
+      "triggers": [],
+      "uid": 7,
+      "useGroupScoring": null,
+      "useProbability": true,
+      "vectorized": false
+    }
+  ],
+  "kind": "world-book",
+  "name": "Fixture Atlas",
+  "schemaVersion": 1,
+  "settings": {
+    "extensions": {
+      "fixture/book-note": "preserve me"
+    }
+  },
+  "source": {
+    "entryContainer": "object-map",
+    "format": "sillytavern-world-info",
+    "raw": {
+      "entries": {
+        "chapter-a": {
+          "caseSensitive": false,
+          "comment": "Harbor facts",
+          "constant": false,
+          "content": "The harbor closes at midnight.",
+          "depth": 2,
+          "disable": false,
+          "extensions": {
+            "fixture/entry-note": {
+              "colour": "blue"
+            }
+          },
+          "fixture_entry_field": "preserve me too",
+          "group": "weather",
+          "groupWeight": 25,
+          "key": [
+            "Harbor",
+            "/moon\\s+gate/i"
+          ],
+          "keysecondary": [
+            "night",
+            "storm"
+          ],
+          "matchWholeWords": true,
+          "order": 120,
+          "position": 4,
+          "probability": 75,
+          "role": 2,
+          "scanDepth": 3,
+          "selective": true,
+          "selectiveLogic": 3,
+          "uid": 7,
+          "useProbability": true
+        }
+      },
+      "extensions": {
+        "fixture/book-note": "preserve me"
+      },
+      "fixture_top_level": {
+        "revision": 1
+      },
+      "name": "Fixture Atlas"
+    }
+  }
+}

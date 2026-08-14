@@ -35,7 +35,9 @@ DSH system prompt + agent request
 | `preset` | “用户如何管理预设？” | 原子文件存储、导入/创建/修改/删除/选择、API、侧边栏源代码 | 决定提示词如何进入 agent |
 | `tavern-loader` | “当前资源怎样影响这次 DSH 请求？” | 编译选中预设、映射支持的 call config、append/replace 策略、Host/API 挂载 | 重新解释 ST 原始字段、实现具体 UI |
 
-角色卡和世界书以后应在 `tavern-format` 增加各自的 adapter/model，在用例层增加管理入口，再由同一个 `tavern-loader` 组合。角色卡不读取预设的 UI 排序逻辑，预设也不决定角色字段插入位置。
+角色卡和世界书采用各自专属的纯 adapter/model 路径，在用例层增加管理入口，再由同一个 `tavern-loader` 组合。角色卡不读取预设的 UI 排序逻辑，预设也不决定角色字段插入位置。
+
+世界书格式兼容现已落在独立纯库 `packages/world-book`，避免把不断扩展的 entry 模型塞入 preset adapter。它与 `tavern-format` 同属无宿主副作用的格式层，通过根包 `./world-book` 子路径暴露；统一 loader 可同时依赖二者，但世界书包不得反向依赖 preset 或 loader。格式与 loader 的详细契约见 `docs/world-book/DESIGN.md`。
 
 ## 为什么不是两个 DSH 插件
 

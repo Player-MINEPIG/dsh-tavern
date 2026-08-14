@@ -1,0 +1,37 @@
+{
+  "name": "Embedded Fixture",
+  "description": "Self-authored compatibility data.",
+  "scan_depth": 4,
+  "token_budget": 256,
+  "recursive_scanning": true,
+  "fixture_book_field": "keep",
+  "extensions": {
+    "fixture/book": true
+  },
+  "entries": [
+    {
+      "id": 3,
+      "keys": [
+        "clocktower"
+      ],
+      "secondary_keys": [],
+      "comment": "Clocktower",
+      "content": "The clocktower rings at dawn.",
+      "enabled": true,
+      "insertion_order": 80,
+      "constant": false,
+      "selective": true,
+      "position": "after_char",
+      "case_sensitive": false,
+      "fixture_entry_field": 42,
+      "extensions": {
+        "position": 1,
+        "depth": 4,
+        "role": 0,
+        "selectiveLogic": 0,
+        "probability": 100,
+        "fixture/entry": "keep"
+      }
+    }
+  ]
+}

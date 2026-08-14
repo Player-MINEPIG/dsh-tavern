@@ -1,0 +1,45 @@
+{
+  "name": "Fixture Atlas",
+  "extensions": {
+    "fixture/book-note": "preserve me"
+  },
+  "fixture_top_level": {
+    "revision": 1
+  },
+  "entries": {
+    "chapter-a": {
+      "uid": 7,
+      "key": [
+        "Harbor",
+        "/moon\\s+gate/i"
+      ],
+      "keysecondary": [
+        "night",
+        "storm"
+      ],
+      "comment": "Harbor facts",
+      "content": "The harbor closes at midnight.",
+      "constant": false,
+      "selective": true,
+      "selectiveLogic": 3,
+      "order": 120,
+      "position": 4,
+      "disable": false,
+      "depth": 2,
+      "role": 2,
+      "probability": 75,
+      "useProbability": true,
+      "scanDepth": 3,
+      "caseSensitive": false,
+      "matchWholeWords": true,
+      "group": "weather",
+      "groupWeight": 25,
+      "fixture_entry_field": "preserve me too",
+      "extensions": {
+        "fixture/entry-note": {
+          "colour": "blue"
+        }
+      }
+    }
+  }
+}
