@@ -5,7 +5,7 @@ import {
   useRef,
   useState,
 } from 'react'
-import { reorderAtBoundary, shouldUseFloatingPanel } from './client-state.js'
+import { reorderAtBoundary } from './client-state.js'
 
 const API_ROOT = '/dsh-tavern/api'
 
@@ -32,15 +32,14 @@ const css = `
 .dtt-note{font-size:11px;line-height:1.45;color:var(--dsw-alias-label-tertiary);margin:0}.dtt-status{font-size:11px;line-height:1.4;border-radius:7px;padding:7px 9px;background:var(--dsw-specific-tip);word-break:break-word}.dtt-status[data-error=true]{color:var(--dsw-alias-state-error)}
 .dtt-prompts{display:flex;flex-direction:column;gap:7px}.dtt-prompt{border:1px solid var(--dsw-alias-border-l1);border-radius:8px;overflow:hidden;transition:border-color .12s,box-shadow .12s}.dtt-prompt[data-dragging=true]{height:4px;min-height:4px;margin:5px 10px;border:0;border-radius:999px;background:var(--dsw-alias-state-business-primary);box-shadow:0 0 0 1px color-mix(in srgb,var(--dsw-alias-state-business-primary) 25%,transparent)}.dtt-prompt[data-dragging=true]>*{opacity:0}.dtt-drop-placeholder{box-sizing:border-box;height:42px;border:2px dashed var(--dsw-alias-state-business-primary);border-radius:8px;background:color-mix(in srgb,var(--dsw-alias-state-business-primary) 7%,transparent);display:flex;align-items:center;justify-content:center;color:var(--dsw-alias-state-business-primary);font-size:11px;font-weight:600;pointer-events:none}.dtt-prompt-summary{display:flex;align-items:center;gap:7px;padding:8px;cursor:pointer;font-size:12px}.dtt-prompt-summary::marker{color:var(--dsw-alias-label-tertiary)}.dtt-drag{border:0;background:transparent;color:var(--dsw-alias-label-tertiary);cursor:grab;padding:1px 2px;font-size:15px;line-height:1;touch-action:none;user-select:none}.dtt-drag:active{cursor:grabbing}.dtt-prompt-name{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.dtt-role{font-size:10px;color:var(--dsw-alias-label-tertiary);text-transform:uppercase}.dtt-prompt-body{padding:0 9px 9px;display:flex;flex-direction:column;gap:8px}.dtt-row-actions{display:flex;gap:6px}.dtt-row-actions .dtt-button{height:28px;padding:0 8px;flex:1}
 .dtt-footer{position:sticky;bottom:-12px;margin:0 -12px -12px;padding:10px 12px;background:var(--dsw-alias-bg-base);border-top:1px solid var(--dsw-alias-border-l2);display:grid;grid-template-columns:1fr auto;gap:8px}
-.dtt-open-button{height:28px;border:1px solid var(--dsw-alias-border-l2);border-radius:7px;background:transparent;color:var(--dsw-alias-label-primary);font-size:11px;cursor:pointer;padding:0 9px}.dtt-open-button:hover{background:var(--dsw-alias-interactive-bg-hover)}
-.dtt-floating-layer{display:none;position:absolute;inset:0;pointer-events:none;z-index:5}[data-details-collapsed] .dtt-floating-layer{display:block}.dtt-floating-launcher{position:absolute;top:14px;right:16px;pointer-events:auto}.dtt-floating-button{height:32px;border:1px solid var(--dsw-alias-border-l2);border-radius:9px;background:var(--dsw-alias-bg-base);box-shadow:var(--ds-shadow-2,0 4px 16px rgba(0,0,0,.16));color:var(--dsw-alias-label-primary);font-size:12px;font-weight:600;cursor:pointer;padding:0 12px}.dtt-floating-button:hover{background:var(--dsw-alias-interactive-bg-hover)}.dtt-overlay-panel{position:absolute;top:0;right:0;bottom:0;width:min(420px,calc(100vw - 56px));pointer-events:auto;border-left:1px solid var(--dsw-alias-border-l2);box-shadow:var(--ds-shadow-3,-8px 0 28px rgba(0,0,0,.18))}
 `
 
 async function api(path, options = {}) {
+  const method = String(options.method ?? 'GET').toUpperCase()
   const response = await fetch(`${API_ROOT}${path}`, {
     ...options,
     headers: {
-      ...(options.body === undefined ? {} : { 'Content-Type': 'application/json' }),
+      ...(method === 'GET' || method === 'HEAD' ? {} : { 'Content-Type': 'application/json' }),
       ...options.headers,
     },
   })
@@ -147,7 +146,7 @@ function insertionBoundary(event) {
   return event.clientY < bounds.top + bounds.height / 2 ? index : index + 1
 }
 
-function PresetSidebar({ closePanel, openPanel, sessionId, autoOpen = true }) {
+export function PresetSidebar({ closePanel, openPanel, sessionId, autoOpen = true }) {
   const [catalog, setCatalog] = useState(null)
   const [draft, setDraft] = useState(null)
   const [busy, setBusy] = useState(false)
@@ -182,7 +181,8 @@ function PresetSidebar({ closePanel, openPanel, sessionId, autoOpen = true }) {
 
   const refresh = useCallback(async (preferredId) => {
     const generation = ++refreshGeneration.current
-    const data = await api('/presets')
+    const query = sessionId ? `?sessionId=${encodeURIComponent(sessionId)}` : ''
+    const data = await api(`/presets${query}`)
     const id = preferredId === undefined ? data.selectedId : preferredId
     const detail = id === null || id === undefined
       ? null
@@ -191,7 +191,7 @@ function PresetSidebar({ closePanel, openPanel, sessionId, autoOpen = true }) {
     setCatalog(data)
     setDraft(detail)
     return true
-  }, [])
+  }, [sessionId])
 
   useEffect(() => {
     refreshGeneration.current += 1
@@ -209,15 +209,15 @@ function PresetSidebar({ closePanel, openPanel, sessionId, autoOpen = true }) {
   }, [refresh, run])
 
   const choose = useCallback((id) => run(async () => {
-    await api('/select', { method: 'POST', body: body({ id: id || null }) })
+    await api('/select', { method: 'POST', body: body({ id: id || null, sessionId }) })
     await refresh(id || null)
-  }, id ? '预设已选择；下一条消息将携带此 preset。已有会话历史不会被清除。' : '已停用 preset；已有会话历史不会被清除'), [refresh, run])
+  }, id ? '预设已选择；下一条消息将携带此 preset。已有会话历史不会被清除。' : '已停用 preset；已有会话历史不会被清除'), [refresh, run, sessionId])
 
   const createPreset = useCallback(() => run(async () => {
     const created = await api('/presets', { method: 'POST', body: body({ name: '新预设' }) })
-    await api('/select', { method: 'POST', body: body({ id: created.preset.id }) })
+    await api('/select', { method: 'POST', body: body({ id: created.preset.id, sessionId }) })
     await refresh(created.preset.id)
-  }, '已创建并选择新预设'), [refresh, run])
+  }, '已创建并选择新预设'), [refresh, run, sessionId])
 
   const importFile = useCallback((file) => run(async () => {
     const content = await file.text()
@@ -225,10 +225,10 @@ function PresetSidebar({ closePanel, openPanel, sessionId, autoOpen = true }) {
       method: 'POST',
       body: body({ name: file.name.replace(/\.json$/i, ''), content }),
     })
-    await api('/select', { method: 'POST', body: body({ id: imported.preset.id }) })
+    await api('/select', { method: 'POST', body: body({ id: imported.preset.id, sessionId }) })
     await refresh(imported.preset.id)
     if (fileRef.current !== null) fileRef.current.value = ''
-  }, 'ST 预设已导入并选择'), [refresh, run])
+  }, 'ST 预设已导入并选择'), [refresh, run, sessionId])
 
   const save = useCallback(() => run(async () => {
     const result = await api(`/presets/${encodeURIComponent(draft.id)}`, {
@@ -282,7 +282,7 @@ function PresetSidebar({ closePanel, openPanel, sessionId, autoOpen = true }) {
   return h('div', { className: 'dtt-root' },
     h('div', { className: 'dtt-header' },
       h('div', { className: 'dtt-title' }, 'Tavern 预设', catalog?.selectedId ? h('span', { className: 'dtt-active' }, '● 已启用') : null),
-      h('button', { className: 'dtt-icon', type: 'button', title: '关闭右侧栏', onClick: closePanel }, '✕'),
+      h('button', { className: 'dtt-icon', type: 'button', title: '关闭右侧栏', 'aria-label': '关闭预设侧边栏', onClick: closePanel }, '✕'),
     ),
     h('div', { className: 'dtt-body' },
       h('div', { className: 'dtt-toolbar' },
@@ -307,7 +307,6 @@ function PresetSidebar({ closePanel, openPanel, sessionId, autoOpen = true }) {
       },
       h('option', { value: '' }, '不使用预设'),
       ...(catalog?.presets ?? []).map((preset) => h('option', { key: preset.id, value: preset.id }, `${preset.name} (${preset.enabledPromptCount}/${preset.promptCount})`)))),
-      h('p', { className: 'dtt-note' }, `存储目录：${catalog?.storageDir || '加载中…'}`),
       h('div', { className: 'dtt-status', 'data-error': status.error || undefined, role: 'status', 'aria-live': 'polite' }, status.text),
       draft === null ? h('p', { className: 'dtt-note' }, catalog === null ? '正在加载预设…' : '请选择或创建预设以开始配置。') : h('div', { className: 'dtt-section' },
         h('div', { className: 'dtt-section-title' }, '基本设置'),
@@ -403,95 +402,10 @@ function PresetSidebar({ closePanel, openPanel, sessionId, autoOpen = true }) {
   )
 }
 
-function PresetHeaderButton({ openPanel }) {
-  const open = () => {
-    openPanel()
-    window.dispatchEvent(new Event('dsh-tavern:refresh'))
-  }
-  return h('button', { className: 'dtt-open-button', type: 'button', onClick: open, title: '打开 Tavern 预设侧边栏' }, '预设')
-}
-
-function PresetFloatingLauncher({ useSessions }) {
-  const [overlayOpen, setOverlayOpen] = useState(false)
-  const sessionId = useSessions((state) => state.current)
-  const floatingAvailable = useSessions(shouldUseFloatingPanel)
-
-  useEffect(() => {
-    if (!floatingAvailable) setOverlayOpen(false)
-  }, [floatingAvailable])
-
-  if (!floatingAvailable) return null
-
-  const open = () => {
-    setOverlayOpen(true)
-    window.dispatchEvent(new Event('dsh-tavern:refresh'))
-  }
-
-  return h('div', { className: 'dtt-floating-layer' },
-    overlayOpen
-      ? h('div', { className: 'dtt-overlay-panel' }, h(PresetSidebar, {
-        closePanel: () => setOverlayOpen(false),
-        openPanel: () => {},
-        sessionId,
-        autoOpen: false,
-      }))
-      : h('div', { className: 'dtt-floating-launcher' },
-        h('button', {
-          className: 'dtt-floating-button',
-          type: 'button',
-          onClick: open,
-          title: '打开 Tavern 预设侧边栏',
-          'aria-label': '打开 Tavern 预设侧边栏',
-        }, '预设'),
-      ),
-  )
-}
-
-function installStyles() {
+export function installPresetStyles() {
   if (document.querySelector('style[data-plugin-css="dsh-tavern"]') !== null) return
   const style = document.createElement('style')
   style.dataset.pluginCss = 'dsh-tavern'
   style.textContent = css
   document.head.append(style)
-}
-
-export const name = 'dsh-tavern'
-export const inject = ['slots', 'layout']
-
-export function apply(ctx) {
-  installStyles()
-  ctx.slots.inject('details', () => ctx.slots.register({
-    name: 'details',
-    priority: -10,
-    inject: () => ({
-      closePanel: () => ctx.layout.closeDetails(),
-      openPanel: () => ctx.layout.openDetails(),
-    }),
-  }, PresetSidebar))
-
-  ctx.slots.inject('conversation.session.header.utilities', () => ctx.slots.register({
-    name: 'conversation.session.header.utilities',
-    id: 'dsh-tavern-preset',
-    order: 80,
-    inject: () => ({ openPanel: () => ctx.layout.openDetails() }),
-  }, PresetHeaderButton))
-
-  ctx.slots.inject('shell.overlay', () => ctx.slots.register({
-    name: 'shell.overlay',
-    id: 'dsh-tavern-preset-launcher',
-    order: 80,
-    inject: () => ({}),
-  }, PresetFloatingLauncher))
-
-  let attempts = 0
-  const openDefault = () => {
-    attempts += 1
-    try {
-      ctx.layout.openDetails()
-    } catch {
-      if (attempts < 20) window.setTimeout(openDefault, 100)
-    }
-  }
-  const timer = window.setTimeout(openDefault, 0)
-  ctx.effect(() => () => window.clearTimeout(timer), 'dsh-tavern: default right panel')
 }

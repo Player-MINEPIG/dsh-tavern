@@ -12,11 +12,14 @@ import {
   installedDataPath,
   localPackageSpec,
   parseOptions,
+  profileHasPlugin,
   profileStoreDir,
 } from '../scripts/shared.mjs'
 
 test('builds local package specs and executable names across platforms', () => {
-  assert.equal(localPackageSpec('D:\\code\\dsh-tavern', 'win32'), 'file:D:/code/dsh-tavern')
+  const syntheticWindowsProject = ['X:', 'synthetic', 'dsh-tavern'].join('\\')
+  const syntheticWindowsSpec = `file:${['X:', 'synthetic', 'dsh-tavern'].join('/')}`
+  assert.equal(localPackageSpec(syntheticWindowsProject, 'win32'), syntheticWindowsSpec)
   assert.equal(localPackageSpec('/opt/dsh-tavern', 'linux'), 'file:/opt/dsh-tavern')
   assert.deepEqual(dshInvocation('linux', {}), { command: 'dsh', prefix: [] })
 })
@@ -67,10 +70,27 @@ test('detects the pnpm store already bound to a profile', async () => {
   }
 })
 
+test('detects whether the profile manifest still registers the plugin', async () => {
+  const temporary = await mkdtemp(path.join(os.tmpdir(), 'dsh-tavern-manifest-test-'))
+  try {
+    const profile = path.join(temporary, 'profiles', 'web')
+    await mkdir(profile, { recursive: true })
+    await writeFile(path.join(profile, 'package.json'), JSON.stringify({ dependencies: { 'dsh-tavern': 'file:/project' } }))
+    assert.equal(profileHasPlugin(temporary, 'web'), true)
+    assert.equal(profileHasPlugin(temporary, 'missing'), false)
+    await writeFile(path.join(profile, 'package.json'), JSON.stringify({ private: true }))
+    assert.equal(profileHasPlugin(temporary, 'web'), false)
+  } finally {
+    await rm(temporary, { recursive: true, force: true })
+  }
+})
+
 test('repeated install dry-run removes and re-adds a stale local package', async () => {
   const temporary = await mkdtemp(path.join(os.tmpdir(), 'dsh-tavern-refresh-test-'))
   try {
     await mkdir(path.dirname(installedDataPath(temporary, 'web')), { recursive: true })
+    const profile = path.join(temporary, 'profiles', 'web')
+    await writeFile(path.join(profile, 'package.json'), JSON.stringify({ dependencies: { 'dsh-tavern': 'file:/stale' } }))
     const result = spawnSync(process.execPath, [
       fileURLToPath(new URL('../scripts/install.mjs', import.meta.url)),
       '--skip-build',
@@ -83,6 +103,30 @@ test('repeated install dry-run removes and re-adds a stale local package', async
     assert.equal(result.status, 0, result.stderr)
     assert.match(result.stdout, /existing installation found; refreshing package files/)
     assert.match(result.stdout, /"remove" "dsh-tavern"/)
+    assert.match(result.stdout, /"add" "file:/)
+  } finally {
+    await rm(temporary, { recursive: true, force: true })
+  }
+})
+
+test('interrupted refresh repairs a leftover package without removing a missing dependency', async () => {
+  const temporary = await mkdtemp(path.join(os.tmpdir(), 'dsh-tavern-interrupted-test-'))
+  try {
+    await mkdir(path.dirname(installedDataPath(temporary, 'web')), { recursive: true })
+    const profile = path.join(temporary, 'profiles', 'web')
+    await writeFile(path.join(profile, 'package.json'), JSON.stringify({ private: true }))
+    const result = spawnSync(process.execPath, [
+      fileURLToPath(new URL('../scripts/install.mjs', import.meta.url)),
+      '--skip-build',
+      '--dry-run',
+      '--dsh-home', temporary,
+    ], {
+      encoding: 'utf8',
+      env: process.env,
+    })
+    assert.equal(result.status, 0, result.stderr)
+    assert.match(result.stdout, /incomplete previous refresh detected/)
+    assert.doesNotMatch(result.stdout, /"remove" "dsh-tavern"/)
     assert.match(result.stdout, /"add" "file:/)
   } finally {
     await rm(temporary, { recursive: true, force: true })

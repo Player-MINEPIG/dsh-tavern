@@ -4,10 +4,10 @@ import { existsSync, readFileSync } from 'node:fs'
 import { parseSillyTavernPreset } from '../packages/tavern-format/src/index.js'
 import { compilePresetForDsh } from '../packages/tavern-loader/src/profile-compiler.js'
 
-const fixturePath = 'D:\\AI\\deepseek-harness\\夏瑾 天琴座 Beta 1.0.json'
+const fixturePath = process.env.DSH_TAVERN_ACCEPTANCE_FIXTURE
 
 test('acceptance fixture parses in place without repository copies or text snapshots', {
-  skip: !existsSync(fixturePath),
+  skip: typeof fixturePath !== 'string' || !existsSync(fixturePath),
 }, () => {
   const preset = parseSillyTavernPreset(readFileSync(fixturePath, 'utf8'), {
     id: 'acceptance-in-place',

@@ -305,3 +305,15 @@ export const constants = Object.freeze({
   schemaVersion: SCHEMA_VERSION,
   chatCompletionOrderId: CHAT_COMPLETION_ORDER_ID,
 })
+
+export {
+  characterCardConstants,
+  embeddedCharacterBookResource,
+  exportCharacterCardJson,
+  parseSillyTavernCharacterCard,
+} from './character.js'
+export {
+  extractCharacterCardPng,
+  isPng,
+  pngCharacterCardConstants,
+} from './png-card.js'

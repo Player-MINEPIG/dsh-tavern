@@ -1,6 +1,6 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
-import { reorder, reorderAtBoundary, shouldUseFloatingPanel } from '../packages/preset/src/client-state.js'
+import { reorder, reorderAtBoundary } from '../packages/preset/src/client-state.js'
 
 test('direct prompt reordering moves one item without mutating the draft array', () => {
   const prompts = [{ name: 'first' }, { name: 'second' }, { name: 'third' }]
@@ -16,10 +16,4 @@ test('drop boundaries map visible insertion boxes to stable reorder destinations
   assert.deepEqual(reorderAtBoundary(prompts, 0, 3), ['second', 'third', 'first'])
   assert.deepEqual(reorderAtBoundary(prompts, 2, 0), ['third', 'first', 'second'])
   assert.equal(reorderAtBoundary(prompts, 1, 2), prompts)
-})
-
-test('floating preset entry is exclusive to missing or blank sessions', () => {
-  assert.equal(shouldUseFloatingPanel({ current: undefined, byId: {} }), true)
-  assert.equal(shouldUseFloatingPanel({ current: 'blank', byId: { blank: { blank: true } } }), true)
-  assert.equal(shouldUseFloatingPanel({ current: 'active', byId: { active: { blank: false } } }), false)
 })

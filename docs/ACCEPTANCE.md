@@ -7,8 +7,8 @@
 - dsh: `0.1.0-rc.6`
 - Execution: a unique temporary `DSH_HOME`; no normal user profile, main
   worktree, or sibling worktree was modified.
-- External fixture: read/imported only from
-  `D:\AI\deepseek-harness\夏瑾 天琴座 Beta 1.0.json`.
+- External fixture: read/imported only from the reviewer-supplied path in
+  `DSH_TAVERN_ACCEPTANCE_FIXTURE`.
 
 This record contains only structure, counts, lengths, booleans, and test-owned
 values. It intentionally contains none of the fixture's prompt text.
@@ -125,7 +125,7 @@ it loads the newly built client bundle.
 ## Stage 10 architecture-split regression
 
 The refactored root package was installed into a fresh isolated profile at
-`D:\AI\deepseek-harness\test-envs\gpt-architecture`. The test used only a
+`<isolated-dsh-home>`. The test used only a
 synthetic preset and did not import or copy the external fixture.
 
 | Check | Observed result |
@@ -152,7 +152,7 @@ pnpm with `--force` did not repair a deliberately missing loader directory.
 
 The updated installer then refreshed that profile with remove/add, temporarily
 preserved and restored plugin-local data, and reused the profile's previously
-recorded `D:\.pnpm-store` automatically. Structural verification found both
+recorded pnpm store automatically. Structural verification found both
 preset files and the selected state still present; no prompt body was read or
 logged. DSH Web booted on `127.0.0.1:53101`, the root page returned HTTP 200,
 and the preset API reported both restored entries. Failed-attempt recovery

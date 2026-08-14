@@ -13,9 +13,3 @@ export function reorderAtBoundary(items, from, boundary) {
   const destination = boundary > from ? boundary - 1 : boundary
   return reorder(items, from, destination)
 }
-
-export function shouldUseFloatingPanel(sessionState) {
-  const current = sessionState?.current
-  if (current === undefined || current === null) return true
-  return sessionState.byId?.[current]?.blank === true
-}

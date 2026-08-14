@@ -4,6 +4,239 @@ This is the staged implementation log for the prompt-preset experiment. It is
 kept separately from the product README so reviewers can follow intent,
 decisions, verification, and known limits chronologically.
 
+## 2026-08-15 — Pre-merge publication hygiene
+
+Purpose: ensure the accepted integration can be merged and published without
+machine-specific directories, credentials, private fixtures or generated
+copies of third-party content in the tracked tree.
+
+- Replaced local checkout, worktree, profile, package-store and external
+  fixture paths in review/research documents with repository-relative paths,
+  descriptive placeholders or environment variables.
+- Changed the optional copyrighted preset acceptance test to read only the
+  reviewer-supplied `DSH_TAVERN_ACCEPTANCE_FIXTURE`; when unset, the test skips
+  instead of assuming a developer-machine location.
+- Kept platform path behavior covered with programmatically assembled synthetic
+  paths that do not identify any workstation.
+- Re-scanned tracked source, generated client code and documentation for local
+  absolute paths, user names, private-key headers and common API/token formats.
+  Credential-related text that remains describes placeholder test policy and
+  contains no credential value.
+
+Verification:
+
+- With `DSH_TAVERN_ACCEPTANCE_FIXTURE` pointing to the external file, the full
+  build and 81/81 tests passed without copying it into the worktree.
+- `npm run pack:check` produced the expected 35-file package; tests, docs,
+  runtime data and the external fixture were absent.
+- Tracked-tree scans returned no machine-specific absolute path, user name,
+  private-key header or common API/token-shaped value. The remaining word
+  `credential` appears only in prose stating that acceptance used a disposable
+  placeholder rather than a real credential.
+
+## 2026-08-15 — Recoverable Windows refresh interruption
+
+Purpose: make repeated installation recover after Windows rejects pnpm's atomic
+profile-manifest rename, without losing the plugin-local preset/character data
+or getting stuck between `remove` and `add`.
+
+- Diagnosed the reported `EPERM` as a profile refresh attempted while the
+  isolated DSH Node child from the prior acceptance smoke test was still alive;
+  the outer command process had stopped but its child had not.
+- Made refresh state depend on the profile manifest instead of only a leftover
+  `node_modules/dsh-tavern` directory. An interrupted state now performs a
+  direct repair add rather than a second failing remove.
+- Replaced random OS-temporary recovery copies with a deterministic
+  `<DSH_HOME>/backups/dsh-tavern/pending-refresh-<profile>/data` location.
+  Subsequent installer runs reuse and automatically restore pending data, then
+  delete the pending copy only after success.
+- Added tests for manifest registration and interrupted-refresh command
+  selection, while retaining the normal remove/add refresh test.
+
+Verification:
+
+- `npm run check` passed 81/81 tests, including both the ordinary refresh and
+  interrupted-manifest repair paths.
+- Repaired the real isolated profile from its removed-dependency state, restored
+  all six retained data files, and verified every file hash with zero mismatch.
+- Ran a second real remove/add refresh using the new persistent recovery path.
+  It restored all six files, kept the dependency registered, produced zero hash
+  mismatches, and removed the pending directory only after success.
+
+## 2026-08-15 — Security hardening after the accepted functional baseline
+
+Purpose: preserve the user-accepted behavior as an immutable review point, then
+reduce browser/API exposure and prevent untrusted ST regex keys from blocking
+the synchronous DSH host process.
+
+- Tagged commit `65ffc08` as `accepted-functional-2026-08-15` before changing
+  implementation or documentation.
+- Added a single security wrapper around the unified Tavern API. It accepts
+  loopback Host values by default, requires same-origin mutation requests,
+  rejects browser-simple or unexpected mutation media types, and emits
+  no-cache, no-sniff and no-referrer response headers.
+- Added an explicit `security.allowedHosts` escape hatch for deployments behind
+  a separately authenticated and encrypted reverse proxy. This is documented as
+  Host permission rather than authentication.
+- Removed local storage paths from preset and character catalog responses and
+  their UI surfaces.
+- Disabled native JavaScript `/regex/flags` world-book keys by default, retained
+  an explicit `worldBook.allowUnsafeRegex` compatibility switch, bounded regex
+  source length, and limited scans to the most recent 64 KiB by default.
+- Added distinct loader diagnostics for disabled, overlong and invalid regex
+  keys, plus scan truncation.
+- Documented semantic prompt injection, local-process/API trust, secret
+  propagation, non-loopback deployment, and unsafe-regex residual risks in the
+  product README.
+
+Verification:
+
+- `npm run check` rebuilt the browser bundle and passed 79/79 tests, including
+  Host/origin/media-type rejection, explicit network-host permission, regex
+  opt-in/length behavior, loader diagnostics and scan truncation.
+- `npm run pack:check` produced the expected 35-file package with the security
+  wrapper included and no tests, runtime data or external copyrighted fixture.
+- Refreshed the isolated integration profile and booted the real DSH Host on
+  loopback. HTTP smoke tests returned 200 for reads, 403 for a forged Host and
+  cross-origin write, 415 for a disallowed media type, and reached the business
+  404 for a valid same-origin JSON write.
+- In the real browser UI, opened the Tavern launcher/preset panel, loaded the
+  existing catalog without exposing its storage path, created a synthetic
+  preset through the secured POST path, and removed it through the secured
+  DELETE path. The isolated Host and browser tab were then closed.
+
+## 2026-08-15 — Draggable launcher and editable embedded World Info
+
+Purpose: make the unified entry feel like one coherent control and expose the
+actual ST entry definitions users need to understand and change activation.
+
+- Made the `T` launcher draggable with viewport clamping, persisted position,
+  click-versus-drag suppression, and left/right plus up/down expansion toward
+  available screen space.
+- Replaced the abrupt detached menu with one animated rounded surface that
+  grows from the ball and keeps the four resource choices inside it.
+- Replaced the World Info source-only view with an ST-style embedded
+  Character Book editor. Collapsed rows show constant, disabled, or keyword
+  activation; expanded rows edit primary/secondary keys and logic, content,
+  enable/constant flags, case/whole-word behavior, insertion position and
+  order. Entries can be added, deleted, reloaded and saved.
+- Added an atomic character-world-book update API. It updates the plugin's
+  normalized character document and JSON export while preserving the original
+  imported PNG/JSON artifact byte-for-byte.
+- Kept runtime truth separate from editing: this is a resource editor, not a
+  fabricated trigger-time log. `request/header` remains the final message-flow
+  audit source.
+
+Verification: `npm run check` passed 73/73 tests. An isolated installed DSH
+showed one expandable launcher, all four menu choices, seven real embedded
+entries with their trigger summaries, complete edit fields, dirty/save state,
+and clean discard on close/reopen without modifying the source card.
+
+Follow-up: kept the floating ball mounted while any resource sidebar is open.
+Its expanded menu now marks the active resource and switches panels directly,
+so navigation no longer requires closing the current sidebar first.
+
+## 2026-08-15 — Unified Tavern launcher and message-flow audit
+
+Purpose: remove competing preset/character controls, expose the integrated
+World Info runtime honestly, and document the exact DSH request boundary.
+
+- Replaced separate preset and character header/overlay launchers with one
+  round `T` launcher and a single menu for preset, World Info, character card,
+  and the planned user/persona surface.
+- Kept only one shell overlay registration and one z-index owner; all feature
+  panels now open from that owner, eliminating cross-module stacking order.
+- Added a World Info sidebar that reads the loader active view, lists embedded
+  character-book resources and diagnostics, and marks standalone import as a
+  planned capability rather than exposing a non-functional control.
+- Corrected the character-card UI: embedded `character_book` is matched by the
+  unified loader while the card is bound and stops contributing after unbind.
+- Added `docs/DSH_MESSAGE_FLOW.md`, verified against installed DSH rc.6 source,
+  covering Inbox claim, system assembly, durable message projection,
+  `agent/request`, `request/header`, streaming, plugin hooks and same-turn lore
+  limitations.
+
+## 2026-08-14 — Parallel world-book format and matching slice
+
+Purpose: make ST world-book semantics independently testable while loader and
+character-card work continued in isolated worktrees.
+
+- Added loss-preserving standalone World Info and embedded Character Book
+  parsing/export, deterministic matching, ordering, groups, explicit
+  probability rolls and token-budget projection.
+- Kept parser/matcher free of DSH Host, session, storage and UI dependencies.
+- Added an explicit loader bridge for before/after entries and honest
+  diagnostics for depth, outlet and other unsupported placements.
+- Read-only compatibility scans covered SillyTavern source examples and 94
+  TauriTavern books; no inspected third-party content entered the repository.
+
+Verification on `feature/world-book-compat`: 42/42 tests and package preview
+passed at commit `1489e11570a712a882cc2b72461fc70bff8605f1`.
+
+## 2026-08-14 — Three-module integration slice
+
+Purpose: prove preset, character-card and world-book features compose through
+one loader and one per-session selection policy before any main merge.
+
+- Integrated the three completed feature branches in the separate
+  `feature/tavern-integration` worktree; `main` remains unchanged.
+- Registered `createCharacterAdapter()` and the embedded-world-book adapter in
+  the sole Host loader rather than introducing additional prompt hooks.
+- Routed character API bindings through `SessionSelectionStore`, added one-way
+  migration from the character module's pre-loader binding file, and cleared
+  references on deletion.
+- Activated selected cards' embedded Character Books through the shared pure
+  parser/matcher/loader bridge. Standalone world-book ids report an explicit
+  not-yet-installed-store diagnostic.
+- Added a synthetic end-to-end Host test proving character fields and matching
+  lore enter one profile while creator notes stay out, plus migration coverage.
+- Real DSH smoke testing exposed that two overlapping prefix registrations let
+  the broad preset API shadow character routes. Replaced them with one Tavern
+  API prefix and an internal path dispatcher; preset, character library and
+  character-selection endpoints then all returned successful responses.
+- Made the world-book snapshot assertion newline-independent across Windows,
+  macOS and Linux.
+
+Known boundary: world-book matching can inspect existing durable history but
+not the same-turn user input because DSH does not expose it in the public
+system-assembly context. Standalone world-book CRUD/UI and advanced recursive,
+sticky/cooldown/delay/vector execution remain future slices.
+
+## 2026-08-14 — Unified loader and session policy (feature/tavern-loader)
+
+Purpose: establish the runtime boundary that lets preset, character-card and
+world-book format modules develop in parallel without each registering its own
+DSH prompt hooks.
+
+- Added loader-owned, durable per-session resource selections with legacy global
+  preset fallback, regular-fork snapshot inheritance, and empty subagent policy.
+- Made the preset browser API/client send and resolve the active DSH session id;
+  two conversations can now explicitly choose different presets or no preset.
+- Replaced the preset-only Host section with one `dsh-tavern:profile` section and
+  kept preset-only compiled output stable.
+- Added `TavernProfileLoader` adapter seams for normalized character cards and
+  activated world-book entries.
+- Added a pure `compileTavernProfile()` coordinator for ST markers, character
+  main/PHI overrides with `{{original}}`, lore before/after placement, fallback
+  fields, macro sanitization and explicit greeting/PHI/depth diagnostics.
+- Kept DSH durable history authoritative: `chatHistory` is consumed as a marker
+  and never copied into system text; no assistant history or private session
+  events are fabricated.
+- Added loader audit snapshots with resource summaries, diagnostics, active lore
+  ids and a deterministic fingerprint; DSH `request/header` remains the final
+  source of truth.
+- Added API, Host, profile composition, persistence, fork and subagent tests.
+- Added `docs/LOADER_CONTRACT.md` as the required merge contract for the parallel
+  character-card and world-book branches.
+
+Verification:
+
+- `npm run check`: 30/30 tests passed after rebuilding `dist/client.js`.
+- `npm run pack:check`: package preview succeeded with the new loader files.
+- Installed the local package into an isolated DSH home, confirmed it in the web
+  profile, composed the full config, and booted the web host on an ephemeral
+  port without a plugin load error.
+
 ## 2026-08-14 — Stage 1: contract and package skeleton
 
 Purpose: establish the installable package boundary and document compatibility
@@ -272,8 +505,8 @@ Verification:
 
 - A deliberately removed installed loader directory was restored by repeated
   install while its synthetic selected preset remained present.
-- The user's existing isolated profile, originally linked to
-  `D:\.pnpm-store\v11`, refreshed successfully, retained two preset files and
+- The existing isolated profile, originally linked to a separate pnpm store,
+  refreshed successfully, retained two preset files and
   its selected state, and booted the Web/API surface on port `53101`.
 - `npm run check` passed 21/21 tests, including store detection and the
   remove/add dry-run contract.
@@ -302,3 +535,39 @@ Verification:
 - `npm run pack:check` contained 17 release files including `LICENSE`, all three
   internal layers, and lifecycle scripts; it excluded docs, tests, runtime data,
   caches, and the copyrighted external fixture.
+
+## 2026-08-14 — Stage 13: character-card format and use-case slice
+
+Purpose: add SillyTavern character-card compatibility without reintroducing
+prompt-runtime coupling or duplicating world-book policy.
+
+Changes:
+
+- Added pure V1/V2/V3 JSON normalization and bounded PNG `chara`/`ccv3` tEXt
+  extraction, with V3 precedence and compatibility diagnostics.
+- Preserved the complete source JSON, unknown fields, extensions, embedded
+  character books, V3 assets, and the exact imported artifact bytes.
+- Added an atomic character library, SHA-256 metadata, per-session selection,
+  stable greeting indices, safe selection copy, and deletion cleanup.
+- Added raw-byte import, detail/list, artifact/JSON export, deletion, and
+  selection APIs with structured errors and loader-supplied session-policy hooks.
+- Added a versioned loader resource snapshot and an inert embedded-world-book
+  resource; neither interface compiles prompt text or activates entries.
+- Aligned selection intent with the loader's `characterCardId`/`character`
+  shape and added a `createCharacterAdapter()` whose `resolve()` returns
+  `{ character, diagnostics }` with `id/name/updatedAt/data`.
+- Added the character library UI and a minimal browser composition entry while
+  leaving preset source and `packages/tavern-loader/**` unchanged.
+- Recorded the implementation, API/loader/world-book contracts, scoped
+  acceptance, limitations, and cross-branch merge points under
+  `docs/character-card/`.
+
+Verification:
+
+- `npm run check` rebuilt the combined browser bundle and passed 38/38 tests:
+  the original 21 preset checks plus 17 character format/use-case checks.
+- All new fixtures are synthetic and generated inside tests; no local
+  third-party character artwork or content was copied into the repository.
+- Installed prompt injection, fork/subagent policy, and character-book matching
+  remain explicit loader/world-book follow-up work rather than false positives
+  in this slice's acceptance record.

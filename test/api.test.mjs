@@ -67,3 +67,33 @@ test('HTTP API imports, selects, reads, updates, and creates presets', async () 
     rmSync(directory, { recursive: true, force: true })
   }
 })
+
+test('HTTP API keeps preset selection isolated by DSH session id', async () => {
+  const directory = mkdtempSync(join(tmpdir(), 'dsh-tavern-api-session-'))
+  const store = new PresetStore(directory)
+  const first = store.create({ id: 'first', name: 'First' })
+  const second = store.create({ id: 'second', name: 'Second' })
+  store.select(first.id)
+  const handler = createApiHandler(store)
+  try {
+    await invoke(handler, {
+      method: 'POST',
+      url: '/dsh-tavern/api/select',
+      body: { id: second.id, sessionId: 'session-a' },
+    })
+    await invoke(handler, {
+      method: 'POST',
+      url: '/dsh-tavern/api/select',
+      body: { id: null, sessionId: 'session-b' },
+    })
+
+    const sessionA = await invoke(handler, { url: '/dsh-tavern/api/presets?sessionId=session-a' })
+    const sessionB = await invoke(handler, { url: '/dsh-tavern/api/presets?sessionId=session-b' })
+    const legacy = await invoke(handler, { url: '/dsh-tavern/api/presets' })
+    assert.equal(sessionA.body.selectedId, second.id)
+    assert.equal(sessionB.body.selectedId, null)
+    assert.equal(legacy.body.selectedId, first.id)
+  } finally {
+    rmSync(directory, { recursive: true, force: true })
+  }
+})
