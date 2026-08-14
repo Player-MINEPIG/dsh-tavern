@@ -182,7 +182,8 @@ function PresetSidebar({ closePanel, openPanel, sessionId, autoOpen = true }) {
 
   const refresh = useCallback(async (preferredId) => {
     const generation = ++refreshGeneration.current
-    const data = await api('/presets')
+    const query = sessionId ? `?sessionId=${encodeURIComponent(sessionId)}` : ''
+    const data = await api(`/presets${query}`)
     const id = preferredId === undefined ? data.selectedId : preferredId
     const detail = id === null || id === undefined
       ? null
@@ -191,7 +192,7 @@ function PresetSidebar({ closePanel, openPanel, sessionId, autoOpen = true }) {
     setCatalog(data)
     setDraft(detail)
     return true
-  }, [])
+  }, [sessionId])
 
   useEffect(() => {
     refreshGeneration.current += 1
@@ -209,15 +210,15 @@ function PresetSidebar({ closePanel, openPanel, sessionId, autoOpen = true }) {
   }, [refresh, run])
 
   const choose = useCallback((id) => run(async () => {
-    await api('/select', { method: 'POST', body: body({ id: id || null }) })
+    await api('/select', { method: 'POST', body: body({ id: id || null, sessionId }) })
     await refresh(id || null)
-  }, id ? '预设已选择；下一条消息将携带此 preset。已有会话历史不会被清除。' : '已停用 preset；已有会话历史不会被清除'), [refresh, run])
+  }, id ? '预设已选择；下一条消息将携带此 preset。已有会话历史不会被清除。' : '已停用 preset；已有会话历史不会被清除'), [refresh, run, sessionId])
 
   const createPreset = useCallback(() => run(async () => {
     const created = await api('/presets', { method: 'POST', body: body({ name: '新预设' }) })
-    await api('/select', { method: 'POST', body: body({ id: created.preset.id }) })
+    await api('/select', { method: 'POST', body: body({ id: created.preset.id, sessionId }) })
     await refresh(created.preset.id)
-  }, '已创建并选择新预设'), [refresh, run])
+  }, '已创建并选择新预设'), [refresh, run, sessionId])
 
   const importFile = useCallback((file) => run(async () => {
     const content = await file.text()
@@ -225,10 +226,10 @@ function PresetSidebar({ closePanel, openPanel, sessionId, autoOpen = true }) {
       method: 'POST',
       body: body({ name: file.name.replace(/\.json$/i, ''), content }),
     })
-    await api('/select', { method: 'POST', body: body({ id: imported.preset.id }) })
+    await api('/select', { method: 'POST', body: body({ id: imported.preset.id, sessionId }) })
     await refresh(imported.preset.id)
     if (fileRef.current !== null) fileRef.current.value = ''
-  }, 'ST 预设已导入并选择'), [refresh, run])
+  }, 'ST 预设已导入并选择'), [refresh, run, sessionId])
 
   const save = useCallback(() => run(async () => {
     const result = await api(`/presets/${encodeURIComponent(draft.id)}`, {

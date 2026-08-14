@@ -35,7 +35,9 @@ DSH system prompt + agent request
 | `preset` | “用户如何管理预设？” | 原子文件存储、导入/创建/修改/删除/选择、API、侧边栏源代码 | 决定提示词如何进入 agent |
 | `tavern-loader` | “当前资源怎样影响这次 DSH 请求？” | 编译选中预设、映射支持的 call config、append/replace 策略、Host/API 挂载 | 重新解释 ST 原始字段、实现具体 UI |
 
-角色卡和世界书以后应在 `tavern-format` 增加各自的 adapter/model，在用例层增加管理入口，再由同一个 `tavern-loader` 组合。角色卡不读取预设的 UI 排序逻辑，预设也不决定角色字段插入位置。
+角色卡和世界书在 `tavern-format` 增加各自的 adapter/model，在用例层增加管理入口，再由同一个 `tavern-loader` 组合。角色卡不读取预设的 UI 排序逻辑，预设也不决定角色字段插入位置。统一 adapter、session 继承和 marker 契约见 `docs/LOADER_CONTRACT.md`。
+
+当前 loader feature 已把 Host 注册收敛为一个 `dsh-tavern:profile` section，并引入 loader-owned `SessionSelectionStore`：preset、角色和世界书的文档仍由各自模块管理，但“哪个 session 使用哪些资源”由统一策略持久化。普通 fork 复制父选择，subagent 默认空选择。
 
 ## 为什么不是两个 DSH 插件
 

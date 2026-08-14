@@ -227,14 +227,15 @@ function PresetSidebar({ closePanel, openPanel, sessionId, autoOpen = true }) {
   }, []);
   const refresh = (0, import_react.useCallback)(async (preferredId) => {
     const generation = ++refreshGeneration.current;
-    const data = await api("/presets");
+    const query = sessionId ? `?sessionId=${encodeURIComponent(sessionId)}` : "";
+    const data = await api(`/presets${query}`);
     const id = preferredId === void 0 ? data.selectedId : preferredId;
     const detail = id === null || id === void 0 ? null : (await api(`/presets/${encodeURIComponent(id)}`)).preset;
     if (generation !== refreshGeneration.current) return false;
     setCatalog(data);
     setDraft(detail);
     return true;
-  }, []);
+  }, [sessionId]);
   (0, import_react.useEffect)(() => {
     refreshGeneration.current += 1;
     setCatalog(null);
@@ -251,24 +252,24 @@ function PresetSidebar({ closePanel, openPanel, sessionId, autoOpen = true }) {
     return () => window.removeEventListener("dsh-tavern:refresh", onRefresh);
   }, [refresh, run]);
   const choose = (0, import_react.useCallback)((id) => run(async () => {
-    await api("/select", { method: "POST", body: body({ id: id || null }) });
+    await api("/select", { method: "POST", body: body({ id: id || null, sessionId }) });
     await refresh(id || null);
-  }, id ? "\u9884\u8BBE\u5DF2\u9009\u62E9\uFF1B\u4E0B\u4E00\u6761\u6D88\u606F\u5C06\u643A\u5E26\u6B64 preset\u3002\u5DF2\u6709\u4F1A\u8BDD\u5386\u53F2\u4E0D\u4F1A\u88AB\u6E05\u9664\u3002" : "\u5DF2\u505C\u7528 preset\uFF1B\u5DF2\u6709\u4F1A\u8BDD\u5386\u53F2\u4E0D\u4F1A\u88AB\u6E05\u9664"), [refresh, run]);
+  }, id ? "\u9884\u8BBE\u5DF2\u9009\u62E9\uFF1B\u4E0B\u4E00\u6761\u6D88\u606F\u5C06\u643A\u5E26\u6B64 preset\u3002\u5DF2\u6709\u4F1A\u8BDD\u5386\u53F2\u4E0D\u4F1A\u88AB\u6E05\u9664\u3002" : "\u5DF2\u505C\u7528 preset\uFF1B\u5DF2\u6709\u4F1A\u8BDD\u5386\u53F2\u4E0D\u4F1A\u88AB\u6E05\u9664"), [refresh, run, sessionId]);
   const createPreset = (0, import_react.useCallback)(() => run(async () => {
     const created = await api("/presets", { method: "POST", body: body({ name: "\u65B0\u9884\u8BBE" }) });
-    await api("/select", { method: "POST", body: body({ id: created.preset.id }) });
+    await api("/select", { method: "POST", body: body({ id: created.preset.id, sessionId }) });
     await refresh(created.preset.id);
-  }, "\u5DF2\u521B\u5EFA\u5E76\u9009\u62E9\u65B0\u9884\u8BBE"), [refresh, run]);
+  }, "\u5DF2\u521B\u5EFA\u5E76\u9009\u62E9\u65B0\u9884\u8BBE"), [refresh, run, sessionId]);
   const importFile = (0, import_react.useCallback)((file) => run(async () => {
     const content = await file.text();
     const imported = await api("/import", {
       method: "POST",
       body: body({ name: file.name.replace(/\.json$/i, ""), content })
     });
-    await api("/select", { method: "POST", body: body({ id: imported.preset.id }) });
+    await api("/select", { method: "POST", body: body({ id: imported.preset.id, sessionId }) });
     await refresh(imported.preset.id);
     if (fileRef.current !== null) fileRef.current.value = "";
-  }, "ST \u9884\u8BBE\u5DF2\u5BFC\u5165\u5E76\u9009\u62E9"), [refresh, run]);
+  }, "ST \u9884\u8BBE\u5DF2\u5BFC\u5165\u5E76\u9009\u62E9"), [refresh, run, sessionId]);
   const save = (0, import_react.useCallback)(() => run(async () => {
     const result = await api(`/presets/${encodeURIComponent(draft.id)}`, {
       method: "PUT",

@@ -4,6 +4,42 @@ This is the staged implementation log for the prompt-preset experiment. It is
 kept separately from the product README so reviewers can follow intent,
 decisions, verification, and known limits chronologically.
 
+## 2026-08-14 — Unified loader and session policy (feature/tavern-loader)
+
+Purpose: establish the runtime boundary that lets preset, character-card and
+world-book format modules develop in parallel without each registering its own
+DSH prompt hooks.
+
+- Added loader-owned, durable per-session resource selections with legacy global
+  preset fallback, regular-fork snapshot inheritance, and empty subagent policy.
+- Made the preset browser API/client send and resolve the active DSH session id;
+  two conversations can now explicitly choose different presets or no preset.
+- Replaced the preset-only Host section with one `dsh-tavern:profile` section and
+  kept preset-only compiled output stable.
+- Added `TavernProfileLoader` adapter seams for normalized character cards and
+  activated world-book entries.
+- Added a pure `compileTavernProfile()` coordinator for ST markers, character
+  main/PHI overrides with `{{original}}`, lore before/after placement, fallback
+  fields, macro sanitization and explicit greeting/PHI/depth diagnostics.
+- Kept DSH durable history authoritative: `chatHistory` is consumed as a marker
+  and never copied into system text; no assistant history or private session
+  events are fabricated.
+- Added loader audit snapshots with resource summaries, diagnostics, active lore
+  ids and a deterministic fingerprint; DSH `request/header` remains the final
+  source of truth.
+- Added API, Host, profile composition, persistence, fork and subagent tests.
+- Added `docs/LOADER_CONTRACT.md` as the required merge contract for the parallel
+  character-card and world-book branches.
+
+Verification:
+
+- `npm run check`: 30/30 tests passed after rebuilding `dist/client.js`.
+- `npm run pack:check`: package preview succeeded with the new loader files.
+- Installed the local package into the isolated
+  `D:\AI\deepseek-harness\test-envs\loader` DSH home, confirmed it in the web
+  profile, composed the full config, and booted the web host on an ephemeral
+  port without a plugin load error.
+
 ## 2026-08-14 — Stage 1: contract and package skeleton
 
 Purpose: establish the installable package boundary and document compatibility

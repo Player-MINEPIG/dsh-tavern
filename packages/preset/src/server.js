@@ -50,19 +50,27 @@ function defaultActiveView(store) {
   }
 }
 
-export function createApiHandler(store, onChange = () => {}, activeView = () => defaultActiveView(store)) {
+export function createApiHandler(
+  store,
+  onChange = () => {},
+  activeView = () => defaultActiveView(store),
+  selectionPolicy = {},
+) {
   return async (req, res) => {
     try {
       const url = new URL(req.url ?? '/', 'http://localhost')
       const path = url.pathname
       const method = req.method ?? 'GET'
       const id = presetId(path)
+      const sessionId = url.searchParams.get('sessionId') || null
 
       if (method === 'GET' && path === `${API_ROOT}/presets`) {
         return sendJson(res, 200, {
           ok: true,
           presets: store.list(),
-          selectedId: store.state.selectedId,
+          selectedId: selectionPolicy.selectedPresetId === undefined
+            ? store.state.selectedId
+            : selectionPolicy.selectedPresetId(sessionId),
           storageDir: store.storageDir,
         })
       }
@@ -70,7 +78,7 @@ export function createApiHandler(store, onChange = () => {}, activeView = () => 
       if (method === 'GET' && path === `${API_ROOT}/active`) {
         return sendJson(res, 200, {
           ok: true,
-          ...activeView(),
+          ...activeView(sessionId),
         })
       }
 
@@ -101,13 +109,18 @@ export function createApiHandler(store, onChange = () => {}, activeView = () => 
 
       if (method === 'DELETE' && id !== null) {
         store.delete(id)
+        selectionPolicy.clearResource?.('preset', id)
         onChange()
         return sendJson(res, 200, { ok: true })
       }
 
       if (method === 'POST' && path === `${API_ROOT}/select`) {
         const body = await readJson(req)
-        const selected = store.select(body.id === null ? null : body.id)
+        const selectedId = body.id === null ? null : body.id
+        const targetSessionId = typeof body.sessionId === 'string' && body.sessionId !== '' ? body.sessionId : null
+        const selected = selectionPolicy.selectPreset === undefined
+          ? store.select(selectedId)
+          : selectionPolicy.selectPreset(selectedId, targetSessionId)
         onChange()
         return sendJson(res, 200, { ok: true, selected: selected === null ? null : { id: selected.id, name: selected.name } })
       }
@@ -120,13 +133,13 @@ export function createApiHandler(store, onChange = () => {}, activeView = () => 
   }
 }
 
-export function installServerRoutes(ctx, store, onChange, activeView) {
+export function installServerRoutes(ctx, store, onChange, activeView, selectionPolicy) {
   const webServer = ctx.get('webServer')
   if (webServer === undefined) return undefined
   return webServer.register({
     kind: 'prefix',
     path: API_ROOT,
-    handler: createApiHandler(store, onChange, activeView),
+    handler: createApiHandler(store, onChange, activeView, selectionPolicy),
   })
 }
 
