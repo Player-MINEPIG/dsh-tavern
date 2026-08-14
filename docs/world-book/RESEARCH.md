@@ -4,8 +4,8 @@
 
 ## 调研范围
 
-- 本机 `D:\AI\SillyTavern`，只读检查 `public/scripts/world-info.js`、`src/endpoints/worldinfo.js`、`src/endpoints/characters.js`、`src/validator/TavernCardValidator.js`、`public/scripts/char-data.js` 与官方自带 `default/content/Eldoria.json`。本机 checkout 为 `staging`，提交 `380e31e8c58d196969b6a0da74f431ba999c7e0a`。未读取或复制用户角色卡、用户世界书内容。
-- 本机 `D:\AI\TauriTavern`，只读检查迁移说明、迁移 manifest 和公开类型声明。该目录是 ST 数据的一次性只读快照；没有发现第二套 TauriTavern 世界书磁盘格式。
+- SillyTavern checkout：只读检查 `public/scripts/world-info.js`、`src/endpoints/worldinfo.js`、`src/endpoints/characters.js`、`src/validator/TavernCardValidator.js`、`public/scripts/char-data.js` 与官方自带 `default/content/Eldoria.json`。checkout 为 `staging`，提交 `380e31e8c58d196969b6a0da74f431ba999c7e0a`。未读取或复制用户角色卡、用户世界书内容。
+- TauriTavern 便携数据目录：只读检查迁移说明、迁移 manifest 和公开类型声明。该目录是 ST 数据的一次性只读快照；没有发现第二套 TauriTavern 世界书磁盘格式。
 - SillyTavern 官方 [World Info 文档](https://docs.sillytavern.app/usage/core-concepts/worldinfo/)、官方 [SillyTavern 源码仓库](https://github.com/SillyTavern/SillyTavern) 与 Character Card V2 的 [character_book 规范](https://github.com/malfoyslastname/character-card-spec-v2/blob/main/spec_v2.md)。
 - TauriTavern 官方 [源码仓库](https://github.com/Darkatse/TauriTavern)；其说明明确前端同步上游 ST，数据格式与目录布局兼容。
 

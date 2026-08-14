@@ -6,7 +6,7 @@
 
 ## 自动化验收
 
-在 `D:\AI\deepseek-harness\world-book-compat` 执行：
+在独立的 `world-book-compat` worktree 执行：
 
 | 命令 | 结果 |
 | --- | --- |
@@ -20,8 +20,8 @@
 
 这些文件没有复制进仓库，扫描命令只输出计数和诊断 code：
 
-- `D:\AI\SillyTavern\default\content\Eldoria.json`：结构有效，4 entries，连续两次 import/export 结构幂等；
-- `D:\AI\TauriTavern\data\default-user\worlds\*.json`：94 files，94 valid，0 invalid，94/94 连续两次 import/export 结构幂等；
+- SillyTavern checkout 中的官方 `default/content/Eldoria.json`：结构有效，4 entries，连续两次 import/export 结构幂等；
+- TauriTavern 便携数据快照中的 `data/default-user/worlds/*.json`：94 files，94 valid，0 invalid，94/94 连续两次 import/export 结构幂等；
 - 快照中有 32 处历史 numeric string，均转换为 number 并给出 `coerced-number` warning；
 - 有 1 处数组型 comment 给出 `invalid-string` warning，标准字段降级为空字符串，原数组仍保存在 entry `source.raw`。
 

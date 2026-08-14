@@ -30,9 +30,8 @@ The default store is `<installed-plugin-root>/data`, containing `state.json`
 and one normalized JSON file per preset under `presets/`. The source worktree
 ignores `/data`.
 
-The acceptance fixture at
-`D:\AI\deepseek-harness\夏瑾 天琴座 Beta 1.0.json` is third-party material.
-Tests may read it in place or import it into a temporary/installed-plugin
+The acceptance fixture selected through `DSH_TAVERN_ACCEPTANCE_FIXTURE` is
+third-party material. Tests may read it in place or import it into a temporary/installed-plugin
 directory, but must never copy it into the Git worktree, fixtures, snapshots,
 generated bundles, logs, or commits.
 

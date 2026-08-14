@@ -17,7 +17,9 @@ import {
 } from '../scripts/shared.mjs'
 
 test('builds local package specs and executable names across platforms', () => {
-  assert.equal(localPackageSpec('D:\\code\\dsh-tavern', 'win32'), 'file:D:/code/dsh-tavern')
+  const syntheticWindowsProject = ['X:', 'synthetic', 'dsh-tavern'].join('\\')
+  const syntheticWindowsSpec = `file:${['X:', 'synthetic', 'dsh-tavern'].join('/')}`
+  assert.equal(localPackageSpec(syntheticWindowsProject, 'win32'), syntheticWindowsSpec)
   assert.equal(localPackageSpec('/opt/dsh-tavern', 'linux'), 'file:/opt/dsh-tavern')
   assert.deepEqual(dshInvocation('linux', {}), { command: 'dsh', prefix: [] })
 })

@@ -12,10 +12,10 @@ SillyTavern 的预设不是“把若干文本拼到最前面”这么简单。�
 4. 对话示例与真实聊天历史分别填入 `dialogueExamples`、`chatHistory` marker，并按 token budget 从历史中取舍。控制提示词最后加入。
 5. `chatCompletion.getChat()` 最终产生真正带 `system`、`user`、`assistant`、`tool` role 的消息数组，随后才交给具体 API。
 
-本机只读源码证据：
+只读源码证据（路径相对于对应上游 checkout）：
 
-- `D:\AI\SillyTavern\public\scripts\PromptManager.js`：`getPromptOrderForCharacter()` 读取角色顺序；默认 marker 定义包括 `worldInfoBefore`、`worldInfoAfter`、`dialogueExamples` 和 `chatHistory`。
-- `D:\AI\SillyTavern\public\scripts\openai.js`：`preparePromptsForChatCompletion()`、`populateChatCompletion()`、`populateChatHistory()`、`populateDialogueExamples()` 和最终 `getChat()` 构成上述链路。
+- `public/scripts/PromptManager.js`：`getPromptOrderForCharacter()` 读取角色顺序；默认 marker 定义包括 `worldInfoBefore`、`worldInfoAfter`、`dialogueExamples` 和 `chatHistory`。
+- `public/scripts/openai.js`：`preparePromptsForChatCompletion()`、`populateChatCompletion()`、`populateChatHistory()`、`populateDialogueExamples()` 和最终 `getChat()` 构成上述链路。
 
 因此，ST 预设中的 marker 是运行时插槽，不是本身要发送的文本；prompt 的 role、absolute position、depth 和 token budget 都可能改变最后的消息拓扑。
 
@@ -32,7 +32,7 @@ TauriTavern 的 Agent 路径则多了一层快照边界：
 
 这意味着 Agent 仍以 ST 已组装完成的消息快照为输入，而不是只读取某个 preset JSON。当前 `preset.mode` 只记录快照或引用信息，并不会再次改写快照。详见官方 [Agent API](https://tauritavern.github.io/en/api/agent.html)。
 
-本机 `D:\AI\TauriTavern` 是便携版运行目录，并不包含完整源码 checkout；其中的迁移说明和 manifest 只能证明角色卡、聊天、预设、世界书等数据采用一次性 ST 数据快照。对 TauriTavern 实现的上述结论以其官方源码仓库和官方架构文档为准。
+调研时使用的 TauriTavern 便携版运行目录并不包含完整源码 checkout；其中的迁移说明和 manifest 只能证明角色卡、聊天、预设、世界书等数据采用一次性 ST 数据快照。对 TauriTavern 实现的上述结论以其官方源码仓库和官方架构文档为准。
 
 ## 3. dsh-tavern 当前如何兼容
 

@@ -60,15 +60,15 @@ node scripts/install.mjs --profile web --dsh-home /absolute/dsh-home
 Windows 示例：
 
 ```cmd
-node scripts/install.mjs --profile web --dsh-home D:\DSH-Test
-set DSH_HOME=D:\DSH-Test
+node scripts/install.mjs --profile web --dsh-home .\test-envs\review
+set DSH_HOME=%CD%\test-envs\review
 dsh web --host 127.0.0.1 --port 53101
 ```
 
 PowerShell 设置环境变量的语法不同：
 
 ```powershell
-$env:DSH_HOME = 'D:\DSH-Test'
+$env:DSH_HOME = (Resolve-Path '.\test-envs\review').Path
 dsh web --host 127.0.0.1 --port 53101
 ```
 

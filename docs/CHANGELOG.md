@@ -4,6 +4,36 @@ This is the staged implementation log for the prompt-preset experiment. It is
 kept separately from the product README so reviewers can follow intent,
 decisions, verification, and known limits chronologically.
 
+## 2026-08-15 — Pre-merge publication hygiene
+
+Purpose: ensure the accepted integration can be merged and published without
+machine-specific directories, credentials, private fixtures or generated
+copies of third-party content in the tracked tree.
+
+- Replaced local checkout, worktree, profile, package-store and external
+  fixture paths in review/research documents with repository-relative paths,
+  descriptive placeholders or environment variables.
+- Changed the optional copyrighted preset acceptance test to read only the
+  reviewer-supplied `DSH_TAVERN_ACCEPTANCE_FIXTURE`; when unset, the test skips
+  instead of assuming a developer-machine location.
+- Kept platform path behavior covered with programmatically assembled synthetic
+  paths that do not identify any workstation.
+- Re-scanned tracked source, generated client code and documentation for local
+  absolute paths, user names, private-key headers and common API/token formats.
+  Credential-related text that remains describes placeholder test policy and
+  contains no credential value.
+
+Verification:
+
+- With `DSH_TAVERN_ACCEPTANCE_FIXTURE` pointing to the external file, the full
+  build and 81/81 tests passed without copying it into the worktree.
+- `npm run pack:check` produced the expected 35-file package; tests, docs,
+  runtime data and the external fixture were absent.
+- Tracked-tree scans returned no machine-specific absolute path, user name,
+  private-key header or common API/token-shaped value. The remaining word
+  `credential` appears only in prose stating that acceptance used a disposable
+  placeholder rather than a real credential.
+
 ## 2026-08-15 — Recoverable Windows refresh interruption
 
 Purpose: make repeated installation recover after Windows rejects pnpm's atomic
@@ -203,8 +233,7 @@ Verification:
 
 - `npm run check`: 30/30 tests passed after rebuilding `dist/client.js`.
 - `npm run pack:check`: package preview succeeded with the new loader files.
-- Installed the local package into the isolated
-  `D:\AI\deepseek-harness\test-envs\loader` DSH home, confirmed it in the web
+- Installed the local package into an isolated DSH home, confirmed it in the web
   profile, composed the full config, and booted the web host on an ephemeral
   port without a plugin load error.
 
@@ -476,8 +505,8 @@ Verification:
 
 - A deliberately removed installed loader directory was restored by repeated
   install while its synthetic selected preset remained present.
-- The user's existing isolated profile, originally linked to
-  `D:\.pnpm-store\v11`, refreshed successfully, retained two preset files and
+- The existing isolated profile, originally linked to a separate pnpm store,
+  refreshed successfully, retained two preset files and
   its selected state, and booted the Web/API surface on port `53101`.
 - `npm run check` passed 21/21 tests, including store detection and the
   remove/add dry-run contract.

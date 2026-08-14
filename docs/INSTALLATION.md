@@ -57,7 +57,7 @@ PowerShell differences in forwarding arguments after `npm run`.
 Windows paths may be passed normally, for example:
 
 ```text
-node scripts/install.mjs --dsh-home D:\DSH-Test
+node scripts/install.mjs --dsh-home .\test-envs\review
 ```
 
 ## Uninstall

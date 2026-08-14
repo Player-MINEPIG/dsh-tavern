@@ -19,10 +19,10 @@
 | 对象 | 调研基线 | 证据 |
 | --- | --- | --- |
 | dsh-tavern 主线 | `main` @ `739cc1297385fe025d97b400e80e2cc24f890c95` | 新角色卡分支的起点 |
-| 已验证预设分支 | `feature/prompt-preset-gpt` @ `7ddf0ef` | `D:\AI\deepseek-harness\prompt-preset-gpt`，工作树干净 |
-| DSH 本地运行包 | `@deepseek-ai/*` `0.1.0-rc.6` | `D:\AI\deepseek-harness\test-envs\gpt\profiles\node_modules\@deepseek-ai` |
+| 已验证预设分支 | `feature/prompt-preset-gpt` @ `7ddf0ef` | 独立 worktree，工作树干净 |
+| DSH 本地运行包 | `@deepseek-ai/*` `0.1.0-rc.6` | 隔离 DSH profile 中已安装的 package |
 | SillyTavern 本地源码 | `staging` @ `380e31e8c58d196969b6a0da74f431ba999c7e0a` | 2026-07-12 提交；仓库含用户自己的未跟踪目录，本轮未触碰 |
-| TauriTavern 本地程序 | portable canary，文件/产品版本 `2.2.0`，构建文件名日期 `20260813` | `D:\AI\TauriTavern\TauriTavern-20260813-canary-windows-x64-portable.exe` |
+| TauriTavern 本地程序 | portable canary，文件/产品版本 `2.2.0`，构建文件名日期 `20260813` | 便携版二进制的文件元数据 |
 | TauriTavern 数据 | 2026-08-10 从本地 SillyTavern 做的一次性只读快照 | `README-SillyTavern-migration.md` 与 `sillytavern-import-manifest.json` |
 
 说明：TauriTavern 本地目录是便携程序和运行数据，不是源码 checkout。为核对其架构，另查阅了项目官方 GitHub 仓库；网页是移动的 `main`，因此本地可执行文件版本才是本轮的可复现产品基线。
@@ -204,17 +204,19 @@ DSH 当前没有公开 API 允许第三方插件凭空提交一条“assistant �
 以下命令类别用于本轮调研，均为只读：
 
 ```powershell
+$stCheckout = '<path-to-sillytavern-checkout>'
+$ttPortable = '<path-to-tauritavern-portable-data>'
 git log --oneline --decorate --graph --all
 git diff --stat main..feature/prompt-preset-gpt
-git -c safe.directory=D:/AI/SillyTavern -C D:/AI/SillyTavern log -1
-rg -n "chara_card_v3|character_book|first_mes|post_history_instructions" D:/AI/SillyTavern/src D:/AI/SillyTavern/public
-Get-Content D:/AI/SillyTavern/src/character-card-parser.js
-Get-Content D:/AI/SillyTavern/src/endpoints/characters.js
-Get-Content D:/AI/SillyTavern/public/scripts/PromptManager.js
-Get-Content D:/AI/SillyTavern/public/scripts/openai.js
-Get-Content D:/AI/TauriTavern/README-SillyTavern-migration.md
-Get-FileHash D:/AI/SillyTavern/data/default-user/characters/default_Seraphina.png
-Get-FileHash D:/AI/TauriTavern/data/default-user/characters/default_Seraphina.png
+git -c safe.directory=$stCheckout -C $stCheckout log -1
+rg -n "chara_card_v3|character_book|first_mes|post_history_instructions" (Join-Path $stCheckout 'src') (Join-Path $stCheckout 'public')
+Get-Content (Join-Path $stCheckout 'src/character-card-parser.js')
+Get-Content (Join-Path $stCheckout 'src/endpoints/characters.js')
+Get-Content (Join-Path $stCheckout 'public/scripts/PromptManager.js')
+Get-Content (Join-Path $stCheckout 'public/scripts/openai.js')
+Get-Content (Join-Path $ttPortable 'README-SillyTavern-migration.md')
+Get-FileHash (Join-Path $stCheckout 'data/default-user/characters/default_Seraphina.png')
+Get-FileHash (Join-Path $ttPortable 'data/default-user/characters/default_Seraphina.png')
 ```
 
 角色卡结构抽样通过本地 SillyTavern 的 parser 读取默认卡，只输出字段名、类型和长度，不输出正文。

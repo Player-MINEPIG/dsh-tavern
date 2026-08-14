@@ -17,7 +17,7 @@
 
 分支：`feature/character-card-compat`
 
-worktree：`D:\AI\deepseek-harness\character-card-compat`
+worktree：`<character-card-worktree>`
 
 ## 1. 目标
 
