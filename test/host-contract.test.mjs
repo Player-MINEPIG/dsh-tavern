@@ -153,3 +153,57 @@ test('selected user keeps DSH agent identity and contributes one Tavern profile 
     rmSync(directory, { recursive: true, force: true })
   }
 })
+
+test('Host traces the exact assembled snapshot even if selection changes before agent/request', async () => {
+  const directory = mkdtempSync(join(tmpdir(), 'dsh-tavern-host-trace-snapshot-'))
+  const sections = []
+  const listeners = new Map()
+  const ctx = {
+    systemPrompt: { section: section => sections.push(section) },
+    on: (name, listener) => listeners.set(name, listener),
+    emit: () => {},
+    get: () => undefined,
+    effect: () => {},
+    logger: { info: () => {} },
+  }
+  const session = {
+    id: 'session-traced',
+    header: {},
+    events: [],
+    deriveMessages: () => [],
+    requestHeader: () => undefined,
+  }
+  const agent = { id: 'session-traced', session }
+
+  try {
+    const store = apply(ctx, { storageDir: directory })
+    const assembled = store.create({ id: 'assembled', name: 'Assembled preset' })
+    const later = store.create({ id: 'later', name: 'Later preset' })
+    store.update(assembled.id, {
+      sampling: { temperature: 0.2 },
+      prompts: [{ ...assembled.prompts[0], content: 'ASSEMBLED_MARKER' }],
+    })
+    store.update(later.id, {
+      sampling: { temperature: 0.8 },
+      prompts: [{ ...later.prompts[0], content: 'LATER_MARKER' }],
+    })
+    store.sessionSelections.set(agent.id, { presetId: assembled.id })
+
+    assert.match(sections[0].text({ agent }), /ASSEMBLED_MARKER/)
+    store.sessionSelections.set(agent.id, { presetId: later.id })
+    const config = await listeners.get('agent/request')(
+      { agent, turn: 3, step: 1 },
+      async () => ({ provider: 'test', model: 'model' }),
+    )
+
+    assert.equal(config.temperature, 0.2)
+    const trace = store.traceStore.list(agent.id)[0]
+    assert.equal(trace.turn, 3)
+    assert.equal(trace.step, 1)
+    assert.equal(trace.resources.preset.id, assembled.id)
+    assert.equal(trace.assembly.callConfig.temperature, 0.2)
+    assert.equal(session.events.length, 0)
+  } finally {
+    rmSync(directory, { recursive: true, force: true })
+  }
+})

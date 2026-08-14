@@ -9,6 +9,7 @@ import { PresetSidebar, installPresetStyles } from '../../preset/src/client.js'
 import { CharacterPanel, installCharacterStyles } from '../../character/src/client.js'
 import { WorldBookPanel, installWorldBookStyles } from '../../world-book-library/src/client.js'
 import { UserPanel, installUserStyles } from '../../user/src/client.js'
+import { installTavernTraceStyles, registerTavernTraceView } from '../../tavern-trace/src/client.js'
 import {
   TAVERN_MENU_ITEMS,
   clampLauncherAnchor,
@@ -438,7 +439,9 @@ export function apply(ctx) {
   installCharacterStyles()
   installWorldBookStyles()
   installUserStyles()
+  installTavernTraceStyles()
   installStyles()
+  registerTavernTraceView(ctx)
   ctx.slots.inject('shell.overlay', () => ctx.slots.register({
     name: 'shell.overlay',
     id: 'dsh-tavern-launcher',

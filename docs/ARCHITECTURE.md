@@ -25,11 +25,14 @@ packages/preset  packages/character  packages/user  packages/world-book-library
 packages/tavern-loader
 DSH 编译策略、session/request 策略、Host hooks
        │
+       ├── packages/tavern-trace
+       │   最小化审计模型、有界插件存储/API、conversation.view
+       │
        ▼
 DSH system prompt + agent request
 ```
 
-依赖只能向下：`tavern-loader → preset/character/user/world-book-library → world-book/tavern-format`。格式层和 `world-book` 纯库不能导入 DSH、文件系统或 UI；preset、character、user、world-book-library 用例层不能注册 `systemPrompt`、`agent/request` 等 Host seam；只有 loader 是根 `main` 入口并允许依赖 DSH 运行时。浏览器侧由 `packages/client` 组合各用例 UI，它不是 Host loader。
+依赖只能向下：`tavern-loader → preset/character/user/world-book-library/world-book/tavern-trace → tavern-format`。格式层和 `world-book` 纯库不能导入 DSH、文件系统或 UI；preset、character、user、world-book-library 用例层不能注册 `systemPrompt`、`agent/request` 等 Host seam；只有 loader 是根 `main` 入口并允许依赖 DSH 运行时。`tavern-trace` 接受 loader 传入的普通 snapshot/session event 数据，但不导入 DSH、不 append Session；它只拥有最小化审计格式、有界插件存储、只读 API 和浏览器 view。浏览器侧由 `packages/client` 组合各用例 UI，它不是 Host loader。
 
 ## 各层职责
 
@@ -42,6 +45,7 @@ DSH system prompt + agent request
 | `world-book` | “哪些 lore entries 候选应被激活？” | ST/角色内嵌格式、归一化、纯匹配/排序/预算与 loader 投影 | session 选择、DSH 注入、角色卡存储 |
 | `world-book-library` | “用户如何管理独立世界书资源？” | 原子 JSON 存储、CRUD/导出 API、编辑 UI、供 loader 读取的 document | session 选择所有权、matcher 复制、Host seam、角色卡内嵌书修改 |
 | `tavern-loader` | “当前资源怎样影响这次 DSH 请求？” | 编译选中预设、映射支持的 call config、append/replace 策略、Host/API 挂载 | 重新解释 ST 原始字段、实现具体 UI |
+| `tavern-trace` | “这次 loader 为什么得到这个组合？” | turn/step 对齐、资源摘要、世界书接受/拒绝原因、header 摘要引用、有界存储/API/并列 view | 保存正文、替代 request/header、append 会话事件或模型消息 |
 
 角色卡已经在 `tavern-format` 增加 adapter/model，并在 `character` 用例层提供管理与资源入口；用户资源由独立 `user` 用例层提供严格 `{id,name,description}` 文档；世界书格式兼容位于独立纯库 `packages/world-book`。所有资源最终由同一个 `tavern-loader` 组合。角色卡和用户模块都不读取预设排序，也不决定字段插入位置。
 

@@ -305,6 +305,8 @@ export function computeWorldBookCandidates(modelOrEntries, options = {}) {
     secondaryMatches: candidate.evaluation.secondaryMatches,
     invalidKeys: candidate.evaluation.invalidKeys,
     tokenCost: candidate.tokenCost,
+    probability: candidate.probability,
+    probabilityRoll: candidate.roll,
   })
   return {
     accepted: accepted.map(publicCandidate),

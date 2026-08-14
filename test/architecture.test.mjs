@@ -11,6 +11,7 @@ test('internal packages keep one-way format to preset to loader boundaries', () 
   const worldBookBridge = read('../packages/world-book/src/loader-bridge.js')
   const store = read('../packages/preset/src/store.js')
   const loader = read('../packages/tavern-loader/src/index.js')
+  const traceRecorder = read('../packages/tavern-trace/src/recorder.js')
 
   assert.doesNotMatch(format, /from ['"]node:(?:fs|path)|@deepseek-ai|systemPrompt\.section|agent\/request/)
   assert.doesNotMatch(worldBookFormat, /from ['"]node:|@deepseek-ai|tavern-loader|systemPrompt|agent\/request|fetch\(/)
@@ -21,6 +22,8 @@ test('internal packages keep one-way format to preset to loader boundaries', () 
   assert.match(loader, /preset\/src/)
   assert.match(loader, /systemPrompt/)
   assert.match(loader, /agent\/request/)
+  assert.doesNotMatch(traceRecorder, /\.append\(/)
+  assert.doesNotMatch(traceRecorder, /from ['"]@deepseek-ai|querySelector|MutationObserver/)
 })
 
 test('character adapter and use-case expose resources without becoming a runtime loader', () => {

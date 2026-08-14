@@ -13,6 +13,7 @@
     "./preset": "./packages/preset/src/index.js",
     "./character": "./packages/character/src/index.js",
     "./user": "./packages/user/src/index.js",
+    "./trace": "./packages/tavern-trace/src/index.js",
     "./client": "./dist/client.js",
     "./package.json": "./package.json"
   },
@@ -30,6 +31,7 @@
       "platform": "web",
       "inject": [
         "@deepseek-ai/dsh-client-runtime",
+        "@deepseek-ai/dsh-client-ui-conversation",
         "@deepseek-ai/dsh-client-ui-layout",
         "@deepseek-ai/dsh-client-ui-slots"
       ]

@@ -30,7 +30,7 @@ __export(index_exports, {
   name: () => name
 });
 module.exports = __toCommonJS(index_exports);
-var import_react5 = require("react");
+var import_react6 = require("react");
 
 // packages/preset/src/client.js
 var import_react = require("react");
@@ -1320,6 +1320,209 @@ function installUserStyles() {
   document.head.append(style);
 }
 
+// packages/tavern-trace/src/client.js
+var import_react5 = require("react");
+var TRACE_API = "/dsh-tavern/api/traces";
+var css5 = `
+.dttrace-root{height:100%;min-height:0;display:flex;flex-direction:column;background:var(--dsw-alias-bg-base);color:var(--dsw-alias-label-primary);font-family:Inter,var(--dsw-font-family),sans-serif}
+.dttrace-toolbar{min-height:48px;box-sizing:border-box;padding:8px 14px;border-bottom:1px solid var(--dsw-alias-border-l2);display:flex;align-items:center;gap:10px;flex:none}.dttrace-title{font-size:13px;font-weight:680;flex:1}.dttrace-button{border:1px solid var(--dsw-alias-border-l2);border-radius:7px;background:var(--dsw-alias-bg-base);color:inherit;padding:6px 10px;font-size:11px;cursor:pointer}.dttrace-button:hover{background:var(--dsw-alias-interactive-bg-hover)}
+.dttrace-body{min-height:0;overflow:auto;padding:12px max(14px,calc((100% - 880px)/2));display:flex;flex-direction:column;gap:10px}.dttrace-note,.dttrace-status{font-size:11px;line-height:1.5;color:var(--dsw-alias-label-tertiary);margin:0}.dttrace-status{padding:9px 10px;border-radius:8px;background:var(--dsw-specific-tip)}.dttrace-status[data-error=true]{color:var(--dsw-alias-state-error)}
+.dttrace-record{border:1px solid var(--dsw-alias-border-l1);border-radius:10px;background:var(--dsw-alias-bg-base);overflow:hidden}.dttrace-record>summary{list-style:none;cursor:pointer;padding:10px 12px;display:flex;align-items:center;gap:8px}.dttrace-record>summary::-webkit-details-marker{display:none}.dttrace-round{font-size:12px;font-weight:670}.dttrace-time{font-size:10px;color:var(--dsw-alias-label-tertiary);margin-left:auto}.dttrace-badge{border-radius:999px;padding:2px 7px;font-size:9px;background:var(--dsw-specific-tip);color:var(--dsw-alias-label-secondary)}.dttrace-badge[data-ok=true]{background:color-mix(in srgb,var(--dsw-alias-state-success,#2fa36b) 18%,transparent);color:var(--dsw-alias-state-success,#2fa36b)}
+.dttrace-content{border-top:1px solid var(--dsw-alias-border-l1);padding:11px 12px;display:flex;flex-direction:column;gap:10px}.dttrace-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:7px}.dttrace-card{border:1px solid var(--dsw-alias-border-l1);border-radius:8px;padding:8px;min-width:0}.dttrace-label{font-size:9px;text-transform:uppercase;letter-spacing:.04em;color:var(--dsw-alias-label-tertiary)}.dttrace-value{font-size:11px;font-weight:620;margin-top:3px;overflow-wrap:anywhere}.dttrace-meta{font-size:10px;line-height:1.45;color:var(--dsw-alias-label-tertiary);margin-top:3px;overflow-wrap:anywhere}
+.dttrace-section{display:flex;flex-direction:column;gap:6px}.dttrace-section-title{font-size:11px;font-weight:670}.dttrace-book{border:1px solid var(--dsw-alias-border-l1);border-radius:8px;padding:8px;display:flex;flex-direction:column;gap:6px}.dttrace-decision{display:grid;grid-template-columns:76px minmax(110px,.7fr) minmax(160px,1.5fr);gap:7px;padding:6px 0;border-top:1px solid var(--dsw-alias-border-l1);font-size:10px;line-height:1.4}.dttrace-decision:first-of-type{border-top:0}.dttrace-decision-state{font-weight:650}.dttrace-decision[data-included=true] .dttrace-decision-state{color:var(--dsw-alias-state-success,#2fa36b)}.dttrace-keywords{overflow-wrap:anywhere;color:var(--dsw-alias-label-secondary)}.dttrace-list{margin:0;padding-left:18px;font-size:10px;line-height:1.55;color:var(--dsw-alias-label-secondary)}
+@media(max-width:760px){.dttrace-grid{grid-template-columns:1fr}.dttrace-decision{grid-template-columns:70px 1fr}.dttrace-keywords{grid-column:1/-1}}
+`;
+var reasonLabels = Object.freeze({
+  constant: "\u5E38\u9A7B\u6761\u76EE",
+  "primary-key-match": "\u4E3B\u5173\u952E\u8BCD\u547D\u4E2D",
+  "primary-key-miss": "\u4E3B\u5173\u952E\u8BCD\u672A\u547D\u4E2D",
+  "secondary-and_any-match": "\u9644\u52A0\u5173\u952E\u8BCD\u4EFB\u4E00\u547D\u4E2D",
+  "secondary-and_any-miss": "\u9644\u52A0\u5173\u952E\u8BCD\u5747\u672A\u547D\u4E2D",
+  "secondary-and_all-match": "\u9644\u52A0\u5173\u952E\u8BCD\u5168\u90E8\u547D\u4E2D",
+  "secondary-and_all-miss": "\u9644\u52A0\u5173\u952E\u8BCD\u672A\u5168\u90E8\u547D\u4E2D",
+  "secondary-not_any-match": "\u9644\u52A0\u5173\u952E\u8BCD\u6392\u9664\u6761\u4EF6\u901A\u8FC7",
+  "secondary-not_any-miss": "\u9644\u52A0\u5173\u952E\u8BCD\u89E6\u53D1\u6392\u9664",
+  "secondary-not_all-match": "\u9644\u52A0\u5173\u952E\u8BCD\u975E\u5168\u4E2D\u6761\u4EF6\u901A\u8FC7",
+  "secondary-not_all-miss": "\u9644\u52A0\u5173\u952E\u8BCD\u5168\u4E2D\u800C\u6392\u9664",
+  disabled: "\u6761\u76EE\u5DF2\u7981\u7528",
+  "external-vector-match-required": "\u9700\u8981\u5916\u90E8\u5411\u91CF\u5339\u914D",
+  "inclusion-group-loser": "\u4E92\u65A5\u7EC4\u672A\u80DC\u51FA",
+  "probability-failed": "\u6982\u7387\u68C0\u67E5\u62D2\u7EDD",
+  "budget-exceeded": "\u8D85\u51FA token \u9884\u7B97",
+  "empty-content": "\u6B63\u6587\u4E3A\u7A7A\uFF0C\u672A\u63D2\u5165",
+  "outlet-unsupported": "Outlet \u65E0\u7A33\u5B9A\u63D2\u5165 seam"
+});
+function formatTime(value) {
+  try {
+    return new Date(value).toLocaleString();
+  } catch {
+    return "";
+  }
+}
+function resourceCard(label, value) {
+  return (0, import_react5.createElement)(
+    "div",
+    { className: "dttrace-card", key: label },
+    (0, import_react5.createElement)("div", { className: "dttrace-label" }, label),
+    (0, import_react5.createElement)("div", { className: "dttrace-value" }, value?.name || "\u672A\u4F7F\u7528"),
+    value?.id ? (0, import_react5.createElement)("div", { className: "dttrace-meta" }, value.id) : null
+  );
+}
+function keywords(decision) {
+  const primary = decision.primaryMatches ?? [];
+  const secondary = decision.secondaryMatches ?? [];
+  const parts = [];
+  if (primary.length > 0) parts.push(`\u4E3B\uFF1A${primary.join("\u3001")}`);
+  if (secondary.length > 0) parts.push(`\u9644\u52A0\uFF1A${secondary.join("\u3001")}`);
+  return parts.length === 0 ? "\u65E0\u547D\u4E2D\u5173\u952E\u8BCD" : parts.join(" \xB7 ");
+}
+function decisionMeta(value) {
+  const parts = [];
+  if (value.secondaryLogic) parts.push(`secondary=${value.secondaryLogic}`);
+  if (value.groupName) parts.push(`\u7EC4 ${value.groupName}${value.groupOverride ? " / override" : value.groupWeight === null ? "" : ` / weight ${value.groupWeight}`}`);
+  if (value.probability !== null) {
+    parts.push(`\u6982\u7387 ${value.probability}%${value.probabilityRoll === null ? "" : ` / roll ${(value.probabilityRoll * 100).toFixed(2)}%`}`);
+  }
+  if (value.tokenCost !== null) parts.push(`\u9884\u7B97 ${value.tokenCost} tokens`);
+  if (value.requestedPosition) {
+    parts.push(`\u4F4D\u7F6E ${value.requestedPosition}${value.appliedPosition ? ` \u2192 ${value.appliedPosition}${value.approximatePosition ? "\uFF08\u8FD1\u4F3C\uFF09" : ""}` : " \u2192 \u672A\u63D2\u5165"}`);
+  }
+  return parts.join(" \xB7 ");
+}
+function WorldBookAudit({ book }) {
+  const name2 = book.resource?.name || book.resource?.id || "\u4E16\u754C\u4E66";
+  return (0, import_react5.createElement)(
+    "div",
+    { className: "dttrace-book" },
+    (0, import_react5.createElement)("div", { className: "dttrace-section-title" }, name2),
+    (0, import_react5.createElement)("div", { className: "dttrace-meta" }, `\u9884\u7B97\uFF1A${book.budget.used}${book.budget.limit === null ? "" : ` / ${book.budget.limit}`} tokens \xB7 ${book.decisions.length} \u6761\u51B3\u7B56`),
+    ...book.decisions.map((item, index) => (0, import_react5.createElement)(
+      "div",
+      {
+        className: "dttrace-decision",
+        "data-included": item.decision === "included",
+        key: `${item.entryId ?? "entry"}-${index}`
+      },
+      (0, import_react5.createElement)("div", { className: "dttrace-decision-state" }, item.decision === "included" ? "\u5DF2\u63D2\u5165" : "\u5DF2\u62D2\u7EDD"),
+      (0, import_react5.createElement)(
+        "div",
+        null,
+        (0, import_react5.createElement)("div", null, item.entryName || `\u6761\u76EE ${String(item.entryId ?? index + 1)}`),
+        (0, import_react5.createElement)("div", { className: "dttrace-meta" }, reasonLabels[item.reason] ?? item.reason)
+      ),
+      (0, import_react5.createElement)(
+        "div",
+        { className: "dttrace-keywords" },
+        (0, import_react5.createElement)("div", null, keywords(item)),
+        (0, import_react5.createElement)("div", { className: "dttrace-meta" }, decisionMeta(item))
+      )
+    ))
+  );
+}
+function TraceRecord({ record, latest }) {
+  const authority = record.authority ?? {};
+  const linked = authority.headerEventSeq !== null;
+  return (0, import_react5.createElement)(
+    "details",
+    { className: "dttrace-record", open: latest },
+    (0, import_react5.createElement)(
+      "summary",
+      null,
+      (0, import_react5.createElement)("span", { className: "dttrace-round" }, `\u8F6E\u6B21 ${record.turn} \xB7 \u6B65\u9AA4 ${record.step}${record.attempt > 1 ? ` \xB7 \u5C1D\u8BD5 ${record.attempt}` : ""}`),
+      (0, import_react5.createElement)("span", { className: "dttrace-badge", "data-ok": linked || void 0 }, linked ? `request/header #${authority.headerEventSeq}` : "\u7B49\u5F85\u6743\u5A01 header"),
+      (0, import_react5.createElement)("span", { className: "dttrace-time" }, formatTime(record.recordedAt))
+    ),
+    (0, import_react5.createElement)(
+      "div",
+      { className: "dttrace-content" },
+      (0, import_react5.createElement)("div", { className: "dttrace-status" }, linked ? `\u8BE5\u8BB0\u5F55\u5DF2\u5BF9\u9F50 DSH request/header #${authority.headerEventSeq}${authority.headerReused ? "\uFF08\u6CBF\u7528\u4E0A\u4E00\u4EFD header\uFF09" : ""}\u3002Tavern profile \u6821\u9A8C\uFF1A${authority.tavernProfilePresent === false ? "\u672A\u627E\u5230" : authority.tavernProfilePresent === true ? "\u4E00\u81F4" : "\u672C\u8F6E\u65E0 profile"}\uFF1B\u91C7\u6837\u5B57\u6BB5\uFF1A${authority.tavernCallConfigApplied === false ? "\u4E0D\u4E00\u81F4" : "\u4E00\u81F4\u6216\u65E0\u5B57\u6BB5"}\u3002` : "\u5C1A\u672A\u89C2\u5BDF\u5230\u53EF\u5BF9\u9F50\u7684 DSH request/header\uFF1B\u8FD9\u4E0D\u4EE3\u8868\u8BF7\u6C42\u5DF2\u7ECF\u53D1\u9001\u3002\u5237\u65B0\u540E\u4ECD\u4F1A\u4FDD\u7559\u8BE5\u5F85\u786E\u8BA4\u8BB0\u5F55\u3002"),
+      (0, import_react5.createElement)(
+        "div",
+        { className: "dttrace-grid" },
+        resourceCard("Preset", record.resources?.preset),
+        resourceCard("Character", record.resources?.characterCard),
+        resourceCard("User", record.resources?.userProfile)
+      ),
+      (0, import_react5.createElement)(
+        "div",
+        { className: "dttrace-section" },
+        (0, import_react5.createElement)("div", { className: "dttrace-section-title" }, "\u7EC4\u5408\u4E0E\u63D2\u5165"),
+        (0, import_react5.createElement)("div", { className: "dttrace-meta" }, `${record.assembly.profileSection} \xB7 order ${record.assembly.profileOrder} \xB7 ${record.assembly.systemPromptMode} \xB7 ${record.assembly.systemCharacters} characters \xB7 call config: ${Object.keys(record.assembly.callConfig ?? {}).join(", ") || "\u65E0"}`)
+      ),
+      record.worldBooks?.length > 0 ? (0, import_react5.createElement)(
+        "div",
+        { className: "dttrace-section" },
+        (0, import_react5.createElement)("div", { className: "dttrace-section-title" }, "\u4E16\u754C\u4E66\u5339\u914D\u51B3\u7B56"),
+        ...record.worldBooks.map((book, index) => (0, import_react5.createElement)(WorldBookAudit, { book, key: `${book.resource?.id ?? "book"}-${index}` }))
+      ) : (0, import_react5.createElement)("div", { className: "dttrace-note" }, "\u672C\u8F6E\u6CA1\u6709\u53EF\u5BA1\u8BA1\u7684\u4E16\u754C\u4E66\u5339\u914D\u6765\u6E90\u3002"),
+      record.diagnostics?.length > 0 ? (0, import_react5.createElement)(
+        "div",
+        { className: "dttrace-section" },
+        (0, import_react5.createElement)("div", { className: "dttrace-section-title" }, `\u8BCA\u65AD\uFF08${record.diagnostics.length}\uFF09`),
+        (0, import_react5.createElement)("ul", { className: "dttrace-list" }, ...record.diagnostics.map((item, index) => (0, import_react5.createElement)("li", { key: `${item.code}-${index}` }, `${item.code}: ${item.message}`)))
+      ) : null,
+      (0, import_react5.createElement)("p", { className: "dttrace-note" }, "\u9690\u79C1\u8FB9\u754C\uFF1A\u8FD9\u91CC\u53EA\u4FDD\u5B58\u8D44\u6E90\u6458\u8981\u3001\u547D\u4E2D\u5173\u952E\u8BCD\u3001\u51B3\u7B56\u539F\u56E0\u3001\u4F4D\u7F6E\u3001\u9884\u7B97\u548C SHA-256 \u6458\u8981\uFF1B\u4E0D\u4FDD\u5B58 preset/\u89D2\u8272/user/\u4E16\u754C\u4E66\u6B63\u6587\u3001\u5B8C\u6574 system\u3001\u804A\u5929\u5386\u53F2\u3001header \u5185\u5BB9\u6216 tool payload\u3002")
+    )
+  );
+}
+function TavernTraceView({ sessionId, useSession }) {
+  const lastVisibleSeq = useSession((snapshot) => snapshot.nodes.at(-1)?.seq ?? -1);
+  const running = useSession((snapshot) => snapshot.running);
+  const [data, setData] = (0, import_react5.useState)(null);
+  const [error, setError] = (0, import_react5.useState)("");
+  const refresh = (0, import_react5.useCallback)(async () => {
+    try {
+      const response = await fetch(`${TRACE_API}?sessionId=${encodeURIComponent(sessionId)}`);
+      const next = await response.json().catch(() => null);
+      if (!response.ok || next?.ok === false) throw new Error(next?.error ?? `HTTP ${response.status}`);
+      setData(next);
+      setError("");
+    } catch (reason) {
+      setError(reason instanceof Error ? reason.message : String(reason));
+    }
+  }, [sessionId]);
+  (0, import_react5.useEffect)(() => {
+    refresh();
+  }, [refresh, lastVisibleSeq, running]);
+  const records = [...data?.records ?? []].reverse();
+  return (0, import_react5.createElement)(
+    "div",
+    { className: "dttrace-root" },
+    (0, import_react5.createElement)(
+      "div",
+      { className: "dttrace-toolbar" },
+      (0, import_react5.createElement)("div", { className: "dttrace-title" }, "Tavern Trace"),
+      (0, import_react5.createElement)("button", { className: "dttrace-button", type: "button", onClick: refresh }, "\u5237\u65B0")
+    ),
+    (0, import_react5.createElement)(
+      "div",
+      { className: "dttrace-body" },
+      (0, import_react5.createElement)("p", { className: "dttrace-note" }, "\u4E0E Conversation / Trajectory \u5E76\u5217\u7684 loader \u5BA1\u8BA1\u89C6\u56FE\u3002DSH request/header \u59CB\u7EC8\u662F\u6700\u7EC8\u53D1\u9001 system\u3001tools \u4E0E\u751F\u6548 config \u7684\u6743\u5A01\u3002"),
+      error ? (0, import_react5.createElement)("div", { className: "dttrace-status", "data-error": true }, error) : null,
+      data === null && !error ? (0, import_react5.createElement)("div", { className: "dttrace-status" }, "\u6B63\u5728\u8BFB\u53D6\u5BA1\u8BA1\u8BB0\u5F55\u2026") : null,
+      data !== null ? (0, import_react5.createElement)("div", { className: "dttrace-status" }, `\u63D2\u4EF6\u6709\u754C\u5B58\u50A8\uFF1A\u6BCF\u4F1A\u8BDD\u6700\u591A ${data.storage.maxRecordsPerSession} \u6761\u3001\u6700\u591A ${data.storage.maxSessions} \u4E2A\u4F1A\u8BDD\u3001\u5355\u6761\u6700\u591A ${Math.round(data.storage.maxRecordBytes / 1024)} KiB\uFF1B\u5237\u65B0\u6216\u5BBF\u4E3B\u91CD\u542F\u540E\u53EF\u6062\u590D\u3002`) : null,
+      records.length === 0 && data !== null ? (0, import_react5.createElement)("div", { className: "dttrace-status" }, "\u6B64\u4F1A\u8BDD\u8FD8\u6CA1\u6709 Tavern \u8BF7\u6C42\u5BA1\u8BA1\u8BB0\u5F55\u3002\u53D1\u9001\u4E0B\u4E00\u6761\u6D88\u606F\u540E\u518D\u67E5\u770B\u3002") : null,
+      ...records.map((record, index) => (0, import_react5.createElement)(TraceRecord, { record, latest: index === 0, key: record.id }))
+    )
+  );
+}
+function installTavernTraceStyles() {
+  if (document.querySelector('style[data-plugin-css="dsh-tavern-trace"]') !== null) return;
+  const style = document.createElement("style");
+  style.dataset.pluginCss = "dsh-tavern-trace";
+  style.textContent = css5;
+  document.head.append(style);
+}
+function registerTavernTraceView(ctx) {
+  ctx.slots.inject("conversation.view", () => ctx.slots.register({
+    name: "conversation.view",
+    id: "tavern-trace",
+    order: 20,
+    label: "Tavern Trace",
+    inject: () => ({})
+  }, TavernTraceView));
+}
+
 // packages/client/src/state.js
 var TAVERN_MENU_ITEMS = Object.freeze([
   { id: "preset", label: "\u9884\u8BBE", available: true },
@@ -1352,7 +1555,7 @@ function launcherPlacement(anchor, viewport2, expanded = false) {
 }
 
 // packages/client/src/index.js
-var css5 = `
+var css6 = `
 .dtv-layer{position:absolute;inset:0;z-index:6;pointer-events:none;font-family:Inter,var(--dsw-font-family),sans-serif;color:var(--dsw-alias-label-primary)}
 .dtv-launcher{position:absolute;z-index:2;width:44px;height:44px;pointer-events:auto;overflow:hidden;border:0 solid transparent;border-radius:22px;background:transparent;box-shadow:none;transition:width .22s ease,height .22s ease,border-radius .22s ease,background-color .18s ease,box-shadow .18s ease;display:block}
 .dtv-launcher[data-open=true]{width:220px;height:244px;border-width:1px;border-color:var(--dsw-alias-border-l2);border-radius:18px;background:var(--dsw-alias-bg-base);box-shadow:var(--ds-shadow-3,0 12px 34px rgba(0,0,0,.24))}
@@ -1387,15 +1590,15 @@ function persistLauncherAnchor(anchor) {
   }
 }
 function TavernShell({ useSessions }) {
-  const [menuOpen, setMenuOpen] = (0, import_react5.useState)(false);
-  const [surface, setSurface] = (0, import_react5.useState)(null);
-  const [anchor, setAnchor] = (0, import_react5.useState)(initialLauncherAnchor);
-  const drag = (0, import_react5.useRef)(null);
-  const suppressClick = (0, import_react5.useRef)(false);
+  const [menuOpen, setMenuOpen] = (0, import_react6.useState)(false);
+  const [surface, setSurface] = (0, import_react6.useState)(null);
+  const [anchor, setAnchor] = (0, import_react6.useState)(initialLauncherAnchor);
+  const drag = (0, import_react6.useRef)(null);
+  const suppressClick = (0, import_react6.useRef)(false);
   const sessionId = useSessions((state) => state.current);
   const sessionBlank = useSessions((state) => state.current === void 0 || state.current === null ? true : state.byId?.[state.current]?.blank === true);
   const close = () => setSurface(null);
-  (0, import_react5.useEffect)(() => {
+  (0, import_react6.useEffect)(() => {
     const onResize = () => setAnchor((current) => {
       const next = clampLauncherAnchor(current, viewport());
       persistLauncherAnchor(next);
@@ -1451,7 +1654,7 @@ function TavernShell({ useSessions }) {
   };
   let panel = null;
   if (surface === "preset") {
-    panel = (0, import_react5.createElement)("div", { className: "dtv-panel" }, (0, import_react5.createElement)(PresetSidebar, {
+    panel = (0, import_react6.createElement)("div", { className: "dtv-panel" }, (0, import_react6.createElement)(PresetSidebar, {
       closePanel: close,
       openPanel: () => {
       },
@@ -1459,18 +1662,18 @@ function TavernShell({ useSessions }) {
       autoOpen: false
     }));
   } else if (surface === "character") {
-    panel = (0, import_react5.createElement)(CharacterPanel, { sessionId, sessionBlank, close });
+    panel = (0, import_react6.createElement)(CharacterPanel, { sessionId, sessionBlank, close });
   } else if (surface === "world-info") {
-    panel = (0, import_react5.createElement)(WorldBookPanel, { sessionId, close });
+    panel = (0, import_react6.createElement)(WorldBookPanel, { sessionId, close });
   } else if (surface === "user") {
-    panel = (0, import_react5.createElement)(UserPanel, { sessionId, sessionBlank, close });
+    panel = (0, import_react6.createElement)(UserPanel, { sessionId, sessionBlank, close });
   }
   const placement = launcherPlacement(anchor, viewport(), menuOpen);
-  return (0, import_react5.createElement)(
+  return (0, import_react6.createElement)(
     "div",
     { className: "dtv-layer" },
     panel,
-    (0, import_react5.createElement)(
+    (0, import_react6.createElement)(
       "div",
       {
         className: "dtv-launcher",
@@ -1479,7 +1682,7 @@ function TavernShell({ useSessions }) {
         "data-vertical": placement.vertical,
         style: { left: placement.left, top: placement.top }
       },
-      (0, import_react5.createElement)("div", { className: "dtv-ball-row" }, (0, import_react5.createElement)("button", {
+      (0, import_react6.createElement)("div", { className: "dtv-ball-row" }, (0, import_react6.createElement)("button", {
         className: "dtv-ball",
         type: "button",
         title: "\u62D6\u52A8\u53EF\u79FB\u52A8\uFF1B\u70B9\u51FB\u5C55\u5F00 Tavern \u8D44\u6E90\u9762\u677F",
@@ -1491,11 +1694,11 @@ function TavernShell({ useSessions }) {
         onPointerCancel: endDrag,
         onClick: toggleMenu
       }, "T")),
-      menuOpen ? (0, import_react5.createElement)(
+      menuOpen ? (0, import_react6.createElement)(
         "div",
         { className: "dtv-menu", role: "menu" },
-        (0, import_react5.createElement)("div", { className: "dtv-menu-title" }, "dsh-tavern"),
-        ...TAVERN_MENU_ITEMS.map((item) => (0, import_react5.createElement)("button", {
+        (0, import_react6.createElement)("div", { className: "dtv-menu-title" }, "dsh-tavern"),
+        ...TAVERN_MENU_ITEMS.map((item) => (0, import_react6.createElement)("button", {
           className: "dtv-menu-item",
           type: "button",
           role: "menuitem",
@@ -1513,7 +1716,7 @@ function installStyles() {
   if (document.querySelector('style[data-plugin-css="dsh-tavern-shell"]') !== null) return;
   const style = document.createElement("style");
   style.dataset.pluginCss = "dsh-tavern-shell";
-  style.textContent = css5;
+  style.textContent = css6;
   document.head.append(style);
 }
 var name = "dsh-tavern";
@@ -1523,7 +1726,9 @@ function apply(ctx) {
   installCharacterStyles();
   installWorldBookStyles();
   installUserStyles();
+  installTavernTraceStyles();
   installStyles();
+  registerTavernTraceView(ctx);
   ctx.slots.inject("shell.overlay", () => ctx.slots.register({
     name: "shell.overlay",
     id: "dsh-tavern-launcher",

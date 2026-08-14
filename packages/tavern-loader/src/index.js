@@ -21,6 +21,12 @@ import { TavernProfileLoader } from './profile-loader.js'
 import { SessionSelectionStore } from './session-policy.js'
 import { createWorldBookAdapter } from './world-book-adapter.js'
 import { secureTavernApi } from './api-security.js'
+import {
+  TavernTraceRecorder,
+  TavernTraceStore,
+  createTavernTraceApiHandler,
+  isTavernTraceApiPath,
+} from '../../tavern-trace/src/index.js'
 
 export const name = 'dsh-tavern'
 export const inject = ['systemPrompt']
@@ -151,10 +157,20 @@ export function apply(ctx, config = {}) {
   })
   migrateCharacterSelections(characterStore, selections)
   const runtime = new TavernProfileLoader({ presetStore: store, selections })
+  const traceStore = new TavernTraceStore(storageDir, config.trace)
+  const traceRecorder = new TavernTraceRecorder(traceStore)
   runtime.registerCharacterAdapter(createCharacterAdapter(characterStore))
   runtime.registerUserAdapter(createUserAdapter(userStore))
   runtime.registerWorldBookAdapter(createWorldBookAdapter(worldBookStore, config.worldBook))
   const notifyChange = () => ctx.emit('system-prompt/change')
+  const traceSafely = (operation, callback) => {
+    try {
+      return callback()
+    } catch (error) {
+      ctx.logger.warn?.(`dsh-tavern: Tavern Trace ${operation} failed: ${error instanceof Error ? error.message : String(error)}`)
+      return undefined
+    }
+  }
   const characterSelectionPolicy = createCharacterSelectionPolicy(characterStore, selections)
   const worldBookSelectionPolicy = createWorldBookSelectionPolicy(worldBookStore, selections)
   const userSelectionPolicy = createUserSelectionPolicy(userStore, selections)
@@ -183,10 +199,25 @@ export function apply(ctx, config = {}) {
     selections.ensureAgent(agent)
   })
 
-  ctx.on('agent/request', async (payload, next) => ({
-    ...await next(),
-    ...runtime.compile({ agent: payload.agent }).callConfig,
-  }))
+  ctx.on('agent/request', async (payload, next) => {
+    const snapshot = runtime.assembledFor(payload.agent) ?? runtime.compile({ agent: payload.agent })
+    const config = {
+      ...await next(),
+      ...snapshot.callConfig,
+    }
+    traceSafely('request capture', () => traceRecorder.begin({ ...payload, snapshot }))
+    return config
+  })
+
+  ctx.on('session/event', (session, event) => {
+    traceSafely('header alignment', () => traceRecorder.observeSessionEvent(session, event))
+  })
+
+  ctx.on('agent/request-error', async (payload, next) => {
+    const result = await next()
+    traceSafely('request-error alignment', () => traceRecorder.observeRequestError(payload.agent, payload.turn, payload.step))
+    return result
+  })
 
   ctx.on('system-prompt/assemble', async (_payload, context, next) => {
     const assembly = await next()
@@ -251,14 +282,17 @@ export function apply(ctx, config = {}) {
         }
       },
     })
+    const traceApi = createTavernTraceApiHandler(traceStore)
     const api = secureTavernApi(
       (req, res) => isUserApiPath(req.url)
         ? userApi(req, res)
-        : isCharacterApiPath(req.url)
-          ? characterApi(req, res)
-          : isWorldBookApiPath(req.url)
-            ? worldBookApi(req, res)
-            : presetApi(req, res),
+        : isTavernTraceApiPath(req.url)
+          ? traceApi(req, res)
+          : isCharacterApiPath(req.url)
+            ? characterApi(req, res)
+            : isWorldBookApiPath(req.url)
+              ? worldBookApi(req, res)
+              : presetApi(req, res),
       config.security,
     )
     ctx.effect(
@@ -278,6 +312,8 @@ export function apply(ctx, config = {}) {
     characterStore: { value: characterStore, enumerable: false },
     worldBookStore: { value: worldBookStore, enumerable: false },
     userStore: { value: userStore, enumerable: false },
+    traceStore: { value: traceStore, enumerable: false },
+    traceRecorder: { value: traceRecorder, enumerable: false },
   })
   return store
 }
@@ -307,4 +343,5 @@ export { SessionSelectionStore, normalizeSelection } from './session-policy.js'
 export { createWorldBookAdapter } from './world-book-adapter.js'
 export { WorldBookStore, createWorldBookApiHandler } from '../../world-book-library/src/index.js'
 export { secureTavernApi, apiSecurityConstants } from './api-security.js'
+export { TavernTraceRecorder, TavernTraceStore } from '../../tavern-trace/src/index.js'
 export { PresetStore } from '../../preset/src/index.js'

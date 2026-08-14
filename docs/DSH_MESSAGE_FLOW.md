@@ -89,6 +89,7 @@ request/header.config
 4. preset marker、用户名字/描述、角色字段与命中 lore 被组合为一个 Tavern profile。`{{user}}` 取当前 session 的用户名字；描述进入一次 `personaDescription`/`{{persona}}` 放置点，缺失时以诊断 fallback 放置。creator notes 永远不进入 profile；`chatHistory` marker 被消费但不复制历史。
 5. 默认 append 模式把 Tavern profile 放在 DSH 其他 system sections 之后。高级 replace 模式只保留 Tavern profile，但仍保留 tools、runtime contexts、variables 和执行层安全机制。
 6. `agent/request` 将 DSH 已公开支持的 preset 参数投影到 call config。未公开的 ST sampler 仅保存，不伪造已经生效。
+7. Tavern Trace 在同一个公开 `agent/request` 上把本次已经完成的 system assembly snapshot 绑定到 `turn/step`；公开 `session/event` 观察到 `request/header` 后，只保存 header event seq、SHA-256 摘要和一致性布尔值。它不复制 header、system 或消息正文，也不 append Session。
 
 世界信息侧栏属于控制面，不是消息历史或日志面板。它从当前已绑定角色卡的插件副本读取 `character_book.entries`，直接展示并编辑主关键词、附加关键词与逻辑、常驻/启用状态、正文、插入位置和排序。保存通过 character API 原子更新标准化角色文档及其 JSON 导出；原始 PNG/JSON artifact 不改写。下一次 `systemPrompt.assemble()` 会重新读取该副本并执行 matcher。
 
@@ -100,6 +101,7 @@ request/header.config
 - 不发送 creator notes。
 - 不让 UI 菜单、未绑定的用户资源或未接线的独立世界信息 ID 产生占位 prompt；用户资源也不覆盖 DSH Agent 身份。
 - 不绕过 DSH 的工具权限、沙箱或审批。replace 模式会移除模型可见的部分宿主说明，但不会关闭执行层限制。
+- 不把 Tavern Trace 写成 `user/message`、`assistant/message`、`tool/call` 或未知自定义 Session event。当前 DSH 持久读取面没有稳定的第三方事件类型注册入口，插件因此使用自己的有界 metadata store。
 
 ## 4. 为什么同轮 World Info 可能晚一轮触发
 
@@ -121,5 +123,7 @@ DSH 当前顺序是：`claim 当前输入 → assemble system prompt → agent/p
 2. 请求对应的 `Session.deriveMessages()`：最终历史消息数组；
 3. loader `/dsh-tavern/api/active?sessionId=...`：选择、资源、诊断和无当前输入的预览 audit；
 4. 前端侧栏状态：用于编辑 World Info 条件和资源选择，不是模型请求日志。
+
+Tavern Trace 标签页位于 Conversation / Trajectory 同一个公开 `conversation.view` 槽中。它按 `turn/step/attempt` 展示 loader 资源和 world-book 决策，并引用上述第 1 项的 header seq；它是解释层，不提升为最终请求权威。
 
 `active` API 没有活跃 Agent 的已 claim 当前输入，因此世界信息侧栏只承诺展示可编辑的条目定义，不把它包装成“本轮触发日志”。确认某条内容是否真正进入过模型请求，仍应查看对应的 `request/header`。

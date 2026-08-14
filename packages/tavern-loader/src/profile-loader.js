@@ -62,6 +62,7 @@ export class TavernProfileLoader {
     this.userAdapter = null
     this.worldBookAdapter = null
     this.contextCache = new WeakMap()
+    this.assembledByAgent = new WeakMap()
   }
 
   registerCharacterAdapter(adapter) {
@@ -146,6 +147,13 @@ export class TavernProfileLoader {
       resources,
       diagnostics: clone(diagnostics),
       activeLoreEntries: compiled.activeLoreEntries,
+      worldBooks: clone(worldBookResult.audit ?? { resources: [] }),
+      composition: {
+        section: { name: 'dsh-tavern:profile', order: 10 },
+        systemPromptMode: compiled.systemPromptMode,
+        profileCharacters: compiled.systemText.length,
+        callConfigFields: Object.keys(compiled.callConfig),
+      },
     }
 
     return {
@@ -162,7 +170,12 @@ export class TavernProfileLoader {
     if (cached !== undefined) return cached
     const snapshot = this.compile({ agent: context.agent, context })
     this.contextCache.set(context, snapshot)
+    if (isRecord(context.agent)) this.assembledByAgent.set(context.agent, snapshot)
     return snapshot
+  }
+
+  assembledFor(agent) {
+    return isRecord(agent) ? this.assembledByAgent.get(agent) : undefined
   }
 
   activeView(sessionId) {

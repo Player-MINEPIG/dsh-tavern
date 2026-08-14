@@ -34,6 +34,31 @@ function entryIdentity(entry, resourceId, candidateKey) {
   }
 }
 
+function auditDecision(candidate, resourceId, decision, reason, projected = {}) {
+  const entry = candidate.entry
+  return {
+    resourceId,
+    entryId: entry?.uid,
+    entryName: typeof entry?.comment === 'string' ? entry.comment : '',
+    decision,
+    reason,
+    primaryMatches: clone(candidate.primaryMatches ?? []),
+    secondaryMatches: clone(candidate.secondaryMatches ?? []),
+    secondaryLogic: entry?.selective === true ? entry.selectiveLogic : null,
+    groupName: typeof entry?.group?.name === 'string' && entry.group.name !== '' ? entry.group.name : null,
+    groupWeight: Number.isFinite(entry?.group?.weight) ? entry.group.weight : null,
+    groupOverride: entry?.group?.override === true,
+    probability: Number.isFinite(candidate.probability)
+      ? candidate.probability
+      : entry?.useProbability === false ? 100 : Number.isFinite(entry?.probability) ? entry.probability : null,
+    probabilityRoll: Number.isFinite(candidate.probabilityRoll) ? candidate.probabilityRoll : null,
+    tokenCost: Number.isFinite(candidate.tokenCost) ? candidate.tokenCost : null,
+    requestedPosition: typeof entry?.position === 'string' ? entry.position : null,
+    appliedPosition: projected.position ?? null,
+    approximatePosition: projected.approximate === true,
+  }
+}
+
 function invalidRegexDiagnostics(candidate, resourceId) {
   return (candidate.invalidKeys ?? []).map(item => ({
     code: item.code === 'unsafe-regex-disabled'
@@ -79,6 +104,12 @@ export function projectWorldBookForLoader(model, candidates, options = {}) {
   }
 
   const loreEntries = []
+  const decisions = candidates.rejected.map(candidate => auditDecision(
+    candidate,
+    resourceId,
+    'rejected',
+    candidate.reason,
+  ))
   for (const candidate of candidates.accepted) {
     const entry = candidate.entry
     const identity = entryIdentity(entry, resourceId, candidate.key)
@@ -90,6 +121,7 @@ export function projectWorldBookForLoader(model, candidates, options = {}) {
         resourceId,
         entryId: entry?.uid,
       })
+      decisions.push(auditDecision(candidate, resourceId, 'rejected', 'empty-content'))
       continue
     }
 
@@ -103,6 +135,7 @@ export function projectWorldBookForLoader(model, candidates, options = {}) {
         entryId: entry.uid,
         originalPosition: entry.position,
       })
+      decisions.push(auditDecision(candidate, resourceId, 'rejected', 'outlet-unsupported', projected))
       continue
     }
     if (projected.approximate) {
@@ -122,6 +155,7 @@ export function projectWorldBookForLoader(model, candidates, options = {}) {
       content: entry.content,
       position: projected.position,
     })
+    decisions.push(auditDecision(candidate, resourceId, 'included', candidate.reason, projected))
   }
 
   const activeEntryIds = loreEntries.map(entry => entry.id)
@@ -134,7 +168,18 @@ export function projectWorldBookForLoader(model, candidates, options = {}) {
     matchedEntryCount: candidates.accepted.length,
     activeEntryIds,
   }
-  return { loreEntries, resources: [resource], diagnostics }
+  return {
+    loreEntries,
+    resources: [resource],
+    diagnostics,
+    audit: {
+      resources: [{
+        resource: clone(resource),
+        budget: clone(candidates.budget ?? { limit: null, used: 0, remaining: null }),
+        decisions,
+      }],
+    },
+  }
 }
 
 /** Combines independently projected selected books without adding policy. */
@@ -145,6 +190,7 @@ export function mergeWorldBookLoaderResults(results) {
     if (Array.isArray(result.loreEntries)) merged.loreEntries.push(...clone(result.loreEntries))
     if (Array.isArray(result.resources)) merged.resources.push(...clone(result.resources))
     if (Array.isArray(result.diagnostics)) merged.diagnostics.push(...clone(result.diagnostics))
+    if (Array.isArray(result.audit?.resources)) merged.audit.resources.push(...clone(result.audit.resources))
     return merged
-  }, { loreEntries: [], resources: [], diagnostics: [] })
+  }, { loreEntries: [], resources: [], diagnostics: [], audit: { resources: [] } })
 }

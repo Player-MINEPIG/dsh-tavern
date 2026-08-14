@@ -76,6 +76,36 @@ avatars or allowing Tavern content to replace the DSH Agent identity.
 
 Verification is recorded in `docs/user/ACCEPTANCE.md`.
 
+## 2026-08-15 — Tavern Trace audit view
+
+Purpose: explain the exact per-request Tavern resource assembly and world-book
+matcher decisions without adding model-visible messages or unsupported custom
+DSH Session events.
+
+- Added a `Tavern Trace` tab through DSH's public additive
+  `conversation.view` slot, parallel to Conversation and Trajectory.
+- Bound the exact Tavern system-assembly snapshot to public `agent/request`
+  turn/step/attempt identifiers, then linked it to the effective public
+  `request/header` event by seq and hashes. DSH header remains authoritative.
+- Added accepted/rejected world-book decision metadata: matched primary and
+  secondary keywords, secondary logic, explicit probability roll, budget,
+  token cost, requested position, applied position and approximation state.
+- Added plugin-owned atomic bounded JSON persistence and a read-only same-origin
+  API because DSH rc.6 has no stable third-party persistent Session event-type
+  registration seam. Defaults are 128 sessions, 128 records per session and
+  256 KiB per record; Trace persistence failure cannot veto a model request.
+- Persisted only resource summaries, matcher metadata and SHA-256 values. Full
+  preset/character/user/world-book content, history, system/header bodies,
+  tool payloads and model messages are never stored by Trace.
+- Documented implementation, recovery/alignment boundaries and acceptance in
+  `docs/tavern-trace/`.
+
+Verification: `npm run check` rebuilt the browser bundle and completed 85/85
+executed tests; the one optional external-fixture test skipped because no path
+was supplied. `npm run pack:check` succeeded with 40 release files, including
+the Trace module and generated client while excluding tests, docs, runtime
+data and caches. All new acceptance fixtures are synthetic and test-owned.
+
 ## 2026-08-15 — Pre-merge publication hygiene
 
 Purpose: ensure the accepted integration can be merged and published without
