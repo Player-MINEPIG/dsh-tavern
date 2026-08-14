@@ -49,4 +49,6 @@ test('standalone world-book panel exposes CRUD, multi-binding and all required e
   for (const label of ['条目标题', '主关键词', '附加关键词', 'Secondary logic', '启用', '常驻', '区分大小写', '全词匹配', '位置', '顺序', '概率', '正文']) {
     assert.match(source, new RegExp(label))
   }
+  assert.match(source, /saveEmbedded/)
+  assert.match(source, /新增内嵌条目/)
 })

@@ -6,6 +6,8 @@ Status: implemented on the standalone-world-books feature branch for parent-task
 
 `packages/world-book-library` owns independent World Info documents, their HTTP management surface and their browser editor. It imports the pure `packages/world-book` format model but contains no DSH Host hooks. `packages/tavern-loader` creates the store, owns session selections and is still the only layer that registers system prompt and request hooks.
 
+The combined browser surface retains editing for the selected character card's embedded `character_book` through the existing character API. That data lifecycle remains character-owned; the independent store never writes it.
+
 ```text
 JSON import / editor
         │

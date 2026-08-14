@@ -26,7 +26,8 @@ the unified Tavern loader.
 - Replaced the planning-only World Info surface with standalone import/create,
   multi-binding, edit/export/delete controls for titles, primary and secondary
   keys, secondary logic, enabled/constant state, case/whole-word matching,
-  position, order, probability and content.
+  position, order, probability and content. The accepted character-card
+  embedded-book editor remains available in the same surface.
 - Added only self-authored synthetic fixture content and automated coverage for
   CRUD reload, unknown-field round trips, API lifecycle, session isolation,
   binding effects, multi-book composition, stable ordering and independent

@@ -50,6 +50,52 @@ function parseKeywords(value) {
   return value.split(',').map(item => item.trim()).filter(Boolean)
 }
 
+function embeddedPosition(entry) {
+  const value = entry?.extensions?.position
+  if (Number.isInteger(value) && value >= 0 && value <= 7) return value
+  return entry?.position === 'before_char' ? 0 : 1
+}
+
+function EmbeddedEntryEditor({ entry, index, update, remove }) {
+  const patch = value => update(index, value)
+  const secondaryKeys = Array.isArray(entry.secondary_keys) ? entry.secondary_keys : []
+  const position = embeddedPosition(entry)
+  return h('details', { className: 'dwb-entry', 'data-enabled': entry.enabled === true },
+    h('summary', null,
+      h('span', { className: 'dwb-dot' }),
+      h('span', { className: 'dwb-entry-name' }, entry.comment || entry.name || `条目 ${entry.id ?? index}`),
+      h('span', { className: 'dwb-entry-state' }, entry.constant ? '常驻' : (entry.keys ?? []).join(', ') || '无关键词'),
+    ),
+    h('div', { className: 'dwb-entry-body' },
+      h(Field, { label: '条目标题' }, h('input', { className: 'dwb-input', value: entry.comment ?? entry.name ?? '', onChange: event => patch({ comment: event.target.value }) })),
+      h(Field, { label: '主关键词（逗号分隔）' }, h('input', { className: 'dwb-input', value: (entry.keys ?? []).join(', '), onChange: event => patch({ keys: parseKeywords(event.target.value) }) })),
+      h(Field, { label: '附加关键词（逗号分隔）' }, h('input', { className: 'dwb-input', value: secondaryKeys.join(', '), onChange: event => { const keys = parseKeywords(event.target.value); patch({ secondary_keys: keys, selective: keys.length > 0 }) } })),
+      secondaryKeys.length > 0 ? h(Field, { label: 'Secondary logic' }, h('select', {
+        className: 'dwb-select',
+        value: entry.selectiveLogic ?? entry.extensions?.selectiveLogic ?? 'and_any',
+        onChange: event => patch({ selectiveLogic: event.target.value, selective: true, extensions: { ...(entry.extensions ?? {}), selectiveLogic: event.target.value } }),
+      },
+      h('option', { value: 'and_any' }, 'AND ANY：命中任一'),
+      h('option', { value: 'and_all' }, 'AND ALL：命中全部'),
+      h('option', { value: 'not_any' }, 'NOT ANY：不能命中任一'),
+      h('option', { value: 'not_all' }, 'NOT ALL：不能全部命中'))) : null,
+      h(Field, { label: '正文' }, h('textarea', { className: 'dwb-textarea', value: entry.content ?? '', onChange: event => patch({ content: event.target.value }) })),
+      h('div', { className: 'dwb-grid' },
+        h(Field, { label: '位置' }, h('select', { className: 'dwb-select', value: position, onChange: event => { const value = Number(event.target.value); patch({ position: value === 0 ? 'before_char' : value === 1 ? 'after_char' : entry.position, extensions: { ...(entry.extensions ?? {}), position: value } }) } }, ...POSITIONS.map(([_value, label], value) => h('option', { key: value, value }, label)))),
+        h(Field, { label: '顺序（高值优先）' }, h('input', { className: 'dwb-input', type: 'number', value: entry.insertion_order ?? 100, onChange: event => patch({ insertion_order: Number(event.target.value) }) })),
+        h(Field, { label: '概率（0–100）' }, h('input', { className: 'dwb-input', type: 'number', min: 0, max: 100, value: entry.probability ?? entry.extensions?.probability ?? 100, onChange: event => patch({ probability: Number(event.target.value), extensions: { ...(entry.extensions ?? {}), probability: Number(event.target.value), useProbability: true } }) })),
+      ),
+      h('div', { className: 'dwb-checks' },
+        h('label', { className: 'dwb-check' }, h('input', { type: 'checkbox', checked: entry.enabled === true, onChange: event => patch({ enabled: event.target.checked }) }), '启用'),
+        h('label', { className: 'dwb-check' }, h('input', { type: 'checkbox', checked: entry.constant === true, onChange: event => patch({ constant: event.target.checked }) }), '常驻'),
+        h('label', { className: 'dwb-check' }, h('input', { type: 'checkbox', checked: (entry.case_sensitive ?? entry.extensions?.case_sensitive) === true, onChange: event => patch({ case_sensitive: event.target.checked, extensions: { ...(entry.extensions ?? {}), case_sensitive: event.target.checked } }) }), '区分大小写'),
+        h('label', { className: 'dwb-check' }, h('input', { type: 'checkbox', checked: (entry.match_whole_words ?? entry.extensions?.match_whole_words) === true, onChange: event => patch({ match_whole_words: event.target.checked, extensions: { ...(entry.extensions ?? {}), match_whole_words: event.target.checked } }) }), '全词匹配'),
+      ),
+      h('div', { className: 'dwb-actions' }, h('button', { className: 'dwb-button dwb-danger', type: 'button', onClick: () => remove(index) }, '删除条目')),
+    ),
+  )
+}
+
 function nextUid(entries) {
   const numeric = entries.map(entry => entry.uid).filter(Number.isSafeInteger)
   return numeric.length === 0 ? 0 : Math.max(...numeric) + 1
@@ -116,6 +162,9 @@ export function WorldBookPanel({ sessionId, close }) {
   const [draft, setDraft] = useState(null)
   const [selection, setSelection] = useState([])
   const [active, setActive] = useState(null)
+  const [embeddedCharacterId, setEmbeddedCharacterId] = useState(null)
+  const [embeddedDraft, setEmbeddedDraft] = useState(null)
+  const [embeddedDirty, setEmbeddedDirty] = useState(false)
   const [dirty, setDirty] = useState(false)
   const [busy, setBusy] = useState(false)
   const [status, setStatus] = useState({ text: '加载中…', error: false })
@@ -143,11 +192,20 @@ export function WorldBookPanel({ sessionId, close }) {
       ? await api(`/world-book-selection?sessionId=${encodeURIComponent(sessionId)}`)
       : { selection: { worldBookIds: [] } }
     const activeView = await api(`/active${sessionId ? `?sessionId=${encodeURIComponent(sessionId)}` : ''}`)
+    const characterId = activeView.resources?.characterCard?.id ?? null
+    let embeddedBook = null
+    if (characterId !== null) {
+      const character = await api(`/characters/${encodeURIComponent(characterId)}`)
+      embeddedBook = character.character?.data?.characterBook ?? null
+    }
     if (currentGeneration !== generation.current) return
     const ids = selected.selection?.worldBookIds ?? []
     setCatalog(list)
     setSelection(ids)
     setActive(activeView)
+    setEmbeddedCharacterId(characterId)
+    setEmbeddedDraft(embeddedBook === null ? null : structuredClone(embeddedBook))
+    setEmbeddedDirty(false)
     const id = preferredId ?? document?.id ?? ids[0] ?? list.worldBooks[0]?.id ?? null
     if (id === null || !list.worldBooks.some(item => item.id === id)) {
       setDocument(null)
@@ -220,6 +278,16 @@ export function WorldBookPanel({ sessionId, close }) {
     window.dispatchEvent(new Event('dsh-tavern:refresh'))
   }, '独立世界书已删除，相关会话绑定已清理')
 
+  const saveEmbedded = () => run(async () => {
+    const data = await api(`/characters/${encodeURIComponent(embeddedCharacterId)}/world-book`, {
+      method: 'PATCH',
+      body: JSON.stringify({ characterBook: embeddedDraft }),
+    })
+    setEmbeddedDraft(structuredClone(data.character.data.characterBook))
+    setEmbeddedDirty(false)
+    window.dispatchEvent(new Event('dsh-tavern:refresh'))
+  }, '角色卡内嵌世界书已保存，后续请求将使用新内容')
+
   const updateEntry = (index, patch) => {
     setDraft(current => {
       const next = structuredClone(current)
@@ -229,6 +297,7 @@ export function WorldBookPanel({ sessionId, close }) {
     setDirty(true)
   }
   const entries = draft?.entries ?? []
+  const embeddedEntries = embeddedDraft?.entries ?? []
   const embedded = active?.resources?.worldBooks?.filter(item => item.kind === 'embedded-character-book') ?? []
   const diagnostics = active?.diagnostics?.filter(item => String(item.code ?? '').includes('WORLD_BOOK')) ?? []
 
@@ -268,7 +337,15 @@ export function WorldBookPanel({ sessionId, close }) {
         ),
         ...entries.map((entry, index) => h(EntryEditor, { key: `${String(entry.uid)}-${index}`, entry, index, update: updateEntry, remove: itemIndex => { if (window.confirm('删除这个世界书条目？保存后生效。')) { setDraft(current => ({ ...current, entries: current.entries.filter((_item, candidate) => candidate !== itemIndex) })); setDirty(true) } } })),
       ),
-      embedded.length > 0 ? h('div', { className: 'dwb-resource' }, h('div', { className: 'dwb-resource-title' }, '角色卡内嵌世界书'), h('p', { className: 'dwb-note' }, `${embedded.map(item => item.name).join('、')}。它与独立书共用 matcher/loader；删除独立书不会修改或解绑角色卡内嵌书。`)) : null,
+      embeddedDraft !== null ? h('div', { className: 'dwb-resource' },
+        h('div', { className: 'dwb-resource-title' }, embeddedDraft.name || embedded[0]?.name || '角色卡内嵌世界书'),
+        h('p', { className: 'dwb-note' }, `${embeddedEntries.length} 条。它与独立书共用 matcher/loader；删除独立书不会修改或解绑角色卡内嵌书。`),
+        h('div', { className: 'dwb-actions' },
+          h('button', { className: 'dwb-button', type: 'button', onClick: () => { const ids = embeddedEntries.map(entry => Number(entry.id)).filter(Number.isSafeInteger); const id = ids.length === 0 ? 0 : Math.max(...ids) + 1; setEmbeddedDraft(current => ({ ...structuredClone(current), entries: [...current.entries, { id, keys: [], secondary_keys: [], comment: `新条目 ${id}`, content: '', enabled: true, constant: false, selective: false, insertion_order: 100, position: 'after_char', extensions: { position: 1, probability: 100, useProbability: true } }] })); setEmbeddedDirty(true) } }, '新增内嵌条目'),
+          h('button', { className: 'dwb-button dwb-primary', type: 'button', disabled: busy || !embeddedDirty, onClick: saveEmbedded }, embeddedDirty ? '保存内嵌书' : '内嵌书已保存'),
+        ),
+        ...embeddedEntries.map((entry, index) => h(EmbeddedEntryEditor, { key: `${String(entry.id)}-${index}`, entry, index, update: (itemIndex, value) => { setEmbeddedDraft(current => { const next = structuredClone(current); next.entries[itemIndex] = { ...next.entries[itemIndex], ...value }; return next }); setEmbeddedDirty(true) }, remove: itemIndex => { if (window.confirm('删除这个角色卡内嵌世界书条目？保存后生效。')) { setEmbeddedDraft(current => ({ ...structuredClone(current), entries: current.entries.filter((_item, candidate) => candidate !== itemIndex) })); setEmbeddedDirty(true) } } })),
+      ) : null,
       diagnostics.length > 0 ? h('details', { className: 'dwb-resource' }, h('summary', { className: 'dwb-resource-title' }, `运行诊断（${diagnostics.length}）`), h('ul', { className: 'dwb-list' }, ...diagnostics.map((item, index) => h('li', { key: `${item.code}-${index}` }, item.message)))) : null,
       h('p', { className: 'dwb-note' }, '实际激活、排序、概率和预算由共享 matcher 确定；最终注入仍由 Tavern loader 统一完成。当前扫描基于已持久化的会话历史，刚提交的同轮用户输入可能到下一轮才触发。'),
     ),

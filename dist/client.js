@@ -773,6 +773,69 @@ function Field3({ label, children }) {
 function parseKeywords(value) {
   return value.split(",").map((item) => item.trim()).filter(Boolean);
 }
+function embeddedPosition(entry) {
+  const value = entry?.extensions?.position;
+  if (Number.isInteger(value) && value >= 0 && value <= 7) return value;
+  return entry?.position === "before_char" ? 0 : 1;
+}
+function EmbeddedEntryEditor({ entry, index, update, remove }) {
+  const patch = (value) => update(index, value);
+  const secondaryKeys = Array.isArray(entry.secondary_keys) ? entry.secondary_keys : [];
+  const position = embeddedPosition(entry);
+  return (0, import_react3.createElement)(
+    "details",
+    { className: "dwb-entry", "data-enabled": entry.enabled === true },
+    (0, import_react3.createElement)(
+      "summary",
+      null,
+      (0, import_react3.createElement)("span", { className: "dwb-dot" }),
+      (0, import_react3.createElement)("span", { className: "dwb-entry-name" }, entry.comment || entry.name || `\u6761\u76EE ${entry.id ?? index}`),
+      (0, import_react3.createElement)("span", { className: "dwb-entry-state" }, entry.constant ? "\u5E38\u9A7B" : (entry.keys ?? []).join(", ") || "\u65E0\u5173\u952E\u8BCD")
+    ),
+    (0, import_react3.createElement)(
+      "div",
+      { className: "dwb-entry-body" },
+      (0, import_react3.createElement)(Field3, { label: "\u6761\u76EE\u6807\u9898" }, (0, import_react3.createElement)("input", { className: "dwb-input", value: entry.comment ?? entry.name ?? "", onChange: (event) => patch({ comment: event.target.value }) })),
+      (0, import_react3.createElement)(Field3, { label: "\u4E3B\u5173\u952E\u8BCD\uFF08\u9017\u53F7\u5206\u9694\uFF09" }, (0, import_react3.createElement)("input", { className: "dwb-input", value: (entry.keys ?? []).join(", "), onChange: (event) => patch({ keys: parseKeywords(event.target.value) }) })),
+      (0, import_react3.createElement)(Field3, { label: "\u9644\u52A0\u5173\u952E\u8BCD\uFF08\u9017\u53F7\u5206\u9694\uFF09" }, (0, import_react3.createElement)("input", { className: "dwb-input", value: secondaryKeys.join(", "), onChange: (event) => {
+        const keys = parseKeywords(event.target.value);
+        patch({ secondary_keys: keys, selective: keys.length > 0 });
+      } })),
+      secondaryKeys.length > 0 ? (0, import_react3.createElement)(Field3, { label: "Secondary logic" }, (0, import_react3.createElement)(
+        "select",
+        {
+          className: "dwb-select",
+          value: entry.selectiveLogic ?? entry.extensions?.selectiveLogic ?? "and_any",
+          onChange: (event) => patch({ selectiveLogic: event.target.value, selective: true, extensions: { ...entry.extensions ?? {}, selectiveLogic: event.target.value } })
+        },
+        (0, import_react3.createElement)("option", { value: "and_any" }, "AND ANY\uFF1A\u547D\u4E2D\u4EFB\u4E00"),
+        (0, import_react3.createElement)("option", { value: "and_all" }, "AND ALL\uFF1A\u547D\u4E2D\u5168\u90E8"),
+        (0, import_react3.createElement)("option", { value: "not_any" }, "NOT ANY\uFF1A\u4E0D\u80FD\u547D\u4E2D\u4EFB\u4E00"),
+        (0, import_react3.createElement)("option", { value: "not_all" }, "NOT ALL\uFF1A\u4E0D\u80FD\u5168\u90E8\u547D\u4E2D")
+      )) : null,
+      (0, import_react3.createElement)(Field3, { label: "\u6B63\u6587" }, (0, import_react3.createElement)("textarea", { className: "dwb-textarea", value: entry.content ?? "", onChange: (event) => patch({ content: event.target.value }) })),
+      (0, import_react3.createElement)(
+        "div",
+        { className: "dwb-grid" },
+        (0, import_react3.createElement)(Field3, { label: "\u4F4D\u7F6E" }, (0, import_react3.createElement)("select", { className: "dwb-select", value: position, onChange: (event) => {
+          const value = Number(event.target.value);
+          patch({ position: value === 0 ? "before_char" : value === 1 ? "after_char" : entry.position, extensions: { ...entry.extensions ?? {}, position: value } });
+        } }, ...POSITIONS.map(([_value, label], value) => (0, import_react3.createElement)("option", { key: value, value }, label)))),
+        (0, import_react3.createElement)(Field3, { label: "\u987A\u5E8F\uFF08\u9AD8\u503C\u4F18\u5148\uFF09" }, (0, import_react3.createElement)("input", { className: "dwb-input", type: "number", value: entry.insertion_order ?? 100, onChange: (event) => patch({ insertion_order: Number(event.target.value) }) })),
+        (0, import_react3.createElement)(Field3, { label: "\u6982\u7387\uFF080\u2013100\uFF09" }, (0, import_react3.createElement)("input", { className: "dwb-input", type: "number", min: 0, max: 100, value: entry.probability ?? entry.extensions?.probability ?? 100, onChange: (event) => patch({ probability: Number(event.target.value), extensions: { ...entry.extensions ?? {}, probability: Number(event.target.value), useProbability: true } }) }))
+      ),
+      (0, import_react3.createElement)(
+        "div",
+        { className: "dwb-checks" },
+        (0, import_react3.createElement)("label", { className: "dwb-check" }, (0, import_react3.createElement)("input", { type: "checkbox", checked: entry.enabled === true, onChange: (event) => patch({ enabled: event.target.checked }) }), "\u542F\u7528"),
+        (0, import_react3.createElement)("label", { className: "dwb-check" }, (0, import_react3.createElement)("input", { type: "checkbox", checked: entry.constant === true, onChange: (event) => patch({ constant: event.target.checked }) }), "\u5E38\u9A7B"),
+        (0, import_react3.createElement)("label", { className: "dwb-check" }, (0, import_react3.createElement)("input", { type: "checkbox", checked: (entry.case_sensitive ?? entry.extensions?.case_sensitive) === true, onChange: (event) => patch({ case_sensitive: event.target.checked, extensions: { ...entry.extensions ?? {}, case_sensitive: event.target.checked } }) }), "\u533A\u5206\u5927\u5C0F\u5199"),
+        (0, import_react3.createElement)("label", { className: "dwb-check" }, (0, import_react3.createElement)("input", { type: "checkbox", checked: (entry.match_whole_words ?? entry.extensions?.match_whole_words) === true, onChange: (event) => patch({ match_whole_words: event.target.checked, extensions: { ...entry.extensions ?? {}, match_whole_words: event.target.checked } }) }), "\u5168\u8BCD\u5339\u914D")
+      ),
+      (0, import_react3.createElement)("div", { className: "dwb-actions" }, (0, import_react3.createElement)("button", { className: "dwb-button dwb-danger", type: "button", onClick: () => remove(index) }, "\u5220\u9664\u6761\u76EE"))
+    )
+  );
+}
 function nextUid(entries) {
   const numeric = entries.map((entry) => entry.uid).filter(Number.isSafeInteger);
   return numeric.length === 0 ? 0 : Math.max(...numeric) + 1;
@@ -849,6 +912,9 @@ function WorldBookPanel({ sessionId, close }) {
   const [draft, setDraft] = (0, import_react3.useState)(null);
   const [selection, setSelection] = (0, import_react3.useState)([]);
   const [active, setActive] = (0, import_react3.useState)(null);
+  const [embeddedCharacterId, setEmbeddedCharacterId] = (0, import_react3.useState)(null);
+  const [embeddedDraft, setEmbeddedDraft] = (0, import_react3.useState)(null);
+  const [embeddedDirty, setEmbeddedDirty] = (0, import_react3.useState)(false);
   const [dirty, setDirty] = (0, import_react3.useState)(false);
   const [busy, setBusy] = (0, import_react3.useState)(false);
   const [status, setStatus] = (0, import_react3.useState)({ text: "\u52A0\u8F7D\u4E2D\u2026", error: false });
@@ -872,11 +938,20 @@ function WorldBookPanel({ sessionId, close }) {
     const list = await api3("/world-books");
     const selected = sessionId ? await api3(`/world-book-selection?sessionId=${encodeURIComponent(sessionId)}`) : { selection: { worldBookIds: [] } };
     const activeView = await api3(`/active${sessionId ? `?sessionId=${encodeURIComponent(sessionId)}` : ""}`);
+    const characterId = activeView.resources?.characterCard?.id ?? null;
+    let embeddedBook = null;
+    if (characterId !== null) {
+      const character = await api3(`/characters/${encodeURIComponent(characterId)}`);
+      embeddedBook = character.character?.data?.characterBook ?? null;
+    }
     if (currentGeneration !== generation.current) return;
     const ids = selected.selection?.worldBookIds ?? [];
     setCatalog(list);
     setSelection(ids);
     setActive(activeView);
+    setEmbeddedCharacterId(characterId);
+    setEmbeddedDraft(embeddedBook === null ? null : structuredClone(embeddedBook));
+    setEmbeddedDirty(false);
     const id = preferredId ?? document2?.id ?? ids[0] ?? list.worldBooks[0]?.id ?? null;
     if (id === null || !list.worldBooks.some((item) => item.id === id)) {
       setDocument(null);
@@ -941,6 +1016,15 @@ function WorldBookPanel({ sessionId, close }) {
     await refresh(null);
     window.dispatchEvent(new Event("dsh-tavern:refresh"));
   }, "\u72EC\u7ACB\u4E16\u754C\u4E66\u5DF2\u5220\u9664\uFF0C\u76F8\u5173\u4F1A\u8BDD\u7ED1\u5B9A\u5DF2\u6E05\u7406");
+  const saveEmbedded = () => run(async () => {
+    const data = await api3(`/characters/${encodeURIComponent(embeddedCharacterId)}/world-book`, {
+      method: "PATCH",
+      body: JSON.stringify({ characterBook: embeddedDraft })
+    });
+    setEmbeddedDraft(structuredClone(data.character.data.characterBook));
+    setEmbeddedDirty(false);
+    window.dispatchEvent(new Event("dsh-tavern:refresh"));
+  }, "\u89D2\u8272\u5361\u5185\u5D4C\u4E16\u754C\u4E66\u5DF2\u4FDD\u5B58\uFF0C\u540E\u7EED\u8BF7\u6C42\u5C06\u4F7F\u7528\u65B0\u5185\u5BB9");
   const updateEntry = (index, patch) => {
     setDraft((current) => {
       const next = structuredClone(current);
@@ -950,6 +1034,7 @@ function WorldBookPanel({ sessionId, close }) {
     setDirty(true);
   };
   const entries = draft?.entries ?? [];
+  const embeddedEntries = embeddedDraft?.entries ?? [];
   const embedded = active?.resources?.worldBooks?.filter((item) => item.kind === "embedded-character-book") ?? [];
   const diagnostics = active?.diagnostics?.filter((item) => String(item.code ?? "").includes("WORLD_BOOK")) ?? [];
   return (0, import_react3.createElement)(
@@ -1025,7 +1110,36 @@ function WorldBookPanel({ sessionId, close }) {
           }
         } }))
       ),
-      embedded.length > 0 ? (0, import_react3.createElement)("div", { className: "dwb-resource" }, (0, import_react3.createElement)("div", { className: "dwb-resource-title" }, "\u89D2\u8272\u5361\u5185\u5D4C\u4E16\u754C\u4E66"), (0, import_react3.createElement)("p", { className: "dwb-note" }, `${embedded.map((item) => item.name).join("\u3001")}\u3002\u5B83\u4E0E\u72EC\u7ACB\u4E66\u5171\u7528 matcher/loader\uFF1B\u5220\u9664\u72EC\u7ACB\u4E66\u4E0D\u4F1A\u4FEE\u6539\u6216\u89E3\u7ED1\u89D2\u8272\u5361\u5185\u5D4C\u4E66\u3002`)) : null,
+      embeddedDraft !== null ? (0, import_react3.createElement)(
+        "div",
+        { className: "dwb-resource" },
+        (0, import_react3.createElement)("div", { className: "dwb-resource-title" }, embeddedDraft.name || embedded[0]?.name || "\u89D2\u8272\u5361\u5185\u5D4C\u4E16\u754C\u4E66"),
+        (0, import_react3.createElement)("p", { className: "dwb-note" }, `${embeddedEntries.length} \u6761\u3002\u5B83\u4E0E\u72EC\u7ACB\u4E66\u5171\u7528 matcher/loader\uFF1B\u5220\u9664\u72EC\u7ACB\u4E66\u4E0D\u4F1A\u4FEE\u6539\u6216\u89E3\u7ED1\u89D2\u8272\u5361\u5185\u5D4C\u4E66\u3002`),
+        (0, import_react3.createElement)(
+          "div",
+          { className: "dwb-actions" },
+          (0, import_react3.createElement)("button", { className: "dwb-button", type: "button", onClick: () => {
+            const ids = embeddedEntries.map((entry) => Number(entry.id)).filter(Number.isSafeInteger);
+            const id = ids.length === 0 ? 0 : Math.max(...ids) + 1;
+            setEmbeddedDraft((current) => ({ ...structuredClone(current), entries: [...current.entries, { id, keys: [], secondary_keys: [], comment: `\u65B0\u6761\u76EE ${id}`, content: "", enabled: true, constant: false, selective: false, insertion_order: 100, position: "after_char", extensions: { position: 1, probability: 100, useProbability: true } }] }));
+            setEmbeddedDirty(true);
+          } }, "\u65B0\u589E\u5185\u5D4C\u6761\u76EE"),
+          (0, import_react3.createElement)("button", { className: "dwb-button dwb-primary", type: "button", disabled: busy || !embeddedDirty, onClick: saveEmbedded }, embeddedDirty ? "\u4FDD\u5B58\u5185\u5D4C\u4E66" : "\u5185\u5D4C\u4E66\u5DF2\u4FDD\u5B58")
+        ),
+        ...embeddedEntries.map((entry, index) => (0, import_react3.createElement)(EmbeddedEntryEditor, { key: `${String(entry.id)}-${index}`, entry, index, update: (itemIndex, value) => {
+          setEmbeddedDraft((current) => {
+            const next = structuredClone(current);
+            next.entries[itemIndex] = { ...next.entries[itemIndex], ...value };
+            return next;
+          });
+          setEmbeddedDirty(true);
+        }, remove: (itemIndex) => {
+          if (window.confirm("\u5220\u9664\u8FD9\u4E2A\u89D2\u8272\u5361\u5185\u5D4C\u4E16\u754C\u4E66\u6761\u76EE\uFF1F\u4FDD\u5B58\u540E\u751F\u6548\u3002")) {
+            setEmbeddedDraft((current) => ({ ...structuredClone(current), entries: current.entries.filter((_item, candidate) => candidate !== itemIndex) }));
+            setEmbeddedDirty(true);
+          }
+        } }))
+      ) : null,
       diagnostics.length > 0 ? (0, import_react3.createElement)("details", { className: "dwb-resource" }, (0, import_react3.createElement)("summary", { className: "dwb-resource-title" }, `\u8FD0\u884C\u8BCA\u65AD\uFF08${diagnostics.length}\uFF09`), (0, import_react3.createElement)("ul", { className: "dwb-list" }, ...diagnostics.map((item, index) => (0, import_react3.createElement)("li", { key: `${item.code}-${index}` }, item.message)))) : null,
       (0, import_react3.createElement)("p", { className: "dwb-note" }, "\u5B9E\u9645\u6FC0\u6D3B\u3001\u6392\u5E8F\u3001\u6982\u7387\u548C\u9884\u7B97\u7531\u5171\u4EAB matcher \u786E\u5B9A\uFF1B\u6700\u7EC8\u6CE8\u5165\u4ECD\u7531 Tavern loader \u7EDF\u4E00\u5B8C\u6210\u3002\u5F53\u524D\u626B\u63CF\u57FA\u4E8E\u5DF2\u6301\u4E45\u5316\u7684\u4F1A\u8BDD\u5386\u53F2\uFF0C\u521A\u63D0\u4EA4\u7684\u540C\u8F6E\u7528\u6237\u8F93\u5165\u53EF\u80FD\u5230\u4E0B\u4E00\u8F6E\u624D\u89E6\u53D1\u3002")
     )
