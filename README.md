@@ -18,7 +18,7 @@
 - 导入 SillyTavern Chat Completion preset JSON。
 - 优先采用 `character_id: 100001` 的 `prompt_order`，并保留未知顶层字段和 prompt 扩展字段，方便后续兼容升级。
 - 在插件目录持久化预设，支持创建、选择、修改、删除和重新加载。
-- 提供一个统一的 Tavern 悬浮球；展开后可进入预设、世界信息、角色卡和预留用户面板，避免多个按钮和侧栏层级竞争。
+- 提供一个可拖拽并记忆位置的 Tavern 悬浮球；点击时由球体展开资源面板，可进入预设、世界信息、角色卡和预留用户面板。
 - 编辑预设名称、system prompt 策略、常用采样参数和 prompt 块。
 - 直接拖拽 prompt 块排序；拖动来源显示为横杠，落点显示为占位框。
 - 将启用且非 marker 的 prompt 编译为 DSH system section，并在请求记录中保留所选预设标识。
@@ -29,6 +29,7 @@
 - 通过角色卡侧栏导入、查看、选择、导出和删除角色卡，并配置 greeting、卡内 system prompt 与 post-history instructions 的采用策略。
 - 将所选角色卡的 description、personality、scenario、example dialogue、system prompt 等字段与 preset marker 统一组合。
 - 解析并匹配角色卡内嵌 `character_book` 的常量/关键词、secondary key、regex、概率、组和 token budget 基础策略，并把激活条目投影到 before/after 位置。
+- 在“世界信息”中按 ST 式条目列表查看和编辑内嵌 Lorebook 的触发条件与内容，包括主/附加关键词、secondary logic、常驻/启用、大小写、全词匹配、位置与排序，并支持新增、删除和保存。
 - 使用统一的 per-session 资源选择；普通 fork 固化父会话快照，delegated subagent 默认不继承 Tavern 资源。
 
 旧版本的全局预设选择继续作为新会话默认值；一旦某个 session 明确选择资源，它与其他会话互不影响。
@@ -85,9 +86,9 @@ dsh web --host 127.0.0.1 --port 53101
 ## 使用
 
 1. 启动并打开 DSH Web。
-2. 点击右上角 `T` 悬浮球，选择“预设”导入或创建 preset；编辑采样参数、system prompt 策略和 prompt 块并选择它。
+2. 拖动 `T` 悬浮球可调整并记忆入口位置；点击球体会展开资源面板。选择“预设”导入或创建 preset，编辑采样参数、system prompt 策略和 prompt 块并选择它。
 3. 从同一菜单选择“角色卡”，导入 ST JSON/PNG 角色卡，选择 greeting 和两个覆盖开关后绑定到当前 session。
-4. “世界信息”面板可查看当前角色卡内嵌 Lorebook 的 loader 连接状态；独立 World Info 导入仍在规划中。
+4. “世界信息”面板会列出当前角色卡内嵌 Lorebook 的全部条目。折叠标题直接显示常驻、禁用或关键词条件；展开可修改触发条件和正文，保存后下一次 loader 组装使用新版本。独立 World Info 导入仍在规划中。
 5. 发送消息。loader 会在每次请求时组合当前 session 的 preset、角色卡与命中的内嵌世界书条目；支持的采样参数进入模型调用配置。
 
 切换预设不会改写已有会话历史。旧预设已经影响过的 assistant 回复仍会进入后续上下文，所以需要“干净切换”时，应选择新预设后新建或 fork 会话。
@@ -112,7 +113,7 @@ npm run plugin:uninstall
 | 用户输入与会话历史 | 继续由 DSH 原生 durable messages 管理，不插入 ST `chatHistory` marker |
 | greeting | 作为明确标注的 system profile 风格参考，不伪造 assistant 历史消息 |
 | PHI / depth / absolute injection | 字段保留并给出降级诊断；当前放入 system profile，不能严格复刻 ST 历史位置 |
-| 世界书扫描 | 角色卡内嵌书可扫描已有 durable history；当前轮尚未公开给 assembly，关键词可能下一轮才激活 |
+| 世界书扫描与编辑 | 角色卡内嵌书可编辑并扫描已有 durable history；当前轮尚未公开给 assembly，关键词可能下一轮才激活；原始导入 artifact 保持不变，JSON 导出反映编辑后的插件副本 |
 | 独立世界书 | 解析、导出和 matcher 核心可作为 library 使用；尚无插件内存储、选择 API 或 UI |
 | ST macro | 支持部分常用变量、随机、骰子与局部变量；不是完整 ST runtime |
 | sampler | 未映射的 ST 参数会保存和编辑，但不宣称已经传给模型 adapter |

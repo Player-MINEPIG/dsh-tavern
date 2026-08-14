@@ -1,7 +1,12 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import { readFileSync } from 'node:fs'
-import { TAVERN_MENU_ITEMS, surfaceTitle } from '../packages/client/src/state.js'
+import {
+  TAVERN_MENU_ITEMS,
+  clampLauncherAnchor,
+  launcherPlacement,
+  surfaceTitle,
+} from '../packages/client/src/state.js'
 
 test('one Tavern launcher exposes stable resource surfaces', () => {
   assert.deepEqual(TAVERN_MENU_ITEMS.map(item => item.id), [
@@ -12,6 +17,17 @@ test('one Tavern launcher exposes stable resource surfaces', () => {
   ])
   assert.equal(surfaceTitle('world-info'), '世界信息')
   assert.equal(TAVERN_MENU_ITEMS.find(item => item.id === 'user').available, false)
+})
+
+test('floating launcher clamps its drag anchor and expands toward available space', () => {
+  assert.deepEqual(clampLauncherAnchor({ x: -20, y: 900 }, { width: 800, height: 600 }), { x: 8, y: 548 })
+  assert.deepEqual(launcherPlacement({ x: 748, y: 548 }, { width: 800, height: 600 }, true), {
+    side: 'left',
+    vertical: 'up',
+    left: 572,
+    top: 348,
+    anchor: { x: 748, y: 548 },
+  })
 })
 
 test('only the client composition root owns the Tavern shell overlay', () => {

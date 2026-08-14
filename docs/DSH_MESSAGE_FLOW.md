@@ -89,6 +89,8 @@ request/header.config
 5. 默认 append 模式把 Tavern profile 放在 DSH 其他 system sections 之后。高级 replace 模式只保留 Tavern profile，但仍保留 tools、runtime contexts、variables 和执行层安全机制。
 6. `agent/request` 将 DSH 已公开支持的 preset 参数投影到 call config。未公开的 ST sampler 仅保存，不伪造已经生效。
 
+世界信息侧栏属于控制面，不是消息历史或日志面板。它从当前已绑定角色卡的插件副本读取 `character_book.entries`，直接展示并编辑主关键词、附加关键词与逻辑、常驻/启用状态、正文、插入位置和排序。保存通过 character API 原子更新标准化角色文档及其 JSON 导出；原始 PNG/JSON artifact 不改写。下一次 `systemPrompt.assemble()` 会重新读取该副本并执行 matcher。
+
 ## 3. 插件明确不改变的内容
 
 - 不删除、重写或复制 DSH durable history；请求 `messages` 仍完全来自 `Session.deriveMessages()`。
@@ -117,6 +119,6 @@ DSH 当前顺序是：`claim 当前输入 → assemble system prompt → agent/p
 1. DSH 持久 `request/header`：最终 system、tools 和生效 call config；
 2. 请求对应的 `Session.deriveMessages()`：最终历史消息数组；
 3. loader `/dsh-tavern/api/active?sessionId=...`：选择、资源、诊断和无当前输入的预览 audit；
-4. 前端侧栏状态：用于操作和解释，不是模型请求事实。
+4. 前端侧栏状态：用于编辑 World Info 条件和资源选择，不是模型请求日志。
 
-`active` API 没有活跃 Agent 的已 claim 当前输入，因此世界信息侧栏会把命中数明确标为“无会话历史预览”，不能代替真实 `request/header`。
+`active` API 没有活跃 Agent 的已 claim 当前输入，因此世界信息侧栏只承诺展示可编辑的条目定义，不把它包装成“本轮触发日志”。确认某条内容是否真正进入过模型请求，仍应查看对应的 `request/header`。

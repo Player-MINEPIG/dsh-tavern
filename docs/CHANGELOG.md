@@ -4,6 +4,33 @@ This is the staged implementation log for the prompt-preset experiment. It is
 kept separately from the product README so reviewers can follow intent,
 decisions, verification, and known limits chronologically.
 
+## 2026-08-15 — Draggable launcher and editable embedded World Info
+
+Purpose: make the unified entry feel like one coherent control and expose the
+actual ST entry definitions users need to understand and change activation.
+
+- Made the `T` launcher draggable with viewport clamping, persisted position,
+  click-versus-drag suppression, and left/right plus up/down expansion toward
+  available screen space.
+- Replaced the abrupt detached menu with one animated rounded surface that
+  grows from the ball and keeps the four resource choices inside it.
+- Replaced the World Info source-only view with an ST-style embedded
+  Character Book editor. Collapsed rows show constant, disabled, or keyword
+  activation; expanded rows edit primary/secondary keys and logic, content,
+  enable/constant flags, case/whole-word behavior, insertion position and
+  order. Entries can be added, deleted, reloaded and saved.
+- Added an atomic character-world-book update API. It updates the plugin's
+  normalized character document and JSON export while preserving the original
+  imported PNG/JSON artifact byte-for-byte.
+- Kept runtime truth separate from editing: this is a resource editor, not a
+  fabricated trigger-time log. `request/header` remains the final message-flow
+  audit source.
+
+Verification: `npm run check` passed 73/73 tests. An isolated installed DSH
+showed one expandable launcher, all four menu choices, seven real embedded
+entries with their trigger summaries, complete edit fields, dirty/save state,
+and clean discard on close/reopen without modifying the source card.
+
 ## 2026-08-15 — Unified Tavern launcher and message-flow audit
 
 Purpose: remove competing preset/character controls, expose the integrated

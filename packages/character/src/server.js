@@ -84,8 +84,8 @@ function readBytes(req, limit = MAX_CHARACTER_BODY_BYTES) {
   })
 }
 
-async function readJson(req) {
-  const bytes = await readBytes(req, 1024 * 1024)
+async function readJson(req, limit = 1024 * 1024) {
+  const bytes = await readBytes(req, limit)
   try {
     return bytes.length === 0 ? {} : JSON.parse(bytes.toString('utf8'))
   } catch (error) {
@@ -94,7 +94,7 @@ async function readJson(req) {
 }
 
 function characterRoute(path) {
-  const match = /^\/dsh-tavern\/api\/characters\/([^/]+)(?:\/(artifact|json))?$/.exec(path)
+  const match = /^\/dsh-tavern\/api\/characters\/([^/]+)(?:\/(artifact|json|world-book))?$/.exec(path)
   if (match === null) return null
   return { id: decodeURIComponent(match[1]), resource: match[2] }
 }
@@ -157,6 +157,13 @@ export function createCharacterApiHandler(store, options = {}) {
       if (route !== null && method === 'GET' && route.resource === 'json') {
         const json = store.json(route.id)
         return sendArtifact(res, 200, { body: json.text, mediaType: 'application/json; charset=utf-8', fileName: json.fileName })
+      }
+
+      if (route !== null && method === 'PATCH' && route.resource === 'world-book') {
+        const body = await readJson(req, MAX_CHARACTER_BODY_BYTES)
+        const character = store.updateCharacterBook(route.id, body.characterBook)
+        onChange({ kind: 'character-world-book-updated', characterCardId: route.id })
+        return sendJson(res, 200, { ok: true, character })
       }
 
       if (route !== null && method === 'DELETE' && route.resource === undefined) {

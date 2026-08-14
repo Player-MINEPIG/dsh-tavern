@@ -279,6 +279,27 @@ export class CharacterStore {
     }
   }
 
+  updateCharacterBook(id, characterBook, options = {}) {
+    if (!isRecord(characterBook) || !Array.isArray(characterBook.entries)) {
+      throw new TypeError('characterBook must be a Character Book object with an entries array')
+    }
+    if (characterBook.entries.some(entry => !isRecord(entry))) {
+      throw new TypeError('Every Character Book entry must be an object')
+    }
+    const character = clone(this.get(id))
+    const nextBook = clone(characterBook)
+    const rawRoot = character.source?.format === 'sillytavern-v1'
+      ? character.source?.raw
+      : character.source?.raw?.data
+    if (!isRecord(rawRoot)) throw new TypeError('Character document does not contain editable source JSON')
+
+    character.data.characterBook = nextBook
+    rawRoot.character_book = clone(nextBook)
+    character.updatedAt = options.now ?? new Date().toISOString()
+    atomicJson(this.characterPath(id), character)
+    return character
+  }
+
   normalizeSelection(characterCardId, patch = {}) {
     return normalizeSelection(this.get(validateId(characterCardId)), patch)
   }

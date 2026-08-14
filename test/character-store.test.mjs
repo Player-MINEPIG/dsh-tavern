@@ -104,3 +104,20 @@ test('validates greeting and session selection input', () => {
     rmSync(directory, { recursive: true, force: true })
   }
 })
+
+test('updates an embedded Character Book without mutating the imported artifact', () => {
+  const { directory, store } = temporaryStore()
+  const source = Buffer.from(JSON.stringify({ spec: 'chara_card_v2', spec_version: '2.0', data: { name: 'Editable', character_book: { name: 'Before', entries: [] } } }))
+  try {
+    store.import(source, { id: 'editable', now: '2026-08-14T00:00:00.000Z' })
+    const book = { name: 'After', entries: [{ id: 7, keys: ['moon'], content: 'Synthetic', enabled: true, insertion_order: 50, extensions: {} }] }
+    const updated = store.updateCharacterBook('editable', book, { now: '2026-08-15T00:00:00.000Z' })
+    assert.deepEqual(updated.data.characterBook, book)
+    assert.deepEqual(JSON.parse(store.json('editable').text).data.character_book, book)
+    assert.deepEqual(store.artifact('editable').bytes, source)
+    assert.equal(new CharacterStore(directory).get('editable').updatedAt, '2026-08-15T00:00:00.000Z')
+    assert.throws(() => store.updateCharacterBook('editable', { entries: ['bad'] }), /entry must be an object/)
+  } finally {
+    rmSync(directory, { recursive: true, force: true })
+  }
+})

@@ -52,6 +52,30 @@ test('character API imports raw bytes, reads resources, selects, exports, and de
     const detail = await invoke(handler, { url: `/dsh-tavern/api/characters/${id}` })
     assert.equal(detail.json.character.source.raw.unknown.kept, true)
 
+    const editedBook = {
+      name: 'Editable synthetic lore',
+      entries: [{
+        id: 1,
+        keys: ['harbor'],
+        secondary_keys: [],
+        comment: 'Harbor rule',
+        content: 'Synthetic lore content',
+        enabled: true,
+        insertion_order: 100,
+        constant: false,
+        selective: false,
+        position: 'after_char',
+        extensions: { position: 1 },
+      }],
+    }
+    const updated = await invoke(handler, {
+      method: 'PATCH',
+      url: `/dsh-tavern/api/characters/${id}/world-book`,
+      body: { characterBook: editedBook },
+    })
+    assert.equal(updated.status, 200)
+    assert.deepEqual(updated.json.character.data.characterBook, editedBook)
+
     const selected = await invoke(handler, {
       method: 'POST',
       url: '/dsh-tavern/api/character-selection',
@@ -65,7 +89,8 @@ test('character API imports raw bytes, reads resources, selects, exports, and de
     assert.deepEqual(artifact.bytes, source)
     assert.equal(artifact.headers['content-type'], 'application/json')
     const json = await invoke(handler, { url: `/dsh-tavern/api/characters/${id}/json` })
-    assert.deepEqual(JSON.parse(json.bytes), JSON.parse(source))
+    assert.equal(JSON.parse(json.bytes).character_book.entries[0].keys[0], 'harbor')
+    assert.deepEqual((await invoke(handler, { url: `/dsh-tavern/api/characters/${id}/artifact` })).bytes, source)
 
     const removed = await invoke(handler, { method: 'DELETE', url: `/dsh-tavern/api/characters/${id}` })
     assert.equal(removed.status, 200)
@@ -73,6 +98,7 @@ test('character API imports raw bytes, reads resources, selects, exports, and de
     assert.equal(cleared.json.selection, null)
     assert.deepEqual(changes.map((item) => item.kind), [
       'character-imported',
+      'character-world-book-updated',
       'character-selection-changed',
       'character-deleted',
     ])
