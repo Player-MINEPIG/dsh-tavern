@@ -4,6 +4,7 @@ import { mkdtempSync, readFileSync, rmSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { PresetStore } from '../packages/preset/src/store.js'
+import { PresetRuntime } from '../packages/tavern-loader/src/preset-runtime.js'
 
 function temporaryStore() {
   const directory = mkdtempSync(join(tmpdir(), 'dsh-tavern-test-'))
@@ -21,9 +22,10 @@ test('creates, edits, selects, and reloads presets under the configured plugin d
     store.select(created.id)
 
     const reloaded = new PresetStore(directory)
+    const runtime = new PresetRuntime(reloaded)
     assert.equal(reloaded.selected().name, 'Created preset')
-    assert.match(reloaded.compiledSelected(), /Stored prompt/)
-    assert.deepEqual(reloaded.selectedCallConfig(), {
+    assert.match(runtime.compiledSelected(), /Stored prompt/)
+    assert.deepEqual(runtime.selectedCallConfig(), {
       temperature: 0.4,
       maxTokens: 4096,
       reasoningEffort: 'high',
@@ -47,4 +49,3 @@ test('imports without trusting ids as paths', () => {
     rmSync(directory, { recursive: true, force: true })
   }
 })
-

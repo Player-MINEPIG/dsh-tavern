@@ -3,7 +3,7 @@ import assert from 'node:assert/strict'
 import { mkdtempSync, rmSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import { apply } from '../packages/preset/src/index.js'
+import { apply } from '../packages/tavern-loader/src/index.js'
 
 test('selected preset enters system prompt and model call config seams', async () => {
   const directory = mkdtempSync(join(tmpdir(), 'dsh-tavern-host-'))

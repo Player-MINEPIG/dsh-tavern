@@ -8,11 +8,9 @@ import {
 } from 'node:fs'
 import { join, resolve } from 'node:path'
 import {
-  compilePreset,
   createBlankPreset,
   editPreset,
   parseSillyTavernPreset,
-  supportedCallConfig,
 } from '../../tavern-format/src/index.js'
 
 const ID_PATTERN = /^[a-zA-Z0-9_-]{1,100}$/
@@ -143,17 +141,4 @@ export class PresetStore {
     return preset === null ? null : summary(preset)
   }
 
-  compiledSelected(context = {}) {
-    const preset = this.selected()
-    return preset === null ? '' : compilePreset(preset, context)
-  }
-
-  selectedSystemPromptMode() {
-    return this.selected()?.systemPromptMode === 'replace' ? 'replace' : 'append'
-  }
-
-  selectedCallConfig() {
-    const preset = this.selected()
-    return preset === null ? {} : supportedCallConfig(preset)
-  }
 }

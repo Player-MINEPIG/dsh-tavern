@@ -4,8 +4,7 @@ import { Readable } from 'node:stream'
 import { mkdtempSync, rmSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import { PresetStore } from '../packages/preset/src/store.js'
-import { createApiHandler } from '../packages/preset/src/server.js'
+import { PresetStore, createApiHandler } from '../packages/tavern-loader/src/index.js'
 
 function invoke(handler, { method = 'GET', url, body } = {}) {
   return new Promise((resolve, reject) => {
@@ -68,4 +67,3 @@ test('HTTP API imports, selects, reads, updates, and creates presets', async () 
     rmSync(directory, { recursive: true, force: true })
   }
 })
-

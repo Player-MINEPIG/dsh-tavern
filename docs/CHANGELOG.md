@@ -213,3 +213,36 @@ Verification:
 - `npm run check` built the client and passed 18/18 tests.
 - Boundary tests cover moving the first prompt to the end, the last prompt to
   the beginning, and a no-op drop immediately after the source.
+
+## 2026-08-14 — Stage 10: format/use-case/runtime boundary split
+
+Purpose: establish the shared architecture before merging preset into `main`,
+so character cards and world books do not copy the preset feature's former Host
+coupling.
+
+Changes:
+
+- Kept one installable and releasable `dsh-tavern` root package while splitting
+  its internals into `tavern-format`, `preset`, and `tavern-loader`.
+- Moved DSH prompt compilation and supported call-config projection out of the
+  pure format adapter and into `tavern-loader`.
+- Removed Host registration from the preset use-case entry; the root `main` now
+  points to the loader, which composes store, API projection, system prompt, and
+  request hooks.
+- Added public subpath exports for library/use-case/runtime consumers without
+  presenting them as independently installable DSH plugins.
+- Added `docs/ARCHITECTURE.md` with the single-plugin decision, dependency rule,
+  parser-library rationale, future resource seams, and pre-merge acceptance
+  gates.
+- Added an automated boundary test preventing obvious Host dependencies from
+  flowing back into the format or store layers.
+
+Verification:
+
+- `npm run check` rebuilt the accepted browser bundle and passed 19/19 tests,
+  including the external fixture's in-place structural check.
+- `npm run pack:check` included all three internal layers in one 16-file package
+  and excluded docs, tests, runtime data, caches, and the copyrighted fixture.
+- A fresh isolated DSH profile installed one root plugin, loaded
+  `packages/tavern-loader/src/index.js`, booted its real HTTP API, and returned
+  the expected compiled marker and call config for a synthetic selected preset.

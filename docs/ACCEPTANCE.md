@@ -15,7 +15,7 @@ values. It intentionally contains none of the fixture's prompt text.
 
 ## Automated checks
 
-`npm run check` built the browser bundle and passed 18/18 tests. Coverage includes:
+`npm run check` built the browser bundle and passed 19/19 tests. Coverage includes:
 
 - ST Chat Completion parsing and `character_id: 100001` order preference;
 - macro rendering and strict-brace removal;
@@ -28,9 +28,12 @@ values. It intentionally contains none of the fixture's prompt text.
 - immutable prompt-list reordering used by the direct drag handle.
 - visible insertion-boundary to array-index conversion for upward, downward,
   end-of-list, and no-op drops.
+- one-way package boundaries keeping DSH Host policy out of the format and
+  preset store layers.
 
-`npm run pack:check` completed successfully. The package preview contained 12
-release files, including the three lifecycle scripts, and excluded runtime
+`npm run pack:check` completed successfully. The package preview contained 16
+release files, including all three internal layers and the three lifecycle
+scripts, and excluded runtime
 `data/`, the external fixture, docs, tests, and local dependency caches.
 
 ## Installed-plugin results
@@ -117,3 +120,24 @@ using a real credential.
 This confirms that uninstall-before-reinstall is not required to prevent the
 reported duplicate controls. A running dsh process must still be restarted so
 it loads the newly built client bundle.
+
+## Stage 10 architecture-split regression
+
+The refactored root package was installed into a fresh isolated profile at
+`D:\AI\deepseek-harness\test-envs\gpt-architecture`. The test used only a
+synthetic preset and did not import or copy the external fixture.
+
+| Check | Observed result |
+| --- | --- |
+| Installed root entry | `packages/tavern-loader/src/index.js` |
+| Real dsh Host boot | Web server and `/dsh-tavern/api` started successfully |
+| Preset use-case layer | Created, updated, selected, and read a synthetic preset through HTTP |
+| Loader compiled output | Active preview contained `ARCHITECTURE_ACCEPTANCE_MARKER` |
+| Request config projection | temperature `0.33`, max tokens `777` |
+| Installation units | One `dsh-tavern` dependency; no separately installed format/parser plugin |
+
+Together with the Host contract tests, this establishes that the split changed
+module ownership without removing the actual agent-loading path. The previously
+accepted browser UI bundle was rebuilt unchanged from its source entry. The
+synthetic profile was uninstalled without backup and its exact temporary
+directory was removed after recording these results.

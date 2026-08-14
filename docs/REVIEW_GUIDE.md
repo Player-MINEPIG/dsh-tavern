@@ -8,14 +8,21 @@ and world books are deliberately outside this review.
 
 ## Package boundaries
 
-- `packages/tavern-format`: pure parsing, normalization, macro rendering, and
-  prompt compilation. It has no dsh or filesystem dependency.
-- `packages/preset`: filesystem store, HTTP API, dsh Host hooks, and browser UI.
+- `packages/tavern-format`: pure ST parsing, normalization, unknown-field
+  preservation, editing, and macro rendering. It has no dsh, filesystem, or UI
+  dependency.
+- `packages/preset`: filesystem store, CRUD HTTP API, and browser use cases. It
+  does not decide how a preset enters an agent request.
+- `packages/tavern-loader`: the sole dsh Host/root entry. It compiles normalized
+  presets for DSH, projects supported call config, and owns request/session
+  policy.
 - `dist/client.js`: generated browser plugin. Review source first; verify the
   generated artifact with `npm run build`.
 
-The root package is the sole installation and release unit. The internal
-folders are not nested repositories.
+Dependencies flow only `tavern-loader -> preset -> tavern-format`. The root
+package is the sole installation and release unit. Internal folders and package
+exports are neither nested repositories nor separately installable DSH plugins.
+The rationale and merge gates are recorded in `docs/ARCHITECTURE.md`.
 
 ## Runtime data and copyright safety
 

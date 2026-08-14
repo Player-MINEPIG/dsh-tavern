@@ -1,11 +1,13 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import {
-  compilePreset,
   parseSillyTavernPreset,
   renderSillyTavernMacros,
-  supportedCallConfig,
 } from '../packages/tavern-format/src/index.js'
+import {
+  compilePresetForDsh,
+  projectPresetCallConfig,
+} from '../packages/tavern-loader/src/profile-compiler.js'
 
 function sample() {
   return {
@@ -45,7 +47,7 @@ test('imports ST Chat Completion order and preserves unknown data', () => {
   assert.equal(preset.prompts[0].identifier, 'main')
   assert.equal(preset.prompts.find((prompt) => prompt.identifier === 'unused').enabled, false)
   assert.equal(preset.source.raw.extensions.future.retained, true)
-  assert.deepEqual(supportedCallConfig(preset), {
+  assert.deepEqual(projectPresetCallConfig(preset), {
     temperature: 0.7,
     maxTokens: 2048,
     reasoningEffort: 'medium',
@@ -54,7 +56,7 @@ test('imports ST Chat Completion order and preserves unknown data', () => {
 
 test('compiles enabled non-marker prompts and removes dsh-conflicting macros', () => {
   const preset = parseSillyTavernPreset(sample(), { id: 'fixture', name: 'Fixture' })
-  const text = compilePreset(preset, { user: 'Reviewer', random: () => 0 })
+  const text = compilePresetForDsh(preset, { user: 'Reviewer', random: () => 0 })
   assert.match(text, /dsh-tavern selected preset/)
   assert.match(text, /Hello Reviewer/)
   assert.match(text, /warm/)

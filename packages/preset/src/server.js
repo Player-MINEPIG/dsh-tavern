@@ -42,7 +42,15 @@ function presetId(pathname) {
   return match === null ? null : decodeURIComponent(match[1])
 }
 
-export function createApiHandler(store, onChange = () => {}) {
+function defaultActiveView(store) {
+  return {
+    selected: store.selectedSummary(),
+    callConfig: {},
+    compiledPrompt: '',
+  }
+}
+
+export function createApiHandler(store, onChange = () => {}, activeView = () => defaultActiveView(store)) {
   return async (req, res) => {
     try {
       const url = new URL(req.url ?? '/', 'http://localhost')
@@ -62,9 +70,7 @@ export function createApiHandler(store, onChange = () => {}) {
       if (method === 'GET' && path === `${API_ROOT}/active`) {
         return sendJson(res, 200, {
           ok: true,
-          selected: store.selectedSummary(),
-          callConfig: store.selectedCallConfig(),
-          compiledPrompt: store.compiledSelected(),
+          ...activeView(),
         })
       }
 
@@ -114,15 +120,14 @@ export function createApiHandler(store, onChange = () => {}) {
   }
 }
 
-export function installServerRoutes(ctx, store, onChange) {
+export function installServerRoutes(ctx, store, onChange, activeView) {
   const webServer = ctx.get('webServer')
   if (webServer === undefined) return undefined
   return webServer.register({
     kind: 'prefix',
     path: API_ROOT,
-    handler: createApiHandler(store, onChange),
+    handler: createApiHandler(store, onChange, activeView),
   })
 }
 
 export { API_ROOT, MAX_BODY_BYTES }
-

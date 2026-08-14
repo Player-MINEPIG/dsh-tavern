@@ -44,6 +44,8 @@ dsh 没有 ST 的 `PromptManager`、marker collection 或任意历史深度插�
 4. 编译结果通过 `systemPrompt.section()` 作为 order `10` 的一个 DSH system 段注入。
 5. `temperature`、`maxTokens`、`reasoningEffort` 和 `stop` 通过 `agent/request` 映射；其他 ST sampler 目前只保存，不宣称已经下发。
 
+代码边界与这条数据流对应：`tavern-format` 只把 ST JSON 归一化，`preset` 只管理持久化/API/UI，`tavern-loader` 才执行第 3–5 步并作为根插件入口。因而以后改变 DSH 注入策略，不需要修改或重新解释 ST parser。完整决策见 `docs/ARCHITECTURE.md`。
+
 默认 system 段顺序为：DSH harness identity（约 `-100`）→ Agent/deployment persona（约 `0`）→ dsh-tavern preset（`10`）→ 工具引导（`100–199`）。
 
 高级“仅使用预设”模式通过 `system-prompt/assemble` 把 system sections 替换为当前预设，但保留 assembly 的 tools、runtime contexts 和 variables。它会移除模型可见的 harness identity、persona 和工具文字说明，所以 Code Mode 或结构化输出可能失效；工具执行策略、文件沙箱和审批不因删除文本而关闭。DSH 对这一边界的本机参考是 `@deepseek-ai/dsh-system-prompt/README.zh.md`。
@@ -87,4 +89,3 @@ dsh 没有 ST 的 `PromptManager`、marker collection 或任意历史深度插�
 这是预期内的上下文效应，不是“旧 preset 仍被直接注入”的必然证据。每次发送前，当前 system prompt 会重新组装，下一条请求只应带当前选择；但旧预设已经影响过的 assistant 回复和后续 user 对话仍存在于 durable conversation history。模型会从这些文本间接推断旧身份、格式或任务，因此产生认知残留。
 
 可靠的干净切换方式是选择新预设后创建新会话，或从旧预设尚未产生回复的位置 fork。插件不会自动删除、改写或隐藏历史，因为那会破坏用户数据和审计语义。将来可以增加“选择并新建会话”，但它应是显式操作。
-

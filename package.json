@@ -3,10 +3,12 @@
   "version": "0.1.0",
   "description": "SillyTavern-compatible prompt presets for DeepSeek Harness.",
   "type": "module",
-  "main": "packages/preset/src/index.js",
+  "main": "packages/tavern-loader/src/index.js",
   "exports": {
-    ".": "./packages/preset/src/index.js",
+    ".": "./packages/tavern-loader/src/index.js",
     "./format": "./packages/tavern-format/src/index.js",
+    "./loader": "./packages/tavern-loader/src/index.js",
+    "./preset": "./packages/preset/src/index.js",
     "./client": "./dist/client.js",
     "./package.json": "./package.json"
   },

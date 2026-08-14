@@ -7,6 +7,12 @@ an argument array, so paths are not reconstructed as shell command text. Run
 the scripts from the `dsh-tavern` checkout with Node.js 20 or newer and `dsh`
 on `PATH`.
 
+Only the repository root is installed. `packages/tavern-format`,
+`packages/preset`, and `packages/tavern-loader` are internal boundaries shipped
+inside that one plugin; do not try to add them to dsh separately. The format
+layer can be consumed as a JavaScript library through the root package export,
+but by itself it intentionally has no agent-loading effect.
+
 ## Install
 
 Install dependencies once, then install the plugin into the default `web`
