@@ -4,6 +4,52 @@ This is the staged implementation log for the prompt-preset experiment. It is
 kept separately from the product README so reviewers can follow intent,
 decisions, verification, and known limits chronologically.
 
+## 2026-08-14 — Parallel world-book format and matching slice
+
+Purpose: make ST world-book semantics independently testable while loader and
+character-card work continued in isolated worktrees.
+
+- Added loss-preserving standalone World Info and embedded Character Book
+  parsing/export, deterministic matching, ordering, groups, explicit
+  probability rolls and token-budget projection.
+- Kept parser/matcher free of DSH Host, session, storage and UI dependencies.
+- Added an explicit loader bridge for before/after entries and honest
+  diagnostics for depth, outlet and other unsupported placements.
+- Read-only compatibility scans covered SillyTavern source examples and 94
+  TauriTavern books; no inspected third-party content entered the repository.
+
+Verification on `feature/world-book-compat`: 42/42 tests and package preview
+passed at commit `1489e11570a712a882cc2b72461fc70bff8605f1`.
+
+## 2026-08-14 — Three-module integration slice
+
+Purpose: prove preset, character-card and world-book features compose through
+one loader and one per-session selection policy before any main merge.
+
+- Integrated the three completed feature branches in the separate
+  `feature/tavern-integration` worktree; `main` remains unchanged.
+- Registered `createCharacterAdapter()` and the embedded-world-book adapter in
+  the sole Host loader rather than introducing additional prompt hooks.
+- Routed character API bindings through `SessionSelectionStore`, added one-way
+  migration from the character module's pre-loader binding file, and cleared
+  references on deletion.
+- Activated selected cards' embedded Character Books through the shared pure
+  parser/matcher/loader bridge. Standalone world-book ids report an explicit
+  not-yet-installed-store diagnostic.
+- Added a synthetic end-to-end Host test proving character fields and matching
+  lore enter one profile while creator notes stay out, plus migration coverage.
+- Real DSH smoke testing exposed that two overlapping prefix registrations let
+  the broad preset API shadow character routes. Replaced them with one Tavern
+  API prefix and an internal path dispatcher; preset, character library and
+  character-selection endpoints then all returned successful responses.
+- Made the world-book snapshot assertion newline-independent across Windows,
+  macOS and Linux.
+
+Known boundary: world-book matching can inspect existing durable history but
+not the same-turn user input because DSH does not expose it in the public
+system-assembly context. Standalone world-book CRUD/UI and advanced recursive,
+sticky/cooldown/delay/vector execution remain future slices.
+
 ## 2026-08-14 — Unified loader and session policy (feature/tavern-loader)
 
 Purpose: establish the runtime boundary that lets preset, character-card and

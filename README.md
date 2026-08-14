@@ -4,7 +4,7 @@
 
 项目目标不是在 DSH 中复制一套 SillyTavern 前端，而是建立可测试、可扩展的兼容层：理解 SillyTavern 的预设、角色卡和世界书格式，将其归一化，再通过统一加载器映射到 DSH 的 session、system prompt、模型参数与后续消息装配能力。
 
-当前 `0.1.x` 阶段已经完成 **SillyTavern Chat Completion 预设**的首个端到端版本。角色卡 feature 已完成格式与管理用例切片，正在等待统一 loader 集成；世界书运行策略仍在独立开发。
+当前 `0.1.x` 集成分支已经完成 **SillyTavern Chat Completion 预设**和**角色卡**的首个端到端版本，并能激活所选角色卡内嵌世界书中的基础关键词条目。独立世界书的格式和匹配核心已完成，但还没有资源库、选择 API 和管理 UI。
 
 角色卡兼容的调研记录与实施方案见：
 
@@ -26,8 +26,12 @@
 - 支持默认“追加到 DSH system prompt”与高级“仅使用预设”两种模式。
 - 提供 Windows、macOS、Linux 通用的安装/卸载脚本；重复安装会刷新本地 `file:` 快照并暂存、恢复插件数据。
 - 角色卡 feature 可解析 V1/V2/V3 JSON 和 PNG `chara`/`ccv3`，保存原件、诊断、per-session binding，并通过稳定资源接口交给 loader/world-book 模块。
+- 通过角色卡侧栏导入、查看、选择、导出和删除角色卡，并配置 greeting、卡内 system prompt 与 post-history instructions 的采用策略。
+- 将所选角色卡的 description、personality、scenario、example dialogue、system prompt 等字段与 preset marker 统一组合。
+- 解析并匹配角色卡内嵌 `character_book` 的常量/关键词、secondary key、regex、概率、组和 token budget 基础策略，并把激活条目投影到 before/after 位置。
+- 使用统一的 per-session 资源选择；普通 fork 固化父会话快照，delegated subagent 默认不继承 Tavern 资源。
 
-预设选择目前是**每个插件安装实例全局共享**的，而不是每个 session 独立选择。
+旧版本的全局预设选择继续作为新会话默认值；一旦某个 session 明确选择资源，它与其他会话互不影响。
 
 ## 安装
 
@@ -81,11 +85,9 @@ dsh web --host 127.0.0.1 --port 53101
 ## 使用
 
 1. 启动并打开 DSH Web。
-2. 在空白会话点击浮动的“预设”按钮；已有消息的会话则点击标题栏“预设”按钮打开右侧栏。
-3. 点击“导入”选择 ST preset JSON，或点击“创建”建立空白预设。
-4. 编辑名称、采样参数、system prompt 策略和 prompt 块；使用左侧拖拽柄调整顺序。
-5. 保存并选择目标预设。
-6. 发送消息。当前选择会在每次请求组装时编译进 DSH system prompt，支持的采样参数会进入模型调用配置。
+2. 使用“预设”入口导入或创建 preset；编辑采样参数、system prompt 策略和 prompt 块并选择它。
+3. 使用“角色卡”入口导入 ST JSON/PNG 角色卡，选择 greeting 和两个覆盖开关后绑定到当前 session。
+4. 发送消息。loader 会在每次请求时组合当前 session 的 preset、角色卡与命中的内嵌世界书条目；支持的采样参数进入模型调用配置。
 
 切换预设不会改写已有会话历史。旧预设已经影响过的 assistant 回复仍会进入后续上下文，所以需要“干净切换”时，应选择新预设后新建或 fork 会话。
 
@@ -105,9 +107,12 @@ npm run plugin:uninstall
 | --- | --- |
 | enabled prompt 与顺序 | 按归一化顺序编译进一个 DSH system section |
 | `system` / `user` / `assistant` role | 作为 `<st-prompt role="…">` 审阅标签保留，不是真实的交错 role message |
-| marker | 保存但不发送 marker 自身文本；尚无 World Info、example dialogue、chat history 填充器 |
+| marker | 填充角色字段、example dialogue 与激活 World Info；`chatHistory` 只由 DSH 原生历史提供 |
 | 用户输入与会话历史 | 继续由 DSH 原生 durable messages 管理，不插入 ST `chatHistory` marker |
-| absolute/depth injection | 字段保留，尚未执行 |
+| greeting | 作为明确标注的 system profile 风格参考，不伪造 assistant 历史消息 |
+| PHI / depth / absolute injection | 字段保留并给出降级诊断；当前放入 system profile，不能严格复刻 ST 历史位置 |
+| 世界书扫描 | 角色卡内嵌书可扫描已有 durable history；当前轮尚未公开给 assembly，关键词可能下一轮才激活 |
+| 独立世界书 | 解析、导出和 matcher 核心可作为 library 使用；尚无插件内存储、选择 API 或 UI |
 | ST macro | 支持部分常用变量、随机、骰子与局部变量；不是完整 ST runtime |
 | sampler | 未映射的 ST 参数会保存和编辑，但不宣称已经传给模型 adapter |
 
@@ -120,21 +125,24 @@ npm run plugin:uninstall
 本仓库发布为一个 `dsh-tavern` 插件，内部采用单向依赖：
 
 ```text
-packages/tavern-loader  →  packages/preset  →  packages/tavern-format
-DSH Runtime Adapter        存储/API/UI用例      ST格式解析与归一化
+packages/tavern-loader
+  ├─ packages/preset ───────────┐
+  ├─ packages/character ────────┼─ packages/tavern-format
+  └─ packages/world-book ───────┘
 ```
 
 - `tavern-format` 不依赖 DSH、文件系统或 UI。
-- `preset` 管理导入、持久化、CRUD、API 和浏览器用例，不决定如何影响 agent。
-- `tavern-loader` 是唯一 DSH Host 入口，负责 prompt 编译、参数投影和运行策略。
+- `preset` 与 `character` 管理各自的导入、持久化、API 和浏览器用例，不决定如何影响 agent。
+- `world-book` 保持 parser、matcher 和 loader projection 为纯逻辑。
+- `tavern-loader` 是唯一 DSH Host 入口，负责 session policy、组合编译、参数投影和运行策略。
 
 这些目录是内部模块，不是三个需要分别安装的插件。纯格式解析层可以作为 JavaScript library 复用，但单独安装不会影响 agent。
 
 ## 计划开发
 
-- 角色卡格式 adapter、标准模型、导入/管理 UI，以及 greeting、persona、example dialogue 的运行策略。
-- 世界书/lorebook 解析、关键词扫描、before/after anchor、递归与预算策略。
-- 统一 profile compiler，在 preset、角色卡、世界书和 DSH agent system prompt 之间定义稳定的组合顺序与覆盖规则。
+- 独立世界书资源库、导入/管理 UI、per-session 多选及与角色卡内嵌书的统一启用策略。
+- 世界书递归扫描、sticky/cooldown/delay、vector、outlet 与严格 depth/role insertion。
+- 将 greeting 作为显式开场消息的安全工作流，而不污染既有 durable history。
 - 在 DSH 提供合适 seam 后支持真实 role message、example dialogue 和 absolute/depth injection，而不是用 system 标签模拟。
 - per-session 选择/继承策略，以及“选择资源并新建干净会话”等显式操作。
 - 更完整的 ST macro、导入诊断、兼容性报告和稳定的 round-trip/export。

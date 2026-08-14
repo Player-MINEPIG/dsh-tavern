@@ -99,24 +99,29 @@ function characterRoute(path) {
   return { id: decodeURIComponent(match[1]), resource: match[2] }
 }
 
-function selectionPayload(store, sessionId) {
-  const selected = store.selectedCharacter(sessionId)
-  return selected === null
-    ? { selection: null, character: null }
-    : {
-        selection: selected.selection,
-        character: {
-          id: selected.character.id,
-          name: selected.character.name,
-          sourceFormat: selected.character.source?.format,
-          specVersion: selected.character.source?.specVersion,
-        },
-      }
+function selectionPayload(store, sessionId, selectionPolicy) {
+  const selection = selectionPolicy?.selection === undefined
+    ? store.selection(sessionId)
+    : selectionPolicy.selection(sessionId)
+  if (selection === null) {
+    return { selection: null, character: null }
+  }
+  const character = store.get(selection.characterCardId)
+  return {
+    selection,
+    character: {
+      id: character.id,
+      name: character.name,
+      sourceFormat: character.source?.format,
+      specVersion: character.source?.specVersion,
+    },
+  }
 }
 
 export function createCharacterApiHandler(store, options = {}) {
   const onChange = options.onChange ?? (() => {})
   const beforeSelectionChange = options.beforeSelectionChange ?? (() => {})
+  const selectionPolicy = options.selectionPolicy
   return async (req, res) => {
     try {
       const url = new URL(req.url ?? '/', 'http://localhost')
@@ -157,13 +162,14 @@ export function createCharacterApiHandler(store, options = {}) {
       if (route !== null && method === 'DELETE' && route.resource === undefined) {
         store.get(route.id)
         store.delete(route.id)
+        selectionPolicy?.clearResource?.('character-card', route.id)
         onChange({ kind: 'character-deleted', characterCardId: route.id })
         return sendJson(res, 200, { ok: true })
       }
 
       if (method === 'GET' && path === '/dsh-tavern/api/character-selection') {
         const sessionId = url.searchParams.get('sessionId')
-        return sendJson(res, 200, { ok: true, ...selectionPayload(store, sessionId) })
+        return sendJson(res, 200, { ok: true, ...selectionPayload(store, sessionId, selectionPolicy) })
       }
 
       if (method === 'POST' && path === '/dsh-tavern/api/character-selection') {
@@ -175,9 +181,13 @@ export function createCharacterApiHandler(store, options = {}) {
           character: body.character ?? {},
           selection: body.characterCardId === null ? null : body,
         })
-        store.select(body.sessionId, body.characterCardId === null ? null : body)
+        if (selectionPolicy?.select === undefined) {
+          store.select(body.sessionId, body.characterCardId === null ? null : body)
+        } else {
+          await selectionPolicy.select(body.sessionId, body.characterCardId === null ? null : body)
+        }
         onChange({ kind: 'character-selection-changed', sessionId: body.sessionId, characterCardId: body.characterCardId ?? null })
-        return sendJson(res, 200, { ok: true, ...selectionPayload(store, body.sessionId) })
+        return sendJson(res, 200, { ok: true, ...selectionPayload(store, body.sessionId, selectionPolicy) })
       }
 
       return sendJson(res, 404, { ok: false, error: { code: 'NOT_FOUND', message: 'not found' } })

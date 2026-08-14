@@ -8,6 +8,12 @@ function clone(value) {
   return structuredClone(value)
 }
 
+const LOADER_HANDLED_DIAGNOSTICS = new Set([
+  'embedded-character-book-pass-through',
+  'post-history-runtime-required',
+  'depth-prompt-runtime-required',
+])
+
 export function createCharacterCardResource(character, selection) {
   if (!isRecord(character) || character.schemaVersion !== 1 || !isRecord(character.data)) {
     throw new TypeError('Unsupported character document')
@@ -96,7 +102,7 @@ export function createCharacterAdapter(store) {
           },
           diagnostics: [
             ...(compatibility.warnings ?? []),
-            ...(compatibility.unsupportedFeatures ?? []),
+            ...(compatibility.unsupportedFeatures ?? []).filter((item) => !LOADER_HANDLED_DIAGNOSTICS.has(item?.code)),
           ],
         }
       } catch (error) {

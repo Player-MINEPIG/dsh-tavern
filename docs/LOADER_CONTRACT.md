@@ -1,6 +1,6 @@
 # Unified Tavern loader contract
 
-状态：2026-08-14，`feature/tavern-loader` 首阶段实现。本文是角色卡、世界书与加载器三个并行分支的集成契约，不是 README。
+状态：2026-08-14，三个并行 feature 已在 `feature/tavern-integration` 完成首轮接线。本文是角色卡、世界书与加载器的运行契约，不是 README。
 
 ## 目标与所有权
 
@@ -140,4 +140,8 @@ DSH 自己的 `request/header` 仍是模型实际输入的最终权威。loader 
 - marker 填充、角色 override、`{{original}}`、lore before/after 与 chatHistory 不复制均有单测；
 - `replace` 只移除宿主 system sections，保留 tools、contexts、variables 和完整 Tavern profile；
 - API active view 暴露 selection/resources/diagnostics/audit；
+- 角色卡 API 使用统一 session policy；旧 `character-state.json` binding 单向迁移后清除，避免解绑后重启复活；
+- V1/V2/V3 JSON 与 PNG 角色卡可由 adapter 进入 profile，creator notes 不发送；
+- 角色卡内嵌 `character_book` 使用共享世界书 parser/matcher，命中项进入同一 profile；
+- 独立世界书的 parser/matcher/bridge 已集成，但 document store、选择 API 与 UI 尚未接线；
 - 未拷贝任何本机第三方 preset、角色卡或世界书 fixture。

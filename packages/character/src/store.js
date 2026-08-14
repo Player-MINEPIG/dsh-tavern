@@ -279,6 +279,10 @@ export class CharacterStore {
     }
   }
 
+  normalizeSelection(characterCardId, patch = {}) {
+    return normalizeSelection(this.get(validateId(characterCardId)), patch)
+  }
+
   select(sessionId, patch) {
     validateSessionId(sessionId)
     if (patch === null || patch?.characterCardId === null) {
@@ -287,7 +291,7 @@ export class CharacterStore {
       return null
     }
     if (!isRecord(patch)) throw new TypeError('Character selection must be an object or null')
-    const selection = normalizeSelection(this.get(validateId(patch.characterCardId)), patch)
+    const selection = this.normalizeSelection(patch.characterCardId, patch)
     this.state.selectedBySessionId[sessionId] = selection
     this.saveState()
     return clone(selection)

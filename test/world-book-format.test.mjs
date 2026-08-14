@@ -15,7 +15,9 @@ import {
 } from '../packages/world-book/src/index.js'
 
 const fixture = name => readFileSync(new URL(`./fixtures/world-book/${name}`, import.meta.url), 'utf8')
-const snapshot = name => readFileSync(new URL(`./snapshots/${name}`, import.meta.url), 'utf8').trimEnd()
+const snapshot = name => readFileSync(new URL(`./snapshots/${name}`, import.meta.url), 'utf8')
+  .replaceAll('\r\n', '\n')
+  .trimEnd()
 
 test('exposes the world-book API through the root package subpath', async () => {
   const api = await import('dsh-tavern/world-book')
