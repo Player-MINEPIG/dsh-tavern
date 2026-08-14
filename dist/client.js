@@ -143,13 +143,17 @@ function PromptEditor({ prompt, index, total, onPatch, onMove, onDelete }) {
     )
   );
 }
-function PresetSidebar({ closePanel }) {
+function PresetSidebar({ closePanel, openPanel }) {
   const [catalog, setCatalog] = (0, import_react.useState)({ presets: [], selectedId: null, storageDir: "" });
   const [draft, setDraft] = (0, import_react.useState)(null);
   const [busy, setBusy] = (0, import_react.useState)(false);
   const [status, setStatus] = (0, import_react.useState)({ text: "\u52A0\u8F7D\u4E2D\u2026", error: false });
   const [advanced, setAdvanced] = (0, import_react.useState)(false);
   const fileRef = (0, import_react.useRef)(null);
+  (0, import_react.useEffect)(() => {
+    const timers = [0, 200, 800].map((delay) => window.setTimeout(openPanel, delay));
+    return () => timers.forEach((timer) => window.clearTimeout(timer));
+  }, []);
   const run = (0, import_react.useCallback)(async (operation, successText) => {
     setBusy(true);
     try {
@@ -370,7 +374,10 @@ function apply(ctx) {
   ctx.slots.inject("details", () => ctx.slots.register({
     name: "details",
     priority: -10,
-    inject: () => ({ closePanel: () => ctx.layout.closeDetails() })
+    inject: () => ({
+      closePanel: () => ctx.layout.closeDetails(),
+      openPanel: () => ctx.layout.openDetails()
+    })
   }, PresetSidebar));
   ctx.slots.inject("conversation.session.header.utilities", () => ctx.slots.register({
     name: "conversation.session.header.utilities",

@@ -113,13 +113,20 @@ function PromptEditor({ prompt, index, total, onPatch, onMove, onDelete }) {
   )
 }
 
-function PresetSidebar({ closePanel }) {
+function PresetSidebar({ closePanel, openPanel }) {
   const [catalog, setCatalog] = useState({ presets: [], selectedId: null, storageDir: '' })
   const [draft, setDraft] = useState(null)
   const [busy, setBusy] = useState(false)
   const [status, setStatus] = useState({ text: '加载中…', error: false })
   const [advanced, setAdvanced] = useState(false)
   const fileRef = useRef(null)
+
+  useEffect(() => {
+    // The host restores its blank-session layout just after slot mount. Re-assert
+    // the requested default across that short bootstrap window.
+    const timers = [0, 200, 800].map((delay) => window.setTimeout(openPanel, delay))
+    return () => timers.forEach((timer) => window.clearTimeout(timer))
+  }, [])
 
   const run = useCallback(async (operation, successText) => {
     setBusy(true)
@@ -331,7 +338,10 @@ export function apply(ctx) {
   ctx.slots.inject('details', () => ctx.slots.register({
     name: 'details',
     priority: -10,
-    inject: () => ({ closePanel: () => ctx.layout.closeDetails() }),
+    inject: () => ({
+      closePanel: () => ctx.layout.closeDetails(),
+      openPanel: () => ctx.layout.openDetails(),
+    }),
   }, PresetSidebar))
 
   ctx.slots.inject('conversation.session.header.utilities', () => ctx.slots.register({
@@ -353,4 +363,3 @@ export function apply(ctx) {
   const timer = window.setTimeout(openDefault, 0)
   ctx.effect(() => () => window.clearTimeout(timer), 'dsh-tavern: default right panel')
 }
-

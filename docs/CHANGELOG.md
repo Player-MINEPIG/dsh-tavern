@@ -68,3 +68,30 @@ Changes:
   ordered prompt editor with enable, role, content, add, move, and delete.
 - Added an API-level test covering import, selection, active compiled preview,
   and creation through the same endpoints used by the UI.
+
+## 2026-08-14 — Stage 4: installed-plugin and message-path acceptance
+
+Purpose: verify the packaged result through a real dsh Web profile, including
+the durable request record, rather than stopping at unit-level mocks.
+
+Changes and findings:
+
+- Installed this worktree with `dsh plugin --profile web add file:...` into an
+  isolated temporary `DSH_HOME` and confirmed both Host and client entries load.
+- Reasserted the default details-panel open during the short dsh session-layout
+  bootstrap window; this avoids the Host restoring the closed width after the
+  plugin's first open request.
+- Imported the named copyrighted fixture in place. It produced 140 editable
+  prompts, 20 enabled non-marker prompts, selected order `character_id: 100001`,
+  and a 4,776-character compiled plugin section without unresolved strict dsh
+  macros. No fixture content was copied to this worktree or test output.
+- Exercised browser create, edit, save, switch-away, and switch-back behavior.
+  The created preset restored `temperature: 0.42` and `maxTokens: 888` after
+  reselection and was stored below the installed plugin's `data/` directory.
+- Submitted real dsh session prompts with both the imported and UI-created
+  presets selected. Their durable `request/header` records contained the
+  dsh-tavern preset marker/name and the selected sampling values; no unresolved
+  `{{...}}` macro reached either request header.
+- Ran `npm run check`: build plus all 9 tests passed. Ran package dry-run and
+  confirmed the copyrighted fixture, runtime `data/`, docs, and tests are absent
+  from the publish payload.

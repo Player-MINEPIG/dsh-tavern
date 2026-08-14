@@ -60,13 +60,28 @@ The first release targets SillyTavern Chat Completion preset JSON:
   slot and adds a header utility to reopen it. This is an upstream slot
   limitation, not an accidental UI choice.
 
-## Planned verification
+## Verification and review path
 
-1. Unit tests for parser, prompt order, macro safety, and store traversal/atomic
-   persistence.
-2. Host-contract test proving selected prompt text and sampling config enter
-   the two dsh request seams.
-3. API tests for import/create/update/select and payload/error bounds.
-4. In-place acceptance parse of the named fixture with structural assertions
-   only; no copyrighted strings in snapshots or output.
-5. Browser smoke test after local dsh installation.
+Run from the worktree root:
+
+```powershell
+npm install --cache .npm-cache --legacy-peer-deps
+npm run check
+npm run pack:check
+```
+
+The automated suite covers parser order/macro behavior, path safety and atomic
+store reload, Host request seams, API CRUD, and an in-place structural check of
+the named acceptance file. The acceptance test skips only when that external
+file is absent.
+
+For a manual browser review, install the worktree into a disposable dsh profile,
+start `dsh web`, then use the `预设` panel to import the external file. Create a
+second preset, change its name and sampling controls, save, switch to the import,
+and switch back. `docs/ACCEPTANCE.md` records the observed results from the
+completed isolated-profile run.
+
+The Host does not render its normal conversation header for a blank session.
+The preset details occupant is mounted there but dsh may keep that column
+collapsed until the session begins; once a conversation is active it opens by
+default, and the header `预设` button is the stable reopen affordance.
