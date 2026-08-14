@@ -191,3 +191,25 @@ Verification:
 - After a test turn created an active session, there was one header launcher,
   zero floating buttons, and one visible native panel. One close collapsed the
   panel from about 359 px to 0 px; one header click reopened it.
+
+## 2026-08-14 — Stage 9: explicit drag origin and drop position
+
+Purpose: make prompt reordering visually predictable before the pointer is
+released.
+
+Changes:
+
+- Collapse the dragged source prompt into a primary-color horizontal bar so its
+  original position remains visible.
+- Render a dashed placeholder box labelled `松开后放置于此` at the exact
+  insertion boundary.
+- Resolve the boundary from the upper or lower half of the prompt under the
+  pointer, including a distinct drop target after the final prompt.
+- Convert the visible insertion boundary to the post-removal array index with a
+  pure helper, avoiding off-by-one moves when dragging downward.
+
+Verification:
+
+- `npm run check` built the client and passed 18/18 tests.
+- Boundary tests cover moving the first prompt to the end, the last prompt to
+  the beginning, and a no-op drop immediately after the source.

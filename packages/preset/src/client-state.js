@@ -8,6 +8,12 @@ export function reorder(items, from, to) {
   return result
 }
 
+export function reorderAtBoundary(items, from, boundary) {
+  if (!Number.isSafeInteger(boundary) || boundary < 0 || boundary > items.length) return items
+  const destination = boundary > from ? boundary - 1 : boundary
+  return reorder(items, from, destination)
+}
+
 export function shouldUseFloatingPanel(sessionState) {
   const current = sessionState?.current
   if (current === undefined || current === null) return true

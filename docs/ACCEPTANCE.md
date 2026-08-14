@@ -15,7 +15,7 @@ values. It intentionally contains none of the fixture's prompt text.
 
 ## Automated checks
 
-`npm run check` built the browser bundle and passed 17/17 tests. Coverage includes:
+`npm run check` built the browser bundle and passed 18/18 tests. Coverage includes:
 
 - ST Chat Completion parsing and `character_id: 100001` order preference;
 - macro rendering and strict-brace removal;
@@ -26,6 +26,8 @@ values. It intentionally contains none of the fixture's prompt text.
 - portable lifecycle argument construction and uninstall backup behavior.
 - system-prompt replacement preserving tools, runtime contexts, and variables;
 - immutable prompt-list reordering used by the direct drag handle.
+- visible insertion-boundary to array-index conversion for upward, downward,
+  end-of-list, and no-op drops.
 
 `npm run pack:check` completed successfully. The package preview contained 12
 release files, including the three lifecycle scripts, and excluded runtime

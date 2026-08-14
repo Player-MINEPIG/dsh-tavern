@@ -42,6 +42,11 @@ function reorder(items, from, to) {
   result.splice(to, 0, moved);
   return result;
 }
+function reorderAtBoundary(items, from, boundary) {
+  if (!Number.isSafeInteger(boundary) || boundary < 0 || boundary > items.length) return items;
+  const destination = boundary > from ? boundary - 1 : boundary;
+  return reorder(items, from, destination);
+}
 function shouldUseFloatingPanel(sessionState) {
   const current = sessionState?.current;
   if (current === void 0 || current === null) return true;
@@ -70,7 +75,7 @@ var css = `
 .dtt-field{display:flex;flex-direction:column;gap:5px}.dtt-label{font-size:11px;color:var(--dsw-alias-label-tertiary);font-weight:600}.dtt-input,.dtt-select,.dtt-textarea{box-sizing:border-box;width:100%;border:1px solid var(--dsw-alias-border-l2);border-radius:7px;background:var(--dsw-alias-bg-base);color:var(--dsw-alias-label-primary);font:inherit;font-size:12px;outline:none}.dtt-input,.dtt-select{height:34px;padding:0 9px}.dtt-textarea{min-height:110px;resize:vertical;padding:8px;line-height:1.45}.dtt-input:focus,.dtt-select:focus,.dtt-textarea:focus{border-color:var(--dsw-alias-state-business-primary)}
 .dtt-grid{display:grid;grid-template-columns:1fr 1fr;gap:9px}.dtt-section{border-top:1px solid var(--dsw-alias-border-l1);padding-top:12px;display:flex;flex-direction:column;gap:10px}.dtt-section-title{font-size:12px;font-weight:650;display:flex;align-items:center;justify-content:space-between}
 .dtt-note{font-size:11px;line-height:1.45;color:var(--dsw-alias-label-tertiary);margin:0}.dtt-status{font-size:11px;line-height:1.4;border-radius:7px;padding:7px 9px;background:var(--dsw-specific-tip);word-break:break-word}.dtt-status[data-error=true]{color:var(--dsw-alias-state-error)}
-.dtt-prompts{display:flex;flex-direction:column;gap:7px}.dtt-prompt{border:1px solid var(--dsw-alias-border-l1);border-radius:8px;overflow:hidden}.dtt-prompt[data-drag-over=true]{border-color:var(--dsw-alias-state-business-primary);box-shadow:0 0 0 1px var(--dsw-alias-state-business-primary)}.dtt-prompt-summary{display:flex;align-items:center;gap:7px;padding:8px;cursor:pointer;font-size:12px}.dtt-prompt-summary::marker{color:var(--dsw-alias-label-tertiary)}.dtt-drag{border:0;background:transparent;color:var(--dsw-alias-label-tertiary);cursor:grab;padding:1px 2px;font-size:15px;line-height:1;touch-action:none;user-select:none}.dtt-drag:active{cursor:grabbing}.dtt-prompt-name{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.dtt-role{font-size:10px;color:var(--dsw-alias-label-tertiary);text-transform:uppercase}.dtt-prompt-body{padding:0 9px 9px;display:flex;flex-direction:column;gap:8px}.dtt-row-actions{display:flex;gap:6px}.dtt-row-actions .dtt-button{height:28px;padding:0 8px;flex:1}
+.dtt-prompts{display:flex;flex-direction:column;gap:7px}.dtt-prompt{border:1px solid var(--dsw-alias-border-l1);border-radius:8px;overflow:hidden;transition:border-color .12s,box-shadow .12s}.dtt-prompt[data-dragging=true]{height:4px;min-height:4px;margin:5px 10px;border:0;border-radius:999px;background:var(--dsw-alias-state-business-primary);box-shadow:0 0 0 1px color-mix(in srgb,var(--dsw-alias-state-business-primary) 25%,transparent)}.dtt-prompt[data-dragging=true]>*{opacity:0}.dtt-drop-placeholder{box-sizing:border-box;height:42px;border:2px dashed var(--dsw-alias-state-business-primary);border-radius:8px;background:color-mix(in srgb,var(--dsw-alias-state-business-primary) 7%,transparent);display:flex;align-items:center;justify-content:center;color:var(--dsw-alias-state-business-primary);font-size:11px;font-weight:600;pointer-events:none}.dtt-prompt-summary{display:flex;align-items:center;gap:7px;padding:8px;cursor:pointer;font-size:12px}.dtt-prompt-summary::marker{color:var(--dsw-alias-label-tertiary)}.dtt-drag{border:0;background:transparent;color:var(--dsw-alias-label-tertiary);cursor:grab;padding:1px 2px;font-size:15px;line-height:1;touch-action:none;user-select:none}.dtt-drag:active{cursor:grabbing}.dtt-prompt-name{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.dtt-role{font-size:10px;color:var(--dsw-alias-label-tertiary);text-transform:uppercase}.dtt-prompt-body{padding:0 9px 9px;display:flex;flex-direction:column;gap:8px}.dtt-row-actions{display:flex;gap:6px}.dtt-row-actions .dtt-button{height:28px;padding:0 8px;flex:1}
 .dtt-footer{position:sticky;bottom:-12px;margin:0 -12px -12px;padding:10px 12px;background:var(--dsw-alias-bg-base);border-top:1px solid var(--dsw-alias-border-l2);display:grid;grid-template-columns:1fr auto;gap:8px}
 .dtt-open-button{height:28px;border:1px solid var(--dsw-alias-border-l2);border-radius:7px;background:transparent;color:var(--dsw-alias-label-primary);font-size:11px;cursor:pointer;padding:0 9px}.dtt-open-button:hover{background:var(--dsw-alias-interactive-bg-hover)}
 .dtt-floating-layer{display:none;position:absolute;inset:0;pointer-events:none;z-index:5}[data-details-collapsed] .dtt-floating-layer{display:block}.dtt-floating-launcher{position:absolute;top:14px;right:16px;pointer-events:auto}.dtt-floating-button{height:32px;border:1px solid var(--dsw-alias-border-l2);border-radius:9px;background:var(--dsw-alias-bg-base);box-shadow:var(--ds-shadow-2,0 4px 16px rgba(0,0,0,.16));color:var(--dsw-alias-label-primary);font-size:12px;font-weight:600;cursor:pointer;padding:0 12px}.dtt-floating-button:hover{background:var(--dsw-alias-interactive-bg-hover)}.dtt-overlay-panel{position:absolute;top:0;right:0;bottom:0;width:min(420px,calc(100vw - 56px));pointer-events:auto;border-left:1px solid var(--dsw-alias-border-l2);box-shadow:var(--ds-shadow-3,-8px 0 28px rgba(0,0,0,.18))}
@@ -108,13 +113,13 @@ function NumberField({ label, value, onChange, min, step = "any" }) {
     onChange: (event) => onChange(event.target.value === "" ? void 0 : Number(event.target.value))
   }));
 }
-function PromptEditor({ prompt, index, dragging, dragOver, onPatch, onPointerDown, onPointerMove, onPointerUp, onPointerCancel, onDelete }) {
+function PromptEditor({ prompt, index, dragging, onPatch, onPointerDown, onPointerMove, onPointerUp, onPointerCancel, onDelete }) {
   return (0, import_react.createElement)(
     "details",
     {
       className: "dtt-prompt",
       "data-prompt-index": index,
-      "data-drag-over": dragOver || void 0
+      "data-dragging": dragging || void 0
     },
     (0, import_react.createElement)(
       "summary",
@@ -179,6 +184,19 @@ function PromptEditor({ prompt, index, dragging, dragOver, onPatch, onPointerDow
     )
   );
 }
+function DropPlaceholder() {
+  return (0, import_react.createElement)("div", {
+    className: "dtt-drop-placeholder",
+    "aria-hidden": true
+  }, "\u677E\u5F00\u540E\u653E\u7F6E\u4E8E\u6B64");
+}
+function insertionBoundary(event) {
+  const target = document.elementFromPoint(event.clientX, event.clientY)?.closest("[data-prompt-index]");
+  if (target === null) return null;
+  const index = Number(target.dataset.promptIndex);
+  const bounds = target.getBoundingClientRect();
+  return event.clientY < bounds.top + bounds.height / 2 ? index : index + 1;
+}
 function PresetSidebar({ closePanel, openPanel, sessionId, autoOpen = true }) {
   const [catalog, setCatalog] = (0, import_react.useState)(null);
   const [draft, setDraft] = (0, import_react.useState)(null);
@@ -186,7 +204,7 @@ function PresetSidebar({ closePanel, openPanel, sessionId, autoOpen = true }) {
   const [status, setStatus] = (0, import_react.useState)({ text: "\u52A0\u8F7D\u4E2D\u2026", error: false });
   const [advanced, setAdvanced] = (0, import_react.useState)(false);
   const [dragFrom, setDragFrom] = (0, import_react.useState)(null);
-  const [dragOver, setDragOver] = (0, import_react.useState)(null);
+  const [dropIndex, setDropIndex] = (0, import_react.useState)(null);
   const fileRef = (0, import_react.useRef)(null);
   const refreshGeneration = (0, import_react.useRef)(0);
   (0, import_react.useEffect)(() => {
@@ -275,8 +293,8 @@ function PresetSidebar({ closePanel, openPanel, sessionId, autoOpen = true }) {
     ...current,
     prompts: current.prompts.map((prompt, at) => at === index ? { ...prompt, ...patch } : prompt)
   }));
-  const movePrompt = (from, to) => setDraft((current) => {
-    const prompts = reorder(current.prompts, from, to);
+  const movePrompt = (from, boundary) => setDraft((current) => {
+    const prompts = reorderAtBoundary(current.prompts, from, boundary);
     if (prompts === current.prompts) return current;
     return { ...current, prompts };
   });
@@ -394,40 +412,46 @@ function PresetSidebar({ closePanel, openPanel, sessionId, autoOpen = true }) {
             (0, import_react.createElement)("span", null, `\u63D0\u793A\u8BCD (${draft.prompts.length})`),
             (0, import_react.createElement)("button", { className: "dtt-button", type: "button", onClick: addPrompt }, "\uFF0B \u6DFB\u52A0")
           ),
-          (0, import_react.createElement)("div", { className: "dtt-prompts" }, ...draft.prompts.map((prompt, index) => (0, import_react.createElement)(PromptEditor, {
-            key: `${prompt.identifier}-${index}`,
-            prompt,
-            index,
-            dragging: dragFrom === index,
-            dragOver: dragOver === index && dragFrom !== index,
-            onPatch: (patch) => patchPrompt(index, patch),
-            onPointerDown: (event) => {
-              event.preventDefault();
-              event.stopPropagation();
-              event.currentTarget.setPointerCapture(event.pointerId);
-              setDragFrom(index);
-              setDragOver(index);
-            },
-            onPointerMove: (event) => {
-              if (!event.currentTarget.hasPointerCapture(event.pointerId)) return;
-              const target = document.elementFromPoint(event.clientX, event.clientY)?.closest("[data-prompt-index]");
-              if (target !== null) setDragOver(Number(target.dataset.promptIndex));
-            },
-            onPointerUp: (event) => {
-              event.preventDefault();
-              const target = document.elementFromPoint(event.clientX, event.clientY)?.closest("[data-prompt-index]");
-              const to = target === null ? index : Number(target.dataset.promptIndex);
-              if (event.currentTarget.hasPointerCapture(event.pointerId)) event.currentTarget.releasePointerCapture(event.pointerId);
-              movePrompt(index, to);
-              setDragFrom(null);
-              setDragOver(null);
-            },
-            onPointerCancel: () => {
-              setDragFrom(null);
-              setDragOver(null);
-            },
-            onDelete: () => deletePrompt(index)
-          })))
+          (0, import_react.createElement)(
+            "div",
+            { className: "dtt-prompts" },
+            ...draft.prompts.flatMap((prompt, index) => [
+              dragFrom !== null && dropIndex === index ? (0, import_react.createElement)(DropPlaceholder, { key: `drop-${index}` }) : null,
+              (0, import_react.createElement)(PromptEditor, {
+                key: `${prompt.identifier}-${index}`,
+                prompt,
+                index,
+                dragging: dragFrom === index,
+                onPatch: (patch) => patchPrompt(index, patch),
+                onPointerDown: (event) => {
+                  event.preventDefault();
+                  event.stopPropagation();
+                  event.currentTarget.setPointerCapture(event.pointerId);
+                  setDragFrom(index);
+                  setDropIndex(index + 1);
+                },
+                onPointerMove: (event) => {
+                  if (!event.currentTarget.hasPointerCapture(event.pointerId)) return;
+                  const boundary = insertionBoundary(event);
+                  if (boundary !== null) setDropIndex(boundary);
+                },
+                onPointerUp: (event) => {
+                  event.preventDefault();
+                  const boundary = insertionBoundary(event) ?? dropIndex ?? index + 1;
+                  if (event.currentTarget.hasPointerCapture(event.pointerId)) event.currentTarget.releasePointerCapture(event.pointerId);
+                  movePrompt(index, boundary);
+                  setDragFrom(null);
+                  setDropIndex(null);
+                },
+                onPointerCancel: () => {
+                  setDragFrom(null);
+                  setDropIndex(null);
+                },
+                onDelete: () => deletePrompt(index)
+              })
+            ]),
+            dragFrom !== null && dropIndex === draft.prompts.length ? (0, import_react.createElement)(DropPlaceholder, { key: "drop-end" }) : null
+          )
         ),
         (0, import_react.createElement)(
           "div",
