@@ -7,3 +7,9 @@ export function reorder(items, from, to) {
   result.splice(to, 0, moved)
   return result
 }
+
+export function shouldUseFloatingPanel(sessionState) {
+  const current = sessionState?.current
+  if (current === undefined || current === null) return true
+  return sessionState.byId?.[current]?.blank === true
+}

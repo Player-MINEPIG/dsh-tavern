@@ -85,8 +85,9 @@ The Host does not render its normal conversation header for a blank session and
 may keep the session-scoped details column collapsed during bootstrap. A
 root-scoped `shell.overlay` launcher and drawer keep preset import/selection
 reachable before the first message. Once a conversation is active, the overlay
-automatically yields to the native details panel and the header `预设` button is
-the stable reopen affordance.
+component unmounts entirely; only the native details panel and header `预设`
+button remain. The two surfaces are deliberately mutually exclusive so closing
+an active panel cannot reveal a second launcher or require a second close.
 
 For the exact compatibility boundary and future character-card/world-book
 design, review `docs/PROMPT_PIPELINE.md`. In particular, current `user` and

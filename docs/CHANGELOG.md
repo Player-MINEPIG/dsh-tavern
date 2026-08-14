@@ -165,3 +165,29 @@ Verification:
 
 - `npm run check` built the client and passed 16/16 tests, including the new
   system-assembly preservation and pure reorder contracts.
+
+## 2026-08-14 — Stage 8: mutually exclusive sidebar surfaces
+
+Purpose: eliminate duplicate launch buttons and double-close behavior after an
+active conversation's native details panel is collapsed.
+
+Changes:
+
+- Confirmed the isolated user profile contains one `dsh-tavern` dependency and
+  one bundle entry; reinstalling without uninstalling did not duplicate it.
+- Restricted the root floating launcher/drawer to the no-session or blank-session
+  state where dsh does not provide a usable conversation header.
+- Active sessions now expose only the native details panel plus its header
+  launcher. Closing that panel cannot reveal a still-open overlay drawer.
+- The blank-session drawer no longer asks the native details layout to open, so
+  the two surfaces cannot become open at the same time.
+- Added a pure visibility-policy test for missing, blank, and active sessions.
+
+Verification:
+
+- `npm run check` built the client and passed 17/17 tests.
+- In a disposable installed profile, the blank state exposed one floating
+  launcher and one drawer; one close removed the drawer.
+- After a test turn created an active session, there was one header launcher,
+  zero floating buttons, and one visible native panel. One close collapsed the
+  panel from about 359 px to 0 px; one header click reopened it.

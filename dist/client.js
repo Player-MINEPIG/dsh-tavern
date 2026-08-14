@@ -42,6 +42,11 @@ function reorder(items, from, to) {
   result.splice(to, 0, moved);
   return result;
 }
+function shouldUseFloatingPanel(sessionState) {
+  const current = sessionState?.current;
+  if (current === void 0 || current === null) return true;
+  return sessionState.byId?.[current]?.blank === true;
+}
 
 // packages/preset/src/client.js
 var API_ROOT = "/dsh-tavern/api";
@@ -174,7 +179,7 @@ function PromptEditor({ prompt, index, dragging, dragOver, onPatch, onPointerDow
     )
   );
 }
-function PresetSidebar({ closePanel, openPanel, sessionId }) {
+function PresetSidebar({ closePanel, openPanel, sessionId, autoOpen = true }) {
   const [catalog, setCatalog] = (0, import_react.useState)(null);
   const [draft, setDraft] = (0, import_react.useState)(null);
   const [busy, setBusy] = (0, import_react.useState)(false);
@@ -185,9 +190,10 @@ function PresetSidebar({ closePanel, openPanel, sessionId }) {
   const fileRef = (0, import_react.useRef)(null);
   const refreshGeneration = (0, import_react.useRef)(0);
   (0, import_react.useEffect)(() => {
+    if (!autoOpen) return void 0;
     const timers = [0, 200, 800].map((delay) => window.setTimeout(openPanel, delay));
     return () => timers.forEach((timer) => window.clearTimeout(timer));
-  }, []);
+  }, [autoOpen]);
   const run = (0, import_react.useCallback)(async (operation, successText) => {
     setBusy(true);
     try {
@@ -440,11 +446,15 @@ function PresetHeaderButton({ openPanel }) {
   };
   return (0, import_react.createElement)("button", { className: "dtt-open-button", type: "button", onClick: open, title: "\u6253\u5F00 Tavern \u9884\u8BBE\u4FA7\u8FB9\u680F" }, "\u9884\u8BBE");
 }
-function PresetFloatingLauncher({ openPanel, useSessions }) {
+function PresetFloatingLauncher({ useSessions }) {
   const [overlayOpen, setOverlayOpen] = (0, import_react.useState)(false);
   const sessionId = useSessions((state) => state.current);
+  const floatingAvailable = useSessions(shouldUseFloatingPanel);
+  (0, import_react.useEffect)(() => {
+    if (!floatingAvailable) setOverlayOpen(false);
+  }, [floatingAvailable]);
+  if (!floatingAvailable) return null;
   const open = () => {
-    openPanel();
     setOverlayOpen(true);
     window.dispatchEvent(new Event("dsh-tavern:refresh"));
   };
@@ -453,8 +463,10 @@ function PresetFloatingLauncher({ openPanel, useSessions }) {
     { className: "dtt-floating-layer" },
     overlayOpen ? (0, import_react.createElement)("div", { className: "dtt-overlay-panel" }, (0, import_react.createElement)(PresetSidebar, {
       closePanel: () => setOverlayOpen(false),
-      openPanel: () => setOverlayOpen(true),
-      sessionId
+      openPanel: () => {
+      },
+      sessionId,
+      autoOpen: false
     })) : (0, import_react.createElement)(
       "div",
       { className: "dtt-floating-launcher" },
@@ -497,7 +509,7 @@ function apply(ctx) {
     name: "shell.overlay",
     id: "dsh-tavern-preset-launcher",
     order: 80,
-    inject: () => ({ openPanel: () => ctx.layout.openDetails() })
+    inject: () => ({})
   }, PresetFloatingLauncher));
   let attempts = 0;
   const openDefault = () => {

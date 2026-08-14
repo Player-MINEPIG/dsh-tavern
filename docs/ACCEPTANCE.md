@@ -15,7 +15,7 @@ values. It intentionally contains none of the fixture's prompt text.
 
 ## Automated checks
 
-`npm run check` built the browser bundle and passed 16/16 tests. Coverage includes:
+`npm run check` built the browser bundle and passed 17/17 tests. Coverage includes:
 
 - ST Chat Completion parsing and `character_id: 100001` order preference;
 - macro rendering and strict-brace removal;
@@ -95,3 +95,23 @@ pointer drag, so the physical pointer gesture remains a short manual review
 item. The UI event path and its reorder transformation are separately covered;
 this limitation is about the test driver, not a claim of completed gesture
 acceptance.
+
+## Stage 8 sidebar exclusivity regression
+
+The installed package was exercised in another disposable profile with a
+blank workspace session and then an active session produced by a test-owned
+message. A placeholder API key intentionally failed provider authentication;
+the durable failed turn was sufficient to enter the active-session UI without
+using a real credential.
+
+| State | Observed result |
+| --- | --- |
+| Installed dependency | One `dsh-tavern` dependency and one profile bundle entry |
+| No session / blank session | One floating launcher; opening created one visible drawer; one close removed it |
+| Active session, panel open | One header `预设` button, zero floating buttons, one native panel about 359 px wide |
+| Active session, after one close | Native panel width became 0; header button remained; no floating button appeared |
+| Active session, reopen | One header click restored the native panel to about 359 px |
+
+This confirms that uninstall-before-reinstall is not required to prevent the
+reported duplicate controls. A running dsh process must still be restarted so
+it loads the newly built client bundle.

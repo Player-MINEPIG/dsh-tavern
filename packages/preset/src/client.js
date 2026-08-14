@@ -5,7 +5,7 @@ import {
   useRef,
   useState,
 } from 'react'
-import { reorder } from './client-state.js'
+import { reorder, shouldUseFloatingPanel } from './client-state.js'
 
 const API_ROOT = '/dsh-tavern/api'
 
@@ -132,7 +132,7 @@ function PromptEditor({ prompt, index, dragging, dragOver, onPatch, onPointerDow
   )
 }
 
-function PresetSidebar({ closePanel, openPanel, sessionId }) {
+function PresetSidebar({ closePanel, openPanel, sessionId, autoOpen = true }) {
   const [catalog, setCatalog] = useState(null)
   const [draft, setDraft] = useState(null)
   const [busy, setBusy] = useState(false)
@@ -144,11 +144,12 @@ function PresetSidebar({ closePanel, openPanel, sessionId }) {
   const refreshGeneration = useRef(0)
 
   useEffect(() => {
+    if (!autoOpen) return undefined
     // The host restores its blank-session layout just after slot mount. Re-assert
     // the requested default across that short bootstrap window.
     const timers = [0, 200, 800].map((delay) => window.setTimeout(openPanel, delay))
     return () => timers.forEach((timer) => window.clearTimeout(timer))
-  }, [])
+  }, [autoOpen])
 
   const run = useCallback(async (operation, successText) => {
     setBusy(true)
@@ -387,11 +388,18 @@ function PresetHeaderButton({ openPanel }) {
   return h('button', { className: 'dtt-open-button', type: 'button', onClick: open, title: '打开 Tavern 预设侧边栏' }, '预设')
 }
 
-function PresetFloatingLauncher({ openPanel, useSessions }) {
+function PresetFloatingLauncher({ useSessions }) {
   const [overlayOpen, setOverlayOpen] = useState(false)
   const sessionId = useSessions((state) => state.current)
+  const floatingAvailable = useSessions(shouldUseFloatingPanel)
+
+  useEffect(() => {
+    if (!floatingAvailable) setOverlayOpen(false)
+  }, [floatingAvailable])
+
+  if (!floatingAvailable) return null
+
   const open = () => {
-    openPanel()
     setOverlayOpen(true)
     window.dispatchEvent(new Event('dsh-tavern:refresh'))
   }
@@ -400,8 +408,9 @@ function PresetFloatingLauncher({ openPanel, useSessions }) {
     overlayOpen
       ? h('div', { className: 'dtt-overlay-panel' }, h(PresetSidebar, {
         closePanel: () => setOverlayOpen(false),
-        openPanel: () => setOverlayOpen(true),
+        openPanel: () => {},
         sessionId,
+        autoOpen: false,
       }))
       : h('div', { className: 'dtt-floating-launcher' },
         h('button', {
@@ -448,7 +457,7 @@ export function apply(ctx) {
     name: 'shell.overlay',
     id: 'dsh-tavern-preset-launcher',
     order: 80,
-    inject: () => ({ openPanel: () => ctx.layout.openDetails() }),
+    inject: () => ({}),
   }, PresetFloatingLauncher))
 
   let attempts = 0
