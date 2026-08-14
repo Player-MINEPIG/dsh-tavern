@@ -1,5 +1,5 @@
 import { spawnSync } from 'node:child_process'
-import { existsSync } from 'node:fs'
+import { existsSync, readFileSync } from 'node:fs'
 import { cp, mkdir, stat } from 'node:fs/promises'
 import os from 'node:os'
 import path from 'node:path'
@@ -66,6 +66,28 @@ export function dshHomePath(options, environment = process.env, home = os.homedi
 
 export function installedDataPath(dshHome, profile) {
   return path.join(dshHome, 'profiles', profile, 'node_modules', PLUGIN_NAME, 'data')
+}
+
+export function profileStoreDir(dshHome, profile) {
+  const manifestPath = path.join(dshHome, 'profiles', profile, 'node_modules', '.modules.yaml')
+  let content
+  try {
+    content = readFileSync(manifestPath, 'utf8')
+  } catch (error) {
+    if (error?.code === 'ENOENT') return undefined
+    throw error
+  }
+
+  let storeDir
+  try {
+    storeDir = JSON.parse(content)?.storeDir
+  } catch {
+    const match = /^\s*storeDir:\s*['"]?(.+?)['"]?\s*$/m.exec(content)
+    storeDir = match?.[1]
+  }
+  if (typeof storeDir !== 'string' || storeDir.trim() === '') return undefined
+  const resolved = path.resolve(storeDir.trim())
+  return /^v\d+$/i.test(path.basename(resolved)) ? path.dirname(resolved) : resolved
 }
 
 export function localPackageSpec(projectRoot, platform = process.platform) {

@@ -1,8 +1,10 @@
 import assert from 'node:assert/strict'
+import { spawnSync } from 'node:child_process'
 import { mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises'
 import os from 'node:os'
 import path from 'node:path'
 import test from 'node:test'
+import { fileURLToPath } from 'node:url'
 import {
   backupPresetData,
   dshInvocation,
@@ -10,6 +12,7 @@ import {
   installedDataPath,
   localPackageSpec,
   parseOptions,
+  profileStoreDir,
 } from '../scripts/shared.mjs'
 
 test('builds local package specs and executable names across platforms', () => {
@@ -47,6 +50,43 @@ test('builds dsh plugin arguments without a shell', () => {
     dshPluginArgs('remove', options, 'dsh-tavern'),
     ['plugin', '--profile', 'web', 'remove', 'dsh-tavern', '--store-dir', path.resolve('./store')],
   )
+})
+
+test('detects the pnpm store already bound to a profile', async () => {
+  const temporary = await mkdtemp(path.join(os.tmpdir(), 'dsh-tavern-store-test-'))
+  try {
+    const modules = path.join(temporary, 'profiles', 'web', 'node_modules')
+    const store = path.join(temporary, 'existing-store')
+    await mkdir(modules, { recursive: true })
+    await writeFile(path.join(modules, '.modules.yaml'), JSON.stringify({
+      storeDir: path.join(store, 'v11'),
+    }))
+    assert.equal(profileStoreDir(temporary, 'web'), store)
+  } finally {
+    await rm(temporary, { recursive: true, force: true })
+  }
+})
+
+test('repeated install dry-run removes and re-adds a stale local package', async () => {
+  const temporary = await mkdtemp(path.join(os.tmpdir(), 'dsh-tavern-refresh-test-'))
+  try {
+    await mkdir(path.dirname(installedDataPath(temporary, 'web')), { recursive: true })
+    const result = spawnSync(process.execPath, [
+      fileURLToPath(new URL('../scripts/install.mjs', import.meta.url)),
+      '--skip-build',
+      '--dry-run',
+      '--dsh-home', temporary,
+    ], {
+      encoding: 'utf8',
+      env: process.env,
+    })
+    assert.equal(result.status, 0, result.stderr)
+    assert.match(result.stdout, /existing installation found; refreshing package files/)
+    assert.match(result.stdout, /"remove" "dsh-tavern"/)
+    assert.match(result.stdout, /"add" "file:/)
+  } finally {
+    await rm(temporary, { recursive: true, force: true })
+  }
 })
 
 test('backs up installed preset data outside the plugin directory', async () => {

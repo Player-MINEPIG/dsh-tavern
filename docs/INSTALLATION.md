@@ -27,6 +27,17 @@ The installer builds `dist/client.js`, calls `dsh plugin ... add` without a
 shell, and prints a restart reminder. Restart a currently running `dsh web`
 process before review.
 
+Stop the target `dsh web` process before updating an existing installation.
+Repeated installation is supported: the script temporarily preserves the
+installed `data/`, removes the stale local `file:` package, adds the current
+worktree again, and restores the data. This is necessary because pnpm can report
+`Already up to date` while leaving newly added source files absent from an
+earlier local-directory snapshot. A successful refresh removes its temporary
+recovery copy. If remove/add fails, the error prints the retained recovery path.
+When `--store-dir` is omitted, the updater reads the store already recorded in
+the profile's `node_modules/.modules.yaml`; this prevents pnpm's
+`ERR_PNPM_UNEXPECTED_STORE` on profiles created with a different store root.
+
 Useful options:
 
 ```text

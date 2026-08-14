@@ -15,7 +15,7 @@ values. It intentionally contains none of the fixture's prompt text.
 
 ## Automated checks
 
-`npm run check` built the browser bundle and passed 19/19 tests. Coverage includes:
+`npm run check` built the browser bundle and passed 21/21 tests. Coverage includes:
 
 - ST Chat Completion parsing and `character_id: 100001` order preference;
 - macro rendering and strict-brace removal;
@@ -30,6 +30,7 @@ values. It intentionally contains none of the fixture's prompt text.
   end-of-list, and no-op drops.
 - one-way package boundaries keeping DSH Host policy out of the format and
   preset store layers.
+- repeated local-package refresh and reuse of a profile's existing pnpm store.
 
 `npm run pack:check` completed successfully. The package preview contained 16
 release files, including all three internal layers and the three lifecycle
@@ -141,3 +142,18 @@ module ownership without removing the actual agent-loading path. The previously
 accepted browser UI bundle was rebuilt unchanged from its source entry. The
 synthetic profile was uninstalled without backup and its exact temporary
 directory was removed after recording these results.
+
+## Stage 11 existing-profile refresh regression
+
+An already-used isolated profile reproduced pnpm's stale local `file:` snapshot:
+the installed manifest referenced `packages/tavern-loader/src/index.js`, while
+the installed package did not contain `packages/tavern-loader` at all. Running
+pnpm with `--force` did not repair a deliberately missing loader directory.
+
+The updated installer then refreshed that profile with remove/add, temporarily
+preserved and restored plugin-local data, and reused the profile's previously
+recorded `D:\.pnpm-store` automatically. Structural verification found both
+preset files and the selected state still present; no prompt body was read or
+logged. DSH Web booted on `127.0.0.1:53101`, the root page returned HTTP 200,
+and the preset API reported both restored entries. Failed-attempt recovery
+copies and the separate synthetic force-test profile were removed afterward.

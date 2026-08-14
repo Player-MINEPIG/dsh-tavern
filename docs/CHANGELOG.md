@@ -246,3 +246,34 @@ Verification:
 - A fresh isolated DSH profile installed one root plugin, loaded
   `packages/tavern-loader/src/index.js`, booted its real HTTP API, and returned
   the expected compiled marker and call config for a synthetic selected preset.
+
+## 2026-08-14 — Stage 11: reliable local-package refresh
+
+Purpose: prevent pnpm's unchanged `file:` resolution from installing a new
+package manifest while leaving newly added source files absent.
+
+Changes:
+
+- Reproduced an existing-profile failure where `package.json` pointed to
+  `tavern-loader` but the installed package still contained only the former
+  preset and format directories.
+- Confirmed pnpm `--force` still reported `Already up to date` and did not repair
+  a deliberately removed loader directory.
+- Made repeated install detect an existing plugin and perform remove/add rather
+  than relying on pnpm's local-directory freshness decision.
+- Preserve plugin-local `data/` in a temporary recovery directory during the
+  refresh, restore it after add, and retain the recovery path if refresh fails.
+- Reuse the pnpm store recorded by an existing profile when `--store-dir` is
+  omitted, while continuing to prefer an explicit command-line store.
+- Kept first install, dry-run, explicit profile, custom `DSH_HOME`, and custom
+  pnpm store behavior unchanged.
+
+Verification:
+
+- A deliberately removed installed loader directory was restored by repeated
+  install while its synthetic selected preset remained present.
+- The user's existing isolated profile, originally linked to
+  `D:\.pnpm-store\v11`, refreshed successfully, retained two preset files and
+  its selected state, and booted the Web/API surface on port `53101`.
+- `npm run check` passed 21/21 tests, including store detection and the
+  remove/add dry-run contract.
