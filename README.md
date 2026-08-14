@@ -6,6 +6,11 @@
 
 当前 `0.1.x` 阶段已经完成 **SillyTavern Chat Completion 预设**的首个端到端版本；角色卡和世界书尚在计划中。
 
+角色卡兼容的调研记录与实施方案见：
+
+- [角色卡调研记录](docs/character-card/RESEARCH.md)
+- [角色卡实施方案与验收标准](docs/character-card/PLAN.md)
+
 > 本项目中的“预设”指 SillyTavern 风格的采样参数与提示词编排，不是 DSH 用于组合插件的 agent preset。
 
 ## 当前能力
