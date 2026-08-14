@@ -31,6 +31,10 @@ showed one expandable launcher, all four menu choices, seven real embedded
 entries with their trigger summaries, complete edit fields, dirty/save state,
 and clean discard on close/reopen without modifying the source card.
 
+Follow-up: kept the floating ball mounted while any resource sidebar is open.
+Its expanded menu now marks the active resource and switches panels directly,
+so navigation no longer requires closing the current sidebar first.
+
 ## 2026-08-15 — Unified Tavern launcher and message-flow audit
 
 Purpose: remove competing preset/character controls, expose the integrated
