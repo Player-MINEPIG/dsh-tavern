@@ -1,0 +1,8 @@
+packages:
+  - .
+
+allowBuilds:
+  esbuild: true
+
+minimumReleaseAgeExclude:
+  - '@deepseek-ai/cordis@4.0.1'

@@ -1,0 +1,5 @@
+# Mount the host half. The browser half is discovered through package.json.
+- insert:
+    - id: dsh-tavern
+      name: 'dsh-tavern'
+      config: {}

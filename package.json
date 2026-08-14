@@ -1,0 +1,48 @@
+{
+  "name": "dsh-tavern",
+  "version": "0.1.0",
+  "description": "SillyTavern-compatible prompt presets for DeepSeek Harness.",
+  "type": "module",
+  "main": "packages/preset/src/index.js",
+  "exports": {
+    ".": "./packages/preset/src/index.js",
+    "./format": "./packages/tavern-format/src/index.js",
+    "./client": "./dist/client.js",
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "packages",
+    "dist",
+    "cordis.patch.yml"
+  ],
+  "dsh": {
+    "bundle": {
+      "patch": "./cordis.patch.yml"
+    },
+    "client": {
+      "platform": "web",
+      "inject": [
+        "@deepseek-ai/dsh-client-runtime",
+        "@deepseek-ai/dsh-client-ui-layout",
+        "@deepseek-ai/dsh-client-ui-slots"
+      ]
+    }
+  },
+  "scripts": {
+    "build": "node build.mjs",
+    "test": "node --test",
+    "check": "npm run build && npm test",
+    "pack:check": "npm pack --dry-run"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "peerDependencies": {
+    "@deepseek-ai/cordis": "^4.0.1"
+  },
+  "devDependencies": {
+    "esbuild": "^0.28.2",
+    "react": "18.3.1"
+  },
+  "license": "MIT"
+}
