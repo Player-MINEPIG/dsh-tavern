@@ -17,7 +17,7 @@ const projectRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '
 
 const help = `Uninstall dsh-tavern from a dsh profile.
 
-Preset data is backed up before removal by default.
+All plugin-local Tavern data is backed up before removal by default.
 
 Usage:
   npm run plugin:uninstall
@@ -52,12 +52,12 @@ try {
       destination: options.backupDir,
     })
     if (backup === null) {
-      console.log('[dsh-tavern] no installed preset data found to back up')
+      console.log('[dsh-tavern] no installed Tavern data found to back up')
     } else {
-      console.log(`[dsh-tavern] preset data backed up to ${backup}`)
+      console.log(`[dsh-tavern] Tavern data backed up to ${backup}`)
     }
   } else if (options.noBackup) {
-    console.log('[dsh-tavern] warning: preset data backup disabled')
+    console.log('[dsh-tavern] warning: Tavern data backup disabled')
   }
 
   const invocation = dshInvocation(process.platform, environment)

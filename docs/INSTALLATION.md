@@ -74,7 +74,11 @@ Before calling `dsh plugin ... remove`, the uninstaller copies the installed
 ```
 
 This is important because dsh/pnpm removes the installed plugin directory,
-which is also where this version stores created and imported presets.
+which is also where this version stores the complete plugin-local `data/`
+tree: presets, normalized character cards, imported character artifacts, and
+per-session resource selections. Future world-book and user resources use the
+same data root. Copy the whole directory when backing up; copying only
+`presets/` loses other resources and bindings.
 
 Choose another backup directory or deliberately skip backup with:
 
@@ -83,8 +87,10 @@ node scripts/uninstall.mjs --backup-dir /absolute/backup/path
 node scripts/uninstall.mjs --no-backup
 ```
 
-`--no-backup` permanently discards plugin-local presets when dsh removes the
-package. It does not delete an external ST JSON originally used for import.
+`--no-backup` permanently discards all plugin-local Tavern resources and
+session bindings when dsh removes the package. It does not delete an external
+ST file originally used for import. A `storageDir` explicitly configured
+outside the installed package is not removed by this script.
 
 All common options work for uninstall too: `--profile`, `--dsh-home`,
 `--store-dir`, and `--dry-run`. Use `--help` for the complete command summary.

@@ -571,3 +571,14 @@ Verification:
 - Installed prompt injection, fork/subagent policy, and character-book matching
   remain explicit loader/world-book follow-up work rather than false positives
   in this slice's acceptance record.
+
+# 2026-08-15 — Data lifecycle and public roadmap documentation
+
+Purpose: make plugin data retention behavior and the public feature direction
+reviewable before resource-library development.
+
+- Documented the exact default plugin-local data tree, refresh recovery,
+  uninstall backup, `--no-backup`, and external `storageDir` behavior.
+- Added the public roadmap for standalone world books, name-and-description
+  user resources, launcher status, Tavern Trace, session workflows, and
+  stateful world-book behavior.

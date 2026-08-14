@@ -83,6 +83,29 @@ dsh web --host 127.0.0.1 --port 53101
 
 完整参数、重复安装的数据恢复机制和卸载说明见 [`docs/INSTALLATION.md`](docs/INSTALLATION.md)。
 
+### 数据存放与卸载
+
+默认情况下，导入和创建的 Tavern 资源以及 session 选择状态保存在当前 DSH profile 安装的插件目录：
+
+```text
+<DSH_HOME>/profiles/<profile>/node_modules/dsh-tavern/data/
+  presets/                 preset 标准化文档
+  characters/              角色卡标准化文档
+  character-artifacts/     导入的角色卡 JSON/PNG 原件
+  state.json               旧版全局 preset 默认选择
+  character-state.json     角色选择迁移状态
+  session-selections.json  统一的 per-session 资源选择
+```
+
+后续独立世界书和用户描述也会存入这个 `data/` 根目录下各自的资源目录。若插件配置显式指定 `storageDir`，则以该外部目录为准。
+
+- 重复运行安装脚本刷新插件时，会先把整个 `data/` 暂存到 `<DSH_HOME>/backups/dsh-tavern/pending-refresh-<profile>/`，安装成功后恢复，因此不会有意清空已导入资源。
+- 普通卸载会先把整个 `data/` 备份到 `<DSH_HOME>/backups/dsh-tavern/<timestamp>/`，然后 DSH/pnpm 会删除安装目录。卸载后资源不会继续生效，但备份仍可手动恢复。
+- `--no-backup` 会跳过这份副本；当使用默认插件内存储时，随后删除插件会同时删除资源，通常不可恢复。
+- 卸载不会删除最初用于导入的外部 ST 文件，也不会自动删除显式配置在插件目录外的 `storageDir`。
+
+备份或迁移时应复制整个 `data/`，不要只复制 `presets/`，否则可能丢失角色卡原件和 session 绑定。
+
 ## 使用
 
 1. 启动并打开 DSH Web。
@@ -171,6 +194,9 @@ packages/tavern-loader
 ## 计划开发
 
 - 独立世界书资源库、导入/管理 UI、per-session 多选及与角色卡内嵌书的统一启用策略。
+- 只有名字和描述的用户资源；与角色卡一样按 session 绑定，通过 preset marker 和宏进入统一 loader，使模型能正确称呼当前用户。
+- Tavern 悬浮球显示当前 session 启用的资源标题和红/绿状态，采用红、黑、白视觉主题。
+- 增加与 Conversation / Trajectory 并列的 Tavern Trace，解释资源组合、世界书命中关键词和拒绝原因；在 DSH 提供安全的插件事件 seam 后再接入原生 Trajectory。
 - 世界书递归扫描、sticky/cooldown/delay、vector、outlet 与严格 depth/role insertion。
 - 将 greeting 作为显式开场消息的安全工作流，而不污染既有 durable history。
 - 在 DSH 提供合适 seam 后支持真实 role message、example dialogue 和 absolute/depth injection，而不是用 system 标签模拟。
