@@ -8,6 +8,7 @@
     ".": "./packages/tavern-loader/src/index.js",
     "./format": "./packages/tavern-format/src/index.js",
     "./loader": "./packages/tavern-loader/src/index.js",
+    "./world-book": "./packages/world-book/src/index.js",
     "./preset": "./packages/preset/src/index.js",
     "./character": "./packages/character/src/index.js",
     "./client": "./dist/client.js",
