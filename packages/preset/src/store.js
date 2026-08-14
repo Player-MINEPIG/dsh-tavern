@@ -148,9 +148,12 @@ export class PresetStore {
     return preset === null ? '' : compilePreset(preset, context)
   }
 
+  selectedSystemPromptMode() {
+    return this.selected()?.systemPromptMode === 'replace' ? 'replace' : 'append'
+  }
+
   selectedCallConfig() {
     const preset = this.selected()
     return preset === null ? {} : supportedCallConfig(preset)
   }
 }
-

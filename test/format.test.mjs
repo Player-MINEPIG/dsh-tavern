@@ -72,3 +72,10 @@ test('rejects non-preset JSON', () => {
   assert.throws(() => parseSillyTavernPreset('{'), /Invalid JSON/)
 })
 
+test('system prompt replacement is opt-in and editable', async () => {
+  const { createBlankPreset, editPreset } = await import('../packages/tavern-format/src/index.js')
+  const preset = createBlankPreset({ id: 'mode' })
+  assert.equal(preset.systemPromptMode, 'append')
+  assert.equal(editPreset(preset, { systemPromptMode: 'replace' }).systemPromptMode, 'replace')
+  assert.equal(editPreset(preset, { systemPromptMode: 'invalid' }).systemPromptMode, 'append')
+})

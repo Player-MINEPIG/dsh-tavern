@@ -87,3 +87,8 @@ root-scoped `shell.overlay` launcher and drawer keep preset import/selection
 reachable before the first message. Once a conversation is active, the overlay
 automatically yields to the native details panel and the header `预设` button is
 the stable reopen affordance.
+
+For the exact compatibility boundary and future character-card/world-book
+design, review `docs/PROMPT_PIPELINE.md`. In particular, current `user` and
+`assistant` prompt roles are labels inside one system section, not arbitrary
+role-message insertion, and switching a preset never rewrites durable history.

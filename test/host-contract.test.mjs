@@ -42,3 +42,43 @@ test('selected preset enters system prompt and model call config seams', async (
   }
 })
 
+test('replace mode removes other system sections but preserves request capabilities', async () => {
+  const directory = mkdtempSync(join(tmpdir(), 'dsh-tavern-host-replace-'))
+  const listeners = new Map()
+  const ctx = {
+    systemPrompt: { section: () => {} },
+    on: (name, listener) => listeners.set(name, listener),
+    emit: () => {},
+    get: () => undefined,
+    effect: () => {},
+    logger: { info: () => {} },
+  }
+
+  try {
+    const store = apply(ctx, { storageDir: directory })
+    const preset = store.create({ id: 'replace', name: 'Replacement preset' })
+    store.update(preset.id, {
+      systemPromptMode: 'replace',
+      prompts: [{ ...preset.prompts[0], content: 'Only this system text' }],
+    })
+    store.select(preset.id)
+
+    const tools = [{ name: 'tool-a' }]
+    const contexts = [{ name: 'runtime-context' }]
+    const result = await listeners.get('system-prompt/assemble')({}, {}, async () => ({
+      sections: [{ name: 'harness', text: 'host text' }],
+      tools,
+      contexts,
+      variables: { session: 'kept' },
+    }))
+
+    assert.equal(result.sections.length, 1)
+    assert.equal(result.sections[0].name, 'dsh-tavern:selected-preset')
+    assert.match(result.sections[0].text, /Only this system text/)
+    assert.equal(result.tools, tools)
+    assert.equal(result.contexts, contexts)
+    assert.deepEqual(result.variables, { session: 'kept' })
+  } finally {
+    rmSync(directory, { recursive: true, force: true })
+  }
+})

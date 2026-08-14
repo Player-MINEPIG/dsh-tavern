@@ -24,6 +24,20 @@ export function apply(ctx, config = {}) {
     ...store.selectedCallConfig(),
   }))
 
+  ctx.on('system-prompt/assemble', async (_payload, _context, next) => {
+    const assembly = await next()
+    if (store.selectedSystemPromptMode() !== 'replace') return assembly
+    const text = store.compiledSelected()
+    return {
+      ...assembly,
+      sections: text === '' ? [] : [{
+        name: 'dsh-tavern:selected-preset',
+        order: 10,
+        text,
+      }],
+    }
+  })
+
   if (ctx.get('webServer') !== undefined) {
     ctx.effect(() => installServerRoutes(ctx, store, notifyChange), 'dsh-tavern: HTTP preset API')
   }
@@ -34,4 +48,3 @@ export function apply(ctx, config = {}) {
 
 export { PresetStore } from './store.js'
 export { createApiHandler } from './server.js'
-

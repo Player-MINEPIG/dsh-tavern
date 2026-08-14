@@ -15,7 +15,7 @@ values. It intentionally contains none of the fixture's prompt text.
 
 ## Automated checks
 
-`npm run check` built the browser bundle and passed 13/13 tests. Coverage includes:
+`npm run check` built the browser bundle and passed 16/16 tests. Coverage includes:
 
 - ST Chat Completion parsing and `character_id: 100001` order preference;
 - macro rendering and strict-brace removal;
@@ -24,6 +24,8 @@ values. It intentionally contains none of the fixture's prompt text.
 - selected preset injection into `systemPrompt.section()` and `agent/request`;
 - in-place structural parsing of the external acceptance fixture;
 - portable lifecycle argument construction and uninstall backup behavior.
+- system-prompt replacement preserving tools, runtime contexts, and variables;
+- immutable prompt-list reordering used by the direct drag handle.
 
 `npm run pack:check` completed successfully. The package preview contained 12
 release files, including the three lifecycle scripts, and excluded runtime
@@ -74,3 +76,22 @@ model quality or authentication was outside this plugin acceptance scope.
 The disposable dsh server is stopped and its exact temporary profile is removed
 after review. That removal also destroys the temporary imported copy and the
 placeholder credential. The external source file remains untouched.
+
+## Stage 7 targeted regression
+
+A second disposable profile at port `53104` tested only the new synchronization
+and prompt-policy work; previously accepted import/create/edit/delete behavior
+was treated as stable baseline.
+
+| Regression | Observed result |
+| --- | --- |
+| Initial selected state | After page load the panel did not render the empty-preset instruction; it settled directly on the selected synthetic preset |
+| Reopen refresh | A preset deleted through the API while the mounted drawer was stale disappeared after close/reopen; the stale option was absent and the empty state was current |
+| Drag affordance | Every prompt summary exposed a left-of-checkbox `⠿` pointer-drag handle; reorder transformation is covered independently by an immutable unit contract |
+| Advanced replace policy | UI displayed the reliability warning, saved `systemPromptMode: replace`, and the API returned the saved mode |
+
+The browser automation transport did not reliably synthesize a continuous
+pointer drag, so the physical pointer gesture remains a short manual review
+item. The UI event path and its reorder transformation are separately covered;
+this limitation is about the test driver, not a claim of completed gesture
+acceptance.

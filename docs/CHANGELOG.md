@@ -136,3 +136,32 @@ Changes:
 - Hide the overlay surface automatically when the native details column is open;
   the existing conversation-header button remains the reopen control after a
   turn.
+
+## 2026-08-14 — Stage 7: session synchronization and prompt policy
+
+Purpose: remove stale or misleading sidebar state and make prompt-order and
+system-prompt policy explicit.
+
+Changes:
+
+- Replaced the initial empty catalog with an explicit loading state, so a new
+  conversation no longer briefly claims that no preset is selected.
+- Subscribed the global launcher to dsh's current session id and made the native
+  panel refresh whenever its session id changes.
+- Made catalog plus selected-preset detail an atomic, generation-guarded refresh;
+  late responses from an older session can no longer overwrite current UI.
+- Added a shared refresh event when either launcher opens the panel, fixing stale
+  state after the host keeps a collapsed details subtree mounted.
+- Added direct HTML drag ordering with a handle immediately left of each prompt's
+  enabled checkbox; removed the detail-only up/down controls.
+- Added an opt-in per-preset system prompt mode. The default appends to dsh;
+  advanced replace mode removes other system sections while preserving tools,
+  runtime contexts, variables, and execution-layer enforcement.
+- Added `docs/PROMPT_PIPELINE.md` documenting the ST pipeline, TauriTavern host and
+  Agent changes, current DSH mapping, context contamination, and future world
+  book/character-card seams.
+
+Verification:
+
+- `npm run check` built the client and passed 16/16 tests, including the new
+  system-assembly preservation and pure reorder contracts.

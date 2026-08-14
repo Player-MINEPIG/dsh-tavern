@@ -169,6 +169,7 @@ export function parseSillyTavernPreset(input, options = {}) {
       selectedOrderCharacterId: selectedOrder?.character_id,
       raw: clone(raw),
     },
+    systemPromptMode: 'append',
     sampling: normalizedSampling(raw),
     prompts: normalizePrompts(raw.prompts, selectedOrder),
   }
@@ -183,6 +184,7 @@ export function createBlankPreset(options = {}) {
     createdAt: now,
     updatedAt: now,
     source: { format: 'dsh-tavern', createdAt: now },
+    systemPromptMode: 'append',
     sampling: {
       temperature: 1,
       maxTokens: undefined,
@@ -240,6 +242,7 @@ export function editPreset(existing, patch, options = {}) {
     ...clone(existing),
     name: normalizeName(patch.name ?? existing.name, existing.name),
     updatedAt: options.now ?? new Date().toISOString(),
+    systemPromptMode: patch.systemPromptMode === 'replace' ? 'replace' : 'append',
     sampling: {
       ...clone(existing.sampling),
       temperature,
@@ -340,4 +343,3 @@ export const constants = Object.freeze({
   schemaVersion: SCHEMA_VERSION,
   chatCompletionOrderId: CHAT_COMPLETION_ORDER_ID,
 })
-

@@ -31,6 +31,19 @@ __export(client_exports, {
 });
 module.exports = __toCommonJS(client_exports);
 var import_react = require("react");
+
+// packages/preset/src/client-state.js
+function reorder(items, from, to) {
+  if (!Array.isArray(items)) throw new TypeError("items must be an array");
+  if (!Number.isSafeInteger(from) || !Number.isSafeInteger(to)) return items;
+  if (from === to || from < 0 || to < 0 || from >= items.length || to >= items.length) return items;
+  const result = [...items];
+  const [moved] = result.splice(from, 1);
+  result.splice(to, 0, moved);
+  return result;
+}
+
+// packages/preset/src/client.js
 var API_ROOT = "/dsh-tavern/api";
 var ST_NUMBER_FIELDS = [
   ["top_p", "Top P"],
@@ -52,7 +65,7 @@ var css = `
 .dtt-field{display:flex;flex-direction:column;gap:5px}.dtt-label{font-size:11px;color:var(--dsw-alias-label-tertiary);font-weight:600}.dtt-input,.dtt-select,.dtt-textarea{box-sizing:border-box;width:100%;border:1px solid var(--dsw-alias-border-l2);border-radius:7px;background:var(--dsw-alias-bg-base);color:var(--dsw-alias-label-primary);font:inherit;font-size:12px;outline:none}.dtt-input,.dtt-select{height:34px;padding:0 9px}.dtt-textarea{min-height:110px;resize:vertical;padding:8px;line-height:1.45}.dtt-input:focus,.dtt-select:focus,.dtt-textarea:focus{border-color:var(--dsw-alias-state-business-primary)}
 .dtt-grid{display:grid;grid-template-columns:1fr 1fr;gap:9px}.dtt-section{border-top:1px solid var(--dsw-alias-border-l1);padding-top:12px;display:flex;flex-direction:column;gap:10px}.dtt-section-title{font-size:12px;font-weight:650;display:flex;align-items:center;justify-content:space-between}
 .dtt-note{font-size:11px;line-height:1.45;color:var(--dsw-alias-label-tertiary);margin:0}.dtt-status{font-size:11px;line-height:1.4;border-radius:7px;padding:7px 9px;background:var(--dsw-specific-tip);word-break:break-word}.dtt-status[data-error=true]{color:var(--dsw-alias-state-error)}
-.dtt-prompts{display:flex;flex-direction:column;gap:7px}.dtt-prompt{border:1px solid var(--dsw-alias-border-l1);border-radius:8px;overflow:hidden}.dtt-prompt-summary{display:flex;align-items:center;gap:7px;padding:8px;cursor:pointer;font-size:12px}.dtt-prompt-summary::marker{color:var(--dsw-alias-label-tertiary)}.dtt-prompt-name{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.dtt-role{font-size:10px;color:var(--dsw-alias-label-tertiary);text-transform:uppercase}.dtt-prompt-body{padding:0 9px 9px;display:flex;flex-direction:column;gap:8px}.dtt-row-actions{display:flex;gap:6px}.dtt-row-actions .dtt-button{height:28px;padding:0 8px;flex:1}
+.dtt-prompts{display:flex;flex-direction:column;gap:7px}.dtt-prompt{border:1px solid var(--dsw-alias-border-l1);border-radius:8px;overflow:hidden}.dtt-prompt[data-drag-over=true]{border-color:var(--dsw-alias-state-business-primary);box-shadow:0 0 0 1px var(--dsw-alias-state-business-primary)}.dtt-prompt-summary{display:flex;align-items:center;gap:7px;padding:8px;cursor:pointer;font-size:12px}.dtt-prompt-summary::marker{color:var(--dsw-alias-label-tertiary)}.dtt-drag{border:0;background:transparent;color:var(--dsw-alias-label-tertiary);cursor:grab;padding:1px 2px;font-size:15px;line-height:1;touch-action:none;user-select:none}.dtt-drag:active{cursor:grabbing}.dtt-prompt-name{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.dtt-role{font-size:10px;color:var(--dsw-alias-label-tertiary);text-transform:uppercase}.dtt-prompt-body{padding:0 9px 9px;display:flex;flex-direction:column;gap:8px}.dtt-row-actions{display:flex;gap:6px}.dtt-row-actions .dtt-button{height:28px;padding:0 8px;flex:1}
 .dtt-footer{position:sticky;bottom:-12px;margin:0 -12px -12px;padding:10px 12px;background:var(--dsw-alias-bg-base);border-top:1px solid var(--dsw-alias-border-l2);display:grid;grid-template-columns:1fr auto;gap:8px}
 .dtt-open-button{height:28px;border:1px solid var(--dsw-alias-border-l2);border-radius:7px;background:transparent;color:var(--dsw-alias-label-primary);font-size:11px;cursor:pointer;padding:0 9px}.dtt-open-button:hover{background:var(--dsw-alias-interactive-bg-hover)}
 .dtt-floating-layer{display:none;position:absolute;inset:0;pointer-events:none;z-index:5}[data-details-collapsed] .dtt-floating-layer{display:block}.dtt-floating-launcher{position:absolute;top:14px;right:16px;pointer-events:auto}.dtt-floating-button{height:32px;border:1px solid var(--dsw-alias-border-l2);border-radius:9px;background:var(--dsw-alias-bg-base);box-shadow:var(--ds-shadow-2,0 4px 16px rgba(0,0,0,.16));color:var(--dsw-alias-label-primary);font-size:12px;font-weight:600;cursor:pointer;padding:0 12px}.dtt-floating-button:hover{background:var(--dsw-alias-interactive-bg-hover)}.dtt-overlay-panel{position:absolute;top:0;right:0;bottom:0;width:min(420px,calc(100vw - 56px));pointer-events:auto;border-left:1px solid var(--dsw-alias-border-l2);box-shadow:var(--ds-shadow-3,-8px 0 28px rgba(0,0,0,.18))}
@@ -90,13 +103,32 @@ function NumberField({ label, value, onChange, min, step = "any" }) {
     onChange: (event) => onChange(event.target.value === "" ? void 0 : Number(event.target.value))
   }));
 }
-function PromptEditor({ prompt, index, total, onPatch, onMove, onDelete }) {
+function PromptEditor({ prompt, index, dragging, dragOver, onPatch, onPointerDown, onPointerMove, onPointerUp, onPointerCancel, onDelete }) {
   return (0, import_react.createElement)(
     "details",
-    { className: "dtt-prompt" },
+    {
+      className: "dtt-prompt",
+      "data-prompt-index": index,
+      "data-drag-over": dragOver || void 0
+    },
     (0, import_react.createElement)(
       "summary",
       { className: "dtt-prompt-summary" },
+      (0, import_react.createElement)("button", {
+        className: "dtt-drag",
+        type: "button",
+        title: "\u62D6\u62FD\u6392\u5217\u987A\u5E8F",
+        "aria-label": `\u62D6\u62FD\u201C${prompt.name || prompt.identifier}\u201D\u6392\u5217\u987A\u5E8F`,
+        "aria-pressed": dragging,
+        onClick: (event) => {
+          event.preventDefault();
+          event.stopPropagation();
+        },
+        onPointerDown,
+        onPointerMove,
+        onPointerUp,
+        onPointerCancel
+      }, "\u283F"),
       (0, import_react.createElement)("input", {
         type: "checkbox",
         checked: prompt.enabled === true,
@@ -137,20 +169,21 @@ function PromptEditor({ prompt, index, total, onPatch, onMove, onDelete }) {
       (0, import_react.createElement)(
         "div",
         { className: "dtt-row-actions" },
-        (0, import_react.createElement)("button", { className: "dtt-button", type: "button", disabled: index === 0, onClick: () => onMove(-1) }, "\u4E0A\u79FB"),
-        (0, import_react.createElement)("button", { className: "dtt-button", type: "button", disabled: index === total - 1, onClick: () => onMove(1) }, "\u4E0B\u79FB"),
         (0, import_react.createElement)("button", { className: "dtt-button dtt-danger", type: "button", onClick: onDelete }, "\u5220\u9664")
       )
     )
   );
 }
-function PresetSidebar({ closePanel, openPanel }) {
-  const [catalog, setCatalog] = (0, import_react.useState)({ presets: [], selectedId: null, storageDir: "" });
+function PresetSidebar({ closePanel, openPanel, sessionId }) {
+  const [catalog, setCatalog] = (0, import_react.useState)(null);
   const [draft, setDraft] = (0, import_react.useState)(null);
   const [busy, setBusy] = (0, import_react.useState)(false);
   const [status, setStatus] = (0, import_react.useState)({ text: "\u52A0\u8F7D\u4E2D\u2026", error: false });
   const [advanced, setAdvanced] = (0, import_react.useState)(false);
+  const [dragFrom, setDragFrom] = (0, import_react.useState)(null);
+  const [dragOver, setDragOver] = (0, import_react.useState)(null);
   const fileRef = (0, import_react.useRef)(null);
+  const refreshGeneration = (0, import_react.useRef)(0);
   (0, import_react.useEffect)(() => {
     const timers = [0, 200, 800].map((delay) => window.setTimeout(openPanel, delay));
     return () => timers.forEach((timer) => window.clearTimeout(timer));
@@ -168,27 +201,35 @@ function PresetSidebar({ closePanel, openPanel }) {
       setBusy(false);
     }
   }, []);
-  const loadPreset = (0, import_react.useCallback)(async (id) => {
-    if (id === null) {
-      setDraft(null);
-      return;
-    }
-    const data = await api(`/presets/${encodeURIComponent(id)}`);
-    setDraft(data.preset);
-  }, []);
   const refresh = (0, import_react.useCallback)(async (preferredId) => {
+    const generation = ++refreshGeneration.current;
     const data = await api("/presets");
+    const id = preferredId === void 0 ? data.selectedId : preferredId;
+    const detail = id === null || id === void 0 ? null : (await api(`/presets/${encodeURIComponent(id)}`)).preset;
+    if (generation !== refreshGeneration.current) return false;
     setCatalog(data);
-    const id = preferredId ?? data.selectedId;
-    await loadPreset(id ?? null);
-  }, [loadPreset]);
+    setDraft(detail);
+    return true;
+  }, []);
   (0, import_react.useEffect)(() => {
+    refreshGeneration.current += 1;
+    setCatalog(null);
+    setDraft(null);
+    setStatus({ text: "\u6B63\u5728\u540C\u6B65\u5F53\u524D\u4F1A\u8BDD\u7684\u9884\u8BBE\u72B6\u6001\u2026", error: false });
     run(() => refresh(), "\u9884\u8BBE\u5DF2\u52A0\u8F7D");
+    return () => {
+      refreshGeneration.current += 1;
+    };
+  }, [refresh, run, sessionId]);
+  (0, import_react.useEffect)(() => {
+    const onRefresh = () => run(() => refresh(), "\u9884\u8BBE\u72B6\u6001\u5DF2\u5237\u65B0");
+    window.addEventListener("dsh-tavern:refresh", onRefresh);
+    return () => window.removeEventListener("dsh-tavern:refresh", onRefresh);
   }, [refresh, run]);
   const choose = (0, import_react.useCallback)((id) => run(async () => {
     await api("/select", { method: "POST", body: body({ id: id || null }) });
     await refresh(id || null);
-  }, id ? "\u9884\u8BBE\u5DF2\u9009\u62E9\uFF1B\u4E0B\u4E00\u6761\u6D88\u606F\u5C06\u643A\u5E26\u6B64 preset" : "\u5DF2\u505C\u7528 preset"), [refresh, run]);
+  }, id ? "\u9884\u8BBE\u5DF2\u9009\u62E9\uFF1B\u4E0B\u4E00\u6761\u6D88\u606F\u5C06\u643A\u5E26\u6B64 preset\u3002\u5DF2\u6709\u4F1A\u8BDD\u5386\u53F2\u4E0D\u4F1A\u88AB\u6E05\u9664\u3002" : "\u5DF2\u505C\u7528 preset\uFF1B\u5DF2\u6709\u4F1A\u8BDD\u5386\u53F2\u4E0D\u4F1A\u88AB\u6E05\u9664"), [refresh, run]);
   const createPreset = (0, import_react.useCallback)(() => run(async () => {
     const created = await api("/presets", { method: "POST", body: body({ name: "\u65B0\u9884\u8BBE" }) });
     await api("/select", { method: "POST", body: body({ id: created.preset.id }) });
@@ -207,7 +248,7 @@ function PresetSidebar({ closePanel, openPanel }) {
   const save = (0, import_react.useCallback)(() => run(async () => {
     const result = await api(`/presets/${encodeURIComponent(draft.id)}`, {
       method: "PUT",
-      body: body({ name: draft.name, sampling: draft.sampling, prompts: draft.prompts })
+      body: body({ name: draft.name, systemPromptMode: draft.systemPromptMode, sampling: draft.sampling, prompts: draft.prompts })
     });
     setDraft(result.preset);
     await refresh(result.preset.id);
@@ -228,11 +269,9 @@ function PresetSidebar({ closePanel, openPanel }) {
     ...current,
     prompts: current.prompts.map((prompt, at) => at === index ? { ...prompt, ...patch } : prompt)
   }));
-  const movePrompt = (index, delta) => setDraft((current) => {
-    const prompts = [...current.prompts];
-    const target = index + delta;
-    if (target < 0 || target >= prompts.length) return current;
-    [prompts[index], prompts[target]] = [prompts[target], prompts[index]];
+  const movePrompt = (from, to) => setDraft((current) => {
+    const prompts = reorder(current.prompts, from, to);
+    if (prompts === current.prompts) return current;
     return { ...current, prompts };
   });
   const deletePrompt = (index) => setDraft((current) => ({
@@ -258,7 +297,7 @@ function PresetSidebar({ closePanel, openPanel }) {
     (0, import_react.createElement)(
       "div",
       { className: "dtt-header" },
-      (0, import_react.createElement)("div", { className: "dtt-title" }, "Tavern \u9884\u8BBE", catalog.selectedId ? (0, import_react.createElement)("span", { className: "dtt-active" }, "\u25CF \u5DF2\u542F\u7528") : null),
+      (0, import_react.createElement)("div", { className: "dtt-title" }, "Tavern \u9884\u8BBE", catalog?.selectedId ? (0, import_react.createElement)("span", { className: "dtt-active" }, "\u25CF \u5DF2\u542F\u7528") : null),
       (0, import_react.createElement)("button", { className: "dtt-icon", type: "button", title: "\u5173\u95ED\u53F3\u4FA7\u680F", onClick: closePanel }, "\u2715")
     ),
     (0, import_react.createElement)(
@@ -284,16 +323,16 @@ function PresetSidebar({ closePanel, openPanel }) {
         "select",
         {
           className: "dtt-select",
-          value: catalog.selectedId ?? "",
-          disabled: busy,
+          value: catalog?.selectedId ?? "",
+          disabled: busy || catalog === null,
           onChange: (event) => choose(event.target.value)
         },
         (0, import_react.createElement)("option", { value: "" }, "\u4E0D\u4F7F\u7528\u9884\u8BBE"),
-        ...catalog.presets.map((preset) => (0, import_react.createElement)("option", { key: preset.id, value: preset.id }, `${preset.name} (${preset.enabledPromptCount}/${preset.promptCount})`))
+        ...(catalog?.presets ?? []).map((preset) => (0, import_react.createElement)("option", { key: preset.id, value: preset.id }, `${preset.name} (${preset.enabledPromptCount}/${preset.promptCount})`))
       )),
-      (0, import_react.createElement)("p", { className: "dtt-note" }, `\u5B58\u50A8\u76EE\u5F55\uFF1A${catalog.storageDir || "\u52A0\u8F7D\u4E2D\u2026"}`),
+      (0, import_react.createElement)("p", { className: "dtt-note" }, `\u5B58\u50A8\u76EE\u5F55\uFF1A${catalog?.storageDir || "\u52A0\u8F7D\u4E2D\u2026"}`),
       (0, import_react.createElement)("div", { className: "dtt-status", "data-error": status.error || void 0, role: "status", "aria-live": "polite" }, status.text),
-      draft === null ? (0, import_react.createElement)("p", { className: "dtt-note" }, "\u8BF7\u9009\u62E9\u6216\u521B\u5EFA\u9884\u8BBE\u4EE5\u5F00\u59CB\u914D\u7F6E\u3002") : (0, import_react.createElement)(
+      draft === null ? (0, import_react.createElement)("p", { className: "dtt-note" }, catalog === null ? "\u6B63\u5728\u52A0\u8F7D\u9884\u8BBE\u2026" : "\u8BF7\u9009\u62E9\u6216\u521B\u5EFA\u9884\u8BBE\u4EE5\u5F00\u59CB\u914D\u7F6E\u3002") : (0, import_react.createElement)(
         "div",
         { className: "dtt-section" },
         (0, import_react.createElement)("div", { className: "dtt-section-title" }, "\u57FA\u672C\u8BBE\u7F6E"),
@@ -321,7 +360,7 @@ function PresetSidebar({ closePanel, openPanel }) {
           (0, import_react.createElement)("option", { value: "high" }, "High"),
           (0, import_react.createElement)("option", { value: "xhigh" }, "Extra high")
         )),
-        (0, import_react.createElement)("button", { className: "dtt-button", type: "button", onClick: () => setAdvanced((value) => !value) }, advanced ? "\u6536\u8D77 ST \u517C\u5BB9\u53C2\u6570" : "\u5C55\u5F00 ST \u517C\u5BB9\u53C2\u6570"),
+        (0, import_react.createElement)("button", { className: "dtt-button", type: "button", onClick: () => setAdvanced((value) => !value) }, advanced ? "\u6536\u8D77\u9AD8\u7EA7\u8BBE\u7F6E" : "\u5C55\u5F00\u9AD8\u7EA7\u8BBE\u7F6E"),
         advanced ? (0, import_react.createElement)("div", { className: "dtt-grid" }, ...ST_NUMBER_FIELDS.map(([key, label]) => (0, import_react.createElement)(NumberField, {
           key,
           label,
@@ -329,6 +368,17 @@ function PresetSidebar({ closePanel, openPanel }) {
           onChange: (value) => patchSt(key, value)
         }))) : null,
         advanced ? (0, import_react.createElement)("p", { className: "dtt-note" }, "\u8FD9\u4E9B\u5B57\u6BB5\u4F1A\u88AB\u5B8C\u6574\u4FDD\u5B58\uFF1Bdsh 0.1.0 \u5F53\u524D\u8BF7\u6C42\u534F\u8BAE\u672A\u66B4\u9732\u7684\u53C2\u6570\u4E0D\u4F1A\u5F3A\u884C\u4E0B\u53D1\u7ED9\u9002\u914D\u5668\u3002") : null,
+        advanced ? (0, import_react.createElement)(Field, { label: "DSH \u7CFB\u7EDF\u63D0\u793A\u8BCD" }, (0, import_react.createElement)(
+          "select",
+          {
+            className: "dtt-select",
+            value: draft.systemPromptMode === "replace" ? "replace" : "append",
+            onChange: (event) => setDraft((current) => ({ ...current, systemPromptMode: event.target.value }))
+          },
+          (0, import_react.createElement)("option", { value: "append" }, "\u4FDD\u7559 DSH \u7CFB\u7EDF\u63D0\u793A\u8BCD\uFF0C\u5E76\u8FFD\u52A0\u9884\u8BBE\uFF08\u63A8\u8350\uFF09"),
+          (0, import_react.createElement)("option", { value: "replace" }, "\u4EC5\u4F7F\u7528\u9884\u8BBE\uFF0C\u79FB\u9664 DSH \u7CFB\u7EDF\u6BB5\uFF08\u9AD8\u7EA7\uFF09")
+        )) : null,
+        advanced && draft.systemPromptMode === "replace" ? (0, import_react.createElement)("p", { className: "dtt-status", "data-error": true }, "\u8B66\u544A\uFF1A\u8FD9\u4F1A\u79FB\u9664\u6A21\u578B\u53EF\u89C1\u7684 Harness \u8EAB\u4EFD\u3001Agent persona \u548C\u5DE5\u5177\u8BF4\u660E\uFF0C\u53EF\u80FD\u7834\u574F\u5DE5\u5177\u8C03\u7528\u6216\u7ED3\u6784\u5316\u8F93\u51FA\uFF1B\u6C99\u7BB1\u4E0E\u5BA1\u6279\u7B49\u6267\u884C\u5C42\u5B89\u5168\u4ECD\u7136\u6709\u6548\u3002") : null,
         (0, import_react.createElement)(
           "div",
           { className: "dtt-section" },
@@ -342,9 +392,34 @@ function PresetSidebar({ closePanel, openPanel }) {
             key: `${prompt.identifier}-${index}`,
             prompt,
             index,
-            total: draft.prompts.length,
+            dragging: dragFrom === index,
+            dragOver: dragOver === index && dragFrom !== index,
             onPatch: (patch) => patchPrompt(index, patch),
-            onMove: (delta) => movePrompt(index, delta),
+            onPointerDown: (event) => {
+              event.preventDefault();
+              event.stopPropagation();
+              event.currentTarget.setPointerCapture(event.pointerId);
+              setDragFrom(index);
+              setDragOver(index);
+            },
+            onPointerMove: (event) => {
+              if (!event.currentTarget.hasPointerCapture(event.pointerId)) return;
+              const target = document.elementFromPoint(event.clientX, event.clientY)?.closest("[data-prompt-index]");
+              if (target !== null) setDragOver(Number(target.dataset.promptIndex));
+            },
+            onPointerUp: (event) => {
+              event.preventDefault();
+              const target = document.elementFromPoint(event.clientX, event.clientY)?.closest("[data-prompt-index]");
+              const to = target === null ? index : Number(target.dataset.promptIndex);
+              if (event.currentTarget.hasPointerCapture(event.pointerId)) event.currentTarget.releasePointerCapture(event.pointerId);
+              movePrompt(index, to);
+              setDragFrom(null);
+              setDragOver(null);
+            },
+            onPointerCancel: () => {
+              setDragFrom(null);
+              setDragOver(null);
+            },
             onDelete: () => deletePrompt(index)
           })))
         ),
@@ -359,20 +434,27 @@ function PresetSidebar({ closePanel, openPanel }) {
   );
 }
 function PresetHeaderButton({ openPanel }) {
-  return (0, import_react.createElement)("button", { className: "dtt-open-button", type: "button", onClick: openPanel, title: "\u6253\u5F00 Tavern \u9884\u8BBE\u4FA7\u8FB9\u680F" }, "\u9884\u8BBE");
+  const open = () => {
+    openPanel();
+    window.dispatchEvent(new Event("dsh-tavern:refresh"));
+  };
+  return (0, import_react.createElement)("button", { className: "dtt-open-button", type: "button", onClick: open, title: "\u6253\u5F00 Tavern \u9884\u8BBE\u4FA7\u8FB9\u680F" }, "\u9884\u8BBE");
 }
-function PresetFloatingLauncher({ openPanel }) {
+function PresetFloatingLauncher({ openPanel, useSessions }) {
   const [overlayOpen, setOverlayOpen] = (0, import_react.useState)(false);
+  const sessionId = useSessions((state) => state.current);
   const open = () => {
     openPanel();
     setOverlayOpen(true);
+    window.dispatchEvent(new Event("dsh-tavern:refresh"));
   };
   return (0, import_react.createElement)(
     "div",
     { className: "dtt-floating-layer" },
     overlayOpen ? (0, import_react.createElement)("div", { className: "dtt-overlay-panel" }, (0, import_react.createElement)(PresetSidebar, {
       closePanel: () => setOverlayOpen(false),
-      openPanel: () => setOverlayOpen(true)
+      openPanel: () => setOverlayOpen(true),
+      sessionId
     })) : (0, import_react.createElement)(
       "div",
       { className: "dtt-floating-launcher" },
