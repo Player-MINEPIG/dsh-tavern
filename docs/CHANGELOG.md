@@ -95,3 +95,29 @@ Changes and findings:
 - Ran `npm run check`: build plus all 9 tests passed. Ran package dry-run and
   confirmed the copyrighted fixture, runtime `data/`, docs, and tests are absent
   from the publish payload.
+
+## 2026-08-14 — Stage 5: cross-platform lifecycle scripts
+
+Purpose: replace platform-specific command snippets with repeatable plugin
+installation and safe removal commands.
+
+Changes:
+
+- Added Node.js install and uninstall entry points for Windows, macOS, and Linux.
+- Avoided shell evaluation; argument arrays carry profiles, paths, local package
+  specs, and optional pnpm store directories directly to dsh.
+- Made uninstall back up plugin-local preset data under `DSH_HOME/backups` by
+  default before package removal, with explicit destination and no-backup modes.
+- Added dry-run/help modes, profile-name validation, path normalization, and
+  cross-platform unit tests.
+- Added the standalone `docs/INSTALLATION.md` reviewer/operator guide.
+
+Verification:
+
+- `npm run check` passed 13/13 tests.
+- A unique temporary `DSH_HOME` completed install, test-preset creation,
+  uninstall-time backup, and removal. The installed package disappeared while
+  the backup retained one preset plus its selected id.
+- Windows execution used the located npm `dsh.ps1` shim through system
+  PowerShell with an argument array. No user shell interpolation was involved.
+- The exact temporary lifecycle directory was removed after verification.

@@ -15,18 +15,19 @@ values. It intentionally contains none of the fixture's prompt text.
 
 ## Automated checks
 
-`npm run check` built the browser bundle and passed 9/9 tests. Coverage includes:
+`npm run check` built the browser bundle and passed 13/13 tests. Coverage includes:
 
 - ST Chat Completion parsing and `character_id: 100001` order preference;
 - macro rendering and strict-brace removal;
 - traversal-safe, atomic persistence plus reload;
 - HTTP import/create/update/select flows;
 - selected preset injection into `systemPrompt.section()` and `agent/request`;
-- in-place structural parsing of the external acceptance fixture.
+- in-place structural parsing of the external acceptance fixture;
+- portable lifecycle argument construction and uninstall backup behavior.
 
-`npm run pack:check` completed successfully. The package preview contained nine
-release files and excluded runtime `data/`, the external fixture, docs, tests,
-and local dependency caches.
+`npm run pack:check` completed successfully. The package preview contained 12
+release files, including the three lifecycle scripts, and excluded runtime
+`data/`, the external fixture, docs, tests, and local dependency caches.
 
 ## Installed-plugin results
 
