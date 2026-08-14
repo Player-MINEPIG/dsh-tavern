@@ -45,6 +45,37 @@ Verification is recorded in
   machine-specific path, local roadmap reference, private-key material or
   common credential-shaped value introduced by this module.
 
+## 2026-08-15 — Per-session user resources (feature/user-profiles)
+
+Purpose: add a deliberately narrow user/persona resource without introducing
+avatars or allowing Tavern content to replace the DSH Agent identity.
+
+- Added an exact `{ id, name, description }` user document store under
+  `data/users/`, with atomic CRUD persistence, traversal-safe ids, bounded
+  text, and rejection of every additional field including avatar metadata.
+- Added same-origin JSON CRUD and per-session selection APIs plus a complete
+  create/edit/save/bind/unbind/delete management panel in the shared Tavern
+  launcher.
+- Extended loader-owned `SessionSelectionStore` with one nullable `userId` per
+  session; normal fork/subagent semantics continue to be owned by the same
+  policy, and deletion clears all matching bindings.
+- Added a user adapter to the unified `TavernProfileLoader`. The selected name
+  supplies existing `{{user}}` macros; the description consumes the official
+  `personaDescription` marker (plus explicit user-description aliases) or the
+  `{{persona}}` placement exactly once.
+- Added a stable fallback before fallback character fields with
+  `USER_PERSONA_MARKER_FALLBACK` diagnostics when no enabled persona marker or
+  explicit persona macro exists.
+- Kept one `dsh-tavern:profile` Host section. User resources do not register a
+  Host seam, change append/replace policy, modify DSH agent identity, or create
+  history messages.
+- Added synthetic-only persistence/API/runtime tests and a real-loader snapshot
+  covering session isolation, immediate switching, restart restoration, macro
+  and marker placement, fallback, unbinding, deletion cleanup and one-copy
+  request contribution.
+
+Verification is recorded in `docs/user/ACCEPTANCE.md`.
+
 ## 2026-08-15 — Pre-merge publication hygiene
 
 Purpose: ensure the accepted integration can be merged and published without

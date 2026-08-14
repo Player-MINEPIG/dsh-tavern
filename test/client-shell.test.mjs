@@ -16,7 +16,7 @@ test('one Tavern launcher exposes stable resource surfaces', () => {
     'user',
   ])
   assert.equal(surfaceTitle('world-info'), '世界信息')
-  assert.equal(TAVERN_MENU_ITEMS.find(item => item.id === 'user').available, false)
+  assert.equal(TAVERN_MENU_ITEMS.find(item => item.id === 'user').available, true)
 })
 
 test('floating launcher clamps its drag anchor and expands toward available space', () => {
@@ -34,13 +34,16 @@ test('only the client composition root owns the Tavern shell overlay', () => {
   const root = readFileSync(new URL('../packages/client/src/index.js', import.meta.url), 'utf8')
   const preset = readFileSync(new URL('../packages/preset/src/client.js', import.meta.url), 'utf8')
   const character = readFileSync(new URL('../packages/character/src/client.js', import.meta.url), 'utf8')
+  const user = readFileSync(new URL('../packages/user/src/client.js', import.meta.url), 'utf8')
   assert.equal(root.match(/slots\.inject\('shell\.overlay'/g)?.length, 1)
   assert.match(root, /id: 'dsh-tavern-launcher'/)
   assert.match(root, /'data-active': surface === item\.id/)
   assert.doesNotMatch(root, /surface === null \? h\('div', \{\s*className: 'dtv-launcher'/)
   assert.doesNotMatch(preset, /slots\.inject|dsh-tavern-preset-launcher/)
   assert.doesNotMatch(character, /slots\.inject|dsh-tavern-character-overlay/)
+  assert.doesNotMatch(user, /slots\.inject|avatar|image\/|<img/)
   assert.match(root, /WorldBookPanel/)
+  assert.match(root, /UserPanel/)
 })
 
 test('standalone world-book panel exposes CRUD, multi-binding and all required entry controls', () => {

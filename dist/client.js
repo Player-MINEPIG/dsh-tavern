@@ -30,7 +30,7 @@ __export(index_exports, {
   name: () => name
 });
 module.exports = __toCommonJS(index_exports);
-var import_react4 = require("react");
+var import_react5 = require("react");
 
 // packages/preset/src/client.js
 var import_react = require("react");
@@ -1153,12 +1153,179 @@ function installWorldBookStyles() {
   document.head.append(style);
 }
 
+// packages/user/src/client.js
+var import_react4 = require("react");
+var API_ROOT4 = "/dsh-tavern/api";
+var css4 = `
+.dtu-panel{position:absolute;top:0;right:0;bottom:0;width:min(440px,calc(100vw - 56px));pointer-events:auto;border-left:1px solid var(--dsw-alias-border-l2);box-shadow:var(--ds-shadow-3,-8px 0 28px rgba(0,0,0,.18));background:var(--dsw-alias-bg-base);color:var(--dsw-alias-label-primary);display:flex;flex-direction:column;font-family:Inter,var(--dsw-font-family),sans-serif}.dtu-header{height:52px;box-sizing:border-box;display:flex;align-items:center;gap:8px;padding:0 14px;border-bottom:1px solid var(--dsw-alias-border-l2);flex:none}.dtu-title{font-size:14px;font-weight:650;flex:1}.dtu-close{border:0;background:transparent;color:var(--dsw-alias-label-tertiary);cursor:pointer;border-radius:7px;padding:6px 8px}.dtu-body{min-height:0;overflow:auto;padding:12px;display:flex;flex-direction:column;gap:12px}.dtu-toolbar,.dtu-actions{display:grid;grid-template-columns:1fr 1fr;gap:8px}.dtu-button{min-height:34px;border:1px solid var(--dsw-alias-border-l2);border-radius:8px;background:var(--dsw-alias-button-secondary-fill,var(--dsw-alias-bg-base));color:var(--dsw-alias-label-primary);cursor:pointer;padding:7px 10px;font-size:12px}.dtu-button:hover:not(:disabled){background:var(--dsw-alias-interactive-bg-hover)}.dtu-button:disabled{opacity:.5;cursor:default}.dtu-primary{background:var(--dsw-alias-state-business-primary);color:white;border-color:transparent}.dtu-danger{color:var(--dsw-alias-state-error)}.dtu-field{display:flex;flex-direction:column;gap:5px}.dtu-label{font-size:11px;color:var(--dsw-alias-label-tertiary);font-weight:600}.dtu-input,.dtu-textarea,.dtu-select{box-sizing:border-box;width:100%;border:1px solid var(--dsw-alias-border-l2);border-radius:7px;background:var(--dsw-alias-bg-base);color:var(--dsw-alias-label-primary);font:inherit;font-size:12px;padding:8px 9px}.dtu-input,.dtu-select{height:34px}.dtu-textarea{min-height:220px;line-height:1.5;resize:vertical}.dtu-note{font-size:11px;line-height:1.5;color:var(--dsw-alias-label-tertiary);margin:0;overflow-wrap:anywhere}.dtu-status{font-size:11px;line-height:1.45;border-radius:7px;padding:7px 9px;background:var(--dsw-specific-tip);overflow-wrap:anywhere}.dtu-status[data-error=true]{color:var(--dsw-alias-state-error)}.dtu-editor{border-top:1px solid var(--dsw-alias-border-l1);padding-top:12px;display:flex;flex-direction:column;gap:10px}.dtu-footer{position:sticky;bottom:-12px;margin:0 -12px -12px;padding:10px 12px;background:var(--dsw-alias-bg-base);border-top:1px solid var(--dsw-alias-border-l2)}
+`;
+function errorMessage3(data, status) {
+  return data?.error?.message ?? data?.error ?? `HTTP ${status}`;
+}
+async function api4(path, options = {}) {
+  const method = String(options.method ?? "GET").toUpperCase();
+  const response = await fetch(`${API_ROOT4}${path}`, {
+    ...options,
+    headers: {
+      ...method === "GET" || method === "HEAD" ? {} : { "Content-Type": "application/json" },
+      ...options.headers
+    }
+  });
+  const data = await response.json().catch(() => null);
+  if (!response.ok || data?.ok === false) throw new Error(errorMessage3(data, response.status));
+  return data;
+}
+function Field4({ label, children }) {
+  return (0, import_react4.createElement)("label", { className: "dtu-field" }, (0, import_react4.createElement)("span", { className: "dtu-label" }, label), children);
+}
+function notifyRefresh() {
+  window.dispatchEvent(new Event("dsh-tavern:refresh"));
+}
+function UserPanel({ sessionId, sessionBlank, close }) {
+  const [users, setUsers] = (0, import_react4.useState)(null);
+  const [draft, setDraft] = (0, import_react4.useState)(null);
+  const [selectedUserId, setSelectedUserId] = (0, import_react4.useState)(null);
+  const [busy, setBusy] = (0, import_react4.useState)(false);
+  const [status, setStatus] = (0, import_react4.useState)({ text: "\u52A0\u8F7D\u4E2D\u2026", error: false });
+  const generation = (0, import_react4.useRef)(0);
+  const draftId = (0, import_react4.useRef)(null);
+  draftId.current = draft?.id ?? null;
+  const run = (0, import_react4.useCallback)(async (operation, success) => {
+    setBusy(true);
+    try {
+      const result = await operation();
+      setStatus({ text: success, error: false });
+      return result;
+    } catch (error) {
+      setStatus({ text: error instanceof Error ? error.message : String(error), error: true });
+      return null;
+    } finally {
+      setBusy(false);
+    }
+  }, []);
+  const refresh = (0, import_react4.useCallback)(async (preferredId) => {
+    const current = ++generation.current;
+    const catalog = await api4("/users");
+    const binding = sessionId ? await api4(`/user-selection?sessionId=${encodeURIComponent(sessionId)}`) : { selection: null };
+    if (current !== generation.current) return;
+    setUsers(catalog.users);
+    setSelectedUserId(binding.selection?.userId ?? null);
+    const id = preferredId ?? binding.selection?.userId ?? catalog.users[0]?.id ?? null;
+    setDraft(id === null ? null : structuredClone(catalog.users.find((user) => user.id === id) ?? null));
+  }, [sessionId]);
+  (0, import_react4.useEffect)(() => {
+    run(() => refresh(), "\u7528\u6237\u8D44\u6E90\u5DF2\u52A0\u8F7D");
+    const onRefresh = () => run(() => refresh(draftId.current), "\u7528\u6237\u8D44\u6E90\u5DF2\u5237\u65B0");
+    window.addEventListener("dsh-tavern:refresh", onRefresh);
+    return () => {
+      generation.current += 1;
+      window.removeEventListener("dsh-tavern:refresh", onRefresh);
+    };
+  }, [refresh, run]);
+  const create = (0, import_react4.useCallback)(() => run(async () => {
+    const data = await api4("/users", { method: "POST", body: JSON.stringify({ name: "\u65B0\u7528\u6237", description: "" }) });
+    draftId.current = data.user.id;
+    await refresh(data.user.id);
+    notifyRefresh();
+  }, "\u7528\u6237\u8D44\u6E90\u5DF2\u521B\u5EFA\uFF1B\u4FDD\u5B58\u540D\u5B57\u548C\u63CF\u8FF0\u540E\u518D\u7ED1\u5B9A"), [refresh, run]);
+  const save = (0, import_react4.useCallback)(() => run(async () => {
+    if (draft === null) return;
+    const data = await api4(`/users/${encodeURIComponent(draft.id)}`, {
+      method: "PATCH",
+      body: JSON.stringify({ name: draft.name, description: draft.description })
+    });
+    draftId.current = data.user.id;
+    setDraft(data.user);
+    setUsers((current) => current?.map((user) => user.id === data.user.id ? data.user : user) ?? current);
+    notifyRefresh();
+  }, "\u540D\u5B57\u548C\u63CF\u8FF0\u5DF2\u4FDD\u5B58\uFF1B\u5DF2\u7ED1\u5B9A\u4F1A\u8BDD\u7684\u4E0B\u4E00\u6B21\u8BF7\u6C42\u4F1A\u7ACB\u5373\u4F7F\u7528\u65B0\u5185\u5BB9"), [draft, run]);
+  const bind = (0, import_react4.useCallback)(() => run(async () => {
+    if (!sessionId || draft === null) throw new Error("\u8BF7\u5148\u521B\u5EFA\u6216\u6253\u5F00\u4E00\u4E2A\u4F1A\u8BDD\u5E76\u9009\u62E9\u7528\u6237\u8D44\u6E90");
+    if (selectedUserId !== draft.id && sessionBlank === false && !window.confirm("\u5F53\u524D\u4F1A\u8BDD\u5DF2\u6709\u5386\u53F2\u3002\u5207\u6362\u7528\u6237\u53EA\u5F71\u54CD\u540E\u7EED\u8BF7\u6C42\uFF0C\u4E0D\u4F1A\u91CD\u5199\u5DF2\u6709\u6D88\u606F\uFF1B\u7EE7\u7EED\u5417\uFF1F")) return;
+    const data = await api4("/user-selection", {
+      method: "POST",
+      body: JSON.stringify({ sessionId, userId: draft.id })
+    });
+    setSelectedUserId(data.selection.userId);
+    notifyRefresh();
+  }, "\u7528\u6237\u5DF2\u7ED1\u5B9A\uFF1B\u5F53\u524D\u4F1A\u8BDD\u7684\u4E0B\u4E00\u6B21\u8BF7\u6C42\u4F1A\u4F7F\u7528\u8BE5\u540D\u5B57\u548C\u63CF\u8FF0"), [draft, run, selectedUserId, sessionBlank, sessionId]);
+  const unbind = (0, import_react4.useCallback)(() => run(async () => {
+    if (!sessionId) throw new Error("\u5F53\u524D\u6CA1\u6709\u53EF\u89E3\u7ED1\u7684\u4F1A\u8BDD");
+    await api4("/user-selection", { method: "POST", body: JSON.stringify({ sessionId, userId: null }) });
+    setSelectedUserId(null);
+    notifyRefresh();
+  }, "\u5F53\u524D\u4F1A\u8BDD\u5DF2\u89E3\u9664\u7528\u6237\u7ED1\u5B9A"), [run, sessionId]);
+  const remove = (0, import_react4.useCallback)(() => run(async () => {
+    if (draft === null || !window.confirm(`\u5220\u9664\u7528\u6237\u201C${draft.name}\u201D\uFF1F\u6240\u6709\u4F1A\u8BDD\u4E2D\u7684\u5BF9\u5E94\u7ED1\u5B9A\u90FD\u4F1A\u6E05\u9664\u3002`)) return;
+    await api4(`/users/${encodeURIComponent(draft.id)}`, { method: "DELETE", body: "{}" });
+    draftId.current = null;
+    await refresh(null);
+    notifyRefresh();
+  }, "\u7528\u6237\u5DF2\u5220\u9664\uFF0C\u76F8\u5173\u4F1A\u8BDD\u7ED1\u5B9A\u5DF2\u6E05\u9664"), [draft, refresh, run]);
+  const activeName = selectedUserId === null ? "\u672A\u7ED1\u5B9A\u7528\u6237" : users?.find((user) => user.id === selectedUserId)?.name ?? selectedUserId;
+  return (0, import_react4.createElement)(
+    "div",
+    { className: "dtu-panel" },
+    (0, import_react4.createElement)(
+      "div",
+      { className: "dtu-header" },
+      (0, import_react4.createElement)("div", { className: "dtu-title" }, "Tavern \u7528\u6237"),
+      (0, import_react4.createElement)("button", { className: "dtu-close", type: "button", title: "\u5173\u95ED\u7528\u6237\u9762\u677F", "aria-label": "\u5173\u95ED\u7528\u6237\u4FA7\u8FB9\u680F", onClick: close }, "\u2715")
+    ),
+    (0, import_react4.createElement)(
+      "div",
+      { className: "dtu-body" },
+      (0, import_react4.createElement)(
+        "div",
+        { className: "dtu-toolbar" },
+        (0, import_react4.createElement)("button", { className: "dtu-button", type: "button", disabled: busy, onClick: create }, "\u65B0\u5EFA\u7528\u6237"),
+        (0, import_react4.createElement)("button", { className: "dtu-button", type: "button", disabled: busy, onClick: () => run(() => refresh(draft?.id), "\u7528\u6237\u8D44\u6E90\u5DF2\u5237\u65B0") }, "\u5237\u65B0")
+      ),
+      (0, import_react4.createElement)(Field4, { label: "\u6D4F\u89C8\u7528\u6237\u8D44\u6E90" }, (0, import_react4.createElement)(
+        "select",
+        {
+          className: "dtu-select",
+          value: draft?.id ?? "",
+          disabled: busy || users === null || users.length === 0,
+          onChange: (event) => setDraft(structuredClone(users.find((user) => user.id === event.target.value) ?? null))
+        },
+        ...users?.length ? [] : [(0, import_react4.createElement)("option", { key: "empty", value: "" }, "\u7528\u6237\u8D44\u6E90\u5E93\u4E3A\u7A7A")],
+        ...(users ?? []).map((user) => (0, import_react4.createElement)("option", { key: user.id, value: user.id }, user.name))
+      )),
+      (0, import_react4.createElement)("p", { className: "dtu-note" }, `\u5F53\u524D\u4F1A\u8BDD\uFF1A${sessionId || "\u65E0"}\uFF1B\u7ED1\u5B9A\uFF1A${activeName}`),
+      (0, import_react4.createElement)("div", { className: "dtu-status", "data-error": status.error || void 0, role: "status", "aria-live": "polite" }, status.text),
+      draft === null ? (0, import_react4.createElement)("p", { className: "dtu-note" }, users === null ? "\u6B63\u5728\u52A0\u8F7D\u7528\u6237\u8D44\u6E90\u2026" : "\u521B\u5EFA\u4E00\u4E2A\u53EA\u542B\u540D\u5B57\u548C\u63CF\u8FF0\u7684\u7528\u6237\u8D44\u6E90\u3002") : (0, import_react4.createElement)(
+        "div",
+        { className: "dtu-editor" },
+        (0, import_react4.createElement)(Field4, { label: "\u540D\u5B57\uFF08\u7528\u4E8E {{user}} \u5B8F\uFF09" }, (0, import_react4.createElement)("input", { className: "dtu-input", value: draft.name, maxLength: 200, onChange: (event) => setDraft((current) => ({ ...current, name: event.target.value })) })),
+        (0, import_react4.createElement)(Field4, { label: "\u63CF\u8FF0\uFF08\u8FDB\u5165 personaDescription marker\uFF1B\u7F3A marker \u65F6\u7531 loader \u7A33\u5B9A\u964D\u7EA7\uFF09" }, (0, import_react4.createElement)("textarea", { className: "dtu-textarea", value: draft.description, maxLength: 1e5, onChange: (event) => setDraft((current) => ({ ...current, description: event.target.value })) })),
+        (0, import_react4.createElement)(
+          "div",
+          { className: "dtu-actions" },
+          (0, import_react4.createElement)("button", { className: "dtu-button dtu-primary", type: "button", disabled: busy, onClick: save }, "\u4FDD\u5B58\u8D44\u6E90"),
+          (0, import_react4.createElement)("button", { className: "dtu-button", type: "button", disabled: busy || !sessionId, onClick: bind }, selectedUserId === draft.id ? "\u5237\u65B0\u4F1A\u8BDD\u7ED1\u5B9A" : "\u7ED1\u5B9A\u5230\u5F53\u524D\u4F1A\u8BDD")
+        ),
+        (0, import_react4.createElement)("button", { className: "dtu-button", type: "button", disabled: busy || !sessionId || selectedUserId === null, onClick: unbind }, "\u89E3\u9664\u5F53\u524D\u4F1A\u8BDD\u7ED1\u5B9A"),
+        (0, import_react4.createElement)("p", { className: "dtu-note" }, "\u7528\u6237\u8D44\u6E90\u4E0D\u5305\u542B\u5934\u50CF\uFF0C\u4E5F\u4E0D\u4F1A\u8986\u76D6 DSH Agent \u8EAB\u4EFD\u3002loader \u53EA\u5728\u7EDF\u4E00 Tavern profile \u4E2D\u89E3\u6790\u540D\u5B57\u5B8F\u5E76\u653E\u7F6E\u4E00\u6B21\u63CF\u8FF0\u3002"),
+        (0, import_react4.createElement)("div", { className: "dtu-footer" }, (0, import_react4.createElement)("button", { className: "dtu-button dtu-danger", type: "button", disabled: busy, onClick: remove }, "\u5220\u9664\u7528\u6237"))
+      )
+    )
+  );
+}
+function installUserStyles() {
+  if (document.querySelector('style[data-plugin-css="dsh-tavern-user"]') !== null) return;
+  const style = document.createElement("style");
+  style.dataset.pluginCss = "dsh-tavern-user";
+  style.textContent = css4;
+  document.head.append(style);
+}
+
 // packages/client/src/state.js
 var TAVERN_MENU_ITEMS = Object.freeze([
   { id: "preset", label: "\u9884\u8BBE", available: true },
   { id: "world-info", label: "\u4E16\u754C\u4FE1\u606F", available: true },
   { id: "character", label: "\u89D2\u8272\u5361", available: true },
-  { id: "user", label: "\u7528\u6237", available: false }
+  { id: "user", label: "\u7528\u6237", available: true }
 ]);
 var TAVERN_LAUNCHER_SIZE = 44;
 var TAVERN_LAUNCHER_PANEL = Object.freeze({ width: 220, height: 244 });
@@ -1185,7 +1352,7 @@ function launcherPlacement(anchor, viewport2, expanded = false) {
 }
 
 // packages/client/src/index.js
-var css4 = `
+var css5 = `
 .dtv-layer{position:absolute;inset:0;z-index:6;pointer-events:none;font-family:Inter,var(--dsw-font-family),sans-serif;color:var(--dsw-alias-label-primary)}
 .dtv-launcher{position:absolute;z-index:2;width:44px;height:44px;pointer-events:auto;overflow:hidden;border:0 solid transparent;border-radius:22px;background:transparent;box-shadow:none;transition:width .22s ease,height .22s ease,border-radius .22s ease,background-color .18s ease,box-shadow .18s ease;display:block}
 .dtv-launcher[data-open=true]{width:220px;height:244px;border-width:1px;border-color:var(--dsw-alias-border-l2);border-radius:18px;background:var(--dsw-alias-bg-base);box-shadow:var(--ds-shadow-3,0 12px 34px rgba(0,0,0,.24))}
@@ -1219,37 +1386,16 @@ function persistLauncherAnchor(anchor) {
   } catch {
   }
 }
-function PanelHeader({ title, close }) {
-  return (0, import_react4.createElement)(
-    "div",
-    { className: "dtv-header" },
-    (0, import_react4.createElement)("div", { className: "dtv-title" }, title),
-    (0, import_react4.createElement)("button", { className: "dtv-close", type: "button", title: `\u5173\u95ED${title}\u4FA7\u8FB9\u680F`, "aria-label": `\u5173\u95ED${title}\u4FA7\u8FB9\u680F`, onClick: close }, "\u2715")
-  );
-}
-function UserPanel({ close }) {
-  return (0, import_react4.createElement)(
-    "div",
-    { className: "dtv-panel" },
-    (0, import_react4.createElement)(PanelHeader, { title: "Tavern \u7528\u6237", close }),
-    (0, import_react4.createElement)(
-      "div",
-      { className: "dtv-body" },
-      (0, import_react4.createElement)("div", { className: "dtv-status" }, "\u7528\u6237/persona \u517C\u5BB9\u4ECD\u5728\u89C4\u5212\u4E2D\u3002\u6B64\u5165\u53E3\u5148\u56FA\u5B9A\u7EDF\u4E00\u5BFC\u822A\u4F4D\u7F6E\uFF0C\u4E0D\u4F1A\u5411 agent \u6CE8\u5165\u5360\u4F4D\u6587\u672C\u3002"),
-      (0, import_react4.createElement)("p", { className: "dtv-note" }, "\u540E\u7EED\u5E94\u7531\u72EC\u7ACB\u683C\u5F0F adapter \u7BA1\u7406 persona \u6570\u636E\uFF0C\u518D\u7531\u7EDF\u4E00 loader \u51B3\u5B9A\u5B83\u4E0E DSH agent persona\u3001\u89D2\u8272\u5361\u548C\u9884\u8BBE\u7684\u8986\u76D6\u5173\u7CFB\u3002")
-    )
-  );
-}
 function TavernShell({ useSessions }) {
-  const [menuOpen, setMenuOpen] = (0, import_react4.useState)(false);
-  const [surface, setSurface] = (0, import_react4.useState)(null);
-  const [anchor, setAnchor] = (0, import_react4.useState)(initialLauncherAnchor);
-  const drag = (0, import_react4.useRef)(null);
-  const suppressClick = (0, import_react4.useRef)(false);
+  const [menuOpen, setMenuOpen] = (0, import_react5.useState)(false);
+  const [surface, setSurface] = (0, import_react5.useState)(null);
+  const [anchor, setAnchor] = (0, import_react5.useState)(initialLauncherAnchor);
+  const drag = (0, import_react5.useRef)(null);
+  const suppressClick = (0, import_react5.useRef)(false);
   const sessionId = useSessions((state) => state.current);
   const sessionBlank = useSessions((state) => state.current === void 0 || state.current === null ? true : state.byId?.[state.current]?.blank === true);
   const close = () => setSurface(null);
-  (0, import_react4.useEffect)(() => {
+  (0, import_react5.useEffect)(() => {
     const onResize = () => setAnchor((current) => {
       const next = clampLauncherAnchor(current, viewport());
       persistLauncherAnchor(next);
@@ -1305,7 +1451,7 @@ function TavernShell({ useSessions }) {
   };
   let panel = null;
   if (surface === "preset") {
-    panel = (0, import_react4.createElement)("div", { className: "dtv-panel" }, (0, import_react4.createElement)(PresetSidebar, {
+    panel = (0, import_react5.createElement)("div", { className: "dtv-panel" }, (0, import_react5.createElement)(PresetSidebar, {
       closePanel: close,
       openPanel: () => {
       },
@@ -1313,18 +1459,18 @@ function TavernShell({ useSessions }) {
       autoOpen: false
     }));
   } else if (surface === "character") {
-    panel = (0, import_react4.createElement)(CharacterPanel, { sessionId, sessionBlank, close });
+    panel = (0, import_react5.createElement)(CharacterPanel, { sessionId, sessionBlank, close });
   } else if (surface === "world-info") {
-    panel = (0, import_react4.createElement)(WorldBookPanel, { sessionId, close });
+    panel = (0, import_react5.createElement)(WorldBookPanel, { sessionId, close });
   } else if (surface === "user") {
-    panel = (0, import_react4.createElement)(UserPanel, { close });
+    panel = (0, import_react5.createElement)(UserPanel, { sessionId, sessionBlank, close });
   }
   const placement = launcherPlacement(anchor, viewport(), menuOpen);
-  return (0, import_react4.createElement)(
+  return (0, import_react5.createElement)(
     "div",
     { className: "dtv-layer" },
     panel,
-    (0, import_react4.createElement)(
+    (0, import_react5.createElement)(
       "div",
       {
         className: "dtv-launcher",
@@ -1333,7 +1479,7 @@ function TavernShell({ useSessions }) {
         "data-vertical": placement.vertical,
         style: { left: placement.left, top: placement.top }
       },
-      (0, import_react4.createElement)("div", { className: "dtv-ball-row" }, (0, import_react4.createElement)("button", {
+      (0, import_react5.createElement)("div", { className: "dtv-ball-row" }, (0, import_react5.createElement)("button", {
         className: "dtv-ball",
         type: "button",
         title: "\u62D6\u52A8\u53EF\u79FB\u52A8\uFF1B\u70B9\u51FB\u5C55\u5F00 Tavern \u8D44\u6E90\u9762\u677F",
@@ -1345,11 +1491,11 @@ function TavernShell({ useSessions }) {
         onPointerCancel: endDrag,
         onClick: toggleMenu
       }, "T")),
-      menuOpen ? (0, import_react4.createElement)(
+      menuOpen ? (0, import_react5.createElement)(
         "div",
         { className: "dtv-menu", role: "menu" },
-        (0, import_react4.createElement)("div", { className: "dtv-menu-title" }, "dsh-tavern"),
-        ...TAVERN_MENU_ITEMS.map((item) => (0, import_react4.createElement)("button", {
+        (0, import_react5.createElement)("div", { className: "dtv-menu-title" }, "dsh-tavern"),
+        ...TAVERN_MENU_ITEMS.map((item) => (0, import_react5.createElement)("button", {
           className: "dtv-menu-item",
           type: "button",
           role: "menuitem",
@@ -1367,7 +1513,7 @@ function installStyles() {
   if (document.querySelector('style[data-plugin-css="dsh-tavern-shell"]') !== null) return;
   const style = document.createElement("style");
   style.dataset.pluginCss = "dsh-tavern-shell";
-  style.textContent = css4;
+  style.textContent = css5;
   document.head.append(style);
 }
 var name = "dsh-tavern";
@@ -1376,6 +1522,7 @@ function apply(ctx) {
   installPresetStyles();
   installCharacterStyles();
   installWorldBookStyles();
+  installUserStyles();
   installStyles();
   ctx.slots.inject("shell.overlay", () => ctx.slots.register({
     name: "shell.overlay",

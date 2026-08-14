@@ -12,6 +12,7 @@
     "./world-book-library": "./packages/world-book-library/src/index.js",
     "./preset": "./packages/preset/src/index.js",
     "./character": "./packages/character/src/index.js",
+    "./user": "./packages/user/src/index.js",
     "./client": "./dist/client.js",
     "./package.json": "./package.json"
   },

@@ -1,6 +1,6 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
-import { mkdtempSync, rmSync } from 'node:fs'
+import { mkdtempSync, readFileSync, rmSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { CharacterStore } from '../packages/character/src/index.js'
@@ -208,6 +208,65 @@ test('standalone world books are isolated per session and merge with embedded bo
     const unbound = store.profileLoader.compile({ agent: agent('session-a', 'alpha beta clocktower') })
     assert.doesNotMatch(unbound.systemText, /alpha lore|Beta lore/)
     assert.match(unbound.systemText, /synthetic clocktower rings at dawn/)
+  } finally {
+    rmSync(directory, { recursive: true, force: true })
+  }
+})
+
+test('real loader isolates users by session, refreshes switches immediately, restores, unbinds, and cleans deletion', () => {
+  const directory = mkdtempSync(join(tmpdir(), 'dsh-tavern-user-integration-'))
+  const firstHost = host()
+  try {
+    const store = apply(firstHost.ctx, { storageDir: directory })
+    store.userStore.create({ id: 'reader-one', name: 'Reader One', description: 'One description.' })
+    store.userStore.create({ id: 'reader-two', name: 'Reader Two', description: 'Two description.' })
+    store.sessionSelections.set('session-one', { userId: 'reader-one' })
+    store.sessionSelections.set('session-two', { userId: 'reader-two' })
+
+    assert.match(firstHost.sections[0].text({ agent: agent('session-one') }), /user-name: Reader One[\s\S]*One description\./)
+    assert.doesNotMatch(firstHost.sections[0].text({ agent: agent('session-one') }), /Two description\./)
+    assert.match(firstHost.sections[0].text({ agent: agent('session-two') }), /user-name: Reader Two[\s\S]*Two description\./)
+
+    store.sessionSelections.set('session-one', { userId: 'reader-two' })
+    const switched = firstHost.sections[0].text({ agent: agent('session-one') })
+    assert.match(switched, /user-name: Reader Two/)
+    assert.doesNotMatch(switched, /One description\./)
+
+    const restartedHost = host()
+    const restarted = apply(restartedHost.ctx, { storageDir: directory })
+    assert.equal(restarted.sessionSelections.get('session-one').userId, 'reader-two')
+    assert.match(restartedHost.sections[0].text({ agent: agent('session-one') }), /Two description\./)
+
+    restarted.sessionSelections.set('session-one', { userId: null })
+    assert.doesNotMatch(restartedHost.sections[0].text({ agent: agent('session-one') }), /user-name:|Two description\./)
+    assert.match(restartedHost.sections[0].text({ agent: agent('session-two') }), /Two description\./)
+
+    restarted.userStore.delete('reader-two')
+    restarted.sessionSelections.clearResource('user', 'reader-two')
+    assert.equal(restarted.sessionSelections.get('session-two').userId, null)
+  } finally {
+    rmSync(directory, { recursive: true, force: true })
+  }
+})
+
+test('real loader user snapshot stays stable and contains one authoritative Tavern profile contribution', () => {
+  const directory = mkdtempSync(join(tmpdir(), 'dsh-tavern-user-snapshot-'))
+  const { ctx, sections } = host()
+  try {
+    const store = apply(ctx, { storageDir: directory })
+    store.userStore.create({ id: 'snapshot-user', name: 'Snapshot Reader', description: 'Synthetic snapshot description for {{user}}.' })
+    store.sessionSelections.set('snapshot-session', { userId: 'snapshot-user' })
+    const snapshot = store.profileLoader.compile({ agent: agent('snapshot-session') })
+    const actual = {
+      sectionNames: sections.map(section => section.name),
+      selection: snapshot.audit.selection,
+      resources: snapshot.resources,
+      systemText: snapshot.systemText,
+      diagnosticCodes: snapshot.diagnostics.map(item => item.code),
+    }
+    const expected = JSON.parse(readFileSync(new URL('./snapshots/user-profile-loader.json', import.meta.url), 'utf8'))
+    assert.deepEqual(actual, expected)
+    assert.equal(snapshot.systemText.match(/Synthetic snapshot description for Snapshot Reader\./g)?.length, 1)
   } finally {
     rmSync(directory, { recursive: true, force: true })
   }

@@ -81,3 +81,59 @@ test('character system and PHI switches suppress those fields instead of moving 
   })
   assert.doesNotMatch(result.systemText, /Hidden system|Hidden PHI/)
 })
+
+test('selected user fills name macros and persona marker exactly once', () => {
+  const result = compileTavernProfile({
+    preset: {
+      id: 'user-preset',
+      name: 'User preset',
+      prompts: [
+        { identifier: 'main', role: 'system', content: '{{char}} is speaking with {{user}}.', enabled: true, marker: false, st: {} },
+        { identifier: 'personaDescription', role: 'system', content: '', enabled: true, marker: true, st: {} },
+        { identifier: 'personaDescription', role: 'system', content: '', enabled: true, marker: true, st: {} },
+      ],
+      sampling: {},
+    },
+    character: { id: 'synthetic-character', data: { name: 'Synthetic Guide' } },
+    user: { id: 'synthetic-user', name: 'Synthetic Reader', description: 'Synthetic Reader studies {{char}}.' },
+  })
+  assert.match(result.systemText, /Synthetic Guide is speaking with Synthetic Reader\./)
+  assert.match(result.systemText, /Synthetic Reader studies Synthetic Guide\./)
+  assert.equal(result.systemText.match(/Synthetic Reader studies Synthetic Guide\./g)?.length, 1)
+  assert.equal(result.systemText.match(/<st-user-field/g)?.length, 1)
+  assert.doesNotMatch(result.systemText, /\{\{/)
+  assert.equal(result.diagnostics.some(item => item.code === 'USER_PERSONA_MARKER_FALLBACK'), false)
+})
+
+test('selected user uses a stable diagnosed fallback when the persona marker is absent', () => {
+  const result = compileTavernProfile({
+    preset: {
+      id: 'fallback-preset',
+      name: 'Fallback preset',
+      prompts: [{ identifier: 'main', role: 'system', content: 'Address {{user}}.', enabled: true, marker: false, st: {} }],
+      sampling: {},
+    },
+    character: { id: 'fallback-character', data: { name: 'Guide', description: 'Character fallback.' } },
+    user: { id: 'fallback-user', name: 'Fallback Reader', description: 'Stable user fallback.' },
+  })
+  assert.equal(result.systemText.match(/Stable user fallback\./g)?.length, 1)
+  assert.ok(result.systemText.indexOf('Stable user fallback.') < result.systemText.indexOf('Character fallback.'))
+  assert.ok(result.diagnostics.some(item => item.code === 'USER_PERSONA_MARKER_FALLBACK'))
+})
+
+test('{{persona}} is an explicit single description placement and does not duplicate a later marker', () => {
+  const result = compileTavernProfile({
+    preset: {
+      id: 'persona-macro',
+      name: 'Persona macro',
+      prompts: [
+        { identifier: 'main', role: 'system', content: 'Persona: {{persona}} / duplicate: {{persona}}', enabled: true, marker: false, st: {} },
+        { identifier: 'personaDescription', role: 'system', content: '', enabled: true, marker: true, st: {} },
+      ],
+      sampling: {},
+    },
+    user: { id: 'macro-user', name: 'Macro User', description: 'Only once.' },
+  })
+  assert.equal(result.systemText.match(/Only once\./g)?.length, 1)
+  assert.equal(result.systemText.match(/<st-user-field/g)?.length ?? 0, 0)
+})

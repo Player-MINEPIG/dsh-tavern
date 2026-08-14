@@ -122,3 +122,34 @@ test('Host resolves profile and call config from the requesting agent session', 
     rmSync(directory, { recursive: true, force: true })
   }
 })
+
+test('selected user keeps DSH agent identity and contributes one Tavern profile section', async () => {
+  const directory = mkdtempSync(join(tmpdir(), 'dsh-tavern-host-user-'))
+  const sections = []
+  const listeners = new Map()
+  const ctx = {
+    systemPrompt: { section: section => sections.push(section) },
+    on: (name, listener) => listeners.set(name, listener),
+    emit: () => {},
+    get: () => undefined,
+    effect: () => {},
+    logger: { info: () => {} },
+  }
+  const selectedAgent = { id: 'user-session', session: { header: {}, deriveMessages: () => [] } }
+  try {
+    const store = apply(ctx, { storageDir: directory })
+    store.userStore.create({ id: 'host-user', name: 'Host Reader', description: 'Host user description.' })
+    store.sessionSelections.set('user-session', { userId: 'host-user' })
+    const profileText = sections[0].text({ agent: selectedAgent })
+    const harness = { name: 'harness', text: 'DSH agent identity remains authoritative.' }
+    const tavern = { name: sections[0].name, text: profileText }
+    const assembly = await listeners.get('system-prompt/assemble')({}, { agent: selectedAgent }, async () => ({
+      sections: [harness, tavern], tools: [], contexts: [], variables: {},
+    }))
+    assert.equal(assembly.sections.filter(section => section.name === 'harness').length, 1)
+    assert.equal(assembly.sections.filter(section => section.name === 'dsh-tavern:profile').length, 1)
+    assert.equal(profileText.match(/Host user description\./g)?.length, 1)
+  } finally {
+    rmSync(directory, { recursive: true, force: true })
+  }
+})

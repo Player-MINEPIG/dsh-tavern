@@ -27,6 +27,7 @@ export function normalizeSelection(value = {}) {
   return {
     presetId: stringOrNull(value?.presetId),
     characterCardId: stringOrNull(value?.characterCardId),
+    userId: stringOrNull(value?.userId),
     worldBookIds: normalizeWorldBookIds(value?.worldBookIds),
     character: value?.character !== null && typeof value?.character === 'object'
       ? clone(value.character)
@@ -133,6 +134,9 @@ export class SessionSelectionStore {
         changed = true
       } else if (kind === 'character-card' && selection.characterCardId === id) {
         this.state.sessions[key] = normalizeSelection({ ...selection, characterCardId: null, character: {} })
+        changed = true
+      } else if (kind === 'user' && selection.userId === id) {
+        this.state.sessions[key] = normalizeSelection({ ...selection, userId: null })
         changed = true
       } else if (kind === 'world-book' && selection.worldBookIds.includes(id)) {
         this.state.sessions[key] = normalizeSelection({

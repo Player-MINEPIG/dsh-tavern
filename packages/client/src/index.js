@@ -8,6 +8,7 @@ import {
 import { PresetSidebar, installPresetStyles } from '../../preset/src/client.js'
 import { CharacterPanel, installCharacterStyles } from '../../character/src/client.js'
 import { WorldBookPanel, installWorldBookStyles } from '../../world-book-library/src/client.js'
+import { UserPanel, installUserStyles } from '../../user/src/client.js'
 import {
   TAVERN_MENU_ITEMS,
   clampLauncherAnchor,
@@ -295,16 +296,6 @@ function WorldInfoPanel({ sessionId, close }) {
   )
 }
 
-function UserPanel({ close }) {
-  return h('div', { className: 'dtv-panel' },
-    h(PanelHeader, { title: 'Tavern 用户', close }),
-    h('div', { className: 'dtv-body' },
-      h('div', { className: 'dtv-status' }, '用户/persona 兼容仍在规划中。此入口先固定统一导航位置，不会向 agent 注入占位文本。'),
-      h('p', { className: 'dtv-note' }, '后续应由独立格式 adapter 管理 persona 数据，再由统一 loader 决定它与 DSH agent persona、角色卡和预设的覆盖关系。'),
-    ),
-  )
-}
-
 function TavernShell({ useSessions }) {
   const [menuOpen, setMenuOpen] = useState(false)
   const [surface, setSurface] = useState(null)
@@ -388,7 +379,7 @@ function TavernShell({ useSessions }) {
   } else if (surface === 'world-info') {
     panel = h(WorldBookPanel, { sessionId, close })
   } else if (surface === 'user') {
-    panel = h(UserPanel, { close })
+    panel = h(UserPanel, { sessionId, sessionBlank, close })
   }
 
   const placement = launcherPlacement(anchor, viewport(), menuOpen)
@@ -446,6 +437,7 @@ export function apply(ctx) {
   installPresetStyles()
   installCharacterStyles()
   installWorldBookStyles()
+  installUserStyles()
   installStyles()
   ctx.slots.inject('shell.overlay', () => ctx.slots.register({
     name: 'shell.overlay',

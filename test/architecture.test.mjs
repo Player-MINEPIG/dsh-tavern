@@ -58,3 +58,15 @@ test('standalone world-book use-case depends inward and leaves host seams to the
   assert.doesNotMatch(worldBookLibrary, /tavern-loader|systemPrompt\.section|system-prompt\/assemble|agent\/request/)
   assert.doesNotMatch(pureWorldBook, /from ['"]node:(?:fs|path)|world-book-library|systemPrompt\.section|agent\/request/)
 })
+
+test('user use-case stays a three-field resource and leaves Host seams to the loader', () => {
+  const user = [
+    read('../packages/user/src/index.js'),
+    read('../packages/user/src/store.js'),
+    read('../packages/user/src/server.js'),
+    read('../packages/user/src/resource.js'),
+  ].join('\n')
+  assert.doesNotMatch(user, /tavern-loader|systemPrompt\.section|system-prompt\/assemble|agent\/request|avatar|image\//i)
+  assert.match(user, /user-selection/)
+  assert.match(user, /\['id', 'name', 'description'\]/)
+})

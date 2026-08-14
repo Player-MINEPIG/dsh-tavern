@@ -39,9 +39,9 @@ TauriTavern 的 Agent 路径则多了一层快照边界：
 dsh 没有 ST 的 `PromptManager`、marker collection 或任意历史深度插入接口。当前实现采用一个明确受限的适配：
 
 1. 导入时把 preset、角色卡和 World Info/Character Book 分别归一化，并保留未知字段与原始 artifact。
-2. loader 根据当前 session 选择读取 preset 和角色卡；角色卡内嵌 `character_book` 自动成为世界信息来源。
+2. loader 根据当前 session 选择读取 preset、角色卡和一个用户资源；角色卡内嵌 `character_book` 自动成为世界信息来源。
 3. 世界信息 matcher 扫描已有 DSH durable user/assistant 历史，得到本次激活条目。
-4. loader 按 preset marker 组合静态 prompt、角色字段和激活 lore，形成唯一 `dsh-tavern:profile` system section。
+4. loader 按 preset marker 组合静态 prompt、用户名/描述、角色字段和激活 lore，形成唯一 `dsh-tavern:profile` system section。
 5. DSH 自己继续从 Session 投影用户输入、历史和工具结果；插件不复制 `chatHistory`。
 6. `temperature`、`maxTokens`、`reasoningEffort` 和 `stop` 通过 `agent/request` 映射；其他 ST sampler 目前只保存，不宣称已经下发。
 
@@ -77,6 +77,7 @@ dsh 没有 ST 的 `PromptManager`、marker collection 或任意历史深度插�
 | --- | --- |
 | 预设静态 instruction | 继续使用命名 system sections；由 coordinator 提供 ST marker anchor |
 | 角色 description/personality/scenario | 当前按 preset marker 或稳定 fallback 进入统一 profile；未来只有明确选择才覆盖 DSH Agent persona |
+| 用户名字与描述 | 名字解析 `{{user}}`；描述进入一次 `personaDescription`/`{{persona}}`，缺少放置点时诊断并稳定 fallback；不覆盖 DSH Agent persona |
 | 世界信息条目 | 当前扫描已有历史并按 before/after anchor 进入 profile；同轮输入与严格 depth 等待公开 seam |
 | example dialogue | 当前为明确标注的 system 近似；未来需要真实 user/assistant 示例消息 seam |
 | first message / alternate greeting | 当前为 greeting-reference；未来应作为创建会话时的显式 seed message |

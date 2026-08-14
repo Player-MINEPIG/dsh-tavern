@@ -19,6 +19,7 @@ test('session selections persist and regular forks snapshot their parent', () =>
     assert.deepEqual(selections.ensureAgent(agent('child', { parentSession: 'parent', delegationDepth: 0 })), {
       presetId: 'parent-preset',
       characterCardId: 'character-a',
+      userId: null,
       worldBookIds: [],
       character: {},
     })
@@ -42,6 +43,7 @@ test('delegated subagents start without parent or global Tavern resources', () =
     assert.deepEqual(selected, {
       presetId: null,
       characterCardId: null,
+      userId: null,
       worldBookIds: [],
       character: {},
     })

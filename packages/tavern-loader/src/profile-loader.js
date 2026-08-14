@@ -59,6 +59,7 @@ export class TavernProfileLoader {
     this.presetStore = presetStore
     this.selections = selections
     this.characterAdapter = null
+    this.userAdapter = null
     this.worldBookAdapter = null
     this.contextCache = new WeakMap()
   }
@@ -73,6 +74,12 @@ export class TavernProfileLoader {
     if (this.worldBookAdapter !== null) throw new Error('A world-book adapter is already registered')
     this.worldBookAdapter = adapter
     return () => { if (this.worldBookAdapter === adapter) this.worldBookAdapter = null }
+  }
+
+  registerUserAdapter(adapter) {
+    if (this.userAdapter !== null) throw new Error('A user adapter is already registered')
+    this.userAdapter = adapter
+    return () => { if (this.userAdapter === adapter) this.userAdapter = null }
   }
 
   selection({ agent, sessionId } = {}) {
@@ -100,8 +107,14 @@ export class TavernProfileLoader {
     )
     diagnostics.push(...characterResult.diagnostics)
 
+    const userResult = normalizedAdapterResult(
+      this.userAdapter?.resolve?.(shared),
+      'user',
+    )
+    diagnostics.push(...userResult.diagnostics)
+
     const worldBookResult = normalizedAdapterResult(
-      this.worldBookAdapter?.resolve?.({ ...shared, character: characterResult.character }),
+      this.worldBookAdapter?.resolve?.({ ...shared, character: characterResult.character, user: userResult.user }),
       'loreEntries',
     )
     diagnostics.push(...worldBookResult.diagnostics)
@@ -109,6 +122,7 @@ export class TavernProfileLoader {
     const compiled = compileTavernProfile({
       preset,
       character: characterResult.character,
+      user: userResult.user,
       characterSelection: selection.character,
       loreEntries: Array.isArray(worldBookResult.loreEntries) ? worldBookResult.loreEntries : [],
       context: options.context ?? {},
@@ -122,6 +136,7 @@ export class TavernProfileLoader {
         name: characterResult.character.name ?? characterResult.character.data?.name ?? '',
         updatedAt: characterResult.character.updatedAt,
       },
+      user: userResult.user === null ? null : clone(userResult.user),
       worldBooks: Array.isArray(worldBookResult.resources) ? clone(worldBookResult.resources) : [],
     }
     const audit = {
@@ -171,12 +186,13 @@ export class TavernProfileLoader {
 export function compileTavernProfile({
   preset = null,
   character = null,
+  user = null,
   characterSelection = {},
   loreEntries = [],
   context = {},
 } = {}) {
   // Preserve the already accepted preset-only byte shape and behavior.
-  if (character === null && loreEntries.length === 0) {
+  if (character === null && user === null && loreEntries.length === 0) {
     return {
       systemText: preset === null ? '' : compilePresetForDsh(preset, context),
       callConfig: preset === null ? {} : projectPresetCallConfig(preset),
@@ -190,6 +206,7 @@ export function compileTavernProfile({
   const characterData = isRecord(character?.data) ? character.data : character
   const profileContext = {
     ...context,
+    user: user?.name ?? context.user ?? 'User',
     character: context.character
       ?? characterData?.nickname
       ?? characterData?.name
@@ -207,6 +224,7 @@ export function compileTavernProfile({
   const beforeLore = normalizedLore.filter((entry) => entry.position === 'before')
   const afterLore = normalizedLore.filter((entry) => entry.position === 'after')
   const fields = normalizedCharacterFields(characterData, characterSelection)
+  const userFields = normalizedUserFields(user)
   const consumed = new Set()
   const body = []
 
@@ -215,7 +233,7 @@ export function compileTavernProfile({
       if (!isRecord(prompt) || prompt.enabled !== true) continue
       const identifier = String(prompt.identifier ?? '')
       if (prompt.marker === true) {
-        const marker = compileMarker(identifier, fields, beforeLore, afterLore, profileContext, consumed)
+        const marker = compileMarker(identifier, fields, userFields, beforeLore, afterLore, profileContext, consumed)
         if (marker !== '') body.push(marker)
         continue
       }
@@ -236,16 +254,17 @@ export function compileTavernProfile({
           diagnostics.push(positionDiagnostic('CHARACTER_PHI_APPROXIMATE', 'Character post-history instructions are placed in the Tavern system profile, not strictly after chat history.'))
         }
       }
-      const rendered = renderCharacterMacros(content, profileContext, fields)
+      const rendered = renderProfileMacros(content, profileContext, fields, userFields, consumed)
       if (rendered !== '') body.push(promptBlock(prompt, rendered))
     }
   }
 
+  appendUserFallback(body, userFields, consumed, profileContext, diagnostics)
   appendCharacterFallbacks(body, fields, consumed, profileContext, diagnostics)
   if (!consumed.has('worldInfoBefore')) appendLore(body, beforeLore, profileContext)
   if (!consumed.has('worldInfoAfter')) appendLore(body, afterLore, profileContext)
 
-  const header = profileHeader(preset, character, profileContext)
+  const header = profileHeader(preset, character, user, profileContext)
   const systemText = [...header, ...body].filter(Boolean).join('\n\n')
   return {
     systemText,
@@ -287,11 +306,18 @@ function normalizedCharacterFields(data, selection) {
   }
 }
 
+function normalizedUserFields(user) {
+  return {
+    name: stringField(user?.name),
+    description: stringField(user?.description),
+  }
+}
+
 function stringField(value) {
   return typeof value === 'string' ? value.trim() : ''
 }
 
-function profileHeader(preset, character, context) {
+function profileHeader(preset, character, user, context) {
   const lines = ['[dsh-tavern profile]']
   if (preset !== null) {
     lines.push(`preset-name: ${renderSillyTavernMacros(preset.name, context)}`)
@@ -302,6 +328,10 @@ function profileHeader(preset, character, context) {
     lines.push(`character-name: ${renderSillyTavernMacros(data?.name ?? character.name ?? '', context)}`)
     lines.push(`character-id: ${escapeAttribute(character.id)}`)
   }
+  if (user !== null) {
+    lines.push(`user-name: ${renderSillyTavernMacros(user.name ?? '', { ...context, user: user.name ?? context.user })}`)
+    lines.push(`user-id: ${escapeAttribute(user.id)}`)
+  }
   return [lines.join('\n')]
 }
 
@@ -310,11 +340,16 @@ function promptBlock(prompt, text) {
 }
 
 function characterBlock(name, text, context) {
-  const rendered = renderCharacterMacros(text, context, {})
+  const rendered = renderSillyTavernMacros(text, context)
   return rendered === '' ? '' : `<st-character-field name="${name}">\n${rendered}\n</st-character-field>`
 }
 
-function compileMarker(identifier, fields, beforeLore, afterLore, context, consumed) {
+function userBlock(text, context) {
+  const rendered = renderSillyTavernMacros(text, context)
+  return rendered === '' ? '' : `<st-user-field name="persona-description">\n${rendered}\n</st-user-field>`
+}
+
+function compileMarker(identifier, fields, userFields, beforeLore, afterLore, context, consumed) {
   const mapping = {
     charDescription: ['description', 'description'],
     charPersonality: ['personality', 'personality'],
@@ -325,6 +360,11 @@ function compileMarker(identifier, fields, beforeLore, afterLore, context, consu
     const [field, tag] = mapping[identifier]
     consumed.add(field)
     return characterBlock(tag, fields[field], context)
+  }
+  if (['personaDescription', 'userDescription', 'userPersona'].includes(identifier)) {
+    if (consumed.has('userDescription')) return ''
+    consumed.add('userDescription')
+    return userBlock(userFields.description, context)
   }
   if (identifier === 'worldInfoBefore') {
     consumed.add('worldInfoBefore')
@@ -338,6 +378,18 @@ function compileMarker(identifier, fields, beforeLore, afterLore, context, consu
   // without copying it into the system prompt.
   if (identifier === 'chatHistory') consumed.add('chatHistory')
   return ''
+}
+
+function appendUserFallback(body, fields, consumed, context, diagnostics) {
+  if (fields.description === '' || consumed.has('userDescription')) return
+  const block = userBlock(fields.description, context)
+  if (block === '') return
+  body.push(block)
+  consumed.add('userDescription')
+  diagnostics.push(positionDiagnostic(
+    'USER_PERSONA_MARKER_FALLBACK',
+    'The selected user description was appended before fallback character fields because the preset has no enabled personaDescription marker.',
+  ))
 }
 
 function appendCharacterFallbacks(body, fields, consumed, context, diagnostics) {
@@ -377,14 +429,21 @@ function applyOriginal(override, original) {
   return override.replace(/\{\{\s*original\s*\}\}/gi, original)
 }
 
-function renderCharacterMacros(text, context, fields) {
+function renderProfileMacros(text, context, fields, userFields, consumed) {
+  let personaInserted = false
+  const withPersona = String(text ?? '').replace(/\{\{\s*persona\s*\}\}/gi, () => {
+    if (userFields.description === '' || consumed.has('userDescription') || personaInserted) return ''
+    personaInserted = true
+    consumed.add('userDescription')
+    return userFields.description
+  })
   const replacements = {
     description: fields.description ?? '',
     personality: fields.personality ?? '',
     scenario: fields.scenario ?? '',
     mesexamples: fields.messageExample ?? '',
   }
-  const expanded = String(text ?? '').replace(/\{\{\s*(description|personality|scenario|mesExamples)\s*\}\}/gi, (_match, name) => replacements[name.toLowerCase()] ?? '')
+  const expanded = withPersona.replace(/\{\{\s*(description|personality|scenario|mesExamples)\s*\}\}/gi, (_match, name) => replacements[name.toLowerCase()] ?? '')
   return renderSillyTavernMacros(expanded, context)
 }
 

@@ -75,9 +75,9 @@ Before calling `dsh plugin ... remove`, the uninstaller copies the installed
 
 This is important because dsh/pnpm removes the installed plugin directory,
 which is also where this version stores the complete plugin-local `data/`
-tree: presets, normalized character cards, imported character artifacts, and
-per-session resource selections. Future world-book and user resources use the
-same data root. Copy the whole directory when backing up; copying only
+tree: presets, normalized character cards, imported character artifacts,
+three-field user resources under `users/`, and per-session resource selections.
+Future standalone world-book resources use the same data root. Copy the whole directory when backing up; copying only
 `presets/` loses other resources and bindings.
 
 Choose another backup directory or deliberately skip backup with:

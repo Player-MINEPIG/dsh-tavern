@@ -1,0 +1,26 @@
+{
+  "sectionNames": [
+    "dsh-tavern:profile"
+  ],
+  "selection": {
+    "presetId": null,
+    "characterCardId": null,
+    "userId": "snapshot-user",
+    "worldBookIds": [],
+    "character": {}
+  },
+  "resources": {
+    "preset": null,
+    "characterCard": null,
+    "user": {
+      "id": "snapshot-user",
+      "name": "Snapshot Reader",
+      "description": "Synthetic snapshot description for {{user}}."
+    },
+    "worldBooks": []
+  },
+  "systemText": "[dsh-tavern profile]\nuser-name: Snapshot Reader\nuser-id: snapshot-user\n\n<st-user-field name=\"persona-description\">\nSynthetic snapshot description for Snapshot Reader.\n</st-user-field>",
+  "diagnosticCodes": [
+    "USER_PERSONA_MARKER_FALLBACK"
+  ]
+}

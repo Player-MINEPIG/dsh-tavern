@@ -57,10 +57,11 @@ llm.stream({ system, messages, tools, ...config })
 插件不替换 DSH agent loop，也不维护第二份聊天历史。它只在两个公开 waterfall 和一个 system section 上贡献内容：
 
 ```text
-SessionSelectionStore（当前 session 的 preset / character / world-info）
+SessionSelectionStore（当前 session 的 preset / character / user / world-info）
   │
   ├─ preset adapter ───────────────┐
   ├─ character adapter ────────────┼─ TavernProfileLoader.compile()
+  ├─ user adapter ─────────────────┤       │
   └─ World Info matcher            │       │
       （扫描既有 deriveMessages）──┘       ├─ dsh-tavern:profile system section
                                           ├─ diagnostics / audit fingerprint
@@ -83,9 +84,9 @@ request/header.config
 具体变化：
 
 1. `agent/session-start` 时，loader 为 session 固化资源选择。普通 fork 复制父会话当时的选择；delegated subagent 默认选择为空。
-2. `systemPrompt.assemble()` 调用 `dsh-tavern:profile` section 时，loader 读取该 session 的 preset 和角色卡。
+2. `systemPrompt.assemble()` 调用 `dsh-tavern:profile` section 时，loader 读取该 session 的 preset、角色卡和单个用户资源。
 3. 若角色卡含 `character_book`，世界信息 adapter 扫描已经存在于 `Session.deriveMessages()` 的 user/assistant 文本（默认最多最近 64 KiB），执行普通关键词、secondary key、概率、组和预算策略。原生 JavaScript regex key 因无法设置执行超时而默认阻断，只有显式不安全兼容模式才执行。
-4. preset marker、角色字段与命中 lore 被组合为一个 Tavern profile。creator notes 永远不进入 profile；`chatHistory` marker 被消费但不复制历史。
+4. preset marker、用户名字/描述、角色字段与命中 lore 被组合为一个 Tavern profile。`{{user}}` 取当前 session 的用户名字；描述进入一次 `personaDescription`/`{{persona}}` 放置点，缺失时以诊断 fallback 放置。creator notes 永远不进入 profile；`chatHistory` marker 被消费但不复制历史。
 5. 默认 append 模式把 Tavern profile 放在 DSH 其他 system sections 之后。高级 replace 模式只保留 Tavern profile，但仍保留 tools、runtime contexts、variables 和执行层安全机制。
 6. `agent/request` 将 DSH 已公开支持的 preset 参数投影到 call config。未公开的 ST sampler 仅保存，不伪造已经生效。
 
@@ -97,7 +98,7 @@ request/header.config
 - 不把 preset 中标记为 user/assistant 的静态 prompt 伪装成真实历史；它们目前只是 system profile 中可审阅的标签块。
 - 不把 greeting 写成一条虚构的 assistant 历史；当前仅作为明确标注的风格参考。
 - 不发送 creator notes。
-- 不让 UI 菜单、未实现的用户/persona 面板或未接线的独立世界信息 ID 产生占位 prompt。
+- 不让 UI 菜单、未绑定的用户资源或未接线的独立世界信息 ID 产生占位 prompt；用户资源也不覆盖 DSH Agent 身份。
 - 不绕过 DSH 的工具权限、沙箱或审批。replace 模式会移除模型可见的部分宿主说明，但不会关闭执行层限制。
 
 ## 4. 为什么同轮 World Info 可能晚一轮触发
