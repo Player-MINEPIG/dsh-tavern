@@ -77,10 +77,11 @@ var css = `
 .dtt-footer{position:sticky;bottom:-12px;margin:0 -12px -12px;padding:10px 12px;background:var(--dsw-alias-bg-base);border-top:1px solid var(--dsw-alias-border-l2);display:grid;grid-template-columns:1fr auto;gap:8px}
 `;
 async function api(path, options = {}) {
+  const method = String(options.method ?? "GET").toUpperCase();
   const response = await fetch(`${API_ROOT}${path}`, {
     ...options,
     headers: {
-      ...options.body === void 0 ? {} : { "Content-Type": "application/json" },
+      ...method === "GET" || method === "HEAD" ? {} : { "Content-Type": "application/json" },
       ...options.headers
     }
   });
@@ -351,7 +352,6 @@ function PresetSidebar({ closePanel, openPanel, sessionId, autoOpen = true }) {
         (0, import_react.createElement)("option", { value: "" }, "\u4E0D\u4F7F\u7528\u9884\u8BBE"),
         ...(catalog?.presets ?? []).map((preset) => (0, import_react.createElement)("option", { key: preset.id, value: preset.id }, `${preset.name} (${preset.enabledPromptCount}/${preset.promptCount})`))
       )),
-      (0, import_react.createElement)("p", { className: "dtt-note" }, `\u5B58\u50A8\u76EE\u5F55\uFF1A${catalog?.storageDir || "\u52A0\u8F7D\u4E2D\u2026"}`),
       (0, import_react.createElement)("div", { className: "dtt-status", "data-error": status.error || void 0, role: "status", "aria-live": "polite" }, status.text),
       draft === null ? (0, import_react.createElement)("p", { className: "dtt-note" }, catalog === null ? "\u6B63\u5728\u52A0\u8F7D\u9884\u8BBE\u2026" : "\u8BF7\u9009\u62E9\u6216\u521B\u5EFA\u9884\u8BBE\u4EE5\u5F00\u59CB\u914D\u7F6E\u3002") : (0, import_react.createElement)(
         "div",
@@ -503,7 +503,14 @@ function errorMessage(data, status) {
   return `HTTP ${status}`;
 }
 async function api2(path, options = {}) {
-  const response = await fetch(`${API_ROOT2}${path}`, options);
+  const method = String(options.method ?? "GET").toUpperCase();
+  const response = await fetch(`${API_ROOT2}${path}`, {
+    ...options,
+    headers: {
+      ...method === "GET" || method === "HEAD" ? {} : { "Content-Type": "application/json" },
+      ...options.headers
+    }
+  });
   const data = await response.json().catch(() => null);
   if (!response.ok || data?.ok === false) throw new Error(errorMessage(data, response.status));
   return data;
@@ -664,7 +671,6 @@ function CharacterPanel({ sessionId, sessionBlank, close }) {
         ...(catalog?.characters ?? []).map((item) => (0, import_react2.createElement)("option", { key: item.id, value: item.id }, `${item.name} \xB7 ${item.sourceFormat}`))
       )),
       (0, import_react2.createElement)("p", { className: "dcc-note" }, `\u5F53\u524D\u4F1A\u8BDD\uFF1A${sessionId || "\u65E0"}\uFF1B\u7ED1\u5B9A\uFF1A${activeName}`),
-      (0, import_react2.createElement)("p", { className: "dcc-note" }, `\u5B58\u50A8\u76EE\u5F55\uFF1A${catalog?.storageDir || "\u52A0\u8F7D\u4E2D\u2026"}`),
       (0, import_react2.createElement)("div", { className: "dcc-status", "data-error": status.error || void 0, role: "status", "aria-live": "polite" }, status.text),
       detail === null ? (0, import_react2.createElement)("p", { className: "dcc-note" }, catalog === null ? "\u6B63\u5728\u52A0\u8F7D\u89D2\u8272\u5E93\u2026" : "\u5BFC\u5165\u4E00\u5F20\u5408\u6210\u6216\u81EA\u6709\u6388\u6743\u7684 SillyTavern \u89D2\u8272\u5361\u4EE5\u67E5\u770B\u8BE6\u60C5\u3002") : (0, import_react2.createElement)(
         "div",

@@ -14,6 +14,7 @@ import { PresetRuntime } from './preset-runtime.js'
 import { TavernProfileLoader } from './profile-loader.js'
 import { SessionSelectionStore } from './session-policy.js'
 import { createWorldBookAdapter } from './world-book-adapter.js'
+import { secureTavernApi } from './api-security.js'
 
 export const name = 'dsh-tavern'
 export const inject = ['systemPrompt']
@@ -151,11 +152,15 @@ export function apply(ctx, config = {}) {
         }
       },
     })
+    const api = secureTavernApi(
+      (req, res) => isCharacterApiPath(req.url) ? characterApi(req, res) : presetApi(req, res),
+      config.security,
+    )
     ctx.effect(
       () => ctx.get('webServer').register({
         kind: 'prefix',
         path: API_ROOT,
-        handler: (req, res) => isCharacterApiPath(req.url) ? characterApi(req, res) : presetApi(req, res),
+        handler: api,
       }),
       'dsh-tavern: HTTP Tavern API',
     )
@@ -193,4 +198,5 @@ export { compilePresetForDsh, projectPresetCallConfig } from './profile-compiler
 export { TavernProfileLoader, compileTavernProfile, conversationTextFromAgent } from './profile-loader.js'
 export { SessionSelectionStore, normalizeSelection } from './session-policy.js'
 export { createWorldBookAdapter } from './world-book-adapter.js'
+export { secureTavernApi, apiSecurityConstants } from './api-security.js'
 export { PresetStore } from '../../preset/src/index.js'

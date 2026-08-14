@@ -30,12 +30,16 @@ function entry(uid, patch = {}) {
   }
 }
 
-test('matches plain, whole-word, case-sensitive and JavaScript regex keys', () => {
+test('matches literal keys and requires explicit unsafe opt-in for JavaScript regex keys', () => {
   assert.equal(matchWorldBookKey('A Harbor', 'harbor').matched, true)
   assert.equal(matchWorldBookKey('harborside', 'harbor', { matchWholeWords: true }).matched, false)
   assert.equal(matchWorldBookKey('Harbor', 'harbor', { caseSensitive: true }).matched, false)
-  assert.equal(matchWorldBookKey('moon   gate', '/moon\\s+gate/i').matched, true)
-  assert.match(matchWorldBookKey('anything', '/[bad/').error, /Invalid regular expression/)
+  const blocked = matchWorldBookKey('moon   gate', '/moon\\s+gate/i')
+  assert.equal(blocked.matched, false)
+  assert.equal(blocked.code, 'unsafe-regex-disabled')
+  assert.equal(matchWorldBookKey('moon   gate', '/moon\\s+gate/i', { allowUnsafeRegex: true }).matched, true)
+  assert.match(matchWorldBookKey('anything', '/[bad/', { allowUnsafeRegex: true }).error, /Invalid regular expression/)
+  assert.equal(matchWorldBookKey('x', `/${'x'.repeat(257)}/`, { allowUnsafeRegex: true }).code, 'regex-too-long')
 })
 
 test('evaluates all four secondary-key logic modes and reports invalid regexes', () => {
@@ -45,7 +49,7 @@ test('evaluates all four secondary-key logic modes and reports invalid regexes',
   assert.equal(evaluateWorldBookEntry({ ...base, selectiveLogic: 'not_any' }, 'primary clear').eligible, true)
   assert.equal(evaluateWorldBookEntry({ ...base, selectiveLogic: 'not_all' }, 'primary rain').eligible, true)
 
-  const invalid = evaluateWorldBookEntry(entry('x', { keys: ['/[bad/'] }), 'x')
+  const invalid = evaluateWorldBookEntry(entry('x', { keys: ['/[bad/'] }), 'x', { allowUnsafeRegex: true })
   assert.equal(invalid.eligible, false)
   assert.equal(invalid.invalidKeys[0].set, 'primary')
 })

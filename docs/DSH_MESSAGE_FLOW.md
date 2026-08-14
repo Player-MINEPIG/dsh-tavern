@@ -84,7 +84,7 @@ request/header.config
 
 1. `agent/session-start` 时，loader 为 session 固化资源选择。普通 fork 复制父会话当时的选择；delegated subagent 默认选择为空。
 2. `systemPrompt.assemble()` 调用 `dsh-tavern:profile` section 时，loader 读取该 session 的 preset 和角色卡。
-3. 若角色卡含 `character_book`，世界信息 adapter 扫描已经存在于 `Session.deriveMessages()` 的 user/assistant 文本，执行关键词、secondary key、regex、概率、组和预算策略。
+3. 若角色卡含 `character_book`，世界信息 adapter 扫描已经存在于 `Session.deriveMessages()` 的 user/assistant 文本（默认最多最近 64 KiB），执行普通关键词、secondary key、概率、组和预算策略。原生 JavaScript regex key 因无法设置执行超时而默认阻断，只有显式不安全兼容模式才执行。
 4. preset marker、角色字段与命中 lore 被组合为一个 Tavern profile。creator notes 永远不进入 profile；`chatHistory` marker 被消费但不复制历史。
 5. 默认 append 模式把 Tavern profile 放在 DSH 其他 system sections 之后。高级 replace 模式只保留 Tavern profile，但仍保留 tools、runtime contexts、variables 和执行层安全机制。
 6. `agent/request` 将 DSH 已公开支持的 preset 参数投影到 call config。未公开的 ST sampler 仅保存，不伪造已经生效。

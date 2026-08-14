@@ -15,14 +15,19 @@ function messageText(message) {
     : ''
 }
 
-function scanText(model, agent, fallback) {
-  if (typeof agent?.session?.deriveMessages !== 'function') return fallback
-  const messages = agent.session.deriveMessages()
-    .map(messageText)
-    .filter(Boolean)
-  const depth = model.settings?.scanDepth
-  if (depth === 0) return ''
-  return (Number.isSafeInteger(depth) ? messages.slice(-depth) : messages).join('\n')
+function boundedScanText(model, agent, fallback, maxCharacters) {
+  let text = typeof fallback === 'string' ? fallback : ''
+  if (typeof agent?.session?.deriveMessages === 'function') {
+    const messages = agent.session.deriveMessages()
+      .map(messageText)
+      .filter(Boolean)
+    const depth = model.settings?.scanDepth
+    text = depth === 0 ? '' : (Number.isSafeInteger(depth) ? messages.slice(-depth) : messages).join('\n')
+  }
+  const originalLength = text.length
+  return originalLength <= maxCharacters
+    ? { text, truncated: false, originalLength }
+    : { text: text.slice(-maxCharacters), truncated: true, originalLength }
 }
 
 export function createWorldBookAdapter(options = {}) {
@@ -46,11 +51,17 @@ export function createWorldBookAdapter(options = {}) {
           const model = parseCharacterBook(embedded, {
             name: `${character.name || character.data?.name || 'Character'} embedded book`,
           })
+          const maxScanCharacters = Number.isSafeInteger(options.maxScanCharacters) && options.maxScanCharacters > 0
+            ? options.maxScanCharacters
+            : 64 * 1024
+          const scan = boundedScanText(model, agent, conversationText, maxScanCharacters)
           const candidates = computeWorldBookCandidates(model, {
-            text: scanText(model, agent, conversationText),
+            text: scan.text,
             tokenBudget: model.settings?.tokenBudget ?? options.defaultTokenBudget,
             probabilityRolls: options.probabilityRolls,
             groupRolls: options.groupRolls,
+            allowUnsafeRegex: options.allowUnsafeRegex === true,
+            maxRegexLength: options.maxRegexLength,
           })
           const projected = projectWorldBookForLoader(model, candidates, {
             resource: {
@@ -66,6 +77,16 @@ export function createWorldBookAdapter(options = {}) {
               severity: 'warning',
               message: 'Recursive world-book scanning is preserved but not executed in the first loader integration slice.',
               resourceId: `character:${character.id}:embedded-world-book`,
+            })
+          }
+          if (scan.truncated) {
+            projected.diagnostics.push({
+              code: 'WORLD_BOOK_SCAN_TEXT_TRUNCATED',
+              severity: 'info',
+              message: `World-book scan input was limited to the most recent ${maxScanCharacters} characters`,
+              resourceId: `character:${character.id}:embedded-world-book`,
+              originalCharacters: scan.originalLength,
+              scannedCharacters: maxScanCharacters,
             })
           }
           results.push(projected)

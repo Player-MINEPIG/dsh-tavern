@@ -59,3 +59,15 @@ test('omits empty content, forwards parser diagnostics, and merges selected book
   assert.equal(merged.resources.length, 1)
   assert.equal(merged.diagnostics.length, 2)
 })
+
+test('reports regex keys blocked by the safe default', () => {
+  const regex = parseWorldBook({
+    name: 'Regex fixture',
+    entries: {
+      1: { uid: 1, key: ['/a+/'], content: 'Regex lore', constant: false, position: 1 },
+    },
+  })
+  const projected = projectWorldBookForLoader(regex, computeWorldBookCandidates(regex, { text: 'aaa' }), { resourceId: 'regex' })
+  assert.deepEqual(projected.loreEntries, [])
+  assert.equal(projected.diagnostics[0].code, 'WORLD_BOOK_REGEX_DISABLED')
+})

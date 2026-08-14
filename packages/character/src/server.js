@@ -130,7 +130,7 @@ export function createCharacterApiHandler(store, options = {}) {
       const route = characterRoute(path)
 
       if (method === 'GET' && path === '/dsh-tavern/api/characters') {
-        return sendJson(res, 200, { ok: true, characters: store.list(), storageDir: store.storageDir })
+        return sendJson(res, 200, { ok: true, characters: store.list() })
       }
 
       if (method === 'POST' && path === '/dsh-tavern/api/characters/import') {

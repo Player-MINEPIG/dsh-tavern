@@ -28,7 +28,7 @@
 - 角色卡 feature 可解析 V1/V2/V3 JSON 和 PNG `chara`/`ccv3`，保存原件、诊断、per-session binding，并通过稳定资源接口交给 loader/world-book 模块。
 - 通过角色卡侧栏导入、查看、选择、导出和删除角色卡，并配置 greeting、卡内 system prompt 与 post-history instructions 的采用策略。
 - 将所选角色卡的 description、personality、scenario、example dialogue、system prompt 等字段与 preset marker 统一组合。
-- 解析并匹配角色卡内嵌 `character_book` 的常量/关键词、secondary key、regex、概率、组和 token budget 基础策略，并把激活条目投影到 before/after 位置。
+- 解析并匹配角色卡内嵌 `character_book` 的常量/普通关键词、secondary key、概率、组和 token budget 基础策略，并把激活条目投影到 before/after 位置；regex key 会被识别和诊断，但因 ReDoS 风险默认不执行。
 - 在“世界信息”中按 ST 式条目列表查看和编辑内嵌 Lorebook 的触发条件与内容，包括主/附加关键词、secondary logic、常驻/启用、大小写、全词匹配、位置与排序，并支持新增、删除和保存。
 - 使用统一的 per-session 资源选择；普通 fork 固化父会话快照，delegated subagent 默认不继承 Tavern 资源。
 
@@ -101,6 +101,34 @@ npm run plugin:uninstall
 
 备份位置为 `<DSH_HOME>/backups/dsh-tavern/<timestamp>/`。只有明确不需要数据时才使用 `--no-backup`。
 
+## 安全与信任边界
+
+经功能验收的加固前基线标记为 Git tag `accepted-functional-2026-08-15`。当前版本在此基础上增加了以下默认保护：
+
+- `/dsh-tavern/api/*` 默认只接受 `localhost`、`127.0.0.1` 和 IPv6 loopback 的 Host；所有修改请求必须来自同一个 DSH Web origin，并使用该路由允许的 `Content-Type`。响应禁止缓存并启用 `nosniff`。
+- API 列表不再返回插件数据目录。浏览器仍可按功能需要读取当前 preset、角色卡和编译结果，因此应把 DSH Web 页面视为可访问已导入 Tavern 内容的受信任界面。
+- 世界书扫描文本默认限制为最近 64 KiB。ST 的 `/pattern/flags` 原生 JavaScript 正则关键词默认不执行，避免恶意或意外的灾难性回溯阻塞 DSH 主进程；普通关键词和全词匹配不受影响。
+
+仍需注意：
+
+- 这些 HTTP 保护是 Host/origin 边界，不是独立的用户鉴权。能在本机发起 HTTP 请求的受信任进程仍可访问 API。请保持 DSH Web 绑定 `127.0.0.1`，不要直接暴露到局域网或公网。DSH Host 当前也不为此 API 提供 TLS 或账号认证。
+- 若确需通过反向代理或局域网主机名访问，可在插件配置中设置 `security.allowedHosts`（只写主机名，不含端口）。这只放行 Host，不会增加认证或加密；应由受信任反向代理另行提供 HTTPS 和认证。
+- preset、角色卡和世界书不是惰性文档，其中的文字会成为发给模型的指令，可能包含 prompt injection。只导入可信来源，启用前审阅内容，并保留 DSH 的文件沙箱、工具审批与权限限制。
+- 插件不会主动读取 DSH API key 或环境变量，但用户写进 preset/角色卡/世界书的任何秘密都可能随模型请求发送，也可能被本机 API 返回。不要在 Tavern 资源中保存密钥、令牌或隐私数据。
+- 为兼容可信旧资源，可显式设置 `worldBook.allowUnsafeRegex: true`；即使同时设置 `maxRegexLength` 和默认扫描上限，JavaScript `RegExp` 仍无超时保证，因此这项模式名副其实是不安全兼容模式。未来应改用 RE2 类受限引擎后再默认兼容正则。
+
+可选配置示例：
+
+```yaml
+config:
+  security:
+    allowedHosts: [dsh.internal.example]
+  worldBook:
+    allowUnsafeRegex: false
+    maxScanCharacters: 65536
+    maxRegexLength: 256
+```
+
 ## 当前兼容边界
 
 “可以导入 ST preset”不等于已经完整复刻 SillyTavern 的消息拓扑。
@@ -113,7 +141,7 @@ npm run plugin:uninstall
 | 用户输入与会话历史 | 继续由 DSH 原生 durable messages 管理，不插入 ST `chatHistory` marker |
 | greeting | 作为明确标注的 system profile 风格参考，不伪造 assistant 历史消息 |
 | PHI / depth / absolute injection | 字段保留并给出降级诊断；当前放入 system profile，不能严格复刻 ST 历史位置 |
-| 世界书扫描与编辑 | 角色卡内嵌书可编辑并扫描已有 durable history；当前轮尚未公开给 assembly，关键词可能下一轮才激活；原始导入 artifact 保持不变，JSON 导出反映编辑后的插件副本 |
+| 世界书扫描与编辑 | 角色卡内嵌书可编辑并扫描已有 durable history（最近 64 KiB）；原生 regex key 默认阻断；当前轮尚未公开给 assembly，关键词可能下一轮才激活；原始导入 artifact 保持不变，JSON 导出反映编辑后的插件副本 |
 | 独立世界书 | 解析、导出和 matcher 核心可作为 library 使用；尚无插件内存储、选择 API 或 UI |
 | ST macro | 支持部分常用变量、随机、骰子与局部变量；不是完整 ST runtime |
 | sampler | 未映射的 ST 参数会保存和编辑，但不宣称已经传给模型 adapter |

@@ -36,9 +36,17 @@ function entryIdentity(entry, resourceId, candidateKey) {
 
 function invalidRegexDiagnostics(candidate, resourceId) {
   return (candidate.invalidKeys ?? []).map(item => ({
-    code: 'WORLD_BOOK_INVALID_REGEX',
+    code: item.code === 'unsafe-regex-disabled'
+      ? 'WORLD_BOOK_REGEX_DISABLED'
+      : item.code === 'regex-too-long'
+        ? 'WORLD_BOOK_REGEX_TOO_LONG'
+        : 'WORLD_BOOK_INVALID_REGEX',
     severity: 'warning',
-    message: `World book key ${JSON.stringify(item.key)} is not a valid JavaScript regular expression`,
+    message: item.code === 'unsafe-regex-disabled'
+      ? `World book regex key ${JSON.stringify(item.key)} was not executed because native regex matching is disabled`
+      : item.code === 'regex-too-long'
+        ? `World book regex key ${JSON.stringify(item.key)} exceeds the configured length limit`
+        : `World book key ${JSON.stringify(item.key)} is not a valid JavaScript regular expression`,
     resourceId,
     entryId: candidate.entry?.uid,
     keySet: item.set,

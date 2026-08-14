@@ -141,3 +141,18 @@ test('Host registers one broad API prefix so character and preset routes cannot 
     rmSync(directory, { recursive: true, force: true })
   }
 })
+
+test('embedded world-book scanning bounds the durable-history input', () => {
+  const directory = mkdtempSync(join(tmpdir(), 'dsh-tavern-scan-limit-'))
+  const { ctx } = host()
+  try {
+    const store = apply(ctx, { storageDir: directory, worldBook: { maxScanCharacters: 32 } })
+    const character = store.characterStore.import(syntheticCard(), { id: 'bounded-card' })
+    store.sessionSelections.set('bounded-session', { characterCardId: character.id })
+    const active = store.profileLoader.compile({ agent: agent('bounded-session', `${'x'.repeat(64)}clocktower`) })
+    assert.deepEqual(active.activeLoreEntries, ['character:bounded-card:embedded-world-book:1'])
+    assert.equal(active.diagnostics.find(item => item.code === 'WORLD_BOOK_SCAN_TEXT_TRUNCATED')?.scannedCharacters, 32)
+  } finally {
+    rmSync(directory, { recursive: true, force: true })
+  }
+})

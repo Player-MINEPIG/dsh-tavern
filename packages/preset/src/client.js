@@ -35,10 +35,11 @@ const css = `
 `
 
 async function api(path, options = {}) {
+  const method = String(options.method ?? 'GET').toUpperCase()
   const response = await fetch(`${API_ROOT}${path}`, {
     ...options,
     headers: {
-      ...(options.body === undefined ? {} : { 'Content-Type': 'application/json' }),
+      ...(method === 'GET' || method === 'HEAD' ? {} : { 'Content-Type': 'application/json' }),
       ...options.headers,
     },
   })
@@ -306,7 +307,6 @@ export function PresetSidebar({ closePanel, openPanel, sessionId, autoOpen = tru
       },
       h('option', { value: '' }, '不使用预设'),
       ...(catalog?.presets ?? []).map((preset) => h('option', { key: preset.id, value: preset.id }, `${preset.name} (${preset.enabledPromptCount}/${preset.promptCount})`)))),
-      h('p', { className: 'dtt-note' }, `存储目录：${catalog?.storageDir || '加载中…'}`),
       h('div', { className: 'dtt-status', 'data-error': status.error || undefined, role: 'status', 'aria-live': 'polite' }, status.text),
       draft === null ? h('p', { className: 'dtt-note' }, catalog === null ? '正在加载预设…' : '请选择或创建预设以开始配置。') : h('div', { className: 'dtt-section' },
         h('div', { className: 'dtt-section-title' }, '基本设置'),

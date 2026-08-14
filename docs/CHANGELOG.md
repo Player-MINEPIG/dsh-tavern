@@ -4,6 +4,48 @@ This is the staged implementation log for the prompt-preset experiment. It is
 kept separately from the product README so reviewers can follow intent,
 decisions, verification, and known limits chronologically.
 
+## 2026-08-15 — Security hardening after the accepted functional baseline
+
+Purpose: preserve the user-accepted behavior as an immutable review point, then
+reduce browser/API exposure and prevent untrusted ST regex keys from blocking
+the synchronous DSH host process.
+
+- Tagged commit `65ffc08` as `accepted-functional-2026-08-15` before changing
+  implementation or documentation.
+- Added a single security wrapper around the unified Tavern API. It accepts
+  loopback Host values by default, requires same-origin mutation requests,
+  rejects browser-simple or unexpected mutation media types, and emits
+  no-cache, no-sniff and no-referrer response headers.
+- Added an explicit `security.allowedHosts` escape hatch for deployments behind
+  a separately authenticated and encrypted reverse proxy. This is documented as
+  Host permission rather than authentication.
+- Removed local storage paths from preset and character catalog responses and
+  their UI surfaces.
+- Disabled native JavaScript `/regex/flags` world-book keys by default, retained
+  an explicit `worldBook.allowUnsafeRegex` compatibility switch, bounded regex
+  source length, and limited scans to the most recent 64 KiB by default.
+- Added distinct loader diagnostics for disabled, overlong and invalid regex
+  keys, plus scan truncation.
+- Documented semantic prompt injection, local-process/API trust, secret
+  propagation, non-loopback deployment, and unsafe-regex residual risks in the
+  product README.
+
+Verification:
+
+- `npm run check` rebuilt the browser bundle and passed 79/79 tests, including
+  Host/origin/media-type rejection, explicit network-host permission, regex
+  opt-in/length behavior, loader diagnostics and scan truncation.
+- `npm run pack:check` produced the expected 35-file package with the security
+  wrapper included and no tests, runtime data or external copyrighted fixture.
+- Refreshed the isolated integration profile and booted the real DSH Host on
+  loopback. HTTP smoke tests returned 200 for reads, 403 for a forged Host and
+  cross-origin write, 415 for a disallowed media type, and reached the business
+  404 for a valid same-origin JSON write.
+- In the real browser UI, opened the Tavern launcher/preset panel, loaded the
+  existing catalog without exposing its storage path, created a synthetic
+  preset through the secured POST path, and removed it through the secured
+  DELETE path. The isolated Host and browser tab were then closed.
+
 ## 2026-08-15 — Draggable launcher and editable embedded World Info
 
 Purpose: make the unified entry feel like one coherent control and expose the

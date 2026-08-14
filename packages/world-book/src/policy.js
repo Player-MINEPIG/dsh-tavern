@@ -12,7 +12,7 @@ function clampRoll(value) {
     : 0
 }
 
-function regexFromKey(key) {
+function regexFromKey(key, options = {}) {
   if (typeof key !== 'string' || !key.startsWith('/')) return null
   let slash = -1
   for (let index = key.length - 1; index > 0; index -= 1) {
@@ -25,10 +25,28 @@ function regexFromKey(key) {
     }
   }
   if (slash <= 0) return null
+  const pattern = key.slice(1, slash)
+  if (options.allowUnsafeRegex !== true) {
+    return {
+      regex: null,
+      error: 'Native regular-expression keys are disabled by default because JavaScript RegExp has no execution timeout',
+      code: 'unsafe-regex-disabled',
+    }
+  }
+  const maxRegexLength = Number.isSafeInteger(options.maxRegexLength) && options.maxRegexLength > 0
+    ? options.maxRegexLength
+    : 256
+  if (pattern.length > maxRegexLength) {
+    return {
+      regex: null,
+      error: `Regular-expression key exceeds the ${maxRegexLength} character limit`,
+      code: 'regex-too-long',
+    }
+  }
   try {
-    return { regex: new RegExp(key.slice(1, slash), key.slice(slash + 1)), error: null }
+    return { regex: new RegExp(pattern, key.slice(slash + 1)), error: null, code: null }
   } catch (error) {
-    return { regex: null, error: error instanceof Error ? error.message : String(error) }
+    return { regex: null, error: error instanceof Error ? error.message : String(error), code: 'invalid-regex' }
   }
 }
 
@@ -39,11 +57,11 @@ function escapeRegex(value) {
 export function matchWorldBookKey(text, key, options = {}) {
   const haystack = typeof text === 'string' ? text : ''
   if (typeof key !== 'string' || key.trim() === '') return { matched: false, kind: 'plain', error: null }
-  const regexKey = regexFromKey(key.trim())
+  const regexKey = regexFromKey(key.trim(), options)
   if (regexKey !== null) {
-    if (regexKey.regex === null) return { matched: false, kind: 'regex', error: regexKey.error }
+    if (regexKey.regex === null) return { matched: false, kind: 'regex', error: regexKey.error, code: regexKey.code }
     regexKey.regex.lastIndex = 0
-    return { matched: regexKey.regex.test(haystack), kind: 'regex', error: null }
+    return { matched: regexKey.regex.test(haystack), kind: 'regex', error: null, code: null }
   }
 
   const caseSensitive = options.caseSensitive === true
@@ -63,7 +81,7 @@ function matchKeys(text, keys, options) {
   const invalidKeys = []
   for (const key of Array.isArray(keys) ? keys : []) {
     const result = matchWorldBookKey(text, key, options)
-    if (result.error !== null) invalidKeys.push({ key, error: result.error })
+    if (result.error !== null) invalidKeys.push({ key, error: result.error, code: result.code ?? 'invalid-regex' })
     if (result.matched) matches.push(key)
   }
   return { matches, invalidKeys }
@@ -80,6 +98,8 @@ export function evaluateWorldBookEntry(entry, text, defaults = {}) {
   const options = {
     caseSensitive: entry.caseSensitive ?? defaults.caseSensitive ?? false,
     matchWholeWords: entry.matchWholeWords ?? defaults.matchWholeWords ?? false,
+    allowUnsafeRegex: defaults.allowUnsafeRegex === true,
+    maxRegexLength: defaults.maxRegexLength,
   }
   const primary = matchKeys(text, entry.keys, options)
   const secondary = matchKeys(text, entry.secondaryKeys, options)
@@ -231,6 +251,8 @@ export function computeWorldBookCandidates(modelOrEntries, options = {}) {
       caseSensitive: options.caseSensitive,
       matchWholeWords: options.matchWholeWords,
       vectorMatched,
+      allowUnsafeRegex: options.allowUnsafeRegex === true,
+      maxRegexLength: options.maxRegexLength,
     })
     const evaluated = { ...candidate, evaluation }
     if (!evaluation.eligible) rejected.push({ ...evaluated, reason: evaluation.reason })

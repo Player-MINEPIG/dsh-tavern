@@ -71,7 +71,6 @@ export function createApiHandler(
           selectedId: selectionPolicy.selectedPresetId === undefined
             ? store.state.selectedId
             : selectionPolicy.selectedPresetId(sessionId),
-          storageDir: store.storageDir,
         })
       }
 

@@ -23,7 +23,14 @@ function errorMessage(data, status) {
 }
 
 async function api(path, options = {}) {
-  const response = await fetch(`${API_ROOT}${path}`, options)
+  const method = String(options.method ?? 'GET').toUpperCase()
+  const response = await fetch(`${API_ROOT}${path}`, {
+    ...options,
+    headers: {
+      ...(method === 'GET' || method === 'HEAD' ? {} : { 'Content-Type': 'application/json' }),
+      ...options.headers,
+    },
+  })
   const data = await response.json().catch(() => null)
   if (!response.ok || data?.ok === false) throw new Error(errorMessage(data, response.status))
   return data
@@ -185,7 +192,6 @@ export function CharacterPanel({ sessionId, sessionBlank, close }) {
       ...(catalog?.characters.length ? [] : [h('option', { key: 'empty', value: '' }, '角色库为空')]),
       ...(catalog?.characters ?? []).map((item) => h('option', { key: item.id, value: item.id }, `${item.name} · ${item.sourceFormat}`)))),
       h('p', { className: 'dcc-note' }, `当前会话：${sessionId || '无'}；绑定：${activeName}`),
-      h('p', { className: 'dcc-note' }, `存储目录：${catalog?.storageDir || '加载中…'}`),
       h('div', { className: 'dcc-status', 'data-error': status.error || undefined, role: 'status', 'aria-live': 'polite' }, status.text),
       detail === null ? h('p', { className: 'dcc-note' }, catalog === null ? '正在加载角色库…' : '导入一张合成或自有授权的 SillyTavern 角色卡以查看详情。') : h('div', { className: 'dcc-card' },
         h('div', { className: 'dcc-card-head' },
