@@ -277,3 +277,28 @@ Verification:
   its selected state, and booted the Web/API surface on port `53101`.
 - `npm run check` passed 21/21 tests, including store detection and the
   remove/add dry-run contract.
+
+## 2026-08-14 — Stage 12: public repository preparation
+
+Purpose: make the accepted preset slice understandable and legally distributable
+before merging it into `main` and publishing the repository.
+
+Changes:
+
+- Replaced the scaffold README with a user-facing project guide covering goals,
+  current preset features, installation, usage, architecture, explicit
+  compatibility limits, roadmap, development checks, and uninstall behavior.
+- Added official SillyTavern repository/prompt-documentation and TauriTavern
+  repository/Agent-documentation references, plus a no-affiliation and
+  third-party-content notice.
+- Added the MIT license already declared by package metadata, with Copyright
+  2026 Zhu Bohan.
+- Kept internal architecture/review/acceptance documents separate from the
+  product README.
+
+Verification:
+
+- `npm run check` rebuilt the client and passed 21/21 tests.
+- `npm run pack:check` contained 17 release files including `LICENSE`, all three
+  internal layers, and lifecycle scripts; it excluded docs, tests, runtime data,
+  caches, and the copyrighted external fixture.

@@ -32,8 +32,8 @@ values. It intentionally contains none of the fixture's prompt text.
   preset store layers.
 - repeated local-package refresh and reuse of a profile's existing pnpm store.
 
-`npm run pack:check` completed successfully. The package preview contained 16
-release files, including all three internal layers and the three lifecycle
+`npm run pack:check` completed successfully. The package preview contained 17
+release files, including the MIT license, all three internal layers and the three lifecycle
 scripts, and excluded runtime
 `data/`, the external fixture, docs, tests, and local dependency caches.
 
@@ -157,3 +157,18 @@ preset files and the selected state still present; no prompt body was read or
 logged. DSH Web booted on `127.0.0.1:53101`, the root page returned HTTP 200,
 and the preset API reported both restored entries. Failed-attempt recovery
 copies and the separate synthetic force-test profile were removed afterward.
+
+## Stage 12 release-documentation regression
+
+The accepted feature was prepared for the first public repository merge without
+changing runtime behavior. The root README now separates implemented preset
+support from planned character-card/world-book work, documents installation and
+usage on Windows/macOS/Linux, and states the current ST message-topology,
+sampler, macro, history, and replace-mode limits. It links only to official
+SillyTavern and TauriTavern repositories/documentation and states that no
+third-party content is bundled.
+
+The package metadata and new root `LICENSE` consistently declare MIT with
+Copyright 2026 Zhu Bohan. `npm run check` remained 21/21, and the package preview
+contained 17 files including `LICENSE` while still excluding tests, docs,
+runtime data, caches, and the external acceptance fixture.
