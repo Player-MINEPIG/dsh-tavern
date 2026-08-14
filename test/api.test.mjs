@@ -1,0 +1,71 @@
+import test from 'node:test'
+import assert from 'node:assert/strict'
+import { Readable } from 'node:stream'
+import { mkdtempSync, rmSync } from 'node:fs'
+import { tmpdir } from 'node:os'
+import { join } from 'node:path'
+import { PresetStore } from '../packages/preset/src/store.js'
+import { createApiHandler } from '../packages/preset/src/server.js'
+
+function invoke(handler, { method = 'GET', url, body } = {}) {
+  return new Promise((resolve, reject) => {
+    const req = Readable.from(body === undefined ? [] : [Buffer.from(JSON.stringify(body))])
+    req.method = method
+    req.url = url
+    const headers = {}
+    const res = {
+      statusCode: 200,
+      setHeader: (name, value) => { headers[name.toLowerCase()] = value },
+      end: (payload = '') => resolve({
+        status: res.statusCode,
+        headers,
+        body: payload === '' ? null : JSON.parse(payload),
+      }),
+    }
+    Promise.resolve(handler(req, res)).catch(reject)
+  })
+}
+
+test('HTTP API imports, selects, reads, updates, and creates presets', async () => {
+  const directory = mkdtempSync(join(tmpdir(), 'dsh-tavern-api-'))
+  const store = new PresetStore(directory)
+  let changes = 0
+  const handler = createApiHandler(store, () => { changes += 1 })
+  try {
+    const imported = await invoke(handler, {
+      method: 'POST',
+      url: '/dsh-tavern/api/import',
+      body: {
+        name: 'Imported API preset',
+        content: JSON.stringify({
+          prompts: [{ identifier: 'main', content: 'API marker', role: 'system' }],
+          prompt_order: [{ character_id: 100001, order: [{ identifier: 'main', enabled: true }] }],
+        }),
+      },
+    })
+    assert.equal(imported.status, 201)
+    const id = imported.body.preset.id
+
+    const selected = await invoke(handler, {
+      method: 'POST',
+      url: '/dsh-tavern/api/select',
+      body: { id },
+    })
+    assert.equal(selected.body.selected.id, id)
+
+    const active = await invoke(handler, { url: '/dsh-tavern/api/active' })
+    assert.match(active.body.compiledPrompt, /API marker/)
+
+    const created = await invoke(handler, {
+      method: 'POST',
+      url: '/dsh-tavern/api/presets',
+      body: { name: 'Created API preset' },
+    })
+    assert.equal(created.status, 201)
+    assert.equal(created.body.preset.source.format, 'dsh-tavern')
+    assert.equal(changes, 3)
+  } finally {
+    rmSync(directory, { recursive: true, force: true })
+  }
+})
+

@@ -50,3 +50,21 @@ Changes:
   sampling values through `agent/request`.
 - Added synthetic unit/contract tests plus an in-place, structure-only test for
   the copyrighted acceptance file.
+
+## 2026-08-14 — Stage 3: right sidebar and complete CRUD workflow
+
+Purpose: expose the tested Host behavior as a SillyTavern-style, always-nearby
+conversation control rather than a settings-only page.
+
+Changes:
+
+- Added a right `details` panel contribution and opened it by default when the
+  dsh layout service becomes ready.
+- Added a conversation-header `预设` utility that reopens the panel after the
+  user closes it.
+- Added browser workflows for JSON file import, create-and-select, selection,
+  edit/save, delete, and status/error reporting.
+- Added sampling controls, compatibility-only ST parameter controls, and an
+  ordered prompt editor with enable, role, content, add, move, and delete.
+- Added an API-level test covering import, selection, active compiled preview,
+  and creation through the same endpoints used by the UI.

@@ -1,5 +1,7 @@
 node_modules/
-dist/
+.npm-cache/
+dist/*
+!dist/client.js
 data/
 *.tgz
 coverage/

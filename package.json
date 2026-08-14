@@ -32,7 +32,7 @@
     "build": "node build.mjs",
     "test": "node --test",
     "check": "npm run build && npm test",
-    "pack:check": "npm pack --dry-run"
+    "pack:check": "npm pack --dry-run --cache .npm-cache"
   },
   "engines": {
     "node": ">=20"
