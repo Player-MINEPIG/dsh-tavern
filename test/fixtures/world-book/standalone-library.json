@@ -1,0 +1,35 @@
+{
+  "name": "Synthetic Library Book",
+  "description": "A self-authored fixture for standalone resource tests.",
+  "token_budget": 12,
+  "fixture_top_level": {
+    "preserve": true
+  },
+  "entries": {
+    "harbor": {
+      "uid": 11,
+      "key": ["harbor"],
+      "keysecondary": ["bell"],
+      "comment": "Harbor bell",
+      "content": "The synthetic harbor bell rings twice.",
+      "selective": true,
+      "selectiveLogic": 0,
+      "order": 200,
+      "position": 0,
+      "disable": false,
+      "probability": 100,
+      "fixture_entry_field": "preserve"
+    },
+    "constant": {
+      "uid": 12,
+      "key": [],
+      "comment": "Constant note",
+      "content": "A constant synthetic note.",
+      "constant": true,
+      "order": 100,
+      "position": 1,
+      "disable": false,
+      "probability": 100
+    }
+  }
+}

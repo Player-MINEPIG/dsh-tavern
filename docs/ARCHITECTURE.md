@@ -14,9 +14,11 @@ packages/tavern-format
 解析、校验、归一化、未知字段保留、ST macro
        │
        ▼
-packages/preset    packages/character    packages/world-book
-预设用例            角色卡资源/UI          世界书纯格式与匹配
+packages/preset    packages/character    packages/world-book-library
+预设用例            角色卡资源/UI          独立世界书资源/API/UI
           \              |              /
+           \             |       packages/world-book
+            \            |       世界书纯格式、匹配与投影
            \             |             /
        │
        ▼
@@ -27,7 +29,7 @@ DSH 编译策略、session/request 策略、Host hooks
 DSH system prompt + agent request
 ```
 
-依赖只能向下：`tavern-loader → preset/character/world-book → tavern-format`。格式层和 world-book 纯库不能导入 DSH、文件系统或 UI；preset/character 用例层不能注册 `systemPrompt`、`agent/request` 等 Host seam；只有 loader 是根 `main` 入口并允许依赖 DSH 运行时。浏览器侧由 `packages/client` 组合各用例 UI，它不是 Host loader。
+依赖只能向下：`tavern-loader → preset/character/world-book-library → world-book/tavern-format`。格式层和 `world-book` 纯库不能导入 DSH、文件系统或 UI；preset、character、world-book-library 用例层不能注册 `systemPrompt`、`agent/request` 等 Host seam；只有 loader 是根 `main` 入口并允许依赖 DSH 运行时。浏览器侧由 `packages/client` 组合各用例 UI，它不是 Host loader。
 
 ## 各层职责
 
@@ -37,6 +39,7 @@ DSH system prompt + agent request
 | `preset` | “用户如何管理预设？” | 原子文件存储、导入/创建/修改/删除/选择、API、侧边栏源代码 | 决定提示词如何进入 agent |
 | `character` | “用户如何管理角色资源？” | JSON/PNG 导入、原件保存/导出、per-session binding、API、UI、loader/world-book 资源快照 | prompt 放置、assistant 历史、世界书激活 |
 | `world-book` | “哪些 lore entries 候选应被激活？” | ST/角色内嵌格式、归一化、纯匹配/排序/预算与 loader 投影 | session 选择、DSH 注入、角色卡存储 |
+| `world-book-library` | “用户如何管理独立世界书资源？” | 原子 JSON 存储、CRUD/导出 API、编辑 UI、供 loader 读取的 document | session 选择所有权、matcher 复制、Host seam、角色卡内嵌书修改 |
 | `tavern-loader` | “当前资源怎样影响这次 DSH 请求？” | 编译选中预设、映射支持的 call config、append/replace 策略、Host/API 挂载 | 重新解释 ST 原始字段、实现具体 UI |
 
 角色卡已经在 `tavern-format` 增加 adapter/model，并在 `character` 用例层提供管理与资源入口；世界书格式兼容位于独立纯库 `packages/world-book`，避免把持续扩展的 entry 模型塞入 preset adapter。三类资源最终由同一个 `tavern-loader` 组合。角色卡不读取预设的 UI 排序逻辑，预设也不决定角色字段插入位置。
@@ -60,7 +63,7 @@ DSH system prompt + agent request
 - 两个插件都可能争用 API、存储或 UI 生命周期；
 - 安装、卸载、备份和故障排查成本翻倍。
 
-因此发布与安装单位固定为根包 `dsh-tavern`，内部包边界用于代码复用和测试隔离。`package.json` 的 `./format`、`./preset`、`./character`、`./world-book`、`./loader` exports 是程序接口，不代表可分别安装的插件。
+因此发布与安装单位固定为根包 `dsh-tavern`，内部包边界用于代码复用和测试隔离。`package.json` 的 `./format`、`./preset`、`./character`、`./world-book`、`./world-book-library`、`./loader` exports 是程序接口，不代表可分别安装的插件。
 
 ## 合并顺序与门槛
 

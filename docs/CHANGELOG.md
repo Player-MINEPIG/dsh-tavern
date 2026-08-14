@@ -4,6 +4,46 @@ This is the staged implementation log for the prompt-preset experiment. It is
 kept separately from the product README so reviewers can follow intent,
 decisions, verification, and known limits chronologically.
 
+## 2026-08-15 — Standalone World Info / World Book library
+
+Purpose: add independently managed SillyTavern World Info resources without
+duplicating the accepted pure matcher or moving Host injection ownership out of
+the unified Tavern loader.
+
+- Added the `world-book-library` use-case layer with bounded JSON import,
+  creation, normalized known-field editing, deletion, original-format export,
+  atomic persistence and reload-safe catalog summaries.
+- Preserved imported book-level and entry-level unknown fields across edits and
+  exports by retaining the parser's raw source snapshot while accepting only
+  known editable model fields from update requests.
+- Added same-origin API routes for CRUD/export and per-session zero/one/many
+  bindings. Deleting a standalone book removes its ids from all saved session
+  selections and never touches a character card or its embedded book.
+- Connected standalone and embedded books to one world-book adapter and the
+  existing deterministic matcher/loader projection. Selected standalone books
+  retain selection order; entries retain insertion-order stability and each
+  book's configured token budget.
+- Replaced the planning-only World Info surface with standalone import/create,
+  multi-binding, edit/export/delete controls for titles, primary and secondary
+  keys, secondary logic, enabled/constant state, case/whole-word matching,
+  position, order, probability and content.
+- Added only self-authored synthetic fixture content and automated coverage for
+  CRUD reload, unknown-field round trips, API lifecycle, session isolation,
+  binding effects, multi-book composition, stable ordering and independent
+  embedded-book behavior.
+
+Verification is recorded in
+`docs/world-book-library/IMPLEMENTATION_AND_ACCEPTANCE.md`.
+
+- `npm run check` built the browser bundle and completed 91 tests: 90 passed,
+  none failed and the optional external-fixture acceptance test skipped because
+  no reviewer path was configured.
+- `npm run pack:check` succeeded with 39 release files and excluded tests,
+  docs, fixtures, runtime data and local caches.
+- Architecture and sensitive-information scans found no reverse Host seam,
+  machine-specific path, local roadmap reference, private-key material or
+  common credential-shaped value introduced by this module.
+
 ## 2026-08-15 — Pre-merge publication hygiene
 
 Purpose: ensure the accepted integration can be merged and published without

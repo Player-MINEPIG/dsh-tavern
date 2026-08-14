@@ -143,5 +143,7 @@ DSH 自己的 `request/header` 仍是模型实际输入的最终权威。loader 
 - 角色卡 API 使用统一 session policy；旧 `character-state.json` binding 单向迁移后清除，避免解绑后重启复活；
 - V1/V2/V3 JSON 与 PNG 角色卡可由 adapter 进入 profile，creator notes 不发送；
 - 角色卡内嵌 `character_book` 使用共享世界书 parser/matcher，命中项进入同一 profile；
-- 独立世界书的 parser/matcher/bridge 已集成，但 document store、选择 API 与 UI 尚未接线；
+- 独立世界书由 `world-book-library` 用例层提供 document store、CRUD/导出 API 与管理 UI；每 session 的零/一/多本绑定仍写入 loader-owned `SessionSelectionStore.worldBookIds`；
+- 选中的独立书与角色卡内嵌 `characterBook` 由同一个 world-book adapter 调用同一 parser、matcher、排序、概率与预算契约，再合并进入 profile；
+- 删除独立书通过 `clearResource("world-book", id)` 清理所有 session 的悬空 id，不读取、修改或解绑角色卡及其内嵌书；
 - 未拷贝任何本机第三方 preset、角色卡或世界书 fixture。

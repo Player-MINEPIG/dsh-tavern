@@ -156,3 +156,59 @@ test('embedded world-book scanning bounds the durable-history input', () => {
     rmSync(directory, { recursive: true, force: true })
   }
 })
+
+test('standalone world books are isolated per session and merge with embedded books through one adapter', () => {
+  const directory = mkdtempSync(join(tmpdir(), 'dsh-tavern-standalone-books-'))
+  const { ctx } = host()
+  try {
+    const store = apply(ctx, { storageDir: directory })
+    const character = store.characterStore.import(syntheticCard(), { id: 'library-character' })
+    store.worldBookStore.import(JSON.stringify({
+      name: 'Alpha Book',
+      token_budget: 100,
+      entries: {
+        high: { uid: 1, key: ['alpha'], content: 'High-order alpha lore.', order: 200, position: 0 },
+        low: { uid: 2, key: ['alpha'], content: 'Low-order alpha lore.', order: 100, position: 0 },
+      },
+    }), { id: 'alpha-book' })
+    store.worldBookStore.import(JSON.stringify({
+      name: 'Beta Book',
+      entries: { beta: { uid: 3, key: ['beta'], content: 'Beta lore.', order: 50, position: 1 } },
+    }), { id: 'beta-book' })
+
+    store.sessionSelections.set('session-a', {
+      characterCardId: character.id,
+      worldBookIds: ['alpha-book', 'beta-book'],
+    })
+    store.sessionSelections.set('session-b', { worldBookIds: ['beta-book'] })
+
+    const first = store.profileLoader.compile({ agent: agent('session-a', 'alpha beta clocktower') })
+    assert.deepEqual(first.resources.worldBooks.map(item => item.id), [
+      'alpha-book',
+      'beta-book',
+      'character:library-character:embedded-world-book',
+    ])
+    assert.ok(first.systemText.indexOf('High-order alpha lore.') < first.systemText.indexOf('Low-order alpha lore.'))
+    assert.match(first.systemText, /Beta lore\./)
+    assert.match(first.systemText, /synthetic clocktower rings at dawn/)
+
+    store.worldBookStore.delete('alpha-book')
+    store.sessionSelections.clearResource('world-book', 'alpha-book')
+    const afterDelete = store.profileLoader.compile({ agent: agent('session-a', 'alpha beta clocktower') })
+    assert.deepEqual(afterDelete.audit.selection.worldBookIds, ['beta-book'])
+    assert.doesNotMatch(afterDelete.systemText, /alpha lore/)
+    assert.match(afterDelete.systemText, /Beta lore\./)
+    assert.match(afterDelete.systemText, /synthetic clocktower rings at dawn/)
+
+    const isolated = store.profileLoader.compile({ agent: agent('session-b', 'alpha beta') })
+    assert.doesNotMatch(isolated.systemText, /alpha lore/)
+    assert.match(isolated.systemText, /Beta lore\./)
+
+    store.sessionSelections.set('session-a', { worldBookIds: [] })
+    const unbound = store.profileLoader.compile({ agent: agent('session-a', 'alpha beta clocktower') })
+    assert.doesNotMatch(unbound.systemText, /alpha lore|Beta lore/)
+    assert.match(unbound.systemText, /synthetic clocktower rings at dawn/)
+  } finally {
+    rmSync(directory, { recursive: true, force: true })
+  }
+})

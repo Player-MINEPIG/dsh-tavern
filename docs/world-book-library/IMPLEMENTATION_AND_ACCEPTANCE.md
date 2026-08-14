@@ -1,0 +1,80 @@
+# Standalone World Book implementation and acceptance
+
+Status: implemented on the standalone-world-books feature branch for parent-task review. This document does not claim merge or publication.
+
+## Scope and boundaries
+
+`packages/world-book-library` owns independent World Info documents, their HTTP management surface and their browser editor. It imports the pure `packages/world-book` format model but contains no DSH Host hooks. `packages/tavern-loader` creates the store, owns session selections and is still the only layer that registers system prompt and request hooks.
+
+```text
+JSON import / editor
+        │
+        ▼
+world-book-library store + API
+        │ selected document snapshots
+        ▼
+loader-owned session policy ── worldBookIds[]
+        │
+        ▼
+one world-book adapter
+  ├─ selected standalone books
+  └─ selected character's embedded book
+        │
+        ▼
+shared parser → matcher → loader projection → Tavern profile
+```
+
+No store or API code was added to the pure parser/matcher package. The resource layer does not register `systemPrompt.section`, handle `agent/request`, inspect DSH sessions or compile final prompts.
+
+## Data lifecycle
+
+- Documents are stored as mode-`0600` JSON files under the plugin data directory's `world-books/` child.
+- Imports and writes are bounded to 4 MiB and use same-directory temporary files followed by atomic rename.
+- A document records its stable id, timestamps, source format/file metadata, SHA-256 and normalized `WorldBookModel` including the original raw source snapshot.
+- Update requests may change only modeled book settings and entry fields. Unknown top-level, entry and extension fields come from the saved raw snapshot and survive subsequent export.
+- New entries receive non-integer object-map keys (`entry-...`) so JavaScript's integer-key enumeration cannot reorder existing entries after reload.
+- Delete removes only the independent document. The loader's resource cleanup removes that id from every `worldBookIds` selection; character selection and embedded `characterBook` data are outside the operation.
+- Plugin refresh/uninstall/backup behavior follows the existing shared data-directory lifecycle. Runtime data is excluded from the npm package.
+
+## HTTP surface
+
+| Method and path | Behavior |
+| --- | --- |
+| `GET /dsh-tavern/api/world-books` | List safe catalog summaries |
+| `POST /dsh-tavern/api/world-books` | Create an empty standalone ST book |
+| `POST /dsh-tavern/api/world-books/import` | Import bounded ST World Info or Character Book JSON |
+| `GET /dsh-tavern/api/world-books/:id` | Read the normalized editable document |
+| `PATCH /dsh-tavern/api/world-books/:id` | Persist known modeled edits while retaining unknown raw fields |
+| `GET /dsh-tavern/api/world-books/:id/json` | Export JSON in the imported source format |
+| `DELETE /dsh-tavern/api/world-books/:id` | Delete the independent document and clear its selections |
+| `GET/POST /dsh-tavern/api/world-book-selection` | Read or replace one session's ordered `worldBookIds` |
+
+All routes remain behind the existing loopback Host, same-origin mutation, JSON media-type and defensive response-header wrapper. Ids are filename-safe; session ids use the loader's bounded allowlist. Catalog responses do not expose storage paths.
+
+## Runtime semantics
+
+The adapter resolves standalone books in saved selection order, followed by the selected character's embedded book. Each model is scanned through the existing bounded-history function and `computeWorldBookCandidates()`. Entry insertion order, secondary logic, group/probability policy and token budget therefore have one implementation for both sources. Loader projection remains responsible for exact before/after mapping, explicit approximation diagnostics and outlet omission.
+
+The current known runtime limits are unchanged: native regular-expression keys are disabled unless explicitly opted in; recursive/stateful effects and vector matching remain deferred; positions unsupported by DSH are explicitly approximated; and the just-submitted user message may not be available until the next turn because matching reads durable history.
+
+## Automated acceptance
+
+The repository tests cover:
+
+- import/create/edit/delete plus a fresh store instance reload;
+- stable preservation of synthetic unknown book and entry fields;
+- export in source format and safe non-integer keys for new object-map entries;
+- bounded API parsing, missing-resource rejection and unsafe session rejection;
+- zero/one/many ordered selection storage and cross-session isolation;
+- binding and unbinding effects on the next loader compilation;
+- deterministic insertion-order output and existing explicit budget/probability tests;
+- simultaneous standalone and character-embedded matching through one adapter;
+- deletion cleanup leaving the bound character's embedded book active;
+- architecture checks that keep filesystem/API code out of the pure world-book package.
+
+Final verification on 2026-08-15:
+
+- `npm run check`: browser bundle built; 91 tests discovered, 90 passed, 0 failed and the optional reviewer-supplied external-fixture test skipped because its environment variable was not set.
+- `npm run pack:check`: succeeded with 39 release files; the new store/API/client sources and generated client bundle are included, while tests, docs, runtime data, local caches and fixtures are excluded.
+- Architecture, local-path, local-roadmap-name, user-name, private-key and common credential-shaped scans returned no feature-introduced finding.
+- The only fixture added by this module is the minimal self-authored `Synthetic Library Book`; no third-party preset, character card or world book was read or copied.

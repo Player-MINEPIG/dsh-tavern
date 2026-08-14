@@ -105,3 +105,21 @@ test('character imports allow only the bounded binary and JSON media types', asy
   })
   assert.equal(form.status, 415)
 })
+
+test('standalone world-book imports remain same-origin JSON-only mutations', async () => {
+  const handler = secureTavernApi(successHandler)
+  const headers = { host: 'localhost:53101', origin: 'http://localhost:53101' }
+  const json = await invoke(handler, {
+    method: 'POST',
+    url: '/dsh-tavern/api/world-books/import?filename=book.json',
+    headers: { ...headers, 'content-type': 'application/json' },
+  })
+  assert.equal(json.status, 204)
+
+  const binary = await invoke(handler, {
+    method: 'POST',
+    url: '/dsh-tavern/api/world-books/import?filename=book.json',
+    headers: { ...headers, 'content-type': 'application/octet-stream' },
+  })
+  assert.equal(binary.status, 415)
+})

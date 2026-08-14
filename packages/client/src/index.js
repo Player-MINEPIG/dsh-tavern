@@ -7,6 +7,7 @@ import {
 } from 'react'
 import { PresetSidebar, installPresetStyles } from '../../preset/src/client.js'
 import { CharacterPanel, installCharacterStyles } from '../../character/src/client.js'
+import { WorldBookPanel, installWorldBookStyles } from '../../world-book-library/src/client.js'
 import {
   TAVERN_MENU_ITEMS,
   clampLauncherAnchor,
@@ -385,7 +386,7 @@ function TavernShell({ useSessions }) {
   } else if (surface === 'character') {
     panel = h(CharacterPanel, { sessionId, sessionBlank, close })
   } else if (surface === 'world-info') {
-    panel = h(WorldInfoPanel, { sessionId, close })
+    panel = h(WorldBookPanel, { sessionId, close })
   } else if (surface === 'user') {
     panel = h(UserPanel, { close })
   }
@@ -444,6 +445,7 @@ export const inject = ['slots', 'layout']
 export function apply(ctx) {
   installPresetStyles()
   installCharacterStyles()
+  installWorldBookStyles()
   installStyles()
   ctx.slots.inject('shell.overlay', () => ctx.slots.register({
     name: 'shell.overlay',

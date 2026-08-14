@@ -10,6 +10,10 @@ import {
   createCharacterAdapter,
   createCharacterApiHandler,
 } from '../../character/src/index.js'
+import {
+  WorldBookStore,
+  createWorldBookApiHandler,
+} from '../../world-book-library/src/index.js'
 import { PresetRuntime } from './preset-runtime.js'
 import { TavernProfileLoader } from './profile-loader.js'
 import { SessionSelectionStore } from './session-policy.js'
@@ -46,6 +50,13 @@ function isCharacterApiPath(url) {
     || path.startsWith('/dsh-tavern/api/characters/')
 }
 
+function isWorldBookApiPath(url) {
+  const path = new URL(url ?? '/', 'http://localhost').pathname
+  return path === '/dsh-tavern/api/world-book-selection'
+    || path === '/dsh-tavern/api/world-books'
+    || path.startsWith('/dsh-tavern/api/world-books/')
+}
+
 export function createCharacterSelectionPolicy(characterStore, selections) {
   return {
     selection(sessionId) {
@@ -72,19 +83,42 @@ export function createCharacterSelectionPolicy(characterStore, selections) {
   }
 }
 
+export function createWorldBookSelectionPolicy(worldBookStore, selections) {
+  return {
+    selection(sessionId) {
+      if (typeof sessionId !== 'string' || sessionId === '') return []
+      return selections.get(sessionId).worldBookIds
+    },
+    select(sessionId, worldBookIds) {
+      if (!Array.isArray(worldBookIds)) throw new TypeError('worldBookIds must be an array')
+      if (worldBookIds.length > 100) throw new TypeError('A session can bind at most 100 world books')
+      const normalized = [...new Set(worldBookIds)]
+      for (const id of normalized) {
+        if (typeof id !== 'string' || id === '') throw new TypeError('Every worldBookId must be a non-empty string')
+        worldBookStore.get(id)
+      }
+      selections.set(sessionId, { worldBookIds: normalized })
+      return normalized
+    },
+    clearResource: (kind, id) => selections.clearResource(kind, id),
+  }
+}
+
 export function apply(ctx, config = {}) {
   const storageDir = resolve(config.storageDir ?? DEFAULT_STORAGE_DIR)
   const store = new PresetStore(storageDir)
   const characterStore = new CharacterStore(storageDir)
+  const worldBookStore = new WorldBookStore(storageDir)
   const selections = new SessionSelectionStore(storageDir, {
     defaultSelection: () => ({ presetId: store.state.selectedId }),
   })
   migrateCharacterSelections(characterStore, selections)
   const runtime = new TavernProfileLoader({ presetStore: store, selections })
   runtime.registerCharacterAdapter(createCharacterAdapter(characterStore))
-  runtime.registerWorldBookAdapter(createWorldBookAdapter(config.worldBook))
+  runtime.registerWorldBookAdapter(createWorldBookAdapter(worldBookStore, config.worldBook))
   const notifyChange = () => ctx.emit('system-prompt/change')
   const characterSelectionPolicy = createCharacterSelectionPolicy(characterStore, selections)
+  const worldBookSelectionPolicy = createWorldBookSelectionPolicy(worldBookStore, selections)
 
   const selectionPolicy = {
     selectedPresetId: (sessionId) => runtime.selection({ sessionId }).presetId,
@@ -152,8 +186,25 @@ export function apply(ctx, config = {}) {
         }
       },
     })
+    const worldBookApi = createWorldBookApiHandler(worldBookStore, {
+      onChange: notifyChange,
+      selectionPolicy: worldBookSelectionPolicy,
+      beforeSelectionChange: ({ sessionId }) => {
+        const agent = ctx.get('agents')?.get?.(sessionId)
+        if (agent?.status === 'running') {
+          const error = new Error('The session agent is running; change world books after the current turn finishes.')
+          error.code = 'WORLD_BOOK_AGENT_RUNNING'
+          error.status = 409
+          throw error
+        }
+      },
+    })
     const api = secureTavernApi(
-      (req, res) => isCharacterApiPath(req.url) ? characterApi(req, res) : presetApi(req, res),
+      (req, res) => isCharacterApiPath(req.url)
+        ? characterApi(req, res)
+        : isWorldBookApiPath(req.url)
+          ? worldBookApi(req, res)
+          : presetApi(req, res),
       config.security,
     )
     ctx.effect(
@@ -171,6 +222,7 @@ export function apply(ctx, config = {}) {
     profileLoader: { value: runtime, enumerable: false },
     sessionSelections: { value: selections, enumerable: false },
     characterStore: { value: characterStore, enumerable: false },
+    worldBookStore: { value: worldBookStore, enumerable: false },
   })
   return store
 }
@@ -198,5 +250,6 @@ export { compilePresetForDsh, projectPresetCallConfig } from './profile-compiler
 export { TavernProfileLoader, compileTavernProfile, conversationTextFromAgent } from './profile-loader.js'
 export { SessionSelectionStore, normalizeSelection } from './session-policy.js'
 export { createWorldBookAdapter } from './world-book-adapter.js'
+export { WorldBookStore, createWorldBookApiHandler } from '../../world-book-library/src/index.js'
 export { secureTavernApi, apiSecurityConstants } from './api-security.js'
 export { PresetStore } from '../../preset/src/index.js'

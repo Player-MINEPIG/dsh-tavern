@@ -40,3 +40,21 @@ test('character adapter and use-case expose resources without becoming a runtime
   assert.match(character, /tavern-format/)
   assert.match(character, /character-selection/)
 })
+
+test('standalone world-book use-case depends inward and leaves host seams to the loader', () => {
+  const worldBookLibrary = [
+    read('../packages/world-book-library/src/index.js'),
+    read('../packages/world-book-library/src/store.js'),
+    read('../packages/world-book-library/src/server.js'),
+  ].join('\n')
+  const pureWorldBook = [
+    read('../packages/world-book/src/index.js'),
+    read('../packages/world-book/src/format.js'),
+    read('../packages/world-book/src/policy.js'),
+    read('../packages/world-book/src/loader-bridge.js'),
+  ].join('\n')
+
+  assert.match(worldBookLibrary, /world-book\/src\/format/)
+  assert.doesNotMatch(worldBookLibrary, /tavern-loader|systemPrompt\.section|system-prompt\/assemble|agent\/request/)
+  assert.doesNotMatch(pureWorldBook, /from ['"]node:(?:fs|path)|world-book-library|systemPrompt\.section|agent\/request/)
+})

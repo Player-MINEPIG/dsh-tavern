@@ -40,4 +40,13 @@ test('only the client composition root owns the Tavern shell overlay', () => {
   assert.doesNotMatch(root, /surface === null \? h\('div', \{\s*className: 'dtv-launcher'/)
   assert.doesNotMatch(preset, /slots\.inject|dsh-tavern-preset-launcher/)
   assert.doesNotMatch(character, /slots\.inject|dsh-tavern-character-overlay/)
+  assert.match(root, /WorldBookPanel/)
+})
+
+test('standalone world-book panel exposes CRUD, multi-binding and all required entry controls', () => {
+  const source = readFileSync(new URL('../packages/world-book-library/src/client.js', import.meta.url), 'utf8')
+  for (const route of ['world-books/import', 'world-book-selection', 'world-books/']) assert.match(source, new RegExp(route))
+  for (const label of ['条目标题', '主关键词', '附加关键词', 'Secondary logic', '启用', '常驻', '区分大小写', '全词匹配', '位置', '顺序', '概率', '正文']) {
+    assert.match(source, new RegExp(label))
+  }
 })

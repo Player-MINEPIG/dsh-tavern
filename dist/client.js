@@ -30,7 +30,7 @@ __export(index_exports, {
   name: () => name
 });
 module.exports = __toCommonJS(index_exports);
-var import_react3 = require("react");
+var import_react4 = require("react");
 
 // packages/preset/src/client.js
 var import_react = require("react");
@@ -733,6 +733,312 @@ function installCharacterStyles() {
   document.head.append(style);
 }
 
+// packages/world-book-library/src/client.js
+var import_react3 = require("react");
+var API_ROOT3 = "/dsh-tavern/api";
+var POSITIONS = [
+  ["before_character_definition", "\u89D2\u8272\u5B9A\u4E49\u4E4B\u524D"],
+  ["after_character_definition", "\u89D2\u8272\u5B9A\u4E49\u4E4B\u540E"],
+  ["before_author_note", "\u4F5C\u8005\u6CE8\u91CA\u4E4B\u524D\uFF08\u8FD1\u4F3C\uFF09"],
+  ["after_author_note", "\u4F5C\u8005\u6CE8\u91CA\u4E4B\u540E\uFF08\u8FD1\u4F3C\uFF09"],
+  ["at_depth", "\u6307\u5B9A\u6DF1\u5EA6\uFF08\u8FD1\u4F3C\uFF09"],
+  ["before_example_messages", "\u793A\u4F8B\u6D88\u606F\u4E4B\u524D\uFF08\u8FD1\u4F3C\uFF09"],
+  ["after_example_messages", "\u793A\u4F8B\u6D88\u606F\u4E4B\u540E\uFF08\u8FD1\u4F3C\uFF09"],
+  ["outlet", "Outlet\uFF08\u5F53\u524D\u4E0D\u6CE8\u5165\uFF09"]
+];
+var css3 = `
+.dwb-panel{position:absolute;top:0;right:0;bottom:0;width:min(500px,calc(100vw - 56px));pointer-events:auto;border-left:1px solid var(--dsw-alias-border-l2);box-shadow:var(--ds-shadow-3,-8px 0 28px rgba(0,0,0,.18));background:var(--dsw-alias-bg-base);color:var(--dsw-alias-label-primary);display:flex;flex-direction:column;font-family:Inter,var(--dsw-font-family),sans-serif}.dwb-header{height:52px;box-sizing:border-box;display:flex;align-items:center;gap:8px;padding:0 14px;border-bottom:1px solid var(--dsw-alias-border-l2);flex:none}.dwb-title{font-size:14px;font-weight:650;flex:1}.dwb-close{border:0;background:transparent;color:var(--dsw-alias-label-tertiary);cursor:pointer;border-radius:7px;padding:6px 8px}.dwb-body{min-height:0;overflow:auto;padding:12px;display:flex;flex-direction:column;gap:11px}.dwb-toolbar{display:grid;grid-template-columns:repeat(3,1fr);gap:7px}.dwb-actions{display:flex;gap:7px;flex-wrap:wrap}.dwb-button{min-height:34px;border:1px solid var(--dsw-alias-border-l2);border-radius:8px;background:var(--dsw-alias-button-secondary-fill,var(--dsw-alias-bg-base));color:var(--dsw-alias-label-primary);cursor:pointer;padding:7px 10px;font-size:11px}.dwb-button:disabled{opacity:.5;cursor:default}.dwb-primary{background:var(--dsw-alias-state-business-primary);color:white;border-color:transparent}.dwb-danger{color:var(--dsw-alias-state-error)}.dwb-field{display:flex;flex-direction:column;gap:4px}.dwb-label{font-size:10px;font-weight:620;color:var(--dsw-alias-label-tertiary)}.dwb-input,.dwb-select,.dwb-textarea{box-sizing:border-box;width:100%;border:1px solid var(--dsw-alias-border-l2);border-radius:7px;background:var(--dsw-alias-bg-base);color:var(--dsw-alias-label-primary);font:inherit;font-size:11px;padding:7px 8px}.dwb-input,.dwb-select{height:32px}.dwb-textarea{min-height:110px;resize:vertical;line-height:1.45}.dwb-note,.dwb-meta{font-size:11px;line-height:1.5;color:var(--dsw-alias-label-tertiary);margin:0;overflow-wrap:anywhere}.dwb-status{font-size:11px;line-height:1.45;border-radius:7px;padding:8px 10px;background:var(--dsw-specific-tip);overflow-wrap:anywhere}.dwb-status[data-error=true]{color:var(--dsw-alias-state-error)}.dwb-resource{border:1px solid var(--dsw-alias-border-l1);border-radius:9px;padding:10px;display:flex;flex-direction:column;gap:8px}.dwb-resource-title{font-size:12px;font-weight:650}.dwb-bindings{display:grid;grid-template-columns:1fr 1fr;gap:5px}.dwb-check{display:flex;gap:6px;align-items:flex-start;font-size:10px;line-height:1.4}.dwb-entry{border:1px solid var(--dsw-alias-border-l1);border-radius:8px;overflow:hidden}.dwb-entry>summary{list-style:none;cursor:pointer;padding:8px;display:flex;align-items:center;gap:7px;font-size:11px}.dwb-entry>summary::-webkit-details-marker{display:none}.dwb-dot{width:8px;height:8px;flex:none;border-radius:50%;background:var(--dsw-alias-label-tertiary)}.dwb-entry[data-enabled=true] .dwb-dot{background:var(--dsw-alias-state-success,#2fa36b)}.dwb-entry-name{font-weight:620;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.dwb-entry-state{margin-left:auto;flex:none;color:var(--dsw-alias-label-tertiary);font-size:10px}.dwb-entry-body{border-top:1px solid var(--dsw-alias-border-l1);padding:8px;display:flex;flex-direction:column;gap:8px}.dwb-grid{display:grid;grid-template-columns:1fr 1fr;gap:7px}.dwb-checks{display:flex;flex-wrap:wrap;gap:10px}.dwb-list{margin:0;padding-left:18px;font-size:11px;line-height:1.5}
+`;
+function errorMessage2(data, status) {
+  if (typeof data?.error?.message === "string") return data.error.message;
+  if (typeof data?.error === "string") return data.error;
+  return `HTTP ${status}`;
+}
+async function api3(path, options = {}) {
+  const method = String(options.method ?? "GET").toUpperCase();
+  const response = await fetch(`${API_ROOT3}${path}`, {
+    ...options,
+    headers: {
+      ...method === "GET" || method === "HEAD" ? {} : { "Content-Type": "application/json" },
+      ...options.headers
+    }
+  });
+  const data = await response.json().catch(() => null);
+  if (!response.ok || data?.ok === false) throw new Error(errorMessage2(data, response.status));
+  return data;
+}
+function Field3({ label, children }) {
+  return (0, import_react3.createElement)("label", { className: "dwb-field" }, (0, import_react3.createElement)("span", { className: "dwb-label" }, label), children);
+}
+function parseKeywords(value) {
+  return value.split(",").map((item) => item.trim()).filter(Boolean);
+}
+function nextUid(entries) {
+  const numeric = entries.map((entry) => entry.uid).filter(Number.isSafeInteger);
+  return numeric.length === 0 ? 0 : Math.max(...numeric) + 1;
+}
+function createWorldBookEntry(entries = []) {
+  const uid = nextUid(entries);
+  return {
+    uid,
+    keys: [],
+    secondaryKeys: [],
+    comment: `\u65B0\u6761\u76EE ${uid}`,
+    content: "",
+    enabled: true,
+    constant: false,
+    selective: false,
+    insertionOrder: 100,
+    position: "after_character_definition",
+    probability: 100,
+    useProbability: true,
+    caseSensitive: false,
+    matchWholeWords: false
+  };
+}
+function EntryEditor({ entry, index, update, remove }) {
+  const patch = (value) => update(index, value);
+  const secondary = Array.isArray(entry.secondaryKeys) ? entry.secondaryKeys : [];
+  return (0, import_react3.createElement)(
+    "details",
+    { className: "dwb-entry", "data-enabled": entry.enabled === true },
+    (0, import_react3.createElement)(
+      "summary",
+      null,
+      (0, import_react3.createElement)("span", { className: "dwb-dot" }),
+      (0, import_react3.createElement)("span", { className: "dwb-entry-name" }, entry.comment || `\u6761\u76EE ${entry.uid ?? index}`),
+      (0, import_react3.createElement)("span", { className: "dwb-entry-state" }, entry.constant ? "\u5E38\u9A7B" : (entry.keys ?? []).join(", ") || "\u65E0\u5173\u952E\u8BCD")
+    ),
+    (0, import_react3.createElement)(
+      "div",
+      { className: "dwb-entry-body" },
+      (0, import_react3.createElement)(Field3, { label: "\u6761\u76EE\u6807\u9898" }, (0, import_react3.createElement)("input", { className: "dwb-input", value: entry.comment ?? "", onChange: (event) => patch({ comment: event.target.value }) })),
+      (0, import_react3.createElement)(Field3, { label: "\u4E3B\u5173\u952E\u8BCD\uFF08\u9017\u53F7\u5206\u9694\uFF09" }, (0, import_react3.createElement)("input", { className: "dwb-input", value: (entry.keys ?? []).join(", "), onChange: (event) => patch({ keys: parseKeywords(event.target.value) }) })),
+      (0, import_react3.createElement)(Field3, { label: "\u9644\u52A0\u5173\u952E\u8BCD\uFF08\u9017\u53F7\u5206\u9694\uFF09" }, (0, import_react3.createElement)("input", { className: "dwb-input", value: secondary.join(", "), onChange: (event) => patch({ secondaryKeys: parseKeywords(event.target.value), selective: parseKeywords(event.target.value).length > 0 }) })),
+      secondary.length > 0 ? (0, import_react3.createElement)(Field3, { label: "Secondary logic" }, (0, import_react3.createElement)(
+        "select",
+        { className: "dwb-select", value: entry.selectiveLogic ?? "and_any", onChange: (event) => patch({ selectiveLogic: event.target.value, selective: true }) },
+        (0, import_react3.createElement)("option", { value: "and_any" }, "AND ANY\uFF1A\u547D\u4E2D\u4EFB\u4E00"),
+        (0, import_react3.createElement)("option", { value: "and_all" }, "AND ALL\uFF1A\u547D\u4E2D\u5168\u90E8"),
+        (0, import_react3.createElement)("option", { value: "not_any" }, "NOT ANY\uFF1A\u4E0D\u80FD\u547D\u4E2D\u4EFB\u4E00"),
+        (0, import_react3.createElement)("option", { value: "not_all" }, "NOT ALL\uFF1A\u4E0D\u80FD\u5168\u90E8\u547D\u4E2D")
+      )) : null,
+      (0, import_react3.createElement)(Field3, { label: "\u6B63\u6587" }, (0, import_react3.createElement)("textarea", { className: "dwb-textarea", value: entry.content ?? "", onChange: (event) => patch({ content: event.target.value }) })),
+      (0, import_react3.createElement)(
+        "div",
+        { className: "dwb-grid" },
+        (0, import_react3.createElement)(Field3, { label: "\u4F4D\u7F6E" }, (0, import_react3.createElement)("select", { className: "dwb-select", value: entry.position, onChange: (event) => patch({ position: event.target.value }) }, ...POSITIONS.map(([value, label]) => (0, import_react3.createElement)("option", { key: value, value }, label)))),
+        (0, import_react3.createElement)(Field3, { label: "\u987A\u5E8F\uFF08\u9AD8\u503C\u4F18\u5148\uFF09" }, (0, import_react3.createElement)("input", { className: "dwb-input", type: "number", value: entry.insertionOrder ?? 100, onChange: (event) => patch({ insertionOrder: Number(event.target.value) }) })),
+        (0, import_react3.createElement)(Field3, { label: "\u6982\u7387\uFF080\u2013100\uFF09" }, (0, import_react3.createElement)("input", { className: "dwb-input", type: "number", min: 0, max: 100, value: entry.probability ?? 100, onChange: (event) => patch({ probability: Number(event.target.value), useProbability: true }) }))
+      ),
+      (0, import_react3.createElement)(
+        "div",
+        { className: "dwb-checks" },
+        (0, import_react3.createElement)("label", { className: "dwb-check" }, (0, import_react3.createElement)("input", { type: "checkbox", checked: entry.enabled === true, onChange: (event) => patch({ enabled: event.target.checked }) }), "\u542F\u7528"),
+        (0, import_react3.createElement)("label", { className: "dwb-check" }, (0, import_react3.createElement)("input", { type: "checkbox", checked: entry.constant === true, onChange: (event) => patch({ constant: event.target.checked }) }), "\u5E38\u9A7B"),
+        (0, import_react3.createElement)("label", { className: "dwb-check" }, (0, import_react3.createElement)("input", { type: "checkbox", checked: entry.caseSensitive === true, onChange: (event) => patch({ caseSensitive: event.target.checked }) }), "\u533A\u5206\u5927\u5C0F\u5199"),
+        (0, import_react3.createElement)("label", { className: "dwb-check" }, (0, import_react3.createElement)("input", { type: "checkbox", checked: entry.matchWholeWords === true, onChange: (event) => patch({ matchWholeWords: event.target.checked }) }), "\u5168\u8BCD\u5339\u914D")
+      ),
+      (0, import_react3.createElement)("div", { className: "dwb-actions" }, (0, import_react3.createElement)("button", { className: "dwb-button dwb-danger", type: "button", onClick: () => remove(index) }, "\u5220\u9664\u6761\u76EE"))
+    )
+  );
+}
+function WorldBookPanel({ sessionId, close }) {
+  const [catalog, setCatalog] = (0, import_react3.useState)(null);
+  const [document2, setDocument] = (0, import_react3.useState)(null);
+  const [draft, setDraft] = (0, import_react3.useState)(null);
+  const [selection, setSelection] = (0, import_react3.useState)([]);
+  const [active, setActive] = (0, import_react3.useState)(null);
+  const [dirty, setDirty] = (0, import_react3.useState)(false);
+  const [busy, setBusy] = (0, import_react3.useState)(false);
+  const [status, setStatus] = (0, import_react3.useState)({ text: "\u52A0\u8F7D\u4E2D\u2026", error: false });
+  const fileRef = (0, import_react3.useRef)(null);
+  const generation = (0, import_react3.useRef)(0);
+  const run = (0, import_react3.useCallback)(async (operation, success) => {
+    setBusy(true);
+    try {
+      const value = await operation();
+      setStatus({ text: success, error: false });
+      return value;
+    } catch (error) {
+      setStatus({ text: error instanceof Error ? error.message : String(error), error: true });
+      return null;
+    } finally {
+      setBusy(false);
+    }
+  }, []);
+  const refresh = (0, import_react3.useCallback)(async (preferredId) => {
+    const currentGeneration = ++generation.current;
+    const list = await api3("/world-books");
+    const selected = sessionId ? await api3(`/world-book-selection?sessionId=${encodeURIComponent(sessionId)}`) : { selection: { worldBookIds: [] } };
+    const activeView = await api3(`/active${sessionId ? `?sessionId=${encodeURIComponent(sessionId)}` : ""}`);
+    if (currentGeneration !== generation.current) return;
+    const ids = selected.selection?.worldBookIds ?? [];
+    setCatalog(list);
+    setSelection(ids);
+    setActive(activeView);
+    const id = preferredId ?? document2?.id ?? ids[0] ?? list.worldBooks[0]?.id ?? null;
+    if (id === null || !list.worldBooks.some((item) => item.id === id)) {
+      setDocument(null);
+      setDraft(null);
+      setDirty(false);
+      return;
+    }
+    const detail = await api3(`/world-books/${encodeURIComponent(id)}`);
+    if (currentGeneration !== generation.current) return;
+    setDocument(detail.worldBook);
+    setDraft(structuredClone(detail.worldBook.book));
+    setDirty(false);
+  }, [document2?.id, sessionId]);
+  (0, import_react3.useEffect)(() => {
+    run(() => refresh(), "\u4E16\u754C\u4E66\u8D44\u6E90\u5E93\u5DF2\u52A0\u8F7D");
+    const onRefresh = () => run(() => refresh(), "\u4E16\u754C\u4E66\u8D44\u6E90\u5E93\u5DF2\u5237\u65B0");
+    window.addEventListener("dsh-tavern:refresh", onRefresh);
+    return () => {
+      generation.current += 1;
+      window.removeEventListener("dsh-tavern:refresh", onRefresh);
+    };
+  }, [refresh, run]);
+  const load = (id) => run(async () => {
+    const detail = await api3(`/world-books/${encodeURIComponent(id)}`);
+    setDocument(detail.worldBook);
+    setDraft(structuredClone(detail.worldBook.book));
+    setDirty(false);
+  }, "\u4E16\u754C\u4E66\u8BE6\u60C5\u5DF2\u52A0\u8F7D");
+  const create = () => run(async () => {
+    const data = await api3("/world-books", { method: "POST", body: JSON.stringify({ name: "Untitled World Book" }) });
+    await refresh(data.worldBook.id);
+  }, "\u5DF2\u521B\u5EFA\u72EC\u7ACB\u4E16\u754C\u4E66\uFF1B\u5C1A\u672A\u7ED1\u5B9A\u5F53\u524D\u4F1A\u8BDD");
+  const importFile = (file) => run(async () => {
+    const response = await fetch(`${API_ROOT3}/world-books/import?filename=${encodeURIComponent(file.name)}`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: file
+    });
+    const data = await response.json().catch(() => null);
+    if (!response.ok || data?.ok === false) throw new Error(errorMessage2(data, response.status));
+    if (fileRef.current !== null) fileRef.current.value = "";
+    await refresh(data.worldBook.id);
+  }, "\u4E16\u754C\u4E66\u5DF2\u5BFC\u5165\uFF1B\u5C1A\u672A\u7ED1\u5B9A\u5F53\u524D\u4F1A\u8BDD");
+  const save = () => run(async () => {
+    const data = await api3(`/world-books/${encodeURIComponent(document2.id)}`, { method: "PATCH", body: JSON.stringify({ book: draft }) });
+    setDocument(data.worldBook);
+    setDraft(structuredClone(data.worldBook.book));
+    setDirty(false);
+    window.dispatchEvent(new Event("dsh-tavern:refresh"));
+  }, "\u4E16\u754C\u4E66\u4FEE\u6539\u5DF2\u6301\u4E45\u5316\uFF0C\u540E\u7EED\u8BF7\u6C42\u5C06\u4F7F\u7528\u65B0\u5185\u5BB9");
+  const saveSelection = () => run(async () => {
+    if (!sessionId) throw new Error("\u8BF7\u5148\u521B\u5EFA\u6216\u6253\u5F00\u4E00\u4E2A\u4F1A\u8BDD\u518D\u7ED1\u5B9A\u4E16\u754C\u4E66");
+    const data = await api3("/world-book-selection", { method: "POST", body: JSON.stringify({ sessionId, worldBookIds: selection }) });
+    setSelection(data.selection.worldBookIds);
+    window.dispatchEvent(new Event("dsh-tavern:refresh"));
+  }, "\u5F53\u524D\u4F1A\u8BDD\u7684\u4E16\u754C\u4E66\u7ED1\u5B9A\u5DF2\u4FDD\u5B58");
+  const remove = () => run(async () => {
+    if (document2 === null || !window.confirm(`\u5220\u9664\u72EC\u7ACB\u4E16\u754C\u4E66\u201C${document2.name}\u201D\uFF1F\u89D2\u8272\u5361\u5185\u5D4C\u4E16\u754C\u4E66\u4E0D\u4F1A\u53D7\u5230\u5F71\u54CD\u3002`)) return;
+    await api3(`/world-books/${encodeURIComponent(document2.id)}`, { method: "DELETE" });
+    setDocument(null);
+    setDraft(null);
+    await refresh(null);
+    window.dispatchEvent(new Event("dsh-tavern:refresh"));
+  }, "\u72EC\u7ACB\u4E16\u754C\u4E66\u5DF2\u5220\u9664\uFF0C\u76F8\u5173\u4F1A\u8BDD\u7ED1\u5B9A\u5DF2\u6E05\u7406");
+  const updateEntry = (index, patch) => {
+    setDraft((current) => {
+      const next = structuredClone(current);
+      next.entries[index] = { ...next.entries[index], ...patch };
+      return next;
+    });
+    setDirty(true);
+  };
+  const entries = draft?.entries ?? [];
+  const embedded = active?.resources?.worldBooks?.filter((item) => item.kind === "embedded-character-book") ?? [];
+  const diagnostics = active?.diagnostics?.filter((item) => String(item.code ?? "").includes("WORLD_BOOK")) ?? [];
+  return (0, import_react3.createElement)(
+    "div",
+    { className: "dwb-panel" },
+    (0, import_react3.createElement)("div", { className: "dwb-header" }, (0, import_react3.createElement)("div", { className: "dwb-title" }, "\u4E16\u754C\u4FE1\u606F\uFF08World Book\uFF09"), (0, import_react3.createElement)("button", { className: "dwb-close", type: "button", onClick: close, "aria-label": "\u5173\u95ED\u4E16\u754C\u4E66\u4FA7\u8FB9\u680F" }, "\u2715")),
+    (0, import_react3.createElement)(
+      "div",
+      { className: "dwb-body" },
+      (0, import_react3.createElement)(
+        "div",
+        { className: "dwb-toolbar" },
+        (0, import_react3.createElement)("button", { className: "dwb-button", type: "button", disabled: busy, onClick: () => fileRef.current?.click() }, "\u5BFC\u5165 JSON"),
+        (0, import_react3.createElement)("button", { className: "dwb-button", type: "button", disabled: busy, onClick: create }, "\u65B0\u5EFA\u4E16\u754C\u4E66"),
+        (0, import_react3.createElement)("button", { className: "dwb-button", type: "button", disabled: busy, onClick: () => {
+          if (!dirty || window.confirm("\u653E\u5F03\u5C1A\u672A\u4FDD\u5B58\u7684\u4FEE\u6539\uFF1F")) run(() => refresh(), "\u4E16\u754C\u4E66\u8D44\u6E90\u5E93\u5DF2\u5237\u65B0");
+        } }, "\u5237\u65B0"),
+        (0, import_react3.createElement)("input", { ref: fileRef, hidden: true, type: "file", accept: ".json,application/json", onChange: (event) => {
+          const file = event.target.files?.[0];
+          if (file !== void 0) importFile(file);
+        } })
+      ),
+      (0, import_react3.createElement)("p", { className: "dwb-note" }, `\u5F53\u524D\u4F1A\u8BDD\uFF1A${sessionId || "\u65E0"}\u3002\u53EF\u7ED1\u5B9A\u96F6\u672C\u3001\u4E00\u672C\u6216\u591A\u672C\u72EC\u7ACB\u4E16\u754C\u4E66\uFF1B\u7ED1\u5B9A\u987A\u5E8F\u4FDD\u6301\u7A33\u5B9A\u3002`),
+      (0, import_react3.createElement)("div", { className: "dwb-status", "data-error": status.error || void 0, role: "status", "aria-live": "polite" }, status.text),
+      (0, import_react3.createElement)(
+        "div",
+        { className: "dwb-resource" },
+        (0, import_react3.createElement)("div", { className: "dwb-resource-title" }, "\u5F53\u524D\u4F1A\u8BDD\u7ED1\u5B9A"),
+        catalog?.worldBooks.length ? (0, import_react3.createElement)("div", { className: "dwb-bindings" }, ...catalog.worldBooks.map((item) => (0, import_react3.createElement)(
+          "label",
+          { className: "dwb-check", key: item.id },
+          (0, import_react3.createElement)("input", { type: "checkbox", checked: selection.includes(item.id), onChange: (event) => setSelection((current) => event.target.checked ? [...current, item.id] : current.filter((id) => id !== item.id)) }),
+          `${item.name}\uFF08${item.entryCount} \u6761\uFF09`
+        ))) : (0, import_react3.createElement)("p", { className: "dwb-note" }, "\u72EC\u7ACB\u4E16\u754C\u4E66\u8D44\u6E90\u5E93\u4E3A\u7A7A\u3002"),
+        (0, import_react3.createElement)(
+          "div",
+          { className: "dwb-actions" },
+          (0, import_react3.createElement)("button", { className: "dwb-button dwb-primary", type: "button", disabled: busy || !sessionId, onClick: saveSelection }, "\u4FDD\u5B58\u4F1A\u8BDD\u7ED1\u5B9A"),
+          (0, import_react3.createElement)("button", { className: "dwb-button", type: "button", disabled: busy || !sessionId || selection.length === 0, onClick: () => setSelection([]) }, "\u6E05\u7A7A\u5F85\u4FDD\u5B58\u9009\u62E9")
+        )
+      ),
+      (0, import_react3.createElement)(Field3, { label: "\u6D4F\u89C8\u72EC\u7ACB\u4E16\u754C\u4E66" }, (0, import_react3.createElement)(
+        "select",
+        { className: "dwb-select", value: document2?.id ?? "", disabled: busy || !catalog?.worldBooks.length, onChange: (event) => {
+          if (!dirty || window.confirm("\u653E\u5F03\u5C1A\u672A\u4FDD\u5B58\u7684\u4FEE\u6539\uFF1F")) load(event.target.value);
+        } },
+        ...catalog?.worldBooks.length ? [] : [(0, import_react3.createElement)("option", { key: "empty", value: "" }, "\u8D44\u6E90\u5E93\u4E3A\u7A7A")],
+        ...(catalog?.worldBooks ?? []).map((item) => (0, import_react3.createElement)("option", { key: item.id, value: item.id }, `${item.name} \xB7 ${item.sourceFormat}`))
+      )),
+      draft === null ? null : (0, import_react3.createElement)(
+        "div",
+        { className: "dwb-resource" },
+        (0, import_react3.createElement)(Field3, { label: "\u4E16\u754C\u4E66\u540D\u79F0" }, (0, import_react3.createElement)("input", { className: "dwb-input", value: draft.name ?? "", onChange: (event) => {
+          setDraft((current) => ({ ...current, name: event.target.value }));
+          setDirty(true);
+        } })),
+        (0, import_react3.createElement)("p", { className: "dwb-meta" }, `${document2.source.format} \xB7 ${entries.length} \u6761 \xB7 \u672A\u77E5\u5B57\u6BB5\u5728\u4FDD\u5B58\u548C\u5BFC\u51FA\u65F6\u7A33\u5B9A\u4FDD\u7559`),
+        (0, import_react3.createElement)(
+          "div",
+          { className: "dwb-actions" },
+          (0, import_react3.createElement)("button", { className: "dwb-button", type: "button", onClick: () => {
+            setDraft((current) => ({ ...current, entries: [...current.entries, createWorldBookEntry(current.entries)] }));
+            setDirty(true);
+          } }, "\u65B0\u589E\u6761\u76EE"),
+          (0, import_react3.createElement)("button", { className: "dwb-button dwb-primary", type: "button", disabled: busy || !dirty, onClick: save }, dirty ? "\u4FDD\u5B58\u4FEE\u6539" : "\u5DF2\u4FDD\u5B58"),
+          (0, import_react3.createElement)("a", { className: "dwb-button", href: `${API_ROOT3}/world-books/${encodeURIComponent(document2.id)}/json`, download: "" }, "\u5BFC\u51FA JSON"),
+          (0, import_react3.createElement)("button", { className: "dwb-button dwb-danger", type: "button", disabled: busy, onClick: remove }, "\u5220\u9664\u72EC\u7ACB\u4E66")
+        ),
+        ...entries.map((entry, index) => (0, import_react3.createElement)(EntryEditor, { key: `${String(entry.uid)}-${index}`, entry, index, update: updateEntry, remove: (itemIndex) => {
+          if (window.confirm("\u5220\u9664\u8FD9\u4E2A\u4E16\u754C\u4E66\u6761\u76EE\uFF1F\u4FDD\u5B58\u540E\u751F\u6548\u3002")) {
+            setDraft((current) => ({ ...current, entries: current.entries.filter((_item, candidate) => candidate !== itemIndex) }));
+            setDirty(true);
+          }
+        } }))
+      ),
+      embedded.length > 0 ? (0, import_react3.createElement)("div", { className: "dwb-resource" }, (0, import_react3.createElement)("div", { className: "dwb-resource-title" }, "\u89D2\u8272\u5361\u5185\u5D4C\u4E16\u754C\u4E66"), (0, import_react3.createElement)("p", { className: "dwb-note" }, `${embedded.map((item) => item.name).join("\u3001")}\u3002\u5B83\u4E0E\u72EC\u7ACB\u4E66\u5171\u7528 matcher/loader\uFF1B\u5220\u9664\u72EC\u7ACB\u4E66\u4E0D\u4F1A\u4FEE\u6539\u6216\u89E3\u7ED1\u89D2\u8272\u5361\u5185\u5D4C\u4E66\u3002`)) : null,
+      diagnostics.length > 0 ? (0, import_react3.createElement)("details", { className: "dwb-resource" }, (0, import_react3.createElement)("summary", { className: "dwb-resource-title" }, `\u8FD0\u884C\u8BCA\u65AD\uFF08${diagnostics.length}\uFF09`), (0, import_react3.createElement)("ul", { className: "dwb-list" }, ...diagnostics.map((item, index) => (0, import_react3.createElement)("li", { key: `${item.code}-${index}` }, item.message)))) : null,
+      (0, import_react3.createElement)("p", { className: "dwb-note" }, "\u5B9E\u9645\u6FC0\u6D3B\u3001\u6392\u5E8F\u3001\u6982\u7387\u548C\u9884\u7B97\u7531\u5171\u4EAB matcher \u786E\u5B9A\uFF1B\u6700\u7EC8\u6CE8\u5165\u4ECD\u7531 Tavern loader \u7EDF\u4E00\u5B8C\u6210\u3002\u5F53\u524D\u626B\u63CF\u57FA\u4E8E\u5DF2\u6301\u4E45\u5316\u7684\u4F1A\u8BDD\u5386\u53F2\uFF0C\u521A\u63D0\u4EA4\u7684\u540C\u8F6E\u7528\u6237\u8F93\u5165\u53EF\u80FD\u5230\u4E0B\u4E00\u8F6E\u624D\u89E6\u53D1\u3002")
+    )
+  );
+}
+function installWorldBookStyles() {
+  if (document.querySelector('style[data-plugin-css="dsh-tavern-world-book"]') !== null) return;
+  const style = document.createElement("style");
+  style.dataset.pluginCss = "dsh-tavern-world-book";
+  style.textContent = css3;
+  document.head.append(style);
+}
+
 // packages/client/src/state.js
 var TAVERN_MENU_ITEMS = Object.freeze([
   { id: "preset", label: "\u9884\u8BBE", available: true },
@@ -765,8 +1071,7 @@ function launcherPlacement(anchor, viewport2, expanded = false) {
 }
 
 // packages/client/src/index.js
-var API_ROOT3 = "/dsh-tavern/api";
-var css3 = `
+var css4 = `
 .dtv-layer{position:absolute;inset:0;z-index:6;pointer-events:none;font-family:Inter,var(--dsw-font-family),sans-serif;color:var(--dsw-alias-label-primary)}
 .dtv-launcher{position:absolute;z-index:2;width:44px;height:44px;pointer-events:auto;overflow:hidden;border:0 solid transparent;border-radius:22px;background:transparent;box-shadow:none;transition:width .22s ease,height .22s ease,border-radius .22s ease,background-color .18s ease,box-shadow .18s ease;display:block}
 .dtv-launcher[data-open=true]{width:220px;height:244px;border-width:1px;border-color:var(--dsw-alias-border-l2);border-radius:18px;background:var(--dsw-alias-bg-base);box-shadow:var(--ds-shadow-3,0 12px 34px rgba(0,0,0,.24))}
@@ -800,280 +1105,37 @@ function persistLauncherAnchor(anchor) {
   } catch {
   }
 }
-async function activeView(sessionId) {
-  const query = sessionId ? `?sessionId=${encodeURIComponent(sessionId)}` : "";
-  const response = await fetch(`${API_ROOT3}/active${query}`);
-  const data = await response.json().catch(() => null);
-  if (!response.ok || data?.ok === false) {
-    const message = typeof data?.error === "string" ? data.error : data?.error?.message;
-    throw new Error(message ?? `HTTP ${response.status}`);
-  }
-  return data;
-}
 function PanelHeader({ title, close }) {
-  return (0, import_react3.createElement)(
+  return (0, import_react4.createElement)(
     "div",
     { className: "dtv-header" },
-    (0, import_react3.createElement)("div", { className: "dtv-title" }, title),
-    (0, import_react3.createElement)("button", { className: "dtv-close", type: "button", title: `\u5173\u95ED${title}\u4FA7\u8FB9\u680F`, "aria-label": `\u5173\u95ED${title}\u4FA7\u8FB9\u680F`, onClick: close }, "\u2715")
-  );
-}
-function Field3({ label, children }) {
-  return (0, import_react3.createElement)("label", { className: "dtv-field" }, (0, import_react3.createElement)("span", { className: "dtv-label" }, label), children);
-}
-function keyLines(value) {
-  return Array.isArray(value) ? value.join("\n") : "";
-}
-function parseKeyLines(value) {
-  return String(value).split(/\r?\n/).map((item) => item.trim()).filter(Boolean);
-}
-function entryPosition(entry) {
-  const value = entry?.extensions?.position;
-  if (Number.isInteger(value) && value >= 0 && value <= 7) return value;
-  return entry?.position === "before_char" ? 0 : 1;
-}
-function triggerSummary(entry) {
-  if (entry.enabled !== true) return "\u5DF2\u7981\u7528";
-  if (entry.constant === true) return "\u5E38\u9A7B";
-  const keys = Array.isArray(entry.keys) ? entry.keys.filter(Boolean) : [];
-  if (keys.length === 0) return "\u65E0\u4E3B\u5173\u952E\u8BCD";
-  const secondary = Array.isArray(entry.secondary_keys) ? entry.secondary_keys.filter(Boolean) : [];
-  const logic = entry.selectiveLogic ?? entry.extensions?.selectiveLogic ?? "and_any";
-  return `\u5173\u952E\u8BCD\uFF1A${keys.join("\u3001")}${entry.selective === true && secondary.length > 0 ? ` \xB7 ${logic}\uFF1A${secondary.join("\u3001")}` : ""}`;
-}
-function WorldInfoEntryEditor({ entry, index, update, remove }) {
-  const patch = (change) => update(index, change);
-  const position = entryPosition(entry);
-  return (0, import_react3.createElement)(
-    "details",
-    { className: "dtv-entry", "data-enabled": entry.enabled === true },
-    (0, import_react3.createElement)(
-      "summary",
-      null,
-      (0, import_react3.createElement)("span", { className: "dtv-entry-dot", "aria-hidden": "true" }),
-      (0, import_react3.createElement)("span", { className: "dtv-entry-name" }, entry.comment || entry.name || `\u6761\u76EE ${String(entry.id ?? index + 1)}`),
-      (0, import_react3.createElement)("span", { className: "dtv-entry-state" }, triggerSummary(entry))
-    ),
-    (0, import_react3.createElement)(
-      "div",
-      { className: "dtv-entry-body" },
-      (0, import_react3.createElement)(
-        "div",
-        { className: "dtv-checks" },
-        (0, import_react3.createElement)("label", { className: "dtv-check" }, (0, import_react3.createElement)("input", { type: "checkbox", checked: entry.enabled === true, onChange: (event) => patch({ enabled: event.target.checked }) }), "\u542F\u7528"),
-        (0, import_react3.createElement)("label", { className: "dtv-check" }, (0, import_react3.createElement)("input", { type: "checkbox", checked: entry.constant === true, onChange: (event) => patch({ constant: event.target.checked }) }), "\u5E38\u9A7B"),
-        (0, import_react3.createElement)("label", { className: "dtv-check" }, (0, import_react3.createElement)("input", { type: "checkbox", checked: entry.selective === true, onChange: (event) => patch({ selective: event.target.checked }) }), "\u4F7F\u7528\u9644\u52A0\u5173\u952E\u8BCD")
-      ),
-      (0, import_react3.createElement)(Field3, { label: "\u6761\u76EE\u540D\u79F0 / \u5907\u6CE8" }, (0, import_react3.createElement)("input", { className: "dtv-input", value: entry.comment ?? entry.name ?? "", onChange: (event) => patch({ comment: event.target.value }) })),
-      (0, import_react3.createElement)(
-        "div",
-        { className: "dtv-entry-grid" },
-        (0, import_react3.createElement)(Field3, { label: "\u4E3B\u5173\u952E\u8BCD\uFF08\u6BCF\u884C\u4E00\u4E2A\uFF1B\u4EFB\u4E00\u547D\u4E2D\uFF09" }, (0, import_react3.createElement)("textarea", { className: "dtv-textarea", value: keyLines(entry.keys), onChange: (event) => patch({ keys: parseKeyLines(event.target.value) }) })),
-        (0, import_react3.createElement)(Field3, { label: "\u9644\u52A0\u5173\u952E\u8BCD\uFF08\u6BCF\u884C\u4E00\u4E2A\uFF09" }, (0, import_react3.createElement)("textarea", { className: "dtv-textarea", value: keyLines(entry.secondary_keys), disabled: entry.selective !== true, onChange: (event) => patch({ secondary_keys: parseKeyLines(event.target.value) }) }))
-      ),
-      entry.selective === true ? (0, import_react3.createElement)(Field3, { label: "\u9644\u52A0\u5173\u952E\u8BCD\u903B\u8F91" }, (0, import_react3.createElement)(
-        "select",
-        {
-          className: "dtv-select",
-          value: entry.selectiveLogic ?? entry.extensions?.selectiveLogic ?? "and_any",
-          onChange: (event) => patch({ selectiveLogic: event.target.value, extensions: { ...entry.extensions ?? {}, selectiveLogic: event.target.value } })
-        },
-        (0, import_react3.createElement)("option", { value: "and_any" }, "AND ANY\uFF1A\u547D\u4E2D\u4EFB\u4E00"),
-        (0, import_react3.createElement)("option", { value: "and_all" }, "AND ALL\uFF1A\u547D\u4E2D\u5168\u90E8"),
-        (0, import_react3.createElement)("option", { value: "not_any" }, "NOT ANY\uFF1A\u4E0D\u80FD\u547D\u4E2D\u4EFB\u4E00"),
-        (0, import_react3.createElement)("option", { value: "not_all" }, "NOT ALL\uFF1A\u4E0D\u80FD\u5168\u90E8\u547D\u4E2D")
-      )) : null,
-      (0, import_react3.createElement)(Field3, { label: "\u6761\u76EE\u5185\u5BB9\uFF08\u89E6\u53D1\u540E\u6CE8\u5165 system profile\uFF09" }, (0, import_react3.createElement)("textarea", { className: "dtv-textarea", value: entry.content ?? "", onChange: (event) => patch({ content: event.target.value }) })),
-      (0, import_react3.createElement)(
-        "div",
-        { className: "dtv-entry-grid" },
-        (0, import_react3.createElement)(Field3, { label: "\u63D2\u5165\u4F4D\u7F6E" }, (0, import_react3.createElement)(
-          "select",
-          {
-            className: "dtv-select",
-            value: position,
-            onChange: (event) => {
-              const next = Number(event.target.value);
-              patch({
-                position: next === 0 ? "before_char" : next === 1 ? "after_char" : entry.position,
-                extensions: { ...entry.extensions ?? {}, position: next }
-              });
-            }
-          },
-          (0, import_react3.createElement)("option", { value: 0 }, "\u89D2\u8272\u5B9A\u4E49\u4E4B\u524D"),
-          (0, import_react3.createElement)("option", { value: 1 }, "\u89D2\u8272\u5B9A\u4E49\u4E4B\u540E"),
-          (0, import_react3.createElement)("option", { value: 2 }, "\u4F5C\u8005\u6CE8\u91CA\u4E4B\u524D\uFF08\u8FD1\u4F3C\uFF09"),
-          (0, import_react3.createElement)("option", { value: 3 }, "\u4F5C\u8005\u6CE8\u91CA\u4E4B\u540E\uFF08\u8FD1\u4F3C\uFF09"),
-          (0, import_react3.createElement)("option", { value: 4 }, "\u6307\u5B9A\u6DF1\u5EA6\uFF08\u8FD1\u4F3C\uFF09"),
-          (0, import_react3.createElement)("option", { value: 5 }, "\u793A\u4F8B\u6D88\u606F\u4E4B\u524D\uFF08\u8FD1\u4F3C\uFF09"),
-          (0, import_react3.createElement)("option", { value: 6 }, "\u793A\u4F8B\u6D88\u606F\u4E4B\u540E\uFF08\u8FD1\u4F3C\uFF09"),
-          (0, import_react3.createElement)("option", { value: 7 }, "Outlet\uFF08\u5F53\u524D\u4E0D\u6CE8\u5165\uFF09")
-        )),
-        (0, import_react3.createElement)(Field3, { label: "\u6392\u5E8F\u6743\u91CD" }, (0, import_react3.createElement)("input", { className: "dtv-input", type: "number", value: entry.insertion_order ?? 100, onChange: (event) => patch({ insertion_order: Number(event.target.value) }) }))
-      ),
-      (0, import_react3.createElement)(
-        "div",
-        { className: "dtv-checks" },
-        (0, import_react3.createElement)("label", { className: "dtv-check" }, (0, import_react3.createElement)("input", { type: "checkbox", checked: (entry.case_sensitive ?? entry.extensions?.case_sensitive) === true, onChange: (event) => patch({ case_sensitive: event.target.checked, extensions: { ...entry.extensions ?? {}, case_sensitive: event.target.checked } }) }), "\u533A\u5206\u5927\u5C0F\u5199"),
-        (0, import_react3.createElement)("label", { className: "dtv-check" }, (0, import_react3.createElement)("input", { type: "checkbox", checked: (entry.match_whole_words ?? entry.extensions?.match_whole_words) === true, onChange: (event) => patch({ match_whole_words: event.target.checked, extensions: { ...entry.extensions ?? {}, match_whole_words: event.target.checked } }) }), "\u5168\u8BCD\u5339\u914D")
-      ),
-      (0, import_react3.createElement)("div", { className: "dtv-entry-actions" }, (0, import_react3.createElement)("button", { className: "dtv-button dtv-danger", type: "button", onClick: () => remove(index) }, "\u5220\u9664\u6761\u76EE"))
-    )
-  );
-}
-function WorldInfoPanel({ sessionId, close }) {
-  const [snapshot, setSnapshot] = (0, import_react3.useState)(null);
-  const [characterId, setCharacterId] = (0, import_react3.useState)(null);
-  const [draft, setDraft] = (0, import_react3.useState)(null);
-  const [dirty, setDirty] = (0, import_react3.useState)(false);
-  const [busy, setBusy] = (0, import_react3.useState)(false);
-  const [error, setError] = (0, import_react3.useState)("");
-  const refresh = (0, import_react3.useCallback)(async () => {
-    try {
-      const next = await activeView(sessionId);
-      const nextCharacterId = next.resources?.characterCard?.id ?? null;
-      let nextBook = null;
-      if (nextCharacterId !== null) {
-        const response = await fetch(`${API_ROOT3}/characters/${encodeURIComponent(nextCharacterId)}`);
-        const data = await response.json().catch(() => null);
-        if (!response.ok || data?.ok === false) throw new Error(data?.error?.message ?? `HTTP ${response.status}`);
-        nextBook = data.character?.data?.characterBook ?? null;
-      }
-      setSnapshot(next);
-      setCharacterId(nextCharacterId);
-      setDraft(nextBook === null ? null : structuredClone(nextBook));
-      setDirty(false);
-      setError("");
-    } catch (reason) {
-      setError(reason instanceof Error ? reason.message : String(reason));
-    }
-  }, [sessionId]);
-  (0, import_react3.useEffect)(() => {
-    refresh();
-    const onRefresh = () => refresh();
-    window.addEventListener("dsh-tavern:refresh", onRefresh);
-    return () => {
-      window.removeEventListener("dsh-tavern:refresh", onRefresh);
-    };
-  }, [refresh]);
-  const resources = snapshot?.resources?.worldBooks ?? [];
-  const selectedStandalone = snapshot?.selection?.worldBookIds ?? [];
-  const diagnostics = (snapshot?.diagnostics ?? []).filter((item) => String(item?.code ?? "").includes("WORLD_BOOK"));
-  const entries = Array.isArray(draft?.entries) ? draft.entries : [];
-  const updateEntry = (index, patch) => {
-    setDraft((current) => {
-      const next = structuredClone(current);
-      next.entries[index] = { ...next.entries[index], ...patch };
-      return next;
-    });
-    setDirty(true);
-  };
-  const addEntry = () => {
-    const numericIds = entries.map((entry) => Number(entry.id)).filter(Number.isSafeInteger);
-    const id = numericIds.length === 0 ? 0 : Math.max(...numericIds) + 1;
-    setDraft((current) => ({
-      ...structuredClone(current),
-      entries: [...current.entries, {
-        id,
-        keys: [],
-        secondary_keys: [],
-        comment: `\u65B0\u6761\u76EE ${id}`,
-        content: "",
-        enabled: true,
-        insertion_order: 100,
-        constant: false,
-        selective: false,
-        position: "after_char",
-        extensions: { position: 1, probability: 100 }
-      }]
-    }));
-    setDirty(true);
-  };
-  const removeEntry = (index) => {
-    if (!window.confirm("\u5220\u9664\u8FD9\u4E2A\u4E16\u754C\u4FE1\u606F\u6761\u76EE\uFF1F\u4FDD\u5B58\u540E\u624D\u4F1A\u5199\u5165\u89D2\u8272\u5361\u526F\u672C\u3002")) return;
-    setDraft((current) => ({ ...structuredClone(current), entries: current.entries.filter((_entry, itemIndex) => itemIndex !== index) }));
-    setDirty(true);
-  };
-  const save = async () => {
-    if (characterId === null || draft === null) return;
-    setBusy(true);
-    try {
-      const response = await fetch(`${API_ROOT3}/characters/${encodeURIComponent(characterId)}/world-book`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ characterBook: draft })
-      });
-      const data = await response.json().catch(() => null);
-      if (!response.ok || data?.ok === false) throw new Error(data?.error?.message ?? `HTTP ${response.status}`);
-      setDraft(structuredClone(data.character.data.characterBook));
-      setDirty(false);
-      setError("");
-      window.dispatchEvent(new Event("dsh-tavern:refresh"));
-    } catch (reason) {
-      setError(reason instanceof Error ? reason.message : String(reason));
-    } finally {
-      setBusy(false);
-    }
-  };
-  return (0, import_react3.createElement)(
-    "div",
-    { className: "dtv-panel" },
-    (0, import_react3.createElement)(PanelHeader, { title: "\u4E16\u754C\u4FE1\u606F\uFF08Lorebook\uFF09", close }),
-    (0, import_react3.createElement)(
-      "div",
-      { className: "dtv-body" },
-      (0, import_react3.createElement)(
-        "div",
-        { className: "dtv-book-toolbar" },
-        (0, import_react3.createElement)("button", { className: "dtv-button", type: "button", disabled: busy, onClick: () => {
-          if (!dirty || window.confirm("\u653E\u5F03\u5C1A\u672A\u4FDD\u5B58\u7684\u6761\u76EE\u4FEE\u6539\u5E76\u91CD\u65B0\u8F7D\u5165\uFF1F")) refresh();
-        } }, "\u91CD\u65B0\u8F7D\u5165"),
-        (0, import_react3.createElement)("button", { className: "dtv-button", type: "button", disabled: busy || draft === null, onClick: addEntry }, "\u65B0\u589E\u6761\u76EE"),
-        (0, import_react3.createElement)("button", { className: "dtv-button", type: "button", disabled: busy || !dirty, onClick: save }, dirty ? "\u4FDD\u5B58\u4FEE\u6539" : "\u5DF2\u4FDD\u5B58")
-      ),
-      (0, import_react3.createElement)("p", { className: "dtv-note" }, `\u5F53\u524D\u4F1A\u8BDD\uFF1A${sessionId || "\u65E0"}\u3002SillyTavern \u7684\u6B63\u5F0F\u529F\u80FD\u540D\u662F World Info\uFF0CLorebook \u662F\u5B98\u65B9\u8BA4\u53EF\u7684\u5E38\u7528\u522B\u540D\u3002`),
-      (0, import_react3.createElement)("div", { className: "dtv-status", "data-error": error !== "" || void 0, role: "status" }, error || (snapshot === null ? "\u6B63\u5728\u8BFB\u53D6\u4E16\u754C\u4FE1\u606F\u2026" : dirty ? "\u6709\u5C1A\u672A\u4FDD\u5B58\u7684\u6761\u76EE\u4FEE\u6539\u3002" : `\u5DF2\u8F7D\u5165 ${entries.length} \u4E2A\u6761\u76EE\u3002`)),
-      draft === null ? (0, import_react3.createElement)("p", { className: "dtv-note" }, "\u5F53\u524D\u4F1A\u8BDD\u6CA1\u6709\u53EF\u7528\u4E16\u754C\u4FE1\u606F\u3002\u7ED1\u5B9A\u542B character_book \u7684\u89D2\u8272\u5361\u540E\uFF0C\u5176\u5185\u5D4C\u6761\u76EE\u4F1A\u81EA\u52A8\u7531 loader \u5339\u914D\uFF1B\u89E3\u7ED1\u89D2\u8272\u4F1A\u540C\u65F6\u79FB\u9664\u8BE5\u6765\u6E90\u3002") : (0, import_react3.createElement)(
-        "div",
-        { className: "dtv-resource" },
-        (0, import_react3.createElement)("div", { className: "dtv-resource-title" }, draft.name || resources[0]?.name || "\u89D2\u8272\u5361\u5185\u5D4C\u4E16\u754C\u4FE1\u606F"),
-        (0, import_react3.createElement)("div", { className: "dtv-resource-meta" }, `\u89D2\u8272\u5361\u5185\u5D4C \xB7 ${entries.length} \u6761\u3002\u6298\u53E0\u6807\u9898\u76F4\u63A5\u663E\u793A\u8BE5\u6761\u76EE\u7684\u89E6\u53D1\u65B9\u5F0F\uFF1B\u5C55\u5F00\u540E\u53EF\u7F16\u8F91\u5173\u952E\u8BCD\u3001\u903B\u8F91\u3001\u5185\u5BB9\u3001\u4F4D\u7F6E\u548C\u6392\u5E8F\u3002`),
-        ...entries.map((entry, index) => (0, import_react3.createElement)(WorldInfoEntryEditor, { key: `${entry.id ?? "entry"}-${index}`, entry, index, update: updateEntry, remove: removeEntry }))
-      ),
-      selectedStandalone.length > 0 ? (0, import_react3.createElement)("div", { className: "dtv-status" }, `\u5DF2\u9009\u62E9 ${selectedStandalone.length} \u4E2A\u72EC\u7ACB\u4E16\u754C\u4FE1\u606F ID\uFF0C\u4F46\u72EC\u7ACB\u8D44\u6E90\u5E93/API \u5C1A\u672A\u63A5\u5165\uFF0C\u672C\u9636\u6BB5\u4E0D\u4F1A\u52A0\u8F7D\u8FD9\u4E9B ID\u3002`) : null,
-      diagnostics.length > 0 ? (0, import_react3.createElement)(
-        "div",
-        { className: "dtv-resource" },
-        (0, import_react3.createElement)("div", { className: "dtv-resource-title" }, `\u8FD0\u884C\u8BCA\u65AD\uFF08${diagnostics.length}\uFF09`),
-        (0, import_react3.createElement)("ul", { className: "dtv-list" }, ...diagnostics.map((item, index) => (0, import_react3.createElement)("li", { key: `${item.code}-${index}` }, item.message)))
-      ) : null,
-      (0, import_react3.createElement)("p", { className: "dtv-note" }, "\u4FDD\u5B58\u4F1A\u66F4\u65B0\u63D2\u4EF6\u4FDD\u5B58\u7684\u89D2\u8272\u5361\u526F\u672C\u53CA\u5176 JSON \u5BFC\u51FA\uFF1B\u4E3A\u907F\u514D\u7834\u574F\u7B7E\u540D\u6216\u56FE\u7247\u6570\u636E\uFF0C\u6700\u521D\u5BFC\u5165\u7684 PNG/JSON artifact \u4ECD\u4FDD\u6301\u4E0D\u53D8\u3002\u5F53\u524D matcher \u626B\u63CF\u5DF2\u8FDB\u5165 Session \u7684\u5386\u53F2\uFF1B\u521A\u63D0\u4EA4\u7684\u540C\u8F6E\u7528\u6237\u8F93\u5165\u53EF\u80FD\u5230\u4E0B\u4E00\u8F6E\u624D\u89E6\u53D1\u5173\u952E\u8BCD\u3002")
-    )
+    (0, import_react4.createElement)("div", { className: "dtv-title" }, title),
+    (0, import_react4.createElement)("button", { className: "dtv-close", type: "button", title: `\u5173\u95ED${title}\u4FA7\u8FB9\u680F`, "aria-label": `\u5173\u95ED${title}\u4FA7\u8FB9\u680F`, onClick: close }, "\u2715")
   );
 }
 function UserPanel({ close }) {
-  return (0, import_react3.createElement)(
+  return (0, import_react4.createElement)(
     "div",
     { className: "dtv-panel" },
-    (0, import_react3.createElement)(PanelHeader, { title: "Tavern \u7528\u6237", close }),
-    (0, import_react3.createElement)(
+    (0, import_react4.createElement)(PanelHeader, { title: "Tavern \u7528\u6237", close }),
+    (0, import_react4.createElement)(
       "div",
       { className: "dtv-body" },
-      (0, import_react3.createElement)("div", { className: "dtv-status" }, "\u7528\u6237/persona \u517C\u5BB9\u4ECD\u5728\u89C4\u5212\u4E2D\u3002\u6B64\u5165\u53E3\u5148\u56FA\u5B9A\u7EDF\u4E00\u5BFC\u822A\u4F4D\u7F6E\uFF0C\u4E0D\u4F1A\u5411 agent \u6CE8\u5165\u5360\u4F4D\u6587\u672C\u3002"),
-      (0, import_react3.createElement)("p", { className: "dtv-note" }, "\u540E\u7EED\u5E94\u7531\u72EC\u7ACB\u683C\u5F0F adapter \u7BA1\u7406 persona \u6570\u636E\uFF0C\u518D\u7531\u7EDF\u4E00 loader \u51B3\u5B9A\u5B83\u4E0E DSH agent persona\u3001\u89D2\u8272\u5361\u548C\u9884\u8BBE\u7684\u8986\u76D6\u5173\u7CFB\u3002")
+      (0, import_react4.createElement)("div", { className: "dtv-status" }, "\u7528\u6237/persona \u517C\u5BB9\u4ECD\u5728\u89C4\u5212\u4E2D\u3002\u6B64\u5165\u53E3\u5148\u56FA\u5B9A\u7EDF\u4E00\u5BFC\u822A\u4F4D\u7F6E\uFF0C\u4E0D\u4F1A\u5411 agent \u6CE8\u5165\u5360\u4F4D\u6587\u672C\u3002"),
+      (0, import_react4.createElement)("p", { className: "dtv-note" }, "\u540E\u7EED\u5E94\u7531\u72EC\u7ACB\u683C\u5F0F adapter \u7BA1\u7406 persona \u6570\u636E\uFF0C\u518D\u7531\u7EDF\u4E00 loader \u51B3\u5B9A\u5B83\u4E0E DSH agent persona\u3001\u89D2\u8272\u5361\u548C\u9884\u8BBE\u7684\u8986\u76D6\u5173\u7CFB\u3002")
     )
   );
 }
 function TavernShell({ useSessions }) {
-  const [menuOpen, setMenuOpen] = (0, import_react3.useState)(false);
-  const [surface, setSurface] = (0, import_react3.useState)(null);
-  const [anchor, setAnchor] = (0, import_react3.useState)(initialLauncherAnchor);
-  const drag = (0, import_react3.useRef)(null);
-  const suppressClick = (0, import_react3.useRef)(false);
+  const [menuOpen, setMenuOpen] = (0, import_react4.useState)(false);
+  const [surface, setSurface] = (0, import_react4.useState)(null);
+  const [anchor, setAnchor] = (0, import_react4.useState)(initialLauncherAnchor);
+  const drag = (0, import_react4.useRef)(null);
+  const suppressClick = (0, import_react4.useRef)(false);
   const sessionId = useSessions((state) => state.current);
   const sessionBlank = useSessions((state) => state.current === void 0 || state.current === null ? true : state.byId?.[state.current]?.blank === true);
   const close = () => setSurface(null);
-  (0, import_react3.useEffect)(() => {
+  (0, import_react4.useEffect)(() => {
     const onResize = () => setAnchor((current) => {
       const next = clampLauncherAnchor(current, viewport());
       persistLauncherAnchor(next);
@@ -1129,7 +1191,7 @@ function TavernShell({ useSessions }) {
   };
   let panel = null;
   if (surface === "preset") {
-    panel = (0, import_react3.createElement)("div", { className: "dtv-panel" }, (0, import_react3.createElement)(PresetSidebar, {
+    panel = (0, import_react4.createElement)("div", { className: "dtv-panel" }, (0, import_react4.createElement)(PresetSidebar, {
       closePanel: close,
       openPanel: () => {
       },
@@ -1137,18 +1199,18 @@ function TavernShell({ useSessions }) {
       autoOpen: false
     }));
   } else if (surface === "character") {
-    panel = (0, import_react3.createElement)(CharacterPanel, { sessionId, sessionBlank, close });
+    panel = (0, import_react4.createElement)(CharacterPanel, { sessionId, sessionBlank, close });
   } else if (surface === "world-info") {
-    panel = (0, import_react3.createElement)(WorldInfoPanel, { sessionId, close });
+    panel = (0, import_react4.createElement)(WorldBookPanel, { sessionId, close });
   } else if (surface === "user") {
-    panel = (0, import_react3.createElement)(UserPanel, { close });
+    panel = (0, import_react4.createElement)(UserPanel, { close });
   }
   const placement = launcherPlacement(anchor, viewport(), menuOpen);
-  return (0, import_react3.createElement)(
+  return (0, import_react4.createElement)(
     "div",
     { className: "dtv-layer" },
     panel,
-    (0, import_react3.createElement)(
+    (0, import_react4.createElement)(
       "div",
       {
         className: "dtv-launcher",
@@ -1157,7 +1219,7 @@ function TavernShell({ useSessions }) {
         "data-vertical": placement.vertical,
         style: { left: placement.left, top: placement.top }
       },
-      (0, import_react3.createElement)("div", { className: "dtv-ball-row" }, (0, import_react3.createElement)("button", {
+      (0, import_react4.createElement)("div", { className: "dtv-ball-row" }, (0, import_react4.createElement)("button", {
         className: "dtv-ball",
         type: "button",
         title: "\u62D6\u52A8\u53EF\u79FB\u52A8\uFF1B\u70B9\u51FB\u5C55\u5F00 Tavern \u8D44\u6E90\u9762\u677F",
@@ -1169,11 +1231,11 @@ function TavernShell({ useSessions }) {
         onPointerCancel: endDrag,
         onClick: toggleMenu
       }, "T")),
-      menuOpen ? (0, import_react3.createElement)(
+      menuOpen ? (0, import_react4.createElement)(
         "div",
         { className: "dtv-menu", role: "menu" },
-        (0, import_react3.createElement)("div", { className: "dtv-menu-title" }, "dsh-tavern"),
-        ...TAVERN_MENU_ITEMS.map((item) => (0, import_react3.createElement)("button", {
+        (0, import_react4.createElement)("div", { className: "dtv-menu-title" }, "dsh-tavern"),
+        ...TAVERN_MENU_ITEMS.map((item) => (0, import_react4.createElement)("button", {
           className: "dtv-menu-item",
           type: "button",
           role: "menuitem",
@@ -1191,7 +1253,7 @@ function installStyles() {
   if (document.querySelector('style[data-plugin-css="dsh-tavern-shell"]') !== null) return;
   const style = document.createElement("style");
   style.dataset.pluginCss = "dsh-tavern-shell";
-  style.textContent = css3;
+  style.textContent = css4;
   document.head.append(style);
 }
 var name = "dsh-tavern";
@@ -1199,6 +1261,7 @@ var inject = ["slots", "layout"];
 function apply(ctx) {
   installPresetStyles();
   installCharacterStyles();
+  installWorldBookStyles();
   installStyles();
   ctx.slots.inject("shell.overlay", () => ctx.slots.register({
     name: "shell.overlay",
