@@ -28,12 +28,15 @@ shell, and prints a restart reminder. Restart a currently running `dsh web`
 process before review.
 
 Stop the target `dsh web` process before updating an existing installation.
-Repeated installation is supported: the script temporarily preserves the
+Repeated installation is supported: the script preserves the
 installed `data/`, removes the stale local `file:` package, adds the current
 worktree again, and restores the data. This is necessary because pnpm can report
 `Already up to date` while leaving newly added source files absent from an
-earlier local-directory snapshot. A successful refresh removes its temporary
-recovery copy. If remove/add fails, the error prints the retained recovery path.
+earlier local-directory snapshot. Pending recovery data is kept under
+`<DSH_HOME>/backups/dsh-tavern/pending-refresh-<profile>/`; a successful refresh
+removes it. If remove/add fails, the error prints the retained path and the next
+installer run repairs an interrupted dependency registration and restores that
+data automatically. Do not delete the pending directory while recovery is due.
 When `--store-dir` is omitted, the updater reads the store already recorded in
 the profile's `node_modules/.modules.yaml`; this prevents pnpm's
 `ERR_PNPM_UNEXPECTED_STORE` on profiles created with a different store root.

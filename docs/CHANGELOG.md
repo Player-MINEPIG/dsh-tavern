@@ -4,6 +4,35 @@ This is the staged implementation log for the prompt-preset experiment. It is
 kept separately from the product README so reviewers can follow intent,
 decisions, verification, and known limits chronologically.
 
+## 2026-08-15 — Recoverable Windows refresh interruption
+
+Purpose: make repeated installation recover after Windows rejects pnpm's atomic
+profile-manifest rename, without losing the plugin-local preset/character data
+or getting stuck between `remove` and `add`.
+
+- Diagnosed the reported `EPERM` as a profile refresh attempted while the
+  isolated DSH Node child from the prior acceptance smoke test was still alive;
+  the outer command process had stopped but its child had not.
+- Made refresh state depend on the profile manifest instead of only a leftover
+  `node_modules/dsh-tavern` directory. An interrupted state now performs a
+  direct repair add rather than a second failing remove.
+- Replaced random OS-temporary recovery copies with a deterministic
+  `<DSH_HOME>/backups/dsh-tavern/pending-refresh-<profile>/data` location.
+  Subsequent installer runs reuse and automatically restore pending data, then
+  delete the pending copy only after success.
+- Added tests for manifest registration and interrupted-refresh command
+  selection, while retaining the normal remove/add refresh test.
+
+Verification:
+
+- `npm run check` passed 81/81 tests, including both the ordinary refresh and
+  interrupted-manifest repair paths.
+- Repaired the real isolated profile from its removed-dependency state, restored
+  all six retained data files, and verified every file hash with zero mismatch.
+- Ran a second real remove/add refresh using the new persistent recovery path.
+  It restored all six files, kept the dependency registered, produced zero hash
+  mismatches, and removed the pending directory only after success.
+
 ## 2026-08-15 — Security hardening after the accepted functional baseline
 
 Purpose: preserve the user-accepted behavior as an immutable review point, then

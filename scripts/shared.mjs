@@ -68,6 +68,21 @@ export function installedDataPath(dshHome, profile) {
   return path.join(dshHome, 'profiles', profile, 'node_modules', PLUGIN_NAME, 'data')
 }
 
+export function profileHasPlugin(dshHome, profile, pluginName = PLUGIN_NAME) {
+  const manifestPath = path.join(dshHome, 'profiles', profile, 'package.json')
+  let manifest
+  try {
+    manifest = JSON.parse(readFileSync(manifestPath, 'utf8'))
+  } catch (error) {
+    if (error?.code === 'ENOENT') return false
+    throw new Error(`cannot read profile manifest ${manifestPath}: ${error.message}`, { cause: error })
+  }
+  return ['dependencies', 'devDependencies', 'optionalDependencies', 'peerDependencies']
+    .some(field => manifest?.[field] !== null
+      && typeof manifest?.[field] === 'object'
+      && Object.hasOwn(manifest[field], pluginName))
+}
+
 export function profileStoreDir(dshHome, profile) {
   const manifestPath = path.join(dshHome, 'profiles', profile, 'node_modules', '.modules.yaml')
   let content

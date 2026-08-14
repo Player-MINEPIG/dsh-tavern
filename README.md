@@ -49,7 +49,7 @@ npm install --cache .npm-cache --legacy-peer-deps
 npm run plugin:install
 ```
 
-安装器会构建浏览器端、安装根插件并提示重启 DSH。更新已有安装前，请先停止目标 `dsh web` 进程，然后重复执行同一安装命令；安装器会保留已经导入或创建的预设。
+安装器会构建浏览器端、安装根插件并提示重启 DSH。更新已有安装前，请先停止目标 `dsh web` 进程，然后重复执行同一安装命令；安装器会保留已经导入或创建的资源。刷新中断时，恢复副本会保存在 `<DSH_HOME>/backups/dsh-tavern/pending-refresh-<profile>/`，下一次运行会自动修复依赖登记并恢复数据。
 
 安装到指定 profile 或隔离的 `DSH_HOME`：
 

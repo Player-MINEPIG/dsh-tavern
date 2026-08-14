@@ -1,8 +1,7 @@
 #!/usr/bin/env node
 
 import { existsSync } from 'node:fs'
-import { cp, mkdtemp, rm } from 'node:fs/promises'
-import os from 'node:os'
+import { cp, mkdir, rm } from 'node:fs/promises'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 import {
@@ -13,6 +12,7 @@ import {
   installedDataPath,
   localPackageSpec,
   parseOptions,
+  profileHasPlugin,
   profileStoreDir,
   run,
 } from './shared.mjs'
@@ -34,7 +34,9 @@ Options:
   -h, --help           show this help
 
 An existing installation is refreshed with remove/add. Its plugin-local data
-is copied to a temporary recovery directory and restored after a successful add.
+is copied to a persistent pending-recovery directory and restored after a
+successful add. A later run resumes that recovery automatically if refresh was
+interrupted.
 `
 
 async function installFresh(invocation, options, spec, projectRoot, environment) {
@@ -49,24 +51,46 @@ async function refreshExisting(invocation, options, spec, projectRoot, environme
   const dshHome = dshHomePath(options, environment)
   const dataPath = installedDataPath(dshHome, options.profile)
   const pluginRoot = path.dirname(dataPath)
-  if (!existsSync(pluginRoot)) {
-    await installFresh(invocation, options, spec, projectRoot, environment)
+  const recoveryRoot = path.join(dshHome, 'backups', PLUGIN_NAME, `pending-refresh-${options.profile}`)
+  const recoveryData = path.join(recoveryRoot, 'data')
+  let hasRecovery = !options.dryRun && existsSync(recoveryData)
+  const registered = profileHasPlugin(dshHome, options.profile)
+  if (!registered) {
+    if (existsSync(pluginRoot)) {
+      console.log('[dsh-tavern] incomplete previous refresh detected; repairing dependency registration')
+    }
+    try {
+      await installFresh(invocation, options, spec, projectRoot, environment)
+      if (hasRecovery) {
+        await cp(recoveryData, dataPath, {
+          recursive: true,
+          dereference: true,
+          errorOnExist: false,
+          force: true,
+        })
+        console.log('[dsh-tavern] restored plugin-local data from the interrupted refresh')
+        await rm(recoveryRoot, { recursive: true, force: true })
+      }
+    } catch (error) {
+      const recovery = hasRecovery ? `; plugin data recovery retained at ${recoveryData}` : ''
+      throw new Error(`${error.message}${recovery}`, { cause: error })
+    }
     return
   }
 
   console.log('[dsh-tavern] existing installation found; refreshing package files')
-  let recoveryRoot
-  let recoveryData
-  if (!options.dryRun && existsSync(dataPath)) {
-    recoveryRoot = await mkdtemp(path.join(os.tmpdir(), 'dsh-tavern-refresh-'))
-    recoveryData = path.join(recoveryRoot, 'data')
+  if (hasRecovery) {
+    console.log('[dsh-tavern] resuming plugin-local data recovery from an interrupted refresh')
+  } else if (!options.dryRun && existsSync(dataPath)) {
+    await mkdir(recoveryRoot, { recursive: true })
     await cp(dataPath, recoveryData, {
       recursive: true,
       dereference: true,
       errorOnExist: true,
       force: false,
     })
-    console.log('[dsh-tavern] preserving plugin-local preset data during refresh')
+    hasRecovery = true
+    console.log('[dsh-tavern] preserving plugin-local data during refresh')
   }
 
   let refreshed = false
@@ -80,23 +104,23 @@ async function refreshExisting(invocation, options, spec, projectRoot, environme
       dryRun: options.dryRun,
     })
     await installFresh(invocation, options, spec, projectRoot, environment)
-    if (recoveryData !== undefined) {
+    if (hasRecovery) {
       await cp(recoveryData, dataPath, {
         recursive: true,
         dereference: true,
         errorOnExist: false,
         force: true,
       })
-      console.log('[dsh-tavern] restored plugin-local preset data')
+      console.log('[dsh-tavern] restored plugin-local data')
     }
     refreshed = true
   } catch (error) {
-    const recovery = recoveryData === undefined
+    const recovery = !hasRecovery
       ? ''
-      : `; preset recovery copy retained at ${recoveryData}`
+      : `; plugin data recovery retained at ${recoveryData}`
     throw new Error(`${error.message}${recovery}`, { cause: error })
   } finally {
-    if (refreshed && recoveryRoot !== undefined) {
+    if (refreshed && hasRecovery) {
       await rm(recoveryRoot, { recursive: true, force: true })
     }
   }
