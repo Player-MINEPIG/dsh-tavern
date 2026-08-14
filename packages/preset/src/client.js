@@ -9,6 +9,10 @@ import { reorderAtBoundary } from './client-state.js'
 
 const API_ROOT = '/dsh-tavern/api'
 
+function announceTavernRefresh() {
+  window.dispatchEvent(new CustomEvent('dsh-tavern:refresh', { detail: { source: 'preset' } }))
+}
+
 const ST_NUMBER_FIELDS = [
   ['top_p', 'Top P'],
   ['top_k', 'Top K'],
@@ -203,7 +207,10 @@ export function PresetSidebar({ closePanel, openPanel, sessionId, autoOpen = tru
   }, [refresh, run, sessionId])
 
   useEffect(() => {
-    const onRefresh = () => run(() => refresh(), '预设状态已刷新')
+    const onRefresh = event => {
+      if (event.detail?.source === 'preset') return
+      run(() => refresh(), '预设状态已刷新')
+    }
     window.addEventListener('dsh-tavern:refresh', onRefresh)
     return () => window.removeEventListener('dsh-tavern:refresh', onRefresh)
   }, [refresh, run])
@@ -211,12 +218,14 @@ export function PresetSidebar({ closePanel, openPanel, sessionId, autoOpen = tru
   const choose = useCallback((id) => run(async () => {
     await api('/select', { method: 'POST', body: body({ id: id || null, sessionId }) })
     await refresh(id || null)
+    announceTavernRefresh()
   }, id ? '预设已选择；下一条消息将携带此 preset。已有会话历史不会被清除。' : '已停用 preset；已有会话历史不会被清除'), [refresh, run, sessionId])
 
   const createPreset = useCallback(() => run(async () => {
     const created = await api('/presets', { method: 'POST', body: body({ name: '新预设' }) })
     await api('/select', { method: 'POST', body: body({ id: created.preset.id, sessionId }) })
     await refresh(created.preset.id)
+    announceTavernRefresh()
   }, '已创建并选择新预设'), [refresh, run, sessionId])
 
   const importFile = useCallback((file) => run(async () => {
@@ -227,6 +236,7 @@ export function PresetSidebar({ closePanel, openPanel, sessionId, autoOpen = tru
     })
     await api('/select', { method: 'POST', body: body({ id: imported.preset.id, sessionId }) })
     await refresh(imported.preset.id)
+    announceTavernRefresh()
     if (fileRef.current !== null) fileRef.current.value = ''
   }, 'ST 预设已导入并选择'), [refresh, run, sessionId])
 
@@ -237,12 +247,14 @@ export function PresetSidebar({ closePanel, openPanel, sessionId, autoOpen = tru
     })
     setDraft(result.preset)
     await refresh(result.preset.id)
+    announceTavernRefresh()
   }, '预设配置已保存'), [draft, refresh, run])
 
   const remove = useCallback(() => run(async () => {
     if (!window.confirm(`删除预设“${draft.name}”？`)) return
     await api(`/presets/${encodeURIComponent(draft.id)}`, { method: 'DELETE' })
     await refresh(null)
+    announceTavernRefresh()
   }, '预设已删除'), [draft, refresh, run])
 
   const patchSampling = (patch) => setDraft((current) => ({

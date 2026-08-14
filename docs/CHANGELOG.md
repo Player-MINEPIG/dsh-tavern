@@ -137,6 +137,42 @@ was supplied. `npm run pack:check` succeeded with 40 release files, including
 the Trace module and generated client while excluding tests, docs, runtime
 data and caches. All new acceptance fixtures are synthetic and test-owned.
 
+## 2026-08-15 — Session-aware Tavern launcher status
+
+Purpose: make the single floating Tavern launcher an always-available,
+session-scoped summary of the resources selected for the active conversation.
+
+- Restyled the draggable launcher as a red, black and white `ST` ball while
+  preserving its saved position, clamped placement and expansion animation.
+- Added current Preset, Character, World Book and User titles beside their
+  launcher actions. Multiple selected world books show every resolved name and
+  an explicit book count.
+- Added glowing green selected dots and red unselected dots. World-book dots
+  intentionally ignore matched-entry and active-entry fields, so they never
+  imply that lore matched the current turn.
+- Made active-view refresh generation-safe across session switches and wired a
+  shared browser refresh event through preset and character CRUD/selection
+  operations. The event updates the launcher without requiring the drawer to be
+  closed or reopened.
+- Kept the launcher mounted above the resource side panel, retained one overlay
+  registration, and added consistent Escape behavior for the expanded menu and
+  open panel.
+- Added a backward-compatible UI projection for existing loader
+  `selection/resources/selected` fields and optional future `catalog/catalogs`
+  fields, without changing resource stores, APIs or Host seams.
+
+Verification:
+
+- `node --test test/client-shell.test.mjs` passed 7/7 focused launcher tests.
+- `npm run check` built the browser bundle and passed 84 tests; the optional
+  external copyrighted-fixture test skipped because no reviewer fixture was
+  supplied. There were no failures.
+- `npm run pack:check` passed with the expected 35 files and did not include
+  tests, module review docs, runtime data or any local roadmap/fixture.
+- Diff hygiene, sensitive-value, machine-path and backend-boundary scans were
+  clean; only browser client composition, generated client output, focused
+  tests and review documentation changed.
+
 ## 2026-08-15 — Pre-merge publication hygiene
 
 Purpose: ensure the accepted integration can be merged and published without

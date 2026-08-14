@@ -53,6 +53,9 @@ function reorderAtBoundary(items, from, boundary) {
 
 // packages/preset/src/client.js
 var API_ROOT = "/dsh-tavern/api";
+function announceTavernRefresh() {
+  window.dispatchEvent(new CustomEvent("dsh-tavern:refresh", { detail: { source: "preset" } }));
+}
 var ST_NUMBER_FIELDS = [
   ["top_p", "Top P"],
   ["top_k", "Top K"],
@@ -195,7 +198,7 @@ function insertionBoundary(event) {
   return event.clientY < bounds.top + bounds.height / 2 ? index : index + 1;
 }
 function PresetSidebar({ closePanel, openPanel, sessionId, autoOpen = true }) {
-  const [catalog, setCatalog] = (0, import_react.useState)(null);
+  const [catalog2, setCatalog] = (0, import_react.useState)(null);
   const [draft, setDraft] = (0, import_react.useState)(null);
   const [busy, setBusy] = (0, import_react.useState)(false);
   const [status, setStatus] = (0, import_react.useState)({ text: "\u52A0\u8F7D\u4E2D\u2026", error: false });
@@ -244,18 +247,23 @@ function PresetSidebar({ closePanel, openPanel, sessionId, autoOpen = true }) {
     };
   }, [refresh, run, sessionId]);
   (0, import_react.useEffect)(() => {
-    const onRefresh = () => run(() => refresh(), "\u9884\u8BBE\u72B6\u6001\u5DF2\u5237\u65B0");
+    const onRefresh = (event) => {
+      if (event.detail?.source === "preset") return;
+      run(() => refresh(), "\u9884\u8BBE\u72B6\u6001\u5DF2\u5237\u65B0");
+    };
     window.addEventListener("dsh-tavern:refresh", onRefresh);
     return () => window.removeEventListener("dsh-tavern:refresh", onRefresh);
   }, [refresh, run]);
   const choose = (0, import_react.useCallback)((id) => run(async () => {
     await api("/select", { method: "POST", body: body({ id: id || null, sessionId }) });
     await refresh(id || null);
+    announceTavernRefresh();
   }, id ? "\u9884\u8BBE\u5DF2\u9009\u62E9\uFF1B\u4E0B\u4E00\u6761\u6D88\u606F\u5C06\u643A\u5E26\u6B64 preset\u3002\u5DF2\u6709\u4F1A\u8BDD\u5386\u53F2\u4E0D\u4F1A\u88AB\u6E05\u9664\u3002" : "\u5DF2\u505C\u7528 preset\uFF1B\u5DF2\u6709\u4F1A\u8BDD\u5386\u53F2\u4E0D\u4F1A\u88AB\u6E05\u9664"), [refresh, run, sessionId]);
   const createPreset = (0, import_react.useCallback)(() => run(async () => {
     const created = await api("/presets", { method: "POST", body: body({ name: "\u65B0\u9884\u8BBE" }) });
     await api("/select", { method: "POST", body: body({ id: created.preset.id, sessionId }) });
     await refresh(created.preset.id);
+    announceTavernRefresh();
   }, "\u5DF2\u521B\u5EFA\u5E76\u9009\u62E9\u65B0\u9884\u8BBE"), [refresh, run, sessionId]);
   const importFile = (0, import_react.useCallback)((file) => run(async () => {
     const content = await file.text();
@@ -265,6 +273,7 @@ function PresetSidebar({ closePanel, openPanel, sessionId, autoOpen = true }) {
     });
     await api("/select", { method: "POST", body: body({ id: imported.preset.id, sessionId }) });
     await refresh(imported.preset.id);
+    announceTavernRefresh();
     if (fileRef.current !== null) fileRef.current.value = "";
   }, "ST \u9884\u8BBE\u5DF2\u5BFC\u5165\u5E76\u9009\u62E9"), [refresh, run, sessionId]);
   const save = (0, import_react.useCallback)(() => run(async () => {
@@ -274,11 +283,13 @@ function PresetSidebar({ closePanel, openPanel, sessionId, autoOpen = true }) {
     });
     setDraft(result.preset);
     await refresh(result.preset.id);
+    announceTavernRefresh();
   }, "\u9884\u8BBE\u914D\u7F6E\u5DF2\u4FDD\u5B58"), [draft, refresh, run]);
   const remove = (0, import_react.useCallback)(() => run(async () => {
     if (!window.confirm(`\u5220\u9664\u9884\u8BBE\u201C${draft.name}\u201D\uFF1F`)) return;
     await api(`/presets/${encodeURIComponent(draft.id)}`, { method: "DELETE" });
     await refresh(null);
+    announceTavernRefresh();
   }, "\u9884\u8BBE\u5DF2\u5220\u9664"), [draft, refresh, run]);
   const patchSampling = (patch) => setDraft((current) => ({
     ...current,
@@ -319,7 +330,7 @@ function PresetSidebar({ closePanel, openPanel, sessionId, autoOpen = true }) {
     (0, import_react.createElement)(
       "div",
       { className: "dtt-header" },
-      (0, import_react.createElement)("div", { className: "dtt-title" }, "Tavern \u9884\u8BBE", catalog?.selectedId ? (0, import_react.createElement)("span", { className: "dtt-active" }, "\u25CF \u5DF2\u542F\u7528") : null),
+      (0, import_react.createElement)("div", { className: "dtt-title" }, "Tavern \u9884\u8BBE", catalog2?.selectedId ? (0, import_react.createElement)("span", { className: "dtt-active" }, "\u25CF \u5DF2\u542F\u7528") : null),
       (0, import_react.createElement)("button", { className: "dtt-icon", type: "button", title: "\u5173\u95ED\u53F3\u4FA7\u680F", "aria-label": "\u5173\u95ED\u9884\u8BBE\u4FA7\u8FB9\u680F", onClick: closePanel }, "\u2715")
     ),
     (0, import_react.createElement)(
@@ -345,15 +356,15 @@ function PresetSidebar({ closePanel, openPanel, sessionId, autoOpen = true }) {
         "select",
         {
           className: "dtt-select",
-          value: catalog?.selectedId ?? "",
-          disabled: busy || catalog === null,
+          value: catalog2?.selectedId ?? "",
+          disabled: busy || catalog2 === null,
           onChange: (event) => choose(event.target.value)
         },
         (0, import_react.createElement)("option", { value: "" }, "\u4E0D\u4F7F\u7528\u9884\u8BBE"),
-        ...(catalog?.presets ?? []).map((preset) => (0, import_react.createElement)("option", { key: preset.id, value: preset.id }, `${preset.name} (${preset.enabledPromptCount}/${preset.promptCount})`))
+        ...(catalog2?.presets ?? []).map((preset) => (0, import_react.createElement)("option", { key: preset.id, value: preset.id }, `${preset.name} (${preset.enabledPromptCount}/${preset.promptCount})`))
       )),
       (0, import_react.createElement)("div", { className: "dtt-status", "data-error": status.error || void 0, role: "status", "aria-live": "polite" }, status.text),
-      draft === null ? (0, import_react.createElement)("p", { className: "dtt-note" }, catalog === null ? "\u6B63\u5728\u52A0\u8F7D\u9884\u8BBE\u2026" : "\u8BF7\u9009\u62E9\u6216\u521B\u5EFA\u9884\u8BBE\u4EE5\u5F00\u59CB\u914D\u7F6E\u3002") : (0, import_react.createElement)(
+      draft === null ? (0, import_react.createElement)("p", { className: "dtt-note" }, catalog2 === null ? "\u6B63\u5728\u52A0\u8F7D\u9884\u8BBE\u2026" : "\u8BF7\u9009\u62E9\u6216\u521B\u5EFA\u9884\u8BBE\u4EE5\u5F00\u59CB\u914D\u7F6E\u3002") : (0, import_react.createElement)(
         "div",
         { className: "dtt-section" },
         (0, import_react.createElement)("div", { className: "dtt-section-title" }, "\u57FA\u672C\u8BBE\u7F6E"),
@@ -494,6 +505,9 @@ function defaultCharacterSelection(characterCardId) {
 
 // packages/character/src/client.js
 var API_ROOT2 = "/dsh-tavern/api";
+function announceTavernRefresh2() {
+  window.dispatchEvent(new CustomEvent("dsh-tavern:refresh", { detail: { source: "character" } }));
+}
 var css2 = `
 .dcc-panel{position:absolute;top:0;right:0;bottom:0;width:min(440px,calc(100vw - 56px));pointer-events:auto;border-left:1px solid var(--dsw-alias-border-l2);box-shadow:var(--ds-shadow-3,-8px 0 28px rgba(0,0,0,.18));background:var(--dsw-alias-bg-base);color:var(--dsw-alias-label-primary);display:flex;flex-direction:column;font-family:Inter,var(--dsw-font-family),sans-serif}.dcc-header{height:52px;box-sizing:border-box;display:flex;align-items:center;gap:8px;padding:0 14px;border-bottom:1px solid var(--dsw-alias-border-l2);flex:none}.dcc-title{font-size:14px;font-weight:650;flex:1}.dcc-close{border:0;background:transparent;color:var(--dsw-alias-label-tertiary);cursor:pointer;border-radius:7px;padding:6px 8px}.dcc-body{min-height:0;overflow:auto;padding:12px;display:flex;flex-direction:column;gap:12px}.dcc-toolbar,.dcc-actions{display:grid;grid-template-columns:1fr 1fr;gap:8px}.dcc-button{min-height:34px;border:1px solid var(--dsw-alias-border-l2);border-radius:8px;background:var(--dsw-alias-button-secondary-fill,var(--dsw-alias-bg-base));color:var(--dsw-alias-label-primary);cursor:pointer;padding:7px 10px;font-size:12px}.dcc-button:hover:not(:disabled){background:var(--dsw-alias-interactive-bg-hover)}.dcc-button:disabled{opacity:.5;cursor:default}.dcc-primary{background:var(--dsw-alias-state-business-primary);color:white;border-color:transparent}.dcc-danger{color:var(--dsw-alias-state-error)}.dcc-field{display:flex;flex-direction:column;gap:5px}.dcc-label{font-size:11px;color:var(--dsw-alias-label-tertiary);font-weight:600}.dcc-select{box-sizing:border-box;width:100%;height:34px;padding:0 9px;border:1px solid var(--dsw-alias-border-l2);border-radius:7px;background:var(--dsw-alias-bg-base);color:var(--dsw-alias-label-primary);font:inherit;font-size:12px}.dcc-note,.dcc-meta{font-size:11px;line-height:1.5;color:var(--dsw-alias-label-tertiary);margin:0;overflow-wrap:anywhere}.dcc-status{font-size:11px;line-height:1.45;border-radius:7px;padding:7px 9px;background:var(--dsw-specific-tip);overflow-wrap:anywhere}.dcc-status[data-error=true]{color:var(--dsw-alias-state-error)}.dcc-card{border-top:1px solid var(--dsw-alias-border-l1);padding-top:12px;display:flex;flex-direction:column;gap:10px}.dcc-card-head{display:flex;gap:11px}.dcc-avatar{width:76px;height:100px;object-fit:cover;border-radius:9px;border:1px solid var(--dsw-alias-border-l1);background:var(--dsw-alias-bg-container)}.dcc-card-title{font-size:15px;font-weight:650;margin:0 0 5px}.dcc-tags{display:flex;gap:5px;flex-wrap:wrap}.dcc-tag{font-size:10px;border:1px solid var(--dsw-alias-border-l1);border-radius:999px;padding:2px 7px;color:var(--dsw-alias-label-secondary)}.dcc-check{display:flex;gap:7px;align-items:flex-start;font-size:11px;line-height:1.4}.dcc-detail{border:1px solid var(--dsw-alias-border-l1);border-radius:8px;padding:8px}.dcc-detail summary{cursor:pointer;font-size:12px;font-weight:600}.dcc-text{white-space:pre-wrap;overflow-wrap:anywhere;font-size:11px;line-height:1.5;margin:8px 0 0;max-height:260px;overflow:auto}.dcc-diags{margin:7px 0 0;padding-left:18px;font-size:11px;line-height:1.5}.dcc-footer{position:sticky;bottom:-12px;margin:0 -12px -12px;padding:10px 12px;background:var(--dsw-alias-bg-base);border-top:1px solid var(--dsw-alias-border-l2)}
 `;
@@ -537,7 +551,7 @@ function DiagnosticList({ title, items }) {
   );
 }
 function CharacterPanel({ sessionId, sessionBlank, close }) {
-  const [catalog, setCatalog] = (0, import_react2.useState)(null);
+  const [catalog2, setCatalog] = (0, import_react2.useState)(null);
   const [detail, setDetail] = (0, import_react2.useState)(null);
   const [selection, setSelection] = (0, import_react2.useState)(null);
   const [binding, setBinding] = (0, import_react2.useState)(null);
@@ -598,6 +612,14 @@ function CharacterPanel({ sessionId, sessionBlank, close }) {
       refreshGeneration.current += 1;
     };
   }, [refresh, run]);
+  (0, import_react2.useEffect)(() => {
+    const onRefresh = (event) => {
+      if (event.detail?.source === "character") return;
+      run(() => refresh(detail?.id), "\u89D2\u8272\u72B6\u6001\u5DF2\u5237\u65B0");
+    };
+    window.addEventListener("dsh-tavern:refresh", onRefresh);
+    return () => window.removeEventListener("dsh-tavern:refresh", onRefresh);
+  }, [detail?.id, refresh, run]);
   const importFile = (0, import_react2.useCallback)((file) => run(async () => {
     const response = await fetch(`${API_ROOT2}/characters/import?filename=${encodeURIComponent(file.name)}`, {
       method: "POST",
@@ -607,6 +629,7 @@ function CharacterPanel({ sessionId, sessionBlank, close }) {
     const data = await response.json().catch(() => null);
     if (!response.ok || data?.ok === false) throw new Error(errorMessage(data, response.status));
     await refresh(data.character.id);
+    announceTavernRefresh2();
     if (fileRef.current !== null) fileRef.current.value = "";
   }, "\u89D2\u8272\u5361\u5DF2\u5BFC\u5165\uFF1B\u5C1A\u672A\u7ED1\u5B9A\u5230\u4F1A\u8BDD"), [refresh, run]);
   const bind = (0, import_react2.useCallback)(() => run(async () => {
@@ -619,6 +642,7 @@ function CharacterPanel({ sessionId, sessionBlank, close }) {
     });
     setSelection(data.selection);
     setBinding(data.selection);
+    announceTavernRefresh2();
   }, "\u89D2\u8272\u9009\u62E9\u5DF2\u4FDD\u5B58\uFF1B\u5B9E\u9645\u5BF9\u8BDD\u52A0\u8F7D\u7531 Tavern loader \u7EDF\u4E00\u5904\u7406"), [binding, run, selection, sessionBlank, sessionId]);
   const unbind = (0, import_react2.useCallback)(() => run(async () => {
     if (!sessionId) throw new Error("\u5F53\u524D\u6CA1\u6709\u53EF\u89E3\u7ED1\u7684\u4F1A\u8BDD");
@@ -629,14 +653,16 @@ function CharacterPanel({ sessionId, sessionBlank, close }) {
     });
     setSelection(null);
     if (detail !== null) setBinding(defaultCharacterSelection(detail.id));
+    announceTavernRefresh2();
   }, "\u5F53\u524D\u4F1A\u8BDD\u5DF2\u89E3\u9664\u89D2\u8272\u7ED1\u5B9A"), [detail, run, sessionId]);
   const remove = (0, import_react2.useCallback)(() => run(async () => {
     if (detail === null || !window.confirm(`\u5220\u9664\u89D2\u8272\u5361\u201C${detail.name}\u201D\uFF1F\u539F\u59CB\u5BFC\u5165\u6587\u4EF6\u4E5F\u4F1A\u88AB\u5220\u9664\u3002`)) return;
     await api2(`/characters/${encodeURIComponent(detail.id)}`, { method: "DELETE" });
     await refresh(null);
+    announceTavernRefresh2();
   }, "\u89D2\u8272\u5361\u5DF2\u5220\u9664\uFF0C\u76F8\u5173\u4F1A\u8BDD\u7ED1\u5B9A\u5DF2\u6E05\u9664"), [detail, refresh, run]);
   const greetings = characterGreetingOptions(detail);
-  const activeName = selection === null ? "\u672A\u7ED1\u5B9A\u89D2\u8272" : catalog?.characters.find((item) => item.id === selection.characterCardId)?.name ?? selection.characterCardId;
+  const activeName = selection === null ? "\u672A\u7ED1\u5B9A\u89D2\u8272" : catalog2?.characters.find((item) => item.id === selection.characterCardId)?.name ?? selection.characterCardId;
   return (0, import_react2.createElement)(
     "div",
     { className: "dcc-panel" },
@@ -664,15 +690,15 @@ function CharacterPanel({ sessionId, sessionBlank, close }) {
         {
           className: "dcc-select",
           value: detail?.id ?? "",
-          disabled: busy || catalog === null || catalog.characters.length === 0,
+          disabled: busy || catalog2 === null || catalog2.characters.length === 0,
           onChange: (event) => run(() => loadDetail(event.target.value), "\u89D2\u8272\u8BE6\u60C5\u5DF2\u52A0\u8F7D")
         },
-        ...catalog?.characters.length ? [] : [(0, import_react2.createElement)("option", { key: "empty", value: "" }, "\u89D2\u8272\u5E93\u4E3A\u7A7A")],
-        ...(catalog?.characters ?? []).map((item) => (0, import_react2.createElement)("option", { key: item.id, value: item.id }, `${item.name} \xB7 ${item.sourceFormat}`))
+        ...catalog2?.characters.length ? [] : [(0, import_react2.createElement)("option", { key: "empty", value: "" }, "\u89D2\u8272\u5E93\u4E3A\u7A7A")],
+        ...(catalog2?.characters ?? []).map((item) => (0, import_react2.createElement)("option", { key: item.id, value: item.id }, `${item.name} \xB7 ${item.sourceFormat}`))
       )),
       (0, import_react2.createElement)("p", { className: "dcc-note" }, `\u5F53\u524D\u4F1A\u8BDD\uFF1A${sessionId || "\u65E0"}\uFF1B\u7ED1\u5B9A\uFF1A${activeName}`),
       (0, import_react2.createElement)("div", { className: "dcc-status", "data-error": status.error || void 0, role: "status", "aria-live": "polite" }, status.text),
-      detail === null ? (0, import_react2.createElement)("p", { className: "dcc-note" }, catalog === null ? "\u6B63\u5728\u52A0\u8F7D\u89D2\u8272\u5E93\u2026" : "\u5BFC\u5165\u4E00\u5F20\u5408\u6210\u6216\u81EA\u6709\u6388\u6743\u7684 SillyTavern \u89D2\u8272\u5361\u4EE5\u67E5\u770B\u8BE6\u60C5\u3002") : (0, import_react2.createElement)(
+      detail === null ? (0, import_react2.createElement)("p", { className: "dcc-note" }, catalog2 === null ? "\u6B63\u5728\u52A0\u8F7D\u89D2\u8272\u5E93\u2026" : "\u5BFC\u5165\u4E00\u5F20\u5408\u6210\u6216\u81EA\u6709\u6388\u6743\u7684 SillyTavern \u89D2\u8272\u5361\u4EE5\u67E5\u770B\u8BE6\u60C5\u3002") : (0, import_react2.createElement)(
         "div",
         { className: "dcc-card" },
         (0, import_react2.createElement)(
@@ -907,7 +933,7 @@ function EntryEditor({ entry, index, update, remove }) {
   );
 }
 function WorldBookPanel({ sessionId, close }) {
-  const [catalog, setCatalog] = (0, import_react3.useState)(null);
+  const [catalog2, setCatalog] = (0, import_react3.useState)(null);
   const [document2, setDocument] = (0, import_react3.useState)(null);
   const [draft, setDraft] = (0, import_react3.useState)(null);
   const [selection, setSelection] = (0, import_react3.useState)([]);
@@ -937,8 +963,8 @@ function WorldBookPanel({ sessionId, close }) {
     const currentGeneration = ++generation.current;
     const list = await api3("/world-books");
     const selected = sessionId ? await api3(`/world-book-selection?sessionId=${encodeURIComponent(sessionId)}`) : { selection: { worldBookIds: [] } };
-    const activeView = await api3(`/active${sessionId ? `?sessionId=${encodeURIComponent(sessionId)}` : ""}`);
-    const characterId = activeView.resources?.characterCard?.id ?? null;
+    const activeView2 = await api3(`/active${sessionId ? `?sessionId=${encodeURIComponent(sessionId)}` : ""}`);
+    const characterId = activeView2.resources?.characterCard?.id ?? null;
     let embeddedBook = null;
     if (characterId !== null) {
       const character = await api3(`/characters/${encodeURIComponent(characterId)}`);
@@ -948,7 +974,7 @@ function WorldBookPanel({ sessionId, close }) {
     const ids = selected.selection?.worldBookIds ?? [];
     setCatalog(list);
     setSelection(ids);
-    setActive(activeView);
+    setActive(activeView2);
     setEmbeddedCharacterId(characterId);
     setEmbeddedDraft(embeddedBook === null ? null : structuredClone(embeddedBook));
     setEmbeddedDirty(false);
@@ -1063,7 +1089,7 @@ function WorldBookPanel({ sessionId, close }) {
         "div",
         { className: "dwb-resource" },
         (0, import_react3.createElement)("div", { className: "dwb-resource-title" }, "\u5F53\u524D\u4F1A\u8BDD\u7ED1\u5B9A"),
-        catalog?.worldBooks.length ? (0, import_react3.createElement)("div", { className: "dwb-bindings" }, ...catalog.worldBooks.map((item) => (0, import_react3.createElement)(
+        catalog2?.worldBooks.length ? (0, import_react3.createElement)("div", { className: "dwb-bindings" }, ...catalog2.worldBooks.map((item) => (0, import_react3.createElement)(
           "label",
           { className: "dwb-check", key: item.id },
           (0, import_react3.createElement)("input", { type: "checkbox", checked: selection.includes(item.id), onChange: (event) => setSelection((current) => event.target.checked ? [...current, item.id] : current.filter((id) => id !== item.id)) }),
@@ -1078,11 +1104,11 @@ function WorldBookPanel({ sessionId, close }) {
       ),
       (0, import_react3.createElement)(Field3, { label: "\u6D4F\u89C8\u72EC\u7ACB\u4E16\u754C\u4E66" }, (0, import_react3.createElement)(
         "select",
-        { className: "dwb-select", value: document2?.id ?? "", disabled: busy || !catalog?.worldBooks.length, onChange: (event) => {
+        { className: "dwb-select", value: document2?.id ?? "", disabled: busy || !catalog2?.worldBooks.length, onChange: (event) => {
           if (!dirty || window.confirm("\u653E\u5F03\u5C1A\u672A\u4FDD\u5B58\u7684\u4FEE\u6539\uFF1F")) load(event.target.value);
         } },
-        ...catalog?.worldBooks.length ? [] : [(0, import_react3.createElement)("option", { key: "empty", value: "" }, "\u8D44\u6E90\u5E93\u4E3A\u7A7A")],
-        ...(catalog?.worldBooks ?? []).map((item) => (0, import_react3.createElement)("option", { key: item.id, value: item.id }, `${item.name} \xB7 ${item.sourceFormat}`))
+        ...catalog2?.worldBooks.length ? [] : [(0, import_react3.createElement)("option", { key: "empty", value: "" }, "\u8D44\u6E90\u5E93\u4E3A\u7A7A")],
+        ...(catalog2?.worldBooks ?? []).map((item) => (0, import_react3.createElement)("option", { key: item.id, value: item.id }, `${item.name} \xB7 ${item.sourceFormat}`))
       )),
       draft === null ? null : (0, import_react3.createElement)(
         "div",
@@ -1205,13 +1231,13 @@ function UserPanel({ sessionId, sessionBlank, close }) {
   }, []);
   const refresh = (0, import_react4.useCallback)(async (preferredId) => {
     const current = ++generation.current;
-    const catalog = await api4("/users");
+    const catalog2 = await api4("/users");
     const binding = sessionId ? await api4(`/user-selection?sessionId=${encodeURIComponent(sessionId)}`) : { selection: null };
     if (current !== generation.current) return;
-    setUsers(catalog.users);
+    setUsers(catalog2.users);
     setSelectedUserId(binding.selection?.userId ?? null);
-    const id = preferredId ?? binding.selection?.userId ?? catalog.users[0]?.id ?? null;
-    setDraft(id === null ? null : structuredClone(catalog.users.find((user) => user.id === id) ?? null));
+    const id = preferredId ?? binding.selection?.userId ?? catalog2.users[0]?.id ?? null;
+    setDraft(id === null ? null : structuredClone(catalog2.users.find((user) => user.id === id) ?? null));
   }, [sessionId]);
   (0, import_react4.useEffect)(() => {
     run(() => refresh(), "\u7528\u6237\u8D44\u6E90\u5DF2\u52A0\u8F7D");
@@ -1535,13 +1561,112 @@ function registerTavernTraceView(ctx) {
 
 // packages/client/src/state.js
 var TAVERN_MENU_ITEMS = Object.freeze([
-  { id: "preset", label: "\u9884\u8BBE", available: true },
-  { id: "world-info", label: "\u4E16\u754C\u4FE1\u606F", available: true },
-  { id: "character", label: "\u89D2\u8272\u5361", available: true },
-  { id: "user", label: "\u7528\u6237", available: true }
+  { id: "preset", label: "\u9884\u8BBE", emptyTitle: "\u672A\u9009\u62E9\u9884\u8BBE", available: true },
+  { id: "character", label: "\u89D2\u8272\u5361", emptyTitle: "\u672A\u7ED1\u5B9A\u89D2\u8272", available: true },
+  { id: "world-info", label: "\u4E16\u754C\u4E66", emptyTitle: "\u672A\u7ED1\u5B9A\u4E16\u754C\u4E66", available: true },
+  { id: "user", label: "\u7528\u6237", emptyTitle: "\u672A\u7ED1\u5B9A\u7528\u6237", available: true }
 ]);
 var TAVERN_LAUNCHER_SIZE = 44;
-var TAVERN_LAUNCHER_PANEL = Object.freeze({ width: 220, height: 244 });
+var TAVERN_LAUNCHER_PANEL = Object.freeze({ width: 300, height: 276 });
+function isRecord(value) {
+  return value !== null && typeof value === "object" && !Array.isArray(value);
+}
+function firstRecord(...values) {
+  return values.find(isRecord) ?? null;
+}
+function firstArray(...values) {
+  return values.find(Array.isArray) ?? [];
+}
+function resourceTitle(resource, fallback = "") {
+  if (!isRecord(resource)) return fallback;
+  for (const key of ["name", "title", "displayName", "label"]) {
+    if (typeof resource[key] === "string" && resource[key].trim() !== "") return resource[key].trim();
+  }
+  return fallback;
+}
+function catalog(snapshot, ...keys) {
+  for (const container of [snapshot?.catalog, snapshot?.catalogs]) {
+    if (!isRecord(container)) continue;
+    for (const key of keys) {
+      if (Array.isArray(container[key])) return container[key];
+      if (Array.isArray(container[key]?.items)) return container[key].items;
+    }
+  }
+  return [];
+}
+function findResourceById(items, id) {
+  return items.find((item) => isRecord(item) && String(item.id ?? item.resourceId ?? "") === String(id)) ?? null;
+}
+function selectionIds(value) {
+  if (!Array.isArray(value)) return [];
+  const ids = value.map((item) => isRecord(item) ? item.id ?? item.resourceId : item).filter((id) => typeof id === "string" && id !== "" || Number.isSafeInteger(id));
+  return ids.filter((id, index) => ids.findIndex((item) => String(item) === String(id)) === index);
+}
+function singleStatus({ id, resource, items, emptyTitle }) {
+  const bound = id !== null && id !== void 0 && id !== "";
+  const directResource = isRecord(resource) && (resource.id === void 0 || String(resource.id) === String(id)) ? resource : null;
+  const resolved = firstRecord(directResource, bound ? findResourceById(items, id) : null);
+  return {
+    bound,
+    title: bound ? resourceTitle(resolved, String(id)) : emptyTitle,
+    count: bound ? 1 : 0
+  };
+}
+function launcherResourceStatuses(snapshot) {
+  const selection = isRecord(snapshot?.selection) ? snapshot.selection : {};
+  const resources = isRecord(snapshot?.resources) ? snapshot.resources : {};
+  const presetResource = firstRecord(resources.preset, snapshot?.selected);
+  const presetId = selection.presetId ?? presetResource?.id ?? null;
+  const characterResource = firstRecord(resources.characterCard, resources.character);
+  const characterId = selection.characterCardId ?? selection.characterId ?? characterResource?.id ?? null;
+  const userResource = firstRecord(resources.user, resources.userProfile, resources.persona);
+  const userId = selection.userId ?? selection.userProfileId ?? selection.personaId ?? userResource?.id ?? null;
+  const explicitWorldIds = selectionIds(firstArray(
+    selection.worldBookIds,
+    selection.worldBooks,
+    selection.worldBookSelection?.ids
+  ));
+  const resolvedWorlds = firstArray(resources.worldBooks, resources.worldBook).filter(isRecord);
+  const implicitlySelectedWorlds = resolvedWorlds.filter((resource) => resource.selected !== false);
+  const worldIds = explicitWorldIds.length > 0 ? explicitWorldIds : implicitlySelectedWorlds.map((resource) => resource.id ?? resource.resourceId).filter((id) => id !== void 0 && id !== null);
+  const worldCatalog = catalog(snapshot, "worldBooks", "worldBook", "lorebooks");
+  const selectedWorlds = worldIds.map((id) => firstRecord(
+    findResourceById(resolvedWorlds, id),
+    findResourceById(worldCatalog, id),
+    { id }
+  ));
+  for (const resource of implicitlySelectedWorlds) {
+    const id = resource.id ?? resource.resourceId;
+    if (id === void 0 || id === null || selectedWorlds.some((item) => String(item.id ?? item.resourceId) === String(id))) continue;
+    selectedWorlds.push(resource);
+  }
+  const worldTitles = selectedWorlds.map((resource) => resourceTitle(resource, String(resource.id ?? resource.resourceId ?? "\u5DF2\u9009\u62E9")));
+  return {
+    preset: singleStatus({
+      id: presetId,
+      resource: presetResource,
+      items: catalog(snapshot, "presets", "preset"),
+      emptyTitle: "\u672A\u9009\u62E9\u9884\u8BBE"
+    }),
+    character: singleStatus({
+      id: characterId,
+      resource: characterResource,
+      items: catalog(snapshot, "characters", "characterCards", "character"),
+      emptyTitle: "\u672A\u7ED1\u5B9A\u89D2\u8272"
+    }),
+    "world-info": {
+      bound: selectedWorlds.length > 0,
+      count: selectedWorlds.length,
+      title: selectedWorlds.length === 0 ? "\u672A\u7ED1\u5B9A\u4E16\u754C\u4E66" : selectedWorlds.length === 1 ? worldTitles[0] : `${worldTitles.join("\u3001")} \xB7 ${selectedWorlds.length} \u672C`
+    },
+    user: singleStatus({
+      id: userId,
+      resource: userResource,
+      items: catalog(snapshot, "users", "userProfiles", "personas"),
+      emptyTitle: "\u672A\u7ED1\u5B9A\u7528\u6237"
+    })
+  };
+}
 function clampLauncherAnchor(position, viewport2) {
   const width = Math.max(TAVERN_LAUNCHER_SIZE, Number(viewport2?.width) || TAVERN_LAUNCHER_SIZE);
   const height = Math.max(TAVERN_LAUNCHER_SIZE, Number(viewport2?.height) || TAVERN_LAUNCHER_SIZE);
@@ -1553,8 +1678,8 @@ function clampLauncherAnchor(position, viewport2) {
 }
 function launcherPlacement(anchor, viewport2, expanded = false) {
   const point = clampLauncherAnchor(anchor, viewport2);
-  const opensLeft = point.x + TAVERN_LAUNCHER_PANEL.width / 2 > viewport2.width / 2;
-  const opensUp = point.y + TAVERN_LAUNCHER_PANEL.height / 2 > viewport2.height;
+  const opensLeft = point.x + TAVERN_LAUNCHER_PANEL.width > viewport2.width - 8;
+  const opensUp = point.y + TAVERN_LAUNCHER_PANEL.height > viewport2.height - 8;
   return {
     side: opensLeft ? "left" : "right",
     vertical: opensUp ? "up" : "down",
@@ -1565,16 +1690,17 @@ function launcherPlacement(anchor, viewport2, expanded = false) {
 }
 
 // packages/client/src/index.js
+var API_ROOT5 = "/dsh-tavern/api";
 var css6 = `
 .dtv-layer{position:absolute;inset:0;z-index:6;pointer-events:none;font-family:Inter,var(--dsw-font-family),sans-serif;color:var(--dsw-alias-label-primary)}
 .dtv-launcher{position:absolute;z-index:2;width:44px;height:44px;pointer-events:auto;overflow:hidden;border:0 solid transparent;border-radius:22px;background:transparent;box-shadow:none;transition:width .22s ease,height .22s ease,border-radius .22s ease,background-color .18s ease,box-shadow .18s ease;display:block}
-.dtv-launcher[data-open=true]{width:220px;height:244px;border-width:1px;border-color:var(--dsw-alias-border-l2);border-radius:18px;background:var(--dsw-alias-bg-base);box-shadow:var(--ds-shadow-3,0 12px 34px rgba(0,0,0,.24))}
+.dtv-launcher[data-open=true]{width:300px;height:276px;border-width:1px;border-color:var(--dsw-alias-border-l2);border-radius:18px;background:var(--dsw-alias-bg-base);box-shadow:var(--ds-shadow-3,0 12px 34px rgba(0,0,0,.24))}
 .dtv-ball-row{position:absolute;top:0;left:0;right:0;height:52px;display:flex;align-items:flex-start;pointer-events:none}.dtv-launcher[data-side=left] .dtv-ball-row{justify-content:flex-end}.dtv-launcher[data-vertical=up] .dtv-ball-row{top:auto;bottom:0;align-items:flex-end}
-.dtv-ball{pointer-events:auto;touch-action:none;user-select:none;width:44px;height:44px;flex:none;border:1px solid color-mix(in srgb,var(--dsw-alias-state-business-primary) 76%,white);border-radius:50%;background:var(--dsw-alias-state-business-primary);box-shadow:var(--ds-shadow-2,0 5px 18px rgba(0,0,0,.22));color:#fff;font-size:17px;font-weight:750;cursor:grab;transition:filter .15s ease,transform .18s ease}.dtv-ball:hover{filter:brightness(1.08)}.dtv-ball:active{cursor:grabbing}.dtv-launcher[data-open=true] .dtv-ball{transform:scale(.82)}
+.dtv-ball{pointer-events:auto;touch-action:none;user-select:none;width:44px;height:44px;flex:none;border:2px solid #fff;border-radius:50%;background:conic-gradient(from 225deg,#090909 0 56%,#b31319 56% 100%);box-shadow:0 0 0 2px #a50f16,0 6px 20px rgba(0,0,0,.34),inset 0 0 0 1px rgba(255,255,255,.28);color:#fff;font-size:13px;letter-spacing:-.5px;font-weight:850;text-shadow:0 1px 2px #000;cursor:grab;transition:filter .15s ease,transform .18s ease,box-shadow .18s ease}.dtv-ball:hover{filter:brightness(1.1);box-shadow:0 0 0 2px #d5222b,0 8px 24px rgba(0,0,0,.4),inset 0 0 0 1px rgba(255,255,255,.35)}.dtv-ball:active{cursor:grabbing}.dtv-launcher[data-open=true] .dtv-ball{transform:scale(.82) rotate(-8deg)}
 .dtv-menu{position:absolute;left:8px;right:8px;top:52px;bottom:8px;padding:1px;display:flex;flex-direction:column;gap:4px;opacity:0;transform:translateY(-6px);transition:opacity .13s ease .1s,transform .18s ease .08s}.dtv-launcher[data-open=true] .dtv-menu{opacity:1;transform:none}.dtv-launcher[data-vertical=up] .dtv-menu{top:8px;bottom:52px;transform:translateY(6px)}.dtv-launcher[data-open=true][data-vertical=up] .dtv-menu{transform:none}
-.dtv-menu-title{padding:5px 8px 7px;font-size:11px;font-weight:650;color:var(--dsw-alias-label-tertiary)}
-.dtv-menu-item{height:36px;border:0;border-radius:8px;padding:0 10px;background:transparent;color:var(--dsw-alias-label-primary);text-align:left;font:inherit;font-size:12px;cursor:pointer;display:flex;align-items:center;justify-content:space-between}.dtv-menu-item:hover{background:var(--dsw-alias-interactive-bg-hover)}.dtv-menu-item[data-active=true]{background:var(--dsw-alias-interactive-bg-selected,var(--dsw-specific-tip));font-weight:650}.dtv-menu-item[data-available=false]::after{content:'\u89C4\u5212\u4E2D';font-size:10px;color:var(--dsw-alias-label-tertiary)}
-.dtv-panel{position:absolute;top:0;right:0;bottom:0;width:min(440px,calc(100vw - 56px));pointer-events:auto;border-left:1px solid var(--dsw-alias-border-l2);box-shadow:var(--ds-shadow-3,-8px 0 28px rgba(0,0,0,.18));background:var(--dsw-alias-bg-base);display:flex;flex-direction:column}
+.dtv-menu-title{padding:5px 8px 7px;font-size:11px;font-weight:650;color:var(--dsw-alias-label-tertiary);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.dtv-menu-item{min-height:43px;border:0;border-radius:9px;padding:5px 8px;background:transparent;color:var(--dsw-alias-label-primary);text-align:left;font:inherit;cursor:pointer;display:grid;grid-template-columns:10px minmax(0,1fr) auto;gap:8px;align-items:center}.dtv-menu-item:hover{background:var(--dsw-alias-interactive-bg-hover)}.dtv-menu-item[data-active=true]{background:var(--dsw-alias-interactive-bg-selected,var(--dsw-specific-tip))}.dtv-binding-dot{width:8px;height:8px;border-radius:50%;background:#d33239;box-shadow:0 0 0 1px rgba(98,0,4,.38)}.dtv-menu-item[data-bound=true] .dtv-binding-dot{background:#44d17a;box-shadow:0 0 5px #31c66b,0 0 10px rgba(49,198,107,.75)}.dtv-item-copy{min-width:0;display:flex;flex-direction:column;gap:1px}.dtv-item-label{font-size:11px;font-weight:700;line-height:1.2}.dtv-item-status{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:10px;line-height:1.25;color:var(--dsw-alias-label-tertiary)}.dtv-item-count{border-radius:10px;padding:2px 6px;background:var(--dsw-specific-tip);font-size:9px;color:var(--dsw-alias-label-secondary)}.dtv-item-planned{font-size:9px;color:var(--dsw-alias-label-tertiary)}
+.dtv-panel{position:absolute;z-index:1;top:0;right:0;bottom:0;width:min(440px,calc(100vw - 56px));pointer-events:auto;border-left:1px solid var(--dsw-alias-border-l2);box-shadow:var(--ds-shadow-3,-8px 0 28px rgba(0,0,0,.18));background:var(--dsw-alias-bg-base);display:flex;flex-direction:column}
 .dtv-header{height:52px;box-sizing:border-box;display:flex;align-items:center;gap:8px;padding:0 14px;border-bottom:1px solid var(--dsw-alias-border-l2);flex:none}.dtv-title{font-size:14px;font-weight:650;flex:1}.dtv-close{border:0;background:transparent;color:var(--dsw-alias-label-tertiary);cursor:pointer;border-radius:7px;padding:6px 8px}.dtv-close:hover{background:var(--dsw-alias-interactive-bg-hover)}
 .dtv-body{min-height:0;overflow:auto;padding:12px;display:flex;flex-direction:column;gap:12px}.dtv-note{font-size:11px;line-height:1.5;color:var(--dsw-alias-label-tertiary);margin:0;overflow-wrap:anywhere}.dtv-status{font-size:11px;line-height:1.45;border-radius:7px;padding:8px 10px;background:var(--dsw-specific-tip);overflow-wrap:anywhere}.dtv-status[data-error=true]{color:var(--dsw-alias-state-error)}
 .dtv-actions{display:grid;grid-template-columns:1fr 1fr;gap:8px}.dtv-button{min-height:34px;border:1px solid var(--dsw-alias-border-l2);border-radius:8px;background:var(--dsw-alias-button-secondary-fill,var(--dsw-alias-bg-base));color:var(--dsw-alias-label-primary);cursor:pointer;padding:7px 10px;font-size:12px}.dtv-button:hover:not(:disabled){background:var(--dsw-alias-interactive-bg-hover)}.dtv-button:disabled{opacity:.5;cursor:default}
@@ -1599,15 +1725,54 @@ function persistLauncherAnchor(anchor) {
   } catch {
   }
 }
+async function activeView(sessionId) {
+  const query = sessionId ? `?sessionId=${encodeURIComponent(sessionId)}` : "";
+  const response = await fetch(`${API_ROOT5}/active${query}`);
+  const data = await response.json().catch(() => null);
+  if (!response.ok || data?.ok === false) {
+    const message = typeof data?.error === "string" ? data.error : data?.error?.message;
+    throw new Error(message ?? `HTTP ${response.status}`);
+  }
+  return data;
+}
 function TavernShell({ useSessions }) {
   const [menuOpen, setMenuOpen] = (0, import_react6.useState)(false);
   const [surface, setSurface] = (0, import_react6.useState)(null);
   const [anchor, setAnchor] = (0, import_react6.useState)(initialLauncherAnchor);
+  const [activeSnapshot, setActiveSnapshot] = (0, import_react6.useState)(null);
+  const [statusError, setStatusError] = (0, import_react6.useState)("");
   const drag = (0, import_react6.useRef)(null);
   const suppressClick = (0, import_react6.useRef)(false);
+  const statusGeneration = (0, import_react6.useRef)(0);
   const sessionId = useSessions((state) => state.current);
   const sessionBlank = useSessions((state) => state.current === void 0 || state.current === null ? true : state.byId?.[state.current]?.blank === true);
   const close = () => setSurface(null);
+  const refreshStatus = (0, import_react6.useCallback)(async () => {
+    const generation = ++statusGeneration.current;
+    try {
+      const next = await activeView(sessionId);
+      if (generation !== statusGeneration.current) return;
+      setActiveSnapshot(next);
+      setStatusError("");
+    } catch (reason) {
+      if (generation !== statusGeneration.current) return;
+      setStatusError(reason instanceof Error ? reason.message : String(reason));
+    }
+  }, [sessionId]);
+  (0, import_react6.useEffect)(() => {
+    statusGeneration.current += 1;
+    setActiveSnapshot(null);
+    setStatusError("");
+    refreshStatus();
+    return () => {
+      statusGeneration.current += 1;
+    };
+  }, [refreshStatus, sessionId]);
+  (0, import_react6.useEffect)(() => {
+    const onRefresh = () => refreshStatus();
+    window.addEventListener("dsh-tavern:refresh", onRefresh);
+    return () => window.removeEventListener("dsh-tavern:refresh", onRefresh);
+  }, [refreshStatus]);
   (0, import_react6.useEffect)(() => {
     const onResize = () => setAnchor((current) => {
       const next = clampLauncherAnchor(current, viewport());
@@ -1617,6 +1782,15 @@ function TavernShell({ useSessions }) {
     window.addEventListener("resize", onResize);
     return () => window.removeEventListener("resize", onResize);
   }, []);
+  (0, import_react6.useEffect)(() => {
+    const onKeyDown = (event) => {
+      if (event.key !== "Escape") return;
+      if (menuOpen) setMenuOpen(false);
+      else if (surface !== null) setSurface(null);
+    };
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [menuOpen, surface]);
   const startDrag = (event) => {
     if (event.button !== 0) return;
     event.currentTarget.setPointerCapture?.(event.pointerId);
@@ -1679,9 +1853,10 @@ function TavernShell({ useSessions }) {
     panel = (0, import_react6.createElement)(UserPanel, { sessionId, sessionBlank, close });
   }
   const placement = launcherPlacement(anchor, viewport(), menuOpen);
+  const statuses = launcherResourceStatuses(activeSnapshot);
   return (0, import_react6.createElement)(
     "div",
-    { className: "dtv-layer" },
+    { className: "dtv-layer", "data-surface-open": surface !== null },
     panel,
     (0, import_react6.createElement)(
       "div",
@@ -1703,21 +1878,39 @@ function TavernShell({ useSessions }) {
         onPointerUp: endDrag,
         onPointerCancel: endDrag,
         onClick: toggleMenu
-      }, "T")),
+      }, "ST")),
       menuOpen ? (0, import_react6.createElement)(
         "div",
         { className: "dtv-menu", role: "menu" },
-        (0, import_react6.createElement)("div", { className: "dtv-menu-title" }, "dsh-tavern"),
-        ...TAVERN_MENU_ITEMS.map((item) => (0, import_react6.createElement)("button", {
-          className: "dtv-menu-item",
-          type: "button",
-          role: "menuitem",
-          key: item.id,
-          "data-available": item.available,
-          "data-active": surface === item.id,
-          "aria-current": surface === item.id ? "page" : void 0,
-          onClick: () => open(item.id)
-        }, item.label))
+        (0, import_react6.createElement)("div", { className: "dtv-menu-title", "aria-live": "polite" }, statusError === "" ? `Tavern \xB7 ${sessionId || "\u65E0\u4F1A\u8BDD"}` : `\u72B6\u6001\u540C\u6B65\u5931\u8D25\uFF1A${statusError}`),
+        ...TAVERN_MENU_ITEMS.map((item) => {
+          const status = statuses[item.id];
+          const stateLabel = status.bound ? "\u5DF2\u7ED1\u5B9A" : "\u672A\u7ED1\u5B9A";
+          return (0, import_react6.createElement)(
+            "button",
+            {
+              className: "dtv-menu-item",
+              type: "button",
+              role: "menuitem",
+              key: item.id,
+              title: `${item.label}\uFF1A${status.title}\uFF08${stateLabel}\uFF09`,
+              "data-available": item.available,
+              "data-active": surface === item.id,
+              "data-bound": status.bound,
+              "aria-current": surface === item.id ? "page" : void 0,
+              "aria-label": `${item.label}\uFF0C${status.title}\uFF0C${stateLabel}`,
+              onClick: () => open(item.id)
+            },
+            (0, import_react6.createElement)("span", { className: "dtv-binding-dot", "aria-hidden": "true" }),
+            (0, import_react6.createElement)(
+              "span",
+              { className: "dtv-item-copy" },
+              (0, import_react6.createElement)("span", { className: "dtv-item-label" }, item.label),
+              (0, import_react6.createElement)("span", { className: "dtv-item-status" }, status.title)
+            ),
+            status.count > 1 ? (0, import_react6.createElement)("span", { className: "dtv-item-count", "aria-label": `${status.count} \u672C` }, `${status.count} \u672C`) : item.available ? null : (0, import_react6.createElement)("span", { className: "dtv-item-planned" }, "\u89C4\u5212\u4E2D")
+          );
+        })
       ) : null
     )
   );

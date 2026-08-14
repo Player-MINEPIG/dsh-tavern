@@ -14,6 +14,7 @@ import {
   TAVERN_MENU_ITEMS,
   clampLauncherAnchor,
   launcherPlacement,
+  launcherResourceStatuses,
 } from './state.js'
 
 const API_ROOT = '/dsh-tavern/api'
@@ -21,13 +22,13 @@ const API_ROOT = '/dsh-tavern/api'
 const css = `
 .dtv-layer{position:absolute;inset:0;z-index:6;pointer-events:none;font-family:Inter,var(--dsw-font-family),sans-serif;color:var(--dsw-alias-label-primary)}
 .dtv-launcher{position:absolute;z-index:2;width:44px;height:44px;pointer-events:auto;overflow:hidden;border:0 solid transparent;border-radius:22px;background:transparent;box-shadow:none;transition:width .22s ease,height .22s ease,border-radius .22s ease,background-color .18s ease,box-shadow .18s ease;display:block}
-.dtv-launcher[data-open=true]{width:220px;height:244px;border-width:1px;border-color:var(--dsw-alias-border-l2);border-radius:18px;background:var(--dsw-alias-bg-base);box-shadow:var(--ds-shadow-3,0 12px 34px rgba(0,0,0,.24))}
+.dtv-launcher[data-open=true]{width:300px;height:276px;border-width:1px;border-color:var(--dsw-alias-border-l2);border-radius:18px;background:var(--dsw-alias-bg-base);box-shadow:var(--ds-shadow-3,0 12px 34px rgba(0,0,0,.24))}
 .dtv-ball-row{position:absolute;top:0;left:0;right:0;height:52px;display:flex;align-items:flex-start;pointer-events:none}.dtv-launcher[data-side=left] .dtv-ball-row{justify-content:flex-end}.dtv-launcher[data-vertical=up] .dtv-ball-row{top:auto;bottom:0;align-items:flex-end}
-.dtv-ball{pointer-events:auto;touch-action:none;user-select:none;width:44px;height:44px;flex:none;border:1px solid color-mix(in srgb,var(--dsw-alias-state-business-primary) 76%,white);border-radius:50%;background:var(--dsw-alias-state-business-primary);box-shadow:var(--ds-shadow-2,0 5px 18px rgba(0,0,0,.22));color:#fff;font-size:17px;font-weight:750;cursor:grab;transition:filter .15s ease,transform .18s ease}.dtv-ball:hover{filter:brightness(1.08)}.dtv-ball:active{cursor:grabbing}.dtv-launcher[data-open=true] .dtv-ball{transform:scale(.82)}
+.dtv-ball{pointer-events:auto;touch-action:none;user-select:none;width:44px;height:44px;flex:none;border:2px solid #fff;border-radius:50%;background:conic-gradient(from 225deg,#090909 0 56%,#b31319 56% 100%);box-shadow:0 0 0 2px #a50f16,0 6px 20px rgba(0,0,0,.34),inset 0 0 0 1px rgba(255,255,255,.28);color:#fff;font-size:13px;letter-spacing:-.5px;font-weight:850;text-shadow:0 1px 2px #000;cursor:grab;transition:filter .15s ease,transform .18s ease,box-shadow .18s ease}.dtv-ball:hover{filter:brightness(1.1);box-shadow:0 0 0 2px #d5222b,0 8px 24px rgba(0,0,0,.4),inset 0 0 0 1px rgba(255,255,255,.35)}.dtv-ball:active{cursor:grabbing}.dtv-launcher[data-open=true] .dtv-ball{transform:scale(.82) rotate(-8deg)}
 .dtv-menu{position:absolute;left:8px;right:8px;top:52px;bottom:8px;padding:1px;display:flex;flex-direction:column;gap:4px;opacity:0;transform:translateY(-6px);transition:opacity .13s ease .1s,transform .18s ease .08s}.dtv-launcher[data-open=true] .dtv-menu{opacity:1;transform:none}.dtv-launcher[data-vertical=up] .dtv-menu{top:8px;bottom:52px;transform:translateY(6px)}.dtv-launcher[data-open=true][data-vertical=up] .dtv-menu{transform:none}
-.dtv-menu-title{padding:5px 8px 7px;font-size:11px;font-weight:650;color:var(--dsw-alias-label-tertiary)}
-.dtv-menu-item{height:36px;border:0;border-radius:8px;padding:0 10px;background:transparent;color:var(--dsw-alias-label-primary);text-align:left;font:inherit;font-size:12px;cursor:pointer;display:flex;align-items:center;justify-content:space-between}.dtv-menu-item:hover{background:var(--dsw-alias-interactive-bg-hover)}.dtv-menu-item[data-active=true]{background:var(--dsw-alias-interactive-bg-selected,var(--dsw-specific-tip));font-weight:650}.dtv-menu-item[data-available=false]::after{content:'规划中';font-size:10px;color:var(--dsw-alias-label-tertiary)}
-.dtv-panel{position:absolute;top:0;right:0;bottom:0;width:min(440px,calc(100vw - 56px));pointer-events:auto;border-left:1px solid var(--dsw-alias-border-l2);box-shadow:var(--ds-shadow-3,-8px 0 28px rgba(0,0,0,.18));background:var(--dsw-alias-bg-base);display:flex;flex-direction:column}
+.dtv-menu-title{padding:5px 8px 7px;font-size:11px;font-weight:650;color:var(--dsw-alias-label-tertiary);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.dtv-menu-item{min-height:43px;border:0;border-radius:9px;padding:5px 8px;background:transparent;color:var(--dsw-alias-label-primary);text-align:left;font:inherit;cursor:pointer;display:grid;grid-template-columns:10px minmax(0,1fr) auto;gap:8px;align-items:center}.dtv-menu-item:hover{background:var(--dsw-alias-interactive-bg-hover)}.dtv-menu-item[data-active=true]{background:var(--dsw-alias-interactive-bg-selected,var(--dsw-specific-tip))}.dtv-binding-dot{width:8px;height:8px;border-radius:50%;background:#d33239;box-shadow:0 0 0 1px rgba(98,0,4,.38)}.dtv-menu-item[data-bound=true] .dtv-binding-dot{background:#44d17a;box-shadow:0 0 5px #31c66b,0 0 10px rgba(49,198,107,.75)}.dtv-item-copy{min-width:0;display:flex;flex-direction:column;gap:1px}.dtv-item-label{font-size:11px;font-weight:700;line-height:1.2}.dtv-item-status{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:10px;line-height:1.25;color:var(--dsw-alias-label-tertiary)}.dtv-item-count{border-radius:10px;padding:2px 6px;background:var(--dsw-specific-tip);font-size:9px;color:var(--dsw-alias-label-secondary)}.dtv-item-planned{font-size:9px;color:var(--dsw-alias-label-tertiary)}
+.dtv-panel{position:absolute;z-index:1;top:0;right:0;bottom:0;width:min(440px,calc(100vw - 56px));pointer-events:auto;border-left:1px solid var(--dsw-alias-border-l2);box-shadow:var(--ds-shadow-3,-8px 0 28px rgba(0,0,0,.18));background:var(--dsw-alias-bg-base);display:flex;flex-direction:column}
 .dtv-header{height:52px;box-sizing:border-box;display:flex;align-items:center;gap:8px;padding:0 14px;border-bottom:1px solid var(--dsw-alias-border-l2);flex:none}.dtv-title{font-size:14px;font-weight:650;flex:1}.dtv-close{border:0;background:transparent;color:var(--dsw-alias-label-tertiary);cursor:pointer;border-radius:7px;padding:6px 8px}.dtv-close:hover{background:var(--dsw-alias-interactive-bg-hover)}
 .dtv-body{min-height:0;overflow:auto;padding:12px;display:flex;flex-direction:column;gap:12px}.dtv-note{font-size:11px;line-height:1.5;color:var(--dsw-alias-label-tertiary);margin:0;overflow-wrap:anywhere}.dtv-status{font-size:11px;line-height:1.45;border-radius:7px;padding:8px 10px;background:var(--dsw-specific-tip);overflow-wrap:anywhere}.dtv-status[data-error=true]{color:var(--dsw-alias-state-error)}
 .dtv-actions{display:grid;grid-template-columns:1fr 1fr;gap:8px}.dtv-button{min-height:34px;border:1px solid var(--dsw-alias-border-l2);border-radius:8px;background:var(--dsw-alias-button-secondary-fill,var(--dsw-alias-bg-base));color:var(--dsw-alias-label-primary);cursor:pointer;padding:7px 10px;font-size:12px}.dtv-button:hover:not(:disabled){background:var(--dsw-alias-interactive-bg-hover)}.dtv-button:disabled{opacity:.5;cursor:default}
@@ -301,11 +302,41 @@ function TavernShell({ useSessions }) {
   const [menuOpen, setMenuOpen] = useState(false)
   const [surface, setSurface] = useState(null)
   const [anchor, setAnchor] = useState(initialLauncherAnchor)
+  const [activeSnapshot, setActiveSnapshot] = useState(null)
+  const [statusError, setStatusError] = useState('')
   const drag = useRef(null)
   const suppressClick = useRef(false)
+  const statusGeneration = useRef(0)
   const sessionId = useSessions(state => state.current)
   const sessionBlank = useSessions(state => state.current === undefined || state.current === null ? true : state.byId?.[state.current]?.blank === true)
   const close = () => setSurface(null)
+
+  const refreshStatus = useCallback(async () => {
+    const generation = ++statusGeneration.current
+    try {
+      const next = await activeView(sessionId)
+      if (generation !== statusGeneration.current) return
+      setActiveSnapshot(next)
+      setStatusError('')
+    } catch (reason) {
+      if (generation !== statusGeneration.current) return
+      setStatusError(reason instanceof Error ? reason.message : String(reason))
+    }
+  }, [sessionId])
+
+  useEffect(() => {
+    statusGeneration.current += 1
+    setActiveSnapshot(null)
+    setStatusError('')
+    refreshStatus()
+    return () => { statusGeneration.current += 1 }
+  }, [refreshStatus, sessionId])
+
+  useEffect(() => {
+    const onRefresh = () => refreshStatus()
+    window.addEventListener('dsh-tavern:refresh', onRefresh)
+    return () => window.removeEventListener('dsh-tavern:refresh', onRefresh)
+  }, [refreshStatus])
 
   useEffect(() => {
     const onResize = () => setAnchor(current => {
@@ -316,6 +347,16 @@ function TavernShell({ useSessions }) {
     window.addEventListener('resize', onResize)
     return () => window.removeEventListener('resize', onResize)
   }, [])
+
+  useEffect(() => {
+    const onKeyDown = event => {
+      if (event.key !== 'Escape') return
+      if (menuOpen) setMenuOpen(false)
+      else if (surface !== null) setSurface(null)
+    }
+    window.addEventListener('keydown', onKeyDown)
+    return () => window.removeEventListener('keydown', onKeyDown)
+  }, [menuOpen, surface])
 
   const startDrag = event => {
     if (event.button !== 0) return
@@ -384,8 +425,9 @@ function TavernShell({ useSessions }) {
   }
 
   const placement = launcherPlacement(anchor, viewport(), menuOpen)
+  const statuses = launcherResourceStatuses(activeSnapshot)
 
-  return h('div', { className: 'dtv-layer' },
+  return h('div', { className: 'dtv-layer', 'data-surface-open': surface !== null },
     panel,
     h('div', {
       className: 'dtv-launcher',
@@ -405,19 +447,35 @@ function TavernShell({ useSessions }) {
           onPointerUp: endDrag,
           onPointerCancel: endDrag,
           onClick: toggleMenu,
-        }, 'T')),
+        }, 'ST')),
       menuOpen ? h('div', { className: 'dtv-menu', role: 'menu' },
-        h('div', { className: 'dtv-menu-title' }, 'dsh-tavern'),
-        ...TAVERN_MENU_ITEMS.map(item => h('button', {
-          className: 'dtv-menu-item',
-          type: 'button',
-          role: 'menuitem',
-          key: item.id,
-          'data-available': item.available,
-          'data-active': surface === item.id,
-          'aria-current': surface === item.id ? 'page' : undefined,
-          onClick: () => open(item.id),
-        }, item.label)),
+        h('div', { className: 'dtv-menu-title', 'aria-live': 'polite' }, statusError === '' ? `Tavern · ${sessionId || '无会话'}` : `状态同步失败：${statusError}`),
+        ...TAVERN_MENU_ITEMS.map(item => {
+          const status = statuses[item.id]
+          const stateLabel = status.bound ? '已绑定' : '未绑定'
+          return h('button', {
+            className: 'dtv-menu-item',
+            type: 'button',
+            role: 'menuitem',
+            key: item.id,
+            title: `${item.label}：${status.title}（${stateLabel}）`,
+            'data-available': item.available,
+            'data-active': surface === item.id,
+            'data-bound': status.bound,
+            'aria-current': surface === item.id ? 'page' : undefined,
+            'aria-label': `${item.label}，${status.title}，${stateLabel}`,
+            onClick: () => open(item.id),
+          },
+          h('span', { className: 'dtv-binding-dot', 'aria-hidden': 'true' }),
+          h('span', { className: 'dtv-item-copy' },
+            h('span', { className: 'dtv-item-label' }, item.label),
+            h('span', { className: 'dtv-item-status' }, status.title),
+          ),
+          status.count > 1
+            ? h('span', { className: 'dtv-item-count', 'aria-label': `${status.count} 本` }, `${status.count} 本`)
+            : item.available ? null : h('span', { className: 'dtv-item-planned' }, '规划中'),
+          )
+        }),
       ) : null,
     ),
   )
