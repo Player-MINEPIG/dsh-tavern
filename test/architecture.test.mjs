@@ -11,6 +11,7 @@ test('internal packages keep one-way format to preset to loader boundaries', () 
   const worldBookBridge = read('../packages/world-book/src/loader-bridge.js')
   const store = read('../packages/preset/src/store.js')
   const loader = read('../packages/tavern-loader/src/index.js')
+  const pendingInput = read('../packages/tavern-loader/src/pending-input-projection.js')
   const traceRecorder = read('../packages/tavern-trace/src/recorder.js')
 
   assert.doesNotMatch(format, /from ['"]node:(?:fs|path)|@deepseek-ai|systemPrompt\.section|agent\/request/)
@@ -24,6 +25,9 @@ test('internal packages keep one-way format to preset to loader boundaries', () 
   assert.match(loader, /agent\/request/)
   assert.doesNotMatch(traceRecorder, /\.append\(/)
   assert.doesNotMatch(traceRecorder, /from ['"]@deepseek-ai|querySelector|MutationObserver/)
+  assert.match(loader, /agent\/inbox\/spliced|observeSessionEvent/)
+  assert.doesNotMatch(pendingInput, /\.inbox\b|\.append\(|from ['"]@deepseek-ai/)
+  assert.doesNotMatch(pendingInput, /agent\/request|systemPrompt\.section|fetch\(/)
 })
 
 test('character adapter and use-case expose resources without becoming a runtime loader', () => {
@@ -72,4 +76,29 @@ test('user use-case stays a three-field resource and leaves Host seams to the lo
   assert.doesNotMatch(user, /tavern-loader|systemPrompt\.section|system-prompt\/assemble|agent\/request|avatar|image\//i)
   assert.match(user, /user-selection/)
   assert.match(user, /\['id', 'name', 'description'\]/)
+})
+
+test('user-to-world-book relationships are owned by loader policy, not either resource document', () => {
+  const policy = read('../packages/tavern-loader/src/user-world-book-policy.js')
+  const profileLoader = read('../packages/tavern-loader/src/profile-loader.js')
+  const userStore = read('../packages/user/src/store.js')
+  const worldBookStore = read('../packages/world-book-library/src/store.js')
+  assert.match(policy, /user-world-book-bindings\.json/)
+  assert.match(profileLoader, /composeWorldBookSelection/)
+  assert.doesNotMatch(userStore, /worldBookIds|world-book-bindings/)
+  assert.doesNotMatch(worldBookStore, /userIds|user-world-book-bindings/)
+  assert.doesNotMatch(policy, /packages\/user|packages\/world-book|systemPrompt|agent\/request/)
+})
+
+test('session-template use-case stores configuration projections without owning DSH Host seams', () => {
+  const sessionTemplate = [
+    read('../packages/session-template/src/index.js'),
+    read('../packages/session-template/src/model.js'),
+    read('../packages/session-template/src/store.js'),
+    read('../packages/session-template/src/service.js'),
+    read('../packages/session-template/src/server.js'),
+  ].join('\n')
+  assert.doesNotMatch(sessionTemplate, /tavern-loader|@deepseek-ai|systemPrompt\.section|agent\/request|sessions\.create|connectWorkspace/)
+  assert.match(sessionTemplate, /normalizeTemplateSelection/)
+  assert.match(sessionTemplate, /session-configurations\/apply/)
 })

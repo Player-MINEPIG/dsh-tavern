@@ -26,3 +26,9 @@ export {
   mergeWorldBookLoaderResults,
   projectWorldBookForLoader,
 } from './loader-bridge.js'
+
+export {
+  WORLD_BOOK_LIMITS,
+  WorldBookLimitError,
+  assertWorldBookStructure,
+} from './limits.js'

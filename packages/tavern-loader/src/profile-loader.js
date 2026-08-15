@@ -1,5 +1,6 @@
 import { createHash } from 'node:crypto'
 import { compilePresetForDsh, projectPresetCallConfig } from './profile-compiler.js'
+import { composeWorldBookSelection } from './user-world-book-policy.js'
 import { renderSillyTavernMacros } from '../../tavern-format/src/index.js'
 
 const DEFAULT_MAX_PROFILE_BYTES = 512 * 1024
@@ -79,13 +80,15 @@ function fingerprint(value) {
  * Adapters resolve normalized documents; the compiler owns request semantics.
  */
 export class TavernProfileLoader {
-  constructor({ presetStore, selections, maxProfileBytes }) {
+  constructor({ presetStore, selections, userWorldBooks = null, maxProfileBytes }) {
     this.presetStore = presetStore
     this.selections = selections
+    this.userWorldBooks = userWorldBooks
     this.maxProfileBytes = profileByteLimit(maxProfileBytes)
     this.characterAdapter = null
     this.userAdapter = null
     this.worldBookAdapter = null
+    this.activationContextProvider = null
     this.contextCache = new WeakMap()
     this.assembledByAgent = new WeakMap()
   }
@@ -108,6 +111,13 @@ export class TavernProfileLoader {
     return () => { if (this.userAdapter === adapter) this.userAdapter = null }
   }
 
+  registerActivationContextProvider(provider) {
+    if (this.activationContextProvider !== null) throw new Error('An activation-context provider is already registered')
+    if (typeof provider !== 'function') throw new TypeError('Activation-context provider must be a function')
+    this.activationContextProvider = provider
+    return () => { if (this.activationContextProvider === provider) this.activationContextProvider = null }
+  }
+
   selection({ agent, sessionId } = {}) {
     return agent === undefined
       ? this.selections.get(sessionId)
@@ -118,12 +128,15 @@ export class TavernProfileLoader {
     const diagnostics = []
     const selection = this.selection(options)
     const preset = safeGet(this.presetStore, selection.presetId, 'preset', diagnostics)
-    const conversationText = options.conversationText ?? conversationTextFromAgent(options.agent)
+    const activationContext = options.activationContext
+      ?? (options.agent === undefined ? null : this.activationContextProvider?.(options.agent) ?? null)
+    const conversationText = options.conversationText ?? activationContext?.text ?? conversationTextFromAgent(options.agent)
     const shared = {
       selection,
       agent: options.agent,
       sessionId: options.agent?.id ?? options.sessionId ?? null,
       conversationText,
+      activationContext,
       context: options.context ?? {},
     }
 
@@ -139,8 +152,23 @@ export class TavernProfileLoader {
     )
     diagnostics.push(...userResult.diagnostics)
 
+    const userBoundIds = userResult.user === null || this.userWorldBooks === null
+      ? []
+      : this.userWorldBooks.get(userResult.user.id)
+    const worldBookSelection = composeWorldBookSelection(selection.worldBookIds, userBoundIds)
+    const effectiveSelection = {
+      ...selection,
+      worldBookIds: worldBookSelection.effectiveIds,
+    }
+
     const worldBookResult = normalizedAdapterResult(
-      this.worldBookAdapter?.resolve?.({ ...shared, character: characterResult.character, user: userResult.user }),
+      this.worldBookAdapter?.resolve?.({
+        ...shared,
+        selection: effectiveSelection,
+        worldBookSelection,
+        character: characterResult.character,
+        user: userResult.user,
+      }),
       'loreEntries',
     )
     diagnostics.push(...worldBookResult.diagnostics)
@@ -169,11 +197,25 @@ export class TavernProfileLoader {
     const audit = {
       schemaVersion: 1,
       sessionId: shared.sessionId,
-      selection: clone(selection),
+      selection: clone(effectiveSelection),
+      sessionSelection: clone(selection),
+      worldBookSelection: clone(worldBookSelection),
       resources,
       diagnostics: clone(diagnostics),
       activeLoreEntries: compiled.activeLoreEntries,
       worldBooks: clone(worldBookResult.audit ?? { resources: [] }),
+      activation: clone(activationContext?.metadata ?? {
+        kind: 'durable-history-only',
+        durableMessageCount: null,
+        pendingMessageCount: 0,
+        includedPendingMessageCount: 0,
+        duplicatePendingMessageCount: 0,
+        scannedMessageCount: null,
+        scannedCharacters: conversationText.length,
+        truncated: false,
+        claimEventSeqs: [],
+        invalidEventCount: 0,
+      }),
       composition: {
         section: { name: 'dsh-tavern:profile', order: 10 },
         systemPromptMode: compiled.systemPromptMode,
@@ -209,9 +251,10 @@ export class TavernProfileLoader {
     return {
       selected: snapshot.resources.preset,
       selection: snapshot.audit.selection,
+      sessionSelection: snapshot.audit.sessionSelection,
+      worldBookSelection: snapshot.audit.worldBookSelection,
       resources: snapshot.resources,
       callConfig: snapshot.callConfig,
-      compiledPrompt: snapshot.systemText,
       diagnostics: snapshot.diagnostics,
       audit: snapshot.audit,
     }

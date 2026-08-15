@@ -1,6 +1,6 @@
 # 角色卡实现说明
 
-状态：角色卡格式与用例切片已实现，等待合并到统一 loader 后进行安装态端到端验收。
+状态：角色卡格式与用例切片已实现并接入统一 loader、世界书和当前 UI。正文中关于独立 feature 尚未接线的段落是历史分支边界，当前状态以 `../INTEGRATION_ACCEPTANCE.md` 为准。
 
 基线：`main` `a38ae9a`；分支：`feature/character-card-compat`。
 

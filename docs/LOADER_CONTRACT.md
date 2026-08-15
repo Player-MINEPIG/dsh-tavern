@@ -1,6 +1,6 @@
 # Unified Tavern loader contract
 
-状态：2026-08-15，preset、角色卡、用户、独立世界书与 Tavern Trace 已在 Phase 2 集成分支完成组合。本文是资源与加载器的运行契约，不是 README。
+状态：2026-08-15，首个公开发布候选版本已组合 preset、角色卡、用户/世界书关系、独立世界书、当前输入提前匹配、干净会话模板、语义键 i18n、全局 UI 设置与 Tavern Trace。本文是资源与加载器的运行契约，不是 README。
 
 ## 目标与所有权
 
@@ -40,7 +40,8 @@ SessionSelectionStore ─────────────────┘
 ```
 
 - 旧 `PresetStore.state.selectedId` 继续作为尚未绑定 session 的兼容默认值。
-- UI/API 带 `sessionId` 后，预设选择只修改该 session，不再污染其他并行会话。
+- UI 将预设资源浏览与会话绑定拆分：切换下拉框、导入或创建只改变当前编辑资源，只有明确的绑定/解除按钮才写 session selection。UI/API 带 `sessionId` 后，预设选择只修改该 session，不再污染其他并行会话。
+- 预设与角色卡/用户使用同一运行边界：agent 正在执行时拒绝改变绑定；有历史的会话更换预设前提示只影响后续请求。
 - 新鲜普通会话在第一次被 Agent 使用时固化当时的默认选择。
 - 普通 fork 从 `Session.header.parentSession` 复制父选择，之后父子互不联动。
 - `delegationDepth > 0` 的 subagent 固化为空选择，不继承 Tavern 内容。
@@ -50,17 +51,38 @@ SessionSelectionStore ─────────────────┘
 - 默认最多 2,048 个 session（实现硬上限 4,096）和 4 MiB 持久状态，超过 8 MiB 的旧文件不进入 `JSON.parse`。写入先在副本上验证并原子落盘，失败不会污染内存状态。
 - selections 是不可静默丢弃的用户意图，因此容量满时拒绝新增，不照搬 Trace 的 LRU。`deleteSession(id)` 是为未来权威 DSH session 删除事件准备的回收 seam；当前 Host 尚未暴露该事件。
 
+### Running-agent mutation boundary and known gaps
+
+当前的运行态保护是“显式 session binding 写入保护”，不是覆盖所有资源变更的全局事务锁。preset、角色卡、用户和独立世界书的 selection API 在写入 `SessionSelectionStore` 前查询对应 agent；状态为 `running` 时返回 HTTP 409，分别使用 `PRESET_AGENT_RUNNING`、`CHARACTER_AGENT_RUNNING`、`USER_AGENT_RUNNING` 和 `WORLD_BOOK_AGENT_RUNNING`。它防止用户在一次 turn 正在执行时通过正常绑定按钮切换该 session 的四类选择。
+
+以下间接变更入口尚未纳入同一保护，评审和后续实现不得把当前行为描述为“运行中的 Tavern 配置完全不可变”：
+
+- session-template/configuration apply 可以直接用完整 selection 覆盖目标 session；正常 UI 以新建 blank session 为目标，但 API 本身尚未拒绝一个正在运行的既有目标；
+- 删除已被引用的 preset、角色卡、用户或独立世界书会调用 `clearResource()` 清理一个或多个 session 的选择，没有逐一检查受影响 agent；
+- 修改当前已绑定资源的正文不会改变资源 ID，却会改变后续 compile 读取到的内容；
+- 修改“用户绑定世界书”关系可能同时改变所有绑定该用户 session 的有效世界书集合，目前只验证关系和资源上限，不检查这些 session 是否正在运行。
+
+已经完成的 system assembly 是一次冻结快照，资源变更不会回写 durable history，也不应伪装成已经进入旧请求；但在 assembly 前后并发修改仍存在时序边界。严格模式需要 loader-owned 的统一 mutation guard：从直接 session id 或反向资源引用解析所有受影响 session，原子确认它们均非 running 后再提交。对于纯正文编辑，还需明确选择“运行中拒绝”或“保存成功但只保证下一 turn 生效”的产品语义。当前专项测试覆盖 preset、角色卡和用户 selection hook 的拒绝路径；世界书虽已接线，仍需补直接的运行态回归测试，模板和上述间接路径也需要各自测试。
+
+### Clean-session/template policy
+
+“维持当前设置新开对话”与配置模板只复制上述 selection 投影，不调用普通 fork，也不读取或写入 Session events。浏览器通过 DSH 公开的 `workspaces.connectWorkspace(workspaceId)` 得到真实 blank session id；loader API 再次解析来源、验证每个资源，并以一次 `SessionSelectionStore.set(targetId, completeSelection)` 原子提交，之后浏览器才调用公开 `sessions.open(targetId)`。
+
+模板删除资源时不被静默改写：preset、角色/greeting、用户或独立世界书的悬空 id 由 preview/apply 返回结构化诊断并阻止创建。DSH 创建失败发生在 selection 写入之前；原子写失败不发布内存状态且不导航。模板不得包含 durable history、Trace、Inbox、turn/step、运行态或资源正文。完整存储/API 上限和人工验收见 `docs/session-template/IMPLEMENTATION_AND_ACCEPTANCE.md`。
+
 ## Profile safety budget
 
-`TavernProfileLoader` 对自己生成的单一 `dsh-tavern:profile` section 施加默认 512 KiB UTF-8 上限；`limits.maxProfileBytes` 可以收紧或放宽，但实现硬上限为 2 MiB。单次装配最多考虑排名最前的 4,096 个 lore 条目，并在生成 wrapper 前将原始 lore 正文限制为 profile budget 的两倍，避免为了判断超限先构造全部多书内容。世界书自身的 `tokenBudget` 与 `ignoreBudget` 只决定 ST 兼容候选，不能改变 Host 上限。
+`TavernProfileLoader` 对自己生成的单一 `dsh-tavern:profile` section 施加默认 512 KiB UTF-8 上限；`limits.maxProfileBytes` 可以收紧或放宽，但实现硬上限为 2 MiB。世界书 parser/store 在 normalize 之前共用流式结构守卫：每资源最多 10,000 条、深度 32、100,000 节点、单字符串 1 MiB、对象键 1,024 字符；adapter 另对本次请求的独立书、用户书与内嵌书合计施加 10,000 条硬上限，超出资源跳过并诊断。合计预算按确定性的组合顺序先到先得：session 显式独立书、随后用户绑定独立书（ID 稳定去重），最后角色卡内嵌书；每个资源整体预留，不能完整放入时整本不扫描。因此前面的独立书占满 10,000 条时，内嵌书会被跳过并产生 `WORLD_BOOK_RUNTIME_TOTAL_LIMIT`，这是有意的安全/确定性策略，不是随机遗漏。在这些前置守卫后，compiler 最多考虑排名最前的 4,096 个 lore 候选，并在生成 wrapper 前将原始 lore 正文限制为 profile budget 的两倍。世界书自身的 `tokenBudget` 与 `ignoreBudget` 只决定 ST 兼容候选，不能改变任何 Host 硬上限。
+
+角色卡编辑内嵌 `character_book` 时会先执行共享结构守卫和 parser；原始 JSON/PNG 导入目前只在角色格式层确认 `character_book` 是 object，然后无损保留，不在落盘前执行同一深度/节点/条目守卫。32 MiB artifact 上限限制总输入，loader 首次消费时仍会通过 `parseCharacterBook()` 安全失败并报告 `EMBEDDED_WORLD_BOOK_INVALID`，所以匹配放大路径已被挡住；但这仍是导入期防御纵深缺口，会允许一个最终不可运行的内嵌书先进入资源库。后续应在不破坏原件无损保存的前提下，为标准化的运行副本增加导入期结构诊断或拒绝策略。
 
 若全部内容超限，compiler 用原有候选顺序保留能完整装入的最高排名 lore 条目前缀，并报告 `TAVERN_PROFILE_LORE_LIMITED`。若移除所有 lore 后仍超限，则抛出 `TAVERN_PROFILE_TOO_LARGE`；preset、角色字段或用户描述不会被从中间截断。
 
-### Planned user-to-world-book relationship
+### User-to-world-book relationship
 
-用户资源继续严格保持 `{ id, name, description }`。计划中的“用户绑定世界书”由统一 loader policy 维护独立关系，不把 world-book id 写入描述正文，也不让 `user` adapter 自己运行 matcher。loader 在每次 compile 时把当前 session 显式 `worldBookIds` 与当前用户关联的独立书解析为一个稳定、去重的有效集合。
+用户资源继续严格保持 `{ id, name, description }`。“用户绑定世界书”由统一 loader policy 的 `user-world-book-bindings.json` 维护独立关系，不把 world-book id 写入描述正文，也不让 `user` adapter 自己运行 matcher。loader 在每次 compile 时先取当前 session 显式 `worldBookIds`，再追加当前用户关联的独立书，并按 ID 稳定去重；因此显式来源优先，同一本书只交给共享 adapter 一次。
 
-实现前必须在契约和测试中固定两类来源的顺序/优先级；同一本书同时出现时只执行一次。解绑或切换用户只移除用户来源，不得误删 session 显式来源；删除用户只清理关系，删除世界书则清理所有关系和 session 引用。
+audit 同时保留原始 `sessionSelection` 和 `worldBookSelection` 的 explicit/user-bound/effective/duplicate 四组 ID；active view 的 `selection.worldBookIds` 是实际有效集合，供 launcher 显示真实组合。解绑或切换用户只移除用户来源，不会改写 session 显式来源；删除用户清理关系和 session 用户选择，删除世界书则清理所有关系和 session 显式引用。关系、API 和原子存储的详细边界见 `docs/user-world-books/IMPLEMENTATION_AND_ACCEPTANCE.md`。
 
 ## Adapter boundary
 
@@ -96,20 +118,19 @@ loader.registerWorldBookAdapter({
 
 角色卡 adapter 的最小返回模型与角色分支 `CharacterCardModel` 一致，loader 当前消费 `id/name/updatedAt/data`。用户 adapter 只返回 `{ id, name, description }`。世界书 adapter 至少把激活项归一化为 `{ id|uid, content, position: "before"|"after" }`。
 
-### Planned activation input contract
+### Activation input contract
 
-当前 `conversationText` 只来自 `Session.deriveMessages()`。下一阶段由 loader Host 层增加唯一的 `PendingInputProjection`，从公开 `agent/inbox/spliced` 重建队列和本次 claimed batch，再向 adapter 提供结构化、只读的 `activationContext`。计划契约为：
+loader Host 层的唯一 `PendingInputProjection` 从公开 `agent/inbox/spliced` 重建队列和本次 claimed batch，再向 adapter 提供结构化、只读的 `activationContext`：
 
 ```js
 {
-  historyMessages,      // DSH durable message projection；不复制进插件存储
-  claimedMessages,      // 本 assembly 对应的临时 batch
-  scanText,             // 在 64 KiB 等策略下生成的 matcher 输入
-  sources,              // history/current-input/steer/tool-context 等无正文来源元数据
+  messages,             // 有界且已按稳定 id 去重的 { id, role, text, source }
+  text,                 // 在消息数/字符数上限下生成的 matcher 兼容输入
+  metadata,             // 数量、截断状态、claim event seq；不含正文/正文 hash
 }
 ```
 
-`conversationText` 在迁移期可作为从 `activationContext.scanText` 派生的兼容字段，不能成为第二份状态。adapter 只消费该 value，不订阅 DSH event；pending 队列、claim/cancel 判定、生命周期清理和去重均由 loader 独占。Trace 可以保存命中来源类别，但不得保存 `historyMessages`、`claimedMessages` 或 `scanText` 正文。
+`conversationText` 是从 `activationContext.text` 派生的兼容字段，不是第二份状态。adapter 只消费该 value，不订阅 DSH event；pending 队列、claim/cancel 判定、首次 assembly 一次性消费、turn-end 清理和去重均由 loader 独占。默认扫描最近 128 条、64 KiB 字符，硬上限分别为 1,024 条和 1 MiB；队列保留也有独立的消息数/字符数硬上限。Trace 只保存无正文 metadata，不保存 `messages` 或 `text`。
 
 ## Composition semantics
 
@@ -142,7 +163,7 @@ loader.registerWorldBookAdapter({
 - PHI 位于 Tavern system profile，不宣称严格位于全部历史之后；
 - depth prompt 保存 role/depth 的格式职责归角色模块，loader 首期只能放入明确标注的 system fallback；
 - `user`/`assistant` preset prompt role 仍是可审阅标签，不是真实历史消息 role；
-- 当前验收版在 system assembly 时只扫描持久历史，因此当前输入可能到同一 turn 的下一 agent step 或下一用户 turn 才匹配。下一阶段改由 loader 从公开 `agent/inbox/spliced` 投影 claimed batch；不再采用过晚的 `agent/pre-step`，也不读取私有 Inbox。
+- system assembly 扫描持久历史与本步骤 claimed batch，因此单 step 会话的当前输入可在首个请求命中。实现不采用过晚的 `agent/pre-step`，也不读取私有 Inbox。
 - Trace 必须描述实际冻结的 assembly。不能在 `agent/pre-step` 或 `request/header` 后拿当前输入重跑 matcher，再把该结果标成已进入本轮 system；因为没有 same-step reassembly seam，claimed batch 必须经 `agent/inbox/spliced` 投影在首次 assembly 前进入 matcher。
 
 ## Audit boundary
@@ -190,7 +211,7 @@ DSH 自己的 `request/header` 仍是模型实际输入的最终权威。loader 
 - 普通 fork 继承快照，subagent 不继承；
 - marker 填充、角色 override、`{{original}}`、lore before/after 与 chatHistory 不复制均有单测；
 - `replace` 只移除宿主 system sections，保留 tools、contexts、variables 和完整 Tavern profile；
-- API active view 暴露 selection/resources/diagnostics/audit；
+- API active view 暴露 selection/resources/diagnostics/audit，不暴露完整 `compiledPrompt`；
 - 角色卡 API 使用统一 session policy；旧 `character-state.json` binding 单向迁移后清除，避免解绑后重启复活；
 - V1/V2/V3 JSON 与 PNG 角色卡可由 adapter 进入 profile，creator notes 不发送；
 - 角色卡内嵌 `character_book` 使用共享世界书 parser/matcher，命中项进入同一 profile；
@@ -198,4 +219,6 @@ DSH 自己的 `request/header` 仍是模型实际输入的最终权威。loader 
 - 选中的独立书与角色卡内嵌 `characterBook` 由同一个 world-book adapter 调用同一 parser、matcher、排序、概率与预算契约，再合并进入 profile；
 - 删除独立书通过 `clearResource("world-book", id)` 清理所有 session 的悬空 id，不读取、修改或解绑角色卡及其内嵌书；
 - 用户 CRUD/API/UI、per-session 单绑定、`{{user}}`/`{{persona}}`、`personaDescription` marker 和诊断 fallback 已接线；
+- 用户面板可为每个用户保存零本或多本独立世界书；loader 以“session 显式优先、用户关系随后”的稳定顺序去重组合，active view/launcher/Trace 公开实际有效集合；
+- 用户关系独立原子持久化并有用户数、每用户书数、状态字节和安全读取上限；删除用户或世界书清理对应关系而不误删其他用户或 session 显式选择；
 - 未拷贝任何本机第三方 preset、角色卡或世界书 fixture。

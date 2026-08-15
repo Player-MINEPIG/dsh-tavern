@@ -1,5 +1,7 @@
 # 角色卡格式与用例切片验收记录
 
+状态：历史 feature 验收，随后已完成 loader/world-book/UI 集成。下表中“等待 loader/不属于本分支”描述的是当时的切片边界；当前整体证据见 `../INTEGRATION_ACCEPTANCE.md`。
+
 日期：2026-08-14
 
 分支：`feature/character-card-compat`

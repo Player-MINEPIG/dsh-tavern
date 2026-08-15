@@ -1,6 +1,6 @@
 # 世界书兼容验收记录
 
-状态：2026-08-14 通过。
+状态：2026-08-14 纯模块验收通过，随后已集成到首个公开发布候选版本。
 
 本文件在实现后记录命令、结果、兼容范围、降级项、工作树边界和最终提交。验收结果不会只写在 README 或提交消息中。
 
@@ -51,4 +51,4 @@
 
 审查确认没有改动 `packages/tavern-loader/**`、`packages/preset/**`、本机 SillyTavern/TauriTavern 或任何其他 worktree。共享改动仅为根 `package.json` 子路径导出、架构边界文档和架构测试。
 
-最终提交位于 `feature/world-book-compat`；提交号由最终交付报告记录，未 merge、未 push。
+历史切片提交位于 `feature/world-book-compat`；当前集成与发布状态以 `../INTEGRATION_ACCEPTANCE.md` 和根 changelog 为准。

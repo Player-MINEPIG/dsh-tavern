@@ -5,8 +5,14 @@ import { mkdtempSync, rmSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { UserStore, createUserApiHandler } from '../packages/user/src/index.js'
+import { WorldBookStore } from '../packages/world-book-library/src/index.js'
 import { SessionSelectionStore } from '../packages/tavern-loader/src/session-policy.js'
-import { apply, createUserSelectionPolicy } from '../packages/tavern-loader/src/index.js'
+import { UserWorldBookBindingStore } from '../packages/tavern-loader/src/user-world-book-policy.js'
+import {
+  apply,
+  createUserSelectionPolicy,
+  createUserWorldBookBindingPolicy,
+} from '../packages/tavern-loader/src/index.js'
 
 function invoke(handler, { method = 'GET', url, body, headers = {} } = {}) {
   return new Promise((resolve, reject) => {
@@ -79,6 +85,7 @@ test('root Tavern API dispatcher exposes user routes through the single secured 
   try {
     const rootStore = apply(ctx, { storageDir: directory })
     rootStore.userStore.create({ id: 'root-user', name: 'Root User', description: 'Root route.' })
+    rootStore.worldBookStore.create({ id: 'root-book', name: 'Root Book' })
     const result = await invoke(route.handler, {
       url: '/dsh-tavern/api/users',
       headers: { host: 'localhost:53100' },
@@ -86,6 +93,18 @@ test('root Tavern API dispatcher exposes user routes through the single secured 
     assert.equal(route.path, '/dsh-tavern/api')
     assert.equal(result.status, 200)
     assert.equal(result.json.users[0].id, 'root-user')
+    const relation = await invoke(route.handler, {
+      method: 'PUT',
+      url: '/dsh-tavern/api/users/root-user/world-books',
+      body: { worldBookIds: ['root-book'] },
+      headers: {
+        host: 'localhost:53100',
+        origin: 'http://localhost:53100',
+        'content-type': 'application/json',
+      },
+    })
+    assert.equal(relation.status, 200)
+    assert.deepEqual(rootStore.userWorldBooks.get('root-user'), ['root-book'])
   } finally {
     rmSync(directory, { recursive: true, force: true })
   }
@@ -114,6 +133,57 @@ test('user API rejects unsupported fields and blocks a running-session switch', 
     const blocked = await invoke(handler, { method: 'POST', url: '/dsh-tavern/api/user-selection', body: { sessionId: 'running', userId: 'safe-user' } })
     assert.equal(blocked.status, 409)
     assert.equal(selections.get('running').userId, null)
+  } finally {
+    rmSync(directory, { recursive: true, force: true })
+  }
+})
+
+test('user API edits bounded world-book relationships without changing the three-field user document', async () => {
+  const directory = mkdtempSync(join(tmpdir(), 'dsh-tavern-user-world-book-api-'))
+  const store = new UserStore(directory)
+  const worldBookStore = new WorldBookStore(directory)
+  const bindings = new UserWorldBookBindingStore(directory)
+  const selections = new SessionSelectionStore(directory)
+  const changes = []
+  store.create({ id: 'reader-a', name: 'Reader A', description: 'Unchanged description.' })
+  worldBookStore.create({ id: 'book-a', name: 'Book A' })
+  worldBookStore.create({ id: 'book-b', name: 'Book B' })
+  const handler = createUserApiHandler(store, {
+    selectionPolicy: createUserSelectionPolicy(store, selections, bindings),
+    worldBookBindingPolicy: createUserWorldBookBindingPolicy(store, worldBookStore, bindings),
+    onChange: change => changes.push(change),
+  })
+  try {
+    const saved = await invoke(handler, {
+      method: 'PUT',
+      url: '/dsh-tavern/api/users/reader-a/world-books',
+      body: { worldBookIds: ['book-a', 'book-b', 'book-a'] },
+    })
+    assert.equal(saved.status, 200)
+    assert.deepEqual(saved.json.binding, { userId: 'reader-a', worldBookIds: ['book-a', 'book-b'] })
+    assert.deepEqual((await invoke(handler, { url: '/dsh-tavern/api/users/reader-a/world-books' })).json.binding.worldBookIds, ['book-a', 'book-b'])
+    assert.deepEqual(store.get('reader-a'), { id: 'reader-a', name: 'Reader A', description: 'Unchanged description.' })
+
+    const missing = await invoke(handler, {
+      method: 'PUT',
+      url: '/dsh-tavern/api/users/reader-a/world-books',
+      body: { worldBookIds: ['missing'] },
+    })
+    assert.equal(missing.status, 404)
+    assert.deepEqual(bindings.get('reader-a'), ['book-a', 'book-b'])
+    const unsupported = await invoke(handler, {
+      method: 'PUT',
+      url: '/dsh-tavern/api/users/reader-a/world-books',
+      body: { worldBookIds: [], description: 'must not be accepted' },
+    })
+    assert.equal(unsupported.status, 400)
+    assert.equal(changes.at(-1).kind, 'user-world-book-binding-changed')
+
+    selections.set('session-a', { userId: 'reader-a', worldBookIds: ['book-a'] })
+    await invoke(handler, { method: 'DELETE', url: '/dsh-tavern/api/users/reader-a', body: {} })
+    assert.deepEqual(bindings.get('reader-a'), [])
+    assert.equal(selections.get('session-a').userId, null)
+    assert.deepEqual(selections.get('session-a').worldBookIds, ['book-a'])
   } finally {
     rmSync(directory, { recursive: true, force: true })
   }

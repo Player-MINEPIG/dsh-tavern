@@ -1,5 +1,7 @@
 # Prompt preset acceptance record
 
+Status: historical preset-slice acceptance from 2026-08-14. The preset is now integrated with the other Tavern modules; use `INTEGRATION_ACCEPTANCE.md` for the current release candidate. The branch/worktree details below are retained as provenance.
+
 ## Scope and environment
 
 - Date: 2026-08-14

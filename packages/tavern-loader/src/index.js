@@ -19,14 +19,27 @@ import {
 import { PresetRuntime } from './preset-runtime.js'
 import { TavernProfileLoader } from './profile-loader.js'
 import { SessionSelectionStore } from './session-policy.js'
+import { UserWorldBookBindingStore } from './user-world-book-policy.js'
 import { createWorldBookAdapter } from './world-book-adapter.js'
+import { PendingInputProjection } from './pending-input-projection.js'
 import { secureTavernApi } from './api-security.js'
+import {
+  UiSettingsStore,
+  createUiSettingsApiHandler,
+  isUiSettingsApiPath,
+} from './ui-settings.js'
 import {
   TavernTraceRecorder,
   TavernTraceStore,
   createTavernTraceApiHandler,
   isTavernTraceApiPath,
 } from '../../tavern-trace/src/index.js'
+import {
+  SessionConfigurationService,
+  SessionTemplateStore,
+  createSessionTemplateApiHandler,
+  isSessionTemplateApiPath,
+} from '../../session-template/src/index.js'
 
 export const name = 'dsh-tavern'
 export const inject = ['systemPrompt']
@@ -98,7 +111,7 @@ export function createCharacterSelectionPolicy(characterStore, selections) {
   }
 }
 
-export function createWorldBookSelectionPolicy(worldBookStore, selections) {
+export function createWorldBookSelectionPolicy(worldBookStore, selections, userWorldBooks = null) {
   return {
     selection(sessionId) {
       if (typeof sessionId !== 'string' || sessionId === '') return []
@@ -115,11 +128,15 @@ export function createWorldBookSelectionPolicy(worldBookStore, selections) {
       selections.set(sessionId, { worldBookIds: normalized })
       return normalized
     },
-    clearResource: (kind, id) => selections.clearResource(kind, id),
+    clearResource(kind, id) {
+      const sessionChanged = selections.clearResource(kind, id)
+      const userChanged = kind === 'world-book' ? userWorldBooks?.clearWorldBook(id) === true : false
+      return sessionChanged || userChanged
+    },
   }
 }
 
-export function createUserSelectionPolicy(userStore, selections) {
+export function createUserSelectionPolicy(userStore, selections, userWorldBooks = null) {
   return {
     selection(sessionId) {
       if (typeof sessionId !== 'string' || sessionId === '') return null
@@ -142,7 +159,34 @@ export function createUserSelectionPolicy(userStore, selections) {
       selections.set(sessionId, { userId: patch.userId })
       return { userId: patch.userId }
     },
-    clearResource: (kind, id) => selections.clearResource(kind, id),
+    clearResource(kind, id) {
+      const sessionChanged = selections.clearResource(kind, id)
+      const bindingChanged = kind === 'user' ? userWorldBooks?.clearUser(id) === true : false
+      return sessionChanged || bindingChanged
+    },
+  }
+}
+
+export function createUserWorldBookBindingPolicy(userStore, worldBookStore, userWorldBooks) {
+  if (typeof userWorldBooks?.get !== 'function' || typeof userWorldBooks?.set !== 'function') {
+    throw new TypeError('User world-book policy requires a binding store')
+  }
+  return {
+    selection(userId) {
+      userStore.get(userId)
+      return userWorldBooks.get(userId)
+    },
+    select(userId, worldBookIds) {
+      userStore.get(userId)
+      if (!Array.isArray(worldBookIds)) throw new TypeError('worldBookIds must be an array')
+      if (worldBookIds.length > 100) throw new TypeError('A user can bind at most 100 world books')
+      const normalized = [...new Set(worldBookIds)]
+      for (const id of normalized) {
+        if (typeof id !== 'string' || id === '') throw new TypeError('Every worldBookId must be a non-empty string')
+        worldBookStore.get(id)
+      }
+      return userWorldBooks.set(userId, normalized)
+    },
   }
 }
 
@@ -152,6 +196,9 @@ export function apply(ctx, config = {}) {
   const characterStore = new CharacterStore(storageDir)
   const worldBookStore = new WorldBookStore(storageDir)
   const userStore = new UserStore(storageDir)
+  const userWorldBooks = new UserWorldBookBindingStore(storageDir, config.userWorldBooks)
+  const sessionTemplateStore = new SessionTemplateStore(storageDir, config.sessionTemplates)
+  const uiSettingsStore = new UiSettingsStore(storageDir)
   const selections = new SessionSelectionStore(storageDir, {
     ...config.sessionSelections,
     defaultSelection: () => ({ presetId: store.state.selectedId }),
@@ -160,8 +207,16 @@ export function apply(ctx, config = {}) {
   const runtime = new TavernProfileLoader({
     presetStore: store,
     selections,
+    userWorldBooks,
     maxProfileBytes: config.limits?.maxProfileBytes,
   })
+  const pendingInput = new PendingInputProjection({
+    maxScanCharacters: config.worldBook?.maxScanCharacters,
+    maxScanMessages: config.worldBook?.maxScanMessages,
+    maxQueuedCharacters: config.pendingInput?.maxQueuedCharacters,
+    maxQueuedMessages: config.pendingInput?.maxQueuedMessages,
+  })
+  runtime.registerActivationContextProvider(agent => pendingInput.activationContext(agent))
   const traceStore = new TavernTraceStore(storageDir, config.trace)
   if (traceStore.resetOversizedFile) {
     ctx.logger.warn?.('dsh-tavern: oversized legacy Tavern Trace storage exceeded the safe read limit and was reset')
@@ -180,8 +235,17 @@ export function apply(ctx, config = {}) {
     }
   }
   const characterSelectionPolicy = createCharacterSelectionPolicy(characterStore, selections)
-  const worldBookSelectionPolicy = createWorldBookSelectionPolicy(worldBookStore, selections)
-  const userSelectionPolicy = createUserSelectionPolicy(userStore, selections)
+  const worldBookSelectionPolicy = createWorldBookSelectionPolicy(worldBookStore, selections, userWorldBooks)
+  const userSelectionPolicy = createUserSelectionPolicy(userStore, selections, userWorldBooks)
+  const userWorldBookBindingPolicy = createUserWorldBookBindingPolicy(userStore, worldBookStore, userWorldBooks)
+  const sessionConfigurations = new SessionConfigurationService({
+    templates: sessionTemplateStore,
+    selections,
+    presets: store,
+    characters: characterStore,
+    users: userStore,
+    worldBooks: worldBookStore,
+  })
 
   const selectionPolicy = {
     selectedPresetId: (sessionId) => runtime.selection({ sessionId }).presetId,
@@ -194,6 +258,15 @@ export function apply(ctx, config = {}) {
       }
       return id === null ? null : store.get(id)
     },
+    beforeSelectionChange: ({ sessionId }) => {
+      const agent = ctx.get('agents')?.get?.(sessionId)
+      if (agent?.status === 'running') {
+        const error = new Error('The session agent is running; change the preset after the current turn finishes.')
+        error.code = 'PRESET_AGENT_RUNNING'
+        error.status = 409
+        throw error
+      }
+    },
     clearResource: (kind, id) => selections.clearResource(kind, id),
   }
 
@@ -205,6 +278,7 @@ export function apply(ctx, config = {}) {
 
   ctx.on('agent/session-start', ({ agent }) => {
     selections.ensureAgent(agent)
+    pendingInput.ensureSession(agent?.session)
   })
 
   ctx.on('agent/request', async (payload, next) => {
@@ -218,6 +292,8 @@ export function apply(ctx, config = {}) {
   })
 
   ctx.on('session/event', (session, event) => {
+    pendingInput.observeSessionEvent(session, event)
+    if (event?.type === 'turn/end') pendingInput.clearClaimed(session)
     traceSafely('header alignment', () => traceRecorder.observeSessionEvent(session, event))
   })
 
@@ -280,6 +356,7 @@ export function apply(ctx, config = {}) {
     const userApi = createUserApiHandler(userStore, {
       onChange: notifyChange,
       selectionPolicy: userSelectionPolicy,
+      worldBookBindingPolicy: userWorldBookBindingPolicy,
       beforeSelectionChange: ({ sessionId }) => {
         const agent = ctx.get('agents')?.get?.(sessionId)
         if (agent?.status === 'running') {
@@ -291,8 +368,18 @@ export function apply(ctx, config = {}) {
       },
     })
     const traceApi = createTavernTraceApiHandler(traceStore)
+    const sessionTemplateApi = createSessionTemplateApiHandler(sessionTemplateStore, sessionConfigurations, {
+      onChange: change => {
+        if (change.kind === 'session-configuration-applied') notifyChange()
+      },
+    })
+    const uiSettingsApi = createUiSettingsApiHandler(uiSettingsStore)
     const api = secureTavernApi(
-      (req, res) => isUserApiPath(req.url)
+      (req, res) => isUiSettingsApiPath(req.url)
+        ? uiSettingsApi(req, res)
+        : isSessionTemplateApiPath(req.url)
+          ? sessionTemplateApi(req, res)
+        : isUserApiPath(req.url)
         ? userApi(req, res)
         : isTavernTraceApiPath(req.url)
           ? traceApi(req, res)
@@ -320,8 +407,13 @@ export function apply(ctx, config = {}) {
     characterStore: { value: characterStore, enumerable: false },
     worldBookStore: { value: worldBookStore, enumerable: false },
     userStore: { value: userStore, enumerable: false },
+    userWorldBooks: { value: userWorldBooks, enumerable: false },
+    sessionTemplateStore: { value: sessionTemplateStore, enumerable: false },
+    sessionConfigurations: { value: sessionConfigurations, enumerable: false },
+    uiSettingsStore: { value: uiSettingsStore, enumerable: false },
     traceStore: { value: traceStore, enumerable: false },
     traceRecorder: { value: traceRecorder, enumerable: false },
+    pendingInputProjection: { value: pendingInput, enumerable: false },
   })
   return store
 }
@@ -359,8 +451,31 @@ export {
   normalizeSelection,
   sessionPolicyConstants,
 } from './session-policy.js'
+export {
+  UserWorldBookBindingLimitError,
+  UserWorldBookBindingStore,
+  composeWorldBookSelection,
+  userWorldBookPolicyConstants,
+} from './user-world-book-policy.js'
 export { createWorldBookAdapter } from './world-book-adapter.js'
+export { PendingInputProjection, pendingInputProjectionConstants } from './pending-input-projection.js'
 export { WorldBookStore, createWorldBookApiHandler } from '../../world-book-library/src/index.js'
 export { secureTavernApi, apiSecurityConstants } from './api-security.js'
+export {
+  UiSettingsStore,
+  createUiSettingsApiHandler,
+  isUiSettingsApiPath,
+  normalizeUiSettings,
+  uiSettingsConstants,
+} from './ui-settings.js'
 export { TavernTraceRecorder, TavernTraceStore } from '../../tavern-trace/src/index.js'
+export {
+  SessionConfigurationError,
+  SessionConfigurationService,
+  SessionTemplateLimitError,
+  SessionTemplateStore,
+  createSessionTemplateApiHandler,
+  sessionTemplateApiConstants,
+  sessionTemplateStoreConstants,
+} from '../../session-template/src/index.js'
 export { PresetStore } from '../../preset/src/index.js'

@@ -1,6 +1,6 @@
 # Tavern Trace implementation
 
-状态：2026-08-15，Phase 2 feature branch 实现说明。本文不是 README。
+状态：2026-08-15，已集成到首个公开发布候选版本。本文保留 Phase 2 实现边界，不是 README。
 
 ## 目标与边界
 
@@ -20,7 +20,7 @@ Tavern Trace 用来回答“这一轮 Tavern loader 选择了哪些资源、世�
 - `conversation.view`：`list/session` slot；Trajectory 用 `id: "trajectory"` 注册同类标签页；
 - `agent/request`：公开 payload 包含 `agent`、`turn`、`step` 和 `signal`；
 - `session/event`：append 后的只读发布流；`Session.events`、`requestHeader()` 和 `deriveMessages()` 是公开读取面；
-- `agent/inbox/spliced`：公开 Session event，插入、替换、取消与 claim 均先 append，并同步通知 `session/event` 观察者；下一阶段可由 loader 投影 claimed input，但 Trace 不直接拥有该投影；
+- `agent/inbox/spliced`：公开 Session event，插入、替换、取消与 claim 均先 append，并同步通知 `session/event` 观察者；loader 投影 claimed input，Trace 不直接拥有该投影；
 - `request/header`：一次 request epoch 的完整 config/system/tools 权威 snapshot。
 
 虽然 `SessionEventMap` 在 TypeScript 层允许 declaration merge，rc.6 的 persistence reader 使用固定 `KNOWN_SESSION_EVENT_TYPES`，并明确说第三方注册面尚未提供。未知必需事件会使恢复拒绝；`Session.append()` 也没有供插件安全声明 ignorable envelope 的稳定调用契约。因此本阶段不写自定义 session event。
@@ -75,5 +75,5 @@ GET API 的 `storage` 元数据通常返回全部实际限制、`maxTotalBytes` 
 
 - rc.6 的 header 事件在请求 dispatch 前写入；header 对齐证明 DSH 构造了该请求边界，不证明 provider 成功返回。
 - header 未变化时 DSH 会沿用上一条 header event；Trace 在第一条 assistant event 或 request error 上引用最近 header 并标记 reused。
-- 当前已验收版本的 world-book 仍按 system assembly 当时可见的 durable history 匹配；Trace 特意复用 exact assembly snapshot，不用稍后的当前输入重新计算。下一阶段由 loader 基于公开 `agent/inbox/spliced` 建立临时 `ActivationContext`，使首 step assembly 本身包含正确决策；Trace 的记录位置和最小化存储边界不变。
+- world-book 按 system assembly 当时的 `ActivationContext`（durable history + 去重后的 claimed input）匹配；Trace 复用 exact assembly snapshot，不在稍后的 hook 重新计算。记录只新增消息数、字符数、截断状态和 claim event seq，不保存输入正文或正文哈希。
 - 当前 main 基线只有角色内嵌 world book；独立书和 user profile 接入后可直接填充同一 resources/decision schema。

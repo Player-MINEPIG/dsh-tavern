@@ -31,6 +31,13 @@ function snapshot(marker = 'SYNTHETIC_PROFILE_MARKER') {
         userProfileId: 'user-a',
         worldBookIds: ['book-a'],
       },
+      worldBookSelection: {
+        explicitIds: ['book-a'],
+        userBoundIds: ['book-a', 'book-b'],
+        effectiveIds: ['book-a', 'book-b'],
+        duplicateIds: ['book-a'],
+        order: 'session-explicit-then-user',
+      },
       composition: {
         userInjection: {
           selected: true,
@@ -125,6 +132,13 @@ test('Trace correlates turn/step to request/header while persisting only minimiz
     assert.equal(pending.worldBooks[0].decisions[0].reason, 'secondary-and_any-match')
     assert.equal(pending.worldBooks[0].decisions[1].reason, 'budget-exceeded')
     assert.equal(pending.resources.userProfile.name, 'Synthetic user')
+    assert.deepEqual(pending.worldBookSelection, {
+      explicitIds: ['book-a'],
+      userBoundIds: ['book-a', 'book-b'],
+      effectiveIds: ['book-a', 'book-b'],
+      duplicateIds: ['book-a'],
+      order: 'session-explicit-then-user',
+    })
     assert.deepEqual(pending.worldBooks[0].decisions[0].primaryKeys, ['harbor', 'quay'])
     assert.deepEqual(pending.worldBooks[0].decisions[0].secondaryKeys, ['lantern'])
     assert.equal(pending.sensitiveContentStored, false)
@@ -378,7 +392,7 @@ test('client registers Tavern Trace as an additive official conversation view', 
   const manifest = JSON.parse(readFileSync(new URL('../package.json', import.meta.url), 'utf8'))
   assert.match(source, /slots\.inject\('conversation\.view'/)
   assert.match(source, /id: 'tavern-trace'/)
-  assert.match(source, /label: 'Tavern Trace'/)
+  assert.match(source, /label: translate\('trace.title'\)/)
   assert.doesNotMatch(source, /querySelector\([^)]*(trajectory|conversation)/i)
   assert.doesNotMatch(source, /MutationObserver|monkey|tool\/call|user\/message|assistant\/message/)
   assert.ok(manifest.dsh.client.inject.includes('@deepseek-ai/dsh-client-ui-conversation'))

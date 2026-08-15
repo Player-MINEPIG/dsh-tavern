@@ -213,6 +213,71 @@ test('standalone world books are isolated per session and merge with embedded bo
   }
 })
 
+test('selected users add their books through loader policy, deduplicate explicit books, and preserve session isolation', () => {
+  const directory = mkdtempSync(join(tmpdir(), 'dsh-tavern-user-book-integration-'))
+  const { ctx } = host()
+  try {
+    const store = apply(ctx, { storageDir: directory })
+    store.userStore.create({ id: 'reader-a', name: 'Reader A', description: '' })
+    store.userStore.create({ id: 'reader-b', name: 'Reader B', description: '' })
+    for (const [id, name, content] of [
+      ['explicit-book', 'Explicit Book', 'Explicit lore.'],
+      ['shared-book', 'Shared Book', 'Shared lore.'],
+      ['user-a-book', 'User A Book', 'User A lore.'],
+      ['user-b-book', 'User B Book', 'User B lore.'],
+    ]) {
+      store.worldBookStore.import(JSON.stringify({
+        name,
+        entries: { one: { uid: 1, key: [], constant: true, content, position: 1 } },
+      }), { id })
+    }
+    store.userWorldBooks.set('reader-a', ['shared-book', 'user-a-book'])
+    store.userWorldBooks.set('reader-b', ['user-b-book'])
+    store.sessionSelections.set('session-a', {
+      userId: 'reader-a',
+      worldBookIds: ['explicit-book', 'shared-book'],
+    })
+    store.sessionSelections.set('session-b', { userId: 'reader-b' })
+
+    const first = store.profileLoader.compile({ agent: agent('session-a') })
+    const activeView = store.profileLoader.activeView('session-a')
+    assert.deepEqual(activeView.selection.worldBookIds, ['explicit-book', 'shared-book', 'user-a-book'])
+    assert.deepEqual(activeView.sessionSelection.worldBookIds, ['explicit-book', 'shared-book'])
+    assert.deepEqual(first.audit.sessionSelection.worldBookIds, ['explicit-book', 'shared-book'])
+    assert.deepEqual(first.audit.worldBookSelection, {
+      explicitIds: ['explicit-book', 'shared-book'],
+      userBoundIds: ['shared-book', 'user-a-book'],
+      effectiveIds: ['explicit-book', 'shared-book', 'user-a-book'],
+      duplicateIds: ['shared-book'],
+      order: 'session-explicit-then-user',
+    })
+    assert.deepEqual(first.resources.worldBooks.map(item => [item.id, item.bindingSources]), [
+      ['explicit-book', ['session']],
+      ['shared-book', ['session', 'user']],
+      ['user-a-book', ['user']],
+    ])
+    assert.equal(first.systemText.match(/Shared lore\./g)?.length, 1)
+
+    const isolated = store.profileLoader.compile({ agent: agent('session-b') })
+    assert.match(isolated.systemText, /User B lore\./)
+    assert.doesNotMatch(isolated.systemText, /User A lore|Shared lore|Explicit lore/)
+
+    store.sessionSelections.set('session-a', { userId: null })
+    const unbound = store.profileLoader.compile({ agent: agent('session-a') })
+    assert.deepEqual(unbound.audit.worldBookSelection.effectiveIds, ['explicit-book', 'shared-book'])
+    assert.match(unbound.systemText, /Explicit lore|Shared lore/)
+    assert.doesNotMatch(unbound.systemText, /User A lore/)
+
+    store.userStore.delete('reader-a')
+    store.sessionSelections.clearResource('user', 'reader-a')
+    store.userWorldBooks.clearUser('reader-a')
+    assert.deepEqual(store.sessionSelections.get('session-a').worldBookIds, ['explicit-book', 'shared-book'])
+    assert.deepEqual(store.userWorldBooks.get('reader-a'), [])
+  } finally {
+    rmSync(directory, { recursive: true, force: true })
+  }
+})
+
 test('real loader isolates users by session, refreshes switches immediately, restores, unbinds, and cleans deletion', () => {
   const directory = mkdtempSync(join(tmpdir(), 'dsh-tavern-user-integration-'))
   const firstHost = host()

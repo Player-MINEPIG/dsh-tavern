@@ -1,3 +1,8 @@
+import {
+  WORLD_BOOK_LIMITS,
+  WorldBookLimitError,
+} from './limits.js'
+
 const LOGIC = new Set(['and_any', 'and_all', 'not_any', 'not_all'])
 const ALLOWED_REGEX_FLAGS = new Set(['i', 'm', 's', 'u', 'v'])
 
@@ -244,6 +249,13 @@ function defaultTokenCost(content) {
 export function computeWorldBookCandidates(modelOrEntries, options = {}) {
   const entries = Array.isArray(modelOrEntries) ? modelOrEntries : modelOrEntries?.entries
   if (!Array.isArray(entries)) throw new TypeError('Expected a WorldBookModel or an entries array')
+  if (entries.length > WORLD_BOOK_LIMITS.maxRuntimeEntries) {
+    throw new WorldBookLimitError(
+      'WORLD_BOOK_RUNTIME_ENTRY_LIMIT',
+      `World-book matching may inspect at most ${WORLD_BOOK_LIMITS.maxRuntimeEntries} entries per resource`,
+      { entryCount: entries.length, limit: WORLD_BOOK_LIMITS.maxRuntimeEntries },
+    )
+  }
   const text = typeof options.text === 'string' ? options.text : ''
   const ranked = entries
     .map((entry, index) => ({ entry, originalIndex: index, key: entryKey(entry, index) }))

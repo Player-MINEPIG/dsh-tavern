@@ -1,14 +1,25 @@
 import {
-  createElement as h,
+  createElement,
   useCallback,
   useEffect,
   useRef,
   useState,
 } from 'react'
 import {
+  createLocalizedElement,
+  rawText,
+  statusText,
+  translate,
+  uiError,
+  uiMessage,
+  unwrapText,
+} from '../../client/src/i18n.js'
+import {
   characterGreetingOptions,
   defaultCharacterSelection,
 } from './client-state.js'
+
+const h = createLocalizedElement(createElement)
 
 const API_ROOT = '/dsh-tavern/api'
 
@@ -48,15 +59,15 @@ function TextDetail({ label, value }) {
   if (typeof value !== 'string' || value === '') return null
   return h('details', { className: 'dcc-detail' },
     h('summary', null, label),
-    h('p', { className: 'dcc-text' }, value),
+    h('p', { className: 'dcc-text' }, rawText(value)),
   )
 }
 
-function DiagnosticList({ title, items }) {
+function DiagnosticList({ titleKey, items }) {
   if (!Array.isArray(items) || items.length === 0) return null
   return h('details', { className: 'dcc-detail' },
-    h('summary', null, `${title} (${items.length})`),
-    h('ul', { className: 'dcc-diags' }, ...items.map((item, index) => h('li', { key: `${item.code}-${index}` }, `${item.message}${item.path ? ` [${item.path}]` : ''}`))),
+    h('summary', null, uiMessage(titleKey, { count: items.length })),
+    h('ul', { className: 'dcc-diags' }, ...items.map((item, index) => h('li', { key: `${item.code}-${index}` }, rawText(`${item.message}${item.path ? ` [${item.path}]` : ''}`)))),
   )
 }
 
@@ -66,18 +77,20 @@ export function CharacterPanel({ sessionId, sessionBlank, close }) {
   const [selection, setSelection] = useState(null)
   const [binding, setBinding] = useState(null)
   const [busy, setBusy] = useState(false)
-  const [status, setStatus] = useState({ text: '加载中…', error: false })
+  const [status, setStatus] = useState({ error: false, key: 'common.loading' })
   const fileRef = useRef(null)
   const refreshGeneration = useRef(0)
 
-  const run = useCallback(async (operation, success) => {
+  const run = useCallback(async (operation, successKey) => {
     setBusy(true)
     try {
       const result = await operation()
-      setStatus({ text: success, error: false })
+      setStatus({ error: false, key: successKey })
       return result
     } catch (error) {
-      setStatus({ text: error instanceof Error ? error.message : String(error), error: true })
+      setStatus(error?.uiKey
+        ? { error: true, key: error.uiKey, values: error.uiValues }
+        : { error: true, text: error instanceof Error ? error.message : String(error) })
       return null
     } finally {
       setBusy(false)
@@ -121,14 +134,14 @@ export function CharacterPanel({ sessionId, sessionBlank, close }) {
   }, [sessionId])
 
   useEffect(() => {
-    run(() => refresh(), '角色库已加载')
+    run(() => refresh(), 'character.status.loaded')
     return () => { refreshGeneration.current += 1 }
   }, [refresh, run])
 
   useEffect(() => {
     const onRefresh = event => {
       if (event.detail?.source === 'character') return
-      run(() => refresh(detail?.id), '角色状态已刷新')
+      run(() => refresh(detail?.id), 'character.status.refreshed')
     }
     window.addEventListener('dsh-tavern:refresh', onRefresh)
     return () => window.removeEventListener('dsh-tavern:refresh', onRefresh)
@@ -145,13 +158,13 @@ export function CharacterPanel({ sessionId, sessionBlank, close }) {
     await refresh(data.character.id)
     announceTavernRefresh()
     if (fileRef.current !== null) fileRef.current.value = ''
-  }, '角色卡已导入；尚未绑定到会话'), [refresh, run])
+  }, 'character.status.imported'), [refresh, run])
 
   const bind = useCallback(() => run(async () => {
-    if (!sessionId) throw new Error('请先创建或打开一个会话再绑定角色')
+    if (!sessionId) throw uiError('character.error.needSession')
     if (selection?.characterCardId !== binding?.characterCardId
       && sessionBlank === false
-      && !window.confirm('当前会话已有历史。更换角色只影响后续请求，不会重写已有消息；继续吗？')) return
+      && !window.confirm(unwrapText(uiMessage('character.confirmHistoricalSwitch')))) return
     const data = await api('/character-selection', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -160,10 +173,10 @@ export function CharacterPanel({ sessionId, sessionBlank, close }) {
     setSelection(data.selection)
     setBinding(data.selection)
     announceTavernRefresh()
-  }, '角色选择已保存；实际对话加载由 Tavern loader 统一处理'), [binding, run, selection, sessionBlank, sessionId])
+  }, 'character.status.bound'), [binding, run, selection, sessionBlank, sessionId])
 
   const unbind = useCallback(() => run(async () => {
-    if (!sessionId) throw new Error('当前没有可解绑的会话')
+    if (!sessionId) throw uiError('character.error.noSessionToUnbind')
     await api('/character-selection', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -172,83 +185,87 @@ export function CharacterPanel({ sessionId, sessionBlank, close }) {
     setSelection(null)
     if (detail !== null) setBinding(defaultCharacterSelection(detail.id))
     announceTavernRefresh()
-  }, '当前会话已解除角色绑定'), [detail, run, sessionId])
+  }, 'character.status.unbound'), [detail, run, sessionId])
 
   const remove = useCallback(() => run(async () => {
-    if (detail === null || !window.confirm(`删除角色卡“${detail.name}”？原始导入文件也会被删除。`)) return
+    if (detail === null || !window.confirm(unwrapText(uiMessage('character.confirmDelete', { name: detail.name })))) return
     await api(`/characters/${encodeURIComponent(detail.id)}`, { method: 'DELETE' })
     await refresh(null)
     announceTavernRefresh()
-  }, '角色卡已删除，相关会话绑定已清除'), [detail, refresh, run])
+  }, 'character.status.deleted'), [detail, refresh, run])
 
   const greetings = characterGreetingOptions(detail)
   const activeName = selection === null
-    ? '未绑定角色'
+    ? translate('nav.character.empty')
     : catalog?.characters.find((item) => item.id === selection.characterCardId)?.name ?? selection.characterCardId
+  const closeLabel = uiMessage('panel.close', { title: unwrapText(uiMessage('character.title')) })
 
   return h('div', { className: 'dcc-panel' },
     h('div', { className: 'dcc-header' },
-      h('div', { className: 'dcc-title' }, 'Tavern 角色卡'),
-      h('button', { className: 'dcc-close', type: 'button', title: '关闭角色卡面板', 'aria-label': '关闭角色卡侧边栏', onClick: close }, '✕'),
+      h('div', { className: 'dcc-title' }, uiMessage('character.title')),
+      h('button', { className: 'dcc-close', type: 'button', title: closeLabel, 'aria-label': closeLabel, onClick: close }, '✕'),
     ),
     h('div', { className: 'dcc-body' },
       h('div', { className: 'dcc-toolbar' },
-        h('button', { className: 'dcc-button', type: 'button', disabled: busy, onClick: () => fileRef.current?.click() }, '导入 JSON / PNG'),
-        h('button', { className: 'dcc-button', type: 'button', disabled: busy, onClick: () => run(() => refresh(detail?.id), '角色库已刷新') }, '刷新'),
+        h('button', { className: 'dcc-button', type: 'button', disabled: busy, onClick: () => fileRef.current?.click() }, uiMessage('character.import')),
+        h('button', { className: 'dcc-button', type: 'button', disabled: busy, onClick: () => run(() => refresh(detail?.id), 'character.status.libraryRefreshed') }, uiMessage('common.refresh')),
         h('input', { ref: fileRef, hidden: true, type: 'file', accept: '.json,.png,application/json,image/png', onChange: (event) => {
           const file = event.target.files?.[0]
           if (file !== undefined) importFile(file)
         } }),
       ),
-      h(Field, { label: '浏览角色库' }, h('select', {
+      h(Field, { label: uiMessage('character.browse') }, h('select', {
         className: 'dcc-select',
         value: detail?.id ?? '',
         disabled: busy || catalog === null || catalog.characters.length === 0,
-        onChange: (event) => run(() => loadDetail(event.target.value), '角色详情已加载'),
+        onChange: (event) => run(() => loadDetail(event.target.value), 'character.status.detailsLoaded'),
       },
-      ...(catalog?.characters.length ? [] : [h('option', { key: 'empty', value: '' }, '角色库为空')]),
-      ...(catalog?.characters ?? []).map((item) => h('option', { key: item.id, value: item.id }, `${item.name} · ${item.sourceFormat}`)))),
-      h('p', { className: 'dcc-note' }, `当前会话：${sessionId || '无'}；绑定：${activeName}`),
-      h('div', { className: 'dcc-status', 'data-error': status.error || undefined, role: 'status', 'aria-live': 'polite' }, status.text),
-      detail === null ? h('p', { className: 'dcc-note' }, catalog === null ? '正在加载角色库…' : '导入一张合成或自有授权的 SillyTavern 角色卡以查看详情。') : h('div', { className: 'dcc-card' },
+      ...(catalog?.characters.length ? [] : [h('option', { key: 'empty', value: '' }, uiMessage('character.libraryEmpty'))]),
+      ...(catalog?.characters ?? []).map((item) => h('option', { key: item.id, value: item.id }, rawText(`${item.name} · ${item.sourceFormat}`))))),
+      h('p', { className: 'dcc-note' }, uiMessage('character.sessionBinding', {
+        session: sessionId || translate('common.none'),
+        name: activeName,
+      })),
+      h('div', { className: 'dcc-status', 'data-error': status.error || undefined, role: 'status', 'aria-live': 'polite' }, statusText(status)),
+      detail === null ? h('p', { className: 'dcc-note' }, catalog === null ? uiMessage('character.loading') : uiMessage('character.emptyHint')) : h('div', { className: 'dcc-card' },
         h('div', { className: 'dcc-card-head' },
-          detail.source.container === 'png' ? h('img', { className: 'dcc-avatar', src: `${API_ROOT}/characters/${encodeURIComponent(detail.id)}/artifact`, alt: `${detail.name} 角色卡图片` }) : null,
+          detail.source.container === 'png' ? h('img', { className: 'dcc-avatar', src: `${API_ROOT}/characters/${encodeURIComponent(detail.id)}/artifact`, alt: uiMessage('character.imageAlt', { name: detail.name }) }) : null,
           h('div', null,
-            h('h3', { className: 'dcc-card-title' }, detail.name),
-            h('p', { className: 'dcc-meta' }, `${detail.source.format}${detail.source.specVersion ? ` · ${detail.source.specVersion}` : ''} · ${detail.source.container}`),
-            h('p', { className: 'dcc-meta' }, `${detail.data.creator || '未知作者'}${detail.data.characterVersion ? ` · ${detail.data.characterVersion}` : ''}`),
-            h('div', { className: 'dcc-tags' }, ...detail.data.tags.map((tag, index) => h('span', { className: 'dcc-tag', key: `${tag}-${index}` }, tag))),
+            h('h3', { className: 'dcc-card-title' }, rawText(detail.name)),
+            h('p', { className: 'dcc-meta' }, rawText(`${detail.source.format}${detail.source.specVersion ? ` · ${detail.source.specVersion}` : ''} · ${detail.source.container}`)),
+            h('p', { className: 'dcc-meta' }, rawText(`${detail.data.creator || translate('common.unknownAuthor')}${detail.data.characterVersion ? ` · ${detail.data.characterVersion}` : ''}`)),
+            h('div', { className: 'dcc-tags' }, ...detail.data.tags.map((tag, index) => h('span', { className: 'dcc-tag', key: `${tag}-${index}` }, rawText(tag)))),
           ),
         ),
-        h(Field, { label: '开场参考' }, h('select', {
+        h(Field, { label: uiMessage('character.greeting') }, h('select', {
           className: 'dcc-select',
           value: binding?.character?.greetingIndex ?? 0,
           onChange: (event) => setBinding((current) => ({ ...current, character: { ...current.character, greetingIndex: Number(event.target.value) } })),
-        }, ...greetings.map((item) => h('option', { key: item.index, value: item.index }, item.label)))),
-        h('label', { className: 'dcc-check' }, h('input', { type: 'checkbox', checked: binding?.character?.preferCharacterSystemPrompt !== false, onChange: (event) => setBinding((current) => ({ ...current, character: { ...current.character, preferCharacterSystemPrompt: event.target.checked } })) }), h('span', null, '允许 loader 优先采用卡内 system_prompt')),
-        h('label', { className: 'dcc-check' }, h('input', { type: 'checkbox', checked: binding?.character?.preferCharacterPostHistory !== false, onChange: (event) => setBinding((current) => ({ ...current, character: { ...current.character, preferCharacterPostHistory: event.target.checked } })) }), h('span', null, '允许 loader 采用 post_history_instructions（实际位置由 loader 决定）')),
+        }, ...greetings.map((item) => h('option', { key: item.index, value: item.index }, uiMessage(item.labelKey, item.labelValues))))),
+        h('label', { className: 'dcc-check' }, h('input', { type: 'checkbox', checked: binding?.character?.preferCharacterSystemPrompt !== false, onChange: (event) => setBinding((current) => ({ ...current, character: { ...current.character, preferCharacterSystemPrompt: event.target.checked } })) }), h('span', null, uiMessage('character.preferSystem'))),
+        h('label', { className: 'dcc-check' }, h('input', { type: 'checkbox', checked: binding?.character?.preferCharacterPostHistory !== false, onChange: (event) => setBinding((current) => ({ ...current, character: { ...current.character, preferCharacterPostHistory: event.target.checked } })) }), h('span', null, uiMessage('character.preferPostHistory'))),
         h('div', { className: 'dcc-actions' },
-          h('button', { className: 'dcc-button dcc-primary', type: 'button', disabled: busy || !sessionId, onClick: bind }, selection?.characterCardId === detail.id ? '更新会话绑定' : '绑定到当前会话'),
-          h('button', { className: 'dcc-button', type: 'button', disabled: busy || !sessionId || selection === null, onClick: unbind }, '解除绑定'),
+          h('button', { className: 'dcc-button dcc-primary', type: 'button', disabled: busy || !sessionId, onClick: bind }, selection?.characterCardId === detail.id ? uiMessage('character.bindUpdate') : uiMessage('character.bind')),
+          h('button', { className: 'dcc-button', type: 'button', disabled: busy || !sessionId || selection === null, onClick: unbind }, uiMessage('character.unbind')),
         ),
-        h('p', { className: 'dcc-note' }, '角色卡模块负责保存标准化资源和会话选择；实际 system profile 与内嵌世界信息匹配由 Tavern loader 在每次请求时统一处理，不会伪造 assistant 历史。'),
-        h(TextDetail, { label: 'Creator notes', value: detail.data.creatorNotes }),
-        h(TextDetail, { label: 'Description', value: detail.data.description }),
-        h(TextDetail, { label: 'Personality', value: detail.data.personality }),
-        h(TextDetail, { label: 'Scenario', value: detail.data.scenario }),
-        h(TextDetail, { label: '当前开场参考内容', value: greetings[binding?.character?.greetingIndex ?? 0]?.text }),
-        h(TextDetail, { label: 'Message examples', value: detail.data.messageExample }),
-        h(TextDetail, { label: 'System prompt（由 loader 按绑定设置处理）', value: detail.data.systemPrompt }),
-        h(TextDetail, { label: 'Post-history instructions（由 loader 近似放置）', value: detail.data.postHistoryInstructions }),
-        detail.data.characterBook !== null ? h('div', { className: 'dcc-status' }, `内嵌 character_book 已无损保留（${Array.isArray(detail.data.characterBook.entries) ? detail.data.characterBook.entries.length : '未知'} 条）；绑定角色后由 Tavern loader 调用世界信息 matcher，解绑后不再参与后续请求。`) : null,
-        h(DiagnosticList, { title: '兼容警告', items: detail.compatibility.warnings }),
-        h(DiagnosticList, { title: '需要 loader/其他模块处理', items: detail.compatibility.unsupportedFeatures }),
-        detail.compatibility.unknownMacroNames.length > 0 ? h('div', { className: 'dcc-status' }, `未知宏：${detail.compatibility.unknownMacroNames.join(', ')}`) : null,
+        h('p', { className: 'dcc-note' }, uiMessage('character.moduleNote')),
+        h(TextDetail, { label: uiMessage('character.field.creatorNotes'), value: detail.data.creatorNotes }),
+        h(TextDetail, { label: uiMessage('character.field.description'), value: detail.data.description }),
+        h(TextDetail, { label: uiMessage('character.field.personality'), value: detail.data.personality }),
+        h(TextDetail, { label: uiMessage('character.field.scenario'), value: detail.data.scenario }),
+        h(TextDetail, { label: uiMessage('character.field.greetingContent'), value: greetings[binding?.character?.greetingIndex ?? 0]?.text }),
+        h(TextDetail, { label: uiMessage('character.field.messageExamples'), value: detail.data.messageExample }),
+        h(TextDetail, { label: uiMessage('character.field.systemPrompt'), value: detail.data.systemPrompt }),
+        h(TextDetail, { label: uiMessage('character.field.postHistory'), value: detail.data.postHistoryInstructions }),
+        detail.data.characterBook !== null ? h('div', { className: 'dcc-status' }, uiMessage('character.embeddedBook', { count: Array.isArray(detail.data.characterBook.entries) ? detail.data.characterBook.entries.length : translate('common.unknown') })) : null,
+        h(DiagnosticList, { titleKey: 'character.warnings', items: detail.compatibility.warnings }),
+        h(DiagnosticList, { titleKey: 'character.unsupported', items: detail.compatibility.unsupportedFeatures }),
+        detail.compatibility.unknownMacroNames.length > 0 ? h('div', { className: 'dcc-status' }, uiMessage('character.unknownMacros', { names: detail.compatibility.unknownMacroNames.join(', ') })) : null,
         h('div', { className: 'dcc-actions' },
-          h('a', { className: 'dcc-button', href: `${API_ROOT}/characters/${encodeURIComponent(detail.id)}/artifact`, download: '' }, '导出原件'),
-          h('a', { className: 'dcc-button', href: `${API_ROOT}/characters/${encodeURIComponent(detail.id)}/json`, download: '' }, '导出 JSON'),
+          h('a', { className: 'dcc-button', href: `${API_ROOT}/characters/${encodeURIComponent(detail.id)}/artifact`, download: '' }, uiMessage('character.exportOriginal')),
+          h('a', { className: 'dcc-button', href: `${API_ROOT}/characters/${encodeURIComponent(detail.id)}/json`, download: '' }, uiMessage('common.exportJson')),
         ),
-        h('div', { className: 'dcc-footer' }, h('button', { className: 'dcc-button dcc-danger', type: 'button', disabled: busy, onClick: remove }, '删除角色卡')),
+        h('div', { className: 'dcc-footer' }, h('button', { className: 'dcc-button dcc-danger', type: 'button', disabled: busy, onClick: remove }, uiMessage('character.delete'))),
       ),
     ),
   )

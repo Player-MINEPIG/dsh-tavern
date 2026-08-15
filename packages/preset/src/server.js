@@ -46,7 +46,6 @@ function defaultActiveView(store) {
   return {
     selected: store.selectedSummary(),
     callConfig: {},
-    compiledPrompt: '',
   }
 }
 
@@ -117,6 +116,7 @@ export function createApiHandler(
         const body = await readJson(req)
         const selectedId = body.id === null ? null : body.id
         const targetSessionId = typeof body.sessionId === 'string' && body.sessionId !== '' ? body.sessionId : null
+        await selectionPolicy.beforeSelectionChange?.({ sessionId: targetSessionId, presetId: selectedId })
         const selected = selectionPolicy.selectPreset === undefined
           ? store.select(selectedId)
           : selectionPolicy.selectPreset(selectedId, targetSessionId)

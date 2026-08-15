@@ -1,7 +1,7 @@
 # Tavern launcher status implementation and acceptance
 
-Status: implemented on the launcher-status feature branch on 2026-08-15. This
-is a module review document, not product README content.
+Status: implemented and integrated into the 2026-08-15 public release candidate.
+This file retains the module-level implementation and acceptance contract.
 
 ## Scope and boundary
 

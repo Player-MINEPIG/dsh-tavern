@@ -1,9 +1,19 @@
 import {
-  createElement as h,
+  createElement,
   useCallback,
   useEffect,
   useState,
 } from 'react'
+import {
+  createLocalizedElement,
+  getClientUiSettings,
+  rawText,
+  translate,
+  uiMessage,
+  unwrapText,
+} from '../../client/src/i18n.js'
+
+const h = createLocalizedElement(createElement)
 
 const TRACE_API = '/dsh-tavern/api/traces'
 
@@ -18,24 +28,24 @@ const css = `
 `
 
 const reasonLabels = Object.freeze({
-  constant: '常驻条目',
-  'primary-key-match': '主关键词命中',
-  'primary-key-miss': '主关键词未命中',
-  'secondary-and_any-match': '附加关键词任一命中',
-  'secondary-and_any-miss': '附加关键词均未命中',
-  'secondary-and_all-match': '附加关键词全部命中',
-  'secondary-and_all-miss': '附加关键词未全部命中',
-  'secondary-not_any-match': '附加关键词排除条件通过',
-  'secondary-not_any-miss': '附加关键词触发排除',
-  'secondary-not_all-match': '附加关键词非全中条件通过',
-  'secondary-not_all-miss': '附加关键词全中而排除',
-  disabled: '条目已禁用',
-  'external-vector-match-required': '需要外部向量匹配',
-  'inclusion-group-loser': '互斥组未胜出',
-  'probability-failed': '概率检查拒绝',
-  'budget-exceeded': '超出 token 预算',
-  'empty-content': '正文为空，未插入',
-  'outlet-unsupported': 'Outlet 无稳定插入 seam',
+  constant: 'trace.reason.constant',
+  'primary-key-match': 'trace.reason.primary-key-match',
+  'primary-key-miss': 'trace.reason.primary-key-miss',
+  'secondary-and_any-match': 'trace.reason.secondary-and_any-match',
+  'secondary-and_any-miss': 'trace.reason.secondary-and_any-miss',
+  'secondary-and_all-match': 'trace.reason.secondary-and_all-match',
+  'secondary-and_all-miss': 'trace.reason.secondary-and_all-miss',
+  'secondary-not_any-match': 'trace.reason.secondary-not_any-match',
+  'secondary-not_any-miss': 'trace.reason.secondary-not_any-miss',
+  'secondary-not_all-match': 'trace.reason.secondary-not_all-match',
+  'secondary-not_all-miss': 'trace.reason.secondary-not_all-miss',
+  disabled: 'trace.reason.disabled',
+  'external-vector-match-required': 'trace.reason.external-vector-match-required',
+  'inclusion-group-loser': 'trace.reason.inclusion-group-loser',
+  'probability-failed': 'trace.reason.probability-failed',
+  'budget-exceeded': 'trace.reason.budget-exceeded',
+  'empty-content': 'trace.reason.empty-content',
+  'outlet-unsupported': 'trace.reason.outlet-unsupported',
 })
 
 function formatTime(value) {
@@ -49,18 +59,18 @@ function formatBytes(value) {
 }
 
 function storageStatus(storage) {
-  const parts = [`总计最多 ${formatBytes(storage.maxTotalBytes)}`]
-  if (Number.isSafeInteger(storage.maxRecordsPerSession)) parts.push(`每会话最多 ${storage.maxRecordsPerSession} 条`)
-  if (Number.isSafeInteger(storage.maxSessions)) parts.push(`最多 ${storage.maxSessions} 个会话`)
-  if (Number.isSafeInteger(storage.maxRecordBytes)) parts.push(`单条最多 ${formatBytes(storage.maxRecordBytes)}`)
-  return `插件有界存储：${parts.join('、')}；刷新或宿主重启后可恢复。`
+  const parts = [translate('trace.storage.total', { value: formatBytes(storage.maxTotalBytes) })]
+  if (Number.isSafeInteger(storage.maxRecordsPerSession)) parts.push(translate('trace.storage.perSession', { value: storage.maxRecordsPerSession }))
+  if (Number.isSafeInteger(storage.maxSessions)) parts.push(translate('trace.storage.sessions', { value: storage.maxSessions }))
+  if (Number.isSafeInteger(storage.maxRecordBytes)) parts.push(translate('trace.storage.perRecord', { value: formatBytes(storage.maxRecordBytes) }))
+  return uiMessage('trace.storage.summary', { limits: parts.join(translate('common.listSeparator')) })
 }
 
-function resourceCard(label, value) {
-  return h('div', { className: 'dttrace-card', key: label },
-    h('div', { className: 'dttrace-label' }, label),
-    h('div', { className: 'dttrace-value' }, value?.name || '未使用'),
-    value?.id ? h('div', { className: 'dttrace-meta' }, value.id) : null,
+function resourceCard(labelKey, value) {
+  return h('div', { className: 'dttrace-card', key: labelKey },
+    h('div', { className: 'dttrace-label' }, uiMessage(labelKey)),
+    h('div', { className: 'dttrace-value' }, value?.name ? rawText(value.name) : uiMessage('trace.unused')),
+    value?.id ? h('div', { className: 'dttrace-meta' }, rawText(value.id)) : null,
   )
 }
 
@@ -69,36 +79,46 @@ function keywords(decision) {
   const configuredSecondary = decision.secondaryKeys ?? []
   const primary = decision.primaryMatches ?? []
   const secondary = decision.secondaryMatches ?? []
+  const separator = translate('common.listSeparator')
   const configured = [
-    configuredPrimary.length > 0 ? `主：${configuredPrimary.map(value => JSON.stringify(value)).join('、')}` : null,
-    configuredSecondary.length > 0 ? `附加：${configuredSecondary.map(value => JSON.stringify(value)).join('、')}` : null,
-  ].filter(Boolean).join(' · ') || '无配置关键词'
+    configuredPrimary.length > 0 ? translate('trace.keywords.primary', { values: configuredPrimary.map(value => JSON.stringify(value)).join(separator) }) : null,
+    configuredSecondary.length > 0 ? translate('trace.keywords.secondary', { values: configuredSecondary.map(value => JSON.stringify(value)).join(separator) }) : null,
+  ].filter(Boolean).join(' · ') || translate('trace.noConfiguredKeywords')
   const matched = [
-    primary.length > 0 ? `主：${primary.map(value => JSON.stringify(value)).join('、')}` : null,
-    secondary.length > 0 ? `附加：${secondary.map(value => JSON.stringify(value)).join('、')}` : null,
-  ].filter(Boolean).join(' · ') || '无关键词命中'
-  return { configured, matched }
+    primary.length > 0 ? translate('trace.keywords.primary', { values: primary.map(value => JSON.stringify(value)).join(separator) }) : null,
+    secondary.length > 0 ? translate('trace.keywords.secondary', { values: secondary.map(value => JSON.stringify(value)).join(separator) }) : null,
+  ].filter(Boolean).join(' · ') || translate('trace.noKeywordMatches')
+  return { configured: rawText(configured), matched: rawText(matched) }
 }
 
 function decisionMeta(value) {
   const parts = []
   if (value.secondaryLogic) parts.push(`secondary=${value.secondaryLogic}`)
-  if (value.groupName) parts.push(`组 ${value.groupName}${value.groupOverride ? ' / override' : value.groupWeight === null ? '' : ` / weight ${value.groupWeight}`}`)
+  if (value.groupName) parts.push(unwrapText(uiMessage('trace.decision.group', { name: value.groupName, detail: value.groupOverride ? ' / override' : value.groupWeight === null ? '' : ` / weight ${value.groupWeight}` })))
   if (value.probability !== null) {
-    parts.push(`概率 ${value.probability}%${value.probabilityRoll === null ? '' : ` / roll ${(value.probabilityRoll * 100).toFixed(2)}%`}`)
+    parts.push(unwrapText(uiMessage('trace.decision.probability', { value: value.probability, roll: value.probabilityRoll === null ? '' : ` / roll ${(value.probabilityRoll * 100).toFixed(2)}%` })))
   }
-  if (value.tokenCost !== null) parts.push(`预算 ${value.tokenCost} tokens`)
+  if (value.tokenCost !== null) parts.push(unwrapText(uiMessage('trace.decision.budget', { value: value.tokenCost })))
   if (value.requestedPosition) {
-    parts.push(`位置 ${value.requestedPosition}${value.appliedPosition ? ` → ${value.appliedPosition}${value.approximatePosition ? '（近似）' : ''}` : ' → 未插入'}`)
+    parts.push(unwrapText(uiMessage('trace.decision.position', {
+      requested: value.requestedPosition,
+      result: value.appliedPosition
+        ? translate('trace.position.applied', {
+          position: value.appliedPosition,
+          approximate: value.approximatePosition ? translate('trace.position.approximate') : '',
+        })
+        : translate('trace.position.notInserted'),
+    })))
   }
-  return parts.join(' · ')
+  return rawText(parts.join(' · '))
 }
 
 function WorldBookAudit({ book }) {
-  const name = book.resource?.name || book.resource?.id || '世界书'
+  const name = book.resource?.name || book.resource?.id
+  const decisionCount = translate(book.decisions.length === 1 ? 'trace.decisionCount.one' : 'trace.decisionCount.other', { count: book.decisions.length })
   return h('div', { className: 'dttrace-book' },
-    h('div', { className: 'dttrace-section-title' }, name),
-    h('div', { className: 'dttrace-meta' }, `预算：${book.budget.used}${book.budget.limit === null ? '' : ` / ${book.budget.limit}`} tokens · ${book.decisions.length} 条决策`),
+    h('div', { className: 'dttrace-section-title' }, name ? rawText(name) : uiMessage('nav.worldBook')),
+    h('div', { className: 'dttrace-meta' }, uiMessage('trace.bookBudget', { used: book.budget.used, limit: book.budget.limit === null ? '' : ` / ${book.budget.limit}`, decisionCount })),
     ...book.decisions.map((item, index) => {
       const keywordState = keywords(item)
       return h('div', {
@@ -106,14 +126,14 @@ function WorldBookAudit({ book }) {
       'data-included': item.decision === 'included',
       key: `${item.entryId ?? 'entry'}-${index}`,
     },
-    h('div', { className: 'dttrace-decision-state' }, item.decision === 'included' ? '已插入' : '已拒绝'),
+    h('div', { className: 'dttrace-decision-state' }, item.decision === 'included' ? uiMessage('trace.inserted') : uiMessage('trace.rejected')),
     h('div', null,
-      h('div', null, item.entryName || `条目 ${String(item.entryId ?? index + 1)}`),
-      h('div', { className: 'dttrace-meta' }, reasonLabels[item.reason] ?? item.reason),
+      h('div', null, item.entryName ? rawText(item.entryName) : uiMessage('world.entry.fallback', { id: String(item.entryId ?? index + 1) })),
+      h('div', { className: 'dttrace-meta' }, reasonLabels[item.reason] ? uiMessage(reasonLabels[item.reason]) : rawText(item.reason)),
     ),
     h('div', { className: 'dttrace-keywords' },
-      h('div', null, `配置关键词：${keywordState.configured}`),
-      h('div', null, `本轮命中：${keywordState.matched}`),
+      h('div', null, uiMessage('trace.keywords.configured', { value: unwrapText(keywordState.configured) })),
+      h('div', null, uiMessage('trace.keywords.matched', { value: unwrapText(keywordState.matched) })),
       h('div', { className: 'dttrace-meta' }, decisionMeta(item)),
     ))}),
   )
@@ -122,35 +142,52 @@ function WorldBookAudit({ book }) {
 function TraceRecord({ record, latest }) {
   const authority = record.authority ?? {}
   const linked = authority.headerEventSeq !== null
+  const reusedHeader = authority.headerReused ? translate('trace.reusedHeader') : ''
+  const profileStatus = translate(authority.tavernProfilePresent === false
+    ? 'trace.profile.missing'
+    : authority.tavernProfilePresent === true ? 'trace.profile.consistent' : 'trace.profile.absent')
+  const configStatus = translate(authority.tavernCallConfigApplied === false ? 'trace.config.inconsistent' : 'trace.config.consistent')
   return h('details', { className: 'dttrace-record', open: latest },
     h('summary', null,
-      h('span', { className: 'dttrace-round' }, `轮次 ${record.turn} · 步骤 ${record.step}${record.attempt > 1 ? ` · 尝试 ${record.attempt}` : ''}`),
-      h('span', { className: 'dttrace-badge', 'data-ok': linked || undefined }, linked ? `request/header #${authority.headerEventSeq}` : '等待权威 header'),
-      h('span', { className: 'dttrace-time' }, formatTime(record.recordedAt)),
+      h('span', { className: 'dttrace-round' }, uiMessage(record.attempt > 1 ? 'trace.roundAttempt' : 'trace.round', { turn: record.turn, step: record.step, attempt: record.attempt })),
+      h('span', { className: 'dttrace-badge', 'data-ok': linked || undefined }, linked ? rawText(`request/header #${authority.headerEventSeq}`) : uiMessage('trace.waitingHeader')),
+      h('span', { className: 'dttrace-time' }, rawText(formatTime(record.recordedAt))),
     ),
     h('div', { className: 'dttrace-content' },
       h('div', { className: 'dttrace-status' }, linked
-        ? `该记录已对齐 DSH request/header #${authority.headerEventSeq}${authority.headerReused ? '（沿用上一份 header）' : ''}。Tavern profile 校验：${authority.tavernProfilePresent === false ? '未找到' : authority.tavernProfilePresent === true ? '一致' : '本轮无 profile'}；采样字段：${authority.tavernCallConfigApplied === false ? '不一致' : '一致或无字段'}。`
-        : '尚未观察到可对齐的 DSH request/header；这不代表请求已经发送。刷新后仍会保留该待确认记录。'),
+        ? uiMessage('trace.recordAligned', { sequence: authority.headerEventSeq, reused: reusedHeader, profile: profileStatus, config: configStatus })
+        : uiMessage('trace.pendingHeader')),
       h('div', { className: 'dttrace-grid' },
-        resourceCard('Preset', record.resources?.preset),
-        resourceCard('Character', record.resources?.characterCard),
-        resourceCard('User', record.resources?.userProfile),
+        resourceCard('trace.resource.preset', record.resources?.preset),
+        resourceCard('trace.resource.character', record.resources?.characterCard),
+        resourceCard('trace.resource.user', record.resources?.userProfile),
       ),
       h('div', { className: 'dttrace-section' },
-        h('div', { className: 'dttrace-section-title' }, '组合与插入'),
-        h('div', { className: 'dttrace-meta' }, `${record.assembly.profileSection} · order ${record.assembly.profileOrder} · ${record.assembly.systemPromptMode} · ${record.assembly.systemCharacters} characters · call config: ${Object.keys(record.assembly.callConfig ?? {}).join(', ') || '无'}`),
+        h('div', { className: 'dttrace-section-title' }, uiMessage('trace.assembly')),
+        h('div', { className: 'dttrace-meta' }, uiMessage('trace.assemblyMeta', {
+          section: record.assembly.profileSection,
+          order: record.assembly.profileOrder,
+          mode: record.assembly.systemPromptMode,
+          characters: record.assembly.systemCharacters,
+          config: Object.keys(record.assembly.callConfig ?? {}).join(', ') || translate('common.none'),
+        })),
       ),
       record.worldBooks?.length > 0 ? h('div', { className: 'dttrace-section' },
-        h('div', { className: 'dttrace-section-title' }, '世界书匹配决策'),
-        h('div', { className: 'dttrace-meta' }, '匹配基于 system assembly 当时可见的持久化会话历史；刚提交的输入会在下一次 agent step 扫描时可见，该 step 可能仍属于同一可见回合（如工具继续），也可能属于下一用户回合。'),
+        h('div', { className: 'dttrace-section-title' }, uiMessage('trace.worldBookDecisions')),
+        h('div', { className: 'dttrace-meta' }, record.activation?.pendingMessageCount > 0
+          ? uiMessage('trace.activationPending', {
+            included: record.activation.includedPendingMessageCount,
+            pending: record.activation.pendingMessageCount,
+            truncated: record.activation.truncated ? translate('trace.truncated') : '',
+          })
+          : uiMessage('trace.historyOnly')),
         ...record.worldBooks.map((book, index) => h(WorldBookAudit, { book, key: `${book.resource?.id ?? 'book'}-${index}` })),
-      ) : h('div', { className: 'dttrace-note' }, '本轮没有可审计的世界书匹配来源。'),
+      ) : h('div', { className: 'dttrace-note' }, uiMessage('trace.noSource')),
       record.diagnostics?.length > 0 ? h('div', { className: 'dttrace-section' },
-        h('div', { className: 'dttrace-section-title' }, `诊断（${record.diagnostics.length}）`),
-        h('ul', { className: 'dttrace-list' }, ...record.diagnostics.map((item, index) => h('li', { key: `${item.code}-${index}` }, `${item.code}: ${item.message}`))),
+        h('div', { className: 'dttrace-section-title' }, uiMessage('trace.diagnostics', { count: record.diagnostics.length })),
+        h('ul', { className: 'dttrace-list' }, ...record.diagnostics.map((item, index) => h('li', { key: `${item.code}-${index}` }, rawText(`${item.code}: ${item.message}`)))),
       ) : null,
-      h('p', { className: 'dttrace-note' }, '隐私边界：这里只保存资源摘要、配置/命中关键词、决策原因、位置、预算和 SHA-256 摘要；不保存 preset/角色/user/世界书正文、完整 system、聊天历史、header 内容或 tool payload。'),
+      h('p', { className: 'dttrace-note' }, uiMessage('trace.privacy')),
     ),
   )
 }
@@ -160,6 +197,7 @@ export function TavernTraceView({ sessionId, useSession }) {
   const running = useSession(snapshot => snapshot.running)
   const [data, setData] = useState(null)
   const [error, setError] = useState('')
+  const [uiSettings, setUiSettings] = useState(getClientUiSettings)
 
   const refresh = useCallback(async () => {
     try {
@@ -174,19 +212,32 @@ export function TavernTraceView({ sessionId, useSession }) {
   }, [sessionId])
 
   useEffect(() => { refresh() }, [refresh, lastVisibleSeq, running])
+  useEffect(() => {
+    const onSettings = event => setUiSettings(event.detail ?? getClientUiSettings())
+    window.addEventListener('dsh-tavern:ui-settings', onSettings)
+    return () => window.removeEventListener('dsh-tavern:ui-settings', onSettings)
+  }, [])
 
   const records = [...(data?.records ?? [])].reverse()
-  return h('div', { className: 'dttrace-root' },
+  return h('div', {
+    className: 'dttrace-root',
+    lang: uiSettings.locale,
+    style: {
+      zoom: uiSettings.scale,
+      width: `${100 / uiSettings.scale}%`,
+      height: `${100 / uiSettings.scale}%`,
+    },
+  },
     h('div', { className: 'dttrace-toolbar' },
-      h('div', { className: 'dttrace-title' }, 'Tavern Trace'),
-      h('button', { className: 'dttrace-button', type: 'button', onClick: refresh }, '刷新'),
+      h('div', { className: 'dttrace-title' }, uiMessage('trace.title')),
+      h('button', { className: 'dttrace-button', type: 'button', onClick: refresh }, uiMessage('common.refresh')),
     ),
     h('div', { className: 'dttrace-body' },
-      h('p', { className: 'dttrace-note' }, '与 Conversation / Trajectory 并列的 loader 审计视图。DSH request/header 始终是最终发送 system、tools 与生效 config 的权威。'),
-      error ? h('div', { className: 'dttrace-status', 'data-error': true }, error) : null,
-      data === null && !error ? h('div', { className: 'dttrace-status' }, '正在读取审计记录…') : null,
+      h('p', { className: 'dttrace-note' }, uiMessage('trace.intro')),
+      error ? h('div', { className: 'dttrace-status', 'data-error': true }, rawText(error)) : null,
+      data === null && !error ? h('div', { className: 'dttrace-status' }, uiMessage('trace.reading')) : null,
       data !== null ? h('div', { className: 'dttrace-status' }, storageStatus(data.storage)) : null,
-      records.length === 0 && data !== null ? h('div', { className: 'dttrace-status' }, '此会话还没有 Tavern 请求审计记录。发送下一条消息后再查看。') : null,
+      records.length === 0 && data !== null ? h('div', { className: 'dttrace-status' }, uiMessage('trace.empty')) : null,
       ...records.map((record, index) => h(TraceRecord, { record, latest: index === 0, key: record.id })),
     ),
   )
@@ -205,7 +256,7 @@ export function registerTavernTraceView(ctx) {
     name: 'conversation.view',
     id: 'tavern-trace',
     order: 20,
-    label: 'Tavern Trace',
+    label: translate('trace.title'),
     inject: () => ({}),
   }, TavernTraceView))
 }

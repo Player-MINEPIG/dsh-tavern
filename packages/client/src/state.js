@@ -1,12 +1,14 @@
 export const TAVERN_MENU_ITEMS = Object.freeze([
-  { id: 'preset', label: '预设', emptyTitle: '未选择预设', available: true },
-  { id: 'character', label: '角色卡', emptyTitle: '未绑定角色', available: true },
-  { id: 'world-info', label: '世界书', emptyTitle: '未绑定世界书', available: true },
-  { id: 'user', label: '用户', emptyTitle: '未绑定用户', available: true },
+  { id: 'preset', labelKey: 'nav.preset', emptyTitleKey: 'nav.preset.empty', available: true },
+  { id: 'character', labelKey: 'nav.character', emptyTitleKey: 'nav.character.empty', available: true },
+  { id: 'world-info', labelKey: 'nav.worldBook', emptyTitleKey: 'nav.worldBook.empty', available: true },
+  { id: 'user', labelKey: 'nav.user', emptyTitleKey: 'nav.user.empty', available: true },
+  { id: 'session-template', labelKey: 'nav.sessionTemplate', emptyTitleKey: 'nav.sessionTemplate.empty', available: true, binding: false, showBinding: false },
+  { id: 'settings', labelKey: 'nav.settings', emptyTitleKey: 'nav.settings.empty', available: true, binding: false, showBinding: false },
 ])
 
 export const TAVERN_LAUNCHER_SIZE = 44
-export const TAVERN_LAUNCHER_PANEL = Object.freeze({ width: 300, height: 276 })
+export const TAVERN_LAUNCHER_PANEL = Object.freeze({ width: 300, height: 376 })
 
 function isRecord(value) {
   return value !== null && typeof value === 'object' && !Array.isArray(value)
@@ -51,7 +53,7 @@ function selectionIds(value) {
   return ids.filter((id, index) => ids.findIndex(item => String(item) === String(id)) === index)
 }
 
-function singleStatus({ id, resource, items, emptyTitle }) {
+function singleStatus({ id, resource, items, emptyTitleKey }) {
   const bound = id !== null && id !== undefined && id !== ''
   const directResource = isRecord(resource)
     && (resource.id === undefined || String(resource.id) === String(id))
@@ -60,7 +62,8 @@ function singleStatus({ id, resource, items, emptyTitle }) {
   const resolved = firstRecord(directResource, bound ? findResourceById(items, id) : null)
   return {
     bound,
-    title: bound ? resourceTitle(resolved, String(id)) : emptyTitle,
+    title: bound ? resourceTitle(resolved, String(id)) : null,
+    titleKey: bound ? null : emptyTitleKey,
     count: bound ? 1 : 0,
   }
 }
@@ -104,62 +107,70 @@ export function launcherResourceStatuses(snapshot) {
     if (id === undefined || id === null || selectedWorlds.some(item => String(item.id ?? item.resourceId) === String(id))) continue
     selectedWorlds.push(resource)
   }
-  const worldTitles = selectedWorlds.map(resource => resourceTitle(resource, String(resource.id ?? resource.resourceId ?? '已选择')))
+  const worldTitles = selectedWorlds.map(resource => resourceTitle(resource, String(resource.id ?? resource.resourceId ?? '')))
 
   return {
     preset: singleStatus({
       id: presetId,
       resource: presetResource,
       items: catalog(snapshot, 'presets', 'preset'),
-      emptyTitle: '未选择预设',
+      emptyTitleKey: 'nav.preset.empty',
     }),
     character: singleStatus({
       id: characterId,
       resource: characterResource,
       items: catalog(snapshot, 'characters', 'characterCards', 'character'),
-      emptyTitle: '未绑定角色',
+      emptyTitleKey: 'nav.character.empty',
     }),
     'world-info': {
       bound: selectedWorlds.length > 0,
       count: selectedWorlds.length,
       title: selectedWorlds.length === 0
-        ? '未绑定世界书'
+        ? null
         : selectedWorlds.length === 1
           ? worldTitles[0]
-          : `${worldTitles.join('、')} · ${selectedWorlds.length} 本`,
+          : worldTitles.join(' · '),
+      titleKey: selectedWorlds.length === 0 ? 'nav.worldBook.empty' : null,
     },
     user: singleStatus({
       id: userId,
       resource: userResource,
       items: catalog(snapshot, 'users', 'userProfiles', 'personas'),
-      emptyTitle: '未绑定用户',
+      emptyTitleKey: 'nav.user.empty',
     }),
+    'session-template': { bound: false, count: 0, title: null, titleKey: 'nav.sessionTemplate.empty' },
+    settings: { bound: false, count: 0, title: null, titleKey: 'nav.settings.empty' },
   }
 }
 
-export function clampLauncherAnchor(position, viewport) {
+export function clampLauncherAnchor(position, viewport, scale = 1) {
   const width = Math.max(TAVERN_LAUNCHER_SIZE, Number(viewport?.width) || TAVERN_LAUNCHER_SIZE)
   const height = Math.max(TAVERN_LAUNCHER_SIZE, Number(viewport?.height) || TAVERN_LAUNCHER_SIZE)
+  const launcherSize = TAVERN_LAUNCHER_SIZE * Math.max(0.1, Number(scale) || 1)
   const margin = 8
   return {
-    x: Math.min(width - TAVERN_LAUNCHER_SIZE - margin, Math.max(margin, Number(position?.x) || margin)),
-    y: Math.min(height - TAVERN_LAUNCHER_SIZE - margin, Math.max(margin, Number(position?.y) || margin)),
+    x: Math.min(width - launcherSize - margin, Math.max(margin, Number(position?.x) || margin)),
+    y: Math.min(height - launcherSize - margin, Math.max(margin, Number(position?.y) || margin)),
   }
 }
 
-export function launcherPlacement(anchor, viewport, expanded = false) {
-  const point = clampLauncherAnchor(anchor, viewport)
-  const opensLeft = point.x + TAVERN_LAUNCHER_PANEL.width > viewport.width - 8
-  const opensUp = point.y + TAVERN_LAUNCHER_PANEL.height > viewport.height - 8
+export function launcherPlacement(anchor, viewport, expanded = false, scale = 1) {
+  const factor = Math.max(0.1, Number(scale) || 1)
+  const point = clampLauncherAnchor(anchor, viewport, factor)
+  const panelWidth = TAVERN_LAUNCHER_PANEL.width * factor
+  const panelHeight = TAVERN_LAUNCHER_PANEL.height * factor
+  const launcherSize = TAVERN_LAUNCHER_SIZE * factor
+  const opensLeft = point.x + panelWidth > viewport.width - 8
+  const opensUp = point.y + panelHeight > viewport.height - 8
   return {
     side: opensLeft ? 'left' : 'right',
     vertical: opensUp ? 'up' : 'down',
-    left: expanded && opensLeft ? point.x - TAVERN_LAUNCHER_PANEL.width + TAVERN_LAUNCHER_SIZE : point.x,
-    top: expanded && opensUp ? point.y - TAVERN_LAUNCHER_PANEL.height + TAVERN_LAUNCHER_SIZE : point.y,
+    left: expanded && opensLeft ? point.x - panelWidth + launcherSize : point.x,
+    top: expanded && opensUp ? point.y - panelHeight + launcherSize : point.y,
     anchor: point,
   }
 }
 
 export function surfaceTitle(id) {
-  return TAVERN_MENU_ITEMS.find(item => item.id === id)?.label ?? ''
+  return TAVERN_MENU_ITEMS.find(item => item.id === id)?.labelKey ?? ''
 }

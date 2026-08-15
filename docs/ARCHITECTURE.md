@@ -1,6 +1,6 @@
 # dsh-tavern package architecture
 
-状态：2026-08-14 已采用。本文是架构决策与合并门槛，不是产品 README。
+状态：2026-08-15，首个公开发布候选版本已采用。本文是当前架构决策与发布审查门槛，不是产品 README。
 
 ## 决策结论
 
@@ -22,7 +22,7 @@ packages/preset  packages/character  packages/user  packages/world-book-library
              \           |              |             /
        │
        ▼
-packages/tavern-loader ◄── DSH session/event（计划：PendingInputProjection）
+packages/tavern-loader ◄── DSH session/event（PendingInputProjection）
 DSH 编译策略、session/request 策略、Host hooks
        │
        ├── packages/tavern-trace
@@ -44,7 +44,8 @@ DSH system prompt + agent request
 | `user` | “用户如何管理自己的 Tavern 身份描述？” | 严格三字段文档、CRUD 持久化、API、UI、loader adapter | 头像、DSH Agent 身份、prompt 放置、Host seam |
 | `world-book` | “哪些 lore entries 候选应被激活？” | ST/角色内嵌格式、归一化、纯匹配/排序/预算与 loader 投影 | session 选择、DSH 注入、角色卡存储 |
 | `world-book-library` | “用户如何管理独立世界书资源？” | 原子 JSON 存储、CRUD/导出 API、编辑 UI、供 loader 读取的 document | session 选择所有权、matcher 复制、Host seam、角色卡内嵌书修改 |
-| `tavern-loader` | “当前资源怎样影响这次 DSH 请求？” | 编译选中预设、映射支持的 call config、append/replace 策略、Host/API 挂载；下一阶段独占 pending-input 投影 | 重新解释 ST 原始字段、实现具体 UI |
+| `session-template` | “怎样复用 Tavern 配置但创建干净 DSH 会话？” | 有界模板投影/原子存储/API、缺失资源诊断和客户端事务顺序 | DSH 历史、Trace、Session 构造、最终 prompt |
+| `tavern-loader` | “当前资源怎样影响这次 DSH 请求？” | 编译选中预设、映射支持的 call config、append/replace 策略、Host/API 挂载、独占 pending-input 投影 | 重新解释 ST 原始字段、实现具体 UI |
 | `tavern-trace` | “这次 loader 为什么得到这个组合？” | turn/step 对齐、资源摘要、世界书接受/拒绝原因、header 摘要引用、有界存储/API/并列 view | 保存正文、替代 request/header、append 会话事件或模型消息 |
 
 角色卡已经在 `tavern-format` 增加 adapter/model，并在 `character` 用例层提供管理与资源入口；用户资源由独立 `user` 用例层提供严格 `{id,name,description}` 文档；世界书格式兼容位于独立纯库 `packages/world-book`。所有资源最终由同一个 `tavern-loader` 组合。角色卡和用户模块都不读取预设排序，也不决定字段插入位置。
@@ -53,9 +54,11 @@ DSH system prompt + agent request
 
 统一 adapter、session 继承和 marker 契约见 `docs/LOADER_CONTRACT.md`；DSH 原生与插件增强消息流见 `docs/DSH_MESSAGE_FLOW.md`；世界书格式和投影细节见 `docs/world-book/DESIGN.md`。
 
-## 下一阶段：loader-owned ActivationContext
+干净会话与配置模板由 `packages/session-template` 保存纯选择投影，loader 注入真实资源库和 `SessionSelectionStore`。浏览器组合根只通过 DSH 公开的 `workspaces.connectWorkspace()` 与 `sessions.open()` 创建/导航；它不 fork 或伪造历史。完整事务与验收边界见 `docs/session-template/IMPLEMENTATION_AND_ACCEPTANCE.md`。
 
-rc.6 的 `agent/inbox/spliced` 是公开、持久的 Session event；插入、替换、取消和 claim 都先 append 该事件并同步通知 `session/event`，随后实时 Inbox 才改变。下一阶段由 loader 在这个边界维护唯一 `PendingInputProjection`，把 durable history 与本次 claimed batch 组合为临时 `ActivationContext`，供 world-book matcher 和未来明确需要当前输入的运行策略只读消费。
+## Loader-owned ActivationContext
+
+rc.6 的 `agent/inbox/spliced` 是公开、持久的 Session event；插入、替换、取消和 claim 都先 append 该事件并同步通知 `session/event`，随后实时 Inbox 才改变。loader 在这个边界维护唯一 `PendingInputProjection`，把 durable history 与本次 claimed batch 去重后组合为临时 `ActivationContext`，供 world-book matcher 只读消费。
 
 这个投影属于 Host adapter，不下沉到纯模块：
 
@@ -67,10 +70,10 @@ rc.6 的 `agent/inbox/spliced` 是公开、持久的 Session event；插入、�
 
 这项变化只把“当前输入参与激活判断”的位置前移到首次 system assembly；它不改变 DSH durable history、真实 role message 顺序、工具权限、`agent/request` 或 `request/header` 的所有权。
 
-## 计划中的控制面扩展
+## 控制面扩展
 
-- 用户与独立世界书的关联由统一 loader policy 持有；`UserModel` 仍只有 `id/name/description`，`world-book-library` 文档也不反向保存用户 id。用户 UI 可以编辑关系，但不能决定最终组合顺序或自行运行 matcher。
-- UI 缩放与语言由 `packages/client` 的单一设置入口持有，各资源组件消费共享设置；Host loader、资源 JSON 和 session selection 不读取显示设置。
+- 用户与独立世界书的关联已由统一 loader policy 的独立原子文件持有；`UserModel` 仍只有 `id/name/description`，`world-book-library` 文档也不反向保存用户 id。用户 UI 可以编辑关系，但最终以 session 显式来源优先、用户来源随后稳定去重，且只有 loader 的共享 adapter 运行 matcher。
+- UI 缩放与语言已由 `packages/client` 的单一设置入口、共享 locale contract 和逐语言语义 catalog 实现。业务组件只引用语义 key，动态资源值通过显式 raw boundary 插值；运行时不再扫描或替换中文原文。loader 根 API 只持久化有界的全局显示文档，资源 JSON、profile 编译和 session selection 不读取显示设置。
 - 这两项都必须复用现有单插件 API、安全边界、刷新事件和原子持久化模式，不能通过新增第二个可安装插件实现。
 
 ## 为什么不是两个 DSH 插件
@@ -90,18 +93,16 @@ rc.6 的 `agent/inbox/spliced` 是公开、持久的 Session event；插入、�
 
 因此发布与安装单位固定为根包 `dsh-tavern`，内部包边界用于代码复用和测试隔离。`package.json` 的 `./format`、`./preset`、`./character`、`./user`、`./world-book`、`./world-book-library`、`./trace`、`./loader` exports 是程序接口，不代表可分别安装的插件。
 
-## 合并顺序与门槛
+## 当前发布门槛
 
-推荐顺序是：
+早期 preset、角色卡、世界书、用户与 Phase 3 worktree 已完成分层开发并统一接入当前 loader；具体提交过程保留在 `docs/CHANGELOG.md`，不再作为尚待执行的合并步骤。正式合入 `main` 前必须：
 
-1. 在 preset feature 分支完成内部边界拆分；
-2. 运行格式兼容验收，证明 ST 解析、未知字段保留和归一化结果稳定；
-3. 运行加载验收，证明选中状态、system prompt、call config、API 和发布入口仍工作；
-4. 用隔离 `DSH_HOME` 安装根插件，确认真实 DSH 从 loader 入口启动；
-5. 文档和 changelog 与实现同步后合并 `main`；
-6. 角色卡分支基于新 `main` 对齐，仅扩展 adapter/model，最后接入统一 loader。
-
-若在拆分后才发现运行回归，修复范围仍留在 feature 分支；这就是不先合并再拆分的主要原因。
+1. 运行格式兼容验收，证明 ST 解析、未知字段保留和归一化结果稳定；
+2. 运行加载验收，证明 per-session 选择、system profile、call config、当前输入激活、API 与 Trace 不回归；
+3. 运行 `npm run check` 与 `npm run pack:check`，确认生成 bundle 稳定且发布包不包含 docs、测试、运行数据或外部 fixture；
+4. 用隔离 `DSH_HOME` 安装根插件并启动真实 DSH，至少完成 launcher、资源绑定、新会话和一次 request/header/Trace 对齐检查；
+5. 扫描跟踪文件和 npm 包清单，确认没有本机绝对路径、API key、私有 fixture 或第三方导入内容；
+6. README、使用指南、安全风险、验收记录和 changelog 与实现同步后再合并、打标签和推送。
 
 ## 两组长期验收
 

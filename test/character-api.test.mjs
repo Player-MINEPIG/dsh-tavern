@@ -169,7 +169,7 @@ test('character world-book edits have an independent request and structure bound
       body: { characterBook: { entries: [{ content: 'safe', extensions: nested }] } },
     })
     assert.equal(tooDeep.status, 400)
-    assert.equal(tooDeep.json.error.code, 'INVALID_CHARACTER_REQUEST')
+    assert.equal(tooDeep.json.error.code, 'WORLD_BOOK_DEPTH_LIMIT')
     assert.equal(store.get('bounded').data.characterBook, null)
   } finally {
     rmSync(directory, { recursive: true, force: true })

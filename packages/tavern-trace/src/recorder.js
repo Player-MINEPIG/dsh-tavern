@@ -4,6 +4,7 @@ const CALL_CONFIG_FIELDS = ['temperature', 'maxTokens', 'reasoningEffort', 'stop
 const MAX_DIAGNOSTICS = 64
 const MAX_TEXT = 320
 const MAX_IDS = 64
+const MAX_WORLD_BOOK_IDS = 200
 const MAX_WORLD_BOOKS = 16
 const MAX_WORLD_BOOK_DECISIONS = 128
 
@@ -59,7 +60,17 @@ function selection(value) {
     presetId: stringOrNull(value?.presetId),
     characterCardId: stringOrNull(value?.characterCardId),
     userProfileId: stringOrNull(value?.userProfileId ?? value?.userId),
-    worldBookIds: stringArray(value?.worldBookIds),
+    worldBookIds: stringArray(value?.worldBookIds, MAX_WORLD_BOOK_IDS),
+  }
+}
+
+function worldBookSelection(value) {
+  return {
+    explicitIds: stringArray(value?.explicitIds, MAX_WORLD_BOOK_IDS),
+    userBoundIds: stringArray(value?.userBoundIds, MAX_WORLD_BOOK_IDS),
+    effectiveIds: stringArray(value?.effectiveIds, MAX_WORLD_BOOK_IDS),
+    duplicateIds: stringArray(value?.duplicateIds, MAX_WORLD_BOOK_IDS),
+    order: value?.order === 'session-explicit-then-user' ? value.order : null,
   }
 }
 
@@ -105,6 +116,23 @@ function worldBooks(value) {
       decisions,
     }
   })
+}
+
+function activation(value) {
+  return {
+    kind: value?.kind === 'durable-plus-pending-input' ? 'durable-plus-pending-input' : 'durable-history-only',
+    durableMessageCount: Number.isSafeInteger(value?.durableMessageCount) ? value.durableMessageCount : null,
+    pendingMessageCount: Number.isSafeInteger(value?.pendingMessageCount) ? value.pendingMessageCount : 0,
+    includedPendingMessageCount: Number.isSafeInteger(value?.includedPendingMessageCount) ? value.includedPendingMessageCount : 0,
+    duplicatePendingMessageCount: Number.isSafeInteger(value?.duplicatePendingMessageCount) ? value.duplicatePendingMessageCount : 0,
+    scannedMessageCount: Number.isSafeInteger(value?.scannedMessageCount) ? value.scannedMessageCount : null,
+    scannedCharacters: Number.isSafeInteger(value?.scannedCharacters) ? value.scannedCharacters : null,
+    truncated: value?.truncated === true,
+    claimEventSeqs: Array.isArray(value?.claimEventSeqs)
+      ? value.claimEventSeqs.filter(Number.isSafeInteger).slice(-4)
+      : [],
+    invalidEventCount: Number.isSafeInteger(value?.invalidEventCount) ? value.invalidEventCount : 0,
+  }
 }
 
 function latestHeaderEvent(session) {
@@ -189,6 +217,7 @@ export class TavernTraceRecorder {
         callConfig: expectedCallConfig,
       },
       selection: selection(audit.selection),
+      worldBookSelection: worldBookSelection(audit.worldBookSelection),
       resources: {
         preset: resource(resources.preset),
         characterCard: resource(resources.characterCard),
@@ -196,6 +225,7 @@ export class TavernTraceRecorder {
         worldBooks: Array.isArray(resources.worldBooks) ? resources.worldBooks.slice(0, 32).map(resource).filter(Boolean) : [],
       },
       worldBooks: worldBooks(audit.worldBooks),
+      activation: activation(audit.activation),
       diagnostics: diagnostics(snapshot?.diagnostics ?? audit.diagnostics),
       authority: headerAuthority(null, null, expectedSystemText, expectedCallConfig),
       sensitiveContentStored: false,

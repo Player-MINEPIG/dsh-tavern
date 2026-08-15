@@ -18,6 +18,10 @@ import {
   parseWorldBook,
   stableStringify,
 } from '../../world-book/src/format.js'
+import {
+  WORLD_BOOK_LIMITS,
+  assertWorldBookStructure,
+} from '../../world-book/src/limits.js'
 
 const DOCUMENT_SCHEMA_VERSION = 1
 const ID_PATTERN = /^[a-zA-Z0-9_-]{1,100}$/
@@ -101,6 +105,7 @@ function validateDocument(document) {
     throw error
   }
   validateId(document.id)
+  assertWorldBookStructure(document.book.source?.raw ?? { entries: document.book.entries })
   return document
 }
 
@@ -220,6 +225,9 @@ function applyEdit(document, patch, now) {
   }
   if (Object.hasOwn(input, 'entries')) {
     if (!Array.isArray(input.entries)) throw new TypeError('book.entries must be an array')
+    if (input.entries.length > WORLD_BOOK_LIMITS.maxEntries) {
+      throw new TypeError(`book.entries may contain at most ${WORLD_BOOK_LIMITS.maxEntries} entries`)
+    }
     const claimed = new Set()
     book.entries = input.entries.map((entry, index) => editableEntry(document.book.entries, entry, index, claimed, book.source.format))
   }
@@ -357,4 +365,5 @@ export class WorldBookStore {
 export const worldBookStoreConstants = Object.freeze({
   schemaVersion: DOCUMENT_SCHEMA_VERSION,
   maxArtifactBytes: MAX_ARTIFACT_BYTES,
+  ...WORLD_BOOK_LIMITS,
 })

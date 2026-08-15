@@ -1,6 +1,6 @@
 # Standalone World Book implementation and acceptance
 
-Status: implemented on the standalone-world-books feature branch for parent-task review. This document does not claim merge or publication.
+Status: implemented and integrated into the 2026-08-15 public release candidate. This file retains the standalone-world-books module contract and acceptance evidence.
 
 ## Scope and boundaries
 
@@ -20,6 +20,7 @@ loader-owned session policy ── worldBookIds[]
         ▼
 one world-book adapter
   ├─ selected standalone books
+  ├─ selected user's bound standalone books
   └─ selected character's embedded book
         │
         ▼
@@ -32,6 +33,7 @@ No store or API code was added to the pure parser/matcher package. The resource 
 
 - Documents are stored as mode-`0600` JSON files under the plugin data directory's `world-books/` child.
 - Imports and writes are bounded to 4 MiB and use same-directory temporary files followed by atomic rename.
+- Before normalization, standalone and embedded books share an iterative structure guard: at most 10,000 entries, depth 32, 100,000 traversed nodes, 1 MiB per string, and 1,024 characters per object key. The loader adapter separately caps the aggregate standalone/user/embedded matcher input at 10,000 entries and skips later overflowing resources with a diagnostic, so it never traverses an unbounded collection before the compiler's 4,096-candidate limit.
 - A document records its stable id, timestamps, source format/file metadata, SHA-256 and normalized `WorldBookModel` including the original raw source snapshot.
 - Update requests may change only modeled book settings and entry fields. Unknown top-level, entry and extension fields come from the saved raw snapshot and survive subsequent export.
 - New entries receive non-integer object-map keys (`entry-...`) so JavaScript's integer-key enumeration cannot reorder existing entries after reload.
@@ -55,9 +57,11 @@ All routes remain behind the existing loopback Host, same-origin mutation, JSON 
 
 ## Runtime semantics
 
-The adapter resolves standalone books in saved selection order, followed by the selected character's embedded book. Each model is scanned through the existing bounded-history function and `computeWorldBookCandidates()`. Entry insertion order, secondary logic, group/probability policy and token budget therefore have one implementation for both sources. Loader projection remains responsible for exact before/after mapping, explicit approximation diagnostics and outlet omission.
+The adapter resolves explicit session books in saved selection order, appends the selected user's bound standalone books in their saved relationship order, deduplicates shared ids, and finally resolves the selected character's embedded book. Each model is scanned through the existing bounded-history function and `computeWorldBookCandidates()`. Entry insertion order, secondary logic, group/probability policy and token budget therefore have one implementation for every source. Loader projection remains responsible for exact before/after mapping, explicit approximation diagnostics and outlet omission.
 
-The current known runtime limits are unchanged: native regular-expression keys are disabled unless explicitly opted in; recursive/stateful effects and vector matching remain deferred; positions unsupported by DSH are explicitly approximated; and the just-submitted user message may not be available until the next turn because matching reads durable history.
+The combined World Book sidebar exposes these as three visually separate sources: editable explicit session bindings, editable current-user bindings, and the character-bound embedded book editor. The World Book and User panels deliberately edit the same loader-owned user/world-book relationship through the same API, so either entry point persists one authoritative value and refreshes the other. Each selected user book also opens the canonical standalone document editor in the same sidebar; this edits the original resource rather than creating a source-specific copy. The World Book panel identifies the current user, ordered inherited book names, pending changes, session duplicates and the effective ordering rule.
+
+Native regular-expression keys are disabled unless explicitly opted in; recursive/stateful effects and vector matching remain deferred; and positions unsupported by DSH are explicitly approximated. Matching combines bounded durable history with the current step's claimed input before system assembly, so a single-step session can activate a book on its first request without creating an artificial empty step or durable message.
 
 ## Automated acceptance
 
