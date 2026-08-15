@@ -143,7 +143,7 @@ function TraceRecord({ record, latest }) {
       ),
       record.worldBooks?.length > 0 ? h('div', { className: 'dttrace-section' },
         h('div', { className: 'dttrace-section-title' }, '世界书匹配决策'),
-        h('div', { className: 'dttrace-meta' }, '匹配基于 system assembly 当时可见的持久化会话历史；刚提交的当前轮输入通常要到下一轮扫描才可见。'),
+        h('div', { className: 'dttrace-meta' }, '匹配基于 system assembly 当时可见的持久化会话历史；刚提交的输入会在下一次 agent step 扫描时可见，该 step 可能仍属于同一可见回合（如工具继续），也可能属于下一用户回合。'),
         ...record.worldBooks.map((book, index) => h(WorldBookAudit, { book, key: `${book.resource?.id ?? 'book'}-${index}` })),
       ) : h('div', { className: 'dttrace-note' }, '本轮没有可审计的世界书匹配来源。'),
       record.diagnostics?.length > 0 ? h('div', { className: 'dttrace-section' },

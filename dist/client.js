@@ -1177,7 +1177,7 @@ function WorldBookPanel({ sessionId, close }) {
         } }))
       ) : null,
       diagnostics.length > 0 ? (0, import_react3.createElement)("details", { className: "dwb-resource" }, (0, import_react3.createElement)("summary", { className: "dwb-resource-title" }, `\u8FD0\u884C\u8BCA\u65AD\uFF08${diagnostics.length}\uFF09`), (0, import_react3.createElement)("ul", { className: "dwb-list" }, ...diagnostics.map((item, index) => (0, import_react3.createElement)("li", { key: `${item.code}-${index}` }, item.message)))) : null,
-      (0, import_react3.createElement)("p", { className: "dwb-note" }, "\u5B9E\u9645\u6FC0\u6D3B\u3001\u6392\u5E8F\u3001\u6982\u7387\u548C\u9884\u7B97\u7531\u5171\u4EAB matcher \u786E\u5B9A\uFF1B\u6700\u7EC8\u6CE8\u5165\u4ECD\u7531 Tavern loader \u7EDF\u4E00\u5B8C\u6210\u3002\u5F53\u524D\u626B\u63CF\u57FA\u4E8E\u5DF2\u6301\u4E45\u5316\u7684\u4F1A\u8BDD\u5386\u53F2\uFF0C\u521A\u63D0\u4EA4\u7684\u540C\u8F6E\u7528\u6237\u8F93\u5165\u53EF\u80FD\u5230\u4E0B\u4E00\u8F6E\u624D\u89E6\u53D1\u3002")
+      (0, import_react3.createElement)("p", { className: "dwb-note" }, "\u5B9E\u9645\u6FC0\u6D3B\u3001\u6392\u5E8F\u3001\u6982\u7387\u548C\u9884\u7B97\u7531\u5171\u4EAB matcher \u786E\u5B9A\uFF1B\u6700\u7EC8\u6CE8\u5165\u4ECD\u7531 Tavern loader \u7EDF\u4E00\u5B8C\u6210\u3002\u5F53\u524D\u626B\u63CF\u57FA\u4E8E\u5DF2\u6301\u4E45\u5316\u7684\u4F1A\u8BDD\u5386\u53F2\uFF1B\u521A\u63D0\u4EA4\u7684\u8F93\u5165\u53EF\u80FD\u5728\u540C\u4E00\u53EF\u89C1\u56DE\u5408\u7684\u4E0B\u4E00 agent step\uFF08\u5982\u5DE5\u5177\u7EE7\u7EED\uFF09\u6216\u4E0B\u4E00\u7528\u6237\u56DE\u5408\u89E6\u53D1\u3002")
     )
   );
 }
@@ -1510,7 +1510,7 @@ function TraceRecord({ record, latest }) {
         "div",
         { className: "dttrace-section" },
         (0, import_react5.createElement)("div", { className: "dttrace-section-title" }, "\u4E16\u754C\u4E66\u5339\u914D\u51B3\u7B56"),
-        (0, import_react5.createElement)("div", { className: "dttrace-meta" }, "\u5339\u914D\u57FA\u4E8E system assembly \u5F53\u65F6\u53EF\u89C1\u7684\u6301\u4E45\u5316\u4F1A\u8BDD\u5386\u53F2\uFF1B\u521A\u63D0\u4EA4\u7684\u5F53\u524D\u8F6E\u8F93\u5165\u901A\u5E38\u8981\u5230\u4E0B\u4E00\u8F6E\u626B\u63CF\u624D\u53EF\u89C1\u3002"),
+        (0, import_react5.createElement)("div", { className: "dttrace-meta" }, "\u5339\u914D\u57FA\u4E8E system assembly \u5F53\u65F6\u53EF\u89C1\u7684\u6301\u4E45\u5316\u4F1A\u8BDD\u5386\u53F2\uFF1B\u521A\u63D0\u4EA4\u7684\u8F93\u5165\u4F1A\u5728\u4E0B\u4E00\u6B21 agent step \u626B\u63CF\u65F6\u53EF\u89C1\uFF0C\u8BE5 step \u53EF\u80FD\u4ECD\u5C5E\u4E8E\u540C\u4E00\u53EF\u89C1\u56DE\u5408\uFF08\u5982\u5DE5\u5177\u7EE7\u7EED\uFF09\uFF0C\u4E5F\u53EF\u80FD\u5C5E\u4E8E\u4E0B\u4E00\u7528\u6237\u56DE\u5408\u3002"),
         ...record.worldBooks.map((book, index) => (0, import_react5.createElement)(WorldBookAudit, { book, key: `${book.resource?.id ?? "book"}-${index}` }))
       ) : (0, import_react5.createElement)("div", { className: "dttrace-note" }, "\u672C\u8F6E\u6CA1\u6709\u53EF\u5BA1\u8BA1\u7684\u4E16\u754C\u4E66\u5339\u914D\u6765\u6E90\u3002"),
       record.diagnostics?.length > 0 ? (0, import_react5.createElement)(

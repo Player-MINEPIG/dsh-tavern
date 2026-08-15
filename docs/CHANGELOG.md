@@ -16,6 +16,9 @@ request path independently reviewable instead of mixing them in one diagram.
   `tools` and call config, including append-versus-replace behavior.
 - Kept the claimed-input/world-book boundary adjacent to the complete flow so
   Trace timing cannot be mistaken for same-step lore injection.
+- Corrected UI and README wording from ambiguous "next round" language to the
+  exact boundary: the next agent step may occur after a tool call inside the
+  same visible user turn, or it may be the next user turn.
 
 ## 2026-08-15 — Product-owned launcher identity and honest Trace timing
 
