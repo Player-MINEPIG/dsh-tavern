@@ -4,6 +4,19 @@ This is the staged implementation log for the prompt-preset experiment. It is
 kept separately from the product README so reviewers can follow intent,
 decisions, verification, and known limits chronologically.
 
+## 2026-08-15 — Four-view DSH/DT message-flow review
+
+Purpose: make the host flow, plugin flow, integration delta and resulting full
+request path independently reviewable instead of mixing them in one diagram.
+
+- Rebuilt `DSH_MESSAGE_FLOW.md` around four explicit views: native DSH, DT's
+  control/data planes, DT's public-hook changes, and the complete integrated
+  model-step sequence.
+- Added a hook-by-hook impact table and a final mapping for `system`, `messages`,
+  `tools` and call config, including append-versus-replace behavior.
+- Kept the claimed-input/world-book boundary adjacent to the complete flow so
+  Trace timing cannot be mistaken for same-step lore injection.
+
 ## 2026-08-15 — Product-owned launcher identity and honest Trace timing
 
 Purpose: identify the entry point as dsh-tavern rather than implying that the

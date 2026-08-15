@@ -1,49 +1,69 @@
-# DSH message flow with dsh-tavern
+# DSH 与 dsh-tavern（DT）消息流
 
-状态：2026-08-15，基于本机 `@deepseek-ai/dsh 0.1.0-rc.6` 的公开 README 与已安装源码核对。本文描述一次普通 agent 模型 step 的数据流，以及 `dsh-tavern` 实际改变和不改变的部分；它不是 README。
+状态：2026-08-15，基于本机 `@deepseek-ai/dsh 0.1.0-rc.6` 的公开 README 与已安装源码核对。本文分别描述 DSH 原生流程、DT 自身流程、DT 对 DSH 的介入，以及安装 DT 后一次完整模型 step 的实际流程；它不是 README。
 
-## 1. 未安装插件时的 DSH 默认消息流
+本文中的 `DT` 是 `dsh-tavern` 的简称。SillyTavern（ST）是 DT 兼容的资源格式与部分语义来源，不是本插件或其界面的产品身份。
+
+## 1. DSH 原来的 flow
+
+未安装 DT 时，一次普通 agent step 按以下顺序执行：
 
 ```text
 用户提交
   │
   ▼
-Agent Inbox（next-turn / next-step，持久 splice）
-  │ claim
+Agent Inbox（next-turn / next-step）
+  │  claim 当前待处理消息
   ▼
-agent/pre-step
-  ├─ systemPrompt.assemble(agent scope)
-  │    ├─ 收集并排序 system sections
-  │    ├─ 收集 runtime contexts
-  │    ├─ 收集 tools 与 variables
-  │    └─ system-prompt/assemble waterfall
-  └─ 接受、替换或拒绝本步骤 user messages
-       │
-       ▼
-Session 追加 user/message → deriveMessages()
-       │
-       ▼
-agent/request waterfall → LLM call config
-       │
-       ▼
-记录 request/header（config + system + tools）
-       │
-       ▼
+systemPrompt.assemble(agent scope)
+  ├─ 收集并排序原生 system sections
+  ├─ 收集 runtime contexts
+  ├─ 收集 tools 与 variables
+  └─ 执行 system-prompt/assemble waterfall
+  │
+  ▼
+把 assembly 渲染为 system 与 runtime context message
+  │
+  ▼
+agent/pre-step waterfall
+  └─ 接受、替换或拒绝本步骤 claimed messages
+  │
+  ▼
+Session 追加已接受的 user/message
+  │
+  ▼
+Session.deriveMessages() 生成本步骤历史 messages
+  │
+  ▼
+agent/request waterfall 生成 LLM call config
+  │
+  ▼
+记录 request/header（最终 config + system + tools）
+  │
+  ▼
 llm.stream({ system, messages, tools, ...config })
-       │
-       ├─ assistant/chunk 持久事件
-       ├─ assistant/message 进入 Session 历史
-       └─ tool-call 时执行工具，并可能进入下一 step
+  │
+  ├─ assistant/chunk 持久事件
+  ├─ assistant/message 进入 Session 历史
+  └─ tool-call → tool result → 可能进入同一 turn 的下一 step
 ```
+
+DSH 的四条数据通道彼此独立：
+
+| 通道 | 权威来源 | 最终去向 |
+| --- | --- | --- |
+| system prompt | `systemPrompt.assemble()` | LLM 请求的 `system` |
+| 会话历史 | `Session.deriveMessages()` | LLM 请求的 `messages` |
+| 工具 | system assembly 的 tools | LLM 请求的 `tools` |
+| 模型参数 | `agent/request` waterfall | provider/model/temperature 等 call config |
 
 关键事实：
 
-- Inbox 中的用户消息先被 `claim`，但 `systemPrompt.assemble()` 执行时它尚未追加成 `Session` 的 `user/message`。
-- `Session.deriveMessages()` 从持久 message surface 投影 user、assistant 和 tool result，是最终请求 `messages` 的权威来源；turn/step 边界和流式 chunk 本身不会重复变成消息。
-- system prompt、runtime context、工具 schema 与普通历史是不同通道。组装后的 system 字符串作为请求的 `system` 字段，历史作为 `messages` 数组。
-- `agent/request` 只提议 provider/model/reasoning/temperature/maxTokens/stop 等 call config；它不负责生成消息历史。
-- 生效的 config、system 和 tools 在发生初始/恢复/变化时写入持久 `request/header`。因此 `request/header` 是审计“该轮模型实际获得什么 system/config”的权威记录。
-- assistant 流先记录为 `assistant/chunk`，成功结束后再产生完整 `assistant/message`。工具调用会让循环执行工具，并可能带着 tool result 进入同一 turn 的后续 step。
+- Inbox 先 `claim` 当前输入，但 system assembly 执行时，当前输入尚未追加为 Session 的 `user/message`，也不在公开的 assembly context 中。
+- DSH 完成 system assembly 后才调用公开的 `agent/pre-step`。该 hook 能看见 claimed messages，但收到的 assembly 已经冻结。
+- `Session.deriveMessages()` 从持久 message surface 投影 user、assistant 和 tool result；turn/step 边界与流式 chunk 不会重复成为模型消息。
+- `agent/request` 只负责 call config，不生成历史，也不能替换已冻结的 system assembly。
+- `request/header` 保存实际生效的 config、system 与 tools，是审计该步骤模型请求头的权威记录。
 
 本机核对位置：
 
@@ -52,80 +72,199 @@ llm.stream({ system, messages, tools, ...config })
 - `@deepseek-ai/dsh-session/lib/index.js`：`Session.deriveMessages()`；
 - `@deepseek-ai/dsh-llm/README.zh.md`：消息、call config 与 `request/header` 契约。
 
-## 2. 安装 dsh-tavern 后增加的路径
+## 2. DT 自己的 flow
 
-插件不替换 DSH agent loop，也不维护第二份聊天历史。它只在两个公开 waterfall 和一个 system section 上贡献内容：
+DT 内部先把“资源管理”和“运行时编译”分开。前端及 API 属于控制面，不直接给模型发送消息；loader 才是运行时数据面。
+
+### 2.1 控制面：导入、编辑与 session 绑定
 
 ```text
-SessionSelectionStore（当前 session 的 preset / character / user / world-info）
+DT 悬浮球 / 资源侧栏
   │
-  ├─ preset adapter ───────────────┐
-  ├─ character adapter ────────────┼─ TavernProfileLoader.compile()
-  ├─ user adapter ─────────────────┤       │
-  └─ World Info matcher            │       │
-      （扫描既有 deriveMessages）──┘       ├─ dsh-tavern:profile system section
-                                          ├─ diagnostics / audit fingerprint
-                                          └─ supported call config
-
-DSH systemPrompt.assemble()
-  ├─ DSH identity/persona/tool sections
-  └─ dsh-tavern:profile
-       │
-       ▼
-request/header.system
-
-DSH agent/request
-  └─ 合并 preset 支持的 temperature/maxTokens/reasoningEffort/stop
-       │
-       ▼
-request/header.config
+  ▼
+/dsh-tavern/api/*
+  │
+  ├─ PresetStore
+  ├─ CharacterStore
+  ├─ WorldBookStore
+  ├─ UserStore
+  └─ SessionSelectionStore
+       └─ 当前 session 绑定的 preset / character / world books / user
 ```
 
-具体变化：
+- 导入的 ST 预设、角色卡与世界书先经过各自 format adapter，归一化后进入插件资源库；未知兼容字段和允许保留的原始 artifact 不参与 DSH session history。
+- 创建、编辑、删除和绑定只改变 DT 的资源或选择状态。未绑定资源不会进入 prompt。
+- 普通 fork 固化父会话当时的资源选择；delegated subagent 默认不继承 Tavern 资源。
+- UI 的红/绿点表示“当前 session 是否绑定资源”，不表示世界书是否在本轮命中。
 
-1. `agent/session-start` 时，loader 为 session 固化资源选择。普通 fork 复制父会话当时的选择；delegated subagent 默认选择为空。
-2. `systemPrompt.assemble()` 调用 `dsh-tavern:profile` section 时，loader 读取该 session 的 preset、角色卡和单个用户资源。
-3. 若角色卡含 `character_book`，世界信息 adapter 扫描已经存在于 `Session.deriveMessages()` 的 user/assistant 文本（默认最多最近 64 KiB），执行普通关键词、secondary key、概率、组和预算策略。原生 JavaScript regex key 因无法设置执行超时而默认阻断，只有显式不安全兼容模式才执行。
-4. preset marker、用户名字/描述、角色字段与命中 lore 被组合为一个 Tavern profile。`{{user}}` 取当前 session 的用户名字；描述进入一次 `personaDescription`/`{{persona}}` 放置点，缺失时以诊断 fallback 放置。creator notes 永远不进入 profile；`chatHistory` marker 被消费但不复制历史。
-5. 默认 append 模式把 Tavern profile 放在 DSH 其他 system sections 之后。高级 replace 模式只保留 Tavern profile，但仍保留 tools、runtime contexts、variables 和执行层安全机制。
-6. `agent/request` 将 DSH 已公开支持的 preset 参数投影到 call config。未公开的 ST sampler 仅保存，不伪造已经生效。
-7. Tavern Trace 在同一个公开 `agent/request` 上把本次已经完成的 system assembly snapshot 绑定到 `turn/step`；公开 `session/event` 观察到 `request/header` 后，只保存激活资源摘要、世界书配置/命中关键词与决策、header event seq、SHA-256 摘要和一致性布尔值。它不复制 header、system 或消息正文，也不 append Session。
+### 2.2 数据面：把已绑定资源编译为一个运行时快照
 
-世界信息侧栏属于控制面，不是消息历史或日志面板。它从当前已绑定角色卡的插件副本读取 `character_book.entries`，直接展示并编辑主关键词、附加关键词与逻辑、常驻/启用状态、正文、插入位置和排序。保存通过 character API 原子更新标准化角色文档及其 JSON 导出；原始 PNG/JSON artifact 不改写。下一次 `systemPrompt.assemble()` 会重新读取该副本并执行 matcher。
+```text
+SessionSelectionStore
+  │
+  ├─ preset adapter ───────────────┐
+  ├─ character adapter ────────────┤
+  ├─ user adapter ─────────────────┼─ TavernProfileLoader.compile()
+  └─ world-book adapter ───────────┘          │
+       ├─ 独立世界书                           ├─ systemText
+       ├─ 角色卡内嵌 character_book            ├─ runtimeContexts
+       └─ matcher 扫描既有会话文本              ├─ supported callConfig
+                                                ├─ resources / diagnostics
+                                                └─ audit + fingerprint
+```
 
-## 3. 插件明确不改变的内容
+编译规则：
 
-- 不删除、重写或复制 DSH durable history；请求 `messages` 仍完全来自 `Session.deriveMessages()`。
-- 不把 preset 中标记为 user/assistant 的静态 prompt 伪装成真实历史；它们目前只是 system profile 中可审阅的标签块。
-- 不把 greeting 写成一条虚构的 assistant 历史；当前仅作为明确标注的风格参考。
+1. loader 按 session 解析 preset、角色卡、用户资料、独立世界书与角色卡内嵌书。
+2. world-book matcher 扫描公开的既有 `Session.deriveMessages()` 文本，默认最多最近 64 KiB；执行普通主关键词、secondary key、概率、组与预算策略。原生 JavaScript regex 默认阻断，避免 ReDoS。
+3. 统一编译器按 preset marker 放置角色字段、用户名字/描述与命中 lore。`{{user}}` 使用当前用户名字；描述只消费一次 `personaDescription`/`{{persona}}`；`chatHistory` marker 不复制 DSH 历史；creator notes 不发送。
+4. 结果是一个不可混淆的运行时快照：`systemText`、受支持的 `callConfig`、资源摘要、诊断、世界书决策和审计指纹。
+5. Tavern Trace 只持久化该快照的最小化元数据与最终 `request/header` 的关联，不保存完整 system、消息正文、资源正文或工具 schema。
+
+## 3. DT 对 DSH flow 做了什么改动
+
+DT 不替换 agent loop，也不维护第二套会话历史。它通过 DSH 的公开扩展点进行以下加法：
+
+| DSH 扩展点 | DT 的动作 | 对最终请求的影响 |
+| --- | --- | --- |
+| `agent/session-start` | 为 agent 建立或恢复 session 资源选择 | 决定本 session 可加载哪些 DT 资源 |
+| `systemPrompt.section` | 注册 `dsh-tavern:profile`，顺序为 10 | 把编译后的 Tavern profile 贡献给 system assembly |
+| `system-prompt/assemble` | 追加 DT runtime contexts；高级 replace 模式可只保留 DT profile section | 改变最终 `system`/context，但不改历史与工具执行权限 |
+| `agent/request` | 合并 preset 中 DSH 明确支持的 call config；把刚完成的 assembly snapshot 交给 Trace | 可改变 temperature/maxTokens/reasoningEffort/stop 等；不改 messages |
+| `session/event` | 在观察到 `request/header` 时把 Trace 记录与 header seq/摘要对齐 | 只增加插件自己的审计元数据，不增加模型消息 |
+| `agent/request-error` | 标记相应 Trace 尝试失败 | 不改变模型输入 |
+| Web server / client slots | 提供受保护的资源 API、`DT` 悬浮球、侧栏与 Tavern Trace 视图 | 控制面与可视化；不直接进入 prompt |
+
+默认 append 模式下，DSH 原有 system sections 仍然存在，DT profile 作为新增 section 参与组装。高级 replace 模式会从模型可见的 system 文本中移除其他 section，只保留 DT profile；但 tools、runtime contexts、variables、沙箱、审批与执行层安全限制仍由 DSH 管理，不会被关闭。
+
+DT 明确不做以下改动：
+
+- 不删除、重写或复制 DSH durable history；最终 `messages` 仍来自 `Session.deriveMessages()`。
+- 不把 preset 中标成 user/assistant 的静态块伪装成真实历史消息。
+- 不把 greeting 伪造成 assistant 历史；当前只作为带来源标记的参考内容。
+- 不覆盖 DSH Agent 身份；用户资料只提供 Tavern 用户名字与描述。
 - 不发送 creator notes。
-- 不让 UI 菜单或未绑定的用户/独立世界书资源产生占位 prompt；用户资源也不覆盖 DSH Agent 身份。
-- 不绕过 DSH 的工具权限、沙箱或审批。replace 模式会移除模型可见的部分宿主说明，但不会关闭执行层限制。
-- 不把 Tavern Trace 写成 `user/message`、`assistant/message`、`tool/call` 或未知自定义 Session event。当前 DSH 持久读取面没有稳定的第三方事件类型注册入口，插件因此使用自己的有界 metadata store。
+- 不绕过 DSH 的工具权限、沙箱或审批。
+- 不向 Session 写入伪造的 Trace、未知事件或第二套对话记录。
 
-## 4. 为什么同轮 World Info 可能晚一轮触发
+## 4. 安装 DT 后的完整 flow
 
-DSH 当前顺序是：`claim 当前输入 → assemble system prompt → agent/pre-step 接受 → 把输入追加到 Session`。loader 在 assemble 阶段只能从公开的 `deriveMessages()` 读取已经持久化的历史，因此此刻通常还看不到刚被 claim 的当前用户输入。
+下面把控制面已经保存的资源选择，与一次真实模型 step 合并起来：
 
-结果是：
+```text
+【请求前：DT 控制面】
+用户在 DT UI 导入/编辑资源
+  → /dsh-tavern/api/*
+  → 插件资源库
+  → SessionSelectionStore 保存当前 session 绑定
 
-- 历史中已有关键词：本轮可以命中；
-- 关键词只出现在刚提交的当前输入：通常在下一模型 step（例如工具继续）或下一 turn 才可见；
-- 解绑角色卡：下一次 assemble 不再解析其 `character_book`，对应 lore 随即停止进入后续请求，但已经受其影响的旧 assistant 文本仍属于历史。
+【一次模型 step】
+用户提交
+  │
+  ▼
+DSH Agent Inbox
+  │ claim 当前输入（此时 DT 尚不能从公开 assembly context 读取它）
+  ▼
+DSH systemPrompt.assemble(agent scope)
+  │
+  ├─ 收集 DSH 原生 system sections / contexts / tools / variables
+  │
+  ├─ 调用 DT 的 dsh-tavern:profile section
+  │    ├─ 读取该 session 的资源选择
+  │    ├─ 解析 preset / character / user / world books
+  │    ├─ matcher 扫描已经持久化的 deriveMessages()
+  │    ├─ 组合 marker、角色字段、用户描述与已命中 lore
+  │    └─ 缓存本次 systemText / callConfig / audit snapshot
+  │
+  └─ system-prompt/assemble waterfall
+       ├─ append：保留 DSH sections，并加入 DT profile/contexts
+       └─ replace：仅保留 DT profile section，仍保留能力与执行层限制
+  │
+  ▼
+DSH 渲染并冻结本步骤 system assembly
+  │
+  ▼
+DSH agent/pre-step
+  └─ 现在公开 claimed 当前输入；接受/替换/拒绝消息
+  │
+  ▼
+DSH Session 追加已接受的 user/message
+  │
+  ▼
+DSH Session.deriveMessages() 生成最终历史 messages
+  │
+  ▼
+DSH agent/request
+  ├─ DSH/其他插件生成基础 call config
+  └─ DT 合并受支持的 preset 参数，并让 Trace 捕获“刚才实际组装的”快照
+  │
+  ▼
+DSH prepareCall() 校验并冻结模型配置
+  │
+  ▼
+DSH 记录 request/header（最终 config + system + tools）
+  └─ DT 通过 session/event 将 Trace 对齐到 header seq 与摘要
+  │
+  ▼
+LLM 收到：
+  ├─ system = DSH sections +/或 DT profile
+  ├─ messages = DSH durable history + 本步骤已接受输入
+  ├─ tools = DSH system assembly 提供的工具
+  └─ config = DSH 基础配置 + DT 支持的 preset 参数
+  │
+  ▼
+assistant stream / tool calls
+  ├─ chunk 与完整 assistant message 由 DSH 持久化
+  ├─ tool result 仍由 DSH 管理
+  └─ 下一 step/turn 重新执行以上 assembly；DT 不缓存第二份聊天历史
+```
 
-若将来要实现严格同轮匹配，应在 `agent/pre-step` 取得已 claim messages 后构造可审计、可重建的注入，而不是读取 Agent 私有 inbox 或修改历史。
+最终模型请求可简化为：
 
-仅把 Tavern Trace 的扫描或记录推迟到 `agent/pre-step`、`agent/request` 或 `request/header` 之后不能修复这个边界：届时当前输入虽然已经可见，但本步骤使用的 system assembly 已在 `agent/pre-step` 之前冻结。重新扫描只会让 Trace 报告“当前输入命中”，而实际 `request/header.system` 仍是先前的组装结果，形成错误审计。因此当前实现继续记录真正参与该次请求的 assembly，不把事后推演冒充本轮激活。严格同轮激活需要 DSH 提供“claim 后、system assembly 前”的公开 hook，或允许 `agent/pre-step` 请求重新组装 system prompt；当前公开契约均未提供。
+```text
+request.system   = DSH 原生 system sections（append 模式） + DT 编译的 Tavern profile
+request.messages = DSH Session.deriveMessages()
+request.tools    = DSH assembly tools
+request.config   = DSH/adapter 配置 + DT 可映射的 preset 参数
+```
 
-## 5. 如何审阅一次真实请求
+replace 模式下只有第一行不同：`request.system = DT 编译的 Tavern profile`；其他三条权威通道不变。
+
+## 5. 当前输入、世界书与 Trace 的时序边界
+
+DSH 当前顺序是：
+
+```text
+claim 当前输入
+  → assemble 并冻结 system prompt
+  → agent/pre-step 才公开 claimed messages
+  → 追加 user/message
+  → agent/request / request/header
+```
+
+因此 DT 在 system assembly 时只能安全扫描已经持久化的历史：
+
+- 关键词已在历史中：本步骤可以命中并注入；
+- 关键词只在刚提交的当前输入中：通常到下一模型 step（例如工具继续）或下一 turn 才能参与匹配；
+- 解绑角色卡或独立世界书：下一次 assembly 不再读取它，但已经受其影响的旧 assistant 文本仍属于历史。
+
+不能仅把 Tavern Trace 的扫描推迟到 `agent/pre-step`、`agent/request` 或 `request/header`：此时虽然能看见当前输入，但 system 已冻结。晚扫描会让 Trace 显示“本轮命中”，而实际 `request/header.system` 没有该 lore，形成错误审计。DT 因此记录真正参与该请求的 assembly，不把事后推演冒充本轮激活。
+
+严格同轮世界书匹配需要 DSH 新增以下任一公开 seam：
+
+1. claim 当前输入后、system assembly 前的 hook；或
+2. `agent/pre-step` 可请求重新组装并替换同一步 system prompt 的协议。
+
+在此之前，DT 不读取 Agent 私有 inbox、不伪造 durable message，也不把 lore 作为额外 user message 注入。
+
+## 6. 如何审阅一次真实请求
 
 按可信度从高到低：
 
 1. DSH 持久 `request/header`：最终 system、tools 和生效 call config；
 2. 请求对应的 `Session.deriveMessages()`：最终历史消息数组；
-3. loader `/dsh-tavern/api/active?sessionId=...`：选择、资源、诊断和无当前输入的预览 audit；
-4. 前端侧栏状态：用于编辑 World Info 条件和资源选择，不是模型请求日志。
+3. Tavern Trace：解释该 turn/step 使用的 DT 资源、世界书决策，以及它与 header seq/摘要是否对齐；
+4. loader `/dsh-tavern/api/active?sessionId=...`：当前选择、资源、诊断和不含 claimed 当前输入的预览；
+5. DT 侧栏：资源编辑和绑定控制面，不是模型请求日志。
 
-Tavern Trace 标签页位于 Conversation / Trajectory 同一个公开 `conversation.view` 槽中。它按 `turn/step/attempt` 展示 loader 资源和 world-book 决策，并引用上述第 1 项的 header seq；它是解释层，不提升为最终请求权威。
-
-`active` API 没有活跃 Agent 的已 claim 当前输入，因此世界信息侧栏只承诺展示可编辑的条目定义，不把它包装成“本轮触发日志”。确认某条内容是否真正进入过模型请求，仍应查看对应的 `request/header`。
+Tavern Trace 位于 Conversation / Trajectory 同级的公开 `conversation.view` 槽中。它是对实际 loader snapshot 的最小化解释层，不取代 `request/header`，也不会进入模型上下文。
