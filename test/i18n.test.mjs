@@ -77,6 +77,7 @@ test('all existing Tavern React clients share the catalog-backed element boundar
     '../packages/character/src/client.js',
     '../packages/world-book-library/src/client.js',
     '../packages/user/src/client.js',
+    '../packages/session-template/src/client.js',
     '../packages/tavern-trace/src/client.js',
   ]) {
     const source = readFileSync(new URL(file, import.meta.url), 'utf8')
@@ -94,6 +95,7 @@ test('resource clients explicitly protect dynamic child, diagnostic, error, and 
     ['character', '../packages/character/src/client.js'],
     ['worldBook', '../packages/world-book-library/src/client.js'],
     ['user', '../packages/user/src/client.js'],
+    ['sessionTemplate', '../packages/session-template/src/client.js'],
     ['trace', '../packages/tavern-trace/src/client.js'],
   ].map(([name, file]) => [name, readFileSync(new URL(file, import.meta.url), 'utf8')]))
 
@@ -106,7 +108,24 @@ test('resource clients explicitly protect dynamic child, diagnostic, error, and 
   assert.match(sources.worldBook, /rawText\(entry\.comment/)
   assert.match(sources.worldBook, /rawText\(item\.message\)/)
   assert.match(sources.user, /rawText\(user\.name\)/)
+  assert.match(sources.sessionTemplate, /rawText\(template\.name\)/)
+  assert.match(sources.sessionTemplate, /rawText\(item\.message\)/)
   assert.match(sources.trace, /value\?\.name \? rawText\(value\.name\)/)
   assert.match(sources.trace, /rawText\(`\$\{item\.code\}: \$\{item\.message\}`\)/)
   for (const source of Object.values(sources)) assert.match(source, /rawText\((status\.text|error)/)
+})
+
+test('new-session integration copy has complete English translations', () => {
+  setClientUiSettings({ locale: 'en', scale: 1 }, { announce: false })
+  for (const source of [
+    '新会话',
+    '当前设置或配置模板',
+    '新会话与配置模板',
+    '维持当前 Tavern 设置新开对话',
+    '由当前设置创建',
+    '根据所选模板新开干净对话',
+    '模板与新会话操作已就绪。',
+  ]) {
+    assert.doesNotMatch(translateVisibleText(source), /[\u3400-\u9fff]/u, source)
+  }
 })

@@ -1,6 +1,6 @@
 # Unified Tavern loader contract
 
-状态：2026-08-15，preset、角色卡、用户、独立世界书与 Tavern Trace 已在 Phase 2 集成分支完成组合。本文是资源与加载器的运行契约，不是 README。
+状态：2026-08-15，Phase 3 集成分支已组合 preset、角色卡、用户/世界书关系、独立世界书、当前输入提前匹配、干净会话模板、全局 UI 设置与 Tavern Trace。本文是资源与加载器的运行契约，不是 README。
 
 ## 目标与所有权
 

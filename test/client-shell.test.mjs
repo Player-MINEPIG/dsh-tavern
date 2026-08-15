@@ -29,7 +29,7 @@ test('floating launcher clamps its drag anchor and expands toward available spac
     side: 'left',
     vertical: 'up',
     left: 492,
-    top: 266,
+    top: 216,
     anchor: { x: 748, y: 548 },
   })
   assert.deepEqual(clampLauncherAnchor({ x: 748, y: 548 }, { width: 800, height: 600 }, 1.5), { x: 726, y: 526 })
@@ -37,7 +37,7 @@ test('floating launcher clamps its drag anchor and expands toward available spac
     side: 'left',
     vertical: 'up',
     left: 342,
-    top: 103,
+    top: 28,
     anchor: { x: 726, y: 526 },
   })
 })

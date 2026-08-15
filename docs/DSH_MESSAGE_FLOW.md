@@ -289,3 +289,18 @@ agent/inbox/spliced（插入消息）
 5. DT 侧栏：资源编辑和绑定控制面，不是模型请求日志。
 
 Tavern Trace 位于 Conversation / Trajectory 同级的公开 `conversation.view` 槽中。它是对实际 loader snapshot 的最小化解释层，不取代 `request/header`，也不会进入模型上下文。
+
+## 7. 干净会话与 UI 设置为何不进入消息流
+
+“维持当前 Tavern 设置新开对话”和配置模板属于显式控制面事务：
+
+```text
+预检当前选择或模板
+  → DSH workspaces.connectWorkspace() 返回真实 blank session
+  → loader 原子写入完整 Tavern selection
+  → DSH sessions.open() 导航
+```
+
+模板只保存 preset、角色/greeting 开关、用户和独立世界书的资源 ID/选项；不会读取或复制 durable messages、Tavern Trace、Inbox、claimed input、turn/step 或资源正文。若任一资源已缺失，预检和应用都会返回诊断并阻止导航，因此不会留下“只应用了一半”的 Tavern 组合。
+
+语言与缩放同样是控制面状态，只写入全局 `ui-settings.json` 并作用于 Tavern 浏览器根节点。它不进入 `SessionSelectionStore`、profile 编译、world-book matcher、`agent/request` 或 `request/header`，所以切换语言/缩放不会改变模型看到的任何消息。

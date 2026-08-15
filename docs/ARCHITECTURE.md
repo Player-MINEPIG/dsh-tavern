@@ -1,6 +1,6 @@
 # dsh-tavern package architecture
 
-状态：2026-08-14 已采用。本文是架构决策与合并门槛，不是产品 README。
+状态：2026-08-15，Phase 3 集成已采用。本文是架构决策与合并门槛，不是产品 README。
 
 ## 决策结论
 

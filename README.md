@@ -4,7 +4,7 @@
 
 项目目标不是在 DSH 中复制一套 SillyTavern 前端，而是建立可测试、可扩展的兼容层：理解 SillyTavern 的预设、角色卡和世界书格式，将其归一化，再通过统一加载器映射到 DSH 的 session、system prompt、模型参数与后续消息装配能力。
 
-当前 `0.1.x` 集成分支已经完成 **SillyTavern Chat Completion 预设、角色卡、独立世界书和用户资料**的首个端到端版本。统一 loader 会按 session 组合这些资源，并可在 Tavern Trace 中查看本次资源快照和世界书匹配决策。
+当前 `0.1.x` 集成分支已经完成 **SillyTavern Chat Completion 预设、角色卡、独立世界书、用户资料、配置模板与全局 UI 设置**的首个端到端版本。统一 loader 会按 session 组合这些资源，在首次请求组装前让当前 claimed 输入参与世界书匹配，并可在 Tavern Trace 中查看本次资源快照和匹配决策。
 
 角色卡兼容的调研记录与实施方案见：
 
@@ -18,7 +18,7 @@
 - 导入 SillyTavern Chat Completion preset JSON。
 - 优先采用 `character_id: 100001` 的 `prompt_order`，并保留未知顶层字段和 prompt 扩展字段，方便后续兼容升级。
 - 在插件目录持久化预设，支持创建、选择、修改、删除和重新加载。
-- 提供红、黑、白配色的 `DT`（dsh-tavern）悬浮球；可拖拽并记忆位置，展开后显示预设、角色卡、世界书和用户资料的当前标题及红/绿选择状态。侧栏打开后入口仍然保留，可直接切换其他资源面板。
+- 提供红、黑、白配色的 `DT`（dsh-tavern）悬浮球；可拖拽并记忆位置，展开后显示预设、角色卡、世界书和用户资料的当前标题及红/绿选择状态，并可进入新会话和界面设置。侧栏打开后入口仍然保留，可直接切换其他面板。
 - 编辑预设名称、system prompt 策略、常用采样参数和 prompt 块。
 - 直接拖拽 prompt 块排序；拖动来源显示为横杠，落点显示为占位框。
 - 将启用且非 marker 的 prompt 编译为 DSH system section，并在请求记录中保留所选预设标识。
@@ -32,6 +32,9 @@
 - 在“世界信息”中按 ST 式条目列表查看和编辑内嵌 Lorebook 的触发条件与内容，包括主/附加关键词、secondary logic、常驻/启用、大小写、全词匹配、位置与排序，并支持新增、删除和保存。
 - 提供独立世界书资源库，支持导入、创建、编辑、导出、删除以及 per-session 多选；独立书与角色卡内嵌书使用同一个 parser、matcher 和 loader adapter。
 - 提供严格只有名字与描述的用户资料，支持 CRUD 和 per-session 单绑定；名字进入 `{{user}}`，描述通过 `personaDescription`/`{{persona}}` 放置一次，并且不会覆盖 DSH Agent 身份。
+- 每个用户可绑定零本或多本独立世界书；loader 按“session 显式选择优先、用户关系随后”稳定去重，同一本书只匹配和投影一次。关系不写入用户描述正文。
+- 支持把当前 Tavern 选择保存为配置模板，或直接维持当前设置创建干净 DSH 会话；只复制 preset、角色/greeting 选项、用户和独立世界书选择，不复制历史、Trace、Inbox 或运行态。
+- 提供全局界面设置，可即时切换简体中文/English，并在 75%–150% 范围缩放 Tavern 悬浮入口、资源面板和 Trace；显示设置不改变资源正文或 session 绑定。
 - 在 Conversation / Trajectory 同级位置提供 Tavern Trace，按 turn/step 展示资源摘要、世界书关键词接受/拒绝原因和 request/header 对齐信息；不保存完整 prompt、历史或工具 schema，也不向模型消息流添加审计内容。
 - 使用统一的 per-session 资源选择；普通 fork 固化父会话快照，delegated subagent 默认不继承 Tavern 资源。
 
@@ -97,7 +100,10 @@ dsh web --host 127.0.0.1 --port 53101
   character-artifacts/     导入的角色卡 JSON/PNG 原件
   world-books/             独立世界书标准化文档
   users/                   只有 id/name/description 的用户资料
+  user-world-book-bindings.json  用户与独立世界书的关系
   tavern-traces.json       有界的最小化请求审计元数据
+  session-templates.json   不含历史和资源正文的 Tavern 选择模板
+  ui-settings.json         全局界面语言与缩放
   state.json               旧版全局 preset 默认选择
   character-state.json     角色选择迁移状态
   session-selections.json  统一的 per-session 资源选择
@@ -119,8 +125,10 @@ dsh web --host 127.0.0.1 --port 53101
 3. 选择“预设”导入或创建 preset，编辑采样参数、system prompt 策略和 prompt 块并选择它。
 4. 从同一菜单选择“角色卡”，导入 ST JSON/PNG 角色卡，选择 greeting 和两个覆盖开关后绑定到当前 session。
 5. 在“世界书”面板的“独立世界书”区管理资源并为当前 session 多选；勾选变化会显示“尚未应用”，必须点击应用按钮才改变该 session。下方“角色卡绑定的世界书”区单独显示和编辑当前角色卡内嵌 Lorebook。折叠标题显示常驻、禁用或关键词条件，展开后可修改触发条件和正文。
-6. 在“用户”面板创建只含名字与描述的资料并绑定到当前 session。
-7. 发送消息。loader 会组合当前 session 的 preset、角色卡、用户资料以及独立/内嵌世界书命中条目；支持的采样参数进入模型调用配置。需要解释结果时，在 Conversation / Trajectory 旁打开 Tavern Trace；它保持简洁，只显示激活资源、世界书配置/命中关键词、接受或拒绝原因及 request/header 对齐，不保存资源正文。
+6. 在“用户”面板创建只含名字与描述的资料，并可为该用户选择独立世界书。分别保存用户正文与世界书关系后，再绑定到当前 session。
+7. 需要不受旧历史影响时，打开“新会话”：可直接维持当前 Tavern 设置新开干净对话，也可创建、更新和选择配置模板后新开。缺失资源会显示诊断并阻止创建。
+8. 在“界面设置”中切换简体中文/English 或调整 Tavern UI 缩放；修改会全局持久化，但不影响 DSH 主界面和对话配置。
+9. 发送消息。loader 会组合当前 session 的 preset、角色卡、用户资料以及独立/内嵌世界书命中条目；当前 claimed 输入会在首次 assembly 前参与匹配，支持的采样参数进入模型调用配置。需要解释结果时，在 Conversation / Trajectory 旁打开 Tavern Trace；它保持简洁，只显示激活资源、世界书配置/命中关键词、接受或拒绝原因及 request/header 对齐，不保存资源正文。
 
 切换预设不会改写已有会话历史。旧预设已经影响过的 assistant 回复仍会进入后续上下文，所以需要“干净切换”时，应选择新预设后新建或 fork 会话。
 
@@ -186,7 +194,9 @@ config:
 | PHI / depth / absolute injection | 字段保留并给出降级诊断；当前放入 system profile，不能严格复刻 ST 历史位置 |
 | 世界书扫描与编辑 | 角色卡内嵌书可编辑；loader 从公开 `agent/inbox/spliced` 建立有界临时投影，把本步骤 claimed 输入与 durable history 组合扫描，因此单 step 会话可在首个请求激活关键词；原生 regex key 默认阻断；原始导入 artifact 保持不变，JSON 导出反映编辑后的插件副本 |
 | 独立世界书 | 提供存储、导入/创建/编辑/导出/删除、per-session 多选和统一 matcher；未知字段随原始模型保留 |
-| 用户资料 | 严格 `{id,name,description}`，按 session 单绑定；`{{user}}` 替换用户名并可按预设出现多次，描述只由 `personaDescription`/`{{persona}}`/fallback 消费一次；不覆盖 DSH Agent 身份 |
+| 用户资料 | 严格 `{id,name,description}`，按 session 单绑定；可在独立关系策略中绑定世界书；`{{user}}` 替换用户名并可按预设出现多次，描述只由 `personaDescription`/`{{persona}}`/fallback 消费一次；不覆盖 DSH Agent 身份 |
+| 干净会话与模板 | 复制有界的 Tavern selection 投影到 DSH 公开 New Session seam 返回的真实 blank session；不复制 durable history、Trace、Inbox 或资源正文 |
+| UI 设置与 i18n | 全局保存简体中文/English 与 75%–150% 缩放；动态资源名、关键词、诊断和服务端错误按原文显示，不因翻译被改写 |
 | Tavern Trace | 保存有界的资源摘要、世界书配置/命中关键词、匹配决策、哈希和 header 引用；不保存资源正文或完整消息，也不等同于 DSH 原生 request/header |
 | ST macro | 支持部分常用变量、随机、骰子与局部变量；不是完整 ST runtime |
 | sampler | 未映射的 ST 参数会保存和编辑，但不宣称已经传给模型 adapter |
@@ -205,6 +215,7 @@ packages/tavern-loader
   ├─ packages/character ────────┼─ packages/tavern-format
   ├─ packages/user ─────────────┤
   ├─ packages/world-book-library ─ packages/world-book
+  ├─ packages/session-template
   └─ packages/tavern-trace
 ```
 
@@ -217,13 +228,9 @@ packages/tavern-loader
 
 ## 计划开发
 
-- 用户资源绑定零本或多本独立世界书，并由统一 session policy/loader 组合；关系存入选择策略，不塞进用户描述正文。用户解绑或删除时清理关联，不影响同一本书的显式 session 绑定。
-- 增加插件设置界面，首批支持 UI 缩放和界面语言；设置应全局持久化、即时刷新、具有恢复默认值，且不改变资源内容或 session 绑定。当前版本仅提高了默认正文与控件字号。
-- 增加“维持当前设置新开对话”按钮：继承当前会话已选择的 preset、角色卡、用户和世界书等 Tavern 配置，同时创建不携带既有对话历史的干净会话。
 - 世界书递归扫描、sticky/cooldown/delay、vector、outlet 与严格 depth/role insertion。
 - 将 greeting 作为显式开场消息的安全工作流，而不污染既有 durable history。
 - 在 DSH 提供合适 seam 后支持真实 role message、example dialogue 和 absolute/depth injection，而不是用 system 标签模拟。
-- 扩展现有 per-session 选择/继承策略，增加“选择资源并新建干净会话”等显式操作。
 - 更完整的 ST macro、导入诊断、兼容性报告和稳定的 round-trip/export。
 - 在 DSH 提供安全的插件事件 seam 后，将当前独立 Tavern Trace 进一步接入原生 Trajectory。
 

@@ -4,6 +4,42 @@ This is the staged implementation log for the prompt-preset experiment. It is
 kept separately from the product README so reviewers can follow intent,
 decisions, verification, and known limits chronologically.
 
+## 2026-08-15 — Phase 3 integration acceptance
+
+Purpose: combine the four independently developed Phase 3 features without
+weakening their ownership, safety, or user-visible contracts.
+
+- Integrated current-input world-book activation, user-bound world books,
+  clean-session configuration templates, and global UI settings/i18n on the
+  dedicated `feature/phase3-integration` branch.
+- Resolved shared loader/API composition so the single secured Tavern prefix
+  serves all resources while one loader owns pending input, effective
+  world-book selection, session templates, and profile assembly.
+- Expanded the launcher from four resource entries to six surfaces while
+  preserving drag geometry, non-binding status semantics, and both the clean
+  session and UI settings panels.
+- Extended the explicit `rawText`/`uiText` boundary to the newly integrated
+  session-template and user/world-book relationship UI. Resource names,
+  keywords, diagnostics, server errors, session IDs, and template names remain
+  verbatim when the interface language changes.
+- Updated README capabilities, usage, storage paths, compatibility limits and
+  roadmap, plus the architecture, loader, prompt-pipeline and full DSH message
+  flow documents. The local execution contract remains outside the repository.
+
+Verification:
+
+- `npm run check` rebuilt `dist/client.js` and completed 172 tests: 171 passed,
+  none failed, and the opt-in external copyrighted fixture was skipped.
+- `npm run pack:check` succeeded with 61 release files and excluded tests,
+  implementation-only documents, runtime data, caches and the local plan.
+- Installed into an isolated DSH profile and booted a loopback-only Web host.
+  Browser acceptance confirmed all six launcher surfaces, immediate English and
+  115% scaling, successful current-settings clean-session navigation, default
+  restoration, and the new settings/template/user-world-book API reads. The
+  owned DSH process was stopped and its test port verified closed afterward.
+- Tracked-file scans found no workstation paths, API keys, bearer tokens or
+  private-key material.
+
 ## 2026-08-15 — Phase 3 world-book early activation
 
 Purpose: let the current claimed input participate in world-book matching

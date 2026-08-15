@@ -1,9 +1,19 @@
 import {
-  createElement as h,
+  createElement,
   useCallback,
   useEffect,
   useState,
 } from 'react'
+import {
+  createLocalizedElement,
+  getClientUiSettings,
+  rawText,
+  translateVisibleText,
+  uiText,
+  unwrapText,
+} from '../../client/src/i18n.js'
+
+const h = createLocalizedElement(createElement)
 
 const API_ROOT = '/dsh-tavern/api'
 
@@ -26,17 +36,21 @@ async function api(path, options = {}) {
 function sourceLabel(template) {
   const selection = template?.selection ?? {}
   const labels = []
-  if (selection.presetId) labels.push('预设')
-  if (selection.characterCardId) labels.push('角色卡')
-  if (selection.userId) labels.push('用户')
-  if (Array.isArray(selection.worldBookIds) && selection.worldBookIds.length > 0) labels.push(`${selection.worldBookIds.length} 本世界书`)
-  return labels.length === 0 ? '空 Tavern 配置' : labels.join('、')
+  if (selection.presetId) labels.push(translateVisibleText('预设'))
+  if (selection.characterCardId) labels.push(translateVisibleText('角色卡'))
+  if (selection.userId) labels.push(translateVisibleText('用户'))
+  if (Array.isArray(selection.worldBookIds) && selection.worldBookIds.length > 0) {
+    labels.push(unwrapText(uiText`${selection.worldBookIds.length} 本世界书`))
+  }
+  return labels.length === 0
+    ? translateVisibleText('空 Tavern 配置')
+    : labels.join(getClientUiSettings().locale === 'en' ? ', ' : '、')
 }
 
 export function SessionTemplatePanel({ sessionId, workspaceId, createCleanSession, close }) {
   const [templates, setTemplates] = useState([])
   const [selectedId, setSelectedId] = useState(null)
-  const [name, setName] = useState('新配置模板')
+  const [name, setName] = useState(() => translateVisibleText('新配置模板'))
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
   const [status, setStatus] = useState('')
@@ -63,7 +77,7 @@ export function SessionTemplatePanel({ sessionId, workspaceId, createCleanSessio
     setError('')
     try {
       const result = await operation()
-      setStatus(typeof success === 'function' ? success(result) : success)
+      setStatus(typeof success === 'function' ? success(result) : translateVisibleText(success))
       await refresh()
       window.dispatchEvent(new Event('dsh-tavern:refresh'))
       return result
@@ -87,43 +101,43 @@ export function SessionTemplatePanel({ sessionId, workspaceId, createCleanSessio
   }, '模板选择已更新')
 
   const create = () => run(async () => {
-    if (!sessionId) throw new Error('请先打开一个会话，再保存当前 Tavern 设置')
+    if (!sessionId) throw new Error(translateVisibleText('请先打开一个会话，再保存当前 Tavern 设置'))
     return api('/session-templates', {
       method: 'POST',
       body: JSON.stringify({ name, sourceSessionId: sessionId }),
     })
-  }, result => `已创建模板：${result.template.name}`)
+  }, result => unwrapText(uiText`已创建模板：${result.template.name}`))
 
   const rename = () => run(async () => {
-    if (selectedId === null) throw new Error('请先选择一个模板')
+    if (selectedId === null) throw new Error(translateVisibleText('请先选择一个模板'))
     return api(`/session-templates/${encodeURIComponent(selectedId)}`, {
       method: 'PATCH',
       body: JSON.stringify({ name }),
     })
-  }, result => `已重命名模板：${result.template.name}`)
+  }, result => unwrapText(uiText`已重命名模板：${result.template.name}`))
 
   const update = () => run(async () => {
-    if (!sessionId || selectedId === null) throw new Error('请先打开会话并选择模板')
+    if (!sessionId || selectedId === null) throw new Error(translateVisibleText('请先打开会话并选择模板'))
     return api(`/session-templates/${encodeURIComponent(selectedId)}`, {
       method: 'PATCH',
       body: JSON.stringify({ name, sourceSessionId: sessionId }),
     })
-  }, result => `已用当前设置更新模板：${result.template.name}`)
+  }, result => unwrapText(uiText`已用当前设置更新模板：${result.template.name}`))
 
   const remove = () => {
-    if (selectedId === null || !window.confirm(`删除配置模板“${selected?.name ?? selectedId}”？这不会删除任何 DSH 会话。`)) return
+    if (selectedId === null || !window.confirm(unwrapText(uiText`删除配置模板“${selected?.name ?? selectedId}”？这不会删除任何 DSH 会话。`))) return
     run(() => api(`/session-templates/${encodeURIComponent(selectedId)}`, { method: 'DELETE', body: JSON.stringify({}) }), '模板已删除')
   }
 
   const start = mode => run(async () => {
-    if (mode === 'current' && !sessionId) throw new Error('请先打开一个来源会话')
-    if (workspaceId === null) throw new Error('当前会话不属于 DSH 工作区；请先把会话加入工作区')
+    if (mode === 'current' && !sessionId) throw new Error(translateVisibleText('请先打开一个来源会话'))
+    if (workspaceId === null) throw new Error(translateVisibleText('当前会话不属于 DSH 工作区；请先把会话加入工作区'))
     const source = mode === 'current'
       ? { mode: 'current', sessionId }
       : { mode: 'template', templateId: selectedId }
-    if (mode === 'template' && selectedId === null) throw new Error('请先选择一个模板')
+    if (mode === 'template' && selectedId === null) throw new Error(translateVisibleText('请先选择一个模板'))
     return createCleanSession({ workspaceId, source })
-  }, id => `已切换到干净会话：${id}`)
+  }, id => unwrapText(uiText`已切换到干净会话：${id}`))
 
   const diagnostics = Array.isArray(selected?.diagnostics) ? selected.diagnostics : []
 
@@ -149,7 +163,7 @@ export function SessionTemplatePanel({ sessionId, workspaceId, createCleanSessio
           h('span', { className: 'dtv-label' }, '已选择模板'),
           h('select', { className: 'dtv-select', value: selectedId ?? '', disabled: busy, onChange: select },
             h('option', { value: '' }, '未选择模板'),
-            ...templates.map(template => h('option', { key: template.id, value: template.id }, template.name)),
+            ...templates.map(template => h('option', { key: template.id, value: template.id }, rawText(template.name))),
           ),
         ),
         h('label', { className: 'dtv-field' },
@@ -162,10 +176,10 @@ export function SessionTemplatePanel({ sessionId, workspaceId, createCleanSessio
           h('button', { className: 'dtv-button', type: 'button', disabled: busy || !sessionId || selectedId === null, onClick: update }, '用当前设置更新'),
           h('button', { className: 'dtv-button dtv-danger', type: 'button', disabled: busy || selectedId === null, onClick: remove }, '删除模板'),
         ),
-        selected === null ? null : h('div', { className: 'dtv-resource-meta' }, `保存内容：${sourceLabel(selected)}`),
+        selected === null ? null : h('div', { className: 'dtv-resource-meta' }, uiText`保存内容：${sourceLabel(selected)}`),
         diagnostics.length === 0 ? null : h('div', { className: 'dtv-status', 'data-error': true },
           h('div', null, '该模板暂不可用于创建：'),
-          h('ul', { className: 'dtv-list' }, ...diagnostics.map((item, index) => h('li', { key: `${item.code}-${index}` }, item.message))),
+          h('ul', { className: 'dtv-list' }, ...diagnostics.map((item, index) => h('li', { key: `${item.code}-${index}` }, rawText(item.message)))),
         ),
         h('button', {
           className: 'dtv-button dtv-primary',
@@ -174,7 +188,7 @@ export function SessionTemplatePanel({ sessionId, workspaceId, createCleanSessio
           onClick: () => start('template'),
         }, '根据所选模板新开干净对话'),
       ),
-      h('div', { className: 'dtv-status', 'data-error': error !== '' || undefined, role: 'status' }, error || status || '模板与新会话操作已就绪。'),
+      h('div', { className: 'dtv-status', 'data-error': error !== '' || undefined, role: 'status' }, error ? rawText(error) : status ? rawText(status) : '模板与新会话操作已就绪。'),
       h('p', { className: 'dtv-note' }, 'DSH 可能复用同工作区中已有的真实 blank session；这是其公开 New Session 语义。插件会在导航前原子替换该 blank session 的 Tavern 选择。'),
     ),
   )

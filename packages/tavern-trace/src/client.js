@@ -132,6 +132,11 @@ function WorldBookAudit({ book }) {
 function TraceRecord({ record, latest }) {
   const authority = record.authority ?? {}
   const linked = authority.headerEventSeq !== null
+  const reusedHeader = authority.headerReused ? translateVisibleText('（沿用上一份 header）') : ''
+  const profileStatus = translateVisibleText(authority.tavernProfilePresent === false
+    ? '未找到'
+    : authority.tavernProfilePresent === true ? '一致' : '本轮无 profile')
+  const configStatus = translateVisibleText(authority.tavernCallConfigApplied === false ? '不一致' : '一致或无字段')
   return h('details', { className: 'dttrace-record', open: latest },
     h('summary', null,
       h('span', { className: 'dttrace-round' }, uiText`轮次 ${record.turn} · 步骤 ${record.step}${record.attempt > 1 ? unwrapText(uiText` · 尝试 ${record.attempt}`) : ''}`),
@@ -140,7 +145,7 @@ function TraceRecord({ record, latest }) {
     ),
     h('div', { className: 'dttrace-content' },
       h('div', { className: 'dttrace-status' }, linked
-        ? `该记录已对齐 DSH request/header #${authority.headerEventSeq}${authority.headerReused ? '（沿用上一份 header）' : ''}。Tavern profile 校验：${authority.tavernProfilePresent === false ? '未找到' : authority.tavernProfilePresent === true ? '一致' : '本轮无 profile'}；采样字段：${authority.tavernCallConfigApplied === false ? '不一致' : '一致或无字段'}。`
+        ? uiText`该记录已对齐 DSH request/header #${authority.headerEventSeq}${reusedHeader}。Tavern profile 校验：${profileStatus}；采样字段：${configStatus}。`
         : '尚未观察到可对齐的 DSH request/header；这不代表请求已经发送。刷新后仍会保留该待确认记录。'),
       h('div', { className: 'dttrace-grid' },
         resourceCard('Preset', record.resources?.preset),
@@ -154,7 +159,7 @@ function TraceRecord({ record, latest }) {
       record.worldBooks?.length > 0 ? h('div', { className: 'dttrace-section' },
         h('div', { className: 'dttrace-section-title' }, '世界书匹配决策'),
         h('div', { className: 'dttrace-meta' }, record.activation?.pendingMessageCount > 0
-          ? `匹配基于本步骤 assembly 的临时激活上下文：持久历史 + ${record.activation.includedPendingMessageCount}/${record.activation.pendingMessageCount} 条本轮 claimed 输入；不保存输入正文${record.activation.truncated ? '；扫描输入已按上限截断' : ''}。`
+          ? uiText`匹配基于本步骤 assembly 的临时激活上下文：持久历史 + ${record.activation.includedPendingMessageCount}/${record.activation.pendingMessageCount} 条本轮 claimed 输入；不保存输入正文${record.activation.truncated ? translateVisibleText('；扫描输入已按上限截断') : ''}。`
           : '匹配基于本步骤 system assembly 当时可见的持久化会话历史；没有重复附加 pending 输入。'),
         ...record.worldBooks.map((book, index) => h(WorldBookAudit, { book, key: `${book.resource?.id ?? 'book'}-${index}` })),
       ) : h('div', { className: 'dttrace-note' }, '本轮没有可审计的世界书匹配来源。'),

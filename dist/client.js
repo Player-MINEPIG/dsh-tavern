@@ -30,7 +30,7 @@ __export(index_exports, {
   name: () => name
 });
 module.exports = __toCommonJS(index_exports);
-var import_react6 = require("react");
+var import_react7 = require("react");
 
 // packages/client/src/i18n.js
 var DEFAULT_UI_SETTINGS = Object.freeze({ locale: "zh-CN", scale: 1 });
@@ -196,6 +196,28 @@ var SOURCE_EN = Object.freeze({
   "\u7528\u6237\u5DF2\u7ED1\u5B9A\uFF1B\u5F53\u524D\u4F1A\u8BDD\u7684\u4E0B\u4E00\u6B21\u8BF7\u6C42\u4F1A\u4F7F\u7528\u8BE5\u540D\u5B57\u548C\u63CF\u8FF0": "User bound; the current session will use this name and description on its next request",
   "\u5F53\u524D\u4F1A\u8BDD\u5DF2\u89E3\u9664\u7528\u6237\u7ED1\u5B9A": "User unbound from the current session",
   "\u7528\u6237\u5DF2\u5220\u9664\uFF0C\u76F8\u5173\u4F1A\u8BDD\u7ED1\u5B9A\u5DF2\u6E05\u9664": "User deleted and related session bindings cleared",
+  "\u68C0\u6D4B\u5230\u5176\u4ED6 Tavern \u8D44\u6E90\u53D8\u5316\uFF1B\u4E3A\u4FDD\u7559\u672C\u9762\u677F\u672A\u4FDD\u5B58\u4FEE\u6539\uFF0C\u672A\u81EA\u52A8\u5237\u65B0\u3002": "Other Tavern resources changed. This panel was not refreshed so its unsaved changes are preserved.",
+  "\u5F53\u524D\u7528\u6237\u8D44\u6E90\u6216\u4E16\u754C\u4E66\u7ED1\u5B9A\u6709\u672A\u4FDD\u5B58\u4FEE\u6539\u3002\u653E\u5F03\u4FEE\u6539\u5E76\u65B0\u5EFA\u7528\u6237\u5417\uFF1F": "This user resource or its world-book binding has unsaved changes. Discard them and create a user?",
+  "\u7528\u6237\u7ED1\u5B9A\u7684\u4E16\u754C\u4E66\u5DF2\u4FDD\u5B58\uFF1B\u9009\u62E9\u8BE5\u7528\u6237\u7684\u4F1A\u8BDD\u4F1A\u5728\u4E0B\u4E00\u6B21\u7EC4\u88C5\u65F6\u81EA\u52A8\u4F7F\u7528": "The user\u2019s world-book binding was saved; sessions using this user will apply it on their next assembly",
+  "\u5F53\u524D\u7528\u6237\u8D44\u6E90\u6216\u4E16\u754C\u4E66\u7ED1\u5B9A\u6709\u672A\u4FDD\u5B58\u4FEE\u6539\u3002\u653E\u5F03\u4FEE\u6539\u5E76\u5207\u6362\u5417\uFF1F": "This user resource or its world-book binding has unsaved changes. Discard them and switch?",
+  "\u7528\u6237\u8D44\u6E90\u548C\u4E16\u754C\u4E66\u7ED1\u5B9A\u5DF2\u52A0\u8F7D": "User resource and world-book binding loaded",
+  "\u5F53\u524D\u7528\u6237\u8D44\u6E90\u6216\u4E16\u754C\u4E66\u7ED1\u5B9A\u6709\u672A\u4FDD\u5B58\u4FEE\u6539\u3002\u4ECD\u7136\u5173\u95ED\u5417\uFF1F": "This user resource or its world-book binding has unsaved changes. Close anyway?",
+  "\u653E\u5F03\u5C1A\u672A\u4FDD\u5B58\u7684\u7528\u6237\u8D44\u6E90\u6216\u4E16\u754C\u4E66\u7ED1\u5B9A\u4FEE\u6539\uFF1F": "Discard unsaved user-resource or world-book-binding changes?",
+  "\u6709\u672A\u4FDD\u5B58\u4FEE\u6539\uFF1A": "Unsaved changes: ",
+  "\u540D\u5B57/\u63CF\u8FF0": "Name/description",
+  "\u7528\u6237\u4E16\u754C\u4E66\u7ED1\u5B9A": "User world-book binding",
+  "\u5F53\u524D\u663E\u793A\u7684\u7528\u6237\u8D44\u6E90\u548C\u4E16\u754C\u4E66\u7ED1\u5B9A\u5747\u5DF2\u4FDD\u5B58\u3002": "The displayed user resource and world-book binding are saved.",
+  "\u4FDD\u5B58\u8D44\u6E90\uFF08\u672A\u4FDD\u5B58\uFF09": "Save resource (unsaved)",
+  "\u8D44\u6E90\u5DF2\u4FDD\u5B58": "Resource saved",
+  "\u8BF7\u5148\u4FDD\u5B58\u4FEE\u6539": "Save changes first",
+  "\u7528\u6237\u7ED1\u5B9A\u7684\u72EC\u7ACB\u4E16\u754C\u4E66": "Standalone world books bound to this user",
+  "\u9009\u62E9\u8BE5\u7528\u6237\u65F6\uFF0Cloader \u4F1A\u81EA\u52A8\u7EC4\u5408\u8FD9\u91CC\u7684\u4E16\u754C\u4E66\u4E0E\u5F53\u524D\u4F1A\u8BDD\u663E\u5F0F\u9009\u62E9\u7684\u4E16\u754C\u4E66\uFF1B\u91CD\u590D\u7684\u540C\u4E00\u672C\u4E66\u53EA\u6267\u884C\u4E00\u6B21\u3002": "When this user is selected, the loader combines these books with the session\u2019s explicit world books; a duplicate book runs only once.",
+  "\u6B63\u5728\u52A0\u8F7D\u72EC\u7ACB\u4E16\u754C\u4E66\u8D44\u6E90\u5E93\u2026": "Loading the standalone world-book library\u2026",
+  "\u72EC\u7ACB\u4E16\u754C\u4E66\u8D44\u6E90\u5E93\u4E3A\u7A7A\u3002\u8BF7\u5148\u5728\u4E16\u754C\u4E66\u9762\u677F\u521B\u5EFA\u6216\u5BFC\u5165\u3002": "The standalone world-book library is empty. Create or import one in the world-book panel first.",
+  "\u4FDD\u5B58\u4E16\u754C\u4E66\u7ED1\u5B9A\uFF08\u672A\u4FDD\u5B58\uFF09": "Save world-book binding (unsaved)",
+  "\u4E16\u754C\u4E66\u7ED1\u5B9A\u5DF2\u4FDD\u5B58": "World-book binding saved",
+  "\u6E05\u7A7A\u5F85\u4FDD\u5B58\u9009\u62E9": "Clear pending selection",
+  "\u7528\u6237\u8D44\u6E90\u6B63\u6587\u4ECD\u4E25\u683C\u53EA\u6709\u540D\u5B57\u548C\u63CF\u8FF0\uFF1B\u4E16\u754C\u4E66\u5173\u7CFB\u4FDD\u5B58\u5728 loader \u7684\u72EC\u7ACB\u7ED3\u6784\u5316\u7B56\u7565\u4E2D\u3002\u7528\u6237\u8D44\u6E90\u4E0D\u5305\u542B\u5934\u50CF\uFF0C\u4E5F\u4E0D\u4F1A\u8986\u76D6 DSH Agent \u8EAB\u4EFD\u3002": "The user resource remains strictly name and description only; world-book relationships are stored in a separate structured loader policy. User resources have no avatar and do not override the DSH Agent identity.",
   "\u89D2\u8272\u5E93\u5DF2\u52A0\u8F7D": "Character library loaded",
   "\u89D2\u8272\u72B6\u6001\u5DF2\u5237\u65B0": "Character status refreshed",
   "\u89D2\u8272\u5361\u5DF2\u5BFC\u5165\uFF1B\u5C1A\u672A\u7ED1\u5B9A\u5230\u4F1A\u8BDD": "Character card imported; it is not yet bound to a session",
@@ -226,6 +248,47 @@ var SOURCE_EN = Object.freeze({
   "\u65B0\u9884\u8BBE": "New preset",
   "\u65B0\u63D0\u793A\u8BCD": "New prompt",
   "\u65B0\u7528\u6237": "New user",
+  "\u65B0\u4F1A\u8BDD": "New session",
+  "\u5F53\u524D\u8BBE\u7F6E\u6216\u914D\u7F6E\u6A21\u677F": "Current settings or configuration template",
+  "\u65B0\u4F1A\u8BDD\u4E0E\u914D\u7F6E\u6A21\u677F": "New session and configuration templates",
+  "\u5173\u95ED\u65B0\u4F1A\u8BDD\u4FA7\u8FB9\u680F": "Close the new-session sidebar",
+  "\u7EF4\u6301\u5F53\u524D Tavern \u8BBE\u7F6E\u65B0\u5F00\u5BF9\u8BDD": "Start a new conversation with the current Tavern settings",
+  "\u53EA\u7EE7\u627F preset\u3001\u89D2\u8272\u5361\u4E0E greeting/\u5F00\u5173\u3001\u7528\u6237\u548C\u72EC\u7ACB\u4E16\u754C\u4E66\u9009\u62E9\u3002DSH \u5386\u53F2\u3001Tavern Trace\u3001Inbox\u3001\u8FD0\u884C\u4E2D turn/step \u548C\u5176\u4ED6\u8FD0\u884C\u6001\u4E0D\u4F1A\u590D\u5236\u3002": "Carries only the preset, character and greeting/options, user, and standalone world-book selections. DSH history, Tavern Trace, Inbox, active turns/steps, and other runtime state are not copied.",
+  "\u6CA1\u6709\u53EF\u7528\u7684 DSH \u76EE\u6807\u5DE5\u4F5C\u533A\u3002\u8BF7\u5148\u5728 DSH \u4FA7\u680F\u4E2D\u52A0\u5165\u6216\u6253\u5F00\u5DE5\u4F5C\u533A\u3002": "No DSH target workspace is available. Add or open a workspace in the DSH sidebar first.",
+  "\u914D\u7F6E\u6A21\u677F": "Configuration templates",
+  "\u5DF2\u9009\u62E9\u6A21\u677F": "Selected template",
+  "\u672A\u9009\u62E9\u6A21\u677F": "No template selected",
+  "\u6A21\u677F\u540D\u79F0": "Template name",
+  "\u65B0\u914D\u7F6E\u6A21\u677F": "New configuration template",
+  "\u7531\u5F53\u524D\u8BBE\u7F6E\u521B\u5EFA": "Create from current settings",
+  "\u4EC5\u4FDD\u5B58\u540D\u79F0": "Save name only",
+  "\u7528\u5F53\u524D\u8BBE\u7F6E\u66F4\u65B0": "Update from current settings",
+  "\u5220\u9664\u6A21\u677F": "Delete template",
+  "\u4FDD\u5B58\u5185\u5BB9\uFF1A": "Saved content: ",
+  "\u7A7A Tavern \u914D\u7F6E": "Empty Tavern configuration",
+  "\u8BE5\u6A21\u677F\u6682\u4E0D\u53EF\u7528\u4E8E\u521B\u5EFA\uFF1A": "This template cannot currently be used:",
+  "\u6839\u636E\u6240\u9009\u6A21\u677F\u65B0\u5F00\u5E72\u51C0\u5BF9\u8BDD": "Start a clean conversation from the selected template",
+  "\u6A21\u677F\u4E0E\u65B0\u4F1A\u8BDD\u64CD\u4F5C\u5DF2\u5C31\u7EEA\u3002": "Template and new-session actions are ready.",
+  "DSH \u53EF\u80FD\u590D\u7528\u540C\u5DE5\u4F5C\u533A\u4E2D\u5DF2\u6709\u7684\u771F\u5B9E blank session\uFF1B\u8FD9\u662F\u5176\u516C\u5F00 New Session \u8BED\u4E49\u3002\u63D2\u4EF6\u4F1A\u5728\u5BFC\u822A\u524D\u539F\u5B50\u66FF\u6362\u8BE5 blank session \u7684 Tavern \u9009\u62E9\u3002": "DSH may reuse an existing real blank session in the same workspace; this is its public New Session behavior. The plugin atomically replaces that blank session\u2019s Tavern selection before navigation.",
+  "\u6A21\u677F\u9009\u62E9\u5DF2\u66F4\u65B0": "Template selection updated",
+  "\u8BF7\u5148\u6253\u5F00\u4E00\u4E2A\u4F1A\u8BDD\uFF0C\u518D\u4FDD\u5B58\u5F53\u524D Tavern \u8BBE\u7F6E": "Open a session before saving its current Tavern settings",
+  "\u8BF7\u5148\u9009\u62E9\u4E00\u4E2A\u6A21\u677F": "Select a template first",
+  "\u8BF7\u5148\u6253\u5F00\u4F1A\u8BDD\u5E76\u9009\u62E9\u6A21\u677F": "Open a session and select a template first",
+  "\u6A21\u677F\u5DF2\u5220\u9664": "Template deleted",
+  "\u8BF7\u5148\u6253\u5F00\u4E00\u4E2A\u6765\u6E90\u4F1A\u8BDD": "Open a source session first",
+  "\u5F53\u524D\u4F1A\u8BDD\u4E0D\u5C5E\u4E8E DSH \u5DE5\u4F5C\u533A\uFF1B\u8BF7\u5148\u628A\u4F1A\u8BDD\u52A0\u5165\u5DE5\u4F5C\u533A": "The current session is not in a DSH workspace; add it to a workspace first",
+  "\u5DF2\u521B\u5EFA\u6A21\u677F\uFF1A": "Template created: ",
+  "\u5DF2\u91CD\u547D\u540D\u6A21\u677F\uFF1A": "Template renamed: ",
+  "\u5DF2\u7528\u5F53\u524D\u8BBE\u7F6E\u66F4\u65B0\u6A21\u677F\uFF1A": "Template updated from current settings: ",
+  "\u5DF2\u5207\u6362\u5230\u5E72\u51C0\u4F1A\u8BDD\uFF1A": "Switched to clean session: ",
+  "\u5220\u9664\u914D\u7F6E\u6A21\u677F\u201C": "Delete configuration template \u201C",
+  "\u201D\uFF1F\u8FD9\u4E0D\u4F1A\u5220\u9664\u4EFB\u4F55 DSH \u4F1A\u8BDD\u3002": "\u201D? This will not delete any DSH session.",
+  " \u672C\u4E16\u754C\u4E66": " world books",
+  "\u4FDD\u5B58\u4F1A\u66F4\u65B0\u63D2\u4EF6\u4FDD\u5B58\u7684\u89D2\u8272\u5361\u526F\u672C\u53CA\u5176 JSON \u5BFC\u51FA\uFF1B\u4E3A\u907F\u514D\u7834\u574F\u7B7E\u540D\u6216\u56FE\u7247\u6570\u636E\uFF0C\u6700\u521D\u5BFC\u5165\u7684 PNG/JSON artifact \u4ECD\u4FDD\u6301\u4E0D\u53D8\u3002matcher \u4F1A\u5728\u9996\u6B21\u8BF7\u6C42\u7EC4\u88C5\u524D\u628A\u672C\u6B65\u9AA4 claimed \u8F93\u5165\u4E0E Session \u5386\u53F2\u7EC4\u5408\u626B\u63CF\uFF0C\u4E0D\u4F1A\u5411\u5386\u53F2\u5199\u5165\u526F\u672C\u3002": "Saving updates the plugin copy of the character card and its JSON export. The original PNG/JSON artifact remains unchanged. Before the first request assembly, the matcher scans this step\u2019s claimed input together with Session history without writing a duplicate into history.",
+  "\u5B9E\u9645\u6FC0\u6D3B\u3001\u6392\u5E8F\u3001\u6982\u7387\u548C\u9884\u7B97\u7531\u5171\u4EAB matcher \u786E\u5B9A\uFF1B\u6700\u7EC8\u6CE8\u5165\u4ECD\u7531 Tavern loader \u7EDF\u4E00\u5B8C\u6210\u3002\u5F53\u524D\u626B\u63CF\u4F1A\u628A\u672C\u6B65\u9AA4 claimed \u8F93\u5165\u4E0E\u6301\u4E45\u5386\u53F2\u7EC4\u5408\u6210\u4E34\u65F6\u4E0A\u4E0B\u6587\uFF0C\u56E0\u6B64\u5355\u6B65\u9AA4\u4F1A\u8BDD\u4E5F\u80FD\u5728\u9996\u6B21\u8BF7\u6C42\u89E6\u53D1\u5173\u952E\u8BCD\u3002": "The shared matcher determines activation, ordering, probability, and budget, and the Tavern loader performs final injection. Scanning combines this step\u2019s claimed input with durable history in a temporary context, so a single-step session can trigger keywords on its first request.",
+  "\u5339\u914D\u57FA\u4E8E\u672C\u6B65\u9AA4 assembly \u7684\u4E34\u65F6\u6FC0\u6D3B\u4E0A\u4E0B\u6587\uFF1A\u6301\u4E45\u5386\u53F2 + ": "Matching uses this step\u2019s temporary activation context: durable history + ",
+  " \u6761\u672C\u8F6E claimed \u8F93\u5165\uFF1B\u4E0D\u4FDD\u5B58\u8F93\u5165\u6B63\u6587": " claimed messages from this turn; input bodies are not stored",
+  "\uFF1B\u626B\u63CF\u8F93\u5165\u5DF2\u6309\u4E0A\u9650\u622A\u65AD": "; scan input was truncated to the configured limit",
   "\u4E3B\u5173\u952E\u8BCD\uFF08\u6BCF\u884C\u4E00\u4E2A\uFF1B\u4EFB\u4E00\u547D\u4E2D\uFF09": "Primary keywords (one per line; any match)",
   "\u9644\u52A0\u5173\u952E\u8BCD\uFF08\u6BCF\u884C\u4E00\u4E2A\uFF09": "Secondary keywords (one per line)",
   "\u4E3B\u5173\u952E\u8BCD\uFF08\u652F\u6301\u4E2D\u6587\u3001\u82F1\u6587\u9017\u53F7\u5206\u9694\uFF09": "Primary keywords (Chinese or English comma separators)",
@@ -318,6 +381,11 @@ var SOURCE_EN = Object.freeze({
   "\uFF08\u8FD1\u4F3C\uFF09": " (approximate)",
   " \u2192 \u672A\u63D2\u5165": " \u2192 not inserted",
   "\uFF08\u6CBF\u7528\u4E0A\u4E00\u4EFD header\uFF09": " (reused previous header)",
+  "\u672A\u627E\u5230": "Not found",
+  "\u8BE5\u8BB0\u5F55\u5DF2\u5BF9\u9F50 DSH request/header #": "This record is aligned with DSH request/header #",
+  "\u3002Tavern profile \u6821\u9A8C\uFF1A": ". Tavern profile validation: ",
+  "\uFF1B\u91C7\u6837\u5B57\u6BB5\uFF1A": "; sampler fields: ",
+  "\u5339\u914D\u57FA\u4E8E\u672C\u6B65\u9AA4 system assembly \u5F53\u65F6\u53EF\u89C1\u7684\u6301\u4E45\u5316\u4F1A\u8BDD\u5386\u53F2\uFF1B\u6CA1\u6709\u91CD\u590D\u9644\u52A0 pending \u8F93\u5165\u3002": "Matching uses durable session history visible during this step\u2019s system assembly; pending input was not appended a second time.",
   "\u4E00\u81F4": "Consistent",
   "\u672C\u8F6E\u65E0 profile": "No profile this request",
   "\u4E0D\u4E00\u81F4": "Inconsistent",
@@ -377,7 +445,7 @@ function localizeChild(value) {
   if (Array.isArray(value)) return value.map(localizeChild);
   return value;
 }
-function createLocalizedElement(createElement7) {
+function createLocalizedElement(createElement8) {
   return (type, props, ...children) => {
     let localizedProps = props;
     if (props !== null && props !== void 0) {
@@ -387,7 +455,7 @@ function createLocalizedElement(createElement7) {
         else if (typeof localizedProps[key] === "string") localizedProps[key] = translateVisibleText(localizedProps[key]);
       }
     }
-    return createElement7(type, localizedProps, ...children.map(localizeChild));
+    return createElement8(type, localizedProps, ...children.map(localizeChild));
   };
 }
 function getClientUiSettings() {
@@ -1552,7 +1620,7 @@ function WorldBookPanel({ sessionId, close }) {
         } }))
       ) : null,
       diagnostics.length > 0 ? h3("details", { className: "dwb-resource" }, h3("summary", { className: "dwb-resource-title" }, uiText`运行诊断（${diagnostics.length}）`), h3("ul", { className: "dwb-list" }, ...diagnostics.map((item, index) => h3("li", { key: `${item.code}-${index}` }, rawText(item.message))))) : null,
-      h3("p", { className: "dwb-note" }, "\u5B9E\u9645\u6FC0\u6D3B\u3001\u6392\u5E8F\u3001\u6982\u7387\u548C\u9884\u7B97\u7531\u5171\u4EAB matcher \u786E\u5B9A\uFF1B\u6700\u7EC8\u6CE8\u5165\u4ECD\u7531 Tavern loader \u7EDF\u4E00\u5B8C\u6210\u3002\u5F53\u524D\u626B\u63CF\u57FA\u4E8E\u5DF2\u6301\u4E45\u5316\u7684\u4F1A\u8BDD\u5386\u53F2\uFF1B\u521A\u63D0\u4EA4\u7684\u8F93\u5165\u53EF\u80FD\u5728\u540C\u4E00\u53EF\u89C1\u56DE\u5408\u7684\u4E0B\u4E00 agent step\uFF08\u5982\u5DE5\u5177\u7EE7\u7EED\uFF09\u6216\u4E0B\u4E00\u7528\u6237\u56DE\u5408\u89E6\u53D1\u3002")
+      h3("p", { className: "dwb-note" }, "\u5B9E\u9645\u6FC0\u6D3B\u3001\u6392\u5E8F\u3001\u6982\u7387\u548C\u9884\u7B97\u7531\u5171\u4EAB matcher \u786E\u5B9A\uFF1B\u6700\u7EC8\u6CE8\u5165\u4ECD\u7531 Tavern loader \u7EDF\u4E00\u5B8C\u6210\u3002\u5F53\u524D\u626B\u63CF\u4F1A\u628A\u672C\u6B65\u9AA4 claimed \u8F93\u5165\u4E0E\u6301\u4E45\u5386\u53F2\u7EC4\u5408\u6210\u4E34\u65F6\u4E0A\u4E0B\u6587\uFF0C\u56E0\u6B64\u5355\u6B65\u9AA4\u4F1A\u8BDD\u4E5F\u80FD\u5728\u9996\u6B21\u8BF7\u6C42\u89E6\u53D1\u5173\u952E\u8BCD\u3002")
     )
   );
 }
@@ -1566,10 +1634,24 @@ function installWorldBookStyles() {
 
 // packages/user/src/client.js
 var import_react4 = require("react");
+
+// packages/user/src/client-state.js
+function sameOrderedIds(left, right) {
+  return Array.isArray(left) && Array.isArray(right) && left.length === right.length && left.every((id, index) => id === right[index]);
+}
+function userResourceDirty(draft, saved) {
+  if (draft === null || saved === null) return draft !== saved;
+  return draft.id !== saved.id || draft.name !== saved.name || draft.description !== saved.description;
+}
+function userPanelDirty(draft, saved, worldBookIds, appliedWorldBookIds) {
+  return userResourceDirty(draft, saved) || !sameOrderedIds(worldBookIds, appliedWorldBookIds);
+}
+
+// packages/user/src/client.js
 var h4 = createLocalizedElement(import_react4.createElement);
 var API_ROOT4 = "/dsh-tavern/api";
 var css4 = `
-.dtu-panel{position:absolute;top:0;right:0;bottom:0;width:min(440px,calc(100vw - 56px));pointer-events:auto;border-left:1px solid var(--dsw-alias-border-l2);box-shadow:var(--ds-shadow-3,-8px 0 28px rgba(0,0,0,.18));background:var(--dsw-alias-bg-base);color:var(--dsw-alias-label-primary);display:flex;flex-direction:column;font-family:Inter,var(--dsw-font-family),sans-serif}.dtu-header{height:52px;box-sizing:border-box;display:flex;align-items:center;gap:8px;padding:0 14px;border-bottom:1px solid var(--dsw-alias-border-l2);flex:none}.dtu-title{font-size:16px;font-weight:650;flex:1}.dtu-close{border:0;background:transparent;color:var(--dsw-alias-label-tertiary);cursor:pointer;border-radius:7px;padding:6px 8px;font-size:14px}.dtu-body{min-height:0;overflow:auto;padding:12px;display:flex;flex-direction:column;gap:12px}.dtu-toolbar,.dtu-actions{display:grid;grid-template-columns:1fr 1fr;gap:8px}.dtu-button{min-height:36px;border:1px solid var(--dsw-alias-border-l2);border-radius:8px;background:var(--dsw-alias-button-secondary-fill,var(--dsw-alias-bg-base));color:var(--dsw-alias-label-primary);cursor:pointer;padding:7px 10px;font-size:13px}.dtu-button:hover:not(:disabled){background:var(--dsw-alias-interactive-bg-hover)}.dtu-button:disabled{opacity:.5;cursor:default}.dtu-primary{background:var(--dsw-alias-state-business-primary);color:white;border-color:transparent}.dtu-danger{color:var(--dsw-alias-state-error)}.dtu-field{display:flex;flex-direction:column;gap:5px}.dtu-label{font-size:12px;color:var(--dsw-alias-label-tertiary);font-weight:600}.dtu-input,.dtu-textarea,.dtu-select{box-sizing:border-box;width:100%;border:1px solid var(--dsw-alias-border-l2);border-radius:7px;background:var(--dsw-alias-bg-base);color:var(--dsw-alias-label-primary);font:inherit;font-size:13px;padding:8px 9px}.dtu-input,.dtu-select{height:36px}.dtu-textarea{min-height:220px;line-height:1.5;resize:vertical}.dtu-note{font-size:13px;line-height:1.5;color:var(--dsw-alias-label-tertiary);margin:0;overflow-wrap:anywhere}.dtu-status{font-size:13px;line-height:1.45;border-radius:7px;padding:7px 9px;background:var(--dsw-specific-tip);overflow-wrap:anywhere}.dtu-status[data-error=true]{color:var(--dsw-alias-state-error)}.dtu-editor{border-top:1px solid var(--dsw-alias-border-l1);padding-top:12px;display:flex;flex-direction:column;gap:10px}.dtu-footer{position:sticky;bottom:-12px;margin:0 -12px -12px;padding:10px 12px;background:var(--dsw-alias-bg-base);border-top:1px solid var(--dsw-alias-border-l2)}
+.dtu-panel{position:absolute;top:0;right:0;bottom:0;width:min(440px,calc(100vw - 56px));pointer-events:auto;border-left:1px solid var(--dsw-alias-border-l2);box-shadow:var(--ds-shadow-3,-8px 0 28px rgba(0,0,0,.18));background:var(--dsw-alias-bg-base);color:var(--dsw-alias-label-primary);display:flex;flex-direction:column;font-family:Inter,var(--dsw-font-family),sans-serif}.dtu-header{height:52px;box-sizing:border-box;display:flex;align-items:center;gap:8px;padding:0 14px;border-bottom:1px solid var(--dsw-alias-border-l2);flex:none}.dtu-title{font-size:16px;font-weight:650;flex:1}.dtu-close{border:0;background:transparent;color:var(--dsw-alias-label-tertiary);cursor:pointer;border-radius:7px;padding:6px 8px;font-size:14px}.dtu-body{min-height:0;overflow:auto;padding:12px;display:flex;flex-direction:column;gap:12px}.dtu-toolbar,.dtu-actions{display:grid;grid-template-columns:1fr 1fr;gap:8px}.dtu-button{min-height:36px;border:1px solid var(--dsw-alias-border-l2);border-radius:8px;background:var(--dsw-alias-button-secondary-fill,var(--dsw-alias-bg-base));color:var(--dsw-alias-label-primary);cursor:pointer;padding:7px 10px;font-size:13px}.dtu-button:hover:not(:disabled){background:var(--dsw-alias-interactive-bg-hover)}.dtu-button:disabled{opacity:.5;cursor:default}.dtu-primary{background:var(--dsw-alias-state-business-primary);color:white;border-color:transparent}.dtu-danger{color:var(--dsw-alias-state-error)}.dtu-field{display:flex;flex-direction:column;gap:5px}.dtu-label{font-size:12px;color:var(--dsw-alias-label-tertiary);font-weight:600}.dtu-input,.dtu-textarea,.dtu-select{box-sizing:border-box;width:100%;border:1px solid var(--dsw-alias-border-l2);border-radius:7px;background:var(--dsw-alias-bg-base);color:var(--dsw-alias-label-primary);font:inherit;font-size:13px;padding:8px 9px}.dtu-input,.dtu-select{height:36px}.dtu-textarea{min-height:220px;line-height:1.5;resize:vertical}.dtu-note{font-size:13px;line-height:1.5;color:var(--dsw-alias-label-tertiary);margin:0;overflow-wrap:anywhere}.dtu-status{font-size:13px;line-height:1.45;border-radius:7px;padding:7px 9px;background:var(--dsw-specific-tip);overflow-wrap:anywhere}.dtu-status[data-error=true]{color:var(--dsw-alias-state-error)}.dtu-status[data-warning=true]{color:var(--dsw-alias-state-warning,var(--dsw-alias-label-primary))}.dtu-editor{border-top:1px solid var(--dsw-alias-border-l1);padding-top:12px;display:flex;flex-direction:column;gap:10px}.dtu-bindings{display:flex;flex-direction:column;gap:8px;border:1px solid var(--dsw-alias-border-l1);border-radius:8px;padding:9px}.dtu-check{display:flex;align-items:flex-start;gap:8px;font-size:13px;line-height:1.4}.dtu-section-title{font-size:14px;margin:4px 0 0}.dtu-footer{position:sticky;bottom:-12px;margin:0 -12px -12px;padding:10px 12px;background:var(--dsw-alias-bg-base);border-top:1px solid var(--dsw-alias-border-l2)}
 `;
 function errorMessage3(data, status) {
   return data?.error?.message ?? data?.error ?? `HTTP ${status}`;
@@ -1596,12 +1678,21 @@ function notifyRefresh() {
 function UserPanel({ sessionId, sessionBlank, close }) {
   const [users, setUsers] = (0, import_react4.useState)(null);
   const [draft, setDraft] = (0, import_react4.useState)(null);
+  const [savedDraft, setSavedDraft] = (0, import_react4.useState)(null);
+  const [worldBooks, setWorldBooks] = (0, import_react4.useState)(null);
+  const [worldBookIds, setWorldBookIds] = (0, import_react4.useState)([]);
+  const [appliedWorldBookIds, setAppliedWorldBookIds] = (0, import_react4.useState)([]);
   const [selectedUserId, setSelectedUserId] = (0, import_react4.useState)(null);
   const [busy, setBusy] = (0, import_react4.useState)(false);
   const [status, setStatus] = (0, import_react4.useState)({ text: "\u52A0\u8F7D\u4E2D\u2026", error: false });
   const generation = (0, import_react4.useRef)(0);
   const draftId = (0, import_react4.useRef)(null);
+  const dirtyRef = (0, import_react4.useRef)(false);
   draftId.current = draft?.id ?? null;
+  const dirty = userPanelDirty(draft, savedDraft, worldBookIds, appliedWorldBookIds);
+  dirtyRef.current = dirty;
+  const resourceDirty = userResourceDirty(draft, savedDraft);
+  const bindingDirty = !sameOrderedIds(worldBookIds, appliedWorldBookIds);
   const run = (0, import_react4.useCallback)(async (operation, success) => {
     setBusy(true);
     try {
@@ -1617,29 +1708,59 @@ function UserPanel({ sessionId, sessionBlank, close }) {
   }, []);
   const refresh = (0, import_react4.useCallback)(async (preferredId) => {
     const current2 = ++generation.current;
-    const catalog2 = await api4("/users");
-    const binding = sessionId ? await api4(`/user-selection?sessionId=${encodeURIComponent(sessionId)}`) : { selection: null };
+    const [catalog2, worldBookCatalog, binding] = await Promise.all([
+      api4("/users"),
+      api4("/world-books"),
+      sessionId ? api4(`/user-selection?sessionId=${encodeURIComponent(sessionId)}`) : Promise.resolve({ selection: null })
+    ]);
+    const availableIds = new Set(catalog2.users.map((user) => user.id));
+    const preferred = availableIds.has(preferredId) ? preferredId : availableIds.has(binding.selection?.userId) ? binding.selection.userId : null;
+    const id = preferred ?? catalog2.users[0]?.id ?? null;
+    const relation = id === null ? { binding: { worldBookIds: [] } } : await api4(`/users/${encodeURIComponent(id)}/world-books`);
     if (current2 !== generation.current) return;
     setUsers(catalog2.users);
+    setWorldBooks(worldBookCatalog.worldBooks);
     setSelectedUserId(binding.selection?.userId ?? null);
-    const id = preferredId ?? binding.selection?.userId ?? catalog2.users[0]?.id ?? null;
-    setDraft(id === null ? null : structuredClone(catalog2.users.find((user) => user.id === id) ?? null));
+    const nextDraft = id === null ? null : structuredClone(catalog2.users.find((user) => user.id === id) ?? null);
+    const ids = relation.binding?.worldBookIds ?? [];
+    setDraft(nextDraft);
+    setSavedDraft(nextDraft === null ? null : structuredClone(nextDraft));
+    setWorldBookIds(ids);
+    setAppliedWorldBookIds(ids);
   }, [sessionId]);
   (0, import_react4.useEffect)(() => {
     run(() => refresh(), "\u7528\u6237\u8D44\u6E90\u5DF2\u52A0\u8F7D");
-    const onRefresh = () => run(() => refresh(draftId.current), "\u7528\u6237\u8D44\u6E90\u5DF2\u5237\u65B0");
+    const onRefresh = () => {
+      if (dirtyRef.current) {
+        setStatus({ text: "\u68C0\u6D4B\u5230\u5176\u4ED6 Tavern \u8D44\u6E90\u53D8\u5316\uFF1B\u4E3A\u4FDD\u7559\u672C\u9762\u677F\u672A\u4FDD\u5B58\u4FEE\u6539\uFF0C\u672A\u81EA\u52A8\u5237\u65B0\u3002", error: false });
+        return;
+      }
+      run(() => refresh(draftId.current), "\u7528\u6237\u8D44\u6E90\u5DF2\u5237\u65B0");
+    };
     window.addEventListener("dsh-tavern:refresh", onRefresh);
     return () => {
       generation.current += 1;
       window.removeEventListener("dsh-tavern:refresh", onRefresh);
     };
   }, [refresh, run]);
-  const create = (0, import_react4.useCallback)(() => run(async () => {
-    const data = await api4("/users", { method: "POST", body: JSON.stringify({ name: translateVisibleText("\u65B0\u7528\u6237"), description: "" }) });
-    draftId.current = data.user.id;
-    await refresh(data.user.id);
-    notifyRefresh();
-  }, "\u7528\u6237\u8D44\u6E90\u5DF2\u521B\u5EFA\uFF1B\u4FDD\u5B58\u540D\u5B57\u548C\u63CF\u8FF0\u540E\u518D\u7ED1\u5B9A"), [refresh, run]);
+  (0, import_react4.useEffect)(() => {
+    if (!dirty) return void 0;
+    const warn = (event) => {
+      event.preventDefault();
+      event.returnValue = "";
+    };
+    window.addEventListener("beforeunload", warn);
+    return () => window.removeEventListener("beforeunload", warn);
+  }, [dirty]);
+  const create = (0, import_react4.useCallback)(() => {
+    if (dirty && !window.confirm(translateVisibleText("\u5F53\u524D\u7528\u6237\u8D44\u6E90\u6216\u4E16\u754C\u4E66\u7ED1\u5B9A\u6709\u672A\u4FDD\u5B58\u4FEE\u6539\u3002\u653E\u5F03\u4FEE\u6539\u5E76\u65B0\u5EFA\u7528\u6237\u5417\uFF1F"))) return;
+    run(async () => {
+      const data = await api4("/users", { method: "POST", body: JSON.stringify({ name: translateVisibleText("\u65B0\u7528\u6237"), description: "" }) });
+      draftId.current = data.user.id;
+      await refresh(data.user.id);
+      notifyRefresh();
+    }, "\u7528\u6237\u8D44\u6E90\u5DF2\u521B\u5EFA\uFF1B\u4FDD\u5B58\u540D\u5B57\u548C\u63CF\u8FF0\u540E\u518D\u7ED1\u5B9A");
+  }, [dirty, refresh, run]);
   const save = (0, import_react4.useCallback)(() => run(async () => {
     if (draft === null) return;
     const data = await api4(`/users/${encodeURIComponent(draft.id)}`, {
@@ -1648,9 +1769,25 @@ function UserPanel({ sessionId, sessionBlank, close }) {
     });
     draftId.current = data.user.id;
     setDraft(data.user);
+    setSavedDraft(structuredClone(data.user));
     setUsers((current2) => current2?.map((user) => user.id === data.user.id ? data.user : user) ?? current2);
     notifyRefresh();
   }, "\u540D\u5B57\u548C\u63CF\u8FF0\u5DF2\u4FDD\u5B58\uFF1B\u5DF2\u7ED1\u5B9A\u4F1A\u8BDD\u7684\u4E0B\u4E00\u6B21\u8BF7\u6C42\u4F1A\u7ACB\u5373\u4F7F\u7528\u65B0\u5185\u5BB9"), [draft, run]);
+  const saveWorldBooks = (0, import_react4.useCallback)(() => run(async () => {
+    if (draft === null) return;
+    const data = await api4(`/users/${encodeURIComponent(draft.id)}/world-books`, {
+      method: "PUT",
+      body: JSON.stringify({ worldBookIds })
+    });
+    const ids = data.binding.worldBookIds;
+    setWorldBookIds(ids);
+    setAppliedWorldBookIds(ids);
+    notifyRefresh();
+  }, "\u7528\u6237\u7ED1\u5B9A\u7684\u4E16\u754C\u4E66\u5DF2\u4FDD\u5B58\uFF1B\u9009\u62E9\u8BE5\u7528\u6237\u7684\u4F1A\u8BDD\u4F1A\u5728\u4E0B\u4E00\u6B21\u7EC4\u88C5\u65F6\u81EA\u52A8\u4F7F\u7528"), [draft, run, worldBookIds]);
+  const chooseUser = (0, import_react4.useCallback)((id) => {
+    if (dirty && !window.confirm(translateVisibleText("\u5F53\u524D\u7528\u6237\u8D44\u6E90\u6216\u4E16\u754C\u4E66\u7ED1\u5B9A\u6709\u672A\u4FDD\u5B58\u4FEE\u6539\u3002\u653E\u5F03\u4FEE\u6539\u5E76\u5207\u6362\u5417\uFF1F"))) return;
+    run(() => refresh(id), "\u7528\u6237\u8D44\u6E90\u548C\u4E16\u754C\u4E66\u7ED1\u5B9A\u5DF2\u52A0\u8F7D");
+  }, [dirty, refresh, run]);
   const bind = (0, import_react4.useCallback)(() => run(async () => {
     if (!sessionId || draft === null) throw new Error("\u8BF7\u5148\u521B\u5EFA\u6216\u6253\u5F00\u4E00\u4E2A\u4F1A\u8BDD\u5E76\u9009\u62E9\u7528\u6237\u8D44\u6E90");
     if (selectedUserId !== draft.id && sessionBlank === false && !window.confirm(translateVisibleText("\u5F53\u524D\u4F1A\u8BDD\u5DF2\u6709\u5386\u53F2\u3002\u5207\u6362\u7528\u6237\u53EA\u5F71\u54CD\u540E\u7EED\u8BF7\u6C42\uFF0C\u4E0D\u4F1A\u91CD\u5199\u5DF2\u6709\u6D88\u606F\uFF1B\u7EE7\u7EED\u5417\uFF1F"))) return;
@@ -1668,13 +1805,21 @@ function UserPanel({ sessionId, sessionBlank, close }) {
     notifyRefresh();
   }, "\u5F53\u524D\u4F1A\u8BDD\u5DF2\u89E3\u9664\u7528\u6237\u7ED1\u5B9A"), [run, sessionId]);
   const remove = (0, import_react4.useCallback)(() => run(async () => {
-    if (draft === null || !window.confirm(unwrapText(uiText`删除用户“${draft.name}”？所有会话中的对应绑定都会清除。`))) return;
+    if (draft === null || !window.confirm(unwrapText(uiText`删除用户“${draft.name}”？所有会话中的用户选择和该用户的世界书关系都会清除。`))) return;
     await api4(`/users/${encodeURIComponent(draft.id)}`, { method: "DELETE", body: "{}" });
     draftId.current = null;
     await refresh(null);
     notifyRefresh();
   }, "\u7528\u6237\u5DF2\u5220\u9664\uFF0C\u76F8\u5173\u4F1A\u8BDD\u7ED1\u5B9A\u5DF2\u6E05\u9664"), [draft, refresh, run]);
   const activeName = selectedUserId === null ? translateVisibleText("\u672A\u7ED1\u5B9A\u7528\u6237") : users?.find((user) => user.id === selectedUserId)?.name ?? selectedUserId;
+  const requestClose = () => {
+    if (!dirty || window.confirm(translateVisibleText("\u5F53\u524D\u7528\u6237\u8D44\u6E90\u6216\u4E16\u754C\u4E66\u7ED1\u5B9A\u6709\u672A\u4FDD\u5B58\u4FEE\u6539\u3002\u4ECD\u7136\u5173\u95ED\u5417\uFF1F"))) close();
+  };
+  const dirtyParts = [
+    resourceDirty ? translateVisibleText("\u540D\u5B57/\u63CF\u8FF0") : "",
+    bindingDirty ? translateVisibleText("\u7528\u6237\u4E16\u754C\u4E66\u7ED1\u5B9A") : ""
+  ].filter(Boolean);
+  const dirtyText = uiText`有未保存修改：${dirtyParts.join(getClientUiSettings().locale === "en" ? ", " : "\u3001")}。`;
   return h4(
     "div",
     { className: "dtu-panel" },
@@ -1682,7 +1827,7 @@ function UserPanel({ sessionId, sessionBlank, close }) {
       "div",
       { className: "dtu-header" },
       h4("div", { className: "dtu-title" }, "Tavern \u7528\u6237"),
-      h4("button", { className: "dtu-close", type: "button", title: "\u5173\u95ED\u7528\u6237\u9762\u677F", "aria-label": "\u5173\u95ED\u7528\u6237\u4FA7\u8FB9\u680F", onClick: close }, "\u2715")
+      h4("button", { className: "dtu-close", type: "button", title: "\u5173\u95ED\u7528\u6237\u9762\u677F", "aria-label": "\u5173\u95ED\u7528\u6237\u4FA7\u8FB9\u680F", onClick: requestClose }, "\u2715")
     ),
     h4(
       "div",
@@ -1691,7 +1836,9 @@ function UserPanel({ sessionId, sessionBlank, close }) {
         "div",
         { className: "dtu-toolbar" },
         h4("button", { className: "dtu-button", type: "button", disabled: busy, onClick: create }, "\u65B0\u5EFA\u7528\u6237"),
-        h4("button", { className: "dtu-button", type: "button", disabled: busy, onClick: () => run(() => refresh(draft?.id), "\u7528\u6237\u8D44\u6E90\u5DF2\u5237\u65B0") }, "\u5237\u65B0")
+        h4("button", { className: "dtu-button", type: "button", disabled: busy, onClick: () => {
+          if (!dirty || window.confirm(translateVisibleText("\u653E\u5F03\u5C1A\u672A\u4FDD\u5B58\u7684\u7528\u6237\u8D44\u6E90\u6216\u4E16\u754C\u4E66\u7ED1\u5B9A\u4FEE\u6539\uFF1F"))) run(() => refresh(draft?.id), "\u7528\u6237\u8D44\u6E90\u5DF2\u5237\u65B0");
+        } }, "\u5237\u65B0")
       ),
       h4(Field4, { label: "\u6D4F\u89C8\u7528\u6237\u8D44\u6E90" }, h4(
         "select",
@@ -1699,13 +1846,14 @@ function UserPanel({ sessionId, sessionBlank, close }) {
           className: "dtu-select",
           value: draft?.id ?? "",
           disabled: busy || users === null || users.length === 0,
-          onChange: (event) => setDraft(structuredClone(users.find((user) => user.id === event.target.value) ?? null))
+          onChange: (event) => chooseUser(event.target.value)
         },
         ...users?.length ? [] : [h4("option", { key: "empty", value: "" }, "\u7528\u6237\u8D44\u6E90\u5E93\u4E3A\u7A7A")],
         ...(users ?? []).map((user) => h4("option", { key: user.id, value: user.id }, rawText(user.name)))
       )),
       h4("p", { className: "dtu-note" }, uiText`当前会话：${sessionId || translateVisibleText("\u65E0")}；绑定：${activeName}`),
       h4("div", { className: "dtu-status", "data-error": status.error || void 0, role: "status", "aria-live": "polite" }, status.error ? rawText(status.text) : status.text),
+      dirty ? h4("div", { className: "dtu-status", "data-warning": true, role: "status" }, dirtyText) : h4("p", { className: "dtu-note" }, "\u5F53\u524D\u663E\u793A\u7684\u7528\u6237\u8D44\u6E90\u548C\u4E16\u754C\u4E66\u7ED1\u5B9A\u5747\u5DF2\u4FDD\u5B58\u3002"),
       draft === null ? h4("p", { className: "dtu-note" }, users === null ? "\u6B63\u5728\u52A0\u8F7D\u7528\u6237\u8D44\u6E90\u2026" : "\u521B\u5EFA\u4E00\u4E2A\u53EA\u542B\u540D\u5B57\u548C\u63CF\u8FF0\u7684\u7528\u6237\u8D44\u6E90\u3002") : h4(
         "div",
         { className: "dtu-editor" },
@@ -1714,11 +1862,29 @@ function UserPanel({ sessionId, sessionBlank, close }) {
         h4(
           "div",
           { className: "dtu-actions" },
-          h4("button", { className: "dtu-button dtu-primary", type: "button", disabled: busy, onClick: save }, "\u4FDD\u5B58\u8D44\u6E90"),
-          h4("button", { className: "dtu-button dtu-primary", type: "button", disabled: busy || !sessionId, onClick: bind }, selectedUserId === draft.id ? "\u5237\u65B0\u4F1A\u8BDD\u7ED1\u5B9A" : "\u7ED1\u5B9A\u5230\u5F53\u524D\u4F1A\u8BDD")
+          h4("button", { className: "dtu-button dtu-primary", type: "button", disabled: busy || !resourceDirty, onClick: save }, resourceDirty ? "\u4FDD\u5B58\u8D44\u6E90\uFF08\u672A\u4FDD\u5B58\uFF09" : "\u8D44\u6E90\u5DF2\u4FDD\u5B58"),
+          h4("button", { className: "dtu-button dtu-primary", type: "button", disabled: busy || !sessionId || dirty, onClick: bind }, dirty ? "\u8BF7\u5148\u4FDD\u5B58\u4FEE\u6539" : selectedUserId === draft.id ? "\u5237\u65B0\u4F1A\u8BDD\u7ED1\u5B9A" : "\u7ED1\u5B9A\u5230\u5F53\u524D\u4F1A\u8BDD")
+        ),
+        h4("h2", { className: "dtu-section-title" }, "\u7528\u6237\u7ED1\u5B9A\u7684\u72EC\u7ACB\u4E16\u754C\u4E66"),
+        h4("p", { className: "dtu-note" }, "\u9009\u62E9\u8BE5\u7528\u6237\u65F6\uFF0Cloader \u4F1A\u81EA\u52A8\u7EC4\u5408\u8FD9\u91CC\u7684\u4E16\u754C\u4E66\u4E0E\u5F53\u524D\u4F1A\u8BDD\u663E\u5F0F\u9009\u62E9\u7684\u4E16\u754C\u4E66\uFF1B\u91CD\u590D\u7684\u540C\u4E00\u672C\u4E66\u53EA\u6267\u884C\u4E00\u6B21\u3002"),
+        worldBooks?.length ? h4("div", { className: "dtu-bindings" }, ...worldBooks.map((book) => h4(
+          "label",
+          { className: "dtu-check", key: book.id },
+          h4("input", {
+            type: "checkbox",
+            checked: worldBookIds.includes(book.id),
+            onChange: (event) => setWorldBookIds((current2) => event.target.checked ? [...current2, book.id] : current2.filter((id) => id !== book.id))
+          }),
+          h4("span", null, uiText`${book.name}（${book.entryCount} 条）`)
+        ))) : h4("p", { className: "dtu-note" }, worldBooks === null ? "\u6B63\u5728\u52A0\u8F7D\u72EC\u7ACB\u4E16\u754C\u4E66\u8D44\u6E90\u5E93\u2026" : "\u72EC\u7ACB\u4E16\u754C\u4E66\u8D44\u6E90\u5E93\u4E3A\u7A7A\u3002\u8BF7\u5148\u5728\u4E16\u754C\u4E66\u9762\u677F\u521B\u5EFA\u6216\u5BFC\u5165\u3002"),
+        h4(
+          "div",
+          { className: "dtu-actions" },
+          h4("button", { className: "dtu-button dtu-primary", type: "button", disabled: busy || !bindingDirty, onClick: saveWorldBooks }, bindingDirty ? "\u4FDD\u5B58\u4E16\u754C\u4E66\u7ED1\u5B9A\uFF08\u672A\u4FDD\u5B58\uFF09" : "\u4E16\u754C\u4E66\u7ED1\u5B9A\u5DF2\u4FDD\u5B58"),
+          h4("button", { className: "dtu-button", type: "button", disabled: busy || worldBookIds.length === 0, onClick: () => setWorldBookIds([]) }, "\u6E05\u7A7A\u5F85\u4FDD\u5B58\u9009\u62E9")
         ),
         h4("button", { className: "dtu-button", type: "button", disabled: busy || !sessionId || selectedUserId === null, onClick: unbind }, "\u89E3\u9664\u5F53\u524D\u4F1A\u8BDD\u7ED1\u5B9A"),
-        h4("p", { className: "dtu-note" }, "\u7528\u6237\u8D44\u6E90\u4E0D\u5305\u542B\u5934\u50CF\uFF0C\u4E5F\u4E0D\u4F1A\u8986\u76D6 DSH Agent \u8EAB\u4EFD\u3002loader \u53EA\u5728\u7EDF\u4E00 Tavern profile \u4E2D\u89E3\u6790\u540D\u5B57\u5B8F\u5E76\u653E\u7F6E\u4E00\u6B21\u63CF\u8FF0\u3002"),
+        h4("p", { className: "dtu-note" }, "\u7528\u6237\u8D44\u6E90\u6B63\u6587\u4ECD\u4E25\u683C\u53EA\u6709\u540D\u5B57\u548C\u63CF\u8FF0\uFF1B\u4E16\u754C\u4E66\u5173\u7CFB\u4FDD\u5B58\u5728 loader \u7684\u72EC\u7ACB\u7ED3\u6784\u5316\u7B56\u7565\u4E2D\u3002\u7528\u6237\u8D44\u6E90\u4E0D\u5305\u542B\u5934\u50CF\uFF0C\u4E5F\u4E0D\u4F1A\u8986\u76D6 DSH Agent \u8EAB\u4EFD\u3002"),
         h4("div", { className: "dtu-footer" }, h4("button", { className: "dtu-button dtu-danger", type: "button", disabled: busy, onClick: remove }, "\u5220\u9664\u7528\u6237"))
       )
     )
@@ -1856,6 +2022,9 @@ function WorldBookAudit({ book }) {
 function TraceRecord({ record, latest }) {
   const authority = record.authority ?? {};
   const linked = authority.headerEventSeq !== null;
+  const reusedHeader = authority.headerReused ? translateVisibleText("\uFF08\u6CBF\u7528\u4E0A\u4E00\u4EFD header\uFF09") : "";
+  const profileStatus = translateVisibleText(authority.tavernProfilePresent === false ? "\u672A\u627E\u5230" : authority.tavernProfilePresent === true ? "\u4E00\u81F4" : "\u672C\u8F6E\u65E0 profile");
+  const configStatus = translateVisibleText(authority.tavernCallConfigApplied === false ? "\u4E0D\u4E00\u81F4" : "\u4E00\u81F4\u6216\u65E0\u5B57\u6BB5");
   return h5(
     "details",
     { className: "dttrace-record", open: latest },
@@ -1869,7 +2038,7 @@ function TraceRecord({ record, latest }) {
     h5(
       "div",
       { className: "dttrace-content" },
-      h5("div", { className: "dttrace-status" }, linked ? `\u8BE5\u8BB0\u5F55\u5DF2\u5BF9\u9F50 DSH request/header #${authority.headerEventSeq}${authority.headerReused ? "\uFF08\u6CBF\u7528\u4E0A\u4E00\u4EFD header\uFF09" : ""}\u3002Tavern profile \u6821\u9A8C\uFF1A${authority.tavernProfilePresent === false ? "\u672A\u627E\u5230" : authority.tavernProfilePresent === true ? "\u4E00\u81F4" : "\u672C\u8F6E\u65E0 profile"}\uFF1B\u91C7\u6837\u5B57\u6BB5\uFF1A${authority.tavernCallConfigApplied === false ? "\u4E0D\u4E00\u81F4" : "\u4E00\u81F4\u6216\u65E0\u5B57\u6BB5"}\u3002` : "\u5C1A\u672A\u89C2\u5BDF\u5230\u53EF\u5BF9\u9F50\u7684 DSH request/header\uFF1B\u8FD9\u4E0D\u4EE3\u8868\u8BF7\u6C42\u5DF2\u7ECF\u53D1\u9001\u3002\u5237\u65B0\u540E\u4ECD\u4F1A\u4FDD\u7559\u8BE5\u5F85\u786E\u8BA4\u8BB0\u5F55\u3002"),
+      h5("div", { className: "dttrace-status" }, linked ? uiText`该记录已对齐 DSH request/header #${authority.headerEventSeq}${reusedHeader}。Tavern profile 校验：${profileStatus}；采样字段：${configStatus}。` : "\u5C1A\u672A\u89C2\u5BDF\u5230\u53EF\u5BF9\u9F50\u7684 DSH request/header\uFF1B\u8FD9\u4E0D\u4EE3\u8868\u8BF7\u6C42\u5DF2\u7ECF\u53D1\u9001\u3002\u5237\u65B0\u540E\u4ECD\u4F1A\u4FDD\u7559\u8BE5\u5F85\u786E\u8BA4\u8BB0\u5F55\u3002"),
       h5(
         "div",
         { className: "dttrace-grid" },
@@ -1887,7 +2056,7 @@ function TraceRecord({ record, latest }) {
         "div",
         { className: "dttrace-section" },
         h5("div", { className: "dttrace-section-title" }, "\u4E16\u754C\u4E66\u5339\u914D\u51B3\u7B56"),
-        h5("div", { className: "dttrace-meta" }, "\u5339\u914D\u57FA\u4E8E system assembly \u5F53\u65F6\u53EF\u89C1\u7684\u6301\u4E45\u5316\u4F1A\u8BDD\u5386\u53F2\uFF1B\u521A\u63D0\u4EA4\u7684\u8F93\u5165\u4F1A\u5728\u4E0B\u4E00\u6B21 agent step \u626B\u63CF\u65F6\u53EF\u89C1\uFF0C\u8BE5 step \u53EF\u80FD\u4ECD\u5C5E\u4E8E\u540C\u4E00\u53EF\u89C1\u56DE\u5408\uFF08\u5982\u5DE5\u5177\u7EE7\u7EED\uFF09\uFF0C\u4E5F\u53EF\u80FD\u5C5E\u4E8E\u4E0B\u4E00\u7528\u6237\u56DE\u5408\u3002"),
+        h5("div", { className: "dttrace-meta" }, record.activation?.pendingMessageCount > 0 ? uiText`匹配基于本步骤 assembly 的临时激活上下文：持久历史 + ${record.activation.includedPendingMessageCount}/${record.activation.pendingMessageCount} 条本轮 claimed 输入；不保存输入正文${record.activation.truncated ? translateVisibleText("\uFF1B\u626B\u63CF\u8F93\u5165\u5DF2\u6309\u4E0A\u9650\u622A\u65AD") : ""}。` : "\u5339\u914D\u57FA\u4E8E\u672C\u6B65\u9AA4 system assembly \u5F53\u65F6\u53EF\u89C1\u7684\u6301\u4E45\u5316\u4F1A\u8BDD\u5386\u53F2\uFF1B\u6CA1\u6709\u91CD\u590D\u9644\u52A0 pending \u8F93\u5165\u3002"),
         ...record.worldBooks.map((book, index) => h5(WorldBookAudit, { book, key: `${book.resource?.id ?? "book"}-${index}` }))
       ) : h5("div", { className: "dttrace-note" }, "\u672C\u8F6E\u6CA1\u6709\u53EF\u5BA1\u8BA1\u7684\u4E16\u754C\u4E66\u5339\u914D\u6765\u6E90\u3002"),
       record.diagnostics?.length > 0 ? h5(
@@ -1972,16 +2141,233 @@ function registerTavernTraceView(ctx) {
   }, TavernTraceView));
 }
 
+// packages/session-template/src/client.js
+var import_react6 = require("react");
+var h6 = createLocalizedElement(import_react6.createElement);
+var API_ROOT5 = "/dsh-tavern/api";
+async function api5(path, options = {}) {
+  const response = await fetch(`${API_ROOT5}${path}`, {
+    ...options,
+    headers: options.body === void 0 ? options.headers : { "Content-Type": "application/json", ...options.headers }
+  });
+  const data = await response.json().catch(() => null);
+  if (!response.ok || data?.ok === false) {
+    const error = new Error(data?.error?.message ?? data?.error ?? `HTTP ${response.status}`);
+    error.diagnostics = data?.error?.diagnostics ?? [];
+    throw error;
+  }
+  return data;
+}
+function sourceLabel(template) {
+  const selection = template?.selection ?? {};
+  const labels = [];
+  if (selection.presetId) labels.push(translateVisibleText("\u9884\u8BBE"));
+  if (selection.characterCardId) labels.push(translateVisibleText("\u89D2\u8272\u5361"));
+  if (selection.userId) labels.push(translateVisibleText("\u7528\u6237"));
+  if (Array.isArray(selection.worldBookIds) && selection.worldBookIds.length > 0) {
+    labels.push(unwrapText(uiText`${selection.worldBookIds.length} 本世界书`));
+  }
+  return labels.length === 0 ? translateVisibleText("\u7A7A Tavern \u914D\u7F6E") : labels.join(getClientUiSettings().locale === "en" ? ", " : "\u3001");
+}
+function SessionTemplatePanel({ sessionId, workspaceId, createCleanSession, close }) {
+  const [templates, setTemplates] = (0, import_react6.useState)([]);
+  const [selectedId, setSelectedId] = (0, import_react6.useState)(null);
+  const [name2, setName] = (0, import_react6.useState)(() => translateVisibleText("\u65B0\u914D\u7F6E\u6A21\u677F"));
+  const [busy, setBusy] = (0, import_react6.useState)(false);
+  const [error, setError] = (0, import_react6.useState)("");
+  const [status, setStatus] = (0, import_react6.useState)("");
+  const selected = templates.find((item) => item.id === selectedId) ?? null;
+  const refresh = (0, import_react6.useCallback)(async () => {
+    const data = await api5("/session-templates");
+    setTemplates(data.templates);
+    setSelectedId(data.selectedId);
+    const active = data.templates.find((item) => item.id === data.selectedId);
+    if (active !== void 0) setName(active.name);
+  }, []);
+  (0, import_react6.useEffect)(() => {
+    refresh().catch((reason) => setError(reason instanceof Error ? reason.message : String(reason)));
+    const onRefresh = () => refresh().catch((reason) => setError(reason instanceof Error ? reason.message : String(reason)));
+    window.addEventListener("dsh-tavern:refresh", onRefresh);
+    return () => window.removeEventListener("dsh-tavern:refresh", onRefresh);
+  }, [refresh]);
+  const run = (0, import_react6.useCallback)(async (operation, success) => {
+    setBusy(true);
+    setError("");
+    try {
+      const result = await operation();
+      setStatus(typeof success === "function" ? success(result) : translateVisibleText(success));
+      await refresh();
+      window.dispatchEvent(new Event("dsh-tavern:refresh"));
+      return result;
+    } catch (reason) {
+      const diagnostics2 = Array.isArray(reason?.diagnostics) ? reason.diagnostics : [];
+      setError(diagnostics2[0]?.message ?? (reason instanceof Error ? reason.message : String(reason)));
+      return null;
+    } finally {
+      setBusy(false);
+    }
+  }, [refresh]);
+  const select = (event) => run(async () => {
+    const id = event.target.value || null;
+    const data = await api5("/session-templates/select", {
+      method: "POST",
+      body: JSON.stringify({ id })
+    });
+    setSelectedId(data.selectedId);
+    if (data.template !== null) setName(data.template.name);
+  }, "\u6A21\u677F\u9009\u62E9\u5DF2\u66F4\u65B0");
+  const create = () => run(async () => {
+    if (!sessionId) throw new Error(translateVisibleText("\u8BF7\u5148\u6253\u5F00\u4E00\u4E2A\u4F1A\u8BDD\uFF0C\u518D\u4FDD\u5B58\u5F53\u524D Tavern \u8BBE\u7F6E"));
+    return api5("/session-templates", {
+      method: "POST",
+      body: JSON.stringify({ name: name2, sourceSessionId: sessionId })
+    });
+  }, (result) => unwrapText(uiText`已创建模板：${result.template.name}`));
+  const rename = () => run(async () => {
+    if (selectedId === null) throw new Error(translateVisibleText("\u8BF7\u5148\u9009\u62E9\u4E00\u4E2A\u6A21\u677F"));
+    return api5(`/session-templates/${encodeURIComponent(selectedId)}`, {
+      method: "PATCH",
+      body: JSON.stringify({ name: name2 })
+    });
+  }, (result) => unwrapText(uiText`已重命名模板：${result.template.name}`));
+  const update = () => run(async () => {
+    if (!sessionId || selectedId === null) throw new Error(translateVisibleText("\u8BF7\u5148\u6253\u5F00\u4F1A\u8BDD\u5E76\u9009\u62E9\u6A21\u677F"));
+    return api5(`/session-templates/${encodeURIComponent(selectedId)}`, {
+      method: "PATCH",
+      body: JSON.stringify({ name: name2, sourceSessionId: sessionId })
+    });
+  }, (result) => unwrapText(uiText`已用当前设置更新模板：${result.template.name}`));
+  const remove = () => {
+    if (selectedId === null || !window.confirm(unwrapText(uiText`删除配置模板“${selected?.name ?? selectedId}”？这不会删除任何 DSH 会话。`))) return;
+    run(() => api5(`/session-templates/${encodeURIComponent(selectedId)}`, { method: "DELETE", body: JSON.stringify({}) }), "\u6A21\u677F\u5DF2\u5220\u9664");
+  };
+  const start = (mode) => run(async () => {
+    if (mode === "current" && !sessionId) throw new Error(translateVisibleText("\u8BF7\u5148\u6253\u5F00\u4E00\u4E2A\u6765\u6E90\u4F1A\u8BDD"));
+    if (workspaceId === null) throw new Error(translateVisibleText("\u5F53\u524D\u4F1A\u8BDD\u4E0D\u5C5E\u4E8E DSH \u5DE5\u4F5C\u533A\uFF1B\u8BF7\u5148\u628A\u4F1A\u8BDD\u52A0\u5165\u5DE5\u4F5C\u533A"));
+    const source = mode === "current" ? { mode: "current", sessionId } : { mode: "template", templateId: selectedId };
+    if (mode === "template" && selectedId === null) throw new Error(translateVisibleText("\u8BF7\u5148\u9009\u62E9\u4E00\u4E2A\u6A21\u677F"));
+    return createCleanSession({ workspaceId, source });
+  }, (id) => unwrapText(uiText`已切换到干净会话：${id}`));
+  const diagnostics = Array.isArray(selected?.diagnostics) ? selected.diagnostics : [];
+  return h6(
+    "div",
+    { className: "dtv-panel" },
+    h6(
+      "div",
+      { className: "dtv-header" },
+      h6("div", { className: "dtv-title" }, "\u65B0\u4F1A\u8BDD\u4E0E\u914D\u7F6E\u6A21\u677F"),
+      h6("button", { className: "dtv-close", type: "button", title: "\u5173\u95ED\u65B0\u4F1A\u8BDD\u4FA7\u8FB9\u680F", "aria-label": "\u5173\u95ED\u65B0\u4F1A\u8BDD\u4FA7\u8FB9\u680F", onClick: close }, "\u2715")
+    ),
+    h6(
+      "div",
+      { className: "dtv-body" },
+      h6("button", {
+        className: "dtv-button dtv-primary",
+        type: "button",
+        disabled: busy || !sessionId || workspaceId === null,
+        onClick: () => start("current")
+      }, "\u7EF4\u6301\u5F53\u524D Tavern \u8BBE\u7F6E\u65B0\u5F00\u5BF9\u8BDD"),
+      h6("p", { className: "dtv-note" }, "\u53EA\u7EE7\u627F preset\u3001\u89D2\u8272\u5361\u4E0E greeting/\u5F00\u5173\u3001\u7528\u6237\u548C\u72EC\u7ACB\u4E16\u754C\u4E66\u9009\u62E9\u3002DSH \u5386\u53F2\u3001Tavern Trace\u3001Inbox\u3001\u8FD0\u884C\u4E2D turn/step \u548C\u5176\u4ED6\u8FD0\u884C\u6001\u4E0D\u4F1A\u590D\u5236\u3002"),
+      workspaceId === null ? h6("div", { className: "dtv-status", "data-error": true }, "\u6CA1\u6709\u53EF\u7528\u7684 DSH \u76EE\u6807\u5DE5\u4F5C\u533A\u3002\u8BF7\u5148\u5728 DSH \u4FA7\u680F\u4E2D\u52A0\u5165\u6216\u6253\u5F00\u5DE5\u4F5C\u533A\u3002") : null,
+      h6(
+        "div",
+        { className: "dtv-resource" },
+        h6("div", { className: "dtv-resource-title" }, `\u914D\u7F6E\u6A21\u677F\uFF08${templates.length}\uFF09`),
+        h6(
+          "label",
+          { className: "dtv-field" },
+          h6("span", { className: "dtv-label" }, "\u5DF2\u9009\u62E9\u6A21\u677F"),
+          h6(
+            "select",
+            { className: "dtv-select", value: selectedId ?? "", disabled: busy, onChange: select },
+            h6("option", { value: "" }, "\u672A\u9009\u62E9\u6A21\u677F"),
+            ...templates.map((template) => h6("option", { key: template.id, value: template.id }, rawText(template.name)))
+          )
+        ),
+        h6(
+          "label",
+          { className: "dtv-field" },
+          h6("span", { className: "dtv-label" }, "\u6A21\u677F\u540D\u79F0"),
+          h6("input", { className: "dtv-input", value: name2, maxLength: 120, disabled: busy, onChange: (event) => setName(event.target.value) })
+        ),
+        h6(
+          "div",
+          { className: "dtv-template-actions" },
+          h6("button", { className: "dtv-button", type: "button", disabled: busy || !sessionId, onClick: create }, "\u7531\u5F53\u524D\u8BBE\u7F6E\u521B\u5EFA"),
+          h6("button", { className: "dtv-button", type: "button", disabled: busy || selectedId === null, onClick: rename }, "\u4EC5\u4FDD\u5B58\u540D\u79F0"),
+          h6("button", { className: "dtv-button", type: "button", disabled: busy || !sessionId || selectedId === null, onClick: update }, "\u7528\u5F53\u524D\u8BBE\u7F6E\u66F4\u65B0"),
+          h6("button", { className: "dtv-button dtv-danger", type: "button", disabled: busy || selectedId === null, onClick: remove }, "\u5220\u9664\u6A21\u677F")
+        ),
+        selected === null ? null : h6("div", { className: "dtv-resource-meta" }, uiText`保存内容：${sourceLabel(selected)}`),
+        diagnostics.length === 0 ? null : h6(
+          "div",
+          { className: "dtv-status", "data-error": true },
+          h6("div", null, "\u8BE5\u6A21\u677F\u6682\u4E0D\u53EF\u7528\u4E8E\u521B\u5EFA\uFF1A"),
+          h6("ul", { className: "dtv-list" }, ...diagnostics.map((item, index) => h6("li", { key: `${item.code}-${index}` }, rawText(item.message))))
+        ),
+        h6("button", {
+          className: "dtv-button dtv-primary",
+          type: "button",
+          disabled: busy || selectedId === null || diagnostics.length > 0 || workspaceId === null,
+          onClick: () => start("template")
+        }, "\u6839\u636E\u6240\u9009\u6A21\u677F\u65B0\u5F00\u5E72\u51C0\u5BF9\u8BDD")
+      ),
+      h6("div", { className: "dtv-status", "data-error": error !== "" || void 0, role: "status" }, error ? rawText(error) : status ? rawText(status) : "\u6A21\u677F\u4E0E\u65B0\u4F1A\u8BDD\u64CD\u4F5C\u5DF2\u5C31\u7EEA\u3002"),
+      h6("p", { className: "dtv-note" }, "DSH \u53EF\u80FD\u590D\u7528\u540C\u5DE5\u4F5C\u533A\u4E2D\u5DF2\u6709\u7684\u771F\u5B9E blank session\uFF1B\u8FD9\u662F\u5176\u516C\u5F00 New Session \u8BED\u4E49\u3002\u63D2\u4EF6\u4F1A\u5728\u5BFC\u822A\u524D\u539F\u5B50\u66FF\u6362\u8BE5 blank session \u7684 Tavern \u9009\u62E9\u3002")
+    )
+  );
+}
+
+// packages/session-template/src/client-state.js
+function workspaceIdForSession(workspaces, sessionId) {
+  if (!Array.isArray(workspaces) || typeof sessionId !== "string" || sessionId === "") return null;
+  return workspaces.find((item) => Array.isArray(item?.sessionIds) && item.sessionIds.includes(sessionId))?.workspaceId ?? null;
+}
+function workspaceTargetId(workspaceState, sessionId) {
+  if (typeof sessionId === "string" && sessionId !== "") {
+    return workspaceIdForSession(workspaceState?.items, sessionId);
+  }
+  return typeof workspaceState?.recentWorkspaceId === "string" && workspaceState.recentWorkspaceId !== "" ? workspaceState.recentWorkspaceId : null;
+}
+var SessionConfigurationUnavailableError = class extends Error {
+  constructor(diagnostics = []) {
+    super(diagnostics[0]?.message ?? "\u5F53\u524D\u914D\u7F6E\u5305\u542B\u7F3A\u5931\u6216\u65E0\u6548\u8D44\u6E90\uFF0C\u65E0\u6CD5\u521B\u5EFA\u65B0\u4F1A\u8BDD");
+    this.name = "SessionConfigurationUnavailableError";
+    this.diagnostics = structuredClone(diagnostics);
+  }
+};
+async function createCleanSessionWorkflow({
+  workspaceId,
+  source,
+  preview,
+  connectWorkspace,
+  applySelection,
+  openSession,
+  refresh
+}) {
+  if (workspaceId === null || workspaceId === void 0 || workspaceId === "") {
+    throw new Error("\u5F53\u524D\u4F1A\u8BDD\u4E0D\u5C5E\u4E8E DSH \u5DE5\u4F5C\u533A\uFF1B\u8BF7\u5148\u628A\u4F1A\u8BDD\u52A0\u5165\u5DE5\u4F5C\u533A\uFF0C\u518D\u521B\u5EFA\u5E72\u51C0\u4F1A\u8BDD");
+  }
+  const checked = await preview(source);
+  if (checked?.available !== true) throw new SessionConfigurationUnavailableError(checked?.diagnostics);
+  const targetSessionId = await connectWorkspace(workspaceId);
+  await applySelection(targetSessionId, source);
+  openSession(targetSessionId);
+  refresh();
+  return targetSessionId;
+}
+
 // packages/client/src/state.js
 var TAVERN_MENU_ITEMS = Object.freeze([
   { id: "preset", label: "\u9884\u8BBE", emptyTitle: "\u672A\u9009\u62E9\u9884\u8BBE", available: true },
   { id: "character", label: "\u89D2\u8272\u5361", emptyTitle: "\u672A\u7ED1\u5B9A\u89D2\u8272", available: true },
   { id: "world-info", label: "\u4E16\u754C\u4E66", emptyTitle: "\u672A\u7ED1\u5B9A\u4E16\u754C\u4E66", available: true },
   { id: "user", label: "\u7528\u6237", emptyTitle: "\u672A\u7ED1\u5B9A\u7528\u6237", available: true },
-  { id: "settings", label: "\u754C\u9762\u8BBE\u7F6E", emptyTitle: "\u8BED\u8A00\u4E0E\u7F29\u653E", available: true, showBinding: false }
+  { id: "session-template", label: "\u65B0\u4F1A\u8BDD", emptyTitle: "\u5F53\u524D\u8BBE\u7F6E\u6216\u914D\u7F6E\u6A21\u677F", available: true, binding: false, showBinding: false },
+  { id: "settings", label: "\u754C\u9762\u8BBE\u7F6E", emptyTitle: "\u8BED\u8A00\u4E0E\u7F29\u653E", available: true, binding: false, showBinding: false }
 ]);
 var TAVERN_LAUNCHER_SIZE = 44;
-var TAVERN_LAUNCHER_PANEL = Object.freeze({ width: 300, height: 326 });
+var TAVERN_LAUNCHER_PANEL = Object.freeze({ width: 300, height: 376 });
 function isRecord(value) {
   return value !== null && typeof value === "object" && !Array.isArray(value);
 }
@@ -2079,6 +2465,7 @@ function launcherResourceStatuses(snapshot) {
       items: catalog(snapshot, "users", "userProfiles", "personas"),
       emptyTitle: "\u672A\u7ED1\u5B9A\u7528\u6237"
     }),
+    "session-template": { bound: false, count: 0, title: "\u5F53\u524D\u8BBE\u7F6E\u6216\u914D\u7F6E\u6A21\u677F" },
     settings: { bound: false, count: 0, title: "\u8BED\u8A00\u4E0E\u7F29\u653E" }
   };
 }
@@ -2110,12 +2497,12 @@ function launcherPlacement(anchor, viewport2, expanded = false, scale = 1) {
 }
 
 // packages/client/src/index.js
-var h6 = createLocalizedElement(import_react6.createElement);
-var API_ROOT5 = "/dsh-tavern/api";
+var h7 = createLocalizedElement(import_react7.createElement);
+var API_ROOT6 = "/dsh-tavern/api";
 var css6 = `
 .dtv-layer{position:absolute;inset:0;z-index:6;pointer-events:none;font-family:Inter,var(--dsw-font-family),sans-serif;color:var(--dsw-alias-label-primary)}
 .dtv-launcher{position:absolute;z-index:2;width:44px;height:44px;pointer-events:auto;overflow:hidden;border:0 solid transparent;border-radius:22px;background:transparent;box-shadow:none;transition:width .22s ease,height .22s ease,border-radius .22s ease,background-color .18s ease,box-shadow .18s ease;display:block}
-.dtv-launcher[data-open=true]{width:300px;height:326px;border-width:1px;border-color:var(--dsw-alias-border-l2);border-radius:18px;background:var(--dsw-alias-bg-base);box-shadow:var(--ds-shadow-3,0 12px 34px rgba(0,0,0,.24))}
+.dtv-launcher[data-open=true]{width:300px;height:376px;border-width:1px;border-color:var(--dsw-alias-border-l2);border-radius:18px;background:var(--dsw-alias-bg-base);box-shadow:var(--ds-shadow-3,0 12px 34px rgba(0,0,0,.24))}
 .dtv-ball-row{position:absolute;top:0;left:0;right:0;height:52px;display:flex;align-items:flex-start;pointer-events:none}.dtv-launcher[data-side=left] .dtv-ball-row{justify-content:flex-end}.dtv-launcher[data-vertical=up] .dtv-ball-row{top:auto;bottom:0;align-items:flex-end}
 .dtv-ball{pointer-events:auto;touch-action:none;user-select:none;width:44px;height:44px;flex:none;border:2px solid #fff;border-radius:50%;background:conic-gradient(from 225deg,#090909 0 56%,#b31319 56% 100%);box-shadow:0 0 0 2px #a50f16,0 6px 20px rgba(0,0,0,.34),inset 0 0 0 1px rgba(255,255,255,.28);color:#fff;font-size:13px;letter-spacing:-.5px;font-weight:850;text-shadow:0 1px 2px #000;cursor:grab;transition:filter .15s ease,transform .18s ease,box-shadow .18s ease}.dtv-ball:hover{filter:brightness(1.1);box-shadow:0 0 0 2px #d5222b,0 8px 24px rgba(0,0,0,.4),inset 0 0 0 1px rgba(255,255,255,.35)}.dtv-ball:active{cursor:grabbing}.dtv-launcher[data-open=true] .dtv-ball{transform:scale(.82) rotate(-8deg)}
 .dtv-menu{position:absolute;left:8px;right:8px;top:52px;bottom:8px;padding:1px;display:flex;flex-direction:column;gap:4px;opacity:0;transform:translateY(-6px);transition:opacity .13s ease .1s,transform .18s ease .08s}.dtv-launcher[data-open=true] .dtv-menu{opacity:1;transform:none}.dtv-launcher[data-vertical=up] .dtv-menu{top:8px;bottom:52px;transform:translateY(6px)}.dtv-launcher[data-open=true][data-vertical=up] .dtv-menu{transform:none}
@@ -2126,6 +2513,7 @@ var css6 = `
 .dtv-header{height:52px;box-sizing:border-box;display:flex;align-items:center;gap:8px;padding:0 14px;border-bottom:1px solid var(--dsw-alias-border-l2);flex:none}.dtv-title{font-size:14px;font-weight:650;flex:1}.dtv-close{border:0;background:transparent;color:var(--dsw-alias-label-tertiary);cursor:pointer;border-radius:7px;padding:6px 8px}.dtv-close:hover{background:var(--dsw-alias-interactive-bg-hover)}
 .dtv-body{min-height:0;overflow:auto;padding:12px;display:flex;flex-direction:column;gap:12px}.dtv-note{font-size:11px;line-height:1.5;color:var(--dsw-alias-label-tertiary);margin:0;overflow-wrap:anywhere}.dtv-status{font-size:11px;line-height:1.45;border-radius:7px;padding:8px 10px;background:var(--dsw-specific-tip);overflow-wrap:anywhere}.dtv-status[data-error=true]{color:var(--dsw-alias-state-error)}
 .dtv-actions{display:grid;grid-template-columns:1fr 1fr;gap:8px}.dtv-button{min-height:34px;border:1px solid var(--dsw-alias-border-l2);border-radius:8px;background:var(--dsw-alias-button-secondary-fill,var(--dsw-alias-bg-base));color:var(--dsw-alias-label-primary);cursor:pointer;padding:7px 10px;font-size:12px}.dtv-button:hover:not(:disabled){background:var(--dsw-alias-interactive-bg-hover)}.dtv-button:disabled{opacity:.5;cursor:default}
+.dtv-primary{background:var(--dsw-alias-button-primary-fill,#2677d9);border-color:transparent;color:var(--dsw-alias-button-primary-label,#fff)}.dtv-primary:hover:not(:disabled){filter:brightness(1.08);background:var(--dsw-alias-button-primary-fill,#2677d9)}.dtv-template-actions{display:grid;grid-template-columns:1fr 1fr;gap:7px}
 .dtv-resource{border:1px solid var(--dsw-alias-border-l1);border-radius:9px;padding:10px;display:flex;flex-direction:column;gap:7px}.dtv-resource-title{font-size:12px;font-weight:650}.dtv-resource-meta{font-size:11px;line-height:1.45;color:var(--dsw-alias-label-tertiary)}.dtv-list{margin:0;padding-left:18px;font-size:11px;line-height:1.55}
 .dtv-book-toolbar{display:grid;grid-template-columns:1fr 1fr 1fr;gap:7px}.dtv-entry{border:1px solid var(--dsw-alias-border-l1);border-radius:8px;background:var(--dsw-alias-bg-base);overflow:hidden}.dtv-entry>summary{list-style:none;cursor:pointer;padding:8px;display:flex;align-items:center;gap:7px;font-size:11px}.dtv-entry>summary::-webkit-details-marker{display:none}.dtv-entry-dot{width:8px;height:8px;flex:none;border-radius:50%;background:var(--dsw-alias-label-tertiary)}.dtv-entry[data-enabled=true] .dtv-entry-dot{background:var(--dsw-alias-state-success,#2fa36b)}.dtv-entry-name{font-weight:620;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.dtv-entry-state{margin-left:auto;flex:none;color:var(--dsw-alias-label-tertiary);font-size:10px}.dtv-entry-body{border-top:1px solid var(--dsw-alias-border-l1);padding:8px;display:flex;flex-direction:column;gap:8px}.dtv-field{display:flex;flex-direction:column;gap:4px}.dtv-label{font-size:10px;font-weight:620;color:var(--dsw-alias-label-tertiary)}.dtv-input,.dtv-select,.dtv-textarea{box-sizing:border-box;width:100%;border:1px solid var(--dsw-alias-border-l2);border-radius:7px;background:var(--dsw-alias-bg-base);color:var(--dsw-alias-label-primary);font:inherit;font-size:11px;padding:7px 8px}.dtv-input,.dtv-select{height:32px}.dtv-textarea{min-height:94px;resize:vertical;line-height:1.45}.dtv-entry-grid{display:grid;grid-template-columns:1fr 1fr;gap:7px}.dtv-checks{display:flex;flex-wrap:wrap;gap:10px}.dtv-check{display:flex;gap:5px;align-items:center;font-size:10px}.dtv-entry-actions{display:flex;justify-content:flex-end}.dtv-danger{color:var(--dsw-alias-state-error)}
 .dtv-layer>.dtv-launcher,.dtv-layer>.dtv-panel,.dtv-layer>.dcc-panel,.dtv-layer>.dwb-panel,.dtv-layer>.dtu-panel{zoom:var(--dtv-ui-scale,1)}.dtv-setting-value{font-size:12px;font-variant-numeric:tabular-nums;color:var(--dsw-alias-label-secondary)}
@@ -2150,7 +2538,7 @@ function persistLauncherAnchor(anchor) {
 }
 async function activeView(sessionId) {
   const query = sessionId ? `?sessionId=${encodeURIComponent(sessionId)}` : "";
-  const response = await fetch(`${API_ROOT5}/active${query}`);
+  const response = await fetch(`${API_ROOT6}/active${query}`);
   const data = await response.json().catch(() => null);
   if (!response.ok || data?.ok === false) {
     const message = typeof data?.error === "string" ? data.error : data?.error?.message;
@@ -2158,8 +2546,22 @@ async function activeView(sessionId) {
   }
   return data;
 }
+async function sessionConfigurationRequest(path, body2) {
+  const response = await fetch(`${API_ROOT6}${path}`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body2)
+  });
+  const data = await response.json().catch(() => null);
+  if (!response.ok || data?.ok === false) {
+    const error = new Error(data?.error?.message ?? data?.error ?? `HTTP ${response.status}`);
+    error.diagnostics = data?.error?.diagnostics ?? [];
+    throw error;
+  }
+  return data;
+}
 async function uiSettingsRequest(method = "GET", body2) {
-  const response = await fetch(`${API_ROOT5}/ui-settings`, {
+  const response = await fetch(`${API_ROOT6}/ui-settings`, {
     method,
     headers: method === "GET" ? void 0 : { "Content-Type": "application/json" },
     body: body2 === void 0 ? void 0 : JSON.stringify(body2)
@@ -2169,23 +2571,23 @@ async function uiSettingsRequest(method = "GET", body2) {
   return data.settings;
 }
 function Field5({ label, children }) {
-  return h6("label", { className: "dtv-field" }, h6("span", { className: "dtv-label" }, label), children);
+  return h7("label", { className: "dtv-field" }, h7("span", { className: "dtv-label" }, label), children);
 }
 function SettingsPanel({ settings, status, busy, close, update, reset }) {
   const percent = Math.round(settings.scale * 100);
-  return h6(
+  return h7(
     "div",
     { className: "dtv-panel" },
-    h6(
+    h7(
       "div",
       { className: "dtv-header" },
-      h6("div", { className: "dtv-title" }, translate("settings.title")),
-      h6("button", { className: "dtv-close", type: "button", title: translate("settings.close"), "aria-label": translate("settings.close"), onClick: close }, "\u2715")
+      h7("div", { className: "dtv-title" }, translate("settings.title")),
+      h7("button", { className: "dtv-close", type: "button", title: translate("settings.close"), "aria-label": translate("settings.close"), onClick: close }, "\u2715")
     ),
-    h6(
+    h7(
       "div",
       { className: "dtv-body" },
-      h6(Field5, { label: translate("settings.language") }, h6(
+      h7(Field5, { label: translate("settings.language") }, h7(
         "select",
         {
           className: "dtv-select",
@@ -2193,42 +2595,43 @@ function SettingsPanel({ settings, status, busy, close, update, reset }) {
           disabled: busy,
           onChange: (event) => update({ ...settings, locale: event.target.value })
         },
-        h6("option", { value: "zh-CN" }, translate("settings.language.zh")),
-        h6("option", { value: "en" }, translate("settings.language.en"))
+        h7("option", { value: "zh-CN" }, translate("settings.language.zh")),
+        h7("option", { value: "en" }, translate("settings.language.en"))
       )),
-      h6(Field5, { label: translate("settings.scale") }, h6("select", {
+      h7(Field5, { label: translate("settings.scale") }, h7("select", {
         className: "dtv-select",
         value: settings.scale,
         disabled: busy,
         onChange: (event) => update({ ...settings, scale: Number(event.target.value) })
-      }, ...UI_SCALE_OPTIONS.map((scale) => h6("option", { key: scale, value: scale }, `${Math.round(scale * 100)}%`)))),
-      h6("div", { className: "dtv-setting-value" }, translate("settings.currentScale", { scale: percent })),
-      h6("p", { className: "dtv-note" }, translate("settings.scale.help")),
-      h6("div", { className: "dtv-status", "data-error": status.error || void 0, role: "status" }, rawText(status.text)),
-      h6(
+      }, ...UI_SCALE_OPTIONS.map((scale) => h7("option", { key: scale, value: scale }, `${Math.round(scale * 100)}%`)))),
+      h7("div", { className: "dtv-setting-value" }, translate("settings.currentScale", { scale: percent })),
+      h7("p", { className: "dtv-note" }, translate("settings.scale.help")),
+      h7("div", { className: "dtv-status", "data-error": status.error || void 0, role: "status" }, rawText(status.text)),
+      h7(
         "div",
         { className: "dtv-actions" },
-        h6("button", { className: "dtv-button", type: "button", disabled: busy, onClick: reset }, translate("settings.reset"))
+        h7("button", { className: "dtv-button", type: "button", disabled: busy, onClick: reset }, translate("settings.reset"))
       )
     )
   );
 }
-function TavernShell({ useSessions }) {
-  const [menuOpen, setMenuOpen] = (0, import_react6.useState)(false);
-  const [surface, setSurface] = (0, import_react6.useState)(null);
-  const [anchor, setAnchor] = (0, import_react6.useState)(initialLauncherAnchor);
-  const [activeSnapshot, setActiveSnapshot] = (0, import_react6.useState)(null);
-  const [statusError, setStatusError] = (0, import_react6.useState)("");
-  const [uiSettings, setUiSettings] = (0, import_react6.useState)(getClientUiSettings);
-  const [settingsStatus, setSettingsStatus] = (0, import_react6.useState)({ text: translate("settings.saved"), error: false });
-  const [settingsBusy, setSettingsBusy] = (0, import_react6.useState)(false);
-  const drag = (0, import_react6.useRef)(null);
-  const suppressClick = (0, import_react6.useRef)(false);
-  const statusGeneration = (0, import_react6.useRef)(0);
+function TavernShell({ useSessions, useWorkspaces, createCleanSession }) {
+  const [menuOpen, setMenuOpen] = (0, import_react7.useState)(false);
+  const [surface, setSurface] = (0, import_react7.useState)(null);
+  const [anchor, setAnchor] = (0, import_react7.useState)(initialLauncherAnchor);
+  const [activeSnapshot, setActiveSnapshot] = (0, import_react7.useState)(null);
+  const [statusError, setStatusError] = (0, import_react7.useState)("");
+  const [uiSettings, setUiSettings] = (0, import_react7.useState)(getClientUiSettings);
+  const [settingsStatus, setSettingsStatus] = (0, import_react7.useState)({ text: translate("settings.saved"), error: false });
+  const [settingsBusy, setSettingsBusy] = (0, import_react7.useState)(false);
+  const drag = (0, import_react7.useRef)(null);
+  const suppressClick = (0, import_react7.useRef)(false);
+  const statusGeneration = (0, import_react7.useRef)(0);
   const sessionId = useSessions((state) => state.current);
   const sessionBlank = useSessions((state) => state.current === void 0 || state.current === null ? true : state.byId?.[state.current]?.blank === true);
+  const workspaceId = useWorkspaces((state) => workspaceTargetId(state, sessionId));
   const close = () => setSurface(null);
-  (0, import_react6.useEffect)(() => {
+  (0, import_react7.useEffect)(() => {
     let active = true;
     uiSettingsRequest().then((next) => {
       if (!active) return;
@@ -2279,7 +2682,7 @@ function TavernShell({ useSessions }) {
       setSettingsBusy(false);
     }
   };
-  const refreshStatus = (0, import_react6.useCallback)(async () => {
+  const refreshStatus = (0, import_react7.useCallback)(async () => {
     const generation = ++statusGeneration.current;
     try {
       const next = await activeView(sessionId);
@@ -2291,7 +2694,7 @@ function TavernShell({ useSessions }) {
       setStatusError(reason instanceof Error ? reason.message : String(reason));
     }
   }, [sessionId]);
-  (0, import_react6.useEffect)(() => {
+  (0, import_react7.useEffect)(() => {
     statusGeneration.current += 1;
     setActiveSnapshot(null);
     setStatusError("");
@@ -2300,12 +2703,12 @@ function TavernShell({ useSessions }) {
       statusGeneration.current += 1;
     };
   }, [refreshStatus, sessionId]);
-  (0, import_react6.useEffect)(() => {
+  (0, import_react7.useEffect)(() => {
     const onRefresh = () => refreshStatus();
     window.addEventListener("dsh-tavern:refresh", onRefresh);
     return () => window.removeEventListener("dsh-tavern:refresh", onRefresh);
   }, [refreshStatus]);
-  (0, import_react6.useEffect)(() => {
+  (0, import_react7.useEffect)(() => {
     const onResize = () => setAnchor((current2) => {
       const next = clampLauncherAnchor(current2, viewport(), uiSettings.scale);
       persistLauncherAnchor(next);
@@ -2314,14 +2717,14 @@ function TavernShell({ useSessions }) {
     window.addEventListener("resize", onResize);
     return () => window.removeEventListener("resize", onResize);
   }, [uiSettings.scale]);
-  (0, import_react6.useEffect)(() => {
+  (0, import_react7.useEffect)(() => {
     setAnchor((current2) => {
       const next = clampLauncherAnchor(current2, viewport(), uiSettings.scale);
       persistLauncherAnchor(next);
       return next;
     });
   }, [uiSettings.scale]);
-  (0, import_react6.useEffect)(() => {
+  (0, import_react7.useEffect)(() => {
     const onKeyDown = (event) => {
       if (event.key !== "Escape") return;
       if (menuOpen) setMenuOpen(false);
@@ -2377,7 +2780,7 @@ function TavernShell({ useSessions }) {
   };
   let panel = null;
   if (surface === "preset") {
-    panel = h6("div", { className: "dtv-panel" }, h6(PresetSidebar, {
+    panel = h7("div", { className: "dtv-panel" }, h7(PresetSidebar, {
       closePanel: close,
       openPanel: () => {
       },
@@ -2385,13 +2788,15 @@ function TavernShell({ useSessions }) {
       autoOpen: false
     }));
   } else if (surface === "character") {
-    panel = h6(CharacterPanel, { sessionId, sessionBlank, close });
+    panel = h7(CharacterPanel, { sessionId, sessionBlank, close });
   } else if (surface === "world-info") {
-    panel = h6(WorldBookPanel, { sessionId, close });
+    panel = h7(WorldBookPanel, { sessionId, close });
   } else if (surface === "user") {
-    panel = h6(UserPanel, { sessionId, sessionBlank, close });
+    panel = h7(UserPanel, { sessionId, sessionBlank, close });
+  } else if (surface === "session-template") {
+    panel = h7(SessionTemplatePanel, { sessionId, workspaceId, createCleanSession, close });
   } else if (surface === "settings") {
-    panel = h6(SettingsPanel, {
+    panel = h7(SettingsPanel, {
       settings: uiSettings,
       status: settingsStatus,
       busy: settingsBusy,
@@ -2402,11 +2807,11 @@ function TavernShell({ useSessions }) {
   }
   const placement = launcherPlacement(anchor, viewport(), menuOpen, uiSettings.scale);
   const statuses = launcherResourceStatuses(activeSnapshot);
-  return h6(
+  return h7(
     "div",
     { className: "dtv-layer", lang: uiSettings.locale, "data-surface-open": surface !== null, style: { "--dtv-ui-scale": uiSettings.scale } },
     panel,
-    h6(
+    h7(
       "div",
       {
         className: "dtv-launcher",
@@ -2415,7 +2820,7 @@ function TavernShell({ useSessions }) {
         "data-vertical": placement.vertical,
         style: { left: placement.left / uiSettings.scale, top: placement.top / uiSettings.scale }
       },
-      h6("div", { className: "dtv-ball-row" }, h6("button", {
+      h7("div", { className: "dtv-ball-row" }, h7("button", {
         className: "dtv-ball",
         type: "button",
         title: "\u62D6\u52A8\u53EF\u79FB\u52A8\uFF1B\u70B9\u51FB\u5C55\u5F00 Tavern \u8D44\u6E90\u9762\u677F",
@@ -2427,39 +2832,41 @@ function TavernShell({ useSessions }) {
         onPointerCancel: endDrag,
         onClick: toggleMenu
       }, "DT")),
-      menuOpen ? h6(
+      menuOpen ? h7(
         "div",
         { className: "dtv-menu", role: "menu" },
-        h6("div", { className: "dtv-menu-title", "aria-live": "polite" }, statusError === "" ? uiText`Tavern · ${sessionId || translateVisibleText("\u65E0\u4F1A\u8BDD")}` : uiText`状态同步失败：${statusError}`),
+        h7("div", { className: "dtv-menu-title", "aria-live": "polite" }, statusError === "" ? uiText`Tavern · ${sessionId || translateVisibleText("\u65E0\u4F1A\u8BDD")}` : uiText`状态同步失败：${statusError}`),
         ...TAVERN_MENU_ITEMS.map((item) => {
-          const status = statuses[item.id];
+          const status = statuses[item.id] ?? { bound: false, count: 0, title: item.emptyTitle };
           const itemLabel = translateVisibleText(item.label);
           const statusTitle = status.bound ? status.title : translateVisibleText(status.title);
-          const stateLabel = translateVisibleText(status.bound ? "\u5DF2\u7ED1\u5B9A" : "\u672A\u7ED1\u5B9A");
-          return h6(
+          const stateLabel = item.binding === false ? "" : translateVisibleText(status.bound ? "\u5DF2\u7ED1\u5B9A" : "\u672A\u7ED1\u5B9A");
+          const titleText = stateLabel ? uiText`${itemLabel}：${statusTitle}（${stateLabel}）` : uiText`${itemLabel}：${statusTitle}`;
+          const ariaText = stateLabel ? uiText`${itemLabel}，${statusTitle}，${stateLabel}` : uiText`${itemLabel}，${statusTitle}`;
+          return h7(
             "button",
             {
               className: "dtv-menu-item",
               type: "button",
               role: "menuitem",
               key: item.id,
-              title: uiText`${itemLabel}：${statusTitle}（${stateLabel}）`,
+              title: titleText,
               "data-available": item.available,
               "data-active": surface === item.id,
-              "data-bound": status.bound,
-              "data-show-binding": item.showBinding !== false,
+              "data-bound": item.binding === false ? void 0 : status.bound,
+              "data-show-binding": item.binding !== false && item.showBinding !== false,
               "aria-current": surface === item.id ? "page" : void 0,
-              "aria-label": uiText`${itemLabel}，${statusTitle}，${stateLabel}`,
+              "aria-label": ariaText,
               onClick: () => open(item.id)
             },
-            h6("span", { className: "dtv-binding-dot", "aria-hidden": "true" }),
-            h6(
+            item.binding === false ? h7("span", { "aria-hidden": "true" }) : h7("span", { className: "dtv-binding-dot", "aria-hidden": "true" }),
+            h7(
               "span",
               { className: "dtv-item-copy" },
-              h6("span", { className: "dtv-item-label" }, item.label),
-              h6("span", { className: "dtv-item-status" }, status.bound ? rawText(status.title) : status.title)
+              h7("span", { className: "dtv-item-label" }, item.label),
+              h7("span", { className: "dtv-item-status" }, status.bound ? rawText(status.title) : status.title)
             ),
-            status.count > 1 ? h6("span", { className: "dtv-item-count", "aria-label": uiText`${status.count} 本` }, uiText`${status.count} 本`) : item.available ? null : h6("span", { className: "dtv-item-planned" }, "\u89C4\u5212\u4E2D")
+            status.count > 1 ? h7("span", { className: "dtv-item-count", "aria-label": uiText`${status.count} 本` }, uiText`${status.count} 本`) : item.available ? null : h7("span", { className: "dtv-item-planned" }, "\u89C4\u5212\u4E2D")
           );
         })
       ) : null
@@ -2474,7 +2881,7 @@ function installStyles() {
   document.head.append(style);
 }
 var name = "dsh-tavern";
-var inject = ["slots", "layout"];
+var inject = ["slots", "layout", "sessions", "workspaces"];
 function apply(ctx) {
   installPresetStyles();
   installCharacterStyles();
@@ -2487,7 +2894,20 @@ function apply(ctx) {
     name: "shell.overlay",
     id: "dsh-tavern-launcher",
     order: 80,
-    inject: () => ({})
+    inject: () => ({
+      createCleanSession: ({ workspaceId, source }) => createCleanSessionWorkflow({
+        workspaceId,
+        source,
+        preview: (selectedSource) => sessionConfigurationRequest("/session-configurations/preview", { source: selectedSource }),
+        connectWorkspace: (id) => ctx.workspaces.connectWorkspace(id),
+        applySelection: (targetSessionId, selectedSource) => sessionConfigurationRequest("/session-configurations/apply", {
+          targetSessionId,
+          source: selectedSource
+        }),
+        openSession: (id) => ctx.sessions.open(id),
+        refresh: () => window.dispatchEvent(new Event("dsh-tavern:refresh"))
+      })
+    })
   }, TavernShell));
 }
 

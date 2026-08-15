@@ -8,6 +8,7 @@ import {
 import { sameOrderedIds, userPanelDirty, userResourceDirty } from './client-state.js'
 import {
   createLocalizedElement,
+  getClientUiSettings,
   rawText,
   translateVisibleText,
   uiText,
@@ -172,7 +173,7 @@ export function UserPanel({ sessionId, sessionBlank, close }) {
   }, '用户绑定的世界书已保存；选择该用户的会话会在下一次组装时自动使用'), [draft, run, worldBookIds])
 
   const chooseUser = useCallback(id => {
-    if (dirty && !window.confirm('当前用户资源或世界书绑定有未保存修改。放弃修改并切换吗？')) return
+    if (dirty && !window.confirm(translateVisibleText('当前用户资源或世界书绑定有未保存修改。放弃修改并切换吗？'))) return
     run(() => refresh(id), '用户资源和世界书绑定已加载')
   }, [dirty, refresh, run])
 
@@ -209,6 +210,11 @@ export function UserPanel({ sessionId, sessionBlank, close }) {
   const requestClose = () => {
     if (!dirty || window.confirm(translateVisibleText('当前用户资源或世界书绑定有未保存修改。仍然关闭吗？'))) close()
   }
+  const dirtyParts = [
+    resourceDirty ? translateVisibleText('名字/描述') : '',
+    bindingDirty ? translateVisibleText('用户世界书绑定') : '',
+  ].filter(Boolean)
+  const dirtyText = uiText`有未保存修改：${dirtyParts.join(getClientUiSettings().locale === 'en' ? ', ' : '、')}。`
 
   return h('div', { className: 'dtu-panel' },
     h('div', { className: 'dtu-header' },
@@ -218,7 +224,7 @@ export function UserPanel({ sessionId, sessionBlank, close }) {
     h('div', { className: 'dtu-body' },
       h('div', { className: 'dtu-toolbar' },
         h('button', { className: 'dtu-button', type: 'button', disabled: busy, onClick: create }, '新建用户'),
-        h('button', { className: 'dtu-button', type: 'button', disabled: busy, onClick: () => { if (!dirty || window.confirm('放弃尚未保存的用户资源或世界书绑定修改？')) run(() => refresh(draft?.id), '用户资源已刷新') } }, '刷新'),
+        h('button', { className: 'dtu-button', type: 'button', disabled: busy, onClick: () => { if (!dirty || window.confirm(translateVisibleText('放弃尚未保存的用户资源或世界书绑定修改？'))) run(() => refresh(draft?.id), '用户资源已刷新') } }, '刷新'),
       ),
       h(Field, { label: '浏览用户资源' }, h('select', {
         className: 'dtu-select',
@@ -231,7 +237,7 @@ export function UserPanel({ sessionId, sessionBlank, close }) {
       h('p', { className: 'dtu-note' }, uiText`当前会话：${sessionId || translateVisibleText('无')}；绑定：${activeName}`),
       h('div', { className: 'dtu-status', 'data-error': status.error || undefined, role: 'status', 'aria-live': 'polite' }, status.error ? rawText(status.text) : status.text),
       dirty
-        ? h('div', { className: 'dtu-status', 'data-warning': true, role: 'status' }, `有未保存修改：${[resourceDirty ? '名字/描述' : '', bindingDirty ? '用户世界书绑定' : ''].filter(Boolean).join('、')}。`)
+        ? h('div', { className: 'dtu-status', 'data-warning': true, role: 'status' }, dirtyText)
         : h('p', { className: 'dtu-note' }, '当前显示的用户资源和世界书绑定均已保存。'),
       draft === null
         ? h('p', { className: 'dtu-note' }, users === null ? '正在加载用户资源…' : '创建一个只含名字和描述的用户资源。')
@@ -253,7 +259,7 @@ export function UserPanel({ sessionId, sessionBlank, close }) {
                   ? [...current, book.id]
                   : current.filter(id => id !== book.id)),
               }),
-              h('span', null, `${book.name}（${book.entryCount} 条）`),
+              h('span', null, uiText`${book.name}（${book.entryCount} 条）`),
             )))
             : h('p', { className: 'dtu-note' }, worldBooks === null ? '正在加载独立世界书资源库…' : '独立世界书资源库为空。请先在世界书面板创建或导入。'),
           h('div', { className: 'dtu-actions' },
