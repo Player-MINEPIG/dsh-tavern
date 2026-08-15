@@ -4,6 +4,25 @@ This is the staged implementation log for the prompt-preset experiment. It is
 kept separately from the product README so reviewers can follow intent,
 decisions, verification, and known limits chronologically.
 
+## 2026-08-15 — Product-owned launcher identity and honest Trace timing
+
+Purpose: identify the entry point as dsh-tavern rather than implying that the
+compatibility plugin is an official SillyTavern surface, and verify whether a
+later Trace scan can safely include the just-claimed user input.
+
+- Changed the red/black/white launcher monogram from `ST` to `DT`, meaning
+  dsh-tavern. SillyTavern remains the compatible content format, not the UI's
+  product identity.
+- Verified against the installed DSH agent loop that system prompt assembly
+  completes before the public `agent/pre-step` waterfall exposes claimed user
+  messages. `agent/request` runs later and only changes call configuration.
+- Kept Trace bound to the assembly actually used by the request. Recomputing a
+  match after `agent/pre-step` would display the current keyword while the lore
+  was absent from that request's frozen system prompt, so it would be a false
+  audit rather than a timing fix.
+- Documented the required upstream seam: either a hook after claim and before
+  assembly, or a supported same-step system reassembly request.
+
 ## 2026-08-15 — World-book UI clarity and compact Trace
 
 Purpose: make the accepted standalone/embedded world-book composition

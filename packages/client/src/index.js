@@ -447,7 +447,7 @@ function TavernShell({ useSessions }) {
           onPointerUp: endDrag,
           onPointerCancel: endDrag,
           onClick: toggleMenu,
-        }, 'ST')),
+        }, 'DT')),
       menuOpen ? h('div', { className: 'dtv-menu', role: 'menu' },
         h('div', { className: 'dtv-menu-title', 'aria-live': 'polite' }, statusError === '' ? `Tavern · ${sessionId || '无会话'}` : `状态同步失败：${statusError}`),
         ...TAVERN_MENU_ITEMS.map(item => {

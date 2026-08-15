@@ -1900,7 +1900,7 @@ function TavernShell({ useSessions }) {
         onPointerUp: endDrag,
         onPointerCancel: endDrag,
         onClick: toggleMenu
-      }, "ST")),
+      }, "DT")),
       menuOpen ? (0, import_react6.createElement)(
         "div",
         { className: "dtv-menu", role: "menu" },

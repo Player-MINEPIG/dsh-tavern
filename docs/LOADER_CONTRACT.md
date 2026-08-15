@@ -110,6 +110,7 @@ loader.registerWorldBookAdapter({
 - depth prompt 保存 role/depth 的格式职责归角色模块，loader 首期只能放入明确标注的 system fallback；
 - `user`/`assistant` preset prompt role 仍是可审阅标签，不是真实历史消息 role；
 - 当前用户输入在 system assembly 前已从 inbox claim、但尚未出现在公开 assembly context。世界书首阶段可扫描持久历史；若要同轮匹配当前输入，需要另行设计 `agent/pre-step` 的可重建注入协议，不能偷偷读取私有 inbox。
+- Trace 必须描述实际冻结的 assembly。不能在 `agent/pre-step` 或 `request/header` 后拿当前输入重跑 matcher，再把该结果标成已进入本轮 system；DSH 当前没有公开的 same-step system reassembly seam。
 
 ## Audit boundary
 

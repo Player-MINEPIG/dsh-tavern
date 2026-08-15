@@ -110,6 +110,8 @@ test('only the client composition root owns the Tavern shell overlay', () => {
   const user = readFileSync(new URL('../packages/user/src/client.js', import.meta.url), 'utf8')
   assert.equal(root.match(/slots\.inject\('shell\.overlay'/g)?.length, 1)
   assert.match(root, /id: 'dsh-tavern-launcher'/)
+  assert.match(root, /}, 'DT'\)\)/)
+  assert.doesNotMatch(root, /}, 'ST'\)\)/)
   assert.match(root, /'data-active': surface === item\.id/)
   assert.match(root, /'data-bound': status\.bound/)
   assert.match(root, /setActiveSnapshot\(null\)[\s\S]*refreshStatus\(\)/)

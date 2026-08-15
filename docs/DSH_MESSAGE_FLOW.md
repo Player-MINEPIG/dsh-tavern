@@ -115,6 +115,8 @@ DSH 当前顺序是：`claim 当前输入 → assemble system prompt → agent/p
 
 若将来要实现严格同轮匹配，应在 `agent/pre-step` 取得已 claim messages 后构造可审计、可重建的注入，而不是读取 Agent 私有 inbox 或修改历史。
 
+仅把 Tavern Trace 的扫描或记录推迟到 `agent/pre-step`、`agent/request` 或 `request/header` 之后不能修复这个边界：届时当前输入虽然已经可见，但本步骤使用的 system assembly 已在 `agent/pre-step` 之前冻结。重新扫描只会让 Trace 报告“当前输入命中”，而实际 `request/header.system` 仍是先前的组装结果，形成错误审计。因此当前实现继续记录真正参与该次请求的 assembly，不把事后推演冒充本轮激活。严格同轮激活需要 DSH 提供“claim 后、system assembly 前”的公开 hook，或允许 `agent/pre-step` 请求重新组装 system prompt；当前公开契约均未提供。
+
 ## 5. 如何审阅一次真实请求
 
 按可信度从高到低：
