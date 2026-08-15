@@ -1,4 +1,5 @@
 import {
+  WORLD_BOOK_LIMITS,
   computeWorldBookCandidates,
   mergeWorldBookLoaderResults,
   parseCharacterBook,
@@ -103,6 +104,28 @@ export function createWorldBookAdapter(storeOrOptions = {}, maybeOptions = {}) {
     } = {}) {
       const results = []
       const diagnostics = []
+      const requestedRuntimeEntries = Number.isSafeInteger(options.maxRuntimeEntries) && options.maxRuntimeEntries > 0
+        ? options.maxRuntimeEntries
+        : WORLD_BOOK_LIMITS.maxRuntimeEntries
+      const maxRuntimeEntries = Math.min(requestedRuntimeEntries, WORLD_BOOK_LIMITS.maxRuntimeEntries)
+      let reservedRuntimeEntries = 0
+      const reserve = (model, resourceId) => {
+        const entryCount = Array.isArray(model?.entries) ? model.entries.length : 0
+        if (reservedRuntimeEntries + entryCount <= maxRuntimeEntries) {
+          reservedRuntimeEntries += entryCount
+          return true
+        }
+        diagnostics.push({
+          code: 'WORLD_BOOK_RUNTIME_TOTAL_LIMIT',
+          severity: 'warning',
+          message: `World-book matching is limited to ${maxRuntimeEntries} total entries per request; this resource was not scanned.`,
+          resourceId,
+          entryCount,
+          reservedEntries: reservedRuntimeEntries,
+          limit: maxRuntimeEntries,
+        })
+        return false
+      }
 
       if (Array.isArray(selection?.worldBookIds) && selection.worldBookIds.length > 0) {
         for (const id of selection.worldBookIds) {
@@ -116,12 +139,14 @@ export function createWorldBookAdapter(storeOrOptions = {}, maybeOptions = {}) {
             break
           }
           try {
+            const document = store.get(id)
+            if (!reserve(document.book, id)) continue
             const bindingSources = [
               ...(worldBookSelection?.explicitIds?.includes(id) ? ['session'] : []),
               ...(worldBookSelection?.userBoundIds?.includes(id) ? ['user'] : []),
             ]
             if (bindingSources.length === 0) bindingSources.push('session')
-            results.push(projectBook(store.get(id), {
+            results.push(projectBook(document, {
               agent,
               conversationText,
               activationContext,
@@ -144,6 +169,11 @@ export function createWorldBookAdapter(storeOrOptions = {}, maybeOptions = {}) {
           const model = parseCharacterBook(embedded, {
             name: character.name || character.data?.name || '角色卡世界书',
           })
+          const resourceId = `character:${character.id}:embedded-world-book`
+          if (!reserve(model, resourceId)) {
+            const merged = mergeWorldBookLoaderResults(results)
+            return { ...merged, diagnostics: [...diagnostics, ...merged.diagnostics] }
+          }
           const maxScanCharacters = Number.isSafeInteger(options.maxScanCharacters) && options.maxScanCharacters > 0
             ? options.maxScanCharacters
             : 64 * 1024
@@ -161,7 +191,7 @@ export function createWorldBookAdapter(storeOrOptions = {}, maybeOptions = {}) {
           })
           const projected = projectWorldBookForLoader(model, candidates, {
             resource: {
-              id: `character:${character.id}:embedded-world-book`,
+              id: resourceId,
               name: model.name,
               ownerCharacterId: character.id,
               kind: 'embedded-character-book',
@@ -172,7 +202,7 @@ export function createWorldBookAdapter(storeOrOptions = {}, maybeOptions = {}) {
               code: 'WORLD_BOOK_RECURSION_DEFERRED',
               severity: 'warning',
               message: 'Recursive world-book scanning is preserved but not executed in the first loader integration slice.',
-              resourceId: `character:${character.id}:embedded-world-book`,
+              resourceId,
             })
           }
           if (scan.truncated) {
@@ -180,7 +210,7 @@ export function createWorldBookAdapter(storeOrOptions = {}, maybeOptions = {}) {
               code: 'WORLD_BOOK_SCAN_TEXT_TRUNCATED',
               severity: 'info',
               message: `World-book scan input was limited to the most recent ${scan.text.length} characters`,
-              resourceId: `character:${character.id}:embedded-world-book`,
+              resourceId,
               originalCharacters: scan.originalLength,
               scannedCharacters: scan.text.length,
             })

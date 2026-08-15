@@ -13,16 +13,17 @@ import {
   exportCharacterCardJson,
   parseSillyTavernCharacterCard,
 } from '../../tavern-format/src/index.js'
-import { parseCharacterBook } from '../../world-book/src/index.js'
+import {
+  WORLD_BOOK_LIMITS,
+  assertWorldBookStructure,
+  parseCharacterBook,
+} from '../../world-book/src/index.js'
 
 const ID_PATTERN = /^[a-zA-Z0-9_-]{1,100}$/
 const MAX_ARTIFACT_BYTES = 32 * 1024 * 1024
 const MAX_EDITED_WORLD_BOOK_BYTES = 4 * 1024 * 1024
 const MAX_CHARACTER_DOCUMENT_BYTES = 16 * 1024 * 1024
-const MAX_WORLD_BOOK_ENTRIES = 10_000
-const MAX_JSON_DEPTH = 32
-const MAX_JSON_NODES = 100_000
-const MAX_STRING_CHARACTERS = 1024 * 1024
+const MAX_WORLD_BOOK_ENTRIES = WORLD_BOOK_LIMITS.maxEntries
 
 function isRecord(value) {
   return value !== null && typeof value === 'object' && !Array.isArray(value)
@@ -36,32 +37,10 @@ function validateEditableWorldBookShape(value) {
   if (!isRecord(value) || !Array.isArray(value.entries)) {
     throw new TypeError('characterBook must be a Character Book object with an entries array')
   }
-  if (value.entries.length > MAX_WORLD_BOOK_ENTRIES) {
-    throw new TypeError(`characterBook may contain at most ${MAX_WORLD_BOOK_ENTRIES} entries`)
-  }
   if (value.entries.some(entry => !isRecord(entry))) {
     throw new TypeError('Every Character Book entry must be an object')
   }
-
-  const pending = [{ value, depth: 0 }]
-  let nodes = 0
-  while (pending.length > 0) {
-    const current = pending.pop()
-    nodes += 1
-    if (nodes > MAX_JSON_NODES) throw new TypeError(`characterBook may contain at most ${MAX_JSON_NODES} JSON values`)
-    if (current.depth > MAX_JSON_DEPTH) throw new TypeError(`characterBook nesting may not exceed ${MAX_JSON_DEPTH} levels`)
-    if (typeof current.value === 'string' && current.value.length > MAX_STRING_CHARACTERS) {
-      throw new TypeError(`characterBook strings may not exceed ${MAX_STRING_CHARACTERS} characters`)
-    }
-    if (Array.isArray(current.value)) {
-      for (const item of current.value) pending.push({ value: item, depth: current.depth + 1 })
-    } else if (isRecord(current.value)) {
-      for (const [key, item] of Object.entries(current.value)) {
-        if (key.length > 1024) throw new TypeError('characterBook object keys may not exceed 1024 characters')
-        pending.push({ value: item, depth: current.depth + 1 })
-      }
-    }
-  }
+  assertWorldBookStructure(value)
 }
 
 function validateId(id) {

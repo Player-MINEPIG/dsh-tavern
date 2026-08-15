@@ -1,3 +1,5 @@
+import { assertWorldBookStructure } from './limits.js'
+
 const SCHEMA_VERSION = 1
 
 export const WORLD_BOOK_FORMATS = Object.freeze({
@@ -309,6 +311,13 @@ function inspect(input, options = {}) {
   const raw = parseJsonInput(input, diagnostics)
   if (!isRecord(raw)) {
     if (raw !== undefined) error(diagnostics, 'invalid-root', '$', 'World book JSON must be an object', raw)
+    return { raw, format: null, diagnostics, model: null }
+  }
+
+  try {
+    assertWorldBookStructure(raw, options.limits)
+  } catch (cause) {
+    error(diagnostics, cause?.code ?? 'world-book-limit', '$', cause instanceof Error ? cause.message : String(cause))
     return { raw, format: null, diagnostics, model: null }
   }
 

@@ -23,7 +23,6 @@ export class PresetRuntime {
     return {
       selected: this.store.selectedSummary(),
       callConfig: this.selectedCallConfig(),
-      compiledPrompt: this.compiledSelected(),
     }
   }
 }

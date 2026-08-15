@@ -46,7 +46,6 @@ function defaultActiveView(store) {
   return {
     selected: store.selectedSummary(),
     callConfig: {},
-    compiledPrompt: '',
   }
 }
 

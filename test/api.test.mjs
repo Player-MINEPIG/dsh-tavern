@@ -53,7 +53,8 @@ test('HTTP API imports, selects, reads, updates, and creates presets', async () 
     assert.equal(selected.body.selected.id, id)
 
     const active = await invoke(handler, { url: '/dsh-tavern/api/active' })
-    assert.match(active.body.compiledPrompt, /API marker/)
+    assert.equal(active.body.selected.id, id)
+    assert.equal(Object.hasOwn(active.body, 'compiledPrompt'), false)
 
     const created = await invoke(handler, {
       method: 'POST',

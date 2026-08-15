@@ -255,7 +255,6 @@ export class TavernProfileLoader {
       worldBookSelection: snapshot.audit.worldBookSelection,
       resources: snapshot.resources,
       callConfig: snapshot.callConfig,
-      compiledPrompt: snapshot.systemText,
       diagnostics: snapshot.diagnostics,
       audit: snapshot.audit,
     }
