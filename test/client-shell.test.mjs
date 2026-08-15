@@ -166,3 +166,15 @@ test('user session binding uses the same primary action styling as other binding
   const source = readFileSync(new URL('../packages/user/src/client.js', import.meta.url), 'utf8')
   assert.match(source, /className: 'dtu-button dtu-primary'[^\n]+onClick: bind/)
 })
+
+test('user panel edits independent world-book relationships and exposes unsaved-state safeguards', () => {
+  const source = readFileSync(new URL('../packages/user/src/client.js', import.meta.url), 'utf8')
+  assert.match(source, /users\/\$\{encodeURIComponent\(draft\.id\)\}\/world-books/)
+  assert.match(source, /method: 'PUT'/)
+  assert.match(source, /用户绑定的独立世界书/)
+  assert.match(source, /重复的同一本书只执行一次/)
+  assert.match(source, /有未保存修改/)
+  assert.match(source, /beforeunload/)
+  assert.match(source, /仍然关闭吗/)
+  assert.doesNotMatch(source, /description:\s*worldBookIds|worldBookIds:\s*draft\.description/)
+})

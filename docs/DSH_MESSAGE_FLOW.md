@@ -90,8 +90,10 @@ DT 悬浮球 / 资源侧栏
   ├─ CharacterStore
   ├─ WorldBookStore
   ├─ UserStore
-  └─ SessionSelectionStore
-       └─ 当前 session 绑定的 preset / character / world books / user
+  ├─ SessionSelectionStore
+  │    └─ 当前 session 显式绑定的 preset / character / world books / user
+  └─ UserWorldBookBindingStore
+       └─ 每个用户绑定的零本或多本独立世界书
 ```
 
 - 导入的 ST 预设、角色卡与世界书先经过各自 format adapter，归一化后进入插件资源库；未知兼容字段和允许保留的原始 artifact 不参与 DSH session history。
@@ -117,7 +119,7 @@ SessionSelectionStore
 
 编译规则：
 
-1. loader 按 session 解析 preset、角色卡、用户资料、独立世界书与角色卡内嵌书。
+1. loader 按 session 解析 preset、角色卡、用户资料、独立世界书与角色卡内嵌书；session 显式世界书优先，随后追加当前用户绑定的世界书并按 ID 稳定去重。
 2. world-book matcher 扫描公开的既有 `Session.deriveMessages()` 文本，默认最多最近 64 KiB；执行普通主关键词、secondary key、概率、组与预算策略。原生 JavaScript regex 默认阻断，避免 ReDoS。
 3. 统一编译器按 preset marker 放置角色字段、用户名字/描述与命中 lore。`{{user}}` 使用当前用户名字；描述只消费一次 `personaDescription`/`{{persona}}`；`chatHistory` marker 不复制 DSH 历史；creator notes 不发送。
 4. 结果是一个不可混淆的运行时快照：`systemText`、受支持的 `callConfig`、资源摘要、诊断、世界书决策和审计指纹。

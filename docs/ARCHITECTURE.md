@@ -67,9 +67,9 @@ rc.6 的 `agent/inbox/spliced` 是公开、持久的 Session event；插入、�
 
 这项变化只把“当前输入参与激活判断”的位置前移到首次 system assembly；它不改变 DSH durable history、真实 role message 顺序、工具权限、`agent/request` 或 `request/header` 的所有权。
 
-## 计划中的控制面扩展
+## 控制面扩展
 
-- 用户与独立世界书的关联由统一 loader policy 持有；`UserModel` 仍只有 `id/name/description`，`world-book-library` 文档也不反向保存用户 id。用户 UI 可以编辑关系，但不能决定最终组合顺序或自行运行 matcher。
+- 用户与独立世界书的关联已由统一 loader policy 的独立原子文件持有；`UserModel` 仍只有 `id/name/description`，`world-book-library` 文档也不反向保存用户 id。用户 UI 可以编辑关系，但最终以 session 显式来源优先、用户来源随后稳定去重，且只有 loader 的共享 adapter 运行 matcher。
 - UI 缩放与语言由 `packages/client` 的单一设置入口持有，各资源组件消费共享设置；Host loader、资源 JSON 和 session selection 不读取显示设置。
 - 这两项都必须复用现有单插件 API、安全边界、刷新事件和原子持久化模式，不能通过新增第二个可安装插件实现。
 

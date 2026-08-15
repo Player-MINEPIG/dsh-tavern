@@ -4,6 +4,7 @@ const CALL_CONFIG_FIELDS = ['temperature', 'maxTokens', 'reasoningEffort', 'stop
 const MAX_DIAGNOSTICS = 64
 const MAX_TEXT = 320
 const MAX_IDS = 64
+const MAX_WORLD_BOOK_IDS = 200
 const MAX_WORLD_BOOKS = 16
 const MAX_WORLD_BOOK_DECISIONS = 128
 
@@ -59,7 +60,17 @@ function selection(value) {
     presetId: stringOrNull(value?.presetId),
     characterCardId: stringOrNull(value?.characterCardId),
     userProfileId: stringOrNull(value?.userProfileId ?? value?.userId),
-    worldBookIds: stringArray(value?.worldBookIds),
+    worldBookIds: stringArray(value?.worldBookIds, MAX_WORLD_BOOK_IDS),
+  }
+}
+
+function worldBookSelection(value) {
+  return {
+    explicitIds: stringArray(value?.explicitIds, MAX_WORLD_BOOK_IDS),
+    userBoundIds: stringArray(value?.userBoundIds, MAX_WORLD_BOOK_IDS),
+    effectiveIds: stringArray(value?.effectiveIds, MAX_WORLD_BOOK_IDS),
+    duplicateIds: stringArray(value?.duplicateIds, MAX_WORLD_BOOK_IDS),
+    order: value?.order === 'session-explicit-then-user' ? value.order : null,
   }
 }
 
@@ -206,6 +217,7 @@ export class TavernTraceRecorder {
         callConfig: expectedCallConfig,
       },
       selection: selection(audit.selection),
+      worldBookSelection: worldBookSelection(audit.worldBookSelection),
       resources: {
         preset: resource(resources.preset),
         characterCard: resource(resources.characterCard),

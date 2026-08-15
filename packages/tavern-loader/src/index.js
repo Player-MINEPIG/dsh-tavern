@@ -19,6 +19,7 @@ import {
 import { PresetRuntime } from './preset-runtime.js'
 import { TavernProfileLoader } from './profile-loader.js'
 import { SessionSelectionStore } from './session-policy.js'
+import { UserWorldBookBindingStore } from './user-world-book-policy.js'
 import { createWorldBookAdapter } from './world-book-adapter.js'
 import { PendingInputProjection } from './pending-input-projection.js'
 import { secureTavernApi } from './api-security.js'
@@ -99,7 +100,7 @@ export function createCharacterSelectionPolicy(characterStore, selections) {
   }
 }
 
-export function createWorldBookSelectionPolicy(worldBookStore, selections) {
+export function createWorldBookSelectionPolicy(worldBookStore, selections, userWorldBooks = null) {
   return {
     selection(sessionId) {
       if (typeof sessionId !== 'string' || sessionId === '') return []
@@ -116,11 +117,15 @@ export function createWorldBookSelectionPolicy(worldBookStore, selections) {
       selections.set(sessionId, { worldBookIds: normalized })
       return normalized
     },
-    clearResource: (kind, id) => selections.clearResource(kind, id),
+    clearResource(kind, id) {
+      const sessionChanged = selections.clearResource(kind, id)
+      const userChanged = kind === 'world-book' ? userWorldBooks?.clearWorldBook(id) === true : false
+      return sessionChanged || userChanged
+    },
   }
 }
 
-export function createUserSelectionPolicy(userStore, selections) {
+export function createUserSelectionPolicy(userStore, selections, userWorldBooks = null) {
   return {
     selection(sessionId) {
       if (typeof sessionId !== 'string' || sessionId === '') return null
@@ -143,7 +148,34 @@ export function createUserSelectionPolicy(userStore, selections) {
       selections.set(sessionId, { userId: patch.userId })
       return { userId: patch.userId }
     },
-    clearResource: (kind, id) => selections.clearResource(kind, id),
+    clearResource(kind, id) {
+      const sessionChanged = selections.clearResource(kind, id)
+      const bindingChanged = kind === 'user' ? userWorldBooks?.clearUser(id) === true : false
+      return sessionChanged || bindingChanged
+    },
+  }
+}
+
+export function createUserWorldBookBindingPolicy(userStore, worldBookStore, userWorldBooks) {
+  if (typeof userWorldBooks?.get !== 'function' || typeof userWorldBooks?.set !== 'function') {
+    throw new TypeError('User world-book policy requires a binding store')
+  }
+  return {
+    selection(userId) {
+      userStore.get(userId)
+      return userWorldBooks.get(userId)
+    },
+    select(userId, worldBookIds) {
+      userStore.get(userId)
+      if (!Array.isArray(worldBookIds)) throw new TypeError('worldBookIds must be an array')
+      if (worldBookIds.length > 100) throw new TypeError('A user can bind at most 100 world books')
+      const normalized = [...new Set(worldBookIds)]
+      for (const id of normalized) {
+        if (typeof id !== 'string' || id === '') throw new TypeError('Every worldBookId must be a non-empty string')
+        worldBookStore.get(id)
+      }
+      return userWorldBooks.set(userId, normalized)
+    },
   }
 }
 
@@ -153,6 +185,7 @@ export function apply(ctx, config = {}) {
   const characterStore = new CharacterStore(storageDir)
   const worldBookStore = new WorldBookStore(storageDir)
   const userStore = new UserStore(storageDir)
+  const userWorldBooks = new UserWorldBookBindingStore(storageDir, config.userWorldBooks)
   const selections = new SessionSelectionStore(storageDir, {
     ...config.sessionSelections,
     defaultSelection: () => ({ presetId: store.state.selectedId }),
@@ -161,6 +194,7 @@ export function apply(ctx, config = {}) {
   const runtime = new TavernProfileLoader({
     presetStore: store,
     selections,
+    userWorldBooks,
     maxProfileBytes: config.limits?.maxProfileBytes,
   })
   const pendingInput = new PendingInputProjection({
@@ -188,8 +222,9 @@ export function apply(ctx, config = {}) {
     }
   }
   const characterSelectionPolicy = createCharacterSelectionPolicy(characterStore, selections)
-  const worldBookSelectionPolicy = createWorldBookSelectionPolicy(worldBookStore, selections)
-  const userSelectionPolicy = createUserSelectionPolicy(userStore, selections)
+  const worldBookSelectionPolicy = createWorldBookSelectionPolicy(worldBookStore, selections, userWorldBooks)
+  const userSelectionPolicy = createUserSelectionPolicy(userStore, selections, userWorldBooks)
+  const userWorldBookBindingPolicy = createUserWorldBookBindingPolicy(userStore, worldBookStore, userWorldBooks)
 
   const selectionPolicy = {
     selectedPresetId: (sessionId) => runtime.selection({ sessionId }).presetId,
@@ -291,6 +326,7 @@ export function apply(ctx, config = {}) {
     const userApi = createUserApiHandler(userStore, {
       onChange: notifyChange,
       selectionPolicy: userSelectionPolicy,
+      worldBookBindingPolicy: userWorldBookBindingPolicy,
       beforeSelectionChange: ({ sessionId }) => {
         const agent = ctx.get('agents')?.get?.(sessionId)
         if (agent?.status === 'running') {
@@ -331,6 +367,7 @@ export function apply(ctx, config = {}) {
     characterStore: { value: characterStore, enumerable: false },
     worldBookStore: { value: worldBookStore, enumerable: false },
     userStore: { value: userStore, enumerable: false },
+    userWorldBooks: { value: userWorldBooks, enumerable: false },
     traceStore: { value: traceStore, enumerable: false },
     traceRecorder: { value: traceRecorder, enumerable: false },
     pendingInputProjection: { value: pendingInput, enumerable: false },
@@ -371,6 +408,12 @@ export {
   normalizeSelection,
   sessionPolicyConstants,
 } from './session-policy.js'
+export {
+  UserWorldBookBindingLimitError,
+  UserWorldBookBindingStore,
+  composeWorldBookSelection,
+  userWorldBookPolicyConstants,
+} from './user-world-book-policy.js'
 export { createWorldBookAdapter } from './world-book-adapter.js'
 export { PendingInputProjection, pendingInputProjectionConstants } from './pending-input-projection.js'
 export { WorldBookStore, createWorldBookApiHandler } from '../../world-book-library/src/index.js'

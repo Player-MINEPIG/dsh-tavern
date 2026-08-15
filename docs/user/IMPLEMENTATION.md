@@ -27,8 +27,11 @@
 | `GET` / `POST` | `/dsh-tavern/api/users` | 列表 / 创建 |
 | `GET` / `PATCH` / `DELETE` | `/dsh-tavern/api/users/:id` | 读取 / 修改 / 删除 |
 | `GET` / `POST` | `/dsh-tavern/api/user-selection` | 按 `sessionId` 读取 / 变更一个绑定 |
+| `GET` / `PUT` | `/dsh-tavern/api/users/:id/world-books` | Phase 3：读取 / 完整替换 loader-owned 独立世界书关系 |
 
 所有 mutation 继续经过既有 loopback Host、same-origin 和 JSON Content-Type 安全边界。运行中的 agent 拒绝切换，避免一轮中 system assembly 与 UI 选择不一致。删除资源通过 `clearResource('user', id)` 清理所有 session；解绑写入明确的 `null`，重启不会复活。
+
+世界书关系不扩展上述三字段文档；它由 loader 的独立有界原子策略保存，并在 compile 时与 session 显式世界书组合。完整语义与验收见 `docs/user-world-books/IMPLEMENTATION_AND_ACCEPTANCE.md`。
 
 共享 Tavern launcher 的“用户”入口提供新建、浏览、编辑、保存、绑定、解绑和删除。UI 不包含文件上传或图像元素。变更成功后既更新本组件状态，也发送共享 refresh 事件；Host API 同时触发 `system-prompt/change`，下一次组装读取新文档和选择。
 

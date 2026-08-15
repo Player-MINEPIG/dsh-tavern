@@ -5,7 +5,11 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { Readable } from 'node:stream'
 import { WorldBookStore, createWorldBookApiHandler } from '../packages/world-book-library/src/index.js'
-import { SessionSelectionStore, createWorldBookSelectionPolicy } from '../packages/tavern-loader/src/index.js'
+import {
+  SessionSelectionStore,
+  UserWorldBookBindingStore,
+  createWorldBookSelectionPolicy,
+} from '../packages/tavern-loader/src/index.js'
 
 function invoke(handler, { method = 'GET', url = '/dsh-tavern/api/world-books', body } = {}) {
   return new Promise((resolve, reject) => {
@@ -36,7 +40,8 @@ test('world-book API covers create, edit, export, multi-select, delete and selec
   try {
     const store = new WorldBookStore(directory)
     const selections = new SessionSelectionStore(directory)
-    const policy = createWorldBookSelectionPolicy(store, selections)
+    const userWorldBooks = new UserWorldBookBindingStore(directory)
+    const policy = createWorldBookSelectionPolicy(store, selections, userWorldBooks)
     const changes = []
     const handler = createWorldBookApiHandler(store, { selectionPolicy: policy, onChange: change => changes.push(change) })
 
@@ -53,6 +58,7 @@ test('world-book API covers create, edit, export, multi-select, delete and selec
     assert.equal(second.status, 201)
     const firstId = first.body.worldBook.id
     const secondId = second.body.worldBook.id
+    userWorldBooks.set('reader-a', [firstId, secondId])
 
     const book = first.body.worldBook.book
     book.entries.push({
@@ -79,6 +85,7 @@ test('world-book API covers create, edit, export, multi-select, delete and selec
     const removed = await invoke(handler, { method: 'DELETE', url: `/dsh-tavern/api/world-books/${firstId}` })
     assert.equal(removed.status, 200)
     assert.deepEqual(selections.get('session-a').worldBookIds, [secondId])
+    assert.deepEqual(userWorldBooks.get('reader-a'), [secondId])
     assert.equal(changes.at(-1).kind, 'world-book-deleted')
   } finally {
     rmSync(directory, { recursive: true, force: true })

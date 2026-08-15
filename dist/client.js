@@ -1191,9 +1191,23 @@ function installWorldBookStyles() {
 
 // packages/user/src/client.js
 var import_react4 = require("react");
+
+// packages/user/src/client-state.js
+function sameOrderedIds(left, right) {
+  return Array.isArray(left) && Array.isArray(right) && left.length === right.length && left.every((id, index) => id === right[index]);
+}
+function userResourceDirty(draft, saved) {
+  if (draft === null || saved === null) return draft !== saved;
+  return draft.id !== saved.id || draft.name !== saved.name || draft.description !== saved.description;
+}
+function userPanelDirty(draft, saved, worldBookIds, appliedWorldBookIds) {
+  return userResourceDirty(draft, saved) || !sameOrderedIds(worldBookIds, appliedWorldBookIds);
+}
+
+// packages/user/src/client.js
 var API_ROOT4 = "/dsh-tavern/api";
 var css4 = `
-.dtu-panel{position:absolute;top:0;right:0;bottom:0;width:min(440px,calc(100vw - 56px));pointer-events:auto;border-left:1px solid var(--dsw-alias-border-l2);box-shadow:var(--ds-shadow-3,-8px 0 28px rgba(0,0,0,.18));background:var(--dsw-alias-bg-base);color:var(--dsw-alias-label-primary);display:flex;flex-direction:column;font-family:Inter,var(--dsw-font-family),sans-serif}.dtu-header{height:52px;box-sizing:border-box;display:flex;align-items:center;gap:8px;padding:0 14px;border-bottom:1px solid var(--dsw-alias-border-l2);flex:none}.dtu-title{font-size:16px;font-weight:650;flex:1}.dtu-close{border:0;background:transparent;color:var(--dsw-alias-label-tertiary);cursor:pointer;border-radius:7px;padding:6px 8px;font-size:14px}.dtu-body{min-height:0;overflow:auto;padding:12px;display:flex;flex-direction:column;gap:12px}.dtu-toolbar,.dtu-actions{display:grid;grid-template-columns:1fr 1fr;gap:8px}.dtu-button{min-height:36px;border:1px solid var(--dsw-alias-border-l2);border-radius:8px;background:var(--dsw-alias-button-secondary-fill,var(--dsw-alias-bg-base));color:var(--dsw-alias-label-primary);cursor:pointer;padding:7px 10px;font-size:13px}.dtu-button:hover:not(:disabled){background:var(--dsw-alias-interactive-bg-hover)}.dtu-button:disabled{opacity:.5;cursor:default}.dtu-primary{background:var(--dsw-alias-state-business-primary);color:white;border-color:transparent}.dtu-danger{color:var(--dsw-alias-state-error)}.dtu-field{display:flex;flex-direction:column;gap:5px}.dtu-label{font-size:12px;color:var(--dsw-alias-label-tertiary);font-weight:600}.dtu-input,.dtu-textarea,.dtu-select{box-sizing:border-box;width:100%;border:1px solid var(--dsw-alias-border-l2);border-radius:7px;background:var(--dsw-alias-bg-base);color:var(--dsw-alias-label-primary);font:inherit;font-size:13px;padding:8px 9px}.dtu-input,.dtu-select{height:36px}.dtu-textarea{min-height:220px;line-height:1.5;resize:vertical}.dtu-note{font-size:13px;line-height:1.5;color:var(--dsw-alias-label-tertiary);margin:0;overflow-wrap:anywhere}.dtu-status{font-size:13px;line-height:1.45;border-radius:7px;padding:7px 9px;background:var(--dsw-specific-tip);overflow-wrap:anywhere}.dtu-status[data-error=true]{color:var(--dsw-alias-state-error)}.dtu-editor{border-top:1px solid var(--dsw-alias-border-l1);padding-top:12px;display:flex;flex-direction:column;gap:10px}.dtu-footer{position:sticky;bottom:-12px;margin:0 -12px -12px;padding:10px 12px;background:var(--dsw-alias-bg-base);border-top:1px solid var(--dsw-alias-border-l2)}
+.dtu-panel{position:absolute;top:0;right:0;bottom:0;width:min(440px,calc(100vw - 56px));pointer-events:auto;border-left:1px solid var(--dsw-alias-border-l2);box-shadow:var(--ds-shadow-3,-8px 0 28px rgba(0,0,0,.18));background:var(--dsw-alias-bg-base);color:var(--dsw-alias-label-primary);display:flex;flex-direction:column;font-family:Inter,var(--dsw-font-family),sans-serif}.dtu-header{height:52px;box-sizing:border-box;display:flex;align-items:center;gap:8px;padding:0 14px;border-bottom:1px solid var(--dsw-alias-border-l2);flex:none}.dtu-title{font-size:16px;font-weight:650;flex:1}.dtu-close{border:0;background:transparent;color:var(--dsw-alias-label-tertiary);cursor:pointer;border-radius:7px;padding:6px 8px;font-size:14px}.dtu-body{min-height:0;overflow:auto;padding:12px;display:flex;flex-direction:column;gap:12px}.dtu-toolbar,.dtu-actions{display:grid;grid-template-columns:1fr 1fr;gap:8px}.dtu-button{min-height:36px;border:1px solid var(--dsw-alias-border-l2);border-radius:8px;background:var(--dsw-alias-button-secondary-fill,var(--dsw-alias-bg-base));color:var(--dsw-alias-label-primary);cursor:pointer;padding:7px 10px;font-size:13px}.dtu-button:hover:not(:disabled){background:var(--dsw-alias-interactive-bg-hover)}.dtu-button:disabled{opacity:.5;cursor:default}.dtu-primary{background:var(--dsw-alias-state-business-primary);color:white;border-color:transparent}.dtu-danger{color:var(--dsw-alias-state-error)}.dtu-field{display:flex;flex-direction:column;gap:5px}.dtu-label{font-size:12px;color:var(--dsw-alias-label-tertiary);font-weight:600}.dtu-input,.dtu-textarea,.dtu-select{box-sizing:border-box;width:100%;border:1px solid var(--dsw-alias-border-l2);border-radius:7px;background:var(--dsw-alias-bg-base);color:var(--dsw-alias-label-primary);font:inherit;font-size:13px;padding:8px 9px}.dtu-input,.dtu-select{height:36px}.dtu-textarea{min-height:220px;line-height:1.5;resize:vertical}.dtu-note{font-size:13px;line-height:1.5;color:var(--dsw-alias-label-tertiary);margin:0;overflow-wrap:anywhere}.dtu-status{font-size:13px;line-height:1.45;border-radius:7px;padding:7px 9px;background:var(--dsw-specific-tip);overflow-wrap:anywhere}.dtu-status[data-error=true]{color:var(--dsw-alias-state-error)}.dtu-status[data-warning=true]{color:var(--dsw-alias-state-warning,var(--dsw-alias-label-primary))}.dtu-editor{border-top:1px solid var(--dsw-alias-border-l1);padding-top:12px;display:flex;flex-direction:column;gap:10px}.dtu-bindings{display:flex;flex-direction:column;gap:8px;border:1px solid var(--dsw-alias-border-l1);border-radius:8px;padding:9px}.dtu-check{display:flex;align-items:flex-start;gap:8px;font-size:13px;line-height:1.4}.dtu-section-title{font-size:14px;margin:4px 0 0}.dtu-footer{position:sticky;bottom:-12px;margin:0 -12px -12px;padding:10px 12px;background:var(--dsw-alias-bg-base);border-top:1px solid var(--dsw-alias-border-l2)}
 `;
 function errorMessage3(data, status) {
   return data?.error?.message ?? data?.error ?? `HTTP ${status}`;
@@ -1220,12 +1234,21 @@ function notifyRefresh() {
 function UserPanel({ sessionId, sessionBlank, close }) {
   const [users, setUsers] = (0, import_react4.useState)(null);
   const [draft, setDraft] = (0, import_react4.useState)(null);
+  const [savedDraft, setSavedDraft] = (0, import_react4.useState)(null);
+  const [worldBooks, setWorldBooks] = (0, import_react4.useState)(null);
+  const [worldBookIds, setWorldBookIds] = (0, import_react4.useState)([]);
+  const [appliedWorldBookIds, setAppliedWorldBookIds] = (0, import_react4.useState)([]);
   const [selectedUserId, setSelectedUserId] = (0, import_react4.useState)(null);
   const [busy, setBusy] = (0, import_react4.useState)(false);
   const [status, setStatus] = (0, import_react4.useState)({ text: "\u52A0\u8F7D\u4E2D\u2026", error: false });
   const generation = (0, import_react4.useRef)(0);
   const draftId = (0, import_react4.useRef)(null);
+  const dirtyRef = (0, import_react4.useRef)(false);
   draftId.current = draft?.id ?? null;
+  const dirty = userPanelDirty(draft, savedDraft, worldBookIds, appliedWorldBookIds);
+  dirtyRef.current = dirty;
+  const resourceDirty = userResourceDirty(draft, savedDraft);
+  const bindingDirty = !sameOrderedIds(worldBookIds, appliedWorldBookIds);
   const run = (0, import_react4.useCallback)(async (operation, success) => {
     setBusy(true);
     try {
@@ -1241,29 +1264,59 @@ function UserPanel({ sessionId, sessionBlank, close }) {
   }, []);
   const refresh = (0, import_react4.useCallback)(async (preferredId) => {
     const current = ++generation.current;
-    const catalog2 = await api4("/users");
-    const binding = sessionId ? await api4(`/user-selection?sessionId=${encodeURIComponent(sessionId)}`) : { selection: null };
+    const [catalog2, worldBookCatalog, binding] = await Promise.all([
+      api4("/users"),
+      api4("/world-books"),
+      sessionId ? api4(`/user-selection?sessionId=${encodeURIComponent(sessionId)}`) : Promise.resolve({ selection: null })
+    ]);
+    const availableIds = new Set(catalog2.users.map((user) => user.id));
+    const preferred = availableIds.has(preferredId) ? preferredId : availableIds.has(binding.selection?.userId) ? binding.selection.userId : null;
+    const id = preferred ?? catalog2.users[0]?.id ?? null;
+    const relation = id === null ? { binding: { worldBookIds: [] } } : await api4(`/users/${encodeURIComponent(id)}/world-books`);
     if (current !== generation.current) return;
     setUsers(catalog2.users);
+    setWorldBooks(worldBookCatalog.worldBooks);
     setSelectedUserId(binding.selection?.userId ?? null);
-    const id = preferredId ?? binding.selection?.userId ?? catalog2.users[0]?.id ?? null;
-    setDraft(id === null ? null : structuredClone(catalog2.users.find((user) => user.id === id) ?? null));
+    const nextDraft = id === null ? null : structuredClone(catalog2.users.find((user) => user.id === id) ?? null);
+    const ids = relation.binding?.worldBookIds ?? [];
+    setDraft(nextDraft);
+    setSavedDraft(nextDraft === null ? null : structuredClone(nextDraft));
+    setWorldBookIds(ids);
+    setAppliedWorldBookIds(ids);
   }, [sessionId]);
   (0, import_react4.useEffect)(() => {
     run(() => refresh(), "\u7528\u6237\u8D44\u6E90\u5DF2\u52A0\u8F7D");
-    const onRefresh = () => run(() => refresh(draftId.current), "\u7528\u6237\u8D44\u6E90\u5DF2\u5237\u65B0");
+    const onRefresh = () => {
+      if (dirtyRef.current) {
+        setStatus({ text: "\u68C0\u6D4B\u5230\u5176\u4ED6 Tavern \u8D44\u6E90\u53D8\u5316\uFF1B\u4E3A\u4FDD\u7559\u672C\u9762\u677F\u672A\u4FDD\u5B58\u4FEE\u6539\uFF0C\u672A\u81EA\u52A8\u5237\u65B0\u3002", error: false });
+        return;
+      }
+      run(() => refresh(draftId.current), "\u7528\u6237\u8D44\u6E90\u5DF2\u5237\u65B0");
+    };
     window.addEventListener("dsh-tavern:refresh", onRefresh);
     return () => {
       generation.current += 1;
       window.removeEventListener("dsh-tavern:refresh", onRefresh);
     };
   }, [refresh, run]);
-  const create = (0, import_react4.useCallback)(() => run(async () => {
-    const data = await api4("/users", { method: "POST", body: JSON.stringify({ name: "\u65B0\u7528\u6237", description: "" }) });
-    draftId.current = data.user.id;
-    await refresh(data.user.id);
-    notifyRefresh();
-  }, "\u7528\u6237\u8D44\u6E90\u5DF2\u521B\u5EFA\uFF1B\u4FDD\u5B58\u540D\u5B57\u548C\u63CF\u8FF0\u540E\u518D\u7ED1\u5B9A"), [refresh, run]);
+  (0, import_react4.useEffect)(() => {
+    if (!dirty) return void 0;
+    const warn = (event) => {
+      event.preventDefault();
+      event.returnValue = "";
+    };
+    window.addEventListener("beforeunload", warn);
+    return () => window.removeEventListener("beforeunload", warn);
+  }, [dirty]);
+  const create = (0, import_react4.useCallback)(() => {
+    if (dirty && !window.confirm("\u5F53\u524D\u7528\u6237\u8D44\u6E90\u6216\u4E16\u754C\u4E66\u7ED1\u5B9A\u6709\u672A\u4FDD\u5B58\u4FEE\u6539\u3002\u653E\u5F03\u4FEE\u6539\u5E76\u65B0\u5EFA\u7528\u6237\u5417\uFF1F")) return;
+    run(async () => {
+      const data = await api4("/users", { method: "POST", body: JSON.stringify({ name: "\u65B0\u7528\u6237", description: "" }) });
+      draftId.current = data.user.id;
+      await refresh(data.user.id);
+      notifyRefresh();
+    }, "\u7528\u6237\u8D44\u6E90\u5DF2\u521B\u5EFA\uFF1B\u4FDD\u5B58\u540D\u5B57\u548C\u63CF\u8FF0\u540E\u518D\u7ED1\u5B9A");
+  }, [dirty, refresh, run]);
   const save = (0, import_react4.useCallback)(() => run(async () => {
     if (draft === null) return;
     const data = await api4(`/users/${encodeURIComponent(draft.id)}`, {
@@ -1272,9 +1325,25 @@ function UserPanel({ sessionId, sessionBlank, close }) {
     });
     draftId.current = data.user.id;
     setDraft(data.user);
+    setSavedDraft(structuredClone(data.user));
     setUsers((current) => current?.map((user) => user.id === data.user.id ? data.user : user) ?? current);
     notifyRefresh();
   }, "\u540D\u5B57\u548C\u63CF\u8FF0\u5DF2\u4FDD\u5B58\uFF1B\u5DF2\u7ED1\u5B9A\u4F1A\u8BDD\u7684\u4E0B\u4E00\u6B21\u8BF7\u6C42\u4F1A\u7ACB\u5373\u4F7F\u7528\u65B0\u5185\u5BB9"), [draft, run]);
+  const saveWorldBooks = (0, import_react4.useCallback)(() => run(async () => {
+    if (draft === null) return;
+    const data = await api4(`/users/${encodeURIComponent(draft.id)}/world-books`, {
+      method: "PUT",
+      body: JSON.stringify({ worldBookIds })
+    });
+    const ids = data.binding.worldBookIds;
+    setWorldBookIds(ids);
+    setAppliedWorldBookIds(ids);
+    notifyRefresh();
+  }, "\u7528\u6237\u7ED1\u5B9A\u7684\u4E16\u754C\u4E66\u5DF2\u4FDD\u5B58\uFF1B\u9009\u62E9\u8BE5\u7528\u6237\u7684\u4F1A\u8BDD\u4F1A\u5728\u4E0B\u4E00\u6B21\u7EC4\u88C5\u65F6\u81EA\u52A8\u4F7F\u7528"), [draft, run, worldBookIds]);
+  const chooseUser = (0, import_react4.useCallback)((id) => {
+    if (dirty && !window.confirm("\u5F53\u524D\u7528\u6237\u8D44\u6E90\u6216\u4E16\u754C\u4E66\u7ED1\u5B9A\u6709\u672A\u4FDD\u5B58\u4FEE\u6539\u3002\u653E\u5F03\u4FEE\u6539\u5E76\u5207\u6362\u5417\uFF1F")) return;
+    run(() => refresh(id), "\u7528\u6237\u8D44\u6E90\u548C\u4E16\u754C\u4E66\u7ED1\u5B9A\u5DF2\u52A0\u8F7D");
+  }, [dirty, refresh, run]);
   const bind = (0, import_react4.useCallback)(() => run(async () => {
     if (!sessionId || draft === null) throw new Error("\u8BF7\u5148\u521B\u5EFA\u6216\u6253\u5F00\u4E00\u4E2A\u4F1A\u8BDD\u5E76\u9009\u62E9\u7528\u6237\u8D44\u6E90");
     if (selectedUserId !== draft.id && sessionBlank === false && !window.confirm("\u5F53\u524D\u4F1A\u8BDD\u5DF2\u6709\u5386\u53F2\u3002\u5207\u6362\u7528\u6237\u53EA\u5F71\u54CD\u540E\u7EED\u8BF7\u6C42\uFF0C\u4E0D\u4F1A\u91CD\u5199\u5DF2\u6709\u6D88\u606F\uFF1B\u7EE7\u7EED\u5417\uFF1F")) return;
@@ -1292,13 +1361,16 @@ function UserPanel({ sessionId, sessionBlank, close }) {
     notifyRefresh();
   }, "\u5F53\u524D\u4F1A\u8BDD\u5DF2\u89E3\u9664\u7528\u6237\u7ED1\u5B9A"), [run, sessionId]);
   const remove = (0, import_react4.useCallback)(() => run(async () => {
-    if (draft === null || !window.confirm(`\u5220\u9664\u7528\u6237\u201C${draft.name}\u201D\uFF1F\u6240\u6709\u4F1A\u8BDD\u4E2D\u7684\u5BF9\u5E94\u7ED1\u5B9A\u90FD\u4F1A\u6E05\u9664\u3002`)) return;
+    if (draft === null || !window.confirm(`\u5220\u9664\u7528\u6237\u201C${draft.name}\u201D\uFF1F\u6240\u6709\u4F1A\u8BDD\u4E2D\u7684\u7528\u6237\u9009\u62E9\u548C\u8BE5\u7528\u6237\u7684\u4E16\u754C\u4E66\u5173\u7CFB\u90FD\u4F1A\u6E05\u9664\u3002`)) return;
     await api4(`/users/${encodeURIComponent(draft.id)}`, { method: "DELETE", body: "{}" });
     draftId.current = null;
     await refresh(null);
     notifyRefresh();
   }, "\u7528\u6237\u5DF2\u5220\u9664\uFF0C\u76F8\u5173\u4F1A\u8BDD\u7ED1\u5B9A\u5DF2\u6E05\u9664"), [draft, refresh, run]);
   const activeName = selectedUserId === null ? "\u672A\u7ED1\u5B9A\u7528\u6237" : users?.find((user) => user.id === selectedUserId)?.name ?? selectedUserId;
+  const requestClose = () => {
+    if (!dirty || window.confirm("\u5F53\u524D\u7528\u6237\u8D44\u6E90\u6216\u4E16\u754C\u4E66\u7ED1\u5B9A\u6709\u672A\u4FDD\u5B58\u4FEE\u6539\u3002\u4ECD\u7136\u5173\u95ED\u5417\uFF1F")) close();
+  };
   return (0, import_react4.createElement)(
     "div",
     { className: "dtu-panel" },
@@ -1306,7 +1378,7 @@ function UserPanel({ sessionId, sessionBlank, close }) {
       "div",
       { className: "dtu-header" },
       (0, import_react4.createElement)("div", { className: "dtu-title" }, "Tavern \u7528\u6237"),
-      (0, import_react4.createElement)("button", { className: "dtu-close", type: "button", title: "\u5173\u95ED\u7528\u6237\u9762\u677F", "aria-label": "\u5173\u95ED\u7528\u6237\u4FA7\u8FB9\u680F", onClick: close }, "\u2715")
+      (0, import_react4.createElement)("button", { className: "dtu-close", type: "button", title: "\u5173\u95ED\u7528\u6237\u9762\u677F", "aria-label": "\u5173\u95ED\u7528\u6237\u4FA7\u8FB9\u680F", onClick: requestClose }, "\u2715")
     ),
     (0, import_react4.createElement)(
       "div",
@@ -1315,7 +1387,9 @@ function UserPanel({ sessionId, sessionBlank, close }) {
         "div",
         { className: "dtu-toolbar" },
         (0, import_react4.createElement)("button", { className: "dtu-button", type: "button", disabled: busy, onClick: create }, "\u65B0\u5EFA\u7528\u6237"),
-        (0, import_react4.createElement)("button", { className: "dtu-button", type: "button", disabled: busy, onClick: () => run(() => refresh(draft?.id), "\u7528\u6237\u8D44\u6E90\u5DF2\u5237\u65B0") }, "\u5237\u65B0")
+        (0, import_react4.createElement)("button", { className: "dtu-button", type: "button", disabled: busy, onClick: () => {
+          if (!dirty || window.confirm("\u653E\u5F03\u5C1A\u672A\u4FDD\u5B58\u7684\u7528\u6237\u8D44\u6E90\u6216\u4E16\u754C\u4E66\u7ED1\u5B9A\u4FEE\u6539\uFF1F")) run(() => refresh(draft?.id), "\u7528\u6237\u8D44\u6E90\u5DF2\u5237\u65B0");
+        } }, "\u5237\u65B0")
       ),
       (0, import_react4.createElement)(Field4, { label: "\u6D4F\u89C8\u7528\u6237\u8D44\u6E90" }, (0, import_react4.createElement)(
         "select",
@@ -1323,13 +1397,14 @@ function UserPanel({ sessionId, sessionBlank, close }) {
           className: "dtu-select",
           value: draft?.id ?? "",
           disabled: busy || users === null || users.length === 0,
-          onChange: (event) => setDraft(structuredClone(users.find((user) => user.id === event.target.value) ?? null))
+          onChange: (event) => chooseUser(event.target.value)
         },
         ...users?.length ? [] : [(0, import_react4.createElement)("option", { key: "empty", value: "" }, "\u7528\u6237\u8D44\u6E90\u5E93\u4E3A\u7A7A")],
         ...(users ?? []).map((user) => (0, import_react4.createElement)("option", { key: user.id, value: user.id }, user.name))
       )),
       (0, import_react4.createElement)("p", { className: "dtu-note" }, `\u5F53\u524D\u4F1A\u8BDD\uFF1A${sessionId || "\u65E0"}\uFF1B\u7ED1\u5B9A\uFF1A${activeName}`),
       (0, import_react4.createElement)("div", { className: "dtu-status", "data-error": status.error || void 0, role: "status", "aria-live": "polite" }, status.text),
+      dirty ? (0, import_react4.createElement)("div", { className: "dtu-status", "data-warning": true, role: "status" }, `\u6709\u672A\u4FDD\u5B58\u4FEE\u6539\uFF1A${[resourceDirty ? "\u540D\u5B57/\u63CF\u8FF0" : "", bindingDirty ? "\u7528\u6237\u4E16\u754C\u4E66\u7ED1\u5B9A" : ""].filter(Boolean).join("\u3001")}\u3002`) : (0, import_react4.createElement)("p", { className: "dtu-note" }, "\u5F53\u524D\u663E\u793A\u7684\u7528\u6237\u8D44\u6E90\u548C\u4E16\u754C\u4E66\u7ED1\u5B9A\u5747\u5DF2\u4FDD\u5B58\u3002"),
       draft === null ? (0, import_react4.createElement)("p", { className: "dtu-note" }, users === null ? "\u6B63\u5728\u52A0\u8F7D\u7528\u6237\u8D44\u6E90\u2026" : "\u521B\u5EFA\u4E00\u4E2A\u53EA\u542B\u540D\u5B57\u548C\u63CF\u8FF0\u7684\u7528\u6237\u8D44\u6E90\u3002") : (0, import_react4.createElement)(
         "div",
         { className: "dtu-editor" },
@@ -1338,11 +1413,29 @@ function UserPanel({ sessionId, sessionBlank, close }) {
         (0, import_react4.createElement)(
           "div",
           { className: "dtu-actions" },
-          (0, import_react4.createElement)("button", { className: "dtu-button dtu-primary", type: "button", disabled: busy, onClick: save }, "\u4FDD\u5B58\u8D44\u6E90"),
-          (0, import_react4.createElement)("button", { className: "dtu-button dtu-primary", type: "button", disabled: busy || !sessionId, onClick: bind }, selectedUserId === draft.id ? "\u5237\u65B0\u4F1A\u8BDD\u7ED1\u5B9A" : "\u7ED1\u5B9A\u5230\u5F53\u524D\u4F1A\u8BDD")
+          (0, import_react4.createElement)("button", { className: "dtu-button dtu-primary", type: "button", disabled: busy || !resourceDirty, onClick: save }, resourceDirty ? "\u4FDD\u5B58\u8D44\u6E90\uFF08\u672A\u4FDD\u5B58\uFF09" : "\u8D44\u6E90\u5DF2\u4FDD\u5B58"),
+          (0, import_react4.createElement)("button", { className: "dtu-button dtu-primary", type: "button", disabled: busy || !sessionId || dirty, onClick: bind }, dirty ? "\u8BF7\u5148\u4FDD\u5B58\u4FEE\u6539" : selectedUserId === draft.id ? "\u5237\u65B0\u4F1A\u8BDD\u7ED1\u5B9A" : "\u7ED1\u5B9A\u5230\u5F53\u524D\u4F1A\u8BDD")
+        ),
+        (0, import_react4.createElement)("h2", { className: "dtu-section-title" }, "\u7528\u6237\u7ED1\u5B9A\u7684\u72EC\u7ACB\u4E16\u754C\u4E66"),
+        (0, import_react4.createElement)("p", { className: "dtu-note" }, "\u9009\u62E9\u8BE5\u7528\u6237\u65F6\uFF0Cloader \u4F1A\u81EA\u52A8\u7EC4\u5408\u8FD9\u91CC\u7684\u4E16\u754C\u4E66\u4E0E\u5F53\u524D\u4F1A\u8BDD\u663E\u5F0F\u9009\u62E9\u7684\u4E16\u754C\u4E66\uFF1B\u91CD\u590D\u7684\u540C\u4E00\u672C\u4E66\u53EA\u6267\u884C\u4E00\u6B21\u3002"),
+        worldBooks?.length ? (0, import_react4.createElement)("div", { className: "dtu-bindings" }, ...worldBooks.map((book) => (0, import_react4.createElement)(
+          "label",
+          { className: "dtu-check", key: book.id },
+          (0, import_react4.createElement)("input", {
+            type: "checkbox",
+            checked: worldBookIds.includes(book.id),
+            onChange: (event) => setWorldBookIds((current) => event.target.checked ? [...current, book.id] : current.filter((id) => id !== book.id))
+          }),
+          (0, import_react4.createElement)("span", null, `${book.name}\uFF08${book.entryCount} \u6761\uFF09`)
+        ))) : (0, import_react4.createElement)("p", { className: "dtu-note" }, worldBooks === null ? "\u6B63\u5728\u52A0\u8F7D\u72EC\u7ACB\u4E16\u754C\u4E66\u8D44\u6E90\u5E93\u2026" : "\u72EC\u7ACB\u4E16\u754C\u4E66\u8D44\u6E90\u5E93\u4E3A\u7A7A\u3002\u8BF7\u5148\u5728\u4E16\u754C\u4E66\u9762\u677F\u521B\u5EFA\u6216\u5BFC\u5165\u3002"),
+        (0, import_react4.createElement)(
+          "div",
+          { className: "dtu-actions" },
+          (0, import_react4.createElement)("button", { className: "dtu-button dtu-primary", type: "button", disabled: busy || !bindingDirty, onClick: saveWorldBooks }, bindingDirty ? "\u4FDD\u5B58\u4E16\u754C\u4E66\u7ED1\u5B9A\uFF08\u672A\u4FDD\u5B58\uFF09" : "\u4E16\u754C\u4E66\u7ED1\u5B9A\u5DF2\u4FDD\u5B58"),
+          (0, import_react4.createElement)("button", { className: "dtu-button", type: "button", disabled: busy || worldBookIds.length === 0, onClick: () => setWorldBookIds([]) }, "\u6E05\u7A7A\u5F85\u4FDD\u5B58\u9009\u62E9")
         ),
         (0, import_react4.createElement)("button", { className: "dtu-button", type: "button", disabled: busy || !sessionId || selectedUserId === null, onClick: unbind }, "\u89E3\u9664\u5F53\u524D\u4F1A\u8BDD\u7ED1\u5B9A"),
-        (0, import_react4.createElement)("p", { className: "dtu-note" }, "\u7528\u6237\u8D44\u6E90\u4E0D\u5305\u542B\u5934\u50CF\uFF0C\u4E5F\u4E0D\u4F1A\u8986\u76D6 DSH Agent \u8EAB\u4EFD\u3002loader \u53EA\u5728\u7EDF\u4E00 Tavern profile \u4E2D\u89E3\u6790\u540D\u5B57\u5B8F\u5E76\u653E\u7F6E\u4E00\u6B21\u63CF\u8FF0\u3002"),
+        (0, import_react4.createElement)("p", { className: "dtu-note" }, "\u7528\u6237\u8D44\u6E90\u6B63\u6587\u4ECD\u4E25\u683C\u53EA\u6709\u540D\u5B57\u548C\u63CF\u8FF0\uFF1B\u4E16\u754C\u4E66\u5173\u7CFB\u4FDD\u5B58\u5728 loader \u7684\u72EC\u7ACB\u7ED3\u6784\u5316\u7B56\u7565\u4E2D\u3002\u7528\u6237\u8D44\u6E90\u4E0D\u5305\u542B\u5934\u50CF\uFF0C\u4E5F\u4E0D\u4F1A\u8986\u76D6 DSH Agent \u8EAB\u4EFD\u3002"),
         (0, import_react4.createElement)("div", { className: "dtu-footer" }, (0, import_react4.createElement)("button", { className: "dtu-button dtu-danger", type: "button", disabled: busy, onClick: remove }, "\u5220\u9664\u7528\u6237"))
       )
     )

@@ -66,6 +66,7 @@ function projectBook(document, context, options) {
       name: document.name,
       kind: 'standalone-world-book',
       updatedAt: document.updatedAt,
+      bindingSources: Array.isArray(context.bindingSources) ? [...context.bindingSources] : ['session'],
     },
   })
   if (model.settings?.recursiveScanning === true) {
@@ -92,7 +93,14 @@ function projectBook(document, context, options) {
 export function createWorldBookAdapter(storeOrOptions = {}, maybeOptions = {}) {
   const { store, options } = resolveArguments(storeOrOptions, maybeOptions)
   return {
-    resolve({ selection, character, conversationText = '', activationContext = null, agent } = {}) {
+    resolve({
+      selection,
+      worldBookSelection,
+      character,
+      conversationText = '',
+      activationContext = null,
+      agent,
+    } = {}) {
       const results = []
       const diagnostics = []
 
@@ -108,7 +116,17 @@ export function createWorldBookAdapter(storeOrOptions = {}, maybeOptions = {}) {
             break
           }
           try {
-            results.push(projectBook(store.get(id), { agent, conversationText, activationContext }, options))
+            const bindingSources = [
+              ...(worldBookSelection?.explicitIds?.includes(id) ? ['session'] : []),
+              ...(worldBookSelection?.userBoundIds?.includes(id) ? ['user'] : []),
+            ]
+            if (bindingSources.length === 0) bindingSources.push('session')
+            results.push(projectBook(store.get(id), {
+              agent,
+              conversationText,
+              activationContext,
+              bindingSources,
+            }, options))
           } catch (error) {
             diagnostics.push({
               code: error?.code === 'WORLD_BOOK_NOT_FOUND' ? 'WORLD_BOOK_NOT_FOUND' : 'WORLD_BOOK_DOCUMENT_INVALID',

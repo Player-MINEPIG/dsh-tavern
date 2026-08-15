@@ -56,11 +56,11 @@ SessionSelectionStore ─────────────────┘
 
 若全部内容超限，compiler 用原有候选顺序保留能完整装入的最高排名 lore 条目前缀，并报告 `TAVERN_PROFILE_LORE_LIMITED`。若移除所有 lore 后仍超限，则抛出 `TAVERN_PROFILE_TOO_LARGE`；preset、角色字段或用户描述不会被从中间截断。
 
-### Planned user-to-world-book relationship
+### User-to-world-book relationship
 
-用户资源继续严格保持 `{ id, name, description }`。计划中的“用户绑定世界书”由统一 loader policy 维护独立关系，不把 world-book id 写入描述正文，也不让 `user` adapter 自己运行 matcher。loader 在每次 compile 时把当前 session 显式 `worldBookIds` 与当前用户关联的独立书解析为一个稳定、去重的有效集合。
+用户资源继续严格保持 `{ id, name, description }`。“用户绑定世界书”由统一 loader policy 的 `user-world-book-bindings.json` 维护独立关系，不把 world-book id 写入描述正文，也不让 `user` adapter 自己运行 matcher。loader 在每次 compile 时先取当前 session 显式 `worldBookIds`，再追加当前用户关联的独立书，并按 ID 稳定去重；因此显式来源优先，同一本书只交给共享 adapter 一次。
 
-实现前必须在契约和测试中固定两类来源的顺序/优先级；同一本书同时出现时只执行一次。解绑或切换用户只移除用户来源，不得误删 session 显式来源；删除用户只清理关系，删除世界书则清理所有关系和 session 引用。
+audit 同时保留原始 `sessionSelection` 和 `worldBookSelection` 的 explicit/user-bound/effective/duplicate 四组 ID；active view 的 `selection.worldBookIds` 是实际有效集合，供 launcher 显示真实组合。解绑或切换用户只移除用户来源，不会改写 session 显式来源；删除用户清理关系和 session 用户选择，删除世界书则清理所有关系和 session 显式引用。关系、API 和原子存储的详细边界见 `docs/user-world-books/IMPLEMENTATION_AND_ACCEPTANCE.md`。
 
 ## Adapter boundary
 
@@ -197,4 +197,6 @@ DSH 自己的 `request/header` 仍是模型实际输入的最终权威。loader 
 - 选中的独立书与角色卡内嵌 `characterBook` 由同一个 world-book adapter 调用同一 parser、matcher、排序、概率与预算契约，再合并进入 profile；
 - 删除独立书通过 `clearResource("world-book", id)` 清理所有 session 的悬空 id，不读取、修改或解绑角色卡及其内嵌书；
 - 用户 CRUD/API/UI、per-session 单绑定、`{{user}}`/`{{persona}}`、`personaDescription` marker 和诊断 fallback 已接线；
+- 用户面板可为每个用户保存零本或多本独立世界书；loader 以“session 显式优先、用户关系随后”的稳定顺序去重组合，active view/launcher/Trace 公开实际有效集合；
+- 用户关系独立原子持久化并有用户数、每用户书数、状态字节和安全读取上限；删除用户或世界书清理对应关系而不误删其他用户或 session 显式选择；
 - 未拷贝任何本机第三方 preset、角色卡或世界书 fixture。

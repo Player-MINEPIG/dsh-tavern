@@ -5,11 +5,12 @@ import {
   useRef,
   useState,
 } from 'react'
+import { sameOrderedIds, userPanelDirty, userResourceDirty } from './client-state.js'
 
 const API_ROOT = '/dsh-tavern/api'
 
 const css = `
-.dtu-panel{position:absolute;top:0;right:0;bottom:0;width:min(440px,calc(100vw - 56px));pointer-events:auto;border-left:1px solid var(--dsw-alias-border-l2);box-shadow:var(--ds-shadow-3,-8px 0 28px rgba(0,0,0,.18));background:var(--dsw-alias-bg-base);color:var(--dsw-alias-label-primary);display:flex;flex-direction:column;font-family:Inter,var(--dsw-font-family),sans-serif}.dtu-header{height:52px;box-sizing:border-box;display:flex;align-items:center;gap:8px;padding:0 14px;border-bottom:1px solid var(--dsw-alias-border-l2);flex:none}.dtu-title{font-size:16px;font-weight:650;flex:1}.dtu-close{border:0;background:transparent;color:var(--dsw-alias-label-tertiary);cursor:pointer;border-radius:7px;padding:6px 8px;font-size:14px}.dtu-body{min-height:0;overflow:auto;padding:12px;display:flex;flex-direction:column;gap:12px}.dtu-toolbar,.dtu-actions{display:grid;grid-template-columns:1fr 1fr;gap:8px}.dtu-button{min-height:36px;border:1px solid var(--dsw-alias-border-l2);border-radius:8px;background:var(--dsw-alias-button-secondary-fill,var(--dsw-alias-bg-base));color:var(--dsw-alias-label-primary);cursor:pointer;padding:7px 10px;font-size:13px}.dtu-button:hover:not(:disabled){background:var(--dsw-alias-interactive-bg-hover)}.dtu-button:disabled{opacity:.5;cursor:default}.dtu-primary{background:var(--dsw-alias-state-business-primary);color:white;border-color:transparent}.dtu-danger{color:var(--dsw-alias-state-error)}.dtu-field{display:flex;flex-direction:column;gap:5px}.dtu-label{font-size:12px;color:var(--dsw-alias-label-tertiary);font-weight:600}.dtu-input,.dtu-textarea,.dtu-select{box-sizing:border-box;width:100%;border:1px solid var(--dsw-alias-border-l2);border-radius:7px;background:var(--dsw-alias-bg-base);color:var(--dsw-alias-label-primary);font:inherit;font-size:13px;padding:8px 9px}.dtu-input,.dtu-select{height:36px}.dtu-textarea{min-height:220px;line-height:1.5;resize:vertical}.dtu-note{font-size:13px;line-height:1.5;color:var(--dsw-alias-label-tertiary);margin:0;overflow-wrap:anywhere}.dtu-status{font-size:13px;line-height:1.45;border-radius:7px;padding:7px 9px;background:var(--dsw-specific-tip);overflow-wrap:anywhere}.dtu-status[data-error=true]{color:var(--dsw-alias-state-error)}.dtu-editor{border-top:1px solid var(--dsw-alias-border-l1);padding-top:12px;display:flex;flex-direction:column;gap:10px}.dtu-footer{position:sticky;bottom:-12px;margin:0 -12px -12px;padding:10px 12px;background:var(--dsw-alias-bg-base);border-top:1px solid var(--dsw-alias-border-l2)}
+.dtu-panel{position:absolute;top:0;right:0;bottom:0;width:min(440px,calc(100vw - 56px));pointer-events:auto;border-left:1px solid var(--dsw-alias-border-l2);box-shadow:var(--ds-shadow-3,-8px 0 28px rgba(0,0,0,.18));background:var(--dsw-alias-bg-base);color:var(--dsw-alias-label-primary);display:flex;flex-direction:column;font-family:Inter,var(--dsw-font-family),sans-serif}.dtu-header{height:52px;box-sizing:border-box;display:flex;align-items:center;gap:8px;padding:0 14px;border-bottom:1px solid var(--dsw-alias-border-l2);flex:none}.dtu-title{font-size:16px;font-weight:650;flex:1}.dtu-close{border:0;background:transparent;color:var(--dsw-alias-label-tertiary);cursor:pointer;border-radius:7px;padding:6px 8px;font-size:14px}.dtu-body{min-height:0;overflow:auto;padding:12px;display:flex;flex-direction:column;gap:12px}.dtu-toolbar,.dtu-actions{display:grid;grid-template-columns:1fr 1fr;gap:8px}.dtu-button{min-height:36px;border:1px solid var(--dsw-alias-border-l2);border-radius:8px;background:var(--dsw-alias-button-secondary-fill,var(--dsw-alias-bg-base));color:var(--dsw-alias-label-primary);cursor:pointer;padding:7px 10px;font-size:13px}.dtu-button:hover:not(:disabled){background:var(--dsw-alias-interactive-bg-hover)}.dtu-button:disabled{opacity:.5;cursor:default}.dtu-primary{background:var(--dsw-alias-state-business-primary);color:white;border-color:transparent}.dtu-danger{color:var(--dsw-alias-state-error)}.dtu-field{display:flex;flex-direction:column;gap:5px}.dtu-label{font-size:12px;color:var(--dsw-alias-label-tertiary);font-weight:600}.dtu-input,.dtu-textarea,.dtu-select{box-sizing:border-box;width:100%;border:1px solid var(--dsw-alias-border-l2);border-radius:7px;background:var(--dsw-alias-bg-base);color:var(--dsw-alias-label-primary);font:inherit;font-size:13px;padding:8px 9px}.dtu-input,.dtu-select{height:36px}.dtu-textarea{min-height:220px;line-height:1.5;resize:vertical}.dtu-note{font-size:13px;line-height:1.5;color:var(--dsw-alias-label-tertiary);margin:0;overflow-wrap:anywhere}.dtu-status{font-size:13px;line-height:1.45;border-radius:7px;padding:7px 9px;background:var(--dsw-specific-tip);overflow-wrap:anywhere}.dtu-status[data-error=true]{color:var(--dsw-alias-state-error)}.dtu-status[data-warning=true]{color:var(--dsw-alias-state-warning,var(--dsw-alias-label-primary))}.dtu-editor{border-top:1px solid var(--dsw-alias-border-l1);padding-top:12px;display:flex;flex-direction:column;gap:10px}.dtu-bindings{display:flex;flex-direction:column;gap:8px;border:1px solid var(--dsw-alias-border-l1);border-radius:8px;padding:9px}.dtu-check{display:flex;align-items:flex-start;gap:8px;font-size:13px;line-height:1.4}.dtu-section-title{font-size:14px;margin:4px 0 0}.dtu-footer{position:sticky;bottom:-12px;margin:0 -12px -12px;padding:10px 12px;background:var(--dsw-alias-bg-base);border-top:1px solid var(--dsw-alias-border-l2)}
 `
 
 function errorMessage(data, status) {
@@ -41,12 +42,21 @@ function notifyRefresh() {
 export function UserPanel({ sessionId, sessionBlank, close }) {
   const [users, setUsers] = useState(null)
   const [draft, setDraft] = useState(null)
+  const [savedDraft, setSavedDraft] = useState(null)
+  const [worldBooks, setWorldBooks] = useState(null)
+  const [worldBookIds, setWorldBookIds] = useState([])
+  const [appliedWorldBookIds, setAppliedWorldBookIds] = useState([])
   const [selectedUserId, setSelectedUserId] = useState(null)
   const [busy, setBusy] = useState(false)
   const [status, setStatus] = useState({ text: '加载中…', error: false })
   const generation = useRef(0)
   const draftId = useRef(null)
+  const dirtyRef = useRef(false)
   draftId.current = draft?.id ?? null
+  const dirty = userPanelDirty(draft, savedDraft, worldBookIds, appliedWorldBookIds)
+  dirtyRef.current = dirty
+  const resourceDirty = userResourceDirty(draft, savedDraft)
+  const bindingDirty = !sameOrderedIds(worldBookIds, appliedWorldBookIds)
 
   const run = useCallback(async (operation, success) => {
     setBusy(true)
@@ -64,20 +74,42 @@ export function UserPanel({ sessionId, sessionBlank, close }) {
 
   const refresh = useCallback(async preferredId => {
     const current = ++generation.current
-    const catalog = await api('/users')
-    const binding = sessionId
-      ? await api(`/user-selection?sessionId=${encodeURIComponent(sessionId)}`)
-      : { selection: null }
+    const [catalog, worldBookCatalog, binding] = await Promise.all([
+      api('/users'),
+      api('/world-books'),
+      sessionId
+        ? api(`/user-selection?sessionId=${encodeURIComponent(sessionId)}`)
+        : Promise.resolve({ selection: null }),
+    ])
+    const availableIds = new Set(catalog.users.map(user => user.id))
+    const preferred = availableIds.has(preferredId)
+      ? preferredId
+      : availableIds.has(binding.selection?.userId) ? binding.selection.userId : null
+    const id = preferred ?? catalog.users[0]?.id ?? null
+    const relation = id === null
+      ? { binding: { worldBookIds: [] } }
+      : await api(`/users/${encodeURIComponent(id)}/world-books`)
     if (current !== generation.current) return
     setUsers(catalog.users)
+    setWorldBooks(worldBookCatalog.worldBooks)
     setSelectedUserId(binding.selection?.userId ?? null)
-    const id = preferredId ?? binding.selection?.userId ?? catalog.users[0]?.id ?? null
-    setDraft(id === null ? null : structuredClone(catalog.users.find(user => user.id === id) ?? null))
+    const nextDraft = id === null ? null : structuredClone(catalog.users.find(user => user.id === id) ?? null)
+    const ids = relation.binding?.worldBookIds ?? []
+    setDraft(nextDraft)
+    setSavedDraft(nextDraft === null ? null : structuredClone(nextDraft))
+    setWorldBookIds(ids)
+    setAppliedWorldBookIds(ids)
   }, [sessionId])
 
   useEffect(() => {
     run(() => refresh(), '用户资源已加载')
-    const onRefresh = () => run(() => refresh(draftId.current), '用户资源已刷新')
+    const onRefresh = () => {
+      if (dirtyRef.current) {
+        setStatus({ text: '检测到其他 Tavern 资源变化；为保留本面板未保存修改，未自动刷新。', error: false })
+        return
+      }
+      run(() => refresh(draftId.current), '用户资源已刷新')
+    }
     window.addEventListener('dsh-tavern:refresh', onRefresh)
     return () => {
       generation.current += 1
@@ -85,12 +117,25 @@ export function UserPanel({ sessionId, sessionBlank, close }) {
     }
   }, [refresh, run])
 
-  const create = useCallback(() => run(async () => {
-    const data = await api('/users', { method: 'POST', body: JSON.stringify({ name: '新用户', description: '' }) })
-    draftId.current = data.user.id
-    await refresh(data.user.id)
-    notifyRefresh()
-  }, '用户资源已创建；保存名字和描述后再绑定'), [refresh, run])
+  useEffect(() => {
+    if (!dirty) return undefined
+    const warn = event => {
+      event.preventDefault()
+      event.returnValue = ''
+    }
+    window.addEventListener('beforeunload', warn)
+    return () => window.removeEventListener('beforeunload', warn)
+  }, [dirty])
+
+  const create = useCallback(() => {
+    if (dirty && !window.confirm('当前用户资源或世界书绑定有未保存修改。放弃修改并新建用户吗？')) return
+    run(async () => {
+      const data = await api('/users', { method: 'POST', body: JSON.stringify({ name: '新用户', description: '' }) })
+      draftId.current = data.user.id
+      await refresh(data.user.id)
+      notifyRefresh()
+    }, '用户资源已创建；保存名字和描述后再绑定')
+  }, [dirty, refresh, run])
 
   const save = useCallback(() => run(async () => {
     if (draft === null) return
@@ -100,9 +145,27 @@ export function UserPanel({ sessionId, sessionBlank, close }) {
     })
     draftId.current = data.user.id
     setDraft(data.user)
+    setSavedDraft(structuredClone(data.user))
     setUsers(current => current?.map(user => user.id === data.user.id ? data.user : user) ?? current)
     notifyRefresh()
   }, '名字和描述已保存；已绑定会话的下一次请求会立即使用新内容'), [draft, run])
+
+  const saveWorldBooks = useCallback(() => run(async () => {
+    if (draft === null) return
+    const data = await api(`/users/${encodeURIComponent(draft.id)}/world-books`, {
+      method: 'PUT',
+      body: JSON.stringify({ worldBookIds }),
+    })
+    const ids = data.binding.worldBookIds
+    setWorldBookIds(ids)
+    setAppliedWorldBookIds(ids)
+    notifyRefresh()
+  }, '用户绑定的世界书已保存；选择该用户的会话会在下一次组装时自动使用'), [draft, run, worldBookIds])
+
+  const chooseUser = useCallback(id => {
+    if (dirty && !window.confirm('当前用户资源或世界书绑定有未保存修改。放弃修改并切换吗？')) return
+    run(() => refresh(id), '用户资源和世界书绑定已加载')
+  }, [dirty, refresh, run])
 
   const bind = useCallback(() => run(async () => {
     if (!sessionId || draft === null) throw new Error('请先创建或打开一个会话并选择用户资源')
@@ -124,7 +187,7 @@ export function UserPanel({ sessionId, sessionBlank, close }) {
   }, '当前会话已解除用户绑定'), [run, sessionId])
 
   const remove = useCallback(() => run(async () => {
-    if (draft === null || !window.confirm(`删除用户“${draft.name}”？所有会话中的对应绑定都会清除。`)) return
+    if (draft === null || !window.confirm(`删除用户“${draft.name}”？所有会话中的用户选择和该用户的世界书关系都会清除。`)) return
     await api(`/users/${encodeURIComponent(draft.id)}`, { method: 'DELETE', body: '{}' })
     draftId.current = null
     await refresh(null)
@@ -134,38 +197,62 @@ export function UserPanel({ sessionId, sessionBlank, close }) {
   const activeName = selectedUserId === null
     ? '未绑定用户'
     : users?.find(user => user.id === selectedUserId)?.name ?? selectedUserId
+  const requestClose = () => {
+    if (!dirty || window.confirm('当前用户资源或世界书绑定有未保存修改。仍然关闭吗？')) close()
+  }
 
   return h('div', { className: 'dtu-panel' },
     h('div', { className: 'dtu-header' },
       h('div', { className: 'dtu-title' }, 'Tavern 用户'),
-      h('button', { className: 'dtu-close', type: 'button', title: '关闭用户面板', 'aria-label': '关闭用户侧边栏', onClick: close }, '✕'),
+      h('button', { className: 'dtu-close', type: 'button', title: '关闭用户面板', 'aria-label': '关闭用户侧边栏', onClick: requestClose }, '✕'),
     ),
     h('div', { className: 'dtu-body' },
       h('div', { className: 'dtu-toolbar' },
         h('button', { className: 'dtu-button', type: 'button', disabled: busy, onClick: create }, '新建用户'),
-        h('button', { className: 'dtu-button', type: 'button', disabled: busy, onClick: () => run(() => refresh(draft?.id), '用户资源已刷新') }, '刷新'),
+        h('button', { className: 'dtu-button', type: 'button', disabled: busy, onClick: () => { if (!dirty || window.confirm('放弃尚未保存的用户资源或世界书绑定修改？')) run(() => refresh(draft?.id), '用户资源已刷新') } }, '刷新'),
       ),
       h(Field, { label: '浏览用户资源' }, h('select', {
         className: 'dtu-select',
         value: draft?.id ?? '',
         disabled: busy || users === null || users.length === 0,
-        onChange: event => setDraft(structuredClone(users.find(user => user.id === event.target.value) ?? null)),
+        onChange: event => chooseUser(event.target.value),
       },
       ...(users?.length ? [] : [h('option', { key: 'empty', value: '' }, '用户资源库为空')]),
       ...(users ?? []).map(user => h('option', { key: user.id, value: user.id }, user.name)))),
       h('p', { className: 'dtu-note' }, `当前会话：${sessionId || '无'}；绑定：${activeName}`),
       h('div', { className: 'dtu-status', 'data-error': status.error || undefined, role: 'status', 'aria-live': 'polite' }, status.text),
+      dirty
+        ? h('div', { className: 'dtu-status', 'data-warning': true, role: 'status' }, `有未保存修改：${[resourceDirty ? '名字/描述' : '', bindingDirty ? '用户世界书绑定' : ''].filter(Boolean).join('、')}。`)
+        : h('p', { className: 'dtu-note' }, '当前显示的用户资源和世界书绑定均已保存。'),
       draft === null
         ? h('p', { className: 'dtu-note' }, users === null ? '正在加载用户资源…' : '创建一个只含名字和描述的用户资源。')
         : h('div', { className: 'dtu-editor' },
           h(Field, { label: '名字（用于 {{user}} 宏）' }, h('input', { className: 'dtu-input', value: draft.name, maxLength: 200, onChange: event => setDraft(current => ({ ...current, name: event.target.value })) })),
           h(Field, { label: '描述（进入 personaDescription marker；缺 marker 时由 loader 稳定降级）' }, h('textarea', { className: 'dtu-textarea', value: draft.description, maxLength: 100000, onChange: event => setDraft(current => ({ ...current, description: event.target.value })) })),
           h('div', { className: 'dtu-actions' },
-            h('button', { className: 'dtu-button dtu-primary', type: 'button', disabled: busy, onClick: save }, '保存资源'),
-            h('button', { className: 'dtu-button dtu-primary', type: 'button', disabled: busy || !sessionId, onClick: bind }, selectedUserId === draft.id ? '刷新会话绑定' : '绑定到当前会话'),
+            h('button', { className: 'dtu-button dtu-primary', type: 'button', disabled: busy || !resourceDirty, onClick: save }, resourceDirty ? '保存资源（未保存）' : '资源已保存'),
+            h('button', { className: 'dtu-button dtu-primary', type: 'button', disabled: busy || !sessionId || dirty, onClick: bind }, dirty ? '请先保存修改' : selectedUserId === draft.id ? '刷新会话绑定' : '绑定到当前会话'),
+          ),
+          h('h2', { className: 'dtu-section-title' }, '用户绑定的独立世界书'),
+          h('p', { className: 'dtu-note' }, '选择该用户时，loader 会自动组合这里的世界书与当前会话显式选择的世界书；重复的同一本书只执行一次。'),
+          worldBooks?.length
+            ? h('div', { className: 'dtu-bindings' }, ...worldBooks.map(book => h('label', { className: 'dtu-check', key: book.id },
+              h('input', {
+                type: 'checkbox',
+                checked: worldBookIds.includes(book.id),
+                onChange: event => setWorldBookIds(current => event.target.checked
+                  ? [...current, book.id]
+                  : current.filter(id => id !== book.id)),
+              }),
+              h('span', null, `${book.name}（${book.entryCount} 条）`),
+            )))
+            : h('p', { className: 'dtu-note' }, worldBooks === null ? '正在加载独立世界书资源库…' : '独立世界书资源库为空。请先在世界书面板创建或导入。'),
+          h('div', { className: 'dtu-actions' },
+            h('button', { className: 'dtu-button dtu-primary', type: 'button', disabled: busy || !bindingDirty, onClick: saveWorldBooks }, bindingDirty ? '保存世界书绑定（未保存）' : '世界书绑定已保存'),
+            h('button', { className: 'dtu-button', type: 'button', disabled: busy || worldBookIds.length === 0, onClick: () => setWorldBookIds([]) }, '清空待保存选择'),
           ),
           h('button', { className: 'dtu-button', type: 'button', disabled: busy || !sessionId || selectedUserId === null, onClick: unbind }, '解除当前会话绑定'),
-          h('p', { className: 'dtu-note' }, '用户资源不包含头像，也不会覆盖 DSH Agent 身份。loader 只在统一 Tavern profile 中解析名字宏并放置一次描述。'),
+          h('p', { className: 'dtu-note' }, '用户资源正文仍严格只有名字和描述；世界书关系保存在 loader 的独立结构化策略中。用户资源不包含头像，也不会覆盖 DSH Agent 身份。'),
           h('div', { className: 'dtu-footer' }, h('button', { className: 'dtu-button dtu-danger', type: 'button', disabled: busy, onClick: remove }, '删除用户')),
         ),
     ),

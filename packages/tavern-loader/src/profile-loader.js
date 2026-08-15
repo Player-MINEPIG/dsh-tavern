@@ -1,5 +1,6 @@
 import { createHash } from 'node:crypto'
 import { compilePresetForDsh, projectPresetCallConfig } from './profile-compiler.js'
+import { composeWorldBookSelection } from './user-world-book-policy.js'
 import { renderSillyTavernMacros } from '../../tavern-format/src/index.js'
 
 const DEFAULT_MAX_PROFILE_BYTES = 512 * 1024
@@ -79,9 +80,10 @@ function fingerprint(value) {
  * Adapters resolve normalized documents; the compiler owns request semantics.
  */
 export class TavernProfileLoader {
-  constructor({ presetStore, selections, maxProfileBytes }) {
+  constructor({ presetStore, selections, userWorldBooks = null, maxProfileBytes }) {
     this.presetStore = presetStore
     this.selections = selections
+    this.userWorldBooks = userWorldBooks
     this.maxProfileBytes = profileByteLimit(maxProfileBytes)
     this.characterAdapter = null
     this.userAdapter = null
@@ -150,8 +152,23 @@ export class TavernProfileLoader {
     )
     diagnostics.push(...userResult.diagnostics)
 
+    const userBoundIds = userResult.user === null || this.userWorldBooks === null
+      ? []
+      : this.userWorldBooks.get(userResult.user.id)
+    const worldBookSelection = composeWorldBookSelection(selection.worldBookIds, userBoundIds)
+    const effectiveSelection = {
+      ...selection,
+      worldBookIds: worldBookSelection.effectiveIds,
+    }
+
     const worldBookResult = normalizedAdapterResult(
-      this.worldBookAdapter?.resolve?.({ ...shared, character: characterResult.character, user: userResult.user }),
+      this.worldBookAdapter?.resolve?.({
+        ...shared,
+        selection: effectiveSelection,
+        worldBookSelection,
+        character: characterResult.character,
+        user: userResult.user,
+      }),
       'loreEntries',
     )
     diagnostics.push(...worldBookResult.diagnostics)
@@ -180,7 +197,9 @@ export class TavernProfileLoader {
     const audit = {
       schemaVersion: 1,
       sessionId: shared.sessionId,
-      selection: clone(selection),
+      selection: clone(effectiveSelection),
+      sessionSelection: clone(selection),
+      worldBookSelection: clone(worldBookSelection),
       resources,
       diagnostics: clone(diagnostics),
       activeLoreEntries: compiled.activeLoreEntries,
@@ -232,6 +251,8 @@ export class TavernProfileLoader {
     return {
       selected: snapshot.resources.preset,
       selection: snapshot.audit.selection,
+      sessionSelection: snapshot.audit.sessionSelection,
+      worldBookSelection: snapshot.audit.worldBookSelection,
       resources: snapshot.resources,
       callConfig: snapshot.callConfig,
       compiledPrompt: snapshot.systemText,

@@ -12,10 +12,14 @@ function sendJson(res, status, payload) {
 
 function apiError(error) {
   const code = error?.code ?? (error instanceof TypeError || error instanceof URIError ? 'INVALID_USER_REQUEST' : 'USER_API_ERROR')
-  const status = error?.status
-    ?? (code === 'USER_NOT_FOUND' ? 404
-      : code === 'USER_ID_EXISTS' ? 409
-        : error instanceof TypeError || error instanceof URIError ? 400 : 500)
+  const knownStatus = {
+    USER_NOT_FOUND: 404,
+    WORLD_BOOK_NOT_FOUND: 404,
+    USER_ID_EXISTS: 409,
+    USER_WORLD_BOOK_BINDING_LIMIT_REACHED: 409,
+    USER_WORLD_BOOK_BINDING_STORAGE_LIMIT_REACHED: 413,
+  }[code]
+  const status = error?.status ?? knownStatus ?? (error instanceof TypeError || error instanceof URIError ? 400 : 500)
   return {
     status,
     payload: { ok: false, error: { code, message: error instanceof Error ? error.message : String(error) } },
@@ -55,8 +59,8 @@ function readJson(req) {
 }
 
 function userRoute(path) {
-  const match = /^\/dsh-tavern\/api\/users\/([^/]+)$/.exec(path)
-  return match === null ? null : decodeURIComponent(match[1])
+  const match = /^\/dsh-tavern\/api\/users\/([^/]+)(?:\/(world-books))?$/.exec(path)
+  return match === null ? null : { id: decodeURIComponent(match[1]), resource: match[2] }
 }
 
 function selectionPayload(store, sessionId, selectionPolicy) {
@@ -65,9 +69,30 @@ function selectionPayload(store, sessionId, selectionPolicy) {
   return { selection, user: store.get(selection.userId) }
 }
 
+function worldBookBindingPayload(userId, worldBookBindingPolicy) {
+  if (worldBookBindingPolicy === null) throw new Error('User world-book binding policy is not installed')
+  return {
+    binding: {
+      userId,
+      worldBookIds: worldBookBindingPolicy.selection(userId),
+    },
+  }
+}
+
+function worldBookIdsBody(value) {
+  if (value === null || typeof value !== 'object' || Array.isArray(value)) {
+    throw new TypeError('User world-book binding request must be an object')
+  }
+  const unexpected = Object.keys(value).find(key => key !== 'worldBookIds')
+  if (unexpected !== undefined) throw new TypeError(`Unsupported user world-book binding field "${unexpected}"`)
+  if (!Array.isArray(value.worldBookIds)) throw new TypeError('worldBookIds must be an array')
+  return value.worldBookIds
+}
+
 export function createUserApiHandler(store, options = {}) {
   const onChange = options.onChange ?? (() => {})
   const beforeSelectionChange = options.beforeSelectionChange ?? (() => {})
+  const worldBookBindingPolicy = options.worldBookBindingPolicy ?? null
   const selectionPolicy = options.selectionPolicy ?? {
     selection: () => null,
     select: () => null,
@@ -78,7 +103,7 @@ export function createUserApiHandler(store, options = {}) {
       const url = new URL(req.url ?? '/', 'http://localhost')
       const path = url.pathname
       const method = String(req.method ?? 'GET').toUpperCase()
-      const id = userRoute(path)
+      const matched = userRoute(path)
 
       if (method === 'GET' && path === '/dsh-tavern/api/users') {
         return sendJson(res, 200, { ok: true, users: store.list() })
@@ -88,18 +113,27 @@ export function createUserApiHandler(store, options = {}) {
         onChange({ kind: 'user-created', userId: user.id })
         return sendJson(res, 201, { ok: true, user })
       }
-      if (id !== null && method === 'GET') {
-        return sendJson(res, 200, { ok: true, user: store.get(id) })
+      if (matched !== null && matched.resource === 'world-books' && method === 'GET') {
+        return sendJson(res, 200, { ok: true, ...worldBookBindingPayload(matched.id, worldBookBindingPolicy) })
       }
-      if (id !== null && method === 'PATCH') {
-        const user = store.update(id, await readJson(req))
-        onChange({ kind: 'user-updated', userId: id })
+      if (matched !== null && matched.resource === 'world-books' && method === 'PUT') {
+        if (worldBookBindingPolicy === null) throw new Error('User world-book binding policy is not installed')
+        const worldBookIds = await worldBookBindingPolicy.select(matched.id, worldBookIdsBody(await readJson(req)))
+        onChange({ kind: 'user-world-book-binding-changed', userId: matched.id, worldBookIds })
+        return sendJson(res, 200, { ok: true, ...worldBookBindingPayload(matched.id, worldBookBindingPolicy) })
+      }
+      if (matched !== null && matched.resource === undefined && method === 'GET') {
+        return sendJson(res, 200, { ok: true, user: store.get(matched.id) })
+      }
+      if (matched !== null && matched.resource === undefined && method === 'PATCH') {
+        const user = store.update(matched.id, await readJson(req))
+        onChange({ kind: 'user-updated', userId: matched.id })
         return sendJson(res, 200, { ok: true, user })
       }
-      if (id !== null && method === 'DELETE') {
-        store.delete(id)
-        selectionPolicy.clearResource?.('user', id)
-        onChange({ kind: 'user-deleted', userId: id })
+      if (matched !== null && matched.resource === undefined && method === 'DELETE') {
+        store.delete(matched.id)
+        selectionPolicy.clearResource?.('user', matched.id)
+        onChange({ kind: 'user-deleted', userId: matched.id })
         return sendJson(res, 200, { ok: true })
       }
       if (method === 'GET' && path === '/dsh-tavern/api/user-selection') {

@@ -77,3 +77,15 @@ test('user use-case stays a three-field resource and leaves Host seams to the lo
   assert.match(user, /user-selection/)
   assert.match(user, /\['id', 'name', 'description'\]/)
 })
+
+test('user-to-world-book relationships are owned by loader policy, not either resource document', () => {
+  const policy = read('../packages/tavern-loader/src/user-world-book-policy.js')
+  const profileLoader = read('../packages/tavern-loader/src/profile-loader.js')
+  const userStore = read('../packages/user/src/store.js')
+  const worldBookStore = read('../packages/world-book-library/src/store.js')
+  assert.match(policy, /user-world-book-bindings\.json/)
+  assert.match(profileLoader, /composeWorldBookSelection/)
+  assert.doesNotMatch(userStore, /worldBookIds|world-book-bindings/)
+  assert.doesNotMatch(worldBookStore, /userIds|user-world-book-bindings/)
+  assert.doesNotMatch(policy, /packages\/user|packages\/world-book|systemPrompt|agent\/request/)
+})

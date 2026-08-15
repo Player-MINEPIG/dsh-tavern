@@ -36,6 +36,36 @@ Verification:
   package and excluded tests, implementation docs, runtime data and local
   execution contracts.
 
+## 2026-08-15 — Phase 3 user-bound world books
+
+Purpose: let each three-field user resource select zero or more independent
+world books while keeping runtime composition in the unified loader.
+
+- Added a loader-owned, atomic `user-world-book-bindings.json` policy with
+  strict IDs, per-user book count, user count, state byte and pre-parse read
+  limits. User descriptions and world-book documents remain unchanged.
+- Defined actual composition as session-explicit books first, followed by the
+  selected user's saved books, with stable ID deduplication. Switching or
+  unbinding a user never alters the session-explicit list.
+- Added secured GET/PUT relationship routes under each user, catalog-backed
+  validation, structured errors, and cleanup when either a user or world book
+  is deleted.
+- Extended the user panel with world-book viewing/editing, separate save
+  actions, visible dirty state, discard warnings and draft preservation across
+  shared refresh events.
+- Made active view/launcher consume the effective book set and added explicit,
+  user-bound, effective and duplicate provenance to loader audit and Tavern
+  Trace. The final profile still comes from the single world-book adapter and
+  a duplicate book is matched/projected once.
+- Added implementation/acceptance documentation and synthetic tests for
+  persistence, limits, API validation, cleanup, session isolation, deduped
+  profile output, UI state and Trace provenance.
+- Verification: `npm run check` rebuilt `dist/client.js` and passed 141 tests
+  with zero failures; the existing opt-in external acceptance fixture was the
+  only skipped test. `npm run pack:check` succeeded with 51 release files,
+  including the new loader policy and browser state helper while excluding
+  tests, docs, runtime data and caches.
+
 ## 2026-08-15 — Deterministic local-package refresh
 
 Purpose: prevent a development install from loading a mixed package after a
