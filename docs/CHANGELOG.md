@@ -4,6 +4,32 @@ This is the staged implementation log for the prompt-preset experiment. It is
 kept separately from the product README so reviewers can follow intent,
 decisions, verification, and known limits chronologically.
 
+## 2026-08-15 — User-bound world books visible in the World Book panel
+
+Purpose: make all three runtime world-book sources reviewable from the World
+Book sidebar without creating a second editor for user relationships.
+
+- Added a dedicated user-bound source section beside explicit session books and
+  character-card embedded books. It identifies the current user, lists books in
+  saved relationship order, marks session duplicates as deduplicated, and
+  explains the effective combination order.
+- Kept relationship changes in the User panel and linked that ownership from
+  the read-only World Book summary.
+- Added complete Simplified Chinese and English semantic messages so resource
+  names remain untranslated while all surrounding status copy follows the UI
+  language.
+
+Verification:
+
+- `npm run check` rebuilt the browser bundle and completed 176 tests: 175
+  passed, none failed, and the opt-in external copyrighted fixture was skipped.
+- `npm run pack:check` retained the 61-file release boundary.
+- An isolated loopback DSH/browser run showed the bound user and inherited book
+  in an existing session, then refreshed the still-open panel to the explicit
+  no-user state after switching sessions while retaining the separate embedded
+  character-book section. The owned DSH process was stopped and its test port
+  verified free afterward.
+
 ## 2026-08-15 — Template preview and semantic i18n hardening
 
 Purpose: make saved template intent reviewable and remove the common source of

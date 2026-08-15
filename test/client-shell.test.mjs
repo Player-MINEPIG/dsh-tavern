@@ -172,12 +172,17 @@ test('resource mutations announce one shared refresh event consumed by the shell
   assert.match(user, /addEventListener\('dsh-tavern:refresh', onRefresh\)/)
 })
 
-test('world-book panel separates sources, omits format suffixes and exposes unapplied binding state', () => {
+test('world-book panel separates session, user and character sources while exposing unapplied binding state', () => {
   const source = readFileSync(new URL('../packages/world-book-library/src/client.js', import.meta.url), 'utf8')
   assert.match(source, /独立世界书/)
   assert.match(source, /角色卡绑定的世界书/)
   assert.match(source, /data-source': 'standalone'/)
+  assert.match(source, /data-source': 'user'/)
   assert.match(source, /data-source': 'character'/)
+  assert.match(source, /deriveUserWorldBookSource/)
+  assert.match(source, /world\.user\.current/)
+  assert.match(source, /world\.user\.order/)
+  assert.match(source, /world\.user\.editHint/)
   assert.match(source, /world\.embeddedEmpty/)
   assert.match(source, /绑定有未保存修改/)
   assert.match(source, /当前绑定已应用/)

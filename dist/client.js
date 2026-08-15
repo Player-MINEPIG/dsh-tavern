@@ -75,6 +75,14 @@ var MESSAGE_CATALOG = Object.freeze({
     "world.currentSession": "\u5F53\u524D\u4F1A\u8BDD\uFF1A{session}\u3002\u53EF\u7ED1\u5B9A\u96F6\u672C\u3001\u4E00\u672C\u6216\u591A\u672C\u72EC\u7ACB\u4E16\u754C\u4E66\uFF1B\u7ED1\u5B9A\u987A\u5E8F\u4FDD\u6301\u7A33\u5B9A\u3002",
     "world.catalogItem": "{name}\uFF08{count} \u6761\uFF09",
     "world.documentMeta": "{count} \u6761 \xB7 \u672A\u77E5\u5B57\u6BB5\u5728\u4FDD\u5B58\u548C\u5BFC\u51FA\u65F6\u7A33\u5B9A\u4FDD\u7559",
+    "world.user.title": "\u7528\u6237\u7ED1\u5B9A\u7684\u4E16\u754C\u4E66",
+    "world.user.current": "\u5F53\u524D\u7528\u6237\uFF1A{name}",
+    "world.user.none": "\u5F53\u524D\u4F1A\u8BDD\u672A\u7ED1\u5B9A\u7528\u6237\uFF0C\u56E0\u6B64\u6CA1\u6709\u7528\u6237\u6765\u6E90\u7684\u4E16\u754C\u4E66\u3002",
+    "world.user.empty": "\u5F53\u524D\u7528\u6237\u6CA1\u6709\u7ED1\u5B9A\u72EC\u7ACB\u4E16\u754C\u4E66\u3002",
+    "world.user.order": "\u6709\u6548\u7EC4\u5408\u987A\u5E8F\u4E3A\uFF1A\u5F53\u524D\u4F1A\u8BDD\u663E\u5F0F\u4E16\u754C\u4E66\u5728\u524D\uFF0C\u7528\u6237\u7ED1\u5B9A\u4E16\u754C\u4E66\u968F\u540E\uFF1B\u91CD\u590D\u8D44\u6E90\u53EA\u6267\u884C\u4E00\u6B21\u3002",
+    "world.user.duplicate": "\u4E0E\u4F1A\u8BDD\u7ED1\u5B9A\u91CD\u590D\uFF0C\u5DF2\u53BB\u91CD",
+    "world.user.appended": "\u7531\u7528\u6237\u7ED1\u5B9A\u8FFD\u52A0",
+    "world.user.editHint": "\u8981\u4FEE\u6539\u8FD9\u4E9B\u5173\u7CFB\uFF0C\u8BF7\u4ECE DT \u60AC\u6D6E\u7403\u5207\u6362\u5230\u7528\u6237\u9762\u677F\u3002",
     "world.embeddedMeta": "{count} \u6761\u3002\u5B83\u4E0E\u72EC\u7ACB\u4E66\u5171\u7528 matcher/loader\uFF1B\u5220\u9664\u72EC\u7ACB\u4E66\u4E0D\u4F1A\u4FEE\u6539\u6216\u89E3\u7ED1\u89D2\u8272\u5361\u5185\u5D4C\u4E66\u3002",
     "world.embeddedEmpty": "\u5F53\u524D\u4F1A\u8BDD\u6CA1\u6709\u89D2\u8272\u5361\u7ED1\u5B9A\u7684\u5185\u5D4C\u4E16\u754C\u4E66\u3002\u7ED1\u5B9A\u542B character_book \u7684\u89D2\u8272\u5361\u540E\u4F1A\u663E\u793A\u5728\u8FD9\u91CC\u3002",
     "world.diagnostics": "\u8FD0\u884C\u8BCA\u65AD\uFF08{count}\uFF09",
@@ -120,6 +128,14 @@ var MESSAGE_CATALOG = Object.freeze({
     "world.currentSession": "Current session: {session}. Bind zero, one, or multiple standalone world books; binding order remains stable.",
     "world.catalogItem": "{name} ({count} entries)",
     "world.documentMeta": "{count} entries \xB7 Unknown fields are preserved across saves and exports",
+    "world.user.title": "User-bound world books",
+    "world.user.current": "Current user: {name}",
+    "world.user.none": "The current session has no bound user, so it has no user-sourced world books.",
+    "world.user.empty": "The current user has no bound standalone world books.",
+    "world.user.order": "Effective order: explicit session books first, followed by user-bound books; duplicate resources run only once.",
+    "world.user.duplicate": "Also session-bound; deduplicated",
+    "world.user.appended": "Appended from user binding",
+    "world.user.editHint": "To change these relationships, switch to the User panel from the DT launcher.",
     "world.embeddedMeta": "{count} entries. It shares the matcher/loader with standalone books; deleting a standalone book never edits or unbinds this embedded book.",
     "world.embeddedEmpty": "The current session has no character-bound embedded world book. Bind a character card with character_book to show it here.",
     "world.diagnostics": "Runtime diagnostics ({count})",
@@ -1280,7 +1296,7 @@ var POSITIONS = [
 ];
 var css3 = `
 .dwb-panel{position:absolute;top:0;right:0;bottom:0;width:min(500px,calc(100vw - 56px));pointer-events:auto;border-left:1px solid var(--dsw-alias-border-l2);box-shadow:var(--ds-shadow-3,-8px 0 28px rgba(0,0,0,.18));background:var(--dsw-alias-bg-base);color:var(--dsw-alias-label-primary);display:flex;flex-direction:column;font-family:Inter,var(--dsw-font-family),sans-serif}.dwb-header{height:52px;box-sizing:border-box;display:flex;align-items:center;gap:8px;padding:0 14px;border-bottom:1px solid var(--dsw-alias-border-l2);flex:none}.dwb-title{font-size:16px;font-weight:650;flex:1}.dwb-close{border:0;background:transparent;color:var(--dsw-alias-label-tertiary);cursor:pointer;border-radius:7px;padding:6px 8px;font-size:14px}.dwb-body{min-height:0;overflow:auto;padding:12px;display:flex;flex-direction:column;gap:11px}.dwb-toolbar{display:grid;grid-template-columns:repeat(3,1fr);gap:7px}.dwb-actions{display:flex;gap:7px;flex-wrap:wrap}.dwb-button{min-height:36px;border:1px solid var(--dsw-alias-border-l2);border-radius:8px;background:var(--dsw-alias-button-secondary-fill,var(--dsw-alias-bg-base));color:var(--dsw-alias-label-primary);cursor:pointer;padding:7px 10px;font-size:13px;text-decoration:none;display:inline-flex;align-items:center;justify-content:center;box-sizing:border-box}.dwb-button:disabled{opacity:.5;cursor:default}.dwb-primary{background:var(--dsw-alias-state-business-primary);color:white;border-color:transparent}.dwb-danger{color:var(--dsw-alias-state-error)}.dwb-field{display:flex;flex-direction:column;gap:4px}.dwb-label{font-size:12px;font-weight:620;color:var(--dsw-alias-label-tertiary)}.dwb-input,.dwb-select,.dwb-textarea{box-sizing:border-box;width:100%;border:1px solid var(--dsw-alias-border-l2);border-radius:7px;background:var(--dsw-alias-bg-base);color:var(--dsw-alias-label-primary);font:inherit;font-size:13px;padding:7px 8px}.dwb-input,.dwb-select{height:36px}.dwb-textarea{min-height:110px;resize:vertical;line-height:1.5}.dwb-note,.dwb-meta{font-size:13px;line-height:1.5;color:var(--dsw-alias-label-tertiary);margin:0;overflow-wrap:anywhere}.dwb-status{font-size:13px;line-height:1.45;border-radius:7px;padding:8px 10px;background:var(--dsw-specific-tip);overflow-wrap:anywhere}.dwb-status[data-error=true]{color:var(--dsw-alias-state-error)}.dwb-status[data-warning=true]{color:var(--dsw-alias-state-warning,#b46b00)}.dwb-section-title{font-size:15px;font-weight:700;margin:5px 0 0}.dwb-resource{border:1px solid var(--dsw-alias-border-l1);border-radius:9px;padding:10px;display:flex;flex-direction:column;gap:8px}.dwb-resource-title{font-size:14px;font-weight:650}.dwb-bindings{display:grid;grid-template-columns:1fr 1fr;gap:5px}.dwb-check{display:flex;gap:6px;align-items:flex-start;font-size:12px;line-height:1.45}.dwb-entry{border:1px solid var(--dsw-alias-border-l1);border-radius:8px;overflow:hidden}.dwb-entry>summary{list-style:none;cursor:pointer;padding:8px;display:flex;align-items:center;gap:7px;font-size:13px}.dwb-entry>summary::-webkit-details-marker{display:none}.dwb-dot{width:8px;height:8px;flex:none;border-radius:50%;background:var(--dsw-alias-label-tertiary)}.dwb-entry[data-enabled=true] .dwb-dot{background:var(--dsw-alias-state-success,#2fa36b)}.dwb-entry-name{font-weight:620;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.dwb-entry-state{margin-left:auto;flex:none;color:var(--dsw-alias-label-tertiary);font-size:12px}.dwb-entry-body{border-top:1px solid var(--dsw-alias-border-l1);padding:8px;display:flex;flex-direction:column;gap:8px}.dwb-grid{display:grid;grid-template-columns:1fr 1fr;gap:7px}.dwb-checks{display:flex;flex-wrap:wrap;gap:10px}.dwb-list{margin:0;padding-left:18px;font-size:13px;line-height:1.5}
-.dwb-source-section{border:1px solid var(--dsw-alias-border-l2);border-radius:11px;padding:10px;background:color-mix(in srgb,var(--dsw-specific-tip) 35%,transparent);display:flex;flex-direction:column;gap:9px}.dwb-source-section>.dwb-section-title{margin:0}.dwb-source-section>.dwb-resource{background:var(--dsw-alias-bg-base)}
+.dwb-source-section{border:1px solid var(--dsw-alias-border-l2);border-radius:11px;padding:10px;background:color-mix(in srgb,var(--dsw-specific-tip) 35%,transparent);display:flex;flex-direction:column;gap:9px}.dwb-source-section>.dwb-section-title{margin:0}.dwb-source-section>.dwb-resource{background:var(--dsw-alias-bg-base)}.dwb-source-list{margin:0;padding-left:20px;display:flex;flex-direction:column;gap:7px}.dwb-source-book{padding-left:2px}.dwb-source-book-row{display:flex;align-items:center;justify-content:space-between;gap:8px}.dwb-source-book-name{min-width:0;font-size:13px;font-weight:620;overflow-wrap:anywhere}.dwb-source-badge{flex:none;border:1px solid var(--dsw-alias-border-l1);border-radius:999px;padding:2px 7px;font-size:11px;line-height:1.35;color:var(--dsw-alias-label-tertiary);background:var(--dsw-specific-tip)}
 `;
 function errorMessage2(data, status) {
   if (typeof data?.error?.message === "string") return data.error.message;
@@ -1390,6 +1406,24 @@ function createWorldBookEntry(entries = []) {
     useProbability: true,
     caseSensitive: false,
     matchWholeWords: false
+  };
+}
+function deriveUserWorldBookSource(active, catalog2) {
+  const user = active?.resources?.user ?? null;
+  const selection = active?.worldBookSelection ?? {};
+  const userBoundIds = Array.isArray(selection.userBoundIds) ? selection.userBoundIds : [];
+  const duplicateIds = new Set(Array.isArray(selection.duplicateIds) ? selection.duplicateIds : []);
+  const known = new Map([
+    ...Array.isArray(catalog2?.worldBooks) ? catalog2.worldBooks : [],
+    ...Array.isArray(active?.resources?.worldBooks) ? active.resources.worldBooks : []
+  ].map((item) => [item.id, item]));
+  return {
+    user,
+    books: userBoundIds.map((id) => ({
+      id,
+      name: known.get(id)?.name ?? id,
+      duplicate: duplicateIds.has(id)
+    }))
   };
 }
 function EntryEditor({ entry, index, update, remove }) {
@@ -1577,6 +1611,7 @@ function WorldBookPanel({ sessionId, close }) {
   const embedded = active?.resources?.worldBooks?.filter((item) => item.kind === "embedded-character-book") ?? [];
   const diagnostics = active?.diagnostics?.filter((item) => String(item.code ?? "").includes("WORLD_BOOK")) ?? [];
   const selectionDirty = selection.length !== appliedSelection.length || selection.some((id, index) => id !== appliedSelection[index]);
+  const userSource = deriveUserWorldBookSource(active, catalog2);
   return h3(
     "div",
     { className: "dwb-panel" },
@@ -1654,6 +1689,28 @@ function WorldBookPanel({ sessionId, close }) {
               setDirty(true);
             }
           } }))
+        )
+      ),
+      h3(
+        "section",
+        { className: "dwb-source-section", "data-source": "user" },
+        h3("h2", { className: "dwb-section-title" }, uiMessage("world.user.title")),
+        userSource.user === null ? h3("p", { className: "dwb-note" }, uiMessage("world.user.none")) : h3(
+          "div",
+          { className: "dwb-resource" },
+          h3("div", { className: "dwb-resource-title" }, uiMessage("world.user.current", { name: userSource.user.name || userSource.user.id })),
+          userSource.books.length === 0 ? h3("p", { className: "dwb-note" }, uiMessage("world.user.empty")) : h3("ol", { className: "dwb-source-list" }, ...userSource.books.map((book) => h3(
+            "li",
+            { className: "dwb-source-book", key: book.id },
+            h3(
+              "div",
+              { className: "dwb-source-book-row" },
+              h3("span", { className: "dwb-source-book-name" }, rawText(book.name)),
+              h3("span", { className: "dwb-source-badge" }, book.duplicate ? uiMessage("world.user.duplicate") : uiMessage("world.user.appended"))
+            )
+          ))),
+          h3("p", { className: "dwb-note" }, uiMessage("world.user.order")),
+          h3("p", { className: "dwb-note" }, uiMessage("world.user.editHint"))
         )
       ),
       h3(

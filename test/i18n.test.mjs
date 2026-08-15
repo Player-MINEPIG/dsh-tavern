@@ -128,12 +128,15 @@ test('semantic dynamic messages translate as complete sentences without altering
     uiMessage('trace.diagnostics', { count: 1 }),
     uiMessage('world.currentSession', { session: 'session-test' }),
     uiMessage('world.documentMeta', { count: 8 }),
+    uiMessage('world.user.current', { name: '中文用户名' }),
+    uiMessage('world.user.order'),
+    uiMessage('world.user.editHint'),
     uiMessage('character.embeddedBook', { count: 8 }),
     uiMessage('template.currentSettingsReminder'),
   ].map(unwrapText)
   assert.match(messages[1], /酸橙，这片大地/)
   for (const message of messages) {
-    const uiCopyWithoutRuntimeKeyword = message.replace('酸橙，这片大地', '')
+    const uiCopyWithoutRuntimeKeyword = message.replace('酸橙，这片大地', '').replace('中文用户名', '')
     assert.doesNotMatch(uiCopyWithoutRuntimeKeyword, /[\u3400-\u9fff]/u)
   }
 })
@@ -141,7 +144,7 @@ test('semantic dynamic messages translate as complete sentences without altering
 test('reported mixed-copy surfaces use semantic messages instead of fragment translation', () => {
   const cases = [
     ['../packages/tavern-trace/src/client.js', ['trace.storage.summary', 'trace.keywords.configured', 'trace.keywords.matched', 'trace.bookBudget', 'trace.recordAligned', 'trace.activationPending', 'trace.diagnostics']],
-    ['../packages/world-book-library/src/client.js', ['world.currentSession', 'world.catalogItem', 'world.documentMeta', 'world.embeddedMeta', 'world.embeddedEmpty', 'world.diagnostics']],
+    ['../packages/world-book-library/src/client.js', ['world.currentSession', 'world.catalogItem', 'world.documentMeta', 'world.user.title', 'world.user.current', 'world.user.none', 'world.user.empty', 'world.user.order', 'world.user.duplicate', 'world.user.appended', 'world.user.editHint', 'world.embeddedMeta', 'world.embeddedEmpty', 'world.diagnostics']],
     ['../packages/character/src/client.js', ['character.embeddedBook']],
     ['../packages/session-template/src/client.js', ['template.currentSettingsReminder']],
   ]

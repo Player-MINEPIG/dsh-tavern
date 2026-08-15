@@ -20,6 +20,7 @@ loader-owned session policy ── worldBookIds[]
         ▼
 one world-book adapter
   ├─ selected standalone books
+  ├─ selected user's bound standalone books
   └─ selected character's embedded book
         │
         ▼
@@ -55,9 +56,11 @@ All routes remain behind the existing loopback Host, same-origin mutation, JSON 
 
 ## Runtime semantics
 
-The adapter resolves standalone books in saved selection order, followed by the selected character's embedded book. Each model is scanned through the existing bounded-history function and `computeWorldBookCandidates()`. Entry insertion order, secondary logic, group/probability policy and token budget therefore have one implementation for both sources. Loader projection remains responsible for exact before/after mapping, explicit approximation diagnostics and outlet omission.
+The adapter resolves explicit session books in saved selection order, appends the selected user's bound standalone books in their saved relationship order, deduplicates shared ids, and finally resolves the selected character's embedded book. Each model is scanned through the existing bounded-history function and `computeWorldBookCandidates()`. Entry insertion order, secondary logic, group/probability policy and token budget therefore have one implementation for every source. Loader projection remains responsible for exact before/after mapping, explicit approximation diagnostics and outlet omission.
 
-The current known runtime limits are unchanged: native regular-expression keys are disabled unless explicitly opted in; recursive/stateful effects and vector matching remain deferred; positions unsupported by DSH are explicitly approximated; and the just-submitted user message may not be available until the next turn because matching reads durable history.
+The combined World Book sidebar exposes these as three visually separate sources: editable explicit session bindings, a read-only summary of the current user's inherited bindings, and the character-bound embedded book editor. User/world-book relationships remain editable only in the User panel so there is one owner for that configuration; the World Book panel identifies the current user, ordered inherited book names, session duplicates and the effective ordering rule.
+
+The current known runtime limits are unchanged: native regular-expression keys are disabled unless explicitly opted in; recursive/stateful effects and vector matching remain deferred; and positions unsupported by DSH are explicitly approximated. Matching now combines bounded durable history with the current step's claimed input before system assembly, so a single-step session can activate a book on its first request without creating an artificial empty step or durable message.
 
 ## Automated acceptance
 
