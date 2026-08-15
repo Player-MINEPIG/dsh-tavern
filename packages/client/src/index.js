@@ -10,6 +10,11 @@ import { CharacterPanel, installCharacterStyles } from '../../character/src/clie
 import { WorldBookPanel, installWorldBookStyles } from '../../world-book-library/src/client.js'
 import { UserPanel, installUserStyles } from '../../user/src/client.js'
 import { installTavernTraceStyles, registerTavernTraceView } from '../../tavern-trace/src/client.js'
+import { SessionTemplatePanel } from '../../session-template/src/client.js'
+import {
+  createCleanSessionWorkflow,
+  workspaceTargetId,
+} from '../../session-template/src/client-state.js'
 import {
   TAVERN_MENU_ITEMS,
   clampLauncherAnchor,
@@ -22,7 +27,7 @@ const API_ROOT = '/dsh-tavern/api'
 const css = `
 .dtv-layer{position:absolute;inset:0;z-index:6;pointer-events:none;font-family:Inter,var(--dsw-font-family),sans-serif;color:var(--dsw-alias-label-primary)}
 .dtv-launcher{position:absolute;z-index:2;width:44px;height:44px;pointer-events:auto;overflow:hidden;border:0 solid transparent;border-radius:22px;background:transparent;box-shadow:none;transition:width .22s ease,height .22s ease,border-radius .22s ease,background-color .18s ease,box-shadow .18s ease;display:block}
-.dtv-launcher[data-open=true]{width:300px;height:276px;border-width:1px;border-color:var(--dsw-alias-border-l2);border-radius:18px;background:var(--dsw-alias-bg-base);box-shadow:var(--ds-shadow-3,0 12px 34px rgba(0,0,0,.24))}
+.dtv-launcher[data-open=true]{width:300px;height:326px;border-width:1px;border-color:var(--dsw-alias-border-l2);border-radius:18px;background:var(--dsw-alias-bg-base);box-shadow:var(--ds-shadow-3,0 12px 34px rgba(0,0,0,.24))}
 .dtv-ball-row{position:absolute;top:0;left:0;right:0;height:52px;display:flex;align-items:flex-start;pointer-events:none}.dtv-launcher[data-side=left] .dtv-ball-row{justify-content:flex-end}.dtv-launcher[data-vertical=up] .dtv-ball-row{top:auto;bottom:0;align-items:flex-end}
 .dtv-ball{pointer-events:auto;touch-action:none;user-select:none;width:44px;height:44px;flex:none;border:2px solid #fff;border-radius:50%;background:conic-gradient(from 225deg,#090909 0 56%,#b31319 56% 100%);box-shadow:0 0 0 2px #a50f16,0 6px 20px rgba(0,0,0,.34),inset 0 0 0 1px rgba(255,255,255,.28);color:#fff;font-size:13px;letter-spacing:-.5px;font-weight:850;text-shadow:0 1px 2px #000;cursor:grab;transition:filter .15s ease,transform .18s ease,box-shadow .18s ease}.dtv-ball:hover{filter:brightness(1.1);box-shadow:0 0 0 2px #d5222b,0 8px 24px rgba(0,0,0,.4),inset 0 0 0 1px rgba(255,255,255,.35)}.dtv-ball:active{cursor:grabbing}.dtv-launcher[data-open=true] .dtv-ball{transform:scale(.82) rotate(-8deg)}
 .dtv-menu{position:absolute;left:8px;right:8px;top:52px;bottom:8px;padding:1px;display:flex;flex-direction:column;gap:4px;opacity:0;transform:translateY(-6px);transition:opacity .13s ease .1s,transform .18s ease .08s}.dtv-launcher[data-open=true] .dtv-menu{opacity:1;transform:none}.dtv-launcher[data-vertical=up] .dtv-menu{top:8px;bottom:52px;transform:translateY(6px)}.dtv-launcher[data-open=true][data-vertical=up] .dtv-menu{transform:none}
@@ -32,6 +37,7 @@ const css = `
 .dtv-header{height:52px;box-sizing:border-box;display:flex;align-items:center;gap:8px;padding:0 14px;border-bottom:1px solid var(--dsw-alias-border-l2);flex:none}.dtv-title{font-size:14px;font-weight:650;flex:1}.dtv-close{border:0;background:transparent;color:var(--dsw-alias-label-tertiary);cursor:pointer;border-radius:7px;padding:6px 8px}.dtv-close:hover{background:var(--dsw-alias-interactive-bg-hover)}
 .dtv-body{min-height:0;overflow:auto;padding:12px;display:flex;flex-direction:column;gap:12px}.dtv-note{font-size:11px;line-height:1.5;color:var(--dsw-alias-label-tertiary);margin:0;overflow-wrap:anywhere}.dtv-status{font-size:11px;line-height:1.45;border-radius:7px;padding:8px 10px;background:var(--dsw-specific-tip);overflow-wrap:anywhere}.dtv-status[data-error=true]{color:var(--dsw-alias-state-error)}
 .dtv-actions{display:grid;grid-template-columns:1fr 1fr;gap:8px}.dtv-button{min-height:34px;border:1px solid var(--dsw-alias-border-l2);border-radius:8px;background:var(--dsw-alias-button-secondary-fill,var(--dsw-alias-bg-base));color:var(--dsw-alias-label-primary);cursor:pointer;padding:7px 10px;font-size:12px}.dtv-button:hover:not(:disabled){background:var(--dsw-alias-interactive-bg-hover)}.dtv-button:disabled{opacity:.5;cursor:default}
+.dtv-primary{background:var(--dsw-alias-button-primary-fill,#2677d9);border-color:transparent;color:var(--dsw-alias-button-primary-label,#fff)}.dtv-primary:hover:not(:disabled){filter:brightness(1.08);background:var(--dsw-alias-button-primary-fill,#2677d9)}.dtv-template-actions{display:grid;grid-template-columns:1fr 1fr;gap:7px}
 .dtv-resource{border:1px solid var(--dsw-alias-border-l1);border-radius:9px;padding:10px;display:flex;flex-direction:column;gap:7px}.dtv-resource-title{font-size:12px;font-weight:650}.dtv-resource-meta{font-size:11px;line-height:1.45;color:var(--dsw-alias-label-tertiary)}.dtv-list{margin:0;padding-left:18px;font-size:11px;line-height:1.55}
 .dtv-book-toolbar{display:grid;grid-template-columns:1fr 1fr 1fr;gap:7px}.dtv-entry{border:1px solid var(--dsw-alias-border-l1);border-radius:8px;background:var(--dsw-alias-bg-base);overflow:hidden}.dtv-entry>summary{list-style:none;cursor:pointer;padding:8px;display:flex;align-items:center;gap:7px;font-size:11px}.dtv-entry>summary::-webkit-details-marker{display:none}.dtv-entry-dot{width:8px;height:8px;flex:none;border-radius:50%;background:var(--dsw-alias-label-tertiary)}.dtv-entry[data-enabled=true] .dtv-entry-dot{background:var(--dsw-alias-state-success,#2fa36b)}.dtv-entry-name{font-weight:620;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.dtv-entry-state{margin-left:auto;flex:none;color:var(--dsw-alias-label-tertiary);font-size:10px}.dtv-entry-body{border-top:1px solid var(--dsw-alias-border-l1);padding:8px;display:flex;flex-direction:column;gap:8px}.dtv-field{display:flex;flex-direction:column;gap:4px}.dtv-label{font-size:10px;font-weight:620;color:var(--dsw-alias-label-tertiary)}.dtv-input,.dtv-select,.dtv-textarea{box-sizing:border-box;width:100%;border:1px solid var(--dsw-alias-border-l2);border-radius:7px;background:var(--dsw-alias-bg-base);color:var(--dsw-alias-label-primary);font:inherit;font-size:11px;padding:7px 8px}.dtv-input,.dtv-select{height:32px}.dtv-textarea{min-height:94px;resize:vertical;line-height:1.45}.dtv-entry-grid{display:grid;grid-template-columns:1fr 1fr;gap:7px}.dtv-checks{display:flex;flex-wrap:wrap;gap:10px}.dtv-check{display:flex;gap:5px;align-items:center;font-size:10px}.dtv-entry-actions{display:flex;justify-content:flex-end}.dtv-danger{color:var(--dsw-alias-state-error)}
 `
@@ -67,6 +73,21 @@ async function activeView(sessionId) {
   if (!response.ok || data?.ok === false) {
     const message = typeof data?.error === 'string' ? data.error : data?.error?.message
     throw new Error(message ?? `HTTP ${response.status}`)
+  }
+  return data
+}
+
+async function sessionConfigurationRequest(path, body) {
+  const response = await fetch(`${API_ROOT}${path}`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+  })
+  const data = await response.json().catch(() => null)
+  if (!response.ok || data?.ok === false) {
+    const error = new Error(data?.error?.message ?? data?.error ?? `HTTP ${response.status}`)
+    error.diagnostics = data?.error?.diagnostics ?? []
+    throw error
   }
   return data
 }
@@ -298,7 +319,7 @@ function WorldInfoPanel({ sessionId, close }) {
   )
 }
 
-function TavernShell({ useSessions }) {
+function TavernShell({ useSessions, useWorkspaces, createCleanSession }) {
   const [menuOpen, setMenuOpen] = useState(false)
   const [surface, setSurface] = useState(null)
   const [anchor, setAnchor] = useState(initialLauncherAnchor)
@@ -309,6 +330,7 @@ function TavernShell({ useSessions }) {
   const statusGeneration = useRef(0)
   const sessionId = useSessions(state => state.current)
   const sessionBlank = useSessions(state => state.current === undefined || state.current === null ? true : state.byId?.[state.current]?.blank === true)
+  const workspaceId = useWorkspaces(state => workspaceTargetId(state, sessionId))
   const close = () => setSurface(null)
 
   const refreshStatus = useCallback(async () => {
@@ -422,6 +444,8 @@ function TavernShell({ useSessions }) {
     panel = h(WorldBookPanel, { sessionId, close })
   } else if (surface === 'user') {
     panel = h(UserPanel, { sessionId, sessionBlank, close })
+  } else if (surface === 'session-template') {
+    panel = h(SessionTemplatePanel, { sessionId, workspaceId, createCleanSession, close })
   }
 
   const placement = launcherPlacement(anchor, viewport(), menuOpen)
@@ -451,22 +475,23 @@ function TavernShell({ useSessions }) {
       menuOpen ? h('div', { className: 'dtv-menu', role: 'menu' },
         h('div', { className: 'dtv-menu-title', 'aria-live': 'polite' }, statusError === '' ? `Tavern · ${sessionId || '无会话'}` : `状态同步失败：${statusError}`),
         ...TAVERN_MENU_ITEMS.map(item => {
-          const status = statuses[item.id]
-          const stateLabel = status.bound ? '已绑定' : '未绑定'
+          const status = statuses[item.id] ?? { bound: false, count: 0, title: item.emptyTitle }
+          const stateLabel = item.binding === false ? '' : status.bound ? '已绑定' : '未绑定'
+          const accessibleStatus = [status.title, stateLabel].filter(Boolean).join('，')
           return h('button', {
             className: 'dtv-menu-item',
             type: 'button',
             role: 'menuitem',
             key: item.id,
-            title: `${item.label}：${status.title}（${stateLabel}）`,
+            title: `${item.label}：${accessibleStatus}`,
             'data-available': item.available,
             'data-active': surface === item.id,
-            'data-bound': status.bound,
+            'data-bound': item.binding === false ? undefined : status.bound,
             'aria-current': surface === item.id ? 'page' : undefined,
-            'aria-label': `${item.label}，${status.title}，${stateLabel}`,
+            'aria-label': `${item.label}，${accessibleStatus}`,
             onClick: () => open(item.id),
           },
-          h('span', { className: 'dtv-binding-dot', 'aria-hidden': 'true' }),
+          item.binding === false ? h('span', { 'aria-hidden': 'true' }) : h('span', { className: 'dtv-binding-dot', 'aria-hidden': 'true' }),
           h('span', { className: 'dtv-item-copy' },
             h('span', { className: 'dtv-item-label' }, item.label),
             h('span', { className: 'dtv-item-status' }, status.title),
@@ -490,7 +515,7 @@ function installStyles() {
 }
 
 export const name = 'dsh-tavern'
-export const inject = ['slots', 'layout']
+export const inject = ['slots', 'layout', 'sessions', 'workspaces']
 
 export function apply(ctx) {
   installPresetStyles()
@@ -504,6 +529,19 @@ export function apply(ctx) {
     name: 'shell.overlay',
     id: 'dsh-tavern-launcher',
     order: 80,
-    inject: () => ({}),
+    inject: () => ({
+      createCleanSession: ({ workspaceId, source }) => createCleanSessionWorkflow({
+        workspaceId,
+        source,
+        preview: selectedSource => sessionConfigurationRequest('/session-configurations/preview', { source: selectedSource }),
+        connectWorkspace: id => ctx.workspaces.connectWorkspace(id),
+        applySelection: (targetSessionId, selectedSource) => sessionConfigurationRequest('/session-configurations/apply', {
+          targetSessionId,
+          source: selectedSource,
+        }),
+        openSession: id => ctx.sessions.open(id),
+        refresh: () => window.dispatchEvent(new Event('dsh-tavern:refresh')),
+      }),
+    }),
   }, TavernShell))
 }

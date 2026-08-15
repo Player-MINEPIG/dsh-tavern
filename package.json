@@ -14,6 +14,7 @@
     "./character": "./packages/character/src/index.js",
     "./user": "./packages/user/src/index.js",
     "./trace": "./packages/tavern-trace/src/index.js",
+    "./session-template": "./packages/session-template/src/index.js",
     "./client": "./dist/client.js",
     "./package.json": "./package.json"
   },

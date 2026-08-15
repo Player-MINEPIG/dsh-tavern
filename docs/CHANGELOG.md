@@ -66,6 +66,18 @@ world books while keeping runtime composition in the unified loader.
   including the new loader policy and browser state helper while excluding
   tests, docs, runtime data and caches.
 
+## 2026-08-15 — Clean sessions and Tavern configuration templates
+
+Purpose: start a clean DSH conversation while carrying only the current or saved Tavern resource configuration.
+
+- Added bounded, atomic configuration-template storage with create/name, persistent selection, rename/update and delete workflows.
+- Added current-settings and template preview/apply APIs under the existing secured Tavern dispatcher. Missing preset, character/greeting, user or independent world-book ids remain visible as structured diagnostics and block creation.
+- Used DSH rc.6's public `workspaces.connectWorkspace()` New Session seam and `sessions.open()` navigation seam. Direct/private SessionRuntime creation, history forks and fabricated messages are not used.
+- Applied the complete target selection only after DSH returns a real blank session and before navigation. Preview and apply both validate resources; capacity/write failures retain the previous store state and never navigate.
+- Added the **新会话** launcher panel and shared refresh hand-off. Templates contain only preset, character/greeting/switches, user and world-book selection fields; durable history, Trace, Inbox and running state are absent by construction.
+- Added store, API, client-workflow, architecture and launcher regressions plus `docs/session-template/IMPLEMENTATION_AND_ACCEPTANCE.md`.
+- Verification: `npm run check` rebuilt the browser bundle and completed 142 tests with zero failures; the one skipped case remains the opt-in external acceptance fixture.
+
 ## 2026-08-15 — Deterministic local-package refresh
 
 Purpose: prevent a development install from loading a mixed package after a

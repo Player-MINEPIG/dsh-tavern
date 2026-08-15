@@ -15,6 +15,7 @@ test('one Tavern launcher exposes stable resource surfaces', () => {
     'character',
     'world-info',
     'user',
+    'session-template',
   ])
   assert.equal(surfaceTitle('world-info'), '世界书')
   assert.equal(TAVERN_MENU_ITEMS.find(item => item.id === 'user').available, true)
@@ -26,7 +27,7 @@ test('floating launcher clamps its drag anchor and expands toward available spac
     side: 'left',
     vertical: 'up',
     left: 492,
-    top: 316,
+    top: 266,
     anchor: { x: 748, y: 548 },
   })
 })
@@ -113,7 +114,7 @@ test('only the client composition root owns the Tavern shell overlay', () => {
   assert.match(root, /}, 'DT'\)\)/)
   assert.doesNotMatch(root, /}, 'ST'\)\)/)
   assert.match(root, /'data-active': surface === item\.id/)
-  assert.match(root, /'data-bound': status\.bound/)
+  assert.match(root, /'data-bound': item\.binding === false \? undefined : status\.bound/)
   assert.match(root, /setActiveSnapshot\(null\)[\s\S]*refreshStatus\(\)/)
   assert.match(root, /event\.key !== 'Escape'/)
   assert.match(root, /'data-surface-open': surface !== null/)
@@ -124,6 +125,11 @@ test('only the client composition root owns the Tavern shell overlay', () => {
   assert.doesNotMatch(user, /slots\.inject|avatar|image\/|<img/)
   assert.match(root, /WorldBookPanel/)
   assert.match(root, /UserPanel/)
+  assert.match(root, /SessionTemplatePanel/)
+  assert.match(root, /ctx\.workspaces\.connectWorkspace/)
+  assert.match(root, /ctx\.sessions\.open/)
+  assert.match(root, /session-configurations\/preview/)
+  assert.match(root, /session-configurations\/apply/)
 })
 
 test('standalone world-book panel exposes CRUD, multi-binding and all required entry controls', () => {

@@ -29,6 +29,12 @@ import {
   createTavernTraceApiHandler,
   isTavernTraceApiPath,
 } from '../../tavern-trace/src/index.js'
+import {
+  SessionConfigurationService,
+  SessionTemplateStore,
+  createSessionTemplateApiHandler,
+  isSessionTemplateApiPath,
+} from '../../session-template/src/index.js'
 
 export const name = 'dsh-tavern'
 export const inject = ['systemPrompt']
@@ -186,6 +192,7 @@ export function apply(ctx, config = {}) {
   const worldBookStore = new WorldBookStore(storageDir)
   const userStore = new UserStore(storageDir)
   const userWorldBooks = new UserWorldBookBindingStore(storageDir, config.userWorldBooks)
+  const sessionTemplateStore = new SessionTemplateStore(storageDir, config.sessionTemplates)
   const selections = new SessionSelectionStore(storageDir, {
     ...config.sessionSelections,
     defaultSelection: () => ({ presetId: store.state.selectedId }),
@@ -225,6 +232,14 @@ export function apply(ctx, config = {}) {
   const worldBookSelectionPolicy = createWorldBookSelectionPolicy(worldBookStore, selections, userWorldBooks)
   const userSelectionPolicy = createUserSelectionPolicy(userStore, selections, userWorldBooks)
   const userWorldBookBindingPolicy = createUserWorldBookBindingPolicy(userStore, worldBookStore, userWorldBooks)
+  const sessionConfigurations = new SessionConfigurationService({
+    templates: sessionTemplateStore,
+    selections,
+    presets: store,
+    characters: characterStore,
+    users: userStore,
+    worldBooks: worldBookStore,
+  })
 
   const selectionPolicy = {
     selectedPresetId: (sessionId) => runtime.selection({ sessionId }).presetId,
@@ -338,8 +353,15 @@ export function apply(ctx, config = {}) {
       },
     })
     const traceApi = createTavernTraceApiHandler(traceStore)
+    const sessionTemplateApi = createSessionTemplateApiHandler(sessionTemplateStore, sessionConfigurations, {
+      onChange: change => {
+        if (change.kind === 'session-configuration-applied') notifyChange()
+      },
+    })
     const api = secureTavernApi(
-      (req, res) => isUserApiPath(req.url)
+      (req, res) => isSessionTemplateApiPath(req.url)
+        ? sessionTemplateApi(req, res)
+        : isUserApiPath(req.url)
         ? userApi(req, res)
         : isTavernTraceApiPath(req.url)
           ? traceApi(req, res)
@@ -368,6 +390,8 @@ export function apply(ctx, config = {}) {
     worldBookStore: { value: worldBookStore, enumerable: false },
     userStore: { value: userStore, enumerable: false },
     userWorldBooks: { value: userWorldBooks, enumerable: false },
+    sessionTemplateStore: { value: sessionTemplateStore, enumerable: false },
+    sessionConfigurations: { value: sessionConfigurations, enumerable: false },
     traceStore: { value: traceStore, enumerable: false },
     traceRecorder: { value: traceRecorder, enumerable: false },
     pendingInputProjection: { value: pendingInput, enumerable: false },
@@ -419,4 +443,13 @@ export { PendingInputProjection, pendingInputProjectionConstants } from './pendi
 export { WorldBookStore, createWorldBookApiHandler } from '../../world-book-library/src/index.js'
 export { secureTavernApi, apiSecurityConstants } from './api-security.js'
 export { TavernTraceRecorder, TavernTraceStore } from '../../tavern-trace/src/index.js'
+export {
+  SessionConfigurationError,
+  SessionConfigurationService,
+  SessionTemplateLimitError,
+  SessionTemplateStore,
+  createSessionTemplateApiHandler,
+  sessionTemplateApiConstants,
+  sessionTemplateStoreConstants,
+} from '../../session-template/src/index.js'
 export { PresetStore } from '../../preset/src/index.js'

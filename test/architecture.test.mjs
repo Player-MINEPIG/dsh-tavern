@@ -89,3 +89,16 @@ test('user-to-world-book relationships are owned by loader policy, not either re
   assert.doesNotMatch(worldBookStore, /userIds|user-world-book-bindings/)
   assert.doesNotMatch(policy, /packages\/user|packages\/world-book|systemPrompt|agent\/request/)
 })
+
+test('session-template use-case stores configuration projections without owning DSH Host seams', () => {
+  const sessionTemplate = [
+    read('../packages/session-template/src/index.js'),
+    read('../packages/session-template/src/model.js'),
+    read('../packages/session-template/src/store.js'),
+    read('../packages/session-template/src/service.js'),
+    read('../packages/session-template/src/server.js'),
+  ].join('\n')
+  assert.doesNotMatch(sessionTemplate, /tavern-loader|@deepseek-ai|systemPrompt\.section|agent\/request|sessions\.create|connectWorkspace/)
+  assert.match(sessionTemplate, /normalizeTemplateSelection/)
+  assert.match(sessionTemplate, /session-configurations\/apply/)
+})

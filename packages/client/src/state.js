@@ -3,10 +3,11 @@ export const TAVERN_MENU_ITEMS = Object.freeze([
   { id: 'character', label: '角色卡', emptyTitle: '未绑定角色', available: true },
   { id: 'world-info', label: '世界书', emptyTitle: '未绑定世界书', available: true },
   { id: 'user', label: '用户', emptyTitle: '未绑定用户', available: true },
+  { id: 'session-template', label: '新会话', emptyTitle: '当前设置或配置模板', available: true, binding: false },
 ])
 
 export const TAVERN_LAUNCHER_SIZE = 44
-export const TAVERN_LAUNCHER_PANEL = Object.freeze({ width: 300, height: 276 })
+export const TAVERN_LAUNCHER_PANEL = Object.freeze({ width: 300, height: 326 })
 
 function isRecord(value) {
   return value !== null && typeof value === 'object' && !Array.isArray(value)
