@@ -797,7 +797,7 @@ function Field3({ label, children }) {
   return (0, import_react3.createElement)("label", { className: "dwb-field" }, (0, import_react3.createElement)("span", { className: "dwb-label" }, label), children);
 }
 function parseKeywords(value) {
-  return value.split(",").map((item) => item.trim()).filter(Boolean);
+  return value.split(/[,，]/u).map((item) => item.trim()).filter(Boolean);
 }
 function embeddedPosition(entry) {
   const value = entry?.extensions?.position;
@@ -822,8 +822,8 @@ function EmbeddedEntryEditor({ entry, index, update, remove }) {
       "div",
       { className: "dwb-entry-body" },
       (0, import_react3.createElement)(Field3, { label: "\u6761\u76EE\u6807\u9898" }, (0, import_react3.createElement)("input", { className: "dwb-input", value: entry.comment ?? entry.name ?? "", onChange: (event) => patch({ comment: event.target.value }) })),
-      (0, import_react3.createElement)(Field3, { label: "\u4E3B\u5173\u952E\u8BCD\uFF08\u9017\u53F7\u5206\u9694\uFF09" }, (0, import_react3.createElement)("input", { className: "dwb-input", value: (entry.keys ?? []).join(", "), onChange: (event) => patch({ keys: parseKeywords(event.target.value) }) })),
-      (0, import_react3.createElement)(Field3, { label: "\u9644\u52A0\u5173\u952E\u8BCD\uFF08\u9017\u53F7\u5206\u9694\uFF09" }, (0, import_react3.createElement)("input", { className: "dwb-input", value: secondaryKeys.join(", "), onChange: (event) => {
+      (0, import_react3.createElement)(Field3, { label: "\u4E3B\u5173\u952E\u8BCD\uFF08\u652F\u6301\u4E2D\u6587\u3001\u82F1\u6587\u9017\u53F7\u5206\u9694\uFF09" }, (0, import_react3.createElement)("input", { className: "dwb-input", value: (entry.keys ?? []).join(", "), onChange: (event) => patch({ keys: parseKeywords(event.target.value) }) })),
+      (0, import_react3.createElement)(Field3, { label: "\u9644\u52A0\u5173\u952E\u8BCD\uFF08\u652F\u6301\u4E2D\u6587\u3001\u82F1\u6587\u9017\u53F7\u5206\u9694\uFF09" }, (0, import_react3.createElement)("input", { className: "dwb-input", value: secondaryKeys.join(", "), onChange: (event) => {
         const keys = parseKeywords(event.target.value);
         patch({ secondary_keys: keys, selective: keys.length > 0 });
       } })),
@@ -902,8 +902,11 @@ function EntryEditor({ entry, index, update, remove }) {
       "div",
       { className: "dwb-entry-body" },
       (0, import_react3.createElement)(Field3, { label: "\u6761\u76EE\u6807\u9898" }, (0, import_react3.createElement)("input", { className: "dwb-input", value: entry.comment ?? "", onChange: (event) => patch({ comment: event.target.value }) })),
-      (0, import_react3.createElement)(Field3, { label: "\u4E3B\u5173\u952E\u8BCD\uFF08\u9017\u53F7\u5206\u9694\uFF09" }, (0, import_react3.createElement)("input", { className: "dwb-input", value: (entry.keys ?? []).join(", "), onChange: (event) => patch({ keys: parseKeywords(event.target.value) }) })),
-      (0, import_react3.createElement)(Field3, { label: "\u9644\u52A0\u5173\u952E\u8BCD\uFF08\u9017\u53F7\u5206\u9694\uFF09" }, (0, import_react3.createElement)("input", { className: "dwb-input", value: secondary.join(", "), onChange: (event) => patch({ secondaryKeys: parseKeywords(event.target.value), selective: parseKeywords(event.target.value).length > 0 }) })),
+      (0, import_react3.createElement)(Field3, { label: "\u4E3B\u5173\u952E\u8BCD\uFF08\u652F\u6301\u4E2D\u6587\u3001\u82F1\u6587\u9017\u53F7\u5206\u9694\uFF09" }, (0, import_react3.createElement)("input", { className: "dwb-input", value: (entry.keys ?? []).join(", "), onChange: (event) => patch({ keys: parseKeywords(event.target.value) }) })),
+      (0, import_react3.createElement)(Field3, { label: "\u9644\u52A0\u5173\u952E\u8BCD\uFF08\u652F\u6301\u4E2D\u6587\u3001\u82F1\u6587\u9017\u53F7\u5206\u9694\uFF09" }, (0, import_react3.createElement)("input", { className: "dwb-input", value: secondary.join(", "), onChange: (event) => {
+        const keys = parseKeywords(event.target.value);
+        patch({ secondaryKeys: keys, selective: keys.length > 0 });
+      } })),
       secondary.length > 0 ? (0, import_react3.createElement)(Field3, { label: "Secondary logic" }, (0, import_react3.createElement)(
         "select",
         { className: "dwb-select", value: entry.selectiveLogic ?? "and_any", onChange: (event) => patch({ selectiveLogic: event.target.value, selective: true }) },
@@ -1336,7 +1339,7 @@ function UserPanel({ sessionId, sessionBlank, close }) {
           "div",
           { className: "dtu-actions" },
           (0, import_react4.createElement)("button", { className: "dtu-button dtu-primary", type: "button", disabled: busy, onClick: save }, "\u4FDD\u5B58\u8D44\u6E90"),
-          (0, import_react4.createElement)("button", { className: "dtu-button", type: "button", disabled: busy || !sessionId, onClick: bind }, selectedUserId === draft.id ? "\u5237\u65B0\u4F1A\u8BDD\u7ED1\u5B9A" : "\u7ED1\u5B9A\u5230\u5F53\u524D\u4F1A\u8BDD")
+          (0, import_react4.createElement)("button", { className: "dtu-button dtu-primary", type: "button", disabled: busy || !sessionId, onClick: bind }, selectedUserId === draft.id ? "\u5237\u65B0\u4F1A\u8BDD\u7ED1\u5B9A" : "\u7ED1\u5B9A\u5230\u5F53\u524D\u4F1A\u8BDD")
         ),
         (0, import_react4.createElement)("button", { className: "dtu-button", type: "button", disabled: busy || !sessionId || selectedUserId === null, onClick: unbind }, "\u89E3\u9664\u5F53\u524D\u4F1A\u8BDD\u7ED1\u5B9A"),
         (0, import_react4.createElement)("p", { className: "dtu-note" }, "\u7528\u6237\u8D44\u6E90\u4E0D\u5305\u542B\u5934\u50CF\uFF0C\u4E5F\u4E0D\u4F1A\u8986\u76D6 DSH Agent \u8EAB\u4EFD\u3002loader \u53EA\u5728\u7EDF\u4E00 Tavern profile \u4E2D\u89E3\u6790\u540D\u5B57\u5B8F\u5E76\u653E\u7F6E\u4E00\u6B21\u63CF\u8FF0\u3002"),
@@ -1411,20 +1414,20 @@ function resourceCard(label, value) {
     value?.id ? (0, import_react5.createElement)("div", { className: "dttrace-meta" }, value.id) : null
   );
 }
-function userInjectionText(value) {
-  if (value?.selected !== true) return "\u672A\u9009\u62E9\u7528\u6237\u8D44\u6E90\uFF0C\u56E0\u6B64\u6CA1\u6709\u7528\u6237\u63CF\u8FF0\u63D2\u5165\u3002";
-  if (value.descriptionAvailable !== true) return "\u5DF2\u9009\u62E9\u7528\u6237\u8D44\u6E90\uFF1B\u63CF\u8FF0\u4E3A\u7A7A\uFF0C\u56E0\u6B64\u6CA1\u6709\u63CF\u8FF0\u6B63\u6587\u9700\u8981\u63D2\u5165\u3002\u7528\u6237\u540D\u79F0\u4ECD\u5199\u5165 Tavern profile \u5934\uFF0C\u5E76\u53C2\u4E0E {{user}} \u5B8F\u66FF\u6362\u3002";
-  const placement = String(value.descriptionPlacement ?? "none");
-  const label = placement === "fallback" ? "\u9884\u8BBE\u6CA1\u6709\u542F\u7528\u7528\u6237\u63CF\u8FF0\u4F4D\u7F6E\uFF0C\u4F7F\u7528\u7A33\u5B9A\u56DE\u9000\u4F4D\u7F6E" : placement.startsWith("preset-marker:") ? `\u9884\u8BBE\u6807\u8BB0 ${placement.slice("preset-marker:".length)}` : placement.startsWith("preset-macro:") ? `\u9884\u8BBE prompt ${placement.slice("preset-macro:".length)} \u5185\u7684 {{persona}} \u5B8F` : "\u672A\u627E\u5230\u63D2\u5165\u4F4D\u7F6E";
-  return `\u7528\u6237\u63CF\u8FF0\uFF1A${value.descriptionCharacters} \u4E2A\u6E90\u5B57\u7B26\uFF0C\u63D2\u5165 ${value.descriptionInsertions} \u6B21\uFF1B\u4F4D\u7F6E\uFF1A${label}\u3002{{user}} \u53EA\u66FF\u6362\u540D\u79F0\uFF0C\u4E0D\u4F1A\u518D\u6B21\u63D2\u5165\u7528\u6237\u63CF\u8FF0\u3002`;
-}
 function keywords(decision) {
+  const configuredPrimary = decision.primaryKeys ?? [];
+  const configuredSecondary = decision.secondaryKeys ?? [];
   const primary = decision.primaryMatches ?? [];
   const secondary = decision.secondaryMatches ?? [];
-  const parts = [];
-  if (primary.length > 0) parts.push(`\u4E3B\uFF1A${primary.join("\u3001")}`);
-  if (secondary.length > 0) parts.push(`\u9644\u52A0\uFF1A${secondary.join("\u3001")}`);
-  return parts.length === 0 ? "\u65E0\u547D\u4E2D\u5173\u952E\u8BCD" : parts.join(" \xB7 ");
+  const configured = [
+    configuredPrimary.length > 0 ? `\u4E3B\uFF1A${configuredPrimary.map((value) => JSON.stringify(value)).join("\u3001")}` : null,
+    configuredSecondary.length > 0 ? `\u9644\u52A0\uFF1A${configuredSecondary.map((value) => JSON.stringify(value)).join("\u3001")}` : null
+  ].filter(Boolean).join(" \xB7 ") || "\u65E0\u914D\u7F6E\u5173\u952E\u8BCD";
+  const matched = [
+    primary.length > 0 ? `\u4E3B\uFF1A${primary.map((value) => JSON.stringify(value)).join("\u3001")}` : null,
+    secondary.length > 0 ? `\u9644\u52A0\uFF1A${secondary.map((value) => JSON.stringify(value)).join("\u3001")}` : null
+  ].filter(Boolean).join(" \xB7 ") || "\u65E0\u5173\u952E\u8BCD\u547D\u4E2D";
+  return { configured, matched };
 }
 function decisionMeta(value) {
   const parts = [];
@@ -1446,27 +1449,31 @@ function WorldBookAudit({ book }) {
     { className: "dttrace-book" },
     (0, import_react5.createElement)("div", { className: "dttrace-section-title" }, name2),
     (0, import_react5.createElement)("div", { className: "dttrace-meta" }, `\u9884\u7B97\uFF1A${book.budget.used}${book.budget.limit === null ? "" : ` / ${book.budget.limit}`} tokens \xB7 ${book.decisions.length} \u6761\u51B3\u7B56`),
-    ...book.decisions.map((item, index) => (0, import_react5.createElement)(
-      "div",
-      {
-        className: "dttrace-decision",
-        "data-included": item.decision === "included",
-        key: `${item.entryId ?? "entry"}-${index}`
-      },
-      (0, import_react5.createElement)("div", { className: "dttrace-decision-state" }, item.decision === "included" ? "\u5DF2\u63D2\u5165" : "\u5DF2\u62D2\u7EDD"),
-      (0, import_react5.createElement)(
+    ...book.decisions.map((item, index) => {
+      const keywordState = keywords(item);
+      return (0, import_react5.createElement)(
         "div",
-        null,
-        (0, import_react5.createElement)("div", null, item.entryName || `\u6761\u76EE ${String(item.entryId ?? index + 1)}`),
-        (0, import_react5.createElement)("div", { className: "dttrace-meta" }, reasonLabels[item.reason] ?? item.reason)
-      ),
-      (0, import_react5.createElement)(
-        "div",
-        { className: "dttrace-keywords" },
-        (0, import_react5.createElement)("div", null, keywords(item)),
-        (0, import_react5.createElement)("div", { className: "dttrace-meta" }, decisionMeta(item))
-      )
-    ))
+        {
+          className: "dttrace-decision",
+          "data-included": item.decision === "included",
+          key: `${item.entryId ?? "entry"}-${index}`
+        },
+        (0, import_react5.createElement)("div", { className: "dttrace-decision-state" }, item.decision === "included" ? "\u5DF2\u63D2\u5165" : "\u5DF2\u62D2\u7EDD"),
+        (0, import_react5.createElement)(
+          "div",
+          null,
+          (0, import_react5.createElement)("div", null, item.entryName || `\u6761\u76EE ${String(item.entryId ?? index + 1)}`),
+          (0, import_react5.createElement)("div", { className: "dttrace-meta" }, reasonLabels[item.reason] ?? item.reason)
+        ),
+        (0, import_react5.createElement)(
+          "div",
+          { className: "dttrace-keywords" },
+          (0, import_react5.createElement)("div", null, `\u914D\u7F6E\u5173\u952E\u8BCD\uFF1A${keywordState.configured}`),
+          (0, import_react5.createElement)("div", null, `\u672C\u8F6E\u547D\u4E2D\uFF1A${keywordState.matched}`),
+          (0, import_react5.createElement)("div", { className: "dttrace-meta" }, decisionMeta(item))
+        )
+      );
+    })
   );
 }
 function TraceRecord({ record, latest }) {
@@ -1497,13 +1504,13 @@ function TraceRecord({ record, latest }) {
         "div",
         { className: "dttrace-section" },
         (0, import_react5.createElement)("div", { className: "dttrace-section-title" }, "\u7EC4\u5408\u4E0E\u63D2\u5165"),
-        (0, import_react5.createElement)("div", { className: "dttrace-meta" }, `${record.assembly.profileSection} \xB7 order ${record.assembly.profileOrder} \xB7 ${record.assembly.systemPromptMode} \xB7 ${record.assembly.systemCharacters} characters \xB7 call config: ${Object.keys(record.assembly.callConfig ?? {}).join(", ") || "\u65E0"}`),
-        (0, import_react5.createElement)("div", { className: "dttrace-meta" }, userInjectionText(record.assembly.userInjection))
+        (0, import_react5.createElement)("div", { className: "dttrace-meta" }, `${record.assembly.profileSection} \xB7 order ${record.assembly.profileOrder} \xB7 ${record.assembly.systemPromptMode} \xB7 ${record.assembly.systemCharacters} characters \xB7 call config: ${Object.keys(record.assembly.callConfig ?? {}).join(", ") || "\u65E0"}`)
       ),
       record.worldBooks?.length > 0 ? (0, import_react5.createElement)(
         "div",
         { className: "dttrace-section" },
         (0, import_react5.createElement)("div", { className: "dttrace-section-title" }, "\u4E16\u754C\u4E66\u5339\u914D\u51B3\u7B56"),
+        (0, import_react5.createElement)("div", { className: "dttrace-meta" }, "\u5339\u914D\u57FA\u4E8E system assembly \u5F53\u65F6\u53EF\u89C1\u7684\u6301\u4E45\u5316\u4F1A\u8BDD\u5386\u53F2\uFF1B\u521A\u63D0\u4EA4\u7684\u5F53\u524D\u8F6E\u8F93\u5165\u901A\u5E38\u8981\u5230\u4E0B\u4E00\u8F6E\u626B\u63CF\u624D\u53EF\u89C1\u3002"),
         ...record.worldBooks.map((book, index) => (0, import_react5.createElement)(WorldBookAudit, { book, key: `${book.resource?.id ?? "book"}-${index}` }))
       ) : (0, import_react5.createElement)("div", { className: "dttrace-note" }, "\u672C\u8F6E\u6CA1\u6709\u53EF\u5BA1\u8BA1\u7684\u4E16\u754C\u4E66\u5339\u914D\u6765\u6E90\u3002"),
       record.diagnostics?.length > 0 ? (0, import_react5.createElement)(
@@ -1512,7 +1519,7 @@ function TraceRecord({ record, latest }) {
         (0, import_react5.createElement)("div", { className: "dttrace-section-title" }, `\u8BCA\u65AD\uFF08${record.diagnostics.length}\uFF09`),
         (0, import_react5.createElement)("ul", { className: "dttrace-list" }, ...record.diagnostics.map((item, index) => (0, import_react5.createElement)("li", { key: `${item.code}-${index}` }, `${item.code}: ${item.message}`)))
       ) : null,
-      (0, import_react5.createElement)("p", { className: "dttrace-note" }, "\u9690\u79C1\u8FB9\u754C\uFF1A\u8FD9\u91CC\u53EA\u4FDD\u5B58\u8D44\u6E90\u6458\u8981\u3001\u547D\u4E2D\u5173\u952E\u8BCD\u3001\u51B3\u7B56\u539F\u56E0\u3001\u4F4D\u7F6E\u3001\u9884\u7B97\u548C SHA-256 \u6458\u8981\uFF1B\u4E0D\u4FDD\u5B58 preset/\u89D2\u8272/user/\u4E16\u754C\u4E66\u6B63\u6587\u3001\u5B8C\u6574 system\u3001\u804A\u5929\u5386\u53F2\u3001header \u5185\u5BB9\u6216 tool payload\u3002")
+      (0, import_react5.createElement)("p", { className: "dttrace-note" }, "\u9690\u79C1\u8FB9\u754C\uFF1A\u8FD9\u91CC\u53EA\u4FDD\u5B58\u8D44\u6E90\u6458\u8981\u3001\u914D\u7F6E/\u547D\u4E2D\u5173\u952E\u8BCD\u3001\u51B3\u7B56\u539F\u56E0\u3001\u4F4D\u7F6E\u3001\u9884\u7B97\u548C SHA-256 \u6458\u8981\uFF1B\u4E0D\u4FDD\u5B58 preset/\u89D2\u8272/user/\u4E16\u754C\u4E66\u6B63\u6587\u3001\u5B8C\u6574 system\u3001\u804A\u5929\u5386\u53F2\u3001header \u5185\u5BB9\u6216 tool payload\u3002")
     )
   );
 }

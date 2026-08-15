@@ -50,6 +50,8 @@ function snapshot(marker = 'SYNTHETIC_PROFILE_MARKER') {
             entryName: 'Synthetic entry',
             decision: 'included',
             reason: 'secondary-and_any-match',
+            primaryKeys: ['harbor', 'quay'],
+            secondaryKeys: ['lantern'],
             primaryMatches: ['harbor'],
             secondaryMatches: ['lantern'],
             secondaryLogic: 'and_any',
@@ -66,6 +68,8 @@ function snapshot(marker = 'SYNTHETIC_PROFILE_MARKER') {
             entryName: 'Rejected synthetic entry',
             decision: 'rejected',
             reason: 'budget-exceeded',
+            primaryKeys: ['harbor'],
+            secondaryKeys: [],
             primaryMatches: ['harbor'],
             secondaryMatches: [],
             tokenCost: 30,
@@ -121,8 +125,8 @@ test('Trace correlates turn/step to request/header while persisting only minimiz
     assert.equal(pending.worldBooks[0].decisions[0].reason, 'secondary-and_any-match')
     assert.equal(pending.worldBooks[0].decisions[1].reason, 'budget-exceeded')
     assert.equal(pending.resources.userProfile.name, 'Synthetic user')
-    assert.equal(pending.assembly.userInjection.descriptionInsertions, 1)
-    assert.equal(pending.assembly.userInjection.descriptionPlacement, 'preset-marker:personaDescription')
+    assert.deepEqual(pending.worldBooks[0].decisions[0].primaryKeys, ['harbor', 'quay'])
+    assert.deepEqual(pending.worldBooks[0].decisions[0].secondaryKeys, ['lantern'])
     assert.equal(pending.sensitiveContentStored, false)
     assert.equal(pending.entersModelHistory, false)
 

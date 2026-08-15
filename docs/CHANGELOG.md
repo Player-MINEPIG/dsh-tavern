@@ -4,11 +4,11 @@ This is the staged implementation log for the prompt-preset experiment. It is
 kept separately from the product README so reviewers can follow intent,
 decisions, verification, and known limits chronologically.
 
-## 2026-08-15 — World-book UI clarity and user-injection Trace
+## 2026-08-15 — World-book UI clarity and compact Trace
 
 Purpose: make the accepted standalone/embedded world-book composition
-unambiguous in the UI and provide privacy-preserving evidence that a selected
-user description reached the assembled request.
+unambiguous in the UI and make keyword decisions explainable without expanding
+Trace into an incomplete per-resource insertion debugger.
 
 - External standalone books now keep their internal title when present and
   otherwise derive a clean title from the imported filename without `.json`.
@@ -22,20 +22,25 @@ user description reached the assembled request.
 - Raised default body/control typography across preset, character, world-book,
   user and Trace panels. The accepted launcher geometry and behavior remain
   unchanged; configurable scale/language belongs to a later settings surface.
-- Extended loader audit metadata and Tavern Trace with user-description source
-  length, one-time insertion count and placement kind. No user description,
-  prompt body, header body or history is copied into Trace persistence.
+- Tavern Trace now separates configured main/secondary keywords from keywords
+  actually matched this turn. It remains resource-level for preset, character
+  and user; no resource body, prompt body, header body or history is copied.
+- Keyword editors accept both Chinese and English commas and state this in the
+  labels. The user session-bind action now uses the shared primary blue style.
+- Literal matcher coverage now includes Chinese and English main keywords. The
+  Trace UI also states the existing DSH timing boundary: current claimed input
+  is normally unavailable until the following system assembly.
 - Added regression coverage proving that `personaDescription` and `{{persona}}`
   consume a user description at most once. `{{user}}` remains a name macro and
   may intentionally occur wherever a preset author placed it.
 
 Verification:
 
-- `npm run check` completed 118 tests: 117 passed, none failed, and the optional
+- `npm run check` completed 121 tests: 120 passed, none failed, and the optional
   external copyrighted-fixture test skipped because no reviewer path was set.
 - Synthetic import tests cover internal names, filename fallback and suffix
-  removal. Trace tests verify insertion metadata while rejecting user content
-  from the persisted record.
+  removal. Matcher/Trace tests verify configured-versus-matched keyword data
+  while rejecting user content from the persisted record.
 
 ## 2026-08-15 — Phase 2 resource and audit integration
 

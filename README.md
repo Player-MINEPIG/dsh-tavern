@@ -120,7 +120,7 @@ dsh web --host 127.0.0.1 --port 53101
 4. 从同一菜单选择“角色卡”，导入 ST JSON/PNG 角色卡，选择 greeting 和两个覆盖开关后绑定到当前 session。
 5. 在“世界书”面板的“独立世界书”区管理资源并为当前 session 多选；勾选变化会显示“尚未应用”，必须点击应用按钮才改变该 session。下方“角色卡绑定的世界书”区单独显示和编辑当前角色卡内嵌 Lorebook。折叠标题显示常驻、禁用或关键词条件，展开后可修改触发条件和正文。
 6. 在“用户”面板创建只含名字与描述的资料并绑定到当前 session。
-7. 发送消息。loader 会组合当前 session 的 preset、角色卡、用户资料以及独立/内嵌世界书命中条目；支持的采样参数进入模型调用配置。需要解释结果时，在 Conversation / Trajectory 旁打开 Tavern Trace；它会显示用户描述是否插入、插入次数和位置，但不会保存或展示描述正文。
+7. 发送消息。loader 会组合当前 session 的 preset、角色卡、用户资料以及独立/内嵌世界书命中条目；支持的采样参数进入模型调用配置。需要解释结果时，在 Conversation / Trajectory 旁打开 Tavern Trace；它保持简洁，只显示激活资源、世界书配置/命中关键词、接受或拒绝原因及 request/header 对齐，不保存资源正文。
 
 切换预设不会改写已有会话历史。旧预设已经影响过的 assistant 回复仍会进入后续上下文，所以需要“干净切换”时，应选择新预设后新建或 fork 会话。
 
@@ -178,7 +178,7 @@ config:
 | 世界书扫描与编辑 | 角色卡内嵌书可编辑并扫描已有 durable history（最近 64 KiB）；原生 regex key 默认阻断；当前轮尚未公开给 assembly，关键词可能下一轮才激活；原始导入 artifact 保持不变，JSON 导出反映编辑后的插件副本 |
 | 独立世界书 | 提供存储、导入/创建/编辑/导出/删除、per-session 多选和统一 matcher；未知字段随原始模型保留 |
 | 用户资料 | 严格 `{id,name,description}`，按 session 单绑定；`{{user}}` 替换用户名并可按预设出现多次，描述只由 `personaDescription`/`{{persona}}`/fallback 消费一次；不覆盖 DSH Agent 身份 |
-| Tavern Trace | 保存有界的资源摘要、用户描述插入次数/位置、匹配决策、哈希和 header 引用；不保存用户描述或完整消息，也不等同于 DSH 原生 request/header |
+| Tavern Trace | 保存有界的资源摘要、世界书配置/命中关键词、匹配决策、哈希和 header 引用；不保存资源正文或完整消息，也不等同于 DSH 原生 request/header |
 | ST macro | 支持部分常用变量、随机、骰子与局部变量；不是完整 ST runtime |
 | sampler | 未映射的 ST 参数会保存和编辑，但不宣称已经传给模型 adapter |
 

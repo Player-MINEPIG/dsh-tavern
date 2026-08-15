@@ -159,3 +159,8 @@ test('world-book panel separates sources, omits format suffixes and exposes unap
   assert.match(source, /当前绑定已应用/)
   assert.doesNotMatch(source, /`\$\{item\.name\} · \$\{item\.sourceFormat\}`/)
 })
+
+test('user session binding uses the same primary action styling as other binding panels', () => {
+  const source = readFileSync(new URL('../packages/user/src/client.js', import.meta.url), 'utf8')
+  assert.match(source, /className: 'dtu-button dtu-primary'[^\n]+onClick: bind/)
+})

@@ -153,7 +153,6 @@ export class TavernProfileLoader {
         systemPromptMode: compiled.systemPromptMode,
         profileCharacters: compiled.systemText.length,
         callConfigFields: Object.keys(compiled.callConfig),
-        userInjection: clone(compiled.userInjection),
       },
     }
 

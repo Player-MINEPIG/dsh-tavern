@@ -162,7 +162,7 @@ export function UserPanel({ sessionId, sessionBlank, close }) {
           h(Field, { label: '描述（进入 personaDescription marker；缺 marker 时由 loader 稳定降级）' }, h('textarea', { className: 'dtu-textarea', value: draft.description, maxLength: 100000, onChange: event => setDraft(current => ({ ...current, description: event.target.value })) })),
           h('div', { className: 'dtu-actions' },
             h('button', { className: 'dtu-button dtu-primary', type: 'button', disabled: busy, onClick: save }, '保存资源'),
-            h('button', { className: 'dtu-button', type: 'button', disabled: busy || !sessionId, onClick: bind }, selectedUserId === draft.id ? '刷新会话绑定' : '绑定到当前会话'),
+            h('button', { className: 'dtu-button dtu-primary', type: 'button', disabled: busy || !sessionId, onClick: bind }, selectedUserId === draft.id ? '刷新会话绑定' : '绑定到当前会话'),
           ),
           h('button', { className: 'dtu-button', type: 'button', disabled: busy || !sessionId || selectedUserId === null, onClick: unbind }, '解除当前会话绑定'),
           h('p', { className: 'dtu-note' }, '用户资源不包含头像，也不会覆盖 DSH Agent 身份。loader 只在统一 Tavern profile 中解析名字宏并放置一次描述。'),

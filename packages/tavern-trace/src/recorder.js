@@ -54,17 +54,6 @@ function callConfig(value) {
   return Object.fromEntries(CALL_CONFIG_FIELDS.flatMap(key => value[key] === undefined ? [] : [[key, structuredClone(value[key])]]))
 }
 
-function userInjection(value) {
-  const placement = stringOrNull(value?.descriptionPlacement) ?? 'none'
-  return {
-    selected: value?.selected === true,
-    descriptionAvailable: value?.descriptionAvailable === true,
-    descriptionCharacters: Number.isSafeInteger(value?.descriptionCharacters) ? value.descriptionCharacters : 0,
-    descriptionInsertions: Number.isSafeInteger(value?.descriptionInsertions) ? value.descriptionInsertions : 0,
-    descriptionPlacement: placement,
-  }
-}
-
 function selection(value) {
   return {
     presetId: stringOrNull(value?.presetId),
@@ -81,6 +70,8 @@ function decision(value) {
     entryName: clipped(value?.entryName, 160),
     decision: value?.decision === 'included' ? 'included' : 'rejected',
     reason: clipped(value?.reason, 120),
+    primaryKeys: stringArray(value?.primaryKeys, 16),
+    secondaryKeys: stringArray(value?.secondaryKeys, 16),
     primaryMatches: stringArray(value?.primaryMatches, 16),
     secondaryMatches: stringArray(value?.secondaryMatches, 16),
     secondaryLogic: stringOrNull(value?.secondaryLogic),
@@ -196,7 +187,6 @@ export class TavernTraceRecorder {
         systemCharacters: expectedSystemText.length,
         systemFingerprint: hash(expectedSystemText),
         callConfig: expectedCallConfig,
-        userInjection: userInjection(audit.composition?.userInjection),
       },
       selection: selection(audit.selection),
       resources: {

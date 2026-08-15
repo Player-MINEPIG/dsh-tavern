@@ -46,8 +46,8 @@ function Field({ label, children }) {
   return h('label', { className: 'dwb-field' }, h('span', { className: 'dwb-label' }, label), children)
 }
 
-function parseKeywords(value) {
-  return value.split(',').map(item => item.trim()).filter(Boolean)
+export function parseKeywords(value) {
+  return value.split(/[,，]/u).map(item => item.trim()).filter(Boolean)
 }
 
 function embeddedPosition(entry) {
@@ -68,8 +68,8 @@ function EmbeddedEntryEditor({ entry, index, update, remove }) {
     ),
     h('div', { className: 'dwb-entry-body' },
       h(Field, { label: '条目标题' }, h('input', { className: 'dwb-input', value: entry.comment ?? entry.name ?? '', onChange: event => patch({ comment: event.target.value }) })),
-      h(Field, { label: '主关键词（逗号分隔）' }, h('input', { className: 'dwb-input', value: (entry.keys ?? []).join(', '), onChange: event => patch({ keys: parseKeywords(event.target.value) }) })),
-      h(Field, { label: '附加关键词（逗号分隔）' }, h('input', { className: 'dwb-input', value: secondaryKeys.join(', '), onChange: event => { const keys = parseKeywords(event.target.value); patch({ secondary_keys: keys, selective: keys.length > 0 }) } })),
+      h(Field, { label: '主关键词（支持中文、英文逗号分隔）' }, h('input', { className: 'dwb-input', value: (entry.keys ?? []).join(', '), onChange: event => patch({ keys: parseKeywords(event.target.value) }) })),
+      h(Field, { label: '附加关键词（支持中文、英文逗号分隔）' }, h('input', { className: 'dwb-input', value: secondaryKeys.join(', '), onChange: event => { const keys = parseKeywords(event.target.value); patch({ secondary_keys: keys, selective: keys.length > 0 }) } })),
       secondaryKeys.length > 0 ? h(Field, { label: 'Secondary logic' }, h('select', {
         className: 'dwb-select',
         value: entry.selectiveLogic ?? entry.extensions?.selectiveLogic ?? 'and_any',
@@ -132,8 +132,8 @@ function EntryEditor({ entry, index, update, remove }) {
     ),
     h('div', { className: 'dwb-entry-body' },
       h(Field, { label: '条目标题' }, h('input', { className: 'dwb-input', value: entry.comment ?? '', onChange: event => patch({ comment: event.target.value }) })),
-      h(Field, { label: '主关键词（逗号分隔）' }, h('input', { className: 'dwb-input', value: (entry.keys ?? []).join(', '), onChange: event => patch({ keys: parseKeywords(event.target.value) }) })),
-      h(Field, { label: '附加关键词（逗号分隔）' }, h('input', { className: 'dwb-input', value: secondary.join(', '), onChange: event => patch({ secondaryKeys: parseKeywords(event.target.value), selective: parseKeywords(event.target.value).length > 0 }) })),
+      h(Field, { label: '主关键词（支持中文、英文逗号分隔）' }, h('input', { className: 'dwb-input', value: (entry.keys ?? []).join(', '), onChange: event => patch({ keys: parseKeywords(event.target.value) }) })),
+      h(Field, { label: '附加关键词（支持中文、英文逗号分隔）' }, h('input', { className: 'dwb-input', value: secondary.join(', '), onChange: event => { const keys = parseKeywords(event.target.value); patch({ secondaryKeys: keys, selective: keys.length > 0 }) } })),
       secondary.length > 0 ? h(Field, { label: 'Secondary logic' }, h('select', { className: 'dwb-select', value: entry.selectiveLogic ?? 'and_any', onChange: event => patch({ selectiveLogic: event.target.value, selective: true }) },
         h('option', { value: 'and_any' }, 'AND ANY：命中任一'),
         h('option', { value: 'and_all' }, 'AND ALL：命中全部'),

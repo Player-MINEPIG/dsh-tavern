@@ -71,3 +71,23 @@ test('reports regex keys blocked by the safe default', () => {
   assert.deepEqual(projected.loreEntries, [])
   assert.equal(projected.diagnostics[0].code, 'WORLD_BOOK_REGEX_DISABLED')
 })
+
+test('audit distinguishes configured main keywords from the keywords matched this turn', () => {
+  const keyed = parseWorldBook({
+    name: 'Keyword audit fixture',
+    entries: {
+      1: { uid: 1, key: ['港口', 'harbor'], keysecondary: ['钟声'], content: 'Matched lore', position: 1 },
+    },
+  })
+  const projected = projectWorldBookForLoader(
+    keyed,
+    computeWorldBookCandidates(keyed, { text: 'The harbor is open，钟声响起。' }),
+    { resourceId: 'keyword-audit' },
+  )
+  const decision = projected.audit.resources[0].decisions[0]
+  assert.equal(decision.decision, 'included')
+  assert.deepEqual(decision.primaryKeys, ['港口', 'harbor'])
+  assert.deepEqual(decision.secondaryKeys, ['钟声'])
+  assert.deepEqual(decision.primaryMatches, ['harbor'])
+  assert.deepEqual(decision.secondaryMatches, ['钟声'])
+})

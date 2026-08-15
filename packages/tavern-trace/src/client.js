@@ -64,27 +64,20 @@ function resourceCard(label, value) {
   )
 }
 
-function userInjectionText(value) {
-  if (value?.selected !== true) return '未选择用户资源，因此没有用户描述插入。'
-  if (value.descriptionAvailable !== true) return '已选择用户资源；描述为空，因此没有描述正文需要插入。用户名称仍写入 Tavern profile 头，并参与 {{user}} 宏替换。'
-  const placement = String(value.descriptionPlacement ?? 'none')
-  const label = placement === 'fallback'
-    ? '预设没有启用用户描述位置，使用稳定回退位置'
-    : placement.startsWith('preset-marker:')
-      ? `预设标记 ${placement.slice('preset-marker:'.length)}`
-      : placement.startsWith('preset-macro:')
-        ? `预设 prompt ${placement.slice('preset-macro:'.length)} 内的 {{persona}} 宏`
-        : '未找到插入位置'
-  return `用户描述：${value.descriptionCharacters} 个源字符，插入 ${value.descriptionInsertions} 次；位置：${label}。{{user}} 只替换名称，不会再次插入用户描述。`
-}
-
 function keywords(decision) {
+  const configuredPrimary = decision.primaryKeys ?? []
+  const configuredSecondary = decision.secondaryKeys ?? []
   const primary = decision.primaryMatches ?? []
   const secondary = decision.secondaryMatches ?? []
-  const parts = []
-  if (primary.length > 0) parts.push(`主：${primary.join('、')}`)
-  if (secondary.length > 0) parts.push(`附加：${secondary.join('、')}`)
-  return parts.length === 0 ? '无命中关键词' : parts.join(' · ')
+  const configured = [
+    configuredPrimary.length > 0 ? `主：${configuredPrimary.map(value => JSON.stringify(value)).join('、')}` : null,
+    configuredSecondary.length > 0 ? `附加：${configuredSecondary.map(value => JSON.stringify(value)).join('、')}` : null,
+  ].filter(Boolean).join(' · ') || '无配置关键词'
+  const matched = [
+    primary.length > 0 ? `主：${primary.map(value => JSON.stringify(value)).join('、')}` : null,
+    secondary.length > 0 ? `附加：${secondary.map(value => JSON.stringify(value)).join('、')}` : null,
+  ].filter(Boolean).join(' · ') || '无关键词命中'
+  return { configured, matched }
 }
 
 function decisionMeta(value) {
@@ -106,7 +99,9 @@ function WorldBookAudit({ book }) {
   return h('div', { className: 'dttrace-book' },
     h('div', { className: 'dttrace-section-title' }, name),
     h('div', { className: 'dttrace-meta' }, `预算：${book.budget.used}${book.budget.limit === null ? '' : ` / ${book.budget.limit}`} tokens · ${book.decisions.length} 条决策`),
-    ...book.decisions.map((item, index) => h('div', {
+    ...book.decisions.map((item, index) => {
+      const keywordState = keywords(item)
+      return h('div', {
       className: 'dttrace-decision',
       'data-included': item.decision === 'included',
       key: `${item.entryId ?? 'entry'}-${index}`,
@@ -117,9 +112,10 @@ function WorldBookAudit({ book }) {
       h('div', { className: 'dttrace-meta' }, reasonLabels[item.reason] ?? item.reason),
     ),
     h('div', { className: 'dttrace-keywords' },
-      h('div', null, keywords(item)),
+      h('div', null, `配置关键词：${keywordState.configured}`),
+      h('div', null, `本轮命中：${keywordState.matched}`),
       h('div', { className: 'dttrace-meta' }, decisionMeta(item)),
-    ))),
+    ))}),
   )
 }
 
@@ -144,17 +140,17 @@ function TraceRecord({ record, latest }) {
       h('div', { className: 'dttrace-section' },
         h('div', { className: 'dttrace-section-title' }, '组合与插入'),
         h('div', { className: 'dttrace-meta' }, `${record.assembly.profileSection} · order ${record.assembly.profileOrder} · ${record.assembly.systemPromptMode} · ${record.assembly.systemCharacters} characters · call config: ${Object.keys(record.assembly.callConfig ?? {}).join(', ') || '无'}`),
-        h('div', { className: 'dttrace-meta' }, userInjectionText(record.assembly.userInjection)),
       ),
       record.worldBooks?.length > 0 ? h('div', { className: 'dttrace-section' },
         h('div', { className: 'dttrace-section-title' }, '世界书匹配决策'),
+        h('div', { className: 'dttrace-meta' }, '匹配基于 system assembly 当时可见的持久化会话历史；刚提交的当前轮输入通常要到下一轮扫描才可见。'),
         ...record.worldBooks.map((book, index) => h(WorldBookAudit, { book, key: `${book.resource?.id ?? 'book'}-${index}` })),
       ) : h('div', { className: 'dttrace-note' }, '本轮没有可审计的世界书匹配来源。'),
       record.diagnostics?.length > 0 ? h('div', { className: 'dttrace-section' },
         h('div', { className: 'dttrace-section-title' }, `诊断（${record.diagnostics.length}）`),
         h('ul', { className: 'dttrace-list' }, ...record.diagnostics.map((item, index) => h('li', { key: `${item.code}-${index}` }, `${item.code}: ${item.message}`))),
       ) : null,
-      h('p', { className: 'dttrace-note' }, '隐私边界：这里只保存资源摘要、命中关键词、决策原因、位置、预算和 SHA-256 摘要；不保存 preset/角色/user/世界书正文、完整 system、聊天历史、header 内容或 tool payload。'),
+      h('p', { className: 'dttrace-note' }, '隐私边界：这里只保存资源摘要、配置/命中关键词、决策原因、位置、预算和 SHA-256 摘要；不保存 preset/角色/user/世界书正文、完整 system、聊天历史、header 内容或 tool payload。'),
     ),
   )
 }

@@ -42,6 +42,8 @@ function auditDecision(candidate, resourceId, decision, reason, projected = {}) 
     entryName: typeof entry?.comment === 'string' ? entry.comment : '',
     decision,
     reason,
+    primaryKeys: clone(Array.isArray(entry?.keys) ? entry.keys : []),
+    secondaryKeys: clone(Array.isArray(entry?.secondaryKeys) ? entry.secondaryKeys : []),
     primaryMatches: clone(candidate.primaryMatches ?? []),
     secondaryMatches: clone(candidate.secondaryMatches ?? []),
     secondaryLogic: entry?.selective === true ? entry.selectiveLogic : null,

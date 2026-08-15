@@ -32,6 +32,7 @@ function entry(uid, patch = {}) {
 
 test('matches literal keys and requires explicit unsafe opt-in for JavaScript regex keys', () => {
   assert.equal(matchWorldBookKey('A Harbor', 'harbor').matched, true)
+  assert.equal(matchWorldBookKey('我们抵达了港口。', '港口').matched, true)
   assert.equal(matchWorldBookKey('harborside', 'harbor', { matchWholeWords: true }).matched, false)
   assert.equal(matchWorldBookKey('Harbor', 'harbor', { caseSensitive: true }).matched, false)
   const blocked = matchWorldBookKey('moon   gate', '/moon\\s+gate/i')
