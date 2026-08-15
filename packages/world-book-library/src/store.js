@@ -7,7 +7,7 @@ import {
   unlinkSync,
   writeFileSync,
 } from 'node:fs'
-import { join, resolve } from 'node:path'
+import { basename, extname, join, resolve } from 'node:path'
 import {
   WORLD_BOOK_FORMATS,
   WORLD_BOOK_POSITIONS,
@@ -34,6 +34,14 @@ function isRecord(value) {
 
 function clone(value) {
   return structuredClone(value)
+}
+
+function importedName(fileName) {
+  if (typeof fileName !== 'string') return ''
+  const safe = safeFileName(fileName, '')
+  if (safe === '') return ''
+  const extension = extname(safe)
+  return basename(safe, extension).trim()
 }
 
 function validateId(id) {
@@ -282,6 +290,8 @@ export class WorldBookStore {
     }
     const text = new TextDecoder('utf-8', { fatal: true }).decode(bytes)
     const book = parseWorldBook(text, { name: options.name })
+    const fallbackName = importedName(options.fileName) || 'Untitled World Book'
+    if (book.name === '') book.name = fallbackName
     const id = validateId(options.id ?? generatedId())
     try {
       this.get(id)
@@ -296,7 +306,7 @@ export class WorldBookStore {
       schemaVersion: DOCUMENT_SCHEMA_VERSION,
       kind: 'world-book-document',
       id,
-      name: book.name || options.name || 'Untitled World Book',
+      name: book.name || options.name || fallbackName,
       createdAt: now,
       updatedAt: now,
       source: {

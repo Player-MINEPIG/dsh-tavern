@@ -89,7 +89,7 @@ request/header.config
 4. preset marker、用户名字/描述、角色字段与命中 lore 被组合为一个 Tavern profile。`{{user}}` 取当前 session 的用户名字；描述进入一次 `personaDescription`/`{{persona}}` 放置点，缺失时以诊断 fallback 放置。creator notes 永远不进入 profile；`chatHistory` marker 被消费但不复制历史。
 5. 默认 append 模式把 Tavern profile 放在 DSH 其他 system sections 之后。高级 replace 模式只保留 Tavern profile，但仍保留 tools、runtime contexts、variables 和执行层安全机制。
 6. `agent/request` 将 DSH 已公开支持的 preset 参数投影到 call config。未公开的 ST sampler 仅保存，不伪造已经生效。
-7. Tavern Trace 在同一个公开 `agent/request` 上把本次已经完成的 system assembly snapshot 绑定到 `turn/step`；公开 `session/event` 观察到 `request/header` 后，只保存 header event seq、SHA-256 摘要和一致性布尔值。它不复制 header、system 或消息正文，也不 append Session。
+7. Tavern Trace 在同一个公开 `agent/request` 上把本次已经完成的 system assembly snapshot 绑定到 `turn/step`；同时记录用户描述是否存在、插入一次的位置类型和源字符数，不记录正文。公开 `session/event` 观察到 `request/header` 后，只保存 header event seq、SHA-256 摘要和一致性布尔值。它不复制 header、system 或消息正文，也不 append Session。
 
 世界信息侧栏属于控制面，不是消息历史或日志面板。它从当前已绑定角色卡的插件副本读取 `character_book.entries`，直接展示并编辑主关键词、附加关键词与逻辑、常驻/启用状态、正文、插入位置和排序。保存通过 character API 原子更新标准化角色文档及其 JSON 导出；原始 PNG/JSON artifact 不改写。下一次 `systemPrompt.assemble()` 会重新读取该副本并执行 matcher。
 

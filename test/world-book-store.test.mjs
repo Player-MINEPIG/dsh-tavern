@@ -79,6 +79,29 @@ test('creates a blank editable standalone book with independent ids', () => {
   }
 })
 
+test('import keeps an internal title and otherwise derives a clean title from the JSON filename', () => {
+  const directory = mkdtempSync(join(tmpdir(), 'dsh-tavern-world-book-names-'))
+  try {
+    const store = new WorldBookStore(directory)
+    const internal = store.import(JSON.stringify({ name: 'Inside Title', entries: {} }), {
+      id: 'internal-title',
+      fileName: 'ignored-file-name.json',
+    })
+    const filename = store.import(JSON.stringify({ entries: {} }), {
+      id: 'filename-title',
+      fileName: 'External Library.JSON',
+    })
+
+    assert.equal(internal.name, 'Inside Title')
+    assert.equal(internal.book.name, 'Inside Title')
+    assert.equal(filename.name, 'External Library')
+    assert.equal(filename.book.name, 'External Library')
+    assert.doesNotMatch(filename.name, /\.json$/i)
+  } finally {
+    rmSync(directory, { recursive: true, force: true })
+  }
+})
+
 test('edits an imported Character Book without adding standalone-only fields', () => {
   const directory = mkdtempSync(join(tmpdir(), 'dsh-tavern-character-book-library-'))
   try {

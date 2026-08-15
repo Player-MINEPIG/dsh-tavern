@@ -19,6 +19,7 @@ function snapshot(marker = 'SYNTHETIC_PROFILE_MARKER') {
     resources: {
       preset: { id: 'preset-a', name: 'Synthetic preset' },
       characterCard: { id: 'character-a', name: 'Synthetic character' },
+      user: { id: 'user-a', name: 'Synthetic user', description: 'SECRET_USER_DESCRIPTION' },
       worldBooks: [{ id: 'book-a', name: 'Synthetic lore', kind: 'standalone-world-book' }],
     },
     diagnostics: [{ code: 'SYNTHETIC_INFO', severity: 'info', message: 'Test-owned diagnostic' }],
@@ -27,7 +28,17 @@ function snapshot(marker = 'SYNTHETIC_PROFILE_MARKER') {
       selection: {
         presetId: 'preset-a',
         characterCardId: 'character-a',
+        userProfileId: 'user-a',
         worldBookIds: ['book-a'],
+      },
+      composition: {
+        userInjection: {
+          selected: true,
+          descriptionAvailable: true,
+          descriptionCharacters: 23,
+          descriptionInsertions: 1,
+          descriptionPlacement: 'preset-marker:personaDescription',
+        },
       },
       worldBooks: {
         resources: [{
@@ -109,6 +120,9 @@ test('Trace correlates turn/step to request/header while persisting only minimiz
     assert.equal(pending.step, 2)
     assert.equal(pending.worldBooks[0].decisions[0].reason, 'secondary-and_any-match')
     assert.equal(pending.worldBooks[0].decisions[1].reason, 'budget-exceeded')
+    assert.equal(pending.resources.userProfile.name, 'Synthetic user')
+    assert.equal(pending.assembly.userInjection.descriptionInsertions, 1)
+    assert.equal(pending.assembly.userInjection.descriptionPlacement, 'preset-marker:personaDescription')
     assert.equal(pending.sensitiveContentStored, false)
     assert.equal(pending.entersModelHistory, false)
 
@@ -134,6 +148,7 @@ test('Trace correlates turn/step to request/header while persisting only minimiz
       'SECRET_PROFILE_BODY',
       'SECRET_WORLD_BOOK_BODY',
       'SECOND_SECRET_WORLD_BOOK_BODY',
+      'SECRET_USER_DESCRIPTION',
       'HOST_SECRET_SYSTEM',
       'SECRET_TOOL_SCHEMA',
     ]) assert.doesNotMatch(disk, new RegExp(secret))

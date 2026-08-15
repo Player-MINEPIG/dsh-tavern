@@ -19,7 +19,7 @@ const POSITIONS = [
 ]
 
 const css = `
-.dwb-panel{position:absolute;top:0;right:0;bottom:0;width:min(500px,calc(100vw - 56px));pointer-events:auto;border-left:1px solid var(--dsw-alias-border-l2);box-shadow:var(--ds-shadow-3,-8px 0 28px rgba(0,0,0,.18));background:var(--dsw-alias-bg-base);color:var(--dsw-alias-label-primary);display:flex;flex-direction:column;font-family:Inter,var(--dsw-font-family),sans-serif}.dwb-header{height:52px;box-sizing:border-box;display:flex;align-items:center;gap:8px;padding:0 14px;border-bottom:1px solid var(--dsw-alias-border-l2);flex:none}.dwb-title{font-size:14px;font-weight:650;flex:1}.dwb-close{border:0;background:transparent;color:var(--dsw-alias-label-tertiary);cursor:pointer;border-radius:7px;padding:6px 8px}.dwb-body{min-height:0;overflow:auto;padding:12px;display:flex;flex-direction:column;gap:11px}.dwb-toolbar{display:grid;grid-template-columns:repeat(3,1fr);gap:7px}.dwb-actions{display:flex;gap:7px;flex-wrap:wrap}.dwb-button{min-height:34px;border:1px solid var(--dsw-alias-border-l2);border-radius:8px;background:var(--dsw-alias-button-secondary-fill,var(--dsw-alias-bg-base));color:var(--dsw-alias-label-primary);cursor:pointer;padding:7px 10px;font-size:11px}.dwb-button:disabled{opacity:.5;cursor:default}.dwb-primary{background:var(--dsw-alias-state-business-primary);color:white;border-color:transparent}.dwb-danger{color:var(--dsw-alias-state-error)}.dwb-field{display:flex;flex-direction:column;gap:4px}.dwb-label{font-size:10px;font-weight:620;color:var(--dsw-alias-label-tertiary)}.dwb-input,.dwb-select,.dwb-textarea{box-sizing:border-box;width:100%;border:1px solid var(--dsw-alias-border-l2);border-radius:7px;background:var(--dsw-alias-bg-base);color:var(--dsw-alias-label-primary);font:inherit;font-size:11px;padding:7px 8px}.dwb-input,.dwb-select{height:32px}.dwb-textarea{min-height:110px;resize:vertical;line-height:1.45}.dwb-note,.dwb-meta{font-size:11px;line-height:1.5;color:var(--dsw-alias-label-tertiary);margin:0;overflow-wrap:anywhere}.dwb-status{font-size:11px;line-height:1.45;border-radius:7px;padding:8px 10px;background:var(--dsw-specific-tip);overflow-wrap:anywhere}.dwb-status[data-error=true]{color:var(--dsw-alias-state-error)}.dwb-resource{border:1px solid var(--dsw-alias-border-l1);border-radius:9px;padding:10px;display:flex;flex-direction:column;gap:8px}.dwb-resource-title{font-size:12px;font-weight:650}.dwb-bindings{display:grid;grid-template-columns:1fr 1fr;gap:5px}.dwb-check{display:flex;gap:6px;align-items:flex-start;font-size:10px;line-height:1.4}.dwb-entry{border:1px solid var(--dsw-alias-border-l1);border-radius:8px;overflow:hidden}.dwb-entry>summary{list-style:none;cursor:pointer;padding:8px;display:flex;align-items:center;gap:7px;font-size:11px}.dwb-entry>summary::-webkit-details-marker{display:none}.dwb-dot{width:8px;height:8px;flex:none;border-radius:50%;background:var(--dsw-alias-label-tertiary)}.dwb-entry[data-enabled=true] .dwb-dot{background:var(--dsw-alias-state-success,#2fa36b)}.dwb-entry-name{font-weight:620;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.dwb-entry-state{margin-left:auto;flex:none;color:var(--dsw-alias-label-tertiary);font-size:10px}.dwb-entry-body{border-top:1px solid var(--dsw-alias-border-l1);padding:8px;display:flex;flex-direction:column;gap:8px}.dwb-grid{display:grid;grid-template-columns:1fr 1fr;gap:7px}.dwb-checks{display:flex;flex-wrap:wrap;gap:10px}.dwb-list{margin:0;padding-left:18px;font-size:11px;line-height:1.5}
+.dwb-panel{position:absolute;top:0;right:0;bottom:0;width:min(500px,calc(100vw - 56px));pointer-events:auto;border-left:1px solid var(--dsw-alias-border-l2);box-shadow:var(--ds-shadow-3,-8px 0 28px rgba(0,0,0,.18));background:var(--dsw-alias-bg-base);color:var(--dsw-alias-label-primary);display:flex;flex-direction:column;font-family:Inter,var(--dsw-font-family),sans-serif}.dwb-header{height:52px;box-sizing:border-box;display:flex;align-items:center;gap:8px;padding:0 14px;border-bottom:1px solid var(--dsw-alias-border-l2);flex:none}.dwb-title{font-size:16px;font-weight:650;flex:1}.dwb-close{border:0;background:transparent;color:var(--dsw-alias-label-tertiary);cursor:pointer;border-radius:7px;padding:6px 8px;font-size:14px}.dwb-body{min-height:0;overflow:auto;padding:12px;display:flex;flex-direction:column;gap:11px}.dwb-toolbar{display:grid;grid-template-columns:repeat(3,1fr);gap:7px}.dwb-actions{display:flex;gap:7px;flex-wrap:wrap}.dwb-button{min-height:36px;border:1px solid var(--dsw-alias-border-l2);border-radius:8px;background:var(--dsw-alias-button-secondary-fill,var(--dsw-alias-bg-base));color:var(--dsw-alias-label-primary);cursor:pointer;padding:7px 10px;font-size:13px;text-decoration:none;display:inline-flex;align-items:center;justify-content:center;box-sizing:border-box}.dwb-button:disabled{opacity:.5;cursor:default}.dwb-primary{background:var(--dsw-alias-state-business-primary);color:white;border-color:transparent}.dwb-danger{color:var(--dsw-alias-state-error)}.dwb-field{display:flex;flex-direction:column;gap:4px}.dwb-label{font-size:12px;font-weight:620;color:var(--dsw-alias-label-tertiary)}.dwb-input,.dwb-select,.dwb-textarea{box-sizing:border-box;width:100%;border:1px solid var(--dsw-alias-border-l2);border-radius:7px;background:var(--dsw-alias-bg-base);color:var(--dsw-alias-label-primary);font:inherit;font-size:13px;padding:7px 8px}.dwb-input,.dwb-select{height:36px}.dwb-textarea{min-height:110px;resize:vertical;line-height:1.5}.dwb-note,.dwb-meta{font-size:13px;line-height:1.5;color:var(--dsw-alias-label-tertiary);margin:0;overflow-wrap:anywhere}.dwb-status{font-size:13px;line-height:1.45;border-radius:7px;padding:8px 10px;background:var(--dsw-specific-tip);overflow-wrap:anywhere}.dwb-status[data-error=true]{color:var(--dsw-alias-state-error)}.dwb-status[data-warning=true]{color:var(--dsw-alias-state-warning,#b46b00)}.dwb-section-title{font-size:15px;font-weight:700;margin:5px 0 0}.dwb-resource{border:1px solid var(--dsw-alias-border-l1);border-radius:9px;padding:10px;display:flex;flex-direction:column;gap:8px}.dwb-resource-title{font-size:14px;font-weight:650}.dwb-bindings{display:grid;grid-template-columns:1fr 1fr;gap:5px}.dwb-check{display:flex;gap:6px;align-items:flex-start;font-size:12px;line-height:1.45}.dwb-entry{border:1px solid var(--dsw-alias-border-l1);border-radius:8px;overflow:hidden}.dwb-entry>summary{list-style:none;cursor:pointer;padding:8px;display:flex;align-items:center;gap:7px;font-size:13px}.dwb-entry>summary::-webkit-details-marker{display:none}.dwb-dot{width:8px;height:8px;flex:none;border-radius:50%;background:var(--dsw-alias-label-tertiary)}.dwb-entry[data-enabled=true] .dwb-dot{background:var(--dsw-alias-state-success,#2fa36b)}.dwb-entry-name{font-weight:620;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.dwb-entry-state{margin-left:auto;flex:none;color:var(--dsw-alias-label-tertiary);font-size:12px}.dwb-entry-body{border-top:1px solid var(--dsw-alias-border-l1);padding:8px;display:flex;flex-direction:column;gap:8px}.dwb-grid{display:grid;grid-template-columns:1fr 1fr;gap:7px}.dwb-checks{display:flex;flex-wrap:wrap;gap:10px}.dwb-list{margin:0;padding-left:18px;font-size:13px;line-height:1.5}
 `
 
 function errorMessage(data, status) {
@@ -161,6 +161,7 @@ export function WorldBookPanel({ sessionId, close }) {
   const [document, setDocument] = useState(null)
   const [draft, setDraft] = useState(null)
   const [selection, setSelection] = useState([])
+  const [appliedSelection, setAppliedSelection] = useState([])
   const [active, setActive] = useState(null)
   const [embeddedCharacterId, setEmbeddedCharacterId] = useState(null)
   const [embeddedDraft, setEmbeddedDraft] = useState(null)
@@ -202,6 +203,7 @@ export function WorldBookPanel({ sessionId, close }) {
     const ids = selected.selection?.worldBookIds ?? []
     setCatalog(list)
     setSelection(ids)
+    setAppliedSelection(ids)
     setActive(activeView)
     setEmbeddedCharacterId(characterId)
     setEmbeddedDraft(embeddedBook === null ? null : structuredClone(embeddedBook))
@@ -266,6 +268,7 @@ export function WorldBookPanel({ sessionId, close }) {
     if (!sessionId) throw new Error('请先创建或打开一个会话再绑定世界书')
     const data = await api('/world-book-selection', { method: 'POST', body: JSON.stringify({ sessionId, worldBookIds: selection }) })
     setSelection(data.selection.worldBookIds)
+    setAppliedSelection(data.selection.worldBookIds)
     window.dispatchEvent(new Event('dsh-tavern:refresh'))
   }, '当前会话的世界书绑定已保存')
 
@@ -300,6 +303,7 @@ export function WorldBookPanel({ sessionId, close }) {
   const embeddedEntries = embeddedDraft?.entries ?? []
   const embedded = active?.resources?.worldBooks?.filter(item => item.kind === 'embedded-character-book') ?? []
   const diagnostics = active?.diagnostics?.filter(item => String(item.code ?? '').includes('WORLD_BOOK')) ?? []
+  const selectionDirty = selection.length !== appliedSelection.length || selection.some((id, index) => id !== appliedSelection[index])
 
   return h('div', { className: 'dwb-panel' },
     h('div', { className: 'dwb-header' }, h('div', { className: 'dwb-title' }, '世界信息（World Book）'), h('button', { className: 'dwb-close', type: 'button', onClick: close, 'aria-label': '关闭世界书侧边栏' }, '✕')),
@@ -312,23 +316,25 @@ export function WorldBookPanel({ sessionId, close }) {
       ),
       h('p', { className: 'dwb-note' }, `当前会话：${sessionId || '无'}。可绑定零本、一本或多本独立世界书；绑定顺序保持稳定。`),
       h('div', { className: 'dwb-status', 'data-error': status.error || undefined, role: 'status', 'aria-live': 'polite' }, status.text),
+      h('h2', { className: 'dwb-section-title' }, '独立世界书'),
       h('div', { className: 'dwb-resource' },
         h('div', { className: 'dwb-resource-title' }, '当前会话绑定'),
         catalog?.worldBooks.length ? h('div', { className: 'dwb-bindings' }, ...catalog.worldBooks.map(item => h('label', { className: 'dwb-check', key: item.id },
           h('input', { type: 'checkbox', checked: selection.includes(item.id), onChange: event => setSelection(current => event.target.checked ? [...current, item.id] : current.filter(id => id !== item.id)) }),
           `${item.name}（${item.entryCount} 条）`,
         ))) : h('p', { className: 'dwb-note' }, '独立世界书资源库为空。'),
+        selectionDirty ? h('div', { className: 'dwb-status', 'data-warning': true }, '绑定有未保存修改，当前勾选尚未应用到会话。') : h('p', { className: 'dwb-note' }, '面板显示的绑定已应用到当前会话。'),
         h('div', { className: 'dwb-actions' },
-          h('button', { className: 'dwb-button dwb-primary', type: 'button', disabled: busy || !sessionId, onClick: saveSelection }, '保存会话绑定'),
-          h('button', { className: 'dwb-button', type: 'button', disabled: busy || !sessionId || selection.length === 0, onClick: () => setSelection([]) }, '清空待保存选择'),
+          h('button', { className: 'dwb-button dwb-primary', type: 'button', disabled: busy || !sessionId || !selectionDirty, onClick: saveSelection }, selectionDirty ? '应用会话绑定（未保存）' : '当前绑定已应用'),
+          h('button', { className: 'dwb-button', type: 'button', disabled: busy || !sessionId || selection.length === 0, onClick: () => setSelection([]) }, '清空待应用选择'),
         ),
       ),
       h(Field, { label: '浏览独立世界书' }, h('select', { className: 'dwb-select', value: document?.id ?? '', disabled: busy || !catalog?.worldBooks.length, onChange: event => { if (!dirty || window.confirm('放弃尚未保存的修改？')) load(event.target.value) } },
         ...(catalog?.worldBooks.length ? [] : [h('option', { key: 'empty', value: '' }, '资源库为空')]),
-        ...(catalog?.worldBooks ?? []).map(item => h('option', { key: item.id, value: item.id }, `${item.name} · ${item.sourceFormat}`)))),
+        ...(catalog?.worldBooks ?? []).map(item => h('option', { key: item.id, value: item.id }, item.name)))),
       draft === null ? null : h('div', { className: 'dwb-resource' },
         h(Field, { label: '世界书名称' }, h('input', { className: 'dwb-input', value: draft.name ?? '', onChange: event => { setDraft(current => ({ ...current, name: event.target.value })); setDirty(true) } })),
-        h('p', { className: 'dwb-meta' }, `${document.source.format} · ${entries.length} 条 · 未知字段在保存和导出时稳定保留`),
+        h('p', { className: 'dwb-meta' }, `${entries.length} 条 · 未知字段在保存和导出时稳定保留`),
         h('div', { className: 'dwb-actions' },
           h('button', { className: 'dwb-button', type: 'button', onClick: () => { setDraft(current => ({ ...current, entries: [...current.entries, createWorldBookEntry(current.entries)] })); setDirty(true) } }, '新增条目'),
           h('button', { className: 'dwb-button dwb-primary', type: 'button', disabled: busy || !dirty, onClick: save }, dirty ? '保存修改' : '已保存'),
@@ -337,6 +343,7 @@ export function WorldBookPanel({ sessionId, close }) {
         ),
         ...entries.map((entry, index) => h(EntryEditor, { key: `${String(entry.uid)}-${index}`, entry, index, update: updateEntry, remove: itemIndex => { if (window.confirm('删除这个世界书条目？保存后生效。')) { setDraft(current => ({ ...current, entries: current.entries.filter((_item, candidate) => candidate !== itemIndex) })); setDirty(true) } } })),
       ),
+      embeddedDraft !== null ? h('h2', { className: 'dwb-section-title' }, '角色卡绑定的世界书') : null,
       embeddedDraft !== null ? h('div', { className: 'dwb-resource' },
         h('div', { className: 'dwb-resource-title' }, embeddedDraft.name || embedded[0]?.name || '角色卡内嵌世界书'),
         h('p', { className: 'dwb-note' }, `${embeddedEntries.length} 条。它与独立书共用 matcher/loader；删除独立书不会修改或解绑角色卡内嵌书。`),

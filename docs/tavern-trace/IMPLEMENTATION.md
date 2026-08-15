@@ -42,7 +42,7 @@ GET /dsh-tavern/api/traces?sessionId=...
   └─ conversation.view / Tavern Trace
 ```
 
-保存的 record 包含 `turn/step/attempt`、资源 id/name 摘要、profile 长度与 hash、支持的 Tavern call-config 字段、诊断、world-book budget 和 entry decisions。Entry decision 包含命中的主/附加关键词、secondary logic、概率阈值与显式 roll、token cost、接受/拒绝原因、请求位置与 loader 实际位置。
+保存的 record 包含 `turn/step/attempt`、资源 id/name 摘要、profile 长度与 hash、支持的 Tavern call-config 字段、诊断、world-book budget 和 entry decisions。Entry decision 包含命中的主/附加关键词、secondary logic、概率阈值与显式 roll、token cost、接受/拒绝原因、请求位置与 loader 实际位置。用户审计只保存“是否选择用户”“描述是否为空”“描述源字符数”“插入次数”和位置类型（preset marker、`{{persona}}` 或 fallback）；不保存用户描述正文。它与最终 `tavernProfilePresent` 一起说明该次 assembly 的用户描述是否进入 DSH 构造的 header。
 
 最终 header 仅保存 event seq、reason、header/system/config SHA-256，以及“本次 Tavern profile 是否存在”“Tavern 提议字段是否一致”的布尔值。完整 header 不进入插件文件或 API。
 
@@ -68,7 +68,7 @@ GET API 的 `storage` 元数据通常返回全部实际限制、`maxTotalBytes` 
 
 浏览器入口通过 `ctx.slots.inject('conversation.view', ...)` 注册 `id: "tavern-trace"`、`order: 20`。它只使用 slot 注入的 `sessionId/useSession` 和同源 GET API；不查询 Conversation/Trajectory DOM，不覆盖它们的 seat，也没有 MutationObserver。
 
-正文没有“显示完整内容”开关。用户需要确认最终 system/config 时应查看 DSH request/header；Trace 只提供资源组合和 matcher 决策解释。
+正文没有“显示完整内容”开关。Trace 会显示用户资源名称及描述的一次性插入证据，但不会显示描述正文。用户需要确认最终 system/config 时应查看 DSH request/header；Trace 只提供资源组合、用户插入和 matcher 决策解释。
 
 ## 已知限制
 

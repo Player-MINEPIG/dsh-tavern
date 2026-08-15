@@ -153,6 +153,7 @@ export class TavernProfileLoader {
         systemPromptMode: compiled.systemPromptMode,
         profileCharacters: compiled.systemText.length,
         callConfigFields: Object.keys(compiled.callConfig),
+        userInjection: clone(compiled.userInjection),
       },
     }
 
@@ -213,6 +214,13 @@ export function compileTavernProfile({
       runtimeContexts: [],
       activeLoreEntries: [],
       diagnostics: [],
+      userInjection: {
+        selected: false,
+        descriptionAvailable: false,
+        descriptionCharacters: 0,
+        descriptionInsertions: 0,
+        descriptionPlacement: 'none',
+      },
     }
   }
 
@@ -238,6 +246,13 @@ export function compileTavernProfile({
   const afterLore = normalizedLore.filter((entry) => entry.position === 'after')
   const fields = normalizedCharacterFields(characterData, characterSelection)
   const userFields = normalizedUserFields(user)
+  const userInjection = {
+    selected: user !== null,
+    descriptionAvailable: userFields.description !== '',
+    descriptionCharacters: userFields.description.length,
+    descriptionInsertions: 0,
+    descriptionPlacement: 'none',
+  }
   const consumed = new Set()
   const body = []
 
@@ -246,7 +261,7 @@ export function compileTavernProfile({
       if (!isRecord(prompt) || prompt.enabled !== true) continue
       const identifier = String(prompt.identifier ?? '')
       if (prompt.marker === true) {
-        const marker = compileMarker(identifier, fields, userFields, beforeLore, afterLore, profileContext, consumed)
+        const marker = compileMarker(identifier, fields, userFields, beforeLore, afterLore, profileContext, consumed, userInjection)
         if (marker !== '') body.push(marker)
         continue
       }
@@ -267,12 +282,12 @@ export function compileTavernProfile({
           diagnostics.push(positionDiagnostic('CHARACTER_PHI_APPROXIMATE', 'Character post-history instructions are placed in the Tavern system profile, not strictly after chat history.'))
         }
       }
-      const rendered = renderProfileMacros(content, profileContext, fields, userFields, consumed)
+      const rendered = renderProfileMacros(content, profileContext, fields, userFields, consumed, userInjection, identifier)
       if (rendered !== '') body.push(promptBlock(prompt, rendered))
     }
   }
 
-  appendUserFallback(body, userFields, consumed, profileContext, diagnostics)
+  appendUserFallback(body, userFields, consumed, profileContext, diagnostics, userInjection)
   appendCharacterFallbacks(body, fields, consumed, profileContext, diagnostics)
   if (!consumed.has('worldInfoBefore')) appendLore(body, beforeLore, profileContext)
   if (!consumed.has('worldInfoAfter')) appendLore(body, afterLore, profileContext)
@@ -286,6 +301,7 @@ export function compileTavernProfile({
     runtimeContexts: [],
     activeLoreEntries: normalizedLore.map((entry) => entry?.id ?? entry?.uid).filter((id) => id !== undefined),
     diagnostics,
+    userInjection,
   }
 }
 
@@ -362,7 +378,7 @@ function userBlock(text, context) {
   return rendered === '' ? '' : `<st-user-field name="persona-description">\n${rendered}\n</st-user-field>`
 }
 
-function compileMarker(identifier, fields, userFields, beforeLore, afterLore, context, consumed) {
+function compileMarker(identifier, fields, userFields, beforeLore, afterLore, context, consumed, userInjection) {
   const mapping = {
     charDescription: ['description', 'description'],
     charPersonality: ['personality', 'personality'],
@@ -377,7 +393,9 @@ function compileMarker(identifier, fields, userFields, beforeLore, afterLore, co
   if (['personaDescription', 'userDescription', 'userPersona'].includes(identifier)) {
     if (consumed.has('userDescription')) return ''
     consumed.add('userDescription')
-    return userBlock(userFields.description, context)
+    const block = userBlock(userFields.description, context)
+    if (block !== '') markUserDescription(userInjection, `preset-marker:${identifier}`)
+    return block
   }
   if (identifier === 'worldInfoBefore') {
     consumed.add('worldInfoBefore')
@@ -393,12 +411,13 @@ function compileMarker(identifier, fields, userFields, beforeLore, afterLore, co
   return ''
 }
 
-function appendUserFallback(body, fields, consumed, context, diagnostics) {
+function appendUserFallback(body, fields, consumed, context, diagnostics, userInjection) {
   if (fields.description === '' || consumed.has('userDescription')) return
   const block = userBlock(fields.description, context)
   if (block === '') return
   body.push(block)
   consumed.add('userDescription')
+  markUserDescription(userInjection, 'fallback')
   diagnostics.push(positionDiagnostic(
     'USER_PERSONA_MARKER_FALLBACK',
     'The selected user description was appended before fallback character fields because the preset has no enabled personaDescription marker.',
@@ -442,12 +461,13 @@ function applyOriginal(override, original) {
   return override.replace(/\{\{\s*original\s*\}\}/gi, original)
 }
 
-function renderProfileMacros(text, context, fields, userFields, consumed) {
+function renderProfileMacros(text, context, fields, userFields, consumed, userInjection, identifier) {
   let personaInserted = false
   const withPersona = String(text ?? '').replace(/\{\{\s*persona\s*\}\}/gi, () => {
     if (userFields.description === '' || consumed.has('userDescription') || personaInserted) return ''
     personaInserted = true
     consumed.add('userDescription')
+    markUserDescription(userInjection, `preset-macro:${identifier}`)
     return userFields.description
   })
   const replacements = {
@@ -458,6 +478,12 @@ function renderProfileMacros(text, context, fields, userFields, consumed) {
   }
   const expanded = withPersona.replace(/\{\{\s*(description|personality|scenario|mesExamples)\s*\}\}/gi, (_match, name) => replacements[name.toLowerCase()] ?? '')
   return renderSillyTavernMacros(expanded, context)
+}
+
+function markUserDescription(audit, placement) {
+  if (audit.descriptionInsertions !== 0) return
+  audit.descriptionInsertions = 1
+  audit.descriptionPlacement = placement
 }
 
 function positionDiagnostic(code, message) {

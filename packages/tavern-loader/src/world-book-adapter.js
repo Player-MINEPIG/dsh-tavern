@@ -113,7 +113,7 @@ export function createWorldBookAdapter(storeOrOptions = {}, maybeOptions = {}) {
       if (embedded !== null && typeof embedded === 'object' && !Array.isArray(embedded)) {
         try {
           const model = parseCharacterBook(embedded, {
-            name: `${character.name || character.data?.name || 'Character'} embedded book`,
+            name: character.name || character.data?.name || '角色卡世界书',
           })
           const maxScanCharacters = Number.isSafeInteger(options.maxScanCharacters) && options.maxScanCharacters > 0
             ? options.maxScanCharacters

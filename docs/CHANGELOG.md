@@ -4,6 +4,39 @@ This is the staged implementation log for the prompt-preset experiment. It is
 kept separately from the product README so reviewers can follow intent,
 decisions, verification, and known limits chronologically.
 
+## 2026-08-15 — World-book UI clarity and user-injection Trace
+
+Purpose: make the accepted standalone/embedded world-book composition
+unambiguous in the UI and provide privacy-preserving evidence that a selected
+user description reached the assembled request.
+
+- External standalone books now keep their internal title when present and
+  otherwise derive a clean title from the imported filename without `.json`.
+  Catalog and editor labels no longer append raw format identifiers.
+- Split the world-book panel into explicit standalone and character-bound
+  sections. Export links now use the same button box, typography and decoration
+  as neighboring actions.
+- Added a separate applied-selection snapshot. Changed checkboxes show a clear
+  unapplied warning and the primary action says so; when the warning is absent,
+  the visible binding equals the server-persisted session binding.
+- Raised default body/control typography across preset, character, world-book,
+  user and Trace panels. The accepted launcher geometry and behavior remain
+  unchanged; configurable scale/language belongs to a later settings surface.
+- Extended loader audit metadata and Tavern Trace with user-description source
+  length, one-time insertion count and placement kind. No user description,
+  prompt body, header body or history is copied into Trace persistence.
+- Added regression coverage proving that `personaDescription` and `{{persona}}`
+  consume a user description at most once. `{{user}}` remains a name macro and
+  may intentionally occur wherever a preset author placed it.
+
+Verification:
+
+- `npm run check` completed 118 tests: 117 passed, none failed, and the optional
+  external copyrighted-fixture test skipped because no reviewer path was set.
+- Synthetic import tests cover internal names, filename fallback and suffix
+  removal. Trace tests verify insertion metadata while rejecting user content
+  from the persisted record.
+
 ## 2026-08-15 — Phase 2 resource and audit integration
 
 Purpose: combine the independently reviewed standalone world-book, user,

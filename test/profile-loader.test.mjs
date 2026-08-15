@@ -103,6 +103,13 @@ test('selected user fills name macros and persona marker exactly once', () => {
   assert.equal(result.systemText.match(/<st-user-field/g)?.length, 1)
   assert.doesNotMatch(result.systemText, /\{\{/)
   assert.equal(result.diagnostics.some(item => item.code === 'USER_PERSONA_MARKER_FALLBACK'), false)
+  assert.deepEqual(result.userInjection, {
+    selected: true,
+    descriptionAvailable: true,
+    descriptionCharacters: 'Synthetic Reader studies {{char}}.'.length,
+    descriptionInsertions: 1,
+    descriptionPlacement: 'preset-marker:personaDescription',
+  })
 })
 
 test('selected user uses a stable diagnosed fallback when the persona marker is absent', () => {
@@ -119,6 +126,8 @@ test('selected user uses a stable diagnosed fallback when the persona marker is 
   assert.equal(result.systemText.match(/Stable user fallback\./g)?.length, 1)
   assert.ok(result.systemText.indexOf('Stable user fallback.') < result.systemText.indexOf('Character fallback.'))
   assert.ok(result.diagnostics.some(item => item.code === 'USER_PERSONA_MARKER_FALLBACK'))
+  assert.equal(result.userInjection.descriptionInsertions, 1)
+  assert.equal(result.userInjection.descriptionPlacement, 'fallback')
 })
 
 test('{{persona}} is an explicit single description placement and does not duplicate a later marker', () => {
@@ -136,4 +145,6 @@ test('{{persona}} is an explicit single description placement and does not dupli
   })
   assert.equal(result.systemText.match(/Only once\./g)?.length, 1)
   assert.equal(result.systemText.match(/<st-user-field/g)?.length ?? 0, 0)
+  assert.equal(result.userInjection.descriptionInsertions, 1)
+  assert.equal(result.userInjection.descriptionPlacement, 'preset-macro:main')
 })
