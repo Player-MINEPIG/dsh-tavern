@@ -13,7 +13,8 @@
   │
   ▼
 Agent Inbox（next-turn / next-step）
-  │  claim 当前待处理消息
+  │  插入/编辑/取消均记录 agent/inbox/spliced
+  │  claim 当前待处理消息时再记录删除 splice
   ▼
 systemPrompt.assemble(agent scope)
   ├─ 收集并排序原生 system sections
@@ -60,6 +61,7 @@ DSH 的四条数据通道彼此独立：
 关键事实：
 
 - Inbox 先 `claim` 当前输入，但 system assembly 执行时，当前输入尚未追加为 Session 的 `user/message`，也不在公开的 assembly context 中。
+- Inbox 的每次插入、替换、取消和 claim 都先持久写入公开的 `agent/inbox/spliced` Session event。`Session.append()` 会同步通知 `session/event` 观察者，然后 Inbox 才修改实时队列；因此插件可以从事件重建待处理队列，并在 claim 删除事件发生后、system assembly 开始前得到被 claim 的消息。当前验收版 DT 尚未使用这条路径。
 - DSH 完成 system assembly 后才调用公开的 `agent/pre-step`。该 hook 能看见 claimed messages，但收到的 assembly 已经冻结。
 - `Session.deriveMessages()` 从持久 message surface 投影 user、assistant 和 tool result；turn/step 边界与流式 chunk 不会重复成为模型消息。
 - `agent/request` 只负责 call config，不生成历史，也不能替换已冻结的 system assembly。
@@ -97,7 +99,7 @@ DT 悬浮球 / 资源侧栏
 - 普通 fork 固化父会话当时的资源选择；delegated subagent 默认不继承 Tavern 资源。
 - UI 的红/绿点表示“当前 session 是否绑定资源”，不表示世界书是否在本轮命中。
 
-### 2.2 数据面：把已绑定资源编译为一个运行时快照
+### 2.2 当前已验收数据面：把已绑定资源编译为一个运行时快照
 
 ```text
 SessionSelectionStore
@@ -135,6 +137,8 @@ DT 不替换 agent loop，也不维护第二套会话历史。它通过 DSH 的�
 | `agent/request-error` | 标记相应 Trace 尝试失败 | 不改变模型输入 |
 | Web server / client slots | 提供受保护的资源 API、`DT` 悬浮球、侧栏与 Tavern Trace 视图 | 控制面与可视化；不直接进入 prompt |
 
+下一阶段会扩展既有 `session/event` 观察者：除 request/header 对齐外，由 loader 独占处理公开 `agent/inbox/spliced`，建立不持久化正文的 `PendingInputProjection`。这属于计划中的 DT 行为，不是当前验收版已经发送给模型的能力。
+
 默认 append 模式下，DSH 原有 system sections 仍然存在，DT profile 作为新增 section 参与组装。高级 replace 模式会从模型可见的 system 文本中移除其他 section，只保留 DT profile；但 tools、runtime contexts、variables、沙箱、审批与执行层安全限制仍由 DSH 管理，不会被关闭。
 
 DT 明确不做以下改动：
@@ -147,7 +151,7 @@ DT 明确不做以下改动：
 - 不绕过 DSH 的工具权限、沙箱或审批。
 - 不向 Session 写入伪造的 Trace、未知事件或第二套对话记录。
 
-## 4. 安装 DT 后的完整 flow
+## 4. 安装当前已验收 DT 后的完整 flow
 
 下面把控制面已经保存的资源选择，与一次真实模型 step 合并起来：
 
@@ -230,7 +234,7 @@ request.config   = DSH/adapter 配置 + DT 可映射的 preset 参数
 
 replace 模式下只有第一行不同：`request.system = DT 编译的 Tavern profile`；其他三条权威通道不变。
 
-## 5. 当前输入、世界书与 Trace 的时序边界
+## 5. 当前边界与计划中的 ActivationContext
 
 DSH 当前顺序是：
 
@@ -242,7 +246,7 @@ claim 当前输入
   → agent/request / request/header
 ```
 
-因此 DT 在 system assembly 时只能安全扫描已经持久化的历史：
+当前已验收 DT 在 system assembly 时只扫描已经持久化的历史：
 
 - 关键词已在历史中：本步骤可以命中并注入；
 - 关键词只在刚提交的当前输入中：通常到下一模型 step（例如工具继续）或下一 turn 才能参与匹配；
@@ -250,12 +254,27 @@ claim 当前输入
 
 不能仅把 Tavern Trace 的扫描推迟到 `agent/pre-step`、`agent/request` 或 `request/header`：此时虽然能看见当前输入，但 system 已冻结。晚扫描会让 Trace 显示“本轮命中”，而实际 `request/header.system` 没有该 lore，形成错误审计。DT 因此记录真正参与该请求的 assembly，不把事后推演冒充本轮激活。
 
-严格同轮世界书匹配需要 DSH 新增以下任一公开 seam：
+进一步核对 rc.6 后，已经确认不需要制造空转 step，也不必等待新的 `agent/pre-step` 协议。可用的公开顺序是：
 
-1. claim 当前输入后、system assembly 前的 hook；或
-2. `agent/pre-step` 可请求重新组装并替换同一步 system prompt 的协议。
+```text
+agent/inbox/spliced（插入消息）
+  → loader 投影 next-turn / next-step 队列
+  → claim 产生删除 splice（outcome 不是 canceled）
+  → loader 暂存本次 claimed batch
+  → systemPrompt.assemble
+  → ActivationContext = durable history + claimed batch
+  → world-book matcher
+  → 本 step 的真实 Tavern profile / Trace snapshot
+```
 
-在此之前，DT 不读取 Agent 私有 inbox、不伪造 durable message，也不把 lore 作为额外 user message 注入。
+该路径尚未在当前验收版实现，已经加入下一阶段计划。实现必须满足：
+
+- `PendingInputProjection` 只存在于 loader Host 层；format、world-book、character、user 和 UI 不分别订阅或复制 Inbox 状态；
+- 按 splice 的 `target/start/removedCount/inserted/outcome` 精确处理插入、替换、取消、steer、next-step 和排队 next-turn；
+- 当前输入正文只作有界内存匹配输入，不写入 DT 资源、selection 或 Tavern Trace；DSH 自己的 durable inbox event 仍是来源权威；
+- assembly 完成、取消、异常或 agent/session 结束后清理 claimed batch，下一 step 已进入 history 的消息不得重复拼接；
+- Trace 仍在 `agent/request` 记录真正参与本次请求的 exact assembly snapshot，不在事后重跑 matcher；
+- 不读取 Agent 私有 Inbox、不提前 append `user/message`、不增加空转模型请求，也不把 lore 伪装成额外 user message。
 
 ## 6. 如何审阅一次真实请求
 

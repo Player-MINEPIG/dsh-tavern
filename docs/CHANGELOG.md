@@ -4,6 +4,24 @@ This is the staged implementation log for the prompt-preset experiment. It is
 kept separately from the product README so reviewers can follow intent,
 decisions, verification, and known limits chronologically.
 
+## 2026-08-15 — Pending-input seam correction and roadmap alignment
+
+Purpose: preserve the last accepted runtime behavior while correcting the
+technical plan after finding an earlier public DSH event boundary.
+
+- Verified that every Inbox insertion, replacement, cancellation and claim is
+  durably represented by `agent/inbox/spliced`, and that synchronous
+  `session/event` observers run before the live Inbox projection mutates and
+  before the claimed batch enters system assembly.
+- Kept the accepted implementation description honest: it still scans durable
+  history only. Planned a loader-owned, in-memory `PendingInputProjection` and
+  structured `ActivationContext` instead of an empty model step, private Inbox
+  access or post-request Trace recomputation.
+- Unified README, message-flow, architecture, loader, prompt-pipeline,
+  world-book and Trace documents around that current-versus-planned boundary.
+- Expanded the public roadmap with acceptance boundaries for current-input
+  activation, UI scale/language settings and user-to-world-book bindings.
+
 ## 2026-08-15 — Four-view DSH/DT message-flow review
 
 Purpose: make the host flow, plugin flow, integration delta and resulting full

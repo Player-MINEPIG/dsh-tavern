@@ -40,12 +40,14 @@ dsh 没有 ST 的 `PromptManager`、marker collection 或任意历史深度插�
 
 1. 导入时把 preset、角色卡和 World Info/Character Book 分别归一化，并保留未知字段与原始 artifact。
 2. loader 根据当前 session 选择读取 preset、角色卡和一个用户资源；角色卡内嵌 `character_book` 自动成为世界信息来源。
-3. 世界信息 matcher 扫描已有 DSH durable user/assistant 历史，得到本次激活条目。
+3. 当前已验收版本的世界信息 matcher 扫描已有 DSH durable user/assistant 历史，得到本次激活条目；尚未把本次 claimed input 加入首个 assembly。
 4. loader 按 preset marker 组合静态 prompt、用户名/描述、角色字段和激活 lore，形成唯一 `dsh-tavern:profile` system section。
 5. DSH 自己继续从 Session 投影用户输入、历史和工具结果；插件不复制 `chatHistory`。
 6. `temperature`、`maxTokens`、`reasoningEffort` 和 `stop` 通过 `agent/request` 映射；其他 ST sampler 目前只保存，不宣称已经下发。
 
 代码边界与这条数据流对应：`tavern-format` 只把 ST JSON 归一化，`preset` 只管理持久化/API/UI，`tavern-loader` 才执行第 3–5 步并作为根插件入口。因而以后改变 DSH 注入策略，不需要修改或重新解释 ST parser。完整决策见 `docs/ARCHITECTURE.md`。
+
+下一阶段不通过空转 step 或私有 Inbox 修补第 3 步。loader 会从公开 `agent/inbox/spliced` Session event 重建待处理队列，在 claim 删除 splice 后、system assembly 前暂存本次 batch，并形成 `ActivationContext = durable history + claimed messages`。world-book 纯 matcher 仍只接收显式输入，不知道 DSH event；Trace 仍记录首次 assembly 的真实结果，不在请求后补算。
 
 默认 system 段顺序为：DSH harness identity（约 `-100`）→ Agent/deployment persona（约 `0`）→ dsh-tavern preset（`10`）→ 工具引导（`100–199`）。
 
@@ -59,7 +61,7 @@ dsh 没有 ST 的 `PromptManager`、marker collection 或任意历史深度插�
 | --- | --- | --- |
 | 普通 enabled prompt 与顺序 | 按顺序编译进一个 DSH system 段 | 部分；原 role 只写入 `<st-prompt role="…">` 标签，不是真正的消息 role |
 | marker | 填充角色字段、before/after lore 和 example dialogue；`chatHistory` 由 DSH 原生历史拥有 | 部分；不支持任意真实 role/depth 拓扑 |
-| 用户本轮输入 | 由 DSH 原生会话发送，插件不复制 | 已接入请求，但没有插入到 ST `chatHistory` marker 位置 |
+| 用户本轮输入 | 由 DSH 原生会话发送，插件不复制；计划中的 loader `ActivationContext` 只让它在首个 assembly 前参与激活判断 | 已接入请求，但没有插入到 ST `chatHistory` marker 位置；pending 投影尚未实现 |
 | 会话历史 | 由 DSH 原生 durable history 重放，插件不复制 | 已接入请求，但没有 ST token-budget/marker/depth 语义 |
 | dialogue examples | 读取角色卡字段并作为带来源标签的 system 近似块 | 部分；不是真实 user/assistant 示例消息 |
 | absolute/depth injection | 字段被保留，编译器不执行 | 未实现 |
@@ -78,7 +80,7 @@ dsh 没有 ST 的 `PromptManager`、marker collection 或任意历史深度插�
 | 预设静态 instruction | 继续使用命名 system sections；由 coordinator 提供 ST marker anchor |
 | 角色 description/personality/scenario | 当前按 preset marker 或稳定 fallback 进入统一 profile；未来只有明确选择才覆盖 DSH Agent persona |
 | 用户名字与描述 | 名字解析 `{{user}}`；描述进入一次 `personaDescription`/`{{persona}}`，缺少放置点时诊断并稳定 fallback；不覆盖 DSH Agent persona |
-| 世界信息条目 | 当前扫描已有历史并按 before/after anchor 进入 profile；同轮输入与严格 depth 等待公开 seam |
+| 世界信息条目 | 当前扫描已有历史并按 before/after anchor 进入 profile；下一阶段用公开 `agent/inbox/spliced` 投影解决首 step 当前输入匹配；严格 depth/outlet 仍需要其他宿主能力 |
 | example dialogue | 当前为明确标注的 system 近似；未来需要真实 user/assistant 示例消息 seam |
 | first message / alternate greeting | 当前为 greeting-reference；未来应作为创建会话时的显式 seed message |
 | 用户输入与历史 | 始终以 DSH 原生 durable messages 为权威来源；世界书只读扫描，不重复发送 |

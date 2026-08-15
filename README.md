@@ -175,7 +175,7 @@ config:
 | 用户输入与会话历史 | 继续由 DSH 原生 durable messages 管理，不插入 ST `chatHistory` marker |
 | greeting | 作为明确标注的 system profile 风格参考，不伪造 assistant 历史消息 |
 | PHI / depth / absolute injection | 字段保留并给出降级诊断；当前放入 system profile，不能严格复刻 ST 历史位置 |
-| 世界书扫描与编辑 | 角色卡内嵌书可编辑并扫描已有 durable history（最近 64 KiB）；原生 regex key 默认阻断；当前输入尚未公开给本 step 的 assembly，关键词可能在同一可见回合的下一 agent step（如工具继续）或下一用户回合激活；原始导入 artifact 保持不变，JSON 导出反映编辑后的插件副本 |
+| 世界书扫描与编辑 | 角色卡内嵌书可编辑并扫描已有 durable history（最近 64 KiB）；原生 regex key 默认阻断；当前已验收版本尚未把 claimed input 投影给本 step 的 assembly，关键词可能在同一可见回合的下一 agent step（如工具继续）或下一用户回合激活；已确认可在公开 `agent/inbox/spliced` 事件上实现无空转的首 step 匹配，但尚未实现；原始导入 artifact 保持不变，JSON 导出反映编辑后的插件副本 |
 | 独立世界书 | 提供存储、导入/创建/编辑/导出/删除、per-session 多选和统一 matcher；未知字段随原始模型保留 |
 | 用户资料 | 严格 `{id,name,description}`，按 session 单绑定；`{{user}}` 替换用户名并可按预设出现多次，描述只由 `personaDescription`/`{{persona}}`/fallback 消费一次；不覆盖 DSH Agent 身份 |
 | Tavern Trace | 保存有界的资源摘要、世界书配置/命中关键词、匹配决策、哈希和 header 引用；不保存资源正文或完整消息，也不等同于 DSH 原生 request/header |
@@ -208,8 +208,9 @@ packages/tavern-loader
 
 ## 计划开发
 
-- 用户资源绑定零本或多本独立世界书，并由统一 session policy/loader 组合；不把这一关系塞进用户描述正文。
-- 增加插件设置界面，允许调整 UI 缩放和界面语言；当前版本先提高默认正文与控件字号。
+- 在 loader 内实现唯一的 `PendingInputProjection`：从公开 `agent/inbox/spliced` 重建待处理/claimed 输入，形成结构化 `ActivationContext`，使单 step 回合也能在 `step 1` 触发世界书。不得增加空转模型请求、私读 Inbox、提前写入消息或在 Trace 中保存输入正文。
+- 用户资源绑定零本或多本独立世界书，并由统一 session policy/loader 组合；关系存入选择策略，不塞进用户描述正文。用户解绑或删除时清理关联，不影响同一本书的显式 session 绑定。
+- 增加插件设置界面，首批支持 UI 缩放和界面语言；设置应全局持久化、即时刷新、具有恢复默认值，且不改变资源内容或 session 绑定。当前版本仅提高了默认正文与控件字号。
 - 世界书递归扫描、sticky/cooldown/delay、vector、outlet 与严格 depth/role insertion。
 - 将 greeting 作为显式开场消息的安全工作流，而不污染既有 durable history。
 - 在 DSH 提供合适 seam 后支持真实 role message、example dialogue 和 absolute/depth injection，而不是用 system 标签模拟。

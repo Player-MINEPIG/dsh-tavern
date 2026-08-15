@@ -44,6 +44,12 @@ SessionSelectionStore ─────────────────┘
 - 删除资源时 loader policy 提供 `clearResource(kind, id)` 清除所有悬空选择。
 - session id 只作为 JSON key，但仍经过长度/字符集校验，避免原型键和异常输入。
 
+### Planned user-to-world-book relationship
+
+用户资源继续严格保持 `{ id, name, description }`。计划中的“用户绑定世界书”由统一 loader policy 维护独立关系，不把 world-book id 写入描述正文，也不让 `user` adapter 自己运行 matcher。loader 在每次 compile 时把当前 session 显式 `worldBookIds` 与当前用户关联的独立书解析为一个稳定、去重的有效集合。
+
+实现前必须在契约和测试中固定两类来源的顺序/优先级；同一本书同时出现时只执行一次。解绑或切换用户只移除用户来源，不得误删 session 显式来源；删除用户只清理关系，删除世界书则清理所有关系和 session 引用。
+
 ## Adapter boundary
 
 `TavernProfileLoader` 为角色、用户和世界书分别暴露一个单例 adapter 插槽：
@@ -78,6 +84,21 @@ loader.registerWorldBookAdapter({
 
 角色卡 adapter 的最小返回模型与角色分支 `CharacterCardModel` 一致，loader 当前消费 `id/name/updatedAt/data`。用户 adapter 只返回 `{ id, name, description }`。世界书 adapter 至少把激活项归一化为 `{ id|uid, content, position: "before"|"after" }`。
 
+### Planned activation input contract
+
+当前 `conversationText` 只来自 `Session.deriveMessages()`。下一阶段由 loader Host 层增加唯一的 `PendingInputProjection`，从公开 `agent/inbox/spliced` 重建队列和本次 claimed batch，再向 adapter 提供结构化、只读的 `activationContext`。计划契约为：
+
+```js
+{
+  historyMessages,      // DSH durable message projection；不复制进插件存储
+  claimedMessages,      // 本 assembly 对应的临时 batch
+  scanText,             // 在 64 KiB 等策略下生成的 matcher 输入
+  sources,              // history/current-input/steer/tool-context 等无正文来源元数据
+}
+```
+
+`conversationText` 在迁移期可作为从 `activationContext.scanText` 派生的兼容字段，不能成为第二份状态。adapter 只消费该 value，不订阅 DSH event；pending 队列、claim/cancel 判定、生命周期清理和去重均由 loader 独占。Trace 可以保存命中来源类别，但不得保存 `historyMessages`、`claimedMessages` 或 `scanText` 正文。
+
 ## Composition semantics
 
 ### Preset-only compatibility
@@ -109,8 +130,8 @@ loader.registerWorldBookAdapter({
 - PHI 位于 Tavern system profile，不宣称严格位于全部历史之后；
 - depth prompt 保存 role/depth 的格式职责归角色模块，loader 首期只能放入明确标注的 system fallback；
 - `user`/`assistant` preset prompt role 仍是可审阅标签，不是真实历史消息 role；
-- 当前用户输入在 system assembly 前已从 inbox claim、但尚未出现在公开 assembly context。世界书首阶段可扫描持久历史；若要同轮匹配当前输入，需要另行设计 `agent/pre-step` 的可重建注入协议，不能偷偷读取私有 inbox。
-- Trace 必须描述实际冻结的 assembly。不能在 `agent/pre-step` 或 `request/header` 后拿当前输入重跑 matcher，再把该结果标成已进入本轮 system；DSH 当前没有公开的 same-step system reassembly seam。
+- 当前验收版在 system assembly 时只扫描持久历史，因此当前输入可能到同一 turn 的下一 agent step 或下一用户 turn 才匹配。下一阶段改由 loader 从公开 `agent/inbox/spliced` 投影 claimed batch；不再采用过晚的 `agent/pre-step`，也不读取私有 Inbox。
+- Trace 必须描述实际冻结的 assembly。不能在 `agent/pre-step` 或 `request/header` 后拿当前输入重跑 matcher，再把该结果标成已进入本轮 system；因为没有 same-step reassembly seam，claimed batch 必须经 `agent/inbox/spliced` 投影在首次 assembly 前进入 matcher。
 
 ## Audit boundary
 
