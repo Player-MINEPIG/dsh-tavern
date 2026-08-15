@@ -37,7 +37,7 @@ test('launcher status follows each session selection and resolves future catalog
       presetId: 'preset-a',
       characterCardId: 'character-a',
       worldBookIds: ['world-a', 'world-b'],
-      userProfileId: 'user-a',
+      userId: 'user-a',
     },
     resources: {
       preset: { id: 'preset-a', name: 'Balanced Red' },
@@ -138,9 +138,15 @@ test('resource mutations announce one shared refresh event consumed by the shell
   const root = readFileSync(new URL('../packages/client/src/index.js', import.meta.url), 'utf8')
   const preset = readFileSync(new URL('../packages/preset/src/client.js', import.meta.url), 'utf8')
   const character = readFileSync(new URL('../packages/character/src/client.js', import.meta.url), 'utf8')
+  const worldBook = readFileSync(new URL('../packages/world-book-library/src/client.js', import.meta.url), 'utf8')
+  const user = readFileSync(new URL('../packages/user/src/client.js', import.meta.url), 'utf8')
 
   assert.match(root, /addEventListener\('dsh-tavern:refresh', onRefresh\)/)
   assert.equal(preset.match(/announceTavernRefresh\(\)/g)?.length, 6)
   assert.equal(character.match(/announceTavernRefresh\(\)/g)?.length, 5)
   assert.match(character, /addEventListener\('dsh-tavern:refresh', onRefresh\)/)
+  assert.match(worldBook, /dispatchEvent\(new Event\('dsh-tavern:refresh'\)\)/)
+  assert.match(user, /notifyRefresh\(\)/)
+  assert.match(worldBook, /addEventListener\('dsh-tavern:refresh', onRefresh\)/)
+  assert.match(user, /addEventListener\('dsh-tavern:refresh', onRefresh\)/)
 })

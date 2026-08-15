@@ -1,6 +1,6 @@
 # Unified Tavern loader contract
 
-状态：2026-08-14，三个并行 feature 已在 `feature/tavern-integration` 完成首轮接线。本文是角色卡、世界书与加载器的运行契约，不是 README。
+状态：2026-08-15，preset、角色卡、用户、独立世界书与 Tavern Trace 已在 Phase 2 集成分支完成组合。本文是资源与加载器的运行契约，不是 README。
 
 ## 目标与所有权
 

@@ -63,7 +63,7 @@ dsh 没有 ST 的 `PromptManager`、marker collection 或任意历史深度插�
 | 会话历史 | 由 DSH 原生 durable history 重放，插件不复制 | 已接入请求，但没有 ST token-budget/marker/depth 语义 |
 | dialogue examples | 读取角色卡字段并作为带来源标签的 system 近似块 | 部分；不是真实 user/assistant 示例消息 |
 | absolute/depth injection | 字段被保留，编译器不执行 | 未实现 |
-| World Info before/after | 角色卡内嵌书可匹配并填入；独立书无 store/UI | 部分 |
+| World Info before/after | 角色卡内嵌书与 per-session 多选独立书使用同一 matcher 并填入 | 已接入基础 before/after；严格 depth/outlet 仍降级 |
 | 角色描述、性格、场景、首条消息 | 前三者进入 profile；首条消息仅作 greeting-reference | 部分；不伪造历史 |
 | ST macro | 支持常见变量、随机与骰子；缺少完整 ST runtime context | 部分 |
 

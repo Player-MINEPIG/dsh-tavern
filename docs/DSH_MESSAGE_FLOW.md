@@ -99,7 +99,7 @@ request/header.config
 - 不把 preset 中标记为 user/assistant 的静态 prompt 伪装成真实历史；它们目前只是 system profile 中可审阅的标签块。
 - 不把 greeting 写成一条虚构的 assistant 历史；当前仅作为明确标注的风格参考。
 - 不发送 creator notes。
-- 不让 UI 菜单、未绑定的用户资源或未接线的独立世界信息 ID 产生占位 prompt；用户资源也不覆盖 DSH Agent 身份。
+- 不让 UI 菜单或未绑定的用户/独立世界书资源产生占位 prompt；用户资源也不覆盖 DSH Agent 身份。
 - 不绕过 DSH 的工具权限、沙箱或审批。replace 模式会移除模型可见的部分宿主说明，但不会关闭执行层限制。
 - 不把 Tavern Trace 写成 `user/message`、`assistant/message`、`tool/call` 或未知自定义 Session event。当前 DSH 持久读取面没有稳定的第三方事件类型注册入口，插件因此使用自己的有界 metadata store。
 

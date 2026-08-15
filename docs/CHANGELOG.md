@@ -4,6 +4,44 @@ This is the staged implementation log for the prompt-preset experiment. It is
 kept separately from the product README so reviewers can follow intent,
 decisions, verification, and known limits chronologically.
 
+## 2026-08-15 — Phase 2 resource and audit integration
+
+Purpose: combine the independently reviewed standalone world-book, user,
+launcher-status and Tavern Trace branches without allowing any one branch to
+replace another module's client, API dispatcher, loader adapter or tests.
+
+- Kept one installable plugin and one secured `/dsh-tavern/api/*` prefix while
+  dispatching preset, character, user, world-book and Trace routes.
+- Registered character, user and world-book adapters in one
+  `TavernProfileLoader`; independent and embedded books use the same matcher.
+- Kept one browser overlay and combined real preset, character, world-book and
+  user panels with the session-aware red/green status projection. Chinese menu
+  labels and the implemented user surface replace the feature branch's
+  planning placeholder.
+- Regenerated the browser bundle after every conflict resolution rather than
+  selecting either generated bundle side.
+- Updated README and technical contracts so completed independent world books,
+  users, launcher status and Trace are no longer described as future work.
+
+Verification:
+
+- `npm run check` completed 116 tests: 115 passed, none failed, and the optional
+  external copyrighted-fixture test skipped because no reviewer path was set.
+- `npm run pack:check` produced the expected 49-file package and excluded tests,
+  review documents, runtime data and the local untracked roadmap.
+- An isolated DSH profile installed and restored prior plugin data, started on
+  a loopback-only test port, and returned HTTP 200 for the web app plus active,
+  world-book, user and Trace endpoints.
+- Synthetic HTTP smoke resources were created, bound together to one test
+  session, observed in the loader active view, deleted, and verified absent
+  with both session references cleared.
+- Browser verification found exactly one draggable `ST` launcher, confirmed
+  red/black/white styling, red/green selection dots, titles for all four
+  resources, persistent drag position, panel switching with the launcher still
+  present, editable embedded entries, and an official sibling Tavern Trace tab.
+- Tracked-file scans found no workstation path, external fixture name, local
+  roadmap reference, private-key block or common API-key pattern.
+
 ## 2026-08-15 — Standalone World Info / World Book library
 
 Purpose: add independently managed SillyTavern World Info resources without

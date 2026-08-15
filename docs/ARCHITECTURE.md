@@ -4,7 +4,7 @@
 
 ## 决策结论
 
-`dsh-tavern` 保持为一个可安装的 DSH 插件，在同一仓库和发布包内拆成单向依赖的内部层。preset 拆分已经验收并进入 `main`；角色卡与世界书沿同一边界在各自 feature 分支提供资源，再由统一 loader 集成。不要求用户安装多个互相配套的 DSH 插件。
+`dsh-tavern` 保持为一个可安装的 DSH 插件，在同一仓库和发布包内拆成单向依赖的内部层。preset、角色卡、用户、独立世界书和 Tavern Trace 均由统一 loader/client 组合；不要求用户安装多个互相配套的 DSH 插件。
 
 ```text
 SillyTavern JSON
@@ -68,7 +68,7 @@ DSH system prompt + agent request
 - 两个插件都可能争用 API、存储或 UI 生命周期；
 - 安装、卸载、备份和故障排查成本翻倍。
 
-因此发布与安装单位固定为根包 `dsh-tavern`，内部包边界用于代码复用和测试隔离。`package.json` 的 `./format`、`./preset`、`./character`、`./user`、`./world-book`、`./world-book-library`、`./loader` exports 是程序接口，不代表可分别安装的插件。
+因此发布与安装单位固定为根包 `dsh-tavern`，内部包边界用于代码复用和测试隔离。`package.json` 的 `./format`、`./preset`、`./character`、`./user`、`./world-book`、`./world-book-library`、`./trace`、`./loader` exports 是程序接口，不代表可分别安装的插件。
 
 ## 合并顺序与门槛
 
