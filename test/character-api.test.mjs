@@ -6,6 +6,7 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import {
   CharacterStore,
+  MAX_CHARACTER_WORLD_BOOK_BODY_BYTES,
   createCharacterApiHandler,
 } from '../packages/character/src/index.js'
 
@@ -139,6 +140,37 @@ test('character API returns structured errors and delegates session policy', asy
     assert.equal(blocked.status, 409)
     assert.equal(blocked.json.error.code, 'SESSION_RUNNING')
     assert.equal(store.selection('running'), null)
+  } finally {
+    rmSync(directory, { recursive: true, force: true })
+  }
+})
+
+test('character world-book edits have an independent request and structure boundary', async () => {
+  const directory = mkdtempSync(join(tmpdir(), 'dsh-tavern-character-book-limit-'))
+  const store = new CharacterStore(directory)
+  store.import(JSON.stringify({ name: 'Bounded synthetic' }), { id: 'bounded' })
+  const handler = createCharacterApiHandler(store)
+  try {
+    const oversized = await invoke(handler, {
+      method: 'PATCH',
+      url: '/dsh-tavern/api/characters/bounded/world-book',
+      body: Buffer.from(JSON.stringify({
+        characterBook: { entries: [{ content: 'x'.repeat(MAX_CHARACTER_WORLD_BOOK_BODY_BYTES) }] },
+      })),
+    })
+    assert.equal(oversized.status, 413)
+    assert.equal(oversized.json.error.code, 'CHARACTER_WORLD_BOOK_TOO_LARGE')
+
+    let nested = 'leaf'
+    for (let index = 0; index < 34; index += 1) nested = { nested }
+    const tooDeep = await invoke(handler, {
+      method: 'PATCH',
+      url: '/dsh-tavern/api/characters/bounded/world-book',
+      body: { characterBook: { entries: [{ content: 'safe', extensions: nested }] } },
+    })
+    assert.equal(tooDeep.status, 400)
+    assert.equal(tooDeep.json.error.code, 'INVALID_CHARACTER_REQUEST')
+    assert.equal(store.get('bounded').data.characterBook, null)
   } finally {
     rmSync(directory, { recursive: true, force: true })
   }

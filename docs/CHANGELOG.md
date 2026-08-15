@@ -4,6 +4,44 @@ This is the staged implementation log for the prompt-preset experiment. It is
 kept separately from the product README so reviewers can follow intent,
 decisions, verification, and known limits chronologically.
 
+## 2026-08-15 — Second security review hardening
+
+Purpose: close the network, resource-amplification and durable-state gaps found
+after the functionally accepted integration build, without weakening ST
+round-trip behavior or silently changing old session bindings.
+
+- Added a real TCP peer check in front of every `/dsh-tavern/api/*` route.
+  Loopback Host/origin headers no longer let a non-loopback client through;
+  remote clients require a separate explicit `security.allowRemoteClients`
+  opt-in in addition to an allowed Host.
+- Removed the exported preset/character route installers that could register
+  handlers without the root security wrapper. Pure API handlers remain
+  available for the one secured root dispatcher and isolated tests.
+- Added a default 512 KiB, absolute 2 MiB UTF-8 limit to the compiled Tavern
+  profile, plus pre-assembly lore byte and 4,096-entry guards so an overflow
+  check does not first concatenate all selected books. Lower-ranked lore is
+  omitted as complete entries with diagnostics; static profile overflow fails
+  explicitly. ST `ignoreBudget` cannot bypass these Host limits.
+- Split embedded Character Book editing from the 32 MiB raw character artifact
+  boundary: PATCH is now 4 MiB, runs through the shared Character Book parser,
+  has explicit depth/node/string/entry bounds, retains unknown extension data,
+  and cannot create a stored character document above 16 MiB.
+- Migrated `session-selections.json` to schema v2 with `updatedAt`, strict
+  selection-field normalization, transactional bounded writes, 2,048-session
+  and 4 MiB defaults, and an 8 MiB pre-parse read ceiling. Capacity failure is
+  explicit rather than silently evicting durable user intent; a deletion seam
+  is ready for a future authoritative DSH lifecycle event.
+- Made `{{original}}` replacement preserve `$&`/`$1`-style text literally and
+  restricted unsafe-regex compatibility flags to unique `i/m/s/u/v` values.
+- Added focused regression coverage for spoofed loopback Host headers,
+  IPv4-mapped loopback, explicit remote opt-in, profile overflow/lore omission,
+  embedded-book request and structure limits, literal replacement, regex flags,
+  schema migration, capacity failure, deletion and transactional persistence.
+- Verification: `npm run check` rebuilt the browser bundle and completed 130
+  tests with zero failures; the one skipped test remains the opt-in local
+  copyrighted acceptance fixture. `npm run pack:check` produced the expected
+  49-file dry-run package without test data or local plans.
+
 ## 2026-08-15 — Pending-input seam correction and roadmap alignment
 
 Purpose: preserve the last accepted runtime behavior while correcting the

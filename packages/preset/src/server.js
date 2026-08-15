@@ -132,14 +132,5 @@ export function createApiHandler(
   }
 }
 
-export function installServerRoutes(ctx, store, onChange, activeView, selectionPolicy) {
-  const webServer = ctx.get('webServer')
-  if (webServer === undefined) return undefined
-  return webServer.register({
-    kind: 'prefix',
-    path: API_ROOT,
-    handler: createApiHandler(store, onChange, activeView, selectionPolicy),
-  })
-}
 
 export { API_ROOT, MAX_BODY_BYTES }

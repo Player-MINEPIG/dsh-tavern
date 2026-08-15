@@ -148,3 +148,64 @@ test('{{persona}} is an explicit single description placement and does not dupli
   assert.equal(result.userInjection.descriptionInsertions, 1)
   assert.equal(result.userInjection.descriptionPlacement, 'preset-macro:main')
 })
+
+test('character {{original}} replacement preserves dollar sequences literally', () => {
+  const result = compileTavernProfile({
+    preset: {
+      id: 'literal-original',
+      name: 'Literal original',
+      prompts: [{ identifier: 'main', role: 'system', content: 'Original $& $1', enabled: true, marker: false, st: {} }],
+      sampling: {},
+    },
+    character: {
+      id: 'literal-character',
+      data: { name: 'Literal', systemPrompt: 'Card then {{original}}' },
+    },
+  })
+  assert.match(result.systemText, /Card then Original \$& \$1/)
+})
+
+test('profile hard limit omits lower-ranked lore without cutting retained entries', () => {
+  const loreEntries = Array.from({ length: 4 }, (_, index) => ({
+    id: `lore-${index}`,
+    position: 'after',
+    content: `${index}:${'x'.repeat(240)}`,
+  }))
+  const result = compileTavernProfile({
+    character: { id: 'bounded-character', data: { name: 'Bounded' } },
+    loreEntries,
+    maxProfileBytes: 700,
+  })
+  assert.ok(Buffer.byteLength(result.systemText, 'utf8') <= 700)
+  assert.ok(result.activeLoreEntries.length > 0)
+  assert.ok(result.activeLoreEntries.length < loreEntries.length)
+  assert.deepEqual(result.activeLoreEntries, loreEntries.slice(0, result.activeLoreEntries.length).map(entry => entry.id))
+  assert.ok(result.diagnostics.some(item => item.code === 'TAVERN_PROFILE_LORE_LIMITED'))
+})
+
+test('profile hard limit rejects oversized static content instead of truncating it', () => {
+  assert.throws(
+    () => compileTavernProfile({
+      preset: {
+        id: 'oversized-static',
+        name: 'Oversized static',
+        prompts: [{ identifier: 'main', role: 'system', content: 'x'.repeat(1000), enabled: true, marker: false }],
+        sampling: {},
+      },
+      maxProfileBytes: 200,
+    }),
+    error => error?.code === 'TAVERN_PROFILE_TOO_LARGE' && error?.maxBytes === 200,
+  )
+})
+
+test('profile assembly considers at most 4096 ranked lore entries', () => {
+  const loreEntries = Array.from({ length: 4100 }, (_, index) => ({
+    id: `bounded-${index}`,
+    position: 'after',
+    content: 'x',
+  }))
+  const result = compileTavernProfile({ loreEntries })
+  assert.equal(result.activeLoreEntries.length, 4096)
+  assert.equal(result.activeLoreEntries.at(-1), 'bounded-4095')
+  assert.equal(result.diagnostics.find(item => item.code === 'TAVERN_PROFILE_LORE_LIMITED')?.omittedLoreEntries, 4)
+})

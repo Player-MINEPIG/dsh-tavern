@@ -1,9 +1,9 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
-import { mkdtempSync, rmSync } from 'node:fs'
+import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import { SessionSelectionStore } from '../packages/tavern-loader/src/session-policy.js'
+import { SessionSelectionStore, sessionPolicyConstants } from '../packages/tavern-loader/src/session-policy.js'
 
 function agent(id, header = {}) {
   return { id, session: { header } }
@@ -58,6 +58,80 @@ test('session selection rejects unsafe or unbounded ids', () => {
     const selections = new SessionSelectionStore(directory)
     assert.throws(() => selections.set('__proto__', { presetId: 'preset' }), /Invalid session id/)
     assert.throws(() => selections.set('x'.repeat(201), { presetId: 'preset' }), /Invalid session id/)
+  } finally {
+    rmSync(directory, { recursive: true, force: true })
+  }
+})
+
+test('session selections migrate legacy state and discard unbounded option fields', () => {
+  const directory = mkdtempSync(join(tmpdir(), 'dsh-tavern-session-migrate-'))
+  const path = join(directory, 'session-selections.json')
+  try {
+    writeFileSync(path, JSON.stringify({
+      schemaVersion: 1,
+      sessions: {
+        legacy: {
+          presetId: 'preset-a',
+          characterCardId: 'character-a',
+          character: { greetingIndex: 2, injected: 'not persisted' },
+        },
+      },
+    }))
+    const selections = new SessionSelectionStore(directory, { now: () => '2026-08-15T00:00:00.000Z' })
+    assert.deepEqual(selections.get('legacy').character, { greetingIndex: 2 })
+    const stored = JSON.parse(readFileSync(path, 'utf8'))
+    assert.equal(stored.schemaVersion, 2)
+    assert.equal(stored.sessions.legacy.updatedAt, '2026-08-15T00:00:00.000Z')
+    assert.equal(stored.sessions.legacy.selection.character.injected, undefined)
+  } finally {
+    rmSync(directory, { recursive: true, force: true })
+  }
+})
+
+test('session selections fail explicitly at capacity and support lifecycle deletion', () => {
+  const directory = mkdtempSync(join(tmpdir(), 'dsh-tavern-session-limit-'))
+  try {
+    const selections = new SessionSelectionStore(directory, { maxSessions: 2 })
+    selections.set('one', { presetId: 'a' })
+    selections.set('two', { presetId: 'b' })
+    assert.throws(
+      () => selections.set('three', { presetId: 'c' }),
+      error => error?.code === 'SESSION_SELECTION_LIMIT_REACHED',
+    )
+    assert.equal(selections.has('three'), false)
+    assert.equal(selections.deleteSession('one'), true)
+    selections.set('three', { presetId: 'c' })
+    assert.equal(selections.get('three').presetId, 'c')
+  } finally {
+    rmSync(directory, { recursive: true, force: true })
+  }
+})
+
+test('session selection persistence is transactional when its byte budget is exceeded', () => {
+  const directory = mkdtempSync(join(tmpdir(), 'dsh-tavern-session-bytes-'))
+  try {
+    const selections = new SessionSelectionStore(directory, { maxStateBytes: 256 })
+    assert.throws(
+      () => selections.set('session-a', { worldBookIds: Array.from({ length: 100 }, (_, index) => `book-${index}`) }),
+      error => error?.code === 'SESSION_SELECTION_STORAGE_LIMIT_REACHED',
+    )
+    assert.equal(selections.has('session-a'), false)
+  } finally {
+    rmSync(directory, { recursive: true, force: true })
+  }
+})
+
+test('oversized legacy session files are rejected before JSON parsing', () => {
+  const directory = mkdtempSync(join(tmpdir(), 'dsh-tavern-session-read-limit-'))
+  try {
+    writeFileSync(
+      join(directory, 'session-selections.json'),
+      Buffer.alloc(sessionPolicyConstants.hardMaxReadBytes + 1, 0x20),
+    )
+    assert.throws(
+      () => new SessionSelectionStore(directory),
+      error => error?.code === 'SESSION_SELECTION_FILE_TOO_LARGE',
+    )
   } finally {
     rmSync(directory, { recursive: true, force: true })
   }

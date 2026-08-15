@@ -5,8 +5,8 @@ export {
 export {
   CHARACTER_API_PREFIX,
   MAX_CHARACTER_BODY_BYTES,
+  MAX_CHARACTER_WORLD_BOOK_BODY_BYTES,
   createCharacterApiHandler,
-  installCharacterServerRoutes,
 } from './server.js'
 export {
   createCharacterCardResource,

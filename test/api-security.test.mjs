@@ -7,12 +7,14 @@ function invoke(handler, {
   method = 'GET',
   url = '/dsh-tavern/api/presets',
   headers = {},
+  remoteAddress = '127.0.0.1',
 } = {}) {
   return new Promise((resolve, reject) => {
     const req = Readable.from([])
     req.method = method
     req.url = url
     req.headers = Object.fromEntries(Object.entries(headers).map(([key, value]) => [key.toLowerCase(), value]))
+    req.socket = { remoteAddress }
     const responseHeaders = {}
     const res = {
       statusCode: 200,
@@ -52,6 +54,36 @@ test('API security rejects unapproved Host values and permits explicit network h
     headers: { host: 'dsh.lan:53101' },
   })
   assert.equal(permitted.status, 204)
+})
+
+test('API security rejects non-loopback peers independently of spoofable Host headers', async () => {
+  const blocked = await invoke(secureTavernApi(successHandler), {
+    remoteAddress: '192.168.1.50',
+    headers: { host: '127.0.0.1:53101' },
+  })
+  assert.equal(blocked.status, 403)
+  assert.equal(blocked.body.code, 'TAVERN_API_REMOTE_FORBIDDEN')
+
+  const missingPeer = await invoke(secureTavernApi(successHandler), {
+    remoteAddress: null,
+    headers: { host: '127.0.0.1:53101' },
+  })
+  assert.equal(missingPeer.status, 403)
+
+  const mappedLoopback = await invoke(secureTavernApi(successHandler), {
+    remoteAddress: '::ffff:127.0.0.42',
+    headers: { host: 'localhost:53101' },
+  })
+  assert.equal(mappedLoopback.status, 204)
+
+  const explicitRemote = await invoke(secureTavernApi(successHandler, {
+    allowedHosts: ['dsh.lan'],
+    allowRemoteClients: true,
+  }), {
+    remoteAddress: '192.168.1.50',
+    headers: { host: 'dsh.lan:53101' },
+  })
+  assert.equal(explicitRemote.status, 204)
 })
 
 test('API security requires same-origin JSON writes', async () => {

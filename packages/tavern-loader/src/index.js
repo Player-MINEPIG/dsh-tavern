@@ -153,10 +153,15 @@ export function apply(ctx, config = {}) {
   const worldBookStore = new WorldBookStore(storageDir)
   const userStore = new UserStore(storageDir)
   const selections = new SessionSelectionStore(storageDir, {
+    ...config.sessionSelections,
     defaultSelection: () => ({ presetId: store.state.selectedId }),
   })
   migrateCharacterSelections(characterStore, selections)
-  const runtime = new TavernProfileLoader({ presetStore: store, selections })
+  const runtime = new TavernProfileLoader({
+    presetStore: store,
+    selections,
+    maxProfileBytes: config.limits?.maxProfileBytes,
+  })
   const traceStore = new TavernTraceStore(storageDir, config.trace)
   if (traceStore.resetOversizedFile) {
     ctx.logger.warn?.('dsh-tavern: oversized legacy Tavern Trace storage exceeded the safe read limit and was reset')
@@ -341,8 +346,19 @@ export function createApiHandler(store, onChange = () => {}) {
 
 export { PresetRuntime } from './preset-runtime.js'
 export { compilePresetForDsh, projectPresetCallConfig } from './profile-compiler.js'
-export { TavernProfileLoader, compileTavernProfile, conversationTextFromAgent } from './profile-loader.js'
-export { SessionSelectionStore, normalizeSelection } from './session-policy.js'
+export {
+  TavernProfileLimitError,
+  TavernProfileLoader,
+  compileTavernProfile,
+  conversationTextFromAgent,
+  profileLoaderConstants,
+} from './profile-loader.js'
+export {
+  SessionSelectionLimitError,
+  SessionSelectionStore,
+  normalizeSelection,
+  sessionPolicyConstants,
+} from './session-policy.js'
 export { createWorldBookAdapter } from './world-book-adapter.js'
 export { WorldBookStore, createWorldBookApiHandler } from '../../world-book-library/src/index.js'
 export { secureTavernApi, apiSecurityConstants } from './api-security.js'

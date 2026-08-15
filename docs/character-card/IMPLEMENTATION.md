@@ -155,9 +155,9 @@ PNG CRC 目前交给正常 PNG 生产链保证；本解析器的安全目标是�
 依赖 DSH agent registry。`onChange(change)` 只报告资源事件，由 loader 决定是否 emit
 Host 事件。
 
-`installCharacterServerRoutes()` 注册 `/dsh-tavern/api/character` 的特定 prefix。若
-目标 Web server 对重叠 prefix 不采用 longest-prefix 规则，loader 应将
-`createCharacterApiHandler()` 合入自己的 API dispatcher，而不是修改角色解析器。
+角色模块只导出纯 `createCharacterApiHandler()`，不再导出可裸注册的 route installer。
+根 loader 把它合入唯一的 `/dsh-tavern/api` dispatcher，再统一套 TCP peer、Host、
+same-origin 与 Content-Type 安全包装，避免子模块被集成者无意间绕过保护。
 
 ## 7. Loader adapter 消费契约
 

@@ -1,4 +1,5 @@
 const LOGIC = new Set(['and_any', 'and_all', 'not_any', 'not_all'])
+const ALLOWED_REGEX_FLAGS = new Set(['i', 'm', 's', 'u', 'v'])
 
 function entryKey(entry, index) {
   const sourceKey = entry?.source?.key
@@ -43,8 +44,17 @@ function regexFromKey(key, options = {}) {
       code: 'regex-too-long',
     }
   }
+  const flags = key.slice(slash + 1)
+  const uniqueFlags = new Set(flags)
+  if (uniqueFlags.size !== flags.length || [...uniqueFlags].some(flag => !ALLOWED_REGEX_FLAGS.has(flag))) {
+    return {
+      regex: null,
+      error: 'Regular-expression flags must be unique and limited to i, m, s, u, or v',
+      code: 'unsupported-regex-flags',
+    }
+  }
   try {
-    return { regex: new RegExp(pattern, key.slice(slash + 1)), error: null, code: null }
+    return { regex: new RegExp(pattern, flags), error: null, code: null }
   } catch (error) {
     return { regex: null, error: error instanceof Error ? error.message : String(error), code: 'invalid-regex' }
   }

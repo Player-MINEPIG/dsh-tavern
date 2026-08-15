@@ -23,14 +23,17 @@ SessionSelectionStore ─────────────────┘
 
 ```json
 {
-  "schemaVersion": 1,
+  "schemaVersion": 2,
   "sessions": {
     "<session-id>": {
-      "presetId": "... or null",
-      "characterCardId": "... or null",
-      "userId": "... or null",
-      "worldBookIds": [],
-      "character": {}
+      "selection": {
+        "presetId": "... or null",
+        "characterCardId": "... or null",
+        "userId": "... or null",
+        "worldBookIds": [],
+        "character": {}
+      },
+      "updatedAt": "2026-08-15T00:00:00.000Z"
     }
   }
 }
@@ -43,6 +46,15 @@ SessionSelectionStore ─────────────────┘
 - `delegationDepth > 0` 的 subagent 固化为空选择，不继承 Tavern 内容。
 - 删除资源时 loader policy 提供 `clearResource(kind, id)` 清除所有悬空选择。
 - session id 只作为 JSON key，但仍经过长度/字符集校验，避免原型键和异常输入。
+- schema v1 在读取后原地迁移为 v2；角色选项只保留 loader 已知的 greeting/system/PHI 三个字段，资源 id 和单 session 世界书数量同时有界。
+- 默认最多 2,048 个 session（实现硬上限 4,096）和 4 MiB 持久状态，超过 8 MiB 的旧文件不进入 `JSON.parse`。写入先在副本上验证并原子落盘，失败不会污染内存状态。
+- selections 是不可静默丢弃的用户意图，因此容量满时拒绝新增，不照搬 Trace 的 LRU。`deleteSession(id)` 是为未来权威 DSH session 删除事件准备的回收 seam；当前 Host 尚未暴露该事件。
+
+## Profile safety budget
+
+`TavernProfileLoader` 对自己生成的单一 `dsh-tavern:profile` section 施加默认 512 KiB UTF-8 上限；`limits.maxProfileBytes` 可以收紧或放宽，但实现硬上限为 2 MiB。单次装配最多考虑排名最前的 4,096 个 lore 条目，并在生成 wrapper 前将原始 lore 正文限制为 profile budget 的两倍，避免为了判断超限先构造全部多书内容。世界书自身的 `tokenBudget` 与 `ignoreBudget` 只决定 ST 兼容候选，不能改变 Host 上限。
+
+若全部内容超限，compiler 用原有候选顺序保留能完整装入的最高排名 lore 条目前缀，并报告 `TAVERN_PROFILE_LORE_LIMITED`。若移除所有 lore 后仍超限，则抛出 `TAVERN_PROFILE_TOO_LARGE`；preset、角色字段或用户描述不会被从中间截断。
 
 ### Planned user-to-world-book relationship
 

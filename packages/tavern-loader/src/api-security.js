@@ -43,6 +43,14 @@ function isAllowedHost(hostname, allowedHosts) {
   return allowedHosts.has(hostname)
 }
 
+function isLoopbackAddress(address) {
+  if (typeof address !== 'string') return false
+  const normalized = address.trim().toLowerCase().split('%', 1)[0]
+  if (normalized === '::1') return true
+  if (normalized.startsWith('::ffff:')) return isLoopbackAddress(normalized.slice(7))
+  return isIP(normalized) === 4 && normalized.startsWith('127.')
+}
+
 function isMutation(method) {
   return method !== 'GET' && method !== 'HEAD' && method !== 'OPTIONS'
 }
@@ -74,17 +82,28 @@ function sameOrigin(req) {
 
 /**
  * Protects the browser-facing API from accidental network exposure, DNS
- * rebinding and cross-site writes. This is an origin boundary, not user
- * authentication: trusted local processes can still make HTTP requests.
+ * rebinding and cross-site writes. Remote TCP peers are denied independently
+ * from the client-controlled Host header unless explicitly enabled. This is
+ * still not user authentication: trusted local processes can make requests.
  */
 export function secureTavernApi(handler, options = {}) {
   if (typeof handler !== 'function') throw new TypeError('handler must be a function')
   const allowedHosts = normalizeAllowedHosts(options.allowedHosts)
+  const allowRemoteClients = options.allowRemoteClients === true
 
   return async (req, res) => {
     res.setHeader('Cache-Control', 'no-store')
     res.setHeader('X-Content-Type-Options', 'nosniff')
     res.setHeader('Referrer-Policy', 'no-referrer')
+
+    if (!allowRemoteClients && !isLoopbackAddress(req.socket?.remoteAddress)) {
+      return sendError(
+        res,
+        403,
+        'TAVERN_API_REMOTE_FORBIDDEN',
+        'dsh-tavern API accepts only loopback TCP clients unless security.allowRemoteClients is explicitly enabled.',
+      )
+    }
 
     const hostname = hostnameFromAuthority(header(req, 'host'))
     if (!isAllowedHost(hostname, allowedHosts)) {

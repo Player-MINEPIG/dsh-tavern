@@ -14,6 +14,7 @@ function invoke(handler, { method = 'GET', url, body, headers = {} } = {}) {
     req.method = method
     req.url = url
     req.headers = headers
+    req.socket = { remoteAddress: '127.0.0.1' }
     const responseHeaders = {}
     const res = {
       statusCode: 200,

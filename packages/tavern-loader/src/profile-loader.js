@@ -2,6 +2,30 @@ import { createHash } from 'node:crypto'
 import { compilePresetForDsh, projectPresetCallConfig } from './profile-compiler.js'
 import { renderSillyTavernMacros } from '../../tavern-format/src/index.js'
 
+const DEFAULT_MAX_PROFILE_BYTES = 512 * 1024
+const HARD_MAX_PROFILE_BYTES = 2 * 1024 * 1024
+const HARD_MAX_PROFILE_LORE_ENTRIES = 4096
+
+function profileByteLimit(value) {
+  if (!Number.isSafeInteger(value) || value <= 0) return DEFAULT_MAX_PROFILE_BYTES
+  return Math.min(value, HARD_MAX_PROFILE_BYTES)
+}
+
+function profileBytes(value) {
+  return Buffer.byteLength(value, 'utf8')
+}
+
+export class TavernProfileLimitError extends Error {
+  constructor(actualBytes, maxBytes) {
+    super(`Compiled Tavern profile is ${actualBytes} bytes; the hard limit is ${maxBytes} bytes`)
+    this.name = 'TavernProfileLimitError'
+    this.code = 'TAVERN_PROFILE_TOO_LARGE'
+    this.status = 413
+    this.actualBytes = actualBytes
+    this.maxBytes = maxBytes
+  }
+}
+
 function isRecord(value) {
   return value !== null && typeof value === 'object' && !Array.isArray(value)
 }
@@ -55,9 +79,10 @@ function fingerprint(value) {
  * Adapters resolve normalized documents; the compiler owns request semantics.
  */
 export class TavernProfileLoader {
-  constructor({ presetStore, selections }) {
+  constructor({ presetStore, selections, maxProfileBytes }) {
     this.presetStore = presetStore
     this.selections = selections
+    this.maxProfileBytes = profileByteLimit(maxProfileBytes)
     this.characterAdapter = null
     this.userAdapter = null
     this.worldBookAdapter = null
@@ -127,6 +152,7 @@ export class TavernProfileLoader {
       characterSelection: selection.character,
       loreEntries: Array.isArray(worldBookResult.loreEntries) ? worldBookResult.loreEntries : [],
       context: options.context ?? {},
+      maxProfileBytes: this.maxProfileBytes,
     })
     diagnostics.push(...compiled.diagnostics)
 
@@ -196,7 +222,7 @@ export class TavernProfileLoader {
  * Pure combination seam. Character/world-book branches target this normalized
  * input rather than importing DSH or mutating session state themselves.
  */
-export function compileTavernProfile({
+function compileTavernProfileUnbounded({
   preset = null,
   character = null,
   user = null,
@@ -457,8 +483,83 @@ function appendLore(body, entries, context) {
 }
 
 function applyOriginal(override, original) {
-  return override.replace(/\{\{\s*original\s*\}\}/gi, original)
+  return override.replace(/\{\{\s*original\s*\}\}/gi, () => original)
 }
+
+/**
+ * Compiles only as much ranked lore as fits the plugin-owned hard profile
+ * budget. ST tokenBudget/ignoreBudget remain compatibility policy; neither can
+ * bypass this byte limit. Static preset/character/user content is never cut in
+ * the middle: if it alone is too large, compilation fails explicitly.
+ */
+export function compileTavernProfile(options = {}) {
+  const maxBytes = profileByteLimit(options.maxProfileBytes)
+  const loreEntries = Array.isArray(options.loreEntries) ? options.loreEntries : []
+  const withoutLore = compileTavernProfileUnbounded({ ...options, loreEntries: [] })
+  const baseBytes = profileBytes(withoutLore.systemText)
+  if (baseBytes > maxBytes) {
+    throw new TavernProfileLimitError(baseBytes, maxBytes)
+  }
+  if (loreEntries.length === 0) return withoutLore
+
+  // Do not first concatenate every selected book merely to discover that the
+  // result is oversized. A raw-input guard bounds transient assembly memory;
+  // final output is still measured exactly below. Two profile budgets leave
+  // room for macros that contract while keeping hostile multi-book input
+  // bounded before wrapper strings are allocated.
+  const maxLoreInputBytes = maxBytes * 2
+  let inputBytes = 0
+  let candidateCount = 0
+  for (const entry of loreEntries.slice(0, HARD_MAX_PROFILE_LORE_ENTRIES)) {
+    const entryBytes = profileBytes(typeof entry?.content === 'string' ? entry.content : '')
+    if (inputBytes + entryBytes > maxLoreInputBytes) break
+    inputBytes += entryBytes
+    candidateCount += 1
+  }
+
+  let compiled = compileTavernProfileUnbounded({ ...options, loreEntries: loreEntries.slice(0, candidateCount) })
+  const measuredBytes = profileBytes(compiled.systemText)
+  if (candidateCount === loreEntries.length && measuredBytes <= maxBytes) return compiled
+
+  let lower = 0
+  let upper = candidateCount
+  let accepted = withoutLore
+  let acceptedCount = 0
+  while (lower <= upper) {
+    const count = Math.floor((lower + upper) / 2)
+    const candidate = compileTavernProfileUnbounded({ ...options, loreEntries: loreEntries.slice(0, count) })
+    if (profileBytes(candidate.systemText) <= maxBytes) {
+      accepted = candidate
+      acceptedCount = count
+      lower = count + 1
+    } else {
+      upper = count - 1
+    }
+  }
+
+  return {
+    ...accepted,
+    diagnostics: [
+      ...accepted.diagnostics,
+      {
+        code: 'TAVERN_PROFILE_LORE_LIMITED',
+        severity: 'warning',
+        message: `${loreEntries.length - acceptedCount} lower-ranked lore entries were omitted to keep the Tavern profile within its ${maxBytes} byte hard limit.`,
+        maxProfileBytes: maxBytes,
+        measuredCandidateBytes: measuredBytes,
+        maxLoreInputBytes,
+        retainedLoreEntries: acceptedCount,
+        omittedLoreEntries: loreEntries.length - acceptedCount,
+      },
+    ],
+  }
+}
+
+export const profileLoaderConstants = Object.freeze({
+  defaultMaxProfileBytes: DEFAULT_MAX_PROFILE_BYTES,
+  hardMaxProfileBytes: HARD_MAX_PROFILE_BYTES,
+  hardMaxLoreEntries: HARD_MAX_PROFILE_LORE_ENTRIES,
+})
 
 function renderProfileMacros(text, context, fields, userFields, consumed, userInjection, identifier) {
   let personaInserted = false

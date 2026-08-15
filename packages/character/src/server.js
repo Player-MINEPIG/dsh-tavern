@@ -3,6 +3,7 @@ import { characterStoreConstants } from './store.js'
 
 export const CHARACTER_API_PREFIX = '/dsh-tavern/api/character'
 export const MAX_CHARACTER_BODY_BYTES = characterStoreConstants.maxArtifactBytes
+export const MAX_CHARACTER_WORLD_BOOK_BODY_BYTES = characterStoreConstants.maxEditedWorldBookBytes
 
 function sendJson(res, status, payload) {
   const body = JSON.stringify(payload)
@@ -52,7 +53,7 @@ function apiError(error) {
   }
 }
 
-function readBytes(req, limit = MAX_CHARACTER_BODY_BYTES) {
+function readBytes(req, limit = MAX_CHARACTER_BODY_BYTES, options = {}) {
   return new Promise((resolve, reject) => {
     let length = 0
     const chunks = []
@@ -62,8 +63,9 @@ function readBytes(req, limit = MAX_CHARACTER_BODY_BYTES) {
       length += chunk.length
       if (length > limit) {
         settled = true
-        const error = new Error(`Character artifact exceeds the ${limit} byte request limit`)
-        error.code = 'ARTIFACT_TOO_LARGE'
+        const label = options.label ?? 'Character artifact'
+        const error = new Error(`${label} exceeds the ${limit} byte request limit`)
+        error.code = options.code ?? 'ARTIFACT_TOO_LARGE'
         error.status = 413
         reject(error)
         req.destroy?.()
@@ -84,8 +86,8 @@ function readBytes(req, limit = MAX_CHARACTER_BODY_BYTES) {
   })
 }
 
-async function readJson(req, limit = 1024 * 1024) {
-  const bytes = await readBytes(req, limit)
+async function readJson(req, limit = 1024 * 1024, options = {}) {
+  const bytes = await readBytes(req, limit, options)
   try {
     return bytes.length === 0 ? {} : JSON.parse(bytes.toString('utf8'))
   } catch (error) {
@@ -160,7 +162,10 @@ export function createCharacterApiHandler(store, options = {}) {
       }
 
       if (route !== null && method === 'PATCH' && route.resource === 'world-book') {
-        const body = await readJson(req, MAX_CHARACTER_BODY_BYTES)
+        const body = await readJson(req, MAX_CHARACTER_WORLD_BOOK_BODY_BYTES, {
+          code: 'CHARACTER_WORLD_BOOK_TOO_LARGE',
+          label: 'Character Book edit',
+        })
         const character = store.updateCharacterBook(route.id, body.characterBook)
         onChange({ kind: 'character-world-book-updated', characterCardId: route.id })
         return sendJson(res, 200, { ok: true, character })
@@ -203,14 +208,4 @@ export function createCharacterApiHandler(store, options = {}) {
       return sendJson(res, response.status, response.payload)
     }
   }
-}
-
-export function installCharacterServerRoutes(ctx, store, options = {}) {
-  const webServer = ctx.get('webServer')
-  if (webServer === undefined) return undefined
-  return webServer.register({
-    kind: 'prefix',
-    path: CHARACTER_API_PREFIX,
-    handler: createCharacterApiHandler(store, options),
-  })
 }
