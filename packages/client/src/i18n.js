@@ -1,5 +1,13 @@
-export const DEFAULT_UI_SETTINGS = Object.freeze({ locale: 'zh-CN', scale: 1 })
-export const SUPPORTED_LOCALES = Object.freeze(['zh-CN', 'en'])
+import {
+  DEFAULT_UI_LOCALE,
+  SUPPORTED_UI_LOCALES,
+  UI_LOCALES,
+  isSupportedUiLocale,
+} from '../../ui-settings/src/locale-contract.js'
+
+export { UI_LOCALES }
+export const DEFAULT_UI_SETTINGS = Object.freeze({ locale: DEFAULT_UI_LOCALE, scale: 1 })
+export const SUPPORTED_LOCALES = SUPPORTED_UI_LOCALES
 export const UI_SCALE_OPTIONS = Object.freeze([0.75, 0.85, 1, 1.15, 1.25, 1.5])
 
 export const MESSAGE_CATALOG = Object.freeze({
@@ -63,6 +71,22 @@ export const MESSAGE_CATALOG = Object.freeze({
     'world.embeddedEmpty': '当前会话没有角色卡绑定的内嵌世界书。绑定含 character_book 的角色卡后会显示在这里。',
     'world.diagnostics': '运行诊断（{count}）',
     'character.embeddedBook': '内嵌 character_book 已无损保留（{count} 条）；绑定角色后由 Tavern loader 调用世界信息 matcher，解绑后不再参与后续请求。',
+    'character.confirmDelete': '删除角色卡“{name}”？原始导入文件也会被删除。',
+    'character.confirmHistoricalSwitch': '当前会话已有历史。更换角色只影响后续请求，不会重写已有消息；继续吗？',
+    'preset.confirmDelete': '删除预设“{name}”？',
+    'world.confirmDelete': '删除独立世界书“{name}”？角色卡内嵌世界书不会受到影响。',
+    'world.confirmDiscardChanges': '放弃尚未保存的修改？',
+    'world.confirmDeleteEntry': '删除这个世界书条目？保存后生效。',
+    'world.confirmDeleteEmbeddedEntry': '删除这个角色卡内嵌世界书条目？保存后生效。',
+    'world.confirmDeleteInfoEntry': '删除这个世界信息条目？保存后才会写入角色卡副本。',
+    'world.confirmReloadInfo': '放弃尚未保存的条目修改并重新载入？',
+    'user.confirmDelete': '删除用户“{name}”？所有会话中的用户选择和该用户的世界书关系都会清除。',
+    'user.confirmDiscardForCreate': '当前用户资源或世界书绑定有未保存修改。放弃修改并新建用户吗？',
+    'user.confirmDiscardForSwitch': '当前用户资源或世界书绑定有未保存修改。放弃修改并切换吗？',
+    'user.confirmHistoricalSwitch': '当前会话已有历史。切换用户只影响后续请求，不会重写已有消息；继续吗？',
+    'user.confirmCloseDirty': '当前用户资源或世界书绑定有未保存修改。仍然关闭吗？',
+    'user.confirmDiscardRefresh': '放弃尚未保存的用户资源或世界书绑定修改？',
+    'template.confirmDelete': '删除配置模板“{name}”？这不会删除任何 DSH 会话。',
     'template.currentSettingsReminder': '模板只能用当前会话的 Tavern 设置创建或更新。请在悬浮球的预设、角色卡、世界书和用户面板中查看或修改当前配置，再回到这里保存。',
     'template.preview.greeting': '开场序号：{value}',
   }),
@@ -126,6 +150,22 @@ export const MESSAGE_CATALOG = Object.freeze({
     'world.embeddedEmpty': 'The current session has no character-bound embedded world book. Bind a character card with character_book to show it here.',
     'world.diagnostics': 'Runtime diagnostics ({count})',
     'character.embeddedBook': 'Embedded character_book preserved losslessly ({count} entries); when the character is bound, the Tavern loader invokes the World Info matcher, and unbinding removes it from later requests.',
+    'character.confirmDelete': 'Delete character card “{name}”? The original imported file will also be deleted.',
+    'character.confirmHistoricalSwitch': 'This session already has history. Changing the character affects only later requests and does not rewrite existing messages. Continue?',
+    'preset.confirmDelete': 'Delete preset “{name}”?',
+    'world.confirmDelete': 'Delete standalone world book “{name}”? Character-card embedded books will not be affected.',
+    'world.confirmDiscardChanges': 'Discard unsaved changes?',
+    'world.confirmDeleteEntry': 'Delete this world-book entry? It takes effect after saving.',
+    'world.confirmDeleteEmbeddedEntry': 'Delete this embedded character-card world-book entry? It takes effect after saving.',
+    'world.confirmDeleteInfoEntry': 'Delete this World Info entry? It will be written to the character-card copy only after saving.',
+    'world.confirmReloadInfo': 'Discard unsaved entry changes and reload?',
+    'user.confirmDelete': 'Delete user “{name}”? User selections in every session and this user’s world-book relationships will be cleared.',
+    'user.confirmDiscardForCreate': 'The current user resource or world-book binding has unsaved changes. Discard them and create a new user?',
+    'user.confirmDiscardForSwitch': 'The current user resource or world-book binding has unsaved changes. Discard them and switch?',
+    'user.confirmHistoricalSwitch': 'This session already has history. Changing the user affects only later requests and does not rewrite existing messages. Continue?',
+    'user.confirmCloseDirty': 'The current user resource or world-book binding has unsaved changes. Close anyway?',
+    'user.confirmDiscardRefresh': 'Discard unsaved user-resource or world-book binding changes?',
+    'template.confirmDelete': 'Delete configuration template “{name}”? This will not delete any DSH session.',
     'template.currentSettingsReminder': 'Templates can only be created or updated from the current session’s Tavern settings. Review or change the current configuration in the launcher’s Preset, Character, World book, and User panels, then return here to save it.',
     'template.preview.greeting': 'Greeting index: {value}',
   }),
@@ -463,9 +503,49 @@ const SOURCE_EN = Object.freeze({
   '侧边栏': ' sidebar',
 })
 
-const SOURCE_REPLACEMENTS = Object.entries(SOURCE_EN).sort((left, right) => right[0].length - left[0].length)
+const SOURCE_EN_TRANSFORMS = Object.freeze([
+  ['当前会话：', 'Current session: '],
+  ['绑定：', 'Binding: '],
+  ['状态同步失败：', 'Status sync failed: '],
+  ['条目 ', 'Entry '],
+  ['新条目 ', 'New entry '],
+  [' 本', ' books'],
+  [' 条', ' entries'],
+  ['轮次 ', 'Turn '],
+  ['步骤 ', 'Step '],
+  ['尝试 ', 'Attempt '],
+  ['诊断（', 'Diagnostics ('],
+  ['（', ' ('],
+  ['）', ')'],
+  ['；', '; '],
+  ['：', ': '],
+  ['、', ', '],
+])
+
+// Transitional source-copy bundles keep older components localizable while
+// new and high-risk UI moves to MESSAGE_CATALOG semantic keys. A new locale
+// provides its own catalog and optional transforms; no locale-specific branch
+// is embedded in the translation algorithm.
+const LEGACY_SOURCE_CATALOGS = Object.freeze({ en: SOURCE_EN })
+const LEGACY_SOURCE_TRANSFORMS = Object.freeze({ en: SOURCE_EN_TRANSFORMS })
+const LEGACY_REPLACEMENTS = Object.freeze(Object.fromEntries(Object.entries(LEGACY_SOURCE_CATALOGS)
+  .map(([locale, catalog]) => [locale, Object.entries(catalog).sort((left, right) => right[0].length - left[0].length)])))
 const RAW_TEXT = Symbol('dsh-tavern.raw-text')
 let current = { ...DEFAULT_UI_SETTINGS }
+
+function assertCompleteMessageCatalogs() {
+  const expected = Object.keys(MESSAGE_CATALOG[DEFAULT_UI_LOCALE] ?? {}).toSorted()
+  for (const locale of SUPPORTED_LOCALES) {
+    const catalog = MESSAGE_CATALOG[locale]
+    if (catalog === undefined) throw new TypeError(`Missing UI message catalog for ${locale}`)
+    const actual = Object.keys(catalog).toSorted()
+    if (JSON.stringify(actual) !== JSON.stringify(expected)) {
+      throw new TypeError(`UI message catalog ${locale} does not have the same keys as ${DEFAULT_UI_LOCALE}`)
+    }
+  }
+}
+
+assertCompleteMessageCatalogs()
 
 function fill(template, values) {
   return template.replace(/\{([A-Za-z0-9_]+)\}/g, (_match, key) => String(values?.[key] ?? ''))
@@ -480,27 +560,17 @@ export function translate(key, values = {}, fallback) {
 }
 
 export function translateVisibleText(value) {
-  if (typeof value !== 'string' || current.locale !== 'en' || !/[\u3400-\u9fff]/u.test(value)) return value
-  if (SOURCE_EN[value] !== undefined) return SOURCE_EN[value]
+  if (typeof value !== 'string' || current.locale === DEFAULT_UI_LOCALE || !/[\u3400-\u9fff]/u.test(value)) return value
+  const catalog = LEGACY_SOURCE_CATALOGS[current.locale]
+  const replacements = LEGACY_REPLACEMENTS[current.locale]
+  if (catalog === undefined || replacements === undefined) return value
+  if (catalog[value] !== undefined) return catalog[value]
   let output = value
-  for (const [source, translated] of SOURCE_REPLACEMENTS) output = output.split(source).join(translated)
+  for (const [source, translated] of replacements) output = output.split(source).join(translated)
+  for (const [source, translated] of LEGACY_SOURCE_TRANSFORMS[current.locale] ?? []) {
+    output = output.split(source).join(translated)
+  }
   return output
-    .replaceAll('当前会话：', 'Current session: ')
-    .replaceAll('绑定：', 'Binding: ')
-    .replaceAll('状态同步失败：', 'Status sync failed: ')
-    .replaceAll('条目 ', 'Entry ')
-    .replaceAll('新条目 ', 'New entry ')
-    .replaceAll(' 本', ' books')
-    .replaceAll(' 条', ' entries')
-    .replaceAll('轮次 ', 'Turn ')
-    .replaceAll('步骤 ', 'Step ')
-    .replaceAll('尝试 ', 'Attempt ')
-    .replaceAll('诊断（', 'Diagnostics (')
-    .replaceAll('（', ' (')
-    .replaceAll('）', ')')
-    .replaceAll('；', '; ')
-    .replaceAll('：', ': ')
-    .replaceAll('、', ', ')
 }
 
 export function rawText(value) {
@@ -568,7 +638,7 @@ export function getClientUiSettings() {
 }
 
 export function setClientUiSettings(value, { announce = true } = {}) {
-  const locale = SUPPORTED_LOCALES.includes(value?.locale) ? value.locale : DEFAULT_UI_SETTINGS.locale
+  const locale = isSupportedUiLocale(value?.locale) ? value.locale : DEFAULT_UI_SETTINGS.locale
   const numericScale = Number(value?.scale)
   const scale = Number.isFinite(numericScale) && numericScale >= 0.75 && numericScale <= 1.5
     ? Number(numericScale.toFixed(2))

@@ -11,6 +11,7 @@ import {
   getClientUiSettings,
   rawText,
   translateVisibleText,
+  uiMessage,
   uiText,
   unwrapText,
 } from '../../client/src/i18n.js'
@@ -138,7 +139,7 @@ export function UserPanel({ sessionId, sessionBlank, close }) {
   }, [dirty])
 
   const create = useCallback(() => {
-    if (dirty && !window.confirm(translateVisibleText('当前用户资源或世界书绑定有未保存修改。放弃修改并新建用户吗？'))) return
+    if (dirty && !window.confirm(unwrapText(uiMessage('user.confirmDiscardForCreate')))) return
     run(async () => {
       const data = await api('/users', { method: 'POST', body: JSON.stringify({ name: translateVisibleText('新用户'), description: '' }) })
       draftId.current = data.user.id
@@ -173,14 +174,14 @@ export function UserPanel({ sessionId, sessionBlank, close }) {
   }, '用户绑定的世界书已保存；选择该用户的会话会在下一次组装时自动使用'), [draft, run, worldBookIds])
 
   const chooseUser = useCallback(id => {
-    if (dirty && !window.confirm(translateVisibleText('当前用户资源或世界书绑定有未保存修改。放弃修改并切换吗？'))) return
+    if (dirty && !window.confirm(unwrapText(uiMessage('user.confirmDiscardForSwitch')))) return
     run(() => refresh(id), '用户资源和世界书绑定已加载')
   }, [dirty, refresh, run])
 
   const bind = useCallback(() => run(async () => {
     if (!sessionId || draft === null) throw new Error('请先创建或打开一个会话并选择用户资源')
     if (selectedUserId !== draft.id && sessionBlank === false
-      && !window.confirm(translateVisibleText('当前会话已有历史。切换用户只影响后续请求，不会重写已有消息；继续吗？'))) return
+      && !window.confirm(unwrapText(uiMessage('user.confirmHistoricalSwitch')))) return
     const data = await api('/user-selection', {
       method: 'POST',
       body: JSON.stringify({ sessionId, userId: draft.id }),
@@ -197,7 +198,7 @@ export function UserPanel({ sessionId, sessionBlank, close }) {
   }, '当前会话已解除用户绑定'), [run, sessionId])
 
   const remove = useCallback(() => run(async () => {
-    if (draft === null || !window.confirm(unwrapText(uiText`删除用户“${draft.name}”？所有会话中的用户选择和该用户的世界书关系都会清除。`))) return
+    if (draft === null || !window.confirm(unwrapText(uiMessage('user.confirmDelete', { name: draft.name })))) return
     await api(`/users/${encodeURIComponent(draft.id)}`, { method: 'DELETE', body: '{}' })
     draftId.current = null
     await refresh(null)
@@ -208,7 +209,7 @@ export function UserPanel({ sessionId, sessionBlank, close }) {
     ? translateVisibleText('未绑定用户')
     : users?.find(user => user.id === selectedUserId)?.name ?? selectedUserId
   const requestClose = () => {
-    if (!dirty || window.confirm(translateVisibleText('当前用户资源或世界书绑定有未保存修改。仍然关闭吗？'))) close()
+    if (!dirty || window.confirm(unwrapText(uiMessage('user.confirmCloseDirty')))) close()
   }
   const dirtyParts = [
     resourceDirty ? translateVisibleText('名字/描述') : '',
@@ -224,7 +225,7 @@ export function UserPanel({ sessionId, sessionBlank, close }) {
     h('div', { className: 'dtu-body' },
       h('div', { className: 'dtu-toolbar' },
         h('button', { className: 'dtu-button', type: 'button', disabled: busy, onClick: create }, '新建用户'),
-        h('button', { className: 'dtu-button', type: 'button', disabled: busy, onClick: () => { if (!dirty || window.confirm(translateVisibleText('放弃尚未保存的用户资源或世界书绑定修改？'))) run(() => refresh(draft?.id), '用户资源已刷新') } }, '刷新'),
+        h('button', { className: 'dtu-button', type: 'button', disabled: busy, onClick: () => { if (!dirty || window.confirm(unwrapText(uiMessage('user.confirmDiscardRefresh')))) run(() => refresh(draft?.id), '用户资源已刷新') } }, '刷新'),
       ),
       h(Field, { label: '浏览用户资源' }, h('select', {
         className: 'dtu-select',

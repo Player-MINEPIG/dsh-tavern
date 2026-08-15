@@ -161,7 +161,7 @@ export function CharacterPanel({ sessionId, sessionBlank, close }) {
     if (!sessionId) throw new Error('请先创建或打开一个会话再绑定角色')
     if (selection?.characterCardId !== binding?.characterCardId
       && sessionBlank === false
-      && !window.confirm(translateVisibleText('当前会话已有历史。更换角色只影响后续请求，不会重写已有消息；继续吗？'))) return
+      && !window.confirm(unwrapText(uiMessage('character.confirmHistoricalSwitch')))) return
     const data = await api('/character-selection', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -185,7 +185,7 @@ export function CharacterPanel({ sessionId, sessionBlank, close }) {
   }, '当前会话已解除角色绑定'), [detail, run, sessionId])
 
   const remove = useCallback(() => run(async () => {
-    if (detail === null || !window.confirm(unwrapText(uiText`删除角色卡“${detail.name}”？原始导入文件也会被删除。`))) return
+    if (detail === null || !window.confirm(unwrapText(uiMessage('character.confirmDelete', { name: detail.name })))) return
     await api(`/characters/${encodeURIComponent(detail.id)}`, { method: 'DELETE' })
     await refresh(null)
     announceTavernRefresh()

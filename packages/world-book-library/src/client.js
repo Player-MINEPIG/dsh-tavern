@@ -330,7 +330,7 @@ export function WorldBookPanel({ sessionId, close }) {
   }, uiMessage('world.user.saveSuccess'))
 
   const remove = () => run(async () => {
-    if (document === null || !window.confirm(unwrapText(uiText`删除独立世界书“${document.name}”？角色卡内嵌世界书不会受到影响。`))) return
+    if (document === null || !window.confirm(unwrapText(uiMessage('world.confirmDelete', { name: document.name })))) return
     await api(`/world-books/${encodeURIComponent(document.id)}`, { method: 'DELETE' })
     setDocument(null)
     setDraft(null)
@@ -376,7 +376,7 @@ export function WorldBookPanel({ sessionId, close }) {
       h('div', { className: 'dwb-toolbar' },
         h('button', { className: 'dwb-button', type: 'button', disabled: busy, onClick: () => fileRef.current?.click() }, '导入 JSON'),
         h('button', { className: 'dwb-button', type: 'button', disabled: busy, onClick: create }, '新建世界书'),
-        h('button', { className: 'dwb-button', type: 'button', disabled: busy, onClick: () => { if (!dirty || window.confirm(translateVisibleText('放弃尚未保存的修改？'))) run(() => refresh(), '世界书资源库已刷新') } }, '刷新'),
+        h('button', { className: 'dwb-button', type: 'button', disabled: busy, onClick: () => { if (!dirty || window.confirm(unwrapText(uiMessage('world.confirmDiscardChanges')))) run(() => refresh(), '世界书资源库已刷新') } }, '刷新'),
         h('input', { ref: fileRef, hidden: true, type: 'file', accept: '.json,application/json', onChange: event => { const file = event.target.files?.[0]; if (file !== undefined) importFile(file) } }),
       ),
       h('p', { className: 'dwb-note' }, uiMessage('world.currentSession', { session: sessionId || translateVisibleText('无') })),
@@ -395,7 +395,7 @@ export function WorldBookPanel({ sessionId, close }) {
           h('button', { className: 'dwb-button', type: 'button', disabled: busy || !sessionId || selection.length === 0, onClick: () => setSelection([]) }, '清空待应用选择'),
         ),
       ),
-      h(Field, { label: '浏览独立世界书' }, h('select', { className: 'dwb-select', value: document?.id ?? '', disabled: busy || !catalog?.worldBooks.length, onChange: event => { if (!dirty || window.confirm(translateVisibleText('放弃尚未保存的修改？'))) load(event.target.value) } },
+      h(Field, { label: '浏览独立世界书' }, h('select', { className: 'dwb-select', value: document?.id ?? '', disabled: busy || !catalog?.worldBooks.length, onChange: event => { if (!dirty || window.confirm(unwrapText(uiMessage('world.confirmDiscardChanges')))) load(event.target.value) } },
         ...(catalog?.worldBooks.length ? [] : [h('option', { key: 'empty', value: '' }, '资源库为空')]),
         ...(catalog?.worldBooks ?? []).map(item => h('option', { key: item.id, value: item.id }, rawText(item.name))))),
       draft === null ? null : h('div', { className: 'dwb-resource', ref: standaloneEditorRef },
@@ -407,7 +407,7 @@ export function WorldBookPanel({ sessionId, close }) {
           h('a', { className: 'dwb-button', href: `${API_ROOT}/world-books/${encodeURIComponent(document.id)}/json`, download: '' }, '导出 JSON'),
           h('button', { className: 'dwb-button dwb-danger', type: 'button', disabled: busy, onClick: remove }, '删除独立书'),
         ),
-        ...entries.map((entry, index) => h(EntryEditor, { key: `${String(entry.uid)}-${index}`, entry, index, update: updateEntry, remove: itemIndex => { if (window.confirm(translateVisibleText('删除这个世界书条目？保存后生效。'))) { setDraft(current => ({ ...current, entries: current.entries.filter((_item, candidate) => candidate !== itemIndex) })); setDirty(true) } } })),
+        ...entries.map((entry, index) => h(EntryEditor, { key: `${String(entry.uid)}-${index}`, entry, index, update: updateEntry, remove: itemIndex => { if (window.confirm(unwrapText(uiMessage('world.confirmDeleteEntry')))) { setDraft(current => ({ ...current, entries: current.entries.filter((_item, candidate) => candidate !== itemIndex) })); setDirty(true) } } })),
       ),
       ),
       h('section', { className: 'dwb-source-section', 'data-source': 'user' },
@@ -467,7 +467,7 @@ export function WorldBookPanel({ sessionId, close }) {
           h('button', { className: 'dwb-button', type: 'button', onClick: () => { const ids = embeddedEntries.map(entry => Number(entry.id)).filter(Number.isSafeInteger); const id = ids.length === 0 ? 0 : Math.max(...ids) + 1; setEmbeddedDraft(current => ({ ...structuredClone(current), entries: [...current.entries, { id, keys: [], secondary_keys: [], comment: unwrapText(uiText`新条目 ${id}`), content: '', enabled: true, constant: false, selective: false, insertion_order: 100, position: 'after_char', extensions: { position: 1, probability: 100, useProbability: true } }] })); setEmbeddedDirty(true) } }, '新增内嵌条目'),
           h('button', { className: 'dwb-button dwb-primary', type: 'button', disabled: busy || !embeddedDirty, onClick: saveEmbedded }, embeddedDirty ? '保存内嵌书' : '内嵌书已保存'),
         ),
-        ...embeddedEntries.map((entry, index) => h(EmbeddedEntryEditor, { key: `${String(entry.id)}-${index}`, entry, index, update: (itemIndex, value) => { setEmbeddedDraft(current => { const next = structuredClone(current); next.entries[itemIndex] = { ...next.entries[itemIndex], ...value }; return next }); setEmbeddedDirty(true) }, remove: itemIndex => { if (window.confirm(translateVisibleText('删除这个角色卡内嵌世界书条目？保存后生效。'))) { setEmbeddedDraft(current => ({ ...structuredClone(current), entries: current.entries.filter((_item, candidate) => candidate !== itemIndex) })); setEmbeddedDirty(true) } } })),
+        ...embeddedEntries.map((entry, index) => h(EmbeddedEntryEditor, { key: `${String(entry.id)}-${index}`, entry, index, update: (itemIndex, value) => { setEmbeddedDraft(current => { const next = structuredClone(current); next.entries[itemIndex] = { ...next.entries[itemIndex], ...value }; return next }); setEmbeddedDirty(true) }, remove: itemIndex => { if (window.confirm(unwrapText(uiMessage('world.confirmDeleteEmbeddedEntry')))) { setEmbeddedDraft(current => ({ ...structuredClone(current), entries: current.entries.filter((_item, candidate) => candidate !== itemIndex) })); setEmbeddedDirty(true) } } })),
       ) : h('p', { className: 'dwb-note' }, uiMessage('world.embeddedEmpty')),
       ),
       diagnostics.length > 0 ? h('details', { className: 'dwb-resource' }, h('summary', { className: 'dwb-resource-title' }, uiMessage('world.diagnostics', { count: diagnostics.length })), h('ul', { className: 'dwb-list' }, ...diagnostics.map((item, index) => h('li', { key: `${item.code}-${index}` }, rawText(item.message))))) : null,

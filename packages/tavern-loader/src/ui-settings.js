@@ -7,14 +7,18 @@ import {
   writeFileSync,
 } from 'node:fs'
 import { join, resolve } from 'node:path'
+import {
+  DEFAULT_UI_LOCALE,
+  SUPPORTED_UI_LOCALES,
+  isSupportedUiLocale,
+} from '../../ui-settings/src/locale-contract.js'
 
 const SETTINGS_FILE = 'ui-settings.json'
 const MAX_SETTINGS_BYTES = 1024
-const ALLOWED_LOCALES = Object.freeze(['zh-CN', 'en'])
 const MIN_SCALE = 0.75
 const MAX_SCALE = 1.5
 const SCALE_STEP = 0.05
-const DEFAULT_UI_SETTINGS = Object.freeze({ schemaVersion: 1, locale: 'zh-CN', scale: 1 })
+const DEFAULT_UI_SETTINGS = Object.freeze({ schemaVersion: 1, locale: DEFAULT_UI_LOCALE, scale: 1 })
 
 function isRecord(value) {
   return value !== null && typeof value === 'object' && !Array.isArray(value)
@@ -38,7 +42,7 @@ export function normalizeUiSettings(value) {
   const allowed = new Set(['locale', 'scale'])
   const unexpected = Object.keys(value).find(key => !allowed.has(key))
   if (unexpected !== undefined) throw new TypeError(`Unsupported UI setting "${unexpected}"`)
-  if (!ALLOWED_LOCALES.includes(value.locale)) throw new TypeError('locale must be "zh-CN" or "en"')
+  if (!isSupportedUiLocale(value.locale)) throw new TypeError(`locale must be one of: ${SUPPORTED_UI_LOCALES.join(', ')}`)
   return { schemaVersion: 1, locale: value.locale, scale: normalizeScale(value.scale) }
 }
 
@@ -154,7 +158,7 @@ export function createUiSettingsApiHandler(store) {
 }
 
 export const uiSettingsConstants = Object.freeze({
-  allowedLocales: [...ALLOWED_LOCALES],
+  allowedLocales: [...SUPPORTED_UI_LOCALES],
   minScale: MIN_SCALE,
   maxScale: MAX_SCALE,
   scaleStep: SCALE_STEP,

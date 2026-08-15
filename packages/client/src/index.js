@@ -7,6 +7,7 @@ import {
 } from 'react'
 import {
   DEFAULT_UI_SETTINGS,
+  UI_LOCALES,
   UI_SCALE_OPTIONS,
   createLocalizedElement,
   getClientUiSettings,
@@ -14,6 +15,7 @@ import {
   setClientUiSettings,
   translate,
   translateVisibleText,
+  uiMessage,
   uiText,
   unwrapText,
 } from './i18n.js'
@@ -144,8 +146,7 @@ function SettingsPanel({ settings, status, busy, close, update, reset }) {
         disabled: busy,
         onChange: event => update({ ...settings, locale: event.target.value }),
       },
-      h('option', { value: 'zh-CN' }, translate('settings.language.zh')),
-      h('option', { value: 'en' }, translate('settings.language.en')))),
+      ...UI_LOCALES.map(locale => h('option', { key: locale.id, value: locale.id }, rawText(locale.nativeName))))),
       h(Field, { label: translate('settings.scale') }, h('select', {
         className: 'dtv-select',
         value: settings.scale,
@@ -324,7 +325,7 @@ function WorldInfoPanel({ sessionId, close }) {
   }
 
   const removeEntry = index => {
-    if (!window.confirm(translateVisibleText('删除这个世界信息条目？保存后才会写入角色卡副本。'))) return
+    if (!window.confirm(unwrapText(uiMessage('world.confirmDeleteInfoEntry')))) return
     setDraft(current => ({ ...structuredClone(current), entries: current.entries.filter((_entry, itemIndex) => itemIndex !== index) }))
     setDirty(true)
   }
@@ -356,7 +357,7 @@ function WorldInfoPanel({ sessionId, close }) {
     h('div', { className: 'dtv-body' },
       h('div', { className: 'dtv-book-toolbar' },
         h('button', { className: 'dtv-button', type: 'button', disabled: busy, onClick: () => {
-          if (!dirty || window.confirm(translateVisibleText('放弃尚未保存的条目修改并重新载入？'))) refresh()
+          if (!dirty || window.confirm(unwrapText(uiMessage('world.confirmReloadInfo')))) refresh()
         } }, '重新载入'),
         h('button', { className: 'dtv-button', type: 'button', disabled: busy || draft === null, onClick: addEntry }, '新增条目'),
         h('button', { className: 'dtv-button', type: 'button', disabled: busy || !dirty, onClick: save }, dirty ? '保存修改' : '已保存'),

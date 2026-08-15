@@ -219,6 +219,6 @@ test('user panel edits independent world-book relationships and exposes unsaved-
   assert.match(source, /重复的同一本书只执行一次/)
   assert.match(source, /有未保存修改/)
   assert.match(source, /beforeunload/)
-  assert.match(source, /仍然关闭吗/)
+  assert.match(source, /uiMessage\('user\.confirmCloseDirty'\)/)
   assert.doesNotMatch(source, /description:\s*worldBookIds|worldBookIds:\s*draft\.description/)
 })

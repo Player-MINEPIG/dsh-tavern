@@ -2,6 +2,9 @@ import test from 'node:test'
 import assert from 'node:assert/strict'
 import { readFileSync } from 'node:fs'
 import {
+  MESSAGE_CATALOG,
+  SUPPORTED_LOCALES,
+  UI_LOCALES,
   createLocalizedElement,
   rawText,
   setClientUiSettings,
@@ -11,8 +14,31 @@ import {
   uiText,
   unwrapText,
 } from '../packages/client/src/i18n.js'
+import {
+  DEFAULT_UI_LOCALE,
+  SUPPORTED_UI_LOCALES,
+} from '../packages/ui-settings/src/locale-contract.js'
+import { uiSettingsConstants } from '../packages/tavern-loader/src/index.js'
 
 test.afterEach(() => setClientUiSettings({ locale: 'zh-CN', scale: 1 }, { announce: false }))
+
+test('client, settings UI, and server share one locale registry with complete semantic catalogs', () => {
+  assert.equal(DEFAULT_UI_LOCALE, 'zh-CN')
+  assert.deepEqual(SUPPORTED_LOCALES, SUPPORTED_UI_LOCALES)
+  assert.deepEqual(UI_LOCALES.map(locale => locale.id), SUPPORTED_UI_LOCALES)
+  assert.deepEqual(uiSettingsConstants.allowedLocales, SUPPORTED_UI_LOCALES)
+  const expectedKeys = Object.keys(MESSAGE_CATALOG[DEFAULT_UI_LOCALE]).sort()
+  for (const locale of SUPPORTED_UI_LOCALES) {
+    assert.deepEqual(Object.keys(MESSAGE_CATALOG[locale]).sort(), expectedKeys, locale)
+  }
+  const clientSource = readFileSync(new URL('../packages/client/src/i18n.js', import.meta.url), 'utf8')
+  const settingsSource = readFileSync(new URL('../packages/client/src/index.js', import.meta.url), 'utf8')
+  const serverSource = readFileSync(new URL('../packages/tavern-loader/src/ui-settings.js', import.meta.url), 'utf8')
+  assert.doesNotMatch(clientSource, /current\.locale\s*!==\s*['"]en['"]/)
+  assert.match(settingsSource, /UI_LOCALES\.map/)
+  assert.match(serverSource, /SUPPORTED_UI_LOCALES/)
+  assert.doesNotMatch(serverSource, /ALLOWED_LOCALES/)
+})
 
 test('catalog switches Simplified Chinese and English with interpolation', () => {
   assert.equal(translate('settings.title'), 'Tavern 界面设置')
@@ -138,6 +164,28 @@ test('semantic dynamic messages translate as complete sentences without altering
   for (const message of messages) {
     const uiCopyWithoutRuntimeKeyword = message.replace('酸橙，这片大地', '').replace('中文用户名', '')
     assert.doesNotMatch(uiCopyWithoutRuntimeKeyword, /[\u3400-\u9fff]/u)
+  }
+})
+
+test('destructive confirmations use semantic messages and preserve runtime names verbatim', () => {
+  setClientUiSettings({ locale: 'en', scale: 1 }, { announce: false })
+  const runtimeName = '中文角色名'
+  const confirmation = unwrapText(uiMessage('character.confirmDelete', { name: runtimeName }))
+  assert.match(confirmation, new RegExp(runtimeName))
+  assert.doesNotMatch(confirmation.replace(runtimeName, ''), /[\u3400-\u9fff]/u)
+
+  for (const file of [
+    '../packages/client/src/index.js',
+    '../packages/preset/src/client.js',
+    '../packages/character/src/client.js',
+    '../packages/world-book-library/src/client.js',
+    '../packages/user/src/client.js',
+    '../packages/session-template/src/client.js',
+  ]) {
+    const source = readFileSync(new URL(file, import.meta.url), 'utf8')
+    for (const call of source.matchAll(/window\.confirm\(([^\n]+)\)/g)) {
+      assert.match(call[1], /uiMessage\(/, `${file}: ${call[0]}`)
+    }
   }
 })
 

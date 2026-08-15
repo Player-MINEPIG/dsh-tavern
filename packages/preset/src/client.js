@@ -9,6 +9,7 @@ import {
   createLocalizedElement,
   rawText,
   translateVisibleText,
+  uiMessage,
   uiText,
   unwrapText,
 } from '../../client/src/i18n.js'
@@ -260,7 +261,7 @@ export function PresetSidebar({ closePanel, openPanel, sessionId, autoOpen = tru
   }, '预设配置已保存'), [draft, refresh, run])
 
   const remove = useCallback(() => run(async () => {
-    if (!window.confirm(unwrapText(uiText`删除预设“${draft.name}”？`))) return
+    if (!window.confirm(unwrapText(uiMessage('preset.confirmDelete', { name: draft.name })))) return
     await api(`/presets/${encodeURIComponent(draft.id)}`, { method: 'DELETE' })
     await refresh(null)
     announceTavernRefresh()

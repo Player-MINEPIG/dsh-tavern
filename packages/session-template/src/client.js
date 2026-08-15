@@ -147,7 +147,7 @@ export function SessionTemplatePanel({ sessionId, workspaceId, createCleanSessio
   }, result => unwrapText(uiText`已用当前设置更新模板：${result.template.name}`))
 
   const remove = () => {
-    if (selectedId === null || !window.confirm(unwrapText(uiText`删除配置模板“${selected?.name ?? selectedId}”？这不会删除任何 DSH 会话。`))) return
+    if (selectedId === null || !window.confirm(unwrapText(uiMessage('template.confirmDelete', { name: selected?.name ?? selectedId })))) return
     run(() => api(`/session-templates/${encodeURIComponent(selectedId)}`, { method: 'DELETE', body: JSON.stringify({}) }), '模板已删除')
   }
 

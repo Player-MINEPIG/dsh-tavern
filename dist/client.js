@@ -32,9 +32,20 @@ __export(index_exports, {
 module.exports = __toCommonJS(index_exports);
 var import_react7 = require("react");
 
+// packages/ui-settings/src/locale-contract.js
+var DEFAULT_UI_LOCALE = "zh-CN";
+var UI_LOCALES = Object.freeze([
+  Object.freeze({ id: "zh-CN", nativeName: "\u7B80\u4F53\u4E2D\u6587" }),
+  Object.freeze({ id: "en", nativeName: "English" })
+]);
+var SUPPORTED_UI_LOCALES = Object.freeze(UI_LOCALES.map((locale) => locale.id));
+function isSupportedUiLocale(value) {
+  return typeof value === "string" && SUPPORTED_UI_LOCALES.includes(value);
+}
+
 // packages/client/src/i18n.js
-var DEFAULT_UI_SETTINGS = Object.freeze({ locale: "zh-CN", scale: 1 });
-var SUPPORTED_LOCALES = Object.freeze(["zh-CN", "en"]);
+var DEFAULT_UI_SETTINGS = Object.freeze({ locale: DEFAULT_UI_LOCALE, scale: 1 });
+var SUPPORTED_LOCALES = SUPPORTED_UI_LOCALES;
 var UI_SCALE_OPTIONS = Object.freeze([0.75, 0.85, 1, 1.15, 1.25, 1.5]);
 var MESSAGE_CATALOG = Object.freeze({
   "zh-CN": Object.freeze({
@@ -97,6 +108,22 @@ var MESSAGE_CATALOG = Object.freeze({
     "world.embeddedEmpty": "\u5F53\u524D\u4F1A\u8BDD\u6CA1\u6709\u89D2\u8272\u5361\u7ED1\u5B9A\u7684\u5185\u5D4C\u4E16\u754C\u4E66\u3002\u7ED1\u5B9A\u542B character_book \u7684\u89D2\u8272\u5361\u540E\u4F1A\u663E\u793A\u5728\u8FD9\u91CC\u3002",
     "world.diagnostics": "\u8FD0\u884C\u8BCA\u65AD\uFF08{count}\uFF09",
     "character.embeddedBook": "\u5185\u5D4C character_book \u5DF2\u65E0\u635F\u4FDD\u7559\uFF08{count} \u6761\uFF09\uFF1B\u7ED1\u5B9A\u89D2\u8272\u540E\u7531 Tavern loader \u8C03\u7528\u4E16\u754C\u4FE1\u606F matcher\uFF0C\u89E3\u7ED1\u540E\u4E0D\u518D\u53C2\u4E0E\u540E\u7EED\u8BF7\u6C42\u3002",
+    "character.confirmDelete": "\u5220\u9664\u89D2\u8272\u5361\u201C{name}\u201D\uFF1F\u539F\u59CB\u5BFC\u5165\u6587\u4EF6\u4E5F\u4F1A\u88AB\u5220\u9664\u3002",
+    "character.confirmHistoricalSwitch": "\u5F53\u524D\u4F1A\u8BDD\u5DF2\u6709\u5386\u53F2\u3002\u66F4\u6362\u89D2\u8272\u53EA\u5F71\u54CD\u540E\u7EED\u8BF7\u6C42\uFF0C\u4E0D\u4F1A\u91CD\u5199\u5DF2\u6709\u6D88\u606F\uFF1B\u7EE7\u7EED\u5417\uFF1F",
+    "preset.confirmDelete": "\u5220\u9664\u9884\u8BBE\u201C{name}\u201D\uFF1F",
+    "world.confirmDelete": "\u5220\u9664\u72EC\u7ACB\u4E16\u754C\u4E66\u201C{name}\u201D\uFF1F\u89D2\u8272\u5361\u5185\u5D4C\u4E16\u754C\u4E66\u4E0D\u4F1A\u53D7\u5230\u5F71\u54CD\u3002",
+    "world.confirmDiscardChanges": "\u653E\u5F03\u5C1A\u672A\u4FDD\u5B58\u7684\u4FEE\u6539\uFF1F",
+    "world.confirmDeleteEntry": "\u5220\u9664\u8FD9\u4E2A\u4E16\u754C\u4E66\u6761\u76EE\uFF1F\u4FDD\u5B58\u540E\u751F\u6548\u3002",
+    "world.confirmDeleteEmbeddedEntry": "\u5220\u9664\u8FD9\u4E2A\u89D2\u8272\u5361\u5185\u5D4C\u4E16\u754C\u4E66\u6761\u76EE\uFF1F\u4FDD\u5B58\u540E\u751F\u6548\u3002",
+    "world.confirmDeleteInfoEntry": "\u5220\u9664\u8FD9\u4E2A\u4E16\u754C\u4FE1\u606F\u6761\u76EE\uFF1F\u4FDD\u5B58\u540E\u624D\u4F1A\u5199\u5165\u89D2\u8272\u5361\u526F\u672C\u3002",
+    "world.confirmReloadInfo": "\u653E\u5F03\u5C1A\u672A\u4FDD\u5B58\u7684\u6761\u76EE\u4FEE\u6539\u5E76\u91CD\u65B0\u8F7D\u5165\uFF1F",
+    "user.confirmDelete": "\u5220\u9664\u7528\u6237\u201C{name}\u201D\uFF1F\u6240\u6709\u4F1A\u8BDD\u4E2D\u7684\u7528\u6237\u9009\u62E9\u548C\u8BE5\u7528\u6237\u7684\u4E16\u754C\u4E66\u5173\u7CFB\u90FD\u4F1A\u6E05\u9664\u3002",
+    "user.confirmDiscardForCreate": "\u5F53\u524D\u7528\u6237\u8D44\u6E90\u6216\u4E16\u754C\u4E66\u7ED1\u5B9A\u6709\u672A\u4FDD\u5B58\u4FEE\u6539\u3002\u653E\u5F03\u4FEE\u6539\u5E76\u65B0\u5EFA\u7528\u6237\u5417\uFF1F",
+    "user.confirmDiscardForSwitch": "\u5F53\u524D\u7528\u6237\u8D44\u6E90\u6216\u4E16\u754C\u4E66\u7ED1\u5B9A\u6709\u672A\u4FDD\u5B58\u4FEE\u6539\u3002\u653E\u5F03\u4FEE\u6539\u5E76\u5207\u6362\u5417\uFF1F",
+    "user.confirmHistoricalSwitch": "\u5F53\u524D\u4F1A\u8BDD\u5DF2\u6709\u5386\u53F2\u3002\u5207\u6362\u7528\u6237\u53EA\u5F71\u54CD\u540E\u7EED\u8BF7\u6C42\uFF0C\u4E0D\u4F1A\u91CD\u5199\u5DF2\u6709\u6D88\u606F\uFF1B\u7EE7\u7EED\u5417\uFF1F",
+    "user.confirmCloseDirty": "\u5F53\u524D\u7528\u6237\u8D44\u6E90\u6216\u4E16\u754C\u4E66\u7ED1\u5B9A\u6709\u672A\u4FDD\u5B58\u4FEE\u6539\u3002\u4ECD\u7136\u5173\u95ED\u5417\uFF1F",
+    "user.confirmDiscardRefresh": "\u653E\u5F03\u5C1A\u672A\u4FDD\u5B58\u7684\u7528\u6237\u8D44\u6E90\u6216\u4E16\u754C\u4E66\u7ED1\u5B9A\u4FEE\u6539\uFF1F",
+    "template.confirmDelete": "\u5220\u9664\u914D\u7F6E\u6A21\u677F\u201C{name}\u201D\uFF1F\u8FD9\u4E0D\u4F1A\u5220\u9664\u4EFB\u4F55 DSH \u4F1A\u8BDD\u3002",
     "template.currentSettingsReminder": "\u6A21\u677F\u53EA\u80FD\u7528\u5F53\u524D\u4F1A\u8BDD\u7684 Tavern \u8BBE\u7F6E\u521B\u5EFA\u6216\u66F4\u65B0\u3002\u8BF7\u5728\u60AC\u6D6E\u7403\u7684\u9884\u8BBE\u3001\u89D2\u8272\u5361\u3001\u4E16\u754C\u4E66\u548C\u7528\u6237\u9762\u677F\u4E2D\u67E5\u770B\u6216\u4FEE\u6539\u5F53\u524D\u914D\u7F6E\uFF0C\u518D\u56DE\u5230\u8FD9\u91CC\u4FDD\u5B58\u3002",
     "template.preview.greeting": "\u5F00\u573A\u5E8F\u53F7\uFF1A{value}"
   }),
@@ -160,6 +187,22 @@ var MESSAGE_CATALOG = Object.freeze({
     "world.embeddedEmpty": "The current session has no character-bound embedded world book. Bind a character card with character_book to show it here.",
     "world.diagnostics": "Runtime diagnostics ({count})",
     "character.embeddedBook": "Embedded character_book preserved losslessly ({count} entries); when the character is bound, the Tavern loader invokes the World Info matcher, and unbinding removes it from later requests.",
+    "character.confirmDelete": "Delete character card \u201C{name}\u201D? The original imported file will also be deleted.",
+    "character.confirmHistoricalSwitch": "This session already has history. Changing the character affects only later requests and does not rewrite existing messages. Continue?",
+    "preset.confirmDelete": "Delete preset \u201C{name}\u201D?",
+    "world.confirmDelete": "Delete standalone world book \u201C{name}\u201D? Character-card embedded books will not be affected.",
+    "world.confirmDiscardChanges": "Discard unsaved changes?",
+    "world.confirmDeleteEntry": "Delete this world-book entry? It takes effect after saving.",
+    "world.confirmDeleteEmbeddedEntry": "Delete this embedded character-card world-book entry? It takes effect after saving.",
+    "world.confirmDeleteInfoEntry": "Delete this World Info entry? It will be written to the character-card copy only after saving.",
+    "world.confirmReloadInfo": "Discard unsaved entry changes and reload?",
+    "user.confirmDelete": "Delete user \u201C{name}\u201D? User selections in every session and this user\u2019s world-book relationships will be cleared.",
+    "user.confirmDiscardForCreate": "The current user resource or world-book binding has unsaved changes. Discard them and create a new user?",
+    "user.confirmDiscardForSwitch": "The current user resource or world-book binding has unsaved changes. Discard them and switch?",
+    "user.confirmHistoricalSwitch": "This session already has history. Changing the user affects only later requests and does not rewrite existing messages. Continue?",
+    "user.confirmCloseDirty": "The current user resource or world-book binding has unsaved changes. Close anyway?",
+    "user.confirmDiscardRefresh": "Discard unsaved user-resource or world-book binding changes?",
+    "template.confirmDelete": "Delete configuration template \u201C{name}\u201D? This will not delete any DSH session.",
     "template.currentSettingsReminder": "Templates can only be created or updated from the current session\u2019s Tavern settings. Review or change the current configuration in the launcher\u2019s Preset, Character, World book, and User panels, then return here to save it.",
     "template.preview.greeting": "Greeting index: {value}"
   })
@@ -492,9 +535,41 @@ var SOURCE_EN = Object.freeze({
   "\u5173\u95ED": "Close ",
   "\u4FA7\u8FB9\u680F": " sidebar"
 });
-var SOURCE_REPLACEMENTS = Object.entries(SOURCE_EN).sort((left, right) => right[0].length - left[0].length);
+var SOURCE_EN_TRANSFORMS = Object.freeze([
+  ["\u5F53\u524D\u4F1A\u8BDD\uFF1A", "Current session: "],
+  ["\u7ED1\u5B9A\uFF1A", "Binding: "],
+  ["\u72B6\u6001\u540C\u6B65\u5931\u8D25\uFF1A", "Status sync failed: "],
+  ["\u6761\u76EE ", "Entry "],
+  ["\u65B0\u6761\u76EE ", "New entry "],
+  [" \u672C", " books"],
+  [" \u6761", " entries"],
+  ["\u8F6E\u6B21 ", "Turn "],
+  ["\u6B65\u9AA4 ", "Step "],
+  ["\u5C1D\u8BD5 ", "Attempt "],
+  ["\u8BCA\u65AD\uFF08", "Diagnostics ("],
+  ["\uFF08", " ("],
+  ["\uFF09", ")"],
+  ["\uFF1B", "; "],
+  ["\uFF1A", ": "],
+  ["\u3001", ", "]
+]);
+var LEGACY_SOURCE_CATALOGS = Object.freeze({ en: SOURCE_EN });
+var LEGACY_SOURCE_TRANSFORMS = Object.freeze({ en: SOURCE_EN_TRANSFORMS });
+var LEGACY_REPLACEMENTS = Object.freeze(Object.fromEntries(Object.entries(LEGACY_SOURCE_CATALOGS).map(([locale, catalog2]) => [locale, Object.entries(catalog2).sort((left, right) => right[0].length - left[0].length)])));
 var RAW_TEXT = /* @__PURE__ */ Symbol("dsh-tavern.raw-text");
 var current = { ...DEFAULT_UI_SETTINGS };
+function assertCompleteMessageCatalogs() {
+  const expected = Object.keys(MESSAGE_CATALOG[DEFAULT_UI_LOCALE] ?? {}).toSorted();
+  for (const locale of SUPPORTED_LOCALES) {
+    const catalog2 = MESSAGE_CATALOG[locale];
+    if (catalog2 === void 0) throw new TypeError(`Missing UI message catalog for ${locale}`);
+    const actual = Object.keys(catalog2).toSorted();
+    if (JSON.stringify(actual) !== JSON.stringify(expected)) {
+      throw new TypeError(`UI message catalog ${locale} does not have the same keys as ${DEFAULT_UI_LOCALE}`);
+    }
+  }
+}
+assertCompleteMessageCatalogs();
 function fill(template, values) {
   return template.replace(/\{([A-Za-z0-9_]+)\}/g, (_match, key) => String(values?.[key] ?? ""));
 }
@@ -506,11 +581,17 @@ function translate(key, values = {}, fallback) {
   return messages["common.unavailable"];
 }
 function translateVisibleText(value) {
-  if (typeof value !== "string" || current.locale !== "en" || !/[\u3400-\u9fff]/u.test(value)) return value;
-  if (SOURCE_EN[value] !== void 0) return SOURCE_EN[value];
+  if (typeof value !== "string" || current.locale === DEFAULT_UI_LOCALE || !/[\u3400-\u9fff]/u.test(value)) return value;
+  const catalog2 = LEGACY_SOURCE_CATALOGS[current.locale];
+  const replacements = LEGACY_REPLACEMENTS[current.locale];
+  if (catalog2 === void 0 || replacements === void 0) return value;
+  if (catalog2[value] !== void 0) return catalog2[value];
   let output = value;
-  for (const [source, translated] of SOURCE_REPLACEMENTS) output = output.split(source).join(translated);
-  return output.replaceAll("\u5F53\u524D\u4F1A\u8BDD\uFF1A", "Current session: ").replaceAll("\u7ED1\u5B9A\uFF1A", "Binding: ").replaceAll("\u72B6\u6001\u540C\u6B65\u5931\u8D25\uFF1A", "Status sync failed: ").replaceAll("\u6761\u76EE ", "Entry ").replaceAll("\u65B0\u6761\u76EE ", "New entry ").replaceAll(" \u672C", " books").replaceAll(" \u6761", " entries").replaceAll("\u8F6E\u6B21 ", "Turn ").replaceAll("\u6B65\u9AA4 ", "Step ").replaceAll("\u5C1D\u8BD5 ", "Attempt ").replaceAll("\u8BCA\u65AD\uFF08", "Diagnostics (").replaceAll("\uFF08", " (").replaceAll("\uFF09", ")").replaceAll("\uFF1B", "; ").replaceAll("\uFF1A", ": ").replaceAll("\u3001", ", ");
+  for (const [source, translated] of replacements) output = output.split(source).join(translated);
+  for (const [source, translated] of LEGACY_SOURCE_TRANSFORMS[current.locale] ?? []) {
+    output = output.split(source).join(translated);
+  }
+  return output;
 }
 function rawText(value) {
   return Object.freeze({
@@ -561,7 +642,7 @@ function getClientUiSettings() {
   return { ...current };
 }
 function setClientUiSettings(value, { announce = true } = {}) {
-  const locale = SUPPORTED_LOCALES.includes(value?.locale) ? value.locale : DEFAULT_UI_SETTINGS.locale;
+  const locale = isSupportedUiLocale(value?.locale) ? value.locale : DEFAULT_UI_SETTINGS.locale;
   const numericScale = Number(value?.scale);
   const scale = Number.isFinite(numericScale) && numericScale >= 0.75 && numericScale <= 1.5 ? Number(numericScale.toFixed(2)) : DEFAULT_UI_SETTINGS.scale;
   current = { locale, scale };
@@ -826,7 +907,7 @@ function PresetSidebar({ closePanel, openPanel, sessionId, autoOpen = true }) {
     announceTavernRefresh();
   }, "\u9884\u8BBE\u914D\u7F6E\u5DF2\u4FDD\u5B58"), [draft, refresh, run]);
   const remove = (0, import_react.useCallback)(() => run(async () => {
-    if (!window.confirm(unwrapText(uiText`删除预设“${draft.name}”？`))) return;
+    if (!window.confirm(unwrapText(uiMessage("preset.confirmDelete", { name: draft.name })))) return;
     await api(`/presets/${encodeURIComponent(draft.id)}`, { method: "DELETE" });
     await refresh(null);
     announceTavernRefresh();
@@ -1175,7 +1256,7 @@ function CharacterPanel({ sessionId, sessionBlank, close }) {
   }, "\u89D2\u8272\u5361\u5DF2\u5BFC\u5165\uFF1B\u5C1A\u672A\u7ED1\u5B9A\u5230\u4F1A\u8BDD"), [refresh, run]);
   const bind = (0, import_react2.useCallback)(() => run(async () => {
     if (!sessionId) throw new Error("\u8BF7\u5148\u521B\u5EFA\u6216\u6253\u5F00\u4E00\u4E2A\u4F1A\u8BDD\u518D\u7ED1\u5B9A\u89D2\u8272");
-    if (selection?.characterCardId !== binding?.characterCardId && sessionBlank === false && !window.confirm(translateVisibleText("\u5F53\u524D\u4F1A\u8BDD\u5DF2\u6709\u5386\u53F2\u3002\u66F4\u6362\u89D2\u8272\u53EA\u5F71\u54CD\u540E\u7EED\u8BF7\u6C42\uFF0C\u4E0D\u4F1A\u91CD\u5199\u5DF2\u6709\u6D88\u606F\uFF1B\u7EE7\u7EED\u5417\uFF1F"))) return;
+    if (selection?.characterCardId !== binding?.characterCardId && sessionBlank === false && !window.confirm(unwrapText(uiMessage("character.confirmHistoricalSwitch")))) return;
     const data = await api2("/character-selection", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -1197,7 +1278,7 @@ function CharacterPanel({ sessionId, sessionBlank, close }) {
     announceTavernRefresh2();
   }, "\u5F53\u524D\u4F1A\u8BDD\u5DF2\u89E3\u9664\u89D2\u8272\u7ED1\u5B9A"), [detail, run, sessionId]);
   const remove = (0, import_react2.useCallback)(() => run(async () => {
-    if (detail === null || !window.confirm(unwrapText(uiText`删除角色卡“${detail.name}”？原始导入文件也会被删除。`))) return;
+    if (detail === null || !window.confirm(unwrapText(uiMessage("character.confirmDelete", { name: detail.name })))) return;
     await api2(`/characters/${encodeURIComponent(detail.id)}`, { method: "DELETE" });
     await refresh(null);
     announceTavernRefresh2();
@@ -1625,7 +1706,7 @@ function WorldBookPanel({ sessionId, close }) {
     window.dispatchEvent(new Event("dsh-tavern:refresh"));
   }, uiMessage("world.user.saveSuccess"));
   const remove = () => run(async () => {
-    if (document2 === null || !window.confirm(unwrapText(uiText`删除独立世界书“${document2.name}”？角色卡内嵌世界书不会受到影响。`))) return;
+    if (document2 === null || !window.confirm(unwrapText(uiMessage("world.confirmDelete", { name: document2.name })))) return;
     await api3(`/world-books/${encodeURIComponent(document2.id)}`, { method: "DELETE" });
     setDocument(null);
     setDraft(null);
@@ -1675,7 +1756,7 @@ function WorldBookPanel({ sessionId, close }) {
         h3("button", { className: "dwb-button", type: "button", disabled: busy, onClick: () => fileRef.current?.click() }, "\u5BFC\u5165 JSON"),
         h3("button", { className: "dwb-button", type: "button", disabled: busy, onClick: create }, "\u65B0\u5EFA\u4E16\u754C\u4E66"),
         h3("button", { className: "dwb-button", type: "button", disabled: busy, onClick: () => {
-          if (!dirty || window.confirm(translateVisibleText("\u653E\u5F03\u5C1A\u672A\u4FDD\u5B58\u7684\u4FEE\u6539\uFF1F"))) run(() => refresh(), "\u4E16\u754C\u4E66\u8D44\u6E90\u5E93\u5DF2\u5237\u65B0");
+          if (!dirty || window.confirm(unwrapText(uiMessage("world.confirmDiscardChanges")))) run(() => refresh(), "\u4E16\u754C\u4E66\u8D44\u6E90\u5E93\u5DF2\u5237\u65B0");
         } }, "\u5237\u65B0"),
         h3("input", { ref: fileRef, hidden: true, type: "file", accept: ".json,application/json", onChange: (event) => {
           const file = event.target.files?.[0];
@@ -1709,7 +1790,7 @@ function WorldBookPanel({ sessionId, close }) {
         h3(Field3, { label: "\u6D4F\u89C8\u72EC\u7ACB\u4E16\u754C\u4E66" }, h3(
           "select",
           { className: "dwb-select", value: document2?.id ?? "", disabled: busy || !catalog2?.worldBooks.length, onChange: (event) => {
-            if (!dirty || window.confirm(translateVisibleText("\u653E\u5F03\u5C1A\u672A\u4FDD\u5B58\u7684\u4FEE\u6539\uFF1F"))) load(event.target.value);
+            if (!dirty || window.confirm(unwrapText(uiMessage("world.confirmDiscardChanges")))) load(event.target.value);
           } },
           ...catalog2?.worldBooks.length ? [] : [h3("option", { key: "empty", value: "" }, "\u8D44\u6E90\u5E93\u4E3A\u7A7A")],
           ...(catalog2?.worldBooks ?? []).map((item) => h3("option", { key: item.id, value: item.id }, rawText(item.name)))
@@ -1734,7 +1815,7 @@ function WorldBookPanel({ sessionId, close }) {
             h3("button", { className: "dwb-button dwb-danger", type: "button", disabled: busy, onClick: remove }, "\u5220\u9664\u72EC\u7ACB\u4E66")
           ),
           ...entries.map((entry, index) => h3(EntryEditor, { key: `${String(entry.uid)}-${index}`, entry, index, update: updateEntry, remove: (itemIndex) => {
-            if (window.confirm(translateVisibleText("\u5220\u9664\u8FD9\u4E2A\u4E16\u754C\u4E66\u6761\u76EE\uFF1F\u4FDD\u5B58\u540E\u751F\u6548\u3002"))) {
+            if (window.confirm(unwrapText(uiMessage("world.confirmDeleteEntry")))) {
               setDraft((current2) => ({ ...current2, entries: current2.entries.filter((_item, candidate) => candidate !== itemIndex) }));
               setDirty(true);
             }
@@ -1809,7 +1890,7 @@ function WorldBookPanel({ sessionId, close }) {
             });
             setEmbeddedDirty(true);
           }, remove: (itemIndex) => {
-            if (window.confirm(translateVisibleText("\u5220\u9664\u8FD9\u4E2A\u89D2\u8272\u5361\u5185\u5D4C\u4E16\u754C\u4E66\u6761\u76EE\uFF1F\u4FDD\u5B58\u540E\u751F\u6548\u3002"))) {
+            if (window.confirm(unwrapText(uiMessage("world.confirmDeleteEmbeddedEntry")))) {
               setEmbeddedDraft((current2) => ({ ...structuredClone(current2), entries: current2.entries.filter((_item, candidate) => candidate !== itemIndex) }));
               setEmbeddedDirty(true);
             }
@@ -1950,7 +2031,7 @@ function UserPanel({ sessionId, sessionBlank, close }) {
     return () => window.removeEventListener("beforeunload", warn);
   }, [dirty]);
   const create = (0, import_react4.useCallback)(() => {
-    if (dirty && !window.confirm(translateVisibleText("\u5F53\u524D\u7528\u6237\u8D44\u6E90\u6216\u4E16\u754C\u4E66\u7ED1\u5B9A\u6709\u672A\u4FDD\u5B58\u4FEE\u6539\u3002\u653E\u5F03\u4FEE\u6539\u5E76\u65B0\u5EFA\u7528\u6237\u5417\uFF1F"))) return;
+    if (dirty && !window.confirm(unwrapText(uiMessage("user.confirmDiscardForCreate")))) return;
     run(async () => {
       const data = await api4("/users", { method: "POST", body: JSON.stringify({ name: translateVisibleText("\u65B0\u7528\u6237"), description: "" }) });
       draftId.current = data.user.id;
@@ -1982,12 +2063,12 @@ function UserPanel({ sessionId, sessionBlank, close }) {
     notifyRefresh();
   }, "\u7528\u6237\u7ED1\u5B9A\u7684\u4E16\u754C\u4E66\u5DF2\u4FDD\u5B58\uFF1B\u9009\u62E9\u8BE5\u7528\u6237\u7684\u4F1A\u8BDD\u4F1A\u5728\u4E0B\u4E00\u6B21\u7EC4\u88C5\u65F6\u81EA\u52A8\u4F7F\u7528"), [draft, run, worldBookIds]);
   const chooseUser = (0, import_react4.useCallback)((id) => {
-    if (dirty && !window.confirm(translateVisibleText("\u5F53\u524D\u7528\u6237\u8D44\u6E90\u6216\u4E16\u754C\u4E66\u7ED1\u5B9A\u6709\u672A\u4FDD\u5B58\u4FEE\u6539\u3002\u653E\u5F03\u4FEE\u6539\u5E76\u5207\u6362\u5417\uFF1F"))) return;
+    if (dirty && !window.confirm(unwrapText(uiMessage("user.confirmDiscardForSwitch")))) return;
     run(() => refresh(id), "\u7528\u6237\u8D44\u6E90\u548C\u4E16\u754C\u4E66\u7ED1\u5B9A\u5DF2\u52A0\u8F7D");
   }, [dirty, refresh, run]);
   const bind = (0, import_react4.useCallback)(() => run(async () => {
     if (!sessionId || draft === null) throw new Error("\u8BF7\u5148\u521B\u5EFA\u6216\u6253\u5F00\u4E00\u4E2A\u4F1A\u8BDD\u5E76\u9009\u62E9\u7528\u6237\u8D44\u6E90");
-    if (selectedUserId !== draft.id && sessionBlank === false && !window.confirm(translateVisibleText("\u5F53\u524D\u4F1A\u8BDD\u5DF2\u6709\u5386\u53F2\u3002\u5207\u6362\u7528\u6237\u53EA\u5F71\u54CD\u540E\u7EED\u8BF7\u6C42\uFF0C\u4E0D\u4F1A\u91CD\u5199\u5DF2\u6709\u6D88\u606F\uFF1B\u7EE7\u7EED\u5417\uFF1F"))) return;
+    if (selectedUserId !== draft.id && sessionBlank === false && !window.confirm(unwrapText(uiMessage("user.confirmHistoricalSwitch")))) return;
     const data = await api4("/user-selection", {
       method: "POST",
       body: JSON.stringify({ sessionId, userId: draft.id })
@@ -2002,7 +2083,7 @@ function UserPanel({ sessionId, sessionBlank, close }) {
     notifyRefresh();
   }, "\u5F53\u524D\u4F1A\u8BDD\u5DF2\u89E3\u9664\u7528\u6237\u7ED1\u5B9A"), [run, sessionId]);
   const remove = (0, import_react4.useCallback)(() => run(async () => {
-    if (draft === null || !window.confirm(unwrapText(uiText`删除用户“${draft.name}”？所有会话中的用户选择和该用户的世界书关系都会清除。`))) return;
+    if (draft === null || !window.confirm(unwrapText(uiMessage("user.confirmDelete", { name: draft.name })))) return;
     await api4(`/users/${encodeURIComponent(draft.id)}`, { method: "DELETE", body: "{}" });
     draftId.current = null;
     await refresh(null);
@@ -2010,7 +2091,7 @@ function UserPanel({ sessionId, sessionBlank, close }) {
   }, "\u7528\u6237\u5DF2\u5220\u9664\uFF0C\u76F8\u5173\u4F1A\u8BDD\u7ED1\u5B9A\u5DF2\u6E05\u9664"), [draft, refresh, run]);
   const activeName = selectedUserId === null ? translateVisibleText("\u672A\u7ED1\u5B9A\u7528\u6237") : users?.find((user) => user.id === selectedUserId)?.name ?? selectedUserId;
   const requestClose = () => {
-    if (!dirty || window.confirm(translateVisibleText("\u5F53\u524D\u7528\u6237\u8D44\u6E90\u6216\u4E16\u754C\u4E66\u7ED1\u5B9A\u6709\u672A\u4FDD\u5B58\u4FEE\u6539\u3002\u4ECD\u7136\u5173\u95ED\u5417\uFF1F"))) close();
+    if (!dirty || window.confirm(unwrapText(uiMessage("user.confirmCloseDirty")))) close();
   };
   const dirtyParts = [
     resourceDirty ? translateVisibleText("\u540D\u5B57/\u63CF\u8FF0") : "",
@@ -2034,7 +2115,7 @@ function UserPanel({ sessionId, sessionBlank, close }) {
         { className: "dtu-toolbar" },
         h4("button", { className: "dtu-button", type: "button", disabled: busy, onClick: create }, "\u65B0\u5EFA\u7528\u6237"),
         h4("button", { className: "dtu-button", type: "button", disabled: busy, onClick: () => {
-          if (!dirty || window.confirm(translateVisibleText("\u653E\u5F03\u5C1A\u672A\u4FDD\u5B58\u7684\u7528\u6237\u8D44\u6E90\u6216\u4E16\u754C\u4E66\u7ED1\u5B9A\u4FEE\u6539\uFF1F"))) run(() => refresh(draft?.id), "\u7528\u6237\u8D44\u6E90\u5DF2\u5237\u65B0");
+          if (!dirty || window.confirm(unwrapText(uiMessage("user.confirmDiscardRefresh")))) run(() => refresh(draft?.id), "\u7528\u6237\u8D44\u6E90\u5DF2\u5237\u65B0");
         } }, "\u5237\u65B0")
       ),
       h4(Field4, { label: "\u6D4F\u89C8\u7528\u6237\u8D44\u6E90" }, h4(
@@ -2470,7 +2551,7 @@ function SessionTemplatePanel({ sessionId, workspaceId, createCleanSession, clos
     });
   }, (result) => unwrapText(uiText`已用当前设置更新模板：${result.template.name}`));
   const remove = () => {
-    if (selectedId === null || !window.confirm(unwrapText(uiText`删除配置模板“${selected?.name ?? selectedId}”？这不会删除任何 DSH 会话。`))) return;
+    if (selectedId === null || !window.confirm(unwrapText(uiMessage("template.confirmDelete", { name: selected?.name ?? selectedId })))) return;
     run(() => api5(`/session-templates/${encodeURIComponent(selectedId)}`, { method: "DELETE", body: JSON.stringify({}) }), "\u6A21\u677F\u5DF2\u5220\u9664");
   };
   const start = (mode) => run(async () => {
@@ -2828,8 +2909,7 @@ function SettingsPanel({ settings, status, busy, close, update, reset }) {
           disabled: busy,
           onChange: (event) => update({ ...settings, locale: event.target.value })
         },
-        h7("option", { value: "zh-CN" }, translate("settings.language.zh")),
-        h7("option", { value: "en" }, translate("settings.language.en"))
+        ...UI_LOCALES.map((locale) => h7("option", { key: locale.id, value: locale.id }, rawText(locale.nativeName)))
       )),
       h7(Field5, { label: translate("settings.scale") }, h7("select", {
         className: "dtv-select",
