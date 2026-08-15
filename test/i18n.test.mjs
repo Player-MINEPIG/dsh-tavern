@@ -144,7 +144,7 @@ test('semantic dynamic messages translate as complete sentences without altering
 test('reported mixed-copy surfaces use semantic messages instead of fragment translation', () => {
   const cases = [
     ['../packages/tavern-trace/src/client.js', ['trace.storage.summary', 'trace.keywords.configured', 'trace.keywords.matched', 'trace.bookBudget', 'trace.recordAligned', 'trace.activationPending', 'trace.diagnostics']],
-    ['../packages/world-book-library/src/client.js', ['world.currentSession', 'world.catalogItem', 'world.documentMeta', 'world.user.title', 'world.user.current', 'world.user.none', 'world.user.empty', 'world.user.order', 'world.user.duplicate', 'world.user.appended', 'world.user.editHint', 'world.embeddedMeta', 'world.embeddedEmpty', 'world.diagnostics']],
+    ['../packages/world-book-library/src/client.js', ['world.currentSession', 'world.catalogItem', 'world.documentMeta', 'world.user.title', 'world.user.current', 'world.user.none', 'world.user.empty', 'world.user.libraryEmpty', 'world.user.unsaved', 'world.user.saved', 'world.user.order', 'world.user.duplicate', 'world.user.appended', 'world.user.pendingAdd', 'world.user.pendingRemove', 'world.user.save', 'world.user.saveApplied', 'world.user.clear', 'world.user.saveSuccess', 'world.user.editContent', 'world.user.editHint', 'world.embeddedMeta', 'world.embeddedEmpty', 'world.diagnostics']],
     ['../packages/character/src/client.js', ['character.embeddedBook']],
     ['../packages/session-template/src/client.js', ['template.currentSettingsReminder']],
   ]

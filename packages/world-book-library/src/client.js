@@ -30,7 +30,7 @@ const POSITIONS = [
 
 const css = `
 .dwb-panel{position:absolute;top:0;right:0;bottom:0;width:min(500px,calc(100vw - 56px));pointer-events:auto;border-left:1px solid var(--dsw-alias-border-l2);box-shadow:var(--ds-shadow-3,-8px 0 28px rgba(0,0,0,.18));background:var(--dsw-alias-bg-base);color:var(--dsw-alias-label-primary);display:flex;flex-direction:column;font-family:Inter,var(--dsw-font-family),sans-serif}.dwb-header{height:52px;box-sizing:border-box;display:flex;align-items:center;gap:8px;padding:0 14px;border-bottom:1px solid var(--dsw-alias-border-l2);flex:none}.dwb-title{font-size:16px;font-weight:650;flex:1}.dwb-close{border:0;background:transparent;color:var(--dsw-alias-label-tertiary);cursor:pointer;border-radius:7px;padding:6px 8px;font-size:14px}.dwb-body{min-height:0;overflow:auto;padding:12px;display:flex;flex-direction:column;gap:11px}.dwb-toolbar{display:grid;grid-template-columns:repeat(3,1fr);gap:7px}.dwb-actions{display:flex;gap:7px;flex-wrap:wrap}.dwb-button{min-height:36px;border:1px solid var(--dsw-alias-border-l2);border-radius:8px;background:var(--dsw-alias-button-secondary-fill,var(--dsw-alias-bg-base));color:var(--dsw-alias-label-primary);cursor:pointer;padding:7px 10px;font-size:13px;text-decoration:none;display:inline-flex;align-items:center;justify-content:center;box-sizing:border-box}.dwb-button:disabled{opacity:.5;cursor:default}.dwb-primary{background:var(--dsw-alias-state-business-primary);color:white;border-color:transparent}.dwb-danger{color:var(--dsw-alias-state-error)}.dwb-field{display:flex;flex-direction:column;gap:4px}.dwb-label{font-size:12px;font-weight:620;color:var(--dsw-alias-label-tertiary)}.dwb-input,.dwb-select,.dwb-textarea{box-sizing:border-box;width:100%;border:1px solid var(--dsw-alias-border-l2);border-radius:7px;background:var(--dsw-alias-bg-base);color:var(--dsw-alias-label-primary);font:inherit;font-size:13px;padding:7px 8px}.dwb-input,.dwb-select{height:36px}.dwb-textarea{min-height:110px;resize:vertical;line-height:1.5}.dwb-note,.dwb-meta{font-size:13px;line-height:1.5;color:var(--dsw-alias-label-tertiary);margin:0;overflow-wrap:anywhere}.dwb-status{font-size:13px;line-height:1.45;border-radius:7px;padding:8px 10px;background:var(--dsw-specific-tip);overflow-wrap:anywhere}.dwb-status[data-error=true]{color:var(--dsw-alias-state-error)}.dwb-status[data-warning=true]{color:var(--dsw-alias-state-warning,#b46b00)}.dwb-section-title{font-size:15px;font-weight:700;margin:5px 0 0}.dwb-resource{border:1px solid var(--dsw-alias-border-l1);border-radius:9px;padding:10px;display:flex;flex-direction:column;gap:8px}.dwb-resource-title{font-size:14px;font-weight:650}.dwb-bindings{display:grid;grid-template-columns:1fr 1fr;gap:5px}.dwb-check{display:flex;gap:6px;align-items:flex-start;font-size:12px;line-height:1.45}.dwb-entry{border:1px solid var(--dsw-alias-border-l1);border-radius:8px;overflow:hidden}.dwb-entry>summary{list-style:none;cursor:pointer;padding:8px;display:flex;align-items:center;gap:7px;font-size:13px}.dwb-entry>summary::-webkit-details-marker{display:none}.dwb-dot{width:8px;height:8px;flex:none;border-radius:50%;background:var(--dsw-alias-label-tertiary)}.dwb-entry[data-enabled=true] .dwb-dot{background:var(--dsw-alias-state-success,#2fa36b)}.dwb-entry-name{font-weight:620;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.dwb-entry-state{margin-left:auto;flex:none;color:var(--dsw-alias-label-tertiary);font-size:12px}.dwb-entry-body{border-top:1px solid var(--dsw-alias-border-l1);padding:8px;display:flex;flex-direction:column;gap:8px}.dwb-grid{display:grid;grid-template-columns:1fr 1fr;gap:7px}.dwb-checks{display:flex;flex-wrap:wrap;gap:10px}.dwb-list{margin:0;padding-left:18px;font-size:13px;line-height:1.5}
-.dwb-source-section{border:1px solid var(--dsw-alias-border-l2);border-radius:11px;padding:10px;background:color-mix(in srgb,var(--dsw-specific-tip) 35%,transparent);display:flex;flex-direction:column;gap:9px}.dwb-source-section>.dwb-section-title{margin:0}.dwb-source-section>.dwb-resource{background:var(--dsw-alias-bg-base)}.dwb-source-list{margin:0;padding-left:20px;display:flex;flex-direction:column;gap:7px}.dwb-source-book{padding-left:2px}.dwb-source-book-row{display:flex;align-items:center;justify-content:space-between;gap:8px}.dwb-source-book-name{min-width:0;font-size:13px;font-weight:620;overflow-wrap:anywhere}.dwb-source-badge{flex:none;border:1px solid var(--dsw-alias-border-l1);border-radius:999px;padding:2px 7px;font-size:11px;line-height:1.35;color:var(--dsw-alias-label-tertiary);background:var(--dsw-specific-tip)}
+.dwb-source-section{border:1px solid var(--dsw-alias-border-l2);border-radius:11px;padding:10px;background:color-mix(in srgb,var(--dsw-specific-tip) 35%,transparent);display:flex;flex-direction:column;gap:9px}.dwb-source-section>.dwb-section-title{margin:0}.dwb-source-section>.dwb-resource{background:var(--dsw-alias-bg-base)}.dwb-source-list{margin:0;padding-left:20px;display:flex;flex-direction:column;gap:7px}.dwb-source-book{padding-left:2px}.dwb-source-book-row{display:flex;align-items:center;justify-content:space-between;gap:8px}.dwb-source-book-name{min-width:0;font-size:13px;font-weight:620;overflow-wrap:anywhere}.dwb-source-badge{flex:none;border:1px solid var(--dsw-alias-border-l1);border-radius:999px;padding:2px 7px;font-size:11px;line-height:1.35;color:var(--dsw-alias-label-tertiary);background:var(--dsw-specific-tip)}.dwb-user-bindings{grid-template-columns:1fr}.dwb-user-binding-row{display:flex;align-items:center;gap:7px}.dwb-user-binding-row>.dwb-check{align-items:center;flex:1;min-width:0}.dwb-user-binding-row .dwb-source-badge{margin-left:auto}.dwb-inline-edit{min-height:30px;padding:4px 8px;flex:none}
 `
 
 function errorMessage(data, status) {
@@ -192,6 +192,8 @@ export function WorldBookPanel({ sessionId, close }) {
   const [draft, setDraft] = useState(null)
   const [selection, setSelection] = useState([])
   const [appliedSelection, setAppliedSelection] = useState([])
+  const [userSelection, setUserSelection] = useState([])
+  const [appliedUserSelection, setAppliedUserSelection] = useState([])
   const [active, setActive] = useState(null)
   const [embeddedCharacterId, setEmbeddedCharacterId] = useState(null)
   const [embeddedDraft, setEmbeddedDraft] = useState(null)
@@ -200,6 +202,7 @@ export function WorldBookPanel({ sessionId, close }) {
   const [busy, setBusy] = useState(false)
   const [status, setStatus] = useState({ text: '加载中…', error: false })
   const fileRef = useRef(null)
+  const standaloneEditorRef = useRef(null)
   const generation = useRef(0)
 
   const run = useCallback(async (operation, success) => {
@@ -231,9 +234,15 @@ export function WorldBookPanel({ sessionId, close }) {
     }
     if (currentGeneration !== generation.current) return
     const ids = selected.selection?.worldBookIds ?? []
+    const resolvedUserIds = activeView.resources?.user === null || activeView.resources?.user === undefined
+      ? []
+      : activeView.worldBookSelection?.userBoundIds ?? []
+    const userIds = Array.isArray(resolvedUserIds) ? resolvedUserIds : []
     setCatalog(list)
     setSelection(ids)
     setAppliedSelection(ids)
+    setUserSelection(userIds)
+    setAppliedUserSelection(userIds)
     setActive(activeView)
     setEmbeddedCharacterId(characterId)
     setEmbeddedDraft(embeddedBook === null ? null : structuredClone(embeddedBook))
@@ -269,6 +278,11 @@ export function WorldBookPanel({ sessionId, close }) {
     setDirty(false)
   }, '世界书详情已加载')
 
+  const editUserBook = async id => {
+    await load(id)
+    requestAnimationFrame(() => standaloneEditorRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }))
+  }
+
   const create = () => run(async () => {
     const data = await api('/world-books', { method: 'POST', body: JSON.stringify({ name: 'Untitled World Book' }) })
     await refresh(data.worldBook.id)
@@ -302,6 +316,19 @@ export function WorldBookPanel({ sessionId, close }) {
     window.dispatchEvent(new Event('dsh-tavern:refresh'))
   }, '当前会话的世界书绑定已保存')
 
+  const saveUserSelection = () => run(async () => {
+    const userId = active?.resources?.user?.id
+    if (!userId) throw new Error('当前会话没有可编辑世界书关系的绑定用户')
+    const data = await api(`/users/${encodeURIComponent(userId)}/world-books`, {
+      method: 'PUT',
+      body: JSON.stringify({ worldBookIds: userSelection }),
+    })
+    const ids = data.binding.worldBookIds
+    setUserSelection(ids)
+    setAppliedUserSelection(ids)
+    window.dispatchEvent(new Event('dsh-tavern:refresh'))
+  }, uiMessage('world.user.saveSuccess'))
+
   const remove = () => run(async () => {
     if (document === null || !window.confirm(unwrapText(uiText`删除独立世界书“${document.name}”？角色卡内嵌世界书不会受到影响。`))) return
     await api(`/world-books/${encodeURIComponent(document.id)}`, { method: 'DELETE' })
@@ -334,7 +361,14 @@ export function WorldBookPanel({ sessionId, close }) {
   const embedded = active?.resources?.worldBooks?.filter(item => item.kind === 'embedded-character-book') ?? []
   const diagnostics = active?.diagnostics?.filter(item => String(item.code ?? '').includes('WORLD_BOOK')) ?? []
   const selectionDirty = selection.length !== appliedSelection.length || selection.some((id, index) => id !== appliedSelection[index])
+  const userSelectionDirty = userSelection.length !== appliedUserSelection.length || userSelection.some((id, index) => id !== appliedUserSelection[index])
   const userSource = deriveUserWorldBookSource(active, catalog)
+  const catalogBooks = Array.isArray(catalog?.worldBooks) ? catalog.worldBooks : []
+  const catalogById = new Map(catalogBooks.map(book => [book.id, book]))
+  const userCatalog = [
+    ...userSelection.map(id => catalogById.get(id)).filter(Boolean),
+    ...catalogBooks.filter(book => !userSelection.includes(book.id)),
+  ]
 
   return h('div', { className: 'dwb-panel' },
     h('div', { className: 'dwb-header' }, h('div', { className: 'dwb-title' }, '世界信息（World Book）'), h('button', { className: 'dwb-close', type: 'button', onClick: close, 'aria-label': '关闭世界书侧边栏' }, '✕')),
@@ -364,7 +398,7 @@ export function WorldBookPanel({ sessionId, close }) {
       h(Field, { label: '浏览独立世界书' }, h('select', { className: 'dwb-select', value: document?.id ?? '', disabled: busy || !catalog?.worldBooks.length, onChange: event => { if (!dirty || window.confirm(translateVisibleText('放弃尚未保存的修改？'))) load(event.target.value) } },
         ...(catalog?.worldBooks.length ? [] : [h('option', { key: 'empty', value: '' }, '资源库为空')]),
         ...(catalog?.worldBooks ?? []).map(item => h('option', { key: item.id, value: item.id }, rawText(item.name))))),
-      draft === null ? null : h('div', { className: 'dwb-resource' },
+      draft === null ? null : h('div', { className: 'dwb-resource', ref: standaloneEditorRef },
         h(Field, { label: '世界书名称' }, h('input', { className: 'dwb-input', value: draft.name ?? '', onChange: event => { setDraft(current => ({ ...current, name: event.target.value })); setDirty(true) } })),
         h('p', { className: 'dwb-meta' }, uiMessage('world.documentMeta', { count: entries.length })),
         h('div', { className: 'dwb-actions' },
@@ -382,14 +416,44 @@ export function WorldBookPanel({ sessionId, close }) {
         ? h('p', { className: 'dwb-note' }, uiMessage('world.user.none'))
         : h('div', { className: 'dwb-resource' },
           h('div', { className: 'dwb-resource-title' }, uiMessage('world.user.current', { name: userSource.user.name || userSource.user.id })),
-          userSource.books.length === 0
-            ? h('p', { className: 'dwb-note' }, uiMessage('world.user.empty'))
-            : h('ol', { className: 'dwb-source-list' }, ...userSource.books.map(book => h('li', { className: 'dwb-source-book', key: book.id },
-              h('div', { className: 'dwb-source-book-row' },
-                h('span', { className: 'dwb-source-book-name' }, rawText(book.name)),
-                h('span', { className: 'dwb-source-badge' }, book.duplicate ? uiMessage('world.user.duplicate') : uiMessage('world.user.appended')),
-              ),
-            ))),
+          userCatalog.length
+            ? h('div', { className: 'dwb-bindings dwb-user-bindings' }, ...userCatalog.map(book => {
+              const checked = userSelection.includes(book.id)
+              const wasApplied = appliedUserSelection.includes(book.id)
+              const badge = checked && !wasApplied
+                ? uiMessage('world.user.pendingAdd')
+                : !checked && wasApplied
+                  ? uiMessage('world.user.pendingRemove')
+                  : checked && selection.includes(book.id)
+                    ? uiMessage('world.user.duplicate')
+                    : checked
+                      ? uiMessage('world.user.appended')
+                      : null
+              return h('div', { className: 'dwb-user-binding-row', key: book.id },
+                h('label', { className: 'dwb-check' },
+                  h('input', {
+                    type: 'checkbox',
+                    checked,
+                    onChange: event => setUserSelection(current => event.target.checked
+                      ? [...current, book.id]
+                      : current.filter(id => id !== book.id)),
+                  }),
+                  h('span', { className: 'dwb-source-book-name' }, rawText(book.name)),
+                  badge === null ? null : h('span', { className: 'dwb-source-badge' }, badge),
+                ),
+                checked || wasApplied
+                  ? h('button', { className: 'dwb-button dwb-inline-edit', type: 'button', disabled: busy, onClick: () => editUserBook(book.id) }, uiMessage('world.user.editContent'))
+                  : null,
+              )
+            }))
+            : h('p', { className: 'dwb-note' }, uiMessage('world.user.libraryEmpty')),
+          userSelectionDirty
+            ? h('div', { className: 'dwb-status', 'data-warning': true }, uiMessage('world.user.unsaved'))
+            : h('p', { className: 'dwb-note' }, userSource.books.length === 0 ? uiMessage('world.user.empty') : uiMessage('world.user.saved')),
+          h('div', { className: 'dwb-actions' },
+            h('button', { className: 'dwb-button dwb-primary', type: 'button', disabled: busy || !userSelectionDirty, onClick: saveUserSelection }, userSelectionDirty ? uiMessage('world.user.save') : uiMessage('world.user.saveApplied')),
+            h('button', { className: 'dwb-button', type: 'button', disabled: busy || userSelection.length === 0, onClick: () => setUserSelection([]) }, uiMessage('world.user.clear')),
+          ),
           h('p', { className: 'dwb-note' }, uiMessage('world.user.order')),
           h('p', { className: 'dwb-note' }, uiMessage('world.user.editHint')),
         ),

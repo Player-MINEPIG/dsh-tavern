@@ -79,10 +79,20 @@ var MESSAGE_CATALOG = Object.freeze({
     "world.user.current": "\u5F53\u524D\u7528\u6237\uFF1A{name}",
     "world.user.none": "\u5F53\u524D\u4F1A\u8BDD\u672A\u7ED1\u5B9A\u7528\u6237\uFF0C\u56E0\u6B64\u6CA1\u6709\u7528\u6237\u6765\u6E90\u7684\u4E16\u754C\u4E66\u3002",
     "world.user.empty": "\u5F53\u524D\u7528\u6237\u6CA1\u6709\u7ED1\u5B9A\u72EC\u7ACB\u4E16\u754C\u4E66\u3002",
+    "world.user.libraryEmpty": "\u72EC\u7ACB\u4E16\u754C\u4E66\u8D44\u6E90\u5E93\u4E3A\u7A7A\u3002\u8BF7\u5148\u521B\u5EFA\u6216\u5BFC\u5165\u4E16\u754C\u4E66\u3002",
+    "world.user.unsaved": "\u7528\u6237\u4E16\u754C\u4E66\u7ED1\u5B9A\u6709\u672A\u4FDD\u5B58\u4FEE\u6539\uFF1B\u5F53\u524D\u52FE\u9009\u5C1A\u672A\u5E94\u7528\u3002",
+    "world.user.saved": "\u5F53\u524D\u663E\u793A\u7684\u7528\u6237\u4E16\u754C\u4E66\u7ED1\u5B9A\u5DF2\u4FDD\u5B58\u5E76\u5E94\u7528\u3002",
     "world.user.order": "\u6709\u6548\u7EC4\u5408\u987A\u5E8F\u4E3A\uFF1A\u5F53\u524D\u4F1A\u8BDD\u663E\u5F0F\u4E16\u754C\u4E66\u5728\u524D\uFF0C\u7528\u6237\u7ED1\u5B9A\u4E16\u754C\u4E66\u968F\u540E\uFF1B\u91CD\u590D\u8D44\u6E90\u53EA\u6267\u884C\u4E00\u6B21\u3002",
     "world.user.duplicate": "\u4E0E\u4F1A\u8BDD\u7ED1\u5B9A\u91CD\u590D\uFF0C\u5DF2\u53BB\u91CD",
     "world.user.appended": "\u7531\u7528\u6237\u7ED1\u5B9A\u8FFD\u52A0",
-    "world.user.editHint": "\u8981\u4FEE\u6539\u8FD9\u4E9B\u5173\u7CFB\uFF0C\u8BF7\u4ECE DT \u60AC\u6D6E\u7403\u5207\u6362\u5230\u7528\u6237\u9762\u677F\u3002",
+    "world.user.pendingAdd": "\u5F85\u6DFB\u52A0",
+    "world.user.pendingRemove": "\u5F85\u79FB\u9664",
+    "world.user.save": "\u4FDD\u5B58\u7528\u6237\u7ED1\u5B9A\uFF08\u672A\u4FDD\u5B58\uFF09",
+    "world.user.saveApplied": "\u7528\u6237\u7ED1\u5B9A\u5DF2\u4FDD\u5B58",
+    "world.user.clear": "\u6E05\u7A7A\u5F85\u4FDD\u5B58\u9009\u62E9",
+    "world.user.saveSuccess": "\u7528\u6237\u7ED1\u5B9A\u7684\u4E16\u754C\u4E66\u5DF2\u4FDD\u5B58\uFF1B\u540E\u7EED\u8BF7\u6C42\u5C06\u4F7F\u7528\u65B0\u7EC4\u5408\u3002",
+    "world.user.editContent": "\u7F16\u8F91\u5185\u5BB9",
+    "world.user.editHint": "\u8FD9\u91CC\u4E0E\u7528\u6237\u9762\u677F\u7F16\u8F91\u540C\u4E00\u4EFD\u7ED1\u5B9A\u5173\u7CFB\uFF1B\u4EFB\u4E00\u5904\u4FDD\u5B58\u540E\uFF0C\u53E6\u4E00\u5904\u4F1A\u540C\u6B65\u5237\u65B0\u3002",
     "world.embeddedMeta": "{count} \u6761\u3002\u5B83\u4E0E\u72EC\u7ACB\u4E66\u5171\u7528 matcher/loader\uFF1B\u5220\u9664\u72EC\u7ACB\u4E66\u4E0D\u4F1A\u4FEE\u6539\u6216\u89E3\u7ED1\u89D2\u8272\u5361\u5185\u5D4C\u4E66\u3002",
     "world.embeddedEmpty": "\u5F53\u524D\u4F1A\u8BDD\u6CA1\u6709\u89D2\u8272\u5361\u7ED1\u5B9A\u7684\u5185\u5D4C\u4E16\u754C\u4E66\u3002\u7ED1\u5B9A\u542B character_book \u7684\u89D2\u8272\u5361\u540E\u4F1A\u663E\u793A\u5728\u8FD9\u91CC\u3002",
     "world.diagnostics": "\u8FD0\u884C\u8BCA\u65AD\uFF08{count}\uFF09",
@@ -132,10 +142,20 @@ var MESSAGE_CATALOG = Object.freeze({
     "world.user.current": "Current user: {name}",
     "world.user.none": "The current session has no bound user, so it has no user-sourced world books.",
     "world.user.empty": "The current user has no bound standalone world books.",
+    "world.user.libraryEmpty": "The standalone world-book library is empty. Create or import a world book first.",
+    "world.user.unsaved": "The user world-book binding has unsaved changes; the current selection is not yet applied.",
+    "world.user.saved": "The displayed user world-book binding is saved and applied.",
     "world.user.order": "Effective order: explicit session books first, followed by user-bound books; duplicate resources run only once.",
     "world.user.duplicate": "Also session-bound; deduplicated",
     "world.user.appended": "Appended from user binding",
-    "world.user.editHint": "To change these relationships, switch to the User panel from the DT launcher.",
+    "world.user.pendingAdd": "Pending addition",
+    "world.user.pendingRemove": "Pending removal",
+    "world.user.save": "Save user binding (unsaved)",
+    "world.user.saveApplied": "User binding saved",
+    "world.user.clear": "Clear pending selection",
+    "world.user.saveSuccess": "The user-bound world books were saved; later requests will use the new composition.",
+    "world.user.editContent": "Edit contents",
+    "world.user.editHint": "This panel and the User panel edit the same binding. Saving in either place refreshes the other.",
     "world.embeddedMeta": "{count} entries. It shares the matcher/loader with standalone books; deleting a standalone book never edits or unbinds this embedded book.",
     "world.embeddedEmpty": "The current session has no character-bound embedded world book. Bind a character card with character_book to show it here.",
     "world.diagnostics": "Runtime diagnostics ({count})",
@@ -1296,7 +1316,7 @@ var POSITIONS = [
 ];
 var css3 = `
 .dwb-panel{position:absolute;top:0;right:0;bottom:0;width:min(500px,calc(100vw - 56px));pointer-events:auto;border-left:1px solid var(--dsw-alias-border-l2);box-shadow:var(--ds-shadow-3,-8px 0 28px rgba(0,0,0,.18));background:var(--dsw-alias-bg-base);color:var(--dsw-alias-label-primary);display:flex;flex-direction:column;font-family:Inter,var(--dsw-font-family),sans-serif}.dwb-header{height:52px;box-sizing:border-box;display:flex;align-items:center;gap:8px;padding:0 14px;border-bottom:1px solid var(--dsw-alias-border-l2);flex:none}.dwb-title{font-size:16px;font-weight:650;flex:1}.dwb-close{border:0;background:transparent;color:var(--dsw-alias-label-tertiary);cursor:pointer;border-radius:7px;padding:6px 8px;font-size:14px}.dwb-body{min-height:0;overflow:auto;padding:12px;display:flex;flex-direction:column;gap:11px}.dwb-toolbar{display:grid;grid-template-columns:repeat(3,1fr);gap:7px}.dwb-actions{display:flex;gap:7px;flex-wrap:wrap}.dwb-button{min-height:36px;border:1px solid var(--dsw-alias-border-l2);border-radius:8px;background:var(--dsw-alias-button-secondary-fill,var(--dsw-alias-bg-base));color:var(--dsw-alias-label-primary);cursor:pointer;padding:7px 10px;font-size:13px;text-decoration:none;display:inline-flex;align-items:center;justify-content:center;box-sizing:border-box}.dwb-button:disabled{opacity:.5;cursor:default}.dwb-primary{background:var(--dsw-alias-state-business-primary);color:white;border-color:transparent}.dwb-danger{color:var(--dsw-alias-state-error)}.dwb-field{display:flex;flex-direction:column;gap:4px}.dwb-label{font-size:12px;font-weight:620;color:var(--dsw-alias-label-tertiary)}.dwb-input,.dwb-select,.dwb-textarea{box-sizing:border-box;width:100%;border:1px solid var(--dsw-alias-border-l2);border-radius:7px;background:var(--dsw-alias-bg-base);color:var(--dsw-alias-label-primary);font:inherit;font-size:13px;padding:7px 8px}.dwb-input,.dwb-select{height:36px}.dwb-textarea{min-height:110px;resize:vertical;line-height:1.5}.dwb-note,.dwb-meta{font-size:13px;line-height:1.5;color:var(--dsw-alias-label-tertiary);margin:0;overflow-wrap:anywhere}.dwb-status{font-size:13px;line-height:1.45;border-radius:7px;padding:8px 10px;background:var(--dsw-specific-tip);overflow-wrap:anywhere}.dwb-status[data-error=true]{color:var(--dsw-alias-state-error)}.dwb-status[data-warning=true]{color:var(--dsw-alias-state-warning,#b46b00)}.dwb-section-title{font-size:15px;font-weight:700;margin:5px 0 0}.dwb-resource{border:1px solid var(--dsw-alias-border-l1);border-radius:9px;padding:10px;display:flex;flex-direction:column;gap:8px}.dwb-resource-title{font-size:14px;font-weight:650}.dwb-bindings{display:grid;grid-template-columns:1fr 1fr;gap:5px}.dwb-check{display:flex;gap:6px;align-items:flex-start;font-size:12px;line-height:1.45}.dwb-entry{border:1px solid var(--dsw-alias-border-l1);border-radius:8px;overflow:hidden}.dwb-entry>summary{list-style:none;cursor:pointer;padding:8px;display:flex;align-items:center;gap:7px;font-size:13px}.dwb-entry>summary::-webkit-details-marker{display:none}.dwb-dot{width:8px;height:8px;flex:none;border-radius:50%;background:var(--dsw-alias-label-tertiary)}.dwb-entry[data-enabled=true] .dwb-dot{background:var(--dsw-alias-state-success,#2fa36b)}.dwb-entry-name{font-weight:620;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.dwb-entry-state{margin-left:auto;flex:none;color:var(--dsw-alias-label-tertiary);font-size:12px}.dwb-entry-body{border-top:1px solid var(--dsw-alias-border-l1);padding:8px;display:flex;flex-direction:column;gap:8px}.dwb-grid{display:grid;grid-template-columns:1fr 1fr;gap:7px}.dwb-checks{display:flex;flex-wrap:wrap;gap:10px}.dwb-list{margin:0;padding-left:18px;font-size:13px;line-height:1.5}
-.dwb-source-section{border:1px solid var(--dsw-alias-border-l2);border-radius:11px;padding:10px;background:color-mix(in srgb,var(--dsw-specific-tip) 35%,transparent);display:flex;flex-direction:column;gap:9px}.dwb-source-section>.dwb-section-title{margin:0}.dwb-source-section>.dwb-resource{background:var(--dsw-alias-bg-base)}.dwb-source-list{margin:0;padding-left:20px;display:flex;flex-direction:column;gap:7px}.dwb-source-book{padding-left:2px}.dwb-source-book-row{display:flex;align-items:center;justify-content:space-between;gap:8px}.dwb-source-book-name{min-width:0;font-size:13px;font-weight:620;overflow-wrap:anywhere}.dwb-source-badge{flex:none;border:1px solid var(--dsw-alias-border-l1);border-radius:999px;padding:2px 7px;font-size:11px;line-height:1.35;color:var(--dsw-alias-label-tertiary);background:var(--dsw-specific-tip)}
+.dwb-source-section{border:1px solid var(--dsw-alias-border-l2);border-radius:11px;padding:10px;background:color-mix(in srgb,var(--dsw-specific-tip) 35%,transparent);display:flex;flex-direction:column;gap:9px}.dwb-source-section>.dwb-section-title{margin:0}.dwb-source-section>.dwb-resource{background:var(--dsw-alias-bg-base)}.dwb-source-list{margin:0;padding-left:20px;display:flex;flex-direction:column;gap:7px}.dwb-source-book{padding-left:2px}.dwb-source-book-row{display:flex;align-items:center;justify-content:space-between;gap:8px}.dwb-source-book-name{min-width:0;font-size:13px;font-weight:620;overflow-wrap:anywhere}.dwb-source-badge{flex:none;border:1px solid var(--dsw-alias-border-l1);border-radius:999px;padding:2px 7px;font-size:11px;line-height:1.35;color:var(--dsw-alias-label-tertiary);background:var(--dsw-specific-tip)}.dwb-user-bindings{grid-template-columns:1fr}.dwb-user-binding-row{display:flex;align-items:center;gap:7px}.dwb-user-binding-row>.dwb-check{align-items:center;flex:1;min-width:0}.dwb-user-binding-row .dwb-source-badge{margin-left:auto}.dwb-inline-edit{min-height:30px;padding:4px 8px;flex:none}
 `;
 function errorMessage2(data, status) {
   if (typeof data?.error?.message === "string") return data.error.message;
@@ -1482,6 +1502,8 @@ function WorldBookPanel({ sessionId, close }) {
   const [draft, setDraft] = (0, import_react3.useState)(null);
   const [selection, setSelection] = (0, import_react3.useState)([]);
   const [appliedSelection, setAppliedSelection] = (0, import_react3.useState)([]);
+  const [userSelection, setUserSelection] = (0, import_react3.useState)([]);
+  const [appliedUserSelection, setAppliedUserSelection] = (0, import_react3.useState)([]);
   const [active, setActive] = (0, import_react3.useState)(null);
   const [embeddedCharacterId, setEmbeddedCharacterId] = (0, import_react3.useState)(null);
   const [embeddedDraft, setEmbeddedDraft] = (0, import_react3.useState)(null);
@@ -1490,6 +1512,7 @@ function WorldBookPanel({ sessionId, close }) {
   const [busy, setBusy] = (0, import_react3.useState)(false);
   const [status, setStatus] = (0, import_react3.useState)({ text: "\u52A0\u8F7D\u4E2D\u2026", error: false });
   const fileRef = (0, import_react3.useRef)(null);
+  const standaloneEditorRef = (0, import_react3.useRef)(null);
   const generation = (0, import_react3.useRef)(0);
   const run = (0, import_react3.useCallback)(async (operation, success) => {
     setBusy(true);
@@ -1517,9 +1540,13 @@ function WorldBookPanel({ sessionId, close }) {
     }
     if (currentGeneration !== generation.current) return;
     const ids = selected.selection?.worldBookIds ?? [];
+    const resolvedUserIds = activeView2.resources?.user === null || activeView2.resources?.user === void 0 ? [] : activeView2.worldBookSelection?.userBoundIds ?? [];
+    const userIds = Array.isArray(resolvedUserIds) ? resolvedUserIds : [];
     setCatalog(list);
     setSelection(ids);
     setAppliedSelection(ids);
+    setUserSelection(userIds);
+    setAppliedUserSelection(userIds);
     setActive(activeView2);
     setEmbeddedCharacterId(characterId);
     setEmbeddedDraft(embeddedBook === null ? null : structuredClone(embeddedBook));
@@ -1552,6 +1579,10 @@ function WorldBookPanel({ sessionId, close }) {
     setDraft(structuredClone(detail.worldBook.book));
     setDirty(false);
   }, "\u4E16\u754C\u4E66\u8BE6\u60C5\u5DF2\u52A0\u8F7D");
+  const editUserBook = async (id) => {
+    await load(id);
+    requestAnimationFrame(() => standaloneEditorRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }));
+  };
   const create = () => run(async () => {
     const data = await api3("/world-books", { method: "POST", body: JSON.stringify({ name: "Untitled World Book" }) });
     await refresh(data.worldBook.id);
@@ -1581,6 +1612,18 @@ function WorldBookPanel({ sessionId, close }) {
     setAppliedSelection(data.selection.worldBookIds);
     window.dispatchEvent(new Event("dsh-tavern:refresh"));
   }, "\u5F53\u524D\u4F1A\u8BDD\u7684\u4E16\u754C\u4E66\u7ED1\u5B9A\u5DF2\u4FDD\u5B58");
+  const saveUserSelection = () => run(async () => {
+    const userId = active?.resources?.user?.id;
+    if (!userId) throw new Error("\u5F53\u524D\u4F1A\u8BDD\u6CA1\u6709\u53EF\u7F16\u8F91\u4E16\u754C\u4E66\u5173\u7CFB\u7684\u7ED1\u5B9A\u7528\u6237");
+    const data = await api3(`/users/${encodeURIComponent(userId)}/world-books`, {
+      method: "PUT",
+      body: JSON.stringify({ worldBookIds: userSelection })
+    });
+    const ids = data.binding.worldBookIds;
+    setUserSelection(ids);
+    setAppliedUserSelection(ids);
+    window.dispatchEvent(new Event("dsh-tavern:refresh"));
+  }, uiMessage("world.user.saveSuccess"));
   const remove = () => run(async () => {
     if (document2 === null || !window.confirm(unwrapText(uiText`删除独立世界书“${document2.name}”？角色卡内嵌世界书不会受到影响。`))) return;
     await api3(`/world-books/${encodeURIComponent(document2.id)}`, { method: "DELETE" });
@@ -1611,7 +1654,14 @@ function WorldBookPanel({ sessionId, close }) {
   const embedded = active?.resources?.worldBooks?.filter((item) => item.kind === "embedded-character-book") ?? [];
   const diagnostics = active?.diagnostics?.filter((item) => String(item.code ?? "").includes("WORLD_BOOK")) ?? [];
   const selectionDirty = selection.length !== appliedSelection.length || selection.some((id, index) => id !== appliedSelection[index]);
+  const userSelectionDirty = userSelection.length !== appliedUserSelection.length || userSelection.some((id, index) => id !== appliedUserSelection[index]);
   const userSource = deriveUserWorldBookSource(active, catalog2);
+  const catalogBooks = Array.isArray(catalog2?.worldBooks) ? catalog2.worldBooks : [];
+  const catalogById = new Map(catalogBooks.map((book) => [book.id, book]));
+  const userCatalog = [
+    ...userSelection.map((id) => catalogById.get(id)).filter(Boolean),
+    ...catalogBooks.filter((book) => !userSelection.includes(book.id))
+  ];
   return h3(
     "div",
     { className: "dwb-panel" },
@@ -1666,7 +1716,7 @@ function WorldBookPanel({ sessionId, close }) {
         )),
         draft === null ? null : h3(
           "div",
-          { className: "dwb-resource" },
+          { className: "dwb-resource", ref: standaloneEditorRef },
           h3(Field3, { label: "\u4E16\u754C\u4E66\u540D\u79F0" }, h3("input", { className: "dwb-input", value: draft.name ?? "", onChange: (event) => {
             setDraft((current2) => ({ ...current2, name: event.target.value }));
             setDirty(true);
@@ -1699,16 +1749,34 @@ function WorldBookPanel({ sessionId, close }) {
           "div",
           { className: "dwb-resource" },
           h3("div", { className: "dwb-resource-title" }, uiMessage("world.user.current", { name: userSource.user.name || userSource.user.id })),
-          userSource.books.length === 0 ? h3("p", { className: "dwb-note" }, uiMessage("world.user.empty")) : h3("ol", { className: "dwb-source-list" }, ...userSource.books.map((book) => h3(
-            "li",
-            { className: "dwb-source-book", key: book.id },
-            h3(
+          userCatalog.length ? h3("div", { className: "dwb-bindings dwb-user-bindings" }, ...userCatalog.map((book) => {
+            const checked = userSelection.includes(book.id);
+            const wasApplied = appliedUserSelection.includes(book.id);
+            const badge = checked && !wasApplied ? uiMessage("world.user.pendingAdd") : !checked && wasApplied ? uiMessage("world.user.pendingRemove") : checked && selection.includes(book.id) ? uiMessage("world.user.duplicate") : checked ? uiMessage("world.user.appended") : null;
+            return h3(
               "div",
-              { className: "dwb-source-book-row" },
-              h3("span", { className: "dwb-source-book-name" }, rawText(book.name)),
-              h3("span", { className: "dwb-source-badge" }, book.duplicate ? uiMessage("world.user.duplicate") : uiMessage("world.user.appended"))
-            )
-          ))),
+              { className: "dwb-user-binding-row", key: book.id },
+              h3(
+                "label",
+                { className: "dwb-check" },
+                h3("input", {
+                  type: "checkbox",
+                  checked,
+                  onChange: (event) => setUserSelection((current2) => event.target.checked ? [...current2, book.id] : current2.filter((id) => id !== book.id))
+                }),
+                h3("span", { className: "dwb-source-book-name" }, rawText(book.name)),
+                badge === null ? null : h3("span", { className: "dwb-source-badge" }, badge)
+              ),
+              checked || wasApplied ? h3("button", { className: "dwb-button dwb-inline-edit", type: "button", disabled: busy, onClick: () => editUserBook(book.id) }, uiMessage("world.user.editContent")) : null
+            );
+          })) : h3("p", { className: "dwb-note" }, uiMessage("world.user.libraryEmpty")),
+          userSelectionDirty ? h3("div", { className: "dwb-status", "data-warning": true }, uiMessage("world.user.unsaved")) : h3("p", { className: "dwb-note" }, userSource.books.length === 0 ? uiMessage("world.user.empty") : uiMessage("world.user.saved")),
+          h3(
+            "div",
+            { className: "dwb-actions" },
+            h3("button", { className: "dwb-button dwb-primary", type: "button", disabled: busy || !userSelectionDirty, onClick: saveUserSelection }, userSelectionDirty ? uiMessage("world.user.save") : uiMessage("world.user.saveApplied")),
+            h3("button", { className: "dwb-button", type: "button", disabled: busy || userSelection.length === 0, onClick: () => setUserSelection([]) }, uiMessage("world.user.clear"))
+          ),
           h3("p", { className: "dwb-note" }, uiMessage("world.user.order")),
           h3("p", { className: "dwb-note" }, uiMessage("world.user.editHint"))
         )
