@@ -258,6 +258,15 @@ export function apply(ctx, config = {}) {
       }
       return id === null ? null : store.get(id)
     },
+    beforeSelectionChange: ({ sessionId }) => {
+      const agent = ctx.get('agents')?.get?.(sessionId)
+      if (agent?.status === 'running') {
+        const error = new Error('The session agent is running; change the preset after the current turn finishes.')
+        error.code = 'PRESET_AGENT_RUNNING'
+        error.status = 409
+        throw error
+      }
+    },
     clearResource: (kind, id) => selections.clearResource(kind, id),
   }
 

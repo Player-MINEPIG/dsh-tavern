@@ -216,3 +216,25 @@ test('new-session integration copy has complete English translations', () => {
     assert.doesNotMatch(translateVisibleText(source), /[\u3400-\u9fff]/u, source)
   }
 })
+
+test('preset session-binding copy has complete English translations', () => {
+  setClientUiSettings({ locale: 'en', scale: 1 }, { announce: false })
+  for (const source of [
+    '浏览预设',
+    '预设库为空',
+    '当前会话未绑定预设。',
+    '预设详情已加载；会话绑定尚未改变',
+    '预设已创建；尚未绑定当前会话',
+    'ST 预设已导入；尚未绑定当前会话',
+  ]) {
+    assert.doesNotMatch(translateVisibleText(source), /[\u3400-\u9fff]/u, source)
+  }
+  const runtimeName = '中文预设名'
+  for (const message of [
+    unwrapText(uiMessage('preset.currentSessionBound', { name: runtimeName })),
+    unwrapText(uiMessage('preset.browsingUnbound', { name: runtimeName })),
+  ]) {
+    assert.match(message, new RegExp(runtimeName))
+    assert.doesNotMatch(message.replace(runtimeName, ''), /[\u3400-\u9fff]/u)
+  }
+})

@@ -561,6 +561,7 @@ function TavernShell({ useSessions, useWorkspaces, createCleanSession }) {
       closePanel: close,
       openPanel: () => {},
       sessionId,
+      sessionBlank,
       autoOpen: false,
     }))
   } else if (surface === 'character') {

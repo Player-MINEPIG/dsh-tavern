@@ -40,7 +40,8 @@ SessionSelectionStore ─────────────────┘
 ```
 
 - 旧 `PresetStore.state.selectedId` 继续作为尚未绑定 session 的兼容默认值。
-- UI/API 带 `sessionId` 后，预设选择只修改该 session，不再污染其他并行会话。
+- UI 将预设资源浏览与会话绑定拆分：切换下拉框、导入或创建只改变当前编辑资源，只有明确的绑定/解除按钮才写 session selection。UI/API 带 `sessionId` 后，预设选择只修改该 session，不再污染其他并行会话。
+- 预设与角色卡/用户使用同一运行边界：agent 正在执行时拒绝改变绑定；有历史的会话更换预设前提示只影响后续请求。
 - 新鲜普通会话在第一次被 Agent 使用时固化当时的默认选择。
 - 普通 fork 从 `Session.header.parentSession` 复制父选择，之后父子互不联动。
 - `delegationDepth > 0` 的 subagent 固化为空选择，不继承 Tavern 内容。

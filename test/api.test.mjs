@@ -5,6 +5,7 @@ import { mkdtempSync, rmSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { PresetStore, createApiHandler } from '../packages/tavern-loader/src/index.js'
+import { createApiHandler as createPresetApiHandler } from '../packages/preset/src/server.js'
 
 function invoke(handler, { method = 'GET', url, body } = {}) {
   return new Promise((resolve, reject) => {
@@ -94,6 +95,34 @@ test('HTTP API keeps preset selection isolated by DSH session id', async () => {
     assert.equal(sessionA.body.selectedId, second.id)
     assert.equal(sessionB.body.selectedId, null)
     assert.equal(legacy.body.selectedId, first.id)
+  } finally {
+    rmSync(directory, { recursive: true, force: true })
+  }
+})
+
+test('preset selection policy can reject binding while the session agent is running', async () => {
+  const directory = mkdtempSync(join(tmpdir(), 'dsh-tavern-api-preset-guard-'))
+  const store = new PresetStore(directory)
+  const preset = store.create({ id: 'guarded', name: 'Guarded preset' })
+  let selected = false
+  const handler = createPresetApiHandler(store, () => {}, undefined, {
+    beforeSelectionChange: ({ sessionId, presetId }) => {
+      assert.equal(sessionId, 'session-running')
+      assert.equal(presetId, preset.id)
+      const error = new Error('agent running')
+      error.status = 409
+      throw error
+    },
+    selectPreset: () => { selected = true },
+  })
+  try {
+    const response = await invoke(handler, {
+      method: 'POST',
+      url: '/dsh-tavern/api/select',
+      body: { id: preset.id, sessionId: 'session-running' },
+    })
+    assert.equal(response.status, 409)
+    assert.equal(selected, false)
   } finally {
     rmSync(directory, { recursive: true, force: true })
   }

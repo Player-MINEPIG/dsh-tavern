@@ -4,6 +4,32 @@ This is the staged implementation log for the prompt-preset experiment. It is
 kept separately from the product README so reviewers can follow intent,
 decisions, verification, and known limits chronologically.
 
+## 2026-08-15 — Explicit per-session preset binding
+
+Purpose: make the preset panel follow the same resource-versus-session boundary
+as character cards, users and standalone world books.
+
+- Separated the browsed preset from the current session's applied preset. The
+  catalog dropdown now loads an editable resource without changing runtime
+  selection; a primary Bind/Update action and a separate Unbind action are the
+  only client operations that write the session selection.
+- Creating or importing a preset opens it for review but no longer binds it as
+  a side effect. The panel shows both the authoritative current-session binding
+  and an explicit warning when the browsed resource differs.
+- Added the existing-session context warning: changing a bound preset affects
+  later requests only and never rewrites durable history. The Host also rejects
+  preset binding changes while that session's agent is running, matching the
+  character, user and world-book race boundary.
+- Added Simplified Chinese/English copy with semantic messages around dynamic
+  preset names; imported names remain byte-for-byte unchanged.
+
+Verification: `npm run check` completed 185 tests: 184 passed, none failed, and
+the opt-in copyrighted fixture was skipped. In an isolated installed profile,
+an initially unbound blank session displayed one browsed preset as unapplied;
+Bind changed the authoritative note and action state, and Unbind restored the
+original unbound state without closing or deleting the resource. The page and
+owned DSH process were closed and loopback port 53123 was verified free.
+
 ## 2026-08-15 — Accepted baseline, bounded World Books, minimized active view, and locale contract
 
 Purpose: preserve the user-accepted functional state before addressing the

@@ -111,6 +111,9 @@ var MESSAGE_CATALOG = Object.freeze({
     "character.confirmDelete": "\u5220\u9664\u89D2\u8272\u5361\u201C{name}\u201D\uFF1F\u539F\u59CB\u5BFC\u5165\u6587\u4EF6\u4E5F\u4F1A\u88AB\u5220\u9664\u3002",
     "character.confirmHistoricalSwitch": "\u5F53\u524D\u4F1A\u8BDD\u5DF2\u6709\u5386\u53F2\u3002\u66F4\u6362\u89D2\u8272\u53EA\u5F71\u54CD\u540E\u7EED\u8BF7\u6C42\uFF0C\u4E0D\u4F1A\u91CD\u5199\u5DF2\u6709\u6D88\u606F\uFF1B\u7EE7\u7EED\u5417\uFF1F",
     "preset.confirmDelete": "\u5220\u9664\u9884\u8BBE\u201C{name}\u201D\uFF1F",
+    "preset.confirmHistoricalSwitch": "\u5F53\u524D\u4F1A\u8BDD\u5DF2\u6709\u5386\u53F2\u3002\u66F4\u6362\u9884\u8BBE\u53EA\u5F71\u54CD\u540E\u7EED\u8BF7\u6C42\uFF0C\u4E0D\u4F1A\u91CD\u5199\u5DF2\u6709\u6D88\u606F\uFF1B\u7EE7\u7EED\u5417\uFF1F",
+    "preset.currentSessionBound": "\u5F53\u524D\u4F1A\u8BDD\u7ED1\u5B9A\uFF1A{name}\u3002",
+    "preset.browsingUnbound": "\u6B63\u5728\u6D4F\u89C8\u201C{name}\u201D\uFF1B\u5B83\u5C1A\u672A\u7ED1\u5B9A\u5230\u5F53\u524D\u4F1A\u8BDD\u3002",
     "world.confirmDelete": "\u5220\u9664\u72EC\u7ACB\u4E16\u754C\u4E66\u201C{name}\u201D\uFF1F\u89D2\u8272\u5361\u5185\u5D4C\u4E16\u754C\u4E66\u4E0D\u4F1A\u53D7\u5230\u5F71\u54CD\u3002",
     "world.confirmDiscardChanges": "\u653E\u5F03\u5C1A\u672A\u4FDD\u5B58\u7684\u4FEE\u6539\uFF1F",
     "world.confirmDeleteEntry": "\u5220\u9664\u8FD9\u4E2A\u4E16\u754C\u4E66\u6761\u76EE\uFF1F\u4FDD\u5B58\u540E\u751F\u6548\u3002",
@@ -190,6 +193,9 @@ var MESSAGE_CATALOG = Object.freeze({
     "character.confirmDelete": "Delete character card \u201C{name}\u201D? The original imported file will also be deleted.",
     "character.confirmHistoricalSwitch": "This session already has history. Changing the character affects only later requests and does not rewrite existing messages. Continue?",
     "preset.confirmDelete": "Delete preset \u201C{name}\u201D?",
+    "preset.confirmHistoricalSwitch": "This session already has history. Changing the preset affects only later requests and does not rewrite existing messages. Continue?",
+    "preset.currentSessionBound": "Current session binding: {name}.",
+    "preset.browsingUnbound": "Browsing \u201C{name}\u201D; it is not bound to the current session.",
     "world.confirmDelete": "Delete standalone world book \u201C{name}\u201D? Character-card embedded books will not be affected.",
     "world.confirmDiscardChanges": "Discard unsaved changes?",
     "world.confirmDeleteEntry": "Delete this world-book entry? It takes effect after saving.",
@@ -238,6 +244,8 @@ var SOURCE_EN = Object.freeze({
   "\u5BFC\u51FA JSON": "Export JSON",
   "\u5BFC\u51FA\u539F\u4EF6": "Export original",
   "\u5F53\u524D\u9009\u62E9": "Current selection",
+  "\u6D4F\u89C8\u9884\u8BBE": "Browse presets",
+  "\u9884\u8BBE\u5E93\u4E3A\u7A7A": "Preset library is empty",
   "\u4E0D\u4F7F\u7528\u9884\u8BBE": "Do not use a preset",
   "\u57FA\u672C\u8BBE\u7F6E": "Basic settings",
   "\u9AD8\u7EA7\u8BBE\u7F6E": "Advanced settings",
@@ -257,6 +265,7 @@ var SOURCE_EN = Object.freeze({
   "\u5237\u65B0\u4F1A\u8BDD\u7ED1\u5B9A": "Refresh session binding",
   "\u89E3\u9664\u7ED1\u5B9A": "Unbind",
   "\u89E3\u9664\u5F53\u524D\u4F1A\u8BDD\u7ED1\u5B9A": "Unbind from current session",
+  "\u5F53\u524D\u4F1A\u8BDD\u672A\u7ED1\u5B9A\u9884\u8BBE\u3002": "The current session has no bound preset.",
   "\u5220\u9664\u89D2\u8272\u5361": "Delete character card",
   "\u5220\u9664\u7528\u6237": "Delete user",
   "\u5220\u9664\u72EC\u7ACB\u4E66": "Delete standalone book",
@@ -362,7 +371,14 @@ var SOURCE_EN = Object.freeze({
   "\u9884\u8BBE\u5DF2\u52A0\u8F7D": "Preset loaded",
   "\u9884\u8BBE\u72B6\u6001\u5DF2\u5237\u65B0": "Preset status refreshed",
   "\u5DF2\u521B\u5EFA\u5E76\u9009\u62E9\u65B0\u9884\u8BBE": "New preset created and selected",
-  "ST \u9884\u8BBE\u5DF2\u5BFC\u5165\u5E76\u9009\u62E9": "ST preset imported and selected",
+  "\u9884\u8BBE\u8BE6\u60C5\u5DF2\u52A0\u8F7D\uFF1B\u4F1A\u8BDD\u7ED1\u5B9A\u5C1A\u672A\u6539\u53D8": "Preset details loaded; the session binding is unchanged",
+  "\u8BF7\u5148\u521B\u5EFA\u6216\u6253\u5F00\u4E00\u4E2A\u4F1A\u8BDD\u518D\u7ED1\u5B9A\u9884\u8BBE": "Create or open a session before binding a preset",
+  "\u8BF7\u5148\u9009\u62E9\u4E00\u4E2A\u9884\u8BBE": "Select a preset first",
+  "\u9884\u8BBE\u5DF2\u7ED1\u5B9A\uFF1B\u5F53\u524D\u4F1A\u8BDD\u7684\u4E0B\u4E00\u6B21\u8BF7\u6C42\u5C06\u4F7F\u7528\u5B83": "Preset bound; the current session will use it on the next request",
+  "\u5F53\u524D\u4F1A\u8BDD\u5DF2\u89E3\u9664\u9884\u8BBE\u7ED1\u5B9A": "Preset unbound from the current session",
+  "\u9884\u8BBE\u5DF2\u521B\u5EFA\uFF1B\u5C1A\u672A\u7ED1\u5B9A\u5F53\u524D\u4F1A\u8BDD": "Preset created; not bound to the current session",
+  "ST \u9884\u8BBE\u5DF2\u5BFC\u5165\uFF1B\u5C1A\u672A\u7ED1\u5B9A\u5F53\u524D\u4F1A\u8BDD": "ST preset imported; not bound to the current session",
+  "\u9884\u8BBE\u914D\u7F6E\u5DF2\u4FDD\u5B58\uFF1B\u5DF2\u7ED1\u5B9A\u5B83\u7684\u4F1A\u8BDD\u5C06\u5728\u540E\u7EED\u8BF7\u6C42\u4F7F\u7528\u65B0\u5185\u5BB9": "Preset saved; sessions bound to it will use the new content on later requests",
   "\u9884\u8BBE\u914D\u7F6E\u5DF2\u4FDD\u5B58": "Preset settings saved",
   "\u9884\u8BBE\u5DF2\u5220\u9664": "Preset deleted",
   "\u5F53\u524D\u7ED1\u5B9A\u5DF2\u5E94\u7528": "Current binding applied",
@@ -693,10 +709,10 @@ var css = `
 .dtt-title{font-size:16px;font-weight:650;flex:1;min-width:0}.dtt-active{font-size:13px;color:var(--dsw-alias-state-success);margin-left:7px}
 .dtt-icon{border:0;background:transparent;color:var(--dsw-alias-label-tertiary);cursor:pointer;border-radius:7px;padding:6px 8px}.dtt-icon:hover{background:var(--dsw-alias-interactive-bg-hover)}
 .dtt-body{min-height:0;overflow:auto;padding:12px;display:flex;flex-direction:column;gap:12px}
-.dtt-toolbar{display:grid;grid-template-columns:1fr 1fr;gap:8px}.dtt-button{height:36px;border:1px solid var(--dsw-alias-border-l2);border-radius:8px;background:var(--dsw-alias-button-secondary-fill,var(--dsw-alias-bg-base));color:var(--dsw-alias-label-primary);cursor:pointer;padding:0 10px;font-size:13px}.dtt-button:hover:not(:disabled){background:var(--dsw-alias-interactive-bg-hover)}.dtt-button:disabled{opacity:.5;cursor:default}.dtt-button-primary{background:var(--dsw-alias-state-business-primary);color:white;border-color:transparent}.dtt-danger{color:var(--dsw-alias-state-error)}
+.dtt-toolbar,.dtt-actions{display:grid;grid-template-columns:1fr 1fr;gap:8px}.dtt-button{height:36px;border:1px solid var(--dsw-alias-border-l2);border-radius:8px;background:var(--dsw-alias-button-secondary-fill,var(--dsw-alias-bg-base));color:var(--dsw-alias-label-primary);cursor:pointer;padding:0 10px;font-size:13px}.dtt-button:hover:not(:disabled){background:var(--dsw-alias-interactive-bg-hover)}.dtt-button:disabled{opacity:.5;cursor:default}.dtt-button-primary{background:var(--dsw-alias-state-business-primary);color:white;border-color:transparent}.dtt-danger{color:var(--dsw-alias-state-error)}
 .dtt-field{display:flex;flex-direction:column;gap:5px}.dtt-label{font-size:12px;color:var(--dsw-alias-label-tertiary);font-weight:600}.dtt-input,.dtt-select,.dtt-textarea{box-sizing:border-box;width:100%;border:1px solid var(--dsw-alias-border-l2);border-radius:7px;background:var(--dsw-alias-bg-base);color:var(--dsw-alias-label-primary);font:inherit;font-size:13px;outline:none}.dtt-input,.dtt-select{height:36px;padding:0 9px}.dtt-textarea{min-height:110px;resize:vertical;padding:8px;line-height:1.5}.dtt-input:focus,.dtt-select:focus,.dtt-textarea:focus{border-color:var(--dsw-alias-state-business-primary)}
 .dtt-grid{display:grid;grid-template-columns:1fr 1fr;gap:9px}.dtt-section{border-top:1px solid var(--dsw-alias-border-l1);padding-top:12px;display:flex;flex-direction:column;gap:10px}.dtt-section-title{font-size:14px;font-weight:650;display:flex;align-items:center;justify-content:space-between}
-.dtt-note{font-size:13px;line-height:1.5;color:var(--dsw-alias-label-tertiary);margin:0}.dtt-status{font-size:13px;line-height:1.45;border-radius:7px;padding:7px 9px;background:var(--dsw-specific-tip);word-break:break-word}.dtt-status[data-error=true]{color:var(--dsw-alias-state-error)}
+.dtt-note{font-size:13px;line-height:1.5;color:var(--dsw-alias-label-tertiary);margin:0}.dtt-status{font-size:13px;line-height:1.45;border-radius:7px;padding:7px 9px;background:var(--dsw-specific-tip);word-break:break-word}.dtt-status[data-error=true]{color:var(--dsw-alias-state-error)}.dtt-status[data-warning=true]{color:var(--dsw-alias-state-warning,var(--dsw-alias-label-primary))}
 .dtt-prompts{display:flex;flex-direction:column;gap:7px}.dtt-prompt{border:1px solid var(--dsw-alias-border-l1);border-radius:8px;overflow:hidden;transition:border-color .12s,box-shadow .12s}.dtt-prompt[data-dragging=true]{height:4px;min-height:4px;margin:5px 10px;border:0;border-radius:999px;background:var(--dsw-alias-state-business-primary);box-shadow:0 0 0 1px color-mix(in srgb,var(--dsw-alias-state-business-primary) 25%,transparent)}.dtt-prompt[data-dragging=true]>*{opacity:0}.dtt-drop-placeholder{box-sizing:border-box;height:42px;border:2px dashed var(--dsw-alias-state-business-primary);border-radius:8px;background:color-mix(in srgb,var(--dsw-alias-state-business-primary) 7%,transparent);display:flex;align-items:center;justify-content:center;color:var(--dsw-alias-state-business-primary);font-size:12px;font-weight:600;pointer-events:none}.dtt-prompt-summary{display:flex;align-items:center;gap:7px;padding:8px;cursor:pointer;font-size:13px}.dtt-prompt-summary::marker{color:var(--dsw-alias-label-tertiary)}.dtt-drag{border:0;background:transparent;color:var(--dsw-alias-label-tertiary);cursor:grab;padding:1px 2px;font-size:15px;line-height:1;touch-action:none;user-select:none}.dtt-drag:active{cursor:grabbing}.dtt-prompt-name{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.dtt-role{font-size:12px;color:var(--dsw-alias-label-tertiary);text-transform:uppercase}.dtt-prompt-body{padding:0 9px 9px;display:flex;flex-direction:column;gap:8px}.dtt-row-actions{display:flex;gap:6px}.dtt-row-actions .dtt-button{height:30px;padding:0 8px;flex:1}
 .dtt-footer{position:sticky;bottom:-12px;margin:0 -12px -12px;padding:10px 12px;background:var(--dsw-alias-bg-base);border-top:1px solid var(--dsw-alias-border-l2);display:grid;grid-template-columns:1fr auto;gap:8px}
 `;
@@ -818,7 +834,7 @@ function insertionBoundary(event) {
   const bounds = target.getBoundingClientRect();
   return event.clientY < bounds.top + bounds.height / 2 ? index : index + 1;
 }
-function PresetSidebar({ closePanel, openPanel, sessionId, autoOpen = true }) {
+function PresetSidebar({ closePanel, openPanel, sessionId, sessionBlank, autoOpen = true }) {
   const [catalog2, setCatalog] = (0, import_react.useState)(null);
   const [draft, setDraft] = (0, import_react.useState)(null);
   const [busy, setBusy] = (0, import_react.useState)(false);
@@ -850,7 +866,7 @@ function PresetSidebar({ closePanel, openPanel, sessionId, autoOpen = true }) {
     const generation = ++refreshGeneration.current;
     const query = sessionId ? `?sessionId=${encodeURIComponent(sessionId)}` : "";
     const data = await api(`/presets${query}`);
-    const id = preferredId === void 0 ? data.selectedId : preferredId;
+    const id = preferredId === void 0 ? data.selectedId ?? data.presets[0]?.id ?? null : preferredId;
     const detail = id === null || id === void 0 ? null : (await api(`/presets/${encodeURIComponent(id)}`)).preset;
     if (generation !== refreshGeneration.current) return false;
     setCatalog(data);
@@ -875,28 +891,39 @@ function PresetSidebar({ closePanel, openPanel, sessionId, autoOpen = true }) {
     window.addEventListener("dsh-tavern:refresh", onRefresh);
     return () => window.removeEventListener("dsh-tavern:refresh", onRefresh);
   }, [refresh, run]);
-  const choose = (0, import_react.useCallback)((id) => run(async () => {
-    await api("/select", { method: "POST", body: body({ id: id || null, sessionId }) });
-    await refresh(id || null);
+  const browse = (0, import_react.useCallback)((id) => run(async () => {
+    const detail = await api(`/presets/${encodeURIComponent(id)}`);
+    setDraft(detail.preset);
+  }, "\u9884\u8BBE\u8BE6\u60C5\u5DF2\u52A0\u8F7D\uFF1B\u4F1A\u8BDD\u7ED1\u5B9A\u5C1A\u672A\u6539\u53D8"), [run]);
+  const bind = (0, import_react.useCallback)(() => run(async () => {
+    if (!sessionId) throw new Error("\u8BF7\u5148\u521B\u5EFA\u6216\u6253\u5F00\u4E00\u4E2A\u4F1A\u8BDD\u518D\u7ED1\u5B9A\u9884\u8BBE");
+    if (draft === null) throw new Error("\u8BF7\u5148\u9009\u62E9\u4E00\u4E2A\u9884\u8BBE");
+    if (catalog2?.selectedId !== draft.id && catalog2?.selectedId !== null && sessionBlank === false && !window.confirm(unwrapText(uiMessage("preset.confirmHistoricalSwitch")))) return;
+    await api("/select", { method: "POST", body: body({ id: draft.id, sessionId }) });
+    await refresh(draft.id);
     announceTavernRefresh();
-  }, id ? "\u9884\u8BBE\u5DF2\u9009\u62E9\uFF1B\u4E0B\u4E00\u6761\u6D88\u606F\u5C06\u643A\u5E26\u6B64 preset\u3002\u5DF2\u6709\u4F1A\u8BDD\u5386\u53F2\u4E0D\u4F1A\u88AB\u6E05\u9664\u3002" : "\u5DF2\u505C\u7528 preset\uFF1B\u5DF2\u6709\u4F1A\u8BDD\u5386\u53F2\u4E0D\u4F1A\u88AB\u6E05\u9664"), [refresh, run, sessionId]);
+  }, "\u9884\u8BBE\u5DF2\u7ED1\u5B9A\uFF1B\u5F53\u524D\u4F1A\u8BDD\u7684\u4E0B\u4E00\u6B21\u8BF7\u6C42\u5C06\u4F7F\u7528\u5B83"), [catalog2?.selectedId, draft, refresh, run, sessionBlank, sessionId]);
+  const unbind = (0, import_react.useCallback)(() => run(async () => {
+    if (!sessionId) throw new Error("\u5F53\u524D\u6CA1\u6709\u53EF\u89E3\u9664\u7ED1\u5B9A\u7684\u4F1A\u8BDD");
+    await api("/select", { method: "POST", body: body({ id: null, sessionId }) });
+    await refresh(draft?.id);
+    announceTavernRefresh();
+  }, "\u5F53\u524D\u4F1A\u8BDD\u5DF2\u89E3\u9664\u9884\u8BBE\u7ED1\u5B9A"), [draft?.id, refresh, run, sessionId]);
   const createPreset = (0, import_react.useCallback)(() => run(async () => {
     const created = await api("/presets", { method: "POST", body: body({ name: translateVisibleText("\u65B0\u9884\u8BBE") }) });
-    await api("/select", { method: "POST", body: body({ id: created.preset.id, sessionId }) });
     await refresh(created.preset.id);
     announceTavernRefresh();
-  }, "\u5DF2\u521B\u5EFA\u5E76\u9009\u62E9\u65B0\u9884\u8BBE"), [refresh, run, sessionId]);
+  }, "\u9884\u8BBE\u5DF2\u521B\u5EFA\uFF1B\u5C1A\u672A\u7ED1\u5B9A\u5F53\u524D\u4F1A\u8BDD"), [refresh, run]);
   const importFile = (0, import_react.useCallback)((file) => run(async () => {
     const content = await file.text();
     const imported = await api("/import", {
       method: "POST",
       body: body({ name: file.name.replace(/\.json$/i, ""), content })
     });
-    await api("/select", { method: "POST", body: body({ id: imported.preset.id, sessionId }) });
     await refresh(imported.preset.id);
     announceTavernRefresh();
     if (fileRef.current !== null) fileRef.current.value = "";
-  }, "ST \u9884\u8BBE\u5DF2\u5BFC\u5165\u5E76\u9009\u62E9"), [refresh, run, sessionId]);
+  }, "ST \u9884\u8BBE\u5DF2\u5BFC\u5165\uFF1B\u5C1A\u672A\u7ED1\u5B9A\u5F53\u524D\u4F1A\u8BDD"), [refresh, run]);
   const save = (0, import_react.useCallback)(() => run(async () => {
     const result = await api(`/presets/${encodeURIComponent(draft.id)}`, {
       method: "PUT",
@@ -905,11 +932,11 @@ function PresetSidebar({ closePanel, openPanel, sessionId, autoOpen = true }) {
     setDraft(result.preset);
     await refresh(result.preset.id);
     announceTavernRefresh();
-  }, "\u9884\u8BBE\u914D\u7F6E\u5DF2\u4FDD\u5B58"), [draft, refresh, run]);
+  }, "\u9884\u8BBE\u914D\u7F6E\u5DF2\u4FDD\u5B58\uFF1B\u5DF2\u7ED1\u5B9A\u5B83\u7684\u4F1A\u8BDD\u5C06\u5728\u540E\u7EED\u8BF7\u6C42\u4F7F\u7528\u65B0\u5185\u5BB9"), [draft, refresh, run]);
   const remove = (0, import_react.useCallback)(() => run(async () => {
     if (!window.confirm(unwrapText(uiMessage("preset.confirmDelete", { name: draft.name })))) return;
     await api(`/presets/${encodeURIComponent(draft.id)}`, { method: "DELETE" });
-    await refresh(null);
+    await refresh();
     announceTavernRefresh();
   }, "\u9884\u8BBE\u5DF2\u5220\u9664"), [draft, refresh, run]);
   const patchSampling = (patch) => setDraft((current2) => ({
@@ -973,17 +1000,25 @@ function PresetSidebar({ closePanel, openPanel, sessionId, autoOpen = true }) {
           }
         })
       ),
-      h(Field, { label: "\u5F53\u524D\u9009\u62E9" }, h(
+      h(Field, { label: "\u6D4F\u89C8\u9884\u8BBE" }, h(
         "select",
         {
           className: "dtt-select",
-          value: catalog2?.selectedId ?? "",
-          disabled: busy || catalog2 === null,
-          onChange: (event) => choose(event.target.value)
+          value: draft?.id ?? "",
+          disabled: busy || catalog2 === null || catalog2.presets.length === 0,
+          onChange: (event) => browse(event.target.value)
         },
-        h("option", { value: "" }, "\u4E0D\u4F7F\u7528\u9884\u8BBE"),
+        ...catalog2?.presets.length ? [] : [h("option", { key: "empty", value: "" }, "\u9884\u8BBE\u5E93\u4E3A\u7A7A")],
         ...(catalog2?.presets ?? []).map((preset) => h("option", { key: preset.id, value: preset.id }, uiText`${preset.name} (${preset.enabledPromptCount}/${preset.promptCount})`))
       )),
+      catalog2 === null ? null : catalog2.selectedId === null ? h("p", { className: "dtt-note" }, "\u5F53\u524D\u4F1A\u8BDD\u672A\u7ED1\u5B9A\u9884\u8BBE\u3002") : h("p", { className: "dtt-note" }, uiMessage("preset.currentSessionBound", { name: catalog2.presets.find((item) => item.id === catalog2.selectedId)?.name ?? catalog2.selectedId })),
+      draft !== null && draft.id !== catalog2?.selectedId ? h("div", { className: "dtt-status", "data-warning": true }, uiMessage("preset.browsingUnbound", { name: draft.name })) : null,
+      h(
+        "div",
+        { className: "dtt-actions" },
+        h("button", { className: "dtt-button dtt-button-primary", type: "button", disabled: busy || !sessionId || draft === null, onClick: bind }, catalog2?.selectedId === draft?.id ? "\u66F4\u65B0\u4F1A\u8BDD\u7ED1\u5B9A" : "\u7ED1\u5B9A\u5230\u5F53\u524D\u4F1A\u8BDD"),
+        h("button", { className: "dtt-button", type: "button", disabled: busy || !sessionId || catalog2?.selectedId == null, onClick: unbind }, "\u89E3\u9664\u5F53\u524D\u4F1A\u8BDD\u7ED1\u5B9A")
+      ),
       h("div", { className: "dtt-status", "data-error": status.error || void 0, role: "status", "aria-live": "polite" }, status.error ? rawText(status.text) : status.text),
       draft === null ? h("p", { className: "dtt-note" }, catalog2 === null ? "\u6B63\u5728\u52A0\u8F7D\u9884\u8BBE\u2026" : "\u8BF7\u9009\u62E9\u6216\u521B\u5EFA\u9884\u8BBE\u4EE5\u5F00\u59CB\u914D\u7F6E\u3002") : h(
         "div",
@@ -1085,7 +1120,7 @@ function PresetSidebar({ closePanel, openPanel, sessionId, autoOpen = true }) {
         h(
           "div",
           { className: "dtt-footer" },
-          h("button", { className: "dtt-button dtt-button-primary", type: "button", disabled: busy, onClick: save }, busy ? "\u5904\u7406\u4E2D\u2026" : "\u4FDD\u5B58\u5E76\u5E94\u7528"),
+          h("button", { className: "dtt-button dtt-button-primary", type: "button", disabled: busy, onClick: save }, busy ? "\u5904\u7406\u4E2D\u2026" : "\u4FDD\u5B58\u4FEE\u6539"),
           h("button", { className: "dtt-button dtt-danger", type: "button", disabled: busy, onClick: remove }, "\u5220\u9664")
         )
       )
@@ -3098,6 +3133,7 @@ function TavernShell({ useSessions, useWorkspaces, createCleanSession }) {
       openPanel: () => {
       },
       sessionId,
+      sessionBlank,
       autoOpen: false
     }));
   } else if (surface === "character") {

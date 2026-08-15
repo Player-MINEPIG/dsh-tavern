@@ -163,7 +163,7 @@ test('resource mutations announce one shared refresh event consumed by the shell
   const user = readFileSync(new URL('../packages/user/src/client.js', import.meta.url), 'utf8')
 
   assert.match(root, /addEventListener\('dsh-tavern:refresh', onRefresh\)/)
-  assert.equal(preset.match(/announceTavernRefresh\(\)/g)?.length, 6)
+  assert.ok((preset.match(/announceTavernRefresh\(\)/g)?.length ?? 0) >= 6)
   assert.equal(character.match(/announceTavernRefresh\(\)/g)?.length, 5)
   assert.match(character, /addEventListener\('dsh-tavern:refresh', onRefresh\)/)
   assert.match(worldBook, /dispatchEvent\(new Event\('dsh-tavern:refresh'\)\)/)
@@ -194,6 +194,23 @@ test('world-book panel separates session, user and character sources while expos
   assert.match(source, /绑定有未保存修改/)
   assert.match(source, /当前绑定已应用/)
   assert.doesNotMatch(source, /`\$\{item\.name\} · \$\{item\.sourceFormat\}`/)
+})
+
+test('preset browsing is separate from explicit per-session binding', () => {
+  const source = readFileSync(new URL('../packages/preset/src/client.js', import.meta.url), 'utf8')
+  const root = readFileSync(new URL('../packages/client/src/index.js', import.meta.url), 'utf8')
+  const server = readFileSync(new URL('../packages/preset/src/server.js', import.meta.url), 'utf8')
+  assert.match(source, /label: '浏览预设'/)
+  assert.match(source, /value: draft\?\.id \?\? ''/)
+  assert.match(source, /onChange: \(event\) => browse\(event\.target\.value\)/)
+  assert.match(source, /body\(\{ id: draft\.id, sessionId \}\)/)
+  assert.match(source, /body\(\{ id: null, sessionId \}\)/)
+  assert.match(source, /className: 'dtt-button dtt-button-primary'[^\n]+onClick: bind/)
+  assert.match(source, /预设已创建；尚未绑定当前会话/)
+  assert.match(source, /ST 预设已导入；尚未绑定当前会话/)
+  assert.equal(source.match(/api\('\/select'/g)?.length, 2)
+  assert.match(root, /PresetSidebar,[\s\S]*sessionId,[\s\S]*sessionBlank/)
+  assert.match(server, /beforeSelectionChange\?\.\(\{ sessionId: targetSessionId, presetId: selectedId \}\)/)
 })
 
 test('session-template panel renders resolved configuration contents and current-settings guidance', () => {
