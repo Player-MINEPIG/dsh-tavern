@@ -5,8 +5,13 @@ export function characterGreetingOptions(character) {
     ? character.data.alternateGreetings.filter((item) => typeof item === 'string')
     : []
   return [
-    { index: 0, label: first === '' ? '默认开场（空）' : '默认开场', text: first },
-    ...alternates.map((text, index) => ({ index: index + 1, label: `备选开场 ${index + 1}`, text })),
+    { index: 0, labelKey: first === '' ? 'character.greeting.defaultEmpty' : 'character.greeting.default', text: first },
+    ...alternates.map((text, index) => ({
+      index: index + 1,
+      labelKey: 'character.greeting.alternate',
+      labelValues: { index: index + 1 },
+      text,
+    })),
   ]
 }
 

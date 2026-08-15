@@ -1,6 +1,6 @@
 {
   "name": "dsh-tavern",
-  "version": "0.1.0",
+  "version": "1.0.0",
   "description": "SillyTavern-compatible content adapters for DeepSeek Harness.",
   "type": "module",
   "main": "packages/tavern-loader/src/index.js",
@@ -22,6 +22,7 @@
     "packages",
     "dist",
     "scripts",
+    "docs/assets",
     "cordis.patch.yml"
   ],
   "dsh": {

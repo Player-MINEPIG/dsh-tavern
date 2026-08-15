@@ -1,6 +1,6 @@
 # Unified Tavern loader contract
 
-状态：2026-08-15，Phase 3 集成分支已组合 preset、角色卡、用户/世界书关系、独立世界书、当前输入提前匹配、干净会话模板、全局 UI 设置与 Tavern Trace。本文是资源与加载器的运行契约，不是 README。
+状态：2026-08-15，首个公开发布候选版本已组合 preset、角色卡、用户/世界书关系、独立世界书、当前输入提前匹配、干净会话模板、语义键 i18n、全局 UI 设置与 Tavern Trace。本文是资源与加载器的运行契约，不是 README。
 
 ## 目标与所有权
 
@@ -51,6 +51,19 @@ SessionSelectionStore ─────────────────┘
 - 默认最多 2,048 个 session（实现硬上限 4,096）和 4 MiB 持久状态，超过 8 MiB 的旧文件不进入 `JSON.parse`。写入先在副本上验证并原子落盘，失败不会污染内存状态。
 - selections 是不可静默丢弃的用户意图，因此容量满时拒绝新增，不照搬 Trace 的 LRU。`deleteSession(id)` 是为未来权威 DSH session 删除事件准备的回收 seam；当前 Host 尚未暴露该事件。
 
+### Running-agent mutation boundary and known gaps
+
+当前的运行态保护是“显式 session binding 写入保护”，不是覆盖所有资源变更的全局事务锁。preset、角色卡、用户和独立世界书的 selection API 在写入 `SessionSelectionStore` 前查询对应 agent；状态为 `running` 时返回 HTTP 409，分别使用 `PRESET_AGENT_RUNNING`、`CHARACTER_AGENT_RUNNING`、`USER_AGENT_RUNNING` 和 `WORLD_BOOK_AGENT_RUNNING`。它防止用户在一次 turn 正在执行时通过正常绑定按钮切换该 session 的四类选择。
+
+以下间接变更入口尚未纳入同一保护，评审和后续实现不得把当前行为描述为“运行中的 Tavern 配置完全不可变”：
+
+- session-template/configuration apply 可以直接用完整 selection 覆盖目标 session；正常 UI 以新建 blank session 为目标，但 API 本身尚未拒绝一个正在运行的既有目标；
+- 删除已被引用的 preset、角色卡、用户或独立世界书会调用 `clearResource()` 清理一个或多个 session 的选择，没有逐一检查受影响 agent；
+- 修改当前已绑定资源的正文不会改变资源 ID，却会改变后续 compile 读取到的内容；
+- 修改“用户绑定世界书”关系可能同时改变所有绑定该用户 session 的有效世界书集合，目前只验证关系和资源上限，不检查这些 session 是否正在运行。
+
+已经完成的 system assembly 是一次冻结快照，资源变更不会回写 durable history，也不应伪装成已经进入旧请求；但在 assembly 前后并发修改仍存在时序边界。严格模式需要 loader-owned 的统一 mutation guard：从直接 session id 或反向资源引用解析所有受影响 session，原子确认它们均非 running 后再提交。对于纯正文编辑，还需明确选择“运行中拒绝”或“保存成功但只保证下一 turn 生效”的产品语义。当前专项测试覆盖 preset、角色卡和用户 selection hook 的拒绝路径；世界书虽已接线，仍需补直接的运行态回归测试，模板和上述间接路径也需要各自测试。
+
 ### Clean-session/template policy
 
 “维持当前设置新开对话”与配置模板只复制上述 selection 投影，不调用普通 fork，也不读取或写入 Session events。浏览器通过 DSH 公开的 `workspaces.connectWorkspace(workspaceId)` 得到真实 blank session id；loader API 再次解析来源、验证每个资源，并以一次 `SessionSelectionStore.set(targetId, completeSelection)` 原子提交，之后浏览器才调用公开 `sessions.open(targetId)`。
@@ -59,7 +72,9 @@ SessionSelectionStore ─────────────────┘
 
 ## Profile safety budget
 
-`TavernProfileLoader` 对自己生成的单一 `dsh-tavern:profile` section 施加默认 512 KiB UTF-8 上限；`limits.maxProfileBytes` 可以收紧或放宽，但实现硬上限为 2 MiB。世界书 parser/store 在 normalize 之前共用流式结构守卫：每资源最多 10,000 条、深度 32、100,000 节点、单字符串 1 MiB、对象键 1,024 字符；adapter 另对本次请求的独立书、用户书与内嵌书合计施加 10,000 条硬上限，超出资源跳过并诊断。在这些前置守卫后，compiler 最多考虑排名最前的 4,096 个 lore 候选，并在生成 wrapper 前将原始 lore 正文限制为 profile budget 的两倍。世界书自身的 `tokenBudget` 与 `ignoreBudget` 只决定 ST 兼容候选，不能改变任何 Host 硬上限。
+`TavernProfileLoader` 对自己生成的单一 `dsh-tavern:profile` section 施加默认 512 KiB UTF-8 上限；`limits.maxProfileBytes` 可以收紧或放宽，但实现硬上限为 2 MiB。世界书 parser/store 在 normalize 之前共用流式结构守卫：每资源最多 10,000 条、深度 32、100,000 节点、单字符串 1 MiB、对象键 1,024 字符；adapter 另对本次请求的独立书、用户书与内嵌书合计施加 10,000 条硬上限，超出资源跳过并诊断。合计预算按确定性的组合顺序先到先得：session 显式独立书、随后用户绑定独立书（ID 稳定去重），最后角色卡内嵌书；每个资源整体预留，不能完整放入时整本不扫描。因此前面的独立书占满 10,000 条时，内嵌书会被跳过并产生 `WORLD_BOOK_RUNTIME_TOTAL_LIMIT`，这是有意的安全/确定性策略，不是随机遗漏。在这些前置守卫后，compiler 最多考虑排名最前的 4,096 个 lore 候选，并在生成 wrapper 前将原始 lore 正文限制为 profile budget 的两倍。世界书自身的 `tokenBudget` 与 `ignoreBudget` 只决定 ST 兼容候选，不能改变任何 Host 硬上限。
+
+角色卡编辑内嵌 `character_book` 时会先执行共享结构守卫和 parser；原始 JSON/PNG 导入目前只在角色格式层确认 `character_book` 是 object，然后无损保留，不在落盘前执行同一深度/节点/条目守卫。32 MiB artifact 上限限制总输入，loader 首次消费时仍会通过 `parseCharacterBook()` 安全失败并报告 `EMBEDDED_WORLD_BOOK_INVALID`，所以匹配放大路径已被挡住；但这仍是导入期防御纵深缺口，会允许一个最终不可运行的内嵌书先进入资源库。后续应在不破坏原件无损保存的前提下，为标准化的运行副本增加导入期结构诊断或拒绝策略。
 
 若全部内容超限，compiler 用原有候选顺序保留能完整装入的最高排名 lore 条目前缀，并报告 `TAVERN_PROFILE_LORE_LIMITED`。若移除所有 lore 后仍超限，则抛出 `TAVERN_PROFILE_TOO_LARGE`；preset、角色字段或用户描述不会被从中间截断。
 

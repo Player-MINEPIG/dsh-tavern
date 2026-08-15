@@ -1,101 +1,51 @@
-# Prompt preset review guide
+# dsh-tavern 发布审查指南
 
-## Review scope
+状态：2026-08-15，适用于首个公开发布候选版本。
 
-This branch implements the prompt-preset vertical slice only: import, durable
-storage, edit/create/select UI, and model-request injection. Character cards
-and world books are deliberately outside this review.
+## 审查顺序
 
-## Package boundaries
+1. 阅读根 `README.md` 与 `docs/USAGE.zh-CN.md`，确认宣传能力和已知风险准确。
+2. 阅读 `ARCHITECTURE.md`、`LOADER_CONTRACT.md`、`DSH_MESSAGE_FLOW.md`，确认一个插件、一个 loader、一个 profile section 和 DSH 原生历史权威边界。
+3. 先审查 `packages/**/src`，再运行 build 核对生成的 `dist/client.js`；不得把 generated bundle 当作业务源码手工修改。
+4. 阅读 `INTEGRATION_ACCEPTANCE.md` 与 changelog 最新条目，区分自动通过、人工抽查和仍待执行的发布步骤。
 
-- `packages/tavern-format`: pure ST parsing, normalization, unknown-field
-  preservation, editing, and macro rendering. It has no dsh, filesystem, or UI
-  dependency.
-- `packages/preset`: filesystem store, CRUD HTTP API, and browser use cases. It
-  does not decide how a preset enters an agent request.
-- `packages/tavern-loader`: the sole dsh Host/root entry. It compiles normalized
-  presets for DSH, projects supported call config, and owns request/session
-  policy.
-- `dist/client.js`: generated browser plugin. Review source first; verify the
-  generated artifact with `npm run build`.
+## 关键所有权
 
-Dependencies flow only `tavern-loader -> preset -> tavern-format`. The root
-package is the sole installation and release unit. Internal folders and package
-exports are neither nested repositories nor separately installable DSH plugins.
-The rationale and merge gates are recorded in `docs/ARCHITECTURE.md`.
+- `tavern-format`：纯 ST preset/角色格式、归一化、未知字段保留；
+- `world-book`：纯 World Book/Character Book parser、matcher 与投影；
+- `preset`、`character`、`user`、`world-book-library`：资源 store、API 用例和 UI，不注册 Host prompt seam；
+- `session-template`：只保存/应用有界 selection 投影；
+- `tavern-trace`：只保存最小化审计，不写 Session 或模型消息；
+- `tavern-loader`：唯一 Host 根入口，拥有 session policy、profile compile、current-input projection、request config 与 API dispatcher；
+- `client`：唯一 shell overlay/launcher 组合根和语义键 i18n runtime。
 
-## Runtime data and copyright safety
+内部目录是一个发布包中的模块，不是多个可分别安装的 DSH 插件。
 
-The default store is `<installed-plugin-root>/data`, containing `state.json`
-and one normalized JSON file per preset under `presets/`. The source worktree
-ignores `/data`.
+## 重点风险检查
 
-The acceptance fixture selected through `DSH_TAVERN_ACCEPTANCE_FIXTURE` is
-third-party material. Tests may read it in place or import it into a temporary/installed-plugin
-directory, but must never copy it into the Git worktree, fixtures, snapshots,
-generated bundles, logs, or commits.
+- API 必须继续经过 loopback peer、Host、Origin、Content-Type 与 no-cache/nosniff 包装；
+- 资源/API/结构/profile/Trace/session state 上限不得被 ST soft budget 或 `ignoreBudget` 绕过；
+- unsafe JavaScript regex 必须默认关闭；
+- 用户/资源正文、输入消息、完整 system、API key 和工具 schema不得进入 Trace；
+- 动态资源名、关键词和用户输入必须走 i18n raw boundary；
+- per-session 绑定只由显式按钮/API 改变，浏览目录、导入和创建不得产生隐式绑定；
+- DSH durable history 与 request/header 始终是权威，插件不得伪造 greeting/history/Trace Session event；
+- running-agent 保护目前只是显式选择边界，不能误报为全局事务锁。
 
-## SillyTavern compatibility contract
+## 版权与发布包
 
-The first release targets SillyTavern Chat Completion preset JSON:
+仓库和发布包不得包含用户提供的外部验收 preset、角色卡、世界书、未经发布授权的截图内容或本机数据目录。项目所有者明确选作公开说明材料的合成 UI 截图可以放入 `docs/assets/`；加入前仍须检查本机路径、密钥和非公开作品内容。外部 fixture 只能通过 `DSH_TAVERN_ACCEPTANCE_FIXTURE` 原地读取；测试、日志和 snapshot 只能记录结构、计数与自制最小内容。
 
-- preserve the original top-level fields for future round-trip work;
-- normalize prompt records without discarding unknown extension fields;
-- prefer the global Chat Completion order (`character_id: 100001`), otherwise
-  choose the order resolving the most prompt identifiers;
-- enable/order prompts from `prompt_order`, falling back to prompt-local state
-  when no usable order exists;
-- skip marker-only entries during dsh prompt compilation;
-- preserve role information by labeling compiled sections because dsh exposes
-  one system-prompt seam rather than arbitrary interleaved role messages;
-- evaluate common ST macros and remove unresolved double-brace macros before
-  handing text to dsh, whose own strict `{{variable}}` syntax would otherwise
-  reject the request.
+`npm run pack:check` 应包含根 LICENSE、Cordis patch、scripts、dist、packages 和 README 引用的 `docs/assets/*.png`；应排除其他 docs、test、cache、worktree 计划、runtime `data/` 和外部 fixture。
 
-## dsh integration contract
+## 验证命令
 
-- The selected preset is global to this plugin installation, matching ST's
-  global Chat Completion preset selection.
-- Compiled prompt text is contributed through `systemPrompt.section()` so the
-  exact selected preset is recorded in the durable request header.
-- The `agent/request` waterfall applies only call-config fields dsh currently
-  supports: `temperature`, `maxTokens`, `reasoningEffort`, and `stop`.
-- Other ST sampling fields remain editable/preserved compatibility data. They
-  are not claimed to reach adapters that do not expose them.
-- The preset manager shadows dsh's current single-occupant right `details`
-  slot and adds a header utility to reopen it. This is an upstream slot
-  limitation, not an accidental UI choice.
-
-## Verification and review path
-
-Run from the worktree root:
-
-```powershell
-npm install --cache .npm-cache --legacy-peer-deps
+```sh
 npm run check
 npm run pack:check
+git diff --check
 ```
 
-The automated suite covers parser order/macro behavior, path safety and atomic
-store reload, Host request seams, API CRUD, and an in-place structural check of
-the named acceptance file. The acceptance test skips only when that external
-file is absent.
+发布前再对 tracked tree 与 npm 包清单执行本机绝对路径、私钥头和常见 API/token 形状扫描。命中 `token`、`key` 等普通技术术语不能直接判为泄露，必须检查实际值和上下文。
 
-For a manual browser review, install the worktree into a disposable dsh profile,
-start `dsh web`, then use the `预设` panel to import the external file. Create a
-second preset, change its name and sampling controls, save, switch to the import,
-and switch back. `docs/ACCEPTANCE.md` records the observed results from the
-completed isolated-profile run.
-
-The Host does not render its normal conversation header for a blank session and
-may keep the session-scoped details column collapsed during bootstrap. A
-root-scoped `shell.overlay` launcher and drawer keep preset import/selection
-reachable before the first message. Once a conversation is active, the overlay
-component unmounts entirely; only the native details panel and header `预设`
-button remain. The two surfaces are deliberately mutually exclusive so closing
-an active panel cannot reveal a second launcher or require a second close.
-
-For the exact compatibility boundary and future character-card/world-book
-design, review `docs/PROMPT_PIPELINE.md`. In particular, current `user` and
-`assistant` prompt roles are labels inside one system section, not arbitrary
-role-message insertion, and switching a preset never rewrites durable history.
+人工 smoke 使用隔离 `DSH_HOME`、唯一 loopback 端口和合成资源；完成后停止本次创建的 DSH 进程并确认端口释放。

@@ -1,8 +1,151 @@
 # Development changelog
 
-This is the staged implementation log for the prompt-preset experiment. It is
-kept separately from the product README so reviewers can follow intent,
-decisions, verification, and known limits chronologically.
+This is the staged implementation log for dsh-tavern. It is kept separately
+from the product README so reviewers can follow intent, decisions, verification,
+and known limits chronologically.
+
+## 2026-08-15 — Version 1.0.0 and public UI gallery
+
+Purpose: prepare the reviewed framework for its first stable public release and
+make the README's module overview visible on GitHub and in the npm package.
+
+- Raised the root package and lockfile version from `0.1.0` to `1.0.0`; DSH
+  dependency/version references elsewhere remain unchanged.
+- Added the project-owner-approved launcher, UI settings, preset, character,
+  world-book, user and new-session screenshots under `docs/assets/`, and placed
+  each image beside the matching README module description.
+- Changed the package allowlist from one launcher filename to `docs/assets` so
+  every README image is present when the README is rendered from a packaged
+  artifact as well as from GitHub.
+- Documented that character cards can be imported, inspected, managed, bound
+  and loaded, but cannot be created in this plugin because dedicated character
+  authoring tools already provide a better creation workflow.
+- Inspected PNG ancillary chunks: every screenshot contains only a `Software =
+  Snipaste` text field and no path, key, author or location metadata.
+
+Verification: `npm run check` rebuilt the versioned bundle and completed 185
+tests (184 passed, zero failed, one opt-in external fixture skipped).
+`npm run pack:check` produced `dsh-tavern-1.0.0.tgz` with 74 files and all seven
+README screenshots.
+
+## 2026-08-15 — New-session primary action color parity
+
+Purpose: keep the session-creation surface visually consistent with the
+accepted preset, character, world-book and user sidebars.
+
+- Changed the session-template primary action style from DSH's generic
+  `button-primary-fill` token, which resolves to black in the current host
+  theme, to the shared `state-business-primary` blue token used by the other
+  Tavern binding panels.
+- The change covers both primary paths: creating from the current Tavern
+  settings and creating from the selected template. Secondary template-library
+  actions remain visually secondary.
+- Added a client-shell regression test that checks the shared token and both
+  primary action bindings.
+
+Verification: `node --test test/client-shell.test.mjs` completed 14 tests with
+zero failures; `npm run check` rebuilt the browser bundle and completed 185
+tests (184 passed, zero failed, one opt-in external fixture skipped).
+
+## 2026-08-15 — Public release-candidate documentation refresh
+
+Purpose: present the integrated plugin as one reviewable public product while
+preserving early feature documents as historical evidence rather than stale
+current instructions.
+
+- Rebuilt the Chinese README in the approved order: table of contents, project
+  introduction, script/manual/Agent installation, concise module usage,
+  characteristics, security risks and upstream references. The install section
+  now explains default script behavior before custom profile/DSH_HOME parameters,
+  and every platform example includes the install command as well as startup.
+- Added only the project-owner-supplied DT launcher screenshot to the README;
+  removed the other screenshot placeholders because detailed UI demonstration
+  will be provided by the project video.
+- Added `docs/USAGE.zh-CN.md` with detailed launcher, preset, character,
+  three-source world-book, user, template/new-session, Trace and data-lifecycle
+  workflows.
+- Replaced the old three-feature integration checklist with the current release
+  scope, automatic/manual acceptance status, known non-blocking limits and
+  main/tag/push gates. Reworked the review guide around the unified loader,
+  security, copyright and package boundaries.
+- Updated architecture, loader, message-flow, prompt-pipeline, install and
+  module-document statuses. Early worktree plans/research remain in place but
+  are labelled historical; obsolete claims that current-input activation or
+  integration were still future work were corrected.
+- Kept the README honest about loopback-without-auth, prompt injection, secret
+  handling, unsafe regex, replace mode, indirect running-agent mutations,
+  embedded-book import diagnostics and incomplete ST message topology.
+
+Verification from the complete working tree: `npm run check` rebuilt the client
+and completed 185 tests (184 passed, zero failed, one opt-in external fixture
+skipped); the final `npm run pack:check` listed 74 files, including all seven
+README UI images while excluding other docs, tests, runtime data and
+caches. Two consecutive builds produced identical client SHA-256
+`DE02FCE650C5B6023F3F74C614A3C3995EE8BDA5434ABB1B3780EBC41C56BA09`.
+`git diff --check`, local Markdown-link validation and scans for machine paths,
+private-key headers and common credential shapes passed. Full post-refactor
+manual browser acceptance was not repeated; the owner performed a visual/basic
+operation spot-check without finding an obvious regression.
+
+## 2026-08-15 — Semantic-key-only i18n; legacy source-copy replacement removed
+
+Purpose: make a third UI language a catalog-plus-registry change, not a
+business-component rewrite or a Chinese-literal replacement table.
+
+- Split browser i18n into `packages/client/src/i18n/runtime.js` and per-locale
+  catalogs under `packages/client/src/i18n/catalogs/`. The previous
+  `packages/client/src/i18n.js` import path remains a thin re-export.
+- Deleted `LEGACY_SOURCE_CATALOGS`, `LEGACY_REPLACEMENTS`, and runtime Chinese
+  source-copy scanning. `translateVisibleText()` is now an identity helper.
+- `translate()` falls back through the current locale, then `DEFAULT_UI_LOCALE`,
+  then `common.unavailable`; it no longer special-cases `zh-CN`.
+- `PanelHeader` uses the complete `panel.close` template with the title as a
+  raw interpolation, so locales can own word order.
+- Migrated launcher, settings, preset, character, world-book, user, session
+  template, and Tavern Trace visible copy, confirmations, empty states, errors,
+  and accessibility labels onto semantic keys. Resource names, keywords, and
+  other runtime values stay on the `rawText` / `uiMessage` raw-parameter
+  boundary.
+- Adding a language still requires a catalog file, a locale-registry entry, and
+  catalog/display tests. This does not mean a third production language is
+  fully translated; shipping locales remain `zh-CN` and `en`.
+
+Verification: `npm run check` rebuilt `dist/client.js` twice with a stable
+SHA-256 and completed 184 tests: 183 passed, none failed, and the opt-in
+copyrighted fixture was skipped. `npm run pack:check` produced a 67-file
+package including `packages/client/src/i18n/catalogs/{zh-CN,en,index}.js` and
+`runtime.js`; tests, docs, and local caches were excluded. Isolated-profile
+browser acceptance from `THIRD_LANGUAGE_MIGRATION.md` §7 was not executed in
+this environment.
+
+## 2026-08-15 — Runtime mutation and remaining audit boundaries documented
+
+Purpose: distinguish implemented running-agent selection guards from a global
+configuration lock, and record the remaining i18n/import hardening debt without
+changing the accepted runtime behavior.
+
+- Documented that explicit preset, character, user and world-book session
+  binding writes return 409 while the corresponding agent is running.
+- Recorded unguarded indirect mutations: applying a complete configuration to
+  an existing target, deleting referenced resources, editing bound resource
+  content and changing a user's world-book relationship.
+- Recorded the missing direct world-book guard regression test and the need for
+  a loader-owned affected-session mutation policy before claiming global
+  immutability.
+- Classified the hard-coded `zh-CN` translation fallback and concatenated
+  `PanelHeader` accessibility label as defects; documented the roughly 300
+  legacy literal translations as a two-language migration bridge rather than a
+  third-language-ready contract.
+- Added a separate third-language migration specification with the required
+  catalog/runtime boundaries, prohibited text-replacement shortcuts, raw-data
+  invariants, synthetic-locale tests and isolated-profile manual acceptance.
+- Clarified that the aggregate 10,000-entry world-book budget is intentionally
+  deterministic and first-come by source order, while character import's lack
+  of an early embedded-book structure guard remains defense-in-depth debt even
+  though runtime parsing safely rejects it.
+
+Verification: documentation-only change; source and generated bundle were not
+modified.
 
 ## 2026-08-15 — Explicit per-session preset binding
 

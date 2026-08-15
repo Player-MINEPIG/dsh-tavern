@@ -1,6 +1,6 @@
 # Tavern Trace implementation
 
-状态：2026-08-15，Phase 2 feature branch 实现说明。本文不是 README。
+状态：2026-08-15，已集成到首个公开发布候选版本。本文保留 Phase 2 实现边界，不是 README。
 
 ## 目标与边界
 

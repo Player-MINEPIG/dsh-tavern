@@ -25,6 +25,7 @@ var __toCommonJS = (mod) => __copyProps(__defProp({}, "__esModule", { value: tru
 // packages/client/src/index.js
 var index_exports = {};
 __export(index_exports, {
+  PanelHeader: () => PanelHeader,
   apply: () => apply,
   inject: () => inject,
   name: () => name
@@ -43,571 +44,935 @@ function isSupportedUiLocale(value) {
   return typeof value === "string" && SUPPORTED_UI_LOCALES.includes(value);
 }
 
-// packages/client/src/i18n.js
+// packages/client/src/i18n/catalogs/zh-CN.js
+var zh_CN_default = Object.freeze({
+  "common.unavailable": "\u754C\u9762\u6587\u672C\u6682\u4E0D\u53EF\u7528",
+  "common.loading": "\u52A0\u8F7D\u4E2D\u2026",
+  "common.none": "\u65E0",
+  "common.unknown": "\u672A\u77E5",
+  "common.unknownAuthor": "\u672A\u77E5\u4F5C\u8005",
+  "common.refresh": "\u5237\u65B0",
+  "common.delete": "\u5220\u9664",
+  "common.save": "\u4FDD\u5B58",
+  "common.saveChanges": "\u4FDD\u5B58\u4FEE\u6539",
+  "common.saved": "\u5DF2\u4FDD\u5B58",
+  "common.reload": "\u91CD\u65B0\u8F7D\u5165",
+  "common.working": "\u5904\u7406\u4E2D\u2026",
+  "common.enabled": "\u5DF2\u542F\u7528",
+  "common.disabled": "\u5DF2\u7981\u7528",
+  "common.bound": "\u5DF2\u7ED1\u5B9A",
+  "common.unbound": "\u672A\u7ED1\u5B9A",
+  "common.planned": "\u89C4\u5212\u4E2D",
+  "common.listSeparator": "\u3001",
+  "common.name": "\u540D\u79F0",
+  "common.role": "\u89D2\u8272",
+  "common.content": "\u5185\u5BB9",
+  "common.exportJson": "\u5BFC\u51FA JSON",
+  "common.importJson": "\u5BFC\u5165 JSON",
+  "common.enable": "\u542F\u7528",
+  "panel.close": "\u5173\u95ED{title}\u4FA7\u8FB9\u680F",
+  "nav.preset": "\u9884\u8BBE",
+  "nav.character": "\u89D2\u8272\u5361",
+  "nav.worldBook": "\u4E16\u754C\u4E66",
+  "nav.user": "\u7528\u6237",
+  "nav.sessionTemplate": "\u65B0\u4F1A\u8BDD",
+  "nav.settings": "\u754C\u9762\u8BBE\u7F6E",
+  "nav.preset.empty": "\u672A\u9009\u62E9\u9884\u8BBE",
+  "nav.character.empty": "\u672A\u7ED1\u5B9A\u89D2\u8272",
+  "nav.worldBook.empty": "\u672A\u7ED1\u5B9A\u4E16\u754C\u4E66",
+  "nav.user.empty": "\u672A\u7ED1\u5B9A\u7528\u6237",
+  "nav.sessionTemplate.empty": "\u5F53\u524D\u8BBE\u7F6E\u6216\u914D\u7F6E\u6A21\u677F",
+  "nav.settings.empty": "\u8BED\u8A00\u4E0E\u7F29\u653E",
+  "nav.session.none": "\u65E0\u4F1A\u8BDD",
+  "nav.syncFailed": "\u72B6\u6001\u540C\u6B65\u5931\u8D25\uFF1A{message}",
+  "nav.menuTitle": "Tavern \xB7 {session}",
+  "nav.itemTitleBound": "{label}\uFF1A{title}\uFF08{state}\uFF09",
+  "nav.itemTitle": "{label}\uFF1A{title}",
+  "nav.itemAriaBound": "{label}\uFF0C{title}\uFF0C{state}",
+  "nav.itemAria": "{label}\uFF0C{title}",
+  "nav.bookCount": "{count} \u672C",
+  "nav.launcher": "\u62D6\u52A8\u53EF\u79FB\u52A8\uFF1B\u70B9\u51FB\u5C55\u5F00 Tavern \u8D44\u6E90\u9762\u677F",
+  "settings.menu": "\u754C\u9762\u8BBE\u7F6E",
+  "settings.title": "Tavern \u754C\u9762\u8BBE\u7F6E",
+  "settings.language": "\u754C\u9762\u8BED\u8A00",
+  "settings.language.zh": "\u7B80\u4F53\u4E2D\u6587",
+  "settings.language.en": "English",
+  "settings.scale": "Tavern UI \u7F29\u653E",
+  "settings.scale.help": "\u4EC5\u7F29\u653E Tavern \u60AC\u6D6E\u5165\u53E3\u3001\u8D44\u6E90\u9762\u677F\u548C Trace\uFF0C\u4E0D\u5F71\u54CD DSH \u4E3B\u754C\u9762\u3002",
+  "settings.currentScale": "\u5F53\u524D\u7F29\u653E\uFF1A{scale}%",
+  "settings.reset": "\u6062\u590D\u9ED8\u8BA4",
+  "settings.saving": "\u6B63\u5728\u4FDD\u5B58\u8BBE\u7F6E\u2026",
+  "settings.saved": "\u8BBE\u7F6E\u5DF2\u4FDD\u5B58\uFF0C\u5E76\u5C06\u5728\u5237\u65B0\u548C\u4F1A\u8BDD\u5207\u6362\u540E\u4FDD\u6301\u3002",
+  "settings.loadError": "\u65E0\u6CD5\u8BFB\u53D6\u754C\u9762\u8BBE\u7F6E\uFF1A{message}",
+  "settings.saveError": "\u65E0\u6CD5\u4FDD\u5B58\u754C\u9762\u8BBE\u7F6E\uFF1A{message}",
+  "settings.close": "\u5173\u95ED\u754C\u9762\u8BBE\u7F6E\u4FA7\u8FB9\u680F",
+  "preset.title": "Tavern \u9884\u8BBE",
+  "preset.active": "\u25CF \u5DF2\u542F\u7528",
+  "preset.importStJson": "\u5BFC\u5165 ST JSON",
+  "preset.create": "\u521B\u5EFA\u9884\u8BBE",
+  "preset.browse": "\u6D4F\u89C8\u9884\u8BBE",
+  "preset.libraryEmpty": "\u9884\u8BBE\u5E93\u4E3A\u7A7A",
+  "preset.unboundNote": "\u5F53\u524D\u4F1A\u8BDD\u672A\u7ED1\u5B9A\u9884\u8BBE\u3002",
+  "preset.currentSessionBound": "\u5F53\u524D\u4F1A\u8BDD\u7ED1\u5B9A\uFF1A{name}\u3002",
+  "preset.browsingUnbound": "\u6B63\u5728\u6D4F\u89C8\u201C{name}\u201D\uFF1B\u5B83\u5C1A\u672A\u7ED1\u5B9A\u5230\u5F53\u524D\u4F1A\u8BDD\u3002",
+  "preset.bind": "\u7ED1\u5B9A\u5230\u5F53\u524D\u4F1A\u8BDD",
+  "preset.bindUpdate": "\u66F4\u65B0\u4F1A\u8BDD\u7ED1\u5B9A",
+  "preset.unbind": "\u89E3\u9664\u5F53\u524D\u4F1A\u8BDD\u7ED1\u5B9A",
+  "preset.loading": "\u6B63\u5728\u52A0\u8F7D\u9884\u8BBE\u2026",
+  "preset.emptyHint": "\u8BF7\u9009\u62E9\u6216\u521B\u5EFA\u9884\u8BBE\u4EE5\u5F00\u59CB\u914D\u7F6E\u3002",
+  "preset.basicSettings": "\u57FA\u672C\u8BBE\u7F6E",
+  "preset.name": "\u9884\u8BBE\u540D\u79F0",
+  "preset.temperature": "Temperature",
+  "preset.maxTokens": "Max tokens",
+  "preset.reasoningEffort": "Reasoning effort",
+  "preset.modelDefault": "\u8DDF\u968F\u6A21\u578B\u9ED8\u8BA4",
+  "preset.effort.low": "Low",
+  "preset.effort.medium": "Medium",
+  "preset.effort.high": "High",
+  "preset.effort.xhigh": "Extra high",
+  "preset.advancedShow": "\u5C55\u5F00\u9AD8\u7EA7\u8BBE\u7F6E",
+  "preset.advancedHide": "\u6536\u8D77\u9AD8\u7EA7\u8BBE\u7F6E",
+  "preset.advancedNote": "\u8FD9\u4E9B\u5B57\u6BB5\u4F1A\u88AB\u5B8C\u6574\u4FDD\u5B58\uFF1Bdsh 0.1.0 \u5F53\u524D\u8BF7\u6C42\u534F\u8BAE\u672A\u66B4\u9732\u7684\u53C2\u6570\u4E0D\u4F1A\u5F3A\u884C\u4E0B\u53D1\u7ED9\u9002\u914D\u5668\u3002",
+  "preset.systemPrompt": "DSH \u7CFB\u7EDF\u63D0\u793A\u8BCD",
+  "preset.systemAppend": "\u4FDD\u7559 DSH \u7CFB\u7EDF\u63D0\u793A\u8BCD\uFF0C\u5E76\u8FFD\u52A0\u9884\u8BBE\uFF08\u63A8\u8350\uFF09",
+  "preset.systemReplace": "\u4EC5\u4F7F\u7528\u9884\u8BBE\uFF0C\u79FB\u9664 DSH \u7CFB\u7EDF\u6BB5\uFF08\u9AD8\u7EA7\uFF09",
+  "preset.replaceWarning": "\u8B66\u544A\uFF1A\u8FD9\u4F1A\u79FB\u9664\u6A21\u578B\u53EF\u89C1\u7684 Harness \u8EAB\u4EFD\u3001Agent persona \u548C\u5DE5\u5177\u8BF4\u660E\uFF0C\u53EF\u80FD\u7834\u574F\u5DE5\u5177\u8C03\u7528\u6216\u7ED3\u6784\u5316\u8F93\u51FA\uFF1B\u6C99\u7BB1\u4E0E\u5BA1\u6279\u7B49\u6267\u884C\u5C42\u5B89\u5168\u4ECD\u7136\u6709\u6548\u3002",
+  "preset.prompts": "\u63D0\u793A\u8BCD ({count})",
+  "preset.addPrompt": "\uFF0B \u6DFB\u52A0",
+  "preset.dropHere": "\u677E\u5F00\u540E\u653E\u7F6E\u4E8E\u6B64",
+  "preset.dragOrder": "\u62D6\u62FD\u6392\u5217\u987A\u5E8F",
+  "preset.dragNamed": "\u62D6\u62FD\u201C{name}\u201D\u6392\u5217\u987A\u5E8F",
+  "preset.markerHint": "ST marker \u4E0D\u4F1A\u4F5C\u4E3A\u72EC\u7ACB\u63D0\u793A\u8BCD\u6CE8\u5165",
+  "preset.enablePrompt": "\u542F\u7528\u63D0\u793A\u8BCD",
+  "preset.role.system": "System",
+  "preset.role.user": "User",
+  "preset.role.assistant": "Assistant",
+  "preset.sampling.topP": "Top P",
+  "preset.sampling.topK": "Top K",
+  "preset.sampling.topA": "Top A",
+  "preset.sampling.minP": "Min P",
+  "preset.sampling.frequencyPenalty": "Frequency penalty",
+  "preset.sampling.presencePenalty": "Presence penalty",
+  "preset.sampling.repetitionPenalty": "Repetition penalty",
+  "preset.sampling.seed": "Seed",
+  "preset.defaultName": "\u65B0\u9884\u8BBE",
+  "preset.defaultPromptName": "\u65B0\u63D0\u793A\u8BCD",
+  "preset.confirmDelete": "\u5220\u9664\u9884\u8BBE\u201C{name}\u201D\uFF1F",
+  "preset.confirmHistoricalSwitch": "\u5F53\u524D\u4F1A\u8BDD\u5DF2\u6709\u5386\u53F2\u3002\u66F4\u6362\u9884\u8BBE\u53EA\u5F71\u54CD\u540E\u7EED\u8BF7\u6C42\uFF0C\u4E0D\u4F1A\u91CD\u5199\u5DF2\u6709\u6D88\u606F\uFF1B\u7EE7\u7EED\u5417\uFF1F",
+  "preset.status.syncing": "\u6B63\u5728\u540C\u6B65\u5F53\u524D\u4F1A\u8BDD\u7684\u9884\u8BBE\u72B6\u6001\u2026",
+  "preset.status.loaded": "\u9884\u8BBE\u5DF2\u52A0\u8F7D",
+  "preset.status.refreshed": "\u9884\u8BBE\u72B6\u6001\u5DF2\u5237\u65B0",
+  "preset.status.detailsLoaded": "\u9884\u8BBE\u8BE6\u60C5\u5DF2\u52A0\u8F7D\uFF1B\u4F1A\u8BDD\u7ED1\u5B9A\u5C1A\u672A\u6539\u53D8",
+  "preset.status.bound": "\u9884\u8BBE\u5DF2\u7ED1\u5B9A\uFF1B\u5F53\u524D\u4F1A\u8BDD\u7684\u4E0B\u4E00\u6B21\u8BF7\u6C42\u5C06\u4F7F\u7528\u5B83",
+  "preset.status.unbound": "\u5F53\u524D\u4F1A\u8BDD\u5DF2\u89E3\u9664\u9884\u8BBE\u7ED1\u5B9A",
+  "preset.status.created": "\u9884\u8BBE\u5DF2\u521B\u5EFA\uFF1B\u5C1A\u672A\u7ED1\u5B9A\u5F53\u524D\u4F1A\u8BDD",
+  "preset.status.imported": "ST \u9884\u8BBE\u5DF2\u5BFC\u5165\uFF1B\u5C1A\u672A\u7ED1\u5B9A\u5F53\u524D\u4F1A\u8BDD",
+  "preset.status.saved": "\u9884\u8BBE\u914D\u7F6E\u5DF2\u4FDD\u5B58\uFF1B\u5DF2\u7ED1\u5B9A\u5B83\u7684\u4F1A\u8BDD\u5C06\u5728\u540E\u7EED\u8BF7\u6C42\u4F7F\u7528\u65B0\u5185\u5BB9",
+  "preset.status.deleted": "\u9884\u8BBE\u5DF2\u5220\u9664",
+  "preset.error.needSession": "\u8BF7\u5148\u521B\u5EFA\u6216\u6253\u5F00\u4E00\u4E2A\u4F1A\u8BDD\u518D\u7ED1\u5B9A\u9884\u8BBE",
+  "preset.error.needPreset": "\u8BF7\u5148\u9009\u62E9\u4E00\u4E2A\u9884\u8BBE",
+  "preset.error.noSessionToUnbind": "\u5F53\u524D\u6CA1\u6709\u53EF\u89E3\u9664\u7ED1\u5B9A\u7684\u4F1A\u8BDD",
+  "character.title": "Tavern \u89D2\u8272\u5361",
+  "character.import": "\u5BFC\u5165 JSON / PNG",
+  "character.browse": "\u6D4F\u89C8\u89D2\u8272\u5E93",
+  "character.libraryEmpty": "\u89D2\u8272\u5E93\u4E3A\u7A7A",
+  "character.sessionBinding": "\u5F53\u524D\u4F1A\u8BDD\uFF1A{session}\uFF1B\u7ED1\u5B9A\uFF1A{name}",
+  "character.loading": "\u6B63\u5728\u52A0\u8F7D\u89D2\u8272\u5E93\u2026",
+  "character.emptyHint": "\u5BFC\u5165\u4E00\u5F20\u5408\u6210\u6216\u81EA\u6709\u6388\u6743\u7684 SillyTavern \u89D2\u8272\u5361\u4EE5\u67E5\u770B\u8BE6\u60C5\u3002",
+  "character.imageAlt": "{name} \u89D2\u8272\u5361\u56FE\u7247",
+  "character.greeting": "\u5F00\u573A\u53C2\u8003",
+  "character.greeting.default": "\u9ED8\u8BA4\u5F00\u573A",
+  "character.greeting.defaultEmpty": "\u9ED8\u8BA4\u5F00\u573A\uFF08\u7A7A\uFF09",
+  "character.greeting.alternate": "\u5907\u9009\u5F00\u573A {index}",
+  "character.preferSystem": "\u5141\u8BB8 loader \u4F18\u5148\u91C7\u7528\u5361\u5185 system_prompt",
+  "character.preferPostHistory": "\u5141\u8BB8 loader \u91C7\u7528 post_history_instructions\uFF08\u5B9E\u9645\u4F4D\u7F6E\u7531 loader \u51B3\u5B9A\uFF09",
+  "character.bind": "\u7ED1\u5B9A\u5230\u5F53\u524D\u4F1A\u8BDD",
+  "character.bindUpdate": "\u66F4\u65B0\u4F1A\u8BDD\u7ED1\u5B9A",
+  "character.unbind": "\u89E3\u9664\u7ED1\u5B9A",
+  "character.moduleNote": "\u89D2\u8272\u5361\u6A21\u5757\u8D1F\u8D23\u4FDD\u5B58\u6807\u51C6\u5316\u8D44\u6E90\u548C\u4F1A\u8BDD\u9009\u62E9\uFF1B\u5B9E\u9645 system profile \u4E0E\u5185\u5D4C\u4E16\u754C\u4FE1\u606F\u5339\u914D\u7531 Tavern loader \u5728\u6BCF\u6B21\u8BF7\u6C42\u65F6\u7EDF\u4E00\u5904\u7406\uFF0C\u4E0D\u4F1A\u4F2A\u9020 assistant \u5386\u53F2\u3002",
+  "character.field.creatorNotes": "Creator notes",
+  "character.field.description": "Description",
+  "character.field.personality": "Personality",
+  "character.field.scenario": "Scenario",
+  "character.field.greetingContent": "\u5F53\u524D\u5F00\u573A\u53C2\u8003\u5185\u5BB9",
+  "character.field.messageExamples": "Message examples",
+  "character.field.systemPrompt": "System prompt\uFF08\u7531 loader \u6309\u7ED1\u5B9A\u8BBE\u7F6E\u5904\u7406\uFF09",
+  "character.field.postHistory": "Post-history instructions\uFF08\u7531 loader \u8FD1\u4F3C\u653E\u7F6E\uFF09",
+  "character.embeddedBook": "\u5185\u5D4C character_book \u5DF2\u65E0\u635F\u4FDD\u7559\uFF08{count} \u6761\uFF09\uFF1B\u7ED1\u5B9A\u89D2\u8272\u540E\u7531 Tavern loader \u8C03\u7528\u4E16\u754C\u4FE1\u606F matcher\uFF0C\u89E3\u7ED1\u540E\u4E0D\u518D\u53C2\u4E0E\u540E\u7EED\u8BF7\u6C42\u3002",
+  "character.warnings": "\u517C\u5BB9\u8B66\u544A ({count})",
+  "character.unsupported": "\u9700\u8981 loader/\u5176\u4ED6\u6A21\u5757\u5904\u7406 ({count})",
+  "character.unknownMacros": "\u672A\u77E5\u5B8F\uFF1A{names}",
+  "character.exportOriginal": "\u5BFC\u51FA\u539F\u4EF6",
+  "character.delete": "\u5220\u9664\u89D2\u8272\u5361",
+  "character.confirmDelete": "\u5220\u9664\u89D2\u8272\u5361\u201C{name}\u201D\uFF1F\u539F\u59CB\u5BFC\u5165\u6587\u4EF6\u4E5F\u4F1A\u88AB\u5220\u9664\u3002",
+  "character.confirmHistoricalSwitch": "\u5F53\u524D\u4F1A\u8BDD\u5DF2\u6709\u5386\u53F2\u3002\u66F4\u6362\u89D2\u8272\u53EA\u5F71\u54CD\u540E\u7EED\u8BF7\u6C42\uFF0C\u4E0D\u4F1A\u91CD\u5199\u5DF2\u6709\u6D88\u606F\uFF1B\u7EE7\u7EED\u5417\uFF1F",
+  "character.status.loaded": "\u89D2\u8272\u5E93\u5DF2\u52A0\u8F7D",
+  "character.status.refreshed": "\u89D2\u8272\u72B6\u6001\u5DF2\u5237\u65B0",
+  "character.status.libraryRefreshed": "\u89D2\u8272\u5E93\u5DF2\u5237\u65B0",
+  "character.status.imported": "\u89D2\u8272\u5361\u5DF2\u5BFC\u5165\uFF1B\u5C1A\u672A\u7ED1\u5B9A\u5230\u4F1A\u8BDD",
+  "character.status.bound": "\u89D2\u8272\u9009\u62E9\u5DF2\u4FDD\u5B58\uFF1B\u5B9E\u9645\u5BF9\u8BDD\u52A0\u8F7D\u7531 Tavern loader \u7EDF\u4E00\u5904\u7406",
+  "character.status.unbound": "\u5F53\u524D\u4F1A\u8BDD\u5DF2\u89E3\u9664\u89D2\u8272\u7ED1\u5B9A",
+  "character.status.deleted": "\u89D2\u8272\u5361\u5DF2\u5220\u9664\uFF0C\u76F8\u5173\u4F1A\u8BDD\u7ED1\u5B9A\u5DF2\u6E05\u9664",
+  "character.status.detailsLoaded": "\u89D2\u8272\u8BE6\u60C5\u5DF2\u52A0\u8F7D",
+  "character.error.needSession": "\u8BF7\u5148\u521B\u5EFA\u6216\u6253\u5F00\u4E00\u4E2A\u4F1A\u8BDD\u518D\u7ED1\u5B9A\u89D2\u8272",
+  "character.error.noSessionToUnbind": "\u5F53\u524D\u6CA1\u6709\u53EF\u89E3\u7ED1\u7684\u4F1A\u8BDD",
+  "world.title": "\u4E16\u754C\u4FE1\u606F\uFF08World Book\uFF09",
+  "world.lorebookTitle": "\u4E16\u754C\u4FE1\u606F\uFF08Lorebook\uFF09",
+  "world.importJson": "\u5BFC\u5165 JSON",
+  "world.create": "\u65B0\u5EFA\u4E16\u754C\u4E66",
+  "world.defaultName": "Untitled World Book",
+  "world.standalone": "\u72EC\u7ACB\u4E16\u754C\u4E66",
+  "world.sessionBinding": "\u5F53\u524D\u4F1A\u8BDD\u7ED1\u5B9A",
+  "world.libraryEmpty": "\u72EC\u7ACB\u4E16\u754C\u4E66\u8D44\u6E90\u5E93\u4E3A\u7A7A\u3002",
+  "world.bindingUnsaved": "\u7ED1\u5B9A\u6709\u672A\u4FDD\u5B58\u4FEE\u6539\uFF0C\u5F53\u524D\u52FE\u9009\u5C1A\u672A\u5E94\u7528\u5230\u4F1A\u8BDD\u3002",
+  "world.bindingApplied": "\u9762\u677F\u663E\u793A\u7684\u7ED1\u5B9A\u5DF2\u5E94\u7528\u5230\u5F53\u524D\u4F1A\u8BDD\u3002",
+  "world.applyBinding": "\u5E94\u7528\u4F1A\u8BDD\u7ED1\u5B9A\uFF08\u672A\u4FDD\u5B58\uFF09",
+  "world.bindingAppliedButton": "\u5F53\u524D\u7ED1\u5B9A\u5DF2\u5E94\u7528",
+  "world.clearPending": "\u6E05\u7A7A\u5F85\u5E94\u7528\u9009\u62E9",
+  "world.browse": "\u6D4F\u89C8\u72EC\u7ACB\u4E16\u754C\u4E66",
+  "world.catalogEmpty": "\u8D44\u6E90\u5E93\u4E3A\u7A7A",
+  "world.bookName": "\u4E16\u754C\u4E66\u540D\u79F0",
+  "world.addEntry": "\u65B0\u589E\u6761\u76EE",
+  "world.deleteStandalone": "\u5220\u9664\u72EC\u7ACB\u4E66",
+  "world.characterBound": "\u89D2\u8272\u5361\u7ED1\u5B9A\u7684\u4E16\u754C\u4E66",
+  "world.embeddedTitle": "\u89D2\u8272\u5361\u5185\u5D4C\u4E16\u754C\u4E66",
+  "world.embeddedInfoTitle": "\u89D2\u8272\u5361\u5185\u5D4C\u4E16\u754C\u4FE1\u606F",
+  "world.addEmbeddedEntry": "\u65B0\u589E\u5185\u5D4C\u6761\u76EE",
+  "world.saveEmbedded": "\u4FDD\u5B58\u5185\u5D4C\u4E66",
+  "world.embeddedSaved": "\u5185\u5D4C\u4E66\u5DF2\u4FDD\u5B58",
+  "world.matcherNote": "\u5B9E\u9645\u6FC0\u6D3B\u3001\u6392\u5E8F\u3001\u6982\u7387\u548C\u9884\u7B97\u7531\u5171\u4EAB matcher \u786E\u5B9A\uFF1B\u6700\u7EC8\u6CE8\u5165\u4ECD\u7531 Tavern loader \u7EDF\u4E00\u5B8C\u6210\u3002\u5F53\u524D\u626B\u63CF\u4F1A\u628A\u672C\u6B65\u9AA4 claimed \u8F93\u5165\u4E0E\u6301\u4E45\u5386\u53F2\u7EC4\u5408\u6210\u4E34\u65F6\u4E0A\u4E0B\u6587\uFF0C\u56E0\u6B64\u5355\u6B65\u9AA4\u4F1A\u8BDD\u4E5F\u80FD\u5728\u9996\u6B21\u8BF7\u6C42\u89E6\u53D1\u5173\u952E\u8BCD\u3002",
+  "world.infoIntro": "\u5F53\u524D\u4F1A\u8BDD\uFF1A{session}\u3002SillyTavern \u7684\u6B63\u5F0F\u529F\u80FD\u540D\u662F World Info\uFF0CLorebook \u662F\u5B98\u65B9\u8BA4\u53EF\u7684\u5E38\u7528\u522B\u540D\u3002",
+  "world.infoLoaded": "\u5DF2\u8F7D\u5165 {count} \u4E2A\u6761\u76EE\u3002",
+  "world.infoDirty": "\u6709\u5C1A\u672A\u4FDD\u5B58\u7684\u6761\u76EE\u4FEE\u6539\u3002",
+  "world.infoReading": "\u6B63\u5728\u8BFB\u53D6\u4E16\u754C\u4FE1\u606F\u2026",
+  "world.infoEmpty": "\u5F53\u524D\u4F1A\u8BDD\u6CA1\u6709\u53EF\u7528\u4E16\u754C\u4FE1\u606F\u3002\u7ED1\u5B9A\u542B character_book \u7684\u89D2\u8272\u5361\u540E\uFF0C\u5176\u5185\u5D4C\u6761\u76EE\u4F1A\u81EA\u52A8\u7531 loader \u5339\u914D\uFF1B\u89E3\u7ED1\u89D2\u8272\u4F1A\u540C\u65F6\u79FB\u9664\u8BE5\u6765\u6E90\u3002",
+  "world.infoMeta": "\u89D2\u8272\u5361\u5185\u5D4C \xB7 {count} \u6761\u3002\u6298\u53E0\u6807\u9898\u76F4\u63A5\u663E\u793A\u8BE5\u6761\u76EE\u7684\u89E6\u53D1\u65B9\u5F0F\uFF1B\u5C55\u5F00\u540E\u53EF\u7F16\u8F91\u5173\u952E\u8BCD\u3001\u903B\u8F91\u3001\u5185\u5BB9\u3001\u4F4D\u7F6E\u548C\u6392\u5E8F\u3002",
+  "world.infoPendingIds": "\u5DF2\u9009\u62E9 {count} \u4E2A\u72EC\u7ACB\u4E16\u754C\u4FE1\u606F ID\uFF0C\u4F46\u72EC\u7ACB\u8D44\u6E90\u5E93/API \u5C1A\u672A\u63A5\u5165\uFF0C\u672C\u9636\u6BB5\u4E0D\u4F1A\u52A0\u8F7D\u8FD9\u4E9B ID\u3002",
+  "world.infoSaveNote": "\u4FDD\u5B58\u4F1A\u66F4\u65B0\u63D2\u4EF6\u4FDD\u5B58\u7684\u89D2\u8272\u5361\u526F\u672C\u53CA\u5176 JSON \u5BFC\u51FA\uFF1B\u4E3A\u907F\u514D\u7834\u574F\u7B7E\u540D\u6216\u56FE\u7247\u6570\u636E\uFF0C\u6700\u521D\u5BFC\u5165\u7684 PNG/JSON artifact \u4ECD\u4FDD\u6301\u4E0D\u53D8\u3002matcher \u4F1A\u5728\u9996\u6B21\u8BF7\u6C42\u7EC4\u88C5\u524D\u628A\u672C\u6B65\u9AA4 claimed \u8F93\u5165\u4E0E Session \u5386\u53F2\u7EC4\u5408\u626B\u63CF\uFF0C\u4E0D\u4F1A\u5411\u5386\u53F2\u5199\u5165\u526F\u672C\u3002",
+  "world.entry.untitled": "\u65B0\u6761\u76EE {id}",
+  "world.entry.fallback": "\u6761\u76EE {id}",
+  "world.entry.title": "\u6761\u76EE\u6807\u9898",
+  "world.entry.nameNote": "\u6761\u76EE\u540D\u79F0 / \u5907\u6CE8",
+  "world.entry.delete": "\u5220\u9664\u6761\u76EE",
+  "world.entry.constant": "\u5E38\u9A7B",
+  "world.entry.noKeywords": "\u65E0\u5173\u952E\u8BCD",
+  "world.entry.noPrimaryKeys": "\u65E0\u4E3B\u5173\u952E\u8BCD",
+  "world.entry.disabled": "\u5DF2\u7981\u7528",
+  "world.entry.useSecondary": "\u4F7F\u7528\u9644\u52A0\u5173\u952E\u8BCD",
+  "world.entry.caseSensitive": "\u533A\u5206\u5927\u5C0F\u5199",
+  "world.entry.wholeWord": "\u5168\u8BCD\u5339\u914D",
+  "world.entry.primaryKeys": "\u4E3B\u5173\u952E\u8BCD\uFF08\u652F\u6301\u4E2D\u6587\u3001\u82F1\u6587\u9017\u53F7\u5206\u9694\uFF09",
+  "world.entry.secondaryKeys": "\u9644\u52A0\u5173\u952E\u8BCD\uFF08\u652F\u6301\u4E2D\u6587\u3001\u82F1\u6587\u9017\u53F7\u5206\u9694\uFF09",
+  "world.entry.primaryKeysLines": "\u4E3B\u5173\u952E\u8BCD\uFF08\u6BCF\u884C\u4E00\u4E2A\uFF1B\u4EFB\u4E00\u547D\u4E2D\uFF09",
+  "world.entry.secondaryKeysLines": "\u9644\u52A0\u5173\u952E\u8BCD\uFF08\u6BCF\u884C\u4E00\u4E2A\uFF09",
+  "world.entry.secondaryLogic": "\u9644\u52A0\u5173\u952E\u8BCD\u903B\u8F91",
+  "world.entry.secondaryLogicShort": "Secondary logic",
+  "world.entry.body": "\u6B63\u6587",
+  "world.entry.content": "\u6761\u76EE\u5185\u5BB9\uFF08\u89E6\u53D1\u540E\u6CE8\u5165 system profile\uFF09",
+  "world.entry.position": "\u4F4D\u7F6E",
+  "world.entry.insertionPosition": "\u63D2\u5165\u4F4D\u7F6E",
+  "world.entry.order": "\u987A\u5E8F\uFF08\u9AD8\u503C\u4F18\u5148\uFF09",
+  "world.entry.sortWeight": "\u6392\u5E8F\u6743\u91CD",
+  "world.entry.probability": "\u6982\u7387\uFF080\u2013100\uFF09",
+  "world.entry.trigger": "\u5173\u952E\u8BCD\uFF1A{keys}",
+  "world.entry.triggerWithSecondary": "\u5173\u952E\u8BCD\uFF1A{keys} \xB7 {logic}\uFF1A{secondary}",
+  "world.logic.andAny": "AND ANY\uFF1A\u547D\u4E2D\u4EFB\u4E00",
+  "world.logic.andAll": "AND ALL\uFF1A\u547D\u4E2D\u5168\u90E8",
+  "world.logic.notAny": "NOT ANY\uFF1A\u4E0D\u80FD\u547D\u4E2D\u4EFB\u4E00",
+  "world.logic.notAll": "NOT ALL\uFF1A\u4E0D\u80FD\u5168\u90E8\u547D\u4E2D",
+  "world.position.beforeCharacter": "\u89D2\u8272\u5B9A\u4E49\u4E4B\u524D",
+  "world.position.afterCharacter": "\u89D2\u8272\u5B9A\u4E49\u4E4B\u540E",
+  "world.position.beforeAuthor": "\u4F5C\u8005\u6CE8\u91CA\u4E4B\u524D\uFF08\u8FD1\u4F3C\uFF09",
+  "world.position.afterAuthor": "\u4F5C\u8005\u6CE8\u91CA\u4E4B\u540E\uFF08\u8FD1\u4F3C\uFF09",
+  "world.position.atDepth": "\u6307\u5B9A\u6DF1\u5EA6\uFF08\u8FD1\u4F3C\uFF09",
+  "world.position.beforeExamples": "\u793A\u4F8B\u6D88\u606F\u4E4B\u524D\uFF08\u8FD1\u4F3C\uFF09",
+  "world.position.afterExamples": "\u793A\u4F8B\u6D88\u606F\u4E4B\u540E\uFF08\u8FD1\u4F3C\uFF09",
+  "world.position.outlet": "Outlet\uFF08\u5F53\u524D\u4E0D\u6CE8\u5165\uFF09",
+  "world.currentSession": "\u5F53\u524D\u4F1A\u8BDD\uFF1A{session}\u3002\u53EF\u7ED1\u5B9A\u96F6\u672C\u3001\u4E00\u672C\u6216\u591A\u672C\u72EC\u7ACB\u4E16\u754C\u4E66\uFF1B\u7ED1\u5B9A\u987A\u5E8F\u4FDD\u6301\u7A33\u5B9A\u3002",
+  "world.catalogItem": "{name}\uFF08{count} \u6761\uFF09",
+  "world.documentMeta": "{count} \u6761 \xB7 \u672A\u77E5\u5B57\u6BB5\u5728\u4FDD\u5B58\u548C\u5BFC\u51FA\u65F6\u7A33\u5B9A\u4FDD\u7559",
+  "world.user.title": "\u7528\u6237\u7ED1\u5B9A\u7684\u4E16\u754C\u4E66",
+  "world.user.current": "\u5F53\u524D\u7528\u6237\uFF1A{name}",
+  "world.user.none": "\u5F53\u524D\u4F1A\u8BDD\u672A\u7ED1\u5B9A\u7528\u6237\uFF0C\u56E0\u6B64\u6CA1\u6709\u7528\u6237\u6765\u6E90\u7684\u4E16\u754C\u4E66\u3002",
+  "world.user.empty": "\u5F53\u524D\u7528\u6237\u6CA1\u6709\u7ED1\u5B9A\u72EC\u7ACB\u4E16\u754C\u4E66\u3002",
+  "world.user.libraryEmpty": "\u72EC\u7ACB\u4E16\u754C\u4E66\u8D44\u6E90\u5E93\u4E3A\u7A7A\u3002\u8BF7\u5148\u521B\u5EFA\u6216\u5BFC\u5165\u4E16\u754C\u4E66\u3002",
+  "world.user.unsaved": "\u7528\u6237\u4E16\u754C\u4E66\u7ED1\u5B9A\u6709\u672A\u4FDD\u5B58\u4FEE\u6539\uFF1B\u5F53\u524D\u52FE\u9009\u5C1A\u672A\u5E94\u7528\u3002",
+  "world.user.saved": "\u5F53\u524D\u663E\u793A\u7684\u7528\u6237\u4E16\u754C\u4E66\u7ED1\u5B9A\u5DF2\u4FDD\u5B58\u5E76\u5E94\u7528\u3002",
+  "world.user.order": "\u6709\u6548\u7EC4\u5408\u987A\u5E8F\u4E3A\uFF1A\u5F53\u524D\u4F1A\u8BDD\u663E\u5F0F\u4E16\u754C\u4E66\u5728\u524D\uFF0C\u7528\u6237\u7ED1\u5B9A\u4E16\u754C\u4E66\u968F\u540E\uFF1B\u91CD\u590D\u8D44\u6E90\u53EA\u6267\u884C\u4E00\u6B21\u3002",
+  "world.user.duplicate": "\u4E0E\u4F1A\u8BDD\u7ED1\u5B9A\u91CD\u590D\uFF0C\u5DF2\u53BB\u91CD",
+  "world.user.appended": "\u7531\u7528\u6237\u7ED1\u5B9A\u8FFD\u52A0",
+  "world.user.pendingAdd": "\u5F85\u6DFB\u52A0",
+  "world.user.pendingRemove": "\u5F85\u79FB\u9664",
+  "world.user.save": "\u4FDD\u5B58\u7528\u6237\u7ED1\u5B9A\uFF08\u672A\u4FDD\u5B58\uFF09",
+  "world.user.saveApplied": "\u7528\u6237\u7ED1\u5B9A\u5DF2\u4FDD\u5B58",
+  "world.user.clear": "\u6E05\u7A7A\u5F85\u4FDD\u5B58\u9009\u62E9",
+  "world.user.saveSuccess": "\u7528\u6237\u7ED1\u5B9A\u7684\u4E16\u754C\u4E66\u5DF2\u4FDD\u5B58\uFF1B\u540E\u7EED\u8BF7\u6C42\u5C06\u4F7F\u7528\u65B0\u7EC4\u5408\u3002",
+  "world.user.editContent": "\u7F16\u8F91\u5185\u5BB9",
+  "world.user.editHint": "\u8FD9\u91CC\u4E0E\u7528\u6237\u9762\u677F\u7F16\u8F91\u540C\u4E00\u4EFD\u7ED1\u5B9A\u5173\u7CFB\uFF1B\u4EFB\u4E00\u5904\u4FDD\u5B58\u540E\uFF0C\u53E6\u4E00\u5904\u4F1A\u540C\u6B65\u5237\u65B0\u3002",
+  "world.user.error.noUser": "\u5F53\u524D\u4F1A\u8BDD\u6CA1\u6709\u53EF\u7F16\u8F91\u4E16\u754C\u4E66\u5173\u7CFB\u7684\u7ED1\u5B9A\u7528\u6237",
+  "world.embeddedMeta": "{count} \u6761\u3002\u5B83\u4E0E\u72EC\u7ACB\u4E66\u5171\u7528 matcher/loader\uFF1B\u5220\u9664\u72EC\u7ACB\u4E66\u4E0D\u4F1A\u4FEE\u6539\u6216\u89E3\u7ED1\u89D2\u8272\u5361\u5185\u5D4C\u4E66\u3002",
+  "world.embeddedEmpty": "\u5F53\u524D\u4F1A\u8BDD\u6CA1\u6709\u89D2\u8272\u5361\u7ED1\u5B9A\u7684\u5185\u5D4C\u4E16\u754C\u4E66\u3002\u7ED1\u5B9A\u542B character_book \u7684\u89D2\u8272\u5361\u540E\u4F1A\u663E\u793A\u5728\u8FD9\u91CC\u3002",
+  "world.diagnostics": "\u8FD0\u884C\u8BCA\u65AD\uFF08{count}\uFF09",
+  "world.confirmDelete": "\u5220\u9664\u72EC\u7ACB\u4E16\u754C\u4E66\u201C{name}\u201D\uFF1F\u89D2\u8272\u5361\u5185\u5D4C\u4E16\u754C\u4E66\u4E0D\u4F1A\u53D7\u5230\u5F71\u54CD\u3002",
+  "world.confirmDiscardChanges": "\u653E\u5F03\u5C1A\u672A\u4FDD\u5B58\u7684\u4FEE\u6539\uFF1F",
+  "world.confirmDeleteEntry": "\u5220\u9664\u8FD9\u4E2A\u4E16\u754C\u4E66\u6761\u76EE\uFF1F\u4FDD\u5B58\u540E\u751F\u6548\u3002",
+  "world.confirmDeleteEmbeddedEntry": "\u5220\u9664\u8FD9\u4E2A\u89D2\u8272\u5361\u5185\u5D4C\u4E16\u754C\u4E66\u6761\u76EE\uFF1F\u4FDD\u5B58\u540E\u751F\u6548\u3002",
+  "world.confirmDeleteInfoEntry": "\u5220\u9664\u8FD9\u4E2A\u4E16\u754C\u4FE1\u606F\u6761\u76EE\uFF1F\u4FDD\u5B58\u540E\u624D\u4F1A\u5199\u5165\u89D2\u8272\u5361\u526F\u672C\u3002",
+  "world.confirmReloadInfo": "\u653E\u5F03\u5C1A\u672A\u4FDD\u5B58\u7684\u6761\u76EE\u4FEE\u6539\u5E76\u91CD\u65B0\u8F7D\u5165\uFF1F",
+  "world.status.loaded": "\u4E16\u754C\u4E66\u8D44\u6E90\u5E93\u5DF2\u52A0\u8F7D",
+  "world.status.refreshed": "\u4E16\u754C\u4E66\u8D44\u6E90\u5E93\u5DF2\u5237\u65B0",
+  "world.status.detailsLoaded": "\u4E16\u754C\u4E66\u8BE6\u60C5\u5DF2\u52A0\u8F7D",
+  "world.status.created": "\u5DF2\u521B\u5EFA\u72EC\u7ACB\u4E16\u754C\u4E66\uFF1B\u5C1A\u672A\u7ED1\u5B9A\u5F53\u524D\u4F1A\u8BDD",
+  "world.status.imported": "\u4E16\u754C\u4E66\u5DF2\u5BFC\u5165\uFF1B\u5C1A\u672A\u7ED1\u5B9A\u5F53\u524D\u4F1A\u8BDD",
+  "world.status.saved": "\u4E16\u754C\u4E66\u4FEE\u6539\u5DF2\u6301\u4E45\u5316\uFF0C\u540E\u7EED\u8BF7\u6C42\u5C06\u4F7F\u7528\u65B0\u5185\u5BB9",
+  "world.status.bindingSaved": "\u5F53\u524D\u4F1A\u8BDD\u7684\u4E16\u754C\u4E66\u7ED1\u5B9A\u5DF2\u4FDD\u5B58",
+  "world.status.deleted": "\u72EC\u7ACB\u4E16\u754C\u4E66\u5DF2\u5220\u9664\uFF0C\u76F8\u5173\u4F1A\u8BDD\u7ED1\u5B9A\u5DF2\u6E05\u7406",
+  "world.status.embeddedSaved": "\u89D2\u8272\u5361\u5185\u5D4C\u4E16\u754C\u4E66\u5DF2\u4FDD\u5B58\uFF0C\u540E\u7EED\u8BF7\u6C42\u5C06\u4F7F\u7528\u65B0\u5185\u5BB9",
+  "world.error.needSession": "\u8BF7\u5148\u521B\u5EFA\u6216\u6253\u5F00\u4E00\u4E2A\u4F1A\u8BDD\u518D\u7ED1\u5B9A\u4E16\u754C\u4E66",
+  "user.title": "Tavern \u7528\u6237",
+  "user.create": "\u65B0\u5EFA\u7528\u6237",
+  "user.browse": "\u6D4F\u89C8\u7528\u6237\u8D44\u6E90",
+  "user.libraryEmpty": "\u7528\u6237\u8D44\u6E90\u5E93\u4E3A\u7A7A",
+  "user.sessionBinding": "\u5F53\u524D\u4F1A\u8BDD\uFF1A{session}\uFF1B\u7ED1\u5B9A\uFF1A{name}",
+  "user.dirty": "\u6709\u672A\u4FDD\u5B58\u4FEE\u6539\uFF1A{parts}\u3002",
+  "user.dirty.name": "\u540D\u5B57/\u63CF\u8FF0",
+  "user.dirty.binding": "\u7528\u6237\u4E16\u754C\u4E66\u7ED1\u5B9A",
+  "user.savedNote": "\u5F53\u524D\u663E\u793A\u7684\u7528\u6237\u8D44\u6E90\u548C\u4E16\u754C\u4E66\u7ED1\u5B9A\u5747\u5DF2\u4FDD\u5B58\u3002",
+  "user.loading": "\u6B63\u5728\u52A0\u8F7D\u7528\u6237\u8D44\u6E90\u2026",
+  "user.emptyHint": "\u521B\u5EFA\u4E00\u4E2A\u53EA\u542B\u540D\u5B57\u548C\u63CF\u8FF0\u7684\u7528\u6237\u8D44\u6E90\u3002",
+  "user.name": "\u540D\u5B57\uFF08\u7528\u4E8E {macro} \u5B8F\uFF09",
+  "user.description": "\u63CF\u8FF0\uFF08\u8FDB\u5165 personaDescription marker\uFF1B\u7F3A marker \u65F6\u7531 loader \u7A33\u5B9A\u964D\u7EA7\uFF09",
+  "user.saveResource": "\u4FDD\u5B58\u8D44\u6E90\uFF08\u672A\u4FDD\u5B58\uFF09",
+  "user.resourceSaved": "\u8D44\u6E90\u5DF2\u4FDD\u5B58",
+  "user.saveFirst": "\u8BF7\u5148\u4FDD\u5B58\u4FEE\u6539",
+  "user.refreshBinding": "\u5237\u65B0\u4F1A\u8BDD\u7ED1\u5B9A",
+  "user.bind": "\u7ED1\u5B9A\u5230\u5F53\u524D\u4F1A\u8BDD",
+  "user.worldBooksTitle": "\u7528\u6237\u7ED1\u5B9A\u7684\u72EC\u7ACB\u4E16\u754C\u4E66",
+  "user.worldBooksHint": "\u9009\u62E9\u8BE5\u7528\u6237\u65F6\uFF0Cloader \u4F1A\u81EA\u52A8\u7EC4\u5408\u8FD9\u91CC\u7684\u4E16\u754C\u4E66\u4E0E\u5F53\u524D\u4F1A\u8BDD\u663E\u5F0F\u9009\u62E9\u7684\u4E16\u754C\u4E66\uFF1B\u91CD\u590D\u7684\u540C\u4E00\u672C\u4E66\u53EA\u6267\u884C\u4E00\u6B21\u3002",
+  "user.worldBooksLoading": "\u6B63\u5728\u52A0\u8F7D\u72EC\u7ACB\u4E16\u754C\u4E66\u8D44\u6E90\u5E93\u2026",
+  "user.worldBooksEmpty": "\u72EC\u7ACB\u4E16\u754C\u4E66\u8D44\u6E90\u5E93\u4E3A\u7A7A\u3002\u8BF7\u5148\u5728\u4E16\u754C\u4E66\u9762\u677F\u521B\u5EFA\u6216\u5BFC\u5165\u3002",
+  "user.saveWorldBooks": "\u4FDD\u5B58\u4E16\u754C\u4E66\u7ED1\u5B9A\uFF08\u672A\u4FDD\u5B58\uFF09",
+  "user.worldBooksSaved": "\u4E16\u754C\u4E66\u7ED1\u5B9A\u5DF2\u4FDD\u5B58",
+  "user.clearPending": "\u6E05\u7A7A\u5F85\u4FDD\u5B58\u9009\u62E9",
+  "user.unbind": "\u89E3\u9664\u5F53\u524D\u4F1A\u8BDD\u7ED1\u5B9A",
+  "user.identityNote": "\u7528\u6237\u8D44\u6E90\u6B63\u6587\u4ECD\u4E25\u683C\u53EA\u6709\u540D\u5B57\u548C\u63CF\u8FF0\uFF1B\u4E16\u754C\u4E66\u5173\u7CFB\u4FDD\u5B58\u5728 loader \u7684\u72EC\u7ACB\u7ED3\u6784\u5316\u7B56\u7565\u4E2D\u3002\u7528\u6237\u8D44\u6E90\u4E0D\u5305\u542B\u5934\u50CF\uFF0C\u4E5F\u4E0D\u4F1A\u8986\u76D6 DSH Agent \u8EAB\u4EFD\u3002",
+  "user.delete": "\u5220\u9664\u7528\u6237",
+  "user.defaultName": "\u65B0\u7528\u6237",
+  "user.confirmDelete": "\u5220\u9664\u7528\u6237\u201C{name}\u201D\uFF1F\u6240\u6709\u4F1A\u8BDD\u4E2D\u7684\u7528\u6237\u9009\u62E9\u548C\u8BE5\u7528\u6237\u7684\u4E16\u754C\u4E66\u5173\u7CFB\u90FD\u4F1A\u6E05\u9664\u3002",
+  "user.confirmDiscardForCreate": "\u5F53\u524D\u7528\u6237\u8D44\u6E90\u6216\u4E16\u754C\u4E66\u7ED1\u5B9A\u6709\u672A\u4FDD\u5B58\u4FEE\u6539\u3002\u653E\u5F03\u4FEE\u6539\u5E76\u65B0\u5EFA\u7528\u6237\u5417\uFF1F",
+  "user.confirmDiscardForSwitch": "\u5F53\u524D\u7528\u6237\u8D44\u6E90\u6216\u4E16\u754C\u4E66\u7ED1\u5B9A\u6709\u672A\u4FDD\u5B58\u4FEE\u6539\u3002\u653E\u5F03\u4FEE\u6539\u5E76\u5207\u6362\u5417\uFF1F",
+  "user.confirmHistoricalSwitch": "\u5F53\u524D\u4F1A\u8BDD\u5DF2\u6709\u5386\u53F2\u3002\u5207\u6362\u7528\u6237\u53EA\u5F71\u54CD\u540E\u7EED\u8BF7\u6C42\uFF0C\u4E0D\u4F1A\u91CD\u5199\u5DF2\u6709\u6D88\u606F\uFF1B\u7EE7\u7EED\u5417\uFF1F",
+  "user.confirmCloseDirty": "\u5F53\u524D\u7528\u6237\u8D44\u6E90\u6216\u4E16\u754C\u4E66\u7ED1\u5B9A\u6709\u672A\u4FDD\u5B58\u4FEE\u6539\u3002\u4ECD\u7136\u5173\u95ED\u5417\uFF1F",
+  "user.confirmDiscardRefresh": "\u653E\u5F03\u5C1A\u672A\u4FDD\u5B58\u7684\u7528\u6237\u8D44\u6E90\u6216\u4E16\u754C\u4E66\u7ED1\u5B9A\u4FEE\u6539\uFF1F",
+  "user.status.loaded": "\u7528\u6237\u8D44\u6E90\u5DF2\u52A0\u8F7D",
+  "user.status.refreshed": "\u7528\u6237\u8D44\u6E90\u5DF2\u5237\u65B0",
+  "user.status.created": "\u7528\u6237\u8D44\u6E90\u5DF2\u521B\u5EFA\uFF1B\u4FDD\u5B58\u540D\u5B57\u548C\u63CF\u8FF0\u540E\u518D\u7ED1\u5B9A",
+  "user.status.saved": "\u540D\u5B57\u548C\u63CF\u8FF0\u5DF2\u4FDD\u5B58\uFF1B\u5DF2\u7ED1\u5B9A\u4F1A\u8BDD\u7684\u4E0B\u4E00\u6B21\u8BF7\u6C42\u4F1A\u7ACB\u5373\u4F7F\u7528\u65B0\u5185\u5BB9",
+  "user.status.bound": "\u7528\u6237\u5DF2\u7ED1\u5B9A\uFF1B\u5F53\u524D\u4F1A\u8BDD\u7684\u4E0B\u4E00\u6B21\u8BF7\u6C42\u4F1A\u4F7F\u7528\u8BE5\u540D\u5B57\u548C\u63CF\u8FF0",
+  "user.status.unbound": "\u5F53\u524D\u4F1A\u8BDD\u5DF2\u89E3\u9664\u7528\u6237\u7ED1\u5B9A",
+  "user.status.deleted": "\u7528\u6237\u5DF2\u5220\u9664\uFF0C\u76F8\u5173\u4F1A\u8BDD\u7ED1\u5B9A\u5DF2\u6E05\u9664",
+  "user.status.skippedRefresh": "\u68C0\u6D4B\u5230\u5176\u4ED6 Tavern \u8D44\u6E90\u53D8\u5316\uFF1B\u4E3A\u4FDD\u7559\u672C\u9762\u677F\u672A\u4FDD\u5B58\u4FEE\u6539\uFF0C\u672A\u81EA\u52A8\u5237\u65B0\u3002",
+  "user.status.worldBooksSaved": "\u7528\u6237\u7ED1\u5B9A\u7684\u4E16\u754C\u4E66\u5DF2\u4FDD\u5B58\uFF1B\u9009\u62E9\u8BE5\u7528\u6237\u7684\u4F1A\u8BDD\u4F1A\u5728\u4E0B\u4E00\u6B21\u7EC4\u88C5\u65F6\u81EA\u52A8\u4F7F\u7528",
+  "user.status.userLoaded": "\u7528\u6237\u8D44\u6E90\u548C\u4E16\u754C\u4E66\u7ED1\u5B9A\u5DF2\u52A0\u8F7D",
+  "user.error.needSession": "\u8BF7\u5148\u521B\u5EFA\u6216\u6253\u5F00\u4E00\u4E2A\u4F1A\u8BDD\u5E76\u9009\u62E9\u7528\u6237\u8D44\u6E90",
+  "user.error.noSessionToUnbind": "\u5F53\u524D\u6CA1\u6709\u53EF\u89E3\u7ED1\u7684\u4F1A\u8BDD",
+  "template.title": "\u65B0\u4F1A\u8BDD\u4E0E\u914D\u7F6E\u6A21\u677F",
+  "template.startCurrent": "\u7EF4\u6301\u5F53\u524D Tavern \u8BBE\u7F6E\u65B0\u5F00\u5BF9\u8BDD",
+  "template.inheritNote": "\u53EA\u7EE7\u627F preset\u3001\u89D2\u8272\u5361\u4E0E greeting/\u5F00\u5173\u3001\u7528\u6237\u548C\u72EC\u7ACB\u4E16\u754C\u4E66\u9009\u62E9\u3002DSH \u5386\u53F2\u3001Tavern Trace\u3001Inbox\u3001\u8FD0\u884C\u4E2D turn/step \u548C\u5176\u4ED6\u8FD0\u884C\u6001\u4E0D\u4F1A\u590D\u5236\u3002",
+  "template.noWorkspace": "\u6CA1\u6709\u53EF\u7528\u7684 DSH \u76EE\u6807\u5DE5\u4F5C\u533A\u3002\u8BF7\u5148\u5728 DSH \u4FA7\u680F\u4E2D\u52A0\u5165\u6216\u6253\u5F00\u5DE5\u4F5C\u533A\u3002",
+  "template.listTitle": "\u914D\u7F6E\u6A21\u677F\uFF08{count}\uFF09",
+  "template.selected": "\u5DF2\u9009\u62E9\u6A21\u677F",
+  "template.noneSelected": "\u672A\u9009\u62E9\u6A21\u677F",
+  "template.name": "\u6A21\u677F\u540D\u79F0",
+  "template.createFromCurrent": "\u7531\u5F53\u524D\u8BBE\u7F6E\u521B\u5EFA",
+  "template.saveNameOnly": "\u4EC5\u4FDD\u5B58\u540D\u79F0",
+  "template.updateFromCurrent": "\u7528\u5F53\u524D\u8BBE\u7F6E\u66F4\u65B0",
+  "template.delete": "\u5220\u9664\u6A21\u677F",
+  "template.unusable": "\u8BE5\u6A21\u677F\u6682\u4E0D\u53EF\u7528\u4E8E\u521B\u5EFA\uFF1A",
+  "template.startFromTemplate": "\u6839\u636E\u6240\u9009\u6A21\u677F\u65B0\u5F00\u5E72\u51C0\u5BF9\u8BDD",
+  "template.ready": "\u6A21\u677F\u4E0E\u65B0\u4F1A\u8BDD\u64CD\u4F5C\u5DF2\u5C31\u7EEA\u3002",
+  "template.blankSessionNote": "DSH \u53EF\u80FD\u590D\u7528\u540C\u5DE5\u4F5C\u533A\u4E2D\u5DF2\u6709\u7684\u771F\u5B9E blank session\uFF1B\u8FD9\u662F\u5176\u516C\u5F00 New Session \u8BED\u4E49\u3002\u63D2\u4EF6\u4F1A\u5728\u5BFC\u822A\u524D\u539F\u5B50\u66FF\u6362\u8BE5 blank session \u7684 Tavern \u9009\u62E9\u3002",
+  "template.preview.title": "\u4FDD\u5B58\u7684 Tavern \u914D\u7F6E",
+  "template.preview.worldBooks": "\u72EC\u7ACB\u4E16\u754C\u4E66\uFF08\u6309\u7ED1\u5B9A\u987A\u5E8F\uFF09",
+  "template.preview.greeting": "\u5F00\u573A\u5E8F\u53F7\uFF1A{value}",
+  "template.preview.systemPrompt": "\u5361\u5185 system_prompt\uFF1A{value}",
+  "template.preview.postHistory": "post_history_instructions\uFF1A{value}",
+  "template.defaultName": "\u65B0\u914D\u7F6E\u6A21\u677F",
+  "template.currentSettingsReminder": "\u6A21\u677F\u53EA\u80FD\u7528\u5F53\u524D\u4F1A\u8BDD\u7684 Tavern \u8BBE\u7F6E\u521B\u5EFA\u6216\u66F4\u65B0\u3002\u8BF7\u5728\u60AC\u6D6E\u7403\u7684\u9884\u8BBE\u3001\u89D2\u8272\u5361\u3001\u4E16\u754C\u4E66\u548C\u7528\u6237\u9762\u677F\u4E2D\u67E5\u770B\u6216\u4FEE\u6539\u5F53\u524D\u914D\u7F6E\uFF0C\u518D\u56DE\u5230\u8FD9\u91CC\u4FDD\u5B58\u3002",
+  "template.confirmDelete": "\u5220\u9664\u914D\u7F6E\u6A21\u677F\u201C{name}\u201D\uFF1F\u8FD9\u4E0D\u4F1A\u5220\u9664\u4EFB\u4F55 DSH \u4F1A\u8BDD\u3002",
+  "template.status.selected": "\u6A21\u677F\u9009\u62E9\u5DF2\u66F4\u65B0",
+  "template.status.created": "\u5DF2\u521B\u5EFA\u6A21\u677F\uFF1A{name}",
+  "template.status.renamed": "\u5DF2\u91CD\u547D\u540D\u6A21\u677F\uFF1A{name}",
+  "template.status.updated": "\u5DF2\u7528\u5F53\u524D\u8BBE\u7F6E\u66F4\u65B0\u6A21\u677F\uFF1A{name}",
+  "template.status.deleted": "\u6A21\u677F\u5DF2\u5220\u9664",
+  "template.status.switched": "\u5DF2\u5207\u6362\u5230\u5E72\u51C0\u4F1A\u8BDD\uFF1A{id}",
+  "template.error.needSessionToSave": "\u8BF7\u5148\u6253\u5F00\u4E00\u4E2A\u4F1A\u8BDD\uFF0C\u518D\u4FDD\u5B58\u5F53\u524D Tavern \u8BBE\u7F6E",
+  "template.error.needTemplate": "\u8BF7\u5148\u9009\u62E9\u4E00\u4E2A\u6A21\u677F",
+  "template.error.needSessionAndTemplate": "\u8BF7\u5148\u6253\u5F00\u4F1A\u8BDD\u5E76\u9009\u62E9\u6A21\u677F",
+  "template.error.needSourceSession": "\u8BF7\u5148\u6253\u5F00\u4E00\u4E2A\u6765\u6E90\u4F1A\u8BDD",
+  "template.error.needWorkspace": "\u5F53\u524D\u4F1A\u8BDD\u4E0D\u5C5E\u4E8E DSH \u5DE5\u4F5C\u533A\uFF1B\u8BF7\u5148\u628A\u4F1A\u8BDD\u52A0\u5165\u5DE5\u4F5C\u533A",
+  "trace.title": "Tavern Trace",
+  "trace.intro": "\u4E0E Conversation / Trajectory \u5E76\u5217\u7684 loader \u5BA1\u8BA1\u89C6\u56FE\u3002DSH request/header \u59CB\u7EC8\u662F\u6700\u7EC8\u53D1\u9001 system\u3001tools \u4E0E\u751F\u6548 config \u7684\u6743\u5A01\u3002",
+  "trace.reading": "\u6B63\u5728\u8BFB\u53D6\u5BA1\u8BA1\u8BB0\u5F55\u2026",
+  "trace.empty": "\u6B64\u4F1A\u8BDD\u8FD8\u6CA1\u6709 Tavern \u8BF7\u6C42\u5BA1\u8BA1\u8BB0\u5F55\u3002\u53D1\u9001\u4E0B\u4E00\u6761\u6D88\u606F\u540E\u518D\u67E5\u770B\u3002",
+  "trace.privacy": "\u9690\u79C1\u8FB9\u754C\uFF1A\u8FD9\u91CC\u53EA\u4FDD\u5B58\u8D44\u6E90\u6458\u8981\u3001\u914D\u7F6E/\u547D\u4E2D\u5173\u952E\u8BCD\u3001\u51B3\u7B56\u539F\u56E0\u3001\u4F4D\u7F6E\u3001\u9884\u7B97\u548C SHA-256 \u6458\u8981\uFF1B\u4E0D\u4FDD\u5B58 preset/\u89D2\u8272/user/\u4E16\u754C\u4E66\u6B63\u6587\u3001\u5B8C\u6574 system\u3001\u804A\u5929\u5386\u53F2\u3001header \u5185\u5BB9\u6216 tool payload\u3002",
+  "trace.unused": "\u672A\u4F7F\u7528",
+  "trace.noSource": "\u672C\u8F6E\u6CA1\u6709\u53EF\u5BA1\u8BA1\u7684\u4E16\u754C\u4E66\u5339\u914D\u6765\u6E90\u3002",
+  "trace.assembly": "\u7EC4\u5408\u4E0E\u63D2\u5165",
+  "trace.assemblyMeta": "{section} \xB7 order {order} \xB7 {mode} \xB7 {characters} characters \xB7 call config: {config}",
+  "trace.worldBookDecisions": "\u4E16\u754C\u4E66\u5339\u914D\u51B3\u7B56",
+  "trace.historyOnly": "\u5339\u914D\u57FA\u4E8E\u672C\u6B65\u9AA4 system assembly \u5F53\u65F6\u53EF\u89C1\u7684\u6301\u4E45\u5316\u4F1A\u8BDD\u5386\u53F2\uFF1B\u6CA1\u6709\u91CD\u590D\u9644\u52A0 pending \u8F93\u5165\u3002",
+  "trace.waitingHeader": "\u7B49\u5F85\u6743\u5A01 header",
+  "trace.pendingHeader": "\u5C1A\u672A\u89C2\u5BDF\u5230\u53EF\u5BF9\u9F50\u7684 DSH request/header\uFF1B\u8FD9\u4E0D\u4EE3\u8868\u8BF7\u6C42\u5DF2\u7ECF\u53D1\u9001\u3002\u5237\u65B0\u540E\u4ECD\u4F1A\u4FDD\u7559\u8BE5\u5F85\u786E\u8BA4\u8BB0\u5F55\u3002",
+  "trace.round": "\u8F6E\u6B21 {turn} \xB7 \u6B65\u9AA4 {step}",
+  "trace.roundAttempt": "\u8F6E\u6B21 {turn} \xB7 \u6B65\u9AA4 {step} \xB7 \u5C1D\u8BD5 {attempt}",
+  "trace.resource.preset": "Preset",
+  "trace.resource.character": "Character",
+  "trace.resource.user": "User",
+  "trace.inserted": "\u5DF2\u63D2\u5165",
+  "trace.rejected": "\u5DF2\u62D2\u7EDD",
+  "trace.noConfiguredKeywords": "\u65E0\u914D\u7F6E\u5173\u952E\u8BCD",
+  "trace.noKeywordMatches": "\u65E0\u5173\u952E\u8BCD\u547D\u4E2D",
+  "trace.truncated": "\uFF1B\u626B\u63CF\u8F93\u5165\u5DF2\u6309\u4E0A\u9650\u622A\u65AD",
+  "trace.reusedHeader": "\uFF08\u6CBF\u7528\u4E0A\u4E00\u4EFD header\uFF09",
+  "trace.profile.missing": "\u672A\u627E\u5230",
+  "trace.profile.consistent": "\u4E00\u81F4",
+  "trace.profile.absent": "\u672C\u8F6E\u65E0 profile",
+  "trace.config.inconsistent": "\u4E0D\u4E00\u81F4",
+  "trace.config.consistent": "\u4E00\u81F4\u6216\u65E0\u5B57\u6BB5",
+  "trace.position.approximate": "\uFF08\u8FD1\u4F3C\uFF09",
+  "trace.position.notInserted": " \u2192 \u672A\u63D2\u5165",
+  "trace.position.applied": " \u2192 {position}{approximate}",
+  "trace.storage.total": "\u603B\u8BA1\u6700\u591A {value}",
+  "trace.storage.perSession": "\u6BCF\u4F1A\u8BDD\u6700\u591A {value} \u6761",
+  "trace.storage.sessions": "\u6700\u591A {value} \u4E2A\u4F1A\u8BDD",
+  "trace.storage.perRecord": "\u5355\u6761\u6700\u591A {value}",
+  "trace.storage.summary": "\u63D2\u4EF6\u6709\u754C\u5B58\u50A8\uFF1A{limits}\uFF1B\u5237\u65B0\u6216\u5BBF\u4E3B\u91CD\u542F\u540E\u53EF\u6062\u590D\u3002",
+  "trace.keywords.primary": "\u4E3B\uFF1A{values}",
+  "trace.keywords.secondary": "\u9644\u52A0\uFF1A{values}",
+  "trace.keywords.configured": "\u914D\u7F6E\u5173\u952E\u8BCD\uFF1A{value}",
+  "trace.keywords.matched": "\u672C\u8F6E\u547D\u4E2D\uFF1A{value}",
+  "trace.bookBudget": "\u9884\u7B97\uFF1A{used}{limit} tokens \xB7 {decisionCount}",
+  "trace.decisionCount.one": "{count} \u6761\u51B3\u7B56",
+  "trace.decisionCount.other": "{count} \u6761\u51B3\u7B56",
+  "trace.decision.group": "\u7EC4 {name}{detail}",
+  "trace.decision.probability": "\u6982\u7387 {value}%{roll}",
+  "trace.decision.budget": "\u9884\u7B97 {value} tokens",
+  "trace.decision.position": "\u4F4D\u7F6E {requested}{result}",
+  "trace.recordAligned": "\u8BE5\u8BB0\u5F55\u5DF2\u5BF9\u9F50 DSH request/header #{sequence}{reused}\u3002Tavern profile \u6821\u9A8C\uFF1A{profile}\uFF1B\u91C7\u6837\u5B57\u6BB5\uFF1A{config}\u3002",
+  "trace.activationPending": "\u5339\u914D\u57FA\u4E8E\u672C\u6B65\u9AA4 assembly \u7684\u4E34\u65F6\u6FC0\u6D3B\u4E0A\u4E0B\u6587\uFF1A\u6301\u4E45\u5386\u53F2 + {included}/{pending} \u6761\u672C\u8F6E claimed \u8F93\u5165\uFF1B\u4E0D\u4FDD\u5B58\u8F93\u5165\u6B63\u6587{truncated}\u3002",
+  "trace.diagnostics": "\u8BCA\u65AD\uFF08{count}\uFF09",
+  "trace.reason.constant": "\u5E38\u9A7B\u6761\u76EE",
+  "trace.reason.primary-key-match": "\u4E3B\u5173\u952E\u8BCD\u547D\u4E2D",
+  "trace.reason.primary-key-miss": "\u4E3B\u5173\u952E\u8BCD\u672A\u547D\u4E2D",
+  "trace.reason.secondary-and_any-match": "\u9644\u52A0\u5173\u952E\u8BCD\u4EFB\u4E00\u547D\u4E2D",
+  "trace.reason.secondary-and_any-miss": "\u9644\u52A0\u5173\u952E\u8BCD\u5747\u672A\u547D\u4E2D",
+  "trace.reason.secondary-and_all-match": "\u9644\u52A0\u5173\u952E\u8BCD\u5168\u90E8\u547D\u4E2D",
+  "trace.reason.secondary-and_all-miss": "\u9644\u52A0\u5173\u952E\u8BCD\u672A\u5168\u90E8\u547D\u4E2D",
+  "trace.reason.secondary-not_any-match": "\u9644\u52A0\u5173\u952E\u8BCD\u6392\u9664\u6761\u4EF6\u901A\u8FC7",
+  "trace.reason.secondary-not_any-miss": "\u9644\u52A0\u5173\u952E\u8BCD\u89E6\u53D1\u6392\u9664",
+  "trace.reason.secondary-not_all-match": "\u9644\u52A0\u5173\u952E\u8BCD\u975E\u5168\u4E2D\u6761\u4EF6\u901A\u8FC7",
+  "trace.reason.secondary-not_all-miss": "\u9644\u52A0\u5173\u952E\u8BCD\u5168\u4E2D\u800C\u6392\u9664",
+  "trace.reason.disabled": "\u6761\u76EE\u5DF2\u7981\u7528",
+  "trace.reason.external-vector-match-required": "\u9700\u8981\u5916\u90E8\u5411\u91CF\u5339\u914D",
+  "trace.reason.inclusion-group-loser": "\u4E92\u65A5\u7EC4\u672A\u80DC\u51FA",
+  "trace.reason.probability-failed": "\u6982\u7387\u68C0\u67E5\u62D2\u7EDD",
+  "trace.reason.budget-exceeded": "\u8D85\u51FA token \u9884\u7B97",
+  "trace.reason.empty-content": "\u6B63\u6587\u4E3A\u7A7A\uFF0C\u672A\u63D2\u5165",
+  "trace.reason.outlet-unsupported": "Outlet \u65E0\u7A33\u5B9A\u63D2\u5165 seam"
+});
+
+// packages/client/src/i18n/catalogs/en.js
+var en_default = Object.freeze({
+  "common.unavailable": "Interface text unavailable",
+  "common.loading": "Loading\u2026",
+  "common.none": "None",
+  "common.unknown": "Unknown",
+  "common.unknownAuthor": "Unknown author",
+  "common.refresh": "Refresh",
+  "common.delete": "Delete",
+  "common.save": "Save",
+  "common.saveChanges": "Save changes",
+  "common.saved": "Saved",
+  "common.reload": "Reload",
+  "common.working": "Working\u2026",
+  "common.enabled": "Enabled",
+  "common.disabled": "Disabled",
+  "common.bound": "Bound",
+  "common.unbound": "Not bound",
+  "common.planned": "Planned",
+  "common.listSeparator": ", ",
+  "common.name": "Name",
+  "common.role": "Role",
+  "common.content": "Content",
+  "common.exportJson": "Export JSON",
+  "common.importJson": "Import JSON",
+  "common.enable": "Enabled",
+  "panel.close": "Close the {title} sidebar",
+  "nav.preset": "Preset",
+  "nav.character": "Character card",
+  "nav.worldBook": "World book",
+  "nav.user": "User",
+  "nav.sessionTemplate": "New session",
+  "nav.settings": "UI settings",
+  "nav.preset.empty": "No preset selected",
+  "nav.character.empty": "No character bound",
+  "nav.worldBook.empty": "No world book bound",
+  "nav.user.empty": "No user bound",
+  "nav.sessionTemplate.empty": "Current settings or configuration template",
+  "nav.settings.empty": "Language and scale",
+  "nav.session.none": "No session",
+  "nav.syncFailed": "Status sync failed: {message}",
+  "nav.menuTitle": "Tavern \xB7 {session}",
+  "nav.itemTitleBound": "{label}: {title} ({state})",
+  "nav.itemTitle": "{label}: {title}",
+  "nav.itemAriaBound": "{label}, {title}, {state}",
+  "nav.itemAria": "{label}, {title}",
+  "nav.bookCount": "{count} books",
+  "nav.launcher": "Drag to move; click to open Tavern resource panels",
+  "settings.menu": "UI settings",
+  "settings.title": "Tavern UI settings",
+  "settings.language": "Interface language",
+  "settings.language.zh": "\u7B80\u4F53\u4E2D\u6587",
+  "settings.language.en": "English",
+  "settings.scale": "Tavern UI scale",
+  "settings.scale.help": "Scales only the Tavern launcher, resource panels, and Trace\u2014not the DSH interface.",
+  "settings.currentScale": "Current scale: {scale}%",
+  "settings.reset": "Restore defaults",
+  "settings.saving": "Saving settings\u2026",
+  "settings.saved": "Settings saved and retained across refreshes and session changes.",
+  "settings.loadError": "Could not load UI settings: {message}",
+  "settings.saveError": "Could not save UI settings: {message}",
+  "settings.close": "Close the UI settings sidebar",
+  "preset.title": "Tavern preset",
+  "preset.active": "\u25CF Enabled",
+  "preset.importStJson": "Import ST JSON",
+  "preset.create": "Create preset",
+  "preset.browse": "Browse presets",
+  "preset.libraryEmpty": "Preset library is empty",
+  "preset.unboundNote": "The current session has no bound preset.",
+  "preset.currentSessionBound": "Current session binding: {name}.",
+  "preset.browsingUnbound": "Browsing \u201C{name}\u201D; it is not bound to the current session.",
+  "preset.bind": "Bind to current session",
+  "preset.bindUpdate": "Update session binding",
+  "preset.unbind": "Unbind from current session",
+  "preset.loading": "Loading presets\u2026",
+  "preset.emptyHint": "Select or create a preset to begin configuring it.",
+  "preset.basicSettings": "Basic settings",
+  "preset.name": "Preset name",
+  "preset.temperature": "Temperature",
+  "preset.maxTokens": "Max tokens",
+  "preset.reasoningEffort": "Reasoning effort",
+  "preset.modelDefault": "Use model default",
+  "preset.effort.low": "Low",
+  "preset.effort.medium": "Medium",
+  "preset.effort.high": "High",
+  "preset.effort.xhigh": "Extra high",
+  "preset.advancedShow": "Show advanced settings",
+  "preset.advancedHide": "Hide advanced settings",
+  "preset.advancedNote": "These fields are saved in full. Parameters not exposed by the current dsh request protocol are not forced into the adapter.",
+  "preset.systemPrompt": "DSH system prompt",
+  "preset.systemAppend": "Keep the DSH system prompt and append the preset (recommended)",
+  "preset.systemReplace": "Use only the preset and remove DSH system sections (advanced)",
+  "preset.replaceWarning": "Warning: this removes the model-visible Harness identity, Agent persona, and tool instructions, which may break tool use or structured output. Execution-layer sandboxing and approvals remain active.",
+  "preset.prompts": "Prompts ({count})",
+  "preset.addPrompt": "+ Add",
+  "preset.dropHere": "Release to place here",
+  "preset.dragOrder": "Drag to reorder",
+  "preset.dragNamed": "Drag \u201C{name}\u201D to reorder",
+  "preset.markerHint": "ST markers are not injected as standalone prompts",
+  "preset.enablePrompt": "Enable prompt",
+  "preset.role.system": "System",
+  "preset.role.user": "User",
+  "preset.role.assistant": "Assistant",
+  "preset.sampling.topP": "Top P",
+  "preset.sampling.topK": "Top K",
+  "preset.sampling.topA": "Top A",
+  "preset.sampling.minP": "Min P",
+  "preset.sampling.frequencyPenalty": "Frequency penalty",
+  "preset.sampling.presencePenalty": "Presence penalty",
+  "preset.sampling.repetitionPenalty": "Repetition penalty",
+  "preset.sampling.seed": "Seed",
+  "preset.defaultName": "New preset",
+  "preset.defaultPromptName": "New prompt",
+  "preset.confirmDelete": "Delete preset \u201C{name}\u201D?",
+  "preset.confirmHistoricalSwitch": "This session already has history. Changing the preset affects only later requests and does not rewrite existing messages. Continue?",
+  "preset.status.syncing": "Syncing preset state for the current session\u2026",
+  "preset.status.loaded": "Preset loaded",
+  "preset.status.refreshed": "Preset status refreshed",
+  "preset.status.detailsLoaded": "Preset details loaded; the session binding is unchanged",
+  "preset.status.bound": "Preset bound; the current session will use it on the next request",
+  "preset.status.unbound": "Preset unbound from the current session",
+  "preset.status.created": "Preset created; not bound to the current session",
+  "preset.status.imported": "ST preset imported; not bound to the current session",
+  "preset.status.saved": "Preset saved; sessions bound to it will use the new content on later requests",
+  "preset.status.deleted": "Preset deleted",
+  "preset.error.needSession": "Create or open a session before binding a preset",
+  "preset.error.needPreset": "Select a preset first",
+  "preset.error.noSessionToUnbind": "There is no session to unbind",
+  "character.title": "Tavern character card",
+  "character.import": "Import JSON / PNG",
+  "character.browse": "Browse character library",
+  "character.libraryEmpty": "Character library is empty",
+  "character.sessionBinding": "Current session: {session}; Binding: {name}",
+  "character.loading": "Loading character library\u2026",
+  "character.emptyHint": "Import a synthetic or properly licensed SillyTavern character card to view its details.",
+  "character.imageAlt": "{name} character card image",
+  "character.greeting": "Greeting reference",
+  "character.greeting.default": "Default greeting",
+  "character.greeting.defaultEmpty": "Default greeting (empty)",
+  "character.greeting.alternate": "Alternate greeting {index}",
+  "character.preferSystem": "Allow the loader to prefer the card system_prompt",
+  "character.preferPostHistory": "Allow the loader to use post_history_instructions (the loader determines placement)",
+  "character.bind": "Bind to current session",
+  "character.bindUpdate": "Update session binding",
+  "character.unbind": "Unbind",
+  "character.moduleNote": "The character-card module stores normalized resources and session selection. The Tavern loader handles the system profile and embedded World Info on each request without fabricating assistant history.",
+  "character.field.creatorNotes": "Creator notes",
+  "character.field.description": "Description",
+  "character.field.personality": "Personality",
+  "character.field.scenario": "Scenario",
+  "character.field.greetingContent": "Current greeting reference",
+  "character.field.messageExamples": "Message examples",
+  "character.field.systemPrompt": "System prompt (handled by the loader according to binding settings)",
+  "character.field.postHistory": "Post-history instructions (approximately placed by the loader)",
+  "character.embeddedBook": "Embedded character_book preserved losslessly ({count} entries); when the character is bound, the Tavern loader invokes the World Info matcher, and unbinding removes it from later requests.",
+  "character.warnings": "Compatibility warnings ({count})",
+  "character.unsupported": "Requires loader/other module handling ({count})",
+  "character.unknownMacros": "Unknown macros: {names}",
+  "character.exportOriginal": "Export original",
+  "character.delete": "Delete character card",
+  "character.confirmDelete": "Delete character card \u201C{name}\u201D? The original imported file will also be deleted.",
+  "character.confirmHistoricalSwitch": "This session already has history. Changing the character affects only later requests and does not rewrite existing messages. Continue?",
+  "character.status.loaded": "Character library loaded",
+  "character.status.refreshed": "Character status refreshed",
+  "character.status.libraryRefreshed": "Character library refreshed",
+  "character.status.imported": "Character card imported; it is not yet bound to a session",
+  "character.status.bound": "Character selection saved; the Tavern loader handles runtime loading",
+  "character.status.unbound": "Character unbound from the current session",
+  "character.status.deleted": "Character card deleted and related bindings cleared",
+  "character.status.detailsLoaded": "Character details loaded",
+  "character.error.needSession": "Create or open a session before binding a character",
+  "character.error.noSessionToUnbind": "There is no session to unbind",
+  "world.title": "World Info (World Book)",
+  "world.lorebookTitle": "World Info (Lorebook)",
+  "world.importJson": "Import JSON",
+  "world.create": "New world book",
+  "world.defaultName": "Untitled World Book",
+  "world.standalone": "Standalone world books",
+  "world.sessionBinding": "Current session binding",
+  "world.libraryEmpty": "The standalone world-book library is empty.",
+  "world.bindingUnsaved": "The binding has unsaved changes; the current selection is not yet applied.",
+  "world.bindingApplied": "The binding shown in this panel is applied to the current session.",
+  "world.applyBinding": "Apply session binding (unsaved)",
+  "world.bindingAppliedButton": "Current binding applied",
+  "world.clearPending": "Clear pending selection",
+  "world.browse": "Browse standalone world books",
+  "world.catalogEmpty": "Library is empty",
+  "world.bookName": "World-book name",
+  "world.addEntry": "Add entry",
+  "world.deleteStandalone": "Delete standalone book",
+  "world.characterBound": "Character-bound world book",
+  "world.embeddedTitle": "Embedded character world book",
+  "world.embeddedInfoTitle": "Embedded character World Info",
+  "world.addEmbeddedEntry": "Add embedded entry",
+  "world.saveEmbedded": "Save embedded book",
+  "world.embeddedSaved": "Embedded book saved",
+  "world.matcherNote": "The shared matcher determines activation, ordering, probability, and budget, and the Tavern loader performs final injection. Scanning combines this step\u2019s claimed input with durable history in a temporary context, so a single-step session can trigger keywords on its first request.",
+  "world.infoIntro": "Current session: {session}. SillyTavern\u2019s official feature name is World Info; Lorebook is a commonly accepted alias.",
+  "world.infoLoaded": "Loaded {count} entries.",
+  "world.infoDirty": "There are unsaved entry changes.",
+  "world.infoReading": "Reading World Info\u2026",
+  "world.infoEmpty": "No World Info is available for this session. Bind a character card containing character_book to let the loader match its entries; unbinding removes that source.",
+  "world.infoMeta": "Embedded character book \xB7 {count} entries. The collapsed title shows how the entry triggers; expand it to edit keywords, logic, content, position, and order.",
+  "world.infoPendingIds": "{count} standalone World Info IDs are selected, but the standalone library/API is not wired in this phase and those IDs will not be loaded.",
+  "world.infoSaveNote": "Saving updates the plugin copy of the character card and its JSON export. The original PNG/JSON artifact remains unchanged. Before the first request assembly, the matcher scans this step\u2019s claimed input together with Session history without writing a duplicate into history.",
+  "world.entry.untitled": "New entry {id}",
+  "world.entry.fallback": "Entry {id}",
+  "world.entry.title": "Entry title",
+  "world.entry.nameNote": "Entry name / note",
+  "world.entry.delete": "Delete entry",
+  "world.entry.constant": "Always active",
+  "world.entry.noKeywords": "No keywords",
+  "world.entry.noPrimaryKeys": "No primary keywords",
+  "world.entry.disabled": "Disabled",
+  "world.entry.useSecondary": "Use secondary keywords",
+  "world.entry.caseSensitive": "Case sensitive",
+  "world.entry.wholeWord": "Whole-word matching",
+  "world.entry.primaryKeys": "Primary keywords (Chinese or English comma separators)",
+  "world.entry.secondaryKeys": "Secondary keywords (Chinese or English comma separators)",
+  "world.entry.primaryKeysLines": "Primary keywords (one per line; any match)",
+  "world.entry.secondaryKeysLines": "Secondary keywords (one per line)",
+  "world.entry.secondaryLogic": "Secondary keyword logic",
+  "world.entry.secondaryLogicShort": "Secondary logic",
+  "world.entry.body": "Body",
+  "world.entry.content": "Entry content (injected into the system profile when triggered)",
+  "world.entry.position": "Position",
+  "world.entry.insertionPosition": "Insertion position",
+  "world.entry.order": "Order (higher values first)",
+  "world.entry.sortWeight": "Sort weight",
+  "world.entry.probability": "Probability (0\u2013100)",
+  "world.entry.trigger": "Keywords: {keys}",
+  "world.entry.triggerWithSecondary": "Keywords: {keys} \xB7 {logic}: {secondary}",
+  "world.logic.andAny": "AND ANY: match any",
+  "world.logic.andAll": "AND ALL: match all",
+  "world.logic.notAny": "NOT ANY: match none",
+  "world.logic.notAll": "NOT ALL: not all may match",
+  "world.position.beforeCharacter": "Before character definition",
+  "world.position.afterCharacter": "After character definition",
+  "world.position.beforeAuthor": "Before author note (approximate)",
+  "world.position.afterAuthor": "After author note (approximate)",
+  "world.position.atDepth": "At depth (approximate)",
+  "world.position.beforeExamples": "Before example messages (approximate)",
+  "world.position.afterExamples": "After example messages (approximate)",
+  "world.position.outlet": "Outlet (not currently injected)",
+  "world.currentSession": "Current session: {session}. Bind zero, one, or multiple standalone world books; binding order remains stable.",
+  "world.catalogItem": "{name} ({count} entries)",
+  "world.documentMeta": "{count} entries \xB7 Unknown fields are preserved across saves and exports",
+  "world.user.title": "User-bound world books",
+  "world.user.current": "Current user: {name}",
+  "world.user.none": "The current session has no bound user, so it has no user-sourced world books.",
+  "world.user.empty": "The current user has no bound standalone world books.",
+  "world.user.libraryEmpty": "The standalone world-book library is empty. Create or import a world book first.",
+  "world.user.unsaved": "The user world-book binding has unsaved changes; the current selection is not yet applied.",
+  "world.user.saved": "The displayed user world-book binding is saved and applied.",
+  "world.user.order": "Effective order: explicit session books first, followed by user-bound books; duplicate resources run only once.",
+  "world.user.duplicate": "Also session-bound; deduplicated",
+  "world.user.appended": "Appended from user binding",
+  "world.user.pendingAdd": "Pending addition",
+  "world.user.pendingRemove": "Pending removal",
+  "world.user.save": "Save user binding (unsaved)",
+  "world.user.saveApplied": "User binding saved",
+  "world.user.clear": "Clear pending selection",
+  "world.user.saveSuccess": "The user-bound world books were saved; later requests will use the new composition.",
+  "world.user.editContent": "Edit contents",
+  "world.user.editHint": "This panel and the User panel edit the same binding. Saving in either place refreshes the other.",
+  "world.user.error.noUser": "The current session has no bound user whose world-book relationship can be edited",
+  "world.embeddedMeta": "{count} entries. It shares the matcher/loader with standalone books; deleting a standalone book never edits or unbinds this embedded book.",
+  "world.embeddedEmpty": "The current session has no character-bound embedded world book. Bind a character card with character_book to show it here.",
+  "world.diagnostics": "Runtime diagnostics ({count})",
+  "world.confirmDelete": "Delete standalone world book \u201C{name}\u201D? Character-card embedded books will not be affected.",
+  "world.confirmDiscardChanges": "Discard unsaved changes?",
+  "world.confirmDeleteEntry": "Delete this world-book entry? It takes effect after saving.",
+  "world.confirmDeleteEmbeddedEntry": "Delete this embedded character-card world-book entry? It takes effect after saving.",
+  "world.confirmDeleteInfoEntry": "Delete this World Info entry? It will be written to the character-card copy only after saving.",
+  "world.confirmReloadInfo": "Discard unsaved entry changes and reload?",
+  "world.status.loaded": "World-book library loaded",
+  "world.status.refreshed": "World-book library refreshed",
+  "world.status.detailsLoaded": "World-book details loaded",
+  "world.status.created": "Standalone world book created; not yet bound to the current session",
+  "world.status.imported": "World book imported; not yet bound to the current session",
+  "world.status.saved": "World-book changes saved; future requests will use the new content",
+  "world.status.bindingSaved": "World-book binding saved for the current session",
+  "world.status.deleted": "Standalone world book deleted and related session bindings cleared",
+  "world.status.embeddedSaved": "Embedded character world book saved; future requests will use the new content",
+  "world.error.needSession": "Create or open a session before binding world books",
+  "user.title": "Tavern user",
+  "user.create": "New user",
+  "user.browse": "Browse user resources",
+  "user.libraryEmpty": "User library is empty",
+  "user.sessionBinding": "Current session: {session}; Binding: {name}",
+  "user.dirty": "Unsaved changes: {parts}.",
+  "user.dirty.name": "Name/description",
+  "user.dirty.binding": "User world-book binding",
+  "user.savedNote": "The displayed user resource and world-book binding are saved.",
+  "user.loading": "Loading user resources\u2026",
+  "user.emptyHint": "Create a user resource containing only a name and description.",
+  "user.name": "Name (used by the {macro} macro)",
+  "user.description": "Description (placed at the personaDescription marker, with a stable loader fallback)",
+  "user.saveResource": "Save resource (unsaved)",
+  "user.resourceSaved": "Resource saved",
+  "user.saveFirst": "Save changes first",
+  "user.refreshBinding": "Refresh session binding",
+  "user.bind": "Bind to current session",
+  "user.worldBooksTitle": "Standalone world books bound to this user",
+  "user.worldBooksHint": "When this user is selected, the loader combines these books with the session\u2019s explicit world books; a duplicate book runs only once.",
+  "user.worldBooksLoading": "Loading the standalone world-book library\u2026",
+  "user.worldBooksEmpty": "The standalone world-book library is empty. Create or import one in the world-book panel first.",
+  "user.saveWorldBooks": "Save world-book binding (unsaved)",
+  "user.worldBooksSaved": "World-book binding saved",
+  "user.clearPending": "Clear pending selection",
+  "user.unbind": "Unbind from current session",
+  "user.identityNote": "The user resource remains strictly name and description only; world-book relationships are stored in a separate structured loader policy. User resources have no avatar and do not override the DSH Agent identity.",
+  "user.delete": "Delete user",
+  "user.defaultName": "New user",
+  "user.confirmDelete": "Delete user \u201C{name}\u201D? User selections in every session and this user\u2019s world-book relationships will be cleared.",
+  "user.confirmDiscardForCreate": "The current user resource or world-book binding has unsaved changes. Discard them and create a new user?",
+  "user.confirmDiscardForSwitch": "The current user resource or world-book binding has unsaved changes. Discard them and switch?",
+  "user.confirmHistoricalSwitch": "This session already has history. Changing the user affects only later requests and does not rewrite existing messages. Continue?",
+  "user.confirmCloseDirty": "The current user resource or world-book binding has unsaved changes. Close anyway?",
+  "user.confirmDiscardRefresh": "Discard unsaved user-resource or world-book binding changes?",
+  "user.status.loaded": "User resources loaded",
+  "user.status.refreshed": "User resources refreshed",
+  "user.status.created": "User created; save its name and description before binding",
+  "user.status.saved": "Name and description saved; bound sessions will use them on the next request",
+  "user.status.bound": "User bound; the current session will use this name and description on its next request",
+  "user.status.unbound": "User unbound from the current session",
+  "user.status.deleted": "User deleted and related session bindings cleared",
+  "user.status.skippedRefresh": "Other Tavern resources changed. This panel was not refreshed so its unsaved changes are preserved.",
+  "user.status.worldBooksSaved": "The user\u2019s world-book binding was saved; sessions using this user will apply it on their next assembly",
+  "user.status.userLoaded": "User resource and world-book binding loaded",
+  "user.error.needSession": "Create or open a session and select a user resource first",
+  "user.error.noSessionToUnbind": "There is no session to unbind",
+  "template.title": "New session and configuration templates",
+  "template.startCurrent": "Start a new conversation with the current Tavern settings",
+  "template.inheritNote": "Carries only the preset, character and greeting/options, user, and standalone world-book selections. DSH history, Tavern Trace, Inbox, active turns/steps, and other runtime state are not copied.",
+  "template.noWorkspace": "No DSH target workspace is available. Add or open a workspace in the DSH sidebar first.",
+  "template.listTitle": "Configuration templates ({count})",
+  "template.selected": "Selected template",
+  "template.noneSelected": "No template selected",
+  "template.name": "Template name",
+  "template.createFromCurrent": "Create from current settings",
+  "template.saveNameOnly": "Save name only",
+  "template.updateFromCurrent": "Update from current settings",
+  "template.delete": "Delete template",
+  "template.unusable": "This template cannot currently be used:",
+  "template.startFromTemplate": "Start a clean conversation from the selected template",
+  "template.ready": "Template and new-session actions are ready.",
+  "template.blankSessionNote": "DSH may reuse an existing real blank session in the same workspace; this is its public New Session behavior. The plugin atomically replaces that blank session\u2019s Tavern selection before navigation.",
+  "template.preview.title": "Saved Tavern configuration",
+  "template.preview.worldBooks": "Standalone world books (binding order)",
+  "template.preview.greeting": "Greeting index: {value}",
+  "template.preview.systemPrompt": "Character system_prompt: {value}",
+  "template.preview.postHistory": "post_history_instructions: {value}",
+  "template.defaultName": "New configuration template",
+  "template.currentSettingsReminder": "Templates can only be created or updated from the current session\u2019s Tavern settings. Review or change the current configuration in the launcher\u2019s Preset, Character, World book, and User panels, then return here to save it.",
+  "template.confirmDelete": "Delete configuration template \u201C{name}\u201D? This will not delete any DSH session.",
+  "template.status.selected": "Template selection updated",
+  "template.status.created": "Template created: {name}",
+  "template.status.renamed": "Template renamed: {name}",
+  "template.status.updated": "Template updated from current settings: {name}",
+  "template.status.deleted": "Template deleted",
+  "template.status.switched": "Switched to clean session: {id}",
+  "template.error.needSessionToSave": "Open a session before saving its current Tavern settings",
+  "template.error.needTemplate": "Select a template first",
+  "template.error.needSessionAndTemplate": "Open a session and select a template first",
+  "template.error.needSourceSession": "Open a source session first",
+  "template.error.needWorkspace": "The current session is not in a DSH workspace; add it to a workspace first",
+  "trace.title": "Tavern Trace",
+  "trace.intro": "A loader audit view alongside Conversation and Trajectory. The DSH request/header remains authoritative for the final system, tools, and effective config.",
+  "trace.reading": "Reading audit records\u2026",
+  "trace.empty": "This session has no Tavern request audit records yet. Send the next message and check again.",
+  "trace.privacy": "Privacy boundary: this stores only resource summaries, configured/matched keywords, decision reasons, placement, budgets, and SHA-256 digests\u2014not resource bodies, full system text, chat history, header content, or tool payloads.",
+  "trace.unused": "Not used",
+  "trace.noSource": "This request has no auditable world-book source.",
+  "trace.assembly": "Assembly and insertion",
+  "trace.assemblyMeta": "{section} \xB7 order {order} \xB7 {mode} \xB7 {characters} characters \xB7 call config: {config}",
+  "trace.worldBookDecisions": "World-book match decisions",
+  "trace.historyOnly": "Matching uses durable session history visible during this step\u2019s system assembly; pending input was not appended a second time.",
+  "trace.waitingHeader": "Waiting for authoritative header",
+  "trace.pendingHeader": "No alignable DSH request/header has been observed; this does not mean the request was sent. The pending record remains after refresh.",
+  "trace.round": "Turn {turn} \xB7 Step {step}",
+  "trace.roundAttempt": "Turn {turn} \xB7 Step {step} \xB7 Attempt {attempt}",
+  "trace.resource.preset": "Preset",
+  "trace.resource.character": "Character",
+  "trace.resource.user": "User",
+  "trace.inserted": "Inserted",
+  "trace.rejected": "Rejected",
+  "trace.noConfiguredKeywords": "No configured keywords",
+  "trace.noKeywordMatches": "No keyword matches",
+  "trace.truncated": "; scan input was truncated to the configured limit",
+  "trace.reusedHeader": " (reused previous header)",
+  "trace.profile.missing": "Not found",
+  "trace.profile.consistent": "Consistent",
+  "trace.profile.absent": "No profile this request",
+  "trace.config.inconsistent": "Inconsistent",
+  "trace.config.consistent": "Consistent or no fields",
+  "trace.position.approximate": " (approximate)",
+  "trace.position.notInserted": " \u2192 not inserted",
+  "trace.position.applied": " \u2192 {position}{approximate}",
+  "trace.storage.total": "up to {value} total",
+  "trace.storage.perSession": "up to {value} entries per session",
+  "trace.storage.sessions": "up to {value} sessions",
+  "trace.storage.perRecord": "up to {value} per entry",
+  "trace.storage.summary": "Bounded plugin storage: {limits}. Restored after refresh or host restart.",
+  "trace.keywords.primary": "Primary: {values}",
+  "trace.keywords.secondary": "Secondary: {values}",
+  "trace.keywords.configured": "Configured keywords: {value}",
+  "trace.keywords.matched": "Matched this request: {value}",
+  "trace.bookBudget": "Budget: {used}{limit} tokens \xB7 {decisionCount}",
+  "trace.decisionCount.one": "{count} decision",
+  "trace.decisionCount.other": "{count} decisions",
+  "trace.decision.group": "Group {name}{detail}",
+  "trace.decision.probability": "Probability {value}%{roll}",
+  "trace.decision.budget": "Budget {value} tokens",
+  "trace.decision.position": "Position {requested}{result}",
+  "trace.recordAligned": "This record is aligned with DSH request/header #{sequence}{reused}. Tavern profile validation: {profile}; sampler fields: {config}.",
+  "trace.activationPending": "Matching uses this step\u2019s temporary activation context: durable history + {included}/{pending} claimed messages from this turn; input bodies are not stored{truncated}.",
+  "trace.diagnostics": "Diagnostics ({count})",
+  "trace.reason.constant": "Always-active entry",
+  "trace.reason.primary-key-match": "Primary keyword matched",
+  "trace.reason.primary-key-miss": "Primary keyword missed",
+  "trace.reason.secondary-and_any-match": "Any secondary keyword matched",
+  "trace.reason.secondary-and_any-miss": "No secondary keyword matched",
+  "trace.reason.secondary-and_all-match": "All secondary keywords matched",
+  "trace.reason.secondary-and_all-miss": "Not all secondary keywords matched",
+  "trace.reason.secondary-not_any-match": "Secondary exclusion condition passed",
+  "trace.reason.secondary-not_any-miss": "Secondary keyword triggered exclusion",
+  "trace.reason.secondary-not_all-match": "Secondary not-all condition passed",
+  "trace.reason.secondary-not_all-miss": "All secondary keywords matched and excluded the entry",
+  "trace.reason.disabled": "Entry disabled",
+  "trace.reason.external-vector-match-required": "External vector match required",
+  "trace.reason.inclusion-group-loser": "Did not win the inclusion group",
+  "trace.reason.probability-failed": "Rejected by probability check",
+  "trace.reason.budget-exceeded": "Token budget exceeded",
+  "trace.reason.empty-content": "Empty body; not inserted",
+  "trace.reason.outlet-unsupported": "Outlet has no stable insertion seam"
+});
+
+// packages/client/src/i18n/catalogs/index.js
+var PRODUCTION_CATALOGS = Object.freeze({
+  "zh-CN": zh_CN_default,
+  en: en_default
+});
+
+// packages/client/src/i18n/runtime.js
 var DEFAULT_UI_SETTINGS = Object.freeze({ locale: DEFAULT_UI_LOCALE, scale: 1 });
-var SUPPORTED_LOCALES = SUPPORTED_UI_LOCALES;
 var UI_SCALE_OPTIONS = Object.freeze([0.75, 0.85, 1, 1.15, 1.25, 1.5]);
-var MESSAGE_CATALOG = Object.freeze({
-  "zh-CN": Object.freeze({
-    "common.unavailable": "\u754C\u9762\u6587\u672C\u6682\u4E0D\u53EF\u7528",
-    "settings.menu": "\u754C\u9762\u8BBE\u7F6E",
-    "settings.title": "Tavern \u754C\u9762\u8BBE\u7F6E",
-    "settings.language": "\u754C\u9762\u8BED\u8A00",
-    "settings.language.zh": "\u7B80\u4F53\u4E2D\u6587",
-    "settings.language.en": "English",
-    "settings.scale": "Tavern UI \u7F29\u653E",
-    "settings.scale.help": "\u4EC5\u7F29\u653E Tavern \u60AC\u6D6E\u5165\u53E3\u3001\u8D44\u6E90\u9762\u677F\u548C Trace\uFF0C\u4E0D\u5F71\u54CD DSH \u4E3B\u754C\u9762\u3002",
-    "settings.currentScale": "\u5F53\u524D\u7F29\u653E\uFF1A{scale}%",
-    "settings.reset": "\u6062\u590D\u9ED8\u8BA4",
-    "settings.saving": "\u6B63\u5728\u4FDD\u5B58\u8BBE\u7F6E\u2026",
-    "settings.saved": "\u8BBE\u7F6E\u5DF2\u4FDD\u5B58\uFF0C\u5E76\u5C06\u5728\u5237\u65B0\u548C\u4F1A\u8BDD\u5207\u6362\u540E\u4FDD\u6301\u3002",
-    "settings.loadError": "\u65E0\u6CD5\u8BFB\u53D6\u754C\u9762\u8BBE\u7F6E\uFF1A{message}",
-    "settings.saveError": "\u65E0\u6CD5\u4FDD\u5B58\u754C\u9762\u8BBE\u7F6E\uFF1A{message}",
-    "settings.close": "\u5173\u95ED\u754C\u9762\u8BBE\u7F6E\u4FA7\u8FB9\u680F",
-    "trace.storage.total": "\u603B\u8BA1\u6700\u591A {value}",
-    "trace.storage.perSession": "\u6BCF\u4F1A\u8BDD\u6700\u591A {value} \u6761",
-    "trace.storage.sessions": "\u6700\u591A {value} \u4E2A\u4F1A\u8BDD",
-    "trace.storage.perRecord": "\u5355\u6761\u6700\u591A {value}",
-    "trace.storage.summary": "\u63D2\u4EF6\u6709\u754C\u5B58\u50A8\uFF1A{limits}\uFF1B\u5237\u65B0\u6216\u5BBF\u4E3B\u91CD\u542F\u540E\u53EF\u6062\u590D\u3002",
-    "trace.keywords.primary": "\u4E3B\uFF1A{values}",
-    "trace.keywords.secondary": "\u9644\u52A0\uFF1A{values}",
-    "trace.keywords.configured": "\u914D\u7F6E\u5173\u952E\u8BCD\uFF1A{value}",
-    "trace.keywords.matched": "\u672C\u8F6E\u547D\u4E2D\uFF1A{value}",
-    "trace.bookBudget": "\u9884\u7B97\uFF1A{used}{limit} tokens \xB7 {decisionCount}",
-    "trace.decisionCount.one": "{count} \u6761\u51B3\u7B56",
-    "trace.decisionCount.other": "{count} \u6761\u51B3\u7B56",
-    "trace.decision.group": "\u7EC4 {name}{detail}",
-    "trace.decision.probability": "\u6982\u7387 {value}%{roll}",
-    "trace.decision.budget": "\u9884\u7B97 {value} tokens",
-    "trace.decision.position": "\u4F4D\u7F6E {requested}{result}",
-    "trace.recordAligned": "\u8BE5\u8BB0\u5F55\u5DF2\u5BF9\u9F50 DSH request/header #{sequence}{reused}\u3002Tavern profile \u6821\u9A8C\uFF1A{profile}\uFF1B\u91C7\u6837\u5B57\u6BB5\uFF1A{config}\u3002",
-    "trace.activationPending": "\u5339\u914D\u57FA\u4E8E\u672C\u6B65\u9AA4 assembly \u7684\u4E34\u65F6\u6FC0\u6D3B\u4E0A\u4E0B\u6587\uFF1A\u6301\u4E45\u5386\u53F2 + {included}/{pending} \u6761\u672C\u8F6E claimed \u8F93\u5165\uFF1B\u4E0D\u4FDD\u5B58\u8F93\u5165\u6B63\u6587{truncated}\u3002",
-    "trace.diagnostics": "\u8BCA\u65AD\uFF08{count}\uFF09",
-    "world.currentSession": "\u5F53\u524D\u4F1A\u8BDD\uFF1A{session}\u3002\u53EF\u7ED1\u5B9A\u96F6\u672C\u3001\u4E00\u672C\u6216\u591A\u672C\u72EC\u7ACB\u4E16\u754C\u4E66\uFF1B\u7ED1\u5B9A\u987A\u5E8F\u4FDD\u6301\u7A33\u5B9A\u3002",
-    "world.catalogItem": "{name}\uFF08{count} \u6761\uFF09",
-    "world.documentMeta": "{count} \u6761 \xB7 \u672A\u77E5\u5B57\u6BB5\u5728\u4FDD\u5B58\u548C\u5BFC\u51FA\u65F6\u7A33\u5B9A\u4FDD\u7559",
-    "world.user.title": "\u7528\u6237\u7ED1\u5B9A\u7684\u4E16\u754C\u4E66",
-    "world.user.current": "\u5F53\u524D\u7528\u6237\uFF1A{name}",
-    "world.user.none": "\u5F53\u524D\u4F1A\u8BDD\u672A\u7ED1\u5B9A\u7528\u6237\uFF0C\u56E0\u6B64\u6CA1\u6709\u7528\u6237\u6765\u6E90\u7684\u4E16\u754C\u4E66\u3002",
-    "world.user.empty": "\u5F53\u524D\u7528\u6237\u6CA1\u6709\u7ED1\u5B9A\u72EC\u7ACB\u4E16\u754C\u4E66\u3002",
-    "world.user.libraryEmpty": "\u72EC\u7ACB\u4E16\u754C\u4E66\u8D44\u6E90\u5E93\u4E3A\u7A7A\u3002\u8BF7\u5148\u521B\u5EFA\u6216\u5BFC\u5165\u4E16\u754C\u4E66\u3002",
-    "world.user.unsaved": "\u7528\u6237\u4E16\u754C\u4E66\u7ED1\u5B9A\u6709\u672A\u4FDD\u5B58\u4FEE\u6539\uFF1B\u5F53\u524D\u52FE\u9009\u5C1A\u672A\u5E94\u7528\u3002",
-    "world.user.saved": "\u5F53\u524D\u663E\u793A\u7684\u7528\u6237\u4E16\u754C\u4E66\u7ED1\u5B9A\u5DF2\u4FDD\u5B58\u5E76\u5E94\u7528\u3002",
-    "world.user.order": "\u6709\u6548\u7EC4\u5408\u987A\u5E8F\u4E3A\uFF1A\u5F53\u524D\u4F1A\u8BDD\u663E\u5F0F\u4E16\u754C\u4E66\u5728\u524D\uFF0C\u7528\u6237\u7ED1\u5B9A\u4E16\u754C\u4E66\u968F\u540E\uFF1B\u91CD\u590D\u8D44\u6E90\u53EA\u6267\u884C\u4E00\u6B21\u3002",
-    "world.user.duplicate": "\u4E0E\u4F1A\u8BDD\u7ED1\u5B9A\u91CD\u590D\uFF0C\u5DF2\u53BB\u91CD",
-    "world.user.appended": "\u7531\u7528\u6237\u7ED1\u5B9A\u8FFD\u52A0",
-    "world.user.pendingAdd": "\u5F85\u6DFB\u52A0",
-    "world.user.pendingRemove": "\u5F85\u79FB\u9664",
-    "world.user.save": "\u4FDD\u5B58\u7528\u6237\u7ED1\u5B9A\uFF08\u672A\u4FDD\u5B58\uFF09",
-    "world.user.saveApplied": "\u7528\u6237\u7ED1\u5B9A\u5DF2\u4FDD\u5B58",
-    "world.user.clear": "\u6E05\u7A7A\u5F85\u4FDD\u5B58\u9009\u62E9",
-    "world.user.saveSuccess": "\u7528\u6237\u7ED1\u5B9A\u7684\u4E16\u754C\u4E66\u5DF2\u4FDD\u5B58\uFF1B\u540E\u7EED\u8BF7\u6C42\u5C06\u4F7F\u7528\u65B0\u7EC4\u5408\u3002",
-    "world.user.editContent": "\u7F16\u8F91\u5185\u5BB9",
-    "world.user.editHint": "\u8FD9\u91CC\u4E0E\u7528\u6237\u9762\u677F\u7F16\u8F91\u540C\u4E00\u4EFD\u7ED1\u5B9A\u5173\u7CFB\uFF1B\u4EFB\u4E00\u5904\u4FDD\u5B58\u540E\uFF0C\u53E6\u4E00\u5904\u4F1A\u540C\u6B65\u5237\u65B0\u3002",
-    "world.embeddedMeta": "{count} \u6761\u3002\u5B83\u4E0E\u72EC\u7ACB\u4E66\u5171\u7528 matcher/loader\uFF1B\u5220\u9664\u72EC\u7ACB\u4E66\u4E0D\u4F1A\u4FEE\u6539\u6216\u89E3\u7ED1\u89D2\u8272\u5361\u5185\u5D4C\u4E66\u3002",
-    "world.embeddedEmpty": "\u5F53\u524D\u4F1A\u8BDD\u6CA1\u6709\u89D2\u8272\u5361\u7ED1\u5B9A\u7684\u5185\u5D4C\u4E16\u754C\u4E66\u3002\u7ED1\u5B9A\u542B character_book \u7684\u89D2\u8272\u5361\u540E\u4F1A\u663E\u793A\u5728\u8FD9\u91CC\u3002",
-    "world.diagnostics": "\u8FD0\u884C\u8BCA\u65AD\uFF08{count}\uFF09",
-    "character.embeddedBook": "\u5185\u5D4C character_book \u5DF2\u65E0\u635F\u4FDD\u7559\uFF08{count} \u6761\uFF09\uFF1B\u7ED1\u5B9A\u89D2\u8272\u540E\u7531 Tavern loader \u8C03\u7528\u4E16\u754C\u4FE1\u606F matcher\uFF0C\u89E3\u7ED1\u540E\u4E0D\u518D\u53C2\u4E0E\u540E\u7EED\u8BF7\u6C42\u3002",
-    "character.confirmDelete": "\u5220\u9664\u89D2\u8272\u5361\u201C{name}\u201D\uFF1F\u539F\u59CB\u5BFC\u5165\u6587\u4EF6\u4E5F\u4F1A\u88AB\u5220\u9664\u3002",
-    "character.confirmHistoricalSwitch": "\u5F53\u524D\u4F1A\u8BDD\u5DF2\u6709\u5386\u53F2\u3002\u66F4\u6362\u89D2\u8272\u53EA\u5F71\u54CD\u540E\u7EED\u8BF7\u6C42\uFF0C\u4E0D\u4F1A\u91CD\u5199\u5DF2\u6709\u6D88\u606F\uFF1B\u7EE7\u7EED\u5417\uFF1F",
-    "preset.confirmDelete": "\u5220\u9664\u9884\u8BBE\u201C{name}\u201D\uFF1F",
-    "preset.confirmHistoricalSwitch": "\u5F53\u524D\u4F1A\u8BDD\u5DF2\u6709\u5386\u53F2\u3002\u66F4\u6362\u9884\u8BBE\u53EA\u5F71\u54CD\u540E\u7EED\u8BF7\u6C42\uFF0C\u4E0D\u4F1A\u91CD\u5199\u5DF2\u6709\u6D88\u606F\uFF1B\u7EE7\u7EED\u5417\uFF1F",
-    "preset.currentSessionBound": "\u5F53\u524D\u4F1A\u8BDD\u7ED1\u5B9A\uFF1A{name}\u3002",
-    "preset.browsingUnbound": "\u6B63\u5728\u6D4F\u89C8\u201C{name}\u201D\uFF1B\u5B83\u5C1A\u672A\u7ED1\u5B9A\u5230\u5F53\u524D\u4F1A\u8BDD\u3002",
-    "world.confirmDelete": "\u5220\u9664\u72EC\u7ACB\u4E16\u754C\u4E66\u201C{name}\u201D\uFF1F\u89D2\u8272\u5361\u5185\u5D4C\u4E16\u754C\u4E66\u4E0D\u4F1A\u53D7\u5230\u5F71\u54CD\u3002",
-    "world.confirmDiscardChanges": "\u653E\u5F03\u5C1A\u672A\u4FDD\u5B58\u7684\u4FEE\u6539\uFF1F",
-    "world.confirmDeleteEntry": "\u5220\u9664\u8FD9\u4E2A\u4E16\u754C\u4E66\u6761\u76EE\uFF1F\u4FDD\u5B58\u540E\u751F\u6548\u3002",
-    "world.confirmDeleteEmbeddedEntry": "\u5220\u9664\u8FD9\u4E2A\u89D2\u8272\u5361\u5185\u5D4C\u4E16\u754C\u4E66\u6761\u76EE\uFF1F\u4FDD\u5B58\u540E\u751F\u6548\u3002",
-    "world.confirmDeleteInfoEntry": "\u5220\u9664\u8FD9\u4E2A\u4E16\u754C\u4FE1\u606F\u6761\u76EE\uFF1F\u4FDD\u5B58\u540E\u624D\u4F1A\u5199\u5165\u89D2\u8272\u5361\u526F\u672C\u3002",
-    "world.confirmReloadInfo": "\u653E\u5F03\u5C1A\u672A\u4FDD\u5B58\u7684\u6761\u76EE\u4FEE\u6539\u5E76\u91CD\u65B0\u8F7D\u5165\uFF1F",
-    "user.confirmDelete": "\u5220\u9664\u7528\u6237\u201C{name}\u201D\uFF1F\u6240\u6709\u4F1A\u8BDD\u4E2D\u7684\u7528\u6237\u9009\u62E9\u548C\u8BE5\u7528\u6237\u7684\u4E16\u754C\u4E66\u5173\u7CFB\u90FD\u4F1A\u6E05\u9664\u3002",
-    "user.confirmDiscardForCreate": "\u5F53\u524D\u7528\u6237\u8D44\u6E90\u6216\u4E16\u754C\u4E66\u7ED1\u5B9A\u6709\u672A\u4FDD\u5B58\u4FEE\u6539\u3002\u653E\u5F03\u4FEE\u6539\u5E76\u65B0\u5EFA\u7528\u6237\u5417\uFF1F",
-    "user.confirmDiscardForSwitch": "\u5F53\u524D\u7528\u6237\u8D44\u6E90\u6216\u4E16\u754C\u4E66\u7ED1\u5B9A\u6709\u672A\u4FDD\u5B58\u4FEE\u6539\u3002\u653E\u5F03\u4FEE\u6539\u5E76\u5207\u6362\u5417\uFF1F",
-    "user.confirmHistoricalSwitch": "\u5F53\u524D\u4F1A\u8BDD\u5DF2\u6709\u5386\u53F2\u3002\u5207\u6362\u7528\u6237\u53EA\u5F71\u54CD\u540E\u7EED\u8BF7\u6C42\uFF0C\u4E0D\u4F1A\u91CD\u5199\u5DF2\u6709\u6D88\u606F\uFF1B\u7EE7\u7EED\u5417\uFF1F",
-    "user.confirmCloseDirty": "\u5F53\u524D\u7528\u6237\u8D44\u6E90\u6216\u4E16\u754C\u4E66\u7ED1\u5B9A\u6709\u672A\u4FDD\u5B58\u4FEE\u6539\u3002\u4ECD\u7136\u5173\u95ED\u5417\uFF1F",
-    "user.confirmDiscardRefresh": "\u653E\u5F03\u5C1A\u672A\u4FDD\u5B58\u7684\u7528\u6237\u8D44\u6E90\u6216\u4E16\u754C\u4E66\u7ED1\u5B9A\u4FEE\u6539\uFF1F",
-    "template.confirmDelete": "\u5220\u9664\u914D\u7F6E\u6A21\u677F\u201C{name}\u201D\uFF1F\u8FD9\u4E0D\u4F1A\u5220\u9664\u4EFB\u4F55 DSH \u4F1A\u8BDD\u3002",
-    "template.currentSettingsReminder": "\u6A21\u677F\u53EA\u80FD\u7528\u5F53\u524D\u4F1A\u8BDD\u7684 Tavern \u8BBE\u7F6E\u521B\u5EFA\u6216\u66F4\u65B0\u3002\u8BF7\u5728\u60AC\u6D6E\u7403\u7684\u9884\u8BBE\u3001\u89D2\u8272\u5361\u3001\u4E16\u754C\u4E66\u548C\u7528\u6237\u9762\u677F\u4E2D\u67E5\u770B\u6216\u4FEE\u6539\u5F53\u524D\u914D\u7F6E\uFF0C\u518D\u56DE\u5230\u8FD9\u91CC\u4FDD\u5B58\u3002",
-    "template.preview.greeting": "\u5F00\u573A\u5E8F\u53F7\uFF1A{value}"
-  }),
-  en: Object.freeze({
-    "common.unavailable": "Interface text unavailable",
-    "settings.menu": "UI settings",
-    "settings.title": "Tavern UI settings",
-    "settings.language": "Interface language",
-    "settings.language.zh": "\u7B80\u4F53\u4E2D\u6587",
-    "settings.language.en": "English",
-    "settings.scale": "Tavern UI scale",
-    "settings.scale.help": "Scales only the Tavern launcher, resource panels, and Trace\u2014not the DSH interface.",
-    "settings.currentScale": "Current scale: {scale}%",
-    "settings.reset": "Restore defaults",
-    "settings.saving": "Saving settings\u2026",
-    "settings.saved": "Settings saved and retained across refreshes and session changes.",
-    "settings.loadError": "Could not load UI settings: {message}",
-    "settings.saveError": "Could not save UI settings: {message}",
-    "settings.close": "Close the UI settings sidebar",
-    "trace.storage.total": "up to {value} total",
-    "trace.storage.perSession": "up to {value} entries per session",
-    "trace.storage.sessions": "up to {value} sessions",
-    "trace.storage.perRecord": "up to {value} per entry",
-    "trace.storage.summary": "Bounded plugin storage: {limits}. Restored after refresh or host restart.",
-    "trace.keywords.primary": "Primary: {values}",
-    "trace.keywords.secondary": "Secondary: {values}",
-    "trace.keywords.configured": "Configured keywords: {value}",
-    "trace.keywords.matched": "Matched this request: {value}",
-    "trace.bookBudget": "Budget: {used}{limit} tokens \xB7 {decisionCount}",
-    "trace.decisionCount.one": "{count} decision",
-    "trace.decisionCount.other": "{count} decisions",
-    "trace.decision.group": "Group {name}{detail}",
-    "trace.decision.probability": "Probability {value}%{roll}",
-    "trace.decision.budget": "Budget {value} tokens",
-    "trace.decision.position": "Position {requested}{result}",
-    "trace.recordAligned": "This record is aligned with DSH request/header #{sequence}{reused}. Tavern profile validation: {profile}; sampler fields: {config}.",
-    "trace.activationPending": "Matching uses this step\u2019s temporary activation context: durable history + {included}/{pending} claimed messages from this turn; input bodies are not stored{truncated}.",
-    "trace.diagnostics": "Diagnostics ({count})",
-    "world.currentSession": "Current session: {session}. Bind zero, one, or multiple standalone world books; binding order remains stable.",
-    "world.catalogItem": "{name} ({count} entries)",
-    "world.documentMeta": "{count} entries \xB7 Unknown fields are preserved across saves and exports",
-    "world.user.title": "User-bound world books",
-    "world.user.current": "Current user: {name}",
-    "world.user.none": "The current session has no bound user, so it has no user-sourced world books.",
-    "world.user.empty": "The current user has no bound standalone world books.",
-    "world.user.libraryEmpty": "The standalone world-book library is empty. Create or import a world book first.",
-    "world.user.unsaved": "The user world-book binding has unsaved changes; the current selection is not yet applied.",
-    "world.user.saved": "The displayed user world-book binding is saved and applied.",
-    "world.user.order": "Effective order: explicit session books first, followed by user-bound books; duplicate resources run only once.",
-    "world.user.duplicate": "Also session-bound; deduplicated",
-    "world.user.appended": "Appended from user binding",
-    "world.user.pendingAdd": "Pending addition",
-    "world.user.pendingRemove": "Pending removal",
-    "world.user.save": "Save user binding (unsaved)",
-    "world.user.saveApplied": "User binding saved",
-    "world.user.clear": "Clear pending selection",
-    "world.user.saveSuccess": "The user-bound world books were saved; later requests will use the new composition.",
-    "world.user.editContent": "Edit contents",
-    "world.user.editHint": "This panel and the User panel edit the same binding. Saving in either place refreshes the other.",
-    "world.embeddedMeta": "{count} entries. It shares the matcher/loader with standalone books; deleting a standalone book never edits or unbinds this embedded book.",
-    "world.embeddedEmpty": "The current session has no character-bound embedded world book. Bind a character card with character_book to show it here.",
-    "world.diagnostics": "Runtime diagnostics ({count})",
-    "character.embeddedBook": "Embedded character_book preserved losslessly ({count} entries); when the character is bound, the Tavern loader invokes the World Info matcher, and unbinding removes it from later requests.",
-    "character.confirmDelete": "Delete character card \u201C{name}\u201D? The original imported file will also be deleted.",
-    "character.confirmHistoricalSwitch": "This session already has history. Changing the character affects only later requests and does not rewrite existing messages. Continue?",
-    "preset.confirmDelete": "Delete preset \u201C{name}\u201D?",
-    "preset.confirmHistoricalSwitch": "This session already has history. Changing the preset affects only later requests and does not rewrite existing messages. Continue?",
-    "preset.currentSessionBound": "Current session binding: {name}.",
-    "preset.browsingUnbound": "Browsing \u201C{name}\u201D; it is not bound to the current session.",
-    "world.confirmDelete": "Delete standalone world book \u201C{name}\u201D? Character-card embedded books will not be affected.",
-    "world.confirmDiscardChanges": "Discard unsaved changes?",
-    "world.confirmDeleteEntry": "Delete this world-book entry? It takes effect after saving.",
-    "world.confirmDeleteEmbeddedEntry": "Delete this embedded character-card world-book entry? It takes effect after saving.",
-    "world.confirmDeleteInfoEntry": "Delete this World Info entry? It will be written to the character-card copy only after saving.",
-    "world.confirmReloadInfo": "Discard unsaved entry changes and reload?",
-    "user.confirmDelete": "Delete user \u201C{name}\u201D? User selections in every session and this user\u2019s world-book relationships will be cleared.",
-    "user.confirmDiscardForCreate": "The current user resource or world-book binding has unsaved changes. Discard them and create a new user?",
-    "user.confirmDiscardForSwitch": "The current user resource or world-book binding has unsaved changes. Discard them and switch?",
-    "user.confirmHistoricalSwitch": "This session already has history. Changing the user affects only later requests and does not rewrite existing messages. Continue?",
-    "user.confirmCloseDirty": "The current user resource or world-book binding has unsaved changes. Close anyway?",
-    "user.confirmDiscardRefresh": "Discard unsaved user-resource or world-book binding changes?",
-    "template.confirmDelete": "Delete configuration template \u201C{name}\u201D? This will not delete any DSH session.",
-    "template.currentSettingsReminder": "Templates can only be created or updated from the current session\u2019s Tavern settings. Review or change the current configuration in the launcher\u2019s Preset, Character, World book, and User panels, then return here to save it.",
-    "template.preview.greeting": "Greeting index: {value}"
-  })
-});
-var SOURCE_EN = Object.freeze({
-  "\u9884\u8BBE": "Preset",
-  "\u89D2\u8272\u5361": "Character card",
-  "\u89D2\u8272\u5361\u56FE\u7247": "Character card image",
-  "\u4E16\u754C\u4E66": "World book",
-  "\u7528\u6237": "User",
-  "\u754C\u9762\u8BBE\u7F6E": "UI settings",
-  "\u8BED\u8A00\u4E0E\u7F29\u653E": "Language and scale",
-  "\u672A\u9009\u62E9\u9884\u8BBE": "No preset selected",
-  "\u672A\u7ED1\u5B9A\u89D2\u8272": "No character bound",
-  "\u672A\u7ED1\u5B9A\u4E16\u754C\u4E66": "No world book bound",
-  "\u672A\u7ED1\u5B9A\u7528\u6237": "No user bound",
-  "\u65E0\u4F1A\u8BDD": "No session",
-  "\u65E0": "None",
-  "\u672A\u77E5": "Unknown",
-  "\u672A\u77E5\u4F5C\u8005": "Unknown author",
-  "\u52A0\u8F7D\u4E2D\u2026": "Loading\u2026",
-  "\u5237\u65B0": "Refresh",
-  "\u5220\u9664": "Delete",
-  "\u4FDD\u5B58": "Save",
-  "\u4FDD\u5B58\u4FEE\u6539": "Save changes",
-  "\u5DF2\u4FDD\u5B58": "Saved",
-  "\u91CD\u65B0\u8F7D\u5165": "Reload",
-  "\u65B0\u589E\u6761\u76EE": "Add entry",
-  "\u65B0\u5EFA\u7528\u6237": "New user",
-  "\u521B\u5EFA\u9884\u8BBE": "Create preset",
-  "\u5BFC\u5165 ST JSON": "Import ST JSON",
-  "\u5BFC\u5165 JSON / PNG": "Import JSON / PNG",
-  "\u5BFC\u51FA JSON": "Export JSON",
-  "\u5BFC\u51FA\u539F\u4EF6": "Export original",
-  "\u5F53\u524D\u9009\u62E9": "Current selection",
-  "\u6D4F\u89C8\u9884\u8BBE": "Browse presets",
-  "\u9884\u8BBE\u5E93\u4E3A\u7A7A": "Preset library is empty",
-  "\u4E0D\u4F7F\u7528\u9884\u8BBE": "Do not use a preset",
-  "\u57FA\u672C\u8BBE\u7F6E": "Basic settings",
-  "\u9AD8\u7EA7\u8BBE\u7F6E": "Advanced settings",
-  "\u6536\u8D77\u9AD8\u7EA7\u8BBE\u7F6E": "Hide advanced settings",
-  "\u5C55\u5F00\u9AD8\u7EA7\u8BBE\u7F6E": "Show advanced settings",
-  "\u4FDD\u5B58\u5E76\u5E94\u7528": "Save and apply",
-  "\u5904\u7406\u4E2D\u2026": "Working\u2026",
-  "\u6D4F\u89C8\u89D2\u8272\u5E93": "Browse character library",
-  "\u6D4F\u89C8\u7528\u6237\u8D44\u6E90": "Browse user resources",
-  "\u6D4F\u89C8\u72EC\u7ACB\u4E16\u754C\u4E66": "Browse standalone world books",
-  "\u89D2\u8272\u5E93\u4E3A\u7A7A": "Character library is empty",
-  "\u7528\u6237\u8D44\u6E90\u5E93\u4E3A\u7A7A": "User library is empty",
-  "\u8D44\u6E90\u5E93\u4E3A\u7A7A": "Library is empty",
-  "\u72EC\u7ACB\u4E16\u754C\u4E66\u8D44\u6E90\u5E93\u4E3A\u7A7A\u3002": "The standalone world-book library is empty.",
-  "\u7ED1\u5B9A\u5230\u5F53\u524D\u4F1A\u8BDD": "Bind to current session",
-  "\u66F4\u65B0\u4F1A\u8BDD\u7ED1\u5B9A": "Update session binding",
-  "\u5237\u65B0\u4F1A\u8BDD\u7ED1\u5B9A": "Refresh session binding",
-  "\u89E3\u9664\u7ED1\u5B9A": "Unbind",
-  "\u89E3\u9664\u5F53\u524D\u4F1A\u8BDD\u7ED1\u5B9A": "Unbind from current session",
-  "\u5F53\u524D\u4F1A\u8BDD\u672A\u7ED1\u5B9A\u9884\u8BBE\u3002": "The current session has no bound preset.",
-  "\u5220\u9664\u89D2\u8272\u5361": "Delete character card",
-  "\u5220\u9664\u7528\u6237": "Delete user",
-  "\u5220\u9664\u72EC\u7ACB\u4E66": "Delete standalone book",
-  "\u540D\u79F0": "Name",
-  "\u89D2\u8272": "Role",
-  "\u5185\u5BB9": "Content",
-  "\u542F\u7528": "Enabled",
-  "\u5DF2\u7981\u7528": "Disabled",
-  "\u5E38\u9A7B": "Always active",
-  "\u4F7F\u7528\u9644\u52A0\u5173\u952E\u8BCD": "Use secondary keywords",
-  "\u533A\u5206\u5927\u5C0F\u5199": "Case sensitive",
-  "\u5168\u8BCD\u5339\u914D": "Whole-word matching",
-  "\u4E3B\u5173\u952E\u8BCD": "Primary keywords",
-  "\u9644\u52A0\u5173\u952E\u8BCD": "Secondary keywords",
-  "\u9644\u52A0\u5173\u952E\u8BCD\u903B\u8F91": "Secondary keyword logic",
-  "\u65E0\u4E3B\u5173\u952E\u8BCD": "No primary keywords",
-  "\u6392\u5E8F\u6743\u91CD": "Sort weight",
-  "\u63D2\u5165\u4F4D\u7F6E": "Insertion position",
-  "\u4F4D\u7F6E": "Position",
-  "\u987A\u5E8F": "Order",
-  "\u6982\u7387": "Probability",
-  "\u6B63\u6587": "Body",
-  "\u6761\u76EE\u6807\u9898": "Entry title",
-  "\u6761\u76EE\u540D\u79F0 / \u5907\u6CE8": "Entry name / note",
-  "\u4E16\u754C\u4E66\u540D\u79F0": "World-book name",
-  "\u5220\u9664\u6761\u76EE": "Delete entry",
-  "\u65B0\u589E\u5185\u5D4C\u6761\u76EE": "Add embedded entry",
-  "\u4FDD\u5B58\u5185\u5D4C\u4E66": "Save embedded book",
-  "\u5185\u5D4C\u4E66\u5DF2\u4FDD\u5B58": "Embedded book saved",
-  "\u72EC\u7ACB\u4E16\u754C\u4E66": "Standalone world books",
-  "\u89D2\u8272\u5361\u7ED1\u5B9A\u7684\u4E16\u754C\u4E66": "Character-bound world book",
-  "\u89D2\u8272\u5361\u5185\u5D4C\u4E16\u754C\u4E66": "Embedded character world book",
-  "\u89D2\u8272\u5361\u5185\u5D4C\u4E16\u754C\u4FE1\u606F": "Embedded character World Info",
-  "\u4E16\u754C\u4FE1\u606F\uFF08Lorebook\uFF09": "World Info (Lorebook)",
-  "\u8FD0\u884C\u8BCA\u65AD": "Runtime diagnostics",
-  "\u517C\u5BB9\u8B66\u544A": "Compatibility warnings",
-  "\u9700\u8981 loader/\u5176\u4ED6\u6A21\u5757\u5904\u7406": "Requires loader/other module handling",
-  "\u5F53\u524D\u5F00\u573A\u53C2\u8003\u5185\u5BB9": "Current greeting reference",
-  "\u5F00\u573A\u53C2\u8003": "Greeting reference",
-  "\u540D\u5B57\uFF08\u7528\u4E8E {{user}} \u5B8F\uFF09": "Name (used by the {{user}} macro)",
-  "\u63CF\u8FF0\uFF08\u8FDB\u5165 personaDescription marker\uFF1B\u7F3A marker \u65F6\u7531 loader \u7A33\u5B9A\u964D\u7EA7\uFF09": "Description (placed at the personaDescription marker, with a stable loader fallback)",
-  "\u4FDD\u5B58\u8D44\u6E90": "Save resource",
-  "\u9884\u8BBE\u540D\u79F0": "Preset name",
-  "\u8DDF\u968F\u6A21\u578B\u9ED8\u8BA4": "Use model default",
-  "DSH \u7CFB\u7EDF\u63D0\u793A\u8BCD": "DSH system prompt",
-  "\u4FDD\u7559 DSH \u7CFB\u7EDF\u63D0\u793A\u8BCD\uFF0C\u5E76\u8FFD\u52A0\u9884\u8BBE\uFF08\u63A8\u8350\uFF09": "Keep the DSH system prompt and append the preset (recommended)",
-  "\u4EC5\u4F7F\u7528\u9884\u8BBE\uFF0C\u79FB\u9664 DSH \u7CFB\u7EDF\u6BB5\uFF08\u9AD8\u7EA7\uFF09": "Use only the preset and remove DSH system sections (advanced)",
-  "\u63D0\u793A\u8BCD": "Prompts",
-  "\uFF0B \u6DFB\u52A0": "+ Add",
-  "\u62D6\u62FD\u6392\u5217\u987A\u5E8F": "Drag to reorder",
-  "\u677E\u5F00\u540E\u653E\u7F6E\u4E8E\u6B64": "Release to place here",
-  "\u5DF2\u542F\u7528": "Enabled",
-  "\u5DF2\u7ED1\u5B9A": "Bound",
-  "\u672A\u7ED1\u5B9A": "Not bound",
-  "\u89C4\u5212\u4E2D": "Planned",
-  "\u5173\u95ED\u53F3\u4FA7\u680F": "Close sidebar",
-  "\u5173\u95ED\u9884\u8BBE\u4FA7\u8FB9\u680F": "Close preset sidebar",
-  "\u5173\u95ED\u89D2\u8272\u5361\u9762\u677F": "Close character-card panel",
-  "\u5173\u95ED\u89D2\u8272\u5361\u4FA7\u8FB9\u680F": "Close character-card sidebar",
-  "\u5173\u95ED\u7528\u6237\u9762\u677F": "Close user panel",
-  "\u5173\u95ED\u7528\u6237\u4FA7\u8FB9\u680F": "Close user sidebar",
-  "\u62D6\u52A8\u53EF\u79FB\u52A8\uFF1B\u70B9\u51FB\u5C55\u5F00 Tavern \u8D44\u6E90\u9762\u677F": "Drag to move; click to open Tavern resource panels",
-  "\u6B63\u5728\u52A0\u8F7D\u9884\u8BBE\u2026": "Loading presets\u2026",
-  "\u6B63\u5728\u52A0\u8F7D\u89D2\u8272\u5E93\u2026": "Loading character library\u2026",
-  "\u6B63\u5728\u52A0\u8F7D\u7528\u6237\u8D44\u6E90\u2026": "Loading user resources\u2026",
-  "\u6B63\u5728\u8BFB\u53D6\u4E16\u754C\u4FE1\u606F\u2026": "Reading World Info\u2026",
-  "\u6B63\u5728\u8BFB\u53D6\u5BA1\u8BA1\u8BB0\u5F55\u2026": "Reading audit records\u2026",
-  "\u7528\u6237\u8D44\u6E90\u5DF2\u52A0\u8F7D": "User resources loaded",
-  "\u7528\u6237\u8D44\u6E90\u5DF2\u5237\u65B0": "User resources refreshed",
-  "\u7528\u6237\u8D44\u6E90\u5DF2\u521B\u5EFA\uFF1B\u4FDD\u5B58\u540D\u5B57\u548C\u63CF\u8FF0\u540E\u518D\u7ED1\u5B9A": "User created; save its name and description before binding",
-  "\u540D\u5B57\u548C\u63CF\u8FF0\u5DF2\u4FDD\u5B58\uFF1B\u5DF2\u7ED1\u5B9A\u4F1A\u8BDD\u7684\u4E0B\u4E00\u6B21\u8BF7\u6C42\u4F1A\u7ACB\u5373\u4F7F\u7528\u65B0\u5185\u5BB9": "Name and description saved; bound sessions will use them on the next request",
-  "\u7528\u6237\u5DF2\u7ED1\u5B9A\uFF1B\u5F53\u524D\u4F1A\u8BDD\u7684\u4E0B\u4E00\u6B21\u8BF7\u6C42\u4F1A\u4F7F\u7528\u8BE5\u540D\u5B57\u548C\u63CF\u8FF0": "User bound; the current session will use this name and description on its next request",
-  "\u5F53\u524D\u4F1A\u8BDD\u5DF2\u89E3\u9664\u7528\u6237\u7ED1\u5B9A": "User unbound from the current session",
-  "\u7528\u6237\u5DF2\u5220\u9664\uFF0C\u76F8\u5173\u4F1A\u8BDD\u7ED1\u5B9A\u5DF2\u6E05\u9664": "User deleted and related session bindings cleared",
-  "\u68C0\u6D4B\u5230\u5176\u4ED6 Tavern \u8D44\u6E90\u53D8\u5316\uFF1B\u4E3A\u4FDD\u7559\u672C\u9762\u677F\u672A\u4FDD\u5B58\u4FEE\u6539\uFF0C\u672A\u81EA\u52A8\u5237\u65B0\u3002": "Other Tavern resources changed. This panel was not refreshed so its unsaved changes are preserved.",
-  "\u5F53\u524D\u7528\u6237\u8D44\u6E90\u6216\u4E16\u754C\u4E66\u7ED1\u5B9A\u6709\u672A\u4FDD\u5B58\u4FEE\u6539\u3002\u653E\u5F03\u4FEE\u6539\u5E76\u65B0\u5EFA\u7528\u6237\u5417\uFF1F": "This user resource or its world-book binding has unsaved changes. Discard them and create a user?",
-  "\u7528\u6237\u7ED1\u5B9A\u7684\u4E16\u754C\u4E66\u5DF2\u4FDD\u5B58\uFF1B\u9009\u62E9\u8BE5\u7528\u6237\u7684\u4F1A\u8BDD\u4F1A\u5728\u4E0B\u4E00\u6B21\u7EC4\u88C5\u65F6\u81EA\u52A8\u4F7F\u7528": "The user\u2019s world-book binding was saved; sessions using this user will apply it on their next assembly",
-  "\u5F53\u524D\u7528\u6237\u8D44\u6E90\u6216\u4E16\u754C\u4E66\u7ED1\u5B9A\u6709\u672A\u4FDD\u5B58\u4FEE\u6539\u3002\u653E\u5F03\u4FEE\u6539\u5E76\u5207\u6362\u5417\uFF1F": "This user resource or its world-book binding has unsaved changes. Discard them and switch?",
-  "\u7528\u6237\u8D44\u6E90\u548C\u4E16\u754C\u4E66\u7ED1\u5B9A\u5DF2\u52A0\u8F7D": "User resource and world-book binding loaded",
-  "\u5F53\u524D\u7528\u6237\u8D44\u6E90\u6216\u4E16\u754C\u4E66\u7ED1\u5B9A\u6709\u672A\u4FDD\u5B58\u4FEE\u6539\u3002\u4ECD\u7136\u5173\u95ED\u5417\uFF1F": "This user resource or its world-book binding has unsaved changes. Close anyway?",
-  "\u653E\u5F03\u5C1A\u672A\u4FDD\u5B58\u7684\u7528\u6237\u8D44\u6E90\u6216\u4E16\u754C\u4E66\u7ED1\u5B9A\u4FEE\u6539\uFF1F": "Discard unsaved user-resource or world-book-binding changes?",
-  "\u6709\u672A\u4FDD\u5B58\u4FEE\u6539\uFF1A": "Unsaved changes: ",
-  "\u540D\u5B57/\u63CF\u8FF0": "Name/description",
-  "\u7528\u6237\u4E16\u754C\u4E66\u7ED1\u5B9A": "User world-book binding",
-  "\u5F53\u524D\u663E\u793A\u7684\u7528\u6237\u8D44\u6E90\u548C\u4E16\u754C\u4E66\u7ED1\u5B9A\u5747\u5DF2\u4FDD\u5B58\u3002": "The displayed user resource and world-book binding are saved.",
-  "\u4FDD\u5B58\u8D44\u6E90\uFF08\u672A\u4FDD\u5B58\uFF09": "Save resource (unsaved)",
-  "\u8D44\u6E90\u5DF2\u4FDD\u5B58": "Resource saved",
-  "\u8BF7\u5148\u4FDD\u5B58\u4FEE\u6539": "Save changes first",
-  "\u7528\u6237\u7ED1\u5B9A\u7684\u72EC\u7ACB\u4E16\u754C\u4E66": "Standalone world books bound to this user",
-  "\u9009\u62E9\u8BE5\u7528\u6237\u65F6\uFF0Cloader \u4F1A\u81EA\u52A8\u7EC4\u5408\u8FD9\u91CC\u7684\u4E16\u754C\u4E66\u4E0E\u5F53\u524D\u4F1A\u8BDD\u663E\u5F0F\u9009\u62E9\u7684\u4E16\u754C\u4E66\uFF1B\u91CD\u590D\u7684\u540C\u4E00\u672C\u4E66\u53EA\u6267\u884C\u4E00\u6B21\u3002": "When this user is selected, the loader combines these books with the session\u2019s explicit world books; a duplicate book runs only once.",
-  "\u6B63\u5728\u52A0\u8F7D\u72EC\u7ACB\u4E16\u754C\u4E66\u8D44\u6E90\u5E93\u2026": "Loading the standalone world-book library\u2026",
-  "\u72EC\u7ACB\u4E16\u754C\u4E66\u8D44\u6E90\u5E93\u4E3A\u7A7A\u3002\u8BF7\u5148\u5728\u4E16\u754C\u4E66\u9762\u677F\u521B\u5EFA\u6216\u5BFC\u5165\u3002": "The standalone world-book library is empty. Create or import one in the world-book panel first.",
-  "\u4FDD\u5B58\u4E16\u754C\u4E66\u7ED1\u5B9A\uFF08\u672A\u4FDD\u5B58\uFF09": "Save world-book binding (unsaved)",
-  "\u4E16\u754C\u4E66\u7ED1\u5B9A\u5DF2\u4FDD\u5B58": "World-book binding saved",
-  "\u6E05\u7A7A\u5F85\u4FDD\u5B58\u9009\u62E9": "Clear pending selection",
-  "\u7528\u6237\u8D44\u6E90\u6B63\u6587\u4ECD\u4E25\u683C\u53EA\u6709\u540D\u5B57\u548C\u63CF\u8FF0\uFF1B\u4E16\u754C\u4E66\u5173\u7CFB\u4FDD\u5B58\u5728 loader \u7684\u72EC\u7ACB\u7ED3\u6784\u5316\u7B56\u7565\u4E2D\u3002\u7528\u6237\u8D44\u6E90\u4E0D\u5305\u542B\u5934\u50CF\uFF0C\u4E5F\u4E0D\u4F1A\u8986\u76D6 DSH Agent \u8EAB\u4EFD\u3002": "The user resource remains strictly name and description only; world-book relationships are stored in a separate structured loader policy. User resources have no avatar and do not override the DSH Agent identity.",
-  "\u89D2\u8272\u5E93\u5DF2\u52A0\u8F7D": "Character library loaded",
-  "\u89D2\u8272\u72B6\u6001\u5DF2\u5237\u65B0": "Character status refreshed",
-  "\u89D2\u8272\u5361\u5DF2\u5BFC\u5165\uFF1B\u5C1A\u672A\u7ED1\u5B9A\u5230\u4F1A\u8BDD": "Character card imported; it is not yet bound to a session",
-  "\u89D2\u8272\u9009\u62E9\u5DF2\u4FDD\u5B58\uFF1B\u5B9E\u9645\u5BF9\u8BDD\u52A0\u8F7D\u7531 Tavern loader \u7EDF\u4E00\u5904\u7406": "Character selection saved; the Tavern loader handles runtime loading",
-  "\u5F53\u524D\u4F1A\u8BDD\u5DF2\u89E3\u9664\u89D2\u8272\u7ED1\u5B9A": "Character unbound from the current session",
-  "\u89D2\u8272\u5361\u5DF2\u5220\u9664\uFF0C\u76F8\u5173\u4F1A\u8BDD\u7ED1\u5B9A\u5DF2\u6E05\u9664": "Character card deleted and related bindings cleared",
-  "\u9884\u8BBE\u5DF2\u52A0\u8F7D": "Preset loaded",
-  "\u9884\u8BBE\u72B6\u6001\u5DF2\u5237\u65B0": "Preset status refreshed",
-  "\u5DF2\u521B\u5EFA\u5E76\u9009\u62E9\u65B0\u9884\u8BBE": "New preset created and selected",
-  "\u9884\u8BBE\u8BE6\u60C5\u5DF2\u52A0\u8F7D\uFF1B\u4F1A\u8BDD\u7ED1\u5B9A\u5C1A\u672A\u6539\u53D8": "Preset details loaded; the session binding is unchanged",
-  "\u8BF7\u5148\u521B\u5EFA\u6216\u6253\u5F00\u4E00\u4E2A\u4F1A\u8BDD\u518D\u7ED1\u5B9A\u9884\u8BBE": "Create or open a session before binding a preset",
-  "\u8BF7\u5148\u9009\u62E9\u4E00\u4E2A\u9884\u8BBE": "Select a preset first",
-  "\u9884\u8BBE\u5DF2\u7ED1\u5B9A\uFF1B\u5F53\u524D\u4F1A\u8BDD\u7684\u4E0B\u4E00\u6B21\u8BF7\u6C42\u5C06\u4F7F\u7528\u5B83": "Preset bound; the current session will use it on the next request",
-  "\u5F53\u524D\u4F1A\u8BDD\u5DF2\u89E3\u9664\u9884\u8BBE\u7ED1\u5B9A": "Preset unbound from the current session",
-  "\u9884\u8BBE\u5DF2\u521B\u5EFA\uFF1B\u5C1A\u672A\u7ED1\u5B9A\u5F53\u524D\u4F1A\u8BDD": "Preset created; not bound to the current session",
-  "ST \u9884\u8BBE\u5DF2\u5BFC\u5165\uFF1B\u5C1A\u672A\u7ED1\u5B9A\u5F53\u524D\u4F1A\u8BDD": "ST preset imported; not bound to the current session",
-  "\u9884\u8BBE\u914D\u7F6E\u5DF2\u4FDD\u5B58\uFF1B\u5DF2\u7ED1\u5B9A\u5B83\u7684\u4F1A\u8BDD\u5C06\u5728\u540E\u7EED\u8BF7\u6C42\u4F7F\u7528\u65B0\u5185\u5BB9": "Preset saved; sessions bound to it will use the new content on later requests",
-  "\u9884\u8BBE\u914D\u7F6E\u5DF2\u4FDD\u5B58": "Preset settings saved",
-  "\u9884\u8BBE\u5DF2\u5220\u9664": "Preset deleted",
-  "\u5F53\u524D\u7ED1\u5B9A\u5DF2\u5E94\u7528": "Current binding applied",
-  "\u6E05\u7A7A\u5F85\u5E94\u7528\u9009\u62E9": "Clear pending selection",
-  "\u5E94\u7528\u4F1A\u8BDD\u7ED1\u5B9A\uFF08\u672A\u4FDD\u5B58\uFF09": "Apply session binding (unsaved)",
-  "\u9762\u677F\u663E\u793A\u7684\u7ED1\u5B9A\u5DF2\u5E94\u7528\u5230\u5F53\u524D\u4F1A\u8BDD\u3002": "The binding shown in this panel is applied to the current session.",
-  "\u7ED1\u5B9A\u6709\u672A\u4FDD\u5B58\u4FEE\u6539\uFF0C\u5F53\u524D\u52FE\u9009\u5C1A\u672A\u5E94\u7528\u5230\u4F1A\u8BDD\u3002": "The binding has unsaved changes; the current selection is not yet applied.",
-  "\u672C\u8F6E\u6CA1\u6709\u53EF\u5BA1\u8BA1\u7684\u4E16\u754C\u4E66\u5339\u914D\u6765\u6E90\u3002": "This request has no auditable world-book source.",
-  "\u5237\u65B0\u6216\u5BBF\u4E3B\u91CD\u542F\u540E\u53EF\u6062\u590D\u3002": "Restored after refresh or host restart.",
-  "\u672A\u4F7F\u7528": "Not used",
-  "\u65E0\u914D\u7F6E\u5173\u952E\u8BCD": "No configured keywords",
-  "\u65E0\u5173\u952E\u8BCD\u547D\u4E2D": "No keyword matches",
-  "\u5DF2\u63D2\u5165": "Inserted",
-  "\u5DF2\u62D2\u7EDD": "Rejected",
-  "\u7B49\u5F85\u6743\u5A01 header": "Waiting for authoritative header",
-  "\u7EC4\u5408\u4E0E\u63D2\u5165": "Assembly and insertion",
-  "\u4E16\u754C\u4E66\u5339\u914D\u51B3\u7B56": "World-book match decisions",
-  "\u65B0\u9884\u8BBE": "New preset",
-  "\u65B0\u63D0\u793A\u8BCD": "New prompt",
-  "\u65B0\u7528\u6237": "New user",
-  "\u65B0\u4F1A\u8BDD": "New session",
-  "\u5F53\u524D\u8BBE\u7F6E\u6216\u914D\u7F6E\u6A21\u677F": "Current settings or configuration template",
-  "\u65B0\u4F1A\u8BDD\u4E0E\u914D\u7F6E\u6A21\u677F": "New session and configuration templates",
-  "\u5173\u95ED\u65B0\u4F1A\u8BDD\u4FA7\u8FB9\u680F": "Close the new-session sidebar",
-  "\u7EF4\u6301\u5F53\u524D Tavern \u8BBE\u7F6E\u65B0\u5F00\u5BF9\u8BDD": "Start a new conversation with the current Tavern settings",
-  "\u53EA\u7EE7\u627F preset\u3001\u89D2\u8272\u5361\u4E0E greeting/\u5F00\u5173\u3001\u7528\u6237\u548C\u72EC\u7ACB\u4E16\u754C\u4E66\u9009\u62E9\u3002DSH \u5386\u53F2\u3001Tavern Trace\u3001Inbox\u3001\u8FD0\u884C\u4E2D turn/step \u548C\u5176\u4ED6\u8FD0\u884C\u6001\u4E0D\u4F1A\u590D\u5236\u3002": "Carries only the preset, character and greeting/options, user, and standalone world-book selections. DSH history, Tavern Trace, Inbox, active turns/steps, and other runtime state are not copied.",
-  "\u6CA1\u6709\u53EF\u7528\u7684 DSH \u76EE\u6807\u5DE5\u4F5C\u533A\u3002\u8BF7\u5148\u5728 DSH \u4FA7\u680F\u4E2D\u52A0\u5165\u6216\u6253\u5F00\u5DE5\u4F5C\u533A\u3002": "No DSH target workspace is available. Add or open a workspace in the DSH sidebar first.",
-  "\u914D\u7F6E\u6A21\u677F": "Configuration templates",
-  "\u4FDD\u5B58\u7684 Tavern \u914D\u7F6E": "Saved Tavern configuration",
-  "\u72EC\u7ACB\u4E16\u754C\u4E66\uFF08\u6309\u7ED1\u5B9A\u987A\u5E8F\uFF09": "Standalone world books (binding order)",
-  "\u5361\u5185 system_prompt\uFF1A": "Character system_prompt: ",
-  "post_history_instructions\uFF1A": "post_history_instructions: ",
-  "\u5DF2\u9009\u62E9\u6A21\u677F": "Selected template",
-  "\u672A\u9009\u62E9\u6A21\u677F": "No template selected",
-  "\u6A21\u677F\u540D\u79F0": "Template name",
-  "\u65B0\u914D\u7F6E\u6A21\u677F": "New configuration template",
-  "\u7531\u5F53\u524D\u8BBE\u7F6E\u521B\u5EFA": "Create from current settings",
-  "\u4EC5\u4FDD\u5B58\u540D\u79F0": "Save name only",
-  "\u7528\u5F53\u524D\u8BBE\u7F6E\u66F4\u65B0": "Update from current settings",
-  "\u5220\u9664\u6A21\u677F": "Delete template",
-  "\u4FDD\u5B58\u5185\u5BB9\uFF1A": "Saved content: ",
-  "\u7A7A Tavern \u914D\u7F6E": "Empty Tavern configuration",
-  "\u8BE5\u6A21\u677F\u6682\u4E0D\u53EF\u7528\u4E8E\u521B\u5EFA\uFF1A": "This template cannot currently be used:",
-  "\u6839\u636E\u6240\u9009\u6A21\u677F\u65B0\u5F00\u5E72\u51C0\u5BF9\u8BDD": "Start a clean conversation from the selected template",
-  "\u6A21\u677F\u4E0E\u65B0\u4F1A\u8BDD\u64CD\u4F5C\u5DF2\u5C31\u7EEA\u3002": "Template and new-session actions are ready.",
-  "DSH \u53EF\u80FD\u590D\u7528\u540C\u5DE5\u4F5C\u533A\u4E2D\u5DF2\u6709\u7684\u771F\u5B9E blank session\uFF1B\u8FD9\u662F\u5176\u516C\u5F00 New Session \u8BED\u4E49\u3002\u63D2\u4EF6\u4F1A\u5728\u5BFC\u822A\u524D\u539F\u5B50\u66FF\u6362\u8BE5 blank session \u7684 Tavern \u9009\u62E9\u3002": "DSH may reuse an existing real blank session in the same workspace; this is its public New Session behavior. The plugin atomically replaces that blank session\u2019s Tavern selection before navigation.",
-  "\u6A21\u677F\u9009\u62E9\u5DF2\u66F4\u65B0": "Template selection updated",
-  "\u8BF7\u5148\u6253\u5F00\u4E00\u4E2A\u4F1A\u8BDD\uFF0C\u518D\u4FDD\u5B58\u5F53\u524D Tavern \u8BBE\u7F6E": "Open a session before saving its current Tavern settings",
-  "\u8BF7\u5148\u9009\u62E9\u4E00\u4E2A\u6A21\u677F": "Select a template first",
-  "\u8BF7\u5148\u6253\u5F00\u4F1A\u8BDD\u5E76\u9009\u62E9\u6A21\u677F": "Open a session and select a template first",
-  "\u6A21\u677F\u5DF2\u5220\u9664": "Template deleted",
-  "\u8BF7\u5148\u6253\u5F00\u4E00\u4E2A\u6765\u6E90\u4F1A\u8BDD": "Open a source session first",
-  "\u5F53\u524D\u4F1A\u8BDD\u4E0D\u5C5E\u4E8E DSH \u5DE5\u4F5C\u533A\uFF1B\u8BF7\u5148\u628A\u4F1A\u8BDD\u52A0\u5165\u5DE5\u4F5C\u533A": "The current session is not in a DSH workspace; add it to a workspace first",
-  "\u5DF2\u521B\u5EFA\u6A21\u677F\uFF1A": "Template created: ",
-  "\u5DF2\u91CD\u547D\u540D\u6A21\u677F\uFF1A": "Template renamed: ",
-  "\u5DF2\u7528\u5F53\u524D\u8BBE\u7F6E\u66F4\u65B0\u6A21\u677F\uFF1A": "Template updated from current settings: ",
-  "\u5DF2\u5207\u6362\u5230\u5E72\u51C0\u4F1A\u8BDD\uFF1A": "Switched to clean session: ",
-  "\u5220\u9664\u914D\u7F6E\u6A21\u677F\u201C": "Delete configuration template \u201C",
-  "\u201D\uFF1F\u8FD9\u4E0D\u4F1A\u5220\u9664\u4EFB\u4F55 DSH \u4F1A\u8BDD\u3002": "\u201D? This will not delete any DSH session.",
-  " \u672C\u4E16\u754C\u4E66": " world books",
-  "\u4FDD\u5B58\u4F1A\u66F4\u65B0\u63D2\u4EF6\u4FDD\u5B58\u7684\u89D2\u8272\u5361\u526F\u672C\u53CA\u5176 JSON \u5BFC\u51FA\uFF1B\u4E3A\u907F\u514D\u7834\u574F\u7B7E\u540D\u6216\u56FE\u7247\u6570\u636E\uFF0C\u6700\u521D\u5BFC\u5165\u7684 PNG/JSON artifact \u4ECD\u4FDD\u6301\u4E0D\u53D8\u3002matcher \u4F1A\u5728\u9996\u6B21\u8BF7\u6C42\u7EC4\u88C5\u524D\u628A\u672C\u6B65\u9AA4 claimed \u8F93\u5165\u4E0E Session \u5386\u53F2\u7EC4\u5408\u626B\u63CF\uFF0C\u4E0D\u4F1A\u5411\u5386\u53F2\u5199\u5165\u526F\u672C\u3002": "Saving updates the plugin copy of the character card and its JSON export. The original PNG/JSON artifact remains unchanged. Before the first request assembly, the matcher scans this step\u2019s claimed input together with Session history without writing a duplicate into history.",
-  "\u5B9E\u9645\u6FC0\u6D3B\u3001\u6392\u5E8F\u3001\u6982\u7387\u548C\u9884\u7B97\u7531\u5171\u4EAB matcher \u786E\u5B9A\uFF1B\u6700\u7EC8\u6CE8\u5165\u4ECD\u7531 Tavern loader \u7EDF\u4E00\u5B8C\u6210\u3002\u5F53\u524D\u626B\u63CF\u4F1A\u628A\u672C\u6B65\u9AA4 claimed \u8F93\u5165\u4E0E\u6301\u4E45\u5386\u53F2\u7EC4\u5408\u6210\u4E34\u65F6\u4E0A\u4E0B\u6587\uFF0C\u56E0\u6B64\u5355\u6B65\u9AA4\u4F1A\u8BDD\u4E5F\u80FD\u5728\u9996\u6B21\u8BF7\u6C42\u89E6\u53D1\u5173\u952E\u8BCD\u3002": "The shared matcher determines activation, ordering, probability, and budget, and the Tavern loader performs final injection. Scanning combines this step\u2019s claimed input with durable history in a temporary context, so a single-step session can trigger keywords on its first request.",
-  "\u5339\u914D\u57FA\u4E8E\u672C\u6B65\u9AA4 assembly \u7684\u4E34\u65F6\u6FC0\u6D3B\u4E0A\u4E0B\u6587\uFF1A\u6301\u4E45\u5386\u53F2 + ": "Matching uses this step\u2019s temporary activation context: durable history + ",
-  " \u6761\u672C\u8F6E claimed \u8F93\u5165\uFF1B\u4E0D\u4FDD\u5B58\u8F93\u5165\u6B63\u6587": " claimed messages from this turn; input bodies are not stored",
-  "\uFF1B\u626B\u63CF\u8F93\u5165\u5DF2\u6309\u4E0A\u9650\u622A\u65AD": "; scan input was truncated to the configured limit",
-  "\u4E3B\u5173\u952E\u8BCD\uFF08\u6BCF\u884C\u4E00\u4E2A\uFF1B\u4EFB\u4E00\u547D\u4E2D\uFF09": "Primary keywords (one per line; any match)",
-  "\u9644\u52A0\u5173\u952E\u8BCD\uFF08\u6BCF\u884C\u4E00\u4E2A\uFF09": "Secondary keywords (one per line)",
-  "\u4E3B\u5173\u952E\u8BCD\uFF08\u652F\u6301\u4E2D\u6587\u3001\u82F1\u6587\u9017\u53F7\u5206\u9694\uFF09": "Primary keywords (Chinese or English comma separators)",
-  "\u9644\u52A0\u5173\u952E\u8BCD\uFF08\u652F\u6301\u4E2D\u6587\u3001\u82F1\u6587\u9017\u53F7\u5206\u9694\uFF09": "Secondary keywords (Chinese or English comma separators)",
-  "AND ANY\uFF1A\u547D\u4E2D\u4EFB\u4E00": "AND ANY: match any",
-  "AND ALL\uFF1A\u547D\u4E2D\u5168\u90E8": "AND ALL: match all",
-  "NOT ANY\uFF1A\u4E0D\u80FD\u547D\u4E2D\u4EFB\u4E00": "NOT ANY: match none",
-  "NOT ALL\uFF1A\u4E0D\u80FD\u5168\u90E8\u547D\u4E2D": "NOT ALL: not all may match",
-  "\u6761\u76EE\u5185\u5BB9\uFF08\u89E6\u53D1\u540E\u6CE8\u5165 system profile\uFF09": "Entry content (injected into the system profile when triggered)",
-  "\u89D2\u8272\u5B9A\u4E49\u4E4B\u524D": "Before character definition",
-  "\u89D2\u8272\u5B9A\u4E49\u4E4B\u540E": "After character definition",
-  "\u4F5C\u8005\u6CE8\u91CA\u4E4B\u524D\uFF08\u8FD1\u4F3C\uFF09": "Before author note (approximate)",
-  "\u4F5C\u8005\u6CE8\u91CA\u4E4B\u540E\uFF08\u8FD1\u4F3C\uFF09": "After author note (approximate)",
-  "\u6307\u5B9A\u6DF1\u5EA6\uFF08\u8FD1\u4F3C\uFF09": "At depth (approximate)",
-  "\u793A\u4F8B\u6D88\u606F\u4E4B\u524D\uFF08\u8FD1\u4F3C\uFF09": "Before example messages (approximate)",
-  "\u793A\u4F8B\u6D88\u606F\u4E4B\u540E\uFF08\u8FD1\u4F3C\uFF09": "After example messages (approximate)",
-  "Outlet\uFF08\u5F53\u524D\u4E0D\u6CE8\u5165\uFF09": "Outlet (not currently injected)",
-  "\u5220\u9664\u8FD9\u4E2A\u4E16\u754C\u4FE1\u606F\u6761\u76EE\uFF1F\u4FDD\u5B58\u540E\u624D\u4F1A\u5199\u5165\u89D2\u8272\u5361\u526F\u672C\u3002": "Delete this World Info entry? It is written to the saved character-card copy only after saving.",
-  "\u653E\u5F03\u5C1A\u672A\u4FDD\u5B58\u7684\u6761\u76EE\u4FEE\u6539\u5E76\u91CD\u65B0\u8F7D\u5165\uFF1F": "Discard unsaved entry changes and reload?",
-  "\u653E\u5F03\u5C1A\u672A\u4FDD\u5B58\u7684\u4FEE\u6539\uFF1F": "Discard unsaved changes?",
-  "\u6709\u5C1A\u672A\u4FDD\u5B58\u7684\u6761\u76EE\u4FEE\u6539\u3002": "There are unsaved entry changes.",
-  "\u5F53\u524D\u4F1A\u8BDD\u6CA1\u6709\u53EF\u7528\u4E16\u754C\u4FE1\u606F\u3002\u7ED1\u5B9A\u542B character_book \u7684\u89D2\u8272\u5361\u540E\uFF0C\u5176\u5185\u5D4C\u6761\u76EE\u4F1A\u81EA\u52A8\u7531 loader \u5339\u914D\uFF1B\u89E3\u7ED1\u89D2\u8272\u4F1A\u540C\u65F6\u79FB\u9664\u8BE5\u6765\u6E90\u3002": "No World Info is available for this session. Bind a character card containing character_book to let the loader match its entries; unbinding removes that source.",
-  "\u4FDD\u5B58\u4F1A\u66F4\u65B0\u63D2\u4EF6\u4FDD\u5B58\u7684\u89D2\u8272\u5361\u526F\u672C\u53CA\u5176 JSON \u5BFC\u51FA\uFF1B\u4E3A\u907F\u514D\u7834\u574F\u7B7E\u540D\u6216\u56FE\u7247\u6570\u636E\uFF0C\u6700\u521D\u5BFC\u5165\u7684 PNG/JSON artifact \u4ECD\u4FDD\u6301\u4E0D\u53D8\u3002\u5F53\u524D matcher \u626B\u63CF\u5DF2\u8FDB\u5165 Session \u7684\u5386\u53F2\uFF1B\u521A\u63D0\u4EA4\u7684\u8F93\u5165\u53EF\u80FD\u5728\u540C\u4E00\u53EF\u89C1\u56DE\u5408\u7684\u4E0B\u4E00 agent step\uFF08\u5982\u5DE5\u5177\u7EE7\u7EED\uFF09\u6216\u4E0B\u4E00\u7528\u6237\u56DE\u5408\u89E6\u53D1\u5173\u952E\u8BCD\u3002": "Saving updates the plugin copy of the character card and its JSON export. The originally imported PNG/JSON artifact remains unchanged to preserve signatures and image data. The matcher scans durable session history; newly submitted input may trigger on the next agent step or user turn.",
-  "ST marker \u4E0D\u4F1A\u4F5C\u4E3A\u72EC\u7ACB\u63D0\u793A\u8BCD\u6CE8\u5165": "ST markers are not injected as standalone prompts",
-  "\u542F\u7528\u63D0\u793A\u8BCD": "Enable prompt",
-  "\u6B63\u5728\u540C\u6B65\u5F53\u524D\u4F1A\u8BDD\u7684\u9884\u8BBE\u72B6\u6001\u2026": "Syncing preset state for the current session\u2026",
-  "\u9884\u8BBE\u5DF2\u9009\u62E9\uFF1B\u4E0B\u4E00\u6761\u6D88\u606F\u5C06\u643A\u5E26\u6B64 preset\u3002\u5DF2\u6709\u4F1A\u8BDD\u5386\u53F2\u4E0D\u4F1A\u88AB\u6E05\u9664\u3002": "Preset selected; the next request will use it. Existing session history is unchanged.",
-  "\u5DF2\u505C\u7528 preset\uFF1B\u5DF2\u6709\u4F1A\u8BDD\u5386\u53F2\u4E0D\u4F1A\u88AB\u6E05\u9664": "Preset disabled; existing session history is unchanged",
-  "\u8BF7\u9009\u62E9\u6216\u521B\u5EFA\u9884\u8BBE\u4EE5\u5F00\u59CB\u914D\u7F6E\u3002": "Select or create a preset to begin configuring it.",
-  "\u8FD9\u4E9B\u5B57\u6BB5\u4F1A\u88AB\u5B8C\u6574\u4FDD\u5B58\uFF1Bdsh 0.1.0 \u5F53\u524D\u8BF7\u6C42\u534F\u8BAE\u672A\u66B4\u9732\u7684\u53C2\u6570\u4E0D\u4F1A\u5F3A\u884C\u4E0B\u53D1\u7ED9\u9002\u914D\u5668\u3002": "These fields are saved in full. Parameters not exposed by the current dsh request protocol are not forced into the adapter.",
-  "\u8B66\u544A\uFF1A\u8FD9\u4F1A\u79FB\u9664\u6A21\u578B\u53EF\u89C1\u7684 Harness \u8EAB\u4EFD\u3001Agent persona \u548C\u5DE5\u5177\u8BF4\u660E\uFF0C\u53EF\u80FD\u7834\u574F\u5DE5\u5177\u8C03\u7528\u6216\u7ED3\u6784\u5316\u8F93\u51FA\uFF1B\u6C99\u7BB1\u4E0E\u5BA1\u6279\u7B49\u6267\u884C\u5C42\u5B89\u5168\u4ECD\u7136\u6709\u6548\u3002": "Warning: this removes the model-visible Harness identity, Agent persona, and tool instructions, which may break tool use or structured output. Execution-layer sandboxing and approvals remain active.",
-  "\u8BF7\u5148\u521B\u5EFA\u6216\u6253\u5F00\u4E00\u4E2A\u4F1A\u8BDD\u518D\u7ED1\u5B9A\u89D2\u8272": "Create or open a session before binding a character",
-  "\u8BF7\u5148\u521B\u5EFA\u6216\u6253\u5F00\u4E00\u4E2A\u4F1A\u8BDD\u518D\u7ED1\u5B9A\u4E16\u754C\u4E66": "Create or open a session before binding world books",
-  "\u8BF7\u5148\u521B\u5EFA\u6216\u6253\u5F00\u4E00\u4E2A\u4F1A\u8BDD\u5E76\u9009\u62E9\u7528\u6237\u8D44\u6E90": "Create or open a session and select a user resource first",
-  "\u5F53\u524D\u4F1A\u8BDD\u5DF2\u6709\u5386\u53F2\u3002\u66F4\u6362\u89D2\u8272\u53EA\u5F71\u54CD\u540E\u7EED\u8BF7\u6C42\uFF0C\u4E0D\u4F1A\u91CD\u5199\u5DF2\u6709\u6D88\u606F\uFF1B\u7EE7\u7EED\u5417\uFF1F": "This session already has history. Changing the character affects only future requests and does not rewrite messages. Continue?",
-  "\u5F53\u524D\u4F1A\u8BDD\u5DF2\u6709\u5386\u53F2\u3002\u5207\u6362\u7528\u6237\u53EA\u5F71\u54CD\u540E\u7EED\u8BF7\u6C42\uFF0C\u4E0D\u4F1A\u91CD\u5199\u5DF2\u6709\u6D88\u606F\uFF1B\u7EE7\u7EED\u5417\uFF1F": "This session already has history. Changing the user affects only future requests and does not rewrite messages. Continue?",
-  "\u5F53\u524D\u6CA1\u6709\u53EF\u89E3\u7ED1\u7684\u4F1A\u8BDD": "There is no session to unbind",
-  "\u89D2\u8272\u5E93\u5DF2\u5237\u65B0": "Character library refreshed",
-  "\u89D2\u8272\u8BE6\u60C5\u5DF2\u52A0\u8F7D": "Character details loaded",
-  "\u5BFC\u5165\u4E00\u5F20\u5408\u6210\u6216\u81EA\u6709\u6388\u6743\u7684 SillyTavern \u89D2\u8272\u5361\u4EE5\u67E5\u770B\u8BE6\u60C5\u3002": "Import a synthetic or properly licensed SillyTavern character card to view its details.",
-  "\u5141\u8BB8 loader \u4F18\u5148\u91C7\u7528\u5361\u5185 system_prompt": "Allow the loader to prefer the card system_prompt",
-  "\u5141\u8BB8 loader \u91C7\u7528 post_history_instructions\uFF08\u5B9E\u9645\u4F4D\u7F6E\u7531 loader \u51B3\u5B9A\uFF09": "Allow the loader to use post_history_instructions (the loader determines placement)",
-  "\u89D2\u8272\u5361\u6A21\u5757\u8D1F\u8D23\u4FDD\u5B58\u6807\u51C6\u5316\u8D44\u6E90\u548C\u4F1A\u8BDD\u9009\u62E9\uFF1B\u5B9E\u9645 system profile \u4E0E\u5185\u5D4C\u4E16\u754C\u4FE1\u606F\u5339\u914D\u7531 Tavern loader \u5728\u6BCF\u6B21\u8BF7\u6C42\u65F6\u7EDF\u4E00\u5904\u7406\uFF0C\u4E0D\u4F1A\u4F2A\u9020 assistant \u5386\u53F2\u3002": "The character-card module stores normalized resources and session selection. The Tavern loader handles the system profile and embedded World Info on each request without fabricating assistant history.",
-  "System prompt\uFF08\u7531 loader \u6309\u7ED1\u5B9A\u8BBE\u7F6E\u5904\u7406\uFF09": "System prompt (handled by the loader according to binding settings)",
-  "Post-history instructions\uFF08\u7531 loader \u8FD1\u4F3C\u653E\u7F6E\uFF09": "Post-history instructions (approximately placed by the loader)",
-  "\u4E16\u754C\u4E66\u8D44\u6E90\u5E93\u5DF2\u52A0\u8F7D": "World-book library loaded",
-  "\u4E16\u754C\u4E66\u8D44\u6E90\u5E93\u5DF2\u5237\u65B0": "World-book library refreshed",
-  "\u4E16\u754C\u4E66\u8BE6\u60C5\u5DF2\u52A0\u8F7D": "World-book details loaded",
-  "\u5DF2\u521B\u5EFA\u72EC\u7ACB\u4E16\u754C\u4E66\uFF1B\u5C1A\u672A\u7ED1\u5B9A\u5F53\u524D\u4F1A\u8BDD": "Standalone world book created; not yet bound to the current session",
-  "\u4E16\u754C\u4E66\u5DF2\u5BFC\u5165\uFF1B\u5C1A\u672A\u7ED1\u5B9A\u5F53\u524D\u4F1A\u8BDD": "World book imported; not yet bound to the current session",
-  "\u4E16\u754C\u4E66\u4FEE\u6539\u5DF2\u6301\u4E45\u5316\uFF0C\u540E\u7EED\u8BF7\u6C42\u5C06\u4F7F\u7528\u65B0\u5185\u5BB9": "World-book changes saved; future requests will use the new content",
-  "\u5F53\u524D\u4F1A\u8BDD\u7684\u4E16\u754C\u4E66\u7ED1\u5B9A\u5DF2\u4FDD\u5B58": "World-book binding saved for the current session",
-  "\u72EC\u7ACB\u4E16\u754C\u4E66\u5DF2\u5220\u9664\uFF0C\u76F8\u5173\u4F1A\u8BDD\u7ED1\u5B9A\u5DF2\u6E05\u7406": "Standalone world book deleted and related session bindings cleared",
-  "\u89D2\u8272\u5361\u5185\u5D4C\u4E16\u754C\u4E66\u5DF2\u4FDD\u5B58\uFF0C\u540E\u7EED\u8BF7\u6C42\u5C06\u4F7F\u7528\u65B0\u5185\u5BB9": "Embedded character world book saved; future requests will use the new content",
-  "\u4E16\u754C\u4FE1\u606F\uFF08World Book\uFF09": "World Info (World Book)",
-  "\u5173\u95ED\u4E16\u754C\u4E66\u4FA7\u8FB9\u680F": "Close world-book sidebar",
-  "\u5BFC\u5165 JSON": "Import JSON",
-  "\u65B0\u5EFA\u4E16\u754C\u4E66": "New world book",
-  "\u5F53\u524D\u4F1A\u8BDD\u7ED1\u5B9A": "Current session binding",
-  "\u5220\u9664\u8FD9\u4E2A\u4E16\u754C\u4E66\u6761\u76EE\uFF1F\u4FDD\u5B58\u540E\u751F\u6548\u3002": "Delete this world-book entry? The change takes effect after saving.",
-  "\u5220\u9664\u8FD9\u4E2A\u89D2\u8272\u5361\u5185\u5D4C\u4E16\u754C\u4E66\u6761\u76EE\uFF1F\u4FDD\u5B58\u540E\u751F\u6548\u3002": "Delete this embedded character world-book entry? The change takes effect after saving.",
-  "\u5B9E\u9645\u6FC0\u6D3B\u3001\u6392\u5E8F\u3001\u6982\u7387\u548C\u9884\u7B97\u7531\u5171\u4EAB matcher \u786E\u5B9A\uFF1B\u6700\u7EC8\u6CE8\u5165\u4ECD\u7531 Tavern loader \u7EDF\u4E00\u5B8C\u6210\u3002\u5F53\u524D\u626B\u63CF\u57FA\u4E8E\u5DF2\u6301\u4E45\u5316\u7684\u4F1A\u8BDD\u5386\u53F2\uFF1B\u521A\u63D0\u4EA4\u7684\u8F93\u5165\u53EF\u80FD\u5728\u540C\u4E00\u53EF\u89C1\u56DE\u5408\u7684\u4E0B\u4E00 agent step\uFF08\u5982\u5DE5\u5177\u7EE7\u7EED\uFF09\u6216\u4E0B\u4E00\u7528\u6237\u56DE\u5408\u89E6\u53D1\u3002": "The shared matcher determines activation, ordering, probability, and budget; the Tavern loader performs final injection. Scanning uses durable session history, so newly submitted input may trigger on the next agent step or user turn.",
-  "\u521B\u5EFA\u4E00\u4E2A\u53EA\u542B\u540D\u5B57\u548C\u63CF\u8FF0\u7684\u7528\u6237\u8D44\u6E90\u3002": "Create a user resource containing only a name and description.",
-  "\u7528\u6237\u8D44\u6E90\u4E0D\u5305\u542B\u5934\u50CF\uFF0C\u4E5F\u4E0D\u4F1A\u8986\u76D6 DSH Agent \u8EAB\u4EFD\u3002loader \u53EA\u5728\u7EDF\u4E00 Tavern profile \u4E2D\u89E3\u6790\u540D\u5B57\u5B8F\u5E76\u653E\u7F6E\u4E00\u6B21\u63CF\u8FF0\u3002": "User resources contain no avatar and do not override the DSH Agent identity. The loader resolves the name macro and places the description once in the unified Tavern profile.",
-  "\u5E38\u9A7B\u6761\u76EE": "Always-active entry",
-  "\u4E3B\u5173\u952E\u8BCD\u547D\u4E2D": "Primary keyword matched",
-  "\u4E3B\u5173\u952E\u8BCD\u672A\u547D\u4E2D": "Primary keyword missed",
-  "\u9644\u52A0\u5173\u952E\u8BCD\u4EFB\u4E00\u547D\u4E2D": "Any secondary keyword matched",
-  "\u9644\u52A0\u5173\u952E\u8BCD\u5747\u672A\u547D\u4E2D": "No secondary keyword matched",
-  "\u9644\u52A0\u5173\u952E\u8BCD\u5168\u90E8\u547D\u4E2D": "All secondary keywords matched",
-  "\u9644\u52A0\u5173\u952E\u8BCD\u672A\u5168\u90E8\u547D\u4E2D": "Not all secondary keywords matched",
-  "\u9644\u52A0\u5173\u952E\u8BCD\u6392\u9664\u6761\u4EF6\u901A\u8FC7": "Secondary exclusion condition passed",
-  "\u9644\u52A0\u5173\u952E\u8BCD\u89E6\u53D1\u6392\u9664": "Secondary keyword triggered exclusion",
-  "\u9644\u52A0\u5173\u952E\u8BCD\u975E\u5168\u4E2D\u6761\u4EF6\u901A\u8FC7": "Secondary not-all condition passed",
-  "\u9644\u52A0\u5173\u952E\u8BCD\u5168\u4E2D\u800C\u6392\u9664": "All secondary keywords matched and excluded the entry",
-  "\u6761\u76EE\u5DF2\u7981\u7528": "Entry disabled",
-  "\u9700\u8981\u5916\u90E8\u5411\u91CF\u5339\u914D": "External vector match required",
-  "\u4E92\u65A5\u7EC4\u672A\u80DC\u51FA": "Did not win the inclusion group",
-  "\u6982\u7387\u68C0\u67E5\u62D2\u7EDD": "Rejected by probability check",
-  "\u8D85\u51FA token \u9884\u7B97": "Token budget exceeded",
-  "\u6B63\u6587\u4E3A\u7A7A\uFF0C\u672A\u63D2\u5165": "Empty body; not inserted",
-  "Outlet \u65E0\u7A33\u5B9A\u63D2\u5165 seam": "Outlet has no stable insertion seam",
-  "\u5C1A\u672A\u89C2\u5BDF\u5230\u53EF\u5BF9\u9F50\u7684 DSH request/header\uFF1B\u8FD9\u4E0D\u4EE3\u8868\u8BF7\u6C42\u5DF2\u7ECF\u53D1\u9001\u3002\u5237\u65B0\u540E\u4ECD\u4F1A\u4FDD\u7559\u8BE5\u5F85\u786E\u8BA4\u8BB0\u5F55\u3002": "No alignable DSH request/header has been observed; this does not mean the request was sent. The pending record remains after refresh.",
-  "\u5339\u914D\u57FA\u4E8E system assembly \u5F53\u65F6\u53EF\u89C1\u7684\u6301\u4E45\u5316\u4F1A\u8BDD\u5386\u53F2\uFF1B\u521A\u63D0\u4EA4\u7684\u8F93\u5165\u4F1A\u5728\u4E0B\u4E00\u6B21 agent step \u626B\u63CF\u65F6\u53EF\u89C1\uFF0C\u8BE5 step \u53EF\u80FD\u4ECD\u5C5E\u4E8E\u540C\u4E00\u53EF\u89C1\u56DE\u5408\uFF08\u5982\u5DE5\u5177\u7EE7\u7EED\uFF09\uFF0C\u4E5F\u53EF\u80FD\u5C5E\u4E8E\u4E0B\u4E00\u7528\u6237\u56DE\u5408\u3002": "Matching uses durable session history visible during system assembly. Newly submitted input becomes visible on the next agent step, which may be in the same visible turn or the next user turn.",
-  "\u9690\u79C1\u8FB9\u754C\uFF1A\u8FD9\u91CC\u53EA\u4FDD\u5B58\u8D44\u6E90\u6458\u8981\u3001\u914D\u7F6E/\u547D\u4E2D\u5173\u952E\u8BCD\u3001\u51B3\u7B56\u539F\u56E0\u3001\u4F4D\u7F6E\u3001\u9884\u7B97\u548C SHA-256 \u6458\u8981\uFF1B\u4E0D\u4FDD\u5B58 preset/\u89D2\u8272/user/\u4E16\u754C\u4E66\u6B63\u6587\u3001\u5B8C\u6574 system\u3001\u804A\u5929\u5386\u53F2\u3001header \u5185\u5BB9\u6216 tool payload\u3002": "Privacy boundary: this stores only resource summaries, configured/matched keywords, decision reasons, placement, budgets, and SHA-256 digests\u2014not resource bodies, full system text, chat history, header content, or tool payloads.",
-  "\u4E0E Conversation / Trajectory \u5E76\u5217\u7684 loader \u5BA1\u8BA1\u89C6\u56FE\u3002DSH request/header \u59CB\u7EC8\u662F\u6700\u7EC8\u53D1\u9001 system\u3001tools \u4E0E\u751F\u6548 config \u7684\u6743\u5A01\u3002": "A loader audit view alongside Conversation and Trajectory. The DSH request/header remains authoritative for the final system, tools, and effective config.",
-  "\u6B64\u4F1A\u8BDD\u8FD8\u6CA1\u6709 Tavern \u8BF7\u6C42\u5BA1\u8BA1\u8BB0\u5F55\u3002\u53D1\u9001\u4E0B\u4E00\u6761\u6D88\u606F\u540E\u518D\u67E5\u770B\u3002": "This session has no Tavern request audit records yet. Send the next message and check again.",
-  "\u65E0\u5173\u952E\u8BCD": "No keywords",
-  "\u987A\u5E8F\uFF08\u9AD8\u503C\u4F18\u5148\uFF09": "Order (higher values first)",
-  "\uFF08\u8FD1\u4F3C\uFF09": " (approximate)",
-  " \u2192 \u672A\u63D2\u5165": " \u2192 not inserted",
-  "\uFF08\u6CBF\u7528\u4E0A\u4E00\u4EFD header\uFF09": " (reused previous header)",
-  "\u672A\u627E\u5230": "Not found",
-  "\u8BE5\u8BB0\u5F55\u5DF2\u5BF9\u9F50 DSH request/header #": "This record is aligned with DSH request/header #",
-  "\u3002Tavern profile \u6821\u9A8C\uFF1A": ". Tavern profile validation: ",
-  "\uFF1B\u91C7\u6837\u5B57\u6BB5\uFF1A": "; sampler fields: ",
-  "\u5339\u914D\u57FA\u4E8E\u672C\u6B65\u9AA4 system assembly \u5F53\u65F6\u53EF\u89C1\u7684\u6301\u4E45\u5316\u4F1A\u8BDD\u5386\u53F2\uFF1B\u6CA1\u6709\u91CD\u590D\u9644\u52A0 pending \u8F93\u5165\u3002": "Matching uses durable session history visible during this step\u2019s system assembly; pending input was not appended a second time.",
-  "\u4E00\u81F4": "Consistent",
-  "\u672C\u8F6E\u65E0 profile": "No profile this request",
-  "\u4E0D\u4E00\u81F4": "Inconsistent",
-  "\u4E00\u81F4\u6216\u65E0\u5B57\u6BB5": "Consistent or no fields",
-  "\u5185\u5D4C character_book \u5DF2\u65E0\u635F\u4FDD\u7559": "Embedded character_book preserved losslessly",
-  "\u672A\u77E5\u5B8F\uFF1A": "Unknown macros: ",
-  "\u9884\u7B97\uFF1A": "Budget: ",
-  "\u5173\u95ED": "Close ",
-  "\u4FA7\u8FB9\u680F": " sidebar"
-});
-var SOURCE_EN_TRANSFORMS = Object.freeze([
-  ["\u5F53\u524D\u4F1A\u8BDD\uFF1A", "Current session: "],
-  ["\u7ED1\u5B9A\uFF1A", "Binding: "],
-  ["\u72B6\u6001\u540C\u6B65\u5931\u8D25\uFF1A", "Status sync failed: "],
-  ["\u6761\u76EE ", "Entry "],
-  ["\u65B0\u6761\u76EE ", "New entry "],
-  [" \u672C", " books"],
-  [" \u6761", " entries"],
-  ["\u8F6E\u6B21 ", "Turn "],
-  ["\u6B65\u9AA4 ", "Step "],
-  ["\u5C1D\u8BD5 ", "Attempt "],
-  ["\u8BCA\u65AD\uFF08", "Diagnostics ("],
-  ["\uFF08", " ("],
-  ["\uFF09", ")"],
-  ["\uFF1B", "; "],
-  ["\uFF1A", ": "],
-  ["\u3001", ", "]
-]);
-var LEGACY_SOURCE_CATALOGS = Object.freeze({ en: SOURCE_EN });
-var LEGACY_SOURCE_TRANSFORMS = Object.freeze({ en: SOURCE_EN_TRANSFORMS });
-var LEGACY_REPLACEMENTS = Object.freeze(Object.fromEntries(Object.entries(LEGACY_SOURCE_CATALOGS).map(([locale, catalog2]) => [locale, Object.entries(catalog2).sort((left, right) => right[0].length - left[0].length)])));
 var RAW_TEXT = /* @__PURE__ */ Symbol("dsh-tavern.raw-text");
+var catalogs = PRODUCTION_CATALOGS;
 var current = { ...DEFAULT_UI_SETTINGS };
-function assertCompleteMessageCatalogs() {
-  const expected = Object.keys(MESSAGE_CATALOG[DEFAULT_UI_LOCALE] ?? {}).toSorted();
-  for (const locale of SUPPORTED_LOCALES) {
-    const catalog2 = MESSAGE_CATALOG[locale];
-    if (catalog2 === void 0) throw new TypeError(`Missing UI message catalog for ${locale}`);
-    const actual = Object.keys(catalog2).toSorted();
-    if (JSON.stringify(actual) !== JSON.stringify(expected)) {
-      throw new TypeError(`UI message catalog ${locale} does not have the same keys as ${DEFAULT_UI_LOCALE}`);
+function isRecord(value) {
+  return value !== null && typeof value === "object" && !Array.isArray(value);
+}
+function catalogKeys(catalog2) {
+  return Object.keys(catalog2 ?? {}).toSorted();
+}
+function assertCatalogParity(catalog2, locale, expectedKeys = catalogKeys(catalogs[DEFAULT_UI_LOCALE] ?? PRODUCTION_CATALOGS[DEFAULT_UI_LOCALE])) {
+  if (!isRecord(catalog2)) throw new TypeError(`UI message catalog ${locale} must be an object`);
+  const actual = catalogKeys(catalog2);
+  if (JSON.stringify(actual) !== JSON.stringify(expectedKeys)) {
+    throw new TypeError(`UI message catalog ${locale} does not have the same keys as ${DEFAULT_UI_LOCALE}`);
+  }
+  for (const key of actual) {
+    if (typeof catalog2[key] !== "string") {
+      throw new TypeError(`UI message catalog ${locale} key ${JSON.stringify(key)} must be a string`);
     }
   }
+  return true;
 }
-assertCompleteMessageCatalogs();
+function assertCompleteMessageCatalogs(source) {
+  const expected = catalogKeys(source[DEFAULT_UI_LOCALE]);
+  if (expected.length === 0) throw new TypeError(`Missing UI message catalog for ${DEFAULT_UI_LOCALE}`);
+  for (const locale of Object.keys(source)) {
+    assertCatalogParity(source[locale], locale, expected);
+  }
+}
+assertCompleteMessageCatalogs(PRODUCTION_CATALOGS);
 function fill(template, values) {
   return template.replace(/\{([A-Za-z0-9_]+)\}/g, (_match, key) => String(values?.[key] ?? ""));
 }
-function translate(key, values = {}, fallback) {
-  const messages = MESSAGE_CATALOG[current.locale] ?? MESSAGE_CATALOG["zh-CN"];
-  const template = messages[key];
-  if (typeof template === "string") return fill(template, values);
-  if (typeof fallback === "string" && fallback !== "") return fill(fallback, values);
-  return messages["common.unavailable"];
+function templateFor(key, locale) {
+  const currentCatalog = catalogs[locale];
+  const defaultCatalog = catalogs[DEFAULT_UI_LOCALE];
+  if (typeof currentCatalog?.[key] === "string") return currentCatalog[key];
+  if (typeof defaultCatalog?.[key] === "string") return defaultCatalog[key];
+  if (typeof defaultCatalog?.["common.unavailable"] === "string") return defaultCatalog["common.unavailable"];
+  if (typeof currentCatalog?.["common.unavailable"] === "string") return currentCatalog["common.unavailable"];
+  return "";
 }
-function translateVisibleText(value) {
-  if (typeof value !== "string" || current.locale === DEFAULT_UI_LOCALE || !/[\u3400-\u9fff]/u.test(value)) return value;
-  const catalog2 = LEGACY_SOURCE_CATALOGS[current.locale];
-  const replacements = LEGACY_REPLACEMENTS[current.locale];
-  if (catalog2 === void 0 || replacements === void 0) return value;
-  if (catalog2[value] !== void 0) return catalog2[value];
-  let output = value;
-  for (const [source, translated] of replacements) output = output.split(source).join(translated);
-  for (const [source, translated] of LEGACY_SOURCE_TRANSFORMS[current.locale] ?? []) {
-    output = output.split(source).join(translated);
-  }
-  return output;
+function translate(key, values = {}) {
+  return fill(templateFor(key, current.locale), values);
 }
 function rawText(value) {
   return Object.freeze({
@@ -618,8 +983,18 @@ function rawText(value) {
     }
   });
 }
-function uiMessage(key, values = {}, fallback) {
-  return rawText(translate(key, values, fallback));
+function uiMessage(key, values = {}) {
+  return rawText(translate(key, values));
+}
+function statusText(status) {
+  if (status?.error && !status.key) return rawText(status.text);
+  return uiMessage(status?.key ?? "common.unavailable", status?.values);
+}
+function uiError(key, values = {}) {
+  const error = new Error(translate(key, values));
+  error.uiKey = key;
+  error.uiValues = values;
+  return error;
 }
 function isRawText(value) {
   return value?.[RAW_TEXT] === true && typeof value.value === "string";
@@ -627,17 +1002,8 @@ function isRawText(value) {
 function unwrapText(value) {
   return isRawText(value) ? value.value : String(value ?? "");
 }
-function uiText(strings, ...values) {
-  let output = "";
-  for (let index = 0; index < strings.length; index += 1) {
-    output += translateVisibleText(strings[index]);
-    if (index < values.length) output += unwrapText(values[index]);
-  }
-  return rawText(output);
-}
 function localizeChild(value) {
   if (isRawText(value)) return value.value;
-  if (typeof value === "string") return translateVisibleText(value);
   if (Array.isArray(value)) return value.map(localizeChild);
   return value;
 }
@@ -648,7 +1014,6 @@ function createLocalizedElement(createElement8) {
       localizedProps = { ...props };
       for (const key of ["title", "aria-label", "placeholder", "alt"]) {
         if (isRawText(localizedProps[key])) localizedProps[key] = localizedProps[key].value;
-        else if (typeof localizedProps[key] === "string") localizedProps[key] = translateVisibleText(localizedProps[key]);
       }
     }
     return createElement8(type, localizedProps, ...children.map(localizeChild));
@@ -658,7 +1023,8 @@ function getClientUiSettings() {
   return { ...current };
 }
 function setClientUiSettings(value, { announce = true } = {}) {
-  const locale = isSupportedUiLocale(value?.locale) ? value.locale : DEFAULT_UI_SETTINGS.locale;
+  const requested = value?.locale;
+  const locale = catalogs[requested] !== void 0 ? requested : isSupportedUiLocale(requested) ? requested : DEFAULT_UI_SETTINGS.locale;
   const numericScale = Number(value?.scale);
   const scale = Number.isFinite(numericScale) && numericScale >= 0.75 && numericScale <= 1.5 ? Number(numericScale.toFixed(2)) : DEFAULT_UI_SETTINGS.scale;
   current = { locale, scale };
@@ -694,14 +1060,14 @@ function announceTavernRefresh() {
   window.dispatchEvent(new CustomEvent("dsh-tavern:refresh", { detail: { source: "preset" } }));
 }
 var ST_NUMBER_FIELDS = [
-  ["top_p", "Top P"],
-  ["top_k", "Top K"],
-  ["top_a", "Top A"],
-  ["min_p", "Min P"],
-  ["frequency_penalty", "Frequency penalty"],
-  ["presence_penalty", "Presence penalty"],
-  ["repetition_penalty", "Repetition penalty"],
-  ["seed", "Seed"]
+  ["top_p", "preset.sampling.topP"],
+  ["top_k", "preset.sampling.topK"],
+  ["top_a", "preset.sampling.topA"],
+  ["min_p", "preset.sampling.minP"],
+  ["frequency_penalty", "preset.sampling.frequencyPenalty"],
+  ["presence_penalty", "preset.sampling.presencePenalty"],
+  ["repetition_penalty", "preset.sampling.repetitionPenalty"],
+  ["seed", "preset.sampling.seed"]
 ];
 var css = `
 .dtt-root{height:100%;display:flex;flex-direction:column;background:var(--dsw-alias-bg-base);color:var(--dsw-alias-label-primary);font-family:Inter,var(--dsw-font-family),sans-serif}
@@ -764,8 +1130,8 @@ function PromptEditor({ prompt, index, dragging, onPatch, onPointerDown, onPoint
       h("button", {
         className: "dtt-drag",
         type: "button",
-        title: "\u62D6\u62FD\u6392\u5217\u987A\u5E8F",
-        "aria-label": uiText`拖拽“${prompt.name || prompt.identifier}”排列顺序`,
+        title: uiMessage("preset.dragOrder"),
+        "aria-label": uiMessage("preset.dragNamed", { name: prompt.name || prompt.identifier }),
         "aria-pressed": dragging,
         onClick: (event) => {
           event.preventDefault();
@@ -780,7 +1146,7 @@ function PromptEditor({ prompt, index, dragging, onPatch, onPointerDown, onPoint
         type: "checkbox",
         checked: prompt.enabled === true,
         disabled: prompt.marker === true,
-        title: prompt.marker === true ? "ST marker \u4E0D\u4F1A\u4F5C\u4E3A\u72EC\u7ACB\u63D0\u793A\u8BCD\u6CE8\u5165" : "\u542F\u7528\u63D0\u793A\u8BCD",
+        title: prompt.marker === true ? uiMessage("preset.markerHint") : uiMessage("preset.enablePrompt"),
         onClick: (event) => event.stopPropagation(),
         onChange: (event) => onPatch({ enabled: event.target.checked })
       }),
@@ -790,12 +1156,12 @@ function PromptEditor({ prompt, index, dragging, onPatch, onPointerDown, onPoint
     h(
       "div",
       { className: "dtt-prompt-body" },
-      h(Field, { label: "\u540D\u79F0" }, h("input", {
+      h(Field, { label: uiMessage("common.name") }, h("input", {
         className: "dtt-input",
         value: prompt.name,
         onChange: (event) => onPatch({ name: event.target.value })
       })),
-      h(Field, { label: "\u89D2\u8272" }, h(
+      h(Field, { label: uiMessage("common.role") }, h(
         "select",
         {
           className: "dtt-select",
@@ -803,11 +1169,11 @@ function PromptEditor({ prompt, index, dragging, onPatch, onPointerDown, onPoint
           disabled: prompt.marker === true,
           onChange: (event) => onPatch({ role: event.target.value })
         },
-        h("option", { value: "system" }, "System"),
-        h("option", { value: "user" }, "User"),
-        h("option", { value: "assistant" }, "Assistant")
+        h("option", { value: "system" }, uiMessage("preset.role.system")),
+        h("option", { value: "user" }, uiMessage("preset.role.user")),
+        h("option", { value: "assistant" }, uiMessage("preset.role.assistant"))
       )),
-      h(Field, { label: "\u5185\u5BB9" }, h("textarea", {
+      h(Field, { label: uiMessage("common.content") }, h("textarea", {
         className: "dtt-textarea",
         value: prompt.content,
         disabled: prompt.marker === true,
@@ -816,7 +1182,7 @@ function PromptEditor({ prompt, index, dragging, onPatch, onPointerDown, onPoint
       h(
         "div",
         { className: "dtt-row-actions" },
-        h("button", { className: "dtt-button dtt-danger", type: "button", onClick: onDelete }, "\u5220\u9664")
+        h("button", { className: "dtt-button dtt-danger", type: "button", onClick: onDelete }, uiMessage("common.delete"))
       )
     )
   );
@@ -825,7 +1191,7 @@ function DropPlaceholder() {
   return h("div", {
     className: "dtt-drop-placeholder",
     "aria-hidden": true
-  }, "\u677E\u5F00\u540E\u653E\u7F6E\u4E8E\u6B64");
+  }, uiMessage("preset.dropHere"));
 }
 function insertionBoundary(event) {
   const target = document.elementFromPoint(event.clientX, event.clientY)?.closest("[data-prompt-index]");
@@ -838,7 +1204,7 @@ function PresetSidebar({ closePanel, openPanel, sessionId, sessionBlank, autoOpe
   const [catalog2, setCatalog] = (0, import_react.useState)(null);
   const [draft, setDraft] = (0, import_react.useState)(null);
   const [busy, setBusy] = (0, import_react.useState)(false);
-  const [status, setStatus] = (0, import_react.useState)({ text: "\u52A0\u8F7D\u4E2D\u2026", error: false });
+  const [status, setStatus] = (0, import_react.useState)({ error: false, key: "common.loading" });
   const [advanced, setAdvanced] = (0, import_react.useState)(false);
   const [dragFrom, setDragFrom] = (0, import_react.useState)(null);
   const [dropIndex, setDropIndex] = (0, import_react.useState)(null);
@@ -849,14 +1215,14 @@ function PresetSidebar({ closePanel, openPanel, sessionId, sessionBlank, autoOpe
     const timers = [0, 200, 800].map((delay) => window.setTimeout(openPanel, delay));
     return () => timers.forEach((timer) => window.clearTimeout(timer));
   }, [autoOpen]);
-  const run = (0, import_react.useCallback)(async (operation, successText) => {
+  const run = (0, import_react.useCallback)(async (operation, successKey) => {
     setBusy(true);
     try {
       const result = await operation();
-      setStatus({ text: successText, error: false });
+      setStatus({ error: false, key: successKey });
       return result;
     } catch (error) {
-      setStatus({ text: error instanceof Error ? error.message : String(error), error: true });
+      setStatus(error?.uiKey ? { error: true, key: error.uiKey, values: error.uiValues } : { error: true, text: error instanceof Error ? error.message : String(error) });
       return null;
     } finally {
       setBusy(false);
@@ -877,8 +1243,8 @@ function PresetSidebar({ closePanel, openPanel, sessionId, sessionBlank, autoOpe
     refreshGeneration.current += 1;
     setCatalog(null);
     setDraft(null);
-    setStatus({ text: "\u6B63\u5728\u540C\u6B65\u5F53\u524D\u4F1A\u8BDD\u7684\u9884\u8BBE\u72B6\u6001\u2026", error: false });
-    run(() => refresh(), "\u9884\u8BBE\u5DF2\u52A0\u8F7D");
+    setStatus({ error: false, key: "preset.status.syncing" });
+    run(() => refresh(), "preset.status.loaded");
     return () => {
       refreshGeneration.current += 1;
     };
@@ -886,7 +1252,7 @@ function PresetSidebar({ closePanel, openPanel, sessionId, sessionBlank, autoOpe
   (0, import_react.useEffect)(() => {
     const onRefresh = (event) => {
       if (event.detail?.source === "preset") return;
-      run(() => refresh(), "\u9884\u8BBE\u72B6\u6001\u5DF2\u5237\u65B0");
+      run(() => refresh(), "preset.status.refreshed");
     };
     window.addEventListener("dsh-tavern:refresh", onRefresh);
     return () => window.removeEventListener("dsh-tavern:refresh", onRefresh);
@@ -894,26 +1260,26 @@ function PresetSidebar({ closePanel, openPanel, sessionId, sessionBlank, autoOpe
   const browse = (0, import_react.useCallback)((id) => run(async () => {
     const detail = await api(`/presets/${encodeURIComponent(id)}`);
     setDraft(detail.preset);
-  }, "\u9884\u8BBE\u8BE6\u60C5\u5DF2\u52A0\u8F7D\uFF1B\u4F1A\u8BDD\u7ED1\u5B9A\u5C1A\u672A\u6539\u53D8"), [run]);
+  }, "preset.status.detailsLoaded"), [run]);
   const bind = (0, import_react.useCallback)(() => run(async () => {
-    if (!sessionId) throw new Error("\u8BF7\u5148\u521B\u5EFA\u6216\u6253\u5F00\u4E00\u4E2A\u4F1A\u8BDD\u518D\u7ED1\u5B9A\u9884\u8BBE");
-    if (draft === null) throw new Error("\u8BF7\u5148\u9009\u62E9\u4E00\u4E2A\u9884\u8BBE");
+    if (!sessionId) throw uiError("preset.error.needSession");
+    if (draft === null) throw uiError("preset.error.needPreset");
     if (catalog2?.selectedId !== draft.id && catalog2?.selectedId !== null && sessionBlank === false && !window.confirm(unwrapText(uiMessage("preset.confirmHistoricalSwitch")))) return;
     await api("/select", { method: "POST", body: body({ id: draft.id, sessionId }) });
     await refresh(draft.id);
     announceTavernRefresh();
-  }, "\u9884\u8BBE\u5DF2\u7ED1\u5B9A\uFF1B\u5F53\u524D\u4F1A\u8BDD\u7684\u4E0B\u4E00\u6B21\u8BF7\u6C42\u5C06\u4F7F\u7528\u5B83"), [catalog2?.selectedId, draft, refresh, run, sessionBlank, sessionId]);
+  }, "preset.status.bound"), [catalog2?.selectedId, draft, refresh, run, sessionBlank, sessionId]);
   const unbind = (0, import_react.useCallback)(() => run(async () => {
-    if (!sessionId) throw new Error("\u5F53\u524D\u6CA1\u6709\u53EF\u89E3\u9664\u7ED1\u5B9A\u7684\u4F1A\u8BDD");
+    if (!sessionId) throw uiError("preset.error.noSessionToUnbind");
     await api("/select", { method: "POST", body: body({ id: null, sessionId }) });
     await refresh(draft?.id);
     announceTavernRefresh();
-  }, "\u5F53\u524D\u4F1A\u8BDD\u5DF2\u89E3\u9664\u9884\u8BBE\u7ED1\u5B9A"), [draft?.id, refresh, run, sessionId]);
+  }, "preset.status.unbound"), [draft?.id, refresh, run, sessionId]);
   const createPreset = (0, import_react.useCallback)(() => run(async () => {
-    const created = await api("/presets", { method: "POST", body: body({ name: translateVisibleText("\u65B0\u9884\u8BBE") }) });
+    const created = await api("/presets", { method: "POST", body: body({ name: translate("preset.defaultName") }) });
     await refresh(created.preset.id);
     announceTavernRefresh();
-  }, "\u9884\u8BBE\u5DF2\u521B\u5EFA\uFF1B\u5C1A\u672A\u7ED1\u5B9A\u5F53\u524D\u4F1A\u8BDD"), [refresh, run]);
+  }, "preset.status.created"), [refresh, run]);
   const importFile = (0, import_react.useCallback)((file) => run(async () => {
     const content = await file.text();
     const imported = await api("/import", {
@@ -923,7 +1289,7 @@ function PresetSidebar({ closePanel, openPanel, sessionId, sessionBlank, autoOpe
     await refresh(imported.preset.id);
     announceTavernRefresh();
     if (fileRef.current !== null) fileRef.current.value = "";
-  }, "ST \u9884\u8BBE\u5DF2\u5BFC\u5165\uFF1B\u5C1A\u672A\u7ED1\u5B9A\u5F53\u524D\u4F1A\u8BDD"), [refresh, run]);
+  }, "preset.status.imported"), [refresh, run]);
   const save = (0, import_react.useCallback)(() => run(async () => {
     const result = await api(`/presets/${encodeURIComponent(draft.id)}`, {
       method: "PUT",
@@ -932,13 +1298,13 @@ function PresetSidebar({ closePanel, openPanel, sessionId, sessionBlank, autoOpe
     setDraft(result.preset);
     await refresh(result.preset.id);
     announceTavernRefresh();
-  }, "\u9884\u8BBE\u914D\u7F6E\u5DF2\u4FDD\u5B58\uFF1B\u5DF2\u7ED1\u5B9A\u5B83\u7684\u4F1A\u8BDD\u5C06\u5728\u540E\u7EED\u8BF7\u6C42\u4F7F\u7528\u65B0\u5185\u5BB9"), [draft, refresh, run]);
+  }, "preset.status.saved"), [draft, refresh, run]);
   const remove = (0, import_react.useCallback)(() => run(async () => {
     if (!window.confirm(unwrapText(uiMessage("preset.confirmDelete", { name: draft.name })))) return;
     await api(`/presets/${encodeURIComponent(draft.id)}`, { method: "DELETE" });
     await refresh();
     announceTavernRefresh();
-  }, "\u9884\u8BBE\u5DF2\u5220\u9664"), [draft, refresh, run]);
+  }, "preset.status.deleted"), [draft, refresh, run]);
   const patchSampling = (patch) => setDraft((current2) => ({
     ...current2,
     sampling: { ...current2.sampling, ...patch }
@@ -963,7 +1329,7 @@ function PresetSidebar({ closePanel, openPanel, sessionId, sessionBlank, autoOpe
     ...current2,
     prompts: [...current2.prompts, {
       identifier: `prompt-${Date.now().toString(36)}`,
-      name: translateVisibleText("\u65B0\u63D0\u793A\u8BCD"),
+      name: translate("preset.defaultPromptName"),
       role: "system",
       content: "",
       enabled: true,
@@ -972,14 +1338,15 @@ function PresetSidebar({ closePanel, openPanel, sessionId, sessionBlank, autoOpe
       st: {}
     }]
   }));
+  const closeLabel = uiMessage("panel.close", { title: unwrapText(uiMessage("preset.title")) });
   return h(
     "div",
     { className: "dtt-root" },
     h(
       "div",
       { className: "dtt-header" },
-      h("div", { className: "dtt-title" }, "Tavern \u9884\u8BBE", catalog2?.selectedId ? h("span", { className: "dtt-active" }, "\u25CF \u5DF2\u542F\u7528") : null),
-      h("button", { className: "dtt-icon", type: "button", title: "\u5173\u95ED\u53F3\u4FA7\u680F", "aria-label": "\u5173\u95ED\u9884\u8BBE\u4FA7\u8FB9\u680F", onClick: closePanel }, "\u2715")
+      h("div", { className: "dtt-title" }, uiMessage("preset.title"), catalog2?.selectedId ? h("span", { className: "dtt-active" }, uiMessage("preset.active")) : null),
+      h("button", { className: "dtt-icon", type: "button", title: closeLabel, "aria-label": closeLabel, onClick: closePanel }, "\u2715")
     ),
     h(
       "div",
@@ -987,8 +1354,8 @@ function PresetSidebar({ closePanel, openPanel, sessionId, sessionBlank, autoOpe
       h(
         "div",
         { className: "dtt-toolbar" },
-        h("button", { className: "dtt-button", type: "button", disabled: busy, onClick: () => fileRef.current?.click() }, "\u5BFC\u5165 ST JSON"),
-        h("button", { className: "dtt-button", type: "button", disabled: busy, onClick: createPreset }, "\u521B\u5EFA\u9884\u8BBE"),
+        h("button", { className: "dtt-button", type: "button", disabled: busy, onClick: () => fileRef.current?.click() }, uiMessage("preset.importStJson")),
+        h("button", { className: "dtt-button", type: "button", disabled: busy, onClick: createPreset }, uiMessage("preset.create")),
         h("input", {
           ref: fileRef,
           hidden: true,
@@ -1000,7 +1367,7 @@ function PresetSidebar({ closePanel, openPanel, sessionId, sessionBlank, autoOpe
           }
         })
       ),
-      h(Field, { label: "\u6D4F\u89C8\u9884\u8BBE" }, h(
+      h(Field, { label: uiMessage("preset.browse") }, h(
         "select",
         {
           className: "dtt-select",
@@ -1008,23 +1375,23 @@ function PresetSidebar({ closePanel, openPanel, sessionId, sessionBlank, autoOpe
           disabled: busy || catalog2 === null || catalog2.presets.length === 0,
           onChange: (event) => browse(event.target.value)
         },
-        ...catalog2?.presets.length ? [] : [h("option", { key: "empty", value: "" }, "\u9884\u8BBE\u5E93\u4E3A\u7A7A")],
-        ...(catalog2?.presets ?? []).map((preset) => h("option", { key: preset.id, value: preset.id }, uiText`${preset.name} (${preset.enabledPromptCount}/${preset.promptCount})`))
+        ...catalog2?.presets.length ? [] : [h("option", { key: "empty", value: "" }, uiMessage("preset.libraryEmpty"))],
+        ...(catalog2?.presets ?? []).map((preset) => h("option", { key: preset.id, value: preset.id }, rawText(`${preset.name} (${preset.enabledPromptCount}/${preset.promptCount})`)))
       )),
-      catalog2 === null ? null : catalog2.selectedId === null ? h("p", { className: "dtt-note" }, "\u5F53\u524D\u4F1A\u8BDD\u672A\u7ED1\u5B9A\u9884\u8BBE\u3002") : h("p", { className: "dtt-note" }, uiMessage("preset.currentSessionBound", { name: catalog2.presets.find((item) => item.id === catalog2.selectedId)?.name ?? catalog2.selectedId })),
+      catalog2 === null ? null : catalog2.selectedId === null ? h("p", { className: "dtt-note" }, uiMessage("preset.unboundNote")) : h("p", { className: "dtt-note" }, uiMessage("preset.currentSessionBound", { name: catalog2.presets.find((item) => item.id === catalog2.selectedId)?.name ?? catalog2.selectedId })),
       draft !== null && draft.id !== catalog2?.selectedId ? h("div", { className: "dtt-status", "data-warning": true }, uiMessage("preset.browsingUnbound", { name: draft.name })) : null,
       h(
         "div",
         { className: "dtt-actions" },
-        h("button", { className: "dtt-button dtt-button-primary", type: "button", disabled: busy || !sessionId || draft === null, onClick: bind }, catalog2?.selectedId === draft?.id ? "\u66F4\u65B0\u4F1A\u8BDD\u7ED1\u5B9A" : "\u7ED1\u5B9A\u5230\u5F53\u524D\u4F1A\u8BDD"),
-        h("button", { className: "dtt-button", type: "button", disabled: busy || !sessionId || catalog2?.selectedId == null, onClick: unbind }, "\u89E3\u9664\u5F53\u524D\u4F1A\u8BDD\u7ED1\u5B9A")
+        h("button", { className: "dtt-button dtt-button-primary", type: "button", disabled: busy || !sessionId || draft === null, onClick: bind }, catalog2?.selectedId === draft?.id ? uiMessage("preset.bindUpdate") : uiMessage("preset.bind")),
+        h("button", { className: "dtt-button", type: "button", disabled: busy || !sessionId || catalog2?.selectedId == null, onClick: unbind }, uiMessage("preset.unbind"))
       ),
-      h("div", { className: "dtt-status", "data-error": status.error || void 0, role: "status", "aria-live": "polite" }, status.error ? rawText(status.text) : status.text),
-      draft === null ? h("p", { className: "dtt-note" }, catalog2 === null ? "\u6B63\u5728\u52A0\u8F7D\u9884\u8BBE\u2026" : "\u8BF7\u9009\u62E9\u6216\u521B\u5EFA\u9884\u8BBE\u4EE5\u5F00\u59CB\u914D\u7F6E\u3002") : h(
+      h("div", { className: "dtt-status", "data-error": status.error || void 0, role: "status", "aria-live": "polite" }, statusText(status)),
+      draft === null ? h("p", { className: "dtt-note" }, catalog2 === null ? uiMessage("preset.loading") : uiMessage("preset.emptyHint")) : h(
         "div",
         { className: "dtt-section" },
-        h("div", { className: "dtt-section-title" }, "\u57FA\u672C\u8BBE\u7F6E"),
-        h(Field, { label: "\u9884\u8BBE\u540D\u79F0" }, h("input", {
+        h("div", { className: "dtt-section-title" }, uiMessage("preset.basicSettings")),
+        h(Field, { label: uiMessage("preset.name") }, h("input", {
           className: "dtt-input",
           value: draft.name,
           onChange: (event) => setDraft((current2) => ({ ...current2, name: event.target.value }))
@@ -1032,49 +1399,49 @@ function PresetSidebar({ closePanel, openPanel, sessionId, sessionBlank, autoOpe
         h(
           "div",
           { className: "dtt-grid" },
-          h(NumberField, { label: "Temperature", value: draft.sampling.temperature, onChange: (temperature) => patchSampling({ temperature }), min: 0 }),
-          h(NumberField, { label: "Max tokens", value: draft.sampling.maxTokens, onChange: (maxTokens) => patchSampling({ maxTokens }), min: 1, step: 1 })
+          h(NumberField, { label: uiMessage("preset.temperature"), value: draft.sampling.temperature, onChange: (temperature) => patchSampling({ temperature }), min: 0 }),
+          h(NumberField, { label: uiMessage("preset.maxTokens"), value: draft.sampling.maxTokens, onChange: (maxTokens) => patchSampling({ maxTokens }), min: 1, step: 1 })
         ),
-        h(Field, { label: "Reasoning effort" }, h(
+        h(Field, { label: uiMessage("preset.reasoningEffort") }, h(
           "select",
           {
             className: "dtt-select",
             value: draft.sampling.reasoningEffort ?? "",
             onChange: (event) => patchSampling({ reasoningEffort: event.target.value || void 0 })
           },
-          h("option", { value: "" }, "\u8DDF\u968F\u6A21\u578B\u9ED8\u8BA4"),
-          h("option", { value: "low" }, "Low"),
-          h("option", { value: "medium" }, "Medium"),
-          h("option", { value: "high" }, "High"),
-          h("option", { value: "xhigh" }, "Extra high")
+          h("option", { value: "" }, uiMessage("preset.modelDefault")),
+          h("option", { value: "low" }, uiMessage("preset.effort.low")),
+          h("option", { value: "medium" }, uiMessage("preset.effort.medium")),
+          h("option", { value: "high" }, uiMessage("preset.effort.high")),
+          h("option", { value: "xhigh" }, uiMessage("preset.effort.xhigh"))
         )),
-        h("button", { className: "dtt-button", type: "button", onClick: () => setAdvanced((value) => !value) }, advanced ? "\u6536\u8D77\u9AD8\u7EA7\u8BBE\u7F6E" : "\u5C55\u5F00\u9AD8\u7EA7\u8BBE\u7F6E"),
-        advanced ? h("div", { className: "dtt-grid" }, ...ST_NUMBER_FIELDS.map(([key, label]) => h(NumberField, {
+        h("button", { className: "dtt-button", type: "button", onClick: () => setAdvanced((value) => !value) }, advanced ? uiMessage("preset.advancedHide") : uiMessage("preset.advancedShow")),
+        advanced ? h("div", { className: "dtt-grid" }, ...ST_NUMBER_FIELDS.map(([key, messageKey]) => h(NumberField, {
           key,
-          label,
+          label: uiMessage(messageKey),
           value: draft.sampling.st?.[key],
           onChange: (value) => patchSt(key, value)
         }))) : null,
-        advanced ? h("p", { className: "dtt-note" }, "\u8FD9\u4E9B\u5B57\u6BB5\u4F1A\u88AB\u5B8C\u6574\u4FDD\u5B58\uFF1Bdsh 0.1.0 \u5F53\u524D\u8BF7\u6C42\u534F\u8BAE\u672A\u66B4\u9732\u7684\u53C2\u6570\u4E0D\u4F1A\u5F3A\u884C\u4E0B\u53D1\u7ED9\u9002\u914D\u5668\u3002") : null,
-        advanced ? h(Field, { label: "DSH \u7CFB\u7EDF\u63D0\u793A\u8BCD" }, h(
+        advanced ? h("p", { className: "dtt-note" }, uiMessage("preset.advancedNote")) : null,
+        advanced ? h(Field, { label: uiMessage("preset.systemPrompt") }, h(
           "select",
           {
             className: "dtt-select",
             value: draft.systemPromptMode === "replace" ? "replace" : "append",
             onChange: (event) => setDraft((current2) => ({ ...current2, systemPromptMode: event.target.value }))
           },
-          h("option", { value: "append" }, "\u4FDD\u7559 DSH \u7CFB\u7EDF\u63D0\u793A\u8BCD\uFF0C\u5E76\u8FFD\u52A0\u9884\u8BBE\uFF08\u63A8\u8350\uFF09"),
-          h("option", { value: "replace" }, "\u4EC5\u4F7F\u7528\u9884\u8BBE\uFF0C\u79FB\u9664 DSH \u7CFB\u7EDF\u6BB5\uFF08\u9AD8\u7EA7\uFF09")
+          h("option", { value: "append" }, uiMessage("preset.systemAppend")),
+          h("option", { value: "replace" }, uiMessage("preset.systemReplace"))
         )) : null,
-        advanced && draft.systemPromptMode === "replace" ? h("p", { className: "dtt-status", "data-error": true }, "\u8B66\u544A\uFF1A\u8FD9\u4F1A\u79FB\u9664\u6A21\u578B\u53EF\u89C1\u7684 Harness \u8EAB\u4EFD\u3001Agent persona \u548C\u5DE5\u5177\u8BF4\u660E\uFF0C\u53EF\u80FD\u7834\u574F\u5DE5\u5177\u8C03\u7528\u6216\u7ED3\u6784\u5316\u8F93\u51FA\uFF1B\u6C99\u7BB1\u4E0E\u5BA1\u6279\u7B49\u6267\u884C\u5C42\u5B89\u5168\u4ECD\u7136\u6709\u6548\u3002") : null,
+        advanced && draft.systemPromptMode === "replace" ? h("p", { className: "dtt-status", "data-error": true }, uiMessage("preset.replaceWarning")) : null,
         h(
           "div",
           { className: "dtt-section" },
           h(
             "div",
             { className: "dtt-section-title" },
-            h("span", null, `\u63D0\u793A\u8BCD (${draft.prompts.length})`),
-            h("button", { className: "dtt-button", type: "button", onClick: addPrompt }, "\uFF0B \u6DFB\u52A0")
+            h("span", null, uiMessage("preset.prompts", { count: draft.prompts.length })),
+            h("button", { className: "dtt-button", type: "button", onClick: addPrompt }, uiMessage("preset.addPrompt"))
           ),
           h(
             "div",
@@ -1120,8 +1487,8 @@ function PresetSidebar({ closePanel, openPanel, sessionId, sessionBlank, autoOpe
         h(
           "div",
           { className: "dtt-footer" },
-          h("button", { className: "dtt-button dtt-button-primary", type: "button", disabled: busy, onClick: save }, busy ? "\u5904\u7406\u4E2D\u2026" : "\u4FDD\u5B58\u4FEE\u6539"),
-          h("button", { className: "dtt-button dtt-danger", type: "button", disabled: busy, onClick: remove }, "\u5220\u9664")
+          h("button", { className: "dtt-button dtt-button-primary", type: "button", disabled: busy, onClick: save }, busy ? uiMessage("common.working") : uiMessage("common.saveChanges")),
+          h("button", { className: "dtt-button dtt-danger", type: "button", disabled: busy, onClick: remove }, uiMessage("common.delete"))
         )
       )
     )
@@ -1144,8 +1511,13 @@ function characterGreetingOptions(character) {
   const first = typeof character.data?.firstMessage === "string" ? character.data.firstMessage : "";
   const alternates = Array.isArray(character.data?.alternateGreetings) ? character.data.alternateGreetings.filter((item) => typeof item === "string") : [];
   return [
-    { index: 0, label: first === "" ? "\u9ED8\u8BA4\u5F00\u573A\uFF08\u7A7A\uFF09" : "\u9ED8\u8BA4\u5F00\u573A", text: first },
-    ...alternates.map((text, index) => ({ index: index + 1, label: `\u5907\u9009\u5F00\u573A ${index + 1}`, text }))
+    { index: 0, labelKey: first === "" ? "character.greeting.defaultEmpty" : "character.greeting.default", text: first },
+    ...alternates.map((text, index) => ({
+      index: index + 1,
+      labelKey: "character.greeting.alternate",
+      labelValues: { index: index + 1 },
+      text
+    }))
   ];
 }
 function defaultCharacterSelection(characterCardId) {
@@ -1198,12 +1570,12 @@ function TextDetail({ label, value }) {
     h2("p", { className: "dcc-text" }, rawText(value))
   );
 }
-function DiagnosticList({ title, items }) {
+function DiagnosticList({ titleKey, items }) {
   if (!Array.isArray(items) || items.length === 0) return null;
   return h2(
     "details",
     { className: "dcc-detail" },
-    h2("summary", null, uiText`${translateVisibleText(title)} (${items.length})`),
+    h2("summary", null, uiMessage(titleKey, { count: items.length })),
     h2("ul", { className: "dcc-diags" }, ...items.map((item, index) => h2("li", { key: `${item.code}-${index}` }, rawText(`${item.message}${item.path ? ` [${item.path}]` : ""}`))))
   );
 }
@@ -1213,17 +1585,17 @@ function CharacterPanel({ sessionId, sessionBlank, close }) {
   const [selection, setSelection] = (0, import_react2.useState)(null);
   const [binding, setBinding] = (0, import_react2.useState)(null);
   const [busy, setBusy] = (0, import_react2.useState)(false);
-  const [status, setStatus] = (0, import_react2.useState)({ text: "\u52A0\u8F7D\u4E2D\u2026", error: false });
+  const [status, setStatus] = (0, import_react2.useState)({ error: false, key: "common.loading" });
   const fileRef = (0, import_react2.useRef)(null);
   const refreshGeneration = (0, import_react2.useRef)(0);
-  const run = (0, import_react2.useCallback)(async (operation, success) => {
+  const run = (0, import_react2.useCallback)(async (operation, successKey) => {
     setBusy(true);
     try {
       const result = await operation();
-      setStatus({ text: success, error: false });
+      setStatus({ error: false, key: successKey });
       return result;
     } catch (error) {
-      setStatus({ text: error instanceof Error ? error.message : String(error), error: true });
+      setStatus(error?.uiKey ? { error: true, key: error.uiKey, values: error.uiValues } : { error: true, text: error instanceof Error ? error.message : String(error) });
       return null;
     } finally {
       setBusy(false);
@@ -1264,7 +1636,7 @@ function CharacterPanel({ sessionId, sessionBlank, close }) {
     setBinding(currentSelection?.characterCardId === id ? currentSelection : defaultCharacterSelection(id));
   }, [sessionId]);
   (0, import_react2.useEffect)(() => {
-    run(() => refresh(), "\u89D2\u8272\u5E93\u5DF2\u52A0\u8F7D");
+    run(() => refresh(), "character.status.loaded");
     return () => {
       refreshGeneration.current += 1;
     };
@@ -1272,7 +1644,7 @@ function CharacterPanel({ sessionId, sessionBlank, close }) {
   (0, import_react2.useEffect)(() => {
     const onRefresh = (event) => {
       if (event.detail?.source === "character") return;
-      run(() => refresh(detail?.id), "\u89D2\u8272\u72B6\u6001\u5DF2\u5237\u65B0");
+      run(() => refresh(detail?.id), "character.status.refreshed");
     };
     window.addEventListener("dsh-tavern:refresh", onRefresh);
     return () => window.removeEventListener("dsh-tavern:refresh", onRefresh);
@@ -1288,9 +1660,9 @@ function CharacterPanel({ sessionId, sessionBlank, close }) {
     await refresh(data.character.id);
     announceTavernRefresh2();
     if (fileRef.current !== null) fileRef.current.value = "";
-  }, "\u89D2\u8272\u5361\u5DF2\u5BFC\u5165\uFF1B\u5C1A\u672A\u7ED1\u5B9A\u5230\u4F1A\u8BDD"), [refresh, run]);
+  }, "character.status.imported"), [refresh, run]);
   const bind = (0, import_react2.useCallback)(() => run(async () => {
-    if (!sessionId) throw new Error("\u8BF7\u5148\u521B\u5EFA\u6216\u6253\u5F00\u4E00\u4E2A\u4F1A\u8BDD\u518D\u7ED1\u5B9A\u89D2\u8272");
+    if (!sessionId) throw uiError("character.error.needSession");
     if (selection?.characterCardId !== binding?.characterCardId && sessionBlank === false && !window.confirm(unwrapText(uiMessage("character.confirmHistoricalSwitch")))) return;
     const data = await api2("/character-selection", {
       method: "POST",
@@ -1300,9 +1672,9 @@ function CharacterPanel({ sessionId, sessionBlank, close }) {
     setSelection(data.selection);
     setBinding(data.selection);
     announceTavernRefresh2();
-  }, "\u89D2\u8272\u9009\u62E9\u5DF2\u4FDD\u5B58\uFF1B\u5B9E\u9645\u5BF9\u8BDD\u52A0\u8F7D\u7531 Tavern loader \u7EDF\u4E00\u5904\u7406"), [binding, run, selection, sessionBlank, sessionId]);
+  }, "character.status.bound"), [binding, run, selection, sessionBlank, sessionId]);
   const unbind = (0, import_react2.useCallback)(() => run(async () => {
-    if (!sessionId) throw new Error("\u5F53\u524D\u6CA1\u6709\u53EF\u89E3\u7ED1\u7684\u4F1A\u8BDD");
+    if (!sessionId) throw uiError("character.error.noSessionToUnbind");
     await api2("/character-selection", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -1311,23 +1683,24 @@ function CharacterPanel({ sessionId, sessionBlank, close }) {
     setSelection(null);
     if (detail !== null) setBinding(defaultCharacterSelection(detail.id));
     announceTavernRefresh2();
-  }, "\u5F53\u524D\u4F1A\u8BDD\u5DF2\u89E3\u9664\u89D2\u8272\u7ED1\u5B9A"), [detail, run, sessionId]);
+  }, "character.status.unbound"), [detail, run, sessionId]);
   const remove = (0, import_react2.useCallback)(() => run(async () => {
     if (detail === null || !window.confirm(unwrapText(uiMessage("character.confirmDelete", { name: detail.name })))) return;
     await api2(`/characters/${encodeURIComponent(detail.id)}`, { method: "DELETE" });
     await refresh(null);
     announceTavernRefresh2();
-  }, "\u89D2\u8272\u5361\u5DF2\u5220\u9664\uFF0C\u76F8\u5173\u4F1A\u8BDD\u7ED1\u5B9A\u5DF2\u6E05\u9664"), [detail, refresh, run]);
+  }, "character.status.deleted"), [detail, refresh, run]);
   const greetings = characterGreetingOptions(detail);
-  const activeName = selection === null ? translateVisibleText("\u672A\u7ED1\u5B9A\u89D2\u8272") : catalog2?.characters.find((item) => item.id === selection.characterCardId)?.name ?? selection.characterCardId;
+  const activeName = selection === null ? translate("nav.character.empty") : catalog2?.characters.find((item) => item.id === selection.characterCardId)?.name ?? selection.characterCardId;
+  const closeLabel = uiMessage("panel.close", { title: unwrapText(uiMessage("character.title")) });
   return h2(
     "div",
     { className: "dcc-panel" },
     h2(
       "div",
       { className: "dcc-header" },
-      h2("div", { className: "dcc-title" }, "Tavern \u89D2\u8272\u5361"),
-      h2("button", { className: "dcc-close", type: "button", title: "\u5173\u95ED\u89D2\u8272\u5361\u9762\u677F", "aria-label": "\u5173\u95ED\u89D2\u8272\u5361\u4FA7\u8FB9\u680F", onClick: close }, "\u2715")
+      h2("div", { className: "dcc-title" }, uiMessage("character.title")),
+      h2("button", { className: "dcc-close", type: "button", title: closeLabel, "aria-label": closeLabel, onClick: close }, "\u2715")
     ),
     h2(
       "div",
@@ -1335,75 +1708,78 @@ function CharacterPanel({ sessionId, sessionBlank, close }) {
       h2(
         "div",
         { className: "dcc-toolbar" },
-        h2("button", { className: "dcc-button", type: "button", disabled: busy, onClick: () => fileRef.current?.click() }, "\u5BFC\u5165 JSON / PNG"),
-        h2("button", { className: "dcc-button", type: "button", disabled: busy, onClick: () => run(() => refresh(detail?.id), "\u89D2\u8272\u5E93\u5DF2\u5237\u65B0") }, "\u5237\u65B0"),
+        h2("button", { className: "dcc-button", type: "button", disabled: busy, onClick: () => fileRef.current?.click() }, uiMessage("character.import")),
+        h2("button", { className: "dcc-button", type: "button", disabled: busy, onClick: () => run(() => refresh(detail?.id), "character.status.libraryRefreshed") }, uiMessage("common.refresh")),
         h2("input", { ref: fileRef, hidden: true, type: "file", accept: ".json,.png,application/json,image/png", onChange: (event) => {
           const file = event.target.files?.[0];
           if (file !== void 0) importFile(file);
         } })
       ),
-      h2(Field2, { label: "\u6D4F\u89C8\u89D2\u8272\u5E93" }, h2(
+      h2(Field2, { label: uiMessage("character.browse") }, h2(
         "select",
         {
           className: "dcc-select",
           value: detail?.id ?? "",
           disabled: busy || catalog2 === null || catalog2.characters.length === 0,
-          onChange: (event) => run(() => loadDetail(event.target.value), "\u89D2\u8272\u8BE6\u60C5\u5DF2\u52A0\u8F7D")
+          onChange: (event) => run(() => loadDetail(event.target.value), "character.status.detailsLoaded")
         },
-        ...catalog2?.characters.length ? [] : [h2("option", { key: "empty", value: "" }, "\u89D2\u8272\u5E93\u4E3A\u7A7A")],
-        ...(catalog2?.characters ?? []).map((item) => h2("option", { key: item.id, value: item.id }, uiText`${item.name} · ${item.sourceFormat}`))
+        ...catalog2?.characters.length ? [] : [h2("option", { key: "empty", value: "" }, uiMessage("character.libraryEmpty"))],
+        ...(catalog2?.characters ?? []).map((item) => h2("option", { key: item.id, value: item.id }, rawText(`${item.name} \xB7 ${item.sourceFormat}`)))
       )),
-      h2("p", { className: "dcc-note" }, uiText`当前会话：${sessionId || translateVisibleText("\u65E0")}；绑定：${activeName}`),
-      h2("div", { className: "dcc-status", "data-error": status.error || void 0, role: "status", "aria-live": "polite" }, status.error ? rawText(status.text) : status.text),
-      detail === null ? h2("p", { className: "dcc-note" }, catalog2 === null ? "\u6B63\u5728\u52A0\u8F7D\u89D2\u8272\u5E93\u2026" : "\u5BFC\u5165\u4E00\u5F20\u5408\u6210\u6216\u81EA\u6709\u6388\u6743\u7684 SillyTavern \u89D2\u8272\u5361\u4EE5\u67E5\u770B\u8BE6\u60C5\u3002") : h2(
+      h2("p", { className: "dcc-note" }, uiMessage("character.sessionBinding", {
+        session: sessionId || translate("common.none"),
+        name: activeName
+      })),
+      h2("div", { className: "dcc-status", "data-error": status.error || void 0, role: "status", "aria-live": "polite" }, statusText(status)),
+      detail === null ? h2("p", { className: "dcc-note" }, catalog2 === null ? uiMessage("character.loading") : uiMessage("character.emptyHint")) : h2(
         "div",
         { className: "dcc-card" },
         h2(
           "div",
           { className: "dcc-card-head" },
-          detail.source.container === "png" ? h2("img", { className: "dcc-avatar", src: `${API_ROOT2}/characters/${encodeURIComponent(detail.id)}/artifact`, alt: uiText`${detail.name} 角色卡图片` }) : null,
+          detail.source.container === "png" ? h2("img", { className: "dcc-avatar", src: `${API_ROOT2}/characters/${encodeURIComponent(detail.id)}/artifact`, alt: uiMessage("character.imageAlt", { name: detail.name }) }) : null,
           h2(
             "div",
             null,
             h2("h3", { className: "dcc-card-title" }, rawText(detail.name)),
             h2("p", { className: "dcc-meta" }, rawText(`${detail.source.format}${detail.source.specVersion ? ` \xB7 ${detail.source.specVersion}` : ""} \xB7 ${detail.source.container}`)),
-            h2("p", { className: "dcc-meta" }, rawText(`${detail.data.creator || translateVisibleText("\u672A\u77E5\u4F5C\u8005")}${detail.data.characterVersion ? ` \xB7 ${detail.data.characterVersion}` : ""}`)),
+            h2("p", { className: "dcc-meta" }, rawText(`${detail.data.creator || translate("common.unknownAuthor")}${detail.data.characterVersion ? ` \xB7 ${detail.data.characterVersion}` : ""}`)),
             h2("div", { className: "dcc-tags" }, ...detail.data.tags.map((tag, index) => h2("span", { className: "dcc-tag", key: `${tag}-${index}` }, rawText(tag))))
           )
         ),
-        h2(Field2, { label: "\u5F00\u573A\u53C2\u8003" }, h2("select", {
+        h2(Field2, { label: uiMessage("character.greeting") }, h2("select", {
           className: "dcc-select",
           value: binding?.character?.greetingIndex ?? 0,
           onChange: (event) => setBinding((current2) => ({ ...current2, character: { ...current2.character, greetingIndex: Number(event.target.value) } }))
-        }, ...greetings.map((item) => h2("option", { key: item.index, value: item.index }, item.label)))),
-        h2("label", { className: "dcc-check" }, h2("input", { type: "checkbox", checked: binding?.character?.preferCharacterSystemPrompt !== false, onChange: (event) => setBinding((current2) => ({ ...current2, character: { ...current2.character, preferCharacterSystemPrompt: event.target.checked } })) }), h2("span", null, "\u5141\u8BB8 loader \u4F18\u5148\u91C7\u7528\u5361\u5185 system_prompt")),
-        h2("label", { className: "dcc-check" }, h2("input", { type: "checkbox", checked: binding?.character?.preferCharacterPostHistory !== false, onChange: (event) => setBinding((current2) => ({ ...current2, character: { ...current2.character, preferCharacterPostHistory: event.target.checked } })) }), h2("span", null, "\u5141\u8BB8 loader \u91C7\u7528 post_history_instructions\uFF08\u5B9E\u9645\u4F4D\u7F6E\u7531 loader \u51B3\u5B9A\uFF09")),
+        }, ...greetings.map((item) => h2("option", { key: item.index, value: item.index }, uiMessage(item.labelKey, item.labelValues))))),
+        h2("label", { className: "dcc-check" }, h2("input", { type: "checkbox", checked: binding?.character?.preferCharacterSystemPrompt !== false, onChange: (event) => setBinding((current2) => ({ ...current2, character: { ...current2.character, preferCharacterSystemPrompt: event.target.checked } })) }), h2("span", null, uiMessage("character.preferSystem"))),
+        h2("label", { className: "dcc-check" }, h2("input", { type: "checkbox", checked: binding?.character?.preferCharacterPostHistory !== false, onChange: (event) => setBinding((current2) => ({ ...current2, character: { ...current2.character, preferCharacterPostHistory: event.target.checked } })) }), h2("span", null, uiMessage("character.preferPostHistory"))),
         h2(
           "div",
           { className: "dcc-actions" },
-          h2("button", { className: "dcc-button dcc-primary", type: "button", disabled: busy || !sessionId, onClick: bind }, selection?.characterCardId === detail.id ? "\u66F4\u65B0\u4F1A\u8BDD\u7ED1\u5B9A" : "\u7ED1\u5B9A\u5230\u5F53\u524D\u4F1A\u8BDD"),
-          h2("button", { className: "dcc-button", type: "button", disabled: busy || !sessionId || selection === null, onClick: unbind }, "\u89E3\u9664\u7ED1\u5B9A")
+          h2("button", { className: "dcc-button dcc-primary", type: "button", disabled: busy || !sessionId, onClick: bind }, selection?.characterCardId === detail.id ? uiMessage("character.bindUpdate") : uiMessage("character.bind")),
+          h2("button", { className: "dcc-button", type: "button", disabled: busy || !sessionId || selection === null, onClick: unbind }, uiMessage("character.unbind"))
         ),
-        h2("p", { className: "dcc-note" }, "\u89D2\u8272\u5361\u6A21\u5757\u8D1F\u8D23\u4FDD\u5B58\u6807\u51C6\u5316\u8D44\u6E90\u548C\u4F1A\u8BDD\u9009\u62E9\uFF1B\u5B9E\u9645 system profile \u4E0E\u5185\u5D4C\u4E16\u754C\u4FE1\u606F\u5339\u914D\u7531 Tavern loader \u5728\u6BCF\u6B21\u8BF7\u6C42\u65F6\u7EDF\u4E00\u5904\u7406\uFF0C\u4E0D\u4F1A\u4F2A\u9020 assistant \u5386\u53F2\u3002"),
-        h2(TextDetail, { label: "Creator notes", value: detail.data.creatorNotes }),
-        h2(TextDetail, { label: "Description", value: detail.data.description }),
-        h2(TextDetail, { label: "Personality", value: detail.data.personality }),
-        h2(TextDetail, { label: "Scenario", value: detail.data.scenario }),
-        h2(TextDetail, { label: "\u5F53\u524D\u5F00\u573A\u53C2\u8003\u5185\u5BB9", value: greetings[binding?.character?.greetingIndex ?? 0]?.text }),
-        h2(TextDetail, { label: "Message examples", value: detail.data.messageExample }),
-        h2(TextDetail, { label: "System prompt\uFF08\u7531 loader \u6309\u7ED1\u5B9A\u8BBE\u7F6E\u5904\u7406\uFF09", value: detail.data.systemPrompt }),
-        h2(TextDetail, { label: "Post-history instructions\uFF08\u7531 loader \u8FD1\u4F3C\u653E\u7F6E\uFF09", value: detail.data.postHistoryInstructions }),
-        detail.data.characterBook !== null ? h2("div", { className: "dcc-status" }, uiMessage("character.embeddedBook", { count: Array.isArray(detail.data.characterBook.entries) ? detail.data.characterBook.entries.length : translateVisibleText("\u672A\u77E5") })) : null,
-        h2(DiagnosticList, { title: "\u517C\u5BB9\u8B66\u544A", items: detail.compatibility.warnings }),
-        h2(DiagnosticList, { title: "\u9700\u8981 loader/\u5176\u4ED6\u6A21\u5757\u5904\u7406", items: detail.compatibility.unsupportedFeatures }),
-        detail.compatibility.unknownMacroNames.length > 0 ? h2("div", { className: "dcc-status" }, uiText`未知宏：${detail.compatibility.unknownMacroNames.join(", ")}`) : null,
+        h2("p", { className: "dcc-note" }, uiMessage("character.moduleNote")),
+        h2(TextDetail, { label: uiMessage("character.field.creatorNotes"), value: detail.data.creatorNotes }),
+        h2(TextDetail, { label: uiMessage("character.field.description"), value: detail.data.description }),
+        h2(TextDetail, { label: uiMessage("character.field.personality"), value: detail.data.personality }),
+        h2(TextDetail, { label: uiMessage("character.field.scenario"), value: detail.data.scenario }),
+        h2(TextDetail, { label: uiMessage("character.field.greetingContent"), value: greetings[binding?.character?.greetingIndex ?? 0]?.text }),
+        h2(TextDetail, { label: uiMessage("character.field.messageExamples"), value: detail.data.messageExample }),
+        h2(TextDetail, { label: uiMessage("character.field.systemPrompt"), value: detail.data.systemPrompt }),
+        h2(TextDetail, { label: uiMessage("character.field.postHistory"), value: detail.data.postHistoryInstructions }),
+        detail.data.characterBook !== null ? h2("div", { className: "dcc-status" }, uiMessage("character.embeddedBook", { count: Array.isArray(detail.data.characterBook.entries) ? detail.data.characterBook.entries.length : translate("common.unknown") })) : null,
+        h2(DiagnosticList, { titleKey: "character.warnings", items: detail.compatibility.warnings }),
+        h2(DiagnosticList, { titleKey: "character.unsupported", items: detail.compatibility.unsupportedFeatures }),
+        detail.compatibility.unknownMacroNames.length > 0 ? h2("div", { className: "dcc-status" }, uiMessage("character.unknownMacros", { names: detail.compatibility.unknownMacroNames.join(", ") })) : null,
         h2(
           "div",
           { className: "dcc-actions" },
-          h2("a", { className: "dcc-button", href: `${API_ROOT2}/characters/${encodeURIComponent(detail.id)}/artifact`, download: "" }, "\u5BFC\u51FA\u539F\u4EF6"),
-          h2("a", { className: "dcc-button", href: `${API_ROOT2}/characters/${encodeURIComponent(detail.id)}/json`, download: "" }, "\u5BFC\u51FA JSON")
+          h2("a", { className: "dcc-button", href: `${API_ROOT2}/characters/${encodeURIComponent(detail.id)}/artifact`, download: "" }, uiMessage("character.exportOriginal")),
+          h2("a", { className: "dcc-button", href: `${API_ROOT2}/characters/${encodeURIComponent(detail.id)}/json`, download: "" }, uiMessage("common.exportJson"))
         ),
-        h2("div", { className: "dcc-footer" }, h2("button", { className: "dcc-button dcc-danger", type: "button", disabled: busy, onClick: remove }, "\u5220\u9664\u89D2\u8272\u5361"))
+        h2("div", { className: "dcc-footer" }, h2("button", { className: "dcc-button dcc-danger", type: "button", disabled: busy, onClick: remove }, uiMessage("character.delete")))
       )
     )
   );
@@ -1421,14 +1797,14 @@ var import_react3 = require("react");
 var h3 = createLocalizedElement(import_react3.createElement);
 var API_ROOT3 = "/dsh-tavern/api";
 var POSITIONS = [
-  ["before_character_definition", "\u89D2\u8272\u5B9A\u4E49\u4E4B\u524D"],
-  ["after_character_definition", "\u89D2\u8272\u5B9A\u4E49\u4E4B\u540E"],
-  ["before_author_note", "\u4F5C\u8005\u6CE8\u91CA\u4E4B\u524D\uFF08\u8FD1\u4F3C\uFF09"],
-  ["after_author_note", "\u4F5C\u8005\u6CE8\u91CA\u4E4B\u540E\uFF08\u8FD1\u4F3C\uFF09"],
-  ["at_depth", "\u6307\u5B9A\u6DF1\u5EA6\uFF08\u8FD1\u4F3C\uFF09"],
-  ["before_example_messages", "\u793A\u4F8B\u6D88\u606F\u4E4B\u524D\uFF08\u8FD1\u4F3C\uFF09"],
-  ["after_example_messages", "\u793A\u4F8B\u6D88\u606F\u4E4B\u540E\uFF08\u8FD1\u4F3C\uFF09"],
-  ["outlet", "Outlet\uFF08\u5F53\u524D\u4E0D\u6CE8\u5165\uFF09"]
+  ["before_character_definition", "world.position.beforeCharacter"],
+  ["after_character_definition", "world.position.afterCharacter"],
+  ["before_author_note", "world.position.beforeAuthor"],
+  ["after_author_note", "world.position.afterAuthor"],
+  ["at_depth", "world.position.atDepth"],
+  ["before_example_messages", "world.position.beforeExamples"],
+  ["after_example_messages", "world.position.afterExamples"],
+  ["outlet", "world.position.outlet"]
 ];
 var css3 = `
 .dwb-panel{position:absolute;top:0;right:0;bottom:0;width:min(500px,calc(100vw - 56px));pointer-events:auto;border-left:1px solid var(--dsw-alias-border-l2);box-shadow:var(--ds-shadow-3,-8px 0 28px rgba(0,0,0,.18));background:var(--dsw-alias-bg-base);color:var(--dsw-alias-label-primary);display:flex;flex-direction:column;font-family:Inter,var(--dsw-font-family),sans-serif}.dwb-header{height:52px;box-sizing:border-box;display:flex;align-items:center;gap:8px;padding:0 14px;border-bottom:1px solid var(--dsw-alias-border-l2);flex:none}.dwb-title{font-size:16px;font-weight:650;flex:1}.dwb-close{border:0;background:transparent;color:var(--dsw-alias-label-tertiary);cursor:pointer;border-radius:7px;padding:6px 8px;font-size:14px}.dwb-body{min-height:0;overflow:auto;padding:12px;display:flex;flex-direction:column;gap:11px}.dwb-toolbar{display:grid;grid-template-columns:repeat(3,1fr);gap:7px}.dwb-actions{display:flex;gap:7px;flex-wrap:wrap}.dwb-button{min-height:36px;border:1px solid var(--dsw-alias-border-l2);border-radius:8px;background:var(--dsw-alias-button-secondary-fill,var(--dsw-alias-bg-base));color:var(--dsw-alias-label-primary);cursor:pointer;padding:7px 10px;font-size:13px;text-decoration:none;display:inline-flex;align-items:center;justify-content:center;box-sizing:border-box}.dwb-button:disabled{opacity:.5;cursor:default}.dwb-primary{background:var(--dsw-alias-state-business-primary);color:white;border-color:transparent}.dwb-danger{color:var(--dsw-alias-state-error)}.dwb-field{display:flex;flex-direction:column;gap:4px}.dwb-label{font-size:12px;font-weight:620;color:var(--dsw-alias-label-tertiary)}.dwb-input,.dwb-select,.dwb-textarea{box-sizing:border-box;width:100%;border:1px solid var(--dsw-alias-border-l2);border-radius:7px;background:var(--dsw-alias-bg-base);color:var(--dsw-alias-label-primary);font:inherit;font-size:13px;padding:7px 8px}.dwb-input,.dwb-select{height:36px}.dwb-textarea{min-height:110px;resize:vertical;line-height:1.5}.dwb-note,.dwb-meta{font-size:13px;line-height:1.5;color:var(--dsw-alias-label-tertiary);margin:0;overflow-wrap:anywhere}.dwb-status{font-size:13px;line-height:1.45;border-radius:7px;padding:8px 10px;background:var(--dsw-specific-tip);overflow-wrap:anywhere}.dwb-status[data-error=true]{color:var(--dsw-alias-state-error)}.dwb-status[data-warning=true]{color:var(--dsw-alias-state-warning,#b46b00)}.dwb-section-title{font-size:15px;font-weight:700;margin:5px 0 0}.dwb-resource{border:1px solid var(--dsw-alias-border-l1);border-radius:9px;padding:10px;display:flex;flex-direction:column;gap:8px}.dwb-resource-title{font-size:14px;font-weight:650}.dwb-bindings{display:grid;grid-template-columns:1fr 1fr;gap:5px}.dwb-check{display:flex;gap:6px;align-items:flex-start;font-size:12px;line-height:1.45}.dwb-entry{border:1px solid var(--dsw-alias-border-l1);border-radius:8px;overflow:hidden}.dwb-entry>summary{list-style:none;cursor:pointer;padding:8px;display:flex;align-items:center;gap:7px;font-size:13px}.dwb-entry>summary::-webkit-details-marker{display:none}.dwb-dot{width:8px;height:8px;flex:none;border-radius:50%;background:var(--dsw-alias-label-tertiary)}.dwb-entry[data-enabled=true] .dwb-dot{background:var(--dsw-alias-state-success,#2fa36b)}.dwb-entry-name{font-weight:620;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.dwb-entry-state{margin-left:auto;flex:none;color:var(--dsw-alias-label-tertiary);font-size:12px}.dwb-entry-body{border-top:1px solid var(--dsw-alias-border-l1);padding:8px;display:flex;flex-direction:column;gap:8px}.dwb-grid{display:grid;grid-template-columns:1fr 1fr;gap:7px}.dwb-checks{display:flex;flex-wrap:wrap;gap:10px}.dwb-list{margin:0;padding-left:18px;font-size:13px;line-height:1.5}
@@ -1474,50 +1850,50 @@ function EmbeddedEntryEditor({ entry, index, update, remove }) {
       "summary",
       null,
       h3("span", { className: "dwb-dot" }),
-      h3("span", { className: "dwb-entry-name" }, entry.comment || entry.name ? rawText(entry.comment || entry.name) : uiText`条目 ${entry.id ?? index}`),
-      h3("span", { className: "dwb-entry-state" }, entry.constant ? "\u5E38\u9A7B" : (entry.keys ?? []).length > 0 ? rawText(entry.keys.join(", ")) : "\u65E0\u5173\u952E\u8BCD")
+      h3("span", { className: "dwb-entry-name" }, entry.comment || entry.name ? rawText(entry.comment || entry.name) : uiMessage("world.entry.fallback", { id: entry.id ?? index })),
+      h3("span", { className: "dwb-entry-state" }, entry.constant ? uiMessage("world.entry.constant") : (entry.keys ?? []).length > 0 ? rawText(entry.keys.join(", ")) : uiMessage("world.entry.noKeywords"))
     ),
     h3(
       "div",
       { className: "dwb-entry-body" },
-      h3(Field3, { label: "\u6761\u76EE\u6807\u9898" }, h3("input", { className: "dwb-input", value: entry.comment ?? entry.name ?? "", onChange: (event) => patch({ comment: event.target.value }) })),
-      h3(Field3, { label: "\u4E3B\u5173\u952E\u8BCD\uFF08\u652F\u6301\u4E2D\u6587\u3001\u82F1\u6587\u9017\u53F7\u5206\u9694\uFF09" }, h3("input", { className: "dwb-input", value: (entry.keys ?? []).join(", "), onChange: (event) => patch({ keys: parseKeywords(event.target.value) }) })),
-      h3(Field3, { label: "\u9644\u52A0\u5173\u952E\u8BCD\uFF08\u652F\u6301\u4E2D\u6587\u3001\u82F1\u6587\u9017\u53F7\u5206\u9694\uFF09" }, h3("input", { className: "dwb-input", value: secondaryKeys.join(", "), onChange: (event) => {
+      h3(Field3, { label: uiMessage("world.entry.title") }, h3("input", { className: "dwb-input", value: entry.comment ?? entry.name ?? "", onChange: (event) => patch({ comment: event.target.value }) })),
+      h3(Field3, { label: uiMessage("world.entry.primaryKeys") }, h3("input", { className: "dwb-input", value: (entry.keys ?? []).join(", "), onChange: (event) => patch({ keys: parseKeywords(event.target.value) }) })),
+      h3(Field3, { label: uiMessage("world.entry.secondaryKeys") }, h3("input", { className: "dwb-input", value: secondaryKeys.join(", "), onChange: (event) => {
         const keys = parseKeywords(event.target.value);
         patch({ secondary_keys: keys, selective: keys.length > 0 });
       } })),
-      secondaryKeys.length > 0 ? h3(Field3, { label: "Secondary logic" }, h3(
+      secondaryKeys.length > 0 ? h3(Field3, { label: uiMessage("world.entry.secondaryLogicShort") }, h3(
         "select",
         {
           className: "dwb-select",
           value: entry.selectiveLogic ?? entry.extensions?.selectiveLogic ?? "and_any",
           onChange: (event) => patch({ selectiveLogic: event.target.value, selective: true, extensions: { ...entry.extensions ?? {}, selectiveLogic: event.target.value } })
         },
-        h3("option", { value: "and_any" }, "AND ANY\uFF1A\u547D\u4E2D\u4EFB\u4E00"),
-        h3("option", { value: "and_all" }, "AND ALL\uFF1A\u547D\u4E2D\u5168\u90E8"),
-        h3("option", { value: "not_any" }, "NOT ANY\uFF1A\u4E0D\u80FD\u547D\u4E2D\u4EFB\u4E00"),
-        h3("option", { value: "not_all" }, "NOT ALL\uFF1A\u4E0D\u80FD\u5168\u90E8\u547D\u4E2D")
+        h3("option", { value: "and_any" }, uiMessage("world.logic.andAny")),
+        h3("option", { value: "and_all" }, uiMessage("world.logic.andAll")),
+        h3("option", { value: "not_any" }, uiMessage("world.logic.notAny")),
+        h3("option", { value: "not_all" }, uiMessage("world.logic.notAll"))
       )) : null,
-      h3(Field3, { label: "\u6B63\u6587" }, h3("textarea", { className: "dwb-textarea", value: entry.content ?? "", onChange: (event) => patch({ content: event.target.value }) })),
+      h3(Field3, { label: uiMessage("world.entry.body") }, h3("textarea", { className: "dwb-textarea", value: entry.content ?? "", onChange: (event) => patch({ content: event.target.value }) })),
       h3(
         "div",
         { className: "dwb-grid" },
-        h3(Field3, { label: "\u4F4D\u7F6E" }, h3("select", { className: "dwb-select", value: position, onChange: (event) => {
+        h3(Field3, { label: uiMessage("world.entry.position") }, h3("select", { className: "dwb-select", value: position, onChange: (event) => {
           const value = Number(event.target.value);
           patch({ position: value === 0 ? "before_char" : value === 1 ? "after_char" : entry.position, extensions: { ...entry.extensions ?? {}, position: value } });
-        } }, ...POSITIONS.map(([_value, label], value) => h3("option", { key: value, value }, label)))),
-        h3(Field3, { label: "\u987A\u5E8F\uFF08\u9AD8\u503C\u4F18\u5148\uFF09" }, h3("input", { className: "dwb-input", type: "number", value: entry.insertion_order ?? 100, onChange: (event) => patch({ insertion_order: Number(event.target.value) }) })),
-        h3(Field3, { label: "\u6982\u7387\uFF080\u2013100\uFF09" }, h3("input", { className: "dwb-input", type: "number", min: 0, max: 100, value: entry.probability ?? entry.extensions?.probability ?? 100, onChange: (event) => patch({ probability: Number(event.target.value), extensions: { ...entry.extensions ?? {}, probability: Number(event.target.value), useProbability: true } }) }))
+        } }, ...POSITIONS.map(([_value, key], value) => h3("option", { key: value, value }, uiMessage(key))))),
+        h3(Field3, { label: uiMessage("world.entry.order") }, h3("input", { className: "dwb-input", type: "number", value: entry.insertion_order ?? 100, onChange: (event) => patch({ insertion_order: Number(event.target.value) }) })),
+        h3(Field3, { label: uiMessage("world.entry.probability") }, h3("input", { className: "dwb-input", type: "number", min: 0, max: 100, value: entry.probability ?? entry.extensions?.probability ?? 100, onChange: (event) => patch({ probability: Number(event.target.value), extensions: { ...entry.extensions ?? {}, probability: Number(event.target.value), useProbability: true } }) }))
       ),
       h3(
         "div",
         { className: "dwb-checks" },
-        h3("label", { className: "dwb-check" }, h3("input", { type: "checkbox", checked: entry.enabled === true, onChange: (event) => patch({ enabled: event.target.checked }) }), "\u542F\u7528"),
-        h3("label", { className: "dwb-check" }, h3("input", { type: "checkbox", checked: entry.constant === true, onChange: (event) => patch({ constant: event.target.checked }) }), "\u5E38\u9A7B"),
-        h3("label", { className: "dwb-check" }, h3("input", { type: "checkbox", checked: (entry.case_sensitive ?? entry.extensions?.case_sensitive) === true, onChange: (event) => patch({ case_sensitive: event.target.checked, extensions: { ...entry.extensions ?? {}, case_sensitive: event.target.checked } }) }), "\u533A\u5206\u5927\u5C0F\u5199"),
-        h3("label", { className: "dwb-check" }, h3("input", { type: "checkbox", checked: (entry.match_whole_words ?? entry.extensions?.match_whole_words) === true, onChange: (event) => patch({ match_whole_words: event.target.checked, extensions: { ...entry.extensions ?? {}, match_whole_words: event.target.checked } }) }), "\u5168\u8BCD\u5339\u914D")
+        h3("label", { className: "dwb-check" }, h3("input", { type: "checkbox", checked: entry.enabled === true, onChange: (event) => patch({ enabled: event.target.checked }) }), uiMessage("common.enable")),
+        h3("label", { className: "dwb-check" }, h3("input", { type: "checkbox", checked: entry.constant === true, onChange: (event) => patch({ constant: event.target.checked }) }), uiMessage("world.entry.constant")),
+        h3("label", { className: "dwb-check" }, h3("input", { type: "checkbox", checked: (entry.case_sensitive ?? entry.extensions?.case_sensitive) === true, onChange: (event) => patch({ case_sensitive: event.target.checked, extensions: { ...entry.extensions ?? {}, case_sensitive: event.target.checked } }) }), uiMessage("world.entry.caseSensitive")),
+        h3("label", { className: "dwb-check" }, h3("input", { type: "checkbox", checked: (entry.match_whole_words ?? entry.extensions?.match_whole_words) === true, onChange: (event) => patch({ match_whole_words: event.target.checked, extensions: { ...entry.extensions ?? {}, match_whole_words: event.target.checked } }) }), uiMessage("world.entry.wholeWord"))
       ),
-      h3("div", { className: "dwb-actions" }, h3("button", { className: "dwb-button dwb-danger", type: "button", onClick: () => remove(index) }, "\u5220\u9664\u6761\u76EE"))
+      h3("div", { className: "dwb-actions" }, h3("button", { className: "dwb-button dwb-danger", type: "button", onClick: () => remove(index) }, uiMessage("world.entry.delete")))
     )
   );
 }
@@ -1531,7 +1907,7 @@ function createWorldBookEntry(entries = []) {
     uid,
     keys: [],
     secondaryKeys: [],
-    comment: unwrapText(uiText`新条目 ${uid}`),
+    comment: translate("world.entry.untitled", { id: uid }),
     content: "",
     enabled: true,
     constant: false,
@@ -1572,43 +1948,43 @@ function EntryEditor({ entry, index, update, remove }) {
       "summary",
       null,
       h3("span", { className: "dwb-dot" }),
-      h3("span", { className: "dwb-entry-name" }, entry.comment ? rawText(entry.comment) : uiText`条目 ${entry.uid ?? index}`),
-      h3("span", { className: "dwb-entry-state" }, entry.constant ? "\u5E38\u9A7B" : (entry.keys ?? []).length > 0 ? rawText(entry.keys.join(", ")) : "\u65E0\u5173\u952E\u8BCD")
+      h3("span", { className: "dwb-entry-name" }, entry.comment ? rawText(entry.comment) : uiMessage("world.entry.fallback", { id: entry.uid ?? index })),
+      h3("span", { className: "dwb-entry-state" }, entry.constant ? uiMessage("world.entry.constant") : (entry.keys ?? []).length > 0 ? rawText(entry.keys.join(", ")) : uiMessage("world.entry.noKeywords"))
     ),
     h3(
       "div",
       { className: "dwb-entry-body" },
-      h3(Field3, { label: "\u6761\u76EE\u6807\u9898" }, h3("input", { className: "dwb-input", value: entry.comment ?? "", onChange: (event) => patch({ comment: event.target.value }) })),
-      h3(Field3, { label: "\u4E3B\u5173\u952E\u8BCD\uFF08\u652F\u6301\u4E2D\u6587\u3001\u82F1\u6587\u9017\u53F7\u5206\u9694\uFF09" }, h3("input", { className: "dwb-input", value: (entry.keys ?? []).join(", "), onChange: (event) => patch({ keys: parseKeywords(event.target.value) }) })),
-      h3(Field3, { label: "\u9644\u52A0\u5173\u952E\u8BCD\uFF08\u652F\u6301\u4E2D\u6587\u3001\u82F1\u6587\u9017\u53F7\u5206\u9694\uFF09" }, h3("input", { className: "dwb-input", value: secondary.join(", "), onChange: (event) => {
+      h3(Field3, { label: uiMessage("world.entry.title") }, h3("input", { className: "dwb-input", value: entry.comment ?? "", onChange: (event) => patch({ comment: event.target.value }) })),
+      h3(Field3, { label: uiMessage("world.entry.primaryKeys") }, h3("input", { className: "dwb-input", value: (entry.keys ?? []).join(", "), onChange: (event) => patch({ keys: parseKeywords(event.target.value) }) })),
+      h3(Field3, { label: uiMessage("world.entry.secondaryKeys") }, h3("input", { className: "dwb-input", value: secondary.join(", "), onChange: (event) => {
         const keys = parseKeywords(event.target.value);
         patch({ secondaryKeys: keys, selective: keys.length > 0 });
       } })),
-      secondary.length > 0 ? h3(Field3, { label: "Secondary logic" }, h3(
+      secondary.length > 0 ? h3(Field3, { label: uiMessage("world.entry.secondaryLogicShort") }, h3(
         "select",
         { className: "dwb-select", value: entry.selectiveLogic ?? "and_any", onChange: (event) => patch({ selectiveLogic: event.target.value, selective: true }) },
-        h3("option", { value: "and_any" }, "AND ANY\uFF1A\u547D\u4E2D\u4EFB\u4E00"),
-        h3("option", { value: "and_all" }, "AND ALL\uFF1A\u547D\u4E2D\u5168\u90E8"),
-        h3("option", { value: "not_any" }, "NOT ANY\uFF1A\u4E0D\u80FD\u547D\u4E2D\u4EFB\u4E00"),
-        h3("option", { value: "not_all" }, "NOT ALL\uFF1A\u4E0D\u80FD\u5168\u90E8\u547D\u4E2D")
+        h3("option", { value: "and_any" }, uiMessage("world.logic.andAny")),
+        h3("option", { value: "and_all" }, uiMessage("world.logic.andAll")),
+        h3("option", { value: "not_any" }, uiMessage("world.logic.notAny")),
+        h3("option", { value: "not_all" }, uiMessage("world.logic.notAll"))
       )) : null,
-      h3(Field3, { label: "\u6B63\u6587" }, h3("textarea", { className: "dwb-textarea", value: entry.content ?? "", onChange: (event) => patch({ content: event.target.value }) })),
+      h3(Field3, { label: uiMessage("world.entry.body") }, h3("textarea", { className: "dwb-textarea", value: entry.content ?? "", onChange: (event) => patch({ content: event.target.value }) })),
       h3(
         "div",
         { className: "dwb-grid" },
-        h3(Field3, { label: "\u4F4D\u7F6E" }, h3("select", { className: "dwb-select", value: entry.position, onChange: (event) => patch({ position: event.target.value }) }, ...POSITIONS.map(([value, label]) => h3("option", { key: value, value }, label)))),
-        h3(Field3, { label: "\u987A\u5E8F\uFF08\u9AD8\u503C\u4F18\u5148\uFF09" }, h3("input", { className: "dwb-input", type: "number", value: entry.insertionOrder ?? 100, onChange: (event) => patch({ insertionOrder: Number(event.target.value) }) })),
-        h3(Field3, { label: "\u6982\u7387\uFF080\u2013100\uFF09" }, h3("input", { className: "dwb-input", type: "number", min: 0, max: 100, value: entry.probability ?? 100, onChange: (event) => patch({ probability: Number(event.target.value), useProbability: true }) }))
+        h3(Field3, { label: uiMessage("world.entry.position") }, h3("select", { className: "dwb-select", value: entry.position, onChange: (event) => patch({ position: event.target.value }) }, ...POSITIONS.map(([value, key]) => h3("option", { key: value, value }, uiMessage(key))))),
+        h3(Field3, { label: uiMessage("world.entry.order") }, h3("input", { className: "dwb-input", type: "number", value: entry.insertionOrder ?? 100, onChange: (event) => patch({ insertionOrder: Number(event.target.value) }) })),
+        h3(Field3, { label: uiMessage("world.entry.probability") }, h3("input", { className: "dwb-input", type: "number", min: 0, max: 100, value: entry.probability ?? 100, onChange: (event) => patch({ probability: Number(event.target.value), useProbability: true }) }))
       ),
       h3(
         "div",
         { className: "dwb-checks" },
-        h3("label", { className: "dwb-check" }, h3("input", { type: "checkbox", checked: entry.enabled === true, onChange: (event) => patch({ enabled: event.target.checked }) }), "\u542F\u7528"),
-        h3("label", { className: "dwb-check" }, h3("input", { type: "checkbox", checked: entry.constant === true, onChange: (event) => patch({ constant: event.target.checked }) }), "\u5E38\u9A7B"),
-        h3("label", { className: "dwb-check" }, h3("input", { type: "checkbox", checked: entry.caseSensitive === true, onChange: (event) => patch({ caseSensitive: event.target.checked }) }), "\u533A\u5206\u5927\u5C0F\u5199"),
-        h3("label", { className: "dwb-check" }, h3("input", { type: "checkbox", checked: entry.matchWholeWords === true, onChange: (event) => patch({ matchWholeWords: event.target.checked }) }), "\u5168\u8BCD\u5339\u914D")
+        h3("label", { className: "dwb-check" }, h3("input", { type: "checkbox", checked: entry.enabled === true, onChange: (event) => patch({ enabled: event.target.checked }) }), uiMessage("common.enable")),
+        h3("label", { className: "dwb-check" }, h3("input", { type: "checkbox", checked: entry.constant === true, onChange: (event) => patch({ constant: event.target.checked }) }), uiMessage("world.entry.constant")),
+        h3("label", { className: "dwb-check" }, h3("input", { type: "checkbox", checked: entry.caseSensitive === true, onChange: (event) => patch({ caseSensitive: event.target.checked }) }), uiMessage("world.entry.caseSensitive")),
+        h3("label", { className: "dwb-check" }, h3("input", { type: "checkbox", checked: entry.matchWholeWords === true, onChange: (event) => patch({ matchWholeWords: event.target.checked }) }), uiMessage("world.entry.wholeWord"))
       ),
-      h3("div", { className: "dwb-actions" }, h3("button", { className: "dwb-button dwb-danger", type: "button", onClick: () => remove(index) }, "\u5220\u9664\u6761\u76EE"))
+      h3("div", { className: "dwb-actions" }, h3("button", { className: "dwb-button dwb-danger", type: "button", onClick: () => remove(index) }, uiMessage("world.entry.delete")))
     )
   );
 }
@@ -1626,18 +2002,23 @@ function WorldBookPanel({ sessionId, close }) {
   const [embeddedDirty, setEmbeddedDirty] = (0, import_react3.useState)(false);
   const [dirty, setDirty] = (0, import_react3.useState)(false);
   const [busy, setBusy] = (0, import_react3.useState)(false);
-  const [status, setStatus] = (0, import_react3.useState)({ text: "\u52A0\u8F7D\u4E2D\u2026", error: false });
+  const [status, setStatus] = (0, import_react3.useState)({ error: false, key: "common.loading" });
   const fileRef = (0, import_react3.useRef)(null);
   const standaloneEditorRef = (0, import_react3.useRef)(null);
   const generation = (0, import_react3.useRef)(0);
-  const run = (0, import_react3.useCallback)(async (operation, success) => {
+  const run = (0, import_react3.useCallback)(async (operation, success, values) => {
     setBusy(true);
     try {
       const value = await operation();
-      setStatus({ text: success, error: false });
+      setStatus({ error: false, key: success, values });
       return value;
     } catch (error) {
-      setStatus({ text: error instanceof Error ? error.message : String(error), error: true });
+      setStatus({
+        error: true,
+        key: error.uiKey,
+        values: error.uiValues,
+        text: error instanceof Error ? error.message : String(error)
+      });
       return null;
     } finally {
       setBusy(false);
@@ -1681,8 +2062,8 @@ function WorldBookPanel({ sessionId, close }) {
     setDirty(false);
   }, [document2?.id, sessionId]);
   (0, import_react3.useEffect)(() => {
-    run(() => refresh(), "\u4E16\u754C\u4E66\u8D44\u6E90\u5E93\u5DF2\u52A0\u8F7D");
-    const onRefresh = () => run(() => refresh(), "\u4E16\u754C\u4E66\u8D44\u6E90\u5E93\u5DF2\u5237\u65B0");
+    run(() => refresh(), "world.status.loaded");
+    const onRefresh = () => run(() => refresh(), "world.status.refreshed");
     window.addEventListener("dsh-tavern:refresh", onRefresh);
     return () => {
       generation.current += 1;
@@ -1694,15 +2075,15 @@ function WorldBookPanel({ sessionId, close }) {
     setDocument(detail.worldBook);
     setDraft(structuredClone(detail.worldBook.book));
     setDirty(false);
-  }, "\u4E16\u754C\u4E66\u8BE6\u60C5\u5DF2\u52A0\u8F7D");
+  }, "world.status.detailsLoaded");
   const editUserBook = async (id) => {
     await load(id);
     requestAnimationFrame(() => standaloneEditorRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }));
   };
   const create = () => run(async () => {
-    const data = await api3("/world-books", { method: "POST", body: JSON.stringify({ name: "Untitled World Book" }) });
+    const data = await api3("/world-books", { method: "POST", body: JSON.stringify({ name: translate("world.defaultName") }) });
     await refresh(data.worldBook.id);
-  }, "\u5DF2\u521B\u5EFA\u72EC\u7ACB\u4E16\u754C\u4E66\uFF1B\u5C1A\u672A\u7ED1\u5B9A\u5F53\u524D\u4F1A\u8BDD");
+  }, "world.status.created");
   const importFile = (file) => run(async () => {
     const response = await fetch(`${API_ROOT3}/world-books/import?filename=${encodeURIComponent(file.name)}`, {
       method: "POST",
@@ -1713,24 +2094,24 @@ function WorldBookPanel({ sessionId, close }) {
     if (!response.ok || data?.ok === false) throw new Error(errorMessage2(data, response.status));
     if (fileRef.current !== null) fileRef.current.value = "";
     await refresh(data.worldBook.id);
-  }, "\u4E16\u754C\u4E66\u5DF2\u5BFC\u5165\uFF1B\u5C1A\u672A\u7ED1\u5B9A\u5F53\u524D\u4F1A\u8BDD");
+  }, "world.status.imported");
   const save = () => run(async () => {
     const data = await api3(`/world-books/${encodeURIComponent(document2.id)}`, { method: "PATCH", body: JSON.stringify({ book: draft }) });
     setDocument(data.worldBook);
     setDraft(structuredClone(data.worldBook.book));
     setDirty(false);
     window.dispatchEvent(new Event("dsh-tavern:refresh"));
-  }, "\u4E16\u754C\u4E66\u4FEE\u6539\u5DF2\u6301\u4E45\u5316\uFF0C\u540E\u7EED\u8BF7\u6C42\u5C06\u4F7F\u7528\u65B0\u5185\u5BB9");
+  }, "world.status.saved");
   const saveSelection = () => run(async () => {
-    if (!sessionId) throw new Error("\u8BF7\u5148\u521B\u5EFA\u6216\u6253\u5F00\u4E00\u4E2A\u4F1A\u8BDD\u518D\u7ED1\u5B9A\u4E16\u754C\u4E66");
+    if (!sessionId) throw uiError("world.error.needSession");
     const data = await api3("/world-book-selection", { method: "POST", body: JSON.stringify({ sessionId, worldBookIds: selection }) });
     setSelection(data.selection.worldBookIds);
     setAppliedSelection(data.selection.worldBookIds);
     window.dispatchEvent(new Event("dsh-tavern:refresh"));
-  }, "\u5F53\u524D\u4F1A\u8BDD\u7684\u4E16\u754C\u4E66\u7ED1\u5B9A\u5DF2\u4FDD\u5B58");
+  }, "world.status.bindingSaved");
   const saveUserSelection = () => run(async () => {
     const userId = active?.resources?.user?.id;
-    if (!userId) throw new Error("\u5F53\u524D\u4F1A\u8BDD\u6CA1\u6709\u53EF\u7F16\u8F91\u4E16\u754C\u4E66\u5173\u7CFB\u7684\u7ED1\u5B9A\u7528\u6237");
+    if (!userId) throw uiError("world.user.error.noUser");
     const data = await api3(`/users/${encodeURIComponent(userId)}/world-books`, {
       method: "PUT",
       body: JSON.stringify({ worldBookIds: userSelection })
@@ -1739,7 +2120,7 @@ function WorldBookPanel({ sessionId, close }) {
     setUserSelection(ids);
     setAppliedUserSelection(ids);
     window.dispatchEvent(new Event("dsh-tavern:refresh"));
-  }, uiMessage("world.user.saveSuccess"));
+  }, "world.user.saveSuccess");
   const remove = () => run(async () => {
     if (document2 === null || !window.confirm(unwrapText(uiMessage("world.confirmDelete", { name: document2.name })))) return;
     await api3(`/world-books/${encodeURIComponent(document2.id)}`, { method: "DELETE" });
@@ -1747,7 +2128,7 @@ function WorldBookPanel({ sessionId, close }) {
     setDraft(null);
     await refresh(null);
     window.dispatchEvent(new Event("dsh-tavern:refresh"));
-  }, "\u72EC\u7ACB\u4E16\u754C\u4E66\u5DF2\u5220\u9664\uFF0C\u76F8\u5173\u4F1A\u8BDD\u7ED1\u5B9A\u5DF2\u6E05\u7406");
+  }, "world.status.deleted");
   const saveEmbedded = () => run(async () => {
     const data = await api3(`/characters/${encodeURIComponent(embeddedCharacterId)}/world-book`, {
       method: "PATCH",
@@ -1756,7 +2137,7 @@ function WorldBookPanel({ sessionId, close }) {
     setEmbeddedDraft(structuredClone(data.character.data.characterBook));
     setEmbeddedDirty(false);
     window.dispatchEvent(new Event("dsh-tavern:refresh"));
-  }, "\u89D2\u8272\u5361\u5185\u5D4C\u4E16\u754C\u4E66\u5DF2\u4FDD\u5B58\uFF0C\u540E\u7EED\u8BF7\u6C42\u5C06\u4F7F\u7528\u65B0\u5185\u5BB9");
+  }, "world.status.embeddedSaved");
   const updateEntry = (index, patch) => {
     setDraft((current2) => {
       const next = structuredClone(current2);
@@ -1778,62 +2159,63 @@ function WorldBookPanel({ sessionId, close }) {
     ...userSelection.map((id) => catalogById.get(id)).filter(Boolean),
     ...catalogBooks.filter((book) => !userSelection.includes(book.id))
   ];
+  const closeLabel = uiMessage("panel.close", { title: unwrapText(uiMessage("world.title")) });
   return h3(
     "div",
     { className: "dwb-panel" },
-    h3("div", { className: "dwb-header" }, h3("div", { className: "dwb-title" }, "\u4E16\u754C\u4FE1\u606F\uFF08World Book\uFF09"), h3("button", { className: "dwb-close", type: "button", onClick: close, "aria-label": "\u5173\u95ED\u4E16\u754C\u4E66\u4FA7\u8FB9\u680F" }, "\u2715")),
+    h3("div", { className: "dwb-header" }, h3("div", { className: "dwb-title" }, uiMessage("world.title")), h3("button", { className: "dwb-close", type: "button", onClick: close, title: closeLabel, "aria-label": closeLabel }, "\u2715")),
     h3(
       "div",
       { className: "dwb-body" },
       h3(
         "div",
         { className: "dwb-toolbar" },
-        h3("button", { className: "dwb-button", type: "button", disabled: busy, onClick: () => fileRef.current?.click() }, "\u5BFC\u5165 JSON"),
-        h3("button", { className: "dwb-button", type: "button", disabled: busy, onClick: create }, "\u65B0\u5EFA\u4E16\u754C\u4E66"),
+        h3("button", { className: "dwb-button", type: "button", disabled: busy, onClick: () => fileRef.current?.click() }, uiMessage("world.importJson")),
+        h3("button", { className: "dwb-button", type: "button", disabled: busy, onClick: create }, uiMessage("world.create")),
         h3("button", { className: "dwb-button", type: "button", disabled: busy, onClick: () => {
-          if (!dirty || window.confirm(unwrapText(uiMessage("world.confirmDiscardChanges")))) run(() => refresh(), "\u4E16\u754C\u4E66\u8D44\u6E90\u5E93\u5DF2\u5237\u65B0");
-        } }, "\u5237\u65B0"),
+          if (!dirty || window.confirm(unwrapText(uiMessage("world.confirmDiscardChanges")))) run(() => refresh(), "world.status.refreshed");
+        } }, uiMessage("common.refresh")),
         h3("input", { ref: fileRef, hidden: true, type: "file", accept: ".json,application/json", onChange: (event) => {
           const file = event.target.files?.[0];
           if (file !== void 0) importFile(file);
         } })
       ),
-      h3("p", { className: "dwb-note" }, uiMessage("world.currentSession", { session: sessionId || translateVisibleText("\u65E0") })),
-      h3("div", { className: "dwb-status", "data-error": status.error || void 0, role: "status", "aria-live": "polite" }, status.error ? rawText(status.text) : status.text),
+      h3("p", { className: "dwb-note" }, uiMessage("world.currentSession", { session: sessionId || translate("common.none") })),
+      h3("div", { className: "dwb-status", "data-error": status.error || void 0, role: "status", "aria-live": "polite" }, statusText(status)),
       h3(
         "section",
         { className: "dwb-source-section", "data-source": "standalone" },
-        h3("h2", { className: "dwb-section-title" }, "\u72EC\u7ACB\u4E16\u754C\u4E66"),
+        h3("h2", { className: "dwb-section-title" }, uiMessage("world.standalone")),
         h3(
           "div",
           { className: "dwb-resource" },
-          h3("div", { className: "dwb-resource-title" }, "\u5F53\u524D\u4F1A\u8BDD\u7ED1\u5B9A"),
+          h3("div", { className: "dwb-resource-title" }, uiMessage("world.sessionBinding")),
           catalog2?.worldBooks.length ? h3("div", { className: "dwb-bindings" }, ...catalog2.worldBooks.map((item) => h3(
             "label",
             { className: "dwb-check", key: item.id },
             h3("input", { type: "checkbox", checked: selection.includes(item.id), onChange: (event) => setSelection((current2) => event.target.checked ? [...current2, item.id] : current2.filter((id) => id !== item.id)) }),
             uiMessage("world.catalogItem", { name: item.name, count: item.entryCount })
-          ))) : h3("p", { className: "dwb-note" }, "\u72EC\u7ACB\u4E16\u754C\u4E66\u8D44\u6E90\u5E93\u4E3A\u7A7A\u3002"),
-          selectionDirty ? h3("div", { className: "dwb-status", "data-warning": true }, "\u7ED1\u5B9A\u6709\u672A\u4FDD\u5B58\u4FEE\u6539\uFF0C\u5F53\u524D\u52FE\u9009\u5C1A\u672A\u5E94\u7528\u5230\u4F1A\u8BDD\u3002") : h3("p", { className: "dwb-note" }, "\u9762\u677F\u663E\u793A\u7684\u7ED1\u5B9A\u5DF2\u5E94\u7528\u5230\u5F53\u524D\u4F1A\u8BDD\u3002"),
+          ))) : h3("p", { className: "dwb-note" }, uiMessage("world.libraryEmpty")),
+          selectionDirty ? h3("div", { className: "dwb-status", "data-warning": true }, uiMessage("world.bindingUnsaved")) : h3("p", { className: "dwb-note" }, uiMessage("world.bindingApplied")),
           h3(
             "div",
             { className: "dwb-actions" },
-            h3("button", { className: "dwb-button dwb-primary", type: "button", disabled: busy || !sessionId || !selectionDirty, onClick: saveSelection }, selectionDirty ? "\u5E94\u7528\u4F1A\u8BDD\u7ED1\u5B9A\uFF08\u672A\u4FDD\u5B58\uFF09" : "\u5F53\u524D\u7ED1\u5B9A\u5DF2\u5E94\u7528"),
-            h3("button", { className: "dwb-button", type: "button", disabled: busy || !sessionId || selection.length === 0, onClick: () => setSelection([]) }, "\u6E05\u7A7A\u5F85\u5E94\u7528\u9009\u62E9")
+            h3("button", { className: "dwb-button dwb-primary", type: "button", disabled: busy || !sessionId || !selectionDirty, onClick: saveSelection }, selectionDirty ? uiMessage("world.applyBinding") : uiMessage("world.bindingAppliedButton")),
+            h3("button", { className: "dwb-button", type: "button", disabled: busy || !sessionId || selection.length === 0, onClick: () => setSelection([]) }, uiMessage("world.clearPending"))
           )
         ),
-        h3(Field3, { label: "\u6D4F\u89C8\u72EC\u7ACB\u4E16\u754C\u4E66" }, h3(
+        h3(Field3, { label: uiMessage("world.browse") }, h3(
           "select",
           { className: "dwb-select", value: document2?.id ?? "", disabled: busy || !catalog2?.worldBooks.length, onChange: (event) => {
             if (!dirty || window.confirm(unwrapText(uiMessage("world.confirmDiscardChanges")))) load(event.target.value);
           } },
-          ...catalog2?.worldBooks.length ? [] : [h3("option", { key: "empty", value: "" }, "\u8D44\u6E90\u5E93\u4E3A\u7A7A")],
+          ...catalog2?.worldBooks.length ? [] : [h3("option", { key: "empty", value: "" }, uiMessage("world.catalogEmpty"))],
           ...(catalog2?.worldBooks ?? []).map((item) => h3("option", { key: item.id, value: item.id }, rawText(item.name)))
         )),
         draft === null ? null : h3(
           "div",
           { className: "dwb-resource", ref: standaloneEditorRef },
-          h3(Field3, { label: "\u4E16\u754C\u4E66\u540D\u79F0" }, h3("input", { className: "dwb-input", value: draft.name ?? "", onChange: (event) => {
+          h3(Field3, { label: uiMessage("world.bookName") }, h3("input", { className: "dwb-input", value: draft.name ?? "", onChange: (event) => {
             setDraft((current2) => ({ ...current2, name: event.target.value }));
             setDirty(true);
           } })),
@@ -1844,10 +2226,10 @@ function WorldBookPanel({ sessionId, close }) {
             h3("button", { className: "dwb-button", type: "button", onClick: () => {
               setDraft((current2) => ({ ...current2, entries: [...current2.entries, createWorldBookEntry(current2.entries)] }));
               setDirty(true);
-            } }, "\u65B0\u589E\u6761\u76EE"),
-            h3("button", { className: "dwb-button dwb-primary", type: "button", disabled: busy || !dirty, onClick: save }, dirty ? "\u4FDD\u5B58\u4FEE\u6539" : "\u5DF2\u4FDD\u5B58"),
-            h3("a", { className: "dwb-button", href: `${API_ROOT3}/world-books/${encodeURIComponent(document2.id)}/json`, download: "" }, "\u5BFC\u51FA JSON"),
-            h3("button", { className: "dwb-button dwb-danger", type: "button", disabled: busy, onClick: remove }, "\u5220\u9664\u72EC\u7ACB\u4E66")
+            } }, uiMessage("world.addEntry")),
+            h3("button", { className: "dwb-button dwb-primary", type: "button", disabled: busy || !dirty, onClick: save }, dirty ? uiMessage("common.saveChanges") : uiMessage("common.saved")),
+            h3("a", { className: "dwb-button", href: `${API_ROOT3}/world-books/${encodeURIComponent(document2.id)}/json`, download: "" }, uiMessage("common.exportJson")),
+            h3("button", { className: "dwb-button dwb-danger", type: "button", disabled: busy, onClick: remove }, uiMessage("world.deleteStandalone"))
           ),
           ...entries.map((entry, index) => h3(EntryEditor, { key: `${String(entry.uid)}-${index}`, entry, index, update: updateEntry, remove: (itemIndex) => {
             if (window.confirm(unwrapText(uiMessage("world.confirmDeleteEntry")))) {
@@ -1900,11 +2282,11 @@ function WorldBookPanel({ sessionId, close }) {
       h3(
         "section",
         { className: "dwb-source-section", "data-source": "character" },
-        h3("h2", { className: "dwb-section-title" }, "\u89D2\u8272\u5361\u7ED1\u5B9A\u7684\u4E16\u754C\u4E66"),
+        h3("h2", { className: "dwb-section-title" }, uiMessage("world.characterBound")),
         embeddedDraft !== null ? h3(
           "div",
           { className: "dwb-resource" },
-          h3("div", { className: "dwb-resource-title" }, embeddedDraft.name || embedded[0]?.name ? rawText(embeddedDraft.name || embedded[0]?.name) : "\u89D2\u8272\u5361\u5185\u5D4C\u4E16\u754C\u4E66"),
+          h3("div", { className: "dwb-resource-title" }, embeddedDraft.name || embedded[0]?.name ? rawText(embeddedDraft.name || embedded[0]?.name) : uiMessage("world.embeddedTitle")),
           h3("p", { className: "dwb-note" }, uiMessage("world.embeddedMeta", { count: embeddedEntries.length })),
           h3(
             "div",
@@ -1912,10 +2294,10 @@ function WorldBookPanel({ sessionId, close }) {
             h3("button", { className: "dwb-button", type: "button", onClick: () => {
               const ids = embeddedEntries.map((entry) => Number(entry.id)).filter(Number.isSafeInteger);
               const id = ids.length === 0 ? 0 : Math.max(...ids) + 1;
-              setEmbeddedDraft((current2) => ({ ...structuredClone(current2), entries: [...current2.entries, { id, keys: [], secondary_keys: [], comment: unwrapText(uiText`新条目 ${id}`), content: "", enabled: true, constant: false, selective: false, insertion_order: 100, position: "after_char", extensions: { position: 1, probability: 100, useProbability: true } }] }));
+              setEmbeddedDraft((current2) => ({ ...structuredClone(current2), entries: [...current2.entries, { id, keys: [], secondary_keys: [], comment: translate("world.entry.untitled", { id }), content: "", enabled: true, constant: false, selective: false, insertion_order: 100, position: "after_char", extensions: { position: 1, probability: 100, useProbability: true } }] }));
               setEmbeddedDirty(true);
-            } }, "\u65B0\u589E\u5185\u5D4C\u6761\u76EE"),
-            h3("button", { className: "dwb-button dwb-primary", type: "button", disabled: busy || !embeddedDirty, onClick: saveEmbedded }, embeddedDirty ? "\u4FDD\u5B58\u5185\u5D4C\u4E66" : "\u5185\u5D4C\u4E66\u5DF2\u4FDD\u5B58")
+            } }, uiMessage("world.addEmbeddedEntry")),
+            h3("button", { className: "dwb-button dwb-primary", type: "button", disabled: busy || !embeddedDirty, onClick: saveEmbedded }, embeddedDirty ? uiMessage("world.saveEmbedded") : uiMessage("world.embeddedSaved"))
           ),
           ...embeddedEntries.map((entry, index) => h3(EmbeddedEntryEditor, { key: `${String(entry.id)}-${index}`, entry, index, update: (itemIndex, value) => {
             setEmbeddedDraft((current2) => {
@@ -1933,7 +2315,7 @@ function WorldBookPanel({ sessionId, close }) {
         ) : h3("p", { className: "dwb-note" }, uiMessage("world.embeddedEmpty"))
       ),
       diagnostics.length > 0 ? h3("details", { className: "dwb-resource" }, h3("summary", { className: "dwb-resource-title" }, uiMessage("world.diagnostics", { count: diagnostics.length })), h3("ul", { className: "dwb-list" }, ...diagnostics.map((item, index) => h3("li", { key: `${item.code}-${index}` }, rawText(item.message))))) : null,
-      h3("p", { className: "dwb-note" }, "\u5B9E\u9645\u6FC0\u6D3B\u3001\u6392\u5E8F\u3001\u6982\u7387\u548C\u9884\u7B97\u7531\u5171\u4EAB matcher \u786E\u5B9A\uFF1B\u6700\u7EC8\u6CE8\u5165\u4ECD\u7531 Tavern loader \u7EDF\u4E00\u5B8C\u6210\u3002\u5F53\u524D\u626B\u63CF\u4F1A\u628A\u672C\u6B65\u9AA4 claimed \u8F93\u5165\u4E0E\u6301\u4E45\u5386\u53F2\u7EC4\u5408\u6210\u4E34\u65F6\u4E0A\u4E0B\u6587\uFF0C\u56E0\u6B64\u5355\u6B65\u9AA4\u4F1A\u8BDD\u4E5F\u80FD\u5728\u9996\u6B21\u8BF7\u6C42\u89E6\u53D1\u5173\u952E\u8BCD\u3002")
+      h3("p", { className: "dwb-note" }, uiMessage("world.matcherNote"))
     )
   );
 }
@@ -1997,7 +2379,7 @@ function UserPanel({ sessionId, sessionBlank, close }) {
   const [appliedWorldBookIds, setAppliedWorldBookIds] = (0, import_react4.useState)([]);
   const [selectedUserId, setSelectedUserId] = (0, import_react4.useState)(null);
   const [busy, setBusy] = (0, import_react4.useState)(false);
-  const [status, setStatus] = (0, import_react4.useState)({ text: "\u52A0\u8F7D\u4E2D\u2026", error: false });
+  const [status, setStatus] = (0, import_react4.useState)({ error: false, key: "common.loading" });
   const generation = (0, import_react4.useRef)(0);
   const draftId = (0, import_react4.useRef)(null);
   const dirtyRef = (0, import_react4.useRef)(false);
@@ -2006,14 +2388,19 @@ function UserPanel({ sessionId, sessionBlank, close }) {
   dirtyRef.current = dirty;
   const resourceDirty = userResourceDirty(draft, savedDraft);
   const bindingDirty = !sameOrderedIds(worldBookIds, appliedWorldBookIds);
-  const run = (0, import_react4.useCallback)(async (operation, success) => {
+  const run = (0, import_react4.useCallback)(async (operation, success, values) => {
     setBusy(true);
     try {
       const result = await operation();
-      setStatus({ text: success, error: false });
+      setStatus({ error: false, key: success, values });
       return result;
     } catch (error) {
-      setStatus({ text: error instanceof Error ? error.message : String(error), error: true });
+      setStatus({
+        error: true,
+        key: error.uiKey,
+        values: error.uiValues,
+        text: error instanceof Error ? error.message : String(error)
+      });
       return null;
     } finally {
       setBusy(false);
@@ -2042,13 +2429,13 @@ function UserPanel({ sessionId, sessionBlank, close }) {
     setAppliedWorldBookIds(ids);
   }, [sessionId]);
   (0, import_react4.useEffect)(() => {
-    run(() => refresh(), "\u7528\u6237\u8D44\u6E90\u5DF2\u52A0\u8F7D");
+    run(() => refresh(), "user.status.loaded");
     const onRefresh = () => {
       if (dirtyRef.current) {
-        setStatus({ text: "\u68C0\u6D4B\u5230\u5176\u4ED6 Tavern \u8D44\u6E90\u53D8\u5316\uFF1B\u4E3A\u4FDD\u7559\u672C\u9762\u677F\u672A\u4FDD\u5B58\u4FEE\u6539\uFF0C\u672A\u81EA\u52A8\u5237\u65B0\u3002", error: false });
+        setStatus({ error: false, key: "user.status.skippedRefresh" });
         return;
       }
-      run(() => refresh(draftId.current), "\u7528\u6237\u8D44\u6E90\u5DF2\u5237\u65B0");
+      run(() => refresh(draftId.current), "user.status.refreshed");
     };
     window.addEventListener("dsh-tavern:refresh", onRefresh);
     return () => {
@@ -2068,11 +2455,11 @@ function UserPanel({ sessionId, sessionBlank, close }) {
   const create = (0, import_react4.useCallback)(() => {
     if (dirty && !window.confirm(unwrapText(uiMessage("user.confirmDiscardForCreate")))) return;
     run(async () => {
-      const data = await api4("/users", { method: "POST", body: JSON.stringify({ name: translateVisibleText("\u65B0\u7528\u6237"), description: "" }) });
+      const data = await api4("/users", { method: "POST", body: JSON.stringify({ name: translate("user.defaultName"), description: "" }) });
       draftId.current = data.user.id;
       await refresh(data.user.id);
       notifyRefresh();
-    }, "\u7528\u6237\u8D44\u6E90\u5DF2\u521B\u5EFA\uFF1B\u4FDD\u5B58\u540D\u5B57\u548C\u63CF\u8FF0\u540E\u518D\u7ED1\u5B9A");
+    }, "user.status.created");
   }, [dirty, refresh, run]);
   const save = (0, import_react4.useCallback)(() => run(async () => {
     if (draft === null) return;
@@ -2085,7 +2472,7 @@ function UserPanel({ sessionId, sessionBlank, close }) {
     setSavedDraft(structuredClone(data.user));
     setUsers((current2) => current2?.map((user) => user.id === data.user.id ? data.user : user) ?? current2);
     notifyRefresh();
-  }, "\u540D\u5B57\u548C\u63CF\u8FF0\u5DF2\u4FDD\u5B58\uFF1B\u5DF2\u7ED1\u5B9A\u4F1A\u8BDD\u7684\u4E0B\u4E00\u6B21\u8BF7\u6C42\u4F1A\u7ACB\u5373\u4F7F\u7528\u65B0\u5185\u5BB9"), [draft, run]);
+  }, "user.status.saved"), [draft, run]);
   const saveWorldBooks = (0, import_react4.useCallback)(() => run(async () => {
     if (draft === null) return;
     const data = await api4(`/users/${encodeURIComponent(draft.id)}/world-books`, {
@@ -2096,13 +2483,13 @@ function UserPanel({ sessionId, sessionBlank, close }) {
     setWorldBookIds(ids);
     setAppliedWorldBookIds(ids);
     notifyRefresh();
-  }, "\u7528\u6237\u7ED1\u5B9A\u7684\u4E16\u754C\u4E66\u5DF2\u4FDD\u5B58\uFF1B\u9009\u62E9\u8BE5\u7528\u6237\u7684\u4F1A\u8BDD\u4F1A\u5728\u4E0B\u4E00\u6B21\u7EC4\u88C5\u65F6\u81EA\u52A8\u4F7F\u7528"), [draft, run, worldBookIds]);
+  }, "user.status.worldBooksSaved"), [draft, run, worldBookIds]);
   const chooseUser = (0, import_react4.useCallback)((id) => {
     if (dirty && !window.confirm(unwrapText(uiMessage("user.confirmDiscardForSwitch")))) return;
-    run(() => refresh(id), "\u7528\u6237\u8D44\u6E90\u548C\u4E16\u754C\u4E66\u7ED1\u5B9A\u5DF2\u52A0\u8F7D");
+    run(() => refresh(id), "user.status.userLoaded");
   }, [dirty, refresh, run]);
   const bind = (0, import_react4.useCallback)(() => run(async () => {
-    if (!sessionId || draft === null) throw new Error("\u8BF7\u5148\u521B\u5EFA\u6216\u6253\u5F00\u4E00\u4E2A\u4F1A\u8BDD\u5E76\u9009\u62E9\u7528\u6237\u8D44\u6E90");
+    if (!sessionId || draft === null) throw uiError("user.error.needSession");
     if (selectedUserId !== draft.id && sessionBlank === false && !window.confirm(unwrapText(uiMessage("user.confirmHistoricalSwitch")))) return;
     const data = await api4("/user-selection", {
       method: "POST",
@@ -2110,37 +2497,38 @@ function UserPanel({ sessionId, sessionBlank, close }) {
     });
     setSelectedUserId(data.selection.userId);
     notifyRefresh();
-  }, "\u7528\u6237\u5DF2\u7ED1\u5B9A\uFF1B\u5F53\u524D\u4F1A\u8BDD\u7684\u4E0B\u4E00\u6B21\u8BF7\u6C42\u4F1A\u4F7F\u7528\u8BE5\u540D\u5B57\u548C\u63CF\u8FF0"), [draft, run, selectedUserId, sessionBlank, sessionId]);
+  }, "user.status.bound"), [draft, run, selectedUserId, sessionBlank, sessionId]);
   const unbind = (0, import_react4.useCallback)(() => run(async () => {
-    if (!sessionId) throw new Error("\u5F53\u524D\u6CA1\u6709\u53EF\u89E3\u7ED1\u7684\u4F1A\u8BDD");
+    if (!sessionId) throw uiError("user.error.noSessionToUnbind");
     await api4("/user-selection", { method: "POST", body: JSON.stringify({ sessionId, userId: null }) });
     setSelectedUserId(null);
     notifyRefresh();
-  }, "\u5F53\u524D\u4F1A\u8BDD\u5DF2\u89E3\u9664\u7528\u6237\u7ED1\u5B9A"), [run, sessionId]);
+  }, "user.status.unbound"), [run, sessionId]);
   const remove = (0, import_react4.useCallback)(() => run(async () => {
     if (draft === null || !window.confirm(unwrapText(uiMessage("user.confirmDelete", { name: draft.name })))) return;
     await api4(`/users/${encodeURIComponent(draft.id)}`, { method: "DELETE", body: "{}" });
     draftId.current = null;
     await refresh(null);
     notifyRefresh();
-  }, "\u7528\u6237\u5DF2\u5220\u9664\uFF0C\u76F8\u5173\u4F1A\u8BDD\u7ED1\u5B9A\u5DF2\u6E05\u9664"), [draft, refresh, run]);
-  const activeName = selectedUserId === null ? translateVisibleText("\u672A\u7ED1\u5B9A\u7528\u6237") : users?.find((user) => user.id === selectedUserId)?.name ?? selectedUserId;
+  }, "user.status.deleted"), [draft, refresh, run]);
+  const activeName = selectedUserId === null ? translate("nav.user.empty") : users?.find((user) => user.id === selectedUserId)?.name ?? selectedUserId;
   const requestClose = () => {
     if (!dirty || window.confirm(unwrapText(uiMessage("user.confirmCloseDirty")))) close();
   };
   const dirtyParts = [
-    resourceDirty ? translateVisibleText("\u540D\u5B57/\u63CF\u8FF0") : "",
-    bindingDirty ? translateVisibleText("\u7528\u6237\u4E16\u754C\u4E66\u7ED1\u5B9A") : ""
+    resourceDirty ? translate("user.dirty.name") : "",
+    bindingDirty ? translate("user.dirty.binding") : ""
   ].filter(Boolean);
-  const dirtyText = uiText`有未保存修改：${dirtyParts.join(getClientUiSettings().locale === "en" ? ", " : "\u3001")}。`;
+  const dirtyText = uiMessage("user.dirty", { parts: dirtyParts.join(translate("common.listSeparator")) });
+  const closeLabel = uiMessage("panel.close", { title: unwrapText(uiMessage("user.title")) });
   return h4(
     "div",
     { className: "dtu-panel" },
     h4(
       "div",
       { className: "dtu-header" },
-      h4("div", { className: "dtu-title" }, "Tavern \u7528\u6237"),
-      h4("button", { className: "dtu-close", type: "button", title: "\u5173\u95ED\u7528\u6237\u9762\u677F", "aria-label": "\u5173\u95ED\u7528\u6237\u4FA7\u8FB9\u680F", onClick: requestClose }, "\u2715")
+      h4("div", { className: "dtu-title" }, uiMessage("user.title")),
+      h4("button", { className: "dtu-close", type: "button", title: closeLabel, "aria-label": closeLabel, onClick: requestClose }, "\u2715")
     ),
     h4(
       "div",
@@ -2148,12 +2536,12 @@ function UserPanel({ sessionId, sessionBlank, close }) {
       h4(
         "div",
         { className: "dtu-toolbar" },
-        h4("button", { className: "dtu-button", type: "button", disabled: busy, onClick: create }, "\u65B0\u5EFA\u7528\u6237"),
+        h4("button", { className: "dtu-button", type: "button", disabled: busy, onClick: create }, uiMessage("user.create")),
         h4("button", { className: "dtu-button", type: "button", disabled: busy, onClick: () => {
-          if (!dirty || window.confirm(unwrapText(uiMessage("user.confirmDiscardRefresh")))) run(() => refresh(draft?.id), "\u7528\u6237\u8D44\u6E90\u5DF2\u5237\u65B0");
-        } }, "\u5237\u65B0")
+          if (!dirty || window.confirm(unwrapText(uiMessage("user.confirmDiscardRefresh")))) run(() => refresh(draft?.id), "user.status.refreshed");
+        } }, uiMessage("common.refresh"))
       ),
-      h4(Field4, { label: "\u6D4F\u89C8\u7528\u6237\u8D44\u6E90" }, h4(
+      h4(Field4, { label: uiMessage("user.browse") }, h4(
         "select",
         {
           className: "dtu-select",
@@ -2161,25 +2549,25 @@ function UserPanel({ sessionId, sessionBlank, close }) {
           disabled: busy || users === null || users.length === 0,
           onChange: (event) => chooseUser(event.target.value)
         },
-        ...users?.length ? [] : [h4("option", { key: "empty", value: "" }, "\u7528\u6237\u8D44\u6E90\u5E93\u4E3A\u7A7A")],
+        ...users?.length ? [] : [h4("option", { key: "empty", value: "" }, uiMessage("user.libraryEmpty"))],
         ...(users ?? []).map((user) => h4("option", { key: user.id, value: user.id }, rawText(user.name)))
       )),
-      h4("p", { className: "dtu-note" }, uiText`当前会话：${sessionId || translateVisibleText("\u65E0")}；绑定：${activeName}`),
-      h4("div", { className: "dtu-status", "data-error": status.error || void 0, role: "status", "aria-live": "polite" }, status.error ? rawText(status.text) : status.text),
-      dirty ? h4("div", { className: "dtu-status", "data-warning": true, role: "status" }, dirtyText) : h4("p", { className: "dtu-note" }, "\u5F53\u524D\u663E\u793A\u7684\u7528\u6237\u8D44\u6E90\u548C\u4E16\u754C\u4E66\u7ED1\u5B9A\u5747\u5DF2\u4FDD\u5B58\u3002"),
-      draft === null ? h4("p", { className: "dtu-note" }, users === null ? "\u6B63\u5728\u52A0\u8F7D\u7528\u6237\u8D44\u6E90\u2026" : "\u521B\u5EFA\u4E00\u4E2A\u53EA\u542B\u540D\u5B57\u548C\u63CF\u8FF0\u7684\u7528\u6237\u8D44\u6E90\u3002") : h4(
+      h4("p", { className: "dtu-note" }, uiMessage("user.sessionBinding", { session: sessionId || translate("common.none"), name: activeName })),
+      h4("div", { className: "dtu-status", "data-error": status.error || void 0, role: "status", "aria-live": "polite" }, statusText(status)),
+      dirty ? h4("div", { className: "dtu-status", "data-warning": true, role: "status" }, dirtyText) : h4("p", { className: "dtu-note" }, uiMessage("user.savedNote")),
+      draft === null ? h4("p", { className: "dtu-note" }, users === null ? uiMessage("user.loading") : uiMessage("user.emptyHint")) : h4(
         "div",
         { className: "dtu-editor" },
-        h4(Field4, { label: "\u540D\u5B57\uFF08\u7528\u4E8E {{user}} \u5B8F\uFF09" }, h4("input", { className: "dtu-input", value: draft.name, maxLength: 200, onChange: (event) => setDraft((current2) => ({ ...current2, name: event.target.value })) })),
-        h4(Field4, { label: "\u63CF\u8FF0\uFF08\u8FDB\u5165 personaDescription marker\uFF1B\u7F3A marker \u65F6\u7531 loader \u7A33\u5B9A\u964D\u7EA7\uFF09" }, h4("textarea", { className: "dtu-textarea", value: draft.description, maxLength: 1e5, onChange: (event) => setDraft((current2) => ({ ...current2, description: event.target.value })) })),
+        h4(Field4, { label: uiMessage("user.name", { macro: "{{user}}" }) }, h4("input", { className: "dtu-input", value: draft.name, maxLength: 200, onChange: (event) => setDraft((current2) => ({ ...current2, name: event.target.value })) })),
+        h4(Field4, { label: uiMessage("user.description") }, h4("textarea", { className: "dtu-textarea", value: draft.description, maxLength: 1e5, onChange: (event) => setDraft((current2) => ({ ...current2, description: event.target.value })) })),
         h4(
           "div",
           { className: "dtu-actions" },
-          h4("button", { className: "dtu-button dtu-primary", type: "button", disabled: busy || !resourceDirty, onClick: save }, resourceDirty ? "\u4FDD\u5B58\u8D44\u6E90\uFF08\u672A\u4FDD\u5B58\uFF09" : "\u8D44\u6E90\u5DF2\u4FDD\u5B58"),
-          h4("button", { className: "dtu-button dtu-primary", type: "button", disabled: busy || !sessionId || dirty, onClick: bind }, dirty ? "\u8BF7\u5148\u4FDD\u5B58\u4FEE\u6539" : selectedUserId === draft.id ? "\u5237\u65B0\u4F1A\u8BDD\u7ED1\u5B9A" : "\u7ED1\u5B9A\u5230\u5F53\u524D\u4F1A\u8BDD")
+          h4("button", { className: "dtu-button dtu-primary", type: "button", disabled: busy || !resourceDirty, onClick: save }, resourceDirty ? uiMessage("user.saveResource") : uiMessage("user.resourceSaved")),
+          h4("button", { className: "dtu-button dtu-primary", type: "button", disabled: busy || !sessionId || dirty, onClick: bind }, dirty ? uiMessage("user.saveFirst") : selectedUserId === draft.id ? uiMessage("user.refreshBinding") : uiMessage("user.bind"))
         ),
-        h4("h2", { className: "dtu-section-title" }, "\u7528\u6237\u7ED1\u5B9A\u7684\u72EC\u7ACB\u4E16\u754C\u4E66"),
-        h4("p", { className: "dtu-note" }, "\u9009\u62E9\u8BE5\u7528\u6237\u65F6\uFF0Cloader \u4F1A\u81EA\u52A8\u7EC4\u5408\u8FD9\u91CC\u7684\u4E16\u754C\u4E66\u4E0E\u5F53\u524D\u4F1A\u8BDD\u663E\u5F0F\u9009\u62E9\u7684\u4E16\u754C\u4E66\uFF1B\u91CD\u590D\u7684\u540C\u4E00\u672C\u4E66\u53EA\u6267\u884C\u4E00\u6B21\u3002"),
+        h4("h2", { className: "dtu-section-title" }, uiMessage("user.worldBooksTitle")),
+        h4("p", { className: "dtu-note" }, uiMessage("user.worldBooksHint")),
         worldBooks?.length ? h4("div", { className: "dtu-bindings" }, ...worldBooks.map((book) => h4(
           "label",
           { className: "dtu-check", key: book.id },
@@ -2188,17 +2576,17 @@ function UserPanel({ sessionId, sessionBlank, close }) {
             checked: worldBookIds.includes(book.id),
             onChange: (event) => setWorldBookIds((current2) => event.target.checked ? [...current2, book.id] : current2.filter((id) => id !== book.id))
           }),
-          h4("span", null, uiText`${book.name}（${book.entryCount} 条）`)
-        ))) : h4("p", { className: "dtu-note" }, worldBooks === null ? "\u6B63\u5728\u52A0\u8F7D\u72EC\u7ACB\u4E16\u754C\u4E66\u8D44\u6E90\u5E93\u2026" : "\u72EC\u7ACB\u4E16\u754C\u4E66\u8D44\u6E90\u5E93\u4E3A\u7A7A\u3002\u8BF7\u5148\u5728\u4E16\u754C\u4E66\u9762\u677F\u521B\u5EFA\u6216\u5BFC\u5165\u3002"),
+          h4("span", null, uiMessage("world.catalogItem", { name: book.name, count: book.entryCount }))
+        ))) : h4("p", { className: "dtu-note" }, worldBooks === null ? uiMessage("user.worldBooksLoading") : uiMessage("user.worldBooksEmpty")),
         h4(
           "div",
           { className: "dtu-actions" },
-          h4("button", { className: "dtu-button dtu-primary", type: "button", disabled: busy || !bindingDirty, onClick: saveWorldBooks }, bindingDirty ? "\u4FDD\u5B58\u4E16\u754C\u4E66\u7ED1\u5B9A\uFF08\u672A\u4FDD\u5B58\uFF09" : "\u4E16\u754C\u4E66\u7ED1\u5B9A\u5DF2\u4FDD\u5B58"),
-          h4("button", { className: "dtu-button", type: "button", disabled: busy || worldBookIds.length === 0, onClick: () => setWorldBookIds([]) }, "\u6E05\u7A7A\u5F85\u4FDD\u5B58\u9009\u62E9")
+          h4("button", { className: "dtu-button dtu-primary", type: "button", disabled: busy || !bindingDirty, onClick: saveWorldBooks }, bindingDirty ? uiMessage("user.saveWorldBooks") : uiMessage("user.worldBooksSaved")),
+          h4("button", { className: "dtu-button", type: "button", disabled: busy || worldBookIds.length === 0, onClick: () => setWorldBookIds([]) }, uiMessage("user.clearPending"))
         ),
-        h4("button", { className: "dtu-button", type: "button", disabled: busy || !sessionId || selectedUserId === null, onClick: unbind }, "\u89E3\u9664\u5F53\u524D\u4F1A\u8BDD\u7ED1\u5B9A"),
-        h4("p", { className: "dtu-note" }, "\u7528\u6237\u8D44\u6E90\u6B63\u6587\u4ECD\u4E25\u683C\u53EA\u6709\u540D\u5B57\u548C\u63CF\u8FF0\uFF1B\u4E16\u754C\u4E66\u5173\u7CFB\u4FDD\u5B58\u5728 loader \u7684\u72EC\u7ACB\u7ED3\u6784\u5316\u7B56\u7565\u4E2D\u3002\u7528\u6237\u8D44\u6E90\u4E0D\u5305\u542B\u5934\u50CF\uFF0C\u4E5F\u4E0D\u4F1A\u8986\u76D6 DSH Agent \u8EAB\u4EFD\u3002"),
-        h4("div", { className: "dtu-footer" }, h4("button", { className: "dtu-button dtu-danger", type: "button", disabled: busy, onClick: remove }, "\u5220\u9664\u7528\u6237"))
+        h4("button", { className: "dtu-button", type: "button", disabled: busy || !sessionId || selectedUserId === null, onClick: unbind }, uiMessage("user.unbind")),
+        h4("p", { className: "dtu-note" }, uiMessage("user.identityNote")),
+        h4("div", { className: "dtu-footer" }, h4("button", { className: "dtu-button dtu-danger", type: "button", disabled: busy, onClick: remove }, uiMessage("user.delete")))
       )
     )
   );
@@ -2225,24 +2613,24 @@ var css5 = `
 @media(max-width:760px){.dttrace-grid{grid-template-columns:1fr}.dttrace-decision{grid-template-columns:70px 1fr}.dttrace-keywords{grid-column:1/-1}}
 `;
 var reasonLabels = Object.freeze({
-  constant: "\u5E38\u9A7B\u6761\u76EE",
-  "primary-key-match": "\u4E3B\u5173\u952E\u8BCD\u547D\u4E2D",
-  "primary-key-miss": "\u4E3B\u5173\u952E\u8BCD\u672A\u547D\u4E2D",
-  "secondary-and_any-match": "\u9644\u52A0\u5173\u952E\u8BCD\u4EFB\u4E00\u547D\u4E2D",
-  "secondary-and_any-miss": "\u9644\u52A0\u5173\u952E\u8BCD\u5747\u672A\u547D\u4E2D",
-  "secondary-and_all-match": "\u9644\u52A0\u5173\u952E\u8BCD\u5168\u90E8\u547D\u4E2D",
-  "secondary-and_all-miss": "\u9644\u52A0\u5173\u952E\u8BCD\u672A\u5168\u90E8\u547D\u4E2D",
-  "secondary-not_any-match": "\u9644\u52A0\u5173\u952E\u8BCD\u6392\u9664\u6761\u4EF6\u901A\u8FC7",
-  "secondary-not_any-miss": "\u9644\u52A0\u5173\u952E\u8BCD\u89E6\u53D1\u6392\u9664",
-  "secondary-not_all-match": "\u9644\u52A0\u5173\u952E\u8BCD\u975E\u5168\u4E2D\u6761\u4EF6\u901A\u8FC7",
-  "secondary-not_all-miss": "\u9644\u52A0\u5173\u952E\u8BCD\u5168\u4E2D\u800C\u6392\u9664",
-  disabled: "\u6761\u76EE\u5DF2\u7981\u7528",
-  "external-vector-match-required": "\u9700\u8981\u5916\u90E8\u5411\u91CF\u5339\u914D",
-  "inclusion-group-loser": "\u4E92\u65A5\u7EC4\u672A\u80DC\u51FA",
-  "probability-failed": "\u6982\u7387\u68C0\u67E5\u62D2\u7EDD",
-  "budget-exceeded": "\u8D85\u51FA token \u9884\u7B97",
-  "empty-content": "\u6B63\u6587\u4E3A\u7A7A\uFF0C\u672A\u63D2\u5165",
-  "outlet-unsupported": "Outlet \u65E0\u7A33\u5B9A\u63D2\u5165 seam"
+  constant: "trace.reason.constant",
+  "primary-key-match": "trace.reason.primary-key-match",
+  "primary-key-miss": "trace.reason.primary-key-miss",
+  "secondary-and_any-match": "trace.reason.secondary-and_any-match",
+  "secondary-and_any-miss": "trace.reason.secondary-and_any-miss",
+  "secondary-and_all-match": "trace.reason.secondary-and_all-match",
+  "secondary-and_all-miss": "trace.reason.secondary-and_all-miss",
+  "secondary-not_any-match": "trace.reason.secondary-not_any-match",
+  "secondary-not_any-miss": "trace.reason.secondary-not_any-miss",
+  "secondary-not_all-match": "trace.reason.secondary-not_all-match",
+  "secondary-not_all-miss": "trace.reason.secondary-not_all-miss",
+  disabled: "trace.reason.disabled",
+  "external-vector-match-required": "trace.reason.external-vector-match-required",
+  "inclusion-group-loser": "trace.reason.inclusion-group-loser",
+  "probability-failed": "trace.reason.probability-failed",
+  "budget-exceeded": "trace.reason.budget-exceeded",
+  "empty-content": "trace.reason.empty-content",
+  "outlet-unsupported": "trace.reason.outlet-unsupported"
 });
 function formatTime(value) {
   try {
@@ -2259,14 +2647,14 @@ function storageStatus(storage) {
   if (Number.isSafeInteger(storage.maxRecordsPerSession)) parts.push(translate("trace.storage.perSession", { value: storage.maxRecordsPerSession }));
   if (Number.isSafeInteger(storage.maxSessions)) parts.push(translate("trace.storage.sessions", { value: storage.maxSessions }));
   if (Number.isSafeInteger(storage.maxRecordBytes)) parts.push(translate("trace.storage.perRecord", { value: formatBytes(storage.maxRecordBytes) }));
-  return uiMessage("trace.storage.summary", { limits: parts.join(getClientUiSettings().locale === "en" ? ", " : "\u3001") });
+  return uiMessage("trace.storage.summary", { limits: parts.join(translate("common.listSeparator")) });
 }
-function resourceCard(label, value) {
+function resourceCard(labelKey, value) {
   return h5(
     "div",
-    { className: "dttrace-card", key: label },
-    h5("div", { className: "dttrace-label" }, label),
-    h5("div", { className: "dttrace-value" }, value?.name ? rawText(value.name) : "\u672A\u4F7F\u7528"),
+    { className: "dttrace-card", key: labelKey },
+    h5("div", { className: "dttrace-label" }, uiMessage(labelKey)),
+    h5("div", { className: "dttrace-value" }, value?.name ? rawText(value.name) : uiMessage("trace.unused")),
     value?.id ? h5("div", { className: "dttrace-meta" }, rawText(value.id)) : null
   );
 }
@@ -2275,15 +2663,15 @@ function keywords(decision) {
   const configuredSecondary = decision.secondaryKeys ?? [];
   const primary = decision.primaryMatches ?? [];
   const secondary = decision.secondaryMatches ?? [];
-  const separator = getClientUiSettings().locale === "en" ? ", " : "\u3001";
+  const separator = translate("common.listSeparator");
   const configured = [
     configuredPrimary.length > 0 ? translate("trace.keywords.primary", { values: configuredPrimary.map((value) => JSON.stringify(value)).join(separator) }) : null,
     configuredSecondary.length > 0 ? translate("trace.keywords.secondary", { values: configuredSecondary.map((value) => JSON.stringify(value)).join(separator) }) : null
-  ].filter(Boolean).join(" \xB7 ") || translateVisibleText("\u65E0\u914D\u7F6E\u5173\u952E\u8BCD");
+  ].filter(Boolean).join(" \xB7 ") || translate("trace.noConfiguredKeywords");
   const matched = [
     primary.length > 0 ? translate("trace.keywords.primary", { values: primary.map((value) => JSON.stringify(value)).join(separator) }) : null,
     secondary.length > 0 ? translate("trace.keywords.secondary", { values: secondary.map((value) => JSON.stringify(value)).join(separator) }) : null
-  ].filter(Boolean).join(" \xB7 ") || translateVisibleText("\u65E0\u5173\u952E\u8BCD\u547D\u4E2D");
+  ].filter(Boolean).join(" \xB7 ") || translate("trace.noKeywordMatches");
   return { configured: rawText(configured), matched: rawText(matched) };
 }
 function decisionMeta(value) {
@@ -2297,7 +2685,10 @@ function decisionMeta(value) {
   if (value.requestedPosition) {
     parts.push(unwrapText(uiMessage("trace.decision.position", {
       requested: value.requestedPosition,
-      result: value.appliedPosition ? ` \u2192 ${value.appliedPosition}${value.approximatePosition ? translateVisibleText("\uFF08\u8FD1\u4F3C\uFF09") : ""}` : translateVisibleText(" \u2192 \u672A\u63D2\u5165")
+      result: value.appliedPosition ? translate("trace.position.applied", {
+        position: value.appliedPosition,
+        approximate: value.approximatePosition ? translate("trace.position.approximate") : ""
+      }) : translate("trace.position.notInserted")
     })));
   }
   return rawText(parts.join(" \xB7 "));
@@ -2308,7 +2699,7 @@ function WorldBookAudit({ book }) {
   return h5(
     "div",
     { className: "dttrace-book" },
-    h5("div", { className: "dttrace-section-title" }, name2 ? rawText(name2) : "\u4E16\u754C\u4E66"),
+    h5("div", { className: "dttrace-section-title" }, name2 ? rawText(name2) : uiMessage("nav.worldBook")),
     h5("div", { className: "dttrace-meta" }, uiMessage("trace.bookBudget", { used: book.budget.used, limit: book.budget.limit === null ? "" : ` / ${book.budget.limit}`, decisionCount })),
     ...book.decisions.map((item, index) => {
       const keywordState = keywords(item);
@@ -2319,12 +2710,12 @@ function WorldBookAudit({ book }) {
           "data-included": item.decision === "included",
           key: `${item.entryId ?? "entry"}-${index}`
         },
-        h5("div", { className: "dttrace-decision-state" }, item.decision === "included" ? "\u5DF2\u63D2\u5165" : "\u5DF2\u62D2\u7EDD"),
+        h5("div", { className: "dttrace-decision-state" }, item.decision === "included" ? uiMessage("trace.inserted") : uiMessage("trace.rejected")),
         h5(
           "div",
           null,
-          h5("div", null, item.entryName ? rawText(item.entryName) : uiText`条目 ${String(item.entryId ?? index + 1)}`),
-          h5("div", { className: "dttrace-meta" }, reasonLabels[item.reason] ?? rawText(item.reason))
+          h5("div", null, item.entryName ? rawText(item.entryName) : uiMessage("world.entry.fallback", { id: String(item.entryId ?? index + 1) })),
+          h5("div", { className: "dttrace-meta" }, reasonLabels[item.reason] ? uiMessage(reasonLabels[item.reason]) : rawText(item.reason))
         ),
         h5(
           "div",
@@ -2340,54 +2731,60 @@ function WorldBookAudit({ book }) {
 function TraceRecord({ record, latest }) {
   const authority = record.authority ?? {};
   const linked = authority.headerEventSeq !== null;
-  const reusedHeader = authority.headerReused ? translateVisibleText("\uFF08\u6CBF\u7528\u4E0A\u4E00\u4EFD header\uFF09") : "";
-  const profileStatus = translateVisibleText(authority.tavernProfilePresent === false ? "\u672A\u627E\u5230" : authority.tavernProfilePresent === true ? "\u4E00\u81F4" : "\u672C\u8F6E\u65E0 profile");
-  const configStatus = translateVisibleText(authority.tavernCallConfigApplied === false ? "\u4E0D\u4E00\u81F4" : "\u4E00\u81F4\u6216\u65E0\u5B57\u6BB5");
+  const reusedHeader = authority.headerReused ? translate("trace.reusedHeader") : "";
+  const profileStatus = translate(authority.tavernProfilePresent === false ? "trace.profile.missing" : authority.tavernProfilePresent === true ? "trace.profile.consistent" : "trace.profile.absent");
+  const configStatus = translate(authority.tavernCallConfigApplied === false ? "trace.config.inconsistent" : "trace.config.consistent");
   return h5(
     "details",
     { className: "dttrace-record", open: latest },
     h5(
       "summary",
       null,
-      h5("span", { className: "dttrace-round" }, uiText`轮次 ${record.turn} · 步骤 ${record.step}${record.attempt > 1 ? unwrapText(uiText` · 尝试 ${record.attempt}`) : ""}`),
-      h5("span", { className: "dttrace-badge", "data-ok": linked || void 0 }, linked ? `request/header #${authority.headerEventSeq}` : "\u7B49\u5F85\u6743\u5A01 header"),
+      h5("span", { className: "dttrace-round" }, uiMessage(record.attempt > 1 ? "trace.roundAttempt" : "trace.round", { turn: record.turn, step: record.step, attempt: record.attempt })),
+      h5("span", { className: "dttrace-badge", "data-ok": linked || void 0 }, linked ? rawText(`request/header #${authority.headerEventSeq}`) : uiMessage("trace.waitingHeader")),
       h5("span", { className: "dttrace-time" }, rawText(formatTime(record.recordedAt)))
     ),
     h5(
       "div",
       { className: "dttrace-content" },
-      h5("div", { className: "dttrace-status" }, linked ? uiMessage("trace.recordAligned", { sequence: authority.headerEventSeq, reused: reusedHeader, profile: profileStatus, config: configStatus }) : "\u5C1A\u672A\u89C2\u5BDF\u5230\u53EF\u5BF9\u9F50\u7684 DSH request/header\uFF1B\u8FD9\u4E0D\u4EE3\u8868\u8BF7\u6C42\u5DF2\u7ECF\u53D1\u9001\u3002\u5237\u65B0\u540E\u4ECD\u4F1A\u4FDD\u7559\u8BE5\u5F85\u786E\u8BA4\u8BB0\u5F55\u3002"),
+      h5("div", { className: "dttrace-status" }, linked ? uiMessage("trace.recordAligned", { sequence: authority.headerEventSeq, reused: reusedHeader, profile: profileStatus, config: configStatus }) : uiMessage("trace.pendingHeader")),
       h5(
         "div",
         { className: "dttrace-grid" },
-        resourceCard("Preset", record.resources?.preset),
-        resourceCard("Character", record.resources?.characterCard),
-        resourceCard("User", record.resources?.userProfile)
+        resourceCard("trace.resource.preset", record.resources?.preset),
+        resourceCard("trace.resource.character", record.resources?.characterCard),
+        resourceCard("trace.resource.user", record.resources?.userProfile)
       ),
       h5(
         "div",
         { className: "dttrace-section" },
-        h5("div", { className: "dttrace-section-title" }, "\u7EC4\u5408\u4E0E\u63D2\u5165"),
-        h5("div", { className: "dttrace-meta" }, rawText(`${record.assembly.profileSection} \xB7 order ${record.assembly.profileOrder} \xB7 ${record.assembly.systemPromptMode} \xB7 ${record.assembly.systemCharacters} characters \xB7 call config: ${Object.keys(record.assembly.callConfig ?? {}).join(", ") || translateVisibleText("\u65E0")}`))
+        h5("div", { className: "dttrace-section-title" }, uiMessage("trace.assembly")),
+        h5("div", { className: "dttrace-meta" }, uiMessage("trace.assemblyMeta", {
+          section: record.assembly.profileSection,
+          order: record.assembly.profileOrder,
+          mode: record.assembly.systemPromptMode,
+          characters: record.assembly.systemCharacters,
+          config: Object.keys(record.assembly.callConfig ?? {}).join(", ") || translate("common.none")
+        }))
       ),
       record.worldBooks?.length > 0 ? h5(
         "div",
         { className: "dttrace-section" },
-        h5("div", { className: "dttrace-section-title" }, "\u4E16\u754C\u4E66\u5339\u914D\u51B3\u7B56"),
+        h5("div", { className: "dttrace-section-title" }, uiMessage("trace.worldBookDecisions")),
         h5("div", { className: "dttrace-meta" }, record.activation?.pendingMessageCount > 0 ? uiMessage("trace.activationPending", {
           included: record.activation.includedPendingMessageCount,
           pending: record.activation.pendingMessageCount,
-          truncated: record.activation.truncated ? translateVisibleText("\uFF1B\u626B\u63CF\u8F93\u5165\u5DF2\u6309\u4E0A\u9650\u622A\u65AD") : ""
-        }) : "\u5339\u914D\u57FA\u4E8E\u672C\u6B65\u9AA4 system assembly \u5F53\u65F6\u53EF\u89C1\u7684\u6301\u4E45\u5316\u4F1A\u8BDD\u5386\u53F2\uFF1B\u6CA1\u6709\u91CD\u590D\u9644\u52A0 pending \u8F93\u5165\u3002"),
+          truncated: record.activation.truncated ? translate("trace.truncated") : ""
+        }) : uiMessage("trace.historyOnly")),
         ...record.worldBooks.map((book, index) => h5(WorldBookAudit, { book, key: `${book.resource?.id ?? "book"}-${index}` }))
-      ) : h5("div", { className: "dttrace-note" }, "\u672C\u8F6E\u6CA1\u6709\u53EF\u5BA1\u8BA1\u7684\u4E16\u754C\u4E66\u5339\u914D\u6765\u6E90\u3002"),
+      ) : h5("div", { className: "dttrace-note" }, uiMessage("trace.noSource")),
       record.diagnostics?.length > 0 ? h5(
         "div",
         { className: "dttrace-section" },
         h5("div", { className: "dttrace-section-title" }, uiMessage("trace.diagnostics", { count: record.diagnostics.length })),
         h5("ul", { className: "dttrace-list" }, ...record.diagnostics.map((item, index) => h5("li", { key: `${item.code}-${index}` }, rawText(`${item.code}: ${item.message}`))))
       ) : null,
-      h5("p", { className: "dttrace-note" }, "\u9690\u79C1\u8FB9\u754C\uFF1A\u8FD9\u91CC\u53EA\u4FDD\u5B58\u8D44\u6E90\u6458\u8981\u3001\u914D\u7F6E/\u547D\u4E2D\u5173\u952E\u8BCD\u3001\u51B3\u7B56\u539F\u56E0\u3001\u4F4D\u7F6E\u3001\u9884\u7B97\u548C SHA-256 \u6458\u8981\uFF1B\u4E0D\u4FDD\u5B58 preset/\u89D2\u8272/user/\u4E16\u754C\u4E66\u6B63\u6587\u3001\u5B8C\u6574 system\u3001\u804A\u5929\u5386\u53F2\u3001header \u5185\u5BB9\u6216 tool payload\u3002")
+      h5("p", { className: "dttrace-note" }, uiMessage("trace.privacy"))
     )
   );
 }
@@ -2431,17 +2828,17 @@ function TavernTraceView({ sessionId, useSession }) {
     h5(
       "div",
       { className: "dttrace-toolbar" },
-      h5("div", { className: "dttrace-title" }, "Tavern Trace"),
-      h5("button", { className: "dttrace-button", type: "button", onClick: refresh }, "\u5237\u65B0")
+      h5("div", { className: "dttrace-title" }, uiMessage("trace.title")),
+      h5("button", { className: "dttrace-button", type: "button", onClick: refresh }, uiMessage("common.refresh"))
     ),
     h5(
       "div",
       { className: "dttrace-body" },
-      h5("p", { className: "dttrace-note" }, "\u4E0E Conversation / Trajectory \u5E76\u5217\u7684 loader \u5BA1\u8BA1\u89C6\u56FE\u3002DSH request/header \u59CB\u7EC8\u662F\u6700\u7EC8\u53D1\u9001 system\u3001tools \u4E0E\u751F\u6548 config \u7684\u6743\u5A01\u3002"),
+      h5("p", { className: "dttrace-note" }, uiMessage("trace.intro")),
       error ? h5("div", { className: "dttrace-status", "data-error": true }, rawText(error)) : null,
-      data === null && !error ? h5("div", { className: "dttrace-status" }, "\u6B63\u5728\u8BFB\u53D6\u5BA1\u8BA1\u8BB0\u5F55\u2026") : null,
+      data === null && !error ? h5("div", { className: "dttrace-status" }, uiMessage("trace.reading")) : null,
       data !== null ? h5("div", { className: "dttrace-status" }, storageStatus(data.storage)) : null,
-      records.length === 0 && data !== null ? h5("div", { className: "dttrace-status" }, "\u6B64\u4F1A\u8BDD\u8FD8\u6CA1\u6709 Tavern \u8BF7\u6C42\u5BA1\u8BA1\u8BB0\u5F55\u3002\u53D1\u9001\u4E0B\u4E00\u6761\u6D88\u606F\u540E\u518D\u67E5\u770B\u3002") : null,
+      records.length === 0 && data !== null ? h5("div", { className: "dttrace-status" }, uiMessage("trace.empty")) : null,
       ...records.map((record, index) => h5(TraceRecord, { record, latest: index === 0, key: record.id }))
     )
   );
@@ -2458,7 +2855,7 @@ function registerTavernTraceView(ctx) {
     name: "conversation.view",
     id: "tavern-trace",
     order: 20,
-    label: "Tavern Trace",
+    label: translate("trace.title"),
     inject: () => ({})
   }, TavernTraceView));
 }
@@ -2488,42 +2885,43 @@ function PreviewRow({ label, value, missing = false }) {
     h6("span", { className: "dtv-preview-value" }, value)
   );
 }
-function resourceValue(resource, emptyLabel) {
-  return resource === null || resource === void 0 ? emptyLabel : rawText(resource.name || resource.id);
+function resourceValue(resource, emptyKey) {
+  return resource === null || resource === void 0 ? uiMessage(emptyKey) : rawText(resource.name || resource.id);
 }
 function TemplatePreview({ template }) {
   const contents = template?.contents ?? {};
   const character = template?.selection?.character ?? contents.character ?? {};
   const books = Array.isArray(contents.worldBooks) ? contents.worldBooks : [];
+  const enabledLabel = character.preferCharacterSystemPrompt === false ? translate("common.disabled") : translate("common.enabled");
+  const postHistoryLabel = character.preferCharacterPostHistory === false ? translate("common.disabled") : translate("common.enabled");
   return h6(
     "div",
     { className: "dtv-preview" },
-    h6("div", { className: "dtv-preview-title" }, "\u4FDD\u5B58\u7684 Tavern \u914D\u7F6E"),
-    h6(PreviewRow, { label: "\u9884\u8BBE", value: resourceValue(contents.preset, "\u672A\u9009\u62E9\u9884\u8BBE"), missing: contents.preset?.missing }),
-    h6(PreviewRow, { label: "\u89D2\u8272\u5361", value: resourceValue(contents.characterCard, "\u672A\u7ED1\u5B9A\u89D2\u8272"), missing: contents.characterCard?.missing }),
+    h6("div", { className: "dtv-preview-title" }, uiMessage("template.preview.title")),
+    h6(PreviewRow, { label: uiMessage("nav.preset"), value: resourceValue(contents.preset, "nav.preset.empty"), missing: contents.preset?.missing }),
+    h6(PreviewRow, { label: uiMessage("nav.character"), value: resourceValue(contents.characterCard, "nav.character.empty"), missing: contents.characterCard?.missing }),
     contents.characterCard === null || contents.characterCard === void 0 ? null : h6(
       "div",
       { className: "dtv-preview-options" },
       h6("span", null, uiMessage("template.preview.greeting", { value: Number(character.greetingIndex ?? 0) + 1 })),
-      h6("span", null, uiText`卡内 system_prompt：${character.preferCharacterSystemPrompt === false ? translateVisibleText("\u5DF2\u7981\u7528") : translateVisibleText("\u5DF2\u542F\u7528")}`),
-      h6("span", null, uiText`post_history_instructions: ${character.preferCharacterPostHistory === false ? translateVisibleText("\u5DF2\u7981\u7528") : translateVisibleText("\u5DF2\u542F\u7528")}`)
+      h6("span", null, uiMessage("template.preview.systemPrompt", { value: enabledLabel })),
+      h6("span", null, uiMessage("template.preview.postHistory", { value: postHistoryLabel }))
     ),
-    h6(PreviewRow, { label: "\u7528\u6237", value: resourceValue(contents.user, "\u672A\u7ED1\u5B9A\u7528\u6237"), missing: contents.user?.missing }),
+    h6(PreviewRow, { label: uiMessage("nav.user"), value: resourceValue(contents.user, "nav.user.empty"), missing: contents.user?.missing }),
     h6(
       "div",
       { className: "dtv-preview-row dtv-preview-books" },
-      h6("span", { className: "dtv-preview-label" }, "\u72EC\u7ACB\u4E16\u754C\u4E66\uFF08\u6309\u7ED1\u5B9A\u987A\u5E8F\uFF09"),
-      books.length === 0 ? h6("span", { className: "dtv-preview-value" }, "\u672A\u7ED1\u5B9A\u4E16\u754C\u4E66") : h6("ol", { className: "dtv-preview-list" }, ...books.map((book) => h6("li", { key: book.id, "data-missing": book.missing || void 0 }, rawText(book.name || book.id))))
+      h6("span", { className: "dtv-preview-label" }, uiMessage("template.preview.worldBooks")),
+      books.length === 0 ? h6("span", { className: "dtv-preview-value" }, uiMessage("nav.worldBook.empty")) : h6("ol", { className: "dtv-preview-list" }, ...books.map((book) => h6("li", { key: book.id, "data-missing": book.missing || void 0 }, rawText(book.name || book.id))))
     )
   );
 }
 function SessionTemplatePanel({ sessionId, workspaceId, createCleanSession, close }) {
   const [templates, setTemplates] = (0, import_react6.useState)([]);
   const [selectedId, setSelectedId] = (0, import_react6.useState)(null);
-  const [name2, setName] = (0, import_react6.useState)(() => translateVisibleText("\u65B0\u914D\u7F6E\u6A21\u677F"));
+  const [name2, setName] = (0, import_react6.useState)(() => translate("template.defaultName"));
   const [busy, setBusy] = (0, import_react6.useState)(false);
-  const [error, setError] = (0, import_react6.useState)("");
-  const [status, setStatus] = (0, import_react6.useState)("");
+  const [status, setStatus] = (0, import_react6.useState)({ error: false, key: "template.ready" });
   const selected = templates.find((item) => item.id === selectedId) ?? null;
   const refresh = (0, import_react6.useCallback)(async () => {
     const data = await api5("/session-templates");
@@ -2533,23 +2931,38 @@ function SessionTemplatePanel({ sessionId, workspaceId, createCleanSession, clos
     if (active !== void 0) setName(active.name);
   }, []);
   (0, import_react6.useEffect)(() => {
-    refresh().catch((reason) => setError(reason instanceof Error ? reason.message : String(reason)));
-    const onRefresh = () => refresh().catch((reason) => setError(reason instanceof Error ? reason.message : String(reason)));
+    refresh().catch((reason) => setStatus({
+      error: true,
+      key: reason.uiKey,
+      values: reason.uiValues,
+      text: reason instanceof Error ? reason.message : String(reason)
+    }));
+    const onRefresh = () => refresh().catch((reason) => setStatus({
+      error: true,
+      key: reason.uiKey,
+      values: reason.uiValues,
+      text: reason instanceof Error ? reason.message : String(reason)
+    }));
     window.addEventListener("dsh-tavern:refresh", onRefresh);
     return () => window.removeEventListener("dsh-tavern:refresh", onRefresh);
   }, [refresh]);
   const run = (0, import_react6.useCallback)(async (operation, success) => {
     setBusy(true);
-    setError("");
     try {
       const result = await operation();
-      setStatus(typeof success === "function" ? success(result) : translateVisibleText(success));
+      const next = typeof success === "function" ? success(result) : success;
+      setStatus(typeof next === "string" ? { error: false, key: next } : { error: false, ...next });
       await refresh();
       window.dispatchEvent(new Event("dsh-tavern:refresh"));
       return result;
     } catch (reason) {
       const diagnostics2 = Array.isArray(reason?.diagnostics) ? reason.diagnostics : [];
-      setError(diagnostics2[0]?.message ?? (reason instanceof Error ? reason.message : String(reason)));
+      setStatus({
+        error: true,
+        key: reason.uiKey,
+        values: reason.uiValues,
+        text: diagnostics2[0]?.message ?? (reason instanceof Error ? reason.message : String(reason))
+      });
       return null;
     } finally {
       setBusy(false);
@@ -2563,48 +2976,49 @@ function SessionTemplatePanel({ sessionId, workspaceId, createCleanSession, clos
     });
     setSelectedId(data.selectedId);
     if (data.template !== null) setName(data.template.name);
-  }, "\u6A21\u677F\u9009\u62E9\u5DF2\u66F4\u65B0");
+  }, "template.status.selected");
   const create = () => run(async () => {
-    if (!sessionId) throw new Error(translateVisibleText("\u8BF7\u5148\u6253\u5F00\u4E00\u4E2A\u4F1A\u8BDD\uFF0C\u518D\u4FDD\u5B58\u5F53\u524D Tavern \u8BBE\u7F6E"));
+    if (!sessionId) throw uiError("template.error.needSessionToSave");
     return api5("/session-templates", {
       method: "POST",
       body: JSON.stringify({ name: name2, sourceSessionId: sessionId })
     });
-  }, (result) => unwrapText(uiText`已创建模板：${result.template.name}`));
+  }, (result) => ({ key: "template.status.created", values: { name: result.template.name } }));
   const rename = () => run(async () => {
-    if (selectedId === null) throw new Error(translateVisibleText("\u8BF7\u5148\u9009\u62E9\u4E00\u4E2A\u6A21\u677F"));
+    if (selectedId === null) throw uiError("template.error.needTemplate");
     return api5(`/session-templates/${encodeURIComponent(selectedId)}`, {
       method: "PATCH",
       body: JSON.stringify({ name: name2 })
     });
-  }, (result) => unwrapText(uiText`已重命名模板：${result.template.name}`));
+  }, (result) => ({ key: "template.status.renamed", values: { name: result.template.name } }));
   const update = () => run(async () => {
-    if (!sessionId || selectedId === null) throw new Error(translateVisibleText("\u8BF7\u5148\u6253\u5F00\u4F1A\u8BDD\u5E76\u9009\u62E9\u6A21\u677F"));
+    if (!sessionId || selectedId === null) throw uiError("template.error.needSessionAndTemplate");
     return api5(`/session-templates/${encodeURIComponent(selectedId)}`, {
       method: "PATCH",
       body: JSON.stringify({ name: name2, sourceSessionId: sessionId })
     });
-  }, (result) => unwrapText(uiText`已用当前设置更新模板：${result.template.name}`));
+  }, (result) => ({ key: "template.status.updated", values: { name: result.template.name } }));
   const remove = () => {
     if (selectedId === null || !window.confirm(unwrapText(uiMessage("template.confirmDelete", { name: selected?.name ?? selectedId })))) return;
-    run(() => api5(`/session-templates/${encodeURIComponent(selectedId)}`, { method: "DELETE", body: JSON.stringify({}) }), "\u6A21\u677F\u5DF2\u5220\u9664");
+    run(() => api5(`/session-templates/${encodeURIComponent(selectedId)}`, { method: "DELETE", body: JSON.stringify({}) }), "template.status.deleted");
   };
   const start = (mode) => run(async () => {
-    if (mode === "current" && !sessionId) throw new Error(translateVisibleText("\u8BF7\u5148\u6253\u5F00\u4E00\u4E2A\u6765\u6E90\u4F1A\u8BDD"));
-    if (workspaceId === null) throw new Error(translateVisibleText("\u5F53\u524D\u4F1A\u8BDD\u4E0D\u5C5E\u4E8E DSH \u5DE5\u4F5C\u533A\uFF1B\u8BF7\u5148\u628A\u4F1A\u8BDD\u52A0\u5165\u5DE5\u4F5C\u533A"));
+    if (mode === "current" && !sessionId) throw uiError("template.error.needSourceSession");
+    if (workspaceId === null) throw uiError("template.error.needWorkspace");
     const source = mode === "current" ? { mode: "current", sessionId } : { mode: "template", templateId: selectedId };
-    if (mode === "template" && selectedId === null) throw new Error(translateVisibleText("\u8BF7\u5148\u9009\u62E9\u4E00\u4E2A\u6A21\u677F"));
+    if (mode === "template" && selectedId === null) throw uiError("template.error.needTemplate");
     return createCleanSession({ workspaceId, source });
-  }, (id) => unwrapText(uiText`已切换到干净会话：${id}`));
+  }, (id) => ({ key: "template.status.switched", values: { id } }));
   const diagnostics = Array.isArray(selected?.diagnostics) ? selected.diagnostics : [];
+  const closeLabel = uiMessage("panel.close", { title: unwrapText(uiMessage("template.title")) });
   return h6(
     "div",
     { className: "dtv-panel" },
     h6(
       "div",
       { className: "dtv-header" },
-      h6("div", { className: "dtv-title" }, "\u65B0\u4F1A\u8BDD\u4E0E\u914D\u7F6E\u6A21\u677F"),
-      h6("button", { className: "dtv-close", type: "button", title: "\u5173\u95ED\u65B0\u4F1A\u8BDD\u4FA7\u8FB9\u680F", "aria-label": "\u5173\u95ED\u65B0\u4F1A\u8BDD\u4FA7\u8FB9\u680F", onClick: close }, "\u2715")
+      h6("div", { className: "dtv-title" }, uiMessage("template.title")),
+      h6("button", { className: "dtv-close", type: "button", title: closeLabel, "aria-label": closeLabel, onClick: close }, "\u2715")
     ),
     h6(
       "div",
@@ -2614,44 +3028,44 @@ function SessionTemplatePanel({ sessionId, workspaceId, createCleanSession, clos
         type: "button",
         disabled: busy || !sessionId || workspaceId === null,
         onClick: () => start("current")
-      }, "\u7EF4\u6301\u5F53\u524D Tavern \u8BBE\u7F6E\u65B0\u5F00\u5BF9\u8BDD"),
-      h6("p", { className: "dtv-note" }, "\u53EA\u7EE7\u627F preset\u3001\u89D2\u8272\u5361\u4E0E greeting/\u5F00\u5173\u3001\u7528\u6237\u548C\u72EC\u7ACB\u4E16\u754C\u4E66\u9009\u62E9\u3002DSH \u5386\u53F2\u3001Tavern Trace\u3001Inbox\u3001\u8FD0\u884C\u4E2D turn/step \u548C\u5176\u4ED6\u8FD0\u884C\u6001\u4E0D\u4F1A\u590D\u5236\u3002"),
-      workspaceId === null ? h6("div", { className: "dtv-status", "data-error": true }, "\u6CA1\u6709\u53EF\u7528\u7684 DSH \u76EE\u6807\u5DE5\u4F5C\u533A\u3002\u8BF7\u5148\u5728 DSH \u4FA7\u680F\u4E2D\u52A0\u5165\u6216\u6253\u5F00\u5DE5\u4F5C\u533A\u3002") : null,
+      }, uiMessage("template.startCurrent")),
+      h6("p", { className: "dtv-note" }, uiMessage("template.inheritNote")),
+      workspaceId === null ? h6("div", { className: "dtv-status", "data-error": true }, uiMessage("template.noWorkspace")) : null,
       h6(
         "div",
         { className: "dtv-resource" },
-        h6("div", { className: "dtv-resource-title" }, `\u914D\u7F6E\u6A21\u677F\uFF08${templates.length}\uFF09`),
+        h6("div", { className: "dtv-resource-title" }, uiMessage("template.listTitle", { count: templates.length })),
         h6(
           "label",
           { className: "dtv-field" },
-          h6("span", { className: "dtv-label" }, "\u5DF2\u9009\u62E9\u6A21\u677F"),
+          h6("span", { className: "dtv-label" }, uiMessage("template.selected")),
           h6(
             "select",
             { className: "dtv-select", value: selectedId ?? "", disabled: busy, onChange: select },
-            h6("option", { value: "" }, "\u672A\u9009\u62E9\u6A21\u677F"),
+            h6("option", { value: "" }, uiMessage("template.noneSelected")),
             ...templates.map((template) => h6("option", { key: template.id, value: template.id }, rawText(template.name)))
           )
         ),
         h6(
           "label",
           { className: "dtv-field" },
-          h6("span", { className: "dtv-label" }, "\u6A21\u677F\u540D\u79F0"),
+          h6("span", { className: "dtv-label" }, uiMessage("template.name")),
           h6("input", { className: "dtv-input", value: name2, maxLength: 120, disabled: busy, onChange: (event) => setName(event.target.value) })
         ),
         h6(
           "div",
           { className: "dtv-template-actions" },
-          h6("button", { className: "dtv-button", type: "button", disabled: busy || !sessionId, onClick: create }, "\u7531\u5F53\u524D\u8BBE\u7F6E\u521B\u5EFA"),
-          h6("button", { className: "dtv-button", type: "button", disabled: busy || selectedId === null, onClick: rename }, "\u4EC5\u4FDD\u5B58\u540D\u79F0"),
-          h6("button", { className: "dtv-button", type: "button", disabled: busy || !sessionId || selectedId === null, onClick: update }, "\u7528\u5F53\u524D\u8BBE\u7F6E\u66F4\u65B0"),
-          h6("button", { className: "dtv-button dtv-danger", type: "button", disabled: busy || selectedId === null, onClick: remove }, "\u5220\u9664\u6A21\u677F")
+          h6("button", { className: "dtv-button", type: "button", disabled: busy || !sessionId, onClick: create }, uiMessage("template.createFromCurrent")),
+          h6("button", { className: "dtv-button", type: "button", disabled: busy || selectedId === null, onClick: rename }, uiMessage("template.saveNameOnly")),
+          h6("button", { className: "dtv-button", type: "button", disabled: busy || !sessionId || selectedId === null, onClick: update }, uiMessage("template.updateFromCurrent")),
+          h6("button", { className: "dtv-button dtv-danger", type: "button", disabled: busy || selectedId === null, onClick: remove }, uiMessage("template.delete"))
         ),
         h6("p", { className: "dtv-note" }, uiMessage("template.currentSettingsReminder")),
         selected === null ? null : h6(TemplatePreview, { template: selected }),
         diagnostics.length === 0 ? null : h6(
           "div",
           { className: "dtv-status", "data-error": true },
-          h6("div", null, "\u8BE5\u6A21\u677F\u6682\u4E0D\u53EF\u7528\u4E8E\u521B\u5EFA\uFF1A"),
+          h6("div", null, uiMessage("template.unusable")),
           h6("ul", { className: "dtv-list" }, ...diagnostics.map((item, index) => h6("li", { key: `${item.code}-${index}` }, rawText(item.message))))
         ),
         h6("button", {
@@ -2659,10 +3073,10 @@ function SessionTemplatePanel({ sessionId, workspaceId, createCleanSession, clos
           type: "button",
           disabled: busy || selectedId === null || diagnostics.length > 0 || workspaceId === null,
           onClick: () => start("template")
-        }, "\u6839\u636E\u6240\u9009\u6A21\u677F\u65B0\u5F00\u5E72\u51C0\u5BF9\u8BDD")
+        }, uiMessage("template.startFromTemplate"))
       ),
-      h6("div", { className: "dtv-status", "data-error": error !== "" || void 0, role: "status" }, error ? rawText(error) : status ? rawText(status) : "\u6A21\u677F\u4E0E\u65B0\u4F1A\u8BDD\u64CD\u4F5C\u5DF2\u5C31\u7EEA\u3002"),
-      h6("p", { className: "dtv-note" }, "DSH \u53EF\u80FD\u590D\u7528\u540C\u5DE5\u4F5C\u533A\u4E2D\u5DF2\u6709\u7684\u771F\u5B9E blank session\uFF1B\u8FD9\u662F\u5176\u516C\u5F00 New Session \u8BED\u4E49\u3002\u63D2\u4EF6\u4F1A\u5728\u5BFC\u822A\u524D\u539F\u5B50\u66FF\u6362\u8BE5 blank session \u7684 Tavern \u9009\u62E9\u3002")
+      h6("div", { className: "dtv-status", "data-error": status.error || void 0, role: "status" }, statusText(status)),
+      h6("p", { className: "dtv-note" }, uiMessage("template.blankSessionNote"))
     )
   );
 }
@@ -2708,26 +3122,26 @@ async function createCleanSessionWorkflow({
 
 // packages/client/src/state.js
 var TAVERN_MENU_ITEMS = Object.freeze([
-  { id: "preset", label: "\u9884\u8BBE", emptyTitle: "\u672A\u9009\u62E9\u9884\u8BBE", available: true },
-  { id: "character", label: "\u89D2\u8272\u5361", emptyTitle: "\u672A\u7ED1\u5B9A\u89D2\u8272", available: true },
-  { id: "world-info", label: "\u4E16\u754C\u4E66", emptyTitle: "\u672A\u7ED1\u5B9A\u4E16\u754C\u4E66", available: true },
-  { id: "user", label: "\u7528\u6237", emptyTitle: "\u672A\u7ED1\u5B9A\u7528\u6237", available: true },
-  { id: "session-template", label: "\u65B0\u4F1A\u8BDD", emptyTitle: "\u5F53\u524D\u8BBE\u7F6E\u6216\u914D\u7F6E\u6A21\u677F", available: true, binding: false, showBinding: false },
-  { id: "settings", label: "\u754C\u9762\u8BBE\u7F6E", emptyTitle: "\u8BED\u8A00\u4E0E\u7F29\u653E", available: true, binding: false, showBinding: false }
+  { id: "preset", labelKey: "nav.preset", emptyTitleKey: "nav.preset.empty", available: true },
+  { id: "character", labelKey: "nav.character", emptyTitleKey: "nav.character.empty", available: true },
+  { id: "world-info", labelKey: "nav.worldBook", emptyTitleKey: "nav.worldBook.empty", available: true },
+  { id: "user", labelKey: "nav.user", emptyTitleKey: "nav.user.empty", available: true },
+  { id: "session-template", labelKey: "nav.sessionTemplate", emptyTitleKey: "nav.sessionTemplate.empty", available: true, binding: false, showBinding: false },
+  { id: "settings", labelKey: "nav.settings", emptyTitleKey: "nav.settings.empty", available: true, binding: false, showBinding: false }
 ]);
 var TAVERN_LAUNCHER_SIZE = 44;
 var TAVERN_LAUNCHER_PANEL = Object.freeze({ width: 300, height: 376 });
-function isRecord(value) {
+function isRecord2(value) {
   return value !== null && typeof value === "object" && !Array.isArray(value);
 }
 function firstRecord(...values) {
-  return values.find(isRecord) ?? null;
+  return values.find(isRecord2) ?? null;
 }
 function firstArray(...values) {
   return values.find(Array.isArray) ?? [];
 }
 function resourceTitle(resource, fallback = "") {
-  if (!isRecord(resource)) return fallback;
+  if (!isRecord2(resource)) return fallback;
   for (const key of ["name", "title", "displayName", "label"]) {
     if (typeof resource[key] === "string" && resource[key].trim() !== "") return resource[key].trim();
   }
@@ -2735,7 +3149,7 @@ function resourceTitle(resource, fallback = "") {
 }
 function catalog(snapshot, ...keys) {
   for (const container of [snapshot?.catalog, snapshot?.catalogs]) {
-    if (!isRecord(container)) continue;
+    if (!isRecord2(container)) continue;
     for (const key of keys) {
       if (Array.isArray(container[key])) return container[key];
       if (Array.isArray(container[key]?.items)) return container[key].items;
@@ -2744,26 +3158,27 @@ function catalog(snapshot, ...keys) {
   return [];
 }
 function findResourceById(items, id) {
-  return items.find((item) => isRecord(item) && String(item.id ?? item.resourceId ?? "") === String(id)) ?? null;
+  return items.find((item) => isRecord2(item) && String(item.id ?? item.resourceId ?? "") === String(id)) ?? null;
 }
 function selectionIds(value) {
   if (!Array.isArray(value)) return [];
-  const ids = value.map((item) => isRecord(item) ? item.id ?? item.resourceId : item).filter((id) => typeof id === "string" && id !== "" || Number.isSafeInteger(id));
+  const ids = value.map((item) => isRecord2(item) ? item.id ?? item.resourceId : item).filter((id) => typeof id === "string" && id !== "" || Number.isSafeInteger(id));
   return ids.filter((id, index) => ids.findIndex((item) => String(item) === String(id)) === index);
 }
-function singleStatus({ id, resource, items, emptyTitle }) {
+function singleStatus({ id, resource, items, emptyTitleKey }) {
   const bound = id !== null && id !== void 0 && id !== "";
-  const directResource = isRecord(resource) && (resource.id === void 0 || String(resource.id) === String(id)) ? resource : null;
+  const directResource = isRecord2(resource) && (resource.id === void 0 || String(resource.id) === String(id)) ? resource : null;
   const resolved = firstRecord(directResource, bound ? findResourceById(items, id) : null);
   return {
     bound,
-    title: bound ? resourceTitle(resolved, String(id)) : emptyTitle,
+    title: bound ? resourceTitle(resolved, String(id)) : null,
+    titleKey: bound ? null : emptyTitleKey,
     count: bound ? 1 : 0
   };
 }
 function launcherResourceStatuses(snapshot) {
-  const selection = isRecord(snapshot?.selection) ? snapshot.selection : {};
-  const resources = isRecord(snapshot?.resources) ? snapshot.resources : {};
+  const selection = isRecord2(snapshot?.selection) ? snapshot.selection : {};
+  const resources = isRecord2(snapshot?.resources) ? snapshot.resources : {};
   const presetResource = firstRecord(resources.preset, snapshot?.selected);
   const presetId = selection.presetId ?? presetResource?.id ?? null;
   const characterResource = firstRecord(resources.characterCard, resources.character);
@@ -2775,7 +3190,7 @@ function launcherResourceStatuses(snapshot) {
     selection.worldBooks,
     selection.worldBookSelection?.ids
   ));
-  const resolvedWorlds = firstArray(resources.worldBooks, resources.worldBook).filter(isRecord);
+  const resolvedWorlds = firstArray(resources.worldBooks, resources.worldBook).filter(isRecord2);
   const implicitlySelectedWorlds = resolvedWorlds.filter((resource) => resource.selected !== false);
   const worldIds = explicitWorldIds.length > 0 ? explicitWorldIds : implicitlySelectedWorlds.map((resource) => resource.id ?? resource.resourceId).filter((id) => id !== void 0 && id !== null);
   const worldCatalog = catalog(snapshot, "worldBooks", "worldBook", "lorebooks");
@@ -2789,33 +3204,34 @@ function launcherResourceStatuses(snapshot) {
     if (id === void 0 || id === null || selectedWorlds.some((item) => String(item.id ?? item.resourceId) === String(id))) continue;
     selectedWorlds.push(resource);
   }
-  const worldTitles = selectedWorlds.map((resource) => resourceTitle(resource, String(resource.id ?? resource.resourceId ?? "\u5DF2\u9009\u62E9")));
+  const worldTitles = selectedWorlds.map((resource) => resourceTitle(resource, String(resource.id ?? resource.resourceId ?? "")));
   return {
     preset: singleStatus({
       id: presetId,
       resource: presetResource,
       items: catalog(snapshot, "presets", "preset"),
-      emptyTitle: "\u672A\u9009\u62E9\u9884\u8BBE"
+      emptyTitleKey: "nav.preset.empty"
     }),
     character: singleStatus({
       id: characterId,
       resource: characterResource,
       items: catalog(snapshot, "characters", "characterCards", "character"),
-      emptyTitle: "\u672A\u7ED1\u5B9A\u89D2\u8272"
+      emptyTitleKey: "nav.character.empty"
     }),
     "world-info": {
       bound: selectedWorlds.length > 0,
       count: selectedWorlds.length,
-      title: selectedWorlds.length === 0 ? "\u672A\u7ED1\u5B9A\u4E16\u754C\u4E66" : selectedWorlds.length === 1 ? worldTitles[0] : worldTitles.join(" \xB7 ")
+      title: selectedWorlds.length === 0 ? null : selectedWorlds.length === 1 ? worldTitles[0] : worldTitles.join(" \xB7 "),
+      titleKey: selectedWorlds.length === 0 ? "nav.worldBook.empty" : null
     },
     user: singleStatus({
       id: userId,
       resource: userResource,
       items: catalog(snapshot, "users", "userProfiles", "personas"),
-      emptyTitle: "\u672A\u7ED1\u5B9A\u7528\u6237"
+      emptyTitleKey: "nav.user.empty"
     }),
-    "session-template": { bound: false, count: 0, title: "\u5F53\u524D\u8BBE\u7F6E\u6216\u914D\u7F6E\u6A21\u677F" },
-    settings: { bound: false, count: 0, title: "\u8BED\u8A00\u4E0E\u7F29\u653E" }
+    "session-template": { bound: false, count: 0, title: null, titleKey: "nav.sessionTemplate.empty" },
+    settings: { bound: false, count: 0, title: null, titleKey: "nav.settings.empty" }
   };
 }
 function clampLauncherAnchor(position, viewport2, scale = 1) {
@@ -2862,7 +3278,7 @@ var css6 = `
 .dtv-header{height:52px;box-sizing:border-box;display:flex;align-items:center;gap:8px;padding:0 14px;border-bottom:1px solid var(--dsw-alias-border-l2);flex:none}.dtv-title{font-size:14px;font-weight:650;flex:1}.dtv-close{border:0;background:transparent;color:var(--dsw-alias-label-tertiary);cursor:pointer;border-radius:7px;padding:6px 8px}.dtv-close:hover{background:var(--dsw-alias-interactive-bg-hover)}
 .dtv-body{min-height:0;overflow:auto;padding:12px;display:flex;flex-direction:column;gap:12px}.dtv-note{font-size:11px;line-height:1.5;color:var(--dsw-alias-label-tertiary);margin:0;overflow-wrap:anywhere}.dtv-status{font-size:11px;line-height:1.45;border-radius:7px;padding:8px 10px;background:var(--dsw-specific-tip);overflow-wrap:anywhere}.dtv-status[data-error=true]{color:var(--dsw-alias-state-error)}
 .dtv-actions{display:grid;grid-template-columns:1fr 1fr;gap:8px}.dtv-button{min-height:34px;border:1px solid var(--dsw-alias-border-l2);border-radius:8px;background:var(--dsw-alias-button-secondary-fill,var(--dsw-alias-bg-base));color:var(--dsw-alias-label-primary);cursor:pointer;padding:7px 10px;font-size:12px}.dtv-button:hover:not(:disabled){background:var(--dsw-alias-interactive-bg-hover)}.dtv-button:disabled{opacity:.5;cursor:default}
-.dtv-primary{background:var(--dsw-alias-button-primary-fill,#2677d9);border-color:transparent;color:var(--dsw-alias-button-primary-label,#fff)}.dtv-primary:hover:not(:disabled){filter:brightness(1.08);background:var(--dsw-alias-button-primary-fill,#2677d9)}.dtv-template-actions{display:grid;grid-template-columns:1fr 1fr;gap:7px}
+.dtv-primary{background:var(--dsw-alias-state-business-primary,#2677d9);border-color:transparent;color:var(--dsw-alias-button-primary-label,#fff)}.dtv-primary:hover:not(:disabled){filter:brightness(1.08);background:var(--dsw-alias-state-business-primary,#2677d9)}.dtv-template-actions{display:grid;grid-template-columns:1fr 1fr;gap:7px}
 .dtv-resource{border:1px solid var(--dsw-alias-border-l1);border-radius:9px;padding:10px;display:flex;flex-direction:column;gap:7px}.dtv-resource-title{font-size:12px;font-weight:650}.dtv-resource-meta{font-size:11px;line-height:1.45;color:var(--dsw-alias-label-tertiary)}.dtv-list{margin:0;padding-left:18px;font-size:11px;line-height:1.55}.dtv-preview{border:1px solid var(--dsw-alias-border-l1);border-radius:8px;background:var(--dsw-specific-tip);padding:9px;display:flex;flex-direction:column;gap:6px}.dtv-preview-title{font-size:12px;font-weight:700}.dtv-preview-row{display:grid;grid-template-columns:112px minmax(0,1fr);gap:8px;font-size:11px;line-height:1.45}.dtv-preview-label{color:var(--dsw-alias-label-tertiary)}.dtv-preview-value{overflow-wrap:anywhere}.dtv-preview-options{margin-left:120px;display:flex;flex-direction:column;gap:2px;font-size:10px;color:var(--dsw-alias-label-tertiary)}.dtv-preview-list{margin:0;padding-left:18px}.dtv-preview-row[data-missing=true] .dtv-preview-value,.dtv-preview-list>[data-missing=true]{color:var(--dsw-alias-state-error)}
 .dtv-book-toolbar{display:grid;grid-template-columns:1fr 1fr 1fr;gap:7px}.dtv-entry{border:1px solid var(--dsw-alias-border-l1);border-radius:8px;background:var(--dsw-alias-bg-base);overflow:hidden}.dtv-entry>summary{list-style:none;cursor:pointer;padding:8px;display:flex;align-items:center;gap:7px;font-size:11px}.dtv-entry>summary::-webkit-details-marker{display:none}.dtv-entry-dot{width:8px;height:8px;flex:none;border-radius:50%;background:var(--dsw-alias-label-tertiary)}.dtv-entry[data-enabled=true] .dtv-entry-dot{background:var(--dsw-alias-state-success,#2fa36b)}.dtv-entry-name{font-weight:620;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.dtv-entry-state{margin-left:auto;flex:none;color:var(--dsw-alias-label-tertiary);font-size:10px}.dtv-entry-body{border-top:1px solid var(--dsw-alias-border-l1);padding:8px;display:flex;flex-direction:column;gap:8px}.dtv-field{display:flex;flex-direction:column;gap:4px}.dtv-label{font-size:10px;font-weight:620;color:var(--dsw-alias-label-tertiary)}.dtv-input,.dtv-select,.dtv-textarea{box-sizing:border-box;width:100%;border:1px solid var(--dsw-alias-border-l2);border-radius:7px;background:var(--dsw-alias-bg-base);color:var(--dsw-alias-label-primary);font:inherit;font-size:11px;padding:7px 8px}.dtv-input,.dtv-select{height:32px}.dtv-textarea{min-height:94px;resize:vertical;line-height:1.45}.dtv-entry-grid{display:grid;grid-template-columns:1fr 1fr;gap:7px}.dtv-checks{display:flex;flex-wrap:wrap;gap:10px}.dtv-check{display:flex;gap:5px;align-items:center;font-size:10px}.dtv-entry-actions{display:flex;justify-content:flex-end}.dtv-danger{color:var(--dsw-alias-state-error)}
 .dtv-layer>.dtv-launcher,.dtv-layer>.dtv-panel,.dtv-layer>.dcc-panel,.dtv-layer>.dwb-panel,.dtv-layer>.dtu-panel{zoom:var(--dtv-ui-scale,1)}.dtv-setting-value{font-size:12px;font-variant-numeric:tabular-nums;color:var(--dsw-alias-label-secondary)}
@@ -2919,6 +3335,16 @@ async function uiSettingsRequest(method = "GET", body2) {
   if (!response.ok || data?.ok === false) throw new Error(data?.error ?? `HTTP ${response.status}`);
   return data.settings;
 }
+function PanelHeader({ title, titleKey, close }) {
+  const titleText = titleKey ? uiMessage(titleKey) : title;
+  const closeLabel = uiMessage("panel.close", { title: unwrapText(titleText) });
+  return h7(
+    "div",
+    { className: "dtv-header" },
+    h7("div", { className: "dtv-title" }, titleText),
+    h7("button", { className: "dtv-close", type: "button", title: closeLabel, "aria-label": closeLabel, onClick: close }, "\u2715")
+  );
+}
 function Field5({ label, children }) {
   return h7("label", { className: "dtv-field" }, h7("span", { className: "dtv-label" }, label), children);
 }
@@ -2963,6 +3389,12 @@ function SettingsPanel({ settings, status, busy, close, update, reset }) {
     )
   );
 }
+var LOGIC_KEYS = Object.freeze({
+  and_any: "world.logic.andAny",
+  and_all: "world.logic.andAll",
+  not_any: "world.logic.notAny",
+  not_all: "world.logic.notAll"
+});
 function TavernShell({ useSessions, useWorkspaces, createCleanSession }) {
   const [menuOpen, setMenuOpen] = (0, import_react7.useState)(false);
   const [surface, setSurface] = (0, import_react7.useState)(null);
@@ -3172,8 +3604,8 @@ function TavernShell({ useSessions, useWorkspaces, createCleanSession }) {
       h7("div", { className: "dtv-ball-row" }, h7("button", {
         className: "dtv-ball",
         type: "button",
-        title: "\u62D6\u52A8\u53EF\u79FB\u52A8\uFF1B\u70B9\u51FB\u5C55\u5F00 Tavern \u8D44\u6E90\u9762\u677F",
-        "aria-label": "\u62D6\u52A8\u53EF\u79FB\u52A8\uFF1B\u70B9\u51FB\u5C55\u5F00 Tavern \u8D44\u6E90\u9762\u677F",
+        title: uiMessage("nav.launcher"),
+        "aria-label": uiMessage("nav.launcher"),
         "aria-expanded": menuOpen,
         onPointerDown: startDrag,
         onPointerMove: moveDrag,
@@ -3184,14 +3616,14 @@ function TavernShell({ useSessions, useWorkspaces, createCleanSession }) {
       menuOpen ? h7(
         "div",
         { className: "dtv-menu", role: "menu" },
-        h7("div", { className: "dtv-menu-title", "aria-live": "polite" }, statusError === "" ? uiText`Tavern · ${sessionId || translateVisibleText("\u65E0\u4F1A\u8BDD")}` : uiText`状态同步失败：${statusError}`),
+        h7("div", { className: "dtv-menu-title", "aria-live": "polite" }, statusError === "" ? uiMessage("nav.menuTitle", { session: sessionId || translate("nav.session.none") }) : uiMessage("nav.syncFailed", { message: statusError })),
         ...TAVERN_MENU_ITEMS.map((item) => {
-          const status = statuses[item.id] ?? { bound: false, count: 0, title: item.emptyTitle };
-          const itemLabel = translateVisibleText(item.label);
-          const statusTitle = status.bound ? status.title : translateVisibleText(status.title);
-          const stateLabel = item.binding === false ? "" : translateVisibleText(status.bound ? "\u5DF2\u7ED1\u5B9A" : "\u672A\u7ED1\u5B9A");
-          const titleText = stateLabel ? uiText`${itemLabel}：${statusTitle}（${stateLabel}）` : uiText`${itemLabel}：${statusTitle}`;
-          const ariaText = stateLabel ? uiText`${itemLabel}，${statusTitle}，${stateLabel}` : uiText`${itemLabel}，${statusTitle}`;
+          const status = statuses[item.id] ?? { bound: false, count: 0, titleKey: item.emptyTitleKey };
+          const itemLabel = unwrapText(uiMessage(item.labelKey));
+          const statusTitle = status.bound ? status.title : unwrapText(uiMessage(status.titleKey ?? item.emptyTitleKey));
+          const stateLabel = item.binding === false ? "" : unwrapText(uiMessage(status.bound ? "common.bound" : "common.unbound"));
+          const titleText = stateLabel ? uiMessage("nav.itemTitleBound", { label: itemLabel, title: statusTitle, state: stateLabel }) : uiMessage("nav.itemTitle", { label: itemLabel, title: statusTitle });
+          const ariaText = stateLabel ? uiMessage("nav.itemAriaBound", { label: itemLabel, title: statusTitle, state: stateLabel }) : uiMessage("nav.itemAria", { label: itemLabel, title: statusTitle });
           return h7(
             "button",
             {
@@ -3212,10 +3644,10 @@ function TavernShell({ useSessions, useWorkspaces, createCleanSession }) {
             h7(
               "span",
               { className: "dtv-item-copy" },
-              h7("span", { className: "dtv-item-label" }, item.label),
-              h7("span", { className: "dtv-item-status" }, status.bound ? rawText(status.title) : status.title)
+              h7("span", { className: "dtv-item-label" }, uiMessage(item.labelKey)),
+              h7("span", { className: "dtv-item-status" }, status.bound ? rawText(status.title) : uiMessage(status.titleKey ?? item.emptyTitleKey))
             ),
-            status.count > 1 ? h7("span", { className: "dtv-item-count", "aria-label": uiText`${status.count} 本` }, uiText`${status.count} 本`) : item.available ? null : h7("span", { className: "dtv-item-planned" }, "\u89C4\u5212\u4E2D")
+            status.count > 1 ? h7("span", { className: "dtv-item-count", "aria-label": uiMessage("nav.bookCount", { count: status.count }) }, uiMessage("nav.bookCount", { count: status.count })) : item.available ? null : h7("span", { className: "dtv-item-planned" }, uiMessage("common.planned"))
           );
         })
       ) : null

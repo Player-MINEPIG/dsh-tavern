@@ -1,6 +1,6 @@
 # Standalone World Book implementation and acceptance
 
-Status: implemented on the standalone-world-books feature branch for parent-task review. This document does not claim merge or publication.
+Status: implemented and integrated into the 2026-08-15 public release candidate. This file retains the standalone-world-books module contract and acceptance evidence.
 
 ## Scope and boundaries
 

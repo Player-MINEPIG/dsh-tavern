@@ -8,9 +8,10 @@ import {
 import {
   createLocalizedElement,
   rawText,
-  translateVisibleText,
+  statusText,
+  translate,
+  uiError,
   uiMessage,
-  uiText,
   unwrapText,
 } from '../../client/src/i18n.js'
 
@@ -18,14 +19,14 @@ const h = createLocalizedElement(createElement)
 
 const API_ROOT = '/dsh-tavern/api'
 const POSITIONS = [
-  ['before_character_definition', '角色定义之前'],
-  ['after_character_definition', '角色定义之后'],
-  ['before_author_note', '作者注释之前（近似）'],
-  ['after_author_note', '作者注释之后（近似）'],
-  ['at_depth', '指定深度（近似）'],
-  ['before_example_messages', '示例消息之前（近似）'],
-  ['after_example_messages', '示例消息之后（近似）'],
-  ['outlet', 'Outlet（当前不注入）'],
+  ['before_character_definition', 'world.position.beforeCharacter'],
+  ['after_character_definition', 'world.position.afterCharacter'],
+  ['before_author_note', 'world.position.beforeAuthor'],
+  ['after_author_note', 'world.position.afterAuthor'],
+  ['at_depth', 'world.position.atDepth'],
+  ['before_example_messages', 'world.position.beforeExamples'],
+  ['after_example_messages', 'world.position.afterExamples'],
+  ['outlet', 'world.position.outlet'],
 ]
 
 const css = `
@@ -74,35 +75,35 @@ function EmbeddedEntryEditor({ entry, index, update, remove }) {
   return h('details', { className: 'dwb-entry', 'data-enabled': entry.enabled === true },
     h('summary', null,
       h('span', { className: 'dwb-dot' }),
-      h('span', { className: 'dwb-entry-name' }, entry.comment || entry.name ? rawText(entry.comment || entry.name) : uiText`条目 ${entry.id ?? index}`),
-      h('span', { className: 'dwb-entry-state' }, entry.constant ? '常驻' : (entry.keys ?? []).length > 0 ? rawText(entry.keys.join(', ')) : '无关键词'),
+      h('span', { className: 'dwb-entry-name' }, entry.comment || entry.name ? rawText(entry.comment || entry.name) : uiMessage('world.entry.fallback', { id: entry.id ?? index })),
+      h('span', { className: 'dwb-entry-state' }, entry.constant ? uiMessage('world.entry.constant') : (entry.keys ?? []).length > 0 ? rawText(entry.keys.join(', ')) : uiMessage('world.entry.noKeywords')),
     ),
     h('div', { className: 'dwb-entry-body' },
-      h(Field, { label: '条目标题' }, h('input', { className: 'dwb-input', value: entry.comment ?? entry.name ?? '', onChange: event => patch({ comment: event.target.value }) })),
-      h(Field, { label: '主关键词（支持中文、英文逗号分隔）' }, h('input', { className: 'dwb-input', value: (entry.keys ?? []).join(', '), onChange: event => patch({ keys: parseKeywords(event.target.value) }) })),
-      h(Field, { label: '附加关键词（支持中文、英文逗号分隔）' }, h('input', { className: 'dwb-input', value: secondaryKeys.join(', '), onChange: event => { const keys = parseKeywords(event.target.value); patch({ secondary_keys: keys, selective: keys.length > 0 }) } })),
-      secondaryKeys.length > 0 ? h(Field, { label: 'Secondary logic' }, h('select', {
+      h(Field, { label: uiMessage('world.entry.title') }, h('input', { className: 'dwb-input', value: entry.comment ?? entry.name ?? '', onChange: event => patch({ comment: event.target.value }) })),
+      h(Field, { label: uiMessage('world.entry.primaryKeys') }, h('input', { className: 'dwb-input', value: (entry.keys ?? []).join(', '), onChange: event => patch({ keys: parseKeywords(event.target.value) }) })),
+      h(Field, { label: uiMessage('world.entry.secondaryKeys') }, h('input', { className: 'dwb-input', value: secondaryKeys.join(', '), onChange: event => { const keys = parseKeywords(event.target.value); patch({ secondary_keys: keys, selective: keys.length > 0 }) } })),
+      secondaryKeys.length > 0 ? h(Field, { label: uiMessage('world.entry.secondaryLogicShort') }, h('select', {
         className: 'dwb-select',
         value: entry.selectiveLogic ?? entry.extensions?.selectiveLogic ?? 'and_any',
         onChange: event => patch({ selectiveLogic: event.target.value, selective: true, extensions: { ...(entry.extensions ?? {}), selectiveLogic: event.target.value } }),
       },
-      h('option', { value: 'and_any' }, 'AND ANY：命中任一'),
-      h('option', { value: 'and_all' }, 'AND ALL：命中全部'),
-      h('option', { value: 'not_any' }, 'NOT ANY：不能命中任一'),
-      h('option', { value: 'not_all' }, 'NOT ALL：不能全部命中'))) : null,
-      h(Field, { label: '正文' }, h('textarea', { className: 'dwb-textarea', value: entry.content ?? '', onChange: event => patch({ content: event.target.value }) })),
+      h('option', { value: 'and_any' }, uiMessage('world.logic.andAny')),
+      h('option', { value: 'and_all' }, uiMessage('world.logic.andAll')),
+      h('option', { value: 'not_any' }, uiMessage('world.logic.notAny')),
+      h('option', { value: 'not_all' }, uiMessage('world.logic.notAll')))) : null,
+      h(Field, { label: uiMessage('world.entry.body') }, h('textarea', { className: 'dwb-textarea', value: entry.content ?? '', onChange: event => patch({ content: event.target.value }) })),
       h('div', { className: 'dwb-grid' },
-        h(Field, { label: '位置' }, h('select', { className: 'dwb-select', value: position, onChange: event => { const value = Number(event.target.value); patch({ position: value === 0 ? 'before_char' : value === 1 ? 'after_char' : entry.position, extensions: { ...(entry.extensions ?? {}), position: value } }) } }, ...POSITIONS.map(([_value, label], value) => h('option', { key: value, value }, label)))),
-        h(Field, { label: '顺序（高值优先）' }, h('input', { className: 'dwb-input', type: 'number', value: entry.insertion_order ?? 100, onChange: event => patch({ insertion_order: Number(event.target.value) }) })),
-        h(Field, { label: '概率（0–100）' }, h('input', { className: 'dwb-input', type: 'number', min: 0, max: 100, value: entry.probability ?? entry.extensions?.probability ?? 100, onChange: event => patch({ probability: Number(event.target.value), extensions: { ...(entry.extensions ?? {}), probability: Number(event.target.value), useProbability: true } }) })),
+        h(Field, { label: uiMessage('world.entry.position') }, h('select', { className: 'dwb-select', value: position, onChange: event => { const value = Number(event.target.value); patch({ position: value === 0 ? 'before_char' : value === 1 ? 'after_char' : entry.position, extensions: { ...(entry.extensions ?? {}), position: value } }) } }, ...POSITIONS.map(([_value, key], value) => h('option', { key: value, value }, uiMessage(key))))),
+        h(Field, { label: uiMessage('world.entry.order') }, h('input', { className: 'dwb-input', type: 'number', value: entry.insertion_order ?? 100, onChange: event => patch({ insertion_order: Number(event.target.value) }) })),
+        h(Field, { label: uiMessage('world.entry.probability') }, h('input', { className: 'dwb-input', type: 'number', min: 0, max: 100, value: entry.probability ?? entry.extensions?.probability ?? 100, onChange: event => patch({ probability: Number(event.target.value), extensions: { ...(entry.extensions ?? {}), probability: Number(event.target.value), useProbability: true } }) })),
       ),
       h('div', { className: 'dwb-checks' },
-        h('label', { className: 'dwb-check' }, h('input', { type: 'checkbox', checked: entry.enabled === true, onChange: event => patch({ enabled: event.target.checked }) }), '启用'),
-        h('label', { className: 'dwb-check' }, h('input', { type: 'checkbox', checked: entry.constant === true, onChange: event => patch({ constant: event.target.checked }) }), '常驻'),
-        h('label', { className: 'dwb-check' }, h('input', { type: 'checkbox', checked: (entry.case_sensitive ?? entry.extensions?.case_sensitive) === true, onChange: event => patch({ case_sensitive: event.target.checked, extensions: { ...(entry.extensions ?? {}), case_sensitive: event.target.checked } }) }), '区分大小写'),
-        h('label', { className: 'dwb-check' }, h('input', { type: 'checkbox', checked: (entry.match_whole_words ?? entry.extensions?.match_whole_words) === true, onChange: event => patch({ match_whole_words: event.target.checked, extensions: { ...(entry.extensions ?? {}), match_whole_words: event.target.checked } }) }), '全词匹配'),
+        h('label', { className: 'dwb-check' }, h('input', { type: 'checkbox', checked: entry.enabled === true, onChange: event => patch({ enabled: event.target.checked }) }), uiMessage('common.enable')),
+        h('label', { className: 'dwb-check' }, h('input', { type: 'checkbox', checked: entry.constant === true, onChange: event => patch({ constant: event.target.checked }) }), uiMessage('world.entry.constant')),
+        h('label', { className: 'dwb-check' }, h('input', { type: 'checkbox', checked: (entry.case_sensitive ?? entry.extensions?.case_sensitive) === true, onChange: event => patch({ case_sensitive: event.target.checked, extensions: { ...(entry.extensions ?? {}), case_sensitive: event.target.checked } }) }), uiMessage('world.entry.caseSensitive')),
+        h('label', { className: 'dwb-check' }, h('input', { type: 'checkbox', checked: (entry.match_whole_words ?? entry.extensions?.match_whole_words) === true, onChange: event => patch({ match_whole_words: event.target.checked, extensions: { ...(entry.extensions ?? {}), match_whole_words: event.target.checked } }) }), uiMessage('world.entry.wholeWord')),
       ),
-      h('div', { className: 'dwb-actions' }, h('button', { className: 'dwb-button dwb-danger', type: 'button', onClick: () => remove(index) }, '删除条目')),
+      h('div', { className: 'dwb-actions' }, h('button', { className: 'dwb-button dwb-danger', type: 'button', onClick: () => remove(index) }, uiMessage('world.entry.delete'))),
     ),
   )
 }
@@ -118,7 +119,7 @@ export function createWorldBookEntry(entries = []) {
     uid,
     keys: [],
     secondaryKeys: [],
-    comment: unwrapText(uiText`新条目 ${uid}`),
+    comment: translate('world.entry.untitled', { id: uid }),
     content: '',
     enabled: true,
     constant: false,
@@ -157,31 +158,31 @@ function EntryEditor({ entry, index, update, remove }) {
   return h('details', { className: 'dwb-entry', 'data-enabled': entry.enabled === true },
     h('summary', null,
       h('span', { className: 'dwb-dot' }),
-      h('span', { className: 'dwb-entry-name' }, entry.comment ? rawText(entry.comment) : uiText`条目 ${entry.uid ?? index}`),
-      h('span', { className: 'dwb-entry-state' }, entry.constant ? '常驻' : (entry.keys ?? []).length > 0 ? rawText(entry.keys.join(', ')) : '无关键词'),
+      h('span', { className: 'dwb-entry-name' }, entry.comment ? rawText(entry.comment) : uiMessage('world.entry.fallback', { id: entry.uid ?? index })),
+      h('span', { className: 'dwb-entry-state' }, entry.constant ? uiMessage('world.entry.constant') : (entry.keys ?? []).length > 0 ? rawText(entry.keys.join(', ')) : uiMessage('world.entry.noKeywords')),
     ),
     h('div', { className: 'dwb-entry-body' },
-      h(Field, { label: '条目标题' }, h('input', { className: 'dwb-input', value: entry.comment ?? '', onChange: event => patch({ comment: event.target.value }) })),
-      h(Field, { label: '主关键词（支持中文、英文逗号分隔）' }, h('input', { className: 'dwb-input', value: (entry.keys ?? []).join(', '), onChange: event => patch({ keys: parseKeywords(event.target.value) }) })),
-      h(Field, { label: '附加关键词（支持中文、英文逗号分隔）' }, h('input', { className: 'dwb-input', value: secondary.join(', '), onChange: event => { const keys = parseKeywords(event.target.value); patch({ secondaryKeys: keys, selective: keys.length > 0 }) } })),
-      secondary.length > 0 ? h(Field, { label: 'Secondary logic' }, h('select', { className: 'dwb-select', value: entry.selectiveLogic ?? 'and_any', onChange: event => patch({ selectiveLogic: event.target.value, selective: true }) },
-        h('option', { value: 'and_any' }, 'AND ANY：命中任一'),
-        h('option', { value: 'and_all' }, 'AND ALL：命中全部'),
-        h('option', { value: 'not_any' }, 'NOT ANY：不能命中任一'),
-        h('option', { value: 'not_all' }, 'NOT ALL：不能全部命中'))) : null,
-      h(Field, { label: '正文' }, h('textarea', { className: 'dwb-textarea', value: entry.content ?? '', onChange: event => patch({ content: event.target.value }) })),
+      h(Field, { label: uiMessage('world.entry.title') }, h('input', { className: 'dwb-input', value: entry.comment ?? '', onChange: event => patch({ comment: event.target.value }) })),
+      h(Field, { label: uiMessage('world.entry.primaryKeys') }, h('input', { className: 'dwb-input', value: (entry.keys ?? []).join(', '), onChange: event => patch({ keys: parseKeywords(event.target.value) }) })),
+      h(Field, { label: uiMessage('world.entry.secondaryKeys') }, h('input', { className: 'dwb-input', value: secondary.join(', '), onChange: event => { const keys = parseKeywords(event.target.value); patch({ secondaryKeys: keys, selective: keys.length > 0 }) } })),
+      secondary.length > 0 ? h(Field, { label: uiMessage('world.entry.secondaryLogicShort') }, h('select', { className: 'dwb-select', value: entry.selectiveLogic ?? 'and_any', onChange: event => patch({ selectiveLogic: event.target.value, selective: true }) },
+        h('option', { value: 'and_any' }, uiMessage('world.logic.andAny')),
+        h('option', { value: 'and_all' }, uiMessage('world.logic.andAll')),
+        h('option', { value: 'not_any' }, uiMessage('world.logic.notAny')),
+        h('option', { value: 'not_all' }, uiMessage('world.logic.notAll')))) : null,
+      h(Field, { label: uiMessage('world.entry.body') }, h('textarea', { className: 'dwb-textarea', value: entry.content ?? '', onChange: event => patch({ content: event.target.value }) })),
       h('div', { className: 'dwb-grid' },
-        h(Field, { label: '位置' }, h('select', { className: 'dwb-select', value: entry.position, onChange: event => patch({ position: event.target.value }) }, ...POSITIONS.map(([value, label]) => h('option', { key: value, value }, label)))),
-        h(Field, { label: '顺序（高值优先）' }, h('input', { className: 'dwb-input', type: 'number', value: entry.insertionOrder ?? 100, onChange: event => patch({ insertionOrder: Number(event.target.value) }) })),
-        h(Field, { label: '概率（0–100）' }, h('input', { className: 'dwb-input', type: 'number', min: 0, max: 100, value: entry.probability ?? 100, onChange: event => patch({ probability: Number(event.target.value), useProbability: true }) })),
+        h(Field, { label: uiMessage('world.entry.position') }, h('select', { className: 'dwb-select', value: entry.position, onChange: event => patch({ position: event.target.value }) }, ...POSITIONS.map(([value, key]) => h('option', { key: value, value }, uiMessage(key))))),
+        h(Field, { label: uiMessage('world.entry.order') }, h('input', { className: 'dwb-input', type: 'number', value: entry.insertionOrder ?? 100, onChange: event => patch({ insertionOrder: Number(event.target.value) }) })),
+        h(Field, { label: uiMessage('world.entry.probability') }, h('input', { className: 'dwb-input', type: 'number', min: 0, max: 100, value: entry.probability ?? 100, onChange: event => patch({ probability: Number(event.target.value), useProbability: true }) })),
       ),
       h('div', { className: 'dwb-checks' },
-        h('label', { className: 'dwb-check' }, h('input', { type: 'checkbox', checked: entry.enabled === true, onChange: event => patch({ enabled: event.target.checked }) }), '启用'),
-        h('label', { className: 'dwb-check' }, h('input', { type: 'checkbox', checked: entry.constant === true, onChange: event => patch({ constant: event.target.checked }) }), '常驻'),
-        h('label', { className: 'dwb-check' }, h('input', { type: 'checkbox', checked: entry.caseSensitive === true, onChange: event => patch({ caseSensitive: event.target.checked }) }), '区分大小写'),
-        h('label', { className: 'dwb-check' }, h('input', { type: 'checkbox', checked: entry.matchWholeWords === true, onChange: event => patch({ matchWholeWords: event.target.checked }) }), '全词匹配'),
+        h('label', { className: 'dwb-check' }, h('input', { type: 'checkbox', checked: entry.enabled === true, onChange: event => patch({ enabled: event.target.checked }) }), uiMessage('common.enable')),
+        h('label', { className: 'dwb-check' }, h('input', { type: 'checkbox', checked: entry.constant === true, onChange: event => patch({ constant: event.target.checked }) }), uiMessage('world.entry.constant')),
+        h('label', { className: 'dwb-check' }, h('input', { type: 'checkbox', checked: entry.caseSensitive === true, onChange: event => patch({ caseSensitive: event.target.checked }) }), uiMessage('world.entry.caseSensitive')),
+        h('label', { className: 'dwb-check' }, h('input', { type: 'checkbox', checked: entry.matchWholeWords === true, onChange: event => patch({ matchWholeWords: event.target.checked }) }), uiMessage('world.entry.wholeWord')),
       ),
-      h('div', { className: 'dwb-actions' }, h('button', { className: 'dwb-button dwb-danger', type: 'button', onClick: () => remove(index) }, '删除条目')),
+      h('div', { className: 'dwb-actions' }, h('button', { className: 'dwb-button dwb-danger', type: 'button', onClick: () => remove(index) }, uiMessage('world.entry.delete'))),
     ),
   )
 }
@@ -200,19 +201,24 @@ export function WorldBookPanel({ sessionId, close }) {
   const [embeddedDirty, setEmbeddedDirty] = useState(false)
   const [dirty, setDirty] = useState(false)
   const [busy, setBusy] = useState(false)
-  const [status, setStatus] = useState({ text: '加载中…', error: false })
+  const [status, setStatus] = useState({ error: false, key: 'common.loading' })
   const fileRef = useRef(null)
   const standaloneEditorRef = useRef(null)
   const generation = useRef(0)
 
-  const run = useCallback(async (operation, success) => {
+  const run = useCallback(async (operation, success, values) => {
     setBusy(true)
     try {
       const value = await operation()
-      setStatus({ text: success, error: false })
+      setStatus({ error: false, key: success, values })
       return value
     } catch (error) {
-      setStatus({ text: error instanceof Error ? error.message : String(error), error: true })
+      setStatus({
+        error: true,
+        key: error.uiKey,
+        values: error.uiValues,
+        text: error instanceof Error ? error.message : String(error),
+      })
       return null
     } finally {
       setBusy(false)
@@ -262,8 +268,8 @@ export function WorldBookPanel({ sessionId, close }) {
   }, [document?.id, sessionId])
 
   useEffect(() => {
-    run(() => refresh(), '世界书资源库已加载')
-    const onRefresh = () => run(() => refresh(), '世界书资源库已刷新')
+    run(() => refresh(), 'world.status.loaded')
+    const onRefresh = () => run(() => refresh(), 'world.status.refreshed')
     window.addEventListener('dsh-tavern:refresh', onRefresh)
     return () => {
       generation.current += 1
@@ -276,7 +282,7 @@ export function WorldBookPanel({ sessionId, close }) {
     setDocument(detail.worldBook)
     setDraft(structuredClone(detail.worldBook.book))
     setDirty(false)
-  }, '世界书详情已加载')
+  }, 'world.status.detailsLoaded')
 
   const editUserBook = async id => {
     await load(id)
@@ -284,9 +290,9 @@ export function WorldBookPanel({ sessionId, close }) {
   }
 
   const create = () => run(async () => {
-    const data = await api('/world-books', { method: 'POST', body: JSON.stringify({ name: 'Untitled World Book' }) })
+    const data = await api('/world-books', { method: 'POST', body: JSON.stringify({ name: translate('world.defaultName') }) })
     await refresh(data.worldBook.id)
-  }, '已创建独立世界书；尚未绑定当前会话')
+  }, 'world.status.created')
 
   const importFile = file => run(async () => {
     const response = await fetch(`${API_ROOT}/world-books/import?filename=${encodeURIComponent(file.name)}`, {
@@ -298,7 +304,7 @@ export function WorldBookPanel({ sessionId, close }) {
     if (!response.ok || data?.ok === false) throw new Error(errorMessage(data, response.status))
     if (fileRef.current !== null) fileRef.current.value = ''
     await refresh(data.worldBook.id)
-  }, '世界书已导入；尚未绑定当前会话')
+  }, 'world.status.imported')
 
   const save = () => run(async () => {
     const data = await api(`/world-books/${encodeURIComponent(document.id)}`, { method: 'PATCH', body: JSON.stringify({ book: draft }) })
@@ -306,19 +312,19 @@ export function WorldBookPanel({ sessionId, close }) {
     setDraft(structuredClone(data.worldBook.book))
     setDirty(false)
     window.dispatchEvent(new Event('dsh-tavern:refresh'))
-  }, '世界书修改已持久化，后续请求将使用新内容')
+  }, 'world.status.saved')
 
   const saveSelection = () => run(async () => {
-    if (!sessionId) throw new Error('请先创建或打开一个会话再绑定世界书')
+    if (!sessionId) throw uiError('world.error.needSession')
     const data = await api('/world-book-selection', { method: 'POST', body: JSON.stringify({ sessionId, worldBookIds: selection }) })
     setSelection(data.selection.worldBookIds)
     setAppliedSelection(data.selection.worldBookIds)
     window.dispatchEvent(new Event('dsh-tavern:refresh'))
-  }, '当前会话的世界书绑定已保存')
+  }, 'world.status.bindingSaved')
 
   const saveUserSelection = () => run(async () => {
     const userId = active?.resources?.user?.id
-    if (!userId) throw new Error('当前会话没有可编辑世界书关系的绑定用户')
+    if (!userId) throw uiError('world.user.error.noUser')
     const data = await api(`/users/${encodeURIComponent(userId)}/world-books`, {
       method: 'PUT',
       body: JSON.stringify({ worldBookIds: userSelection }),
@@ -327,7 +333,7 @@ export function WorldBookPanel({ sessionId, close }) {
     setUserSelection(ids)
     setAppliedUserSelection(ids)
     window.dispatchEvent(new Event('dsh-tavern:refresh'))
-  }, uiMessage('world.user.saveSuccess'))
+  }, 'world.user.saveSuccess')
 
   const remove = () => run(async () => {
     if (document === null || !window.confirm(unwrapText(uiMessage('world.confirmDelete', { name: document.name })))) return
@@ -336,7 +342,7 @@ export function WorldBookPanel({ sessionId, close }) {
     setDraft(null)
     await refresh(null)
     window.dispatchEvent(new Event('dsh-tavern:refresh'))
-  }, '独立世界书已删除，相关会话绑定已清理')
+  }, 'world.status.deleted')
 
   const saveEmbedded = () => run(async () => {
     const data = await api(`/characters/${encodeURIComponent(embeddedCharacterId)}/world-book`, {
@@ -346,7 +352,7 @@ export function WorldBookPanel({ sessionId, close }) {
     setEmbeddedDraft(structuredClone(data.character.data.characterBook))
     setEmbeddedDirty(false)
     window.dispatchEvent(new Event('dsh-tavern:refresh'))
-  }, '角色卡内嵌世界书已保存，后续请求将使用新内容')
+  }, 'world.status.embeddedSaved')
 
   const updateEntry = (index, patch) => {
     setDraft(current => {
@@ -369,43 +375,44 @@ export function WorldBookPanel({ sessionId, close }) {
     ...userSelection.map(id => catalogById.get(id)).filter(Boolean),
     ...catalogBooks.filter(book => !userSelection.includes(book.id)),
   ]
+  const closeLabel = uiMessage('panel.close', { title: unwrapText(uiMessage('world.title')) })
 
   return h('div', { className: 'dwb-panel' },
-    h('div', { className: 'dwb-header' }, h('div', { className: 'dwb-title' }, '世界信息（World Book）'), h('button', { className: 'dwb-close', type: 'button', onClick: close, 'aria-label': '关闭世界书侧边栏' }, '✕')),
+    h('div', { className: 'dwb-header' }, h('div', { className: 'dwb-title' }, uiMessage('world.title')), h('button', { className: 'dwb-close', type: 'button', onClick: close, title: closeLabel, 'aria-label': closeLabel }, '✕')),
     h('div', { className: 'dwb-body' },
       h('div', { className: 'dwb-toolbar' },
-        h('button', { className: 'dwb-button', type: 'button', disabled: busy, onClick: () => fileRef.current?.click() }, '导入 JSON'),
-        h('button', { className: 'dwb-button', type: 'button', disabled: busy, onClick: create }, '新建世界书'),
-        h('button', { className: 'dwb-button', type: 'button', disabled: busy, onClick: () => { if (!dirty || window.confirm(unwrapText(uiMessage('world.confirmDiscardChanges')))) run(() => refresh(), '世界书资源库已刷新') } }, '刷新'),
+        h('button', { className: 'dwb-button', type: 'button', disabled: busy, onClick: () => fileRef.current?.click() }, uiMessage('world.importJson')),
+        h('button', { className: 'dwb-button', type: 'button', disabled: busy, onClick: create }, uiMessage('world.create')),
+        h('button', { className: 'dwb-button', type: 'button', disabled: busy, onClick: () => { if (!dirty || window.confirm(unwrapText(uiMessage('world.confirmDiscardChanges')))) run(() => refresh(), 'world.status.refreshed') } }, uiMessage('common.refresh')),
         h('input', { ref: fileRef, hidden: true, type: 'file', accept: '.json,application/json', onChange: event => { const file = event.target.files?.[0]; if (file !== undefined) importFile(file) } }),
       ),
-      h('p', { className: 'dwb-note' }, uiMessage('world.currentSession', { session: sessionId || translateVisibleText('无') })),
-      h('div', { className: 'dwb-status', 'data-error': status.error || undefined, role: 'status', 'aria-live': 'polite' }, status.error ? rawText(status.text) : status.text),
+      h('p', { className: 'dwb-note' }, uiMessage('world.currentSession', { session: sessionId || translate('common.none') })),
+      h('div', { className: 'dwb-status', 'data-error': status.error || undefined, role: 'status', 'aria-live': 'polite' }, statusText(status)),
       h('section', { className: 'dwb-source-section', 'data-source': 'standalone' },
-      h('h2', { className: 'dwb-section-title' }, '独立世界书'),
+      h('h2', { className: 'dwb-section-title' }, uiMessage('world.standalone')),
       h('div', { className: 'dwb-resource' },
-        h('div', { className: 'dwb-resource-title' }, '当前会话绑定'),
+        h('div', { className: 'dwb-resource-title' }, uiMessage('world.sessionBinding')),
         catalog?.worldBooks.length ? h('div', { className: 'dwb-bindings' }, ...catalog.worldBooks.map(item => h('label', { className: 'dwb-check', key: item.id },
           h('input', { type: 'checkbox', checked: selection.includes(item.id), onChange: event => setSelection(current => event.target.checked ? [...current, item.id] : current.filter(id => id !== item.id)) }),
           uiMessage('world.catalogItem', { name: item.name, count: item.entryCount }),
-        ))) : h('p', { className: 'dwb-note' }, '独立世界书资源库为空。'),
-        selectionDirty ? h('div', { className: 'dwb-status', 'data-warning': true }, '绑定有未保存修改，当前勾选尚未应用到会话。') : h('p', { className: 'dwb-note' }, '面板显示的绑定已应用到当前会话。'),
+        ))) : h('p', { className: 'dwb-note' }, uiMessage('world.libraryEmpty')),
+        selectionDirty ? h('div', { className: 'dwb-status', 'data-warning': true }, uiMessage('world.bindingUnsaved')) : h('p', { className: 'dwb-note' }, uiMessage('world.bindingApplied')),
         h('div', { className: 'dwb-actions' },
-          h('button', { className: 'dwb-button dwb-primary', type: 'button', disabled: busy || !sessionId || !selectionDirty, onClick: saveSelection }, selectionDirty ? '应用会话绑定（未保存）' : '当前绑定已应用'),
-          h('button', { className: 'dwb-button', type: 'button', disabled: busy || !sessionId || selection.length === 0, onClick: () => setSelection([]) }, '清空待应用选择'),
+          h('button', { className: 'dwb-button dwb-primary', type: 'button', disabled: busy || !sessionId || !selectionDirty, onClick: saveSelection }, selectionDirty ? uiMessage('world.applyBinding') : uiMessage('world.bindingAppliedButton')),
+          h('button', { className: 'dwb-button', type: 'button', disabled: busy || !sessionId || selection.length === 0, onClick: () => setSelection([]) }, uiMessage('world.clearPending')),
         ),
       ),
-      h(Field, { label: '浏览独立世界书' }, h('select', { className: 'dwb-select', value: document?.id ?? '', disabled: busy || !catalog?.worldBooks.length, onChange: event => { if (!dirty || window.confirm(unwrapText(uiMessage('world.confirmDiscardChanges')))) load(event.target.value) } },
-        ...(catalog?.worldBooks.length ? [] : [h('option', { key: 'empty', value: '' }, '资源库为空')]),
+      h(Field, { label: uiMessage('world.browse') }, h('select', { className: 'dwb-select', value: document?.id ?? '', disabled: busy || !catalog?.worldBooks.length, onChange: event => { if (!dirty || window.confirm(unwrapText(uiMessage('world.confirmDiscardChanges')))) load(event.target.value) } },
+        ...(catalog?.worldBooks.length ? [] : [h('option', { key: 'empty', value: '' }, uiMessage('world.catalogEmpty'))]),
         ...(catalog?.worldBooks ?? []).map(item => h('option', { key: item.id, value: item.id }, rawText(item.name))))),
       draft === null ? null : h('div', { className: 'dwb-resource', ref: standaloneEditorRef },
-        h(Field, { label: '世界书名称' }, h('input', { className: 'dwb-input', value: draft.name ?? '', onChange: event => { setDraft(current => ({ ...current, name: event.target.value })); setDirty(true) } })),
+        h(Field, { label: uiMessage('world.bookName') }, h('input', { className: 'dwb-input', value: draft.name ?? '', onChange: event => { setDraft(current => ({ ...current, name: event.target.value })); setDirty(true) } })),
         h('p', { className: 'dwb-meta' }, uiMessage('world.documentMeta', { count: entries.length })),
         h('div', { className: 'dwb-actions' },
-          h('button', { className: 'dwb-button', type: 'button', onClick: () => { setDraft(current => ({ ...current, entries: [...current.entries, createWorldBookEntry(current.entries)] })); setDirty(true) } }, '新增条目'),
-          h('button', { className: 'dwb-button dwb-primary', type: 'button', disabled: busy || !dirty, onClick: save }, dirty ? '保存修改' : '已保存'),
-          h('a', { className: 'dwb-button', href: `${API_ROOT}/world-books/${encodeURIComponent(document.id)}/json`, download: '' }, '导出 JSON'),
-          h('button', { className: 'dwb-button dwb-danger', type: 'button', disabled: busy, onClick: remove }, '删除独立书'),
+          h('button', { className: 'dwb-button', type: 'button', onClick: () => { setDraft(current => ({ ...current, entries: [...current.entries, createWorldBookEntry(current.entries)] })); setDirty(true) } }, uiMessage('world.addEntry')),
+          h('button', { className: 'dwb-button dwb-primary', type: 'button', disabled: busy || !dirty, onClick: save }, dirty ? uiMessage('common.saveChanges') : uiMessage('common.saved')),
+          h('a', { className: 'dwb-button', href: `${API_ROOT}/world-books/${encodeURIComponent(document.id)}/json`, download: '' }, uiMessage('common.exportJson')),
+          h('button', { className: 'dwb-button dwb-danger', type: 'button', disabled: busy, onClick: remove }, uiMessage('world.deleteStandalone')),
         ),
         ...entries.map((entry, index) => h(EntryEditor, { key: `${String(entry.uid)}-${index}`, entry, index, update: updateEntry, remove: itemIndex => { if (window.confirm(unwrapText(uiMessage('world.confirmDeleteEntry')))) { setDraft(current => ({ ...current, entries: current.entries.filter((_item, candidate) => candidate !== itemIndex) })); setDirty(true) } } })),
       ),
@@ -459,19 +466,19 @@ export function WorldBookPanel({ sessionId, close }) {
         ),
       ),
       h('section', { className: 'dwb-source-section', 'data-source': 'character' },
-      h('h2', { className: 'dwb-section-title' }, '角色卡绑定的世界书'),
+      h('h2', { className: 'dwb-section-title' }, uiMessage('world.characterBound')),
       embeddedDraft !== null ? h('div', { className: 'dwb-resource' },
-        h('div', { className: 'dwb-resource-title' }, embeddedDraft.name || embedded[0]?.name ? rawText(embeddedDraft.name || embedded[0]?.name) : '角色卡内嵌世界书'),
+        h('div', { className: 'dwb-resource-title' }, embeddedDraft.name || embedded[0]?.name ? rawText(embeddedDraft.name || embedded[0]?.name) : uiMessage('world.embeddedTitle')),
         h('p', { className: 'dwb-note' }, uiMessage('world.embeddedMeta', { count: embeddedEntries.length })),
         h('div', { className: 'dwb-actions' },
-          h('button', { className: 'dwb-button', type: 'button', onClick: () => { const ids = embeddedEntries.map(entry => Number(entry.id)).filter(Number.isSafeInteger); const id = ids.length === 0 ? 0 : Math.max(...ids) + 1; setEmbeddedDraft(current => ({ ...structuredClone(current), entries: [...current.entries, { id, keys: [], secondary_keys: [], comment: unwrapText(uiText`新条目 ${id}`), content: '', enabled: true, constant: false, selective: false, insertion_order: 100, position: 'after_char', extensions: { position: 1, probability: 100, useProbability: true } }] })); setEmbeddedDirty(true) } }, '新增内嵌条目'),
-          h('button', { className: 'dwb-button dwb-primary', type: 'button', disabled: busy || !embeddedDirty, onClick: saveEmbedded }, embeddedDirty ? '保存内嵌书' : '内嵌书已保存'),
+          h('button', { className: 'dwb-button', type: 'button', onClick: () => { const ids = embeddedEntries.map(entry => Number(entry.id)).filter(Number.isSafeInteger); const id = ids.length === 0 ? 0 : Math.max(...ids) + 1; setEmbeddedDraft(current => ({ ...structuredClone(current), entries: [...current.entries, { id, keys: [], secondary_keys: [], comment: translate('world.entry.untitled', { id }), content: '', enabled: true, constant: false, selective: false, insertion_order: 100, position: 'after_char', extensions: { position: 1, probability: 100, useProbability: true } }] })); setEmbeddedDirty(true) } }, uiMessage('world.addEmbeddedEntry')),
+          h('button', { className: 'dwb-button dwb-primary', type: 'button', disabled: busy || !embeddedDirty, onClick: saveEmbedded }, embeddedDirty ? uiMessage('world.saveEmbedded') : uiMessage('world.embeddedSaved')),
         ),
         ...embeddedEntries.map((entry, index) => h(EmbeddedEntryEditor, { key: `${String(entry.id)}-${index}`, entry, index, update: (itemIndex, value) => { setEmbeddedDraft(current => { const next = structuredClone(current); next.entries[itemIndex] = { ...next.entries[itemIndex], ...value }; return next }); setEmbeddedDirty(true) }, remove: itemIndex => { if (window.confirm(unwrapText(uiMessage('world.confirmDeleteEmbeddedEntry')))) { setEmbeddedDraft(current => ({ ...structuredClone(current), entries: current.entries.filter((_item, candidate) => candidate !== itemIndex) })); setEmbeddedDirty(true) } } })),
       ) : h('p', { className: 'dwb-note' }, uiMessage('world.embeddedEmpty')),
       ),
       diagnostics.length > 0 ? h('details', { className: 'dwb-resource' }, h('summary', { className: 'dwb-resource-title' }, uiMessage('world.diagnostics', { count: diagnostics.length })), h('ul', { className: 'dwb-list' }, ...diagnostics.map((item, index) => h('li', { key: `${item.code}-${index}` }, rawText(item.message))))) : null,
-      h('p', { className: 'dwb-note' }, '实际激活、排序、概率和预算由共享 matcher 确定；最终注入仍由 Tavern loader 统一完成。当前扫描会把本步骤 claimed 输入与持久历史组合成临时上下文，因此单步骤会话也能在首次请求触发关键词。'),
+      h('p', { className: 'dwb-note' }, uiMessage('world.matcherNote')),
     ),
   )
 }

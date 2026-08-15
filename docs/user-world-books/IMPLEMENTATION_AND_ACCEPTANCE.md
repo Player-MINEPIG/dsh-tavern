@@ -1,6 +1,6 @@
 # User-bound world books: implementation and acceptance
 
-状态：2026-08-15，`feature/user-world-books` 实施与验收记录。本文不是 README。
+状态：2026-08-15，已集成到首个公开发布候选版本。本文保留原 feature 的实施与验收细节，不是 README。
 
 ## 运行语义
 
@@ -93,4 +93,4 @@ loader audit 同时公开：
 
 - 用户关系是全局资源关系；保存后会影响所有后续选择该用户的 session compile。已经冻结的当前 request/header 不会被回写。
 - 多个持久文件之间没有跨文件系统事务。删除流程沿用既有资源先删除、policy 随后清理引用的模式；若底层磁盘在两次原子写之间失败，缺失资源会被 loader 诊断且不会进入 profile，下一次成功删除/清理可修复悬空 ID。
-- 世界书匹配何时看到当前用户输入仍遵守本分支基线的 durable-history 边界；pending-input 提前识别由独立 Phase 3 开发线负责。
+- 当前集成版本已由 loader-owned `PendingInputProjection` 让本步骤 claimed 输入参与首次 assembly；用户绑定书与其他来源共用同一提前识别和 Trace 契约。

@@ -1,8 +1,8 @@
 # Tavern UI settings and i18n implementation / acceptance
 
-Status: implemented on `feature/ui-settings-i18n` on 2026-08-15. This is the
-phase-three implementation and review contract; it is intentionally separate
-from the README.
+Status: implemented and integrated into the 2026-08-15 public release candidate,
+including the later semantic-key-only/third-language-ready refactor. This is the
+implementation and review contract; it is intentionally separate from the README.
 
 ## Outcome
 
@@ -23,48 +23,55 @@ history, and per-session bindings are not read or changed by this setting.
 `packages/ui-settings/src/locale-contract.js` is the environment-neutral locale
 registry. The settings dropdown, browser translator and server-side settings
 validator all consume its locale ids and default; they no longer maintain
-separate two-value whitelists. `packages/client/src/i18n.js` is the browser-only
-message catalog boundary. The
-composition root and all current Tavern React clients create elements
-through its localized factory. Literal UI children plus `title`, `aria-label`,
-`placeholder`, and `alt` copy use one active locale. Runtime data crosses an
-explicit raw-text boundary: `rawText(value)` preserves an entire value, while
-the tagged `uiText` helper translates only literal template fragments and
-inserts interpolated values verbatim. Form `value` data is never translated.
-Together these rules prevent localization from rewriting imported resource
-names, user input, prompt text, entry comments, personas, character data,
-lore, diagnostics, or server error text even when they render as children.
+separate two-value whitelists. Browser catalogs live under
+`packages/client/src/i18n/catalogs/`; `packages/client/src/i18n.js` remains the
+stable import path and re-exports the runtime. The composition root and all
+current Tavern React clients create elements through the localized factory.
+Visible UI copy plus `title`, `aria-label`, `placeholder`, and `alt` must use
+semantic keys. Runtime data crosses an explicit raw-text boundary:
+`rawText(value)` preserves an entire value, and `uiMessage(key, values)`
+interpolates those values into a complete locale-owned template. Form `value`
+data is never translated. Together these rules prevent localization from
+rewriting imported resource names, user input, prompt text, entry comments,
+personas, character data, lore, diagnostics, or server error text even when
+they render as children.
 
-The initial retrofit contained semantic keys for the settings surface and a
-legacy Simplified-Chinese source-copy replacement catalog for existing static
-labels. That fallback is intentionally retained for short, literal controls,
-and is now represented as a locale-specific compatibility bundle rather than an
-English-only branch. It is not the extension contract: fragment replacement cannot reliably
-translate a sentence assembled from counts, statuses, resource names and
-punctuation. Such mixed sentences previously produced half-translated output.
+The initial retrofit mixed semantic keys with a Simplified-Chinese source-copy
+replacement catalog. That legacy bundle, `translateVisibleText()` scanning, and
+hard-coded `zh-CN` fallbacks have been removed. `translateVisibleText()` remains
+only as an identity compatibility export. `uiText` concatenates already-resolved
+fragments and must not be used to invent new UI sentences.
 
-New and migrated dynamic copy must use one of three explicit boundaries:
+New copy must use one of two explicit boundaries:
 
-1. `uiMessage(key, values)` for a complete semantic sentence. Both locales own
+1. `uiMessage(key, values)` for a complete semantic sentence. Each locale owns
    the whole template and runtime values are interpolated verbatim.
-2. `uiText` only for a short legacy literal with raw interpolations; it must not
-   be used to compose a new long sentence.
-3. `rawText(value)` for pure resource/runtime data with no UI-owned words.
+2. `rawText(value)` for pure resource/runtime data with no UI-owned words.
 
 For structured previews, static labels and runtime values should be separate
 React children instead of one concatenated string. This keeps imported names,
 ids and keywords byte-for-byte stable and makes future locales additive. A
-missing semantic key returns the stable localized `common.unavailable` message; it
-never renders the key itself. Locale changes update the in-memory catalog
-before React state, then announce `dsh-tavern:ui-settings` so Tavern Trace
-rerenders without a page refresh.
+missing semantic key falls back through the current locale, then
+`DEFAULT_UI_LOCALE`, then `common.unavailable`; it never renders the key itself.
+Locale changes update the in-memory catalog before React state, then announce
+`dsh-tavern:ui-settings` so open panels and Tavern Trace rerender without a page
+refresh.
 
 To add a locale, register its id/native label once in `locale-contract.js`, add
-a complete semantic message catalog with exactly the same keys as the default,
-and, while legacy static controls remain, add that locale's source-copy bundle.
-Module initialization rejects a missing or incomplete semantic catalog. New
-copy and every destructive/unsaved/history confirmation must use `uiMessage`;
-tests inspect every current `window.confirm` call to enforce that boundary.
+one complete catalog module with exactly the same keys as the default catalog,
+and add catalog/display acceptance tests. Module initialization rejects a
+missing or incomplete semantic catalog. Every destructive/unsaved/history
+confirmation must use `uiMessage`; tests inspect every current `window.confirm`
+call to enforce that boundary.
+
+The supported production languages remain Simplified Chinese and English. The
+registry plus per-locale catalogs are the extension contract; a synthetic
+`xx-TEST` locale in tests proves a third language can change `panel.close` word
+order without editing business components. That is not the same as shipping a
+fully translated third language.
+
+完整实施要求、禁止项、自动化与人工验收门槛见
+`docs/ui-settings-i18n/THIRD_LANGUAGE_MIGRATION.md`。
 
 The settings flow is:
 
@@ -133,16 +140,15 @@ compensates its width and height for zoom so its own scroller remains usable.
 
 `test/ui-settings.test.mjs` covers defaults, atomic persistence, restart,
 reset, field/locale/range/increment validation, malformed and oversized files,
-and GET/PUT/DELETE behavior. `test/i18n.test.mjs` covers both languages,
-interpolation, non-key fallback, accessibility text, complete English creation
-labels, raw resource names rendered as children, and raw-data-boundary adoption
-by every current Tavern client. It also locks the Trace storage/keyword,
-world-book metadata, character-book status and template-guidance sentences to
-semantic keys and asserts that their English UI copy contains no Han characters
-while Chinese runtime keywords remain unchanged. The existing shell suite continues to assert
-one overlay owner, drag clamping, expansion direction, panel switching,
-resource status, and shared refresh behavior; it adds scaled-coordinate and
-settings-surface assertions.
+and GET/PUT/DELETE behavior. `test/i18n.test.mjs` covers catalog parity,
+`DEFAULT_UI_LOCALE` fallback, a synthetic third locale with reversed
+`panel.close` word order, PanelHeader interpolation, raw resource names in
+every catalog, the identity `translateVisibleText()` helper, absence of the
+legacy source-copy path, and a static boundary scan of Tavern client sources
+outside catalogs. The existing shell suite continues to assert one overlay
+owner, drag clamping, expansion direction, panel switching, resource status,
+and shared refresh behavior; it adds scaled-coordinate and settings-surface
+assertions.
 
 Verification command:
 
@@ -150,8 +156,9 @@ Verification command:
 npm run check
 ```
 
-Result after the 2026-08-15 hardening pass: build succeeded; 181 tests passed,
-one opt-in local fixture was skipped, and zero tests failed.
+Result after the 2026-08-15 semantic-key migration: build succeeded; 183 tests
+passed, one opt-in local fixture was skipped, and zero tests failed. Building
+the client bundle twice produced a stable `dist/client.js`.
 
 ## Security, data-boundary, architecture, and UI self-review
 

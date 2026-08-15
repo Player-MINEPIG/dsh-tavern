@@ -7,11 +7,11 @@ import {
 
 test('character greeting options keep first_mes at stable index zero', () => {
   assert.deepEqual(characterGreetingOptions({ data: { firstMessage: 'First', alternateGreetings: ['Second', 'Third'] } }), [
-    { index: 0, label: '默认开场', text: 'First' },
-    { index: 1, label: '备选开场 1', text: 'Second' },
-    { index: 2, label: '备选开场 2', text: 'Third' },
+    { index: 0, labelKey: 'character.greeting.default', text: 'First' },
+    { index: 1, labelKey: 'character.greeting.alternate', labelValues: { index: 1 }, text: 'Second' },
+    { index: 2, labelKey: 'character.greeting.alternate', labelValues: { index: 2 }, text: 'Third' },
   ])
-  assert.equal(characterGreetingOptions({ data: { firstMessage: '', alternateGreetings: [] } })[0].label, '默认开场（空）')
+  assert.equal(characterGreetingOptions({ data: { firstMessage: '', alternateGreetings: [] } })[0].labelKey, 'character.greeting.defaultEmpty')
 })
 
 test('new bindings default to loader-controlled system and post-history fields', () => {

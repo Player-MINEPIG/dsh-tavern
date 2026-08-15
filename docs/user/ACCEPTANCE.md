@@ -1,6 +1,6 @@
 # User resource acceptance
 
-状态：2026-08-15，feature branch 自验收记录。本文不是 README，也不代表已经合并。
+状态：2026-08-15，已集成到首个公开发布候选版本。本文保留原 feature 自验收记录；后续用户世界书、launcher 与 Trace 集成见整体验收文档。
 
 ## Acceptance matrix
 

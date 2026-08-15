@@ -7,9 +7,10 @@ import {
 import {
   createLocalizedElement,
   rawText,
-  translateVisibleText,
+  statusText,
+  translate,
+  uiError,
   uiMessage,
-  uiText,
   unwrapText,
 } from '../../client/src/i18n.js'
 
@@ -40,9 +41,9 @@ function PreviewRow({ label, value, missing = false }) {
   )
 }
 
-function resourceValue(resource, emptyLabel) {
+function resourceValue(resource, emptyKey) {
   return resource === null || resource === undefined
-    ? emptyLabel
+    ? uiMessage(emptyKey)
     : rawText(resource.name || resource.id)
 }
 
@@ -50,20 +51,22 @@ function TemplatePreview({ template }) {
   const contents = template?.contents ?? {}
   const character = template?.selection?.character ?? contents.character ?? {}
   const books = Array.isArray(contents.worldBooks) ? contents.worldBooks : []
+  const enabledLabel = character.preferCharacterSystemPrompt === false ? translate('common.disabled') : translate('common.enabled')
+  const postHistoryLabel = character.preferCharacterPostHistory === false ? translate('common.disabled') : translate('common.enabled')
   return h('div', { className: 'dtv-preview' },
-    h('div', { className: 'dtv-preview-title' }, '保存的 Tavern 配置'),
-    h(PreviewRow, { label: '预设', value: resourceValue(contents.preset, '未选择预设'), missing: contents.preset?.missing }),
-    h(PreviewRow, { label: '角色卡', value: resourceValue(contents.characterCard, '未绑定角色'), missing: contents.characterCard?.missing }),
+    h('div', { className: 'dtv-preview-title' }, uiMessage('template.preview.title')),
+    h(PreviewRow, { label: uiMessage('nav.preset'), value: resourceValue(contents.preset, 'nav.preset.empty'), missing: contents.preset?.missing }),
+    h(PreviewRow, { label: uiMessage('nav.character'), value: resourceValue(contents.characterCard, 'nav.character.empty'), missing: contents.characterCard?.missing }),
     contents.characterCard === null || contents.characterCard === undefined ? null : h('div', { className: 'dtv-preview-options' },
       h('span', null, uiMessage('template.preview.greeting', { value: Number(character.greetingIndex ?? 0) + 1 })),
-      h('span', null, uiText`卡内 system_prompt：${character.preferCharacterSystemPrompt === false ? translateVisibleText('已禁用') : translateVisibleText('已启用')}`),
-      h('span', null, uiText`post_history_instructions: ${character.preferCharacterPostHistory === false ? translateVisibleText('已禁用') : translateVisibleText('已启用')}`),
+      h('span', null, uiMessage('template.preview.systemPrompt', { value: enabledLabel })),
+      h('span', null, uiMessage('template.preview.postHistory', { value: postHistoryLabel })),
     ),
-    h(PreviewRow, { label: '用户', value: resourceValue(contents.user, '未绑定用户'), missing: contents.user?.missing }),
+    h(PreviewRow, { label: uiMessage('nav.user'), value: resourceValue(contents.user, 'nav.user.empty'), missing: contents.user?.missing }),
     h('div', { className: 'dtv-preview-row dtv-preview-books' },
-      h('span', { className: 'dtv-preview-label' }, '独立世界书（按绑定顺序）'),
+      h('span', { className: 'dtv-preview-label' }, uiMessage('template.preview.worldBooks')),
       books.length === 0
-        ? h('span', { className: 'dtv-preview-value' }, '未绑定世界书')
+        ? h('span', { className: 'dtv-preview-value' }, uiMessage('nav.worldBook.empty'))
         : h('ol', { className: 'dtv-preview-list' }, ...books.map(book => h('li', { key: book.id, 'data-missing': book.missing || undefined }, rawText(book.name || book.id)))),
     ),
   )
@@ -72,10 +75,9 @@ function TemplatePreview({ template }) {
 export function SessionTemplatePanel({ sessionId, workspaceId, createCleanSession, close }) {
   const [templates, setTemplates] = useState([])
   const [selectedId, setSelectedId] = useState(null)
-  const [name, setName] = useState(() => translateVisibleText('新配置模板'))
+  const [name, setName] = useState(() => translate('template.defaultName'))
   const [busy, setBusy] = useState(false)
-  const [error, setError] = useState('')
-  const [status, setStatus] = useState('')
+  const [status, setStatus] = useState({ error: false, key: 'template.ready' })
 
   const selected = templates.find(item => item.id === selectedId) ?? null
 
@@ -88,24 +90,39 @@ export function SessionTemplatePanel({ sessionId, workspaceId, createCleanSessio
   }, [])
 
   useEffect(() => {
-    refresh().catch(reason => setError(reason instanceof Error ? reason.message : String(reason)))
-    const onRefresh = () => refresh().catch(reason => setError(reason instanceof Error ? reason.message : String(reason)))
+    refresh().catch(reason => setStatus({
+      error: true,
+      key: reason.uiKey,
+      values: reason.uiValues,
+      text: reason instanceof Error ? reason.message : String(reason),
+    }))
+    const onRefresh = () => refresh().catch(reason => setStatus({
+      error: true,
+      key: reason.uiKey,
+      values: reason.uiValues,
+      text: reason instanceof Error ? reason.message : String(reason),
+    }))
     window.addEventListener('dsh-tavern:refresh', onRefresh)
     return () => window.removeEventListener('dsh-tavern:refresh', onRefresh)
   }, [refresh])
 
   const run = useCallback(async (operation, success) => {
     setBusy(true)
-    setError('')
     try {
       const result = await operation()
-      setStatus(typeof success === 'function' ? success(result) : translateVisibleText(success))
+      const next = typeof success === 'function' ? success(result) : success
+      setStatus(typeof next === 'string' ? { error: false, key: next } : { error: false, ...next })
       await refresh()
       window.dispatchEvent(new Event('dsh-tavern:refresh'))
       return result
     } catch (reason) {
       const diagnostics = Array.isArray(reason?.diagnostics) ? reason.diagnostics : []
-      setError(diagnostics[0]?.message ?? (reason instanceof Error ? reason.message : String(reason)))
+      setStatus({
+        error: true,
+        key: reason.uiKey,
+        values: reason.uiValues,
+        text: diagnostics[0]?.message ?? (reason instanceof Error ? reason.message : String(reason)),
+      })
       return null
     } finally {
       setBusy(false)
@@ -120,53 +137,54 @@ export function SessionTemplatePanel({ sessionId, workspaceId, createCleanSessio
     })
     setSelectedId(data.selectedId)
     if (data.template !== null) setName(data.template.name)
-  }, '模板选择已更新')
+  }, 'template.status.selected')
 
   const create = () => run(async () => {
-    if (!sessionId) throw new Error(translateVisibleText('请先打开一个会话，再保存当前 Tavern 设置'))
+    if (!sessionId) throw uiError('template.error.needSessionToSave')
     return api('/session-templates', {
       method: 'POST',
       body: JSON.stringify({ name, sourceSessionId: sessionId }),
     })
-  }, result => unwrapText(uiText`已创建模板：${result.template.name}`))
+  }, result => ({ key: 'template.status.created', values: { name: result.template.name } }))
 
   const rename = () => run(async () => {
-    if (selectedId === null) throw new Error(translateVisibleText('请先选择一个模板'))
+    if (selectedId === null) throw uiError('template.error.needTemplate')
     return api(`/session-templates/${encodeURIComponent(selectedId)}`, {
       method: 'PATCH',
       body: JSON.stringify({ name }),
     })
-  }, result => unwrapText(uiText`已重命名模板：${result.template.name}`))
+  }, result => ({ key: 'template.status.renamed', values: { name: result.template.name } }))
 
   const update = () => run(async () => {
-    if (!sessionId || selectedId === null) throw new Error(translateVisibleText('请先打开会话并选择模板'))
+    if (!sessionId || selectedId === null) throw uiError('template.error.needSessionAndTemplate')
     return api(`/session-templates/${encodeURIComponent(selectedId)}`, {
       method: 'PATCH',
       body: JSON.stringify({ name, sourceSessionId: sessionId }),
     })
-  }, result => unwrapText(uiText`已用当前设置更新模板：${result.template.name}`))
+  }, result => ({ key: 'template.status.updated', values: { name: result.template.name } }))
 
   const remove = () => {
     if (selectedId === null || !window.confirm(unwrapText(uiMessage('template.confirmDelete', { name: selected?.name ?? selectedId })))) return
-    run(() => api(`/session-templates/${encodeURIComponent(selectedId)}`, { method: 'DELETE', body: JSON.stringify({}) }), '模板已删除')
+    run(() => api(`/session-templates/${encodeURIComponent(selectedId)}`, { method: 'DELETE', body: JSON.stringify({}) }), 'template.status.deleted')
   }
 
   const start = mode => run(async () => {
-    if (mode === 'current' && !sessionId) throw new Error(translateVisibleText('请先打开一个来源会话'))
-    if (workspaceId === null) throw new Error(translateVisibleText('当前会话不属于 DSH 工作区；请先把会话加入工作区'))
+    if (mode === 'current' && !sessionId) throw uiError('template.error.needSourceSession')
+    if (workspaceId === null) throw uiError('template.error.needWorkspace')
     const source = mode === 'current'
       ? { mode: 'current', sessionId }
       : { mode: 'template', templateId: selectedId }
-    if (mode === 'template' && selectedId === null) throw new Error(translateVisibleText('请先选择一个模板'))
+    if (mode === 'template' && selectedId === null) throw uiError('template.error.needTemplate')
     return createCleanSession({ workspaceId, source })
-  }, id => unwrapText(uiText`已切换到干净会话：${id}`))
+  }, id => ({ key: 'template.status.switched', values: { id } }))
 
   const diagnostics = Array.isArray(selected?.diagnostics) ? selected.diagnostics : []
+  const closeLabel = uiMessage('panel.close', { title: unwrapText(uiMessage('template.title')) })
 
   return h('div', { className: 'dtv-panel' },
     h('div', { className: 'dtv-header' },
-      h('div', { className: 'dtv-title' }, '新会话与配置模板'),
-      h('button', { className: 'dtv-close', type: 'button', title: '关闭新会话侧边栏', 'aria-label': '关闭新会话侧边栏', onClick: close }, '✕'),
+      h('div', { className: 'dtv-title' }, uiMessage('template.title')),
+      h('button', { className: 'dtv-close', type: 'button', title: closeLabel, 'aria-label': closeLabel, onClick: close }, '✕'),
     ),
     h('div', { className: 'dtv-body' },
       h('button', {
@@ -174,34 +192,34 @@ export function SessionTemplatePanel({ sessionId, workspaceId, createCleanSessio
         type: 'button',
         disabled: busy || !sessionId || workspaceId === null,
         onClick: () => start('current'),
-      }, '维持当前 Tavern 设置新开对话'),
-      h('p', { className: 'dtv-note' }, '只继承 preset、角色卡与 greeting/开关、用户和独立世界书选择。DSH 历史、Tavern Trace、Inbox、运行中 turn/step 和其他运行态不会复制。'),
+      }, uiMessage('template.startCurrent')),
+      h('p', { className: 'dtv-note' }, uiMessage('template.inheritNote')),
       workspaceId === null
-        ? h('div', { className: 'dtv-status', 'data-error': true }, '没有可用的 DSH 目标工作区。请先在 DSH 侧栏中加入或打开工作区。')
+        ? h('div', { className: 'dtv-status', 'data-error': true }, uiMessage('template.noWorkspace'))
         : null,
       h('div', { className: 'dtv-resource' },
-        h('div', { className: 'dtv-resource-title' }, `配置模板（${templates.length}）`),
+        h('div', { className: 'dtv-resource-title' }, uiMessage('template.listTitle', { count: templates.length })),
         h('label', { className: 'dtv-field' },
-          h('span', { className: 'dtv-label' }, '已选择模板'),
+          h('span', { className: 'dtv-label' }, uiMessage('template.selected')),
           h('select', { className: 'dtv-select', value: selectedId ?? '', disabled: busy, onChange: select },
-            h('option', { value: '' }, '未选择模板'),
+            h('option', { value: '' }, uiMessage('template.noneSelected')),
             ...templates.map(template => h('option', { key: template.id, value: template.id }, rawText(template.name))),
           ),
         ),
         h('label', { className: 'dtv-field' },
-          h('span', { className: 'dtv-label' }, '模板名称'),
+          h('span', { className: 'dtv-label' }, uiMessage('template.name')),
           h('input', { className: 'dtv-input', value: name, maxLength: 120, disabled: busy, onChange: event => setName(event.target.value) }),
         ),
         h('div', { className: 'dtv-template-actions' },
-          h('button', { className: 'dtv-button', type: 'button', disabled: busy || !sessionId, onClick: create }, '由当前设置创建'),
-          h('button', { className: 'dtv-button', type: 'button', disabled: busy || selectedId === null, onClick: rename }, '仅保存名称'),
-          h('button', { className: 'dtv-button', type: 'button', disabled: busy || !sessionId || selectedId === null, onClick: update }, '用当前设置更新'),
-          h('button', { className: 'dtv-button dtv-danger', type: 'button', disabled: busy || selectedId === null, onClick: remove }, '删除模板'),
+          h('button', { className: 'dtv-button', type: 'button', disabled: busy || !sessionId, onClick: create }, uiMessage('template.createFromCurrent')),
+          h('button', { className: 'dtv-button', type: 'button', disabled: busy || selectedId === null, onClick: rename }, uiMessage('template.saveNameOnly')),
+          h('button', { className: 'dtv-button', type: 'button', disabled: busy || !sessionId || selectedId === null, onClick: update }, uiMessage('template.updateFromCurrent')),
+          h('button', { className: 'dtv-button dtv-danger', type: 'button', disabled: busy || selectedId === null, onClick: remove }, uiMessage('template.delete')),
         ),
         h('p', { className: 'dtv-note' }, uiMessage('template.currentSettingsReminder')),
         selected === null ? null : h(TemplatePreview, { template: selected }),
         diagnostics.length === 0 ? null : h('div', { className: 'dtv-status', 'data-error': true },
-          h('div', null, '该模板暂不可用于创建：'),
+          h('div', null, uiMessage('template.unusable')),
           h('ul', { className: 'dtv-list' }, ...diagnostics.map((item, index) => h('li', { key: `${item.code}-${index}` }, rawText(item.message)))),
         ),
         h('button', {
@@ -209,10 +227,10 @@ export function SessionTemplatePanel({ sessionId, workspaceId, createCleanSessio
           type: 'button',
           disabled: busy || selectedId === null || diagnostics.length > 0 || workspaceId === null,
           onClick: () => start('template'),
-        }, '根据所选模板新开干净对话'),
+        }, uiMessage('template.startFromTemplate')),
       ),
-      h('div', { className: 'dtv-status', 'data-error': error !== '' || undefined, role: 'status' }, error ? rawText(error) : status ? rawText(status) : '模板与新会话操作已就绪。'),
-      h('p', { className: 'dtv-note' }, 'DSH 可能复用同工作区中已有的真实 blank session；这是其公开 New Session 语义。插件会在导航前原子替换该 blank session 的 Tavern 选择。'),
+      h('div', { className: 'dtv-status', 'data-error': status.error || undefined, role: 'status' }, statusText(status)),
+      h('p', { className: 'dtv-note' }, uiMessage('template.blankSessionNote')),
     ),
   )
 }

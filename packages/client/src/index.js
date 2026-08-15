@@ -14,9 +14,7 @@ import {
   rawText,
   setClientUiSettings,
   translate,
-  translateVisibleText,
   uiMessage,
-  uiText,
   unwrapText,
 } from './i18n.js'
 import { PresetSidebar, installPresetStyles } from '../../preset/src/client.js'
@@ -54,7 +52,7 @@ const css = `
 .dtv-header{height:52px;box-sizing:border-box;display:flex;align-items:center;gap:8px;padding:0 14px;border-bottom:1px solid var(--dsw-alias-border-l2);flex:none}.dtv-title{font-size:14px;font-weight:650;flex:1}.dtv-close{border:0;background:transparent;color:var(--dsw-alias-label-tertiary);cursor:pointer;border-radius:7px;padding:6px 8px}.dtv-close:hover{background:var(--dsw-alias-interactive-bg-hover)}
 .dtv-body{min-height:0;overflow:auto;padding:12px;display:flex;flex-direction:column;gap:12px}.dtv-note{font-size:11px;line-height:1.5;color:var(--dsw-alias-label-tertiary);margin:0;overflow-wrap:anywhere}.dtv-status{font-size:11px;line-height:1.45;border-radius:7px;padding:8px 10px;background:var(--dsw-specific-tip);overflow-wrap:anywhere}.dtv-status[data-error=true]{color:var(--dsw-alias-state-error)}
 .dtv-actions{display:grid;grid-template-columns:1fr 1fr;gap:8px}.dtv-button{min-height:34px;border:1px solid var(--dsw-alias-border-l2);border-radius:8px;background:var(--dsw-alias-button-secondary-fill,var(--dsw-alias-bg-base));color:var(--dsw-alias-label-primary);cursor:pointer;padding:7px 10px;font-size:12px}.dtv-button:hover:not(:disabled){background:var(--dsw-alias-interactive-bg-hover)}.dtv-button:disabled{opacity:.5;cursor:default}
-.dtv-primary{background:var(--dsw-alias-button-primary-fill,#2677d9);border-color:transparent;color:var(--dsw-alias-button-primary-label,#fff)}.dtv-primary:hover:not(:disabled){filter:brightness(1.08);background:var(--dsw-alias-button-primary-fill,#2677d9)}.dtv-template-actions{display:grid;grid-template-columns:1fr 1fr;gap:7px}
+.dtv-primary{background:var(--dsw-alias-state-business-primary,#2677d9);border-color:transparent;color:var(--dsw-alias-button-primary-label,#fff)}.dtv-primary:hover:not(:disabled){filter:brightness(1.08);background:var(--dsw-alias-state-business-primary,#2677d9)}.dtv-template-actions{display:grid;grid-template-columns:1fr 1fr;gap:7px}
 .dtv-resource{border:1px solid var(--dsw-alias-border-l1);border-radius:9px;padding:10px;display:flex;flex-direction:column;gap:7px}.dtv-resource-title{font-size:12px;font-weight:650}.dtv-resource-meta{font-size:11px;line-height:1.45;color:var(--dsw-alias-label-tertiary)}.dtv-list{margin:0;padding-left:18px;font-size:11px;line-height:1.55}.dtv-preview{border:1px solid var(--dsw-alias-border-l1);border-radius:8px;background:var(--dsw-specific-tip);padding:9px;display:flex;flex-direction:column;gap:6px}.dtv-preview-title{font-size:12px;font-weight:700}.dtv-preview-row{display:grid;grid-template-columns:112px minmax(0,1fr);gap:8px;font-size:11px;line-height:1.45}.dtv-preview-label{color:var(--dsw-alias-label-tertiary)}.dtv-preview-value{overflow-wrap:anywhere}.dtv-preview-options{margin-left:120px;display:flex;flex-direction:column;gap:2px;font-size:10px;color:var(--dsw-alias-label-tertiary)}.dtv-preview-list{margin:0;padding-left:18px}.dtv-preview-row[data-missing=true] .dtv-preview-value,.dtv-preview-list>[data-missing=true]{color:var(--dsw-alias-state-error)}
 .dtv-book-toolbar{display:grid;grid-template-columns:1fr 1fr 1fr;gap:7px}.dtv-entry{border:1px solid var(--dsw-alias-border-l1);border-radius:8px;background:var(--dsw-alias-bg-base);overflow:hidden}.dtv-entry>summary{list-style:none;cursor:pointer;padding:8px;display:flex;align-items:center;gap:7px;font-size:11px}.dtv-entry>summary::-webkit-details-marker{display:none}.dtv-entry-dot{width:8px;height:8px;flex:none;border-radius:50%;background:var(--dsw-alias-label-tertiary)}.dtv-entry[data-enabled=true] .dtv-entry-dot{background:var(--dsw-alias-state-success,#2fa36b)}.dtv-entry-name{font-weight:620;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.dtv-entry-state{margin-left:auto;flex:none;color:var(--dsw-alias-label-tertiary);font-size:10px}.dtv-entry-body{border-top:1px solid var(--dsw-alias-border-l1);padding:8px;display:flex;flex-direction:column;gap:8px}.dtv-field{display:flex;flex-direction:column;gap:4px}.dtv-label{font-size:10px;font-weight:620;color:var(--dsw-alias-label-tertiary)}.dtv-input,.dtv-select,.dtv-textarea{box-sizing:border-box;width:100%;border:1px solid var(--dsw-alias-border-l2);border-radius:7px;background:var(--dsw-alias-bg-base);color:var(--dsw-alias-label-primary);font:inherit;font-size:11px;padding:7px 8px}.dtv-input,.dtv-select{height:32px}.dtv-textarea{min-height:94px;resize:vertical;line-height:1.45}.dtv-entry-grid{display:grid;grid-template-columns:1fr 1fr;gap:7px}.dtv-checks{display:flex;flex-wrap:wrap;gap:10px}.dtv-check{display:flex;gap:5px;align-items:center;font-size:10px}.dtv-entry-actions{display:flex;justify-content:flex-end}.dtv-danger{color:var(--dsw-alias-state-error)}
 .dtv-layer>.dtv-launcher,.dtv-layer>.dtv-panel,.dtv-layer>.dcc-panel,.dtv-layer>.dwb-panel,.dtv-layer>.dtu-panel{zoom:var(--dtv-ui-scale,1)}.dtv-setting-value{font-size:12px;font-variant-numeric:tabular-nums;color:var(--dsw-alias-label-secondary)}
@@ -121,10 +119,12 @@ async function uiSettingsRequest(method = 'GET', body) {
   return data.settings
 }
 
-function PanelHeader({ title, close }) {
+function PanelHeader({ title, titleKey, close }) {
+  const titleText = titleKey ? uiMessage(titleKey) : title
+  const closeLabel = uiMessage('panel.close', { title: unwrapText(titleText) })
   return h('div', { className: 'dtv-header' },
-    h('div', { className: 'dtv-title' }, title),
-    h('button', { className: 'dtv-close', type: 'button', title: uiText`关闭${translateVisibleText(title)}侧边栏`, 'aria-label': uiText`关闭${translateVisibleText(title)}侧边栏`, onClick: close }, '✕'),
+    h('div', { className: 'dtv-title' }, titleText),
+    h('button', { className: 'dtv-close', type: 'button', title: closeLabel, 'aria-label': closeLabel, onClick: close }, '✕'),
   )
 }
 
@@ -177,16 +177,28 @@ function entryPosition(entry) {
   return entry?.position === 'before_char' ? 0 : 1
 }
 
+const LOGIC_KEYS = Object.freeze({
+  and_any: 'world.logic.andAny',
+  and_all: 'world.logic.andAll',
+  not_any: 'world.logic.notAny',
+  not_all: 'world.logic.notAll',
+})
+
 function triggerSummary(entry) {
-  if (entry.enabled !== true) return '已禁用'
-  if (entry.constant === true) return '常驻'
+  if (entry.enabled !== true) return uiMessage('world.entry.disabled')
+  if (entry.constant === true) return uiMessage('world.entry.constant')
   const keys = Array.isArray(entry.keys) ? entry.keys.filter(Boolean) : []
-  if (keys.length === 0) return '无主关键词'
+  if (keys.length === 0) return uiMessage('world.entry.noPrimaryKeys')
+  const separator = translate('common.listSeparator')
   const secondary = Array.isArray(entry.secondary_keys) ? entry.secondary_keys.filter(Boolean) : []
   const logic = entry.selectiveLogic ?? entry.extensions?.selectiveLogic ?? 'and_any'
   return entry.selective === true && secondary.length > 0
-    ? uiText`关键词：${keys.join('、')} · ${logic}：${secondary.join('、')}`
-    : uiText`关键词：${keys.join('、')}`
+    ? uiMessage('world.entry.triggerWithSecondary', {
+      keys: keys.join(separator),
+      logic: translate(LOGIC_KEYS[logic] ?? 'world.logic.andAny'),
+      secondary: secondary.join(separator),
+    })
+    : uiMessage('world.entry.trigger', { keys: keys.join(separator) })
 }
 
 function WorldInfoEntryEditor({ entry, index, update, remove }) {
@@ -195,32 +207,32 @@ function WorldInfoEntryEditor({ entry, index, update, remove }) {
   return h('details', { className: 'dtv-entry', 'data-enabled': entry.enabled === true },
     h('summary', null,
       h('span', { className: 'dtv-entry-dot', 'aria-hidden': 'true' }),
-      h('span', { className: 'dtv-entry-name' }, entry.comment || entry.name ? rawText(entry.comment || entry.name) : uiText`条目 ${String(entry.id ?? index + 1)}`),
+      h('span', { className: 'dtv-entry-name' }, entry.comment || entry.name ? rawText(entry.comment || entry.name) : uiMessage('world.entry.fallback', { id: String(entry.id ?? index + 1) })),
       h('span', { className: 'dtv-entry-state' }, triggerSummary(entry)),
     ),
     h('div', { className: 'dtv-entry-body' },
       h('div', { className: 'dtv-checks' },
-        h('label', { className: 'dtv-check' }, h('input', { type: 'checkbox', checked: entry.enabled === true, onChange: event => patch({ enabled: event.target.checked }) }), '启用'),
-        h('label', { className: 'dtv-check' }, h('input', { type: 'checkbox', checked: entry.constant === true, onChange: event => patch({ constant: event.target.checked }) }), '常驻'),
-        h('label', { className: 'dtv-check' }, h('input', { type: 'checkbox', checked: entry.selective === true, onChange: event => patch({ selective: event.target.checked }) }), '使用附加关键词'),
+        h('label', { className: 'dtv-check' }, h('input', { type: 'checkbox', checked: entry.enabled === true, onChange: event => patch({ enabled: event.target.checked }) }), uiMessage('common.enable')),
+        h('label', { className: 'dtv-check' }, h('input', { type: 'checkbox', checked: entry.constant === true, onChange: event => patch({ constant: event.target.checked }) }), uiMessage('world.entry.constant')),
+        h('label', { className: 'dtv-check' }, h('input', { type: 'checkbox', checked: entry.selective === true, onChange: event => patch({ selective: event.target.checked }) }), uiMessage('world.entry.useSecondary')),
       ),
-      h(Field, { label: '条目名称 / 备注' }, h('input', { className: 'dtv-input', value: entry.comment ?? entry.name ?? '', onChange: event => patch({ comment: event.target.value }) })),
+      h(Field, { label: uiMessage('world.entry.nameNote') }, h('input', { className: 'dtv-input', value: entry.comment ?? entry.name ?? '', onChange: event => patch({ comment: event.target.value }) })),
       h('div', { className: 'dtv-entry-grid' },
-        h(Field, { label: '主关键词（每行一个；任一命中）' }, h('textarea', { className: 'dtv-textarea', value: keyLines(entry.keys), onChange: event => patch({ keys: parseKeyLines(event.target.value) }) })),
-        h(Field, { label: '附加关键词（每行一个）' }, h('textarea', { className: 'dtv-textarea', value: keyLines(entry.secondary_keys), disabled: entry.selective !== true, onChange: event => patch({ secondary_keys: parseKeyLines(event.target.value) }) })),
+        h(Field, { label: uiMessage('world.entry.primaryKeysLines') }, h('textarea', { className: 'dtv-textarea', value: keyLines(entry.keys), onChange: event => patch({ keys: parseKeyLines(event.target.value) }) })),
+        h(Field, { label: uiMessage('world.entry.secondaryKeysLines') }, h('textarea', { className: 'dtv-textarea', value: keyLines(entry.secondary_keys), disabled: entry.selective !== true, onChange: event => patch({ secondary_keys: parseKeyLines(event.target.value) }) })),
       ),
-      entry.selective === true ? h(Field, { label: '附加关键词逻辑' }, h('select', {
+      entry.selective === true ? h(Field, { label: uiMessage('world.entry.secondaryLogic') }, h('select', {
         className: 'dtv-select',
         value: entry.selectiveLogic ?? entry.extensions?.selectiveLogic ?? 'and_any',
         onChange: event => patch({ selectiveLogic: event.target.value, extensions: { ...(entry.extensions ?? {}), selectiveLogic: event.target.value } }),
       },
-      h('option', { value: 'and_any' }, 'AND ANY：命中任一'),
-      h('option', { value: 'and_all' }, 'AND ALL：命中全部'),
-      h('option', { value: 'not_any' }, 'NOT ANY：不能命中任一'),
-      h('option', { value: 'not_all' }, 'NOT ALL：不能全部命中'))) : null,
-      h(Field, { label: '条目内容（触发后注入 system profile）' }, h('textarea', { className: 'dtv-textarea', value: entry.content ?? '', onChange: event => patch({ content: event.target.value }) })),
+      h('option', { value: 'and_any' }, uiMessage('world.logic.andAny')),
+      h('option', { value: 'and_all' }, uiMessage('world.logic.andAll')),
+      h('option', { value: 'not_any' }, uiMessage('world.logic.notAny')),
+      h('option', { value: 'not_all' }, uiMessage('world.logic.notAll')))) : null,
+      h(Field, { label: uiMessage('world.entry.content') }, h('textarea', { className: 'dtv-textarea', value: entry.content ?? '', onChange: event => patch({ content: event.target.value }) })),
       h('div', { className: 'dtv-entry-grid' },
-        h(Field, { label: '插入位置' }, h('select', {
+        h(Field, { label: uiMessage('world.entry.insertionPosition') }, h('select', {
           className: 'dtv-select',
           value: position,
           onChange: event => {
@@ -231,21 +243,21 @@ function WorldInfoEntryEditor({ entry, index, update, remove }) {
             })
           },
         },
-        h('option', { value: 0 }, '角色定义之前'),
-        h('option', { value: 1 }, '角色定义之后'),
-        h('option', { value: 2 }, '作者注释之前（近似）'),
-        h('option', { value: 3 }, '作者注释之后（近似）'),
-        h('option', { value: 4 }, '指定深度（近似）'),
-        h('option', { value: 5 }, '示例消息之前（近似）'),
-        h('option', { value: 6 }, '示例消息之后（近似）'),
-        h('option', { value: 7 }, 'Outlet（当前不注入）'))),
-        h(Field, { label: '排序权重' }, h('input', { className: 'dtv-input', type: 'number', value: entry.insertion_order ?? 100, onChange: event => patch({ insertion_order: Number(event.target.value) }) })),
+        h('option', { value: 0 }, uiMessage('world.position.beforeCharacter')),
+        h('option', { value: 1 }, uiMessage('world.position.afterCharacter')),
+        h('option', { value: 2 }, uiMessage('world.position.beforeAuthor')),
+        h('option', { value: 3 }, uiMessage('world.position.afterAuthor')),
+        h('option', { value: 4 }, uiMessage('world.position.atDepth')),
+        h('option', { value: 5 }, uiMessage('world.position.beforeExamples')),
+        h('option', { value: 6 }, uiMessage('world.position.afterExamples')),
+        h('option', { value: 7 }, uiMessage('world.position.outlet')))),
+        h(Field, { label: uiMessage('world.entry.sortWeight') }, h('input', { className: 'dtv-input', type: 'number', value: entry.insertion_order ?? 100, onChange: event => patch({ insertion_order: Number(event.target.value) }) })),
       ),
       h('div', { className: 'dtv-checks' },
-        h('label', { className: 'dtv-check' }, h('input', { type: 'checkbox', checked: (entry.case_sensitive ?? entry.extensions?.case_sensitive) === true, onChange: event => patch({ case_sensitive: event.target.checked, extensions: { ...(entry.extensions ?? {}), case_sensitive: event.target.checked } }) }), '区分大小写'),
-        h('label', { className: 'dtv-check' }, h('input', { type: 'checkbox', checked: (entry.match_whole_words ?? entry.extensions?.match_whole_words) === true, onChange: event => patch({ match_whole_words: event.target.checked, extensions: { ...(entry.extensions ?? {}), match_whole_words: event.target.checked } }) }), '全词匹配'),
+        h('label', { className: 'dtv-check' }, h('input', { type: 'checkbox', checked: (entry.case_sensitive ?? entry.extensions?.case_sensitive) === true, onChange: event => patch({ case_sensitive: event.target.checked, extensions: { ...(entry.extensions ?? {}), case_sensitive: event.target.checked } }) }), uiMessage('world.entry.caseSensitive')),
+        h('label', { className: 'dtv-check' }, h('input', { type: 'checkbox', checked: (entry.match_whole_words ?? entry.extensions?.match_whole_words) === true, onChange: event => patch({ match_whole_words: event.target.checked, extensions: { ...(entry.extensions ?? {}), match_whole_words: event.target.checked } }) }), uiMessage('world.entry.wholeWord')),
       ),
-      h('div', { className: 'dtv-entry-actions' }, h('button', { className: 'dtv-button dtv-danger', type: 'button', onClick: () => remove(index) }, '删除条目')),
+      h('div', { className: 'dtv-entry-actions' }, h('button', { className: 'dtv-button dtv-danger', type: 'button', onClick: () => remove(index) }, uiMessage('world.entry.delete'))),
     ),
   )
 }
@@ -311,7 +323,7 @@ function WorldInfoPanel({ sessionId, close }) {
         id,
         keys: [],
         secondary_keys: [],
-        comment: unwrapText(uiText`新条目 ${id}`),
+        comment: translate('world.entry.untitled', { id }),
         content: '',
         enabled: true,
         insertion_order: 100,
@@ -353,30 +365,30 @@ function WorldInfoPanel({ sessionId, close }) {
   }
 
   return h('div', { className: 'dtv-panel' },
-    h(PanelHeader, { title: '世界信息（Lorebook）', close }),
+    h(PanelHeader, { titleKey: 'world.lorebookTitle', close }),
     h('div', { className: 'dtv-body' },
       h('div', { className: 'dtv-book-toolbar' },
         h('button', { className: 'dtv-button', type: 'button', disabled: busy, onClick: () => {
           if (!dirty || window.confirm(unwrapText(uiMessage('world.confirmReloadInfo')))) refresh()
-        } }, '重新载入'),
-        h('button', { className: 'dtv-button', type: 'button', disabled: busy || draft === null, onClick: addEntry }, '新增条目'),
-        h('button', { className: 'dtv-button', type: 'button', disabled: busy || !dirty, onClick: save }, dirty ? '保存修改' : '已保存'),
+        } }, uiMessage('common.reload')),
+        h('button', { className: 'dtv-button', type: 'button', disabled: busy || draft === null, onClick: addEntry }, uiMessage('world.addEntry')),
+        h('button', { className: 'dtv-button', type: 'button', disabled: busy || !dirty, onClick: save }, dirty ? uiMessage('common.saveChanges') : uiMessage('common.saved')),
       ),
-      h('p', { className: 'dtv-note' }, uiText`当前会话：${sessionId || translateVisibleText('无')}。SillyTavern 的正式功能名是 World Info，Lorebook 是官方认可的常用别名。`),
-      h('div', { className: 'dtv-status', 'data-error': error !== '' || undefined, role: 'status' }, error ? rawText(error) : snapshot === null ? '正在读取世界信息…' : dirty ? '有尚未保存的条目修改。' : uiText`已载入 ${entries.length} 个条目。`),
+      h('p', { className: 'dtv-note' }, uiMessage('world.infoIntro', { session: sessionId || translate('common.none') })),
+      h('div', { className: 'dtv-status', 'data-error': error !== '' || undefined, role: 'status' }, error ? rawText(error) : snapshot === null ? uiMessage('world.infoReading') : dirty ? uiMessage('world.infoDirty') : uiMessage('world.infoLoaded', { count: entries.length })),
       draft === null
-        ? h('p', { className: 'dtv-note' }, '当前会话没有可用世界信息。绑定含 character_book 的角色卡后，其内嵌条目会自动由 loader 匹配；解绑角色会同时移除该来源。')
+        ? h('p', { className: 'dtv-note' }, uiMessage('world.infoEmpty'))
         : h('div', { className: 'dtv-resource' },
-          h('div', { className: 'dtv-resource-title' }, draft.name || resources[0]?.name ? rawText(draft.name || resources[0]?.name) : '角色卡内嵌世界信息'),
-          h('div', { className: 'dtv-resource-meta' }, uiText`角色卡内嵌 · ${entries.length} 条。折叠标题直接显示该条目的触发方式；展开后可编辑关键词、逻辑、内容、位置和排序。`),
+          h('div', { className: 'dtv-resource-title' }, draft.name || resources[0]?.name ? rawText(draft.name || resources[0]?.name) : uiMessage('world.embeddedInfoTitle')),
+          h('div', { className: 'dtv-resource-meta' }, uiMessage('world.infoMeta', { count: entries.length })),
           ...entries.map((entry, index) => h(WorldInfoEntryEditor, { key: `${entry.id ?? 'entry'}-${index}`, entry, index, update: updateEntry, remove: removeEntry })),
         ),
-      selectedStandalone.length > 0 ? h('div', { className: 'dtv-status' }, uiText`已选择 ${selectedStandalone.length} 个独立世界信息 ID，但独立资源库/API 尚未接入，本阶段不会加载这些 ID。`) : null,
+      selectedStandalone.length > 0 ? h('div', { className: 'dtv-status' }, uiMessage('world.infoPendingIds', { count: selectedStandalone.length })) : null,
       diagnostics.length > 0 ? h('div', { className: 'dtv-resource' },
-        h('div', { className: 'dtv-resource-title' }, uiText`运行诊断（${diagnostics.length}）`),
+        h('div', { className: 'dtv-resource-title' }, uiMessage('world.diagnostics', { count: diagnostics.length })),
         h('ul', { className: 'dtv-list' }, ...diagnostics.map((item, index) => h('li', { key: `${item.code}-${index}` }, rawText(item.message)))),
       ) : null,
-      h('p', { className: 'dtv-note' }, '保存会更新插件保存的角色卡副本及其 JSON 导出；为避免破坏签名或图片数据，最初导入的 PNG/JSON artifact 仍保持不变。matcher 会在首次请求组装前把本步骤 claimed 输入与 Session 历史组合扫描，不会向历史写入副本。'),
+      h('p', { className: 'dtv-note' }, uiMessage('world.infoSaveNote')),
     ),
   )
 }
@@ -598,8 +610,8 @@ function TavernShell({ useSessions, useWorkspaces, createCleanSession }) {
       h('div', { className: 'dtv-ball-row' }, h('button', {
           className: 'dtv-ball',
           type: 'button',
-          title: '拖动可移动；点击展开 Tavern 资源面板',
-          'aria-label': '拖动可移动；点击展开 Tavern 资源面板',
+          title: uiMessage('nav.launcher'),
+          'aria-label': uiMessage('nav.launcher'),
           'aria-expanded': menuOpen,
           onPointerDown: startDrag,
           onPointerMove: moveDrag,
@@ -608,18 +620,18 @@ function TavernShell({ useSessions, useWorkspaces, createCleanSession }) {
           onClick: toggleMenu,
         }, 'DT')),
       menuOpen ? h('div', { className: 'dtv-menu', role: 'menu' },
-        h('div', { className: 'dtv-menu-title', 'aria-live': 'polite' }, statusError === '' ? uiText`Tavern · ${sessionId || translateVisibleText('无会话')}` : uiText`状态同步失败：${statusError}`),
+        h('div', { className: 'dtv-menu-title', 'aria-live': 'polite' }, statusError === '' ? uiMessage('nav.menuTitle', { session: sessionId || translate('nav.session.none') }) : uiMessage('nav.syncFailed', { message: statusError })),
         ...TAVERN_MENU_ITEMS.map(item => {
-          const status = statuses[item.id] ?? { bound: false, count: 0, title: item.emptyTitle }
-          const itemLabel = translateVisibleText(item.label)
-          const statusTitle = status.bound ? status.title : translateVisibleText(status.title)
-          const stateLabel = item.binding === false ? '' : translateVisibleText(status.bound ? '已绑定' : '未绑定')
+          const status = statuses[item.id] ?? { bound: false, count: 0, titleKey: item.emptyTitleKey }
+          const itemLabel = unwrapText(uiMessage(item.labelKey))
+          const statusTitle = status.bound ? status.title : unwrapText(uiMessage(status.titleKey ?? item.emptyTitleKey))
+          const stateLabel = item.binding === false ? '' : unwrapText(uiMessage(status.bound ? 'common.bound' : 'common.unbound'))
           const titleText = stateLabel
-            ? uiText`${itemLabel}：${statusTitle}（${stateLabel}）`
-            : uiText`${itemLabel}：${statusTitle}`
+            ? uiMessage('nav.itemTitleBound', { label: itemLabel, title: statusTitle, state: stateLabel })
+            : uiMessage('nav.itemTitle', { label: itemLabel, title: statusTitle })
           const ariaText = stateLabel
-            ? uiText`${itemLabel}，${statusTitle}，${stateLabel}`
-            : uiText`${itemLabel}，${statusTitle}`
+            ? uiMessage('nav.itemAriaBound', { label: itemLabel, title: statusTitle, state: stateLabel })
+            : uiMessage('nav.itemAria', { label: itemLabel, title: statusTitle })
           return h('button', {
             className: 'dtv-menu-item',
             type: 'button',
@@ -636,12 +648,12 @@ function TavernShell({ useSessions, useWorkspaces, createCleanSession }) {
           },
           item.binding === false ? h('span', { 'aria-hidden': 'true' }) : h('span', { className: 'dtv-binding-dot', 'aria-hidden': 'true' }),
           h('span', { className: 'dtv-item-copy' },
-            h('span', { className: 'dtv-item-label' }, item.label),
-            h('span', { className: 'dtv-item-status' }, status.bound ? rawText(status.title) : status.title),
+            h('span', { className: 'dtv-item-label' }, uiMessage(item.labelKey)),
+            h('span', { className: 'dtv-item-status' }, status.bound ? rawText(status.title) : uiMessage(status.titleKey ?? item.emptyTitleKey)),
           ),
           status.count > 1
-            ? h('span', { className: 'dtv-item-count', 'aria-label': uiText`${status.count} 本` }, uiText`${status.count} 本`)
-            : item.available ? null : h('span', { className: 'dtv-item-planned' }, '规划中'),
+            ? h('span', { className: 'dtv-item-count', 'aria-label': uiMessage('nav.bookCount', { count: status.count }) }, uiMessage('nav.bookCount', { count: status.count }))
+            : item.available ? null : h('span', { className: 'dtv-item-planned' }, uiMessage('common.planned')),
           )
         }),
       ) : null,
@@ -659,6 +671,7 @@ function installStyles() {
 
 export const name = 'dsh-tavern'
 export const inject = ['slots', 'layout', 'sessions', 'workspaces']
+export { PanelHeader }
 
 export function apply(ctx) {
   installPresetStyles()

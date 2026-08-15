@@ -8,11 +8,11 @@ import {
 import { sameOrderedIds, userPanelDirty, userResourceDirty } from './client-state.js'
 import {
   createLocalizedElement,
-  getClientUiSettings,
   rawText,
-  translateVisibleText,
+  statusText,
+  translate,
+  uiError,
   uiMessage,
-  uiText,
   unwrapText,
 } from '../../client/src/i18n.js'
 
@@ -59,7 +59,7 @@ export function UserPanel({ sessionId, sessionBlank, close }) {
   const [appliedWorldBookIds, setAppliedWorldBookIds] = useState([])
   const [selectedUserId, setSelectedUserId] = useState(null)
   const [busy, setBusy] = useState(false)
-  const [status, setStatus] = useState({ text: '加载中…', error: false })
+  const [status, setStatus] = useState({ error: false, key: 'common.loading' })
   const generation = useRef(0)
   const draftId = useRef(null)
   const dirtyRef = useRef(false)
@@ -69,14 +69,19 @@ export function UserPanel({ sessionId, sessionBlank, close }) {
   const resourceDirty = userResourceDirty(draft, savedDraft)
   const bindingDirty = !sameOrderedIds(worldBookIds, appliedWorldBookIds)
 
-  const run = useCallback(async (operation, success) => {
+  const run = useCallback(async (operation, success, values) => {
     setBusy(true)
     try {
       const result = await operation()
-      setStatus({ text: success, error: false })
+      setStatus({ error: false, key: success, values })
       return result
     } catch (error) {
-      setStatus({ text: error instanceof Error ? error.message : String(error), error: true })
+      setStatus({
+        error: true,
+        key: error.uiKey,
+        values: error.uiValues,
+        text: error instanceof Error ? error.message : String(error),
+      })
       return null
     } finally {
       setBusy(false)
@@ -113,13 +118,13 @@ export function UserPanel({ sessionId, sessionBlank, close }) {
   }, [sessionId])
 
   useEffect(() => {
-    run(() => refresh(), '用户资源已加载')
+    run(() => refresh(), 'user.status.loaded')
     const onRefresh = () => {
       if (dirtyRef.current) {
-        setStatus({ text: '检测到其他 Tavern 资源变化；为保留本面板未保存修改，未自动刷新。', error: false })
+        setStatus({ error: false, key: 'user.status.skippedRefresh' })
         return
       }
-      run(() => refresh(draftId.current), '用户资源已刷新')
+      run(() => refresh(draftId.current), 'user.status.refreshed')
     }
     window.addEventListener('dsh-tavern:refresh', onRefresh)
     return () => {
@@ -141,11 +146,11 @@ export function UserPanel({ sessionId, sessionBlank, close }) {
   const create = useCallback(() => {
     if (dirty && !window.confirm(unwrapText(uiMessage('user.confirmDiscardForCreate')))) return
     run(async () => {
-      const data = await api('/users', { method: 'POST', body: JSON.stringify({ name: translateVisibleText('新用户'), description: '' }) })
+      const data = await api('/users', { method: 'POST', body: JSON.stringify({ name: translate('user.defaultName'), description: '' }) })
       draftId.current = data.user.id
       await refresh(data.user.id)
       notifyRefresh()
-    }, '用户资源已创建；保存名字和描述后再绑定')
+    }, 'user.status.created')
   }, [dirty, refresh, run])
 
   const save = useCallback(() => run(async () => {
@@ -159,7 +164,7 @@ export function UserPanel({ sessionId, sessionBlank, close }) {
     setSavedDraft(structuredClone(data.user))
     setUsers(current => current?.map(user => user.id === data.user.id ? data.user : user) ?? current)
     notifyRefresh()
-  }, '名字和描述已保存；已绑定会话的下一次请求会立即使用新内容'), [draft, run])
+  }, 'user.status.saved'), [draft, run])
 
   const saveWorldBooks = useCallback(() => run(async () => {
     if (draft === null) return
@@ -171,15 +176,15 @@ export function UserPanel({ sessionId, sessionBlank, close }) {
     setWorldBookIds(ids)
     setAppliedWorldBookIds(ids)
     notifyRefresh()
-  }, '用户绑定的世界书已保存；选择该用户的会话会在下一次组装时自动使用'), [draft, run, worldBookIds])
+  }, 'user.status.worldBooksSaved'), [draft, run, worldBookIds])
 
   const chooseUser = useCallback(id => {
     if (dirty && !window.confirm(unwrapText(uiMessage('user.confirmDiscardForSwitch')))) return
-    run(() => refresh(id), '用户资源和世界书绑定已加载')
+    run(() => refresh(id), 'user.status.userLoaded')
   }, [dirty, refresh, run])
 
   const bind = useCallback(() => run(async () => {
-    if (!sessionId || draft === null) throw new Error('请先创建或打开一个会话并选择用户资源')
+    if (!sessionId || draft === null) throw uiError('user.error.needSession')
     if (selectedUserId !== draft.id && sessionBlank === false
       && !window.confirm(unwrapText(uiMessage('user.confirmHistoricalSwitch')))) return
     const data = await api('/user-selection', {
@@ -188,14 +193,14 @@ export function UserPanel({ sessionId, sessionBlank, close }) {
     })
     setSelectedUserId(data.selection.userId)
     notifyRefresh()
-  }, '用户已绑定；当前会话的下一次请求会使用该名字和描述'), [draft, run, selectedUserId, sessionBlank, sessionId])
+  }, 'user.status.bound'), [draft, run, selectedUserId, sessionBlank, sessionId])
 
   const unbind = useCallback(() => run(async () => {
-    if (!sessionId) throw new Error('当前没有可解绑的会话')
+    if (!sessionId) throw uiError('user.error.noSessionToUnbind')
     await api('/user-selection', { method: 'POST', body: JSON.stringify({ sessionId, userId: null }) })
     setSelectedUserId(null)
     notifyRefresh()
-  }, '当前会话已解除用户绑定'), [run, sessionId])
+  }, 'user.status.unbound'), [run, sessionId])
 
   const remove = useCallback(() => run(async () => {
     if (draft === null || !window.confirm(unwrapText(uiMessage('user.confirmDelete', { name: draft.name })))) return
@@ -203,54 +208,55 @@ export function UserPanel({ sessionId, sessionBlank, close }) {
     draftId.current = null
     await refresh(null)
     notifyRefresh()
-  }, '用户已删除，相关会话绑定已清除'), [draft, refresh, run])
+  }, 'user.status.deleted'), [draft, refresh, run])
 
   const activeName = selectedUserId === null
-    ? translateVisibleText('未绑定用户')
+    ? translate('nav.user.empty')
     : users?.find(user => user.id === selectedUserId)?.name ?? selectedUserId
   const requestClose = () => {
     if (!dirty || window.confirm(unwrapText(uiMessage('user.confirmCloseDirty')))) close()
   }
   const dirtyParts = [
-    resourceDirty ? translateVisibleText('名字/描述') : '',
-    bindingDirty ? translateVisibleText('用户世界书绑定') : '',
+    resourceDirty ? translate('user.dirty.name') : '',
+    bindingDirty ? translate('user.dirty.binding') : '',
   ].filter(Boolean)
-  const dirtyText = uiText`有未保存修改：${dirtyParts.join(getClientUiSettings().locale === 'en' ? ', ' : '、')}。`
+  const dirtyText = uiMessage('user.dirty', { parts: dirtyParts.join(translate('common.listSeparator')) })
+  const closeLabel = uiMessage('panel.close', { title: unwrapText(uiMessage('user.title')) })
 
   return h('div', { className: 'dtu-panel' },
     h('div', { className: 'dtu-header' },
-      h('div', { className: 'dtu-title' }, 'Tavern 用户'),
-      h('button', { className: 'dtu-close', type: 'button', title: '关闭用户面板', 'aria-label': '关闭用户侧边栏', onClick: requestClose }, '✕'),
+      h('div', { className: 'dtu-title' }, uiMessage('user.title')),
+      h('button', { className: 'dtu-close', type: 'button', title: closeLabel, 'aria-label': closeLabel, onClick: requestClose }, '✕'),
     ),
     h('div', { className: 'dtu-body' },
       h('div', { className: 'dtu-toolbar' },
-        h('button', { className: 'dtu-button', type: 'button', disabled: busy, onClick: create }, '新建用户'),
-        h('button', { className: 'dtu-button', type: 'button', disabled: busy, onClick: () => { if (!dirty || window.confirm(unwrapText(uiMessage('user.confirmDiscardRefresh')))) run(() => refresh(draft?.id), '用户资源已刷新') } }, '刷新'),
+        h('button', { className: 'dtu-button', type: 'button', disabled: busy, onClick: create }, uiMessage('user.create')),
+        h('button', { className: 'dtu-button', type: 'button', disabled: busy, onClick: () => { if (!dirty || window.confirm(unwrapText(uiMessage('user.confirmDiscardRefresh')))) run(() => refresh(draft?.id), 'user.status.refreshed') } }, uiMessage('common.refresh')),
       ),
-      h(Field, { label: '浏览用户资源' }, h('select', {
+      h(Field, { label: uiMessage('user.browse') }, h('select', {
         className: 'dtu-select',
         value: draft?.id ?? '',
         disabled: busy || users === null || users.length === 0,
         onChange: event => chooseUser(event.target.value),
       },
-      ...(users?.length ? [] : [h('option', { key: 'empty', value: '' }, '用户资源库为空')]),
+      ...(users?.length ? [] : [h('option', { key: 'empty', value: '' }, uiMessage('user.libraryEmpty'))]),
       ...(users ?? []).map(user => h('option', { key: user.id, value: user.id }, rawText(user.name))))),
-      h('p', { className: 'dtu-note' }, uiText`当前会话：${sessionId || translateVisibleText('无')}；绑定：${activeName}`),
-      h('div', { className: 'dtu-status', 'data-error': status.error || undefined, role: 'status', 'aria-live': 'polite' }, status.error ? rawText(status.text) : status.text),
+      h('p', { className: 'dtu-note' }, uiMessage('user.sessionBinding', { session: sessionId || translate('common.none'), name: activeName })),
+      h('div', { className: 'dtu-status', 'data-error': status.error || undefined, role: 'status', 'aria-live': 'polite' }, statusText(status)),
       dirty
         ? h('div', { className: 'dtu-status', 'data-warning': true, role: 'status' }, dirtyText)
-        : h('p', { className: 'dtu-note' }, '当前显示的用户资源和世界书绑定均已保存。'),
+        : h('p', { className: 'dtu-note' }, uiMessage('user.savedNote')),
       draft === null
-        ? h('p', { className: 'dtu-note' }, users === null ? '正在加载用户资源…' : '创建一个只含名字和描述的用户资源。')
+        ? h('p', { className: 'dtu-note' }, users === null ? uiMessage('user.loading') : uiMessage('user.emptyHint'))
         : h('div', { className: 'dtu-editor' },
-          h(Field, { label: '名字（用于 {{user}} 宏）' }, h('input', { className: 'dtu-input', value: draft.name, maxLength: 200, onChange: event => setDraft(current => ({ ...current, name: event.target.value })) })),
-          h(Field, { label: '描述（进入 personaDescription marker；缺 marker 时由 loader 稳定降级）' }, h('textarea', { className: 'dtu-textarea', value: draft.description, maxLength: 100000, onChange: event => setDraft(current => ({ ...current, description: event.target.value })) })),
+          h(Field, { label: uiMessage('user.name', { macro: '{{user}}' }) }, h('input', { className: 'dtu-input', value: draft.name, maxLength: 200, onChange: event => setDraft(current => ({ ...current, name: event.target.value })) })),
+          h(Field, { label: uiMessage('user.description') }, h('textarea', { className: 'dtu-textarea', value: draft.description, maxLength: 100000, onChange: event => setDraft(current => ({ ...current, description: event.target.value })) })),
           h('div', { className: 'dtu-actions' },
-            h('button', { className: 'dtu-button dtu-primary', type: 'button', disabled: busy || !resourceDirty, onClick: save }, resourceDirty ? '保存资源（未保存）' : '资源已保存'),
-            h('button', { className: 'dtu-button dtu-primary', type: 'button', disabled: busy || !sessionId || dirty, onClick: bind }, dirty ? '请先保存修改' : selectedUserId === draft.id ? '刷新会话绑定' : '绑定到当前会话'),
+            h('button', { className: 'dtu-button dtu-primary', type: 'button', disabled: busy || !resourceDirty, onClick: save }, resourceDirty ? uiMessage('user.saveResource') : uiMessage('user.resourceSaved')),
+            h('button', { className: 'dtu-button dtu-primary', type: 'button', disabled: busy || !sessionId || dirty, onClick: bind }, dirty ? uiMessage('user.saveFirst') : selectedUserId === draft.id ? uiMessage('user.refreshBinding') : uiMessage('user.bind')),
           ),
-          h('h2', { className: 'dtu-section-title' }, '用户绑定的独立世界书'),
-          h('p', { className: 'dtu-note' }, '选择该用户时，loader 会自动组合这里的世界书与当前会话显式选择的世界书；重复的同一本书只执行一次。'),
+          h('h2', { className: 'dtu-section-title' }, uiMessage('user.worldBooksTitle')),
+          h('p', { className: 'dtu-note' }, uiMessage('user.worldBooksHint')),
           worldBooks?.length
             ? h('div', { className: 'dtu-bindings' }, ...worldBooks.map(book => h('label', { className: 'dtu-check', key: book.id },
               h('input', {
@@ -260,16 +266,16 @@ export function UserPanel({ sessionId, sessionBlank, close }) {
                   ? [...current, book.id]
                   : current.filter(id => id !== book.id)),
               }),
-              h('span', null, uiText`${book.name}（${book.entryCount} 条）`),
+              h('span', null, uiMessage('world.catalogItem', { name: book.name, count: book.entryCount })),
             )))
-            : h('p', { className: 'dtu-note' }, worldBooks === null ? '正在加载独立世界书资源库…' : '独立世界书资源库为空。请先在世界书面板创建或导入。'),
+            : h('p', { className: 'dtu-note' }, worldBooks === null ? uiMessage('user.worldBooksLoading') : uiMessage('user.worldBooksEmpty')),
           h('div', { className: 'dtu-actions' },
-            h('button', { className: 'dtu-button dtu-primary', type: 'button', disabled: busy || !bindingDirty, onClick: saveWorldBooks }, bindingDirty ? '保存世界书绑定（未保存）' : '世界书绑定已保存'),
-            h('button', { className: 'dtu-button', type: 'button', disabled: busy || worldBookIds.length === 0, onClick: () => setWorldBookIds([]) }, '清空待保存选择'),
+            h('button', { className: 'dtu-button dtu-primary', type: 'button', disabled: busy || !bindingDirty, onClick: saveWorldBooks }, bindingDirty ? uiMessage('user.saveWorldBooks') : uiMessage('user.worldBooksSaved')),
+            h('button', { className: 'dtu-button', type: 'button', disabled: busy || worldBookIds.length === 0, onClick: () => setWorldBookIds([]) }, uiMessage('user.clearPending')),
           ),
-          h('button', { className: 'dtu-button', type: 'button', disabled: busy || !sessionId || selectedUserId === null, onClick: unbind }, '解除当前会话绑定'),
-          h('p', { className: 'dtu-note' }, '用户资源正文仍严格只有名字和描述；世界书关系保存在 loader 的独立结构化策略中。用户资源不包含头像，也不会覆盖 DSH Agent 身份。'),
-          h('div', { className: 'dtu-footer' }, h('button', { className: 'dtu-button dtu-danger', type: 'button', disabled: busy, onClick: remove }, '删除用户')),
+          h('button', { className: 'dtu-button', type: 'button', disabled: busy || !sessionId || selectedUserId === null, onClick: unbind }, uiMessage('user.unbind')),
+          h('p', { className: 'dtu-note' }, uiMessage('user.identityNote')),
+          h('div', { className: 'dtu-footer' }, h('button', { className: 'dtu-button dtu-danger', type: 'button', disabled: busy, onClick: remove }, uiMessage('user.delete'))),
         ),
     ),
   )

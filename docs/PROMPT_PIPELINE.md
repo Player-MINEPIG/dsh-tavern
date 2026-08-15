@@ -1,5 +1,7 @@
 # Prompt pipeline and compatibility map
 
+状态：2026-08-15，已对齐首个公开发布候选版本及当前输入提前识别实现。
+
 本文说明 Tavern 资源在 SillyTavern、TauriTavern 和 dsh-tavern 中如何进入一次模型请求，并明确当前版本没有实现的映射。DSH 自身的 turn/step、Inbox、Session、system assembly 和 request/header 顺序另见 `docs/DSH_MESSAGE_FLOW.md`。它是技术评审文档，不是产品 README。
 
 ## 1. SillyTavern 如何组装一次 Chat Completion

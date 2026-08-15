@@ -1,6 +1,6 @@
 # Tavern clean sessions and configuration templates
 
-Status: implemented on `feature/session-templates` against DSH `0.1.0-rc.6`.
+Status: implemented against DSH `0.1.0-rc.6` and integrated into the 2026-08-15 public release candidate.
 
 ## Outcome and scope
 

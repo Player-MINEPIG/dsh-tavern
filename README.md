@@ -1,256 +1,291 @@
 # dsh-tavern
 
-为 DeepSeek Harness（DSH）提供 Tavern 风格内容兼容与运行时加载能力的插件。
+为 DeepSeek Harness（DSH）提供 Tavern 风格内容兼容、会话绑定与运行时加载能力的插件。
 
-项目目标不是在 DSH 中复制一套 SillyTavern 前端，而是建立可测试、可扩展的兼容层：理解 SillyTavern 的预设、角色卡和世界书格式，将其归一化，再通过统一加载器映射到 DSH 的 session、system prompt、模型参数与后续消息装配能力。
+> 当前 README 为 `1.0.0` 中文版；英文版计划后续补充。
 
-当前 `0.1.x` 集成分支已经完成 **SillyTavern Chat Completion 预设、角色卡、独立世界书、用户资料、配置模板与全局 UI 设置**的首个端到端版本。统一 loader 会按 session 组合这些资源，在首次请求组装前让当前 claimed 输入参与世界书匹配，并可在 Tavern Trace 中查看本次资源快照和匹配决策。
+## 目录
 
-角色卡兼容的调研记录与实施方案见：
+- [项目简介](#项目简介)
+- [安装](#安装)
+  - [脚本安装（推荐）](#脚本安装推荐)
+  - [手动安装](#手动安装)
+  - [让 Agent 安装](#让-agent-安装)
+  - [更新、卸载与数据位置](#更新卸载与数据位置)
+- [使用](#使用)
+  - [DT 悬浮球与界面设置](#dt-悬浮球与界面设置)
+  - [预设](#预设)
+  - [角色卡](#角色卡)
+  - [世界书](#世界书)
+  - [用户](#用户)
+  - [新会话与配置模板](#新会话与配置模板)
+  - [Tavern Trace](#tavern-trace)
+- [特点](#特点)
+- [安全风险](#安全风险)
+- [参考](#参考)
 
-- [角色卡调研记录](docs/character-card/RESEARCH.md)
-- [角色卡实施方案与验收标准](docs/character-card/PLAN.md)
+## 项目简介
+
+`dsh-tavern` 的目标不是在 DSH 中复制一套 SillyTavern 前端，而是建立一个可测试、可审计、可扩展的兼容层：读取 SillyTavern 风格的预设、角色卡和世界书，将它们归一化，再通过统一 loader 按 DSH session 组合为实际模型请求。
+
+当前版本已经提供一个完整的 DSH 插件，包含：
+
+- SillyTavern Chat Completion 预设；
+- V1/V2/V3 JSON 与 PNG 角色卡；
+- 独立世界书、角色卡内嵌世界书及用户绑定世界书；
+- 只有名字和描述的用户资料；
+- per-session 资源绑定、干净新会话与配置模板；
+- 简体中文/English、Tavern UI 缩放与可拖拽 `DT` 悬浮入口；
+- 与 Conversation、Trajectory 并列的 Tavern Trace。
+
+插件不会复制 DSH 的会话历史。DSH 仍然拥有 durable history、工具、权限和最终 `request/header`；dsh-tavern 只在公开扩展点装配 Tavern profile、映射受支持的模型参数，并记录不含正文的最小化审计信息。
+
+本项目当前版本为 `1.0.0`。现有框架与核心工作流已达到首个稳定发布范围；真实 role message、严格 depth/absolute injection、完整 ST macro，以及 recursive、sticky/cooldown/delay、vector、outlet 等高级世界书语义仍受当前 DSH seam 或实现范围限制。详细兼容表见 [Prompt pipeline](docs/PROMPT_PIPELINE.md)。
 
 > 本项目中的“预设”指 SillyTavern 风格的采样参数与提示词编排，不是 DSH 用于组合插件的 agent preset。
 
-## 当前能力
-
-- 导入 SillyTavern Chat Completion preset JSON。
-- 优先采用 `character_id: 100001` 的 `prompt_order`，并保留未知顶层字段和 prompt 扩展字段，方便后续兼容升级。
-- 在插件目录持久化预设，支持创建、选择、修改、删除和重新加载。
-- 提供红、黑、白配色的 `DT`（dsh-tavern）悬浮球；可拖拽并记忆位置，展开后显示预设、角色卡、世界书和用户资料的当前标题及红/绿选择状态，并可进入新会话和界面设置。侧栏打开后入口仍然保留，可直接切换其他面板。
-- 编辑预设名称、system prompt 策略、常用采样参数和 prompt 块。
-- 直接拖拽 prompt 块排序；拖动来源显示为横杠，落点显示为占位框。
-- 将启用且非 marker 的 prompt 编译为 DSH system section，并在请求记录中保留所选预设标识。
-- 映射 DSH 当前支持的 `temperature`、`maxTokens`、`reasoningEffort` 和 `stop`。
-- 支持默认“追加到 DSH system prompt”与高级“仅使用预设”两种模式。
-- 提供 Windows、macOS、Linux 通用的安装/卸载脚本；重复安装会刷新本地 `file:` 快照并暂存、恢复插件数据。
-- 角色卡 feature 可解析 V1/V2/V3 JSON 和 PNG `chara`/`ccv3`，保存原件、诊断、per-session binding，并通过稳定资源接口交给 loader/world-book 模块。
-- 通过角色卡侧栏导入、查看、选择、导出和删除角色卡，并配置 greeting、卡内 system prompt 与 post-history instructions 的采用策略。
-- 将所选角色卡的 description、personality、scenario、example dialogue、system prompt 等字段与 preset marker 统一组合。
-- 解析并匹配角色卡内嵌 `character_book` 的常量/普通关键词、secondary key、概率、组和 token budget 基础策略，并把激活条目投影到 before/after 位置；regex key 会被识别和诊断，但因 ReDoS 风险默认不执行。
-- 在“世界信息”中按 ST 式条目列表查看和编辑内嵌 Lorebook 的触发条件与内容，包括主/附加关键词、secondary logic、常驻/启用、大小写、全词匹配、位置与排序，并支持新增、删除和保存。
-- 提供独立世界书资源库，支持导入、创建、编辑、导出、删除以及 per-session 多选；独立书与角色卡内嵌书使用同一个 parser、matcher 和 loader adapter。
-- 提供严格只有名字与描述的用户资料，支持 CRUD 和 per-session 单绑定；名字进入 `{{user}}`，描述通过 `personaDescription`/`{{persona}}` 放置一次，并且不会覆盖 DSH Agent 身份。
-- 每个用户可绑定零本或多本独立世界书；loader 按“session 显式选择优先、用户关系随后”稳定去重，同一本书只匹配和投影一次。关系不写入用户描述正文。
-- 支持把当前 Tavern 选择保存为配置模板，或直接维持当前设置创建干净 DSH 会话；只复制 preset、角色/greeting 选项、用户和独立世界书选择，不复制历史、Trace、Inbox 或运行态。
-- 提供全局界面设置，可即时切换简体中文/English，并在 75%–150% 范围缩放 Tavern 悬浮入口、资源面板和 Trace；显示设置不改变资源正文或 session 绑定。
-- 在 Conversation / Trajectory 同级位置提供 Tavern Trace，按 turn/step 展示资源摘要、世界书关键词接受/拒绝原因和 request/header 对齐信息；不保存完整 prompt、历史或工具 schema，也不向模型消息流添加审计内容。
-- 使用统一的 per-session 资源选择；普通 fork 固化父会话快照，delegated subagent 默认不继承 Tavern 资源。
-
-旧版本的全局预设选择继续作为新会话默认值；一旦某个 session 明确选择资源，它与其他会话互不影响。
-
 ## 安装
 
-要求：
+### 环境要求
 
 - Node.js 20 或更高版本；
-- 已安装并可从 `PATH` 调用的 `dsh`；
-- 一个已经初始化的 DSH profile，默认使用 `web`。
+- 已安装并能从 `PATH` 调用 `dsh`；
+- 一个已经初始化的 DSH profile，默认名称为 `web`；
+- DSH Web 建议只监听 `127.0.0.1`。
 
-克隆仓库后，在仓库根目录执行：
+先取得源码：
+
+```sh
+git clone https://github.com/Player-MINEPIG/dsh-tavern.git
+cd dsh-tavern
+```
+
+### 脚本安装（推荐）
+
+不传参数时，安装脚本会：
+
+1. 使用当前终端的默认 DSH 根目录；如果已经设置 `DSH_HOME`，则使用该目录；
+2. 安装到默认的 `web` profile；
+3. 先构建浏览器 bundle，再调用 DSH 安装根插件；
+4. 首次运行执行全新安装；发现已有安装时先暂存 `data/`，刷新插件文件后再恢复数据；
+5. 安装完成后提示你重启 DSH，但不会替你启动或停止 `dsh web`。
+
+默认安装命令：
 
 ```sh
 npm install --cache .npm-cache --legacy-peer-deps
 npm run plugin:install
 ```
 
-安装器会构建浏览器端、安装根插件并提示重启 DSH。更新已有安装前，请先停止目标 `dsh web` 进程，然后重复执行同一安装命令；安装器会保留已经导入或创建的资源，并在 pnpm 登记完成后把声明的包文件物化为独立副本，避免本地 `file:` 硬链接在开发期间形成新旧文件混装。刷新中断时，恢复副本会保存在 `<DSH_HOME>/backups/dsh-tavern/pending-refresh-<profile>/`，下一次运行会自动修复依赖登记并恢复数据。
+更新已有安装前应先停止目标 `dsh web`。Windows 下安装器会安全调用 npm 的 PowerShell shim，避免路径和 shell 参数问题。
 
-安装到指定 profile 或隔离的 `DSH_HOME`：
+需要安装到其他位置时，直接给脚本传入不同参数：
+
+- `--profile <name>`：目标 DSH profile，默认是 `web`；
+- `--dsh-home <path>`：目标 DSH 根目录，也就是该次安装使用的 `DSH_HOME`；
+- 两者可以单独使用，也可以组合使用。
 
 ```sh
-node scripts/install.mjs --profile web --dsh-home /absolute/dsh-home
+node scripts/install.mjs --profile <profile-name> --dsh-home /absolute/dsh-home
 ```
 
-Windows 示例：
+`--dsh-home` 只影响安装脚本启动的子进程，不会永久修改当前终端。安装完成后若要从同一根目录启动 DSH，仍需在当前 shell 设置 `DSH_HOME`。
 
-```cmd
-node scripts/install.mjs --profile web --dsh-home .\test-envs\review
-set DSH_HOME=%CD%\test-envs\review
-dsh web --host 127.0.0.1 --port 53101
-```
-
-PowerShell 设置环境变量的语法不同：
+PowerShell：安装到独立根目录，然后启动该目录中的 `web` profile：
 
 ```powershell
-$env:DSH_HOME = (Resolve-Path '.\test-envs\review').Path
+node scripts/install.mjs --profile web --dsh-home 'D:\DSH\review'
+$env:DSH_HOME = 'D:\DSH\review'
 dsh web --host 127.0.0.1 --port 53101
 ```
 
-macOS/Linux：
+Windows CMD：
+
+```bat
+node scripts/install.mjs --profile web --dsh-home C:\DSH\review
+set DSH_HOME=C:\DSH\review
+dsh web --host 127.0.0.1 --port 53101
+```
+
+macOS：先安装到独立根目录，再从该目录启动 DSH：
 
 ```sh
-export DSH_HOME=/absolute/dsh-home
+node scripts/install.mjs --profile web --dsh-home /Users/you/dsh-review
+export DSH_HOME=/Users/you/dsh-review
 dsh web --host 127.0.0.1 --port 53101
 ```
 
-如果同一端口已经有 DSH 运行，会收到 `EADDRINUSE`；请使用现有实例、停止旧进程，或更换端口。
+Linux：
 
-完整参数、重复安装的数据恢复机制和卸载说明见 [`docs/INSTALLATION.md`](docs/INSTALLATION.md)。
+```sh
+node scripts/install.mjs --profile web --dsh-home /home/you/dsh-review
+export DSH_HOME=/home/you/dsh-review
+dsh web --host 127.0.0.1 --port 53101
+```
 
-### 数据存放与卸载
+如果出现 `EADDRINUSE`，说明端口已被其他 DSH 进程占用；停止旧进程或换一个端口。
 
-默认情况下，导入和创建的 Tavern 资源以及 session 选择状态保存在当前 DSH profile 安装的插件目录：
+### 手动安装
+
+脚本是推荐路径。如果需要手动安装：
+
+```sh
+npm install --cache .npm-cache --legacy-peer-deps
+npm run build
+dsh plugin --profile web add "file:/absolute/path/to/dsh-tavern"
+```
+
+Windows 的本地包规范同样使用正斜杠，例如：
+
+```powershell
+dsh plugin --profile web add "file:D:/Projects/dsh-tavern"
+```
+
+手动更新前应停止目标 `dsh web`，备份安装目录下的 `data/`，执行 `dsh plugin --profile web remove dsh-tavern` 后再重新 add。直接调用 DSH 不包含本项目安装器的 pending-recovery、pnpm store 复用和独立文件物化保护，因此更新已有安装时更建议使用脚本。
+
+### 让 Agent 安装
+
+可以把下面的指令交给拥有本机终端权限的编码 Agent，并把路径替换成自己的值：
+
+```text
+请从 https://github.com/Player-MINEPIG/dsh-tavern.git 获取源码，阅读 README 和
+docs/INSTALLATION.md。确认 Node.js >= 20、dsh 可从 PATH 调用，并把插件安装到
+profile web、DSH_HOME=<我的绝对路径>。若目标 dsh web 正在运行，先提醒我停止；
+不要删除或覆盖已有 Tavern data，不要使用 --no-backup。运行 npm install 后使用
+node scripts/install.mjs --profile web --dsh-home <我的绝对路径>，报告执行命令、
+安装结果和需要我手动完成的 DSH 重启步骤。
+```
+
+请只授权你信任的 Agent 操作本机终端，并在执行前确认仓库地址、目标 `DSH_HOME` 和 profile。安装插件等同于允许其代码在 DSH Host 与浏览器上下文中运行。
+
+### 更新、卸载与数据位置
+
+更新前停止目标 DSH，然后在新源码目录重复运行安装脚本。安装器会暂存并恢复插件内数据；中断恢复副本位于：
+
+```text
+<DSH_HOME>/backups/dsh-tavern/pending-refresh-<profile>/
+```
+
+默认资源与状态位于：
 
 ```text
 <DSH_HOME>/profiles/<profile>/node_modules/dsh-tavern/data/
-  presets/                 preset 标准化文档
-  characters/              角色卡标准化文档
-  character-artifacts/     导入的角色卡 JSON/PNG 原件
-  world-books/             独立世界书标准化文档
-  users/                   只有 id/name/description 的用户资料
-  user-world-book-bindings.json  用户与独立世界书的关系
-  tavern-traces.json       有界的最小化请求审计元数据
-  session-templates.json   不含历史和资源正文的 Tavern 选择模板
-  ui-settings.json         全局界面语言与缩放
-  state.json               旧版全局 preset 默认选择
-  character-state.json     角色选择迁移状态
-  session-selections.json  统一的 per-session 资源选择
 ```
 
-若插件配置显式指定 `storageDir`，以上资源和状态均改存到该外部目录。
+这里保存预设、角色卡原件与标准化文档、独立世界书、用户、用户—世界书关系、session 选择、配置模板、UI 设置和有界 Trace。若配置了外部 `storageDir`，数据改存该目录。
 
-- 重复运行安装脚本刷新插件时，会先把整个 `data/` 暂存到 `<DSH_HOME>/backups/dsh-tavern/pending-refresh-<profile>/`，安装成功后恢复，因此不会有意清空已导入资源。
-- 普通卸载会先把整个 `data/` 备份到 `<DSH_HOME>/backups/dsh-tavern/<timestamp>/`，然后 DSH/pnpm 会删除安装目录。卸载后资源不会继续生效，但备份仍可手动恢复。
-- `--no-backup` 会跳过这份副本；当使用默认插件内存储时，随后删除插件会同时删除资源，通常不可恢复。
-- 卸载不会删除最初用于导入的外部 ST 文件，也不会自动删除显式配置在插件目录外的 `storageDir`。
-
-备份或迁移时应复制整个 `data/`，不要只复制 `presets/`，否则可能丢失角色卡原件和 session 绑定。
-
-## 使用
-
-1. 启动并打开 DSH Web。
-2. 拖动 `DT` 悬浮球可调整并记忆入口位置；点击球体会展开资源面板。红点表示未选择，发光绿点表示当前 session 已选择资源；它不表示世界书本轮是否命中。
-3. 选择“预设”导入或创建 preset，编辑采样参数、system prompt 策略和 prompt 块。下拉框只用于浏览；确认内容后点击蓝色“绑定到当前会话”，也可随时解除。导入和创建不会自动改变会话绑定。
-4. 从同一菜单选择“角色卡”，导入 ST JSON/PNG 角色卡，选择 greeting 和两个覆盖开关后绑定到当前 session。
-5. 在“世界书”面板的“独立世界书”区管理资源并为当前 session 多选；勾选变化会显示“尚未应用”，必须点击应用按钮才改变该 session。下方“角色卡绑定的世界书”区单独显示和编辑当前角色卡内嵌 Lorebook。折叠标题显示常驻、禁用或关键词条件，展开后可修改触发条件和正文。
-6. 在“用户”面板创建只含名字与描述的资料，并可为该用户选择独立世界书。分别保存用户正文与世界书关系后，再绑定到当前 session。
-7. 需要不受旧历史影响时，打开“新会话”：可直接维持当前 Tavern 设置新开干净对话，也可创建、更新和选择配置模板后新开。缺失资源会显示诊断并阻止创建。
-8. 在“界面设置”中切换简体中文/English 或调整 Tavern UI 缩放；修改会全局持久化，但不影响 DSH 主界面和对话配置。
-9. 发送消息。loader 会组合当前 session 的 preset、角色卡、用户资料以及独立/内嵌世界书命中条目；当前 claimed 输入会在首次 assembly 前参与匹配，支持的采样参数进入模型调用配置。需要解释结果时，在 Conversation / Trajectory 旁打开 Tavern Trace；它保持简洁，只显示激活资源、世界书配置/命中关键词、接受或拒绝原因及 request/header 对齐，不保存资源正文。
-
-更换预设绑定不会改写已有会话历史。旧预设已经影响过的 assistant 回复仍会进入后续上下文，所以需要“干净切换”时，应先绑定新预设，再用“维持当前 Tavern 设置新开对话”；也可把当前绑定保存为配置模板后新建。
-
-卸载默认会先备份插件数据：
+卸载：
 
 ```sh
 npm run plugin:uninstall
 ```
 
-备份位置为 `<DSH_HOME>/backups/dsh-tavern/<timestamp>/`。只有明确不需要数据时才使用 `--no-backup`。
+卸载器默认先把整个 `data/` 备份到 `<DSH_HOME>/backups/dsh-tavern/<timestamp>/`。`--no-backup` 会跳过备份；在默认插件内存储模式下，这通常意味着资源随卸载一起永久删除。
 
-## 安全与信任边界
+完整安装参数、刷新恢复机制和数据说明见 [安装与卸载文档](docs/INSTALLATION.md)。
 
-经功能验收的加固前基线是 commit `fdf9fd27254359feb3fe0f1016141683db529784`，并用带注释 Git tag `accepted-functional-pre-hardening-20260815` 固定。当前版本在此基础上增加了以下默认保护：
+## 使用
 
-- `/dsh-tavern/api/*` 默认同时要求真实 TCP 对端为 loopback，并只接受 `localhost`、`127.0.0.0/8` 或 IPv6 loopback 的 Host；伪造 `Host: 127.0.0.1` 的局域网客户端仍会在 socket 边界被拒绝。所有修改请求还必须来自同一个 DSH Web origin，并使用该路由允许的 `Content-Type`。响应禁止缓存并启用 `nosniff`。
-- API 列表不再返回插件数据目录；`GET /active` 也不再返回完整 `compiledPrompt`，只提供选择、资源摘要、诊断与审计元数据。资源详情和导出 API 仍会按功能需要返回已导入内容，因此应把 DSH Web 页面视为可访问 Tavern 资源的受信任界面。
-- 世界书扫描文本默认限制为最近 64 KiB。ST 的 `/pattern/flags` 原生 JavaScript 正则关键词默认不执行；不安全兼容模式也只接受唯一的 `i/m/s/u/v` flags、限制 pattern 长度。普通关键词和全词匹配不受影响。
-- 独立世界书和角色卡内嵌书共用结构守卫：每个资源最多 10,000 条、对象深度 32、合计 100,000 节点、单字符串 1 MiB、对象键 1,024 字符。每次请求进入 matcher 的独立/用户/内嵌条目总数也硬限为 10,000，超出的后续资源会被跳过并生成诊断，不会先无界遍历再截断。
-- 插件最终生成的 Tavern profile 默认受 512 KiB UTF-8 硬上限约束，配置也不能超过 2 MiB；通过上述聚合守卫后，compiler 最多考虑排名最前的 4,096 个 lore 候选，且拼接前的 lore 正文字节有界。`ignoreBudget` 只能绕过 ST 兼容软预算，不能绕过这些硬限制；超限时先按既有排名省略低优先级 lore 条目，preset/角色卡/用户等静态内容本身超限则明确拒绝装配，不做字符串截断。
-- 角色卡原始 JSON/PNG artifact 仍可为 32 MiB，但“编辑内嵌世界书”是独立的 4 MiB JSON 边界，并经过共享 Character Book parser、条目数/深度/节点/字符串限制；更新后的角色文档另受 16 MiB 存储上限约束。
-- `session-selections.json` 使用带 `updatedAt` 的 schema v2，默认最多 2,048 个 session、最多 4 MiB，启动时拒绝解析超过 8 MiB 的文件。因为绑定是用户状态而非可再生成审计，插件不会静默 LRU 淘汰；达到上限会明确失败，等待 DSH 提供权威 session 删除生命周期后再自动回收。
-- Tavern Trace 的完整持久文件、单次 GET 响应和可配置上限默认均受 8 MiB 硬上限约束，单记录最多 64 KiB；跨 session 超限时淘汰最旧记录。当前仍采用同步事务写盘，慢速磁盘或安全软件可能增加请求延迟，可通过 `trace.maxTotalBytes` 进一步收紧。
+### DT 悬浮球与界面设置
 
-仍需注意：
+安装并重启 DSH Web 后，点击红、黑、白配色的 `DT` 悬浮球展开菜单。球体可以拖动并记忆位置；侧栏打开时球体仍会保留，可直接切换模块。
 
-- 这些 HTTP 保护是 TCP peer、Host 和 origin 边界，不是独立的用户鉴权。能在本机发起 HTTP 请求的受信任进程仍可访问 API。请继续让 DSH Web 绑定 `127.0.0.1`，不要直接暴露到局域网或公网。DSH Host 当前也不为此 API 提供 TLS 或账号认证。
-- 本机受信任反向代理可用 `security.allowedHosts` 放行它转发的主机名（只写主机名，不含端口），此时插件看到的 TCP 对端仍应是 loopback。只有明确接受远程风险时才同时设置 `security.allowRemoteClients: true`；这两个配置都不会增加认证或加密，反向代理必须另行提供 HTTPS 和认证。插件不信任 `X-Forwarded-For`。
-- preset、角色卡和世界书不是惰性文档，其中的文字会成为发给模型的指令，可能包含 prompt injection。只导入可信来源，启用前审阅内容，并保留 DSH 的文件沙箱、工具审批与权限限制。
-- 插件不会主动读取 DSH API key 或环境变量，但用户写进 preset/角色卡/世界书的任何秘密都可能随模型请求发送，也可能被本机 API 返回。不要在 Tavern 资源中保存密钥、令牌或隐私数据。
-- 为兼容可信旧资源，可显式设置 `worldBook.allowUnsafeRegex: true`；即使同时设置 `maxRegexLength` 和默认扫描上限，JavaScript `RegExp` 仍无超时保证，因此这项模式名副其实是不安全兼容模式。未来应改用 RE2 类受限引擎后再默认兼容正则。
+资源旁的发光绿点表示当前 session 已启用，红点表示未启用；世界书绿点表示存在有效来源，不代表本轮已经命中关键词。“界面设置”可以即时切换简体中文/English，并在 75%–150% 之间缩放 Tavern UI。
 
-可选配置示例：
+<p align="center">
+  <img src="docs/assets/dt-launcher.png" alt="DT 悬浮球展开后的资源状态菜单" width="420">
+</p>
 
-```yaml
-config:
-  security:
-    allowedHosts: [dsh.internal.example] # 本机反向代理使用的 Host
-    allowRemoteClients: false
-  limits:
-    maxProfileBytes: 524288
-  sessionSelections:
-    maxSessions: 2048
-    maxStateBytes: 4194304
-  worldBook:
-    allowUnsafeRegex: false
-    maxScanCharacters: 65536
-    maxRegexLength: 256
-  trace:
-    maxTotalBytes: 8388608
-```
+<p align="center">
+  <img src="docs/assets/ui-settings.png" alt="Tavern 界面语言与缩放设置" width="520">
+</p>
 
-## 当前兼容边界
+### 预设
 
-“可以导入 ST preset”不等于已经完整复刻 SillyTavern 的消息拓扑。
+导入或创建 Chat Completion 预设，编辑 prompt、顺序、采样参数和 append/replace 策略。目录下拉框只用于浏览；必须点击蓝色绑定/更新按钮才会应用到当前 session。导入和创建不会自动绑定。
 
-| SillyTavern 概念 | 当前行为 |
-| --- | --- |
-| enabled prompt 与顺序 | 按归一化顺序编译进一个 DSH system section |
-| `system` / `user` / `assistant` role | 作为 `<st-prompt role="…">` 审阅标签保留，不是真实的交错 role message |
-| marker | 填充角色字段、example dialogue 与激活 World Info；`chatHistory` 只由 DSH 原生历史提供 |
-| 用户输入与会话历史 | 继续由 DSH 原生 durable messages 管理，不插入 ST `chatHistory` marker |
-| greeting | 作为明确标注的 system profile 风格参考，不伪造 assistant 历史消息 |
-| PHI / depth / absolute injection | 字段保留并给出降级诊断；当前放入 system profile，不能严格复刻 ST 历史位置 |
-| 世界书扫描与编辑 | 角色卡内嵌书可编辑；loader 从公开 `agent/inbox/spliced` 建立有界临时投影，把本步骤 claimed 输入与 durable history 组合扫描，因此单 step 会话可在首个请求激活关键词；原生 regex key 默认阻断；原始导入 artifact 保持不变，JSON 导出反映编辑后的插件副本 |
-| 独立世界书 | 提供存储、导入/创建/编辑/导出/删除、per-session 多选和统一 matcher；未知字段随原始模型保留 |
-| 用户资料 | 严格 `{id,name,description}`，按 session 单绑定；可在独立关系策略中绑定世界书；`{{user}}` 替换用户名并可按预设出现多次，描述只由 `personaDescription`/`{{persona}}`/fallback 消费一次；不覆盖 DSH Agent 身份 |
-| 干净会话与模板 | 复制有界的 Tavern selection 投影到 DSH 公开 New Session seam 返回的真实 blank session；不复制 durable history、Trace、Inbox 或资源正文 |
-| UI 设置与 i18n | 全局保存简体中文/English 与 75%–150% 缩放；动态资源名、关键词、诊断和服务端错误按原文显示，不因翻译被改写 |
-| Tavern Trace | 保存有界的资源摘要、世界书配置/命中关键词、匹配决策、哈希和 header 引用；不保存资源正文或完整消息，也不等同于 DSH 原生 request/header |
-| ST macro | 支持部分常用变量、随机、骰子与局部变量；不是完整 ST runtime |
-| sampler | 未映射的 ST 参数会保存和编辑，但不宣称已经传给模型 adapter |
+<p align="center">
+  <img src="docs/assets/preset.png" alt="Tavern 预设管理与编辑侧栏" width="520">
+</p>
 
-高级“仅使用预设”模式会移除其他模型可见的 DSH system sections，包括 harness identity、agent persona 和工具文字说明；文件沙箱、工具执行策略和审批机制不会因此关闭，但 Code Mode、结构化输出或工具使用可靠性可能下降。
+### 角色卡
 
-DSH 原生消息流与插件介入点见 [`docs/DSH_MESSAGE_FLOW.md`](docs/DSH_MESSAGE_FLOW.md)；ST/TT/DSH 差异及安全边界见 [`docs/PROMPT_PIPELINE.md`](docs/PROMPT_PIPELINE.md)，架构决策见 [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md)。
+导入 ST JSON/PNG 角色卡，选择 greeting，以及角色 system prompt、post-history instructions 的使用策略，再绑定到当前 session。角色字段会通过统一 loader 与预设 marker、用户资料和世界书组合；greeting 不会伪造成既有 assistant 历史。
 
-## 架构
+当前不提供“创建角色卡”功能。角色卡创作者已经有更成熟的专用创建工具，本项目把范围集中在兼容导入、检查、管理、绑定和运行时加载。
 
-本仓库发布为一个 `dsh-tavern` 插件，内部采用单向依赖：
+<p align="center">
+  <img src="docs/assets/character-card.png" alt="Tavern 角色卡导入、检查与会话绑定侧栏" width="520">
+</p>
 
-```text
-packages/tavern-loader
-  ├─ packages/preset ───────────┐
-  ├─ packages/character ────────┼─ packages/tavern-format
-  ├─ packages/user ─────────────┤
-  ├─ packages/world-book-library ─ packages/world-book
-  ├─ packages/session-template
-  └─ packages/tavern-trace
-```
+### 世界书
 
-- `tavern-format` 不依赖 DSH、文件系统或 UI。
-- `preset`、`character`、`user` 与 `world-book-library` 管理各自的持久化、API 和浏览器用例，不决定如何影响 agent。
-- `world-book` 保持 parser、matcher 和 loader projection 为纯逻辑。
-- `tavern-loader` 是唯一 DSH Host 入口，负责 session policy、组合编译、参数投影和运行策略。
+导入、创建、编辑、导出和删除独立世界书，并为当前 session 多选。面板分别展示 session 独立书、用户绑定书和角色卡内嵌书；条目可查看并编辑关键词、secondary logic、常驻、概率、位置、顺序和正文。当前 claimed 输入会在首次 assembly 前参与匹配，因此新会话第一条消息也能在同一轮激活普通关键词。
 
-这些目录是内部模块，不是需要分别安装的插件。纯格式解析层可以作为 JavaScript library 复用，但单独安装不会影响 agent。
+<p align="center">
+  <img src="docs/assets/world-book.png" alt="独立、用户绑定与角色卡内嵌世界书侧栏" width="520">
+</p>
 
-## 计划开发
+### 用户
 
-- 世界书递归扫描、sticky/cooldown/delay、vector、outlet 与严格 depth/role insertion。
-- 将 greeting 作为显式开场消息的安全工作流，而不污染既有 durable history。
-- 在 DSH 提供合适 seam 后支持真实 role message、example dialogue 和 absolute/depth injection，而不是用 system 标签模拟。
-- 更完整的 ST macro、导入诊断、兼容性报告和稳定的 round-trip/export。
-- 在 DSH 提供安全的插件事件 seam 后，将当前独立 Tavern Trace 进一步接入原生 Trajectory。
+创建只含名字与描述的用户资料。名字用于 `{{user}}`，描述通过 `personaDescription`、`{{persona}}` 或稳定 fallback 放置一次；用户还可以绑定零本或多本独立世界书。用户资料不会覆盖 DSH Agent 身份。
 
-## 上游项目与引用
+<p align="center">
+  <img src="docs/assets/user.png" alt="Tavern 用户资料与世界书绑定侧栏" width="520">
+</p>
 
-- [SillyTavern](https://github.com/SillyTavern/SillyTavern)：本项目兼容格式和 prompt 语义的主要来源。其官方 [Prompt 文档](https://github.com/SillyTavern/SillyTavern-Docs/blob/main/Usage/Prompts/index.md) 说明了 preset、角色信息、World Info、历史和用户输入如何共同构成请求。
-- [TauriTavern](https://github.com/Darkatse/TauriTavern)：SillyTavern 的 Tauri/Rust 原生宿主实现。本项目将其前端宿主边界和 Agent prompt snapshot 设计作为兼容研究参考；参见其 [官方文档](https://tauritavern.github.io/) 与 [Agent API](https://tauritavern.github.io/en/api/agent.html)。
+### 新会话与配置模板
 
-`dsh-tavern` 与 SillyTavern、TauriTavern 均无官方隶属关系。上游名称和格式仅用于说明兼容目标；本仓库不内置或分发第三方 preset、角色卡、世界书，也不复制用户导入内容。请分别遵守上游项目及所导入内容的许可证和版权要求。
+“维持当前设置新开对话”会把当前 Tavern 选择复制到真实 blank DSH session，不复制旧历史、Inbox 或 Trace。也可以保存配置模板、查看模板内容，并从模板创建干净会话。它适合在切换角色或预设时避免旧 assistant 回复造成上下文残留。
 
-## 开发与验证
+<p align="center">
+  <img src="docs/assets/new-session.png" alt="新会话与 Tavern 配置模板侧栏" width="520">
+</p>
 
-```sh
-npm run check
-npm run pack:check
-```
+### Tavern Trace
 
-自动测试覆盖格式解析、宏处理、持久化/API、Host 请求 seam、前端状态策略、安装/卸载和内部依赖边界。验收记录、阶段 changelog 与 review 路径位于 [`docs/`](docs/)；测试只会原地读取外部验收文件，不会把第三方内容复制进仓库或发布包。
+在 Conversation、Trajectory 旁打开 Tavern Trace，可查看每个 turn/step 采用的资源摘要、世界书配置和命中关键词、接受/拒绝原因、预算及 `request/header` 对齐信息。Trace 不保存完整 prompt、消息或资源正文；最终模型输入仍以 DSH `request/header` 为准。
 
-## License
+更详细的逐模块操作、数据和兼容边界见 [中文使用指南](docs/USAGE.zh-CN.md)。
 
-[MIT](LICENSE) © 2026 Zhu Bohan
+## 特点
+
+- **一个插件、统一加载器**：格式解析、资源管理和 DSH 运行时分层，但只安装一个根插件，不产生多个插件之间的版本与加载顺序问题。
+- **按 session 隔离**：preset、角色卡、用户和独立世界书都由统一 selection 管理；普通 fork 固化父选择，delegated subagent 默认不继承 Tavern 内容。
+- **兼容数据优先**：识别 ST 常用格式和 marker，保留未知字段与角色卡原始 artifact，为后续兼容升级保留空间。
+- **当前轮世界书识别**：通过 DSH 公开的 `agent/inbox/spliced` 建立有界临时投影，不增加空转 step、不伪造消息，也不读取私有 Inbox。
+- **可解释而不过度记录**：Tavern Trace 展示资源和匹配决策，但不持久化完整 prompt、输入正文或工具 schema。
+- **安全默认值**：loopback peer/Host/origin 检查、原子持久化、请求/文件/结构/profile/Trace 上限，以及默认禁用原生 JavaScript regex。
+- **可恢复安装**：跨 Windows、macOS、Linux 的脚本支持隔离 `DSH_HOME`、重复安装数据恢复和卸载前备份。
+- **可扩展 i18n**：全部 Tavern UI 使用语义 key 与显式 raw-data 边界；增加语言只需注册 locale、增加独立 catalog 和测试，无需修改各业务组件。
+- **诚实降级**：不把 system 标签宣传成真实 role message，不把 greeting 伪造成历史，也不把 Trace 当作最终请求权威。
+
+架构、消息流和运行契约分别见 [架构说明](docs/ARCHITECTURE.md)、[DSH 消息流](docs/DSH_MESSAGE_FLOW.md) 与 [Loader contract](docs/LOADER_CONTRACT.md)。
+
+## 安全风险
+
+`dsh-tavern` 会处理并发送可执行为模型指令的第三方内容。使用前请理解以下边界：
+
+- **没有独立账号鉴权**：`/dsh-tavern/api/*` 使用真实 TCP peer、Host、Origin 和 Content-Type 防护，但本机受信任进程仍可能访问。请让 DSH Web 绑定 `127.0.0.1`，不要直接暴露到局域网或公网；如需反向代理，应自行提供 HTTPS 和认证。
+- **Prompt injection**：preset、角色卡、用户描述和世界书正文都会影响模型。只导入可信来源，启用前审阅内容，并保留 DSH 的沙箱、工具审批与权限限制。
+- **秘密泄露**：插件不会主动读取 API key，但写入 Tavern 资源的密钥、令牌或隐私内容可能随模型请求发送，也可能通过本机资源 API 返回。不要用资源文件保存秘密。
+- **不安全正则为显式兼容模式**：ST `/pattern/flags` 默认不执行。开启 `worldBook.allowUnsafeRegex` 后，JavaScript `RegExp` 仍没有超时保证，即使已有长度和扫描上限也存在 ReDoS 风险。
+- **replace 模式会移除模型可见的 DSH system 说明**：它不会关闭执行层安全机制，但可能降低 Code Mode、结构化输出和工具使用可靠性。
+- **运行中保护并非全局事务锁**：显式切换 preset、角色卡、用户和世界书时会拒绝运行中的 agent；模板 API 应用到既有目标、删除/编辑已引用资源，以及修改用户—世界书关系等间接变更尚未统一锁定。已冻结请求不会被回写，但并发修改存在 assembly 时序边界。
+- **角色卡内嵌书的导入期诊断仍可加强**：原始角色 artifact 有 32 MiB 上限；编辑和运行时解析有完整结构守卫，但导入时不会提前拒绝所有最终不可运行的超复杂内嵌书。
+- **兼容不等于完整复刻 ST**：真实 role/depth 拓扑、greeting 历史和部分高级世界书状态尚未实现。请以 Tavern Trace 与 DSH `request/header` 验证实际行为。
+
+更完整的安全预算、运行态变更缺口和数据边界见 [Loader contract](docs/LOADER_CONTRACT.md)。
+
+## 参考
+
+- [SillyTavern](https://github.com/SillyTavern/SillyTavern)：兼容格式与 prompt 语义的主要来源。
+- [SillyTavern Prompt 文档](https://github.com/SillyTavern/SillyTavern-Docs/blob/main/Usage/Prompts/index.md)：preset、角色信息、World Info、历史和用户输入的组装说明。
+- [SillyTavern World Info 文档](https://docs.sillytavern.app/usage/core-concepts/worldinfo/)：World Info / Lorebook 的用户语义。
+- [Character Card V2 规范](https://github.com/malfoyslastname/character-card-spec-v2)：角色卡与内嵌 `character_book` 格式参考。
+- [TauriTavern](https://github.com/Darkatse/TauriTavern)：SillyTavern 的 Tauri/Rust 原生宿主实现。
+- [TauriTavern 文档](https://tauritavern.github.io/) 与 [Agent API](https://tauritavern.github.io/en/api/agent.html)：宿主边界和 Agent prompt snapshot 的设计参考。
+
+`dsh-tavern` 与 SillyTavern、TauriTavern 均无官方隶属关系。本仓库不内置或分发第三方 preset、角色卡或世界书，也不复制用户导入内容。请分别遵守上游项目及所导入内容的许可证和版权要求。
+
+本项目代码使用 [MIT License](LICENSE)，Copyright © 2026 Zhu Bohan。

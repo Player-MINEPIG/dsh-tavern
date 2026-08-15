@@ -392,7 +392,7 @@ test('client registers Tavern Trace as an additive official conversation view', 
   const manifest = JSON.parse(readFileSync(new URL('../package.json', import.meta.url), 'utf8'))
   assert.match(source, /slots\.inject\('conversation\.view'/)
   assert.match(source, /id: 'tavern-trace'/)
-  assert.match(source, /label: 'Tavern Trace'/)
+  assert.match(source, /label: translate\('trace.title'\)/)
   assert.doesNotMatch(source, /querySelector\([^)]*(trajectory|conversation)/i)
   assert.doesNotMatch(source, /MutationObserver|monkey|tool\/call|user\/message|assistant\/message/)
   assert.ok(manifest.dsh.client.inject.includes('@deepseek-ai/dsh-client-ui-conversation'))

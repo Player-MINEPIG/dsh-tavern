@@ -1,6 +1,6 @@
 # dsh-tavern package architecture
 
-状态：2026-08-15，Phase 3 集成已采用。本文是架构决策与合并门槛，不是产品 README。
+状态：2026-08-15，首个公开发布候选版本已采用。本文是当前架构决策与发布审查门槛，不是产品 README。
 
 ## 决策结论
 
@@ -73,7 +73,7 @@ rc.6 的 `agent/inbox/spliced` 是公开、持久的 Session event；插入、�
 ## 控制面扩展
 
 - 用户与独立世界书的关联已由统一 loader policy 的独立原子文件持有；`UserModel` 仍只有 `id/name/description`，`world-book-library` 文档也不反向保存用户 id。用户 UI 可以编辑关系，但最终以 session 显式来源优先、用户来源随后稳定去重，且只有 loader 的共享 adapter 运行 matcher。
-- UI 缩放与语言已由 `packages/client` 的单一设置入口和共享 i18n catalog 实现，各资源组件只在渲染时消费共享设置；loader 根 API 只持久化有界的全局显示文档，资源 JSON、profile 编译和 session selection 不读取显示设置。
+- UI 缩放与语言已由 `packages/client` 的单一设置入口、共享 locale contract 和逐语言语义 catalog 实现。业务组件只引用语义 key，动态资源值通过显式 raw boundary 插值；运行时不再扫描或替换中文原文。loader 根 API 只持久化有界的全局显示文档，资源 JSON、profile 编译和 session selection 不读取显示设置。
 - 这两项都必须复用现有单插件 API、安全边界、刷新事件和原子持久化模式，不能通过新增第二个可安装插件实现。
 
 ## 为什么不是两个 DSH 插件
@@ -93,18 +93,16 @@ rc.6 的 `agent/inbox/spliced` 是公开、持久的 Session event；插入、�
 
 因此发布与安装单位固定为根包 `dsh-tavern`，内部包边界用于代码复用和测试隔离。`package.json` 的 `./format`、`./preset`、`./character`、`./user`、`./world-book`、`./world-book-library`、`./trace`、`./loader` exports 是程序接口，不代表可分别安装的插件。
 
-## 合并顺序与门槛
+## 当前发布门槛
 
-推荐顺序是：
+早期 preset、角色卡、世界书、用户与 Phase 3 worktree 已完成分层开发并统一接入当前 loader；具体提交过程保留在 `docs/CHANGELOG.md`，不再作为尚待执行的合并步骤。正式合入 `main` 前必须：
 
-1. 在 preset feature 分支完成内部边界拆分；
-2. 运行格式兼容验收，证明 ST 解析、未知字段保留和归一化结果稳定；
-3. 运行加载验收，证明选中状态、system prompt、call config、API 和发布入口仍工作；
-4. 用隔离 `DSH_HOME` 安装根插件，确认真实 DSH 从 loader 入口启动；
-5. 文档和 changelog 与实现同步后合并 `main`；
-6. 角色卡分支基于新 `main` 对齐，仅扩展 adapter/model，最后接入统一 loader。
-
-若在拆分后才发现运行回归，修复范围仍留在 feature 分支；这就是不先合并再拆分的主要原因。
+1. 运行格式兼容验收，证明 ST 解析、未知字段保留和归一化结果稳定；
+2. 运行加载验收，证明 per-session 选择、system profile、call config、当前输入激活、API 与 Trace 不回归；
+3. 运行 `npm run check` 与 `npm run pack:check`，确认生成 bundle 稳定且发布包不包含 docs、测试、运行数据或外部 fixture；
+4. 用隔离 `DSH_HOME` 安装根插件并启动真实 DSH，至少完成 launcher、资源绑定、新会话和一次 request/header/Trace 对齐检查；
+5. 扫描跟踪文件和 npm 包清单，确认没有本机绝对路径、API key、私有 fixture 或第三方导入内容；
+6. README、使用指南、安全风险、验收记录和 changelog 与实现同步后再合并、打标签和推送。
 
 ## 两组长期验收
 

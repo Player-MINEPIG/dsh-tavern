@@ -1,5 +1,7 @@
 # Cross-platform installation and removal
 
+Status: current for the 2026-08-15 public release candidate. The root README provides the short script/manual/Agent paths; this file is the detailed lifecycle and recovery contract.
+
 The scripts use Node.js as their common entry point and normalize paths for
 Windows, macOS, and Linux. macOS/Linux execute `dsh` directly. Windows safely
 locates npm's `dsh.ps1` shim and invokes it through the system PowerShell with

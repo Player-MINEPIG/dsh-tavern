@@ -1,6 +1,6 @@
 # User resource implementation
 
-状态：2026-08-15，`feature/user-profiles` 实施说明。本文不是 README。
+状态：2026-08-15，已集成到首个公开发布候选版本。本文保留 `feature/user-profiles` 的模块实施边界，不是 README。
 
 ## Scope and model
 

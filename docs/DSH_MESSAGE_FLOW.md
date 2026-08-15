@@ -112,7 +112,7 @@ SessionSelectionStore
   └─ world-book adapter ───────────┘          │
        ├─ 独立世界书                           ├─ systemText
        ├─ 角色卡内嵌 character_book            ├─ runtimeContexts
-       └─ matcher 扫描既有会话文本              ├─ supported callConfig
+       └─ matcher 扫描历史 + 本次 claimed 输入    ├─ supported callConfig
                                                 ├─ resources / diagnostics
                                                 └─ audit + fingerprint
 ```
@@ -120,7 +120,7 @@ SessionSelectionStore
 编译规则：
 
 1. loader 按 session 解析 preset、角色卡、用户资料、独立世界书与角色卡内嵌书；session 显式世界书优先，随后追加当前用户绑定的世界书并按 ID 稳定去重。
-2. world-book matcher 扫描公开的既有 `Session.deriveMessages()` 文本，默认最多最近 64 KiB；执行普通主关键词、secondary key、概率、组与预算策略。原生 JavaScript regex 默认阻断，避免 ReDoS。
+2. world-book matcher 扫描公开的 `Session.deriveMessages()` 历史与 `PendingInputProjection` 提供的本步骤 claimed 输入，稳定去重后默认最多最近 64 KiB；执行普通主关键词、secondary key、概率、组与预算策略。原生 JavaScript regex 默认阻断，避免 ReDoS。
 3. 统一编译器按 preset marker 放置角色字段、用户名字/描述与命中 lore。`{{user}}` 使用当前用户名字；描述只消费一次 `personaDescription`/`{{persona}}`；`chatHistory` marker 不复制 DSH 历史；creator notes 不发送。
 4. 结果是一个不可混淆的运行时快照：`systemText`、受支持的 `callConfig`、资源摘要、诊断、世界书决策和审计指纹。
 5. Tavern Trace 只持久化该快照的最小化元数据与最终 `request/header` 的关联，不保存完整 system、消息正文、资源正文或工具 schema。
