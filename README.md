@@ -142,12 +142,13 @@ npm run plugin:uninstall
 
 ## 安全与信任边界
 
-经功能验收的加固前基线标记为 Git tag `accepted-functional-2026-08-15`。当前版本在此基础上增加了以下默认保护：
+经功能验收的加固前基线是 commit `fdf9fd27254359feb3fe0f1016141683db529784`，并用带注释 Git tag `accepted-functional-pre-hardening-20260815` 固定。当前版本在此基础上增加了以下默认保护：
 
 - `/dsh-tavern/api/*` 默认同时要求真实 TCP 对端为 loopback，并只接受 `localhost`、`127.0.0.0/8` 或 IPv6 loopback 的 Host；伪造 `Host: 127.0.0.1` 的局域网客户端仍会在 socket 边界被拒绝。所有修改请求还必须来自同一个 DSH Web origin，并使用该路由允许的 `Content-Type`。响应禁止缓存并启用 `nosniff`。
-- API 列表不再返回插件数据目录。浏览器仍可按功能需要读取当前 preset、角色卡和编译结果，因此应把 DSH Web 页面视为可访问已导入 Tavern 内容的受信任界面。
+- API 列表不再返回插件数据目录；`GET /active` 也不再返回完整 `compiledPrompt`，只提供选择、资源摘要、诊断与审计元数据。资源详情和导出 API 仍会按功能需要返回已导入内容，因此应把 DSH Web 页面视为可访问 Tavern 资源的受信任界面。
 - 世界书扫描文本默认限制为最近 64 KiB。ST 的 `/pattern/flags` 原生 JavaScript 正则关键词默认不执行；不安全兼容模式也只接受唯一的 `i/m/s/u/v` flags、限制 pattern 长度。普通关键词和全词匹配不受影响。
-- 插件最终生成的 Tavern profile 默认受 512 KiB UTF-8 硬上限约束，配置也不能超过 2 MiB；单次装配还最多考虑 4,096 个 lore 条目，且拼接前的 lore 正文字节有界。`ignoreBudget` 只能绕过 ST 兼容软预算，不能绕过这些硬限制；超限时先按既有排名省略低优先级 lore 条目，preset/角色卡/用户等静态内容本身超限则明确拒绝装配，不做字符串截断。
+- 独立世界书和角色卡内嵌书共用结构守卫：每个资源最多 10,000 条、对象深度 32、合计 100,000 节点、单字符串 1 MiB、对象键 1,024 字符。每次请求进入 matcher 的独立/用户/内嵌条目总数也硬限为 10,000，超出的后续资源会被跳过并生成诊断，不会先无界遍历再截断。
+- 插件最终生成的 Tavern profile 默认受 512 KiB UTF-8 硬上限约束，配置也不能超过 2 MiB；通过上述聚合守卫后，compiler 最多考虑排名最前的 4,096 个 lore 候选，且拼接前的 lore 正文字节有界。`ignoreBudget` 只能绕过 ST 兼容软预算，不能绕过这些硬限制；超限时先按既有排名省略低优先级 lore 条目，preset/角色卡/用户等静态内容本身超限则明确拒绝装配，不做字符串截断。
 - 角色卡原始 JSON/PNG artifact 仍可为 32 MiB，但“编辑内嵌世界书”是独立的 4 MiB JSON 边界，并经过共享 Character Book parser、条目数/深度/节点/字符串限制；更新后的角色文档另受 16 MiB 存储上限约束。
 - `session-selections.json` 使用带 `updatedAt` 的 schema v2，默认最多 2,048 个 session、最多 4 MiB，启动时拒绝解析超过 8 MiB 的文件。因为绑定是用户状态而非可再生成审计，插件不会静默 LRU 淘汰；达到上限会明确失败，等待 DSH 提供权威 session 删除生命周期后再自动回收。
 - Tavern Trace 的完整持久文件、单次 GET 响应和可配置上限默认均受 8 MiB 硬上限约束，单记录最多 64 KiB；跨 session 超限时淘汰最旧记录。当前仍采用同步事务写盘，慢速磁盘或安全软件可能增加请求延迟，可通过 `trace.maxTotalBytes` 进一步收紧。

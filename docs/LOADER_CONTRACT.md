@@ -58,7 +58,7 @@ SessionSelectionStore ─────────────────┘
 
 ## Profile safety budget
 
-`TavernProfileLoader` 对自己生成的单一 `dsh-tavern:profile` section 施加默认 512 KiB UTF-8 上限；`limits.maxProfileBytes` 可以收紧或放宽，但实现硬上限为 2 MiB。单次装配最多考虑排名最前的 4,096 个 lore 条目，并在生成 wrapper 前将原始 lore 正文限制为 profile budget 的两倍，避免为了判断超限先构造全部多书内容。世界书自身的 `tokenBudget` 与 `ignoreBudget` 只决定 ST 兼容候选，不能改变 Host 上限。
+`TavernProfileLoader` 对自己生成的单一 `dsh-tavern:profile` section 施加默认 512 KiB UTF-8 上限；`limits.maxProfileBytes` 可以收紧或放宽，但实现硬上限为 2 MiB。世界书 parser/store 在 normalize 之前共用流式结构守卫：每资源最多 10,000 条、深度 32、100,000 节点、单字符串 1 MiB、对象键 1,024 字符；adapter 另对本次请求的独立书、用户书与内嵌书合计施加 10,000 条硬上限，超出资源跳过并诊断。在这些前置守卫后，compiler 最多考虑排名最前的 4,096 个 lore 候选，并在生成 wrapper 前将原始 lore 正文限制为 profile budget 的两倍。世界书自身的 `tokenBudget` 与 `ignoreBudget` 只决定 ST 兼容候选，不能改变任何 Host 硬上限。
 
 若全部内容超限，compiler 用原有候选顺序保留能完整装入的最高排名 lore 条目前缀，并报告 `TAVERN_PROFILE_LORE_LIMITED`。若移除所有 lore 后仍超限，则抛出 `TAVERN_PROFILE_TOO_LARGE`；preset、角色字段或用户描述不会被从中间截断。
 
@@ -195,7 +195,7 @@ DSH 自己的 `request/header` 仍是模型实际输入的最终权威。loader 
 - 普通 fork 继承快照，subagent 不继承；
 - marker 填充、角色 override、`{{original}}`、lore before/after 与 chatHistory 不复制均有单测；
 - `replace` 只移除宿主 system sections，保留 tools、contexts、variables 和完整 Tavern profile；
-- API active view 暴露 selection/resources/diagnostics/audit；
+- API active view 暴露 selection/resources/diagnostics/audit，不暴露完整 `compiledPrompt`；
 - 角色卡 API 使用统一 session policy；旧 `character-state.json` binding 单向迁移后清除，避免解绑后重启复活；
 - V1/V2/V3 JSON 与 PNG 角色卡可由 adapter 进入 profile，creator notes 不发送；
 - 角色卡内嵌 `character_book` 使用共享世界书 parser/matcher，命中项进入同一 profile；

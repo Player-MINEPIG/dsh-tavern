@@ -20,7 +20,11 @@ history, and per-session bindings are not read or changed by this setting.
 
 ## Ownership and flow
 
-`packages/client/src/i18n.js` is the browser-only shared catalog boundary. The
+`packages/ui-settings/src/locale-contract.js` is the environment-neutral locale
+registry. The settings dropdown, browser translator and server-side settings
+validator all consume its locale ids and default; they no longer maintain
+separate two-value whitelists. `packages/client/src/i18n.js` is the browser-only
+message catalog boundary. The
 composition root and all current Tavern React clients create elements
 through its localized factory. Literal UI children plus `title`, `aria-label`,
 `placeholder`, and `alt` copy use one active locale. Runtime data crosses an
@@ -34,7 +38,8 @@ lore, diagnostics, or server error text even when they render as children.
 The initial retrofit contained semantic keys for the settings surface and a
 legacy Simplified-Chinese source-copy replacement catalog for existing static
 labels. That fallback is intentionally retained for short, literal controls,
-but it is not the extension contract: fragment replacement cannot reliably
+and is now represented as a locale-specific compatibility bundle rather than an
+English-only branch. It is not the extension contract: fragment replacement cannot reliably
 translate a sentence assembled from counts, statuses, resource names and
 punctuation. Such mixed sentences previously produced half-translated output.
 
@@ -53,6 +58,13 @@ missing semantic key returns the stable localized `common.unavailable` message; 
 never renders the key itself. Locale changes update the in-memory catalog
 before React state, then announce `dsh-tavern:ui-settings` so Tavern Trace
 rerenders without a page refresh.
+
+To add a locale, register its id/native label once in `locale-contract.js`, add
+a complete semantic message catalog with exactly the same keys as the default,
+and, while legacy static controls remain, add that locale's source-copy bundle.
+Module initialization rejects a missing or incomplete semantic catalog. New
+copy and every destructive/unsaved/history confirmation must use `uiMessage`;
+tests inspect every current `window.confirm` call to enforce that boundary.
 
 The settings flow is:
 
@@ -87,8 +99,8 @@ storage directory:
 }
 ```
 
-The public write shape accepts exactly `locale` and `scale`. Locale is a
-two-value whitelist. Scale is finite, between 0.75 and 1.5 inclusive, and must
+The public write shape accepts exactly `locale` and `scale`. Locale must occur
+in the shared registry (currently `zh-CN` and `en`). Scale is finite, between 0.75 and 1.5 inclusive, and must
 use 0.05 increments. Unknown properties, out-of-range values, malformed JSON,
 and invalid increments are rejected. The request and persisted document are
 both capped at 1 KiB. Writes use a mode-0600 temporary file followed by rename;
@@ -138,8 +150,8 @@ Verification command:
 npm run check
 ```
 
-Result on 2026-08-15: build succeeded; 144 tests passed, one opt-in local
-fixture was skipped, and zero tests failed.
+Result after the 2026-08-15 hardening pass: build succeeded; 181 tests passed,
+one opt-in local fixture was skipped, and zero tests failed.
 
 ## Security, data-boundary, architecture, and UI self-review
 

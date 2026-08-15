@@ -28,7 +28,7 @@
 2. 确认预设原有导入、编辑、拖拽、选择和发送路径未回归。
 3. 导入一张用户有权测试的 ST JSON 或 PNG 角色卡；不得把该文件复制或提交到仓库。
 4. 在两个会话选择不同角色或让其中一个不选择，确认侧栏状态和模型请求互不污染。
-5. 对含内嵌 Character Book 的卡，在已有会话历史中写入关键词，再发送下一条消息；检查 active view/request header 中出现对应 lore。
+5. 对含内嵌 Character Book 的卡，在已有会话历史中写入关键词，再发送下一条消息；检查 active view/Trace 的有界诊断显示对应条目命中，并以 DSH request/header 的 system 确认实际 lore 正文已装配。`GET /active` 不返回完整编译提示词。
 6. 切换 greeting 与 system/PHI 开关，确认 UI 恢复值正确且 profile 反映选择。
 7. 删除正在被某 session 选择的角色，确认悬空选择被清除。
 

@@ -4,6 +4,40 @@ This is the staged implementation log for the prompt-preset experiment. It is
 kept separately from the product README so reviewers can follow intent,
 decisions, verification, and known limits chronologically.
 
+## 2026-08-15 — Accepted baseline, bounded World Books, minimized active view, and locale contract
+
+Purpose: preserve the user-accepted functional state before addressing the
+subsequent security and i18n review without mixing those changes into the
+rollback point.
+
+- Recorded accepted commit `fdf9fd27254359feb3fe0f1016141683db529784` as the
+  annotated tag `accepted-functional-pre-hardening-20260815`.
+- Added one shared pre-normalization World Book structure guard for standalone
+  and embedded resources: 10,000 entries, depth 32, 100,000 nodes, 1 MiB per
+  string and 1,024 characters per object key. The loader additionally caps the
+  aggregate matcher input from all resource sources at 10,000 entries and emits
+  a diagnostic instead of traversing an overflowing resource.
+- Removed full `compiledPrompt` content from `GET /active`; selection, bounded
+  resource summaries, diagnostics and audit metadata remain available. DSH's
+  request/header remains the authority for the system content actually sent.
+- Centralized locale ids, native labels and the default locale in one shared
+  contract used by the settings UI, browser translator and server validation.
+  Every semantic catalog must have the same key set. The legacy static-copy
+  bridge is locale-bundled rather than hardcoded to English.
+- Migrated every destructive, unsaved-change and historical-session confirmation
+  to whole-sentence semantic keys. Dynamic resource names remain byte-for-byte
+  unchanged; automated tests reject confirmation calls that bypass this path.
+
+Verification: `npm run check` rebuilt the browser bundle and completed 182
+tests: 181 passed, none failed, and the opt-in copyrighted local fixture was
+skipped. `npm run pack:check` reported a 63-file package containing both new
+shared modules and no tests or runtime data. An isolated install loaded one DT
+launcher, exposed the two registry-defined locale options, switched the full
+settings panel to English and back to the preserved Chinese/125% state, and
+returned an `/active` response without `compiledPrompt`. The test tab was
+closed, the owned DSH process was stopped, and its loopback port was verified
+free.
+
 ## 2026-08-15 — User-bound world books visible in the World Book panel
 
 Purpose: make all three runtime world-book sources reviewable and consistently
