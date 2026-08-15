@@ -4,6 +4,30 @@ This is the staged implementation log for the prompt-preset experiment. It is
 kept separately from the product README so reviewers can follow intent,
 decisions, verification, and known limits chronologically.
 
+## 2026-08-15 — Deterministic local-package refresh
+
+Purpose: prevent a development install from loading a mixed package after a
+source file is replaced while other files remain pnpm hardlinks.
+
+- Reproduced a real failed boot where the installed `index.js` reflected the
+  security commit through its existing hardlink, while a recreated
+  `session-policy.js` retained the pre-commit inode and lacked the newly
+  exported class.
+- Added post-add package materialization. The installer resolves the installed
+  target, verifies that it is inside the selected DSH profile, removes only the
+  package manifest's declared shipped paths, and copies fresh independent
+  files from the current worktree. Plugin `data/` and pnpm nested dependencies
+  are not touched.
+- Added a cross-platform synthetic regression proving stale code is replaced,
+  plugin data survives, and later source edits no longer mutate the installed
+  copy through a hardlink.
+- Verification: `npm run check` completed 131 tests with zero failures and the
+  one opt-in local fixture skipped. A real refresh of the isolated integration
+  profile preserved its data, produced matching source/installed SHA-256 for
+  `session-policy.js`, booted DSH Web on `127.0.0.1:53105`, and returned HTTP
+  200 from both the root page and secured preset API. The verification process
+  was then stopped and port 53105 confirmed free.
+
 ## 2026-08-15 — Second security review hardening
 
 Purpose: close the network, resource-amplification and durable-state gaps found

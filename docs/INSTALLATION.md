@@ -32,7 +32,14 @@ Repeated installation is supported: the script preserves the
 installed `data/`, removes the stale local `file:` package, adds the current
 worktree again, and restores the data. This is necessary because pnpm can report
 `Already up to date` while leaving newly added source files absent from an
-earlier local-directory snapshot. Pending recovery data is kept under
+earlier local-directory snapshot. It can also hardlink source files: editing
+one inode then replacing another may otherwise produce a package whose entry
+file is new but one imported module is old. After every add, the installer
+therefore replaces the package's declared `files` entries with independent
+copies from the current worktree. It does not touch the installed `data/` or
+pnpm-managed nested `node_modules`, and validates that the resolved package
+target remains inside the selected profile before removing any stale package
+directory. Pending recovery data is kept under
 `<DSH_HOME>/backups/dsh-tavern/pending-refresh-<profile>/`; a successful refresh
 removes it. If remove/add fails, the error prints the retained path and the next
 installer run repairs an interrupted dependency registration and restores that

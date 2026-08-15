@@ -11,6 +11,7 @@ import {
   dshPluginArgs,
   installedDataPath,
   localPackageSpec,
+  materializeInstalledPackage,
   parseOptions,
   profileHasPlugin,
   profileStoreDir,
@@ -45,6 +46,13 @@ async function installFresh(invocation, options, spec, projectRoot, environment)
     environment,
     dryRun: options.dryRun,
   })
+  await materializeInstalledPackage({
+    projectRoot,
+    dshHome: dshHomePath(options, environment),
+    profile: options.profile,
+    dryRun: options.dryRun,
+  })
+  if (!options.dryRun) console.log('[dsh-tavern] materialized an independent package copy for deterministic refreshes')
 }
 
 async function refreshExisting(invocation, options, spec, projectRoot, environment) {

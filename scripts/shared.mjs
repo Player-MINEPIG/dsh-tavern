@@ -1,6 +1,6 @@
 import { spawnSync } from 'node:child_process'
 import { existsSync, readFileSync } from 'node:fs'
-import { cp, mkdir, stat } from 'node:fs/promises'
+import { cp, mkdir, realpath, rm, stat } from 'node:fs/promises'
 import os from 'node:os'
 import path from 'node:path'
 
@@ -66,6 +66,62 @@ export function dshHomePath(options, environment = process.env, home = os.homedi
 
 export function installedDataPath(dshHome, profile) {
   return path.join(dshHome, 'profiles', profile, 'node_modules', PLUGIN_NAME, 'data')
+}
+
+function isPathInside(parent, child) {
+  const relative = path.relative(parent, child)
+  return relative !== '' && !relative.startsWith(`..${path.sep}`) && relative !== '..' && !path.isAbsolute(relative)
+}
+
+/**
+ * pnpm installs local file dependencies as hardlinks. During plugin
+ * development, replacing one source file can therefore leave the installed
+ * package with a mixture of old and new inodes. Materialize the declared npm
+ * package files as independent copies after dsh/pnpm has registered the
+ * dependency. Plugin-local data and pnpm's nested node_modules are untouched.
+ */
+export async function materializeInstalledPackage({ projectRoot, dshHome, profile, dryRun = false }) {
+  const installedLink = path.dirname(installedDataPath(dshHome, profile))
+  if (dryRun) {
+    console.log(`[dsh-tavern] dry-run: materialize package files into ${installedLink}`)
+    return installedLink
+  }
+
+  const profileRoot = await realpath(path.resolve(dshHome, 'profiles', profile))
+  const installedRoot = await realpath(installedLink)
+  if (!isPathInside(profileRoot, installedRoot)) {
+    throw new Error(`refusing to materialize package outside the dsh profile: ${installedRoot}`)
+  }
+
+  const manifest = JSON.parse(readFileSync(path.join(projectRoot, 'package.json'), 'utf8'))
+  const entries = new Set(['package.json', 'README.md', 'LICENSE', ...(Array.isArray(manifest.files) ? manifest.files : [])])
+  for (const entry of entries) {
+    if (typeof entry !== 'string'
+      || entry === ''
+      || path.isAbsolute(entry)
+      || entry.includes('*')
+      || entry.includes('?')) {
+      throw new Error(`unsupported package files entry for safe materialization: ${JSON.stringify(entry)}`)
+    }
+    const source = path.resolve(projectRoot, entry)
+    const target = path.resolve(installedRoot, entry)
+    if (!isPathInside(projectRoot, source) || !isPathInside(installedRoot, target)) {
+      throw new Error(`package files entry escapes its root: ${entry}`)
+    }
+    if (!existsSync(source)) {
+      if (entry === 'README.md' || entry === 'LICENSE') continue
+      throw new Error(`package files entry does not exist: ${source}`)
+    }
+    await rm(target, { recursive: true, force: true })
+    await mkdir(path.dirname(target), { recursive: true })
+    await cp(source, target, {
+      recursive: true,
+      dereference: true,
+      errorOnExist: true,
+      force: false,
+    })
+  }
+  return installedRoot
 }
 
 export function profileHasPlugin(dshHome, profile, pluginName = PLUGIN_NAME) {

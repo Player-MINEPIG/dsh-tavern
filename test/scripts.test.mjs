@@ -11,6 +11,7 @@ import {
   dshPluginArgs,
   installedDataPath,
   localPackageSpec,
+  materializeInstalledPackage,
   parseOptions,
   profileHasPlugin,
   profileStoreDir,
@@ -80,6 +81,35 @@ test('detects whether the profile manifest still registers the plugin', async ()
     assert.equal(profileHasPlugin(temporary, 'missing'), false)
     await writeFile(path.join(profile, 'package.json'), JSON.stringify({ private: true }))
     assert.equal(profileHasPlugin(temporary, 'web'), false)
+  } finally {
+    await rm(temporary, { recursive: true, force: true })
+  }
+})
+
+test('materializes a detached installed package while preserving plugin data', async () => {
+  const temporary = await mkdtemp(path.join(os.tmpdir(), 'dsh-tavern-materialize-test-'))
+  const projectRoot = path.join(temporary, 'project')
+  const dshHome = path.join(temporary, 'dsh-home')
+  const installedRoot = path.dirname(installedDataPath(dshHome, 'web'))
+  const sourceModule = path.join(projectRoot, 'packages', 'loader', 'session-policy.js')
+  const installedModule = path.join(installedRoot, 'packages', 'loader', 'session-policy.js')
+  try {
+    await mkdir(path.dirname(sourceModule), { recursive: true })
+    await mkdir(path.dirname(installedModule), { recursive: true })
+    await mkdir(path.join(installedRoot, 'data'), { recursive: true })
+    await writeFile(path.join(projectRoot, 'package.json'), JSON.stringify({ files: ['packages'] }))
+    await writeFile(path.join(projectRoot, 'README.md'), 'synthetic readme')
+    await writeFile(path.join(projectRoot, 'LICENSE'), 'synthetic license')
+    await writeFile(sourceModule, 'export const schemaVersion = 2\n')
+    await writeFile(installedModule, 'export const schemaVersion = 1\n')
+    await writeFile(path.join(installedRoot, 'data', 'resource.json'), '{"kept":true}')
+
+    await materializeInstalledPackage({ projectRoot, dshHome, profile: 'web' })
+    assert.equal(await readFile(installedModule, 'utf8'), 'export const schemaVersion = 2\n')
+    assert.equal(await readFile(path.join(installedRoot, 'data', 'resource.json'), 'utf8'), '{"kept":true}')
+
+    await writeFile(sourceModule, 'export const schemaVersion = 3\n')
+    assert.equal(await readFile(installedModule, 'utf8'), 'export const schemaVersion = 2\n')
   } finally {
     await rm(temporary, { recursive: true, force: true })
   }
