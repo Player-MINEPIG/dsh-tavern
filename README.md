@@ -220,6 +220,7 @@ packages/tavern-loader
 - 在 loader 内实现唯一的 `PendingInputProjection`：从公开 `agent/inbox/spliced` 重建待处理/claimed 输入，形成结构化 `ActivationContext`，使单 step 回合也能在 `step 1` 触发世界书。不得增加空转模型请求、私读 Inbox、提前写入消息或在 Trace 中保存输入正文。
 - 用户资源绑定零本或多本独立世界书，并由统一 session policy/loader 组合；关系存入选择策略，不塞进用户描述正文。用户解绑或删除时清理关联，不影响同一本书的显式 session 绑定。
 - 增加插件设置界面，首批支持 UI 缩放和界面语言；设置应全局持久化、即时刷新、具有恢复默认值，且不改变资源内容或 session 绑定。当前版本仅提高了默认正文与控件字号。
+- 增加“维持当前设置新开对话”按钮：继承当前会话已选择的 preset、角色卡、用户和世界书等 Tavern 配置，同时创建不携带既有对话历史的干净会话。
 - 世界书递归扫描、sticky/cooldown/delay、vector、outlet 与严格 depth/role insertion。
 - 将 greeting 作为显式开场消息的安全工作流，而不污染既有 durable history。
 - 在 DSH 提供合适 seam 后支持真实 role message、example dialogue 和 absolute/depth injection，而不是用 system 标签模拟。
