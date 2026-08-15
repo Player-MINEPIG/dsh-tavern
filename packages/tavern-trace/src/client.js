@@ -1,9 +1,12 @@
 import {
-  createElement as h,
+  createElement,
   useCallback,
   useEffect,
   useState,
 } from 'react'
+import { createLocalizedElement, getClientUiSettings } from '../../client/src/i18n.js'
+
+const h = createLocalizedElement(createElement)
 
 const TRACE_API = '/dsh-tavern/api/traces'
 
@@ -162,6 +165,7 @@ export function TavernTraceView({ sessionId, useSession }) {
   const running = useSession(snapshot => snapshot.running)
   const [data, setData] = useState(null)
   const [error, setError] = useState('')
+  const [uiSettings, setUiSettings] = useState(getClientUiSettings)
 
   const refresh = useCallback(async () => {
     try {
@@ -176,9 +180,22 @@ export function TavernTraceView({ sessionId, useSession }) {
   }, [sessionId])
 
   useEffect(() => { refresh() }, [refresh, lastVisibleSeq, running])
+  useEffect(() => {
+    const onSettings = event => setUiSettings(event.detail ?? getClientUiSettings())
+    window.addEventListener('dsh-tavern:ui-settings', onSettings)
+    return () => window.removeEventListener('dsh-tavern:ui-settings', onSettings)
+  }, [])
 
   const records = [...(data?.records ?? [])].reverse()
-  return h('div', { className: 'dttrace-root' },
+  return h('div', {
+    className: 'dttrace-root',
+    lang: uiSettings.locale,
+    style: {
+      zoom: uiSettings.scale,
+      width: `${100 / uiSettings.scale}%`,
+      height: `${100 / uiSettings.scale}%`,
+    },
+  },
     h('div', { className: 'dttrace-toolbar' },
       h('div', { className: 'dttrace-title' }, 'Tavern Trace'),
       h('button', { className: 'dttrace-button', type: 'button', onClick: refresh }, '刷新'),

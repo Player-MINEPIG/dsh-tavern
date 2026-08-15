@@ -24,6 +24,11 @@ import { createWorldBookAdapter } from './world-book-adapter.js'
 import { PendingInputProjection } from './pending-input-projection.js'
 import { secureTavernApi } from './api-security.js'
 import {
+  UiSettingsStore,
+  createUiSettingsApiHandler,
+  isUiSettingsApiPath,
+} from './ui-settings.js'
+import {
   TavernTraceRecorder,
   TavernTraceStore,
   createTavernTraceApiHandler,
@@ -193,6 +198,7 @@ export function apply(ctx, config = {}) {
   const userStore = new UserStore(storageDir)
   const userWorldBooks = new UserWorldBookBindingStore(storageDir, config.userWorldBooks)
   const sessionTemplateStore = new SessionTemplateStore(storageDir, config.sessionTemplates)
+  const uiSettingsStore = new UiSettingsStore(storageDir)
   const selections = new SessionSelectionStore(storageDir, {
     ...config.sessionSelections,
     defaultSelection: () => ({ presetId: store.state.selectedId }),
@@ -358,9 +364,12 @@ export function apply(ctx, config = {}) {
         if (change.kind === 'session-configuration-applied') notifyChange()
       },
     })
+    const uiSettingsApi = createUiSettingsApiHandler(uiSettingsStore)
     const api = secureTavernApi(
-      (req, res) => isSessionTemplateApiPath(req.url)
-        ? sessionTemplateApi(req, res)
+      (req, res) => isUiSettingsApiPath(req.url)
+        ? uiSettingsApi(req, res)
+        : isSessionTemplateApiPath(req.url)
+          ? sessionTemplateApi(req, res)
         : isUserApiPath(req.url)
         ? userApi(req, res)
         : isTavernTraceApiPath(req.url)
@@ -392,6 +401,7 @@ export function apply(ctx, config = {}) {
     userWorldBooks: { value: userWorldBooks, enumerable: false },
     sessionTemplateStore: { value: sessionTemplateStore, enumerable: false },
     sessionConfigurations: { value: sessionConfigurations, enumerable: false },
+    uiSettingsStore: { value: uiSettingsStore, enumerable: false },
     traceStore: { value: traceStore, enumerable: false },
     traceRecorder: { value: traceRecorder, enumerable: false },
     pendingInputProjection: { value: pendingInput, enumerable: false },
@@ -442,6 +452,13 @@ export { createWorldBookAdapter } from './world-book-adapter.js'
 export { PendingInputProjection, pendingInputProjectionConstants } from './pending-input-projection.js'
 export { WorldBookStore, createWorldBookApiHandler } from '../../world-book-library/src/index.js'
 export { secureTavernApi, apiSecurityConstants } from './api-security.js'
+export {
+  UiSettingsStore,
+  createUiSettingsApiHandler,
+  isUiSettingsApiPath,
+  normalizeUiSettings,
+  uiSettingsConstants,
+} from './ui-settings.js'
 export { TavernTraceRecorder, TavernTraceStore } from '../../tavern-trace/src/index.js'
 export {
   SessionConfigurationError,

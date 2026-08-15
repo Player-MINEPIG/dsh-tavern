@@ -16,9 +16,11 @@ test('one Tavern launcher exposes stable resource surfaces', () => {
     'world-info',
     'user',
     'session-template',
+    'settings',
   ])
   assert.equal(surfaceTitle('world-info'), '世界书')
   assert.equal(TAVERN_MENU_ITEMS.find(item => item.id === 'user').available, true)
+  assert.equal(TAVERN_MENU_ITEMS.find(item => item.id === 'settings').showBinding, false)
 })
 
 test('floating launcher clamps its drag anchor and expands toward available space', () => {
@@ -29,6 +31,14 @@ test('floating launcher clamps its drag anchor and expands toward available spac
     left: 492,
     top: 266,
     anchor: { x: 748, y: 548 },
+  })
+  assert.deepEqual(clampLauncherAnchor({ x: 748, y: 548 }, { width: 800, height: 600 }, 1.5), { x: 726, y: 526 })
+  assert.deepEqual(launcherPlacement({ x: 748, y: 548 }, { width: 800, height: 600 }, true, 1.5), {
+    side: 'left',
+    vertical: 'up',
+    left: 342,
+    top: 103,
+    anchor: { x: 726, y: 526 },
   })
 })
 
@@ -130,6 +140,9 @@ test('only the client composition root owns the Tavern shell overlay', () => {
   assert.match(root, /ctx\.sessions\.open/)
   assert.match(root, /session-configurations\/preview/)
   assert.match(root, /session-configurations\/apply/)
+  assert.match(root, /surface === 'settings'/)
+  assert.match(root, /uiSettingsRequest\('PUT'/)
+  assert.match(root, /--dtv-ui-scale/)
 })
 
 test('standalone world-book panel exposes CRUD, multi-binding and all required entry controls', () => {

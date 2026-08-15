@@ -3,11 +3,12 @@ export const TAVERN_MENU_ITEMS = Object.freeze([
   { id: 'character', label: '角色卡', emptyTitle: '未绑定角色', available: true },
   { id: 'world-info', label: '世界书', emptyTitle: '未绑定世界书', available: true },
   { id: 'user', label: '用户', emptyTitle: '未绑定用户', available: true },
-  { id: 'session-template', label: '新会话', emptyTitle: '当前设置或配置模板', available: true, binding: false },
+  { id: 'session-template', label: '新会话', emptyTitle: '当前设置或配置模板', available: true, binding: false, showBinding: false },
+  { id: 'settings', label: '界面设置', emptyTitle: '语言与缩放', available: true, binding: false, showBinding: false },
 ])
 
 export const TAVERN_LAUNCHER_SIZE = 44
-export const TAVERN_LAUNCHER_PANEL = Object.freeze({ width: 300, height: 326 })
+export const TAVERN_LAUNCHER_PANEL = Object.freeze({ width: 300, height: 376 })
 
 function isRecord(value) {
   return value !== null && typeof value === 'object' && !Array.isArray(value)
@@ -135,28 +136,35 @@ export function launcherResourceStatuses(snapshot) {
       items: catalog(snapshot, 'users', 'userProfiles', 'personas'),
       emptyTitle: '未绑定用户',
     }),
+    'session-template': { bound: false, count: 0, title: '当前设置或配置模板' },
+    settings: { bound: false, count: 0, title: '语言与缩放' },
   }
 }
 
-export function clampLauncherAnchor(position, viewport) {
+export function clampLauncherAnchor(position, viewport, scale = 1) {
   const width = Math.max(TAVERN_LAUNCHER_SIZE, Number(viewport?.width) || TAVERN_LAUNCHER_SIZE)
   const height = Math.max(TAVERN_LAUNCHER_SIZE, Number(viewport?.height) || TAVERN_LAUNCHER_SIZE)
+  const launcherSize = TAVERN_LAUNCHER_SIZE * Math.max(0.1, Number(scale) || 1)
   const margin = 8
   return {
-    x: Math.min(width - TAVERN_LAUNCHER_SIZE - margin, Math.max(margin, Number(position?.x) || margin)),
-    y: Math.min(height - TAVERN_LAUNCHER_SIZE - margin, Math.max(margin, Number(position?.y) || margin)),
+    x: Math.min(width - launcherSize - margin, Math.max(margin, Number(position?.x) || margin)),
+    y: Math.min(height - launcherSize - margin, Math.max(margin, Number(position?.y) || margin)),
   }
 }
 
-export function launcherPlacement(anchor, viewport, expanded = false) {
-  const point = clampLauncherAnchor(anchor, viewport)
-  const opensLeft = point.x + TAVERN_LAUNCHER_PANEL.width > viewport.width - 8
-  const opensUp = point.y + TAVERN_LAUNCHER_PANEL.height > viewport.height - 8
+export function launcherPlacement(anchor, viewport, expanded = false, scale = 1) {
+  const factor = Math.max(0.1, Number(scale) || 1)
+  const point = clampLauncherAnchor(anchor, viewport, factor)
+  const panelWidth = TAVERN_LAUNCHER_PANEL.width * factor
+  const panelHeight = TAVERN_LAUNCHER_PANEL.height * factor
+  const launcherSize = TAVERN_LAUNCHER_SIZE * factor
+  const opensLeft = point.x + panelWidth > viewport.width - 8
+  const opensUp = point.y + panelHeight > viewport.height - 8
   return {
     side: opensLeft ? 'left' : 'right',
     vertical: opensUp ? 'up' : 'down',
-    left: expanded && opensLeft ? point.x - TAVERN_LAUNCHER_PANEL.width + TAVERN_LAUNCHER_SIZE : point.x,
-    top: expanded && opensUp ? point.y - TAVERN_LAUNCHER_PANEL.height + TAVERN_LAUNCHER_SIZE : point.y,
+    left: expanded && opensLeft ? point.x - panelWidth + launcherSize : point.x,
+    top: expanded && opensUp ? point.y - panelHeight + launcherSize : point.y,
     anchor: point,
   }
 }

@@ -73,7 +73,7 @@ rc.6 的 `agent/inbox/spliced` 是公开、持久的 Session event；插入、�
 ## 控制面扩展
 
 - 用户与独立世界书的关联已由统一 loader policy 的独立原子文件持有；`UserModel` 仍只有 `id/name/description`，`world-book-library` 文档也不反向保存用户 id。用户 UI 可以编辑关系，但最终以 session 显式来源优先、用户来源随后稳定去重，且只有 loader 的共享 adapter 运行 matcher。
-- UI 缩放与语言由 `packages/client` 的单一设置入口持有，各资源组件消费共享设置；Host loader、资源 JSON 和 session selection 不读取显示设置。
+- UI 缩放与语言已由 `packages/client` 的单一设置入口和共享 i18n catalog 实现，各资源组件只在渲染时消费共享设置；loader 根 API 只持久化有界的全局显示文档，资源 JSON、profile 编译和 session selection 不读取显示设置。
 - 这两项都必须复用现有单插件 API、安全边界、刷新事件和原子持久化模式，不能通过新增第二个可安装插件实现。
 
 ## 为什么不是两个 DSH 插件

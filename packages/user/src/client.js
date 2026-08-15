@@ -1,11 +1,14 @@
 import {
-  createElement as h,
+  createElement,
   useCallback,
   useEffect,
   useRef,
   useState,
 } from 'react'
 import { sameOrderedIds, userPanelDirty, userResourceDirty } from './client-state.js'
+import { createLocalizedElement, translateVisibleText } from '../../client/src/i18n.js'
+
+const h = createLocalizedElement(createElement)
 
 const API_ROOT = '/dsh-tavern/api'
 
@@ -170,7 +173,7 @@ export function UserPanel({ sessionId, sessionBlank, close }) {
   const bind = useCallback(() => run(async () => {
     if (!sessionId || draft === null) throw new Error('请先创建或打开一个会话并选择用户资源')
     if (selectedUserId !== draft.id && sessionBlank === false
-      && !window.confirm('当前会话已有历史。切换用户只影响后续请求，不会重写已有消息；继续吗？')) return
+      && !window.confirm(translateVisibleText('当前会话已有历史。切换用户只影响后续请求，不会重写已有消息；继续吗？'))) return
     const data = await api('/user-selection', {
       method: 'POST',
       body: JSON.stringify({ sessionId, userId: draft.id }),
@@ -187,7 +190,7 @@ export function UserPanel({ sessionId, sessionBlank, close }) {
   }, '当前会话已解除用户绑定'), [run, sessionId])
 
   const remove = useCallback(() => run(async () => {
-    if (draft === null || !window.confirm(`删除用户“${draft.name}”？所有会话中的用户选择和该用户的世界书关系都会清除。`)) return
+    if (draft === null || !window.confirm(translateVisibleText(`删除用户“${draft.name}”？所有会话中的用户选择和该用户的世界书关系都会清除。`))) return
     await api(`/users/${encodeURIComponent(draft.id)}`, { method: 'DELETE', body: '{}' })
     draftId.current = null
     await refresh(null)

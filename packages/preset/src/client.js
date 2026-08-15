@@ -1,11 +1,14 @@
 import {
-  createElement as h,
+  createElement,
   useCallback,
   useEffect,
   useRef,
   useState,
 } from 'react'
+import { createLocalizedElement, translateVisibleText } from '../../client/src/i18n.js'
 import { reorderAtBoundary } from './client-state.js'
+
+const h = createLocalizedElement(createElement)
 
 const API_ROOT = '/dsh-tavern/api'
 
@@ -251,7 +254,7 @@ export function PresetSidebar({ closePanel, openPanel, sessionId, autoOpen = tru
   }, '预设配置已保存'), [draft, refresh, run])
 
   const remove = useCallback(() => run(async () => {
-    if (!window.confirm(`删除预设“${draft.name}”？`)) return
+    if (!window.confirm(translateVisibleText(`删除预设“${draft.name}”？`))) return
     await api(`/presets/${encodeURIComponent(draft.id)}`, { method: 'DELETE' })
     await refresh(null)
     announceTavernRefresh()

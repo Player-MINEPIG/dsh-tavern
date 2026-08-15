@@ -78,6 +78,29 @@ Purpose: start a clean DSH conversation while carrying only the current or saved
 - Added store, API, client-workflow, architecture and launcher regressions plus `docs/session-template/IMPLEMENTATION_AND_ACCEPTANCE.md`.
 - Verification: `npm run check` rebuilt the browser bundle and completed 142 tests with zero failures; the one skipped case remains the opt-in external acceptance fixture.
 
+## 2026-08-15 — Global Tavern UI settings and unified i18n
+
+Purpose: add presentation-only language and scaling controls without changing
+DSH UI, Tavern resources, session bindings, or the single-shell architecture.
+
+- Added a fifth surface to the existing draggable `DT` launcher for
+  Simplified Chinese / English and 75%–150% Tavern UI scaling, with immediate
+  application, failure rollback, and restore-default behavior.
+- Added one shared catalog-backed rendering boundary for the launcher, preset,
+  character, standalone/embedded world-book, user, and Tavern Trace clients.
+  Missing semantic keys return a stable localized fallback rather than the raw
+  key, while resource form values remain untouched.
+- Added global `ui-settings.json` persistence and secured
+  `GET`/`PUT`/`DELETE /dsh-tavern/api/ui-settings`. The write schema is an exact
+  locale/scale whitelist with a 1 KiB request/file cap and atomic replacement.
+- Kept one `shell.overlay`, one root API prefix, and one Host profile section;
+  scale styles are scoped to Tavern roots and launcher geometry now accounts
+  for the active scale.
+- Added focused persistence/API/i18n/scaled-geometry regression tests and
+  `docs/ui-settings-i18n/IMPLEMENTATION_AND_ACCEPTANCE.md`.
+- Verification: `npm run check` built the client and completed 140 passing
+  tests, zero failures, with the one opt-in local acceptance fixture skipped.
+
 ## 2026-08-15 — Deterministic local-package refresh
 
 Purpose: prevent a development install from loading a mixed package after a

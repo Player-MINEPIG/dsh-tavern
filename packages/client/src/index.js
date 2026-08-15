@@ -1,10 +1,19 @@
 import {
-  createElement as h,
+  createElement,
   useCallback,
   useEffect,
   useRef,
   useState,
 } from 'react'
+import {
+  DEFAULT_UI_SETTINGS,
+  UI_SCALE_OPTIONS,
+  createLocalizedElement,
+  getClientUiSettings,
+  setClientUiSettings,
+  translate,
+  translateVisibleText,
+} from './i18n.js'
 import { PresetSidebar, installPresetStyles } from '../../preset/src/client.js'
 import { CharacterPanel, installCharacterStyles } from '../../character/src/client.js'
 import { WorldBookPanel, installWorldBookStyles } from '../../world-book-library/src/client.js'
@@ -22,17 +31,20 @@ import {
   launcherResourceStatuses,
 } from './state.js'
 
+const h = createLocalizedElement(createElement)
+
 const API_ROOT = '/dsh-tavern/api'
 
 const css = `
 .dtv-layer{position:absolute;inset:0;z-index:6;pointer-events:none;font-family:Inter,var(--dsw-font-family),sans-serif;color:var(--dsw-alias-label-primary)}
 .dtv-launcher{position:absolute;z-index:2;width:44px;height:44px;pointer-events:auto;overflow:hidden;border:0 solid transparent;border-radius:22px;background:transparent;box-shadow:none;transition:width .22s ease,height .22s ease,border-radius .22s ease,background-color .18s ease,box-shadow .18s ease;display:block}
-.dtv-launcher[data-open=true]{width:300px;height:326px;border-width:1px;border-color:var(--dsw-alias-border-l2);border-radius:18px;background:var(--dsw-alias-bg-base);box-shadow:var(--ds-shadow-3,0 12px 34px rgba(0,0,0,.24))}
+.dtv-launcher[data-open=true]{width:300px;height:376px;border-width:1px;border-color:var(--dsw-alias-border-l2);border-radius:18px;background:var(--dsw-alias-bg-base);box-shadow:var(--ds-shadow-3,0 12px 34px rgba(0,0,0,.24))}
 .dtv-ball-row{position:absolute;top:0;left:0;right:0;height:52px;display:flex;align-items:flex-start;pointer-events:none}.dtv-launcher[data-side=left] .dtv-ball-row{justify-content:flex-end}.dtv-launcher[data-vertical=up] .dtv-ball-row{top:auto;bottom:0;align-items:flex-end}
 .dtv-ball{pointer-events:auto;touch-action:none;user-select:none;width:44px;height:44px;flex:none;border:2px solid #fff;border-radius:50%;background:conic-gradient(from 225deg,#090909 0 56%,#b31319 56% 100%);box-shadow:0 0 0 2px #a50f16,0 6px 20px rgba(0,0,0,.34),inset 0 0 0 1px rgba(255,255,255,.28);color:#fff;font-size:13px;letter-spacing:-.5px;font-weight:850;text-shadow:0 1px 2px #000;cursor:grab;transition:filter .15s ease,transform .18s ease,box-shadow .18s ease}.dtv-ball:hover{filter:brightness(1.1);box-shadow:0 0 0 2px #d5222b,0 8px 24px rgba(0,0,0,.4),inset 0 0 0 1px rgba(255,255,255,.35)}.dtv-ball:active{cursor:grabbing}.dtv-launcher[data-open=true] .dtv-ball{transform:scale(.82) rotate(-8deg)}
 .dtv-menu{position:absolute;left:8px;right:8px;top:52px;bottom:8px;padding:1px;display:flex;flex-direction:column;gap:4px;opacity:0;transform:translateY(-6px);transition:opacity .13s ease .1s,transform .18s ease .08s}.dtv-launcher[data-open=true] .dtv-menu{opacity:1;transform:none}.dtv-launcher[data-vertical=up] .dtv-menu{top:8px;bottom:52px;transform:translateY(6px)}.dtv-launcher[data-open=true][data-vertical=up] .dtv-menu{transform:none}
 .dtv-menu-title{padding:5px 8px 7px;font-size:11px;font-weight:650;color:var(--dsw-alias-label-tertiary);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .dtv-menu-item{min-height:43px;border:0;border-radius:9px;padding:5px 8px;background:transparent;color:var(--dsw-alias-label-primary);text-align:left;font:inherit;cursor:pointer;display:grid;grid-template-columns:10px minmax(0,1fr) auto;gap:8px;align-items:center}.dtv-menu-item:hover{background:var(--dsw-alias-interactive-bg-hover)}.dtv-menu-item[data-active=true]{background:var(--dsw-alias-interactive-bg-selected,var(--dsw-specific-tip))}.dtv-binding-dot{width:8px;height:8px;border-radius:50%;background:#d33239;box-shadow:0 0 0 1px rgba(98,0,4,.38)}.dtv-menu-item[data-bound=true] .dtv-binding-dot{background:#44d17a;box-shadow:0 0 5px #31c66b,0 0 10px rgba(49,198,107,.75)}.dtv-item-copy{min-width:0;display:flex;flex-direction:column;gap:1px}.dtv-item-label{font-size:11px;font-weight:700;line-height:1.2}.dtv-item-status{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:10px;line-height:1.25;color:var(--dsw-alias-label-tertiary)}.dtv-item-count{border-radius:10px;padding:2px 6px;background:var(--dsw-specific-tip);font-size:9px;color:var(--dsw-alias-label-secondary)}.dtv-item-planned{font-size:9px;color:var(--dsw-alias-label-tertiary)}
+.dtv-menu-item[data-show-binding=false] .dtv-binding-dot{visibility:hidden}
 .dtv-panel{position:absolute;z-index:1;top:0;right:0;bottom:0;width:min(440px,calc(100vw - 56px));pointer-events:auto;border-left:1px solid var(--dsw-alias-border-l2);box-shadow:var(--ds-shadow-3,-8px 0 28px rgba(0,0,0,.18));background:var(--dsw-alias-bg-base);display:flex;flex-direction:column}
 .dtv-header{height:52px;box-sizing:border-box;display:flex;align-items:center;gap:8px;padding:0 14px;border-bottom:1px solid var(--dsw-alias-border-l2);flex:none}.dtv-title{font-size:14px;font-weight:650;flex:1}.dtv-close{border:0;background:transparent;color:var(--dsw-alias-label-tertiary);cursor:pointer;border-radius:7px;padding:6px 8px}.dtv-close:hover{background:var(--dsw-alias-interactive-bg-hover)}
 .dtv-body{min-height:0;overflow:auto;padding:12px;display:flex;flex-direction:column;gap:12px}.dtv-note{font-size:11px;line-height:1.5;color:var(--dsw-alias-label-tertiary);margin:0;overflow-wrap:anywhere}.dtv-status{font-size:11px;line-height:1.45;border-radius:7px;padding:8px 10px;background:var(--dsw-specific-tip);overflow-wrap:anywhere}.dtv-status[data-error=true]{color:var(--dsw-alias-state-error)}
@@ -40,6 +52,7 @@ const css = `
 .dtv-primary{background:var(--dsw-alias-button-primary-fill,#2677d9);border-color:transparent;color:var(--dsw-alias-button-primary-label,#fff)}.dtv-primary:hover:not(:disabled){filter:brightness(1.08);background:var(--dsw-alias-button-primary-fill,#2677d9)}.dtv-template-actions{display:grid;grid-template-columns:1fr 1fr;gap:7px}
 .dtv-resource{border:1px solid var(--dsw-alias-border-l1);border-radius:9px;padding:10px;display:flex;flex-direction:column;gap:7px}.dtv-resource-title{font-size:12px;font-weight:650}.dtv-resource-meta{font-size:11px;line-height:1.45;color:var(--dsw-alias-label-tertiary)}.dtv-list{margin:0;padding-left:18px;font-size:11px;line-height:1.55}
 .dtv-book-toolbar{display:grid;grid-template-columns:1fr 1fr 1fr;gap:7px}.dtv-entry{border:1px solid var(--dsw-alias-border-l1);border-radius:8px;background:var(--dsw-alias-bg-base);overflow:hidden}.dtv-entry>summary{list-style:none;cursor:pointer;padding:8px;display:flex;align-items:center;gap:7px;font-size:11px}.dtv-entry>summary::-webkit-details-marker{display:none}.dtv-entry-dot{width:8px;height:8px;flex:none;border-radius:50%;background:var(--dsw-alias-label-tertiary)}.dtv-entry[data-enabled=true] .dtv-entry-dot{background:var(--dsw-alias-state-success,#2fa36b)}.dtv-entry-name{font-weight:620;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.dtv-entry-state{margin-left:auto;flex:none;color:var(--dsw-alias-label-tertiary);font-size:10px}.dtv-entry-body{border-top:1px solid var(--dsw-alias-border-l1);padding:8px;display:flex;flex-direction:column;gap:8px}.dtv-field{display:flex;flex-direction:column;gap:4px}.dtv-label{font-size:10px;font-weight:620;color:var(--dsw-alias-label-tertiary)}.dtv-input,.dtv-select,.dtv-textarea{box-sizing:border-box;width:100%;border:1px solid var(--dsw-alias-border-l2);border-radius:7px;background:var(--dsw-alias-bg-base);color:var(--dsw-alias-label-primary);font:inherit;font-size:11px;padding:7px 8px}.dtv-input,.dtv-select{height:32px}.dtv-textarea{min-height:94px;resize:vertical;line-height:1.45}.dtv-entry-grid{display:grid;grid-template-columns:1fr 1fr;gap:7px}.dtv-checks{display:flex;flex-wrap:wrap;gap:10px}.dtv-check{display:flex;gap:5px;align-items:center;font-size:10px}.dtv-entry-actions{display:flex;justify-content:flex-end}.dtv-danger{color:var(--dsw-alias-state-error)}
+.dtv-layer>.dtv-launcher,.dtv-layer>.dtv-panel,.dtv-layer>.dcc-panel,.dtv-layer>.dwb-panel,.dtv-layer>.dtu-panel{zoom:var(--dtv-ui-scale,1)}.dtv-setting-value{font-size:12px;font-variant-numeric:tabular-nums;color:var(--dsw-alias-label-secondary)}
 `
 
 const LAUNCHER_STORAGE_KEY = 'dsh-tavern:launcher-position:v1'
@@ -92,6 +105,17 @@ async function sessionConfigurationRequest(path, body) {
   return data
 }
 
+async function uiSettingsRequest(method = 'GET', body) {
+  const response = await fetch(`${API_ROOT}/ui-settings`, {
+    method,
+    headers: method === 'GET' ? undefined : { 'Content-Type': 'application/json' },
+    body: body === undefined ? undefined : JSON.stringify(body),
+  })
+  const data = await response.json().catch(() => null)
+  if (!response.ok || data?.ok === false) throw new Error(data?.error ?? `HTTP ${response.status}`)
+  return data.settings
+}
+
 function PanelHeader({ title, close }) {
   return h('div', { className: 'dtv-header' },
     h('div', { className: 'dtv-title' }, title),
@@ -101,6 +125,38 @@ function PanelHeader({ title, close }) {
 
 function Field({ label, children }) {
   return h('label', { className: 'dtv-field' }, h('span', { className: 'dtv-label' }, label), children)
+}
+
+function SettingsPanel({ settings, status, busy, close, update, reset }) {
+  const percent = Math.round(settings.scale * 100)
+  return h('div', { className: 'dtv-panel' },
+    h('div', { className: 'dtv-header' },
+      h('div', { className: 'dtv-title' }, translate('settings.title')),
+      h('button', { className: 'dtv-close', type: 'button', title: translate('settings.close'), 'aria-label': translate('settings.close'), onClick: close }, '✕'),
+    ),
+    h('div', { className: 'dtv-body' },
+      h(Field, { label: translate('settings.language') }, h('select', {
+        className: 'dtv-select',
+        value: settings.locale,
+        disabled: busy,
+        onChange: event => update({ ...settings, locale: event.target.value }),
+      },
+      h('option', { value: 'zh-CN' }, translate('settings.language.zh')),
+      h('option', { value: 'en' }, translate('settings.language.en')))),
+      h(Field, { label: translate('settings.scale') }, h('select', {
+        className: 'dtv-select',
+        value: settings.scale,
+        disabled: busy,
+        onChange: event => update({ ...settings, scale: Number(event.target.value) }),
+      }, ...UI_SCALE_OPTIONS.map(scale => h('option', { key: scale, value: scale }, `${Math.round(scale * 100)}%`)))),
+      h('div', { className: 'dtv-setting-value' }, translate('settings.currentScale', { scale: percent })),
+      h('p', { className: 'dtv-note' }, translate('settings.scale.help')),
+      h('div', { className: 'dtv-status', 'data-error': status.error || undefined, role: 'status' }, status.text),
+      h('div', { className: 'dtv-actions' },
+        h('button', { className: 'dtv-button', type: 'button', disabled: busy, onClick: reset }, translate('settings.reset')),
+      ),
+    ),
+  )
 }
 
 function keyLines(value) {
@@ -263,7 +319,7 @@ function WorldInfoPanel({ sessionId, close }) {
   }
 
   const removeEntry = index => {
-    if (!window.confirm('删除这个世界信息条目？保存后才会写入角色卡副本。')) return
+    if (!window.confirm(translateVisibleText('删除这个世界信息条目？保存后才会写入角色卡副本。'))) return
     setDraft(current => ({ ...structuredClone(current), entries: current.entries.filter((_entry, itemIndex) => itemIndex !== index) }))
     setDirty(true)
   }
@@ -295,7 +351,7 @@ function WorldInfoPanel({ sessionId, close }) {
     h('div', { className: 'dtv-body' },
       h('div', { className: 'dtv-book-toolbar' },
         h('button', { className: 'dtv-button', type: 'button', disabled: busy, onClick: () => {
-          if (!dirty || window.confirm('放弃尚未保存的条目修改并重新载入？')) refresh()
+          if (!dirty || window.confirm(translateVisibleText('放弃尚未保存的条目修改并重新载入？'))) refresh()
         } }, '重新载入'),
         h('button', { className: 'dtv-button', type: 'button', disabled: busy || draft === null, onClick: addEntry }, '新增条目'),
         h('button', { className: 'dtv-button', type: 'button', disabled: busy || !dirty, onClick: save }, dirty ? '保存修改' : '已保存'),
@@ -325,6 +381,9 @@ function TavernShell({ useSessions, useWorkspaces, createCleanSession }) {
   const [anchor, setAnchor] = useState(initialLauncherAnchor)
   const [activeSnapshot, setActiveSnapshot] = useState(null)
   const [statusError, setStatusError] = useState('')
+  const [uiSettings, setUiSettings] = useState(getClientUiSettings)
+  const [settingsStatus, setSettingsStatus] = useState({ text: translate('settings.saved'), error: false })
+  const [settingsBusy, setSettingsBusy] = useState(false)
   const drag = useRef(null)
   const suppressClick = useRef(false)
   const statusGeneration = useRef(0)
@@ -332,6 +391,58 @@ function TavernShell({ useSessions, useWorkspaces, createCleanSession }) {
   const sessionBlank = useSessions(state => state.current === undefined || state.current === null ? true : state.byId?.[state.current]?.blank === true)
   const workspaceId = useWorkspaces(state => workspaceTargetId(state, sessionId))
   const close = () => setSurface(null)
+
+  useEffect(() => {
+    let active = true
+    uiSettingsRequest().then(next => {
+      if (!active) return
+      const normalized = setClientUiSettings(next)
+      setUiSettings(normalized)
+      setSettingsStatus({ text: translate('settings.saved'), error: false })
+    }).catch(reason => {
+      if (!active) return
+      setSettingsStatus({ text: translate('settings.loadError', { message: reason instanceof Error ? reason.message : String(reason) }), error: true })
+    })
+    return () => { active = false }
+  }, [])
+
+  const persistSettings = async next => {
+    const previous = uiSettings
+    const normalized = setClientUiSettings(next)
+    setUiSettings(normalized)
+    setSettingsBusy(true)
+    setSettingsStatus({ text: translate('settings.saving'), error: false })
+    try {
+      const saved = setClientUiSettings(await uiSettingsRequest('PUT', normalized))
+      setUiSettings(saved)
+      setSettingsStatus({ text: translate('settings.saved'), error: false })
+    } catch (reason) {
+      setClientUiSettings(previous)
+      setUiSettings(previous)
+      setSettingsStatus({ text: translate('settings.saveError', { message: reason instanceof Error ? reason.message : String(reason) }), error: true })
+    } finally {
+      setSettingsBusy(false)
+    }
+  }
+
+  const resetSettings = async () => {
+    const previous = uiSettings
+    const defaults = setClientUiSettings(DEFAULT_UI_SETTINGS)
+    setUiSettings(defaults)
+    setSettingsBusy(true)
+    setSettingsStatus({ text: translate('settings.saving'), error: false })
+    try {
+      const saved = setClientUiSettings(await uiSettingsRequest('DELETE'))
+      setUiSettings(saved)
+      setSettingsStatus({ text: translate('settings.saved'), error: false })
+    } catch (reason) {
+      setClientUiSettings(previous)
+      setUiSettings(previous)
+      setSettingsStatus({ text: translate('settings.saveError', { message: reason instanceof Error ? reason.message : String(reason) }), error: true })
+    } finally {
+      setSettingsBusy(false)
+    }
+  }
 
   const refreshStatus = useCallback(async () => {
     const generation = ++statusGeneration.current
@@ -362,13 +473,21 @@ function TavernShell({ useSessions, useWorkspaces, createCleanSession }) {
 
   useEffect(() => {
     const onResize = () => setAnchor(current => {
-      const next = clampLauncherAnchor(current, viewport())
+      const next = clampLauncherAnchor(current, viewport(), uiSettings.scale)
       persistLauncherAnchor(next)
       return next
     })
     window.addEventListener('resize', onResize)
     return () => window.removeEventListener('resize', onResize)
-  }, [])
+  }, [uiSettings.scale])
+
+  useEffect(() => {
+    setAnchor(current => {
+      const next = clampLauncherAnchor(current, viewport(), uiSettings.scale)
+      persistLauncherAnchor(next)
+      return next
+    })
+  }, [uiSettings.scale])
 
   useEffect(() => {
     const onKeyDown = event => {
@@ -402,7 +521,7 @@ function TavernShell({ useSessions, useWorkspaces, createCleanSession }) {
     const next = clampLauncherAnchor({
       x: drag.current.origin.x + dx,
       y: drag.current.origin.y + dy,
-    }, viewport())
+    }, viewport(), uiSettings.scale)
     drag.current.latest = next
     setAnchor(next)
   }
@@ -446,19 +565,28 @@ function TavernShell({ useSessions, useWorkspaces, createCleanSession }) {
     panel = h(UserPanel, { sessionId, sessionBlank, close })
   } else if (surface === 'session-template') {
     panel = h(SessionTemplatePanel, { sessionId, workspaceId, createCleanSession, close })
+  } else if (surface === 'settings') {
+    panel = h(SettingsPanel, {
+      settings: uiSettings,
+      status: settingsStatus,
+      busy: settingsBusy,
+      close,
+      update: persistSettings,
+      reset: resetSettings,
+    })
   }
 
-  const placement = launcherPlacement(anchor, viewport(), menuOpen)
+  const placement = launcherPlacement(anchor, viewport(), menuOpen, uiSettings.scale)
   const statuses = launcherResourceStatuses(activeSnapshot)
 
-  return h('div', { className: 'dtv-layer', 'data-surface-open': surface !== null },
+  return h('div', { className: 'dtv-layer', lang: uiSettings.locale, 'data-surface-open': surface !== null, style: { '--dtv-ui-scale': uiSettings.scale } },
     panel,
     h('div', {
       className: 'dtv-launcher',
       'data-open': menuOpen,
       'data-side': placement.side,
       'data-vertical': placement.vertical,
-      style: { left: placement.left, top: placement.top },
+      style: { left: placement.left / uiSettings.scale, top: placement.top / uiSettings.scale },
     },
       h('div', { className: 'dtv-ball-row' }, h('button', {
           className: 'dtv-ball',
@@ -487,6 +615,7 @@ function TavernShell({ useSessions, useWorkspaces, createCleanSession }) {
             'data-available': item.available,
             'data-active': surface === item.id,
             'data-bound': item.binding === false ? undefined : status.bound,
+            'data-show-binding': item.binding !== false && item.showBinding !== false,
             'aria-current': surface === item.id ? 'page' : undefined,
             'aria-label': `${item.label}，${accessibleStatus}`,
             onClick: () => open(item.id),
