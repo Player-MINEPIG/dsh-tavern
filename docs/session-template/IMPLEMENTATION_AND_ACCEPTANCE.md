@@ -20,6 +20,15 @@ The copied projection is exactly the loader-owned selection shape:
 
 No operation reads, serializes or appends DSH messages. Templates contain no durable history, request header, Tavern Trace record, Inbox item, turn/step identifier, streaming state, tool state or model output. Character, preset, user and world-book documents remain in their existing resource stores; templates keep bounded ids and switches only.
 
+The selected-template UI resolves those ids through the current resource
+stores and displays the complete stored projection: preset title, character
+title, greeting index, both character switches, user title and ordered
+standalone world-book titles. Missing resources remain visible by id and share
+the existing blocking diagnostic. No prompt, persona, character or lore body is
+copied into the template response. Creating and updating deliberately remain
+"from current settings" operations; a localized notice directs the user to the
+DT launcher panels to review or change the active configuration first.
+
 ## Public DSH seam research
 
 The implementation was chosen after read-only inspection of the installed rc.6 public READMEs, declarations and emitted source:
@@ -74,7 +83,13 @@ All routes remain below the single `/dsh-tavern/api` registration and pass throu
 - `POST /session-configurations/preview`
 - `POST /session-configurations/apply`
 
-Template list responses are bounded by the same global file budget. Resource deletion intentionally does not rewrite templates: the stored intent remains visible and the list/apply endpoints return explicit diagnostics instead of silently choosing another resource.
+Template list responses are bounded by the same global file budget. Each list
+item includes a derived, non-persisted `contents` summary containing only ids,
+display names, missing flags and character switches so the browser can render
+the stored selection without issuing one request per resource. Resource
+deletion intentionally does not rewrite templates: the stored intent remains
+visible and the list/apply endpoints return explicit diagnostics instead of
+silently choosing another resource.
 
 ## Architecture review
 
@@ -109,7 +124,11 @@ Use an isolated DSH profile and synthetic resources:
 2. Open **DT -> 新会话** and choose **维持当前 Tavern 设置新开对话**.
 3. Confirm DSH navigates to a blank session in the same workspace. `/active?sessionId=<new-id>` must show the copied selection; the conversation view and Tavern Trace must be empty.
 4. Send one message in the new session and confirm only that session receives new durable history/Trace.
-5. Return to the source, create and name a template, select it, rename it, change current bindings, and use **用当前设置更新**. Restart DSH and confirm the template and selected id reload.
+5. Return to the source, create and name a template, select it, and verify the
+   panel lists the resolved preset, character/greeting/switches, user and
+   ordered world books. Use the DT panels to change current bindings, return to
+   the template panel, and use **用当前设置更新**. Restart DSH and confirm the
+   template, preview and selected id reload.
 6. Create from the template and verify all saved ids, greeting and switches, with no source history.
 7. Delete one referenced resource. Confirm the template shows the exact missing id and refuses creation without navigation or a new selection record.
 8. Delete the template and confirm existing sessions/resources are unchanged.

@@ -171,6 +171,16 @@ test('missing template resources produce diagnostics and never partially replace
 
     const preview = service.preview({ mode: 'template', templateId: 'template-missing' })
     assert.equal(preview.available, false)
+    assert.deepEqual(preview.contents, {
+      preset: { id: 'preset-a', name: 'preset-a', missing: false },
+      characterCard: { id: 'character-a', name: 'character-a', missing: false },
+      user: { id: 'user-a', name: 'user-a', missing: false },
+      worldBooks: [
+        { id: 'book-a', name: 'book-a', missing: false },
+        { id: 'book-b', name: 'book-b', missing: true },
+      ],
+      character: selection.character,
+    })
     assert.deepEqual(preview.diagnostics.map(item => item.code), ['SESSION_CONFIGURATION_WORLD_BOOK_MISSING'])
     assert.match(preview.diagnostics[0].message, /book-b/)
     assert.throws(

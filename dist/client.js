@@ -52,7 +52,35 @@ var MESSAGE_CATALOG = Object.freeze({
     "settings.saved": "\u8BBE\u7F6E\u5DF2\u4FDD\u5B58\uFF0C\u5E76\u5C06\u5728\u5237\u65B0\u548C\u4F1A\u8BDD\u5207\u6362\u540E\u4FDD\u6301\u3002",
     "settings.loadError": "\u65E0\u6CD5\u8BFB\u53D6\u754C\u9762\u8BBE\u7F6E\uFF1A{message}",
     "settings.saveError": "\u65E0\u6CD5\u4FDD\u5B58\u754C\u9762\u8BBE\u7F6E\uFF1A{message}",
-    "settings.close": "\u5173\u95ED\u754C\u9762\u8BBE\u7F6E\u4FA7\u8FB9\u680F"
+    "settings.close": "\u5173\u95ED\u754C\u9762\u8BBE\u7F6E\u4FA7\u8FB9\u680F",
+    "trace.storage.total": "\u603B\u8BA1\u6700\u591A {value}",
+    "trace.storage.perSession": "\u6BCF\u4F1A\u8BDD\u6700\u591A {value} \u6761",
+    "trace.storage.sessions": "\u6700\u591A {value} \u4E2A\u4F1A\u8BDD",
+    "trace.storage.perRecord": "\u5355\u6761\u6700\u591A {value}",
+    "trace.storage.summary": "\u63D2\u4EF6\u6709\u754C\u5B58\u50A8\uFF1A{limits}\uFF1B\u5237\u65B0\u6216\u5BBF\u4E3B\u91CD\u542F\u540E\u53EF\u6062\u590D\u3002",
+    "trace.keywords.primary": "\u4E3B\uFF1A{values}",
+    "trace.keywords.secondary": "\u9644\u52A0\uFF1A{values}",
+    "trace.keywords.configured": "\u914D\u7F6E\u5173\u952E\u8BCD\uFF1A{value}",
+    "trace.keywords.matched": "\u672C\u8F6E\u547D\u4E2D\uFF1A{value}",
+    "trace.bookBudget": "\u9884\u7B97\uFF1A{used}{limit} tokens \xB7 {decisionCount}",
+    "trace.decisionCount.one": "{count} \u6761\u51B3\u7B56",
+    "trace.decisionCount.other": "{count} \u6761\u51B3\u7B56",
+    "trace.decision.group": "\u7EC4 {name}{detail}",
+    "trace.decision.probability": "\u6982\u7387 {value}%{roll}",
+    "trace.decision.budget": "\u9884\u7B97 {value} tokens",
+    "trace.decision.position": "\u4F4D\u7F6E {requested}{result}",
+    "trace.recordAligned": "\u8BE5\u8BB0\u5F55\u5DF2\u5BF9\u9F50 DSH request/header #{sequence}{reused}\u3002Tavern profile \u6821\u9A8C\uFF1A{profile}\uFF1B\u91C7\u6837\u5B57\u6BB5\uFF1A{config}\u3002",
+    "trace.activationPending": "\u5339\u914D\u57FA\u4E8E\u672C\u6B65\u9AA4 assembly \u7684\u4E34\u65F6\u6FC0\u6D3B\u4E0A\u4E0B\u6587\uFF1A\u6301\u4E45\u5386\u53F2 + {included}/{pending} \u6761\u672C\u8F6E claimed \u8F93\u5165\uFF1B\u4E0D\u4FDD\u5B58\u8F93\u5165\u6B63\u6587{truncated}\u3002",
+    "trace.diagnostics": "\u8BCA\u65AD\uFF08{count}\uFF09",
+    "world.currentSession": "\u5F53\u524D\u4F1A\u8BDD\uFF1A{session}\u3002\u53EF\u7ED1\u5B9A\u96F6\u672C\u3001\u4E00\u672C\u6216\u591A\u672C\u72EC\u7ACB\u4E16\u754C\u4E66\uFF1B\u7ED1\u5B9A\u987A\u5E8F\u4FDD\u6301\u7A33\u5B9A\u3002",
+    "world.catalogItem": "{name}\uFF08{count} \u6761\uFF09",
+    "world.documentMeta": "{count} \u6761 \xB7 \u672A\u77E5\u5B57\u6BB5\u5728\u4FDD\u5B58\u548C\u5BFC\u51FA\u65F6\u7A33\u5B9A\u4FDD\u7559",
+    "world.embeddedMeta": "{count} \u6761\u3002\u5B83\u4E0E\u72EC\u7ACB\u4E66\u5171\u7528 matcher/loader\uFF1B\u5220\u9664\u72EC\u7ACB\u4E66\u4E0D\u4F1A\u4FEE\u6539\u6216\u89E3\u7ED1\u89D2\u8272\u5361\u5185\u5D4C\u4E66\u3002",
+    "world.embeddedEmpty": "\u5F53\u524D\u4F1A\u8BDD\u6CA1\u6709\u89D2\u8272\u5361\u7ED1\u5B9A\u7684\u5185\u5D4C\u4E16\u754C\u4E66\u3002\u7ED1\u5B9A\u542B character_book \u7684\u89D2\u8272\u5361\u540E\u4F1A\u663E\u793A\u5728\u8FD9\u91CC\u3002",
+    "world.diagnostics": "\u8FD0\u884C\u8BCA\u65AD\uFF08{count}\uFF09",
+    "character.embeddedBook": "\u5185\u5D4C character_book \u5DF2\u65E0\u635F\u4FDD\u7559\uFF08{count} \u6761\uFF09\uFF1B\u7ED1\u5B9A\u89D2\u8272\u540E\u7531 Tavern loader \u8C03\u7528\u4E16\u754C\u4FE1\u606F matcher\uFF0C\u89E3\u7ED1\u540E\u4E0D\u518D\u53C2\u4E0E\u540E\u7EED\u8BF7\u6C42\u3002",
+    "template.currentSettingsReminder": "\u6A21\u677F\u53EA\u80FD\u7528\u5F53\u524D\u4F1A\u8BDD\u7684 Tavern \u8BBE\u7F6E\u521B\u5EFA\u6216\u66F4\u65B0\u3002\u8BF7\u5728\u60AC\u6D6E\u7403\u7684\u9884\u8BBE\u3001\u89D2\u8272\u5361\u3001\u4E16\u754C\u4E66\u548C\u7528\u6237\u9762\u677F\u4E2D\u67E5\u770B\u6216\u4FEE\u6539\u5F53\u524D\u914D\u7F6E\uFF0C\u518D\u56DE\u5230\u8FD9\u91CC\u4FDD\u5B58\u3002",
+    "template.preview.greeting": "\u5F00\u573A\u5E8F\u53F7\uFF1A{value}"
   }),
   en: Object.freeze({
     "common.unavailable": "Interface text unavailable",
@@ -69,7 +97,35 @@ var MESSAGE_CATALOG = Object.freeze({
     "settings.saved": "Settings saved and retained across refreshes and session changes.",
     "settings.loadError": "Could not load UI settings: {message}",
     "settings.saveError": "Could not save UI settings: {message}",
-    "settings.close": "Close the UI settings sidebar"
+    "settings.close": "Close the UI settings sidebar",
+    "trace.storage.total": "up to {value} total",
+    "trace.storage.perSession": "up to {value} entries per session",
+    "trace.storage.sessions": "up to {value} sessions",
+    "trace.storage.perRecord": "up to {value} per entry",
+    "trace.storage.summary": "Bounded plugin storage: {limits}. Restored after refresh or host restart.",
+    "trace.keywords.primary": "Primary: {values}",
+    "trace.keywords.secondary": "Secondary: {values}",
+    "trace.keywords.configured": "Configured keywords: {value}",
+    "trace.keywords.matched": "Matched this request: {value}",
+    "trace.bookBudget": "Budget: {used}{limit} tokens \xB7 {decisionCount}",
+    "trace.decisionCount.one": "{count} decision",
+    "trace.decisionCount.other": "{count} decisions",
+    "trace.decision.group": "Group {name}{detail}",
+    "trace.decision.probability": "Probability {value}%{roll}",
+    "trace.decision.budget": "Budget {value} tokens",
+    "trace.decision.position": "Position {requested}{result}",
+    "trace.recordAligned": "This record is aligned with DSH request/header #{sequence}{reused}. Tavern profile validation: {profile}; sampler fields: {config}.",
+    "trace.activationPending": "Matching uses this step\u2019s temporary activation context: durable history + {included}/{pending} claimed messages from this turn; input bodies are not stored{truncated}.",
+    "trace.diagnostics": "Diagnostics ({count})",
+    "world.currentSession": "Current session: {session}. Bind zero, one, or multiple standalone world books; binding order remains stable.",
+    "world.catalogItem": "{name} ({count} entries)",
+    "world.documentMeta": "{count} entries \xB7 Unknown fields are preserved across saves and exports",
+    "world.embeddedMeta": "{count} entries. It shares the matcher/loader with standalone books; deleting a standalone book never edits or unbinds this embedded book.",
+    "world.embeddedEmpty": "The current session has no character-bound embedded world book. Bind a character card with character_book to show it here.",
+    "world.diagnostics": "Runtime diagnostics ({count})",
+    "character.embeddedBook": "Embedded character_book preserved losslessly ({count} entries); when the character is bound, the Tavern loader invokes the World Info matcher, and unbinding removes it from later requests.",
+    "template.currentSettingsReminder": "Templates can only be created or updated from the current session\u2019s Tavern settings. Review or change the current configuration in the launcher\u2019s Preset, Character, World book, and User panels, then return here to save it.",
+    "template.preview.greeting": "Greeting index: {value}"
   })
 });
 var SOURCE_EN = Object.freeze({
@@ -256,6 +312,10 @@ var SOURCE_EN = Object.freeze({
   "\u53EA\u7EE7\u627F preset\u3001\u89D2\u8272\u5361\u4E0E greeting/\u5F00\u5173\u3001\u7528\u6237\u548C\u72EC\u7ACB\u4E16\u754C\u4E66\u9009\u62E9\u3002DSH \u5386\u53F2\u3001Tavern Trace\u3001Inbox\u3001\u8FD0\u884C\u4E2D turn/step \u548C\u5176\u4ED6\u8FD0\u884C\u6001\u4E0D\u4F1A\u590D\u5236\u3002": "Carries only the preset, character and greeting/options, user, and standalone world-book selections. DSH history, Tavern Trace, Inbox, active turns/steps, and other runtime state are not copied.",
   "\u6CA1\u6709\u53EF\u7528\u7684 DSH \u76EE\u6807\u5DE5\u4F5C\u533A\u3002\u8BF7\u5148\u5728 DSH \u4FA7\u680F\u4E2D\u52A0\u5165\u6216\u6253\u5F00\u5DE5\u4F5C\u533A\u3002": "No DSH target workspace is available. Add or open a workspace in the DSH sidebar first.",
   "\u914D\u7F6E\u6A21\u677F": "Configuration templates",
+  "\u4FDD\u5B58\u7684 Tavern \u914D\u7F6E": "Saved Tavern configuration",
+  "\u72EC\u7ACB\u4E16\u754C\u4E66\uFF08\u6309\u7ED1\u5B9A\u987A\u5E8F\uFF09": "Standalone world books (binding order)",
+  "\u5361\u5185 system_prompt\uFF1A": "Character system_prompt: ",
+  "post_history_instructions\uFF1A": "post_history_instructions: ",
   "\u5DF2\u9009\u62E9\u6A21\u677F": "Selected template",
   "\u672A\u9009\u62E9\u6A21\u677F": "No template selected",
   "\u6A21\u677F\u540D\u79F0": "Template name",
@@ -424,6 +484,9 @@ function rawText(value) {
       return this.value;
     }
   });
+}
+function uiMessage(key, values = {}, fallback) {
+  return rawText(translate(key, values, fallback));
 }
 function isRawText(value) {
   return value?.[RAW_TEXT] === true && typeof value.value === "string";
@@ -1178,7 +1241,7 @@ function CharacterPanel({ sessionId, sessionBlank, close }) {
         h2(TextDetail, { label: "Message examples", value: detail.data.messageExample }),
         h2(TextDetail, { label: "System prompt\uFF08\u7531 loader \u6309\u7ED1\u5B9A\u8BBE\u7F6E\u5904\u7406\uFF09", value: detail.data.systemPrompt }),
         h2(TextDetail, { label: "Post-history instructions\uFF08\u7531 loader \u8FD1\u4F3C\u653E\u7F6E\uFF09", value: detail.data.postHistoryInstructions }),
-        detail.data.characterBook !== null ? h2("div", { className: "dcc-status" }, uiText`内嵌 character_book 已无损保留（${Array.isArray(detail.data.characterBook.entries) ? detail.data.characterBook.entries.length : translateVisibleText("\u672A\u77E5")} 条）；绑定角色后由 Tavern loader 调用世界信息 matcher，解绑后不再参与后续请求。`) : null,
+        detail.data.characterBook !== null ? h2("div", { className: "dcc-status" }, uiMessage("character.embeddedBook", { count: Array.isArray(detail.data.characterBook.entries) ? detail.data.characterBook.entries.length : translateVisibleText("\u672A\u77E5") })) : null,
         h2(DiagnosticList, { title: "\u517C\u5BB9\u8B66\u544A", items: detail.compatibility.warnings }),
         h2(DiagnosticList, { title: "\u9700\u8981 loader/\u5176\u4ED6\u6A21\u5757\u5904\u7406", items: detail.compatibility.unsupportedFeatures }),
         detail.compatibility.unknownMacroNames.length > 0 ? h2("div", { className: "dcc-status" }, uiText`未知宏：${detail.compatibility.unknownMacroNames.join(", ")}`) : null,
@@ -1217,6 +1280,7 @@ var POSITIONS = [
 ];
 var css3 = `
 .dwb-panel{position:absolute;top:0;right:0;bottom:0;width:min(500px,calc(100vw - 56px));pointer-events:auto;border-left:1px solid var(--dsw-alias-border-l2);box-shadow:var(--ds-shadow-3,-8px 0 28px rgba(0,0,0,.18));background:var(--dsw-alias-bg-base);color:var(--dsw-alias-label-primary);display:flex;flex-direction:column;font-family:Inter,var(--dsw-font-family),sans-serif}.dwb-header{height:52px;box-sizing:border-box;display:flex;align-items:center;gap:8px;padding:0 14px;border-bottom:1px solid var(--dsw-alias-border-l2);flex:none}.dwb-title{font-size:16px;font-weight:650;flex:1}.dwb-close{border:0;background:transparent;color:var(--dsw-alias-label-tertiary);cursor:pointer;border-radius:7px;padding:6px 8px;font-size:14px}.dwb-body{min-height:0;overflow:auto;padding:12px;display:flex;flex-direction:column;gap:11px}.dwb-toolbar{display:grid;grid-template-columns:repeat(3,1fr);gap:7px}.dwb-actions{display:flex;gap:7px;flex-wrap:wrap}.dwb-button{min-height:36px;border:1px solid var(--dsw-alias-border-l2);border-radius:8px;background:var(--dsw-alias-button-secondary-fill,var(--dsw-alias-bg-base));color:var(--dsw-alias-label-primary);cursor:pointer;padding:7px 10px;font-size:13px;text-decoration:none;display:inline-flex;align-items:center;justify-content:center;box-sizing:border-box}.dwb-button:disabled{opacity:.5;cursor:default}.dwb-primary{background:var(--dsw-alias-state-business-primary);color:white;border-color:transparent}.dwb-danger{color:var(--dsw-alias-state-error)}.dwb-field{display:flex;flex-direction:column;gap:4px}.dwb-label{font-size:12px;font-weight:620;color:var(--dsw-alias-label-tertiary)}.dwb-input,.dwb-select,.dwb-textarea{box-sizing:border-box;width:100%;border:1px solid var(--dsw-alias-border-l2);border-radius:7px;background:var(--dsw-alias-bg-base);color:var(--dsw-alias-label-primary);font:inherit;font-size:13px;padding:7px 8px}.dwb-input,.dwb-select{height:36px}.dwb-textarea{min-height:110px;resize:vertical;line-height:1.5}.dwb-note,.dwb-meta{font-size:13px;line-height:1.5;color:var(--dsw-alias-label-tertiary);margin:0;overflow-wrap:anywhere}.dwb-status{font-size:13px;line-height:1.45;border-radius:7px;padding:8px 10px;background:var(--dsw-specific-tip);overflow-wrap:anywhere}.dwb-status[data-error=true]{color:var(--dsw-alias-state-error)}.dwb-status[data-warning=true]{color:var(--dsw-alias-state-warning,#b46b00)}.dwb-section-title{font-size:15px;font-weight:700;margin:5px 0 0}.dwb-resource{border:1px solid var(--dsw-alias-border-l1);border-radius:9px;padding:10px;display:flex;flex-direction:column;gap:8px}.dwb-resource-title{font-size:14px;font-weight:650}.dwb-bindings{display:grid;grid-template-columns:1fr 1fr;gap:5px}.dwb-check{display:flex;gap:6px;align-items:flex-start;font-size:12px;line-height:1.45}.dwb-entry{border:1px solid var(--dsw-alias-border-l1);border-radius:8px;overflow:hidden}.dwb-entry>summary{list-style:none;cursor:pointer;padding:8px;display:flex;align-items:center;gap:7px;font-size:13px}.dwb-entry>summary::-webkit-details-marker{display:none}.dwb-dot{width:8px;height:8px;flex:none;border-radius:50%;background:var(--dsw-alias-label-tertiary)}.dwb-entry[data-enabled=true] .dwb-dot{background:var(--dsw-alias-state-success,#2fa36b)}.dwb-entry-name{font-weight:620;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.dwb-entry-state{margin-left:auto;flex:none;color:var(--dsw-alias-label-tertiary);font-size:12px}.dwb-entry-body{border-top:1px solid var(--dsw-alias-border-l1);padding:8px;display:flex;flex-direction:column;gap:8px}.dwb-grid{display:grid;grid-template-columns:1fr 1fr;gap:7px}.dwb-checks{display:flex;flex-wrap:wrap;gap:10px}.dwb-list{margin:0;padding-left:18px;font-size:13px;line-height:1.5}
+.dwb-source-section{border:1px solid var(--dsw-alias-border-l2);border-radius:11px;padding:10px;background:color-mix(in srgb,var(--dsw-specific-tip) 35%,transparent);display:flex;flex-direction:column;gap:9px}.dwb-source-section>.dwb-section-title{margin:0}.dwb-source-section>.dwb-resource{background:var(--dsw-alias-bg-base)}
 `;
 function errorMessage2(data, status) {
   if (typeof data?.error?.message === "string") return data.error.message;
@@ -1533,93 +1597,101 @@ function WorldBookPanel({ sessionId, close }) {
           if (file !== void 0) importFile(file);
         } })
       ),
-      h3("p", { className: "dwb-note" }, uiText`当前会话：${sessionId || translateVisibleText("\u65E0")}。可绑定零本、一本或多本独立世界书；绑定顺序保持稳定。`),
+      h3("p", { className: "dwb-note" }, uiMessage("world.currentSession", { session: sessionId || translateVisibleText("\u65E0") })),
       h3("div", { className: "dwb-status", "data-error": status.error || void 0, role: "status", "aria-live": "polite" }, status.error ? rawText(status.text) : status.text),
-      h3("h2", { className: "dwb-section-title" }, "\u72EC\u7ACB\u4E16\u754C\u4E66"),
       h3(
-        "div",
-        { className: "dwb-resource" },
-        h3("div", { className: "dwb-resource-title" }, "\u5F53\u524D\u4F1A\u8BDD\u7ED1\u5B9A"),
-        catalog2?.worldBooks.length ? h3("div", { className: "dwb-bindings" }, ...catalog2.worldBooks.map((item) => h3(
-          "label",
-          { className: "dwb-check", key: item.id },
-          h3("input", { type: "checkbox", checked: selection.includes(item.id), onChange: (event) => setSelection((current2) => event.target.checked ? [...current2, item.id] : current2.filter((id) => id !== item.id)) }),
-          uiText`${item.name}（${item.entryCount} 条）`
-        ))) : h3("p", { className: "dwb-note" }, "\u72EC\u7ACB\u4E16\u754C\u4E66\u8D44\u6E90\u5E93\u4E3A\u7A7A\u3002"),
-        selectionDirty ? h3("div", { className: "dwb-status", "data-warning": true }, "\u7ED1\u5B9A\u6709\u672A\u4FDD\u5B58\u4FEE\u6539\uFF0C\u5F53\u524D\u52FE\u9009\u5C1A\u672A\u5E94\u7528\u5230\u4F1A\u8BDD\u3002") : h3("p", { className: "dwb-note" }, "\u9762\u677F\u663E\u793A\u7684\u7ED1\u5B9A\u5DF2\u5E94\u7528\u5230\u5F53\u524D\u4F1A\u8BDD\u3002"),
+        "section",
+        { className: "dwb-source-section", "data-source": "standalone" },
+        h3("h2", { className: "dwb-section-title" }, "\u72EC\u7ACB\u4E16\u754C\u4E66"),
         h3(
           "div",
-          { className: "dwb-actions" },
-          h3("button", { className: "dwb-button dwb-primary", type: "button", disabled: busy || !sessionId || !selectionDirty, onClick: saveSelection }, selectionDirty ? "\u5E94\u7528\u4F1A\u8BDD\u7ED1\u5B9A\uFF08\u672A\u4FDD\u5B58\uFF09" : "\u5F53\u524D\u7ED1\u5B9A\u5DF2\u5E94\u7528"),
-          h3("button", { className: "dwb-button", type: "button", disabled: busy || !sessionId || selection.length === 0, onClick: () => setSelection([]) }, "\u6E05\u7A7A\u5F85\u5E94\u7528\u9009\u62E9")
+          { className: "dwb-resource" },
+          h3("div", { className: "dwb-resource-title" }, "\u5F53\u524D\u4F1A\u8BDD\u7ED1\u5B9A"),
+          catalog2?.worldBooks.length ? h3("div", { className: "dwb-bindings" }, ...catalog2.worldBooks.map((item) => h3(
+            "label",
+            { className: "dwb-check", key: item.id },
+            h3("input", { type: "checkbox", checked: selection.includes(item.id), onChange: (event) => setSelection((current2) => event.target.checked ? [...current2, item.id] : current2.filter((id) => id !== item.id)) }),
+            uiMessage("world.catalogItem", { name: item.name, count: item.entryCount })
+          ))) : h3("p", { className: "dwb-note" }, "\u72EC\u7ACB\u4E16\u754C\u4E66\u8D44\u6E90\u5E93\u4E3A\u7A7A\u3002"),
+          selectionDirty ? h3("div", { className: "dwb-status", "data-warning": true }, "\u7ED1\u5B9A\u6709\u672A\u4FDD\u5B58\u4FEE\u6539\uFF0C\u5F53\u524D\u52FE\u9009\u5C1A\u672A\u5E94\u7528\u5230\u4F1A\u8BDD\u3002") : h3("p", { className: "dwb-note" }, "\u9762\u677F\u663E\u793A\u7684\u7ED1\u5B9A\u5DF2\u5E94\u7528\u5230\u5F53\u524D\u4F1A\u8BDD\u3002"),
+          h3(
+            "div",
+            { className: "dwb-actions" },
+            h3("button", { className: "dwb-button dwb-primary", type: "button", disabled: busy || !sessionId || !selectionDirty, onClick: saveSelection }, selectionDirty ? "\u5E94\u7528\u4F1A\u8BDD\u7ED1\u5B9A\uFF08\u672A\u4FDD\u5B58\uFF09" : "\u5F53\u524D\u7ED1\u5B9A\u5DF2\u5E94\u7528"),
+            h3("button", { className: "dwb-button", type: "button", disabled: busy || !sessionId || selection.length === 0, onClick: () => setSelection([]) }, "\u6E05\u7A7A\u5F85\u5E94\u7528\u9009\u62E9")
+          )
+        ),
+        h3(Field3, { label: "\u6D4F\u89C8\u72EC\u7ACB\u4E16\u754C\u4E66" }, h3(
+          "select",
+          { className: "dwb-select", value: document2?.id ?? "", disabled: busy || !catalog2?.worldBooks.length, onChange: (event) => {
+            if (!dirty || window.confirm(translateVisibleText("\u653E\u5F03\u5C1A\u672A\u4FDD\u5B58\u7684\u4FEE\u6539\uFF1F"))) load(event.target.value);
+          } },
+          ...catalog2?.worldBooks.length ? [] : [h3("option", { key: "empty", value: "" }, "\u8D44\u6E90\u5E93\u4E3A\u7A7A")],
+          ...(catalog2?.worldBooks ?? []).map((item) => h3("option", { key: item.id, value: item.id }, rawText(item.name)))
+        )),
+        draft === null ? null : h3(
+          "div",
+          { className: "dwb-resource" },
+          h3(Field3, { label: "\u4E16\u754C\u4E66\u540D\u79F0" }, h3("input", { className: "dwb-input", value: draft.name ?? "", onChange: (event) => {
+            setDraft((current2) => ({ ...current2, name: event.target.value }));
+            setDirty(true);
+          } })),
+          h3("p", { className: "dwb-meta" }, uiMessage("world.documentMeta", { count: entries.length })),
+          h3(
+            "div",
+            { className: "dwb-actions" },
+            h3("button", { className: "dwb-button", type: "button", onClick: () => {
+              setDraft((current2) => ({ ...current2, entries: [...current2.entries, createWorldBookEntry(current2.entries)] }));
+              setDirty(true);
+            } }, "\u65B0\u589E\u6761\u76EE"),
+            h3("button", { className: "dwb-button dwb-primary", type: "button", disabled: busy || !dirty, onClick: save }, dirty ? "\u4FDD\u5B58\u4FEE\u6539" : "\u5DF2\u4FDD\u5B58"),
+            h3("a", { className: "dwb-button", href: `${API_ROOT3}/world-books/${encodeURIComponent(document2.id)}/json`, download: "" }, "\u5BFC\u51FA JSON"),
+            h3("button", { className: "dwb-button dwb-danger", type: "button", disabled: busy, onClick: remove }, "\u5220\u9664\u72EC\u7ACB\u4E66")
+          ),
+          ...entries.map((entry, index) => h3(EntryEditor, { key: `${String(entry.uid)}-${index}`, entry, index, update: updateEntry, remove: (itemIndex) => {
+            if (window.confirm(translateVisibleText("\u5220\u9664\u8FD9\u4E2A\u4E16\u754C\u4E66\u6761\u76EE\uFF1F\u4FDD\u5B58\u540E\u751F\u6548\u3002"))) {
+              setDraft((current2) => ({ ...current2, entries: current2.entries.filter((_item, candidate) => candidate !== itemIndex) }));
+              setDirty(true);
+            }
+          } }))
         )
       ),
-      h3(Field3, { label: "\u6D4F\u89C8\u72EC\u7ACB\u4E16\u754C\u4E66" }, h3(
-        "select",
-        { className: "dwb-select", value: document2?.id ?? "", disabled: busy || !catalog2?.worldBooks.length, onChange: (event) => {
-          if (!dirty || window.confirm(translateVisibleText("\u653E\u5F03\u5C1A\u672A\u4FDD\u5B58\u7684\u4FEE\u6539\uFF1F"))) load(event.target.value);
-        } },
-        ...catalog2?.worldBooks.length ? [] : [h3("option", { key: "empty", value: "" }, "\u8D44\u6E90\u5E93\u4E3A\u7A7A")],
-        ...(catalog2?.worldBooks ?? []).map((item) => h3("option", { key: item.id, value: item.id }, rawText(item.name)))
-      )),
-      draft === null ? null : h3(
-        "div",
-        { className: "dwb-resource" },
-        h3(Field3, { label: "\u4E16\u754C\u4E66\u540D\u79F0" }, h3("input", { className: "dwb-input", value: draft.name ?? "", onChange: (event) => {
-          setDraft((current2) => ({ ...current2, name: event.target.value }));
-          setDirty(true);
-        } })),
-        h3("p", { className: "dwb-meta" }, uiText`${entries.length} 条 · 未知字段在保存和导出时稳定保留`),
-        h3(
+      h3(
+        "section",
+        { className: "dwb-source-section", "data-source": "character" },
+        h3("h2", { className: "dwb-section-title" }, "\u89D2\u8272\u5361\u7ED1\u5B9A\u7684\u4E16\u754C\u4E66"),
+        embeddedDraft !== null ? h3(
           "div",
-          { className: "dwb-actions" },
-          h3("button", { className: "dwb-button", type: "button", onClick: () => {
-            setDraft((current2) => ({ ...current2, entries: [...current2.entries, createWorldBookEntry(current2.entries)] }));
-            setDirty(true);
-          } }, "\u65B0\u589E\u6761\u76EE"),
-          h3("button", { className: "dwb-button dwb-primary", type: "button", disabled: busy || !dirty, onClick: save }, dirty ? "\u4FDD\u5B58\u4FEE\u6539" : "\u5DF2\u4FDD\u5B58"),
-          h3("a", { className: "dwb-button", href: `${API_ROOT3}/world-books/${encodeURIComponent(document2.id)}/json`, download: "" }, "\u5BFC\u51FA JSON"),
-          h3("button", { className: "dwb-button dwb-danger", type: "button", disabled: busy, onClick: remove }, "\u5220\u9664\u72EC\u7ACB\u4E66")
-        ),
-        ...entries.map((entry, index) => h3(EntryEditor, { key: `${String(entry.uid)}-${index}`, entry, index, update: updateEntry, remove: (itemIndex) => {
-          if (window.confirm(translateVisibleText("\u5220\u9664\u8FD9\u4E2A\u4E16\u754C\u4E66\u6761\u76EE\uFF1F\u4FDD\u5B58\u540E\u751F\u6548\u3002"))) {
-            setDraft((current2) => ({ ...current2, entries: current2.entries.filter((_item, candidate) => candidate !== itemIndex) }));
-            setDirty(true);
-          }
-        } }))
+          { className: "dwb-resource" },
+          h3("div", { className: "dwb-resource-title" }, embeddedDraft.name || embedded[0]?.name ? rawText(embeddedDraft.name || embedded[0]?.name) : "\u89D2\u8272\u5361\u5185\u5D4C\u4E16\u754C\u4E66"),
+          h3("p", { className: "dwb-note" }, uiMessage("world.embeddedMeta", { count: embeddedEntries.length })),
+          h3(
+            "div",
+            { className: "dwb-actions" },
+            h3("button", { className: "dwb-button", type: "button", onClick: () => {
+              const ids = embeddedEntries.map((entry) => Number(entry.id)).filter(Number.isSafeInteger);
+              const id = ids.length === 0 ? 0 : Math.max(...ids) + 1;
+              setEmbeddedDraft((current2) => ({ ...structuredClone(current2), entries: [...current2.entries, { id, keys: [], secondary_keys: [], comment: unwrapText(uiText`新条目 ${id}`), content: "", enabled: true, constant: false, selective: false, insertion_order: 100, position: "after_char", extensions: { position: 1, probability: 100, useProbability: true } }] }));
+              setEmbeddedDirty(true);
+            } }, "\u65B0\u589E\u5185\u5D4C\u6761\u76EE"),
+            h3("button", { className: "dwb-button dwb-primary", type: "button", disabled: busy || !embeddedDirty, onClick: saveEmbedded }, embeddedDirty ? "\u4FDD\u5B58\u5185\u5D4C\u4E66" : "\u5185\u5D4C\u4E66\u5DF2\u4FDD\u5B58")
+          ),
+          ...embeddedEntries.map((entry, index) => h3(EmbeddedEntryEditor, { key: `${String(entry.id)}-${index}`, entry, index, update: (itemIndex, value) => {
+            setEmbeddedDraft((current2) => {
+              const next = structuredClone(current2);
+              next.entries[itemIndex] = { ...next.entries[itemIndex], ...value };
+              return next;
+            });
+            setEmbeddedDirty(true);
+          }, remove: (itemIndex) => {
+            if (window.confirm(translateVisibleText("\u5220\u9664\u8FD9\u4E2A\u89D2\u8272\u5361\u5185\u5D4C\u4E16\u754C\u4E66\u6761\u76EE\uFF1F\u4FDD\u5B58\u540E\u751F\u6548\u3002"))) {
+              setEmbeddedDraft((current2) => ({ ...structuredClone(current2), entries: current2.entries.filter((_item, candidate) => candidate !== itemIndex) }));
+              setEmbeddedDirty(true);
+            }
+          } }))
+        ) : h3("p", { className: "dwb-note" }, uiMessage("world.embeddedEmpty"))
       ),
-      embeddedDraft !== null ? h3("h2", { className: "dwb-section-title" }, "\u89D2\u8272\u5361\u7ED1\u5B9A\u7684\u4E16\u754C\u4E66") : null,
-      embeddedDraft !== null ? h3(
-        "div",
-        { className: "dwb-resource" },
-        h3("div", { className: "dwb-resource-title" }, embeddedDraft.name || embedded[0]?.name ? rawText(embeddedDraft.name || embedded[0]?.name) : "\u89D2\u8272\u5361\u5185\u5D4C\u4E16\u754C\u4E66"),
-        h3("p", { className: "dwb-note" }, uiText`${embeddedEntries.length} 条。它与独立书共用 matcher/loader；删除独立书不会修改或解绑角色卡内嵌书。`),
-        h3(
-          "div",
-          { className: "dwb-actions" },
-          h3("button", { className: "dwb-button", type: "button", onClick: () => {
-            const ids = embeddedEntries.map((entry) => Number(entry.id)).filter(Number.isSafeInteger);
-            const id = ids.length === 0 ? 0 : Math.max(...ids) + 1;
-            setEmbeddedDraft((current2) => ({ ...structuredClone(current2), entries: [...current2.entries, { id, keys: [], secondary_keys: [], comment: unwrapText(uiText`新条目 ${id}`), content: "", enabled: true, constant: false, selective: false, insertion_order: 100, position: "after_char", extensions: { position: 1, probability: 100, useProbability: true } }] }));
-            setEmbeddedDirty(true);
-          } }, "\u65B0\u589E\u5185\u5D4C\u6761\u76EE"),
-          h3("button", { className: "dwb-button dwb-primary", type: "button", disabled: busy || !embeddedDirty, onClick: saveEmbedded }, embeddedDirty ? "\u4FDD\u5B58\u5185\u5D4C\u4E66" : "\u5185\u5D4C\u4E66\u5DF2\u4FDD\u5B58")
-        ),
-        ...embeddedEntries.map((entry, index) => h3(EmbeddedEntryEditor, { key: `${String(entry.id)}-${index}`, entry, index, update: (itemIndex, value) => {
-          setEmbeddedDraft((current2) => {
-            const next = structuredClone(current2);
-            next.entries[itemIndex] = { ...next.entries[itemIndex], ...value };
-            return next;
-          });
-          setEmbeddedDirty(true);
-        }, remove: (itemIndex) => {
-          if (window.confirm(translateVisibleText("\u5220\u9664\u8FD9\u4E2A\u89D2\u8272\u5361\u5185\u5D4C\u4E16\u754C\u4E66\u6761\u76EE\uFF1F\u4FDD\u5B58\u540E\u751F\u6548\u3002"))) {
-            setEmbeddedDraft((current2) => ({ ...structuredClone(current2), entries: current2.entries.filter((_item, candidate) => candidate !== itemIndex) }));
-            setEmbeddedDirty(true);
-          }
-        } }))
-      ) : null,
-      diagnostics.length > 0 ? h3("details", { className: "dwb-resource" }, h3("summary", { className: "dwb-resource-title" }, uiText`运行诊断（${diagnostics.length}）`), h3("ul", { className: "dwb-list" }, ...diagnostics.map((item, index) => h3("li", { key: `${item.code}-${index}` }, rawText(item.message))))) : null,
+      diagnostics.length > 0 ? h3("details", { className: "dwb-resource" }, h3("summary", { className: "dwb-resource-title" }, uiMessage("world.diagnostics", { count: diagnostics.length })), h3("ul", { className: "dwb-list" }, ...diagnostics.map((item, index) => h3("li", { key: `${item.code}-${index}` }, rawText(item.message))))) : null,
       h3("p", { className: "dwb-note" }, "\u5B9E\u9645\u6FC0\u6D3B\u3001\u6392\u5E8F\u3001\u6982\u7387\u548C\u9884\u7B97\u7531\u5171\u4EAB matcher \u786E\u5B9A\uFF1B\u6700\u7EC8\u6CE8\u5165\u4ECD\u7531 Tavern loader \u7EDF\u4E00\u5B8C\u6210\u3002\u5F53\u524D\u626B\u63CF\u4F1A\u628A\u672C\u6B65\u9AA4 claimed \u8F93\u5165\u4E0E\u6301\u4E45\u5386\u53F2\u7EC4\u5408\u6210\u4E34\u65F6\u4E0A\u4E0B\u6587\uFF0C\u56E0\u6B64\u5355\u6B65\u9AA4\u4F1A\u8BDD\u4E5F\u80FD\u5728\u9996\u6B21\u8BF7\u6C42\u89E6\u53D1\u5173\u952E\u8BCD\u3002")
     )
   );
@@ -1942,11 +2014,11 @@ function formatBytes(value) {
   return value >= 1024 * 1024 ? `${Math.round(value / 1024 / 1024)} MiB` : `${Math.round(value / 1024)} KiB`;
 }
 function storageStatus(storage) {
-  const parts = [`\u603B\u8BA1\u6700\u591A ${formatBytes(storage.maxTotalBytes)}`];
-  if (Number.isSafeInteger(storage.maxRecordsPerSession)) parts.push(`\u6BCF\u4F1A\u8BDD\u6700\u591A ${storage.maxRecordsPerSession} \u6761`);
-  if (Number.isSafeInteger(storage.maxSessions)) parts.push(`\u6700\u591A ${storage.maxSessions} \u4E2A\u4F1A\u8BDD`);
-  if (Number.isSafeInteger(storage.maxRecordBytes)) parts.push(`\u5355\u6761\u6700\u591A ${formatBytes(storage.maxRecordBytes)}`);
-  return `\u63D2\u4EF6\u6709\u754C\u5B58\u50A8\uFF1A${parts.join("\u3001")}\uFF1B\u5237\u65B0\u6216\u5BBF\u4E3B\u91CD\u542F\u540E\u53EF\u6062\u590D\u3002`;
+  const parts = [translate("trace.storage.total", { value: formatBytes(storage.maxTotalBytes) })];
+  if (Number.isSafeInteger(storage.maxRecordsPerSession)) parts.push(translate("trace.storage.perSession", { value: storage.maxRecordsPerSession }));
+  if (Number.isSafeInteger(storage.maxSessions)) parts.push(translate("trace.storage.sessions", { value: storage.maxSessions }));
+  if (Number.isSafeInteger(storage.maxRecordBytes)) parts.push(translate("trace.storage.perRecord", { value: formatBytes(storage.maxRecordBytes) }));
+  return uiMessage("trace.storage.summary", { limits: parts.join(getClientUiSettings().locale === "en" ? ", " : "\u3001") });
 }
 function resourceCard(label, value) {
   return h5(
@@ -1962,36 +2034,41 @@ function keywords(decision) {
   const configuredSecondary = decision.secondaryKeys ?? [];
   const primary = decision.primaryMatches ?? [];
   const secondary = decision.secondaryMatches ?? [];
+  const separator = getClientUiSettings().locale === "en" ? ", " : "\u3001";
   const configured = [
-    configuredPrimary.length > 0 ? unwrapText(uiText`主：${configuredPrimary.map((value) => JSON.stringify(value)).join("\u3001")}`) : null,
-    configuredSecondary.length > 0 ? unwrapText(uiText`附加：${configuredSecondary.map((value) => JSON.stringify(value)).join("\u3001")}`) : null
+    configuredPrimary.length > 0 ? translate("trace.keywords.primary", { values: configuredPrimary.map((value) => JSON.stringify(value)).join(separator) }) : null,
+    configuredSecondary.length > 0 ? translate("trace.keywords.secondary", { values: configuredSecondary.map((value) => JSON.stringify(value)).join(separator) }) : null
   ].filter(Boolean).join(" \xB7 ") || translateVisibleText("\u65E0\u914D\u7F6E\u5173\u952E\u8BCD");
   const matched = [
-    primary.length > 0 ? unwrapText(uiText`主：${primary.map((value) => JSON.stringify(value)).join("\u3001")}`) : null,
-    secondary.length > 0 ? unwrapText(uiText`附加：${secondary.map((value) => JSON.stringify(value)).join("\u3001")}`) : null
+    primary.length > 0 ? translate("trace.keywords.primary", { values: primary.map((value) => JSON.stringify(value)).join(separator) }) : null,
+    secondary.length > 0 ? translate("trace.keywords.secondary", { values: secondary.map((value) => JSON.stringify(value)).join(separator) }) : null
   ].filter(Boolean).join(" \xB7 ") || translateVisibleText("\u65E0\u5173\u952E\u8BCD\u547D\u4E2D");
   return { configured: rawText(configured), matched: rawText(matched) };
 }
 function decisionMeta(value) {
   const parts = [];
   if (value.secondaryLogic) parts.push(`secondary=${value.secondaryLogic}`);
-  if (value.groupName) parts.push(unwrapText(uiText`组 ${value.groupName}${value.groupOverride ? " / override" : value.groupWeight === null ? "" : ` / weight ${value.groupWeight}`}`));
+  if (value.groupName) parts.push(unwrapText(uiMessage("trace.decision.group", { name: value.groupName, detail: value.groupOverride ? " / override" : value.groupWeight === null ? "" : ` / weight ${value.groupWeight}` })));
   if (value.probability !== null) {
-    parts.push(unwrapText(uiText`概率 ${value.probability}%${value.probabilityRoll === null ? "" : ` / roll ${(value.probabilityRoll * 100).toFixed(2)}%`}`));
+    parts.push(unwrapText(uiMessage("trace.decision.probability", { value: value.probability, roll: value.probabilityRoll === null ? "" : ` / roll ${(value.probabilityRoll * 100).toFixed(2)}%` })));
   }
-  if (value.tokenCost !== null) parts.push(unwrapText(uiText`预算 ${value.tokenCost} tokens`));
+  if (value.tokenCost !== null) parts.push(unwrapText(uiMessage("trace.decision.budget", { value: value.tokenCost })));
   if (value.requestedPosition) {
-    parts.push(unwrapText(uiText`位置 ${value.requestedPosition}${value.appliedPosition ? ` \u2192 ${value.appliedPosition}${value.approximatePosition ? translateVisibleText("\uFF08\u8FD1\u4F3C\uFF09") : ""}` : translateVisibleText(" \u2192 \u672A\u63D2\u5165")}`));
+    parts.push(unwrapText(uiMessage("trace.decision.position", {
+      requested: value.requestedPosition,
+      result: value.appliedPosition ? ` \u2192 ${value.appliedPosition}${value.approximatePosition ? translateVisibleText("\uFF08\u8FD1\u4F3C\uFF09") : ""}` : translateVisibleText(" \u2192 \u672A\u63D2\u5165")
+    })));
   }
   return rawText(parts.join(" \xB7 "));
 }
 function WorldBookAudit({ book }) {
   const name2 = book.resource?.name || book.resource?.id;
+  const decisionCount = translate(book.decisions.length === 1 ? "trace.decisionCount.one" : "trace.decisionCount.other", { count: book.decisions.length });
   return h5(
     "div",
     { className: "dttrace-book" },
     h5("div", { className: "dttrace-section-title" }, name2 ? rawText(name2) : "\u4E16\u754C\u4E66"),
-    h5("div", { className: "dttrace-meta" }, uiText`预算：${book.budget.used}${book.budget.limit === null ? "" : ` / ${book.budget.limit}`} tokens · ${book.decisions.length} 条决策`),
+    h5("div", { className: "dttrace-meta" }, uiMessage("trace.bookBudget", { used: book.budget.used, limit: book.budget.limit === null ? "" : ` / ${book.budget.limit}`, decisionCount })),
     ...book.decisions.map((item, index) => {
       const keywordState = keywords(item);
       return h5(
@@ -2011,8 +2088,8 @@ function WorldBookAudit({ book }) {
         h5(
           "div",
           { className: "dttrace-keywords" },
-          h5("div", null, uiText`配置关键词：${keywordState.configured}`),
-          h5("div", null, uiText`本轮命中：${keywordState.matched}`),
+          h5("div", null, uiMessage("trace.keywords.configured", { value: unwrapText(keywordState.configured) })),
+          h5("div", null, uiMessage("trace.keywords.matched", { value: unwrapText(keywordState.matched) })),
           h5("div", { className: "dttrace-meta" }, decisionMeta(item))
         )
       );
@@ -2038,7 +2115,7 @@ function TraceRecord({ record, latest }) {
     h5(
       "div",
       { className: "dttrace-content" },
-      h5("div", { className: "dttrace-status" }, linked ? uiText`该记录已对齐 DSH request/header #${authority.headerEventSeq}${reusedHeader}。Tavern profile 校验：${profileStatus}；采样字段：${configStatus}。` : "\u5C1A\u672A\u89C2\u5BDF\u5230\u53EF\u5BF9\u9F50\u7684 DSH request/header\uFF1B\u8FD9\u4E0D\u4EE3\u8868\u8BF7\u6C42\u5DF2\u7ECF\u53D1\u9001\u3002\u5237\u65B0\u540E\u4ECD\u4F1A\u4FDD\u7559\u8BE5\u5F85\u786E\u8BA4\u8BB0\u5F55\u3002"),
+      h5("div", { className: "dttrace-status" }, linked ? uiMessage("trace.recordAligned", { sequence: authority.headerEventSeq, reused: reusedHeader, profile: profileStatus, config: configStatus }) : "\u5C1A\u672A\u89C2\u5BDF\u5230\u53EF\u5BF9\u9F50\u7684 DSH request/header\uFF1B\u8FD9\u4E0D\u4EE3\u8868\u8BF7\u6C42\u5DF2\u7ECF\u53D1\u9001\u3002\u5237\u65B0\u540E\u4ECD\u4F1A\u4FDD\u7559\u8BE5\u5F85\u786E\u8BA4\u8BB0\u5F55\u3002"),
       h5(
         "div",
         { className: "dttrace-grid" },
@@ -2056,13 +2133,17 @@ function TraceRecord({ record, latest }) {
         "div",
         { className: "dttrace-section" },
         h5("div", { className: "dttrace-section-title" }, "\u4E16\u754C\u4E66\u5339\u914D\u51B3\u7B56"),
-        h5("div", { className: "dttrace-meta" }, record.activation?.pendingMessageCount > 0 ? uiText`匹配基于本步骤 assembly 的临时激活上下文：持久历史 + ${record.activation.includedPendingMessageCount}/${record.activation.pendingMessageCount} 条本轮 claimed 输入；不保存输入正文${record.activation.truncated ? translateVisibleText("\uFF1B\u626B\u63CF\u8F93\u5165\u5DF2\u6309\u4E0A\u9650\u622A\u65AD") : ""}。` : "\u5339\u914D\u57FA\u4E8E\u672C\u6B65\u9AA4 system assembly \u5F53\u65F6\u53EF\u89C1\u7684\u6301\u4E45\u5316\u4F1A\u8BDD\u5386\u53F2\uFF1B\u6CA1\u6709\u91CD\u590D\u9644\u52A0 pending \u8F93\u5165\u3002"),
+        h5("div", { className: "dttrace-meta" }, record.activation?.pendingMessageCount > 0 ? uiMessage("trace.activationPending", {
+          included: record.activation.includedPendingMessageCount,
+          pending: record.activation.pendingMessageCount,
+          truncated: record.activation.truncated ? translateVisibleText("\uFF1B\u626B\u63CF\u8F93\u5165\u5DF2\u6309\u4E0A\u9650\u622A\u65AD") : ""
+        }) : "\u5339\u914D\u57FA\u4E8E\u672C\u6B65\u9AA4 system assembly \u5F53\u65F6\u53EF\u89C1\u7684\u6301\u4E45\u5316\u4F1A\u8BDD\u5386\u53F2\uFF1B\u6CA1\u6709\u91CD\u590D\u9644\u52A0 pending \u8F93\u5165\u3002"),
         ...record.worldBooks.map((book, index) => h5(WorldBookAudit, { book, key: `${book.resource?.id ?? "book"}-${index}` }))
       ) : h5("div", { className: "dttrace-note" }, "\u672C\u8F6E\u6CA1\u6709\u53EF\u5BA1\u8BA1\u7684\u4E16\u754C\u4E66\u5339\u914D\u6765\u6E90\u3002"),
       record.diagnostics?.length > 0 ? h5(
         "div",
         { className: "dttrace-section" },
-        h5("div", { className: "dttrace-section-title" }, uiText`诊断（${record.diagnostics.length}）`),
+        h5("div", { className: "dttrace-section-title" }, uiMessage("trace.diagnostics", { count: record.diagnostics.length })),
         h5("ul", { className: "dttrace-list" }, ...record.diagnostics.map((item, index) => h5("li", { key: `${item.code}-${index}` }, rawText(`${item.code}: ${item.message}`))))
       ) : null,
       h5("p", { className: "dttrace-note" }, "\u9690\u79C1\u8FB9\u754C\uFF1A\u8FD9\u91CC\u53EA\u4FDD\u5B58\u8D44\u6E90\u6458\u8981\u3001\u914D\u7F6E/\u547D\u4E2D\u5173\u952E\u8BCD\u3001\u51B3\u7B56\u539F\u56E0\u3001\u4F4D\u7F6E\u3001\u9884\u7B97\u548C SHA-256 \u6458\u8981\uFF1B\u4E0D\u4FDD\u5B58 preset/\u89D2\u8272/user/\u4E16\u754C\u4E66\u6B63\u6587\u3001\u5B8C\u6574 system\u3001\u804A\u5929\u5386\u53F2\u3001header \u5185\u5BB9\u6216 tool payload\u3002")
@@ -2158,16 +2239,42 @@ async function api5(path, options = {}) {
   }
   return data;
 }
-function sourceLabel(template) {
-  const selection = template?.selection ?? {};
-  const labels = [];
-  if (selection.presetId) labels.push(translateVisibleText("\u9884\u8BBE"));
-  if (selection.characterCardId) labels.push(translateVisibleText("\u89D2\u8272\u5361"));
-  if (selection.userId) labels.push(translateVisibleText("\u7528\u6237"));
-  if (Array.isArray(selection.worldBookIds) && selection.worldBookIds.length > 0) {
-    labels.push(unwrapText(uiText`${selection.worldBookIds.length} 本世界书`));
-  }
-  return labels.length === 0 ? translateVisibleText("\u7A7A Tavern \u914D\u7F6E") : labels.join(getClientUiSettings().locale === "en" ? ", " : "\u3001");
+function PreviewRow({ label, value, missing = false }) {
+  return h6(
+    "div",
+    { className: "dtv-preview-row", "data-missing": missing || void 0 },
+    h6("span", { className: "dtv-preview-label" }, label),
+    h6("span", { className: "dtv-preview-value" }, value)
+  );
+}
+function resourceValue(resource, emptyLabel) {
+  return resource === null || resource === void 0 ? emptyLabel : rawText(resource.name || resource.id);
+}
+function TemplatePreview({ template }) {
+  const contents = template?.contents ?? {};
+  const character = template?.selection?.character ?? contents.character ?? {};
+  const books = Array.isArray(contents.worldBooks) ? contents.worldBooks : [];
+  return h6(
+    "div",
+    { className: "dtv-preview" },
+    h6("div", { className: "dtv-preview-title" }, "\u4FDD\u5B58\u7684 Tavern \u914D\u7F6E"),
+    h6(PreviewRow, { label: "\u9884\u8BBE", value: resourceValue(contents.preset, "\u672A\u9009\u62E9\u9884\u8BBE"), missing: contents.preset?.missing }),
+    h6(PreviewRow, { label: "\u89D2\u8272\u5361", value: resourceValue(contents.characterCard, "\u672A\u7ED1\u5B9A\u89D2\u8272"), missing: contents.characterCard?.missing }),
+    contents.characterCard === null || contents.characterCard === void 0 ? null : h6(
+      "div",
+      { className: "dtv-preview-options" },
+      h6("span", null, uiMessage("template.preview.greeting", { value: Number(character.greetingIndex ?? 0) + 1 })),
+      h6("span", null, uiText`卡内 system_prompt：${character.preferCharacterSystemPrompt === false ? translateVisibleText("\u5DF2\u7981\u7528") : translateVisibleText("\u5DF2\u542F\u7528")}`),
+      h6("span", null, uiText`post_history_instructions: ${character.preferCharacterPostHistory === false ? translateVisibleText("\u5DF2\u7981\u7528") : translateVisibleText("\u5DF2\u542F\u7528")}`)
+    ),
+    h6(PreviewRow, { label: "\u7528\u6237", value: resourceValue(contents.user, "\u672A\u7ED1\u5B9A\u7528\u6237"), missing: contents.user?.missing }),
+    h6(
+      "div",
+      { className: "dtv-preview-row dtv-preview-books" },
+      h6("span", { className: "dtv-preview-label" }, "\u72EC\u7ACB\u4E16\u754C\u4E66\uFF08\u6309\u7ED1\u5B9A\u987A\u5E8F\uFF09"),
+      books.length === 0 ? h6("span", { className: "dtv-preview-value" }, "\u672A\u7ED1\u5B9A\u4E16\u754C\u4E66") : h6("ol", { className: "dtv-preview-list" }, ...books.map((book) => h6("li", { key: book.id, "data-missing": book.missing || void 0 }, rawText(book.name || book.id))))
+    )
+  );
 }
 function SessionTemplatePanel({ sessionId, workspaceId, createCleanSession, close }) {
   const [templates, setTemplates] = (0, import_react6.useState)([]);
@@ -2298,7 +2405,8 @@ function SessionTemplatePanel({ sessionId, workspaceId, createCleanSession, clos
           h6("button", { className: "dtv-button", type: "button", disabled: busy || !sessionId || selectedId === null, onClick: update }, "\u7528\u5F53\u524D\u8BBE\u7F6E\u66F4\u65B0"),
           h6("button", { className: "dtv-button dtv-danger", type: "button", disabled: busy || selectedId === null, onClick: remove }, "\u5220\u9664\u6A21\u677F")
         ),
-        selected === null ? null : h6("div", { className: "dtv-resource-meta" }, uiText`保存内容：${sourceLabel(selected)}`),
+        h6("p", { className: "dtv-note" }, uiMessage("template.currentSettingsReminder")),
+        selected === null ? null : h6(TemplatePreview, { template: selected }),
         diagnostics.length === 0 ? null : h6(
           "div",
           { className: "dtv-status", "data-error": true },
@@ -2514,7 +2622,7 @@ var css6 = `
 .dtv-body{min-height:0;overflow:auto;padding:12px;display:flex;flex-direction:column;gap:12px}.dtv-note{font-size:11px;line-height:1.5;color:var(--dsw-alias-label-tertiary);margin:0;overflow-wrap:anywhere}.dtv-status{font-size:11px;line-height:1.45;border-radius:7px;padding:8px 10px;background:var(--dsw-specific-tip);overflow-wrap:anywhere}.dtv-status[data-error=true]{color:var(--dsw-alias-state-error)}
 .dtv-actions{display:grid;grid-template-columns:1fr 1fr;gap:8px}.dtv-button{min-height:34px;border:1px solid var(--dsw-alias-border-l2);border-radius:8px;background:var(--dsw-alias-button-secondary-fill,var(--dsw-alias-bg-base));color:var(--dsw-alias-label-primary);cursor:pointer;padding:7px 10px;font-size:12px}.dtv-button:hover:not(:disabled){background:var(--dsw-alias-interactive-bg-hover)}.dtv-button:disabled{opacity:.5;cursor:default}
 .dtv-primary{background:var(--dsw-alias-button-primary-fill,#2677d9);border-color:transparent;color:var(--dsw-alias-button-primary-label,#fff)}.dtv-primary:hover:not(:disabled){filter:brightness(1.08);background:var(--dsw-alias-button-primary-fill,#2677d9)}.dtv-template-actions{display:grid;grid-template-columns:1fr 1fr;gap:7px}
-.dtv-resource{border:1px solid var(--dsw-alias-border-l1);border-radius:9px;padding:10px;display:flex;flex-direction:column;gap:7px}.dtv-resource-title{font-size:12px;font-weight:650}.dtv-resource-meta{font-size:11px;line-height:1.45;color:var(--dsw-alias-label-tertiary)}.dtv-list{margin:0;padding-left:18px;font-size:11px;line-height:1.55}
+.dtv-resource{border:1px solid var(--dsw-alias-border-l1);border-radius:9px;padding:10px;display:flex;flex-direction:column;gap:7px}.dtv-resource-title{font-size:12px;font-weight:650}.dtv-resource-meta{font-size:11px;line-height:1.45;color:var(--dsw-alias-label-tertiary)}.dtv-list{margin:0;padding-left:18px;font-size:11px;line-height:1.55}.dtv-preview{border:1px solid var(--dsw-alias-border-l1);border-radius:8px;background:var(--dsw-specific-tip);padding:9px;display:flex;flex-direction:column;gap:6px}.dtv-preview-title{font-size:12px;font-weight:700}.dtv-preview-row{display:grid;grid-template-columns:112px minmax(0,1fr);gap:8px;font-size:11px;line-height:1.45}.dtv-preview-label{color:var(--dsw-alias-label-tertiary)}.dtv-preview-value{overflow-wrap:anywhere}.dtv-preview-options{margin-left:120px;display:flex;flex-direction:column;gap:2px;font-size:10px;color:var(--dsw-alias-label-tertiary)}.dtv-preview-list{margin:0;padding-left:18px}.dtv-preview-row[data-missing=true] .dtv-preview-value,.dtv-preview-list>[data-missing=true]{color:var(--dsw-alias-state-error)}
 .dtv-book-toolbar{display:grid;grid-template-columns:1fr 1fr 1fr;gap:7px}.dtv-entry{border:1px solid var(--dsw-alias-border-l1);border-radius:8px;background:var(--dsw-alias-bg-base);overflow:hidden}.dtv-entry>summary{list-style:none;cursor:pointer;padding:8px;display:flex;align-items:center;gap:7px;font-size:11px}.dtv-entry>summary::-webkit-details-marker{display:none}.dtv-entry-dot{width:8px;height:8px;flex:none;border-radius:50%;background:var(--dsw-alias-label-tertiary)}.dtv-entry[data-enabled=true] .dtv-entry-dot{background:var(--dsw-alias-state-success,#2fa36b)}.dtv-entry-name{font-weight:620;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.dtv-entry-state{margin-left:auto;flex:none;color:var(--dsw-alias-label-tertiary);font-size:10px}.dtv-entry-body{border-top:1px solid var(--dsw-alias-border-l1);padding:8px;display:flex;flex-direction:column;gap:8px}.dtv-field{display:flex;flex-direction:column;gap:4px}.dtv-label{font-size:10px;font-weight:620;color:var(--dsw-alias-label-tertiary)}.dtv-input,.dtv-select,.dtv-textarea{box-sizing:border-box;width:100%;border:1px solid var(--dsw-alias-border-l2);border-radius:7px;background:var(--dsw-alias-bg-base);color:var(--dsw-alias-label-primary);font:inherit;font-size:11px;padding:7px 8px}.dtv-input,.dtv-select{height:32px}.dtv-textarea{min-height:94px;resize:vertical;line-height:1.45}.dtv-entry-grid{display:grid;grid-template-columns:1fr 1fr;gap:7px}.dtv-checks{display:flex;flex-wrap:wrap;gap:10px}.dtv-check{display:flex;gap:5px;align-items:center;font-size:10px}.dtv-entry-actions{display:flex;justify-content:flex-end}.dtv-danger{color:var(--dsw-alias-state-error)}
 .dtv-layer>.dtv-launcher,.dtv-layer>.dtv-panel,.dtv-layer>.dcc-panel,.dtv-layer>.dwb-panel,.dtv-layer>.dtu-panel{zoom:var(--dtv-ui-scale,1)}.dtv-setting-value{font-size:12px;font-variant-numeric:tabular-nums;color:var(--dsw-alias-label-secondary)}
 `;

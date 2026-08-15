@@ -176,9 +176,22 @@ test('world-book panel separates sources, omits format suffixes and exposes unap
   const source = readFileSync(new URL('../packages/world-book-library/src/client.js', import.meta.url), 'utf8')
   assert.match(source, /独立世界书/)
   assert.match(source, /角色卡绑定的世界书/)
+  assert.match(source, /data-source': 'standalone'/)
+  assert.match(source, /data-source': 'character'/)
+  assert.match(source, /world\.embeddedEmpty/)
   assert.match(source, /绑定有未保存修改/)
   assert.match(source, /当前绑定已应用/)
   assert.doesNotMatch(source, /`\$\{item\.name\} · \$\{item\.sourceFormat\}`/)
+})
+
+test('session-template panel renders resolved configuration contents and current-settings guidance', () => {
+  const source = readFileSync(new URL('../packages/session-template/src/client.js', import.meta.url), 'utf8')
+  assert.match(source, /function TemplatePreview/)
+  assert.match(source, /contents\.preset/)
+  assert.match(source, /contents\.characterCard/)
+  assert.match(source, /contents\.user/)
+  assert.match(source, /contents\.worldBooks/)
+  assert.match(source, /template\.currentSettingsReminder/)
 })
 
 test('user session binding uses the same primary action styling as other binding panels', () => {

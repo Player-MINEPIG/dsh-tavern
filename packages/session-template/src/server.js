@@ -87,6 +87,7 @@ export function createSessionTemplateApiHandler(store, configurations, options =
       if (method === 'GET' && path === API_PREFIX) {
         const templates = store.list().map(template => ({
           ...template,
+          contents: configurations.contents(template.selection),
           diagnostics: configurations.diagnostics(template.selection),
         }))
         return sendJson(res, 200, { ok: true, selectedId: store.state.selectedId, templates })
@@ -120,6 +121,7 @@ export function createSessionTemplateApiHandler(store, configurations, options =
         return sendJson(res, 200, {
           ok: true,
           template,
+          contents: configurations.contents(template.selection),
           diagnostics: configurations.diagnostics(template.selection),
         })
       }
@@ -129,6 +131,7 @@ export function createSessionTemplateApiHandler(store, configurations, options =
         return sendJson(res, 200, {
           ok: true,
           template,
+          contents: configurations.contents(template.selection),
           diagnostics: configurations.diagnostics(template.selection),
         })
       }

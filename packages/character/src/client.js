@@ -9,6 +9,7 @@ import {
   createLocalizedElement,
   rawText,
   translateVisibleText,
+  uiMessage,
   uiText,
   unwrapText,
 } from '../../client/src/i18n.js'
@@ -249,7 +250,7 @@ export function CharacterPanel({ sessionId, sessionBlank, close }) {
         h(TextDetail, { label: 'Message examples', value: detail.data.messageExample }),
         h(TextDetail, { label: 'System prompt（由 loader 按绑定设置处理）', value: detail.data.systemPrompt }),
         h(TextDetail, { label: 'Post-history instructions（由 loader 近似放置）', value: detail.data.postHistoryInstructions }),
-        detail.data.characterBook !== null ? h('div', { className: 'dcc-status' }, uiText`内嵌 character_book 已无损保留（${Array.isArray(detail.data.characterBook.entries) ? detail.data.characterBook.entries.length : translateVisibleText('未知')} 条）；绑定角色后由 Tavern loader 调用世界信息 matcher，解绑后不再参与后续请求。`) : null,
+        detail.data.characterBook !== null ? h('div', { className: 'dcc-status' }, uiMessage('character.embeddedBook', { count: Array.isArray(detail.data.characterBook.entries) ? detail.data.characterBook.entries.length : translateVisibleText('未知') })) : null,
         h(DiagnosticList, { title: '兼容警告', items: detail.compatibility.warnings }),
         h(DiagnosticList, { title: '需要 loader/其他模块处理', items: detail.compatibility.unsupportedFeatures }),
         detail.compatibility.unknownMacroNames.length > 0 ? h('div', { className: 'dcc-status' }, uiText`未知宏：${detail.compatibility.unknownMacroNames.join(', ')}`) : null,

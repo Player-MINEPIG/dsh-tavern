@@ -4,6 +4,37 @@ This is the staged implementation log for the prompt-preset experiment. It is
 kept separately from the product README so reviewers can follow intent,
 decisions, verification, and known limits chronologically.
 
+## 2026-08-15 — Template preview and semantic i18n hardening
+
+Purpose: make saved template intent reviewable and remove the common source of
+partially translated dynamic sentences found during manual acceptance.
+
+- Added derived template-content summaries and a structured preview of preset,
+  character/greeting/switches, user and ordered standalone world books. Template
+  updates remain intentionally sourced only from the current session; localized
+  guidance directs configuration changes to the DT launcher panels.
+- Promoted Trace storage/keyword messages, world-book session/entry metadata,
+  character-book preservation status and template guidance to full semantic
+  catalog keys. Dynamic resource names, ids and keywords remain raw.
+- Documented the semantic-first i18n extension contract: `uiMessage` for full
+  dynamic sentences, `uiText` only as a legacy short-fragment bridge, and
+  `rawText` for pure runtime data.
+- Made standalone and character-bound world books visually separate source
+  sections. The character section is always visible and has an explicit empty
+  state instead of disappearing when no embedded book is bound.
+
+Verification:
+
+- `npm run check` rebuilt the client and completed 175 tests: 174 passed,
+  none failed, and the opt-in external copyrighted fixture was skipped.
+- `npm run pack:check` retained the 61-file release boundary.
+- An isolated loopback DSH/browser run displayed a stored template's resolved
+  preset, character/greeting/switches, user and ordered books; fully English
+  Trace storage, keyword, placement and diagnostic copy; both visually separate
+  world-book sources and their empty/bound states; and the localized embedded
+  `character_book` status. Imported Chinese resource names and keywords remained
+  unchanged.
+
 ## 2026-08-15 — Phase 3 integration acceptance
 
 Purpose: combine the four independently developed Phase 3 features without

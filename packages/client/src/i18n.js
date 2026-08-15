@@ -19,6 +19,34 @@ export const MESSAGE_CATALOG = Object.freeze({
     'settings.loadError': '无法读取界面设置：{message}',
     'settings.saveError': '无法保存界面设置：{message}',
     'settings.close': '关闭界面设置侧边栏',
+    'trace.storage.total': '总计最多 {value}',
+    'trace.storage.perSession': '每会话最多 {value} 条',
+    'trace.storage.sessions': '最多 {value} 个会话',
+    'trace.storage.perRecord': '单条最多 {value}',
+    'trace.storage.summary': '插件有界存储：{limits}；刷新或宿主重启后可恢复。',
+    'trace.keywords.primary': '主：{values}',
+    'trace.keywords.secondary': '附加：{values}',
+    'trace.keywords.configured': '配置关键词：{value}',
+    'trace.keywords.matched': '本轮命中：{value}',
+    'trace.bookBudget': '预算：{used}{limit} tokens · {decisionCount}',
+    'trace.decisionCount.one': '{count} 条决策',
+    'trace.decisionCount.other': '{count} 条决策',
+    'trace.decision.group': '组 {name}{detail}',
+    'trace.decision.probability': '概率 {value}%{roll}',
+    'trace.decision.budget': '预算 {value} tokens',
+    'trace.decision.position': '位置 {requested}{result}',
+    'trace.recordAligned': '该记录已对齐 DSH request/header #{sequence}{reused}。Tavern profile 校验：{profile}；采样字段：{config}。',
+    'trace.activationPending': '匹配基于本步骤 assembly 的临时激活上下文：持久历史 + {included}/{pending} 条本轮 claimed 输入；不保存输入正文{truncated}。',
+    'trace.diagnostics': '诊断（{count}）',
+    'world.currentSession': '当前会话：{session}。可绑定零本、一本或多本独立世界书；绑定顺序保持稳定。',
+    'world.catalogItem': '{name}（{count} 条）',
+    'world.documentMeta': '{count} 条 · 未知字段在保存和导出时稳定保留',
+    'world.embeddedMeta': '{count} 条。它与独立书共用 matcher/loader；删除独立书不会修改或解绑角色卡内嵌书。',
+    'world.embeddedEmpty': '当前会话没有角色卡绑定的内嵌世界书。绑定含 character_book 的角色卡后会显示在这里。',
+    'world.diagnostics': '运行诊断（{count}）',
+    'character.embeddedBook': '内嵌 character_book 已无损保留（{count} 条）；绑定角色后由 Tavern loader 调用世界信息 matcher，解绑后不再参与后续请求。',
+    'template.currentSettingsReminder': '模板只能用当前会话的 Tavern 设置创建或更新。请在悬浮球的预设、角色卡、世界书和用户面板中查看或修改当前配置，再回到这里保存。',
+    'template.preview.greeting': '开场序号：{value}',
   }),
   en: Object.freeze({
     'common.unavailable': 'Interface text unavailable',
@@ -36,6 +64,34 @@ export const MESSAGE_CATALOG = Object.freeze({
     'settings.loadError': 'Could not load UI settings: {message}',
     'settings.saveError': 'Could not save UI settings: {message}',
     'settings.close': 'Close the UI settings sidebar',
+    'trace.storage.total': 'up to {value} total',
+    'trace.storage.perSession': 'up to {value} entries per session',
+    'trace.storage.sessions': 'up to {value} sessions',
+    'trace.storage.perRecord': 'up to {value} per entry',
+    'trace.storage.summary': 'Bounded plugin storage: {limits}. Restored after refresh or host restart.',
+    'trace.keywords.primary': 'Primary: {values}',
+    'trace.keywords.secondary': 'Secondary: {values}',
+    'trace.keywords.configured': 'Configured keywords: {value}',
+    'trace.keywords.matched': 'Matched this request: {value}',
+    'trace.bookBudget': 'Budget: {used}{limit} tokens · {decisionCount}',
+    'trace.decisionCount.one': '{count} decision',
+    'trace.decisionCount.other': '{count} decisions',
+    'trace.decision.group': 'Group {name}{detail}',
+    'trace.decision.probability': 'Probability {value}%{roll}',
+    'trace.decision.budget': 'Budget {value} tokens',
+    'trace.decision.position': 'Position {requested}{result}',
+    'trace.recordAligned': 'This record is aligned with DSH request/header #{sequence}{reused}. Tavern profile validation: {profile}; sampler fields: {config}.',
+    'trace.activationPending': 'Matching uses this step’s temporary activation context: durable history + {included}/{pending} claimed messages from this turn; input bodies are not stored{truncated}.',
+    'trace.diagnostics': 'Diagnostics ({count})',
+    'world.currentSession': 'Current session: {session}. Bind zero, one, or multiple standalone world books; binding order remains stable.',
+    'world.catalogItem': '{name} ({count} entries)',
+    'world.documentMeta': '{count} entries · Unknown fields are preserved across saves and exports',
+    'world.embeddedMeta': '{count} entries. It shares the matcher/loader with standalone books; deleting a standalone book never edits or unbinds this embedded book.',
+    'world.embeddedEmpty': 'The current session has no character-bound embedded world book. Bind a character card with character_book to show it here.',
+    'world.diagnostics': 'Runtime diagnostics ({count})',
+    'character.embeddedBook': 'Embedded character_book preserved losslessly ({count} entries); when the character is bound, the Tavern loader invokes the World Info matcher, and unbinding removes it from later requests.',
+    'template.currentSettingsReminder': 'Templates can only be created or updated from the current session’s Tavern settings. Review or change the current configuration in the launcher’s Preset, Character, World book, and User panels, then return here to save it.',
+    'template.preview.greeting': 'Greeting index: {value}',
   }),
 })
 
@@ -226,6 +282,10 @@ const SOURCE_EN = Object.freeze({
   '只继承 preset、角色卡与 greeting/开关、用户和独立世界书选择。DSH 历史、Tavern Trace、Inbox、运行中 turn/step 和其他运行态不会复制。': 'Carries only the preset, character and greeting/options, user, and standalone world-book selections. DSH history, Tavern Trace, Inbox, active turns/steps, and other runtime state are not copied.',
   '没有可用的 DSH 目标工作区。请先在 DSH 侧栏中加入或打开工作区。': 'No DSH target workspace is available. Add or open a workspace in the DSH sidebar first.',
   '配置模板': 'Configuration templates',
+  '保存的 Tavern 配置': 'Saved Tavern configuration',
+  '独立世界书（按绑定顺序）': 'Standalone world books (binding order)',
+  '卡内 system_prompt：': 'Character system_prompt: ',
+  'post_history_instructions：': 'post_history_instructions: ',
   '已选择模板': 'Selected template',
   '未选择模板': 'No template selected',
   '模板名称': 'Template name',
@@ -413,6 +473,15 @@ export function rawText(value) {
     value: value === null || value === undefined ? '' : String(value),
     toString() { return this.value },
   })
+}
+
+/**
+ * Resolves a complete semantic UI message and brands it as UI-owned text.
+ * Dynamic values are interpolated verbatim, so resource names and ids are
+ * never sent through the legacy source-copy replacement layer.
+ */
+export function uiMessage(key, values = {}, fallback) {
+  return rawText(translate(key, values, fallback))
 }
 
 export function isRawText(value) {

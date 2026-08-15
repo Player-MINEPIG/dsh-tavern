@@ -7,6 +7,7 @@ import {
   setClientUiSettings,
   translate,
   translateVisibleText,
+  uiMessage,
   uiText,
   unwrapText,
 } from '../packages/client/src/i18n.js'
@@ -113,6 +114,41 @@ test('resource clients explicitly protect dynamic child, diagnostic, error, and 
   assert.match(sources.trace, /value\?\.name \? rawText\(value\.name\)/)
   assert.match(sources.trace, /rawText\(`\$\{item\.code\}: \$\{item\.message\}`\)/)
   for (const source of Object.values(sources)) assert.match(source, /rawText\((status\.text|error)/)
+})
+
+test('semantic dynamic messages translate as complete sentences without altering runtime values', () => {
+  setClientUiSettings({ locale: 'en', scale: 1 }, { announce: false })
+  const messages = [
+    uiMessage('trace.storage.summary', { limits: 'up to 8 MiB total, up to 128 entries per session' }),
+    uiMessage('trace.keywords.configured', { value: 'Primary: "酸橙，这片大地"' }),
+    uiMessage('trace.keywords.matched', { value: 'No keyword matches' }),
+    uiMessage('trace.bookBudget', { used: 8, limit: '', decisionCount: translate('trace.decisionCount.one', { count: 1 }) }),
+    uiMessage('trace.recordAligned', { sequence: 42, reused: '', profile: 'Consistent', config: 'Consistent or no fields' }),
+    uiMessage('trace.activationPending', { included: 1, pending: 1, truncated: '' }),
+    uiMessage('trace.diagnostics', { count: 1 }),
+    uiMessage('world.currentSession', { session: 'session-test' }),
+    uiMessage('world.documentMeta', { count: 8 }),
+    uiMessage('character.embeddedBook', { count: 8 }),
+    uiMessage('template.currentSettingsReminder'),
+  ].map(unwrapText)
+  assert.match(messages[1], /酸橙，这片大地/)
+  for (const message of messages) {
+    const uiCopyWithoutRuntimeKeyword = message.replace('酸橙，这片大地', '')
+    assert.doesNotMatch(uiCopyWithoutRuntimeKeyword, /[\u3400-\u9fff]/u)
+  }
+})
+
+test('reported mixed-copy surfaces use semantic messages instead of fragment translation', () => {
+  const cases = [
+    ['../packages/tavern-trace/src/client.js', ['trace.storage.summary', 'trace.keywords.configured', 'trace.keywords.matched', 'trace.bookBudget', 'trace.recordAligned', 'trace.activationPending', 'trace.diagnostics']],
+    ['../packages/world-book-library/src/client.js', ['world.currentSession', 'world.catalogItem', 'world.documentMeta', 'world.embeddedMeta', 'world.embeddedEmpty', 'world.diagnostics']],
+    ['../packages/character/src/client.js', ['character.embeddedBook']],
+    ['../packages/session-template/src/client.js', ['template.currentSettingsReminder']],
+  ]
+  for (const [file, keys] of cases) {
+    const source = readFileSync(new URL(file, import.meta.url), 'utf8')
+    for (const key of keys) assert.match(source, new RegExp(`uiMessage\\('${key.replaceAll('.', '\\.')}'`))
+  }
 })
 
 test('new-session integration copy has complete English translations', () => {

@@ -21,7 +21,7 @@ history, and per-session bindings are not read or changed by this setting.
 ## Ownership and flow
 
 `packages/client/src/i18n.js` is the browser-only shared catalog boundary. The
-composition root and all five existing Tavern React clients create elements
+composition root and all current Tavern React clients create elements
 through its localized factory. Literal UI children plus `title`, `aria-label`,
 `placeholder`, and `alt` copy use one active locale. Runtime data crosses an
 explicit raw-text boundary: `rawText(value)` preserves an entire value, while
@@ -31,9 +31,25 @@ Together these rules prevent localization from rewriting imported resource
 names, user input, prompt text, entry comments, personas, character data,
 lore, diagnostics, or server error text even when they render as children.
 
-The catalog contains semantic keys for the settings surface and the existing
-Simplified-Chinese source messages used by the resource clients. A missing
-semantic key returns the stable localized `common.unavailable` message; it
+The initial retrofit contained semantic keys for the settings surface and a
+legacy Simplified-Chinese source-copy replacement catalog for existing static
+labels. That fallback is intentionally retained for short, literal controls,
+but it is not the extension contract: fragment replacement cannot reliably
+translate a sentence assembled from counts, statuses, resource names and
+punctuation. Such mixed sentences previously produced half-translated output.
+
+New and migrated dynamic copy must use one of three explicit boundaries:
+
+1. `uiMessage(key, values)` for a complete semantic sentence. Both locales own
+   the whole template and runtime values are interpolated verbatim.
+2. `uiText` only for a short legacy literal with raw interpolations; it must not
+   be used to compose a new long sentence.
+3. `rawText(value)` for pure resource/runtime data with no UI-owned words.
+
+For structured previews, static labels and runtime values should be separate
+React children instead of one concatenated string. This keeps imported names,
+ids and keywords byte-for-byte stable and makes future locales additive. A
+missing semantic key returns the stable localized `common.unavailable` message; it
 never renders the key itself. Locale changes update the in-memory catalog
 before React state, then announce `dsh-tavern:ui-settings` so Tavern Trace
 rerenders without a page refresh.
@@ -108,7 +124,10 @@ reset, field/locale/range/increment validation, malformed and oversized files,
 and GET/PUT/DELETE behavior. `test/i18n.test.mjs` covers both languages,
 interpolation, non-key fallback, accessibility text, complete English creation
 labels, raw resource names rendered as children, and raw-data-boundary adoption
-by every current Tavern client. The existing shell suite continues to assert
+by every current Tavern client. It also locks the Trace storage/keyword,
+world-book metadata, character-book status and template-guidance sentences to
+semantic keys and asserts that their English UI copy contains no Han characters
+while Chinese runtime keywords remain unchanged. The existing shell suite continues to assert
 one overlay owner, drag clamping, expansion direction, panel switching,
 resource status, and shared refresh behavior; it adds scaled-coordinate and
 settings-surface assertions.
@@ -164,6 +183,10 @@ fixture was skipped, and zero tests failed.
 6. Restore defaults. Refresh again and verify Simplified Chinese / 100%.
 7. With DevTools, force the settings PUT to fail. Verify the optimistic change
    rolls back and a localized error is shown without disabling the launcher.
+8. In English, inspect Trace storage and keyword decisions, standalone and
+   character-bound world-book sections, a character with `character_book`, and
+   a saved session template. Verify UI-owned prose is fully English while
+   resource titles, ids and configured keywords remain exactly as imported.
 
 Known manual risk: final pixel behavior of CSS `zoom` depends on the Chromium
 version embedded by DSH. Automated geometry covers physical launcher

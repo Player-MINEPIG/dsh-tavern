@@ -16,6 +16,20 @@ function sourceOf(value) {
   throw new TypeError('Session configuration source mode must be current or template')
 }
 
+function resourceReference(store, id) {
+  if (id === null) return null
+  try {
+    const resource = store.get(id)
+    return {
+      id,
+      name: typeof resource?.name === 'string' && resource.name !== '' ? resource.name : id,
+      missing: false,
+    }
+  } catch {
+    return { id, name: id, missing: true }
+  }
+}
+
 export class SessionConfigurationError extends Error {
   constructor(diagnostics) {
     super('Session configuration refers to missing or invalid Tavern resources')
@@ -91,10 +105,26 @@ export class SessionConfigurationService {
     return diagnostics
   }
 
+  contents(selection) {
+    const value = normalizeTemplateSelection(selection)
+    return {
+      preset: resourceReference(this.presets, value.presetId),
+      characterCard: resourceReference(this.characters, value.characterCardId),
+      user: resourceReference(this.users, value.userId),
+      worldBooks: value.worldBookIds.map(id => resourceReference(this.worldBooks, id)),
+      character: structuredClone(value.character),
+    }
+  }
+
   preview(source) {
     const selection = normalizeTemplateSelection(this.selection(source))
     const diagnostics = this.diagnostics(selection)
-    return { selection, diagnostics, available: diagnostics.length === 0 }
+    return {
+      selection,
+      contents: this.contents(selection),
+      diagnostics,
+      available: diagnostics.length === 0,
+    }
   }
 
   apply(targetSessionId, source) {

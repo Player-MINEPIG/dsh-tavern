@@ -6,9 +6,9 @@ import {
 } from 'react'
 import {
   createLocalizedElement,
-  getClientUiSettings,
   rawText,
   translateVisibleText,
+  uiMessage,
   uiText,
   unwrapText,
 } from '../../client/src/i18n.js'
@@ -33,18 +33,40 @@ async function api(path, options = {}) {
   return data
 }
 
-function sourceLabel(template) {
-  const selection = template?.selection ?? {}
-  const labels = []
-  if (selection.presetId) labels.push(translateVisibleText('预设'))
-  if (selection.characterCardId) labels.push(translateVisibleText('角色卡'))
-  if (selection.userId) labels.push(translateVisibleText('用户'))
-  if (Array.isArray(selection.worldBookIds) && selection.worldBookIds.length > 0) {
-    labels.push(unwrapText(uiText`${selection.worldBookIds.length} 本世界书`))
-  }
-  return labels.length === 0
-    ? translateVisibleText('空 Tavern 配置')
-    : labels.join(getClientUiSettings().locale === 'en' ? ', ' : '、')
+function PreviewRow({ label, value, missing = false }) {
+  return h('div', { className: 'dtv-preview-row', 'data-missing': missing || undefined },
+    h('span', { className: 'dtv-preview-label' }, label),
+    h('span', { className: 'dtv-preview-value' }, value),
+  )
+}
+
+function resourceValue(resource, emptyLabel) {
+  return resource === null || resource === undefined
+    ? emptyLabel
+    : rawText(resource.name || resource.id)
+}
+
+function TemplatePreview({ template }) {
+  const contents = template?.contents ?? {}
+  const character = template?.selection?.character ?? contents.character ?? {}
+  const books = Array.isArray(contents.worldBooks) ? contents.worldBooks : []
+  return h('div', { className: 'dtv-preview' },
+    h('div', { className: 'dtv-preview-title' }, '保存的 Tavern 配置'),
+    h(PreviewRow, { label: '预设', value: resourceValue(contents.preset, '未选择预设'), missing: contents.preset?.missing }),
+    h(PreviewRow, { label: '角色卡', value: resourceValue(contents.characterCard, '未绑定角色'), missing: contents.characterCard?.missing }),
+    contents.characterCard === null || contents.characterCard === undefined ? null : h('div', { className: 'dtv-preview-options' },
+      h('span', null, uiMessage('template.preview.greeting', { value: Number(character.greetingIndex ?? 0) + 1 })),
+      h('span', null, uiText`卡内 system_prompt：${character.preferCharacterSystemPrompt === false ? translateVisibleText('已禁用') : translateVisibleText('已启用')}`),
+      h('span', null, uiText`post_history_instructions: ${character.preferCharacterPostHistory === false ? translateVisibleText('已禁用') : translateVisibleText('已启用')}`),
+    ),
+    h(PreviewRow, { label: '用户', value: resourceValue(contents.user, '未绑定用户'), missing: contents.user?.missing }),
+    h('div', { className: 'dtv-preview-row dtv-preview-books' },
+      h('span', { className: 'dtv-preview-label' }, '独立世界书（按绑定顺序）'),
+      books.length === 0
+        ? h('span', { className: 'dtv-preview-value' }, '未绑定世界书')
+        : h('ol', { className: 'dtv-preview-list' }, ...books.map(book => h('li', { key: book.id, 'data-missing': book.missing || undefined }, rawText(book.name || book.id)))),
+    ),
+  )
 }
 
 export function SessionTemplatePanel({ sessionId, workspaceId, createCleanSession, close }) {
@@ -176,7 +198,8 @@ export function SessionTemplatePanel({ sessionId, workspaceId, createCleanSessio
           h('button', { className: 'dtv-button', type: 'button', disabled: busy || !sessionId || selectedId === null, onClick: update }, '用当前设置更新'),
           h('button', { className: 'dtv-button dtv-danger', type: 'button', disabled: busy || selectedId === null, onClick: remove }, '删除模板'),
         ),
-        selected === null ? null : h('div', { className: 'dtv-resource-meta' }, uiText`保存内容：${sourceLabel(selected)}`),
+        h('p', { className: 'dtv-note' }, uiMessage('template.currentSettingsReminder')),
+        selected === null ? null : h(TemplatePreview, { template: selected }),
         diagnostics.length === 0 ? null : h('div', { className: 'dtv-status', 'data-error': true },
           h('div', null, '该模板暂不可用于创建：'),
           h('ul', { className: 'dtv-list' }, ...diagnostics.map((item, index) => h('li', { key: `${item.code}-${index}` }, rawText(item.message)))),

@@ -105,6 +105,13 @@ test('session-template API covers create, select, rename, update, preview, apply
     const listed = await invoke(handler)
     assert.equal(listed.body.selectedId, 'template-api')
     assert.equal(listed.body.templates[0].diagnostics.length, 0)
+    assert.deepEqual(listed.body.templates[0].contents, {
+      preset: null,
+      characterCard: null,
+      user: null,
+      worldBooks: [],
+      character: {},
+    })
 
     const deleted = await invoke(handler, {
       method: 'DELETE',

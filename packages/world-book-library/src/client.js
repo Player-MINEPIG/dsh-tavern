@@ -9,6 +9,7 @@ import {
   createLocalizedElement,
   rawText,
   translateVisibleText,
+  uiMessage,
   uiText,
   unwrapText,
 } from '../../client/src/i18n.js'
@@ -29,6 +30,7 @@ const POSITIONS = [
 
 const css = `
 .dwb-panel{position:absolute;top:0;right:0;bottom:0;width:min(500px,calc(100vw - 56px));pointer-events:auto;border-left:1px solid var(--dsw-alias-border-l2);box-shadow:var(--ds-shadow-3,-8px 0 28px rgba(0,0,0,.18));background:var(--dsw-alias-bg-base);color:var(--dsw-alias-label-primary);display:flex;flex-direction:column;font-family:Inter,var(--dsw-font-family),sans-serif}.dwb-header{height:52px;box-sizing:border-box;display:flex;align-items:center;gap:8px;padding:0 14px;border-bottom:1px solid var(--dsw-alias-border-l2);flex:none}.dwb-title{font-size:16px;font-weight:650;flex:1}.dwb-close{border:0;background:transparent;color:var(--dsw-alias-label-tertiary);cursor:pointer;border-radius:7px;padding:6px 8px;font-size:14px}.dwb-body{min-height:0;overflow:auto;padding:12px;display:flex;flex-direction:column;gap:11px}.dwb-toolbar{display:grid;grid-template-columns:repeat(3,1fr);gap:7px}.dwb-actions{display:flex;gap:7px;flex-wrap:wrap}.dwb-button{min-height:36px;border:1px solid var(--dsw-alias-border-l2);border-radius:8px;background:var(--dsw-alias-button-secondary-fill,var(--dsw-alias-bg-base));color:var(--dsw-alias-label-primary);cursor:pointer;padding:7px 10px;font-size:13px;text-decoration:none;display:inline-flex;align-items:center;justify-content:center;box-sizing:border-box}.dwb-button:disabled{opacity:.5;cursor:default}.dwb-primary{background:var(--dsw-alias-state-business-primary);color:white;border-color:transparent}.dwb-danger{color:var(--dsw-alias-state-error)}.dwb-field{display:flex;flex-direction:column;gap:4px}.dwb-label{font-size:12px;font-weight:620;color:var(--dsw-alias-label-tertiary)}.dwb-input,.dwb-select,.dwb-textarea{box-sizing:border-box;width:100%;border:1px solid var(--dsw-alias-border-l2);border-radius:7px;background:var(--dsw-alias-bg-base);color:var(--dsw-alias-label-primary);font:inherit;font-size:13px;padding:7px 8px}.dwb-input,.dwb-select{height:36px}.dwb-textarea{min-height:110px;resize:vertical;line-height:1.5}.dwb-note,.dwb-meta{font-size:13px;line-height:1.5;color:var(--dsw-alias-label-tertiary);margin:0;overflow-wrap:anywhere}.dwb-status{font-size:13px;line-height:1.45;border-radius:7px;padding:8px 10px;background:var(--dsw-specific-tip);overflow-wrap:anywhere}.dwb-status[data-error=true]{color:var(--dsw-alias-state-error)}.dwb-status[data-warning=true]{color:var(--dsw-alias-state-warning,#b46b00)}.dwb-section-title{font-size:15px;font-weight:700;margin:5px 0 0}.dwb-resource{border:1px solid var(--dsw-alias-border-l1);border-radius:9px;padding:10px;display:flex;flex-direction:column;gap:8px}.dwb-resource-title{font-size:14px;font-weight:650}.dwb-bindings{display:grid;grid-template-columns:1fr 1fr;gap:5px}.dwb-check{display:flex;gap:6px;align-items:flex-start;font-size:12px;line-height:1.45}.dwb-entry{border:1px solid var(--dsw-alias-border-l1);border-radius:8px;overflow:hidden}.dwb-entry>summary{list-style:none;cursor:pointer;padding:8px;display:flex;align-items:center;gap:7px;font-size:13px}.dwb-entry>summary::-webkit-details-marker{display:none}.dwb-dot{width:8px;height:8px;flex:none;border-radius:50%;background:var(--dsw-alias-label-tertiary)}.dwb-entry[data-enabled=true] .dwb-dot{background:var(--dsw-alias-state-success,#2fa36b)}.dwb-entry-name{font-weight:620;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.dwb-entry-state{margin-left:auto;flex:none;color:var(--dsw-alias-label-tertiary);font-size:12px}.dwb-entry-body{border-top:1px solid var(--dsw-alias-border-l1);padding:8px;display:flex;flex-direction:column;gap:8px}.dwb-grid{display:grid;grid-template-columns:1fr 1fr;gap:7px}.dwb-checks{display:flex;flex-wrap:wrap;gap:10px}.dwb-list{margin:0;padding-left:18px;font-size:13px;line-height:1.5}
+.dwb-source-section{border:1px solid var(--dsw-alias-border-l2);border-radius:11px;padding:10px;background:color-mix(in srgb,var(--dsw-specific-tip) 35%,transparent);display:flex;flex-direction:column;gap:9px}.dwb-source-section>.dwb-section-title{margin:0}.dwb-source-section>.dwb-resource{background:var(--dsw-alias-bg-base)}
 `
 
 function errorMessage(data, status) {
@@ -323,14 +325,15 @@ export function WorldBookPanel({ sessionId, close }) {
         h('button', { className: 'dwb-button', type: 'button', disabled: busy, onClick: () => { if (!dirty || window.confirm(translateVisibleText('放弃尚未保存的修改？'))) run(() => refresh(), '世界书资源库已刷新') } }, '刷新'),
         h('input', { ref: fileRef, hidden: true, type: 'file', accept: '.json,application/json', onChange: event => { const file = event.target.files?.[0]; if (file !== undefined) importFile(file) } }),
       ),
-      h('p', { className: 'dwb-note' }, uiText`当前会话：${sessionId || translateVisibleText('无')}。可绑定零本、一本或多本独立世界书；绑定顺序保持稳定。`),
+      h('p', { className: 'dwb-note' }, uiMessage('world.currentSession', { session: sessionId || translateVisibleText('无') })),
       h('div', { className: 'dwb-status', 'data-error': status.error || undefined, role: 'status', 'aria-live': 'polite' }, status.error ? rawText(status.text) : status.text),
+      h('section', { className: 'dwb-source-section', 'data-source': 'standalone' },
       h('h2', { className: 'dwb-section-title' }, '独立世界书'),
       h('div', { className: 'dwb-resource' },
         h('div', { className: 'dwb-resource-title' }, '当前会话绑定'),
         catalog?.worldBooks.length ? h('div', { className: 'dwb-bindings' }, ...catalog.worldBooks.map(item => h('label', { className: 'dwb-check', key: item.id },
           h('input', { type: 'checkbox', checked: selection.includes(item.id), onChange: event => setSelection(current => event.target.checked ? [...current, item.id] : current.filter(id => id !== item.id)) }),
-          uiText`${item.name}（${item.entryCount} 条）`,
+          uiMessage('world.catalogItem', { name: item.name, count: item.entryCount }),
         ))) : h('p', { className: 'dwb-note' }, '独立世界书资源库为空。'),
         selectionDirty ? h('div', { className: 'dwb-status', 'data-warning': true }, '绑定有未保存修改，当前勾选尚未应用到会话。') : h('p', { className: 'dwb-note' }, '面板显示的绑定已应用到当前会话。'),
         h('div', { className: 'dwb-actions' },
@@ -343,7 +346,7 @@ export function WorldBookPanel({ sessionId, close }) {
         ...(catalog?.worldBooks ?? []).map(item => h('option', { key: item.id, value: item.id }, rawText(item.name))))),
       draft === null ? null : h('div', { className: 'dwb-resource' },
         h(Field, { label: '世界书名称' }, h('input', { className: 'dwb-input', value: draft.name ?? '', onChange: event => { setDraft(current => ({ ...current, name: event.target.value })); setDirty(true) } })),
-        h('p', { className: 'dwb-meta' }, uiText`${entries.length} 条 · 未知字段在保存和导出时稳定保留`),
+        h('p', { className: 'dwb-meta' }, uiMessage('world.documentMeta', { count: entries.length })),
         h('div', { className: 'dwb-actions' },
           h('button', { className: 'dwb-button', type: 'button', onClick: () => { setDraft(current => ({ ...current, entries: [...current.entries, createWorldBookEntry(current.entries)] })); setDirty(true) } }, '新增条目'),
           h('button', { className: 'dwb-button dwb-primary', type: 'button', disabled: busy || !dirty, onClick: save }, dirty ? '保存修改' : '已保存'),
@@ -352,17 +355,20 @@ export function WorldBookPanel({ sessionId, close }) {
         ),
         ...entries.map((entry, index) => h(EntryEditor, { key: `${String(entry.uid)}-${index}`, entry, index, update: updateEntry, remove: itemIndex => { if (window.confirm(translateVisibleText('删除这个世界书条目？保存后生效。'))) { setDraft(current => ({ ...current, entries: current.entries.filter((_item, candidate) => candidate !== itemIndex) })); setDirty(true) } } })),
       ),
-      embeddedDraft !== null ? h('h2', { className: 'dwb-section-title' }, '角色卡绑定的世界书') : null,
+      ),
+      h('section', { className: 'dwb-source-section', 'data-source': 'character' },
+      h('h2', { className: 'dwb-section-title' }, '角色卡绑定的世界书'),
       embeddedDraft !== null ? h('div', { className: 'dwb-resource' },
         h('div', { className: 'dwb-resource-title' }, embeddedDraft.name || embedded[0]?.name ? rawText(embeddedDraft.name || embedded[0]?.name) : '角色卡内嵌世界书'),
-        h('p', { className: 'dwb-note' }, uiText`${embeddedEntries.length} 条。它与独立书共用 matcher/loader；删除独立书不会修改或解绑角色卡内嵌书。`),
+        h('p', { className: 'dwb-note' }, uiMessage('world.embeddedMeta', { count: embeddedEntries.length })),
         h('div', { className: 'dwb-actions' },
           h('button', { className: 'dwb-button', type: 'button', onClick: () => { const ids = embeddedEntries.map(entry => Number(entry.id)).filter(Number.isSafeInteger); const id = ids.length === 0 ? 0 : Math.max(...ids) + 1; setEmbeddedDraft(current => ({ ...structuredClone(current), entries: [...current.entries, { id, keys: [], secondary_keys: [], comment: unwrapText(uiText`新条目 ${id}`), content: '', enabled: true, constant: false, selective: false, insertion_order: 100, position: 'after_char', extensions: { position: 1, probability: 100, useProbability: true } }] })); setEmbeddedDirty(true) } }, '新增内嵌条目'),
           h('button', { className: 'dwb-button dwb-primary', type: 'button', disabled: busy || !embeddedDirty, onClick: saveEmbedded }, embeddedDirty ? '保存内嵌书' : '内嵌书已保存'),
         ),
         ...embeddedEntries.map((entry, index) => h(EmbeddedEntryEditor, { key: `${String(entry.id)}-${index}`, entry, index, update: (itemIndex, value) => { setEmbeddedDraft(current => { const next = structuredClone(current); next.entries[itemIndex] = { ...next.entries[itemIndex], ...value }; return next }); setEmbeddedDirty(true) }, remove: itemIndex => { if (window.confirm(translateVisibleText('删除这个角色卡内嵌世界书条目？保存后生效。'))) { setEmbeddedDraft(current => ({ ...structuredClone(current), entries: current.entries.filter((_item, candidate) => candidate !== itemIndex) })); setEmbeddedDirty(true) } } })),
-      ) : null,
-      diagnostics.length > 0 ? h('details', { className: 'dwb-resource' }, h('summary', { className: 'dwb-resource-title' }, uiText`运行诊断（${diagnostics.length}）`), h('ul', { className: 'dwb-list' }, ...diagnostics.map((item, index) => h('li', { key: `${item.code}-${index}` }, rawText(item.message))))) : null,
+      ) : h('p', { className: 'dwb-note' }, uiMessage('world.embeddedEmpty')),
+      ),
+      diagnostics.length > 0 ? h('details', { className: 'dwb-resource' }, h('summary', { className: 'dwb-resource-title' }, uiMessage('world.diagnostics', { count: diagnostics.length })), h('ul', { className: 'dwb-list' }, ...diagnostics.map((item, index) => h('li', { key: `${item.code}-${index}` }, rawText(item.message))))) : null,
       h('p', { className: 'dwb-note' }, '实际激活、排序、概率和预算由共享 matcher 确定；最终注入仍由 Tavern loader 统一完成。当前扫描会把本步骤 claimed 输入与持久历史组合成临时上下文，因此单步骤会话也能在首次请求触发关键词。'),
     ),
   )
