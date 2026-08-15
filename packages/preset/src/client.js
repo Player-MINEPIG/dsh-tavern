@@ -5,7 +5,13 @@ import {
   useRef,
   useState,
 } from 'react'
-import { createLocalizedElement, translateVisibleText } from '../../client/src/i18n.js'
+import {
+  createLocalizedElement,
+  rawText,
+  translateVisibleText,
+  uiText,
+  unwrapText,
+} from '../../client/src/i18n.js'
 import { reorderAtBoundary } from './client-state.js'
 
 const h = createLocalizedElement(createElement)
@@ -88,7 +94,7 @@ function PromptEditor({ prompt, index, dragging, onPatch, onPointerDown, onPoint
         className: 'dtt-drag',
         type: 'button',
         title: '拖拽排列顺序',
-        'aria-label': `拖拽“${prompt.name || prompt.identifier}”排列顺序`,
+        'aria-label': uiText`拖拽“${prompt.name || prompt.identifier}”排列顺序`,
         'aria-pressed': dragging,
         onClick: (event) => {
           event.preventDefault()
@@ -107,8 +113,8 @@ function PromptEditor({ prompt, index, dragging, onPatch, onPointerDown, onPoint
         onClick: (event) => event.stopPropagation(),
         onChange: (event) => onPatch({ enabled: event.target.checked }),
       }),
-      h('span', { className: 'dtt-prompt-name' }, prompt.name || prompt.identifier),
-      h('span', { className: 'dtt-role' }, prompt.marker ? 'marker' : prompt.role),
+      h('span', { className: 'dtt-prompt-name' }, rawText(prompt.name || prompt.identifier)),
+      h('span', { className: 'dtt-role' }, rawText(prompt.marker ? 'marker' : prompt.role)),
     ),
     h('div', { className: 'dtt-prompt-body' },
       h(Field, { label: '名称' }, h('input', {
@@ -225,7 +231,7 @@ export function PresetSidebar({ closePanel, openPanel, sessionId, autoOpen = tru
   }, id ? '预设已选择；下一条消息将携带此 preset。已有会话历史不会被清除。' : '已停用 preset；已有会话历史不会被清除'), [refresh, run, sessionId])
 
   const createPreset = useCallback(() => run(async () => {
-    const created = await api('/presets', { method: 'POST', body: body({ name: '新预设' }) })
+    const created = await api('/presets', { method: 'POST', body: body({ name: translateVisibleText('新预设') }) })
     await api('/select', { method: 'POST', body: body({ id: created.preset.id, sessionId }) })
     await refresh(created.preset.id)
     announceTavernRefresh()
@@ -254,7 +260,7 @@ export function PresetSidebar({ closePanel, openPanel, sessionId, autoOpen = tru
   }, '预设配置已保存'), [draft, refresh, run])
 
   const remove = useCallback(() => run(async () => {
-    if (!window.confirm(translateVisibleText(`删除预设“${draft.name}”？`))) return
+    if (!window.confirm(unwrapText(uiText`删除预设“${draft.name}”？`))) return
     await api(`/presets/${encodeURIComponent(draft.id)}`, { method: 'DELETE' })
     await refresh(null)
     announceTavernRefresh()
@@ -284,7 +290,7 @@ export function PresetSidebar({ closePanel, openPanel, sessionId, autoOpen = tru
     ...current,
     prompts: [...current.prompts, {
       identifier: `prompt-${Date.now().toString(36)}`,
-      name: '新提示词',
+      name: translateVisibleText('新提示词'),
       role: 'system',
       content: '',
       enabled: true,
@@ -321,8 +327,8 @@ export function PresetSidebar({ closePanel, openPanel, sessionId, autoOpen = tru
         onChange: (event) => choose(event.target.value),
       },
       h('option', { value: '' }, '不使用预设'),
-      ...(catalog?.presets ?? []).map((preset) => h('option', { key: preset.id, value: preset.id }, `${preset.name} (${preset.enabledPromptCount}/${preset.promptCount})`)))),
-      h('div', { className: 'dtt-status', 'data-error': status.error || undefined, role: 'status', 'aria-live': 'polite' }, status.text),
+      ...(catalog?.presets ?? []).map((preset) => h('option', { key: preset.id, value: preset.id }, uiText`${preset.name} (${preset.enabledPromptCount}/${preset.promptCount})`)))),
+      h('div', { className: 'dtt-status', 'data-error': status.error || undefined, role: 'status', 'aria-live': 'polite' }, status.error ? rawText(status.text) : status.text),
       draft === null ? h('p', { className: 'dtt-note' }, catalog === null ? '正在加载预设…' : '请选择或创建预设以开始配置。') : h('div', { className: 'dtt-section' },
         h('div', { className: 'dtt-section-title' }, '基本设置'),
         h(Field, { label: '预设名称' }, h('input', {

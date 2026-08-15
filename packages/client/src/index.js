@@ -10,9 +10,12 @@ import {
   UI_SCALE_OPTIONS,
   createLocalizedElement,
   getClientUiSettings,
+  rawText,
   setClientUiSettings,
   translate,
   translateVisibleText,
+  uiText,
+  unwrapText,
 } from './i18n.js'
 import { PresetSidebar, installPresetStyles } from '../../preset/src/client.js'
 import { CharacterPanel, installCharacterStyles } from '../../character/src/client.js'
@@ -119,7 +122,7 @@ async function uiSettingsRequest(method = 'GET', body) {
 function PanelHeader({ title, close }) {
   return h('div', { className: 'dtv-header' },
     h('div', { className: 'dtv-title' }, title),
-    h('button', { className: 'dtv-close', type: 'button', title: `关闭${title}侧边栏`, 'aria-label': `关闭${title}侧边栏`, onClick: close }, '✕'),
+    h('button', { className: 'dtv-close', type: 'button', title: uiText`关闭${translateVisibleText(title)}侧边栏`, 'aria-label': uiText`关闭${translateVisibleText(title)}侧边栏`, onClick: close }, '✕'),
   )
 }
 
@@ -151,7 +154,7 @@ function SettingsPanel({ settings, status, busy, close, update, reset }) {
       }, ...UI_SCALE_OPTIONS.map(scale => h('option', { key: scale, value: scale }, `${Math.round(scale * 100)}%`)))),
       h('div', { className: 'dtv-setting-value' }, translate('settings.currentScale', { scale: percent })),
       h('p', { className: 'dtv-note' }, translate('settings.scale.help')),
-      h('div', { className: 'dtv-status', 'data-error': status.error || undefined, role: 'status' }, status.text),
+      h('div', { className: 'dtv-status', 'data-error': status.error || undefined, role: 'status' }, rawText(status.text)),
       h('div', { className: 'dtv-actions' },
         h('button', { className: 'dtv-button', type: 'button', disabled: busy, onClick: reset }, translate('settings.reset')),
       ),
@@ -180,7 +183,9 @@ function triggerSummary(entry) {
   if (keys.length === 0) return '无主关键词'
   const secondary = Array.isArray(entry.secondary_keys) ? entry.secondary_keys.filter(Boolean) : []
   const logic = entry.selectiveLogic ?? entry.extensions?.selectiveLogic ?? 'and_any'
-  return `关键词：${keys.join('、')}${entry.selective === true && secondary.length > 0 ? ` · ${logic}：${secondary.join('、')}` : ''}`
+  return entry.selective === true && secondary.length > 0
+    ? uiText`关键词：${keys.join('、')} · ${logic}：${secondary.join('、')}`
+    : uiText`关键词：${keys.join('、')}`
 }
 
 function WorldInfoEntryEditor({ entry, index, update, remove }) {
@@ -189,7 +194,7 @@ function WorldInfoEntryEditor({ entry, index, update, remove }) {
   return h('details', { className: 'dtv-entry', 'data-enabled': entry.enabled === true },
     h('summary', null,
       h('span', { className: 'dtv-entry-dot', 'aria-hidden': 'true' }),
-      h('span', { className: 'dtv-entry-name' }, entry.comment || entry.name || `条目 ${String(entry.id ?? index + 1)}`),
+      h('span', { className: 'dtv-entry-name' }, entry.comment || entry.name ? rawText(entry.comment || entry.name) : uiText`条目 ${String(entry.id ?? index + 1)}`),
       h('span', { className: 'dtv-entry-state' }, triggerSummary(entry)),
     ),
     h('div', { className: 'dtv-entry-body' },
@@ -305,7 +310,7 @@ function WorldInfoPanel({ sessionId, close }) {
         id,
         keys: [],
         secondary_keys: [],
-        comment: `新条目 ${id}`,
+        comment: unwrapText(uiText`新条目 ${id}`),
         content: '',
         enabled: true,
         insertion_order: 100,
@@ -356,19 +361,19 @@ function WorldInfoPanel({ sessionId, close }) {
         h('button', { className: 'dtv-button', type: 'button', disabled: busy || draft === null, onClick: addEntry }, '新增条目'),
         h('button', { className: 'dtv-button', type: 'button', disabled: busy || !dirty, onClick: save }, dirty ? '保存修改' : '已保存'),
       ),
-      h('p', { className: 'dtv-note' }, `当前会话：${sessionId || '无'}。SillyTavern 的正式功能名是 World Info，Lorebook 是官方认可的常用别名。`),
-      h('div', { className: 'dtv-status', 'data-error': error !== '' || undefined, role: 'status' }, error || (snapshot === null ? '正在读取世界信息…' : dirty ? '有尚未保存的条目修改。' : `已载入 ${entries.length} 个条目。`)),
+      h('p', { className: 'dtv-note' }, uiText`当前会话：${sessionId || translateVisibleText('无')}。SillyTavern 的正式功能名是 World Info，Lorebook 是官方认可的常用别名。`),
+      h('div', { className: 'dtv-status', 'data-error': error !== '' || undefined, role: 'status' }, error ? rawText(error) : snapshot === null ? '正在读取世界信息…' : dirty ? '有尚未保存的条目修改。' : uiText`已载入 ${entries.length} 个条目。`),
       draft === null
         ? h('p', { className: 'dtv-note' }, '当前会话没有可用世界信息。绑定含 character_book 的角色卡后，其内嵌条目会自动由 loader 匹配；解绑角色会同时移除该来源。')
         : h('div', { className: 'dtv-resource' },
-          h('div', { className: 'dtv-resource-title' }, draft.name || resources[0]?.name || '角色卡内嵌世界信息'),
-          h('div', { className: 'dtv-resource-meta' }, `角色卡内嵌 · ${entries.length} 条。折叠标题直接显示该条目的触发方式；展开后可编辑关键词、逻辑、内容、位置和排序。`),
+          h('div', { className: 'dtv-resource-title' }, draft.name || resources[0]?.name ? rawText(draft.name || resources[0]?.name) : '角色卡内嵌世界信息'),
+          h('div', { className: 'dtv-resource-meta' }, uiText`角色卡内嵌 · ${entries.length} 条。折叠标题直接显示该条目的触发方式；展开后可编辑关键词、逻辑、内容、位置和排序。`),
           ...entries.map((entry, index) => h(WorldInfoEntryEditor, { key: `${entry.id ?? 'entry'}-${index}`, entry, index, update: updateEntry, remove: removeEntry })),
         ),
-      selectedStandalone.length > 0 ? h('div', { className: 'dtv-status' }, `已选择 ${selectedStandalone.length} 个独立世界信息 ID，但独立资源库/API 尚未接入，本阶段不会加载这些 ID。`) : null,
+      selectedStandalone.length > 0 ? h('div', { className: 'dtv-status' }, uiText`已选择 ${selectedStandalone.length} 个独立世界信息 ID，但独立资源库/API 尚未接入，本阶段不会加载这些 ID。`) : null,
       diagnostics.length > 0 ? h('div', { className: 'dtv-resource' },
-        h('div', { className: 'dtv-resource-title' }, `运行诊断（${diagnostics.length}）`),
-        h('ul', { className: 'dtv-list' }, ...diagnostics.map((item, index) => h('li', { key: `${item.code}-${index}` }, item.message))),
+        h('div', { className: 'dtv-resource-title' }, uiText`运行诊断（${diagnostics.length}）`),
+        h('ul', { className: 'dtv-list' }, ...diagnostics.map((item, index) => h('li', { key: `${item.code}-${index}` }, rawText(item.message)))),
       ) : null,
       h('p', { className: 'dtv-note' }, '保存会更新插件保存的角色卡副本及其 JSON 导出；为避免破坏签名或图片数据，最初导入的 PNG/JSON artifact 仍保持不变。matcher 会在首次请求组装前把本步骤 claimed 输入与 Session 历史组合扫描，不会向历史写入副本。'),
     ),
@@ -601,32 +606,39 @@ function TavernShell({ useSessions, useWorkspaces, createCleanSession }) {
           onClick: toggleMenu,
         }, 'DT')),
       menuOpen ? h('div', { className: 'dtv-menu', role: 'menu' },
-        h('div', { className: 'dtv-menu-title', 'aria-live': 'polite' }, statusError === '' ? `Tavern · ${sessionId || '无会话'}` : `状态同步失败：${statusError}`),
+        h('div', { className: 'dtv-menu-title', 'aria-live': 'polite' }, statusError === '' ? uiText`Tavern · ${sessionId || translateVisibleText('无会话')}` : uiText`状态同步失败：${statusError}`),
         ...TAVERN_MENU_ITEMS.map(item => {
           const status = statuses[item.id] ?? { bound: false, count: 0, title: item.emptyTitle }
-          const stateLabel = item.binding === false ? '' : status.bound ? '已绑定' : '未绑定'
-          const accessibleStatus = [status.title, stateLabel].filter(Boolean).join('，')
+          const itemLabel = translateVisibleText(item.label)
+          const statusTitle = status.bound ? status.title : translateVisibleText(status.title)
+          const stateLabel = item.binding === false ? '' : translateVisibleText(status.bound ? '已绑定' : '未绑定')
+          const titleText = stateLabel
+            ? uiText`${itemLabel}：${statusTitle}（${stateLabel}）`
+            : uiText`${itemLabel}：${statusTitle}`
+          const ariaText = stateLabel
+            ? uiText`${itemLabel}，${statusTitle}，${stateLabel}`
+            : uiText`${itemLabel}，${statusTitle}`
           return h('button', {
             className: 'dtv-menu-item',
             type: 'button',
             role: 'menuitem',
             key: item.id,
-            title: `${item.label}：${accessibleStatus}`,
+            title: titleText,
             'data-available': item.available,
             'data-active': surface === item.id,
             'data-bound': item.binding === false ? undefined : status.bound,
             'data-show-binding': item.binding !== false && item.showBinding !== false,
             'aria-current': surface === item.id ? 'page' : undefined,
-            'aria-label': `${item.label}，${accessibleStatus}`,
+            'aria-label': ariaText,
             onClick: () => open(item.id),
           },
           item.binding === false ? h('span', { 'aria-hidden': 'true' }) : h('span', { className: 'dtv-binding-dot', 'aria-hidden': 'true' }),
           h('span', { className: 'dtv-item-copy' },
             h('span', { className: 'dtv-item-label' }, item.label),
-            h('span', { className: 'dtv-item-status' }, status.title),
+            h('span', { className: 'dtv-item-status' }, status.bound ? rawText(status.title) : status.title),
           ),
           status.count > 1
-            ? h('span', { className: 'dtv-item-count', 'aria-label': `${status.count} 本` }, `${status.count} 本`)
+            ? h('span', { className: 'dtv-item-count', 'aria-label': uiText`${status.count} 本` }, uiText`${status.count} 本`)
             : item.available ? null : h('span', { className: 'dtv-item-planned' }, '规划中'),
           )
         }),

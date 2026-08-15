@@ -78,6 +78,25 @@ Purpose: start a clean DSH conversation while carrying only the current or saved
 - Added store, API, client-workflow, architecture and launcher regressions plus `docs/session-template/IMPLEMENTATION_AND_ACCEPTANCE.md`.
 - Verification: `npm run check` rebuilt the browser bundle and completed 142 tests with zero failures; the one skipped case remains the opt-in external acceptance fixture.
 
+## 2026-08-15 — i18n raw-data boundary review fix
+
+Purpose: prevent localized rendering from treating resource and runtime data
+as interface copy, and remove partial-English creation labels.
+
+- Added explicit `rawText` and tagged `uiText` boundaries. Raw values remain
+  verbatim when rendered as children or accessibility properties; interpolated
+  UI sentences translate only their literal fragments.
+- Audited the composition root plus preset, character, world-book, user, and
+  Tavern Trace clients. Resource names, user input, prompt and entry names,
+  comments, diagnostics, server errors, identifiers, timestamps, keywords,
+  and other runtime values are now explicitly preserved.
+- Added complete English catalog entries for new preset, prompt, and user
+  labels, plus regressions for Chinese-named resources rendered in `option`
+  and `span` children and for missing-key fallback behavior.
+- Verification: focused i18n/settings/shell tests passed 23/23. `npm run check`
+  built the client and completed 144 passing tests, zero failures, with the one
+  opt-in local acceptance fixture skipped.
+
 ## 2026-08-15 — Global Tavern UI settings and unified i18n
 
 Purpose: add presentation-only language and scaling controls without changing

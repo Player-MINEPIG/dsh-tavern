@@ -4,7 +4,14 @@ import {
   useEffect,
   useState,
 } from 'react'
-import { createLocalizedElement, getClientUiSettings } from '../../client/src/i18n.js'
+import {
+  createLocalizedElement,
+  getClientUiSettings,
+  rawText,
+  translateVisibleText,
+  uiText,
+  unwrapText,
+} from '../../client/src/i18n.js'
 
 const h = createLocalizedElement(createElement)
 
@@ -62,8 +69,8 @@ function storageStatus(storage) {
 function resourceCard(label, value) {
   return h('div', { className: 'dttrace-card', key: label },
     h('div', { className: 'dttrace-label' }, label),
-    h('div', { className: 'dttrace-value' }, value?.name || '未使用'),
-    value?.id ? h('div', { className: 'dttrace-meta' }, value.id) : null,
+    h('div', { className: 'dttrace-value' }, value?.name ? rawText(value.name) : '未使用'),
+    value?.id ? h('div', { className: 'dttrace-meta' }, rawText(value.id)) : null,
   )
 }
 
@@ -73,35 +80,35 @@ function keywords(decision) {
   const primary = decision.primaryMatches ?? []
   const secondary = decision.secondaryMatches ?? []
   const configured = [
-    configuredPrimary.length > 0 ? `主：${configuredPrimary.map(value => JSON.stringify(value)).join('、')}` : null,
-    configuredSecondary.length > 0 ? `附加：${configuredSecondary.map(value => JSON.stringify(value)).join('、')}` : null,
-  ].filter(Boolean).join(' · ') || '无配置关键词'
+    configuredPrimary.length > 0 ? unwrapText(uiText`主：${configuredPrimary.map(value => JSON.stringify(value)).join('、')}`) : null,
+    configuredSecondary.length > 0 ? unwrapText(uiText`附加：${configuredSecondary.map(value => JSON.stringify(value)).join('、')}`) : null,
+  ].filter(Boolean).join(' · ') || translateVisibleText('无配置关键词')
   const matched = [
-    primary.length > 0 ? `主：${primary.map(value => JSON.stringify(value)).join('、')}` : null,
-    secondary.length > 0 ? `附加：${secondary.map(value => JSON.stringify(value)).join('、')}` : null,
-  ].filter(Boolean).join(' · ') || '无关键词命中'
-  return { configured, matched }
+    primary.length > 0 ? unwrapText(uiText`主：${primary.map(value => JSON.stringify(value)).join('、')}`) : null,
+    secondary.length > 0 ? unwrapText(uiText`附加：${secondary.map(value => JSON.stringify(value)).join('、')}`) : null,
+  ].filter(Boolean).join(' · ') || translateVisibleText('无关键词命中')
+  return { configured: rawText(configured), matched: rawText(matched) }
 }
 
 function decisionMeta(value) {
   const parts = []
   if (value.secondaryLogic) parts.push(`secondary=${value.secondaryLogic}`)
-  if (value.groupName) parts.push(`组 ${value.groupName}${value.groupOverride ? ' / override' : value.groupWeight === null ? '' : ` / weight ${value.groupWeight}`}`)
+  if (value.groupName) parts.push(unwrapText(uiText`组 ${value.groupName}${value.groupOverride ? ' / override' : value.groupWeight === null ? '' : ` / weight ${value.groupWeight}`}`))
   if (value.probability !== null) {
-    parts.push(`概率 ${value.probability}%${value.probabilityRoll === null ? '' : ` / roll ${(value.probabilityRoll * 100).toFixed(2)}%`}`)
+    parts.push(unwrapText(uiText`概率 ${value.probability}%${value.probabilityRoll === null ? '' : ` / roll ${(value.probabilityRoll * 100).toFixed(2)}%`}`))
   }
-  if (value.tokenCost !== null) parts.push(`预算 ${value.tokenCost} tokens`)
+  if (value.tokenCost !== null) parts.push(unwrapText(uiText`预算 ${value.tokenCost} tokens`))
   if (value.requestedPosition) {
-    parts.push(`位置 ${value.requestedPosition}${value.appliedPosition ? ` → ${value.appliedPosition}${value.approximatePosition ? '（近似）' : ''}` : ' → 未插入'}`)
+    parts.push(unwrapText(uiText`位置 ${value.requestedPosition}${value.appliedPosition ? ` → ${value.appliedPosition}${value.approximatePosition ? translateVisibleText('（近似）') : ''}` : translateVisibleText(' → 未插入')}`))
   }
-  return parts.join(' · ')
+  return rawText(parts.join(' · '))
 }
 
 function WorldBookAudit({ book }) {
-  const name = book.resource?.name || book.resource?.id || '世界书'
+  const name = book.resource?.name || book.resource?.id
   return h('div', { className: 'dttrace-book' },
-    h('div', { className: 'dttrace-section-title' }, name),
-    h('div', { className: 'dttrace-meta' }, `预算：${book.budget.used}${book.budget.limit === null ? '' : ` / ${book.budget.limit}`} tokens · ${book.decisions.length} 条决策`),
+    h('div', { className: 'dttrace-section-title' }, name ? rawText(name) : '世界书'),
+    h('div', { className: 'dttrace-meta' }, uiText`预算：${book.budget.used}${book.budget.limit === null ? '' : ` / ${book.budget.limit}`} tokens · ${book.decisions.length} 条决策`),
     ...book.decisions.map((item, index) => {
       const keywordState = keywords(item)
       return h('div', {
@@ -111,12 +118,12 @@ function WorldBookAudit({ book }) {
     },
     h('div', { className: 'dttrace-decision-state' }, item.decision === 'included' ? '已插入' : '已拒绝'),
     h('div', null,
-      h('div', null, item.entryName || `条目 ${String(item.entryId ?? index + 1)}`),
-      h('div', { className: 'dttrace-meta' }, reasonLabels[item.reason] ?? item.reason),
+      h('div', null, item.entryName ? rawText(item.entryName) : uiText`条目 ${String(item.entryId ?? index + 1)}`),
+      h('div', { className: 'dttrace-meta' }, reasonLabels[item.reason] ?? rawText(item.reason)),
     ),
     h('div', { className: 'dttrace-keywords' },
-      h('div', null, `配置关键词：${keywordState.configured}`),
-      h('div', null, `本轮命中：${keywordState.matched}`),
+      h('div', null, uiText`配置关键词：${keywordState.configured}`),
+      h('div', null, uiText`本轮命中：${keywordState.matched}`),
       h('div', { className: 'dttrace-meta' }, decisionMeta(item)),
     ))}),
   )
@@ -127,9 +134,9 @@ function TraceRecord({ record, latest }) {
   const linked = authority.headerEventSeq !== null
   return h('details', { className: 'dttrace-record', open: latest },
     h('summary', null,
-      h('span', { className: 'dttrace-round' }, `轮次 ${record.turn} · 步骤 ${record.step}${record.attempt > 1 ? ` · 尝试 ${record.attempt}` : ''}`),
+      h('span', { className: 'dttrace-round' }, uiText`轮次 ${record.turn} · 步骤 ${record.step}${record.attempt > 1 ? unwrapText(uiText` · 尝试 ${record.attempt}`) : ''}`),
       h('span', { className: 'dttrace-badge', 'data-ok': linked || undefined }, linked ? `request/header #${authority.headerEventSeq}` : '等待权威 header'),
-      h('span', { className: 'dttrace-time' }, formatTime(record.recordedAt)),
+      h('span', { className: 'dttrace-time' }, rawText(formatTime(record.recordedAt))),
     ),
     h('div', { className: 'dttrace-content' },
       h('div', { className: 'dttrace-status' }, linked
@@ -142,7 +149,7 @@ function TraceRecord({ record, latest }) {
       ),
       h('div', { className: 'dttrace-section' },
         h('div', { className: 'dttrace-section-title' }, '组合与插入'),
-        h('div', { className: 'dttrace-meta' }, `${record.assembly.profileSection} · order ${record.assembly.profileOrder} · ${record.assembly.systemPromptMode} · ${record.assembly.systemCharacters} characters · call config: ${Object.keys(record.assembly.callConfig ?? {}).join(', ') || '无'}`),
+        h('div', { className: 'dttrace-meta' }, rawText(`${record.assembly.profileSection} · order ${record.assembly.profileOrder} · ${record.assembly.systemPromptMode} · ${record.assembly.systemCharacters} characters · call config: ${Object.keys(record.assembly.callConfig ?? {}).join(', ') || translateVisibleText('无')}`)),
       ),
       record.worldBooks?.length > 0 ? h('div', { className: 'dttrace-section' },
         h('div', { className: 'dttrace-section-title' }, '世界书匹配决策'),
@@ -152,8 +159,8 @@ function TraceRecord({ record, latest }) {
         ...record.worldBooks.map((book, index) => h(WorldBookAudit, { book, key: `${book.resource?.id ?? 'book'}-${index}` })),
       ) : h('div', { className: 'dttrace-note' }, '本轮没有可审计的世界书匹配来源。'),
       record.diagnostics?.length > 0 ? h('div', { className: 'dttrace-section' },
-        h('div', { className: 'dttrace-section-title' }, `诊断（${record.diagnostics.length}）`),
-        h('ul', { className: 'dttrace-list' }, ...record.diagnostics.map((item, index) => h('li', { key: `${item.code}-${index}` }, `${item.code}: ${item.message}`))),
+        h('div', { className: 'dttrace-section-title' }, uiText`诊断（${record.diagnostics.length}）`),
+        h('ul', { className: 'dttrace-list' }, ...record.diagnostics.map((item, index) => h('li', { key: `${item.code}-${index}` }, rawText(`${item.code}: ${item.message}`)))),
       ) : null,
       h('p', { className: 'dttrace-note' }, '隐私边界：这里只保存资源摘要、配置/命中关键词、决策原因、位置、预算和 SHA-256 摘要；不保存 preset/角色/user/世界书正文、完整 system、聊天历史、header 内容或 tool payload。'),
     ),
@@ -202,7 +209,7 @@ export function TavernTraceView({ sessionId, useSession }) {
     ),
     h('div', { className: 'dttrace-body' },
       h('p', { className: 'dttrace-note' }, '与 Conversation / Trajectory 并列的 loader 审计视图。DSH request/header 始终是最终发送 system、tools 与生效 config 的权威。'),
-      error ? h('div', { className: 'dttrace-status', 'data-error': true }, error) : null,
+      error ? h('div', { className: 'dttrace-status', 'data-error': true }, rawText(error)) : null,
       data === null && !error ? h('div', { className: 'dttrace-status' }, '正在读取审计记录…') : null,
       data !== null ? h('div', { className: 'dttrace-status' }, storageStatus(data.storage)) : null,
       records.length === 0 && data !== null ? h('div', { className: 'dttrace-status' }, '此会话还没有 Tavern 请求审计记录。发送下一条消息后再查看。') : null,

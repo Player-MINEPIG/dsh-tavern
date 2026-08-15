@@ -3,9 +3,12 @@ import assert from 'node:assert/strict'
 import { readFileSync } from 'node:fs'
 import {
   createLocalizedElement,
+  rawText,
   setClientUiSettings,
   translate,
   translateVisibleText,
+  uiText,
+  unwrapText,
 } from '../packages/client/src/i18n.js'
 
 test.afterEach(() => setClientUiSettings({ locale: 'zh-CN', scale: 1 }, { announce: false }))
@@ -40,6 +43,33 @@ test('localized element factory translates UI copy and accessibility text but pr
   assert.deepEqual(element.children, ['Refresh'])
 })
 
+test('branded runtime children preserve resource names that collide with UI copy', () => {
+  setClientUiSettings({ locale: 'en', scale: 1 }, { announce: false })
+  const createElement = (type, props, ...children) => ({ type, props, children })
+  const h = createLocalizedElement(createElement)
+  for (const name of ['用户', '世界书', '角色卡', '预设', '角色卡/预设']) {
+    assert.deepEqual(h('option', null, rawText(name)).children, [name])
+    assert.deepEqual(h('span', null, rawText(name)).children, [name])
+  }
+})
+
+test('UI templates localize literal copy without translating interpolated runtime data', () => {
+  setClientUiSettings({ locale: 'en', scale: 1 }, { announce: false })
+  assert.equal(unwrapText(uiText`当前会话：${'用户'}；绑定：${'世界书'}`), 'Current session: 用户; Binding: 世界书')
+  const createElement = (type, props, ...children) => ({ type, props, children })
+  const h = createLocalizedElement(createElement)
+  assert.equal(h('img', { alt: uiText`${'角色卡'} 角色卡图片` }).props.alt, '角色卡 Character card image')
+})
+
+test('English static creation copy is complete and contains no Han characters', () => {
+  setClientUiSettings({ locale: 'en', scale: 1 }, { announce: false })
+  for (const [source, expected] of [['新预设', 'New preset'], ['新提示词', 'New prompt'], ['新用户', 'New user']]) {
+    const translated = translateVisibleText(source)
+    assert.equal(translated, expected)
+    assert.doesNotMatch(translated, /[\u3400-\u9fff]/u)
+  }
+})
+
 test('all existing Tavern React clients share the catalog-backed element boundary', () => {
   for (const file of [
     '../packages/client/src/index.js',
@@ -51,6 +81,32 @@ test('all existing Tavern React clients share the catalog-backed element boundar
   ]) {
     const source = readFileSync(new URL(file, import.meta.url), 'utf8')
     assert.match(source, /createLocalizedElement/)
+    assert.match(source, /rawText/)
+    assert.match(source, /uiText/)
     assert.doesNotMatch(source, /createElement as h/)
   }
+})
+
+test('resource clients explicitly protect dynamic child, diagnostic, error, and comment surfaces', () => {
+  const sources = Object.fromEntries([
+    ['shell', '../packages/client/src/index.js'],
+    ['preset', '../packages/preset/src/client.js'],
+    ['character', '../packages/character/src/client.js'],
+    ['worldBook', '../packages/world-book-library/src/client.js'],
+    ['user', '../packages/user/src/client.js'],
+    ['trace', '../packages/tavern-trace/src/client.js'],
+  ].map(([name, file]) => [name, readFileSync(new URL(file, import.meta.url), 'utf8')]))
+
+  assert.match(sources.shell, /status\.bound \? rawText\(status\.title\)/)
+  assert.match(sources.shell, /rawText\(item\.message\)/)
+  assert.match(sources.preset, /rawText\(prompt\.name \|\| prompt\.identifier\)/)
+  assert.match(sources.preset, /status\.error \? rawText\(status\.text\)/)
+  assert.match(sources.character, /rawText\(detail\.name\)/)
+  assert.match(sources.character, /rawText\(`\$\{item\.message\}/)
+  assert.match(sources.worldBook, /rawText\(entry\.comment/)
+  assert.match(sources.worldBook, /rawText\(item\.message\)/)
+  assert.match(sources.user, /rawText\(user\.name\)/)
+  assert.match(sources.trace, /value\?\.name \? rawText\(value\.name\)/)
+  assert.match(sources.trace, /rawText\(`\$\{item\.code\}: \$\{item\.message\}`\)/)
+  for (const source of Object.values(sources)) assert.match(source, /rawText\((status\.text|error)/)
 })

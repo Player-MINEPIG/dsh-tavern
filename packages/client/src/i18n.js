@@ -45,6 +45,7 @@ export const MESSAGE_CATALOG = Object.freeze({
 const SOURCE_EN = Object.freeze({
   '预设': 'Preset',
   '角色卡': 'Character card',
+  '角色卡图片': 'Character card image',
   '世界书': 'World book',
   '用户': 'User',
   '界面设置': 'UI settings',
@@ -192,6 +193,9 @@ const SOURCE_EN = Object.freeze({
   '等待权威 header': 'Waiting for authoritative header',
   '组合与插入': 'Assembly and insertion',
   '世界书匹配决策': 'World-book match decisions',
+  '新预设': 'New preset',
+  '新提示词': 'New prompt',
+  '新用户': 'New user',
   '主关键词（每行一个；任一命中）': 'Primary keywords (one per line; any match)',
   '附加关键词（每行一个）': 'Secondary keywords (one per line)',
   '主关键词（支持中文、英文逗号分隔）': 'Primary keywords (Chinese or English comma separators)',
@@ -296,6 +300,7 @@ const SOURCE_EN = Object.freeze({
 })
 
 const SOURCE_REPLACEMENTS = Object.entries(SOURCE_EN).sort((left, right) => right[0].length - left[0].length)
+const RAW_TEXT = Symbol('dsh-tavern.raw-text')
 let current = { ...DEFAULT_UI_SETTINGS }
 
 function fill(template, values) {
@@ -334,7 +339,38 @@ export function translateVisibleText(value) {
     .replaceAll('、', ', ')
 }
 
+export function rawText(value) {
+  return Object.freeze({
+    [RAW_TEXT]: true,
+    value: value === null || value === undefined ? '' : String(value),
+    toString() { return this.value },
+  })
+}
+
+export function isRawText(value) {
+  return value?.[RAW_TEXT] === true && typeof value.value === 'string'
+}
+
+export function unwrapText(value) {
+  return isRawText(value) ? value.value : String(value ?? '')
+}
+
+/**
+ * Localizes only the literal pieces of a UI template. Interpolated resource,
+ * user, server, and runtime values are inserted verbatim and the branded
+ * result bypasses the element factory's static-copy translation pass.
+ */
+export function uiText(strings, ...values) {
+  let output = ''
+  for (let index = 0; index < strings.length; index += 1) {
+    output += translateVisibleText(strings[index])
+    if (index < values.length) output += unwrapText(values[index])
+  }
+  return rawText(output)
+}
+
 function localizeChild(value) {
+  if (isRawText(value)) return value.value
   if (typeof value === 'string') return translateVisibleText(value)
   if (Array.isArray(value)) return value.map(localizeChild)
   return value
@@ -346,7 +382,8 @@ export function createLocalizedElement(createElement) {
     if (props !== null && props !== undefined) {
       localizedProps = { ...props }
       for (const key of ['title', 'aria-label', 'placeholder', 'alt']) {
-        if (typeof localizedProps[key] === 'string') localizedProps[key] = translateVisibleText(localizedProps[key])
+        if (isRawText(localizedProps[key])) localizedProps[key] = localizedProps[key].value
+        else if (typeof localizedProps[key] === 'string') localizedProps[key] = translateVisibleText(localizedProps[key])
       }
     }
     return createElement(type, localizedProps, ...children.map(localizeChild))

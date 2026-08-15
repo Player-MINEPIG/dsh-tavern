@@ -70,7 +70,7 @@ test('launcher status follows each session selection and resolves future catalog
   assert.deepEqual(sessionA['world-info'], {
     bound: true,
     count: 2,
-    title: 'Harbour Notes、Mountain Notes · 2 本',
+    title: 'Harbour Notes · Mountain Notes',
   })
   assert.deepEqual(sessionA.user, { bound: true, title: 'Local Tester', count: 1 })
   assert.equal(sessionB.preset.bound, false)

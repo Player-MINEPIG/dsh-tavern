@@ -22,10 +22,14 @@ history, and per-session bindings are not read or changed by this setting.
 
 `packages/client/src/i18n.js` is the browser-only shared catalog boundary. The
 composition root and all five existing Tavern React clients create elements
-through its localized factory, so text children plus `title`, `aria-label`,
-`placeholder`, and `alt` copy use one active locale. Form `value` data is never
-translated, which prevents localized rendering from rewriting imported names,
-prompt text, personas, character data, or lore.
+through its localized factory. Literal UI children plus `title`, `aria-label`,
+`placeholder`, and `alt` copy use one active locale. Runtime data crosses an
+explicit raw-text boundary: `rawText(value)` preserves an entire value, while
+the tagged `uiText` helper translates only literal template fragments and
+inserts interpolated values verbatim. Form `value` data is never translated.
+Together these rules prevent localization from rewriting imported resource
+names, user input, prompt text, entry comments, personas, character data,
+lore, diagnostics, or server error text even when they render as children.
 
 The catalog contains semantic keys for the settings surface and the existing
 Simplified-Chinese source messages used by the resource clients. A missing
@@ -102,11 +106,12 @@ compensates its width and height for zoom so its own scroller remains usable.
 `test/ui-settings.test.mjs` covers defaults, atomic persistence, restart,
 reset, field/locale/range/increment validation, malformed and oversized files,
 and GET/PUT/DELETE behavior. `test/i18n.test.mjs` covers both languages,
-interpolation, non-key fallback, accessibility text, preservation of resource
-values, and adoption by every current Tavern client. The existing shell suite
-continues to assert one overlay owner, drag clamping, expansion direction,
-panel switching, resource status, and shared refresh behavior; it adds
-scaled-coordinate and settings-surface assertions.
+interpolation, non-key fallback, accessibility text, complete English creation
+labels, raw resource names rendered as children, and raw-data-boundary adoption
+by every current Tavern client. The existing shell suite continues to assert
+one overlay owner, drag clamping, expansion direction, panel switching,
+resource status, and shared refresh behavior; it adds scaled-coordinate and
+settings-surface assertions.
 
 Verification command:
 
@@ -114,7 +119,7 @@ Verification command:
 npm run check
 ```
 
-Result on 2026-08-15: build succeeded; 140 tests passed, one opt-in local
+Result on 2026-08-15: build succeeded; 144 tests passed, one opt-in local
 fixture was skipped, and zero tests failed.
 
 ## Security, data-boundary, architecture, and UI self-review
@@ -127,7 +132,10 @@ fixture was skipped, and zero tests failed.
 - There is still one `dsh-tavern:profile` Host section, one secured API prefix,
   and one `shell.overlay` registration.
 - The catalog helper has no Host, filesystem, API, format, loader, or resource
-  dependencies. Resource clients consume it only while rendering.
+  dependencies. Resource clients consume it only while rendering. All six
+  React clients explicitly mark resource names, user input, entry comments,
+  diagnostics, errors, identifiers, timestamps, and other runtime values as
+  raw, including values interpolated into otherwise localized UI sentences.
 - Default scale preserves the accepted launcher drag and panel geometry. The
   fifth menu row increases only the expanded menu height.
 
@@ -141,7 +149,11 @@ fixture was skipped, and zero tests failed.
    shell or launcher appears.
 3. Change language to English. Verify launcher copy, preset, character,
    world-book, user, confirmation dialogs, accessibility titles, and Tavern
-   Trace copy update without reload. Switch back to Simplified Chinese.
+   Trace copy update without reload. Create a preset, prompt, and user and
+   verify their default names are fully English. Also create resources named
+   `用户`, `世界书`, and `角色卡/预设`; verify those names, entry comments, and
+   displayed diagnostics/errors remain byte-for-byte unchanged. Switch back
+   to Simplified Chinese.
 4. Select 75%, 125%, and 150%. Verify the launcher, menus, panels, controls,
    and Trace scale while the DSH header, navigation, Conversation, and
    Trajectory retain their original size. Drag the ball at each scale and test

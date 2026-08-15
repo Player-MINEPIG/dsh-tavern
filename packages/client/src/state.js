@@ -128,7 +128,7 @@ export function launcherResourceStatuses(snapshot) {
         ? '未绑定世界书'
         : selectedWorlds.length === 1
           ? worldTitles[0]
-          : `${worldTitles.join('、')} · ${selectedWorlds.length} 本`,
+          : worldTitles.join(' · '),
     },
     user: singleStatus({
       id: userId,

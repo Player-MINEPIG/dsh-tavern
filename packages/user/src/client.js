@@ -6,7 +6,13 @@ import {
   useState,
 } from 'react'
 import { sameOrderedIds, userPanelDirty, userResourceDirty } from './client-state.js'
-import { createLocalizedElement, translateVisibleText } from '../../client/src/i18n.js'
+import {
+  createLocalizedElement,
+  rawText,
+  translateVisibleText,
+  uiText,
+  unwrapText,
+} from '../../client/src/i18n.js'
 
 const h = createLocalizedElement(createElement)
 
@@ -131,9 +137,9 @@ export function UserPanel({ sessionId, sessionBlank, close }) {
   }, [dirty])
 
   const create = useCallback(() => {
-    if (dirty && !window.confirm('当前用户资源或世界书绑定有未保存修改。放弃修改并新建用户吗？')) return
+    if (dirty && !window.confirm(translateVisibleText('当前用户资源或世界书绑定有未保存修改。放弃修改并新建用户吗？'))) return
     run(async () => {
-      const data = await api('/users', { method: 'POST', body: JSON.stringify({ name: '新用户', description: '' }) })
+      const data = await api('/users', { method: 'POST', body: JSON.stringify({ name: translateVisibleText('新用户'), description: '' }) })
       draftId.current = data.user.id
       await refresh(data.user.id)
       notifyRefresh()
@@ -190,7 +196,7 @@ export function UserPanel({ sessionId, sessionBlank, close }) {
   }, '当前会话已解除用户绑定'), [run, sessionId])
 
   const remove = useCallback(() => run(async () => {
-    if (draft === null || !window.confirm(translateVisibleText(`删除用户“${draft.name}”？所有会话中的用户选择和该用户的世界书关系都会清除。`))) return
+    if (draft === null || !window.confirm(unwrapText(uiText`删除用户“${draft.name}”？所有会话中的用户选择和该用户的世界书关系都会清除。`))) return
     await api(`/users/${encodeURIComponent(draft.id)}`, { method: 'DELETE', body: '{}' })
     draftId.current = null
     await refresh(null)
@@ -198,10 +204,10 @@ export function UserPanel({ sessionId, sessionBlank, close }) {
   }, '用户已删除，相关会话绑定已清除'), [draft, refresh, run])
 
   const activeName = selectedUserId === null
-    ? '未绑定用户'
+    ? translateVisibleText('未绑定用户')
     : users?.find(user => user.id === selectedUserId)?.name ?? selectedUserId
   const requestClose = () => {
-    if (!dirty || window.confirm('当前用户资源或世界书绑定有未保存修改。仍然关闭吗？')) close()
+    if (!dirty || window.confirm(translateVisibleText('当前用户资源或世界书绑定有未保存修改。仍然关闭吗？'))) close()
   }
 
   return h('div', { className: 'dtu-panel' },
@@ -221,9 +227,9 @@ export function UserPanel({ sessionId, sessionBlank, close }) {
         onChange: event => chooseUser(event.target.value),
       },
       ...(users?.length ? [] : [h('option', { key: 'empty', value: '' }, '用户资源库为空')]),
-      ...(users ?? []).map(user => h('option', { key: user.id, value: user.id }, user.name)))),
-      h('p', { className: 'dtu-note' }, `当前会话：${sessionId || '无'}；绑定：${activeName}`),
-      h('div', { className: 'dtu-status', 'data-error': status.error || undefined, role: 'status', 'aria-live': 'polite' }, status.text),
+      ...(users ?? []).map(user => h('option', { key: user.id, value: user.id }, rawText(user.name))))),
+      h('p', { className: 'dtu-note' }, uiText`当前会话：${sessionId || translateVisibleText('无')}；绑定：${activeName}`),
+      h('div', { className: 'dtu-status', 'data-error': status.error || undefined, role: 'status', 'aria-live': 'polite' }, status.error ? rawText(status.text) : status.text),
       dirty
         ? h('div', { className: 'dtu-status', 'data-warning': true, role: 'status' }, `有未保存修改：${[resourceDirty ? '名字/描述' : '', bindingDirty ? '用户世界书绑定' : ''].filter(Boolean).join('、')}。`)
         : h('p', { className: 'dtu-note' }, '当前显示的用户资源和世界书绑定均已保存。'),

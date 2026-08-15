@@ -75,6 +75,7 @@ var MESSAGE_CATALOG = Object.freeze({
 var SOURCE_EN = Object.freeze({
   "\u9884\u8BBE": "Preset",
   "\u89D2\u8272\u5361": "Character card",
+  "\u89D2\u8272\u5361\u56FE\u7247": "Character card image",
   "\u4E16\u754C\u4E66": "World book",
   "\u7528\u6237": "User",
   "\u754C\u9762\u8BBE\u7F6E": "UI settings",
@@ -222,6 +223,9 @@ var SOURCE_EN = Object.freeze({
   "\u7B49\u5F85\u6743\u5A01 header": "Waiting for authoritative header",
   "\u7EC4\u5408\u4E0E\u63D2\u5165": "Assembly and insertion",
   "\u4E16\u754C\u4E66\u5339\u914D\u51B3\u7B56": "World-book match decisions",
+  "\u65B0\u9884\u8BBE": "New preset",
+  "\u65B0\u63D0\u793A\u8BCD": "New prompt",
+  "\u65B0\u7528\u6237": "New user",
   "\u4E3B\u5173\u952E\u8BCD\uFF08\u6BCF\u884C\u4E00\u4E2A\uFF1B\u4EFB\u4E00\u547D\u4E2D\uFF09": "Primary keywords (one per line; any match)",
   "\u9644\u52A0\u5173\u952E\u8BCD\uFF08\u6BCF\u884C\u4E00\u4E2A\uFF09": "Secondary keywords (one per line)",
   "\u4E3B\u5173\u952E\u8BCD\uFF08\u652F\u6301\u4E2D\u6587\u3001\u82F1\u6587\u9017\u53F7\u5206\u9694\uFF09": "Primary keywords (Chinese or English comma separators)",
@@ -325,6 +329,7 @@ var SOURCE_EN = Object.freeze({
   "\u4FA7\u8FB9\u680F": " sidebar"
 });
 var SOURCE_REPLACEMENTS = Object.entries(SOURCE_EN).sort((left, right) => right[0].length - left[0].length);
+var RAW_TEXT = /* @__PURE__ */ Symbol("dsh-tavern.raw-text");
 var current = { ...DEFAULT_UI_SETTINGS };
 function fill(template, values) {
   return template.replace(/\{([A-Za-z0-9_]+)\}/g, (_match, key) => String(values?.[key] ?? ""));
@@ -343,7 +348,31 @@ function translateVisibleText(value) {
   for (const [source, translated] of SOURCE_REPLACEMENTS) output = output.split(source).join(translated);
   return output.replaceAll("\u5F53\u524D\u4F1A\u8BDD\uFF1A", "Current session: ").replaceAll("\u7ED1\u5B9A\uFF1A", "Binding: ").replaceAll("\u72B6\u6001\u540C\u6B65\u5931\u8D25\uFF1A", "Status sync failed: ").replaceAll("\u6761\u76EE ", "Entry ").replaceAll("\u65B0\u6761\u76EE ", "New entry ").replaceAll(" \u672C", " books").replaceAll(" \u6761", " entries").replaceAll("\u8F6E\u6B21 ", "Turn ").replaceAll("\u6B65\u9AA4 ", "Step ").replaceAll("\u5C1D\u8BD5 ", "Attempt ").replaceAll("\u8BCA\u65AD\uFF08", "Diagnostics (").replaceAll("\uFF08", " (").replaceAll("\uFF09", ")").replaceAll("\uFF1B", "; ").replaceAll("\uFF1A", ": ").replaceAll("\u3001", ", ");
 }
+function rawText(value) {
+  return Object.freeze({
+    [RAW_TEXT]: true,
+    value: value === null || value === void 0 ? "" : String(value),
+    toString() {
+      return this.value;
+    }
+  });
+}
+function isRawText(value) {
+  return value?.[RAW_TEXT] === true && typeof value.value === "string";
+}
+function unwrapText(value) {
+  return isRawText(value) ? value.value : String(value ?? "");
+}
+function uiText(strings, ...values) {
+  let output = "";
+  for (let index = 0; index < strings.length; index += 1) {
+    output += translateVisibleText(strings[index]);
+    if (index < values.length) output += unwrapText(values[index]);
+  }
+  return rawText(output);
+}
 function localizeChild(value) {
+  if (isRawText(value)) return value.value;
   if (typeof value === "string") return translateVisibleText(value);
   if (Array.isArray(value)) return value.map(localizeChild);
   return value;
@@ -354,7 +383,8 @@ function createLocalizedElement(createElement7) {
     if (props !== null && props !== void 0) {
       localizedProps = { ...props };
       for (const key of ["title", "aria-label", "placeholder", "alt"]) {
-        if (typeof localizedProps[key] === "string") localizedProps[key] = translateVisibleText(localizedProps[key]);
+        if (isRawText(localizedProps[key])) localizedProps[key] = localizedProps[key].value;
+        else if (typeof localizedProps[key] === "string") localizedProps[key] = translateVisibleText(localizedProps[key]);
       }
     }
     return createElement7(type, localizedProps, ...children.map(localizeChild));
@@ -471,7 +501,7 @@ function PromptEditor({ prompt, index, dragging, onPatch, onPointerDown, onPoint
         className: "dtt-drag",
         type: "button",
         title: "\u62D6\u62FD\u6392\u5217\u987A\u5E8F",
-        "aria-label": `\u62D6\u62FD\u201C${prompt.name || prompt.identifier}\u201D\u6392\u5217\u987A\u5E8F`,
+        "aria-label": uiText`拖拽“${prompt.name || prompt.identifier}”排列顺序`,
         "aria-pressed": dragging,
         onClick: (event) => {
           event.preventDefault();
@@ -490,8 +520,8 @@ function PromptEditor({ prompt, index, dragging, onPatch, onPointerDown, onPoint
         onClick: (event) => event.stopPropagation(),
         onChange: (event) => onPatch({ enabled: event.target.checked })
       }),
-      h("span", { className: "dtt-prompt-name" }, prompt.name || prompt.identifier),
-      h("span", { className: "dtt-role" }, prompt.marker ? "marker" : prompt.role)
+      h("span", { className: "dtt-prompt-name" }, rawText(prompt.name || prompt.identifier)),
+      h("span", { className: "dtt-role" }, rawText(prompt.marker ? "marker" : prompt.role))
     ),
     h(
       "div",
@@ -603,7 +633,7 @@ function PresetSidebar({ closePanel, openPanel, sessionId, autoOpen = true }) {
     announceTavernRefresh();
   }, id ? "\u9884\u8BBE\u5DF2\u9009\u62E9\uFF1B\u4E0B\u4E00\u6761\u6D88\u606F\u5C06\u643A\u5E26\u6B64 preset\u3002\u5DF2\u6709\u4F1A\u8BDD\u5386\u53F2\u4E0D\u4F1A\u88AB\u6E05\u9664\u3002" : "\u5DF2\u505C\u7528 preset\uFF1B\u5DF2\u6709\u4F1A\u8BDD\u5386\u53F2\u4E0D\u4F1A\u88AB\u6E05\u9664"), [refresh, run, sessionId]);
   const createPreset = (0, import_react.useCallback)(() => run(async () => {
-    const created = await api("/presets", { method: "POST", body: body({ name: "\u65B0\u9884\u8BBE" }) });
+    const created = await api("/presets", { method: "POST", body: body({ name: translateVisibleText("\u65B0\u9884\u8BBE") }) });
     await api("/select", { method: "POST", body: body({ id: created.preset.id, sessionId }) });
     await refresh(created.preset.id);
     announceTavernRefresh();
@@ -629,7 +659,7 @@ function PresetSidebar({ closePanel, openPanel, sessionId, autoOpen = true }) {
     announceTavernRefresh();
   }, "\u9884\u8BBE\u914D\u7F6E\u5DF2\u4FDD\u5B58"), [draft, refresh, run]);
   const remove = (0, import_react.useCallback)(() => run(async () => {
-    if (!window.confirm(translateVisibleText(`\u5220\u9664\u9884\u8BBE\u201C${draft.name}\u201D\uFF1F`))) return;
+    if (!window.confirm(unwrapText(uiText`删除预设“${draft.name}”？`))) return;
     await api(`/presets/${encodeURIComponent(draft.id)}`, { method: "DELETE" });
     await refresh(null);
     announceTavernRefresh();
@@ -658,7 +688,7 @@ function PresetSidebar({ closePanel, openPanel, sessionId, autoOpen = true }) {
     ...current2,
     prompts: [...current2.prompts, {
       identifier: `prompt-${Date.now().toString(36)}`,
-      name: "\u65B0\u63D0\u793A\u8BCD",
+      name: translateVisibleText("\u65B0\u63D0\u793A\u8BCD"),
       role: "system",
       content: "",
       enabled: true,
@@ -704,9 +734,9 @@ function PresetSidebar({ closePanel, openPanel, sessionId, autoOpen = true }) {
           onChange: (event) => choose(event.target.value)
         },
         h("option", { value: "" }, "\u4E0D\u4F7F\u7528\u9884\u8BBE"),
-        ...(catalog2?.presets ?? []).map((preset) => h("option", { key: preset.id, value: preset.id }, `${preset.name} (${preset.enabledPromptCount}/${preset.promptCount})`))
+        ...(catalog2?.presets ?? []).map((preset) => h("option", { key: preset.id, value: preset.id }, uiText`${preset.name} (${preset.enabledPromptCount}/${preset.promptCount})`))
       )),
-      h("div", { className: "dtt-status", "data-error": status.error || void 0, role: "status", "aria-live": "polite" }, status.text),
+      h("div", { className: "dtt-status", "data-error": status.error || void 0, role: "status", "aria-live": "polite" }, status.error ? rawText(status.text) : status.text),
       draft === null ? h("p", { className: "dtt-note" }, catalog2 === null ? "\u6B63\u5728\u52A0\u8F7D\u9884\u8BBE\u2026" : "\u8BF7\u9009\u62E9\u6216\u521B\u5EFA\u9884\u8BBE\u4EE5\u5F00\u59CB\u914D\u7F6E\u3002") : h(
         "div",
         { className: "dtt-section" },
@@ -882,7 +912,7 @@ function TextDetail({ label, value }) {
     "details",
     { className: "dcc-detail" },
     h2("summary", null, label),
-    h2("p", { className: "dcc-text" }, value)
+    h2("p", { className: "dcc-text" }, rawText(value))
   );
 }
 function DiagnosticList({ title, items }) {
@@ -890,8 +920,8 @@ function DiagnosticList({ title, items }) {
   return h2(
     "details",
     { className: "dcc-detail" },
-    h2("summary", null, `${title} (${items.length})`),
-    h2("ul", { className: "dcc-diags" }, ...items.map((item, index) => h2("li", { key: `${item.code}-${index}` }, `${item.message}${item.path ? ` [${item.path}]` : ""}`)))
+    h2("summary", null, uiText`${translateVisibleText(title)} (${items.length})`),
+    h2("ul", { className: "dcc-diags" }, ...items.map((item, index) => h2("li", { key: `${item.code}-${index}` }, rawText(`${item.message}${item.path ? ` [${item.path}]` : ""}`))))
   );
 }
 function CharacterPanel({ sessionId, sessionBlank, close }) {
@@ -1000,13 +1030,13 @@ function CharacterPanel({ sessionId, sessionBlank, close }) {
     announceTavernRefresh2();
   }, "\u5F53\u524D\u4F1A\u8BDD\u5DF2\u89E3\u9664\u89D2\u8272\u7ED1\u5B9A"), [detail, run, sessionId]);
   const remove = (0, import_react2.useCallback)(() => run(async () => {
-    if (detail === null || !window.confirm(translateVisibleText(`\u5220\u9664\u89D2\u8272\u5361\u201C${detail.name}\u201D\uFF1F\u539F\u59CB\u5BFC\u5165\u6587\u4EF6\u4E5F\u4F1A\u88AB\u5220\u9664\u3002`))) return;
+    if (detail === null || !window.confirm(unwrapText(uiText`删除角色卡“${detail.name}”？原始导入文件也会被删除。`))) return;
     await api2(`/characters/${encodeURIComponent(detail.id)}`, { method: "DELETE" });
     await refresh(null);
     announceTavernRefresh2();
   }, "\u89D2\u8272\u5361\u5DF2\u5220\u9664\uFF0C\u76F8\u5173\u4F1A\u8BDD\u7ED1\u5B9A\u5DF2\u6E05\u9664"), [detail, refresh, run]);
   const greetings = characterGreetingOptions(detail);
-  const activeName = selection === null ? "\u672A\u7ED1\u5B9A\u89D2\u8272" : catalog2?.characters.find((item) => item.id === selection.characterCardId)?.name ?? selection.characterCardId;
+  const activeName = selection === null ? translateVisibleText("\u672A\u7ED1\u5B9A\u89D2\u8272") : catalog2?.characters.find((item) => item.id === selection.characterCardId)?.name ?? selection.characterCardId;
   return h2(
     "div",
     { className: "dcc-panel" },
@@ -1038,24 +1068,24 @@ function CharacterPanel({ sessionId, sessionBlank, close }) {
           onChange: (event) => run(() => loadDetail(event.target.value), "\u89D2\u8272\u8BE6\u60C5\u5DF2\u52A0\u8F7D")
         },
         ...catalog2?.characters.length ? [] : [h2("option", { key: "empty", value: "" }, "\u89D2\u8272\u5E93\u4E3A\u7A7A")],
-        ...(catalog2?.characters ?? []).map((item) => h2("option", { key: item.id, value: item.id }, `${item.name} \xB7 ${item.sourceFormat}`))
+        ...(catalog2?.characters ?? []).map((item) => h2("option", { key: item.id, value: item.id }, uiText`${item.name} · ${item.sourceFormat}`))
       )),
-      h2("p", { className: "dcc-note" }, `\u5F53\u524D\u4F1A\u8BDD\uFF1A${sessionId || "\u65E0"}\uFF1B\u7ED1\u5B9A\uFF1A${activeName}`),
-      h2("div", { className: "dcc-status", "data-error": status.error || void 0, role: "status", "aria-live": "polite" }, status.text),
+      h2("p", { className: "dcc-note" }, uiText`当前会话：${sessionId || translateVisibleText("\u65E0")}；绑定：${activeName}`),
+      h2("div", { className: "dcc-status", "data-error": status.error || void 0, role: "status", "aria-live": "polite" }, status.error ? rawText(status.text) : status.text),
       detail === null ? h2("p", { className: "dcc-note" }, catalog2 === null ? "\u6B63\u5728\u52A0\u8F7D\u89D2\u8272\u5E93\u2026" : "\u5BFC\u5165\u4E00\u5F20\u5408\u6210\u6216\u81EA\u6709\u6388\u6743\u7684 SillyTavern \u89D2\u8272\u5361\u4EE5\u67E5\u770B\u8BE6\u60C5\u3002") : h2(
         "div",
         { className: "dcc-card" },
         h2(
           "div",
           { className: "dcc-card-head" },
-          detail.source.container === "png" ? h2("img", { className: "dcc-avatar", src: `${API_ROOT2}/characters/${encodeURIComponent(detail.id)}/artifact`, alt: `${detail.name} \u89D2\u8272\u5361\u56FE\u7247` }) : null,
+          detail.source.container === "png" ? h2("img", { className: "dcc-avatar", src: `${API_ROOT2}/characters/${encodeURIComponent(detail.id)}/artifact`, alt: uiText`${detail.name} 角色卡图片` }) : null,
           h2(
             "div",
             null,
-            h2("h3", { className: "dcc-card-title" }, detail.name),
-            h2("p", { className: "dcc-meta" }, `${detail.source.format}${detail.source.specVersion ? ` \xB7 ${detail.source.specVersion}` : ""} \xB7 ${detail.source.container}`),
-            h2("p", { className: "dcc-meta" }, `${detail.data.creator || "\u672A\u77E5\u4F5C\u8005"}${detail.data.characterVersion ? ` \xB7 ${detail.data.characterVersion}` : ""}`),
-            h2("div", { className: "dcc-tags" }, ...detail.data.tags.map((tag, index) => h2("span", { className: "dcc-tag", key: `${tag}-${index}` }, tag)))
+            h2("h3", { className: "dcc-card-title" }, rawText(detail.name)),
+            h2("p", { className: "dcc-meta" }, rawText(`${detail.source.format}${detail.source.specVersion ? ` \xB7 ${detail.source.specVersion}` : ""} \xB7 ${detail.source.container}`)),
+            h2("p", { className: "dcc-meta" }, rawText(`${detail.data.creator || translateVisibleText("\u672A\u77E5\u4F5C\u8005")}${detail.data.characterVersion ? ` \xB7 ${detail.data.characterVersion}` : ""}`)),
+            h2("div", { className: "dcc-tags" }, ...detail.data.tags.map((tag, index) => h2("span", { className: "dcc-tag", key: `${tag}-${index}` }, rawText(tag))))
           )
         ),
         h2(Field2, { label: "\u5F00\u573A\u53C2\u8003" }, h2("select", {
@@ -1080,10 +1110,10 @@ function CharacterPanel({ sessionId, sessionBlank, close }) {
         h2(TextDetail, { label: "Message examples", value: detail.data.messageExample }),
         h2(TextDetail, { label: "System prompt\uFF08\u7531 loader \u6309\u7ED1\u5B9A\u8BBE\u7F6E\u5904\u7406\uFF09", value: detail.data.systemPrompt }),
         h2(TextDetail, { label: "Post-history instructions\uFF08\u7531 loader \u8FD1\u4F3C\u653E\u7F6E\uFF09", value: detail.data.postHistoryInstructions }),
-        detail.data.characterBook !== null ? h2("div", { className: "dcc-status" }, `\u5185\u5D4C character_book \u5DF2\u65E0\u635F\u4FDD\u7559\uFF08${Array.isArray(detail.data.characterBook.entries) ? detail.data.characterBook.entries.length : "\u672A\u77E5"} \u6761\uFF09\uFF1B\u7ED1\u5B9A\u89D2\u8272\u540E\u7531 Tavern loader \u8C03\u7528\u4E16\u754C\u4FE1\u606F matcher\uFF0C\u89E3\u7ED1\u540E\u4E0D\u518D\u53C2\u4E0E\u540E\u7EED\u8BF7\u6C42\u3002`) : null,
+        detail.data.characterBook !== null ? h2("div", { className: "dcc-status" }, uiText`内嵌 character_book 已无损保留（${Array.isArray(detail.data.characterBook.entries) ? detail.data.characterBook.entries.length : translateVisibleText("\u672A\u77E5")} 条）；绑定角色后由 Tavern loader 调用世界信息 matcher，解绑后不再参与后续请求。`) : null,
         h2(DiagnosticList, { title: "\u517C\u5BB9\u8B66\u544A", items: detail.compatibility.warnings }),
         h2(DiagnosticList, { title: "\u9700\u8981 loader/\u5176\u4ED6\u6A21\u5757\u5904\u7406", items: detail.compatibility.unsupportedFeatures }),
-        detail.compatibility.unknownMacroNames.length > 0 ? h2("div", { className: "dcc-status" }, `\u672A\u77E5\u5B8F\uFF1A${detail.compatibility.unknownMacroNames.join(", ")}`) : null,
+        detail.compatibility.unknownMacroNames.length > 0 ? h2("div", { className: "dcc-status" }, uiText`未知宏：${detail.compatibility.unknownMacroNames.join(", ")}`) : null,
         h2(
           "div",
           { className: "dcc-actions" },
@@ -1160,8 +1190,8 @@ function EmbeddedEntryEditor({ entry, index, update, remove }) {
       "summary",
       null,
       h3("span", { className: "dwb-dot" }),
-      h3("span", { className: "dwb-entry-name" }, entry.comment || entry.name || `\u6761\u76EE ${entry.id ?? index}`),
-      h3("span", { className: "dwb-entry-state" }, entry.constant ? "\u5E38\u9A7B" : (entry.keys ?? []).join(", ") || "\u65E0\u5173\u952E\u8BCD")
+      h3("span", { className: "dwb-entry-name" }, entry.comment || entry.name ? rawText(entry.comment || entry.name) : uiText`条目 ${entry.id ?? index}`),
+      h3("span", { className: "dwb-entry-state" }, entry.constant ? "\u5E38\u9A7B" : (entry.keys ?? []).length > 0 ? rawText(entry.keys.join(", ")) : "\u65E0\u5173\u952E\u8BCD")
     ),
     h3(
       "div",
@@ -1217,7 +1247,7 @@ function createWorldBookEntry(entries = []) {
     uid,
     keys: [],
     secondaryKeys: [],
-    comment: `\u65B0\u6761\u76EE ${uid}`,
+    comment: unwrapText(uiText`新条目 ${uid}`),
     content: "",
     enabled: true,
     constant: false,
@@ -1240,8 +1270,8 @@ function EntryEditor({ entry, index, update, remove }) {
       "summary",
       null,
       h3("span", { className: "dwb-dot" }),
-      h3("span", { className: "dwb-entry-name" }, entry.comment || `\u6761\u76EE ${entry.uid ?? index}`),
-      h3("span", { className: "dwb-entry-state" }, entry.constant ? "\u5E38\u9A7B" : (entry.keys ?? []).join(", ") || "\u65E0\u5173\u952E\u8BCD")
+      h3("span", { className: "dwb-entry-name" }, entry.comment ? rawText(entry.comment) : uiText`条目 ${entry.uid ?? index}`),
+      h3("span", { className: "dwb-entry-state" }, entry.constant ? "\u5E38\u9A7B" : (entry.keys ?? []).length > 0 ? rawText(entry.keys.join(", ")) : "\u65E0\u5173\u952E\u8BCD")
     ),
     h3(
       "div",
@@ -1386,7 +1416,7 @@ function WorldBookPanel({ sessionId, close }) {
     window.dispatchEvent(new Event("dsh-tavern:refresh"));
   }, "\u5F53\u524D\u4F1A\u8BDD\u7684\u4E16\u754C\u4E66\u7ED1\u5B9A\u5DF2\u4FDD\u5B58");
   const remove = () => run(async () => {
-    if (document2 === null || !window.confirm(translateVisibleText(`\u5220\u9664\u72EC\u7ACB\u4E16\u754C\u4E66\u201C${document2.name}\u201D\uFF1F\u89D2\u8272\u5361\u5185\u5D4C\u4E16\u754C\u4E66\u4E0D\u4F1A\u53D7\u5230\u5F71\u54CD\u3002`))) return;
+    if (document2 === null || !window.confirm(unwrapText(uiText`删除独立世界书“${document2.name}”？角色卡内嵌世界书不会受到影响。`))) return;
     await api3(`/world-books/${encodeURIComponent(document2.id)}`, { method: "DELETE" });
     setDocument(null);
     setDraft(null);
@@ -1435,8 +1465,8 @@ function WorldBookPanel({ sessionId, close }) {
           if (file !== void 0) importFile(file);
         } })
       ),
-      h3("p", { className: "dwb-note" }, `\u5F53\u524D\u4F1A\u8BDD\uFF1A${sessionId || "\u65E0"}\u3002\u53EF\u7ED1\u5B9A\u96F6\u672C\u3001\u4E00\u672C\u6216\u591A\u672C\u72EC\u7ACB\u4E16\u754C\u4E66\uFF1B\u7ED1\u5B9A\u987A\u5E8F\u4FDD\u6301\u7A33\u5B9A\u3002`),
-      h3("div", { className: "dwb-status", "data-error": status.error || void 0, role: "status", "aria-live": "polite" }, status.text),
+      h3("p", { className: "dwb-note" }, uiText`当前会话：${sessionId || translateVisibleText("\u65E0")}。可绑定零本、一本或多本独立世界书；绑定顺序保持稳定。`),
+      h3("div", { className: "dwb-status", "data-error": status.error || void 0, role: "status", "aria-live": "polite" }, status.error ? rawText(status.text) : status.text),
       h3("h2", { className: "dwb-section-title" }, "\u72EC\u7ACB\u4E16\u754C\u4E66"),
       h3(
         "div",
@@ -1446,7 +1476,7 @@ function WorldBookPanel({ sessionId, close }) {
           "label",
           { className: "dwb-check", key: item.id },
           h3("input", { type: "checkbox", checked: selection.includes(item.id), onChange: (event) => setSelection((current2) => event.target.checked ? [...current2, item.id] : current2.filter((id) => id !== item.id)) }),
-          `${item.name}\uFF08${item.entryCount} \u6761\uFF09`
+          uiText`${item.name}（${item.entryCount} 条）`
         ))) : h3("p", { className: "dwb-note" }, "\u72EC\u7ACB\u4E16\u754C\u4E66\u8D44\u6E90\u5E93\u4E3A\u7A7A\u3002"),
         selectionDirty ? h3("div", { className: "dwb-status", "data-warning": true }, "\u7ED1\u5B9A\u6709\u672A\u4FDD\u5B58\u4FEE\u6539\uFF0C\u5F53\u524D\u52FE\u9009\u5C1A\u672A\u5E94\u7528\u5230\u4F1A\u8BDD\u3002") : h3("p", { className: "dwb-note" }, "\u9762\u677F\u663E\u793A\u7684\u7ED1\u5B9A\u5DF2\u5E94\u7528\u5230\u5F53\u524D\u4F1A\u8BDD\u3002"),
         h3(
@@ -1462,7 +1492,7 @@ function WorldBookPanel({ sessionId, close }) {
           if (!dirty || window.confirm(translateVisibleText("\u653E\u5F03\u5C1A\u672A\u4FDD\u5B58\u7684\u4FEE\u6539\uFF1F"))) load(event.target.value);
         } },
         ...catalog2?.worldBooks.length ? [] : [h3("option", { key: "empty", value: "" }, "\u8D44\u6E90\u5E93\u4E3A\u7A7A")],
-        ...(catalog2?.worldBooks ?? []).map((item) => h3("option", { key: item.id, value: item.id }, item.name))
+        ...(catalog2?.worldBooks ?? []).map((item) => h3("option", { key: item.id, value: item.id }, rawText(item.name)))
       )),
       draft === null ? null : h3(
         "div",
@@ -1471,7 +1501,7 @@ function WorldBookPanel({ sessionId, close }) {
           setDraft((current2) => ({ ...current2, name: event.target.value }));
           setDirty(true);
         } })),
-        h3("p", { className: "dwb-meta" }, `${entries.length} \u6761 \xB7 \u672A\u77E5\u5B57\u6BB5\u5728\u4FDD\u5B58\u548C\u5BFC\u51FA\u65F6\u7A33\u5B9A\u4FDD\u7559`),
+        h3("p", { className: "dwb-meta" }, uiText`${entries.length} 条 · 未知字段在保存和导出时稳定保留`),
         h3(
           "div",
           { className: "dwb-actions" },
@@ -1494,15 +1524,15 @@ function WorldBookPanel({ sessionId, close }) {
       embeddedDraft !== null ? h3(
         "div",
         { className: "dwb-resource" },
-        h3("div", { className: "dwb-resource-title" }, embeddedDraft.name || embedded[0]?.name || "\u89D2\u8272\u5361\u5185\u5D4C\u4E16\u754C\u4E66"),
-        h3("p", { className: "dwb-note" }, `${embeddedEntries.length} \u6761\u3002\u5B83\u4E0E\u72EC\u7ACB\u4E66\u5171\u7528 matcher/loader\uFF1B\u5220\u9664\u72EC\u7ACB\u4E66\u4E0D\u4F1A\u4FEE\u6539\u6216\u89E3\u7ED1\u89D2\u8272\u5361\u5185\u5D4C\u4E66\u3002`),
+        h3("div", { className: "dwb-resource-title" }, embeddedDraft.name || embedded[0]?.name ? rawText(embeddedDraft.name || embedded[0]?.name) : "\u89D2\u8272\u5361\u5185\u5D4C\u4E16\u754C\u4E66"),
+        h3("p", { className: "dwb-note" }, uiText`${embeddedEntries.length} 条。它与独立书共用 matcher/loader；删除独立书不会修改或解绑角色卡内嵌书。`),
         h3(
           "div",
           { className: "dwb-actions" },
           h3("button", { className: "dwb-button", type: "button", onClick: () => {
             const ids = embeddedEntries.map((entry) => Number(entry.id)).filter(Number.isSafeInteger);
             const id = ids.length === 0 ? 0 : Math.max(...ids) + 1;
-            setEmbeddedDraft((current2) => ({ ...structuredClone(current2), entries: [...current2.entries, { id, keys: [], secondary_keys: [], comment: `\u65B0\u6761\u76EE ${id}`, content: "", enabled: true, constant: false, selective: false, insertion_order: 100, position: "after_char", extensions: { position: 1, probability: 100, useProbability: true } }] }));
+            setEmbeddedDraft((current2) => ({ ...structuredClone(current2), entries: [...current2.entries, { id, keys: [], secondary_keys: [], comment: unwrapText(uiText`新条目 ${id}`), content: "", enabled: true, constant: false, selective: false, insertion_order: 100, position: "after_char", extensions: { position: 1, probability: 100, useProbability: true } }] }));
             setEmbeddedDirty(true);
           } }, "\u65B0\u589E\u5185\u5D4C\u6761\u76EE"),
           h3("button", { className: "dwb-button dwb-primary", type: "button", disabled: busy || !embeddedDirty, onClick: saveEmbedded }, embeddedDirty ? "\u4FDD\u5B58\u5185\u5D4C\u4E66" : "\u5185\u5D4C\u4E66\u5DF2\u4FDD\u5B58")
@@ -1521,7 +1551,7 @@ function WorldBookPanel({ sessionId, close }) {
           }
         } }))
       ) : null,
-      diagnostics.length > 0 ? h3("details", { className: "dwb-resource" }, h3("summary", { className: "dwb-resource-title" }, `\u8FD0\u884C\u8BCA\u65AD\uFF08${diagnostics.length}\uFF09`), h3("ul", { className: "dwb-list" }, ...diagnostics.map((item, index) => h3("li", { key: `${item.code}-${index}` }, item.message)))) : null,
+      diagnostics.length > 0 ? h3("details", { className: "dwb-resource" }, h3("summary", { className: "dwb-resource-title" }, uiText`运行诊断（${diagnostics.length}）`), h3("ul", { className: "dwb-list" }, ...diagnostics.map((item, index) => h3("li", { key: `${item.code}-${index}` }, rawText(item.message))))) : null,
       h3("p", { className: "dwb-note" }, "\u5B9E\u9645\u6FC0\u6D3B\u3001\u6392\u5E8F\u3001\u6982\u7387\u548C\u9884\u7B97\u7531\u5171\u4EAB matcher \u786E\u5B9A\uFF1B\u6700\u7EC8\u6CE8\u5165\u4ECD\u7531 Tavern loader \u7EDF\u4E00\u5B8C\u6210\u3002\u5F53\u524D\u626B\u63CF\u57FA\u4E8E\u5DF2\u6301\u4E45\u5316\u7684\u4F1A\u8BDD\u5386\u53F2\uFF1B\u521A\u63D0\u4EA4\u7684\u8F93\u5165\u53EF\u80FD\u5728\u540C\u4E00\u53EF\u89C1\u56DE\u5408\u7684\u4E0B\u4E00 agent step\uFF08\u5982\u5DE5\u5177\u7EE7\u7EED\uFF09\u6216\u4E0B\u4E00\u7528\u6237\u56DE\u5408\u89E6\u53D1\u3002")
     )
   );
@@ -1605,7 +1635,7 @@ function UserPanel({ sessionId, sessionBlank, close }) {
     };
   }, [refresh, run]);
   const create = (0, import_react4.useCallback)(() => run(async () => {
-    const data = await api4("/users", { method: "POST", body: JSON.stringify({ name: "\u65B0\u7528\u6237", description: "" }) });
+    const data = await api4("/users", { method: "POST", body: JSON.stringify({ name: translateVisibleText("\u65B0\u7528\u6237"), description: "" }) });
     draftId.current = data.user.id;
     await refresh(data.user.id);
     notifyRefresh();
@@ -1638,13 +1668,13 @@ function UserPanel({ sessionId, sessionBlank, close }) {
     notifyRefresh();
   }, "\u5F53\u524D\u4F1A\u8BDD\u5DF2\u89E3\u9664\u7528\u6237\u7ED1\u5B9A"), [run, sessionId]);
   const remove = (0, import_react4.useCallback)(() => run(async () => {
-    if (draft === null || !window.confirm(translateVisibleText(`\u5220\u9664\u7528\u6237\u201C${draft.name}\u201D\uFF1F\u6240\u6709\u4F1A\u8BDD\u4E2D\u7684\u5BF9\u5E94\u7ED1\u5B9A\u90FD\u4F1A\u6E05\u9664\u3002`))) return;
+    if (draft === null || !window.confirm(unwrapText(uiText`删除用户“${draft.name}”？所有会话中的对应绑定都会清除。`))) return;
     await api4(`/users/${encodeURIComponent(draft.id)}`, { method: "DELETE", body: "{}" });
     draftId.current = null;
     await refresh(null);
     notifyRefresh();
   }, "\u7528\u6237\u5DF2\u5220\u9664\uFF0C\u76F8\u5173\u4F1A\u8BDD\u7ED1\u5B9A\u5DF2\u6E05\u9664"), [draft, refresh, run]);
-  const activeName = selectedUserId === null ? "\u672A\u7ED1\u5B9A\u7528\u6237" : users?.find((user) => user.id === selectedUserId)?.name ?? selectedUserId;
+  const activeName = selectedUserId === null ? translateVisibleText("\u672A\u7ED1\u5B9A\u7528\u6237") : users?.find((user) => user.id === selectedUserId)?.name ?? selectedUserId;
   return h4(
     "div",
     { className: "dtu-panel" },
@@ -1672,10 +1702,10 @@ function UserPanel({ sessionId, sessionBlank, close }) {
           onChange: (event) => setDraft(structuredClone(users.find((user) => user.id === event.target.value) ?? null))
         },
         ...users?.length ? [] : [h4("option", { key: "empty", value: "" }, "\u7528\u6237\u8D44\u6E90\u5E93\u4E3A\u7A7A")],
-        ...(users ?? []).map((user) => h4("option", { key: user.id, value: user.id }, user.name))
+        ...(users ?? []).map((user) => h4("option", { key: user.id, value: user.id }, rawText(user.name)))
       )),
-      h4("p", { className: "dtu-note" }, `\u5F53\u524D\u4F1A\u8BDD\uFF1A${sessionId || "\u65E0"}\uFF1B\u7ED1\u5B9A\uFF1A${activeName}`),
-      h4("div", { className: "dtu-status", "data-error": status.error || void 0, role: "status", "aria-live": "polite" }, status.text),
+      h4("p", { className: "dtu-note" }, uiText`当前会话：${sessionId || translateVisibleText("\u65E0")}；绑定：${activeName}`),
+      h4("div", { className: "dtu-status", "data-error": status.error || void 0, role: "status", "aria-live": "polite" }, status.error ? rawText(status.text) : status.text),
       draft === null ? h4("p", { className: "dtu-note" }, users === null ? "\u6B63\u5728\u52A0\u8F7D\u7528\u6237\u8D44\u6E90\u2026" : "\u521B\u5EFA\u4E00\u4E2A\u53EA\u542B\u540D\u5B57\u548C\u63CF\u8FF0\u7684\u7528\u6237\u8D44\u6E90\u3002") : h4(
         "div",
         { className: "dtu-editor" },
@@ -1757,8 +1787,8 @@ function resourceCard(label, value) {
     "div",
     { className: "dttrace-card", key: label },
     h5("div", { className: "dttrace-label" }, label),
-    h5("div", { className: "dttrace-value" }, value?.name || "\u672A\u4F7F\u7528"),
-    value?.id ? h5("div", { className: "dttrace-meta" }, value.id) : null
+    h5("div", { className: "dttrace-value" }, value?.name ? rawText(value.name) : "\u672A\u4F7F\u7528"),
+    value?.id ? h5("div", { className: "dttrace-meta" }, rawText(value.id)) : null
   );
 }
 function keywords(decision) {
@@ -1767,35 +1797,35 @@ function keywords(decision) {
   const primary = decision.primaryMatches ?? [];
   const secondary = decision.secondaryMatches ?? [];
   const configured = [
-    configuredPrimary.length > 0 ? `\u4E3B\uFF1A${configuredPrimary.map((value) => JSON.stringify(value)).join("\u3001")}` : null,
-    configuredSecondary.length > 0 ? `\u9644\u52A0\uFF1A${configuredSecondary.map((value) => JSON.stringify(value)).join("\u3001")}` : null
-  ].filter(Boolean).join(" \xB7 ") || "\u65E0\u914D\u7F6E\u5173\u952E\u8BCD";
+    configuredPrimary.length > 0 ? unwrapText(uiText`主：${configuredPrimary.map((value) => JSON.stringify(value)).join("\u3001")}`) : null,
+    configuredSecondary.length > 0 ? unwrapText(uiText`附加：${configuredSecondary.map((value) => JSON.stringify(value)).join("\u3001")}`) : null
+  ].filter(Boolean).join(" \xB7 ") || translateVisibleText("\u65E0\u914D\u7F6E\u5173\u952E\u8BCD");
   const matched = [
-    primary.length > 0 ? `\u4E3B\uFF1A${primary.map((value) => JSON.stringify(value)).join("\u3001")}` : null,
-    secondary.length > 0 ? `\u9644\u52A0\uFF1A${secondary.map((value) => JSON.stringify(value)).join("\u3001")}` : null
-  ].filter(Boolean).join(" \xB7 ") || "\u65E0\u5173\u952E\u8BCD\u547D\u4E2D";
-  return { configured, matched };
+    primary.length > 0 ? unwrapText(uiText`主：${primary.map((value) => JSON.stringify(value)).join("\u3001")}`) : null,
+    secondary.length > 0 ? unwrapText(uiText`附加：${secondary.map((value) => JSON.stringify(value)).join("\u3001")}`) : null
+  ].filter(Boolean).join(" \xB7 ") || translateVisibleText("\u65E0\u5173\u952E\u8BCD\u547D\u4E2D");
+  return { configured: rawText(configured), matched: rawText(matched) };
 }
 function decisionMeta(value) {
   const parts = [];
   if (value.secondaryLogic) parts.push(`secondary=${value.secondaryLogic}`);
-  if (value.groupName) parts.push(`\u7EC4 ${value.groupName}${value.groupOverride ? " / override" : value.groupWeight === null ? "" : ` / weight ${value.groupWeight}`}`);
+  if (value.groupName) parts.push(unwrapText(uiText`组 ${value.groupName}${value.groupOverride ? " / override" : value.groupWeight === null ? "" : ` / weight ${value.groupWeight}`}`));
   if (value.probability !== null) {
-    parts.push(`\u6982\u7387 ${value.probability}%${value.probabilityRoll === null ? "" : ` / roll ${(value.probabilityRoll * 100).toFixed(2)}%`}`);
+    parts.push(unwrapText(uiText`概率 ${value.probability}%${value.probabilityRoll === null ? "" : ` / roll ${(value.probabilityRoll * 100).toFixed(2)}%`}`));
   }
-  if (value.tokenCost !== null) parts.push(`\u9884\u7B97 ${value.tokenCost} tokens`);
+  if (value.tokenCost !== null) parts.push(unwrapText(uiText`预算 ${value.tokenCost} tokens`));
   if (value.requestedPosition) {
-    parts.push(`\u4F4D\u7F6E ${value.requestedPosition}${value.appliedPosition ? ` \u2192 ${value.appliedPosition}${value.approximatePosition ? "\uFF08\u8FD1\u4F3C\uFF09" : ""}` : " \u2192 \u672A\u63D2\u5165"}`);
+    parts.push(unwrapText(uiText`位置 ${value.requestedPosition}${value.appliedPosition ? ` \u2192 ${value.appliedPosition}${value.approximatePosition ? translateVisibleText("\uFF08\u8FD1\u4F3C\uFF09") : ""}` : translateVisibleText(" \u2192 \u672A\u63D2\u5165")}`));
   }
-  return parts.join(" \xB7 ");
+  return rawText(parts.join(" \xB7 "));
 }
 function WorldBookAudit({ book }) {
-  const name2 = book.resource?.name || book.resource?.id || "\u4E16\u754C\u4E66";
+  const name2 = book.resource?.name || book.resource?.id;
   return h5(
     "div",
     { className: "dttrace-book" },
-    h5("div", { className: "dttrace-section-title" }, name2),
-    h5("div", { className: "dttrace-meta" }, `\u9884\u7B97\uFF1A${book.budget.used}${book.budget.limit === null ? "" : ` / ${book.budget.limit}`} tokens \xB7 ${book.decisions.length} \u6761\u51B3\u7B56`),
+    h5("div", { className: "dttrace-section-title" }, name2 ? rawText(name2) : "\u4E16\u754C\u4E66"),
+    h5("div", { className: "dttrace-meta" }, uiText`预算：${book.budget.used}${book.budget.limit === null ? "" : ` / ${book.budget.limit}`} tokens · ${book.decisions.length} 条决策`),
     ...book.decisions.map((item, index) => {
       const keywordState = keywords(item);
       return h5(
@@ -1809,14 +1839,14 @@ function WorldBookAudit({ book }) {
         h5(
           "div",
           null,
-          h5("div", null, item.entryName || `\u6761\u76EE ${String(item.entryId ?? index + 1)}`),
-          h5("div", { className: "dttrace-meta" }, reasonLabels[item.reason] ?? item.reason)
+          h5("div", null, item.entryName ? rawText(item.entryName) : uiText`条目 ${String(item.entryId ?? index + 1)}`),
+          h5("div", { className: "dttrace-meta" }, reasonLabels[item.reason] ?? rawText(item.reason))
         ),
         h5(
           "div",
           { className: "dttrace-keywords" },
-          h5("div", null, `\u914D\u7F6E\u5173\u952E\u8BCD\uFF1A${keywordState.configured}`),
-          h5("div", null, `\u672C\u8F6E\u547D\u4E2D\uFF1A${keywordState.matched}`),
+          h5("div", null, uiText`配置关键词：${keywordState.configured}`),
+          h5("div", null, uiText`本轮命中：${keywordState.matched}`),
           h5("div", { className: "dttrace-meta" }, decisionMeta(item))
         )
       );
@@ -1832,9 +1862,9 @@ function TraceRecord({ record, latest }) {
     h5(
       "summary",
       null,
-      h5("span", { className: "dttrace-round" }, `\u8F6E\u6B21 ${record.turn} \xB7 \u6B65\u9AA4 ${record.step}${record.attempt > 1 ? ` \xB7 \u5C1D\u8BD5 ${record.attempt}` : ""}`),
+      h5("span", { className: "dttrace-round" }, uiText`轮次 ${record.turn} · 步骤 ${record.step}${record.attempt > 1 ? unwrapText(uiText` · 尝试 ${record.attempt}`) : ""}`),
       h5("span", { className: "dttrace-badge", "data-ok": linked || void 0 }, linked ? `request/header #${authority.headerEventSeq}` : "\u7B49\u5F85\u6743\u5A01 header"),
-      h5("span", { className: "dttrace-time" }, formatTime(record.recordedAt))
+      h5("span", { className: "dttrace-time" }, rawText(formatTime(record.recordedAt)))
     ),
     h5(
       "div",
@@ -1851,7 +1881,7 @@ function TraceRecord({ record, latest }) {
         "div",
         { className: "dttrace-section" },
         h5("div", { className: "dttrace-section-title" }, "\u7EC4\u5408\u4E0E\u63D2\u5165"),
-        h5("div", { className: "dttrace-meta" }, `${record.assembly.profileSection} \xB7 order ${record.assembly.profileOrder} \xB7 ${record.assembly.systemPromptMode} \xB7 ${record.assembly.systemCharacters} characters \xB7 call config: ${Object.keys(record.assembly.callConfig ?? {}).join(", ") || "\u65E0"}`)
+        h5("div", { className: "dttrace-meta" }, rawText(`${record.assembly.profileSection} \xB7 order ${record.assembly.profileOrder} \xB7 ${record.assembly.systemPromptMode} \xB7 ${record.assembly.systemCharacters} characters \xB7 call config: ${Object.keys(record.assembly.callConfig ?? {}).join(", ") || translateVisibleText("\u65E0")}`))
       ),
       record.worldBooks?.length > 0 ? h5(
         "div",
@@ -1863,8 +1893,8 @@ function TraceRecord({ record, latest }) {
       record.diagnostics?.length > 0 ? h5(
         "div",
         { className: "dttrace-section" },
-        h5("div", { className: "dttrace-section-title" }, `\u8BCA\u65AD\uFF08${record.diagnostics.length}\uFF09`),
-        h5("ul", { className: "dttrace-list" }, ...record.diagnostics.map((item, index) => h5("li", { key: `${item.code}-${index}` }, `${item.code}: ${item.message}`)))
+        h5("div", { className: "dttrace-section-title" }, uiText`诊断（${record.diagnostics.length}）`),
+        h5("ul", { className: "dttrace-list" }, ...record.diagnostics.map((item, index) => h5("li", { key: `${item.code}-${index}` }, rawText(`${item.code}: ${item.message}`))))
       ) : null,
       h5("p", { className: "dttrace-note" }, "\u9690\u79C1\u8FB9\u754C\uFF1A\u8FD9\u91CC\u53EA\u4FDD\u5B58\u8D44\u6E90\u6458\u8981\u3001\u914D\u7F6E/\u547D\u4E2D\u5173\u952E\u8BCD\u3001\u51B3\u7B56\u539F\u56E0\u3001\u4F4D\u7F6E\u3001\u9884\u7B97\u548C SHA-256 \u6458\u8981\uFF1B\u4E0D\u4FDD\u5B58 preset/\u89D2\u8272/user/\u4E16\u754C\u4E66\u6B63\u6587\u3001\u5B8C\u6574 system\u3001\u804A\u5929\u5386\u53F2\u3001header \u5185\u5BB9\u6216 tool payload\u3002")
     )
@@ -1917,7 +1947,7 @@ function TavernTraceView({ sessionId, useSession }) {
       "div",
       { className: "dttrace-body" },
       h5("p", { className: "dttrace-note" }, "\u4E0E Conversation / Trajectory \u5E76\u5217\u7684 loader \u5BA1\u8BA1\u89C6\u56FE\u3002DSH request/header \u59CB\u7EC8\u662F\u6700\u7EC8\u53D1\u9001 system\u3001tools \u4E0E\u751F\u6548 config \u7684\u6743\u5A01\u3002"),
-      error ? h5("div", { className: "dttrace-status", "data-error": true }, error) : null,
+      error ? h5("div", { className: "dttrace-status", "data-error": true }, rawText(error)) : null,
       data === null && !error ? h5("div", { className: "dttrace-status" }, "\u6B63\u5728\u8BFB\u53D6\u5BA1\u8BA1\u8BB0\u5F55\u2026") : null,
       data !== null ? h5("div", { className: "dttrace-status" }, storageStatus(data.storage)) : null,
       records.length === 0 && data !== null ? h5("div", { className: "dttrace-status" }, "\u6B64\u4F1A\u8BDD\u8FD8\u6CA1\u6709 Tavern \u8BF7\u6C42\u5BA1\u8BA1\u8BB0\u5F55\u3002\u53D1\u9001\u4E0B\u4E00\u6761\u6D88\u606F\u540E\u518D\u67E5\u770B\u3002") : null,
@@ -2041,7 +2071,7 @@ function launcherResourceStatuses(snapshot) {
     "world-info": {
       bound: selectedWorlds.length > 0,
       count: selectedWorlds.length,
-      title: selectedWorlds.length === 0 ? "\u672A\u7ED1\u5B9A\u4E16\u754C\u4E66" : selectedWorlds.length === 1 ? worldTitles[0] : `${worldTitles.join("\u3001")} \xB7 ${selectedWorlds.length} \u672C`
+      title: selectedWorlds.length === 0 ? "\u672A\u7ED1\u5B9A\u4E16\u754C\u4E66" : selectedWorlds.length === 1 ? worldTitles[0] : worldTitles.join(" \xB7 ")
     },
     user: singleStatus({
       id: userId,
@@ -2174,7 +2204,7 @@ function SettingsPanel({ settings, status, busy, close, update, reset }) {
       }, ...UI_SCALE_OPTIONS.map((scale) => h6("option", { key: scale, value: scale }, `${Math.round(scale * 100)}%`)))),
       h6("div", { className: "dtv-setting-value" }, translate("settings.currentScale", { scale: percent })),
       h6("p", { className: "dtv-note" }, translate("settings.scale.help")),
-      h6("div", { className: "dtv-status", "data-error": status.error || void 0, role: "status" }, status.text),
+      h6("div", { className: "dtv-status", "data-error": status.error || void 0, role: "status" }, rawText(status.text)),
       h6(
         "div",
         { className: "dtv-actions" },
@@ -2400,10 +2430,12 @@ function TavernShell({ useSessions }) {
       menuOpen ? h6(
         "div",
         { className: "dtv-menu", role: "menu" },
-        h6("div", { className: "dtv-menu-title", "aria-live": "polite" }, statusError === "" ? `Tavern \xB7 ${sessionId || "\u65E0\u4F1A\u8BDD"}` : `\u72B6\u6001\u540C\u6B65\u5931\u8D25\uFF1A${statusError}`),
+        h6("div", { className: "dtv-menu-title", "aria-live": "polite" }, statusError === "" ? uiText`Tavern · ${sessionId || translateVisibleText("\u65E0\u4F1A\u8BDD")}` : uiText`状态同步失败：${statusError}`),
         ...TAVERN_MENU_ITEMS.map((item) => {
           const status = statuses[item.id];
-          const stateLabel = status.bound ? "\u5DF2\u7ED1\u5B9A" : "\u672A\u7ED1\u5B9A";
+          const itemLabel = translateVisibleText(item.label);
+          const statusTitle = status.bound ? status.title : translateVisibleText(status.title);
+          const stateLabel = translateVisibleText(status.bound ? "\u5DF2\u7ED1\u5B9A" : "\u672A\u7ED1\u5B9A");
           return h6(
             "button",
             {
@@ -2411,13 +2443,13 @@ function TavernShell({ useSessions }) {
               type: "button",
               role: "menuitem",
               key: item.id,
-              title: `${item.label}\uFF1A${status.title}\uFF08${stateLabel}\uFF09`,
+              title: uiText`${itemLabel}：${statusTitle}（${stateLabel}）`,
               "data-available": item.available,
               "data-active": surface === item.id,
               "data-bound": status.bound,
               "data-show-binding": item.showBinding !== false,
               "aria-current": surface === item.id ? "page" : void 0,
-              "aria-label": `${item.label}\uFF0C${status.title}\uFF0C${stateLabel}`,
+              "aria-label": uiText`${itemLabel}，${statusTitle}，${stateLabel}`,
               onClick: () => open(item.id)
             },
             h6("span", { className: "dtv-binding-dot", "aria-hidden": "true" }),
@@ -2425,9 +2457,9 @@ function TavernShell({ useSessions }) {
               "span",
               { className: "dtv-item-copy" },
               h6("span", { className: "dtv-item-label" }, item.label),
-              h6("span", { className: "dtv-item-status" }, status.title)
+              h6("span", { className: "dtv-item-status" }, status.bound ? rawText(status.title) : status.title)
             ),
-            status.count > 1 ? h6("span", { className: "dtv-item-count", "aria-label": `${status.count} \u672C` }, `${status.count} \u672C`) : item.available ? null : h6("span", { className: "dtv-item-planned" }, "\u89C4\u5212\u4E2D")
+            status.count > 1 ? h6("span", { className: "dtv-item-count", "aria-label": uiText`${status.count} 本` }, uiText`${status.count} 本`) : item.available ? null : h6("span", { className: "dtv-item-planned" }, "\u89C4\u5212\u4E2D")
           );
         })
       ) : null

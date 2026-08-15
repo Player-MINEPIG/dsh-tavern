@@ -5,7 +5,13 @@ import {
   useRef,
   useState,
 } from 'react'
-import { createLocalizedElement, translateVisibleText } from '../../client/src/i18n.js'
+import {
+  createLocalizedElement,
+  rawText,
+  translateVisibleText,
+  uiText,
+  unwrapText,
+} from '../../client/src/i18n.js'
 import {
   characterGreetingOptions,
   defaultCharacterSelection,
@@ -51,15 +57,15 @@ function TextDetail({ label, value }) {
   if (typeof value !== 'string' || value === '') return null
   return h('details', { className: 'dcc-detail' },
     h('summary', null, label),
-    h('p', { className: 'dcc-text' }, value),
+    h('p', { className: 'dcc-text' }, rawText(value)),
   )
 }
 
 function DiagnosticList({ title, items }) {
   if (!Array.isArray(items) || items.length === 0) return null
   return h('details', { className: 'dcc-detail' },
-    h('summary', null, `${title} (${items.length})`),
-    h('ul', { className: 'dcc-diags' }, ...items.map((item, index) => h('li', { key: `${item.code}-${index}` }, `${item.message}${item.path ? ` [${item.path}]` : ''}`))),
+    h('summary', null, uiText`${translateVisibleText(title)} (${items.length})`),
+    h('ul', { className: 'dcc-diags' }, ...items.map((item, index) => h('li', { key: `${item.code}-${index}` }, rawText(`${item.message}${item.path ? ` [${item.path}]` : ''}`)))),
   )
 }
 
@@ -178,7 +184,7 @@ export function CharacterPanel({ sessionId, sessionBlank, close }) {
   }, '当前会话已解除角色绑定'), [detail, run, sessionId])
 
   const remove = useCallback(() => run(async () => {
-    if (detail === null || !window.confirm(translateVisibleText(`删除角色卡“${detail.name}”？原始导入文件也会被删除。`))) return
+    if (detail === null || !window.confirm(unwrapText(uiText`删除角色卡“${detail.name}”？原始导入文件也会被删除。`))) return
     await api(`/characters/${encodeURIComponent(detail.id)}`, { method: 'DELETE' })
     await refresh(null)
     announceTavernRefresh()
@@ -186,7 +192,7 @@ export function CharacterPanel({ sessionId, sessionBlank, close }) {
 
   const greetings = characterGreetingOptions(detail)
   const activeName = selection === null
-    ? '未绑定角色'
+    ? translateVisibleText('未绑定角色')
     : catalog?.characters.find((item) => item.id === selection.characterCardId)?.name ?? selection.characterCardId
 
   return h('div', { className: 'dcc-panel' },
@@ -210,17 +216,17 @@ export function CharacterPanel({ sessionId, sessionBlank, close }) {
         onChange: (event) => run(() => loadDetail(event.target.value), '角色详情已加载'),
       },
       ...(catalog?.characters.length ? [] : [h('option', { key: 'empty', value: '' }, '角色库为空')]),
-      ...(catalog?.characters ?? []).map((item) => h('option', { key: item.id, value: item.id }, `${item.name} · ${item.sourceFormat}`)))),
-      h('p', { className: 'dcc-note' }, `当前会话：${sessionId || '无'}；绑定：${activeName}`),
-      h('div', { className: 'dcc-status', 'data-error': status.error || undefined, role: 'status', 'aria-live': 'polite' }, status.text),
+      ...(catalog?.characters ?? []).map((item) => h('option', { key: item.id, value: item.id }, uiText`${item.name} · ${item.sourceFormat}`)))),
+      h('p', { className: 'dcc-note' }, uiText`当前会话：${sessionId || translateVisibleText('无')}；绑定：${activeName}`),
+      h('div', { className: 'dcc-status', 'data-error': status.error || undefined, role: 'status', 'aria-live': 'polite' }, status.error ? rawText(status.text) : status.text),
       detail === null ? h('p', { className: 'dcc-note' }, catalog === null ? '正在加载角色库…' : '导入一张合成或自有授权的 SillyTavern 角色卡以查看详情。') : h('div', { className: 'dcc-card' },
         h('div', { className: 'dcc-card-head' },
-          detail.source.container === 'png' ? h('img', { className: 'dcc-avatar', src: `${API_ROOT}/characters/${encodeURIComponent(detail.id)}/artifact`, alt: `${detail.name} 角色卡图片` }) : null,
+          detail.source.container === 'png' ? h('img', { className: 'dcc-avatar', src: `${API_ROOT}/characters/${encodeURIComponent(detail.id)}/artifact`, alt: uiText`${detail.name} 角色卡图片` }) : null,
           h('div', null,
-            h('h3', { className: 'dcc-card-title' }, detail.name),
-            h('p', { className: 'dcc-meta' }, `${detail.source.format}${detail.source.specVersion ? ` · ${detail.source.specVersion}` : ''} · ${detail.source.container}`),
-            h('p', { className: 'dcc-meta' }, `${detail.data.creator || '未知作者'}${detail.data.characterVersion ? ` · ${detail.data.characterVersion}` : ''}`),
-            h('div', { className: 'dcc-tags' }, ...detail.data.tags.map((tag, index) => h('span', { className: 'dcc-tag', key: `${tag}-${index}` }, tag))),
+            h('h3', { className: 'dcc-card-title' }, rawText(detail.name)),
+            h('p', { className: 'dcc-meta' }, rawText(`${detail.source.format}${detail.source.specVersion ? ` · ${detail.source.specVersion}` : ''} · ${detail.source.container}`)),
+            h('p', { className: 'dcc-meta' }, rawText(`${detail.data.creator || translateVisibleText('未知作者')}${detail.data.characterVersion ? ` · ${detail.data.characterVersion}` : ''}`)),
+            h('div', { className: 'dcc-tags' }, ...detail.data.tags.map((tag, index) => h('span', { className: 'dcc-tag', key: `${tag}-${index}` }, rawText(tag)))),
           ),
         ),
         h(Field, { label: '开场参考' }, h('select', {
@@ -243,10 +249,10 @@ export function CharacterPanel({ sessionId, sessionBlank, close }) {
         h(TextDetail, { label: 'Message examples', value: detail.data.messageExample }),
         h(TextDetail, { label: 'System prompt（由 loader 按绑定设置处理）', value: detail.data.systemPrompt }),
         h(TextDetail, { label: 'Post-history instructions（由 loader 近似放置）', value: detail.data.postHistoryInstructions }),
-        detail.data.characterBook !== null ? h('div', { className: 'dcc-status' }, `内嵌 character_book 已无损保留（${Array.isArray(detail.data.characterBook.entries) ? detail.data.characterBook.entries.length : '未知'} 条）；绑定角色后由 Tavern loader 调用世界信息 matcher，解绑后不再参与后续请求。`) : null,
+        detail.data.characterBook !== null ? h('div', { className: 'dcc-status' }, uiText`内嵌 character_book 已无损保留（${Array.isArray(detail.data.characterBook.entries) ? detail.data.characterBook.entries.length : translateVisibleText('未知')} 条）；绑定角色后由 Tavern loader 调用世界信息 matcher，解绑后不再参与后续请求。`) : null,
         h(DiagnosticList, { title: '兼容警告', items: detail.compatibility.warnings }),
         h(DiagnosticList, { title: '需要 loader/其他模块处理', items: detail.compatibility.unsupportedFeatures }),
-        detail.compatibility.unknownMacroNames.length > 0 ? h('div', { className: 'dcc-status' }, `未知宏：${detail.compatibility.unknownMacroNames.join(', ')}`) : null,
+        detail.compatibility.unknownMacroNames.length > 0 ? h('div', { className: 'dcc-status' }, uiText`未知宏：${detail.compatibility.unknownMacroNames.join(', ')}`) : null,
         h('div', { className: 'dcc-actions' },
           h('a', { className: 'dcc-button', href: `${API_ROOT}/characters/${encodeURIComponent(detail.id)}/artifact`, download: '' }, '导出原件'),
           h('a', { className: 'dcc-button', href: `${API_ROOT}/characters/${encodeURIComponent(detail.id)}/json`, download: '' }, '导出 JSON'),
