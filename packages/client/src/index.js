@@ -293,7 +293,7 @@ function WorldInfoPanel({ sessionId, close }) {
         h('div', { className: 'dtv-resource-title' }, `运行诊断（${diagnostics.length}）`),
         h('ul', { className: 'dtv-list' }, ...diagnostics.map((item, index) => h('li', { key: `${item.code}-${index}` }, item.message))),
       ) : null,
-      h('p', { className: 'dtv-note' }, '保存会更新插件保存的角色卡副本及其 JSON 导出；为避免破坏签名或图片数据，最初导入的 PNG/JSON artifact 仍保持不变。当前 matcher 扫描已进入 Session 的历史；刚提交的输入可能在同一可见回合的下一 agent step（如工具继续）或下一用户回合触发关键词。'),
+      h('p', { className: 'dtv-note' }, '保存会更新插件保存的角色卡副本及其 JSON 导出；为避免破坏签名或图片数据，最初导入的 PNG/JSON artifact 仍保持不变。matcher 会在首次请求组装前把本步骤 claimed 输入与 Session 历史组合扫描，不会向历史写入副本。'),
     ),
   )
 }

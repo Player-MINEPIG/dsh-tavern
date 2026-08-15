@@ -107,6 +107,23 @@ function worldBooks(value) {
   })
 }
 
+function activation(value) {
+  return {
+    kind: value?.kind === 'durable-plus-pending-input' ? 'durable-plus-pending-input' : 'durable-history-only',
+    durableMessageCount: Number.isSafeInteger(value?.durableMessageCount) ? value.durableMessageCount : null,
+    pendingMessageCount: Number.isSafeInteger(value?.pendingMessageCount) ? value.pendingMessageCount : 0,
+    includedPendingMessageCount: Number.isSafeInteger(value?.includedPendingMessageCount) ? value.includedPendingMessageCount : 0,
+    duplicatePendingMessageCount: Number.isSafeInteger(value?.duplicatePendingMessageCount) ? value.duplicatePendingMessageCount : 0,
+    scannedMessageCount: Number.isSafeInteger(value?.scannedMessageCount) ? value.scannedMessageCount : null,
+    scannedCharacters: Number.isSafeInteger(value?.scannedCharacters) ? value.scannedCharacters : null,
+    truncated: value?.truncated === true,
+    claimEventSeqs: Array.isArray(value?.claimEventSeqs)
+      ? value.claimEventSeqs.filter(Number.isSafeInteger).slice(-4)
+      : [],
+    invalidEventCount: Number.isSafeInteger(value?.invalidEventCount) ? value.invalidEventCount : 0,
+  }
+}
+
 function latestHeaderEvent(session) {
   const events = Array.isArray(session?.events) ? session.events : []
   return events.findLast(event => event?.type === 'request/header') ?? null
@@ -196,6 +213,7 @@ export class TavernTraceRecorder {
         worldBooks: Array.isArray(resources.worldBooks) ? resources.worldBooks.slice(0, 32).map(resource).filter(Boolean) : [],
       },
       worldBooks: worldBooks(audit.worldBooks),
+      activation: activation(audit.activation),
       diagnostics: diagnostics(snapshot?.diagnostics ?? audit.diagnostics),
       authority: headerAuthority(null, null, expectedSystemText, expectedCallConfig),
       sensitiveContentStored: false,

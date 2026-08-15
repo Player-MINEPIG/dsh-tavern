@@ -20,6 +20,7 @@ import { PresetRuntime } from './preset-runtime.js'
 import { TavernProfileLoader } from './profile-loader.js'
 import { SessionSelectionStore } from './session-policy.js'
 import { createWorldBookAdapter } from './world-book-adapter.js'
+import { PendingInputProjection } from './pending-input-projection.js'
 import { secureTavernApi } from './api-security.js'
 import {
   TavernTraceRecorder,
@@ -162,6 +163,13 @@ export function apply(ctx, config = {}) {
     selections,
     maxProfileBytes: config.limits?.maxProfileBytes,
   })
+  const pendingInput = new PendingInputProjection({
+    maxScanCharacters: config.worldBook?.maxScanCharacters,
+    maxScanMessages: config.worldBook?.maxScanMessages,
+    maxQueuedCharacters: config.pendingInput?.maxQueuedCharacters,
+    maxQueuedMessages: config.pendingInput?.maxQueuedMessages,
+  })
+  runtime.registerActivationContextProvider(agent => pendingInput.activationContext(agent))
   const traceStore = new TavernTraceStore(storageDir, config.trace)
   if (traceStore.resetOversizedFile) {
     ctx.logger.warn?.('dsh-tavern: oversized legacy Tavern Trace storage exceeded the safe read limit and was reset')
@@ -205,6 +213,7 @@ export function apply(ctx, config = {}) {
 
   ctx.on('agent/session-start', ({ agent }) => {
     selections.ensureAgent(agent)
+    pendingInput.ensureSession(agent?.session)
   })
 
   ctx.on('agent/request', async (payload, next) => {
@@ -218,6 +227,8 @@ export function apply(ctx, config = {}) {
   })
 
   ctx.on('session/event', (session, event) => {
+    pendingInput.observeSessionEvent(session, event)
+    if (event?.type === 'turn/end') pendingInput.clearClaimed(session)
     traceSafely('header alignment', () => traceRecorder.observeSessionEvent(session, event))
   })
 
@@ -322,6 +333,7 @@ export function apply(ctx, config = {}) {
     userStore: { value: userStore, enumerable: false },
     traceStore: { value: traceStore, enumerable: false },
     traceRecorder: { value: traceRecorder, enumerable: false },
+    pendingInputProjection: { value: pendingInput, enumerable: false },
   })
   return store
 }
@@ -360,6 +372,7 @@ export {
   sessionPolicyConstants,
 } from './session-policy.js'
 export { createWorldBookAdapter } from './world-book-adapter.js'
+export { PendingInputProjection, pendingInputProjectionConstants } from './pending-input-projection.js'
 export { WorldBookStore, createWorldBookApiHandler } from '../../world-book-library/src/index.js'
 export { secureTavernApi, apiSecurityConstants } from './api-security.js'
 export { TavernTraceRecorder, TavernTraceStore } from '../../tavern-trace/src/index.js'

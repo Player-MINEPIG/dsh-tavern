@@ -15,19 +15,27 @@ function messageText(message) {
     : ''
 }
 
-function boundedScanText(model, agent, fallback, maxCharacters) {
-  let text = typeof fallback === 'string' ? fallback : ''
-  if (typeof agent?.session?.deriveMessages === 'function') {
-    const messages = agent.session.deriveMessages()
-      .map(messageText)
-      .filter(Boolean)
+function boundedScanText(model, context, maxCharacters, maxMessages) {
+  let text = typeof context.conversationText === 'string' ? context.conversationText : ''
+  let messages = Array.isArray(context.activationContext?.messages)
+    ? context.activationContext.messages.map(message => message?.text).filter(text => typeof text === 'string' && text !== '')
+    : null
+  if (messages === null && typeof context.agent?.session?.deriveMessages === 'function') {
+    messages = context.agent.session.deriveMessages().map(messageText).filter(Boolean)
+  }
+  if (messages !== null) {
     const depth = model.settings?.scanDepth
-    text = depth === 0 ? '' : (Number.isSafeInteger(depth) ? messages.slice(-depth) : messages).join('\n')
+    const depthBounded = depth === 0 ? [] : (Number.isSafeInteger(depth) ? messages.slice(-depth) : messages)
+    text = depthBounded.slice(-maxMessages).join('\n')
   }
   const originalLength = text.length
+  const activationOriginalLength = Number.isSafeInteger(context.activationContext?.metadata?.inputCharacters)
+    ? context.activationContext.metadata.inputCharacters
+    : originalLength
+  const truncatedBeforeAdapter = context.activationContext?.metadata?.truncated === true
   return originalLength <= maxCharacters
-    ? { text, truncated: false, originalLength }
-    : { text: text.slice(-maxCharacters), truncated: true, originalLength }
+    ? { text, truncated: truncatedBeforeAdapter, originalLength: Math.max(originalLength, activationOriginalLength) }
+    : { text: text.slice(-maxCharacters), truncated: true, originalLength: Math.max(originalLength, activationOriginalLength) }
 }
 
 function resolveArguments(storeOrOptions, maybeOptions) {
@@ -40,7 +48,10 @@ function projectBook(document, context, options) {
   const maxScanCharacters = Number.isSafeInteger(options.maxScanCharacters) && options.maxScanCharacters > 0
     ? options.maxScanCharacters
     : 64 * 1024
-  const scan = boundedScanText(model, context.agent, context.conversationText, maxScanCharacters)
+  const maxScanMessages = Number.isSafeInteger(options.maxScanMessages) && options.maxScanMessages > 0
+    ? Math.min(options.maxScanMessages, 1024)
+    : 128
+  const scan = boundedScanText(model, context, maxScanCharacters, maxScanMessages)
   const candidates = computeWorldBookCandidates(model, {
     text: scan.text,
     tokenBudget: model.settings?.tokenBudget ?? options.defaultTokenBudget,
@@ -69,10 +80,10 @@ function projectBook(document, context, options) {
     projected.diagnostics.push({
       code: 'WORLD_BOOK_SCAN_TEXT_TRUNCATED',
       severity: 'info',
-      message: `World-book scan input was limited to the most recent ${maxScanCharacters} characters`,
+      message: `World-book scan input was limited to the most recent ${scan.text.length} characters`,
       resourceId: document.id,
       originalCharacters: scan.originalLength,
-      scannedCharacters: maxScanCharacters,
+      scannedCharacters: scan.text.length,
     })
   }
   return projected
@@ -81,7 +92,7 @@ function projectBook(document, context, options) {
 export function createWorldBookAdapter(storeOrOptions = {}, maybeOptions = {}) {
   const { store, options } = resolveArguments(storeOrOptions, maybeOptions)
   return {
-    resolve({ selection, character, conversationText = '', agent } = {}) {
+    resolve({ selection, character, conversationText = '', activationContext = null, agent } = {}) {
       const results = []
       const diagnostics = []
 
@@ -97,7 +108,7 @@ export function createWorldBookAdapter(storeOrOptions = {}, maybeOptions = {}) {
             break
           }
           try {
-            results.push(projectBook(store.get(id), { agent, conversationText }, options))
+            results.push(projectBook(store.get(id), { agent, conversationText, activationContext }, options))
           } catch (error) {
             diagnostics.push({
               code: error?.code === 'WORLD_BOOK_NOT_FOUND' ? 'WORLD_BOOK_NOT_FOUND' : 'WORLD_BOOK_DOCUMENT_INVALID',
@@ -118,7 +129,10 @@ export function createWorldBookAdapter(storeOrOptions = {}, maybeOptions = {}) {
           const maxScanCharacters = Number.isSafeInteger(options.maxScanCharacters) && options.maxScanCharacters > 0
             ? options.maxScanCharacters
             : 64 * 1024
-          const scan = boundedScanText(model, agent, conversationText, maxScanCharacters)
+          const maxScanMessages = Number.isSafeInteger(options.maxScanMessages) && options.maxScanMessages > 0
+            ? Math.min(options.maxScanMessages, 1024)
+            : 128
+          const scan = boundedScanText(model, { agent, conversationText, activationContext }, maxScanCharacters, maxScanMessages)
           const candidates = computeWorldBookCandidates(model, {
             text: scan.text,
             tokenBudget: model.settings?.tokenBudget ?? options.defaultTokenBudget,
@@ -147,10 +161,10 @@ export function createWorldBookAdapter(storeOrOptions = {}, maybeOptions = {}) {
             projected.diagnostics.push({
               code: 'WORLD_BOOK_SCAN_TEXT_TRUNCATED',
               severity: 'info',
-              message: `World-book scan input was limited to the most recent ${maxScanCharacters} characters`,
+              message: `World-book scan input was limited to the most recent ${scan.text.length} characters`,
               resourceId: `character:${character.id}:embedded-world-book`,
               originalCharacters: scan.originalLength,
-              scannedCharacters: maxScanCharacters,
+              scannedCharacters: scan.text.length,
             })
           }
           results.push(projected)

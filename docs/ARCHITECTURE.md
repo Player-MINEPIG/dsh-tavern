@@ -22,7 +22,7 @@ packages/preset  packages/character  packages/user  packages/world-book-library
              \           |              |             /
        │
        ▼
-packages/tavern-loader ◄── DSH session/event（计划：PendingInputProjection）
+packages/tavern-loader ◄── DSH session/event（PendingInputProjection）
 DSH 编译策略、session/request 策略、Host hooks
        │
        ├── packages/tavern-trace
@@ -44,7 +44,7 @@ DSH system prompt + agent request
 | `user` | “用户如何管理自己的 Tavern 身份描述？” | 严格三字段文档、CRUD 持久化、API、UI、loader adapter | 头像、DSH Agent 身份、prompt 放置、Host seam |
 | `world-book` | “哪些 lore entries 候选应被激活？” | ST/角色内嵌格式、归一化、纯匹配/排序/预算与 loader 投影 | session 选择、DSH 注入、角色卡存储 |
 | `world-book-library` | “用户如何管理独立世界书资源？” | 原子 JSON 存储、CRUD/导出 API、编辑 UI、供 loader 读取的 document | session 选择所有权、matcher 复制、Host seam、角色卡内嵌书修改 |
-| `tavern-loader` | “当前资源怎样影响这次 DSH 请求？” | 编译选中预设、映射支持的 call config、append/replace 策略、Host/API 挂载；下一阶段独占 pending-input 投影 | 重新解释 ST 原始字段、实现具体 UI |
+| `tavern-loader` | “当前资源怎样影响这次 DSH 请求？” | 编译选中预设、映射支持的 call config、append/replace 策略、Host/API 挂载、独占 pending-input 投影 | 重新解释 ST 原始字段、实现具体 UI |
 | `tavern-trace` | “这次 loader 为什么得到这个组合？” | turn/step 对齐、资源摘要、世界书接受/拒绝原因、header 摘要引用、有界存储/API/并列 view | 保存正文、替代 request/header、append 会话事件或模型消息 |
 
 角色卡已经在 `tavern-format` 增加 adapter/model，并在 `character` 用例层提供管理与资源入口；用户资源由独立 `user` 用例层提供严格 `{id,name,description}` 文档；世界书格式兼容位于独立纯库 `packages/world-book`。所有资源最终由同一个 `tavern-loader` 组合。角色卡和用户模块都不读取预设排序，也不决定字段插入位置。
@@ -53,9 +53,9 @@ DSH system prompt + agent request
 
 统一 adapter、session 继承和 marker 契约见 `docs/LOADER_CONTRACT.md`；DSH 原生与插件增强消息流见 `docs/DSH_MESSAGE_FLOW.md`；世界书格式和投影细节见 `docs/world-book/DESIGN.md`。
 
-## 下一阶段：loader-owned ActivationContext
+## Loader-owned ActivationContext
 
-rc.6 的 `agent/inbox/spliced` 是公开、持久的 Session event；插入、替换、取消和 claim 都先 append 该事件并同步通知 `session/event`，随后实时 Inbox 才改变。下一阶段由 loader 在这个边界维护唯一 `PendingInputProjection`，把 durable history 与本次 claimed batch 组合为临时 `ActivationContext`，供 world-book matcher 和未来明确需要当前输入的运行策略只读消费。
+rc.6 的 `agent/inbox/spliced` 是公开、持久的 Session event；插入、替换、取消和 claim 都先 append 该事件并同步通知 `session/event`，随后实时 Inbox 才改变。loader 在这个边界维护唯一 `PendingInputProjection`，把 durable history 与本次 claimed batch 去重后组合为临时 `ActivationContext`，供 world-book matcher 只读消费。
 
 这个投影属于 Host adapter，不下沉到纯模块：
 

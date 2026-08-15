@@ -86,6 +86,7 @@ export class TavernProfileLoader {
     this.characterAdapter = null
     this.userAdapter = null
     this.worldBookAdapter = null
+    this.activationContextProvider = null
     this.contextCache = new WeakMap()
     this.assembledByAgent = new WeakMap()
   }
@@ -108,6 +109,13 @@ export class TavernProfileLoader {
     return () => { if (this.userAdapter === adapter) this.userAdapter = null }
   }
 
+  registerActivationContextProvider(provider) {
+    if (this.activationContextProvider !== null) throw new Error('An activation-context provider is already registered')
+    if (typeof provider !== 'function') throw new TypeError('Activation-context provider must be a function')
+    this.activationContextProvider = provider
+    return () => { if (this.activationContextProvider === provider) this.activationContextProvider = null }
+  }
+
   selection({ agent, sessionId } = {}) {
     return agent === undefined
       ? this.selections.get(sessionId)
@@ -118,12 +126,15 @@ export class TavernProfileLoader {
     const diagnostics = []
     const selection = this.selection(options)
     const preset = safeGet(this.presetStore, selection.presetId, 'preset', diagnostics)
-    const conversationText = options.conversationText ?? conversationTextFromAgent(options.agent)
+    const activationContext = options.activationContext
+      ?? (options.agent === undefined ? null : this.activationContextProvider?.(options.agent) ?? null)
+    const conversationText = options.conversationText ?? activationContext?.text ?? conversationTextFromAgent(options.agent)
     const shared = {
       selection,
       agent: options.agent,
       sessionId: options.agent?.id ?? options.sessionId ?? null,
       conversationText,
+      activationContext,
       context: options.context ?? {},
     }
 
@@ -174,6 +185,18 @@ export class TavernProfileLoader {
       diagnostics: clone(diagnostics),
       activeLoreEntries: compiled.activeLoreEntries,
       worldBooks: clone(worldBookResult.audit ?? { resources: [] }),
+      activation: clone(activationContext?.metadata ?? {
+        kind: 'durable-history-only',
+        durableMessageCount: null,
+        pendingMessageCount: 0,
+        includedPendingMessageCount: 0,
+        duplicatePendingMessageCount: 0,
+        scannedMessageCount: null,
+        scannedCharacters: conversationText.length,
+        truncated: false,
+        claimEventSeqs: [],
+        invalidEventCount: 0,
+      }),
       composition: {
         section: { name: 'dsh-tavern:profile', order: 10 },
         systemPromptMode: compiled.systemPromptMode,

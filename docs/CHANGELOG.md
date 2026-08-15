@@ -4,6 +4,38 @@ This is the staged implementation log for the prompt-preset experiment. It is
 kept separately from the product README so reviewers can follow intent,
 decisions, verification, and known limits chronologically.
 
+## 2026-08-15 — Phase 3 world-book early activation
+
+Purpose: let the current claimed input participate in world-book matching
+before the first system assembly without changing DSH message ownership.
+
+- Added the loader-owned `PendingInputProjection`, reconstructed exclusively
+  from public `agent/inbox/spliced` Session events. It handles next-turn and
+  next-step insertion, replacement, cancellation and claim semantics without
+  reading the private Inbox or appending any event.
+- Added one bounded `ActivationContext` combining durable messages with the
+  current claimed batch, deduplicated by stable message id and consumed once
+  at the first assembly. Message, character and pending-queue retention all
+  have configurable defaults and absolute hard limits.
+- Kept world-book format/policy pure and passed the activation value through
+  the loader adapter. A new one-step-session regression proves current input
+  activates lore in step 1 with no empty step, extra model call or fake
+  durable message.
+- Extended Tavern Trace with only turn/step-associated counts, truncation,
+  deduplication and claim event sequence metadata. No input body or body hash
+  is persisted.
+- Updated the runtime UI explanations and the architecture, loader, message
+  flow, prompt pipeline and Trace contracts. Detailed acceptance is recorded
+  in `docs/world-book-early/IMPLEMENTATION_AND_ACCEPTANCE.md`.
+
+Verification:
+
+- `npm run check` rebuilt `dist/client.js` and completed 137 tests: 136 passed,
+  none failed, and the opt-in external copyrighted fixture was skipped.
+- `npm run pack:check` included the new projection in the expected 50-file
+  package and excluded tests, implementation docs, runtime data and local
+  execution contracts.
+
 ## 2026-08-15 — Deterministic local-package refresh
 
 Purpose: prevent a development install from loading a mixed package after a
