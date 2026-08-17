@@ -40,6 +40,14 @@ import {
   createSessionTemplateApiHandler,
   isSessionTemplateApiPath,
 } from '../../session-template/src/index.js'
+import {
+  RpModeController,
+  createRpModeApiHandler,
+  isRpModeApiPath,
+  registerRpCommands,
+  resolveRpConfig,
+  rpModeConstants,
+} from './rp-mode.js'
 
 export const name = 'dsh-tavern'
 export const inject = ['systemPrompt']
@@ -238,6 +246,24 @@ export function apply(ctx, config = {}) {
   const worldBookSelectionPolicy = createWorldBookSelectionPolicy(worldBookStore, selections, userWorldBooks)
   const userSelectionPolicy = createUserSelectionPolicy(userStore, selections, userWorldBooks)
   const userWorldBookBindingPolicy = createUserWorldBookBindingPolicy(userStore, worldBookStore, userWorldBooks)
+  const rpMode = new RpModeController({
+    selections,
+    uiSettings: uiSettingsStore,
+    agents: () => ctx.get('agents'),
+    sandboxDefault: () => ctx.get('sandboxPolicy')?.defaultMode,
+    logger: ctx.logger,
+    section: resolveRpConfig(config.rpMode ?? {}).section,
+  })
+  const selectCharacter = characterSelectionPolicy.select.bind(characterSelectionPolicy)
+  characterSelectionPolicy.select = (sessionId, patch) => {
+    const previousId = characterSelectionPolicy.selection(sessionId)?.characterCardId ?? null
+    const result = selectCharacter(sessionId, patch)
+    rpMode.followCharacterChange(sessionId, {
+      previousId,
+      nextId: result?.characterCardId ?? null,
+    })
+    return result
+  }
   const sessionConfigurations = new SessionConfigurationService({
     templates: sessionTemplateStore,
     selections,
@@ -275,11 +301,37 @@ export function apply(ctx, config = {}) {
     order: 10,
     text: (context) => runtime.forAssembleContext(context).systemText,
   })
+  ctx.systemPrompt.section({
+    name: rpModeConstants.sectionName,
+    order: rpModeConstants.sectionOrder,
+    text: (context) => {
+      if (context.agent === undefined) return ''
+      return rpMode.isActive(context.agent) ? rpMode.section : ''
+    },
+  })
 
   ctx.on('agent/session-start', ({ agent }) => {
     selections.ensureAgent(agent)
     pendingInput.ensureSession(agent?.session)
+    try {
+      rpMode.onSessionStart(agent)
+    } catch (error) {
+      ctx.logger.warn?.(`dsh-tavern: RP mode session start failed: ${error instanceof Error ? error.message : String(error)}`)
+    }
   })
+
+  ctx.on('agent/pre-step', async (payload, next) => {
+    const decision = await next()
+    if (decision?.kind === 'reject' || payload?.signal?.aborted) return decision
+    try {
+      rpMode.onBoundary(payload.agent)
+    } catch (error) {
+      ctx.logger.warn?.(`dsh-tavern: RP mode pre-step commit failed: ${error instanceof Error ? error.message : String(error)}`)
+    }
+    return decision
+  })
+
+  registerRpCommands(ctx, rpMode)
 
   ctx.on('agent/request', async (payload, next) => {
     const snapshot = runtime.assembledFor(payload.agent) ?? runtime.compile({ agent: payload.agent })
@@ -310,14 +362,17 @@ export function apply(ctx, config = {}) {
       ? assembly.contexts
       : [...assembly.contexts, ...snapshot.runtimeContexts]
     if (snapshot.systemPromptMode !== 'replace') return { ...assembly, contexts }
-    const profileSections = assembly.sections.filter((section) => section.name === 'dsh-tavern:profile')
-    return {
-      ...assembly,
-      sections: profileSections.length > 0 || snapshot.systemText === ''
-        ? profileSections
-        : [{ name: 'dsh-tavern:profile', text: snapshot.systemText }],
-      contexts,
+    const profileSections = assembly.sections.filter((section) => (
+      section.name === 'dsh-tavern:profile' || section.name === rpModeConstants.sectionName
+    ))
+    const sections = profileSections.length > 0 || snapshot.systemText === ''
+      ? profileSections
+      : [{ name: 'dsh-tavern:profile', text: snapshot.systemText }]
+    const rpSection = assembly.sections.find((section) => section.name === rpModeConstants.sectionName)
+    if (rpSection !== undefined && !sections.some((section) => section.name === rpModeConstants.sectionName)) {
+      sections.push(rpSection)
     }
+    return { ...assembly, sections, contexts }
   })
 
   if (ctx.get('webServer') !== undefined) {
@@ -370,13 +425,29 @@ export function apply(ctx, config = {}) {
     const traceApi = createTavernTraceApiHandler(traceStore)
     const sessionTemplateApi = createSessionTemplateApiHandler(sessionTemplateStore, sessionConfigurations, {
       onChange: change => {
-        if (change.kind === 'session-configuration-applied') notifyChange()
+        if (change.kind === 'session-configuration-applied') {
+          notifyChange()
+          const agent = ctx.get('agents')?.get?.(change.sessionId)
+          if (agent !== undefined) {
+            try { rpMode.onSessionStart(agent) } catch (error) {
+              ctx.logger.warn?.(`dsh-tavern: RP mode apply failed: ${error instanceof Error ? error.message : String(error)}`)
+            }
+          }
+        }
       },
     })
     const uiSettingsApi = createUiSettingsApiHandler(uiSettingsStore)
+    const rpModeApi = createRpModeApiHandler(rpMode, {
+      beforeChange: ({ sessionId, active }) => {
+        notifyChange()
+        if (typeof sessionId !== 'string' || typeof active !== 'boolean') return
+      },
+    })
     const api = secureTavernApi(
       (req, res) => isUiSettingsApiPath(req.url)
         ? uiSettingsApi(req, res)
+        : isRpModeApiPath(req.url)
+          ? rpModeApi(req, res)
         : isSessionTemplateApiPath(req.url)
           ? sessionTemplateApi(req, res)
         : isUserApiPath(req.url)
@@ -414,6 +485,7 @@ export function apply(ctx, config = {}) {
     traceStore: { value: traceStore, enumerable: false },
     traceRecorder: { value: traceRecorder, enumerable: false },
     pendingInputProjection: { value: pendingInput, enumerable: false },
+    rpMode: { value: rpMode, enumerable: false },
   })
   return store
 }
@@ -459,6 +531,19 @@ export {
 } from './user-world-book-policy.js'
 export { createWorldBookAdapter } from './world-book-adapter.js'
 export { PendingInputProjection, pendingInputProjectionConstants } from './pending-input-projection.js'
+export {
+  DEFAULT_RP_SECTION,
+  DEFAULT_RP_STATE,
+  RpModeController,
+  createRpModeApiHandler,
+  foldSandboxMode,
+  hasOpenTurn,
+  isRpModeApiPath,
+  normalizeRpState,
+  registerRpCommands,
+  resolveRpConfig,
+  rpModeConstants,
+} from './rp-mode.js'
 export { WorldBookStore, createWorldBookApiHandler } from '../../world-book-library/src/index.js'
 export { secureTavernApi, apiSecurityConstants } from './api-security.js'
 export {

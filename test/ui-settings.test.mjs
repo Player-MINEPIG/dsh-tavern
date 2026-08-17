@@ -40,6 +40,7 @@ test('UI settings are global, bounded, atomic, and survive store recreation', ()
       schemaVersion: 1,
       locale: 'en',
       scale: 1.25,
+      rpFollowCharacter: true,
     })
     assert.deepEqual(new UiSettingsStore(directory).get(), store.get())
     assert.equal(readFileSync(join(directory, 'ui-settings.json'), 'utf8').includes('session'), false)
@@ -55,6 +56,7 @@ test('UI settings whitelist locale, scale, increments, and fields', () => {
   assert.throws(() => normalizeUiSettings({ locale: 'en', scale: 2 }), /scale/)
   assert.throws(() => normalizeUiSettings({ locale: 'en', scale: 1.03 }), /increments/)
   assert.throws(() => normalizeUiSettings({ locale: 'en', scale: 1, sessionId: 'forbidden' }), /Unsupported/)
+  assert.throws(() => normalizeUiSettings({ locale: 'en', scale: 1, rpFollowCharacter: 'yes' }), /rpFollowCharacter/)
 })
 
 test('oversized or malformed persisted UI settings fall back without reading resource data', () => {
@@ -76,7 +78,7 @@ test('UI settings API supports read, replace, reset, and bounded failures', asyn
     assert.equal((await invoke(handler)).body.settings.locale, 'zh-CN')
     const saved = await invoke(handler, { method: 'PUT', body: { locale: 'en', scale: 0.85 } })
     assert.equal(saved.status, 200)
-    assert.deepEqual(saved.body.settings, { schemaVersion: 1, locale: 'en', scale: 0.85 })
+    assert.deepEqual(saved.body.settings, { schemaVersion: 1, locale: 'en', scale: 0.85, rpFollowCharacter: true })
     assert.equal((await invoke(handler, { method: 'PUT', body: { locale: 'en', scale: 1, extra: true } })).status, 400)
     assert.equal((await invoke(handler, { method: 'PUT', rawBody: '{bad' })).status, 400)
     assert.equal((await invoke(handler, { method: 'PUT', rawBody: 'x'.repeat(uiSettingsConstants.maxSettingsBytes + 1) })).status, 413)
@@ -90,6 +92,7 @@ test('UI settings API supports read, replace, reset, and bounded failures', asyn
 test('root loader routes UI settings through the existing single secured API prefix', () => {
   const source = readFileSync(new URL('../packages/tavern-loader/src/index.js', import.meta.url), 'utf8')
   assert.match(source, /isUiSettingsApiPath\(req\.url\)[\s\S]*uiSettingsApi\(req, res\)/)
+  assert.match(source, /isRpModeApiPath\(req\.url\)[\s\S]*rpModeApi\(req, res\)/)
   assert.equal(source.match(/path: API_ROOT/g)?.length, 1)
   assert.equal(source.match(/secureTavernApi\(/g)?.length, 1)
 })

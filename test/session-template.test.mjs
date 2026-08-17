@@ -53,6 +53,12 @@ const selection = {
     preferCharacterSystemPrompt: false,
     preferCharacterPostHistory: true,
   },
+  rp: {
+    active: false,
+    source: null,
+    followSuppressed: false,
+    sandboxBefore: null,
+  },
 }
 
 test('template projection stays identical to the loader selection schema', () => {
@@ -86,7 +92,7 @@ test('session templates persist only the bounded Tavern selection projection', (
     assert.equal(reloaded.state.selectedId, created.id)
     const stored = JSON.parse(readFileSync(join(directory, 'session-templates.json'), 'utf8'))
     assert.deepEqual(Object.keys(stored.templates[0].selection).toSorted(), [
-      'character', 'characterCardId', 'presetId', 'userId', 'worldBookIds',
+      'character', 'characterCardId', 'presetId', 'rp', 'userId', 'worldBookIds',
     ])
 
     reloaded.delete(created.id)
@@ -151,6 +157,7 @@ test('current settings and templates apply as one clean target selection', () =>
       userId: 'user-a',
       worldBookIds: [],
       character: selection.character,
+      rp: selection.rp,
     })
     assert.deepEqual(selections.get('target-template'), selection)
   } finally {

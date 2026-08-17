@@ -1,13 +1,20 @@
 {
   "sectionNames": [
-    "dsh-tavern:profile"
+    "dsh-tavern:profile",
+    "rp:policy"
   ],
   "selection": {
     "presetId": null,
     "characterCardId": null,
     "userId": "snapshot-user",
     "worldBookIds": [],
-    "character": {}
+    "character": {},
+    "rp": {
+      "active": false,
+      "source": null,
+      "followSuppressed": false,
+      "sandboxBefore": null
+    }
   },
   "resources": {
     "preset": null,

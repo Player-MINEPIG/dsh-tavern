@@ -7,6 +7,7 @@ import {
   writeFileSync,
 } from 'node:fs'
 import { join, resolve } from 'node:path'
+import { normalizeRpState } from './rp-mode.js'
 
 const SCHEMA_VERSION = 2
 const LEGACY_SCHEMA_VERSION = 1
@@ -57,6 +58,7 @@ export function normalizeSelection(value = {}) {
     userId: stringOrNull(value?.userId),
     worldBookIds: normalizeWorldBookIds(value?.worldBookIds),
     character: normalizeCharacterOptions(value?.character),
+    rp: normalizeRpState(value?.rp),
   }
 }
 

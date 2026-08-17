@@ -22,6 +22,7 @@ test('session selections persist and regular forks snapshot their parent', () =>
       userId: null,
       worldBookIds: [],
       character: {},
+      rp: { active: false, source: null, followSuppressed: false, sandboxBefore: null },
     })
 
     selections.set('parent', { presetId: 'changed' })
@@ -46,6 +47,7 @@ test('delegated subagents start without parent or global Tavern resources', () =
       userId: null,
       worldBookIds: [],
       character: {},
+      rp: { active: false, source: null, followSuppressed: false, sandboxBefore: null },
     })
   } finally {
     rmSync(directory, { recursive: true, force: true })

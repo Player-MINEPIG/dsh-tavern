@@ -18,7 +18,12 @@ const MAX_SETTINGS_BYTES = 1024
 const MIN_SCALE = 0.75
 const MAX_SCALE = 1.5
 const SCALE_STEP = 0.05
-const DEFAULT_UI_SETTINGS = Object.freeze({ schemaVersion: 1, locale: DEFAULT_UI_LOCALE, scale: 1 })
+const DEFAULT_UI_SETTINGS = Object.freeze({
+  schemaVersion: 1,
+  locale: DEFAULT_UI_LOCALE,
+  scale: 1,
+  rpFollowCharacter: true,
+})
 
 function isRecord(value) {
   return value !== null && typeof value === 'object' && !Array.isArray(value)
@@ -39,18 +44,30 @@ function normalizeScale(value) {
 
 export function normalizeUiSettings(value) {
   if (!isRecord(value)) throw new TypeError('UI settings must be an object')
-  const allowed = new Set(['locale', 'scale'])
+  const allowed = new Set(['locale', 'scale', 'rpFollowCharacter'])
   const unexpected = Object.keys(value).find(key => !allowed.has(key))
   if (unexpected !== undefined) throw new TypeError(`Unsupported UI setting "${unexpected}"`)
   if (!isSupportedUiLocale(value.locale)) throw new TypeError(`locale must be one of: ${SUPPORTED_UI_LOCALES.join(', ')}`)
-  return { schemaVersion: 1, locale: value.locale, scale: normalizeScale(value.scale) }
+  if (value.rpFollowCharacter !== undefined && typeof value.rpFollowCharacter !== 'boolean') {
+    throw new TypeError('rpFollowCharacter must be a boolean')
+  }
+  return {
+    schemaVersion: 1,
+    locale: value.locale,
+    scale: normalizeScale(value.scale),
+    rpFollowCharacter: value.rpFollowCharacter !== false,
+  }
 }
 
 function readSettings(path) {
   try {
     if (statSync(path).size > MAX_SETTINGS_BYTES) return cloneDefault()
     const parsed = JSON.parse(readFileSync(path, 'utf8'))
-    return normalizeUiSettings({ locale: parsed?.locale, scale: parsed?.scale })
+    return normalizeUiSettings({
+      locale: parsed?.locale,
+      scale: parsed?.scale,
+      rpFollowCharacter: parsed?.rpFollowCharacter,
+    })
   } catch (error) {
     if (error?.code === 'ENOENT' || error instanceof SyntaxError || error instanceof TypeError) return cloneDefault()
     throw error
@@ -90,7 +107,11 @@ export class UiSettingsStore {
   }
 
   reset() {
-    return this.set({ locale: DEFAULT_UI_SETTINGS.locale, scale: DEFAULT_UI_SETTINGS.scale })
+    return this.set({
+      locale: DEFAULT_UI_SETTINGS.locale,
+      scale: DEFAULT_UI_SETTINGS.scale,
+      rpFollowCharacter: DEFAULT_UI_SETTINGS.rpFollowCharacter,
+    })
   }
 }
 

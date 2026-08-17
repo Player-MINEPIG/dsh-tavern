@@ -29,6 +29,8 @@ test('selected preset enters system prompt and model call config seams', async (
     store.select(preset.id)
 
     assert.match(sections[0].text({}), /Contract marker/)
+    assert.equal(sections[1].name, 'rp:policy')
+    assert.equal(sections[1].text({}), '')
     const callConfig = await listeners.get('agent/request')({}, async () => ({ provider: 'test', model: 'model' }))
     assert.deepEqual(callConfig, {
       provider: 'test',

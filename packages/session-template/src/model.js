@@ -16,6 +16,21 @@ function characterOptions(value) {
   return result
 }
 
+const RP_SOURCES = new Set(['command', 'character-follow'])
+const SANDBOX_MODES = new Set(['read-only', 'workspace-write', 'danger-full-access'])
+
+function rpState(value) {
+  if (value === null || typeof value !== 'object' || Array.isArray(value)) {
+    return { active: false, source: null, followSuppressed: false, sandboxBefore: null }
+  }
+  return {
+    active: value.active === true,
+    source: RP_SOURCES.has(value.source) ? value.source : null,
+    followSuppressed: value.followSuppressed === true,
+    sandboxBefore: SANDBOX_MODES.has(value.sandboxBefore) ? value.sandboxBefore : null,
+  }
+}
+
 /**
  * Persistent template shape only. The loader remains authoritative when this
  * projection is applied to a real SessionSelectionStore.
@@ -32,6 +47,7 @@ export function normalizeTemplateSelection(value = {}) {
     userId: stringOrNull(value?.userId),
     worldBookIds,
     character: characterOptions(value?.character),
+    rp: rpState(value?.rp),
   }
 }
 
