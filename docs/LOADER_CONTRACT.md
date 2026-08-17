@@ -68,13 +68,13 @@ SessionSelectionStore ─────────────────┘
 
 “维持当前设置新开对话”与配置模板只复制上述 selection 投影，不调用普通 fork，也不读取或写入 Session events。浏览器通过 DSH 公开的 `workspaces.connectWorkspace(workspaceId)` 得到真实 blank session id；loader API 再次解析来源、验证每个资源，并以一次 `SessionSelectionStore.set(targetId, completeSelection)` 原子提交，之后浏览器才调用公开 `sessions.open(targetId)`。
 
-模板删除资源时不被静默改写：preset、角色/greeting、用户或独立世界书的悬空 id 由 preview/apply 返回结构化诊断并阻止创建。DSH 创建失败发生在 selection 写入之前；原子写失败不发布内存状态且不导航。模板不得包含 durable history、Trace、Inbox、turn/step、运行态或资源正文。完整存储/API 上限和人工验收见 `docs/session-template/IMPLEMENTATION_AND_ACCEPTANCE.md`。
+模板删除资源时不被静默改写：preset、角色/greeting、用户或独立世界书的悬空 id 由 preview/apply 返回结构化诊断并阻止创建。DSH 创建失败发生在 selection 写入之前；原子写失败不发布内存状态且不导航。模板不得包含 durable history、Trace、Inbox、turn/step、运行态或资源正文。
 
 ## Profile safety budget
 
 `TavernProfileLoader` 对自己生成的单一 `dsh-tavern:profile` section 施加默认 512 KiB UTF-8 上限；`limits.maxProfileBytes` 可以收紧或放宽，但实现硬上限为 2 MiB。世界书 parser/store 在 normalize 之前共用流式结构守卫：每资源最多 10,000 条、深度 32、100,000 节点、单字符串 1 MiB、对象键 1,024 字符；adapter 另对本次请求的独立书、用户书与内嵌书合计施加 10,000 条硬上限，超出资源跳过并诊断。合计预算按确定性的组合顺序先到先得：session 显式独立书、随后用户绑定独立书（ID 稳定去重），最后角色卡内嵌书；每个资源整体预留，不能完整放入时整本不扫描。因此前面的独立书占满 10,000 条时，内嵌书会被跳过并产生 `WORLD_BOOK_RUNTIME_TOTAL_LIMIT`，这是有意的安全/确定性策略，不是随机遗漏。在这些前置守卫后，compiler 最多考虑排名最前的 4,096 个 lore 候选，并在生成 wrapper 前将原始 lore 正文限制为 profile budget 的两倍。世界书自身的 `tokenBudget` 与 `ignoreBudget` 只决定 ST 兼容候选，不能改变任何 Host 硬上限。
 
-角色卡编辑内嵌 `character_book` 时会先执行共享结构守卫和 parser；原始 JSON/PNG 导入目前只在角色格式层确认 `character_book` 是 object，然后无损保留，不在落盘前执行同一深度/节点/条目守卫。32 MiB artifact 上限限制总输入，loader 首次消费时仍会通过 `parseCharacterBook()` 安全失败并报告 `EMBEDDED_WORLD_BOOK_INVALID`，所以匹配放大路径已被挡住；但这仍是导入期防御纵深缺口，会允许一个最终不可运行的内嵌书先进入资源库。后续应在不破坏原件无损保存的前提下，为标准化的运行副本增加导入期结构诊断或拒绝策略。
+角色卡编辑内嵌 `character_book` 时会先执行共享结构守卫和 parser；原始 JSON/PNG 导入目前只在角色格式层确认 `character_book` 是 object，然后无损保留未知字段，不在落盘前执行同一深度/节点/条目守卫。32 MiB 导入上限限制总输入，loader 首次消费时仍会通过 `parseCharacterBook()` 安全失败并报告 `EMBEDDED_WORLD_BOOK_INVALID`，所以匹配放大路径已被挡住；但这仍是导入期防御纵深缺口，会允许一个最终不可运行的内嵌书先进入资源库。后续应在不破坏当前文档未知字段保留的前提下，为标准化的运行副本增加导入期结构诊断或拒绝策略。
 
 若全部内容超限，compiler 用原有候选顺序保留能完整装入的最高排名 lore 条目前缀，并报告 `TAVERN_PROFILE_LORE_LIMITED`。若移除所有 lore 后仍超限，则抛出 `TAVERN_PROFILE_TOO_LARGE`；preset、角色字段或用户描述不会被从中间截断。
 
@@ -82,7 +82,7 @@ SessionSelectionStore ─────────────────┘
 
 用户资源继续严格保持 `{ id, name, description }`。“用户绑定世界书”由统一 loader policy 的 `user-world-book-bindings.json` 维护独立关系，不把 world-book id 写入描述正文，也不让 `user` adapter 自己运行 matcher。loader 在每次 compile 时先取当前 session 显式 `worldBookIds`，再追加当前用户关联的独立书，并按 ID 稳定去重；因此显式来源优先，同一本书只交给共享 adapter 一次。
 
-audit 同时保留原始 `sessionSelection` 和 `worldBookSelection` 的 explicit/user-bound/effective/duplicate 四组 ID；active view 的 `selection.worldBookIds` 是实际有效集合，供 launcher 显示真实组合。解绑或切换用户只移除用户来源，不会改写 session 显式来源；删除用户清理关系和 session 用户选择，删除世界书则清理所有关系和 session 显式引用。关系、API 和原子存储的详细边界见 `docs/user-world-books/IMPLEMENTATION_AND_ACCEPTANCE.md`。
+audit 同时保留原始 `sessionSelection` 和 `worldBookSelection` 的 explicit/user-bound/effective/duplicate 四组 ID；active view 的 `selection.worldBookIds` 是实际有效集合，供 launcher 显示真实组合。解绑或切换用户只移除用户来源，不会改写 session 显式来源；删除用户清理关系和 session 用户选择，删除世界书则清理所有关系和 session 显式引用。
 
 ## Adapter boundary
 

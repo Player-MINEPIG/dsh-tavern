@@ -1,6 +1,6 @@
 # dsh-tavern 中文使用指南
 
-状态：2026-08-15，对应首个公开发布候选版本。本文介绍实际操作；消息流、架构和安全契约分别见 `DSH_MESSAGE_FLOW.md`、`ARCHITECTURE.md` 与 `LOADER_CONTRACT.md`。
+状态：2026-08-18，对应当前角色卡创建/编辑与单份文档存储。本文介绍实际操作；消息流、架构和安全契约分别见 `DSH_MESSAGE_FLOW.md`、`ARCHITECTURE.md` 与 `LOADER_CONTRACT.md`。
 
 ## 1. 打开和切换面板
 
@@ -28,10 +28,10 @@
 
 角色卡面板支持 SillyTavern V1/V2/V3 JSON，以及包含 `chara`/`ccv3` 数据的 PNG。
 
-1. 导入后可查看格式诊断、角色字段、greeting 和内嵌 `character_book` 状态；插件同时保存标准化文档和原始 artifact。
-2. 选择 greeting，并配置是否优先采用角色卡 system prompt 与 post-history instructions。
+1. 导入或创建后可编辑名称、描述、性格、场景、开场白（含备选）、示例对话等字段；保存字段与绑定到会话是两步。插件只保存一份当前角色卡文档；PNG 导入另留去掉卡数据后的封面图，没有封面时导出 PNG 使用占位图。没有「导出原件」。
+2. 选择 greeting，并配置是否优先采用角色卡 system prompt 与 post-history instructions。已绑定当前卡时，改开场或策略但尚未点绑定，会提示未应用到会话。
 3. 点击绑定/更新应用到当前 session；另一个 session 可以绑定不同角色，delegated subagent 默认不继承 Tavern 资源。
-4. 解绑只移除 session 选择；删除会删除插件资源库中的角色卡及原件，并清理引用。
+4. 解绑只移除 session 选择；删除会删除插件资源库中的角色卡文档和封面图，并清理引用。
 
 description、personality、scenario、example dialogue 等字段会按预设 marker 或稳定 fallback 进入统一 Tavern profile。greeting 目前只是明确标注的参考内容，不会伪造成已经发生的 assistant 历史消息。
 
@@ -92,8 +92,8 @@ Trace 不保存完整 Tavern profile、用户消息、资源正文或工具 sche
 
 ```text
 presets/                       预设标准化文档
-characters/                    角色卡标准化文档
-character-artifacts/           导入的角色卡 JSON/PNG 原件
+characters/                    角色卡当前文档
+character-artifacts/           PNG 导入留下的封面图（无卡数据）
 world-books/                   独立世界书
 users/                         用户名字与描述
 session-selections.json        per-session 选择

@@ -7,6 +7,7 @@ import { join } from 'node:path'
 import {
   CharacterStore,
   MAX_CHARACTER_WORLD_BOOK_BODY_BYTES,
+  characterStoreConstants,
   createCharacterApiHandler,
 } from '../packages/character/src/index.js'
 
@@ -86,12 +87,10 @@ test('character API imports raw bytes, reads resources, selects, exports, and de
     const selection = await invoke(handler, { url: '/dsh-tavern/api/character-selection?sessionId=session-a' })
     assert.equal(selection.json.character.name, 'API synthetic')
 
-    const artifact = await invoke(handler, { url: `/dsh-tavern/api/characters/${id}/artifact` })
-    assert.deepEqual(artifact.bytes, source)
-    assert.equal(artifact.headers['content-type'], 'application/json')
     const json = await invoke(handler, { url: `/dsh-tavern/api/characters/${id}/json` })
     assert.equal(JSON.parse(json.bytes).character_book.entries[0].keys[0], 'harbor')
-    assert.deepEqual((await invoke(handler, { url: `/dsh-tavern/api/characters/${id}/artifact` })).bytes, source)
+    const missingOriginal = await invoke(handler, { url: `/dsh-tavern/api/characters/${id}/artifact` })
+    assert.equal(missingOriginal.status, 404)
 
     const removed = await invoke(handler, { method: 'DELETE', url: `/dsh-tavern/api/characters/${id}` })
     assert.equal(removed.status, 200)
@@ -103,6 +102,83 @@ test('character API imports raw bytes, reads resources, selects, exports, and de
       'character-selection-changed',
       'character-deleted',
     ])
+  } finally {
+    rmSync(directory, { recursive: true, force: true })
+  }
+})
+
+test('character API patches fields, exports current PNG, and rejects invalid updates', async () => {
+  const directory = mkdtempSync(join(tmpdir(), 'dsh-tavern-character-patch-'))
+  const store = new CharacterStore(directory)
+  const handler = createCharacterApiHandler(store)
+  const source = Buffer.from(JSON.stringify({
+    spec: 'chara_card_v2',
+    spec_version: '2.0',
+    data: { name: 'Patchable', first_mes: 'First', alternate_greetings: ['Second'] },
+  }))
+  try {
+    const imported = await invoke(handler, {
+      method: 'POST',
+      url: '/dsh-tavern/api/characters/import?filename=patchable.json',
+      body: source,
+    })
+    const id = imported.json.character.id
+    const patched = await invoke(handler, {
+      method: 'PATCH',
+      url: `/dsh-tavern/api/characters/${id}`,
+      body: { description: 'Edited', firstMessage: 'First edited' },
+    })
+    assert.equal(patched.status, 200)
+    assert.equal(patched.json.character.data.description, 'Edited')
+    assert.equal(JSON.parse((await invoke(handler, { url: `/dsh-tavern/api/characters/${id}/json` })).bytes).data.description, 'Edited')
+
+    const png = await invoke(handler, { url: `/dsh-tavern/api/characters/${id}/png` })
+    assert.equal(png.status, 200)
+    assert.equal(png.headers['content-type'], 'image/png')
+    assert.match(png.headers['content-disposition'], /\.png/)
+
+    const missing = await invoke(handler, {
+      method: 'PATCH',
+      url: '/dsh-tavern/api/characters/missing',
+      body: { description: 'nope' },
+    })
+    assert.equal(missing.status, 404)
+    const invalid = await invoke(handler, {
+      method: 'PATCH',
+      url: `/dsh-tavern/api/characters/${id}`,
+      body: { characterBook: {} },
+    })
+    assert.equal(invalid.status, 400)
+    assert.equal(invalid.json.error.code, 'INVALID_CHARACTER_REQUEST')
+
+    const oversized = await invoke(handler, {
+      method: 'PATCH',
+      url: `/dsh-tavern/api/characters/${id}`,
+      body: Buffer.from(`{"description":"${'x'.repeat(characterStoreConstants.maxCharacterDocumentBytes)}}"`),
+    })
+    assert.equal(oversized.status, 413)
+    assert.equal(oversized.json.error.code, 'CHARACTER_DOCUMENT_TOO_LARGE')
+  } finally {
+    rmSync(directory, { recursive: true, force: true })
+  }
+})
+
+test('character API creates a blank card', async () => {
+  const directory = mkdtempSync(join(tmpdir(), 'dsh-tavern-character-create-'))
+  const store = new CharacterStore(directory)
+  const changes = []
+  const handler = createCharacterApiHandler(store, { onChange: (change) => changes.push(change) })
+  try {
+    const created = await invoke(handler, {
+      method: 'POST',
+      url: '/dsh-tavern/api/characters',
+      body: { name: 'Created card' },
+    })
+    assert.equal(created.status, 201)
+    assert.equal(created.json.character.name, 'Created card')
+    assert.equal(store.get(created.json.character.id).data.firstMessage, '')
+    assert.equal(store.coverImage(created.json.character.id), null)
+    assert.deepEqual(changes.map((item) => item.kind), ['character-created'])
   } finally {
     rmSync(directory, { recursive: true, force: true })
   }

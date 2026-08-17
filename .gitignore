@@ -6,3 +6,4 @@ data/
 *.tgz
 coverage/
 .DS_Store
+docs/dev-plans/

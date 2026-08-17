@@ -209,3 +209,35 @@ test('profile assembly considers at most 4096 ranked lore entries', () => {
   assert.equal(result.activeLoreEntries.at(-1), 'bounded-4095')
   assert.equal(result.diagnostics.find(item => item.code === 'TAVERN_PROFILE_LORE_LIMITED')?.omittedLoreEntries, 4)
 })
+
+test('V1 character description and greeting enter the compiled profile', () => {
+  const result = compileTavernProfile({
+    character: {
+      id: 'v1-card',
+      data: {
+        name: 'V1 Guide',
+        description: 'V1 description text',
+        firstMessage: 'V1 hello',
+      },
+    },
+  })
+  assert.match(result.systemText, /V1 description text/)
+  assert.match(result.systemText, /greeting-reference/)
+  assert.match(result.systemText, /V1 hello/)
+})
+
+test('V2 alternate greeting index 1 uses the second greeting string', () => {
+  const result = compileTavernProfile({
+    character: {
+      id: 'v2-card',
+      data: {
+        name: 'V2 Guide',
+        firstMessage: 'First greeting',
+        alternateGreetings: ['Second greeting'],
+      },
+    },
+    characterSelection: { greetingIndex: 1 },
+  })
+  assert.match(result.systemText, /Second greeting/)
+  assert.doesNotMatch(result.systemText, /First greeting/)
+})

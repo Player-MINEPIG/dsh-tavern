@@ -308,12 +308,17 @@ export const constants = Object.freeze({
 
 export {
   characterCardConstants,
+  createBlankCharacterCard,
+  editCharacterCard,
   embeddedCharacterBookResource,
   exportCharacterCardJson,
+  exportCharacterCardPng,
   parseSillyTavernCharacterCard,
 } from './character.js'
 export {
+  embedCharacterCardPng,
   extractCharacterCardPng,
   isPng,
   pngCharacterCardConstants,
+  stripCharacterCardPng,
 } from './png-card.js'

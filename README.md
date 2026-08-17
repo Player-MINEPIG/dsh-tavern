@@ -21,6 +21,7 @@
   - [新会话与配置模板](#新会话与配置模板)
   - [Tavern Trace](#tavern-trace)
 - [特点](#特点)
+- [文档](#文档)
 - [安全风险](#安全风险)
 - [参考](#参考)
 
@@ -31,7 +32,7 @@
 当前版本已经提供一个完整的 DSH 插件，包含：
 
 - SillyTavern Chat Completion 预设；
-- V1/V2/V3 JSON 与 PNG 角色卡；
+- V1/V2/V3 JSON 与 PNG 角色卡（可创建、导入后编辑，导出当前 JSON/PNG）；
 - 独立世界书、角色卡内嵌世界书及用户绑定世界书；
 - 只有名字和描述的用户资料；
 - per-session 资源绑定、干净新会话与配置模板；
@@ -172,7 +173,7 @@ node scripts/install.mjs --profile web --dsh-home <我的绝对路径>，报告�
 <DSH_HOME>/profiles/<profile>/node_modules/dsh-tavern/data/
 ```
 
-这里保存预设、角色卡原件与标准化文档、独立世界书、用户、用户—世界书关系、session 选择、配置模板、UI 设置和有界 Trace。若配置了外部 `storageDir`，数据改存该目录。
+这里保存预设、角色卡文档（PNG 导入另存封面图）、独立世界书、用户、用户—世界书关系、session 选择、配置模板、UI 设置和有界 Trace。若配置了外部 `storageDir`，数据改存该目录。
 
 卸载：
 
@@ -210,12 +211,12 @@ npm run plugin:uninstall
 
 ### 角色卡
 
-导入 ST JSON/PNG 角色卡，选择 greeting，以及角色 system prompt、post-history instructions 的使用策略，再绑定到当前 session。角色字段会通过统一 loader 与预设 marker、用户资料和世界书组合；greeting 不会伪造成既有 assistant 历史。
+导入 ST JSON/PNG 角色卡，或创建空白卡。导入后可编辑名称、描述、性格、场景、开场白（含备选）、示例对话、创作者备注、system prompt、post-history instructions 和标签等字段；保存与绑定分开，目录下拉只用于浏览。内嵌世界书仍在世界书面板编辑。
 
-当前不提供“创建角色卡”功能。角色卡创作者已经有更成熟的专用创建工具，本项目把范围集中在兼容导入、检查、管理、绑定和运行时加载。
+绑定到当前 session 时可选择 greeting，以及是否采用卡内 system prompt / post-history instructions。导出 JSON / PNG 都是当前内容，没有「导出原件」；PNG 导入只保留封面图，没有封面时使用占位图。角色字段由统一 loader 与预设 marker、用户资料和世界书组合；greeting 不会伪造成既有 assistant 历史。
 
 <p align="center">
-  <img src="docs/assets/character-card.png" alt="Tavern 角色卡导入、检查与会话绑定侧栏" width="520">
+  <img src="docs/assets/character-card.png" alt="Tavern 角色卡导入、编辑与会话绑定侧栏" width="520">
 </p>
 
 ### 世界书
@@ -252,7 +253,7 @@ npm run plugin:uninstall
 
 - **一个插件、统一加载器**：格式解析、资源管理和 DSH 运行时分层，但只安装一个根插件，不产生多个插件之间的版本与加载顺序问题。
 - **按 session 隔离**：preset、角色卡、用户和独立世界书都由统一 selection 管理；普通 fork 固化父选择，delegated subagent 默认不继承 Tavern 内容。
-- **兼容数据优先**：识别 ST 常用格式和 marker，保留未知字段与角色卡原始 artifact，为后续兼容升级保留空间。
+- **兼容数据优先**：识别 ST 常用格式和 marker，保留未知字段；角色卡只存一份当前文档，不为导入原件另存第二份卡数据。
 - **当前轮世界书识别**：通过 DSH 公开的 `agent/inbox/spliced` 建立有界临时投影，不增加空转 step、不伪造消息，也不读取私有 Inbox。
 - **可解释而不过度记录**：Tavern Trace 展示资源和匹配决策，但不持久化完整 prompt、输入正文或工具 schema。
 - **安全默认值**：loopback peer/Host/origin 检查、原子持久化、请求/文件/结构/profile/Trace 上限，以及默认禁用原生 JavaScript regex。
@@ -260,7 +261,16 @@ npm run plugin:uninstall
 - **可扩展 i18n**：全部 Tavern UI 使用语义 key 与显式 raw-data 边界；增加语言只需注册 locale、增加独立 catalog 和测试，无需修改各业务组件。
 - **诚实降级**：不把 system 标签宣传成真实 role message，不把 greeting 伪造成历史，也不把 Trace 当作最终请求权威。
 
-架构、消息流和运行契约分别见 [架构说明](docs/ARCHITECTURE.md)、[DSH 消息流](docs/DSH_MESSAGE_FLOW.md) 与 [Loader contract](docs/LOADER_CONTRACT.md)。
+## 文档
+
+- [中文使用指南](docs/USAGE.zh-CN.md)：逐模块操作、数据和兼容边界
+- [安装与卸载](docs/INSTALLATION.md)：跨平台参数、刷新恢复与备份
+- [架构说明](docs/ARCHITECTURE.md)：单插件分层与发布边界
+- [Loader contract](docs/LOADER_CONTRACT.md)：session 选择、profile 与安全预算
+- [DSH 消息流](docs/DSH_MESSAGE_FLOW.md)：DSH 原生流程以及本插件的介入点
+- [Prompt pipeline](docs/PROMPT_PIPELINE.md)：ST / TauriTavern / 本仓库的兼容对照
+- [世界书设计](docs/world-book/DESIGN.md)：World Info 格式、匹配与投影契约
+- [CHANGELOG](docs/CHANGELOG.md)：公开发布演进
 
 ## 安全风险
 
@@ -272,7 +282,7 @@ npm run plugin:uninstall
 - **不安全正则为显式兼容模式**：ST `/pattern/flags` 默认不执行。开启 `worldBook.allowUnsafeRegex` 后，JavaScript `RegExp` 仍没有超时保证，即使已有长度和扫描上限也存在 ReDoS 风险。
 - **replace 模式会移除模型可见的 DSH system 说明**：它不会关闭执行层安全机制，但可能降低 Code Mode、结构化输出和工具使用可靠性。
 - **运行中保护并非全局事务锁**：显式切换 preset、角色卡、用户和世界书时会拒绝运行中的 agent；模板 API 应用到既有目标、删除/编辑已引用资源，以及修改用户—世界书关系等间接变更尚未统一锁定。已冻结请求不会被回写，但并发修改存在 assembly 时序边界。
-- **角色卡内嵌书的导入期诊断仍可加强**：原始角色 artifact 有 32 MiB 上限；编辑和运行时解析有完整结构守卫，但导入时不会提前拒绝所有最终不可运行的超复杂内嵌书。
+- **角色卡内嵌书的导入期诊断仍可加强**：角色卡导入有 32 MiB 上限；编辑和运行时解析有完整结构守卫，但导入时不会提前拒绝所有最终不可运行的超复杂内嵌书。
 - **兼容不等于完整复刻 ST**：真实 role/depth 拓扑、greeting 历史和部分高级世界书状态尚未实现。请以 Tavern Trace 与 DSH `request/header` 验证实际行为。
 
 更完整的安全预算、运行态变更缺口和数据边界见 [Loader contract](docs/LOADER_CONTRACT.md)。

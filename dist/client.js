@@ -174,11 +174,13 @@ var zh_CN_default = Object.freeze({
   "preset.error.noSessionToUnbind": "\u5F53\u524D\u6CA1\u6709\u53EF\u89E3\u9664\u7ED1\u5B9A\u7684\u4F1A\u8BDD",
   "character.title": "Tavern \u89D2\u8272\u5361",
   "character.import": "\u5BFC\u5165 JSON / PNG",
+  "character.create": "\u65B0\u5EFA\u89D2\u8272\u5361",
+  "character.defaultName": "\u65B0\u89D2\u8272",
   "character.browse": "\u6D4F\u89C8\u89D2\u8272\u5E93",
   "character.libraryEmpty": "\u89D2\u8272\u5E93\u4E3A\u7A7A",
   "character.sessionBinding": "\u5F53\u524D\u4F1A\u8BDD\uFF1A{session}\uFF1B\u7ED1\u5B9A\uFF1A{name}",
   "character.loading": "\u6B63\u5728\u52A0\u8F7D\u89D2\u8272\u5E93\u2026",
-  "character.emptyHint": "\u5BFC\u5165\u4E00\u5F20\u5408\u6210\u6216\u81EA\u6709\u6388\u6743\u7684 SillyTavern \u89D2\u8272\u5361\u4EE5\u67E5\u770B\u8BE6\u60C5\u3002",
+  "character.emptyHint": "\u65B0\u5EFA\u4E00\u5F20\u7A7A\u767D\u89D2\u8272\u5361\uFF0C\u6216\u5BFC\u5165\u5408\u6210/\u81EA\u6709\u6388\u6743\u7684 SillyTavern \u89D2\u8272\u5361\u3002",
   "character.imageAlt": "{name} \u89D2\u8272\u5361\u56FE\u7247",
   "character.greeting": "\u5F00\u573A\u53C2\u8003",
   "character.greeting.default": "\u9ED8\u8BA4\u5F00\u573A",
@@ -187,7 +189,10 @@ var zh_CN_default = Object.freeze({
   "character.preferSystem": "\u5141\u8BB8 loader \u4F18\u5148\u91C7\u7528\u5361\u5185 system_prompt",
   "character.preferPostHistory": "\u5141\u8BB8 loader \u91C7\u7528 post_history_instructions\uFF08\u5B9E\u9645\u4F4D\u7F6E\u7531 loader \u51B3\u5B9A\uFF09",
   "character.bind": "\u7ED1\u5B9A\u5230\u5F53\u524D\u4F1A\u8BDD",
-  "character.bindUpdate": "\u66F4\u65B0\u4F1A\u8BDD\u7ED1\u5B9A",
+  "character.bindUpdate": "\u66F4\u65B0\u4F1A\u8BDD\u7ED1\u5B9A\uFF08\u672A\u4FDD\u5B58\uFF09",
+  "character.bindingUnsaved": "\u7ED1\u5B9A\u6709\u672A\u4FDD\u5B58\u4FEE\u6539\uFF0C\u5F53\u524D\u5F00\u573A\u9009\u62E9\u5C1A\u672A\u5E94\u7528\u5230\u4F1A\u8BDD\u3002",
+  "character.bindingApplied": "\u9762\u677F\u663E\u793A\u7684\u5F00\u573A\u9009\u62E9\u5DF2\u5E94\u7528\u5230\u5F53\u524D\u4F1A\u8BDD\u3002",
+  "character.bindingAppliedButton": "\u5F53\u524D\u7ED1\u5B9A\u5DF2\u5E94\u7528",
   "character.unbind": "\u89E3\u9664\u7ED1\u5B9A",
   "character.moduleNote": "\u89D2\u8272\u5361\u6A21\u5757\u8D1F\u8D23\u4FDD\u5B58\u6807\u51C6\u5316\u8D44\u6E90\u548C\u4F1A\u8BDD\u9009\u62E9\uFF1B\u5B9E\u9645 system profile \u4E0E\u5185\u5D4C\u4E16\u754C\u4FE1\u606F\u5339\u914D\u7531 Tavern loader \u5728\u6BCF\u6B21\u8BF7\u6C42\u65F6\u7EDF\u4E00\u5904\u7406\uFF0C\u4E0D\u4F1A\u4F2A\u9020 assistant \u5386\u53F2\u3002",
   "character.field.creatorNotes": "Creator notes",
@@ -202,20 +207,41 @@ var zh_CN_default = Object.freeze({
   "character.warnings": "\u517C\u5BB9\u8B66\u544A ({count})",
   "character.unsupported": "\u9700\u8981 loader/\u5176\u4ED6\u6A21\u5757\u5904\u7406 ({count})",
   "character.unknownMacros": "\u672A\u77E5\u5B8F\uFF1A{names}",
-  "character.exportOriginal": "\u5BFC\u51FA\u539F\u4EF6",
+  "character.exportPng": "\u5BFC\u51FA PNG",
+  "character.saveResource": "\u4FDD\u5B58\u5B57\u6BB5\uFF08\u672A\u4FDD\u5B58\uFF09",
+  "character.resourceSaved": "\u5B57\u6BB5\u5DF2\u4FDD\u5B58",
+  "character.saveFirst": "\u8BF7\u5148\u4FDD\u5B58\u4FEE\u6539",
+  "character.dirty": "\u5F53\u524D\u89D2\u8272\u5361\u5B57\u6BB5\u6709\u672A\u4FDD\u5B58\u4FEE\u6539\u3002",
+  "character.savedNote": "\u5F53\u524D\u663E\u793A\u7684\u89D2\u8272\u5361\u5B57\u6BB5\u5747\u5DF2\u4FDD\u5B58\u3002",
+  "character.field.nickname": "\u6635\u79F0",
+  "character.field.creator": "\u4F5C\u8005",
+  "character.field.characterVersion": "\u89D2\u8272\u7248\u672C",
+  "character.field.tags": "\u6807\u7B7E",
+  "character.tagsPlaceholder": "\u6807\u7B7E\u4E00, \u6807\u7B7E\u4E8C",
+  "character.field.firstMessage": "\u9ED8\u8BA4\u5F00\u573A",
+  "character.alternateGreetings": "\u5907\u9009\u5F00\u573A",
+  "character.addGreeting": "\u6DFB\u52A0\u5907\u9009\u5F00\u573A",
   "character.delete": "\u5220\u9664\u89D2\u8272\u5361",
-  "character.confirmDelete": "\u5220\u9664\u89D2\u8272\u5361\u201C{name}\u201D\uFF1F\u539F\u59CB\u5BFC\u5165\u6587\u4EF6\u4E5F\u4F1A\u88AB\u5220\u9664\u3002",
+  "character.confirmDelete": "\u5220\u9664\u89D2\u8272\u5361\u201C{name}\u201D\uFF1F",
   "character.confirmHistoricalSwitch": "\u5F53\u524D\u4F1A\u8BDD\u5DF2\u6709\u5386\u53F2\u3002\u66F4\u6362\u89D2\u8272\u53EA\u5F71\u54CD\u540E\u7EED\u8BF7\u6C42\uFF0C\u4E0D\u4F1A\u91CD\u5199\u5DF2\u6709\u6D88\u606F\uFF1B\u7EE7\u7EED\u5417\uFF1F",
+  "character.confirmCloseDirty": "\u5F53\u524D\u89D2\u8272\u5361\u6709\u672A\u4FDD\u5B58\u4FEE\u6539\u3002\u4ECD\u7136\u5173\u95ED\u5417\uFF1F",
+  "character.confirmDiscardForSwitch": "\u5F53\u524D\u89D2\u8272\u5361\u6709\u672A\u4FDD\u5B58\u4FEE\u6539\u3002\u4ECD\u7136\u5207\u6362\u5417\uFF1F",
+  "character.confirmDiscardRefresh": "\u5F53\u524D\u89D2\u8272\u5361\u6709\u672A\u4FDD\u5B58\u4FEE\u6539\u3002\u4ECD\u7136\u5237\u65B0\u5417\uFF1F",
+  "character.confirmDiscardForCreate": "\u5F53\u524D\u89D2\u8272\u5361\u6709\u672A\u4FDD\u5B58\u4FEE\u6539\u3002\u653E\u5F03\u4FEE\u6539\u5E76\u65B0\u5EFA\u89D2\u8272\u5361\u5417\uFF1F",
   "character.status.loaded": "\u89D2\u8272\u5E93\u5DF2\u52A0\u8F7D",
   "character.status.refreshed": "\u89D2\u8272\u72B6\u6001\u5DF2\u5237\u65B0",
   "character.status.libraryRefreshed": "\u89D2\u8272\u5E93\u5DF2\u5237\u65B0",
   "character.status.imported": "\u89D2\u8272\u5361\u5DF2\u5BFC\u5165\uFF1B\u5C1A\u672A\u7ED1\u5B9A\u5230\u4F1A\u8BDD",
+  "character.status.created": "\u5DF2\u521B\u5EFA\u7A7A\u767D\u89D2\u8272\u5361\uFF1B\u5C1A\u672A\u7ED1\u5B9A\u5230\u4F1A\u8BDD",
   "character.status.bound": "\u89D2\u8272\u9009\u62E9\u5DF2\u4FDD\u5B58\uFF1B\u5B9E\u9645\u5BF9\u8BDD\u52A0\u8F7D\u7531 Tavern loader \u7EDF\u4E00\u5904\u7406",
   "character.status.unbound": "\u5F53\u524D\u4F1A\u8BDD\u5DF2\u89E3\u9664\u89D2\u8272\u7ED1\u5B9A",
   "character.status.deleted": "\u89D2\u8272\u5361\u5DF2\u5220\u9664\uFF0C\u76F8\u5173\u4F1A\u8BDD\u7ED1\u5B9A\u5DF2\u6E05\u9664",
   "character.status.detailsLoaded": "\u89D2\u8272\u8BE6\u60C5\u5DF2\u52A0\u8F7D",
+  "character.status.saved": "\u89D2\u8272\u5361\u5DF2\u4FDD\u5B58\uFF1B\u5DF2\u7ED1\u5B9A\u4F1A\u8BDD\u7684\u4E0B\u4E00\u6B21\u8BF7\u6C42\u4F1A\u4F7F\u7528\u65B0\u5B57\u6BB5",
+  "character.status.skippedRefresh": "\u6709\u672A\u4FDD\u5B58\u7684\u89D2\u8272\u5361\u4FEE\u6539\uFF0C\u5DF2\u8DF3\u8FC7\u5237\u65B0",
   "character.error.needSession": "\u8BF7\u5148\u521B\u5EFA\u6216\u6253\u5F00\u4E00\u4E2A\u4F1A\u8BDD\u518D\u7ED1\u5B9A\u89D2\u8272",
   "character.error.noSessionToUnbind": "\u5F53\u524D\u6CA1\u6709\u53EF\u89E3\u7ED1\u7684\u4F1A\u8BDD",
+  "character.error.saveFirst": "\u8BF7\u5148\u4FDD\u5B58\u89D2\u8272\u5361\u5B57\u6BB5\u518D\u7ED1\u5B9A",
   "world.title": "\u4E16\u754C\u4FE1\u606F\uFF08World Book\uFF09",
   "world.lorebookTitle": "\u4E16\u754C\u4FE1\u606F\uFF08Lorebook\uFF09",
   "world.importJson": "\u5BFC\u5165 JSON",
@@ -248,7 +274,7 @@ var zh_CN_default = Object.freeze({
   "world.infoEmpty": "\u5F53\u524D\u4F1A\u8BDD\u6CA1\u6709\u53EF\u7528\u4E16\u754C\u4FE1\u606F\u3002\u7ED1\u5B9A\u542B character_book \u7684\u89D2\u8272\u5361\u540E\uFF0C\u5176\u5185\u5D4C\u6761\u76EE\u4F1A\u81EA\u52A8\u7531 loader \u5339\u914D\uFF1B\u89E3\u7ED1\u89D2\u8272\u4F1A\u540C\u65F6\u79FB\u9664\u8BE5\u6765\u6E90\u3002",
   "world.infoMeta": "\u89D2\u8272\u5361\u5185\u5D4C \xB7 {count} \u6761\u3002\u6298\u53E0\u6807\u9898\u76F4\u63A5\u663E\u793A\u8BE5\u6761\u76EE\u7684\u89E6\u53D1\u65B9\u5F0F\uFF1B\u5C55\u5F00\u540E\u53EF\u7F16\u8F91\u5173\u952E\u8BCD\u3001\u903B\u8F91\u3001\u5185\u5BB9\u3001\u4F4D\u7F6E\u548C\u6392\u5E8F\u3002",
   "world.infoPendingIds": "\u5DF2\u9009\u62E9 {count} \u4E2A\u72EC\u7ACB\u4E16\u754C\u4FE1\u606F ID\uFF0C\u4F46\u72EC\u7ACB\u8D44\u6E90\u5E93/API \u5C1A\u672A\u63A5\u5165\uFF0C\u672C\u9636\u6BB5\u4E0D\u4F1A\u52A0\u8F7D\u8FD9\u4E9B ID\u3002",
-  "world.infoSaveNote": "\u4FDD\u5B58\u4F1A\u66F4\u65B0\u63D2\u4EF6\u4FDD\u5B58\u7684\u89D2\u8272\u5361\u526F\u672C\u53CA\u5176 JSON \u5BFC\u51FA\uFF1B\u4E3A\u907F\u514D\u7834\u574F\u7B7E\u540D\u6216\u56FE\u7247\u6570\u636E\uFF0C\u6700\u521D\u5BFC\u5165\u7684 PNG/JSON artifact \u4ECD\u4FDD\u6301\u4E0D\u53D8\u3002matcher \u4F1A\u5728\u9996\u6B21\u8BF7\u6C42\u7EC4\u88C5\u524D\u628A\u672C\u6B65\u9AA4 claimed \u8F93\u5165\u4E0E Session \u5386\u53F2\u7EC4\u5408\u626B\u63CF\uFF0C\u4E0D\u4F1A\u5411\u5386\u53F2\u5199\u5165\u526F\u672C\u3002",
+  "world.infoSaveNote": "\u4FDD\u5B58\u4F1A\u66F4\u65B0\u89D2\u8272\u5361\u6587\u6863\u53CA\u5176 JSON/PNG \u5BFC\u51FA\u3002matcher \u4F1A\u5728\u9996\u6B21\u8BF7\u6C42\u7EC4\u88C5\u524D\u628A\u672C\u6B65\u9AA4 claimed \u8F93\u5165\u4E0E Session \u5386\u53F2\u7EC4\u5408\u626B\u63CF\uFF0C\u4E0D\u4F1A\u5411\u5386\u53F2\u5199\u5165\u526F\u672C\u3002",
   "world.entry.untitled": "\u65B0\u6761\u76EE {id}",
   "world.entry.fallback": "\u6761\u76EE {id}",
   "world.entry.title": "\u6761\u76EE\u6807\u9898",
@@ -612,11 +638,13 @@ var en_default = Object.freeze({
   "preset.error.noSessionToUnbind": "There is no session to unbind",
   "character.title": "Tavern character card",
   "character.import": "Import JSON / PNG",
+  "character.create": "New character card",
+  "character.defaultName": "New character",
   "character.browse": "Browse character library",
   "character.libraryEmpty": "Character library is empty",
   "character.sessionBinding": "Current session: {session}; Binding: {name}",
   "character.loading": "Loading character library\u2026",
-  "character.emptyHint": "Import a synthetic or properly licensed SillyTavern character card to view its details.",
+  "character.emptyHint": "Create a blank character card or import a synthetic or properly licensed SillyTavern card.",
   "character.imageAlt": "{name} character card image",
   "character.greeting": "Greeting reference",
   "character.greeting.default": "Default greeting",
@@ -625,7 +653,10 @@ var en_default = Object.freeze({
   "character.preferSystem": "Allow the loader to prefer the card system_prompt",
   "character.preferPostHistory": "Allow the loader to use post_history_instructions (the loader determines placement)",
   "character.bind": "Bind to current session",
-  "character.bindUpdate": "Update session binding",
+  "character.bindUpdate": "Update session binding (unsaved)",
+  "character.bindingUnsaved": "The binding has unsaved changes; the current greeting is not yet applied.",
+  "character.bindingApplied": "The greeting shown in this panel is applied to the current session.",
+  "character.bindingAppliedButton": "Current binding applied",
   "character.unbind": "Unbind",
   "character.moduleNote": "The character-card module stores normalized resources and session selection. The Tavern loader handles the system profile and embedded World Info on each request without fabricating assistant history.",
   "character.field.creatorNotes": "Creator notes",
@@ -640,20 +671,41 @@ var en_default = Object.freeze({
   "character.warnings": "Compatibility warnings ({count})",
   "character.unsupported": "Requires loader/other module handling ({count})",
   "character.unknownMacros": "Unknown macros: {names}",
-  "character.exportOriginal": "Export original",
+  "character.exportPng": "Export PNG",
+  "character.saveResource": "Save fields (unsaved)",
+  "character.resourceSaved": "Fields saved",
+  "character.saveFirst": "Save changes first",
+  "character.dirty": "This character card has unsaved field changes.",
+  "character.savedNote": "The displayed character card fields are saved.",
+  "character.field.nickname": "Nickname",
+  "character.field.creator": "Creator",
+  "character.field.characterVersion": "Character version",
+  "character.field.tags": "Tags",
+  "character.tagsPlaceholder": "tag-one, tag-two",
+  "character.field.firstMessage": "Default greeting",
+  "character.alternateGreetings": "Alternate greetings",
+  "character.addGreeting": "Add alternate greeting",
   "character.delete": "Delete character card",
-  "character.confirmDelete": "Delete character card \u201C{name}\u201D? The original imported file will also be deleted.",
+  "character.confirmDelete": "Delete character card \u201C{name}\u201D?",
   "character.confirmHistoricalSwitch": "This session already has history. Changing the character affects only later requests and does not rewrite existing messages. Continue?",
+  "character.confirmCloseDirty": "This character card has unsaved changes. Close anyway?",
+  "character.confirmDiscardForSwitch": "This character card has unsaved changes. Switch anyway?",
+  "character.confirmDiscardRefresh": "This character card has unsaved changes. Refresh anyway?",
+  "character.confirmDiscardForCreate": "This character card has unsaved changes. Discard them and create a new card?",
   "character.status.loaded": "Character library loaded",
   "character.status.refreshed": "Character status refreshed",
   "character.status.libraryRefreshed": "Character library refreshed",
   "character.status.imported": "Character card imported; it is not yet bound to a session",
+  "character.status.created": "Blank character card created; it is not yet bound to a session",
   "character.status.bound": "Character selection saved; the Tavern loader handles runtime loading",
   "character.status.unbound": "Character unbound from the current session",
   "character.status.deleted": "Character card deleted and related bindings cleared",
   "character.status.detailsLoaded": "Character details loaded",
+  "character.status.saved": "Character card saved; bound sessions will use the new fields on the next request",
+  "character.status.skippedRefresh": "Unsaved character edits were kept; refresh skipped",
   "character.error.needSession": "Create or open a session before binding a character",
   "character.error.noSessionToUnbind": "There is no session to unbind",
+  "character.error.saveFirst": "Save character field changes before binding",
   "world.title": "World Info (World Book)",
   "world.lorebookTitle": "World Info (Lorebook)",
   "world.importJson": "Import JSON",
@@ -686,7 +738,7 @@ var en_default = Object.freeze({
   "world.infoEmpty": "No World Info is available for this session. Bind a character card containing character_book to let the loader match its entries; unbinding removes that source.",
   "world.infoMeta": "Embedded character book \xB7 {count} entries. The collapsed title shows how the entry triggers; expand it to edit keywords, logic, content, position, and order.",
   "world.infoPendingIds": "{count} standalone World Info IDs are selected, but the standalone library/API is not wired in this phase and those IDs will not be loaded.",
-  "world.infoSaveNote": "Saving updates the plugin copy of the character card and its JSON export. The original PNG/JSON artifact remains unchanged. Before the first request assembly, the matcher scans this step\u2019s claimed input together with Session history without writing a duplicate into history.",
+  "world.infoSaveNote": "Saving updates the character card document and its JSON/PNG export. Before the first request assembly, the matcher scans this step\u2019s claimed input together with Session history without writing a duplicate into history.",
   "world.entry.untitled": "New entry {id}",
   "world.entry.fallback": "Entry {id}",
   "world.entry.title": "Entry title",
@@ -1530,6 +1582,62 @@ function defaultCharacterSelection(characterCardId) {
     }
   };
 }
+function characterBindingOptions(value) {
+  const options = value !== null && typeof value === "object" && value.character !== null && typeof value.character === "object" ? value.character : {};
+  return {
+    greetingIndex: Number(options.greetingIndex ?? 0),
+    preferCharacterSystemPrompt: options.preferCharacterSystemPrompt !== false,
+    preferCharacterPostHistory: options.preferCharacterPostHistory !== false
+  };
+}
+function characterBindingDirty(selection, binding) {
+  if (selection === null || typeof selection !== "object" || binding === null || typeof binding !== "object") return false;
+  if (selection.characterCardId !== binding.characterCardId) return false;
+  const applied = characterBindingOptions(selection);
+  const pending = characterBindingOptions(binding);
+  return applied.greetingIndex !== pending.greetingIndex || applied.preferCharacterSystemPrompt !== pending.preferCharacterSystemPrompt || applied.preferCharacterPostHistory !== pending.preferCharacterPostHistory;
+}
+function characterEditorDraft(character) {
+  if (character === null || typeof character !== "object") return null;
+  const data = character.data ?? {};
+  return {
+    name: typeof data.name === "string" ? data.name : "",
+    nickname: typeof data.nickname === "string" ? data.nickname : "",
+    description: typeof data.description === "string" ? data.description : "",
+    personality: typeof data.personality === "string" ? data.personality : "",
+    scenario: typeof data.scenario === "string" ? data.scenario : "",
+    firstMessage: typeof data.firstMessage === "string" ? data.firstMessage : "",
+    alternateGreetings: Array.isArray(data.alternateGreetings) ? data.alternateGreetings.filter((item) => typeof item === "string") : [],
+    messageExample: typeof data.messageExample === "string" ? data.messageExample : "",
+    creatorNotes: typeof data.creatorNotes === "string" ? data.creatorNotes : "",
+    systemPrompt: typeof data.systemPrompt === "string" ? data.systemPrompt : "",
+    postHistoryInstructions: typeof data.postHistoryInstructions === "string" ? data.postHistoryInstructions : "",
+    tagsText: Array.isArray(data.tags) ? data.tags.filter((item) => typeof item === "string").join(", ") : "",
+    creator: typeof data.creator === "string" ? data.creator : "",
+    characterVersion: typeof data.characterVersion === "string" ? data.characterVersion : ""
+  };
+}
+function characterEditorDirty(draft, saved) {
+  return JSON.stringify(draft) !== JSON.stringify(saved);
+}
+function characterEditorPatch(draft) {
+  return {
+    name: draft.name,
+    nickname: draft.nickname,
+    description: draft.description,
+    personality: draft.personality,
+    scenario: draft.scenario,
+    firstMessage: draft.firstMessage,
+    alternateGreetings: [...draft.alternateGreetings],
+    messageExample: draft.messageExample,
+    creatorNotes: draft.creatorNotes,
+    systemPrompt: draft.systemPrompt,
+    postHistoryInstructions: draft.postHistoryInstructions,
+    tags: draft.tagsText.split(",").map((item) => item.trim()).filter(Boolean),
+    creator: draft.creator,
+    characterVersion: draft.characterVersion
+  };
+}
 
 // packages/character/src/client.js
 var h2 = createLocalizedElement(import_react2.createElement);
@@ -1538,7 +1646,7 @@ function announceTavernRefresh2() {
   window.dispatchEvent(new CustomEvent("dsh-tavern:refresh", { detail: { source: "character" } }));
 }
 var css2 = `
-.dcc-panel{position:absolute;top:0;right:0;bottom:0;width:min(440px,calc(100vw - 56px));pointer-events:auto;border-left:1px solid var(--dsw-alias-border-l2);box-shadow:var(--ds-shadow-3,-8px 0 28px rgba(0,0,0,.18));background:var(--dsw-alias-bg-base);color:var(--dsw-alias-label-primary);display:flex;flex-direction:column;font-family:Inter,var(--dsw-font-family),sans-serif}.dcc-header{height:52px;box-sizing:border-box;display:flex;align-items:center;gap:8px;padding:0 14px;border-bottom:1px solid var(--dsw-alias-border-l2);flex:none}.dcc-title{font-size:16px;font-weight:650;flex:1}.dcc-close{border:0;background:transparent;color:var(--dsw-alias-label-tertiary);cursor:pointer;border-radius:7px;padding:6px 8px;font-size:14px}.dcc-body{min-height:0;overflow:auto;padding:12px;display:flex;flex-direction:column;gap:12px}.dcc-toolbar,.dcc-actions{display:grid;grid-template-columns:1fr 1fr;gap:8px}.dcc-button{min-height:36px;border:1px solid var(--dsw-alias-border-l2);border-radius:8px;background:var(--dsw-alias-button-secondary-fill,var(--dsw-alias-bg-base));color:var(--dsw-alias-label-primary);cursor:pointer;padding:7px 10px;font-size:13px;text-decoration:none;display:flex;align-items:center;justify-content:center;box-sizing:border-box}.dcc-button:hover:not(:disabled){background:var(--dsw-alias-interactive-bg-hover)}.dcc-button:disabled{opacity:.5;cursor:default}.dcc-primary{background:var(--dsw-alias-state-business-primary);color:white;border-color:transparent}.dcc-danger{color:var(--dsw-alias-state-error)}.dcc-field{display:flex;flex-direction:column;gap:5px}.dcc-label{font-size:12px;color:var(--dsw-alias-label-tertiary);font-weight:600}.dcc-select{box-sizing:border-box;width:100%;height:36px;padding:0 9px;border:1px solid var(--dsw-alias-border-l2);border-radius:7px;background:var(--dsw-alias-bg-base);color:var(--dsw-alias-label-primary);font:inherit;font-size:13px}.dcc-note,.dcc-meta{font-size:13px;line-height:1.5;color:var(--dsw-alias-label-tertiary);margin:0;overflow-wrap:anywhere}.dcc-status{font-size:13px;line-height:1.45;border-radius:7px;padding:7px 9px;background:var(--dsw-specific-tip);overflow-wrap:anywhere}.dcc-status[data-error=true]{color:var(--dsw-alias-state-error)}.dcc-card{border-top:1px solid var(--dsw-alias-border-l1);padding-top:12px;display:flex;flex-direction:column;gap:10px}.dcc-card-head{display:flex;gap:11px}.dcc-avatar{width:76px;height:100px;object-fit:cover;border-radius:9px;border:1px solid var(--dsw-alias-border-l1);background:var(--dsw-alias-bg-container)}.dcc-card-title{font-size:16px;font-weight:650;margin:0 0 5px}.dcc-tags{display:flex;gap:5px;flex-wrap:wrap}.dcc-tag{font-size:12px;border:1px solid var(--dsw-alias-border-l1);border-radius:999px;padding:2px 7px;color:var(--dsw-alias-label-secondary)}.dcc-check{display:flex;gap:7px;align-items:flex-start;font-size:13px;line-height:1.4}.dcc-detail{border:1px solid var(--dsw-alias-border-l1);border-radius:8px;padding:8px}.dcc-detail summary{cursor:pointer;font-size:13px;font-weight:600}.dcc-text{white-space:pre-wrap;overflow-wrap:anywhere;font-size:13px;line-height:1.5;margin:8px 0 0;max-height:260px;overflow:auto}.dcc-diags{margin:7px 0 0;padding-left:18px;font-size:13px;line-height:1.5}.dcc-footer{position:sticky;bottom:-12px;margin:0 -12px -12px;padding:10px 12px;background:var(--dsw-alias-bg-base);border-top:1px solid var(--dsw-alias-border-l2)}
+.dcc-panel{position:absolute;top:0;right:0;bottom:0;width:min(440px,calc(100vw - 56px));pointer-events:auto;border-left:1px solid var(--dsw-alias-border-l2);box-shadow:var(--ds-shadow-3,-8px 0 28px rgba(0,0,0,.18));background:var(--dsw-alias-bg-base);color:var(--dsw-alias-label-primary);display:flex;flex-direction:column;font-family:Inter,var(--dsw-font-family),sans-serif}.dcc-header{height:52px;box-sizing:border-box;display:flex;align-items:center;gap:8px;padding:0 14px;border-bottom:1px solid var(--dsw-alias-border-l2);flex:none}.dcc-title{font-size:16px;font-weight:650;flex:1}.dcc-close{border:0;background:transparent;color:var(--dsw-alias-label-tertiary);cursor:pointer;border-radius:7px;padding:6px 8px;font-size:14px}.dcc-body{min-height:0;overflow:auto;padding:12px;display:flex;flex-direction:column;gap:12px}.dcc-toolbar{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}.dcc-actions{display:grid;grid-template-columns:1fr 1fr;gap:8px}.dcc-button{min-height:36px;border:1px solid var(--dsw-alias-border-l2);border-radius:8px;background:var(--dsw-alias-button-secondary-fill,var(--dsw-alias-bg-base));color:var(--dsw-alias-label-primary);cursor:pointer;padding:7px 10px;font-size:13px;text-decoration:none;display:flex;align-items:center;justify-content:center;box-sizing:border-box}.dcc-button:hover:not(:disabled){background:var(--dsw-alias-interactive-bg-hover)}.dcc-button:disabled{opacity:.5;cursor:default}.dcc-primary{background:var(--dsw-alias-state-business-primary);color:white;border-color:transparent}.dcc-danger{color:var(--dsw-alias-state-error)}.dcc-field{display:flex;flex-direction:column;gap:5px}.dcc-label{font-size:12px;color:var(--dsw-alias-label-tertiary);font-weight:600}.dcc-select,.dcc-input,.dcc-textarea{box-sizing:border-box;width:100%;border:1px solid var(--dsw-alias-border-l2);border-radius:7px;background:var(--dsw-alias-bg-base);color:var(--dsw-alias-label-primary);font:inherit;font-size:13px}.dcc-select,.dcc-input{height:36px;padding:0 9px}.dcc-textarea{min-height:88px;resize:vertical;padding:8px;line-height:1.5}.dcc-note,.dcc-meta{font-size:13px;line-height:1.5;color:var(--dsw-alias-label-tertiary);margin:0;overflow-wrap:anywhere}.dcc-status{font-size:13px;line-height:1.45;border-radius:7px;padding:7px 9px;background:var(--dsw-specific-tip);overflow-wrap:anywhere}.dcc-status[data-error=true]{color:var(--dsw-alias-state-error)}.dcc-status[data-warning=true]{color:var(--dsw-alias-state-warning,var(--dsw-alias-label-primary))}.dcc-card{border-top:1px solid var(--dsw-alias-border-l1);padding-top:12px;display:flex;flex-direction:column;gap:10px}.dcc-card-head{display:flex;gap:11px}.dcc-avatar{width:76px;height:100px;object-fit:cover;border-radius:9px;border:1px solid var(--dsw-alias-border-l1);background:var(--dsw-alias-bg-container);flex:none}.dcc-card-title{font-size:16px;font-weight:650;margin:0 0 5px}.dcc-check{display:flex;gap:7px;align-items:flex-start;font-size:13px;line-height:1.4}.dcc-detail{border:1px solid var(--dsw-alias-border-l1);border-radius:8px;padding:8px}.dcc-detail summary{cursor:pointer;font-size:13px;font-weight:600}.dcc-detail-body{display:flex;flex-direction:column;gap:8px;margin-top:8px}.dcc-diags{margin:7px 0 0;padding-left:18px;font-size:13px;line-height:1.5}.dcc-greetings{display:flex;flex-direction:column;gap:8px}.dcc-greeting-item{border:1px solid var(--dsw-alias-border-l1);border-radius:8px;padding:8px;display:flex;flex-direction:column;gap:6px}.dcc-greeting-head{display:flex;align-items:center;justify-content:space-between;gap:8px}.dcc-footer{position:sticky;bottom:-12px;margin:0 -12px -12px;padding:10px 12px;background:var(--dsw-alias-bg-base);border-top:1px solid var(--dsw-alias-border-l2)}
 `;
 function errorMessage(data, status) {
   if (typeof data?.error === "string") return data.error;
@@ -1561,15 +1669,6 @@ async function api2(path, options = {}) {
 function Field2({ label, children }) {
   return h2("label", { className: "dcc-field" }, h2("span", { className: "dcc-label" }, label), children);
 }
-function TextDetail({ label, value }) {
-  if (typeof value !== "string" || value === "") return null;
-  return h2(
-    "details",
-    { className: "dcc-detail" },
-    h2("summary", null, label),
-    h2("p", { className: "dcc-text" }, rawText(value))
-  );
-}
 function DiagnosticList({ titleKey, items }) {
   if (!Array.isArray(items) || items.length === 0) return null;
   return h2(
@@ -1579,15 +1678,30 @@ function DiagnosticList({ titleKey, items }) {
     h2("ul", { className: "dcc-diags" }, ...items.map((item, index) => h2("li", { key: `${item.code}-${index}` }, rawText(`${item.message}${item.path ? ` [${item.path}]` : ""}`))))
   );
 }
+function patchDraft(setter, field, value) {
+  setter((current2) => current2 === null ? current2 : { ...current2, [field]: value });
+}
 function CharacterPanel({ sessionId, sessionBlank, close }) {
   const [catalog2, setCatalog] = (0, import_react2.useState)(null);
   const [detail, setDetail] = (0, import_react2.useState)(null);
+  const [draft, setDraft] = (0, import_react2.useState)(null);
+  const [savedDraft, setSavedDraft] = (0, import_react2.useState)(null);
   const [selection, setSelection] = (0, import_react2.useState)(null);
   const [binding, setBinding] = (0, import_react2.useState)(null);
   const [busy, setBusy] = (0, import_react2.useState)(false);
   const [status, setStatus] = (0, import_react2.useState)({ error: false, key: "common.loading" });
   const fileRef = (0, import_react2.useRef)(null);
   const refreshGeneration = (0, import_react2.useRef)(0);
+  const dirtyRef = (0, import_react2.useRef)(false);
+  const dirty = characterEditorDirty(draft, savedDraft);
+  dirtyRef.current = dirty;
+  const applyCharacter = (0, import_react2.useCallback)((character, currentSelection) => {
+    const nextDraft = characterEditorDraft(character);
+    setDetail(character);
+    setDraft(nextDraft);
+    setSavedDraft(nextDraft === null ? null : structuredClone(nextDraft));
+    setBinding(currentSelection?.characterCardId === character?.id ? currentSelection : character === null ? null : defaultCharacterSelection(character.id));
+  }, []);
   const run = (0, import_react2.useCallback)(async (operation, successKey) => {
     setBusy(true);
     try {
@@ -1604,15 +1718,13 @@ function CharacterPanel({ sessionId, sessionBlank, close }) {
   const loadDetail = (0, import_react2.useCallback)(async (id) => {
     const generation = ++refreshGeneration.current;
     if (id === null || id === void 0 || id === "") {
-      setDetail(null);
-      setBinding(null);
+      applyCharacter(null, null);
       return;
     }
     const data = await api2(`/characters/${encodeURIComponent(id)}`);
     if (generation !== refreshGeneration.current) return;
-    setDetail(data.character);
-    setBinding(selection?.characterCardId === id ? selection : defaultCharacterSelection(id));
-  }, [selection]);
+    applyCharacter(data.character, selection);
+  }, [applyCharacter, selection]);
   const refresh = (0, import_react2.useCallback)(async (preferredId) => {
     const generation = ++refreshGeneration.current;
     const list = await api2("/characters");
@@ -1626,15 +1738,13 @@ function CharacterPanel({ sessionId, sessionBlank, close }) {
     setSelection(currentSelection);
     const id = preferredId ?? currentSelection?.characterCardId ?? list.characters[0]?.id ?? null;
     if (id === null) {
-      setDetail(null);
-      setBinding(null);
+      applyCharacter(null, null);
       return;
     }
     const data = await api2(`/characters/${encodeURIComponent(id)}`);
     if (generation !== refreshGeneration.current) return;
-    setDetail(data.character);
-    setBinding(currentSelection?.characterCardId === id ? currentSelection : defaultCharacterSelection(id));
-  }, [sessionId]);
+    applyCharacter(data.character, currentSelection);
+  }, [applyCharacter, sessionId]);
   (0, import_react2.useEffect)(() => {
     run(() => refresh(), "character.status.loaded");
     return () => {
@@ -1644,11 +1754,32 @@ function CharacterPanel({ sessionId, sessionBlank, close }) {
   (0, import_react2.useEffect)(() => {
     const onRefresh = (event) => {
       if (event.detail?.source === "character") return;
+      if (dirtyRef.current) {
+        setStatus({ error: false, key: "character.status.skippedRefresh" });
+        return;
+      }
       run(() => refresh(detail?.id), "character.status.refreshed");
     };
     window.addEventListener("dsh-tavern:refresh", onRefresh);
     return () => window.removeEventListener("dsh-tavern:refresh", onRefresh);
   }, [detail?.id, refresh, run]);
+  (0, import_react2.useEffect)(() => {
+    if (!dirty) return void 0;
+    const warn = (event) => {
+      event.preventDefault();
+      event.returnValue = "";
+    };
+    window.addEventListener("beforeunload", warn);
+    return () => window.removeEventListener("beforeunload", warn);
+  }, [dirty]);
+  const create = (0, import_react2.useCallback)(() => {
+    if (dirty && !window.confirm(unwrapText(uiMessage("character.confirmDiscardForCreate")))) return;
+    run(async () => {
+      const data = await api2("/characters", { method: "POST", body: JSON.stringify({ name: translate("character.defaultName") }) });
+      await refresh(data.character.id);
+      announceTavernRefresh2();
+    }, "character.status.created");
+  }, [dirty, refresh, run]);
   const importFile = (0, import_react2.useCallback)((file) => run(async () => {
     const response = await fetch(`${API_ROOT2}/characters/import?filename=${encodeURIComponent(file.name)}`, {
       method: "POST",
@@ -1661,8 +1792,32 @@ function CharacterPanel({ sessionId, sessionBlank, close }) {
     announceTavernRefresh2();
     if (fileRef.current !== null) fileRef.current.value = "";
   }, "character.status.imported"), [refresh, run]);
+  const save = (0, import_react2.useCallback)(() => run(async () => {
+    if (detail === null || draft === null) return;
+    const data = await api2(`/characters/${encodeURIComponent(detail.id)}`, {
+      method: "PATCH",
+      body: JSON.stringify(characterEditorPatch(draft))
+    });
+    const nextDraft = characterEditorDraft(data.character);
+    setDetail(data.character);
+    setDraft(nextDraft);
+    setSavedDraft(structuredClone(nextDraft));
+    setCatalog((current2) => current2 === null ? current2 : {
+      ...current2,
+      characters: current2.characters.map((item) => item.id === data.character.id ? { ...item, name: data.character.name } : item)
+    });
+    setBinding((current2) => {
+      if (current2 === null || current2.characterCardId !== data.character.id) return current2;
+      const greetings2 = characterGreetingOptions(data.character);
+      const maxIndex = Math.max(0, greetings2.length - 1);
+      const greetingIndex2 = Math.min(current2.character?.greetingIndex ?? 0, maxIndex);
+      return { ...current2, character: { ...current2.character, greetingIndex: greetingIndex2 } };
+    });
+    announceTavernRefresh2();
+  }, "character.status.saved"), [detail, draft, run]);
   const bind = (0, import_react2.useCallback)(() => run(async () => {
     if (!sessionId) throw uiError("character.error.needSession");
+    if (dirty) throw uiError("character.error.saveFirst");
     if (selection?.characterCardId !== binding?.characterCardId && sessionBlank === false && !window.confirm(unwrapText(uiMessage("character.confirmHistoricalSwitch")))) return;
     const data = await api2("/character-selection", {
       method: "POST",
@@ -1672,7 +1827,7 @@ function CharacterPanel({ sessionId, sessionBlank, close }) {
     setSelection(data.selection);
     setBinding(data.selection);
     announceTavernRefresh2();
-  }, "character.status.bound"), [binding, run, selection, sessionBlank, sessionId]);
+  }, "character.status.bound"), [binding, dirty, run, selection, sessionBlank, sessionId]);
   const unbind = (0, import_react2.useCallback)(() => run(async () => {
     if (!sessionId) throw uiError("character.error.noSessionToUnbind");
     await api2("/character-selection", {
@@ -1690,9 +1845,20 @@ function CharacterPanel({ sessionId, sessionBlank, close }) {
     await refresh(null);
     announceTavernRefresh2();
   }, "character.status.deleted"), [detail, refresh, run]);
-  const greetings = characterGreetingOptions(detail);
+  const chooseCharacter = (0, import_react2.useCallback)((id) => {
+    if (dirty && !window.confirm(unwrapText(uiMessage("character.confirmDiscardForSwitch")))) return;
+    run(() => loadDetail(id), "character.status.detailsLoaded");
+  }, [dirty, loadDetail, run]);
+  const requestClose = () => {
+    if (!dirty || window.confirm(unwrapText(uiMessage("character.confirmCloseDirty")))) close();
+  };
+  const greetings = characterGreetingOptions(draft === null ? detail : { data: draft });
+  const greetingIndex = Math.min(binding?.character?.greetingIndex ?? 0, Math.max(0, greetings.length - 1));
+  const boundHere = detail !== null && selection?.characterCardId === detail.id;
+  const bindingDirty = characterBindingDirty(selection, binding);
   const activeName = selection === null ? translate("nav.character.empty") : catalog2?.characters.find((item) => item.id === selection.characterCardId)?.name ?? selection.characterCardId;
   const closeLabel = uiMessage("panel.close", { title: unwrapText(uiMessage("character.title")) });
+  const avatarSrc = detail === null ? null : `${API_ROOT2}/characters/${encodeURIComponent(detail.id)}/png`;
   return h2(
     "div",
     { className: "dcc-panel" },
@@ -1700,7 +1866,7 @@ function CharacterPanel({ sessionId, sessionBlank, close }) {
       "div",
       { className: "dcc-header" },
       h2("div", { className: "dcc-title" }, uiMessage("character.title")),
-      h2("button", { className: "dcc-close", type: "button", title: closeLabel, "aria-label": closeLabel, onClick: close }, "\u2715")
+      h2("button", { className: "dcc-close", type: "button", title: closeLabel, "aria-label": closeLabel, onClick: requestClose }, "\u2715")
     ),
     h2(
       "div",
@@ -1708,8 +1874,12 @@ function CharacterPanel({ sessionId, sessionBlank, close }) {
       h2(
         "div",
         { className: "dcc-toolbar" },
+        h2("button", { className: "dcc-button", type: "button", disabled: busy, onClick: create }, uiMessage("character.create")),
         h2("button", { className: "dcc-button", type: "button", disabled: busy, onClick: () => fileRef.current?.click() }, uiMessage("character.import")),
-        h2("button", { className: "dcc-button", type: "button", disabled: busy, onClick: () => run(() => refresh(detail?.id), "character.status.libraryRefreshed") }, uiMessage("common.refresh")),
+        h2("button", { className: "dcc-button", type: "button", disabled: busy, onClick: () => {
+          if (dirty && !window.confirm(unwrapText(uiMessage("character.confirmDiscardRefresh")))) return;
+          run(() => refresh(detail?.id), "character.status.libraryRefreshed");
+        } }, uiMessage("common.refresh")),
         h2("input", { ref: fileRef, hidden: true, type: "file", accept: ".json,.png,application/json,image/png", onChange: (event) => {
           const file = event.target.files?.[0];
           if (file !== void 0) importFile(file);
@@ -1721,54 +1891,177 @@ function CharacterPanel({ sessionId, sessionBlank, close }) {
           className: "dcc-select",
           value: detail?.id ?? "",
           disabled: busy || catalog2 === null || catalog2.characters.length === 0,
-          onChange: (event) => run(() => loadDetail(event.target.value), "character.status.detailsLoaded")
+          onChange: (event) => chooseCharacter(event.target.value)
         },
         ...catalog2?.characters.length ? [] : [h2("option", { key: "empty", value: "" }, uiMessage("character.libraryEmpty"))],
-        ...(catalog2?.characters ?? []).map((item) => h2("option", { key: item.id, value: item.id }, rawText(`${item.name} \xB7 ${item.sourceFormat}`)))
+        ...(catalog2?.characters ?? []).map((item) => h2("option", { key: item.id, value: item.id }, rawText(item.name)))
       )),
       h2("p", { className: "dcc-note" }, uiMessage("character.sessionBinding", {
         session: sessionId || translate("common.none"),
         name: activeName
       })),
       h2("div", { className: "dcc-status", "data-error": status.error || void 0, role: "status", "aria-live": "polite" }, statusText(status)),
-      detail === null ? h2("p", { className: "dcc-note" }, catalog2 === null ? uiMessage("character.loading") : uiMessage("character.emptyHint")) : h2(
+      dirty ? h2("div", { className: "dcc-status", "data-warning": true, role: "status" }, uiMessage("character.dirty")) : detail === null ? null : h2("p", { className: "dcc-note" }, uiMessage("character.savedNote")),
+      detail === null || draft === null ? h2("p", { className: "dcc-note" }, catalog2 === null ? uiMessage("character.loading") : uiMessage("character.emptyHint")) : h2(
         "div",
         { className: "dcc-card" },
         h2(
           "div",
           { className: "dcc-card-head" },
-          detail.source.container === "png" ? h2("img", { className: "dcc-avatar", src: `${API_ROOT2}/characters/${encodeURIComponent(detail.id)}/artifact`, alt: uiMessage("character.imageAlt", { name: detail.name }) }) : null,
+          h2("img", { className: "dcc-avatar", src: avatarSrc, alt: uiMessage("character.imageAlt", { name: detail.name }) }),
           h2(
             "div",
             null,
             h2("h3", { className: "dcc-card-title" }, rawText(detail.name)),
             h2("p", { className: "dcc-meta" }, rawText(`${detail.source.format}${detail.source.specVersion ? ` \xB7 ${detail.source.specVersion}` : ""} \xB7 ${detail.source.container}`)),
-            h2("p", { className: "dcc-meta" }, rawText(`${detail.data.creator || translate("common.unknownAuthor")}${detail.data.characterVersion ? ` \xB7 ${detail.data.characterVersion}` : ""}`)),
-            h2("div", { className: "dcc-tags" }, ...detail.data.tags.map((tag, index) => h2("span", { className: "dcc-tag", key: `${tag}-${index}` }, rawText(tag))))
+            h2("p", { className: "dcc-meta" }, rawText(`${draft.creator || translate("common.unknownAuthor")}${draft.characterVersion ? ` \xB7 ${draft.characterVersion}` : ""}`))
           )
         ),
+        h2(Field2, { label: uiMessage("common.name") }, h2("input", {
+          className: "dcc-input",
+          value: draft.name,
+          maxLength: 200,
+          onChange: (event) => patchDraft(setDraft, "name", event.target.value)
+        })),
+        h2(Field2, { label: uiMessage("character.field.nickname") }, h2("input", {
+          className: "dcc-input",
+          value: draft.nickname,
+          onChange: (event) => patchDraft(setDraft, "nickname", event.target.value)
+        })),
+        h2(Field2, { label: uiMessage("character.field.creator") }, h2("input", {
+          className: "dcc-input",
+          value: draft.creator,
+          onChange: (event) => patchDraft(setDraft, "creator", event.target.value)
+        })),
+        h2(Field2, { label: uiMessage("character.field.characterVersion") }, h2("input", {
+          className: "dcc-input",
+          value: draft.characterVersion,
+          onChange: (event) => patchDraft(setDraft, "characterVersion", event.target.value)
+        })),
+        h2(Field2, { label: uiMessage("character.field.tags") }, h2("input", {
+          className: "dcc-input",
+          value: draft.tagsText,
+          placeholder: uiMessage("character.tagsPlaceholder"),
+          onChange: (event) => patchDraft(setDraft, "tagsText", event.target.value)
+        })),
         h2(Field2, { label: uiMessage("character.greeting") }, h2("select", {
           className: "dcc-select",
-          value: binding?.character?.greetingIndex ?? 0,
+          value: greetingIndex,
           onChange: (event) => setBinding((current2) => ({ ...current2, character: { ...current2.character, greetingIndex: Number(event.target.value) } }))
         }, ...greetings.map((item) => h2("option", { key: item.index, value: item.index }, uiMessage(item.labelKey, item.labelValues))))),
         h2("label", { className: "dcc-check" }, h2("input", { type: "checkbox", checked: binding?.character?.preferCharacterSystemPrompt !== false, onChange: (event) => setBinding((current2) => ({ ...current2, character: { ...current2.character, preferCharacterSystemPrompt: event.target.checked } })) }), h2("span", null, uiMessage("character.preferSystem"))),
         h2("label", { className: "dcc-check" }, h2("input", { type: "checkbox", checked: binding?.character?.preferCharacterPostHistory !== false, onChange: (event) => setBinding((current2) => ({ ...current2, character: { ...current2.character, preferCharacterPostHistory: event.target.checked } })) }), h2("span", null, uiMessage("character.preferPostHistory"))),
+        boundHere ? bindingDirty ? h2("div", { className: "dcc-status", "data-warning": true, role: "status" }, uiMessage("character.bindingUnsaved")) : h2("p", { className: "dcc-note" }, uiMessage("character.bindingApplied")) : null,
         h2(
           "div",
           { className: "dcc-actions" },
-          h2("button", { className: "dcc-button dcc-primary", type: "button", disabled: busy || !sessionId, onClick: bind }, selection?.characterCardId === detail.id ? uiMessage("character.bindUpdate") : uiMessage("character.bind")),
-          h2("button", { className: "dcc-button", type: "button", disabled: busy || !sessionId || selection === null, onClick: unbind }, uiMessage("character.unbind"))
+          h2("button", { className: "dcc-button dcc-primary", type: "button", disabled: busy || !dirty, onClick: save }, dirty ? uiMessage("character.saveResource") : uiMessage("character.resourceSaved")),
+          h2("button", { className: "dcc-button dcc-primary", type: "button", disabled: busy || !sessionId || dirty || boundHere && !bindingDirty, onClick: bind }, dirty ? uiMessage("character.saveFirst") : boundHere ? bindingDirty ? uiMessage("character.bindUpdate") : uiMessage("character.bindingAppliedButton") : uiMessage("character.bind"))
         ),
+        h2("button", { className: "dcc-button", type: "button", disabled: busy || !sessionId || selection === null, onClick: unbind }, uiMessage("character.unbind")),
         h2("p", { className: "dcc-note" }, uiMessage("character.moduleNote")),
-        h2(TextDetail, { label: uiMessage("character.field.creatorNotes"), value: detail.data.creatorNotes }),
-        h2(TextDetail, { label: uiMessage("character.field.description"), value: detail.data.description }),
-        h2(TextDetail, { label: uiMessage("character.field.personality"), value: detail.data.personality }),
-        h2(TextDetail, { label: uiMessage("character.field.scenario"), value: detail.data.scenario }),
-        h2(TextDetail, { label: uiMessage("character.field.greetingContent"), value: greetings[binding?.character?.greetingIndex ?? 0]?.text }),
-        h2(TextDetail, { label: uiMessage("character.field.messageExamples"), value: detail.data.messageExample }),
-        h2(TextDetail, { label: uiMessage("character.field.systemPrompt"), value: detail.data.systemPrompt }),
-        h2(TextDetail, { label: uiMessage("character.field.postHistory"), value: detail.data.postHistoryInstructions }),
+        h2(
+          "details",
+          { className: "dcc-detail", open: true },
+          h2("summary", null, uiMessage("character.field.firstMessage")),
+          h2("div", { className: "dcc-detail-body" }, h2("textarea", {
+            className: "dcc-textarea",
+            value: draft.firstMessage,
+            onChange: (event) => patchDraft(setDraft, "firstMessage", event.target.value)
+          }))
+        ),
+        h2(
+          "details",
+          { className: "dcc-detail", open: true },
+          h2("summary", null, uiMessage("character.alternateGreetings")),
+          h2(
+            "div",
+            { className: "dcc-detail-body" },
+            h2(
+              "div",
+              { className: "dcc-greetings" },
+              ...draft.alternateGreetings.map((text, index) => h2(
+                "div",
+                { className: "dcc-greeting-item", key: `alt-${index}` },
+                h2(
+                  "div",
+                  { className: "dcc-greeting-head" },
+                  h2("span", { className: "dcc-label" }, uiMessage("character.greeting.alternate", { index: index + 1 })),
+                  h2("button", {
+                    className: "dcc-button dcc-danger",
+                    type: "button",
+                    disabled: busy,
+                    onClick: () => setDraft((current2) => current2 === null ? current2 : {
+                      ...current2,
+                      alternateGreetings: current2.alternateGreetings.filter((_item, itemIndex) => itemIndex !== index)
+                    })
+                  }, uiMessage("common.delete"))
+                ),
+                h2("textarea", {
+                  className: "dcc-textarea",
+                  value: text,
+                  onChange: (event) => setDraft((current2) => {
+                    if (current2 === null) return current2;
+                    const alternateGreetings = [...current2.alternateGreetings];
+                    alternateGreetings[index] = event.target.value;
+                    return { ...current2, alternateGreetings };
+                  })
+                })
+              ))
+            ),
+            h2("button", {
+              className: "dcc-button",
+              type: "button",
+              disabled: busy,
+              onClick: () => setDraft((current2) => current2 === null ? current2 : {
+                ...current2,
+                alternateGreetings: [...current2.alternateGreetings, ""]
+              })
+            }, uiMessage("character.addGreeting"))
+          )
+        ),
+        h2(
+          "details",
+          { className: "dcc-detail" },
+          h2("summary", null, uiMessage("character.field.creatorNotes")),
+          h2("div", { className: "dcc-detail-body" }, h2("textarea", { className: "dcc-textarea", value: draft.creatorNotes, onChange: (event) => patchDraft(setDraft, "creatorNotes", event.target.value) }))
+        ),
+        h2(
+          "details",
+          { className: "dcc-detail" },
+          h2("summary", null, uiMessage("character.field.description")),
+          h2("div", { className: "dcc-detail-body" }, h2("textarea", { className: "dcc-textarea", value: draft.description, onChange: (event) => patchDraft(setDraft, "description", event.target.value) }))
+        ),
+        h2(
+          "details",
+          { className: "dcc-detail" },
+          h2("summary", null, uiMessage("character.field.personality")),
+          h2("div", { className: "dcc-detail-body" }, h2("textarea", { className: "dcc-textarea", value: draft.personality, onChange: (event) => patchDraft(setDraft, "personality", event.target.value) }))
+        ),
+        h2(
+          "details",
+          { className: "dcc-detail" },
+          h2("summary", null, uiMessage("character.field.scenario")),
+          h2("div", { className: "dcc-detail-body" }, h2("textarea", { className: "dcc-textarea", value: draft.scenario, onChange: (event) => patchDraft(setDraft, "scenario", event.target.value) }))
+        ),
+        h2(
+          "details",
+          { className: "dcc-detail" },
+          h2("summary", null, uiMessage("character.field.messageExamples")),
+          h2("div", { className: "dcc-detail-body" }, h2("textarea", { className: "dcc-textarea", value: draft.messageExample, onChange: (event) => patchDraft(setDraft, "messageExample", event.target.value) }))
+        ),
+        h2(
+          "details",
+          { className: "dcc-detail" },
+          h2("summary", null, uiMessage("character.field.systemPrompt")),
+          h2("div", { className: "dcc-detail-body" }, h2("textarea", { className: "dcc-textarea", value: draft.systemPrompt, onChange: (event) => patchDraft(setDraft, "systemPrompt", event.target.value) }))
+        ),
+        h2(
+          "details",
+          { className: "dcc-detail" },
+          h2("summary", null, uiMessage("character.field.postHistory")),
+          h2("div", { className: "dcc-detail-body" }, h2("textarea", { className: "dcc-textarea", value: draft.postHistoryInstructions, onChange: (event) => patchDraft(setDraft, "postHistoryInstructions", event.target.value) }))
+        ),
         detail.data.characterBook !== null ? h2("div", { className: "dcc-status" }, uiMessage("character.embeddedBook", { count: Array.isArray(detail.data.characterBook.entries) ? detail.data.characterBook.entries.length : translate("common.unknown") })) : null,
         h2(DiagnosticList, { titleKey: "character.warnings", items: detail.compatibility.warnings }),
         h2(DiagnosticList, { titleKey: "character.unsupported", items: detail.compatibility.unsupportedFeatures }),
@@ -1776,8 +2069,8 @@ function CharacterPanel({ sessionId, sessionBlank, close }) {
         h2(
           "div",
           { className: "dcc-actions" },
-          h2("a", { className: "dcc-button", href: `${API_ROOT2}/characters/${encodeURIComponent(detail.id)}/artifact`, download: "" }, uiMessage("character.exportOriginal")),
-          h2("a", { className: "dcc-button", href: `${API_ROOT2}/characters/${encodeURIComponent(detail.id)}/json`, download: "" }, uiMessage("common.exportJson"))
+          h2("a", { className: "dcc-button", href: `${API_ROOT2}/characters/${encodeURIComponent(detail.id)}/json`, download: "" }, uiMessage("common.exportJson")),
+          h2("a", { className: "dcc-button", href: `${API_ROOT2}/characters/${encodeURIComponent(detail.id)}/png`, download: "" }, uiMessage("character.exportPng"))
         ),
         h2("div", { className: "dcc-footer" }, h2("button", { className: "dcc-button dcc-danger", type: "button", disabled: busy, onClick: remove }, uiMessage("character.delete")))
       )

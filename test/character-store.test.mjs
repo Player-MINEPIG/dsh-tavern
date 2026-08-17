@@ -1,7 +1,7 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import { createHash } from 'node:crypto'
-import { mkdtempSync, readFileSync, rmSync } from 'node:fs'
+import { existsSync, mkdtempSync, readFileSync, rmSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import {
@@ -9,6 +9,7 @@ import {
   createCharacterAdapter,
   selectedCharacterCardResource,
 } from '../packages/character/src/index.js'
+import { embedCharacterCardPng, extractCharacterCardPng, parseSillyTavernCharacterCard } from '../packages/tavern-format/src/index.js'
 
 function temporaryStore() {
   const directory = mkdtempSync(join(tmpdir(), 'dsh-tavern-character-'))
@@ -23,13 +24,14 @@ function synthetic(name = 'Synthetic card') {
   })
 }
 
-test('persists normalized cards and exports the exact imported artifact bytes', () => {
+test('persists a single character document without a duplicate JSON artifact', () => {
   const { directory, store } = temporaryStore()
   const source = Buffer.from(synthetic())
   try {
     const card = store.import(source, { id: 'stored', fileName: '../../display.json', now: '2026-08-14T00:00:00.000Z' })
     assert.equal(card.source.sha256, createHash('sha256').update(source).digest('hex'))
-    assert.deepEqual(store.artifact(card.id).bytes, source)
+    assert.equal(store.coverImage(card.id), null)
+    assert.equal(existsSync(join(directory, 'character-artifacts', 'stored.bin')), false)
     assert.deepEqual(JSON.parse(store.json(card.id).text), JSON.parse(source))
     assert.equal(store.list()[0].hasEmbeddedCharacterBook, false)
 
@@ -105,7 +107,7 @@ test('validates greeting and session selection input', () => {
   }
 })
 
-test('updates an embedded Character Book without mutating the imported artifact', () => {
+test('updates an embedded Character Book in the character document', () => {
   const { directory, store } = temporaryStore()
   const source = Buffer.from(JSON.stringify({ spec: 'chara_card_v2', spec_version: '2.0', data: { name: 'Editable', character_book: { name: 'Before', entries: [] } } }))
   try {
@@ -114,9 +116,79 @@ test('updates an embedded Character Book without mutating the imported artifact'
     const updated = store.updateCharacterBook('editable', book, { now: '2026-08-15T00:00:00.000Z' })
     assert.deepEqual(updated.data.characterBook, book)
     assert.deepEqual(JSON.parse(store.json('editable').text).data.character_book, book)
-    assert.deepEqual(store.artifact('editable').bytes, source)
+    assert.equal(store.coverImage('editable'), null)
     assert.equal(new CharacterStore(directory).get('editable').updatedAt, '2026-08-15T00:00:00.000Z')
     assert.throws(() => store.updateCharacterBook('editable', { entries: ['bad'] }), /entry must be an object/)
+  } finally {
+    rmSync(directory, { recursive: true, force: true })
+  }
+})
+
+test('imports V1 JSON and V1 PNG, edits fields without rewriting the artifact, and clamps greetings', () => {
+  const { directory, store } = temporaryStore()
+  const v1Json = Buffer.from(JSON.stringify({
+    name: 'V1 JSON',
+    description: 'Old description',
+    first_mes: 'Hello',
+    alternate_greetings: ['Second', 'Third'],
+    leftover: true,
+  }))
+  const placeholder = readFileSync(new URL('../packages/tavern-format/assets/character-placeholder.png', import.meta.url))
+  const v1Png = Buffer.from(embedCharacterCardPng(placeholder, JSON.stringify({ name: 'V1 PNG', first_mes: 'Hi' })))
+  try {
+    store.import(v1Json, { id: 'v1-json', fileName: 'v1.json' })
+    store.import(v1Png, { id: 'v1-png', fileName: 'v1.png' })
+    assert.equal(store.get('v1-json').source.format, 'sillytavern-v1')
+    assert.equal(store.get('v1-png').source.container, 'png')
+    assert.equal(store.get('v1-png').name, 'V1 PNG')
+
+    store.select('session-a', { characterCardId: 'v1-json', character: { greetingIndex: 2 } })
+    store.select('session-b', { characterCardId: 'v1-json', character: { greetingIndex: 1 } })
+    const updated = store.update('v1-json', {
+      description: 'New description',
+      alternateGreetings: ['Only second'],
+    }, { now: '2026-08-17T00:00:00.000Z' })
+    assert.equal(updated.data.description, 'New description')
+    assert.equal(updated.source.raw.leftover, true)
+    assert.equal(store.coverImage('v1-json'), null)
+    assert.equal(JSON.parse(store.json('v1-json').text).description, 'New description')
+    assert.equal(store.selection('session-a').characterCardId, 'v1-json')
+    assert.equal(store.selection('session-a').character.greetingIndex, 1)
+    assert.equal(store.selection('session-b').character.greetingIndex, 1)
+
+    const exported = store.png('v1-json')
+    const extracted = extractCharacterCardPng(exported.bytes)
+    assert.equal(JSON.parse(extracted.jsonText).description, 'New description')
+    assert.equal(exported.mediaType, 'image/png')
+    assert.equal(Buffer.from(exported.bytes.subarray(0, 8)).equals(placeholder.subarray(0, 8)), true)
+    assert.equal(exported.bytes[16], placeholder[16])
+    assert.equal(exported.bytes[17], placeholder[17])
+
+    const pngEdited = store.update('v1-png', { firstMessage: 'Edited' })
+    const cover = store.coverImage('v1-png')
+    assert.notEqual(cover, null)
+    assert.throws(() => extractCharacterCardPng(cover), /does not contain/)
+    assert.equal(JSON.parse(store.json('v1-png').text).first_mes, 'Edited')
+    const currentPng = store.png('v1-png')
+    assert.notDeepEqual(currentPng.bytes, v1Png)
+    assert.equal(parseSillyTavernCharacterCard(currentPng.bytes).data.firstMessage, 'Edited')
+    assert.equal(pngEdited.updatedAt.length > 0, true)
+    assert.equal(new CharacterStore(directory).get('v1-json').data.description, 'New description')
+  } finally {
+    rmSync(directory, { recursive: true, force: true })
+  }
+})
+
+test('creates a blank V2 card without a cover image', () => {
+  const { directory, store } = temporaryStore()
+  try {
+    const created = store.create({ id: 'blank', name: 'Blank card', now: '2026-08-17T00:00:00.000Z' })
+    assert.equal(created.source.format, 'sillytavern-v2')
+    assert.equal(created.source.container, 'json')
+    assert.equal(created.data.firstMessage, '')
+    assert.equal(store.coverImage('blank'), null)
+    assert.equal(JSON.parse(store.json('blank').text).data.name, 'Blank card')
+    assert.throws(() => store.create({ id: 'blank' }), /already exists/)
   } finally {
     rmSync(directory, { recursive: true, force: true })
   }

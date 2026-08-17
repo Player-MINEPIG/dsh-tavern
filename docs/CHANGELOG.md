@@ -4,6 +4,27 @@ This is the staged implementation log for dsh-tavern. It is kept separately
 from the product README so reviewers can follow intent, decisions, verification,
 and known limits chronologically.
 
+## 2026-08-18 — Character-card editing and public-doc cleanup
+
+Purpose: let users create and edit character cards like presets/world books,
+store one current card document, and keep published docs limited to outsider-facing
+guides.
+
+- Added blank V2 character-card creation and field editing; save remains separate
+  from session binding. Greeting and strategy changes show the same unapplied
+  warning as world-book selection until bind/update.
+- Stopped storing a second copy of card JSON. JSON import and create write only
+  `characters/<id>.json`. PNG import keeps a cover image with `chara`/`ccv3`
+  stripped. JSON/PNG export is the current `source.raw`; missing covers use the
+  in-repo placeholder. The browse dropdown shows the card name only.
+- Moved implementation, acceptance, research and working plans under the
+  gitignored `docs/dev-plans/` tree. Public docs keep installation, usage,
+  architecture, contracts, changelog and world-book design.
+- Updated README, usage and installation text for create/edit and single-copy
+  storage. DeepSec L1/L2 on the published tree reported only false positives
+  (`RegExp.exec` and the base64 alphabet). Tracked files have no API keys or
+  workstation paths.
+
 ## 2026-08-15 — Version 1.0.0 and public UI gallery
 
 Purpose: prepare the reviewed framework for its first stable public release and

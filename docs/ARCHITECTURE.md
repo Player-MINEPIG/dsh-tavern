@@ -40,7 +40,7 @@ DSH system prompt + agent request
 | --- | --- | --- | --- |
 | `tavern-format` | “这个 ST 文件表达了什么？” | preset 识别、顺序和启用状态归一化、原字段保留、编辑模型、macro 解释 | session 选择、DSH system 段、模型调用参数、HTTP、磁盘 |
 | `preset` | “用户如何管理预设？” | 原子文件存储、导入/创建/修改/删除/选择、API、侧边栏源代码 | 决定提示词如何进入 agent |
-| `character` | “用户如何管理角色资源？” | JSON/PNG 导入、原件保存/导出、per-session binding、API、UI、loader/world-book 资源快照 | prompt 放置、assistant 历史、世界书激活 |
+| `character` | “用户如何管理角色资源？” | JSON/PNG 导入、创建/编辑、当前文档 JSON/PNG 导出、per-session binding、API、UI、loader/world-book 资源快照 | prompt 放置、assistant 历史、世界书激活 |
 | `user` | “用户如何管理自己的 Tavern 身份描述？” | 严格三字段文档、CRUD 持久化、API、UI、loader adapter | 头像、DSH Agent 身份、prompt 放置、Host seam |
 | `world-book` | “哪些 lore entries 候选应被激活？” | ST/角色内嵌格式、归一化、纯匹配/排序/预算与 loader 投影 | session 选择、DSH 注入、角色卡存储 |
 | `world-book-library` | “用户如何管理独立世界书资源？” | 原子 JSON 存储、CRUD/导出 API、编辑 UI、供 loader 读取的 document | session 选择所有权、matcher 复制、Host seam、角色卡内嵌书修改 |
@@ -54,7 +54,7 @@ DSH system prompt + agent request
 
 统一 adapter、session 继承和 marker 契约见 `docs/LOADER_CONTRACT.md`；DSH 原生与插件增强消息流见 `docs/DSH_MESSAGE_FLOW.md`；世界书格式和投影细节见 `docs/world-book/DESIGN.md`。
 
-干净会话与配置模板由 `packages/session-template` 保存纯选择投影，loader 注入真实资源库和 `SessionSelectionStore`。浏览器组合根只通过 DSH 公开的 `workspaces.connectWorkspace()` 与 `sessions.open()` 创建/导航；它不 fork 或伪造历史。完整事务与验收边界见 `docs/session-template/IMPLEMENTATION_AND_ACCEPTANCE.md`。
+干净会话与配置模板由 `packages/session-template` 保存纯选择投影，loader 注入真实资源库和 `SessionSelectionStore`。浏览器组合根只通过 DSH 公开的 `workspaces.connectWorkspace()` 与 `sessions.open()` 创建/导航；它不 fork 或伪造历史。完整事务边界见 `docs/LOADER_CONTRACT.md`。
 
 ## Loader-owned ActivationContext
 

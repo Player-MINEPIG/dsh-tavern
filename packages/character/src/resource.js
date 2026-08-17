@@ -8,6 +8,12 @@ function clone(value) {
   return structuredClone(value)
 }
 
+function clampGreetingIndexValue(greetingIndex, greetingCount) {
+  const maxIndex = Math.max(0, greetingCount - 1)
+  if (!Number.isSafeInteger(greetingIndex) || greetingIndex < 0) return 0
+  return Math.min(greetingIndex, maxIndex)
+}
+
 const LOADER_HANDLED_DIAGNOSTICS = new Set([
   'embedded-character-book-pass-through',
   'post-history-runtime-required',
@@ -25,11 +31,13 @@ export function createCharacterCardResource(character, selection) {
   const alternateGreetings = Array.isArray(character.data.alternateGreetings)
     ? character.data.alternateGreetings
     : []
-  const greetingIndex = Number(options.greetingIndex ?? 0)
+  const greetingIndex = clampGreetingIndexValue(
+    Number(options.greetingIndex ?? 0),
+    1 + alternateGreetings.length,
+  )
   const greeting = greetingIndex === 0
     ? character.data.firstMessage ?? ''
-    : alternateGreetings[greetingIndex - 1]
-  if (typeof greeting !== 'string') throw new TypeError('Character selection contains an invalid greetingIndex')
+    : alternateGreetings[greetingIndex - 1] ?? ''
 
   return {
     kind: 'character-card',

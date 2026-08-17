@@ -36,9 +36,9 @@ function sendArtifact(res, status, payload) {
 function apiError(error) {
   const code = error?.code ?? (error instanceof TypeError || error instanceof URIError ? 'INVALID_CHARACTER_REQUEST' : 'CHARACTER_API_ERROR')
   const status = error?.status
-    ?? (code === 'CHARACTER_NOT_FOUND' || code === 'ARTIFACT_NOT_FOUND' ? 404
+    ?? (code === 'CHARACTER_NOT_FOUND' ? 404
       : code === 'CHARACTER_ID_EXISTS' ? 409
-      : code === 'ARTIFACT_TOO_LARGE' ? 413
+      : code === 'ARTIFACT_TOO_LARGE' || code === 'CHARACTER_DOCUMENT_TOO_LARGE' ? 413
         : error instanceof TypeError || error instanceof URIError ? 400 : 500)
   return {
     status,
@@ -96,7 +96,7 @@ async function readJson(req, limit = 1024 * 1024, options = {}) {
 }
 
 function characterRoute(path) {
-  const match = /^\/dsh-tavern\/api\/characters\/([^/]+)(?:\/(artifact|json|world-book))?$/.exec(path)
+  const match = /^\/dsh-tavern\/api\/characters\/([^/]+)(?:\/(json|png|world-book))?$/.exec(path)
   if (match === null) return null
   return { id: decodeURIComponent(match[1]), resource: match[2] }
 }
@@ -135,6 +135,16 @@ export function createCharacterApiHandler(store, options = {}) {
         return sendJson(res, 200, { ok: true, characters: store.list() })
       }
 
+      if (method === 'POST' && path === '/dsh-tavern/api/characters') {
+        const body = await readJson(req, 64 * 1024)
+        const character = store.create({ name: body.name })
+        onChange({ kind: 'character-created', characterCardId: character.id })
+        return sendJson(res, 201, {
+          ok: true,
+          character: store.list().find((item) => item.id === character.id),
+        })
+      }
+
       if (method === 'POST' && path === '/dsh-tavern/api/characters/import') {
         const bytes = await readBytes(req)
         if (bytes.length === 0) throw new TypeError('Character import body is empty')
@@ -151,14 +161,24 @@ export function createCharacterApiHandler(store, options = {}) {
         return sendJson(res, 200, { ok: true, character: store.get(route.id) })
       }
 
-      if (route !== null && method === 'GET' && route.resource === 'artifact') {
-        const artifact = store.artifact(route.id)
-        return sendArtifact(res, 200, { body: artifact.bytes, ...artifact })
-      }
-
       if (route !== null && method === 'GET' && route.resource === 'json') {
         const json = store.json(route.id)
         return sendArtifact(res, 200, { body: json.text, mediaType: 'application/json; charset=utf-8', fileName: json.fileName })
+      }
+
+      if (route !== null && method === 'GET' && route.resource === 'png') {
+        const png = store.png(route.id)
+        return sendArtifact(res, 200, { body: png.bytes, mediaType: png.mediaType, fileName: png.fileName })
+      }
+
+      if (route !== null && method === 'PATCH' && route.resource === undefined) {
+        const body = await readJson(req, characterStoreConstants.maxCharacterDocumentBytes, {
+          code: 'CHARACTER_DOCUMENT_TOO_LARGE',
+          label: 'Character edit',
+        })
+        const character = store.update(route.id, body)
+        onChange({ kind: 'character-updated', characterCardId: route.id })
+        return sendJson(res, 200, { ok: true, character })
       }
 
       if (route !== null && method === 'PATCH' && route.resource === 'world-book') {

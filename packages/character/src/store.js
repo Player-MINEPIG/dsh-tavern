@@ -8,10 +8,16 @@ import {
   unlinkSync,
   writeFileSync,
 } from 'node:fs'
-import { join, resolve } from 'node:path'
+import { dirname, join, resolve } from 'node:path'
+import { fileURLToPath } from 'node:url'
 import {
+  createBlankCharacterCard,
+  editCharacterCard,
   exportCharacterCardJson,
+  exportCharacterCardPng,
+  isPng,
   parseSillyTavernCharacterCard,
+  stripCharacterCardPng,
 } from '../../tavern-format/src/index.js'
 import {
   WORLD_BOOK_LIMITS,
@@ -24,6 +30,7 @@ const MAX_ARTIFACT_BYTES = 32 * 1024 * 1024
 const MAX_EDITED_WORLD_BOOK_BYTES = 4 * 1024 * 1024
 const MAX_CHARACTER_DOCUMENT_BYTES = 16 * 1024 * 1024
 const MAX_WORLD_BOOK_ENTRIES = WORLD_BOOK_LIMITS.maxEntries
+const PLACEHOLDER_PNG_PATH = join(dirname(fileURLToPath(import.meta.url)), '../../tavern-format/assets/character-placeholder.png')
 
 function isRecord(value) {
   return value !== null && typeof value === 'object' && !Array.isArray(value)
@@ -147,19 +154,32 @@ function normalizeState(value) {
   return { schemaVersion: 1, selectedBySessionId: selections }
 }
 
-function normalizeSelection(character, patch = {}) {
-  const options = isRecord(patch.character) ? patch.character : {}
-  const greetingIndex = options.greetingIndex === undefined ? 0 : Number(options.greetingIndex)
-  const greetingCount = 1 + (character.data?.alternateGreetings?.length ?? 0)
-  if (!Number.isSafeInteger(greetingIndex) || greetingIndex < 0 || greetingIndex >= greetingCount) {
-    throw new TypeError(`greetingIndex must be between 0 and ${greetingCount - 1}`)
+function greetingCount(character) {
+  return 1 + (Array.isArray(character.data?.alternateGreetings) ? character.data.alternateGreetings.length : 0)
+}
+
+function clampGreetingIndex(character, greetingIndex) {
+  const maxIndex = Math.max(0, greetingCount(character) - 1)
+  if (!Number.isSafeInteger(greetingIndex) || greetingIndex < 0) return 0
+  return Math.min(greetingIndex, maxIndex)
+}
+
+function normalizeSelection(character, patch = {}, options = {}) {
+  const values = isRecord(patch.character) ? patch.character : {}
+  const requested = values.greetingIndex === undefined ? 0 : Number(values.greetingIndex)
+  const maxIndex = Math.max(0, greetingCount(character) - 1)
+  let greetingIndex = requested
+  if (options.clampGreetingIndex === true) {
+    greetingIndex = clampGreetingIndex(character, requested)
+  } else if (!Number.isSafeInteger(requested) || requested < 0 || requested > maxIndex) {
+    throw new TypeError(`greetingIndex must be between 0 and ${maxIndex}`)
   }
   return {
     characterCardId: character.id,
     character: {
       greetingIndex,
-      preferCharacterSystemPrompt: options.preferCharacterSystemPrompt !== false,
-      preferCharacterPostHistory: options.preferCharacterPostHistory !== false,
+      preferCharacterSystemPrompt: values.preferCharacterSystemPrompt !== false,
+      preferCharacterPostHistory: values.preferCharacterPostHistory !== false,
     },
   }
 }
@@ -207,55 +227,63 @@ export class CharacterStore {
   }
 
   import(input, options = {}) {
-    const artifact = inputBytes(input)
-    if (artifact.byteLength > (options.maxArtifactBytes ?? MAX_ARTIFACT_BYTES)) {
+    const bytes = inputBytes(input)
+    if (bytes.byteLength > (options.maxArtifactBytes ?? MAX_ARTIFACT_BYTES)) {
       const error = new TypeError(`Character artifact exceeds the ${options.maxArtifactBytes ?? MAX_ARTIFACT_BYTES} byte limit`)
       error.code = 'ARTIFACT_TOO_LARGE'
       throw error
     }
-    const sha256 = createHash('sha256').update(artifact).digest('hex')
-    const character = parseSillyTavernCharacterCard(artifact, {
+    const sha256 = createHash('sha256').update(bytes).digest('hex')
+    const character = parseSillyTavernCharacterCard(bytes, {
       id: options.id,
       name: options.name,
       fileName: options.fileName,
       now: options.now,
       sha256,
-      byteLength: artifact.byteLength,
+      byteLength: bytes.byteLength,
       png: options.png,
     })
     const documentPath = this.characterPath(character.id)
-    const artifactPath = this.artifactPath(character.id)
-    if (existsSync(documentPath) || existsSync(artifactPath)) {
+    const coverPath = this.artifactPath(character.id)
+    if (existsSync(documentPath)) {
       const error = new Error(`Character id "${character.id}" already exists`)
       error.code = 'CHARACTER_ID_EXISTS'
       throw error
     }
+    const cover = isPng(bytes) ? stripCharacterCardPng(bytes, options.png) : null
     try {
-      atomicBytes(artifactPath, artifact)
+      if (cover !== null) atomicBytes(coverPath, cover)
       atomicJson(documentPath, character)
     } catch (error) {
       try { unlinkSync(documentPath) } catch {}
-      try { unlinkSync(artifactPath) } catch {}
+      try { unlinkSync(coverPath) } catch {}
       throw error
     }
     return character
   }
 
-  artifact(id) {
-    const character = this.get(id)
+  create(options = {}) {
+    const character = createBlankCharacterCard(options)
+    const documentPath = this.characterPath(character.id)
+    if (existsSync(documentPath)) {
+      const error = new Error(`Character id "${character.id}" already exists`)
+      error.code = 'CHARACTER_ID_EXISTS'
+      throw error
+    }
+    atomicJson(documentPath, character)
+    return character
+  }
+
+  coverImage(id) {
+    this.get(id)
     try {
-      return {
-        bytes: readFileSync(this.artifactPath(id)),
-        mediaType: character.source?.container === 'png' ? 'image/png' : 'application/json',
-        fileName: character.source?.fileName ?? (character.source?.container === 'png' ? 'character.png' : 'character.json'),
-        sha256: character.source?.sha256,
-      }
+      const bytes = readFileSync(this.artifactPath(id))
+      if (isPng(bytes)) return bytes
+      try { unlinkSync(this.artifactPath(id)) } catch {}
     } catch (error) {
       if (error?.code !== 'ENOENT') throw error
-      const missing = new Error(`Artifact for character "${id}" not found`)
-      missing.code = 'ARTIFACT_NOT_FOUND'
-      throw missing
     }
+    return null
   }
 
   json(id) {
@@ -264,6 +292,50 @@ export class CharacterStore {
       text: exportCharacterCardJson(character),
       fileName: `${character.name || 'character'}.json`,
     }
+  }
+
+  png(id) {
+    const character = this.get(id)
+    const image = this.coverImage(id) ?? readFileSync(PLACEHOLDER_PNG_PATH)
+    return {
+      bytes: exportCharacterCardPng(character, image),
+      mediaType: 'image/png',
+      fileName: `${character.name || 'character'}.png`,
+    }
+  }
+
+  persistCharacter(id, character) {
+    const documentBytes = Buffer.byteLength(JSON.stringify(character), 'utf8')
+    if (documentBytes > MAX_CHARACTER_DOCUMENT_BYTES) {
+      const error = new Error(`Updated character document exceeds the ${MAX_CHARACTER_DOCUMENT_BYTES} byte storage limit`)
+      error.code = 'CHARACTER_DOCUMENT_TOO_LARGE'
+      error.status = 413
+      throw error
+    }
+    atomicJson(this.characterPath(id), character)
+    return character
+  }
+
+  clampGreetingSelections(id, character) {
+    let changed = false
+    for (const [sessionId, selection] of Object.entries(this.state.selectedBySessionId)) {
+      if (selection?.characterCardId !== id || !isRecord(selection.character)) continue
+      const greetingIndex = clampGreetingIndex(character, Number(selection.character.greetingIndex ?? 0))
+      if (greetingIndex === selection.character.greetingIndex) continue
+      this.state.selectedBySessionId[sessionId] = {
+        ...selection,
+        character: { ...selection.character, greetingIndex },
+      }
+      changed = true
+    }
+    if (changed) this.saveState()
+  }
+
+  update(id, patch, options = {}) {
+    const character = editCharacterCard(this.get(id), patch, options)
+    this.persistCharacter(id, character)
+    this.clampGreetingSelections(id, character)
+    return character
   }
 
   delete(id) {
@@ -290,7 +362,7 @@ export class CharacterStore {
     if (!isRecord(selection)) return null
     try {
       const character = this.get(selection.characterCardId)
-      return normalizeSelection(character, selection)
+      return normalizeSelection(character, selection, { clampGreetingIndex: true })
     } catch (error) {
       if (error?.code !== 'CHARACTER_NOT_FOUND' && !(error instanceof TypeError)) throw error
       return null
@@ -320,14 +392,7 @@ export class CharacterStore {
     character.data.characterBook = nextBook
     rawRoot.character_book = clone(nextBook)
     character.updatedAt = options.now ?? new Date().toISOString()
-    const documentBytes = Buffer.byteLength(JSON.stringify(character), 'utf8')
-    if (documentBytes > MAX_CHARACTER_DOCUMENT_BYTES) {
-      const error = new Error(`Updated character document exceeds the ${MAX_CHARACTER_DOCUMENT_BYTES} byte storage limit`)
-      error.code = 'CHARACTER_DOCUMENT_TOO_LARGE'
-      error.status = 413
-      throw error
-    }
-    atomicJson(this.characterPath(id), character)
+    this.persistCharacter(id, character)
     return character
   }
 

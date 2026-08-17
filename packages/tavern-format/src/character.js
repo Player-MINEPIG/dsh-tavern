@@ -1,4 +1,4 @@
-import { extractCharacterCardPng, isPng } from './png-card.js'
+import { embedCharacterCardPng, extractCharacterCardPng, isPng } from './png-card.js'
 
 const CHARACTER_SCHEMA_VERSION = 1
 const KNOWN_MACROS = new Set([
@@ -229,6 +229,119 @@ export function exportCharacterCardJson(character, options = {}) {
   if (!isRecord(character?.source?.raw)) throw new TypeError('Character document does not contain preserved source JSON')
   const space = options.pretty === false ? undefined : 2
   return `${JSON.stringify(character.source.raw, null, space)}${space === undefined ? '' : '\n'}`
+}
+
+const EDITABLE_STRING_FIELDS = [
+  ['name', 'name'],
+  ['nickname', 'nickname'],
+  ['description', 'description'],
+  ['personality', 'personality'],
+  ['scenario', 'scenario'],
+  ['firstMessage', 'first_mes'],
+  ['messageExample', 'mes_example'],
+  ['creatorNotes', 'creator_notes'],
+  ['systemPrompt', 'system_prompt'],
+  ['postHistoryInstructions', 'post_history_instructions'],
+  ['creator', 'creator'],
+  ['characterVersion', 'character_version'],
+]
+
+const EDITABLE_STRING_ARRAY_FIELDS = [
+  ['alternateGreetings', 'alternate_greetings'],
+  ['tags', 'tags'],
+]
+
+const EDITABLE_PATCH_KEYS = new Set([
+  ...EDITABLE_STRING_FIELDS.map(([camel]) => camel),
+  ...EDITABLE_STRING_ARRAY_FIELDS.map(([camel]) => camel),
+])
+
+function rawDataRoot(character) {
+  if (!isRecord(character?.source?.raw)) throw new TypeError('Character document does not contain editable source JSON')
+  if (character.source.format === 'sillytavern-v1') return character.source.raw
+  if (!isRecord(character.source.raw.data)) throw new TypeError('Character document does not contain editable source JSON')
+  return character.source.raw.data
+}
+
+function refreshNameWarning(warnings, name) {
+  const next = (Array.isArray(warnings) ? warnings : []).filter((item) => item?.code !== 'missing-name')
+  if (text(name).trim() === '') next.push(diagnostic('missing-name', 'The character name is empty.', 'data.name'))
+  return next
+}
+
+export function editCharacterCard(existing, patch, options = {}) {
+  if (!isRecord(existing) || existing.schemaVersion !== CHARACTER_SCHEMA_VERSION) {
+    throw new TypeError('Unsupported character document')
+  }
+  if (!isRecord(patch)) throw new TypeError('Character update must be an object')
+  const unexpected = Object.keys(patch).find((key) => !EDITABLE_PATCH_KEYS.has(key))
+  if (unexpected !== undefined) throw new TypeError(`Unsupported character field "${unexpected}"`)
+
+  const next = clone(existing)
+  const rawRoot = rawDataRoot(next)
+
+  for (const [camel, snake] of EDITABLE_STRING_FIELDS) {
+    if (patch[camel] === undefined) continue
+    if (typeof patch[camel] !== 'string') throw new TypeError(`${camel} must be a string`)
+    next.data[camel] = patch[camel]
+    rawRoot[snake] = patch[camel]
+  }
+  if (typeof patch.creatorNotes === 'string' && next.source.format === 'sillytavern-v1') {
+    rawRoot.creatorcomment = patch.creatorNotes
+  }
+  for (const [camel, snake] of EDITABLE_STRING_ARRAY_FIELDS) {
+    if (patch[camel] === undefined) continue
+    if (!Array.isArray(patch[camel]) || patch[camel].some((item) => typeof item !== 'string')) {
+      throw new TypeError(`${camel} must be an array of strings`)
+    }
+    next.data[camel] = [...patch[camel]]
+    rawRoot[snake] = [...patch[camel]]
+  }
+
+  next.name = displayName(next.data.name)
+  next.updatedAt = options.now ?? new Date().toISOString()
+  next.compatibility = {
+    ...clone(existing.compatibility ?? { warnings: [], unsupportedFeatures: [], unknownMacroNames: [] }),
+    warnings: refreshNameWarning(existing.compatibility?.warnings, next.data.name),
+    unknownMacroNames: unknownMacros(rawRoot),
+  }
+  return next
+}
+
+export function exportCharacterCardPng(character, pngInput, options = {}) {
+  if (!isRecord(character?.source?.raw)) throw new TypeError('Character document does not contain preserved source JSON')
+  const keywords = character.source?.format === 'character-card-v3' ? ['ccv3', 'chara'] : ['chara']
+  return embedCharacterCardPng(pngInput, JSON.stringify(character.source.raw), { ...options, keywords })
+}
+
+export function createBlankCharacterCard(options = {}) {
+  const name = displayName(options.name, 'Untitled character')
+  return parseSillyTavernCharacterCard({
+    spec: 'chara_card_v2',
+    spec_version: '2.0',
+    data: {
+      name,
+      description: '',
+      personality: '',
+      scenario: '',
+      first_mes: '',
+      mes_example: '',
+      creator_notes: '',
+      system_prompt: '',
+      post_history_instructions: '',
+      alternate_greetings: [],
+      tags: [],
+      creator: '',
+      character_version: '',
+      extensions: {},
+    },
+  }, {
+    id: options.id,
+    name,
+    now: options.now,
+    fileName: options.fileName ?? 'character.json',
+    container: 'json',
+  })
 }
 
 export function embeddedCharacterBookResource(character) {

@@ -84,8 +84,9 @@ Before calling `dsh plugin ... remove`, the uninstaller copies the installed
 
 This is important because dsh/pnpm removes the installed plugin directory,
 which is also where this version stores the complete plugin-local `data/`
-tree: presets, normalized character cards, imported character artifacts,
-standalone world books under `world-books/`, three-field user resources under
+tree: presets, normalized character cards, PNG cover images under
+`character-artifacts/` when a card was imported from PNG, standalone world books under
+`world-books/`, three-field user resources under
 `users/`, bounded Trace metadata in `tavern-traces.json`, and per-session
 resource selections. Copy the whole directory when backing up; copying only
 `presets/` loses other resources, audit metadata and bindings.
