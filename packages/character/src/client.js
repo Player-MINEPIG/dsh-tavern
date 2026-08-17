@@ -78,6 +78,7 @@ export function CharacterPanel({ sessionId, sessionBlank, close }) {
   const [savedDraft, setSavedDraft] = useState(null)
   const [selection, setSelection] = useState(null)
   const [binding, setBinding] = useState(null)
+  const [rp, setRp] = useState({ active: false })
   const [busy, setBusy] = useState(false)
   const [status, setStatus] = useState({ error: false, key: 'common.loading' })
   const fileRef = useRef(null)
@@ -127,13 +128,17 @@ export function CharacterPanel({ sessionId, sessionBlank, close }) {
     const generation = ++refreshGeneration.current
     const list = await api('/characters')
     let currentSelection = null
+    let currentRp = { active: false }
     if (sessionId) {
       const selected = await api(`/character-selection?sessionId=${encodeURIComponent(sessionId)}`)
       currentSelection = selected.selection
+      const rpData = await api(`/rp-mode?sessionId=${encodeURIComponent(sessionId)}`)
+      currentRp = rpData.rp ?? { active: false }
     }
     if (generation !== refreshGeneration.current) return
     setCatalog(list)
     setSelection(currentSelection)
+    setRp(currentRp)
     const id = preferredId ?? currentSelection?.characterCardId ?? list.characters[0]?.id ?? null
     if (id === null) {
       applyCharacter(null, null)
@@ -233,6 +238,8 @@ export function CharacterPanel({ sessionId, sessionBlank, close }) {
     })
     setSelection(data.selection)
     setBinding(data.selection)
+    const rpData = await api(`/rp-mode?sessionId=${encodeURIComponent(sessionId)}`)
+    setRp(rpData.rp ?? { active: false })
     announceTavernRefresh()
   }, 'character.status.bound'), [binding, dirty, run, selection, sessionBlank, sessionId])
 
@@ -240,13 +247,20 @@ export function CharacterPanel({ sessionId, sessionBlank, close }) {
     if (!sessionId) throw uiError('character.error.noSessionToUnbind')
     await api('/character-selection', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ sessionId, characterCardId: null }),
     })
-    setSelection(null)
-    if (detail !== null) setBinding(defaultCharacterSelection(detail.id))
+    await refresh(detail?.id)
+  }, 'character.status.unbound'), [detail?.id, refresh, run, sessionId])
+
+  const toggleRp = useCallback(() => run(async () => {
+    if (!sessionId) throw uiError('character.error.needSession')
+    const data = await api('/rp-mode', {
+      method: 'PUT',
+      body: JSON.stringify({ sessionId, active: rp.active !== true }),
+    })
+    setRp(data.rp ?? { active: rp.active !== true })
     announceTavernRefresh()
-  }, 'character.status.unbound'), [detail, run, sessionId])
+  }, 'character.status.rpUpdated'), [rp.active, run, sessionId])
 
   const remove = useCallback(() => run(async () => {
     if (detail === null || !window.confirm(unwrapText(uiMessage('character.confirmDelete', { name: detail.name })))) return
@@ -361,6 +375,16 @@ export function CharacterPanel({ sessionId, sessionBlank, close }) {
           h('button', { className: 'dcc-button dcc-primary', type: 'button', disabled: busy || !sessionId || dirty || (boundHere && !bindingDirty), onClick: bind }, dirty ? uiMessage('character.saveFirst') : boundHere ? (bindingDirty ? uiMessage('character.bindUpdate') : uiMessage('character.bindingAppliedButton')) : uiMessage('character.bind')),
         ),
         h('button', { className: 'dcc-button', type: 'button', disabled: busy || !sessionId || selection === null, onClick: unbind }, uiMessage('character.unbind')),
+        h('label', { className: 'dcc-check' },
+          h('input', {
+            type: 'checkbox',
+            checked: rp.active === true,
+            disabled: busy || !sessionId,
+            onChange: toggleRp,
+          }),
+          h('span', null, uiMessage('character.rpMode')),
+        ),
+        h('p', { className: 'dcc-note' }, uiMessage('character.rpMode.help')),
         h('p', { className: 'dcc-note' }, uiMessage('character.moduleNote')),
         h('details', { className: 'dcc-detail', open: true },
           h('summary', null, uiMessage('character.field.firstMessage')),

@@ -82,7 +82,7 @@ var zh_CN_default = Object.freeze({
   "nav.worldBook.empty": "\u672A\u7ED1\u5B9A\u4E16\u754C\u4E66",
   "nav.user.empty": "\u672A\u7ED1\u5B9A\u7528\u6237",
   "nav.sessionTemplate.empty": "\u5F53\u524D\u8BBE\u7F6E\u6216\u914D\u7F6E\u6A21\u677F",
-  "nav.settings.empty": "\u8BED\u8A00\u4E0E\u7F29\u653E",
+  "nav.settings.empty": "\u8BED\u8A00\u3001\u7F29\u653E\u4E0E RP \u8DDF\u968F",
   "nav.session.none": "\u65E0\u4F1A\u8BDD",
   "nav.syncFailed": "\u72B6\u6001\u540C\u6B65\u5931\u8D25\uFF1A{message}",
   "nav.menuTitle": "Tavern \xB7 {session}",
@@ -106,6 +106,8 @@ var zh_CN_default = Object.freeze({
   "settings.loadError": "\u65E0\u6CD5\u8BFB\u53D6\u754C\u9762\u8BBE\u7F6E\uFF1A{message}",
   "settings.saveError": "\u65E0\u6CD5\u4FDD\u5B58\u754C\u9762\u8BBE\u7F6E\uFF1A{message}",
   "settings.close": "\u5173\u95ED\u754C\u9762\u8BBE\u7F6E\u4FA7\u8FB9\u680F",
+  "settings.rpFollow": "\u7ED1\u5B9A\u89D2\u8272\u5361\u65F6\u81EA\u52A8\u8FDB\u5165 RP \u6A21\u5F0F",
+  "settings.rpFollow.help": "\u5F00\u542F\u540E\uFF0C\u7ED1\u5B9A\u89D2\u8272\u5361\u4F1A\u8FDB\u5165\u89D2\u8272\u626E\u6F14\u5E76\u9ED8\u8BA4\u628A\u6587\u4EF6\u6C99\u7BB1\u5207\u5230\u53EA\u8BFB\uFF1B\u89E3\u7ED1\u4F1A\u9000\u51FA RP \u5E76\u5C1D\u8BD5\u6062\u590D\u8FDB\u5165\u524D\u7684\u6587\u4EF6\u6743\u9650\u3002\u5DE5\u5177\u5BA1\u6279\u4E0D\u4F1A\u88AB\u5173\u6389\u3002\u624B\u52A8\u5173\u95ED RP \u540E\uFF0C\u53EA\u8981\u8FD8\u7ED1\u7740\u8FD9\u5F20\u5361\u5C31\u4E0D\u4F1A\u7ACB\u523B\u518D\u81EA\u52A8\u6253\u5F00\u3002",
   "preset.title": "Tavern \u9884\u8BBE",
   "preset.active": "\u25CF \u5DF2\u542F\u7528",
   "preset.importStJson": "\u5BFC\u5165 ST JSON",
@@ -194,6 +196,9 @@ var zh_CN_default = Object.freeze({
   "character.bindingApplied": "\u9762\u677F\u663E\u793A\u7684\u5F00\u573A\u9009\u62E9\u5DF2\u5E94\u7528\u5230\u5F53\u524D\u4F1A\u8BDD\u3002",
   "character.bindingAppliedButton": "\u5F53\u524D\u7ED1\u5B9A\u5DF2\u5E94\u7528",
   "character.unbind": "\u89E3\u9664\u7ED1\u5B9A",
+  "character.rpMode": "RP \u6A21\u5F0F\uFF08\u9ED8\u8BA4\u6587\u4EF6\u53EA\u8BFB\uFF09",
+  "character.rpMode.help": "\u5F00\u542F\u540E\u4F7F\u7528\u72EC\u7ACB\u7684\u89D2\u8272\u626E\u6F14\u63D0\u793A\u8BCD\uFF0C\u6587\u4EF6\u9ED8\u8BA4\u4E3A\u53EA\u8BFB\uFF0C\u5DE5\u5177\u5BA1\u6279\u4FDD\u6301\u4E0D\u53D8\u3002\u4E5F\u53EF\u4EE5\u4F7F\u7528 /rp \u548C /rp off\u3002\u89E3\u7ED1\u89D2\u8272\u5361\u4F1A\u9000\u51FA RP\u3002",
+  "character.status.rpUpdated": "RP \u6A21\u5F0F\u5DF2\u66F4\u65B0",
   "character.moduleNote": "\u89D2\u8272\u5361\u6A21\u5757\u8D1F\u8D23\u4FDD\u5B58\u6807\u51C6\u5316\u8D44\u6E90\u548C\u4F1A\u8BDD\u9009\u62E9\uFF1B\u5B9E\u9645 system profile \u4E0E\u5185\u5D4C\u4E16\u754C\u4FE1\u606F\u5339\u914D\u7531 Tavern loader \u5728\u6BCF\u6B21\u8BF7\u6C42\u65F6\u7EDF\u4E00\u5904\u7406\uFF0C\u4E0D\u4F1A\u4F2A\u9020 assistant \u5386\u53F2\u3002",
   "character.field.creatorNotes": "Creator notes",
   "character.field.description": "Description",
@@ -546,7 +551,7 @@ var en_default = Object.freeze({
   "nav.worldBook.empty": "No world book bound",
   "nav.user.empty": "No user bound",
   "nav.sessionTemplate.empty": "Current settings or configuration template",
-  "nav.settings.empty": "Language and scale",
+  "nav.settings.empty": "Language, scale, and RP follow",
   "nav.session.none": "No session",
   "nav.syncFailed": "Status sync failed: {message}",
   "nav.menuTitle": "Tavern \xB7 {session}",
@@ -570,6 +575,8 @@ var en_default = Object.freeze({
   "settings.loadError": "Could not load UI settings: {message}",
   "settings.saveError": "Could not save UI settings: {message}",
   "settings.close": "Close the UI settings sidebar",
+  "settings.rpFollow": "Enter RP mode when a character card is bound",
+  "settings.rpFollow.help": "When enabled, binding a character card enters roleplay and defaults the file sandbox to read-only. Unbinding leaves RP and tries to restore the previous file permissions. Tool approval is unchanged. Manually turning RP off while a card stays bound will not auto-reenter until you unbind or bind again.",
   "preset.title": "Tavern preset",
   "preset.active": "\u25CF Enabled",
   "preset.importStJson": "Import ST JSON",
@@ -658,6 +665,9 @@ var en_default = Object.freeze({
   "character.bindingApplied": "The greeting shown in this panel is applied to the current session.",
   "character.bindingAppliedButton": "Current binding applied",
   "character.unbind": "Unbind",
+  "character.rpMode": "RP mode (files default to read-only)",
+  "character.rpMode.help": "When on, a separate roleplay prompt is used, files default to read-only, and tool approval stays unchanged. /rp and /rp off do the same. Unbinding the character card leaves RP.",
+  "character.status.rpUpdated": "RP mode updated",
   "character.moduleNote": "The character-card module stores normalized resources and session selection. The Tavern loader handles the system profile and embedded World Info on each request without fabricating assistant history.",
   "character.field.creatorNotes": "Creator notes",
   "character.field.description": "Description",
@@ -979,7 +989,7 @@ var PRODUCTION_CATALOGS = Object.freeze({
 });
 
 // packages/client/src/i18n/runtime.js
-var DEFAULT_UI_SETTINGS = Object.freeze({ locale: DEFAULT_UI_LOCALE, scale: 1 });
+var DEFAULT_UI_SETTINGS = Object.freeze({ locale: DEFAULT_UI_LOCALE, scale: 1, rpFollowCharacter: true });
 var UI_SCALE_OPTIONS = Object.freeze([0.75, 0.85, 1, 1.15, 1.25, 1.5]);
 var RAW_TEXT = /* @__PURE__ */ Symbol("dsh-tavern.raw-text");
 var catalogs = PRODUCTION_CATALOGS;
@@ -1079,7 +1089,8 @@ function setClientUiSettings(value, { announce = true } = {}) {
   const locale = catalogs[requested] !== void 0 ? requested : isSupportedUiLocale(requested) ? requested : DEFAULT_UI_SETTINGS.locale;
   const numericScale = Number(value?.scale);
   const scale = Number.isFinite(numericScale) && numericScale >= 0.75 && numericScale <= 1.5 ? Number(numericScale.toFixed(2)) : DEFAULT_UI_SETTINGS.scale;
-  current = { locale, scale };
+  const rpFollowCharacter = value?.rpFollowCharacter !== false;
+  current = { locale, scale, rpFollowCharacter };
   if (announce && typeof window !== "undefined") {
     window.dispatchEvent(new CustomEvent("dsh-tavern:ui-settings", { detail: getClientUiSettings() }));
   }
@@ -1688,6 +1699,7 @@ function CharacterPanel({ sessionId, sessionBlank, close }) {
   const [savedDraft, setSavedDraft] = (0, import_react2.useState)(null);
   const [selection, setSelection] = (0, import_react2.useState)(null);
   const [binding, setBinding] = (0, import_react2.useState)(null);
+  const [rp, setRp] = (0, import_react2.useState)({ active: false });
   const [busy, setBusy] = (0, import_react2.useState)(false);
   const [status, setStatus] = (0, import_react2.useState)({ error: false, key: "common.loading" });
   const fileRef = (0, import_react2.useRef)(null);
@@ -1729,13 +1741,17 @@ function CharacterPanel({ sessionId, sessionBlank, close }) {
     const generation = ++refreshGeneration.current;
     const list = await api2("/characters");
     let currentSelection = null;
+    let currentRp = { active: false };
     if (sessionId) {
       const selected = await api2(`/character-selection?sessionId=${encodeURIComponent(sessionId)}`);
       currentSelection = selected.selection;
+      const rpData = await api2(`/rp-mode?sessionId=${encodeURIComponent(sessionId)}`);
+      currentRp = rpData.rp ?? { active: false };
     }
     if (generation !== refreshGeneration.current) return;
     setCatalog(list);
     setSelection(currentSelection);
+    setRp(currentRp);
     const id = preferredId ?? currentSelection?.characterCardId ?? list.characters[0]?.id ?? null;
     if (id === null) {
       applyCharacter(null, null);
@@ -1826,19 +1842,27 @@ function CharacterPanel({ sessionId, sessionBlank, close }) {
     });
     setSelection(data.selection);
     setBinding(data.selection);
+    const rpData = await api2(`/rp-mode?sessionId=${encodeURIComponent(sessionId)}`);
+    setRp(rpData.rp ?? { active: false });
     announceTavernRefresh2();
   }, "character.status.bound"), [binding, dirty, run, selection, sessionBlank, sessionId]);
   const unbind = (0, import_react2.useCallback)(() => run(async () => {
     if (!sessionId) throw uiError("character.error.noSessionToUnbind");
     await api2("/character-selection", {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ sessionId, characterCardId: null })
     });
-    setSelection(null);
-    if (detail !== null) setBinding(defaultCharacterSelection(detail.id));
+    await refresh(detail?.id);
+  }, "character.status.unbound"), [detail?.id, refresh, run, sessionId]);
+  const toggleRp = (0, import_react2.useCallback)(() => run(async () => {
+    if (!sessionId) throw uiError("character.error.needSession");
+    const data = await api2("/rp-mode", {
+      method: "PUT",
+      body: JSON.stringify({ sessionId, active: rp.active !== true })
+    });
+    setRp(data.rp ?? { active: rp.active !== true });
     announceTavernRefresh2();
-  }, "character.status.unbound"), [detail, run, sessionId]);
+  }, "character.status.rpUpdated"), [rp.active, run, sessionId]);
   const remove = (0, import_react2.useCallback)(() => run(async () => {
     if (detail === null || !window.confirm(unwrapText(uiMessage("character.confirmDelete", { name: detail.name })))) return;
     await api2(`/characters/${encodeURIComponent(detail.id)}`, { method: "DELETE" });
@@ -1959,6 +1983,18 @@ function CharacterPanel({ sessionId, sessionBlank, close }) {
           h2("button", { className: "dcc-button dcc-primary", type: "button", disabled: busy || !sessionId || dirty || boundHere && !bindingDirty, onClick: bind }, dirty ? uiMessage("character.saveFirst") : boundHere ? bindingDirty ? uiMessage("character.bindUpdate") : uiMessage("character.bindingAppliedButton") : uiMessage("character.bind"))
         ),
         h2("button", { className: "dcc-button", type: "button", disabled: busy || !sessionId || selection === null, onClick: unbind }, uiMessage("character.unbind")),
+        h2(
+          "label",
+          { className: "dcc-check" },
+          h2("input", {
+            type: "checkbox",
+            checked: rp.active === true,
+            disabled: busy || !sessionId,
+            onChange: toggleRp
+          }),
+          h2("span", null, uiMessage("character.rpMode"))
+        ),
+        h2("p", { className: "dcc-note" }, uiMessage("character.rpMode.help")),
         h2("p", { className: "dcc-note" }, uiMessage("character.moduleNote")),
         h2(
           "details",
@@ -3673,6 +3709,18 @@ function SettingsPanel({ settings, status, busy, close, update, reset }) {
       }, ...UI_SCALE_OPTIONS.map((scale) => h7("option", { key: scale, value: scale }, `${Math.round(scale * 100)}%`)))),
       h7("div", { className: "dtv-setting-value" }, translate("settings.currentScale", { scale: percent })),
       h7("p", { className: "dtv-note" }, translate("settings.scale.help")),
+      h7(
+        "label",
+        { className: "dtv-check" },
+        h7("input", {
+          type: "checkbox",
+          checked: settings.rpFollowCharacter !== false,
+          disabled: busy,
+          onChange: (event) => update({ ...settings, rpFollowCharacter: event.target.checked })
+        }),
+        h7("span", null, translate("settings.rpFollow"))
+      ),
+      h7("p", { className: "dtv-note" }, translate("settings.rpFollow.help")),
       h7("div", { className: "dtv-status", "data-error": status.error || void 0, role: "status" }, rawText(status.text)),
       h7(
         "div",

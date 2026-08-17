@@ -7,7 +7,7 @@ import {
 import { PRODUCTION_CATALOGS } from './catalogs/index.js'
 
 export { UI_LOCALES }
-export const DEFAULT_UI_SETTINGS = Object.freeze({ locale: DEFAULT_UI_LOCALE, scale: 1 })
+export const DEFAULT_UI_SETTINGS = Object.freeze({ locale: DEFAULT_UI_LOCALE, scale: 1, rpFollowCharacter: true })
 export const SUPPORTED_LOCALES = SUPPORTED_UI_LOCALES
 export const UI_SCALE_OPTIONS = Object.freeze([0.75, 0.85, 1, 1.15, 1.25, 1.5])
 export const MESSAGE_CATALOG = PRODUCTION_CATALOGS
@@ -160,7 +160,8 @@ export function setClientUiSettings(value, { announce = true } = {}) {
   const scale = Number.isFinite(numericScale) && numericScale >= 0.75 && numericScale <= 1.5
     ? Number(numericScale.toFixed(2))
     : DEFAULT_UI_SETTINGS.scale
-  current = { locale, scale }
+  const rpFollowCharacter = value?.rpFollowCharacter !== false
+  current = { locale, scale, rpFollowCharacter }
   if (announce && typeof window !== 'undefined') {
     window.dispatchEvent(new CustomEvent('dsh-tavern:ui-settings', { detail: getClientUiSettings() }))
   }
