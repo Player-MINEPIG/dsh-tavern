@@ -6,24 +6,42 @@ and known limits chronologically.
 
 ## 2026-08-18 — Character-card editing and public-doc cleanup
 
-Purpose: let users create and edit character cards like presets/world books,
-store one current card document, and keep published docs limited to outsider-facing
-guides.
+Purpose: let users create and edit character cards like presets and world books,
+store one current card document instead of a parallel original, and keep
+published docs limited to outsider-facing guides.
 
-- Added blank V2 character-card creation and field editing; save remains separate
-  from session binding. Greeting and strategy changes show the same unapplied
-  warning as world-book selection until bind/update.
+- Added blank V2 character-card creation (`POST /dsh-tavern/api/characters`) and
+  import-after-edit for name, nickname, description, personality, scenario,
+  default/alternate greetings, example dialogue, creator notes, system prompt,
+  post-history instructions, tags, creator and character version. Save remains
+  separate from session binding; embedded `character_book` still edits only in
+  the world-book panel.
+- Greeting lists can be added, edited and removed. Saving clamps each session's
+  `greetingIndex` instead of unbinding. Switching the bound card's greeting or
+  system/PHI strategy shows the same unapplied warning as world-book selection
+  until bind/update.
 - Stopped storing a second copy of card JSON. JSON import and create write only
   `characters/<id>.json`. PNG import keeps a cover image with `chara`/`ccv3`
-  stripped. JSON/PNG export is the current `source.raw`; missing covers use the
-  in-repo placeholder. The browse dropdown shows the card name only.
+  stripped. There is no original-file export; JSON/PNG export is the current
+  `source.raw`. Cards without a cover use
+  `packages/tavern-format/assets/character-placeholder.png`. The browse
+  dropdown shows the card name only, without a format suffix.
 - Moved implementation, acceptance, research and working plans under the
-  gitignored `docs/dev-plans/` tree. Public docs keep installation, usage,
-  architecture, contracts, changelog and world-book design.
-- Updated README, usage and installation text for create/edit and single-copy
-  storage. DeepSec L1/L2 on the published tree reported only false positives
-  (`RegExp.exec` and the base64 alphabet). Tracked files have no API keys or
+  gitignored `docs/dev-plans/` tree (`in-progress/` and `archive/`). Public docs
+  keep installation, usage, architecture, loader contract, message flow, prompt
+  pipeline, changelog, world-book design and README screenshots.
+- Updated README, usage, installation, architecture, loader contract, prompt
+  pipeline and message-flow text so they no longer claim cards cannot be created
+  or that original artifacts are stored/exported.
+- DeepSec L1/L2 on the published tree reported 12 findings, all false positives
+  (`RegExp.exec` classified as Python `exec`, and the PNG base64 alphabet as a
+  high-entropy secret). Tracked files have no API keys, private-key headers or
   workstation paths.
+
+Verification: `npm test` completed 198 tests (197 passed, zero failed, one
+opt-in external fixture skipped). `npm run build` regenerated `dist/client.js`.
+`git check-ignore` confirms `docs/dev-plans/` is excluded from the published
+tree.
 
 ## 2026-08-15 — Version 1.0.0 and public UI gallery
 
@@ -42,7 +60,7 @@ make the README's module overview visible on GitHub and in the npm package.
   and loaded, but cannot be created in this plugin because dedicated character
   authoring tools already provide a better creation workflow.
 - Inspected PNG ancillary chunks: every screenshot contains only a `Software =
-  Snipaste` text field and no path, key, author or location metadata.
+Snipaste` text field and no path, key, author or location metadata.
 
 Verification: `npm run check` rebuilt the versioned bundle and completed 185
 tests (184 passed, zero failed, one opt-in external fixture skipped).
