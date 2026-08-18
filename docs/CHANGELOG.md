@@ -4,18 +4,20 @@ This is the staged implementation log for dsh-tavern. It is kept separately
 from the product README so reviewers can follow intent, decisions, verification,
 and known limits chronologically.
 
-## 2026-08-19 — Play workspace files and path jail
+## 2026-08-19 — Play timeline/catalog validation and deriveFocus
 
-Purpose: bind one play workspace root and keep catalog/timeline files inside it.
+Purpose: keep playthrough pointer files valid without writing a stored focus
+session, and derive focus from the last rendered QA node.
 
-- `GET/PUT /v2/workspace`, `POST /v2/workspace/dirs`, and
-  `GET/PUT /v2/workspace/files` (including `?list=`) live in `packages/play`.
-- The root must already exist. First selection returns disk warnings. Child
-  directories only mkdir; they do not register extra DSH workspaces. Unbound
-  files/dirs return 409. `..`, absolute paths, and symlink escape return
-  400/403 and do not write outside the root. `archiveSession` is not used.
+- `PUT /workspace/files` validates `timeline.json` and `catalog.json` before
+  disk write. Illegal kind, missing event seq pointers, or `focusSessionId`
+  return 400 and leave no file.
+- `deriveFocus(timeline)` is the adopted variant `sessionId` of the last
+  non-hidden `qa` node. Greeting-only timelines have `sessionId: null`.
+  Unused older swipe variants are ignored. This module does not read DSH
+  events.
 
-Verification: `test/play-workspace.test.mjs`.
+Verification: `test/play-timeline.test.mjs`.
 
 
 ## 2026-08-19 — Play workspace files/dirs path jail

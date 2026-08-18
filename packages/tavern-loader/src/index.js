@@ -595,9 +595,12 @@ export {
   PlayWorkspaceStore,
   chromeConstants,
   createPlayApiHandler,
+  deriveFocus,
   isPlayApiPath,
   normalizeChrome,
+  normalizeTimeline,
   playWorkspaceConstants,
+  validatePlayDocument,
 } from '../../play/src/index.js'
 export { WorldBookStore, createWorldBookApiHandler } from '../../world-book-library/src/index.js'
 export { secureTavernApi, apiSecurityConstants } from './api-security.js'

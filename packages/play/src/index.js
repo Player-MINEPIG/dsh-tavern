@@ -11,4 +11,12 @@ export {
   workspaceWarnings,
 } from './workspace.js'
 export { createPlayApiHandler, isPlayApiPath } from './server.js'
+export {
+  deriveFocus,
+  normalizeCatalog,
+  normalizeTimeline,
+  parseCatalogJson,
+  parseTimelineJson,
+  validatePlayDocument,
+} from './timeline.js'
 export { resolvePlayPath, splitRelativeSegments } from './paths.js'

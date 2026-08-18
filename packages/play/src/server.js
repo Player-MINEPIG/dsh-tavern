@@ -1,13 +1,14 @@
 import { API_V2 } from '../../identity.js'
 import { createChromeApiHandler } from './chrome.js'
 import { httpError, parsePlayUrl, sendPlayError } from './http.js'
+import { validatePlayDocument } from './timeline.js'
 import { createWorkspaceApiHandler } from './workspace.js'
 
 export function isPlayApiPath(url) {
   return parsePlayUrl(url, API_V2) !== null
 }
 
-export function createPlayApiHandler({ chromeStore, workspaceStore, validateFile } = {}) {
+export function createPlayApiHandler({ chromeStore, workspaceStore, validateFile = validatePlayDocument } = {}) {
   if (chromeStore === undefined) throw new TypeError('chromeStore is required')
   const chromeApi = createChromeApiHandler(chromeStore)
   const workspaceApi = workspaceStore === undefined
