@@ -10,8 +10,9 @@ Purpose: finish the identity rename so Host assembly and bundled UI events use
 the same plugin id as the Cordis package.
 
 - Host system section is now `pmp-dsh-tavern:profile` (`PROFILE_SECTION`).
-  Replace-mode filtering follows the new name. Upgrading from a Host that still
-  has the old section name will not keep that old profile in replace mode.
+  After upgrade the plugin only registers this name, so assembly never
+  includes `dsh-tavern:profile`. Replace-mode keeps the current profile
+  section and `rp:policy`.
 - Browser CustomEvents are `pmp-dsh-tavern:refresh` and
   `pmp-dsh-tavern:ui-settings`. Old `dsh-tavern:*` event names are not
   dispatched. `dist/client.js` is rebuilt.
