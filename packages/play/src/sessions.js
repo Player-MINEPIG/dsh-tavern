@@ -113,9 +113,12 @@ export function createSessionApiHandler({ host, workspaceStore, now = () => new 
       const sourceId = body?.selectionFromSessionId === undefined || body.selectionFromSessionId === null
         ? null
         : requireSessionId(body.selectionFromSessionId)
-      const characterName = sourceId !== null && typeof host.characterName === 'function'
+      const characterName = typeof host.characterName === 'function'
         ? host.characterName(sourceId)
-        : (typeof host.characterName === 'function' ? host.characterName(null) : null)
+        : null
+      if (typeof characterName !== 'string' || characterName.trim() === '') {
+        throw httpError(409, 'A bound character card is required to create a play session', 'PLAY_CHARACTER_REQUIRED')
+      }
       const title = formatPlaySessionTitle(characterName, now())
       const created = await host.createSession({
         workspaceId: binding.workspaceId,
@@ -123,7 +126,7 @@ export function createSessionApiHandler({ host, workspaceStore, now = () => new 
         title,
       })
       const sessionId = requireSessionId(created?.sessionId)
-      if (sourceId !== null && typeof host.copySelection === 'function') {
+      if (typeof host.copySelection === 'function') {
         host.copySelection(sourceId, sessionId)
       }
       return sendJson(res, 201, { ok: true, sessionId, title })

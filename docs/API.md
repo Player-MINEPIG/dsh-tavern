@@ -24,7 +24,7 @@
 | GET | `/workspace/files?path=` | 读根内 UTF-8 文件 | 已实现 |
 | PUT | `/workspace/files?path=` | `{ content }` 写根内 UTF-8 文件。`..`、绝对路径、symlink 逃逸 → 400/403 | 已实现 |
 | GET | `/workspace/files?list=` | 列一层前缀 | 已实现 |
-| POST | `/sessions` | 新开扮演 session。标题=角色名+时间；可选复制绑定；插入扮演工作区。**不写 timeline** | 已实现 |
+| POST | `/sessions` | 新开扮演 session。必须已有角色卡，否则 `409 PLAY_CHARACTER_REQUIRED`。标题=角色名+时间；可选复制绑定；插入扮演工作区。**不写 timeline** | 已实现 |
 | POST | `/sessions/:id/branch` | `{ atEventId }` = 日志 seq。fork，不写 timeline、不代发。开放 turn → 409 | 已实现 |
 | POST | `/sessions/:id/user-message` | `{ text }` 作为下一条用户正文，`session.prompt` `queue` | 已实现 |
 | GET | `/sessions/:id/messages` | `deriveMessages()` + `seq` + `incompleteTurn` | 已实现 |

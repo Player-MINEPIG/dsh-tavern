@@ -35,7 +35,7 @@ function invoke(handler, { method = 'GET', url, body } = {}) {
   })
 }
 
-function mockHost() {
+function mockHost({ characterName = 'Alice' } = {}) {
   const calls = []
   return {
     calls,
@@ -77,15 +77,15 @@ function mockHost() {
         { id: 'm2', role: 'assistant', content: [{ type: 'text', text: 'yo' }] },
       ]
     },
-    characterName() { return 'Alice' },
+    characterName() { return characterName },
     copySelection(from, to) { calls.push(['copySelection', from, to]) },
   }
 }
 
-async function boundHandler(now = () => new Date('2026-08-19T03:04:00.000Z')) {
+async function boundHandler({ now = () => new Date('2026-08-19T03:04:00.000Z'), characterName = 'Alice' } = {}) {
   const pluginDir = mkdtempSync(join(tmpdir(), 'dsh-tavern-play-session-plugin-'))
   const playRoot = mkdtempSync(join(tmpdir(), 'dsh-tavern-play-session-root-'))
-  const host = mockHost()
+  const host = mockHost({ characterName })
   const workspaceStore = new PlayWorkspaceStore(pluginDir, { host })
   const handler = createPlayApiHandler({
     chromeStore: new ChromeStore(pluginDir),
@@ -114,6 +114,23 @@ test('POST /sessions creates a titled session in the play workspace and does not
     assert.deepEqual(fixture.host.calls.find(call => call[0] === 'copySelection'), ['copySelection', 'session-parent', 'session-new'])
     assert.equal(existsSync(join(fixture.playRoot, 'timeline.json')), false)
     assert.equal(fixture.host.calls.some(call => call[0] === 'promptSession'), false)
+  } finally {
+    rmSync(fixture.pluginDir, { recursive: true, force: true })
+    rmSync(fixture.playRoot, { recursive: true, force: true })
+  }
+})
+
+test('POST /sessions requires a bound character card', async () => {
+  const fixture = await boundHandler({ characterName: null })
+  try {
+    const created = await invoke(fixture.handler, {
+      method: 'POST',
+      url: `${API_V2}/sessions`,
+      body: {},
+    })
+    assert.equal(created.status, 409)
+    assert.equal(created.body.code, 'PLAY_CHARACTER_REQUIRED')
+    assert.equal(fixture.host.calls.some(call => call[0] === 'createSession'), false)
   } finally {
     rmSync(fixture.pluginDir, { recursive: true, force: true })
     rmSync(fixture.playRoot, { recursive: true, force: true })
