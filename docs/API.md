@@ -1,0 +1,39 @@
+# HTTP API
+
+状态：2026-08-19。根：`/pmp-dsh-tavern/api`。鉴权仍是本机 TCP peer、Host、Origin、Content-Type（见 loader 安全中间件）。成功响应带 `ok: true`；失败带 `ok: false` 与 `error`。
+
+两栏合同：
+
+- **v2**：给任意扮演前端的稳定面。
+- **v1**：给本插件悬浮球 / 侧栏 / Trace 的 bundled UI 合同。外人可以读、可以调，但扮演表面请走 v2；v1 字段随本插件 UI 需求增减。
+
+不要 `/swipe`、`/regenerate`、`/export`、`POST /focus`。
+
+## v2 稳定面
+
+前缀 `/pmp-dsh-tavern/api/v2`。
+
+| 方法 | 路径 | 作用 | 状态 |
+| --- | --- | --- | --- |
+| GET | `/chrome` | 返回 `{ mode: "native" \| "play" }` | 已实现 |
+| PUT | `/chrome` | 写入全局 chrome。不改 RP 锁、不改 DSH 当前 session | 已实现 |
+| POST | `/chrome` | 不提供 | 404 |
+
+`chrome` 是整个前端的蓝/红球，存在插件 data `chrome.json`，默认 `native`。非法 `mode` → 400。GET 不要求 JSON Content-Type。
+
+后续 M2–M4 会在本表追加 workspace files/dirs、timeline 校验、sessions / branch / user-message / messages、只读 `GET /focus`。
+
+## v1 bundled UI 合同
+
+前缀 `/pmp-dsh-tavern/api/v1`。旧根 `/dsh-tavern/api` 已废止。
+
+| 当你想 | 路径 |
+| --- | --- |
+| 管预设、看当前装配、导入/选中 | `/presets`、`/active`、`/import`、`/select` |
+| 管角色卡、绑定、导出 json/png、内嵌书 | `/characters`、`/character-selection` |
+| 管独立世界书和绑定 | `/world-books`、`/world-book-selection` |
+| 管用户、用户-世界书关系 | `/users`、`/user-selection` |
+| 界面语言缩放、绑卡跟随 RP | `/ui-settings` |
+| RP 开关与告警、rp:policy 正文 | `/rp-mode`、`/rp-alert`、`/rp-policy` |
+| 看 Trace | `/traces` |
+| 配置模板、按当前绑定开干净会话 | `/session-templates`、`/session-configurations/preview`、`/apply` |

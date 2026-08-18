@@ -4,6 +4,22 @@ This is the staged implementation log for dsh-tavern. It is kept separately
 from the product README so reviewers can follow intent, decisions, verification,
 and known limits chronologically.
 
+## 2026-08-19 — Play chrome GET/PUT `/v2/chrome`
+
+Purpose: persist the global native/play surface switch independently of RP
+and of the current DSH session, as the first v2 play-surface route.
+
+- New `packages/play` owns chrome storage (`chrome.json`) and the v2 HTTP
+  dispatcher. Loader mounts it on the existing `/pmp-dsh-tavern/api` prefix
+  via `secureTavernApi`; GET/PUT `/pmp-dsh-tavern/api/v2/chrome` are live.
+- Default mode is `native`. `PUT { "mode": "play" }` is atomic and survives
+  store recreation. Illegal modes and unknown fields return 400. There is no
+  `POST /chrome`. Chrome does not read or write RP selection.
+- Documented in [docs/API.md](API.md) (v2 stable vs v1 bundled).
+
+Verification: `test/play-chrome.test.mjs` plus `npm test`.
+
+
 ## 2026-08-19 — Plugin identity `pmp-dsh-tavern` and v1 HTTP root
 
 Purpose: stop colliding with other DSH plugins named `dsh-tavern`, and put the

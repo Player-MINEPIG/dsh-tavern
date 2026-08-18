@@ -32,6 +32,12 @@ export function isUnderApiV1(url, prefix) {
   return path === root || path.startsWith(`${root}/`)
 }
 
+export function isUnderApiV2(url, prefix = '') {
+  const path = requestPathname(url)
+  const root = apiV2Path(prefix)
+  return path === root || path.startsWith(`${root}/`)
+}
+
 export const identityConstants = Object.freeze({
   pluginId: PLUGIN_ID,
   apiRoot: API_ROOT,

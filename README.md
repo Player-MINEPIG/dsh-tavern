@@ -276,6 +276,7 @@ RP 是当前 session 的叠加，不是 DSH agent preset。开启后文件沙箱
 - [中文使用指南](docs/USAGE.zh-CN.md)：逐模块操作、数据和兼容边界
 - [RP 安全模式](docs/RP_SECURE_MODE.md)：RP 拦住与不拦的工具清单
 - [安装与卸载](docs/INSTALLATION.md)：跨平台参数、刷新恢复与备份
+- [HTTP API](docs/API.md)：v2 稳定面与 v1 bundled UI 合同
 - [架构说明](docs/ARCHITECTURE.md)：单插件分层与发布边界
 - [Loader contract](docs/LOADER_CONTRACT.md)：session 选择、profile 与安全预算
 - [DSH 消息流](docs/DSH_MESSAGE_FLOW.md)：DSH 原生流程以及本插件的介入点
@@ -293,7 +294,7 @@ RP 是当前 session 的叠加，不是 DSH agent preset。开启后文件沙箱
 | --- | --- |
 | 插件 id / 包名 | `pmp-dsh-tavern` |
 | 本插件资源 API（预设、卡、书、RP、Trace…） | `/pmp-dsh-tavern/api/v1/...` |
-| 扮演表面元 API | `/pmp-dsh-tavern/api/v2/...`（前缀已预留，路由随 M1–M4 补齐） |
+| 扮演表面元 API | `/pmp-dsh-tavern/api/v2/...`（`GET/PUT /chrome` 已实现；workspace / sessions 随后续模块补齐） |
 
 v1 是本插件悬浮球 / 侧栏 / Trace 用的 bundled UI 资源合同，不保证给第三方扮演表面用。v2 才是给任意扮演前端的稳定面：chrome、扮演工作区文件、session（create / branch / **user-message** / messages）以及只读 **GET `/focus`**。`user-message` 只提交下一条用户正文，不是 loader 拼好的完整 prompt；focus 是后端告诉前端上边栏该跟哪条 session，前端自己 `sessions.open`，不用 POST。swipe、删改、局分支、导入导出都由前端用这些接口拼。想在这套协议上做自己的前端，也用同一套积木拼产品功能（例如「修改并重新生成」= swipe 链路换掉 `user-message` 的 text），不要等本仓库加专用 API。扮演工作区不要放系统盘。时间线含开场白；上边栏对话 / 轨迹 / Tavern Trace 保留。人类可读导出为静态 HTML，另可保存 SillyTavern 聊天 JSON。
 

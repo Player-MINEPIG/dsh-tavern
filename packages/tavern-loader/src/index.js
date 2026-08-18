@@ -5,6 +5,7 @@ import {
   createApiHandler as createPresetApiHandler,
 } from '../../preset/src/index.js'
 import { API_ROOT, API_V1, PLUGIN_ID } from '../../identity.js'
+import { ChromeStore, createPlayApiHandler, isPlayApiPath } from '../../play/src/index.js'
 import {
   CharacterStore,
   createCharacterAdapter,
@@ -213,6 +214,7 @@ export function apply(ctx, config = {}) {
   const userWorldBooks = new UserWorldBookBindingStore(storageDir, config.userWorldBooks)
   const sessionTemplateStore = new SessionTemplateStore(storageDir, config.sessionTemplates)
   const uiSettingsStore = new UiSettingsStore(storageDir)
+  const chromeStore = new ChromeStore(storageDir)
   const rpPolicyStore = new RpPolicyStore(storageDir, {
     defaultSection: resolveRpConfig(config.rpMode ?? {}).section,
   })
@@ -458,6 +460,7 @@ export function apply(ctx, config = {}) {
       },
     })
     const uiSettingsApi = createUiSettingsApiHandler(uiSettingsStore)
+    const playApi = createPlayApiHandler({ chromeStore })
     const rpPolicyApi = createRpPolicyApiHandler(rpPolicyStore, { onChange: notifyChange })
     const rpModeApi = createRpModeApiHandler(rpMode, {
       beforeChange: ({ sessionId, active }) => {
@@ -466,7 +469,9 @@ export function apply(ctx, config = {}) {
       },
     })
     const api = secureTavernApi(
-      (req, res) => isUiSettingsApiPath(req.url)
+      (req, res) => isPlayApiPath(req.url)
+        ? playApi(req, res)
+        : isUiSettingsApiPath(req.url)
         ? uiSettingsApi(req, res)
         : isRpPolicyApiPath(req.url)
           ? rpPolicyApi(req, res)
@@ -506,6 +511,7 @@ export function apply(ctx, config = {}) {
     sessionTemplateStore: { value: sessionTemplateStore, enumerable: false },
     sessionConfigurations: { value: sessionConfigurations, enumerable: false },
     uiSettingsStore: { value: uiSettingsStore, enumerable: false },
+    chromeStore: { value: chromeStore, enumerable: false },
     rpPolicyStore: { value: rpPolicyStore, enumerable: false },
     traceStore: { value: traceStore, enumerable: false },
     traceRecorder: { value: traceRecorder, enumerable: false },
@@ -582,6 +588,13 @@ export {
   rpWorkspaceReadGuardReason,
   rpWriteGuardReason,
 } from './rp-mode.js'
+export {
+  ChromeStore,
+  chromeConstants,
+  createPlayApiHandler,
+  isPlayApiPath,
+  normalizeChrome,
+} from '../../play/src/index.js'
 export { WorldBookStore, createWorldBookApiHandler } from '../../world-book-library/src/index.js'
 export { secureTavernApi, apiSecurityConstants } from './api-security.js'
 export {

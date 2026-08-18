@@ -10,5 +10,6 @@ export {
   identityConstants,
   isApiV1Path,
   isUnderApiV1,
+  isUnderApiV2,
   requestPathname,
 } from '../../identity.js'

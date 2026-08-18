@@ -102,3 +102,18 @@ test('session-template use-case stores configuration projections without owning 
   assert.match(sessionTemplate, /normalizeTemplateSelection/)
   assert.match(sessionTemplate, /session-configurations\/apply/)
 })
+
+test('play use-case owns chrome/workspace/timeline logic and leaves Host seams to the loader', () => {
+  const play = [
+    read('../packages/play/src/index.js'),
+    read('../packages/play/src/server.js'),
+    read('../packages/play/src/chrome.js'),
+    read('../packages/play/src/http.js'),
+    read('../packages/play/src/atomic-json.js'),
+  ].join('\n')
+  assert.doesNotMatch(play, /tavern-loader|@deepseek-ai|systemPrompt\.section|agent\/request|archiveSession/)
+  assert.match(play, /\/chrome/)
+  const loader = read('../packages/tavern-loader/src/index.js')
+  assert.match(loader, /play\/src/)
+  assert.match(loader, /isPlayApiPath/)
+})

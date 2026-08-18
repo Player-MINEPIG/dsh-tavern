@@ -1,0 +1,24 @@
+import { API_V2 } from '../../identity.js'
+import { createChromeApiHandler } from './chrome.js'
+import { httpError, parsePlayUrl, sendPlayError } from './http.js'
+
+export function isPlayApiPath(url) {
+  return parsePlayUrl(url, API_V2) !== null
+}
+
+export function createPlayApiHandler({ chromeStore } = {}) {
+  if (chromeStore === undefined) throw new TypeError('chromeStore is required')
+  const chromeApi = createChromeApiHandler(chromeStore)
+
+  return async (req, res) => {
+    try {
+      const route = parsePlayUrl(req.url, API_V2)
+      if (route === null) throw httpError(404, 'Not found', 'PLAY_NOT_FOUND')
+      const method = String(req.method ?? 'GET').toUpperCase()
+      if (route.rest === '/chrome') return await chromeApi(req, res, { method })
+      throw httpError(404, 'Not found', 'PLAY_NOT_FOUND')
+    } catch (error) {
+      return sendPlayError(res, error)
+    }
+  }
+}

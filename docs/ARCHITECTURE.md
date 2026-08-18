@@ -22,8 +22,12 @@ packages/preset  packages/character  packages/user  packages/world-book-library
              \           |              |             /
        │
        ▼
+packages/play
+chrome / 扮演工作区 files / timeline 校验 / focus 派生（纯逻辑+HTTP）
+       │
+       ▼
 packages/tavern-loader ◄── DSH session/event（PendingInputProjection）
-DSH 编译策略、session/request 策略、Host hooks
+DSH 编译策略、session/request 策略、Host hooks、v1+v2 HTTP
        │
        ├── packages/tavern-trace
        │   最小化审计模型、有界插件存储/API、conversation.view
@@ -32,7 +36,7 @@ DSH 编译策略、session/request 策略、Host hooks
 DSH system prompt + agent request
 ```
 
-依赖只能向下：`tavern-loader → preset/character/user/world-book-library/world-book/tavern-trace → tavern-format`。格式层和 `world-book` 纯库不能导入 DSH、文件系统或 UI；preset、character、user、world-book-library 用例层不能注册 `systemPrompt`、`agent/request` 等 Host seam；只有 loader 是根 `main` 入口并允许依赖 DSH 运行时。`tavern-trace` 接受 loader 传入的普通 snapshot/session event 数据，但不导入 DSH、不 append Session；它只拥有最小化审计格式、有界插件存储、只读 API 和浏览器 view。浏览器侧由 `packages/client` 组合各用例 UI，它不是 Host loader。
+依赖只能向下：`tavern-loader → play/preset/character/user/world-book-library/world-book/tavern-trace → tavern-format`。格式层和 `world-book` 纯库不能导入 DSH、文件系统或 UI；preset、character、user、world-book-library 和 `play` 用例层不能注册 `systemPrompt`、`agent/request` 等 Host seam；只有 loader 是根 `main` 入口并允许依赖 DSH 运行时。`tavern-trace` 接受 loader 传入的普通 snapshot/session event 数据，但不导入 DSH、不 append Session；它只拥有最小化审计格式、有界插件存储、只读 API 和浏览器 view。浏览器侧由 `packages/client` 组合各用例 UI，它不是 Host loader。
 
 ## 各层职责
 
@@ -45,6 +49,7 @@ DSH system prompt + agent request
 | `world-book` | “哪些 lore entries 候选应被激活？” | ST/角色内嵌格式、归一化、纯匹配/排序/预算与 loader 投影 | session 选择、DSH 注入、角色卡存储 |
 | `world-book-library` | “用户如何管理独立世界书资源？” | 原子 JSON 存储、CRUD/导出 API、编辑 UI、供 loader 读取的 document | session 选择所有权、matcher 复制、Host seam、角色卡内嵌书修改 |
 | `session-template` | “怎样复用 Tavern 配置但创建干净 DSH 会话？” | 有界模板投影/原子存储/API、缺失资源诊断和客户端事务顺序 | DSH 历史、Trace、Session 构造、最终 prompt |
+| `play` | “扮演表面的元状态存在哪、文件怎么守在根内？” | 全局 chrome、后续 workspace/timeline/focus；HTTP 在 loader 挂载 | DSH session 事件、RP 锁、内置魔丸 DOM |
 | `tavern-loader` | “当前资源怎样影响这次 DSH 请求？” | 编译选中预设、映射支持的 call config、append/replace 策略、Host/API 挂载、独占 pending-input 投影、RP 会话叠加 | 重新解释 ST 原始字段、实现具体 UI |
 | `tavern-trace` | “这次 loader 为什么得到这个组合？” | turn/step 对齐、资源摘要、世界书接受/拒绝原因、header 摘要引用、有界存储/API/并列 view | 保存正文、替代 request/header、append 会话事件或模型消息 |
 
@@ -91,7 +96,7 @@ rc.6 的 `agent/inbox/spliced` 是公开、持久的 Session event；插入、�
 - 两个插件都可能争用 API、存储或 UI 生命周期；
 - 安装、卸载、备份和故障排查成本翻倍。
 
-因此发布与安装单位固定为根包 `pmp-dsh-tavern`（产品名仍是 dsh-tavern），内部包边界用于代码复用和测试隔离。浏览器与 Host 共用 `packages/identity.js` 的 `PLUGIN_ID`、`API_ROOT`、`API_V1`、`API_V2`。HTTP 挂载前缀是 `/pmp-dsh-tavern/api`；现有资源走 `/v1`，扮演元 API 走 `/v2`。旧根 `/dsh-tavern/api` 已废止。`package.json` 的 `./format`、`./preset`、`./character`、`./user`、`./world-book`、`./world-book-library`、`./trace`、`./loader` exports 是程序接口，不代表可分别安装的插件。
+因此发布与安装单位固定为根包 `pmp-dsh-tavern`（产品名仍是 dsh-tavern），内部包边界用于代码复用和测试隔离。浏览器与 Host 共用 `packages/identity.js` 的 `PLUGIN_ID`、`API_ROOT`、`API_V1`、`API_V2`。HTTP 挂载前缀是 `/pmp-dsh-tavern/api`；现有资源走 `/v1`，扮演元 API 走 `/v2`（chrome 已挂；workspace/sessions 随后续模块补齐）。旧根 `/dsh-tavern/api` 已废止。`packages/play` 不导入 DSH；只有 loader 把 v2 handler 挂到现有 `secureTavernApi`。`package.json` 的 `./format`、`./preset`、`./character`、`./user`、`./world-book`、`./world-book-library`、`./trace`、`./loader` exports 是程序接口，不代表可分别安装的插件。
 
 ## 当前发布门槛
 
