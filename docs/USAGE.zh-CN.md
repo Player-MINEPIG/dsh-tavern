@@ -1,6 +1,6 @@
 # dsh-tavern 中文使用指南
 
-状态：2026-08-18，对应当前角色卡创建/编辑与单份文档存储。本文介绍实际操作；消息流、架构和安全契约分别见 `DSH_MESSAGE_FLOW.md`、`ARCHITECTURE.md` 与 `LOADER_CONTRACT.md`。
+状态：2026-08-18，对应当前角色卡创建/编辑、RP 安全模式与委派子 agent 继承父级 Tavern 选择。本文介绍实际操作；消息流、架构和安全契约分别见 `DSH_MESSAGE_FLOW.md`、`ARCHITECTURE.md` 与 `LOADER_CONTRACT.md`。RP 拦/不拦清单见 [RP_SECURE_MODE.md](RP_SECURE_MODE.md)。
 
 ## 1. 打开和切换面板
 
@@ -10,7 +10,7 @@
 - 点击球体会平滑展开菜单。打开任一侧栏后，球体仍然保留，可直接切换到其他模块。
 - 资源旁的发光绿点表示当前 session 已启用该类资源，红点表示未启用；世界书绿点表示存在有效绑定，不等于本轮关键词已经命中。
 - 资源标题旁显示当前启用内容。面板内的“浏览/编辑对象”可能与当前 session 已绑定对象不同，请以绑定状态和“未应用”提示为准。
-- “界面设置”可切换简体中文/English，并把全部 Tavern UI 缩放到 75%–150%。设置全局保存，不改变 DSH 主界面、资源正文或 session 绑定。RP 安全锁定（写文件、终端、工作区外读取等）见 [RP 安全模式](RP_SECURE_MODE.md)。
+- “界面设置”可切换简体中文/English，并把全部 Tavern UI 缩放到 75%–150%；还可开关「绑卡跟随 RP」，以及编辑可选的 `rp:policy` 提示词。语言/缩放/跟随是全局设置；RP 开关本身是 per-session。RP 锁定清单见 [RP 安全模式](RP_SECURE_MODE.md)。
 
 ## 2. 预设
 
@@ -64,7 +64,7 @@ description、personality、scenario、example dialogue 等字段会按预设 ma
 
 同一会话中切换资源不会删除旧资源已经影响过的 assistant 回复。需要避免上下文残留时，应使用“新会话”：
 
-- “维持当前设置新开对话”把当前 preset、角色/greeting 选项、用户和独立世界书选择复制到真实 blank DSH session；
+- “维持当前设置新开对话”把当前 preset、角色/greeting 选项、用户、独立世界书和 RP 状态复制到真实 blank DSH session；
 - 配置模板保存同一份有界 selection 投影，可在创建前查看模板内容；
 - 更新模板只从当前 session 的实际设置获取。请先通过 DT 悬浮球的资源面板完成并保存配置；
 - 新会话不会复制 durable history、Inbox、Trace、资源正文或旧运行态；
@@ -82,7 +82,15 @@ Trace 不保存完整 Tavern profile、用户消息、资源正文或工具 sche
 
 ## 8. RP 安全模式
 
-绑定角色卡可自动进入 RP。开启后：写文件、终端、外连抓取被拒绝；本地读取只限当前工作区，且不读 `.env` 等机密文件；子 agent 可以派，孩子受同一套限制并带上父会话当时的 Tavern 选择。完整清单见 [RP_SECURE_MODE.md](RP_SECURE_MODE.md)。
+RP 是当前 session 的叠加，不是 DSH agent preset。
+
+1. 角色卡面板上的 RP 开关控制本会话。界面设置里的「绑卡跟随」默认开启，绑定角色卡会自动进入 RP。
+2. 关掉该开关或发送 `/rp off` 即可离开。聊天栏改文件权限不能解除锁定。
+3. 开启后：写文件、终端、外连抓取被拒绝；本地读取只限当前工作区，且不读 `.env` 等机密文件名。触发拦截时弹出告知窗（不是审批），并中断该 agent 当前轮。
+4. 子 agent 可以派。孩子继承同一套限制，并固化父会话当时的 Tavern 选择（与「用当前配置新开对话」相同）。委派任务是否收窄由主 agent 的 spawn 提示决定；插件不往 `rp:policy` 里写委派策略。
+5. 界面设置里可改可选的 `rp:policy` 提示词。默认只说明高风险操作被锁。身份和文风写在预设或角色卡。留空则不附加这段文本，锁定仍有效。底部「恢复默认」只重置语言、缩放和绑卡跟随，不会改这段提示词。
+
+完整拦/不拦清单见 [RP_SECURE_MODE.md](RP_SECURE_MODE.md)。
 
 ## 9. 数据、备份与卸载
 
@@ -100,11 +108,12 @@ characters/                    角色卡当前文档
 character-artifacts/           PNG 导入留下的封面图（无卡数据）
 world-books/                   独立世界书
 users/                         用户名字与描述
-session-selections.json        per-session 选择
+session-selections.json        per-session 选择（含 RP 状态）
 user-world-book-bindings.json  用户—世界书关系
-session-templates.json         配置模板
+session-templates.json         配置模板（含 RP 投影）
 tavern-traces.json             有界 Trace 元数据
-ui-settings.json               全局语言与缩放
+ui-settings.json               全局语言、缩放与绑卡跟随 RP
+rp-policy.json                 可选的 rp:policy 提示词
 ```
 
 如插件配置指定外部 `storageDir`，以上数据改存该目录。备份时复制整个 `data/`，不要只复制 `presets/`。

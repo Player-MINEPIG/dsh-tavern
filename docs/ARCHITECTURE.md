@@ -1,6 +1,6 @@
 # dsh-tavern package architecture
 
-状态：2026-08-15，首个公开发布候选版本已采用。本文是当前架构决策与发布审查门槛，不是产品 README。
+状态：2026-08-18，已包含 RP 会话叠加与委派子 agent 固化父选择。本文是当前架构决策与发布审查门槛，不是产品 README。
 
 ## 决策结论
 
@@ -45,12 +45,12 @@ DSH system prompt + agent request
 | `world-book` | “哪些 lore entries 候选应被激活？” | ST/角色内嵌格式、归一化、纯匹配/排序/预算与 loader 投影 | session 选择、DSH 注入、角色卡存储 |
 | `world-book-library` | “用户如何管理独立世界书资源？” | 原子 JSON 存储、CRUD/导出 API、编辑 UI、供 loader 读取的 document | session 选择所有权、matcher 复制、Host seam、角色卡内嵌书修改 |
 | `session-template` | “怎样复用 Tavern 配置但创建干净 DSH 会话？” | 有界模板投影/原子存储/API、缺失资源诊断和客户端事务顺序 | DSH 历史、Trace、Session 构造、最终 prompt |
-| `tavern-loader` | “当前资源怎样影响这次 DSH 请求？” | 编译选中预设、映射支持的 call config、append/replace 策略、Host/API 挂载、独占 pending-input 投影 | 重新解释 ST 原始字段、实现具体 UI |
+| `tavern-loader` | “当前资源怎样影响这次 DSH 请求？” | 编译选中预设、映射支持的 call config、append/replace 策略、Host/API 挂载、独占 pending-input 投影、RP 会话叠加 | 重新解释 ST 原始字段、实现具体 UI |
 | `tavern-trace` | “这次 loader 为什么得到这个组合？” | turn/step 对齐、资源摘要、世界书接受/拒绝原因、header 摘要引用、有界存储/API/并列 view | 保存正文、替代 request/header、append 会话事件或模型消息 |
 
 角色卡已经在 `tavern-format` 增加 adapter/model，并在 `character` 用例层提供管理与资源入口；用户资源由独立 `user` 用例层提供严格 `{id,name,description}` 文档；世界书格式兼容位于独立纯库 `packages/world-book`。所有资源最终由同一个 `tavern-loader` 组合。角色卡和用户模块都不读取预设排序，也不决定字段插入位置。
 
-统一 loader 把 Host 注册收敛为一个 `dsh-tavern:profile` section，并引入 loader-owned `SessionSelectionStore`：preset、角色、用户和世界书的文档仍由各自模块管理，但“哪个 session 使用哪些资源”由统一策略持久化。普通 fork 与 delegated subagent 都复制父选择。
+统一 loader 把 Host 注册收敛为 `dsh-tavern:profile` 与可选的 `rp:policy` 两个 section，并引入 loader-owned `SessionSelectionStore`：preset、角色、用户和世界书的文档仍由各自模块管理，但“哪个 session 使用哪些资源”以及 RP 叠加由统一策略持久化。普通 fork 与 delegated subagent 都复制父选择。RP 不是 DSH agent preset。
 
 统一 adapter、session 继承和 marker 契约见 `docs/LOADER_CONTRACT.md`；DSH 原生与插件增强消息流见 `docs/DSH_MESSAGE_FLOW.md`；世界书格式和投影细节见 `docs/world-book/DESIGN.md`。
 
@@ -73,7 +73,7 @@ rc.6 的 `agent/inbox/spliced` 是公开、持久的 Session event；插入、�
 ## 控制面扩展
 
 - 用户与独立世界书的关联已由统一 loader policy 的独立原子文件持有；`UserModel` 仍只有 `id/name/description`，`world-book-library` 文档也不反向保存用户 id。用户 UI 可以编辑关系，但最终以 session 显式来源优先、用户来源随后稳定去重，且只有 loader 的共享 adapter 运行 matcher。
-- UI 缩放与语言已由 `packages/client` 的单一设置入口、共享 locale contract 和逐语言语义 catalog 实现。业务组件只引用语义 key，动态资源值通过显式 raw boundary 插值；运行时不再扫描或替换中文原文。loader 根 API 只持久化有界的全局显示文档，资源 JSON、profile 编译和 session selection 不读取显示设置。
+- UI 缩放、语言与绑卡跟随 RP 已由 `packages/client` 的单一设置入口、共享 locale contract 和逐语言语义 catalog 实现。业务组件只引用语义 key，动态资源值通过显式 raw boundary 插值；运行时不再扫描或替换中文原文。loader 根 API 只持久化有界的全局显示文档（含 `rpFollowCharacter`），资源 JSON、profile 编译和 session selection 不读取显示语言/缩放。可选的 `rp:policy` 正文是另一份有界文件 `rp-policy.json`。
 - 这两项都必须复用现有单插件 API、安全边界、刷新事件和原子持久化模式，不能通过新增第二个可安装插件实现。
 
 ## 为什么不是两个 DSH 插件

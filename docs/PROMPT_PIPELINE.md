@@ -1,6 +1,6 @@
 # Prompt pipeline and compatibility map
 
-状态：2026-08-15，已对齐首个公开发布候选版本及当前输入提前识别实现。
+状态：2026-08-18，已对齐 RP `rp:policy` 段与当前输入提前识别实现。
 
 本文说明 Tavern 资源在 SillyTavern、TauriTavern 和 dsh-tavern 中如何进入一次模型请求，并明确当前版本没有实现的映射。DSH 自身的 turn/step、Inbox、Session、system assembly 和 request/header 顺序另见 `docs/DSH_MESSAGE_FLOW.md`。它是技术评审文档，不是产品 README。
 
@@ -51,9 +51,9 @@ dsh 没有 ST 的 `PromptManager`、marker collection 或任意历史深度插�
 
 第 3 步不使用空转 step 或私有 Inbox。loader 从公开 `agent/inbox/spliced` Session event 重建有界待处理队列，在 claim 删除 splice 后、system assembly 前暂存本次 batch，并形成 `ActivationContext = durable history + claimed messages`。world-book 纯 matcher 仍只接收显式输入，不知道 DSH event；Trace 仍记录首次 assembly 的真实结果，不在请求后补算。
 
-默认 system 段顺序为：DSH harness identity（约 `-100`）→ Agent/deployment persona（约 `0`）→ dsh-tavern preset（`10`）→ 工具引导（`100–199`）。
+默认 system 段顺序为：DSH harness identity（约 `-100`）→ Agent/deployment persona（约 `0`）→ dsh-tavern preset（`10`）→ RP 开启时的 `rp:policy`（`45`）→ 工具引导（`100–199`）。`rp:policy` 默认只说明高风险操作被锁，不是扮演身份；身份和文风仍来自 preset / 角色卡。
 
-高级“仅使用预设”模式通过 `system-prompt/assemble` 把 system sections 替换为当前预设，但保留 assembly 的 tools、runtime contexts 和 variables。它会移除模型可见的 harness identity、persona 和工具文字说明，所以 Code Mode 或结构化输出可能失效；工具执行策略、文件沙箱和审批不因删除文本而关闭。DSH 对这一边界的本机参考是 `@deepseek-ai/dsh-system-prompt/README.zh.md`。
+高级“仅使用预设”模式通过 `system-prompt/assemble` 把 system sections 替换为当前预设与 `rp:policy`（若有），但保留 assembly 的 tools、contexts 和 variables。它会移除模型可见的 harness identity、persona 和工具文字说明，所以 Code Mode 或结构化输出可能失效；工具执行策略、文件沙箱和审批不因删除文本而关闭。RP 锁仍由 `tools.guard` 执行。DSH 对这一边界的本机参考是 `@deepseek-ai/dsh-system-prompt/README.zh.md`。
 
 ## 4. 当前映射是否完整
 

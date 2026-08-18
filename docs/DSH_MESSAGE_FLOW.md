@@ -1,6 +1,6 @@
 # DSH 与 dsh-tavern（DT）消息流
 
-状态：2026-08-15，基于本机 `@deepseek-ai/dsh 0.1.0-rc.6` 的公开 README 与已安装源码核对。本文分别描述 DSH 原生流程、DT 自身流程、DT 对 DSH 的介入，以及安装 DT 后一次完整模型 step 的实际流程；它不是 README。
+状态：2026-08-18，基于本机 `@deepseek-ai/dsh 0.1.0-rc.6` 的公开 README 与已安装源码核对，并包含 RP 会话叠加。本文分别描述 DSH 原生流程、DT 自身流程、DT 对 DSH 的介入，以及安装 DT 后一次完整模型 step 的实际流程；它不是 README。
 
 本文中的 `DT` 是 `dsh-tavern` 的简称。SillyTavern（ST）是 DT 兼容的资源格式与部分语义来源，不是本插件或其界面的产品身份。
 
@@ -131,17 +131,19 @@ DT 不替换 agent loop，也不维护第二套会话历史。它通过 DSH 的�
 
 | DSH 扩展点 | DT 的动作 | 对最终请求的影响 |
 | --- | --- | --- |
-| `agent/session-start` | 为 agent 建立或恢复 session 资源选择 | 决定本 session 可加载哪些 DT 资源 |
-| `systemPrompt.section` | 注册 `dsh-tavern:profile`，顺序为 10 | 把编译后的 Tavern profile 贡献给 system assembly |
-| `system-prompt/assemble` | 追加 DT runtime contexts；高级 replace 模式可只保留 DT profile section | 改变最终 `system`/context，但不改历史与工具执行权限 |
+| `agent/session-start` | 为 agent 建立或恢复 session 资源选择；RP 开启时钉只读沙箱 | 决定本 session 可加载哪些 DT 资源，以及是否进入 RP 锁 |
+| `systemPrompt.section` | 注册 `dsh-tavern:profile`（order 10）与 `rp:policy`（order 45） | 把编译后的 Tavern profile 与可选 RP 锁说明贡献给 system assembly |
+| `system-prompt/assemble` | 追加 DT runtime contexts；高级 replace 模式可只保留 DT profile 与 `rp:policy` | 改变最终 `system`/context，但不改历史与工具执行权限 |
+| `agent/pre-step` | RP 边界提交待处理开关，并再次钉只读沙箱 | 不改 messages；保证聊天栏改权限无法在下一步前解开 RP |
+| `tools.guard` | RP 开启时拒绝高风险工具并 `agent.cancel` | 不进入执行；告警弹窗记在父会话（子 agent 违规时） |
 | `agent/request` | 合并 preset 中 DSH 明确支持的 call config；把刚完成的 assembly snapshot 交给 Trace | 可改变 temperature/maxTokens/reasoningEffort/stop 等；不改 messages |
-| `session/event` | 在观察到 `request/header` 时把 Trace 记录与 header seq/摘要对齐 | 只增加插件自己的审计元数据，不增加模型消息 |
+| `session/event` | 对齐 Trace 与 `request/header`；RP 开启时若看到 `sandbox/mode` 再次钉只读 | 只增加插件审计元数据；聊天栏改权限无法解开 RP |
 | `agent/request-error` | 标记相应 Trace 尝试失败 | 不改变模型输入 |
 | Web server / client slots | 提供受保护的资源 API、`DT` 悬浮球、侧栏与 Tavern Trace 视图 | 控制面与可视化；不直接进入 prompt |
 
 既有 `session/event` 观察者除 request/header 对齐外，也由 loader 独占处理公开 `agent/inbox/spliced`，建立不持久化正文的 `PendingInputProjection`。该投影只影响世界书激活判断，不改变最终 DSH messages。
 
-默认 append 模式下，DSH 原有 system sections 仍然存在，DT profile 作为新增 section 参与组装。高级 replace 模式会从模型可见的 system 文本中移除其他 section，只保留 DT profile；但 tools、runtime contexts、variables、沙箱、审批与执行层安全限制仍由 DSH 管理，不会被关闭。
+默认 append 模式下，DSH 原有 system sections 仍然存在，DT profile 作为新增 section 参与组装；RP 开启且 `rp:policy` 非空时再插入 order 45 的锁说明。高级 replace 模式会从模型可见的 system 文本中移除其他 section，只保留 DT profile 与 `rp:policy`；但 tools、runtime contexts、variables、沙箱、审批与执行层安全限制仍由 DSH 管理，不会被关闭。RP 是在此之上再拒绝一部分工具，不能用聊天栏权限芯片解开。
 
 DT 明确不做以下改动：
 
@@ -150,7 +152,7 @@ DT 明确不做以下改动：
 - 不把 greeting 伪造成 assistant 历史；当前只作为带来源标记的参考内容。
 - 不覆盖 DSH Agent 身份；用户资料只提供 Tavern 用户名字与描述。
 - 不发送 creator notes。
-- 不绕过 DSH 的工具权限、沙箱或审批。
+- 不绕过 DSH 的工具权限、沙箱或审批。RP 额外拦住一部分高风险工具，清单见 `docs/RP_SECURE_MODE.md`。
 - 不向 Session 写入伪造的 Trace、未知事件或第二套对话记录。
 
 ## 4. 安装当前已验收 DT 后的完整 flow
@@ -301,6 +303,6 @@ Tavern Trace 位于 Conversation / Trajectory 同级的公开 `conversation.view
   → DSH sessions.open() 导航
 ```
 
-模板只保存 preset、角色/greeting 开关、用户和独立世界书的资源 ID/选项；不会读取或复制 durable messages、Tavern Trace、Inbox、claimed input、turn/step 或资源正文。若任一资源已缺失，预检和应用都会返回诊断并阻止导航，因此不会留下“只应用了一半”的 Tavern 组合。
+模板只保存 preset、角色/greeting 开关、用户、独立世界书和 RP 叠加的资源 ID/选项；不会读取或复制 durable messages、Tavern Trace、Inbox、claimed input、turn/step 或资源正文。若任一资源已缺失，预检和应用都会返回诊断并阻止导航，因此不会留下“只应用了一半”的 Tavern 组合。
 
-语言与缩放同样是控制面状态，只写入全局 `ui-settings.json` 并作用于 Tavern 浏览器根节点。它不进入 `SessionSelectionStore`、profile 编译、world-book matcher、`agent/request` 或 `request/header`，所以切换语言/缩放不会改变模型看到的任何消息。
+语言、缩放与「绑卡跟随 RP」同样是控制面状态，只写入全局 `ui-settings.json` 并作用于 Tavern 浏览器根节点。它们不进入 profile 编译、world-book matcher、`agent/request` 或 `request/header`。可选的 `rp:policy` 正文写入 `rp-policy.json`，只在 RP 开启时进入 system 段。

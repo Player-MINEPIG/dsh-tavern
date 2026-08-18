@@ -4,24 +4,39 @@ This is the staged implementation log for dsh-tavern. It is kept separately
 from the product README so reviewers can follow intent, decisions, verification,
 and known limits chronologically.
 
-## 2026-08-18 — Delegated subagents snapshot parent Tavern selection
+## 2026-08-18 — RP secure mode and delegated subagent snapshot
 
-Purpose: let a parent agent spawn children that start from the same Tavern
-binding as “new session with current settings”, so candidate replies and
-multi-character scenes can share the bound preset, character, user and world
-books unless the parent writes a narrower spawn prompt.
+Purpose: add a session overlay for roleplay that pins a read-only file sandbox
+and refuses high-risk tools, without making RP a DSH agent preset. Delegated
+children then start from the same Tavern binding as “new session with current
+settings”, so candidate replies and multi-character scenes share the bound
+preset, character, user and world books unless the parent writes a narrower
+spawn prompt.
 
-- `SessionSelectionStore.ensureAgent()` now copies the parent selection for
-  `delegationDepth > 0` the same way ordinary forks already did. The snapshot
-  is independent: later parent rebinds do not change the child.
-- RP policy text is unchanged. Spawn-prompt narrowing stays with the user and
-  preset author; this plugin does not inject subagent composition instructions.
-- RP lock inheritance is unchanged: children still cannot write, shell, fetch,
-  or read outside the workspace / secret files.
+- RP is stored on `SessionSelectionStore.selection.rp`. Binding a character
+  card can auto-enter RP (`rpFollowCharacter`, default on). Leave with the
+  card switch or `/rp off`. The chat permission chip cannot lift the lock.
+- High-risk tools are refused by `tools.guard` and the current agent is
+  cancelled: writes, shell, `run_code`, `web_fetch`, any `sandbox_permissions`,
+  `grep`, workspace-outside `read`/`read_image`/`glob`, and secret filenames.
+  Subagent spawn itself is allowed. Child violations alert on the parent
+  session and cancel only that child.
+- Optional `rp:policy` (order 45) is a short lock notice, editable in UI
+  settings and stored as `rp-policy.json`. Identity and style stay in the
+  preset or character card; spawn-composition instructions are not injected.
+- `ensureAgent()` copies the parent selection for `delegationDepth > 0` the
+  same way ordinary forks already did. The snapshot is independent. Children
+  inherit the RP lock from the ancestor chain.
+- Product inventory of blocked vs allowed tools is in `docs/RP_SECURE_MODE.md`.
 
 Verification: `npm test` completed 218 tests (217 passed, zero failed, one
 opt-in external fixture skipped). `node scripts/install.mjs` refreshed the
-isolated tavern test profile.
+isolated tavern test profile. DeepSec L1/L2 on the published tree reported 15
+findings, all false positives (`RegExp.exec` classified as Python `exec`, PNG
+base64 alphabet, and minified `dist/client.js` URL templates as high-entropy
+secrets). Tracked files have no API keys, private-key headers or workstation
+paths. README `D:\DSH\review` and `/Users/you/` are install placeholders.
+`docs/dev-plans/` remains gitignored.
 
 ## 2026-08-18 — Character-card editing and public-doc cleanup
 

@@ -16,6 +16,7 @@
   - [DT 悬浮球与界面设置](#dt-悬浮球与界面设置)
   - [预设](#预设)
   - [角色卡](#角色卡)
+  - [RP 安全模式](#rp-安全模式)
   - [世界书](#世界书)
   - [用户](#用户)
   - [新会话与配置模板](#新会话与配置模板)
@@ -36,6 +37,7 @@
 - 独立世界书、角色卡内嵌世界书及用户绑定世界书；
 - 只有名字和描述的用户资料；
 - per-session 资源绑定、干净新会话与配置模板；
+- RP 会话叠加：只读文件沙箱与高风险工具拦截（不是 DSH agent preset）；
 - 简体中文/English、Tavern UI 缩放与可拖拽 `DT` 悬浮入口；
 - 与 Conversation、Trajectory 并列的 Tavern Trace。
 
@@ -191,7 +193,7 @@ npm run plugin:uninstall
 
 安装并重启 DSH Web 后，点击红、黑、白配色的 `DT` 悬浮球展开菜单。球体可以拖动并记忆位置；侧栏打开时球体仍会保留，可直接切换模块。
 
-资源旁的发光绿点表示当前 session 已启用，红点表示未启用；世界书绿点表示存在有效来源，不代表本轮已经命中关键词。“界面设置”可以即时切换简体中文/English，并在 75%–150% 之间缩放 Tavern UI。
+资源旁的发光绿点表示当前 session 已启用，红点表示未启用；世界书绿点表示存在有效来源，不代表本轮已经命中关键词。“界面设置”可以即时切换简体中文/English，在 75%–150% 之间缩放 Tavern UI，并开关「绑卡跟随 RP」、编辑可选的 `rp:policy` 提示词。
 
 <p align="center">
   <img src="docs/assets/dt-launcher.png" alt="DT 悬浮球展开后的资源状态菜单" width="420">
@@ -213,11 +215,15 @@ npm run plugin:uninstall
 
 导入 ST JSON/PNG 角色卡，或创建空白卡。导入后可编辑名称、描述、性格、场景、开场白（含备选）、示例对话、创作者备注、system prompt、post-history instructions 和标签等字段；保存与绑定分开，目录下拉只用于浏览。内嵌世界书仍在世界书面板编辑。
 
-绑定到当前 session 时可选择 greeting，以及是否采用卡内 system prompt / post-history instructions。导出 JSON / PNG 都是当前内容，没有「导出原件」；PNG 导入只保留封面图，没有封面时使用占位图。角色字段由统一 loader 与预设 marker、用户资料和世界书组合；greeting 不会伪造成既有 assistant 历史。
+绑定到当前 session 时可选择 greeting，以及是否采用卡内 system prompt / post-history instructions。角色卡面板上的 RP 开关控制本会话；界面设置里的「绑卡跟随」默认开启。导出 JSON / PNG 都是当前内容，没有「导出原件」；PNG 导入只保留封面图，没有封面时使用占位图。角色字段由统一 loader 与预设 marker、用户资料和世界书组合；greeting 不会伪造成既有 assistant 历史。
 
 <p align="center">
   <img src="docs/assets/character-card.png" alt="Tavern 角色卡导入、编辑与会话绑定侧栏" width="520">
 </p>
+
+### RP 安全模式
+
+RP 是当前 session 的叠加，不是 DSH agent preset。开启后文件沙箱钉在只读；写入、终端、外连抓取、工作区外读取和机密文件名会被拒绝并中断该 agent。聊天栏改权限不能解开。子 agent 仍可派：孩子继承同一套锁，并固化父会话当时的 Tavern 选择（与「用当前配置新开对话」相同）。委派任务是否收窄由主 agent 的 spawn 提示决定。完整拦/不拦清单见 [RP 安全模式](docs/RP_SECURE_MODE.md)。
 
 ### 世界书
 
@@ -253,6 +259,7 @@ npm run plugin:uninstall
 
 - **一个插件、统一加载器**：格式解析、资源管理和 DSH 运行时分层，但只安装一个根插件，不产生多个插件之间的版本与加载顺序问题。
 - **按 session 隔离**：preset、角色卡、用户和独立世界书都由统一 selection 管理；普通 fork 与 delegated subagent 都固化父选择。
+- **RP 安全叠加**：写入/终端/外连被拒，子 agent 继承锁并带上父级当时的 Tavern 选择；不是换一套 DSH agent 配方。
 - **兼容数据优先**：识别 ST 常用格式和 marker，保留未知字段；角色卡只存一份当前文档，不为导入原件另存第二份卡数据。
 - **当前轮世界书识别**：通过 DSH 公开的 `agent/inbox/spliced` 建立有界临时投影，不增加空转 step、不伪造消息，也不读取私有 Inbox。
 - **可解释而不过度记录**：Tavern Trace 展示资源和匹配决策，但不持久化完整 prompt、输入正文或工具 schema。
@@ -281,7 +288,8 @@ npm run plugin:uninstall
 - **Prompt injection**：preset、角色卡、用户描述和世界书正文都会影响模型。只导入可信来源，启用前审阅内容，并保留 DSH 的沙箱、工具审批与权限限制。
 - **秘密泄露**：插件不会主动读取 API key，但写入 Tavern 资源的密钥、令牌或隐私内容可能随模型请求发送，也可能通过本机资源 API 返回。不要用资源文件保存秘密。
 - **不安全正则为显式兼容模式**：ST `/pattern/flags` 默认不执行。开启 `worldBook.allowUnsafeRegex` 后，JavaScript `RegExp` 仍没有超时保证，即使已有长度和扫描上限也存在 ReDoS 风险。
-- **replace 模式会移除模型可见的 DSH system 说明**：它不会关闭执行层安全机制，但可能降低 Code Mode、结构化输出和工具使用可靠性。
+- **replace 模式会移除模型可见的 DSH system 说明**：它不会关闭执行层安全机制，但可能降低 Code Mode、结构化输出和工具使用可靠性。RP 开启时仍保留 `rp:policy` 段。
+- **RP 不是完整隔离**：用户在聊天里主动贴出的秘密插件不管；未点名的 MCP 等工具默认不拦。完整清单见 [RP 安全模式](docs/RP_SECURE_MODE.md)。
 - **运行中保护并非全局事务锁**：显式切换 preset、角色卡、用户和世界书时会拒绝运行中的 agent；模板 API 应用到既有目标、删除/编辑已引用资源，以及修改用户—世界书关系等间接变更尚未统一锁定。已冻结请求不会被回写，但并发修改存在 assembly 时序边界。
 - **角色卡内嵌书的导入期诊断仍可加强**：角色卡导入有 32 MiB 上限；编辑和运行时解析有完整结构守卫，但导入时不会提前拒绝所有最终不可运行的超复杂内嵌书。
 - **兼容不等于完整复刻 ST**：真实 role/depth 拓扑、greeting 历史和部分高级世界书状态尚未实现。请以 Tavern Trace 与 DSH `request/header` 验证实际行为。

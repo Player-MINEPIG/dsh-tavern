@@ -1,6 +1,6 @@
 # Unified Tavern loader contract
 
-状态：2026-08-15，首个公开发布候选版本已组合 preset、角色卡、用户/世界书关系、独立世界书、当前输入提前匹配、干净会话模板、语义键 i18n、全局 UI 设置与 Tavern Trace。本文是资源与加载器的运行契约，不是 README。
+状态：2026-08-18，已包含 RP 会话叠加（`selection.rp` + `rp:policy`）以及 delegated subagent 固化父选择。本文是资源与加载器的运行契约，不是 README。
 
 ## 目标与所有权
 
@@ -15,7 +15,7 @@ WorldBookModel + matches ┘             │
 SessionSelectionStore ─────────────────┘
 ```
 
-当前根插件只注册一个 `dsh-tavern:profile` system section。这样 preset 的 `replace` 模式保留完整 Tavern profile，不会只留下 preset、静默丢失角色或世界书。
+当前根插件注册两个 system section：`dsh-tavern:profile`（order 10）与可选的 `rp:policy`（order 45，仅 RP 开启且文本非空时有内容）。preset 的 `replace` 模式保留这两段，不会只留下 preset、静默丢失角色、世界书或 RP 锁说明。
 
 ## Session policy
 
@@ -31,7 +31,13 @@ SessionSelectionStore ─────────────────┘
         "characterCardId": "... or null",
         "userId": "... or null",
         "worldBookIds": [],
-        "character": {}
+        "character": {},
+        "rp": {
+          "active": false,
+          "source": null,
+          "followSuppressed": false,
+          "sandboxBefore": null
+        }
       },
       "updatedAt": "2026-08-15T00:00:00.000Z"
     }
@@ -44,7 +50,8 @@ SessionSelectionStore ─────────────────┘
 - 预设与角色卡/用户使用同一运行边界：agent 正在执行时拒绝改变绑定；有历史的会话更换预设前提示只影响后续请求。
 - 新鲜普通会话在第一次被 Agent 使用时固化当时的默认选择。
 - 普通 fork 从 `Session.header.parentSession` 复制父选择，之后父子互不联动。
-- `delegationDepth > 0` 的 subagent 同样固化父选择（与「用当前配置新开对话」同一份投影），之后父子互不联动。委派任务是否收窄由主 agent 的 spawn 提示决定，不在 RP 政策或空选择里编码。
+- `delegationDepth > 0` 的 subagent 同样固化父选择（与「用当前配置新开对话」同一份投影，含 `rp`），之后父子互不联动。委派任务是否收窄由主 agent 的 spawn 提示决定，不在 `rp:policy` 或空选择里编码。
+- RP 是 selection 上的会话叠加，不是 DSH agent preset。`selection.rp` 记录是否锁定；可选的 `rp:policy` 正文存在 `rp-policy.json`，默认只说明高风险操作被锁。
 - 删除资源时 loader policy 提供 `clearResource(kind, id)` 清除所有悬空选择。
 - session id 只作为 JSON key，但仍经过长度/字符集校验，避免原型键和异常输入。
 - schema v1 在读取后原地迁移为 v2；角色选项只保留 loader 已知的 greeting/system/PHI 三个字段，资源 id 和单 session 世界书数量同时有界。
@@ -68,7 +75,7 @@ SessionSelectionStore ─────────────────┘
 
 “维持当前设置新开对话”与配置模板只复制上述 selection 投影，不调用普通 fork，也不读取或写入 Session events。浏览器通过 DSH 公开的 `workspaces.connectWorkspace(workspaceId)` 得到真实 blank session id；loader API 再次解析来源、验证每个资源，并以一次 `SessionSelectionStore.set(targetId, completeSelection)` 原子提交，之后浏览器才调用公开 `sessions.open(targetId)`。
 
-模板删除资源时不被静默改写：preset、角色/greeting、用户或独立世界书的悬空 id 由 preview/apply 返回结构化诊断并阻止创建。DSH 创建失败发生在 selection 写入之前；原子写失败不发布内存状态且不导航。模板不得包含 durable history、Trace、Inbox、turn/step、运行态或资源正文。
+模板删除资源时不被静默改写：preset、角色/greeting、用户或独立世界书的悬空 id 由 preview/apply 返回结构化诊断并阻止创建。DSH 创建失败发生在 selection 写入之前；原子写失败不发布内存状态且不导航。模板不得包含 durable history、Trace、Inbox、turn/step、运行态或资源正文。RP 状态随 selection 投影一起复制。
 
 ## Profile safety budget
 
@@ -208,7 +215,7 @@ DSH 自己的 `request/header` 仍是模型实际输入的最终权威。loader 
 
 - preset-only 输出和模型参数不回归；
 - 两个 session 可选不同 preset，也可显式选择“无 preset”；
-- 普通 fork 与 delegated subagent 都继承父选择快照，之后互不联动；
+- 普通 fork 与 delegated subagent 都继承父选择快照（含 RP 状态），之后互不联动；
 - marker 填充、角色 override、`{{original}}`、lore before/after 与 chatHistory 不复制均有单测；
 - `replace` 只移除宿主 system sections，保留 tools、contexts、variables 和完整 Tavern profile；
 - API active view 暴露 selection/resources/diagnostics/audit，不暴露完整 `compiledPrompt`；

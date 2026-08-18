@@ -89,7 +89,9 @@ tree: presets, normalized character cards, PNG cover images under
 `world-books/`, three-field user resources under
 `users/`, bounded Trace metadata in `tavern-traces.json`, and per-session
 resource selections. Copy the whole directory when backing up; copying only
-`presets/` loses other resources, audit metadata and bindings.
+`presets/` loses other resources, audit metadata and bindings. The same tree
+also holds `ui-settings.json` (locale, scale, character-follow RP) and optional
+`rp-policy.json`.
 
 Choose another backup directory or deliberately skip backup with:
 
