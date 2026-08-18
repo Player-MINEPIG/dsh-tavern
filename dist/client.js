@@ -82,7 +82,7 @@ var zh_CN_default = Object.freeze({
   "nav.worldBook.empty": "\u672A\u7ED1\u5B9A\u4E16\u754C\u4E66",
   "nav.user.empty": "\u672A\u7ED1\u5B9A\u7528\u6237",
   "nav.sessionTemplate.empty": "\u5F53\u524D\u8BBE\u7F6E\u6216\u914D\u7F6E\u6A21\u677F",
-  "nav.settings.empty": "\u8BED\u8A00\u3001\u7F29\u653E\u4E0E RP \u8DDF\u968F",
+  "nav.settings.empty": "\u8BED\u8A00\u3001\u7F29\u653E\u3001RP \u8DDF\u968F\u4E0E RP \u63D0\u793A\u8BCD",
   "nav.session.none": "\u65E0\u4F1A\u8BDD",
   "nav.syncFailed": "\u72B6\u6001\u540C\u6B65\u5931\u8D25\uFF1A{message}",
   "nav.menuTitle": "Tavern \xB7 {session}",
@@ -107,7 +107,15 @@ var zh_CN_default = Object.freeze({
   "settings.saveError": "\u65E0\u6CD5\u4FDD\u5B58\u754C\u9762\u8BBE\u7F6E\uFF1A{message}",
   "settings.close": "\u5173\u95ED\u754C\u9762\u8BBE\u7F6E\u4FA7\u8FB9\u680F",
   "settings.rpFollow": "\u7ED1\u5B9A\u89D2\u8272\u5361\u65F6\u81EA\u52A8\u8FDB\u5165 RP \u6A21\u5F0F",
-  "settings.rpFollow.help": "\u5F00\u542F\u540E\uFF0C\u7ED1\u5B9A\u89D2\u8272\u5361\u4F1A\u8FDB\u5165\u89D2\u8272\u626E\u6F14\u5E76\u9ED8\u8BA4\u628A\u6587\u4EF6\u6C99\u7BB1\u5207\u5230\u53EA\u8BFB\uFF1B\u89E3\u7ED1\u4F1A\u9000\u51FA RP \u5E76\u5C1D\u8BD5\u6062\u590D\u8FDB\u5165\u524D\u7684\u6587\u4EF6\u6743\u9650\u3002\u5DE5\u5177\u5BA1\u6279\u4E0D\u4F1A\u88AB\u5173\u6389\u3002\u624B\u52A8\u5173\u95ED RP \u540E\uFF0C\u53EA\u8981\u8FD8\u7ED1\u7740\u8FD9\u5F20\u5361\u5C31\u4E0D\u4F1A\u7ACB\u523B\u518D\u81EA\u52A8\u6253\u5F00\u3002",
+  "settings.rpFollow.help": "\u5F00\u542F\u540E\uFF0C\u7ED1\u5B9A\u89D2\u8272\u5361\u4F1A\u8FDB\u5165\u89D2\u8272\u626E\u6F14\u5E76\u628A\u6587\u4EF6\u6C99\u7BB1\u9489\u5728\u53EA\u8BFB\u3002\u5199\u5165\u3001\u7EC8\u7AEF\u548C\u5916\u8FDE\u4F1A\u88AB\u76F4\u63A5\u62E6\u4F4F\u5E76\u4E2D\u65AD\u672C\u8F6E\uFF0C\u4E0D\u4F1A\u5F39\u51FA\u5347\u6743\u5BA1\u6279\uFF1B\u804A\u5929\u680F\u6539\u6743\u9650\u65E0\u6548\u3002\u8981\u505A\u8FD9\u4E9B\u4E8B\u5FC5\u987B\u5148\u5173\u6389 RP\uFF08\u6216 /rp off\uFF09\u3002\u89E3\u7ED1\u4F1A\u9000\u51FA RP \u5E76\u5C1D\u8BD5\u6062\u590D\u8FDB\u5165\u524D\u7684\u6587\u4EF6\u6743\u9650\u3002\u624B\u52A8\u5173\u95ED RP \u540E\uFF0C\u53EA\u8981\u8FD8\u7ED1\u7740\u8FD9\u5F20\u5361\u5C31\u4E0D\u4F1A\u7ACB\u523B\u518D\u81EA\u52A8\u6253\u5F00\u3002",
+  "settings.rpPolicy": "RP \u6A21\u5F0F\u63D0\u793A\u8BCD\uFF08rp:policy\uFF09",
+  "settings.rpPolicy.help": "\u53EF\u9009\u3002DSH \u4E0D\u80FD\u6309\u6BB5\u52A0\u6743\uFF0C\u8EAB\u4EFD\u548C\u6587\u98CE\u5E94\u5199\u5728\u9884\u8BBE\u6216\u89D2\u8272\u5361\u91CC\u3002\u9ED8\u8BA4\u53EA\u8BF4\u660E\u9AD8\u98CE\u9669\u64CD\u4F5C\u88AB\u9501\u5B9A\u3002\u7559\u7A7A\u5219\u4E0D\u9644\u52A0\u8FD9\u6BB5\u63D0\u793A\uFF0C\u9501\u5B9A\u4ECD\u7136\u6709\u6548\u3002\u5E95\u90E8\u7684\u300C\u6062\u590D\u9ED8\u8BA4\u300D\u53EA\u91CD\u7F6E\u8BED\u8A00\u3001\u7F29\u653E\u548C\u7ED1\u5361\u8DDF\u968F\u3002",
+  "settings.rpPolicy.placeholder": "\u7559\u7A7A\uFF1A\u53EA\u542F\u7528\u53EA\u8BFB\u6C99\u7BB1\uFF0C\u4E0D\u9644\u52A0 RP \u63D0\u793A\u8BCD",
+  "settings.rpPolicy.save": "\u4FDD\u5B58 RP \u63D0\u793A\u8BCD",
+  "settings.rpPolicy.reset": "\u6062\u590D\u9ED8\u8BA4 RP \u63D0\u793A\u8BCD",
+  "settings.rpPolicy.saved": "RP \u63D0\u793A\u8BCD\u5DF2\u4FDD\u5B58\uFF0C\u4E0B\u4E00\u8F6E\u8BF7\u6C42\u751F\u6548\u3002",
+  "rp.block.body": "Agent \u6B63\u5728\u8FDB\u884C\u5199\u5165\u7B49\u9AD8\u98CE\u9669\u64CD\u4F5C\u3002\u5982\u679C\u4F60\u77E5\u9053\u4F60\u5728\u505A\u4EC0\u4E48\uFF0C\u8BF7\u5173\u95ED RP \u6A21\u5F0F\u540E\u91CD\u8BD5\u3002",
+  "rp.block.dismiss": "\u77E5\u9053\u4E86",
   "preset.title": "Tavern \u9884\u8BBE",
   "preset.active": "\u25CF \u5DF2\u542F\u7528",
   "preset.importStJson": "\u5BFC\u5165 ST JSON",
@@ -196,8 +204,8 @@ var zh_CN_default = Object.freeze({
   "character.bindingApplied": "\u9762\u677F\u663E\u793A\u7684\u5F00\u573A\u9009\u62E9\u5DF2\u5E94\u7528\u5230\u5F53\u524D\u4F1A\u8BDD\u3002",
   "character.bindingAppliedButton": "\u5F53\u524D\u7ED1\u5B9A\u5DF2\u5E94\u7528",
   "character.unbind": "\u89E3\u9664\u7ED1\u5B9A",
-  "character.rpMode": "RP \u6A21\u5F0F\uFF08\u9ED8\u8BA4\u6587\u4EF6\u53EA\u8BFB\uFF09",
-  "character.rpMode.help": "\u5F00\u542F\u540E\u4F7F\u7528\u72EC\u7ACB\u7684\u89D2\u8272\u626E\u6F14\u63D0\u793A\u8BCD\uFF0C\u6587\u4EF6\u9ED8\u8BA4\u4E3A\u53EA\u8BFB\uFF0C\u5DE5\u5177\u5BA1\u6279\u4FDD\u6301\u4E0D\u53D8\u3002\u4E5F\u53EF\u4EE5\u4F7F\u7528 /rp \u548C /rp off\u3002\u89E3\u7ED1\u89D2\u8272\u5361\u4F1A\u9000\u51FA RP\u3002",
+  "character.rpMode": "RP \u6A21\u5F0F\uFF08\u9AD8\u98CE\u9669\u9501\u5B9A\uFF09",
+  "character.rpMode.help": "\u5F00\u542F\u540E\u6587\u4EF6\u6C99\u7BB1\u9489\u5728\u53EA\u8BFB\uFF1B\u5199\u5165\u3001\u7EC8\u7AEF\u548C\u5916\u8FDE\u4F1A\u76F4\u63A5\u62D2\u7EDD\u5E76\u4E2D\u65AD\u672C\u8F6E\uFF0C\u4E0D\u4F1A\u5F39\u51FA\u5347\u6743\u5BA1\u6279\u3002\u804A\u5929\u680F\u6539\u6743\u9650\u65E0\u6548\u3002\u5173\u6389\u672C\u5F00\u5173\u6216\u4F7F\u7528 /rp off \u540E\u624D\u80FD\u505A\u8FD9\u4E9B\u4E8B\u3002\u89E3\u7ED1\u89D2\u8272\u5361\u4F1A\u9000\u51FA RP\u3002",
   "character.status.rpUpdated": "RP \u6A21\u5F0F\u5DF2\u66F4\u65B0",
   "character.moduleNote": "\u89D2\u8272\u5361\u6A21\u5757\u8D1F\u8D23\u4FDD\u5B58\u6807\u51C6\u5316\u8D44\u6E90\u548C\u4F1A\u8BDD\u9009\u62E9\uFF1B\u5B9E\u9645 system profile \u4E0E\u5185\u5D4C\u4E16\u754C\u4FE1\u606F\u5339\u914D\u7531 Tavern loader \u5728\u6BCF\u6B21\u8BF7\u6C42\u65F6\u7EDF\u4E00\u5904\u7406\uFF0C\u4E0D\u4F1A\u4F2A\u9020 assistant \u5386\u53F2\u3002",
   "character.field.creatorNotes": "Creator notes",
@@ -551,7 +559,7 @@ var en_default = Object.freeze({
   "nav.worldBook.empty": "No world book bound",
   "nav.user.empty": "No user bound",
   "nav.sessionTemplate.empty": "Current settings or configuration template",
-  "nav.settings.empty": "Language, scale, and RP follow",
+  "nav.settings.empty": "Language, scale, RP follow, and RP prompt",
   "nav.session.none": "No session",
   "nav.syncFailed": "Status sync failed: {message}",
   "nav.menuTitle": "Tavern \xB7 {session}",
@@ -576,7 +584,15 @@ var en_default = Object.freeze({
   "settings.saveError": "Could not save UI settings: {message}",
   "settings.close": "Close the UI settings sidebar",
   "settings.rpFollow": "Enter RP mode when a character card is bound",
-  "settings.rpFollow.help": "When enabled, binding a character card enters roleplay and defaults the file sandbox to read-only. Unbinding leaves RP and tries to restore the previous file permissions. Tool approval is unchanged. Manually turning RP off while a card stays bound will not auto-reenter until you unbind or bind again.",
+  "settings.rpFollow.help": "When enabled, binding a character card enters roleplay and pins the file sandbox to read-only. Writes, shell, and outbound fetch are refused and the turn is cancelled, with no escalation prompt. The chat permission chip cannot override this; turn RP off on the character card (or /rp off) first. Unbinding leaves RP and tries to restore the previous file permissions. Manually turning RP off while a card stays bound will not auto-reenter until you unbind or bind again.",
+  "settings.rpPolicy": "RP mode prompt (rp:policy)",
+  "settings.rpPolicy.help": "Optional. DSH cannot weight prompt sections; identity and style belong in the preset or character card. The default only says high-risk actions are locked. Leave empty to skip extra RP text; the lock still applies. Restore defaults at the bottom only resets language, scale, and RP follow.",
+  "settings.rpPolicy.placeholder": "Leave empty to use the read-only sandbox with no extra RP prompt",
+  "settings.rpPolicy.save": "Save RP prompt",
+  "settings.rpPolicy.reset": "Restore default RP prompt",
+  "settings.rpPolicy.saved": "RP prompt saved; it applies on the next request.",
+  "rp.block.body": "The agent is attempting a high-risk action such as writing files. If you know what you are doing, turn off RP mode and try again.",
+  "rp.block.dismiss": "OK",
   "preset.title": "Tavern preset",
   "preset.active": "\u25CF Enabled",
   "preset.importStJson": "Import ST JSON",
@@ -665,8 +681,8 @@ var en_default = Object.freeze({
   "character.bindingApplied": "The greeting shown in this panel is applied to the current session.",
   "character.bindingAppliedButton": "Current binding applied",
   "character.unbind": "Unbind",
-  "character.rpMode": "RP mode (files default to read-only)",
-  "character.rpMode.help": "When on, a separate roleplay prompt is used, files default to read-only, and tool approval stays unchanged. /rp and /rp off do the same. Unbinding the character card leaves RP.",
+  "character.rpMode": "RP mode (high-risk lock)",
+  "character.rpMode.help": "When on, the file sandbox stays read-only. Writes, shell, and outbound fetch are refused and the turn is cancelled, with no escalation prompt. The chat permission chip cannot override this. Turn this switch off or use /rp off first. Unbinding the character card leaves RP.",
   "character.status.rpUpdated": "RP mode updated",
   "character.moduleNote": "The character-card module stores normalized resources and session selection. The Tavern loader handles the system profile and embedded World Info on each request without fabricating assistant history.",
   "character.field.creatorNotes": "Creator notes",
@@ -2933,11 +2949,11 @@ var import_react5 = require("react");
 var h5 = createLocalizedElement(import_react5.createElement);
 var TRACE_API = "/dsh-tavern/api/traces";
 var css5 = `
-.dttrace-root{height:100%;min-height:0;display:flex;flex-direction:column;background:var(--dsw-alias-bg-base);color:var(--dsw-alias-label-primary);font-family:Inter,var(--dsw-font-family),sans-serif}
-.dttrace-toolbar{min-height:48px;box-sizing:border-box;padding:8px 14px;border-bottom:1px solid var(--dsw-alias-border-l2);display:flex;align-items:center;gap:10px;flex:none}.dttrace-title{font-size:16px;font-weight:680;flex:1}.dttrace-button{border:1px solid var(--dsw-alias-border-l2);border-radius:7px;background:var(--dsw-alias-bg-base);color:inherit;padding:7px 10px;font-size:13px;cursor:pointer}.dttrace-button:hover{background:var(--dsw-alias-interactive-bg-hover)}
-.dttrace-body{min-height:0;overflow:auto;padding:12px max(14px,calc((100% - 880px)/2));display:flex;flex-direction:column;gap:10px}.dttrace-note,.dttrace-status{font-size:13px;line-height:1.5;color:var(--dsw-alias-label-tertiary);margin:0}.dttrace-status{padding:9px 10px;border-radius:8px;background:var(--dsw-specific-tip)}.dttrace-status[data-error=true]{color:var(--dsw-alias-state-error)}
-.dttrace-record{border:1px solid var(--dsw-alias-border-l1);border-radius:10px;background:var(--dsw-alias-bg-base);overflow:hidden}.dttrace-record>summary{list-style:none;cursor:pointer;padding:10px 12px;display:flex;align-items:center;gap:8px}.dttrace-record>summary::-webkit-details-marker{display:none}.dttrace-round{font-size:14px;font-weight:670}.dttrace-time{font-size:12px;color:var(--dsw-alias-label-tertiary);margin-left:auto}.dttrace-badge{border-radius:999px;padding:2px 7px;font-size:11px;background:var(--dsw-specific-tip);color:var(--dsw-alias-label-secondary)}.dttrace-badge[data-ok=true]{background:color-mix(in srgb,var(--dsw-alias-state-success,#2fa36b) 18%,transparent);color:var(--dsw-alias-state-success,#2fa36b)}
-.dttrace-content{border-top:1px solid var(--dsw-alias-border-l1);padding:11px 12px;display:flex;flex-direction:column;gap:10px}.dttrace-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:7px}.dttrace-card{border:1px solid var(--dsw-alias-border-l1);border-radius:8px;padding:8px;min-width:0}.dttrace-label{font-size:11px;text-transform:uppercase;letter-spacing:.04em;color:var(--dsw-alias-label-tertiary)}.dttrace-value{font-size:13px;font-weight:620;margin-top:3px;overflow-wrap:anywhere}.dttrace-meta{font-size:12px;line-height:1.45;color:var(--dsw-alias-label-tertiary);margin-top:3px;overflow-wrap:anywhere}
+.dttrace-root{height:100%;min-height:0;display:flex;flex-direction:column;overflow:hidden;background:var(--dsw-alias-bg-base);color:var(--dsw-alias-label-primary);font-family:Inter,var(--dsw-font-family),sans-serif}
+.dttrace-toolbar{min-height:48px;box-sizing:border-box;padding:8px 14px;border-bottom:1px solid var(--dsw-alias-border-l2);display:flex;align-items:center;gap:10px;flex:none;zoom:var(--dtv-trace-scale,1);width:calc(100%/var(--dtv-trace-scale,1))}.dttrace-title{font-size:16px;font-weight:680;flex:1}.dttrace-button{border:1px solid var(--dsw-alias-border-l2);border-radius:7px;background:var(--dsw-alias-bg-base);color:inherit;padding:7px 10px;font-size:13px;cursor:pointer}.dttrace-button:hover{background:var(--dsw-alias-interactive-bg-hover)}
+.dttrace-body{flex:1;min-height:0;overflow:auto;padding:12px max(14px,calc((100% - 880px)/2)) 28px}.dttrace-scale{zoom:var(--dtv-trace-scale,1);width:calc(100%/var(--dtv-trace-scale,1));display:flex;flex-direction:column;gap:10px;padding-bottom:8px}.dttrace-note,.dttrace-status{font-size:13px;line-height:1.5;color:var(--dsw-alias-label-tertiary);margin:0}.dttrace-status{padding:9px 10px;border-radius:8px;background:var(--dsw-specific-tip)}.dttrace-status[data-error=true]{color:var(--dsw-alias-state-error)}
+.dttrace-record{border:1px solid var(--dsw-alias-border-l1);border-radius:10px;background:var(--dsw-alias-bg-base);overflow:visible}.dttrace-record>summary{list-style:none;cursor:pointer;padding:10px 12px;display:flex;align-items:center;gap:8px;border-radius:10px}.dttrace-record[open]>summary{border-radius:10px 10px 0 0}.dttrace-record>summary::-webkit-details-marker{display:none}.dttrace-round{font-size:14px;font-weight:670}.dttrace-time{font-size:12px;color:var(--dsw-alias-label-tertiary);margin-left:auto}.dttrace-badge{border-radius:999px;padding:2px 7px;font-size:11px;background:var(--dsw-specific-tip);color:var(--dsw-alias-label-secondary)}.dttrace-badge[data-ok=true]{background:color-mix(in srgb,var(--dsw-alias-state-success,#2fa36b) 18%,transparent);color:var(--dsw-alias-state-success,#2fa36b)}
+.dttrace-content{border-top:1px solid var(--dsw-alias-border-l1);padding:11px 12px 16px;display:flex;flex-direction:column;gap:10px}.dttrace-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:7px}.dttrace-card{border:1px solid var(--dsw-alias-border-l1);border-radius:8px;padding:8px;min-width:0}.dttrace-label{font-size:11px;text-transform:uppercase;letter-spacing:.04em;color:var(--dsw-alias-label-tertiary)}.dttrace-value{font-size:13px;font-weight:620;margin-top:3px;overflow-wrap:anywhere}.dttrace-meta{font-size:12px;line-height:1.45;color:var(--dsw-alias-label-tertiary);margin-top:3px;overflow-wrap:anywhere}
 .dttrace-section{display:flex;flex-direction:column;gap:6px}.dttrace-section-title{font-size:14px;font-weight:670}.dttrace-book{border:1px solid var(--dsw-alias-border-l1);border-radius:8px;padding:8px;display:flex;flex-direction:column;gap:6px}.dttrace-decision{display:grid;grid-template-columns:76px minmax(110px,.7fr) minmax(160px,1.5fr);gap:7px;padding:6px 0;border-top:1px solid var(--dsw-alias-border-l1);font-size:12px;line-height:1.45}.dttrace-decision:first-of-type{border-top:0}.dttrace-decision-state{font-weight:650}.dttrace-decision[data-included=true] .dttrace-decision-state{color:var(--dsw-alias-state-success,#2fa36b)}.dttrace-keywords{overflow-wrap:anywhere;color:var(--dsw-alias-label-secondary)}.dttrace-list{margin:0;padding-left:18px;font-size:12px;line-height:1.55;color:var(--dsw-alias-label-secondary)}
 @media(max-width:760px){.dttrace-grid{grid-template-columns:1fr}.dttrace-decision{grid-template-columns:70px 1fr}.dttrace-keywords{grid-column:1/-1}}
 `;
@@ -3148,11 +3164,7 @@ function TavernTraceView({ sessionId, useSession }) {
     {
       className: "dttrace-root",
       lang: uiSettings.locale,
-      style: {
-        zoom: uiSettings.scale,
-        width: `${100 / uiSettings.scale}%`,
-        height: `${100 / uiSettings.scale}%`
-      }
+      style: { "--dtv-trace-scale": String(uiSettings.scale) }
     },
     h5(
       "div",
@@ -3163,12 +3175,16 @@ function TavernTraceView({ sessionId, useSession }) {
     h5(
       "div",
       { className: "dttrace-body" },
-      h5("p", { className: "dttrace-note" }, uiMessage("trace.intro")),
-      error ? h5("div", { className: "dttrace-status", "data-error": true }, rawText(error)) : null,
-      data === null && !error ? h5("div", { className: "dttrace-status" }, uiMessage("trace.reading")) : null,
-      data !== null ? h5("div", { className: "dttrace-status" }, storageStatus(data.storage)) : null,
-      records.length === 0 && data !== null ? h5("div", { className: "dttrace-status" }, uiMessage("trace.empty")) : null,
-      ...records.map((record, index) => h5(TraceRecord, { record, latest: index === 0, key: record.id }))
+      h5(
+        "div",
+        { className: "dttrace-scale" },
+        h5("p", { className: "dttrace-note" }, uiMessage("trace.intro")),
+        error ? h5("div", { className: "dttrace-status", "data-error": true }, rawText(error)) : null,
+        data === null && !error ? h5("div", { className: "dttrace-status" }, uiMessage("trace.reading")) : null,
+        data !== null ? h5("div", { className: "dttrace-status" }, storageStatus(data.storage)) : null,
+        records.length === 0 && data !== null ? h5("div", { className: "dttrace-status" }, uiMessage("trace.empty")) : null,
+        ...records.map((record, index) => h5(TraceRecord, { record, latest: index === 0, key: record.id }))
+      )
     )
   );
 }
@@ -3609,8 +3625,11 @@ var css6 = `
 .dtv-actions{display:grid;grid-template-columns:1fr 1fr;gap:8px}.dtv-button{min-height:34px;border:1px solid var(--dsw-alias-border-l2);border-radius:8px;background:var(--dsw-alias-button-secondary-fill,var(--dsw-alias-bg-base));color:var(--dsw-alias-label-primary);cursor:pointer;padding:7px 10px;font-size:12px}.dtv-button:hover:not(:disabled){background:var(--dsw-alias-interactive-bg-hover)}.dtv-button:disabled{opacity:.5;cursor:default}
 .dtv-primary{background:var(--dsw-alias-state-business-primary,#2677d9);border-color:transparent;color:var(--dsw-alias-button-primary-label,#fff)}.dtv-primary:hover:not(:disabled){filter:brightness(1.08);background:var(--dsw-alias-state-business-primary,#2677d9)}.dtv-template-actions{display:grid;grid-template-columns:1fr 1fr;gap:7px}
 .dtv-resource{border:1px solid var(--dsw-alias-border-l1);border-radius:9px;padding:10px;display:flex;flex-direction:column;gap:7px}.dtv-resource-title{font-size:12px;font-weight:650}.dtv-resource-meta{font-size:11px;line-height:1.45;color:var(--dsw-alias-label-tertiary)}.dtv-list{margin:0;padding-left:18px;font-size:11px;line-height:1.55}.dtv-preview{border:1px solid var(--dsw-alias-border-l1);border-radius:8px;background:var(--dsw-specific-tip);padding:9px;display:flex;flex-direction:column;gap:6px}.dtv-preview-title{font-size:12px;font-weight:700}.dtv-preview-row{display:grid;grid-template-columns:112px minmax(0,1fr);gap:8px;font-size:11px;line-height:1.45}.dtv-preview-label{color:var(--dsw-alias-label-tertiary)}.dtv-preview-value{overflow-wrap:anywhere}.dtv-preview-options{margin-left:120px;display:flex;flex-direction:column;gap:2px;font-size:10px;color:var(--dsw-alias-label-tertiary)}.dtv-preview-list{margin:0;padding-left:18px}.dtv-preview-row[data-missing=true] .dtv-preview-value,.dtv-preview-list>[data-missing=true]{color:var(--dsw-alias-state-error)}
-.dtv-book-toolbar{display:grid;grid-template-columns:1fr 1fr 1fr;gap:7px}.dtv-entry{border:1px solid var(--dsw-alias-border-l1);border-radius:8px;background:var(--dsw-alias-bg-base);overflow:hidden}.dtv-entry>summary{list-style:none;cursor:pointer;padding:8px;display:flex;align-items:center;gap:7px;font-size:11px}.dtv-entry>summary::-webkit-details-marker{display:none}.dtv-entry-dot{width:8px;height:8px;flex:none;border-radius:50%;background:var(--dsw-alias-label-tertiary)}.dtv-entry[data-enabled=true] .dtv-entry-dot{background:var(--dsw-alias-state-success,#2fa36b)}.dtv-entry-name{font-weight:620;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.dtv-entry-state{margin-left:auto;flex:none;color:var(--dsw-alias-label-tertiary);font-size:10px}.dtv-entry-body{border-top:1px solid var(--dsw-alias-border-l1);padding:8px;display:flex;flex-direction:column;gap:8px}.dtv-field{display:flex;flex-direction:column;gap:4px}.dtv-label{font-size:10px;font-weight:620;color:var(--dsw-alias-label-tertiary)}.dtv-input,.dtv-select,.dtv-textarea{box-sizing:border-box;width:100%;border:1px solid var(--dsw-alias-border-l2);border-radius:7px;background:var(--dsw-alias-bg-base);color:var(--dsw-alias-label-primary);font:inherit;font-size:11px;padding:7px 8px}.dtv-input,.dtv-select{height:32px}.dtv-textarea{min-height:94px;resize:vertical;line-height:1.45}.dtv-entry-grid{display:grid;grid-template-columns:1fr 1fr;gap:7px}.dtv-checks{display:flex;flex-wrap:wrap;gap:10px}.dtv-check{display:flex;gap:5px;align-items:center;font-size:10px}.dtv-entry-actions{display:flex;justify-content:flex-end}.dtv-danger{color:var(--dsw-alias-state-error)}
+.dtv-book-toolbar{display:grid;grid-template-columns:1fr 1fr 1fr;gap:7px}.dtv-entry{border:1px solid var(--dsw-alias-border-l1);border-radius:8px;background:var(--dsw-alias-bg-base);overflow:hidden}.dtv-entry>summary{list-style:none;cursor:pointer;padding:8px;display:flex;align-items:center;gap:7px;font-size:11px}.dtv-entry>summary::-webkit-details-marker{display:none}.dtv-entry-dot{width:8px;height:8px;flex:none;border-radius:50%;background:var(--dsw-alias-label-tertiary)}.dtv-entry[data-enabled=true] .dtv-entry-dot{background:var(--dsw-alias-state-success,#2fa36b)}.dtv-entry-name{font-weight:620;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.dtv-entry-state{margin-left:auto;flex:none;color:var(--dsw-alias-label-tertiary);font-size:10px}.dtv-entry-body{border-top:1px solid var(--dsw-alias-border-l1);padding:8px;display:flex;flex-direction:column;gap:8px}.dtv-field{display:flex;flex-direction:column;gap:4px}.dtv-label{font-size:10px;font-weight:620;color:var(--dsw-alias-label-tertiary)}.dtv-input,.dtv-select,.dtv-textarea{box-sizing:border-box;width:100%;border:1px solid var(--dsw-alias-border-l2);border-radius:7px;background:var(--dsw-alias-bg-base);color:var(--dsw-alias-label-primary);font:inherit;font-size:11px;padding:7px 8px}.dtv-input,.dtv-select{height:32px}.dtv-textarea{min-height:94px;resize:vertical;line-height:1.45}.dtv-policy{min-height:96px}.dtv-entry-grid{display:grid;grid-template-columns:1fr 1fr;gap:7px}.dtv-checks{display:flex;flex-wrap:wrap;gap:10px}.dtv-check{display:flex;gap:5px;align-items:center;font-size:10px}.dtv-entry-actions{display:flex;justify-content:flex-end}.dtv-danger{color:var(--dsw-alias-state-error)}
 .dtv-layer>.dtv-launcher,.dtv-layer>.dtv-panel,.dtv-layer>.dcc-panel,.dtv-layer>.dwb-panel,.dtv-layer>.dtu-panel{zoom:var(--dtv-ui-scale,1)}.dtv-setting-value{font-size:12px;font-variant-numeric:tabular-nums;color:var(--dsw-alias-label-secondary)}
+.dtv-modal-backdrop{position:absolute;inset:0;z-index:20;pointer-events:auto;background:rgba(0,0,0,.48);display:flex;align-items:center;justify-content:center;padding:24px}
+.dtv-modal{width:min(420px,100%);border-radius:12px;background:var(--dsw-alias-bg-base);border:1px solid var(--dsw-alias-border-l2);box-shadow:var(--ds-shadow-3,0 16px 40px rgba(0,0,0,.28));padding:18px 16px;display:flex;flex-direction:column;gap:14px}
+.dtv-modal-body{margin:0;font-size:13px;line-height:1.55}.dtv-modal .dtv-button{align-self:flex-end;min-width:88px}
 `;
 var LAUNCHER_STORAGE_KEY = "dsh-tavern:launcher-position:v1";
 function viewport() {
@@ -3654,6 +3673,24 @@ async function sessionConfigurationRequest(path, body2) {
   }
   return data;
 }
+async function rpAlertRequest(sessionId, { method = "GET", id } = {}) {
+  const params = new URLSearchParams({ sessionId });
+  if (id !== void 0) params.set("id", String(id));
+  const response = await fetch(`${API_ROOT6}/rp-alert?${params}`, { method });
+  const data = await response.json().catch(() => null);
+  if (!response.ok || data?.ok === false) throw new Error(data?.error ?? `HTTP ${response.status}`);
+  return data;
+}
+async function rpPolicyRequest(method = "GET", body2) {
+  const response = await fetch(`${API_ROOT6}/rp-policy`, {
+    method,
+    headers: method === "GET" ? void 0 : { "Content-Type": "application/json" },
+    body: body2 === void 0 ? void 0 : JSON.stringify(body2)
+  });
+  const data = await response.json().catch(() => null);
+  if (!response.ok || data?.ok === false) throw new Error(data?.error ?? `HTTP ${response.status}`);
+  return data;
+}
 async function uiSettingsRequest(method = "GET", body2) {
   const response = await fetch(`${API_ROOT6}/ui-settings`, {
     method,
@@ -3677,7 +3714,20 @@ function PanelHeader({ title, titleKey, close }) {
 function Field5({ label, children }) {
   return h7("label", { className: "dtv-field" }, h7("span", { className: "dtv-label" }, label), children);
 }
-function SettingsPanel({ settings, status, busy, close, update, reset }) {
+function SettingsPanel({
+  settings,
+  status,
+  busy,
+  close,
+  update,
+  reset,
+  policyDraft,
+  policyBusy,
+  policyLoaded,
+  onPolicyDraft,
+  savePolicy,
+  resetPolicy
+}) {
   const percent = Math.round(settings.scale * 100);
   return h7(
     "div",
@@ -3721,6 +3771,30 @@ function SettingsPanel({ settings, status, busy, close, update, reset }) {
         h7("span", null, translate("settings.rpFollow"))
       ),
       h7("p", { className: "dtv-note" }, translate("settings.rpFollow.help")),
+      h7(Field5, { label: translate("settings.rpPolicy") }, h7("textarea", {
+        className: "dtv-textarea dtv-policy",
+        value: policyDraft,
+        placeholder: translate("settings.rpPolicy.placeholder"),
+        disabled: busy || policyBusy || policyLoaded !== true,
+        onChange: (event) => onPolicyDraft(event.target.value)
+      })),
+      h7("p", { className: "dtv-note" }, translate("settings.rpPolicy.help")),
+      h7(
+        "div",
+        { className: "dtv-actions" },
+        h7("button", {
+          className: "dtv-button dtv-primary",
+          type: "button",
+          disabled: busy || policyBusy || policyLoaded !== true,
+          onClick: savePolicy
+        }, translate("settings.rpPolicy.save")),
+        h7("button", {
+          className: "dtv-button",
+          type: "button",
+          disabled: busy || policyBusy || policyLoaded !== true,
+          onClick: resetPolicy
+        }, translate("settings.rpPolicy.reset"))
+      ),
       h7("div", { className: "dtv-status", "data-error": status.error || void 0, role: "status" }, rawText(status.text)),
       h7(
         "div",
@@ -3736,6 +3810,23 @@ var LOGIC_KEYS = Object.freeze({
   not_any: "world.logic.notAny",
   not_all: "world.logic.notAll"
 });
+function RpHighRiskDialog({ onDismiss }) {
+  return h7(
+    "div",
+    {
+      className: "dtv-modal-backdrop",
+      role: "alertdialog",
+      "aria-modal": "true",
+      "aria-labelledby": "dtv-rp-block-body"
+    },
+    h7(
+      "div",
+      { className: "dtv-modal" },
+      h7("p", { id: "dtv-rp-block-body", className: "dtv-modal-body" }, translate("rp.block.body")),
+      h7("button", { className: "dtv-button dtv-primary", type: "button", onClick: onDismiss }, translate("rp.block.dismiss"))
+    )
+  );
+}
 function TavernShell({ useSessions, useWorkspaces, createCleanSession }) {
   const [menuOpen, setMenuOpen] = (0, import_react7.useState)(false);
   const [surface, setSurface] = (0, import_react7.useState)(null);
@@ -3745,13 +3836,19 @@ function TavernShell({ useSessions, useWorkspaces, createCleanSession }) {
   const [uiSettings, setUiSettings] = (0, import_react7.useState)(getClientUiSettings);
   const [settingsStatus, setSettingsStatus] = (0, import_react7.useState)({ text: translate("settings.saved"), error: false });
   const [settingsBusy, setSettingsBusy] = (0, import_react7.useState)(false);
+  const [rpPolicyDraft, setRpPolicyDraft] = (0, import_react7.useState)("");
+  const [rpPolicyLoaded, setRpPolicyLoaded] = (0, import_react7.useState)(false);
+  const [rpPolicyBusy, setRpPolicyBusy] = (0, import_react7.useState)(false);
+  const [rpAlert, setRpAlert] = (0, import_react7.useState)(null);
   const drag = (0, import_react7.useRef)(null);
   const suppressClick = (0, import_react7.useRef)(false);
   const statusGeneration = (0, import_react7.useRef)(0);
+  const rpAlertRef = (0, import_react7.useRef)(null);
   const sessionId = useSessions((state) => state.current);
   const sessionBlank = useSessions((state) => state.current === void 0 || state.current === null ? true : state.byId?.[state.current]?.blank === true);
   const workspaceId = useWorkspaces((state) => workspaceTargetId(state, sessionId));
   const close = () => setSurface(null);
+  rpAlertRef.current = rpAlert;
   (0, import_react7.useEffect)(() => {
     let active = true;
     uiSettingsRequest().then((next) => {
@@ -3803,6 +3900,50 @@ function TavernShell({ useSessions, useWorkspaces, createCleanSession }) {
       setSettingsBusy(false);
     }
   };
+  (0, import_react7.useEffect)(() => {
+    if (surface !== "settings") return void 0;
+    let active = true;
+    setRpPolicyLoaded(false);
+    rpPolicyRequest().then((next) => {
+      if (!active) return;
+      setRpPolicyDraft(typeof next.section === "string" ? next.section : "");
+      setRpPolicyLoaded(true);
+    }).catch((reason) => {
+      if (!active) return;
+      setSettingsStatus({ text: translate("settings.loadError", { message: reason instanceof Error ? reason.message : String(reason) }), error: true });
+    });
+    return () => {
+      active = false;
+    };
+  }, [surface]);
+  const persistRpPolicy = async () => {
+    setRpPolicyBusy(true);
+    setSettingsStatus({ text: translate("settings.saving"), error: false });
+    try {
+      const saved = await rpPolicyRequest("PUT", { section: rpPolicyDraft });
+      setRpPolicyDraft(saved.section);
+      setRpPolicyLoaded(true);
+      setSettingsStatus({ text: translate("settings.rpPolicy.saved"), error: false });
+    } catch (reason) {
+      setSettingsStatus({ text: translate("settings.saveError", { message: reason instanceof Error ? reason.message : String(reason) }), error: true });
+    } finally {
+      setRpPolicyBusy(false);
+    }
+  };
+  const resetRpPolicy = async () => {
+    setRpPolicyBusy(true);
+    setSettingsStatus({ text: translate("settings.saving"), error: false });
+    try {
+      const saved = await rpPolicyRequest("DELETE");
+      setRpPolicyDraft(saved.section);
+      setRpPolicyLoaded(true);
+      setSettingsStatus({ text: translate("settings.rpPolicy.saved"), error: false });
+    } catch (reason) {
+      setSettingsStatus({ text: translate("settings.saveError", { message: reason instanceof Error ? reason.message : String(reason) }), error: true });
+    } finally {
+      setRpPolicyBusy(false);
+    }
+  };
   const refreshStatus = (0, import_react7.useCallback)(async () => {
     const generation = ++statusGeneration.current;
     try {
@@ -3846,14 +3987,46 @@ function TavernShell({ useSessions, useWorkspaces, createCleanSession }) {
     });
   }, [uiSettings.scale]);
   (0, import_react7.useEffect)(() => {
+    if (typeof sessionId !== "string" || sessionId === "") {
+      setRpAlert(null);
+      return void 0;
+    }
+    let active = true;
+    const poll = async () => {
+      try {
+        const data = await rpAlertRequest(sessionId);
+        if (!active || data?.alert == null) return;
+        if (rpAlertRef.current?.id === data.alert.id) return;
+        setRpAlert(data.alert);
+      } catch {
+      }
+    };
+    poll();
+    const timer = window.setInterval(poll, 800);
+    return () => {
+      active = false;
+      window.clearInterval(timer);
+    };
+  }, [sessionId]);
+  const dismissRpAlert = async () => {
+    const alert = rpAlert;
+    setRpAlert(null);
+    if (typeof sessionId !== "string" || sessionId === "" || alert?.id == null) return;
+    try {
+      await rpAlertRequest(sessionId, { method: "DELETE", id: alert.id });
+    } catch {
+    }
+  };
+  (0, import_react7.useEffect)(() => {
     const onKeyDown = (event) => {
       if (event.key !== "Escape") return;
-      if (menuOpen) setMenuOpen(false);
+      if (rpAlert !== null) dismissRpAlert();
+      else if (menuOpen) setMenuOpen(false);
       else if (surface !== null) setSurface(null);
     };
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
-  }, [menuOpen, surface]);
+  }, [menuOpen, rpAlert, surface]);
   const startDrag = (event) => {
     if (event.button !== 0) return;
     event.currentTarget.setPointerCapture?.(event.pointerId);
@@ -3924,7 +4097,13 @@ function TavernShell({ useSessions, useWorkspaces, createCleanSession }) {
       busy: settingsBusy,
       close,
       update: persistSettings,
-      reset: resetSettings
+      reset: resetSettings,
+      policyDraft: rpPolicyDraft,
+      policyBusy: rpPolicyBusy,
+      policyLoaded: rpPolicyLoaded,
+      onPolicyDraft: setRpPolicyDraft,
+      savePolicy: persistRpPolicy,
+      resetPolicy: resetRpPolicy
     });
   }
   const placement = launcherPlacement(anchor, viewport(), menuOpen, uiSettings.scale);
@@ -3933,6 +4112,7 @@ function TavernShell({ useSessions, useWorkspaces, createCleanSession }) {
     "div",
     { className: "dtv-layer", lang: uiSettings.locale, "data-surface-open": surface !== null, style: { "--dtv-ui-scale": uiSettings.scale } },
     panel,
+    rpAlert === null ? null : h7(RpHighRiskDialog, { onDismiss: dismissRpAlert }),
     h7(
       "div",
       {

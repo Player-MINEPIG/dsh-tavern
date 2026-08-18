@@ -92,7 +92,11 @@ test('UI settings API supports read, replace, reset, and bounded failures', asyn
 test('root loader routes UI settings through the existing single secured API prefix', () => {
   const source = readFileSync(new URL('../packages/tavern-loader/src/index.js', import.meta.url), 'utf8')
   assert.match(source, /isUiSettingsApiPath\(req\.url\)[\s\S]*uiSettingsApi\(req, res\)/)
+  assert.match(source, /isRpPolicyApiPath\(req\.url\)[\s\S]*rpPolicyApi\(req, res\)/)
   assert.match(source, /isRpModeApiPath\(req\.url\)[\s\S]*rpModeApi\(req, res\)/)
   assert.equal(source.match(/path: API_ROOT/g)?.length, 1)
   assert.equal(source.match(/secureTavernApi\(/g)?.length, 1)
+  const client = readFileSync(new URL('../packages/client/src/index.js', import.meta.url), 'utf8')
+  assert.match(client, /\/rp-alert/)
+  assert.match(client, /RpHighRiskDialog/)
 })

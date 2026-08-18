@@ -8,12 +8,14 @@ import { SessionSelectionStore } from '../packages/tavern-loader/src/session-pol
 import {
   DEFAULT_RP_SECTION,
   DEFAULT_RP_STATE,
+  RP_WRITE_BLOCK_REASON,
   RpModeController,
   createRpModeApiHandler,
   foldSandboxMode,
   hasOpenTurn,
   normalizeRpState,
   resolveRpConfig,
+  rpWriteGuardReason,
 } from '../packages/tavern-loader/src/rp-mode.js'
 
 function createAgent(id, events = []) {
@@ -65,6 +67,9 @@ async function invoke(handler, { method = 'GET', url = '/dsh-tavern/api/rp-mode?
 
 test('RP config requires a non-empty section and rejects unknown keys', () => {
   assert.equal(resolveRpConfig().section, DEFAULT_RP_SECTION)
+  assert.ok(DEFAULT_RP_SECTION.length < 220)
+  assert.match(DEFAULT_RP_SECTION, /read-only|blocked/)
+  assert.doesNotMatch(DEFAULT_RP_SECTION, /Stay in character|coding assistant|planner/)
   assert.throws(() => resolveRpConfig({ section: '' }), /non-empty/)
   assert.throws(() => resolveRpConfig({ section: 1 }), /string/)
   assert.throws(() => resolveRpConfig({ section: 'ok', extra: true }), /unknown/)
@@ -105,15 +110,17 @@ test('idle RP entry switches sandbox to read-only and leave restores the previou
   }
 })
 
-test('RP leave does not clobber a sandbox the user changed while roleplay was active', () => {
+test('RP pins the file sandbox to read-only if the chat permission chip changes', () => {
   const { directory, agents, controller } = fixture()
   try {
     const agent = createAgent('session-a', [{ type: 'sandbox/mode', data: { mode: 'workspace-write' } }])
     agents.set(agent.id, agent)
     controller.set(agent, true)
     agent.session.append('sandbox/mode', { mode: 'danger-full-access' })
+    assert.equal(controller.enforceReadOnly(agent.session), true)
+    assert.equal(foldSandboxMode(agent.session.events), 'read-only')
     controller.set(agent, false)
-    assert.equal(foldSandboxMode(agent.session.events), 'danger-full-access')
+    assert.equal(foldSandboxMode(agent.session.events), 'workspace-write')
   } finally {
     rmSync(directory, { recursive: true, force: true })
   }
@@ -199,6 +206,79 @@ test('RP HTTP API reads and writes session collaboration state', async () => {
     assert.equal(updated.status, 200)
     assert.equal(updated.body.rp.active, true)
     assert.equal(controller.stored('session-a').source, 'command')
+  } finally {
+    rmSync(directory, { recursive: true, force: true })
+  }
+})
+
+test('queued RP leave still blocks writes until the next pre-step commits', () => {
+  const { directory, agents, controller } = fixture()
+  try {
+    const agent = createAgent('session-a')
+    agents.set(agent.id, agent)
+    controller.set(agent, true)
+    agent.session.append('turn/start', {})
+    assert.equal(controller.set(agent, false, { followSuppressed: true }), 'queued')
+    assert.equal(controller.stored(agent.id).active, true)
+    assert.equal(controller.blocksWrites(agent), true)
+    assert.equal(controller.enforceReadOnly(agent.session), false)
+    controller.onBoundary(agent)
+    assert.equal(controller.stored(agent.id).active, false)
+    assert.equal(controller.blocksWrites(agent), false)
+  } finally {
+    rmSync(directory, { recursive: true, force: true })
+  }
+})
+
+test('RP write guard denies mutating file tools, shell, fetch, and sandbox escalation, but not reads', () => {
+  assert.equal(rpWriteGuardReason({ name: 'write', arguments: { file_path: 'a.md' } }), RP_WRITE_BLOCK_REASON)
+  assert.equal(rpWriteGuardReason({ name: 'edit', arguments: { file_path: 'a.md' } }), RP_WRITE_BLOCK_REASON)
+  assert.equal(rpWriteGuardReason({ name: 'str_replace_editor', arguments: {} }), RP_WRITE_BLOCK_REASON)
+  assert.equal(rpWriteGuardReason({ name: 'pwsh', arguments: { sandbox_permissions: 'danger-full-access' } }), RP_WRITE_BLOCK_REASON)
+  assert.equal(rpWriteGuardReason({ name: 'pwsh', arguments: { command: 'Get-ChildItem' } }), RP_WRITE_BLOCK_REASON)
+  assert.equal(rpWriteGuardReason({ name: 'bash', arguments: { command: 'curl https://example.test' } }), RP_WRITE_BLOCK_REASON)
+  assert.equal(rpWriteGuardReason({ name: 'run_code', arguments: {} }), RP_WRITE_BLOCK_REASON)
+  assert.equal(rpWriteGuardReason({ name: 'web_fetch', arguments: { url: 'https://example.test' } }), RP_WRITE_BLOCK_REASON)
+  assert.equal(rpWriteGuardReason({ name: 'read', arguments: { file_path: 'a.md' } }), undefined)
+  assert.equal(rpWriteGuardReason({ name: 'web_search', arguments: { query: 'weather' } }), undefined)
+})
+
+test('RP high-risk block records an alert and cancels the running agent', async () => {
+  const { directory, agents, controller } = fixture()
+  try {
+    const cancelled = []
+    const agent = createAgent('session-a')
+    agent.cancel = (cause, options) => cancelled.push({ cause, options })
+    agents.set(agent.id, agent)
+    controller.set(agent, true)
+    assert.equal(controller.interruptHighRisk({ name: 'bash', arguments: { command: 'curl https://example.test' }, agent: createAgent('other') }), undefined)
+    assert.equal(controller.interruptHighRisk({ name: 'read', arguments: { file_path: 'a.md' }, agent }), undefined)
+    assert.equal(controller.peekHighRiskAlert('session-a'), null)
+    const reason = controller.interruptHighRisk({
+      name: 'bash',
+      arguments: { command: 'curl https://example.test' },
+      agent,
+    })
+    assert.equal(reason, RP_WRITE_BLOCK_REASON)
+    const alert = controller.peekHighRiskAlert('session-a')
+    assert.equal(alert.toolName, 'bash')
+    assert.equal(cancelled.length, 0)
+    await Promise.resolve()
+    assert.equal(cancelled.length, 1)
+    assert.deepEqual(cancelled[0], {
+      cause: { kind: 'hook', reason: 'rp-high-risk-block' },
+      options: { keepInbox: true },
+    })
+    const handler = createRpModeApiHandler(controller)
+    const peeked = await invoke(handler, { url: '/dsh-tavern/api/rp-alert?sessionId=session-a' })
+    assert.equal(peeked.body.alert.toolName, 'bash')
+    const acked = await invoke(handler, {
+      method: 'DELETE',
+      url: `/dsh-tavern/api/rp-alert?sessionId=session-a&id=${peeked.body.alert.id}`,
+    })
+    assert.equal(acked.body.alert.toolName, 'bash')
+    const empty = await invoke(handler, { url: '/dsh-tavern/api/rp-alert?sessionId=session-a' })
+    assert.equal(empty.body.alert, null)
   } finally {
     rmSync(directory, { recursive: true, force: true })
   }

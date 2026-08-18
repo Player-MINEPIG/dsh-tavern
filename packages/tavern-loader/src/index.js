@@ -41,10 +41,16 @@ import {
   isSessionTemplateApiPath,
 } from '../../session-template/src/index.js'
 import {
+  RpPolicyStore,
+  createRpPolicyApiHandler,
+  isRpPolicyApiPath,
+} from './rp-policy-store.js'
+import {
   RpModeController,
   createRpModeApiHandler,
   isRpModeApiPath,
   registerRpCommands,
+  registerRpWriteGuard,
   resolveRpConfig,
   rpModeConstants,
 } from './rp-mode.js'
@@ -207,6 +213,9 @@ export function apply(ctx, config = {}) {
   const userWorldBooks = new UserWorldBookBindingStore(storageDir, config.userWorldBooks)
   const sessionTemplateStore = new SessionTemplateStore(storageDir, config.sessionTemplates)
   const uiSettingsStore = new UiSettingsStore(storageDir)
+  const rpPolicyStore = new RpPolicyStore(storageDir, {
+    defaultSection: resolveRpConfig(config.rpMode ?? {}).section,
+  })
   const selections = new SessionSelectionStore(storageDir, {
     ...config.sessionSelections,
     defaultSelection: () => ({ presetId: store.state.selectedId }),
@@ -252,7 +261,8 @@ export function apply(ctx, config = {}) {
     agents: () => ctx.get('agents'),
     sandboxDefault: () => ctx.get('sandboxPolicy')?.defaultMode,
     logger: ctx.logger,
-    section: resolveRpConfig(config.rpMode ?? {}).section,
+    policyStore: rpPolicyStore,
+    section: rpPolicyStore.defaultSection,
   })
   const selectCharacter = characterSelectionPolicy.select.bind(characterSelectionPolicy)
   characterSelectionPolicy.select = (sessionId, patch) => {
@@ -325,6 +335,7 @@ export function apply(ctx, config = {}) {
     if (decision?.kind === 'reject' || payload?.signal?.aborted) return decision
     try {
       rpMode.onBoundary(payload.agent)
+      rpMode.enforceReadOnly(payload.agent?.session)
     } catch (error) {
       ctx.logger.warn?.(`dsh-tavern: RP mode pre-step commit failed: ${error instanceof Error ? error.message : String(error)}`)
     }
@@ -332,6 +343,7 @@ export function apply(ctx, config = {}) {
   })
 
   registerRpCommands(ctx, rpMode)
+  registerRpWriteGuard(ctx, rpMode)
 
   ctx.on('agent/request', async (payload, next) => {
     const snapshot = runtime.assembledFor(payload.agent) ?? runtime.compile({ agent: payload.agent })
@@ -346,6 +358,11 @@ export function apply(ctx, config = {}) {
   ctx.on('session/event', (session, event) => {
     pendingInput.observeSessionEvent(session, event)
     if (event?.type === 'turn/end') pendingInput.clearClaimed(session)
+    if (event?.type === 'sandbox/mode') {
+      try { rpMode.enforceReadOnly(session) } catch (error) {
+        ctx.logger.warn?.(`dsh-tavern: RP sandbox pin failed: ${error instanceof Error ? error.message : String(error)}`)
+      }
+    }
     traceSafely('header alignment', () => traceRecorder.observeSessionEvent(session, event))
   })
 
@@ -437,6 +454,7 @@ export function apply(ctx, config = {}) {
       },
     })
     const uiSettingsApi = createUiSettingsApiHandler(uiSettingsStore)
+    const rpPolicyApi = createRpPolicyApiHandler(rpPolicyStore, { onChange: notifyChange })
     const rpModeApi = createRpModeApiHandler(rpMode, {
       beforeChange: ({ sessionId, active }) => {
         notifyChange()
@@ -446,6 +464,8 @@ export function apply(ctx, config = {}) {
     const api = secureTavernApi(
       (req, res) => isUiSettingsApiPath(req.url)
         ? uiSettingsApi(req, res)
+        : isRpPolicyApiPath(req.url)
+          ? rpPolicyApi(req, res)
         : isRpModeApiPath(req.url)
           ? rpModeApi(req, res)
         : isSessionTemplateApiPath(req.url)
@@ -482,6 +502,7 @@ export function apply(ctx, config = {}) {
     sessionTemplateStore: { value: sessionTemplateStore, enumerable: false },
     sessionConfigurations: { value: sessionConfigurations, enumerable: false },
     uiSettingsStore: { value: uiSettingsStore, enumerable: false },
+    rpPolicyStore: { value: rpPolicyStore, enumerable: false },
     traceStore: { value: traceStore, enumerable: false },
     traceRecorder: { value: traceRecorder, enumerable: false },
     pendingInputProjection: { value: pendingInput, enumerable: false },
@@ -532,6 +553,13 @@ export {
 export { createWorldBookAdapter } from './world-book-adapter.js'
 export { PendingInputProjection, pendingInputProjectionConstants } from './pending-input-projection.js'
 export {
+  RpPolicyStore,
+  createRpPolicyApiHandler,
+  isRpPolicyApiPath,
+  normalizeRpPolicySection,
+  rpPolicyStoreConstants,
+} from './rp-policy-store.js'
+export {
   DEFAULT_RP_SECTION,
   DEFAULT_RP_STATE,
   RpModeController,
@@ -541,8 +569,12 @@ export {
   isRpModeApiPath,
   normalizeRpState,
   registerRpCommands,
+  registerRpWriteGuard,
   resolveRpConfig,
+  RP_MUTATING_TOOL_NAMES,
+  RP_WRITE_BLOCK_REASON,
   rpModeConstants,
+  rpWriteGuardReason,
 } from './rp-mode.js'
 export { WorldBookStore, createWorldBookApiHandler } from '../../world-book-library/src/index.js'
 export { secureTavernApi, apiSecurityConstants } from './api-security.js'

@@ -54,8 +54,11 @@ const css = `
 .dtv-actions{display:grid;grid-template-columns:1fr 1fr;gap:8px}.dtv-button{min-height:34px;border:1px solid var(--dsw-alias-border-l2);border-radius:8px;background:var(--dsw-alias-button-secondary-fill,var(--dsw-alias-bg-base));color:var(--dsw-alias-label-primary);cursor:pointer;padding:7px 10px;font-size:12px}.dtv-button:hover:not(:disabled){background:var(--dsw-alias-interactive-bg-hover)}.dtv-button:disabled{opacity:.5;cursor:default}
 .dtv-primary{background:var(--dsw-alias-state-business-primary,#2677d9);border-color:transparent;color:var(--dsw-alias-button-primary-label,#fff)}.dtv-primary:hover:not(:disabled){filter:brightness(1.08);background:var(--dsw-alias-state-business-primary,#2677d9)}.dtv-template-actions{display:grid;grid-template-columns:1fr 1fr;gap:7px}
 .dtv-resource{border:1px solid var(--dsw-alias-border-l1);border-radius:9px;padding:10px;display:flex;flex-direction:column;gap:7px}.dtv-resource-title{font-size:12px;font-weight:650}.dtv-resource-meta{font-size:11px;line-height:1.45;color:var(--dsw-alias-label-tertiary)}.dtv-list{margin:0;padding-left:18px;font-size:11px;line-height:1.55}.dtv-preview{border:1px solid var(--dsw-alias-border-l1);border-radius:8px;background:var(--dsw-specific-tip);padding:9px;display:flex;flex-direction:column;gap:6px}.dtv-preview-title{font-size:12px;font-weight:700}.dtv-preview-row{display:grid;grid-template-columns:112px minmax(0,1fr);gap:8px;font-size:11px;line-height:1.45}.dtv-preview-label{color:var(--dsw-alias-label-tertiary)}.dtv-preview-value{overflow-wrap:anywhere}.dtv-preview-options{margin-left:120px;display:flex;flex-direction:column;gap:2px;font-size:10px;color:var(--dsw-alias-label-tertiary)}.dtv-preview-list{margin:0;padding-left:18px}.dtv-preview-row[data-missing=true] .dtv-preview-value,.dtv-preview-list>[data-missing=true]{color:var(--dsw-alias-state-error)}
-.dtv-book-toolbar{display:grid;grid-template-columns:1fr 1fr 1fr;gap:7px}.dtv-entry{border:1px solid var(--dsw-alias-border-l1);border-radius:8px;background:var(--dsw-alias-bg-base);overflow:hidden}.dtv-entry>summary{list-style:none;cursor:pointer;padding:8px;display:flex;align-items:center;gap:7px;font-size:11px}.dtv-entry>summary::-webkit-details-marker{display:none}.dtv-entry-dot{width:8px;height:8px;flex:none;border-radius:50%;background:var(--dsw-alias-label-tertiary)}.dtv-entry[data-enabled=true] .dtv-entry-dot{background:var(--dsw-alias-state-success,#2fa36b)}.dtv-entry-name{font-weight:620;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.dtv-entry-state{margin-left:auto;flex:none;color:var(--dsw-alias-label-tertiary);font-size:10px}.dtv-entry-body{border-top:1px solid var(--dsw-alias-border-l1);padding:8px;display:flex;flex-direction:column;gap:8px}.dtv-field{display:flex;flex-direction:column;gap:4px}.dtv-label{font-size:10px;font-weight:620;color:var(--dsw-alias-label-tertiary)}.dtv-input,.dtv-select,.dtv-textarea{box-sizing:border-box;width:100%;border:1px solid var(--dsw-alias-border-l2);border-radius:7px;background:var(--dsw-alias-bg-base);color:var(--dsw-alias-label-primary);font:inherit;font-size:11px;padding:7px 8px}.dtv-input,.dtv-select{height:32px}.dtv-textarea{min-height:94px;resize:vertical;line-height:1.45}.dtv-entry-grid{display:grid;grid-template-columns:1fr 1fr;gap:7px}.dtv-checks{display:flex;flex-wrap:wrap;gap:10px}.dtv-check{display:flex;gap:5px;align-items:center;font-size:10px}.dtv-entry-actions{display:flex;justify-content:flex-end}.dtv-danger{color:var(--dsw-alias-state-error)}
+.dtv-book-toolbar{display:grid;grid-template-columns:1fr 1fr 1fr;gap:7px}.dtv-entry{border:1px solid var(--dsw-alias-border-l1);border-radius:8px;background:var(--dsw-alias-bg-base);overflow:hidden}.dtv-entry>summary{list-style:none;cursor:pointer;padding:8px;display:flex;align-items:center;gap:7px;font-size:11px}.dtv-entry>summary::-webkit-details-marker{display:none}.dtv-entry-dot{width:8px;height:8px;flex:none;border-radius:50%;background:var(--dsw-alias-label-tertiary)}.dtv-entry[data-enabled=true] .dtv-entry-dot{background:var(--dsw-alias-state-success,#2fa36b)}.dtv-entry-name{font-weight:620;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.dtv-entry-state{margin-left:auto;flex:none;color:var(--dsw-alias-label-tertiary);font-size:10px}.dtv-entry-body{border-top:1px solid var(--dsw-alias-border-l1);padding:8px;display:flex;flex-direction:column;gap:8px}.dtv-field{display:flex;flex-direction:column;gap:4px}.dtv-label{font-size:10px;font-weight:620;color:var(--dsw-alias-label-tertiary)}.dtv-input,.dtv-select,.dtv-textarea{box-sizing:border-box;width:100%;border:1px solid var(--dsw-alias-border-l2);border-radius:7px;background:var(--dsw-alias-bg-base);color:var(--dsw-alias-label-primary);font:inherit;font-size:11px;padding:7px 8px}.dtv-input,.dtv-select{height:32px}.dtv-textarea{min-height:94px;resize:vertical;line-height:1.45}.dtv-policy{min-height:96px}.dtv-entry-grid{display:grid;grid-template-columns:1fr 1fr;gap:7px}.dtv-checks{display:flex;flex-wrap:wrap;gap:10px}.dtv-check{display:flex;gap:5px;align-items:center;font-size:10px}.dtv-entry-actions{display:flex;justify-content:flex-end}.dtv-danger{color:var(--dsw-alias-state-error)}
 .dtv-layer>.dtv-launcher,.dtv-layer>.dtv-panel,.dtv-layer>.dcc-panel,.dtv-layer>.dwb-panel,.dtv-layer>.dtu-panel{zoom:var(--dtv-ui-scale,1)}.dtv-setting-value{font-size:12px;font-variant-numeric:tabular-nums;color:var(--dsw-alias-label-secondary)}
+.dtv-modal-backdrop{position:absolute;inset:0;z-index:20;pointer-events:auto;background:rgba(0,0,0,.48);display:flex;align-items:center;justify-content:center;padding:24px}
+.dtv-modal{width:min(420px,100%);border-radius:12px;background:var(--dsw-alias-bg-base);border:1px solid var(--dsw-alias-border-l2);box-shadow:var(--ds-shadow-3,0 16px 40px rgba(0,0,0,.28));padding:18px 16px;display:flex;flex-direction:column;gap:14px}
+.dtv-modal-body{margin:0;font-size:13px;line-height:1.55}.dtv-modal .dtv-button{align-self:flex-end;min-width:88px}
 `
 
 const LAUNCHER_STORAGE_KEY = 'dsh-tavern:launcher-position:v1'
@@ -108,6 +111,26 @@ async function sessionConfigurationRequest(path, body) {
   return data
 }
 
+async function rpAlertRequest(sessionId, { method = 'GET', id } = {}) {
+  const params = new URLSearchParams({ sessionId })
+  if (id !== undefined) params.set('id', String(id))
+  const response = await fetch(`${API_ROOT}/rp-alert?${params}`, { method })
+  const data = await response.json().catch(() => null)
+  if (!response.ok || data?.ok === false) throw new Error(data?.error ?? `HTTP ${response.status}`)
+  return data
+}
+
+async function rpPolicyRequest(method = 'GET', body) {
+  const response = await fetch(`${API_ROOT}/rp-policy`, {
+    method,
+    headers: method === 'GET' ? undefined : { 'Content-Type': 'application/json' },
+    body: body === undefined ? undefined : JSON.stringify(body),
+  })
+  const data = await response.json().catch(() => null)
+  if (!response.ok || data?.ok === false) throw new Error(data?.error ?? `HTTP ${response.status}`)
+  return data
+}
+
 async function uiSettingsRequest(method = 'GET', body) {
   const response = await fetch(`${API_ROOT}/ui-settings`, {
     method,
@@ -132,7 +155,20 @@ function Field({ label, children }) {
   return h('label', { className: 'dtv-field' }, h('span', { className: 'dtv-label' }, label), children)
 }
 
-function SettingsPanel({ settings, status, busy, close, update, reset }) {
+function SettingsPanel({
+  settings,
+  status,
+  busy,
+  close,
+  update,
+  reset,
+  policyDraft,
+  policyBusy,
+  policyLoaded,
+  onPolicyDraft,
+  savePolicy,
+  resetPolicy,
+}) {
   const percent = Math.round(settings.scale * 100)
   return h('div', { className: 'dtv-panel' },
     h('div', { className: 'dtv-header' },
@@ -165,6 +201,28 @@ function SettingsPanel({ settings, status, busy, close, update, reset }) {
         h('span', null, translate('settings.rpFollow')),
       ),
       h('p', { className: 'dtv-note' }, translate('settings.rpFollow.help')),
+      h(Field, { label: translate('settings.rpPolicy') }, h('textarea', {
+        className: 'dtv-textarea dtv-policy',
+        value: policyDraft,
+        placeholder: translate('settings.rpPolicy.placeholder'),
+        disabled: busy || policyBusy || policyLoaded !== true,
+        onChange: event => onPolicyDraft(event.target.value),
+      })),
+      h('p', { className: 'dtv-note' }, translate('settings.rpPolicy.help')),
+      h('div', { className: 'dtv-actions' },
+        h('button', {
+          className: 'dtv-button dtv-primary',
+          type: 'button',
+          disabled: busy || policyBusy || policyLoaded !== true,
+          onClick: savePolicy,
+        }, translate('settings.rpPolicy.save')),
+        h('button', {
+          className: 'dtv-button',
+          type: 'button',
+          disabled: busy || policyBusy || policyLoaded !== true,
+          onClick: resetPolicy,
+        }, translate('settings.rpPolicy.reset')),
+      ),
       h('div', { className: 'dtv-status', 'data-error': status.error || undefined, role: 'status' }, rawText(status.text)),
       h('div', { className: 'dtv-actions' },
         h('button', { className: 'dtv-button', type: 'button', disabled: busy, onClick: reset }, translate('settings.reset')),
@@ -403,6 +461,20 @@ function WorldInfoPanel({ sessionId, close }) {
   )
 }
 
+function RpHighRiskDialog({ onDismiss }) {
+  return h('div', {
+    className: 'dtv-modal-backdrop',
+    role: 'alertdialog',
+    'aria-modal': 'true',
+    'aria-labelledby': 'dtv-rp-block-body',
+  },
+    h('div', { className: 'dtv-modal' },
+      h('p', { id: 'dtv-rp-block-body', className: 'dtv-modal-body' }, translate('rp.block.body')),
+      h('button', { className: 'dtv-button dtv-primary', type: 'button', onClick: onDismiss }, translate('rp.block.dismiss')),
+    ),
+  )
+}
+
 function TavernShell({ useSessions, useWorkspaces, createCleanSession }) {
   const [menuOpen, setMenuOpen] = useState(false)
   const [surface, setSurface] = useState(null)
@@ -412,13 +484,19 @@ function TavernShell({ useSessions, useWorkspaces, createCleanSession }) {
   const [uiSettings, setUiSettings] = useState(getClientUiSettings)
   const [settingsStatus, setSettingsStatus] = useState({ text: translate('settings.saved'), error: false })
   const [settingsBusy, setSettingsBusy] = useState(false)
+  const [rpPolicyDraft, setRpPolicyDraft] = useState('')
+  const [rpPolicyLoaded, setRpPolicyLoaded] = useState(false)
+  const [rpPolicyBusy, setRpPolicyBusy] = useState(false)
+  const [rpAlert, setRpAlert] = useState(null)
   const drag = useRef(null)
   const suppressClick = useRef(false)
   const statusGeneration = useRef(0)
+  const rpAlertRef = useRef(null)
   const sessionId = useSessions(state => state.current)
   const sessionBlank = useSessions(state => state.current === undefined || state.current === null ? true : state.byId?.[state.current]?.blank === true)
   const workspaceId = useWorkspaces(state => workspaceTargetId(state, sessionId))
   const close = () => setSurface(null)
+  rpAlertRef.current = rpAlert
 
   useEffect(() => {
     let active = true
@@ -472,6 +550,51 @@ function TavernShell({ useSessions, useWorkspaces, createCleanSession }) {
     }
   }
 
+  useEffect(() => {
+    if (surface !== 'settings') return undefined
+    let active = true
+    setRpPolicyLoaded(false)
+    rpPolicyRequest().then(next => {
+      if (!active) return
+      setRpPolicyDraft(typeof next.section === 'string' ? next.section : '')
+      setRpPolicyLoaded(true)
+    }).catch(reason => {
+      if (!active) return
+      setSettingsStatus({ text: translate('settings.loadError', { message: reason instanceof Error ? reason.message : String(reason) }), error: true })
+    })
+    return () => { active = false }
+  }, [surface])
+
+  const persistRpPolicy = async () => {
+    setRpPolicyBusy(true)
+    setSettingsStatus({ text: translate('settings.saving'), error: false })
+    try {
+      const saved = await rpPolicyRequest('PUT', { section: rpPolicyDraft })
+      setRpPolicyDraft(saved.section)
+      setRpPolicyLoaded(true)
+      setSettingsStatus({ text: translate('settings.rpPolicy.saved'), error: false })
+    } catch (reason) {
+      setSettingsStatus({ text: translate('settings.saveError', { message: reason instanceof Error ? reason.message : String(reason) }), error: true })
+    } finally {
+      setRpPolicyBusy(false)
+    }
+  }
+
+  const resetRpPolicy = async () => {
+    setRpPolicyBusy(true)
+    setSettingsStatus({ text: translate('settings.saving'), error: false })
+    try {
+      const saved = await rpPolicyRequest('DELETE')
+      setRpPolicyDraft(saved.section)
+      setRpPolicyLoaded(true)
+      setSettingsStatus({ text: translate('settings.rpPolicy.saved'), error: false })
+    } catch (reason) {
+      setSettingsStatus({ text: translate('settings.saveError', { message: reason instanceof Error ? reason.message : String(reason) }), error: true })
+    } finally {
+      setRpPolicyBusy(false)
+    }
+  }
+
   const refreshStatus = useCallback(async () => {
     const generation = ++statusGeneration.current
     try {
@@ -518,14 +641,50 @@ function TavernShell({ useSessions, useWorkspaces, createCleanSession }) {
   }, [uiSettings.scale])
 
   useEffect(() => {
+    if (typeof sessionId !== 'string' || sessionId === '') {
+      setRpAlert(null)
+      return undefined
+    }
+    let active = true
+    const poll = async () => {
+      try {
+        const data = await rpAlertRequest(sessionId)
+        if (!active || data?.alert == null) return
+        if (rpAlertRef.current?.id === data.alert.id) return
+        setRpAlert(data.alert)
+      } catch {
+        // Polling must not surface as a settings or launcher error.
+      }
+    }
+    poll()
+    const timer = window.setInterval(poll, 800)
+    return () => {
+      active = false
+      window.clearInterval(timer)
+    }
+  }, [sessionId])
+
+  const dismissRpAlert = async () => {
+    const alert = rpAlert
+    setRpAlert(null)
+    if (typeof sessionId !== 'string' || sessionId === '' || alert?.id == null) return
+    try {
+      await rpAlertRequest(sessionId, { method: 'DELETE', id: alert.id })
+    } catch {
+      // Closing the dialog still stops the current overlay even if ack fails.
+    }
+  }
+
+  useEffect(() => {
     const onKeyDown = event => {
       if (event.key !== 'Escape') return
-      if (menuOpen) setMenuOpen(false)
+      if (rpAlert !== null) dismissRpAlert()
+      else if (menuOpen) setMenuOpen(false)
       else if (surface !== null) setSurface(null)
     }
     window.addEventListener('keydown', onKeyDown)
     return () => window.removeEventListener('keydown', onKeyDown)
-  }, [menuOpen, surface])
+  }, [menuOpen, rpAlert, surface])
 
   const startDrag = event => {
     if (event.button !== 0) return
@@ -602,6 +761,12 @@ function TavernShell({ useSessions, useWorkspaces, createCleanSession }) {
       close,
       update: persistSettings,
       reset: resetSettings,
+      policyDraft: rpPolicyDraft,
+      policyBusy: rpPolicyBusy,
+      policyLoaded: rpPolicyLoaded,
+      onPolicyDraft: setRpPolicyDraft,
+      savePolicy: persistRpPolicy,
+      resetPolicy: resetRpPolicy,
     })
   }
 
@@ -610,6 +775,7 @@ function TavernShell({ useSessions, useWorkspaces, createCleanSession }) {
 
   return h('div', { className: 'dtv-layer', lang: uiSettings.locale, 'data-surface-open': surface !== null, style: { '--dtv-ui-scale': uiSettings.scale } },
     panel,
+    rpAlert === null ? null : h(RpHighRiskDialog, { onDismiss: dismissRpAlert }),
     h('div', {
       className: 'dtv-launcher',
       'data-open': menuOpen,

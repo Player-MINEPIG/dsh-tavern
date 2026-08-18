@@ -8,14 +8,19 @@ export const DEFAULT_RP_STATE = Object.freeze({
   sandboxBefore: null,
 })
 
-export const DEFAULT_RP_SECTION = [
-  'You are in Tavern roleplay mode for this session.',
-  'The bound character card, user persona, world books, and preset already in this prompt are the scene contract. Stay in character. Do not break the scene to act as a coding assistant, software engineer, or planner unless the user explicitly asks to leave roleplay.',
-  'Do not speak for the user or decide their feelings. Do not invent shared history that is not in this prompt, the world-book activations, or this conversation. Prefer one clear in-character beat over padding, recap, or interrogation.',
-  'File tools may still appear. This session is expected to use a read-only file sandbox; do not create, edit, or delete project files as part of roleplay. If a file operation is denied, continue in text. Do not treat denials as a reason to escalate into a coding workflow.',
-  'Tool approval still applies. Trace and the current Tavern bindings remain in force. World-book text in this prompt is canon for the scene.',
-  'When roleplay mode is turned off, resume ordinary DeepSeek Harness assistant behavior.',
-].join('\n\n')
+export const RP_WRITE_BLOCK_REASON = 'Tavern roleplay is on. File writes, shell, and sandbox escalation are blocked until RP mode is turned off on the character card.'
+
+export const DEFAULT_RP_SECTION = RP_WRITE_BLOCK_REASON
+
+export const RP_MUTATING_TOOL_NAMES = new Set([
+  'write',
+  'edit',
+  'str_replace_editor',
+  'bash',
+  'pwsh',
+  'run_code',
+  'web_fetch',
+])
 
 function isRecord(value) {
   return value !== null && typeof value === 'object' && !Array.isArray(value)
@@ -74,6 +79,14 @@ function sameRp(left, right) {
     && a.sandboxBefore === b.sandboxBefore
 }
 
+export function rpWriteGuardReason(execution) {
+  if (!isRecord(execution) || typeof execution.name !== 'string') return undefined
+  if (RP_MUTATING_TOOL_NAMES.has(execution.name)) return RP_WRITE_BLOCK_REASON
+  const args = execution.arguments
+  if (isRecord(args) && args.sandbox_permissions) return RP_WRITE_BLOCK_REASON
+  return undefined
+}
+
 /**
  * Per-session RP collaboration state. Durable bits live on the Tavern
  * selection store because out-of-repo plugins cannot register SessionEventMap
@@ -86,6 +99,7 @@ export class RpModeController {
     agents = () => undefined,
     sandboxDefault = () => undefined,
     logger = null,
+    policyStore = null,
     section = DEFAULT_RP_SECTION,
     readOnlyOnEnter = true,
   }) {
@@ -94,9 +108,16 @@ export class RpModeController {
     this.agents = typeof agents === 'function' ? agents : () => agents
     this.sandboxDefault = typeof sandboxDefault === 'function' ? sandboxDefault : () => sandboxDefault
     this.logger = logger
-    this.section = section
+    this.policyStore = policyStore
+    this.defaultSection = section
     this.readOnlyOnEnter = readOnlyOnEnter !== false
     this.pendingIntents = new WeakMap()
+    this.highRiskAlerts = new Map()
+    this.highRiskAlertSeq = 0
+  }
+
+  get section() {
+    return this.policyStore?.get() ?? this.defaultSection
   }
 
   followCharacterEnabled() {
@@ -123,6 +144,12 @@ export class RpModeController {
     return this.effective(agent).active === true
   }
 
+  blocksWrites(agent) {
+    const sessionId = agent?.id ?? agent?.session?.id
+    if (typeof sessionId === 'string' && this.stored(sessionId).active === true) return true
+    return this.isActive(agent)
+  }
+
   get(agent) {
     const stored = this.stored(agent?.id ?? agent?.session?.id)
     const pending = agent?.session === undefined ? undefined : this.pendingIntents.get(agent.session)
@@ -131,6 +158,47 @@ export class RpModeController {
 
   write(sessionId, rp) {
     this.selections.set(sessionId, { rp: normalizeRpState(rp) })
+  }
+
+  noteHighRiskBlock(sessionId, toolName) {
+    if (typeof sessionId !== 'string' || sessionId === '') return null
+    this.highRiskAlertSeq += 1
+    const alert = {
+      id: this.highRiskAlertSeq,
+      sessionId,
+      toolName: typeof toolName === 'string' ? toolName : 'unknown',
+      at: Date.now(),
+    }
+    this.highRiskAlerts.set(sessionId, alert)
+    return alert
+  }
+
+  peekHighRiskAlert(sessionId) {
+    const alert = this.highRiskAlerts.get(sessionId)
+    return alert === undefined ? null : { ...alert }
+  }
+
+  takeHighRiskAlert(sessionId, id) {
+    const alert = this.peekHighRiskAlert(sessionId)
+    if (alert === null) return null
+    if (id !== undefined && alert.id !== id) return null
+    this.highRiskAlerts.delete(sessionId)
+    return alert
+  }
+
+  interruptHighRisk(execution) {
+    if (!this.blocksWrites(execution?.agent)) return undefined
+    const reason = rpWriteGuardReason(execution)
+    if (reason === undefined) return undefined
+    const agent = execution.agent
+    const sessionId = agent?.id ?? agent?.session?.id
+    this.noteHighRiskBlock(sessionId, execution.name)
+    queueMicrotask(() => {
+      try {
+        agent?.cancel?.({ kind: 'hook', reason: 'rp-high-risk-block' }, { keepInbox: true })
+      } catch {}
+    })
+    return reason
   }
 
   currentSandbox(session) {
@@ -154,6 +222,19 @@ export class RpModeController {
     return null
   }
 
+  enforceReadOnly(session) {
+    if (this.readOnlyOnEnter !== true || typeof session?.append !== 'function') return false
+    const sessionId = session.id ?? session.header?.id
+    if (typeof sessionId !== 'string' || sessionId === '') return false
+    const pending = this.pendingIntents.get(session)
+    const stored = this.stored(sessionId)
+    const active = stored.active === true || pending?.rp.active === true
+    if (active !== true) return false
+    if (this.currentSandbox(session) === 'read-only') return false
+    session.append('sandbox/mode', { mode: 'read-only' })
+    return true
+  }
+
   commit(agent, rp, { recaptureSandbox = false } = {}) {
     const sessionId = agent?.id ?? agent?.session?.id
     const session = agent?.session
@@ -163,13 +244,16 @@ export class RpModeController {
       next.followSuppressed = false
       const previous = recaptureSandbox ? null : current.sandboxBefore
       next.sandboxBefore = this.applySandbox(session, { active: true, previous })
-    } else {
-      this.applySandbox(session, { active: false, previous: current.sandboxBefore })
-      next.sandboxBefore = null
-      if (next.source !== 'command') next.source = null
+      this.write(sessionId, next)
+      if (session !== undefined) this.pendingIntents.delete(session)
+      return 'committed'
     }
+    const previous = current.sandboxBefore
+    next.sandboxBefore = null
+    if (next.source !== 'command') next.source = null
     this.write(sessionId, next)
     if (session !== undefined) this.pendingIntents.delete(session)
+    this.applySandbox(session, { active: false, previous })
     return 'committed'
   }
 
@@ -269,7 +353,8 @@ function sendJson(res, status, payload) {
 }
 
 export function isRpModeApiPath(url) {
-  return new URL(url ?? '/', 'http://localhost').pathname === '/dsh-tavern/api/rp-mode'
+  const path = new URL(url ?? '/', 'http://localhost').pathname
+  return path === '/dsh-tavern/api/rp-mode' || path === '/dsh-tavern/api/rp-alert'
 }
 
 export function createRpModeApiHandler(controller, { beforeChange = async () => {} } = {}) {
@@ -277,6 +362,17 @@ export function createRpModeApiHandler(controller, { beforeChange = async () => 
     try {
       const url = new URL(req.url ?? '/', 'http://localhost')
       const method = String(req.method ?? 'GET').toUpperCase()
+      if (url.pathname === '/dsh-tavern/api/rp-alert') {
+        const sessionId = url.searchParams.get('sessionId')
+        if (typeof sessionId !== 'string' || sessionId === '') throw new TypeError('sessionId must be a string')
+        if (method === 'GET') return sendJson(res, 200, { ok: true, alert: controller.peekHighRiskAlert(sessionId) })
+        if (method === 'DELETE') {
+          const raw = url.searchParams.get('id')
+          const id = raw === null || raw === '' ? undefined : Number(raw)
+          return sendJson(res, 200, { ok: true, alert: controller.takeHighRiskAlert(sessionId, Number.isSafeInteger(id) ? id : undefined) })
+        }
+        return sendJson(res, 405, { ok: false, error: 'method not allowed' })
+      }
       if (method === 'GET') {
         const sessionId = url.searchParams.get('sessionId')
         if (typeof sessionId !== 'string' || sessionId === '') throw new TypeError('sessionId must be a string')
@@ -341,11 +437,18 @@ export function registerRpCommands(ctx, controller) {
         return {
           kind: 'success',
           text: outcome === 'committed'
-            ? 'Roleplay mode on. Files default to read-only. Use /rp off to leave.'
+            ? 'Roleplay mode on. Writes, shell, and fetch stay blocked until you turn RP off. Use /rp off to leave.'
             : 'Entering roleplay mode (applies from the next step). Use /rp off to leave.',
         }
       },
     })
+  })
+}
+
+export function registerRpWriteGuard(ctx, controller) {
+  if (typeof ctx?.inject !== 'function') return
+  ctx.inject(['tools'], toolCtx => {
+    toolCtx.tools.guard(execution => controller.interruptHighRisk(execution))
   })
 }
 
