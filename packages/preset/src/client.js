@@ -15,10 +15,9 @@ import {
   unwrapText,
 } from '../../client/src/i18n.js'
 import { reorderAtBoundary } from './client-state.js'
+import { API_V1 as API_ROOT, PLUGIN_ID } from '../../identity.js'
 
 const h = createLocalizedElement(createElement)
-
-const API_ROOT = '/dsh-tavern/api'
 
 function announceTavernRefresh() {
   window.dispatchEvent(new CustomEvent('dsh-tavern:refresh', { detail: { source: 'preset' } }))
@@ -460,9 +459,9 @@ export function PresetSidebar({ closePanel, openPanel, sessionId, sessionBlank, 
 }
 
 export function installPresetStyles() {
-  if (document.querySelector('style[data-plugin-css="dsh-tavern"]') !== null) return
+  if (document.querySelector(`style[data-plugin-css="${PLUGIN_ID}"]`) !== null) return
   const style = document.createElement('style')
-  style.dataset.pluginCss = 'dsh-tavern'
+  style.dataset.pluginCss = PLUGIN_ID
   style.textContent = css
   document.head.append(style)
 }

@@ -14,10 +14,9 @@ import {
   uiMessage,
   unwrapText,
 } from '../../client/src/i18n.js'
+import { API_V1 as API_ROOT, PLUGIN_ID } from '../../identity.js'
 
 const h = createLocalizedElement(createElement)
-
-const API_ROOT = '/dsh-tavern/api'
 const POSITIONS = [
   ['before_character_definition', 'world.position.beforeCharacter'],
   ['after_character_definition', 'world.position.afterCharacter'],
@@ -484,9 +483,9 @@ export function WorldBookPanel({ sessionId, close }) {
 }
 
 export function installWorldBookStyles() {
-  if (document.querySelector('style[data-plugin-css="dsh-tavern-world-book"]') !== null) return
+  if (document.querySelector(`style[data-plugin-css="${PLUGIN_ID}-world-book"]`) !== null) return
   const style = document.createElement('style')
-  style.dataset.pluginCss = 'dsh-tavern-world-book'
+  style.dataset.pluginCss = `${PLUGIN_ID}-world-book`
   style.textContent = css
   document.head.append(style)
 }

@@ -42,16 +42,16 @@ test('character API imports raw bytes, reads resources, selects, exports, and de
   try {
     const imported = await invoke(handler, {
       method: 'POST',
-      url: '/dsh-tavern/api/characters/import?filename=synthetic.json',
+      url: '/pmp-dsh-tavern/api/v1/characters/import?filename=synthetic.json',
       body: source,
     })
     assert.equal(imported.status, 201)
     const id = imported.json.character.id
     assert.equal(imported.json.character.name, 'API synthetic')
 
-    const listed = await invoke(handler, { url: '/dsh-tavern/api/characters' })
+    const listed = await invoke(handler, { url: '/pmp-dsh-tavern/api/v1/characters' })
     assert.equal(listed.json.characters.length, 1)
-    const detail = await invoke(handler, { url: `/dsh-tavern/api/characters/${id}` })
+    const detail = await invoke(handler, { url: `/pmp-dsh-tavern/api/v1/characters/${id}` })
     assert.equal(detail.json.character.source.raw.unknown.kept, true)
 
     const editedBook = {
@@ -72,7 +72,7 @@ test('character API imports raw bytes, reads resources, selects, exports, and de
     }
     const updated = await invoke(handler, {
       method: 'PATCH',
-      url: `/dsh-tavern/api/characters/${id}/world-book`,
+      url: `/pmp-dsh-tavern/api/v1/characters/${id}/world-book`,
       body: { characterBook: editedBook },
     })
     assert.equal(updated.status, 200)
@@ -80,21 +80,21 @@ test('character API imports raw bytes, reads resources, selects, exports, and de
 
     const selected = await invoke(handler, {
       method: 'POST',
-      url: '/dsh-tavern/api/character-selection',
+      url: '/pmp-dsh-tavern/api/v1/character-selection',
       body: { sessionId: 'session-a', characterCardId: id, character: { greetingIndex: 0 } },
     })
     assert.equal(selected.json.selection.characterCardId, id)
-    const selection = await invoke(handler, { url: '/dsh-tavern/api/character-selection?sessionId=session-a' })
+    const selection = await invoke(handler, { url: '/pmp-dsh-tavern/api/v1/character-selection?sessionId=session-a' })
     assert.equal(selection.json.character.name, 'API synthetic')
 
-    const json = await invoke(handler, { url: `/dsh-tavern/api/characters/${id}/json` })
+    const json = await invoke(handler, { url: `/pmp-dsh-tavern/api/v1/characters/${id}/json` })
     assert.equal(JSON.parse(json.bytes).character_book.entries[0].keys[0], 'harbor')
-    const missingOriginal = await invoke(handler, { url: `/dsh-tavern/api/characters/${id}/artifact` })
+    const missingOriginal = await invoke(handler, { url: `/pmp-dsh-tavern/api/v1/characters/${id}/artifact` })
     assert.equal(missingOriginal.status, 404)
 
-    const removed = await invoke(handler, { method: 'DELETE', url: `/dsh-tavern/api/characters/${id}` })
+    const removed = await invoke(handler, { method: 'DELETE', url: `/pmp-dsh-tavern/api/v1/characters/${id}` })
     assert.equal(removed.status, 200)
-    const cleared = await invoke(handler, { url: '/dsh-tavern/api/character-selection?sessionId=session-a' })
+    const cleared = await invoke(handler, { url: '/pmp-dsh-tavern/api/v1/character-selection?sessionId=session-a' })
     assert.equal(cleared.json.selection, null)
     assert.deepEqual(changes.map((item) => item.kind), [
       'character-imported',
@@ -119,33 +119,33 @@ test('character API patches fields, exports current PNG, and rejects invalid upd
   try {
     const imported = await invoke(handler, {
       method: 'POST',
-      url: '/dsh-tavern/api/characters/import?filename=patchable.json',
+      url: '/pmp-dsh-tavern/api/v1/characters/import?filename=patchable.json',
       body: source,
     })
     const id = imported.json.character.id
     const patched = await invoke(handler, {
       method: 'PATCH',
-      url: `/dsh-tavern/api/characters/${id}`,
+      url: `/pmp-dsh-tavern/api/v1/characters/${id}`,
       body: { description: 'Edited', firstMessage: 'First edited' },
     })
     assert.equal(patched.status, 200)
     assert.equal(patched.json.character.data.description, 'Edited')
-    assert.equal(JSON.parse((await invoke(handler, { url: `/dsh-tavern/api/characters/${id}/json` })).bytes).data.description, 'Edited')
+    assert.equal(JSON.parse((await invoke(handler, { url: `/pmp-dsh-tavern/api/v1/characters/${id}/json` })).bytes).data.description, 'Edited')
 
-    const png = await invoke(handler, { url: `/dsh-tavern/api/characters/${id}/png` })
+    const png = await invoke(handler, { url: `/pmp-dsh-tavern/api/v1/characters/${id}/png` })
     assert.equal(png.status, 200)
     assert.equal(png.headers['content-type'], 'image/png')
     assert.match(png.headers['content-disposition'], /\.png/)
 
     const missing = await invoke(handler, {
       method: 'PATCH',
-      url: '/dsh-tavern/api/characters/missing',
+      url: '/pmp-dsh-tavern/api/v1/characters/missing',
       body: { description: 'nope' },
     })
     assert.equal(missing.status, 404)
     const invalid = await invoke(handler, {
       method: 'PATCH',
-      url: `/dsh-tavern/api/characters/${id}`,
+      url: `/pmp-dsh-tavern/api/v1/characters/${id}`,
       body: { characterBook: {} },
     })
     assert.equal(invalid.status, 400)
@@ -153,7 +153,7 @@ test('character API patches fields, exports current PNG, and rejects invalid upd
 
     const oversized = await invoke(handler, {
       method: 'PATCH',
-      url: `/dsh-tavern/api/characters/${id}`,
+      url: `/pmp-dsh-tavern/api/v1/characters/${id}`,
       body: Buffer.from(`{"description":"${'x'.repeat(characterStoreConstants.maxCharacterDocumentBytes)}}"`),
     })
     assert.equal(oversized.status, 413)
@@ -171,7 +171,7 @@ test('character API creates a blank card', async () => {
   try {
     const created = await invoke(handler, {
       method: 'POST',
-      url: '/dsh-tavern/api/characters',
+      url: '/pmp-dsh-tavern/api/v1/characters',
       body: { name: 'Created card' },
     })
     assert.equal(created.status, 201)
@@ -201,7 +201,7 @@ test('character API returns structured errors and delegates session policy', asy
   try {
     const invalid = await invoke(handler, {
       method: 'POST',
-      url: '/dsh-tavern/api/characters/import?filename=bad.json',
+      url: '/pmp-dsh-tavern/api/v1/characters/import?filename=bad.json',
       body: Buffer.from('{'),
     })
     assert.equal(invalid.status, 400)
@@ -210,7 +210,7 @@ test('character API returns structured errors and delegates session policy', asy
 
     const blocked = await invoke(handler, {
       method: 'POST',
-      url: '/dsh-tavern/api/character-selection',
+      url: '/pmp-dsh-tavern/api/v1/character-selection',
       body: { sessionId: 'running', characterCardId: 'policy', character: {} },
     })
     assert.equal(blocked.status, 409)
@@ -229,7 +229,7 @@ test('character world-book edits have an independent request and structure bound
   try {
     const oversized = await invoke(handler, {
       method: 'PATCH',
-      url: '/dsh-tavern/api/characters/bounded/world-book',
+      url: '/pmp-dsh-tavern/api/v1/characters/bounded/world-book',
       body: Buffer.from(JSON.stringify({
         characterBook: { entries: [{ content: 'x'.repeat(MAX_CHARACTER_WORLD_BOOK_BODY_BYTES) }] },
       })),
@@ -241,7 +241,7 @@ test('character world-book edits have an independent request and structure bound
     for (let index = 0; index < 34; index += 1) nested = { nested }
     const tooDeep = await invoke(handler, {
       method: 'PATCH',
-      url: '/dsh-tavern/api/characters/bounded/world-book',
+      url: '/pmp-dsh-tavern/api/v1/characters/bounded/world-book',
       body: { characterBook: { entries: [{ content: 'safe', extensions: nested }] } },
     })
     assert.equal(tooDeep.status, 400)

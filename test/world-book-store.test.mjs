@@ -8,7 +8,7 @@ import { WorldBookStore } from '../packages/world-book-library/src/index.js'
 const fixture = () => readFileSync(new URL('./fixtures/world-book/standalone-library.json', import.meta.url), 'utf8')
 
 test('exposes the standalone resource use-case through its package subpath', async () => {
-  const api = await import('dsh-tavern/world-book-library')
+  const api = await import('pmp-dsh-tavern/world-book-library')
   assert.equal(typeof api.WorldBookStore, 'function')
   assert.equal(typeof api.createWorldBookApiHandler, 'function')
 })

@@ -4,6 +4,28 @@ This is the staged implementation log for dsh-tavern. It is kept separately
 from the product README so reviewers can follow intent, decisions, verification,
 and known limits chronologically.
 
+## 2026-08-19 — Plugin identity `pmp-dsh-tavern` and v1 HTTP root
+
+Purpose: stop colliding with other DSH plugins named `dsh-tavern`, and put the
+existing resource API under a versioned prefix before play-surface v2 routes
+land on the same Host prefix.
+
+- Package name, Cordis id, installer plugin name, browser bundle id, and the
+  Host `export const name` are now `pmp-dsh-tavern`. Shared constants live in
+  `packages/identity.js` (`PLUGIN_ID`, `API_ROOT`, `API_V1`, `API_V2`).
+- HTTP is mounted at `/pmp-dsh-tavern/api`. Existing resource routes moved to
+  `/pmp-dsh-tavern/api/v1/...`. The old `/dsh-tavern/api` root is not
+  registered and returns 404. There is no dual-root compatibility window.
+- Browser clients, launcher storage key, and `data-plugin-css` attributes
+  follow the new id. Host system section `dsh-tavern:profile` is unchanged so
+  replace-mode filtering does not drop the profile on upgrade.
+- Data and backup directories follow the new package name:
+  `node_modules/pmp-dsh-tavern/data/` and `backups/pmp-dsh-tavern/`.
+
+Verification: `npm test` plus a leftover-path scan of `packages/` and
+`scripts/` for callable `/dsh-tavern/api` roots.
+
+
 ## 2026-08-18 — RP secure mode and delegated subagent snapshot
 
 Purpose: add a session overlay for roleplay that pins a read-only file sandbox

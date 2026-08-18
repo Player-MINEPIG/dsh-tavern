@@ -1,4 +1,6 @@
-const API_PATH = '/dsh-tavern/api/traces'
+import { API_V1 } from '../../identity.js'
+
+const API_PATH = `${API_V1}/traces`
 
 function oldestRecordIndex(records) {
   let oldestIndex = 0

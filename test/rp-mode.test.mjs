@@ -48,7 +48,7 @@ function fixture(options = {}) {
   return { directory, selections, agents, controller }
 }
 
-async function invoke(handler, { method = 'GET', url = '/dsh-tavern/api/rp-mode?sessionId=session-a', body } = {}) {
+async function invoke(handler, { method = 'GET', url = '/pmp-dsh-tavern/api/v1/rp-mode?sessionId=session-a', body } = {}) {
   const content = body === undefined ? '' : JSON.stringify(body)
   const req = Readable.from(content === '' ? [] : [Buffer.from(content)])
   req.method = method
@@ -203,7 +203,7 @@ test('RP HTTP API reads and writes session collaboration state', async () => {
     assert.equal(initial.body.rp.active, false)
     const updated = await invoke(handler, {
       method: 'PUT',
-      url: '/dsh-tavern/api/rp-mode',
+      url: '/pmp-dsh-tavern/api/v1/rp-mode',
       body: { sessionId: 'session-a', active: true },
     })
     assert.equal(updated.status, 200)
@@ -294,14 +294,14 @@ test('RP high-risk block records an alert and cancels the running agent', async 
       options: { keepInbox: true },
     })
     const handler = createRpModeApiHandler(controller)
-    const peeked = await invoke(handler, { url: '/dsh-tavern/api/rp-alert?sessionId=session-a' })
+    const peeked = await invoke(handler, { url: '/pmp-dsh-tavern/api/v1/rp-alert?sessionId=session-a' })
     assert.equal(peeked.body.alert.toolName, 'write')
     const acked = await invoke(handler, {
       method: 'DELETE',
-      url: `/dsh-tavern/api/rp-alert?sessionId=session-a&id=${peeked.body.alert.id}`,
+      url: `/pmp-dsh-tavern/api/v1/rp-alert?sessionId=session-a&id=${peeked.body.alert.id}`,
     })
     assert.equal(acked.body.alert.toolName, 'write')
-    const empty = await invoke(handler, { url: '/dsh-tavern/api/rp-alert?sessionId=session-a' })
+    const empty = await invoke(handler, { url: '/pmp-dsh-tavern/api/v1/rp-alert?sessionId=session-a' })
     assert.equal(empty.body.alert, null)
   } finally {
     rmSync(directory, { recursive: true, force: true })

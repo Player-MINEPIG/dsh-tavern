@@ -22,10 +22,9 @@ import {
   characterGreetingOptions,
   defaultCharacterSelection,
 } from './client-state.js'
+import { API_V1 as API_ROOT, PLUGIN_ID } from '../../identity.js'
 
 const h = createLocalizedElement(createElement)
-
-const API_ROOT = '/dsh-tavern/api'
 
 function announceTavernRefresh() {
   window.dispatchEvent(new CustomEvent('dsh-tavern:refresh', { detail: { source: 'character' } }))
@@ -477,9 +476,9 @@ export function CharacterPanel({ sessionId, sessionBlank, close }) {
 }
 
 export function installCharacterStyles() {
-  if (document.querySelector('style[data-plugin-css="dsh-tavern-character"]') !== null) return
+  if (document.querySelector(`style[data-plugin-css="${PLUGIN_ID}-character"]`) !== null) return
   const style = document.createElement('style')
-  style.dataset.pluginCss = 'dsh-tavern-character'
+  style.dataset.pluginCss = `${PLUGIN_ID}-character`
   style.textContent = css
   document.head.append(style)
 }

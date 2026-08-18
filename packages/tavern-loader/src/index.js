@@ -2,9 +2,9 @@ import { fileURLToPath } from 'node:url'
 import { resolve } from 'node:path'
 import {
   PresetStore,
-  API_ROOT,
   createApiHandler as createPresetApiHandler,
 } from '../../preset/src/index.js'
+import { API_ROOT, API_V1, PLUGIN_ID } from '../../identity.js'
 import {
   CharacterStore,
   createCharacterAdapter,
@@ -55,7 +55,7 @@ import {
   rpModeConstants,
 } from './rp-mode.js'
 
-export const name = 'dsh-tavern'
+export const name = PLUGIN_ID
 export const inject = ['systemPrompt']
 
 const DEFAULT_STORAGE_DIR = fileURLToPath(new URL('../../../data', import.meta.url))
@@ -80,23 +80,23 @@ function migrateCharacterSelections(characterStore, selections) {
 
 function isCharacterApiPath(url) {
   const path = new URL(url ?? '/', 'http://localhost').pathname
-  return path === '/dsh-tavern/api/character-selection'
-    || path === '/dsh-tavern/api/characters'
-    || path.startsWith('/dsh-tavern/api/characters/')
+  return path === `${API_V1}/character-selection`
+    || path === `${API_V1}/characters`
+    || path.startsWith(`${API_V1}/characters/`)
 }
 
 function isWorldBookApiPath(url) {
   const path = new URL(url ?? '/', 'http://localhost').pathname
-  return path === '/dsh-tavern/api/world-book-selection'
-    || path === '/dsh-tavern/api/world-books'
-    || path.startsWith('/dsh-tavern/api/world-books/')
+  return path === `${API_V1}/world-book-selection`
+    || path === `${API_V1}/world-books`
+    || path.startsWith(`${API_V1}/world-books/`)
 }
 
 function isUserApiPath(url) {
   const path = new URL(url ?? '/', 'http://localhost').pathname
-  return path === '/dsh-tavern/api/user-selection'
-    || path === '/dsh-tavern/api/users'
-    || path.startsWith('/dsh-tavern/api/users/')
+  return path === `${API_V1}/user-selection`
+    || path === `${API_V1}/users`
+    || path.startsWith(`${API_V1}/users/`)
 }
 
 export function createCharacterSelectionPolicy(characterStore, selections) {
@@ -602,3 +602,11 @@ export {
   sessionTemplateStoreConstants,
 } from '../../session-template/src/index.js'
 export { PresetStore } from '../../preset/src/index.js'
+export {
+  API_ROOT,
+  API_V1,
+  API_V2,
+  LEGACY_API_ROOT,
+  PLUGIN_ID,
+  identityConstants,
+} from '../../identity.js'

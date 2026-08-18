@@ -1,6 +1,6 @@
 import { isIP } from 'node:net'
+import { API_ROOT, API_V1 } from './identity.js'
 
-const API_ROOT = '/dsh-tavern/api'
 const LOOPBACK_HOSTS = new Set(['127.0.0.1', 'localhost', '::1'])
 const JSON_MEDIA_TYPE = 'application/json'
 const CHARACTER_IMPORT_MEDIA_TYPES = new Set([
@@ -59,9 +59,9 @@ function requestMediaType(req) {
   return String(header(req, 'content-type') ?? '').split(';', 1)[0].trim().toLowerCase()
 }
 
-function isCharacterImport(url) {
+export function isCharacterImport(url, apiRoot = API_V1) {
   try {
-    return new URL(url ?? '/', 'http://localhost').pathname === `${API_ROOT}/characters/import`
+    return new URL(url ?? '/', 'http://localhost').pathname === `${apiRoot}/characters/import`
   } catch {
     return false
   }
@@ -90,6 +90,7 @@ export function secureTavernApi(handler, options = {}) {
   if (typeof handler !== 'function') throw new TypeError('handler must be a function')
   const allowedHosts = normalizeAllowedHosts(options.allowedHosts)
   const allowRemoteClients = options.allowRemoteClients === true
+  const characterImportRoot = options.characterImportApiRoot ?? API_V1
 
   return async (req, res) => {
     res.setHeader('Cache-Control', 'no-store')
@@ -121,7 +122,9 @@ export function secureTavernApi(handler, options = {}) {
         return sendError(res, 403, 'TAVERN_API_ORIGIN_FORBIDDEN', 'Mutation requests must come from the same DSH Web origin.')
       }
       const mediaType = requestMediaType(req)
-      const allowedTypes = isCharacterImport(req.url) ? CHARACTER_IMPORT_MEDIA_TYPES : new Set([JSON_MEDIA_TYPE])
+      const allowedTypes = isCharacterImport(req.url, characterImportRoot)
+        ? CHARACTER_IMPORT_MEDIA_TYPES
+        : new Set([JSON_MEDIA_TYPE])
       if (!allowedTypes.has(mediaType)) {
         return sendError(res, 415, 'TAVERN_API_CONTENT_TYPE_REQUIRED', `Unsupported Content-Type ${JSON.stringify(mediaType || '(missing)')}.`)
       }
@@ -133,6 +136,7 @@ export function secureTavernApi(handler, options = {}) {
 
 export const apiSecurityConstants = Object.freeze({
   apiRoot: API_ROOT,
+  apiV1: API_V1,
   loopbackHosts: [...LOOPBACK_HOSTS],
   characterImportMediaTypes: [...CHARACTER_IMPORT_MEDIA_TYPES],
 })

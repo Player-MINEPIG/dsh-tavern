@@ -46,6 +46,8 @@
 
 本项目当前版本为 `1.0.0`。现有框架与核心工作流已达到首个稳定发布范围；真实 role message、严格 depth/absolute injection、完整 ST macro，以及 recursive、sticky/cooldown/delay、vector、outlet 等高级世界书语义仍受当前 DSH seam 或实现范围限制。详细兼容表见 [Prompt pipeline](docs/PROMPT_PIPELINE.md)。
 
+仓库名仍是 `dsh-tavern`。安装包名、Cordis 插件 id、HTTP 根已经改为 **`pmp-dsh-tavern`**（`package.json` name、Cordis id、`/pmp-dsh-tavern/api/v1` 资源 API）。GitHub 仓库路径不必跟着改。详见 [规划中：v2.0 灵珠魔丸](#规划中v20-灵珠魔丸)。
+
 > 本项目中的“预设”指 SillyTavern 风格的采样参数与提示词编排，不是 DSH 用于组合插件的 agent preset。
 
 ## 安装
@@ -145,7 +147,7 @@ Windows 的本地包规范同样使用正斜杠，例如：
 dsh plugin --profile web add "file:D:/Projects/dsh-tavern"
 ```
 
-手动更新前应停止目标 `dsh web`，备份安装目录下的 `data/`，执行 `dsh plugin --profile web remove dsh-tavern` 后再重新 add。直接调用 DSH 不包含本项目安装器的 pending-recovery、pnpm store 复用和独立文件物化保护，因此更新已有安装时更建议使用脚本。
+手动更新前应停止目标 `dsh web`，备份安装目录下的 `data/`，执行 `dsh plugin --profile web remove pmp-dsh-tavern` 后再重新 add。直接调用 DSH 不包含本项目安装器的 pending-recovery、pnpm store 复用和独立文件物化保护，因此更新已有安装时更建议使用脚本。
 
 ### 让 Agent 安装
 
@@ -167,13 +169,13 @@ node scripts/install.mjs --profile web --dsh-home <我的绝对路径>，报告�
 更新前停止目标 DSH，然后在新源码目录重复运行安装脚本。安装器会暂存并恢复插件内数据；中断恢复副本位于：
 
 ```text
-<DSH_HOME>/backups/dsh-tavern/pending-refresh-<profile>/
+<DSH_HOME>/backups/pmp-dsh-tavern/pending-refresh-<profile>/
 ```
 
 默认资源与状态位于：
 
 ```text
-<DSH_HOME>/profiles/<profile>/node_modules/dsh-tavern/data/
+<DSH_HOME>/profiles/<profile>/node_modules/pmp-dsh-tavern/data/
 ```
 
 这里保存预设、角色卡文档（PNG 导入另存封面图）、独立世界书、用户、用户—世界书关系、session 选择、配置模板、UI 设置和有界 Trace。若配置了外部 `storageDir`，数据改存该目录。
@@ -184,7 +186,7 @@ node scripts/install.mjs --profile web --dsh-home <我的绝对路径>，报告�
 npm run plugin:uninstall
 ```
 
-卸载器默认先把整个 `data/` 备份到 `<DSH_HOME>/backups/dsh-tavern/<timestamp>/`。`--no-backup` 会跳过备份；在默认插件内存储模式下，这通常意味着资源随卸载一起永久删除。
+卸载器默认先把整个 `data/` 备份到 `<DSH_HOME>/backups/pmp-dsh-tavern/<timestamp>/`。`--no-backup` 会跳过备份；在默认插件内存储模式下，这通常意味着资源随卸载一起永久删除。
 
 完整安装参数、刷新恢复机制和数据说明见 [安装与卸载文档](docs/INSTALLATION.md)。
 
@@ -283,13 +285,23 @@ RP 是当前 session 的叠加，不是 DSH agent preset。开启后文件沙箱
 
 ## 规划中：v2.0 灵珠魔丸
 
-下一阶段才接管对话表面（产品名灵珠魔丸）。蓝球切到 DSH 原前端，红球切到扮演前端；这是**全局** chrome。后端只有 chrome、扮演工作区文件、session（create / branch / prompt / messages / focus）这三类元 API；swipe、删改、局分支、导入导出都由前端拼。内置扮演 UI 用原用户提示做回复 swipe；其它前端可在同一节点换 `prompt` 文本。扮演工作区不要放系统盘。时间线含开场白；上边栏对话 / 轨迹 / Tavern Trace 保留。人类可读导出为静态 HTML，另可保存 SillyTavern 聊天 JSON。
+下一阶段才接管对话表面（产品名灵珠魔丸）。蓝球切到 DSH 原前端，红球切到扮演前端；这是**全局** chrome。
+
+**标识已改为 `pmp-dsh-tavern`。** 仓库仍叫 `dsh-tavern`。安装包名、Cordis 插件 id、HTTP 根统一为 **`pmp-dsh-tavern`**。旧根 `/dsh-tavern/api` 已废止，不双根兼容：
+
+| 层 | 现状 |
+| --- | --- |
+| 插件 id / 包名 | `pmp-dsh-tavern` |
+| 本插件资源 API（预设、卡、书、RP、Trace…） | `/pmp-dsh-tavern/api/v1/...` |
+| 扮演表面元 API | `/pmp-dsh-tavern/api/v2/...`（前缀已预留，路由随 M1–M4 补齐） |
+
+v1 是本插件悬浮球 / 侧栏 / Trace 用的 bundled UI 资源合同，不保证给第三方扮演表面用。v2 才是给任意扮演前端的稳定面：chrome、扮演工作区文件、session（create / branch / **user-message** / messages）以及只读 **GET `/focus`**。`user-message` 只提交下一条用户正文，不是 loader 拼好的完整 prompt；focus 是后端告诉前端上边栏该跟哪条 session，前端自己 `sessions.open`，不用 POST。swipe、删改、局分支、导入导出都由前端用这些接口拼。想在这套协议上做自己的前端，也用同一套积木拼产品功能（例如「修改并重新生成」= swipe 链路换掉 `user-message` 的 text），不要等本仓库加专用 API。扮演工作区不要放系统盘。时间线含开场白；上边栏对话 / 轨迹 / Tavern Trace 保留。人类可读导出为静态 HTML，另可保存 SillyTavern 聊天 JSON。
 
 ## 安全风险
 
 `dsh-tavern` 会处理并发送可执行为模型指令的第三方内容。使用前请理解以下边界：
 
-- **没有独立账号鉴权**：`/dsh-tavern/api/*` 使用真实 TCP peer、Host、Origin 和 Content-Type 防护，但本机受信任进程仍可能访问。请让 DSH Web 绑定 `127.0.0.1`，不要直接暴露到局域网或公网；如需反向代理，应自行提供 HTTPS 和认证。
+- **没有独立账号鉴权**：`/pmp-dsh-tavern/api/v1/*` 与即将补齐的 `/v2/*` 使用真实 TCP peer、Host、Origin 和 Content-Type 防护，但本机受信任进程仍可能访问。请让 DSH Web 绑定 `127.0.0.1`，不要直接暴露到局域网或公网；如需反向代理，应自行提供 HTTPS 和认证。旧根 `/dsh-tavern/api` 已废止。
 - **Prompt injection**：preset、角色卡、用户描述和世界书正文都会影响模型。只导入可信来源，启用前审阅内容，并保留 DSH 的沙箱、工具审批与权限限制。
 - **秘密泄露**：插件不会主动读取 API key，但写入 Tavern 资源的密钥、令牌或隐私内容可能随模型请求发送，也可能通过本机资源 API 返回。不要用资源文件保存秘密。
 - **不安全正则为显式兼容模式**：ST `/pattern/flags` 默认不执行。开启 `worldBook.allowUnsafeRegex` 后，JavaScript `RegExp` 仍没有超时保证，即使已有长度和扫描上限也存在 ReDoS 风险。

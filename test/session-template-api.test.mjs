@@ -12,7 +12,7 @@ import {
 } from '../packages/session-template/src/index.js'
 import { SessionSelectionStore } from '../packages/tavern-loader/src/session-policy.js'
 
-function invoke(handler, { method = 'GET', url = '/dsh-tavern/api/session-templates', body } = {}) {
+function invoke(handler, { method = 'GET', url = '/pmp-dsh-tavern/api/v1/session-templates', body } = {}) {
   return new Promise((resolve, reject) => {
     const request = Readable.from(body === undefined ? [] : [Buffer.from(JSON.stringify(body))])
     request.method = method
@@ -61,20 +61,20 @@ test('session-template API covers create, select, rename, update, preview, apply
 
     const clearedSelection = await invoke(handler, {
       method: 'POST',
-      url: '/dsh-tavern/api/session-templates/select',
+      url: '/pmp-dsh-tavern/api/v1/session-templates/select',
       body: { id: null },
     })
     assert.equal(clearedSelection.body.selectedId, null)
     const restoredSelection = await invoke(handler, {
       method: 'POST',
-      url: '/dsh-tavern/api/session-templates/select',
+      url: '/pmp-dsh-tavern/api/v1/session-templates/select',
       body: { id: 'template-api' },
     })
     assert.equal(restoredSelection.body.selectedId, 'template-api')
 
     const renamed = await invoke(handler, {
       method: 'PATCH',
-      url: '/dsh-tavern/api/session-templates/template-api',
+      url: '/pmp-dsh-tavern/api/v1/session-templates/template-api',
       body: { name: 'Renamed API setup' },
     })
     assert.equal(renamed.body.template.name, 'Renamed API setup')
@@ -82,21 +82,21 @@ test('session-template API covers create, select, rename, update, preview, apply
     selections.set('source', { presetId: null, worldBookIds: [] })
     const updated = await invoke(handler, {
       method: 'PATCH',
-      url: '/dsh-tavern/api/session-templates/template-api',
+      url: '/pmp-dsh-tavern/api/v1/session-templates/template-api',
       body: { sourceSessionId: 'source' },
     })
     assert.equal(updated.body.template.selection.presetId, null)
 
     const preview = await invoke(handler, {
       method: 'POST',
-      url: '/dsh-tavern/api/session-configurations/preview',
+      url: '/pmp-dsh-tavern/api/v1/session-configurations/preview',
       body: { source: { mode: 'template', templateId: 'template-api' } },
     })
     assert.equal(preview.body.available, true)
 
     const applied = await invoke(handler, {
       method: 'POST',
-      url: '/dsh-tavern/api/session-configurations/apply',
+      url: '/pmp-dsh-tavern/api/v1/session-configurations/apply',
       body: { targetSessionId: 'target', source: { mode: 'template', templateId: 'template-api' } },
     })
     assert.equal(applied.status, 200)
@@ -115,7 +115,7 @@ test('session-template API covers create, select, rename, update, preview, apply
 
     const deleted = await invoke(handler, {
       method: 'DELETE',
-      url: '/dsh-tavern/api/session-templates/template-api',
+      url: '/pmp-dsh-tavern/api/v1/session-templates/template-api',
       body: {},
     })
     assert.equal(deleted.status, 200)
@@ -151,7 +151,7 @@ test('session-template API rejects invalid source and publishes its request boun
     }))
     const response = await invoke(handler, {
       method: 'POST',
-      url: '/dsh-tavern/api/session-configurations/preview',
+      url: '/pmp-dsh-tavern/api/v1/session-configurations/preview',
       body: { source: { mode: 'private-session-copy' } },
     })
     assert.equal(response.status, 400)

@@ -136,7 +136,7 @@ test('Host registers one broad API prefix so character and preset routes cannot 
   ctx.effect = install => install()
   try {
     apply(ctx, { storageDir: directory })
-    assert.deepEqual(routes.map(route => route.path), ['/dsh-tavern/api'])
+    assert.deepEqual(routes.map(route => route.path), ['/pmp-dsh-tavern/api'])
   } finally {
     rmSync(directory, { recursive: true, force: true })
   }

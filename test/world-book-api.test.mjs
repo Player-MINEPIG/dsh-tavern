@@ -11,7 +11,7 @@ import {
   createWorldBookSelectionPolicy,
 } from '../packages/tavern-loader/src/index.js'
 
-function invoke(handler, { method = 'GET', url = '/dsh-tavern/api/world-books', body } = {}) {
+function invoke(handler, { method = 'GET', url = '/pmp-dsh-tavern/api/v1/world-books', body } = {}) {
   return new Promise((resolve, reject) => {
     const bytes = body === undefined ? [] : [Buffer.from(JSON.stringify(body))]
     const req = Readable.from(bytes)
@@ -47,7 +47,7 @@ test('world-book API covers create, edit, export, multi-select, delete and selec
 
     const imported = await invoke(handler, {
       method: 'POST',
-      url: '/dsh-tavern/api/world-books/import?filename=synthetic.json',
+      url: '/pmp-dsh-tavern/api/v1/world-books/import?filename=synthetic.json',
       body: { name: 'Imported API Book', entries: {} },
     })
     const first = await invoke(handler, { method: 'POST', body: { name: 'API Book A' } })
@@ -66,23 +66,23 @@ test('world-book API covers create, edit, export, multi-select, delete and selec
       enabled: true, constant: false, selective: false, insertionOrder: 200,
       position: 'before_character_definition', probability: 100,
     })
-    const patched = await invoke(handler, { method: 'PATCH', url: `/dsh-tavern/api/world-books/${firstId}`, body: { book } })
+    const patched = await invoke(handler, { method: 'PATCH', url: `/pmp-dsh-tavern/api/v1/world-books/${firstId}`, body: { book } })
     assert.equal(patched.status, 200)
     assert.equal(patched.body.worldBook.book.entries[0].comment, 'Alpha')
 
     const selected = await invoke(handler, {
       method: 'POST',
-      url: '/dsh-tavern/api/world-book-selection',
+      url: '/pmp-dsh-tavern/api/v1/world-book-selection',
       body: { sessionId: 'session-a', worldBookIds: [firstId, secondId] },
     })
     assert.deepEqual(selected.body.selection.worldBookIds, [firstId, secondId])
     assert.deepEqual(selections.get('session-b').worldBookIds, [])
 
-    const exported = await invoke(handler, { url: `/dsh-tavern/api/world-books/${firstId}/json` })
+    const exported = await invoke(handler, { url: `/pmp-dsh-tavern/api/v1/world-books/${firstId}/json` })
     assert.equal(exported.status, 200)
     assert.equal(Object.values(JSON.parse(exported.text).entries)[0].comment, 'Alpha')
 
-    const removed = await invoke(handler, { method: 'DELETE', url: `/dsh-tavern/api/world-books/${firstId}` })
+    const removed = await invoke(handler, { method: 'DELETE', url: `/pmp-dsh-tavern/api/v1/world-books/${firstId}` })
     assert.equal(removed.status, 200)
     assert.deepEqual(selections.get('session-a').worldBookIds, [secondId])
     assert.deepEqual(userWorldBooks.get('reader-a'), [secondId])
@@ -98,9 +98,9 @@ test('world-book selection API rejects missing resources and unsafe session ids'
     const store = new WorldBookStore(directory)
     const selections = new SessionSelectionStore(directory)
     const handler = createWorldBookApiHandler(store, { selectionPolicy: createWorldBookSelectionPolicy(store, selections) })
-    const missing = await invoke(handler, { method: 'POST', url: '/dsh-tavern/api/world-book-selection', body: { sessionId: 'safe', worldBookIds: ['missing'] } })
+    const missing = await invoke(handler, { method: 'POST', url: '/pmp-dsh-tavern/api/v1/world-book-selection', body: { sessionId: 'safe', worldBookIds: ['missing'] } })
     assert.equal(missing.status, 404)
-    const unsafe = await invoke(handler, { method: 'POST', url: '/dsh-tavern/api/world-book-selection', body: { sessionId: '__proto__', worldBookIds: [] } })
+    const unsafe = await invoke(handler, { method: 'POST', url: '/pmp-dsh-tavern/api/v1/world-book-selection', body: { sessionId: '__proto__', worldBookIds: [] } })
     assert.equal(unsafe.status, 400)
   } finally {
     rmSync(directory, { recursive: true, force: true })

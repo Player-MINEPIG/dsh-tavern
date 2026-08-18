@@ -1,7 +1,9 @@
 import { Buffer } from 'node:buffer'
+import { API_V1, escapeRegExp } from '../../identity.js'
 import { characterStoreConstants } from './store.js'
 
-export const CHARACTER_API_PREFIX = '/dsh-tavern/api/character'
+export const CHARACTER_API_PREFIX = `${API_V1}/character`
+const CHARACTER_ID_ROUTE = new RegExp(`^${escapeRegExp(API_V1)}/characters/([^/]+)(?:/(json|png|world-book))?$`)
 export const MAX_CHARACTER_BODY_BYTES = characterStoreConstants.maxArtifactBytes
 export const MAX_CHARACTER_WORLD_BOOK_BODY_BYTES = characterStoreConstants.maxEditedWorldBookBytes
 
@@ -96,7 +98,7 @@ async function readJson(req, limit = 1024 * 1024, options = {}) {
 }
 
 function characterRoute(path) {
-  const match = /^\/dsh-tavern\/api\/characters\/([^/]+)(?:\/(json|png|world-book))?$/.exec(path)
+  const match = CHARACTER_ID_ROUTE.exec(path)
   if (match === null) return null
   return { id: decodeURIComponent(match[1]), resource: match[2] }
 }
@@ -131,11 +133,11 @@ export function createCharacterApiHandler(store, options = {}) {
       const method = req.method ?? 'GET'
       const route = characterRoute(path)
 
-      if (method === 'GET' && path === '/dsh-tavern/api/characters') {
+      if (method === 'GET' && path === `${API_V1}/characters`) {
         return sendJson(res, 200, { ok: true, characters: store.list() })
       }
 
-      if (method === 'POST' && path === '/dsh-tavern/api/characters') {
+      if (method === 'POST' && path === `${API_V1}/characters`) {
         const body = await readJson(req, 64 * 1024)
         const character = store.create({ name: body.name })
         onChange({ kind: 'character-created', characterCardId: character.id })
@@ -145,7 +147,7 @@ export function createCharacterApiHandler(store, options = {}) {
         })
       }
 
-      if (method === 'POST' && path === '/dsh-tavern/api/characters/import') {
+      if (method === 'POST' && path === `${API_V1}/characters/import`) {
         const bytes = await readBytes(req)
         if (bytes.length === 0) throw new TypeError('Character import body is empty')
         const character = store.import(bytes, { fileName: fileName(url.searchParams.get('filename'), 'character') })
@@ -199,12 +201,12 @@ export function createCharacterApiHandler(store, options = {}) {
         return sendJson(res, 200, { ok: true })
       }
 
-      if (method === 'GET' && path === '/dsh-tavern/api/character-selection') {
+      if (method === 'GET' && path === `${API_V1}/character-selection`) {
         const sessionId = url.searchParams.get('sessionId')
         return sendJson(res, 200, { ok: true, ...selectionPayload(store, sessionId, selectionPolicy) })
       }
 
-      if (method === 'POST' && path === '/dsh-tavern/api/character-selection') {
+      if (method === 'POST' && path === `${API_V1}/character-selection`) {
         const body = await readJson(req)
         if (typeof body.sessionId !== 'string') throw new TypeError('sessionId must be a string')
         await beforeSelectionChange({

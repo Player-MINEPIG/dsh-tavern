@@ -97,7 +97,7 @@ RP 是当前 session 的叠加，不是 DSH agent preset。
 默认数据位于：
 
 ```text
-<DSH_HOME>/profiles/<profile>/node_modules/dsh-tavern/data/
+<DSH_HOME>/profiles/<profile>/node_modules/pmp-dsh-tavern/data/
 ```
 
 主要内容包括：
@@ -118,7 +118,7 @@ rp-policy.json                 可选的 rp:policy 提示词
 
 如插件配置指定外部 `storageDir`，以上数据改存该目录。备份时复制整个 `data/`，不要只复制 `presets/`。
 
-重复执行安装脚本会先暂存并恢复插件内 `data/`。卸载脚本默认备份到 `<DSH_HOME>/backups/dsh-tavern/<timestamp>/`；只有确认不需要数据时才使用 `--no-backup`。外部导入源文件和外部 `storageDir` 不会被卸载器删除。
+重复执行安装脚本会先暂存并恢复插件内 `data/`。卸载脚本默认备份到 `<DSH_HOME>/backups/pmp-dsh-tavern/<timestamp>/`；只有确认不需要数据时才使用 `--no-backup`。外部导入源文件和外部 `storageDir` 不会被卸载器删除。
 
 完整安装、刷新恢复、跨平台参数和卸载说明见 `INSTALLATION.md`。
 

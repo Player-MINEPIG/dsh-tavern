@@ -84,7 +84,7 @@ DT 内部先把“资源管理”和“运行时编译”分开。前端及 API 
 DT 悬浮球 / 资源侧栏
   │
   ▼
-/dsh-tavern/api/*
+/pmp-dsh-tavern/api/v1/*
   │
   ├─ PresetStore
   ├─ CharacterStore
@@ -162,7 +162,7 @@ DT 明确不做以下改动：
 ```text
 【请求前：DT 控制面】
 用户在 DT UI 导入/编辑资源
-  → /dsh-tavern/api/*
+  → /pmp-dsh-tavern/api/v1/*
   → 插件资源库
   → SessionSelectionStore 保存当前 session 绑定
 
@@ -287,7 +287,7 @@ agent/inbox/spliced（插入消息）
 1. DSH 持久 `request/header`：最终 system、tools 和生效 call config；
 2. 请求对应的 `Session.deriveMessages()`：最终历史消息数组；
 3. Tavern Trace：解释该 turn/step 使用的 DT 资源、世界书决策，以及它与 header seq/摘要是否对齐；
-4. loader `/dsh-tavern/api/active?sessionId=...`：当前选择、资源、诊断和不含 claimed 当前输入的预览；
+4. loader `/pmp-dsh-tavern/api/v1/active?sessionId=...`：当前选择、资源、诊断和不含 claimed 当前输入的预览；
 5. DT 侧栏：资源编辑和绑定控制面，不是模型请求日志。
 
 Tavern Trace 位于 Conversation / Trajectory 同级的公开 `conversation.view` 槽中。它是对实际 loader snapshot 的最小化解释层，不取代 `request/header`，也不会进入模型上下文。

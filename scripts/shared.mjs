@@ -4,7 +4,7 @@ import { cp, mkdir, realpath, rm, stat } from 'node:fs/promises'
 import os from 'node:os'
 import path from 'node:path'
 
-export const PLUGIN_NAME = 'dsh-tavern'
+export const PLUGIN_NAME = 'pmp-dsh-tavern'
 export const DEFAULT_PROFILE = 'web'
 
 function valueAfter(argv, index, flag) {

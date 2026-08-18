@@ -1,5 +1,5 @@
 window.__ModuleLoader__.load({
-	id: "dsh-tavern",
+	id: "pmp-dsh-tavern",
 	factory: (require) => {
 		var module = { exports: {} };
 		var exports = module.exports;
@@ -1132,9 +1132,22 @@ function reorderAtBoundary(items, from, boundary) {
   return reorder(items, from, destination);
 }
 
+// packages/identity.js
+var PLUGIN_ID = "pmp-dsh-tavern";
+var API_ROOT = `/${PLUGIN_ID}/api`;
+var API_V1 = `${API_ROOT}/v1`;
+var API_V2 = `${API_ROOT}/v2`;
+var LEGACY_API_ROOT = "/dsh-tavern/api";
+var identityConstants = Object.freeze({
+  pluginId: PLUGIN_ID,
+  apiRoot: API_ROOT,
+  apiV1: API_V1,
+  apiV2: API_V2,
+  legacyApiRoot: LEGACY_API_ROOT
+});
+
 // packages/preset/src/client.js
 var h = createLocalizedElement(import_react.createElement);
-var API_ROOT = "/dsh-tavern/api";
 function announceTavernRefresh() {
   window.dispatchEvent(new CustomEvent("dsh-tavern:refresh", { detail: { source: "preset" } }));
 }
@@ -1163,7 +1176,7 @@ var css = `
 `;
 async function api(path, options = {}) {
   const method = String(options.method ?? "GET").toUpperCase();
-  const response = await fetch(`${API_ROOT}${path}`, {
+  const response = await fetch(`${API_V1}${path}`, {
     ...options,
     headers: {
       ...method === "GET" || method === "HEAD" ? {} : { "Content-Type": "application/json" },
@@ -1574,9 +1587,9 @@ function PresetSidebar({ closePanel, openPanel, sessionId, sessionBlank, autoOpe
   );
 }
 function installPresetStyles() {
-  if (document.querySelector('style[data-plugin-css="dsh-tavern"]') !== null) return;
+  if (document.querySelector(`style[data-plugin-css="${PLUGIN_ID}"]`) !== null) return;
   const style = document.createElement("style");
-  style.dataset.pluginCss = "dsh-tavern";
+  style.dataset.pluginCss = PLUGIN_ID;
   style.textContent = css;
   document.head.append(style);
 }
@@ -1668,7 +1681,6 @@ function characterEditorPatch(draft) {
 
 // packages/character/src/client.js
 var h2 = createLocalizedElement(import_react2.createElement);
-var API_ROOT2 = "/dsh-tavern/api";
 function announceTavernRefresh2() {
   window.dispatchEvent(new CustomEvent("dsh-tavern:refresh", { detail: { source: "character" } }));
 }
@@ -1682,7 +1694,7 @@ function errorMessage(data, status) {
 }
 async function api2(path, options = {}) {
   const method = String(options.method ?? "GET").toUpperCase();
-  const response = await fetch(`${API_ROOT2}${path}`, {
+  const response = await fetch(`${API_V1}${path}`, {
     ...options,
     headers: {
       ...method === "GET" || method === "HEAD" ? {} : { "Content-Type": "application/json" },
@@ -1813,7 +1825,7 @@ function CharacterPanel({ sessionId, sessionBlank, close }) {
     }, "character.status.created");
   }, [dirty, refresh, run]);
   const importFile = (0, import_react2.useCallback)((file) => run(async () => {
-    const response = await fetch(`${API_ROOT2}/characters/import?filename=${encodeURIComponent(file.name)}`, {
+    const response = await fetch(`${API_V1}/characters/import?filename=${encodeURIComponent(file.name)}`, {
       method: "POST",
       headers: { "Content-Type": file.type || "application/octet-stream" },
       body: file
@@ -1898,7 +1910,7 @@ function CharacterPanel({ sessionId, sessionBlank, close }) {
   const bindingDirty = characterBindingDirty(selection, binding);
   const activeName = selection === null ? translate("nav.character.empty") : catalog2?.characters.find((item) => item.id === selection.characterCardId)?.name ?? selection.characterCardId;
   const closeLabel = uiMessage("panel.close", { title: unwrapText(uiMessage("character.title")) });
-  const avatarSrc = detail === null ? null : `${API_ROOT2}/characters/${encodeURIComponent(detail.id)}/png`;
+  const avatarSrc = detail === null ? null : `${API_V1}/characters/${encodeURIComponent(detail.id)}/png`;
   return h2(
     "div",
     { className: "dcc-panel" },
@@ -2121,8 +2133,8 @@ function CharacterPanel({ sessionId, sessionBlank, close }) {
         h2(
           "div",
           { className: "dcc-actions" },
-          h2("a", { className: "dcc-button", href: `${API_ROOT2}/characters/${encodeURIComponent(detail.id)}/json`, download: "" }, uiMessage("common.exportJson")),
-          h2("a", { className: "dcc-button", href: `${API_ROOT2}/characters/${encodeURIComponent(detail.id)}/png`, download: "" }, uiMessage("character.exportPng"))
+          h2("a", { className: "dcc-button", href: `${API_V1}/characters/${encodeURIComponent(detail.id)}/json`, download: "" }, uiMessage("common.exportJson")),
+          h2("a", { className: "dcc-button", href: `${API_V1}/characters/${encodeURIComponent(detail.id)}/png`, download: "" }, uiMessage("character.exportPng"))
         ),
         h2("div", { className: "dcc-footer" }, h2("button", { className: "dcc-button dcc-danger", type: "button", disabled: busy, onClick: remove }, uiMessage("character.delete")))
       )
@@ -2130,9 +2142,9 @@ function CharacterPanel({ sessionId, sessionBlank, close }) {
   );
 }
 function installCharacterStyles() {
-  if (document.querySelector('style[data-plugin-css="dsh-tavern-character"]') !== null) return;
+  if (document.querySelector(`style[data-plugin-css="${PLUGIN_ID}-character"]`) !== null) return;
   const style = document.createElement("style");
-  style.dataset.pluginCss = "dsh-tavern-character";
+  style.dataset.pluginCss = `${PLUGIN_ID}-character`;
   style.textContent = css2;
   document.head.append(style);
 }
@@ -2140,7 +2152,6 @@ function installCharacterStyles() {
 // packages/world-book-library/src/client.js
 var import_react3 = require("react");
 var h3 = createLocalizedElement(import_react3.createElement);
-var API_ROOT3 = "/dsh-tavern/api";
 var POSITIONS = [
   ["before_character_definition", "world.position.beforeCharacter"],
   ["after_character_definition", "world.position.afterCharacter"],
@@ -2162,7 +2173,7 @@ function errorMessage2(data, status) {
 }
 async function api3(path, options = {}) {
   const method = String(options.method ?? "GET").toUpperCase();
-  const response = await fetch(`${API_ROOT3}${path}`, {
+  const response = await fetch(`${API_V1}${path}`, {
     ...options,
     headers: {
       ...method === "GET" || method === "HEAD" ? {} : { "Content-Type": "application/json" },
@@ -2430,7 +2441,7 @@ function WorldBookPanel({ sessionId, close }) {
     await refresh(data.worldBook.id);
   }, "world.status.created");
   const importFile = (file) => run(async () => {
-    const response = await fetch(`${API_ROOT3}/world-books/import?filename=${encodeURIComponent(file.name)}`, {
+    const response = await fetch(`${API_V1}/world-books/import?filename=${encodeURIComponent(file.name)}`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: file
@@ -2573,7 +2584,7 @@ function WorldBookPanel({ sessionId, close }) {
               setDirty(true);
             } }, uiMessage("world.addEntry")),
             h3("button", { className: "dwb-button dwb-primary", type: "button", disabled: busy || !dirty, onClick: save }, dirty ? uiMessage("common.saveChanges") : uiMessage("common.saved")),
-            h3("a", { className: "dwb-button", href: `${API_ROOT3}/world-books/${encodeURIComponent(document2.id)}/json`, download: "" }, uiMessage("common.exportJson")),
+            h3("a", { className: "dwb-button", href: `${API_V1}/world-books/${encodeURIComponent(document2.id)}/json`, download: "" }, uiMessage("common.exportJson")),
             h3("button", { className: "dwb-button dwb-danger", type: "button", disabled: busy, onClick: remove }, uiMessage("world.deleteStandalone"))
           ),
           ...entries.map((entry, index) => h3(EntryEditor, { key: `${String(entry.uid)}-${index}`, entry, index, update: updateEntry, remove: (itemIndex) => {
@@ -2665,9 +2676,9 @@ function WorldBookPanel({ sessionId, close }) {
   );
 }
 function installWorldBookStyles() {
-  if (document.querySelector('style[data-plugin-css="dsh-tavern-world-book"]') !== null) return;
+  if (document.querySelector(`style[data-plugin-css="${PLUGIN_ID}-world-book"]`) !== null) return;
   const style = document.createElement("style");
-  style.dataset.pluginCss = "dsh-tavern-world-book";
+  style.dataset.pluginCss = `${PLUGIN_ID}-world-book`;
   style.textContent = css3;
   document.head.append(style);
 }
@@ -2689,7 +2700,6 @@ function userPanelDirty(draft, saved, worldBookIds, appliedWorldBookIds) {
 
 // packages/user/src/client.js
 var h4 = createLocalizedElement(import_react4.createElement);
-var API_ROOT4 = "/dsh-tavern/api";
 var css4 = `
 .dtu-panel{position:absolute;top:0;right:0;bottom:0;width:min(440px,calc(100vw - 56px));pointer-events:auto;border-left:1px solid var(--dsw-alias-border-l2);box-shadow:var(--ds-shadow-3,-8px 0 28px rgba(0,0,0,.18));background:var(--dsw-alias-bg-base);color:var(--dsw-alias-label-primary);display:flex;flex-direction:column;font-family:Inter,var(--dsw-font-family),sans-serif}.dtu-header{height:52px;box-sizing:border-box;display:flex;align-items:center;gap:8px;padding:0 14px;border-bottom:1px solid var(--dsw-alias-border-l2);flex:none}.dtu-title{font-size:16px;font-weight:650;flex:1}.dtu-close{border:0;background:transparent;color:var(--dsw-alias-label-tertiary);cursor:pointer;border-radius:7px;padding:6px 8px;font-size:14px}.dtu-body{min-height:0;overflow:auto;padding:12px;display:flex;flex-direction:column;gap:12px}.dtu-toolbar,.dtu-actions{display:grid;grid-template-columns:1fr 1fr;gap:8px}.dtu-button{min-height:36px;border:1px solid var(--dsw-alias-border-l2);border-radius:8px;background:var(--dsw-alias-button-secondary-fill,var(--dsw-alias-bg-base));color:var(--dsw-alias-label-primary);cursor:pointer;padding:7px 10px;font-size:13px}.dtu-button:hover:not(:disabled){background:var(--dsw-alias-interactive-bg-hover)}.dtu-button:disabled{opacity:.5;cursor:default}.dtu-primary{background:var(--dsw-alias-state-business-primary);color:white;border-color:transparent}.dtu-danger{color:var(--dsw-alias-state-error)}.dtu-field{display:flex;flex-direction:column;gap:5px}.dtu-label{font-size:12px;color:var(--dsw-alias-label-tertiary);font-weight:600}.dtu-input,.dtu-textarea,.dtu-select{box-sizing:border-box;width:100%;border:1px solid var(--dsw-alias-border-l2);border-radius:7px;background:var(--dsw-alias-bg-base);color:var(--dsw-alias-label-primary);font:inherit;font-size:13px;padding:8px 9px}.dtu-input,.dtu-select{height:36px}.dtu-textarea{min-height:220px;line-height:1.5;resize:vertical}.dtu-note{font-size:13px;line-height:1.5;color:var(--dsw-alias-label-tertiary);margin:0;overflow-wrap:anywhere}.dtu-status{font-size:13px;line-height:1.45;border-radius:7px;padding:7px 9px;background:var(--dsw-specific-tip);overflow-wrap:anywhere}.dtu-status[data-error=true]{color:var(--dsw-alias-state-error)}.dtu-status[data-warning=true]{color:var(--dsw-alias-state-warning,var(--dsw-alias-label-primary))}.dtu-editor{border-top:1px solid var(--dsw-alias-border-l1);padding-top:12px;display:flex;flex-direction:column;gap:10px}.dtu-bindings{display:flex;flex-direction:column;gap:8px;border:1px solid var(--dsw-alias-border-l1);border-radius:8px;padding:9px}.dtu-check{display:flex;align-items:flex-start;gap:8px;font-size:13px;line-height:1.4}.dtu-section-title{font-size:14px;margin:4px 0 0}.dtu-footer{position:sticky;bottom:-12px;margin:0 -12px -12px;padding:10px 12px;background:var(--dsw-alias-bg-base);border-top:1px solid var(--dsw-alias-border-l2)}
 `;
@@ -2698,7 +2708,7 @@ function errorMessage3(data, status) {
 }
 async function api4(path, options = {}) {
   const method = String(options.method ?? "GET").toUpperCase();
-  const response = await fetch(`${API_ROOT4}${path}`, {
+  const response = await fetch(`${API_V1}${path}`, {
     ...options,
     headers: {
       ...method === "GET" || method === "HEAD" ? {} : { "Content-Type": "application/json" },
@@ -2937,9 +2947,9 @@ function UserPanel({ sessionId, sessionBlank, close }) {
   );
 }
 function installUserStyles() {
-  if (document.querySelector('style[data-plugin-css="dsh-tavern-user"]') !== null) return;
+  if (document.querySelector(`style[data-plugin-css="${PLUGIN_ID}-user"]`) !== null) return;
   const style = document.createElement("style");
-  style.dataset.pluginCss = "dsh-tavern-user";
+  style.dataset.pluginCss = `${PLUGIN_ID}-user`;
   style.textContent = css4;
   document.head.append(style);
 }
@@ -2947,7 +2957,7 @@ function installUserStyles() {
 // packages/tavern-trace/src/client.js
 var import_react5 = require("react");
 var h5 = createLocalizedElement(import_react5.createElement);
-var TRACE_API = "/dsh-tavern/api/traces";
+var TRACE_API = `${API_V1}/traces`;
 var css5 = `
 .dttrace-root{height:100%;min-height:0;display:flex;flex-direction:column;overflow:hidden;background:var(--dsw-alias-bg-base);color:var(--dsw-alias-label-primary);font-family:Inter,var(--dsw-font-family),sans-serif}
 .dttrace-toolbar{min-height:48px;box-sizing:border-box;padding:8px 14px;border-bottom:1px solid var(--dsw-alias-border-l2);display:flex;align-items:center;gap:10px;flex:none;zoom:var(--dtv-trace-scale,1);width:calc(100%/var(--dtv-trace-scale,1))}.dttrace-title{font-size:16px;font-weight:680;flex:1}.dttrace-button{border:1px solid var(--dsw-alias-border-l2);border-radius:7px;background:var(--dsw-alias-bg-base);color:inherit;padding:7px 10px;font-size:13px;cursor:pointer}.dttrace-button:hover{background:var(--dsw-alias-interactive-bg-hover)}
@@ -3189,9 +3199,9 @@ function TavernTraceView({ sessionId, useSession }) {
   );
 }
 function installTavernTraceStyles() {
-  if (document.querySelector('style[data-plugin-css="dsh-tavern-trace"]') !== null) return;
+  if (document.querySelector(`style[data-plugin-css="${PLUGIN_ID}-trace"]`) !== null) return;
   const style = document.createElement("style");
-  style.dataset.pluginCss = "dsh-tavern-trace";
+  style.dataset.pluginCss = `${PLUGIN_ID}-trace`;
   style.textContent = css5;
   document.head.append(style);
 }
@@ -3208,9 +3218,8 @@ function registerTavernTraceView(ctx) {
 // packages/session-template/src/client.js
 var import_react6 = require("react");
 var h6 = createLocalizedElement(import_react6.createElement);
-var API_ROOT5 = "/dsh-tavern/api";
 async function api5(path, options = {}) {
-  const response = await fetch(`${API_ROOT5}${path}`, {
+  const response = await fetch(`${API_V1}${path}`, {
     ...options,
     headers: options.body === void 0 ? options.headers : { "Content-Type": "application/json", ...options.headers }
   });
@@ -3608,7 +3617,6 @@ function launcherPlacement(anchor, viewport2, expanded = false, scale = 1) {
 
 // packages/client/src/index.js
 var h7 = createLocalizedElement(import_react7.createElement);
-var API_ROOT6 = "/dsh-tavern/api";
 var css6 = `
 .dtv-layer{position:absolute;inset:0;z-index:6;pointer-events:none;font-family:Inter,var(--dsw-font-family),sans-serif;color:var(--dsw-alias-label-primary)}
 .dtv-launcher{position:absolute;z-index:2;width:44px;height:44px;pointer-events:auto;overflow:hidden;border:0 solid transparent;border-radius:22px;background:transparent;box-shadow:none;transition:width .22s ease,height .22s ease,border-radius .22s ease,background-color .18s ease,box-shadow .18s ease;display:block}
@@ -3631,7 +3639,7 @@ var css6 = `
 .dtv-modal{width:min(420px,100%);border-radius:12px;background:var(--dsw-alias-bg-base);border:1px solid var(--dsw-alias-border-l2);box-shadow:var(--ds-shadow-3,0 16px 40px rgba(0,0,0,.28));padding:18px 16px;display:flex;flex-direction:column;gap:14px}
 .dtv-modal-body{margin:0;font-size:13px;line-height:1.55}.dtv-modal .dtv-button{align-self:flex-end;min-width:88px}
 `;
-var LAUNCHER_STORAGE_KEY = "dsh-tavern:launcher-position:v1";
+var LAUNCHER_STORAGE_KEY = `${PLUGIN_ID}:launcher-position:v1`;
 function viewport() {
   return { width: window.innerWidth, height: window.innerHeight };
 }
@@ -3651,7 +3659,7 @@ function persistLauncherAnchor(anchor) {
 }
 async function activeView(sessionId) {
   const query = sessionId ? `?sessionId=${encodeURIComponent(sessionId)}` : "";
-  const response = await fetch(`${API_ROOT6}/active${query}`);
+  const response = await fetch(`${API_V1}/active${query}`);
   const data = await response.json().catch(() => null);
   if (!response.ok || data?.ok === false) {
     const message = typeof data?.error === "string" ? data.error : data?.error?.message;
@@ -3660,7 +3668,7 @@ async function activeView(sessionId) {
   return data;
 }
 async function sessionConfigurationRequest(path, body2) {
-  const response = await fetch(`${API_ROOT6}${path}`, {
+  const response = await fetch(`${API_V1}${path}`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(body2)
@@ -3677,7 +3685,7 @@ async function rpAlertRequest(sessionId, { method = "GET", id } = {}) {
   const params = new URLSearchParams({ sessionId });
   if (id !== void 0) params.set("id", String(id));
   const mutating = method !== "GET" && method !== "HEAD";
-  const response = await fetch(`${API_ROOT6}/rp-alert?${params}`, {
+  const response = await fetch(`${API_V1}/rp-alert?${params}`, {
     method,
     headers: mutating ? { "Content-Type": "application/json" } : void 0,
     body: mutating ? "{}" : void 0
@@ -3687,7 +3695,7 @@ async function rpAlertRequest(sessionId, { method = "GET", id } = {}) {
   return data;
 }
 async function rpPolicyRequest(method = "GET", body2) {
-  const response = await fetch(`${API_ROOT6}/rp-policy`, {
+  const response = await fetch(`${API_V1}/rp-policy`, {
     method,
     headers: method === "GET" ? void 0 : { "Content-Type": "application/json" },
     body: body2 === void 0 ? void 0 : JSON.stringify(body2)
@@ -3697,7 +3705,7 @@ async function rpPolicyRequest(method = "GET", body2) {
   return data;
 }
 async function uiSettingsRequest(method = "GET", body2) {
-  const response = await fetch(`${API_ROOT6}/ui-settings`, {
+  const response = await fetch(`${API_V1}/ui-settings`, {
     method,
     headers: method === "GET" ? void 0 : { "Content-Type": "application/json" },
     body: body2 === void 0 ? void 0 : JSON.stringify(body2)
@@ -4188,13 +4196,13 @@ function TavernShell({ useSessions, useWorkspaces, createCleanSession }) {
   );
 }
 function installStyles() {
-  if (document.querySelector('style[data-plugin-css="dsh-tavern-shell"]') !== null) return;
+  if (document.querySelector(`style[data-plugin-css="${PLUGIN_ID}-shell"]`) !== null) return;
   const style = document.createElement("style");
-  style.dataset.pluginCss = "dsh-tavern-shell";
+  style.dataset.pluginCss = `${PLUGIN_ID}-shell`;
   style.textContent = css6;
   document.head.append(style);
 }
-var name = "dsh-tavern";
+var name = PLUGIN_ID;
 var inject = ["slots", "layout", "sessions", "workspaces"];
 function apply(ctx) {
   installPresetStyles();
@@ -4206,7 +4214,7 @@ function apply(ctx) {
   registerTavernTraceView(ctx);
   ctx.slots.inject("shell.overlay", () => ctx.slots.register({
     name: "shell.overlay",
-    id: "dsh-tavern-launcher",
+    id: `${PLUGIN_ID}-launcher`,
     order: 80,
     inject: () => ({
       createCleanSession: ({ workspaceId, source }) => createCleanSessionWorkflow({

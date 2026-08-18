@@ -1,6 +1,10 @@
 import { Buffer } from 'node:buffer'
+import { API_V1, escapeRegExp } from '../../identity.js'
 
-const API_PREFIX = '/dsh-tavern/api/session-templates'
+const API_PREFIX = `${API_V1}/session-templates`
+const TEMPLATE_ID_ROUTE = new RegExp(`^${escapeRegExp(API_PREFIX)}/([^/]+)$`)
+const CONFIG_PREVIEW_PATH = `${API_V1}/session-configurations/preview`
+const CONFIG_APPLY_PATH = `${API_V1}/session-configurations/apply`
 const MAX_BODY_BYTES = 64 * 1024
 
 function sendJson(res, status, payload) {
@@ -44,7 +48,7 @@ function readJson(req) {
 }
 
 function templateRoute(path) {
-  const match = /^\/dsh-tavern\/api\/session-templates\/([^/]+)$/.exec(path)
+  const match = TEMPLATE_ID_ROUTE.exec(path)
   return match === null ? null : decodeURIComponent(match[1])
 }
 
@@ -105,11 +109,11 @@ export function createSessionTemplateApiHandler(store, configurations, options =
         onChange({ kind: 'session-template-selected', templateId: template?.id ?? null })
         return sendJson(res, 200, { ok: true, selectedId: template?.id ?? null, template })
       }
-      if (method === 'POST' && path === '/dsh-tavern/api/session-configurations/preview') {
+      if (method === 'POST' && path === CONFIG_PREVIEW_PATH) {
         const body = await readJson(req)
         return sendJson(res, 200, { ok: true, ...configurations.preview(body.source) })
       }
-      if (method === 'POST' && path === '/dsh-tavern/api/session-configurations/apply') {
+      if (method === 'POST' && path === CONFIG_APPLY_PATH) {
         const body = await readJson(req)
         const targetSessionId = requireSessionId(body.targetSessionId, 'targetSessionId')
         const applied = configurations.apply(targetSessionId, body.source)
@@ -152,8 +156,8 @@ export function isSessionTemplateApiPath(url) {
   const path = new URL(url ?? '/', 'http://localhost').pathname
   return path === API_PREFIX
     || path.startsWith(`${API_PREFIX}/`)
-    || path === '/dsh-tavern/api/session-configurations/preview'
-    || path === '/dsh-tavern/api/session-configurations/apply'
+    || path === CONFIG_PREVIEW_PATH
+    || path === CONFIG_APPLY_PATH
 }
 
 export const sessionTemplateApiConstants = Object.freeze({

@@ -51,8 +51,8 @@ test('builds dsh plugin arguments without a shell', () => {
     ['plugin', '--profile', 'web', 'add', 'file:/project', '--store-dir', path.resolve('./store')],
   )
   assert.deepEqual(
-    dshPluginArgs('remove', options, 'dsh-tavern'),
-    ['plugin', '--profile', 'web', 'remove', 'dsh-tavern', '--store-dir', path.resolve('./store')],
+    dshPluginArgs('remove', options, 'pmp-dsh-tavern'),
+    ['plugin', '--profile', 'web', 'remove', 'pmp-dsh-tavern', '--store-dir', path.resolve('./store')],
   )
 })
 
@@ -76,7 +76,7 @@ test('detects whether the profile manifest still registers the plugin', async ()
   try {
     const profile = path.join(temporary, 'profiles', 'web')
     await mkdir(profile, { recursive: true })
-    await writeFile(path.join(profile, 'package.json'), JSON.stringify({ dependencies: { 'dsh-tavern': 'file:/project' } }))
+    await writeFile(path.join(profile, 'package.json'), JSON.stringify({ dependencies: { 'pmp-dsh-tavern': 'file:/project' } }))
     assert.equal(profileHasPlugin(temporary, 'web'), true)
     assert.equal(profileHasPlugin(temporary, 'missing'), false)
     await writeFile(path.join(profile, 'package.json'), JSON.stringify({ private: true }))
@@ -120,7 +120,7 @@ test('repeated install dry-run removes and re-adds a stale local package', async
   try {
     await mkdir(path.dirname(installedDataPath(temporary, 'web')), { recursive: true })
     const profile = path.join(temporary, 'profiles', 'web')
-    await writeFile(path.join(profile, 'package.json'), JSON.stringify({ dependencies: { 'dsh-tavern': 'file:/stale' } }))
+    await writeFile(path.join(profile, 'package.json'), JSON.stringify({ dependencies: { 'pmp-dsh-tavern': 'file:/stale' } }))
     const result = spawnSync(process.execPath, [
       fileURLToPath(new URL('../scripts/install.mjs', import.meta.url)),
       '--skip-build',
@@ -132,7 +132,7 @@ test('repeated install dry-run removes and re-adds a stale local package', async
     })
     assert.equal(result.status, 0, result.stderr)
     assert.match(result.stdout, /existing installation found; refreshing package files/)
-    assert.match(result.stdout, /"remove" "dsh-tavern"/)
+    assert.match(result.stdout, /"remove" "pmp-dsh-tavern"/)
     assert.match(result.stdout, /"add" "file:/)
   } finally {
     await rm(temporary, { recursive: true, force: true })
@@ -156,7 +156,7 @@ test('interrupted refresh repairs a leftover package without removing a missing 
     })
     assert.equal(result.status, 0, result.stderr)
     assert.match(result.stdout, /incomplete previous refresh detected/)
-    assert.doesNotMatch(result.stdout, /"remove" "dsh-tavern"/)
+    assert.doesNotMatch(result.stdout, /"remove" "pmp-dsh-tavern"/)
     assert.match(result.stdout, /"add" "file:/)
   } finally {
     await rm(temporary, { recursive: true, force: true })

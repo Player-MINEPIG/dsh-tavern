@@ -42,7 +42,7 @@ copies from the current worktree. It does not touch the installed `data/` or
 pnpm-managed nested `node_modules`, and validates that the resolved package
 target remains inside the selected profile before removing any stale package
 directory. Pending recovery data is kept under
-`<DSH_HOME>/backups/dsh-tavern/pending-refresh-<profile>/`; a successful refresh
+`<DSH_HOME>/backups/pmp-dsh-tavern/pending-refresh-<profile>/`; a successful refresh
 removes it. If remove/add fails, the error prints the retained path and the next
 installer run repairs an interrupted dependency registration and restores that
 data automatically. Do not delete the pending directory while recovery is due.
@@ -79,7 +79,7 @@ Before calling `dsh plugin ... remove`, the uninstaller copies the installed
 `data/` directory to:
 
 ```text
-<DSH_HOME>/backups/dsh-tavern/<timestamp>/
+<DSH_HOME>/backups/pmp-dsh-tavern/<timestamp>/
 ```
 
 This is important because dsh/pnpm removes the installed plugin directory,

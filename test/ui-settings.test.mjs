@@ -16,7 +16,7 @@ function invoke(handler, { method = 'GET', body, rawBody } = {}) {
     const content = rawBody ?? (body === undefined ? undefined : JSON.stringify(body))
     const req = Readable.from(content === undefined ? [] : [Buffer.from(content)])
     req.method = method
-    req.url = '/dsh-tavern/api/ui-settings'
+    req.url = '/pmp-dsh-tavern/api/v1/ui-settings'
     const headers = {}
     const res = {
       statusCode: 200,

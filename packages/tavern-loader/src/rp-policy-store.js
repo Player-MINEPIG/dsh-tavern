@@ -7,6 +7,7 @@ import {
   writeFileSync,
 } from 'node:fs'
 import { join, resolve } from 'node:path'
+import { API_V1 } from '../../identity.js'
 import { DEFAULT_RP_SECTION } from './rp-mode.js'
 
 const POLICY_FILE = 'rp-policy.json'
@@ -149,7 +150,7 @@ function readBoundedJson(req) {
 }
 
 export function isRpPolicyApiPath(url) {
-  return new URL(url ?? '/', 'http://localhost').pathname === '/dsh-tavern/api/rp-policy'
+  return new URL(url ?? '/', 'http://localhost').pathname === `${API_V1}/rp-policy`
 }
 
 export function createRpPolicyApiHandler(store, { onChange = () => {} } = {}) {

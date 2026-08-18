@@ -1,6 +1,6 @@
 # dsh-tavern package architecture
 
-状态：2026-08-18，已包含 RP 会话叠加与委派子 agent 固化父选择。本文是当前架构决策与发布审查门槛，不是产品 README。
+状态：2026-08-19，安装标识为 `pmp-dsh-tavern`；HTTP 挂载 `/pmp-dsh-tavern/api`，资源走 `/v1`。RP 会话叠加与委派子 agent 固化父选择仍然有效。本文是当前架构决策与发布审查门槛，不是产品 README。
 
 ## 决策结论
 
@@ -91,7 +91,7 @@ rc.6 的 `agent/inbox/spliced` 是公开、持久的 Session event；插入、�
 - 两个插件都可能争用 API、存储或 UI 生命周期；
 - 安装、卸载、备份和故障排查成本翻倍。
 
-因此发布与安装单位固定为根包 `dsh-tavern`，内部包边界用于代码复用和测试隔离。`package.json` 的 `./format`、`./preset`、`./character`、`./user`、`./world-book`、`./world-book-library`、`./trace`、`./loader` exports 是程序接口，不代表可分别安装的插件。
+因此发布与安装单位固定为根包 `pmp-dsh-tavern`（产品名仍是 dsh-tavern），内部包边界用于代码复用和测试隔离。浏览器与 Host 共用 `packages/identity.js` 的 `PLUGIN_ID`、`API_ROOT`、`API_V1`、`API_V2`。HTTP 挂载前缀是 `/pmp-dsh-tavern/api`；现有资源走 `/v1`，扮演元 API 走 `/v2`。旧根 `/dsh-tavern/api` 已废止。`package.json` 的 `./format`、`./preset`、`./character`、`./user`、`./world-book`、`./world-book-library`、`./trace`、`./loader` exports 是程序接口，不代表可分别安装的插件。
 
 ## 当前发布门槛
 

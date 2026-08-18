@@ -34,7 +34,7 @@ test('HTTP API imports, selects, reads, updates, and creates presets', async () 
   try {
     const imported = await invoke(handler, {
       method: 'POST',
-      url: '/dsh-tavern/api/import',
+      url: '/pmp-dsh-tavern/api/v1/import',
       body: {
         name: 'Imported API preset',
         content: JSON.stringify({
@@ -48,18 +48,18 @@ test('HTTP API imports, selects, reads, updates, and creates presets', async () 
 
     const selected = await invoke(handler, {
       method: 'POST',
-      url: '/dsh-tavern/api/select',
+      url: '/pmp-dsh-tavern/api/v1/select',
       body: { id },
     })
     assert.equal(selected.body.selected.id, id)
 
-    const active = await invoke(handler, { url: '/dsh-tavern/api/active' })
+    const active = await invoke(handler, { url: '/pmp-dsh-tavern/api/v1/active' })
     assert.equal(active.body.selected.id, id)
     assert.equal(Object.hasOwn(active.body, 'compiledPrompt'), false)
 
     const created = await invoke(handler, {
       method: 'POST',
-      url: '/dsh-tavern/api/presets',
+      url: '/pmp-dsh-tavern/api/v1/presets',
       body: { name: 'Created API preset' },
     })
     assert.equal(created.status, 201)
@@ -80,18 +80,18 @@ test('HTTP API keeps preset selection isolated by DSH session id', async () => {
   try {
     await invoke(handler, {
       method: 'POST',
-      url: '/dsh-tavern/api/select',
+      url: '/pmp-dsh-tavern/api/v1/select',
       body: { id: second.id, sessionId: 'session-a' },
     })
     await invoke(handler, {
       method: 'POST',
-      url: '/dsh-tavern/api/select',
+      url: '/pmp-dsh-tavern/api/v1/select',
       body: { id: null, sessionId: 'session-b' },
     })
 
-    const sessionA = await invoke(handler, { url: '/dsh-tavern/api/presets?sessionId=session-a' })
-    const sessionB = await invoke(handler, { url: '/dsh-tavern/api/presets?sessionId=session-b' })
-    const legacy = await invoke(handler, { url: '/dsh-tavern/api/presets' })
+    const sessionA = await invoke(handler, { url: '/pmp-dsh-tavern/api/v1/presets?sessionId=session-a' })
+    const sessionB = await invoke(handler, { url: '/pmp-dsh-tavern/api/v1/presets?sessionId=session-b' })
+    const legacy = await invoke(handler, { url: '/pmp-dsh-tavern/api/v1/presets' })
     assert.equal(sessionA.body.selectedId, second.id)
     assert.equal(sessionB.body.selectedId, null)
     assert.equal(legacy.body.selectedId, first.id)
@@ -118,7 +118,7 @@ test('preset selection policy can reject binding while the session agent is runn
   try {
     const response = await invoke(handler, {
       method: 'POST',
-      url: '/dsh-tavern/api/select',
+      url: '/pmp-dsh-tavern/api/v1/select',
       body: { id: preset.id, sessionId: 'session-running' },
     })
     assert.equal(response.status, 409)

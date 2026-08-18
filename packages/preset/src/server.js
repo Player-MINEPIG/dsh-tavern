@@ -1,4 +1,7 @@
-const API_ROOT = '/dsh-tavern/api'
+import { API_V1, escapeRegExp } from '../../identity.js'
+
+const API_ROOT = API_V1
+const PRESET_ID_ROUTE = new RegExp(`^${escapeRegExp(API_V1)}/presets/([^/]+)$`)
 const MAX_BODY_BYTES = 2 * 1024 * 1024
 
 function sendJson(res, status, payload) {
@@ -38,7 +41,7 @@ function readJson(req) {
 }
 
 function presetId(pathname) {
-  const match = /^\/dsh-tavern\/api\/presets\/([^/]+)$/.exec(pathname)
+  const match = PRESET_ID_ROUTE.exec(pathname)
   return match === null ? null : decodeURIComponent(match[1])
 }
 

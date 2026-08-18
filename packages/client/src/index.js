@@ -33,10 +33,9 @@ import {
   launcherPlacement,
   launcherResourceStatuses,
 } from './state.js'
+import { API_V1 as API_ROOT, PLUGIN_ID } from '../../identity.js'
 
 const h = createLocalizedElement(createElement)
-
-const API_ROOT = '/dsh-tavern/api'
 
 const css = `
 .dtv-layer{position:absolute;inset:0;z-index:6;pointer-events:none;font-family:Inter,var(--dsw-font-family),sans-serif;color:var(--dsw-alias-label-primary)}
@@ -61,7 +60,7 @@ const css = `
 .dtv-modal-body{margin:0;font-size:13px;line-height:1.55}.dtv-modal .dtv-button{align-self:flex-end;min-width:88px}
 `
 
-const LAUNCHER_STORAGE_KEY = 'dsh-tavern:launcher-position:v1'
+const LAUNCHER_STORAGE_KEY = `${PLUGIN_ID}:launcher-position:v1`
 
 function viewport() {
   return { width: window.innerWidth, height: window.innerHeight }
@@ -850,14 +849,14 @@ function TavernShell({ useSessions, useWorkspaces, createCleanSession }) {
 }
 
 function installStyles() {
-  if (document.querySelector('style[data-plugin-css="dsh-tavern-shell"]') !== null) return
+  if (document.querySelector(`style[data-plugin-css="${PLUGIN_ID}-shell"]`) !== null) return
   const style = document.createElement('style')
-  style.dataset.pluginCss = 'dsh-tavern-shell'
+  style.dataset.pluginCss = `${PLUGIN_ID}-shell`
   style.textContent = css
   document.head.append(style)
 }
 
-export const name = 'dsh-tavern'
+export const name = PLUGIN_ID
 export const inject = ['slots', 'layout', 'sessions', 'workspaces']
 export { PanelHeader }
 
@@ -871,7 +870,7 @@ export function apply(ctx) {
   registerTavernTraceView(ctx)
   ctx.slots.inject('shell.overlay', () => ctx.slots.register({
     name: 'shell.overlay',
-    id: 'dsh-tavern-launcher',
+    id: `${PLUGIN_ID}-launcher`,
     order: 80,
     inject: () => ({
       createCleanSession: ({ workspaceId, source }) => createCleanSessionWorkflow({

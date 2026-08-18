@@ -13,10 +13,9 @@ import {
   uiMessage,
   unwrapText,
 } from '../../client/src/i18n.js'
+import { API_V1 as API_ROOT } from '../../identity.js'
 
 const h = createLocalizedElement(createElement)
-
-const API_ROOT = '/dsh-tavern/api'
 
 async function api(path, options = {}) {
   const response = await fetch(`${API_ROOT}${path}`, {

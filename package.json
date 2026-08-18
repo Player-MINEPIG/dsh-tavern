@@ -1,5 +1,5 @@
 {
-  "name": "dsh-tavern",
+  "name": "pmp-dsh-tavern",
   "version": "1.0.0",
   "description": "SillyTavern-compatible content adapters for DeepSeek Harness.",
   "type": "module",
@@ -16,6 +16,7 @@
     "./trace": "./packages/tavern-trace/src/index.js",
     "./session-template": "./packages/session-template/src/index.js",
     "./client": "./dist/client.js",
+    "./identity": "./packages/identity.js",
     "./package.json": "./package.json"
   },
   "files": [

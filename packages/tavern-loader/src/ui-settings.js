@@ -12,6 +12,7 @@ import {
   SUPPORTED_UI_LOCALES,
   isSupportedUiLocale,
 } from '../../ui-settings/src/locale-contract.js'
+import { API_V1 } from '../../identity.js'
 
 const SETTINGS_FILE = 'ui-settings.json'
 const MAX_SETTINGS_BYTES = 1024
@@ -160,7 +161,7 @@ function readBoundedJson(req) {
 }
 
 export function isUiSettingsApiPath(url) {
-  return new URL(url ?? '/', 'http://localhost').pathname === '/dsh-tavern/api/ui-settings'
+  return new URL(url ?? '/', 'http://localhost').pathname === `${API_V1}/ui-settings`
 }
 
 export function createUiSettingsApiHandler(store) {
