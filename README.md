@@ -304,7 +304,9 @@ RP 是当前 session 的叠加，不是 DSH agent preset。开启后文件沙箱
 - [Character Card V2 规范](https://github.com/malfoyslastname/character-card-spec-v2)：角色卡与内嵌 `character_book` 格式参考。
 - [TauriTavern](https://github.com/Darkatse/TauriTavern)：SillyTavern 的 Tauri/Rust 原生宿主实现。
 - [TauriTavern 文档](https://tauritavern.github.io/) 与 [Agent API](https://tauritavern.github.io/en/api/agent.html)：宿主边界和 Agent prompt snapshot 的设计参考。
+- [hewzhew/dsh-agent-rp](https://github.com/hewzhew/dsh-agent-rp)：DSH 角色扮演插件，提供了灵感；未使用其代码。
+- [LingyeSoul/dsh-tavern](https://github.com/LingyeSoul/dsh-tavern)：另一个 DSH Tavern 插件，提供了灵感；未使用其代码。与本仓库同名，没有代码或发布关系。
 
-`dsh-tavern` 与 SillyTavern、TauriTavern 均无官方隶属关系。本仓库不内置或分发第三方 preset、角色卡或世界书，也不复制用户导入内容。请分别遵守上游项目及所导入内容的许可证和版权要求。
+`dsh-tavern` 与上述项目均无官方隶属关系。本仓库不内置或分发第三方 preset、角色卡或世界书，也不复制用户导入内容。请分别遵守上游项目及所导入内容的许可证和版权要求。
 
 本项目代码使用 [MIT License](LICENSE)，Copyright © 2026 Zhu Bohan。
