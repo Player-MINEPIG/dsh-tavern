@@ -283,7 +283,7 @@ RP 是当前 session 的叠加，不是 DSH agent preset。开启后文件沙箱
 
 ## 规划中：v2.0 灵珠魔丸
 
-下一阶段才接管对话表面（产品名灵珠魔丸）。蓝球切到 DSH 原前端，红球切到扮演前端；这是**全局** chrome，会改侧边栏收纳，不按 session 记。后端只提供可拼装的元 API（时间线节点、`branch`、`prompt`、挂变体等），不提供 `/swipe` 或「修改并重新生成」一揽子接口。内置扮演 UI 用「原用户提示 + branch」拼回复 swipe；其它前端可在同一节点把 `prompt` 换成别的文本，效果等于在该处 swipe。扮演时间线可在任意位置去掉渲染或改显示文字（只动指针，操作前确认），不改 DSH 历史。扮演工作区不要放系统盘。局的导入/导出、按需复制的局分支尚未随 `1.0.0` 提供。扮演时间线含开场白（左右切换绑定，不写入 DSH 历史）；上边栏对话 / 轨迹 / Tavern Trace 保留，默认跟最后一轮仍在显示的 QA 所在 session。人类可读导出走静态 HTML；另带 SillyTavern 聊天 JSON。
+下一阶段才接管对话表面（产品名灵珠魔丸）。蓝球切到 DSH 原前端，红球切到扮演前端；这是**全局** chrome。后端只有 chrome、扮演工作区文件、session（create / branch / prompt / messages / focus）这三类元 API；swipe、删改、局分支、导入导出都由前端拼。内置扮演 UI 用原用户提示做回复 swipe；其它前端可在同一节点换 `prompt` 文本。扮演工作区不要放系统盘。时间线含开场白；上边栏对话 / 轨迹 / Tavern Trace 保留。人类可读导出为静态 HTML，另可保存 SillyTavern 聊天 JSON。
 
 ## 安全风险
 
