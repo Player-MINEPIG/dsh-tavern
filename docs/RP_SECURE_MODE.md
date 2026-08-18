@@ -37,6 +37,7 @@ RP 是会话叠加，不是 DSH agent preset。开启后，本插件在工具 di
 | 换 DSH agent preset | 留给高级用户 |
 | 用户在聊天里自己发送的内容 | 用户自愿给出的材料，插件不管 |
 | MCP 等未出现在默认配方中的工具 | 未点名则默认不拦 |
+| 插件自己的 HTTP API、前端读会话日志 / 资源库 | 锁只挂在 `tools.guard`（模型调 `read` / `write` / 终端等）。浏览器或 loader 走固定代码路径取信息，不是 agent 工具调用，默认不拦 |
 
 ## 关 RP 之后
 
