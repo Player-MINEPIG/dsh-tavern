@@ -15,7 +15,7 @@ import {
   uiMessage,
   unwrapText,
 } from '../../client/src/i18n.js'
-import { API_V1 as API_ROOT, PLUGIN_ID } from '../../identity.js'
+import { API_V1 as API_ROOT, CLIENT_REFRESH_EVENT, PLUGIN_ID } from '../../identity.js'
 
 const h = createLocalizedElement(createElement)
 
@@ -46,7 +46,7 @@ function Field({ label, children }) {
 }
 
 function notifyRefresh() {
-  window.dispatchEvent(new Event('dsh-tavern:refresh'))
+  window.dispatchEvent(new Event(CLIENT_REFRESH_EVENT))
 }
 
 export function UserPanel({ sessionId, sessionBlank, close }) {
@@ -125,10 +125,10 @@ export function UserPanel({ sessionId, sessionBlank, close }) {
       }
       run(() => refresh(draftId.current), 'user.status.refreshed')
     }
-    window.addEventListener('dsh-tavern:refresh', onRefresh)
+    window.addEventListener(CLIENT_REFRESH_EVENT, onRefresh)
     return () => {
       generation.current += 1
-      window.removeEventListener('dsh-tavern:refresh', onRefresh)
+      window.removeEventListener(CLIENT_REFRESH_EVENT, onRefresh)
     }
   }, [refresh, run])
 

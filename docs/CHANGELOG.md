@@ -4,19 +4,54 @@ This is the staged implementation log for dsh-tavern. It is kept separately
 from the product README so reviewers can follow intent, decisions, verification,
 and known limits chronologically.
 
+## 2026-08-19 — Align profile section and browser events with `pmp-dsh-tavern`
+
+Purpose: finish the identity rename so Host assembly and bundled UI events use
+the same plugin id as the Cordis package.
+
+- Host system section is now `pmp-dsh-tavern:profile` (`PROFILE_SECTION`).
+  Replace-mode filtering follows the new name. Upgrading from a Host that still
+  has the old section name will not keep that old profile in replace mode.
+- Browser CustomEvents are `pmp-dsh-tavern:refresh` and
+  `pmp-dsh-tavern:ui-settings`. Old `dsh-tavern:*` event names are not
+  dispatched. `dist/client.js` is rebuilt.
+
+Verification: `test/host-contract.test.mjs`, `test/client-shell.test.mjs`,
+`test/identity.test.mjs`, plus `npm run build`.
+
+
+## 2026-08-19 — Play API: 405, derived focus, default session create
+
+Purpose: match HTTP method semantics, keep focus a derived session id, and stop
+requiring a character card to create a play session.
+
+- Known v2 paths with the wrong method return `405 PLAY_METHOD_NOT_ALLOWED`.
+  `404` is only for paths that do not exist.
+- `GET /v2/focus` returns `{ ok, sessionId }` only. `POST /focus` is 405.
+- `POST /v2/sessions` without a bound character uses DSH `session.create`
+  (no extra title). Title `{characterName} {UTC stamp}` only when a character
+  name is available. `copySelection` runs only when `selectionFromSessionId`
+  is provided.
+
+Verification: `test/play-chrome.test.mjs`, `test/play-sessions.test.mjs`.
+
+
 ## 2026-08-19 — Play session meta API
 
 Purpose: wrap DSH `session.create` / `fork` / `prompt(queue)` / `history` as
 plugin HTTP without writing timeline nodes or posting focus.
 
-- `POST /v2/sessions` titles the session `{characterName} {UTC stamp}`, copies
-  optional Tavern selection, and `insertSessionBefore`s into the bound play
-  workspace. It does not write `timeline.json`.
+- `POST /v2/sessions` titles the session `{characterName} {UTC stamp}` when a
+  character name is available; otherwise it leaves DSH's default title.
+  Optional Tavern selection is copied only with `selectionFromSessionId`.
+  The new session is `insertSessionBefore`'d into the bound play workspace.
+  It does not write `timeline.json`.
 - `POST .../branch { atEventId }` maps eventId to log seq. Open-turn
   `fork-unavailable` / `OPEN_TURN` become HTTP 409. Branch does not prompt.
 - `POST .../user-message { text }` is the next user utterance only, mode
   `queue`. `GET .../messages` returns Message.id plus seq and `incompleteTurn`.
-- `GET /v2/focus` is read-only `deriveFocus`. `POST /focus` is 404.
+- `GET /v2/focus` is read-only `deriveFocus` (`sessionId` only). `POST /focus`
+  is 405.
 - Host calls go through `ctx.get('apiProxy')` when present. Unit tests mock
   that face. Live coverage is opt-in (`DSH_TAVERN_PLAY_LIVE=1`).
 
@@ -85,8 +120,8 @@ land on the same Host prefix.
   `/pmp-dsh-tavern/api/v1/...`. The old `/dsh-tavern/api` root is not
   registered and returns 404. There is no dual-root compatibility window.
 - Browser clients, launcher storage key, and `data-plugin-css` attributes
-  follow the new id. Host system section `dsh-tavern:profile` is unchanged so
-  replace-mode filtering does not drop the profile on upgrade.
+  follow the new id. Host system section was later renamed to
+  `pmp-dsh-tavern:profile` (same day; see the identity-alignment entry).
 - Data and backup directories follow the new package name:
   `node_modules/pmp-dsh-tavern/data/` and `backups/pmp-dsh-tavern/`.
 

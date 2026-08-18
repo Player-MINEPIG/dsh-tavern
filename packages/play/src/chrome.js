@@ -73,7 +73,7 @@ export function createChromeApiHandler(store) {
       const body = await readBoundedJson(req, MAX_CHROME_BYTES)
       return sendJson(res, 200, { ok: true, mode: store.set(body).mode })
     }
-    throw httpError(404, 'Not found', 'PLAY_NOT_FOUND')
+    throw httpError(405, 'method not allowed', 'PLAY_METHOD_NOT_ALLOWED')
   }
 }
 

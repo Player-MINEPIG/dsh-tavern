@@ -4,7 +4,7 @@ import {
   PresetStore,
   createApiHandler as createPresetApiHandler,
 } from '../../preset/src/index.js'
-import { API_ROOT, API_V1, PLUGIN_ID } from '../../identity.js'
+import { API_ROOT, API_V1, PLUGIN_ID, PROFILE_SECTION } from '../../identity.js'
 import { ChromeStore, PlayWorkspaceStore, createPlayApiHandler, isPlayApiPath } from '../../play/src/index.js'
 import {
   CharacterStore,
@@ -316,7 +316,7 @@ export function apply(ctx, config = {}) {
   }
 
   ctx.systemPrompt.section({
-    name: 'dsh-tavern:profile',
+    name: PROFILE_SECTION,
     order: 10,
     text: (context) => runtime.forAssembleContext(context).systemText,
   })
@@ -389,11 +389,11 @@ export function apply(ctx, config = {}) {
       : [...assembly.contexts, ...snapshot.runtimeContexts]
     if (snapshot.systemPromptMode !== 'replace') return { ...assembly, contexts }
     const profileSections = assembly.sections.filter((section) => (
-      section.name === 'dsh-tavern:profile' || section.name === rpModeConstants.sectionName
+      section.name === PROFILE_SECTION || section.name === rpModeConstants.sectionName
     ))
     const sections = profileSections.length > 0 || snapshot.systemText === ''
       ? profileSections
-      : [{ name: 'dsh-tavern:profile', text: snapshot.systemText }]
+      : [{ name: PROFILE_SECTION, text: snapshot.systemText }]
     const rpSection = assembly.sections.find((section) => section.name === rpModeConstants.sectionName)
     if (rpSection !== undefined && !sections.some((section) => section.name === rpModeConstants.sectionName)) {
       sections.push(rpSection)
@@ -633,7 +633,10 @@ export {
   API_ROOT,
   API_V1,
   API_V2,
+  CLIENT_REFRESH_EVENT,
+  CLIENT_UI_SETTINGS_EVENT,
   LEGACY_API_ROOT,
   PLUGIN_ID,
+  PROFILE_SECTION,
   identityConstants,
 } from '../../identity.js'

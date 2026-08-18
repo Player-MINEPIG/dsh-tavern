@@ -14,7 +14,7 @@ import {
   uiMessage,
   unwrapText,
 } from '../../client/src/i18n.js'
-import { API_V1 as API_ROOT, PLUGIN_ID } from '../../identity.js'
+import { API_V1 as API_ROOT, CLIENT_REFRESH_EVENT, PLUGIN_ID } from '../../identity.js'
 
 const h = createLocalizedElement(createElement)
 const POSITIONS = [
@@ -269,10 +269,10 @@ export function WorldBookPanel({ sessionId, close }) {
   useEffect(() => {
     run(() => refresh(), 'world.status.loaded')
     const onRefresh = () => run(() => refresh(), 'world.status.refreshed')
-    window.addEventListener('dsh-tavern:refresh', onRefresh)
+    window.addEventListener(CLIENT_REFRESH_EVENT, onRefresh)
     return () => {
       generation.current += 1
-      window.removeEventListener('dsh-tavern:refresh', onRefresh)
+      window.removeEventListener(CLIENT_REFRESH_EVENT, onRefresh)
     }
   }, [refresh, run])
 
@@ -310,7 +310,7 @@ export function WorldBookPanel({ sessionId, close }) {
     setDocument(data.worldBook)
     setDraft(structuredClone(data.worldBook.book))
     setDirty(false)
-    window.dispatchEvent(new Event('dsh-tavern:refresh'))
+    window.dispatchEvent(new Event(CLIENT_REFRESH_EVENT))
   }, 'world.status.saved')
 
   const saveSelection = () => run(async () => {
@@ -318,7 +318,7 @@ export function WorldBookPanel({ sessionId, close }) {
     const data = await api('/world-book-selection', { method: 'POST', body: JSON.stringify({ sessionId, worldBookIds: selection }) })
     setSelection(data.selection.worldBookIds)
     setAppliedSelection(data.selection.worldBookIds)
-    window.dispatchEvent(new Event('dsh-tavern:refresh'))
+    window.dispatchEvent(new Event(CLIENT_REFRESH_EVENT))
   }, 'world.status.bindingSaved')
 
   const saveUserSelection = () => run(async () => {
@@ -331,7 +331,7 @@ export function WorldBookPanel({ sessionId, close }) {
     const ids = data.binding.worldBookIds
     setUserSelection(ids)
     setAppliedUserSelection(ids)
-    window.dispatchEvent(new Event('dsh-tavern:refresh'))
+    window.dispatchEvent(new Event(CLIENT_REFRESH_EVENT))
   }, 'world.user.saveSuccess')
 
   const remove = () => run(async () => {
@@ -340,7 +340,7 @@ export function WorldBookPanel({ sessionId, close }) {
     setDocument(null)
     setDraft(null)
     await refresh(null)
-    window.dispatchEvent(new Event('dsh-tavern:refresh'))
+    window.dispatchEvent(new Event(CLIENT_REFRESH_EVENT))
   }, 'world.status.deleted')
 
   const saveEmbedded = () => run(async () => {
@@ -350,7 +350,7 @@ export function WorldBookPanel({ sessionId, close }) {
     })
     setEmbeddedDraft(structuredClone(data.character.data.characterBook))
     setEmbeddedDirty(false)
-    window.dispatchEvent(new Event('dsh-tavern:refresh'))
+    window.dispatchEvent(new Event(CLIENT_REFRESH_EVENT))
   }, 'world.status.embeddedSaved')
 
   const updateEntry = (index, patch) => {

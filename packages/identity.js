@@ -3,6 +3,9 @@ export const API_ROOT = `/${PLUGIN_ID}/api`
 export const API_V1 = `${API_ROOT}/v1`
 export const API_V2 = `${API_ROOT}/v2`
 export const LEGACY_API_ROOT = '/dsh-tavern/api'
+export const PROFILE_SECTION = `${PLUGIN_ID}:profile`
+export const CLIENT_REFRESH_EVENT = `${PLUGIN_ID}:refresh`
+export const CLIENT_UI_SETTINGS_EVENT = `${PLUGIN_ID}:ui-settings`
 
 export function escapeRegExp(value) {
   return String(value).replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
@@ -44,4 +47,7 @@ export const identityConstants = Object.freeze({
   apiV1: API_V1,
   apiV2: API_V2,
   legacyApiRoot: LEGACY_API_ROOT,
+  profileSection: PROFILE_SECTION,
+  clientRefreshEvent: CLIENT_REFRESH_EVENT,
+  clientUiSettingsEvent: CLIENT_UI_SETTINGS_EVENT,
 })

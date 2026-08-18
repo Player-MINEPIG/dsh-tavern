@@ -132,7 +132,7 @@ DT 不替换 agent loop，也不维护第二套会话历史。它通过 DSH 的�
 | DSH 扩展点 | DT 的动作 | 对最终请求的影响 |
 | --- | --- | --- |
 | `agent/session-start` | 为 agent 建立或恢复 session 资源选择；RP 开启时钉只读沙箱 | 决定本 session 可加载哪些 DT 资源，以及是否进入 RP 锁 |
-| `systemPrompt.section` | 注册 `dsh-tavern:profile`（order 10）与 `rp:policy`（order 45） | 把编译后的 Tavern profile 与可选 RP 锁说明贡献给 system assembly |
+| `systemPrompt.section` | 注册 `pmp-dsh-tavern:profile`（order 10）与 `rp:policy`（order 45） | 把编译后的 Tavern profile 与可选 RP 锁说明贡献给 system assembly |
 | `system-prompt/assemble` | 追加 DT runtime contexts；高级 replace 模式可只保留 DT profile 与 `rp:policy` | 改变最终 `system`/context，但不改历史与工具执行权限 |
 | `agent/pre-step` | RP 边界提交待处理开关，并再次钉只读沙箱 | 不改 messages；保证聊天栏改权限无法在下一步前解开 RP |
 | `tools.guard` | RP 开启时拒绝高风险工具并 `agent.cancel` | 不进入执行；告警弹窗记在父会话（子 agent 违规时） |
@@ -177,7 +177,7 @@ DSH systemPrompt.assemble(agent scope)
   │
   ├─ 收集 DSH 原生 system sections / contexts / tools / variables
   │
-  ├─ 调用 DT 的 dsh-tavern:profile section
+  ├─ 调用 DT 的 pmp-dsh-tavern:profile section
   │    ├─ 读取该 session 的资源选择
   │    ├─ 解析 preset / character / user / world books
   │    ├─ matcher 扫描 deriveMessages() + 去重后的本步骤 claimed batch

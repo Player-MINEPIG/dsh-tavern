@@ -1,4 +1,5 @@
 import { createHash } from 'node:crypto'
+import { PROFILE_SECTION } from '../../identity.js'
 import { compilePresetForDsh, projectPresetCallConfig } from './profile-compiler.js'
 import { composeWorldBookSelection } from './user-world-book-policy.js'
 import { renderSillyTavernMacros } from '../../tavern-format/src/index.js'
@@ -217,7 +218,7 @@ export class TavernProfileLoader {
         invalidEventCount: 0,
       }),
       composition: {
-        section: { name: 'dsh-tavern:profile', order: 10 },
+        section: { name: PROFILE_SECTION, order: 10 },
         systemPromptMode: compiled.systemPromptMode,
         profileCharacters: compiled.systemText.length,
         callConfigFields: Object.keys(compiled.callConfig),

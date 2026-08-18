@@ -120,7 +120,7 @@ test('POST /sessions creates a titled session in the play workspace and does not
   }
 })
 
-test('POST /sessions requires a bound character card', async () => {
+test('POST /sessions without a character uses DSH default create', async () => {
   const fixture = await boundHandler({ characterName: null })
   try {
     const created = await invoke(fixture.handler, {
@@ -128,9 +128,12 @@ test('POST /sessions requires a bound character card', async () => {
       url: `${API_V2}/sessions`,
       body: {},
     })
-    assert.equal(created.status, 409)
-    assert.equal(created.body.code, 'PLAY_CHARACTER_REQUIRED')
-    assert.equal(fixture.host.calls.some(call => call[0] === 'createSession'), false)
+    assert.equal(created.status, 201)
+    assert.equal(created.body.sessionId, 'session-new')
+    assert.equal(created.body.title, undefined)
+    const createCall = fixture.host.calls.find(call => call[0] === 'createSession')
+    assert.equal(createCall[1].title, undefined)
+    assert.equal(fixture.host.calls.some(call => call[0] === 'copySelection'), false)
   } finally {
     rmSync(fixture.pluginDir, { recursive: true, force: true })
     rmSync(fixture.playRoot, { recursive: true, force: true })
@@ -200,7 +203,7 @@ test('GET messages returns Message.id plus seq and incompleteTurn', async () => 
   }
 })
 
-test('GET /focus is derived; POST /focus is 404', async () => {
+test('GET /focus is derived sessionId only; POST /focus is 405', async () => {
   const fixture = await boundHandler()
   try {
     writeFileSync(join(fixture.playRoot, 'run-timeline.json'), JSON.stringify({
@@ -222,9 +225,17 @@ test('GET /focus is derived; POST /focus is 404', async () => {
     fixture.workspaceStore.setActiveTimelinePath('run-timeline.json')
     const focus = await invoke(fixture.handler, { url: `${API_V2}/focus` })
     assert.equal(focus.status, 200)
+    assert.equal(focus.body.ok, true)
     assert.equal(focus.body.sessionId, 'session-focus')
+    assert.equal(Object.hasOwn(focus.body, 'path'), false)
+    assert.equal(Object.hasOwn(focus.body, 'nodeId'), false)
     const post = await invoke(fixture.handler, { method: 'POST', url: `${API_V2}/focus`, body: { sessionId: 'nope' } })
-    assert.equal(post.status, 404)
+    assert.equal(post.status, 405)
+    assert.equal(post.body.code, 'PLAY_METHOD_NOT_ALLOWED')
+    const getSessions = await invoke(fixture.handler, { url: `${API_V2}/sessions` })
+    assert.equal(getSessions.status, 405)
+    const unknown = await invoke(fixture.handler, { url: `${API_V2}/not-a-route` })
+    assert.equal(unknown.status, 404)
   } finally {
     rmSync(fixture.pluginDir, { recursive: true, force: true })
     rmSync(fixture.playRoot, { recursive: true, force: true })

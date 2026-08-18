@@ -3,7 +3,7 @@ import assert from 'node:assert/strict'
 import { mkdtempSync, rmSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import { apply } from '../packages/tavern-loader/src/index.js'
+import { apply, PROFILE_SECTION } from '../packages/tavern-loader/src/index.js'
 
 test('selected preset enters system prompt and model call config seams', async () => {
   const directory = mkdtempSync(join(tmpdir(), 'dsh-tavern-host-'))
@@ -28,6 +28,7 @@ test('selected preset enters system prompt and model call config seams', async (
     })
     store.select(preset.id)
 
+    assert.equal(sections[0].name, PROFILE_SECTION)
     assert.match(sections[0].text({}), /Contract marker/)
     assert.equal(sections[1].name, 'rp:policy')
     assert.equal(sections[1].text({}), '')
@@ -75,7 +76,7 @@ test('replace mode removes other system sections but preserves request capabilit
     }))
 
     assert.equal(result.sections.length, 1)
-    assert.equal(result.sections[0].name, 'dsh-tavern:profile')
+    assert.equal(result.sections[0].name, PROFILE_SECTION)
     assert.match(result.sections[0].text, /Only this system text/)
     assert.equal(result.tools, tools)
     assert.equal(result.contexts, contexts)
@@ -149,7 +150,7 @@ test('selected user keeps DSH agent identity and contributes one Tavern profile 
       sections: [harness, tavern], tools: [], contexts: [], variables: {},
     }))
     assert.equal(assembly.sections.filter(section => section.name === 'harness').length, 1)
-    assert.equal(assembly.sections.filter(section => section.name === 'dsh-tavern:profile').length, 1)
+    assert.equal(assembly.sections.filter(section => section.name === PROFILE_SECTION).length, 1)
     assert.equal(profileText.match(/Host user description\./g)?.length, 1)
   } finally {
     rmSync(directory, { recursive: true, force: true })

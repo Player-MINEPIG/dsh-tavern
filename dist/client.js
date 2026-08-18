@@ -44,6 +44,26 @@ function isSupportedUiLocale(value) {
   return typeof value === "string" && SUPPORTED_UI_LOCALES.includes(value);
 }
 
+// packages/identity.js
+var PLUGIN_ID = "pmp-dsh-tavern";
+var API_ROOT = `/${PLUGIN_ID}/api`;
+var API_V1 = `${API_ROOT}/v1`;
+var API_V2 = `${API_ROOT}/v2`;
+var LEGACY_API_ROOT = "/dsh-tavern/api";
+var PROFILE_SECTION = `${PLUGIN_ID}:profile`;
+var CLIENT_REFRESH_EVENT = `${PLUGIN_ID}:refresh`;
+var CLIENT_UI_SETTINGS_EVENT = `${PLUGIN_ID}:ui-settings`;
+var identityConstants = Object.freeze({
+  pluginId: PLUGIN_ID,
+  apiRoot: API_ROOT,
+  apiV1: API_V1,
+  apiV2: API_V2,
+  legacyApiRoot: LEGACY_API_ROOT,
+  profileSection: PROFILE_SECTION,
+  clientRefreshEvent: CLIENT_REFRESH_EVENT,
+  clientUiSettingsEvent: CLIENT_UI_SETTINGS_EVENT
+});
+
 // packages/client/src/i18n/catalogs/zh-CN.js
 var zh_CN_default = Object.freeze({
   "common.unavailable": "\u754C\u9762\u6587\u672C\u6682\u4E0D\u53EF\u7528",
@@ -1108,7 +1128,7 @@ function setClientUiSettings(value, { announce = true } = {}) {
   const rpFollowCharacter = value?.rpFollowCharacter !== false;
   current = { locale, scale, rpFollowCharacter };
   if (announce && typeof window !== "undefined") {
-    window.dispatchEvent(new CustomEvent("dsh-tavern:ui-settings", { detail: getClientUiSettings() }));
+    window.dispatchEvent(new CustomEvent(CLIENT_UI_SETTINGS_EVENT, { detail: getClientUiSettings() }));
   }
   return getClientUiSettings();
 }
@@ -1132,24 +1152,10 @@ function reorderAtBoundary(items, from, boundary) {
   return reorder(items, from, destination);
 }
 
-// packages/identity.js
-var PLUGIN_ID = "pmp-dsh-tavern";
-var API_ROOT = `/${PLUGIN_ID}/api`;
-var API_V1 = `${API_ROOT}/v1`;
-var API_V2 = `${API_ROOT}/v2`;
-var LEGACY_API_ROOT = "/dsh-tavern/api";
-var identityConstants = Object.freeze({
-  pluginId: PLUGIN_ID,
-  apiRoot: API_ROOT,
-  apiV1: API_V1,
-  apiV2: API_V2,
-  legacyApiRoot: LEGACY_API_ROOT
-});
-
 // packages/preset/src/client.js
 var h = createLocalizedElement(import_react.createElement);
 function announceTavernRefresh() {
-  window.dispatchEvent(new CustomEvent("dsh-tavern:refresh", { detail: { source: "preset" } }));
+  window.dispatchEvent(new CustomEvent(CLIENT_REFRESH_EVENT, { detail: { source: "preset" } }));
 }
 var ST_NUMBER_FIELDS = [
   ["top_p", "preset.sampling.topP"],
@@ -1346,8 +1352,8 @@ function PresetSidebar({ closePanel, openPanel, sessionId, sessionBlank, autoOpe
       if (event.detail?.source === "preset") return;
       run(() => refresh(), "preset.status.refreshed");
     };
-    window.addEventListener("dsh-tavern:refresh", onRefresh);
-    return () => window.removeEventListener("dsh-tavern:refresh", onRefresh);
+    window.addEventListener(CLIENT_REFRESH_EVENT, onRefresh);
+    return () => window.removeEventListener(CLIENT_REFRESH_EVENT, onRefresh);
   }, [refresh, run]);
   const browse = (0, import_react.useCallback)((id) => run(async () => {
     const detail = await api(`/presets/${encodeURIComponent(id)}`);
@@ -1682,7 +1688,7 @@ function characterEditorPatch(draft) {
 // packages/character/src/client.js
 var h2 = createLocalizedElement(import_react2.createElement);
 function announceTavernRefresh2() {
-  window.dispatchEvent(new CustomEvent("dsh-tavern:refresh", { detail: { source: "character" } }));
+  window.dispatchEvent(new CustomEvent(CLIENT_REFRESH_EVENT, { detail: { source: "character" } }));
 }
 var css2 = `
 .dcc-panel{position:absolute;top:0;right:0;bottom:0;width:min(440px,calc(100vw - 56px));pointer-events:auto;border-left:1px solid var(--dsw-alias-border-l2);box-shadow:var(--ds-shadow-3,-8px 0 28px rgba(0,0,0,.18));background:var(--dsw-alias-bg-base);color:var(--dsw-alias-label-primary);display:flex;flex-direction:column;font-family:Inter,var(--dsw-font-family),sans-serif}.dcc-header{height:52px;box-sizing:border-box;display:flex;align-items:center;gap:8px;padding:0 14px;border-bottom:1px solid var(--dsw-alias-border-l2);flex:none}.dcc-title{font-size:16px;font-weight:650;flex:1}.dcc-close{border:0;background:transparent;color:var(--dsw-alias-label-tertiary);cursor:pointer;border-radius:7px;padding:6px 8px;font-size:14px}.dcc-body{min-height:0;overflow:auto;padding:12px;display:flex;flex-direction:column;gap:12px}.dcc-toolbar{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}.dcc-actions{display:grid;grid-template-columns:1fr 1fr;gap:8px}.dcc-button{min-height:36px;border:1px solid var(--dsw-alias-border-l2);border-radius:8px;background:var(--dsw-alias-button-secondary-fill,var(--dsw-alias-bg-base));color:var(--dsw-alias-label-primary);cursor:pointer;padding:7px 10px;font-size:13px;text-decoration:none;display:flex;align-items:center;justify-content:center;box-sizing:border-box}.dcc-button:hover:not(:disabled){background:var(--dsw-alias-interactive-bg-hover)}.dcc-button:disabled{opacity:.5;cursor:default}.dcc-primary{background:var(--dsw-alias-state-business-primary);color:white;border-color:transparent}.dcc-danger{color:var(--dsw-alias-state-error)}.dcc-field{display:flex;flex-direction:column;gap:5px}.dcc-label{font-size:12px;color:var(--dsw-alias-label-tertiary);font-weight:600}.dcc-select,.dcc-input,.dcc-textarea{box-sizing:border-box;width:100%;border:1px solid var(--dsw-alias-border-l2);border-radius:7px;background:var(--dsw-alias-bg-base);color:var(--dsw-alias-label-primary);font:inherit;font-size:13px}.dcc-select,.dcc-input{height:36px;padding:0 9px}.dcc-textarea{min-height:88px;resize:vertical;padding:8px;line-height:1.5}.dcc-note,.dcc-meta{font-size:13px;line-height:1.5;color:var(--dsw-alias-label-tertiary);margin:0;overflow-wrap:anywhere}.dcc-status{font-size:13px;line-height:1.45;border-radius:7px;padding:7px 9px;background:var(--dsw-specific-tip);overflow-wrap:anywhere}.dcc-status[data-error=true]{color:var(--dsw-alias-state-error)}.dcc-status[data-warning=true]{color:var(--dsw-alias-state-warning,var(--dsw-alias-label-primary))}.dcc-card{border-top:1px solid var(--dsw-alias-border-l1);padding-top:12px;display:flex;flex-direction:column;gap:10px}.dcc-card-head{display:flex;gap:11px}.dcc-avatar{width:76px;height:100px;object-fit:cover;border-radius:9px;border:1px solid var(--dsw-alias-border-l1);background:var(--dsw-alias-bg-container);flex:none}.dcc-card-title{font-size:16px;font-weight:650;margin:0 0 5px}.dcc-check{display:flex;gap:7px;align-items:flex-start;font-size:13px;line-height:1.4}.dcc-detail{border:1px solid var(--dsw-alias-border-l1);border-radius:8px;padding:8px}.dcc-detail summary{cursor:pointer;font-size:13px;font-weight:600}.dcc-detail-body{display:flex;flex-direction:column;gap:8px;margin-top:8px}.dcc-diags{margin:7px 0 0;padding-left:18px;font-size:13px;line-height:1.5}.dcc-greetings{display:flex;flex-direction:column;gap:8px}.dcc-greeting-item{border:1px solid var(--dsw-alias-border-l1);border-radius:8px;padding:8px;display:flex;flex-direction:column;gap:6px}.dcc-greeting-head{display:flex;align-items:center;justify-content:space-between;gap:8px}.dcc-footer{position:sticky;bottom:-12px;margin:0 -12px -12px;padding:10px 12px;background:var(--dsw-alias-bg-base);border-top:1px solid var(--dsw-alias-border-l2)}
@@ -1804,8 +1810,8 @@ function CharacterPanel({ sessionId, sessionBlank, close }) {
       }
       run(() => refresh(detail?.id), "character.status.refreshed");
     };
-    window.addEventListener("dsh-tavern:refresh", onRefresh);
-    return () => window.removeEventListener("dsh-tavern:refresh", onRefresh);
+    window.addEventListener(CLIENT_REFRESH_EVENT, onRefresh);
+    return () => window.removeEventListener(CLIENT_REFRESH_EVENT, onRefresh);
   }, [detail?.id, refresh, run]);
   (0, import_react2.useEffect)(() => {
     if (!dirty) return void 0;
@@ -2420,10 +2426,10 @@ function WorldBookPanel({ sessionId, close }) {
   (0, import_react3.useEffect)(() => {
     run(() => refresh(), "world.status.loaded");
     const onRefresh = () => run(() => refresh(), "world.status.refreshed");
-    window.addEventListener("dsh-tavern:refresh", onRefresh);
+    window.addEventListener(CLIENT_REFRESH_EVENT, onRefresh);
     return () => {
       generation.current += 1;
-      window.removeEventListener("dsh-tavern:refresh", onRefresh);
+      window.removeEventListener(CLIENT_REFRESH_EVENT, onRefresh);
     };
   }, [refresh, run]);
   const load = (id) => run(async () => {
@@ -2456,14 +2462,14 @@ function WorldBookPanel({ sessionId, close }) {
     setDocument(data.worldBook);
     setDraft(structuredClone(data.worldBook.book));
     setDirty(false);
-    window.dispatchEvent(new Event("dsh-tavern:refresh"));
+    window.dispatchEvent(new Event(CLIENT_REFRESH_EVENT));
   }, "world.status.saved");
   const saveSelection = () => run(async () => {
     if (!sessionId) throw uiError("world.error.needSession");
     const data = await api3("/world-book-selection", { method: "POST", body: JSON.stringify({ sessionId, worldBookIds: selection }) });
     setSelection(data.selection.worldBookIds);
     setAppliedSelection(data.selection.worldBookIds);
-    window.dispatchEvent(new Event("dsh-tavern:refresh"));
+    window.dispatchEvent(new Event(CLIENT_REFRESH_EVENT));
   }, "world.status.bindingSaved");
   const saveUserSelection = () => run(async () => {
     const userId = active?.resources?.user?.id;
@@ -2475,7 +2481,7 @@ function WorldBookPanel({ sessionId, close }) {
     const ids = data.binding.worldBookIds;
     setUserSelection(ids);
     setAppliedUserSelection(ids);
-    window.dispatchEvent(new Event("dsh-tavern:refresh"));
+    window.dispatchEvent(new Event(CLIENT_REFRESH_EVENT));
   }, "world.user.saveSuccess");
   const remove = () => run(async () => {
     if (document2 === null || !window.confirm(unwrapText(uiMessage("world.confirmDelete", { name: document2.name })))) return;
@@ -2483,7 +2489,7 @@ function WorldBookPanel({ sessionId, close }) {
     setDocument(null);
     setDraft(null);
     await refresh(null);
-    window.dispatchEvent(new Event("dsh-tavern:refresh"));
+    window.dispatchEvent(new Event(CLIENT_REFRESH_EVENT));
   }, "world.status.deleted");
   const saveEmbedded = () => run(async () => {
     const data = await api3(`/characters/${encodeURIComponent(embeddedCharacterId)}/world-book`, {
@@ -2492,7 +2498,7 @@ function WorldBookPanel({ sessionId, close }) {
     });
     setEmbeddedDraft(structuredClone(data.character.data.characterBook));
     setEmbeddedDirty(false);
-    window.dispatchEvent(new Event("dsh-tavern:refresh"));
+    window.dispatchEvent(new Event(CLIENT_REFRESH_EVENT));
   }, "world.status.embeddedSaved");
   const updateEntry = (index, patch) => {
     setDraft((current2) => {
@@ -2723,7 +2729,7 @@ function Field4({ label, children }) {
   return h4("label", { className: "dtu-field" }, h4("span", { className: "dtu-label" }, label), children);
 }
 function notifyRefresh() {
-  window.dispatchEvent(new Event("dsh-tavern:refresh"));
+  window.dispatchEvent(new Event(CLIENT_REFRESH_EVENT));
 }
 function UserPanel({ sessionId, sessionBlank, close }) {
   const [users, setUsers] = (0, import_react4.useState)(null);
@@ -2792,10 +2798,10 @@ function UserPanel({ sessionId, sessionBlank, close }) {
       }
       run(() => refresh(draftId.current), "user.status.refreshed");
     };
-    window.addEventListener("dsh-tavern:refresh", onRefresh);
+    window.addEventListener(CLIENT_REFRESH_EVENT, onRefresh);
     return () => {
       generation.current += 1;
-      window.removeEventListener("dsh-tavern:refresh", onRefresh);
+      window.removeEventListener(CLIENT_REFRESH_EVENT, onRefresh);
     };
   }, [refresh, run]);
   (0, import_react4.useEffect)(() => {
@@ -3165,8 +3171,8 @@ function TavernTraceView({ sessionId, useSession }) {
   }, [refresh, lastVisibleSeq, running]);
   (0, import_react5.useEffect)(() => {
     const onSettings = (event) => setUiSettings(event.detail ?? getClientUiSettings());
-    window.addEventListener("dsh-tavern:ui-settings", onSettings);
-    return () => window.removeEventListener("dsh-tavern:ui-settings", onSettings);
+    window.addEventListener(CLIENT_UI_SETTINGS_EVENT, onSettings);
+    return () => window.removeEventListener(CLIENT_UI_SETTINGS_EVENT, onSettings);
   }, []);
   const records = [...data?.records ?? []].reverse();
   return h5(
@@ -3297,8 +3303,8 @@ function SessionTemplatePanel({ sessionId, workspaceId, createCleanSession, clos
       values: reason.uiValues,
       text: reason instanceof Error ? reason.message : String(reason)
     }));
-    window.addEventListener("dsh-tavern:refresh", onRefresh);
-    return () => window.removeEventListener("dsh-tavern:refresh", onRefresh);
+    window.addEventListener(CLIENT_REFRESH_EVENT, onRefresh);
+    return () => window.removeEventListener(CLIENT_REFRESH_EVENT, onRefresh);
   }, [refresh]);
   const run = (0, import_react6.useCallback)(async (operation, success) => {
     setBusy(true);
@@ -3307,7 +3313,7 @@ function SessionTemplatePanel({ sessionId, workspaceId, createCleanSession, clos
       const next = typeof success === "function" ? success(result) : success;
       setStatus(typeof next === "string" ? { error: false, key: next } : { error: false, ...next });
       await refresh();
-      window.dispatchEvent(new Event("dsh-tavern:refresh"));
+      window.dispatchEvent(new Event(CLIENT_REFRESH_EVENT));
       return result;
     } catch (reason) {
       const diagnostics2 = Array.isArray(reason?.diagnostics) ? reason.diagnostics : [];
@@ -3982,8 +3988,8 @@ function TavernShell({ useSessions, useWorkspaces, createCleanSession }) {
   }, [refreshStatus, sessionId]);
   (0, import_react7.useEffect)(() => {
     const onRefresh = () => refreshStatus();
-    window.addEventListener("dsh-tavern:refresh", onRefresh);
-    return () => window.removeEventListener("dsh-tavern:refresh", onRefresh);
+    window.addEventListener(CLIENT_REFRESH_EVENT, onRefresh);
+    return () => window.removeEventListener(CLIENT_REFRESH_EVENT, onRefresh);
   }, [refreshStatus]);
   (0, import_react7.useEffect)(() => {
     const onResize = () => setAnchor((current2) => {
@@ -4090,7 +4096,7 @@ function TavernShell({ useSessions, useWorkspaces, createCleanSession }) {
   const open = (id) => {
     setMenuOpen(false);
     setSurface(id);
-    window.dispatchEvent(new Event("dsh-tavern:refresh"));
+    window.dispatchEvent(new Event(CLIENT_REFRESH_EVENT));
   };
   let panel = null;
   if (surface === "preset") {
@@ -4227,7 +4233,7 @@ function apply(ctx) {
           source: selectedSource
         }),
         openSession: (id) => ctx.sessions.open(id),
-        refresh: () => window.dispatchEvent(new Event("dsh-tavern:refresh"))
+        refresh: () => window.dispatchEvent(new Event(CLIENT_REFRESH_EVENT))
       })
     })
   }, TavernShell));

@@ -37,21 +37,36 @@ export function createPlayApiHandler({
       const route = parsePlayUrl(req.url, API_V2)
       if (route === null) throw httpError(404, 'Not found', 'PLAY_NOT_FOUND')
       const method = String(req.method ?? 'GET').toUpperCase()
-      if (route.rest === '/chrome') return await chromeApi(req, res, { method })
-      if (workspaceApi !== null) {
-        if (route.rest === '/workspace' && method === 'GET') return await workspaceApi.getWorkspace(req, res)
-        if (route.rest === '/workspace' && method === 'PUT') return await workspaceApi.putWorkspace(req, res)
-        if (route.rest === '/workspace/dirs' && method === 'POST') return await workspaceApi.postDirs(req, res)
-        if (route.rest === '/workspace/files') return await workspaceApi.files(req, res, { method, searchParams: route.searchParams })
+      if (route.rest === '/chrome') {
+        if (method !== 'GET' && method !== 'PUT') throw httpError(405, 'method not allowed', 'PLAY_METHOD_NOT_ALLOWED')
+        return await chromeApi(req, res, { method })
       }
-      if (sessionApi !== null) {
-        if (route.rest === '/focus' && method === 'GET') return await sessionApi.focus(req, res, route.searchParams)
-        for (const [pattern, action, required] of SESSION_ROUTES) {
-          const match = route.rest.match(pattern)
-          if (match === null) continue
-          if (method !== required) throw httpError(404, 'Not found', 'PLAY_NOT_FOUND')
-          return await sessionApi[action](req, res, match[1])
-        }
+      if (route.rest === '/workspace') {
+        if (method !== 'GET' && method !== 'PUT') throw httpError(405, 'method not allowed', 'PLAY_METHOD_NOT_ALLOWED')
+        if (workspaceApi === null) throw httpError(404, 'Not found', 'PLAY_NOT_FOUND')
+        if (method === 'GET') return await workspaceApi.getWorkspace(req, res)
+        return await workspaceApi.putWorkspace(req, res)
+      }
+      if (route.rest === '/workspace/dirs') {
+        if (method !== 'POST') throw httpError(405, 'method not allowed', 'PLAY_METHOD_NOT_ALLOWED')
+        if (workspaceApi === null) throw httpError(404, 'Not found', 'PLAY_NOT_FOUND')
+        return await workspaceApi.postDirs(req, res)
+      }
+      if (route.rest === '/workspace/files') {
+        if (workspaceApi === null) throw httpError(404, 'Not found', 'PLAY_NOT_FOUND')
+        return await workspaceApi.files(req, res, { method, searchParams: route.searchParams })
+      }
+      if (route.rest === '/focus') {
+        if (method !== 'GET') throw httpError(405, 'method not allowed', 'PLAY_METHOD_NOT_ALLOWED')
+        if (sessionApi === null) throw httpError(404, 'Not found', 'PLAY_NOT_FOUND')
+        return await sessionApi.focus(req, res, route.searchParams)
+      }
+      for (const [pattern, action, required] of SESSION_ROUTES) {
+        const match = route.rest.match(pattern)
+        if (match === null) continue
+        if (method !== required) throw httpError(405, 'method not allowed', 'PLAY_METHOD_NOT_ALLOWED')
+        if (sessionApi === null) throw httpError(404, 'Not found', 'PLAY_NOT_FOUND')
+        return await sessionApi[action](req, res, match[1])
       }
       throw httpError(404, 'Not found', 'PLAY_NOT_FOUND')
     } catch (error) {

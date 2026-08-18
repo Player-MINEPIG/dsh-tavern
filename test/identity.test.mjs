@@ -12,6 +12,9 @@ import {
   API_V2,
   LEGACY_API_ROOT,
   PLUGIN_ID,
+  PROFILE_SECTION,
+  CLIENT_REFRESH_EVENT,
+  CLIENT_UI_SETTINGS_EVENT,
 } from '../packages/identity.js'
 import { apply, createApiHandler } from '../packages/tavern-loader/src/index.js'
 import { PresetStore } from '../packages/preset/src/index.js'
@@ -54,6 +57,9 @@ test('plugin identity uses pmp-dsh-tavern with versioned API roots', () => {
   assert.equal(API_V1, '/pmp-dsh-tavern/api/v1')
   assert.equal(API_V2, '/pmp-dsh-tavern/api/v2')
   assert.equal(LEGACY_API_ROOT, '/dsh-tavern/api')
+  assert.equal(PROFILE_SECTION, 'pmp-dsh-tavern:profile')
+  assert.equal(CLIENT_REFRESH_EVENT, 'pmp-dsh-tavern:refresh')
+  assert.equal(CLIENT_UI_SETTINGS_EVENT, 'pmp-dsh-tavern:ui-settings')
 })
 
 test('legacy /dsh-tavern/api resource paths are not served', async () => {

@@ -12,7 +12,7 @@ import {
   uiMessage,
   unwrapText,
 } from '../../client/src/i18n.js'
-import { API_V1, PLUGIN_ID } from '../../identity.js'
+import { API_V1, CLIENT_UI_SETTINGS_EVENT, PLUGIN_ID } from '../../identity.js'
 
 const h = createLocalizedElement(createElement)
 
@@ -215,8 +215,8 @@ export function TavernTraceView({ sessionId, useSession }) {
   useEffect(() => { refresh() }, [refresh, lastVisibleSeq, running])
   useEffect(() => {
     const onSettings = event => setUiSettings(event.detail ?? getClientUiSettings())
-    window.addEventListener('dsh-tavern:ui-settings', onSettings)
-    return () => window.removeEventListener('dsh-tavern:ui-settings', onSettings)
+    window.addEventListener(CLIENT_UI_SETTINGS_EVENT, onSettings)
+    return () => window.removeEventListener(CLIENT_UI_SETTINGS_EVENT, onSettings)
   }, [])
 
   const records = [...(data?.records ?? [])].reverse()

@@ -33,7 +33,7 @@ import {
   launcherPlacement,
   launcherResourceStatuses,
 } from './state.js'
-import { API_V1 as API_ROOT, PLUGIN_ID } from '../../identity.js'
+import { API_V1 as API_ROOT, CLIENT_REFRESH_EVENT, PLUGIN_ID } from '../../identity.js'
 
 const h = createLocalizedElement(createElement)
 
@@ -366,9 +366,9 @@ function WorldInfoPanel({ sessionId, close }) {
   useEffect(() => {
     refresh()
     const onRefresh = () => refresh()
-    window.addEventListener('dsh-tavern:refresh', onRefresh)
+    window.addEventListener(CLIENT_REFRESH_EVENT, onRefresh)
     return () => {
-      window.removeEventListener('dsh-tavern:refresh', onRefresh)
+      window.removeEventListener(CLIENT_REFRESH_EVENT, onRefresh)
     }
   }, [refresh])
 
@@ -428,7 +428,7 @@ function WorldInfoPanel({ sessionId, close }) {
       setDraft(structuredClone(data.character.data.characterBook))
       setDirty(false)
       setError('')
-      window.dispatchEvent(new Event('dsh-tavern:refresh'))
+      window.dispatchEvent(new Event(CLIENT_REFRESH_EVENT))
     } catch (reason) {
       setError(reason instanceof Error ? reason.message : String(reason))
     } finally {
@@ -624,8 +624,8 @@ function TavernShell({ useSessions, useWorkspaces, createCleanSession }) {
 
   useEffect(() => {
     const onRefresh = () => refreshStatus()
-    window.addEventListener('dsh-tavern:refresh', onRefresh)
-    return () => window.removeEventListener('dsh-tavern:refresh', onRefresh)
+    window.addEventListener(CLIENT_REFRESH_EVENT, onRefresh)
+    return () => window.removeEventListener(CLIENT_REFRESH_EVENT, onRefresh)
   }, [refreshStatus])
 
   useEffect(() => {
@@ -744,7 +744,7 @@ function TavernShell({ useSessions, useWorkspaces, createCleanSession }) {
   const open = id => {
     setMenuOpen(false)
     setSurface(id)
-    window.dispatchEvent(new Event('dsh-tavern:refresh'))
+    window.dispatchEvent(new Event(CLIENT_REFRESH_EVENT))
   }
 
   let panel = null
@@ -883,7 +883,7 @@ export function apply(ctx) {
           source: selectedSource,
         }),
         openSession: id => ctx.sessions.open(id),
-        refresh: () => window.dispatchEvent(new Event('dsh-tavern:refresh')),
+        refresh: () => window.dispatchEvent(new Event(CLIENT_REFRESH_EVENT)),
       }),
     }),
   }, TavernShell))

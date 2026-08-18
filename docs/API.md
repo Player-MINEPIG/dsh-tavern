@@ -17,21 +17,23 @@
 | --- | --- | --- | --- |
 | GET | `/chrome` | 返回 `{ mode: "native" \| "play" }` | 已实现 |
 | PUT | `/chrome` | 写入全局 chrome。不改 RP 锁、不改 DSH 当前 session | 已实现 |
-| POST | `/chrome` | 不提供 | 404 |
+| POST | `/chrome` | 不提供 | 405 |
 | GET | `/workspace` | 根路径、是否已选、合同版本、警告 | 已实现 |
 | PUT | `/workspace` | 绑定**一棵**已存在的扮演工作区根。首次选择带 `SWIPE_DISK` / 可能的 `SYSTEM_DISK` 警告。不 mkdir 根 | 已实现 |
 | POST | `/workspace/dirs` | `{ path }` 相对路径 mkdir。未绑根 → 409。不新注册 DSH 工作区 | 已实现 |
 | GET | `/workspace/files?path=` | 读根内 UTF-8 文件 | 已实现 |
 | PUT | `/workspace/files?path=` | `{ content }` 写根内 UTF-8 文件。`..`、绝对路径、symlink 逃逸 → 400/403 | 已实现 |
 | GET | `/workspace/files?list=` | 列一层前缀 | 已实现 |
-| POST | `/sessions` | 新开扮演 session。必须已有角色卡，否则 `409 PLAY_CHARACTER_REQUIRED`。标题=角色名+时间；可选复制绑定；插入扮演工作区。**不写 timeline** | 已实现 |
+| POST | `/sessions` | 新开扮演 session。有角色卡时标题=角色名+时间；无角色卡时走 DSH `session.create` 默认标题，不 409。仅当 body 带 `selectionFromSessionId` 才复制 Tavern 绑定。插入扮演工作区。**不写 timeline** | 已实现 |
 | POST | `/sessions/:id/branch` | `{ atEventId }` = 日志 seq。fork，不写 timeline、不代发。开放 turn → 409 | 已实现 |
 | POST | `/sessions/:id/user-message` | `{ text }` 作为下一条用户正文，`session.prompt` `queue` | 已实现 |
 | GET | `/sessions/:id/messages` | `deriveMessages()` + `seq` + `incompleteTurn` | 已实现 |
 | GET | `/focus` | 只读派生 `{ sessionId }`。前端再 `sessions.open` | 已实现 |
-| POST | `/focus` | 不提供 | 404 |
+| POST | `/focus` | 不提供 | 405 |
 
-`PUT` 命中 `timeline.json` / `catalog.json` 时先做 schema 校验，失败不落盘。`focusSessionId` 禁止写入。focus 是派生值：仍在渲染（未 `hidden`）的最后一轮 **qa** 的 adopted variant 的 `sessionId`。greeting-only 没有 focus session。校验不读、不改 DSH 事件。
+路径存在、方法不对 → `405 PLAY_METHOD_NOT_ALLOWED`（例如 `POST /chrome`、`POST /focus`、`GET /sessions`）。`404` 只用于路径本身不存在。
+
+`PUT` 命中 `timeline.json` / `catalog.json` 时先做 schema 校验，失败不落盘。`focusSessionId` 禁止写入。focus 是派生值：仍在渲染（未 `hidden`）的最后一轮 **qa** 的 adopted variant 的 `sessionId`。`GET /focus` 只返回 `{ ok, sessionId }`，不含 path / nodeId。greeting-only 的 `sessionId` 为 `null`。校验不读、不改 DSH 事件。
 
 `chrome` 是整个前端的蓝/红球，存在插件 data `chrome.json`，默认 `native`。非法 `mode` → 400。GET 不要求 JSON Content-Type。
 

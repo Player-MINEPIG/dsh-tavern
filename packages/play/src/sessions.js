@@ -116,20 +116,19 @@ export function createSessionApiHandler({ host, workspaceStore, now = () => new 
       const characterName = typeof host.characterName === 'function'
         ? host.characterName(sourceId)
         : null
-      if (typeof characterName !== 'string' || characterName.trim() === '') {
-        throw httpError(409, 'A bound character card is required to create a play session', 'PLAY_CHARACTER_REQUIRED')
-      }
-      const title = formatPlaySessionTitle(characterName, now())
+      const title = typeof characterName === 'string' && characterName.trim() !== ''
+        ? formatPlaySessionTitle(characterName, now())
+        : undefined
       const created = await host.createSession({
         workspaceId: binding.workspaceId,
         cwd: binding.rootPath,
         title,
       })
       const sessionId = requireSessionId(created?.sessionId)
-      if (typeof host.copySelection === 'function') {
+      if (sourceId !== null && typeof host.copySelection === 'function') {
         host.copySelection(sourceId, sessionId)
       }
-      return sendJson(res, 201, { ok: true, sessionId, title })
+      return sendJson(res, 201, title === undefined ? { ok: true, sessionId } : { ok: true, sessionId, title })
     },
 
     async branch(req, res, sessionId) {
@@ -170,9 +169,9 @@ export function createSessionApiHandler({ host, workspaceStore, now = () => new 
     async focus(req, res, searchParams) {
       requireBoundWorkspace(workspaceStore)
       const requested = searchParams.get('path')
-      const { path, timeline } = await readTimelineForFocus(workspaceStore, requested)
+      const { timeline } = await readTimelineForFocus(workspaceStore, requested)
       const focus = deriveFocus(timeline)
-      return sendJson(res, 200, { ok: true, sessionId: focus.sessionId, path, nodeId: focus.nodeId })
+      return sendJson(res, 200, { ok: true, sessionId: focus.sessionId })
     },
   }
 }

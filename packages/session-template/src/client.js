@@ -13,7 +13,7 @@ import {
   uiMessage,
   unwrapText,
 } from '../../client/src/i18n.js'
-import { API_V1 as API_ROOT } from '../../identity.js'
+import { API_V1 as API_ROOT, CLIENT_REFRESH_EVENT } from '../../identity.js'
 
 const h = createLocalizedElement(createElement)
 
@@ -101,8 +101,8 @@ export function SessionTemplatePanel({ sessionId, workspaceId, createCleanSessio
       values: reason.uiValues,
       text: reason instanceof Error ? reason.message : String(reason),
     }))
-    window.addEventListener('dsh-tavern:refresh', onRefresh)
-    return () => window.removeEventListener('dsh-tavern:refresh', onRefresh)
+    window.addEventListener(CLIENT_REFRESH_EVENT, onRefresh)
+    return () => window.removeEventListener(CLIENT_REFRESH_EVENT, onRefresh)
   }, [refresh])
 
   const run = useCallback(async (operation, success) => {
@@ -112,7 +112,7 @@ export function SessionTemplatePanel({ sessionId, workspaceId, createCleanSessio
       const next = typeof success === 'function' ? success(result) : success
       setStatus(typeof next === 'string' ? { error: false, key: next } : { error: false, ...next })
       await refresh()
-      window.dispatchEvent(new Event('dsh-tavern:refresh'))
+      window.dispatchEvent(new Event(CLIENT_REFRESH_EVENT))
       return result
     } catch (reason) {
       const diagnostics = Array.isArray(reason?.diagnostics) ? reason.diagnostics : []

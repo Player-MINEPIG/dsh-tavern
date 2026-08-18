@@ -22,12 +22,12 @@ import {
   characterGreetingOptions,
   defaultCharacterSelection,
 } from './client-state.js'
-import { API_V1 as API_ROOT, PLUGIN_ID } from '../../identity.js'
+import { API_V1 as API_ROOT, CLIENT_REFRESH_EVENT, PLUGIN_ID } from '../../identity.js'
 
 const h = createLocalizedElement(createElement)
 
 function announceTavernRefresh() {
-  window.dispatchEvent(new CustomEvent('dsh-tavern:refresh', { detail: { source: 'character' } }))
+  window.dispatchEvent(new CustomEvent(CLIENT_REFRESH_EVENT, { detail: { source: 'character' } }))
 }
 
 const css = `
@@ -162,8 +162,8 @@ export function CharacterPanel({ sessionId, sessionBlank, close }) {
       }
       run(() => refresh(detail?.id), 'character.status.refreshed')
     }
-    window.addEventListener('dsh-tavern:refresh', onRefresh)
-    return () => window.removeEventListener('dsh-tavern:refresh', onRefresh)
+    window.addEventListener(CLIENT_REFRESH_EVENT, onRefresh)
+    return () => window.removeEventListener(CLIENT_REFRESH_EVENT, onRefresh)
   }, [detail?.id, refresh, run])
 
   useEffect(() => {

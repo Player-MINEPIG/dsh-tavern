@@ -69,7 +69,8 @@ test('GET /v2/chrome does not require JSON and POST /chrome is absent', async ()
     assert.equal(bad.status, 400)
 
     const post = await invoke(handler, { method: 'POST', url: `${API_V2}/chrome`, body: { mode: 'play' } })
-    assert.equal(post.status, 404)
+    assert.equal(post.status, 405)
+    assert.equal(post.body.code, 'PLAY_METHOD_NOT_ALLOWED')
 
     const unknown = await invoke(handler, { url: `${API_V2}/not-a-route` })
     assert.equal(unknown.status, 404)
