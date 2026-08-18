@@ -252,7 +252,7 @@ npm run plugin:uninstall
 ## 特点
 
 - **一个插件、统一加载器**：格式解析、资源管理和 DSH 运行时分层，但只安装一个根插件，不产生多个插件之间的版本与加载顺序问题。
-- **按 session 隔离**：preset、角色卡、用户和独立世界书都由统一 selection 管理；普通 fork 固化父选择，delegated subagent 默认不继承 Tavern 内容。
+- **按 session 隔离**：preset、角色卡、用户和独立世界书都由统一 selection 管理；普通 fork 与 delegated subagent 都固化父选择。
 - **兼容数据优先**：识别 ST 常用格式和 marker，保留未知字段；角色卡只存一份当前文档，不为导入原件另存第二份卡数据。
 - **当前轮世界书识别**：通过 DSH 公开的 `agent/inbox/spliced` 建立有界临时投影，不增加空转 step、不伪造消息，也不读取私有 Inbox。
 - **可解释而不过度记录**：Tavern Trace 展示资源和匹配决策，但不持久化完整 prompt、输入正文或工具 schema。

@@ -98,7 +98,7 @@ DT 悬浮球 / 资源侧栏
 
 - 导入的 ST 预设、角色卡与世界书先经过各自 format adapter，归一化后进入插件资源库；未知兼容字段不参与 DSH session history。
 - 创建、编辑、删除和绑定只改变 DT 的资源或选择状态。未绑定资源不会进入 prompt。
-- 普通 fork 固化父会话当时的资源选择；delegated subagent 默认不继承 Tavern 资源。
+- 普通 fork 与 delegated subagent 都固化父会话当时的资源选择；委派任务是否收窄由主 agent 的 spawn 提示决定。
 - UI 的红/绿点表示“当前 session 是否绑定资源”，不表示世界书是否在本轮命中。
 
 ### 2.2 当前已验收数据面：把已绑定资源编译为一个运行时快照

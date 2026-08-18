@@ -44,7 +44,7 @@ SessionSelectionStore ─────────────────┘
 - 预设与角色卡/用户使用同一运行边界：agent 正在执行时拒绝改变绑定；有历史的会话更换预设前提示只影响后续请求。
 - 新鲜普通会话在第一次被 Agent 使用时固化当时的默认选择。
 - 普通 fork 从 `Session.header.parentSession` 复制父选择，之后父子互不联动。
-- `delegationDepth > 0` 的 subagent 固化为空选择，不继承 Tavern 内容。
+- `delegationDepth > 0` 的 subagent 同样固化父选择（与「用当前配置新开对话」同一份投影），之后父子互不联动。委派任务是否收窄由主 agent 的 spawn 提示决定，不在 RP 政策或空选择里编码。
 - 删除资源时 loader policy 提供 `clearResource(kind, id)` 清除所有悬空选择。
 - session id 只作为 JSON key，但仍经过长度/字符集校验，避免原型键和异常输入。
 - schema v1 在读取后原地迁移为 v2；角色选项只保留 loader 已知的 greeting/system/PHI 三个字段，资源 id 和单 session 世界书数量同时有界。
@@ -208,7 +208,7 @@ DSH 自己的 `request/header` 仍是模型实际输入的最终权威。loader 
 
 - preset-only 输出和模型参数不回归；
 - 两个 session 可选不同 preset，也可显式选择“无 preset”；
-- 普通 fork 继承快照，subagent 不继承；
+- 普通 fork 与 delegated subagent 都继承父选择快照，之后互不联动；
 - marker 填充、角色 override、`{{original}}`、lore before/after 与 chatHistory 不复制均有单测；
 - `replace` 只移除宿主 system sections，保留 tools、contexts、variables 和完整 Tavern profile；
 - API active view 暴露 selection/resources/diagnostics/audit，不暴露完整 `compiledPrompt`；

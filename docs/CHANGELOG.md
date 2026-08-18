@@ -4,6 +4,25 @@ This is the staged implementation log for dsh-tavern. It is kept separately
 from the product README so reviewers can follow intent, decisions, verification,
 and known limits chronologically.
 
+## 2026-08-18 — Delegated subagents snapshot parent Tavern selection
+
+Purpose: let a parent agent spawn children that start from the same Tavern
+binding as “new session with current settings”, so candidate replies and
+multi-character scenes can share the bound preset, character, user and world
+books unless the parent writes a narrower spawn prompt.
+
+- `SessionSelectionStore.ensureAgent()` now copies the parent selection for
+  `delegationDepth > 0` the same way ordinary forks already did. The snapshot
+  is independent: later parent rebinds do not change the child.
+- RP policy text is unchanged. Spawn-prompt narrowing stays with the user and
+  preset author; this plugin does not inject subagent composition instructions.
+- RP lock inheritance is unchanged: children still cannot write, shell, fetch,
+  or read outside the workspace / secret files.
+
+Verification: `npm test` completed 218 tests (217 passed, zero failed, one
+opt-in external fixture skipped). `node scripts/install.mjs` refreshed the
+isolated tavern test profile.
+
 ## 2026-08-18 — Character-card editing and public-doc cleanup
 
 Purpose: let users create and edit character cards like presets and world books,

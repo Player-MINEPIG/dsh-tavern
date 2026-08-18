@@ -33,22 +33,33 @@ test('session selections persist and regular forks snapshot their parent', () =>
   }
 })
 
-test('delegated subagents start without parent or global Tavern resources', () => {
+test('delegated subagents snapshot the parent tavern selection like a current-settings session', () => {
   const directory = mkdtempSync(join(tmpdir(), 'dsh-tavern-subagent-'))
   try {
     const selections = new SessionSelectionStore(directory, {
       defaultSelection: () => ({ presetId: 'default', worldBookIds: ['global-book'] }),
     })
-    selections.set('parent', { presetId: 'parent-preset', characterCardId: 'character-a' })
+    selections.set('parent', {
+      presetId: 'parent-preset',
+      characterCardId: 'character-a',
+      userId: 'user-a',
+      worldBookIds: ['book-a'],
+      character: { greetingIndex: 1, preferCharacterSystemPrompt: true },
+      rp: { active: true, source: 'command', sandboxBefore: 'workspace-write' },
+    })
     const selected = selections.ensureAgent(agent('subagent', { parentSession: 'parent', delegationDepth: 1 }))
     assert.deepEqual(selected, {
-      presetId: null,
-      characterCardId: null,
-      userId: null,
-      worldBookIds: [],
-      character: {},
-      rp: { active: false, source: null, followSuppressed: false, sandboxBefore: null },
+      presetId: 'parent-preset',
+      characterCardId: 'character-a',
+      userId: 'user-a',
+      worldBookIds: ['book-a'],
+      character: { greetingIndex: 1, preferCharacterSystemPrompt: true },
+      rp: { active: true, source: 'command', followSuppressed: false, sandboxBefore: 'workspace-write' },
     })
+
+    selections.set('parent', { presetId: 'changed', worldBookIds: [] })
+    assert.equal(selections.get('subagent').presetId, 'parent-preset')
+    assert.deepEqual(selections.get('subagent').worldBookIds, ['book-a'])
   } finally {
     rmSync(directory, { recursive: true, force: true })
   }

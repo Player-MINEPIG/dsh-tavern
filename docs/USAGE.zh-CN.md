@@ -30,7 +30,7 @@
 
 1. 导入或创建后可编辑名称、描述、性格、场景、开场白（含备选）、示例对话等字段；保存字段与绑定到会话是两步。插件只保存一份当前角色卡文档；PNG 导入另留去掉卡数据后的封面图，没有封面时导出 PNG 使用占位图。没有「导出原件」。
 2. 选择 greeting，并配置是否优先采用角色卡 system prompt 与 post-history instructions。已绑定当前卡时，改开场或策略但尚未点绑定，会提示未应用到会话。
-3. 点击绑定/更新应用到当前 session；另一个 session 可以绑定不同角色，delegated subagent 默认不继承 Tavern 资源。
+3. 点击绑定/更新应用到当前 session；另一个 session 可以绑定不同角色。delegated subagent 会固化父会话当时的 Tavern 选择（与「用当前配置新开对话」相同）；是否在委派说明里收窄由主 agent / 预设作者决定。
 4. 解绑只移除 session 选择；删除会删除插件资源库中的角色卡文档和封面图，并清理引用。
 
 description、personality、scenario、example dialogue 等字段会按预设 marker 或稳定 fallback 进入统一 Tavern profile。greeting 目前只是明确标注的参考内容，不会伪造成已经发生的 assistant 历史消息。
@@ -82,7 +82,7 @@ Trace 不保存完整 Tavern profile、用户消息、资源正文或工具 sche
 
 ## 8. RP 安全模式
 
-绑定角色卡可自动进入 RP。开启后：写文件、终端、外连抓取被拒绝；本地读取只限当前工作区，且不读 `.env` 等机密文件；子 agent 可以派，但孩子受同一套限制。完整清单见 [RP_SECURE_MODE.md](RP_SECURE_MODE.md)。
+绑定角色卡可自动进入 RP。开启后：写文件、终端、外连抓取被拒绝；本地读取只限当前工作区，且不读 `.env` 等机密文件；子 agent 可以派，孩子受同一套限制并带上父会话当时的 Tavern 选择。完整清单见 [RP_SECURE_MODE.md](RP_SECURE_MODE.md)。
 
 ## 9. 数据、备份与卸载
 

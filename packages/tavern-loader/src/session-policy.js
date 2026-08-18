@@ -229,15 +229,12 @@ export class SessionSelectionStore {
     if (this.has(key)) return this.get(key)
 
     const header = agent?.session?.header ?? {}
-    const delegationDepth = Number.isSafeInteger(header.delegationDepth) ? header.delegationDepth : 0
-    let selection
-    if (delegationDepth > 0) {
-      selection = normalizeSelection()
-    } else if (sessionId(header.parentSession) !== null) {
-      selection = this.get(header.parentSession)
-    } else {
-      selection = this.defaults()
-    }
+    const parentId = sessionId(header.parentSession)
+    // Ordinary forks and delegated subagents both snapshot the parent tavern
+    // selection (same projection as "new session with current settings").
+    // Spawn-prompt narrowing is the parent agent's DSH tool text, not an empty
+    // selection here.
+    const selection = parentId !== null ? this.get(parentId) : this.defaults()
     this.commit((next) => {
       next.sessions[key] = { selection, updatedAt: this.now() }
     })

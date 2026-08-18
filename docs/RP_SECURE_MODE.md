@@ -2,7 +2,7 @@
 
 RP 是会话叠加，不是 DSH agent preset。开启后，本插件在工具 dispatch 前拦截高风险调用、钉死只读文件沙箱，并中断当前轮；聊天栏改权限不能放开这些限制。关掉方式：角色卡上的 RP 开关，或 `/rp off`。
 
-子 agent **可以派**，但派出去的孩子沿用同一套限制。父 agent 仍可汇总各角色的输出。
+子 agent **可以派**。孩子沿用同一套限制，并固化父会话当时的 Tavern 资源选择（与「用当前配置新开对话」相同）。委派任务是否收窄由主 agent 的 spawn 提示决定，不写在 RP 政策里。父 agent 仍可汇总各候选或各角色的输出。
 
 用户在对话里主动贴出的秘密，插件不管。
 
@@ -28,7 +28,7 @@ RP 是会话叠加，不是 DSH agent preset。开启后，本插件在工具 di
 | 能力 | 没拦原因 |
 |---|---|
 | `web_search` | 工作区读取已被限制，模型看不到机密文件，搜索 query 外传不在本模式的威胁模型里 |
-| 派子 agent、`workflow`、`ralph`、`list_agents`、`interrupt_agent`、`report` | 要保留多人场景：各角色一个孩子，父级汇总 |
+| 派子 agent、`workflow`、`ralph`、`list_agents`、`interrupt_agent`、`report` | 孩子带上父级当时的 Tavern 选择和 RP 锁；任务收窄交给 spawn 提示 |
 | `skill` | 注入内容可在 DSH 官方轨迹里查看 |
 | `ask_user_question`、`todo_write`、goal 工具、`exit_plan_mode` | 会话状态与对人提问，不改文件/网络 |
 | `job_output` / `job_list` / `job_kill` | 后台任务是 DSH 的 Task（agent 用 `run_in_background` 拉起的工作，常常包着一条已在跑的 shell/子 agent），不是独立的「进程 API」。新的 shell 任务已经起不来 |
