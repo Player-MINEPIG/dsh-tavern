@@ -160,21 +160,25 @@ export class PlayWorkspaceStore {
       throw httpError(409, 'path exists and is not a directory', 'PLAY_PATH_CONFLICT')
     }
     if (typeof this.host.createDirectory === 'function') {
-      let parentRelative = []
-      for (const name of segments) {
-        const childRelative = [...parentRelative, name]
-        const childAbs = resolvePlayPath(root, posixPlayPath(childRelative))
-        if (!existsSync(childAbs)) {
-          const parentAbs = parentRelative.length === 0 ? root : resolvePlayPath(root, posixPlayPath(parentRelative))
-          await this.host.createDirectory({ path: parentAbs, name })
-        } else if (!statSync(childAbs).isDirectory()) {
-          throw httpError(409, 'path exists and is not a directory', 'PLAY_PATH_CONFLICT')
+      try {
+        let parentRelative = []
+        for (const name of segments) {
+          const childRelative = [...parentRelative, name]
+          const childAbs = resolvePlayPath(root, posixPlayPath(childRelative))
+          if (!existsSync(childAbs)) {
+            const parentAbs = parentRelative.length === 0 ? root : resolvePlayPath(root, posixPlayPath(parentRelative))
+            await this.host.createDirectory({ path: parentAbs, name })
+          } else if (!statSync(childAbs).isDirectory()) {
+            throw httpError(409, 'path exists and is not a directory', 'PLAY_PATH_CONFLICT')
+          }
+          parentRelative = childRelative
         }
-        parentRelative = childRelative
+        return { ok: true, path: posix }
+      } catch (error) {
+        if (error?.code !== 'PLAY_HOST_UNAVAILABLE') throw error
       }
-    } else {
-      mkdirSync(absolute, { recursive: true })
     }
+    mkdirSync(absolute, { recursive: true })
     return { ok: true, path: posix }
   }
 

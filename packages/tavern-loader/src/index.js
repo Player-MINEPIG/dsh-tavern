@@ -23,6 +23,7 @@ import { SessionSelectionStore } from './session-policy.js'
 import { UserWorldBookBindingStore } from './user-world-book-policy.js'
 import { createWorldBookAdapter } from './world-book-adapter.js'
 import { PendingInputProjection } from './pending-input-projection.js'
+import { createPlayHost } from './play-host.js'
 import { secureTavernApi } from './api-security.js'
 import {
   UiSettingsStore,
@@ -215,7 +216,6 @@ export function apply(ctx, config = {}) {
   const sessionTemplateStore = new SessionTemplateStore(storageDir, config.sessionTemplates)
   const uiSettingsStore = new UiSettingsStore(storageDir)
   const chromeStore = new ChromeStore(storageDir)
-  const playWorkspaceStore = new PlayWorkspaceStore(storageDir)
   const rpPolicyStore = new RpPolicyStore(storageDir, {
     defaultSection: resolveRpConfig(config.rpMode ?? {}).section,
   })
@@ -224,6 +224,8 @@ export function apply(ctx, config = {}) {
     defaultSelection: () => ({ presetId: store.state.selectedId }),
   })
   migrateCharacterSelections(characterStore, selections)
+  const playHost = createPlayHost(ctx, { selections, characters: characterStore })
+  const playWorkspaceStore = new PlayWorkspaceStore(storageDir, { host: playHost })
   const runtime = new TavernProfileLoader({
     presetStore: store,
     selections,
@@ -461,7 +463,11 @@ export function apply(ctx, config = {}) {
       },
     })
     const uiSettingsApi = createUiSettingsApiHandler(uiSettingsStore)
-    const playApi = createPlayApiHandler({ chromeStore, workspaceStore: playWorkspaceStore })
+    const playApi = createPlayApiHandler({
+      chromeStore,
+      workspaceStore: playWorkspaceStore,
+      host: playHost,
+    })
     const rpPolicyApi = createRpPolicyApiHandler(rpPolicyStore, { onChange: notifyChange })
     const rpModeApi = createRpModeApiHandler(rpMode, {
       beforeChange: ({ sessionId, active }) => {
@@ -590,6 +596,7 @@ export {
   rpWorkspaceReadGuardReason,
   rpWriteGuardReason,
 } from './rp-mode.js'
+export { createPlayHost } from './play-host.js'
 export {
   ChromeStore,
   PlayWorkspaceStore,

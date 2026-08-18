@@ -24,14 +24,18 @@
 | GET | `/workspace/files?path=` | 读根内 UTF-8 文件 | 已实现 |
 | PUT | `/workspace/files?path=` | `{ content }` 写根内 UTF-8 文件。`..`、绝对路径、symlink 逃逸 → 400/403 | 已实现 |
 | GET | `/workspace/files?list=` | 列一层前缀 | 已实现 |
+| POST | `/sessions` | 新开扮演 session。标题=角色名+时间；可选复制绑定；插入扮演工作区。**不写 timeline** | 已实现 |
+| POST | `/sessions/:id/branch` | `{ atEventId }` = 日志 seq。fork，不写 timeline、不代发。开放 turn → 409 | 已实现 |
+| POST | `/sessions/:id/user-message` | `{ text }` 作为下一条用户正文，`session.prompt` `queue` | 已实现 |
+| GET | `/sessions/:id/messages` | `deriveMessages()` + `seq` + `incompleteTurn` | 已实现 |
+| GET | `/focus` | 只读派生 `{ sessionId }`。前端再 `sessions.open` | 已实现 |
+| POST | `/focus` | 不提供 | 404 |
 
 `PUT` 命中 `timeline.json` / `catalog.json` 时先做 schema 校验，失败不落盘。`focusSessionId` 禁止写入。focus 是派生值：仍在渲染（未 `hidden`）的最后一轮 **qa** 的 adopted variant 的 `sessionId`。greeting-only 没有 focus session。校验不读、不改 DSH 事件。
 
-后续 M4 会在本表追加 sessions / branch / user-message / messages、只读 `GET /focus`。
-
 `chrome` 是整个前端的蓝/红球，存在插件 data `chrome.json`，默认 `native`。非法 `mode` → 400。GET 不要求 JSON Content-Type。
 
-`PUT /workspace` 的目录必须事先存在（DSH `workspace.create` 也不 mkdir）。角色卡 / 局子目录只落盘。路径监狱拒绝 `..`、绝对路径和指向根外的符号链接。未选根时 files/dirs 返回 409。不要用 `archiveSession` 收纳会话。
+`PUT /workspace` 的目录必须事先存在（DSH `workspace.create` 也不 mkdir）。角色卡 / 局子目录只落盘。路径监狱拒绝 `..`、绝对路径和指向根外的符号链接。未选根时 files/dirs 返回 409。不要用 `archiveSession` 收纳会话。`user-message` 的 body 不是完整 prompt。session 元 API 经 Host `apiProxy`：`session.create` / `session.fork({ atSeq })` / `session.prompt({ mode: "queue" })` / `session.history`；`PUT /workspace` 调用 `workspace.create`；开放 turn 的 fork 映射为 HTTP 409。
 
 ## v1 bundled UI 合同
 

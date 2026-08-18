@@ -4,6 +4,25 @@ This is the staged implementation log for dsh-tavern. It is kept separately
 from the product README so reviewers can follow intent, decisions, verification,
 and known limits chronologically.
 
+## 2026-08-19 — Play session meta API
+
+Purpose: wrap DSH `session.create` / `fork` / `prompt(queue)` / `history` as
+plugin HTTP without writing timeline nodes or posting focus.
+
+- `POST /v2/sessions` titles the session `{characterName} {UTC stamp}`, copies
+  optional Tavern selection, and `insertSessionBefore`s into the bound play
+  workspace. It does not write `timeline.json`.
+- `POST .../branch { atEventId }` maps eventId to log seq. Open-turn
+  `fork-unavailable` / `OPEN_TURN` become HTTP 409. Branch does not prompt.
+- `POST .../user-message { text }` is the next user utterance only, mode
+  `queue`. `GET .../messages` returns Message.id plus seq and `incompleteTurn`.
+- `GET /v2/focus` is read-only `deriveFocus`. `POST /focus` is 404.
+- Host calls go through `ctx.get('apiProxy')` when present. Unit tests mock
+  that face. Live coverage is opt-in (`DSH_TAVERN_PLAY_LIVE=1`).
+
+Verification: `test/play-sessions.test.mjs`.
+
+
 ## 2026-08-19 — Play timeline/catalog validation and deriveFocus
 
 Purpose: keep playthrough pointer files valid without writing a stored focus
