@@ -162,6 +162,12 @@ export class RpModeController {
 
   noteHighRiskBlock(sessionId, toolName) {
     if (typeof sessionId !== 'string' || sessionId === '') return null
+    const existing = this.highRiskAlerts.get(sessionId)
+    if (existing !== undefined) {
+      if (typeof toolName === 'string' && toolName !== '') existing.toolName = toolName
+      existing.at = Date.now()
+      return existing
+    }
     this.highRiskAlertSeq += 1
     const alert = {
       id: this.highRiskAlertSeq,

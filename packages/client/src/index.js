@@ -114,7 +114,12 @@ async function sessionConfigurationRequest(path, body) {
 async function rpAlertRequest(sessionId, { method = 'GET', id } = {}) {
   const params = new URLSearchParams({ sessionId })
   if (id !== undefined) params.set('id', String(id))
-  const response = await fetch(`${API_ROOT}/rp-alert?${params}`, { method })
+  const mutating = method !== 'GET' && method !== 'HEAD'
+  const response = await fetch(`${API_ROOT}/rp-alert?${params}`, {
+    method,
+    headers: mutating ? { 'Content-Type': 'application/json' } : undefined,
+    body: mutating ? '{}' : undefined,
+  })
   const data = await response.json().catch(() => null)
   if (!response.ok || data?.ok === false) throw new Error(data?.error ?? `HTTP ${response.status}`)
   return data
@@ -492,11 +497,13 @@ function TavernShell({ useSessions, useWorkspaces, createCleanSession }) {
   const suppressClick = useRef(false)
   const statusGeneration = useRef(0)
   const rpAlertRef = useRef(null)
+  const dismissedRpAlerts = useRef(new Set())
   const sessionId = useSessions(state => state.current)
   const sessionBlank = useSessions(state => state.current === undefined || state.current === null ? true : state.byId?.[state.current]?.blank === true)
   const workspaceId = useWorkspaces(state => workspaceTargetId(state, sessionId))
   const close = () => setSurface(null)
-  rpAlertRef.current = rpAlert
+  if (rpAlert === null || dismissedRpAlerts.current.has(rpAlert.id)) rpAlertRef.current = null
+  else rpAlertRef.current = rpAlert
 
   useEffect(() => {
     let active = true
@@ -642,6 +649,8 @@ function TavernShell({ useSessions, useWorkspaces, createCleanSession }) {
 
   useEffect(() => {
     if (typeof sessionId !== 'string' || sessionId === '') {
+      dismissedRpAlerts.current = new Set()
+      rpAlertRef.current = null
       setRpAlert(null)
       return undefined
     }
@@ -650,6 +659,7 @@ function TavernShell({ useSessions, useWorkspaces, createCleanSession }) {
       try {
         const data = await rpAlertRequest(sessionId)
         if (!active || data?.alert == null) return
+        if (dismissedRpAlerts.current.has(data.alert.id)) return
         if (rpAlertRef.current?.id === data.alert.id) return
         setRpAlert(data.alert)
       } catch {
@@ -665,7 +675,9 @@ function TavernShell({ useSessions, useWorkspaces, createCleanSession }) {
   }, [sessionId])
 
   const dismissRpAlert = async () => {
-    const alert = rpAlert
+    const alert = rpAlertRef.current ?? rpAlert
+    if (alert?.id != null) dismissedRpAlerts.current.add(alert.id)
+    rpAlertRef.current = null
     setRpAlert(null)
     if (typeof sessionId !== 'string' || sessionId === '' || alert?.id == null) return
     try {

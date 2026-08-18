@@ -262,21 +262,27 @@ test('RP high-risk block records an alert and cancels the running agent', async 
     assert.equal(reason, RP_WRITE_BLOCK_REASON)
     const alert = controller.peekHighRiskAlert('session-a')
     assert.equal(alert.toolName, 'bash')
-    assert.equal(cancelled.length, 0)
+    assert.equal(
+      controller.interruptHighRisk({ name: 'write', arguments: { file_path: 'a.md' }, agent }),
+      RP_WRITE_BLOCK_REASON,
+    )
+    const coalesced = controller.peekHighRiskAlert('session-a')
+    assert.equal(coalesced.id, alert.id)
+    assert.equal(coalesced.toolName, 'write')
     await Promise.resolve()
-    assert.equal(cancelled.length, 1)
+    assert.equal(cancelled.length, 2)
     assert.deepEqual(cancelled[0], {
       cause: { kind: 'hook', reason: 'rp-high-risk-block' },
       options: { keepInbox: true },
     })
     const handler = createRpModeApiHandler(controller)
     const peeked = await invoke(handler, { url: '/dsh-tavern/api/rp-alert?sessionId=session-a' })
-    assert.equal(peeked.body.alert.toolName, 'bash')
+    assert.equal(peeked.body.alert.toolName, 'write')
     const acked = await invoke(handler, {
       method: 'DELETE',
       url: `/dsh-tavern/api/rp-alert?sessionId=session-a&id=${peeked.body.alert.id}`,
     })
-    assert.equal(acked.body.alert.toolName, 'bash')
+    assert.equal(acked.body.alert.toolName, 'write')
     const empty = await invoke(handler, { url: '/dsh-tavern/api/rp-alert?sessionId=session-a' })
     assert.equal(empty.body.alert, null)
   } finally {

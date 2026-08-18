@@ -3676,7 +3676,12 @@ async function sessionConfigurationRequest(path, body2) {
 async function rpAlertRequest(sessionId, { method = "GET", id } = {}) {
   const params = new URLSearchParams({ sessionId });
   if (id !== void 0) params.set("id", String(id));
-  const response = await fetch(`${API_ROOT6}/rp-alert?${params}`, { method });
+  const mutating = method !== "GET" && method !== "HEAD";
+  const response = await fetch(`${API_ROOT6}/rp-alert?${params}`, {
+    method,
+    headers: mutating ? { "Content-Type": "application/json" } : void 0,
+    body: mutating ? "{}" : void 0
+  });
   const data = await response.json().catch(() => null);
   if (!response.ok || data?.ok === false) throw new Error(data?.error ?? `HTTP ${response.status}`);
   return data;
@@ -3844,11 +3849,13 @@ function TavernShell({ useSessions, useWorkspaces, createCleanSession }) {
   const suppressClick = (0, import_react7.useRef)(false);
   const statusGeneration = (0, import_react7.useRef)(0);
   const rpAlertRef = (0, import_react7.useRef)(null);
+  const dismissedRpAlerts = (0, import_react7.useRef)(/* @__PURE__ */ new Set());
   const sessionId = useSessions((state) => state.current);
   const sessionBlank = useSessions((state) => state.current === void 0 || state.current === null ? true : state.byId?.[state.current]?.blank === true);
   const workspaceId = useWorkspaces((state) => workspaceTargetId(state, sessionId));
   const close = () => setSurface(null);
-  rpAlertRef.current = rpAlert;
+  if (rpAlert === null || dismissedRpAlerts.current.has(rpAlert.id)) rpAlertRef.current = null;
+  else rpAlertRef.current = rpAlert;
   (0, import_react7.useEffect)(() => {
     let active = true;
     uiSettingsRequest().then((next) => {
@@ -3988,6 +3995,8 @@ function TavernShell({ useSessions, useWorkspaces, createCleanSession }) {
   }, [uiSettings.scale]);
   (0, import_react7.useEffect)(() => {
     if (typeof sessionId !== "string" || sessionId === "") {
+      dismissedRpAlerts.current = /* @__PURE__ */ new Set();
+      rpAlertRef.current = null;
       setRpAlert(null);
       return void 0;
     }
@@ -3996,6 +4005,7 @@ function TavernShell({ useSessions, useWorkspaces, createCleanSession }) {
       try {
         const data = await rpAlertRequest(sessionId);
         if (!active || data?.alert == null) return;
+        if (dismissedRpAlerts.current.has(data.alert.id)) return;
         if (rpAlertRef.current?.id === data.alert.id) return;
         setRpAlert(data.alert);
       } catch {
@@ -4009,7 +4019,9 @@ function TavernShell({ useSessions, useWorkspaces, createCleanSession }) {
     };
   }, [sessionId]);
   const dismissRpAlert = async () => {
-    const alert = rpAlert;
+    const alert = rpAlertRef.current ?? rpAlert;
+    if (alert?.id != null) dismissedRpAlerts.current.add(alert.id);
+    rpAlertRef.current = null;
     setRpAlert(null);
     if (typeof sessionId !== "string" || sessionId === "" || alert?.id == null) return;
     try {

@@ -99,4 +99,6 @@ test('root loader routes UI settings through the existing single secured API pre
   const client = readFileSync(new URL('../packages/client/src/index.js', import.meta.url), 'utf8')
   assert.match(client, /\/rp-alert/)
   assert.match(client, /RpHighRiskDialog/)
+  assert.match(client, /async function rpAlertRequest[\s\S]*Content-Type': 'application\/json'/)
+  assert.match(client, /dismissedRpAlerts/)
 })
