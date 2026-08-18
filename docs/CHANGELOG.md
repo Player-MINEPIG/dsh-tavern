@@ -4,6 +4,37 @@ This is the staged implementation log for dsh-tavern. It is kept separately
 from the product README so reviewers can follow intent, decisions, verification,
 and known limits chronologically.
 
+## 2026-08-19 — Play workspace files and path jail
+
+Purpose: bind one play workspace root and keep catalog/timeline files inside it.
+
+- `GET/PUT /v2/workspace`, `POST /v2/workspace/dirs`, and
+  `GET/PUT /v2/workspace/files` (including `?list=`) live in `packages/play`.
+- The root must already exist. First selection returns disk warnings. Child
+  directories only mkdir; they do not register extra DSH workspaces. Unbound
+  files/dirs return 409. `..`, absolute paths, and symlink escape return
+  400/403 and do not write outside the root. `archiveSession` is not used.
+
+Verification: `test/play-workspace.test.mjs`.
+
+
+## 2026-08-19 — Play workspace files/dirs path jail
+
+Purpose: bind one existing play-workspace directory and read/write plugin
+files without leaving that root or registering extra DSH workspaces.
+
+- `GET/PUT /pmp-dsh-tavern/api/v2/workspace` persist the chosen root in
+  plugin data. First selection returns swipe-disk (and system-disk when
+  applicable) warnings. The directory must already exist.
+- `POST /workspace/dirs` and `GET/PUT /workspace/files` stay inside the
+  bound root: `..`, absolute paths, and symlink escape return 400/403 and
+  do not write. Unbound roots return 409. `archiveSession` is not used.
+- Host `workspaces.create` is optional in this module (filled in M4). Unit
+  tests use temporary directories.
+
+Verification: `test/play-workspace.test.mjs` plus `npm test`.
+
+
 ## 2026-08-19 — Play chrome GET/PUT `/v2/chrome`
 
 Purpose: persist the global native/play surface switch independently of RP

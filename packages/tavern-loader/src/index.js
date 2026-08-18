@@ -5,7 +5,7 @@ import {
   createApiHandler as createPresetApiHandler,
 } from '../../preset/src/index.js'
 import { API_ROOT, API_V1, PLUGIN_ID } from '../../identity.js'
-import { ChromeStore, createPlayApiHandler, isPlayApiPath } from '../../play/src/index.js'
+import { ChromeStore, PlayWorkspaceStore, createPlayApiHandler, isPlayApiPath } from '../../play/src/index.js'
 import {
   CharacterStore,
   createCharacterAdapter,
@@ -215,6 +215,7 @@ export function apply(ctx, config = {}) {
   const sessionTemplateStore = new SessionTemplateStore(storageDir, config.sessionTemplates)
   const uiSettingsStore = new UiSettingsStore(storageDir)
   const chromeStore = new ChromeStore(storageDir)
+  const playWorkspaceStore = new PlayWorkspaceStore(storageDir)
   const rpPolicyStore = new RpPolicyStore(storageDir, {
     defaultSection: resolveRpConfig(config.rpMode ?? {}).section,
   })
@@ -460,7 +461,7 @@ export function apply(ctx, config = {}) {
       },
     })
     const uiSettingsApi = createUiSettingsApiHandler(uiSettingsStore)
-    const playApi = createPlayApiHandler({ chromeStore })
+    const playApi = createPlayApiHandler({ chromeStore, workspaceStore: playWorkspaceStore })
     const rpPolicyApi = createRpPolicyApiHandler(rpPolicyStore, { onChange: notifyChange })
     const rpModeApi = createRpModeApiHandler(rpMode, {
       beforeChange: ({ sessionId, active }) => {
@@ -512,6 +513,7 @@ export function apply(ctx, config = {}) {
     sessionConfigurations: { value: sessionConfigurations, enumerable: false },
     uiSettingsStore: { value: uiSettingsStore, enumerable: false },
     chromeStore: { value: chromeStore, enumerable: false },
+    playWorkspaceStore: { value: playWorkspaceStore, enumerable: false },
     rpPolicyStore: { value: rpPolicyStore, enumerable: false },
     traceStore: { value: traceStore, enumerable: false },
     traceRecorder: { value: traceRecorder, enumerable: false },
@@ -590,10 +592,12 @@ export {
 } from './rp-mode.js'
 export {
   ChromeStore,
+  PlayWorkspaceStore,
   chromeConstants,
   createPlayApiHandler,
   isPlayApiPath,
   normalizeChrome,
+  playWorkspaceConstants,
 } from '../../play/src/index.js'
 export { WorldBookStore, createWorldBookApiHandler } from '../../world-book-library/src/index.js'
 export { secureTavernApi, apiSecurityConstants } from './api-security.js'

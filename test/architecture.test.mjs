@@ -110,6 +110,8 @@ test('play use-case owns chrome/workspace/timeline logic and leaves Host seams t
     read('../packages/play/src/chrome.js'),
     read('../packages/play/src/http.js'),
     read('../packages/play/src/atomic-json.js'),
+    read('../packages/play/src/paths.js'),
+    read('../packages/play/src/workspace.js'),
   ].join('\n')
   assert.doesNotMatch(play, /tavern-loader|@deepseek-ai|systemPrompt\.section|agent\/request|archiveSession/)
   assert.match(play, /\/chrome/)
