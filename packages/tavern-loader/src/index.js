@@ -260,6 +260,10 @@ export function apply(ctx, config = {}) {
     uiSettings: uiSettingsStore,
     agents: () => ctx.get('agents'),
     sandboxDefault: () => ctx.get('sandboxPolicy')?.defaultMode,
+    workspaceRoot: () => {
+      const root = ctx.get('sandboxPolicy')?.workspaceRoot
+      return typeof root === 'string' && root !== '' ? root : process.cwd()
+    },
     logger: ctx.logger,
     policyStore: rpPolicyStore,
     section: rpPolicyStore.defaultSection,
@@ -573,7 +577,9 @@ export {
   resolveRpConfig,
   RP_MUTATING_TOOL_NAMES,
   RP_WRITE_BLOCK_REASON,
+  rpHighRiskGuardReason,
   rpModeConstants,
+  rpWorkspaceReadGuardReason,
   rpWriteGuardReason,
 } from './rp-mode.js'
 export { WorldBookStore, createWorldBookApiHandler } from '../../world-book-library/src/index.js'

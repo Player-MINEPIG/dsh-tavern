@@ -1,3 +1,5 @@
+import { resolveRpReadTarget } from './rp-secure-path.js'
+
 const RP_SOURCES = new Set(['command', 'character-follow'])
 const SANDBOX_MODES = new Set(['read-only', 'workspace-write', 'danger-full-access'])
 
@@ -8,7 +10,7 @@ export const DEFAULT_RP_STATE = Object.freeze({
   sandboxBefore: null,
 })
 
-export const RP_WRITE_BLOCK_REASON = 'Tavern roleplay is on. File writes, shell, and sandbox escalation are blocked until RP mode is turned off on the character card.'
+export const RP_WRITE_BLOCK_REASON = 'Tavern roleplay is on. Writes, shell, fetch, and reads outside the workspace or of secret files are blocked until RP mode is turned off on the character card.'
 
 export const DEFAULT_RP_SECTION = RP_WRITE_BLOCK_REASON
 
@@ -87,6 +89,30 @@ export function rpWriteGuardReason(execution) {
   return undefined
 }
 
+export function rpWorkspaceReadGuardReason(execution, workspaceRoot) {
+  if (!isRecord(execution) || typeof execution.name !== 'string') return undefined
+  const args = isRecord(execution.arguments) ? execution.arguments : {}
+  if (execution.name === 'grep') return RP_WRITE_BLOCK_REASON
+  if (execution.name === 'read' || execution.name === 'read_image') {
+    const target = resolveRpReadTarget(args.file_path, workspaceRoot)
+    if (!target.ok || target.inside !== true || target.secret === true) return RP_WRITE_BLOCK_REASON
+    return undefined
+  }
+  if (execution.name === 'glob') {
+    if (args.path === undefined || args.path === '') {
+      return typeof workspaceRoot === 'string' && workspaceRoot !== '' ? undefined : RP_WRITE_BLOCK_REASON
+    }
+    const target = resolveRpReadTarget(args.path, workspaceRoot)
+    if (!target.ok || target.inside !== true) return RP_WRITE_BLOCK_REASON
+    return undefined
+  }
+  return undefined
+}
+
+export function rpHighRiskGuardReason(execution, workspaceRoot) {
+  return rpWriteGuardReason(execution) ?? rpWorkspaceReadGuardReason(execution, workspaceRoot)
+}
+
 /**
  * Per-session RP collaboration state. Durable bits live on the Tavern
  * selection store because out-of-repo plugins cannot register SessionEventMap
@@ -102,6 +128,7 @@ export class RpModeController {
     policyStore = null,
     section = DEFAULT_RP_SECTION,
     readOnlyOnEnter = true,
+    workspaceRoot = () => undefined,
   }) {
     this.selections = selections
     this.uiSettings = uiSettings
@@ -111,6 +138,7 @@ export class RpModeController {
     this.policyStore = policyStore
     this.defaultSection = section
     this.readOnlyOnEnter = readOnlyOnEnter !== false
+    this.workspaceRoot = typeof workspaceRoot === 'function' ? workspaceRoot : () => workspaceRoot
     this.pendingIntents = new WeakMap()
     this.highRiskAlerts = new Map()
     this.highRiskAlertSeq = 0
@@ -141,13 +169,52 @@ export class RpModeController {
   }
 
   isActive(agent) {
-    return this.effective(agent).active === true
+    return this.lineageHasRp(agent)
   }
 
   blocksWrites(agent) {
+    return this.lineageHasRp(agent)
+  }
+
+  workspaceOf(agent) {
+    const cwd = agent?.session?.header?.cwd
+    if (typeof cwd === 'string' && cwd !== '') return cwd
+    return this.workspaceRoot()
+  }
+
+  lineageHasRp(agent) {
     const sessionId = agent?.id ?? agent?.session?.id
+    const pending = agent?.session === undefined ? undefined : this.pendingIntents.get(agent.session)
+    if (pending?.rp.active === true) return true
     if (typeof sessionId === 'string' && this.stored(sessionId).active === true) return true
-    return this.isActive(agent)
+    const seen = new Set(typeof sessionId === 'string' ? [sessionId] : [])
+    let parent = agent?.session?.header?.parentSession
+    while (typeof parent === 'string' && parent !== '' && !seen.has(parent)) {
+      seen.add(parent)
+      if (this.stored(parent).active === true) return true
+      parent = this.agentFor(parent)?.session?.header?.parentSession
+    }
+    return false
+  }
+
+  alertSessionId(agent) {
+    const sessionId = agent?.id ?? agent?.session?.id
+    const chain = []
+    const seen = new Set()
+    if (typeof sessionId === 'string' && sessionId !== '') {
+      chain.push(sessionId)
+      seen.add(sessionId)
+    }
+    let parent = agent?.session?.header?.parentSession
+    while (typeof parent === 'string' && parent !== '' && !seen.has(parent)) {
+      seen.add(parent)
+      chain.push(parent)
+      parent = this.agentFor(parent)?.session?.header?.parentSession
+    }
+    for (let index = chain.length - 1; index >= 0; index -= 1) {
+      if (this.stored(chain[index]).active === true) return chain[index]
+    }
+    return typeof sessionId === 'string' ? sessionId : undefined
   }
 
   get(agent) {
@@ -194,11 +261,10 @@ export class RpModeController {
 
   interruptHighRisk(execution) {
     if (!this.blocksWrites(execution?.agent)) return undefined
-    const reason = rpWriteGuardReason(execution)
+    const reason = rpHighRiskGuardReason(execution, this.workspaceOf(execution.agent))
     if (reason === undefined) return undefined
     const agent = execution.agent
-    const sessionId = agent?.id ?? agent?.session?.id
-    this.noteHighRiskBlock(sessionId, execution.name)
+    this.noteHighRiskBlock(this.alertSessionId(agent), execution.name)
     queueMicrotask(() => {
       try {
         agent?.cancel?.({ kind: 'hook', reason: 'rp-high-risk-block' }, { keepInbox: true })
@@ -232,10 +298,8 @@ export class RpModeController {
     if (this.readOnlyOnEnter !== true || typeof session?.append !== 'function') return false
     const sessionId = session.id ?? session.header?.id
     if (typeof sessionId !== 'string' || sessionId === '') return false
-    const pending = this.pendingIntents.get(session)
-    const stored = this.stored(sessionId)
-    const active = stored.active === true || pending?.rp.active === true
-    if (active !== true) return false
+    const agent = this.agentFor(sessionId) ?? { id: sessionId, session }
+    if (this.lineageHasRp(agent) !== true) return false
     if (this.currentSandbox(session) === 'read-only') return false
     session.append('sandbox/mode', { mode: 'read-only' })
     return true
@@ -323,7 +387,17 @@ export class RpModeController {
     const sessionId = agent?.id
     if (typeof sessionId !== 'string' || sessionId === '') return
     const header = agent.session?.header ?? {}
-    if (Number.isSafeInteger(header.delegationDepth) && header.delegationDepth > 0) return
+    if (Number.isSafeInteger(header.delegationDepth) && header.delegationDepth > 0) {
+      if (this.lineageHasRp(agent) !== true) return
+      const parentRp = this.stored(header.parentSession)
+      this.commit(agent, {
+        active: true,
+        source: parentRp.source === 'character-follow' ? 'character-follow' : 'command',
+        followSuppressed: false,
+        sandboxBefore: null,
+      }, { recaptureSandbox: true })
+      return
+    }
     const rp = this.stored(sessionId)
     const characterBound = this.selections.get(sessionId).characterCardId !== null
     if (rp.active) {

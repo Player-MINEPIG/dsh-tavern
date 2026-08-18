@@ -10,7 +10,7 @@
 - 点击球体会平滑展开菜单。打开任一侧栏后，球体仍然保留，可直接切换到其他模块。
 - 资源旁的发光绿点表示当前 session 已启用该类资源，红点表示未启用；世界书绿点表示存在有效绑定，不等于本轮关键词已经命中。
 - 资源标题旁显示当前启用内容。面板内的“浏览/编辑对象”可能与当前 session 已绑定对象不同，请以绑定状态和“未应用”提示为准。
-- “界面设置”可切换简体中文/English，并把全部 Tavern UI 缩放到 75%–150%。设置全局保存，不改变 DSH 主界面、资源正文或 session 绑定。
+- “界面设置”可切换简体中文/English，并把全部 Tavern UI 缩放到 75%–150%。设置全局保存，不改变 DSH 主界面、资源正文或 session 绑定。RP 安全锁定（写文件、终端、工作区外读取等）见 [RP 安全模式](RP_SECURE_MODE.md)。
 
 ## 2. 预设
 
@@ -80,7 +80,11 @@ Tavern Trace 位于 Conversation、Trajectory 同级视图，用来解释某一 
 
 Trace 不保存完整 Tavern profile、用户消息、资源正文或工具 schema，也不能替代 DSH 的 `request/header`；后者仍是模型实际请求头的权威记录。Trace 使用有界插件存储，刷新或 Host 重启后可恢复近期记录。
 
-## 8. 数据、备份与卸载
+## 8. RP 安全模式
+
+绑定角色卡可自动进入 RP。开启后：写文件、终端、外连抓取被拒绝；本地读取只限当前工作区，且不读 `.env` 等机密文件；子 agent 可以派，但孩子受同一套限制。完整清单见 [RP_SECURE_MODE.md](RP_SECURE_MODE.md)。
+
+## 9. 数据、备份与卸载
 
 默认数据位于：
 
@@ -109,7 +113,7 @@ ui-settings.json               全局语言与缩放
 
 完整安装、刷新恢复、跨平台参数和卸载说明见 `INSTALLATION.md`。
 
-## 9. 当前兼容边界
+## 10. 当前兼容边界
 
 - ST `system`/`user`/`assistant` prompt role 目前作为可审阅标签进入一个 DSH system section，不是真实交错 role message。
 - `chatHistory` 始终由 DSH durable history 提供，插件不复制历史。

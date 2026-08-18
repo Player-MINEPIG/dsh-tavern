@@ -15,13 +15,15 @@ import {
   hasOpenTurn,
   normalizeRpState,
   resolveRpConfig,
+  rpHighRiskGuardReason,
+  rpWorkspaceReadGuardReason,
   rpWriteGuardReason,
 } from '../packages/tavern-loader/src/rp-mode.js'
 
-function createAgent(id, events = []) {
+function createAgent(id, events = [], header = {}) {
   const session = {
     id,
-    header: { id },
+    header: { ...header, id },
     events,
     append(type, data) {
       const event = { type, seq: this.events.length, time: 1, data }
@@ -41,6 +43,7 @@ function fixture(options = {}) {
     uiSettings: { get: () => ({ rpFollowCharacter: options.follow !== false }) },
     agents: () => ({ get: id => agents.get(id) }),
     sandboxDefault: () => options.sandboxDefault ?? 'workspace-write',
+    workspaceRoot: () => options.workspaceRoot ?? directory,
   })
   return { directory, selections, agents, controller }
 }
@@ -241,6 +244,21 @@ test('RP write guard denies mutating file tools, shell, fetch, and sandbox escal
   assert.equal(rpWriteGuardReason({ name: 'web_fetch', arguments: { url: 'https://example.test' } }), RP_WRITE_BLOCK_REASON)
   assert.equal(rpWriteGuardReason({ name: 'read', arguments: { file_path: 'a.md' } }), undefined)
   assert.equal(rpWriteGuardReason({ name: 'web_search', arguments: { query: 'weather' } }), undefined)
+  assert.equal(rpWriteGuardReason({ name: 'subagent', arguments: { description: 'play' } }), undefined)
+})
+
+test('RP read guard stays inside the workspace and refuses secret files and grep', () => {
+  const workspace = join(tmpdir(), 'dsh-tavern-rp-ws')
+  assert.equal(rpWorkspaceReadGuardReason({ name: 'read', arguments: { file_path: 'a.md' } }, workspace), undefined)
+  assert.equal(rpWorkspaceReadGuardReason({ name: 'read_image', arguments: { file_path: 'art.png' } }, workspace), undefined)
+  assert.equal(rpWorkspaceReadGuardReason({ name: 'glob', arguments: { pattern: '*.md' } }, workspace), undefined)
+  assert.equal(rpWorkspaceReadGuardReason({ name: 'read', arguments: { file_path: '.env' } }, workspace), RP_WRITE_BLOCK_REASON)
+  assert.equal(rpWorkspaceReadGuardReason({ name: 'read', arguments: { file_path: '.env.local' } }, workspace), RP_WRITE_BLOCK_REASON)
+  assert.equal(rpWorkspaceReadGuardReason({ name: 'read', arguments: { file_path: join('..', 'outside.md') } }, workspace), RP_WRITE_BLOCK_REASON)
+  assert.equal(rpWorkspaceReadGuardReason({ name: 'grep', arguments: { pattern: 'API_KEY' } }, workspace), RP_WRITE_BLOCK_REASON)
+  assert.equal(rpWorkspaceReadGuardReason({ name: 'glob', arguments: { pattern: '*', path: join('..', 'other') } }, workspace), RP_WRITE_BLOCK_REASON)
+  assert.equal(rpHighRiskGuardReason({ name: 'web_search', arguments: { query: 'weather' } }, workspace), undefined)
+  assert.equal(rpHighRiskGuardReason({ name: 'subagent', arguments: {} }, workspace), undefined)
 })
 
 test('RP high-risk block records an alert and cancels the running agent', async () => {
@@ -285,6 +303,35 @@ test('RP high-risk block records an alert and cancels the running agent', async 
     assert.equal(acked.body.alert.toolName, 'write')
     const empty = await invoke(handler, { url: '/dsh-tavern/api/rp-alert?sessionId=session-a' })
     assert.equal(empty.body.alert, null)
+  } finally {
+    rmSync(directory, { recursive: true, force: true })
+  }
+})
+
+test('RP lock applies to subagents while still allowing the parent to spawn them', async () => {
+  const { directory, agents, controller } = fixture()
+  try {
+    const cancelled = []
+    const parent = createAgent('session-a')
+    const child = createAgent('child', [], { parentSession: 'session-a', delegationDepth: 1 })
+    child.cancel = (cause, options) => cancelled.push({ cause, options })
+    agents.set(parent.id, parent)
+    agents.set(child.id, child)
+    controller.set(parent, true)
+    assert.equal(controller.interruptHighRisk({ name: 'subagent', arguments: { description: 'npc' }, agent: parent }), undefined)
+    assert.equal(controller.blocksWrites(child), true)
+    assert.equal(controller.interruptHighRisk({ name: 'read', arguments: { file_path: 'lore.md' }, agent: child }), undefined)
+    assert.equal(
+      controller.interruptHighRisk({ name: 'bash', arguments: { command: 'curl https://example.test' }, agent: child }),
+      RP_WRITE_BLOCK_REASON,
+    )
+    assert.equal(controller.peekHighRiskAlert('session-a').toolName, 'bash')
+    assert.equal(controller.peekHighRiskAlert('child'), null)
+    await Promise.resolve()
+    assert.equal(cancelled.length, 1)
+    controller.onSessionStart(child)
+    assert.equal(controller.stored('child').active, true)
+    assert.equal(foldSandboxMode(child.session.events), 'read-only')
   } finally {
     rmSync(directory, { recursive: true, force: true })
   }

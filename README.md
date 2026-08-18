@@ -264,6 +264,7 @@ npm run plugin:uninstall
 ## 文档
 
 - [中文使用指南](docs/USAGE.zh-CN.md)：逐模块操作、数据和兼容边界
+- [RP 安全模式](docs/RP_SECURE_MODE.md)：RP 拦住与不拦的工具清单
 - [安装与卸载](docs/INSTALLATION.md)：跨平台参数、刷新恢复与备份
 - [架构说明](docs/ARCHITECTURE.md)：单插件分层与发布边界
 - [Loader contract](docs/LOADER_CONTRACT.md)：session 选择、profile 与安全预算
