@@ -39,13 +39,21 @@ function invoke(handler, { method = 'GET', url, body } = {}) {
   })
 }
 
-function setup() {
+function hostWithDirs() {
+  return {
+    async createDirectory({ path, name }) {
+      mkdirSync(join(path, name))
+    },
+  }
+}
+
+function setup({ host = hostWithDirs() } = {}) {
   const pluginDir = mkdtempSync(join(tmpdir(), 'dsh-tavern-play-plugin-'))
   const playRoot = mkdtempSync(join(tmpdir(), 'dsh-tavern-play-root-'))
   const outside = mkdtempSync(join(tmpdir(), 'dsh-tavern-play-outside-'))
   const handler = createPlayApiHandler({
     chromeStore: new ChromeStore(pluginDir),
-    workspaceStore: new PlayWorkspaceStore(pluginDir),
+    workspaceStore: new PlayWorkspaceStore(pluginDir, { host }),
   })
   return { pluginDir, playRoot, outside, handler }
 }
@@ -74,6 +82,27 @@ test('files and dirs require a bound play workspace root', async () => {
       body: { path: 'card/pt' },
     })
     assert.equal(dirs.status, 409)
+  } finally {
+    cleanup(fixture)
+  }
+})
+
+test('POST /workspace/dirs uses Host createDirectory and does not mkdir locally', async () => {
+  const fixture = setup({ host: {} })
+  try {
+    await invoke(fixture.handler, {
+      method: 'PUT',
+      url: `${API_V2}/workspace`,
+      body: { path: fixture.playRoot },
+    })
+    const dirs = await invoke(fixture.handler, {
+      method: 'POST',
+      url: `${API_V2}/workspace/dirs`,
+      body: { path: 'card/pt' },
+    })
+    assert.equal(dirs.status, 501)
+    assert.equal(dirs.body.code, 'PLAY_HOST_UNAVAILABLE')
+    assert.equal(existsSync(join(fixture.playRoot, 'card')), false)
   } finally {
     cleanup(fixture)
   }

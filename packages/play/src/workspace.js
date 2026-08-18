@@ -153,32 +153,27 @@ export class PlayWorkspaceStore {
 
   async createDir(relativePath) {
     const root = requireRoot(this.binding)
+    if (typeof this.host.createDirectory !== 'function') {
+      throw httpError(501, 'Host createDirectory is unavailable', 'PLAY_HOST_UNAVAILABLE')
+    }
     const segments = splitRelativeSegments(relativePath)
     const posix = posixPlayPath(segments)
     const absolute = resolvePlayPath(root, posix)
     if (existsSync(absolute) && !statSync(absolute).isDirectory()) {
       throw httpError(409, 'path exists and is not a directory', 'PLAY_PATH_CONFLICT')
     }
-    if (typeof this.host.createDirectory === 'function') {
-      try {
-        let parentRelative = []
-        for (const name of segments) {
-          const childRelative = [...parentRelative, name]
-          const childAbs = resolvePlayPath(root, posixPlayPath(childRelative))
-          if (!existsSync(childAbs)) {
-            const parentAbs = parentRelative.length === 0 ? root : resolvePlayPath(root, posixPlayPath(parentRelative))
-            await this.host.createDirectory({ path: parentAbs, name })
-          } else if (!statSync(childAbs).isDirectory()) {
-            throw httpError(409, 'path exists and is not a directory', 'PLAY_PATH_CONFLICT')
-          }
-          parentRelative = childRelative
-        }
-        return { ok: true, path: posix }
-      } catch (error) {
-        if (error?.code !== 'PLAY_HOST_UNAVAILABLE') throw error
+    let parentRelative = []
+    for (const name of segments) {
+      const childRelative = [...parentRelative, name]
+      const childAbs = resolvePlayPath(root, posixPlayPath(childRelative))
+      if (!existsSync(childAbs)) {
+        const parentAbs = parentRelative.length === 0 ? root : resolvePlayPath(root, posixPlayPath(parentRelative))
+        await this.host.createDirectory({ path: parentAbs, name })
+      } else if (!statSync(childAbs).isDirectory()) {
+        throw httpError(409, 'path exists and is not a directory', 'PLAY_PATH_CONFLICT')
       }
+      parentRelative = childRelative
     }
-    mkdirSync(absolute, { recursive: true })
     return { ok: true, path: posix }
   }
 

@@ -20,7 +20,7 @@
 | POST | `/chrome` | 不提供 | 405 |
 | GET | `/workspace` | 根路径、是否已选、合同版本、警告 | 已实现 |
 | PUT | `/workspace` | 绑定**一棵**已存在的扮演工作区根。首次选择带 `SWIPE_DISK` / 可能的 `SYSTEM_DISK` 警告。不 mkdir 根 | 已实现 |
-| POST | `/workspace/dirs` | `{ path }` 相对路径 mkdir。未绑根 → 409。不新注册 DSH 工作区 | 已实现 |
+| POST | `/workspace/dirs` | `{ path }` 相对路径，经 Host `createDirectory` 逐段创建。未绑根 → 409。Host 不可用 → 501。不本地 mkdir、不新注册 DSH 工作区 | 已实现 |
 | GET | `/workspace/files?path=` | 读根内 UTF-8 文件 | 已实现 |
 | PUT | `/workspace/files?path=` | `{ content }` 写根内 UTF-8 文件。`..`、绝对路径、symlink 逃逸 → 400/403 | 已实现 |
 | GET | `/workspace/files?list=` | 列一层前缀 | 已实现 |
@@ -37,7 +37,7 @@
 
 `chrome` 是整个前端的蓝/红球，存在插件 data `chrome.json`，默认 `native`。非法 `mode` → 400。GET 不要求 JSON Content-Type。
 
-`PUT /workspace` 的目录必须事先存在（DSH `workspace.create` 也不 mkdir）。角色卡 / 局子目录只落盘。路径监狱拒绝 `..`、绝对路径和指向根外的符号链接。未选根时 files/dirs 返回 409。不要用 `archiveSession` 收纳会话。`user-message` 的 body 不是完整 prompt。session 元 API 经 Host `apiProxy`：`session.create` / `session.fork({ atSeq })` / `session.prompt({ mode: "queue" })` / `session.history`；`PUT /workspace` 调用 `workspace.create`；开放 turn 的 fork 映射为 HTTP 409。
+`PUT /workspace` 的目录必须事先存在（DSH `workspace.create` 也不 mkdir）。`POST /workspace/dirs` 只走 Host `createDirectory`（本机绝对路径 + 单段 `name`），没有本地 `mkdir` 回退。角色卡 / 局子目录只落盘。路径监狱拒绝 `..`、绝对路径和指向根外的符号链接。未选根时 files/dirs 返回 409。不要用 `archiveSession` 收纳会话。`user-message` 的 body 不是完整 prompt。session 元 API 经 Host `apiProxy`：`session.create` / `session.fork({ atSeq })` / `session.prompt({ mode: "queue" })` / `session.history`；`PUT /workspace` 调用 `workspace.create`；开放 turn 的 fork 映射为 HTTP 409。
 
 ## v1 bundled UI 合同
 

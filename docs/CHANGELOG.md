@@ -4,6 +4,18 @@ This is the staged implementation log for dsh-tavern. It is kept separately
 from the product README so reviewers can follow intent, decisions, verification,
 and known limits chronologically.
 
+## 2026-08-19 — Play dirs use Host createDirectory only
+
+Purpose: keep directory creation on the Host browse API so path joining stays
+on one OS-native implementation.
+
+- `POST /v2/workspace/dirs` calls `createDirectory({ path, name })` for each
+  missing segment. It does not fall back to local `mkdir`. Missing Host
+  capability returns `501 PLAY_HOST_UNAVAILABLE` and writes nothing.
+
+Verification: `test/play-workspace.test.mjs`.
+
+
 ## 2026-08-19 — Align profile section and browser events with `pmp-dsh-tavern`
 
 Purpose: finish the identity rename so Host assembly and bundled UI events use
@@ -83,9 +95,11 @@ files without leaving that root or registering extra DSH workspaces.
 - `GET/PUT /pmp-dsh-tavern/api/v2/workspace` persist the chosen root in
   plugin data. First selection returns swipe-disk (and system-disk when
   applicable) warnings. The directory must already exist.
-- `POST /workspace/dirs` and `GET/PUT /workspace/files` stay inside the
-  bound root: `..`, absolute paths, and symlink escape return 400/403 and
-  do not write. Unbound roots return 409. `archiveSession` is not used.
+- `POST /workspace/dirs` stays inside the bound root via Host
+  `createDirectory` (no local mkdir fallback). `GET/PUT /workspace/files`
+  stay inside the bound root: `..`, absolute paths, and symlink escape
+  return 400/403 and do not write. Unbound roots return 409.
+  `archiveSession` is not used.
 - Host `workspaces.create` is optional in this module (filled in M4). Unit
   tests use temporary directories.
 
