@@ -31,7 +31,7 @@ __export(index_exports, {
   name: () => name
 });
 module.exports = __toCommonJS(index_exports);
-var import_react9 = require("react");
+var import_react10 = require("react");
 
 // packages/ui-settings/src/locale-contract.js
 var DEFAULT_UI_LOCALE = "zh-CN";
@@ -129,6 +129,11 @@ var zh_CN_default = Object.freeze({
   "play.notice.unbound": "\u672C\u4F1A\u8BDD\u6682\u672A\u7ED1\u5B9A\u89D2\u8272\u5361\uFF1B\u53EF\u4EE5\u6B63\u5E38\u5BF9\u8BDD\u3002\u7ED1\u5B9A\u89D2\u8272\u5361\u540E\u65B0\u5F00\u4E00\u5C40\uFF0C\u624D\u4F1A\u542F\u7528\u5F00\u573A\u767D\u3001\u56DE\u590D\u5207\u6362\u3001\u663E\u793A\u7F16\u8F91\u4E0E\u5C40\u5BFC\u5165/\u5BFC\u51FA\u3002",
   "play.sidebar.sessionMissing": "\u8BE5\u5C40\u5728\u89D2\u8272\u626E\u6F14\u5DE5\u4F5C\u533A\u4E2D\u6CA1\u6709\u53EF\u7528\u4F1A\u8BDD\u3002",
   "play.sidebar.timelineErrors": "\u6709 {count} \u4E2A\u5C40\u7684 timeline \u65E0\u6CD5\u8BFB\u53D6\u3002",
+  "play.chat.label": "\u5BF9\u8BDD",
+  "play.chat.loading": "\u6B63\u5728\u8BFB\u53D6\u672C\u5C40\u8BB0\u5F55\u2026",
+  "play.chat.empty": "\u672C\u5C40\u5C1A\u65E0\u5BF9\u8BDD\uFF0C\u8BF7\u5728\u4E0B\u65B9\u5F00\u59CB\u3002",
+  "play.chat.previousGreeting": "\u4E0A\u4E00\u6761\u5F00\u573A\u767D",
+  "play.chat.nextGreeting": "\u4E0B\u4E00\u6761\u5F00\u573A\u767D",
   "settings.menu": "\u754C\u9762\u8BBE\u7F6E",
   "settings.title": "Tavern \u754C\u9762\u8BBE\u7F6E",
   "settings.language": "\u754C\u9762\u8BED\u8A00",
@@ -623,6 +628,11 @@ var en_default = Object.freeze({
   "play.notice.unbound": "This session is not bound to a character card. You can keep chatting normally; start a new playthrough after binding a card to enable greetings, swipes, display edits, and playthrough import/export.",
   "play.sidebar.sessionMissing": "This playthrough has no available session in the role-play workspace.",
   "play.sidebar.timelineErrors": "{count} playthrough timelines could not be read.",
+  "play.chat.label": "Chat",
+  "play.chat.loading": "Loading playthrough\u2026",
+  "play.chat.empty": "No turns yet. Start the conversation below.",
+  "play.chat.previousGreeting": "Previous greeting",
+  "play.chat.nextGreeting": "Next greeting",
   "settings.menu": "UI settings",
   "settings.title": "Tavern UI settings",
   "settings.language": "Interface language",
@@ -1139,7 +1149,7 @@ function localizeChild(value) {
   if (Array.isArray(value)) return value.map(localizeChild);
   return value;
 }
-function createLocalizedElement(createElement10) {
+function createLocalizedElement(createElement11) {
   return (type, props, ...children) => {
     let localizedProps = props;
     if (props !== null && props !== void 0) {
@@ -1148,7 +1158,7 @@ function createLocalizedElement(createElement10) {
         if (isRawText(localizedProps[key])) localizedProps[key] = localizedProps[key].value;
       }
     }
-    return createElement10(type, localizedProps, ...children.map(localizeChild));
+    return createElement11(type, localizedProps, ...children.map(localizeChild));
   };
 }
 function getClientUiSettings() {
@@ -3721,8 +3731,268 @@ function createChromeClickController({
   };
 }
 
-// packages/client/src/play/sidebar.js
+// packages/client/src/play/chat.js
 var import_react7 = require("react");
+
+// packages/client/src/play/chat-model.js
+function normalizedPath(value) {
+  return typeof value === "string" ? value.replaceAll("\\", "/").replace(/\/+$/, "").toLocaleLowerCase() : "";
+}
+function rootSessionId(playthrough) {
+  const value = playthrough?.ext?.pmpDshTavern?.rootSessionId;
+  return typeof value === "string" && value !== "" ? value : null;
+}
+function adoptedVariant(node) {
+  return node?.variants?.find((variant) => variant.id === node.adoptedVariantId) ?? null;
+}
+function sessionIsInRpWorkspace(workspace, session) {
+  if (workspace?.selected !== true || session == null) return false;
+  const root = normalizedPath(workspace.rootPath);
+  return root !== "" && normalizedPath(session.cwd) === root;
+}
+function findPlaythroughForSession(sessionId, catalog2, timelines = {}) {
+  if (typeof sessionId !== "string" || sessionId === "") return null;
+  for (const playthrough of catalog2?.playthroughs ?? []) {
+    const timeline = timelines[playthrough.path];
+    if (rootSessionId(playthrough) === sessionId) return { playthrough, timeline: timeline ?? null };
+    if (timeline?.nodes?.some((node) => node.variants?.some((variant) => variant.sessionId === sessionId))) {
+      return { playthrough, timeline };
+    }
+  }
+  return null;
+}
+async function loadTimelines(client, playthroughs, concurrency = 4) {
+  const result = {};
+  let cursor = 0;
+  const worker = async () => {
+    while (cursor < playthroughs.length) {
+      const playthrough = playthroughs[cursor];
+      cursor += 1;
+      result[playthrough.path] = await client.getTimeline(playthrough);
+    }
+  };
+  await Promise.all(Array.from(
+    { length: Math.min(Math.max(1, concurrency), playthroughs.length) },
+    worker
+  ));
+  return result;
+}
+async function loadCurrentPlaythrough(client, session, options = {}) {
+  if (client == null) throw new TypeError("playClient.required");
+  const workspace = await client.getWorkspace();
+  if (!sessionIsInRpWorkspace(workspace, session)) return null;
+  const catalog2 = await client.getCatalog();
+  const playthroughs = catalog2.playthroughs ?? [];
+  const sessionId = session.id ?? session.sessionId;
+  const root = playthroughs.find((item) => rootSessionId(item) === sessionId);
+  if (root !== void 0) {
+    return { workspace, playthrough: root, timeline: await client.getTimeline(root) };
+  }
+  const timelines = await loadTimelines(client, playthroughs, options.concurrency);
+  const match = findPlaythroughForSession(sessionId, catalog2, timelines);
+  return match === null ? null : { workspace, ...match };
+}
+function projectTimelineQa(timeline, messagesBySession = {}) {
+  const result = [];
+  for (const node of timeline?.nodes ?? []) {
+    if (node.kind !== "qa" || node.hidden === true) continue;
+    const variant = adoptedVariant(node);
+    if (variant === null) continue;
+    const messages = messagesBySession[variant.sessionId]?.messages ?? messagesBySession[variant.sessionId] ?? [];
+    const within = messages.filter((message) => Number.isSafeInteger(message.seq) && message.seq >= variant.startEventId && message.seq <= variant.endEventId);
+    const user = within.find((message) => message.role === "user") ?? null;
+    const assistant = [...within].reverse().find((message) => message.role === "assistant") ?? null;
+    result.push({
+      id: node.id,
+      userText: user?.text ?? "",
+      assistantText: node.displayOverride ?? assistant?.text ?? "",
+      variant,
+      variantCount: node.variants.length
+    });
+  }
+  return result;
+}
+function projectGreeting({
+  timeline,
+  messages,
+  selectionResponse,
+  characterResponse
+} = {}) {
+  if ((timeline?.nodes?.length ?? 0) !== 0 || (messages?.length ?? 0) !== 0) return null;
+  const selection = selectionResponse?.selection;
+  const character = characterResponse?.character;
+  if (typeof selection?.characterCardId !== "string" || selection.characterCardId === "" || character?.id !== selection.characterCardId) return null;
+  const options = characterGreetingOptions(character);
+  if (options.length === 0) return null;
+  const requested = Number(selection.character?.greetingIndex ?? 0);
+  const selected = options.find((option) => option.index === requested) ?? options[0];
+  if (selected.text === "") return null;
+  return {
+    characterId: character.id,
+    characterName: character.data?.nickname || character.data?.name || character.name || character.id,
+    index: selected.index,
+    text: selected.text,
+    options
+  };
+}
+function adjacentGreetingIndex(greeting, direction) {
+  const options = greeting?.options ?? [];
+  if (options.length === 0) return null;
+  const cursor = Math.max(0, options.findIndex((option) => option.index === greeting.index));
+  const offset = direction === "previous" ? -1 : 1;
+  return options[(cursor + offset + options.length) % options.length].index;
+}
+
+// packages/client/src/play/chat.js
+var h7 = createLocalizedElement(import_react7.createElement);
+var css6 = `
+.dtv-play-chat{height:100%;min-height:0;box-sizing:border-box;overflow:auto;padding:22px max(18px,calc((100% - 780px)/2)) 36px;color:var(--dsw-alias-label-primary)}
+.dtv-play-chat-list{display:flex;flex-direction:column;gap:22px}.dtv-play-chat-row{display:flex;flex-direction:column;gap:8px}.dtv-play-chat-role{font-size:11px;font-weight:700;color:var(--dsw-alias-label-tertiary)}
+.dtv-play-chat-bubble{max-width:88%;box-sizing:border-box;border-radius:14px;padding:12px 14px;white-space:pre-wrap;overflow-wrap:anywhere;font-size:14px;line-height:1.65}.dtv-play-chat-user{align-self:flex-end;background:var(--dsw-alias-interactive-bg-selected,var(--dsw-specific-tip))}.dtv-play-chat-assistant{align-self:flex-start;background:var(--dsw-alias-bg-layer-2,var(--dsw-specific-block))}
+.dtv-play-greeting{position:relative;align-self:flex-start;max-width:88%;display:grid;grid-template-columns:30px minmax(0,1fr) 30px;align-items:center;gap:6px}.dtv-play-greeting-text{border-radius:14px;padding:13px 15px;background:var(--dsw-alias-bg-layer-2,var(--dsw-specific-block));white-space:pre-wrap;overflow-wrap:anywhere;font-size:14px;line-height:1.65}
+.dtv-play-greeting-button{width:30px;height:34px;border:0;border-radius:9px;background:transparent;color:var(--dsw-alias-label-secondary);cursor:pointer}.dtv-play-greeting-button:hover{background:var(--dsw-alias-interactive-bg-hover)}.dtv-play-greeting-button:disabled{opacity:.4;cursor:default}
+.dtv-play-chat-status{margin:16px 0;padding:12px 14px;border-radius:12px;background:var(--dsw-alias-bg-layer-2,var(--dsw-specific-block));color:var(--dsw-alias-label-tertiary);font-size:12px;line-height:1.55}.dtv-play-chat-status[data-error=true]{color:var(--dsw-alias-state-error)}
+`;
+function installStyles() {
+  if (document.querySelector(`style[data-plugin-css="${PLUGIN_ID}-play-chat"]`) !== null) return;
+  const style = document.createElement("style");
+  style.dataset.pluginCss = `${PLUGIN_ID}-play-chat`;
+  style.textContent = css6;
+  document.head.append(style);
+}
+function adoptedSessionIds(timeline, currentSessionId) {
+  const ids = /* @__PURE__ */ new Set([currentSessionId]);
+  for (const node of timeline?.nodes ?? []) {
+    const variant = node.variants?.find((item) => item.id === node.adoptedVariantId);
+    if (typeof variant?.sessionId === "string" && variant.sessionId !== "") ids.add(variant.sessionId);
+  }
+  return [...ids];
+}
+async function loadMessages(client, sessionIds, concurrency = 4) {
+  const result = {};
+  let cursor = 0;
+  const worker = async () => {
+    while (cursor < sessionIds.length) {
+      const sessionId = sessionIds[cursor];
+      cursor += 1;
+      result[sessionId] = await client.getMessages(sessionId);
+    }
+  };
+  await Promise.all(Array.from({ length: Math.min(concurrency, sessionIds.length) }, worker));
+  return result;
+}
+async function loadChatState(client, sessionId, playthrough) {
+  const timeline = await client.getTimeline(playthrough);
+  const messagesBySession = await loadMessages(client, adoptedSessionIds(timeline, sessionId));
+  const selectionResponse = await client.getCharacterSelection(sessionId);
+  const characterId = selectionResponse?.selection?.characterCardId;
+  const characterResponse = typeof characterId === "string" && characterId !== "" ? await client.getCharacter(characterId) : null;
+  return {
+    timeline,
+    turns: projectTimelineQa(timeline, messagesBySession),
+    greeting: projectGreeting({
+      timeline,
+      messages: messagesBySession[sessionId]?.messages ?? [],
+      selectionResponse,
+      characterResponse
+    })
+  };
+}
+function Greeting({ greeting, busy, change }) {
+  const multiple = greeting.options.length > 1;
+  return h7(
+    "div",
+    { className: "dtv-play-chat-row" },
+    h7("span", { className: "dtv-play-chat-role" }, rawText(greeting.characterName)),
+    h7(
+      "div",
+      { className: "dtv-play-greeting" },
+      h7("button", {
+        type: "button",
+        className: "dtv-play-greeting-button",
+        disabled: busy || !multiple,
+        title: uiMessage("play.chat.previousGreeting"),
+        "aria-label": uiMessage("play.chat.previousGreeting"),
+        onClick: () => change("previous")
+      }, "\u2039"),
+      h7("div", { className: "dtv-play-greeting-text" }, rawText(greeting.text)),
+      h7("button", {
+        type: "button",
+        className: "dtv-play-greeting-button",
+        disabled: busy || !multiple,
+        title: uiMessage("play.chat.nextGreeting"),
+        "aria-label": uiMessage("play.chat.nextGreeting"),
+        onClick: () => change("next")
+      }, "\u203A")
+    )
+  );
+}
+function Turn({ turn }) {
+  return h7(
+    "div",
+    { className: "dtv-play-chat-row" },
+    turn.userText === "" ? null : h7("div", { className: "dtv-play-chat-bubble dtv-play-chat-user" }, rawText(turn.userText)),
+    turn.assistantText === "" ? null : h7("div", { className: "dtv-play-chat-bubble dtv-play-chat-assistant" }, rawText(turn.assistantText))
+  );
+}
+function MowanChatView({ sessionId, useSession, playClient, playthrough }) {
+  installStyles();
+  const sessionRevision = useSession((state2) => `${state2.nodes?.length ?? 0}:${state2.running === true}:${state2.blank === true}`);
+  const [revision, setRevision] = (0, import_react7.useState)(0);
+  const [state, setState] = (0, import_react7.useState)(null);
+  const [error, setError] = (0, import_react7.useState)("");
+  const [greetingBusy, setGreetingBusy] = (0, import_react7.useState)(false);
+  (0, import_react7.useEffect)(() => {
+    const refresh = () => setRevision((value) => value + 1);
+    window.addEventListener(CLIENT_REFRESH_EVENT, refresh);
+    return () => window.removeEventListener(CLIENT_REFRESH_EVENT, refresh);
+  }, []);
+  (0, import_react7.useEffect)(() => {
+    let active = true;
+    setError("");
+    loadChatState(playClient, sessionId, playthrough).then((next) => {
+      if (active) setState(next);
+    }).catch((reason) => {
+      if (!active) return;
+      setState(null);
+      setError(reason instanceof Error ? reason.message : String(reason));
+    });
+    return () => {
+      active = false;
+    };
+  }, [playClient, playthrough, revision, sessionId, sessionRevision]);
+  const changeGreeting = async (direction) => {
+    if (state?.greeting == null || greetingBusy) return;
+    const next = adjacentGreetingIndex(state.greeting, direction);
+    if (next === null) return;
+    setGreetingBusy(true);
+    setError("");
+    try {
+      await playClient.putGreetingIndex(sessionId, next);
+      setRevision((value) => value + 1);
+    } catch (reason) {
+      setError(reason instanceof Error ? reason.message : String(reason));
+    } finally {
+      setGreetingBusy(false);
+    }
+  };
+  return h7(
+    "div",
+    { className: "dtv-play-chat" },
+    error === "" ? null : h7("p", { className: "dtv-play-chat-status", "data-error": true }, rawText(error)),
+    state === null && error === "" ? h7("p", { className: "dtv-play-chat-status" }, uiMessage("play.chat.loading")) : null,
+    state === null ? null : h7(
+      "div",
+      { className: "dtv-play-chat-list" },
+      state.greeting === null ? null : h7(Greeting, { greeting: state.greeting, busy: greetingBusy, change: changeGreeting }),
+      ...state.turns.map((turn) => h7(Turn, { key: turn.id, turn })),
+      state.greeting === null && state.turns.length === 0 ? h7("p", { className: "dtv-play-chat-status" }, uiMessage("play.chat.empty")) : null
+    )
+  );
+}
+
+// packages/client/src/play/sidebar.js
+var import_react8 = require("react");
 
 // packages/client/src/play/schema.js
 var CHROME_MODES = /* @__PURE__ */ new Set(["native", "play"]);
@@ -3908,7 +4178,7 @@ function characterIdFromSelection(value) {
   const id = selection?.characterCardId;
   return typeof id === "string" && id !== "" ? id : null;
 }
-function rootSessionId(playthrough) {
+function rootSessionId2(playthrough) {
   const id = playthrough?.ext?.pmpDshTavern?.rootSessionId;
   return typeof id === "string" && id !== "" ? id : null;
 }
@@ -3917,7 +4187,7 @@ function sessionTitle(session, id) {
   if (typeof session?.title === "string" && session.title !== "") return session.title;
   return id;
 }
-function normalizedPath(value) {
+function normalizedPath2(value) {
   if (typeof value !== "string") return "";
   const normalized = value.replaceAll("\\", "/").replace(/\/+$/, "");
   return /^[a-z]:\//i.test(normalized) ? normalized.toLowerCase() : normalized;
@@ -3931,7 +4201,7 @@ function timelineFor(timelines, playthrough) {
 }
 function playthroughMembers(playthrough, timeline) {
   const ids = /* @__PURE__ */ new Set();
-  const rootId = rootSessionId(playthrough);
+  const rootId = rootSessionId2(playthrough);
   if (rootId !== null) ids.add(rootId);
   for (const node of timeline?.nodes ?? []) {
     for (const variant of node?.variants ?? []) {
@@ -3950,10 +4220,10 @@ function sessionIdsInRpWorkspace({ workspace, workspaceItems = [], sessions = {}
       return ids;
     }
   }
-  const root = normalizedPath(workspace.rootPath);
+  const root = normalizedPath2(workspace.rootPath);
   if (root === "") return ids;
   for (const [id, session] of Object.entries(sessions)) {
-    if (normalizedPath(session?.cwd) === root) ids.add(id);
+    if (normalizedPath2(session?.cwd) === root) ids.add(id);
   }
   return ids;
 }
@@ -4068,7 +4338,7 @@ function projectPlaySidebar({
   }
   const claimedRpSessions = /* @__PURE__ */ new Set();
   for (const playthrough of catalog2.playthroughs ?? []) {
-    const rootId = rootSessionId(playthrough);
+    const rootId = rootSessionId2(playthrough);
     const characterId = playthroughCharacterId(playthrough);
     if (characterId === null) continue;
     const allMembers = playthroughMembers(playthrough, timelineFor(timelines, playthrough));
@@ -4111,8 +4381,8 @@ function projectPlaySidebar({
 function shouldShowUnboundNotice({ workspace, session, selection } = {}) {
   if (workspace == null || session == null) return false;
   if (workspace.selected !== true) return true;
-  const workspacePath = normalizedPath(workspace.rootPath);
-  const sessionPath = normalizedPath(session.cwd);
+  const workspacePath = normalizedPath2(workspace.rootPath);
+  const sessionPath = normalizedPath2(session.cwd);
   if (workspacePath === "" || sessionPath !== workspacePath) return true;
   return characterIdFromSelection(selection) === null;
 }
@@ -4232,8 +4502,8 @@ function createPlaythroughController(client, dependencies = {}) {
 }
 
 // packages/client/src/play/sidebar.js
-var h7 = createLocalizedElement(import_react7.createElement);
-var css6 = `
+var h8 = createLocalizedElement(import_react8.createElement);
+var css7 = `
 .dtv-play-sidebar{height:100%;min-height:0;box-sizing:border-box;display:flex;flex-direction:column;gap:4px;padding:6px 7px 10px;overflow:auto;zoom:var(--dtv-ui-scale,1);color:var(--dsw-alias-label-primary)}
 .dtv-play-section{display:flex;flex-direction:column;gap:2px;border-radius:10px}.dtv-play-section[data-open=true]{padding-bottom:3px}
 .dtv-play-group,.dtv-play-row{width:100%;box-sizing:border-box;border:0;border-radius:8px;background:transparent;color:inherit;font:inherit;text-align:left;cursor:pointer;display:flex;align-items:center;gap:7px}.dtv-play-group:hover,.dtv-play-row:hover{background:var(--dsw-alias-interactive-bg-hover)}
@@ -4245,16 +4515,16 @@ var css6 = `
 .dtv-play-empty,.dtv-play-status{margin:0;padding:7px 9px;font-size:10px;line-height:1.45;color:var(--dsw-alias-label-tertiary);overflow-wrap:anywhere}.dtv-play-status[data-error=true]{color:var(--dsw-alias-state-error)}
 .dtv-play-rail{height:100%;box-sizing:border-box;padding:7px;display:flex;flex-direction:column;align-items:center;gap:7px;overflow:auto;zoom:var(--dtv-ui-scale,1)}.dtv-play-rail-button{width:38px;height:38px;border:0;border-radius:10px;background:transparent;color:var(--dsw-alias-label-secondary);cursor:pointer;display:grid;place-items:center}.dtv-play-rail-button:hover{background:var(--dsw-alias-interactive-bg-hover)}.dtv-play-rail-button .dtv-play-avatar{width:30px;height:30px}
 `;
-function installStyles() {
+function installStyles2() {
   if (document.querySelector(`style[data-plugin-css="${PLUGIN_ID}-play-sidebar"]`) !== null) return;
   const style = document.createElement("style");
   style.dataset.pluginCss = `${PLUGIN_ID}-play-sidebar`;
-  style.textContent = css6;
+  style.textContent = css7;
   document.head.append(style);
 }
 function useUiScale() {
-  const [scale, setScale] = (0, import_react7.useState)(() => getClientUiSettings().scale);
-  (0, import_react7.useEffect)(() => {
+  const [scale, setScale] = (0, import_react8.useState)(() => getClientUiSettings().scale);
+  (0, import_react8.useEffect)(() => {
     const onSettings = (event) => {
       const next = Number(event.detail?.scale);
       if (Number.isFinite(next)) setScale(next);
@@ -4266,11 +4536,11 @@ function useUiScale() {
 }
 function Avatar({ character }) {
   const fallback = (character.name || character.id).slice(0, 1).toUpperCase();
-  return h7(
+  return h8(
     "span",
     { className: "dtv-play-avatar", "aria-hidden": "true" },
     rawText(fallback),
-    h7("img", {
+    h8("img", {
       src: `${API_V1}/characters/${encodeURIComponent(character.id)}/png`,
       alt: "",
       onError: (event) => {
@@ -4280,18 +4550,18 @@ function Avatar({ character }) {
   );
 }
 function Rail({ model, scale, expandSidebar }) {
-  return h7(
+  return h8(
     "div",
     { className: "dtv-play-rail", style: { "--dtv-ui-scale": scale } },
-    ...model.characters.map((character) => h7("button", {
+    ...model.characters.map((character) => h8("button", {
       key: character.id,
       type: "button",
       className: "dtv-play-rail-button",
       title: rawText(character.name),
       "aria-label": rawText(character.name),
       onClick: expandSidebar
-    }, h7(Avatar, { character }))),
-    h7("button", {
+    }, h8(Avatar, { character }))),
+    h8("button", {
       type: "button",
       className: "dtv-play-rail-button",
       title: uiMessage("play.sidebar.other"),
@@ -4302,13 +4572,13 @@ function Rail({ model, scale, expandSidebar }) {
 }
 function CharacterGroup({ character, collapsed, unassignedOpen, creating, createDisabled, toggle, toggleUnassigned, createPlaythrough, openPlaythrough, openSession }) {
   const count = character.playthroughs.length + character.unassigned.length;
-  return h7(
+  return h8(
     "section",
     { className: "dtv-play-section", "data-open": !collapsed },
-    h7(
+    h8(
       "div",
       { className: "dtv-play-group-line" },
-      h7(
+      h8(
         "button",
         {
           type: "button",
@@ -4316,12 +4586,12 @@ function CharacterGroup({ character, collapsed, unassignedOpen, creating, create
           "aria-expanded": !collapsed,
           onClick: toggle
         },
-        h7("span", { className: "dtv-play-chevron", "aria-hidden": "true" }, collapsed ? "\u203A" : "\u2304"),
-        h7(Avatar, { character }),
-        h7("span", { className: "dtv-play-title" }, rawText(character.name)),
-        h7("span", { className: "dtv-play-count" }, rawText(String(count)))
+        h8("span", { className: "dtv-play-chevron", "aria-hidden": "true" }, collapsed ? "\u203A" : "\u2304"),
+        h8(Avatar, { character }),
+        h8("span", { className: "dtv-play-title" }, rawText(character.name)),
+        h8("span", { className: "dtv-play-count" }, rawText(String(count)))
       ),
-      h7("button", {
+      h8("button", {
         type: "button",
         className: "dtv-play-create",
         disabled: createDisabled,
@@ -4330,8 +4600,8 @@ function CharacterGroup({ character, collapsed, unassignedOpen, creating, create
         onClick: () => createPlaythrough(character)
       }, creating ? "\u2026" : "+")
     ),
-    collapsed ? null : character.playthroughs.length === 0 && character.unassigned.length === 0 ? h7("p", { className: "dtv-play-empty" }, uiMessage("play.sidebar.noPlaythroughs")) : null,
-    collapsed ? null : character.playthroughs.map((playthrough) => h7(
+    collapsed ? null : character.playthroughs.length === 0 && character.unassigned.length === 0 ? h8("p", { className: "dtv-play-empty" }, uiMessage("play.sidebar.noPlaythroughs")) : null,
+    collapsed ? null : character.playthroughs.map((playthrough) => h8(
       "button",
       {
         key: playthrough.id,
@@ -4342,13 +4612,13 @@ function CharacterGroup({ character, collapsed, unassignedOpen, creating, create
         title: playthrough.missing ? uiMessage("play.sidebar.sessionMissing") : rawText(playthrough.title),
         onClick: () => openPlaythrough(playthrough)
       },
-      h7("span", { className: "dtv-play-chevron", "aria-hidden": "true" }, "\u25C6"),
-      h7("span", { className: "dtv-play-title" }, rawText(playthrough.title))
+      h8("span", { className: "dtv-play-chevron", "aria-hidden": "true" }, "\u25C6"),
+      h8("span", { className: "dtv-play-title" }, rawText(playthrough.title))
     )),
-    collapsed || character.unassigned.length === 0 ? null : h7(
+    collapsed || character.unassigned.length === 0 ? null : h8(
       "div",
       { className: "dtv-play-subgroup" },
-      h7(
+      h8(
         "button",
         {
           type: "button",
@@ -4356,11 +4626,11 @@ function CharacterGroup({ character, collapsed, unassignedOpen, creating, create
           "aria-expanded": unassignedOpen,
           onClick: toggleUnassigned
         },
-        h7("span", { className: "dtv-play-chevron", "aria-hidden": "true" }, unassignedOpen ? "\u2304" : "\u203A"),
-        h7("span", { className: "dtv-play-title" }, uiMessage("play.sidebar.unassigned")),
-        h7("span", { className: "dtv-play-count" }, rawText(String(character.unassigned.length)))
+        h8("span", { className: "dtv-play-chevron", "aria-hidden": "true" }, unassignedOpen ? "\u2304" : "\u203A"),
+        h8("span", { className: "dtv-play-title" }, uiMessage("play.sidebar.unassigned")),
+        h8("span", { className: "dtv-play-count" }, rawText(String(character.unassigned.length)))
       ),
-      unassignedOpen ? character.unassigned.map((session) => h7(
+      unassignedOpen ? character.unassigned.map((session) => h8(
         "button",
         {
           key: session.id,
@@ -4369,8 +4639,8 @@ function CharacterGroup({ character, collapsed, unassignedOpen, creating, create
           "data-active": session.active,
           onClick: () => openSession(session.id)
         },
-        h7("span", { className: "dtv-play-chevron", "aria-hidden": "true" }, "\u2022"),
-        h7("span", { className: "dtv-play-title" }, rawText(session.title))
+        h8("span", { className: "dtv-play-chevron", "aria-hidden": "true" }, "\u2022"),
+        h8("span", { className: "dtv-play-title" }, rawText(session.title))
       )) : null
     )
   );
@@ -4383,28 +4653,28 @@ function PlayWorkspaceBrowser({
   playClient,
   openSession
 }) {
-  installStyles();
+  installStyles2();
   const scale = useUiScale();
   const sessionIds = useSessions((state) => state.ids);
   const sessions = useSessions((state) => state.byId);
   const currentId = useSessions((state) => state.current ?? null);
   const workspaceItems = useWorkspaces((state) => state.items);
   const archivedSessionIds = useWorkspaces((state) => state.archivedSessionIds);
-  const cache = (0, import_react7.useRef)(null);
+  const cache = (0, import_react8.useRef)(null);
   if (cache.current === null) cache.current = new SessionCharacterBindingCache();
-  const creator = (0, import_react7.useRef)(null);
+  const creator = (0, import_react8.useRef)(null);
   if (creator.current?.client !== playClient) {
     creator.current = { client: playClient, controller: createPlaythroughController(playClient) };
   }
-  const [creatingCharacterId, setCreatingCharacterId] = (0, import_react7.useState)(null);
-  const [revision, setRevision] = (0, import_react7.useState)(0);
-  const [resources, setResources] = (0, import_react7.useState)(null);
-  const [sessionCharacters, setSessionCharacters] = (0, import_react7.useState)({});
-  const [status, setStatus] = (0, import_react7.useState)(null);
-  const [collapsedCharacters, setCollapsedCharacters] = (0, import_react7.useState)(() => /* @__PURE__ */ new Set());
-  const [expandedUnassigned, setExpandedUnassigned] = (0, import_react7.useState)(() => /* @__PURE__ */ new Set());
-  const [otherOpen, setOtherOpen] = (0, import_react7.useState)(false);
-  (0, import_react7.useEffect)(() => {
+  const [creatingCharacterId, setCreatingCharacterId] = (0, import_react8.useState)(null);
+  const [revision, setRevision] = (0, import_react8.useState)(0);
+  const [resources, setResources] = (0, import_react8.useState)(null);
+  const [sessionCharacters, setSessionCharacters] = (0, import_react8.useState)({});
+  const [status, setStatus] = (0, import_react8.useState)(null);
+  const [collapsedCharacters, setCollapsedCharacters] = (0, import_react8.useState)(() => /* @__PURE__ */ new Set());
+  const [expandedUnassigned, setExpandedUnassigned] = (0, import_react8.useState)(() => /* @__PURE__ */ new Set());
+  const [otherOpen, setOtherOpen] = (0, import_react8.useState)(false);
+  (0, import_react8.useEffect)(() => {
     const refresh = () => {
       cache.current.clear();
       setRevision((value) => value + 1);
@@ -4412,7 +4682,7 @@ function PlayWorkspaceBrowser({
     window.addEventListener(CLIENT_REFRESH_EVENT, refresh);
     return () => window.removeEventListener(CLIENT_REFRESH_EVENT, refresh);
   }, []);
-  (0, import_react7.useEffect)(() => {
+  (0, import_react8.useEffect)(() => {
     let active = true;
     setStatus(null);
     loadPlaySidebarResources(playClient).then((next) => {
@@ -4432,7 +4702,7 @@ function PlayWorkspaceBrowser({
     sessions
   })];
   const rpKey = rpIds.join("\0");
-  (0, import_react7.useEffect)(() => {
+  (0, import_react8.useEffect)(() => {
     let active = true;
     if (resources === null) {
       setSessionCharacters({});
@@ -4500,24 +4770,24 @@ function PlayWorkspaceBrowser({
       setStatus({ message: reason instanceof Error ? reason.message : String(reason) });
     }
   };
-  if (wide === false) return h7(Rail, { model, scale, expandSidebar });
+  if (wide === false) return h8(Rail, { model, scale, expandSidebar });
   const toggleSet = (setter, id) => setter((current2) => {
     const next = new Set(current2);
     if (next.has(id)) next.delete(id);
     else next.add(id);
     return next;
   });
-  return h7(
+  return h8(
     "div",
     { className: "dtv-play-sidebar", style: { "--dtv-ui-scale": scale } },
-    resources === null && status === null ? h7("p", { className: "dtv-play-status" }, uiMessage("play.sidebar.loading")) : null,
-    resources?.workspace?.selected === false ? h7(
+    resources === null && status === null ? h8("p", { className: "dtv-play-status" }, uiMessage("play.sidebar.loading")) : null,
+    resources?.workspace?.selected === false ? h8(
       "section",
       { className: "dtv-play-section", "data-open": true },
-      h7("p", { className: "dtv-play-status" }, uiMessage("play.sidebar.workspaceMissing")),
+      h8("p", { className: "dtv-play-status" }, uiMessage("play.sidebar.workspaceMissing")),
       ...workspaceItems.map((workspace) => {
         const label = uiMessage("play.sidebar.selectWorkspace", { name: workspace.title });
-        return h7(
+        return h8(
           "button",
           {
             key: workspace.workspaceId,
@@ -4527,20 +4797,20 @@ function PlayWorkspaceBrowser({
             "aria-label": label,
             onClick: () => bindWorkspace(workspace)
           },
-          h7("span", { className: "dtv-play-chevron", "aria-hidden": "true" }, "\u25C7"),
-          h7("span", { className: "dtv-play-title" }, rawText(workspace.title))
+          h8("span", { className: "dtv-play-chevron", "aria-hidden": "true" }, "\u25C7"),
+          h8("span", { className: "dtv-play-title" }, rawText(workspace.title))
         );
       })
     ) : null,
-    status === null ? null : h7("p", { className: "dtv-play-status", "data-error": true }, status.key ? uiMessage(status.key) : rawText(status.message)),
-    (resources?.diagnostics.length ?? 0) === 0 ? null : h7("p", { className: "dtv-play-status", "data-error": true }, uiMessage("play.sidebar.timelineErrors", { count: resources.diagnostics.length })),
-    ...(resources?.diagnostics ?? []).map((diagnostic) => h7("p", {
+    status === null ? null : h8("p", { className: "dtv-play-status", "data-error": true }, status.key ? uiMessage(status.key) : rawText(status.message)),
+    (resources?.diagnostics.length ?? 0) === 0 ? null : h8("p", { className: "dtv-play-status", "data-error": true }, uiMessage("play.sidebar.timelineErrors", { count: resources.diagnostics.length })),
+    ...(resources?.diagnostics ?? []).map((diagnostic) => h8("p", {
       key: diagnostic.playthroughId,
       className: "dtv-play-status",
       "data-error": true
     }, rawText(`${diagnostic.path}: ${diagnostic.message}`))),
-    resources !== null && model.characters.length === 0 ? h7("p", { className: "dtv-play-empty" }, uiMessage("play.sidebar.noCharacters")) : null,
-    ...model.characters.map((character) => h7(CharacterGroup, {
+    resources !== null && model.characters.length === 0 ? h8("p", { className: "dtv-play-empty" }, uiMessage("play.sidebar.noCharacters")) : null,
+    ...model.characters.map((character) => h8(CharacterGroup, {
       key: character.id,
       character,
       collapsed: collapsedCharacters.has(character.id),
@@ -4553,10 +4823,10 @@ function PlayWorkspaceBrowser({
       openPlaythrough,
       openSession
     })),
-    h7(
+    h8(
       "section",
       { className: "dtv-play-section", "data-open": otherOpen },
-      h7(
+      h8(
         "button",
         {
           type: "button",
@@ -4564,12 +4834,12 @@ function PlayWorkspaceBrowser({
           "aria-expanded": otherOpen,
           onClick: () => setOtherOpen((value) => !value)
         },
-        h7("span", { className: "dtv-play-chevron", "aria-hidden": "true" }, otherOpen ? "\u2304" : "\u203A"),
-        h7("span", { className: "dtv-play-title" }, uiMessage("play.sidebar.other")),
-        h7("span", { className: "dtv-play-count" }, rawText(String(model.otherSessions.length)))
+        h8("span", { className: "dtv-play-chevron", "aria-hidden": "true" }, otherOpen ? "\u2304" : "\u203A"),
+        h8("span", { className: "dtv-play-title" }, uiMessage("play.sidebar.other")),
+        h8("span", { className: "dtv-play-count" }, rawText(String(model.otherSessions.length)))
       ),
-      otherOpen && model.otherSessions.length === 0 ? h7("p", { className: "dtv-play-empty" }, uiMessage("play.sidebar.otherEmpty")) : null,
-      otherOpen ? model.otherSessions.map((session) => h7(
+      otherOpen && model.otherSessions.length === 0 ? h8("p", { className: "dtv-play-empty" }, uiMessage("play.sidebar.otherEmpty")) : null,
+      otherOpen ? model.otherSessions.map((session) => h8(
         "button",
         {
           key: session.id,
@@ -4579,38 +4849,38 @@ function PlayWorkspaceBrowser({
           "data-kind": session.kind,
           onClick: () => openSession(session.id)
         },
-        h7("span", { className: "dtv-play-chevron", "aria-hidden": "true" }, "\u2022"),
-        h7("span", { className: "dtv-play-title" }, rawText(session.title))
+        h8("span", { className: "dtv-play-chevron", "aria-hidden": "true" }, "\u2022"),
+        h8("span", { className: "dtv-play-title" }, rawText(session.title))
       )) : null
     )
   );
 }
 
 // packages/client/src/play/notice.js
-var import_react8 = require("react");
-var h8 = createLocalizedElement(import_react8.createElement);
-var css7 = `
+var import_react9 = require("react");
+var h9 = createLocalizedElement(import_react9.createElement);
+var css8 = `
 .dtv-play-unbound-notice{box-sizing:border-box;width:100%;margin:0;padding:7px 10px;border:1px solid color-mix(in srgb,var(--dsw-alias-state-warning,#d79921) 34%,transparent);border-radius:10px;background:color-mix(in srgb,var(--dsw-alias-state-warning,#d79921) 8%,transparent);color:var(--dsw-alias-label-secondary);font-size:11px;line-height:1.45}
 `;
-function installStyles2() {
+function installStyles3() {
   if (document.querySelector(`style[data-plugin-css="${PLUGIN_ID}-play-notice"]`) !== null) return;
   const style = document.createElement("style");
   style.dataset.pluginCss = `${PLUGIN_ID}-play-notice`;
-  style.textContent = css7;
+  style.textContent = css8;
   document.head.append(style);
 }
 function PlayUnboundNotice({ session, useSessions, playClient }) {
-  installStyles2();
+  installStyles3();
   const sessionId = session?.sessionId ?? null;
   const summary = useSessions((state) => sessionId === null ? null : state.byId?.[sessionId] ?? null);
-  const [revision, setRevision] = (0, import_react8.useState)(0);
-  const [visible, setVisible] = (0, import_react8.useState)(false);
-  (0, import_react8.useEffect)(() => {
+  const [revision, setRevision] = (0, import_react9.useState)(0);
+  const [visible, setVisible] = (0, import_react9.useState)(false);
+  (0, import_react9.useEffect)(() => {
     const refresh = () => setRevision((value) => value + 1);
     window.addEventListener(CLIENT_REFRESH_EVENT, refresh);
     return () => window.removeEventListener(CLIENT_REFRESH_EVENT, refresh);
   }, []);
-  (0, import_react8.useEffect)(() => {
+  (0, import_react9.useEffect)(() => {
     let active = true;
     setVisible(false);
     if (sessionId === null || summary === null) return () => {
@@ -4629,7 +4899,7 @@ function PlayUnboundNotice({ session, useSessions, playClient }) {
     };
   }, [playClient, revision, sessionId, summary]);
   if (!visible) return null;
-  return h8("p", {
+  return h9("p", {
     className: "dtv-play-unbound-notice",
     role: "note"
   }, uiMessage("play.notice.unbound"));
@@ -4645,6 +4915,11 @@ function installPlaySlotOccupancy(ctx, playClient) {
   let noticeDeclared = false;
   let disposeNoticeEntry = null;
   let disposeNoticeEffect = null;
+  let chatDeclared = false;
+  let chatGeneration = 0;
+  let disposeChatEntry = null;
+  let disposeSessionSubscription = null;
+  let refreshChatListener = null;
   const dropEntry = () => {
     const dispose = disposeEntry;
     disposeEntry = null;
@@ -4715,6 +4990,66 @@ function installPlaySlotOccupancy(ctx, playClient) {
       disposeNoticeEffect = effect();
     }
   };
+  const dropChatEntry = () => {
+    const dispose = disposeChatEntry;
+    disposeChatEntry = null;
+    dispose?.();
+  };
+  const currentSession = () => {
+    const snapshot = ctx.sessions?.list?.getSnapshot?.();
+    const sessionId = snapshot?.current;
+    if (typeof sessionId !== "string" || sessionId === "") return null;
+    const session = snapshot.byId?.[sessionId];
+    return session == null ? null : { ...session, id: session.id ?? sessionId };
+  };
+  const reconcileChat = () => {
+    chatGeneration += 1;
+    const generation = chatGeneration;
+    dropChatEntry();
+    if (!chatDeclared || mode !== "play") return;
+    const session = currentSession();
+    if (session === null) return;
+    const sessionId = session.id;
+    loadCurrentPlaythrough(playClient, session).then((match) => {
+      if (generation !== chatGeneration || mode !== "play" || !chatDeclared || currentSession()?.id !== sessionId || match === null) return;
+      disposeChatEntry = ctx.slots.register({
+        name: "conversation.view",
+        id: "chat",
+        order: 0,
+        priority: PLAY_SLOT_PRIORITY,
+        label: () => translate("play.chat.label"),
+        inject: () => ({
+          playClient,
+          playthrough: match.playthrough
+        })
+      }, MowanChatView);
+    }).catch(() => {
+    });
+  };
+  const stopChatObserver = () => {
+    chatGeneration += 1;
+    dropChatEntry();
+    const dispose = disposeSessionSubscription;
+    disposeSessionSubscription = null;
+    dispose?.();
+    if (refreshChatListener !== null && typeof window !== "undefined") {
+      window.removeEventListener(CLIENT_REFRESH_EVENT, refreshChatListener);
+    }
+    refreshChatListener = null;
+  };
+  const startChatObserver = () => {
+    stopChatObserver();
+    const list = ctx.sessions?.list;
+    if (typeof list?.subscribe === "function") {
+      const dispose = list.subscribe(reconcileChat);
+      disposeSessionSubscription = typeof dispose === "function" ? dispose : null;
+    }
+    if (typeof window !== "undefined") {
+      refreshChatListener = reconcileChat;
+      window.addEventListener(CLIENT_REFRESH_EVENT, refreshChatListener);
+    }
+    reconcileChat();
+  };
   ctx.slots.inject("sidebar.workspaces", () => {
     declared = true;
     reconcile();
@@ -4731,6 +5066,14 @@ function installPlaySlotOccupancy(ctx, playClient) {
       dropNoticeEffect();
     };
   });
+  ctx.slots.inject("conversation.view", () => {
+    chatDeclared = true;
+    startChatObserver();
+    return () => {
+      chatDeclared = false;
+      stopChatObserver();
+    };
+  });
   return {
     setMode(next) {
       const normalized = next === "play" ? "play" : "native";
@@ -4738,6 +5081,7 @@ function installPlaySlotOccupancy(ctx, playClient) {
       mode = normalized;
       reconcile();
       reconcileNotice();
+      reconcileChat();
     }
   };
 }
@@ -4913,8 +5257,8 @@ function createLivePlayClient({
 }
 
 // packages/client/src/index.js
-var h9 = createLocalizedElement(import_react9.createElement);
-var css8 = `
+var h10 = createLocalizedElement(import_react10.createElement);
+var css9 = `
 .dtv-layer{position:absolute;inset:0;z-index:6;pointer-events:none;font-family:Inter,var(--dsw-font-family),sans-serif;color:var(--dsw-alias-label-primary)}
 .dtv-launcher{position:absolute;z-index:2;width:44px;height:44px;pointer-events:auto;overflow:hidden;border:0 solid transparent;border-radius:22px;background:transparent;box-shadow:none;transition:width .22s ease,height .22s ease,border-radius .22s ease,background-color .18s ease,box-shadow .18s ease;display:block}
 .dtv-launcher[data-open=true]{width:300px;height:376px;border-width:1px;border-color:var(--dsw-alias-border-l2);border-radius:18px;background:var(--dsw-alias-bg-base);box-shadow:var(--ds-shadow-3,0 12px 34px rgba(0,0,0,.24))}
@@ -5014,15 +5358,15 @@ async function uiSettingsRequest(method = "GET", body2) {
 function PanelHeader({ title, titleKey, close }) {
   const titleText = titleKey ? uiMessage(titleKey) : title;
   const closeLabel = uiMessage("panel.close", { title: unwrapText(titleText) });
-  return h9(
+  return h10(
     "div",
     { className: "dtv-header" },
-    h9("div", { className: "dtv-title" }, titleText),
-    h9("button", { className: "dtv-close", type: "button", title: closeLabel, "aria-label": closeLabel, onClick: close }, "\u2715")
+    h10("div", { className: "dtv-title" }, titleText),
+    h10("button", { className: "dtv-close", type: "button", title: closeLabel, "aria-label": closeLabel, onClick: close }, "\u2715")
   );
 }
 function Field5({ label, children }) {
-  return h9("label", { className: "dtv-field" }, h9("span", { className: "dtv-label" }, label), children);
+  return h10("label", { className: "dtv-field" }, h10("span", { className: "dtv-label" }, label), children);
 }
 function SettingsPanel({
   settings,
@@ -5039,19 +5383,19 @@ function SettingsPanel({
   resetPolicy
 }) {
   const percent = Math.round(settings.scale * 100);
-  return h9(
+  return h10(
     "div",
     { className: "dtv-panel" },
-    h9(
+    h10(
       "div",
       { className: "dtv-header" },
-      h9("div", { className: "dtv-title" }, translate("settings.title")),
-      h9("button", { className: "dtv-close", type: "button", title: translate("settings.close"), "aria-label": translate("settings.close"), onClick: close }, "\u2715")
+      h10("div", { className: "dtv-title" }, translate("settings.title")),
+      h10("button", { className: "dtv-close", type: "button", title: translate("settings.close"), "aria-label": translate("settings.close"), onClick: close }, "\u2715")
     ),
-    h9(
+    h10(
       "div",
       { className: "dtv-body" },
-      h9(Field5, { label: translate("settings.language") }, h9(
+      h10(Field5, { label: translate("settings.language") }, h10(
         "select",
         {
           className: "dtv-select",
@@ -5059,57 +5403,57 @@ function SettingsPanel({
           disabled: busy,
           onChange: (event) => update({ ...settings, locale: event.target.value })
         },
-        ...UI_LOCALES.map((locale) => h9("option", { key: locale.id, value: locale.id }, rawText(locale.nativeName)))
+        ...UI_LOCALES.map((locale) => h10("option", { key: locale.id, value: locale.id }, rawText(locale.nativeName)))
       )),
-      h9(Field5, { label: translate("settings.scale") }, h9("select", {
+      h10(Field5, { label: translate("settings.scale") }, h10("select", {
         className: "dtv-select",
         value: settings.scale,
         disabled: busy,
         onChange: (event) => update({ ...settings, scale: Number(event.target.value) })
-      }, ...UI_SCALE_OPTIONS.map((scale) => h9("option", { key: scale, value: scale }, `${Math.round(scale * 100)}%`)))),
-      h9("div", { className: "dtv-setting-value" }, translate("settings.currentScale", { scale: percent })),
-      h9("p", { className: "dtv-note" }, translate("settings.scale.help")),
-      h9(
+      }, ...UI_SCALE_OPTIONS.map((scale) => h10("option", { key: scale, value: scale }, `${Math.round(scale * 100)}%`)))),
+      h10("div", { className: "dtv-setting-value" }, translate("settings.currentScale", { scale: percent })),
+      h10("p", { className: "dtv-note" }, translate("settings.scale.help")),
+      h10(
         "label",
         { className: "dtv-check" },
-        h9("input", {
+        h10("input", {
           type: "checkbox",
           checked: settings.rpFollowCharacter !== false,
           disabled: busy,
           onChange: (event) => update({ ...settings, rpFollowCharacter: event.target.checked })
         }),
-        h9("span", null, translate("settings.rpFollow"))
+        h10("span", null, translate("settings.rpFollow"))
       ),
-      h9("p", { className: "dtv-note" }, translate("settings.rpFollow.help")),
-      h9(Field5, { label: translate("settings.rpPolicy") }, h9("textarea", {
+      h10("p", { className: "dtv-note" }, translate("settings.rpFollow.help")),
+      h10(Field5, { label: translate("settings.rpPolicy") }, h10("textarea", {
         className: "dtv-textarea dtv-policy",
         value: policyDraft,
         placeholder: translate("settings.rpPolicy.placeholder"),
         disabled: busy || policyBusy || policyLoaded !== true,
         onChange: (event) => onPolicyDraft(event.target.value)
       })),
-      h9("p", { className: "dtv-note" }, translate("settings.rpPolicy.help")),
-      h9(
+      h10("p", { className: "dtv-note" }, translate("settings.rpPolicy.help")),
+      h10(
         "div",
         { className: "dtv-actions" },
-        h9("button", {
+        h10("button", {
           className: "dtv-button dtv-primary",
           type: "button",
           disabled: busy || policyBusy || policyLoaded !== true,
           onClick: savePolicy
         }, translate("settings.rpPolicy.save")),
-        h9("button", {
+        h10("button", {
           className: "dtv-button",
           type: "button",
           disabled: busy || policyBusy || policyLoaded !== true,
           onClick: resetPolicy
         }, translate("settings.rpPolicy.reset"))
       ),
-      h9("div", { className: "dtv-status", "data-error": status.error || void 0, role: "status" }, rawText(status.text)),
-      h9(
+      h10("div", { className: "dtv-status", "data-error": status.error || void 0, role: "status" }, rawText(status.text)),
+      h10(
         "div",
         { className: "dtv-actions" },
-        h9("button", { className: "dtv-button", type: "button", disabled: busy, onClick: reset }, translate("settings.reset"))
+        h10("button", { className: "dtv-button", type: "button", disabled: busy, onClick: reset }, translate("settings.reset"))
       )
     )
   );
@@ -5121,7 +5465,7 @@ var LOGIC_KEYS = Object.freeze({
   not_all: "world.logic.notAll"
 });
 function RpHighRiskDialog({ onDismiss }) {
-  return h9(
+  return h10(
     "div",
     {
       className: "dtv-modal-backdrop",
@@ -5129,43 +5473,43 @@ function RpHighRiskDialog({ onDismiss }) {
       "aria-modal": "true",
       "aria-labelledby": "dtv-rp-block-body"
     },
-    h9(
+    h10(
       "div",
       { className: "dtv-modal" },
-      h9("p", { id: "dtv-rp-block-body", className: "dtv-modal-body" }, translate("rp.block.body")),
-      h9("button", { className: "dtv-button dtv-primary", type: "button", onClick: onDismiss }, translate("rp.block.dismiss"))
+      h10("p", { id: "dtv-rp-block-body", className: "dtv-modal-body" }, translate("rp.block.body")),
+      h10("button", { className: "dtv-button dtv-primary", type: "button", onClick: onDismiss }, translate("rp.block.dismiss"))
     )
   );
 }
 function TavernShell({ useSessions, useWorkspaces, createCleanSession, playClient, playSlots }) {
-  const [menuOpen, setMenuOpen] = (0, import_react9.useState)(false);
-  const [surface, setSurface] = (0, import_react9.useState)(null);
-  const [anchor, setAnchor] = (0, import_react9.useState)(initialLauncherAnchor);
-  const [chromeMode, setChromeMode] = (0, import_react9.useState)("native");
-  const [chromeError, setChromeError] = (0, import_react9.useState)("");
-  const [activeSnapshot, setActiveSnapshot] = (0, import_react9.useState)(null);
-  const [statusError, setStatusError] = (0, import_react9.useState)("");
-  const [uiSettings, setUiSettings] = (0, import_react9.useState)(getClientUiSettings);
-  const [settingsStatus, setSettingsStatus] = (0, import_react9.useState)({ text: translate("settings.saved"), error: false });
-  const [settingsBusy, setSettingsBusy] = (0, import_react9.useState)(false);
-  const [rpPolicyDraft, setRpPolicyDraft] = (0, import_react9.useState)("");
-  const [rpPolicyLoaded, setRpPolicyLoaded] = (0, import_react9.useState)(false);
-  const [rpPolicyBusy, setRpPolicyBusy] = (0, import_react9.useState)(false);
-  const [rpAlert, setRpAlert] = (0, import_react9.useState)(null);
-  const drag = (0, import_react9.useRef)(null);
-  const suppressClick = (0, import_react9.useRef)(false);
-  const chromeModeRef = (0, import_react9.useRef)("native");
-  const chromeController = (0, import_react9.useRef)(null);
-  const statusGeneration = (0, import_react9.useRef)(0);
-  const rpAlertRef = (0, import_react9.useRef)(null);
-  const dismissedRpAlerts = (0, import_react9.useRef)(/* @__PURE__ */ new Set());
+  const [menuOpen, setMenuOpen] = (0, import_react10.useState)(false);
+  const [surface, setSurface] = (0, import_react10.useState)(null);
+  const [anchor, setAnchor] = (0, import_react10.useState)(initialLauncherAnchor);
+  const [chromeMode, setChromeMode] = (0, import_react10.useState)("native");
+  const [chromeError, setChromeError] = (0, import_react10.useState)("");
+  const [activeSnapshot, setActiveSnapshot] = (0, import_react10.useState)(null);
+  const [statusError, setStatusError] = (0, import_react10.useState)("");
+  const [uiSettings, setUiSettings] = (0, import_react10.useState)(getClientUiSettings);
+  const [settingsStatus, setSettingsStatus] = (0, import_react10.useState)({ text: translate("settings.saved"), error: false });
+  const [settingsBusy, setSettingsBusy] = (0, import_react10.useState)(false);
+  const [rpPolicyDraft, setRpPolicyDraft] = (0, import_react10.useState)("");
+  const [rpPolicyLoaded, setRpPolicyLoaded] = (0, import_react10.useState)(false);
+  const [rpPolicyBusy, setRpPolicyBusy] = (0, import_react10.useState)(false);
+  const [rpAlert, setRpAlert] = (0, import_react10.useState)(null);
+  const drag = (0, import_react10.useRef)(null);
+  const suppressClick = (0, import_react10.useRef)(false);
+  const chromeModeRef = (0, import_react10.useRef)("native");
+  const chromeController = (0, import_react10.useRef)(null);
+  const statusGeneration = (0, import_react10.useRef)(0);
+  const rpAlertRef = (0, import_react10.useRef)(null);
+  const dismissedRpAlerts = (0, import_react10.useRef)(/* @__PURE__ */ new Set());
   const sessionId = useSessions((state) => state.current);
   const sessionBlank = useSessions((state) => state.current === void 0 || state.current === null ? true : state.byId?.[state.current]?.blank === true);
   const workspaceId = useWorkspaces((state) => workspaceTargetId(state, sessionId));
   const close = () => setSurface(null);
   if (rpAlert === null || dismissedRpAlerts.current.has(rpAlert.id)) rpAlertRef.current = null;
   else rpAlertRef.current = rpAlert;
-  (0, import_react9.useEffect)(() => {
+  (0, import_react10.useEffect)(() => {
     let active = true;
     let channel = null;
     try {
@@ -5219,7 +5563,7 @@ function TavernShell({ useSessions, useWorkspaces, createCleanSession, playClien
       channel?.close();
     };
   }, [playClient, playSlots]);
-  (0, import_react9.useEffect)(() => {
+  (0, import_react10.useEffect)(() => {
     let active = true;
     uiSettingsRequest().then((next) => {
       if (!active) return;
@@ -5270,7 +5614,7 @@ function TavernShell({ useSessions, useWorkspaces, createCleanSession, playClien
       setSettingsBusy(false);
     }
   };
-  (0, import_react9.useEffect)(() => {
+  (0, import_react10.useEffect)(() => {
     if (surface !== "settings") return void 0;
     let active = true;
     setRpPolicyLoaded(false);
@@ -5314,7 +5658,7 @@ function TavernShell({ useSessions, useWorkspaces, createCleanSession, playClien
       setRpPolicyBusy(false);
     }
   };
-  const refreshStatus = (0, import_react9.useCallback)(async () => {
+  const refreshStatus = (0, import_react10.useCallback)(async () => {
     const generation = ++statusGeneration.current;
     try {
       const next = await activeView(sessionId);
@@ -5326,7 +5670,7 @@ function TavernShell({ useSessions, useWorkspaces, createCleanSession, playClien
       setStatusError(reason instanceof Error ? reason.message : String(reason));
     }
   }, [sessionId]);
-  (0, import_react9.useEffect)(() => {
+  (0, import_react10.useEffect)(() => {
     statusGeneration.current += 1;
     setActiveSnapshot(null);
     setStatusError("");
@@ -5335,12 +5679,12 @@ function TavernShell({ useSessions, useWorkspaces, createCleanSession, playClien
       statusGeneration.current += 1;
     };
   }, [refreshStatus, sessionId]);
-  (0, import_react9.useEffect)(() => {
+  (0, import_react10.useEffect)(() => {
     const onRefresh = () => refreshStatus();
     window.addEventListener(CLIENT_REFRESH_EVENT, onRefresh);
     return () => window.removeEventListener(CLIENT_REFRESH_EVENT, onRefresh);
   }, [refreshStatus]);
-  (0, import_react9.useEffect)(() => {
+  (0, import_react10.useEffect)(() => {
     const onResize = () => setAnchor((current2) => {
       const next = clampLauncherAnchor(current2, viewport(), uiSettings.scale);
       persistLauncherAnchor(next);
@@ -5349,14 +5693,14 @@ function TavernShell({ useSessions, useWorkspaces, createCleanSession, playClien
     window.addEventListener("resize", onResize);
     return () => window.removeEventListener("resize", onResize);
   }, [uiSettings.scale]);
-  (0, import_react9.useEffect)(() => {
+  (0, import_react10.useEffect)(() => {
     setAnchor((current2) => {
       const next = clampLauncherAnchor(current2, viewport(), uiSettings.scale);
       persistLauncherAnchor(next);
       return next;
     });
   }, [uiSettings.scale]);
-  (0, import_react9.useEffect)(() => {
+  (0, import_react10.useEffect)(() => {
     if (typeof sessionId !== "string" || sessionId === "") {
       dismissedRpAlerts.current = /* @__PURE__ */ new Set();
       rpAlertRef.current = null;
@@ -5392,7 +5736,7 @@ function TavernShell({ useSessions, useWorkspaces, createCleanSession, playClien
     } catch {
     }
   };
-  (0, import_react9.useEffect)(() => {
+  (0, import_react10.useEffect)(() => {
     const onKeyDown = (event) => {
       if (event.key !== "Escape") return;
       if (rpAlert !== null) dismissRpAlert();
@@ -5450,7 +5794,7 @@ function TavernShell({ useSessions, useWorkspaces, createCleanSession, playClien
   };
   let panel = null;
   if (surface === "preset") {
-    panel = h9("div", { className: "dtv-panel" }, h9(PresetSidebar, {
+    panel = h10("div", { className: "dtv-panel" }, h10(PresetSidebar, {
       closePanel: close,
       openPanel: () => {
       },
@@ -5459,15 +5803,15 @@ function TavernShell({ useSessions, useWorkspaces, createCleanSession, playClien
       autoOpen: false
     }));
   } else if (surface === "character") {
-    panel = h9(CharacterPanel, { sessionId, sessionBlank, close });
+    panel = h10(CharacterPanel, { sessionId, sessionBlank, close });
   } else if (surface === "world-info") {
-    panel = h9(WorldBookPanel, { sessionId, close });
+    panel = h10(WorldBookPanel, { sessionId, close });
   } else if (surface === "user") {
-    panel = h9(UserPanel, { sessionId, sessionBlank, close });
+    panel = h10(UserPanel, { sessionId, sessionBlank, close });
   } else if (surface === "session-template") {
-    panel = h9(SessionTemplatePanel, { sessionId, workspaceId, createCleanSession, close });
+    panel = h10(SessionTemplatePanel, { sessionId, workspaceId, createCleanSession, close });
   } else if (surface === "settings") {
-    panel = h9(SettingsPanel, {
+    panel = h10(SettingsPanel, {
       settings: uiSettings,
       status: settingsStatus,
       busy: settingsBusy,
@@ -5486,12 +5830,12 @@ function TavernShell({ useSessions, useWorkspaces, createCleanSession, playClien
   const statuses = launcherResourceStatuses(activeSnapshot);
   const chromeSwitchLabel = chromeMode === "play" ? uiMessage("chrome.switchToNative") : uiMessage("chrome.switchToPlay");
   const chromeStatusLabel = chromeMode === "play" ? uiMessage("chrome.currentPlay") : uiMessage("chrome.currentNative");
-  return h9(
+  return h10(
     "div",
     { className: "dtv-layer", lang: uiSettings.locale, "data-chrome": chromeMode, "data-surface-open": surface !== null, style: { "--dtv-ui-scale": uiSettings.scale } },
     panel,
-    rpAlert === null ? null : h9(RpHighRiskDialog, { onDismiss: dismissRpAlert }),
-    h9(
+    rpAlert === null ? null : h10(RpHighRiskDialog, { onDismiss: dismissRpAlert }),
+    h10(
       "div",
       {
         className: "dtv-launcher",
@@ -5500,7 +5844,7 @@ function TavernShell({ useSessions, useWorkspaces, createCleanSession, playClien
         "data-vertical": placement.vertical,
         style: { left: placement.left / uiSettings.scale, top: placement.top / uiSettings.scale }
       },
-      h9("div", { className: "dtv-ball-row" }, h9("button", {
+      h10("div", { className: "dtv-ball-row" }, h10("button", {
         className: "dtv-ball",
         type: "button",
         title: uiMessage("nav.launcher"),
@@ -5513,11 +5857,11 @@ function TavernShell({ useSessions, useWorkspaces, createCleanSession, playClien
         onClick: clickLauncher,
         onDoubleClick: doubleClickLauncher
       }, chromeMode === "play" ? "ST" : "DS")),
-      menuOpen ? h9(
+      menuOpen ? h10(
         "div",
         { className: "dtv-menu", role: "menu" },
-        h9("div", { className: "dtv-menu-title", "aria-live": "polite" }, chromeError === "" && statusError === "" ? uiMessage("nav.menuTitle", { session: sessionId || translate("nav.session.none") }) : uiMessage("nav.syncFailed", { message: chromeError || statusError })),
-        h9(
+        h10("div", { className: "dtv-menu-title", "aria-live": "polite" }, chromeError === "" && statusError === "" ? uiMessage("nav.menuTitle", { session: sessionId || translate("nav.session.none") }) : uiMessage("nav.syncFailed", { message: chromeError || statusError })),
+        h10(
           "button",
           {
             className: "dtv-menu-item",
@@ -5528,14 +5872,14 @@ function TavernShell({ useSessions, useWorkspaces, createCleanSession, playClien
             "data-show-binding": false,
             onClick: switchChrome
           },
-          h9("span", { "aria-hidden": "true" }, "\u2194"),
-          h9(
+          h10("span", { "aria-hidden": "true" }, "\u2194"),
+          h10(
             "span",
             { className: "dtv-item-copy" },
-            h9("span", { className: "dtv-item-label" }, chromeSwitchLabel),
-            h9("span", { className: "dtv-item-status" }, chromeStatusLabel)
+            h10("span", { className: "dtv-item-label" }, chromeSwitchLabel),
+            h10("span", { className: "dtv-item-status" }, chromeStatusLabel)
           ),
-          h9("span", { className: "dtv-item-planned" }, chromeMode === "play" ? "ST" : "DSH")
+          h10("span", { className: "dtv-item-planned" }, chromeMode === "play" ? "ST" : "DSH")
         ),
         ...TAVERN_MENU_ITEMS.map((item) => {
           const status = statuses[item.id] ?? { bound: false, count: 0, titleKey: item.emptyTitleKey };
@@ -5544,7 +5888,7 @@ function TavernShell({ useSessions, useWorkspaces, createCleanSession, playClien
           const stateLabel = item.binding === false ? "" : unwrapText(uiMessage(status.bound ? "common.bound" : "common.unbound"));
           const titleText = stateLabel ? uiMessage("nav.itemTitleBound", { label: itemLabel, title: statusTitle, state: stateLabel }) : uiMessage("nav.itemTitle", { label: itemLabel, title: statusTitle });
           const ariaText = stateLabel ? uiMessage("nav.itemAriaBound", { label: itemLabel, title: statusTitle, state: stateLabel }) : uiMessage("nav.itemAria", { label: itemLabel, title: statusTitle });
-          return h9(
+          return h10(
             "button",
             {
               className: "dtv-menu-item",
@@ -5560,25 +5904,25 @@ function TavernShell({ useSessions, useWorkspaces, createCleanSession, playClien
               "aria-label": ariaText,
               onClick: () => open(item.id)
             },
-            item.binding === false ? h9("span", { "aria-hidden": "true" }) : h9("span", { className: "dtv-binding-dot", "aria-hidden": "true" }),
-            h9(
+            item.binding === false ? h10("span", { "aria-hidden": "true" }) : h10("span", { className: "dtv-binding-dot", "aria-hidden": "true" }),
+            h10(
               "span",
               { className: "dtv-item-copy" },
-              h9("span", { className: "dtv-item-label" }, uiMessage(item.labelKey)),
-              h9("span", { className: "dtv-item-status" }, status.bound ? rawText(status.title) : uiMessage(status.titleKey ?? item.emptyTitleKey))
+              h10("span", { className: "dtv-item-label" }, uiMessage(item.labelKey)),
+              h10("span", { className: "dtv-item-status" }, status.bound ? rawText(status.title) : uiMessage(status.titleKey ?? item.emptyTitleKey))
             ),
-            status.count > 1 ? h9("span", { className: "dtv-item-count", "aria-label": uiMessage("nav.bookCount", { count: status.count }) }, uiMessage("nav.bookCount", { count: status.count })) : item.available ? null : h9("span", { className: "dtv-item-planned" }, uiMessage("common.planned"))
+            status.count > 1 ? h10("span", { className: "dtv-item-count", "aria-label": uiMessage("nav.bookCount", { count: status.count }) }, uiMessage("nav.bookCount", { count: status.count })) : item.available ? null : h10("span", { className: "dtv-item-planned" }, uiMessage("common.planned"))
           );
         })
       ) : null
     )
   );
 }
-function installStyles3() {
+function installStyles4() {
   if (document.querySelector(`style[data-plugin-css="${PLUGIN_ID}-shell"]`) !== null) return;
   const style = document.createElement("style");
   style.dataset.pluginCss = `${PLUGIN_ID}-shell`;
-  style.textContent = css8;
+  style.textContent = css9;
   document.head.append(style);
 }
 var name = PLUGIN_ID;
@@ -5589,7 +5933,7 @@ function apply(ctx) {
   installWorldBookStyles();
   installUserStyles();
   installTavernTraceStyles();
-  installStyles3();
+  installStyles4();
   registerTavernTraceView(ctx);
   const playClient = createLivePlayClient();
   const playSlots = installPlaySlotOccupancy(ctx, playClient);
