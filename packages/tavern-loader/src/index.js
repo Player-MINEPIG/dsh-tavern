@@ -23,6 +23,7 @@ import { SessionSelectionStore } from './session-policy.js'
 import { UserWorldBookBindingStore } from './user-world-book-policy.js'
 import { createWorldBookAdapter } from './world-book-adapter.js'
 import { PendingInputProjection } from './pending-input-projection.js'
+import { ImportContextRuntime } from './import-context-runtime.js'
 import { createPlayHost } from './play-host.js'
 import { secureTavernApi } from './api-security.js'
 import {
@@ -224,8 +225,10 @@ export function apply(ctx, config = {}) {
     defaultSelection: () => ({ presetId: store.state.selectedId }),
   })
   migrateCharacterSelections(characterStore, selections)
-  const playHost = createPlayHost(ctx, { selections, characters: characterStore })
+  let importContexts = null
+  const playHost = createPlayHost(ctx, { selections, characters: characterStore, importContexts: () => importContexts })
   const playWorkspaceStore = new PlayWorkspaceStore(storageDir, { host: playHost })
+  importContexts = new ImportContextRuntime(storageDir, playWorkspaceStore)
   const runtime = new TavernProfileLoader({
     presetStore: store,
     selections,
@@ -318,7 +321,7 @@ export function apply(ctx, config = {}) {
   ctx.systemPrompt.section({
     name: PROFILE_SECTION,
     order: 10,
-    text: (context) => runtime.forAssembleContext(context).systemText,
+    text: (context) => [runtime.forAssembleContext(context).systemText, importContexts.contextFor(context.agent?.id)].filter(Boolean).join('\n\n'),
   })
   ctx.systemPrompt.section({
     name: rpModeConstants.sectionName,
@@ -366,7 +369,10 @@ export function apply(ctx, config = {}) {
 
   ctx.on('session/event', (session, event) => {
     pendingInput.observeSessionEvent(session, event)
-    if (event?.type === 'turn/end') pendingInput.clearClaimed(session)
+    if (event?.type === 'turn/end') {
+      pendingInput.clearClaimed(session)
+      importContexts.consumeAfterTurn(session?.id)
+    }
     if (event?.type === 'sandbox/mode') {
       try { rpMode.enforceReadOnly(session) } catch (error) {
         ctx.logger.warn?.(`dsh-tavern: RP sandbox pin failed: ${error instanceof Error ? error.message : String(error)}`)

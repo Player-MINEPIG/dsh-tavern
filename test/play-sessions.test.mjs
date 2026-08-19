@@ -78,10 +78,11 @@ function mockHost({ characterName = 'Alice' } = {}) {
       ]
     },
     characterName() { return characterName },
+    prepareImportContext(reference) { calls.push(['prepareImportContext', reference]); return { path: reference.path, hash: 'hash', qaCount: 1 } },
+    bindImportContext(sessionId, prepared) { calls.push(['bindImportContext', sessionId, prepared]) },
     copySelection(from, to) { calls.push(['copySelection', from, to]) },
   }
 }
-
 async function boundHandler({ now = () => new Date('2026-08-19T03:04:00.000Z'), characterName = 'Alice' } = {}) {
   const pluginDir = mkdtempSync(join(tmpdir(), 'dsh-tavern-play-session-plugin-'))
   const playRoot = mkdtempSync(join(tmpdir(), 'dsh-tavern-play-session-root-'))

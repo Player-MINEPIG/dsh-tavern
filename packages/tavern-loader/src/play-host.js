@@ -5,7 +5,7 @@ function missing(name) {
   return httpError(501, `Host ${name} is unavailable`, 'PLAY_HOST_UNAVAILABLE')
 }
 
-export function createPlayHost(ctx, { selections, characters } = {}) {
+export function createPlayHost(ctx, { selections, characters, importContexts } = {}) {
   const api = () => ctx.get('apiProxy')
   const clientWorkspaces = () => ctx.get('workspaces')
 
@@ -100,6 +100,18 @@ export function createPlayHost(ctx, { selections, characters } = {}) {
       const session = ctx.get('sessions')?.get?.(sessionId)
       if (typeof session?.deriveMessages === 'function') return session.deriveMessages()
       return null
+    },
+
+    prepareImportContext(reference) {
+      const runtime = importContexts?.()
+      if (runtime === null || runtime === undefined) throw missing('import context')
+      return runtime.prepare(reference)
+    },
+
+    bindImportContext(sessionId, prepared) {
+      const runtime = importContexts?.()
+      if (runtime === null || runtime === undefined) throw missing('import context')
+      return runtime.bind(sessionId, prepared)
     },
 
     characterName(sessionId) {

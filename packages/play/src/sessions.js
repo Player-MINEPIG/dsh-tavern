@@ -113,6 +113,9 @@ export function createSessionApiHandler({ host, workspaceStore, now = () => new 
       const sourceId = body?.selectionFromSessionId === undefined || body.selectionFromSessionId === null
         ? null
         : requireSessionId(body.selectionFromSessionId)
+      const preparedImport = body?.importContextRef === undefined
+        ? null
+        : await host.prepareImportContext(body.importContextRef)
       const characterName = typeof host.characterName === 'function'
         ? host.characterName(sourceId)
         : null
@@ -125,6 +128,9 @@ export function createSessionApiHandler({ host, workspaceStore, now = () => new 
         title,
       })
       const sessionId = requireSessionId(created?.sessionId)
+      if (preparedImport !== null) {
+        host.bindImportContext(sessionId, preparedImport)
+      }
       if (sourceId !== null && typeof host.copySelection === 'function') {
         host.copySelection(sourceId, sessionId)
       }
