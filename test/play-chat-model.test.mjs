@@ -66,15 +66,21 @@ test('timeline projection renders only adopted visible QA ranges', () => {
   })
   assert.deepEqual(projected, [{
     id: 'qa-1',
+    hidden: false,
     userText: 'Hello',
     assistantText: 'Hi',
+    originalAssistantText: 'Hi',
+    displayOverridden: false,
     variant: timeline.nodes[0].variants[0],
+    variants: timeline.nodes[0].variants,
     variantCount: 1,
   }])
 
   const overridden = structuredClone(timeline)
   overridden.nodes[0].displayOverride = 'Display only'
-  assert.equal(projectTimelineQa(overridden, { fork: [] })[0].assistantText, 'Display only')
+  const display = projectTimelineQa(overridden, { fork: [] })[0]
+  assert.equal(display.assistantText, 'Display only')
+  assert.equal(display.displayOverridden, true)
   overridden.nodes[0].hidden = true
-  assert.deepEqual(projectTimelineQa(overridden, { fork: [] }), [])
+  assert.equal(projectTimelineQa(overridden, { fork: [] })[0].hidden, true)
 })

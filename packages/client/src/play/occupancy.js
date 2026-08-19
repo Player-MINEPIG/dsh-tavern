@@ -136,6 +136,7 @@ export function installPlaySlotOccupancy(ctx, playClient) {
         inject: () => ({
           playClient,
           playthrough: match.playthrough,
+          openSession: sessionId => ctx.sessions.open(sessionId),
         }),
       }, MowanChatView)
     }).catch(() => {

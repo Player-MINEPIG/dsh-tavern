@@ -17,6 +17,7 @@ import {
   projectGreeting,
   projectTimelineQa,
 } from './chat-model.js'
+import { PlayTurnActions } from './turn-actions.js'
 import { createTurnReconciler } from './turns.js'
 
 const h = createLocalizedElement(createElement)
@@ -118,17 +119,25 @@ function Greeting({ greeting, busy, change }) {
   )
 }
 
-function Turn({ turn }) {
+function Turn({ turn, ...actionProps }) {
+  if (turn.hidden) {
+    return h('div', { className: 'dtv-play-chat-row' },
+      h('p', { className: 'dtv-play-chat-status' }, uiMessage('play.chat.hiddenNode')),
+      h(PlayTurnActions, { turn, ...actionProps }),
+    )
+  }
   return h('div', { className: 'dtv-play-chat-row' },
     turn.userText === '' ? null : h('div', { className: 'dtv-play-chat-bubble dtv-play-chat-user' }, rawText(turn.userText)),
     turn.assistantText === '' ? null : h('div', { className: 'dtv-play-chat-bubble dtv-play-chat-assistant' }, rawText(turn.assistantText)),
+    h(PlayTurnActions, { turn, ...actionProps }),
   )
 }
 
-export function MowanChatView({ sessionId, useSession, playClient, playthrough }) {
+export function MowanChatView({ sessionId, useSession, playClient, playthrough, openSession }) {
   installStyles()
   const sessionRevision = useSession(state => `${state.nodes?.length ?? 0}:${state.running === true}:${state.blank === true}`)
   const [revision, setRevision] = useState(0)
+  const running = useSession(state => state.running === true)
   const [state, setState] = useState(null)
   const [error, setError] = useState('')
   const [greetingBusy, setGreetingBusy] = useState(false)
@@ -173,7 +182,16 @@ export function MowanChatView({ sessionId, useSession, playClient, playthrough }
     state === null && error === '' ? h('p', { className: 'dtv-play-chat-status' }, uiMessage('play.chat.loading')) : null,
     state === null ? null : h('div', { className: 'dtv-play-chat-list' },
       state.greeting === null ? null : h(Greeting, { greeting: state.greeting, busy: greetingBusy, change: changeGreeting }),
-      ...state.turns.map(turn => h(Turn, { key: turn.id, turn })),
+      ...state.turns.map(turn => h(Turn, {
+        key: turn.id,
+        turn,
+        playthrough,
+        playClient,
+        openSession,
+        running,
+        onChanged: () => setRevision(value => value + 1),
+        onError: setError,
+      })),
       state.greeting === null && state.turns.length === 0
         ? h('p', { className: 'dtv-play-chat-status' }, uiMessage('play.chat.empty'))
         : null,

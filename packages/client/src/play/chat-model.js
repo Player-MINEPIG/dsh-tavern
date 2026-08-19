@@ -69,7 +69,7 @@ export async function loadCurrentPlaythrough(client, session, options = {}) {
 export function projectTimelineQa(timeline, messagesBySession = {}) {
   const result = []
   for (const node of timeline?.nodes ?? []) {
-    if (node.kind !== 'qa' || node.hidden === true) continue
+    if (node.kind !== 'qa') continue
     const variant = adoptedVariant(node)
     if (variant === null) continue
     const messages = messagesBySession[variant.sessionId]?.messages
@@ -82,9 +82,13 @@ export function projectTimelineQa(timeline, messagesBySession = {}) {
     const assistant = [...within].reverse().find(message => message.role === 'assistant') ?? null
     result.push({
       id: node.id,
+      hidden: node.hidden === true,
       userText: user?.text ?? '',
       assistantText: node.displayOverride ?? assistant?.text ?? '',
+      originalAssistantText: assistant?.text ?? '',
+      displayOverridden: node.displayOverride !== null,
       variant,
+      variants: node.variants,
       variantCount: node.variants.length,
     })
   }
