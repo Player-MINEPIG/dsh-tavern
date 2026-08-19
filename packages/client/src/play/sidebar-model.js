@@ -2,7 +2,7 @@ import { playthroughCharacterId } from './schema.js'
 
 export const SIDEBAR_LOAD_CONCURRENCY = 4
 
-function characterIdFromSelection(value) {
+export function characterIdFromSelection(value) {
   const selection = value?.selection ?? value
   const id = selection?.characterCardId
   return typeof id === 'string' && id !== '' ? id : null
@@ -232,4 +232,13 @@ export function projectPlaySidebar({
     characters: [...characterById.values()],
     otherSessions,
   }
+}
+
+export function shouldShowUnboundNotice({ workspace, session, selection } = {}) {
+  if (workspace == null || session == null) return false
+  if (workspace.selected !== true) return true
+  const workspacePath = normalizedPath(workspace.rootPath)
+  const sessionPath = normalizedPath(session.cwd)
+  if (workspacePath === '' || sessionPath !== workspacePath) return true
+  return characterIdFromSelection(selection) === null
 }

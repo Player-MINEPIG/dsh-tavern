@@ -5,17 +5,17 @@ import {
   installPlaySlotOccupancy,
 } from '../packages/client/src/play/occupancy.js'
 
-test('Mowan shadows only sidebar.workspaces and Lingzhu disposes the shadow', () => {
+test('Mowan owns only the sidebar shadow and additive unbound notice while Lingzhu disposes both', () => {
   const registrations = []
-  let declarationCleanup = null
+  const declarationCleanups = []
   const nativeStart = () => {}
   const ctx = {
     sessions: { open() {} },
     workspaces: { startSession: nativeStart },
     slots: {
       inject(name, callback) {
-        assert.equal(name, 'sidebar.workspaces')
-        declarationCleanup = callback()
+        assert.ok(['sidebar.workspaces', 'conversation.input.dock'].includes(name))
+        declarationCleanups.push(callback())
       },
       register(options, component) {
         const registration = { options, component, active: true, disposals: 0 }
@@ -36,21 +36,23 @@ test('Mowan shadows only sidebar.workspaces and Lingzhu disposes the shadow', ()
   assert.equal(registrations.length, 0)
 
   occupancy.setMode('play')
-  assert.equal(registrations.length, 1)
-  assert.equal(registrations[0].options.name, 'sidebar.workspaces')
-  assert.equal(registrations[0].options.priority, PLAY_SLOT_PRIORITY)
-  assert.equal(registrations[0].active, true)
+  assert.equal(registrations.length, 2)
+  const sidebar = registrations.find(item => item.options.name === 'sidebar.workspaces')
+  const notice = registrations.find(item => item.options.name === 'conversation.input.dock')
+  assert.equal(sidebar.options.priority, PLAY_SLOT_PRIORITY)
+  assert.equal(notice.options.id, 'pmp-dsh-tavern-unbound-notice')
+  assert.equal(notice.options.order, 90)
+  assert.equal(registrations.every(item => item.active), true)
   assert.equal(ctx.workspaces.startSession, nativeStart)
 
   occupancy.setMode('play')
-  assert.equal(registrations.length, 1)
+  assert.equal(registrations.length, 2)
   occupancy.setMode('native')
-  assert.equal(registrations[0].active, false)
-  assert.equal(registrations[0].disposals, 1)
+  assert.equal(registrations.every(item => !item.active && item.disposals === 1), true)
 
   occupancy.setMode('play')
-  assert.equal(registrations.length, 2)
-  assert.equal(registrations[1].active, true)
-  declarationCleanup()
-  assert.equal(registrations[1].active, false)
+  assert.equal(registrations.length, 4)
+  assert.equal(registrations.slice(2).every(item => item.active), true)
+  for (const cleanup of declarationCleanups) cleanup()
+  assert.equal(registrations.slice(2).every(item => !item.active), true)
 })

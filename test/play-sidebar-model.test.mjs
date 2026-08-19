@@ -5,6 +5,7 @@ import {
   loadSessionCharacterBindings,
   projectPlaySidebar,
   requiresSystemWorkspaceConfirmation,
+  shouldShowUnboundNotice,
   sessionIdsInRpWorkspace,
 } from '../packages/client/src/play/sidebar-model.js'
 
@@ -142,4 +143,29 @@ test('system workspace confirmation follows the backend disk policy', () => {
   assert.equal(requiresSystemWorkspaceConfirmation('/usr/local/rp'), true)
   assert.equal(requiresSystemWorkspaceConfirmation('/System/Volumes/Data'), true)
   assert.equal(requiresSystemWorkspaceConfirmation('/home/user/rp'), false)
+})
+
+test('ordinary-session notice follows workspace membership before stale card binding', () => {
+  const workspace = { selected: true, rootPath: 'D:\\Roleplay' }
+  assert.equal(shouldShowUnboundNotice({
+    workspace,
+    session: session('inside-bound', 'D:\\Roleplay'),
+    selection: { selection: { characterCardId: 'character-a' } },
+  }), false)
+  assert.equal(shouldShowUnboundNotice({
+    workspace,
+    session: session('inside-ordinary', 'd:/roleplay'),
+    selection: { selection: null },
+  }), true)
+  assert.equal(shouldShowUnboundNotice({
+    workspace,
+    session: session('outside-stale', 'D:\\Other'),
+    selection: { selection: { characterCardId: 'character-a' } },
+  }), true)
+  assert.equal(shouldShowUnboundNotice({
+    workspace: { selected: false, rootPath: null },
+    session: session('unconfigured', 'D:\\Other'),
+    selection: { selection: { characterCardId: 'character-a' } },
+  }), true)
+  assert.equal(shouldShowUnboundNotice({ workspace, session: null, selection: null }), false)
 })

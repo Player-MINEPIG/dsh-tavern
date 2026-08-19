@@ -58,6 +58,7 @@ export default Object.freeze({
   "play.sidebar.unassigned": "未归入局",
   "play.sidebar.other": "普通 / 非角色扮演会话",
   "play.sidebar.otherEmpty": "暂无普通或外部会话。",
+  "play.notice.unbound": "本会话暂未绑定角色卡；可以正常对话。绑定角色卡后新开一局，才会启用开场白、回复切换、显示编辑与局导入/导出。",
   "play.sidebar.sessionMissing": "该局在角色扮演工作区中没有可用会话。",
   "play.sidebar.timelineErrors": "有 {count} 个局的 timeline 无法读取。",
   "settings.menu": "界面设置",

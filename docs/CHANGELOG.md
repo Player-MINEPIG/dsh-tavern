@@ -4,6 +4,15 @@ This is the staged implementation log for dsh-tavern. It is kept separately
 from the product README so reviewers can follow intent, decisions, verification,
 and known limits chronologically.
 
+## 2026-08-19 — Ordinary sessions keep native Chat with an additive notice
+
+- Mowan registers one additive `conversation.input.dock` row and never
+  shadows Chat or the composer for an ordinary session.
+- The notice classifies workspace membership before character selection, so a
+  stale binding outside the configured role-play workspace remains ordinary.
+- The row is non-blocking, hides while classification is unresolved, and is
+  disposed completely when the chrome returns to Lingzhu mode.
+
 ## 2026-08-19 — Mowan projects sessions through the workspace slot
 
 - Play chrome shadows only the official sidebar.workspaces cell at priority
