@@ -4,6 +4,18 @@ This is the staged implementation log for dsh-tavern. It is kept separately
 from the product README so reviewers can follow intent, decisions, verification,
 and known limits chronologically.
 
+## 2026-08-19 — Character groups create verified empty playthroughs
+
+- Each character group exposes an icon-only, named new-playthrough action.
+- Existing character sessions seed the complete Tavern selection through the
+  v2 session-copy contract; a card with no session uses the existing v1
+  selection mutation after creating the blank session.
+- The controller writes `nodes: []`, stores character/root ownership only in
+  playthrough ext, then rereads catalog and timeline before navigation.
+- Catalog writes are serialized and a same-character double click shares one
+  in-flight transaction. No greeting, user message, or assistant turn is
+  appended during creation.
+
 ## 2026-08-19 — Ordinary sessions keep native Chat with an additive notice
 
 - Mowan registers one additive `conversation.input.dock` row and never

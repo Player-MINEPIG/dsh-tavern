@@ -53,6 +53,7 @@ export default Object.freeze({
   "play.sidebar.workspaceMissing": "No role-play workspace is selected. Native sessions remain available in Lingzhu mode.",
   "play.sidebar.selectWorkspace": "Use {name} as the role-play workspace",
   "play.sidebar.systemWorkspaceConfirm": "{path} is on the system disk. Use it as the role-play workspace anyway?",
+  "play.sidebar.newPlaythrough": "Start a new playthrough with {name}",
   "play.sidebar.noCharacters": "No character cards are available.",
   "play.sidebar.noPlaythroughs": "No playthroughs yet.",
   "play.sidebar.unassigned": "Not in a playthrough",

@@ -120,6 +120,7 @@ var zh_CN_default = Object.freeze({
   "play.sidebar.workspaceMissing": "\u5C1A\u672A\u9009\u62E9\u89D2\u8272\u626E\u6F14\u5DE5\u4F5C\u533A\uFF1B\u7075\u73E0\u6A21\u5F0F\u4E2D\u7684\u539F\u751F\u4F1A\u8BDD\u4ECD\u53EF\u6B63\u5E38\u4F7F\u7528\u3002",
   "play.sidebar.selectWorkspace": "\u5C06 {name} \u8BBE\u4E3A\u89D2\u8272\u626E\u6F14\u5DE5\u4F5C\u533A",
   "play.sidebar.systemWorkspaceConfirm": "{path} \u4F4D\u4E8E\u7CFB\u7EDF\u76D8\uFF0C\u4ECD\u8981\u5C06\u5176\u8BBE\u4E3A\u89D2\u8272\u626E\u6F14\u5DE5\u4F5C\u533A\u5417\uFF1F",
+  "play.sidebar.newPlaythrough": "\u4E0E {name} \u65B0\u5F00\u4E00\u5C40",
   "play.sidebar.noCharacters": "\u6682\u65E0\u89D2\u8272\u5361\u3002",
   "play.sidebar.noPlaythroughs": "\u5C1A\u672A\u521B\u5EFA\u5C40\u3002",
   "play.sidebar.unassigned": "\u672A\u5F52\u5165\u5C40",
@@ -613,6 +614,7 @@ var en_default = Object.freeze({
   "play.sidebar.workspaceMissing": "No role-play workspace is selected. Native sessions remain available in Lingzhu mode.",
   "play.sidebar.selectWorkspace": "Use {name} as the role-play workspace",
   "play.sidebar.systemWorkspaceConfirm": "{path} is on the system disk. Use it as the role-play workspace anyway?",
+  "play.sidebar.newPlaythrough": "Start a new playthrough with {name}",
   "play.sidebar.noCharacters": "No character cards are available.",
   "play.sidebar.noPlaythroughs": "No playthroughs yet.",
   "play.sidebar.unassigned": "Not in a playthrough",
@@ -4115,6 +4117,120 @@ function shouldShowUnboundNotice({ workspace, session, selection } = {}) {
   return characterIdFromSelection(selection) === null;
 }
 
+// packages/client/src/play/create.js
+var SAFE_SEGMENT = /^[A-Za-z0-9][A-Za-z0-9._-]{0,199}$/;
+var SAFE_SESSION_ID = /^[A-Za-z0-9][A-Za-z0-9._:-]{0,199}$/;
+function safeSegment(value, label) {
+  if (typeof value !== "string" || !SAFE_SEGMENT.test(value)) {
+    throw new TypeError(`${label} must be a safe path segment`);
+  }
+  return value;
+}
+function safeSessionId(value) {
+  if (typeof value !== "string" || !SAFE_SESSION_ID.test(value)) {
+    throw new TypeError("session.id must be a valid DSH session id");
+  }
+  return value;
+}
+function isoNow(now) {
+  const value = now();
+  if (!(value instanceof Date) || Number.isNaN(value.valueOf())) throw new TypeError("now must return a valid Date");
+  return value.toISOString();
+}
+async function catalogOrEmpty(client) {
+  try {
+    return await client.getCatalog();
+  } catch (reason) {
+    if (reason?.code === "PLAY_PATH_NOT_FOUND") return { playthroughs: [] };
+    throw reason;
+  }
+}
+function sourceSessionIdForCharacter(character) {
+  const activePlaythrough = character?.playthroughs?.find((item) => item.active && typeof item.rootSessionId === "string");
+  if (activePlaythrough !== void 0) return activePlaythrough.rootSessionId;
+  const activeLoose = character?.unassigned?.find((item) => item.active);
+  if (activeLoose !== void 0) return activeLoose.id;
+  const loose = character?.unassigned?.find((item) => typeof item.id === "string");
+  if (loose !== void 0) return loose.id;
+  const rooted = character?.playthroughs?.find((item) => typeof item.rootSessionId === "string");
+  return rooted?.rootSessionId ?? null;
+}
+async function createCharacterPlaythrough(client, {
+  character,
+  selectionFromSessionId = null,
+  now = () => /* @__PURE__ */ new Date(),
+  randomUUID = () => globalThis.crypto.randomUUID()
+} = {}) {
+  if (client == null) throw new TypeError("playClient.required");
+  const characterId = safeSegment(character?.id, "character.id");
+  const characterName = typeof character?.name === "string" && character.name.trim() !== "" ? character.name.trim() : characterId;
+  const createdAt = isoNow(now);
+  const playthroughId = safeSegment(`playthrough-${randomUUID()}`, "playthrough.id");
+  const directory = `${characterId}/${playthroughId}`;
+  const path = `${directory}/timeline.json`;
+  const sourceId = typeof selectionFromSessionId === "string" && selectionFromSessionId !== "" ? selectionFromSessionId : null;
+  const created = await client.postSession(sourceId);
+  const sessionId = safeSessionId(created?.sessionId);
+  if (sourceId === null) {
+    await client.putCharacterSelection(sessionId, characterId, { greetingIndex: 0 });
+  }
+  const selection = await client.getCharacterSelection(sessionId);
+  if (characterIdFromSelection(selection) !== characterId) {
+    throw new Error("playthrough character selection did not persist");
+  }
+  const catalog2 = await catalogOrEmpty(client);
+  const playthrough = {
+    id: playthroughId,
+    path,
+    title: typeof created?.title === "string" && created.title !== "" ? created.title : `${characterName} ${createdAt.slice(0, 16).replace("T", " ")}`,
+    lastOpenedAt: createdAt,
+    ext: {
+      pmpDshTavern: {
+        characterId,
+        rootSessionId: sessionId
+      }
+    }
+  };
+  await client.createDirs(directory);
+  await client.putTimeline(playthrough, { nodes: [] });
+  await client.putCatalog({
+    ...catalog2,
+    playthroughs: [...catalog2.playthroughs, playthrough]
+  });
+  const [savedCatalog, savedTimeline] = await Promise.all([
+    client.getCatalog(),
+    client.getTimeline(playthrough)
+  ]);
+  const saved = savedCatalog.playthroughs.find((item) => item.id === playthroughId);
+  if (saved?.ext?.pmpDshTavern?.rootSessionId !== sessionId || savedTimeline.nodes.length !== 0) {
+    throw new Error("playthrough verification failed");
+  }
+  return { sessionId, playthrough: saved };
+}
+function createPlaythroughController(client, dependencies = {}) {
+  const inFlight = /* @__PURE__ */ new Map();
+  let tail = Promise.resolve();
+  return {
+    create(args) {
+      const characterId = safeSegment(args?.character?.id, "character.id");
+      const existing = inFlight.get(characterId);
+      if (existing !== void 0) return existing;
+      const task = tail.catch(() => {
+      }).then(() => createCharacterPlaythrough(client, {
+        ...dependencies,
+        ...args
+      }));
+      tail = task;
+      inFlight.set(characterId, task);
+      task.finally(() => {
+        if (inFlight.get(characterId) === task) inFlight.delete(characterId);
+      }).catch(() => {
+      });
+      return task;
+    }
+  };
+}
+
 // packages/client/src/play/sidebar.js
 var h7 = createLocalizedElement(import_react7.createElement);
 var css6 = `
@@ -4122,6 +4238,7 @@ var css6 = `
 .dtv-play-section{display:flex;flex-direction:column;gap:2px;border-radius:10px}.dtv-play-section[data-open=true]{padding-bottom:3px}
 .dtv-play-group,.dtv-play-row{width:100%;box-sizing:border-box;border:0;border-radius:8px;background:transparent;color:inherit;font:inherit;text-align:left;cursor:pointer;display:flex;align-items:center;gap:7px}.dtv-play-group:hover,.dtv-play-row:hover{background:var(--dsw-alias-interactive-bg-hover)}
 .dtv-play-group{min-height:38px;padding:4px 6px;font-size:12px;font-weight:680}.dtv-play-row{min-height:32px;padding:4px 7px 4px 27px;font-size:11px}.dtv-play-row[data-active=true]{background:var(--dsw-alias-interactive-bg-selected,var(--dsw-specific-tip));font-weight:650}.dtv-play-row:disabled{cursor:default;opacity:.55}
+.dtv-play-group-line{display:flex;align-items:center;gap:3px}.dtv-play-group-line>.dtv-play-group{min-width:0;flex:1}.dtv-play-create{width:30px;height:30px;flex:none;border:0;border-radius:8px;background:transparent;color:var(--dsw-alias-label-secondary);font:inherit;cursor:pointer}.dtv-play-create:hover{background:var(--dsw-alias-interactive-bg-hover)}.dtv-play-create:disabled{cursor:default;opacity:.5}
 .dtv-play-chevron{width:10px;flex:none;text-align:center;color:var(--dsw-alias-label-tertiary)}.dtv-play-title{min-width:0;flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.dtv-play-count{flex:none;border-radius:9px;padding:1px 6px;background:var(--dsw-specific-tip);color:var(--dsw-alias-label-tertiary);font-size:9px}
 .dtv-play-avatar{position:relative;width:25px;height:25px;flex:none;border-radius:50%;overflow:hidden;background:var(--dsw-specific-tip);display:grid;place-items:center;color:var(--dsw-alias-label-secondary);font-size:10px}.dtv-play-avatar img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
 .dtv-play-subgroup{display:flex;flex-direction:column;gap:1px}.dtv-play-subgroup>.dtv-play-group{min-height:30px;padding-left:25px;font-size:10px;font-weight:620;color:var(--dsw-alias-label-secondary)}
@@ -4183,23 +4300,35 @@ function Rail({ model, scale, expandSidebar }) {
     }, "\u2630")
   );
 }
-function CharacterGroup({ character, collapsed, unassignedOpen, toggle, toggleUnassigned, openPlaythrough, openSession }) {
+function CharacterGroup({ character, collapsed, unassignedOpen, creating, createDisabled, toggle, toggleUnassigned, createPlaythrough, openPlaythrough, openSession }) {
   const count = character.playthroughs.length + character.unassigned.length;
   return h7(
     "section",
     { className: "dtv-play-section", "data-open": !collapsed },
     h7(
-      "button",
-      {
+      "div",
+      { className: "dtv-play-group-line" },
+      h7(
+        "button",
+        {
+          type: "button",
+          className: "dtv-play-group",
+          "aria-expanded": !collapsed,
+          onClick: toggle
+        },
+        h7("span", { className: "dtv-play-chevron", "aria-hidden": "true" }, collapsed ? "\u203A" : "\u2304"),
+        h7(Avatar, { character }),
+        h7("span", { className: "dtv-play-title" }, rawText(character.name)),
+        h7("span", { className: "dtv-play-count" }, rawText(String(count)))
+      ),
+      h7("button", {
         type: "button",
-        className: "dtv-play-group",
-        "aria-expanded": !collapsed,
-        onClick: toggle
-      },
-      h7("span", { className: "dtv-play-chevron", "aria-hidden": "true" }, collapsed ? "\u203A" : "\u2304"),
-      h7(Avatar, { character }),
-      h7("span", { className: "dtv-play-title" }, rawText(character.name)),
-      h7("span", { className: "dtv-play-count" }, rawText(String(count)))
+        className: "dtv-play-create",
+        disabled: createDisabled,
+        title: uiMessage("play.sidebar.newPlaythrough", { name: character.name }),
+        "aria-label": uiMessage("play.sidebar.newPlaythrough", { name: character.name }),
+        onClick: () => createPlaythrough(character)
+      }, creating ? "\u2026" : "+")
     ),
     collapsed ? null : character.playthroughs.length === 0 && character.unassigned.length === 0 ? h7("p", { className: "dtv-play-empty" }, uiMessage("play.sidebar.noPlaythroughs")) : null,
     collapsed ? null : character.playthroughs.map((playthrough) => h7(
@@ -4263,6 +4392,11 @@ function PlayWorkspaceBrowser({
   const archivedSessionIds = useWorkspaces((state) => state.archivedSessionIds);
   const cache = (0, import_react7.useRef)(null);
   if (cache.current === null) cache.current = new SessionCharacterBindingCache();
+  const creator = (0, import_react7.useRef)(null);
+  if (creator.current?.client !== playClient) {
+    creator.current = { client: playClient, controller: createPlaythroughController(playClient) };
+  }
+  const [creatingCharacterId, setCreatingCharacterId] = (0, import_react7.useState)(null);
   const [revision, setRevision] = (0, import_react7.useState)(0);
   const [resources, setResources] = (0, import_react7.useState)(null);
   const [sessionCharacters, setSessionCharacters] = (0, import_react7.useState)({});
@@ -4335,6 +4469,23 @@ function PlayWorkspaceBrowser({
       setStatus({ message: reason instanceof Error ? reason.message : String(reason) });
     }
   };
+  const createPlaythrough = async (character) => {
+    if (creatingCharacterId !== null) return;
+    setCreatingCharacterId(character.id);
+    setStatus(null);
+    try {
+      const result = await creator.current.controller.create({
+        character,
+        selectionFromSessionId: sourceSessionIdForCharacter(character)
+      });
+      window.dispatchEvent(new Event(CLIENT_REFRESH_EVENT));
+      openSession(result.sessionId);
+    } catch (reason) {
+      setStatus({ message: reason instanceof Error ? reason.message : String(reason) });
+    } finally {
+      setCreatingCharacterId(null);
+    }
+  };
   const openPlaythrough = async (playthrough) => {
     setStatus(null);
     try {
@@ -4394,6 +4545,9 @@ function PlayWorkspaceBrowser({
       character,
       collapsed: collapsedCharacters.has(character.id),
       unassignedOpen: expandedUnassigned.has(character.id),
+      creating: creatingCharacterId === character.id,
+      createDisabled: !model.workspaceReady || creatingCharacterId !== null,
+      createPlaythrough,
       toggle: () => toggleSet(setCollapsedCharacters, character.id),
       toggleUnassigned: () => toggleSet(setExpandedUnassigned, character.id),
       openPlaythrough,
@@ -4712,6 +4866,20 @@ function createLivePlayClient({
     async getSelection(sessionId) {
       const response = await getCharacterSelection(sessionId);
       return response?.selection ?? null;
+    },
+    putCharacterSelection(sessionId, characterCardId, character = {}) {
+      if (typeof sessionId !== "string" || sessionId === "") throw new TypeError("sessionId is required");
+      if (typeof characterCardId !== "string" || characterCardId === "") {
+        throw new TypeError("characterCardId is required");
+      }
+      if (character === null || typeof character !== "object" || Array.isArray(character)) {
+        throw new TypeError("character selection options must be an object");
+      }
+      return v1("POST", "/character-selection", {
+        sessionId,
+        characterCardId,
+        character
+      });
     },
     getCharacters() {
       return v1("GET", "/characters");

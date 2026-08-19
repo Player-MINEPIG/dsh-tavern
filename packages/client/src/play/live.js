@@ -167,6 +167,20 @@ export function createLivePlayClient({
       const response = await getCharacterSelection(sessionId)
       return response?.selection ?? null
     },
+    putCharacterSelection(sessionId, characterCardId, character = {}) {
+      if (typeof sessionId !== 'string' || sessionId === '') throw new TypeError('sessionId is required')
+      if (typeof characterCardId !== 'string' || characterCardId === '') {
+        throw new TypeError('characterCardId is required')
+      }
+      if (character === null || typeof character !== 'object' || Array.isArray(character)) {
+        throw new TypeError('character selection options must be an object')
+      }
+      return v1('POST', '/character-selection', {
+        sessionId,
+        characterCardId,
+        character,
+      })
+    },
     getCharacters() {
       return v1('GET', '/characters')
     },

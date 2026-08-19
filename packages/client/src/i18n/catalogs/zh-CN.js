@@ -53,6 +53,7 @@ export default Object.freeze({
   "play.sidebar.workspaceMissing": "尚未选择角色扮演工作区；灵珠模式中的原生会话仍可正常使用。",
   "play.sidebar.selectWorkspace": "将 {name} 设为角色扮演工作区",
   "play.sidebar.systemWorkspaceConfirm": "{path} 位于系统盘，仍要将其设为角色扮演工作区吗？",
+  "play.sidebar.newPlaythrough": "与 {name} 新开一局",
   "play.sidebar.noCharacters": "暂无角色卡。",
   "play.sidebar.noPlaythroughs": "尚未创建局。",
   "play.sidebar.unassigned": "未归入局",

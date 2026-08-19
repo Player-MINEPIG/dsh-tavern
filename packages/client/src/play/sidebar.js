@@ -18,6 +18,10 @@ import {
   unwrapText,
 } from '../i18n.js'
 import {
+  createPlaythroughController,
+  sourceSessionIdForCharacter,
+} from './create.js'
+import {
   SessionCharacterBindingCache,
   loadPlaySidebarResources,
   requiresSystemWorkspaceConfirmation,
@@ -33,6 +37,7 @@ const css = `
 .dtv-play-section{display:flex;flex-direction:column;gap:2px;border-radius:10px}.dtv-play-section[data-open=true]{padding-bottom:3px}
 .dtv-play-group,.dtv-play-row{width:100%;box-sizing:border-box;border:0;border-radius:8px;background:transparent;color:inherit;font:inherit;text-align:left;cursor:pointer;display:flex;align-items:center;gap:7px}.dtv-play-group:hover,.dtv-play-row:hover{background:var(--dsw-alias-interactive-bg-hover)}
 .dtv-play-group{min-height:38px;padding:4px 6px;font-size:12px;font-weight:680}.dtv-play-row{min-height:32px;padding:4px 7px 4px 27px;font-size:11px}.dtv-play-row[data-active=true]{background:var(--dsw-alias-interactive-bg-selected,var(--dsw-specific-tip));font-weight:650}.dtv-play-row:disabled{cursor:default;opacity:.55}
+.dtv-play-group-line{display:flex;align-items:center;gap:3px}.dtv-play-group-line>.dtv-play-group{min-width:0;flex:1}.dtv-play-create{width:30px;height:30px;flex:none;border:0;border-radius:8px;background:transparent;color:var(--dsw-alias-label-secondary);font:inherit;cursor:pointer}.dtv-play-create:hover{background:var(--dsw-alias-interactive-bg-hover)}.dtv-play-create:disabled{cursor:default;opacity:.5}
 .dtv-play-chevron{width:10px;flex:none;text-align:center;color:var(--dsw-alias-label-tertiary)}.dtv-play-title{min-width:0;flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.dtv-play-count{flex:none;border-radius:9px;padding:1px 6px;background:var(--dsw-specific-tip);color:var(--dsw-alias-label-tertiary);font-size:9px}
 .dtv-play-avatar{position:relative;width:25px;height:25px;flex:none;border-radius:50%;overflow:hidden;background:var(--dsw-specific-tip);display:grid;place-items:center;color:var(--dsw-alias-label-secondary);font-size:10px}.dtv-play-avatar img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
 .dtv-play-subgroup{display:flex;flex-direction:column;gap:1px}.dtv-play-subgroup>.dtv-play-group{min-height:30px;padding-left:25px;font-size:10px;font-weight:620;color:var(--dsw-alias-label-secondary)}
@@ -93,9 +98,10 @@ function Rail({ model, scale, expandSidebar }) {
   )
 }
 
-function CharacterGroup({ character, collapsed, unassignedOpen, toggle, toggleUnassigned, openPlaythrough, openSession }) {
+function CharacterGroup({ character, collapsed, unassignedOpen, creating, createDisabled, toggle, toggleUnassigned, createPlaythrough, openPlaythrough, openSession }) {
   const count = character.playthroughs.length + character.unassigned.length
   return h('section', { className: 'dtv-play-section', 'data-open': !collapsed },
+    h('div', { className: 'dtv-play-group-line' },
     h('button', {
       type: 'button',
       className: 'dtv-play-group',
@@ -106,6 +112,15 @@ function CharacterGroup({ character, collapsed, unassignedOpen, toggle, toggleUn
     h(Avatar, { character }),
     h('span', { className: 'dtv-play-title' }, rawText(character.name)),
     h('span', { className: 'dtv-play-count' }, rawText(String(count))),
+    ),
+    h('button', {
+      type: 'button',
+      className: 'dtv-play-create',
+      disabled: createDisabled,
+      title: uiMessage('play.sidebar.newPlaythrough', { name: character.name }),
+      'aria-label': uiMessage('play.sidebar.newPlaythrough', { name: character.name }),
+      onClick: () => createPlaythrough(character),
+    }, creating ? '…' : '+'),
     ),
     collapsed ? null : character.playthroughs.length === 0 && character.unassigned.length === 0
       ? h('p', { className: 'dtv-play-empty' }, uiMessage('play.sidebar.noPlaythroughs'))
@@ -164,6 +179,11 @@ export function PlayWorkspaceBrowser({
   const archivedSessionIds = useWorkspaces(state => state.archivedSessionIds)
   const cache = useRef(null)
   if (cache.current === null) cache.current = new SessionCharacterBindingCache()
+  const creator = useRef(null)
+  if (creator.current?.client !== playClient) {
+    creator.current = { client: playClient, controller: createPlaythroughController(playClient) }
+  }
+  const [creatingCharacterId, setCreatingCharacterId] = useState(null)
   const [revision, setRevision] = useState(0)
   const [resources, setResources] = useState(null)
   const [sessionCharacters, setSessionCharacters] = useState({})
@@ -238,6 +258,24 @@ export function PlayWorkspaceBrowser({
     }
   }
 
+  const createPlaythrough = async character => {
+    if (creatingCharacterId !== null) return
+    setCreatingCharacterId(character.id)
+    setStatus(null)
+    try {
+      const result = await creator.current.controller.create({
+        character,
+        selectionFromSessionId: sourceSessionIdForCharacter(character),
+      })
+      window.dispatchEvent(new Event(CLIENT_REFRESH_EVENT))
+      openSession(result.sessionId)
+    } catch (reason) {
+      setStatus({ message: reason instanceof Error ? reason.message : String(reason) })
+    } finally {
+      setCreatingCharacterId(null)
+    }
+  }
+
   const openPlaythrough = async playthrough => {
     setStatus(null)
     try {
@@ -294,6 +332,9 @@ export function PlayWorkspaceBrowser({
       character,
       collapsed: collapsedCharacters.has(character.id),
       unassignedOpen: expandedUnassigned.has(character.id),
+      creating: creatingCharacterId === character.id,
+      createDisabled: !model.workspaceReady || creatingCharacterId !== null,
+      createPlaythrough,
       toggle: () => toggleSet(setCollapsedCharacters, character.id),
       toggleUnassigned: () => toggleSet(setExpandedUnassigned, character.id),
       openPlaythrough,

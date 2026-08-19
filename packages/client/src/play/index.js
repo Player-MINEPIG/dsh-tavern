@@ -1,5 +1,6 @@
 export { createLivePlayClient } from './live.js'
 export * from './chrome.js'
+export * from './create.js'
 export * from './occupancy.js'
 export * from './sidebar-model.js'
 export { PlayWorkspaceBrowser } from './sidebar.js'
