@@ -112,6 +112,10 @@ var zh_CN_default = Object.freeze({
   "nav.itemAria": "{label}\uFF0C{title}",
   "nav.bookCount": "{count} \u672C",
   "nav.launcher": "\u62D6\u52A8\u53EF\u79FB\u52A8\uFF1B\u5355\u51FB\u5C55\u5F00\u9762\u677F\uFF1B\u53CC\u51FB\u5207\u6362\u7075\u73E0/\u9B54\u4E38",
+  "chrome.switchToPlay": "\u5207\u6362\u5230\u9B54\u4E38",
+  "chrome.switchToNative": "\u5207\u6362\u5230\u7075\u73E0",
+  "chrome.currentPlay": "\u5F53\u524D\uFF1A\u7EA2\u9ED1 ST",
+  "chrome.currentNative": "\u5F53\u524D\uFF1A\u84DD\u9ED1 DSH",
   "settings.menu": "\u754C\u9762\u8BBE\u7F6E",
   "settings.title": "Tavern \u754C\u9762\u8BBE\u7F6E",
   "settings.language": "\u754C\u9762\u8BED\u8A00",
@@ -589,6 +593,10 @@ var en_default = Object.freeze({
   "nav.itemAria": "{label}, {title}",
   "nav.bookCount": "{count} books",
   "nav.launcher": "Drag to move; click to open panels; double-click to switch Lingzhu/Mowan",
+  "chrome.switchToPlay": "Switch to Mowan",
+  "chrome.switchToNative": "Switch to Lingzhu",
+  "chrome.currentPlay": "Current: red-black ST",
+  "chrome.currentNative": "Current: blue-black DSH",
   "settings.menu": "UI settings",
   "settings.title": "Tavern UI settings",
   "settings.language": "Interface language",
@@ -3651,6 +3659,24 @@ function createChromeClickController({
     cancel(pendingClick);
     pendingClick = null;
   };
+  const switchMode = async ({ suppressed = false } = {}) => {
+    cancelPendingClick();
+    closeMenu();
+    if (disposed || suppressed || switching) return false;
+    switching = true;
+    try {
+      const saved = await persistMode(nextChromeMode(getMode()));
+      if (disposed) return false;
+      setMode(saved.mode);
+      setError(null);
+      return true;
+    } catch (reason) {
+      if (!disposed) setError(reason);
+      return false;
+    } finally {
+      switching = false;
+    }
+  };
   return {
     click({ suppressed = false } = {}) {
       if (disposed || suppressed || pendingClick !== null) return false;
@@ -3660,24 +3686,8 @@ function createChromeClickController({
       }, delay);
       return true;
     },
-    async doubleClick({ suppressed = false } = {}) {
-      cancelPendingClick();
-      closeMenu();
-      if (disposed || suppressed || switching) return false;
-      switching = true;
-      try {
-        const saved = await persistMode(nextChromeMode(getMode()));
-        if (disposed) return false;
-        setMode(saved.mode);
-        setError(null);
-        return true;
-      } catch (reason) {
-        if (!disposed) setError(reason);
-        return false;
-      } finally {
-        switching = false;
-      }
-    },
+    switchMode,
+    doubleClick: switchMode,
     dispose() {
       disposed = true;
       cancelPendingClick();
@@ -4537,6 +4547,7 @@ function TavernShell({ useSessions, useWorkspaces, createCleanSession, playClien
   };
   const clickLauncher = () => chromeController.current?.click({ suppressed: consumeSuppressedClick() });
   const doubleClickLauncher = () => chromeController.current?.doubleClick({ suppressed: consumeSuppressedClick() });
+  const switchChrome = () => chromeController.current?.switchMode();
   const open = (id) => {
     setMenuOpen(false);
     setSurface(id);
@@ -4578,6 +4589,8 @@ function TavernShell({ useSessions, useWorkspaces, createCleanSession, playClien
   }
   const placement = launcherPlacement(anchor, viewport(), menuOpen, uiSettings.scale);
   const statuses = launcherResourceStatuses(activeSnapshot);
+  const chromeSwitchLabel = chromeMode === "play" ? uiMessage("chrome.switchToNative") : uiMessage("chrome.switchToPlay");
+  const chromeStatusLabel = chromeMode === "play" ? uiMessage("chrome.currentPlay") : uiMessage("chrome.currentNative");
   return h7(
     "div",
     { className: "dtv-layer", lang: uiSettings.locale, "data-chrome": chromeMode, "data-surface-open": surface !== null, style: { "--dtv-ui-scale": uiSettings.scale } },
@@ -4609,6 +4622,26 @@ function TavernShell({ useSessions, useWorkspaces, createCleanSession, playClien
         "div",
         { className: "dtv-menu", role: "menu" },
         h7("div", { className: "dtv-menu-title", "aria-live": "polite" }, chromeError === "" && statusError === "" ? uiMessage("nav.menuTitle", { session: sessionId || translate("nav.session.none") }) : uiMessage("nav.syncFailed", { message: chromeError || statusError })),
+        h7(
+          "button",
+          {
+            className: "dtv-menu-item",
+            type: "button",
+            role: "menuitem",
+            title: chromeSwitchLabel,
+            "aria-label": chromeSwitchLabel,
+            "data-show-binding": false,
+            onClick: switchChrome
+          },
+          h7("span", { "aria-hidden": "true" }, "\u2194"),
+          h7(
+            "span",
+            { className: "dtv-item-copy" },
+            h7("span", { className: "dtv-item-label" }, chromeSwitchLabel),
+            h7("span", { className: "dtv-item-status" }, chromeStatusLabel)
+          ),
+          h7("span", { className: "dtv-item-planned" }, chromeMode === "play" ? "ST" : "DSH")
+        ),
         ...TAVERN_MENU_ITEMS.map((item) => {
           const status = statuses[item.id] ?? { bound: false, count: 0, titleKey: item.emptyTitleKey };
           const itemLabel = unwrapText(uiMessage(item.labelKey));

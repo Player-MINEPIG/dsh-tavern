@@ -799,6 +799,7 @@ function TavernShell({ useSessions, useWorkspaces, createCleanSession, playClien
 
   const clickLauncher = () => chromeController.current?.click({ suppressed: consumeSuppressedClick() })
   const doubleClickLauncher = () => chromeController.current?.doubleClick({ suppressed: consumeSuppressedClick() })
+  const switchChrome = () => chromeController.current?.switchMode()
 
   const open = id => {
     setMenuOpen(false)
@@ -842,6 +843,10 @@ function TavernShell({ useSessions, useWorkspaces, createCleanSession, playClien
 
   const placement = launcherPlacement(anchor, viewport(), menuOpen, uiSettings.scale)
   const statuses = launcherResourceStatuses(activeSnapshot)
+  const chromeSwitchLabel = chromeMode === 'play'
+    ? uiMessage('chrome.switchToNative')
+    : uiMessage('chrome.switchToPlay')
+  const chromeStatusLabel = chromeMode === 'play' ? uiMessage('chrome.currentPlay') : uiMessage('chrome.currentNative')
 
   return h('div', { className: 'dtv-layer', lang: uiSettings.locale, 'data-chrome': chromeMode, 'data-surface-open': surface !== null, style: { '--dtv-ui-scale': uiSettings.scale } },
     panel,
@@ -868,6 +873,22 @@ function TavernShell({ useSessions, useWorkspaces, createCleanSession, playClien
         }, chromeMode === 'play' ? 'ST' : 'DS')),
       menuOpen ? h('div', { className: 'dtv-menu', role: 'menu' },
         h('div', { className: 'dtv-menu-title', 'aria-live': 'polite' }, chromeError === '' && statusError === '' ? uiMessage('nav.menuTitle', { session: sessionId || translate('nav.session.none') }) : uiMessage('nav.syncFailed', { message: chromeError || statusError })),
+        h('button', {
+          className: 'dtv-menu-item',
+          type: 'button',
+          role: 'menuitem',
+          title: chromeSwitchLabel,
+          'aria-label': chromeSwitchLabel,
+          'data-show-binding': false,
+          onClick: switchChrome,
+        },
+        h('span', { 'aria-hidden': 'true' }, '↔'),
+        h('span', { className: 'dtv-item-copy' },
+          h('span', { className: 'dtv-item-label' }, chromeSwitchLabel),
+          h('span', { className: 'dtv-item-status' }, chromeStatusLabel),
+        ),
+        h('span', { className: 'dtv-item-planned' }, chromeMode === 'play' ? 'ST' : 'DSH'),
+        ),
         ...TAVERN_MENU_ITEMS.map(item => {
           const status = statuses[item.id] ?? { bound: false, count: 0, titleKey: item.emptyTitleKey }
           const itemLabel = unwrapText(uiMessage(item.labelKey))

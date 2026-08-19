@@ -31,6 +31,25 @@ export function createChromeClickController({
     pendingClick = null
   }
 
+  const switchMode = async ({ suppressed = false } = {}) => {
+    cancelPendingClick()
+    closeMenu()
+    if (disposed || suppressed || switching) return false
+    switching = true
+    try {
+      const saved = await persistMode(nextChromeMode(getMode()))
+      if (disposed) return false
+      setMode(saved.mode)
+      setError(null)
+      return true
+    } catch (reason) {
+      if (!disposed) setError(reason)
+      return false
+    } finally {
+      switching = false
+    }
+  }
+
   return {
     click({ suppressed = false } = {}) {
       if (disposed || suppressed || pendingClick !== null) return false
@@ -41,24 +60,8 @@ export function createChromeClickController({
       return true
     },
 
-    async doubleClick({ suppressed = false } = {}) {
-      cancelPendingClick()
-      closeMenu()
-      if (disposed || suppressed || switching) return false
-      switching = true
-      try {
-        const saved = await persistMode(nextChromeMode(getMode()))
-        if (disposed) return false
-        setMode(saved.mode)
-        setError(null)
-        return true
-      } catch (reason) {
-        if (!disposed) setError(reason)
-        return false
-      } finally {
-        switching = false
-      }
-    },
+    switchMode,
+    doubleClick: switchMode,
 
     dispose() {
       disposed = true

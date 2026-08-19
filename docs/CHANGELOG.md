@@ -4,6 +4,14 @@ This is the staged implementation log for dsh-tavern. It is kept separately
 from the product README so reviewers can follow intent, decisions, verification,
 and known limits chronologically.
 
+## 2026-08-19 — Chrome switch is keyboard reachable
+
+- The launcher menu exposes an explicit Lingzhu/Mowan switch with current-mode
+  text, title, and aria label.
+- Menu activation and pointer double-click share the same transactional
+  controller, including PUT-before-render and failure rollback.
+
+Verification: test/play-chrome-client.test.mjs, test/client-shell.test.mjs.
 ## 2026-08-19 — Lingzhu/Mowan chrome is transactional
 
 - The single floating launcher defaults to the blue-black native chrome and
