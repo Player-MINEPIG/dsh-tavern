@@ -1,6 +1,5 @@
 import { httpError } from './http.js'
 
-const NODE_KINDS = new Set(['greeting', 'qa'])
 const NODE_KEYS = new Set([
   'id',
   'kind',
@@ -72,8 +71,8 @@ export function normalizeNode(value, label = 'node') {
   if (!isRecord(value)) throw httpError(400, `${label} must be an object`, 'PLAY_TIMELINE_INVALID')
   rejectFocusField(value, label)
   unexpectedKey(value, NODE_KEYS, label)
-  if (!NODE_KINDS.has(value.kind)) {
-    throw httpError(400, `${label}.kind must be greeting or qa`, 'PLAY_TIMELINE_INVALID')
+  if (value.kind !== 'qa') {
+    throw httpError(400, `${label}.kind must be qa`, 'PLAY_TIMELINE_INVALID')
   }
   if (value.hidden !== undefined && typeof value.hidden !== 'boolean') {
     throw httpError(400, `${label}.hidden must be a boolean`, 'PLAY_TIMELINE_INVALID')
@@ -136,13 +135,13 @@ export function parseTimelineJson(text) {
 
 /**
  * Focus is the session of the adopted variant on the last still-rendered QA node.
- * Hidden QA nodes are not rendered. Greeting-only timelines have no focus session.
+ * Hidden QA nodes are not rendered. Empty timelines have no focus session.
  */
 export function deriveFocus(timeline) {
   const nodes = Array.isArray(timeline?.nodes) ? timeline.nodes : normalizeTimeline(timeline).nodes
   for (let index = nodes.length - 1; index >= 0; index -= 1) {
     const node = nodes[index]
-    if (node.kind !== 'qa' || node.hidden === true) continue
+    if (node.hidden === true) continue
     const adopted = node.variants.find(variant => variant.id === node.adoptedVariantId)
     if (adopted === undefined) {
       throw httpError(400, 'adopted variant is missing', 'PLAY_TIMELINE_INVALID')

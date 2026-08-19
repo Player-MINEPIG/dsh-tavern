@@ -209,12 +209,6 @@ test('GET /focus is derived sessionId only; POST /focus is 405', async () => {
     writeFileSync(join(fixture.playRoot, 'run-timeline.json'), JSON.stringify({
       nodes: [
         {
-          id: 'g1',
-          kind: 'greeting',
-          adoptedVariantId: 'gv',
-          variants: [{ id: 'gv', sessionId: 'session-root', startEventId: 0, endEventId: 0 }],
-        },
-        {
           id: 'q1',
           kind: 'qa',
           adoptedVariantId: 'v1',

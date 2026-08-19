@@ -33,28 +33,19 @@ function invoke(handler, { method = 'GET', url, body } = {}) {
   })
 }
 
-const greetingOnly = {
-  nodes: [
-    {
-      id: 'g1',
-      kind: 'greeting',
-      hidden: false,
-      displayOverride: null,
-      adoptedVariantId: 'gv',
-      variants: [{ id: 'gv', sessionId: 'session-greet', startEventId: 0, endEventId: 0 }],
-    },
-  ],
+const emptyTimeline = { nodes: [] }
+
+const qaNode = {
+  id: 'q0',
+  kind: 'qa',
+  hidden: false,
+  displayOverride: null,
+  adoptedVariantId: 'v0',
+  variants: [{ id: 'v0', sessionId: 'session-root', startEventId: 0, endEventId: 1 }],
 }
 
 const multiQaUnusedVariant = {
   nodes: [
-    {
-      id: 'g1',
-      kind: 'greeting',
-      hidden: false,
-      adoptedVariantId: 'gv',
-      variants: [{ id: 'gv', sessionId: 'session-root', startEventId: 0, endEventId: 0 }],
-    },
     {
       id: 'q1',
       kind: 'qa',
@@ -79,29 +70,31 @@ const multiQaUnusedVariant = {
 }
 
 test('normalizeTimeline accepts legal documents and rejects bad kind, missing event ids, and focusSessionId', () => {
-  assert.equal(normalizeTimeline(greetingOnly).nodes[0].kind, 'greeting')
-  assert.throws(() => normalizeTimeline({ nodes: [{ ...greetingOnly.nodes[0], kind: 'swipe' }] }), /kind/)
+  assert.deepEqual(normalizeTimeline(emptyTimeline), emptyTimeline)
+  assert.equal(normalizeTimeline({ nodes: [qaNode] }).nodes[0].kind, 'qa')
+  assert.throws(() => normalizeTimeline({ nodes: [{ ...qaNode, kind: 'greeting' }] }), /kind must be qa/)
+  assert.throws(() => normalizeTimeline({ nodes: [{ ...qaNode, kind: 'swipe' }] }), /kind must be qa/)
   assert.throws(() => normalizeTimeline({
     nodes: [{
-      ...greetingOnly.nodes[0],
-      variants: [{ id: 'gv', sessionId: 's', startEventId: 0 }],
+      ...qaNode,
+      variants: [{ id: 'v0', sessionId: 's', startEventId: 0 }],
     }],
   }), /endEventId/)
   assert.throws(() => normalizeTimeline({ focusSessionId: 'nope', nodes: [] }), /focusSessionId/)
   assert.throws(() => normalizeTimeline({
-    nodes: [{ ...greetingOnly.nodes[0], focusSessionId: 'nope' }],
+    nodes: [{ ...qaNode, focusSessionId: 'nope' }],
   }), /focusSessionId/)
 })
 
 test('deriveFocus uses the last rendered QA adopted variant and ignores unused older swipes', () => {
-  assert.deepEqual(deriveFocus(greetingOnly), { sessionId: null, nodeId: null, variantId: null })
+  assert.deepEqual(deriveFocus(emptyTimeline), { sessionId: null, nodeId: null, variantId: null })
   assert.deepEqual(deriveFocus(multiQaUnusedVariant), {
     sessionId: 'session-focus',
     nodeId: 'q2',
     variantId: 'v-new',
   })
   const hiddenTail = structuredClone(multiQaUnusedVariant)
-  hiddenTail.nodes[2].hidden = true
+  hiddenTail.nodes[1].hidden = true
   assert.equal(deriveFocus(hiddenTail).sessionId, 'session-root')
 })
 

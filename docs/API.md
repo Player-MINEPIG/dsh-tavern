@@ -33,7 +33,7 @@
 
 路径存在、方法不对 → `405 PLAY_METHOD_NOT_ALLOWED`（例如 `POST /chrome`、`POST /focus`、`GET /sessions`）。`404` 只用于路径本身不存在。
 
-`PUT` 命中 `timeline.json` / `catalog.json` 时先做 schema 校验，失败不落盘。`focusSessionId` 禁止写入。focus 是派生值：仍在渲染（未 `hidden`）的最后一轮 **qa** 的 adopted variant 的 `sessionId`。`GET /focus` 只返回 `{ ok, sessionId }`，不含 path / nodeId。greeting-only 的 `sessionId` 为 `null`。校验不读、不改 DSH 事件。
+`PUT` 命中 `timeline.json` / `catalog.json` 时先做 schema 校验，失败不落盘。timeline 只允许真实 `qa` 节点，greeting 从角色卡与 session selection 派生，不进入 timeline。`focusSessionId` 禁止写入。focus 是派生值：仍在渲染（未 `hidden`）的最后一轮 `qa` 的 adopted variant 的 `sessionId`。`GET /focus` 只返回 `{ ok, sessionId }`，不含 path / nodeId。空 timeline 的 `sessionId` 为 `null`。校验不读、不改 DSH 事件。
 
 `chrome` 是整个前端的蓝/红球，存在插件 data `chrome.json`，默认 `native`。非法 `mode` → 400。GET 不要求 JSON Content-Type。
 

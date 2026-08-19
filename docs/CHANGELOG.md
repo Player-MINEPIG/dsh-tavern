@@ -4,6 +4,14 @@ This is the staged implementation log for dsh-tavern. It is kept separately
 from the product README so reviewers can follow intent, decisions, verification,
 and known limits chronologically.
 
+## 2026-08-19 — Greeting removed from play timeline contract
+
+- Timeline nodes now represent real QA spans only; `kind: "greeting"` is rejected.
+- New playthroughs use an empty `nodes` array until the first real turn.
+- Greeting remains character/session-selection data and is not materialized as a DSH event.
+
+Verification: `test/play-timeline.test.mjs`, `test/play-sessions.test.mjs`.
+
 ## 2026-08-19 — Play dirs use Host createDirectory only
 
 Purpose: keep directory creation on the Host browse API so path joining stays
