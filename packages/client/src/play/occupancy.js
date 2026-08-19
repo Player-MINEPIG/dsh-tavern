@@ -152,7 +152,7 @@ export function installPlaySlotOccupancy(ctx, playClient) {
           name: 'conversation.input.left',
           id: 'pmp-dsh-tavern-play-io',
           order: 80,
-          inject: () => ({ playClient, playthrough: match.playthrough }),
+          inject: () => ({ playClient, playthrough: match.playthrough, openSession: sessionId => ctx.sessions.open(sessionId) }),
         }, PlayIoMenu)
       }
     }).catch(() => {

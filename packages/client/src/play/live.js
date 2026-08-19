@@ -154,10 +154,11 @@ export function createLivePlayClient({
       return v2('POST', `/sessions/${encodeURIComponent(sessionId)}/branch`, { atEventId })
     },
 
-    postSession(selectionFromSessionId) {
-      const body = typeof selectionFromSessionId === 'string' && selectionFromSessionId !== ''
-        ? { selectionFromSessionId }
-        : {}
+    postSession(selectionFromSessionId, importContextRef) {
+      const body = {
+        ...(typeof selectionFromSessionId === 'string' && selectionFromSessionId !== '' ? { selectionFromSessionId } : {}),
+        ...(importContextRef === undefined ? {} : { importContextRef }),
+      }
       return v2('POST', '/sessions', body)
     },
 

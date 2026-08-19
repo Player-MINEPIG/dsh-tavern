@@ -15,6 +15,7 @@ import {
   playthroughExportDocument,
 } from './export.js'
 
+import { importPlaythrough } from './import.js'
 const h = createLocalizedElement(createElement)
 
 const css = `
@@ -49,7 +50,7 @@ function downloadDocument(playthrough, document) {
   queueMicrotask(() => URL.revokeObjectURL(url))
 }
 
-export function PlayIoMenu({ playClient, playthrough, trigger = '+', placement = 'composer' }) {
+export function PlayIoMenu({ playClient, playthrough, openSession, trigger = '+', placement = 'composer' }) {
   installStyles()
   const root = useRef(null)
   const [open, setOpen] = useState(false)
@@ -59,6 +60,7 @@ export function PlayIoMenu({ playClient, playthrough, trigger = '+', placement =
   useEffect(() => {
     if (!open) return undefined
     const close = event => {
+  const importInput = useRef(null)
       if (!root.current?.contains(event.target)) setOpen(false)
     }
     window.document.addEventListener('pointerdown', close)
@@ -80,6 +82,23 @@ export function PlayIoMenu({ playClient, playthrough, trigger = '+', placement =
     }
   }
 
+  const importFile = async event => {
+    const file = event.target.files?.[0]
+    event.target.value = ''
+    if (!file || busy) return
+    setBusy(true)
+    setError('')
+    try {
+      const result = await importPlaythrough(playClient, playthrough, file)
+      window.dispatchEvent(new Event('pmp-dsh-tavern:refresh'))
+      openSession?.(result.sessionId)
+      setOpen(false)
+    } catch (reason) {
+      setError(reason instanceof Error ? reason.message : String(reason))
+    } finally {
+      setBusy(false)
+    }
+  }
   return h('div', { ref: root, className: 'dtv-play-io', 'data-placement': placement },
     h('button', {
       type: 'button',
@@ -96,9 +115,10 @@ export function PlayIoMenu({ playClient, playthrough, trigger = '+', placement =
       h('button', {
         type: 'button',
         className: 'dtv-play-io-item',
-        disabled: true,
-        title: uiMessage('play.io.importUnavailable'),
+        disabled: busy,
+        onClick: () => importInput.current?.click(),
       }, uiMessage('play.io.import')),
+      h('input', { ref: importInput, hidden: true, type: 'file', accept: '.json,.jsonl,application/json,application/x-ndjson', onChange: importFile }),
       error === '' ? null : h('p', { className: 'dtv-play-io-error' }, rawText(error)),
     ),
   )

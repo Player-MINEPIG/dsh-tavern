@@ -142,7 +142,7 @@ function CharacterGroup({ character, collapsed, unassignedOpen, creating, create
     h('span', { className: 'dtv-play-chevron', 'aria-hidden': 'true' }, '◆'),
     h('span', { className: 'dtv-play-title' }, rawText(playthrough.title)),
     ),
-    h(PlayIoMenu, { playClient, playthrough, trigger: '⋯', placement: 'sidebar' }),
+    h(PlayIoMenu, { playClient, playthrough, openSession, trigger: '⋯', placement: 'sidebar' }),
     )),
     collapsed || character.unassigned.length === 0 ? null : h('div', { className: 'dtv-play-subgroup' },
       h('button', {

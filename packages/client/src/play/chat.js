@@ -114,10 +114,26 @@ export async function loadChatState(client, sessionId, playthrough) {
     selectionResponse,
     characterResponse,
   })
+  const importContextPath = playthrough?.ext?.pmpDshTavern?.importContextPath
+  let importedTurns = []
+  if (typeof importContextPath === 'string' && importContextPath !== '') {
+    const imported = JSON.parse((await client.getFile(importContextPath)).content)
+    importedTurns = [
+      ...(typeof imported.greeting === 'string' && imported.greeting !== '' ? [{
+        id: 'import-greeting', imported: true, hidden: false, userText: '',
+        assistantText: renderText(imported.greeting, 'assistant'), originalAssistantText: imported.greeting,
+      }] : []),
+      ...(imported.qa ?? []).map((qa, index) => ({
+        id: `import-${index}`, imported: true, hidden: false,
+        userText: renderText(qa.user, 'user'),
+        assistantText: renderText(qa.assistant, 'assistant'), originalAssistantText: qa.assistant,
+      })),
+    ]
+  }
   return {
     timeline,
-    turns,
-    greeting: greeting === null ? null : { ...greeting, text: renderText(greeting.text, 'assistant') },
+    turns: [...importedTurns, ...turns],
+    greeting: importedTurns.length > 0 ? null : greeting === null ? null : { ...greeting, text: renderText(greeting.text, 'assistant') },
     regexDiagnostics,
   }
 }
@@ -158,7 +174,7 @@ function Turn({ turn, ...actionProps }) {
   return h('div', { className: 'dtv-play-chat-row' },
     turn.userText === '' ? null : h('div', { className: 'dtv-play-chat-bubble dtv-play-chat-user' }, rawText(turn.userText)),
     turn.assistantText === '' ? null : h('div', { className: 'dtv-play-chat-bubble dtv-play-chat-assistant' }, rawText(turn.assistantText)),
-    h(PlayTurnActions, { turn, ...actionProps }),
+    turn.imported ? null : h(PlayTurnActions, { turn, ...actionProps }),
   )
 }
 
