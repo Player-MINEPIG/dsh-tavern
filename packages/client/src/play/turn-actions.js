@@ -117,6 +117,15 @@ export function PlayTurnActions({
       onClick: () => adopt(1),
     }),
     h(Action, {
+      icon: '✦',
+      label: uiMessage('play.chat.generateReply'),
+      disabled,
+      onClick: () => mutate(async () => {
+        const result = await controller(playClient).createReplySwipe(playthrough, turn.id)
+        openSession(result.sessionId)
+      }),
+    }),
+    h(Action, {
       icon: '✎',
       label: uiMessage('play.chat.editDisplay'),
       disabled,

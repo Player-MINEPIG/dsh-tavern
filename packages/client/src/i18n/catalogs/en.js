@@ -74,6 +74,7 @@ export default Object.freeze({
   "play.chat.previousReply": "Previous saved reply",
   "play.chat.nextReply": "Next saved reply",
   "play.chat.noOtherReply": "No other saved reply",
+  "play.chat.generateReply": "Generate a new reply",
   "play.chat.editDisplay": "Edit displayed reply",
   "play.chat.editDisplayPrompt": "Display this text instead of the original reply:",
   "play.chat.restoreOriginal": "Restore original reply",

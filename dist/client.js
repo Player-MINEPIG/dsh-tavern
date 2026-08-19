@@ -141,6 +141,7 @@ var zh_CN_default = Object.freeze({
   "play.chat.previousReply": "\u4E0A\u4E00\u6761\u5DF2\u6709\u56DE\u590D",
   "play.chat.nextReply": "\u4E0B\u4E00\u6761\u5DF2\u6709\u56DE\u590D",
   "play.chat.noOtherReply": "\u6CA1\u6709\u5176\u4ED6\u5DF2\u6709\u56DE\u590D",
+  "play.chat.generateReply": "\u751F\u6210\u4E00\u6761\u65B0\u56DE\u590D",
   "play.chat.editDisplay": "\u4FEE\u6539\u663E\u793A\u6587\u5B57",
   "play.chat.editDisplayPrompt": "\u8F93\u5165\u66FF\u4EE3\u539F\u56DE\u590D\u7684\u663E\u793A\u6587\u5B57\uFF1A",
   "play.chat.restoreOriginal": "\u6062\u590D\u539F\u56DE\u590D",
@@ -653,6 +654,7 @@ var en_default = Object.freeze({
   "play.chat.previousReply": "Previous saved reply",
   "play.chat.nextReply": "Next saved reply",
   "play.chat.noOtherReply": "No other saved reply",
+  "play.chat.generateReply": "Generate a new reply",
   "play.chat.editDisplay": "Edit displayed reply",
   "play.chat.editDisplayPrompt": "Display this text instead of the original reply:",
   "play.chat.restoreOriginal": "Restore original reply",
@@ -3887,7 +3889,27 @@ function replaceNode(timeline, index, node) {
   nodes[index] = node;
   return { ...timeline, nodes };
 }
-function createPlayNodeController(client) {
+function defaultDelay(milliseconds) {
+  return new Promise((resolve) => setTimeout(resolve, milliseconds));
+}
+function defaultId(startEventId, endEventId) {
+  const random = globalThis.crypto?.randomUUID?.() ?? Date.now();
+  return ["variant", startEventId, endEventId, random].join("-").slice(0, 200);
+}
+function completedPairAfter(messageState, eventId) {
+  if (messageState?.incompleteTurn === true) return null;
+  const messages = (messageState?.messages ?? []).filter((message) => Number.isSafeInteger(message.seq) && message.seq > eventId).sort((left, right) => left.seq - right.seq);
+  const user = messages.find((message) => message.role === "user");
+  if (user === void 0) return null;
+  const assistant = [...messages].reverse().find((message) => message.role === "assistant" && message.seq > user.seq);
+  return assistant === void 0 ? null : { user, assistant };
+}
+function createPlayNodeController(client, {
+  delay = defaultDelay,
+  pollInterval = 500,
+  maxPolls = 240,
+  idFactory = defaultId
+} = {}) {
   if (client == null) throw new TypeError("playClient.required");
   let pending = Promise.resolve();
   const schedule = (operation) => {
@@ -3926,6 +3948,52 @@ function createPlayNodeController(client) {
         const focus = await client.getFocus(playthrough);
         if (focus.sessionId !== variant.sessionId) throw new Error("Saved variant does not match derived focus");
         return { timeline: next, sessionId: variant.sessionId };
+      });
+    },
+    createReplySwipe(playthrough, nodeId) {
+      return schedule(async () => {
+        const timeline = await client.getTimeline(playthrough);
+        const { node } = nodeById(timeline, nodeId);
+        const adopted = node.variants.find((item) => item.id === node.adoptedVariantId);
+        if (adopted === void 0) throw new TypeError("Adopted variant is missing");
+        const source = await client.getMessages(adopted.sessionId);
+        const user = source.messages.find((message) => message.role === "user" && message.seq >= adopted.startEventId && message.seq <= adopted.endEventId);
+        if (user === void 0 || typeof user.text !== "string" || user.text === "") {
+          throw new TypeError("Adopted variant has no reusable user message");
+        }
+        const forkEventId = Math.max(0, adopted.startEventId - 1);
+        const branch = await client.postBranch(adopted.sessionId, forkEventId);
+        const newSessionId = branch?.sessionId;
+        if (typeof newSessionId !== "string" || newSessionId === "") {
+          throw new TypeError("Branch response has no sessionId");
+        }
+        await client.postUserMessage(newSessionId, user.text);
+        let pair = null;
+        for (let attempt = 0; attempt < maxPolls; attempt += 1) {
+          pair = completedPairAfter(await client.getMessages(newSessionId), forkEventId);
+          if (pair !== null) break;
+          if (attempt + 1 < maxPolls) await delay(pollInterval);
+        }
+        if (pair === null) throw new Error("Timed out waiting for the swipe reply");
+        const latest = await client.getTimeline(playthrough);
+        const current2 = nodeById(latest, nodeId);
+        const variantId = idFactory(pair.user.seq, pair.assistant.seq, newSessionId);
+        const variant = {
+          id: variantId,
+          sessionId: newSessionId,
+          startEventId: pair.user.seq,
+          endEventId: pair.assistant.seq
+        };
+        const nextNode = {
+          ...current2.node,
+          adoptedVariantId: variantId,
+          variants: [...current2.node.variants, variant]
+        };
+        const next = replaceNode(latest, current2.index, nextNode);
+        await client.putTimeline(playthrough, next);
+        const focus = await client.getFocus(playthrough);
+        if (focus.sessionId !== newSessionId) throw new Error("Saved swipe does not match derived focus");
+        return { timeline: next, sessionId: newSessionId, variantId };
       });
     }
   };
@@ -4033,6 +4101,15 @@ function PlayTurnActions({
       onClick: () => adopt(1)
     }),
     h7(Action, {
+      icon: "\u2726",
+      label: uiMessage("play.chat.generateReply"),
+      disabled,
+      onClick: () => mutate(async () => {
+        const result = await controller(playClient).createReplySwipe(playthrough, turn.id);
+        openSession(result.sessionId);
+      })
+    }),
+    h7(Action, {
       icon: "\u270E",
       label: uiMessage("play.chat.editDisplay"),
       disabled,
@@ -4070,12 +4147,12 @@ function recordedEndSeq(timeline, sessionId) {
   }
   return end;
 }
-function defaultId(prefix, sessionId, startEventId, endEventId) {
+function defaultId2(prefix, sessionId, startEventId, endEventId) {
   const random = globalThis.crypto?.randomUUID?.() ?? `${Date.now()}-${Math.random()}`;
   return `${prefix}-${startEventId}-${endEventId}-${random}`.slice(0, 200);
 }
 function appendCompletedTurns(timeline, messageState, sessionId, {
-  idFactory = defaultId
+  idFactory = defaultId2
 } = {}) {
   if (typeof sessionId !== "string" || sessionId === "") throw new TypeError("sessionId is required");
   if (messageState?.incompleteTurn === true) return { timeline, added: [] };
