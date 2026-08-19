@@ -4,6 +4,15 @@ This is the staged implementation log for dsh-tavern. It is kept separately
 from the product README so reviewers can follow intent, decisions, verification,
 and known limits chronologically.
 
+## 2026-08-19 — Live play client follows the real wire contract
+
+- Added one v1/v2 requester for chrome, workspace, catalog, timeline, sessions, focus, and greeting selection.
+- Workspace JSON files are parsed from `{ content }` and written back as JSON strings in that envelope.
+- Session messages retain `ContentPart[]` and integer/null `seq`, with a separate safe display-text projection.
+- Timeline paths must point to the actual `timeline.json` file; catalog character ownership lives in `ext`.
+
+Verification: `test/play-client-contract.test.mjs`.
+
 ## 2026-08-19 — Greeting removed from play timeline contract
 
 - Timeline nodes now represent real QA spans only; `kind: "greeting"` is rejected.
