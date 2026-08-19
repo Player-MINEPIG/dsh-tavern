@@ -36,6 +36,7 @@ import {
 import { createChromeClickController } from './play/chrome.js'
 import { installPlaySlotOccupancy } from './play/occupancy.js'
 import { createLivePlayClient } from './play/live.js'
+import { RegexPanel } from './play/regex-panel.js'
 import { API_V1 as API_ROOT, CLIENT_REFRESH_EVENT, PLUGIN_ID } from '../../identity.js'
 
 const h = createLocalizedElement(createElement)
@@ -43,6 +44,7 @@ const h = createLocalizedElement(createElement)
 const css = `
 .dtv-layer{position:absolute;inset:0;z-index:6;pointer-events:none;font-family:Inter,var(--dsw-font-family),sans-serif;color:var(--dsw-alias-label-primary)}
 .dtv-launcher{position:absolute;z-index:2;width:44px;height:44px;pointer-events:auto;overflow:hidden;border:0 solid transparent;border-radius:22px;background:transparent;box-shadow:none;transition:width .22s ease,height .22s ease,border-radius .22s ease,background-color .18s ease,box-shadow .18s ease;display:block}
+.dtv-launcher[data-open=true] .dtv-menu{overflow-y:auto}
 .dtv-launcher[data-open=true]{width:300px;height:376px;border-width:1px;border-color:var(--dsw-alias-border-l2);border-radius:18px;background:var(--dsw-alias-bg-base);box-shadow:var(--ds-shadow-3,0 12px 34px rgba(0,0,0,.24))}
 .dtv-ball-row{position:absolute;top:0;left:0;right:0;height:52px;display:flex;align-items:flex-start;pointer-events:none}.dtv-launcher[data-side=left] .dtv-ball-row{justify-content:flex-end}.dtv-launcher[data-vertical=up] .dtv-ball-row{top:auto;bottom:0;align-items:flex-end}
 .dtv-ball{pointer-events:auto;touch-action:none;user-select:none;width:44px;height:44px;flex:none;border:2px solid #fff;border-radius:50%;background:conic-gradient(from 225deg,#090909 0 56%,#18569d 56% 100%);box-shadow:0 0 0 2px #174e8a,0 6px 20px rgba(0,0,0,.34),inset 0 0 0 1px rgba(255,255,255,.28);color:#fff;font-size:13px;letter-spacing:-.5px;font-weight:850;text-shadow:0 1px 2px #000;cursor:grab;transition:filter .15s ease,transform .18s ease,box-shadow .18s ease,background .18s ease}.dtv-ball:hover{filter:brightness(1.1);box-shadow:0 0 0 2px #2675c9,0 8px 24px rgba(0,0,0,.4),inset 0 0 0 1px rgba(255,255,255,.35)}.dtv-layer[data-chrome=play] .dtv-ball{background:conic-gradient(from 225deg,#090909 0 56%,#b31319 56% 100%);box-shadow:0 0 0 2px #a50f16,0 6px 20px rgba(0,0,0,.34),inset 0 0 0 1px rgba(255,255,255,.28)}.dtv-layer[data-chrome=play] .dtv-ball:hover{box-shadow:0 0 0 2px #d5222b,0 8px 24px rgba(0,0,0,.4),inset 0 0 0 1px rgba(255,255,255,.35)}.dtv-ball:active{cursor:grabbing}.dtv-launcher[data-open=true] .dtv-ball{transform:scale(.82) rotate(-8deg)}
@@ -59,6 +61,7 @@ const css = `
 .dtv-book-toolbar{display:grid;grid-template-columns:1fr 1fr 1fr;gap:7px}.dtv-entry{border:1px solid var(--dsw-alias-border-l1);border-radius:8px;background:var(--dsw-alias-bg-base);overflow:hidden}.dtv-entry>summary{list-style:none;cursor:pointer;padding:8px;display:flex;align-items:center;gap:7px;font-size:11px}.dtv-entry>summary::-webkit-details-marker{display:none}.dtv-entry-dot{width:8px;height:8px;flex:none;border-radius:50%;background:var(--dsw-alias-label-tertiary)}.dtv-entry[data-enabled=true] .dtv-entry-dot{background:var(--dsw-alias-state-success,#2fa36b)}.dtv-entry-name{font-weight:620;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.dtv-entry-state{margin-left:auto;flex:none;color:var(--dsw-alias-label-tertiary);font-size:10px}.dtv-entry-body{border-top:1px solid var(--dsw-alias-border-l1);padding:8px;display:flex;flex-direction:column;gap:8px}.dtv-field{display:flex;flex-direction:column;gap:4px}.dtv-label{font-size:10px;font-weight:620;color:var(--dsw-alias-label-tertiary)}.dtv-input,.dtv-select,.dtv-textarea{box-sizing:border-box;width:100%;border:1px solid var(--dsw-alias-border-l2);border-radius:7px;background:var(--dsw-alias-bg-base);color:var(--dsw-alias-label-primary);font:inherit;font-size:11px;padding:7px 8px}.dtv-input,.dtv-select{height:32px}.dtv-textarea{min-height:94px;resize:vertical;line-height:1.45}.dtv-policy{min-height:96px}.dtv-entry-grid{display:grid;grid-template-columns:1fr 1fr;gap:7px}.dtv-checks{display:flex;flex-wrap:wrap;gap:10px}.dtv-check{display:flex;gap:5px;align-items:center;font-size:10px}.dtv-entry-actions{display:flex;justify-content:flex-end}.dtv-danger{color:var(--dsw-alias-state-error)}
 .dtv-layer>.dtv-launcher,.dtv-layer>.dtv-panel,.dtv-layer>.dcc-panel,.dtv-layer>.dwb-panel,.dtv-layer>.dtu-panel{zoom:var(--dtv-ui-scale,1)}.dtv-setting-value{font-size:12px;font-variant-numeric:tabular-nums;color:var(--dsw-alias-label-secondary)}
 .dtv-modal-backdrop{position:absolute;inset:0;z-index:20;pointer-events:auto;background:rgba(0,0,0,.48);display:flex;align-items:center;justify-content:center;padding:24px}
+.dtv-regex-scopes{display:grid;grid-template-columns:repeat(3,1fr);gap:7px}.dtv-regex-scopes .dtv-button[data-selected=true]{background:var(--dsw-alias-interactive-bg-selected,var(--dsw-specific-tip));border-color:var(--dsw-alias-state-business-primary,#2677d9)}.dtv-regex-expression{font-family:var(--dsw-font-mono,ui-monospace,SFMono-Regular,Consolas,monospace);min-height:72px}.dtv-regex-footer{position:sticky;bottom:-12px;display:grid;grid-template-columns:1fr 1fr;gap:8px;padding:10px 0 12px;background:var(--dsw-alias-bg-base)}
 .dtv-modal{width:min(420px,100%);border-radius:12px;background:var(--dsw-alias-bg-base);border:1px solid var(--dsw-alias-border-l2);box-shadow:var(--ds-shadow-3,0 16px 40px rgba(0,0,0,.28));padding:18px 16px;display:flex;flex-direction:column;gap:14px}
 .dtv-modal-body{margin:0;font-size:13px;line-height:1.55}.dtv-modal .dtv-button{align-self:flex-end;min-width:88px}
 `
@@ -519,6 +522,7 @@ function TavernShell({ useSessions, useWorkspaces, createCleanSession, playClien
     } catch {
       // Restricted browsing contexts still synchronize by refreshing on focus.
     }
+      if (mode !== 'play') setSurface(current => current === 'regex' ? null : current)
     const commitChrome = mode => {
       chromeModeRef.current = mode
       setChromeMode(mode)
@@ -820,6 +824,8 @@ function TavernShell({ useSessions, useWorkspaces, createCleanSession, playClien
     }))
   } else if (surface === 'character') {
     panel = h(CharacterPanel, { sessionId, sessionBlank, close })
+  } else if (surface === 'regex' && chromeMode === 'play') {
+    panel = h(RegexPanel, { client: playClient, activeSnapshot, close })
   } else if (surface === 'world-info') {
     panel = h(WorldBookPanel, { sessionId, close })
   } else if (surface === 'user') {
@@ -891,7 +897,7 @@ function TavernShell({ useSessions, useWorkspaces, createCleanSession, playClien
         ),
         h('span', { className: 'dtv-item-planned' }, chromeMode === 'play' ? 'ST' : 'DSH'),
         ),
-        ...TAVERN_MENU_ITEMS.map(item => {
+        ...TAVERN_MENU_ITEMS.filter(item => !item.playOnly || chromeMode === 'play').map(item => {
           const status = statuses[item.id] ?? { bound: false, count: 0, titleKey: item.emptyTitleKey }
           const itemLabel = unwrapText(uiMessage(item.labelKey))
           const statusTitle = status.bound ? status.title : unwrapText(uiMessage(status.titleKey ?? item.emptyTitleKey))

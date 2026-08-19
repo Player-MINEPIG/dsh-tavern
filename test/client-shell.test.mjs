@@ -14,12 +14,14 @@ test('one Tavern launcher exposes stable resource surfaces', () => {
     'preset',
     'character',
     'world-info',
+    'regex',
     'user',
     'session-template',
     'settings',
   ])
   assert.equal(surfaceTitle('world-info'), 'nav.worldBook')
   assert.equal(TAVERN_MENU_ITEMS.find(item => item.id === 'user').available, true)
+  assert.equal(TAVERN_MENU_ITEMS.find(item => item.id === 'regex').playOnly, true)
   assert.equal(TAVERN_MENU_ITEMS.find(item => item.id === 'settings').showBinding, false)
 })
 
@@ -142,6 +144,8 @@ test('only the client composition root owns the Tavern shell overlay', () => {
   assert.doesNotMatch(root, /surface === null \? h\('div', \{\s*className: 'dtv-launcher'/)
   assert.doesNotMatch(preset, /slots\.inject|dsh-tavern-preset-launcher/)
   assert.doesNotMatch(character, /slots\.inject|dsh-tavern-character-overlay/)
+  assert.match(root, /RegexPanel/)
+  assert.match(root, /filter\(item => !item\.playOnly \|\| chromeMode === 'play'\)/)
   assert.doesNotMatch(user, /slots\.inject|avatar|image\/|<img/)
   assert.match(root, /WorldBookPanel/)
   assert.match(root, /UserPanel/)

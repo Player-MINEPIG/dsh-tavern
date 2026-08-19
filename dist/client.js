@@ -31,7 +31,7 @@ __export(index_exports, {
   name: () => name
 });
 module.exports = __toCommonJS(index_exports);
-var import_react12 = require("react");
+var import_react13 = require("react");
 
 // packages/ui-settings/src/locale-contract.js
 var DEFAULT_UI_LOCALE = "zh-CN";
@@ -103,6 +103,36 @@ var zh_CN_default = Object.freeze({
   "nav.user.empty": "\u672A\u7ED1\u5B9A\u7528\u6237",
   "nav.sessionTemplate.empty": "\u5F53\u524D\u8BBE\u7F6E\u6216\u914D\u7F6E\u6A21\u677F",
   "nav.settings.empty": "\u8BED\u8A00\u3001\u7F29\u653E\u3001RP \u8DDF\u968F\u4E0E RP \u63D0\u793A\u8BCD",
+  "nav.regex": "\u663E\u793A\u6B63\u5219",
+  "nav.regex.empty": "\u4EC5\u7528\u4E8E\u9B54\u4E38\u663E\u793A\u7684\u89C4\u5219",
+  "regex.title": "\u663E\u793A\u6B63\u5219",
+  "regex.displayOnlyNote": "\u8FD9\u4E9B\u89C4\u5219\u53EA\u6539\u53D8\u9B54\u4E38\u6E32\u67D3\u548C\u9759\u6001 HTML\uFF0C\u4E0D\u4F1A\u6539\u5199\u5386\u53F2\u3001\u65F6\u95F4\u7EBF\u6570\u636E\u6216\u53D1\u9001\u7ED9 AI \u7684\u8BF7\u6C42\u3002\u5BFC\u5165\u89C4\u5219\u7684\u5F00\u5173\u6309\u539F\u6837\u4FDD\u7559\u3002",
+  "regex.scopes": "\u6B63\u5219\u4F5C\u7528\u57DF",
+  "regex.scope.global": "\u5168\u5C40",
+  "regex.scope.preset": "\u9884\u8BBE",
+  "regex.scope.character": "\u89D2\u8272\u5361",
+  "regex.noPreset": "\u5F53\u524D\u672A\u9009\u62E9\u9884\u8BBE\uFF1B\u9884\u8BBE\u4F5C\u7528\u57DF\u7684\u65B0\u89C4\u5219\u9700\u8981\u586B\u5199\u8D44\u6E90 ID \u540E\u624D\u80FD\u5339\u914D\u3002",
+  "regex.noCharacter": "\u5F53\u524D\u672A\u7ED1\u5B9A\u89D2\u8272\u5361\uFF1B\u89D2\u8272\u5361\u4F5C\u7528\u57DF\u7684\u65B0\u89C4\u5219\u9700\u8981\u586B\u5199\u8D44\u6E90 ID \u540E\u624D\u80FD\u5339\u914D\u3002",
+  "regex.add": "\u65B0\u5EFA\u89C4\u5219",
+  "regex.emptyScope": "\u6B64\u4F5C\u7528\u57DF\u6682\u65E0\u89C4\u5219\u3002",
+  "regex.enabled": "\u4F7F\u7528\u6B64\u89C4\u5219",
+  "regex.name": "\u89C4\u5219\u540D\u79F0",
+  "regex.unnamed": "\u672A\u547D\u540D\u89C4\u5219",
+  "regex.newRule": "\u65B0\u6B63\u5219",
+  "regex.find": "\u67E5\u627E\u8868\u8FBE\u5F0F",
+  "regex.replace": "\u66FF\u6362\u5185\u5BB9",
+  "regex.flags": "\u6807\u5FD7",
+  "regex.target": "\u6E32\u67D3\u6D88\u606F",
+  "regex.target.assistant": "\u52A9\u624B",
+  "regex.target.user": "\u7528\u6237",
+  "regex.target.both": "\u4E24\u8005",
+  "regex.scope": "\u4F5C\u7528\u57DF",
+  "regex.resourceId": "\u8D44\u6E90 ID",
+  "regex.loaded": "\u5DF2\u52A0\u8F7D {count} \u6761\u6B63\u5219",
+  "regex.saved": "\u5DF2\u4FDD\u5B58 {count} \u6761\u6B63\u5219",
+  "regex.imported": "\u5DF2\u5BFC\u5165\u5E76\u4FDD\u5B58 {count} \u6761\u6B63\u5219",
+  "regex.confirmReload": "\u653E\u5F03\u672A\u4FDD\u5B58\u7684\u6B63\u5219\u4FEE\u6539\u5E76\u91CD\u65B0\u8F7D\u5165\uFF1F",
+  "regex.confirmClose": "\u5173\u95ED\u5E76\u653E\u5F03\u672A\u4FDD\u5B58\u7684\u6B63\u5219\u4FEE\u6539\uFF1F",
   "nav.session.none": "\u65E0\u4F1A\u8BDD",
   "nav.syncFailed": "\u72B6\u6001\u540C\u6B65\u5931\u8D25\uFF1A{message}",
   "nav.menuTitle": "Tavern \xB7 {session}",
@@ -622,6 +652,36 @@ var en_default = Object.freeze({
   "nav.user.empty": "No user bound",
   "nav.sessionTemplate.empty": "Current settings or configuration template",
   "nav.settings.empty": "Language, scale, RP follow, and RP prompt",
+  "nav.regex": "Display regex",
+  "nav.regex.empty": "Mowan display-only rules",
+  "regex.title": "Display regex",
+  "regex.displayOnlyNote": "These rules change Mowan rendering and static HTML only. They never rewrite history, timeline data, or AI requests. Imported switches are preserved as supplied.",
+  "regex.scopes": "Regex scopes",
+  "regex.scope.global": "Global",
+  "regex.scope.preset": "Preset",
+  "regex.scope.character": "Character card",
+  "regex.noPreset": "No preset is selected. New preset-scoped rules need a resource ID before they can match.",
+  "regex.noCharacter": "No character card is bound. New character-scoped rules need a resource ID before they can match.",
+  "regex.add": "New rule",
+  "regex.emptyScope": "No rules in this scope.",
+  "regex.enabled": "Use this rule",
+  "regex.name": "Rule name",
+  "regex.unnamed": "Unnamed rule",
+  "regex.newRule": "New regex",
+  "regex.find": "Find expression",
+  "regex.replace": "Replacement",
+  "regex.flags": "Flags",
+  "regex.target": "Rendered messages",
+  "regex.target.assistant": "Assistant",
+  "regex.target.user": "User",
+  "regex.target.both": "Both",
+  "regex.scope": "Scope",
+  "regex.resourceId": "Resource ID",
+  "regex.loaded": "{count} regex rules loaded",
+  "regex.saved": "{count} regex rules saved",
+  "regex.imported": "{count} regex rules imported and saved",
+  "regex.confirmReload": "Discard unsaved regex changes and reload?",
+  "regex.confirmClose": "Close and discard unsaved regex changes?",
   "nav.session.none": "No session",
   "nav.syncFailed": "Status sync failed: {message}",
   "nav.menuTitle": "Tavern \xB7 {session}",
@@ -1189,7 +1249,7 @@ function localizeChild(value) {
   if (Array.isArray(value)) return value.map(localizeChild);
   return value;
 }
-function createLocalizedElement(createElement13) {
+function createLocalizedElement(createElement14) {
   return (type, props, ...children) => {
     let localizedProps = props;
     if (props !== null && props !== void 0) {
@@ -1198,7 +1258,7 @@ function createLocalizedElement(createElement13) {
         if (isRawText(localizedProps[key])) localizedProps[key] = localizedProps[key].value;
       }
     }
-    return createElement13(type, localizedProps, ...children.map(localizeChild));
+    return createElement14(type, localizedProps, ...children.map(localizeChild));
   };
 }
 function getClientUiSettings() {
@@ -3446,11 +3506,11 @@ function SessionTemplatePanel({ sessionId, workspaceId, createCleanSession, clos
     if (selectedId === null || !window.confirm(unwrapText(uiMessage("template.confirmDelete", { name: selected?.name ?? selectedId })))) return;
     run(() => api5(`/session-templates/${encodeURIComponent(selectedId)}`, { method: "DELETE", body: JSON.stringify({}) }), "template.status.deleted");
   };
-  const start = (mode) => run(async () => {
-    if (mode === "current" && !sessionId) throw uiError("template.error.needSourceSession");
+  const start = (mode2) => run(async () => {
+    if (mode2 === "current" && !sessionId) throw uiError("template.error.needSourceSession");
     if (workspaceId === null) throw uiError("template.error.needWorkspace");
-    const source = mode === "current" ? { mode: "current", sessionId } : { mode: "template", templateId: selectedId };
-    if (mode === "template" && selectedId === null) throw uiError("template.error.needTemplate");
+    const source = mode2 === "current" ? { mode: "current", sessionId } : { mode: "template", templateId: selectedId };
+    if (mode2 === "template" && selectedId === null) throw uiError("template.error.needTemplate");
     return createCleanSession({ workspaceId, source });
   }, (id) => ({ key: "template.status.switched", values: { id } }));
   const diagnostics = Array.isArray(selected?.diagnostics) ? selected.diagnostics : [];
@@ -3569,6 +3629,7 @@ var TAVERN_MENU_ITEMS = Object.freeze([
   { id: "preset", labelKey: "nav.preset", emptyTitleKey: "nav.preset.empty", available: true },
   { id: "character", labelKey: "nav.character", emptyTitleKey: "nav.character.empty", available: true },
   { id: "world-info", labelKey: "nav.worldBook", emptyTitleKey: "nav.worldBook.empty", available: true },
+  { id: "regex", labelKey: "nav.regex", emptyTitleKey: "nav.regex.empty", available: true, binding: false, showBinding: false, playOnly: true },
   { id: "user", labelKey: "nav.user", emptyTitleKey: "nav.user.empty", available: true },
   { id: "session-template", labelKey: "nav.sessionTemplate", emptyTitleKey: "nav.sessionTemplate.empty", available: true, binding: false, showBinding: false },
   { id: "settings", labelKey: "nav.settings", emptyTitleKey: "nav.settings.empty", available: true, binding: false, showBinding: false }
@@ -3675,7 +3736,8 @@ function launcherResourceStatuses(snapshot) {
       emptyTitleKey: "nav.user.empty"
     }),
     "session-template": { bound: false, count: 0, title: null, titleKey: "nav.sessionTemplate.empty" },
-    settings: { bound: false, count: 0, title: null, titleKey: "nav.settings.empty" }
+    settings: { bound: false, count: 0, title: null, titleKey: "nav.settings.empty" },
+    regex: { bound: false, count: 0, title: null, titleKey: "nav.regex.empty" }
   };
 }
 function clampLauncherAnchor(position, viewport2, scale = 1) {
@@ -3707,8 +3769,8 @@ function launcherPlacement(anchor, viewport2, expanded = false, scale = 1) {
 
 // packages/client/src/play/chrome.js
 var CHROME_CLICK_DELAY = 260;
-function nextChromeMode(mode) {
-  return mode === "play" ? "native" : "play";
+function nextChromeMode(mode2) {
+  return mode2 === "play" ? "native" : "play";
 }
 function createChromeClickController({
   getMode,
@@ -3932,6 +3994,11 @@ function normalizeRegexDocument(value) {
   const rules = Array.isArray(value.rules) ? value.rules : [];
   return { schemaVersion: 1, rules: rules.map((rule) => normalizeRegexRule(rule)) };
 }
+function importRegexDocument(value, { scope = { kind: "global", resourceId: null } } = {}) {
+  const candidates = Array.isArray(value) ? value : Array.isArray(value?.rules) ? value.rules : Array.isArray(value?.regex_scripts) ? value.regex_scripts : Array.isArray(value?.extensions?.regex_scripts) ? value.extensions.regex_scripts : null;
+  if (candidates === null) throw new TypeError("No regex rules were found");
+  return candidates.map((rule) => normalizeRegexRule(rule, { scope }));
+}
 async function getRegexDocument(client) {
   try {
     const file = await client.getFile(REGEX_PATH);
@@ -3942,6 +4009,12 @@ async function getRegexDocument(client) {
     }
     throw error;
   }
+}
+async function putRegexDocument(client, document2) {
+  const normalized = normalizeRegexDocument(document2);
+  await client.createDirs("ui");
+  await client.putFile(REGEX_PATH, JSON.stringify(normalized, null, 2));
+  return normalized;
 }
 function expression(rule) {
   if (rule.find.startsWith("/")) {
@@ -5652,7 +5725,7 @@ function PlayUnboundNotice({ session, useSessions, playClient }) {
 // packages/client/src/play/occupancy.js
 var PLAY_SLOT_PRIORITY = -100;
 function installPlaySlotOccupancy(ctx, playClient) {
-  let mode = "native";
+  let mode2 = "native";
   let declared = false;
   let disposeEntry = null;
   let disposeEffect = null;
@@ -5678,7 +5751,7 @@ function installPlaySlotOccupancy(ctx, playClient) {
     dropEntry();
   };
   const mount = () => {
-    if (!declared || mode !== "play" || disposeEntry !== null) return;
+    if (!declared || mode2 !== "play" || disposeEntry !== null) return;
     disposeEntry = ctx.slots.register({
       name: "sidebar.workspaces",
       priority: PLAY_SLOT_PRIORITY,
@@ -5690,7 +5763,7 @@ function installPlaySlotOccupancy(ctx, playClient) {
   };
   const reconcile = () => {
     dropEffect();
-    if (!declared || mode !== "play") return;
+    if (!declared || mode2 !== "play") return;
     const effect = () => {
       mount();
       return dropEntry;
@@ -5714,7 +5787,7 @@ function installPlaySlotOccupancy(ctx, playClient) {
     dropNoticeEntry();
   };
   const mountNotice = () => {
-    if (!noticeDeclared || mode !== "play" || disposeNoticeEntry !== null) return;
+    if (!noticeDeclared || mode2 !== "play" || disposeNoticeEntry !== null) return;
     disposeNoticeEntry = ctx.slots.register({
       name: "conversation.input.dock",
       id: "pmp-dsh-tavern-unbound-notice",
@@ -5724,7 +5797,7 @@ function installPlaySlotOccupancy(ctx, playClient) {
   };
   const reconcileNotice = () => {
     dropNoticeEffect();
-    if (!noticeDeclared || mode !== "play") return;
+    if (!noticeDeclared || mode2 !== "play") return;
     const effect = () => {
       mountNotice();
       return dropNoticeEntry;
@@ -5755,12 +5828,12 @@ function installPlaySlotOccupancy(ctx, playClient) {
     chatGeneration += 1;
     const generation = chatGeneration;
     dropChatEntry();
-    if (!chatDeclared && !ioDeclared || mode !== "play") return;
+    if (!chatDeclared && !ioDeclared || mode2 !== "play") return;
     const session = currentSession();
     if (session === null) return;
     const sessionId = session.id;
     loadCurrentPlaythrough(playClient, session).then((match) => {
-      if (generation !== chatGeneration || mode !== "play" || !chatDeclared && !ioDeclared || currentSession()?.id !== sessionId || match === null) return;
+      if (generation !== chatGeneration || mode2 !== "play" || !chatDeclared && !ioDeclared || currentSession()?.id !== sessionId || match === null) return;
       if (chatDeclared) {
         disposeChatEntry = ctx.slots.register({
           name: "conversation.view",
@@ -5847,8 +5920,8 @@ function installPlaySlotOccupancy(ctx, playClient) {
   return {
     setMode(next) {
       const normalized = next === "play" ? "play" : "native";
-      if (mode === normalized) return;
-      mode = normalized;
+      if (mode2 === normalized) return;
+      mode2 = normalized;
       reconcile();
       reconcileNotice();
       reconcileChat();
@@ -5918,8 +5991,8 @@ function createLivePlayClient({
     async getChrome() {
       return normalizeChrome(await v2("GET", "/chrome"));
     },
-    async putChrome(mode) {
-      return normalizeChrome(await v2("PUT", "/chrome", { mode }));
+    async putChrome(mode2) {
+      return normalizeChrome(await v2("PUT", "/chrome", { mode: mode2 }));
     },
     async getWorkspace() {
       return normalizeWorkspace(await v2("GET", "/workspace"));
@@ -6026,11 +6099,287 @@ function createLivePlayClient({
   };
 }
 
-// packages/client/src/index.js
+// packages/client/src/play/regex-panel.js
+var import_react12 = require("react");
 var h12 = createLocalizedElement(import_react12.createElement);
+var EMPTY_DOCUMENT = Object.freeze({ schemaVersion: 1, rules: Object.freeze([]) });
+var SCOPE_KINDS = Object.freeze(["global", "preset", "character"]);
+function activeRegexBindings(snapshot) {
+  return {
+    presetId: typeof snapshot?.selection?.presetId === "string" ? snapshot.selection.presetId : null,
+    characterId: typeof snapshot?.selection?.characterCardId === "string" ? snapshot.selection.characterCardId : typeof snapshot?.selection?.characterId === "string" ? snapshot.selection.characterId : null
+  };
+}
+function scopeFor(kind, bindings) {
+  return {
+    kind,
+    resourceId: kind === "global" ? null : kind === "preset" ? bindings.presetId : bindings.characterId
+  };
+}
+function downloadJson(document2) {
+  const blob = new Blob([JSON.stringify(document2, null, 2)], { type: "application/json" });
+  const url = URL.createObjectURL(blob);
+  const anchor = window.document.createElement("a");
+  anchor.href = url;
+  anchor.download = "regex.json";
+  anchor.click();
+  URL.revokeObjectURL(url);
+}
+function Field5({ labelKey, children }) {
+  return h12(
+    "label",
+    { className: "dtv-field" },
+    h12("span", { className: "dtv-label" }, uiMessage(labelKey)),
+    children
+  );
+}
+function RuleEditor({ rule, busy, update, remove }) {
+  const set = (patch) => update({ ...rule, ...patch });
+  const setScope = (patch) => set({ scope: { ...rule.scope, ...patch } });
+  const stateLabel = uiMessage(rule.enabled ? "common.enabled" : "common.disabled");
+  return h12(
+    "details",
+    { className: "dtv-entry dtv-regex-rule", "data-enabled": rule.enabled },
+    h12(
+      "summary",
+      null,
+      h12("span", { className: "dtv-entry-dot", "aria-hidden": "true" }),
+      h12("span", { className: "dtv-entry-name" }, rawText(rule.name || unwrapText(uiMessage("regex.unnamed")))),
+      h12("span", { className: "dtv-entry-state" }, stateLabel)
+    ),
+    h12(
+      "div",
+      { className: "dtv-entry-body" },
+      h12(
+        "label",
+        { className: "dtv-check" },
+        h12("input", {
+          type: "checkbox",
+          checked: rule.enabled,
+          disabled: busy,
+          onChange: (event) => set({ enabled: event.target.checked })
+        }),
+        uiMessage("regex.enabled")
+      ),
+      h12(Field5, { labelKey: "regex.name" }, h12("input", {
+        className: "dtv-input",
+        value: rule.name,
+        disabled: busy,
+        onChange: (event) => set({ name: event.target.value })
+      })),
+      h12(Field5, { labelKey: "regex.find" }, h12("textarea", {
+        className: "dtv-textarea dtv-regex-expression",
+        value: rule.find,
+        disabled: busy,
+        spellCheck: false,
+        onChange: (event) => set({ find: event.target.value })
+      })),
+      h12(Field5, { labelKey: "regex.replace" }, h12("textarea", {
+        className: "dtv-textarea dtv-regex-expression",
+        value: rule.replace,
+        disabled: busy,
+        spellCheck: false,
+        onChange: (event) => set({ replace: event.target.value })
+      })),
+      h12(
+        "div",
+        { className: "dtv-entry-grid" },
+        h12(Field5, { labelKey: "regex.flags" }, h12("input", {
+          className: "dtv-input",
+          value: rule.flags,
+          disabled: busy,
+          spellCheck: false,
+          onChange: (event) => set({ flags: event.target.value })
+        })),
+        h12(Field5, { labelKey: "regex.target" }, h12(
+          "select",
+          {
+            className: "dtv-select",
+            value: rule.target,
+            disabled: busy,
+            onChange: (event) => set({ target: event.target.value })
+          },
+          h12("option", { value: "assistant" }, uiMessage("regex.target.assistant")),
+          h12("option", { value: "user" }, uiMessage("regex.target.user")),
+          h12("option", { value: "both" }, uiMessage("regex.target.both"))
+        ))
+      ),
+      h12(
+        "div",
+        { className: "dtv-entry-grid" },
+        h12(Field5, { labelKey: "regex.scope" }, h12(
+          "select",
+          {
+            className: "dtv-select",
+            value: rule.scope.kind,
+            disabled: busy,
+            onChange: (event) => setScope({
+              kind: event.target.value,
+              resourceId: event.target.value === "global" ? null : rule.scope.resourceId
+            })
+          },
+          ...SCOPE_KINDS.map((kind) => h12("option", { key: kind, value: kind }, uiMessage(`regex.scope.${kind}`)))
+        )),
+        rule.scope.kind === "global" ? null : h12(Field5, { labelKey: "regex.resourceId" }, h12("input", {
+          className: "dtv-input",
+          value: rule.scope.resourceId ?? "",
+          disabled: busy,
+          onChange: (event) => setScope({ resourceId: event.target.value || null })
+        }))
+      ),
+      h12("div", { className: "dtv-entry-actions" }, h12("button", {
+        className: "dtv-button dtv-danger",
+        type: "button",
+        disabled: busy,
+        onClick: remove
+      }, uiMessage("common.delete")))
+    )
+  );
+}
+function RegexPanel({ client, activeSnapshot, close }) {
+  const [document2, setDocument] = (0, import_react12.useState)(EMPTY_DOCUMENT);
+  const [savedDocument, setSavedDocument] = (0, import_react12.useState)(EMPTY_DOCUMENT);
+  const [scopeKind, setScopeKind] = (0, import_react12.useState)("global");
+  const [busy, setBusy] = (0, import_react12.useState)(false);
+  const [status, setStatus] = (0, import_react12.useState)({ text: uiMessage("common.loading"), error: false });
+  const fileInput = (0, import_react12.useRef)(null);
+  const bindings = activeRegexBindings(activeSnapshot);
+  const dirty = JSON.stringify(document2) !== JSON.stringify(savedDocument);
+  const load = async () => {
+    setBusy(true);
+    try {
+      const next = await getRegexDocument(client);
+      setDocument(next);
+      setSavedDocument(next);
+      setStatus({ text: uiMessage("regex.loaded", { count: next.rules.length }), error: false });
+    } catch (reason) {
+      setStatus({ text: rawText(reason instanceof Error ? reason.message : String(reason)), error: true });
+    } finally {
+      setBusy(false);
+    }
+  };
+  (0, import_react12.useEffect)(() => {
+    load();
+  }, [client]);
+  const persist = async (next) => {
+    setBusy(true);
+    try {
+      const saved = await putRegexDocument(client, next);
+      setDocument(saved);
+      setSavedDocument(saved);
+      setStatus({ text: uiMessage("regex.saved", { count: saved.rules.length }), error: false });
+      window.dispatchEvent(new Event(CLIENT_REFRESH_EVENT));
+    } catch (reason) {
+      setStatus({ text: rawText(reason instanceof Error ? reason.message : String(reason)), error: true });
+    } finally {
+      setBusy(false);
+    }
+  };
+  const guardedLoad = () => {
+    if (dirty && !window.confirm(unwrapText(uiMessage("regex.confirmReload")))) return;
+    load();
+  };
+  const guardedClose = () => {
+    if (dirty && !window.confirm(unwrapText(uiMessage("regex.confirmClose")))) return;
+    close();
+  };
+  const addRule = () => {
+    const rule = normalizeRegexRule({
+      name: unwrapText(uiMessage("regex.newRule")),
+      enabled: true,
+      find: "",
+      replace: "",
+      flags: "g",
+      target: "assistant"
+    }, { scope: scopeFor(scopeKind, bindings) });
+    setDocument((current2) => ({ ...current2, rules: [...current2.rules, rule] }));
+  };
+  const updateRule = (next) => setDocument((current2) => ({
+    ...current2,
+    rules: current2.rules.map((rule) => rule.id === next.id ? next : rule)
+  }));
+  const removeRule = (id) => setDocument((current2) => ({
+    ...current2,
+    rules: current2.rules.filter((rule) => rule.id !== id)
+  }));
+  const importFile = async (event) => {
+    const file = event.target.files?.[0];
+    event.target.value = "";
+    if (!file) return;
+    setBusy(true);
+    try {
+      const imported = importRegexDocument(JSON.parse(await file.text()), {
+        scope: scopeFor(scopeKind, bindings)
+      });
+      await persist({ ...document2, rules: [...document2.rules, ...imported] });
+      setStatus({ text: uiMessage("regex.imported", { count: imported.length }), error: false });
+    } catch (reason) {
+      setStatus({ text: rawText(reason instanceof Error ? reason.message : String(reason)), error: true });
+      setBusy(false);
+    }
+  };
+  const visibleRules = document2.rules.filter((rule) => rule.scope.kind === scopeKind);
+  const title = uiMessage("regex.title");
+  const closeLabel = uiMessage("panel.close", { title: unwrapText(title) });
+  return h12(
+    "div",
+    { className: "dtv-panel dtv-regex-panel" },
+    h12(
+      "div",
+      { className: "dtv-header" },
+      h12("div", { className: "dtv-title" }, title),
+      h12("button", { className: "dtv-close", type: "button", title: closeLabel, "aria-label": closeLabel, onClick: guardedClose }, "\u2715")
+    ),
+    h12(
+      "div",
+      { className: "dtv-body" },
+      h12("p", { className: "dtv-note" }, uiMessage("regex.displayOnlyNote")),
+      h12(
+        "div",
+        { className: "dtv-regex-scopes", role: "tablist", "aria-label": uiMessage("regex.scopes") },
+        ...SCOPE_KINDS.map((kind) => h12("button", {
+          className: "dtv-button",
+          type: "button",
+          role: "tab",
+          key: kind,
+          "aria-selected": scopeKind === kind,
+          "data-selected": scopeKind === kind,
+          onClick: () => setScopeKind(kind)
+        }, uiMessage(`regex.scope.${kind}`)))
+      ),
+      scopeKind === "preset" && bindings.presetId === null ? h12("p", { className: "dtv-note" }, uiMessage("regex.noPreset")) : scopeKind === "character" && bindings.characterId === null ? h12("p", { className: "dtv-note" }, uiMessage("regex.noCharacter")) : null,
+      h12(
+        "div",
+        { className: "dtv-book-toolbar" },
+        h12("button", { className: "dtv-button", type: "button", disabled: busy, onClick: addRule }, uiMessage("regex.add")),
+        h12("button", { className: "dtv-button", type: "button", disabled: busy, onClick: () => fileInput.current?.click() }, uiMessage("common.importJson")),
+        h12("button", { className: "dtv-button", type: "button", disabled: busy, onClick: () => downloadJson(document2) }, uiMessage("common.exportJson"))
+      ),
+      h12("input", { ref: fileInput, type: "file", accept: "application/json,.json", hidden: true, onChange: importFile }),
+      visibleRules.length === 0 ? h12("p", { className: "dtv-note" }, uiMessage("regex.emptyScope")) : visibleRules.map((rule) => h12(RuleEditor, {
+        key: rule.id,
+        rule,
+        busy,
+        update: updateRule,
+        remove: () => removeRule(rule.id)
+      })),
+      h12("div", { className: "dtv-status", "data-error": status.error }, status.text),
+      h12(
+        "div",
+        { className: "dtv-regex-footer" },
+        h12("button", { className: "dtv-button", type: "button", disabled: busy, onClick: guardedLoad }, uiMessage("common.reload")),
+        h12("button", { className: "dtv-button dtv-primary", type: "button", disabled: busy || !dirty, onClick: () => persist(document2) }, busy ? uiMessage("common.working") : uiMessage("common.saveChanges"))
+      )
+    )
+  );
+}
+
+// packages/client/src/index.js
+var h13 = createLocalizedElement(import_react13.createElement);
 var css11 = `
 .dtv-layer{position:absolute;inset:0;z-index:6;pointer-events:none;font-family:Inter,var(--dsw-font-family),sans-serif;color:var(--dsw-alias-label-primary)}
 .dtv-launcher{position:absolute;z-index:2;width:44px;height:44px;pointer-events:auto;overflow:hidden;border:0 solid transparent;border-radius:22px;background:transparent;box-shadow:none;transition:width .22s ease,height .22s ease,border-radius .22s ease,background-color .18s ease,box-shadow .18s ease;display:block}
+.dtv-launcher[data-open=true] .dtv-menu{overflow-y:auto}
 .dtv-launcher[data-open=true]{width:300px;height:376px;border-width:1px;border-color:var(--dsw-alias-border-l2);border-radius:18px;background:var(--dsw-alias-bg-base);box-shadow:var(--ds-shadow-3,0 12px 34px rgba(0,0,0,.24))}
 .dtv-ball-row{position:absolute;top:0;left:0;right:0;height:52px;display:flex;align-items:flex-start;pointer-events:none}.dtv-launcher[data-side=left] .dtv-ball-row{justify-content:flex-end}.dtv-launcher[data-vertical=up] .dtv-ball-row{top:auto;bottom:0;align-items:flex-end}
 .dtv-ball{pointer-events:auto;touch-action:none;user-select:none;width:44px;height:44px;flex:none;border:2px solid #fff;border-radius:50%;background:conic-gradient(from 225deg,#090909 0 56%,#18569d 56% 100%);box-shadow:0 0 0 2px #174e8a,0 6px 20px rgba(0,0,0,.34),inset 0 0 0 1px rgba(255,255,255,.28);color:#fff;font-size:13px;letter-spacing:-.5px;font-weight:850;text-shadow:0 1px 2px #000;cursor:grab;transition:filter .15s ease,transform .18s ease,box-shadow .18s ease,background .18s ease}.dtv-ball:hover{filter:brightness(1.1);box-shadow:0 0 0 2px #2675c9,0 8px 24px rgba(0,0,0,.4),inset 0 0 0 1px rgba(255,255,255,.35)}.dtv-layer[data-chrome=play] .dtv-ball{background:conic-gradient(from 225deg,#090909 0 56%,#b31319 56% 100%);box-shadow:0 0 0 2px #a50f16,0 6px 20px rgba(0,0,0,.34),inset 0 0 0 1px rgba(255,255,255,.28)}.dtv-layer[data-chrome=play] .dtv-ball:hover{box-shadow:0 0 0 2px #d5222b,0 8px 24px rgba(0,0,0,.4),inset 0 0 0 1px rgba(255,255,255,.35)}.dtv-ball:active{cursor:grabbing}.dtv-launcher[data-open=true] .dtv-ball{transform:scale(.82) rotate(-8deg)}
@@ -6047,6 +6396,7 @@ var css11 = `
 .dtv-book-toolbar{display:grid;grid-template-columns:1fr 1fr 1fr;gap:7px}.dtv-entry{border:1px solid var(--dsw-alias-border-l1);border-radius:8px;background:var(--dsw-alias-bg-base);overflow:hidden}.dtv-entry>summary{list-style:none;cursor:pointer;padding:8px;display:flex;align-items:center;gap:7px;font-size:11px}.dtv-entry>summary::-webkit-details-marker{display:none}.dtv-entry-dot{width:8px;height:8px;flex:none;border-radius:50%;background:var(--dsw-alias-label-tertiary)}.dtv-entry[data-enabled=true] .dtv-entry-dot{background:var(--dsw-alias-state-success,#2fa36b)}.dtv-entry-name{font-weight:620;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.dtv-entry-state{margin-left:auto;flex:none;color:var(--dsw-alias-label-tertiary);font-size:10px}.dtv-entry-body{border-top:1px solid var(--dsw-alias-border-l1);padding:8px;display:flex;flex-direction:column;gap:8px}.dtv-field{display:flex;flex-direction:column;gap:4px}.dtv-label{font-size:10px;font-weight:620;color:var(--dsw-alias-label-tertiary)}.dtv-input,.dtv-select,.dtv-textarea{box-sizing:border-box;width:100%;border:1px solid var(--dsw-alias-border-l2);border-radius:7px;background:var(--dsw-alias-bg-base);color:var(--dsw-alias-label-primary);font:inherit;font-size:11px;padding:7px 8px}.dtv-input,.dtv-select{height:32px}.dtv-textarea{min-height:94px;resize:vertical;line-height:1.45}.dtv-policy{min-height:96px}.dtv-entry-grid{display:grid;grid-template-columns:1fr 1fr;gap:7px}.dtv-checks{display:flex;flex-wrap:wrap;gap:10px}.dtv-check{display:flex;gap:5px;align-items:center;font-size:10px}.dtv-entry-actions{display:flex;justify-content:flex-end}.dtv-danger{color:var(--dsw-alias-state-error)}
 .dtv-layer>.dtv-launcher,.dtv-layer>.dtv-panel,.dtv-layer>.dcc-panel,.dtv-layer>.dwb-panel,.dtv-layer>.dtu-panel{zoom:var(--dtv-ui-scale,1)}.dtv-setting-value{font-size:12px;font-variant-numeric:tabular-nums;color:var(--dsw-alias-label-secondary)}
 .dtv-modal-backdrop{position:absolute;inset:0;z-index:20;pointer-events:auto;background:rgba(0,0,0,.48);display:flex;align-items:center;justify-content:center;padding:24px}
+.dtv-regex-scopes{display:grid;grid-template-columns:repeat(3,1fr);gap:7px}.dtv-regex-scopes .dtv-button[data-selected=true]{background:var(--dsw-alias-interactive-bg-selected,var(--dsw-specific-tip));border-color:var(--dsw-alias-state-business-primary,#2677d9)}.dtv-regex-expression{font-family:var(--dsw-font-mono,ui-monospace,SFMono-Regular,Consolas,monospace);min-height:72px}.dtv-regex-footer{position:sticky;bottom:-12px;display:grid;grid-template-columns:1fr 1fr;gap:8px;padding:10px 0 12px;background:var(--dsw-alias-bg-base)}
 .dtv-modal{width:min(420px,100%);border-radius:12px;background:var(--dsw-alias-bg-base);border:1px solid var(--dsw-alias-border-l2);box-shadow:var(--ds-shadow-3,0 16px 40px rgba(0,0,0,.28));padding:18px 16px;display:flex;flex-direction:column;gap:14px}
 .dtv-modal-body{margin:0;font-size:13px;line-height:1.55}.dtv-modal .dtv-button{align-self:flex-end;min-width:88px}
 `;
@@ -6128,15 +6478,15 @@ async function uiSettingsRequest(method = "GET", body2) {
 function PanelHeader({ title, titleKey, close }) {
   const titleText = titleKey ? uiMessage(titleKey) : title;
   const closeLabel = uiMessage("panel.close", { title: unwrapText(titleText) });
-  return h12(
+  return h13(
     "div",
     { className: "dtv-header" },
-    h12("div", { className: "dtv-title" }, titleText),
-    h12("button", { className: "dtv-close", type: "button", title: closeLabel, "aria-label": closeLabel, onClick: close }, "\u2715")
+    h13("div", { className: "dtv-title" }, titleText),
+    h13("button", { className: "dtv-close", type: "button", title: closeLabel, "aria-label": closeLabel, onClick: close }, "\u2715")
   );
 }
-function Field5({ label, children }) {
-  return h12("label", { className: "dtv-field" }, h12("span", { className: "dtv-label" }, label), children);
+function Field6({ label, children }) {
+  return h13("label", { className: "dtv-field" }, h13("span", { className: "dtv-label" }, label), children);
 }
 function SettingsPanel({
   settings,
@@ -6153,19 +6503,19 @@ function SettingsPanel({
   resetPolicy
 }) {
   const percent = Math.round(settings.scale * 100);
-  return h12(
+  return h13(
     "div",
     { className: "dtv-panel" },
-    h12(
+    h13(
       "div",
       { className: "dtv-header" },
-      h12("div", { className: "dtv-title" }, translate("settings.title")),
-      h12("button", { className: "dtv-close", type: "button", title: translate("settings.close"), "aria-label": translate("settings.close"), onClick: close }, "\u2715")
+      h13("div", { className: "dtv-title" }, translate("settings.title")),
+      h13("button", { className: "dtv-close", type: "button", title: translate("settings.close"), "aria-label": translate("settings.close"), onClick: close }, "\u2715")
     ),
-    h12(
+    h13(
       "div",
       { className: "dtv-body" },
-      h12(Field5, { label: translate("settings.language") }, h12(
+      h13(Field6, { label: translate("settings.language") }, h13(
         "select",
         {
           className: "dtv-select",
@@ -6173,57 +6523,57 @@ function SettingsPanel({
           disabled: busy,
           onChange: (event) => update({ ...settings, locale: event.target.value })
         },
-        ...UI_LOCALES.map((locale) => h12("option", { key: locale.id, value: locale.id }, rawText(locale.nativeName)))
+        ...UI_LOCALES.map((locale) => h13("option", { key: locale.id, value: locale.id }, rawText(locale.nativeName)))
       )),
-      h12(Field5, { label: translate("settings.scale") }, h12("select", {
+      h13(Field6, { label: translate("settings.scale") }, h13("select", {
         className: "dtv-select",
         value: settings.scale,
         disabled: busy,
         onChange: (event) => update({ ...settings, scale: Number(event.target.value) })
-      }, ...UI_SCALE_OPTIONS.map((scale) => h12("option", { key: scale, value: scale }, `${Math.round(scale * 100)}%`)))),
-      h12("div", { className: "dtv-setting-value" }, translate("settings.currentScale", { scale: percent })),
-      h12("p", { className: "dtv-note" }, translate("settings.scale.help")),
-      h12(
+      }, ...UI_SCALE_OPTIONS.map((scale) => h13("option", { key: scale, value: scale }, `${Math.round(scale * 100)}%`)))),
+      h13("div", { className: "dtv-setting-value" }, translate("settings.currentScale", { scale: percent })),
+      h13("p", { className: "dtv-note" }, translate("settings.scale.help")),
+      h13(
         "label",
         { className: "dtv-check" },
-        h12("input", {
+        h13("input", {
           type: "checkbox",
           checked: settings.rpFollowCharacter !== false,
           disabled: busy,
           onChange: (event) => update({ ...settings, rpFollowCharacter: event.target.checked })
         }),
-        h12("span", null, translate("settings.rpFollow"))
+        h13("span", null, translate("settings.rpFollow"))
       ),
-      h12("p", { className: "dtv-note" }, translate("settings.rpFollow.help")),
-      h12(Field5, { label: translate("settings.rpPolicy") }, h12("textarea", {
+      h13("p", { className: "dtv-note" }, translate("settings.rpFollow.help")),
+      h13(Field6, { label: translate("settings.rpPolicy") }, h13("textarea", {
         className: "dtv-textarea dtv-policy",
         value: policyDraft,
         placeholder: translate("settings.rpPolicy.placeholder"),
         disabled: busy || policyBusy || policyLoaded !== true,
         onChange: (event) => onPolicyDraft(event.target.value)
       })),
-      h12("p", { className: "dtv-note" }, translate("settings.rpPolicy.help")),
-      h12(
+      h13("p", { className: "dtv-note" }, translate("settings.rpPolicy.help")),
+      h13(
         "div",
         { className: "dtv-actions" },
-        h12("button", {
+        h13("button", {
           className: "dtv-button dtv-primary",
           type: "button",
           disabled: busy || policyBusy || policyLoaded !== true,
           onClick: savePolicy
         }, translate("settings.rpPolicy.save")),
-        h12("button", {
+        h13("button", {
           className: "dtv-button",
           type: "button",
           disabled: busy || policyBusy || policyLoaded !== true,
           onClick: resetPolicy
         }, translate("settings.rpPolicy.reset"))
       ),
-      h12("div", { className: "dtv-status", "data-error": status.error || void 0, role: "status" }, rawText(status.text)),
-      h12(
+      h13("div", { className: "dtv-status", "data-error": status.error || void 0, role: "status" }, rawText(status.text)),
+      h13(
         "div",
         { className: "dtv-actions" },
-        h12("button", { className: "dtv-button", type: "button", disabled: busy, onClick: reset }, translate("settings.reset"))
+        h13("button", { className: "dtv-button", type: "button", disabled: busy, onClick: reset }, translate("settings.reset"))
       )
     )
   );
@@ -6235,7 +6585,7 @@ var LOGIC_KEYS = Object.freeze({
   not_all: "world.logic.notAll"
 });
 function RpHighRiskDialog({ onDismiss }) {
-  return h12(
+  return h13(
     "div",
     {
       className: "dtv-modal-backdrop",
@@ -6243,53 +6593,54 @@ function RpHighRiskDialog({ onDismiss }) {
       "aria-modal": "true",
       "aria-labelledby": "dtv-rp-block-body"
     },
-    h12(
+    h13(
       "div",
       { className: "dtv-modal" },
-      h12("p", { id: "dtv-rp-block-body", className: "dtv-modal-body" }, translate("rp.block.body")),
-      h12("button", { className: "dtv-button dtv-primary", type: "button", onClick: onDismiss }, translate("rp.block.dismiss"))
+      h13("p", { id: "dtv-rp-block-body", className: "dtv-modal-body" }, translate("rp.block.body")),
+      h13("button", { className: "dtv-button dtv-primary", type: "button", onClick: onDismiss }, translate("rp.block.dismiss"))
     )
   );
 }
 function TavernShell({ useSessions, useWorkspaces, createCleanSession, playClient, playSlots }) {
-  const [menuOpen, setMenuOpen] = (0, import_react12.useState)(false);
-  const [surface, setSurface] = (0, import_react12.useState)(null);
-  const [anchor, setAnchor] = (0, import_react12.useState)(initialLauncherAnchor);
-  const [chromeMode, setChromeMode] = (0, import_react12.useState)("native");
-  const [chromeError, setChromeError] = (0, import_react12.useState)("");
-  const [activeSnapshot, setActiveSnapshot] = (0, import_react12.useState)(null);
-  const [statusError, setStatusError] = (0, import_react12.useState)("");
-  const [uiSettings, setUiSettings] = (0, import_react12.useState)(getClientUiSettings);
-  const [settingsStatus, setSettingsStatus] = (0, import_react12.useState)({ text: translate("settings.saved"), error: false });
-  const [settingsBusy, setSettingsBusy] = (0, import_react12.useState)(false);
-  const [rpPolicyDraft, setRpPolicyDraft] = (0, import_react12.useState)("");
-  const [rpPolicyLoaded, setRpPolicyLoaded] = (0, import_react12.useState)(false);
-  const [rpPolicyBusy, setRpPolicyBusy] = (0, import_react12.useState)(false);
-  const [rpAlert, setRpAlert] = (0, import_react12.useState)(null);
-  const drag = (0, import_react12.useRef)(null);
-  const suppressClick = (0, import_react12.useRef)(false);
-  const chromeModeRef = (0, import_react12.useRef)("native");
-  const chromeController = (0, import_react12.useRef)(null);
-  const statusGeneration = (0, import_react12.useRef)(0);
-  const rpAlertRef = (0, import_react12.useRef)(null);
-  const dismissedRpAlerts = (0, import_react12.useRef)(/* @__PURE__ */ new Set());
+  const [menuOpen, setMenuOpen] = (0, import_react13.useState)(false);
+  const [surface, setSurface] = (0, import_react13.useState)(null);
+  const [anchor, setAnchor] = (0, import_react13.useState)(initialLauncherAnchor);
+  const [chromeMode, setChromeMode] = (0, import_react13.useState)("native");
+  const [chromeError, setChromeError] = (0, import_react13.useState)("");
+  const [activeSnapshot, setActiveSnapshot] = (0, import_react13.useState)(null);
+  const [statusError, setStatusError] = (0, import_react13.useState)("");
+  const [uiSettings, setUiSettings] = (0, import_react13.useState)(getClientUiSettings);
+  const [settingsStatus, setSettingsStatus] = (0, import_react13.useState)({ text: translate("settings.saved"), error: false });
+  const [settingsBusy, setSettingsBusy] = (0, import_react13.useState)(false);
+  const [rpPolicyDraft, setRpPolicyDraft] = (0, import_react13.useState)("");
+  const [rpPolicyLoaded, setRpPolicyLoaded] = (0, import_react13.useState)(false);
+  const [rpPolicyBusy, setRpPolicyBusy] = (0, import_react13.useState)(false);
+  const [rpAlert, setRpAlert] = (0, import_react13.useState)(null);
+  const drag = (0, import_react13.useRef)(null);
+  const suppressClick = (0, import_react13.useRef)(false);
+  const chromeModeRef = (0, import_react13.useRef)("native");
+  const chromeController = (0, import_react13.useRef)(null);
+  const statusGeneration = (0, import_react13.useRef)(0);
+  const rpAlertRef = (0, import_react13.useRef)(null);
+  const dismissedRpAlerts = (0, import_react13.useRef)(/* @__PURE__ */ new Set());
   const sessionId = useSessions((state) => state.current);
   const sessionBlank = useSessions((state) => state.current === void 0 || state.current === null ? true : state.byId?.[state.current]?.blank === true);
   const workspaceId = useWorkspaces((state) => workspaceTargetId(state, sessionId));
   const close = () => setSurface(null);
   if (rpAlert === null || dismissedRpAlerts.current.has(rpAlert.id)) rpAlertRef.current = null;
   else rpAlertRef.current = rpAlert;
-  (0, import_react12.useEffect)(() => {
+  (0, import_react13.useEffect)(() => {
     let active = true;
     let channel = null;
     try {
       if (typeof BroadcastChannel === "function") channel = new BroadcastChannel(`${PLUGIN_ID}:chrome`);
     } catch {
     }
-    const commitChrome = (mode) => {
-      chromeModeRef.current = mode;
-      setChromeMode(mode);
-      playSlots.setMode(mode);
+    if (mode !== "play") setSurface((current2) => current2 === "regex" ? null : current2);
+    const commitChrome = (mode2) => {
+      chromeModeRef.current = mode2;
+      setChromeMode(mode2);
+      playSlots.setMode(mode2);
     };
     const refreshChrome = async () => {
       try {
@@ -6304,13 +6655,13 @@ function TavernShell({ useSessions, useWorkspaces, createCleanSession, playClien
     };
     const controller2 = createChromeClickController({
       getMode: () => chromeModeRef.current,
-      persistMode: (mode) => playClient.putChrome(mode),
+      persistMode: (mode2) => playClient.putChrome(mode2),
       openMenu: () => setMenuOpen((value) => !value),
       closeMenu: () => setMenuOpen(false),
-      setMode: (mode) => {
-        commitChrome(mode);
+      setMode: (mode2) => {
+        commitChrome(mode2);
         try {
-          channel?.postMessage({ mode });
+          channel?.postMessage({ mode: mode2 });
         } catch {
         }
       },
@@ -6333,7 +6684,7 @@ function TavernShell({ useSessions, useWorkspaces, createCleanSession, playClien
       channel?.close();
     };
   }, [playClient, playSlots]);
-  (0, import_react12.useEffect)(() => {
+  (0, import_react13.useEffect)(() => {
     let active = true;
     uiSettingsRequest().then((next) => {
       if (!active) return;
@@ -6384,7 +6735,7 @@ function TavernShell({ useSessions, useWorkspaces, createCleanSession, playClien
       setSettingsBusy(false);
     }
   };
-  (0, import_react12.useEffect)(() => {
+  (0, import_react13.useEffect)(() => {
     if (surface !== "settings") return void 0;
     let active = true;
     setRpPolicyLoaded(false);
@@ -6428,7 +6779,7 @@ function TavernShell({ useSessions, useWorkspaces, createCleanSession, playClien
       setRpPolicyBusy(false);
     }
   };
-  const refreshStatus = (0, import_react12.useCallback)(async () => {
+  const refreshStatus = (0, import_react13.useCallback)(async () => {
     const generation = ++statusGeneration.current;
     try {
       const next = await activeView(sessionId);
@@ -6440,7 +6791,7 @@ function TavernShell({ useSessions, useWorkspaces, createCleanSession, playClien
       setStatusError(reason instanceof Error ? reason.message : String(reason));
     }
   }, [sessionId]);
-  (0, import_react12.useEffect)(() => {
+  (0, import_react13.useEffect)(() => {
     statusGeneration.current += 1;
     setActiveSnapshot(null);
     setStatusError("");
@@ -6449,12 +6800,12 @@ function TavernShell({ useSessions, useWorkspaces, createCleanSession, playClien
       statusGeneration.current += 1;
     };
   }, [refreshStatus, sessionId]);
-  (0, import_react12.useEffect)(() => {
+  (0, import_react13.useEffect)(() => {
     const onRefresh = () => refreshStatus();
     window.addEventListener(CLIENT_REFRESH_EVENT, onRefresh);
     return () => window.removeEventListener(CLIENT_REFRESH_EVENT, onRefresh);
   }, [refreshStatus]);
-  (0, import_react12.useEffect)(() => {
+  (0, import_react13.useEffect)(() => {
     const onResize = () => setAnchor((current2) => {
       const next = clampLauncherAnchor(current2, viewport(), uiSettings.scale);
       persistLauncherAnchor(next);
@@ -6463,14 +6814,14 @@ function TavernShell({ useSessions, useWorkspaces, createCleanSession, playClien
     window.addEventListener("resize", onResize);
     return () => window.removeEventListener("resize", onResize);
   }, [uiSettings.scale]);
-  (0, import_react12.useEffect)(() => {
+  (0, import_react13.useEffect)(() => {
     setAnchor((current2) => {
       const next = clampLauncherAnchor(current2, viewport(), uiSettings.scale);
       persistLauncherAnchor(next);
       return next;
     });
   }, [uiSettings.scale]);
-  (0, import_react12.useEffect)(() => {
+  (0, import_react13.useEffect)(() => {
     if (typeof sessionId !== "string" || sessionId === "") {
       dismissedRpAlerts.current = /* @__PURE__ */ new Set();
       rpAlertRef.current = null;
@@ -6506,7 +6857,7 @@ function TavernShell({ useSessions, useWorkspaces, createCleanSession, playClien
     } catch {
     }
   };
-  (0, import_react12.useEffect)(() => {
+  (0, import_react13.useEffect)(() => {
     const onKeyDown = (event) => {
       if (event.key !== "Escape") return;
       if (rpAlert !== null) dismissRpAlert();
@@ -6564,7 +6915,7 @@ function TavernShell({ useSessions, useWorkspaces, createCleanSession, playClien
   };
   let panel = null;
   if (surface === "preset") {
-    panel = h12("div", { className: "dtv-panel" }, h12(PresetSidebar, {
+    panel = h13("div", { className: "dtv-panel" }, h13(PresetSidebar, {
       closePanel: close,
       openPanel: () => {
       },
@@ -6573,15 +6924,17 @@ function TavernShell({ useSessions, useWorkspaces, createCleanSession, playClien
       autoOpen: false
     }));
   } else if (surface === "character") {
-    panel = h12(CharacterPanel, { sessionId, sessionBlank, close });
+    panel = h13(CharacterPanel, { sessionId, sessionBlank, close });
+  } else if (surface === "regex" && chromeMode === "play") {
+    panel = h13(RegexPanel, { client: playClient, activeSnapshot, close });
   } else if (surface === "world-info") {
-    panel = h12(WorldBookPanel, { sessionId, close });
+    panel = h13(WorldBookPanel, { sessionId, close });
   } else if (surface === "user") {
-    panel = h12(UserPanel, { sessionId, sessionBlank, close });
+    panel = h13(UserPanel, { sessionId, sessionBlank, close });
   } else if (surface === "session-template") {
-    panel = h12(SessionTemplatePanel, { sessionId, workspaceId, createCleanSession, close });
+    panel = h13(SessionTemplatePanel, { sessionId, workspaceId, createCleanSession, close });
   } else if (surface === "settings") {
-    panel = h12(SettingsPanel, {
+    panel = h13(SettingsPanel, {
       settings: uiSettings,
       status: settingsStatus,
       busy: settingsBusy,
@@ -6600,12 +6953,12 @@ function TavernShell({ useSessions, useWorkspaces, createCleanSession, playClien
   const statuses = launcherResourceStatuses(activeSnapshot);
   const chromeSwitchLabel = chromeMode === "play" ? uiMessage("chrome.switchToNative") : uiMessage("chrome.switchToPlay");
   const chromeStatusLabel = chromeMode === "play" ? uiMessage("chrome.currentPlay") : uiMessage("chrome.currentNative");
-  return h12(
+  return h13(
     "div",
     { className: "dtv-layer", lang: uiSettings.locale, "data-chrome": chromeMode, "data-surface-open": surface !== null, style: { "--dtv-ui-scale": uiSettings.scale } },
     panel,
-    rpAlert === null ? null : h12(RpHighRiskDialog, { onDismiss: dismissRpAlert }),
-    h12(
+    rpAlert === null ? null : h13(RpHighRiskDialog, { onDismiss: dismissRpAlert }),
+    h13(
       "div",
       {
         className: "dtv-launcher",
@@ -6614,7 +6967,7 @@ function TavernShell({ useSessions, useWorkspaces, createCleanSession, playClien
         "data-vertical": placement.vertical,
         style: { left: placement.left / uiSettings.scale, top: placement.top / uiSettings.scale }
       },
-      h12("div", { className: "dtv-ball-row" }, h12("button", {
+      h13("div", { className: "dtv-ball-row" }, h13("button", {
         className: "dtv-ball",
         type: "button",
         title: uiMessage("nav.launcher"),
@@ -6627,11 +6980,11 @@ function TavernShell({ useSessions, useWorkspaces, createCleanSession, playClien
         onClick: clickLauncher,
         onDoubleClick: doubleClickLauncher
       }, chromeMode === "play" ? "ST" : "DS")),
-      menuOpen ? h12(
+      menuOpen ? h13(
         "div",
         { className: "dtv-menu", role: "menu" },
-        h12("div", { className: "dtv-menu-title", "aria-live": "polite" }, chromeError === "" && statusError === "" ? uiMessage("nav.menuTitle", { session: sessionId || translate("nav.session.none") }) : uiMessage("nav.syncFailed", { message: chromeError || statusError })),
-        h12(
+        h13("div", { className: "dtv-menu-title", "aria-live": "polite" }, chromeError === "" && statusError === "" ? uiMessage("nav.menuTitle", { session: sessionId || translate("nav.session.none") }) : uiMessage("nav.syncFailed", { message: chromeError || statusError })),
+        h13(
           "button",
           {
             className: "dtv-menu-item",
@@ -6642,23 +6995,23 @@ function TavernShell({ useSessions, useWorkspaces, createCleanSession, playClien
             "data-show-binding": false,
             onClick: switchChrome
           },
-          h12("span", { "aria-hidden": "true" }, "\u2194"),
-          h12(
+          h13("span", { "aria-hidden": "true" }, "\u2194"),
+          h13(
             "span",
             { className: "dtv-item-copy" },
-            h12("span", { className: "dtv-item-label" }, chromeSwitchLabel),
-            h12("span", { className: "dtv-item-status" }, chromeStatusLabel)
+            h13("span", { className: "dtv-item-label" }, chromeSwitchLabel),
+            h13("span", { className: "dtv-item-status" }, chromeStatusLabel)
           ),
-          h12("span", { className: "dtv-item-planned" }, chromeMode === "play" ? "ST" : "DSH")
+          h13("span", { className: "dtv-item-planned" }, chromeMode === "play" ? "ST" : "DSH")
         ),
-        ...TAVERN_MENU_ITEMS.map((item) => {
+        ...TAVERN_MENU_ITEMS.filter((item) => !item.playOnly || chromeMode === "play").map((item) => {
           const status = statuses[item.id] ?? { bound: false, count: 0, titleKey: item.emptyTitleKey };
           const itemLabel = unwrapText(uiMessage(item.labelKey));
           const statusTitle = status.bound ? status.title : unwrapText(uiMessage(status.titleKey ?? item.emptyTitleKey));
           const stateLabel = item.binding === false ? "" : unwrapText(uiMessage(status.bound ? "common.bound" : "common.unbound"));
           const titleText = stateLabel ? uiMessage("nav.itemTitleBound", { label: itemLabel, title: statusTitle, state: stateLabel }) : uiMessage("nav.itemTitle", { label: itemLabel, title: statusTitle });
           const ariaText = stateLabel ? uiMessage("nav.itemAriaBound", { label: itemLabel, title: statusTitle, state: stateLabel }) : uiMessage("nav.itemAria", { label: itemLabel, title: statusTitle });
-          return h12(
+          return h13(
             "button",
             {
               className: "dtv-menu-item",
@@ -6674,14 +7027,14 @@ function TavernShell({ useSessions, useWorkspaces, createCleanSession, playClien
               "aria-label": ariaText,
               onClick: () => open(item.id)
             },
-            item.binding === false ? h12("span", { "aria-hidden": "true" }) : h12("span", { className: "dtv-binding-dot", "aria-hidden": "true" }),
-            h12(
+            item.binding === false ? h13("span", { "aria-hidden": "true" }) : h13("span", { className: "dtv-binding-dot", "aria-hidden": "true" }),
+            h13(
               "span",
               { className: "dtv-item-copy" },
-              h12("span", { className: "dtv-item-label" }, uiMessage(item.labelKey)),
-              h12("span", { className: "dtv-item-status" }, status.bound ? rawText(status.title) : uiMessage(status.titleKey ?? item.emptyTitleKey))
+              h13("span", { className: "dtv-item-label" }, uiMessage(item.labelKey)),
+              h13("span", { className: "dtv-item-status" }, status.bound ? rawText(status.title) : uiMessage(status.titleKey ?? item.emptyTitleKey))
             ),
-            status.count > 1 ? h12("span", { className: "dtv-item-count", "aria-label": uiMessage("nav.bookCount", { count: status.count }) }, uiMessage("nav.bookCount", { count: status.count })) : item.available ? null : h12("span", { className: "dtv-item-planned" }, uiMessage("common.planned"))
+            status.count > 1 ? h13("span", { className: "dtv-item-count", "aria-label": uiMessage("nav.bookCount", { count: status.count }) }, uiMessage("nav.bookCount", { count: status.count })) : item.available ? null : h13("span", { className: "dtv-item-planned" }, uiMessage("common.planned"))
           );
         })
       ) : null
