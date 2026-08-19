@@ -111,7 +111,7 @@ var zh_CN_default = Object.freeze({
   "nav.itemAriaBound": "{label}\uFF0C{title}\uFF0C{state}",
   "nav.itemAria": "{label}\uFF0C{title}",
   "nav.bookCount": "{count} \u672C",
-  "nav.launcher": "\u62D6\u52A8\u53EF\u79FB\u52A8\uFF1B\u70B9\u51FB\u5C55\u5F00 Tavern \u8D44\u6E90\u9762\u677F",
+  "nav.launcher": "\u62D6\u52A8\u53EF\u79FB\u52A8\uFF1B\u5355\u51FB\u5C55\u5F00\u9762\u677F\uFF1B\u53CC\u51FB\u5207\u6362\u7075\u73E0/\u9B54\u4E38",
   "settings.menu": "\u754C\u9762\u8BBE\u7F6E",
   "settings.title": "Tavern \u754C\u9762\u8BBE\u7F6E",
   "settings.language": "\u754C\u9762\u8BED\u8A00",
@@ -588,7 +588,7 @@ var en_default = Object.freeze({
   "nav.itemAriaBound": "{label}, {title}, {state}",
   "nav.itemAria": "{label}, {title}",
   "nav.bookCount": "{count} books",
-  "nav.launcher": "Drag to move; click to open Tavern resource panels",
+  "nav.launcher": "Drag to move; click to open panels; double-click to switch Lingzhu/Mowan",
   "settings.menu": "UI settings",
   "settings.title": "Tavern UI settings",
   "settings.language": "Interface language",
@@ -3621,6 +3621,393 @@ function launcherPlacement(anchor, viewport2, expanded = false, scale = 1) {
   };
 }
 
+// packages/client/src/play/chrome.js
+var CHROME_CLICK_DELAY = 260;
+function nextChromeMode(mode) {
+  return mode === "play" ? "native" : "play";
+}
+function createChromeClickController({
+  getMode,
+  persistMode,
+  openMenu,
+  closeMenu,
+  setMode,
+  setError = () => {
+  },
+  schedule = (callback, delay2) => globalThis.setTimeout(callback, delay2),
+  cancel = (timer) => globalThis.clearTimeout(timer),
+  delay = CHROME_CLICK_DELAY
+}) {
+  if (typeof getMode !== "function") throw new TypeError("getMode is required");
+  if (typeof persistMode !== "function") throw new TypeError("persistMode is required");
+  if (typeof openMenu !== "function") throw new TypeError("openMenu is required");
+  if (typeof closeMenu !== "function") throw new TypeError("closeMenu is required");
+  if (typeof setMode !== "function") throw new TypeError("setMode is required");
+  let pendingClick = null;
+  let switching = false;
+  let disposed = false;
+  const cancelPendingClick = () => {
+    if (pendingClick === null) return;
+    cancel(pendingClick);
+    pendingClick = null;
+  };
+  return {
+    click({ suppressed = false } = {}) {
+      if (disposed || suppressed || pendingClick !== null) return false;
+      pendingClick = schedule(() => {
+        pendingClick = null;
+        if (!disposed) openMenu();
+      }, delay);
+      return true;
+    },
+    async doubleClick({ suppressed = false } = {}) {
+      cancelPendingClick();
+      closeMenu();
+      if (disposed || suppressed || switching) return false;
+      switching = true;
+      try {
+        const saved = await persistMode(nextChromeMode(getMode()));
+        if (disposed) return false;
+        setMode(saved.mode);
+        setError(null);
+        return true;
+      } catch (reason) {
+        if (!disposed) setError(reason);
+        return false;
+      } finally {
+        switching = false;
+      }
+    },
+    dispose() {
+      disposed = true;
+      cancelPendingClick();
+    }
+  };
+}
+
+// packages/client/src/play/schema.js
+var CHROME_MODES = /* @__PURE__ */ new Set(["native", "play"]);
+var MESSAGE_ROLES = /* @__PURE__ */ new Set(["user", "assistant", "system"]);
+function isRecord3(value) {
+  return value !== null && typeof value === "object" && !Array.isArray(value);
+}
+function fail(label, detail) {
+  throw new TypeError(`${label}: ${detail}`);
+}
+function stringId(value, label) {
+  if (typeof value !== "string" || value.trim() === "") fail(label, "must be a non-empty string");
+  return value;
+}
+function eventSeq(value, label) {
+  if (!Number.isSafeInteger(value) || value < 0) fail(label, "must be a non-negative integer");
+  return value;
+}
+function extRecord(value, label) {
+  if (value === void 0) return void 0;
+  if (!isRecord3(value)) fail(label, "must be an object");
+  return value;
+}
+function normalizeChrome(value, label = "chrome") {
+  if (!isRecord3(value)) fail(label, "must be an object");
+  if (!CHROME_MODES.has(value.mode)) fail(label, "mode must be native or play");
+  return { mode: value.mode };
+}
+function normalizeWorkspace(value, label = "workspace") {
+  if (!isRecord3(value)) fail(label, "must be an object");
+  if (typeof value.selected !== "boolean") fail(label, "selected must be a boolean");
+  if (value.rootPath !== null && value.rootPath !== void 0 && typeof value.rootPath !== "string") {
+    fail(label, "rootPath must be a string or null");
+  }
+  if (!Number.isSafeInteger(value.contractVersion) || value.contractVersion < 1) {
+    fail(label, "contractVersion must be a positive integer");
+  }
+  const warnings = Array.isArray(value.warnings) ? value.warnings.filter(isRecord3).map((item) => ({
+    code: typeof item.code === "string" ? item.code : "",
+    message: typeof item.message === "string" ? item.message : ""
+  })) : [];
+  return {
+    selected: value.selected,
+    rootPath: value.rootPath ?? null,
+    workspaceId: typeof value.workspaceId === "string" ? value.workspaceId : null,
+    contractVersion: value.contractVersion,
+    activeTimelinePath: typeof value.activeTimelinePath === "string" ? value.activeTimelinePath : null,
+    firstSelection: value.firstSelection === true,
+    warnings
+  };
+}
+function normalizeTimelineVariant(value, label = "variant") {
+  if (!isRecord3(value)) fail(label, "must be an object");
+  const startEventId = eventSeq(value.startEventId, `${label}.startEventId`);
+  const endEventId = eventSeq(value.endEventId, `${label}.endEventId`);
+  if (startEventId > endEventId) fail(label, "startEventId must not exceed endEventId");
+  const ext = extRecord(value.ext, `${label}.ext`);
+  return {
+    id: stringId(value.id, `${label}.id`),
+    sessionId: stringId(value.sessionId, `${label}.sessionId`),
+    startEventId,
+    endEventId,
+    ...ext === void 0 ? {} : { ext }
+  };
+}
+function normalizeTimelineNode(value, label = "node") {
+  if (!isRecord3(value)) fail(label, "must be an object");
+  if (value.kind !== "qa") fail(label, "kind must be qa");
+  if (!Array.isArray(value.variants) || value.variants.length === 0) {
+    fail(label, "variants must be a non-empty array");
+  }
+  const variants = value.variants.map((item, index) => normalizeTimelineVariant(item, `${label}.variants[${index}]`));
+  const adoptedVariantId = stringId(value.adoptedVariantId, `${label}.adoptedVariantId`);
+  if (!variants.some((item) => item.id === adoptedVariantId)) fail(label, "adoptedVariantId must match a variant");
+  if (value.hidden !== void 0 && typeof value.hidden !== "boolean") fail(label, "hidden must be a boolean");
+  if (value.displayOverride !== void 0 && value.displayOverride !== null && typeof value.displayOverride !== "string") {
+    fail(label, "displayOverride must be a string or null");
+  }
+  const ext = extRecord(value.ext, `${label}.ext`);
+  return {
+    id: stringId(value.id, `${label}.id`),
+    kind: "qa",
+    hidden: value.hidden === true,
+    displayOverride: value.displayOverride ?? null,
+    adoptedVariantId,
+    variants,
+    ...ext === void 0 ? {} : { ext }
+  };
+}
+function normalizeTimeline(value, label = "timeline") {
+  if (!isRecord3(value)) fail(label, "must be an object");
+  if (!Array.isArray(value.nodes)) fail(label, "nodes must be an array");
+  const nodes = value.nodes.map((item, index) => normalizeTimelineNode(item, `${label}.nodes[${index}]`));
+  const ids = /* @__PURE__ */ new Set();
+  for (const node of nodes) {
+    if (ids.has(node.id)) fail(label, `duplicate node id ${node.id}`);
+    ids.add(node.id);
+  }
+  const ext = extRecord(value.ext, `${label}.ext`);
+  return { nodes, ...ext === void 0 ? {} : { ext } };
+}
+function normalizeCatalog(value, label = "catalog") {
+  if (!isRecord3(value)) fail(label, "must be an object");
+  if (!Array.isArray(value.playthroughs)) fail(label, "playthroughs must be an array");
+  const playthroughs = value.playthroughs.map((item, index) => {
+    const itemLabel = `${label}.playthroughs[${index}]`;
+    if (!isRecord3(item)) fail(itemLabel, "must be an object");
+    const ext2 = extRecord(item.ext, `${itemLabel}.ext`);
+    return {
+      id: stringId(item.id, `${itemLabel}.id`),
+      path: stringId(item.path, `${itemLabel}.path`),
+      ...typeof item.title === "string" ? { title: item.title } : {},
+      ...typeof item.lastOpenedAt === "string" ? { lastOpenedAt: item.lastOpenedAt } : {},
+      ...ext2 === void 0 ? {} : { ext: ext2 }
+    };
+  });
+  const ext = extRecord(value.ext, `${label}.ext`);
+  return { playthroughs, ...ext === void 0 ? {} : { ext } };
+}
+function parseJsonDocument(content, normalize, label) {
+  if (typeof content !== "string") fail(label, "content must be a JSON string");
+  let parsed;
+  try {
+    parsed = JSON.parse(content);
+  } catch {
+    fail(label, "content must be valid JSON");
+  }
+  return normalize(parsed, label);
+}
+function projectContentText(content) {
+  if (!Array.isArray(content)) return "";
+  return content.map((part) => {
+    if (!isRecord3(part)) return "";
+    if (typeof part.text === "string") return part.text;
+    return typeof part.type === "string" && part.type !== "text" ? `\u27E6${part.type}\u27E7` : "";
+  }).join("");
+}
+function normalizeSessionMessages(value, label = "messages") {
+  if (!isRecord3(value)) fail(label, "must be an object");
+  if (!Array.isArray(value.messages)) fail(label, "messages must be an array");
+  if (typeof value.incompleteTurn !== "boolean") fail(label, "incompleteTurn must be a boolean");
+  const messages = value.messages.map((item, index) => {
+    const itemLabel = `${label}.messages[${index}]`;
+    if (!isRecord3(item)) fail(itemLabel, "must be an object");
+    if (!MESSAGE_ROLES.has(item.role)) fail(itemLabel, "role is invalid");
+    if (!Array.isArray(item.content)) fail(itemLabel, "content must be an array");
+    if (item.seq !== null && (!Number.isSafeInteger(item.seq) || item.seq < 0)) fail(itemLabel, "seq must be a non-negative integer or null");
+    return {
+      id: stringId(item.id, `${itemLabel}.id`),
+      role: item.role,
+      content: item.content,
+      seq: item.seq,
+      text: projectContentText(item.content)
+    };
+  });
+  return { messages, incompleteTurn: value.incompleteTurn };
+}
+function normalizeFocus(value, label = "focus") {
+  if (!isRecord3(value)) fail(label, "must be an object");
+  if (value.sessionId !== null && (typeof value.sessionId !== "string" || value.sessionId === "")) {
+    fail(label, "sessionId must be a non-empty string or null");
+  }
+  return { sessionId: value.sessionId };
+}
+function timelinePath(value, label = "timeline path") {
+  const path = typeof value === "string" ? value : value?.path;
+  stringId(path, label);
+  if (!path.endsWith("timeline.json")) fail(label, "must point to timeline.json");
+  return path;
+}
+
+// packages/client/src/play/live.js
+function errorMessage4(data, status) {
+  if (typeof data?.error === "string") return data.error;
+  if (typeof data?.error?.message === "string") return data.error.message;
+  return `HTTP ${status}`;
+}
+function createRequester(fetchImpl, root) {
+  return async function request(method, path, body2) {
+    const hasBody = body2 !== void 0;
+    const response = await fetchImpl(`${root}${path}`, {
+      method,
+      headers: hasBody ? { "Content-Type": "application/json" } : void 0,
+      body: hasBody ? JSON.stringify(body2) : void 0
+    });
+    const data = await response.json().catch(() => null);
+    if (!response.ok || data?.ok === false) {
+      const error = new Error(errorMessage4(data, response.status));
+      error.status = response.status;
+      error.code = data?.code ?? data?.error?.code;
+      error.diagnostics = data?.diagnostics ?? data?.error?.diagnostics ?? [];
+      throw error;
+    }
+    return data;
+  };
+}
+function fileContent(value, label) {
+  if (typeof value?.content !== "string") throw new TypeError(`${label}: content must be a string`);
+  return value.content;
+}
+function pathQuery(path) {
+  return `?path=${encodeURIComponent(path)}`;
+}
+function createLivePlayClient({
+  fetchImpl = globalThis.fetch,
+  apiRoot = API_V2,
+  v1Root = API_V1
+} = {}) {
+  if (typeof fetchImpl !== "function") throw new TypeError("fetchImpl is required");
+  const v1 = createRequester(fetchImpl, v1Root);
+  const v2 = createRequester(fetchImpl, apiRoot);
+  async function getCharacterSelection(sessionId) {
+    const query = typeof sessionId === "string" && sessionId !== "" ? `?sessionId=${encodeURIComponent(sessionId)}` : "";
+    return v1("GET", `/character-selection${query}`);
+  }
+  async function getJsonFile(path, normalize, label) {
+    const response = await v2("GET", `/workspace/files${pathQuery(path)}`);
+    return parseJsonDocument(fileContent(response, label), normalize, label);
+  }
+  async function putJsonFile(path, value, normalize, label) {
+    const normalized = normalize(value, label);
+    await v2("PUT", `/workspace/files${pathQuery(path)}`, {
+      content: JSON.stringify(normalized)
+    });
+    return normalized;
+  }
+  return {
+    mode: "live",
+    apiRoot,
+    v1Root,
+    async getChrome() {
+      return normalizeChrome(await v2("GET", "/chrome"));
+    },
+    async putChrome(mode) {
+      return normalizeChrome(await v2("PUT", "/chrome", { mode }));
+    },
+    async getWorkspace() {
+      return normalizeWorkspace(await v2("GET", "/workspace"));
+    },
+    async putWorkspace(path) {
+      return normalizeWorkspace(await v2("PUT", "/workspace", { path }));
+    },
+    async createDirs(path) {
+      return v2("POST", "/workspace/dirs", { path });
+    },
+    async listFiles(prefix = "") {
+      return v2("GET", `/workspace/files?list=${encodeURIComponent(prefix)}`);
+    },
+    async getFile(path) {
+      const response = await v2("GET", `/workspace/files${pathQuery(path)}`);
+      return { path: response.path, content: fileContent(response, path) };
+    },
+    async putFile(path, content) {
+      if (typeof content !== "string") throw new TypeError("content must be a string");
+      return v2("PUT", `/workspace/files${pathQuery(path)}`, { content });
+    },
+    getCatalog() {
+      return getJsonFile("catalog.json", normalizeCatalog, "catalog");
+    },
+    putCatalog(catalog2) {
+      return putJsonFile("catalog.json", catalog2, normalizeCatalog, "catalog");
+    },
+    getTimeline(playthrough) {
+      const path = timelinePath(playthrough);
+      return getJsonFile(path, normalizeTimeline, "timeline");
+    },
+    putTimeline(playthrough, timeline) {
+      const path = timelinePath(playthrough);
+      return putJsonFile(path, timeline, normalizeTimeline, "timeline");
+    },
+    async getMessages(sessionId) {
+      const response = await v2("GET", `/sessions/${encodeURIComponent(sessionId)}/messages`);
+      return normalizeSessionMessages(response);
+    },
+    async getFocus(playthrough) {
+      const query = playthrough === void 0 ? "" : pathQuery(timelinePath(playthrough));
+      return normalizeFocus(await v2("GET", `/focus${query}`));
+    },
+    postUserMessage(sessionId, text) {
+      return v2("POST", `/sessions/${encodeURIComponent(sessionId)}/user-message`, { text });
+    },
+    postBranch(sessionId, atEventId) {
+      if (!Number.isSafeInteger(atEventId) || atEventId < 0) {
+        throw new TypeError("atEventId must be a non-negative integer");
+      }
+      return v2("POST", `/sessions/${encodeURIComponent(sessionId)}/branch`, { atEventId });
+    },
+    postSession(selectionFromSessionId) {
+      const body2 = typeof selectionFromSessionId === "string" && selectionFromSessionId !== "" ? { selectionFromSessionId } : {};
+      return v2("POST", "/sessions", body2);
+    },
+    getCharacterSelection,
+    async getSelection(sessionId) {
+      const response = await getCharacterSelection(sessionId);
+      return response?.selection ?? null;
+    },
+    getCharacter(id) {
+      return v1("GET", `/characters/${encodeURIComponent(id)}`);
+    },
+    getPreset(id) {
+      return v1("GET", `/presets/${encodeURIComponent(id)}`);
+    },
+    getActive(sessionId) {
+      const query = typeof sessionId === "string" && sessionId !== "" ? `?sessionId=${encodeURIComponent(sessionId)}` : "";
+      return v1("GET", `/active${query}`);
+    },
+    async putGreetingIndex(sessionId, greetingIndex) {
+      if (typeof sessionId !== "string" || sessionId === "") throw new TypeError("sessionId is required");
+      if (!Number.isSafeInteger(greetingIndex) || greetingIndex < 0) {
+        throw new TypeError("greetingIndex must be a non-negative integer");
+      }
+      const current2 = await getCharacterSelection(sessionId);
+      if (typeof current2?.selection?.characterCardId !== "string") {
+        throw new TypeError("character selection is empty");
+      }
+      return v1("POST", "/character-selection", {
+        sessionId,
+        characterCardId: current2.selection.characterCardId,
+        character: { ...current2.selection.character ?? {}, greetingIndex }
+      });
+    }
+  };
+}
+
 // packages/client/src/index.js
 var h7 = createLocalizedElement(import_react7.createElement);
 var css6 = `
@@ -3628,7 +4015,7 @@ var css6 = `
 .dtv-launcher{position:absolute;z-index:2;width:44px;height:44px;pointer-events:auto;overflow:hidden;border:0 solid transparent;border-radius:22px;background:transparent;box-shadow:none;transition:width .22s ease,height .22s ease,border-radius .22s ease,background-color .18s ease,box-shadow .18s ease;display:block}
 .dtv-launcher[data-open=true]{width:300px;height:376px;border-width:1px;border-color:var(--dsw-alias-border-l2);border-radius:18px;background:var(--dsw-alias-bg-base);box-shadow:var(--ds-shadow-3,0 12px 34px rgba(0,0,0,.24))}
 .dtv-ball-row{position:absolute;top:0;left:0;right:0;height:52px;display:flex;align-items:flex-start;pointer-events:none}.dtv-launcher[data-side=left] .dtv-ball-row{justify-content:flex-end}.dtv-launcher[data-vertical=up] .dtv-ball-row{top:auto;bottom:0;align-items:flex-end}
-.dtv-ball{pointer-events:auto;touch-action:none;user-select:none;width:44px;height:44px;flex:none;border:2px solid #fff;border-radius:50%;background:conic-gradient(from 225deg,#090909 0 56%,#b31319 56% 100%);box-shadow:0 0 0 2px #a50f16,0 6px 20px rgba(0,0,0,.34),inset 0 0 0 1px rgba(255,255,255,.28);color:#fff;font-size:13px;letter-spacing:-.5px;font-weight:850;text-shadow:0 1px 2px #000;cursor:grab;transition:filter .15s ease,transform .18s ease,box-shadow .18s ease}.dtv-ball:hover{filter:brightness(1.1);box-shadow:0 0 0 2px #d5222b,0 8px 24px rgba(0,0,0,.4),inset 0 0 0 1px rgba(255,255,255,.35)}.dtv-ball:active{cursor:grabbing}.dtv-launcher[data-open=true] .dtv-ball{transform:scale(.82) rotate(-8deg)}
+.dtv-ball{pointer-events:auto;touch-action:none;user-select:none;width:44px;height:44px;flex:none;border:2px solid #fff;border-radius:50%;background:conic-gradient(from 225deg,#090909 0 56%,#18569d 56% 100%);box-shadow:0 0 0 2px #174e8a,0 6px 20px rgba(0,0,0,.34),inset 0 0 0 1px rgba(255,255,255,.28);color:#fff;font-size:13px;letter-spacing:-.5px;font-weight:850;text-shadow:0 1px 2px #000;cursor:grab;transition:filter .15s ease,transform .18s ease,box-shadow .18s ease,background .18s ease}.dtv-ball:hover{filter:brightness(1.1);box-shadow:0 0 0 2px #2675c9,0 8px 24px rgba(0,0,0,.4),inset 0 0 0 1px rgba(255,255,255,.35)}.dtv-layer[data-chrome=play] .dtv-ball{background:conic-gradient(from 225deg,#090909 0 56%,#b31319 56% 100%);box-shadow:0 0 0 2px #a50f16,0 6px 20px rgba(0,0,0,.34),inset 0 0 0 1px rgba(255,255,255,.28)}.dtv-layer[data-chrome=play] .dtv-ball:hover{box-shadow:0 0 0 2px #d5222b,0 8px 24px rgba(0,0,0,.4),inset 0 0 0 1px rgba(255,255,255,.35)}.dtv-ball:active{cursor:grabbing}.dtv-launcher[data-open=true] .dtv-ball{transform:scale(.82) rotate(-8deg)}
 .dtv-menu{position:absolute;left:8px;right:8px;top:52px;bottom:8px;padding:1px;display:flex;flex-direction:column;gap:4px;opacity:0;transform:translateY(-6px);transition:opacity .13s ease .1s,transform .18s ease .08s}.dtv-launcher[data-open=true] .dtv-menu{opacity:1;transform:none}.dtv-launcher[data-vertical=up] .dtv-menu{top:8px;bottom:52px;transform:translateY(6px)}.dtv-launcher[data-open=true][data-vertical=up] .dtv-menu{transform:none}
 .dtv-menu-title{padding:5px 8px 7px;font-size:11px;font-weight:650;color:var(--dsw-alias-label-tertiary);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .dtv-menu-item{min-height:43px;border:0;border-radius:9px;padding:5px 8px;background:transparent;color:var(--dsw-alias-label-primary);text-align:left;font:inherit;cursor:pointer;display:grid;grid-template-columns:10px minmax(0,1fr) auto;gap:8px;align-items:center}.dtv-menu-item:hover{background:var(--dsw-alias-interactive-bg-hover)}.dtv-menu-item[data-active=true]{background:var(--dsw-alias-interactive-bg-selected,var(--dsw-specific-tip))}.dtv-binding-dot{width:8px;height:8px;border-radius:50%;background:#d33239;box-shadow:0 0 0 1px rgba(98,0,4,.38)}.dtv-menu-item[data-bound=true] .dtv-binding-dot{background:#44d17a;box-shadow:0 0 5px #31c66b,0 0 10px rgba(49,198,107,.75)}.dtv-item-copy{min-width:0;display:flex;flex-direction:column;gap:1px}.dtv-item-label{font-size:11px;font-weight:700;line-height:1.2}.dtv-item-status{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:10px;line-height:1.25;color:var(--dsw-alias-label-tertiary)}.dtv-item-count{border-radius:10px;padding:2px 6px;background:var(--dsw-specific-tip);font-size:9px;color:var(--dsw-alias-label-secondary)}.dtv-item-planned{font-size:9px;color:var(--dsw-alias-label-tertiary)}
@@ -3846,10 +4233,12 @@ function RpHighRiskDialog({ onDismiss }) {
     )
   );
 }
-function TavernShell({ useSessions, useWorkspaces, createCleanSession }) {
+function TavernShell({ useSessions, useWorkspaces, createCleanSession, playClient }) {
   const [menuOpen, setMenuOpen] = (0, import_react7.useState)(false);
   const [surface, setSurface] = (0, import_react7.useState)(null);
   const [anchor, setAnchor] = (0, import_react7.useState)(initialLauncherAnchor);
+  const [chromeMode, setChromeMode] = (0, import_react7.useState)("native");
+  const [chromeError, setChromeError] = (0, import_react7.useState)("");
   const [activeSnapshot, setActiveSnapshot] = (0, import_react7.useState)(null);
   const [statusError, setStatusError] = (0, import_react7.useState)("");
   const [uiSettings, setUiSettings] = (0, import_react7.useState)(getClientUiSettings);
@@ -3861,6 +4250,8 @@ function TavernShell({ useSessions, useWorkspaces, createCleanSession }) {
   const [rpAlert, setRpAlert] = (0, import_react7.useState)(null);
   const drag = (0, import_react7.useRef)(null);
   const suppressClick = (0, import_react7.useRef)(false);
+  const chromeModeRef = (0, import_react7.useRef)("native");
+  const chromeController = (0, import_react7.useRef)(null);
   const statusGeneration = (0, import_react7.useRef)(0);
   const rpAlertRef = (0, import_react7.useRef)(null);
   const dismissedRpAlerts = (0, import_react7.useRef)(/* @__PURE__ */ new Set());
@@ -3870,6 +4261,59 @@ function TavernShell({ useSessions, useWorkspaces, createCleanSession }) {
   const close = () => setSurface(null);
   if (rpAlert === null || dismissedRpAlerts.current.has(rpAlert.id)) rpAlertRef.current = null;
   else rpAlertRef.current = rpAlert;
+  (0, import_react7.useEffect)(() => {
+    let active = true;
+    let channel = null;
+    try {
+      if (typeof BroadcastChannel === "function") channel = new BroadcastChannel(`${PLUGIN_ID}:chrome`);
+    } catch {
+    }
+    const commitChrome = (mode) => {
+      chromeModeRef.current = mode;
+      setChromeMode(mode);
+    };
+    const refreshChrome = async () => {
+      try {
+        const saved = await playClient.getChrome();
+        if (!active) return;
+        commitChrome(saved.mode);
+        setChromeError("");
+      } catch (reason) {
+        if (!active) return;
+        setChromeError(reason instanceof Error ? reason.message : String(reason));
+      }
+    };
+    const controller = createChromeClickController({
+      getMode: () => chromeModeRef.current,
+      persistMode: (mode) => playClient.putChrome(mode),
+      openMenu: () => setMenuOpen((value) => !value),
+      closeMenu: () => setMenuOpen(false),
+      setMode: (mode) => {
+        commitChrome(mode);
+        try {
+          channel?.postMessage({ mode });
+        } catch {
+        }
+      },
+      setError: (reason) => setChromeError(reason instanceof Error ? reason.message : reason == null ? "" : String(reason))
+    });
+    chromeController.current = controller;
+    const onFocus = () => refreshChrome();
+    const onChromeMessage = (event) => {
+      if (event.data?.mode === "native" || event.data?.mode === "play") commitChrome(event.data.mode);
+    };
+    if (channel !== null) channel.addEventListener("message", onChromeMessage);
+    window.addEventListener("focus", onFocus);
+    refreshChrome();
+    return () => {
+      active = false;
+      controller.dispose();
+      if (chromeController.current === controller) chromeController.current = null;
+      window.removeEventListener("focus", onFocus);
+      channel?.removeEventListener("message", onChromeMessage);
+      channel?.close();
+    };
+  }, [playClient]);
   (0, import_react7.useEffect)(() => {
     let active = true;
     uiSettingsRequest().then((next) => {
@@ -4086,13 +4530,13 @@ function TavernShell({ useSessions, useWorkspaces, createCleanSession }) {
     }
     drag.current = null;
   };
-  const toggleMenu = () => {
-    if (suppressClick.current) {
-      suppressClick.current = false;
-      return;
-    }
-    setMenuOpen((value) => !value);
+  const consumeSuppressedClick = () => {
+    if (!suppressClick.current) return false;
+    suppressClick.current = false;
+    return true;
   };
+  const clickLauncher = () => chromeController.current?.click({ suppressed: consumeSuppressedClick() });
+  const doubleClickLauncher = () => chromeController.current?.doubleClick({ suppressed: consumeSuppressedClick() });
   const open = (id) => {
     setMenuOpen(false);
     setSurface(id);
@@ -4136,7 +4580,7 @@ function TavernShell({ useSessions, useWorkspaces, createCleanSession }) {
   const statuses = launcherResourceStatuses(activeSnapshot);
   return h7(
     "div",
-    { className: "dtv-layer", lang: uiSettings.locale, "data-surface-open": surface !== null, style: { "--dtv-ui-scale": uiSettings.scale } },
+    { className: "dtv-layer", lang: uiSettings.locale, "data-chrome": chromeMode, "data-surface-open": surface !== null, style: { "--dtv-ui-scale": uiSettings.scale } },
     panel,
     rpAlert === null ? null : h7(RpHighRiskDialog, { onDismiss: dismissRpAlert }),
     h7(
@@ -4158,12 +4602,13 @@ function TavernShell({ useSessions, useWorkspaces, createCleanSession }) {
         onPointerMove: moveDrag,
         onPointerUp: endDrag,
         onPointerCancel: endDrag,
-        onClick: toggleMenu
-      }, "DT")),
+        onClick: clickLauncher,
+        onDoubleClick: doubleClickLauncher
+      }, chromeMode === "play" ? "ST" : "DS")),
       menuOpen ? h7(
         "div",
         { className: "dtv-menu", role: "menu" },
-        h7("div", { className: "dtv-menu-title", "aria-live": "polite" }, statusError === "" ? uiMessage("nav.menuTitle", { session: sessionId || translate("nav.session.none") }) : uiMessage("nav.syncFailed", { message: statusError })),
+        h7("div", { className: "dtv-menu-title", "aria-live": "polite" }, chromeError === "" && statusError === "" ? uiMessage("nav.menuTitle", { session: sessionId || translate("nav.session.none") }) : uiMessage("nav.syncFailed", { message: chromeError || statusError })),
         ...TAVERN_MENU_ITEMS.map((item) => {
           const status = statuses[item.id] ?? { bound: false, count: 0, titleKey: item.emptyTitleKey };
           const itemLabel = unwrapText(uiMessage(item.labelKey));
@@ -4218,11 +4663,13 @@ function apply(ctx) {
   installTavernTraceStyles();
   installStyles();
   registerTavernTraceView(ctx);
+  const playClient = createLivePlayClient();
   ctx.slots.inject("shell.overlay", () => ctx.slots.register({
     name: "shell.overlay",
     id: `${PLUGIN_ID}-launcher`,
     order: 80,
     inject: () => ({
+      playClient,
       createCleanSession: ({ workspaceId, source }) => createCleanSessionWorkflow({
         workspaceId,
         source,

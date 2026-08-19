@@ -33,6 +33,8 @@ import {
   launcherPlacement,
   launcherResourceStatuses,
 } from './state.js'
+import { createChromeClickController } from './play/chrome.js'
+import { createLivePlayClient } from './play/live.js'
 import { API_V1 as API_ROOT, CLIENT_REFRESH_EVENT, PLUGIN_ID } from '../../identity.js'
 
 const h = createLocalizedElement(createElement)
@@ -42,7 +44,7 @@ const css = `
 .dtv-launcher{position:absolute;z-index:2;width:44px;height:44px;pointer-events:auto;overflow:hidden;border:0 solid transparent;border-radius:22px;background:transparent;box-shadow:none;transition:width .22s ease,height .22s ease,border-radius .22s ease,background-color .18s ease,box-shadow .18s ease;display:block}
 .dtv-launcher[data-open=true]{width:300px;height:376px;border-width:1px;border-color:var(--dsw-alias-border-l2);border-radius:18px;background:var(--dsw-alias-bg-base);box-shadow:var(--ds-shadow-3,0 12px 34px rgba(0,0,0,.24))}
 .dtv-ball-row{position:absolute;top:0;left:0;right:0;height:52px;display:flex;align-items:flex-start;pointer-events:none}.dtv-launcher[data-side=left] .dtv-ball-row{justify-content:flex-end}.dtv-launcher[data-vertical=up] .dtv-ball-row{top:auto;bottom:0;align-items:flex-end}
-.dtv-ball{pointer-events:auto;touch-action:none;user-select:none;width:44px;height:44px;flex:none;border:2px solid #fff;border-radius:50%;background:conic-gradient(from 225deg,#090909 0 56%,#b31319 56% 100%);box-shadow:0 0 0 2px #a50f16,0 6px 20px rgba(0,0,0,.34),inset 0 0 0 1px rgba(255,255,255,.28);color:#fff;font-size:13px;letter-spacing:-.5px;font-weight:850;text-shadow:0 1px 2px #000;cursor:grab;transition:filter .15s ease,transform .18s ease,box-shadow .18s ease}.dtv-ball:hover{filter:brightness(1.1);box-shadow:0 0 0 2px #d5222b,0 8px 24px rgba(0,0,0,.4),inset 0 0 0 1px rgba(255,255,255,.35)}.dtv-ball:active{cursor:grabbing}.dtv-launcher[data-open=true] .dtv-ball{transform:scale(.82) rotate(-8deg)}
+.dtv-ball{pointer-events:auto;touch-action:none;user-select:none;width:44px;height:44px;flex:none;border:2px solid #fff;border-radius:50%;background:conic-gradient(from 225deg,#090909 0 56%,#18569d 56% 100%);box-shadow:0 0 0 2px #174e8a,0 6px 20px rgba(0,0,0,.34),inset 0 0 0 1px rgba(255,255,255,.28);color:#fff;font-size:13px;letter-spacing:-.5px;font-weight:850;text-shadow:0 1px 2px #000;cursor:grab;transition:filter .15s ease,transform .18s ease,box-shadow .18s ease,background .18s ease}.dtv-ball:hover{filter:brightness(1.1);box-shadow:0 0 0 2px #2675c9,0 8px 24px rgba(0,0,0,.4),inset 0 0 0 1px rgba(255,255,255,.35)}.dtv-layer[data-chrome=play] .dtv-ball{background:conic-gradient(from 225deg,#090909 0 56%,#b31319 56% 100%);box-shadow:0 0 0 2px #a50f16,0 6px 20px rgba(0,0,0,.34),inset 0 0 0 1px rgba(255,255,255,.28)}.dtv-layer[data-chrome=play] .dtv-ball:hover{box-shadow:0 0 0 2px #d5222b,0 8px 24px rgba(0,0,0,.4),inset 0 0 0 1px rgba(255,255,255,.35)}.dtv-ball:active{cursor:grabbing}.dtv-launcher[data-open=true] .dtv-ball{transform:scale(.82) rotate(-8deg)}
 .dtv-menu{position:absolute;left:8px;right:8px;top:52px;bottom:8px;padding:1px;display:flex;flex-direction:column;gap:4px;opacity:0;transform:translateY(-6px);transition:opacity .13s ease .1s,transform .18s ease .08s}.dtv-launcher[data-open=true] .dtv-menu{opacity:1;transform:none}.dtv-launcher[data-vertical=up] .dtv-menu{top:8px;bottom:52px;transform:translateY(6px)}.dtv-launcher[data-open=true][data-vertical=up] .dtv-menu{transform:none}
 .dtv-menu-title{padding:5px 8px 7px;font-size:11px;font-weight:650;color:var(--dsw-alias-label-tertiary);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .dtv-menu-item{min-height:43px;border:0;border-radius:9px;padding:5px 8px;background:transparent;color:var(--dsw-alias-label-primary);text-align:left;font:inherit;cursor:pointer;display:grid;grid-template-columns:10px minmax(0,1fr) auto;gap:8px;align-items:center}.dtv-menu-item:hover{background:var(--dsw-alias-interactive-bg-hover)}.dtv-menu-item[data-active=true]{background:var(--dsw-alias-interactive-bg-selected,var(--dsw-specific-tip))}.dtv-binding-dot{width:8px;height:8px;border-radius:50%;background:#d33239;box-shadow:0 0 0 1px rgba(98,0,4,.38)}.dtv-menu-item[data-bound=true] .dtv-binding-dot{background:#44d17a;box-shadow:0 0 5px #31c66b,0 0 10px rgba(49,198,107,.75)}.dtv-item-copy{min-width:0;display:flex;flex-direction:column;gap:1px}.dtv-item-label{font-size:11px;font-weight:700;line-height:1.2}.dtv-item-status{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:10px;line-height:1.25;color:var(--dsw-alias-label-tertiary)}.dtv-item-count{border-radius:10px;padding:2px 6px;background:var(--dsw-specific-tip);font-size:9px;color:var(--dsw-alias-label-secondary)}.dtv-item-planned{font-size:9px;color:var(--dsw-alias-label-tertiary)}
@@ -479,10 +481,12 @@ function RpHighRiskDialog({ onDismiss }) {
   )
 }
 
-function TavernShell({ useSessions, useWorkspaces, createCleanSession }) {
+function TavernShell({ useSessions, useWorkspaces, createCleanSession, playClient }) {
   const [menuOpen, setMenuOpen] = useState(false)
   const [surface, setSurface] = useState(null)
   const [anchor, setAnchor] = useState(initialLauncherAnchor)
+  const [chromeMode, setChromeMode] = useState('native')
+  const [chromeError, setChromeError] = useState('')
   const [activeSnapshot, setActiveSnapshot] = useState(null)
   const [statusError, setStatusError] = useState('')
   const [uiSettings, setUiSettings] = useState(getClientUiSettings)
@@ -494,6 +498,8 @@ function TavernShell({ useSessions, useWorkspaces, createCleanSession }) {
   const [rpAlert, setRpAlert] = useState(null)
   const drag = useRef(null)
   const suppressClick = useRef(false)
+  const chromeModeRef = useRef('native')
+  const chromeController = useRef(null)
   const statusGeneration = useRef(0)
   const rpAlertRef = useRef(null)
   const dismissedRpAlerts = useRef(new Set())
@@ -503,6 +509,58 @@ function TavernShell({ useSessions, useWorkspaces, createCleanSession }) {
   const close = () => setSurface(null)
   if (rpAlert === null || dismissedRpAlerts.current.has(rpAlert.id)) rpAlertRef.current = null
   else rpAlertRef.current = rpAlert
+
+  useEffect(() => {
+    let active = true
+    let channel = null
+    try {
+      if (typeof BroadcastChannel === 'function') channel = new BroadcastChannel(`${PLUGIN_ID}:chrome`)
+    } catch {
+      // Restricted browsing contexts still synchronize by refreshing on focus.
+    }
+    const commitChrome = mode => {
+      chromeModeRef.current = mode
+      setChromeMode(mode)
+    }
+    const refreshChrome = async () => {
+      try {
+        const saved = await playClient.getChrome()
+        if (!active) return
+        commitChrome(saved.mode)
+        setChromeError('')
+      } catch (reason) {
+        if (!active) return
+        setChromeError(reason instanceof Error ? reason.message : String(reason))
+      }
+    }
+    const controller = createChromeClickController({
+      getMode: () => chromeModeRef.current,
+      persistMode: mode => playClient.putChrome(mode),
+      openMenu: () => setMenuOpen(value => !value),
+      closeMenu: () => setMenuOpen(false),
+      setMode: mode => {
+        commitChrome(mode)
+        try { channel?.postMessage({ mode }) } catch { /* Focus refresh remains the fallback. */ }
+      },
+      setError: reason => setChromeError(reason instanceof Error ? reason.message : reason == null ? '' : String(reason)),
+    })
+    chromeController.current = controller
+    const onFocus = () => refreshChrome()
+    const onChromeMessage = event => {
+      if (event.data?.mode === 'native' || event.data?.mode === 'play') commitChrome(event.data.mode)
+    }
+    if (channel !== null) channel.addEventListener('message', onChromeMessage)
+    window.addEventListener('focus', onFocus)
+    refreshChrome()
+    return () => {
+      active = false
+      controller.dispose()
+      if (chromeController.current === controller) chromeController.current = null
+      window.removeEventListener('focus', onFocus)
+      channel?.removeEventListener('message', onChromeMessage)
+      channel?.close()
+    }
+  }, [playClient])
 
   useEffect(() => {
     let active = true
@@ -733,13 +791,14 @@ function TavernShell({ useSessions, useWorkspaces, createCleanSession }) {
     drag.current = null
   }
 
-  const toggleMenu = () => {
-    if (suppressClick.current) {
-      suppressClick.current = false
-      return
-    }
-    setMenuOpen(value => !value)
+  const consumeSuppressedClick = () => {
+    if (!suppressClick.current) return false
+    suppressClick.current = false
+    return true
   }
+
+  const clickLauncher = () => chromeController.current?.click({ suppressed: consumeSuppressedClick() })
+  const doubleClickLauncher = () => chromeController.current?.doubleClick({ suppressed: consumeSuppressedClick() })
 
   const open = id => {
     setMenuOpen(false)
@@ -784,7 +843,7 @@ function TavernShell({ useSessions, useWorkspaces, createCleanSession }) {
   const placement = launcherPlacement(anchor, viewport(), menuOpen, uiSettings.scale)
   const statuses = launcherResourceStatuses(activeSnapshot)
 
-  return h('div', { className: 'dtv-layer', lang: uiSettings.locale, 'data-surface-open': surface !== null, style: { '--dtv-ui-scale': uiSettings.scale } },
+  return h('div', { className: 'dtv-layer', lang: uiSettings.locale, 'data-chrome': chromeMode, 'data-surface-open': surface !== null, style: { '--dtv-ui-scale': uiSettings.scale } },
     panel,
     rpAlert === null ? null : h(RpHighRiskDialog, { onDismiss: dismissRpAlert }),
     h('div', {
@@ -804,10 +863,11 @@ function TavernShell({ useSessions, useWorkspaces, createCleanSession }) {
           onPointerMove: moveDrag,
           onPointerUp: endDrag,
           onPointerCancel: endDrag,
-          onClick: toggleMenu,
-        }, 'DT')),
+          onClick: clickLauncher,
+          onDoubleClick: doubleClickLauncher,
+        }, chromeMode === 'play' ? 'ST' : 'DS')),
       menuOpen ? h('div', { className: 'dtv-menu', role: 'menu' },
-        h('div', { className: 'dtv-menu-title', 'aria-live': 'polite' }, statusError === '' ? uiMessage('nav.menuTitle', { session: sessionId || translate('nav.session.none') }) : uiMessage('nav.syncFailed', { message: statusError })),
+        h('div', { className: 'dtv-menu-title', 'aria-live': 'polite' }, chromeError === '' && statusError === '' ? uiMessage('nav.menuTitle', { session: sessionId || translate('nav.session.none') }) : uiMessage('nav.syncFailed', { message: chromeError || statusError })),
         ...TAVERN_MENU_ITEMS.map(item => {
           const status = statuses[item.id] ?? { bound: false, count: 0, titleKey: item.emptyTitleKey }
           const itemLabel = unwrapText(uiMessage(item.labelKey))
@@ -868,11 +928,13 @@ export function apply(ctx) {
   installTavernTraceStyles()
   installStyles()
   registerTavernTraceView(ctx)
+  const playClient = createLivePlayClient()
   ctx.slots.inject('shell.overlay', () => ctx.slots.register({
     name: 'shell.overlay',
     id: `${PLUGIN_ID}-launcher`,
     order: 80,
     inject: () => ({
+      playClient,
       createCleanSession: ({ workspaceId, source }) => createCleanSessionWorkflow({
         workspaceId,
         source,

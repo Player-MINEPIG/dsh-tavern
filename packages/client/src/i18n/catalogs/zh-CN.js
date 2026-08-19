@@ -44,7 +44,7 @@ export default Object.freeze({
   "nav.itemAriaBound": "{label}，{title}，{state}",
   "nav.itemAria": "{label}，{title}",
   "nav.bookCount": "{count} 本",
-  "nav.launcher": "拖动可移动；点击展开 Tavern 资源面板",
+  "nav.launcher": "拖动可移动；单击展开面板；双击切换灵珠/魔丸",
   "settings.menu": "界面设置",
   "settings.title": "Tavern 界面设置",
   "settings.language": "界面语言",

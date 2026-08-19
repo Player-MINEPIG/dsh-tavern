@@ -4,6 +4,17 @@ This is the staged implementation log for dsh-tavern. It is kept separately
 from the product README so reviewers can follow intent, decisions, verification,
 and known limits chronologically.
 
+## 2026-08-19 — Lingzhu/Mowan chrome is transactional
+
+- The single floating launcher defaults to the blue-black native chrome and
+  switches to the red-black play chrome on double-click.
+- A delayed single-click keeps menu opening distinct from double-click, while
+  pointer dragging suppresses both actions.
+- Chrome changes reach the UI only after PUT /v2/chrome succeeds and sync
+  across browser windows without storing a second client-side source of truth.
+
+Verification: test/play-chrome-client.test.mjs, test/client-shell.test.mjs.
+
 ## 2026-08-19 — Live play client follows the real wire contract
 
 - Added one v1/v2 requester for chrome, workspace, catalog, timeline, sessions, focus, and greeting selection.

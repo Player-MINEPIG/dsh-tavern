@@ -44,7 +44,7 @@ export default Object.freeze({
   "nav.itemAriaBound": "{label}, {title}, {state}",
   "nav.itemAria": "{label}, {title}",
   "nav.bookCount": "{count} books",
-  "nav.launcher": "Drag to move; click to open Tavern resource panels",
+  "nav.launcher": "Drag to move; click to open panels; double-click to switch Lingzhu/Mowan",
   "settings.menu": "UI settings",
   "settings.title": "Tavern UI settings",
   "settings.language": "Interface language",
