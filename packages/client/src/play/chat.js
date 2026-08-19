@@ -17,8 +17,10 @@ import {
   projectGreeting,
   projectTimelineQa,
 } from './chat-model.js'
+import { createTurnReconciler } from './turns.js'
 
 const h = createLocalizedElement(createElement)
+const turnReconcilers = new WeakMap()
 
 const css = `
 .dtv-play-chat{height:100%;min-height:0;box-sizing:border-box;overflow:auto;padding:22px max(18px,calc((100% - 780px)/2)) 36px;color:var(--dsw-alias-label-primary)}
@@ -60,8 +62,18 @@ async function loadMessages(client, sessionIds, concurrency = 4) {
   return result
 }
 
-async function loadChatState(client, sessionId, playthrough) {
-  const timeline = await client.getTimeline(playthrough)
+function turnReconciler(client) {
+  let reconcile = turnReconcilers.get(client)
+  if (reconcile === undefined) {
+    reconcile = createTurnReconciler(client)
+    turnReconcilers.set(client, reconcile)
+  }
+  return reconcile
+}
+
+export async function loadChatState(client, sessionId, playthrough) {
+  const reconciled = await turnReconciler(client)(sessionId, playthrough)
+  const timeline = reconciled.timeline ?? await client.getTimeline(playthrough)
   const messagesBySession = await loadMessages(client, adoptedSessionIds(timeline, sessionId))
   const selectionResponse = await client.getCharacterSelection(sessionId)
   const characterId = selectionResponse?.selection?.characterCardId
