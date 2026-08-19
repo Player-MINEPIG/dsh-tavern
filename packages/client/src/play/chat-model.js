@@ -1,3 +1,5 @@
+import { characterGreetingOptions } from '../../../character/src/client-state.js'
+
 function normalizedPath(value) {
   return typeof value === 'string'
     ? value.replaceAll('\\', '/').replace(/\/+$/, '').toLocaleLowerCase()
@@ -87,4 +89,38 @@ export function projectTimelineQa(timeline, messagesBySession = {}) {
     })
   }
   return result
+}
+
+export function projectGreeting({
+  timeline,
+  messages,
+  selectionResponse,
+  characterResponse,
+} = {}) {
+  if ((timeline?.nodes?.length ?? 0) !== 0 || (messages?.length ?? 0) !== 0) return null
+  const selection = selectionResponse?.selection
+  const character = characterResponse?.character
+  if (typeof selection?.characterCardId !== 'string'
+    || selection.characterCardId === ''
+    || character?.id !== selection.characterCardId) return null
+  const options = characterGreetingOptions(character)
+  if (options.length === 0) return null
+  const requested = Number(selection.character?.greetingIndex ?? 0)
+  const selected = options.find(option => option.index === requested) ?? options[0]
+  if (selected.text === '') return null
+  return {
+    characterId: character.id,
+    characterName: character.data?.nickname || character.data?.name || character.name || character.id,
+    index: selected.index,
+    text: selected.text,
+    options,
+  }
+}
+
+export function adjacentGreetingIndex(greeting, direction) {
+  const options = greeting?.options ?? []
+  if (options.length === 0) return null
+  const cursor = Math.max(0, options.findIndex(option => option.index === greeting.index))
+  const offset = direction === 'previous' ? -1 : 1
+  return options[(cursor + offset + options.length) % options.length].index
 }
