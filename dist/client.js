@@ -3887,6 +3887,93 @@ function adjacentGreetingIndex(greeting, direction) {
   return options[(cursor + offset + options.length) % options.length].index;
 }
 
+// packages/client/src/play/regex.js
+var REGEX_PATH = "ui/regex.json";
+function isRecord3(value) {
+  return value !== null && typeof value === "object" && !Array.isArray(value);
+}
+function stringValue(...values) {
+  return values.find((value) => typeof value === "string") ?? "";
+}
+function importedEnabled(value) {
+  if (typeof value.enabled === "boolean") return value.enabled;
+  if (typeof value.disabled === "boolean") return !value.disabled;
+  return true;
+}
+function normalizeScope(value, fallback = { kind: "global", resourceId: null }) {
+  const source = isRecord3(value) ? value : fallback;
+  const kind = ["global", "preset", "character"].includes(source.kind) ? source.kind : fallback.kind;
+  const resourceId = kind === "global" ? null : stringValue(source.resourceId, fallback.resourceId);
+  return { kind, resourceId: resourceId || null };
+}
+function normalizeTarget(value) {
+  return ["user", "assistant", "both"].includes(value) ? value : "assistant";
+}
+function generatedId() {
+  return `regex-${globalThis.crypto?.randomUUID?.() ?? `${Date.now()}-${Math.random()}`}`;
+}
+function normalizeRegexRule(value, { scope } = {}) {
+  if (!isRecord3(value)) throw new TypeError("regex rule must be an object");
+  const source = stringValue(value.find, value.findRegex, value.regex);
+  return {
+    id: stringValue(value.id) || generatedId(),
+    name: stringValue(value.name, value.script_name, value.scriptName) || "Regex",
+    enabled: importedEnabled(value),
+    find: source,
+    replace: stringValue(value.replace, value.replaceString, value.replacement),
+    flags: stringValue(value.flags),
+    target: normalizeTarget(value.target ?? value.placement),
+    scope: normalizeScope(value.scope, scope),
+    ext: isRecord3(value.ext) ? structuredClone(value.ext) : {}
+  };
+}
+function normalizeRegexDocument(value) {
+  if (!isRecord3(value)) throw new TypeError("regex document must be an object");
+  const rules = Array.isArray(value.rules) ? value.rules : [];
+  return { schemaVersion: 1, rules: rules.map((rule) => normalizeRegexRule(rule)) };
+}
+async function getRegexDocument(client) {
+  try {
+    const file = await client.getFile(REGEX_PATH);
+    return normalizeRegexDocument(JSON.parse(file.content));
+  } catch (error) {
+    if (error?.status === 404 || error?.code === "PLAY_FILE_NOT_FOUND") {
+      return { schemaVersion: 1, rules: [] };
+    }
+    throw error;
+  }
+}
+function expression(rule) {
+  if (rule.find.startsWith("/")) {
+    const closing = rule.find.lastIndexOf("/");
+    if (closing > 0) {
+      const pattern = rule.find.slice(1, closing);
+      const flags = rule.flags || rule.find.slice(closing + 1);
+      return new RegExp(pattern, flags);
+    }
+  }
+  return new RegExp(rule.find, rule.flags || "g");
+}
+function applies(rule, bindings, target) {
+  if (!rule.enabled || rule.target !== "both" && rule.target !== target) return false;
+  if (rule.scope.kind === "global") return true;
+  if (rule.scope.kind === "preset") return rule.scope.resourceId === bindings?.presetId;
+  return rule.scope.resourceId === bindings?.characterId;
+}
+function applyDisplayRegex(text, rules, bindings, target = "assistant") {
+  let output = String(text ?? "");
+  const diagnostics = [];
+  for (const rule of rules ?? []) {
+    if (!applies(rule, bindings, target)) continue;
+    try {
+      output = output.replace(expression(rule), rule.replace);
+    } catch (error) {
+      diagnostics.push({ ruleId: rule.id, message: error instanceof Error ? error.message : String(error) });
+    }
+  }
+  return { text: output, diagnostics };
+}
+
 // packages/client/src/play/turn-actions.js
 var import_react7 = require("react");
 
@@ -4275,15 +4362,36 @@ async function loadChatState(client, sessionId, playthrough) {
   const selectionResponse = await client.getCharacterSelection(sessionId);
   const characterId = selectionResponse?.selection?.characterCardId;
   const characterResponse = typeof characterId === "string" && characterId !== "" ? await client.getCharacter(characterId) : null;
+  const [regexDocument, active] = await Promise.all([
+    typeof client.getFile === "function" ? getRegexDocument(client) : { schemaVersion: 1, rules: [] },
+    typeof client.getActive === "function" ? client.getActive(sessionId) : null
+  ]);
+  const bindings = {
+    presetId: active?.selection?.presetId ?? null,
+    characterId: characterId ?? active?.selection?.characterCardId ?? null
+  };
+  const regexDiagnostics = [];
+  const renderText = (text, target) => {
+    const result = applyDisplayRegex(text, regexDocument.rules, bindings, target);
+    regexDiagnostics.push(...result.diagnostics);
+    return result.text;
+  };
+  const turns = projectTimelineQa(timeline, messagesBySession).map((turn) => ({
+    ...turn,
+    userText: renderText(turn.userText, "user"),
+    assistantText: renderText(turn.assistantText, "assistant")
+  }));
+  const greeting = projectGreeting({
+    timeline,
+    messages: messagesBySession[sessionId]?.messages ?? [],
+    selectionResponse,
+    characterResponse
+  });
   return {
     timeline,
-    turns: projectTimelineQa(timeline, messagesBySession),
-    greeting: projectGreeting({
-      timeline,
-      messages: messagesBySession[sessionId]?.messages ?? [],
-      selectionResponse,
-      characterResponse
-    })
+    turns,
+    greeting: greeting === null ? null : { ...greeting, text: renderText(greeting.text, "assistant") },
+    regexDiagnostics
   };
 }
 function Greeting({ greeting, busy, change }) {
@@ -4448,13 +4556,30 @@ async function loadPlaythroughExport(client, playthrough) {
   const selectionResponse = root === null ? null : await client.getCharacterSelection(root);
   const characterId = selectionResponse?.selection?.characterCardId;
   const characterResponse = typeof characterId === "string" && characterId !== "" ? await client.getCharacter(characterId) : null;
+  const turns = projectTimelineQa(timeline, messagesBySession);
+  const greeting = selectedGreeting(selectionResponse, characterResponse);
+  const [regexDocument, active] = await Promise.all([
+    typeof client.getFile === "function" ? getRegexDocument(client) : { schemaVersion: 1, rules: [] },
+    root !== null && typeof client.getActive === "function" ? client.getActive(root) : null
+  ]);
+  const bindings = {
+    presetId: active?.selection?.presetId ?? null,
+    characterId: characterId ?? active?.selection?.characterCardId ?? null
+  };
+  const render = (text, target) => applyDisplayRegex(text, regexDocument.rules, bindings, target).text;
   return {
     playthrough,
     timeline,
     messagesBySession,
-    turns: projectTimelineQa(timeline, messagesBySession),
+    turns,
+    displayTurns: turns.map((turn) => ({
+      ...turn,
+      userText: render(turn.userText, "user"),
+      assistantText: render(turn.assistantText, "assistant")
+    })),
     character: characterResponse?.character ?? null,
-    greeting: selectedGreeting(selectionResponse, characterResponse),
+    greeting,
+    displayGreeting: greeting === null ? null : render(greeting, "assistant"),
     exportedAt: (/* @__PURE__ */ new Date()).toISOString()
   };
 }
@@ -4463,12 +4588,13 @@ function escapeHtml(value) {
 }
 function staticHtmlExport(snapshot) {
   const title = snapshot.playthrough.title || snapshot.character?.name || snapshot.playthrough.id;
-  const rows = snapshot.turns.filter((turn) => !turn.hidden).map((turn) => `
+  const rows = (snapshot.displayTurns ?? snapshot.turns).filter((turn) => !turn.hidden).map((turn) => `
     <article class="turn">
       <div class="user">${escapeHtml(turn.userText)}</div>
       <div class="assistant">${escapeHtml(turn.assistantText)}</div>
     </article>`).join("");
-  const greeting = snapshot.greeting === null ? "" : `<div class="assistant greeting">${escapeHtml(snapshot.greeting)}</div>`;
+  const displayGreeting = snapshot.displayGreeting ?? snapshot.greeting;
+  const greeting = displayGreeting === null || displayGreeting === void 0 ? "" : `<div class="assistant greeting">${escapeHtml(displayGreeting)}</div>`;
   return `<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width"><title>${escapeHtml(title)}</title><style>body{max-width:800px;margin:32px auto;padding:0 18px;background:#101216;color:#e8eaf0;font:15px/1.65 system-ui}.turn{display:flex;flex-direction:column;gap:10px;margin:24px 0}.user,.assistant{padding:12px 15px;border-radius:14px;white-space:pre-wrap}.user{align-self:flex-end;background:#1c3651}.assistant{align-self:flex-start;background:#24262d}.greeting{margin:24px 0}</style></head><body><h1>${escapeHtml(title)}</h1>${greeting}${rows}</body></html>`;
 }
 function sillyTavernJsonlExport(snapshot) {
@@ -4606,7 +4732,7 @@ var import_react10 = require("react");
 // packages/client/src/play/schema.js
 var CHROME_MODES = /* @__PURE__ */ new Set(["native", "play"]);
 var MESSAGE_ROLES = /* @__PURE__ */ new Set(["user", "assistant", "system"]);
-function isRecord3(value) {
+function isRecord4(value) {
   return value !== null && typeof value === "object" && !Array.isArray(value);
 }
 function fail(label, detail) {
@@ -4622,16 +4748,16 @@ function eventSeq(value, label) {
 }
 function extRecord(value, label) {
   if (value === void 0) return void 0;
-  if (!isRecord3(value)) fail(label, "must be an object");
+  if (!isRecord4(value)) fail(label, "must be an object");
   return value;
 }
 function normalizeChrome(value, label = "chrome") {
-  if (!isRecord3(value)) fail(label, "must be an object");
+  if (!isRecord4(value)) fail(label, "must be an object");
   if (!CHROME_MODES.has(value.mode)) fail(label, "mode must be native or play");
   return { mode: value.mode };
 }
 function normalizeWorkspace(value, label = "workspace") {
-  if (!isRecord3(value)) fail(label, "must be an object");
+  if (!isRecord4(value)) fail(label, "must be an object");
   if (typeof value.selected !== "boolean") fail(label, "selected must be a boolean");
   if (value.rootPath !== null && value.rootPath !== void 0 && typeof value.rootPath !== "string") {
     fail(label, "rootPath must be a string or null");
@@ -4639,7 +4765,7 @@ function normalizeWorkspace(value, label = "workspace") {
   if (!Number.isSafeInteger(value.contractVersion) || value.contractVersion < 1) {
     fail(label, "contractVersion must be a positive integer");
   }
-  const warnings = Array.isArray(value.warnings) ? value.warnings.filter(isRecord3).map((item) => ({
+  const warnings = Array.isArray(value.warnings) ? value.warnings.filter(isRecord4).map((item) => ({
     code: typeof item.code === "string" ? item.code : "",
     message: typeof item.message === "string" ? item.message : ""
   })) : [];
@@ -4654,7 +4780,7 @@ function normalizeWorkspace(value, label = "workspace") {
   };
 }
 function normalizeTimelineVariant(value, label = "variant") {
-  if (!isRecord3(value)) fail(label, "must be an object");
+  if (!isRecord4(value)) fail(label, "must be an object");
   const startEventId = eventSeq(value.startEventId, `${label}.startEventId`);
   const endEventId = eventSeq(value.endEventId, `${label}.endEventId`);
   if (startEventId > endEventId) fail(label, "startEventId must not exceed endEventId");
@@ -4668,7 +4794,7 @@ function normalizeTimelineVariant(value, label = "variant") {
   };
 }
 function normalizeTimelineNode(value, label = "node") {
-  if (!isRecord3(value)) fail(label, "must be an object");
+  if (!isRecord4(value)) fail(label, "must be an object");
   if (value.kind !== "qa") fail(label, "kind must be qa");
   if (!Array.isArray(value.variants) || value.variants.length === 0) {
     fail(label, "variants must be a non-empty array");
@@ -4692,7 +4818,7 @@ function normalizeTimelineNode(value, label = "node") {
   };
 }
 function normalizeTimeline(value, label = "timeline") {
-  if (!isRecord3(value)) fail(label, "must be an object");
+  if (!isRecord4(value)) fail(label, "must be an object");
   if (!Array.isArray(value.nodes)) fail(label, "nodes must be an array");
   const nodes = value.nodes.map((item, index) => normalizeTimelineNode(item, `${label}.nodes[${index}]`));
   const ids = /* @__PURE__ */ new Set();
@@ -4704,11 +4830,11 @@ function normalizeTimeline(value, label = "timeline") {
   return { nodes, ...ext === void 0 ? {} : { ext } };
 }
 function normalizeCatalog(value, label = "catalog") {
-  if (!isRecord3(value)) fail(label, "must be an object");
+  if (!isRecord4(value)) fail(label, "must be an object");
   if (!Array.isArray(value.playthroughs)) fail(label, "playthroughs must be an array");
   const playthroughs = value.playthroughs.map((item, index) => {
     const itemLabel = `${label}.playthroughs[${index}]`;
-    if (!isRecord3(item)) fail(itemLabel, "must be an object");
+    if (!isRecord4(item)) fail(itemLabel, "must be an object");
     const ext2 = extRecord(item.ext, `${itemLabel}.ext`);
     return {
       id: stringId(item.id, `${itemLabel}.id`),
@@ -4734,18 +4860,18 @@ function parseJsonDocument(content, normalize, label) {
 function projectContentText(content) {
   if (!Array.isArray(content)) return "";
   return content.map((part) => {
-    if (!isRecord3(part)) return "";
+    if (!isRecord4(part)) return "";
     if (typeof part.text === "string") return part.text;
     return typeof part.type === "string" && part.type !== "text" ? `\u27E6${part.type}\u27E7` : "";
   }).join("");
 }
 function normalizeSessionMessages(value, label = "messages") {
-  if (!isRecord3(value)) fail(label, "must be an object");
+  if (!isRecord4(value)) fail(label, "must be an object");
   if (!Array.isArray(value.messages)) fail(label, "messages must be an array");
   if (typeof value.incompleteTurn !== "boolean") fail(label, "incompleteTurn must be a boolean");
   const messages = value.messages.map((item, index) => {
     const itemLabel = `${label}.messages[${index}]`;
-    if (!isRecord3(item)) fail(itemLabel, "must be an object");
+    if (!isRecord4(item)) fail(itemLabel, "must be an object");
     if (!MESSAGE_ROLES.has(item.role)) fail(itemLabel, "role is invalid");
     if (!Array.isArray(item.content)) fail(itemLabel, "content must be an array");
     if (item.seq !== null && (!Number.isSafeInteger(item.seq) || item.seq < 0)) fail(itemLabel, "seq must be a non-negative integer or null");
@@ -4760,7 +4886,7 @@ function normalizeSessionMessages(value, label = "messages") {
   return { messages, incompleteTurn: value.incompleteTurn };
 }
 function normalizeFocus(value, label = "focus") {
-  if (!isRecord3(value)) fail(label, "must be an object");
+  if (!isRecord4(value)) fail(label, "must be an object");
   if (value.sessionId !== null && (typeof value.sessionId !== "string" || value.sessionId === "")) {
     fail(label, "sessionId must be a non-empty string or null");
   }

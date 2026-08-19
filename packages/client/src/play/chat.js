@@ -17,6 +17,10 @@ import {
   projectGreeting,
   projectTimelineQa,
 } from './chat-model.js'
+import {
+  applyDisplayRegex,
+  getRegexDocument,
+} from './regex.js'
 import { PlayTurnActions } from './turn-actions.js'
 import { createTurnReconciler } from './turns.js'
 
@@ -81,15 +85,40 @@ export async function loadChatState(client, sessionId, playthrough) {
   const characterResponse = typeof characterId === 'string' && characterId !== ''
     ? await client.getCharacter(characterId)
     : null
+  const [regexDocument, active] = await Promise.all([
+    typeof client.getFile === 'function'
+      ? getRegexDocument(client)
+      : { schemaVersion: 1, rules: [] },
+    typeof client.getActive === 'function'
+      ? client.getActive(sessionId)
+      : null,
+  ])
+  const bindings = {
+    presetId: active?.selection?.presetId ?? null,
+    characterId: characterId ?? active?.selection?.characterCardId ?? null,
+  }
+  const regexDiagnostics = []
+  const renderText = (text, target) => {
+    const result = applyDisplayRegex(text, regexDocument.rules, bindings, target)
+    regexDiagnostics.push(...result.diagnostics)
+    return result.text
+  }
+  const turns = projectTimelineQa(timeline, messagesBySession).map(turn => ({
+    ...turn,
+    userText: renderText(turn.userText, 'user'),
+    assistantText: renderText(turn.assistantText, 'assistant'),
+  }))
+  const greeting = projectGreeting({
+    timeline,
+    messages: messagesBySession[sessionId]?.messages ?? [],
+    selectionResponse,
+    characterResponse,
+  })
   return {
     timeline,
-    turns: projectTimelineQa(timeline, messagesBySession),
-    greeting: projectGreeting({
-      timeline,
-      messages: messagesBySession[sessionId]?.messages ?? [],
-      selectionResponse,
-      characterResponse,
-    }),
+    turns,
+    greeting: greeting === null ? null : { ...greeting, text: renderText(greeting.text, 'assistant') },
+    regexDiagnostics,
   }
 }
 
