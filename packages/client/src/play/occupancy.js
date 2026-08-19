@@ -2,6 +2,7 @@ import { CLIENT_REFRESH_EVENT } from '../../../identity.js'
 import { translate } from '../i18n.js'
 import { MowanChatView } from './chat.js'
 import { loadCurrentPlaythrough } from './chat-model.js'
+import { PlayIoMenu } from './io-menu.js'
 import { PlayWorkspaceBrowser } from './sidebar.js'
 import { PlayUnboundNotice } from './notice.js'
 
@@ -16,8 +17,10 @@ export function installPlaySlotOccupancy(ctx, playClient) {
   let disposeNoticeEntry = null
   let disposeNoticeEffect = null
   let chatDeclared = false
+  let ioDeclared = false
   let chatGeneration = 0
   let disposeChatEntry = null
+  let disposeIoEntry = null
   let disposeSessionSubscription = null
   let refreshChatListener = null
 
@@ -103,6 +106,9 @@ export function installPlaySlotOccupancy(ctx, playClient) {
     const dispose = disposeChatEntry
     disposeChatEntry = null
     dispose?.()
+    const disposeIo = disposeIoEntry
+    disposeIoEntry = null
+    disposeIo?.()
   }
 
   const currentSession = () => {
@@ -117,28 +123,38 @@ export function installPlaySlotOccupancy(ctx, playClient) {
     chatGeneration += 1
     const generation = chatGeneration
     dropChatEntry()
-    if (!chatDeclared || mode !== 'play') return
+    if ((!chatDeclared && !ioDeclared) || mode !== 'play') return
     const session = currentSession()
     if (session === null) return
     const sessionId = session.id
     loadCurrentPlaythrough(playClient, session).then(match => {
       if (generation !== chatGeneration
         || mode !== 'play'
-        || !chatDeclared
+        || (!chatDeclared && !ioDeclared)
         || currentSession()?.id !== sessionId
         || match === null) return
-      disposeChatEntry = ctx.slots.register({
-        name: 'conversation.view',
-        id: 'chat',
-        order: 0,
-        priority: PLAY_SLOT_PRIORITY,
-        label: () => translate('play.chat.label'),
-        inject: () => ({
-          playClient,
-          playthrough: match.playthrough,
-          openSession: sessionId => ctx.sessions.open(sessionId),
-        }),
-      }, MowanChatView)
+      if (chatDeclared) {
+        disposeChatEntry = ctx.slots.register({
+          name: 'conversation.view',
+          id: 'chat',
+          order: 0,
+          priority: PLAY_SLOT_PRIORITY,
+          label: () => translate('play.chat.label'),
+          inject: () => ({
+            playClient,
+            playthrough: match.playthrough,
+            openSession: sessionId => ctx.sessions.open(sessionId),
+          }),
+        }, MowanChatView)
+      }
+      if (ioDeclared) {
+        disposeIoEntry = ctx.slots.register({
+          name: 'conversation.input.left',
+          id: 'pmp-dsh-tavern-play-io',
+          order: 80,
+          inject: () => ({ playClient, playthrough: match.playthrough }),
+        }, PlayIoMenu)
+      }
     }).catch(() => {
       // Classification failures keep the official Chat active.
     })
@@ -193,7 +209,18 @@ export function installPlaySlotOccupancy(ctx, playClient) {
     startChatObserver()
     return () => {
       chatDeclared = false
-      stopChatObserver()
+      if (ioDeclared) startChatObserver()
+      else stopChatObserver()
+    }
+  })
+
+  ctx.slots.inject('conversation.input.left', () => {
+    ioDeclared = true
+    startChatObserver()
+    return () => {
+      ioDeclared = false
+      if (chatDeclared) startChatObserver()
+      else stopChatObserver()
     }
   })
 

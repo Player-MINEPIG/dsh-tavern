@@ -21,6 +21,7 @@ import {
   createPlaythroughController,
   sourceSessionIdForCharacter,
 } from './create.js'
+import { PlayIoMenu } from './io-menu.js'
 import {
   SessionCharacterBindingCache,
   loadPlaySidebarResources,
@@ -36,6 +37,7 @@ const css = `
 .dtv-play-sidebar{height:100%;min-height:0;box-sizing:border-box;display:flex;flex-direction:column;gap:4px;padding:6px 7px 10px;overflow:auto;zoom:var(--dtv-ui-scale,1);color:var(--dsw-alias-label-primary)}
 .dtv-play-section{display:flex;flex-direction:column;gap:2px;border-radius:10px}.dtv-play-section[data-open=true]{padding-bottom:3px}
 .dtv-play-group,.dtv-play-row{width:100%;box-sizing:border-box;border:0;border-radius:8px;background:transparent;color:inherit;font:inherit;text-align:left;cursor:pointer;display:flex;align-items:center;gap:7px}.dtv-play-group:hover,.dtv-play-row:hover{background:var(--dsw-alias-interactive-bg-hover)}
+.dtv-play-row-line{display:flex;align-items:center;gap:2px}.dtv-play-row-line>.dtv-play-row{min-width:0;flex:1}.dtv-play-row-line>.dtv-play-io{flex:none}
 .dtv-play-group{min-height:38px;padding:4px 6px;font-size:12px;font-weight:680}.dtv-play-row{min-height:32px;padding:4px 7px 4px 27px;font-size:11px}.dtv-play-row[data-active=true]{background:var(--dsw-alias-interactive-bg-selected,var(--dsw-specific-tip));font-weight:650}.dtv-play-row:disabled{cursor:default;opacity:.55}
 .dtv-play-group-line{display:flex;align-items:center;gap:3px}.dtv-play-group-line>.dtv-play-group{min-width:0;flex:1}.dtv-play-create{width:30px;height:30px;flex:none;border:0;border-radius:8px;background:transparent;color:var(--dsw-alias-label-secondary);font:inherit;cursor:pointer}.dtv-play-create:hover{background:var(--dsw-alias-interactive-bg-hover)}.dtv-play-create:disabled{cursor:default;opacity:.5}
 .dtv-play-chevron{width:10px;flex:none;text-align:center;color:var(--dsw-alias-label-tertiary)}.dtv-play-title{min-width:0;flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.dtv-play-count{flex:none;border-radius:9px;padding:1px 6px;background:var(--dsw-specific-tip);color:var(--dsw-alias-label-tertiary);font-size:9px}
@@ -98,7 +100,7 @@ function Rail({ model, scale, expandSidebar }) {
   )
 }
 
-function CharacterGroup({ character, collapsed, unassignedOpen, creating, createDisabled, toggle, toggleUnassigned, createPlaythrough, openPlaythrough, openSession }) {
+function CharacterGroup({ character, collapsed, unassignedOpen, creating, createDisabled, toggle, toggleUnassigned, createPlaythrough, openPlaythrough, openSession, playClient }) {
   const count = character.playthroughs.length + character.unassigned.length
   return h('section', { className: 'dtv-play-section', 'data-open': !collapsed },
     h('div', { className: 'dtv-play-group-line' },
@@ -125,8 +127,11 @@ function CharacterGroup({ character, collapsed, unassignedOpen, creating, create
     collapsed ? null : character.playthroughs.length === 0 && character.unassigned.length === 0
       ? h('p', { className: 'dtv-play-empty' }, uiMessage('play.sidebar.noPlaythroughs'))
       : null,
-    collapsed ? null : character.playthroughs.map(playthrough => h('button', {
+    collapsed ? null : character.playthroughs.map(playthrough => h('div', {
       key: playthrough.id,
+      className: 'dtv-play-row-line',
+    },
+    h('button', {
       type: 'button',
       className: 'dtv-play-row',
       'data-active': playthrough.active,
@@ -136,6 +141,8 @@ function CharacterGroup({ character, collapsed, unassignedOpen, creating, create
     },
     h('span', { className: 'dtv-play-chevron', 'aria-hidden': 'true' }, '◆'),
     h('span', { className: 'dtv-play-title' }, rawText(playthrough.title)),
+    ),
+    h(PlayIoMenu, { playClient, playthrough, trigger: '⋯', placement: 'sidebar' }),
     )),
     collapsed || character.unassigned.length === 0 ? null : h('div', { className: 'dtv-play-subgroup' },
       h('button', {
@@ -335,6 +342,7 @@ export function PlayWorkspaceBrowser({
       creating: creatingCharacterId === character.id,
       createDisabled: !model.workspaceReady || creatingCharacterId !== null,
       createPlaythrough,
+      playClient,
       toggle: () => toggleSet(setCollapsedCharacters, character.id),
       toggleUnassigned: () => toggleSet(setExpandedUnassigned, character.id),
       openPlaythrough,
