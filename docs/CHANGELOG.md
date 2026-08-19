@@ -4,6 +4,21 @@ This is the staged implementation log for dsh-tavern. It is kept separately
 from the product README so reviewers can follow intent, decisions, verification,
 and known limits chronologically.
 
+## 2026-08-19 — Mowan projects sessions through the workspace slot
+
+- Play chrome shadows only the official sidebar.workspaces cell at priority
+  -100; returning to native chrome disposes the entry and restores DSH.
+- RP classification starts with the selected DSH workspace account, then
+  timeline/root-session membership, then cached character selection.
+- Playthrough sessions are hidden under character → playthrough rows;
+  unassigned card sessions stay in a collapsed subgroup and ordinary/external
+  sessions stay in the collapsed bottom group.
+- Character selection reads are invalidatable, deduplicated, and capped at
+  four concurrent requests. Timeline damage is reported with its file path.
+- The empty state can bind an existing DSH workspace, with a second
+  confirmation for paths covered by the backend system-disk warning policy.
+- Native New Session and ctx.workspaces.startSession are not patched.
+
 ## 2026-08-19 — Chrome switch is keyboard reachable
 
 - The launcher menu exposes an explicit Lingzhu/Mowan switch with current-mode

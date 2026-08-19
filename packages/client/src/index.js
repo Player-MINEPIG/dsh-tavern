@@ -34,6 +34,7 @@ import {
   launcherResourceStatuses,
 } from './state.js'
 import { createChromeClickController } from './play/chrome.js'
+import { installPlaySlotOccupancy } from './play/occupancy.js'
 import { createLivePlayClient } from './play/live.js'
 import { API_V1 as API_ROOT, CLIENT_REFRESH_EVENT, PLUGIN_ID } from '../../identity.js'
 
@@ -481,7 +482,7 @@ function RpHighRiskDialog({ onDismiss }) {
   )
 }
 
-function TavernShell({ useSessions, useWorkspaces, createCleanSession, playClient }) {
+function TavernShell({ useSessions, useWorkspaces, createCleanSession, playClient, playSlots }) {
   const [menuOpen, setMenuOpen] = useState(false)
   const [surface, setSurface] = useState(null)
   const [anchor, setAnchor] = useState(initialLauncherAnchor)
@@ -521,6 +522,7 @@ function TavernShell({ useSessions, useWorkspaces, createCleanSession, playClien
     const commitChrome = mode => {
       chromeModeRef.current = mode
       setChromeMode(mode)
+      playSlots.setMode(mode)
     }
     const refreshChrome = async () => {
       try {
@@ -560,7 +562,7 @@ function TavernShell({ useSessions, useWorkspaces, createCleanSession, playClien
       channel?.removeEventListener('message', onChromeMessage)
       channel?.close()
     }
-  }, [playClient])
+  }, [playClient, playSlots])
 
   useEffect(() => {
     let active = true
@@ -950,12 +952,14 @@ export function apply(ctx) {
   installStyles()
   registerTavernTraceView(ctx)
   const playClient = createLivePlayClient()
+  const playSlots = installPlaySlotOccupancy(ctx, playClient)
   ctx.slots.inject('shell.overlay', () => ctx.slots.register({
     name: 'shell.overlay',
     id: `${PLUGIN_ID}-launcher`,
     order: 80,
     inject: () => ({
       playClient,
+      playSlots,
       createCleanSession: ({ workspaceId, source }) => createCleanSessionWorkflow({
         workspaceId,
         source,

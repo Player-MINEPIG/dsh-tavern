@@ -167,6 +167,9 @@ export function createLivePlayClient({
       const response = await getCharacterSelection(sessionId)
       return response?.selection ?? null
     },
+    getCharacters() {
+      return v1('GET', '/characters')
+    },
 
     getCharacter(id) {
       return v1('GET', `/characters/${encodeURIComponent(id)}`)

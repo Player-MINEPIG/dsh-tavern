@@ -31,7 +31,7 @@ __export(index_exports, {
   name: () => name
 });
 module.exports = __toCommonJS(index_exports);
-var import_react7 = require("react");
+var import_react8 = require("react");
 
 // packages/ui-settings/src/locale-contract.js
 var DEFAULT_UI_LOCALE = "zh-CN";
@@ -116,6 +116,17 @@ var zh_CN_default = Object.freeze({
   "chrome.switchToNative": "\u5207\u6362\u5230\u7075\u73E0",
   "chrome.currentPlay": "\u5F53\u524D\uFF1A\u7EA2\u9ED1 ST",
   "chrome.currentNative": "\u5F53\u524D\uFF1A\u84DD\u9ED1 DSH",
+  "play.sidebar.loading": "\u6B63\u5728\u8BFB\u53D6\u89D2\u8272\u626E\u6F14\u5DE5\u4F5C\u533A\u2026",
+  "play.sidebar.workspaceMissing": "\u5C1A\u672A\u9009\u62E9\u89D2\u8272\u626E\u6F14\u5DE5\u4F5C\u533A\uFF1B\u7075\u73E0\u6A21\u5F0F\u4E2D\u7684\u539F\u751F\u4F1A\u8BDD\u4ECD\u53EF\u6B63\u5E38\u4F7F\u7528\u3002",
+  "play.sidebar.selectWorkspace": "\u5C06 {name} \u8BBE\u4E3A\u89D2\u8272\u626E\u6F14\u5DE5\u4F5C\u533A",
+  "play.sidebar.systemWorkspaceConfirm": "{path} \u4F4D\u4E8E\u7CFB\u7EDF\u76D8\uFF0C\u4ECD\u8981\u5C06\u5176\u8BBE\u4E3A\u89D2\u8272\u626E\u6F14\u5DE5\u4F5C\u533A\u5417\uFF1F",
+  "play.sidebar.noCharacters": "\u6682\u65E0\u89D2\u8272\u5361\u3002",
+  "play.sidebar.noPlaythroughs": "\u5C1A\u672A\u521B\u5EFA\u5C40\u3002",
+  "play.sidebar.unassigned": "\u672A\u5F52\u5165\u5C40",
+  "play.sidebar.other": "\u666E\u901A / \u975E\u89D2\u8272\u626E\u6F14\u4F1A\u8BDD",
+  "play.sidebar.otherEmpty": "\u6682\u65E0\u666E\u901A\u6216\u5916\u90E8\u4F1A\u8BDD\u3002",
+  "play.sidebar.sessionMissing": "\u8BE5\u5C40\u5728\u89D2\u8272\u626E\u6F14\u5DE5\u4F5C\u533A\u4E2D\u6CA1\u6709\u53EF\u7528\u4F1A\u8BDD\u3002",
+  "play.sidebar.timelineErrors": "\u6709 {count} \u4E2A\u5C40\u7684 timeline \u65E0\u6CD5\u8BFB\u53D6\u3002",
   "settings.menu": "\u754C\u9762\u8BBE\u7F6E",
   "settings.title": "Tavern \u754C\u9762\u8BBE\u7F6E",
   "settings.language": "\u754C\u9762\u8BED\u8A00",
@@ -597,6 +608,17 @@ var en_default = Object.freeze({
   "chrome.switchToNative": "Switch to Lingzhu",
   "chrome.currentPlay": "Current: red-black ST",
   "chrome.currentNative": "Current: blue-black DSH",
+  "play.sidebar.loading": "Loading role-play workspace\u2026",
+  "play.sidebar.workspaceMissing": "No role-play workspace is selected. Native sessions remain available in Lingzhu mode.",
+  "play.sidebar.selectWorkspace": "Use {name} as the role-play workspace",
+  "play.sidebar.systemWorkspaceConfirm": "{path} is on the system disk. Use it as the role-play workspace anyway?",
+  "play.sidebar.noCharacters": "No character cards are available.",
+  "play.sidebar.noPlaythroughs": "No playthroughs yet.",
+  "play.sidebar.unassigned": "Not in a playthrough",
+  "play.sidebar.other": "Regular / non-role-play sessions",
+  "play.sidebar.otherEmpty": "No regular or external sessions.",
+  "play.sidebar.sessionMissing": "This playthrough has no available session in the role-play workspace.",
+  "play.sidebar.timelineErrors": "{count} playthrough timelines could not be read.",
   "settings.menu": "UI settings",
   "settings.title": "Tavern UI settings",
   "settings.language": "Interface language",
@@ -1113,7 +1135,7 @@ function localizeChild(value) {
   if (Array.isArray(value)) return value.map(localizeChild);
   return value;
 }
-function createLocalizedElement(createElement8) {
+function createLocalizedElement(createElement9) {
   return (type, props, ...children) => {
     let localizedProps = props;
     if (props !== null && props !== void 0) {
@@ -1122,7 +1144,7 @@ function createLocalizedElement(createElement8) {
         if (isRawText(localizedProps[key])) localizedProps[key] = localizedProps[key].value;
       }
     }
-    return createElement8(type, localizedProps, ...children.map(localizeChild));
+    return createElement9(type, localizedProps, ...children.map(localizeChild));
   };
 }
 function getClientUiSettings() {
@@ -3695,6 +3717,9 @@ function createChromeClickController({
   };
 }
 
+// packages/client/src/play/sidebar.js
+var import_react7 = require("react");
+
 // packages/client/src/play/schema.js
 var CHROME_MODES = /* @__PURE__ */ new Set(["native", "play"]);
 var MESSAGE_ROLES = /* @__PURE__ */ new Set(["user", "assistant", "system"]);
@@ -3864,6 +3889,599 @@ function timelinePath(value, label = "timeline path") {
   if (!path.endsWith("timeline.json")) fail(label, "must point to timeline.json");
   return path;
 }
+function playthroughCharacterId(playthrough) {
+  const explicit = playthrough?.ext?.pmpDshTavern?.characterId;
+  if (typeof explicit === "string" && explicit !== "") return explicit;
+  const path = typeof playthrough?.path === "string" ? playthrough.path.replaceAll("\\", "/") : "";
+  const first = path.split("/").filter(Boolean)[0];
+  return first || null;
+}
+
+// packages/client/src/play/sidebar-model.js
+var SIDEBAR_LOAD_CONCURRENCY = 4;
+function characterIdFromSelection(value) {
+  const selection = value?.selection ?? value;
+  const id = selection?.characterCardId;
+  return typeof id === "string" && id !== "" ? id : null;
+}
+function rootSessionId(playthrough) {
+  const id = playthrough?.ext?.pmpDshTavern?.rootSessionId;
+  return typeof id === "string" && id !== "" ? id : null;
+}
+function sessionTitle(session, id) {
+  if (typeof session?.displayTitle === "string" && session.displayTitle !== "") return session.displayTitle;
+  if (typeof session?.title === "string" && session.title !== "") return session.title;
+  return id;
+}
+function normalizedPath(value) {
+  if (typeof value !== "string") return "";
+  const normalized = value.replaceAll("\\", "/").replace(/\/+$/, "");
+  return /^[a-z]:\//i.test(normalized) ? normalized.toLowerCase() : normalized;
+}
+function requiresSystemWorkspaceConfirmation(value) {
+  const path = typeof value === "string" ? value.replaceAll("\\", "/") : "";
+  return /^c:\//i.test(path) || path === "/" || path === "/usr" || path.startsWith("/usr/") || path === "/System" || path.startsWith("/System/");
+}
+function timelineFor(timelines, playthrough) {
+  return timelines?.[playthrough.path] ?? timelines?.[playthrough.id] ?? null;
+}
+function playthroughMembers(playthrough, timeline) {
+  const ids = /* @__PURE__ */ new Set();
+  const rootId = rootSessionId(playthrough);
+  if (rootId !== null) ids.add(rootId);
+  for (const node of timeline?.nodes ?? []) {
+    for (const variant of node?.variants ?? []) {
+      if (typeof variant?.sessionId === "string" && variant.sessionId !== "") ids.add(variant.sessionId);
+    }
+  }
+  return ids;
+}
+function sessionIdsInRpWorkspace({ workspace, workspaceItems = [], sessions = {} } = {}) {
+  const ids = /* @__PURE__ */ new Set();
+  if (workspace?.selected !== true) return ids;
+  if (typeof workspace.workspaceId === "string" && workspace.workspaceId !== "") {
+    const item = workspaceItems.find((candidate) => candidate?.workspaceId === workspace.workspaceId);
+    if (item !== void 0) {
+      for (const id of item.sessionIds ?? []) if (typeof id === "string" && id !== "") ids.add(id);
+      return ids;
+    }
+  }
+  const root = normalizedPath(workspace.rootPath);
+  if (root === "") return ids;
+  for (const [id, session] of Object.entries(sessions)) {
+    if (normalizedPath(session?.cwd) === root) ids.add(id);
+  }
+  return ids;
+}
+var SessionCharacterBindingCache = class {
+  constructor() {
+    this.entries = /* @__PURE__ */ new Map();
+    this.generation = 0;
+  }
+  clear() {
+    this.generation += 1;
+    this.entries.clear();
+  }
+  get(client, sessionId) {
+    const cached = this.entries.get(sessionId);
+    if (cached !== void 0) return cached.promise ?? Promise.resolve(cached.value);
+    const generation = this.generation;
+    const readSelection = typeof client.getSelection === "function" ? client.getSelection.bind(client) : client.getCharacterSelection.bind(client);
+    const promise = readSelection(sessionId).then(characterIdFromSelection, () => null);
+    this.entries.set(sessionId, { promise });
+    promise.then((value) => {
+      if (this.generation === generation) this.entries.set(sessionId, { value });
+    });
+    return promise;
+  }
+};
+async function loadSessionCharacterBindings(client, sessionIds, {
+  concurrency = SIDEBAR_LOAD_CONCURRENCY,
+  cache = new SessionCharacterBindingCache()
+} = {}) {
+  if (client == null || typeof client.getSelection !== "function" && typeof client.getCharacterSelection !== "function") return {};
+  const ids = [...new Set(sessionIds)].filter((id) => typeof id === "string" && id !== "");
+  const result = {};
+  let cursor = 0;
+  const worker = async () => {
+    while (cursor < ids.length) {
+      const index = cursor;
+      cursor += 1;
+      const id = ids[index];
+      result[id] = await cache.get(client, id);
+    }
+  };
+  const requested = Number.isFinite(concurrency) ? Math.floor(concurrency) : SIDEBAR_LOAD_CONCURRENCY;
+  const workerCount = Math.min(ids.length, Math.max(1, Math.min(SIDEBAR_LOAD_CONCURRENCY, requested)));
+  await Promise.all(Array.from({ length: workerCount }, worker));
+  return result;
+}
+async function mapConcurrent(values, mapper, concurrency = SIDEBAR_LOAD_CONCURRENCY) {
+  const result = new Array(values.length);
+  let cursor = 0;
+  const worker = async () => {
+    while (cursor < values.length) {
+      const index = cursor;
+      cursor += 1;
+      result[index] = await mapper(values[index], index);
+    }
+  };
+  await Promise.all(Array.from({ length: Math.min(values.length, concurrency) }, worker));
+  return result;
+}
+async function loadPlaySidebarResources(client) {
+  if (client == null) throw new TypeError("playClient.required");
+  const [workspace, characterResponse] = await Promise.all([
+    client.getWorkspace(),
+    client.getCharacters()
+  ]);
+  const characters = Array.isArray(characterResponse?.characters) ? characterResponse.characters : [];
+  if (workspace.selected !== true) return { workspace, characters, catalog: { playthroughs: [] }, timelines: {}, diagnostics: [] };
+  let catalog2;
+  try {
+    catalog2 = await client.getCatalog();
+  } catch (reason) {
+    if (reason?.code !== "PLAY_PATH_NOT_FOUND") throw reason;
+    catalog2 = { playthroughs: [] };
+  }
+  const timelines = {};
+  const diagnostics = [];
+  await mapConcurrent(catalog2.playthroughs, async (playthrough) => {
+    try {
+      timelines[playthrough.path] = await client.getTimeline(playthrough);
+    } catch (reason) {
+      diagnostics.push({
+        playthroughId: playthrough.id,
+        path: playthrough.path,
+        message: reason instanceof Error ? reason.message : String(reason)
+      });
+    }
+  });
+  return { workspace, characters, catalog: catalog2, timelines, diagnostics };
+}
+function projectPlaySidebar({
+  workspace = { selected: false },
+  workspaceItems = [],
+  characters = [],
+  catalog: catalog2 = { playthroughs: [] },
+  timelines = {},
+  sessions = {},
+  sessionIds = [],
+  archivedSessionIds = [],
+  currentId = null,
+  sessionCharacters = {}
+} = {}) {
+  const archived = new Set(archivedSessionIds);
+  const rpSessionIds = sessionIdsInRpWorkspace({ workspace, workspaceItems, sessions });
+  const characterById = /* @__PURE__ */ new Map();
+  const ensureCharacter = (id, name2 = id) => {
+    if (!characterById.has(id)) characterById.set(id, { id, name: name2, playthroughs: [], unassigned: [] });
+    return characterById.get(id);
+  };
+  for (const character of characters) {
+    if (typeof character?.id !== "string" || character.id === "") continue;
+    ensureCharacter(character.id, typeof character.name === "string" && character.name !== "" ? character.name : character.id);
+  }
+  const claimedRpSessions = /* @__PURE__ */ new Set();
+  for (const playthrough of catalog2.playthroughs ?? []) {
+    const rootId = rootSessionId(playthrough);
+    const characterId = playthroughCharacterId(playthrough);
+    if (characterId === null) continue;
+    const allMembers = playthroughMembers(playthrough, timelineFor(timelines, playthrough));
+    const members = [...allMembers].filter((id) => rpSessionIds.has(id) && !archived.has(id));
+    for (const id of members) claimedRpSessions.add(id);
+    ensureCharacter(characterId).playthroughs.push({
+      ...playthrough,
+      title: typeof playthrough.title === "string" && playthrough.title !== "" ? playthrough.title : playthrough.id,
+      rootSessionId: rootId !== null && members.includes(rootId) ? rootId : null,
+      sessionIds: members,
+      active: currentId !== null && members.includes(currentId),
+      missing: members.length === 0
+    });
+  }
+  const ids = sessionIds.length > 0 ? sessionIds : Object.keys(sessions);
+  const otherSessions = [];
+  for (const id of ids) {
+    const session = sessions[id];
+    if (session == null || archived.has(id)) continue;
+    if (!rpSessionIds.has(id)) {
+      otherSessions.push({ id, title: sessionTitle(session, id), active: currentId === id, kind: "external" });
+      continue;
+    }
+    if (claimedRpSessions.has(id)) continue;
+    const characterId = sessionCharacters[id];
+    if (typeof characterId === "string" && characterId !== "") {
+      ensureCharacter(characterId).unassigned.push({ id, title: sessionTitle(session, id), active: currentId === id });
+      continue;
+    }
+    otherSessions.push({ id, title: sessionTitle(session, id), active: currentId === id, kind: "ordinary" });
+  }
+  return {
+    workspaceReady: workspace.selected === true,
+    rpSessionIds: [...rpSessionIds],
+    playSessionIds: [...claimedRpSessions],
+    characters: [...characterById.values()],
+    otherSessions
+  };
+}
+
+// packages/client/src/play/sidebar.js
+var h7 = createLocalizedElement(import_react7.createElement);
+var css6 = `
+.dtv-play-sidebar{height:100%;min-height:0;box-sizing:border-box;display:flex;flex-direction:column;gap:4px;padding:6px 7px 10px;overflow:auto;zoom:var(--dtv-ui-scale,1);color:var(--dsw-alias-label-primary)}
+.dtv-play-section{display:flex;flex-direction:column;gap:2px;border-radius:10px}.dtv-play-section[data-open=true]{padding-bottom:3px}
+.dtv-play-group,.dtv-play-row{width:100%;box-sizing:border-box;border:0;border-radius:8px;background:transparent;color:inherit;font:inherit;text-align:left;cursor:pointer;display:flex;align-items:center;gap:7px}.dtv-play-group:hover,.dtv-play-row:hover{background:var(--dsw-alias-interactive-bg-hover)}
+.dtv-play-group{min-height:38px;padding:4px 6px;font-size:12px;font-weight:680}.dtv-play-row{min-height:32px;padding:4px 7px 4px 27px;font-size:11px}.dtv-play-row[data-active=true]{background:var(--dsw-alias-interactive-bg-selected,var(--dsw-specific-tip));font-weight:650}.dtv-play-row:disabled{cursor:default;opacity:.55}
+.dtv-play-chevron{width:10px;flex:none;text-align:center;color:var(--dsw-alias-label-tertiary)}.dtv-play-title{min-width:0;flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.dtv-play-count{flex:none;border-radius:9px;padding:1px 6px;background:var(--dsw-specific-tip);color:var(--dsw-alias-label-tertiary);font-size:9px}
+.dtv-play-avatar{position:relative;width:25px;height:25px;flex:none;border-radius:50%;overflow:hidden;background:var(--dsw-specific-tip);display:grid;place-items:center;color:var(--dsw-alias-label-secondary);font-size:10px}.dtv-play-avatar img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+.dtv-play-subgroup{display:flex;flex-direction:column;gap:1px}.dtv-play-subgroup>.dtv-play-group{min-height:30px;padding-left:25px;font-size:10px;font-weight:620;color:var(--dsw-alias-label-secondary)}
+.dtv-play-empty,.dtv-play-status{margin:0;padding:7px 9px;font-size:10px;line-height:1.45;color:var(--dsw-alias-label-tertiary);overflow-wrap:anywhere}.dtv-play-status[data-error=true]{color:var(--dsw-alias-state-error)}
+.dtv-play-rail{height:100%;box-sizing:border-box;padding:7px;display:flex;flex-direction:column;align-items:center;gap:7px;overflow:auto;zoom:var(--dtv-ui-scale,1)}.dtv-play-rail-button{width:38px;height:38px;border:0;border-radius:10px;background:transparent;color:var(--dsw-alias-label-secondary);cursor:pointer;display:grid;place-items:center}.dtv-play-rail-button:hover{background:var(--dsw-alias-interactive-bg-hover)}.dtv-play-rail-button .dtv-play-avatar{width:30px;height:30px}
+`;
+function installStyles() {
+  if (document.querySelector(`style[data-plugin-css="${PLUGIN_ID}-play-sidebar"]`) !== null) return;
+  const style = document.createElement("style");
+  style.dataset.pluginCss = `${PLUGIN_ID}-play-sidebar`;
+  style.textContent = css6;
+  document.head.append(style);
+}
+function useUiScale() {
+  const [scale, setScale] = (0, import_react7.useState)(() => getClientUiSettings().scale);
+  (0, import_react7.useEffect)(() => {
+    const onSettings = (event) => {
+      const next = Number(event.detail?.scale);
+      if (Number.isFinite(next)) setScale(next);
+    };
+    window.addEventListener(CLIENT_UI_SETTINGS_EVENT, onSettings);
+    return () => window.removeEventListener(CLIENT_UI_SETTINGS_EVENT, onSettings);
+  }, []);
+  return scale;
+}
+function Avatar({ character }) {
+  const fallback = (character.name || character.id).slice(0, 1).toUpperCase();
+  return h7(
+    "span",
+    { className: "dtv-play-avatar", "aria-hidden": "true" },
+    rawText(fallback),
+    h7("img", {
+      src: `${API_V1}/characters/${encodeURIComponent(character.id)}/png`,
+      alt: "",
+      onError: (event) => {
+        event.currentTarget.hidden = true;
+      }
+    })
+  );
+}
+function Rail({ model, scale, expandSidebar }) {
+  return h7(
+    "div",
+    { className: "dtv-play-rail", style: { "--dtv-ui-scale": scale } },
+    ...model.characters.map((character) => h7("button", {
+      key: character.id,
+      type: "button",
+      className: "dtv-play-rail-button",
+      title: rawText(character.name),
+      "aria-label": rawText(character.name),
+      onClick: expandSidebar
+    }, h7(Avatar, { character }))),
+    h7("button", {
+      type: "button",
+      className: "dtv-play-rail-button",
+      title: uiMessage("play.sidebar.other"),
+      "aria-label": uiMessage("play.sidebar.other"),
+      onClick: expandSidebar
+    }, "\u2630")
+  );
+}
+function CharacterGroup({ character, collapsed, unassignedOpen, toggle, toggleUnassigned, openPlaythrough, openSession }) {
+  const count = character.playthroughs.length + character.unassigned.length;
+  return h7(
+    "section",
+    { className: "dtv-play-section", "data-open": !collapsed },
+    h7(
+      "button",
+      {
+        type: "button",
+        className: "dtv-play-group",
+        "aria-expanded": !collapsed,
+        onClick: toggle
+      },
+      h7("span", { className: "dtv-play-chevron", "aria-hidden": "true" }, collapsed ? "\u203A" : "\u2304"),
+      h7(Avatar, { character }),
+      h7("span", { className: "dtv-play-title" }, rawText(character.name)),
+      h7("span", { className: "dtv-play-count" }, rawText(String(count)))
+    ),
+    collapsed ? null : character.playthroughs.length === 0 && character.unassigned.length === 0 ? h7("p", { className: "dtv-play-empty" }, uiMessage("play.sidebar.noPlaythroughs")) : null,
+    collapsed ? null : character.playthroughs.map((playthrough) => h7(
+      "button",
+      {
+        key: playthrough.id,
+        type: "button",
+        className: "dtv-play-row",
+        "data-active": playthrough.active,
+        disabled: playthrough.missing,
+        title: playthrough.missing ? uiMessage("play.sidebar.sessionMissing") : rawText(playthrough.title),
+        onClick: () => openPlaythrough(playthrough)
+      },
+      h7("span", { className: "dtv-play-chevron", "aria-hidden": "true" }, "\u25C6"),
+      h7("span", { className: "dtv-play-title" }, rawText(playthrough.title))
+    )),
+    collapsed || character.unassigned.length === 0 ? null : h7(
+      "div",
+      { className: "dtv-play-subgroup" },
+      h7(
+        "button",
+        {
+          type: "button",
+          className: "dtv-play-group",
+          "aria-expanded": unassignedOpen,
+          onClick: toggleUnassigned
+        },
+        h7("span", { className: "dtv-play-chevron", "aria-hidden": "true" }, unassignedOpen ? "\u2304" : "\u203A"),
+        h7("span", { className: "dtv-play-title" }, uiMessage("play.sidebar.unassigned")),
+        h7("span", { className: "dtv-play-count" }, rawText(String(character.unassigned.length)))
+      ),
+      unassignedOpen ? character.unassigned.map((session) => h7(
+        "button",
+        {
+          key: session.id,
+          type: "button",
+          className: "dtv-play-row",
+          "data-active": session.active,
+          onClick: () => openSession(session.id)
+        },
+        h7("span", { className: "dtv-play-chevron", "aria-hidden": "true" }, "\u2022"),
+        h7("span", { className: "dtv-play-title" }, rawText(session.title))
+      )) : null
+    )
+  );
+}
+function PlayWorkspaceBrowser({
+  wide = true,
+  expandSidebar,
+  useSessions,
+  useWorkspaces,
+  playClient,
+  openSession
+}) {
+  installStyles();
+  const scale = useUiScale();
+  const sessionIds = useSessions((state) => state.ids);
+  const sessions = useSessions((state) => state.byId);
+  const currentId = useSessions((state) => state.current ?? null);
+  const workspaceItems = useWorkspaces((state) => state.items);
+  const archivedSessionIds = useWorkspaces((state) => state.archivedSessionIds);
+  const cache = (0, import_react7.useRef)(null);
+  if (cache.current === null) cache.current = new SessionCharacterBindingCache();
+  const [revision, setRevision] = (0, import_react7.useState)(0);
+  const [resources, setResources] = (0, import_react7.useState)(null);
+  const [sessionCharacters, setSessionCharacters] = (0, import_react7.useState)({});
+  const [status, setStatus] = (0, import_react7.useState)(null);
+  const [collapsedCharacters, setCollapsedCharacters] = (0, import_react7.useState)(() => /* @__PURE__ */ new Set());
+  const [expandedUnassigned, setExpandedUnassigned] = (0, import_react7.useState)(() => /* @__PURE__ */ new Set());
+  const [otherOpen, setOtherOpen] = (0, import_react7.useState)(false);
+  (0, import_react7.useEffect)(() => {
+    const refresh = () => {
+      cache.current.clear();
+      setRevision((value) => value + 1);
+    };
+    window.addEventListener(CLIENT_REFRESH_EVENT, refresh);
+    return () => window.removeEventListener(CLIENT_REFRESH_EVENT, refresh);
+  }, []);
+  (0, import_react7.useEffect)(() => {
+    let active = true;
+    setStatus(null);
+    loadPlaySidebarResources(playClient).then((next) => {
+      if (active) setResources(next);
+    }).catch((reason) => {
+      if (!active) return;
+      setResources(null);
+      setStatus({ message: reason instanceof Error ? reason.message : String(reason) });
+    });
+    return () => {
+      active = false;
+    };
+  }, [playClient, revision]);
+  const rpIds = resources === null ? [] : [...sessionIdsInRpWorkspace({
+    workspace: resources.workspace,
+    workspaceItems,
+    sessions
+  })];
+  const rpKey = rpIds.join("\0");
+  (0, import_react7.useEffect)(() => {
+    let active = true;
+    if (resources === null) {
+      setSessionCharacters({});
+      return () => {
+        active = false;
+      };
+    }
+    loadSessionCharacterBindings(playClient, rpIds, { cache: cache.current }).then((next) => {
+      if (active) setSessionCharacters(next);
+    });
+    return () => {
+      active = false;
+    };
+  }, [playClient, resources, rpKey, revision]);
+  const model = projectPlaySidebar({
+    workspace: resources?.workspace,
+    workspaceItems,
+    characters: resources?.characters,
+    catalog: resources?.catalog,
+    timelines: resources?.timelines,
+    sessions,
+    sessionIds,
+    archivedSessionIds,
+    currentId,
+    sessionCharacters
+  });
+  const bindWorkspace = async (workspace) => {
+    if (requiresSystemWorkspaceConfirmation(workspace.path) && !window.confirm(unwrapText(uiMessage("play.sidebar.systemWorkspaceConfirm", { path: workspace.path })))) return;
+    setStatus(null);
+    try {
+      await playClient.putWorkspace(workspace.path);
+      window.dispatchEvent(new Event(CLIENT_REFRESH_EVENT));
+    } catch (reason) {
+      setStatus({ message: reason instanceof Error ? reason.message : String(reason) });
+    }
+  };
+  const openPlaythrough = async (playthrough) => {
+    setStatus(null);
+    try {
+      const focus = await playClient.getFocus(playthrough);
+      const target = typeof focus.sessionId === "string" ? focus.sessionId : playthrough.rootSessionId;
+      if (typeof target !== "string" || !playthrough.sessionIds.includes(target)) {
+        setStatus({ key: "play.sidebar.sessionMissing" });
+        return;
+      }
+      openSession(target);
+    } catch (reason) {
+      setStatus({ message: reason instanceof Error ? reason.message : String(reason) });
+    }
+  };
+  if (wide === false) return h7(Rail, { model, scale, expandSidebar });
+  const toggleSet = (setter, id) => setter((current2) => {
+    const next = new Set(current2);
+    if (next.has(id)) next.delete(id);
+    else next.add(id);
+    return next;
+  });
+  return h7(
+    "div",
+    { className: "dtv-play-sidebar", style: { "--dtv-ui-scale": scale } },
+    resources === null && status === null ? h7("p", { className: "dtv-play-status" }, uiMessage("play.sidebar.loading")) : null,
+    resources?.workspace?.selected === false ? h7(
+      "section",
+      { className: "dtv-play-section", "data-open": true },
+      h7("p", { className: "dtv-play-status" }, uiMessage("play.sidebar.workspaceMissing")),
+      ...workspaceItems.map((workspace) => {
+        const label = uiMessage("play.sidebar.selectWorkspace", { name: workspace.title });
+        return h7(
+          "button",
+          {
+            key: workspace.workspaceId,
+            type: "button",
+            className: "dtv-play-row",
+            title: label,
+            "aria-label": label,
+            onClick: () => bindWorkspace(workspace)
+          },
+          h7("span", { className: "dtv-play-chevron", "aria-hidden": "true" }, "\u25C7"),
+          h7("span", { className: "dtv-play-title" }, rawText(workspace.title))
+        );
+      })
+    ) : null,
+    status === null ? null : h7("p", { className: "dtv-play-status", "data-error": true }, status.key ? uiMessage(status.key) : rawText(status.message)),
+    (resources?.diagnostics.length ?? 0) === 0 ? null : h7("p", { className: "dtv-play-status", "data-error": true }, uiMessage("play.sidebar.timelineErrors", { count: resources.diagnostics.length })),
+    ...(resources?.diagnostics ?? []).map((diagnostic) => h7("p", {
+      key: diagnostic.playthroughId,
+      className: "dtv-play-status",
+      "data-error": true
+    }, rawText(`${diagnostic.path}: ${diagnostic.message}`))),
+    resources !== null && model.characters.length === 0 ? h7("p", { className: "dtv-play-empty" }, uiMessage("play.sidebar.noCharacters")) : null,
+    ...model.characters.map((character) => h7(CharacterGroup, {
+      key: character.id,
+      character,
+      collapsed: collapsedCharacters.has(character.id),
+      unassignedOpen: expandedUnassigned.has(character.id),
+      toggle: () => toggleSet(setCollapsedCharacters, character.id),
+      toggleUnassigned: () => toggleSet(setExpandedUnassigned, character.id),
+      openPlaythrough,
+      openSession
+    })),
+    h7(
+      "section",
+      { className: "dtv-play-section", "data-open": otherOpen },
+      h7(
+        "button",
+        {
+          type: "button",
+          className: "dtv-play-group",
+          "aria-expanded": otherOpen,
+          onClick: () => setOtherOpen((value) => !value)
+        },
+        h7("span", { className: "dtv-play-chevron", "aria-hidden": "true" }, otherOpen ? "\u2304" : "\u203A"),
+        h7("span", { className: "dtv-play-title" }, uiMessage("play.sidebar.other")),
+        h7("span", { className: "dtv-play-count" }, rawText(String(model.otherSessions.length)))
+      ),
+      otherOpen && model.otherSessions.length === 0 ? h7("p", { className: "dtv-play-empty" }, uiMessage("play.sidebar.otherEmpty")) : null,
+      otherOpen ? model.otherSessions.map((session) => h7(
+        "button",
+        {
+          key: session.id,
+          type: "button",
+          className: "dtv-play-row",
+          "data-active": session.active,
+          "data-kind": session.kind,
+          onClick: () => openSession(session.id)
+        },
+        h7("span", { className: "dtv-play-chevron", "aria-hidden": "true" }, "\u2022"),
+        h7("span", { className: "dtv-play-title" }, rawText(session.title))
+      )) : null
+    )
+  );
+}
+
+// packages/client/src/play/occupancy.js
+var PLAY_SLOT_PRIORITY = -100;
+function installPlaySlotOccupancy(ctx, playClient) {
+  let mode = "native";
+  let declared = false;
+  let disposeEntry = null;
+  let disposeEffect = null;
+  const dropEntry = () => {
+    const dispose = disposeEntry;
+    disposeEntry = null;
+    dispose?.();
+  };
+  const dropEffect = () => {
+    const dispose = disposeEffect;
+    disposeEffect = null;
+    dispose?.();
+    dropEntry();
+  };
+  const mount = () => {
+    if (!declared || mode !== "play" || disposeEntry !== null) return;
+    disposeEntry = ctx.slots.register({
+      name: "sidebar.workspaces",
+      priority: PLAY_SLOT_PRIORITY,
+      inject: () => ({
+        playClient,
+        openSession: (sessionId) => ctx.sessions.open(sessionId)
+      })
+    }, PlayWorkspaceBrowser);
+  };
+  const reconcile = () => {
+    dropEffect();
+    if (!declared || mode !== "play") return;
+    const effect = () => {
+      mount();
+      return dropEntry;
+    };
+    if (typeof ctx.effect === "function") {
+      const dispose = ctx.effect(effect, "pmp-dsh-tavern:play-sidebar-shadow");
+      disposeEffect = typeof dispose === "function" ? dispose : null;
+    } else {
+      disposeEffect = effect();
+    }
+  };
+  ctx.slots.inject("sidebar.workspaces", () => {
+    declared = true;
+    reconcile();
+    return () => {
+      declared = false;
+      dropEffect();
+    };
+  });
+  return {
+    setMode(next) {
+      const normalized = next === "play" ? "play" : "native";
+      if (mode === normalized) return;
+      mode = normalized;
+      reconcile();
+    }
+  };
+}
 
 // packages/client/src/play/live.js
 function errorMessage4(data, status) {
@@ -3990,6 +4608,9 @@ function createLivePlayClient({
       const response = await getCharacterSelection(sessionId);
       return response?.selection ?? null;
     },
+    getCharacters() {
+      return v1("GET", "/characters");
+    },
     getCharacter(id) {
       return v1("GET", `/characters/${encodeURIComponent(id)}`);
     },
@@ -4019,8 +4640,8 @@ function createLivePlayClient({
 }
 
 // packages/client/src/index.js
-var h7 = createLocalizedElement(import_react7.createElement);
-var css6 = `
+var h8 = createLocalizedElement(import_react8.createElement);
+var css7 = `
 .dtv-layer{position:absolute;inset:0;z-index:6;pointer-events:none;font-family:Inter,var(--dsw-font-family),sans-serif;color:var(--dsw-alias-label-primary)}
 .dtv-launcher{position:absolute;z-index:2;width:44px;height:44px;pointer-events:auto;overflow:hidden;border:0 solid transparent;border-radius:22px;background:transparent;box-shadow:none;transition:width .22s ease,height .22s ease,border-radius .22s ease,background-color .18s ease,box-shadow .18s ease;display:block}
 .dtv-launcher[data-open=true]{width:300px;height:376px;border-width:1px;border-color:var(--dsw-alias-border-l2);border-radius:18px;background:var(--dsw-alias-bg-base);box-shadow:var(--ds-shadow-3,0 12px 34px rgba(0,0,0,.24))}
@@ -4120,15 +4741,15 @@ async function uiSettingsRequest(method = "GET", body2) {
 function PanelHeader({ title, titleKey, close }) {
   const titleText = titleKey ? uiMessage(titleKey) : title;
   const closeLabel = uiMessage("panel.close", { title: unwrapText(titleText) });
-  return h7(
+  return h8(
     "div",
     { className: "dtv-header" },
-    h7("div", { className: "dtv-title" }, titleText),
-    h7("button", { className: "dtv-close", type: "button", title: closeLabel, "aria-label": closeLabel, onClick: close }, "\u2715")
+    h8("div", { className: "dtv-title" }, titleText),
+    h8("button", { className: "dtv-close", type: "button", title: closeLabel, "aria-label": closeLabel, onClick: close }, "\u2715")
   );
 }
 function Field5({ label, children }) {
-  return h7("label", { className: "dtv-field" }, h7("span", { className: "dtv-label" }, label), children);
+  return h8("label", { className: "dtv-field" }, h8("span", { className: "dtv-label" }, label), children);
 }
 function SettingsPanel({
   settings,
@@ -4145,19 +4766,19 @@ function SettingsPanel({
   resetPolicy
 }) {
   const percent = Math.round(settings.scale * 100);
-  return h7(
+  return h8(
     "div",
     { className: "dtv-panel" },
-    h7(
+    h8(
       "div",
       { className: "dtv-header" },
-      h7("div", { className: "dtv-title" }, translate("settings.title")),
-      h7("button", { className: "dtv-close", type: "button", title: translate("settings.close"), "aria-label": translate("settings.close"), onClick: close }, "\u2715")
+      h8("div", { className: "dtv-title" }, translate("settings.title")),
+      h8("button", { className: "dtv-close", type: "button", title: translate("settings.close"), "aria-label": translate("settings.close"), onClick: close }, "\u2715")
     ),
-    h7(
+    h8(
       "div",
       { className: "dtv-body" },
-      h7(Field5, { label: translate("settings.language") }, h7(
+      h8(Field5, { label: translate("settings.language") }, h8(
         "select",
         {
           className: "dtv-select",
@@ -4165,57 +4786,57 @@ function SettingsPanel({
           disabled: busy,
           onChange: (event) => update({ ...settings, locale: event.target.value })
         },
-        ...UI_LOCALES.map((locale) => h7("option", { key: locale.id, value: locale.id }, rawText(locale.nativeName)))
+        ...UI_LOCALES.map((locale) => h8("option", { key: locale.id, value: locale.id }, rawText(locale.nativeName)))
       )),
-      h7(Field5, { label: translate("settings.scale") }, h7("select", {
+      h8(Field5, { label: translate("settings.scale") }, h8("select", {
         className: "dtv-select",
         value: settings.scale,
         disabled: busy,
         onChange: (event) => update({ ...settings, scale: Number(event.target.value) })
-      }, ...UI_SCALE_OPTIONS.map((scale) => h7("option", { key: scale, value: scale }, `${Math.round(scale * 100)}%`)))),
-      h7("div", { className: "dtv-setting-value" }, translate("settings.currentScale", { scale: percent })),
-      h7("p", { className: "dtv-note" }, translate("settings.scale.help")),
-      h7(
+      }, ...UI_SCALE_OPTIONS.map((scale) => h8("option", { key: scale, value: scale }, `${Math.round(scale * 100)}%`)))),
+      h8("div", { className: "dtv-setting-value" }, translate("settings.currentScale", { scale: percent })),
+      h8("p", { className: "dtv-note" }, translate("settings.scale.help")),
+      h8(
         "label",
         { className: "dtv-check" },
-        h7("input", {
+        h8("input", {
           type: "checkbox",
           checked: settings.rpFollowCharacter !== false,
           disabled: busy,
           onChange: (event) => update({ ...settings, rpFollowCharacter: event.target.checked })
         }),
-        h7("span", null, translate("settings.rpFollow"))
+        h8("span", null, translate("settings.rpFollow"))
       ),
-      h7("p", { className: "dtv-note" }, translate("settings.rpFollow.help")),
-      h7(Field5, { label: translate("settings.rpPolicy") }, h7("textarea", {
+      h8("p", { className: "dtv-note" }, translate("settings.rpFollow.help")),
+      h8(Field5, { label: translate("settings.rpPolicy") }, h8("textarea", {
         className: "dtv-textarea dtv-policy",
         value: policyDraft,
         placeholder: translate("settings.rpPolicy.placeholder"),
         disabled: busy || policyBusy || policyLoaded !== true,
         onChange: (event) => onPolicyDraft(event.target.value)
       })),
-      h7("p", { className: "dtv-note" }, translate("settings.rpPolicy.help")),
-      h7(
+      h8("p", { className: "dtv-note" }, translate("settings.rpPolicy.help")),
+      h8(
         "div",
         { className: "dtv-actions" },
-        h7("button", {
+        h8("button", {
           className: "dtv-button dtv-primary",
           type: "button",
           disabled: busy || policyBusy || policyLoaded !== true,
           onClick: savePolicy
         }, translate("settings.rpPolicy.save")),
-        h7("button", {
+        h8("button", {
           className: "dtv-button",
           type: "button",
           disabled: busy || policyBusy || policyLoaded !== true,
           onClick: resetPolicy
         }, translate("settings.rpPolicy.reset"))
       ),
-      h7("div", { className: "dtv-status", "data-error": status.error || void 0, role: "status" }, rawText(status.text)),
-      h7(
+      h8("div", { className: "dtv-status", "data-error": status.error || void 0, role: "status" }, rawText(status.text)),
+      h8(
         "div",
         { className: "dtv-actions" },
-        h7("button", { className: "dtv-button", type: "button", disabled: busy, onClick: reset }, translate("settings.reset"))
+        h8("button", { className: "dtv-button", type: "button", disabled: busy, onClick: reset }, translate("settings.reset"))
       )
     )
   );
@@ -4227,7 +4848,7 @@ var LOGIC_KEYS = Object.freeze({
   not_all: "world.logic.notAll"
 });
 function RpHighRiskDialog({ onDismiss }) {
-  return h7(
+  return h8(
     "div",
     {
       className: "dtv-modal-backdrop",
@@ -4235,43 +4856,43 @@ function RpHighRiskDialog({ onDismiss }) {
       "aria-modal": "true",
       "aria-labelledby": "dtv-rp-block-body"
     },
-    h7(
+    h8(
       "div",
       { className: "dtv-modal" },
-      h7("p", { id: "dtv-rp-block-body", className: "dtv-modal-body" }, translate("rp.block.body")),
-      h7("button", { className: "dtv-button dtv-primary", type: "button", onClick: onDismiss }, translate("rp.block.dismiss"))
+      h8("p", { id: "dtv-rp-block-body", className: "dtv-modal-body" }, translate("rp.block.body")),
+      h8("button", { className: "dtv-button dtv-primary", type: "button", onClick: onDismiss }, translate("rp.block.dismiss"))
     )
   );
 }
-function TavernShell({ useSessions, useWorkspaces, createCleanSession, playClient }) {
-  const [menuOpen, setMenuOpen] = (0, import_react7.useState)(false);
-  const [surface, setSurface] = (0, import_react7.useState)(null);
-  const [anchor, setAnchor] = (0, import_react7.useState)(initialLauncherAnchor);
-  const [chromeMode, setChromeMode] = (0, import_react7.useState)("native");
-  const [chromeError, setChromeError] = (0, import_react7.useState)("");
-  const [activeSnapshot, setActiveSnapshot] = (0, import_react7.useState)(null);
-  const [statusError, setStatusError] = (0, import_react7.useState)("");
-  const [uiSettings, setUiSettings] = (0, import_react7.useState)(getClientUiSettings);
-  const [settingsStatus, setSettingsStatus] = (0, import_react7.useState)({ text: translate("settings.saved"), error: false });
-  const [settingsBusy, setSettingsBusy] = (0, import_react7.useState)(false);
-  const [rpPolicyDraft, setRpPolicyDraft] = (0, import_react7.useState)("");
-  const [rpPolicyLoaded, setRpPolicyLoaded] = (0, import_react7.useState)(false);
-  const [rpPolicyBusy, setRpPolicyBusy] = (0, import_react7.useState)(false);
-  const [rpAlert, setRpAlert] = (0, import_react7.useState)(null);
-  const drag = (0, import_react7.useRef)(null);
-  const suppressClick = (0, import_react7.useRef)(false);
-  const chromeModeRef = (0, import_react7.useRef)("native");
-  const chromeController = (0, import_react7.useRef)(null);
-  const statusGeneration = (0, import_react7.useRef)(0);
-  const rpAlertRef = (0, import_react7.useRef)(null);
-  const dismissedRpAlerts = (0, import_react7.useRef)(/* @__PURE__ */ new Set());
+function TavernShell({ useSessions, useWorkspaces, createCleanSession, playClient, playSlots }) {
+  const [menuOpen, setMenuOpen] = (0, import_react8.useState)(false);
+  const [surface, setSurface] = (0, import_react8.useState)(null);
+  const [anchor, setAnchor] = (0, import_react8.useState)(initialLauncherAnchor);
+  const [chromeMode, setChromeMode] = (0, import_react8.useState)("native");
+  const [chromeError, setChromeError] = (0, import_react8.useState)("");
+  const [activeSnapshot, setActiveSnapshot] = (0, import_react8.useState)(null);
+  const [statusError, setStatusError] = (0, import_react8.useState)("");
+  const [uiSettings, setUiSettings] = (0, import_react8.useState)(getClientUiSettings);
+  const [settingsStatus, setSettingsStatus] = (0, import_react8.useState)({ text: translate("settings.saved"), error: false });
+  const [settingsBusy, setSettingsBusy] = (0, import_react8.useState)(false);
+  const [rpPolicyDraft, setRpPolicyDraft] = (0, import_react8.useState)("");
+  const [rpPolicyLoaded, setRpPolicyLoaded] = (0, import_react8.useState)(false);
+  const [rpPolicyBusy, setRpPolicyBusy] = (0, import_react8.useState)(false);
+  const [rpAlert, setRpAlert] = (0, import_react8.useState)(null);
+  const drag = (0, import_react8.useRef)(null);
+  const suppressClick = (0, import_react8.useRef)(false);
+  const chromeModeRef = (0, import_react8.useRef)("native");
+  const chromeController = (0, import_react8.useRef)(null);
+  const statusGeneration = (0, import_react8.useRef)(0);
+  const rpAlertRef = (0, import_react8.useRef)(null);
+  const dismissedRpAlerts = (0, import_react8.useRef)(/* @__PURE__ */ new Set());
   const sessionId = useSessions((state) => state.current);
   const sessionBlank = useSessions((state) => state.current === void 0 || state.current === null ? true : state.byId?.[state.current]?.blank === true);
   const workspaceId = useWorkspaces((state) => workspaceTargetId(state, sessionId));
   const close = () => setSurface(null);
   if (rpAlert === null || dismissedRpAlerts.current.has(rpAlert.id)) rpAlertRef.current = null;
   else rpAlertRef.current = rpAlert;
-  (0, import_react7.useEffect)(() => {
+  (0, import_react8.useEffect)(() => {
     let active = true;
     let channel = null;
     try {
@@ -4281,6 +4902,7 @@ function TavernShell({ useSessions, useWorkspaces, createCleanSession, playClien
     const commitChrome = (mode) => {
       chromeModeRef.current = mode;
       setChromeMode(mode);
+      playSlots.setMode(mode);
     };
     const refreshChrome = async () => {
       try {
@@ -4323,8 +4945,8 @@ function TavernShell({ useSessions, useWorkspaces, createCleanSession, playClien
       channel?.removeEventListener("message", onChromeMessage);
       channel?.close();
     };
-  }, [playClient]);
-  (0, import_react7.useEffect)(() => {
+  }, [playClient, playSlots]);
+  (0, import_react8.useEffect)(() => {
     let active = true;
     uiSettingsRequest().then((next) => {
       if (!active) return;
@@ -4375,7 +4997,7 @@ function TavernShell({ useSessions, useWorkspaces, createCleanSession, playClien
       setSettingsBusy(false);
     }
   };
-  (0, import_react7.useEffect)(() => {
+  (0, import_react8.useEffect)(() => {
     if (surface !== "settings") return void 0;
     let active = true;
     setRpPolicyLoaded(false);
@@ -4419,7 +5041,7 @@ function TavernShell({ useSessions, useWorkspaces, createCleanSession, playClien
       setRpPolicyBusy(false);
     }
   };
-  const refreshStatus = (0, import_react7.useCallback)(async () => {
+  const refreshStatus = (0, import_react8.useCallback)(async () => {
     const generation = ++statusGeneration.current;
     try {
       const next = await activeView(sessionId);
@@ -4431,7 +5053,7 @@ function TavernShell({ useSessions, useWorkspaces, createCleanSession, playClien
       setStatusError(reason instanceof Error ? reason.message : String(reason));
     }
   }, [sessionId]);
-  (0, import_react7.useEffect)(() => {
+  (0, import_react8.useEffect)(() => {
     statusGeneration.current += 1;
     setActiveSnapshot(null);
     setStatusError("");
@@ -4440,12 +5062,12 @@ function TavernShell({ useSessions, useWorkspaces, createCleanSession, playClien
       statusGeneration.current += 1;
     };
   }, [refreshStatus, sessionId]);
-  (0, import_react7.useEffect)(() => {
+  (0, import_react8.useEffect)(() => {
     const onRefresh = () => refreshStatus();
     window.addEventListener(CLIENT_REFRESH_EVENT, onRefresh);
     return () => window.removeEventListener(CLIENT_REFRESH_EVENT, onRefresh);
   }, [refreshStatus]);
-  (0, import_react7.useEffect)(() => {
+  (0, import_react8.useEffect)(() => {
     const onResize = () => setAnchor((current2) => {
       const next = clampLauncherAnchor(current2, viewport(), uiSettings.scale);
       persistLauncherAnchor(next);
@@ -4454,14 +5076,14 @@ function TavernShell({ useSessions, useWorkspaces, createCleanSession, playClien
     window.addEventListener("resize", onResize);
     return () => window.removeEventListener("resize", onResize);
   }, [uiSettings.scale]);
-  (0, import_react7.useEffect)(() => {
+  (0, import_react8.useEffect)(() => {
     setAnchor((current2) => {
       const next = clampLauncherAnchor(current2, viewport(), uiSettings.scale);
       persistLauncherAnchor(next);
       return next;
     });
   }, [uiSettings.scale]);
-  (0, import_react7.useEffect)(() => {
+  (0, import_react8.useEffect)(() => {
     if (typeof sessionId !== "string" || sessionId === "") {
       dismissedRpAlerts.current = /* @__PURE__ */ new Set();
       rpAlertRef.current = null;
@@ -4497,7 +5119,7 @@ function TavernShell({ useSessions, useWorkspaces, createCleanSession, playClien
     } catch {
     }
   };
-  (0, import_react7.useEffect)(() => {
+  (0, import_react8.useEffect)(() => {
     const onKeyDown = (event) => {
       if (event.key !== "Escape") return;
       if (rpAlert !== null) dismissRpAlert();
@@ -4555,7 +5177,7 @@ function TavernShell({ useSessions, useWorkspaces, createCleanSession, playClien
   };
   let panel = null;
   if (surface === "preset") {
-    panel = h7("div", { className: "dtv-panel" }, h7(PresetSidebar, {
+    panel = h8("div", { className: "dtv-panel" }, h8(PresetSidebar, {
       closePanel: close,
       openPanel: () => {
       },
@@ -4564,15 +5186,15 @@ function TavernShell({ useSessions, useWorkspaces, createCleanSession, playClien
       autoOpen: false
     }));
   } else if (surface === "character") {
-    panel = h7(CharacterPanel, { sessionId, sessionBlank, close });
+    panel = h8(CharacterPanel, { sessionId, sessionBlank, close });
   } else if (surface === "world-info") {
-    panel = h7(WorldBookPanel, { sessionId, close });
+    panel = h8(WorldBookPanel, { sessionId, close });
   } else if (surface === "user") {
-    panel = h7(UserPanel, { sessionId, sessionBlank, close });
+    panel = h8(UserPanel, { sessionId, sessionBlank, close });
   } else if (surface === "session-template") {
-    panel = h7(SessionTemplatePanel, { sessionId, workspaceId, createCleanSession, close });
+    panel = h8(SessionTemplatePanel, { sessionId, workspaceId, createCleanSession, close });
   } else if (surface === "settings") {
-    panel = h7(SettingsPanel, {
+    panel = h8(SettingsPanel, {
       settings: uiSettings,
       status: settingsStatus,
       busy: settingsBusy,
@@ -4591,12 +5213,12 @@ function TavernShell({ useSessions, useWorkspaces, createCleanSession, playClien
   const statuses = launcherResourceStatuses(activeSnapshot);
   const chromeSwitchLabel = chromeMode === "play" ? uiMessage("chrome.switchToNative") : uiMessage("chrome.switchToPlay");
   const chromeStatusLabel = chromeMode === "play" ? uiMessage("chrome.currentPlay") : uiMessage("chrome.currentNative");
-  return h7(
+  return h8(
     "div",
     { className: "dtv-layer", lang: uiSettings.locale, "data-chrome": chromeMode, "data-surface-open": surface !== null, style: { "--dtv-ui-scale": uiSettings.scale } },
     panel,
-    rpAlert === null ? null : h7(RpHighRiskDialog, { onDismiss: dismissRpAlert }),
-    h7(
+    rpAlert === null ? null : h8(RpHighRiskDialog, { onDismiss: dismissRpAlert }),
+    h8(
       "div",
       {
         className: "dtv-launcher",
@@ -4605,7 +5227,7 @@ function TavernShell({ useSessions, useWorkspaces, createCleanSession, playClien
         "data-vertical": placement.vertical,
         style: { left: placement.left / uiSettings.scale, top: placement.top / uiSettings.scale }
       },
-      h7("div", { className: "dtv-ball-row" }, h7("button", {
+      h8("div", { className: "dtv-ball-row" }, h8("button", {
         className: "dtv-ball",
         type: "button",
         title: uiMessage("nav.launcher"),
@@ -4618,11 +5240,11 @@ function TavernShell({ useSessions, useWorkspaces, createCleanSession, playClien
         onClick: clickLauncher,
         onDoubleClick: doubleClickLauncher
       }, chromeMode === "play" ? "ST" : "DS")),
-      menuOpen ? h7(
+      menuOpen ? h8(
         "div",
         { className: "dtv-menu", role: "menu" },
-        h7("div", { className: "dtv-menu-title", "aria-live": "polite" }, chromeError === "" && statusError === "" ? uiMessage("nav.menuTitle", { session: sessionId || translate("nav.session.none") }) : uiMessage("nav.syncFailed", { message: chromeError || statusError })),
-        h7(
+        h8("div", { className: "dtv-menu-title", "aria-live": "polite" }, chromeError === "" && statusError === "" ? uiMessage("nav.menuTitle", { session: sessionId || translate("nav.session.none") }) : uiMessage("nav.syncFailed", { message: chromeError || statusError })),
+        h8(
           "button",
           {
             className: "dtv-menu-item",
@@ -4633,14 +5255,14 @@ function TavernShell({ useSessions, useWorkspaces, createCleanSession, playClien
             "data-show-binding": false,
             onClick: switchChrome
           },
-          h7("span", { "aria-hidden": "true" }, "\u2194"),
-          h7(
+          h8("span", { "aria-hidden": "true" }, "\u2194"),
+          h8(
             "span",
             { className: "dtv-item-copy" },
-            h7("span", { className: "dtv-item-label" }, chromeSwitchLabel),
-            h7("span", { className: "dtv-item-status" }, chromeStatusLabel)
+            h8("span", { className: "dtv-item-label" }, chromeSwitchLabel),
+            h8("span", { className: "dtv-item-status" }, chromeStatusLabel)
           ),
-          h7("span", { className: "dtv-item-planned" }, chromeMode === "play" ? "ST" : "DSH")
+          h8("span", { className: "dtv-item-planned" }, chromeMode === "play" ? "ST" : "DSH")
         ),
         ...TAVERN_MENU_ITEMS.map((item) => {
           const status = statuses[item.id] ?? { bound: false, count: 0, titleKey: item.emptyTitleKey };
@@ -4649,7 +5271,7 @@ function TavernShell({ useSessions, useWorkspaces, createCleanSession, playClien
           const stateLabel = item.binding === false ? "" : unwrapText(uiMessage(status.bound ? "common.bound" : "common.unbound"));
           const titleText = stateLabel ? uiMessage("nav.itemTitleBound", { label: itemLabel, title: statusTitle, state: stateLabel }) : uiMessage("nav.itemTitle", { label: itemLabel, title: statusTitle });
           const ariaText = stateLabel ? uiMessage("nav.itemAriaBound", { label: itemLabel, title: statusTitle, state: stateLabel }) : uiMessage("nav.itemAria", { label: itemLabel, title: statusTitle });
-          return h7(
+          return h8(
             "button",
             {
               className: "dtv-menu-item",
@@ -4665,25 +5287,25 @@ function TavernShell({ useSessions, useWorkspaces, createCleanSession, playClien
               "aria-label": ariaText,
               onClick: () => open(item.id)
             },
-            item.binding === false ? h7("span", { "aria-hidden": "true" }) : h7("span", { className: "dtv-binding-dot", "aria-hidden": "true" }),
-            h7(
+            item.binding === false ? h8("span", { "aria-hidden": "true" }) : h8("span", { className: "dtv-binding-dot", "aria-hidden": "true" }),
+            h8(
               "span",
               { className: "dtv-item-copy" },
-              h7("span", { className: "dtv-item-label" }, uiMessage(item.labelKey)),
-              h7("span", { className: "dtv-item-status" }, status.bound ? rawText(status.title) : uiMessage(status.titleKey ?? item.emptyTitleKey))
+              h8("span", { className: "dtv-item-label" }, uiMessage(item.labelKey)),
+              h8("span", { className: "dtv-item-status" }, status.bound ? rawText(status.title) : uiMessage(status.titleKey ?? item.emptyTitleKey))
             ),
-            status.count > 1 ? h7("span", { className: "dtv-item-count", "aria-label": uiMessage("nav.bookCount", { count: status.count }) }, uiMessage("nav.bookCount", { count: status.count })) : item.available ? null : h7("span", { className: "dtv-item-planned" }, uiMessage("common.planned"))
+            status.count > 1 ? h8("span", { className: "dtv-item-count", "aria-label": uiMessage("nav.bookCount", { count: status.count }) }, uiMessage("nav.bookCount", { count: status.count })) : item.available ? null : h8("span", { className: "dtv-item-planned" }, uiMessage("common.planned"))
           );
         })
       ) : null
     )
   );
 }
-function installStyles() {
+function installStyles2() {
   if (document.querySelector(`style[data-plugin-css="${PLUGIN_ID}-shell"]`) !== null) return;
   const style = document.createElement("style");
   style.dataset.pluginCss = `${PLUGIN_ID}-shell`;
-  style.textContent = css6;
+  style.textContent = css7;
   document.head.append(style);
 }
 var name = PLUGIN_ID;
@@ -4694,15 +5316,17 @@ function apply(ctx) {
   installWorldBookStyles();
   installUserStyles();
   installTavernTraceStyles();
-  installStyles();
+  installStyles2();
   registerTavernTraceView(ctx);
   const playClient = createLivePlayClient();
+  const playSlots = installPlaySlotOccupancy(ctx, playClient);
   ctx.slots.inject("shell.overlay", () => ctx.slots.register({
     name: "shell.overlay",
     id: `${PLUGIN_ID}-launcher`,
     order: 80,
     inject: () => ({
       playClient,
+      playSlots,
       createCleanSession: ({ workspaceId, source }) => createCleanSessionWorkflow({
         workspaceId,
         source,

@@ -124,6 +124,9 @@ test('live play client parses JSON file envelopes and writes them as content str
     }
     if (url.includes('/sessions/session-1/messages')) return response({ ok: true, ...messages })
     if (url.includes('/focus?path=')) return response({ ok: true, sessionId: null })
+    if (url === API_V1 + '/characters') {
+      return response({ ok: true, characters: [{ id: 'character-1', name: 'Guide' }] })
+    }
     if (url.includes('/character-selection') && (options.method ?? 'GET') === 'GET') {
       return response({
         ok: true,
@@ -139,6 +142,7 @@ test('live play client parses JSON file envelopes and writes them as content str
   assert.equal(client.apiRoot, API_V2)
   assert.equal(client.v1Root, API_V1)
   assert.equal((await client.getWorkspace()).rootPath, 'D:/play')
+  assert.equal((await client.getCharacters()).characters[0].id, 'character-1')
   assert.equal((await client.getCatalog()).playthroughs[0].id, 'playthrough-1')
   assert.equal((await client.getTimeline(catalog.playthroughs[0])).nodes[0].id, 'qa-1')
   assert.equal((await client.getMessages('session-1')).messages[0].text, 'Hello ⟦image⟧')
