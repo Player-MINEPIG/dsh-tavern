@@ -10,7 +10,32 @@ function replaceNode(timeline, index, node) {
   return { ...timeline, nodes }
 }
 
-export function createPlayNodeController(client) {
+function defaultDelay(milliseconds) {
+  return new Promise(resolve => setTimeout(resolve, milliseconds))
+}
+
+function defaultId(startEventId, endEventId) {
+  const random = globalThis.crypto?.randomUUID?.() ?? Date.now()
+  return ['variant', startEventId, endEventId, random].join('-').slice(0, 200)
+}
+
+function completedPairAfter(messageState, eventId) {
+  if (messageState?.incompleteTurn === true) return null
+  const messages = (messageState?.messages ?? [])
+    .filter(message => Number.isSafeInteger(message.seq) && message.seq > eventId)
+    .sort((left, right) => left.seq - right.seq)
+  const user = messages.find(message => message.role === 'user')
+  if (user === undefined) return null
+  const assistant = [...messages].reverse().find(message => message.role === 'assistant' && message.seq > user.seq)
+  return assistant === undefined ? null : { user, assistant }
+}
+
+export function createPlayNodeController(client, {
+  delay = defaultDelay,
+  pollInterval = 500,
+  maxPolls = 240,
+  idFactory = defaultId,
+} = {}) {
   if (client == null) throw new TypeError('playClient.required')
   let pending = Promise.resolve()
 
@@ -55,5 +80,56 @@ export function createPlayNodeController(client) {
         return { timeline: next, sessionId: variant.sessionId }
       })
     },
+    createReplySwipe(playthrough, nodeId) {
+      return schedule(async () => {
+        const timeline = await client.getTimeline(playthrough)
+        const { node } = nodeById(timeline, nodeId)
+        const adopted = node.variants.find(item => item.id === node.adoptedVariantId)
+        if (adopted === undefined) throw new TypeError('Adopted variant is missing')
+        const source = await client.getMessages(adopted.sessionId)
+        const user = source.messages.find(message => message.role === 'user'
+          && message.seq >= adopted.startEventId
+          && message.seq <= adopted.endEventId)
+        if (user === undefined || typeof user.text !== 'string' || user.text === '') {
+          throw new TypeError('Adopted variant has no reusable user message')
+        }
+        const forkEventId = Math.max(0, adopted.startEventId - 1)
+        const branch = await client.postBranch(adopted.sessionId, forkEventId)
+        const newSessionId = branch?.sessionId
+        if (typeof newSessionId !== 'string' || newSessionId === '') {
+          throw new TypeError('Branch response has no sessionId')
+        }
+        await client.postUserMessage(newSessionId, user.text)
+
+        let pair = null
+        for (let attempt = 0; attempt < maxPolls; attempt += 1) {
+          pair = completedPairAfter(await client.getMessages(newSessionId), forkEventId)
+          if (pair !== null) break
+          if (attempt + 1 < maxPolls) await delay(pollInterval)
+        }
+        if (pair === null) throw new Error('Timed out waiting for the swipe reply')
+
+        const latest = await client.getTimeline(playthrough)
+        const current = nodeById(latest, nodeId)
+        const variantId = idFactory(pair.user.seq, pair.assistant.seq, newSessionId)
+        const variant = {
+          id: variantId,
+          sessionId: newSessionId,
+          startEventId: pair.user.seq,
+          endEventId: pair.assistant.seq,
+        }
+        const nextNode = {
+          ...current.node,
+          adoptedVariantId: variantId,
+          variants: [...current.node.variants, variant],
+        }
+        const next = replaceNode(latest, current.index, nextNode)
+        await client.putTimeline(playthrough, next)
+        const focus = await client.getFocus(playthrough)
+        if (focus.sessionId !== newSessionId) throw new Error('Saved swipe does not match derived focus')
+        return { timeline: next, sessionId: newSessionId, variantId }
+      })
+    },
+
   }
 }
