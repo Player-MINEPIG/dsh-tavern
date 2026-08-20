@@ -41,6 +41,9 @@ const catalog = {
   }],
 }
 
+const catalogRevision = 'a'.repeat(64)
+const timelineRevision = 'b'.repeat(64)
+
 const messages = {
   messages: [
     {
@@ -117,10 +120,10 @@ test('live play client parses JSON file envelopes and writes them as content str
       })
     }
     if (url.includes('/workspace/files?path=catalog.json') && (options.method ?? 'GET') === 'GET') {
-      return response({ ok: true, path: 'catalog.json', content: JSON.stringify(catalog) })
+      return response({ ok: true, path: 'catalog.json', content: JSON.stringify(catalog), revision: catalogRevision })
     }
     if (url.includes('/workspace/files?path=character-1%2Fplaythrough-1%2Ftimeline.json') && (options.method ?? 'GET') === 'GET') {
-      return response({ ok: true, path: catalog.playthroughs[0].path, content: JSON.stringify(timeline) })
+      return response({ ok: true, path: catalog.playthroughs[0].path, content: JSON.stringify(timeline), revision: timelineRevision })
     }
     if (url.includes('/sessions/session-1/messages')) return response({ ok: true, ...messages })
     if (url.includes('/sessions/session-1/import-context')) {
@@ -138,6 +141,12 @@ test('live play client parses JSON file envelopes and writes them as content str
           character: { greetingIndex: 0 },
         },
       })
+    }
+    if (url.includes('/workspace/files?path=catalog.json') && options.method === 'PUT') {
+      return response({ ok: true, path: 'catalog.json', revision: 'c'.repeat(64) })
+    }
+    if (url.includes('timeline.json') && options.method === 'PUT') {
+      return response({ ok: true, path: catalog.playthroughs[0].path, revision: 'd'.repeat(64) })
     }
     return response({ ok: true, mode: 'play', accepted: true, sessionId: 'session-2' })
   }
@@ -167,7 +176,9 @@ test('live play client parses JSON file envelopes and writes them as content str
   const catalogPut = calls.find(item => item.method === 'PUT' && item.url.includes('path=catalog.json'))
   const timelinePut = calls.find(item => item.method === 'PUT' && item.url.includes('timeline.json'))
   assert.equal(typeof JSON.parse(catalogPut.body).content, 'string')
+  assert.equal(JSON.parse(catalogPut.body).expectedRevision, catalogRevision)
   assert.deepEqual(JSON.parse(JSON.parse(timelinePut.body).content), timeline)
+  assert.equal(JSON.parse(timelinePut.body).expectedRevision, timelineRevision)
 
   const focusCall = calls.find(item => item.url.includes('/focus?path='))
   assert.match(focusCall.url, /timeline\.json/)

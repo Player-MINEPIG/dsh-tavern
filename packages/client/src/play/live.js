@@ -41,6 +41,15 @@ function fileContent(value, label) {
   return value.content
 }
 
+const REVISION_PATTERN = /^[0-9a-f]{64}$/
+
+function fileRevision(value, label) {
+  if (typeof value?.revision !== 'string' || !REVISION_PATTERN.test(value.revision)) {
+    throw new TypeError(`${label}: revision must be a 64-character lowercase SHA-256 hex string`)
+  }
+  return value.revision
+}
+
 function pathQuery(path) {
   return `?path=${encodeURIComponent(path)}`
 }
@@ -53,6 +62,15 @@ export function createLivePlayClient({
   if (typeof fetchImpl !== 'function') throw new TypeError('fetchImpl is required')
   const v1 = createRequester(fetchImpl, v1Root)
   const v2 = createRequester(fetchImpl, apiRoot)
+  const managedRevisions = new Map()
+
+  function invalidateRevision(path) {
+    managedRevisions.delete(path)
+  }
+
+  function expectedRevision(path) {
+    return managedRevisions.has(path) ? managedRevisions.get(path) : null
+  }
 
   async function getCharacterSelection(sessionId) {
     const query = typeof sessionId === 'string' && sessionId !== ''
@@ -62,16 +80,66 @@ export function createLivePlayClient({
   }
 
   async function getJsonFile(path, normalize, label) {
-    const response = await v2('GET', `/workspace/files${pathQuery(path)}`)
-    return parseJsonDocument(fileContent(response, label), normalize, label)
+    let response
+    try {
+      response = await v2('GET', `/workspace/files${pathQuery(path)}`)
+    } catch (error) {
+      if (error?.status === 404 && error?.code === 'PLAY_PATH_NOT_FOUND') {
+        managedRevisions.set(path, null)
+      }
+      throw error
+    }
+    const content = fileContent(response, label)
+    const revision = fileRevision(response, label)
+    const parsed = parseJsonDocument(content, normalize, label)
+    managedRevisions.set(path, revision)
+    return parsed
   }
 
   async function putJsonFile(path, value, normalize, label) {
     const normalized = normalize(value, label)
-    await v2('PUT', `/workspace/files${pathQuery(path)}`, {
+    const body = {
       content: JSON.stringify(normalized),
-    })
+      expectedRevision: expectedRevision(path),
+    }
+    try {
+      const response = await v2('PUT', `/workspace/files${pathQuery(path)}`, body)
+      const revision = fileRevision(response, label)
+      managedRevisions.set(path, revision)
+    } catch (error) {
+      if (error?.status === 409 && error?.code === 'PLAY_FILE_REVISION_CONFLICT') {
+        invalidateRevision(path)
+      } else if (error instanceof TypeError) {
+        // A malformed success envelope leaves the write outcome unknown; never reuse the old revision.
+        invalidateRevision(path)
+      }
+      throw error
+    }
     return normalized
+  }
+
+  function retryLimit(options) {
+    const value = options?.maxRetries ?? options?.retries ?? 3
+    if (!Number.isSafeInteger(value) || value < 1 || value > 5) {
+      throw new TypeError('maxRetries must be an integer from 1 to 5')
+    }
+    return value
+  }
+
+  async function updateJsonFile({ getFresh, putFresh, mutator, options }) {
+    if (typeof mutator !== 'function') throw new TypeError('mutator must be a function')
+    const maxRetries = retryLimit(options)
+    for (let retry = 0; ; retry += 1) {
+      const current = await getFresh()
+      const next = await mutator(current)
+      try {
+        return await putFresh(next)
+      } catch (error) {
+        if (error?.status !== 409 || error?.code !== 'PLAY_FILE_REVISION_CONFLICT' || retry >= maxRetries) {
+          throw error
+        }
+      }
+    }
   }
 
   return {
@@ -105,12 +173,20 @@ export function createLivePlayClient({
 
     async getFile(path) {
       const response = await v2('GET', `/workspace/files${pathQuery(path)}`)
-      return { path: response.path, content: fileContent(response, path) }
+      return {
+        path: response.path,
+        content: fileContent(response, path),
+        ...(response.revision === undefined ? {} : { revision: response.revision }),
+      }
     },
 
-    async putFile(path, content) {
+    async putFile(path, content, options = {}) {
       if (typeof content !== 'string') throw new TypeError('content must be a string')
-      return v2('PUT', `/workspace/files${pathQuery(path)}`, { content })
+      const body = { content }
+      if (options !== null && typeof options === 'object' && Object.hasOwn(options, 'expectedRevision')) {
+        body.expectedRevision = options.expectedRevision
+      }
+      return v2('PUT', `/workspace/files${pathQuery(path)}`, body)
     },
 
     getCatalog() {
@@ -121,6 +197,24 @@ export function createLivePlayClient({
       return putJsonFile('catalog.json', catalog, normalizeCatalog, 'catalog')
     },
 
+    updateCatalog(mutator, options) {
+      return updateJsonFile({
+        getFresh: async () => {
+          try {
+            return await getJsonFile('catalog.json', normalizeCatalog, 'catalog')
+          } catch (error) {
+            if (error?.status === 404 && error?.code === 'PLAY_PATH_NOT_FOUND') {
+              return { playthroughs: [] }
+            }
+            throw error
+          }
+        },
+        putFresh: value => putJsonFile('catalog.json', value, normalizeCatalog, 'catalog'),
+        mutator,
+        options,
+      })
+    },
+
     getTimeline(playthrough) {
       const path = timelinePath(playthrough)
       return getJsonFile(path, normalizeTimeline, 'timeline')
@@ -129,6 +223,16 @@ export function createLivePlayClient({
     putTimeline(playthrough, timeline) {
       const path = timelinePath(playthrough)
       return putJsonFile(path, timeline, normalizeTimeline, 'timeline')
+    },
+
+    updateTimeline(playthrough, mutator, options) {
+      const path = timelinePath(playthrough)
+      return updateJsonFile({
+        getFresh: () => getJsonFile(path, normalizeTimeline, 'timeline'),
+        putFresh: value => putJsonFile(path, value, normalizeTimeline, 'timeline'),
+        mutator,
+        options,
+      })
     },
 
     async getMessages(sessionId) {
