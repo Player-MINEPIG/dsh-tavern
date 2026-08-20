@@ -45,6 +45,9 @@ Verification: chat/load/export/import focused tests, full 304-test suite
 - After mount, only a newer DSH user-node sequence triggers one additional
   scroll to the bottom. Assistant partial growth, finalization, and Tavern
   timeline reconciliation do not move the reader away from the reply start.
+- User acceptance passed after the implementation was aligned with DSH's
+  Conversation scrollport and `chatScroll` semantics; no fixed composer-height
+  compensation remains.
 
 Verification: `test/play-chat-model.test.mjs`, full 304-test suite (302 pass,
 2 skip), and production client build.
