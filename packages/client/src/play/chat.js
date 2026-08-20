@@ -26,6 +26,7 @@ import {
   getRegexDocument,
   resourceRegexRules,
 } from './regex.js'
+import { RichText } from './rich-text.js'
 import { PlayTurnActions } from './turn-actions.js'
 import { createTurnReconciler } from './turns.js'
 
@@ -35,12 +36,13 @@ const turnReconcilers = new WeakMap()
 const css = `
 .dtv-play-chat{height:100%;min-height:0;box-sizing:border-box;overflow:auto;padding:22px max(18px,calc((100% - 780px)/2)) 36px;color:var(--dsw-alias-label-primary)}
 .dtv-play-chat-list{display:flex;flex-direction:column;gap:22px}.dtv-play-chat-row{display:flex;flex-direction:column;gap:8px}.dtv-play-chat-role{font-size:11px;font-weight:700;color:var(--dsw-alias-label-tertiary)}
-.dtv-play-chat-bubble{max-width:88%;box-sizing:border-box;border-radius:14px;padding:12px 14px;white-space:pre-wrap;overflow-wrap:anywhere;font-size:14px;line-height:1.65}.dtv-play-chat-user{align-self:flex-end;background:var(--dsw-alias-interactive-bg-selected,var(--dsw-specific-tip))}.dtv-play-chat-assistant{align-self:flex-start;background:var(--dsw-alias-bg-layer-2,var(--dsw-specific-block))}
-.dtv-play-greeting{position:relative;align-self:flex-start;max-width:88%;display:grid;grid-template-columns:30px minmax(0,1fr) 30px;align-items:center;gap:6px}.dtv-play-greeting-text{border-radius:14px;padding:13px 15px;background:var(--dsw-alias-bg-layer-2,var(--dsw-specific-block));white-space:pre-wrap;overflow-wrap:anywhere;font-size:14px;line-height:1.65}
+.dtv-play-chat-bubble{max-width:88%;box-sizing:border-box;border-radius:14px;padding:12px 14px;overflow-wrap:anywhere;font-size:14px;line-height:1.65}.dtv-play-chat-user{align-self:flex-end;background:var(--dsw-alias-interactive-bg-selected,var(--dsw-specific-tip))}.dtv-play-chat-assistant{align-self:flex-start;background:var(--dsw-alias-bg-layer-2,var(--dsw-specific-block))}
+.dtv-play-greeting{position:relative;align-self:flex-start;max-width:88%;display:grid;grid-template-columns:30px minmax(0,1fr) 30px;align-items:center;gap:6px}.dtv-play-greeting-text{border-radius:14px;padding:13px 15px;background:var(--dsw-alias-bg-layer-2,var(--dsw-specific-block));overflow-wrap:anywhere;font-size:14px;line-height:1.65}
 .dtv-play-greeting-button{width:30px;height:34px;border:0;border-radius:9px;background:transparent;color:var(--dsw-alias-label-secondary);cursor:pointer}.dtv-play-greeting-button:hover{background:var(--dsw-alias-interactive-bg-hover)}.dtv-play-greeting-button:disabled{opacity:.4;cursor:default}
 .dtv-play-chat-status{margin:16px 0;padding:12px 14px;border-radius:12px;background:var(--dsw-alias-bg-layer-2,var(--dsw-specific-block));color:var(--dsw-alias-label-tertiary);font-size:12px;line-height:1.55}.dtv-play-chat-status[data-error=true]{color:var(--dsw-alias-state-error)}
 .dtv-play-chat-running{align-self:flex-start;margin:0;color:var(--dsw-alias-label-tertiary);font-size:12px;line-height:1.5}
 .dtv-play-chat-reasoning{align-self:flex-start;max-width:88%;color:var(--dsw-alias-label-secondary);font-size:13px;line-height:1.6}.dtv-play-chat-reasoning summary{width:max-content;cursor:pointer;user-select:none;color:var(--dsw-alias-label-tertiary);font-size:12px}.dtv-play-chat-reasoning-text{margin-top:8px;padding:10px 12px;border-left:2px solid var(--dsw-alias-border-secondary,var(--dsw-specific-divider));white-space:pre-wrap;overflow-wrap:anywhere}
+.dtv-play-rich>:first-child{margin-top:0}.dtv-play-rich>:last-child{margin-bottom:0}.dtv-play-rich p,.dtv-play-rich ul,.dtv-play-rich ol,.dtv-play-rich blockquote,.dtv-play-rich pre,.dtv-play-rich table{margin:0 0 .85em}.dtv-play-rich ul,.dtv-play-rich ol{padding-left:1.5em}.dtv-play-rich blockquote{padding-left:12px;border-left:3px solid var(--dsw-alias-border-secondary,var(--dsw-specific-divider));color:var(--dsw-alias-label-secondary)}.dtv-play-rich pre{max-width:100%;overflow:auto;padding:11px 12px;border-radius:9px;background:var(--dsw-alias-markdown-code-block,var(--dsw-alias-bg-base));white-space:pre}.dtv-play-rich code{font-family:var(--ds-font-family-code,ui-monospace,monospace);font-size:.92em}.dtv-play-rich :not(pre)>code{padding:.12em .35em;border-radius:5px;background:var(--dsw-alias-markdown-code-inline,var(--dsw-alias-bg-base))}.dtv-play-rich table{display:block;max-width:100%;overflow:auto;border-collapse:collapse}.dtv-play-rich th,.dtv-play-rich td{padding:6px 9px;border:1px solid var(--dsw-alias-border-l2)}.dtv-play-rich img,.dtv-play-rich video{max-width:100%;height:auto}.dtv-play-rich a{color:var(--dsw-alias-state-business-primary);text-decoration:underline}.dtv-play-rich hr{border:0;border-top:1px solid var(--dsw-alias-border-l2)}
 `
 
 function installStyles() {
@@ -158,9 +160,27 @@ export async function loadChatState(client, sessionId, playthrough) {
     turns: [...importedTurns, ...turns],
     greeting: importedTurns.length > 0 ? null : greeting === null ? null : { ...greeting, text: renderText(greeting.text, 'assistant') },
     regexDiagnostics,
+    display: { rules, bindings },
   }
 }
 
+export function applyTurnDisplayRegex(turn, display) {
+  return {
+    ...turn,
+    userText: applyDisplayRegex(
+      turn.userText,
+      display.rules,
+      display.bindings,
+      'user',
+    ).text,
+    assistantText: applyDisplayRegex(
+      turn.assistantText,
+      display.rules,
+      display.bindings,
+      'assistant',
+    ).text,
+  }
+}
 function Greeting({ greeting, busy, change }) {
   const multiple = greeting.options.length > 1
   return h('div', { className: 'dtv-play-chat-row' },
@@ -174,7 +194,7 @@ function Greeting({ greeting, busy, change }) {
         'aria-label': uiMessage('play.chat.previousGreeting'),
         onClick: () => change('previous'),
       }, '‹'),
-      h('div', { className: 'dtv-play-greeting-text' }, rawText(greeting.text)),
+      h(RichText, { className: 'dtv-play-greeting-text dtv-play-rich', text: greeting.text }),
       h('button', {
         type: 'button',
         className: 'dtv-play-greeting-button',
@@ -195,12 +215,12 @@ function Turn({ turn, ...actionProps }) {
     )
   }
   return h('div', { className: 'dtv-play-chat-row' },
-    turn.userText === '' ? null : h('div', { className: 'dtv-play-chat-bubble dtv-play-chat-user' }, rawText(turn.userText)),
+    turn.userText === '' ? null : h(RichText, { className: 'dtv-play-chat-bubble dtv-play-chat-user dtv-play-rich', text: turn.userText }),
     turn.reasoningText === '' || turn.reasoningText == null ? null : h('details', { className: 'dtv-play-chat-reasoning' },
       h('summary', { title: uiMessage('play.chat.reasoning') }, uiMessage('play.chat.reasoning')),
       h('div', { className: 'dtv-play-chat-reasoning-text' }, rawText(turn.reasoningText)),
     ),
-    turn.assistantText === '' ? null : h('div', { className: 'dtv-play-chat-bubble dtv-play-chat-assistant' }, rawText(turn.assistantText)),
+    turn.assistantText === '' ? null : h(RichText, { className: 'dtv-play-chat-bubble dtv-play-chat-assistant dtv-play-rich', text: turn.assistantText }),
     turn.running === true && turn.assistantText === ''
       ? h('p', { className: 'dtv-play-chat-running' }, uiMessage('play.chat.thinking'))
       : null,
@@ -290,7 +310,8 @@ export function MowanChatView({ sessionId, useSession, playClient, playthrough, 
     nodes: liveNodes,
     partial,
     running,
-  })
+  }).map(turn => applyTurnDisplayRegex(turn, state.display))
+
 
   return h('div', { className: 'dtv-play-chat' },
     error === '' ? null : h('p', { className: 'dtv-play-chat-status', 'data-error': true }, rawText(error)),

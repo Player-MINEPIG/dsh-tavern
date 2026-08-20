@@ -1,6 +1,6 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
-import { loadChatState } from '../packages/client/src/play/chat.js'
+import { applyTurnDisplayRegex, loadChatState } from '../packages/client/src/play/chat.js'
 
 test('Chat applies regex only after displayOverride and keeps source messages untouched', async () => {
   const messages = {
@@ -75,4 +75,20 @@ test('Chat automatically composes bound preset and character source regex', asyn
   assert.equal(state.turns[0].userText, 'Preset asks')
   assert.equal(state.turns[0].assistantText, 'Card answers')
   assert.equal(messages.messages[1].text, 'Alice answers')
+})
+
+test('live turns use the same display rules without changing their source projection', () => {
+  const turn = { id: 'live', userText: 'Alice asks', assistantText: 'Alice answers', reasoningText: 'Alice thinks' }
+  const before = structuredClone(turn)
+  const projected = applyTurnDisplayRegex(turn, {
+    rules: [{
+      id: 'both', name: 'both', enabled: true, find: '/Alice/g', replace: 'Rendered',
+      target: 'both', scope: { kind: 'global', resourceId: null }, flags: '', ext: {},
+    }],
+    bindings: {},
+  })
+  assert.equal(projected.userText, 'Rendered asks')
+  assert.equal(projected.assistantText, 'Rendered answers')
+  assert.equal(projected.reasoningText, 'Alice thinks')
+  assert.deepEqual(turn, before)
 })

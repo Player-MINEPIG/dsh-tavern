@@ -3,7 +3,9 @@ import { projectTimelineQa } from './chat-model.js'
 import {
   applyDisplayRegex,
   getRegexDocument,
+  resourceRegexRules,
 } from './regex.js'
+import { renderRichTextHtml } from './rich-text.js'
 
 function rootSessionId(playthrough, timeline) {
   const root = playthrough?.ext?.pmpDshTavern?.rootSessionId
@@ -71,7 +73,23 @@ export async function loadPlaythroughExport(client, playthrough) {
     presetId: active?.selection?.presetId ?? null,
     characterId: characterId ?? active?.selection?.characterCardId ?? null,
   }
-  const render = (text, target) => applyDisplayRegex(text, regexDocument.rules, bindings, target).text
+  const presetResponse = typeof bindings.presetId === 'string'
+    && bindings.presetId !== ''
+    && typeof client.getPreset === 'function'
+    ? await client.getPreset(bindings.presetId)
+    : null
+  const rules = [
+    ...regexDocument.rules,
+    ...resourceRegexRules(presetResponse?.preset ?? presetResponse, {
+      kind: 'preset',
+      resourceId: bindings.presetId,
+    }),
+    ...resourceRegexRules(characterResponse?.character ?? characterResponse, {
+      kind: 'character',
+      resourceId: bindings.characterId,
+    }),
+  ]
+  const render = (text, target) => applyDisplayRegex(text, rules, bindings, target).text
   return {
     playthrough,
     timeline,
@@ -97,14 +115,14 @@ export function staticHtmlExport(snapshot) {
   const title = snapshot.playthrough.title || snapshot.character?.name || snapshot.playthrough.id
   const rows = (snapshot.displayTurns ?? snapshot.turns).filter(turn => !turn.hidden).map(turn => `
     <article class="turn">
-      <div class="user">${escapeHtml(turn.userText)}</div>
-      <div class="assistant">${escapeHtml(turn.assistantText)}</div>
+      <div class="user rich">${renderRichTextHtml(turn.userText)}</div>
+      <div class="assistant rich">${renderRichTextHtml(turn.assistantText)}</div>
     </article>`).join('')
   const displayGreeting = snapshot.displayGreeting ?? snapshot.greeting
   const greeting = displayGreeting === null || displayGreeting === undefined
     ? ''
-    : `<div class="assistant greeting">${escapeHtml(displayGreeting)}</div>`
-  return `<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width"><title>${escapeHtml(title)}</title><style>body{max-width:800px;margin:32px auto;padding:0 18px;background:#101216;color:#e8eaf0;font:15px/1.65 system-ui}.turn{display:flex;flex-direction:column;gap:10px;margin:24px 0}.user,.assistant{padding:12px 15px;border-radius:14px;white-space:pre-wrap}.user{align-self:flex-end;background:#1c3651}.assistant{align-self:flex-start;background:#24262d}.greeting{margin:24px 0}</style></head><body><h1>${escapeHtml(title)}</h1>${greeting}${rows}</body></html>`
+    : `<div class="assistant greeting rich">${renderRichTextHtml(displayGreeting)}</div>`
+  return `<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width"><title>${escapeHtml(title)}</title><style>body{max-width:800px;margin:32px auto;padding:0 18px;background:#101216;color:#e8eaf0;font:15px/1.65 system-ui}.turn{display:flex;flex-direction:column;gap:10px;margin:24px 0}.user,.assistant{padding:12px 15px;border-radius:14px}.user{align-self:flex-end;background:#1c3651}.assistant{align-self:flex-start;background:#24262d}.greeting{margin:24px 0}.rich>:first-child{margin-top:0}.rich>:last-child{margin-bottom:0}.rich pre{max-width:100%;overflow:auto;white-space:pre-wrap}.rich img,.rich video{max-width:100%;height:auto}.rich table{display:block;max-width:100%;overflow:auto;border-collapse:collapse}.rich th,.rich td{padding:6px 9px;border:1px solid #555}</style></head><body><h1>${escapeHtml(title)}</h1>${greeting}${rows}</body></html>`
 }
 
 export function sillyTavernJsonlExport(snapshot) {
