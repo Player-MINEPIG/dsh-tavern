@@ -121,6 +121,8 @@ rc.6 的 `agent/inbox/spliced` 是公开、持久的 Session event；插入、�
 
 DSH 当前没有角色卡、周目、greeting、跨 session adopted variant、ST 显示正则或 Tavern selection 的原生数据模型。因此 `catalog.json` / `timeline.json`、角色卡→周目侧栏投影、跨 session 回复切换、greeting 纯展示、正则资源管理与 v2 周目协议继续由 Tavern 拥有；它们通过事件范围指向 DSH 权威消息，不复制正文。RP 工作区内子目录还必须经过 Tavern 路径监狱：DSH 的 native/browse directory flow 是选择或注册 Workspace 的 UI seam，不提供“在已绑定根内让第三方 v2 前端安全创建任意周目子目录”的统一 Host 能力。
 
+周目名称和 DSH session 名称刻意分离：Tavern 在每张角色卡内按已分配的单调序号显示 `N周目`，并把序号保存在 catalog 扩展数据；用户重命名也只修改这一投影。DSH 原始 session 继续由 Host 按“角色卡名 + 时间”命名，便于退出魔丸或卸载插件后辨认权威数据。旧 catalog 没有序号时按该角色卡既有顺序补入计算，但不为兼容而重写旧条目。
+
 插件自有资源变化继续使用有界的 Tavern refresh event；Session / Workspace / live Chat 变化必须订阅 DSH store，不能用该自定义事件替代 Host 状态管理。
 
 ### DSH 升级审查

@@ -4,6 +4,21 @@ This is the staged implementation log for dsh-tavern. It is kept separately
 from the product README so reviewers can follow intent, decisions, verification,
 and known limits chronologically.
 
+## 2026-08-20 — Number and rename playthrough projections
+
+- New and imported playthroughs receive a character-local monotonic title such
+  as `1周目`; the underlying DSH session keeps the Host-owned
+  `角色卡名 + 时间` title so native Chat remains easy to inspect.
+- The assigned ordinal is stored in Tavern catalog extension data. Legacy
+  entries without the field participate by their existing character-local
+  order, and renamed titles do not affect later allocation.
+- The sidebar playthrough menu can rename a single Tavern projection. The
+  operation changes only `catalog.json`, rereads it for verification, and does
+  not rename or rewrite the authoritative DSH session.
+
+Verification: focused create/import/i18n/shell tests and production client
+build.
+
 ## 2026-08-20 — Move the default-view adapter out of the view ring
 
 - Kept the accepted native-chat-store adapter semantics, but mounted its

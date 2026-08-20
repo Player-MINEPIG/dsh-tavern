@@ -1,4 +1,5 @@
 import { projectTimelineQa } from './chat-model.js'
+import { nextPlaythroughNumber } from './create.js'
 import { playthroughCharacterId } from './schema.js'
 
 function parseJsonl(text) {
@@ -64,17 +65,18 @@ export async function importPlaythrough(client, playthrough, file, {
   const directory = `${characterId}/${id}`
   const path = `${directory}/timeline.json`
   const contextPath = `${directory}/import-context.json`
+  const catalog = await client.getCatalog()
+  const playthroughNumber = nextPlaythroughNumber(catalog, characterId)
   await client.createDirs(directory)
   await client.putFile(contextPath, JSON.stringify(document, null, 2))
   const created = await client.postSession(rootSessionId(playthrough), { path: contextPath })
   const imported = {
     id,
     path,
-    title: `${playthrough.title || characterId} · ${file.name}`,
+    title: `${playthroughNumber}周目`,
     lastOpenedAt: now().toISOString(),
-    ext: { pmpDshTavern: { characterId, rootSessionId: created.sessionId, importContextPath: contextPath } },
+    ext: { pmpDshTavern: { characterId, rootSessionId: created.sessionId, importContextPath: contextPath, playthroughNumber } },
   }
-  const catalog = await client.getCatalog()
   await client.putTimeline(imported, { nodes: [], ext: { pmpDshTavern: { importContextPath: contextPath } } })
   await client.putCatalog({ ...catalog, playthroughs: [...catalog.playthroughs, imported] })
   return { sessionId: created.sessionId, playthrough: imported, document }

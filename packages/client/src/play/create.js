@@ -32,6 +32,39 @@ async function catalogOrEmpty(client) {
   }
 }
 
+function playthroughCharacterId(playthrough) {
+  const value = playthrough?.ext?.pmpDshTavern?.characterId
+  return typeof value === 'string' && value !== '' ? value : null
+}
+
+export function nextPlaythroughNumber(catalog, characterId) {
+  let maximum = 0
+  let legacyOrdinal = 0
+  for (const playthrough of catalog?.playthroughs ?? []) {
+    if (playthroughCharacterId(playthrough) !== characterId) continue
+    legacyOrdinal += 1
+    const explicit = playthrough?.ext?.pmpDshTavern?.playthroughNumber
+    maximum = Math.max(maximum, Number.isSafeInteger(explicit) && explicit > 0 ? explicit : legacyOrdinal)
+  }
+  return maximum + 1
+}
+
+export async function renamePlaythrough(client, playthrough, title) {
+  if (client == null) throw new TypeError('playClient.required')
+  const normalized = typeof title === 'string' ? title.trim() : ''
+  if (normalized === '' || normalized.length > 120) throw new TypeError('play.rename.invalid')
+  const catalog = await catalogOrEmpty(client)
+  const index = catalog.playthroughs.findIndex(item => item.id === playthrough?.id && item.path === playthrough?.path)
+  if (index < 0) throw new TypeError('play.rename.missing')
+  const playthroughs = [...catalog.playthroughs]
+  playthroughs[index] = { ...playthroughs[index], title: normalized }
+  await client.putCatalog({ ...catalog, playthroughs })
+  const saved = await client.getCatalog()
+  const renamed = saved.playthroughs.find(item => item.id === playthrough.id && item.path === playthrough.path)
+  if (renamed?.title !== normalized) throw new Error('play.rename.verificationFailed')
+  return renamed
+}
+
 export function sourceSessionIdForCharacter(character) {
   const activePlaythrough = character?.playthroughs?.find(item => item.active && typeof item.rootSessionId === 'string')
   if (activePlaythrough !== undefined) return activePlaythrough.rootSessionId
@@ -51,9 +84,6 @@ export async function createCharacterPlaythrough(client, {
 } = {}) {
   if (client == null) throw new TypeError('playClient.required')
   const characterId = safeSegment(character?.id, 'character.id')
-  const characterName = typeof character?.name === 'string' && character.name.trim() !== ''
-    ? character.name.trim()
-    : characterId
   const createdAt = isoNow(now)
   const playthroughId = safeSegment(`playthrough-${randomUUID()}`, 'playthrough.id')
   const directory = `${characterId}/${playthroughId}`
@@ -61,6 +91,8 @@ export async function createCharacterPlaythrough(client, {
   const sourceId = typeof selectionFromSessionId === 'string' && selectionFromSessionId !== ''
     ? selectionFromSessionId
     : null
+  const catalog = await catalogOrEmpty(client)
+  const playthroughNumber = nextPlaythroughNumber(catalog, characterId)
 
   const created = await client.postSession(sourceId)
   const sessionId = safeSessionId(created?.sessionId)
@@ -72,18 +104,16 @@ export async function createCharacterPlaythrough(client, {
     throw new Error('playthrough character selection did not persist')
   }
 
-  const catalog = await catalogOrEmpty(client)
   const playthrough = {
     id: playthroughId,
     path,
-    title: typeof created?.title === 'string' && created.title !== ''
-      ? created.title
-      : `${characterName} ${createdAt.slice(0, 16).replace('T', ' ')}`,
+    title: `${playthroughNumber}周目`,
     lastOpenedAt: createdAt,
     ext: {
       pmpDshTavern: {
         characterId,
         rootSessionId: sessionId,
+        playthroughNumber,
       },
     },
   }

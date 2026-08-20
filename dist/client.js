@@ -3835,6 +3835,9 @@ var zh_CN_default = Object.freeze({
   "play.chat.hideConfirm": "\u8981\u4ECE\u9B54\u4E38\u663E\u793A\u4E2D\u9690\u85CF\u672C\u7EC4\u95EE\u7B54\u5417\uFF1F\u539F\u59CB DSH \u6D88\u606F\u4E0D\u4F1A\u88AB\u5220\u9664\u3002",
   "play.chat.restoreNode": "\u6062\u590D\u663E\u793A\u672C\u7EC4\u95EE\u7B54",
   "play.io.menu": "\u5468\u76EE\u5BFC\u5165 / \u5BFC\u51FA",
+  "play.io.rename": "\u91CD\u547D\u540D\u5468\u76EE",
+  "play.io.renamePrompt": "\u8F93\u5165\u65B0\u7684\u5468\u76EE\u540D\u79F0\uFF1A",
+  "play.io.renameInvalid": "\u5468\u76EE\u540D\u79F0\u4E0D\u80FD\u4E3A\u7A7A\uFF0C\u4E14\u4E0D\u80FD\u8D85\u8FC7 120 \u4E2A\u5B57\u7B26\u3002",
   "play.io.exportHtml": "\u5BFC\u51FA\u9759\u6001 HTML",
   "play.io.exportSt": "\u5BFC\u51FA SillyTavern JSONL",
   "play.io.exportBundle": "\u5BFC\u51FA portable bundle",
@@ -4388,6 +4391,9 @@ var en_default = Object.freeze({
   "play.chat.hideConfirm": "Hide this QA from Mowan display? The original DSH messages will not be deleted.",
   "play.chat.restoreNode": "Restore this QA to Mowan display",
   "play.io.menu": "Playthrough import / export",
+  "play.io.rename": "Rename playthrough",
+  "play.io.renamePrompt": "Enter a new playthrough name:",
+  "play.io.renameInvalid": "The playthrough name must contain 1\u2013120 characters.",
   "play.io.exportHtml": "Export static HTML",
   "play.io.exportSt": "Export SillyTavern JSONL",
   "play.io.exportBundle": "Export portable bundle",
@@ -10569,193 +10575,6 @@ function playthroughCharacterId(playthrough) {
   return first || null;
 }
 
-// packages/client/src/play/import.js
-function parseJsonl(text2) {
-  const rows = text2.split(/\r?\n/).filter(Boolean).map((line) => JSON.parse(line));
-  if (rows.length === 0) throw new TypeError("play.import.empty");
-  const messages = rows.slice(1).filter((row) => typeof row?.mes === "string");
-  let greeting = null;
-  const qa = [];
-  let pending = null;
-  for (const message of messages) {
-    if (message.is_user === true) {
-      if (pending !== null) throw new TypeError("play.import.unpaired");
-      pending = message.mes;
-    } else if (pending === null && qa.length === 0 && greeting === null) {
-      greeting = message.mes;
-    } else if (pending !== null) {
-      qa.push({ user: pending, assistant: message.mes });
-      pending = null;
-    }
-  }
-  if (pending !== null) throw new TypeError("play.import.unpaired");
-  return { greeting, qa, source: { format: "sillytavern-jsonl" } };
-}
-function parseBundle(value) {
-  if (value?.kind !== "pmp-dsh-tavern-playthrough" || value.schemaVersion !== 1) {
-    throw new TypeError("play.import.unsupported");
-  }
-  const turns = projectTimelineQa(value.timeline, value.messagesBySession);
-  return {
-    greeting: typeof value.resources?.greeting === "string" ? value.resources.greeting : null,
-    qa: turns.filter((turn) => !turn.hidden).map((turn) => ({ user: turn.userText, assistant: turn.originalAssistantText })),
-    source: { format: "pmp-dsh-tavern-bundle", playthroughId: value.playthrough?.id ?? null }
-  };
-}
-function parsePlaythroughImport(text2, fileName = "") {
-  if (typeof text2 !== "string" || text2.trim() === "") throw new TypeError("play.import.empty");
-  const parsed = text2.trimStart().startsWith("{") && !text2.trimStart().includes("\n") ? parseBundle(JSON.parse(text2)) : (() => {
-    try {
-      return parseBundle(JSON.parse(text2));
-    } catch (error) {
-      if (text2.includes("\n")) return parseJsonl(text2);
-      throw error;
-    }
-  })();
-  return { schemaVersion: 1, ...parsed, source: { ...parsed.source, fileName } };
-}
-function rootSessionId3(playthrough) {
-  const value = playthrough?.ext?.pmpDshTavern?.rootSessionId;
-  return typeof value === "string" && value !== "" ? value : null;
-}
-async function importPlaythrough(client, playthrough, file, {
-  now = () => /* @__PURE__ */ new Date(),
-  randomUUID = () => globalThis.crypto.randomUUID()
-} = {}) {
-  const document2 = parsePlaythroughImport(await file.text(), file.name);
-  const characterId = playthroughCharacterId(playthrough);
-  if (characterId === null) throw new TypeError("play.import.characterRequired");
-  const id = `playthrough-${randomUUID()}`;
-  const directory = `${characterId}/${id}`;
-  const path = `${directory}/timeline.json`;
-  const contextPath = `${directory}/import-context.json`;
-  await client.createDirs(directory);
-  await client.putFile(contextPath, JSON.stringify(document2, null, 2));
-  const created = await client.postSession(rootSessionId3(playthrough), { path: contextPath });
-  const imported = {
-    id,
-    path,
-    title: `${playthrough.title || characterId} \xB7 ${file.name}`,
-    lastOpenedAt: now().toISOString(),
-    ext: { pmpDshTavern: { characterId, rootSessionId: created.sessionId, importContextPath: contextPath } }
-  };
-  const catalog2 = await client.getCatalog();
-  await client.putTimeline(imported, { nodes: [], ext: { pmpDshTavern: { importContextPath: contextPath } } });
-  await client.putCatalog({ ...catalog2, playthroughs: [...catalog2.playthroughs, imported] });
-  return { sessionId: created.sessionId, playthrough: imported, document: document2 };
-}
-
-// packages/client/src/play/io-menu.js
-var h9 = createLocalizedElement(import_react10.createElement);
-var css8 = `
-.dtv-play-io{position:relative;display:inline-flex}.dtv-play-io-trigger{width:30px;height:30px;border:0;border-radius:8px;background:transparent;color:var(--dsw-alias-label-secondary);font:inherit;cursor:pointer}.dtv-play-io-trigger:hover{background:var(--dsw-alias-interactive-bg-hover)}
-.dtv-play-io-menu{position:absolute;z-index:30;left:0;bottom:calc(100% + 6px);min-width:210px;padding:6px;border:1px solid var(--dsw-alias-border-subtle);border-radius:11px;background:var(--dsw-alias-bg-layer-1,#181a20);box-shadow:0 12px 30px #0008;display:flex;flex-direction:column;gap:2px}.dtv-play-io[data-placement=sidebar] .dtv-play-io-menu{left:auto;right:0;bottom:auto;top:calc(100% + 4px);width:max-content;min-width:0;max-width:168px}.dtv-play-io[data-placement=sidebar] .dtv-play-io-item{white-space:nowrap}
-.dtv-play-io-item{min-height:34px;border:0;border-radius:8px;padding:6px 9px;background:transparent;color:var(--dsw-alias-label-primary);font:inherit;font-size:11px;text-align:left;cursor:pointer}.dtv-play-io-item:hover{background:var(--dsw-alias-interactive-bg-hover)}.dtv-play-io-item:disabled{opacity:.45;cursor:default}.dtv-play-io-error{max-width:240px;margin:3px 5px;color:var(--dsw-alias-state-error);font-size:10px;overflow-wrap:anywhere}
-`;
-function installStyles3() {
-  if (document.querySelector(`style[data-plugin-css="${PLUGIN_ID}-play-io"]`) !== null) return;
-  const style = document.createElement("style");
-  style.dataset.pluginCss = `${PLUGIN_ID}-play-io`;
-  style.textContent = css8;
-  document.head.append(style);
-}
-function safeFilename(value) {
-  const normalized = String(value ?? "playthrough").replace(/[<>:"/\\|?*\u0000-\u001f]/g, "-").trim();
-  return normalized === "" ? "playthrough" : normalized.slice(0, 100);
-}
-function downloadDocument(playthrough, document2) {
-  const blob = new Blob([document2.content], { type: document2.mime });
-  const url = URL.createObjectURL(blob);
-  const anchor = window.document.createElement("a");
-  anchor.href = url;
-  anchor.download = `${safeFilename(playthrough.title || playthrough.id)}.${document2.extension}`;
-  anchor.style.display = "none";
-  window.document.body.append(anchor);
-  anchor.click();
-  anchor.remove();
-  queueMicrotask(() => URL.revokeObjectURL(url));
-}
-function PlayIoMenu({ playClient, playthrough, openSession, trigger = "+", placement = "composer" }) {
-  installStyles3();
-  const root = (0, import_react10.useRef)(null);
-  const importInput = (0, import_react10.useRef)(null);
-  const [open, setOpen] = (0, import_react10.useState)(false);
-  const [busy, setBusy] = (0, import_react10.useState)(false);
-  const [error, setError] = (0, import_react10.useState)("");
-  (0, import_react10.useEffect)(() => {
-    if (!open) return void 0;
-    const close = (event) => {
-      if (!root.current?.contains(event.target)) setOpen(false);
-    };
-    window.document.addEventListener("pointerdown", close);
-    return () => window.document.removeEventListener("pointerdown", close);
-  }, [open]);
-  const exportAs = async (format) => {
-    if (busy) return;
-    setBusy(true);
-    setError("");
-    try {
-      const snapshot = await loadPlaythroughExport(playClient, playthrough);
-      downloadDocument(playthrough, playthroughExportDocument(snapshot, format));
-      setOpen(false);
-    } catch (reason) {
-      setError(reason instanceof Error ? reason.message : String(reason));
-    } finally {
-      setBusy(false);
-    }
-  };
-  const importFile = async (event) => {
-    const file = event.target.files?.[0];
-    event.target.value = "";
-    if (!file || busy) return;
-    setBusy(true);
-    setError("");
-    try {
-      const result = await importPlaythrough(playClient, playthrough, file);
-      window.dispatchEvent(new Event("pmp-dsh-tavern:refresh"));
-      openSession?.(result.sessionId);
-      setOpen(false);
-    } catch (reason) {
-      setError(reason instanceof Error ? reason.message : String(reason));
-    } finally {
-      setBusy(false);
-    }
-  };
-  return h9(
-    "div",
-    { ref: root, className: "dtv-play-io", "data-placement": placement },
-    h9("button", {
-      type: "button",
-      className: "dtv-play-io-trigger",
-      title: uiMessage("play.io.menu"),
-      "aria-label": uiMessage("play.io.menu"),
-      "aria-expanded": open,
-      onClick: (event) => {
-        event.stopPropagation();
-        setOpen((value) => !value);
-      }
-    }, rawText(trigger)),
-    !open ? null : h9(
-      "div",
-      { className: "dtv-play-io-menu" },
-      h9("button", { type: "button", className: "dtv-play-io-item", disabled: busy, onClick: () => exportAs("html") }, uiMessage("play.io.exportHtml")),
-      h9("button", { type: "button", className: "dtv-play-io-item", disabled: busy, onClick: () => exportAs("st") }, uiMessage("play.io.exportSt")),
-      h9("button", { type: "button", className: "dtv-play-io-item", disabled: busy, onClick: () => exportAs("bundle") }, uiMessage("play.io.exportBundle")),
-      h9("button", {
-        type: "button",
-        className: "dtv-play-io-item",
-        disabled: busy,
-        onClick: () => importInput.current?.click()
-      }, uiMessage("play.io.import")),
-      h9("input", { ref: importInput, hidden: true, type: "file", accept: ".json,.jsonl,application/json,application/x-ndjson", onChange: importFile }),
-      error === "" ? null : h9("p", { className: "dtv-play-io-error" }, rawText(error))
-    )
-  );
-}
-
-// packages/client/src/play/sidebar.js
-var import_react11 = require("react");
-
 // packages/client/src/play/sidebar-model.js
 var SIDEBAR_LOAD_CONCURRENCY = 4;
 function characterIdFromSelection(value) {
@@ -10763,7 +10582,7 @@ function characterIdFromSelection(value) {
   const id = selection?.characterCardId;
   return typeof id === "string" && id !== "" ? id : null;
 }
-function rootSessionId4(playthrough) {
+function rootSessionId3(playthrough) {
   const id = playthrough?.ext?.pmpDshTavern?.rootSessionId;
   return typeof id === "string" && id !== "" ? id : null;
 }
@@ -10786,7 +10605,7 @@ function timelineFor(timelines, playthrough) {
 }
 function playthroughMembers(playthrough, timeline) {
   const ids = /* @__PURE__ */ new Set();
-  const rootId = rootSessionId4(playthrough);
+  const rootId = rootSessionId3(playthrough);
   if (rootId !== null) ids.add(rootId);
   for (const node of timeline?.nodes ?? []) {
     for (const variant of node?.variants ?? []) {
@@ -10923,7 +10742,7 @@ function projectPlaySidebar({
   }
   const claimedRpSessions = /* @__PURE__ */ new Set();
   for (const playthrough of catalog2.playthroughs ?? []) {
-    const rootId = rootSessionId4(playthrough);
+    const rootId = rootSessionId3(playthrough);
     const characterId = playthroughCharacterId(playthrough);
     if (characterId === null) continue;
     const allMembers = playthroughMembers(playthrough, timelineFor(timelines, playthrough));
@@ -11000,6 +10819,36 @@ async function catalogOrEmpty(client) {
     throw reason;
   }
 }
+function playthroughCharacterId2(playthrough) {
+  const value = playthrough?.ext?.pmpDshTavern?.characterId;
+  return typeof value === "string" && value !== "" ? value : null;
+}
+function nextPlaythroughNumber(catalog2, characterId) {
+  let maximum = 0;
+  let legacyOrdinal = 0;
+  for (const playthrough of catalog2?.playthroughs ?? []) {
+    if (playthroughCharacterId2(playthrough) !== characterId) continue;
+    legacyOrdinal += 1;
+    const explicit = playthrough?.ext?.pmpDshTavern?.playthroughNumber;
+    maximum = Math.max(maximum, Number.isSafeInteger(explicit) && explicit > 0 ? explicit : legacyOrdinal);
+  }
+  return maximum + 1;
+}
+async function renamePlaythrough(client, playthrough, title) {
+  if (client == null) throw new TypeError("playClient.required");
+  const normalized = typeof title === "string" ? title.trim() : "";
+  if (normalized === "" || normalized.length > 120) throw new TypeError("play.rename.invalid");
+  const catalog2 = await catalogOrEmpty(client);
+  const index = catalog2.playthroughs.findIndex((item) => item.id === playthrough?.id && item.path === playthrough?.path);
+  if (index < 0) throw new TypeError("play.rename.missing");
+  const playthroughs = [...catalog2.playthroughs];
+  playthroughs[index] = { ...playthroughs[index], title: normalized };
+  await client.putCatalog({ ...catalog2, playthroughs });
+  const saved = await client.getCatalog();
+  const renamed = saved.playthroughs.find((item) => item.id === playthrough.id && item.path === playthrough.path);
+  if (renamed?.title !== normalized) throw new Error("play.rename.verificationFailed");
+  return renamed;
+}
 function sourceSessionIdForCharacter(character) {
   const activePlaythrough = character?.playthroughs?.find((item) => item.active && typeof item.rootSessionId === "string");
   if (activePlaythrough !== void 0) return activePlaythrough.rootSessionId;
@@ -11018,12 +10867,13 @@ async function createCharacterPlaythrough(client, {
 } = {}) {
   if (client == null) throw new TypeError("playClient.required");
   const characterId = safeSegment(character?.id, "character.id");
-  const characterName = typeof character?.name === "string" && character.name.trim() !== "" ? character.name.trim() : characterId;
   const createdAt = isoNow(now);
   const playthroughId = safeSegment(`playthrough-${randomUUID()}`, "playthrough.id");
   const directory = `${characterId}/${playthroughId}`;
   const path = `${directory}/timeline.json`;
   const sourceId = typeof selectionFromSessionId === "string" && selectionFromSessionId !== "" ? selectionFromSessionId : null;
+  const catalog2 = await catalogOrEmpty(client);
+  const playthroughNumber = nextPlaythroughNumber(catalog2, characterId);
   const created = await client.postSession(sourceId);
   const sessionId = safeSessionId(created?.sessionId);
   if (sourceId === null) {
@@ -11033,16 +10883,16 @@ async function createCharacterPlaythrough(client, {
   if (characterIdFromSelection(selection) !== characterId) {
     throw new Error("playthrough character selection did not persist");
   }
-  const catalog2 = await catalogOrEmpty(client);
   const playthrough = {
     id: playthroughId,
     path,
-    title: typeof created?.title === "string" && created.title !== "" ? created.title : `${characterName} ${createdAt.slice(0, 16).replace("T", " ")}`,
+    title: `${playthroughNumber}\u5468\u76EE`,
     lastOpenedAt: createdAt,
     ext: {
       pmpDshTavern: {
         characterId,
-        rootSessionId: sessionId
+        rootSessionId: sessionId,
+        playthroughNumber
       }
     }
   };
@@ -11086,7 +10936,214 @@ function createPlaythroughController(client, dependencies = {}) {
   };
 }
 
+// packages/client/src/play/import.js
+function parseJsonl(text2) {
+  const rows = text2.split(/\r?\n/).filter(Boolean).map((line) => JSON.parse(line));
+  if (rows.length === 0) throw new TypeError("play.import.empty");
+  const messages = rows.slice(1).filter((row) => typeof row?.mes === "string");
+  let greeting = null;
+  const qa = [];
+  let pending = null;
+  for (const message of messages) {
+    if (message.is_user === true) {
+      if (pending !== null) throw new TypeError("play.import.unpaired");
+      pending = message.mes;
+    } else if (pending === null && qa.length === 0 && greeting === null) {
+      greeting = message.mes;
+    } else if (pending !== null) {
+      qa.push({ user: pending, assistant: message.mes });
+      pending = null;
+    }
+  }
+  if (pending !== null) throw new TypeError("play.import.unpaired");
+  return { greeting, qa, source: { format: "sillytavern-jsonl" } };
+}
+function parseBundle(value) {
+  if (value?.kind !== "pmp-dsh-tavern-playthrough" || value.schemaVersion !== 1) {
+    throw new TypeError("play.import.unsupported");
+  }
+  const turns = projectTimelineQa(value.timeline, value.messagesBySession);
+  return {
+    greeting: typeof value.resources?.greeting === "string" ? value.resources.greeting : null,
+    qa: turns.filter((turn) => !turn.hidden).map((turn) => ({ user: turn.userText, assistant: turn.originalAssistantText })),
+    source: { format: "pmp-dsh-tavern-bundle", playthroughId: value.playthrough?.id ?? null }
+  };
+}
+function parsePlaythroughImport(text2, fileName = "") {
+  if (typeof text2 !== "string" || text2.trim() === "") throw new TypeError("play.import.empty");
+  const parsed = text2.trimStart().startsWith("{") && !text2.trimStart().includes("\n") ? parseBundle(JSON.parse(text2)) : (() => {
+    try {
+      return parseBundle(JSON.parse(text2));
+    } catch (error) {
+      if (text2.includes("\n")) return parseJsonl(text2);
+      throw error;
+    }
+  })();
+  return { schemaVersion: 1, ...parsed, source: { ...parsed.source, fileName } };
+}
+function rootSessionId4(playthrough) {
+  const value = playthrough?.ext?.pmpDshTavern?.rootSessionId;
+  return typeof value === "string" && value !== "" ? value : null;
+}
+async function importPlaythrough(client, playthrough, file, {
+  now = () => /* @__PURE__ */ new Date(),
+  randomUUID = () => globalThis.crypto.randomUUID()
+} = {}) {
+  const document2 = parsePlaythroughImport(await file.text(), file.name);
+  const characterId = playthroughCharacterId(playthrough);
+  if (characterId === null) throw new TypeError("play.import.characterRequired");
+  const id = `playthrough-${randomUUID()}`;
+  const directory = `${characterId}/${id}`;
+  const path = `${directory}/timeline.json`;
+  const contextPath = `${directory}/import-context.json`;
+  const catalog2 = await client.getCatalog();
+  const playthroughNumber = nextPlaythroughNumber(catalog2, characterId);
+  await client.createDirs(directory);
+  await client.putFile(contextPath, JSON.stringify(document2, null, 2));
+  const created = await client.postSession(rootSessionId4(playthrough), { path: contextPath });
+  const imported = {
+    id,
+    path,
+    title: `${playthroughNumber}\u5468\u76EE`,
+    lastOpenedAt: now().toISOString(),
+    ext: { pmpDshTavern: { characterId, rootSessionId: created.sessionId, importContextPath: contextPath, playthroughNumber } }
+  };
+  await client.putTimeline(imported, { nodes: [], ext: { pmpDshTavern: { importContextPath: contextPath } } });
+  await client.putCatalog({ ...catalog2, playthroughs: [...catalog2.playthroughs, imported] });
+  return { sessionId: created.sessionId, playthrough: imported, document: document2 };
+}
+
+// packages/client/src/play/io-menu.js
+var h9 = createLocalizedElement(import_react10.createElement);
+var css8 = `
+.dtv-play-io{position:relative;display:inline-flex}.dtv-play-io-trigger{width:30px;height:30px;border:0;border-radius:8px;background:transparent;color:var(--dsw-alias-label-secondary);font:inherit;cursor:pointer}.dtv-play-io-trigger:hover{background:var(--dsw-alias-interactive-bg-hover)}
+.dtv-play-io-menu{position:absolute;z-index:30;left:0;bottom:calc(100% + 6px);min-width:210px;padding:6px;border:1px solid var(--dsw-alias-border-subtle);border-radius:11px;background:var(--dsw-alias-bg-layer-1,#181a20);box-shadow:0 12px 30px #0008;display:flex;flex-direction:column;gap:2px}.dtv-play-io[data-placement=sidebar] .dtv-play-io-menu{left:auto;right:0;bottom:auto;top:calc(100% + 4px);width:max-content;min-width:0;max-width:168px}.dtv-play-io[data-placement=sidebar] .dtv-play-io-item{white-space:nowrap}
+.dtv-play-io-item{min-height:34px;border:0;border-radius:8px;padding:6px 9px;background:transparent;color:var(--dsw-alias-label-primary);font:inherit;font-size:11px;text-align:left;cursor:pointer}.dtv-play-io-item:hover{background:var(--dsw-alias-interactive-bg-hover)}.dtv-play-io-item:disabled{opacity:.45;cursor:default}.dtv-play-io-error{max-width:240px;margin:3px 5px;color:var(--dsw-alias-state-error);font-size:10px;overflow-wrap:anywhere}
+`;
+function installStyles3() {
+  if (document.querySelector(`style[data-plugin-css="${PLUGIN_ID}-play-io"]`) !== null) return;
+  const style = document.createElement("style");
+  style.dataset.pluginCss = `${PLUGIN_ID}-play-io`;
+  style.textContent = css8;
+  document.head.append(style);
+}
+function safeFilename(value) {
+  const normalized = String(value ?? "playthrough").replace(/[<>:"/\\|?*\u0000-\u001f]/g, "-").trim();
+  return normalized === "" ? "playthrough" : normalized.slice(0, 100);
+}
+function downloadDocument(playthrough, document2) {
+  const blob = new Blob([document2.content], { type: document2.mime });
+  const url = URL.createObjectURL(blob);
+  const anchor = window.document.createElement("a");
+  anchor.href = url;
+  anchor.download = `${safeFilename(playthrough.title || playthrough.id)}.${document2.extension}`;
+  anchor.style.display = "none";
+  window.document.body.append(anchor);
+  anchor.click();
+  anchor.remove();
+  queueMicrotask(() => URL.revokeObjectURL(url));
+}
+function PlayIoMenu({ playClient, playthrough, openSession, trigger = "+", placement = "composer" }) {
+  installStyles3();
+  const root = (0, import_react10.useRef)(null);
+  const importInput = (0, import_react10.useRef)(null);
+  const [open, setOpen] = (0, import_react10.useState)(false);
+  const [busy, setBusy] = (0, import_react10.useState)(false);
+  const [error, setError] = (0, import_react10.useState)("");
+  (0, import_react10.useEffect)(() => {
+    if (!open) return void 0;
+    const close = (event) => {
+      if (!root.current?.contains(event.target)) setOpen(false);
+    };
+    window.document.addEventListener("pointerdown", close);
+    return () => window.document.removeEventListener("pointerdown", close);
+  }, [open]);
+  const exportAs = async (format) => {
+    if (busy) return;
+    setBusy(true);
+    setError("");
+    try {
+      const snapshot = await loadPlaythroughExport(playClient, playthrough);
+      downloadDocument(playthrough, playthroughExportDocument(snapshot, format));
+      setOpen(false);
+    } catch (reason) {
+      setError(reason instanceof Error ? reason.message : String(reason));
+    } finally {
+      setBusy(false);
+    }
+  };
+  const importFile = async (event) => {
+    const file = event.target.files?.[0];
+    event.target.value = "";
+    if (!file || busy) return;
+    setBusy(true);
+    setError("");
+    try {
+      const result = await importPlaythrough(playClient, playthrough, file);
+      window.dispatchEvent(new Event("pmp-dsh-tavern:refresh"));
+      openSession?.(result.sessionId);
+      setOpen(false);
+    } catch (reason) {
+      setError(reason instanceof Error ? reason.message : String(reason));
+    } finally {
+      setBusy(false);
+    }
+  };
+  const rename = async () => {
+    if (busy) return;
+    const title = window.prompt(unwrapText(uiMessage("play.io.renamePrompt")), playthrough.title ?? "");
+    if (title === null) return;
+    if (title.trim() === "" || title.trim().length > 120) {
+      setError(unwrapText(uiMessage("play.io.renameInvalid")));
+      return;
+    }
+    setBusy(true);
+    setError("");
+    try {
+      await renamePlaythrough(playClient, playthrough, title);
+      window.dispatchEvent(new Event("pmp-dsh-tavern:refresh"));
+      setOpen(false);
+    } catch (reason) {
+      setError(reason instanceof Error ? reason.message : String(reason));
+    } finally {
+      setBusy(false);
+    }
+  };
+  return h9(
+    "div",
+    { ref: root, className: "dtv-play-io", "data-placement": placement },
+    h9("button", {
+      type: "button",
+      className: "dtv-play-io-trigger",
+      title: uiMessage("play.io.menu"),
+      "aria-label": uiMessage("play.io.menu"),
+      "aria-expanded": open,
+      onClick: (event) => {
+        event.stopPropagation();
+        setOpen((value) => !value);
+      }
+    }, rawText(trigger)),
+    !open ? null : h9(
+      "div",
+      { className: "dtv-play-io-menu" },
+      h9("button", { type: "button", className: "dtv-play-io-item", disabled: busy, onClick: rename }, uiMessage("play.io.rename")),
+      h9("button", { type: "button", className: "dtv-play-io-item", disabled: busy, onClick: () => exportAs("html") }, uiMessage("play.io.exportHtml")),
+      h9("button", { type: "button", className: "dtv-play-io-item", disabled: busy, onClick: () => exportAs("st") }, uiMessage("play.io.exportSt")),
+      h9("button", { type: "button", className: "dtv-play-io-item", disabled: busy, onClick: () => exportAs("bundle") }, uiMessage("play.io.exportBundle")),
+      h9("button", {
+        type: "button",
+        className: "dtv-play-io-item",
+        disabled: busy,
+        onClick: () => importInput.current?.click()
+      }, uiMessage("play.io.import")),
+      h9("input", { ref: importInput, hidden: true, type: "file", accept: ".json,.jsonl,application/json,application/x-ndjson", onChange: importFile }),
+      error === "" ? null : h9("p", { className: "dtv-play-io-error" }, rawText(error))
+    )
+  );
+}
+
 // packages/client/src/play/sidebar.js
+var import_react11 = require("react");
 var h10 = createLocalizedElement(import_react11.createElement);
 var css9 = `
 .dtv-play-sidebar{height:100%;min-height:0;box-sizing:border-box;display:flex;flex-direction:column;gap:4px;padding:6px 7px 10px;overflow:auto;zoom:var(--dtv-ui-scale,1);color:var(--dsw-alias-label-primary)}

@@ -9,6 +9,7 @@ import {
   createLocalizedElement,
   rawText,
   uiMessage,
+  unwrapText,
 } from '../i18n.js'
 import {
   loadPlaythroughExport,
@@ -16,6 +17,7 @@ import {
 } from './export.js'
 
 import { importPlaythrough } from './import.js'
+import { renamePlaythrough } from './create.js'
 const h = createLocalizedElement(createElement)
 
 const css = `
@@ -99,6 +101,27 @@ export function PlayIoMenu({ playClient, playthrough, openSession, trigger = '+'
       setBusy(false)
     }
   }
+
+  const rename = async () => {
+    if (busy) return
+    const title = window.prompt(unwrapText(uiMessage('play.io.renamePrompt')), playthrough.title ?? '')
+    if (title === null) return
+    if (title.trim() === '' || title.trim().length > 120) {
+      setError(unwrapText(uiMessage('play.io.renameInvalid')))
+      return
+    }
+    setBusy(true)
+    setError('')
+    try {
+      await renamePlaythrough(playClient, playthrough, title)
+      window.dispatchEvent(new Event('pmp-dsh-tavern:refresh'))
+      setOpen(false)
+    } catch (reason) {
+      setError(reason instanceof Error ? reason.message : String(reason))
+    } finally {
+      setBusy(false)
+    }
+  }
   return h('div', { ref: root, className: 'dtv-play-io', 'data-placement': placement },
     h('button', {
       type: 'button',
@@ -109,6 +132,7 @@ export function PlayIoMenu({ playClient, playthrough, openSession, trigger = '+'
       onClick: event => { event.stopPropagation(); setOpen(value => !value) },
     }, rawText(trigger)),
     !open ? null : h('div', { className: 'dtv-play-io-menu' },
+      h('button', { type: 'button', className: 'dtv-play-io-item', disabled: busy, onClick: rename }, uiMessage('play.io.rename')),
       h('button', { type: 'button', className: 'dtv-play-io-item', disabled: busy, onClick: () => exportAs('html') }, uiMessage('play.io.exportHtml')),
       h('button', { type: 'button', className: 'dtv-play-io-item', disabled: busy, onClick: () => exportAs('st') }, uiMessage('play.io.exportSt')),
       h('button', { type: 'button', className: 'dtv-play-io-item', disabled: busy, onClick: () => exportAs('bundle') }, uiMessage('play.io.exportBundle')),

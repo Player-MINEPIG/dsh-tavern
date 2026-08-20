@@ -35,6 +35,8 @@ test('import writes immutable context before creating a new empty session and ti
     ext: { pmpDshTavern: { characterId: 'alice', rootSessionId: 'session-old' } },
   }, file, { now: () => new Date('2026-08-20T00:00:00Z'), randomUUID: () => 'fixed' })
   assert.equal(result.sessionId, 'session-new')
+  assert.equal(result.playthrough.title, '1周目')
+  assert.equal(result.playthrough.ext.pmpDshTavern.playthroughNumber, 1)
   assert.deepEqual(calls.map(call => call[0]), ['dirs', 'context', 'session', 'timeline', 'catalog'])
   assert.deepEqual(calls[2], ['session', 'session-old', { path: 'alice/playthrough-fixed/import-context.json' }])
   assert.deepEqual(calls[3][2].nodes, [])

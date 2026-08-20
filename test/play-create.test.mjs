@@ -3,6 +3,8 @@ import assert from 'node:assert/strict'
 import {
   createCharacterPlaythrough,
   createPlaythroughController,
+  nextPlaythroughNumber,
+  renamePlaythrough,
   sourceSessionIdForCharacter,
 } from '../packages/client/src/play/create.js'
 
@@ -69,9 +71,11 @@ test('new card playthrough binds the card and persists an empty verified timelin
   assert.equal(result.sessionId, 'session-new')
   assert.equal(result.playthrough.ext.pmpDshTavern.characterId, 'character-a')
   assert.equal(result.playthrough.ext.pmpDshTavern.rootSessionId, 'session-new')
-  assert.equal(result.playthrough.title, 'Alice 2026-08-19 03:04')
-  assert.deepEqual(client.calls[0], ['postSession', null])
-  assert.deepEqual(client.calls[1], ['putCharacterSelection', 'session-new', 'character-a', { greetingIndex: 0 }])
+  assert.equal(result.playthrough.title, '1周目')
+  assert.equal(result.playthrough.ext.pmpDshTavern.playthroughNumber, 1)
+  assert.deepEqual(client.calls[0], ['getCatalog'])
+  assert.deepEqual(client.calls[1], ['postSession', null])
+  assert.deepEqual(client.calls[2], ['putCharacterSelection', 'session-new', 'character-a', { greetingIndex: 0 }])
   const timelineWrite = client.calls.find(call => call[0] === 'putTimeline')
   assert.match(timelineWrite[1], /^character-a\/playthrough-[^/]+\/timeline\.json$/)
   assert.deepEqual(timelineWrite[2], { nodes: [] })
@@ -86,9 +90,32 @@ test('existing card session is copied instead of rebinding only the character', 
     selectionFromSessionId: 'session-source',
     ...dependencies,
   })
-  assert.equal(result.playthrough.title, 'Alice copied')
-  assert.deepEqual(client.calls[0], ['postSession', 'session-source'])
+  assert.equal(result.playthrough.title, '1周目')
+  assert.deepEqual(client.calls[1], ['postSession', 'session-source'])
   assert.equal(client.calls.some(call => call[0] === 'putCharacterSelection'), false)
+})
+
+test('playthrough numbers are character-local and survive renamed or legacy rows', () => {
+  const catalog = { playthroughs: [
+    { id: 'a-old', ext: { pmpDshTavern: { characterId: 'a' } } },
+    { id: 'b-one', ext: { pmpDshTavern: { characterId: 'b', playthroughNumber: 1 } } },
+    { id: 'a-five', title: 'custom', ext: { pmpDshTavern: { characterId: 'a', playthroughNumber: 5 } } },
+  ] }
+  assert.equal(nextPlaythroughNumber(catalog, 'a'), 6)
+  assert.equal(nextPlaythroughNumber(catalog, 'b'), 2)
+  assert.equal(nextPlaythroughNumber(catalog, 'c'), 1)
+})
+
+test('renaming changes only the catalog display title and verifies the write', async () => {
+  let catalog = { playthroughs: [{ id: 'pt-a', path: 'a/pt-a/timeline.json', title: '1周目', ext: { pmpDshTavern: { rootSessionId: 'session-a' } } }] }
+  const client = {
+    async getCatalog() { return structuredClone(catalog) },
+    async putCatalog(next) { catalog = structuredClone(next) },
+  }
+  const renamed = await renamePlaythrough(client, catalog.playthroughs[0], '  夜班线  ')
+  assert.equal(renamed.title, '夜班线')
+  assert.equal(renamed.ext.pmpDshTavern.rootSessionId, 'session-a')
+  await assert.rejects(renamePlaythrough(client, catalog.playthroughs[0], '   '), /play\.rename\.invalid/)
 })
 
 test('character source selection prefers active playthrough, then loose session, then any root', () => {
