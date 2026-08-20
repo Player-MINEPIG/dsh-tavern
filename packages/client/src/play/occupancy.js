@@ -5,10 +5,12 @@ import { loadCurrentPlaythrough } from './chat-model.js'
 import { PlayIoMenu } from './io-menu.js'
 import { PlayWorkspaceBrowser } from './sidebar.js'
 import { PlayUnboundNotice } from './notice.js'
+import { DefaultConversationViewAdapter } from './view-default.js'
 
 export const PLAY_SLOT_PRIORITY = -100
 export const PLAY_VIEW_ID = 'rp'
 export const PLAY_VIEW_ORDER = -100
+export const PLAY_DEFAULT_VIEW_ATTEMPT_LIMIT = 256
 
 export function installPlaySlotOccupancy(ctx, playClient) {
   let mode = 'native'
@@ -22,11 +24,14 @@ export function installPlaySlotOccupancy(ctx, playClient) {
   let ioDeclared = false
   let chatGeneration = 0
   let disposeChatEntry = null
+  let disposeDefaultViewEntry = null
+  let defaultViewEntryKey = null
   let disposeIoEntry = null
   let disposeSessionSubscription = null
   let refreshChatListener = null
   let chatBinding = null
   let pendingChatSignature = null
+  const completedDefaultViewAttempts = new Set()
 
   const dropEntry = () => {
     const dispose = disposeEntry
@@ -112,6 +117,20 @@ export function installPlaySlotOccupancy(ctx, playClient) {
     dispose?.()
   }
 
+  const dropDefaultViewEntry = () => {
+    const dispose = disposeDefaultViewEntry
+    disposeDefaultViewEntry = null
+    defaultViewEntryKey = null
+    dispose?.()
+  }
+
+  const rememberDefaultViewAttempt = key => {
+    completedDefaultViewAttempts.delete(key)
+    completedDefaultViewAttempts.add(key)
+    if (completedDefaultViewAttempts.size <= PLAY_DEFAULT_VIEW_ATTEMPT_LIMIT) return
+    completedDefaultViewAttempts.delete(completedDefaultViewAttempts.values().next().value)
+  }
+
   const dropIoEntry = () => {
     const disposeIo = disposeIoEntry
     disposeIoEntry = null
@@ -119,6 +138,7 @@ export function installPlaySlotOccupancy(ctx, playClient) {
   }
 
   const dropChatEntry = () => {
+    dropDefaultViewEntry()
     dropConversationEntry()
     dropIoEntry()
     chatBinding = null
@@ -137,6 +157,7 @@ export function installPlaySlotOccupancy(ctx, playClient) {
   const syncChatEntries = () => {
     if (chatBinding === null) return
     if (!chatDeclared) {
+      dropDefaultViewEntry()
       dropConversationEntry()
     } else if (disposeChatEntry === null) {
       disposeChatEntry = ctx.slots.register({
@@ -151,6 +172,26 @@ export function installPlaySlotOccupancy(ctx, playClient) {
           openSession: sessionId => ctx.sessions.open(sessionId),
         }),
       }, MowanChatView)
+    }
+    const defaultViewKey = `${chatBinding.signature}\u0000${chatBinding.playthrough.path}`
+    if (chatDeclared
+      && disposeDefaultViewEntry === null
+      && !completedDefaultViewAttempts.has(defaultViewKey)) {
+      const complete = () => {
+        rememberDefaultViewAttempt(defaultViewKey)
+        if (defaultViewEntryKey === defaultViewKey) dropDefaultViewEntry()
+      }
+      defaultViewEntryKey = defaultViewKey
+      disposeDefaultViewEntry = ctx.slots.register({
+        name: 'conversation.view',
+        id: 'chat',
+        order: 0,
+        priority: PLAY_SLOT_PRIORITY,
+        inject: () => ({
+          targetViewId: PLAY_VIEW_ID,
+          complete,
+        }),
+      }, DefaultConversationViewAdapter)
     }
     if (!ioDeclared) {
       dropIoEntry()
@@ -260,6 +301,7 @@ export function installPlaySlotOccupancy(ctx, playClient) {
     startChatObserver()
     return () => {
       chatDeclared = false
+      dropDefaultViewEntry()
       dropConversationEntry()
       if (ioDeclared) reconcileChat(false)
       else stopChatObserver()

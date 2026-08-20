@@ -31,7 +31,7 @@ __export(index_exports, {
   name: () => name
 });
 module.exports = __toCommonJS(index_exports);
-var import_react13 = require("react");
+var import_react14 = require("react");
 
 // packages/ui-settings/src/locale-contract.js
 var DEFAULT_UI_LOCALE = "zh-CN";
@@ -5961,10 +5961,31 @@ function PlayUnboundNotice({ session, useSessions, playClient }) {
   }, uiMessage("play.notice.unbound"));
 }
 
+// packages/client/src/play/view-default.js
+var import_react12 = require("react");
+function defaultViewTarget(selectedView, targetViewId) {
+  return selectedView === null || selectedView === void 0 ? targetViewId : null;
+}
+function DefaultConversationViewAdapter({ useStore, actions, targetViewId, complete }) {
+  const selectedView = useStore((state) => state.view);
+  (0, import_react12.useLayoutEffect)(() => {
+    const target = defaultViewTarget(selectedView, targetViewId);
+    if (target !== null && typeof actions?.setView === "function") {
+      try {
+        actions.setView(target);
+      } catch {
+      }
+    }
+    queueMicrotask(complete);
+  }, [actions, complete, selectedView, targetViewId]);
+  return null;
+}
+
 // packages/client/src/play/occupancy.js
 var PLAY_SLOT_PRIORITY = -100;
 var PLAY_VIEW_ID = "rp";
 var PLAY_VIEW_ORDER = -100;
+var PLAY_DEFAULT_VIEW_ATTEMPT_LIMIT = 256;
 function installPlaySlotOccupancy(ctx, playClient) {
   let mode = "native";
   let declared = false;
@@ -5977,11 +5998,14 @@ function installPlaySlotOccupancy(ctx, playClient) {
   let ioDeclared = false;
   let chatGeneration = 0;
   let disposeChatEntry = null;
+  let disposeDefaultViewEntry = null;
+  let defaultViewEntryKey = null;
   let disposeIoEntry = null;
   let disposeSessionSubscription = null;
   let refreshChatListener = null;
   let chatBinding = null;
   let pendingChatSignature = null;
+  const completedDefaultViewAttempts = /* @__PURE__ */ new Set();
   const dropEntry = () => {
     const dispose = disposeEntry;
     disposeEntry = null;
@@ -6057,12 +6081,25 @@ function installPlaySlotOccupancy(ctx, playClient) {
     disposeChatEntry = null;
     dispose?.();
   };
+  const dropDefaultViewEntry = () => {
+    const dispose = disposeDefaultViewEntry;
+    disposeDefaultViewEntry = null;
+    defaultViewEntryKey = null;
+    dispose?.();
+  };
+  const rememberDefaultViewAttempt = (key) => {
+    completedDefaultViewAttempts.delete(key);
+    completedDefaultViewAttempts.add(key);
+    if (completedDefaultViewAttempts.size <= PLAY_DEFAULT_VIEW_ATTEMPT_LIMIT) return;
+    completedDefaultViewAttempts.delete(completedDefaultViewAttempts.values().next().value);
+  };
   const dropIoEntry = () => {
     const disposeIo = disposeIoEntry;
     disposeIoEntry = null;
     disposeIo?.();
   };
   const dropChatEntry = () => {
+    dropDefaultViewEntry();
     dropConversationEntry();
     dropIoEntry();
     chatBinding = null;
@@ -6078,6 +6115,7 @@ function installPlaySlotOccupancy(ctx, playClient) {
   const syncChatEntries = () => {
     if (chatBinding === null) return;
     if (!chatDeclared) {
+      dropDefaultViewEntry();
       dropConversationEntry();
     } else if (disposeChatEntry === null) {
       disposeChatEntry = ctx.slots.register({
@@ -6092,6 +6130,24 @@ function installPlaySlotOccupancy(ctx, playClient) {
           openSession: (sessionId) => ctx.sessions.open(sessionId)
         })
       }, MowanChatView);
+    }
+    const defaultViewKey = `${chatBinding.signature}\0${chatBinding.playthrough.path}`;
+    if (chatDeclared && disposeDefaultViewEntry === null && !completedDefaultViewAttempts.has(defaultViewKey)) {
+      const complete = () => {
+        rememberDefaultViewAttempt(defaultViewKey);
+        if (defaultViewEntryKey === defaultViewKey) dropDefaultViewEntry();
+      };
+      defaultViewEntryKey = defaultViewKey;
+      disposeDefaultViewEntry = ctx.slots.register({
+        name: "conversation.view",
+        id: "chat",
+        order: 0,
+        priority: PLAY_SLOT_PRIORITY,
+        inject: () => ({
+          targetViewId: PLAY_VIEW_ID,
+          complete
+        })
+      }, DefaultConversationViewAdapter);
     }
     if (!ioDeclared) {
       dropIoEntry();
@@ -6189,6 +6245,7 @@ function installPlaySlotOccupancy(ctx, playClient) {
     startChatObserver();
     return () => {
       chatDeclared = false;
+      dropDefaultViewEntry();
       dropConversationEntry();
       if (ioDeclared) reconcileChat(false);
       else stopChatObserver();
@@ -6390,8 +6447,8 @@ function createLivePlayClient({
 }
 
 // packages/client/src/play/regex-panel.js
-var import_react12 = require("react");
-var h12 = createLocalizedElement(import_react12.createElement);
+var import_react13 = require("react");
+var h12 = createLocalizedElement(import_react13.createElement);
 var EMPTY_DOCUMENT = Object.freeze({ schemaVersion: 1, rules: Object.freeze([]) });
 var SCOPE_KINDS = Object.freeze(["global", "preset", "character"]);
 function activeRegexBindings(snapshot) {
@@ -6527,12 +6584,12 @@ function RuleEditor({ rule, busy, update, remove }) {
   );
 }
 function RegexPanel({ client, activeSnapshot, close }) {
-  const [document2, setDocument] = (0, import_react12.useState)(EMPTY_DOCUMENT);
-  const [savedDocument, setSavedDocument] = (0, import_react12.useState)(EMPTY_DOCUMENT);
-  const [scopeKind, setScopeKind] = (0, import_react12.useState)("global");
-  const [busy, setBusy] = (0, import_react12.useState)(false);
-  const [status, setStatus] = (0, import_react12.useState)({ text: uiMessage("common.loading"), error: false });
-  const fileInput = (0, import_react12.useRef)(null);
+  const [document2, setDocument] = (0, import_react13.useState)(EMPTY_DOCUMENT);
+  const [savedDocument, setSavedDocument] = (0, import_react13.useState)(EMPTY_DOCUMENT);
+  const [scopeKind, setScopeKind] = (0, import_react13.useState)("global");
+  const [busy, setBusy] = (0, import_react13.useState)(false);
+  const [status, setStatus] = (0, import_react13.useState)({ text: uiMessage("common.loading"), error: false });
+  const fileInput = (0, import_react13.useRef)(null);
   const bindings = activeRegexBindings(activeSnapshot);
   const dirty = JSON.stringify(document2) !== JSON.stringify(savedDocument);
   const load = async () => {
@@ -6548,7 +6605,7 @@ function RegexPanel({ client, activeSnapshot, close }) {
       setBusy(false);
     }
   };
-  (0, import_react12.useEffect)(() => {
+  (0, import_react13.useEffect)(() => {
     load();
   }, [client]);
   const persist = async (next) => {
@@ -6665,7 +6722,7 @@ function RegexPanel({ client, activeSnapshot, close }) {
 }
 
 // packages/client/src/index.js
-var h13 = createLocalizedElement(import_react13.createElement);
+var h13 = createLocalizedElement(import_react14.createElement);
 var css11 = `
 .dtv-layer{position:absolute;inset:0;z-index:6;pointer-events:none;font-family:Inter,var(--dsw-font-family),sans-serif;color:var(--dsw-alias-label-primary)}
 .dtv-launcher{position:absolute;z-index:2;width:44px;height:44px;pointer-events:auto;overflow:hidden;border:0 solid transparent;border-radius:22px;background:transparent;box-shadow:none;transition:width .22s ease,height .22s ease,border-radius .22s ease,background-color .18s ease,box-shadow .18s ease;display:block}
@@ -6892,34 +6949,34 @@ function RpHighRiskDialog({ onDismiss }) {
   );
 }
 function TavernShell({ useSessions, useWorkspaces, createCleanSession, playClient, playSlots }) {
-  const [menuOpen, setMenuOpen] = (0, import_react13.useState)(false);
-  const [surface, setSurface] = (0, import_react13.useState)(null);
-  const [anchor, setAnchor] = (0, import_react13.useState)(initialLauncherAnchor);
-  const [chromeMode, setChromeMode] = (0, import_react13.useState)("native");
-  const [chromeError, setChromeError] = (0, import_react13.useState)("");
-  const [activeSnapshot, setActiveSnapshot] = (0, import_react13.useState)(null);
-  const [statusError, setStatusError] = (0, import_react13.useState)("");
-  const [uiSettings, setUiSettings] = (0, import_react13.useState)(getClientUiSettings);
-  const [settingsStatus, setSettingsStatus] = (0, import_react13.useState)({ text: translate("settings.saved"), error: false });
-  const [settingsBusy, setSettingsBusy] = (0, import_react13.useState)(false);
-  const [rpPolicyDraft, setRpPolicyDraft] = (0, import_react13.useState)("");
-  const [rpPolicyLoaded, setRpPolicyLoaded] = (0, import_react13.useState)(false);
-  const [rpPolicyBusy, setRpPolicyBusy] = (0, import_react13.useState)(false);
-  const [rpAlert, setRpAlert] = (0, import_react13.useState)(null);
-  const drag = (0, import_react13.useRef)(null);
-  const suppressClick = (0, import_react13.useRef)(false);
-  const chromeModeRef = (0, import_react13.useRef)("native");
-  const chromeController = (0, import_react13.useRef)(null);
-  const statusGeneration = (0, import_react13.useRef)(0);
-  const rpAlertRef = (0, import_react13.useRef)(null);
-  const dismissedRpAlerts = (0, import_react13.useRef)(/* @__PURE__ */ new Set());
+  const [menuOpen, setMenuOpen] = (0, import_react14.useState)(false);
+  const [surface, setSurface] = (0, import_react14.useState)(null);
+  const [anchor, setAnchor] = (0, import_react14.useState)(initialLauncherAnchor);
+  const [chromeMode, setChromeMode] = (0, import_react14.useState)("native");
+  const [chromeError, setChromeError] = (0, import_react14.useState)("");
+  const [activeSnapshot, setActiveSnapshot] = (0, import_react14.useState)(null);
+  const [statusError, setStatusError] = (0, import_react14.useState)("");
+  const [uiSettings, setUiSettings] = (0, import_react14.useState)(getClientUiSettings);
+  const [settingsStatus, setSettingsStatus] = (0, import_react14.useState)({ text: translate("settings.saved"), error: false });
+  const [settingsBusy, setSettingsBusy] = (0, import_react14.useState)(false);
+  const [rpPolicyDraft, setRpPolicyDraft] = (0, import_react14.useState)("");
+  const [rpPolicyLoaded, setRpPolicyLoaded] = (0, import_react14.useState)(false);
+  const [rpPolicyBusy, setRpPolicyBusy] = (0, import_react14.useState)(false);
+  const [rpAlert, setRpAlert] = (0, import_react14.useState)(null);
+  const drag = (0, import_react14.useRef)(null);
+  const suppressClick = (0, import_react14.useRef)(false);
+  const chromeModeRef = (0, import_react14.useRef)("native");
+  const chromeController = (0, import_react14.useRef)(null);
+  const statusGeneration = (0, import_react14.useRef)(0);
+  const rpAlertRef = (0, import_react14.useRef)(null);
+  const dismissedRpAlerts = (0, import_react14.useRef)(/* @__PURE__ */ new Set());
   const sessionId = useSessions((state) => state.current);
   const sessionBlank = useSessions((state) => state.current === void 0 || state.current === null ? true : state.byId?.[state.current]?.blank === true);
   const workspaceId = useWorkspaces((state) => workspaceTargetId(state, sessionId));
   const close = () => setSurface(null);
   if (rpAlert === null || dismissedRpAlerts.current.has(rpAlert.id)) rpAlertRef.current = null;
   else rpAlertRef.current = rpAlert;
-  (0, import_react13.useEffect)(() => {
+  (0, import_react14.useEffect)(() => {
     let active = true;
     let channel = null;
     try {
@@ -6974,7 +7031,7 @@ function TavernShell({ useSessions, useWorkspaces, createCleanSession, playClien
       channel?.close();
     };
   }, [playClient, playSlots]);
-  (0, import_react13.useEffect)(() => {
+  (0, import_react14.useEffect)(() => {
     let active = true;
     uiSettingsRequest().then((next) => {
       if (!active) return;
@@ -7025,7 +7082,7 @@ function TavernShell({ useSessions, useWorkspaces, createCleanSession, playClien
       setSettingsBusy(false);
     }
   };
-  (0, import_react13.useEffect)(() => {
+  (0, import_react14.useEffect)(() => {
     if (surface !== "settings") return void 0;
     let active = true;
     setRpPolicyLoaded(false);
@@ -7069,7 +7126,7 @@ function TavernShell({ useSessions, useWorkspaces, createCleanSession, playClien
       setRpPolicyBusy(false);
     }
   };
-  const refreshStatus = (0, import_react13.useCallback)(async () => {
+  const refreshStatus = (0, import_react14.useCallback)(async () => {
     const generation = ++statusGeneration.current;
     try {
       const next = await activeView(sessionId);
@@ -7081,7 +7138,7 @@ function TavernShell({ useSessions, useWorkspaces, createCleanSession, playClien
       setStatusError(reason instanceof Error ? reason.message : String(reason));
     }
   }, [sessionId]);
-  (0, import_react13.useEffect)(() => {
+  (0, import_react14.useEffect)(() => {
     statusGeneration.current += 1;
     setActiveSnapshot(null);
     setStatusError("");
@@ -7090,12 +7147,12 @@ function TavernShell({ useSessions, useWorkspaces, createCleanSession, playClien
       statusGeneration.current += 1;
     };
   }, [refreshStatus, sessionId]);
-  (0, import_react13.useEffect)(() => {
+  (0, import_react14.useEffect)(() => {
     const onRefresh = () => refreshStatus();
     window.addEventListener(CLIENT_REFRESH_EVENT, onRefresh);
     return () => window.removeEventListener(CLIENT_REFRESH_EVENT, onRefresh);
   }, [refreshStatus]);
-  (0, import_react13.useEffect)(() => {
+  (0, import_react14.useEffect)(() => {
     const onResize = () => setAnchor((current2) => {
       const next = clampLauncherAnchor(current2, viewport(), uiSettings.scale);
       persistLauncherAnchor(next);
@@ -7104,14 +7161,14 @@ function TavernShell({ useSessions, useWorkspaces, createCleanSession, playClien
     window.addEventListener("resize", onResize);
     return () => window.removeEventListener("resize", onResize);
   }, [uiSettings.scale]);
-  (0, import_react13.useEffect)(() => {
+  (0, import_react14.useEffect)(() => {
     setAnchor((current2) => {
       const next = clampLauncherAnchor(current2, viewport(), uiSettings.scale);
       persistLauncherAnchor(next);
       return next;
     });
   }, [uiSettings.scale]);
-  (0, import_react13.useEffect)(() => {
+  (0, import_react14.useEffect)(() => {
     if (typeof sessionId !== "string" || sessionId === "") {
       dismissedRpAlerts.current = /* @__PURE__ */ new Set();
       rpAlertRef.current = null;
@@ -7147,7 +7204,7 @@ function TavernShell({ useSessions, useWorkspaces, createCleanSession, playClien
     } catch {
     }
   };
-  (0, import_react13.useEffect)(() => {
+  (0, import_react14.useEffect)(() => {
     const onKeyDown = (event) => {
       if (event.key !== "Escape") return;
       if (rpAlert !== null) dismissRpAlert();

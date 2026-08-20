@@ -67,6 +67,11 @@ test('Mowan adds the default RP view only while the current session belongs to a
   assert.equal(firstChat.options.order, PLAY_VIEW_ORDER)
   assert.equal(firstChat.options.priority, PLAY_SLOT_PRIORITY)
   assert.equal(firstChat.options.inject().playthrough, playthrough)
+  const firstAdapter = registrations.find(item => item.options.name === 'conversation.view' && item.options.id === 'chat')
+  assert.ok(firstAdapter)
+  assert.equal(firstAdapter.active, true)
+  assert.equal(firstAdapter.options.priority, PLAY_SLOT_PRIORITY)
+  assert.equal(firstAdapter.options.inject().targetViewId, PLAY_VIEW_ID)
 
   snapshot = {
     ...snapshot,
@@ -78,28 +83,35 @@ test('Mowan adds the default RP view only while the current session belongs to a
   notifySessions()
   await nextTurn()
   assert.equal(firstChat.active, true)
-  assert.equal(registrations.filter(item => item.options.name === 'conversation.view').length, 1)
+  assert.equal(registrations.filter(item => item.options.name === 'conversation.view').length, 2)
+
+  firstAdapter.options.inject().complete()
+  assert.equal(firstAdapter.active, false)
+  notifySessions()
+  await nextTurn()
+  assert.equal(registrations.filter(item => item.options.name === 'conversation.view').length, 2)
 
   snapshot = { ...snapshot, current: 'ordinary' }
   notifySessions()
   assert.equal(firstChat.active, false)
   await nextTurn()
-  assert.equal(registrations.filter(item => item.options.name === 'conversation.view').length, 1)
+  assert.equal(registrations.filter(item => item.options.name === 'conversation.view').length, 2)
 
   snapshot = { ...snapshot, current: 'outside' }
   notifySessions()
   await nextTurn()
-  assert.equal(registrations.filter(item => item.options.name === 'conversation.view').length, 1)
+  assert.equal(registrations.filter(item => item.options.name === 'conversation.view').length, 2)
 
   snapshot = { ...snapshot, current: 'root' }
   notifySessions()
   await nextTurn()
   const chats = registrations.filter(item => item.options.name === 'conversation.view')
-  assert.equal(chats.length, 2)
-  assert.equal(chats[1].active, true)
+  assert.equal(chats.length, 3)
+  assert.equal(chats[2].options.id, PLAY_VIEW_ID)
+  assert.equal(chats[2].active, true)
 
   occupancy.setMode('native')
-  assert.equal(chats[1].active, false)
+  assert.equal(chats[2].active, false)
   for (const cleanup of declarationCleanups) cleanup()
 })
 
