@@ -116,8 +116,28 @@ durable history。当前已实现的基础语义是：首次 assembly 必须按�
 这个 v1 子资源只编辑预设或角色卡原文。它不组合全局正则，不计算当前 session 最终生效集合，不修改历史、timeline 或 AI 请求；魔丸显示管线只把保存后的资源数据作为渲染投影读取。失败响应沿用所属资源 API 的既有格式与状态码。
 ### 后端 operation log utility
 
-packages/play/src/operation-log.js 导出 createOperationContext 和 operationLogConstants，供 workspace/catalog/timeline 及 session/import mutation 接入。当前已接入 workspace bind、目录创建、文件写入、session create/branch/user-message 和 import-context PUT/DELETE；只读 GET 不产 operation 日志。它只接受 Cordis ctx.logger（或其 callable logger service），以 dsh-tavern.operation 前缀输出单行日志；前缀后的部分是稳定 JSON。一次 operation 在 context 创建时保存 operation 名和开始时刻，并可记录 start、多个 stage、一次 success 或一次 failure。成功和失败终态包含 result 与非负 durationMs；失败只记录稳定 error.code（缺失时为 UNKNOWN_ERROR）和可选 HTTP status，使用 warn 级别。
+`packages/play/src/operation-log.js` 导出 `createOperationContext` 和
+`operationLogConstants`，供 workspace/catalog/timeline 及 session/import
+mutation 接入。当前已接入以下写操作：
 
-日志 payload 的白名单只有 operationId、operation、stage、result、errorCode、status、durationMs、method、sessionId、playthroughId、path。标识和路径会做类型/长度/控制字符归一化；prompt、QA、角色卡、preset、正则、资源正文、请求 body、message text 及未知字段均不会输出，也不做正文摘要。logger 缺失、方法缺失或 logger 自身抛错时 fail-soft。terminal 之后的 stage 或 terminal 调用无效且不会重复写终态。
+- `PUT /workspace`（bind）、`POST /workspace/dirs`、`PUT /workspace/files?path=`；
+- `POST /sessions`、`POST /sessions/:id/branch`、`POST /sessions/:id/user-message`；
+- `PUT /sessions/:id/import-context` 和 `DELETE /sessions/:id/import-context`。
 
-本节声明 utility 及上述 workspace/session/import endpoint 接入；当前不能据此声称所有生命周期静默失败都已被日志覆盖。默认 Cordis logger 仍由其自身管理，插件不写持久日志文件、浏览器日志或 exporter。
+只读的 GET 不产 operation 日志。它只接受 Cordis `ctx.logger`（或其 callable
+logger service），以 `dsh-tavern.operation ` 前缀输出单行日志；前缀后的部分是稳定
+JSON。一次 operation 在 context 创建时保存 operation 名和开始时刻，并可记录
+`start`、多个 `stage`、一次 `success` 或一次 `failure`。成功和失败终态包含
+`result` 与非负 `durationMs`；失败只记录稳定 `error.code`（缺失时为
+`UNKNOWN_ERROR`）和可选 HTTP status，使用 `warn` 级别。
+
+日志 payload 的白名单只有 `operationId`、`operation`、`stage`、`result`、
+`errorCode`、`status`、`durationMs`、`method`、`sessionId`、`playthroughId`、
+`path`。标识和路径会做类型、长度和控制字符归一化；prompt、QA、角色卡、
+preset、正则、资源正文、请求 body、message text 及未知字段均不会输出，也不做
+正文摘要。logger 缺失、方法缺失或 logger 自身抛错时 fail-soft。terminal 之后的
+stage 或 terminal 调用无效且不会重复写终态。
+
+本节声明 utility 及上述 workspace/session/import endpoint 接入；当前不能据此声称
+所有生命周期静默失败都已被日志覆盖。默认 Cordis logger 仍由其自身管理，插件不写
+持久日志文件、浏览器日志或 exporter。
