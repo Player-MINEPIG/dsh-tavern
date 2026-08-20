@@ -294,9 +294,11 @@ RP 是当前 session 的叠加，不是 DSH agent preset。开启后文件沙箱
 | --- | --- |
 | 插件 id / 包名 | `pmp-dsh-tavern` |
 | 本插件资源 API（预设、卡、书、RP、Trace…） | `/pmp-dsh-tavern/api/v1/...` |
-| 扮演表面元 API | `/pmp-dsh-tavern/api/v2/...`（chrome、workspace files/dirs、sessions / focus 已实现） |
+| 扮演表面元 API | `/pmp-dsh-tavern/api/v2/...`（2.0 预发布合同；可靠性加固仍在进行） |
 
-v1 是本插件悬浮球 / 侧栏 / Trace 用的 bundled UI 资源合同，不保证给第三方扮演表面用。v2 才是给任意扮演前端的稳定面：chrome、扮演工作区文件、session（create / branch / **user-message** / messages）以及只读 **GET `/focus`**。`user-message` 只提交下一条用户正文，不是 loader 拼好的完整 prompt；focus 是后端告诉前端上边栏该跟哪条 session，前端自己 `sessions.open`，不用 POST。swipe、删改、周目分支、导入导出都由前端用这些接口拼。想在这套协议上做自己的前端，也用同一套积木拼产品功能（例如「修改并重新生成」= swipe 链路换掉 `user-message` 的 text），不要等本仓库加专用 API。扮演工作区不要放系统盘。时间线含开场白；上边栏对话 / 轨迹 / Tavern Trace 保留。人类可读导出为静态 HTML，另可保存 SillyTavern 聊天 JSON。
+v1 是本插件悬浮球 / 侧栏 / Trace 用的 bundled UI 资源合同，不保证给第三方扮演表面用。v2 是给任意扮演前端的稳定面：chrome、扮演工作区文件、session（create / branch / **user-message** / messages）以及按周目查询的只读 **GET `/playthroughs/:id/focus`**。该 focus 路由及 revision/CAS、完整 history、读写校验、import claim 和路径竞态加固是 2.0 对外发布前的已接受合同，在 backlog 标为完成前不要把当前预发布实现当成最终稳定版。`user-message` 只提交下一条用户正文，不是 loader 拼好的完整 prompt；focus 告诉前端上边栏该跟哪条 session，前端自己 `sessions.open`，不用 POST。swipe、删改、周目分支、导入导出都由前端用这些接口拼。想在这套协议上做自己的前端，也用同一套积木拼产品功能（例如「修改并重新生成」= swipe 链路换掉 `user-message` 的 text），不要等本仓库加专用 API。扮演工作区不要放系统盘。greeting 从角色卡与 selection 派生，不写入时间线或 DSH 历史；上边栏对话 / 轨迹 / Tavern Trace 保留。人类可读导出为静态 HTML，另可保存 SillyTavern 聊天 JSON。
+
+2.0 的 history API 目标是读取 DSH 提供的全部历史，直到 Host 返回 `hasMore: false`；插件不会在 32 页等人为阈值静默截断，也不会在这一层做摘要或切片。**能通过 API 读取全历史，不代表模型的一次请求能够容纳全历史。** 模型上下文超限、DSH 是否压缩上下文以及最终错误提示仍由 DSH/模型层负责；dsh-tavern 不承诺绕过其上下文窗口。
 
 ## 安全风险
 
@@ -312,6 +314,7 @@ v1 是本插件悬浮球 / 侧栏 / Trace 用的 bundled UI 资源合同，不�
 - **角色卡内嵌书的导入期诊断仍可加强**：角色卡导入有 32 MiB 上限；编辑和运行时解析有完整结构守卫，但导入时不会提前拒绝所有最终不可运行的超复杂内嵌书。
 - **兼容不等于完整复刻 ST**：真实 role/depth 拓扑、greeting 历史和部分高级世界书状态尚未实现。请以 Tavern Trace 与 DSH `request/header` 验证实际行为。
 - **v2.0 扮演 swipe 会放大磁盘占用（规划）**：自定义前端表面的重新生成按 DSH 分支新开 session，每份分支都带着分叉点之前的完整会话日志。请把扮演工作区放在空间充足的磁盘，不要放在系统盘（Windows 上避免 `C:\`）。自动清理未采用的分支尚未提供。导入 SillyTavern 对话时若带多份 session。
+- **生命周期日志当前只使用 Host 的 `ctx.logger`**：发布前会为创建、导入绑定、catalog/timeline 写入等变更记录 operationId、阶段、结果和稳定错误码，但不记录聊天或资源正文。默认日志是进程内有界记录，重启后不应视为持久审计；持久 journal、浏览器日志和额外 exporter 暂缓。
 
 更完整的安全预算、运行态变更缺口和数据边界见 [Loader contract](docs/LOADER_CONTRACT.md)。
 

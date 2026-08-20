@@ -89,8 +89,10 @@ footer 中央的导入按钮可从 JSON/JSONL 或本插件 bundle 绑定外部�
 外部记录只允许绑定到仍为空的 root session。第一次实际发送请求时，loader 将它作为转义的、
 标明 `untrusted` 的只读上下文交给模型；它不会成为 DSH durable history，也不会写入
 `timeline.json`，所以不会伪造一轮 QA。正常一轮结束后绑定会标记为已消费；从此以及出现
-真实 user/assistant 消息、开放 turn 后，都不能再改绑或解绑。若请求异常、取消或 Host 没有
-发出 `turn/end`，重试语义仍属于待决策风险，见 [周目审查记录](PLAY_REVIEW.md)。
+真实 user/assistant 消息、开放 turn 后，都不能再改绑或解绑。2.0 发布前将补齐已接受的
+claim/lineage 语义：同一用户回合的 retry 或 swipe 可以重放该上下文；中断后另发一条用户
+消息不会再次注入；成功后保留原回合 lineage 供将来 swipe。该加固尚待实现，见
+[周目审查记录](PLAY_REVIEW.md)。
 
 导入文件和绑定摘要保存在已选扮演工作区根内；服务端会校验路径、哈希、`schemaVersion: 1`、
 QA 数量（最多 2,000）和文件大小（最多 256 KiB）。

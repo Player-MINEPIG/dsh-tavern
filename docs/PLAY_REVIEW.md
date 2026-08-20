@@ -22,15 +22,28 @@ timeline 只保存 session/event 范围引用；路径 API 有根目录、相对
 | 空会话 greeting dock | 已实现、已验收 | 在原生 composer dock 展示 greeting；左右切换按钮保持两侧，卡无 greeting 时保留空白 opening 和 footer。 |
 | 外部记录绑定 | 已实现、已验收 | 绑定到当前空 root session，不新建 session 或 timeline；支持绑定、换绑、解绑，解绑后恢复 greeting。服务端会重复空会话锁定检查。 |
 | 最近三轮 QA | 已实现、已验收 | opening dock 显示导入记录最后三轮 QA；这是显示预览，不是 DSH 历史。 |
-| 一次性注入 | 正常路径已实现；边界待决策 | 首次实际 assembly 注入转义、`untrusted`、只读上下文，正常 `turn/end` 后 `pending → consumed`；request error、取消、断线和缺失终态事件仍属于下方 P1 请求语义风险。 |
+| 一次性注入 | 正常路径已实现；加固待实现 | 首次实际 assembly 注入转义、`untrusted`、只读上下文；request error、取消、断线、retry 与 swipe 的新 claim/lineage 语义已经接受，尚待实现。 |
 
 上述行为在 DSH 0.1.0-rc.8 上通过用户验收；生产构建与 347 个测试通过、2 个测试跳过。
 “已验收”只表示当前产品路径，不表示下方并发、事务或失败恢复风险已关闭。
 
-但 v2 作为“第三方可基于协议开发前端”的稳定面，仍有以下需要在周目生命周期验收前处理或
-明确降级的风险。
+但 v2 作为“第三方可基于协议开发前端”的稳定面，仍有以下发布前风险。2026-08-21 已完成
+协议决策，下面保留原始发现作为证据；新的完成合同以紧随其后的决策表为准。
 
-## 必须重新讨论 API 或生命周期语义
+## 已接受的处理决定（2026-08-21，均待实现）
+
+| 原风险 | 已接受的合同 |
+| --- | --- |
+| 历史完整性 | 移除 32 页上限，一直分页到 Host `hasMore: false`，仅保留 cursor 不前进保护。插件不摘要/切片；模型上下文超限由 DSH 报错，README 明确区分两层。 |
+| catalog/timeline 并发 | GET 返回 SHA-256 revision；PUT 带 `expectedRevision`，`null` 仅创建；冲突为 409 `PLAY_FILE_REVISION_CONFLICT`。比较、校验、临时写、替换在同一目标锁内；客户端冲突后回读并重放。 |
+| 半完成资源 | 不增加跨文件事务。每个生命周期变更 API 使用同一 `operationId` 通过 `ctx.logger` 记录阶段/结果/错误码/耗时；客户端回读并恢复。只记录标识和摘要，不记录正文。 |
+| import-context 请求语义 | 首次 assembly 按原用户 turn/event claim；同一回合 retry/swipe 可重放；中断后新用户消息不重复；成功后保留 lineage 供未来 swipe。 |
+| catalog schema | PUT 写前和 GET 读后都校验。id/规范化 path 唯一；id 使用安全段；path 为安全相对路径且以 `/timeline.json` 结尾；校验已知 `ext.pmpDshTavern`，保留第三方 ext。 |
+| focus | 稳定入口改为 `GET /playthroughs/:id/focus`，由已校验 catalog 解析路径，返回 playthroughId/sessionId/nodeId/variantId；空周目使用 rootSessionId。移除无参数默认行为和 timeline PUT 的隐式 active 写入。 |
+| 路径 TOCTOU | 目标锁内逐段 `lstat` 拒绝 symlink/junction/reparse point，逐层创建并 realpath 复核，临时文件排他 `wx`，写/rename 前复验父目录。承认外部本机进程仍可制造极窄竞态，本轮不引入 native addon。 |
+| 更广日志 | 本轮只支持 Cordis `ctx.logger`。其默认是进程内最近 1000 条记录的 ring buffer，未发现本插件自行写持久日志。浏览器 logger、持久有界 journal 和额外 exporter 进入 backlog，不阻塞本轮实现。 |
+
+## 原始发现：API 与生命周期语义
 
 | 级别 | 位置 | 发现与影响 | 建议 |
 | --- | --- | --- | --- |
@@ -39,7 +52,7 @@ timeline 只保存 session/event 范围引用；路径 API 有根目录、相对
 | P1 历史完整性 | `packages/play/src/sessions.js:62-74` | `readAllHistory()` 最多读取 32 页；当 Host 仍返回 `hasMore: true` 时循环自然结束，却不返回 truncated、continuation 或错误。`GET /sessions/:id/messages` 因而可能静默返回不完整历史，客户端会把它当作完整历史用于 timeline 对账、导出或生成 variant。每页大小也未由 v2 合同明确限制。 | API 需要明确完整性：继续分页并返回 continuation，或达到上限时返回 413/409 及 `truncated: true`；客户端不得把截断结果当完整消息集。应同时给 Host history 指定 bounded page size。 |
 | P1 请求语义 | `packages/tavern-loader/src/import-context-runtime.js:132-159`、`packages/tavern-loader/src/index.js:385-402` | 导入上下文状态只有在 `session/event` 的 `turn/end` 才从 `pending` 变为 `consumed`。request error、取消、断线或 Host 未发出 `turn/end` 时，binding 会一直 pending；下一次请求会再次注入同一份导入历史。即使正常情况下同一 turn 发生多次 assembly，`contextFor()` 也没有 request/turn token 去保证只消费一次。 | 重新确定 one-shot 的所有权和重试语义：在首次实际 assembly 前建立带 turn/request id 的 claim，处理 request-error/cancel/agent abort/启动恢复；若允许失败后重试，需显式记录 retry 次数，不能依靠“等 turn/end”。补充 Host 终态事件或 loader 的清理接口。 |
 
-## 中风险安全与 schema 问题
+## 原始发现：安全与 schema
 
 | 级别 | 位置 | 发现与影响 | 建议 |
 | --- | --- | --- | --- |
@@ -56,11 +69,11 @@ timeline 只保存 session/event 范围引用；路径 API 有根目录、相对
 - 不用本地 controller 的串行队列冒充跨客户端事务；它仍需要配合服务端版本/冲突合同。
 - 修复上述问题时仍应保持 native view、原生 Chat、Host session 历史和卸载回退可独立工作。
 
-## 建议的验收顺序
+## 更新后的验收顺序
 
-1. 先确定 catalog/timeline 并发写入和周目创建失败后的补偿合同；命名、重命名、空周目复用、
-   opening dock 与普通导入路径已通过产品验收，但仍依赖当前整文档写入语义；
-2. 用超过 32 页的历史、请求失败/取消后的导入上下文、两个标签页同时写入同一 catalog/
-   timeline 做协议验收；
-3. 最后再验收功能按钮，因为 swipe、adopt、hide、display override 和 restore 都依赖
-   同一份 timeline 一致性语义。
+1. 逐 commit 实现完整 history、catalog/timeline 校验与 CAS、`ctx.logger` 阶段日志、claim/lineage、
+   playthrough-id focus 和路径 TOCTOU 加固；
+2. 用超过 32 页的历史、请求失败/取消/中断/重试后的导入上下文、两个标签页并发写同一
+   catalog/timeline、损坏文件和 symlink/junction 替换做协议验收；
+3. 最后统一验收功能按钮，因为 swipe、adopt、hide、display override 和 restore 都依赖
+   同一份 timeline、focus 与 import lineage 一致性语义。

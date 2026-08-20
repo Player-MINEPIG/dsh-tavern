@@ -4,6 +4,19 @@ This is the staged implementation log for dsh-tavern. It is kept separately
 from the product README so reviewers can follow intent, decisions, verification,
 and known limits chronologically.
 
+## 2026-08-21 — Freeze the remaining v2 release-hardening contracts
+
+- Accepted complete Host history pagination without a plugin page cap; model
+  context overflow remains owned by DSH rather than a Tavern summarizer.
+- Accepted read/write catalog validation, revision/CAS writes, playthrough-id
+  focus, import-context claim lineage, and practical path TOCTOU hardening as
+  release blockers rather than silently treating the reviewed risks as done.
+- Kept playthrough lifecycle as a composition of public atomic APIs. Mutation
+  stages will use backend `ctx.logger` with operation ids and no resource or
+  conversation bodies; browser and persistent logging remain deferred.
+
+Documentation only; runtime implementation and rc.8 verification remain open.
+
 ## 2026-08-20 — Use one opening layout with or without greeting
 
 - Cards without greeting now keep the same opening container and import-footer

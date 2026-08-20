@@ -21,24 +21,26 @@
 | GET | `/workspace` | 根路径、是否已选、合同版本、警告 | 已实现 |
 | PUT | `/workspace` | 绑定**一棵**已存在的扮演工作区根。首次选择带 `SWIPE_DISK` / 可能的 `SYSTEM_DISK` 警告。不 mkdir 根 | 已实现 |
 | POST | `/workspace/dirs` | `{ path }` 相对路径，由 `PlayWorkspaceStore` 在已绑定根目录内的路径监狱中直接创建。兼容 native/browse Host；不依赖全局 `directory-picker` 或 `apiProxy.host.createDirectory`。未绑根 → 409；拒绝绝对路径、`..`、symlink 逃逸和文件冲突；不新注册 DSH 工作区 | 已实现 |
-| GET | `/workspace/files?path=` | 读根内 UTF-8 文件 | 已实现 |
-| PUT | `/workspace/files?path=` | `{ content }` 写根内 UTF-8 文件。`..`、绝对路径、symlink 逃逸 → 400/403 | 已实现 |
+| GET | `/workspace/files?path=` | 读根内 UTF-8 文件。2.0 发布目标：受管 catalog/timeline 同时返回 SHA-256 `revision`，读后做 schema/路径校验 | 基础读取已实现；revision/读时校验待实现 |
+| PUT | `/workspace/files?path=` | 当前 `{ content }` 写根内 UTF-8 文件。2.0 发布目标：受管文档要求 `{ content, expectedRevision }`，`null` 仅创建，冲突返回 409 `PLAY_FILE_REVISION_CONFLICT` | 基础写入已实现；CAS/完整加固待实现 |
 | GET | `/workspace/files?list=` | 列一层前缀 | 已实现 |
 | POST | `/sessions` | 新开扮演 session。有角色卡时标题=角色名+时间；无角色卡时走 DSH `session.create` 默认标题，不 409。仅当 body 带 `selectionFromSessionId` 才复制 Tavern 绑定。插入扮演工作区。**不写 timeline** | 已实现 |
 | POST | `/sessions/:id/branch` | `{ atEventId }` = 日志 seq。fork，不写 timeline、不代发。开放 turn → 409 | 已实现 |
 | POST | `/sessions/:id/user-message` | `{ text }` 作为下一条用户正文，`session.prompt` `queue` | 已实现 |
-| GET | `/sessions/:id/messages` | `deriveMessages()` + `seq` + `incompleteTurn` | 已实现 |
+| GET | `/sessions/:id/messages` | `deriveMessages()` + `seq` + `incompleteTurn`。2.0 发布目标为持续读取到 `hasMore: false`，不设插件页数上限 | 基础读取已实现；完整分页待实现 |
 | GET | `/sessions/:id/import-context` | 返回 `{ binding }`；未绑定为 `null`，绑定只含 path/hash/state/数量摘要，不返回记录正文 | 已实现 |
 | PUT | `/sessions/:id/import-context` | `{ reference: { path, expectedHash? } }`；为空 session 绑定或换绑已写入工作区的 import-context | 已实现 |
 | DELETE | `/sessions/:id/import-context` | 为空 session 解绑；幂等返回 `{ binding: null }` | 已实现 |
-| GET | `/focus` | 只读派生 `{ sessionId }`。前端再 `sessions.open` | 已实现 |
-| POST | `/focus` | 不提供 | 405 |
+| GET | `/playthroughs/:id/focus` | 2.0 稳定合同：经 catalog 解析周目，返回 `{ playthroughId, sessionId, nodeId, variantId }`；空周目使用 `rootSessionId` | 待实现 |
+| GET | `/focus?path=` | 迁移期低层兼容：按显式 timeline path 派生 `{ sessionId }`；2.0 内置前端不再依赖 | 已实现，待降级为兼容面 |
+| GET | `/focus`（无 path） | 2.0 不提供默认目标；不再把“最近写入 timeline”当作用户 focus | 待移除 |
+| POST | `/focus`、`/playthroughs/:id/focus` | 不提供 | 405 |
 
-路径存在、方法不对 → `405 PLAY_METHOD_NOT_ALLOWED`（例如 `POST /chrome`、`POST /focus`、`GET /sessions`）。`404` 只用于路径本身不存在。
+路径存在、方法不对 → `405 PLAY_METHOD_NOT_ALLOWED`（例如 `POST /chrome`、`POST /focus`、`GET /sessions`）。稳定 focus 中周目 id 不存在返回 404；timeline 缺失或损坏返回 409。
 
 import-context 修改由 session 权威状态锁定：只要存在 DSH user/assistant message、开放 turn，或该绑定已经在一次请求中消费，`PUT` / `DELETE` 都返回 `409 PLAY_IMPORT_CONTEXT_LOCKED`；前端隐藏按钮不能替代此检查。`PUT` 会重新读取工作区文件、执行大小/QA 结构限制并核对可选 `expectedHash`，然后把绑定置为 `pending`。`GET` 可在任意状态读取摘要；正文仍通过已有 `/workspace/files?path=` 按明确路径读取。首次实际请求组装时 loader 把内容标为 untrusted read-only context，正常 `turn/end` 后转为 `consumed`，不会写成 DSH 历史。
 
-`PUT` 命中 `timeline.json` / `catalog.json` 时先做 schema 校验，失败不落盘。timeline 只允许真实 `qa` 节点，greeting 从角色卡与 session selection 派生，不进入 timeline。`focusSessionId` 禁止写入。focus 是派生值：仍在渲染（未 `hidden`）的最后一轮 `qa` 的 adopted variant 的 `sessionId`。`GET /focus` 只返回 `{ ok, sessionId }`，不含 path / nodeId。空 timeline 的 `sessionId` 为 `null`。校验不读、不改 DSH 事件。
+当前 `PUT` 命中 `timeline.json` / `catalog.json` 时先做 schema 校验，失败不落盘。2.0 发布前还必须补齐 GET 读时校验、catalog id/path 唯一性和安全路径语法，并让受管文档使用 revision/CAS。timeline 只允许真实 `qa` 节点，greeting 从角色卡与 session selection 派生，不进入 timeline。focus 不存盘；稳定 focus 由 playthrough id、catalog 与 timeline 派生。校验不读、不改 DSH 事件。
 
 ### 周目生命周期组合语义
 
@@ -53,8 +55,9 @@ session/workspace/timeline/catalog 积木组合同样的流程。当前 bundled 
    读取并校验；显示名为 `x周目`，可通过 catalog 修改后重新读取确认。
 
 这里的“周目事务”是前端对公开原子操作的组合，不等同于服务端跨文件事务。单个客户端的
-controller 会串行同角色创建，但跨标签页或第三方客户端的并发写入、创建中途失败后的
-补偿仍属于 [`PLAY_REVIEW.md`](PLAY_REVIEW.md) 的待决策风险。
+controller 会串行同角色创建，但跨标签页或第三方客户端的并发写入仍必须由服务端 CAS
+解决。创建中途失败暂不增加跨文件事务：每个变更 API 使用同一 `operationId` 写 `ctx.logger`，
+客户端依据已完成阶段、回读结果和稳定错误码恢复；不得把组合流程宣传为原子提交。
 
 ### 外部记录导入上下文
 
@@ -62,22 +65,24 @@ controller 会串行同角色创建，但跨标签页或第三方客户端的并
 或 timeline 节点。绑定、换绑和解绑分别通过 `PUT` / `DELETE /sessions/:id/import-context`
 完成；客户端在同一 footer 中显示操作，绑定后预览最近三轮 QA。绑定状态为 `pending` 时，首次
 实际请求才注入完整内容；loader 将其转义并标记为 `untrusted`、只读上下文，不把它写入 DSH
-durable history。正常 `turn/end` 后变为 `consumed`，此后服务端拒绝修改。
+durable history。2.0 发布语义为：首次 assembly 按原用户 turn/event 建立 claim；同一回合的
+retry/swipe 可重放，中断后新发用户消息不重复；成功后保留 lineage 供未来 swipe。
 
 请求体为 `{ reference: { path, expectedHash? } }`。文件必须位于已绑定工作区根内，文档为
 `schemaVersion: 1` 且含 `qa` 数组；当前实现有 256 KiB 文档和 2,000 个 QA 对限制。普通
 SillyTavern JSON/JSONL 与本插件 bundle 可由客户端解析后写入该上下文文件。greeting 仍是
 展示投影，不伪造 assistant 历史。
 
-### 当前已知限制（不是已解决的事务合同）
+### 已接受、待实现的 2.0 发布加固
 
-- `/sessions/:id/messages` 的 Host history 读取目前最多分页 32 页；若 Host 仍返回 `hasMore`，
-  当前响应没有 `truncated`/continuation 字段。第三方前端不得把超过此界限的结果无条件当成
-  完整历史，详情见 [`PLAY_REVIEW.md`](PLAY_REVIEW.md)。
-- import-context 正常路径在 `turn/end` 后才变为 `consumed`。request error、取消、断线或缺失
-  `turn/end` 后是否允许重试、如何 claim 一次请求，尚未形成新的 v2 token/CAS 合同。
-- catalog/timeline 仍是整文档 GET→PUT；服务端版本号、ETag/CAS、原子 append/adopt 和跨客户端
-  冲突响应尚未提供。路径监狱能处理静态越界，但不宣称抵抗并发文件系统替换。
+- history 取消 32 页人为上限并一直分页至 `hasMore: false`；只保留 cursor 不前进保护。
+- import-context 使用按原用户回合的 claim/lineage 语义，覆盖 retry、swipe、取消和中断后新消息。
+- catalog/timeline GET 返回 revision，PUT 使用 `expectedRevision`；冲突显式 409，所有内置客户端回读重放。
+- catalog/timeline 在 GET 与 PUT 两侧校验；路径、CAS、校验、临时写和替换处于同一目标锁内。
+- 路径逐段拒绝 symlink/junction/reparse point，逐层创建并 realpath 复核，临时文件使用排他 `wx`。
+- 本轮日志只使用后端 `ctx.logger`，记录生命周期变更阶段和 `operationId`，不记录任何资源或聊天正文。浏览器日志、持久 journal 和额外 exporter 暂缓。
+
+以上在完成代码、自动测试和 rc.8 验收前均不得宣称已经实现。具体风险与决策见 [`PLAY_REVIEW.md`](PLAY_REVIEW.md)。
 
 `chrome` 是整个前端的蓝/红球，存在插件 data `chrome.json`，默认 `native`。非法 `mode` → 400。GET 不要求 JSON Content-Type。
 
