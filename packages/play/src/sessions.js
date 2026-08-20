@@ -3,7 +3,6 @@ import { deriveFocus, parseCatalogJson, parseTimelineJson } from './timeline.js'
 
 const MAX_BODY_BYTES = 64 * 1024
 const SESSION_ID_PATTERN = /^[A-Za-z0-9][A-Za-z0-9._:-]{0,199}$/
-const MAX_HISTORY_PAGES = 32
 
 function requireSessionId(value) {
   if (typeof value !== 'string' || !SESSION_ID_PATTERN.test(value)) {
@@ -62,13 +61,21 @@ export function formatPlaySessionTitle(characterName, now = new Date()) {
 async function readAllHistory(host, sessionId) {
   const collected = []
   let beforeSeq
-  for (let page = 0; page < MAX_HISTORY_PAGES; page += 1) {
+  for (;;) {
     const result = await host.history({ sessionId, beforeSeq })
     const events = result?.events ?? []
     collected.unshift(...events)
     if (result?.hasMore !== true) break
+    if (events.length === 0) {
+      throw httpError(502, 'Host history cursor stalled: hasMore=true with an empty page', 'PLAY_HISTORY_CURSOR_STALLED')
+    }
     const oldest = eventRecord(events[0])
-    if (!Number.isSafeInteger(oldest?.seq)) break
+    if (!Number.isSafeInteger(oldest?.seq)) {
+      throw httpError(502, 'Host history cursor stalled: page has no valid oldest sequence', 'PLAY_HISTORY_CURSOR_STALLED')
+    }
+    if (beforeSeq !== undefined && oldest.seq >= beforeSeq) {
+      throw httpError(502, 'Host history cursor stalled: oldest sequence did not move backward', 'PLAY_HISTORY_CURSOR_STALLED')
+    }
     beforeSeq = oldest.seq
   }
   return collected
