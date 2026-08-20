@@ -62,7 +62,13 @@ test('timeline projection renders only adopted visible QA ranges', () => {
       { id: 'system', role: 'system', seq: 1, text: 'hidden context' },
       { id: 'user', role: 'user', seq: 2, text: 'Hello' },
       { id: 'tool', role: 'tool', seq: 3, text: 'tool output' },
-      { id: 'assistant', role: 'assistant', seq: 4, text: 'Hi' },
+      {
+        id: 'assistant', role: 'assistant', seq: 4, text: 'internal reasoningHi',
+        content: [
+          { type: 'reasoning', text: 'internal reasoning' },
+          { type: 'text', text: 'Hi' },
+        ],
+      },
       { id: 'later', role: 'assistant', seq: 5, text: 'outside' },
     ] },
   })

@@ -179,7 +179,9 @@ function Turn({ turn, ...actionProps }) {
   return h('div', { className: 'dtv-play-chat-row' },
     turn.userText === '' ? null : h('div', { className: 'dtv-play-chat-bubble dtv-play-chat-user' }, rawText(turn.userText)),
     turn.assistantText === '' ? null : h('div', { className: 'dtv-play-chat-bubble dtv-play-chat-assistant' }, rawText(turn.assistantText)),
-    turn.running === true ? h('p', { className: 'dtv-play-chat-running' }, uiMessage('play.chat.responding')) : null,
+    turn.running === true && turn.assistantText === ''
+      ? h('p', { className: 'dtv-play-chat-running' }, uiMessage('play.chat.thinking'))
+      : null,
     turn.imported || turn.transient ? null : h(PlayTurnActions, { turn, ...actionProps }),
   )
 }
@@ -285,7 +287,7 @@ export function MowanChatView({ sessionId, useSession, playClient, playthrough, 
         ? h('p', { className: 'dtv-play-chat-status' }, uiMessage('play.chat.empty'))
         : null,
       liveTurns.length === 0 && running
-        ? h('p', { className: 'dtv-play-chat-running' }, uiMessage('play.chat.responding'))
+        ? h('p', { className: 'dtv-play-chat-running' }, uiMessage('play.chat.thinking'))
         : null,
     ),
   )

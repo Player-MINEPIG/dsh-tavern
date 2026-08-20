@@ -162,7 +162,7 @@ var zh_CN_default = Object.freeze({
   "play.chat.label": "\u5BF9\u8BDD",
   "play.chat.loading": "\u6B63\u5728\u8BFB\u53D6\u672C\u5468\u76EE\u8BB0\u5F55\u2026",
   "play.chat.empty": "\u672C\u5468\u76EE\u5C1A\u65E0\u5BF9\u8BDD\uFF0C\u8BF7\u5728\u4E0B\u65B9\u5F00\u59CB\u3002",
-  "play.chat.responding": "\u6B63\u5728\u56DE\u590D\u2026",
+  "play.chat.thinking": "\u6B63\u5728\u601D\u8003\u2026",
   "play.chat.previousGreeting": "\u4E0A\u4E00\u6761\u5F00\u573A\u767D",
   "play.chat.nextGreeting": "\u4E0B\u4E00\u6761\u5F00\u573A\u767D",
   "play.chat.hiddenNode": "\u8FD9\u4E00\u7EC4\u95EE\u7B54\u5DF2\u5728\u9B54\u4E38\u663E\u793A\u4E2D\u9690\u85CF\u3002",
@@ -712,7 +712,7 @@ var en_default = Object.freeze({
   "play.chat.label": "Chat",
   "play.chat.loading": "Loading playthrough\u2026",
   "play.chat.empty": "No turns yet. Start the conversation below.",
-  "play.chat.responding": "Responding\u2026",
+  "play.chat.thinking": "Thinking\u2026",
   "play.chat.previousGreeting": "Previous greeting",
   "play.chat.nextGreeting": "Next greeting",
   "play.chat.hiddenNode": "This QA is hidden in Mowan display.",
@@ -3852,6 +3852,10 @@ function assistantText(blocks) {
   if (!Array.isArray(blocks)) return "";
   return blocks.filter((block) => block?.kind === "text" && typeof block.text === "string").map((block) => block.text).join("");
 }
+function renderedMessageText(message) {
+  if (Array.isArray(message?.content) && message.content.length > 0) return contentText(message.content);
+  return typeof message?.text === "string" ? message.text : "";
+}
 function sessionIsInRpWorkspace(workspace, session) {
   if (workspace?.selected !== true || session == null) return false;
   const root = normalizedPath(workspace.rootPath);
@@ -3912,9 +3916,9 @@ function projectTimelineQa(timeline, messagesBySession = {}) {
     result.push({
       id: node.id,
       hidden: node.hidden === true,
-      userText: user?.text ?? "",
-      assistantText: node.displayOverride ?? assistant?.text ?? "",
-      originalAssistantText: assistant?.text ?? "",
+      userText: renderedMessageText(user),
+      assistantText: node.displayOverride ?? renderedMessageText(assistant),
+      originalAssistantText: renderedMessageText(assistant),
       displayOverridden: node.displayOverride !== null,
       variant,
       variants: node.variants,
@@ -4588,7 +4592,7 @@ function Turn({ turn, ...actionProps }) {
     { className: "dtv-play-chat-row" },
     turn.userText === "" ? null : h8("div", { className: "dtv-play-chat-bubble dtv-play-chat-user" }, rawText(turn.userText)),
     turn.assistantText === "" ? null : h8("div", { className: "dtv-play-chat-bubble dtv-play-chat-assistant" }, rawText(turn.assistantText)),
-    turn.running === true ? h8("p", { className: "dtv-play-chat-running" }, uiMessage("play.chat.responding")) : null,
+    turn.running === true && turn.assistantText === "" ? h8("p", { className: "dtv-play-chat-running" }, uiMessage("play.chat.thinking")) : null,
     turn.imported || turn.transient ? null : h8(PlayTurnActions, { turn, ...actionProps })
   );
 }
@@ -4688,7 +4692,7 @@ function MowanChatView({ sessionId, useSession, playClient, playthrough, openSes
       })),
       ...liveTurns.map((turn) => h8(Turn, { key: turn.id, turn })),
       state.greeting === null && state.turns.length === 0 && liveTurns.length === 0 && !running ? h8("p", { className: "dtv-play-chat-status" }, uiMessage("play.chat.empty")) : null,
-      liveTurns.length === 0 && running ? h8("p", { className: "dtv-play-chat-running" }, uiMessage("play.chat.responding")) : null
+      liveTurns.length === 0 && running ? h8("p", { className: "dtv-play-chat-running" }, uiMessage("play.chat.thinking")) : null
     )
   );
 }

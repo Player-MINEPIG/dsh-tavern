@@ -4,6 +4,21 @@ This is the staged implementation log for dsh-tavern. It is kept separately
 from the product README so reviewers can follow intent, decisions, verification,
 and known limits chronologically.
 
+## 2026-08-20 — Keep reasoning out of the Mowan body projection
+
+- Completed Mowan turns now project only DSH `content` parts whose type is
+  `text`; structured `reasoning` remains in DSH's authoritative message but is
+  not flattened into the role-play body. Empty legacy content arrays still
+  fall back to the compatibility `text` field.
+- During a live turn, Mowan shows “正在思考…” / “Thinking…” only until the
+  first assistant text block appears. Once body streaming begins, the text
+  itself is the activity indicator and no “responding” label remains.
+- Regex, Markdown/other rich-text rendering, and a configurable body font size
+  remain separate follow-up items.
+
+Verification: chat/load/export/import focused tests, full 304-test suite
+(302 pass, 2 skip), and production client build.
+
 ## 2026-08-20 — Scroll Mowan only for entry and user messages
 
 - A newly mounted Mowan conversation scrolls to its bottom after the current

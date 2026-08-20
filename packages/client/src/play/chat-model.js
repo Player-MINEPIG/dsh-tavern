@@ -43,6 +43,11 @@ function assistantText(blocks) {
     .join('')
 }
 
+function renderedMessageText(message) {
+  if (Array.isArray(message?.content) && message.content.length > 0) return contentText(message.content)
+  return typeof message?.text === 'string' ? message.text : ''
+}
+
 export function sessionIsInRpWorkspace(workspace, session) {
   if (workspace?.selected !== true || session == null) return false
   const root = normalizedPath(workspace.rootPath)
@@ -111,9 +116,9 @@ export function projectTimelineQa(timeline, messagesBySession = {}) {
     result.push({
       id: node.id,
       hidden: node.hidden === true,
-      userText: user?.text ?? '',
-      assistantText: node.displayOverride ?? assistant?.text ?? '',
-      originalAssistantText: assistant?.text ?? '',
+      userText: renderedMessageText(user),
+      assistantText: node.displayOverride ?? renderedMessageText(assistant),
+      originalAssistantText: renderedMessageText(assistant),
       displayOverridden: node.displayOverride !== null,
       variant,
       variants: node.variants,
