@@ -43,7 +43,7 @@ test('import context claims from public input event seqs and is repeatable for t
     const reloaded = makeRuntime(directory, content)
     assert.match(reloaded.contextFor('session-new', { claimEventSeqs: [12, 13] }), /old &amp; question/)
     assert.equal(reloaded.contextFor('session-new', { claimEventSeqs: [14] }), '')
-    assert.equal(reloaded.consumeAfterTurn('session-new'), true)
+    assert.equal(reloaded.consumeAfterTurn('session-new', { type: 'turn/end', seq: 20, data: { turn: 1, reason: { kind: 'completed' } } }), true)
     assert.equal(reloaded.contextFor('session-new', { claimEventSeqs: [12, 13] }), '')
     assert.equal(reloaded.binding('session-new').state, 'consumed')
   } finally {
@@ -51,6 +51,56 @@ test('import context claims from public input event seqs and is repeatable for t
   }
 })
 
+test('pending terminal events do not consume and terminal metadata closes a claim', () => {
+  const directory = mkdtempSync(join(tmpdir(), 'dsh-tavern-import-context-terminal-'))
+  try {
+    const runtime = makeRuntime(directory)
+    runtime.bind('pending', runtime.prepare('context.json'))
+    assert.equal(runtime.consumeAfterTurn('pending', { type: 'turn/end', seq: 4, data: { turn: 1, reason: { kind: 'completed' } } }), false)
+    assert.equal(runtime.binding('pending').state, 'pending')
+    runtime.contextFor('pending', { claimEventSeqs: [10] })
+    assert.equal(runtime.consumeAfterTurn('pending', { type: 'turn/end', seq: 5, data: { turn: 2, reason: { kind: 'aborted' } } }), true)
+    assert.deepEqual(runtime.binding('pending').terminal, {
+      endEventSeq: 5,
+      turn: 2,
+      reason: { kind: 'aborted' },
+    })
+    assert.equal(runtime.contextFor('pending', { claimEventSeqs: [11] }), '')
+  } finally {
+    rmSync(directory, { recursive: true, force: true })
+  }
+})
+
+test('branch lineage is pending, preserves only metadata, and rejects the old claim', () => {
+  const directory = mkdtempSync(join(tmpdir(), 'dsh-tavern-import-context-lineage-'))
+  const content = makeDocument([])
+  try {
+    const runtime = makeRuntime(directory, content)
+    runtime.bind('source', runtime.prepare('context.json'))
+    runtime.contextFor('source', { claimEventSeqs: [10] })
+    runtime.consumeAfterTurn('source', { type: 'turn/end', seq: 20, data: { turn: 1, reason: { kind: 'error' } } })
+    const child = runtime.copyLineageForBranch('source', 'child', 19)
+    assert.equal(child.state, 'pending')
+    assert.equal(child.path, 'context.json')
+    assert.deepEqual(child.lineage, {
+      sourceSessionId: 'source',
+      sourceEndEventSeq: 20,
+      sourceClaimIdentity: 'event-seqs:10',
+      forkEventSeq: 19,
+    })
+    assert.equal(runtime.contextFor('child', { claimEventSeqs: [10] }), '')
+    assert.match(runtime.contextFor('child', { claimEventSeqs: [21] }), /imported-playthrough-context/)
+    assert.equal(Object.hasOwn(runtime.binding('child'), 'qa'), false)
+    const reloaded = makeRuntime(directory, content)
+    assert.equal(reloaded.binding('child').state, 'claimed')
+    assert.equal(reloaded.binding('child').lineage.sourceSessionId, 'source')
+    assert.equal(runtime.copyLineageForBranch('source', 'late', 20), null)
+    assert.equal(runtime.copyLineageForBranch('source', 'too-late', 99), null)
+    assert.equal(runtime.copyLineageForBranch('missing', 'missing-child', 1), null)
+  } finally {
+    rmSync(directory, { recursive: true, force: true })
+  }
+})
 test('import context rejects changed hashes but does not impose QA/context parser limits', () => {
   const directory = mkdtempSync(join(tmpdir(), 'dsh-tavern-import-context-bounds-'))
   try {

@@ -390,7 +390,7 @@ export function apply(ctx, config = {}) {
     pendingInput.observeSessionEvent(session, event)
     if (event?.type === 'turn/end') {
       pendingInput.clearClaimed(session)
-      importContexts.consumeAfterTurn(session?.id)
+      importContexts.consumeAfterTurn(session?.id, event)
     }
     if (event?.type === 'sandbox/mode') {
       try { rpMode.enforceReadOnly(session) } catch (error) {

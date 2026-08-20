@@ -172,7 +172,18 @@ export function createSessionApiHandler({ host, workspaceStore, now = () => new 
         throw httpError(400, 'atEventId must be a non-negative event seq', 'PLAY_EVENT_INVALID')
       }
       const created = await host.forkSession({ sessionId, atSeq: body.atEventId })
-      return sendJson(res, 201, { ok: true, sessionId: requireSessionId(created?.sessionId) })
+      const childSessionId = requireSessionId(created?.sessionId)
+      try {
+        if (typeof host.copySelection === 'function') host.copySelection(sessionId, childSessionId)
+        if (typeof host.copyImportContextLineage === 'function') {
+          await host.copyImportContextLineage(sessionId, childSessionId, body.atEventId)
+        }
+      } catch (error) {
+        const failure = httpError(502, 'Fork succeeded but branch context copy failed', 'PLAY_BRANCH_COPY_FAILED')
+        failure.cause = error
+        throw failure
+      }
+      return sendJson(res, 201, { ok: true, sessionId: childSessionId })
     },
 
     async userMessage(req, res, sessionId) {

@@ -80,6 +80,12 @@ export function createPlayHost(ctx, {
       }
     },
 
+    copyImportContextLineage(fromSessionId, toSessionId, atSeq) {
+      const runtime = importContexts?.()
+      if (runtime === null || runtime === undefined) return null
+      return runtime.copyLineageForBranch(fromSessionId, toSessionId, atSeq)
+    },
+
     async promptSession({ sessionId, text, mode = 'queue' }) {
       const proxy = api()
       if (typeof proxy?.sessions?.prompt !== 'function') throw missing('session.prompt')

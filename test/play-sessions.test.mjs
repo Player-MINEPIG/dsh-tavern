@@ -330,6 +330,25 @@ test('createPlayHost maps session.fork RPC fork-unavailable to 409 and prompts w
   assert.deepEqual(recorded[1][1].content, [{ type: 'text', text: 'next line' }])
 })
 
+test('branch reports explicit copy failure after fork', async () => {
+  let forked = false
+  const handler = createPlayApiHandler({
+    chromeStore: new ChromeStore(mkdtempSync(join(tmpdir(), 'dsh-tavern-branch-copy-chrome-'))),
+    workspaceStore: {},
+    host: {
+      async forkSession() { forked = true; return { sessionId: 'child' } },
+      copySelection() { throw new Error('selection copy failed') },
+    },
+  })
+  const output = await invoke(handler, {
+    method: 'POST',
+    url: `${API_V2}/sessions/source/branch`,
+    body: { atEventId: 3 },
+  })
+  assert.equal(forked, true)
+  assert.equal(output.status, 502)
+  assert.equal(output.body.code, 'PLAY_BRANCH_COPY_FAILED')
+})
 test('live play session APIs against a running DSH host', {
   skip: process.env.DSH_TAVERN_PLAY_LIVE !== '1',
 }, async () => {
