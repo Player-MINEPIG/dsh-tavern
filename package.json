@@ -24,6 +24,8 @@
     "dist",
     "scripts",
     "docs/assets",
+    "docs/*.md",
+    "docs/world-book",
     "cordis.patch.yml"
   ],
   "dsh": {
