@@ -10077,6 +10077,7 @@ var css7 = `
 .dtv-play-chat-list{display:flex;flex-direction:column;gap:22px}.dtv-play-chat-row{display:flex;flex-direction:column;gap:8px}.dtv-play-chat-role{font-size:11px;font-weight:700;color:var(--dsw-alias-label-tertiary)}
 .dtv-play-chat-bubble{max-width:88%;box-sizing:border-box;border-radius:14px;padding:12px 14px;overflow-wrap:anywhere;font-size:14px;line-height:1.65}.dtv-play-chat-user{align-self:flex-end;background:var(--dsw-alias-interactive-bg-selected,var(--dsw-specific-tip))}.dtv-play-chat-assistant{align-self:flex-start;background:var(--dsw-alias-bg-layer-2,var(--dsw-specific-block))}
 .dtv-play-greeting{position:relative;align-self:flex-start;max-width:88%;display:grid;grid-template-columns:30px minmax(0,1fr) 30px;align-items:center;gap:6px}.dtv-play-greeting-text{border-radius:14px;padding:13px 15px;background:var(--dsw-alias-bg-layer-2,var(--dsw-specific-block));overflow-wrap:anywhere;font-size:14px;line-height:1.65}
+.dtv-play-greeting-empty{min-height:34px;visibility:hidden}
 .dtv-play-greeting-button{width:30px;height:34px;border:0;border-radius:9px;background:transparent;color:var(--dsw-alias-label-secondary);cursor:pointer}.dtv-play-greeting-button:hover{background:var(--dsw-alias-interactive-bg-hover)}.dtv-play-greeting-button:disabled{opacity:.4;cursor:default}
 .dtv-play-import-controls{align-self:center;display:flex;flex-wrap:wrap;align-items:center;justify-content:center;gap:8px;margin:0 0 2px}.dtv-play-import-bound{width:100%;margin:0;text-align:center;color:var(--dsw-alias-label-tertiary);font-size:11px}.dtv-play-import-button{min-height:30px;padding:5px 11px;border:1px solid var(--dsw-alias-border-subtle);border-radius:9px;background:var(--dsw-alias-bg-layer-2,var(--dsw-specific-block));color:var(--dsw-alias-label-primary);font:inherit;font-size:11px;cursor:pointer}.dtv-play-import-button:hover{background:var(--dsw-alias-interactive-bg-hover)}.dtv-play-import-button:disabled{opacity:.45;cursor:default}.dtv-play-import-last{margin:0;color:var(--dsw-alias-label-tertiary);font-size:11px;font-weight:700}
 .dtv-play-chat-status{margin:16px 0;padding:12px 14px;border-radius:12px;background:var(--dsw-alias-bg-layer-2,var(--dsw-specific-block));color:var(--dsw-alias-label-tertiary);font-size:12px;line-height:1.55}.dtv-play-chat-status[data-error=true]{color:var(--dsw-alias-state-error)}
@@ -10236,12 +10237,12 @@ function applyTurnDisplayRegex(turn, display, { userDepth, assistantDepth } = {}
   };
 }
 function Greeting({ greeting, busy, change, footer = null }) {
-  const multiple = greeting.options.length > 1;
+  const multiple = (greeting?.options?.length ?? 0) > 1;
   return h8(
     "div",
     { className: "dtv-play-chat-row" },
-    h8("span", { className: "dtv-play-chat-role" }, rawText(greeting.characterName)),
-    h8(
+    greeting === null ? null : h8("span", { className: "dtv-play-chat-role" }, rawText(greeting.characterName)),
+    greeting === null ? h8("div", { className: "dtv-play-greeting dtv-play-greeting-empty", "aria-hidden": true }) : h8(
       "div",
       { className: "dtv-play-greeting" },
       h8("button", {
@@ -10460,13 +10461,12 @@ function MowanChatView({ sessionId, useSession, playClient, playthrough, openSes
     state === null ? null : h8(
       "div",
       { className: "dtv-play-chat-list" },
-      state.greeting === null ? null : h8(Greeting, {
+      state.greeting === null && state.importBinding !== null ? null : h8(Greeting, {
         greeting: state.greeting,
         busy: greetingBusy,
         change: changeGreeting,
         footer: state.importBinding === null ? importControls : null
       }),
-      state.greeting === null && state.importBinding === null ? importControls : null,
       ...state.turns.map((turn) => h8(Turn, {
         key: turn.id,
         turn,

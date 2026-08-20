@@ -4,6 +4,14 @@ This is the staged implementation log for dsh-tavern. It is kept separately
 from the product README so reviewers can follow intent, decisions, verification,
 and known limits chronologically.
 
+## 2026-08-20 — Use one opening layout with or without greeting
+
+- Cards without greeting now keep the same opening container and import-footer
+  placement as cards with greeting; only the greeting content slot is empty.
+- Removed the separate no-greeting import layout branch.
+
+Verification: focused opening-layout test and production client build.
+
 ## 2026-08-20 — Keep the import action inside the greeting container
 
 - The unbound empty-playthrough import action is now rendered as the greeting

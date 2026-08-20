@@ -122,8 +122,9 @@ test('consumed import binding is never mutable even before timeline reconciliati
   assert.equal(state.importMutable, false)
 })
 
-test('unbound import action is passed into the greeting container as its footer', () => {
+test('unbound import action always uses the greeting container footer, including cards without greeting', () => {
   assert.match(chatSource, /function Greeting\(\{ greeting, busy, change, footer = null \}\)/)
   assert.match(chatSource, /footer: state\.importBinding === null \? importControls : null/)
-  assert.match(chatSource, /state\.greeting === null && state\.importBinding === null \? importControls : null/)
+  assert.match(chatSource, /state\.greeting === null && state\.importBinding !== null \? null : h\(Greeting/)
+  assert.doesNotMatch(chatSource, /state\.greeting === null && state\.importBinding === null \? importControls : null/)
 })
