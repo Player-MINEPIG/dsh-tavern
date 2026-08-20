@@ -53,6 +53,20 @@ Verification: focused lifecycle tests and production client build.
 Verification: focused create/import/i18n/shell tests and production client
 build.
 
+## 2026-08-20 — Review the playthrough lifecycle boundary
+
+- Added [`PLAY_REVIEW.md`](PLAY_REVIEW.md), a read-only review of the v2
+  playthrough implementation at `6ede09d`.
+- Recorded the remaining lifecycle risks: cross-client catalog/timeline lost
+  updates, half-created Host sessions after downstream failure, silently
+  truncated history pagination, import-context retry semantics, filesystem
+  TOCTOU hardening, catalog uniqueness/path validation, and ambiguous default
+  focus selection.
+- Confirmed the current native-first boundaries that must remain: Host RPC and
+  public session projections stay authoritative, imported history remains a
+  bounded untrusted context, and the client does not write fabricated DSH
+  messages.
+
 ## 2026-08-20 — Move the default-view adapter out of the view ring
 
 - Kept the accepted native-chat-store adapter semantics, but mounted its
