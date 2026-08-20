@@ -111,14 +111,21 @@ export function createPlayApiHandler({
       if (importContextMatch !== null) {
         if (!['GET', 'PUT', 'DELETE'].includes(method)) throw httpError(405, 'method not allowed', 'PLAY_METHOD_NOT_ALLOWED')
         if (sessionApi === null) throw httpError(404, 'Not found', 'PLAY_NOT_FOUND')
-        return await sessionApi.importContext(req, res, importContextMatch[1], method)
+        if (method === 'GET') return await sessionApi.importContext(req, res, importContextMatch[1], method)
+        operation = startMutation(req, method === 'PUT' ? 'session.import-context.bind' : 'session.import-context.unbind')
+        return await runMutation(operation, () => sessionApi.importContext(req, res, importContextMatch[1], method, operation))
       }
       for (const [pattern, action, required] of SESSION_ROUTES) {
         const match = route.rest.match(pattern)
         if (match === null) continue
         if (method !== required) throw httpError(405, 'method not allowed', 'PLAY_METHOD_NOT_ALLOWED')
         if (sessionApi === null) throw httpError(404, 'Not found', 'PLAY_NOT_FOUND')
-        return await sessionApi[action](req, res, match[1])
+        if (action === 'messages') return await sessionApi[action](req, res, match[1])
+        const operationName = action === 'create' ? 'session.create' : action === 'branch' ? 'session.branch' : 'session.user-message'
+        operation = startMutation(req, operationName)
+        return await runMutation(operation, () => action === 'create'
+          ? sessionApi[action](req, res, operation)
+          : sessionApi[action](req, res, match[1], operation))
       }
       throw httpError(404, 'Not found', 'PLAY_NOT_FOUND')
     } catch (error) {

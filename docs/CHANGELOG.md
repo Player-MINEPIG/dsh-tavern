@@ -1,5 +1,12 @@
 # Development changelog
 
+## 2026-08-21 — Integrate session/import mutation operation logs
+
+- Added content-free, fail-soft operation logging for session create, branch, user-message, and import-context bind/unbind mutations via Host ctx.logger.
+- Each request has one operation id and one terminal success/failure; staged logs cover validation, Host create/fork/prompt, import prepare/bind/unbind, selection/lineage copy, and authority/history locks.
+- GET messages/focus/import-context, chrome, browser logs, and persistent exporters remain quiet/out of scope. user-message logs only the Host acceptance stage and never text, length, or summary.
+
+Verification: test/play-session-import-log.test.mjs, related session tests, and git diff --check; no bundled client artifact was refreshed.
 ## 2026-08-21 — Integrate workspace mutation operation logs
 
 - Integrated the task-11 fail-soft operation context into `PUT /workspace`, `POST /workspace/dirs`, and `PUT /workspace/files?path=` for ordinary files and managed catalog/timeline documents. Each mutation has one operation id and staged start/validation/begin/commit/success or failure records; GET/list stay quiet.

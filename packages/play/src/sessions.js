@@ -81,13 +81,14 @@ async function readAllHistory(host, sessionId) {
   return collected
 }
 
-async function requireMutableImportContext(host, sessionId) {
+async function requireMutableImportContext(host, sessionId, operation) {
   const binding = typeof host.getImportContextBinding === 'function'
     ? await host.getImportContextBinding(sessionId)
     : null
   if (binding?.state === 'claimed' || binding?.state === 'consumed') {
     throw httpError(409, 'import context is locked after use', 'PLAY_IMPORT_CONTEXT_LOCKED')
   }
+  operation?.stage('authority.checked', { sessionId })
   const events = await readAllHistory(host, sessionId)
   const derived = typeof host.deriveMessages === 'function'
     ? await host.deriveMessages({ sessionId, events })
@@ -96,6 +97,7 @@ async function requireMutableImportContext(host, sessionId) {
   if (hasOpenTurn(events) || messages.some(message => message?.role === 'user' || message?.role === 'assistant')) {
     throw httpError(409, 'import context is locked after conversation starts', 'PLAY_IMPORT_CONTEXT_LOCKED')
   }
+  operation?.stage('history.lock.checked', { sessionId })
   return binding
 }
 
@@ -135,48 +137,74 @@ export function createSessionApiHandler({ host, workspaceStore, now = () => new 
   if (workspaceStore === undefined) throw new TypeError('workspaceStore is required')
 
   return {
-    async create(req, res) {
+    async create(req, res, operation) {
       const body = await readBoundedJson(req, MAX_BODY_BYTES)
       const binding = requireBoundWorkspace(workspaceStore)
       const sourceId = body?.selectionFromSessionId === undefined || body.selectionFromSessionId === null
         ? null
         : requireSessionId(body.selectionFromSessionId)
+      operation?.stage('request.validated', sourceId === null ? {} : { sessionId: sourceId })
+      const importPath = typeof body?.importContextRef?.path === 'string' ? body.importContextRef.path : undefined
+      if (body?.importContextRef !== undefined) operation?.stage('import.prepare.begin', importPath === undefined ? {} : { path: importPath })
       const preparedImport = body?.importContextRef === undefined
         ? null
         : await host.prepareImportContext(body.importContextRef)
+      if (preparedImport !== null) {
+        const preparedPath = typeof preparedImport.path === 'string' ? preparedImport.path : importPath
+        operation?.stage('import.prepared', preparedPath === undefined ? {} : { path: preparedPath })
+      }
       const characterName = typeof host.characterName === 'function'
         ? host.characterName(sourceId)
         : null
       const title = typeof characterName === 'string' && characterName.trim() !== ''
         ? formatPlaySessionTitle(characterName, now())
         : undefined
+      operation?.stage('host.session.create.begin')
       const created = await host.createSession({
         workspaceId: binding.workspaceId,
         cwd: binding.rootPath,
         title,
       })
       const sessionId = requireSessionId(created?.sessionId)
+      operation?.stage('host.session.created', { sessionId })
       if (preparedImport !== null) {
-        host.bindImportContext(sessionId, preparedImport)
+        operation?.stage('import.bind.begin', { sessionId })
+        await host.bindImportContext(sessionId, preparedImport)
+        operation?.stage('import.bind.committed', { sessionId })
       }
       if (sourceId !== null && typeof host.copySelection === 'function') {
-        host.copySelection(sourceId, sessionId)
+        operation?.stage('selection.copy.begin', { sessionId })
+        await host.copySelection(sourceId, sessionId)
+        operation?.stage('selection.copy.committed', { sessionId })
       }
       return sendJson(res, 201, title === undefined ? { ok: true, sessionId } : { ok: true, sessionId, title })
     },
 
-    async branch(req, res, sessionId) {
+    async branch(req, res, sessionId, operation) {
       const body = await readBoundedJson(req, MAX_BODY_BYTES)
       requireSessionId(sessionId)
       if (!Number.isSafeInteger(body?.atEventId) || body.atEventId < 0) {
         throw httpError(400, 'atEventId must be a non-negative event seq', 'PLAY_EVENT_INVALID')
       }
+      operation?.stage('request.validated', { sessionId })
+      operation?.stage('host.fork.begin', { sessionId })
       const created = await host.forkSession({ sessionId, atSeq: body.atEventId })
       const childSessionId = requireSessionId(created?.sessionId)
+      operation?.stage('host.forked', { sessionId: childSessionId })
       try {
-        if (typeof host.copySelection === 'function') host.copySelection(sessionId, childSessionId)
+        if (typeof host.copySelection === 'function') {
+          operation?.stage('selection.copy.begin', { sessionId: childSessionId })
+          await host.copySelection(sessionId, childSessionId)
+          operation?.stage('selection.copy.committed', { sessionId: childSessionId })
+        } else {
+          operation?.stage('selection.copy.skipped', { sessionId: childSessionId })
+        }
         if (typeof host.copyImportContextLineage === 'function') {
+          operation?.stage('import.lineage.copy.begin', { sessionId: childSessionId })
           await host.copyImportContextLineage(sessionId, childSessionId, body.atEventId)
+          operation?.stage('import.lineage.copy.committed', { sessionId: childSessionId })
+        } else {
+          operation?.stage('import.lineage.copy.skipped', { sessionId: childSessionId })
         }
       } catch (error) {
         const failure = httpError(502, 'Fork succeeded but branch context copy failed', 'PLAY_BRANCH_COPY_FAILED')
@@ -186,15 +214,18 @@ export function createSessionApiHandler({ host, workspaceStore, now = () => new 
       return sendJson(res, 201, { ok: true, sessionId: childSessionId })
     },
 
-    async userMessage(req, res, sessionId) {
+    async userMessage(req, res, sessionId, operation) {
       const body = await readBoundedJson(req, MAX_BODY_BYTES)
       requireSessionId(sessionId)
       if (typeof body?.text !== 'string') throw httpError(400, 'text must be a string', 'PLAY_MESSAGE_INVALID')
+      operation?.stage('request.validated', { sessionId })
+      operation?.stage('host.prompt.begin', { sessionId })
       await host.promptSession({
         sessionId,
         mode: 'queue',
         text: body.text,
       })
+      operation?.stage('host.prompt.accepted', { sessionId })
       return sendJson(res, 200, { ok: true, accepted: true })
     },
 
@@ -211,7 +242,7 @@ export function createSessionApiHandler({ host, workspaceStore, now = () => new 
       })
     },
 
-    async importContext(req, res, sessionId, method) {
+    async importContext(req, res, sessionId, method, operation) {
       requireSessionId(sessionId)
       if (typeof host.getImportContextBinding !== 'function') {
         throw httpError(501, 'Host import context is unavailable', 'PLAY_HOST_UNAVAILABLE')
@@ -220,20 +251,27 @@ export function createSessionApiHandler({ host, workspaceStore, now = () => new 
         const binding = await host.getImportContextBinding(sessionId)
         return sendJson(res, 200, { ok: true, binding })
       }
-      await requireMutableImportContext(host, sessionId)
+      await requireMutableImportContext(host, sessionId, operation)
+      operation?.stage('request.validated', { sessionId })
       if (method === 'DELETE') {
         if (typeof host.unbindImportContext !== 'function') {
           throw httpError(501, 'Host import context is unavailable', 'PLAY_HOST_UNAVAILABLE')
         }
+        operation?.stage('unbind.begin', { sessionId })
         await host.unbindImportContext(sessionId)
+        operation?.stage('unbind.committed', { sessionId })
         return sendJson(res, 200, { ok: true, binding: null })
       }
       const body = await readBoundedJson(req, MAX_BODY_BYTES)
       if (body?.reference === undefined) {
         throw httpError(400, 'reference is required', 'PLAY_IMPORT_CONTEXT_INVALID')
       }
+      operation?.stage('prepare.begin', typeof body.reference.path === 'string' ? { path: body.reference.path } : {})
       const prepared = await host.prepareImportContext(body.reference)
+      operation?.stage('prepared', typeof prepared?.path === 'string' ? { path: prepared.path } : {})
+      operation?.stage('bind.begin', { sessionId })
       const binding = await host.bindImportContext(sessionId, prepared)
+      operation?.stage('bind.committed', { sessionId })
       return sendJson(res, 200, { ok: true, binding })
     },
 

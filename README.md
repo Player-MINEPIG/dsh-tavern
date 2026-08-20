@@ -316,7 +316,7 @@ v1 是本插件悬浮球 / 侧栏 / Trace 用的 bundled UI 资源合同，不�
 - **角色卡内嵌书的导入期诊断仍可加强**：角色卡导入有 32 MiB 上限；编辑和运行时解析有完整结构守卫，但导入时不会提前拒绝所有最终不可运行的超复杂内嵌书。
 - **兼容不等于完整复刻 ST**：真实 role/depth 拓扑、greeting 历史和部分高级世界书状态尚未实现。请以 Tavern Trace 与 DSH `request/header` 验证实际行为。
 - **v2.0 扮演 swipe 会放大磁盘占用（规划）**：自定义前端表面的重新生成按 DSH 分支新开 session，每份分支都带着分叉点之前的完整会话日志。请把扮演工作区放在空间充足的磁盘，不要放在系统盘（Windows 上避免 `C:\`）。自动清理未采用的分支尚未提供。导入 SillyTavern 对话时若带多份 session。
-- **生命周期日志当前只使用 Host 的 `ctx.logger`**：发布前会为 workspace bind、目录创建、文件及 catalog/timeline 写入等变更记录 operationId、阶段、结果和稳定错误码；session/import 等其余生命周期日志仍在后续任务中，但任何日志都不记录聊天或资源正文。默认日志是进程内有界记录，重启后不应视为持久审计；持久 journal、浏览器日志和额外 exporter 暂缓。
+- **生命周期日志当前只使用 Host 的 `ctx.logger`**：workspace bind、目录创建、文件及 catalog/timeline 写入，以及 `POST /v2/sessions`、`POST /v2/sessions/:id/branch`、`POST /v2/sessions/:id/user-message` 和 import-context PUT/DELETE 都记录 operationId、阶段、结果和稳定错误码；GET session/messages/focus/import-context、chrome 和浏览器操作仍保持安静。user-message 只记录 Host 接受阶段，绝不记录正文、长度或摘要。日志不记录聊天或资源正文；默认日志是进程内有界记录，重启后不应视为持久审计；持久 journal 和额外 exporter 暂缓。
 
 更完整的安全预算、运行态变更缺口和数据边界见 [Loader contract](docs/LOADER_CONTRACT.md)。
 

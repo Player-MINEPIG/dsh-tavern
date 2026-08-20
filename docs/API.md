@@ -75,7 +75,7 @@ durable history。当前已实现的基础语义是：首次 assembly 必须按�
 - ✅ catalog/timeline GET 返回精确 UTF-8 字节 SHA-256 `revision`，PUT 使用显式 `expectedRevision`；缺失/格式错误分别为 400，目标状态或 hash 不一致为 409，冲突不改文件。服务端合同、内置 live client 的 revision 缓存/有限重放原语，以及内置生命周期 caller 的 CAS 迁移均已实现。
 - ✅ catalog/timeline 已在 GET 读后与 PUT 写前执行同一 schema/path 校验；未知第三方 `ext` 原样保留。revision/CAS 已在同一目标 guard 中实现；路径锁、逐段 no-follow 检查、临时 `wx` 写和 rename 前复验已实现。
 - 路径逐段拒绝 symlink/junction（Node 暴露的链接类型），逐层非 recursive 创建并 realpath 复核，临时文件使用排他 `wx`，写入/rename 前复验父目录；纯 Node 仍无法抵抗外部进程制造的极窄竞态，不引入 native addon。
-- 本轮已接入后端 `ctx.logger` 的 operation log：`PUT /workspace`（bind）、`POST /workspace/dirs`、`PUT /workspace/files?path=`（普通文件及 catalog/timeline）。每次请求记录同一 `operationId` 的 start、request/body validated、mutation begin、payload validated（受管文档）、mutation committed、success 或 failure；不记录资源/聊天正文。GET/list、session、import、chrome 及浏览器日志、持久 journal、额外 exporter 暂缓。
+- 本轮已接入后端 `ctx.logger` 的 operation log：`PUT /workspace`（bind）、`POST /workspace/dirs`、`PUT /workspace/files?path=`（普通文件及 catalog/timeline），以及 session create/branch/user-message 和 import-context PUT/DELETE。每次变更请求记录同一 `operationId` 的 start、request.validated、Host/prepare/bind/copy 等阶段、success 或 failure；不记录资源/聊天正文。user-message 只记录 Host prompt accepted 阶段，不记录正文、长度或摘要。GET/list、session/messages/focus/import-context、chrome 及浏览器日志、持久 journal、额外 exporter 暂缓。
 
 除已标记为已实现的 history 分页外，其余加固在完成代码、自动测试和 rc.8 验收前均不得宣称已经实现。具体风险与决策见 [`PLAY_REVIEW.md`](PLAY_REVIEW.md)。
 
@@ -116,19 +116,8 @@ durable history。当前已实现的基础语义是：首次 assembly 必须按�
 这个 v1 子资源只编辑预设或角色卡原文。它不组合全局正则，不计算当前 session 最终生效集合，不修改历史、timeline 或 AI 请求；魔丸显示管线只把保存后的资源数据作为渲染投影读取。失败响应沿用所属资源 API 的既有格式与状态码。
 ### 后端 operation log utility
 
-`packages/play/src/operation-log.js` 导出 `createOperationContext` 和
-`operationLogConstants`，供 workspace/catalog/timeline mutation 及后续 session/import mutation 接入。任务12已接入 workspace bind、目录创建和文件写入 endpoint；session/import 尚未接入。它只接受 Cordis `ctx.logger`（或其 callable logger service），以
-`dsh-tavern.operation ` 前缀输出单行日志；前缀后的部分是稳定 JSON。一次 operation
-在 context 创建时保存 operation 名和开始时刻，并可记录 `start`、多个 `stage`、一次
-`success` 或一次 `failure`。成功和失败终态包含 `result` 与非负 `durationMs`；失败只记录
-稳定 `error.code`（缺失时为 `UNKNOWN_ERROR`）和可选 HTTP status，使用 `warn` 级别。
+packages/play/src/operation-log.js 导出 createOperationContext 和 operationLogConstants，供 workspace/catalog/timeline 及 session/import mutation 接入。当前已接入 workspace bind、目录创建、文件写入、session create/branch/user-message 和 import-context PUT/DELETE；只读 GET 不产 operation 日志。它只接受 Cordis ctx.logger（或其 callable logger service），以 dsh-tavern.operation 前缀输出单行日志；前缀后的部分是稳定 JSON。一次 operation 在 context 创建时保存 operation 名和开始时刻，并可记录 start、多个 stage、一次 success 或一次 failure。成功和失败终态包含 result 与非负 durationMs；失败只记录稳定 error.code（缺失时为 UNKNOWN_ERROR）和可选 HTTP status，使用 warn 级别。
 
-日志 payload 的白名单只有 `operationId`、`operation`、`stage`、`result`、`errorCode`、
-`status`、`durationMs`、`method`、`sessionId`、`playthroughId`、`path`。标识和路径会做
-类型/长度/控制字符归一化；prompt、QA、角色卡、preset、正则、资源正文、请求 body、
-message text 及未知字段均不会输出，也不做正文摘要。logger 缺失、方法缺失或 logger
-自身抛错时 fail-soft。terminal 之后的 stage 或 terminal 调用无效且不会重复写终态。
+日志 payload 的白名单只有 operationId、operation、stage、result、errorCode、status、durationMs、method、sessionId、playthroughId、path。标识和路径会做类型/长度/控制字符归一化；prompt、QA、角色卡、preset、正则、资源正文、请求 body、message text 及未知字段均不会输出，也不做正文摘要。logger 缺失、方法缺失或 logger 自身抛错时 fail-soft。terminal 之后的 stage 或 terminal 调用无效且不会重复写终态。
 
-本节声明 utility 及任务12 workspace endpoint 接入；任务13再覆盖 session/import。当前不能据此
-声称所有生命周期静默失败都已被日志覆盖。默认 Cordis logger 仍由其自身管理，插件不写
-持久日志文件、浏览器日志或 exporter。
+本节声明 utility 及上述 workspace/session/import endpoint 接入；当前不能据此声称所有生命周期静默失败都已被日志覆盖。默认 Cordis logger 仍由其自身管理，插件不写持久日志文件、浏览器日志或 exporter。
