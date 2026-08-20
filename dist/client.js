@@ -10026,10 +10026,10 @@ async function loadChatState(client, sessionId, playthrough) {
     selectionResponse,
     characterResponse
   });
-  const importContextPath2 = playthrough?.ext?.pmpDshTavern?.importContextPath;
+  const importContextPath3 = playthrough?.ext?.pmpDshTavern?.importContextPath;
   let importedTurns = [];
-  if (typeof importContextPath2 === "string" && importContextPath2 !== "") {
-    const imported = JSON.parse((await client.getFile(importContextPath2)).content);
+  if (typeof importContextPath3 === "string" && importContextPath3 !== "") {
+    const imported = JSON.parse((await client.getFile(importContextPath3)).content);
     importedTurns = [
       ...typeof imported.greeting === "string" && imported.greeting !== "" ? [{
         id: "import-greeting",
@@ -10873,6 +10873,26 @@ async function loadMessages2(client, sessionIds, concurrency = 4) {
   await Promise.all(Array.from({ length: Math.min(concurrency, sessionIds.length) }, worker));
   return result;
 }
+function importContextPath2(playthrough, timeline) {
+  const direct = playthrough?.ext?.pmpDshTavern?.importContextPath;
+  if (typeof direct === "string" && direct !== "") return direct;
+  const nested = timeline?.ext?.pmpDshTavern?.importContextPath;
+  return typeof nested === "string" && nested !== "" ? nested : null;
+}
+async function loadImportContext(client, playthrough, timeline) {
+  const path = importContextPath2(playthrough, timeline);
+  if (path === null) return null;
+  const value = JSON.parse((await client.getFile(path)).content);
+  return {
+    schemaVersion: value?.schemaVersion ?? 1,
+    greeting: typeof value?.greeting === "string" ? value.greeting : null,
+    qa: Array.isArray(value?.qa) ? value.qa.map((item) => ({
+      user: typeof item?.user === "string" ? item.user : "",
+      assistant: typeof item?.assistant === "string" ? item.assistant : ""
+    })) : [],
+    source: value?.source ?? null
+  };
+}
 function selectedGreeting(selectionResponse, characterResponse) {
   const selection = selectionResponse?.selection;
   const character = characterResponse?.character;
@@ -10884,14 +10904,25 @@ function selectedGreeting(selectionResponse, characterResponse) {
 }
 async function loadPlaythroughExport(client, playthrough) {
   const timeline = await client.getTimeline(playthrough);
+  const importContext = await loadImportContext(client, playthrough, timeline);
   const sessionIds = allSessionIds(timeline);
   const messagesBySession = await loadMessages2(client, sessionIds);
   const root = rootSessionId4(playthrough, timeline);
   const selectionResponse = root === null ? null : await client.getCharacterSelection(root);
   const characterId = selectionResponse?.selection?.characterCardId;
   const characterResponse = typeof characterId === "string" && characterId !== "" ? await client.getCharacter(characterId) : null;
-  const turns = projectTimelineQa(timeline, messagesBySession);
-  const greeting = selectedGreeting(selectionResponse, characterResponse);
+  const timelineTurns = projectTimelineQa(timeline, messagesBySession);
+  const importedTurns = (importContext?.qa ?? []).map((qa, index) => ({
+    id: `import-${index}`,
+    imported: true,
+    hidden: false,
+    userText: qa.user,
+    assistantText: qa.assistant,
+    originalAssistantText: qa.assistant
+  }));
+  const turns = [...importedTurns, ...timelineTurns];
+  const hasImportedDisplay = importedTurns.length > 0 || (importContext?.greeting ?? "") !== "";
+  const greeting = (importContext?.greeting ?? "") !== "" ? importContext.greeting : hasImportedDisplay ? null : selectedGreeting(selectionResponse, characterResponse);
   const [regexDocument, active] = await Promise.all([
     typeof client.getFile === "function" ? getRegexDocument(client) : { schemaVersion: 1, rules: [] },
     root !== null && typeof client.getActive === "function" ? client.getActive(root) : null
@@ -10924,6 +10955,7 @@ async function loadPlaythroughExport(client, playthrough) {
       assistantText: render(turn.assistantText, "assistant")
     })),
     character: characterResponse?.character ?? null,
+    importContext,
     greeting,
     displayGreeting: greeting === null ? null : render(greeting, "assistant"),
     exportedAt: (/* @__PURE__ */ new Date()).toISOString()
@@ -10972,7 +11004,8 @@ function portableBundleExport(snapshot) {
     messagesBySession: snapshot.messagesBySession,
     resources: {
       characterId: snapshot.character?.id ?? null,
-      greeting: snapshot.greeting
+      greeting: snapshot.greeting,
+      importContext: snapshot.importContext
     }
   }, null, 2);
 }
@@ -11010,9 +11043,14 @@ function parseBundle(value) {
     throw new TypeError("play.import.unsupported");
   }
   const turns = projectTimelineQa(value.timeline, value.messagesBySession);
+  const imported = value.resources?.importContext;
+  const importedQa = Array.isArray(imported?.qa) ? imported.qa.map((item) => ({ user: String(item?.user ?? ""), assistant: String(item?.assistant ?? "") })) : [];
   return {
-    greeting: typeof value.resources?.greeting === "string" ? value.resources.greeting : null,
-    qa: turns.filter((turn) => !turn.hidden).map((turn) => ({ user: turn.userText, assistant: turn.originalAssistantText })),
+    greeting: typeof imported?.greeting === "string" ? imported.greeting : typeof value.resources?.greeting === "string" ? value.resources.greeting : null,
+    qa: [
+      ...importedQa,
+      ...turns.filter((turn) => !turn.hidden).map((turn) => ({ user: turn.userText, assistant: turn.originalAssistantText }))
+    ],
     source: { format: "pmp-dsh-tavern-bundle", playthroughId: value.playthrough?.id ?? null }
   };
 }
@@ -11048,6 +11086,7 @@ async function importPlaythrough(client, playthrough, file, {
   await client.createDirs(directory);
   await client.putFile(contextPath, JSON.stringify(document2, null, 2));
   const created = await client.postSession(rootSessionId5(playthrough), { path: contextPath });
+  if (typeof created?.sessionId !== "string" || created.sessionId === "") throw new TypeError("play.import.sessionInvalid");
   const imported = {
     id,
     path,
@@ -11057,7 +11096,18 @@ async function importPlaythrough(client, playthrough, file, {
   };
   await client.putTimeline(imported, { nodes: [], ext: { pmpDshTavern: { importContextPath: contextPath } } });
   await client.putCatalog({ ...catalog2, playthroughs: [...catalog2.playthroughs, imported] });
-  return { sessionId: created.sessionId, playthrough: imported, document: document2 };
+  const [savedFile, savedTimeline, savedCatalog, savedSelection] = await Promise.all([
+    client.getFile(contextPath),
+    client.getTimeline(imported),
+    client.getCatalog(),
+    client.getCharacterSelection(created.sessionId)
+  ]);
+  const savedDocument = JSON.parse(savedFile.content);
+  const saved = savedCatalog.playthroughs.find((item) => item.id === id && item.path === path);
+  if (savedDocument.schemaVersion !== document2.schemaVersion || savedDocument.qa?.length !== document2.qa.length || savedTimeline.nodes.length !== 0 || savedTimeline.ext?.pmpDshTavern?.importContextPath !== contextPath || saved?.ext?.pmpDshTavern?.rootSessionId !== created.sessionId || savedSelection?.selection?.characterCardId !== characterId) {
+    throw new Error("play.import.verificationFailed");
+  }
+  return { sessionId: created.sessionId, playthrough: saved, document: document2 };
 }
 
 // packages/client/src/play/io-menu.js

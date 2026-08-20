@@ -39,6 +39,28 @@ async function loadMessages(client, sessionIds, concurrency = 4) {
   return result
 }
 
+function importContextPath(playthrough, timeline) {
+  const direct = playthrough?.ext?.pmpDshTavern?.importContextPath
+  if (typeof direct === 'string' && direct !== '') return direct
+  const nested = timeline?.ext?.pmpDshTavern?.importContextPath
+  return typeof nested === 'string' && nested !== '' ? nested : null
+}
+
+async function loadImportContext(client, playthrough, timeline) {
+  const path = importContextPath(playthrough, timeline)
+  if (path === null) return null
+  const value = JSON.parse((await client.getFile(path)).content)
+  return {
+    schemaVersion: value?.schemaVersion ?? 1,
+    greeting: typeof value?.greeting === 'string' ? value.greeting : null,
+    qa: Array.isArray(value?.qa) ? value.qa.map(item => ({
+      user: typeof item?.user === 'string' ? item.user : '',
+      assistant: typeof item?.assistant === 'string' ? item.assistant : '',
+    })) : [],
+    source: value?.source ?? null,
+  }
+}
+
 function selectedGreeting(selectionResponse, characterResponse) {
   const selection = selectionResponse?.selection
   const character = characterResponse?.character
@@ -51,6 +73,7 @@ function selectedGreeting(selectionResponse, characterResponse) {
 
 export async function loadPlaythroughExport(client, playthrough) {
   const timeline = await client.getTimeline(playthrough)
+  const importContext = await loadImportContext(client, playthrough, timeline)
   const sessionIds = allSessionIds(timeline)
   const messagesBySession = await loadMessages(client, sessionIds)
   const root = rootSessionId(playthrough, timeline)
@@ -59,8 +82,20 @@ export async function loadPlaythroughExport(client, playthrough) {
   const characterResponse = typeof characterId === 'string' && characterId !== ''
     ? await client.getCharacter(characterId)
     : null
-  const turns = projectTimelineQa(timeline, messagesBySession)
-  const greeting = selectedGreeting(selectionResponse, characterResponse)
+  const timelineTurns = projectTimelineQa(timeline, messagesBySession)
+  const importedTurns = (importContext?.qa ?? []).map((qa, index) => ({
+    id: `import-${index}`,
+    imported: true,
+    hidden: false,
+    userText: qa.user,
+    assistantText: qa.assistant,
+    originalAssistantText: qa.assistant,
+  }))
+  const turns = [...importedTurns, ...timelineTurns]
+  const hasImportedDisplay = importedTurns.length > 0 || (importContext?.greeting ?? '') !== ''
+  const greeting = (importContext?.greeting ?? '') !== ''
+    ? importContext.greeting
+    : hasImportedDisplay ? null : selectedGreeting(selectionResponse, characterResponse)
   const [regexDocument, active] = await Promise.all([
     typeof client.getFile === 'function'
       ? getRegexDocument(client)
@@ -101,6 +136,7 @@ export async function loadPlaythroughExport(client, playthrough) {
       assistantText: render(turn.assistantText, 'assistant'),
     })),
     character: characterResponse?.character ?? null,
+    importContext,
     greeting,
     displayGreeting: greeting === null ? null : render(greeting, 'assistant'),
     exportedAt: new Date().toISOString(),
@@ -155,6 +191,7 @@ export function portableBundleExport(snapshot) {
     resources: {
       characterId: snapshot.character?.id ?? null,
       greeting: snapshot.greeting,
+      importContext: snapshot.importContext,
     },
   }, null, 2)
 }

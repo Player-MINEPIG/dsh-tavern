@@ -53,3 +53,42 @@ test('three exports honor display state without changing raw ST or bundle data',
   assert.equal(bundle.timeline.nodes[1].hidden, true)
   assert.equal(bundle.messagesBySession['session-a'].messages[3].text, 'Hidden reply')
 })
+
+test('exports retain imported read-only history before later DSH timeline turns', async () => {
+  const playthrough = {
+    id: 'pt-imported', title: '2周目', path: 'a/pt/timeline.json',
+    ext: { pmpDshTavern: { rootSessionId: 'session-a', importContextPath: 'a/pt/import-context.json' } },
+  }
+  const timeline = { nodes: [{
+    id: 'qa-live', kind: 'qa', hidden: false, displayOverride: null, adoptedVariantId: 'v-live',
+    variants: [{ id: 'v-live', sessionId: 'session-a', startEventId: 1, endEventId: 2 }],
+  }] }
+  const client = {
+    async getTimeline() { return timeline },
+    async getFile(path) {
+      if (path === 'a/pt/import-context.json') {
+        return { content: JSON.stringify({ schemaVersion: 1, greeting: 'Imported hello', qa: [{ user: 'Old Q', assistant: 'Old A' }] }) }
+      }
+      const error = new Error('missing')
+      error.code = 'PLAY_FILE_NOT_FOUND'
+      throw error
+    },
+    async getMessages() { return { incompleteTurn: false, messages: [
+      { role: 'user', seq: 1, text: 'New Q' },
+      { role: 'assistant', seq: 2, text: 'New A' },
+    ] } },
+    async getCharacterSelection() { return { selection: null } },
+  }
+  const snapshot = await loadPlaythroughExport(client, playthrough)
+  assert.equal(snapshot.greeting, 'Imported hello')
+  assert.deepEqual(snapshot.turns.map(turn => [turn.userText, turn.originalAssistantText]), [
+    ['Old Q', 'Old A'],
+    ['New Q', 'New A'],
+  ])
+  const st = playthroughExportDocument(snapshot, 'st').content
+  assert.match(st, /Imported hello/)
+  assert.match(st, /Old Q/)
+  assert.match(st, /New A/)
+  const bundle = JSON.parse(playthroughExportDocument(snapshot, 'bundle').content)
+  assert.equal(bundle.resources.importContext.qa[0].assistant, 'Old A')
+})

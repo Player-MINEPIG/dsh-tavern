@@ -4,6 +4,18 @@ This is the staged implementation log for dsh-tavern. It is kept separately
 from the product README so reviewers can follow intent, decisions, verification,
 and known limits chronologically.
 
+## 2026-08-20 — Preserve imported context through playthrough export
+
+- HTML, SillyTavern JSONL, and portable bundle exports now include the
+  read-only imported greeting/QA before later DSH-backed timeline turns.
+- Portable bundles carry the immutable import-context document and restore it
+  on reimport without turning those records into DSH history.
+- Import rereads the context, empty timeline, catalog row, and copied character
+  selection before navigation. This detects partial writes but does not claim
+  atomic rollback from the current composition API.
+
+Verification: focused import/export tests and production client build.
+
 ## 2026-08-20 — Keep playthrough IO in the sidebar only
 
 - Removed the duplicate `conversation.input.left` registration from the RP

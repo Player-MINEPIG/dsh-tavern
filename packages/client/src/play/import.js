@@ -29,9 +29,18 @@ function parseBundle(value) {
     throw new TypeError('play.import.unsupported')
   }
   const turns = projectTimelineQa(value.timeline, value.messagesBySession)
+  const imported = value.resources?.importContext
+  const importedQa = Array.isArray(imported?.qa)
+    ? imported.qa.map(item => ({ user: String(item?.user ?? ''), assistant: String(item?.assistant ?? '') }))
+    : []
   return {
-    greeting: typeof value.resources?.greeting === 'string' ? value.resources.greeting : null,
-    qa: turns.filter(turn => !turn.hidden).map(turn => ({ user: turn.userText, assistant: turn.originalAssistantText })),
+    greeting: typeof imported?.greeting === 'string'
+      ? imported.greeting
+      : typeof value.resources?.greeting === 'string' ? value.resources.greeting : null,
+    qa: [
+      ...importedQa,
+      ...turns.filter(turn => !turn.hidden).map(turn => ({ user: turn.userText, assistant: turn.originalAssistantText })),
+    ],
     source: { format: 'pmp-dsh-tavern-bundle', playthroughId: value.playthrough?.id ?? null },
   }
 }
@@ -70,6 +79,7 @@ export async function importPlaythrough(client, playthrough, file, {
   await client.createDirs(directory)
   await client.putFile(contextPath, JSON.stringify(document, null, 2))
   const created = await client.postSession(rootSessionId(playthrough), { path: contextPath })
+  if (typeof created?.sessionId !== 'string' || created.sessionId === '') throw new TypeError('play.import.sessionInvalid')
   const imported = {
     id,
     path,
@@ -79,5 +89,21 @@ export async function importPlaythrough(client, playthrough, file, {
   }
   await client.putTimeline(imported, { nodes: [], ext: { pmpDshTavern: { importContextPath: contextPath } } })
   await client.putCatalog({ ...catalog, playthroughs: [...catalog.playthroughs, imported] })
-  return { sessionId: created.sessionId, playthrough: imported, document }
+  const [savedFile, savedTimeline, savedCatalog, savedSelection] = await Promise.all([
+    client.getFile(contextPath),
+    client.getTimeline(imported),
+    client.getCatalog(),
+    client.getCharacterSelection(created.sessionId),
+  ])
+  const savedDocument = JSON.parse(savedFile.content)
+  const saved = savedCatalog.playthroughs.find(item => item.id === id && item.path === path)
+  if (savedDocument.schemaVersion !== document.schemaVersion
+    || savedDocument.qa?.length !== document.qa.length
+    || savedTimeline.nodes.length !== 0
+    || savedTimeline.ext?.pmpDshTavern?.importContextPath !== contextPath
+    || saved?.ext?.pmpDshTavern?.rootSessionId !== created.sessionId
+    || savedSelection?.selection?.characterCardId !== characterId) {
+    throw new Error('play.import.verificationFailed')
+  }
+  return { sessionId: created.sessionId, playthrough: saved, document }
 }
