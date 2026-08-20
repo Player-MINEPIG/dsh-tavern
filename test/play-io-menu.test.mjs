@@ -16,3 +16,8 @@ test('play import input ref is declared at component scope before the menu rende
   assert.ok(effectDeclaration > refDeclaration)
   assert.equal(component.match(/const importInput = useRef\(null\)/g)?.length, 1)
 })
+
+test('sidebar IO menu sizes to its content within the narrow sidebar budget', () => {
+  assert.match(source, /data-placement=sidebar[^}]*width:max-content;min-width:0;max-width:168px/)
+  assert.match(source, /data-placement=sidebar[^}]*\.dtv-play-io-item\{white-space:nowrap\}/)
+})
