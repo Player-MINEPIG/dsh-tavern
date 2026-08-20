@@ -1,6 +1,6 @@
 # dsh-tavern package architecture
 
-状态：2026-08-19，安装标识为 `pmp-dsh-tavern`；HTTP 挂载 `/pmp-dsh-tavern/api`，资源走 `/v1`。RP 会话叠加与委派子 agent 固化父选择仍然有效。本文是当前架构决策与发布审查门槛，不是产品 README。
+状态：2026-08-20，安装标识为 `pmp-dsh-tavern`；HTTP 挂载 `/pmp-dsh-tavern/api`，资源走 `/v1`。RP 会话叠加与委派子 agent 固化父选择仍然有效。本文是当前架构决策与发布审查门槛，不是产品 README。
 
 ## 决策结论
 
@@ -82,6 +82,49 @@ rc.6 的 `agent/inbox/spliced` 是公开、持久的 Session event；插入、�
 - 用户与独立世界书的关联已由统一 loader policy 的独立原子文件持有；`UserModel` 仍只有 `id/name/description`，`world-book-library` 文档也不反向保存用户 id。用户 UI 可以编辑关系，但最终以 session 显式来源优先、用户来源随后稳定去重，且只有 loader 的共享 adapter 运行 matcher。
 - UI 缩放、语言与绑卡跟随 RP 已由 `packages/client` 的单一设置入口、共享 locale contract 和逐语言语义 catalog 实现。业务组件只引用语义 key，动态资源值通过显式 raw boundary 插值；运行时不再扫描或替换中文原文。loader 根 API 只持久化有界的全局显示文档（含 `rpFollowCharacter`），资源 JSON、profile 编译和 session selection 不读取显示语言/缩放。可选的 `rp:policy` 正文是另一份有界文件 `rp-policy.json`。
 - 这两项都必须复用现有单插件 API、安全边界、刷新事件和原子持久化模式，不能通过新增第二个可安装插件实现。
+
+## 原生优先的前端适配策略
+
+前端长期遵循“最小改动、最大兼容”：先在当前 DSH 版本的包 README、根导出类型和公开 slot / service 中寻找等价能力，只有 DSH 没有表达 Tavern 语义的公开接口时才自建。复用的判定标准不是“能从 DSH 源码里 import 到”，而是同时满足：能力在公开文档或根导出中出现、由插件清单显式注入或声明依赖、没有读取 `/src/*` 或 bundle 内部符号、卸载本插件后 Host 数据和原生界面仍可独立工作。
+
+### 当前已经复用的 DSH 机制
+
+| Tavern 能力 | 复用的 DSH 公开机制 | 自定义部分及边界 |
+| --- | --- | --- |
+| DT 悬浮入口 | `shell.overlay` additive slot、Cordis effect 生命周期 | 球体、菜单内容和全局 chrome 状态是产品 UI；不向 `document.body` 另建失控根节点 |
+| 魔丸侧边栏 | `sidebar.workspaces` slot；owner 注入的 `useSessions` / `useWorkspaces`；`ctx.sessions.open()` | 只重组为角色卡 / 周目投影，不改写、不归档、不隐藏 Host session 数据 |
+| 普通会话提示 | `conversation.input.dock` 独立整行 slot | 仅显示 Tavern 的 RP 工作区分类结果，不接管原生 composer |
+| 魔丸对话页 | `conversation.view` slot；标准 `useSession` 的 nodes / partial / running | 周目跨 session 聚合是 Tavern 投影；不伪造 DSH 消息，不读取私有 runtime |
+| 实时发送和流式显示 | DSH `useSession` 实时节点与 partial | `/v2/messages` 只做持久消息范围对账，不重复封装 DSH 的浏览器实时 API |
+| 对话滚动 | Conversation 的 `[data-conversation-scroll]` scrollport、sticky composer 几何和注入的 `chatScroll.save(null)` | 只选择何时调用原生“到底部”语义；不计算固定 composer 高度，不维护第二个滚动容器 |
+| 干净新会话 / 配置模板 | `workspaces.connectWorkspace()` 返回 Host 拥有或复用的 blank session；`sessions.open()` 导航 | Tavern 只在目标 session 上原子复制 selection，不构造 Session、不 fork 历史 |
+| 周目 session 操作 | Host `sessions.create/rename/fork/prompt/history`、`workspace.insertSessionBefore`；Host 侧 `Session.deriveMessages()` | v2 把这些原子操作组成第三方前端可用的周目事务，同时保持 DSH session 为权威历史 |
+| RP 安全模式 | 官方 `sandbox/mode` Session event、`tools.guard`、Session/agent 生命周期 hook | Tavern 只保存 RP 是否启用及跟随来源；不发明第二种沙箱状态 |
+| prompt 与审计 | `systemPrompt.section`、`agent/request`、`request/header`、`Session.deriveMessages()` | loader 只编译选中的 ST 资源；Trace 只记录有界来源元数据 |
+| Tavern Trace | additive `conversation.view` | Trace 是 loader snapshot 的解释层，不取代原生 Chat / Trajectory |
+| 视觉适配 | DSH `--dsw-*` theme / semantic tokens | 角色卡、周目和资源编辑器的布局仍由 Tavern 拥有 |
+
+### 可以进一步复用，但尚未迁移
+
+以下是升级候选，不代表当前轮次已经授权修改：
+
+- 用户正文可采用 `@deepseek-ai/dsh-client-ui-primitives` 根导出的 `MessageText`；assistant 正文可在显示正则语义确定后采用根导出的 `MarkdownText`，复用 DSH 的 GFM、数学公式、安全链接、代码块和流式增量解析。`MarkdownText` 会主动省略 raw HTML，因此不能在没有协议决策时直接替代需要输出 ST HTML 的显示正则管线。
+- 思考折叠可采用公开 `DisclosureRow` 和 `IconThinkOutline*`；操作按钮可采用公开图标与 `Tooltip`。DSH bundle 内的 `ReasoningRow`、`MessageIconActions` 虽然存在，但未从 Conversation 的公开 client 入口导出，不属于可依赖接口。
+- 周目导入/导出、资源选择等锚定菜单可采用公开 `Menu`（含 portal、滚动/resize 重定位、紧凑模式），减少窄侧栏裁切和自维护定位 CSS；编辑、删除确认可逐步采用公开 `Modal` / `Button` / `Input`，复制可采用 `writeClipboard`。
+- 当前 `conversation.input.left` 的导入/导出 `+` 使用了正确 slot，却与已冻结的产品布局重复；处理方式应是移除该注册、保留侧栏菜单，而不是为重复入口再造一个机制。
+- 早期为消息滚动写过本地锚点、遮挡量与 composer 高度补偿；已改回 DSH scrollport 的 `scrollTop = scrollHeight` 语义。以后先确认 Host 的滚动所有权，不再用固定像素模拟 sticky composer。
+
+引入 primitives 时必须把 `@deepseek-ai/dsh-client-ui-primitives` 作为明确、同版本族的 client 依赖/注入项；不得借用 DSH 安装目录中的传递依赖。迁移必须逐项验收，不能为了统一外观一次替换所有控件。
+
+### 必须保留的 Tavern 自定义层
+
+DSH 当前没有角色卡、周目、greeting、跨 session adopted variant、ST 显示正则或 Tavern selection 的原生数据模型。因此 `catalog.json` / `timeline.json`、角色卡→周目侧栏投影、跨 session 回复切换、greeting 纯展示、正则资源管理与 v2 周目协议继续由 Tavern 拥有；它们通过事件范围指向 DSH 权威消息，不复制正文。RP 工作区内子目录还必须经过 Tavern 路径监狱：DSH 的 native/browse directory flow 是选择或注册 Workspace 的 UI seam，不提供“在已绑定根内让第三方 v2 前端安全创建任意周目子目录”的统一 Host 能力。
+
+插件自有资源变化继续使用有界的 Tavern refresh event；Session / Workspace / live Chat 变化必须订阅 DSH store，不能用该自定义事件替代 Host 状态管理。
+
+### DSH 升级审查
+
+每次升级 DSH 版本先做只读差异审计：核对插件清单的 inject、公开包根导出、slot owner props、store 字段、Host RPC 和 README 合同；然后运行 native/play 双模式及卸载回退验收。若公开 seam 消失，优先让对应增强失败关闭并保留原生表面，再讨论协议调整；禁止临时改为 DOM 查询、内部 bundle 符号或私有 runtime。新增前端功能的设计记录必须明确写出“复用的原生机制 / 自定义原因 / 官方升级观察点”。
 
 ## 为什么不是两个 DSH 插件
 

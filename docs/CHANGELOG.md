@@ -19,6 +19,24 @@ and known limits chronologically.
 Verification: chat/load/export/import focused tests, full 304-test suite
 (302 pass, 2 skip), and production client build.
 
+## 2026-08-20 — Document native-first frontend compatibility policy
+
+- Performed a read-only audit of the Mowan client against DSH rc.6's documented
+  slots, stores, Host operations, Session events, and public package exports.
+  No feature code changed in this audit.
+- Recorded the native seams already reused by the launcher, sidebar,
+  conversation, live projection, scrolling, clean-session flow, RP lock, prompt
+  assembly, Trace, and theme styling.
+- Recorded migration candidates in the public UI-primitives package
+  (`MessageText`/`MarkdownText`, `DisclosureRow`, `Menu`, icons/`Tooltip`,
+  `Modal`, and clipboard helpers), while explicitly rejecting imports from DSH
+  source paths or unexported conversation internals.
+- Kept Tavern-owned semantics custom where DSH has no equivalent model:
+  playthrough timelines, cross-session adopted variants, greetings, display
+  regex, selection composition, and the RP-root path jail.
+- Corrected the in-progress protocol to describe the current collapsible
+  reasoning projection and DSH-scrollport-based entry/user-message behavior.
+
 ## 2026-08-20 — Scroll Mowan only for entry and user messages
 
 - A newly mounted Mowan conversation scrolls to its bottom after the current
