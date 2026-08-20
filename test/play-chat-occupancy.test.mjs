@@ -65,6 +65,18 @@ test('Mowan shadows Chat only while the current session belongs to a playthrough
   assert.equal(firstChat.options.priority, PLAY_SLOT_PRIORITY)
   assert.equal(firstChat.options.inject().playthrough, playthrough)
 
+  snapshot = {
+    ...snapshot,
+    byId: {
+      ...snapshot.byId,
+      root: { ...snapshot.byId.root, running: true, blank: false },
+    },
+  }
+  notifySessions()
+  await nextTurn()
+  assert.equal(firstChat.active, true)
+  assert.equal(registrations.filter(item => item.options.name === 'conversation.view').length, 1)
+
   snapshot = { ...snapshot, current: 'ordinary' }
   notifySessions()
   assert.equal(firstChat.active, false)

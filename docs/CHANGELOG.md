@@ -4,6 +4,22 @@ This is the staged implementation log for dsh-tavern. It is kept separately
 from the product README so reviewers can follow intent, decisions, verification,
 and known limits chronologically.
 
+## 2026-08-20 — Preserve the Mowan conversation mount across live status updates
+
+- Session-list `running` and `blank` changes no longer unregister and
+  asynchronously recreate the Mowan `conversation.view`. The existing React
+  view and its scroll container remain mounted while a prompt starts and runs.
+- Occupancy is reclassified only when the frontend mode, current session/cwd,
+  or an explicit Tavern refresh can change playthrough membership. A refresh
+  that resolves to the same playthrough updates the binding without remounting
+  the view.
+- Conversation and input-left registrations are synchronized independently,
+  so declaration changes no longer restart the shared observer or tear down an
+  unrelated entry.
+
+Verification: `test/play-chat-occupancy.test.mjs`, focused occupancy/chat tests,
+full 303-test suite (301 pass, 2 skip), and production client build.
+
 ## 2026-08-20 — Mowan follows DSH live conversation state
 
 - The play conversation consumes DSH's public `useSession` projection directly:
