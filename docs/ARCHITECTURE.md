@@ -95,6 +95,7 @@ rc.6 的 `agent/inbox/spliced` 是公开、持久的 Session event；插入、�
 | 魔丸侧边栏 | `sidebar.workspaces` slot；owner 注入的 `useSessions` / `useWorkspaces`；`ctx.sessions.open()` | 只重组为角色卡 / 周目投影，不改写、不归档、不隐藏 Host session 数据 |
 | 普通会话提示 | `conversation.input.dock` 独立整行 slot | 仅显示 Tavern 的 RP 工作区分类结果，不接管原生 composer |
 | 魔丸对话页 | `conversation.view` slot；标准 `useSession` 的 nodes / partial / running | 周目跨 session 聚合是 Tavern 投影；不伪造 DSH 消息，不读取私有 runtime |
+| 魔丸默认视图 | `slots.entries("conversation.view")` 暴露的原生 `chat` store 句柄及其 `actions.setView()` | 只在新周目尚未选定视图时短暂 shadow `chat`，切到 `rp` 后立即注销；保留可手动选择的原生“对话”，不替换 DSH 插件 |
 | 实时发送和流式显示 | DSH `useSession` 实时节点与 partial | `/v2/messages` 只做持久消息范围对账，不重复封装 DSH 的浏览器实时 API |
 | 对话滚动 | Conversation 的 `[data-conversation-scroll]` scrollport、sticky composer 几何和注入的 `chatScroll.save(null)` | 只选择何时调用原生“到底部”语义；不计算固定 composer 高度，不维护第二个滚动容器 |
 | 干净新会话 / 配置模板 | `workspaces.connectWorkspace()` 返回 Host 拥有或复用的 blank session；`sessions.open()` 导航 | Tavern 只在目标 session 上原子复制 selection，不构造 Session、不 fork 历史 |
@@ -125,6 +126,8 @@ DSH 当前没有角色卡、周目、greeting、跨 session adopted variant、ST
 ### DSH 升级审查
 
 每次升级 DSH 版本先做只读差异审计：核对插件清单的 inject、公开包根导出、slot owner props、store 字段、Host RPC 和 README 合同；然后运行 native/play 双模式及卸载回退验收。若公开 seam 消失，优先让对应增强失败关闭并保留原生表面，再讨论协议调整；禁止临时改为 DOM 查询、内部 bundle 符号或私有 runtime。新增前端功能的设计记录必须明确写出“复用的原生机制 / 自定义原因 / 官方升级观察点”。
+
+rc.8 的默认视图仍由 DSH chat store 持有，`conversation.view` owner 不会自动把另一条目的 store 注入插件视图。因此默认 RP adapter 必须显式复用原生 `chat` 条目在公开 slot 快照中的同一 store 句柄，不能自建第二个 store。adapter 只处理 `view` 尚未选定的状态，执行后即注销；找不到公开句柄或组件拿不到 store 时失败关闭并清除临时占用。升级时应回归：新周目首条消息后默认进入 RP、原生“对话”仍可手动选择、顶栏没有临时 `chat` 残留、切回 native/卸载插件不改变 DSH 原组件。
 
 ## 为什么不是两个 DSH 插件
 

@@ -4,6 +4,25 @@ This is the staged implementation log for dsh-tavern. It is kept separately
 from the product README so reviewers can follow intent, decisions, verification,
 and known limits chronologically.
 
+## 2026-08-20 — Default new playthroughs to the selectable RP view
+
+- Kept DSH's native Conversation view installed and separately selectable,
+  while naming the Tavern projection `RP视图` and making it the initial view
+  for a newly opened playthrough whose DSH chat store has no explicit view.
+- The plugin briefly shadows the `chat` cell with an adapter that reuses the
+  native chat entry's public store handle, calls the existing `setView('rp')`
+  action, and then unregisters itself. It does not replace the DSH
+  conversation plugin, create a second chat store, or mutate the DOM.
+- The adapter fails closed: if the native store handle is not exposed, it is
+  not registered; if its owner props are unavailable at render time, it
+  retires without changing the native view. This prevents a stale `chat` tab
+  from surviving a future DSH contract change.
+- User acceptance passed on DSH 0.1.0-rc.8 after verifying both the automatic
+  switch and removal of the transient `chat` occupancy.
+
+Verification: focused default-view/occupancy tests, production client build,
+and full 306-test suite (304 pass, 2 skip).
+
 ## 2026-08-20 — Keep reasoning out of the Mowan body projection
 
 - Completed Mowan turns now project only DSH `content` parts whose type is
