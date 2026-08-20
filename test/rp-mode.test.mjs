@@ -162,6 +162,45 @@ test('binding a character follows into RP and unbinding always leaves', () => {
   }
 })
 
+test('a character selection copied after session start still enters RP and pins read-only', () => {
+  const { directory, agents, controller, selections } = fixture()
+  try {
+    const agent = createAgent('session-child', [{ type: 'sandbox/mode', data: { mode: 'workspace-write' } }])
+    agents.set(agent.id, agent)
+    controller.onSessionStart(agent)
+    assert.equal(controller.stored(agent.id).active, false)
+
+    selections.set(agent.id, { characterCardId: 'card-a' })
+    controller.onSessionStart(agent)
+
+    assert.equal(controller.stored(agent.id).active, true)
+    assert.equal(controller.stored(agent.id).source, 'character-follow')
+    assert.equal(foldSandboxMode(agent.session.events), 'read-only')
+  } finally {
+    rmSync(directory, { recursive: true, force: true })
+  }
+})
+
+test('an active RP selection copied after session start still commits the read-only sandbox event', () => {
+  const { directory, agents, controller, selections } = fixture()
+  try {
+    const agent = createAgent('session-child', [{ type: 'sandbox/mode', data: { mode: 'workspace-write' } }])
+    agents.set(agent.id, agent)
+    selections.set(agent.id, {
+      characterCardId: 'card-a',
+      rp: { active: true, source: 'character-follow', sandboxBefore: null },
+    })
+
+    controller.onSessionStart(agent)
+
+    assert.equal(controller.stored(agent.id).active, true)
+    assert.equal(controller.stored(agent.id).sandboxBefore, 'workspace-write')
+    assert.equal(foldSandboxMode(agent.session.events), 'read-only')
+  } finally {
+    rmSync(directory, { recursive: true, force: true })
+  }
+})
+
 test('manually leaving RP while a card is bound does not auto-reenter until a new bind', () => {
   const { directory, agents, controller, selections } = fixture()
   try {

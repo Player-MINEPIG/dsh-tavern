@@ -225,8 +225,36 @@ export function apply(ctx, config = {}) {
     defaultSelection: () => ({ presetId: store.state.selectedId }),
   })
   migrateCharacterSelections(characterStore, selections)
+  const rpMode = new RpModeController({
+    selections,
+    uiSettings: uiSettingsStore,
+    agents: () => ctx.get('agents'),
+    sandboxDefault: () => ctx.get('sandboxPolicy')?.defaultMode,
+    workspaceRoot: () => {
+      const root = ctx.get('sandboxPolicy')?.workspaceRoot
+      return typeof root === 'string' && root !== '' ? root : process.cwd()
+    },
+    logger: ctx.logger,
+    policyStore: rpPolicyStore,
+    section: rpPolicyStore.defaultSection,
+  })
+  const reconcileRpAfterSelection = (sessionId, operation) => {
+    const liveAgent = ctx.get('agents')?.get?.(sessionId)
+    const session = liveAgent === undefined ? ctx.get('sessions')?.get?.(sessionId) : undefined
+    const agent = liveAgent ?? (session === undefined ? { id: sessionId } : { id: sessionId, session })
+    try {
+      rpMode.onSessionStart(agent)
+    } catch (error) {
+      ctx.logger.warn?.(`dsh-tavern: RP mode ${operation} failed: ${error instanceof Error ? error.message : String(error)}`)
+    }
+  }
   let importContexts = null
-  const playHost = createPlayHost(ctx, { selections, characters: characterStore, importContexts: () => importContexts })
+  const playHost = createPlayHost(ctx, {
+    selections,
+    characters: characterStore,
+    importContexts: () => importContexts,
+    onSelectionCopied: sessionId => reconcileRpAfterSelection(sessionId, 'selection copy'),
+  })
   const playWorkspaceStore = new PlayWorkspaceStore(storageDir, { host: playHost })
   importContexts = new ImportContextRuntime(storageDir, playWorkspaceStore)
   const runtime = new TavernProfileLoader({
@@ -263,19 +291,6 @@ export function apply(ctx, config = {}) {
   const worldBookSelectionPolicy = createWorldBookSelectionPolicy(worldBookStore, selections, userWorldBooks)
   const userSelectionPolicy = createUserSelectionPolicy(userStore, selections, userWorldBooks)
   const userWorldBookBindingPolicy = createUserWorldBookBindingPolicy(userStore, worldBookStore, userWorldBooks)
-  const rpMode = new RpModeController({
-    selections,
-    uiSettings: uiSettingsStore,
-    agents: () => ctx.get('agents'),
-    sandboxDefault: () => ctx.get('sandboxPolicy')?.defaultMode,
-    workspaceRoot: () => {
-      const root = ctx.get('sandboxPolicy')?.workspaceRoot
-      return typeof root === 'string' && root !== '' ? root : process.cwd()
-    },
-    logger: ctx.logger,
-    policyStore: rpPolicyStore,
-    section: rpPolicyStore.defaultSection,
-  })
   const selectCharacter = characterSelectionPolicy.select.bind(characterSelectionPolicy)
   characterSelectionPolicy.select = (sessionId, patch) => {
     const previousId = characterSelectionPolicy.selection(sessionId)?.characterCardId ?? null
@@ -459,12 +474,7 @@ export function apply(ctx, config = {}) {
       onChange: change => {
         if (change.kind === 'session-configuration-applied') {
           notifyChange()
-          const agent = ctx.get('agents')?.get?.(change.sessionId)
-          if (agent !== undefined) {
-            try { rpMode.onSessionStart(agent) } catch (error) {
-              ctx.logger.warn?.(`dsh-tavern: RP mode apply failed: ${error instanceof Error ? error.message : String(error)}`)
-            }
-          }
+          reconcileRpAfterSelection(change.sessionId, 'configuration apply')
         }
       },
     })

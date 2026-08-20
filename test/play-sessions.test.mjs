@@ -188,6 +188,33 @@ test('user-message sends only the next user text with queue mode', async () => {
   }
 })
 
+test('copying a play session selection reconciles RP after the snapshot is stored', () => {
+  const calls = []
+  const selections = {
+    get(sessionId) {
+      calls.push(['get', sessionId])
+      return { characterCardId: 'card-a' }
+    },
+    set(sessionId, selection) {
+      calls.push(['set', sessionId, selection])
+    },
+  }
+  const host = createPlayHost({ get: () => undefined }, {
+    selections,
+    onSelectionCopied(sessionId) {
+      calls.push(['reconcile', sessionId])
+    },
+  })
+
+  host.copySelection('session-parent', 'session-child')
+
+  assert.deepEqual(calls, [
+    ['get', 'session-parent'],
+    ['set', 'session-child', { characterCardId: 'card-a' }],
+    ['reconcile', 'session-child'],
+  ])
+})
+
 test('GET messages returns Message.id plus seq and incompleteTurn', async () => {
   const fixture = await boundHandler()
   try {

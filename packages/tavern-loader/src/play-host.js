@@ -5,7 +5,12 @@ function missing(name) {
   return httpError(501, `Host ${name} is unavailable`, 'PLAY_HOST_UNAVAILABLE')
 }
 
-export function createPlayHost(ctx, { selections, characters, importContexts } = {}) {
+export function createPlayHost(ctx, {
+  selections,
+  characters,
+  importContexts,
+  onSelectionCopied,
+} = {}) {
   const api = () => ctx.get('apiProxy')
   const clientWorkspaces = () => ctx.get('workspaces')
 
@@ -128,6 +133,7 @@ export function createPlayHost(ctx, { selections, characters, importContexts } =
     copySelection(fromSessionId, toSessionId) {
       if (selections === undefined) return
       selections.set(toSessionId, selections.get(fromSessionId))
+      onSelectionCopied?.(toSessionId)
     },
   }
 }
