@@ -1,6 +1,4 @@
 import { projectTimelineQa } from './chat-model.js'
-import { nextPlaythroughNumber } from './create.js'
-import { playthroughCharacterId } from './schema.js'
 
 function parseJsonl(text) {
   const rows = text.split(/\r?\n/).filter(Boolean).map(line => JSON.parse(line))
@@ -63,47 +61,88 @@ function rootSessionId(playthrough) {
   return typeof value === 'string' && value !== '' ? value : null
 }
 
-export async function importPlaythrough(client, playthrough, file, {
-  now = () => new Date(),
+function playthroughDirectory(playthrough) {
+  const path = typeof playthrough?.path === 'string' ? playthrough.path.replaceAll('\\', '/') : ''
+  if (!path.endsWith('/timeline.json')) throw new TypeError('play.import.timelineRequired')
+  return path.slice(0, -'/timeline.json'.length)
+}
+
+function fallbackImportPath(playthrough, timeline) {
+  const direct = playthrough?.ext?.pmpDshTavern?.importContextPath
+  if (typeof direct === 'string' && direct !== '') return direct
+  const nested = timeline?.ext?.pmpDshTavern?.importContextPath
+  return typeof nested === 'string' && nested !== '' ? nested : null
+}
+
+export async function getPlaythroughImportBinding(client, sessionId, playthrough, timeline) {
+  if (typeof client.getImportContextBinding === 'function') {
+    return client.getImportContextBinding(sessionId)
+  }
+  const path = fallbackImportPath(playthrough, timeline)
+  return path === null ? null : { path, state: 'pending' }
+}
+
+export async function loadPlaythroughImportContext(client, sessionId, playthrough, timeline) {
+  const binding = await getPlaythroughImportBinding(client, sessionId, playthrough, timeline)
+  if (typeof binding?.path !== 'string' || binding.path === '') return { binding: null, document: null }
+  const document = JSON.parse((await client.getFile(binding.path)).content)
+  return { binding, document }
+}
+
+function assertLocallyMutable(timeline, messages) {
+  if ((timeline?.nodes?.length ?? 0) > 0
+    || messages?.incompleteTurn === true
+    || (messages?.messages ?? []).some(message => message?.role === 'user' || message?.role === 'assistant')) {
+    const error = new Error('play.import.locked')
+    error.code = 'PLAY_IMPORT_CONTEXT_LOCKED'
+    throw error
+  }
+}
+
+export async function bindPlaythroughImport(client, playthrough, file, {
   randomUUID = () => globalThis.crypto.randomUUID(),
 } = {}) {
   const document = parsePlaythroughImport(await file.text(), file.name)
-  const characterId = playthroughCharacterId(playthrough)
-  if (characterId === null) throw new TypeError('play.import.characterRequired')
-  const id = `playthrough-${randomUUID()}`
-  const directory = `${characterId}/${id}`
-  const path = `${directory}/timeline.json`
-  const contextPath = `${directory}/import-context.json`
-  const catalog = await client.getCatalog()
-  const playthroughNumber = nextPlaythroughNumber(catalog, characterId)
+  const sessionId = rootSessionId(playthrough)
+  if (sessionId === null) throw new TypeError('play.import.sessionRequired')
+  const [timeline, messages] = await Promise.all([
+    client.getTimeline(playthrough),
+    client.getMessages(sessionId),
+  ])
+  assertLocallyMutable(timeline, messages)
+  const directory = playthroughDirectory(playthrough)
+  const token = String(randomUUID())
+  if (!/^[A-Za-z0-9][A-Za-z0-9._-]{0,199}$/.test(token)) throw new TypeError('play.import.idInvalid')
+  const contextPath = `${directory}/import-context-${token}.json`
   await client.createDirs(directory)
   await client.putFile(contextPath, JSON.stringify(document, null, 2))
-  const created = await client.postSession(rootSessionId(playthrough), { path: contextPath })
-  if (typeof created?.sessionId !== 'string' || created.sessionId === '') throw new TypeError('play.import.sessionInvalid')
-  const imported = {
-    id,
-    path,
-    title: `${playthroughNumber}周目`,
-    lastOpenedAt: now().toISOString(),
-    ext: { pmpDshTavern: { characterId, rootSessionId: created.sessionId, importContextPath: contextPath, playthroughNumber } },
-  }
-  await client.putTimeline(imported, { nodes: [], ext: { pmpDshTavern: { importContextPath: contextPath } } })
-  await client.putCatalog({ ...catalog, playthroughs: [...catalog.playthroughs, imported] })
-  const [savedFile, savedTimeline, savedCatalog, savedSelection] = await Promise.all([
+  const bound = await client.putImportContextBinding(sessionId, { path: contextPath })
+  const [savedFile, savedBinding] = await Promise.all([
     client.getFile(contextPath),
-    client.getTimeline(imported),
-    client.getCatalog(),
-    client.getCharacterSelection(created.sessionId),
+    client.getImportContextBinding(sessionId),
   ])
   const savedDocument = JSON.parse(savedFile.content)
-  const saved = savedCatalog.playthroughs.find(item => item.id === id && item.path === path)
-  if (savedDocument.schemaVersion !== document.schemaVersion
+  if (bound?.path !== contextPath
+    || savedBinding?.path !== contextPath
+    || savedBinding?.state !== 'pending'
+    || savedDocument.schemaVersion !== document.schemaVersion
     || savedDocument.qa?.length !== document.qa.length
-    || savedTimeline.nodes.length !== 0
-    || savedTimeline.ext?.pmpDshTavern?.importContextPath !== contextPath
-    || saved?.ext?.pmpDshTavern?.rootSessionId !== created.sessionId
-    || savedSelection?.selection?.characterCardId !== characterId) {
+  ) {
     throw new Error('play.import.verificationFailed')
   }
-  return { sessionId: created.sessionId, playthrough: saved, document }
+  return { sessionId, binding: savedBinding, document }
+}
+
+export async function unbindPlaythroughImport(client, playthrough) {
+  const sessionId = rootSessionId(playthrough)
+  if (sessionId === null) throw new TypeError('play.import.sessionRequired')
+  const [timeline, messages] = await Promise.all([
+    client.getTimeline(playthrough),
+    client.getMessages(sessionId),
+  ])
+  assertLocallyMutable(timeline, messages)
+  await client.deleteImportContextBinding(sessionId)
+  const saved = await client.getImportContextBinding(sessionId)
+  if (saved !== null) throw new Error('play.import.verificationFailed')
+  return { sessionId, binding: null }
 }

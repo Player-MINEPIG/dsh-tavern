@@ -16,7 +16,6 @@ import {
   playthroughExportDocument,
 } from './export.js'
 
-import { importPlaythrough } from './import.js'
 import { renamePlaythrough } from './create.js'
 const h = createLocalizedElement(createElement)
 
@@ -52,10 +51,9 @@ function downloadDocument(playthrough, document) {
   queueMicrotask(() => URL.revokeObjectURL(url))
 }
 
-export function PlayIoMenu({ playClient, playthrough, openSession, trigger = '+', placement = 'composer' }) {
+export function PlayIoMenu({ playClient, playthrough, trigger = '+', placement = 'composer' }) {
   installStyles()
   const root = useRef(null)
-  const importInput = useRef(null)
   const [open, setOpen] = useState(false)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
@@ -76,24 +74,6 @@ export function PlayIoMenu({ playClient, playthrough, openSession, trigger = '+'
     try {
       const snapshot = await loadPlaythroughExport(playClient, playthrough)
       downloadDocument(playthrough, playthroughExportDocument(snapshot, format))
-      setOpen(false)
-    } catch (reason) {
-      setError(reason instanceof Error ? reason.message : String(reason))
-    } finally {
-      setBusy(false)
-    }
-  }
-
-  const importFile = async event => {
-    const file = event.target.files?.[0]
-    event.target.value = ''
-    if (!file || busy) return
-    setBusy(true)
-    setError('')
-    try {
-      const result = await importPlaythrough(playClient, playthrough, file)
-      window.dispatchEvent(new Event('pmp-dsh-tavern:refresh'))
-      openSession?.(result.sessionId)
       setOpen(false)
     } catch (reason) {
       setError(reason instanceof Error ? reason.message : String(reason))
@@ -136,13 +116,6 @@ export function PlayIoMenu({ playClient, playthrough, openSession, trigger = '+'
       h('button', { type: 'button', className: 'dtv-play-io-item', disabled: busy, onClick: () => exportAs('html') }, uiMessage('play.io.exportHtml')),
       h('button', { type: 'button', className: 'dtv-play-io-item', disabled: busy, onClick: () => exportAs('st') }, uiMessage('play.io.exportSt')),
       h('button', { type: 'button', className: 'dtv-play-io-item', disabled: busy, onClick: () => exportAs('bundle') }, uiMessage('play.io.exportBundle')),
-      h('button', {
-        type: 'button',
-        className: 'dtv-play-io-item',
-        disabled: busy,
-        onClick: () => importInput.current?.click(),
-      }, uiMessage('play.io.import')),
-      h('input', { ref: importInput, hidden: true, type: 'file', accept: '.json,.jsonl,application/json,application/x-ndjson', onChange: importFile }),
       error === '' ? null : h('p', { className: 'dtv-play-io-error' }, rawText(error)),
     ),
   )

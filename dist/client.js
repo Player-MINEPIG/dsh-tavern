@@ -9930,6 +9930,27 @@ function createTurnReconciler(client) {
   };
 }
 
+// packages/client/src/play/import.js
+function fallbackImportPath(playthrough, timeline) {
+  const direct = playthrough?.ext?.pmpDshTavern?.importContextPath;
+  if (typeof direct === "string" && direct !== "") return direct;
+  const nested = timeline?.ext?.pmpDshTavern?.importContextPath;
+  return typeof nested === "string" && nested !== "" ? nested : null;
+}
+async function getPlaythroughImportBinding(client, sessionId, playthrough, timeline) {
+  if (typeof client.getImportContextBinding === "function") {
+    return client.getImportContextBinding(sessionId);
+  }
+  const path = fallbackImportPath(playthrough, timeline);
+  return path === null ? null : { path, state: "pending" };
+}
+async function loadPlaythroughImportContext(client, sessionId, playthrough, timeline) {
+  const binding = await getPlaythroughImportBinding(client, sessionId, playthrough, timeline);
+  if (typeof binding?.path !== "string" || binding.path === "") return { binding: null, document: null };
+  const document2 = JSON.parse((await client.getFile(binding.path)).content);
+  return { binding, document: document2 };
+}
+
 // packages/client/src/play/chat.js
 var h8 = createLocalizedElement(import_react9.createElement);
 var turnReconcilers = /* @__PURE__ */ new WeakMap();
@@ -10026,10 +10047,10 @@ async function loadChatState(client, sessionId, playthrough) {
     selectionResponse,
     characterResponse
   });
-  const importContextPath3 = playthrough?.ext?.pmpDshTavern?.importContextPath;
+  const importedContext = await loadPlaythroughImportContext(client, sessionId, playthrough, timeline);
   let importedTurns = [];
-  if (typeof importContextPath3 === "string" && importContextPath3 !== "") {
-    const imported = JSON.parse((await client.getFile(importContextPath3)).content);
+  if (importedContext.document !== null) {
+    const imported = importedContext.document;
     importedTurns = [
       ...typeof imported.greeting === "string" && imported.greeting !== "" ? [{
         id: "import-greeting",
@@ -10062,9 +10083,14 @@ async function loadChatState(client, sessionId, playthrough) {
       assistantText: renderText(turn.assistantText, "assistant", { depth: assistantDepth })
     };
   }
+  const rootMessages = messagesBySession[sessionId];
+  const importMutable = (timeline?.nodes?.length ?? 0) === 0 && rootMessages?.incompleteTurn !== true && !(rootMessages?.messages ?? []).some((message) => message?.role === "user" || message?.role === "assistant") && importedContext.binding?.state !== "consumed";
   return {
     timeline,
     turns,
+    importBinding: importedContext.binding,
+    importContext: importedContext.document,
+    importMutable,
     greeting: importedTurns.length > 0 ? null : greeting === null ? null : { ...greeting, text: renderText(greeting.text, "assistant") },
     regexDiagnostics,
     display: { rules, bindings, macros }
@@ -10703,22 +10729,13 @@ function latestCharacterPlaythrough(catalog2, characterId) {
   }
   return latest;
 }
-function importContextPath(playthrough, timeline) {
-  const direct = playthrough?.ext?.pmpDshTavern?.importContextPath;
-  if (typeof direct === "string" && direct !== "") return direct;
-  const timelineValue = timeline?.ext?.pmpDshTavern?.importContextPath;
-  return typeof timelineValue === "string" && timelineValue !== "" ? timelineValue : null;
-}
 async function playthroughIsReusable(client, playthrough) {
   const sessionId = rootSessionId3(playthrough);
   if (sessionId === null) return false;
   const timeline = await client.getTimeline(playthrough);
   if ((timeline?.nodes?.length ?? 0) > 0) return false;
-  const contextPath = importContextPath(playthrough, timeline);
-  if (contextPath !== null) {
-    const imported = JSON.parse((await client.getFile(contextPath)).content);
-    if (Array.isArray(imported?.qa) && imported.qa.length > 0) return false;
-  }
+  const imported = await loadPlaythroughImportContext(client, sessionId, playthrough, timeline);
+  if (Array.isArray(imported.document?.qa) && imported.document.qa.length > 0) return false;
   const history = await client.getMessages(sessionId);
   if (history?.incompleteTurn === true) return false;
   return !(history?.messages ?? []).some((message) => message?.role === "user" || message?.role === "assistant");
@@ -10873,16 +10890,8 @@ async function loadMessages2(client, sessionIds, concurrency = 4) {
   await Promise.all(Array.from({ length: Math.min(concurrency, sessionIds.length) }, worker));
   return result;
 }
-function importContextPath2(playthrough, timeline) {
-  const direct = playthrough?.ext?.pmpDshTavern?.importContextPath;
-  if (typeof direct === "string" && direct !== "") return direct;
-  const nested = timeline?.ext?.pmpDshTavern?.importContextPath;
-  return typeof nested === "string" && nested !== "" ? nested : null;
-}
-async function loadImportContext(client, playthrough, timeline) {
-  const path = importContextPath2(playthrough, timeline);
-  if (path === null) return null;
-  const value = JSON.parse((await client.getFile(path)).content);
+function normalizeImportContext(value) {
+  if (value === null) return null;
   return {
     schemaVersion: value?.schemaVersion ?? 1,
     greeting: typeof value?.greeting === "string" ? value.greeting : null,
@@ -10904,10 +10913,10 @@ function selectedGreeting(selectionResponse, characterResponse) {
 }
 async function loadPlaythroughExport(client, playthrough) {
   const timeline = await client.getTimeline(playthrough);
-  const importContext = await loadImportContext(client, playthrough, timeline);
   const sessionIds = allSessionIds(timeline);
   const messagesBySession = await loadMessages2(client, sessionIds);
   const root = rootSessionId4(playthrough, timeline);
+  const importContext = root === null ? null : normalizeImportContext((await loadPlaythroughImportContext(client, root, playthrough, timeline)).document);
   const selectionResponse = root === null ? null : await client.getCharacterSelection(root);
   const characterId = selectionResponse?.selection?.characterCardId;
   const characterResponse = typeof characterId === "string" && characterId !== "" ? await client.getCharacter(characterId) : null;
@@ -11016,100 +11025,6 @@ function playthroughExportDocument(snapshot, format) {
   throw new TypeError(`Unknown export format ${format}`);
 }
 
-// packages/client/src/play/import.js
-function parseJsonl(text2) {
-  const rows = text2.split(/\r?\n/).filter(Boolean).map((line) => JSON.parse(line));
-  if (rows.length === 0) throw new TypeError("play.import.empty");
-  const messages = rows.slice(1).filter((row) => typeof row?.mes === "string");
-  let greeting = null;
-  const qa = [];
-  let pending = null;
-  for (const message of messages) {
-    if (message.is_user === true) {
-      if (pending !== null) throw new TypeError("play.import.unpaired");
-      pending = message.mes;
-    } else if (pending === null && qa.length === 0 && greeting === null) {
-      greeting = message.mes;
-    } else if (pending !== null) {
-      qa.push({ user: pending, assistant: message.mes });
-      pending = null;
-    }
-  }
-  if (pending !== null) throw new TypeError("play.import.unpaired");
-  return { greeting, qa, source: { format: "sillytavern-jsonl" } };
-}
-function parseBundle(value) {
-  if (value?.kind !== "pmp-dsh-tavern-playthrough" || value.schemaVersion !== 1) {
-    throw new TypeError("play.import.unsupported");
-  }
-  const turns = projectTimelineQa(value.timeline, value.messagesBySession);
-  const imported = value.resources?.importContext;
-  const importedQa = Array.isArray(imported?.qa) ? imported.qa.map((item) => ({ user: String(item?.user ?? ""), assistant: String(item?.assistant ?? "") })) : [];
-  return {
-    greeting: typeof imported?.greeting === "string" ? imported.greeting : typeof value.resources?.greeting === "string" ? value.resources.greeting : null,
-    qa: [
-      ...importedQa,
-      ...turns.filter((turn) => !turn.hidden).map((turn) => ({ user: turn.userText, assistant: turn.originalAssistantText }))
-    ],
-    source: { format: "pmp-dsh-tavern-bundle", playthroughId: value.playthrough?.id ?? null }
-  };
-}
-function parsePlaythroughImport(text2, fileName = "") {
-  if (typeof text2 !== "string" || text2.trim() === "") throw new TypeError("play.import.empty");
-  const parsed = text2.trimStart().startsWith("{") && !text2.trimStart().includes("\n") ? parseBundle(JSON.parse(text2)) : (() => {
-    try {
-      return parseBundle(JSON.parse(text2));
-    } catch (error) {
-      if (text2.includes("\n")) return parseJsonl(text2);
-      throw error;
-    }
-  })();
-  return { schemaVersion: 1, ...parsed, source: { ...parsed.source, fileName } };
-}
-function rootSessionId5(playthrough) {
-  const value = playthrough?.ext?.pmpDshTavern?.rootSessionId;
-  return typeof value === "string" && value !== "" ? value : null;
-}
-async function importPlaythrough(client, playthrough, file, {
-  now = () => /* @__PURE__ */ new Date(),
-  randomUUID = () => globalThis.crypto.randomUUID()
-} = {}) {
-  const document2 = parsePlaythroughImport(await file.text(), file.name);
-  const characterId = playthroughCharacterId(playthrough);
-  if (characterId === null) throw new TypeError("play.import.characterRequired");
-  const id = `playthrough-${randomUUID()}`;
-  const directory = `${characterId}/${id}`;
-  const path = `${directory}/timeline.json`;
-  const contextPath = `${directory}/import-context.json`;
-  const catalog2 = await client.getCatalog();
-  const playthroughNumber = nextPlaythroughNumber(catalog2, characterId);
-  await client.createDirs(directory);
-  await client.putFile(contextPath, JSON.stringify(document2, null, 2));
-  const created = await client.postSession(rootSessionId5(playthrough), { path: contextPath });
-  if (typeof created?.sessionId !== "string" || created.sessionId === "") throw new TypeError("play.import.sessionInvalid");
-  const imported = {
-    id,
-    path,
-    title: `${playthroughNumber}\u5468\u76EE`,
-    lastOpenedAt: now().toISOString(),
-    ext: { pmpDshTavern: { characterId, rootSessionId: created.sessionId, importContextPath: contextPath, playthroughNumber } }
-  };
-  await client.putTimeline(imported, { nodes: [], ext: { pmpDshTavern: { importContextPath: contextPath } } });
-  await client.putCatalog({ ...catalog2, playthroughs: [...catalog2.playthroughs, imported] });
-  const [savedFile, savedTimeline, savedCatalog, savedSelection] = await Promise.all([
-    client.getFile(contextPath),
-    client.getTimeline(imported),
-    client.getCatalog(),
-    client.getCharacterSelection(created.sessionId)
-  ]);
-  const savedDocument = JSON.parse(savedFile.content);
-  const saved = savedCatalog.playthroughs.find((item) => item.id === id && item.path === path);
-  if (savedDocument.schemaVersion !== document2.schemaVersion || savedDocument.qa?.length !== document2.qa.length || savedTimeline.nodes.length !== 0 || savedTimeline.ext?.pmpDshTavern?.importContextPath !== contextPath || saved?.ext?.pmpDshTavern?.rootSessionId !== created.sessionId || savedSelection?.selection?.characterCardId !== characterId) {
-    throw new Error("play.import.verificationFailed");
-  }
-  return { sessionId: created.sessionId, playthrough: saved, document: document2 };
-}
-
 // packages/client/src/play/io-menu.js
 var h9 = createLocalizedElement(import_react10.createElement);
 var css8 = `
@@ -11140,10 +11055,9 @@ function downloadDocument(playthrough, document2) {
   anchor.remove();
   queueMicrotask(() => URL.revokeObjectURL(url));
 }
-function PlayIoMenu({ playClient, playthrough, openSession, trigger = "+", placement = "composer" }) {
+function PlayIoMenu({ playClient, playthrough, trigger = "+", placement = "composer" }) {
   installStyles3();
   const root = (0, import_react10.useRef)(null);
-  const importInput = (0, import_react10.useRef)(null);
   const [open, setOpen] = (0, import_react10.useState)(false);
   const [busy, setBusy] = (0, import_react10.useState)(false);
   const [error, setError] = (0, import_react10.useState)("");
@@ -11162,23 +11076,6 @@ function PlayIoMenu({ playClient, playthrough, openSession, trigger = "+", place
     try {
       const snapshot = await loadPlaythroughExport(playClient, playthrough);
       downloadDocument(playthrough, playthroughExportDocument(snapshot, format));
-      setOpen(false);
-    } catch (reason) {
-      setError(reason instanceof Error ? reason.message : String(reason));
-    } finally {
-      setBusy(false);
-    }
-  };
-  const importFile = async (event) => {
-    const file = event.target.files?.[0];
-    event.target.value = "";
-    if (!file || busy) return;
-    setBusy(true);
-    setError("");
-    try {
-      const result = await importPlaythrough(playClient, playthrough, file);
-      window.dispatchEvent(new Event("pmp-dsh-tavern:refresh"));
-      openSession?.(result.sessionId);
       setOpen(false);
     } catch (reason) {
       setError(reason instanceof Error ? reason.message : String(reason));
@@ -11227,13 +11124,6 @@ function PlayIoMenu({ playClient, playthrough, openSession, trigger = "+", place
       h9("button", { type: "button", className: "dtv-play-io-item", disabled: busy, onClick: () => exportAs("html") }, uiMessage("play.io.exportHtml")),
       h9("button", { type: "button", className: "dtv-play-io-item", disabled: busy, onClick: () => exportAs("st") }, uiMessage("play.io.exportSt")),
       h9("button", { type: "button", className: "dtv-play-io-item", disabled: busy, onClick: () => exportAs("bundle") }, uiMessage("play.io.exportBundle")),
-      h9("button", {
-        type: "button",
-        className: "dtv-play-io-item",
-        disabled: busy,
-        onClick: () => importInput.current?.click()
-      }, uiMessage("play.io.import")),
-      h9("input", { ref: importInput, hidden: true, type: "file", accept: ".json,.jsonl,application/json,application/x-ndjson", onChange: importFile }),
       error === "" ? null : h9("p", { className: "dtv-play-io-error" }, rawText(error))
     )
   );
@@ -12131,6 +12021,18 @@ function createLivePlayClient({
     async getMessages(sessionId) {
       const response = await v2("GET", `/sessions/${encodeURIComponent(sessionId)}/messages`);
       return normalizeSessionMessages(response);
+    },
+    async getImportContextBinding(sessionId) {
+      const response = await v2("GET", `/sessions/${encodeURIComponent(sessionId)}/import-context`);
+      return response?.binding ?? null;
+    },
+    async putImportContextBinding(sessionId, reference) {
+      const response = await v2("PUT", `/sessions/${encodeURIComponent(sessionId)}/import-context`, { reference });
+      return response?.binding ?? null;
+    },
+    async deleteImportContextBinding(sessionId) {
+      const response = await v2("DELETE", `/sessions/${encodeURIComponent(sessionId)}/import-context`);
+      return response?.binding ?? null;
     },
     async getFocus(playthrough) {
       const query = playthrough === void 0 ? "" : pathQuery(timelinePath(playthrough));

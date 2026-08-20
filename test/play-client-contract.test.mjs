@@ -123,6 +123,9 @@ test('live play client parses JSON file envelopes and writes them as content str
       return response({ ok: true, path: catalog.playthroughs[0].path, content: JSON.stringify(timeline) })
     }
     if (url.includes('/sessions/session-1/messages')) return response({ ok: true, ...messages })
+    if (url.includes('/sessions/session-1/import-context')) {
+      return response({ ok: true, binding: (options.method ?? 'GET') === 'DELETE' ? null : { path: 'character-1/playthrough-1/import-context.json', state: 'pending' } })
+    }
     if (url.includes('/focus?path=')) return response({ ok: true, sessionId: null })
     if (url === API_V1 + '/characters') {
       return response({ ok: true, characters: [{ id: 'character-1', name: 'Guide' }] })
@@ -146,6 +149,9 @@ test('live play client parses JSON file envelopes and writes them as content str
   assert.equal((await client.getCatalog()).playthroughs[0].id, 'playthrough-1')
   assert.equal((await client.getTimeline(catalog.playthroughs[0])).nodes[0].id, 'qa-1')
   assert.equal((await client.getMessages('session-1')).messages[0].text, 'Hello ⟦image⟧')
+  assert.equal((await client.getImportContextBinding('session-1')).state, 'pending')
+  assert.equal((await client.putImportContextBinding('session-1', { path: 'character-1/playthrough-1/import-context.json' })).path, 'character-1/playthrough-1/import-context.json')
+  assert.equal(await client.deleteImportContextBinding('session-1'), null)
   assert.equal((await client.getFocus(catalog.playthroughs[0])).sessionId, null)
   await client.putCatalog(catalog)
   await client.putTimeline(catalog.playthroughs[0], timeline)

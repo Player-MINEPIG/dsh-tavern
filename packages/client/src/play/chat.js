@@ -30,6 +30,7 @@ import {
 import { RichText } from './rich-text.js'
 import { PlayTurnActions } from './turn-actions.js'
 import { createTurnReconciler } from './turns.js'
+import { loadPlaythroughImportContext } from './import.js'
 
 const h = createLocalizedElement(createElement)
 const turnReconcilers = new WeakMap()
@@ -142,10 +143,10 @@ export async function loadChatState(client, sessionId, playthrough) {
     selectionResponse,
     characterResponse,
   })
-  const importContextPath = playthrough?.ext?.pmpDshTavern?.importContextPath
+  const importedContext = await loadPlaythroughImportContext(client, sessionId, playthrough, timeline)
   let importedTurns = []
-  if (typeof importContextPath === 'string' && importContextPath !== '') {
-    const imported = JSON.parse((await client.getFile(importContextPath)).content)
+  if (importedContext.document !== null) {
+    const imported = importedContext.document
     importedTurns = [
       ...(typeof imported.greeting === 'string' && imported.greeting !== '' ? [{
         id: 'import-greeting', imported: true, hidden: false, userText: '',
@@ -171,9 +172,17 @@ export async function loadChatState(client, sessionId, playthrough) {
       assistantText: renderText(turn.assistantText, 'assistant', { depth: assistantDepth }),
     }
   }
+  const rootMessages = messagesBySession[sessionId]
+  const importMutable = (timeline?.nodes?.length ?? 0) === 0
+    && rootMessages?.incompleteTurn !== true
+    && !(rootMessages?.messages ?? []).some(message => message?.role === 'user' || message?.role === 'assistant')
+    && importedContext.binding?.state !== 'consumed'
   return {
     timeline,
     turns,
+    importBinding: importedContext.binding,
+    importContext: importedContext.document,
+    importMutable,
     greeting: importedTurns.length > 0 ? null : greeting === null ? null : { ...greeting, text: renderText(greeting.text, 'assistant') },
     regexDiagnostics,
     display: { rules, bindings, macros },

@@ -1,4 +1,5 @@
 import { characterIdFromSelection } from './sidebar-model.js'
+import { loadPlaythroughImportContext } from './import.js'
 
 const SAFE_SEGMENT = /^[A-Za-z0-9][A-Za-z0-9._-]{0,199}$/
 const SAFE_SESSION_ID = /^[A-Za-z0-9][A-Za-z0-9._:-]{0,199}$/
@@ -59,24 +60,14 @@ function latestCharacterPlaythrough(catalog, characterId) {
   return latest
 }
 
-function importContextPath(playthrough, timeline) {
-  const direct = playthrough?.ext?.pmpDshTavern?.importContextPath
-  if (typeof direct === 'string' && direct !== '') return direct
-  const timelineValue = timeline?.ext?.pmpDshTavern?.importContextPath
-  return typeof timelineValue === 'string' && timelineValue !== '' ? timelineValue : null
-}
-
 export async function playthroughIsReusable(client, playthrough) {
   const sessionId = rootSessionId(playthrough)
   if (sessionId === null) return false
   const timeline = await client.getTimeline(playthrough)
   if ((timeline?.nodes?.length ?? 0) > 0) return false
 
-  const contextPath = importContextPath(playthrough, timeline)
-  if (contextPath !== null) {
-    const imported = JSON.parse((await client.getFile(contextPath)).content)
-    if (Array.isArray(imported?.qa) && imported.qa.length > 0) return false
-  }
+  const imported = await loadPlaythroughImportContext(client, sessionId, playthrough, timeline)
+  if (Array.isArray(imported.document?.qa) && imported.document.qa.length > 0) return false
 
   const history = await client.getMessages(sessionId)
   if (history?.incompleteTurn === true) return false

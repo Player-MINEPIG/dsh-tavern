@@ -6,6 +6,7 @@ import {
   resourceRegexRules,
 } from './regex.js'
 import { renderRichTextHtml } from './rich-text.js'
+import { loadPlaythroughImportContext } from './import.js'
 
 function rootSessionId(playthrough, timeline) {
   const root = playthrough?.ext?.pmpDshTavern?.rootSessionId
@@ -39,17 +40,8 @@ async function loadMessages(client, sessionIds, concurrency = 4) {
   return result
 }
 
-function importContextPath(playthrough, timeline) {
-  const direct = playthrough?.ext?.pmpDshTavern?.importContextPath
-  if (typeof direct === 'string' && direct !== '') return direct
-  const nested = timeline?.ext?.pmpDshTavern?.importContextPath
-  return typeof nested === 'string' && nested !== '' ? nested : null
-}
-
-async function loadImportContext(client, playthrough, timeline) {
-  const path = importContextPath(playthrough, timeline)
-  if (path === null) return null
-  const value = JSON.parse((await client.getFile(path)).content)
+function normalizeImportContext(value) {
+  if (value === null) return null
   return {
     schemaVersion: value?.schemaVersion ?? 1,
     greeting: typeof value?.greeting === 'string' ? value.greeting : null,
@@ -73,10 +65,12 @@ function selectedGreeting(selectionResponse, characterResponse) {
 
 export async function loadPlaythroughExport(client, playthrough) {
   const timeline = await client.getTimeline(playthrough)
-  const importContext = await loadImportContext(client, playthrough, timeline)
   const sessionIds = allSessionIds(timeline)
   const messagesBySession = await loadMessages(client, sessionIds)
   const root = rootSessionId(playthrough, timeline)
+  const importContext = root === null
+    ? null
+    : normalizeImportContext((await loadPlaythroughImportContext(client, root, playthrough, timeline)).document)
   const selectionResponse = root === null ? null : await client.getCharacterSelection(root)
   const characterId = selectionResponse?.selection?.characterCardId
   const characterResponse = typeof characterId === 'string' && characterId !== ''

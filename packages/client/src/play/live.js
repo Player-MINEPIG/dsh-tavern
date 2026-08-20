@@ -136,6 +136,21 @@ export function createLivePlayClient({
       return normalizeSessionMessages(response)
     },
 
+    async getImportContextBinding(sessionId) {
+      const response = await v2('GET', `/sessions/${encodeURIComponent(sessionId)}/import-context`)
+      return response?.binding ?? null
+    },
+
+    async putImportContextBinding(sessionId, reference) {
+      const response = await v2('PUT', `/sessions/${encodeURIComponent(sessionId)}/import-context`, { reference })
+      return response?.binding ?? null
+    },
+
+    async deleteImportContextBinding(sessionId) {
+      const response = await v2('DELETE', `/sessions/${encodeURIComponent(sessionId)}/import-context`)
+      return response?.binding ?? null
+    },
+
     async getFocus(playthrough) {
       const query = playthrough === undefined
         ? ''
