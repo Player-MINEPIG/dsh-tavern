@@ -77,6 +77,38 @@ test('Chat automatically composes bound preset and character source regex', asyn
   assert.equal(messages.messages[1].text, 'Alice answers')
 })
 
+test('Chat applies ST minDepth and maxDepth to existing timeline messages', async () => {
+  const messages = { incompleteTurn: false, messages: [
+    { id: 'u1', role: 'user', seq: 1, content: [], text: 'old——user' },
+    { id: 'a1', role: 'assistant', seq: 2, content: [], text: 'old——assistant' },
+    { id: 'u2', role: 'user', seq: 3, content: [], text: 'new——user' },
+    { id: 'a2', role: 'assistant', seq: 4, content: [], text: 'new——assistant' },
+  ] }
+  const timeline = { nodes: [
+    { id: 'qa1', kind: 'qa', hidden: false, displayOverride: null, adoptedVariantId: 'v1', variants: [
+      { id: 'v1', sessionId: 'session-a', startEventId: 1, endEventId: 2 },
+    ] },
+    { id: 'qa2', kind: 'qa', hidden: false, displayOverride: null, adoptedVariantId: 'v2', variants: [
+      { id: 'v2', sessionId: 'session-a', startEventId: 3, endEventId: 4 },
+    ] },
+  ] }
+  const client = {
+    async getMessages() { return messages },
+    async getTimeline() { return timeline },
+    async getCharacterSelection() { return { selection: null } },
+    async getActive() { return { selection: { presetId: 'preset-a' } } },
+    async getPreset() { return { preset: { source: { raw: { extensions: { regex_scripts: [{
+      id: 'depth', scriptName: 'Depth', findRegex: '/——/g', replaceString: ',',
+      placement: [2], disabled: false, markdownOnly: true, minDepth: 2, maxDepth: 2,
+    }] } } } } } },
+    async getFile() { return { content: JSON.stringify({ schemaVersion: 1, rules: [] }) } },
+  }
+  const state = await loadChatState(client, 'session-a', { path: 'timeline.json' })
+  assert.equal(state.turns[0].assistantText, 'old,assistant')
+  assert.equal(state.turns[1].assistantText, 'new——assistant')
+  assert.equal(messages.messages[1].text, 'old——assistant')
+})
+
 test('live turns use the same display rules without changing their source projection', () => {
   const turn = { id: 'live', userText: 'Alice asks', assistantText: 'Alice answers', reasoningText: 'Alice thinks' }
   const before = structuredClone(turn)

@@ -123,16 +123,12 @@ export async function loadChatState(client, sessionId, playthrough) {
     }),
   ]
   const regexDiagnostics = []
-  const renderText = (text, target) => {
-    const result = applyDisplayRegex(text, rules, bindings, target)
+  const renderText = (text, target, context) => {
+    const result = applyDisplayRegex(text, rules, bindings, target, context)
     regexDiagnostics.push(...result.diagnostics)
     return result.text
   }
-  const turns = projectTimelineQa(timeline, messagesBySession).map(turn => ({
-    ...turn,
-    userText: renderText(turn.userText, 'user'),
-    assistantText: renderText(turn.assistantText, 'assistant'),
-  }))
+  const timelineTurns = projectTimelineQa(timeline, messagesBySession)
   const greeting = projectGreeting({
     timeline,
     messages: messagesBySession[sessionId]?.messages ?? [],
@@ -146,25 +142,38 @@ export async function loadChatState(client, sessionId, playthrough) {
     importedTurns = [
       ...(typeof imported.greeting === 'string' && imported.greeting !== '' ? [{
         id: 'import-greeting', imported: true, hidden: false, userText: '',
-        assistantText: renderText(imported.greeting, 'assistant'), originalAssistantText: imported.greeting,
+        assistantText: imported.greeting, originalAssistantText: imported.greeting,
       }] : []),
       ...(imported.qa ?? []).map((qa, index) => ({
         id: `import-${index}`, imported: true, hidden: false,
-        userText: renderText(qa.user, 'user'),
-        assistantText: renderText(qa.assistant, 'assistant'), originalAssistantText: qa.assistant,
+        userText: qa.user,
+        assistantText: qa.assistant, originalAssistantText: qa.assistant,
       })),
     ]
   }
+  const rawTurns = [...importedTurns, ...timelineTurns]
+  const turns = Array(rawTurns.length)
+  let depth = 0
+  for (let index = rawTurns.length - 1; index >= 0; index -= 1) {
+    const turn = rawTurns[index]
+    const assistantDepth = turn.assistantText === '' ? undefined : depth++
+    const userDepth = turn.userText === '' ? undefined : depth++
+    turns[index] = {
+      ...turn,
+      userText: renderText(turn.userText, 'user', { depth: userDepth }),
+      assistantText: renderText(turn.assistantText, 'assistant', { depth: assistantDepth }),
+    }
+  }
   return {
     timeline,
-    turns: [...importedTurns, ...turns],
+    turns,
     greeting: importedTurns.length > 0 ? null : greeting === null ? null : { ...greeting, text: renderText(greeting.text, 'assistant') },
     regexDiagnostics,
     display: { rules, bindings },
   }
 }
 
-export function applyTurnDisplayRegex(turn, display) {
+export function applyTurnDisplayRegex(turn, display, { userDepth, assistantDepth } = {}) {
   return {
     ...turn,
     userText: applyDisplayRegex(
@@ -172,12 +181,14 @@ export function applyTurnDisplayRegex(turn, display) {
       display.rules,
       display.bindings,
       'user',
+      { depth: userDepth },
     ).text,
     assistantText: applyDisplayRegex(
       turn.assistantText,
       display.rules,
       display.bindings,
       'assistant',
+      { depth: assistantDepth },
     ).text,
   }
 }
@@ -304,13 +315,21 @@ export function MowanChatView({ sessionId, useSession, playClient, playthrough, 
     }
   }
 
-  const liveTurns = state === null ? [] : projectLiveTurns({
+  const liveSourceTurns = state === null ? [] : projectLiveTurns({
     timeline: state.timeline,
     sessionId,
     nodes: liveNodes,
     partial,
     running,
-  }).map(turn => applyTurnDisplayRegex(turn, state.display))
+  })
+  let liveDepth = 0
+  const liveTurns = Array(liveSourceTurns.length)
+  for (let index = liveSourceTurns.length - 1; index >= 0; index -= 1) {
+    const turn = liveSourceTurns[index]
+    const assistantDepth = turn.assistantText === '' ? undefined : liveDepth++
+    const userDepth = turn.userText === '' ? undefined : liveDepth++
+    liveTurns[index] = applyTurnDisplayRegex(turn, state.display, { userDepth, assistantDepth })
+  }
 
 
   return h('div', { className: 'dtv-play-chat' },

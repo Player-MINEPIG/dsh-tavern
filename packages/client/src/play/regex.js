@@ -14,6 +14,42 @@ function importedEnabled(value) {
   return true
 }
 
+function finiteDepth(value) {
+  if (value === null || value === undefined || value === '') return null
+  const number = Number(value)
+  return Number.isFinite(number) ? number : null
+}
+
+function stringList(value) {
+  return Array.isArray(value) ? value.filter(item => typeof item === 'string') : []
+}
+
+function nativePlacement(value) {
+  const placement = Array.isArray(value.placement)
+    ? [...value.placement]
+    : typeof value.placement === 'number'
+      ? [value.placement]
+      : []
+  let markdownOnly = value.markdownOnly === true
+  let promptOnly = value.promptOnly === true
+
+  // Match SillyTavern's migration of deprecated MD Display/sendAs placements.
+  if (placement.includes(0)) {
+    placement.splice(0, placement.length, ...(placement.length === 1
+      ? [1, 2, 3, 5, 6]
+      : placement.filter(item => item !== 0)))
+    markdownOnly = true
+    promptOnly = true
+  }
+  if (placement.includes(4)) {
+    placement.splice(0, placement.length, ...(placement.length === 1
+      ? [3]
+      : placement.filter(item => item !== 4)))
+  }
+
+  return { placement, markdownOnly, promptOnly }
+}
+
 function normalizeScope(value, fallback = { kind: 'global', resourceId: null }) {
   const source = isRecord(value) ? value : fallback
   const kind = ['global', 'preset', 'character'].includes(source.kind) ? source.kind : fallback.kind
@@ -28,9 +64,10 @@ function normalizeTarget(value) {
 function importedTarget(value) {
   if (typeof value.target === 'string') return normalizeTarget(value.target)
   if (typeof value.placement === 'string') return normalizeTarget(value.placement)
-  if (!Array.isArray(value.placement)) return 'assistant'
-  const user = value.placement.some(item => item === 1 || item === 'user' || item === 'user_input')
-  const assistant = value.placement.some(item => item === 2 || item === 'assistant' || item === 'ai_output')
+  const { placement } = nativePlacement(value)
+  if (placement.length === 0) return 'assistant'
+  const user = placement.some(item => item === 1 || item === 'user' || item === 'user_input')
+  const assistant = placement.some(item => item === 2 || item === 'assistant' || item === 'ai_output')
   if (user && assistant) return 'both'
   if (user) return 'user'
   return 'assistant'
@@ -38,9 +75,10 @@ function importedTarget(value) {
 
 function displayImportCandidate(value) {
   if (!isRecord(value)) return false
-  if (value.promptOnly === true && value.markdownOnly !== true) return false
-  if (!Array.isArray(value.placement)) return true
-  return value.placement.some(item => item === 1 || item === 2
+  const native = nativePlacement(value)
+  if (native.promptOnly && !native.markdownOnly) return false
+  if (native.placement.length === 0) return true
+  return native.placement.some(item => item === 1 || item === 2
     || item === 'user' || item === 'assistant'
     || item === 'user_input' || item === 'ai_output')
 }
@@ -66,6 +104,7 @@ function generatedId() {
 export function normalizeRegexRule(value, { scope } = {}) {
   if (!isRecord(value)) throw new TypeError('regex rule must be an object')
   const source = stringValue(value.find, value.findRegex, value.regex)
+  const native = nativePlacement(value)
   return {
     id: stringValue(value.id) || generatedId(),
     name: stringValue(value.name, value.script_name, value.scriptName) || 'Regex',
@@ -75,6 +114,16 @@ export function normalizeRegexRule(value, { scope } = {}) {
     flags: stringValue(value.flags),
     target: importedTarget(value),
     scope: normalizeScope(value.scope, scope),
+    placement: native.placement,
+    trimStrings: stringList(value.trimStrings),
+    markdownOnly: native.markdownOnly,
+    promptOnly: native.promptOnly,
+    runOnEdit: value.runOnEdit === true,
+    substituteRegex: [0, 1, 2].includes(Number(value.substituteRegex))
+      ? Number(value.substituteRegex)
+      : 0,
+    minDepth: finiteDepth(value.minDepth),
+    maxDepth: finiteDepth(value.maxDepth),
     ext: isRecord(value.ext) ? structuredClone(value.ext) : {},
   }
 }
@@ -130,32 +179,60 @@ export async function putRegexDocument(client, document) {
   return normalized
 }
 
-function expression(rule) {
-  if (rule.find.startsWith('/')) {
-    const closing = rule.find.lastIndexOf('/')
+function expression(rule, context) {
+  const source = rule.substituteRegex !== 0 && typeof context?.substituteRegex === 'function'
+    ? context.substituteRegex(rule.find, { escaped: rule.substituteRegex === 2 })
+    : rule.find
+  if (source.startsWith('/')) {
+    const closing = source.lastIndexOf('/')
     if (closing > 0) {
-      const pattern = rule.find.slice(1, closing)
-      const flags = rule.flags || rule.find.slice(closing + 1)
+      const pattern = source.slice(1, closing)
+      const flags = rule.flags || source.slice(closing + 1)
       return new RegExp(pattern, flags)
     }
   }
-  return new RegExp(rule.find, rule.flags || 'g')
+  return new RegExp(source, rule.flags || 'g')
 }
 
-function applies(rule, bindings, target) {
+function applies(rule, bindings, target, context) {
   if (!rule.enabled || (rule.target !== 'both' && rule.target !== target)) return false
+  if (typeof context?.depth === 'number') {
+    if (rule.minDepth !== null && rule.minDepth >= -1 && context.depth < rule.minDepth) return false
+    if (rule.maxDepth !== null && rule.maxDepth >= 0 && context.depth > rule.maxDepth) return false
+  }
   if (rule.scope.kind === 'global') return true
   if (rule.scope.kind === 'preset') return rule.scope.resourceId === bindings?.presetId
   return rule.scope.resourceId === bindings?.characterId
 }
 
-export function applyDisplayRegex(text, rules, bindings, target = 'assistant') {
+function replacement(rule, context) {
+  return function replaceMatch(match, ...args) {
+    const groups = isRecord(args.at(-1)) ? args.at(-1) : null
+    let value = rule.replace.replace(/\{\{match\}\}/gi, '$0')
+    value = value.replaceAll(/\$(\d+)|\$<([^>]+)>/g, (_token, number, groupName) => {
+      const captureIndex = Number(number)
+      const captured = groupName === undefined
+        ? captureIndex === 0 ? match : args[captureIndex - 1]
+        : groups?.[groupName]
+      if (!captured) return ''
+      return rule.trimStrings.reduce(
+        (result, trim) => result.replaceAll(trim, ''),
+        String(captured),
+      )
+    })
+    return typeof context?.substituteReplacement === 'function'
+      ? context.substituteReplacement(value)
+      : value
+  }
+}
+
+export function applyDisplayRegex(text, rules, bindings, target = 'assistant', context = {}) {
   let output = String(text ?? '')
   const diagnostics = []
   for (const rule of rules ?? []) {
-    if (!applies(rule, bindings, target)) continue
+    if (!applies(rule, bindings, target, context)) continue
     try {
-      output = output.replace(expression(rule), rule.replace)
+      output = output.replace(expression(rule, context), replacement(rule, context))
     } catch (error) {
       diagnostics.push({ ruleId: rule.id, message: error instanceof Error ? error.message : String(error) })
     }

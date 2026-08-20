@@ -23,6 +23,32 @@ test('ST regex import preserves each original switch without a safety override',
   ])
 })
 
+test('ST native regex fields are normalized without losing display semantics', () => {
+  const [rule] = importRegexDocument({
+    extensions: { regex_scripts: [{
+      id: 'native', scriptName: 'Native', findRegex: '/(——)/g', replaceString: '$1',
+      trimStrings: ['—'], placement: [1, 2], disabled: false, markdownOnly: true,
+      promptOnly: true, runOnEdit: true, substituteRegex: 2, minDepth: 1, maxDepth: 4,
+    }] },
+  })
+  assert.deepEqual(rule, {
+    id: 'native', name: 'Native', enabled: true, find: '/(——)/g', replace: '$1', flags: '',
+    target: 'both', scope: { kind: 'global', resourceId: null }, placement: [1, 2],
+    trimStrings: ['—'], markdownOnly: true, promptOnly: true, runOnEdit: true,
+    substituteRegex: 2, minDepth: 1, maxDepth: 4, ext: {},
+  })
+})
+
+test('ST deprecated MD display placement is migrated like SillyTavern', () => {
+  const [rule] = importRegexDocument({ regex_scripts: [{
+    id: 'legacy-display', findRegex: '/x/g', replaceString: 'y', placement: [0],
+  }] })
+  assert.deepEqual(rule.placement, [1, 2, 3, 5, 6])
+  assert.equal(rule.markdownOnly, true)
+  assert.equal(rule.promptOnly, true)
+  assert.equal(rule.target, 'both')
+})
+
 test('display regex observes scope, target and order while invalid rules only diagnose', () => {
   const document = normalizeRegexDocument({ rules: [
     { id: 'global', name: 'global', enabled: true, find: '/Alice/g', replace: 'A', target: 'assistant', scope: { kind: 'global' } },
@@ -45,6 +71,17 @@ test('display regex is a pure projection and cannot mutate request or history da
   }] }).rules
   assert.equal(applyDisplayRegex(request.text, rules, {}, 'user').text, 'A')
   assert.deepEqual(request, before)
+})
+
+test('display regex supports ST match tokens, trim strings and depth bounds', () => {
+  const rules = importRegexDocument({ regex_scripts: [{
+    id: 'native-replace', scriptName: 'Native replace', findRegex: '/(?<dash>——)/g',
+    replaceString: '$<dash>|{{match}}', trimStrings: ['—'], placement: [2],
+    disabled: false, markdownOnly: true, minDepth: 1, maxDepth: 2,
+  }] })
+  assert.equal(applyDisplayRegex('A——B', rules, {}, 'assistant', { depth: 0 }).text, 'A——B')
+  assert.equal(applyDisplayRegex('A——B', rules, {}, 'assistant', { depth: 1 }).text, 'A|B')
+  assert.equal(applyDisplayRegex('A——B', rules, {}, 'assistant', { depth: 3 }).text, 'A——B')
 })
 
 test('resource regex import finds preserved V2 card and preset sources without reimporting', () => {
