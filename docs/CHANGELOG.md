@@ -65,8 +65,8 @@ production build tests.
   DSH sessions.
 - Mutations are locked after a user/assistant message, an open turn, or context
   consumption and return `409 PLAY_IMPORT_CONTEXT_LOCKED`.
-- Responses expose only binding path/hash/state and bounded counts; imported
-  dialogue content stays in the existing jailed workspace file.
+- Responses expose binding path/hash/state, bounded counts, and claim identity/event-seq metadata without content; imported
+  dialogue content stays in the existing jailed workspace file. Pending bindings are claimed only from the public pending-input projection; parser-level QA/context caps are not applied.
 
 Verification: import-runtime, session-handler, route, and Host-adapter tests.
 

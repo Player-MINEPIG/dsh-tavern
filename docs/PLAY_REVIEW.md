@@ -22,7 +22,7 @@ timeline 只保存 session/event 范围引用；路径 API 有根目录、相对
 | 空会话 greeting dock | 已实现、已验收 | 在原生 composer dock 展示 greeting；左右切换按钮保持两侧，卡无 greeting 时保留空白 opening 和 footer。 |
 | 外部记录绑定 | 已实现、已验收 | 绑定到当前空 root session，不新建 session 或 timeline；支持绑定、换绑、解绑，解绑后恢复 greeting。服务端会重复空会话锁定检查。 |
 | 最近三轮 QA | 已实现、已验收 | opening dock 显示导入记录最后三轮 QA；这是显示预览，不是 DSH 历史。 |
-| 一次性注入 | 正常路径已实现；加固待实现 | 首次实际 assembly 注入转义、`untrusted`、只读上下文；request error、取消、断线、retry 与 swipe 的新 claim/lineage 语义已经接受，尚待实现。 |
+| 一次性注入 | 基础 claim 已实现；lineage 待 task 10 | 首次 assembly 只接受同一次 profile snapshot 的公开 `claimEventSeqs`；pending 在无 claim 的 view/assembly 或无关 turn/end 下保持 pending，首个有效 claim 持久转为 claimed，同一 claim identity 可重放，已 claim 才能消费。retry/swipe lineage、取消/中断终态细分留给 task 10。 |
 
 上述行为在 DSH 0.1.0-rc.8 上通过用户验收；生产构建与 347 个测试通过、2 个测试跳过。
 “已验收”只表示当前产品路径，不表示下方并发、事务或失败恢复风险已关闭。
@@ -37,7 +37,7 @@ timeline 只保存 session/event 范围引用；路径 API 有根目录、相对
 | 历史完整性（已实现，`10250a7`） | 已移除 32 页上限，一直分页到 Host `hasMore: false`；Host 空页、非法 oldest `seq` 或 cursor 重复/不前进时返回 502 `PLAY_HISTORY_CURSOR_STALLED`。插件不摘要/切片；模型上下文超限由 DSH 报错，README 明确区分两层。 |
 | catalog/timeline 并发 | GET/PUT schema/path 校验、进程内目标锁、临时写/替换复验和服务端 SHA-256 revision/CAS 已实现。受管 PUT 必须带 `expectedRevision`，冲突统一 409 `PLAY_FILE_REVISION_CONFLICT` 且不改文件；跨进程极窄竞态仍由任务 03 的纯 Node 边界覆盖；内置 live client 的 revision 缓存、create-only 与有限冲突重放已由任务 05 完成；任务 06 已完成普通生命周期 caller 迁移。 |
 | 半完成资源 | 不增加跨文件事务。每个生命周期变更 API 使用同一 `operationId` 通过 `ctx.logger` 记录阶段/结果/错误码/耗时；客户端回读并恢复。只记录标识和摘要，不记录正文。 |
-| import-context 请求语义 | 首次 assembly 按原用户 turn/event claim；同一回合 retry/swipe 可重放；中断后新用户消息不重复；成功后保留 lineage 供未来 swipe。 |
+| import-context 请求语义 | 基础 claim 已实现：公开 `claimEventSeqs` 驱动 pending → claimed，状态持久化并返回 claim identity；无 claim 不注入/不消费，同一 identity 可重放，claimed 才能被当前简单 turn/end 消费。retry/swipe lineage、取消/中断终态属于 task 10。 |
 | catalog schema | 已实现：PUT 写前和 GET 读后都校验。id/规范化 path 唯一；id 使用安全段；path 为安全相对路径且以 `/timeline.json` 结尾；校验已知 `ext.pmpDshTavern`，保留第三方 ext。 |
 | focus | 已实现任务 07：稳定入口按已校验 catalog 和安全周目 id 解析路径，返回 playthroughId/sessionId/nodeId/variantId；空周目使用 rootSessionId。旧 /focus?path= 仍兼容，无 path 返回 400；普通 timeline PUT 不再更新 deprecated/ignored 的 activeTimelinePath。任务 08 已完成 bundled live client 迁移：只传 URL 编码的 playthrough id，并校验四字段及返回 id 一致。 |
 | 路径 TOCTOU | `packages/play/src/workspace.js`、`packages/play/src/paths.js` | 已实现进程内 per-target guard；路径链逐段 `lstat`，拒绝 Node 暴露的 symlink/junction，目录逐层非 recursive 创建并 realpath 复核，临时文件 `openSync(..., 'wx')` 排他创建，写入和 rename 前复验父目录。测试包含根内链接拒绝、父目录替换注入、异常清理/锁释放（当前 Windows 无 symlink 权限时稳定 skip）。 | 这是纯 Node 的实用加固，不是跨进程锁或内核级 no-follow 事务；外部本机进程仍可制造极窄竞态，CAS/native addon 另行处理。 |
@@ -50,7 +50,7 @@ timeline 只保存 session/event 范围引用；路径 API 有根目录、相对
 | P1 数据一致性 | `packages/client/src/play/create.js:91-100`、`import.js:68-80`；`packages/client/src/play/nodes.js:48-52,72-77,112-127`；`turns.js:77-80` | catalog/timeline 都是“GET → 本地修改 → PUT 整份文档”。controller 只在同一个 JS 实例内串行；两个标签页、两个插件前端或第三方客户端同时操作时，后写者会覆盖前一个 playthrough、variant、隐藏状态或显示覆盖。v2 没有版本号、ETag、条件写入或冲突响应，违反第三方稳定协议和“卸载后一切如常”所需的持久一致性。 | 在 v2 重新确定 CAS 合同：文档带 generation/ETag，`PUT` 必须带 `If-Match` 并在冲突时返回 409；或增加服务端原子命令（append/adopt/update catalog）。客户端控制器只能作为 UX 优化，不能是唯一并发保护。 |
 | P1 半完成资源 | `packages/play/src/sessions.js:116-136`、`packages/tavern-loader/src/play-host.js:52-69,116-136`；客户端 `create.js:91-96`、`import.js:68-79` | Host session 已创建后，绑定导入上下文、复制 selection、创建目录、写 timeline 或写 catalog 任一步失败，都会留下没有 catalog/timeline 的 DSH session；标题重命名失败也被静默忽略。导入上下文还可能已经写入且处于 pending。当前响应只能报错，不能告诉第三方前端哪些步骤已提交。 | 讨论“周目创建事务”的边界：优先提供 Host/loader 侧可回滚或可补偿的 create transaction；否则返回结构化 `sessionId`、已完成阶段和恢复操作，并让 catalog 采用可恢复状态，而不是声称一次操作原子完成。 |
 | P1 历史完整性（已关闭，`10250a7`） | `packages/play/src/sessions.js:62-79` | 原始 32 页上限会在 `hasMore: true` 时静默返回不完整历史。该风险已由无限分页和游标停滞显式失败处理关闭；`GET /sessions/:id/messages` 不返回部分历史假象。 | 已实现：持续分页至 `hasMore !== true`；空页、非法 oldest `seq` 或 cursor 重复/不前进返回 502 `PLAY_HISTORY_CURSOR_STALLED`。插件不摘要/切片。 |
-| P1 请求语义 | `packages/tavern-loader/src/import-context-runtime.js:132-159`、`packages/tavern-loader/src/index.js:385-402` | 导入上下文状态只有在 `session/event` 的 `turn/end` 才从 `pending` 变为 `consumed`。request error、取消、断线或 Host 未发出 `turn/end` 时，binding 会一直 pending；下一次请求会再次注入同一份导入历史。即使正常情况下同一 turn 发生多次 assembly，`contextFor()` 也没有 request/turn token 去保证只消费一次。 | 重新确定 one-shot 的所有权和重试语义：在首次实际 assembly 前建立带 turn/request id 的 claim，处理 request-error/cancel/agent abort/启动恢复；若允许失败后重试，需显式记录 retry 次数，不能依靠“等 turn/end”。补充 Host 终态事件或 loader 的清理接口。 |
+| P1 请求语义 | `packages/tavern-loader/src/import-context-runtime.js`、`packages/tavern-loader/src/index.js` | 已完成基础 claim：loader 从同一 `forAssembleContext()` snapshot 读取公开 `activation.claimEventSeqs`，无有效 claim 不注入、不改 pending；首个 claim 持久化 `state: claimed` 与最多 4 个 event seq 的 identity；相同 identity 可重复 assembly，不同 identity 不会把旧上下文给新回合，只有 claimed binding 才能由当前 `turn/end` 消费。仍需 task 10 处理 retry/swipe lineage、取消/中断终态和恢复。 | 保持 claim 元数据不含正文；完成 task 10 前不要宣称完整 one-shot 终态语义。 |
 
 ## 原始发现：安全与 schema
 

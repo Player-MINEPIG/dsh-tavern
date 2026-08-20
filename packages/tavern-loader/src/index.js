@@ -336,7 +336,11 @@ export function apply(ctx, config = {}) {
   ctx.systemPrompt.section({
     name: PROFILE_SECTION,
     order: 10,
-    text: (context) => [runtime.forAssembleContext(context).systemText, importContexts.contextFor(context.agent?.id)].filter(Boolean).join('\n\n'),
+    text: (context) => {
+      const snapshot = runtime.forAssembleContext(context)
+      const claimMetadata = snapshot.audit?.activation ?? null
+      return [snapshot.systemText, importContexts.contextFor(context.agent?.id, claimMetadata)].filter(Boolean).join('\n\n')
+    },
   })
   ctx.systemPrompt.section({
     name: rpModeConstants.sectionName,

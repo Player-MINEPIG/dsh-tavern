@@ -300,6 +300,8 @@ v1 是本插件悬浮球 / 侧栏 / Trace 用的 bundled UI 资源合同，不�
 
 2.0 的 history API 已实现读取 DSH 提供的全部历史，直到 Host 返回 `hasMore: false`（代码 commit `10250a7`）；插件不会在 32 页等人为阈值静默截断，也不会在这一层做摘要或切片。Host 声称仍有更多历史但返回空页、非法 oldest `seq` 或不前进 cursor 时，API 返回 502 `PLAY_HISTORY_CURSOR_STALLED`。**能通过 API 读取全历史，不代表模型的一次请求能够容纳全历史。** 模型上下文超限、DSH 是否压缩上下文以及最终错误提示仍由 DSH/模型层负责；dsh-tavern 不承诺绕过其上下文窗口。
 
+导入上下文同样不在插件层做 summary、QA 切片或 256 KiB/2,000 QA 人为上限；它只校验 JSON/schema/hash，并通过公开 pending-input claim 投影在同一 profile snapshot 下建立持久 claim。通用工作区文件仍有 1 MiB 的存储/传输上限。无 claim 的只读 assembly 不会注入或消费 pending；retry/swipe lineage 与取消/中断终态继续按 task 10 完成。
+
 ## 安全风险
 
 `dsh-tavern` 会处理并发送可执行为模型指令的第三方内容。使用前请理解以下边界：
