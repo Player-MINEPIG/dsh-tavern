@@ -11,6 +11,7 @@ import {
   unlinkSync,
   writeSync,
 } from 'node:fs'
+import { createHash } from 'node:crypto'
 import { basename, join, resolve } from 'node:path'
 import { atomicJson, readJsonFile } from './atomic-json.js'
 import { httpError, readBoundedJson, sendJson } from './http.js'
@@ -20,6 +21,7 @@ const BINDING_FILE = 'play-workspace.json'
 const MAX_BINDING_BYTES = 8 * 1024
 const MAX_FILE_BYTES = 1 * 1024 * 1024
 const CONTRACT_VERSION = 1
+const REVISION_PATTERN = /^[0-9a-f]{64}$/
 const DEFAULT_BINDING = Object.freeze({
   schemaVersion: 1,
   rootPath: null,
@@ -61,6 +63,26 @@ function requireRoot(binding) {
   }
   assertSafeRoot(binding.rootPath)
   return binding.rootPath
+}
+
+function isManagedDocument(relativePath) {
+  const base = basename(relativePath)
+  return base === 'catalog.json' || base === 'timeline.json'
+}
+
+function revisionOf(content) {
+  return createHash('sha256').update(content).digest('hex')
+}
+
+function revisionConflict(message = 'managed file revision does not match') {
+  throw httpError(409, message, 'PLAY_FILE_REVISION_CONFLICT')
+}
+
+function assertExpectedRevision(value, present) {
+  if (!present) throw httpError(400, 'expectedRevision is required for catalog.json and timeline.json', 'PLAY_FILE_REVISION_REQUIRED')
+  if (value !== null && (typeof value !== 'string' || !REVISION_PATTERN.test(value))) {
+    throw httpError(400, 'expectedRevision must be null or a 64-character lowercase SHA-256 hex string', 'PLAY_FILE_REVISION_INVALID')
+  }
 }
 
 export function workspaceWarnings(rootPath, { firstSelection = false } = {}) {
@@ -205,31 +227,40 @@ export class PlayWorkspaceStore {
     return { ok: true, list: entries }
   }
 
-  readFile(relativePath) {
+  readFile(relativePath, { validate } = {}) {
     const root = requireRoot(this.binding)
     const posix = posixPlayPath(relativePath)
-    const absolute = resolvePlayPath(root, posix, { mustExist: true })
-    if (!statSync(absolute).isFile()) {
-      throw httpError(400, 'path is not a file', 'PLAY_PATH_INVALID')
+    const managed = isManagedDocument(posix)
+    const operation = () => {
+      const absolute = resolvePlayPath(root, posix, { mustExist: true })
+      if (!statSync(absolute).isFile()) {
+        throw httpError(400, 'path is not a file', 'PLAY_PATH_INVALID')
+      }
+      if (statSync(absolute).size > MAX_FILE_BYTES) {
+        throw httpError(413, 'file exceeds the read limit', 'PLAY_FILE_TOO_LARGE')
+      }
+      const bytes = readFileSync(absolute)
+      const content = bytes.toString('utf8')
+      if (typeof validate === 'function') validate(posix, content)
+      return {
+        ok: true,
+        path: posix,
+        content,
+        ...(managed ? { revision: revisionOf(bytes) } : {}),
+      }
     }
-    if (statSync(absolute).size > MAX_FILE_BYTES) {
-      throw httpError(413, 'file exceeds the read limit', 'PLAY_FILE_TOO_LARGE')
-    }
-    return {
-      ok: true,
-      path: posix,
-      content: readFileSync(absolute, 'utf8'),
-    }
+    return managed ? this.withTargetGuard(posix, operation) : operation()
   }
 
-  writeFile(relativePath, content, { validate } = {}) {
+  writeFile(relativePath, content, { validate, expectedRevision, expectedRevisionPresent = false } = {}) {
     const root = requireRoot(this.binding)
     if (typeof content !== 'string') throw httpError(400, 'content must be a string', 'PLAY_FILE_INVALID')
     if (Buffer.byteLength(content) > MAX_FILE_BYTES) {
       throw httpError(413, 'file exceeds the storage limit', 'PLAY_FILE_TOO_LARGE')
     }
     const posix = posixPlayPath(relativePath)
-    if (typeof validate === 'function') validate(posix, content)
+    const managed = isManagedDocument(posix)
+    if (managed) assertExpectedRevision(expectedRevision, expectedRevisionPresent)
     return this.withTargetGuard(posix, () => {
       const segments = splitRelativeSegments(posix)
       const fileName = segments.pop()
@@ -258,6 +289,13 @@ export class PlayWorkspaceStore {
       if (existing !== null && !existing.isFile()) {
         throw httpError(409, 'path exists and is not a file', 'PLAY_PATH_CONFLICT')
       }
+      if (managed) {
+        const currentRevision = existing === null ? null : revisionOf(readFileSync(absolute))
+        if (expectedRevision === null ? currentRevision !== null : currentRevision !== expectedRevision) {
+          revisionConflict()
+        }
+      }
+      if (typeof validate === 'function') validate(posix, content)
       const temporary = absolute + '.' + process.pid + '.' + Math.random().toString(36).slice(2) + '.tmp'
       let descriptor = null
       try {
@@ -270,7 +308,13 @@ export class PlayWorkspaceStore {
           ? assertSafeRoot(root)
           : resolvePlayPath(root, posixPlayPath(parentSegments), { mustExist: true })
         if (verifiedParent !== parent) throw httpError(403, 'path parent changed during write', 'PLAY_PATH_RACE')
-        assertNoLink(absolute, 'target')
+        const currentTarget = assertNoLink(absolute, 'target')
+        if (managed) {
+          const currentRevision = currentTarget === null ? null : revisionOf(readFileSync(absolute))
+          if (expectedRevision === null ? currentRevision !== null : currentRevision !== expectedRevision) {
+            revisionConflict()
+          }
+        }
         renameSync(temporary, absolute)
       } catch (error) {
         if (descriptor !== null) { try { closeSync(descriptor) } catch {} }
@@ -278,9 +322,14 @@ export class PlayWorkspaceStore {
         throw error
       }
       if (basename(posix) === 'timeline.json') this.setActiveTimelinePath(posix)
-      return { ok: true, path: posix }
+      return {
+        ok: true,
+        path: posix,
+        ...(managed ? { revision: revisionOf(Buffer.from(content, 'utf8')) } : {}),
+      }
     })
   }
+
 }
 
 export function createWorkspaceApiHandler(store, { validateFile } = {}) {
@@ -301,13 +350,17 @@ export function createWorkspaceApiHandler(store, { validateFile } = {}) {
       if (method === 'GET' && list !== null) return sendJson(res, 200, store.list(list === '' ? undefined : list))
       const path = searchParams.get('path')
       if (method === 'GET') {
-        const file = store.readFile(path)
-        if (typeof validateFile === 'function') validateFile(file.path, file.content)
+        const file = store.readFile(path, { validate: validateFile })
         return sendJson(res, 200, file)
       }
       if (method === 'PUT') {
         const body = await readBoundedJson(req, MAX_FILE_BYTES + 1024)
-        return sendJson(res, 200, store.writeFile(path, body?.content, { validate: validateFile }))
+        const managed = isManagedDocument(posixPlayPath(path))
+        return sendJson(res, 200, store.writeFile(path, body?.content, {
+          validate: validateFile,
+          expectedRevision: body?.expectedRevision,
+          expectedRevisionPresent: managed && Object.hasOwn(body ?? {}, 'expectedRevision'),
+        }))
       }
       throw httpError(405, 'method not allowed', 'PLAY_METHOD_NOT_ALLOWED')
     },

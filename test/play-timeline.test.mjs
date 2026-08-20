@@ -2,6 +2,7 @@ import test from 'node:test'
 import assert from 'node:assert/strict'
 import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
+import { createHash } from 'node:crypto'
 import { join } from 'node:path'
 import { Readable } from 'node:stream'
 import { API_V2 } from '../packages/identity.js'
@@ -119,7 +120,7 @@ test('PUT timeline.json validates before writing; catalog.json likewise', async 
     const ok = await invoke(handler, {
       method: 'PUT',
       url: `${API_V2}/workspace/files?path=run/timeline.json`,
-      body: { content: JSON.stringify(multiQaUnusedVariant) },
+      body: { content: JSON.stringify(multiQaUnusedVariant), expectedRevision: null },
     })
     assert.equal(ok.status, 200)
     const saved = JSON.parse(readFileSync(join(playRoot, 'run', 'timeline.json'), 'utf8'))
@@ -137,7 +138,7 @@ test('PUT timeline.json validates before writing; catalog.json likewise', async 
     const catalog = await invoke(handler, {
       method: 'PUT',
       url: `${API_V2}/workspace/files?path=catalog.json`,
-      body: { content: JSON.stringify({ playthroughs: [{ id: 'pt1', path: 'run/timeline.json' }] }) },
+      body: { content: JSON.stringify({ playthroughs: [{ id: 'pt1', path: 'run/timeline.json' }] }), expectedRevision: null },
     })
     assert.equal(catalog.status, 200)
   } finally {
@@ -180,7 +181,7 @@ test('catalog and timeline documents are validated on GET and PUT with stable er
     const saved = await invoke(handler, {
       method: 'PUT',
       url: `${API_V2}/workspace/files?path=catalog.json`,
-      body: { content: JSON.stringify(valid) },
+      body: { content: JSON.stringify(valid), expectedRevision: null },
     })
     assert.equal(saved.status, 200)
     const read = await invoke(handler, { url: `${API_V2}/workspace/files?path=catalog.json` })
@@ -208,10 +209,11 @@ test('catalog and timeline documents are validated on GET and PUT with stable er
         body: { content: JSON.stringify(content) },
       })
       assert.equal(result.status, 200, `non-document files remain unvalidated: ${index}`)
+      const currentCatalog = await invoke(handler, { url: `${API_V2}/workspace/files?path=catalog.json` })
       const catalogResult = await invoke(handler, {
         method: 'PUT',
         url: `${API_V2}/workspace/files?path=catalog.json`,
-        body: { content: JSON.stringify(content) },
+        body: { content: JSON.stringify(content), expectedRevision: currentCatalog.body.revision },
       })
       assert.equal(catalogResult.status, 400, `catalog case ${index}`)
       assert.equal(catalogResult.body.code, 'PLAY_CATALOG_INVALID', `catalog code ${index}`)
@@ -224,7 +226,7 @@ test('catalog and timeline documents are validated on GET and PUT with stable er
     const timelinePut = await invoke(handler, {
       method: 'PUT',
       url: `${API_V2}/workspace/files?path=alice/pt-a/timeline.json`,
-      body: { content: JSON.stringify(unsafeTimeline) },
+      body: { content: JSON.stringify(unsafeTimeline), expectedRevision: null },
     })
     assert.equal(timelinePut.status, 400)
     assert.equal(timelinePut.body.code, 'PLAY_TIMELINE_INVALID')
@@ -238,6 +240,123 @@ test('catalog and timeline documents are validated on GET and PUT with stable er
     const catalogGet = await invoke(handler, { url: `${API_V2}/workspace/files?path=catalog.json` })
     assert.equal(catalogGet.status, 400)
     assert.equal(catalogGet.body.code, 'PLAY_CATALOG_INVALID')
+  } finally {
+    rmSync(pluginDir, { recursive: true, force: true })
+    rmSync(playRoot, { recursive: true, force: true })
+  }
+})
+
+test('managed catalog/timeline files expose SHA-256 revisions and enforce guarded CAS', async () => {
+  const pluginDir = mkdtempSync(join(tmpdir(), 'dsh-tavern-play-cas-plugin-'))
+  const playRoot = mkdtempSync(join(tmpdir(), 'dsh-tavern-play-cas-root-'))
+  const timeline = JSON.stringify({ nodes: [] })
+  try {
+    const handler = createPlayApiHandler({
+      chromeStore: new ChromeStore(pluginDir),
+      workspaceStore: new PlayWorkspaceStore(pluginDir),
+    })
+    await invoke(handler, { method: 'PUT', url: `${API_V2}/workspace`, body: { path: playRoot } })
+
+    const missing = await invoke(handler, {
+      method: 'PUT',
+      url: `${API_V2}/workspace/files?path=run/timeline.json`,
+      body: { content: timeline },
+    })
+    assert.equal(missing.status, 400)
+    assert.equal(missing.body.code, 'PLAY_FILE_REVISION_REQUIRED')
+
+    const created = await invoke(handler, {
+      method: 'PUT',
+      url: `${API_V2}/workspace/files?path=run/timeline.json`,
+      body: { content: timeline, expectedRevision: null },
+    })
+    assert.equal(created.status, 200)
+    const expectedCreatedRevision = createHash('sha256').update(Buffer.from(timeline, 'utf8')).digest('hex')
+    assert.equal(created.body.revision, expectedCreatedRevision)
+
+    const read = await invoke(handler, { url: `${API_V2}/workspace/files?path=run/timeline.json` })
+    assert.equal(read.status, 200)
+    assert.equal(read.body.revision, expectedCreatedRevision)
+
+    for (const expectedRevision of ['', 'A'.repeat(64), 'a'.repeat(63), 'g'.repeat(64), 42]) {
+      const invalid = await invoke(handler, {
+        method: 'PUT',
+        url: `${API_V2}/workspace/files?path=run/timeline.json`,
+        body: { content: timeline, expectedRevision },
+      })
+      assert.equal(invalid.status, 400)
+      assert.equal(invalid.body.code, 'PLAY_FILE_REVISION_INVALID')
+    }
+
+    const nullExisting = await invoke(handler, {
+      method: 'PUT',
+      url: `${API_V2}/workspace/files?path=run/timeline.json`,
+      body: { content: timeline, expectedRevision: null },
+    })
+    assert.equal(nullExisting.status, 409)
+    assert.equal(nullExisting.body.code, 'PLAY_FILE_REVISION_CONFLICT')
+
+    const updatedTimeline = JSON.stringify({ nodes: [], ext: { marker: 'updated' } })
+    const updated = await invoke(handler, {
+      method: 'PUT',
+      url: `${API_V2}/workspace/files?path=run/timeline.json`,
+      body: { content: updatedTimeline, expectedRevision: expectedCreatedRevision },
+    })
+    assert.equal(updated.status, 200)
+    assert.notEqual(updated.body.revision, expectedCreatedRevision)
+    const beforeStale = readFileSync(join(playRoot, 'run', 'timeline.json'))
+    const stale = await invoke(handler, {
+      method: 'PUT',
+      url: `${API_V2}/workspace/files?path=run/timeline.json`,
+      body: { content: timeline, expectedRevision: expectedCreatedRevision },
+    })
+    assert.equal(stale.status, 409)
+    assert.equal(stale.body.code, 'PLAY_FILE_REVISION_CONFLICT')
+    assert.deepEqual(readFileSync(join(playRoot, 'run', 'timeline.json')), beforeStale)
+
+    const ordinary = await invoke(handler, {
+      method: 'PUT',
+      url: `${API_V2}/workspace/files?path=ordinary.txt`,
+      body: { content: 'ordinary' },
+    })
+    assert.equal(ordinary.status, 200)
+    assert.equal(Object.hasOwn(ordinary.body, 'revision'), false)
+  } finally {
+    rmSync(pluginDir, { recursive: true, force: true })
+    rmSync(playRoot, { recursive: true, force: true })
+  }
+})
+
+test('managed CAS rejects a target deleted after the revision check', async () => {
+  const pluginDir = mkdtempSync(join(tmpdir(), 'dsh-tavern-play-cas-delete-plugin-'))
+  const playRoot = mkdtempSync(join(tmpdir(), 'dsh-tavern-play-cas-delete-root-'))
+  const target = join(playRoot, 'run', 'timeline.json')
+  let deleteBeforeRename = false
+  try {
+    const store = new PlayWorkspaceStore(pluginDir, {
+      beforeRename: () => {
+        if (!deleteBeforeRename) return
+        deleteBeforeRename = false
+        rmSync(target, { force: true })
+      },
+    })
+    const handler = createPlayApiHandler({ chromeStore: new ChromeStore(pluginDir), workspaceStore: store })
+    await invoke(handler, { method: 'PUT', url: `${API_V2}/workspace`, body: { path: playRoot } })
+    const first = await invoke(handler, {
+      method: 'PUT',
+      url: `${API_V2}/workspace/files?path=run/timeline.json`,
+      body: { content: JSON.stringify({ nodes: [] }), expectedRevision: null },
+    })
+    assert.equal(first.status, 200)
+    deleteBeforeRename = true
+    const result = await invoke(handler, {
+      method: 'PUT',
+      url: `${API_V2}/workspace/files?path=run/timeline.json`,
+      body: { content: JSON.stringify({ nodes: [], ext: { marker: 'must-not-write' } }), expectedRevision: first.body.revision },
+    })
+    assert.equal(result.status, 409)
+    assert.equal(result.body.code, 'PLAY_FILE_REVISION_CONFLICT')
+    assert.equal(existsSync(target), false)
   } finally {
     rmSync(pluginDir, { recursive: true, force: true })
     rmSync(playRoot, { recursive: true, force: true })
