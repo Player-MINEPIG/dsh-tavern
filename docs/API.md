@@ -1,6 +1,6 @@
 # HTTP API
 
-状态：2026-08-20。根：`/pmp-dsh-tavern/api`。鉴权仍是本机 TCP peer、Host、Origin、Content-Type（见 loader 安全中间件）。成功响应带 `ok: true`；失败带 `ok: false` 与 `error`。
+状态：2026-08-21。根：`/pmp-dsh-tavern/api`。鉴权仍是本机 TCP peer、Host、Origin、Content-Type（见 loader 安全中间件）。成功响应带 `ok: true`；失败带 `ok: false` 与 `error`。
 
 两栏合同：
 
@@ -39,6 +39,45 @@
 import-context 修改由 session 权威状态锁定：只要存在 DSH user/assistant message、开放 turn，或该绑定已经在一次请求中消费，`PUT` / `DELETE` 都返回 `409 PLAY_IMPORT_CONTEXT_LOCKED`；前端隐藏按钮不能替代此检查。`PUT` 会重新读取工作区文件、执行大小/QA 结构限制并核对可选 `expectedHash`，然后把绑定置为 `pending`。`GET` 可在任意状态读取摘要；正文仍通过已有 `/workspace/files?path=` 按明确路径读取。首次实际请求组装时 loader 把内容标为 untrusted read-only context，正常 `turn/end` 后转为 `consumed`，不会写成 DSH 历史。
 
 `PUT` 命中 `timeline.json` / `catalog.json` 时先做 schema 校验，失败不落盘。timeline 只允许真实 `qa` 节点，greeting 从角色卡与 session selection 派生，不进入 timeline。`focusSessionId` 禁止写入。focus 是派生值：仍在渲染（未 `hidden`）的最后一轮 `qa` 的 adopted variant 的 `sessionId`。`GET /focus` 只返回 `{ ok, sessionId }`，不含 path / nodeId。空 timeline 的 `sessionId` 为 `null`。校验不读、不改 DSH 事件。
+
+### 周目生命周期组合语义
+
+v2 没有把角色卡、周目和 greeting 做成一个不可替换的后端大接口；第三方前端可以用公开
+session/workspace/timeline/catalog 积木组合同样的流程。当前 bundled 前端的组合顺序是：
+
+1. 读取角色目录并检查该角色最后一个周目是否仍为空；若为空则复用它，否则调用
+   `POST /sessions` 创建真实 blank DSH session；
+2. 对已有来源 session，使用 v2 的 `selectionFromSessionId` 复制 Tavern selection；无来源
+   session 再通过 v1 绑定角色卡；
+3. 在已绑定工作区根内创建角色/周目目录，写入空 `timeline.json`，再写入 catalog，最后重新
+   读取并校验；显示名为 `x周目`，可通过 catalog 修改后重新读取确认。
+
+这里的“周目事务”是前端对公开原子操作的组合，不等同于服务端跨文件事务。单个客户端的
+controller 会串行同角色创建，但跨标签页或第三方客户端的并发写入、创建中途失败后的
+补偿仍属于 [`PLAY_REVIEW.md`](PLAY_REVIEW.md) 的待决策风险。
+
+### 外部记录导入上下文
+
+空周目的 opening dock 使用当前 root session 绑定外部记录，不另建 session，也不写 greeting
+或 timeline 节点。绑定、换绑和解绑分别通过 `PUT` / `DELETE /sessions/:id/import-context`
+完成；客户端在同一 footer 中显示操作，绑定后预览最近三轮 QA。绑定状态为 `pending` 时，首次
+实际请求才注入完整内容；loader 将其转义并标记为 `untrusted`、只读上下文，不把它写入 DSH
+durable history。正常 `turn/end` 后变为 `consumed`，此后服务端拒绝修改。
+
+请求体为 `{ reference: { path, expectedHash? } }`。文件必须位于已绑定工作区根内，文档为
+`schemaVersion: 1` 且含 `qa` 数组；当前实现有 256 KiB 文档和 2,000 个 QA 对限制。普通
+SillyTavern JSON/JSONL 与本插件 bundle 可由客户端解析后写入该上下文文件。greeting 仍是
+展示投影，不伪造 assistant 历史。
+
+### 当前已知限制（不是已解决的事务合同）
+
+- `/sessions/:id/messages` 的 Host history 读取目前最多分页 32 页；若 Host 仍返回 `hasMore`，
+  当前响应没有 `truncated`/continuation 字段。第三方前端不得把超过此界限的结果无条件当成
+  完整历史，详情见 [`PLAY_REVIEW.md`](PLAY_REVIEW.md)。
+- import-context 正常路径在 `turn/end` 后才变为 `consumed`。request error、取消、断线或缺失
+  `turn/end` 后是否允许重试、如何 claim 一次请求，尚未形成新的 v2 token/CAS 合同。
+- catalog/timeline 仍是整文档 GET→PUT；服务端版本号、ETag/CAS、原子 append/adopt 和跨客户端
+  冲突响应尚未提供。路径监狱能处理静态越界，但不宣称抵抗并发文件系统替换。
 
 `chrome` 是整个前端的蓝/红球，存在插件 data `chrome.json`，默认 `native`。非法 `mode` → 400。GET 不要求 JSON Content-Type。
 

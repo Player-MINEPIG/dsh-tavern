@@ -1,6 +1,7 @@
 # 周目 v2 实现审查记录
 
-审查基线：`codex/v2-lingzhu-mowan-frontend`，`6ede09d`（2026-08-20）。
+审查基线：`codex/v2-lingzhu-mowan-frontend`，`6ede09d`（2026-08-20）。后续已验收实现延伸至
+`83be2ba..1f248e4`（2026-08-21）。
 本记录是只读代码审查；本次没有修改源码、测试、构建产物或配置。
 
 ## 结论摘要
@@ -10,6 +11,21 @@
 用户输入走 `session.prompt({ mode: "queue" })`，没有旁路写入 DSH 消息或伪造历史；
 timeline 只保存 session/event 范围引用；路径 API 有根目录、相对路径、符号链接检查；默认
 视图 adapter 也已经移出 `conversation.view`，不会再注册第二个 `chat`。
+
+## 后续验收状态
+
+以下是审查基线之后、但不改变下方风险结论的产品验收记录：
+
+| 范围 | 当前状态 | 说明 |
+| --- | --- | --- |
+| 周目生命周期 | 已实现、已验收 | 角色卡侧边栏创建/复用最近空周目、`x周目` 命名、重命名、真实 blank DSH session、空 timeline/catalog 校验。复用检查也考虑 DSH 消息和外部导入 QA。 |
+| 空会话 greeting dock | 已实现、已验收 | 在原生 composer dock 展示 greeting；左右切换按钮保持两侧，卡无 greeting 时保留空白 opening 和 footer。 |
+| 外部记录绑定 | 已实现、已验收 | 绑定到当前空 root session，不新建 session 或 timeline；支持绑定、换绑、解绑，解绑后恢复 greeting。服务端会重复空会话锁定检查。 |
+| 最近三轮 QA | 已实现、已验收 | opening dock 显示导入记录最后三轮 QA；这是显示预览，不是 DSH 历史。 |
+| 一次性注入 | 正常路径已实现；边界待决策 | 首次实际 assembly 注入转义、`untrusted`、只读上下文，正常 `turn/end` 后 `pending → consumed`；request error、取消、断线和缺失终态事件仍属于下方 P1 请求语义风险。 |
+
+上述行为在 DSH 0.1.0-rc.8 上通过用户验收；生产构建与 347 个测试通过、2 个测试跳过。
+“已验收”只表示当前产品路径，不表示下方并发、事务或失败恢复风险已关闭。
 
 但 v2 作为“第三方可基于协议开发前端”的稳定面，仍有以下需要在周目生命周期验收前处理或
 明确降级的风险。
@@ -42,8 +58,8 @@ timeline 只保存 session/event 范围引用；路径 API 有根目录、相对
 
 ## 建议的验收顺序
 
-1. 先确定 catalog/timeline 并发写入和周目创建失败后的补偿合同，再实现命名、重命名、
-   空周目复用、导入和导出；
+1. 先确定 catalog/timeline 并发写入和周目创建失败后的补偿合同；命名、重命名、空周目复用、
+   opening dock 与普通导入路径已通过产品验收，但仍依赖当前整文档写入语义；
 2. 用超过 32 页的历史、请求失败/取消后的导入上下文、两个标签页同时写入同一 catalog/
    timeline 做协议验收；
 3. 最后再验收功能按钮，因为 swipe、adopt、hide、display override 和 restore 都依赖

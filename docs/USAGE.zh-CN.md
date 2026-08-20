@@ -1,6 +1,6 @@
 # dsh-tavern 中文使用指南
 
-状态：2026-08-20，对应当前悬浮球交互、前端显示模式切换、角色卡创建/编辑、RP 安全模式与委派子 agent 继承父级 Tavern 选择。本文介绍实际操作；消息流、架构和安全契约分别见 `DSH_MESSAGE_FLOW.md`、`ARCHITECTURE.md` 与 `LOADER_CONTRACT.md`。RP 拦/不拦清单见 [RP_SECURE_MODE.md](RP_SECURE_MODE.md)。
+状态：2026-08-21，对应当前悬浮球交互、前端显示模式切换、角色卡创建/编辑、周目生命周期、外部记录开场绑定、RP 安全模式与委派子 agent 继承父级 Tavern 选择。本文介绍实际操作；消息流、架构和安全契约分别见 `DSH_MESSAGE_FLOW.md`、`ARCHITECTURE.md` 与 `LOADER_CONTRACT.md`。RP 拦/不拦清单见 [RP_SECURE_MODE.md](RP_SECURE_MODE.md)。
 
 ## 1. 打开和切换面板
 
@@ -74,7 +74,28 @@ description、personality、scenario、example dialogue 等字段会按预设 ma
 
 正常 UI 只把模板应用到新建 blank session。底层配置 apply API 尚未对任意既有运行中目标提供全局事务锁，详见 `LOADER_CONTRACT.md` 的运行态风险说明。
 
-## 7. Tavern Trace
+## 7. 周目与外部记录开场
+
+在魔丸侧边栏的角色卡下点击新建周目，会创建或复用该角色最近一个没有任何真实记录的
+`x周目`。复用检查同时查看 `timeline.json`、root session 的 DSH user/assistant 消息、开放
+turn，以及是否已有外部导入 QA；因此连续点击不会无限增加空周目。周目标题旁的菜单可以
+重命名。创建只建立真实 blank DSH session 和周目元数据，不写 greeting 或伪造消息。
+
+空周目尚未出现顶栏时，greeting 会显示在原生对话栏下方的 opening dock 中。左右按钮切换
+角色卡 alternate greeting；角色卡没有 greeting 时仍保留空白区域和同一 footer 布局。点击
+footer 中央的导入按钮可从 JSON/JSONL 或本插件 bundle 绑定外部记录；已有绑定时按钮变为
+换绑和解绑。绑定后 dock 显示最近三轮 QA，显示内容只是本地渲染预览。
+
+外部记录只允许绑定到仍为空的 root session。第一次实际发送请求时，loader 将它作为转义的、
+标明 `untrusted` 的只读上下文交给模型；它不会成为 DSH durable history，也不会写入
+`timeline.json`，所以不会伪造一轮 QA。正常一轮结束后绑定会标记为已消费；从此以及出现
+真实 user/assistant 消息、开放 turn 后，都不能再改绑或解绑。若请求异常、取消或 Host 没有
+发出 `turn/end`，重试语义仍属于待决策风险，见 [周目审查记录](PLAY_REVIEW.md)。
+
+导入文件和绑定摘要保存在已选扮演工作区根内；服务端会校验路径、哈希、`schemaVersion: 1`、
+QA 数量（最多 2,000）和文件大小（最多 256 KiB）。
+
+## 8. Tavern Trace
 
 Tavern Trace 位于 Conversation、Trajectory 同级视图，用来解释某一 turn/step 实际采用了哪些 Tavern 配置。
 

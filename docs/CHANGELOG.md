@@ -97,6 +97,33 @@ Verification: focused lifecycle tests and production client build.
 
 Verification: focused create/import/i18n/shell tests and production client
 build.
+## 2026-08-21 — Accept the playthrough lifecycle and opening import surface
+
+- The character-card sidebar now creates a numbered `x周目` under the selected
+  character, reuses the nearest preceding empty playthrough instead of adding
+  unbounded blank entries, and exposes playthrough rename. A new playthrough
+  remains a real blank DSH session; no greeting, imported QA, or fabricated
+  user/assistant message is written during creation.
+- The empty-session opening is rendered in the same native composer dock as the
+  greeting. Previous/next greeting controls remain in the outer positions;
+  import controls occupy the center footer. A card without a greeting still
+  keeps the empty opening area and its action layout.
+- External history is now bound to the current empty playthrough rather than
+  creating a second playthrough/session. The opening surface can bind, rebind,
+  or unbind the imported context. After binding it previews the latest three
+  imported QA pairs; after unbinding it returns to the selected greeting.
+  Binding and unbinding are locked after a DSH user/assistant message, an open
+  turn, or one-shot context consumption. The server repeats this check; hiding
+  the client controls is not the authority.
+- The loader injects a bound import as escaped, read-only and explicitly
+  untrusted context for the first actual request. It is not a DSH durable
+  message and does not enter `timeline.json`; normal `turn/end` changes the
+  binding from `pending` to `consumed`. Retry/abort semantics remain a review
+  item (see [`PLAY_REVIEW.md`](PLAY_REVIEW.md)).
+
+Verification: production client build, 347 tests passed and 2 skipped; the
+opening greeting, three-QA preview, bind/rebind/unbind, and playthrough
+lifecycle passed user acceptance on DSH 0.1.0-rc.8.
 
 ## 2026-08-20 — Review the playthrough lifecycle boundary
 
