@@ -195,7 +195,21 @@ export function nativeRegexScript(rule) {
   if (original === null || rule.target !== original.target) {
     writeNativeField(source, ['placement'], 'placement', nativePlacementFor(rule))
   }
+  if (original === null) {
+    source.trimStrings = structuredClone(rule.trimStrings)
+    source.markdownOnly = rule.markdownOnly
+    source.promptOnly = rule.promptOnly
+    source.runOnEdit = rule.runOnEdit
+    source.substituteRegex = rule.substituteRegex
+    source.minDepth = rule.minDepth
+    source.maxDepth = rule.maxDepth
+  }
   return source
+}
+
+export function exportNativeRegexScripts(rules) {
+  if (!Array.isArray(rules)) throw new TypeError('regex rules must be an array')
+  return rules.map(nativeRegexScript)
 }
 
 export function resourceRegexRules(value, scope) {

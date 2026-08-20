@@ -12,6 +12,7 @@ import {
   unwrapText,
 } from '../i18n.js'
 import {
+  exportNativeRegexScripts,
   getRegexDocument,
   importRegexDocument,
   nativeRegexScript,
@@ -42,12 +43,13 @@ function scopeFor(kind, bindings) {
   }
 }
 
-function downloadJson(document) {
-  const blob = new Blob([JSON.stringify(document, null, 2)], { type: 'application/json' })
+function downloadRegexScripts(rules, kind) {
+  const scripts = exportNativeRegexScripts(rules)
+  const blob = new Blob([JSON.stringify(scripts, null, 2)], { type: 'application/json' })
   const url = URL.createObjectURL(blob)
   const anchor = window.document.createElement('a')
   anchor.href = url
-  anchor.download = 'regex.json'
+  anchor.download = `regex-${kind}.json`
   anchor.click()
   URL.revokeObjectURL(url)
 }
@@ -212,7 +214,7 @@ function RegexScopeSection({
     h('div', { className: 'dtv-book-toolbar' },
       h('button', { className: 'dtv-button', type: 'button', disabled: busy, onClick: add }, uiMessage('regex.add')),
       h('button', { className: 'dtv-button', type: 'button', disabled: busy, onClick: importJson }, uiMessage('common.importJson')),
-      h('button', { className: 'dtv-button', type: 'button', disabled: busy, onClick: exportJson }, uiMessage('common.exportJson')),
+      h('button', { className: 'dtv-button', type: 'button', disabled: busy, onClick: () => exportJson(rules) }, uiMessage('common.exportJson')),
     ),
     rules.length === 0
       ? h('p', { className: 'dtv-note' }, uiMessage('regex.emptyScope'))
@@ -381,7 +383,7 @@ export function RegexPanel({ client, activeSnapshot, close }) {
           importScope.current = kind
           fileInput.current?.click()
         },
-        exportJson: () => downloadJson(document),
+        exportJson: rules => downloadRegexScripts(rules, kind),
         update: updateRule,
         remove: removeRule,
         updateSource: (index, next) => updateSourceRule(kind, index, next),

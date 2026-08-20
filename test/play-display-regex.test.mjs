@@ -2,6 +2,7 @@ import test from 'node:test'
 import assert from 'node:assert/strict'
 import {
   applyDisplayRegex,
+  exportNativeRegexScripts,
   importRegexDocument,
   nativeRegexScript,
   normalizeRegexDocument,
@@ -136,4 +137,31 @@ test('resource regex serialization leaves untouched native fields byte-shape-equ
     placement: [2, 1, 5], disabled: false, markdownOnly: true, futureExtension: { kept: true } }
   const [rule] = resourceRegexInventory([source], { kind: 'character', resourceId: 'character-a' })
   assert.deepEqual(nativeRegexScript(rule), source)
+})
+
+test('ST export is a bare native script array with complete canonical fields', () => {
+  const [rule] = normalizeRegexDocument({ rules: [{
+    id: 'global', name: 'Global rule', enabled: true, find: 'x', replace: 'y', flags: 'g',
+    target: 'both', placement: [5], trimStrings: ['trim'], markdownOnly: true,
+    promptOnly: false, runOnEdit: true, substituteRegex: 2, minDepth: 1, maxDepth: 4,
+  }] }).rules
+  const exported = exportNativeRegexScripts([rule])
+  assert.equal(Array.isArray(exported), true)
+  assert.deepEqual(exported, [{
+    id: 'global',
+    scriptName: 'Global rule',
+    findRegex: 'x',
+    replaceString: 'y',
+    disabled: false,
+    placement: [5, 1, 2],
+    trimStrings: ['trim'],
+    markdownOnly: true,
+    promptOnly: false,
+    runOnEdit: true,
+    substituteRegex: 2,
+    minDepth: 1,
+    maxDepth: 4,
+  }])
+  assert.equal(Object.hasOwn(exported, 'schemaVersion'), false)
+  assert.equal(Object.hasOwn(exported, 'rules'), false)
 })

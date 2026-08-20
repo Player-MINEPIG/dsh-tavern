@@ -4179,7 +4179,20 @@ function nativeRegexScript(rule) {
   if (original === null || rule.target !== original.target) {
     writeNativeField(source, ["placement"], "placement", nativePlacementFor(rule));
   }
+  if (original === null) {
+    source.trimStrings = structuredClone(rule.trimStrings);
+    source.markdownOnly = rule.markdownOnly;
+    source.promptOnly = rule.promptOnly;
+    source.runOnEdit = rule.runOnEdit;
+    source.substituteRegex = rule.substituteRegex;
+    source.minDepth = rule.minDepth;
+    source.maxDepth = rule.maxDepth;
+  }
   return source;
+}
+function exportNativeRegexScripts(rules) {
+  if (!Array.isArray(rules)) throw new TypeError("regex rules must be an array");
+  return rules.map(nativeRegexScript);
 }
 function resourceRegexRules(value, scope) {
   try {
@@ -9582,12 +9595,13 @@ function scopeFor(kind, bindings) {
     resourceId: kind === "global" ? null : kind === "preset" ? bindings.presetId : bindings.characterId
   };
 }
-function downloadJson(document2) {
-  const blob = new Blob([JSON.stringify(document2, null, 2)], { type: "application/json" });
+function downloadRegexScripts(rules, kind) {
+  const scripts = exportNativeRegexScripts(rules);
+  const blob = new Blob([JSON.stringify(scripts, null, 2)], { type: "application/json" });
   const url = URL.createObjectURL(blob);
   const anchor = window.document.createElement("a");
   anchor.href = url;
-  anchor.download = "regex.json";
+  anchor.download = `regex-${kind}.json`;
   anchor.click();
   URL.revokeObjectURL(url);
 }
@@ -9757,7 +9771,7 @@ function RegexScopeSection({
       { className: "dtv-book-toolbar" },
       h12("button", { className: "dtv-button", type: "button", disabled: busy, onClick: add }, uiMessage("regex.add")),
       h12("button", { className: "dtv-button", type: "button", disabled: busy, onClick: importJson }, uiMessage("common.importJson")),
-      h12("button", { className: "dtv-button", type: "button", disabled: busy, onClick: exportJson }, uiMessage("common.exportJson"))
+      h12("button", { className: "dtv-button", type: "button", disabled: busy, onClick: () => exportJson(rules) }, uiMessage("common.exportJson"))
     ),
     rules.length === 0 ? h12("p", { className: "dtv-note" }, uiMessage("regex.emptyScope")) : [
       ...editableRules.map((rule, index) => h12(RuleEditor, {
@@ -9912,7 +9926,7 @@ function RegexPanel({ client, activeSnapshot, close }) {
           importScope.current = kind;
           fileInput.current?.click();
         },
-        exportJson: () => downloadJson(document2),
+        exportJson: (rules) => downloadRegexScripts(rules, kind),
         update: updateRule,
         remove: removeRule,
         updateSource: (index, next) => updateSourceRule(kind, index, next),
