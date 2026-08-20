@@ -1,4 +1,5 @@
 import { updateTimeline } from './mutations.js'
+import { forkPlaythroughAtNode } from './fork.js'
 
 function nodeById(timeline, nodeId) {
   const index = timeline.nodes.findIndex(node => node.id === nodeId)
@@ -135,6 +136,10 @@ export function createPlayNodeController(client, {
         if (focus.sessionId !== newSessionId) throw new Error('Saved swipe does not match derived focus')
         return { timeline: next, sessionId: newSessionId, variantId }
       })
+    },
+
+    forkPlaythrough(playthrough, nodeId) {
+      return schedule(() => forkPlaythroughAtNode(client, { playthrough, nodeId }))
     },
 
   }

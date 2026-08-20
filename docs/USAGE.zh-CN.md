@@ -87,6 +87,8 @@ footer 中央的导入按钮可从 JSON/JSONL 或本插件 bundle 绑定外部�
 换绑和解绑。绑定后 dock 显示最近三轮 QA，显示内容只是本地渲染预览。
 
 外部记录只允许绑定到仍为空的 root session。第一次实际发送请求时，loader 只在同一 profile snapshot 提供至少一个公开 `claimEventSeqs` 后建立持久 claim，再将内容作为转义的、标明 `untrusted` 的只读上下文交给模型；它不会成为 DSH durable history，也不会写入 `timeline.json`，所以不会伪造一轮 QA。没有 claim 的 view/assembly 不注入，也不会消费 pending；同一 claim identity 在 terminal 前可重复 assembly，`turn/end` 只会消费已 claimed 绑定并保存 event seq、turn、reason.kind 等非正文元数据。DSH provider 的 request retry 不会消费或重置 claim；Tavern swipe 通过公开 branch 复制不含正文的 lineage，子 session 需要新的 claim；中断后原 session 的新 claim 不再注入。真实 user/assistant 消息、开放 turn 或绑定已 claim 后，都不能再改绑或解绑。
+
+每轮回复尾部的分支按钮会从该 adopted 回复创建一个新周目。新周目继承截至该处的 DSH durable 历史，复制当前显示时间线，并自动打开可继续对话的子 session；源周目和源消息不会被改写。该操作由多个公开原子 API 组合，极端的磁盘或网络失败可能留下未加入 catalog 的子 session/文件，诊断时按后端 operation log 的各步骤处理。
 [周目审查记录](PLAY_REVIEW.md)。
 导入文件和绑定摘要保存在已选扮演工作区根内；服务端会校验路径、哈希和 `schemaVersion: 1`/QA 结构。import parser 不做 summary、QA 切片或 256 KiB/2,000 QA 人为上限；模型上下文超限交给 DSH/provider，通用工作区文件仍有 1 MiB 文件层上限。
 

@@ -1,5 +1,16 @@
 # Development changelog
 
+## 2026-08-21 — Compose Tavern forks from public play APIs
+
+- Added a reply-tail action that branches the adopted DSH session at the
+  selected assistant event, copies the playthrough through that QA, and opens
+  the new playthrough root session.
+- The copied target variant is rebound to the child session so stable focus
+  returns to the continuation session instead of the ancestor. Source timeline
+  metadata and DSH messages remain unchanged.
+- The client verifies the inherited durable user/assistant range before any
+  workspace write and uses catalog CAS for the final catalog append.
+
 ## 2026-08-21 — Integrate session/import mutation operation logs
 
 - Added content-free, fail-soft operation logging for session create, branch, user-message, and import-context bind/unbind mutations via Host ctx.logger.

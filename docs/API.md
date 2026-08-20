@@ -116,6 +116,13 @@ durable history。当前已实现的基础语义是：首次 assembly 必须按�
 `PUT` 是完整替换，不是逐字段 merge。数组元素必须是对象；服务端不改写原生 ST 字段，也不丢弃规则内未知扩展字段。适配器优先写回资源已有的 `regex_scripts` 路径；没有现有数组时，预设写入 `extensions.regex_scripts`，V2/V3 角色卡写入 `data.extensions.regex_scripts`，V1 角色卡写入 `extensions.regex_scripts`。资源中的其他字段保持不变，写入仍经过对应 store 的原子保存和总文档体积限制。
 
 这个 v1 子资源只编辑预设或角色卡原文。它不组合全局正则，不计算当前 session 最终生效集合，不修改历史、timeline 或 AI 请求；魔丸显示管线只把保存后的资源数据作为渲染投影读取。失败响应沿用所属资源 API 的既有格式与状态码。
+
+### Tavern 周目分支组合
+
+内置 RP 视图不覆盖 DSH 原生 fork。它在目标 adopted assistant 的 `endEventId` 调用公开 `POST /sessions/:id/branch`，先用 `/messages` 验证子 session 继承了该 durable user/assistant 区间，再创建新周目目录和截至该 QA 的 timeline 副本。副本只把目标 adopted variant 的 `sessionId` 重定向到子 session，随后用 catalog CAS 追加新周目并通过按 id 的 focus 校验。这样新周目保留 DSH 权威上下文，再次从侧边栏进入时也会打开可继续对话的 branch session；源 timeline、源 variant 和 DSH 原始消息不变。
+
+这仍是现有原子 API 的客户端组合，不是跨 session、目录、timeline、catalog 的大事务。branch 已成功而后续文件写入失败时可能留下未归档的 DSH 子 session 或工作区孤儿文件；每一步由现有 `ctx.logger` operation 记录，客户端不通过删除原始历史来伪造回滚。
+
 ### 后端 operation log utility
 
 `packages/play/src/operation-log.js` 导出 `createOperationContext` 和

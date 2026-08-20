@@ -126,6 +126,15 @@ export function PlayTurnActions({
       }),
     }),
     h(Action, {
+      icon: '⑂',
+      label: uiMessage('play.chat.forkPlaythrough'),
+      disabled,
+      onClick: () => mutate(async () => {
+        const result = await controller(playClient).forkPlaythrough(playthrough, turn.id)
+        openSession(result.sessionId)
+      }),
+    }),
+    h(Action, {
       icon: '✎',
       label: uiMessage('play.chat.editDisplay'),
       disabled,

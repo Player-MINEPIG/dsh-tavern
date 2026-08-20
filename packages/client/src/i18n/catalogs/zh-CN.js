@@ -109,6 +109,7 @@ export default Object.freeze({
   "play.chat.nextReply": "下一条已有回复",
   "play.chat.noOtherReply": "没有其他已有回复",
   "play.chat.generateReply": "生成一条新回复",
+  "play.chat.forkPlaythrough": "从这里分支为新周目",
   "play.chat.editDisplay": "修改显示文字",
   "play.chat.editDisplayPrompt": "输入替代原回复的显示文字：",
   "play.chat.restoreOriginal": "恢复原回复",
