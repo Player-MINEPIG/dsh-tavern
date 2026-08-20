@@ -5691,6 +5691,7 @@ function CharacterPanel({ sessionId, sessionBlank, close }) {
       body: JSON.stringify({ sessionId, characterCardId: null })
     });
     await refresh(detail?.id);
+    announceTavernRefresh2();
   }, "character.status.unbound"), [detail?.id, refresh, run, sessionId]);
   const toggleRp = (0, import_react2.useCallback)(() => run(async () => {
     if (!sessionId) throw uiError("character.error.needSession");

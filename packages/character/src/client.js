@@ -249,6 +249,7 @@ export function CharacterPanel({ sessionId, sessionBlank, close }) {
       body: JSON.stringify({ sessionId, characterCardId: null }),
     })
     await refresh(detail?.id)
+    announceTavernRefresh()
   }, 'character.status.unbound'), [detail?.id, refresh, run, sessionId])
 
   const toggleRp = useCallback(() => run(async () => {
