@@ -197,14 +197,13 @@ export function MowanChatView({ sessionId, useSession, playClient, playthrough, 
   const [state, setState] = useState(null)
   const [error, setError] = useState('')
   const [greetingBusy, setGreetingBusy] = useState(false)
-  const scrollRoot = useRef(null)
+  const bottomAnchor = useRef(null)
   const initialScrollSession = useRef(null)
   const userSeqSession = useRef(null)
   const lastUserSeq = useRef(-1)
 
   const scrollToBottom = () => {
-    const root = scrollRoot.current
-    if (root !== null) root.scrollTop = root.scrollHeight
+    bottomAnchor.current?.scrollIntoView({ block: 'end' })
   }
 
   useLayoutEffect(() => {
@@ -267,7 +266,7 @@ export function MowanChatView({ sessionId, useSession, playClient, playthrough, 
     running,
   })
 
-  return h('div', { className: 'dtv-play-chat', ref: scrollRoot },
+  return h('div', { className: 'dtv-play-chat' },
     error === '' ? null : h('p', { className: 'dtv-play-chat-status', 'data-error': true }, rawText(error)),
     state === null && error === '' ? h('p', { className: 'dtv-play-chat-status' }, uiMessage('play.chat.loading')) : null,
     state === null ? null : h('div', { className: 'dtv-play-chat-list' },
@@ -289,6 +288,7 @@ export function MowanChatView({ sessionId, useSession, playClient, playthrough, 
       liveTurns.length === 0 && running
         ? h('p', { className: 'dtv-play-chat-running' }, uiMessage('play.chat.thinking'))
         : null,
+      h('span', { ref: bottomAnchor, 'aria-hidden': true }),
     ),
   )
 }
