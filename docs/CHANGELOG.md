@@ -4,6 +4,15 @@ This is the staged implementation log for dsh-tavern. It is kept separately
 from the product README so reviewers can follow intent, decisions, verification,
 and known limits chronologically.
 
+## 2026-08-20 — Keep the import action inside the greeting container
+
+- The unbound empty-playthrough import action is now rendered as the greeting
+  row's footer instead of a negatively offset sibling.
+- Cards without a greeting retain the same action in the standalone opening
+  position; bound replace/unbind controls remain below imported history.
+
+Verification: focused chat-state/layout test and production client build.
+
 ## 2026-08-20 — Move import binding into the empty-playthrough opening
 
 - Removed import from the sidebar playthrough menu. Empty playthroughs expose

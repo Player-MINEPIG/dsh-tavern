@@ -1,6 +1,9 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import { loadChatState } from '../packages/client/src/play/chat.js'
+import { readFileSync } from 'node:fs'
+
+const chatSource = readFileSync(new URL('../packages/client/src/play/chat.js', import.meta.url), 'utf8')
 
 test('Chat load registers a completed real turn before projecting it', async () => {
   const calls = []
@@ -117,4 +120,10 @@ test('consumed import binding is never mutable even before timeline reconciliati
     ext: { pmpDshTavern: { rootSessionId: 'session-a' } },
   })
   assert.equal(state.importMutable, false)
+})
+
+test('unbound import action is passed into the greeting container as its footer', () => {
+  assert.match(chatSource, /function Greeting\(\{ greeting, busy, change, footer = null \}\)/)
+  assert.match(chatSource, /footer: state\.importBinding === null \? importControls : null/)
+  assert.match(chatSource, /state\.greeting === null && state\.importBinding === null \? importControls : null/)
 })
