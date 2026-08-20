@@ -4474,6 +4474,42 @@ function installStyles2() {
   style.textContent = css7;
   document.head.append(style);
 }
+function scrollableAncestor(element) {
+  for (let current2 = element?.parentElement; current2 !== null; current2 = current2.parentElement) {
+    const style = window.getComputedStyle(current2);
+    if (/(auto|scroll)/.test(style.overflowY) && current2.scrollHeight > current2.clientHeight) return current2;
+  }
+  return null;
+}
+function visibleBottom(container, content) {
+  const containerRect = container.getBoundingClientRect();
+  const contentRect = content.getBoundingClientRect();
+  let bottom = containerRect.bottom;
+  const candidates = /* @__PURE__ */ new Set();
+  for (const editor of container.querySelectorAll('textarea, [contenteditable="true"]')) {
+    for (let current2 = editor; current2 !== null && current2 !== container; current2 = current2.parentElement) {
+      candidates.add(current2);
+    }
+  }
+  for (const element of candidates) {
+    const position = window.getComputedStyle(element).position;
+    if (position !== "sticky" && position !== "fixed") continue;
+    const rect = element.getBoundingClientRect();
+    const overlap = Math.min(rect.right, contentRect.right) - Math.max(rect.left, contentRect.left);
+    if (rect.height <= 0 || overlap < contentRect.width / 2 || rect.top <= containerRect.top || rect.top >= containerRect.bottom || rect.bottom < containerRect.bottom) continue;
+    bottom = Math.min(bottom, rect.top);
+  }
+  return bottom;
+}
+function revealBottomAboveComposer(anchor) {
+  if (anchor === null) return;
+  anchor.scrollIntoView({ block: "end" });
+  const container = scrollableAncestor(anchor);
+  if (container === null) return;
+  const obstructionTop = visibleBottom(container, anchor.parentElement ?? anchor);
+  const covered = anchor.getBoundingClientRect().bottom - obstructionTop;
+  if (covered > 0) container.scrollTop += covered;
+}
 function adoptedSessionIds(timeline, currentSessionId) {
   const ids = /* @__PURE__ */ new Set([currentSessionId]);
   for (const node of timeline?.nodes ?? []) {
@@ -4633,13 +4669,20 @@ function MowanChatView({ sessionId, useSession, playClient, playthrough, openSes
   const initialScrollSession = (0, import_react8.useRef)(null);
   const userSeqSession = (0, import_react8.useRef)(null);
   const lastUserSeq = (0, import_react8.useRef)(-1);
-  const scrollToBottom = () => {
-    bottomAnchor.current?.scrollIntoView({ block: "end" });
+  const scrollToBottomAfterLayout = () => {
+    let nextFrame = 0;
+    const frame = window.requestAnimationFrame(() => {
+      nextFrame = window.requestAnimationFrame(() => revealBottomAboveComposer(bottomAnchor.current));
+    });
+    return () => {
+      window.cancelAnimationFrame(frame);
+      if (nextFrame !== 0) window.cancelAnimationFrame(nextFrame);
+    };
   };
-  (0, import_react8.useLayoutEffect)(() => {
+  (0, import_react8.useEffect)(() => {
     if (state === null || initialScrollSession.current === sessionId) return;
     initialScrollSession.current = sessionId;
-    scrollToBottom();
+    return scrollToBottomAfterLayout();
   }, [sessionId, state]);
   (0, import_react8.useEffect)(() => {
     if (userSeqSession.current !== sessionId) {
@@ -4649,14 +4692,7 @@ function MowanChatView({ sessionId, useSession, playClient, playthrough, openSes
     }
     if (latestUserSeq <= lastUserSeq.current) return;
     lastUserSeq.current = latestUserSeq;
-    let nextFrame = 0;
-    const frame = window.requestAnimationFrame(() => {
-      nextFrame = window.requestAnimationFrame(scrollToBottom);
-    });
-    return () => {
-      window.cancelAnimationFrame(frame);
-      if (nextFrame !== 0) window.cancelAnimationFrame(nextFrame);
-    };
+    return scrollToBottomAfterLayout();
   }, [latestUserSeq, sessionId]);
   (0, import_react8.useEffect)(() => {
     const refresh = () => setRevision((value) => value + 1);

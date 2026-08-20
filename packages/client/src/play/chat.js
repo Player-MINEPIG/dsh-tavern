@@ -1,7 +1,6 @@
 import {
   createElement,
   useEffect,
-  useLayoutEffect,
   useRef,
   useState,
 } from 'react'
@@ -48,6 +47,49 @@ function installStyles() {
   style.dataset.pluginCss = `${PLUGIN_ID}-play-chat`
   style.textContent = css
   document.head.append(style)
+}
+
+function scrollableAncestor(element) {
+  for (let current = element?.parentElement; current !== null; current = current.parentElement) {
+    const style = window.getComputedStyle(current)
+    if (/(auto|scroll)/.test(style.overflowY) && current.scrollHeight > current.clientHeight) return current
+  }
+  return null
+}
+
+function visibleBottom(container, content) {
+  const containerRect = container.getBoundingClientRect()
+  const contentRect = content.getBoundingClientRect()
+  let bottom = containerRect.bottom
+  const candidates = new Set()
+  for (const editor of container.querySelectorAll('textarea, [contenteditable="true"]')) {
+    for (let current = editor; current !== null && current !== container; current = current.parentElement) {
+      candidates.add(current)
+    }
+  }
+  for (const element of candidates) {
+    const position = window.getComputedStyle(element).position
+    if (position !== 'sticky' && position !== 'fixed') continue
+    const rect = element.getBoundingClientRect()
+    const overlap = Math.min(rect.right, contentRect.right) - Math.max(rect.left, contentRect.left)
+    if (rect.height <= 0
+      || overlap < contentRect.width / 2
+      || rect.top <= containerRect.top
+      || rect.top >= containerRect.bottom
+      || rect.bottom < containerRect.bottom) continue
+    bottom = Math.min(bottom, rect.top)
+  }
+  return bottom
+}
+
+function revealBottomAboveComposer(anchor) {
+  if (anchor === null) return
+  anchor.scrollIntoView({ block: 'end' })
+  const container = scrollableAncestor(anchor)
+  if (container === null) return
+  const obstructionTop = visibleBottom(container, anchor.parentElement ?? anchor)
+  const covered = anchor.getBoundingClientRect().bottom - obstructionTop
+  if (covered > 0) container.scrollTop += covered
 }
 
 function adoptedSessionIds(timeline, currentSessionId) {
@@ -207,14 +249,21 @@ export function MowanChatView({ sessionId, useSession, playClient, playthrough, 
   const userSeqSession = useRef(null)
   const lastUserSeq = useRef(-1)
 
-  const scrollToBottom = () => {
-    bottomAnchor.current?.scrollIntoView({ block: 'end' })
+  const scrollToBottomAfterLayout = () => {
+    let nextFrame = 0
+    const frame = window.requestAnimationFrame(() => {
+      nextFrame = window.requestAnimationFrame(() => revealBottomAboveComposer(bottomAnchor.current))
+    })
+    return () => {
+      window.cancelAnimationFrame(frame)
+      if (nextFrame !== 0) window.cancelAnimationFrame(nextFrame)
+    }
   }
 
-  useLayoutEffect(() => {
+  useEffect(() => {
     if (state === null || initialScrollSession.current === sessionId) return
     initialScrollSession.current = sessionId
-    scrollToBottom()
+    return scrollToBottomAfterLayout()
   }, [sessionId, state])
 
   useEffect(() => {
@@ -225,14 +274,7 @@ export function MowanChatView({ sessionId, useSession, playClient, playthrough, 
     }
     if (latestUserSeq <= lastUserSeq.current) return
     lastUserSeq.current = latestUserSeq
-    let nextFrame = 0
-    const frame = window.requestAnimationFrame(() => {
-      nextFrame = window.requestAnimationFrame(scrollToBottom)
-    })
-    return () => {
-      window.cancelAnimationFrame(frame)
-      if (nextFrame !== 0) window.cancelAnimationFrame(nextFrame)
-    }
+    return scrollToBottomAfterLayout()
   }, [latestUserSeq, sessionId])
 
   useEffect(() => {
