@@ -120,6 +120,13 @@ test('legacy active responses and missing optional fields remain safe', () => {
 
 test('only the client composition root owns the Tavern shell overlay', () => {
   const root = readFileSync(new URL('../packages/client/src/index.js', import.meta.url), 'utf8')
+  assert.match(root, /ctx\.provide\(CHROME_SERVICE_NAME, chrome\.face\)/)
+  assert.match(root, /startChromeModeTransport\(\{/)
+  assert.match(root, /chromeService: chrome\.face/)
+  assert.match(root, /chromeService\.subscribe\(snapshot =>/)
+  assert.match(root, /persistMode: mode => chromeService\.setMode\(mode\)/)
+  assert.doesNotMatch(root, /new BroadcastChannel|chromeModeRef/)
+  assert.match(root, /stopTransport\(\)[\s\S]*chrome\.internal\.dispose\(\)/)
   const preset = readFileSync(new URL('../packages/preset/src/client.js', import.meta.url), 'utf8')
   const character = readFileSync(new URL('../packages/character/src/client.js', import.meta.url), 'utf8')
   const user = readFileSync(new URL('../packages/user/src/client.js', import.meta.url), 'utf8')

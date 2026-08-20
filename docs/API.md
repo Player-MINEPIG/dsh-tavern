@@ -143,3 +143,19 @@ stage 或 terminal 调用无效且不会重复写终态。
 本节声明 utility 及上述 workspace/session/import endpoint 接入；当前不能据此声称
 所有生命周期静默失败都已被日志覆盖。默认 Cordis logger 仍由其自身管理，插件不写
 持久日志文件、浏览器日志或 exporter。
+
+## 浏览器端 Chrome 模式服务
+
+Tavern client 通过 rc.8 公开 Cordis `ctx.provide` 注册稳定服务名 `pmpDshTavernChrome`。这是 Tavern v2 自有合同，不是 DSH Host API；它只提供 `native|play` 生命周期，不拥有或仲裁任何 slot、view 或第三方插件 UI。
+
+公开 face：
+
+- `getMode()`、`getSnapshot()`：同步返回冻结的 `{ mode, revision }`；旧服务端的 revision 可为 `null`。
+- `subscribe(listener)`：注册后立即同步通知当前快照，返回幂等 disposer。
+- `refresh()`：通过 `GET /v2/chrome` 回读并提交权威快照。
+- `setMode(mode)`、`switchMode()`：串行写入；只有 `PUT /v2/chrome` 成功返回后才更新本地状态。
+- `when(mode, setup)`：进入目标模式时 setup，离开、取消注册或服务卸载时 dispose；异步 setup 迟到也会立即清理。
+
+必需依赖的插件可声明 `inject: ['pmpDshTavernChrome']` 后读取 `ctx.pmpDshTavernChrome`；兼容性可选插件应使用 `ctx.get('pmpDshTavernChrome')` 并在缺失时保持自己的 native/fallback 行为。第三方不得重新 provide 同名服务，也不得依赖 Tavern 内部的 React state、`playSlots`、EventSource 或 timer。
+
+内部 transport 使用 `GET /v2/chrome/events`；不支持 EventSource、连接失败或断线时降级为初始 GET、window focus 回读和1秒轮询，SSE恢复后停止轮询。BroadcastChannel 不属于合同。服务卸载会停止transport并清理所有 `when` effect；多个第三方插件的注册互相独立，各自只清理自己拥有的slot/UI。

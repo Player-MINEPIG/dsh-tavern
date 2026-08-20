@@ -40,7 +40,9 @@ import { sessionHasConversationHistory } from './play/chat-model.js'
 import { RegexPanel } from './play/regex-panel.js'
 import { projectRpWorkspaceSetting, workspaceSelectionRequest } from './play/workspace-setting.js'
 import { requiresSystemWorkspaceConfirmation } from './play/sidebar-model.js'
-import { API_V1 as API_ROOT, CLIENT_REFRESH_EVENT, PLUGIN_ID } from '../../identity.js'
+import { createChromeModeServiceCore } from './play/chrome-service.js'
+import { startChromeModeTransport } from './play/chrome-transport.js'
+import { API_V1 as API_ROOT, CHROME_SERVICE_NAME, CLIENT_REFRESH_EVENT, PLUGIN_ID } from '../../identity.js'
 
 const h = createLocalizedElement(createElement)
 
@@ -507,11 +509,11 @@ function RpHighRiskDialog({ onDismiss }) {
   )
 }
 
-function TavernShell({ useSessions, useWorkspaces, createCleanSession, playClient, playSlots }) {
+function TavernShell({ useSessions, useWorkspaces, createCleanSession, playClient, playSlots, chromeService }) {
   const [menuOpen, setMenuOpen] = useState(false)
   const [surface, setSurface] = useState(null)
   const [anchor, setAnchor] = useState(initialLauncherAnchor)
-  const [chromeMode, setChromeMode] = useState('native')
+  const [chromeMode, setChromeMode] = useState(() => chromeService.getMode())
   const [chromeError, setChromeError] = useState('')
   const [activeSnapshot, setActiveSnapshot] = useState(null)
   const [statusError, setStatusError] = useState('')
@@ -527,7 +529,6 @@ function TavernShell({ useSessions, useWorkspaces, createCleanSession, playClien
   const [rpAlert, setRpAlert] = useState(null)
   const drag = useRef(null)
   const suppressClick = useRef(false)
-  const chromeModeRef = useRef('native')
   const chromeController = useRef(null)
   const statusGeneration = useRef(0)
   const rpAlertRef = useRef(null)
@@ -545,58 +546,30 @@ function TavernShell({ useSessions, useWorkspaces, createCleanSession, playClien
   else rpAlertRef.current = rpAlert
 
   useEffect(() => {
-    let active = true
-    let channel = null
-    try {
-      if (typeof BroadcastChannel === 'function') channel = new BroadcastChannel(`${PLUGIN_ID}:chrome`)
-    } catch {
-      // Restricted browsing contexts still synchronize by refreshing on focus.
+    const commitChrome = snapshot => {
+      setChromeMode(snapshot.mode)
+      playSlots.setMode(snapshot.mode)
+      if (snapshot.mode !== 'play') setSurface(current => current === 'regex' ? null : current)
     }
-    const commitChrome = mode => {
-      chromeModeRef.current = mode
-      setChromeMode(mode)
-      playSlots.setMode(mode)
-      if (mode !== 'play') setSurface(current => current === 'regex' ? null : current)
-    }
-    const refreshChrome = async () => {
-      try {
-        const saved = await playClient.getChrome()
-        if (!active) return
-        commitChrome(saved.mode)
-        setChromeError('')
-      } catch (reason) {
-        if (!active) return
-        setChromeError(reason instanceof Error ? reason.message : String(reason))
-      }
-    }
+    const unsubscribe = chromeService.subscribe(snapshot => {
+      commitChrome(snapshot)
+      setChromeError('')
+    })
     const controller = createChromeClickController({
-      getMode: () => chromeModeRef.current,
-      persistMode: mode => playClient.putChrome(mode),
+      getMode: () => chromeService.getMode(),
+      persistMode: mode => chromeService.setMode(mode),
       openMenu: () => setMenuOpen(value => !value),
       closeMenu: () => setMenuOpen(false),
-      setMode: mode => {
-        commitChrome(mode)
-        try { channel?.postMessage({ mode }) } catch { /* Focus refresh remains the fallback. */ }
-      },
+      setMode: () => {},
       setError: reason => setChromeError(reason instanceof Error ? reason.message : reason == null ? '' : String(reason)),
     })
     chromeController.current = controller
-    const onFocus = () => refreshChrome()
-    const onChromeMessage = event => {
-      if (event.data?.mode === 'native' || event.data?.mode === 'play') commitChrome(event.data.mode)
-    }
-    if (channel !== null) channel.addEventListener('message', onChromeMessage)
-    window.addEventListener('focus', onFocus)
-    refreshChrome()
     return () => {
-      active = false
       controller.dispose()
       if (chromeController.current === controller) chromeController.current = null
-      window.removeEventListener('focus', onFocus)
-      channel?.removeEventListener('message', onChromeMessage)
-      channel?.close()
+      unsubscribe()
     }
-  }, [playClient, playSlots])
+  }, [chromeService, playSlots])
 
   useEffect(() => {
     let active = true
@@ -1038,6 +1011,22 @@ export function apply(ctx) {
   installStyles()
   registerTavernTraceView(ctx)
   const playClient = createLivePlayClient()
+  const chrome = createChromeModeServiceCore({
+    read: () => playClient.getChrome(),
+    write: mode => playClient.putChrome(mode),
+  })
+  ctx.provide(CHROME_SERVICE_NAME, chrome.face)
+  ctx.effect(() => {
+    const stopTransport = startChromeModeTransport({
+      face: chrome.face,
+      internal: chrome.internal,
+      eventsUrl: playClient.chromeEventsUrl,
+    })
+    return () => {
+      stopTransport()
+      chrome.internal.dispose()
+    }
+  }, 'dsh-tavern: chrome mode service transport')
   const playSlots = installPlaySlotOccupancy(ctx, playClient)
   ctx.slots.inject('shell.overlay', () => ctx.slots.register({
     name: 'shell.overlay',
@@ -1045,6 +1034,7 @@ export function apply(ctx) {
     order: 80,
     inject: () => ({
       playClient,
+      chromeService: chrome.face,
       playSlots,
       createCleanSession: ({ workspaceId, source }) => createCleanSessionWorkflow({
         workspaceId,

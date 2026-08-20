@@ -5,6 +5,7 @@ export const API_V2 = `${API_ROOT}/v2`
 export const LEGACY_API_ROOT = '/dsh-tavern/api'
 export const PROFILE_SECTION = `${PLUGIN_ID}:profile`
 export const CLIENT_REFRESH_EVENT = `${PLUGIN_ID}:refresh`
+export const CHROME_SERVICE_NAME = 'pmpDshTavernChrome'
 export const CLIENT_UI_SETTINGS_EVENT = `${PLUGIN_ID}:ui-settings`
 
 export function escapeRegExp(value) {
@@ -46,6 +47,7 @@ export const identityConstants = Object.freeze({
   apiRoot: API_ROOT,
   apiV1: API_V1,
   apiV2: API_V2,
+  chromeServiceName: CHROME_SERVICE_NAME,
   legacyApiRoot: LEGACY_API_ROOT,
   profileSection: PROFILE_SECTION,
   clientRefreshEvent: CLIENT_REFRESH_EVENT,

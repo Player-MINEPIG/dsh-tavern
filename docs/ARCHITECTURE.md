@@ -177,3 +177,9 @@ rc.8 的默认视图仍由 DSH chat store 持有，`conversation.view` owner 不
 ### Tavern chrome revision 与事件边界
 
 全局蓝/红前端状态由 `packages/play` 自有 `ChromeStore` 持有，`chrome.json` 保存 `mode` 与不透明 `revision`。`GET/PUT /v2/chrome` 保留旧的 `ok/mode` 字段并附加 `revision`；只有 atomic write 成功且 mode 实际变化时才发布一次变更。`GET /v2/chrome/events` 是同一 API 前缀下的 Tavern 自有 SSE：首次连接发送当前快照，随后发送 `chrome/change`，只暴露 `mode/revision`，并在连接关闭时释放订阅。它不改 DSH Host 的 store、transport 或 view；外部直接改文件和其他进程写入不在事件合同内，客户端必须以 GET/focus 刷新作为降级校验。
+
+### 浏览器模式服务与消费者边界
+
+client组合根创建 transport-independent mode core，以 `ctx.provide('pmpDshTavernChrome', face)` 注册在稳定插件fiber；SSE/focus/轮询只通过内部adapter提交服务端快照。TavernShell、悬浮球controller和 `playSlots.setMode()` 都是该服务的普通消费者，不再各自维护GET、focus或BroadcastChannel状态机。
+
+该服务的 `when(mode, setup)` 只表达模式生命周期，不授予surface所有权。多个插件可以同时订阅并注册各自的DSH公开slot；同一slot的占用冲突仍由对应公开slot合同处理。provider卸载时先停止transport、清理effect，再由Cordis撤销服务并驱动required consumer卸载。native模式仍不修改DSH原生表面。
