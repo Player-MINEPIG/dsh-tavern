@@ -245,7 +245,11 @@ export function createWorkspaceApiHandler(store, { validateFile } = {}) {
       const list = searchParams.get('list')
       if (method === 'GET' && list !== null) return sendJson(res, 200, store.list(list === '' ? undefined : list))
       const path = searchParams.get('path')
-      if (method === 'GET') return sendJson(res, 200, store.readFile(path))
+      if (method === 'GET') {
+        const file = store.readFile(path)
+        if (typeof validateFile === 'function') validateFile(file.path, file.content)
+        return sendJson(res, 200, file)
+      }
       if (method === 'PUT') {
         const body = await readBoundedJson(req, MAX_FILE_BYTES + 1024)
         return sendJson(res, 200, store.writeFile(path, body?.content, { validate: validateFile }))

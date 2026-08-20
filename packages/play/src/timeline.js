@@ -16,9 +16,9 @@ function isRecord(value) {
   return value !== null && typeof value === 'object' && !Array.isArray(value)
 }
 
-function rejectFocusField(record, label) {
+function rejectFocusField(record, label, code = 'PLAY_TIMELINE_INVALID') {
   if (Object.hasOwn(record, 'focusSessionId')) {
-    throw httpError(400, `${label} must not store focusSessionId`, 'PLAY_TIMELINE_INVALID')
+    throw httpError(400, `${label} must not store focusSessionId`, code)
   }
 }
 
@@ -36,10 +36,10 @@ function requireSeq(value, label) {
   return value
 }
 
-function unexpectedKey(record, allowed, label) {
+function unexpectedKey(record, allowed, label, code = 'PLAY_TIMELINE_INVALID') {
   const unexpected = Object.keys(record).find(key => !allowed.has(key))
   if (unexpected !== undefined) {
-    throw httpError(400, `${label} has unsupported field "${unexpected}"`, 'PLAY_TIMELINE_INVALID')
+    throw httpError(400, `${label} has unsupported field "${unexpected}"`, code)
   }
 }
 
@@ -119,7 +119,7 @@ export function normalizeTimeline(value) {
   }
   return {
     nodes,
-    ...(value.ext === undefined ? {} : { ext: normalizeExt(value.ext, 'timeline.ext') }),
+    ...(value.ext === undefined ? {} : { ext: validateKnownTimelineExt(normalizeExt(value.ext, 'timeline.ext'), 'timeline.ext') }),
   }
 }
 
@@ -153,29 +153,105 @@ export function deriveFocus(timeline) {
 
 const CATALOG_KEYS = new Set(['playthroughs', 'ext'])
 const PLAYTHROUGH_KEYS = new Set(['id', 'path', 'lastOpenedAt', 'title', 'ext'])
+const SAFE_SEGMENT = /^[A-Za-z0-9][A-Za-z0-9._-]{0,199}$/
+const SAFE_SESSION_ID = /^[A-Za-z0-9][A-Za-z0-9._:-]{0,199}$/
+
+function catalogError(message) {
+  throw httpError(400, message, 'PLAY_CATALOG_INVALID')
+}
+
+function safeSegment(value, label, code = 'PLAY_CATALOG_INVALID') {
+  if (typeof value !== 'string' || !SAFE_SEGMENT.test(value)) {
+    throw httpError(400, `${label} must be a safe path segment`, code)
+  }
+  return value
+}
+
+function safeSessionId(value, label, code = 'PLAY_CATALOG_INVALID') {
+  if (typeof value !== 'string' || !SAFE_SESSION_ID.test(value)) {
+    throw httpError(400, `${label} must be a valid DSH session id`, code)
+  }
+  return value
+}
+
+function safeRelativePath(value, label, suffix, code = 'PLAY_CATALOG_INVALID') {
+  if (typeof value !== 'string' || value.length === 0 || value.includes('\\') || value.includes('\u0000')) {
+    throw httpError(400, `${label} must be a safe POSIX relative path`, code)
+  }
+  const segments = value.split('/')
+  if (segments.length < 2 || segments.some(segment => segment === '' || segment === '.' || segment === '..')) {
+    throw httpError(400, `${label} must be a safe POSIX relative path`, code)
+  }
+  if (segments.some(segment => !SAFE_SEGMENT.test(segment))) {
+    throw httpError(400, `${label} contains an unsafe path segment`, code)
+  }
+  if (segments.at(-1) !== suffix) {
+    throw httpError(400, `${label} must end with /${suffix}`, code)
+  }
+  return value
+}
+
+function validateKnownPlaythroughExt(ext, label) {
+  if (ext === undefined) return undefined
+  if (!isRecord(ext)) catalogError(`${label} must be an object`)
+  const known = ext.pmpDshTavern
+  if (known !== undefined) {
+    if (!isRecord(known)) catalogError(`${label}.pmpDshTavern must be an object`)
+    if (known.characterId !== undefined) safeSegment(known.characterId, `${label}.pmpDshTavern.characterId`)
+    if (known.rootSessionId !== undefined) safeSessionId(known.rootSessionId, `${label}.pmpDshTavern.rootSessionId`)
+    if (known.playthroughNumber !== undefined && (!Number.isSafeInteger(known.playthroughNumber) || known.playthroughNumber < 1)) {
+      catalogError(`${label}.pmpDshTavern.playthroughNumber must be a positive safe integer`)
+    }
+    if (known.importContextPath !== undefined) {
+      safeRelativePath(known.importContextPath, `${label}.pmpDshTavern.importContextPath`, 'import-context.json')
+    }
+  }
+  return ext
+}
+
+function validateKnownTimelineExt(ext, label) {
+  if (ext === undefined) return undefined
+  if (!isRecord(ext)) throw httpError(400, `${label} must be an object`, 'PLAY_TIMELINE_INVALID')
+  const known = ext.pmpDshTavern
+  if (known !== undefined) {
+    if (!isRecord(known)) throw httpError(400, `${label}.pmpDshTavern must be an object`, 'PLAY_TIMELINE_INVALID')
+    if (known.importContextPath !== undefined) {
+      safeRelativePath(known.importContextPath, `${label}.pmpDshTavern.importContextPath`, 'import-context.json', 'PLAY_TIMELINE_INVALID')
+    }
+  }
+  return ext
+}
 
 export function normalizeCatalog(value) {
   if (!isRecord(value)) throw httpError(400, 'catalog must be an object', 'PLAY_CATALOG_INVALID')
-  rejectFocusField(value, 'catalog')
-  unexpectedKey(value, CATALOG_KEYS, 'catalog')
+  rejectFocusField(value, 'catalog', 'PLAY_CATALOG_INVALID')
+  unexpectedKey(value, CATALOG_KEYS, 'catalog', 'PLAY_CATALOG_INVALID')
   if (!Array.isArray(value.playthroughs)) {
     throw httpError(400, 'catalog.playthroughs must be an array', 'PLAY_CATALOG_INVALID')
   }
+  const ids = new Set()
+  const paths = new Set()
   const playthroughs = value.playthroughs.map((item, index) => {
     if (!isRecord(item)) throw httpError(400, `playthroughs[${index}] must be an object`, 'PLAY_CATALOG_INVALID')
-    rejectFocusField(item, `playthroughs[${index}]`)
-    unexpectedKey(item, PLAYTHROUGH_KEYS, `playthroughs[${index}]`)
+    rejectFocusField(item, `playthroughs[${index}]`, 'PLAY_CATALOG_INVALID')
+    unexpectedKey(item, PLAYTHROUGH_KEYS, `playthroughs[${index}]`, 'PLAY_CATALOG_INVALID')
+    const id = safeSegment(item.id, `playthroughs[${index}].id`)
+    if (ids.has(id)) catalogError(`playthroughs contains duplicate id "${id}"`)
+    ids.add(id)
+    const path = safeRelativePath(item.path, `playthroughs[${index}].path`, 'timeline.json')
+    if (paths.has(path)) catalogError(`playthroughs contains duplicate path "${path}"`)
+    paths.add(path)
     return {
-      id: requireId(item.id, `playthroughs[${index}].id`),
-      path: requireId(item.path, `playthroughs[${index}].path`),
+      id,
+      path,
       ...(typeof item.title === 'string' ? { title: item.title } : {}),
       ...(typeof item.lastOpenedAt === 'string' ? { lastOpenedAt: item.lastOpenedAt } : {}),
-      ...(item.ext === undefined ? {} : { ext: normalizeExt(item.ext, `playthroughs[${index}].ext`) }),
+      ...(item.ext === undefined ? {} : { ext: validateKnownPlaythroughExt(item.ext, `playthroughs[${index}].ext`) }),
     }
   })
   return {
     playthroughs,
-    ...(value.ext === undefined ? {} : { ext: normalizeExt(value.ext, 'catalog.ext') }),
+    ...(value.ext === undefined ? {} : { ext: validateKnownPlaythroughExt(value.ext, 'catalog.ext') }),
   }
 }
 

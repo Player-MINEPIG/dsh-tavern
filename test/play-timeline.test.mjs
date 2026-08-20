@@ -1,6 +1,6 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
-import { existsSync, mkdtempSync, readFileSync, rmSync } from 'node:fs'
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { Readable } from 'node:stream'
@@ -149,4 +149,97 @@ test('PUT timeline.json validates before writing; catalog.json likewise', async 
 test('timeline validation does not read DSH events', () => {
   const source = readFileSync(new URL('../packages/play/src/timeline.js', import.meta.url), 'utf8')
   assert.doesNotMatch(source, /ctx\.sessions|session\.history|deriveMessages|@deepseek-ai/)
+})
+
+test('catalog and timeline documents are validated on GET and PUT with stable error codes', async () => {
+  const pluginDir = mkdtempSync(join(tmpdir(), 'dsh-tavern-play-validate-plugin-'))
+  const playRoot = mkdtempSync(join(tmpdir(), 'dsh-tavern-play-validate-root-'))
+  try {
+    const handler = createPlayApiHandler({
+      chromeStore: new ChromeStore(pluginDir),
+      workspaceStore: new PlayWorkspaceStore(pluginDir),
+    })
+    await invoke(handler, { method: 'PUT', url: `${API_V2}/workspace`, body: { path: playRoot } })
+    const valid = {
+      playthroughs: [{
+        id: 'pt-a',
+        path: 'alice/pt-a/timeline.json',
+        ext: {
+          pmpDshTavern: {
+            characterId: 'alice',
+            rootSessionId: 'session.root-1',
+            playthroughNumber: 1,
+            importContextPath: 'alice/pt-a/import-context.json',
+            thirdPartyNested: { keep: true },
+          },
+          thirdParty: { keep: true },
+        },
+      }],
+      ext: { thirdPartyCatalog: ['keep'] },
+    }
+    const saved = await invoke(handler, {
+      method: 'PUT',
+      url: `${API_V2}/workspace/files?path=catalog.json`,
+      body: { content: JSON.stringify(valid) },
+    })
+    assert.equal(saved.status, 200)
+    const read = await invoke(handler, { url: `${API_V2}/workspace/files?path=catalog.json` })
+    assert.equal(read.status, 200)
+    assert.deepEqual(JSON.parse(read.body.content), valid)
+
+    const badCatalogs = [
+      { playthroughs: [{ id: 'bad id', path: 'alice/pt/timeline.json' }] },
+      { playthroughs: [{ id: 'pt', path: '../pt/timeline.json' }] },
+      { playthroughs: [{ id: 'pt', path: '/alice/pt/timeline.json' }] },
+      { playthroughs: [{ id: 'pt', path: 'alice\\pt\\timeline.json' }] },
+      { playthroughs: [{ id: 'pt', path: 'alice//timeline.json' }] },
+      { playthroughs: [{ id: 'pt', path: 'alice/pt/chat.json' }] },
+      { playthroughs: [{ id: 'pt', path: 'alice/pt/timeline.json' }, { id: 'pt', path: 'alice/other/timeline.json' }] },
+      { playthroughs: [{ id: 'pt-a', path: 'alice/pt-a/timeline.json' }, { id: 'pt-b', path: 'alice/pt-a/timeline.json' }] },
+      { playthroughs: [{ id: 'pt', path: 'alice/pt/timeline.json', ext: { pmpDshTavern: { characterId: 'bad id' } } }] },
+      { playthroughs: [{ id: 'pt', path: 'alice/pt/timeline.json', ext: { pmpDshTavern: { rootSessionId: ':bad' } } }] },
+      { playthroughs: [{ id: 'pt', path: 'alice/pt/timeline.json', ext: { pmpDshTavern: { playthroughNumber: 0 } } }] },
+      { playthroughs: [{ id: 'pt', path: 'alice/pt/timeline.json', ext: { pmpDshTavern: { importContextPath: 'alice/pt/context.json' } } }] },
+    ]
+    for (const [index, content] of badCatalogs.entries()) {
+      const result = await invoke(handler, {
+        method: 'PUT',
+        url: `${API_V2}/workspace/files?path=bad-${index}.json`,
+        body: { content: JSON.stringify(content) },
+      })
+      assert.equal(result.status, 200, `non-document files remain unvalidated: ${index}`)
+      const catalogResult = await invoke(handler, {
+        method: 'PUT',
+        url: `${API_V2}/workspace/files?path=catalog.json`,
+        body: { content: JSON.stringify(content) },
+      })
+      assert.equal(catalogResult.status, 400, `catalog case ${index}`)
+      assert.equal(catalogResult.body.code, 'PLAY_CATALOG_INVALID', `catalog code ${index}`)
+    }
+
+    const unsafeTimeline = {
+      nodes: [],
+      ext: { pmpDshTavern: { importContextPath: '../alice/import-context.json' } },
+    }
+    const timelinePut = await invoke(handler, {
+      method: 'PUT',
+      url: `${API_V2}/workspace/files?path=alice/pt-a/timeline.json`,
+      body: { content: JSON.stringify(unsafeTimeline) },
+    })
+    assert.equal(timelinePut.status, 400)
+    assert.equal(timelinePut.body.code, 'PLAY_TIMELINE_INVALID')
+    mkdirSync(join(playRoot, 'alice', 'pt-a'), { recursive: true })
+    writeFileSync(join(playRoot, 'alice', 'pt-a', 'timeline.json'), JSON.stringify(unsafeTimeline))
+    const timelineGet = await invoke(handler, { url: `${API_V2}/workspace/files?path=alice/pt-a/timeline.json` })
+    assert.equal(timelineGet.status, 400)
+    assert.equal(timelineGet.body.code, 'PLAY_TIMELINE_INVALID')
+
+    writeFileSync(join(playRoot, 'catalog.json'), JSON.stringify(badCatalogs[0]))
+    const catalogGet = await invoke(handler, { url: `${API_V2}/workspace/files?path=catalog.json` })
+    assert.equal(catalogGet.status, 400)
+    assert.equal(catalogGet.body.code, 'PLAY_CATALOG_INVALID')
+  } finally {
+    rmSync(pluginDir, { recursive: true, force: true })
+    rmSync(playRoot, { recursive: true, force: true })
+  }
 })
