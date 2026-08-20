@@ -76,6 +76,37 @@ test('open or already-recorded turns never append a duplicate', () => {
   assert.equal(appendCompletedTurns(existing, messages, 'session-a').timeline, existing)
 })
 
+test('an interrupted durable assistant prefix becomes a normal QA reference', () => {
+  const result = appendCompletedTurns({ nodes: [] }, {
+    incompleteTurn: false,
+    messages: [
+      { id: 'user-1', role: 'user', seq: 10, text: 'keep going' },
+      {
+        id: 'assistant-1',
+        role: 'assistant',
+        seq: 12,
+        text: 'visible interrupted prefix',
+        interrupted: true,
+      },
+    ],
+  }, 'session-a', { idFactory: ids })
+
+  assert.deepEqual(result.added, [{
+    id: 'qa-session-a-10-12',
+    kind: 'qa',
+    hidden: false,
+    displayOverride: null,
+    adoptedVariantId: 'variant-session-a-10-12',
+    variants: [{
+      id: 'variant-session-a-10-12',
+      sessionId: 'session-a',
+      startEventId: 10,
+      endEventId: 12,
+    }],
+  }])
+  assert.equal(JSON.stringify(result.timeline).includes('visible interrupted prefix'), false)
+})
+
 test('reconciler serializes reread-before-write and survives a failed task', async () => {
   let timeline = { nodes: [] }
   let failFirst = true
