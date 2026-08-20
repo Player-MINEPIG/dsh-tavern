@@ -4,6 +4,20 @@ This is the staged implementation log for dsh-tavern. It is kept separately
 from the product README so reviewers can follow intent, decisions, verification,
 and known limits chronologically.
 
+## 2026-08-20 — Move the default-view adapter out of the view ring
+
+- Kept the accepted native-chat-store adapter semantics, but mounted its
+  null-rendering component in the session-scoped `conversation.input.dock`.
+- Reusing the same public store handle and session scope still supplies the
+  native `setView('rp')` action; the adapter retires immediately after its one
+  attempt.
+- The adapter no longer registers a second `conversation.view` entry with
+  `id: 'chat'`, so an unrendered first WebUI frame cannot expose a duplicate
+  Chat tab.
+- No DSH source, DOM, native Chat registration, or second store is modified.
+
+Verification: focused default-view/occupancy tests and production client build.
+
 ## 2026-08-20 — Default new playthroughs to the selectable RP view
 
 - Kept DSH's native Conversation view installed and separately selectable,

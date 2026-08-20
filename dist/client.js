@@ -11607,6 +11607,7 @@ function DefaultConversationViewAdapter({ useStore, actions, targetViewId, compl
 var PLAY_SLOT_PRIORITY = -100;
 var PLAY_VIEW_ID = "rp";
 var PLAY_VIEW_ORDER = -100;
+var PLAY_DEFAULT_VIEW_ADAPTER_ID = "pmp-dsh-tavern-default-rp-view";
 var PLAY_DEFAULT_VIEW_ATTEMPT_LIMIT = 256;
 function findNativeChatStore(slots) {
   if (typeof slots?.entries !== "function") return void 0;
@@ -11772,9 +11773,9 @@ function installPlaySlotOccupancy(ctx, playClient) {
         };
         defaultViewEntryKey = defaultViewKey;
         disposeDefaultViewEntry = ctx.slots.register({
-          name: "conversation.view",
-          id: "chat",
-          order: 0,
+          name: "conversation.input.dock",
+          id: PLAY_DEFAULT_VIEW_ADAPTER_ID,
+          order: -1e3,
           priority: PLAY_SLOT_PRIORITY,
           store: nativeChatStore,
           inject: () => ({
