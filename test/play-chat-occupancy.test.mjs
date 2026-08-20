@@ -2,6 +2,8 @@ import test from 'node:test'
 import assert from 'node:assert/strict'
 import {
   PLAY_SLOT_PRIORITY,
+  PLAY_VIEW_ID,
+  PLAY_VIEW_ORDER,
   installPlaySlotOccupancy,
 } from '../packages/client/src/play/occupancy.js'
 
@@ -9,7 +11,7 @@ function nextTurn() {
   return new Promise(resolve => setImmediate(resolve))
 }
 
-test('Mowan shadows Chat only while the current session belongs to a playthrough', async () => {
+test('Mowan adds the default RP view only while the current session belongs to a playthrough', async () => {
   let snapshot = {
     current: 'root',
     byId: {
@@ -60,8 +62,9 @@ test('Mowan shadows Chat only while the current session belongs to a playthrough
   const firstChat = registrations.find(item => item.options.name === 'conversation.view')
   assert.ok(firstChat)
   assert.equal(firstChat.active, true)
-  assert.equal(firstChat.options.id, 'chat')
-  assert.equal(firstChat.options.order, 0)
+  assert.equal(firstChat.options.id, PLAY_VIEW_ID)
+  assert.notEqual(firstChat.options.id, 'chat')
+  assert.equal(firstChat.options.order, PLAY_VIEW_ORDER)
   assert.equal(firstChat.options.priority, PLAY_SLOT_PRIORITY)
   assert.equal(firstChat.options.inject().playthrough, playthrough)
 

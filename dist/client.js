@@ -159,7 +159,7 @@ var zh_CN_default = Object.freeze({
   "play.notice.unbound": "\u672C\u4F1A\u8BDD\u6682\u672A\u7ED1\u5B9A\u89D2\u8272\u5361\uFF1B\u53EF\u4EE5\u6B63\u5E38\u5BF9\u8BDD\u3002\u7ED1\u5B9A\u89D2\u8272\u5361\u540E\u65B0\u5F00\u5468\u76EE\uFF0C\u624D\u4F1A\u542F\u7528\u5F00\u573A\u767D\u3001\u56DE\u590D\u5207\u6362\u3001\u663E\u793A\u7F16\u8F91\u4E0E\u5468\u76EE\u5BFC\u5165/\u5BFC\u51FA\u3002",
   "play.sidebar.sessionMissing": "\u8BE5\u5468\u76EE\u5728\u89D2\u8272\u626E\u6F14\u5DE5\u4F5C\u533A\u4E2D\u6CA1\u6709\u53EF\u7528\u4F1A\u8BDD\u3002",
   "play.sidebar.timelineErrors": "\u6709 {count} \u4E2A\u5468\u76EE\u7684 timeline \u65E0\u6CD5\u8BFB\u53D6\u3002",
-  "play.chat.label": "\u5BF9\u8BDD",
+  "play.chat.label": "RP\u89C6\u56FE",
   "play.chat.loading": "\u6B63\u5728\u8BFB\u53D6\u672C\u5468\u76EE\u8BB0\u5F55\u2026",
   "play.chat.empty": "\u672C\u5468\u76EE\u5C1A\u65E0\u5BF9\u8BDD\uFF0C\u8BF7\u5728\u4E0B\u65B9\u5F00\u59CB\u3002",
   "play.chat.thinking": "\u6B63\u5728\u601D\u8003\u2026",
@@ -710,7 +710,7 @@ var en_default = Object.freeze({
   "play.notice.unbound": "This session is not bound to a character card. You can keep chatting normally; start a new playthrough after binding a card to enable greetings, swipes, display edits, and playthrough import/export.",
   "play.sidebar.sessionMissing": "This playthrough has no available session in the role-play workspace.",
   "play.sidebar.timelineErrors": "{count} playthrough timelines could not be read.",
-  "play.chat.label": "Chat",
+  "play.chat.label": "RP View",
   "play.chat.loading": "Loading playthrough\u2026",
   "play.chat.empty": "No turns yet. Start the conversation below.",
   "play.chat.thinking": "Thinking\u2026",
@@ -5963,6 +5963,8 @@ function PlayUnboundNotice({ session, useSessions, playClient }) {
 
 // packages/client/src/play/occupancy.js
 var PLAY_SLOT_PRIORITY = -100;
+var PLAY_VIEW_ID = "rp";
+var PLAY_VIEW_ORDER = -100;
 function installPlaySlotOccupancy(ctx, playClient) {
   let mode = "native";
   let declared = false;
@@ -6080,8 +6082,8 @@ function installPlaySlotOccupancy(ctx, playClient) {
     } else if (disposeChatEntry === null) {
       disposeChatEntry = ctx.slots.register({
         name: "conversation.view",
-        id: "chat",
-        order: 0,
+        id: PLAY_VIEW_ID,
+        order: PLAY_VIEW_ORDER,
         priority: PLAY_SLOT_PRIORITY,
         label: () => translate("play.chat.label"),
         inject: () => ({

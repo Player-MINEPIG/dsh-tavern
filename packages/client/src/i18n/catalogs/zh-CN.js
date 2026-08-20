@@ -92,7 +92,7 @@ export default Object.freeze({
   "play.notice.unbound": "本会话暂未绑定角色卡；可以正常对话。绑定角色卡后新开周目，才会启用开场白、回复切换、显示编辑与周目导入/导出。",
   "play.sidebar.sessionMissing": "该周目在角色扮演工作区中没有可用会话。",
   "play.sidebar.timelineErrors": "有 {count} 个周目的 timeline 无法读取。",
-  "play.chat.label": "对话",
+  "play.chat.label": "RP视图",
   "play.chat.loading": "正在读取本周目记录…",
   "play.chat.empty": "本周目尚无对话，请在下方开始。",
   "play.chat.thinking": "正在思考…",

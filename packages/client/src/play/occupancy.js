@@ -7,6 +7,8 @@ import { PlayWorkspaceBrowser } from './sidebar.js'
 import { PlayUnboundNotice } from './notice.js'
 
 export const PLAY_SLOT_PRIORITY = -100
+export const PLAY_VIEW_ID = 'rp'
+export const PLAY_VIEW_ORDER = -100
 
 export function installPlaySlotOccupancy(ctx, playClient) {
   let mode = 'native'
@@ -139,8 +141,8 @@ export function installPlaySlotOccupancy(ctx, playClient) {
     } else if (disposeChatEntry === null) {
       disposeChatEntry = ctx.slots.register({
         name: 'conversation.view',
-        id: 'chat',
-        order: 0,
+        id: PLAY_VIEW_ID,
+        order: PLAY_VIEW_ORDER,
         priority: PLAY_SLOT_PRIORITY,
         label: () => translate('play.chat.label'),
         inject: () => ({
