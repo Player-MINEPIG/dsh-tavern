@@ -9605,30 +9605,6 @@ function RichText({ text: text2, className }) {
 // packages/client/src/play/turn-actions.js
 var import_react8 = require("react");
 
-// packages/client/src/play/mutations.js
-async function updateCatalog(client, mutator, options) {
-  if (typeof client?.updateCatalog === "function") return client.updateCatalog(mutator, options);
-  const current2 = await readCatalogOrEmpty(client);
-  const next = await mutator(current2);
-  const saved = await client.putCatalog(next);
-  return saved ?? next;
-}
-async function updateTimeline(client, playthrough, mutator, options) {
-  if (typeof client?.updateTimeline === "function") return client.updateTimeline(playthrough, mutator, options);
-  const current2 = options?.initial ?? await client.getTimeline(playthrough);
-  const next = await mutator(current2);
-  const saved = await client.putTimeline(playthrough, next);
-  return saved ?? next;
-}
-async function readCatalogOrEmpty(client) {
-  try {
-    return await client.getCatalog();
-  } catch (error) {
-    if (error?.code === "PLAY_PATH_NOT_FOUND" && (error?.status === void 0 || error?.status === 404)) return { playthroughs: [] };
-    throw error;
-  }
-}
-
 // packages/client/src/play/nodes.js
 function nodeById(timeline, nodeId) {
   const index = timeline.nodes.findIndex((node) => node.id === nodeId);
@@ -9670,10 +9646,11 @@ function createPlayNodeController(client, {
     return task;
   };
   const update = (playthrough, nodeId, transform) => schedule(async () => {
-    return updateTimeline(client, playthrough, (timeline) => {
-      const { index, node } = nodeById(timeline, nodeId);
-      return replaceNode(timeline, index, transform(node));
-    });
+    const timeline = await client.getTimeline(playthrough);
+    const { index, node } = nodeById(timeline, nodeId);
+    const next = replaceNode(timeline, index, transform(node));
+    await client.putTimeline(playthrough, next);
+    return next;
   });
   return {
     setHidden(playthrough, nodeId, hidden) {
@@ -9689,14 +9666,12 @@ function createPlayNodeController(client, {
     adoptVariant(playthrough, nodeId, variantId) {
       if (typeof variantId !== "string" || variantId === "") throw new TypeError("variantId is required");
       return schedule(async () => {
-        const next = await updateTimeline(client, playthrough, (timeline) => {
-          const { index, node: node2 } = nodeById(timeline, nodeId);
-          const variant2 = node2.variants.find((item) => item.id === variantId);
-          if (variant2 === void 0) throw new TypeError(`Unknown variant ${variantId}`);
-          return replaceNode(timeline, index, { ...node2, adoptedVariantId: variantId });
-        });
-        const { node } = nodeById(next, nodeId);
+        const timeline = await client.getTimeline(playthrough);
+        const { index, node } = nodeById(timeline, nodeId);
         const variant = node.variants.find((item) => item.id === variantId);
+        if (variant === void 0) throw new TypeError(`Unknown variant ${variantId}`);
+        const next = replaceNode(timeline, index, { ...node, adoptedVariantId: variantId });
+        await client.putTimeline(playthrough, next);
         const focus = await client.getFocus(playthrough);
         if (focus.sessionId !== variant.sessionId) throw new Error("Saved variant does not match derived focus");
         return { timeline: next, sessionId: variant.sessionId };
@@ -9727,6 +9702,8 @@ function createPlayNodeController(client, {
           if (attempt + 1 < maxPolls) await delay(pollInterval);
         }
         if (pair === null) throw new Error("Timed out waiting for the swipe reply");
+        const latest = await client.getTimeline(playthrough);
+        const current2 = nodeById(latest, nodeId);
         const variantId = idFactory(pair.user.seq, pair.assistant.seq, newSessionId);
         const variant = {
           id: variantId,
@@ -9734,18 +9711,13 @@ function createPlayNodeController(client, {
           startEventId: pair.user.seq,
           endEventId: pair.assistant.seq
         };
-        const next = await updateTimeline(client, playthrough, (timeline2) => {
-          const current2 = nodeById(timeline2, nodeId);
-          const existing = current2.node.variants.find((item) => item.id === variantId);
-          if (existing !== void 0) {
-            return replaceNode(timeline2, current2.index, { ...current2.node, adoptedVariantId: variantId });
-          }
-          return replaceNode(timeline2, current2.index, {
-            ...current2.node,
-            adoptedVariantId: variantId,
-            variants: [...current2.node.variants, variant]
-          });
-        });
+        const nextNode = {
+          ...current2.node,
+          adoptedVariantId: variantId,
+          variants: [...current2.node.variants, variant]
+        };
+        const next = replaceNode(latest, current2.index, nextNode);
+        await client.putTimeline(playthrough, next);
         const focus = await client.getFocus(playthrough);
         if (focus.sessionId !== newSessionId) throw new Error("Saved swipe does not match derived focus");
         return { timeline: next, sessionId: newSessionId, variantId };
@@ -9958,16 +9930,11 @@ function createTurnReconciler(client) {
     const task = pending.then(async () => {
       const messages = await client.getMessages(sessionId);
       if (messages.incompleteTurn) return { timeline: null, added: [] };
-      const initial = await client.getTimeline(playthrough);
-      const initialResult = appendCompletedTurns(initial, messages, sessionId);
-      if (initialResult.added.length === 0) return initialResult;
-      let added = initialResult.added;
-      const timeline = await updateTimeline(client, playthrough, (current2) => {
-        const next = appendCompletedTurns(current2, messages, sessionId);
-        added = next.added;
-        return next.timeline;
-      }, { initial });
-      return { timeline, added };
+      const timeline = await client.getTimeline(playthrough);
+      const next = appendCompletedTurns(timeline, messages, sessionId);
+      if (next.added.length === 0) return next;
+      await client.putTimeline(playthrough, next.timeline);
+      return next;
     });
     pending = task.catch(() => {
     });
@@ -10680,18 +10647,10 @@ function normalizeSessionMessages(value, label = "messages") {
 }
 function normalizeFocus(value, label = "focus") {
   if (!isRecord4(value)) fail(label, "must be an object");
-  const nullableId = (field, fieldLabel) => {
-    if (value[field] !== null && (typeof value[field] !== "string" || value[field].trim() === "")) {
-      fail(label, `${fieldLabel} must be a non-empty string or null`);
-    }
-    return value[field];
-  };
-  return {
-    playthroughId: stringId(value.playthroughId, `${label}.playthroughId`),
-    sessionId: nullableId("sessionId", "sessionId"),
-    nodeId: nullableId("nodeId", "nodeId"),
-    variantId: nullableId("variantId", "variantId")
-  };
+  if (value.sessionId !== null && (typeof value.sessionId !== "string" || value.sessionId === "")) {
+    fail(label, "sessionId must be a non-empty string or null");
+  }
+  return { sessionId: value.sessionId };
 }
 function timelinePath(value, label = "timeline path") {
   const path = typeof value === "string" ? value : value?.path;
@@ -11001,15 +10960,14 @@ async function renamePlaythrough(client, playthrough, title) {
   if (client == null) throw new TypeError("playClient.required");
   const normalized = typeof title === "string" ? title.trim() : "";
   if (normalized === "" || normalized.length > 120) throw new TypeError("play.rename.invalid");
-  const saved = await updateCatalog(client, (current2) => {
-    const freshIndex = current2.playthroughs.findIndex((item) => item.id === playthrough?.id && item.path === playthrough?.path);
-    if (freshIndex < 0) throw new TypeError("play.rename.missing");
-    const freshPlaythroughs = [...current2.playthroughs];
-    freshPlaythroughs[freshIndex] = { ...freshPlaythroughs[freshIndex], title: normalized };
-    return { ...current2, playthroughs: freshPlaythroughs };
-  });
-  const verified = saved?.playthroughs === void 0 ? await client.getCatalog() : saved;
-  const renamed = verified.playthroughs.find((item) => item.id === playthrough.id && item.path === playthrough.path);
+  const catalog2 = await catalogOrEmpty(client);
+  const index = catalog2.playthroughs.findIndex((item) => item.id === playthrough?.id && item.path === playthrough?.path);
+  if (index < 0) throw new TypeError("play.rename.missing");
+  const playthroughs = [...catalog2.playthroughs];
+  playthroughs[index] = { ...playthroughs[index], title: normalized };
+  await client.putCatalog({ ...catalog2, playthroughs });
+  const saved = await client.getCatalog();
+  const renamed = saved.playthroughs.find((item) => item.id === playthrough.id && item.path === playthrough.path);
   if (renamed?.title !== normalized) throw new Error("play.rename.verificationFailed");
   return renamed;
 }
@@ -11041,6 +10999,7 @@ async function createCharacterPlaythrough(client, {
   if (latest !== null && await playthroughIsReusable(client, latest)) {
     return { sessionId: rootSessionId4(latest), playthrough: latest, reused: true };
   }
+  const playthroughNumber = nextPlaythroughNumber(catalog2, characterId);
   const created = await client.postSession(sourceId);
   const sessionId = safeSessionId(created?.sessionId);
   if (sourceId === null) {
@@ -11053,40 +11012,27 @@ async function createCharacterPlaythrough(client, {
   const playthrough = {
     id: playthroughId,
     path,
-    title: "\u5468\u76EE",
+    title: `${playthroughNumber}\u5468\u76EE`,
     lastOpenedAt: createdAt,
     ext: {
       pmpDshTavern: {
         characterId,
         rootSessionId: sessionId,
-        playthroughNumber: 0
+        playthroughNumber
       }
     }
   };
   await client.createDirs(directory);
   await client.putTimeline(playthrough, { nodes: [] });
-  let saved;
-  const savedCatalog = await updateCatalog(client, (fresh) => {
-    const existing = fresh.playthroughs.find((item) => item.id === playthroughId && item.path === path);
-    if (existing !== void 0) {
-      if (existing.ext?.pmpDshTavern?.rootSessionId !== sessionId) throw new Error("playthrough.create.identityConflict");
-      saved = existing;
-      return fresh;
-    }
-    const playthroughNumber = nextPlaythroughNumber(fresh, characterId);
-    const row = {
-      ...playthrough,
-      title: `${playthroughNumber}\u5468\u76EE`,
-      ext: {
-        ...playthrough.ext,
-        pmpDshTavern: { ...playthrough.ext.pmpDshTavern, playthroughNumber }
-      }
-    };
-    saved = row;
-    return { ...fresh, playthroughs: [...fresh.playthroughs, row] };
+  await client.putCatalog({
+    ...catalog2,
+    playthroughs: [...catalog2.playthroughs, playthrough]
   });
-  const savedTimeline = await client.getTimeline(playthrough);
-  saved ??= savedCatalog?.playthroughs?.find((item) => item.id === playthroughId && item.path === path);
+  const [savedCatalog, savedTimeline] = await Promise.all([
+    client.getCatalog(),
+    client.getTimeline(playthrough)
+  ]);
+  const saved = savedCatalog.playthroughs.find((item) => item.id === playthroughId);
   if (saved?.ext?.pmpDshTavern?.rootSessionId !== sessionId || savedTimeline.nodes.length !== 0) {
     throw new Error("playthrough verification failed");
   }
@@ -12242,13 +12188,6 @@ function fileContent(value, label) {
   if (typeof value?.content !== "string") throw new TypeError(`${label}: content must be a string`);
   return value.content;
 }
-var REVISION_PATTERN = /^[0-9a-f]{64}$/;
-function fileRevision(value, label) {
-  if (typeof value?.revision !== "string" || !REVISION_PATTERN.test(value.revision)) {
-    throw new TypeError(`${label}: revision must be a 64-character lowercase SHA-256 hex string`);
-  }
-  return value.revision;
-}
 function pathQuery(path) {
   return `?path=${encodeURIComponent(path)}`;
 }
@@ -12260,74 +12199,20 @@ function createLivePlayClient({
   if (typeof fetchImpl !== "function") throw new TypeError("fetchImpl is required");
   const v1 = createRequester(fetchImpl, v1Root);
   const v2 = createRequester(fetchImpl, apiRoot);
-  const managedRevisions = /* @__PURE__ */ new Map();
-  function invalidateRevision(path) {
-    managedRevisions.delete(path);
-  }
-  function expectedRevision(path) {
-    return managedRevisions.has(path) ? managedRevisions.get(path) : null;
-  }
   async function getCharacterSelection(sessionId) {
     const query = typeof sessionId === "string" && sessionId !== "" ? `?sessionId=${encodeURIComponent(sessionId)}` : "";
     return v1("GET", `/character-selection${query}`);
   }
   async function getJsonFile(path, normalize, label) {
-    let response;
-    try {
-      response = await v2("GET", `/workspace/files${pathQuery(path)}`);
-    } catch (error) {
-      if (error?.status === 404 && error?.code === "PLAY_PATH_NOT_FOUND") {
-        managedRevisions.set(path, null);
-      }
-      throw error;
-    }
-    const content = fileContent(response, label);
-    const revision = fileRevision(response, label);
-    const parsed = parseJsonDocument(content, normalize, label);
-    managedRevisions.set(path, revision);
-    return parsed;
+    const response = await v2("GET", `/workspace/files${pathQuery(path)}`);
+    return parseJsonDocument(fileContent(response, label), normalize, label);
   }
   async function putJsonFile(path, value, normalize, label) {
     const normalized = normalize(value, label);
-    const body2 = {
-      content: JSON.stringify(normalized),
-      expectedRevision: expectedRevision(path)
-    };
-    try {
-      const response = await v2("PUT", `/workspace/files${pathQuery(path)}`, body2);
-      const revision = fileRevision(response, label);
-      managedRevisions.set(path, revision);
-    } catch (error) {
-      if (error?.status === 409 && error?.code === "PLAY_FILE_REVISION_CONFLICT") {
-        invalidateRevision(path);
-      } else if (error instanceof TypeError) {
-        invalidateRevision(path);
-      }
-      throw error;
-    }
+    await v2("PUT", `/workspace/files${pathQuery(path)}`, {
+      content: JSON.stringify(normalized)
+    });
     return normalized;
-  }
-  function retryLimit(options) {
-    const value = options?.maxRetries ?? options?.retries ?? 3;
-    if (!Number.isSafeInteger(value) || value < 1 || value > 5) {
-      throw new TypeError("maxRetries must be an integer from 1 to 5");
-    }
-    return value;
-  }
-  async function updateJsonFile({ getFresh, putFresh, mutator, options }) {
-    if (typeof mutator !== "function") throw new TypeError("mutator must be a function");
-    const maxRetries = retryLimit(options);
-    for (let retry = 0; ; retry += 1) {
-      const current2 = await getFresh();
-      const next = await mutator(current2);
-      try {
-        return await putFresh(next);
-      } catch (error) {
-        if (error?.status !== 409 || error?.code !== "PLAY_FILE_REVISION_CONFLICT" || retry >= maxRetries) {
-          throw error;
-        }
-      }
-    }
   }
   return {
     mode: "live",
@@ -12353,42 +12238,17 @@ function createLivePlayClient({
     },
     async getFile(path) {
       const response = await v2("GET", `/workspace/files${pathQuery(path)}`);
-      return {
-        path: response.path,
-        content: fileContent(response, path),
-        ...response.revision === void 0 ? {} : { revision: response.revision }
-      };
+      return { path: response.path, content: fileContent(response, path) };
     },
-    async putFile(path, content, options = {}) {
+    async putFile(path, content) {
       if (typeof content !== "string") throw new TypeError("content must be a string");
-      const body2 = { content };
-      if (options !== null && typeof options === "object" && Object.hasOwn(options, "expectedRevision")) {
-        body2.expectedRevision = options.expectedRevision;
-      }
-      return v2("PUT", `/workspace/files${pathQuery(path)}`, body2);
+      return v2("PUT", `/workspace/files${pathQuery(path)}`, { content });
     },
     getCatalog() {
       return getJsonFile("catalog.json", normalizeCatalog, "catalog");
     },
     putCatalog(catalog2) {
       return putJsonFile("catalog.json", catalog2, normalizeCatalog, "catalog");
-    },
-    updateCatalog(mutator, options) {
-      return updateJsonFile({
-        getFresh: async () => {
-          try {
-            return await getJsonFile("catalog.json", normalizeCatalog, "catalog");
-          } catch (error) {
-            if (error?.status === 404 && error?.code === "PLAY_PATH_NOT_FOUND") {
-              return { playthroughs: [] };
-            }
-            throw error;
-          }
-        },
-        putFresh: (value) => putJsonFile("catalog.json", value, normalizeCatalog, "catalog"),
-        mutator,
-        options
-      });
     },
     getTimeline(playthrough) {
       const path = timelinePath(playthrough);
@@ -12397,15 +12257,6 @@ function createLivePlayClient({
     putTimeline(playthrough, timeline) {
       const path = timelinePath(playthrough);
       return putJsonFile(path, timeline, normalizeTimeline, "timeline");
-    },
-    updateTimeline(playthrough, mutator, options) {
-      const path = timelinePath(playthrough);
-      return updateJsonFile({
-        getFresh: () => getJsonFile(path, normalizeTimeline, "timeline"),
-        putFresh: (value) => putJsonFile(path, value, normalizeTimeline, "timeline"),
-        mutator,
-        options
-      });
     },
     async getMessages(sessionId) {
       const response = await v2("GET", `/sessions/${encodeURIComponent(sessionId)}/messages`);
@@ -12424,15 +12275,8 @@ function createLivePlayClient({
       return response?.binding ?? null;
     },
     async getFocus(playthrough) {
-      const playthroughId = playthrough?.id;
-      if (typeof playthroughId !== "string" || playthroughId.trim() === "") {
-        throw new TypeError("playthrough.id must be a non-empty string");
-      }
-      const focus = normalizeFocus(await v2("GET", `/playthroughs/${encodeURIComponent(playthroughId)}/focus`));
-      if (focus.playthroughId !== playthroughId) {
-        throw new TypeError("focus.playthroughId does not match playthrough.id");
-      }
-      return focus;
+      const query = playthrough === void 0 ? "" : pathQuery(timelinePath(playthrough));
+      return normalizeFocus(await v2("GET", `/focus${query}`));
     },
     postUserMessage(sessionId, text2) {
       return v2("POST", `/sessions/${encodeURIComponent(sessionId)}/user-message`, { text: text2 });
