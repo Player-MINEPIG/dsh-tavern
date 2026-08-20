@@ -1,6 +1,6 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
-import { mkdtempSync, rmSync } from 'node:fs'
+import { mkdtempSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { Readable } from 'node:stream'
@@ -51,6 +51,7 @@ test('workspace mutations emit safe staged operations while reads stay quiet', a
     assert.equal(f.calls.length, beforeRead)
     const all = records(f.calls)
     assert.deepEqual([...new Set(all.map(item => item.operation))], ['workspace.bind', 'workspace.dir.create', 'workspace.file.write'])
+    assert.deepEqual([...new Set(['bind', 'dir', 'file'].map(id => all.find(item => item.operationId === id).operationId))], ['bind', 'dir', 'file'])
     for (const id of ['bind', 'dir', 'file']) {
       const entries = all.filter(item => item.operationId === id)
       assert.equal(entries.at(-1).stage, 'success')
@@ -107,3 +108,60 @@ test('managed document failures are logged without content or revision', async (
 
 
 
+
+
+test('host workspace failure preserves HTTP error and logs only stable code/status', async () => {
+  const failure = Object.assign(new Error('secret host message'), {
+    code: 'HOST_WORKSPACE_CREATE_FAILED',
+    status: 422,
+    cause: new Error('secret host cause'),
+  })
+  const f = fixture({ ids: ['host-fail'], host: { async createWorkspace() { throw failure } } })
+  try {
+    const response = await invoke(f.handler, { method: 'PUT', url: API_V2 + '/workspace', body: { path: f.root } })
+    assert.equal(response.status, 422)
+    assert.equal(response.body.error, 'secret host message')
+    const entries = records(f.calls)
+    assert.equal(entries.at(-1).stage, 'failure')
+    assert.equal(entries.at(-1).operationId, 'host-fail')
+    assert.equal(entries.at(-1).errorCode, 'HOST_WORKSPACE_CREATE_FAILED')
+    assert.equal(entries.at(-1).status, 422)
+    assert.equal(entries.filter(item => ['success', 'failure'].includes(item.stage)).length, 1)
+    assert.equal(Object.hasOwn(entries.at(-1), 'message'), false)
+    assert.equal(Object.hasOwn(entries.at(-1), 'stack'), false)
+    assert.equal(Object.hasOwn(entries.at(-1), 'cause'), false)
+    assert.equal(f.calls.some(([, line]) => line.includes('secret host')), false)
+  } finally { cleanup(f) }
+})
+
+test('directory segment conflict keeps one failure terminal', async () => {
+  const f = fixture({ ids: ['bind', 'dir-fail'] })
+  try {
+    assert.equal((await invoke(f.handler, { method: 'PUT', url: API_V2 + '/workspace', body: { path: f.root } })).status, 200)
+    await new Promise(resolve => setImmediate(resolve))
+    writeFileSync(join(f.root, 'blocked'), 'not a directory')
+    const response = await invoke(f.handler, { method: 'POST', url: API_V2 + '/workspace/dirs', body: { path: 'blocked/child' } })
+    assert.equal(response.status, 409)
+    assert.equal(response.body.code, 'PLAY_PATH_CONFLICT')
+    await new Promise(resolve => setImmediate(resolve))
+    const entries = records(f.calls).filter(item => item.operationId === 'dir-fail')
+    assert.equal(entries.at(-1).stage, 'failure')
+    assert.equal(entries.at(-1).errorCode, 'PLAY_PATH_CONFLICT')
+    assert.equal(entries.at(-1).status, 409)
+    assert.equal(entries.filter(item => ['success', 'failure'].includes(item.stage)).length, 1)
+  } finally { cleanup(f) }
+})
+
+test('failed long or newline path stays bounded to single-line logs', async () => {
+  const f = fixture({ ids: ['path-fail'] })
+  try {
+    const hostilePath = 'bad\n' + 'x'.repeat(700)
+    const response = await invoke(f.handler, { method: 'POST', url: API_V2 + '/workspace/dirs', body: { path: hostilePath } })
+    assert.equal(response.status, 409)
+    for (const [, line] of f.calls) {
+      assert.doesNotMatch(line, /\r|\n/)
+      const payload = JSON.parse(line.slice(operationLogConstants.prefix.length))
+      assert.ok((payload.path?.length ?? 0) <= operationLogConstants.maxPath)
+    }
+  } finally { cleanup(f) }
+})
