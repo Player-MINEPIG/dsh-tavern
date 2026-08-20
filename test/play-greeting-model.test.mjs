@@ -5,7 +5,7 @@ import {
   projectGreeting,
 } from '../packages/client/src/play/chat-model.js'
 
-test('greeting is a frontend projection only before any real record exists', () => {
+test('greeting remains a frontend projection throughout its character playthrough', () => {
   const character = {
     id: 'character-a',
     name: 'Alice card',
@@ -17,8 +17,7 @@ test('greeting is a frontend projection only before any real record exists', () 
     },
   }
   const input = {
-    timeline: { nodes: [] },
-    messages: [],
+    openingCharacterId: 'character-a',
     selectionResponse: {
       selection: { characterCardId: 'character-a', character: { greetingIndex: 1 } },
     },
@@ -32,11 +31,8 @@ test('greeting is a frontend projection only before any real record exists', () 
   assert.equal(adjacentGreetingIndex(greeting, 'next'), 2)
   assert.equal(adjacentGreetingIndex({ ...greeting, index: 2 }, 'next'), 0)
 
-  assert.equal(projectGreeting({ ...input, messages: [{ role: 'user', text: 'real' }] }), null)
-  assert.equal(projectGreeting({
-    ...input,
-    timeline: { nodes: [{ id: 'qa-existing' }] },
-  }), null)
+  assert.equal(projectGreeting(input).text, 'Second hello')
+  assert.equal(projectGreeting({ ...input, openingCharacterId: 'character-b' }), null)
 })
 
 test('empty or mismatched greetings do not create a fake conversation record', () => {
@@ -44,16 +40,14 @@ test('empty or mismatched greetings do not create a fake conversation record', (
     selection: { characterCardId: 'character-a', character: { greetingIndex: 0 } },
   }
   assert.equal(projectGreeting({
-    timeline: { nodes: [] },
-    messages: [],
+    openingCharacterId: 'character-a',
     selectionResponse,
     characterResponse: {
       character: { id: 'character-a', name: 'Alice', data: { firstMessage: '', alternateGreetings: [] } },
     },
   }), null)
   assert.equal(projectGreeting({
-    timeline: { nodes: [] },
-    messages: [],
+    openingCharacterId: 'character-a',
     selectionResponse,
     characterResponse: {
       character: { id: 'character-b', name: 'Bob', data: { firstMessage: 'Hello' } },

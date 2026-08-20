@@ -7649,15 +7649,13 @@ function latestUserNodeSeq(nodes) {
   return latest;
 }
 function projectGreeting({
-  timeline,
-  messages,
+  openingCharacterId,
   selectionResponse,
   characterResponse
 } = {}) {
-  if ((timeline?.nodes?.length ?? 0) !== 0 || (messages?.length ?? 0) !== 0) return null;
   const selection = selectionResponse?.selection;
   const character = characterResponse?.character;
-  if (typeof selection?.characterCardId !== "string" || selection.characterCardId === "" || character?.id !== selection.characterCardId) return null;
+  if (typeof selection?.characterCardId !== "string" || selection.characterCardId === "" || selection.characterCardId !== openingCharacterId || character?.id !== selection.characterCardId) return null;
   const options = characterGreetingOptions(character);
   if (options.length === 0) return null;
   const requested = Number(selection.character?.greetingIndex ?? 0);
@@ -10018,8 +10016,7 @@ async function loadChatState(client, sessionId, playthrough) {
   };
   const timelineTurns = projectTimelineQa(timeline, messagesBySession);
   const greeting = projectGreeting({
-    timeline,
-    messages: messagesBySession[sessionId]?.messages ?? [],
+    openingCharacterId: playthrough?.ext?.pmpDshTavern?.characterId,
     selectionResponse,
     characterResponse
   });

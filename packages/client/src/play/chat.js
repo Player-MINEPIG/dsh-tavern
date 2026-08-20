@@ -138,8 +138,7 @@ export async function loadChatState(client, sessionId, playthrough) {
   }
   const timelineTurns = projectTimelineQa(timeline, messagesBySession)
   const greeting = projectGreeting({
-    timeline,
-    messages: messagesBySession[sessionId]?.messages ?? [],
+    openingCharacterId: playthrough?.ext?.pmpDshTavern?.characterId,
     selectionResponse,
     characterResponse,
   })

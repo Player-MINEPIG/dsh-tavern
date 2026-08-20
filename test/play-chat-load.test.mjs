@@ -26,12 +26,15 @@ test('Chat load registers a completed real turn before projecting it', async () 
     },
   }
 
-  const state = await loadChatState(client, 'session-a', { path: 'timeline.json' })
+  const state = await loadChatState(client, 'session-a', {
+    path: 'timeline.json',
+    ext: { pmpDshTavern: { characterId: 'character-a' } },
+  })
   assert.deepEqual(calls, ['messages', 'timeline', 'write', 'messages', 'selection', 'character'])
   assert.equal(state.turns.length, 1)
   assert.equal(state.turns[0].userText, 'Hello')
   assert.equal(state.turns[0].assistantText, 'Hi')
-  assert.equal(state.greeting, null)
+  assert.equal(state.greeting.text, 'Greeting')
   assert.equal(JSON.stringify(timeline).includes('Hello'), false)
 })
 
@@ -65,7 +68,10 @@ test('Chat display expands bound user and character names without changing greet
     async getActive() { return { resources: { user: { id: 'user-a', name: 'Reader' } } } },
   }
 
-  const state = await loadChatState(client, 'session-a', { path: 'timeline.json' })
+  const state = await loadChatState(client, 'session-a', {
+    path: 'timeline.json',
+    ext: { pmpDshTavern: { characterId: 'character-a' } },
+  })
   assert.equal(state.greeting.text, 'Welcome Reader; Alice is waiting.')
   assert.equal(greeting, 'Welcome {{user}}; {{char}} is waiting.')
 })
