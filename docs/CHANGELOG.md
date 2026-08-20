@@ -4,6 +4,15 @@ This is the staged implementation log for dsh-tavern. It is kept separately
 from the product README so reviewers can follow intent, decisions, verification,
 and known limits chronologically.
 
+## 2026-08-20 — Launcher clicks are immediate and literal
+
+- Every left click immediately performs the normal menu toggle; rapid clicks
+  repeat that same action and double-click has no separate binding.
+- Right click suppresses the browser context menu and uses the same
+  transactional Lingzhu/Mowan switch as the explicit menu action.
+
+Verification: test/play-chrome-client.test.mjs, test/client-shell.test.mjs.
+
 ## 2026-08-19 — Character groups create verified empty playthroughs
 
 - Each character group exposes an icon-only, named new-playthrough action.

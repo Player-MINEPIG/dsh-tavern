@@ -74,7 +74,7 @@ export default Object.freeze({
   "nav.itemAriaBound": "{label}, {title}, {state}",
   "nav.itemAria": "{label}, {title}",
   "nav.bookCount": "{count} books",
-  "nav.launcher": "Drag to move; click to open panels; double-click to switch Lingzhu/Mowan",
+  "nav.launcher": "Drag to move; left-click to open panels; right-click to switch Lingzhu/Mowan",
   "chrome.switchToPlay": "Switch to Mowan",
   "chrome.switchToNative": "Switch to Lingzhu",
   "chrome.currentPlay": "Current: red-black ST",

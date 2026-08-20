@@ -141,7 +141,7 @@ var zh_CN_default = Object.freeze({
   "nav.itemAriaBound": "{label}\uFF0C{title}\uFF0C{state}",
   "nav.itemAria": "{label}\uFF0C{title}",
   "nav.bookCount": "{count} \u672C",
-  "nav.launcher": "\u62D6\u52A8\u53EF\u79FB\u52A8\uFF1B\u5355\u51FB\u5C55\u5F00\u9762\u677F\uFF1B\u53CC\u51FB\u5207\u6362\u7075\u73E0/\u9B54\u4E38",
+  "nav.launcher": "\u62D6\u52A8\u53EF\u79FB\u52A8\uFF1B\u5DE6\u952E\u5C55\u5F00\u9762\u677F\uFF1B\u53F3\u952E\u5207\u6362\u7075\u73E0/\u9B54\u4E38",
   "chrome.switchToPlay": "\u5207\u6362\u5230\u9B54\u4E38",
   "chrome.switchToNative": "\u5207\u6362\u5230\u7075\u73E0",
   "chrome.currentPlay": "\u5F53\u524D\uFF1A\u7EA2\u9ED1 ST",
@@ -690,7 +690,7 @@ var en_default = Object.freeze({
   "nav.itemAriaBound": "{label}, {title}, {state}",
   "nav.itemAria": "{label}, {title}",
   "nav.bookCount": "{count} books",
-  "nav.launcher": "Drag to move; click to open panels; double-click to switch Lingzhu/Mowan",
+  "nav.launcher": "Drag to move; left-click to open panels; right-click to switch Lingzhu/Mowan",
   "chrome.switchToPlay": "Switch to Mowan",
   "chrome.switchToNative": "Switch to Lingzhu",
   "chrome.currentPlay": "Current: red-black ST",
@@ -7010,12 +7010,13 @@ function TavernShell({ useSessions, useWorkspaces, createCleanSession, playClien
     suppressClick.current = false;
     return true;
   };
-  const clickLauncher = (event) => chromeController.current?.click({
-    suppressed: consumeSuppressedClick() || event.detail > 1
-  });
-  const doubleClickLauncher = () => chromeController.current?.switchMode({
+  const clickLauncher = () => chromeController.current?.click({
     suppressed: consumeSuppressedClick()
   });
+  const contextSwitchLauncher = (event) => {
+    event.preventDefault();
+    chromeController.current?.switchMode({ suppressed: consumeSuppressedClick() });
+  };
   const switchChrome = () => chromeController.current?.switchMode();
   const open = (id) => {
     setMenuOpen(false);
@@ -7087,7 +7088,7 @@ function TavernShell({ useSessions, useWorkspaces, createCleanSession, playClien
         onPointerUp: endDrag,
         onPointerCancel: endDrag,
         onClick: clickLauncher,
-        onDoubleClick: doubleClickLauncher
+        onContextMenu: contextSwitchLauncher
       }, chromeMode === "play" ? "ST" : "DS")),
       menuOpen ? h13(
         "div",

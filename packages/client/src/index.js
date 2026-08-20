@@ -803,12 +803,13 @@ function TavernShell({ useSessions, useWorkspaces, createCleanSession, playClien
     return true
   }
 
-  const clickLauncher = event => chromeController.current?.click({
-    suppressed: consumeSuppressedClick() || event.detail > 1,
-  })
-  const doubleClickLauncher = () => chromeController.current?.switchMode({
+  const clickLauncher = () => chromeController.current?.click({
     suppressed: consumeSuppressedClick(),
   })
+  const contextSwitchLauncher = event => {
+    event.preventDefault()
+    chromeController.current?.switchMode({ suppressed: consumeSuppressedClick() })
+  }
   const switchChrome = () => chromeController.current?.switchMode()
 
   const open = id => {
@@ -881,7 +882,7 @@ function TavernShell({ useSessions, useWorkspaces, createCleanSession, playClien
           onPointerUp: endDrag,
           onPointerCancel: endDrag,
           onClick: clickLauncher,
-          onDoubleClick: doubleClickLauncher,
+          onContextMenu: contextSwitchLauncher,
         }, chromeMode === 'play' ? 'ST' : 'DS')),
       menuOpen ? h('div', { className: 'dtv-menu', role: 'menu' },
         h('div', { className: 'dtv-menu-title', 'aria-live': 'polite' }, chromeError === '' && statusError === '' ? uiMessage('nav.menuTitle', { session: sessionId || translate('nav.session.none') }) : uiMessage('nav.syncFailed', { message: chromeError || statusError })),

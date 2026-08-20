@@ -74,7 +74,7 @@ export default Object.freeze({
   "nav.itemAriaBound": "{label}，{title}，{state}",
   "nav.itemAria": "{label}，{title}",
   "nav.bookCount": "{count} 本",
-  "nav.launcher": "拖动可移动；单击展开面板；双击切换灵珠/魔丸",
+  "nav.launcher": "拖动可移动；左键展开面板；右键切换灵珠/魔丸",
   "chrome.switchToPlay": "切换到魔丸",
   "chrome.switchToNative": "切换到灵珠",
   "chrome.currentPlay": "当前：红黑 ST",
