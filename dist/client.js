@@ -10026,10 +10026,10 @@ async function loadChatState(client, sessionId, playthrough) {
     selectionResponse,
     characterResponse
   });
-  const importContextPath = playthrough?.ext?.pmpDshTavern?.importContextPath;
+  const importContextPath2 = playthrough?.ext?.pmpDshTavern?.importContextPath;
   let importedTurns = [];
-  if (typeof importContextPath === "string" && importContextPath !== "") {
-    const imported = JSON.parse((await client.getFile(importContextPath)).content);
+  if (typeof importContextPath2 === "string" && importContextPath2 !== "") {
+    const imported = JSON.parse((await client.getFile(importContextPath2)).content);
     importedTurns = [
       ...typeof imported.greeting === "string" && imported.greeting !== "" ? [{
         id: "import-greeting",
@@ -10823,6 +10823,46 @@ function playthroughCharacterId2(playthrough) {
   const value = playthrough?.ext?.pmpDshTavern?.characterId;
   return typeof value === "string" && value !== "" ? value : null;
 }
+function rootSessionId4(playthrough) {
+  const value = playthrough?.ext?.pmpDshTavern?.rootSessionId;
+  return typeof value === "string" && value !== "" ? value : null;
+}
+function latestCharacterPlaythrough(catalog2, characterId) {
+  let latest = null;
+  let latestNumber = 0;
+  let ordinal = 0;
+  for (const playthrough of catalog2?.playthroughs ?? []) {
+    if (playthroughCharacterId2(playthrough) !== characterId) continue;
+    ordinal += 1;
+    const explicit = playthrough?.ext?.pmpDshTavern?.playthroughNumber;
+    const number = Number.isSafeInteger(explicit) && explicit > 0 ? explicit : ordinal;
+    if (latest === null || number >= latestNumber) {
+      latest = playthrough;
+      latestNumber = number;
+    }
+  }
+  return latest;
+}
+function importContextPath(playthrough, timeline) {
+  const direct = playthrough?.ext?.pmpDshTavern?.importContextPath;
+  if (typeof direct === "string" && direct !== "") return direct;
+  const timelineValue = timeline?.ext?.pmpDshTavern?.importContextPath;
+  return typeof timelineValue === "string" && timelineValue !== "" ? timelineValue : null;
+}
+async function playthroughIsReusable(client, playthrough) {
+  const sessionId = rootSessionId4(playthrough);
+  if (sessionId === null) return false;
+  const timeline = await client.getTimeline(playthrough);
+  if ((timeline?.nodes?.length ?? 0) > 0) return false;
+  const contextPath = importContextPath(playthrough, timeline);
+  if (contextPath !== null) {
+    const imported = JSON.parse((await client.getFile(contextPath)).content);
+    if (Array.isArray(imported?.qa) && imported.qa.length > 0) return false;
+  }
+  const history = await client.getMessages(sessionId);
+  if (history?.incompleteTurn === true) return false;
+  return !(history?.messages ?? []).some((message) => message?.role === "user" || message?.role === "assistant");
+}
 function nextPlaythroughNumber(catalog2, characterId) {
   let maximum = 0;
   let legacyOrdinal = 0;
@@ -10873,6 +10913,10 @@ async function createCharacterPlaythrough(client, {
   const path = `${directory}/timeline.json`;
   const sourceId = typeof selectionFromSessionId === "string" && selectionFromSessionId !== "" ? selectionFromSessionId : null;
   const catalog2 = await catalogOrEmpty(client);
+  const latest = latestCharacterPlaythrough(catalog2, characterId);
+  if (latest !== null && await playthroughIsReusable(client, latest)) {
+    return { sessionId: rootSessionId4(latest), playthrough: latest, reused: true };
+  }
   const playthroughNumber = nextPlaythroughNumber(catalog2, characterId);
   const created = await client.postSession(sourceId);
   const sessionId = safeSessionId(created?.sessionId);
@@ -10910,7 +10954,7 @@ async function createCharacterPlaythrough(client, {
   if (saved?.ext?.pmpDshTavern?.rootSessionId !== sessionId || savedTimeline.nodes.length !== 0) {
     throw new Error("playthrough verification failed");
   }
-  return { sessionId, playthrough: saved };
+  return { sessionId, playthrough: saved, reused: false };
 }
 function createPlaythroughController(client, dependencies = {}) {
   const inFlight = /* @__PURE__ */ new Map();
@@ -10981,7 +11025,7 @@ function parsePlaythroughImport(text2, fileName = "") {
   })();
   return { schemaVersion: 1, ...parsed, source: { ...parsed.source, fileName } };
 }
-function rootSessionId4(playthrough) {
+function rootSessionId5(playthrough) {
   const value = playthrough?.ext?.pmpDshTavern?.rootSessionId;
   return typeof value === "string" && value !== "" ? value : null;
 }
@@ -11000,7 +11044,7 @@ async function importPlaythrough(client, playthrough, file, {
   const playthroughNumber = nextPlaythroughNumber(catalog2, characterId);
   await client.createDirs(directory);
   await client.putFile(contextPath, JSON.stringify(document2, null, 2));
-  const created = await client.postSession(rootSessionId4(playthrough), { path: contextPath });
+  const created = await client.postSession(rootSessionId5(playthrough), { path: contextPath });
   const imported = {
     id,
     path,

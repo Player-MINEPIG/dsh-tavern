@@ -123,6 +123,8 @@ DSH 当前没有角色卡、周目、greeting、跨 session adopted variant、ST
 
 周目名称和 DSH session 名称刻意分离：Tavern 在每张角色卡内按已分配的单调序号显示 `N周目`，并把序号保存在 catalog 扩展数据；用户重命名也只修改这一投影。DSH 原始 session 继续由 Host 按“角色卡名 + 时间”命名，便于退出魔丸或卸载插件后辨认权威数据。旧 catalog 没有序号时按该角色卡既有顺序补入计算，但不为兼容而重写旧条目。
 
+新建动作只检查该角色卡最高序号周目：timeline 已有 QA、导入上下文已有 QA、DSH 权威消息已有 user/assistant，或存在未完成回合时都不得复用；纯 greeting 不算 durable history。四者均为空才直接打开原 root session，不产生目录、session 或 catalog 写入。读取失败不允许猜测为空，以免权威状态不确定时继续膨胀或覆盖生命周期。
+
 插件自有资源变化继续使用有界的 Tavern refresh event；Session / Workspace / live Chat 变化必须订阅 DSH store，不能用该自定义事件替代 Host 状态管理。
 
 ### DSH 升级审查

@@ -4,6 +4,18 @@ This is the staged implementation log for dsh-tavern. It is kept separately
 from the product README so reviewers can follow intent, decisions, verification,
 and known limits chronologically.
 
+## 2026-08-20 — Reuse the latest authoritative empty playthrough
+
+- Creating a playthrough now opens the character's highest-numbered existing
+  playthrough when it is still empty instead of appending another empty row.
+- Empty means no timeline QA, no imported QA, no DSH user/assistant message,
+  and no incomplete turn. A greeting-only import remains an opening choice and
+  therefore does not make the playthrough nonempty.
+- The check reads DSH messages through the existing v2 contract and fails on
+  unreadable state instead of treating uncertainty as an empty playthrough.
+
+Verification: focused lifecycle tests and production client build.
+
 ## 2026-08-20 — Number and rename playthrough projections
 
 - New and imported playthroughs receive a character-local monotonic title such

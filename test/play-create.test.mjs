@@ -4,6 +4,7 @@ import {
   createCharacterPlaythrough,
   createPlaythroughController,
   nextPlaythroughNumber,
+  playthroughIsReusable,
   renamePlaythrough,
   sourceSessionIdForCharacter,
 } from '../packages/client/src/play/create.js'
@@ -158,4 +159,78 @@ test('selection verification failure stops before workspace metadata writes', as
   assert.equal(client.calls.some(call => call[0] === 'createDirs'), false)
   assert.equal(client.calls.some(call => call[0] === 'putTimeline'), false)
   assert.equal(client.calls.some(call => call[0] === 'putCatalog'), false)
+})
+
+test('latest empty playthrough is reused without creating workspace or session data', async () => {
+  const playthrough = {
+    id: 'pt-2', path: 'character-a/pt-2/timeline.json', title: '2周目',
+    ext: { pmpDshTavern: { characterId: 'character-a', rootSessionId: 'session-empty', playthroughNumber: 2 } },
+  }
+  const calls = []
+  const client = {
+    async getCatalog() { calls.push('catalog'); return { playthroughs: [playthrough] } },
+    async getTimeline() { calls.push('timeline'); return { nodes: [] } },
+    async getMessages(id) { calls.push(['messages', id]); return { incompleteTurn: false, messages: [{ role: 'system' }] } },
+    async postSession() { calls.push('postSession'); throw new Error('must not create') },
+  }
+  const result = await createCharacterPlaythrough(client, {
+    character: { id: 'character-a' },
+    ...dependencies,
+  })
+  assert.deepEqual(result, { sessionId: 'session-empty', playthrough, reused: true })
+  assert.equal(calls.includes('postSession'), false)
+})
+
+test('greeting-only import remains reusable but imported QA does not', async () => {
+  const playthrough = {
+    path: 'character-a/pt/timeline.json',
+    ext: { pmpDshTavern: { rootSessionId: 'root', importContextPath: 'character-a/pt/import-context.json' } },
+  }
+  let qa = []
+  const client = {
+    async getTimeline() { return { nodes: [], ext: { pmpDshTavern: { importContextPath: 'character-a/pt/import-context.json' } } } },
+    async getFile() { return { content: JSON.stringify({ greeting: 'Hello', qa }) } },
+    async getMessages() { return { incompleteTurn: false, messages: [] } },
+  }
+  assert.equal(await playthroughIsReusable(client, playthrough), true)
+  qa = [{ user: 'u', assistant: 'a' }]
+  assert.equal(await playthroughIsReusable(client, playthrough), false)
+})
+
+test('timeline QA, authoritative messages and incomplete turns each prevent empty reuse', async () => {
+  const playthrough = { path: 'character-a/pt/timeline.json', ext: { pmpDshTavern: { rootSessionId: 'root' } } }
+  const client = {
+    timeline: { nodes: [{ kind: 'qa' }] },
+    history: { incompleteTurn: false, messages: [] },
+    async getTimeline() { return this.timeline },
+    async getMessages() { return this.history },
+  }
+  assert.equal(await playthroughIsReusable(client, playthrough), false)
+  client.timeline = { nodes: [] }
+  client.history = { incompleteTurn: false, messages: [{ role: 'user' }] }
+  assert.equal(await playthroughIsReusable(client, playthrough), false)
+  client.history = { incompleteTurn: true, messages: [] }
+  assert.equal(await playthroughIsReusable(client, playthrough), false)
+})
+
+test('a nonempty latest playthrough does not reuse an older empty one', async () => {
+  const older = {
+    id: 'pt-1', path: 'character-a/pt-1/timeline.json',
+    ext: { pmpDshTavern: { characterId: 'character-a', rootSessionId: 'older', playthroughNumber: 1 } },
+  }
+  const latest = {
+    id: 'pt-2', path: 'character-a/pt-2/timeline.json',
+    ext: { pmpDshTavern: { characterId: 'character-a', rootSessionId: 'latest', playthroughNumber: 2 } },
+  }
+  const client = fakeClient()
+  let catalog = { playthroughs: [older, latest] }
+  client.getCatalog = async () => catalog
+  client.getTimeline = async playthrough => playthrough.id === 'pt-2'
+    ? { nodes: [{ kind: 'qa' }] }
+    : { nodes: [] }
+  client.putCatalog = async value => { catalog = value }
+  const result = await createCharacterPlaythrough(client, { character: { id: 'character-a' }, ...dependencies })
+  assert.equal(result.reused, false)
+  assert.equal(result.playthrough.title, '3周目')
+  assert.equal(client.calls.filter(call => call[0] === 'postSession').length, 1)
 })

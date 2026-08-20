@@ -37,6 +37,52 @@ function playthroughCharacterId(playthrough) {
   return typeof value === 'string' && value !== '' ? value : null
 }
 
+function rootSessionId(playthrough) {
+  const value = playthrough?.ext?.pmpDshTavern?.rootSessionId
+  return typeof value === 'string' && value !== '' ? value : null
+}
+
+function latestCharacterPlaythrough(catalog, characterId) {
+  let latest = null
+  let latestNumber = 0
+  let ordinal = 0
+  for (const playthrough of catalog?.playthroughs ?? []) {
+    if (playthroughCharacterId(playthrough) !== characterId) continue
+    ordinal += 1
+    const explicit = playthrough?.ext?.pmpDshTavern?.playthroughNumber
+    const number = Number.isSafeInteger(explicit) && explicit > 0 ? explicit : ordinal
+    if (latest === null || number >= latestNumber) {
+      latest = playthrough
+      latestNumber = number
+    }
+  }
+  return latest
+}
+
+function importContextPath(playthrough, timeline) {
+  const direct = playthrough?.ext?.pmpDshTavern?.importContextPath
+  if (typeof direct === 'string' && direct !== '') return direct
+  const timelineValue = timeline?.ext?.pmpDshTavern?.importContextPath
+  return typeof timelineValue === 'string' && timelineValue !== '' ? timelineValue : null
+}
+
+export async function playthroughIsReusable(client, playthrough) {
+  const sessionId = rootSessionId(playthrough)
+  if (sessionId === null) return false
+  const timeline = await client.getTimeline(playthrough)
+  if ((timeline?.nodes?.length ?? 0) > 0) return false
+
+  const contextPath = importContextPath(playthrough, timeline)
+  if (contextPath !== null) {
+    const imported = JSON.parse((await client.getFile(contextPath)).content)
+    if (Array.isArray(imported?.qa) && imported.qa.length > 0) return false
+  }
+
+  const history = await client.getMessages(sessionId)
+  if (history?.incompleteTurn === true) return false
+  return !(history?.messages ?? []).some(message => message?.role === 'user' || message?.role === 'assistant')
+}
+
 export function nextPlaythroughNumber(catalog, characterId) {
   let maximum = 0
   let legacyOrdinal = 0
@@ -92,6 +138,10 @@ export async function createCharacterPlaythrough(client, {
     ? selectionFromSessionId
     : null
   const catalog = await catalogOrEmpty(client)
+  const latest = latestCharacterPlaythrough(catalog, characterId)
+  if (latest !== null && await playthroughIsReusable(client, latest)) {
+    return { sessionId: rootSessionId(latest), playthrough: latest, reused: true }
+  }
   const playthroughNumber = nextPlaythroughNumber(catalog, characterId)
 
   const created = await client.postSession(sourceId)
@@ -133,7 +183,7 @@ export async function createCharacterPlaythrough(client, {
   if (saved?.ext?.pmpDshTavern?.rootSessionId !== sessionId || savedTimeline.nodes.length !== 0) {
     throw new Error('playthrough verification failed')
   }
-  return { sessionId, playthrough: saved }
+  return { sessionId, playthrough: saved, reused: false }
 }
 
 export function createPlaythroughController(client, dependencies = {}) {
