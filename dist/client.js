@@ -4474,42 +4474,6 @@ function installStyles2() {
   style.textContent = css7;
   document.head.append(style);
 }
-function scrollableAncestor(element) {
-  for (let current2 = element?.parentElement; current2 !== null; current2 = current2.parentElement) {
-    const style = window.getComputedStyle(current2);
-    if (/(auto|scroll)/.test(style.overflowY) && current2.scrollHeight > current2.clientHeight) return current2;
-  }
-  return null;
-}
-function visibleBottom(container, content) {
-  const containerRect = container.getBoundingClientRect();
-  const contentRect = content.getBoundingClientRect();
-  let bottom = containerRect.bottom;
-  const candidates = /* @__PURE__ */ new Set();
-  for (const editor of container.querySelectorAll('textarea, [contenteditable="true"]')) {
-    for (let current2 = editor; current2 !== null && current2 !== container; current2 = current2.parentElement) {
-      candidates.add(current2);
-    }
-  }
-  for (const element of candidates) {
-    const position = window.getComputedStyle(element).position;
-    if (position !== "sticky" && position !== "fixed") continue;
-    const rect = element.getBoundingClientRect();
-    const overlap = Math.min(rect.right, contentRect.right) - Math.max(rect.left, contentRect.left);
-    if (rect.height <= 0 || overlap < contentRect.width / 2 || rect.top <= containerRect.top || rect.top >= containerRect.bottom || rect.bottom < containerRect.bottom) continue;
-    bottom = Math.min(bottom, rect.top);
-  }
-  return bottom;
-}
-function revealBottomAboveComposer(anchor) {
-  if (anchor === null) return;
-  anchor.scrollIntoView({ block: "end" });
-  const container = scrollableAncestor(anchor);
-  if (container === null) return;
-  const obstructionTop = visibleBottom(container, anchor.parentElement ?? anchor);
-  const covered = anchor.getBoundingClientRect().bottom - obstructionTop;
-  if (covered > 0) container.scrollTop += covered;
-}
 function adoptedSessionIds(timeline, currentSessionId) {
   const ids = /* @__PURE__ */ new Set([currentSessionId]);
   for (const node of timeline?.nodes ?? []) {
@@ -4654,7 +4618,7 @@ function Turn({ turn, ...actionProps }) {
     turn.imported || turn.transient ? null : h8(PlayTurnActions, { turn, ...actionProps })
   );
 }
-function MowanChatView({ sessionId, useSession, playClient, playthrough, openSession }) {
+function MowanChatView({ sessionId, useSession, playClient, playthrough, openSession, chatScroll }) {
   installStyles2();
   const sessionRevision = useSession((state2) => `${state2.nodes?.length ?? 0}:${state2.running === true}:${state2.blank === true}`);
   const liveNodes = useSession((state2) => state2.nodes);
@@ -4669,22 +4633,19 @@ function MowanChatView({ sessionId, useSession, playClient, playthrough, openSes
   const initialScrollSession = (0, import_react8.useRef)(null);
   const userSeqSession = (0, import_react8.useRef)(null);
   const lastUserSeq = (0, import_react8.useRef)(-1);
-  const scrollToBottomAfterLayout = () => {
-    let nextFrame = 0;
-    const frame = window.requestAnimationFrame(() => {
-      nextFrame = window.requestAnimationFrame(() => revealBottomAboveComposer(bottomAnchor.current));
-    });
-    return () => {
-      window.cancelAnimationFrame(frame);
-      if (nextFrame !== 0) window.cancelAnimationFrame(nextFrame);
-    };
+  const scrollToBottom = () => {
+    const local = bottomAnchor.current;
+    if (local === null) return;
+    const scrollport = local.closest("[data-conversation-scroll]") ?? local;
+    scrollport.scrollTop = scrollport.scrollHeight;
+    chatScroll?.save(null);
   };
-  (0, import_react8.useEffect)(() => {
+  (0, import_react8.useLayoutEffect)(() => {
     if (state === null || initialScrollSession.current === sessionId) return;
     initialScrollSession.current = sessionId;
-    return scrollToBottomAfterLayout();
+    scrollToBottom();
   }, [sessionId, state]);
-  (0, import_react8.useEffect)(() => {
+  (0, import_react8.useLayoutEffect)(() => {
     if (userSeqSession.current !== sessionId) {
       userSeqSession.current = sessionId;
       lastUserSeq.current = latestUserSeq;
@@ -4692,7 +4653,7 @@ function MowanChatView({ sessionId, useSession, playClient, playthrough, openSes
     }
     if (latestUserSeq <= lastUserSeq.current) return;
     lastUserSeq.current = latestUserSeq;
-    return scrollToBottomAfterLayout();
+    scrollToBottom();
   }, [latestUserSeq, sessionId]);
   (0, import_react8.useEffect)(() => {
     const refresh = () => setRevision((value) => value + 1);
