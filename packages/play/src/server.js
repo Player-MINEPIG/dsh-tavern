@@ -61,6 +61,12 @@ export function createPlayApiHandler({
         if (sessionApi === null) throw httpError(404, 'Not found', 'PLAY_NOT_FOUND')
         return await sessionApi.focus(req, res, route.searchParams)
       }
+      const playthroughFocusMatch = route.rest.match(/^\/playthroughs\/([^/]+)\/focus$/)
+      if (playthroughFocusMatch !== null) {
+        if (method !== 'GET') throw httpError(405, 'method not allowed', 'PLAY_METHOD_NOT_ALLOWED')
+        if (sessionApi === null) throw httpError(404, 'Not found', 'PLAY_NOT_FOUND')
+        return await sessionApi.playthroughFocus(req, res, playthroughFocusMatch[1])
+      }
       const importContextMatch = route.rest.match(/^\/sessions\/([^/]+)\/import-context$/)
       if (importContextMatch !== null) {
         if (!['GET', 'PUT', 'DELETE'].includes(method)) throw httpError(405, 'method not allowed', 'PLAY_METHOD_NOT_ALLOWED')

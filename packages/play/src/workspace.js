@@ -334,7 +334,6 @@ export class PlayWorkspaceStore {
         try { unlinkSync(temporary) } catch {}
         throw error
       }
-      if (basename(posix) === 'timeline.json') this.setActiveTimelinePath(posix)
       return {
         ok: true,
         path: posix,

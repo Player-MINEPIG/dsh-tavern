@@ -1,6 +1,7 @@
 import test from 'node:test'
+import { createHash } from 'node:crypto'
 import assert from 'node:assert/strict'
-import { existsSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs'
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { Readable } from 'node:stream'
@@ -271,10 +272,13 @@ test('GET /focus is derived sessionId only; POST /focus is 405', async () => {
       ],
     }))
     fixture.workspaceStore.setActiveTimelinePath('run-timeline.json')
-    const focus = await invoke(fixture.handler, { url: `${API_V2}/focus` })
-    assert.equal(focus.status, 200)
-    assert.equal(focus.body.ok, true)
-    assert.equal(focus.body.sessionId, 'session-focus')
+    const focus = await invoke(fixture.handler, { url: API_V2 + '/focus' })
+    assert.equal(focus.status, 400)
+    assert.equal(focus.body.code, 'PLAY_FOCUS_PATH_REQUIRED')
+    const explicitFocus = await invoke(fixture.handler, { url: API_V2 + '/focus?path=run-timeline.json' })
+    assert.equal(explicitFocus.status, 200)
+    assert.equal(explicitFocus.body.ok, true)
+    assert.equal(explicitFocus.body.sessionId, 'session-focus')
     assert.equal(Object.hasOwn(focus.body, 'path'), false)
     assert.equal(Object.hasOwn(focus.body, 'nodeId'), false)
     const post = await invoke(fixture.handler, { method: 'POST', url: `${API_V2}/focus`, body: { sessionId: 'nope' } })
@@ -330,4 +334,44 @@ test('live play session APIs against a running DSH host', {
   skip: process.env.DSH_TAVERN_PLAY_LIVE !== '1',
 }, async () => {
   assert.ok(process.env.DSH_TAVERN_PLAY_LIVE_URL, 'DSH_TAVERN_PLAY_LIVE_URL is required for live play tests')
+})
+test('GET /playthroughs/:id/focus derives catalog authority and does not use active timeline', async () => {
+  const fixture = await boundHandler()
+  try {
+    mkdirSync(join(fixture.playRoot, 'alice', 'pt-a'), { recursive: true })
+    mkdirSync(join(fixture.playRoot, 'alice', 'pt-empty'), { recursive: true })
+    writeFileSync(join(fixture.playRoot, 'alice', 'pt-a', 'timeline.json'), JSON.stringify({
+      nodes: [{ id: 'q1', kind: 'qa', adoptedVariantId: 'v1', variants: [{ id: 'v1', sessionId: 'session-focus', startEventId: 1, endEventId: 4 }] }],
+    }))
+    writeFileSync(join(fixture.playRoot, 'alice', 'pt-empty', 'timeline.json'), JSON.stringify({ nodes: [] }))
+    writeFileSync(join(fixture.playRoot, 'catalog.json'), JSON.stringify({ playthroughs: [
+      { id: 'pt-a', path: 'alice/pt-a/timeline.json', lastOpenedAt: '9999', ext: { pmpDshTavern: { rootSessionId: 'session-root-a' } } },
+      { id: 'pt-empty', path: 'alice/pt-empty/timeline.json', ext: { pmpDshTavern: { rootSessionId: 'session-root-empty' } } },
+    ] }))
+    fixture.workspaceStore.setActiveTimelinePath('alice/pt-empty/timeline.json')
+    const result = await invoke(fixture.handler, { url: API_V2 + '/playthroughs/pt-a/focus' })
+    assert.equal(result.status, 200)
+    assert.deepEqual(result.body, { ok: true, playthroughId: 'pt-a', sessionId: 'session-focus', nodeId: 'q1', variantId: 'v1' })
+    const empty = await invoke(fixture.handler, { url: API_V2 + '/playthroughs/pt-empty/focus' })
+    assert.equal(empty.status, 200)
+    assert.deepEqual(empty.body, { ok: true, playthroughId: 'pt-empty', sessionId: 'session-root-empty', nodeId: null, variantId: null })
+    const missing = await invoke(fixture.handler, { url: API_V2 + '/playthroughs/nope/focus' })
+    assert.equal(missing.status, 404)
+    assert.equal(missing.body.code, 'PLAY_PLAYTHROUGH_NOT_FOUND')
+    const invalidId = await invoke(fixture.handler, { url: API_V2 + '/playthroughs/bad%2Fid/focus' })
+    assert.equal(invalidId.status, 400)
+    assert.equal(invalidId.body.code, 'PLAY_PLAYTHROUGH_ID_INVALID')
+    const post = await invoke(fixture.handler, { method: 'POST', url: API_V2 + '/playthroughs/pt-a/focus' })
+    assert.equal(post.status, 405)
+    assert.equal(post.body.code, 'PLAY_METHOD_NOT_ALLOWED')
+    const before = fixture.workspaceStore.get().activeTimelinePath
+    const current = readFileSync(join(fixture.playRoot, 'alice', 'pt-a', 'timeline.json'))
+    const revision = createHash('sha256').update(current).digest('hex')
+    const put = await invoke(fixture.handler, { method: 'PUT', url: API_V2 + '/workspace/files?path=alice/pt-a/timeline.json', body: { content: JSON.stringify({ nodes: [] }), expectedRevision: revision } })
+    assert.equal(put.status, 200)
+    assert.equal(fixture.workspaceStore.get().activeTimelinePath, before)
+  } finally {
+    rmSync(fixture.pluginDir, { recursive: true, force: true })
+    rmSync(fixture.playRoot, { recursive: true, force: true })
+  }
 })

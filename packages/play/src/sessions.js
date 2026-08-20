@@ -1,5 +1,5 @@
 import { httpError, readBoundedJson, sendJson } from './http.js'
-import { deriveFocus, parseCatalogJson, parseTimelineJson } from './timeline.js'
+import { deriveFocus, isSafeCatalogSegment, parseCatalogJson, parseTimelineJson } from './timeline.js'
 
 const MAX_BODY_BYTES = 64 * 1024
 const SESSION_ID_PATTERN = /^[A-Za-z0-9][A-Za-z0-9._:-]{0,199}$/
@@ -105,6 +105,22 @@ function requireBoundWorkspace(workspaceStore) {
     throw httpError(409, 'play workspace root is not bound', 'PLAY_WORKSPACE_UNBOUND')
   }
   return binding
+}
+
+function playthroughNotFound(id) {
+  throw httpError(404, `playthrough "${id}" was not found`, 'PLAY_PLAYTHROUGH_NOT_FOUND')
+}
+
+function catalogUnavailable(cause) {
+  const error = httpError(409, 'play catalog is unavailable', 'PLAY_CATALOG_UNAVAILABLE')
+  error.cause = cause
+  return error
+}
+
+function focusUnavailable(id, cause) {
+  const error = httpError(409, `focus for playthrough "${id}" is unavailable`, 'PLAY_FOCUS_UNAVAILABLE')
+  error.cause = cause
+  return error
 }
 
 async function readTimelineForFocus(workspaceStore, relativePath) {
@@ -226,9 +242,41 @@ export function createSessionApiHandler({ host, workspaceStore, now = () => new 
     async focus(req, res, searchParams) {
       requireBoundWorkspace(workspaceStore)
       const requested = searchParams.get('path')
+      if (requested === null) throw httpError(400, 'path is required', 'PLAY_FOCUS_PATH_REQUIRED')
       const { timeline } = await readTimelineForFocus(workspaceStore, requested)
       const focus = deriveFocus(timeline)
       return sendJson(res, 200, { ok: true, sessionId: focus.sessionId })
+    },
+
+    async playthroughFocus(_req, res, playthroughId) {
+      requireBoundWorkspace(workspaceStore)
+      let id
+      try { id = decodeURIComponent(playthroughId) } catch (error) { throw httpError(400, 'playthrough id is not valid URL encoding', 'PLAY_PLAYTHROUGH_ID_INVALID') }
+      if (!isSafeCatalogSegment(id)) throw httpError(400, 'playthrough id must be a safe path segment', 'PLAY_PLAYTHROUGH_ID_INVALID')
+      let catalog
+      try {
+        catalog = parseCatalogJson(workspaceStore.readFile('catalog.json').content)
+      } catch (error) {
+        if (error?.code === 'PLAY_CATALOG_INVALID') throw error
+        throw catalogUnavailable(error)
+      }
+      const playthrough = catalog.playthroughs.find(item => item.id === id)
+      if (playthrough === undefined) playthroughNotFound(id)
+      let timeline, focus
+      try {
+        timeline = parseTimelineJson(workspaceStore.readFile(playthrough.path).content)
+        focus = deriveFocus(timeline)
+      } catch (error) {
+        throw focusUnavailable(id, error)
+      }
+      const rootSessionId = playthrough.ext?.pmpDshTavern?.rootSessionId ?? null
+      return sendJson(res, 200, {
+        ok: true,
+        playthroughId: id,
+        sessionId: focus.sessionId ?? rootSessionId,
+        nodeId: focus.nodeId,
+        variantId: focus.variantId,
+      })
     },
   }
 }

@@ -160,6 +160,10 @@ function catalogError(message) {
   throw httpError(400, message, 'PLAY_CATALOG_INVALID')
 }
 
+export function isSafeCatalogSegment(value) {
+  return typeof value === 'string' && SAFE_SEGMENT.test(value)
+}
+
 function safeSegment(value, label, code = 'PLAY_CATALOG_INVALID') {
   if (typeof value !== 'string' || !SAFE_SEGMENT.test(value)) {
     throw httpError(400, `${label} must be a safe path segment`, code)
