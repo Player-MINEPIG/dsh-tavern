@@ -522,11 +522,11 @@ function TavernShell({ useSessions, useWorkspaces, createCleanSession, playClien
     } catch {
       // Restricted browsing contexts still synchronize by refreshing on focus.
     }
-      if (mode !== 'play') setSurface(current => current === 'regex' ? null : current)
     const commitChrome = mode => {
       chromeModeRef.current = mode
       setChromeMode(mode)
       playSlots.setMode(mode)
+      if (mode !== 'play') setSurface(current => current === 'regex' ? null : current)
     }
     const refreshChrome = async () => {
       try {

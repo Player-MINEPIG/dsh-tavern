@@ -3506,11 +3506,11 @@ function SessionTemplatePanel({ sessionId, workspaceId, createCleanSession, clos
     if (selectedId === null || !window.confirm(unwrapText(uiMessage("template.confirmDelete", { name: selected?.name ?? selectedId })))) return;
     run(() => api5(`/session-templates/${encodeURIComponent(selectedId)}`, { method: "DELETE", body: JSON.stringify({}) }), "template.status.deleted");
   };
-  const start = (mode2) => run(async () => {
-    if (mode2 === "current" && !sessionId) throw uiError("template.error.needSourceSession");
+  const start = (mode) => run(async () => {
+    if (mode === "current" && !sessionId) throw uiError("template.error.needSourceSession");
     if (workspaceId === null) throw uiError("template.error.needWorkspace");
-    const source = mode2 === "current" ? { mode: "current", sessionId } : { mode: "template", templateId: selectedId };
-    if (mode2 === "template" && selectedId === null) throw uiError("template.error.needTemplate");
+    const source = mode === "current" ? { mode: "current", sessionId } : { mode: "template", templateId: selectedId };
+    if (mode === "template" && selectedId === null) throw uiError("template.error.needTemplate");
     return createCleanSession({ workspaceId, source });
   }, (id) => ({ key: "template.status.switched", values: { id } }));
   const diagnostics = Array.isArray(selected?.diagnostics) ? selected.diagnostics : [];
@@ -3769,8 +3769,8 @@ function launcherPlacement(anchor, viewport2, expanded = false, scale = 1) {
 
 // packages/client/src/play/chrome.js
 var CHROME_CLICK_DELAY = 260;
-function nextChromeMode(mode2) {
-  return mode2 === "play" ? "native" : "play";
+function nextChromeMode(mode) {
+  return mode === "play" ? "native" : "play";
 }
 function createChromeClickController({
   getMode,
@@ -5843,7 +5843,7 @@ function PlayUnboundNotice({ session, useSessions, playClient }) {
 // packages/client/src/play/occupancy.js
 var PLAY_SLOT_PRIORITY = -100;
 function installPlaySlotOccupancy(ctx, playClient) {
-  let mode2 = "native";
+  let mode = "native";
   let declared = false;
   let disposeEntry = null;
   let disposeEffect = null;
@@ -5869,7 +5869,7 @@ function installPlaySlotOccupancy(ctx, playClient) {
     dropEntry();
   };
   const mount = () => {
-    if (!declared || mode2 !== "play" || disposeEntry !== null) return;
+    if (!declared || mode !== "play" || disposeEntry !== null) return;
     disposeEntry = ctx.slots.register({
       name: "sidebar.workspaces",
       priority: PLAY_SLOT_PRIORITY,
@@ -5881,7 +5881,7 @@ function installPlaySlotOccupancy(ctx, playClient) {
   };
   const reconcile = () => {
     dropEffect();
-    if (!declared || mode2 !== "play") return;
+    if (!declared || mode !== "play") return;
     const effect = () => {
       mount();
       return dropEntry;
@@ -5905,7 +5905,7 @@ function installPlaySlotOccupancy(ctx, playClient) {
     dropNoticeEntry();
   };
   const mountNotice = () => {
-    if (!noticeDeclared || mode2 !== "play" || disposeNoticeEntry !== null) return;
+    if (!noticeDeclared || mode !== "play" || disposeNoticeEntry !== null) return;
     disposeNoticeEntry = ctx.slots.register({
       name: "conversation.input.dock",
       id: "pmp-dsh-tavern-unbound-notice",
@@ -5915,7 +5915,7 @@ function installPlaySlotOccupancy(ctx, playClient) {
   };
   const reconcileNotice = () => {
     dropNoticeEffect();
-    if (!noticeDeclared || mode2 !== "play") return;
+    if (!noticeDeclared || mode !== "play") return;
     const effect = () => {
       mountNotice();
       return dropNoticeEntry;
@@ -5946,12 +5946,12 @@ function installPlaySlotOccupancy(ctx, playClient) {
     chatGeneration += 1;
     const generation = chatGeneration;
     dropChatEntry();
-    if (!chatDeclared && !ioDeclared || mode2 !== "play") return;
+    if (!chatDeclared && !ioDeclared || mode !== "play") return;
     const session = currentSession();
     if (session === null) return;
     const sessionId = session.id;
     loadCurrentPlaythrough(playClient, session).then((match) => {
-      if (generation !== chatGeneration || mode2 !== "play" || !chatDeclared && !ioDeclared || currentSession()?.id !== sessionId || match === null) return;
+      if (generation !== chatGeneration || mode !== "play" || !chatDeclared && !ioDeclared || currentSession()?.id !== sessionId || match === null) return;
       if (chatDeclared) {
         disposeChatEntry = ctx.slots.register({
           name: "conversation.view",
@@ -6038,8 +6038,8 @@ function installPlaySlotOccupancy(ctx, playClient) {
   return {
     setMode(next) {
       const normalized = next === "play" ? "play" : "native";
-      if (mode2 === normalized) return;
-      mode2 = normalized;
+      if (mode === normalized) return;
+      mode = normalized;
       reconcile();
       reconcileNotice();
       reconcileChat();
@@ -6109,8 +6109,8 @@ function createLivePlayClient({
     async getChrome() {
       return normalizeChrome(await v2("GET", "/chrome"));
     },
-    async putChrome(mode2) {
-      return normalizeChrome(await v2("PUT", "/chrome", { mode: mode2 }));
+    async putChrome(mode) {
+      return normalizeChrome(await v2("PUT", "/chrome", { mode }));
     },
     async getWorkspace() {
       return normalizeWorkspace(await v2("GET", "/workspace"));
@@ -6757,11 +6757,11 @@ function TavernShell({ useSessions, useWorkspaces, createCleanSession, playClien
       if (typeof BroadcastChannel === "function") channel = new BroadcastChannel(`${PLUGIN_ID}:chrome`);
     } catch {
     }
-    if (mode !== "play") setSurface((current2) => current2 === "regex" ? null : current2);
-    const commitChrome = (mode2) => {
-      chromeModeRef.current = mode2;
-      setChromeMode(mode2);
-      playSlots.setMode(mode2);
+    const commitChrome = (mode) => {
+      chromeModeRef.current = mode;
+      setChromeMode(mode);
+      playSlots.setMode(mode);
+      if (mode !== "play") setSurface((current2) => current2 === "regex" ? null : current2);
     };
     const refreshChrome = async () => {
       try {
@@ -6776,13 +6776,13 @@ function TavernShell({ useSessions, useWorkspaces, createCleanSession, playClien
     };
     const controller2 = createChromeClickController({
       getMode: () => chromeModeRef.current,
-      persistMode: (mode2) => playClient.putChrome(mode2),
+      persistMode: (mode) => playClient.putChrome(mode),
       openMenu: () => setMenuOpen((value) => !value),
       closeMenu: () => setMenuOpen(false),
-      setMode: (mode2) => {
-        commitChrome(mode2);
+      setMode: (mode) => {
+        commitChrome(mode);
         try {
-          channel?.postMessage({ mode: mode2 });
+          channel?.postMessage({ mode });
         } catch {
         }
       },
