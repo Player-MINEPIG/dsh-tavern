@@ -61,3 +61,13 @@ test('Mowan regex panel exposes scoped CRUD and import/export without an AI requ
   assert.match(source, /downloadJson\(document\)/)
   assert.doesNotMatch(source, /postUserMessage|agent\/request|systemPrompt|putTimeline|getMessages/)
 })
+
+test('regex panel renders global, preset-bound and character-bound sections without scope tabs', () => {
+  const source = readFileSync(new URL('../packages/client/src/play/regex-panel.js', import.meta.url), 'utf8')
+  assert.match(source, /SCOPE_KINDS\.map\(kind => h\(RegexScopeSection/)
+  assert.match(source, /className: 'dtv-resource dtv-regex-section'/)
+  assert.match(source, /importScope\.current = kind/)
+  assert.match(source, /scopeFor\(importScope\.current, bindings\)/)
+  assert.doesNotMatch(source, /role: 'tab'/)
+  assert.doesNotMatch(source, /setScopeKind|scopeKind/)
+})

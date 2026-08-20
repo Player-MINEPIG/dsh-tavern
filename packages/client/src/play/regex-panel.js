@@ -170,14 +170,65 @@ function RuleEditor({ rule, busy, update, remove, sourceOwned = false }) {
   )
 }
 
+function RegexScopeSection({
+  kind,
+  bindings,
+  editableRules,
+  sourceRules,
+  busy,
+  add,
+  importJson,
+  exportJson,
+  update,
+  remove,
+}) {
+  const rules = [...editableRules, ...sourceRules]
+  const unbound = kind === 'preset' && bindings.presetId === null
+    ? uiMessage('regex.noPreset')
+    : kind === 'character' && bindings.characterId === null
+      ? uiMessage('regex.noCharacter')
+      : null
+  return h('section', { className: 'dtv-resource dtv-regex-section', 'data-scope': kind },
+    h('div', { className: 'dtv-regex-section-title' },
+      h('div', { className: 'dtv-resource-title' }, uiMessage(`regex.scope.${kind}`)),
+      h('span', { className: 'dtv-item-count' }, rawText(String(rules.length))),
+    ),
+    unbound === null ? null : h('p', { className: 'dtv-note' }, unbound),
+    h('div', { className: 'dtv-book-toolbar' },
+      h('button', { className: 'dtv-button', type: 'button', disabled: busy, onClick: add }, uiMessage('regex.add')),
+      h('button', { className: 'dtv-button', type: 'button', disabled: busy, onClick: importJson }, uiMessage('common.importJson')),
+      h('button', { className: 'dtv-button', type: 'button', disabled: busy, onClick: exportJson }, uiMessage('common.exportJson')),
+    ),
+    rules.length === 0
+      ? h('p', { className: 'dtv-note' }, uiMessage('regex.emptyScope'))
+      : [
+          ...editableRules.map((rule, index) => h(RuleEditor, {
+            key: `${kind}-editable-${rule.id}-${index}`,
+            rule,
+            busy,
+            update,
+            remove: () => remove(rule.id),
+          })),
+          ...sourceRules.map((rule, index) => h(RuleEditor, {
+            key: `${kind}-source-${rule.id}-${index}`,
+            rule,
+            busy,
+            sourceOwned: true,
+            update: () => {},
+            remove: () => {},
+          })),
+        ],
+  )
+}
+
 export function RegexPanel({ client, activeSnapshot, close }) {
   const [document, setDocument] = useState(EMPTY_DOCUMENT)
   const [savedDocument, setSavedDocument] = useState(EMPTY_DOCUMENT)
   const [resourceRules, setResourceRules] = useState({ preset: [], character: [] })
-  const [scopeKind, setScopeKind] = useState('global')
   const [busy, setBusy] = useState(false)
   const [status, setStatus] = useState({ text: uiMessage('common.loading'), error: false })
   const fileInput = useRef(null)
+  const importScope = useRef('global')
   const bindings = activeRegexBindings(activeSnapshot)
   const dirty = JSON.stringify(document) !== JSON.stringify(savedDocument)
 
@@ -227,7 +278,7 @@ export function RegexPanel({ client, activeSnapshot, close }) {
     close()
   }
 
-  const addRule = () => {
+  const addRule = kind => {
     const rule = normalizeRegexRule({
       name: unwrapText(uiMessage('regex.newRule')),
       enabled: true,
@@ -235,7 +286,7 @@ export function RegexPanel({ client, activeSnapshot, close }) {
       replace: '',
       flags: 'g',
       target: 'assistant',
-    }, { scope: scopeFor(scopeKind, bindings) })
+    }, { scope: scopeFor(kind, bindings) })
     setDocument(current => ({ ...current, rules: [...current.rules, rule] }))
   }
 
@@ -256,7 +307,7 @@ export function RegexPanel({ client, activeSnapshot, close }) {
     setBusy(true)
     try {
       const imported = importRegexDocument(JSON.parse(await file.text()), {
-        scope: scopeFor(scopeKind, bindings),
+        scope: scopeFor(importScope.current, bindings),
       })
       await persist({ ...document, rules: [...document.rules, ...imported] })
       setStatus({ text: uiMessage('regex.imported', { count: imported.length }), error: false })
@@ -266,13 +317,6 @@ export function RegexPanel({ client, activeSnapshot, close }) {
     }
   }
 
-  const editableRules = document.rules.filter(rule => rule.scope.kind === scopeKind)
-  const sourceRules = scopeKind === 'preset'
-    ? resourceRules.preset
-    : scopeKind === 'character'
-      ? resourceRules.character
-      : []
-  const visibleRules = [...editableRules, ...sourceRules]
   const title = uiMessage('regex.title')
   const closeLabel = uiMessage('panel.close', { title: unwrapText(title) })
   return h('div', { className: 'dtv-panel dtv-regex-panel' },
@@ -282,38 +326,23 @@ export function RegexPanel({ client, activeSnapshot, close }) {
     ),
     h('div', { className: 'dtv-body' },
       h('p', { className: 'dtv-note' }, uiMessage('regex.displayOnlyNote')),
-      h('div', { className: 'dtv-regex-scopes', role: 'tablist', 'aria-label': uiMessage('regex.scopes') },
-        ...SCOPE_KINDS.map(kind => h('button', {
-          className: 'dtv-button',
-          type: 'button',
-          role: 'tab',
-          key: kind,
-          'aria-selected': scopeKind === kind,
-          'data-selected': scopeKind === kind,
-          onClick: () => setScopeKind(kind),
-        }, uiMessage(`regex.scope.${kind}`))),
-      ),
-      scopeKind === 'preset' && bindings.presetId === null
-        ? h('p', { className: 'dtv-note' }, uiMessage('regex.noPreset'))
-        : scopeKind === 'character' && bindings.characterId === null
-          ? h('p', { className: 'dtv-note' }, uiMessage('regex.noCharacter'))
-          : null,
-      h('div', { className: 'dtv-book-toolbar' },
-        h('button', { className: 'dtv-button', type: 'button', disabled: busy, onClick: addRule }, uiMessage('regex.add')),
-        h('button', { className: 'dtv-button', type: 'button', disabled: busy, onClick: () => fileInput.current?.click() }, uiMessage('common.importJson')),
-        h('button', { className: 'dtv-button', type: 'button', disabled: busy, onClick: () => downloadJson(document) }, uiMessage('common.exportJson')),
-      ),
       h('input', { ref: fileInput, type: 'file', accept: 'application/json,.json', hidden: true, onChange: importFile }),
-      visibleRules.length === 0
-        ? h('p', { className: 'dtv-note' }, uiMessage('regex.emptyScope'))
-        : visibleRules.map((rule, index) => h(RuleEditor, {
-          key: `${rule.scope.kind}-${rule.id}-${index}`,
-          rule,
-          busy,
-          sourceOwned: index >= editableRules.length,
-          update: index >= editableRules.length ? () => {} : updateRule,
-          remove: () => removeRule(rule.id),
-        })),
+      ...SCOPE_KINDS.map(kind => h(RegexScopeSection, {
+        key: kind,
+        kind,
+        bindings,
+        editableRules: document.rules.filter(rule => rule.scope.kind === kind),
+        sourceRules: kind === 'preset' ? resourceRules.preset : kind === 'character' ? resourceRules.character : [],
+        busy,
+        add: () => addRule(kind),
+        importJson: () => {
+          importScope.current = kind
+          fileInput.current?.click()
+        },
+        exportJson: () => downloadJson(document),
+        update: updateRule,
+        remove: removeRule,
+      })),
       h('div', { className: 'dtv-status', 'data-error': status.error }, status.text),
       h('div', { className: 'dtv-regex-footer' },
         h('button', { className: 'dtv-button', type: 'button', disabled: busy, onClick: guardedLoad }, uiMessage('common.reload')),

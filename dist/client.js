@@ -109,8 +109,8 @@ var zh_CN_default = Object.freeze({
   "regex.displayOnlyNote": "\u8FD9\u4E9B\u89C4\u5219\u53EA\u6539\u53D8\u9B54\u4E38\u6E32\u67D3\u548C\u9759\u6001 HTML\uFF0C\u4E0D\u4F1A\u6539\u5199\u5386\u53F2\u3001\u65F6\u95F4\u7EBF\u6570\u636E\u6216\u53D1\u9001\u7ED9 AI \u7684\u8BF7\u6C42\u3002\u5BFC\u5165\u89C4\u5219\u7684\u5F00\u5173\u6309\u539F\u6837\u4FDD\u7559\u3002",
   "regex.scopes": "\u6B63\u5219\u4F5C\u7528\u57DF",
   "regex.scope.global": "\u5168\u5C40",
-  "regex.scope.preset": "\u9884\u8BBE",
-  "regex.scope.character": "\u89D2\u8272\u5361",
+  "regex.scope.preset": "\u9884\u8BBE\u7ED1\u5B9A",
+  "regex.scope.character": "\u89D2\u8272\u5361\u7ED1\u5B9A",
   "regex.noPreset": "\u5F53\u524D\u672A\u9009\u62E9\u9884\u8BBE\uFF1B\u9884\u8BBE\u4F5C\u7528\u57DF\u7684\u65B0\u89C4\u5219\u9700\u8981\u586B\u5199\u8D44\u6E90 ID \u540E\u624D\u80FD\u5339\u914D\u3002",
   "regex.noCharacter": "\u5F53\u524D\u672A\u7ED1\u5B9A\u89D2\u8272\u5361\uFF1B\u89D2\u8272\u5361\u4F5C\u7528\u57DF\u7684\u65B0\u89C4\u5219\u9700\u8981\u586B\u5199\u8D44\u6E90 ID \u540E\u624D\u80FD\u5339\u914D\u3002",
   "regex.add": "\u65B0\u5EFA\u89C4\u5219",
@@ -662,8 +662,8 @@ var en_default = Object.freeze({
   "regex.displayOnlyNote": "These rules change Mowan rendering and static HTML only. They never rewrite history, timeline data, or AI requests. Imported switches are preserved as supplied.",
   "regex.scopes": "Regex scopes",
   "regex.scope.global": "Global",
-  "regex.scope.preset": "Preset",
-  "regex.scope.character": "Character card",
+  "regex.scope.preset": "Preset-bound",
+  "regex.scope.character": "Character-bound",
   "regex.noPreset": "No preset is selected. New preset-scoped rules need a resource ID before they can match.",
   "regex.noCharacter": "No character card is bound. New character-scoped rules need a resource ID before they can match.",
   "regex.add": "New rule",
@@ -9666,14 +9666,66 @@ function RuleEditor({ rule, busy, update, remove, sourceOwned = false }) {
     )
   );
 }
+function RegexScopeSection({
+  kind,
+  bindings,
+  editableRules,
+  sourceRules,
+  busy,
+  add,
+  importJson,
+  exportJson,
+  update,
+  remove
+}) {
+  const rules = [...editableRules, ...sourceRules];
+  const unbound = kind === "preset" && bindings.presetId === null ? uiMessage("regex.noPreset") : kind === "character" && bindings.characterId === null ? uiMessage("regex.noCharacter") : null;
+  return h12(
+    "section",
+    { className: "dtv-resource dtv-regex-section", "data-scope": kind },
+    h12(
+      "div",
+      { className: "dtv-regex-section-title" },
+      h12("div", { className: "dtv-resource-title" }, uiMessage(`regex.scope.${kind}`)),
+      h12("span", { className: "dtv-item-count" }, rawText(String(rules.length)))
+    ),
+    unbound === null ? null : h12("p", { className: "dtv-note" }, unbound),
+    h12(
+      "div",
+      { className: "dtv-book-toolbar" },
+      h12("button", { className: "dtv-button", type: "button", disabled: busy, onClick: add }, uiMessage("regex.add")),
+      h12("button", { className: "dtv-button", type: "button", disabled: busy, onClick: importJson }, uiMessage("common.importJson")),
+      h12("button", { className: "dtv-button", type: "button", disabled: busy, onClick: exportJson }, uiMessage("common.exportJson"))
+    ),
+    rules.length === 0 ? h12("p", { className: "dtv-note" }, uiMessage("regex.emptyScope")) : [
+      ...editableRules.map((rule, index) => h12(RuleEditor, {
+        key: `${kind}-editable-${rule.id}-${index}`,
+        rule,
+        busy,
+        update,
+        remove: () => remove(rule.id)
+      })),
+      ...sourceRules.map((rule, index) => h12(RuleEditor, {
+        key: `${kind}-source-${rule.id}-${index}`,
+        rule,
+        busy,
+        sourceOwned: true,
+        update: () => {
+        },
+        remove: () => {
+        }
+      }))
+    ]
+  );
+}
 function RegexPanel({ client, activeSnapshot, close }) {
   const [document2, setDocument] = (0, import_react14.useState)(EMPTY_DOCUMENT);
   const [savedDocument, setSavedDocument] = (0, import_react14.useState)(EMPTY_DOCUMENT);
   const [resourceRules, setResourceRules] = (0, import_react14.useState)({ preset: [], character: [] });
-  const [scopeKind, setScopeKind] = (0, import_react14.useState)("global");
   const [busy, setBusy] = (0, import_react14.useState)(false);
   const [status, setStatus] = (0, import_react14.useState)({ text: uiMessage("common.loading"), error: false });
   const fileInput = (0, import_react14.useRef)(null);
+  const importScope = (0, import_react14.useRef)("global");
   const bindings = activeRegexBindings(activeSnapshot);
   const dirty = JSON.stringify(document2) !== JSON.stringify(savedDocument);
   const load = async () => {
@@ -9719,7 +9771,7 @@ function RegexPanel({ client, activeSnapshot, close }) {
     if (dirty && !window.confirm(unwrapText(uiMessage("regex.confirmClose")))) return;
     close();
   };
-  const addRule = () => {
+  const addRule = (kind) => {
     const rule = normalizeRegexRule({
       name: unwrapText(uiMessage("regex.newRule")),
       enabled: true,
@@ -9727,7 +9779,7 @@ function RegexPanel({ client, activeSnapshot, close }) {
       replace: "",
       flags: "g",
       target: "assistant"
-    }, { scope: scopeFor(scopeKind, bindings) });
+    }, { scope: scopeFor(kind, bindings) });
     setDocument((current2) => ({ ...current2, rules: [...current2.rules, rule] }));
   };
   const updateRule = (next) => setDocument((current2) => ({
@@ -9745,7 +9797,7 @@ function RegexPanel({ client, activeSnapshot, close }) {
     setBusy(true);
     try {
       const imported = importRegexDocument(JSON.parse(await file.text()), {
-        scope: scopeFor(scopeKind, bindings)
+        scope: scopeFor(importScope.current, bindings)
       });
       await persist({ ...document2, rules: [...document2.rules, ...imported] });
       setStatus({ text: uiMessage("regex.imported", { count: imported.length }), error: false });
@@ -9754,9 +9806,6 @@ function RegexPanel({ client, activeSnapshot, close }) {
       setBusy(false);
     }
   };
-  const editableRules = document2.rules.filter((rule) => rule.scope.kind === scopeKind);
-  const sourceRules = scopeKind === "preset" ? resourceRules.preset : scopeKind === "character" ? resourceRules.character : [];
-  const visibleRules = [...editableRules, ...sourceRules];
   const title = uiMessage("regex.title");
   const closeLabel = uiMessage("panel.close", { title: unwrapText(title) });
   return h12(
@@ -9772,36 +9821,22 @@ function RegexPanel({ client, activeSnapshot, close }) {
       "div",
       { className: "dtv-body" },
       h12("p", { className: "dtv-note" }, uiMessage("regex.displayOnlyNote")),
-      h12(
-        "div",
-        { className: "dtv-regex-scopes", role: "tablist", "aria-label": uiMessage("regex.scopes") },
-        ...SCOPE_KINDS.map((kind) => h12("button", {
-          className: "dtv-button",
-          type: "button",
-          role: "tab",
-          key: kind,
-          "aria-selected": scopeKind === kind,
-          "data-selected": scopeKind === kind,
-          onClick: () => setScopeKind(kind)
-        }, uiMessage(`regex.scope.${kind}`)))
-      ),
-      scopeKind === "preset" && bindings.presetId === null ? h12("p", { className: "dtv-note" }, uiMessage("regex.noPreset")) : scopeKind === "character" && bindings.characterId === null ? h12("p", { className: "dtv-note" }, uiMessage("regex.noCharacter")) : null,
-      h12(
-        "div",
-        { className: "dtv-book-toolbar" },
-        h12("button", { className: "dtv-button", type: "button", disabled: busy, onClick: addRule }, uiMessage("regex.add")),
-        h12("button", { className: "dtv-button", type: "button", disabled: busy, onClick: () => fileInput.current?.click() }, uiMessage("common.importJson")),
-        h12("button", { className: "dtv-button", type: "button", disabled: busy, onClick: () => downloadJson(document2) }, uiMessage("common.exportJson"))
-      ),
       h12("input", { ref: fileInput, type: "file", accept: "application/json,.json", hidden: true, onChange: importFile }),
-      visibleRules.length === 0 ? h12("p", { className: "dtv-note" }, uiMessage("regex.emptyScope")) : visibleRules.map((rule, index) => h12(RuleEditor, {
-        key: `${rule.scope.kind}-${rule.id}-${index}`,
-        rule,
+      ...SCOPE_KINDS.map((kind) => h12(RegexScopeSection, {
+        key: kind,
+        kind,
+        bindings,
+        editableRules: document2.rules.filter((rule) => rule.scope.kind === kind),
+        sourceRules: kind === "preset" ? resourceRules.preset : kind === "character" ? resourceRules.character : [],
         busy,
-        sourceOwned: index >= editableRules.length,
-        update: index >= editableRules.length ? () => {
-        } : updateRule,
-        remove: () => removeRule(rule.id)
+        add: () => addRule(kind),
+        importJson: () => {
+          importScope.current = kind;
+          fileInput.current?.click();
+        },
+        exportJson: () => downloadJson(document2),
+        update: updateRule,
+        remove: removeRule
       })),
       h12("div", { className: "dtv-status", "data-error": status.error }, status.text),
       h12(
@@ -9836,7 +9871,7 @@ var css11 = `
 .dtv-book-toolbar{display:grid;grid-template-columns:1fr 1fr 1fr;gap:7px}.dtv-entry{border:1px solid var(--dsw-alias-border-l1);border-radius:8px;background:var(--dsw-alias-bg-base);overflow:hidden}.dtv-entry>summary{list-style:none;cursor:pointer;padding:8px;display:flex;align-items:center;gap:7px;font-size:11px}.dtv-entry>summary::-webkit-details-marker{display:none}.dtv-entry-dot{width:8px;height:8px;flex:none;border-radius:50%;background:var(--dsw-alias-label-tertiary)}.dtv-entry[data-enabled=true] .dtv-entry-dot{background:var(--dsw-alias-state-success,#2fa36b)}.dtv-entry-name{font-weight:620;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.dtv-entry-state{margin-left:auto;flex:none;color:var(--dsw-alias-label-tertiary);font-size:10px}.dtv-entry-body{border-top:1px solid var(--dsw-alias-border-l1);padding:8px;display:flex;flex-direction:column;gap:8px}.dtv-field{display:flex;flex-direction:column;gap:4px}.dtv-label{font-size:10px;font-weight:620;color:var(--dsw-alias-label-tertiary)}.dtv-input,.dtv-select,.dtv-textarea{box-sizing:border-box;width:100%;border:1px solid var(--dsw-alias-border-l2);border-radius:7px;background:var(--dsw-alias-bg-base);color:var(--dsw-alias-label-primary);font:inherit;font-size:11px;padding:7px 8px}.dtv-input,.dtv-select{height:32px}.dtv-textarea{min-height:94px;resize:vertical;line-height:1.45}.dtv-policy{min-height:96px}.dtv-entry-grid{display:grid;grid-template-columns:1fr 1fr;gap:7px}.dtv-checks{display:flex;flex-wrap:wrap;gap:10px}.dtv-check{display:flex;gap:5px;align-items:center;font-size:10px}.dtv-entry-actions{display:flex;justify-content:flex-end}.dtv-danger{color:var(--dsw-alias-state-error)}
 .dtv-layer>.dtv-launcher,.dtv-layer>.dtv-panel,.dtv-layer>.dcc-panel,.dtv-layer>.dwb-panel,.dtv-layer>.dtu-panel{zoom:var(--dtv-ui-scale,1)}.dtv-setting-value{font-size:12px;font-variant-numeric:tabular-nums;color:var(--dsw-alias-label-secondary)}
 .dtv-modal-backdrop{position:absolute;inset:0;z-index:20;pointer-events:auto;background:rgba(0,0,0,.48);display:flex;align-items:center;justify-content:center;padding:24px}
-.dtv-regex-scopes{display:grid;grid-template-columns:repeat(3,1fr);gap:7px}.dtv-regex-scopes .dtv-button[data-selected=true]{background:var(--dsw-alias-interactive-bg-selected,var(--dsw-specific-tip));border-color:var(--dsw-alias-state-business-primary,#2677d9)}.dtv-regex-expression{font-family:var(--dsw-font-mono,ui-monospace,SFMono-Regular,Consolas,monospace);min-height:72px}.dtv-regex-footer{position:sticky;bottom:-12px;display:grid;grid-template-columns:1fr 1fr;gap:8px;padding:10px 0 12px;background:var(--dsw-alias-bg-base)}
+.dtv-regex-section{gap:8px}.dtv-regex-section-title{display:flex;align-items:center;gap:8px}.dtv-regex-section-title .dtv-item-count{margin-left:auto}.dtv-regex-expression{font-family:var(--dsw-font-mono,ui-monospace,SFMono-Regular,Consolas,monospace);min-height:72px}.dtv-regex-footer{position:sticky;bottom:-12px;display:grid;grid-template-columns:1fr 1fr;gap:8px;padding:10px 0 12px;background:var(--dsw-alias-bg-base)}
 .dtv-modal{width:min(420px,100%);border-radius:12px;background:var(--dsw-alias-bg-base);border:1px solid var(--dsw-alias-border-l2);box-shadow:var(--ds-shadow-3,0 16px 40px rgba(0,0,0,.28));padding:18px 16px;display:flex;flex-direction:column;gap:14px}
 .dtv-modal-body{margin:0;font-size:13px;line-height:1.55}.dtv-modal .dtv-button{align-self:flex-end;min-width:88px}
 `;
