@@ -26,6 +26,31 @@ test('ST regex import preserves each original switch without a safety override',
   ])
 })
 
+test('ST official single-script export imports without an array wrapper', () => {
+  const [rule] = importRegexDocument({
+    id: 'single',
+    scriptName: 'Quote closer',
+    findRegex: '/(“[^”"\\r\\n]+)"/g',
+    replaceString: '$1”',
+    trimStrings: [],
+    placement: [2],
+    disabled: true,
+    markdownOnly: false,
+    promptOnly: false,
+    runOnEdit: true,
+    substituteRegex: 0,
+    minDepth: null,
+    maxDepth: null,
+  }, { scope: { kind: 'global', resourceId: null } })
+  assert.equal(rule.id, 'single')
+  assert.equal(rule.name, 'Quote closer')
+  assert.equal(rule.enabled, false)
+  assert.equal(rule.find, '/(“[^”"\\r\\n]+)"/g')
+  assert.equal(rule.replace, '$1”')
+  assert.equal(rule.target, 'assistant')
+  assert.deepEqual(rule.scope, { kind: 'global', resourceId: null })
+})
+
 test('ST native regex fields are normalized without losing display semantics', () => {
   const [rule] = importRegexDocument({
     extensions: { regex_scripts: [{

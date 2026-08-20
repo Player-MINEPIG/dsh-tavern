@@ -4084,6 +4084,9 @@ function displayImportCandidate(value) {
 }
 function regexCandidates(value) {
   if (Array.isArray(value)) return value;
+  if (isRecord3(value) && [value.find, value.findRegex, value.find_regex, value.regex].some((item) => typeof item === "string")) {
+    return [value];
+  }
   const candidates = [
     value?.rules,
     value?.regex_scripts,
