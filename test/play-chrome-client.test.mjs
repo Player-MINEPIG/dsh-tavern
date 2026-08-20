@@ -6,27 +6,6 @@ import {
   nextChromeMode,
 } from '../packages/client/src/play/chrome.js'
 
-function fakeScheduler() {
-  const scheduled = new Map()
-  let sequence = 0
-  return {
-    schedule(callback, delay) {
-      const id = ++sequence
-      scheduled.set(id, { callback, delay })
-      return id
-    },
-    cancel(id) {
-      scheduled.delete(id)
-    },
-    flush() {
-      const tasks = [...scheduled.values()]
-      scheduled.clear()
-      for (const task of tasks) task.callback()
-    },
-    scheduled,
-  }
-}
-
 function deferred() {
   let resolve
   let reject
@@ -42,8 +21,8 @@ test('chrome modes toggle only between native and play', () => {
   assert.equal(nextChromeMode('play'), 'native')
 })
 
-test('a single launcher click opens the menu only after the double-click window', () => {
-  const clock = fakeScheduler()
+test('a single launcher click opens the menu immediately without waiting for the double-click window', () => {
+  let time = 100
   let opens = 0
   const controller = createChromeClickController({
     getMode: () => 'native',
@@ -51,23 +30,22 @@ test('a single launcher click opens the menu only after the double-click window'
     openMenu: () => { opens += 1 },
     closeMenu: () => {},
     setMode: () => {},
-    schedule: clock.schedule,
-    cancel: clock.cancel,
+    now: () => time,
   })
 
   assert.equal(controller.click(), true)
-  assert.equal(controller.click(), false)
-  assert.equal(opens, 0)
-  assert.equal([...clock.scheduled.values()][0].delay, CHROME_CLICK_DELAY)
-  clock.flush()
   assert.equal(opens, 1)
+  time += CHROME_CLICK_DELAY + 1
+  assert.equal(controller.click(), true)
+  assert.equal(opens, 2)
 })
 
-test('double-click cancels menu opening and commits mode only after PUT succeeds', async () => {
-  const clock = fakeScheduler()
+test('a fast second click switches mode without delaying the first menu opening', async () => {
+  let time = 100
   const request = deferred()
   let mode = 'native'
   let requestedMode = null
+  let opens = 0
   let closes = 0
   const controller = createChromeClickController({
     getMode: () => mode,
@@ -75,19 +53,20 @@ test('double-click cancels menu opening and commits mode only after PUT succeeds
       requestedMode = desired
       return request.promise
     },
-    openMenu: () => assert.fail('double-click must cancel menu opening'),
+    openMenu: () => { opens += 1 },
     closeMenu: () => { closes += 1 },
     setMode: saved => { mode = saved },
-    schedule: clock.schedule,
-    cancel: clock.cancel,
+    now: () => time,
   })
 
   controller.click()
-  const switching = controller.doubleClick()
+  assert.equal(opens, 1)
+  time += CHROME_CLICK_DELAY - 1
+  const switching = controller.click()
   assert.equal(requestedMode, 'play')
   assert.equal(mode, 'native')
   assert.equal(closes, 1)
-  assert.equal(clock.scheduled.size, 0)
+  assert.equal(controller.doubleClick(), false)
 
   request.resolve({ mode: 'play' })
   assert.equal(await switching, true)
@@ -95,7 +74,6 @@ test('double-click cancels menu opening and commits mode only after PUT succeeds
 })
 
 test('failed and suppressed switches never change local chrome state', async () => {
-  const clock = fakeScheduler()
   const failure = new Error('PUT failed')
   let mode = 'native'
   let error = null
@@ -110,8 +88,6 @@ test('failed and suppressed switches never change local chrome state', async () 
     closeMenu: () => {},
     setMode: saved => { mode = saved },
     setError: reason => { error = reason },
-    schedule: clock.schedule,
-    cancel: clock.cancel,
   })
 
   assert.equal(controller.click({ suppressed: true }), false)
@@ -121,7 +97,6 @@ test('failed and suppressed switches never change local chrome state', async () 
   assert.equal(mode, 'native')
   assert.equal(error, failure)
 
-  controller.click()
   controller.dispose()
-  clock.flush()
+  assert.equal(controller.click(), false)
 })

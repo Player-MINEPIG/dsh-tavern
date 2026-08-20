@@ -4,8 +4,10 @@ import { readFileSync } from 'node:fs'
 import {
   TAVERN_MENU_ITEMS,
   clampLauncherAnchor,
+  defaultLauncherAnchor,
   launcherPlacement,
   launcherResourceStatuses,
+  migrateLegacyLauncherAnchor,
   surfaceTitle,
 } from '../packages/client/src/state.js'
 
@@ -26,6 +28,9 @@ test('one Tavern launcher exposes stable resource surfaces', () => {
 })
 
 test('floating launcher clamps its drag anchor and expands toward available space', () => {
+  assert.deepEqual(defaultLauncherAnchor({ width: 800, height: 600 }), { x: 740, y: 72 })
+  assert.deepEqual(migrateLegacyLauncherAnchor({ x: 740, y: 14 }, { width: 800, height: 600 }), { x: 740, y: 72 })
+  assert.deepEqual(migrateLegacyLauncherAnchor({ x: 400, y: 220 }, { width: 800, height: 600 }), { x: 400, y: 220 })
   assert.deepEqual(clampLauncherAnchor({ x: -20, y: 900 }, { width: 800, height: 600 }), { x: 8, y: 548 })
   assert.deepEqual(launcherPlacement({ x: 748, y: 548 }, { width: 800, height: 600 }, true), {
     side: 'left',

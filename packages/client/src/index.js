@@ -30,8 +30,10 @@ import {
 import {
   TAVERN_MENU_ITEMS,
   clampLauncherAnchor,
+  defaultLauncherAnchor,
   launcherPlacement,
   launcherResourceStatuses,
+  migrateLegacyLauncherAnchor,
 } from './state.js'
 import { createChromeClickController } from './play/chrome.js'
 import { installPlaySlotOccupancy } from './play/occupancy.js'
@@ -66,7 +68,8 @@ const css = `
 .dtv-modal-body{margin:0;font-size:13px;line-height:1.55}.dtv-modal .dtv-button{align-self:flex-end;min-width:88px}
 `
 
-const LAUNCHER_STORAGE_KEY = `${PLUGIN_ID}:launcher-position:v1`
+const LAUNCHER_STORAGE_KEY = `${PLUGIN_ID}:launcher-position:v2`
+const LEGACY_LAUNCHER_STORAGE_KEY = `${PLUGIN_ID}:launcher-position:v1`
 
 function viewport() {
   return { width: window.innerWidth, height: window.innerHeight }
@@ -76,10 +79,16 @@ function initialLauncherAnchor() {
   try {
     const stored = window.localStorage.getItem(LAUNCHER_STORAGE_KEY)
     if (stored !== null) return clampLauncherAnchor(JSON.parse(stored), viewport())
+    const legacy = window.localStorage.getItem(LEGACY_LAUNCHER_STORAGE_KEY)
+    if (legacy !== null) {
+      const migrated = migrateLegacyLauncherAnchor(JSON.parse(legacy), viewport())
+      window.localStorage.setItem(LAUNCHER_STORAGE_KEY, JSON.stringify(migrated))
+      return migrated
+    }
   } catch {
     // Fall through to the default when stored state is missing or malformed.
   }
-  return clampLauncherAnchor({ x: window.innerWidth - 60, y: 14 }, viewport())
+  return defaultLauncherAnchor(viewport())
 }
 
 function persistLauncherAnchor(anchor) {

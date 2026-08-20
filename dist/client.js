@@ -3636,6 +3636,7 @@ var TAVERN_MENU_ITEMS = Object.freeze([
 ]);
 var TAVERN_LAUNCHER_SIZE = 44;
 var TAVERN_LAUNCHER_PANEL = Object.freeze({ width: 300, height: 376 });
+var TAVERN_LAUNCHER_DEFAULT_TOP = 72;
 function isRecord2(value) {
   return value !== null && typeof value === "object" && !Array.isArray(value);
 }
@@ -3750,6 +3751,18 @@ function clampLauncherAnchor(position, viewport2, scale = 1) {
     y: Math.min(height - launcherSize - margin, Math.max(margin, Number(position?.y) || margin))
   };
 }
+function defaultLauncherAnchor(viewport2, scale = 1) {
+  const factor = Math.max(0.1, Number(scale) || 1);
+  return clampLauncherAnchor({
+    x: (Number(viewport2?.width) || TAVERN_LAUNCHER_SIZE) - TAVERN_LAUNCHER_SIZE * factor - 16,
+    y: TAVERN_LAUNCHER_DEFAULT_TOP
+  }, viewport2, factor);
+}
+function migrateLegacyLauncherAnchor(position, viewport2, scale = 1) {
+  const point = clampLauncherAnchor(position, viewport2, scale);
+  const width = Math.max(TAVERN_LAUNCHER_SIZE, Number(viewport2?.width) || TAVERN_LAUNCHER_SIZE);
+  return point.y < 64 && point.x > width - 120 ? defaultLauncherAnchor(viewport2, scale) : point;
+}
 function launcherPlacement(anchor, viewport2, expanded = false, scale = 1) {
   const factor = Math.max(0.1, Number(scale) || 1);
   const point = clampLauncherAnchor(anchor, viewport2, factor);
@@ -3780,8 +3793,7 @@ function createChromeClickController({
   setMode,
   setError = () => {
   },
-  schedule = (callback, delay2) => globalThis.setTimeout(callback, delay2),
-  cancel = (timer) => globalThis.clearTimeout(timer),
+  now = () => Date.now(),
   delay = CHROME_CLICK_DELAY
 }) {
   if (typeof getMode !== "function") throw new TypeError("getMode is required");
@@ -3789,16 +3801,11 @@ function createChromeClickController({
   if (typeof openMenu !== "function") throw new TypeError("openMenu is required");
   if (typeof closeMenu !== "function") throw new TypeError("closeMenu is required");
   if (typeof setMode !== "function") throw new TypeError("setMode is required");
-  let pendingClick = null;
+  let lastClickAt = null;
+  let suppressNextDoubleClick = false;
   let switching = false;
   let disposed = false;
-  const cancelPendingClick = () => {
-    if (pendingClick === null) return;
-    cancel(pendingClick);
-    pendingClick = null;
-  };
   const switchMode = async ({ suppressed = false } = {}) => {
-    cancelPendingClick();
     closeMenu();
     if (disposed || suppressed || switching) return false;
     switching = true;
@@ -3817,18 +3824,31 @@ function createChromeClickController({
   };
   return {
     click({ suppressed = false } = {}) {
-      if (disposed || suppressed || pendingClick !== null) return false;
-      pendingClick = schedule(() => {
-        pendingClick = null;
-        if (!disposed) openMenu();
-      }, delay);
+      if (disposed || suppressed || switching) return false;
+      const clickedAt = Number(now());
+      const elapsed = lastClickAt === null ? Infinity : clickedAt - lastClickAt;
+      if (elapsed >= 0 && elapsed <= delay) {
+        lastClickAt = null;
+        suppressNextDoubleClick = true;
+        return switchMode();
+      }
+      lastClickAt = clickedAt;
+      suppressNextDoubleClick = false;
+      openMenu();
       return true;
     },
     switchMode,
-    doubleClick: switchMode,
+    doubleClick(options) {
+      if (suppressNextDoubleClick) {
+        suppressNextDoubleClick = false;
+        return false;
+      }
+      return switchMode(options);
+    },
     dispose() {
       disposed = true;
-      cancelPendingClick();
+      lastClickAt = null;
+      suppressNextDoubleClick = false;
     }
   };
 }
@@ -6521,7 +6541,8 @@ var css11 = `
 .dtv-modal{width:min(420px,100%);border-radius:12px;background:var(--dsw-alias-bg-base);border:1px solid var(--dsw-alias-border-l2);box-shadow:var(--ds-shadow-3,0 16px 40px rgba(0,0,0,.28));padding:18px 16px;display:flex;flex-direction:column;gap:14px}
 .dtv-modal-body{margin:0;font-size:13px;line-height:1.55}.dtv-modal .dtv-button{align-self:flex-end;min-width:88px}
 `;
-var LAUNCHER_STORAGE_KEY = `${PLUGIN_ID}:launcher-position:v1`;
+var LAUNCHER_STORAGE_KEY = `${PLUGIN_ID}:launcher-position:v2`;
+var LEGACY_LAUNCHER_STORAGE_KEY = `${PLUGIN_ID}:launcher-position:v1`;
 function viewport() {
   return { width: window.innerWidth, height: window.innerHeight };
 }
@@ -6529,9 +6550,15 @@ function initialLauncherAnchor() {
   try {
     const stored = window.localStorage.getItem(LAUNCHER_STORAGE_KEY);
     if (stored !== null) return clampLauncherAnchor(JSON.parse(stored), viewport());
+    const legacy = window.localStorage.getItem(LEGACY_LAUNCHER_STORAGE_KEY);
+    if (legacy !== null) {
+      const migrated = migrateLegacyLauncherAnchor(JSON.parse(legacy), viewport());
+      window.localStorage.setItem(LAUNCHER_STORAGE_KEY, JSON.stringify(migrated));
+      return migrated;
+    }
   } catch {
   }
-  return clampLauncherAnchor({ x: window.innerWidth - 60, y: 14 }, viewport());
+  return defaultLauncherAnchor(viewport());
 }
 function persistLauncherAnchor(anchor) {
   try {

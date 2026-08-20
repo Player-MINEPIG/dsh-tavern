@@ -10,6 +10,7 @@ export const TAVERN_MENU_ITEMS = Object.freeze([
 
 export const TAVERN_LAUNCHER_SIZE = 44
 export const TAVERN_LAUNCHER_PANEL = Object.freeze({ width: 300, height: 376 })
+export const TAVERN_LAUNCHER_DEFAULT_TOP = 72
 
 function isRecord(value) {
   return value !== null && typeof value === 'object' && !Array.isArray(value)
@@ -154,6 +155,22 @@ export function clampLauncherAnchor(position, viewport, scale = 1) {
     x: Math.min(width - launcherSize - margin, Math.max(margin, Number(position?.x) || margin)),
     y: Math.min(height - launcherSize - margin, Math.max(margin, Number(position?.y) || margin)),
   }
+}
+
+export function defaultLauncherAnchor(viewport, scale = 1) {
+  const factor = Math.max(0.1, Number(scale) || 1)
+  return clampLauncherAnchor({
+    x: (Number(viewport?.width) || TAVERN_LAUNCHER_SIZE) - (TAVERN_LAUNCHER_SIZE * factor) - 16,
+    y: TAVERN_LAUNCHER_DEFAULT_TOP,
+  }, viewport, factor)
+}
+
+export function migrateLegacyLauncherAnchor(position, viewport, scale = 1) {
+  const point = clampLauncherAnchor(position, viewport, scale)
+  const width = Math.max(TAVERN_LAUNCHER_SIZE, Number(viewport?.width) || TAVERN_LAUNCHER_SIZE)
+  return point.y < 64 && point.x > width - 120
+    ? defaultLauncherAnchor(viewport, scale)
+    : point
 }
 
 export function launcherPlacement(anchor, viewport, expanded = false, scale = 1) {

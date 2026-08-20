@@ -11,8 +11,7 @@ export function createChromeClickController({
   closeMenu,
   setMode,
   setError = () => {},
-  schedule = (callback, delay) => globalThis.setTimeout(callback, delay),
-  cancel = timer => globalThis.clearTimeout(timer),
+  now = () => Date.now(),
   delay = CHROME_CLICK_DELAY,
 }) {
   if (typeof getMode !== 'function') throw new TypeError('getMode is required')
@@ -21,18 +20,12 @@ export function createChromeClickController({
   if (typeof closeMenu !== 'function') throw new TypeError('closeMenu is required')
   if (typeof setMode !== 'function') throw new TypeError('setMode is required')
 
-  let pendingClick = null
+  let lastClickAt = null
+  let suppressNextDoubleClick = false
   let switching = false
   let disposed = false
 
-  const cancelPendingClick = () => {
-    if (pendingClick === null) return
-    cancel(pendingClick)
-    pendingClick = null
-  }
-
   const switchMode = async ({ suppressed = false } = {}) => {
-    cancelPendingClick()
     closeMenu()
     if (disposed || suppressed || switching) return false
     switching = true
@@ -52,20 +45,33 @@ export function createChromeClickController({
 
   return {
     click({ suppressed = false } = {}) {
-      if (disposed || suppressed || pendingClick !== null) return false
-      pendingClick = schedule(() => {
-        pendingClick = null
-        if (!disposed) openMenu()
-      }, delay)
+      if (disposed || suppressed || switching) return false
+      const clickedAt = Number(now())
+      const elapsed = lastClickAt === null ? Infinity : clickedAt - lastClickAt
+      if (elapsed >= 0 && elapsed <= delay) {
+        lastClickAt = null
+        suppressNextDoubleClick = true
+        return switchMode()
+      }
+      lastClickAt = clickedAt
+      suppressNextDoubleClick = false
+      openMenu()
       return true
     },
 
     switchMode,
-    doubleClick: switchMode,
+    doubleClick(options) {
+      if (suppressNextDoubleClick) {
+        suppressNextDoubleClick = false
+        return false
+      }
+      return switchMode(options)
+    },
 
     dispose() {
       disposed = true
-      cancelPendingClick()
+      lastClickAt = null
+      suppressNextDoubleClick = false
     },
   }
 }
