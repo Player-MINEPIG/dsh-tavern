@@ -375,3 +375,36 @@ test('GET /playthroughs/:id/focus derives catalog authority and does not use act
     rmSync(fixture.playRoot, { recursive: true, force: true })
   }
 })
+test('playthrough focus preserves null focus for hidden non-empty timelines and maps file failures', async () => {
+  const fixture = await boundHandler()
+  try {
+    mkdirSync(join(fixture.playRoot, 'alice', 'hidden'), { recursive: true })
+    mkdirSync(join(fixture.playRoot, 'alice', 'missing'), { recursive: true })
+    mkdirSync(join(fixture.playRoot, 'alice', 'invalid'), { recursive: true })
+    writeFileSync(join(fixture.playRoot, 'alice', 'hidden', 'timeline.json'), JSON.stringify({
+      nodes: [{ id: 'hidden-q', kind: 'qa', hidden: true, adoptedVariantId: 'v1', variants: [{ id: 'v1', sessionId: 'hidden-session', startEventId: 1, endEventId: 2 }] }],
+    }))
+    writeFileSync(join(fixture.playRoot, 'alice', 'invalid', 'timeline.json'), '{invalid')
+    writeFileSync(join(fixture.playRoot, 'catalog.json'), JSON.stringify({ playthroughs: [
+      { id: 'hidden', path: 'alice/hidden/timeline.json', ext: { pmpDshTavern: { rootSessionId: 'hidden-root' } } },
+      { id: 'missing', path: 'alice/missing/timeline.json', ext: { pmpDshTavern: { rootSessionId: 'missing-root' } } },
+      { id: 'invalid', path: 'alice/invalid/timeline.json', ext: { pmpDshTavern: { rootSessionId: 'invalid-root' } } },
+    ] }))
+    const hidden = await invoke(fixture.handler, { url: API_V2 + '/playthroughs/hidden/focus' })
+    assert.equal(hidden.status, 200)
+    assert.deepEqual(hidden.body, { ok: true, playthroughId: 'hidden', sessionId: null, nodeId: null, variantId: null })
+    const missing = await invoke(fixture.handler, { url: API_V2 + '/playthroughs/missing/focus' })
+    assert.equal(missing.status, 409)
+    assert.equal(missing.body.code, 'PLAY_FOCUS_UNAVAILABLE')
+    const invalid = await invoke(fixture.handler, { url: API_V2 + '/playthroughs/invalid/focus' })
+    assert.equal(invalid.status, 409)
+    assert.equal(invalid.body.code, 'PLAY_FOCUS_UNAVAILABLE')
+    writeFileSync(join(fixture.playRoot, 'catalog.json'), '{invalid')
+    const badCatalog = await invoke(fixture.handler, { url: API_V2 + '/playthroughs/hidden/focus' })
+    assert.equal(badCatalog.status, 400)
+    assert.equal(badCatalog.body.code, 'PLAY_CATALOG_INVALID')
+  } finally {
+    rmSync(fixture.pluginDir, { recursive: true, force: true })
+    rmSync(fixture.playRoot, { recursive: true, force: true })
+  }
+})

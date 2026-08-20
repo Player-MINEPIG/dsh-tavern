@@ -124,23 +124,10 @@ function focusUnavailable(id, cause) {
 }
 
 async function readTimelineForFocus(workspaceStore, relativePath) {
-  const path = relativePath
-    ?? workspaceStore.get().activeTimelinePath
-    ?? null
-  if (path === null) {
-    try {
-      const catalog = parseCatalogJson(workspaceStore.readFile('catalog.json').content)
-      const opened = [...catalog.playthroughs].sort((left, right) => String(right.lastOpenedAt ?? '').localeCompare(String(left.lastOpenedAt ?? '')))[0]
-      if (opened?.path) return { path: opened.path, timeline: parseTimelineJson(workspaceStore.readFile(opened.path).content) }
-    } catch (error) {
-      if (error?.status === 409 || error?.code === 'PLAY_PATH_NOT_FOUND' || error?.code === 'PLAY_CATALOG_INVALID') {
-        return { path: null, timeline: { nodes: [] } }
-      }
-      throw error
-    }
-    return { path: null, timeline: { nodes: [] } }
+  if (typeof relativePath !== 'string' || relativePath === '') {
+    throw httpError(400, 'path is required', 'PLAY_FOCUS_PATH_REQUIRED')
   }
-  return { path, timeline: parseTimelineJson(workspaceStore.readFile(path).content) }
+  return { path: relativePath, timeline: parseTimelineJson(workspaceStore.readFile(relativePath).content) }
 }
 
 export function createSessionApiHandler({ host, workspaceStore, now = () => new Date() } = {}) {
@@ -270,10 +257,11 @@ export function createSessionApiHandler({ host, workspaceStore, now = () => new 
         throw focusUnavailable(id, error)
       }
       const rootSessionId = playthrough.ext?.pmpDshTavern?.rootSessionId ?? null
+      const emptyTimeline = timeline.nodes.length === 0
       return sendJson(res, 200, {
         ok: true,
         playthroughId: id,
-        sessionId: focus.sessionId ?? rootSessionId,
+        sessionId: emptyTimeline ? rootSessionId : focus.sessionId,
         nodeId: focus.nodeId,
         variantId: focus.variantId,
       })
