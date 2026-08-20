@@ -315,7 +315,7 @@ v1 是本插件悬浮球 / 侧栏 / Trace 用的 bundled UI 资源合同，不�
 
 `dsh-tavern` 会处理并发送可执行为模型指令的第三方内容。使用前请理解以下边界：
 
-- **没有独立账号鉴权**：`/pmp-dsh-tavern/api/v1/*` 与即将补齐的 `/v2/*` 使用真实 TCP peer、Host、Origin 和 Content-Type 防护，但本机受信任进程仍可能访问。请让 DSH Web 绑定 `127.0.0.1`，不要直接暴露到局域网或公网；如需反向代理，应自行提供 HTTPS 和认证。旧根 `/dsh-tavern/api` 已废止。
+- **没有独立账号鉴权**：`/pmp-dsh-tavern/api/v1/*` 与 `/v2/*` 使用真实 TCP peer、Host、Origin 和 Content-Type 防护，但本机受信任进程仍可能访问。请让 DSH Web 绑定 `127.0.0.1`，不要直接暴露到局域网或公网；如需反向代理，应自行提供 HTTPS 和认证。旧根 `/dsh-tavern/api` 已废止。
 - **Prompt injection**：preset、角色卡、用户描述和世界书正文都会影响模型。只导入可信来源，启用前审阅内容，并保留 DSH 的沙箱、工具审批与权限限制。
 - **秘密泄露**：插件不会主动读取 API key，但写入 Tavern 资源的密钥、令牌或隐私内容可能随模型请求发送，也可能通过本机资源 API 返回。不要用资源文件保存秘密。
 - **不安全正则为显式兼容模式**：ST `/pattern/flags` 默认不执行。开启 `worldBook.allowUnsafeRegex` 后，JavaScript `RegExp` 仍没有超时保证，即使已有长度和扫描上限也存在 ReDoS 风险。
@@ -324,7 +324,7 @@ v1 是本插件悬浮球 / 侧栏 / Trace 用的 bundled UI 资源合同，不�
 - **运行中保护并非全局事务锁**：显式切换 preset、角色卡、用户和世界书时会拒绝运行中的 agent；模板 API 应用到既有目标、删除/编辑已引用资源，以及修改用户—世界书关系等间接变更尚未统一锁定。已冻结请求不会被回写，但并发修改存在 assembly 时序边界。
 - **角色卡内嵌书的导入期诊断仍可加强**：角色卡导入有 32 MiB 上限；编辑和运行时解析有完整结构守卫，但导入时不会提前拒绝所有最终不可运行的超复杂内嵌书。
 - **兼容不等于完整复刻 ST**：真实 role/depth 拓扑、greeting 历史和部分高级世界书状态尚未实现。请以 Tavern Trace 与 DSH `request/header` 验证实际行为。
-- **v2.0 扮演 swipe 会放大磁盘占用（规划）**：自定义前端表面的重新生成按 DSH 分支新开 session，每份分支都带着分叉点之前的完整会话日志。请把扮演工作区放在空间充足的磁盘，不要放在系统盘（Windows 上避免 `C:\`）。自动清理未采用的分支尚未提供。导入 SillyTavern 对话时若带多份 session。
+- **v2.0 扮演 swipe/周目分支会放大磁盘占用**：回复 swipe 和从回复创建新周目都按 DSH 分支新开 session，每份分支带着分叉点之前的完整会话日志。请把扮演工作区放在空间充足的磁盘，不要放在系统盘（Windows 上避免 `C:\`）。自动清理未采用的分支尚未提供。
 - **生命周期日志当前只使用 Host 的 `ctx.logger`**：workspace bind、目录创建、文件及 catalog/timeline 写入，以及 `POST /v2/sessions`、`POST /v2/sessions/:id/branch`、`POST /v2/sessions/:id/user-message` 和 import-context PUT/DELETE 都记录 operationId、阶段、结果和稳定错误码；GET session/messages/focus/import-context、chrome 和浏览器操作仍保持安静。user-message 只记录 Host 接受阶段，绝不记录正文、长度或摘要。日志不记录聊天或资源正文；默认日志是进程内有界记录，重启后不应视为持久审计；持久 journal 和额外 exporter 暂缓。
 
 更完整的安全预算、运行态变更缺口和数据边界见 [Loader contract](docs/LOADER_CONTRACT.md)。
