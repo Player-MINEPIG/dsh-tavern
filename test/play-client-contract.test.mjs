@@ -104,7 +104,7 @@ test('catalog keeps character ownership in ext and falls back to its path segmen
 test('live play client parses JSON file envelopes and writes them as content strings', async () => {
   const calls = []
   const fetchImpl = async (url, options = {}) => {
-    calls.push({ url, method: options.method ?? 'GET', body: options.body })
+    calls.push({ url, method: options.method ?? 'GET', headers: options.headers, body: options.body })
     if (url === API_V2 + '/workspace') {
       return response({
         ok: true,
@@ -152,6 +152,9 @@ test('live play client parses JSON file envelopes and writes them as content str
   assert.equal((await client.getImportContextBinding('session-1')).state, 'pending')
   assert.equal((await client.putImportContextBinding('session-1', { path: 'character-1/playthrough-1/import-context.json' })).path, 'character-1/playthrough-1/import-context.json')
   assert.equal(await client.deleteImportContextBinding('session-1'), null)
+  const importDelete = calls.find(item => item.method === 'DELETE' && item.url.endsWith('/import-context'))
+  assert.equal(importDelete.headers['Content-Type'], 'application/json')
+  assert.deepEqual(JSON.parse(importDelete.body), {})
   assert.equal((await client.getFocus(catalog.playthroughs[0])).sessionId, null)
   await client.putCatalog(catalog)
   await client.putTimeline(catalog.playthroughs[0], timeline)

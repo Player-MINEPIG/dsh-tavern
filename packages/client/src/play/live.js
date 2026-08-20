@@ -147,7 +147,7 @@ export function createLivePlayClient({
     },
 
     async deleteImportContextBinding(sessionId) {
-      const response = await v2('DELETE', `/sessions/${encodeURIComponent(sessionId)}/import-context`)
+      const response = await v2('DELETE', `/sessions/${encodeURIComponent(sessionId)}/import-context`, {})
       return response?.binding ?? null
     },
 
