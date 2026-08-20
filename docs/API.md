@@ -115,3 +115,22 @@ durable history。当前已实现的基础语义是：首次 assembly 必须按�
 `PUT` 是完整替换，不是逐字段 merge。数组元素必须是对象；服务端不改写原生 ST 字段，也不丢弃规则内未知扩展字段。适配器优先写回资源已有的 `regex_scripts` 路径；没有现有数组时，预设写入 `extensions.regex_scripts`，V2/V3 角色卡写入 `data.extensions.regex_scripts`，V1 角色卡写入 `extensions.regex_scripts`。资源中的其他字段保持不变，写入仍经过对应 store 的原子保存和总文档体积限制。
 
 这个 v1 子资源只编辑预设或角色卡原文。它不组合全局正则，不计算当前 session 最终生效集合，不修改历史、timeline 或 AI 请求；魔丸显示管线只把保存后的资源数据作为渲染投影读取。失败响应沿用所属资源 API 的既有格式与状态码。
+### 后端 operation log utility
+
+`packages/play/src/operation-log.js` 导出 `createOperationContext` 和
+`operationLogConstants`，供后续 workspace/catalog/timeline/session/import mutation
+接入。它只接受 Cordis `ctx.logger`（或其 callable logger service），以
+`dsh-tavern.operation ` 前缀输出单行日志；前缀后的部分是稳定 JSON。一次 operation
+在 context 创建时保存 operation 名和开始时刻，并可记录 `start`、多个 `stage`、一次
+`success` 或一次 `failure`。成功和失败终态包含 `result` 与非负 `durationMs`；失败只记录
+稳定 `error.code`（缺失时为 `UNKNOWN_ERROR`）和可选 HTTP status，使用 `warn` 级别。
+
+日志 payload 的白名单只有 `operationId`、`operation`、`stage`、`result`、`errorCode`、
+`status`、`durationMs`、`method`、`sessionId`、`playthroughId`、`path`。标识和路径会做
+类型/长度/控制字符归一化；prompt、QA、角色卡、preset、正则、资源正文、请求 body、
+message text 及未知字段均不会输出，也不做正文摘要。logger 缺失、方法缺失或 logger
+自身抛错时 fail-soft。terminal 之后的 stage 或 terminal 调用无效且不会重复写终态。
+
+本节只声明 utility 已实现；具体业务 endpoint 的接入分为后续任务 12/13，当前不能据此
+声称所有生命周期静默失败都已被日志覆盖。默认 Cordis logger 仍由其自身管理，插件不写
+持久日志文件、浏览器日志或 exporter。

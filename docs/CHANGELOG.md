@@ -1,5 +1,16 @@
 # Development changelog
 
+## 2026-08-21 — Add fail-soft backend operation log utility
+
+- Added `packages/play/src/operation-log.js` and the root play export for a
+  content-free operation context using Cordis `ctx.logger`.
+- Logs use a stable single-line plugin prefix, one operation id across stages,
+  bounded identifiers, and a single terminal result with duration/error code.
+- Unknown fields and content-bearing values are ignored; logger failures never
+  alter business results. Endpoint integration remains scheduled for tasks 12/13.
+
+Verification: `test/play-operation-log.test.mjs`; no bundled client artifact was refreshed.
+
 This is the staged implementation log for dsh-tavern. It is kept separately
 from the product README so reviewers can follow intent, decisions, verification,
 and known limits chronologically.
