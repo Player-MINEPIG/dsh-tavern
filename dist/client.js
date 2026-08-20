@@ -3704,12 +3704,14 @@ var API_V2 = `${API_ROOT}/v2`;
 var LEGACY_API_ROOT = "/dsh-tavern/api";
 var PROFILE_SECTION = `${PLUGIN_ID}:profile`;
 var CLIENT_REFRESH_EVENT = `${PLUGIN_ID}:refresh`;
+var CHROME_SERVICE_NAME = "pmpDshTavernChrome";
 var CLIENT_UI_SETTINGS_EVENT = `${PLUGIN_ID}:ui-settings`;
 var identityConstants = Object.freeze({
   pluginId: PLUGIN_ID,
   apiRoot: API_ROOT,
   apiV1: API_V1,
   apiV2: API_V2,
+  chromeServiceName: CHROME_SERVICE_NAME,
   legacyApiRoot: LEGACY_API_ROOT,
   profileSection: PROFILE_SECTION,
   clientRefreshEvent: CLIENT_REFRESH_EVENT,
@@ -3754,7 +3756,7 @@ var zh_CN_default = Object.freeze({
   "nav.worldBook.empty": "\u672A\u7ED1\u5B9A\u4E16\u754C\u4E66",
   "nav.user.empty": "\u672A\u7ED1\u5B9A\u7528\u6237",
   "nav.sessionTemplate.empty": "\u5F53\u524D\u8BBE\u7F6E\u6216\u914D\u7F6E\u6A21\u677F",
-  "nav.settings.empty": "\u8BED\u8A00\u3001\u7F29\u653E\u3001RP \u8DDF\u968F\u4E0E RP \u63D0\u793A\u8BCD",
+  "nav.settings.empty": "\u8BED\u8A00\u3001\u7F29\u653E\u3001\u9ED8\u8BA4 RP \u5DE5\u4F5C\u533A\u3001RP \u8DDF\u968F\u4E0E\u63D0\u793A\u8BCD",
   "nav.regex": "\u663E\u793A\u6B63\u5219",
   "nav.regex.empty": "\u4EC5\u7528\u4E8E\u9B54\u4E38\u663E\u793A\u7684\u89C4\u5219",
   "regex.title": "\u663E\u793A\u6B63\u5219",
@@ -3828,6 +3830,7 @@ var zh_CN_default = Object.freeze({
   "play.chat.nextReply": "\u4E0B\u4E00\u6761\u5DF2\u6709\u56DE\u590D",
   "play.chat.noOtherReply": "\u6CA1\u6709\u5176\u4ED6\u5DF2\u6709\u56DE\u590D",
   "play.chat.generateReply": "\u751F\u6210\u4E00\u6761\u65B0\u56DE\u590D",
+  "play.chat.forkPlaythrough": "\u4ECE\u8FD9\u91CC\u5206\u652F\u4E3A\u65B0\u5468\u76EE",
   "play.chat.editDisplay": "\u4FEE\u6539\u663E\u793A\u6587\u5B57",
   "play.chat.editDisplayPrompt": "\u8F93\u5165\u66FF\u4EE3\u539F\u56DE\u590D\u7684\u663E\u793A\u6587\u5B57\uFF1A",
   "play.chat.restoreOriginal": "\u6062\u590D\u539F\u56DE\u590D",
@@ -3865,6 +3868,12 @@ var zh_CN_default = Object.freeze({
   "settings.close": "\u5173\u95ED\u754C\u9762\u8BBE\u7F6E\u4FA7\u8FB9\u680F",
   "settings.rpFollow": "\u7ED1\u5B9A\u89D2\u8272\u5361\u65F6\u81EA\u52A8\u8FDB\u5165 RP \u6A21\u5F0F",
   "settings.rpFollow.help": "\u5F00\u542F\u540E\uFF0C\u7ED1\u5B9A\u89D2\u8272\u5361\u4F1A\u8FDB\u5165\u89D2\u8272\u626E\u6F14\u5E76\u628A\u6587\u4EF6\u6C99\u7BB1\u9489\u5728\u53EA\u8BFB\u3002\u5199\u5165\u3001\u7EC8\u7AEF\u3001\u5916\u8FDE\u548C\u5DE5\u4F5C\u533A\u5916\u6216\u673A\u5BC6\u6587\u4EF6\u8BFB\u53D6\u4F1A\u88AB\u62E6\u4F4F\u5E76\u4E2D\u65AD\u8BE5 agent\uFF1B\u5B50 agent \u53EF\u4EE5\u6D3E\uFF0C\u4F46\u540C\u6837\u53D7\u9650\u5236\u3002\u804A\u5929\u680F\u6539\u6743\u9650\u65E0\u6548\u3002\u8981\u505A\u8FD9\u4E9B\u4E8B\u5FC5\u987B\u5148\u5173\u6389 RP\uFF08\u6216 /rp off\uFF09\u3002",
+  "settings.rpWorkspace": "\u9ED8\u8BA4 RP \u5DE5\u4F5C\u533A",
+  "settings.rpWorkspace.help": "\u65B0\u5EFA\u5468\u76EE\u9ED8\u8BA4\u4F7F\u7528\u6B64\u5DE5\u4F5C\u533A\u3002\u66F4\u6539\u53EA\u5F71\u54CD\u4E4B\u540E\u7684\u9ED8\u8BA4\u843D\u70B9\u548C RP \u4F1A\u8BDD\u5206\u7C7B\uFF0C\u4E0D\u79FB\u52A8\u5DF2\u6709\u4F1A\u8BDD\u3001\u76EE\u5F55\u6216\u5468\u76EE\u3002",
+  "settings.rpWorkspace.unselected": "\u5C1A\u672A\u9009\u62E9 RP \u5DE5\u4F5C\u533A",
+  "settings.rpWorkspace.unavailable": "\u5F53\u524D\u7ED1\u5B9A\u5DF2\u4E0D\u5728 DSH \u5DE5\u4F5C\u533A\u5217\u8868\u4E2D\uFF1A{path}",
+  "settings.rpWorkspace.none": "\u6CA1\u6709\u53EF\u7528\u7684 DSH \u5DE5\u4F5C\u533A",
+  "settings.rpWorkspace.verifyError": "\u9ED8\u8BA4 RP \u5DE5\u4F5C\u533A\u5DF2\u66F4\u65B0\uFF0C\u4F46\u56DE\u8BFB\u9A8C\u8BC1\u5931\u8D25\uFF1A{message}",
   "settings.rpPolicy": "RP \u6A21\u5F0F\u63D0\u793A\u8BCD\uFF08rp:policy\uFF09",
   "settings.rpPolicy.help": "\u53EF\u9009\u3002DSH \u4E0D\u80FD\u6309\u6BB5\u52A0\u6743\uFF0C\u8EAB\u4EFD\u548C\u6587\u98CE\u5E94\u5199\u5728\u9884\u8BBE\u6216\u89D2\u8272\u5361\u91CC\u3002\u9ED8\u8BA4\u53EA\u8BF4\u660E\u9AD8\u98CE\u9669\u64CD\u4F5C\u88AB\u9501\u5B9A\u3002\u7559\u7A7A\u5219\u4E0D\u9644\u52A0\u8FD9\u6BB5\u63D0\u793A\uFF0C\u9501\u5B9A\u4ECD\u7136\u6709\u6548\u3002\u5E95\u90E8\u7684\u300C\u6062\u590D\u9ED8\u8BA4\u300D\u53EA\u91CD\u7F6E\u8BED\u8A00\u3001\u7F29\u653E\u548C\u7ED1\u5361\u8DDF\u968F\u3002",
   "settings.rpPolicy.placeholder": "\u7559\u7A7A\uFF1A\u53EA\u542F\u7528\u53EA\u8BFB\u6C99\u7BB1\uFF0C\u4E0D\u9644\u52A0 RP \u63D0\u793A\u8BCD",
@@ -4316,7 +4325,7 @@ var en_default = Object.freeze({
   "nav.worldBook.empty": "No world book bound",
   "nav.user.empty": "No user bound",
   "nav.sessionTemplate.empty": "Current settings or configuration template",
-  "nav.settings.empty": "Language, scale, RP follow, and RP prompt",
+  "nav.settings.empty": "Language, scale, default RP workspace, RP follow, and prompt",
   "nav.regex": "Display regex",
   "nav.regex.empty": "Mowan display-only rules",
   "regex.title": "Display regex",
@@ -4390,6 +4399,7 @@ var en_default = Object.freeze({
   "play.chat.nextReply": "Next saved reply",
   "play.chat.noOtherReply": "No other saved reply",
   "play.chat.generateReply": "Generate a new reply",
+  "play.chat.forkPlaythrough": "Fork a new playthrough here",
   "play.chat.editDisplay": "Edit displayed reply",
   "play.chat.editDisplayPrompt": "Display this text instead of the original reply:",
   "play.chat.restoreOriginal": "Restore original reply",
@@ -4427,6 +4437,12 @@ var en_default = Object.freeze({
   "settings.close": "Close the UI settings sidebar",
   "settings.rpFollow": "Enter RP mode when a character card is bound",
   "settings.rpFollow.help": "When enabled, binding a character card enters roleplay and pins the file sandbox to read-only. Writes, shell, outbound fetch, and reads outside the workspace or of secret files are refused and that agent is cancelled. Subagents may still be spawned and inherit the same lock. The chat permission chip cannot override this; turn RP off on the character card (or /rp off) first.",
+  "settings.rpWorkspace": "Default RP workspace",
+  "settings.rpWorkspace.help": "New playthroughs use this workspace by default. Changing it only affects future placement and RP-session classification; it does not move existing sessions, directories, or playthroughs.",
+  "settings.rpWorkspace.unselected": "No RP workspace selected",
+  "settings.rpWorkspace.unavailable": "The current binding is no longer in the DSH workspace list: {path}",
+  "settings.rpWorkspace.none": "No DSH workspaces are available",
+  "settings.rpWorkspace.verifyError": "The default RP workspace was updated, but read-back verification failed: {message}",
   "settings.rpPolicy": "RP mode prompt (rp:policy)",
   "settings.rpPolicy.help": "Optional. DSH cannot weight prompt sections; identity and style belong in the preset or character card. The default only says high-risk actions are locked. Leave empty to skip extra RP text; the lock still applies. Restore defaults at the bottom only resets language, scale, and RP follow.",
   "settings.rpPolicy.placeholder": "Leave empty to use the read-only sandbox with no extra RP prompt",
@@ -9605,8 +9621,863 @@ function RichText({ text: text2, className }) {
 // packages/client/src/play/turn-actions.js
 var import_react8 = require("react");
 
-// packages/client/src/play/nodes.js
+// packages/client/src/play/mutations.js
+async function updateCatalog(client, mutator, options) {
+  if (typeof client?.updateCatalog === "function") return client.updateCatalog(mutator, options);
+  const current2 = await readCatalogOrEmpty(client);
+  const next = await mutator(current2);
+  const saved = await client.putCatalog(next);
+  return saved ?? next;
+}
+async function updateTimeline(client, playthrough, mutator, options) {
+  if (typeof client?.updateTimeline === "function") return client.updateTimeline(playthrough, mutator, options);
+  const current2 = options?.initial ?? await client.getTimeline(playthrough);
+  const next = await mutator(current2);
+  const saved = await client.putTimeline(playthrough, next);
+  return saved ?? next;
+}
+async function readCatalogOrEmpty(client) {
+  try {
+    return await client.getCatalog();
+  } catch (error) {
+    if (error?.code === "PLAY_PATH_NOT_FOUND" && (error?.status === void 0 || error?.status === 404)) return { playthroughs: [] };
+    throw error;
+  }
+}
+
+// packages/client/src/play/schema.js
+var CHROME_MODES = /* @__PURE__ */ new Set(["native", "play"]);
+var MESSAGE_ROLES = /* @__PURE__ */ new Set(["user", "assistant", "system"]);
+function isRecord4(value) {
+  return value !== null && typeof value === "object" && !Array.isArray(value);
+}
+function fail(label, detail) {
+  throw new TypeError(`${label}: ${detail}`);
+}
+function stringId(value, label) {
+  if (typeof value !== "string" || value.trim() === "") fail(label, "must be a non-empty string");
+  return value;
+}
+function eventSeq(value, label) {
+  if (!Number.isSafeInteger(value) || value < 0) fail(label, "must be a non-negative integer");
+  return value;
+}
+function extRecord(value, label) {
+  if (value === void 0) return void 0;
+  if (!isRecord4(value)) fail(label, "must be an object");
+  return value;
+}
+function normalizeChrome(value, label = "chrome") {
+  if (!isRecord4(value)) fail(label, "must be an object");
+  if (!CHROME_MODES.has(value.mode)) fail(label, "mode must be native or play");
+  if (value.revision !== void 0 && value.revision !== null && (typeof value.revision !== "string" || value.revision === "")) {
+    fail(label, "revision must be a non-empty string or null");
+  }
+  return { mode: value.mode, revision: value.revision ?? null };
+}
+function normalizeWorkspace(value, label = "workspace") {
+  if (!isRecord4(value)) fail(label, "must be an object");
+  if (typeof value.selected !== "boolean") fail(label, "selected must be a boolean");
+  if (value.rootPath !== null && value.rootPath !== void 0 && typeof value.rootPath !== "string") {
+    fail(label, "rootPath must be a string or null");
+  }
+  if (!Number.isSafeInteger(value.contractVersion) || value.contractVersion < 1) {
+    fail(label, "contractVersion must be a positive integer");
+  }
+  const warnings = Array.isArray(value.warnings) ? value.warnings.filter(isRecord4).map((item) => ({
+    code: typeof item.code === "string" ? item.code : "",
+    message: typeof item.message === "string" ? item.message : ""
+  })) : [];
+  return {
+    selected: value.selected,
+    rootPath: value.rootPath ?? null,
+    workspaceId: typeof value.workspaceId === "string" ? value.workspaceId : null,
+    contractVersion: value.contractVersion,
+    activeTimelinePath: typeof value.activeTimelinePath === "string" ? value.activeTimelinePath : null,
+    firstSelection: value.firstSelection === true,
+    warnings
+  };
+}
+function normalizeTimelineVariant(value, label = "variant") {
+  if (!isRecord4(value)) fail(label, "must be an object");
+  const startEventId = eventSeq(value.startEventId, `${label}.startEventId`);
+  const endEventId = eventSeq(value.endEventId, `${label}.endEventId`);
+  if (startEventId > endEventId) fail(label, "startEventId must not exceed endEventId");
+  const ext = extRecord(value.ext, `${label}.ext`);
+  return {
+    id: stringId(value.id, `${label}.id`),
+    sessionId: stringId(value.sessionId, `${label}.sessionId`),
+    startEventId,
+    endEventId,
+    ...ext === void 0 ? {} : { ext }
+  };
+}
+function normalizeTimelineNode(value, label = "node") {
+  if (!isRecord4(value)) fail(label, "must be an object");
+  if (value.kind !== "qa") fail(label, "kind must be qa");
+  if (!Array.isArray(value.variants) || value.variants.length === 0) {
+    fail(label, "variants must be a non-empty array");
+  }
+  const variants = value.variants.map((item, index) => normalizeTimelineVariant(item, `${label}.variants[${index}]`));
+  const adoptedVariantId = stringId(value.adoptedVariantId, `${label}.adoptedVariantId`);
+  if (!variants.some((item) => item.id === adoptedVariantId)) fail(label, "adoptedVariantId must match a variant");
+  if (value.hidden !== void 0 && typeof value.hidden !== "boolean") fail(label, "hidden must be a boolean");
+  if (value.displayOverride !== void 0 && value.displayOverride !== null && typeof value.displayOverride !== "string") {
+    fail(label, "displayOverride must be a string or null");
+  }
+  const ext = extRecord(value.ext, `${label}.ext`);
+  return {
+    id: stringId(value.id, `${label}.id`),
+    kind: "qa",
+    hidden: value.hidden === true,
+    displayOverride: value.displayOverride ?? null,
+    adoptedVariantId,
+    variants,
+    ...ext === void 0 ? {} : { ext }
+  };
+}
+function normalizeTimeline(value, label = "timeline") {
+  if (!isRecord4(value)) fail(label, "must be an object");
+  if (!Array.isArray(value.nodes)) fail(label, "nodes must be an array");
+  const nodes = value.nodes.map((item, index) => normalizeTimelineNode(item, `${label}.nodes[${index}]`));
+  const ids = /* @__PURE__ */ new Set();
+  for (const node of nodes) {
+    if (ids.has(node.id)) fail(label, `duplicate node id ${node.id}`);
+    ids.add(node.id);
+  }
+  const ext = extRecord(value.ext, `${label}.ext`);
+  return { nodes, ...ext === void 0 ? {} : { ext } };
+}
+function normalizeCatalog(value, label = "catalog") {
+  if (!isRecord4(value)) fail(label, "must be an object");
+  if (!Array.isArray(value.playthroughs)) fail(label, "playthroughs must be an array");
+  const playthroughs = value.playthroughs.map((item, index) => {
+    const itemLabel = `${label}.playthroughs[${index}]`;
+    if (!isRecord4(item)) fail(itemLabel, "must be an object");
+    const ext2 = extRecord(item.ext, `${itemLabel}.ext`);
+    return {
+      id: stringId(item.id, `${itemLabel}.id`),
+      path: stringId(item.path, `${itemLabel}.path`),
+      ...typeof item.title === "string" ? { title: item.title } : {},
+      ...typeof item.lastOpenedAt === "string" ? { lastOpenedAt: item.lastOpenedAt } : {},
+      ...ext2 === void 0 ? {} : { ext: ext2 }
+    };
+  });
+  const ext = extRecord(value.ext, `${label}.ext`);
+  return { playthroughs, ...ext === void 0 ? {} : { ext } };
+}
+function parseJsonDocument(content, normalize, label) {
+  if (typeof content !== "string") fail(label, "content must be a JSON string");
+  let parsed;
+  try {
+    parsed = JSON.parse(content);
+  } catch {
+    fail(label, "content must be valid JSON");
+  }
+  return normalize(parsed, label);
+}
+function projectContentText(content) {
+  if (!Array.isArray(content)) return "";
+  return content.map((part) => {
+    if (!isRecord4(part)) return "";
+    if (typeof part.text === "string") return part.text;
+    return typeof part.type === "string" && part.type !== "text" ? `\u27E6${part.type}\u27E7` : "";
+  }).join("");
+}
+function normalizeSessionMessages(value, label = "messages") {
+  if (!isRecord4(value)) fail(label, "must be an object");
+  if (!Array.isArray(value.messages)) fail(label, "messages must be an array");
+  if (typeof value.incompleteTurn !== "boolean") fail(label, "incompleteTurn must be a boolean");
+  const messages = value.messages.map((item, index) => {
+    const itemLabel = `${label}.messages[${index}]`;
+    if (!isRecord4(item)) fail(itemLabel, "must be an object");
+    if (!MESSAGE_ROLES.has(item.role)) fail(itemLabel, "role is invalid");
+    if (!Array.isArray(item.content)) fail(itemLabel, "content must be an array");
+    if (item.seq !== null && (!Number.isSafeInteger(item.seq) || item.seq < 0)) fail(itemLabel, "seq must be a non-negative integer or null");
+    return {
+      id: stringId(item.id, `${itemLabel}.id`),
+      role: item.role,
+      content: item.content,
+      seq: item.seq,
+      text: projectContentText(item.content)
+    };
+  });
+  return { messages, incompleteTurn: value.incompleteTurn };
+}
+function normalizeFocus(value, label = "focus") {
+  if (!isRecord4(value)) fail(label, "must be an object");
+  const nullableId = (field, fieldLabel) => {
+    if (value[field] !== null && (typeof value[field] !== "string" || value[field].trim() === "")) {
+      fail(label, `${fieldLabel} must be a non-empty string or null`);
+    }
+    return value[field];
+  };
+  return {
+    playthroughId: stringId(value.playthroughId, `${label}.playthroughId`),
+    sessionId: nullableId("sessionId", "sessionId"),
+    nodeId: nullableId("nodeId", "nodeId"),
+    variantId: nullableId("variantId", "variantId")
+  };
+}
+function timelinePath(value, label = "timeline path") {
+  const path = typeof value === "string" ? value : value?.path;
+  stringId(path, label);
+  if (!path.endsWith("timeline.json")) fail(label, "must point to timeline.json");
+  return path;
+}
+function playthroughCharacterId(playthrough) {
+  const explicit = playthrough?.ext?.pmpDshTavern?.characterId;
+  if (typeof explicit === "string" && explicit !== "") return explicit;
+  const path = typeof playthrough?.path === "string" ? playthrough.path.replaceAll("\\", "/") : "";
+  const first = path.split("/").filter(Boolean)[0];
+  return first || null;
+}
+
+// packages/client/src/play/sidebar-model.js
+var SIDEBAR_LOAD_CONCURRENCY = 4;
+function characterIdFromSelection(value) {
+  const selection = value?.selection ?? value;
+  const id = selection?.characterCardId;
+  return typeof id === "string" && id !== "" ? id : null;
+}
+function rootSessionId2(playthrough) {
+  const id = playthrough?.ext?.pmpDshTavern?.rootSessionId;
+  return typeof id === "string" && id !== "" ? id : null;
+}
+function sessionTitle(session, id) {
+  if (typeof session?.displayTitle === "string" && session.displayTitle !== "") return session.displayTitle;
+  if (typeof session?.title === "string" && session.title !== "") return session.title;
+  return id;
+}
+function normalizedPath2(value) {
+  if (typeof value !== "string") return "";
+  const normalized = value.replaceAll("\\", "/").replace(/\/+$/, "");
+  return /^[a-z]:\//i.test(normalized) ? normalized.toLowerCase() : normalized;
+}
+function requiresSystemWorkspaceConfirmation(value) {
+  const path = typeof value === "string" ? value.replaceAll("\\", "/") : "";
+  return /^c:\//i.test(path) || path === "/" || path === "/usr" || path.startsWith("/usr/") || path === "/System" || path.startsWith("/System/");
+}
+function timelineFor(timelines, playthrough) {
+  return timelines?.[playthrough.path] ?? timelines?.[playthrough.id] ?? null;
+}
+function playthroughMembers(playthrough, timeline) {
+  const ids = /* @__PURE__ */ new Set();
+  const rootId = rootSessionId2(playthrough);
+  if (rootId !== null) ids.add(rootId);
+  for (const node of timeline?.nodes ?? []) {
+    for (const variant of node?.variants ?? []) {
+      if (typeof variant?.sessionId === "string" && variant.sessionId !== "") ids.add(variant.sessionId);
+    }
+  }
+  return ids;
+}
+function sessionIdsInRpWorkspace({ workspace, workspaceItems = [], sessions = {} } = {}) {
+  const ids = /* @__PURE__ */ new Set();
+  if (workspace?.selected !== true) return ids;
+  if (typeof workspace.workspaceId === "string" && workspace.workspaceId !== "") {
+    const item = workspaceItems.find((candidate) => candidate?.workspaceId === workspace.workspaceId);
+    if (item !== void 0) {
+      for (const id of item.sessionIds ?? []) if (typeof id === "string" && id !== "") ids.add(id);
+      return ids;
+    }
+  }
+  const root = normalizedPath2(workspace.rootPath);
+  if (root === "") return ids;
+  for (const [id, session] of Object.entries(sessions)) {
+    if (normalizedPath2(session?.cwd) === root) ids.add(id);
+  }
+  return ids;
+}
+var SessionCharacterBindingCache = class {
+  constructor() {
+    this.entries = /* @__PURE__ */ new Map();
+    this.generation = 0;
+  }
+  clear() {
+    this.generation += 1;
+    this.entries.clear();
+  }
+  get(client, sessionId) {
+    const cached = this.entries.get(sessionId);
+    if (cached !== void 0) return cached.promise ?? Promise.resolve(cached.value);
+    const generation = this.generation;
+    const readSelection = typeof client.getSelection === "function" ? client.getSelection.bind(client) : client.getCharacterSelection.bind(client);
+    const promise = readSelection(sessionId).then(characterIdFromSelection, () => null);
+    this.entries.set(sessionId, { promise });
+    promise.then((value) => {
+      if (this.generation === generation) this.entries.set(sessionId, { value });
+    });
+    return promise;
+  }
+};
+async function loadSessionCharacterBindings(client, sessionIds, {
+  concurrency = SIDEBAR_LOAD_CONCURRENCY,
+  cache = new SessionCharacterBindingCache()
+} = {}) {
+  if (client == null || typeof client.getSelection !== "function" && typeof client.getCharacterSelection !== "function") return {};
+  const ids = [...new Set(sessionIds)].filter((id) => typeof id === "string" && id !== "");
+  const result = {};
+  let cursor = 0;
+  const worker = async () => {
+    while (cursor < ids.length) {
+      const index = cursor;
+      cursor += 1;
+      const id = ids[index];
+      result[id] = await cache.get(client, id);
+    }
+  };
+  const requested = Number.isFinite(concurrency) ? Math.floor(concurrency) : SIDEBAR_LOAD_CONCURRENCY;
+  const workerCount = Math.min(ids.length, Math.max(1, Math.min(SIDEBAR_LOAD_CONCURRENCY, requested)));
+  await Promise.all(Array.from({ length: workerCount }, worker));
+  return result;
+}
+async function mapConcurrent(values, mapper, concurrency = SIDEBAR_LOAD_CONCURRENCY) {
+  const result = new Array(values.length);
+  let cursor = 0;
+  const worker = async () => {
+    while (cursor < values.length) {
+      const index = cursor;
+      cursor += 1;
+      result[index] = await mapper(values[index], index);
+    }
+  };
+  await Promise.all(Array.from({ length: Math.min(values.length, concurrency) }, worker));
+  return result;
+}
+async function loadPlaySidebarResources(client) {
+  if (client == null) throw new TypeError("playClient.required");
+  const [workspace, characterResponse] = await Promise.all([
+    client.getWorkspace(),
+    client.getCharacters()
+  ]);
+  const characters = Array.isArray(characterResponse?.characters) ? characterResponse.characters : [];
+  if (workspace.selected !== true) return { workspace, characters, catalog: { playthroughs: [] }, timelines: {}, diagnostics: [] };
+  let catalog2;
+  try {
+    catalog2 = await client.getCatalog();
+  } catch (reason) {
+    if (reason?.code !== "PLAY_PATH_NOT_FOUND") throw reason;
+    catalog2 = { playthroughs: [] };
+  }
+  const timelines = {};
+  const diagnostics = [];
+  await mapConcurrent(catalog2.playthroughs, async (playthrough) => {
+    try {
+      timelines[playthrough.path] = await client.getTimeline(playthrough);
+    } catch (reason) {
+      diagnostics.push({
+        playthroughId: playthrough.id,
+        path: playthrough.path,
+        message: reason instanceof Error ? reason.message : String(reason)
+      });
+    }
+  });
+  return { workspace, characters, catalog: catalog2, timelines, diagnostics };
+}
+function projectPlaySidebar({
+  workspace = { selected: false },
+  workspaceItems = [],
+  characters = [],
+  catalog: catalog2 = { playthroughs: [] },
+  timelines = {},
+  sessions = {},
+  sessionIds = [],
+  archivedSessionIds = [],
+  currentId = null,
+  sessionCharacters = {}
+} = {}) {
+  const archived = new Set(archivedSessionIds);
+  const rpSessionIds = sessionIdsInRpWorkspace({ workspace, workspaceItems, sessions });
+  const characterById = /* @__PURE__ */ new Map();
+  const ensureCharacter = (id, name2 = id) => {
+    if (!characterById.has(id)) characterById.set(id, { id, name: name2, playthroughs: [], unassigned: [] });
+    return characterById.get(id);
+  };
+  for (const character of characters) {
+    if (typeof character?.id !== "string" || character.id === "") continue;
+    ensureCharacter(character.id, typeof character.name === "string" && character.name !== "" ? character.name : character.id);
+  }
+  const claimedRpSessions = /* @__PURE__ */ new Set();
+  for (const playthrough of catalog2.playthroughs ?? []) {
+    const rootId = rootSessionId2(playthrough);
+    const characterId = playthroughCharacterId(playthrough);
+    if (characterId === null) continue;
+    const allMembers = playthroughMembers(playthrough, timelineFor(timelines, playthrough));
+    const members = [...allMembers].filter((id) => rpSessionIds.has(id) && !archived.has(id));
+    for (const id of members) claimedRpSessions.add(id);
+    ensureCharacter(characterId).playthroughs.push({
+      ...playthrough,
+      title: typeof playthrough.title === "string" && playthrough.title !== "" ? playthrough.title : playthrough.id,
+      rootSessionId: rootId !== null && members.includes(rootId) ? rootId : null,
+      sessionIds: members,
+      active: currentId !== null && members.includes(currentId),
+      missing: members.length === 0
+    });
+  }
+  const ids = sessionIds.length > 0 ? sessionIds : Object.keys(sessions);
+  const otherSessions = [];
+  for (const id of ids) {
+    const session = sessions[id];
+    if (session == null || archived.has(id)) continue;
+    if (!rpSessionIds.has(id)) {
+      otherSessions.push({ id, title: sessionTitle(session, id), active: currentId === id, kind: "external" });
+      continue;
+    }
+    if (claimedRpSessions.has(id)) continue;
+    const characterId = sessionCharacters[id];
+    if (typeof characterId === "string" && characterId !== "") {
+      ensureCharacter(characterId).unassigned.push({ id, title: sessionTitle(session, id), active: currentId === id });
+      continue;
+    }
+    otherSessions.push({ id, title: sessionTitle(session, id), active: currentId === id, kind: "ordinary" });
+  }
+  return {
+    workspaceReady: workspace.selected === true,
+    rpSessionIds: [...rpSessionIds],
+    playSessionIds: [...claimedRpSessions],
+    characters: [...characterById.values()],
+    otherSessions
+  };
+}
+function shouldShowUnboundNotice({ workspace, session, selection } = {}) {
+  if (workspace == null || session == null) return false;
+  if (workspace.selected !== true) return true;
+  const workspacePath = normalizedPath2(workspace.rootPath);
+  const sessionPath = normalizedPath2(session.cwd);
+  if (workspacePath === "" || sessionPath !== workspacePath) return true;
+  return characterIdFromSelection(selection) === null;
+}
+
+// packages/client/src/play/import.js
+function parseJsonl(text2) {
+  const rows = text2.split(/\r?\n/).filter(Boolean).map((line) => JSON.parse(line));
+  if (rows.length === 0) throw new TypeError("play.import.empty");
+  const messages = rows.slice(1).filter((row) => typeof row?.mes === "string");
+  let greeting = null;
+  const qa = [];
+  let pending = null;
+  for (const message of messages) {
+    if (message.is_user === true) {
+      if (pending !== null) throw new TypeError("play.import.unpaired");
+      pending = message.mes;
+    } else if (pending === null && qa.length === 0 && greeting === null) {
+      greeting = message.mes;
+    } else if (pending !== null) {
+      qa.push({ user: pending, assistant: message.mes });
+      pending = null;
+    }
+  }
+  if (pending !== null) throw new TypeError("play.import.unpaired");
+  return { greeting, qa, source: { format: "sillytavern-jsonl" } };
+}
+function parseBundle(value) {
+  if (value?.kind !== "pmp-dsh-tavern-playthrough" || value.schemaVersion !== 1) {
+    throw new TypeError("play.import.unsupported");
+  }
+  const turns = projectTimelineQa(value.timeline, value.messagesBySession);
+  const imported = value.resources?.importContext;
+  const importedQa = Array.isArray(imported?.qa) ? imported.qa.map((item) => ({ user: String(item?.user ?? ""), assistant: String(item?.assistant ?? "") })) : [];
+  return {
+    greeting: typeof imported?.greeting === "string" ? imported.greeting : typeof value.resources?.greeting === "string" ? value.resources.greeting : null,
+    qa: [
+      ...importedQa,
+      ...turns.filter((turn) => !turn.hidden).map((turn) => ({ user: turn.userText, assistant: turn.originalAssistantText }))
+    ],
+    source: { format: "pmp-dsh-tavern-bundle", playthroughId: value.playthrough?.id ?? null }
+  };
+}
+function parsePlaythroughImport(text2, fileName = "") {
+  if (typeof text2 !== "string" || text2.trim() === "") throw new TypeError("play.import.empty");
+  const parsed = text2.trimStart().startsWith("{") && !text2.trimStart().includes("\n") ? parseBundle(JSON.parse(text2)) : (() => {
+    try {
+      return parseBundle(JSON.parse(text2));
+    } catch (error) {
+      if (text2.includes("\n")) return parseJsonl(text2);
+      throw error;
+    }
+  })();
+  return { schemaVersion: 1, ...parsed, source: { ...parsed.source, fileName } };
+}
+function rootSessionId3(playthrough) {
+  const value = playthrough?.ext?.pmpDshTavern?.rootSessionId;
+  return typeof value === "string" && value !== "" ? value : null;
+}
+function playthroughDirectory(playthrough) {
+  const path = typeof playthrough?.path === "string" ? playthrough.path.replaceAll("\\", "/") : "";
+  if (!path.endsWith("/timeline.json")) throw new TypeError("play.import.timelineRequired");
+  return path.slice(0, -"/timeline.json".length);
+}
+function fallbackImportPath(playthrough, timeline) {
+  const direct = playthrough?.ext?.pmpDshTavern?.importContextPath;
+  if (typeof direct === "string" && direct !== "") return direct;
+  const nested = timeline?.ext?.pmpDshTavern?.importContextPath;
+  return typeof nested === "string" && nested !== "" ? nested : null;
+}
+async function getPlaythroughImportBinding(client, sessionId, playthrough, timeline) {
+  if (typeof client.getImportContextBinding === "function") {
+    return client.getImportContextBinding(sessionId);
+  }
+  const path = fallbackImportPath(playthrough, timeline);
+  return path === null ? null : { path, state: "pending" };
+}
+async function loadPlaythroughImportContext(client, sessionId, playthrough, timeline) {
+  const binding = await getPlaythroughImportBinding(client, sessionId, playthrough, timeline);
+  if (typeof binding?.path !== "string" || binding.path === "") return { binding: null, document: null };
+  const document2 = JSON.parse((await client.getFile(binding.path)).content);
+  return { binding, document: document2 };
+}
+function assertLocallyMutable(timeline, messages) {
+  if ((timeline?.nodes?.length ?? 0) > 0 || messages?.incompleteTurn === true || (messages?.messages ?? []).some((message) => message?.role === "user" || message?.role === "assistant")) {
+    const error = new Error("play.import.locked");
+    error.code = "PLAY_IMPORT_CONTEXT_LOCKED";
+    throw error;
+  }
+}
+async function bindPlaythroughImport(client, playthrough, file, {
+  randomUUID = () => globalThis.crypto.randomUUID()
+} = {}) {
+  const document2 = parsePlaythroughImport(await file.text(), file.name);
+  const sessionId = rootSessionId3(playthrough);
+  if (sessionId === null) throw new TypeError("play.import.sessionRequired");
+  const [timeline, messages] = await Promise.all([
+    client.getTimeline(playthrough),
+    client.getMessages(sessionId)
+  ]);
+  assertLocallyMutable(timeline, messages);
+  const directory = playthroughDirectory(playthrough);
+  const token = String(randomUUID());
+  if (!/^[A-Za-z0-9][A-Za-z0-9._-]{0,199}$/.test(token)) throw new TypeError("play.import.idInvalid");
+  const contextPath = `${directory}/import-context-${token}.json`;
+  await client.createDirs(directory);
+  await client.putFile(contextPath, JSON.stringify(document2, null, 2));
+  const bound = await client.putImportContextBinding(sessionId, { path: contextPath });
+  const [savedFile, savedBinding] = await Promise.all([
+    client.getFile(contextPath),
+    client.getImportContextBinding(sessionId)
+  ]);
+  const savedDocument = JSON.parse(savedFile.content);
+  if (bound?.path !== contextPath || savedBinding?.path !== contextPath || savedBinding?.state !== "pending" || savedDocument.schemaVersion !== document2.schemaVersion || savedDocument.qa?.length !== document2.qa.length) {
+    throw new Error("play.import.verificationFailed");
+  }
+  return { sessionId, binding: savedBinding, document: document2 };
+}
+async function unbindPlaythroughImport(client, playthrough) {
+  const sessionId = rootSessionId3(playthrough);
+  if (sessionId === null) throw new TypeError("play.import.sessionRequired");
+  const [timeline, messages] = await Promise.all([
+    client.getTimeline(playthrough),
+    client.getMessages(sessionId)
+  ]);
+  assertLocallyMutable(timeline, messages);
+  await client.deleteImportContextBinding(sessionId);
+  const saved = await client.getImportContextBinding(sessionId);
+  if (saved !== null) throw new Error("play.import.verificationFailed");
+  return { sessionId, binding: null };
+}
+
+// packages/client/src/play/create.js
+var SAFE_SEGMENT = /^[A-Za-z0-9][A-Za-z0-9._-]{0,199}$/;
+var SAFE_SESSION_ID = /^[A-Za-z0-9][A-Za-z0-9._:-]{0,199}$/;
+function safeSegment(value, label) {
+  if (typeof value !== "string" || !SAFE_SEGMENT.test(value)) {
+    throw new TypeError(`${label} must be a safe path segment`);
+  }
+  return value;
+}
+function safeSessionId(value) {
+  if (typeof value !== "string" || !SAFE_SESSION_ID.test(value)) {
+    throw new TypeError("session.id must be a valid DSH session id");
+  }
+  return value;
+}
+function isoNow(now) {
+  const value = now();
+  if (!(value instanceof Date) || Number.isNaN(value.valueOf())) throw new TypeError("now must return a valid Date");
+  return value.toISOString();
+}
+async function catalogOrEmpty(client) {
+  try {
+    return await client.getCatalog();
+  } catch (reason) {
+    if (reason?.code === "PLAY_PATH_NOT_FOUND") return { playthroughs: [] };
+    throw reason;
+  }
+}
+function playthroughCharacterId2(playthrough) {
+  const value = playthrough?.ext?.pmpDshTavern?.characterId;
+  return typeof value === "string" && value !== "" ? value : null;
+}
+function rootSessionId4(playthrough) {
+  const value = playthrough?.ext?.pmpDshTavern?.rootSessionId;
+  return typeof value === "string" && value !== "" ? value : null;
+}
+function latestCharacterPlaythrough(catalog2, characterId) {
+  let latest = null;
+  let latestNumber = 0;
+  let ordinal = 0;
+  for (const playthrough of catalog2?.playthroughs ?? []) {
+    if (playthroughCharacterId2(playthrough) !== characterId) continue;
+    ordinal += 1;
+    const explicit = playthrough?.ext?.pmpDshTavern?.playthroughNumber;
+    const number = Number.isSafeInteger(explicit) && explicit > 0 ? explicit : ordinal;
+    if (latest === null || number >= latestNumber) {
+      latest = playthrough;
+      latestNumber = number;
+    }
+  }
+  return latest;
+}
+async function playthroughIsReusable(client, playthrough) {
+  const sessionId = rootSessionId4(playthrough);
+  if (sessionId === null) return false;
+  const timeline = await client.getTimeline(playthrough);
+  if ((timeline?.nodes?.length ?? 0) > 0) return false;
+  const imported = await loadPlaythroughImportContext(client, sessionId, playthrough, timeline);
+  if (Array.isArray(imported.document?.qa) && imported.document.qa.length > 0) return false;
+  const history = await client.getMessages(sessionId);
+  if (history?.incompleteTurn === true) return false;
+  return !(history?.messages ?? []).some((message) => message?.role === "user" || message?.role === "assistant");
+}
+function nextPlaythroughNumber(catalog2, characterId) {
+  let maximum = 0;
+  let legacyOrdinal = 0;
+  for (const playthrough of catalog2?.playthroughs ?? []) {
+    if (playthroughCharacterId2(playthrough) !== characterId) continue;
+    legacyOrdinal += 1;
+    const explicit = playthrough?.ext?.pmpDshTavern?.playthroughNumber;
+    maximum = Math.max(maximum, Number.isSafeInteger(explicit) && explicit > 0 ? explicit : legacyOrdinal);
+  }
+  return maximum + 1;
+}
+async function renamePlaythrough(client, playthrough, title) {
+  if (client == null) throw new TypeError("playClient.required");
+  const normalized = typeof title === "string" ? title.trim() : "";
+  if (normalized === "" || normalized.length > 120) throw new TypeError("play.rename.invalid");
+  const saved = await updateCatalog(client, (current2) => {
+    const freshIndex = current2.playthroughs.findIndex((item) => item.id === playthrough?.id && item.path === playthrough?.path);
+    if (freshIndex < 0) throw new TypeError("play.rename.missing");
+    const freshPlaythroughs = [...current2.playthroughs];
+    freshPlaythroughs[freshIndex] = { ...freshPlaythroughs[freshIndex], title: normalized };
+    return { ...current2, playthroughs: freshPlaythroughs };
+  });
+  const verified = saved?.playthroughs === void 0 ? await client.getCatalog() : saved;
+  const renamed = verified.playthroughs.find((item) => item.id === playthrough.id && item.path === playthrough.path);
+  if (renamed?.title !== normalized) throw new Error("play.rename.verificationFailed");
+  return renamed;
+}
+function sourceSessionIdForCharacter(character) {
+  const activePlaythrough = character?.playthroughs?.find((item) => item.active && typeof item.rootSessionId === "string");
+  if (activePlaythrough !== void 0) return activePlaythrough.rootSessionId;
+  const activeLoose = character?.unassigned?.find((item) => item.active);
+  if (activeLoose !== void 0) return activeLoose.id;
+  const loose = character?.unassigned?.find((item) => typeof item.id === "string");
+  if (loose !== void 0) return loose.id;
+  const rooted = character?.playthroughs?.find((item) => typeof item.rootSessionId === "string");
+  return rooted?.rootSessionId ?? null;
+}
+async function createCharacterPlaythrough(client, {
+  character,
+  selectionFromSessionId = null,
+  now = () => /* @__PURE__ */ new Date(),
+  randomUUID = () => globalThis.crypto.randomUUID()
+} = {}) {
+  if (client == null) throw new TypeError("playClient.required");
+  const characterId = safeSegment(character?.id, "character.id");
+  const createdAt = isoNow(now);
+  const playthroughId = safeSegment(`playthrough-${randomUUID()}`, "playthrough.id");
+  const directory = `${characterId}/${playthroughId}`;
+  const path = `${directory}/timeline.json`;
+  const sourceId = typeof selectionFromSessionId === "string" && selectionFromSessionId !== "" ? selectionFromSessionId : null;
+  const catalog2 = await catalogOrEmpty(client);
+  const latest = latestCharacterPlaythrough(catalog2, characterId);
+  if (latest !== null && await playthroughIsReusable(client, latest)) {
+    return { sessionId: rootSessionId4(latest), playthrough: latest, reused: true };
+  }
+  const created = await client.postSession(sourceId);
+  const sessionId = safeSessionId(created?.sessionId);
+  if (sourceId === null) {
+    await client.putCharacterSelection(sessionId, characterId, { greetingIndex: 0 });
+  }
+  const selection = await client.getCharacterSelection(sessionId);
+  if (characterIdFromSelection(selection) !== characterId) {
+    throw new Error("playthrough character selection did not persist");
+  }
+  const playthrough = {
+    id: playthroughId,
+    path,
+    title: "\u5468\u76EE",
+    lastOpenedAt: createdAt,
+    ext: {
+      pmpDshTavern: {
+        characterId,
+        rootSessionId: sessionId,
+        playthroughNumber: 0
+      }
+    }
+  };
+  await client.createDirs(directory);
+  await client.putTimeline(playthrough, { nodes: [] });
+  let saved;
+  const savedCatalog = await updateCatalog(client, (fresh) => {
+    const existing = fresh.playthroughs.find((item) => item.id === playthroughId && item.path === path);
+    if (existing !== void 0) {
+      if (existing.ext?.pmpDshTavern?.rootSessionId !== sessionId) throw new Error("playthrough.create.identityConflict");
+      saved = existing;
+      return fresh;
+    }
+    const playthroughNumber = nextPlaythroughNumber(fresh, characterId);
+    const row = {
+      ...playthrough,
+      title: `${playthroughNumber}\u5468\u76EE`,
+      ext: {
+        ...playthrough.ext,
+        pmpDshTavern: { ...playthrough.ext.pmpDshTavern, playthroughNumber }
+      }
+    };
+    saved = row;
+    return { ...fresh, playthroughs: [...fresh.playthroughs, row] };
+  });
+  const savedTimeline = await client.getTimeline(playthrough);
+  saved ??= savedCatalog?.playthroughs?.find((item) => item.id === playthroughId && item.path === path);
+  if (saved?.ext?.pmpDshTavern?.rootSessionId !== sessionId || savedTimeline.nodes.length !== 0) {
+    throw new Error("playthrough verification failed");
+  }
+  return { sessionId, playthrough: saved, reused: false };
+}
+function createPlaythroughController(client, dependencies = {}) {
+  const inFlight = /* @__PURE__ */ new Map();
+  let tail = Promise.resolve();
+  return {
+    create(args) {
+      const characterId = safeSegment(args?.character?.id, "character.id");
+      const existing = inFlight.get(characterId);
+      if (existing !== void 0) return existing;
+      const task = tail.catch(() => {
+      }).then(() => createCharacterPlaythrough(client, {
+        ...dependencies,
+        ...args
+      }));
+      tail = task;
+      inFlight.set(characterId, task);
+      task.finally(() => {
+        if (inFlight.get(characterId) === task) inFlight.delete(characterId);
+      }).catch(() => {
+      });
+      return task;
+    }
+  };
+}
+
+// packages/client/src/play/fork.js
+var SAFE_SEGMENT2 = /^[A-Za-z0-9][A-Za-z0-9._-]{0,199}$/;
+var SAFE_SESSION_ID2 = /^[A-Za-z0-9][A-Za-z0-9._:-]{0,199}$/;
+function safeSegment2(value, label) {
+  if (typeof value !== "string" || !SAFE_SEGMENT2.test(value)) {
+    throw new TypeError(`${label} must be a safe path segment`);
+  }
+  return value;
+}
+function safeSessionId2(value) {
+  if (typeof value !== "string" || !SAFE_SESSION_ID2.test(value)) {
+    throw new TypeError("session.id must be a valid DSH session id");
+  }
+  return value;
+}
 function nodeById(timeline, nodeId) {
+  const index = timeline.nodes.findIndex((node) => node.id === nodeId);
+  if (index < 0) throw new TypeError(`Unknown timeline node ${nodeId}`);
+  return { index, node: timeline.nodes[index] };
+}
+function adoptedVariant2(node) {
+  const value = node.variants.find((variant) => variant.id === node.adoptedVariantId);
+  if (value === void 0) throw new TypeError("Adopted variant is missing");
+  return value;
+}
+function forkedTimeline(source, nodeIndex, adoptedId, sessionId) {
+  return {
+    ...source,
+    nodes: source.nodes.slice(0, nodeIndex + 1).map((node, index) => ({
+      ...node,
+      variants: node.variants.map((variant) => index === nodeIndex && variant.id === adoptedId ? { ...variant, sessionId } : { ...variant })
+    }))
+  };
+}
+function inheritedRangeExists(messages, variant) {
+  const values = messages?.messages ?? [];
+  const user = values.some((message) => message.role === "user" && Number.isSafeInteger(message.seq) && message.seq >= variant.startEventId && message.seq <= variant.endEventId);
+  const assistant = values.some((message) => message.role === "assistant" && message.seq === variant.endEventId);
+  return messages?.incompleteTurn !== true && user && assistant;
+}
+async function forkPlaythroughAtNode(client, {
+  playthrough,
+  nodeId,
+  now = () => /* @__PURE__ */ new Date(),
+  randomUUID = () => globalThis.crypto.randomUUID()
+} = {}) {
+  if (client == null) throw new TypeError("playClient.required");
+  const characterId = safeSegment2(playthroughCharacterId(playthrough), "character.id");
+  const source = await client.getTimeline(playthrough);
+  const { index, node } = nodeById(source, nodeId);
+  const adopted = adoptedVariant2(node);
+  const branch = await client.postBranch(adopted.sessionId, adopted.endEventId);
+  const sessionId = safeSessionId2(branch?.sessionId);
+  const inherited = await client.getMessages(sessionId);
+  if (!inheritedRangeExists(inherited, adopted)) {
+    throw new Error("Forked session does not contain the adopted reply range");
+  }
+  const value = now();
+  if (!(value instanceof Date) || Number.isNaN(value.valueOf())) throw new TypeError("now must return a valid Date");
+  const playthroughId = safeSegment2(`playthrough-${randomUUID()}`, "playthrough.id");
+  const directory = `${characterId}/${playthroughId}`;
+  const path = `${directory}/timeline.json`;
+  const timeline = forkedTimeline(source, index, adopted.id, sessionId);
+  const draft = {
+    id: playthroughId,
+    path,
+    title: "\u5468\u76EE",
+    lastOpenedAt: value.toISOString(),
+    ext: {
+      pmpDshTavern: {
+        characterId,
+        rootSessionId: sessionId,
+        playthroughNumber: 0
+      }
+    }
+  };
+  await client.createDirs(directory);
+  await client.putTimeline(draft, timeline);
+  let saved;
+  const catalog2 = await updateCatalog(client, (fresh) => {
+    const existing = fresh.playthroughs.find((item) => item.id === playthroughId && item.path === path);
+    if (existing !== void 0) {
+      if (existing.ext?.pmpDshTavern?.rootSessionId !== sessionId) {
+        throw new Error("playthrough.fork.identityConflict");
+      }
+      saved = existing;
+      return fresh;
+    }
+    const playthroughNumber = nextPlaythroughNumber(fresh, characterId);
+    saved = {
+      ...draft,
+      title: `${playthroughNumber}\u5468\u76EE`,
+      ext: {
+        ...draft.ext,
+        pmpDshTavern: { ...draft.ext.pmpDshTavern, playthroughNumber }
+      }
+    };
+    return { ...fresh, playthroughs: [...fresh.playthroughs, saved] };
+  });
+  saved ??= catalog2?.playthroughs?.find((item) => item.id === playthroughId && item.path === path);
+  const focus = await client.getFocus(saved ?? draft);
+  if (focus.sessionId !== sessionId || focus.nodeId !== node.id || focus.variantId !== adopted.id) {
+    throw new Error("Forked playthrough focus verification failed");
+  }
+  return { sessionId, playthrough: saved ?? draft, timeline };
+}
+
+// packages/client/src/play/nodes.js
+function nodeById2(timeline, nodeId) {
   const index = timeline.nodes.findIndex((node) => node.id === nodeId);
   if (index < 0) throw new TypeError(`Unknown timeline node ${nodeId}`);
   return { index, node: timeline.nodes[index] };
@@ -9646,11 +10517,10 @@ function createPlayNodeController(client, {
     return task;
   };
   const update = (playthrough, nodeId, transform) => schedule(async () => {
-    const timeline = await client.getTimeline(playthrough);
-    const { index, node } = nodeById(timeline, nodeId);
-    const next = replaceNode(timeline, index, transform(node));
-    await client.putTimeline(playthrough, next);
-    return next;
+    return updateTimeline(client, playthrough, (timeline) => {
+      const { index, node } = nodeById2(timeline, nodeId);
+      return replaceNode(timeline, index, transform(node));
+    });
   });
   return {
     setHidden(playthrough, nodeId, hidden) {
@@ -9666,12 +10536,14 @@ function createPlayNodeController(client, {
     adoptVariant(playthrough, nodeId, variantId) {
       if (typeof variantId !== "string" || variantId === "") throw new TypeError("variantId is required");
       return schedule(async () => {
-        const timeline = await client.getTimeline(playthrough);
-        const { index, node } = nodeById(timeline, nodeId);
+        const next = await updateTimeline(client, playthrough, (timeline) => {
+          const { index, node: node2 } = nodeById2(timeline, nodeId);
+          const variant2 = node2.variants.find((item) => item.id === variantId);
+          if (variant2 === void 0) throw new TypeError(`Unknown variant ${variantId}`);
+          return replaceNode(timeline, index, { ...node2, adoptedVariantId: variantId });
+        });
+        const { node } = nodeById2(next, nodeId);
         const variant = node.variants.find((item) => item.id === variantId);
-        if (variant === void 0) throw new TypeError(`Unknown variant ${variantId}`);
-        const next = replaceNode(timeline, index, { ...node, adoptedVariantId: variantId });
-        await client.putTimeline(playthrough, next);
         const focus = await client.getFocus(playthrough);
         if (focus.sessionId !== variant.sessionId) throw new Error("Saved variant does not match derived focus");
         return { timeline: next, sessionId: variant.sessionId };
@@ -9680,7 +10552,7 @@ function createPlayNodeController(client, {
     createReplySwipe(playthrough, nodeId) {
       return schedule(async () => {
         const timeline = await client.getTimeline(playthrough);
-        const { node } = nodeById(timeline, nodeId);
+        const { node } = nodeById2(timeline, nodeId);
         const adopted = node.variants.find((item) => item.id === node.adoptedVariantId);
         if (adopted === void 0) throw new TypeError("Adopted variant is missing");
         const source = await client.getMessages(adopted.sessionId);
@@ -9702,8 +10574,6 @@ function createPlayNodeController(client, {
           if (attempt + 1 < maxPolls) await delay(pollInterval);
         }
         if (pair === null) throw new Error("Timed out waiting for the swipe reply");
-        const latest = await client.getTimeline(playthrough);
-        const current2 = nodeById(latest, nodeId);
         const variantId = idFactory(pair.user.seq, pair.assistant.seq, newSessionId);
         const variant = {
           id: variantId,
@@ -9711,17 +10581,25 @@ function createPlayNodeController(client, {
           startEventId: pair.user.seq,
           endEventId: pair.assistant.seq
         };
-        const nextNode = {
-          ...current2.node,
-          adoptedVariantId: variantId,
-          variants: [...current2.node.variants, variant]
-        };
-        const next = replaceNode(latest, current2.index, nextNode);
-        await client.putTimeline(playthrough, next);
+        const next = await updateTimeline(client, playthrough, (timeline2) => {
+          const current2 = nodeById2(timeline2, nodeId);
+          const existing = current2.node.variants.find((item) => item.id === variantId);
+          if (existing !== void 0) {
+            return replaceNode(timeline2, current2.index, { ...current2.node, adoptedVariantId: variantId });
+          }
+          return replaceNode(timeline2, current2.index, {
+            ...current2.node,
+            adoptedVariantId: variantId,
+            variants: [...current2.node.variants, variant]
+          });
+        });
         const focus = await client.getFocus(playthrough);
         if (focus.sessionId !== newSessionId) throw new Error("Saved swipe does not match derived focus");
         return { timeline: next, sessionId: newSessionId, variantId };
       });
+    },
+    forkPlaythrough(playthrough, nodeId) {
+      return schedule(() => forkPlaythroughAtNode(client, { playthrough, nodeId }));
     }
   };
 }
@@ -9837,6 +10715,15 @@ function PlayTurnActions({
       })
     }),
     h7(Action, {
+      icon: "\u2442",
+      label: uiMessage("play.chat.forkPlaythrough"),
+      disabled,
+      onClick: () => mutate(async () => {
+        const result = await controller(playClient).forkPlaythrough(playthrough, turn.id);
+        openSession(result.sessionId);
+      })
+    }),
+    h7(Action, {
       icon: "\u270E",
       label: uiMessage("play.chat.editDisplay"),
       disabled,
@@ -9930,143 +10817,21 @@ function createTurnReconciler(client) {
     const task = pending.then(async () => {
       const messages = await client.getMessages(sessionId);
       if (messages.incompleteTurn) return { timeline: null, added: [] };
-      const timeline = await client.getTimeline(playthrough);
-      const next = appendCompletedTurns(timeline, messages, sessionId);
-      if (next.added.length === 0) return next;
-      await client.putTimeline(playthrough, next.timeline);
-      return next;
+      const initial = await client.getTimeline(playthrough);
+      const initialResult = appendCompletedTurns(initial, messages, sessionId);
+      if (initialResult.added.length === 0) return initialResult;
+      let added = initialResult.added;
+      const timeline = await updateTimeline(client, playthrough, (current2) => {
+        const next = appendCompletedTurns(current2, messages, sessionId);
+        added = next.added;
+        return next.timeline;
+      }, { initial });
+      return { timeline, added };
     });
     pending = task.catch(() => {
     });
     return task;
   };
-}
-
-// packages/client/src/play/import.js
-function parseJsonl(text2) {
-  const rows = text2.split(/\r?\n/).filter(Boolean).map((line) => JSON.parse(line));
-  if (rows.length === 0) throw new TypeError("play.import.empty");
-  const messages = rows.slice(1).filter((row) => typeof row?.mes === "string");
-  let greeting = null;
-  const qa = [];
-  let pending = null;
-  for (const message of messages) {
-    if (message.is_user === true) {
-      if (pending !== null) throw new TypeError("play.import.unpaired");
-      pending = message.mes;
-    } else if (pending === null && qa.length === 0 && greeting === null) {
-      greeting = message.mes;
-    } else if (pending !== null) {
-      qa.push({ user: pending, assistant: message.mes });
-      pending = null;
-    }
-  }
-  if (pending !== null) throw new TypeError("play.import.unpaired");
-  return { greeting, qa, source: { format: "sillytavern-jsonl" } };
-}
-function parseBundle(value) {
-  if (value?.kind !== "pmp-dsh-tavern-playthrough" || value.schemaVersion !== 1) {
-    throw new TypeError("play.import.unsupported");
-  }
-  const turns = projectTimelineQa(value.timeline, value.messagesBySession);
-  const imported = value.resources?.importContext;
-  const importedQa = Array.isArray(imported?.qa) ? imported.qa.map((item) => ({ user: String(item?.user ?? ""), assistant: String(item?.assistant ?? "") })) : [];
-  return {
-    greeting: typeof imported?.greeting === "string" ? imported.greeting : typeof value.resources?.greeting === "string" ? value.resources.greeting : null,
-    qa: [
-      ...importedQa,
-      ...turns.filter((turn) => !turn.hidden).map((turn) => ({ user: turn.userText, assistant: turn.originalAssistantText }))
-    ],
-    source: { format: "pmp-dsh-tavern-bundle", playthroughId: value.playthrough?.id ?? null }
-  };
-}
-function parsePlaythroughImport(text2, fileName = "") {
-  if (typeof text2 !== "string" || text2.trim() === "") throw new TypeError("play.import.empty");
-  const parsed = text2.trimStart().startsWith("{") && !text2.trimStart().includes("\n") ? parseBundle(JSON.parse(text2)) : (() => {
-    try {
-      return parseBundle(JSON.parse(text2));
-    } catch (error) {
-      if (text2.includes("\n")) return parseJsonl(text2);
-      throw error;
-    }
-  })();
-  return { schemaVersion: 1, ...parsed, source: { ...parsed.source, fileName } };
-}
-function rootSessionId2(playthrough) {
-  const value = playthrough?.ext?.pmpDshTavern?.rootSessionId;
-  return typeof value === "string" && value !== "" ? value : null;
-}
-function playthroughDirectory(playthrough) {
-  const path = typeof playthrough?.path === "string" ? playthrough.path.replaceAll("\\", "/") : "";
-  if (!path.endsWith("/timeline.json")) throw new TypeError("play.import.timelineRequired");
-  return path.slice(0, -"/timeline.json".length);
-}
-function fallbackImportPath(playthrough, timeline) {
-  const direct = playthrough?.ext?.pmpDshTavern?.importContextPath;
-  if (typeof direct === "string" && direct !== "") return direct;
-  const nested = timeline?.ext?.pmpDshTavern?.importContextPath;
-  return typeof nested === "string" && nested !== "" ? nested : null;
-}
-async function getPlaythroughImportBinding(client, sessionId, playthrough, timeline) {
-  if (typeof client.getImportContextBinding === "function") {
-    return client.getImportContextBinding(sessionId);
-  }
-  const path = fallbackImportPath(playthrough, timeline);
-  return path === null ? null : { path, state: "pending" };
-}
-async function loadPlaythroughImportContext(client, sessionId, playthrough, timeline) {
-  const binding = await getPlaythroughImportBinding(client, sessionId, playthrough, timeline);
-  if (typeof binding?.path !== "string" || binding.path === "") return { binding: null, document: null };
-  const document2 = JSON.parse((await client.getFile(binding.path)).content);
-  return { binding, document: document2 };
-}
-function assertLocallyMutable(timeline, messages) {
-  if ((timeline?.nodes?.length ?? 0) > 0 || messages?.incompleteTurn === true || (messages?.messages ?? []).some((message) => message?.role === "user" || message?.role === "assistant")) {
-    const error = new Error("play.import.locked");
-    error.code = "PLAY_IMPORT_CONTEXT_LOCKED";
-    throw error;
-  }
-}
-async function bindPlaythroughImport(client, playthrough, file, {
-  randomUUID = () => globalThis.crypto.randomUUID()
-} = {}) {
-  const document2 = parsePlaythroughImport(await file.text(), file.name);
-  const sessionId = rootSessionId2(playthrough);
-  if (sessionId === null) throw new TypeError("play.import.sessionRequired");
-  const [timeline, messages] = await Promise.all([
-    client.getTimeline(playthrough),
-    client.getMessages(sessionId)
-  ]);
-  assertLocallyMutable(timeline, messages);
-  const directory = playthroughDirectory(playthrough);
-  const token = String(randomUUID());
-  if (!/^[A-Za-z0-9][A-Za-z0-9._-]{0,199}$/.test(token)) throw new TypeError("play.import.idInvalid");
-  const contextPath = `${directory}/import-context-${token}.json`;
-  await client.createDirs(directory);
-  await client.putFile(contextPath, JSON.stringify(document2, null, 2));
-  const bound = await client.putImportContextBinding(sessionId, { path: contextPath });
-  const [savedFile, savedBinding] = await Promise.all([
-    client.getFile(contextPath),
-    client.getImportContextBinding(sessionId)
-  ]);
-  const savedDocument = JSON.parse(savedFile.content);
-  if (bound?.path !== contextPath || savedBinding?.path !== contextPath || savedBinding?.state !== "pending" || savedDocument.schemaVersion !== document2.schemaVersion || savedDocument.qa?.length !== document2.qa.length) {
-    throw new Error("play.import.verificationFailed");
-  }
-  return { sessionId, binding: savedBinding, document: document2 };
-}
-async function unbindPlaythroughImport(client, playthrough) {
-  const sessionId = rootSessionId2(playthrough);
-  if (sessionId === null) throw new TypeError("play.import.sessionRequired");
-  const [timeline, messages] = await Promise.all([
-    client.getTimeline(playthrough),
-    client.getMessages(sessionId)
-  ]);
-  assertLocallyMutable(timeline, messages);
-  await client.deleteImportContextBinding(sessionId);
-  const saved = await client.getImportContextBinding(sessionId);
-  if (saved !== null) throw new Error("play.import.verificationFailed");
-  return { sessionId, binding: null };
 }
 
 // packages/client/src/play/chat.js
@@ -10488,579 +11253,6 @@ function MowanChatView({ sessionId, useSession, playClient, playthrough, openSes
 
 // packages/client/src/play/sidebar.js
 var import_react11 = require("react");
-
-// packages/client/src/play/schema.js
-var CHROME_MODES = /* @__PURE__ */ new Set(["native", "play"]);
-var MESSAGE_ROLES = /* @__PURE__ */ new Set(["user", "assistant", "system"]);
-function isRecord4(value) {
-  return value !== null && typeof value === "object" && !Array.isArray(value);
-}
-function fail(label, detail) {
-  throw new TypeError(`${label}: ${detail}`);
-}
-function stringId(value, label) {
-  if (typeof value !== "string" || value.trim() === "") fail(label, "must be a non-empty string");
-  return value;
-}
-function eventSeq(value, label) {
-  if (!Number.isSafeInteger(value) || value < 0) fail(label, "must be a non-negative integer");
-  return value;
-}
-function extRecord(value, label) {
-  if (value === void 0) return void 0;
-  if (!isRecord4(value)) fail(label, "must be an object");
-  return value;
-}
-function normalizeChrome(value, label = "chrome") {
-  if (!isRecord4(value)) fail(label, "must be an object");
-  if (!CHROME_MODES.has(value.mode)) fail(label, "mode must be native or play");
-  return { mode: value.mode };
-}
-function normalizeWorkspace(value, label = "workspace") {
-  if (!isRecord4(value)) fail(label, "must be an object");
-  if (typeof value.selected !== "boolean") fail(label, "selected must be a boolean");
-  if (value.rootPath !== null && value.rootPath !== void 0 && typeof value.rootPath !== "string") {
-    fail(label, "rootPath must be a string or null");
-  }
-  if (!Number.isSafeInteger(value.contractVersion) || value.contractVersion < 1) {
-    fail(label, "contractVersion must be a positive integer");
-  }
-  const warnings = Array.isArray(value.warnings) ? value.warnings.filter(isRecord4).map((item) => ({
-    code: typeof item.code === "string" ? item.code : "",
-    message: typeof item.message === "string" ? item.message : ""
-  })) : [];
-  return {
-    selected: value.selected,
-    rootPath: value.rootPath ?? null,
-    workspaceId: typeof value.workspaceId === "string" ? value.workspaceId : null,
-    contractVersion: value.contractVersion,
-    activeTimelinePath: typeof value.activeTimelinePath === "string" ? value.activeTimelinePath : null,
-    firstSelection: value.firstSelection === true,
-    warnings
-  };
-}
-function normalizeTimelineVariant(value, label = "variant") {
-  if (!isRecord4(value)) fail(label, "must be an object");
-  const startEventId = eventSeq(value.startEventId, `${label}.startEventId`);
-  const endEventId = eventSeq(value.endEventId, `${label}.endEventId`);
-  if (startEventId > endEventId) fail(label, "startEventId must not exceed endEventId");
-  const ext = extRecord(value.ext, `${label}.ext`);
-  return {
-    id: stringId(value.id, `${label}.id`),
-    sessionId: stringId(value.sessionId, `${label}.sessionId`),
-    startEventId,
-    endEventId,
-    ...ext === void 0 ? {} : { ext }
-  };
-}
-function normalizeTimelineNode(value, label = "node") {
-  if (!isRecord4(value)) fail(label, "must be an object");
-  if (value.kind !== "qa") fail(label, "kind must be qa");
-  if (!Array.isArray(value.variants) || value.variants.length === 0) {
-    fail(label, "variants must be a non-empty array");
-  }
-  const variants = value.variants.map((item, index) => normalizeTimelineVariant(item, `${label}.variants[${index}]`));
-  const adoptedVariantId = stringId(value.adoptedVariantId, `${label}.adoptedVariantId`);
-  if (!variants.some((item) => item.id === adoptedVariantId)) fail(label, "adoptedVariantId must match a variant");
-  if (value.hidden !== void 0 && typeof value.hidden !== "boolean") fail(label, "hidden must be a boolean");
-  if (value.displayOverride !== void 0 && value.displayOverride !== null && typeof value.displayOverride !== "string") {
-    fail(label, "displayOverride must be a string or null");
-  }
-  const ext = extRecord(value.ext, `${label}.ext`);
-  return {
-    id: stringId(value.id, `${label}.id`),
-    kind: "qa",
-    hidden: value.hidden === true,
-    displayOverride: value.displayOverride ?? null,
-    adoptedVariantId,
-    variants,
-    ...ext === void 0 ? {} : { ext }
-  };
-}
-function normalizeTimeline(value, label = "timeline") {
-  if (!isRecord4(value)) fail(label, "must be an object");
-  if (!Array.isArray(value.nodes)) fail(label, "nodes must be an array");
-  const nodes = value.nodes.map((item, index) => normalizeTimelineNode(item, `${label}.nodes[${index}]`));
-  const ids = /* @__PURE__ */ new Set();
-  for (const node of nodes) {
-    if (ids.has(node.id)) fail(label, `duplicate node id ${node.id}`);
-    ids.add(node.id);
-  }
-  const ext = extRecord(value.ext, `${label}.ext`);
-  return { nodes, ...ext === void 0 ? {} : { ext } };
-}
-function normalizeCatalog(value, label = "catalog") {
-  if (!isRecord4(value)) fail(label, "must be an object");
-  if (!Array.isArray(value.playthroughs)) fail(label, "playthroughs must be an array");
-  const playthroughs = value.playthroughs.map((item, index) => {
-    const itemLabel = `${label}.playthroughs[${index}]`;
-    if (!isRecord4(item)) fail(itemLabel, "must be an object");
-    const ext2 = extRecord(item.ext, `${itemLabel}.ext`);
-    return {
-      id: stringId(item.id, `${itemLabel}.id`),
-      path: stringId(item.path, `${itemLabel}.path`),
-      ...typeof item.title === "string" ? { title: item.title } : {},
-      ...typeof item.lastOpenedAt === "string" ? { lastOpenedAt: item.lastOpenedAt } : {},
-      ...ext2 === void 0 ? {} : { ext: ext2 }
-    };
-  });
-  const ext = extRecord(value.ext, `${label}.ext`);
-  return { playthroughs, ...ext === void 0 ? {} : { ext } };
-}
-function parseJsonDocument(content, normalize, label) {
-  if (typeof content !== "string") fail(label, "content must be a JSON string");
-  let parsed;
-  try {
-    parsed = JSON.parse(content);
-  } catch {
-    fail(label, "content must be valid JSON");
-  }
-  return normalize(parsed, label);
-}
-function projectContentText(content) {
-  if (!Array.isArray(content)) return "";
-  return content.map((part) => {
-    if (!isRecord4(part)) return "";
-    if (typeof part.text === "string") return part.text;
-    return typeof part.type === "string" && part.type !== "text" ? `\u27E6${part.type}\u27E7` : "";
-  }).join("");
-}
-function normalizeSessionMessages(value, label = "messages") {
-  if (!isRecord4(value)) fail(label, "must be an object");
-  if (!Array.isArray(value.messages)) fail(label, "messages must be an array");
-  if (typeof value.incompleteTurn !== "boolean") fail(label, "incompleteTurn must be a boolean");
-  const messages = value.messages.map((item, index) => {
-    const itemLabel = `${label}.messages[${index}]`;
-    if (!isRecord4(item)) fail(itemLabel, "must be an object");
-    if (!MESSAGE_ROLES.has(item.role)) fail(itemLabel, "role is invalid");
-    if (!Array.isArray(item.content)) fail(itemLabel, "content must be an array");
-    if (item.seq !== null && (!Number.isSafeInteger(item.seq) || item.seq < 0)) fail(itemLabel, "seq must be a non-negative integer or null");
-    return {
-      id: stringId(item.id, `${itemLabel}.id`),
-      role: item.role,
-      content: item.content,
-      seq: item.seq,
-      text: projectContentText(item.content)
-    };
-  });
-  return { messages, incompleteTurn: value.incompleteTurn };
-}
-function normalizeFocus(value, label = "focus") {
-  if (!isRecord4(value)) fail(label, "must be an object");
-  if (value.sessionId !== null && (typeof value.sessionId !== "string" || value.sessionId === "")) {
-    fail(label, "sessionId must be a non-empty string or null");
-  }
-  return { sessionId: value.sessionId };
-}
-function timelinePath(value, label = "timeline path") {
-  const path = typeof value === "string" ? value : value?.path;
-  stringId(path, label);
-  if (!path.endsWith("timeline.json")) fail(label, "must point to timeline.json");
-  return path;
-}
-function playthroughCharacterId(playthrough) {
-  const explicit = playthrough?.ext?.pmpDshTavern?.characterId;
-  if (typeof explicit === "string" && explicit !== "") return explicit;
-  const path = typeof playthrough?.path === "string" ? playthrough.path.replaceAll("\\", "/") : "";
-  const first = path.split("/").filter(Boolean)[0];
-  return first || null;
-}
-
-// packages/client/src/play/sidebar-model.js
-var SIDEBAR_LOAD_CONCURRENCY = 4;
-function characterIdFromSelection(value) {
-  const selection = value?.selection ?? value;
-  const id = selection?.characterCardId;
-  return typeof id === "string" && id !== "" ? id : null;
-}
-function rootSessionId3(playthrough) {
-  const id = playthrough?.ext?.pmpDshTavern?.rootSessionId;
-  return typeof id === "string" && id !== "" ? id : null;
-}
-function sessionTitle(session, id) {
-  if (typeof session?.displayTitle === "string" && session.displayTitle !== "") return session.displayTitle;
-  if (typeof session?.title === "string" && session.title !== "") return session.title;
-  return id;
-}
-function normalizedPath2(value) {
-  if (typeof value !== "string") return "";
-  const normalized = value.replaceAll("\\", "/").replace(/\/+$/, "");
-  return /^[a-z]:\//i.test(normalized) ? normalized.toLowerCase() : normalized;
-}
-function requiresSystemWorkspaceConfirmation(value) {
-  const path = typeof value === "string" ? value.replaceAll("\\", "/") : "";
-  return /^c:\//i.test(path) || path === "/" || path === "/usr" || path.startsWith("/usr/") || path === "/System" || path.startsWith("/System/");
-}
-function timelineFor(timelines, playthrough) {
-  return timelines?.[playthrough.path] ?? timelines?.[playthrough.id] ?? null;
-}
-function playthroughMembers(playthrough, timeline) {
-  const ids = /* @__PURE__ */ new Set();
-  const rootId = rootSessionId3(playthrough);
-  if (rootId !== null) ids.add(rootId);
-  for (const node of timeline?.nodes ?? []) {
-    for (const variant of node?.variants ?? []) {
-      if (typeof variant?.sessionId === "string" && variant.sessionId !== "") ids.add(variant.sessionId);
-    }
-  }
-  return ids;
-}
-function sessionIdsInRpWorkspace({ workspace, workspaceItems = [], sessions = {} } = {}) {
-  const ids = /* @__PURE__ */ new Set();
-  if (workspace?.selected !== true) return ids;
-  if (typeof workspace.workspaceId === "string" && workspace.workspaceId !== "") {
-    const item = workspaceItems.find((candidate) => candidate?.workspaceId === workspace.workspaceId);
-    if (item !== void 0) {
-      for (const id of item.sessionIds ?? []) if (typeof id === "string" && id !== "") ids.add(id);
-      return ids;
-    }
-  }
-  const root = normalizedPath2(workspace.rootPath);
-  if (root === "") return ids;
-  for (const [id, session] of Object.entries(sessions)) {
-    if (normalizedPath2(session?.cwd) === root) ids.add(id);
-  }
-  return ids;
-}
-var SessionCharacterBindingCache = class {
-  constructor() {
-    this.entries = /* @__PURE__ */ new Map();
-    this.generation = 0;
-  }
-  clear() {
-    this.generation += 1;
-    this.entries.clear();
-  }
-  get(client, sessionId) {
-    const cached = this.entries.get(sessionId);
-    if (cached !== void 0) return cached.promise ?? Promise.resolve(cached.value);
-    const generation = this.generation;
-    const readSelection = typeof client.getSelection === "function" ? client.getSelection.bind(client) : client.getCharacterSelection.bind(client);
-    const promise = readSelection(sessionId).then(characterIdFromSelection, () => null);
-    this.entries.set(sessionId, { promise });
-    promise.then((value) => {
-      if (this.generation === generation) this.entries.set(sessionId, { value });
-    });
-    return promise;
-  }
-};
-async function loadSessionCharacterBindings(client, sessionIds, {
-  concurrency = SIDEBAR_LOAD_CONCURRENCY,
-  cache = new SessionCharacterBindingCache()
-} = {}) {
-  if (client == null || typeof client.getSelection !== "function" && typeof client.getCharacterSelection !== "function") return {};
-  const ids = [...new Set(sessionIds)].filter((id) => typeof id === "string" && id !== "");
-  const result = {};
-  let cursor = 0;
-  const worker = async () => {
-    while (cursor < ids.length) {
-      const index = cursor;
-      cursor += 1;
-      const id = ids[index];
-      result[id] = await cache.get(client, id);
-    }
-  };
-  const requested = Number.isFinite(concurrency) ? Math.floor(concurrency) : SIDEBAR_LOAD_CONCURRENCY;
-  const workerCount = Math.min(ids.length, Math.max(1, Math.min(SIDEBAR_LOAD_CONCURRENCY, requested)));
-  await Promise.all(Array.from({ length: workerCount }, worker));
-  return result;
-}
-async function mapConcurrent(values, mapper, concurrency = SIDEBAR_LOAD_CONCURRENCY) {
-  const result = new Array(values.length);
-  let cursor = 0;
-  const worker = async () => {
-    while (cursor < values.length) {
-      const index = cursor;
-      cursor += 1;
-      result[index] = await mapper(values[index], index);
-    }
-  };
-  await Promise.all(Array.from({ length: Math.min(values.length, concurrency) }, worker));
-  return result;
-}
-async function loadPlaySidebarResources(client) {
-  if (client == null) throw new TypeError("playClient.required");
-  const [workspace, characterResponse] = await Promise.all([
-    client.getWorkspace(),
-    client.getCharacters()
-  ]);
-  const characters = Array.isArray(characterResponse?.characters) ? characterResponse.characters : [];
-  if (workspace.selected !== true) return { workspace, characters, catalog: { playthroughs: [] }, timelines: {}, diagnostics: [] };
-  let catalog2;
-  try {
-    catalog2 = await client.getCatalog();
-  } catch (reason) {
-    if (reason?.code !== "PLAY_PATH_NOT_FOUND") throw reason;
-    catalog2 = { playthroughs: [] };
-  }
-  const timelines = {};
-  const diagnostics = [];
-  await mapConcurrent(catalog2.playthroughs, async (playthrough) => {
-    try {
-      timelines[playthrough.path] = await client.getTimeline(playthrough);
-    } catch (reason) {
-      diagnostics.push({
-        playthroughId: playthrough.id,
-        path: playthrough.path,
-        message: reason instanceof Error ? reason.message : String(reason)
-      });
-    }
-  });
-  return { workspace, characters, catalog: catalog2, timelines, diagnostics };
-}
-function projectPlaySidebar({
-  workspace = { selected: false },
-  workspaceItems = [],
-  characters = [],
-  catalog: catalog2 = { playthroughs: [] },
-  timelines = {},
-  sessions = {},
-  sessionIds = [],
-  archivedSessionIds = [],
-  currentId = null,
-  sessionCharacters = {}
-} = {}) {
-  const archived = new Set(archivedSessionIds);
-  const rpSessionIds = sessionIdsInRpWorkspace({ workspace, workspaceItems, sessions });
-  const characterById = /* @__PURE__ */ new Map();
-  const ensureCharacter = (id, name2 = id) => {
-    if (!characterById.has(id)) characterById.set(id, { id, name: name2, playthroughs: [], unassigned: [] });
-    return characterById.get(id);
-  };
-  for (const character of characters) {
-    if (typeof character?.id !== "string" || character.id === "") continue;
-    ensureCharacter(character.id, typeof character.name === "string" && character.name !== "" ? character.name : character.id);
-  }
-  const claimedRpSessions = /* @__PURE__ */ new Set();
-  for (const playthrough of catalog2.playthroughs ?? []) {
-    const rootId = rootSessionId3(playthrough);
-    const characterId = playthroughCharacterId(playthrough);
-    if (characterId === null) continue;
-    const allMembers = playthroughMembers(playthrough, timelineFor(timelines, playthrough));
-    const members = [...allMembers].filter((id) => rpSessionIds.has(id) && !archived.has(id));
-    for (const id of members) claimedRpSessions.add(id);
-    ensureCharacter(characterId).playthroughs.push({
-      ...playthrough,
-      title: typeof playthrough.title === "string" && playthrough.title !== "" ? playthrough.title : playthrough.id,
-      rootSessionId: rootId !== null && members.includes(rootId) ? rootId : null,
-      sessionIds: members,
-      active: currentId !== null && members.includes(currentId),
-      missing: members.length === 0
-    });
-  }
-  const ids = sessionIds.length > 0 ? sessionIds : Object.keys(sessions);
-  const otherSessions = [];
-  for (const id of ids) {
-    const session = sessions[id];
-    if (session == null || archived.has(id)) continue;
-    if (!rpSessionIds.has(id)) {
-      otherSessions.push({ id, title: sessionTitle(session, id), active: currentId === id, kind: "external" });
-      continue;
-    }
-    if (claimedRpSessions.has(id)) continue;
-    const characterId = sessionCharacters[id];
-    if (typeof characterId === "string" && characterId !== "") {
-      ensureCharacter(characterId).unassigned.push({ id, title: sessionTitle(session, id), active: currentId === id });
-      continue;
-    }
-    otherSessions.push({ id, title: sessionTitle(session, id), active: currentId === id, kind: "ordinary" });
-  }
-  return {
-    workspaceReady: workspace.selected === true,
-    rpSessionIds: [...rpSessionIds],
-    playSessionIds: [...claimedRpSessions],
-    characters: [...characterById.values()],
-    otherSessions
-  };
-}
-function shouldShowUnboundNotice({ workspace, session, selection } = {}) {
-  if (workspace == null || session == null) return false;
-  if (workspace.selected !== true) return true;
-  const workspacePath = normalizedPath2(workspace.rootPath);
-  const sessionPath = normalizedPath2(session.cwd);
-  if (workspacePath === "" || sessionPath !== workspacePath) return true;
-  return characterIdFromSelection(selection) === null;
-}
-
-// packages/client/src/play/create.js
-var SAFE_SEGMENT = /^[A-Za-z0-9][A-Za-z0-9._-]{0,199}$/;
-var SAFE_SESSION_ID = /^[A-Za-z0-9][A-Za-z0-9._:-]{0,199}$/;
-function safeSegment(value, label) {
-  if (typeof value !== "string" || !SAFE_SEGMENT.test(value)) {
-    throw new TypeError(`${label} must be a safe path segment`);
-  }
-  return value;
-}
-function safeSessionId(value) {
-  if (typeof value !== "string" || !SAFE_SESSION_ID.test(value)) {
-    throw new TypeError("session.id must be a valid DSH session id");
-  }
-  return value;
-}
-function isoNow(now) {
-  const value = now();
-  if (!(value instanceof Date) || Number.isNaN(value.valueOf())) throw new TypeError("now must return a valid Date");
-  return value.toISOString();
-}
-async function catalogOrEmpty(client) {
-  try {
-    return await client.getCatalog();
-  } catch (reason) {
-    if (reason?.code === "PLAY_PATH_NOT_FOUND") return { playthroughs: [] };
-    throw reason;
-  }
-}
-function playthroughCharacterId2(playthrough) {
-  const value = playthrough?.ext?.pmpDshTavern?.characterId;
-  return typeof value === "string" && value !== "" ? value : null;
-}
-function rootSessionId4(playthrough) {
-  const value = playthrough?.ext?.pmpDshTavern?.rootSessionId;
-  return typeof value === "string" && value !== "" ? value : null;
-}
-function latestCharacterPlaythrough(catalog2, characterId) {
-  let latest = null;
-  let latestNumber = 0;
-  let ordinal = 0;
-  for (const playthrough of catalog2?.playthroughs ?? []) {
-    if (playthroughCharacterId2(playthrough) !== characterId) continue;
-    ordinal += 1;
-    const explicit = playthrough?.ext?.pmpDshTavern?.playthroughNumber;
-    const number = Number.isSafeInteger(explicit) && explicit > 0 ? explicit : ordinal;
-    if (latest === null || number >= latestNumber) {
-      latest = playthrough;
-      latestNumber = number;
-    }
-  }
-  return latest;
-}
-async function playthroughIsReusable(client, playthrough) {
-  const sessionId = rootSessionId4(playthrough);
-  if (sessionId === null) return false;
-  const timeline = await client.getTimeline(playthrough);
-  if ((timeline?.nodes?.length ?? 0) > 0) return false;
-  const imported = await loadPlaythroughImportContext(client, sessionId, playthrough, timeline);
-  if (Array.isArray(imported.document?.qa) && imported.document.qa.length > 0) return false;
-  const history = await client.getMessages(sessionId);
-  if (history?.incompleteTurn === true) return false;
-  return !(history?.messages ?? []).some((message) => message?.role === "user" || message?.role === "assistant");
-}
-function nextPlaythroughNumber(catalog2, characterId) {
-  let maximum = 0;
-  let legacyOrdinal = 0;
-  for (const playthrough of catalog2?.playthroughs ?? []) {
-    if (playthroughCharacterId2(playthrough) !== characterId) continue;
-    legacyOrdinal += 1;
-    const explicit = playthrough?.ext?.pmpDshTavern?.playthroughNumber;
-    maximum = Math.max(maximum, Number.isSafeInteger(explicit) && explicit > 0 ? explicit : legacyOrdinal);
-  }
-  return maximum + 1;
-}
-async function renamePlaythrough(client, playthrough, title) {
-  if (client == null) throw new TypeError("playClient.required");
-  const normalized = typeof title === "string" ? title.trim() : "";
-  if (normalized === "" || normalized.length > 120) throw new TypeError("play.rename.invalid");
-  const catalog2 = await catalogOrEmpty(client);
-  const index = catalog2.playthroughs.findIndex((item) => item.id === playthrough?.id && item.path === playthrough?.path);
-  if (index < 0) throw new TypeError("play.rename.missing");
-  const playthroughs = [...catalog2.playthroughs];
-  playthroughs[index] = { ...playthroughs[index], title: normalized };
-  await client.putCatalog({ ...catalog2, playthroughs });
-  const saved = await client.getCatalog();
-  const renamed = saved.playthroughs.find((item) => item.id === playthrough.id && item.path === playthrough.path);
-  if (renamed?.title !== normalized) throw new Error("play.rename.verificationFailed");
-  return renamed;
-}
-function sourceSessionIdForCharacter(character) {
-  const activePlaythrough = character?.playthroughs?.find((item) => item.active && typeof item.rootSessionId === "string");
-  if (activePlaythrough !== void 0) return activePlaythrough.rootSessionId;
-  const activeLoose = character?.unassigned?.find((item) => item.active);
-  if (activeLoose !== void 0) return activeLoose.id;
-  const loose = character?.unassigned?.find((item) => typeof item.id === "string");
-  if (loose !== void 0) return loose.id;
-  const rooted = character?.playthroughs?.find((item) => typeof item.rootSessionId === "string");
-  return rooted?.rootSessionId ?? null;
-}
-async function createCharacterPlaythrough(client, {
-  character,
-  selectionFromSessionId = null,
-  now = () => /* @__PURE__ */ new Date(),
-  randomUUID = () => globalThis.crypto.randomUUID()
-} = {}) {
-  if (client == null) throw new TypeError("playClient.required");
-  const characterId = safeSegment(character?.id, "character.id");
-  const createdAt = isoNow(now);
-  const playthroughId = safeSegment(`playthrough-${randomUUID()}`, "playthrough.id");
-  const directory = `${characterId}/${playthroughId}`;
-  const path = `${directory}/timeline.json`;
-  const sourceId = typeof selectionFromSessionId === "string" && selectionFromSessionId !== "" ? selectionFromSessionId : null;
-  const catalog2 = await catalogOrEmpty(client);
-  const latest = latestCharacterPlaythrough(catalog2, characterId);
-  if (latest !== null && await playthroughIsReusable(client, latest)) {
-    return { sessionId: rootSessionId4(latest), playthrough: latest, reused: true };
-  }
-  const playthroughNumber = nextPlaythroughNumber(catalog2, characterId);
-  const created = await client.postSession(sourceId);
-  const sessionId = safeSessionId(created?.sessionId);
-  if (sourceId === null) {
-    await client.putCharacterSelection(sessionId, characterId, { greetingIndex: 0 });
-  }
-  const selection = await client.getCharacterSelection(sessionId);
-  if (characterIdFromSelection(selection) !== characterId) {
-    throw new Error("playthrough character selection did not persist");
-  }
-  const playthrough = {
-    id: playthroughId,
-    path,
-    title: `${playthroughNumber}\u5468\u76EE`,
-    lastOpenedAt: createdAt,
-    ext: {
-      pmpDshTavern: {
-        characterId,
-        rootSessionId: sessionId,
-        playthroughNumber
-      }
-    }
-  };
-  await client.createDirs(directory);
-  await client.putTimeline(playthrough, { nodes: [] });
-  await client.putCatalog({
-    ...catalog2,
-    playthroughs: [...catalog2.playthroughs, playthrough]
-  });
-  const [savedCatalog, savedTimeline] = await Promise.all([
-    client.getCatalog(),
-    client.getTimeline(playthrough)
-  ]);
-  const saved = savedCatalog.playthroughs.find((item) => item.id === playthroughId);
-  if (saved?.ext?.pmpDshTavern?.rootSessionId !== sessionId || savedTimeline.nodes.length !== 0) {
-    throw new Error("playthrough verification failed");
-  }
-  return { sessionId, playthrough: saved, reused: false };
-}
-function createPlaythroughController(client, dependencies = {}) {
-  const inFlight = /* @__PURE__ */ new Map();
-  let tail = Promise.resolve();
-  return {
-    create(args) {
-      const characterId = safeSegment(args?.character?.id, "character.id");
-      const existing = inFlight.get(characterId);
-      if (existing !== void 0) return existing;
-      const task = tail.catch(() => {
-      }).then(() => createCharacterPlaythrough(client, {
-        ...dependencies,
-        ...args
-      }));
-      tail = task;
-      inFlight.set(characterId, task);
-      task.finally(() => {
-        if (inFlight.get(characterId) === task) inFlight.delete(characterId);
-      }).catch(() => {
-      });
-      return task;
-    }
-  };
-}
 
 // packages/client/src/play/io-menu.js
 var import_react10 = require("react");
@@ -12188,6 +12380,13 @@ function fileContent(value, label) {
   if (typeof value?.content !== "string") throw new TypeError(`${label}: content must be a string`);
   return value.content;
 }
+var REVISION_PATTERN = /^[0-9a-f]{64}$/;
+function fileRevision(value, label) {
+  if (typeof value?.revision !== "string" || !REVISION_PATTERN.test(value.revision)) {
+    throw new TypeError(`${label}: revision must be a 64-character lowercase SHA-256 hex string`);
+  }
+  return value.revision;
+}
 function pathQuery(path) {
   return `?path=${encodeURIComponent(path)}`;
 }
@@ -12199,24 +12398,79 @@ function createLivePlayClient({
   if (typeof fetchImpl !== "function") throw new TypeError("fetchImpl is required");
   const v1 = createRequester(fetchImpl, v1Root);
   const v2 = createRequester(fetchImpl, apiRoot);
+  const managedRevisions = /* @__PURE__ */ new Map();
+  function invalidateRevision(path) {
+    managedRevisions.delete(path);
+  }
+  function expectedRevision(path) {
+    return managedRevisions.has(path) ? managedRevisions.get(path) : null;
+  }
   async function getCharacterSelection(sessionId) {
     const query = typeof sessionId === "string" && sessionId !== "" ? `?sessionId=${encodeURIComponent(sessionId)}` : "";
     return v1("GET", `/character-selection${query}`);
   }
   async function getJsonFile(path, normalize, label) {
-    const response = await v2("GET", `/workspace/files${pathQuery(path)}`);
-    return parseJsonDocument(fileContent(response, label), normalize, label);
+    let response;
+    try {
+      response = await v2("GET", `/workspace/files${pathQuery(path)}`);
+    } catch (error) {
+      if (error?.status === 404 && error?.code === "PLAY_PATH_NOT_FOUND") {
+        managedRevisions.set(path, null);
+      }
+      throw error;
+    }
+    const content = fileContent(response, label);
+    const revision = fileRevision(response, label);
+    const parsed = parseJsonDocument(content, normalize, label);
+    managedRevisions.set(path, revision);
+    return parsed;
   }
   async function putJsonFile(path, value, normalize, label) {
     const normalized = normalize(value, label);
-    await v2("PUT", `/workspace/files${pathQuery(path)}`, {
-      content: JSON.stringify(normalized)
-    });
+    const body2 = {
+      content: JSON.stringify(normalized),
+      expectedRevision: expectedRevision(path)
+    };
+    try {
+      const response = await v2("PUT", `/workspace/files${pathQuery(path)}`, body2);
+      const revision = fileRevision(response, label);
+      managedRevisions.set(path, revision);
+    } catch (error) {
+      if (error?.status === 409 && error?.code === "PLAY_FILE_REVISION_CONFLICT") {
+        invalidateRevision(path);
+      } else if (error instanceof TypeError) {
+        invalidateRevision(path);
+      }
+      throw error;
+    }
     return normalized;
+  }
+  function retryLimit(options) {
+    const value = options?.maxRetries ?? options?.retries ?? 3;
+    if (!Number.isSafeInteger(value) || value < 1 || value > 5) {
+      throw new TypeError("maxRetries must be an integer from 1 to 5");
+    }
+    return value;
+  }
+  async function updateJsonFile({ getFresh, putFresh, mutator, options }) {
+    if (typeof mutator !== "function") throw new TypeError("mutator must be a function");
+    const maxRetries = retryLimit(options);
+    for (let retry = 0; ; retry += 1) {
+      const current2 = await getFresh();
+      const next = await mutator(current2);
+      try {
+        return await putFresh(next);
+      } catch (error) {
+        if (error?.status !== 409 || error?.code !== "PLAY_FILE_REVISION_CONFLICT" || retry >= maxRetries) {
+          throw error;
+        }
+      }
+    }
   }
   return {
     mode: "live",
     apiRoot,
+    chromeEventsUrl: `${apiRoot}/chrome/events`,
     v1Root,
     async getChrome() {
       return normalizeChrome(await v2("GET", "/chrome"));
@@ -12238,17 +12492,42 @@ function createLivePlayClient({
     },
     async getFile(path) {
       const response = await v2("GET", `/workspace/files${pathQuery(path)}`);
-      return { path: response.path, content: fileContent(response, path) };
+      return {
+        path: response.path,
+        content: fileContent(response, path),
+        ...response.revision === void 0 ? {} : { revision: response.revision }
+      };
     },
-    async putFile(path, content) {
+    async putFile(path, content, options = {}) {
       if (typeof content !== "string") throw new TypeError("content must be a string");
-      return v2("PUT", `/workspace/files${pathQuery(path)}`, { content });
+      const body2 = { content };
+      if (options !== null && typeof options === "object" && Object.hasOwn(options, "expectedRevision")) {
+        body2.expectedRevision = options.expectedRevision;
+      }
+      return v2("PUT", `/workspace/files${pathQuery(path)}`, body2);
     },
     getCatalog() {
       return getJsonFile("catalog.json", normalizeCatalog, "catalog");
     },
     putCatalog(catalog2) {
       return putJsonFile("catalog.json", catalog2, normalizeCatalog, "catalog");
+    },
+    updateCatalog(mutator, options) {
+      return updateJsonFile({
+        getFresh: async () => {
+          try {
+            return await getJsonFile("catalog.json", normalizeCatalog, "catalog");
+          } catch (error) {
+            if (error?.status === 404 && error?.code === "PLAY_PATH_NOT_FOUND") {
+              return { playthroughs: [] };
+            }
+            throw error;
+          }
+        },
+        putFresh: (value) => putJsonFile("catalog.json", value, normalizeCatalog, "catalog"),
+        mutator,
+        options
+      });
     },
     getTimeline(playthrough) {
       const path = timelinePath(playthrough);
@@ -12257,6 +12536,15 @@ function createLivePlayClient({
     putTimeline(playthrough, timeline) {
       const path = timelinePath(playthrough);
       return putJsonFile(path, timeline, normalizeTimeline, "timeline");
+    },
+    updateTimeline(playthrough, mutator, options) {
+      const path = timelinePath(playthrough);
+      return updateJsonFile({
+        getFresh: () => getJsonFile(path, normalizeTimeline, "timeline"),
+        putFresh: (value) => putJsonFile(path, value, normalizeTimeline, "timeline"),
+        mutator,
+        options
+      });
     },
     async getMessages(sessionId) {
       const response = await v2("GET", `/sessions/${encodeURIComponent(sessionId)}/messages`);
@@ -12275,8 +12563,15 @@ function createLivePlayClient({
       return response?.binding ?? null;
     },
     async getFocus(playthrough) {
-      const query = playthrough === void 0 ? "" : pathQuery(timelinePath(playthrough));
-      return normalizeFocus(await v2("GET", `/focus${query}`));
+      const playthroughId = playthrough?.id;
+      if (typeof playthroughId !== "string" || playthroughId.trim() === "") {
+        throw new TypeError("playthrough.id must be a non-empty string");
+      }
+      const focus = normalizeFocus(await v2("GET", `/playthroughs/${encodeURIComponent(playthroughId)}/focus`));
+      if (focus.playthroughId !== playthroughId) {
+        throw new TypeError("focus.playthroughId does not match playthrough.id");
+      }
+      return focus;
     },
     postUserMessage(sessionId, text2) {
       return v2("POST", `/sessions/${encodeURIComponent(sessionId)}/user-message`, { text: text2 });
@@ -12721,6 +13016,302 @@ function RegexPanel({ client, activeSnapshot, close }) {
   );
 }
 
+// packages/client/src/play/workspace-setting.js
+function isRecord5(value) {
+  return value !== null && typeof value === "object" && !Array.isArray(value);
+}
+function pathOf(value) {
+  return typeof value?.path === "string" && value.path !== "" ? value.path : null;
+}
+function titleOf(value) {
+  if (typeof value?.title === "string" && value.title.trim() !== "") return value.title.trim();
+  if (typeof value?.name === "string" && value.name.trim() !== "") return value.name.trim();
+  return pathOf(value) ?? "";
+}
+function comparablePath(value) {
+  if (typeof value !== "string") return "";
+  const normalized = value.replaceAll("\\", "/").replace(/\/+$/, "");
+  return /^[a-z]:\//i.test(normalized) ? normalized.toLowerCase() : normalized;
+}
+function projectRpWorkspaceSetting({ workspace, items = [] } = {}) {
+  const currentPath = pathOf(workspace?.rootPath === null ? null : { path: workspace?.rootPath });
+  const available = items.filter((item) => isRecord5(item) && pathOf(item) !== null).map((item) => ({
+    id: item.workspaceId ?? item.id ?? pathOf(item),
+    path: pathOf(item),
+    title: titleOf(item)
+  }));
+  const current2 = currentPath === null ? null : available.find((item) => comparablePath(item.path) === comparablePath(currentPath)) ?? { id: `unavailable:${currentPath}`, path: currentPath, title: currentPath, unavailable: true };
+  return { currentPath, current: current2, available, selectedPath: current2?.path ?? "", currentAvailable: current2?.unavailable !== true && current2 !== null };
+}
+function workspaceSelectionRequest(path, { setting } = {}) {
+  if (typeof path !== "string" || path === "") throw new TypeError("workspace path must be a non-empty string");
+  if (comparablePath(setting?.currentPath) === comparablePath(path)) return { path, changed: false };
+  return { path, changed: true };
+}
+
+// packages/client/src/play/chrome-service.js
+var CHROME_MODES2 = /* @__PURE__ */ new Set(["native", "play"]);
+function serviceError() {
+  const error = new Error("Chrome mode service is disposed");
+  error.code = "CHROME_SERVICE_DISPOSED";
+  return error;
+}
+function normalizeSnapshot(value) {
+  if (value === null || typeof value !== "object" || Array.isArray(value)) throw new TypeError("chrome snapshot must be an object");
+  if (!CHROME_MODES2.has(value.mode)) throw new TypeError("chrome snapshot mode must be native or play");
+  if (value.revision !== void 0 && value.revision !== null && (typeof value.revision !== "string" || value.revision === "")) {
+    throw new TypeError("chrome snapshot revision must be a non-empty string or null");
+  }
+  return Object.freeze({ mode: value.mode, revision: value.revision ?? null });
+}
+function safely(action) {
+  try {
+    action();
+  } catch {
+  }
+}
+function createChromeModeServiceCore({
+  initial = { mode: "native", revision: null },
+  read,
+  write
+} = {}) {
+  if (typeof read !== "function") throw new TypeError("read must be a function");
+  if (typeof write !== "function") throw new TypeError("write must be a function");
+  let snapshot = normalizeSnapshot(initial);
+  let disposed = false;
+  let queue = Promise.resolve();
+  let intentMode = snapshot.mode;
+  let intentVersion = 0;
+  let pendingWrites = 0;
+  const listeners = /* @__PURE__ */ new Set();
+  const effects = /* @__PURE__ */ new Set();
+  const notify = () => {
+    for (const listener of [...listeners]) safely(() => listener(snapshot));
+  };
+  const stopEffect = (effect) => {
+    effect.generation += 1;
+    if (effect.dispose !== null) safely(effect.dispose);
+    effect.dispose = null;
+  };
+  const startEffect = (effect) => {
+    if (!effect.active || disposed || snapshot.mode !== effect.mode) return;
+    const generation = ++effect.generation;
+    let result;
+    try {
+      result = effect.setup({ snapshot });
+    } catch {
+      return;
+    }
+    Promise.resolve(result).then((dispose) => {
+      if (typeof dispose !== "function") return;
+      if (!effect.active || disposed || effect.generation !== generation || snapshot.mode !== effect.mode) {
+        safely(dispose);
+        return;
+      }
+      effect.dispose = dispose;
+    }, () => {
+    });
+  };
+  const commit = (value) => {
+    const next = normalizeSnapshot(value);
+    if (next.mode === snapshot.mode && next.revision === snapshot.revision) return snapshot;
+    const previousMode = snapshot.mode;
+    snapshot = next;
+    if (previousMode !== next.mode) {
+      for (const effect of effects) stopEffect(effect);
+      for (const effect of effects) startEffect(effect);
+    }
+    notify();
+    return snapshot;
+  };
+  const enqueue = (action) => {
+    const result = queue.then(() => {
+      if (disposed) throw serviceError();
+      return action();
+    });
+    queue = result.catch(() => {
+    });
+    return result;
+  };
+  const planWrite = (mode) => {
+    if (!CHROME_MODES2.has(mode)) return Promise.reject(new TypeError("chrome mode must be native or play"));
+    const version = ++intentVersion;
+    intentMode = mode;
+    pendingWrites += 1;
+    return enqueue(async () => {
+      try {
+        const value = await write(mode);
+        if (disposed) throw serviceError();
+        const confirmed = commit(value);
+        if (version === intentVersion) intentMode = confirmed.mode;
+        return confirmed;
+      } catch (error) {
+        if (version === intentVersion) intentMode = snapshot.mode;
+        throw error;
+      } finally {
+        pendingWrites -= 1;
+      }
+    });
+  };
+  const face = Object.freeze({
+    getMode() {
+      return snapshot.mode;
+    },
+    getSnapshot() {
+      return snapshot;
+    },
+    subscribe(listener) {
+      if (typeof listener !== "function") throw new TypeError("listener must be a function");
+      if (disposed) return () => {
+      };
+      listeners.add(listener);
+      safely(() => listener(snapshot));
+      let active = true;
+      return () => {
+        if (!active) return;
+        active = false;
+        listeners.delete(listener);
+      };
+    },
+    refresh() {
+      const version = intentVersion;
+      return enqueue(async () => {
+        const value = await read();
+        if (disposed) throw serviceError();
+        const confirmed = commit(value);
+        if (version === intentVersion) intentMode = confirmed.mode;
+        return confirmed;
+      });
+    },
+    setMode(mode) {
+      return planWrite(mode);
+    },
+    switchMode() {
+      const next = intentMode === "native" ? "play" : "native";
+      return planWrite(next);
+    },
+    when(mode, setup) {
+      if (!CHROME_MODES2.has(mode)) throw new TypeError("chrome mode must be native or play");
+      if (typeof setup !== "function") throw new TypeError("setup must be a function");
+      if (disposed) return () => {
+      };
+      const effect = { mode, setup, active: true, generation: 0, dispose: null };
+      effects.add(effect);
+      startEffect(effect);
+      return () => {
+        if (!effect.active) return;
+        effect.active = false;
+        stopEffect(effect);
+        effects.delete(effect);
+      };
+    }
+  });
+  const internal = Object.freeze({
+    acceptSnapshot(value) {
+      if (disposed) throw serviceError();
+      const confirmed = commit(value);
+      if (pendingWrites === 0) {
+        intentMode = confirmed.mode;
+        intentVersion += 1;
+      }
+      return confirmed;
+    },
+    dispose() {
+      if (disposed) return;
+      disposed = true;
+      listeners.clear();
+      for (const effect of [...effects]) {
+        effect.active = false;
+        stopEffect(effect);
+      }
+      effects.clear();
+    }
+  });
+  return Object.freeze({ face, internal });
+}
+var chromeModeServiceConstants = Object.freeze({
+  modes: Object.freeze([...CHROME_MODES2]),
+  disposedCode: "CHROME_SERVICE_DISPOSED"
+});
+
+// packages/client/src/play/chrome-transport.js
+function startChromeModeTransport({
+  face,
+  internal,
+  eventsUrl,
+  EventSourceImpl = globalThis.EventSource,
+  focusTarget = globalThis.window,
+  pollIntervalMs = 1e3,
+  setIntervalImpl = globalThis.setInterval,
+  clearIntervalImpl = globalThis.clearInterval
+} = {}) {
+  if (typeof face?.refresh !== "function") throw new TypeError("face.refresh is required");
+  if (typeof internal?.acceptSnapshot !== "function") throw new TypeError("internal.acceptSnapshot is required");
+  if (typeof eventsUrl !== "string" || eventsUrl === "") throw new TypeError("eventsUrl is required");
+  if (!Number.isSafeInteger(pollIntervalMs) || pollIntervalMs < 250 || pollIntervalMs > 6e4) {
+    throw new TypeError("pollIntervalMs must be an integer from 250 to 60000");
+  }
+  if (typeof setIntervalImpl !== "function" || typeof clearIntervalImpl !== "function") {
+    throw new TypeError("timer functions are required");
+  }
+  let disposed = false;
+  let source = null;
+  let pollTimer = null;
+  const refresh = () => {
+    if (disposed) return Promise.resolve();
+    return Promise.resolve(face.refresh()).catch(() => {
+    });
+  };
+  const stopPolling = () => {
+    if (pollTimer === null) return;
+    clearIntervalImpl(pollTimer);
+    pollTimer = null;
+  };
+  const startPolling = () => {
+    if (disposed || pollTimer !== null) return;
+    pollTimer = setIntervalImpl(() => {
+      void refresh();
+    }, pollIntervalMs);
+  };
+  const acceptEvent = (event) => {
+    if (disposed) return;
+    try {
+      internal.acceptSnapshot(JSON.parse(String(event?.data ?? "")));
+    } catch {
+      void refresh();
+    }
+  };
+  const focus = () => {
+    void refresh();
+  };
+  focusTarget?.addEventListener?.("focus", focus);
+  if (typeof EventSourceImpl === "function") {
+    try {
+      source = new EventSourceImpl(eventsUrl);
+      source.addEventListener?.("chrome/change", acceptEvent);
+      source.addEventListener?.("open", stopPolling);
+      source.addEventListener?.("error", startPolling);
+    } catch {
+      source = null;
+      startPolling();
+    }
+  } else {
+    startPolling();
+  }
+  void refresh();
+  return () => {
+    if (disposed) return;
+    disposed = true;
+    stopPolling();
+    focusTarget?.removeEventListener?.("focus", focus);
+    source?.removeEventListener?.("chrome/change", acceptEvent);
+    source?.removeEventListener?.("open", stopPolling);
+    source?.removeEventListener?.("error", startPolling);
+    source?.close?.();
+    source = null;
+  };
+}
+
 // packages/client/src/index.js
 var h13 = createLocalizedElement(import_react15.createElement);
 var css11 = `
@@ -12729,7 +13320,9 @@ var css11 = `
 .dtv-launcher[data-open=true] .dtv-menu{overflow-y:auto}
 .dtv-launcher[data-open=true]{width:300px;height:376px;border-width:1px;border-color:var(--dsw-alias-border-l2);border-radius:18px;background:var(--dsw-alias-bg-base);box-shadow:var(--ds-shadow-3,0 12px 34px rgba(0,0,0,.24))}
 .dtv-ball-row{position:absolute;top:0;left:0;right:0;height:52px;display:flex;align-items:flex-start;pointer-events:none}.dtv-launcher[data-side=left] .dtv-ball-row{justify-content:flex-end}.dtv-launcher[data-vertical=up] .dtv-ball-row{top:auto;bottom:0;align-items:flex-end}
-.dtv-ball{pointer-events:auto;touch-action:none;user-select:none;width:44px;height:44px;flex:none;border:2px solid #fff;border-radius:50%;background:conic-gradient(from 225deg,#090909 0 56%,#18569d 56% 100%);box-shadow:0 0 0 2px #174e8a,0 6px 20px rgba(0,0,0,.34),inset 0 0 0 1px rgba(255,255,255,.28);color:#fff;font-size:13px;letter-spacing:-.5px;font-weight:850;text-shadow:0 1px 2px #000;cursor:grab;transition:filter .15s ease,transform .18s ease,box-shadow .18s ease,background .18s ease}.dtv-ball:hover{filter:brightness(1.1);box-shadow:0 0 0 2px #2675c9,0 8px 24px rgba(0,0,0,.4),inset 0 0 0 1px rgba(255,255,255,.35)}.dtv-layer[data-chrome=play] .dtv-ball{background:conic-gradient(from 225deg,#090909 0 56%,#b31319 56% 100%);box-shadow:0 0 0 2px #a50f16,0 6px 20px rgba(0,0,0,.34),inset 0 0 0 1px rgba(255,255,255,.28)}.dtv-layer[data-chrome=play] .dtv-ball:hover{box-shadow:0 0 0 2px #d5222b,0 8px 24px rgba(0,0,0,.4),inset 0 0 0 1px rgba(255,255,255,.35)}.dtv-ball:active{cursor:grabbing}.dtv-launcher[data-open=true] .dtv-ball{transform:scale(.82) rotate(-8deg)}
+@property --dtv-orb-a{syntax:"<color>";inherits:true;initial-value:#f7fbff}@property --dtv-orb-b{syntax:"<color>";inherits:true;initial-value:#18569d}@property --dtv-orb-ring{syntax:"<color>";inherits:true;initial-value:#174e8a}
+.dtv-ball{--dtv-orb-a:#f7fbff;--dtv-orb-b:#18569d;--dtv-orb-ring:#174e8a;pointer-events:auto;touch-action:none;user-select:none;position:relative;isolation:isolate;overflow:hidden;width:44px;height:44px;flex:none;border:2px solid #fff;border-radius:50%;background:transparent;box-shadow:0 0 0 2px var(--dtv-orb-ring),0 6px 20px rgba(0,0,0,.34),inset 0 0 0 1px rgba(255,255,255,.28);color:#fff;font-size:13px;letter-spacing:-.5px;font-weight:850;text-shadow:0 1px 2px #000;cursor:grab;transition:filter .15s ease,transform .18s ease,box-shadow .18s ease,--dtv-orb-a .32s ease,--dtv-orb-b .32s ease,--dtv-orb-ring .32s ease}.dtv-ball-face{position:absolute;inset:0;border-radius:inherit;background:conic-gradient(from 225deg,var(--dtv-orb-a) 0 50%,var(--dtv-orb-b) 50% 100%);z-index:-1}.dtv-ball-face[data-animate=true]{animation:dtv-orb-switch .48s cubic-bezier(.3,.7,.2,1)}.dtv-ball-label{position:relative;z-index:1}.dtv-ball:hover{filter:brightness(1.1);box-shadow:0 0 0 2px #2675c9,0 8px 24px rgba(0,0,0,.4),inset 0 0 0 1px rgba(255,255,255,.35)}.dtv-layer[data-chrome=play] .dtv-ball{--dtv-orb-a:#090909;--dtv-orb-b:#b31319;--dtv-orb-ring:#a50f16}.dtv-layer[data-chrome=play] .dtv-ball:hover{box-shadow:0 0 0 2px #d5222b,0 8px 24px rgba(0,0,0,.4),inset 0 0 0 1px rgba(255,255,255,.35)}.dtv-ball:active{cursor:grabbing}.dtv-launcher[data-open=true] .dtv-ball{transform:scale(.82) rotate(-8deg)}
+@keyframes dtv-orb-switch{to{transform:rotate(1turn)}}@media (prefers-reduced-motion:reduce){.dtv-ball{transition:filter .15s ease,transform .18s ease,box-shadow .18s ease}.dtv-ball-face[data-animate=true]{animation:none}}
 .dtv-menu{position:absolute;left:8px;right:8px;top:52px;bottom:8px;padding:1px;display:flex;flex-direction:column;gap:4px;opacity:0;visibility:hidden;pointer-events:none;transform:translateY(-6px);transition:opacity .12s ease,transform .18s ease,visibility 0s linear .18s}.dtv-launcher[data-open=true] .dtv-menu{opacity:1;visibility:visible;pointer-events:auto;transform:none;transition-delay:.22s,.16s,.22s}.dtv-launcher[data-vertical=up] .dtv-menu{top:8px;bottom:52px;transform:translateY(6px)}.dtv-launcher[data-open=true][data-vertical=up] .dtv-menu{transform:none}
 .dtv-menu-title{flex:none;padding:5px 8px 7px;font-size:11px;line-height:1.35;font-weight:650;color:var(--dsw-alias-label-tertiary);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .dtv-menu-item{min-height:43px;border:0;border-radius:9px;padding:5px 8px;background:transparent;color:var(--dsw-alias-label-primary);text-align:left;font:inherit;cursor:pointer;display:grid;grid-template-columns:10px minmax(0,1fr) auto;gap:8px;align-items:center}.dtv-menu-item:hover{background:var(--dsw-alias-interactive-bg-hover)}.dtv-menu-item[data-active=true]{background:var(--dsw-alias-interactive-bg-selected,var(--dsw-specific-tip))}.dtv-binding-dot{width:8px;height:8px;border-radius:50%;background:#d33239;box-shadow:0 0 0 1px rgba(98,0,4,.38)}.dtv-menu-item[data-bound=true] .dtv-binding-dot{background:#44d17a;box-shadow:0 0 5px #31c66b,0 0 10px rgba(49,198,107,.75)}.dtv-item-copy{min-width:0;display:flex;flex-direction:column;gap:1px}.dtv-item-label{font-size:11px;font-weight:700;line-height:1.2}.dtv-item-status{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:10px;line-height:1.25;color:var(--dsw-alias-label-tertiary)}.dtv-item-count{border-radius:10px;padding:2px 6px;background:var(--dsw-specific-tip);font-size:9px;color:var(--dsw-alias-label-secondary)}.dtv-item-planned{font-size:9px;color:var(--dsw-alias-label-tertiary)}
@@ -12847,7 +13440,10 @@ function SettingsPanel({
   policyLoaded,
   onPolicyDraft,
   savePolicy,
-  resetPolicy
+  resetPolicy,
+  workspaceSetting,
+  workspaceBusy,
+  selectWorkspace
 }) {
   const percent = Math.round(settings.scale * 100);
   return h13(
@@ -12892,6 +13488,19 @@ function SettingsPanel({
         h13("span", null, translate("settings.rpFollow"))
       ),
       h13("p", { className: "dtv-note" }, translate("settings.rpFollow.help")),
+      h13(Field6, { label: translate("settings.rpWorkspace") }, h13(
+        "select",
+        {
+          className: "dtv-select",
+          value: workspaceSetting?.selectedPath ?? "",
+          disabled: busy || workspaceBusy || workspaceSetting === null,
+          onChange: (event) => selectWorkspace(event.target.value)
+        },
+        workspaceSetting?.current === null && workspaceSetting.available.length > 0 ? h13("option", { value: "", disabled: true }, translate("settings.rpWorkspace.unselected")) : null,
+        workspaceSetting?.current?.unavailable === true ? h13("option", { value: workspaceSetting.current.path, disabled: true }, translate("settings.rpWorkspace.unavailable", { path: workspaceSetting.current.path })) : null,
+        workspaceSetting?.available?.length > 0 ? workspaceSetting.available.map((item) => h13("option", { key: item.id, value: item.path }, rawText(item.title))) : h13("option", { value: "", disabled: true }, translate("settings.rpWorkspace.none"))
+      )),
+      h13("p", { className: "dtv-note" }, translate("settings.rpWorkspace.help")),
       h13(Field6, { label: translate("settings.rpPolicy") }, h13("textarea", {
         className: "dtv-textarea dtv-policy",
         value: policyDraft,
@@ -12948,11 +13557,12 @@ function RpHighRiskDialog({ onDismiss }) {
     )
   );
 }
-function TavernShell({ useSessions, useWorkspaces, createCleanSession, playClient, playSlots }) {
+function TavernShell({ useSessions, useWorkspaces, createCleanSession, playClient, playSlots, chromeService }) {
   const [menuOpen, setMenuOpen] = (0, import_react15.useState)(false);
   const [surface, setSurface] = (0, import_react15.useState)(null);
   const [anchor, setAnchor] = (0, import_react15.useState)(initialLauncherAnchor);
-  const [chromeMode, setChromeMode] = (0, import_react15.useState)("native");
+  const [chromeMode, setChromeMode] = (0, import_react15.useState)(() => chromeService.getMode());
+  const [chromeAnimation, setChromeAnimation] = (0, import_react15.useState)(0);
   const [chromeError, setChromeError] = (0, import_react15.useState)("");
   const [activeSnapshot, setActiveSnapshot] = (0, import_react15.useState)(null);
   const [statusError, setStatusError] = (0, import_react15.useState)("");
@@ -12962,10 +13572,12 @@ function TavernShell({ useSessions, useWorkspaces, createCleanSession, playClien
   const [rpPolicyDraft, setRpPolicyDraft] = (0, import_react15.useState)("");
   const [rpPolicyLoaded, setRpPolicyLoaded] = (0, import_react15.useState)(false);
   const [rpPolicyBusy, setRpPolicyBusy] = (0, import_react15.useState)(false);
+  const [rpWorkspaceSetting, setRpWorkspaceSetting] = (0, import_react15.useState)(null);
+  const [rpWorkspaceBusy, setRpWorkspaceBusy] = (0, import_react15.useState)(false);
+  const rpWorkspaceBusyRef = (0, import_react15.useRef)(false);
   const [rpAlert, setRpAlert] = (0, import_react15.useState)(null);
   const drag = (0, import_react15.useRef)(null);
   const suppressClick = (0, import_react15.useRef)(false);
-  const chromeModeRef = (0, import_react15.useRef)("native");
   const chromeController = (0, import_react15.useRef)(null);
   const statusGeneration = (0, import_react15.useRef)(0);
   const rpAlertRef = (0, import_react15.useRef)(null);
@@ -12973,6 +13585,7 @@ function TavernShell({ useSessions, useWorkspaces, createCleanSession, playClien
   const sessionId = useSessions((state) => state.current);
   const sessionBlank = useSessions((state) => state.current === void 0 || state.current === null ? true : state.byId?.[state.current]?.blank === true);
   const workspaceId = useWorkspaces((state) => workspaceTargetId(state, sessionId));
+  const workspaceItems = useWorkspaces((state) => state.items);
   const hasConversationHistory = (0, import_react15.useCallback)(async (targetSessionId) => {
     const messages = await playClient.getMessages(targetSessionId);
     return sessionHasConversationHistory(messages);
@@ -12981,60 +13594,31 @@ function TavernShell({ useSessions, useWorkspaces, createCleanSession, playClien
   if (rpAlert === null || dismissedRpAlerts.current.has(rpAlert.id)) rpAlertRef.current = null;
   else rpAlertRef.current = rpAlert;
   (0, import_react15.useEffect)(() => {
-    let active = true;
-    let channel = null;
-    try {
-      if (typeof BroadcastChannel === "function") channel = new BroadcastChannel(`${PLUGIN_ID}:chrome`);
-    } catch {
-    }
-    const commitChrome = (mode) => {
-      chromeModeRef.current = mode;
-      setChromeMode(mode);
-      playSlots.setMode(mode);
-      if (mode !== "play") setSurface((current2) => current2 === "regex" ? null : current2);
+    const commitChrome = (snapshot) => {
+      setChromeMode(snapshot.mode);
+      playSlots.setMode(snapshot.mode);
+      if (snapshot.mode !== "play") setSurface((current2) => current2 === "regex" ? null : current2);
     };
-    const refreshChrome = async () => {
-      try {
-        const saved = await playClient.getChrome();
-        if (!active) return;
-        commitChrome(saved.mode);
-        setChromeError("");
-      } catch (reason) {
-        if (!active) return;
-        setChromeError(reason instanceof Error ? reason.message : String(reason));
-      }
-    };
+    const unsubscribe = chromeService.subscribe((snapshot) => {
+      commitChrome(snapshot);
+      setChromeError("");
+    });
     const controller2 = createChromeClickController({
-      getMode: () => chromeModeRef.current,
-      persistMode: (mode) => playClient.putChrome(mode),
+      getMode: () => chromeService.getMode(),
+      persistMode: (mode) => chromeService.setMode(mode),
       openMenu: () => setMenuOpen((value) => !value),
       closeMenu: () => setMenuOpen(false),
-      setMode: (mode) => {
-        commitChrome(mode);
-        try {
-          channel?.postMessage({ mode });
-        } catch {
-        }
+      setMode: () => {
       },
       setError: (reason) => setChromeError(reason instanceof Error ? reason.message : reason == null ? "" : String(reason))
     });
     chromeController.current = controller2;
-    const onFocus = () => refreshChrome();
-    const onChromeMessage = (event) => {
-      if (event.data?.mode === "native" || event.data?.mode === "play") commitChrome(event.data.mode);
-    };
-    if (channel !== null) channel.addEventListener("message", onChromeMessage);
-    window.addEventListener("focus", onFocus);
-    refreshChrome();
     return () => {
-      active = false;
       controller2.dispose();
       if (chromeController.current === controller2) chromeController.current = null;
-      window.removeEventListener("focus", onFocus);
-      channel?.removeEventListener("message", onChromeMessage);
-      channel?.close();
+      unsubscribe();
     };
-  }, [playClient, playSlots]);
+  }, [chromeService, playSlots]);
   (0, import_react15.useEffect)(() => {
     let active = true;
     uiSettingsRequest().then((next) => {
@@ -13102,6 +13686,47 @@ function TavernShell({ useSessions, useWorkspaces, createCleanSession, playClien
       active = false;
     };
   }, [surface]);
+  (0, import_react15.useEffect)(() => {
+    if (surface !== "settings") return void 0;
+    let active = true;
+    setRpWorkspaceSetting(null);
+    playClient.getWorkspace().then((workspace) => {
+      if (active) setRpWorkspaceSetting(projectRpWorkspaceSetting({ workspace, items: workspaceItems }));
+    }).catch((reason) => {
+      if (active) setSettingsStatus({ text: translate("settings.loadError", { message: reason instanceof Error ? reason.message : String(reason) }), error: true });
+    });
+    return () => {
+      active = false;
+    };
+  }, [playClient, surface, workspaceItems]);
+  const selectRpWorkspace = async (path) => {
+    if (rpWorkspaceBusyRef.current) return;
+    const request = workspaceSelectionRequest(path, { setting: rpWorkspaceSetting });
+    if (!request.changed) return;
+    const item = rpWorkspaceSetting?.available?.find((candidate) => candidate.path === path);
+    if (item === void 0) return;
+    if (requiresSystemWorkspaceConfirmation(path) && !window.confirm(unwrapText(uiMessage("play.sidebar.systemWorkspaceConfirm", { path })))) return;
+    rpWorkspaceBusyRef.current = true;
+    setRpWorkspaceBusy(true);
+    setSettingsStatus({ text: translate("settings.saving"), error: false });
+    try {
+      const written = await playClient.putWorkspace(path);
+      setRpWorkspaceSetting(projectRpWorkspaceSetting({ workspace: written, items: workspaceItems }));
+      window.dispatchEvent(new Event(CLIENT_REFRESH_EVENT));
+      try {
+        const current2 = await playClient.getWorkspace();
+        setRpWorkspaceSetting(projectRpWorkspaceSetting({ workspace: current2, items: workspaceItems }));
+        setSettingsStatus({ text: translate("settings.saved"), error: false });
+      } catch (reason) {
+        setSettingsStatus({ text: translate("settings.rpWorkspace.verifyError", { message: reason instanceof Error ? reason.message : String(reason) }), error: true });
+      }
+    } catch (reason) {
+      setSettingsStatus({ text: translate("settings.saveError", { message: reason instanceof Error ? reason.message : String(reason) }), error: true });
+    } finally {
+      rpWorkspaceBusyRef.current = false;
+      setRpWorkspaceBusy(false);
+    }
+  };
   const persistRpPolicy = async () => {
     setRpPolicyBusy(true);
     setSettingsStatus({ text: translate("settings.saving"), error: false });
@@ -13261,7 +13886,10 @@ function TavernShell({ useSessions, useWorkspaces, createCleanSession, playClien
   });
   const contextSwitchLauncher = (event) => {
     event.preventDefault();
-    chromeController.current?.switchMode({ suppressed: consumeSuppressedClick() });
+    const switching = chromeController.current?.switchMode({ suppressed: consumeSuppressedClick() });
+    Promise.resolve(switching).then((changed) => {
+      if (changed) setChromeAnimation((value) => value + 1);
+    });
   };
   const switchChrome = () => chromeController.current?.switchMode();
   const open = (id) => {
@@ -13302,7 +13930,10 @@ function TavernShell({ useSessions, useWorkspaces, createCleanSession, playClien
       policyLoaded: rpPolicyLoaded,
       onPolicyDraft: setRpPolicyDraft,
       savePolicy: persistRpPolicy,
-      resetPolicy: resetRpPolicy
+      resetPolicy: resetRpPolicy,
+      workspaceSetting: rpWorkspaceSetting,
+      workspaceBusy: rpWorkspaceBusy,
+      selectWorkspace: selectRpWorkspace
     });
   }
   const placement = launcherPlacement(anchor, viewport(), menuOpen, uiSettings.scale);
@@ -13323,19 +13954,24 @@ function TavernShell({ useSessions, useWorkspaces, createCleanSession, playClien
         "data-vertical": placement.vertical,
         style: { left: placement.left / uiSettings.scale, top: placement.top / uiSettings.scale }
       },
-      h13("div", { className: "dtv-ball-row" }, h13("button", {
-        className: "dtv-ball",
-        type: "button",
-        title: uiMessage("nav.launcher"),
-        "aria-label": uiMessage("nav.launcher"),
-        "aria-expanded": menuOpen,
-        onPointerDown: startDrag,
-        onPointerMove: moveDrag,
-        onPointerUp: endDrag,
-        onPointerCancel: endDrag,
-        onClick: clickLauncher,
-        onContextMenu: contextSwitchLauncher
-      }, "DT")),
+      h13("div", { className: "dtv-ball-row" }, h13(
+        "button",
+        {
+          className: "dtv-ball",
+          type: "button",
+          title: uiMessage("nav.launcher"),
+          "aria-label": uiMessage("nav.launcher"),
+          "aria-expanded": menuOpen,
+          onPointerDown: startDrag,
+          onPointerMove: moveDrag,
+          onPointerUp: endDrag,
+          onPointerCancel: endDrag,
+          onClick: clickLauncher,
+          onContextMenu: contextSwitchLauncher
+        },
+        h13("span", { key: chromeAnimation, className: "dtv-ball-face", "data-animate": chromeAnimation > 0, "aria-hidden": "true" }),
+        h13("span", { className: "dtv-ball-label" }, "DT")
+      )),
       h13(
         "div",
         { className: "dtv-menu", role: "menu" },
@@ -13415,6 +14051,22 @@ function apply2(ctx) {
   installStyles5();
   registerTavernTraceView(ctx);
   const playClient = createLivePlayClient();
+  const chrome = createChromeModeServiceCore({
+    read: () => playClient.getChrome(),
+    write: (mode) => playClient.putChrome(mode)
+  });
+  ctx.provide(CHROME_SERVICE_NAME, chrome.face);
+  ctx.effect(() => {
+    const stopTransport = startChromeModeTransport({
+      face: chrome.face,
+      internal: chrome.internal,
+      eventsUrl: playClient.chromeEventsUrl
+    });
+    return () => {
+      stopTransport();
+      chrome.internal.dispose();
+    };
+  }, "dsh-tavern: chrome mode service transport");
   const playSlots = installPlaySlotOccupancy(ctx, playClient);
   ctx.slots.inject("shell.overlay", () => ctx.slots.register({
     name: "shell.overlay",
@@ -13422,6 +14074,7 @@ function apply2(ctx) {
     order: 80,
     inject: () => ({
       playClient,
+      chromeService: chrome.face,
       playSlots,
       createCleanSession: ({ workspaceId, source }) => createCleanSessionWorkflow({
         workspaceId,
