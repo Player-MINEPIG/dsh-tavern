@@ -4,7 +4,7 @@ import { MowanChatView } from './chat.js'
 import { loadCurrentPlaythrough } from './chat-model.js'
 import { PlayIoMenu } from './io-menu.js'
 import { PlayWorkspaceBrowser } from './sidebar.js'
-import { PlayUnboundNotice } from './notice.js'
+import { PlaySessionDock } from './notice.js'
 import { DefaultConversationViewAdapter } from './view-default.js'
 
 export const PLAY_SLOT_PRIORITY = -100
@@ -100,10 +100,10 @@ export function installPlaySlotOccupancy(ctx, playClient) {
     if (!noticeDeclared || mode !== 'play' || disposeNoticeEntry !== null) return
     disposeNoticeEntry = ctx.slots.register({
       name: 'conversation.input.dock',
-      id: 'pmp-dsh-tavern-unbound-notice',
+      id: 'pmp-dsh-tavern-session-dock',
       order: 90,
       inject: () => ({ playClient }),
-    }, PlayUnboundNotice)
+    }, PlaySessionDock)
   }
 
   const reconcileNotice = () => {

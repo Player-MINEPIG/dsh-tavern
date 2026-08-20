@@ -40,7 +40,7 @@ test('Mowan owns only the sidebar shadow and additive unbound notice while Lingz
   const sidebar = registrations.find(item => item.options.name === 'sidebar.workspaces')
   const notice = registrations.find(item => item.options.name === 'conversation.input.dock')
   assert.equal(sidebar.options.priority, PLAY_SLOT_PRIORITY)
-  assert.equal(notice.options.id, 'pmp-dsh-tavern-unbound-notice')
+  assert.equal(notice.options.id, 'pmp-dsh-tavern-session-dock')
   assert.equal(notice.options.order, 90)
   assert.equal(registrations.every(item => item.active), true)
   assert.equal(ctx.workspaces.startSession, nativeStart)

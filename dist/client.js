@@ -11434,6 +11434,10 @@ var import_react12 = require("react");
 var h11 = createLocalizedElement(import_react12.createElement);
 var css10 = `
 .dtv-play-unbound-notice{box-sizing:border-box;width:100%;margin:0;padding:7px 10px;border:1px solid color-mix(in srgb,var(--dsw-alias-state-warning,#d79921) 34%,transparent);border-radius:10px;background:color-mix(in srgb,var(--dsw-alias-state-warning,#d79921) 8%,transparent);color:var(--dsw-alias-label-secondary);font-size:11px;line-height:1.45}
+.dtv-play-opening-dock{box-sizing:border-box;width:100%;min-width:0;overflow:hidden;border:1px solid var(--dsw-alias-border-l2);border-radius:14px;background:var(--dsw-alias-bg-layer-2,var(--dsw-specific-block));color:var(--dsw-alias-label-primary);box-shadow:0 4px 18px color-mix(in srgb,var(--dsw-alias-label-primary) 7%,transparent)}
+.dtv-play-opening-header{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:9px 12px;border-bottom:1px solid var(--dsw-alias-border-l2);font-size:12px}.dtv-play-opening-name{min-width:0;overflow:hidden;font-weight:650;text-overflow:ellipsis;white-space:nowrap}.dtv-play-opening-index{flex:none;color:var(--dsw-alias-label-tertiary);font-size:11px}
+.dtv-play-opening-body{box-sizing:border-box;max-height:45dvh;overflow-x:hidden;overflow-y:auto;padding:13px 15px;font-size:14px;line-height:1.65;overflow-wrap:anywhere}.dtv-play-opening-body>:first-child{margin-top:0}.dtv-play-opening-body>:last-child{margin-bottom:0}.dtv-play-opening-body p,.dtv-play-opening-body ul,.dtv-play-opening-body ol,.dtv-play-opening-body blockquote,.dtv-play-opening-body pre,.dtv-play-opening-body table{margin:0 0 .85em}.dtv-play-opening-body ul,.dtv-play-opening-body ol{padding-left:1.5em}.dtv-play-opening-body pre,.dtv-play-opening-body table{max-width:100%;overflow:auto}.dtv-play-opening-body img,.dtv-play-opening-body video{max-width:100%;height:auto}
+.dtv-play-opening-actions{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:8px 10px;border-top:1px solid var(--dsw-alias-border-l2)}.dtv-play-opening-button{min-width:0;padding:6px 10px;border:0;border-radius:9px;background:transparent;color:var(--dsw-alias-label-secondary);font:inherit;font-size:12px;cursor:pointer}.dtv-play-opening-button:hover:not(:disabled){background:var(--dsw-alias-interactive-bg-hover)}.dtv-play-opening-button:disabled{opacity:.4;cursor:default}.dtv-play-opening-error{margin:0;padding:7px 12px;border-top:1px solid var(--dsw-alias-border-l2);color:var(--dsw-alias-state-error);font-size:11px;line-height:1.45}
 `;
 function installStyles5() {
   if (document.querySelector(`style[data-plugin-css="${PLUGIN_ID}-play-notice"]`) !== null) return;
@@ -11442,12 +11446,16 @@ function installStyles5() {
   style.textContent = css10;
   document.head.append(style);
 }
-function PlayUnboundNotice({ session, useSessions, playClient }) {
+function PlaySessionDock({ session, useSessions, playClient }) {
   installStyles5();
   const sessionId = session?.sessionId ?? null;
+  const sessionBlank = session?.blank === true;
+  const composerPhase = session?.composerPhase;
   const summary = useSessions((state) => sessionId === null ? null : state.byId?.[sessionId] ?? null);
   const [revision, setRevision] = (0, import_react12.useState)(0);
-  const [visible, setVisible] = (0, import_react12.useState)(false);
+  const [content, setContent] = (0, import_react12.useState)(null);
+  const [greetingBusy, setGreetingBusy] = (0, import_react12.useState)(false);
+  const [error, setError] = (0, import_react12.useState)("");
   (0, import_react12.useEffect)(() => {
     const refresh = () => setRevision((value) => value + 1);
     window.addEventListener(CLIENT_REFRESH_EVENT, refresh);
@@ -11455,7 +11463,8 @@ function PlayUnboundNotice({ session, useSessions, playClient }) {
   }, []);
   (0, import_react12.useEffect)(() => {
     let active = true;
-    setVisible(false);
+    setContent((current2) => current2?.sessionId === sessionId && current2.kind === "opening" ? current2 : null);
+    setError("");
     if (sessionId === null || summary === null) return () => {
       active = false;
     };
@@ -11463,19 +11472,93 @@ function PlayUnboundNotice({ session, useSessions, playClient }) {
       playClient.getWorkspace(),
       playClient.getCharacterSelection(sessionId)
     ]).then(([workspace, selection]) => {
-      if (active) setVisible(shouldShowUnboundNotice({ workspace, session: summary, selection }));
-    }, () => {
-      if (active) setVisible(false);
+      if (!active) return;
+      if (shouldShowUnboundNotice({ workspace, session: summary, selection })) {
+        setContent({ kind: "unbound", sessionId });
+        return;
+      }
+      if (!sessionBlank || composerPhase !== "blank") {
+        setContent(null);
+        return;
+      }
+      loadCurrentPlaythrough(playClient, summary).then((binding) => {
+        if (!active) return;
+        if (binding === null || (binding.timeline?.nodes?.length ?? 0) !== 0) {
+          setContent(null);
+          return;
+        }
+        loadChatState(playClient, sessionId, binding.playthrough).then((state) => {
+          if (!active) return;
+          setContent(state.greeting === null ? null : { kind: "opening", greeting: state.greeting, sessionId });
+        }, (reason) => {
+          if (active) setError(reason instanceof Error ? reason.message : String(reason));
+        });
+      }, (reason) => {
+        if (active) setError(reason instanceof Error ? reason.message : String(reason));
+      });
+    }, (reason) => {
+      if (active) setError(reason instanceof Error ? reason.message : String(reason));
     });
     return () => {
       active = false;
     };
-  }, [playClient, revision, sessionId, summary]);
-  if (!visible) return null;
-  return h11("p", {
-    className: "dtv-play-unbound-notice",
-    role: "note"
-  }, uiMessage("play.notice.unbound"));
+  }, [composerPhase, playClient, revision, sessionBlank, sessionId, summary]);
+  const changeGreeting = async (direction) => {
+    if (content?.kind !== "opening" || greetingBusy || sessionId === null) return;
+    const next = adjacentGreetingIndex(content.greeting, direction);
+    if (next === null) return;
+    setGreetingBusy(true);
+    setError("");
+    try {
+      await playClient.putGreetingIndex(sessionId, next);
+      setRevision((value) => value + 1);
+    } catch (reason) {
+      setError(reason instanceof Error ? reason.message : String(reason));
+    } finally {
+      setGreetingBusy(false);
+    }
+  };
+  if (content?.sessionId !== sessionId) return null;
+  if (content.kind === "unbound") {
+    return h11("p", {
+      className: "dtv-play-unbound-notice",
+      role: "note"
+    }, uiMessage("play.notice.unbound"));
+  }
+  if (content.kind !== "opening" || !sessionBlank || composerPhase !== "blank") return null;
+  const greeting = content.greeting;
+  const multiple = greeting.options.length > 1;
+  const position = Math.max(0, greeting.options.findIndex((option) => option.index === greeting.index)) + 1;
+  return h11(
+    "section",
+    {
+      className: "dtv-play-opening-dock"
+    },
+    h11(
+      "header",
+      { className: "dtv-play-opening-header" },
+      h11("span", { className: "dtv-play-opening-name" }, rawText(greeting.characterName)),
+      h11("span", { className: "dtv-play-opening-index" }, rawText(`${position} / ${greeting.options.length}`))
+    ),
+    h11(RichText, { className: "dtv-play-opening-body", text: greeting.text }),
+    error === "" ? null : h11("p", { className: "dtv-play-opening-error", role: "alert" }, rawText(error)),
+    h11(
+      "footer",
+      { className: "dtv-play-opening-actions" },
+      h11("button", {
+        type: "button",
+        className: "dtv-play-opening-button",
+        disabled: greetingBusy || !multiple,
+        onClick: () => changeGreeting("previous")
+      }, uiMessage("play.chat.previousGreeting")),
+      h11("button", {
+        type: "button",
+        className: "dtv-play-opening-button",
+        disabled: greetingBusy || !multiple,
+        onClick: () => changeGreeting("next")
+      }, uiMessage("play.chat.nextGreeting"))
+    )
+  );
 }
 
 // packages/client/src/play/view-default.js
@@ -11584,10 +11667,10 @@ function installPlaySlotOccupancy(ctx, playClient) {
     if (!noticeDeclared || mode !== "play" || disposeNoticeEntry !== null) return;
     disposeNoticeEntry = ctx.slots.register({
       name: "conversation.input.dock",
-      id: "pmp-dsh-tavern-unbound-notice",
+      id: "pmp-dsh-tavern-session-dock",
       order: 90,
       inject: () => ({ playClient })
-    }, PlayUnboundNotice);
+    }, PlaySessionDock);
   };
   const reconcileNotice = () => {
     dropNoticeEffect();
