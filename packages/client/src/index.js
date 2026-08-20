@@ -38,6 +38,8 @@ import { installPlaySlotOccupancy } from './play/occupancy.js'
 import { createLivePlayClient } from './play/live.js'
 import { sessionHasConversationHistory } from './play/chat-model.js'
 import { RegexPanel } from './play/regex-panel.js'
+import { projectRpWorkspaceSetting, workspaceSelectionRequest } from './play/workspace-setting.js'
+import { requiresSystemWorkspaceConfirmation } from './play/sidebar-model.js'
 import { API_V1 as API_ROOT, CLIENT_REFRESH_EVENT, PLUGIN_ID } from '../../identity.js'
 
 const h = createLocalizedElement(createElement)
@@ -179,6 +181,9 @@ function SettingsPanel({
   onPolicyDraft,
   savePolicy,
   resetPolicy,
+  workspaceSetting,
+  workspaceBusy,
+  selectWorkspace,
 }) {
   const percent = Math.round(settings.scale * 100)
   return h('div', { className: 'dtv-panel' },
@@ -212,6 +217,22 @@ function SettingsPanel({
         h('span', null, translate('settings.rpFollow')),
       ),
       h('p', { className: 'dtv-note' }, translate('settings.rpFollow.help')),
+      h(Field, { label: translate('settings.rpWorkspace') }, h('select', {
+        className: 'dtv-select',
+        value: workspaceSetting?.selectedPath ?? '',
+        disabled: busy || workspaceBusy || workspaceSetting === null,
+        onChange: event => selectWorkspace(event.target.value),
+      },
+      workspaceSetting?.current === null && workspaceSetting.available.length > 0
+        ? h('option', { value: '', disabled: true }, translate('settings.rpWorkspace.unselected'))
+        : null,
+      workspaceSetting?.current?.unavailable === true
+        ? h('option', { value: workspaceSetting.current.path, disabled: true }, translate('settings.rpWorkspace.unavailable', { path: workspaceSetting.current.path }))
+        : null,
+      workspaceSetting?.available?.length > 0
+        ? workspaceSetting.available.map(item => h('option', { key: item.id, value: item.path }, rawText(item.title)))
+        : h('option', { value: '', disabled: true }, translate('settings.rpWorkspace.none')))),
+      h('p', { className: 'dtv-note' }, translate('settings.rpWorkspace.help')),
       h(Field, { label: translate('settings.rpPolicy') }, h('textarea', {
         className: 'dtv-textarea dtv-policy',
         value: policyDraft,
@@ -500,6 +521,9 @@ function TavernShell({ useSessions, useWorkspaces, createCleanSession, playClien
   const [rpPolicyDraft, setRpPolicyDraft] = useState('')
   const [rpPolicyLoaded, setRpPolicyLoaded] = useState(false)
   const [rpPolicyBusy, setRpPolicyBusy] = useState(false)
+  const [rpWorkspaceSetting, setRpWorkspaceSetting] = useState(null)
+  const [rpWorkspaceBusy, setRpWorkspaceBusy] = useState(false)
+  const rpWorkspaceBusyRef = useRef(false)
   const [rpAlert, setRpAlert] = useState(null)
   const drag = useRef(null)
   const suppressClick = useRef(false)
@@ -511,6 +535,7 @@ function TavernShell({ useSessions, useWorkspaces, createCleanSession, playClien
   const sessionId = useSessions(state => state.current)
   const sessionBlank = useSessions(state => state.current === undefined || state.current === null ? true : state.byId?.[state.current]?.blank === true)
   const workspaceId = useWorkspaces(state => workspaceTargetId(state, sessionId))
+  const workspaceItems = useWorkspaces(state => state.items)
   const hasConversationHistory = useCallback(async targetSessionId => {
     const messages = await playClient.getMessages(targetSessionId)
     return sessionHasConversationHistory(messages)
@@ -639,6 +664,48 @@ function TavernShell({ useSessions, useWorkspaces, createCleanSession, playClien
     })
     return () => { active = false }
   }, [surface])
+
+  useEffect(() => {
+    if (surface !== 'settings') return undefined
+    let active = true
+    setRpWorkspaceSetting(null)
+    playClient.getWorkspace().then(workspace => {
+      if (active) setRpWorkspaceSetting(projectRpWorkspaceSetting({ workspace, items: workspaceItems }))
+    }).catch(reason => {
+      if (active) setSettingsStatus({ text: translate('settings.loadError', { message: reason instanceof Error ? reason.message : String(reason) }), error: true })
+    })
+    return () => { active = false }
+  }, [playClient, surface, workspaceItems])
+
+  const selectRpWorkspace = async path => {
+    if (rpWorkspaceBusyRef.current) return
+    const request = workspaceSelectionRequest(path, { setting: rpWorkspaceSetting })
+    if (!request.changed) return
+    const item = rpWorkspaceSetting?.available?.find(candidate => candidate.path === path)
+    if (item === undefined) return
+    if (requiresSystemWorkspaceConfirmation(path)
+      && !window.confirm(unwrapText(uiMessage('play.sidebar.systemWorkspaceConfirm', { path })))) return
+    rpWorkspaceBusyRef.current = true
+    setRpWorkspaceBusy(true)
+    setSettingsStatus({ text: translate('settings.saving'), error: false })
+    try {
+      const written = await playClient.putWorkspace(path)
+      setRpWorkspaceSetting(projectRpWorkspaceSetting({ workspace: written, items: workspaceItems }))
+      window.dispatchEvent(new Event(CLIENT_REFRESH_EVENT))
+      try {
+        const current = await playClient.getWorkspace()
+        setRpWorkspaceSetting(projectRpWorkspaceSetting({ workspace: current, items: workspaceItems }))
+        setSettingsStatus({ text: translate('settings.saved'), error: false })
+      } catch (reason) {
+        setSettingsStatus({ text: translate('settings.rpWorkspace.verifyError', { message: reason instanceof Error ? reason.message : String(reason) }), error: true })
+      }
+    } catch (reason) {
+      setSettingsStatus({ text: translate('settings.saveError', { message: reason instanceof Error ? reason.message : String(reason) }), error: true })
+    } finally {
+      rpWorkspaceBusyRef.current = false
+      setRpWorkspaceBusy(false)
+    }
+  }
 
   const persistRpPolicy = async () => {
     setRpPolicyBusy(true)
@@ -856,6 +923,9 @@ function TavernShell({ useSessions, useWorkspaces, createCleanSession, playClien
       onPolicyDraft: setRpPolicyDraft,
       savePolicy: persistRpPolicy,
       resetPolicy: resetRpPolicy,
+      workspaceSetting: rpWorkspaceSetting,
+      workspaceBusy: rpWorkspaceBusy,
+      selectWorkspace: selectRpWorkspace,
     })
   }
 
