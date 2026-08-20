@@ -87,8 +87,14 @@ test('files and dirs require a bound play workspace root', async () => {
   }
 })
 
-test('POST /workspace/dirs uses Host createDirectory and does not mkdir locally', async () => {
-  const fixture = setup({ host: {} })
+test('POST /workspace/dirs creates jailed plugin directories without depending on the Host picker capability', async () => {
+  const fixture = setup({
+    host: {
+      async createDirectory() {
+        throw new Error('directory picker must not be used')
+      },
+    },
+  })
   try {
     await invoke(fixture.handler, {
       method: 'PUT',
@@ -100,9 +106,9 @@ test('POST /workspace/dirs uses Host createDirectory and does not mkdir locally'
       url: `${API_V2}/workspace/dirs`,
       body: { path: 'card/pt' },
     })
-    assert.equal(dirs.status, 501)
-    assert.equal(dirs.body.code, 'PLAY_HOST_UNAVAILABLE')
-    assert.equal(existsSync(join(fixture.playRoot, 'card')), false)
+    assert.equal(dirs.status, 200)
+    assert.equal(dirs.body.path, 'card/pt')
+    assert.equal(existsSync(join(fixture.playRoot, 'card', 'pt')), true)
   } finally {
     cleanup(fixture)
   }

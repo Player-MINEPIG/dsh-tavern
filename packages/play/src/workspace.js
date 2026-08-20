@@ -153,9 +153,6 @@ export class PlayWorkspaceStore {
 
   async createDir(relativePath) {
     const root = requireRoot(this.binding)
-    if (typeof this.host.createDirectory !== 'function') {
-      throw httpError(501, 'Host createDirectory is unavailable', 'PLAY_HOST_UNAVAILABLE')
-    }
     const segments = splitRelativeSegments(relativePath)
     const posix = posixPlayPath(segments)
     const absolute = resolvePlayPath(root, posix)
@@ -167,8 +164,7 @@ export class PlayWorkspaceStore {
       const childRelative = [...parentRelative, name]
       const childAbs = resolvePlayPath(root, posixPlayPath(childRelative))
       if (!existsSync(childAbs)) {
-        const parentAbs = parentRelative.length === 0 ? root : resolvePlayPath(root, posixPlayPath(parentRelative))
-        await this.host.createDirectory({ path: parentAbs, name })
+        mkdirSync(childAbs)
       } else if (!statSync(childAbs).isDirectory()) {
         throw httpError(409, 'path exists and is not a directory', 'PLAY_PATH_CONFLICT')
       }
