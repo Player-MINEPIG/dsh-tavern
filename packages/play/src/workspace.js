@@ -1,17 +1,20 @@
 import {
   existsSync,
+  closeSync,
+  lstatSync,
   mkdirSync,
+  openSync,
   readdirSync,
   readFileSync,
   renameSync,
   statSync,
   unlinkSync,
-  writeFileSync,
+  writeSync,
 } from 'node:fs'
-import { basename, dirname, join, resolve } from 'node:path'
+import { basename, join, resolve } from 'node:path'
 import { atomicJson, readJsonFile } from './atomic-json.js'
 import { httpError, readBoundedJson, sendJson } from './http.js'
-import { isSystemDiskPath, posixPlayPath, resolvePlayPath, splitRelativeSegments } from './paths.js'
+import { assertNoLink, assertSafeRoot, isSystemDiskPath, posixPlayPath, resolvePlayPath, splitRelativeSegments } from './paths.js'
 
 const BINDING_FILE = 'play-workspace.json'
 const MAX_BINDING_BYTES = 8 * 1024
@@ -56,9 +59,7 @@ function requireRoot(binding) {
   if (typeof binding.rootPath !== 'string' || binding.rootPath === '') {
     throw httpError(409, 'play workspace root is not bound', 'PLAY_WORKSPACE_UNBOUND')
   }
-  if (!existsSync(binding.rootPath) || !statSync(binding.rootPath).isDirectory()) {
-    throw httpError(409, 'play workspace root is not bound', 'PLAY_WORKSPACE_UNBOUND')
-  }
+  assertSafeRoot(binding.rootPath)
   return binding.rootPath
 }
 
@@ -79,11 +80,13 @@ export function workspaceWarnings(rootPath, { firstSelection = false } = {}) {
 }
 
 export class PlayWorkspaceStore {
-  constructor(storageDir, { host, now = () => new Date().toISOString() } = {}) {
+  constructor(storageDir, { host, now = () => new Date().toISOString(), beforeRename = null } = {}) {
     this.storageDir = resolve(storageDir)
     this.path = join(this.storageDir, BINDING_FILE)
     this.host = host ?? {}
     this.now = now
+    this.targetGuards = new Set()
+    this.beforeRename = beforeRename
     mkdirSync(this.storageDir, { recursive: true })
     this.binding = readBinding(this.path)
   }
@@ -124,6 +127,7 @@ export class PlayWorkspaceStore {
     if (!existsSync(resolved) || !statSync(resolved).isDirectory()) {
       throw httpError(400, 'path must be an existing directory', 'PLAY_WORKSPACE_INVALID')
     }
+    assertNoLink(resolved, 'play workspace root')
     const previous = this.get()
     const firstSelection = previous.rootPath !== resolved
     let workspaceId = previous.rootPath === resolved ? previous.workspaceId : null
@@ -155,22 +159,35 @@ export class PlayWorkspaceStore {
     const root = requireRoot(this.binding)
     const segments = splitRelativeSegments(relativePath)
     const posix = posixPlayPath(segments)
-    const absolute = resolvePlayPath(root, posix)
-    if (existsSync(absolute) && !statSync(absolute).isDirectory()) {
-      throw httpError(409, 'path exists and is not a directory', 'PLAY_PATH_CONFLICT')
-    }
-    let parentRelative = []
-    for (const name of segments) {
-      const childRelative = [...parentRelative, name]
-      const childAbs = resolvePlayPath(root, posixPlayPath(childRelative))
-      if (!existsSync(childAbs)) {
-        mkdirSync(childAbs)
-      } else if (!statSync(childAbs).isDirectory()) {
-        throw httpError(409, 'path exists and is not a directory', 'PLAY_PATH_CONFLICT')
+    return this.withTargetGuard(posix, () => {
+      let current = assertSafeRoot(root)
+      const parentRelative = []
+      for (const name of segments) {
+        const childRelative = [...parentRelative, name]
+        const childAbs = join(current, name)
+        let stat = assertNoLink(childAbs, 'path segment "' + name + '"')
+        if (stat === null) {
+          try { mkdirSync(childAbs) } catch (error) {
+            if (error?.code !== 'EEXIST') throw error
+          }
+          stat = assertNoLink(childAbs, 'path segment "' + name + '"')
+          if (stat === null) throw httpError(409, 'directory creation did not persist', 'PLAY_PATH_CONFLICT')
+        }
+        if (!stat.isDirectory()) {
+          throw httpError(409, 'path exists and is not a directory', 'PLAY_PATH_CONFLICT')
+        }
+        current = resolvePlayPath(root, posixPlayPath(childRelative), { mustExist: true })
+        parentRelative.push(name)
       }
-      parentRelative = childRelative
-    }
-    return { ok: true, path: posix }
+      return { ok: true, path: posix }
+    })
+  }
+
+  withTargetGuard(relativePath, operation) {
+    const key = (this.binding.rootPath ?? '') + '\\0' + posixPlayPath(relativePath)
+    if (this.targetGuards.has(key)) throw httpError(409, 'path target is busy', 'PLAY_PATH_BUSY')
+    this.targetGuards.add(key)
+    try { return operation() } finally { this.targetGuards.delete(key) }
   }
 
   list(prefix) {
@@ -182,7 +199,7 @@ export class PlayWorkspaceStore {
     }
     const prefixPosix = hasPrefix ? posixPlayPath(prefix) : ''
     const entries = readdirSync(start, { withFileTypes: true }).map(entry => ({
-      path: prefixPosix === '' ? entry.name : `${prefixPosix}/${entry.name}`,
+      path: prefixPosix === '' ? entry.name : prefixPosix + '/' + entry.name,
       type: entry.isDirectory() ? 'dir' : 'file',
     })).sort((left, right) => left.path.localeCompare(right.path))
     return { ok: true, list: entries }
@@ -213,18 +230,56 @@ export class PlayWorkspaceStore {
     }
     const posix = posixPlayPath(relativePath)
     if (typeof validate === 'function') validate(posix, content)
-    const absolute = resolvePlayPath(root, posix)
-    mkdirSync(dirname(absolute), { recursive: true })
-    const temporary = `${absolute}.${process.pid}.${Math.random().toString(36).slice(2)}.tmp`
-    writeFileSync(temporary, content, { encoding: 'utf8', mode: 0o600 })
-    try {
-      renameSync(temporary, absolute)
-    } catch (error) {
-      try { unlinkSync(temporary) } catch {}
-      throw error
-    }
-    if (basename(posix) === 'timeline.json') this.setActiveTimelinePath(posix)
-    return { ok: true, path: posix }
+    return this.withTargetGuard(posix, () => {
+      const segments = splitRelativeSegments(posix)
+      const fileName = segments.pop()
+      let parent = assertSafeRoot(root)
+      const parentSegments = []
+      for (const name of segments) {
+        const child = join(parent, name)
+        let stat = assertNoLink(child, 'path segment "' + name + '"')
+        if (stat === null) {
+          try { mkdirSync(child) } catch (error) {
+            if (error?.code !== 'EEXIST') throw error
+          }
+          stat = assertNoLink(child, 'path segment "' + name + '"')
+        }
+        if (stat === null || !stat.isDirectory()) {
+          throw httpError(409, 'path exists and is not a directory', 'PLAY_PATH_CONFLICT')
+        }
+        parentSegments.push(name)
+        parent = resolvePlayPath(root, posixPlayPath(parentSegments), { mustExist: true })
+      }
+      parent = parentSegments.length === 0
+        ? assertSafeRoot(root)
+        : resolvePlayPath(root, posixPlayPath(parentSegments), { mustExist: true })
+      const absolute = join(parent, fileName)
+      const existing = assertNoLink(absolute, 'target')
+      if (existing !== null && !existing.isFile()) {
+        throw httpError(409, 'path exists and is not a file', 'PLAY_PATH_CONFLICT')
+      }
+      const temporary = absolute + '.' + process.pid + '.' + Math.random().toString(36).slice(2) + '.tmp'
+      let descriptor = null
+      try {
+        descriptor = openSync(temporary, 'wx', 0o600)
+        writeSync(descriptor, content, null, 'utf8')
+        closeSync(descriptor)
+        descriptor = null
+        if (typeof this.beforeRename === 'function') this.beforeRename({ absolute, parent })
+        const verifiedParent = parentSegments.length === 0
+          ? assertSafeRoot(root)
+          : resolvePlayPath(root, posixPlayPath(parentSegments), { mustExist: true })
+        if (verifiedParent !== parent) throw httpError(403, 'path parent changed during write', 'PLAY_PATH_RACE')
+        assertNoLink(absolute, 'target')
+        renameSync(temporary, absolute)
+      } catch (error) {
+        if (descriptor !== null) { try { closeSync(descriptor) } catch {} }
+        try { unlinkSync(temporary) } catch {}
+        throw error
+      }
+      if (basename(posix) === 'timeline.json') this.setActiveTimelinePath(posix)
+      return { ok: true, path: posix }
+    })
   }
 }
 

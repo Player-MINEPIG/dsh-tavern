@@ -41,42 +41,49 @@ export function assertInsideRoot(rootReal, candidate) {
   }
 }
 
-function existingReal(path) {
-  if (!existsSync(path)) return null
-  return realpathSync(path)
+function isLinkLike(stat) {
+  return stat.isSymbolicLink()
 }
 
-/**
- * Resolve a relative play path inside an existing workspace root.
- * Follows symlinks on existing prefixes and refuses any result outside the root.
- */
+export function assertNoLink(path, label = 'path') {
+  let stat
+  try { stat = lstatSync(path) } catch (error) {
+    if (error?.code === 'ENOENT') return null
+    throw error
+  }
+  if (isLinkLike(stat)) {
+    throw httpError(403, `${label} must not contain a symlink or junction`, 'PLAY_PATH_LINK')
+  }
+  return stat
+}
+
+export function assertSafeRoot(rootPath) {
+  const stat = assertNoLink(rootPath, 'play workspace root')
+  if (stat === null || !stat.isDirectory()) {
+    throw httpError(409, 'play workspace root is not bound', 'PLAY_WORKSPACE_UNBOUND')
+  }
+  const rootReal = realpathSync(rootPath)
+  assertInsideRoot(rootReal, rootReal)
+  return rootReal
+}
+
 export function resolvePlayPath(rootPath, relativePath, { mustExist = false } = {}) {
   if (typeof rootPath !== 'string' || rootPath.trim() === '') {
     throw httpError(409, 'play workspace root is not bound', 'PLAY_WORKSPACE_UNBOUND')
   }
-  let rootReal
-  try {
-    rootReal = realpathSync(rootPath)
-  } catch (error) {
-    if (error?.code === 'ENOENT') {
-      throw httpError(409, 'play workspace root is not bound', 'PLAY_WORKSPACE_UNBOUND')
-    }
-    throw error
-  }
+  const rootReal = assertSafeRoot(rootPath)
   const segments = splitRelativeSegments(relativePath)
   let current = rootReal
   for (let index = 0; index < segments.length; index += 1) {
     const next = join(current, segments[index])
-    const real = existingReal(next)
+    const stat = assertNoLink(next, `path segment "${segments[index]}"`)
+    const real = stat === null ? null : realpathSync(next)
     if (real !== null) {
-      if (lstatSync(next).isSymbolicLink()) assertInsideRoot(rootReal, real)
-      else assertInsideRoot(rootReal, real)
+      assertInsideRoot(rootReal, real)
       current = real
       continue
     }
-    if (mustExist) {
-      throw httpError(404, `path not found: ${segments.join('/')}`, 'PLAY_PATH_NOT_FOUND')
-    }
+    if (mustExist) throw httpError(404, `path not found: ${segments.join('/')}`, 'PLAY_PATH_NOT_FOUND')
     const remainder = join(next, ...segments.slice(index + 1))
     assertInsideRoot(rootReal, remainder)
     return remainder

@@ -244,3 +244,86 @@ test('play workspace module never calls archiveSession', () => {
   ].join('\n')
   assert.doesNotMatch(source, /archiveSession/)
 })
+
+test('root-in symlink or junction is refused for reads and writes', async t => {
+  const fixture = setup()
+  try {
+    await invoke(fixture.handler, {
+      method: 'PUT',
+      url: `${API_V2}/workspace`,
+      body: { path: fixture.playRoot },
+    })
+    mkdirSync(join(fixture.playRoot, 'safe'))
+    const link = join(fixture.playRoot, 'link')
+    try {
+      symlinkSync(join(fixture.playRoot, 'safe'), link, 'dir')
+    } catch (error) {
+      t.skip(`symlink/junction creation unavailable: ${error.code ?? error.message}`)
+      return
+    }
+    const read = await invoke(fixture.handler, {
+      url: `${API_V2}/workspace/files?path=link/file.txt`,
+    })
+    assert.equal(read.status, 403)
+    assert.equal(read.body.code, 'PLAY_PATH_LINK')
+    const write = await invoke(fixture.handler, {
+      method: 'PUT',
+      url: `${API_V2}/workspace/files?path=link/file.txt`,
+      body: { content: 'blocked' },
+    })
+    assert.equal(write.status, 403)
+    assert.equal(write.body.code, 'PLAY_PATH_LINK')
+  } finally {
+    cleanup(fixture)
+  }
+})
+
+test('write rechecks a replaced parent before rename and releases the guard', async t => {
+  const fixture = setup()
+  let replaced = false
+  try {
+    const store = new PlayWorkspaceStore(fixture.pluginDir, {
+      beforeRename: () => {
+        if (replaced) return
+        replaced = true
+        rmSync(join(fixture.playRoot, 'card'), { recursive: true, force: true })
+        symlinkSync(fixture.outside, join(fixture.playRoot, 'card'), 'dir')
+      },
+    })
+    const handler = createPlayApiHandler({
+      chromeStore: new ChromeStore(fixture.pluginDir),
+      workspaceStore: store,
+    })
+    await invoke(handler, {
+      method: 'PUT',
+      url: `${API_V2}/workspace`,
+      body: { path: fixture.playRoot },
+    })
+    try {
+      mkdirSync(join(fixture.playRoot, 'card'))
+      rmSync(join(fixture.playRoot, 'card'), { recursive: true, force: true })
+      symlinkSync(fixture.outside, join(fixture.playRoot, 'card'), 'dir')
+      rmSync(join(fixture.playRoot, 'card'), { recursive: true, force: true })
+    } catch (error) {
+      t.skip(`symlink/junction creation unavailable: ${error.code ?? error.message}`)
+      return
+    }
+    const write = await invoke(handler, {
+      method: 'PUT',
+      url: `${API_V2}/workspace/files?path=card/file.txt`,
+      body: { content: 'must not escape' },
+    })
+    assert.equal(write.status, 403)
+    assert.ok(['PLAY_PATH_LINK', 'PLAY_PATH_RACE'].includes(write.body.code))
+    assert.equal(existsSync(join(fixture.outside, 'file.txt')), false)
+    const retry = await invoke(handler, {
+      method: 'PUT',
+      url: `${API_V2}/workspace/files?path=retry.txt`,
+      body: { content: 'guard released' },
+    })
+    assert.equal(retry.status, 200)
+    assert.equal(readFileSync(join(fixture.playRoot, 'retry.txt'), 'utf8'), 'guard released')
+  } finally {
+    cleanup(fixture)
+  }
+})
