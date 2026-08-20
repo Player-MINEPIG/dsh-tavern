@@ -137,3 +137,10 @@ test('native blank-session greeting dock mounts the shared import control', () =
   assert.match(noticeSource, /h\('footer', \{ className: 'dtv-play-opening-actions' \},[\s\S]*importControls,/)
   assert.match(noticeSource, /greeting === null[\s\S]*dtv-play-opening-body-empty/)
 })
+
+test('native blank-session dock projects only the latest three imported QA turns', () => {
+  assert.match(noticeSource, /\.filter\(turn => turn\.imported === true && turn\.id !== 'import-greeting'\)[\s\S]*\.slice\(-3\)/)
+  assert.match(noticeSource, /importTurns\.map\(turn => h\('div'/)
+  assert.match(noticeSource, /dtv-play-chat-user/)
+  assert.match(noticeSource, /dtv-play-chat-assistant/)
+})

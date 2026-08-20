@@ -11764,6 +11764,7 @@ function PlaySessionDock({ session, useSessions, playClient }) {
             greeting: state.greeting,
             importBinding: state.importBinding,
             importMutable: state.importMutable,
+            importTurns: state.turns.filter((turn) => turn.imported === true && turn.id !== "import-greeting").slice(-3),
             playthrough: binding.playthrough,
             sessionId
           });
@@ -11804,6 +11805,7 @@ function PlaySessionDock({ session, useSessions, playClient }) {
   }
   if (content.kind !== "opening" || !sessionBlank || composerPhase !== "blank") return null;
   const greeting = content.greeting;
+  const importTurns = content.importTurns ?? [];
   const options = greeting?.options ?? [];
   const multiple = options.length > 1;
   const position = greeting === null ? 0 : Math.max(0, options.findIndex((option) => option.index === greeting.index)) + 1;
@@ -11826,7 +11828,22 @@ function PlaySessionDock({ session, useSessions, playClient }) {
       h11("span", { className: "dtv-play-opening-name" }, rawText(greeting.characterName)),
       h11("span", { className: "dtv-play-opening-index" }, rawText(`${position} / ${options.length}`))
     ),
-    greeting === null ? h11("div", { className: "dtv-play-opening-body dtv-play-opening-body-empty", "aria-hidden": true }) : h11(RichText, { className: "dtv-play-opening-body", text: greeting.text }),
+    importTurns.length > 0 ? h11(
+      "div",
+      { className: "dtv-play-opening-body dtv-play-chat-list" },
+      ...importTurns.map((turn) => h11(
+        "div",
+        { key: turn.id, className: "dtv-play-chat-row" },
+        turn.userText === "" ? null : h11(RichText, {
+          className: "dtv-play-chat-bubble dtv-play-chat-user dtv-play-rich",
+          text: turn.userText
+        }),
+        turn.assistantText === "" ? null : h11(RichText, {
+          className: "dtv-play-chat-bubble dtv-play-chat-assistant dtv-play-rich",
+          text: turn.assistantText
+        })
+      ))
+    ) : greeting === null ? h11("div", { className: "dtv-play-opening-body dtv-play-opening-body-empty", "aria-hidden": true }) : h11(RichText, { className: "dtv-play-opening-body", text: greeting.text }),
     error === "" ? null : h11("p", { className: "dtv-play-opening-error", role: "alert" }, rawText(error)),
     h11(
       "footer",
