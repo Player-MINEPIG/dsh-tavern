@@ -86,7 +86,7 @@ turn，以及是否已有外部导入 QA；因此连续点击不会无限增加�
 footer 中央的导入按钮可从 JSON/JSONL 或本插件 bundle 绑定外部记录；已有绑定时按钮变为
 换绑和解绑。绑定后 dock 显示最近三轮 QA，显示内容只是本地渲染预览。
 
-外部记录只允许绑定到仍为空的 root session。第一次实际发送请求时，loader 只在同一 profile snapshot 提供至少一个公开 `claimEventSeqs` 后建立持久 claim，再将内容作为转义的、标明 `untrusted` 的只读上下文交给模型；它不会成为 DSH durable history，也不会写入 `timeline.json`，所以不会伪造一轮 QA。没有 claim 的 view/assembly 不注入，也不会消费 pending；同一 claim identity 可重复 assembly，简单 `turn/end` 只会消费已 claimed 绑定。真实 user/assistant 消息、开放 turn 或绑定已 claim 后，都不能再改绑或解绑。完整 retry/swipe lineage 与取消/中断终态由 task 10 继续完成，见
+外部记录只允许绑定到仍为空的 root session。第一次实际发送请求时，loader 只在同一 profile snapshot 提供至少一个公开 `claimEventSeqs` 后建立持久 claim，再将内容作为转义的、标明 `untrusted` 的只读上下文交给模型；它不会成为 DSH durable history，也不会写入 `timeline.json`，所以不会伪造一轮 QA。没有 claim 的 view/assembly 不注入，也不会消费 pending；同一 claim identity 在 terminal 前可重复 assembly，`turn/end` 只会消费已 claimed 绑定并保存 event seq、turn、reason.kind 等非正文元数据。DSH provider 的 request retry 不会消费或重置 claim；Tavern swipe 通过公开 branch 复制不含正文的 lineage，子 session 需要新的 claim；中断后原 session 的新 claim 不再注入。真实 user/assistant 消息、开放 turn 或绑定已 claim 后，都不能再改绑或解绑。
 [周目审查记录](PLAY_REVIEW.md)。
 导入文件和绑定摘要保存在已选扮演工作区根内；服务端会校验路径、哈希和 `schemaVersion: 1`/QA 结构。import parser 不做 summary、QA 切片或 256 KiB/2,000 QA 人为上限；模型上下文超限交给 DSH/provider，通用工作区文件仍有 1 MiB 文件层上限。
 

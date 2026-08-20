@@ -25,7 +25,7 @@
 | PUT | `/workspace/files?path=` | 普通文件仍使用 `{ content }`；`catalog.json` / `timeline.json` 必须显式带 `expectedRevision`：`null` 仅创建缺失目标，64 位小写 SHA-256 仅在当前字节 hash 相等时替换。校验、CAS、临时写和 rename 在同一目标 guard 内 | 已实现 |
 | GET | `/workspace/files?list=` | 列一层前缀 | 已实现 |
 | POST | `/sessions` | 新开扮演 session。有角色卡时标题=角色名+时间；无角色卡时走 DSH `session.create` 默认标题，不 409。仅当 body 带 `selectionFromSessionId` 才复制 Tavern 绑定。插入扮演工作区。**不写 timeline** | 已实现 |
-| POST | `/sessions/:id/branch` | `{ atEventId }` = 日志 seq。fork，不写 timeline、不代发。开放 turn → 409 | 已实现 |
+| POST | `/sessions/:id/branch` | `{ atEventId }` = 日志 seq。fork 后复制公开 selection；若来源 import claim 已在更早 terminal 结束，则复制不含正文的 pending lineage；不写 timeline、不代发。复制失败显式返回 502 `PLAY_BRANCH_COPY_FAILED`；开放 turn → 409 | 已实现 |
 | POST | `/sessions/:id/user-message` | `{ text }` 作为下一条用户正文，`session.prompt` `queue` | 已实现 |
 | GET | `/sessions/:id/messages` | `deriveMessages()` + `seq` + `incompleteTurn`。持续读取到 `hasMore: false`，不设插件页数上限；Host 游标空页、非法 seq 或不前进时返回 502 `PLAY_HISTORY_CURSOR_STALLED` | 已实现（`10250a7`） |
 | GET | `/sessions/:id/import-context` | 返回 `{ binding }`；未绑定为 `null`，绑定含 path/hash/state/数量摘要及（已 claim 时）不含正文的 claim identity/event seq 摘要，不返回记录正文 | 已实现 |
@@ -38,7 +38,7 @@
 
 路径存在、方法不对 → `405 PLAY_METHOD_NOT_ALLOWED`（例如 `POST /chrome`、`POST /focus`、`GET /sessions`）。稳定 focus 中周目 id 不存在返回 404 PLAY_PLAYTHROUGH_NOT_FOUND；catalog 缺失返回 409 PLAY_CATALOG_UNAVAILABLE，catalog 损坏保留 400 PLAY_CATALOG_INVALID；timeline 缺失或损坏统一返回 409 PLAY_FOCUS_UNAVAILABLE。稳定入口不接受客户端 path，不读取 DSH history，也不写文件。旧 /focus?path= 仅保留迁移兼容。
 
-import-context 修改由 session 权威状态锁定：只要存在 DSH user/assistant message、开放 turn，或该绑定已经被 claim，`PUT` / `DELETE` 都返回 `409 PLAY_IMPORT_CONTEXT_LOCKED`；前端隐藏按钮不能替代此检查。`PUT` 会重新读取工作区文件、执行 JSON/schema/hash 校验，然后把绑定置为 `pending`。`GET` 可在任意状态读取摘要；正文仍通过已有 `/workspace/files?path=` 按明确路径读取。首次实际 assembly 必须携带公开 `agent/inbox/spliced` 投影的非负 `claimEventSeqs`；loader 才把绑定持久转为 `claimed`，并在同一 claim identity 的重复 assembly 中重放相同的转义、untrusted、只读上下文。没有 claim 的 view/assembly 不注入，也不会消费 pending；已 claim 的简单 `turn/end` 才转为 `consumed`，不会写成 DSH 历史。
+import-context 修改由 session 权威状态锁定：只要存在 DSH user/assistant message、开放 turn，或该绑定已经被 claim，`PUT` / `DELETE` 都返回 `409 PLAY_IMPORT_CONTEXT_LOCKED`；前端隐藏按钮不能替代此检查。`PUT` 会重新读取工作区文件、执行 JSON/schema/hash 校验，然后把绑定置为 `pending`。`GET` 可在任意状态读取摘要；正文仍通过已有 `/workspace/files?path=` 按明确路径读取。首次实际 assembly 必须携带公开 `agent/inbox/spliced` 投影的非负 `claimEventSeqs`；loader 才把绑定持久转为 `claimed`，并在同一 claim identity 的重复 assembly 中重放相同的转义、untrusted、只读上下文。没有 claim 的 view/assembly 不注入，也不会消费 pending；已 claim 的 `turn/end` 才转为 `consumed`，并保存安全整数结束 event seq、turn 与 `reason.kind` 的非正文终态元数据，不写成 DSH 历史。DSH provider 在同一 turn/end 前的 request retry 复用同一 claim；`agent/request-error` 不消费或重置。Tavern swipe 通过公开 branch endpoint，在分叉点早于来源终态时复制 selection 和不含正文的 import lineage；子 session 必须出现新的 public claim 才注入，旧 claim 不直接复用。中断后原 session 的新用户 claim 不再注入。
 
 当前 `GET` 和 `PUT` 命中 `timeline.json` / `catalog.json` 时都会执行同一 schema/path 校验；PUT 在同一目标 guard 内先比较 `expectedRevision`、再校验内容，GET 在 guard 内读后校验并返回精确 UTF-8 字节的 SHA-256 `revision`。缺字段返回 400 `PLAY_FILE_REVISION_REQUIRED`，格式错误返回 400 `PLAY_FILE_REVISION_INVALID`，目标存在/缺失/hash 不一致统一返回 409 `PLAY_FILE_REVISION_CONFLICT`；冲突不改文件。schema 失败仍返回明确的 `PLAY_TIMELINE_INVALID` 或 `PLAY_CATALOG_INVALID`，不会改写 DSH 事件。catalog 的 id 使用客户端同源安全段规则、id/path 唯一，path 为安全 POSIX 相对路径且严格以 `/timeline.json` 结尾；已知 `ext.pmpDshTavern` 字段校验但未知第三方字段原样保留。timeline 只允许真实 `qa` 节点，greeting 从角色卡与 session selection 派生，不进入 timeline。focus 不存盘；稳定 focus 由 playthrough id、catalog 与 timeline 派生。bundled live client 只发送 URL 编码后的 playthrough id，并拒绝服务端返回的 id 不匹配或缺失/非法字段。稳定 focus 的 activeTimelinePath 字段仅作为旧 binding 兼容数据保留，已 deprecated/ignored；普通 timeline PUT 不再更新它。路径 mutation 已在进程内目标锁中逐段 `lstat` 拒绝 symlink/junction，逐层创建并 realpath 复核；临时文件使用排他 `wx`，写入和 rename 前复验父目录。服务端 CAS 已实现；内置 live client 已实现受管 revision 缓存、`null` create-only、409 作废陈旧缓存和有限冲突重放（默认最多重试 3 次，可配置 1–5）。任务 06 已将内置周目生命周期 caller（rename、create catalog append、node metadata/adopt、swipe timeline append、turn reconcile）迁移到 `updateCatalog` / `updateTimeline`；mutator 每次只基于 fresh document 重算本地意图，外部 session/branch/user-message/目录/timeline create-only 副作用不会在 CAS 重放中重复。旧自定义 client 若只有 get/put 会走一次兼容 fallback，不提供并发重放保证。
 
@@ -64,7 +64,7 @@ controller 会串行同角色创建；内置 caller 使用服务端 CAS 的有�
 或 timeline 节点。绑定、换绑和解绑分别通过 `PUT` / `DELETE /sessions/:id/import-context`
 完成；客户端在同一 footer 中显示操作，绑定后预览最近三轮 QA。绑定状态为 `pending` 时，首次
 实际请求才注入完整内容；loader 将其转义并标记为 `untrusted`、只读上下文，不把它写入 DSH
-durable history。当前已实现的基础语义是：首次 assembly 必须按原用户 turn/event 的公开 `claimEventSeqs` 建立持久 claim；同一 claim identity 可重复 assembly，未 claim 的 pending 不会因 view 或无关 turn/end 被消费。完整 retry/swipe lineage、取消/中断终态细分属于 task 10，尚未在本任务宣称完成。
+durable history。当前已实现的基础语义是：首次 assembly 必须按原用户 turn/event 的公开 `claimEventSeqs` 建立持久 claim；同一 claim identity 可重复 assembly，未 claim 的 pending 不会因 view 或无关 turn/end 被消费。retry/swipe lineage 与取消/中断终态已实现：终态只保存 event seq、turn、reason.kind 等非正文元数据；同一请求在 terminal 前可重复 assembly，terminal 后新 claim 不再注入；Tavern swipe 仅通过公开 branch 接缝复制 selection/lineage，不宣称拦截所有第三方原生 fork。
 
 请求体为 `{ reference: { path, expectedHash? } }`。文件必须位于已绑定工作区根内，文档为
 `schemaVersion: 1` 且含 `qa` 数组。import parser 不做 256 KiB 或 QA 数量的人为上下文截断，也不做 summary/切片；模型上下文是否超限交给 DSH/provider。通用 `/workspace/files` 仍有 1 MiB 文件层读写上限。普通 SillyTavern JSON/JSONL 与本插件 bundle 可由客户端解析后写入该上下文文件。greeting 仍是展示投影，不伪造 assistant 历史。
@@ -72,7 +72,7 @@ durable history。当前已实现的基础语义是：首次 assembly 必须按�
 ### 已接受的 2.0 发布加固（部分已实现）
 
 - ✅ history 已实现（`10250a7`）：取消 32 页人为上限并一直分页至 `hasMore: false`；Host 空页、非法 oldest `seq` 或 cursor 重复/不前进时返回 502 `PLAY_HISTORY_CURSOR_STALLED`；插件不摘要/切片。
-- import-context 基础 claim 已实现：公开 `claimEventSeqs` 驱动 pending → claimed，状态持久化并返回 claim identity；无 claim 不注入/不消费，同一 identity 可重放，claimed 才能被当前简单 turn/end 消费。retry/swipe lineage、取消/中断终态属于 task 10。
+- import-context claim/终态/lineage 已实现：公开 `claimEventSeqs` 驱动 pending → claimed；terminal 前同一 identity 可重放，`turn/end` 保存 event seq、turn、reason.kind 等非正文元数据并转 consumed；terminal 后新 claim 不注入。Tavern swipe 通过公开 branch 复制 selection 与不含正文的 pending lineage，旧 claim 不直接复用；第三方原生 fork 不在插件拦截范围。
 - ✅ catalog/timeline GET 返回精确 UTF-8 字节 SHA-256 `revision`，PUT 使用显式 `expectedRevision`；缺失/格式错误分别为 400，目标状态或 hash 不一致为 409，冲突不改文件。服务端合同、内置 live client 的 revision 缓存/有限重放原语，以及内置生命周期 caller 的 CAS 迁移均已实现。
 - ✅ catalog/timeline 已在 GET 读后与 PUT 写前执行同一 schema/path 校验；未知第三方 `ext` 原样保留。revision/CAS 已在同一目标 guard 中实现；路径锁、逐段 no-follow 检查、临时 `wx` 写和 rename 前复验已实现。
 - 路径逐段拒绝 symlink/junction（Node 暴露的链接类型），逐层非 recursive 创建并 realpath 复核，临时文件使用排他 `wx`，写入/rename 前复验父目录；纯 Node 仍无法抵抗外部进程制造的极窄竞态，不引入 native addon。
