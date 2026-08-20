@@ -217,7 +217,7 @@ export function MowanChatView({ sessionId, useSession, playClient, playthrough, 
     scrollToBottom()
   }, [sessionId, state])
 
-  useLayoutEffect(() => {
+  useEffect(() => {
     if (userSeqSession.current !== sessionId) {
       userSeqSession.current = sessionId
       lastUserSeq.current = latestUserSeq
@@ -225,7 +225,14 @@ export function MowanChatView({ sessionId, useSession, playClient, playthrough, 
     }
     if (latestUserSeq <= lastUserSeq.current) return
     lastUserSeq.current = latestUserSeq
-    scrollToBottom()
+    let nextFrame = 0
+    const frame = window.requestAnimationFrame(() => {
+      nextFrame = window.requestAnimationFrame(scrollToBottom)
+    })
+    return () => {
+      window.cancelAnimationFrame(frame)
+      if (nextFrame !== 0) window.cancelAnimationFrame(nextFrame)
+    }
   }, [latestUserSeq, sessionId])
 
   useEffect(() => {

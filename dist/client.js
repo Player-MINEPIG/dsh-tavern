@@ -4641,7 +4641,7 @@ function MowanChatView({ sessionId, useSession, playClient, playthrough, openSes
     initialScrollSession.current = sessionId;
     scrollToBottom();
   }, [sessionId, state]);
-  (0, import_react8.useLayoutEffect)(() => {
+  (0, import_react8.useEffect)(() => {
     if (userSeqSession.current !== sessionId) {
       userSeqSession.current = sessionId;
       lastUserSeq.current = latestUserSeq;
@@ -4649,7 +4649,14 @@ function MowanChatView({ sessionId, useSession, playClient, playthrough, openSes
     }
     if (latestUserSeq <= lastUserSeq.current) return;
     lastUserSeq.current = latestUserSeq;
-    scrollToBottom();
+    let nextFrame = 0;
+    const frame = window.requestAnimationFrame(() => {
+      nextFrame = window.requestAnimationFrame(scrollToBottom);
+    });
+    return () => {
+      window.cancelAnimationFrame(frame);
+      if (nextFrame !== 0) window.cancelAnimationFrame(nextFrame);
+    };
   }, [latestUserSeq, sessionId]);
   (0, import_react8.useEffect)(() => {
     const refresh = () => setRevision((value) => value + 1);
