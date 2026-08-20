@@ -173,3 +173,7 @@ rc.8 的默认视图仍由 DSH chat store 持有，`conversation.view` owner 不
 运行加载验收关注：当前选择、session 隔离、append/replace、资源组合顺序、call config、最终 request/header、API 审计与安装入口。以后更换加载策略时，不应使格式解析测试一起失效。
 
 当前架构测试会检查关键依赖方向；它不能替代代码评审，但会阻止最明显的 DSH Host 逻辑回流到格式层。
+
+### Tavern chrome revision 与事件边界
+
+全局蓝/红前端状态由 `packages/play` 自有 `ChromeStore` 持有，`chrome.json` 保存 `mode` 与不透明 `revision`。`GET/PUT /v2/chrome` 保留旧的 `ok/mode` 字段并附加 `revision`；只有 atomic write 成功且 mode 实际变化时才发布一次变更。`GET /v2/chrome/events` 是同一 API 前缀下的 Tavern 自有 SSE：首次连接发送当前快照，随后发送 `chrome/change`，只暴露 `mode/revision`，并在连接关闭时释放订阅。它不改 DSH Host 的 store、transport 或 view；外部直接改文件和其他进程写入不在事件合同内，客户端必须以 GET/focus 刷新作为降级校验。

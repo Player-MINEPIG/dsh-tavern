@@ -2,6 +2,7 @@ export {
   ChromeStore,
   chromeConstants,
   createChromeApiHandler,
+  createChromeEventsHandler,
   normalizeChrome,
 } from './chrome.js'
 export {

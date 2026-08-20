@@ -5,7 +5,7 @@ import {
   createApiHandler as createPresetApiHandler,
 } from '../../preset/src/index.js'
 import { API_ROOT, API_V1, PLUGIN_ID, PROFILE_SECTION } from '../../identity.js'
-import { ChromeStore, PlayWorkspaceStore, createPlayApiHandler, isPlayApiPath } from '../../play/src/index.js'
+import { ChromeStore, PlayWorkspaceStore, createChromeEventsHandler, createPlayApiHandler, isPlayApiPath } from '../../play/src/index.js'
 import {
   CharacterStore,
   createCharacterAdapter,
@@ -519,11 +519,17 @@ export function apply(ctx, config = {}) {
       config.security,
     )
     ctx.effect(
-      () => ctx.get('webServer').register({
-        kind: 'prefix',
-        path: API_ROOT,
-        handler: api,
-      }),
+      () => {
+        const disposeRoute = ctx.get('webServer').register({
+          kind: 'prefix',
+          path: API_ROOT,
+          handler: api,
+        })
+        return () => {
+          disposeRoute?.()
+          chromeStore.dispose()
+        }
+      },
       'dsh-tavern: HTTP Tavern API',
     )
   }
@@ -622,6 +628,7 @@ export {
   ChromeStore,
   PlayWorkspaceStore,
   chromeConstants,
+  createChromeEventsHandler,
   createPlayApiHandler,
   deriveFocus,
   isPlayApiPath,

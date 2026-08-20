@@ -1,5 +1,5 @@
 import { API_V2 } from '../../identity.js'
-import { createChromeApiHandler } from './chrome.js'
+import { createChromeApiHandler, createChromeEventsHandler } from './chrome.js'
 import { httpError, parsePlayUrl, sendPlayError } from './http.js'
 import { createSessionApiHandler } from './sessions.js'
 import { validatePlayDocument } from './timeline.js'
@@ -28,6 +28,7 @@ export function createPlayApiHandler({
 } = {}) {
   if (chromeStore === undefined) throw new TypeError('chromeStore is required')
   const chromeApi = createChromeApiHandler(chromeStore)
+  const chromeEventsApi = createChromeEventsHandler(chromeStore)
   const workspaceApi = workspaceStore === undefined
     ? null
     : createWorkspaceApiHandler(workspaceStore, { validateFile })
@@ -70,6 +71,9 @@ export function createPlayApiHandler({
       if (route.rest === '/chrome') {
         if (method !== 'GET' && method !== 'PUT') throw httpError(405, 'method not allowed', 'PLAY_METHOD_NOT_ALLOWED')
         return await chromeApi(req, res, { method })
+      }
+      if (route.rest === '/chrome/events') {
+        return await chromeEventsApi(req, res, { method })
       }
       if (route.rest === '/workspace') {
         if (method !== 'GET' && method !== 'PUT') throw httpError(405, 'method not allowed', 'PLAY_METHOD_NOT_ALLOWED')

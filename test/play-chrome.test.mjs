@@ -4,6 +4,7 @@ import { mkdtempSync, readFileSync, rmSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { Readable } from 'node:stream'
+import { EventEmitter } from 'node:events'
 import { API_V2 } from '../packages/identity.js'
 import {
   ChromeStore,
@@ -60,6 +61,8 @@ test('GET /v2/chrome does not require JSON and POST /chrome is absent', async ()
     assert.equal(fresh.status, 200)
     assert.equal(fresh.body.ok, true)
     assert.equal(fresh.body.mode, 'native')
+    assert.equal(typeof fresh.body.revision, 'string')
+    assert.notEqual(fresh.body.revision, '')
 
     const put = await invoke(handler, { method: 'PUT', url: `${API_V2}/chrome`, body: { mode: 'play' } })
     assert.equal(put.status, 200)
@@ -110,4 +113,133 @@ test('loader routes v2 chrome through the existing single secured API prefix', (
   assert.equal(source.match(/path: API_ROOT/g)?.length, 1)
   assert.equal(source.match(/secureTavernApi\(/g)?.length, 1)
   assert.doesNotMatch(source, /archiveSession/)
+})
+
+test('chrome store revisions and subscriptions only publish actual changes', () => {
+  const directory = mkdtempSync(join(tmpdir(), 'dsh-tavern-play-chrome-events-'))
+  try {
+    const store = new ChromeStore(directory)
+    const initial = store.get()
+    const snapshots = []
+    const secondSnapshots = []
+    const dispose = store.subscribe(snapshot => {
+      snapshots.push(snapshot)
+      throw new Error('listener failure is isolated')
+    })
+    const disposeSecond = store.subscribe(snapshot => secondSnapshots.push(snapshot))
+    assert.equal(store.set({ mode: 'native', revision: 'client-controlled' }).revision, initial.revision)
+    assert.equal(snapshots.length, 0)
+    const changed = store.set({ mode: 'play', revision: 'client-controlled' })
+    assert.equal(snapshots.length, 1)
+    assert.equal(secondSnapshots.length, 1)
+    assert.equal(secondSnapshots[0].mode, 'play')
+    assert.equal(secondSnapshots[0].revision, changed.revision)
+    assert.notEqual(changed.revision, initial.revision)
+    assert.notEqual(changed.revision, 'client-controlled')
+    assert.equal(store.set({ mode: 'play' }).revision, changed.revision)
+    dispose()
+    dispose()
+    disposeSecond()
+    disposeSecond()
+    store.set({ mode: 'native' })
+    assert.equal(snapshots.length, 1)
+    store.dispose()
+    store.dispose()
+  } finally {
+    rmSync(directory, { recursive: true, force: true })
+  }
+})
+
+test('chrome events sends initial and changed snapshots, then cleans up on close', async () => {
+  const directory = mkdtempSync(join(tmpdir(), 'dsh-tavern-play-chrome-sse-'))
+  try {
+    const store = new ChromeStore(directory)
+    const req = new EventEmitter()
+    req.method = 'GET'
+    const res = new EventEmitter()
+    const headers = {}
+    const chunks = []
+    res.setHeader = (name, value) => { headers[name.toLowerCase()] = value }
+    res.write = chunk => { chunks.push(String(chunk)); return true }
+    res.flushHeaders = () => {}
+    res.destroyed = false
+    res.writableEnded = false
+    let endCalls = 0
+    res.end = () => { endCalls += 1; res.writableEnded = true }
+    req.url = `${API_V2}/chrome/events`
+    const handler = createPlayApiHandler({ chromeStore: store })
+    await handler(req, res)
+    assert.equal(res.statusCode, 200)
+    assert.equal(headers['content-type'], 'text/event-stream; charset=utf-8')
+    assert.match(chunks[0], /event: chrome\/change/)
+    assert.match(chunks[0], /"mode":"native"/)
+    store.set({ mode: 'play' })
+    assert.equal(chunks.length, 2)
+    assert.match(chunks[1], /"mode":"play"/)
+    req.emit('close')
+    store.set({ mode: 'native' })
+    assert.equal(endCalls, 0)
+    assert.equal(chunks.length, 2)
+    const bad = await invoke(handler, { method: 'POST', url: `${API_V2}/chrome/events` })
+    assert.equal(bad.status, 405)
+    assert.equal(bad.body.code, 'PLAY_METHOD_NOT_ALLOWED')
+    store.dispose()
+    assert.equal(chunks.length, 2)
+  } finally {
+    rmSync(directory, { recursive: true, force: true })
+  }
+})
+
+test('chrome events end and unsubscribe on store disposal or write failure', async () => {
+  const firstDirectory = mkdtempSync(join(tmpdir(), 'dsh-tavern-play-chrome-dispose-'))
+  const secondDirectory = mkdtempSync(join(tmpdir(), 'dsh-tavern-play-chrome-write-failure-'))
+  const exchange = ({ failAfter = Infinity } = {}) => {
+    const req = new EventEmitter()
+    const res = new EventEmitter()
+    const chunks = []
+    let writes = 0
+    let endCalls = 0
+    req.method = 'GET'
+    req.url = `${API_V2}/chrome/events`
+    res.setHeader = () => {}
+    res.flushHeaders = () => {}
+    res.destroyed = false
+    res.writableEnded = false
+    res.write = chunk => {
+      if (writes >= failAfter) throw new Error('write failed')
+      writes += 1
+      chunks.push(String(chunk))
+      return true
+    }
+    res.end = () => {
+      endCalls += 1
+      res.writableEnded = true
+    }
+    return { req, res, chunks, endCalls: () => endCalls }
+  }
+  try {
+    const disposedStore = new ChromeStore(firstDirectory)
+    const disposedExchange = exchange()
+    await createPlayApiHandler({ chromeStore: disposedStore })(disposedExchange.req, disposedExchange.res)
+    assert.equal(disposedExchange.chunks.length, 1)
+    disposedStore.dispose()
+    disposedStore.dispose()
+    assert.equal(disposedExchange.endCalls(), 1)
+    disposedStore.set({ mode: 'play' })
+    assert.equal(disposedExchange.chunks.length, 1)
+
+    const failedStore = new ChromeStore(secondDirectory)
+    const failedExchange = exchange({ failAfter: 1 })
+    await createPlayApiHandler({ chromeStore: failedStore })(failedExchange.req, failedExchange.res)
+    assert.equal(failedExchange.chunks.length, 1)
+    failedStore.set({ mode: 'play' })
+    assert.equal(failedExchange.endCalls(), 1)
+    failedStore.set({ mode: 'native' })
+    assert.equal(failedExchange.chunks.length, 1)
+    failedStore.dispose()
+    assert.equal(failedExchange.endCalls(), 1)
+  } finally {
+    rmSync(firstDirectory, { recursive: true, force: true })
+    rmSync(secondDirectory, { recursive: true, force: true })
+  }
 })

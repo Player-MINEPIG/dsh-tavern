@@ -15,8 +15,9 @@
 
 | 方法 | 路径 | 作用 | 状态 |
 | --- | --- | --- | --- |
-| GET | `/chrome` | 返回 `{ mode: "native" \| "play" }` | 已实现 |
-| PUT | `/chrome` | 写入全局 chrome。不改 RP 锁、不改 DSH 当前 session | 已实现 |
+| GET | `/chrome` | 返回 `{ mode: "native" \| "play", revision }`；`revision` 是服务端权威不透明版本串 | 已实现 |
+| GET | `/chrome/events` | Tavern 自有 SSE；连接后发送当前快照，mode 实际变化时发送 `chrome/change` | 已实现 |
+| PUT | `/chrome` | 写入全局 chrome。不改 RP 锁、不改 DSH 当前 session；成功响应附带新的 `revision`（同 mode 不产生变更） | 已实现 |
 | POST | `/chrome` | 不提供 | 405 |
 | GET | `/workspace` | 根路径、是否已选、合同版本、警告 | 已实现 |
 | PUT | `/workspace` | 绑定**一棵**已存在的扮演工作区根。首次选择带 `SWIPE_DISK` / 可能的 `SYSTEM_DISK` 警告。不 mkdir 根 | 已实现 |
@@ -80,6 +81,7 @@ durable history。当前已实现的基础语义是：首次 assembly 必须按�
 除已标记为已实现的 history 分页外，其余加固在完成代码、自动测试和 rc.8 验收前均不得宣称已经实现。具体风险与决策见 [`PLAY_REVIEW.md`](PLAY_REVIEW.md)。
 
 `chrome` 是整个前端的蓝/红球，存在插件 data `chrome.json`，默认 `native`。非法 `mode` → 400。GET 不要求 JSON Content-Type。
+`GET /chrome/events` 是 Tavern 自有的 SSE 变更面，不是 DSH Host API。连接后立即发送 `event: chrome/change` 当前快照；成功的 `PUT /chrome` 在实际 mode 变化后广播一次同名事件，事件 data 只含 `{ mode, revision }`。SSE 使用 `text/event-stream`、禁止缓存并在连接关闭时清理订阅；非 GET → 405。旧客户端只读取 `mode` 仍兼容，无法使用 SSE 的客户端应回退 GET/focus 刷新或短轮询。直接编辑 `chrome.json`、其他进程写入以及 DSH 私有 transport 不在该事件合同内。
 
 客户端入口始终显示 `DT`。左键立即展开/收起菜单，快速重复点击重复同一默认行为，双击没有特殊效果；右键单击切换前端显示模式。菜单按钮使用“切换到自定义前端模式 / 切换到 DSH 原生模式”，当前状态可显示“当前：魔丸 / 当前：DSH 原生”；悬浮提示固定为“切换前端显示模式”。菜单始终挂载，容器展开完成（220ms）后内容再淡入。
 
