@@ -10000,8 +10000,8 @@ async function loadChatState(client, sessionId, playthrough) {
   const character = characterResponse?.character;
   const characterData = character?.data ?? character;
   const macros = {
-    user: active?.resources?.user?.name ?? "User",
-    character: characterData?.nickname ?? characterData?.name ?? character?.name ?? "Assistant"
+    user: active?.resources?.user?.name || "User",
+    character: characterData?.nickname || characterData?.name || character?.name || "Assistant"
   };
   const regexDiagnostics = [];
   const renderText = (text2, target, context) => {

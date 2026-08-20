@@ -60,7 +60,7 @@ test('Chat display expands bound user and character names without changing greet
       return { selection: { characterCardId: 'character-a', character: { greetingIndex: 0 } } }
     },
     async getCharacter() {
-      return { character: { id: 'character-a', name: 'Card', data: { nickname: 'Alice', firstMessage: greeting } } }
+      return { character: { id: 'character-a', name: 'Card', data: { nickname: '', name: 'Alice', firstMessage: greeting } } }
     },
     async getActive() { return { resources: { user: { id: 'user-a', name: 'Reader' } } } },
   }
