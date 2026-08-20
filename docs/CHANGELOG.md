@@ -4,6 +4,43 @@ This is the staged implementation log for dsh-tavern. It is kept separately
 from the product README so reviewers can follow intent, decisions, verification,
 and known limits chronologically.
 
+## 2026-08-20 — Accepted launcher and frontend-mode behavior
+
+- The floating launcher always displays `DT`. Left click immediately expands or
+  collapses the menu; rapid repeated clicks repeat that default action, and
+  double-click has no special behavior.
+- Right-click toggles the frontend display mode. The menu exposes the exact
+  labels “切换到自定义前端模式” / “切换到 DSH 原生模式” and can show
+  “当前：魔丸” / “当前：DSH 原生”. The hover title is “切换前端显示模式”
+  and does not use Lingzhu/Mowan promotional wording.
+- The menu remains mounted while opening. Its contents fade in after the 220 ms
+  container expansion completes, preventing the first-row switch button from
+  flashing. This behavior has passed user acceptance.
+
+## 2026-08-20 — Host New Session baseline and acceptance observations
+
+- DSH native New Session currently inherits the preset and other Tavern
+  selection/settings from the previously focused session by Host behavior. This
+  is a Host baseline, not a promise that native New Session starts blank.
+- The acceptance pass observed the following without inferring root causes:
+  an unbound-character-card notice whose width does not match the conversation
+  bar; starting a new playthrough from the Mowan character-card sidebar showed
+  `host.createDirectory needs browse capability` and did not auto-bind the
+  character card; an inherited-configuration new session did not automatically
+  switch RP safety mode with the character card; a new session from a bound
+  character card was not grouped into the new playthrough; and regex supplied
+  by presets/character cards was not recognized.
+
+## 2026-08-20 — Play workspace directory creation contract corrected
+
+- `POST /v2/workspace/dirs` now creates directories directly through
+  `PlayWorkspaceStore` inside the bound RP root's path jail. It does not depend
+  on the global native directory picker or `apiProxy.host.createDirectory`, so
+  both native and browse Host modes are supported.
+- The path jail still rejects absolute paths, `..`, symlink escapes, and file
+  conflicts. The earlier Host-only wording remains in the historical 2026-08-19
+  implementation entry; the current API contract is the one documented above.
+
 ## 2026-08-20 — Launcher clicks are immediate and literal
 
 - Every left click immediately performs the normal menu toggle; rapid clicks

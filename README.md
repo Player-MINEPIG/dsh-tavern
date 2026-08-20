@@ -23,7 +23,7 @@
   - [Tavern Trace](#tavern-trace)
 - [特点](#特点)
 - [文档](#文档)
-- [规划中：v2.0 灵珠魔丸](#规划中v20-灵珠魔丸)
+- [v2.0 前端显示模式与后续规划](#v20-前端显示模式与后续规划)
 - [安全风险](#安全风险)
 - [参考](#参考)
 
@@ -46,7 +46,7 @@
 
 本项目当前版本为 `1.0.0`。现有框架与核心工作流已达到首个稳定发布范围；真实 role message、严格 depth/absolute injection、完整 ST macro，以及 recursive、sticky/cooldown/delay、vector、outlet 等高级世界书语义仍受当前 DSH seam 或实现范围限制。详细兼容表见 [Prompt pipeline](docs/PROMPT_PIPELINE.md)。
 
-仓库名仍是 `dsh-tavern`。安装包名、Cordis 插件 id、HTTP 根已经改为 **`pmp-dsh-tavern`**（`package.json` name、Cordis id、`/pmp-dsh-tavern/api/v1` 资源 API）。GitHub 仓库路径不必跟着改。详见 [规划中：v2.0 灵珠魔丸](#规划中v20-灵珠魔丸)。
+仓库名仍是 `dsh-tavern`。安装包名、Cordis 插件 id、HTTP 根已经改为 **`pmp-dsh-tavern`**（`package.json` name、Cordis id、`/pmp-dsh-tavern/api/v1` 资源 API）。GitHub 仓库路径不必跟着改。详见 [v2.0 前端显示模式与后续规划](#v20-前端显示模式与后续规划)。
 
 > 本项目中的“预设”指 SillyTavern 风格的采样参数与提示词编排，不是 DSH 用于组合插件的 agent preset。
 
@@ -194,7 +194,7 @@ npm run plugin:uninstall
 
 ### DT 悬浮球与界面设置
 
-安装并重启 DSH Web 后，点击红、黑、白配色的 `DT` 悬浮球展开菜单。球体可以拖动并记忆位置；侧栏打开时球体仍会保留，可直接切换模块。
+安装并重启 DSH Web 后，页面会显示始终标记为 `DT` 的红、黑、白配色悬浮球。左键立即展开或收起菜单；快速重复点击就是重复执行这个默认切换，双击没有特殊效果。右键单击切换前端显示模式。菜单按钮会显示“切换到自定义前端模式”或“切换到 DSH 原生模式”，并显示“当前：魔丸”或“当前：DSH 原生”；悬浮提示固定为“切换前端显示模式”，不使用宣传语。菜单始终挂载，容器在 220ms 展开完成后再淡入内容，以避免首行切换按钮闪烁。球体可以拖动并记忆位置；侧栏打开时球体仍会保留，可直接切换模块。
 
 资源旁的发光绿点表示当前 session 已启用，红点表示未启用；世界书绿点表示存在有效来源，不代表本轮已经命中关键词。“界面设置”可以即时切换简体中文/English，在 75%–150% 之间缩放 Tavern UI，并开关「绑卡跟随 RP」、编辑可选的 `rp:policy` 提示词。
 
@@ -284,9 +284,9 @@ RP 是当前 session 的叠加，不是 DSH agent preset。开启后文件沙箱
 - [世界书设计](docs/world-book/DESIGN.md)：World Info 格式、匹配与投影契约
 - [CHANGELOG](docs/CHANGELOG.md)：公开发布演进
 
-## 规划中：v2.0 灵珠魔丸
+## v2.0 前端显示模式与后续规划
 
-下一阶段才接管对话表面（产品名灵珠魔丸）。蓝球切到 DSH 原前端，红球切到扮演前端；这是**全局** chrome。
+前端显示模式切换已经实现并通过用户验收。这是**全局** chrome：右键单击 `DT` 悬浮球即可切换 DSH 原生模式与自定义前端模式，菜单也提供同样的明确操作；左键只负责立即展开/收起菜单，双击没有额外动作。模式切换按钮和当前状态使用明确的功能文案，悬浮提示为“切换前端显示模式”。
 
 **标识已改为 `pmp-dsh-tavern`。** 仓库仍叫 `dsh-tavern`。安装包名、Cordis 插件 id、HTTP 根统一为 **`pmp-dsh-tavern`**。旧根 `/dsh-tavern/api` 已废止，不双根兼容：
 
@@ -311,7 +311,7 @@ v1 是本插件悬浮球 / 侧栏 / Trace 用的 bundled UI 资源合同，不�
 - **运行中保护并非全局事务锁**：显式切换 preset、角色卡、用户和世界书时会拒绝运行中的 agent；模板 API 应用到既有目标、删除/编辑已引用资源，以及修改用户—世界书关系等间接变更尚未统一锁定。已冻结请求不会被回写，但并发修改存在 assembly 时序边界。
 - **角色卡内嵌书的导入期诊断仍可加强**：角色卡导入有 32 MiB 上限；编辑和运行时解析有完整结构守卫，但导入时不会提前拒绝所有最终不可运行的超复杂内嵌书。
 - **兼容不等于完整复刻 ST**：真实 role/depth 拓扑、greeting 历史和部分高级世界书状态尚未实现。请以 Tavern Trace 与 DSH `request/header` 验证实际行为。
-- **v2.0 扮演 swipe 会放大磁盘占用（规划）**：魔丸表面的重新生成按 DSH 分支新开 session，每份分支都带着分叉点之前的完整会话日志。请把灵珠魔丸工作区放在空间充足的磁盘，不要放在系统盘（Windows 上避免 `C:\`）。自动清理未采用的分支尚未提供。导入 SillyTavern 对话时若带多组 swipe，同样会落下多份 session。
+- **v2.0 扮演 swipe 会放大磁盘占用（规划）**：自定义前端表面的重新生成按 DSH 分支新开 session，每份分支都带着分叉点之前的完整会话日志。请把扮演工作区放在空间充足的磁盘，不要放在系统盘（Windows 上避免 `C:\`）。自动清理未采用的分支尚未提供。导入 SillyTavern 对话时若带多份 session。
 
 更完整的安全预算、运行态变更缺口和数据边界见 [Loader contract](docs/LOADER_CONTRACT.md)。
 

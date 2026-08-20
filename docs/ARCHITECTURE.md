@@ -59,6 +59,8 @@ DSH system prompt + agent request
 
 统一 adapter、session 继承和 marker 契约见 `docs/LOADER_CONTRACT.md`；DSH 原生与插件增强消息流见 `docs/DSH_MESSAGE_FLOW.md`；世界书格式和投影细节见 `docs/world-book/DESIGN.md`。
 
+DSH 原生“新会话”按钮当前默认继承上一个聚焦会话的 preset 等 Tavern 选择/设定；这是 Host 基线。架构和验收不得继续把原生新会话假定为空白配置。
+
 干净会话与配置模板由 `packages/session-template` 保存纯选择投影，loader 注入真实资源库和 `SessionSelectionStore`。浏览器组合根只通过 DSH 公开的 `workspaces.connectWorkspace()` 与 `sessions.open()` 创建/导航；它不 fork 或伪造历史。完整事务边界见 `docs/LOADER_CONTRACT.md`。
 
 ## Loader-owned ActivationContext

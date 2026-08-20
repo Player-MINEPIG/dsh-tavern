@@ -20,7 +20,7 @@
 | POST | `/chrome` | 不提供 | 405 |
 | GET | `/workspace` | 根路径、是否已选、合同版本、警告 | 已实现 |
 | PUT | `/workspace` | 绑定**一棵**已存在的扮演工作区根。首次选择带 `SWIPE_DISK` / 可能的 `SYSTEM_DISK` 警告。不 mkdir 根 | 已实现 |
-| POST | `/workspace/dirs` | `{ path }` 相对路径，经 Host `createDirectory` 逐段创建。未绑根 → 409。Host 不可用 → 501。不本地 mkdir、不新注册 DSH 工作区 | 已实现 |
+| POST | `/workspace/dirs` | `{ path }` 相对路径，由 `PlayWorkspaceStore` 在已绑定根目录内的路径监狱中直接创建。兼容 native/browse Host；不依赖全局 `directory-picker` 或 `apiProxy.host.createDirectory`。未绑根 → 409；拒绝绝对路径、`..`、symlink 逃逸和文件冲突；不新注册 DSH 工作区 | 已实现 |
 | GET | `/workspace/files?path=` | 读根内 UTF-8 文件 | 已实现 |
 | PUT | `/workspace/files?path=` | `{ content }` 写根内 UTF-8 文件。`..`、绝对路径、symlink 逃逸 → 400/403 | 已实现 |
 | GET | `/workspace/files?list=` | 列一层前缀 | 已实现 |
@@ -37,7 +37,9 @@
 
 `chrome` 是整个前端的蓝/红球，存在插件 data `chrome.json`，默认 `native`。非法 `mode` → 400。GET 不要求 JSON Content-Type。
 
-`PUT /workspace` 的目录必须事先存在（DSH `workspace.create` 也不 mkdir）。`POST /workspace/dirs` 只走 Host `createDirectory`（本机绝对路径 + 单段 `name`），没有本地 `mkdir` 回退。角色卡 / 局子目录只落盘。路径监狱拒绝 `..`、绝对路径和指向根外的符号链接。未选根时 files/dirs 返回 409。不要用 `archiveSession` 收纳会话。`user-message` 的 body 不是完整 prompt。session 元 API 经 Host `apiProxy`：`session.create` / `session.fork({ atSeq })` / `session.prompt({ mode: "queue" })` / `session.history`；`PUT /workspace` 调用 `workspace.create`；开放 turn 的 fork 映射为 HTTP 409。
+客户端入口始终显示 `DT`。左键立即展开/收起菜单，快速重复点击重复同一默认行为，双击没有特殊效果；右键单击切换前端显示模式。菜单按钮使用“切换到自定义前端模式 / 切换到 DSH 原生模式”，当前状态可显示“当前：魔丸 / 当前：DSH 原生”；悬浮提示固定为“切换前端显示模式”。菜单始终挂载，容器展开完成（220ms）后内容再淡入。
+
+`PUT /workspace` 的目录必须事先存在（DSH `workspace.create` 也不 mkdir）。`POST /workspace/dirs` 由 `PlayWorkspaceStore` 在已绑定根目录内直接创建角色卡 / 局子目录，不依赖全局 `directory-picker` 或 `apiProxy.host.createDirectory`，因此 native/browse Host 都兼容。路径监狱拒绝 `..`、绝对路径、指向根外的符号链接和文件冲突。未选根时 files/dirs 返回 409。不要用 `archiveSession` 收纳会话。`user-message` 的 body 不是完整 prompt。session 元 API 经 Host `apiProxy`：`session.create` / `session.fork({ atSeq })` / `session.prompt({ mode: "queue" })` / `session.history`；`PUT /workspace` 调用 `workspace.create`；开放 turn 的 fork 映射为 HTTP 409。
 
 ## v1 bundled UI 合同
 
