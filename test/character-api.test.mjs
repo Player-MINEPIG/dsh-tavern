@@ -251,3 +251,60 @@ test('character world-book edits have an independent request and structure bound
     rmSync(directory, { recursive: true, force: true })
   }
 })
+
+test('character regex-scripts API reads and replaces native ST rules without rewriting the card', async () => {
+  const directory = mkdtempSync(join(tmpdir(), 'dsh-tavern-character-regex-'))
+  const store = new CharacterStore(directory)
+  const changes = []
+  store.import(JSON.stringify({
+    spec: 'chara_card_v2',
+    spec_version: '2.0',
+    data: {
+      name: 'Regex card',
+      description: 'Keep me',
+      extensions: {
+        kept: { future: true },
+        regex_scripts: [{ id: 'old', script_name: 'Old', find_regex: '/old/g', replace_string: 'before' }],
+      },
+    },
+  }), { id: 'character-regex' })
+  const handler = createCharacterApiHandler(store, { onChange: change => changes.push(change) })
+  try {
+    const read = await invoke(handler, {
+      url: '/pmp-dsh-tavern/api/v1/characters/character-regex/regex-scripts',
+    })
+    assert.equal(read.status, 200)
+    assert.equal(read.json.regexScripts[0].script_name, 'Old')
+
+    const regexScripts = [{
+      id: 'new',
+      script_name: 'New',
+      find_regex: '/new/g',
+      replace_string: 'after',
+      disabled: false,
+      future_extension: { preserved: true },
+    }]
+    const replaced = await invoke(handler, {
+      method: 'PUT',
+      url: '/pmp-dsh-tavern/api/v1/characters/character-regex/regex-scripts',
+      body: { regexScripts },
+    })
+    assert.equal(replaced.status, 200)
+    assert.deepEqual(replaced.json.regexScripts, regexScripts)
+    const stored = store.get('character-regex')
+    assert.deepEqual(stored.source.raw.data.extensions.regex_scripts, regexScripts)
+    assert.equal(stored.source.raw.data.extensions.kept.future, true)
+    assert.equal(stored.data.description, 'Keep me')
+    assert.deepEqual(changes, [{ kind: 'character-regex-scripts-updated', characterCardId: 'character-regex' }])
+
+    const invalid = await invoke(handler, {
+      method: 'PUT',
+      url: '/pmp-dsh-tavern/api/v1/characters/character-regex/regex-scripts',
+      body: { regexScripts: {} },
+    })
+    assert.equal(invalid.status, 400)
+    assert.deepEqual(store.get('character-regex').source.raw.data.extensions.regex_scripts, regexScripts)
+  } finally {
+    rmSync(directory, { recursive: true, force: true })
+  }
+})

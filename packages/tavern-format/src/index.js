@@ -322,3 +322,7 @@ export {
   pngCharacterCardConstants,
   stripCharacterCardPng,
 } from './png-card.js'
+export {
+  readNativeRegexScripts,
+  replaceNativeRegexScripts,
+} from './regex-scripts.js'

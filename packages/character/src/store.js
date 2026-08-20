@@ -17,6 +17,8 @@ import {
   exportCharacterCardPng,
   isPng,
   parseSillyTavernCharacterCard,
+  readNativeRegexScripts,
+  replaceNativeRegexScripts,
   stripCharacterCardPng,
 } from '../../tavern-format/src/index.js'
 import {
@@ -336,6 +338,18 @@ export class CharacterStore {
     this.persistCharacter(id, character)
     this.clampGreetingSelections(id, character)
     return character
+  }
+
+  regexScripts(id) {
+    return readNativeRegexScripts(this.get(id))
+  }
+
+  replaceRegexScripts(id, regexScripts, options = {}) {
+    const character = replaceNativeRegexScripts(this.get(id), regexScripts, {
+      ...options,
+      kind: 'character',
+    })
+    return this.persistCharacter(id, character)
   }
 
   delete(id) {

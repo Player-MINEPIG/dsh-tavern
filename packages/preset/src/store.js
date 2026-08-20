@@ -11,6 +11,8 @@ import {
   createBlankPreset,
   editPreset,
   parseSillyTavernPreset,
+  readNativeRegexScripts,
+  replaceNativeRegexScripts,
 } from '../../tavern-format/src/index.js'
 
 const ID_PATTERN = /^[a-zA-Z0-9_-]{1,100}$/
@@ -107,6 +109,17 @@ export class PresetStore {
 
   update(id, patch, options = {}) {
     return this.save(editPreset(this.get(id), patch, options))
+  }
+
+  regexScripts(id) {
+    return readNativeRegexScripts(this.get(id))
+  }
+
+  replaceRegexScripts(id, regexScripts, options = {}) {
+    return this.save(replaceNativeRegexScripts(this.get(id), regexScripts, {
+      ...options,
+      kind: 'preset',
+    }))
   }
 
   delete(id) {

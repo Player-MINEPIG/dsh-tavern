@@ -1,6 +1,6 @@
 # HTTP API
 
-状态：2026-08-19。根：`/pmp-dsh-tavern/api`。鉴权仍是本机 TCP peer、Host、Origin、Content-Type（见 loader 安全中间件）。成功响应带 `ok: true`；失败带 `ok: false` 与 `error`。
+状态：2026-08-20。根：`/pmp-dsh-tavern/api`。鉴权仍是本机 TCP peer、Host、Origin、Content-Type（见 loader 安全中间件）。成功响应带 `ok: true`；失败带 `ok: false` 与 `error`。
 
 两栏合同：
 
@@ -47,11 +47,26 @@
 
 | 当你想 | 路径 |
 | --- | --- |
-| 管预设、看当前装配、导入/选中 | `/presets`、`/active`、`/import`、`/select` |
-| 管角色卡、绑定、导出 json/png、内嵌书 | `/characters`、`/character-selection` |
+| 管预设、原生正则、看当前装配、导入/选中 | `/presets`、`/presets/:id/regex-scripts`、`/active`、`/import`、`/select` |
+| 管角色卡、原生正则、绑定、导出 json/png、内嵌书 | `/characters`、`/characters/:id/regex-scripts`、`/character-selection` |
 | 管独立世界书和绑定 | `/world-books`、`/world-book-selection` |
 | 管用户、用户-世界书关系 | `/users`、`/user-selection` |
 | 界面语言缩放、绑卡跟随 RP | `/ui-settings` |
 | RP 开关与告警、rp:policy 正文 | `/rp-mode`、`/rp-alert`、`/rp-policy` |
 | 看 Trace | `/traces` |
 | 配置模板、按当前绑定开干净会话 | `/session-templates`、`/session-configurations/preview`、`/apply` |
+
+### 资源携带的原生 ST 正则
+
+预设与角色卡使用一致的子资源合同：
+
+| 方法 | 路径 | 请求 | 成功响应 |
+| --- | --- | --- | --- |
+| GET | `/presets/:id/regex-scripts` | 无 | `{ ok: true, regexScripts: [...] }` |
+| PUT | `/presets/:id/regex-scripts` | `{ regexScripts: [...] }` | `{ ok: true, regexScripts: [...] }` |
+| GET | `/characters/:id/regex-scripts` | 无 | `{ ok: true, regexScripts: [...] }` |
+| PUT | `/characters/:id/regex-scripts` | `{ regexScripts: [...] }` | `{ ok: true, regexScripts: [...] }` |
+
+`PUT` 是完整替换，不是逐字段 merge。数组元素必须是对象；服务端不改写原生 ST 字段，也不丢弃规则内未知扩展字段。适配器优先写回资源已有的 `regex_scripts` 路径；没有现有数组时，预设写入 `extensions.regex_scripts`，V2/V3 角色卡写入 `data.extensions.regex_scripts`，V1 角色卡写入 `extensions.regex_scripts`。资源中的其他字段保持不变，写入仍经过对应 store 的原子保存和总文档体积限制。
+
+这个 v1 子资源只编辑预设或角色卡原文。它不组合全局正则，不计算当前 session 最终生效集合，不修改历史、timeline 或 AI 请求；魔丸显示管线只把保存后的资源数据作为渲染投影读取。失败响应沿用所属资源 API 的既有格式与状态码。

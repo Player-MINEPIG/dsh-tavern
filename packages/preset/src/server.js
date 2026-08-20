@@ -1,7 +1,7 @@
 import { API_V1, escapeRegExp } from '../../identity.js'
 
 const API_ROOT = API_V1
-const PRESET_ID_ROUTE = new RegExp(`^${escapeRegExp(API_V1)}/presets/([^/]+)$`)
+const PRESET_ID_ROUTE = new RegExp(`^${escapeRegExp(API_V1)}/presets/([^/]+)(?:/(regex-scripts))?$`)
 const MAX_BODY_BYTES = 2 * 1024 * 1024
 
 function sendJson(res, status, payload) {
@@ -40,9 +40,9 @@ function readJson(req) {
   })
 }
 
-function presetId(pathname) {
+function presetRoute(pathname) {
   const match = PRESET_ID_ROUTE.exec(pathname)
-  return match === null ? null : decodeURIComponent(match[1])
+  return match === null ? null : { id: decodeURIComponent(match[1]), resource: match[2] }
 }
 
 function defaultActiveView(store) {
@@ -63,7 +63,8 @@ export function createApiHandler(
       const url = new URL(req.url ?? '/', 'http://localhost')
       const path = url.pathname
       const method = req.method ?? 'GET'
-      const id = presetId(path)
+      const route = presetRoute(path)
+      const id = route?.id ?? null
       const sessionId = url.searchParams.get('sessionId') || null
 
       if (method === 'GET' && path === `${API_ROOT}/presets`) {
@@ -83,8 +84,12 @@ export function createApiHandler(
         })
       }
 
-      if (method === 'GET' && id !== null) {
+      if (method === 'GET' && id !== null && route.resource === undefined) {
         return sendJson(res, 200, { ok: true, preset: store.get(id) })
+      }
+
+      if (method === 'GET' && id !== null && route.resource === 'regex-scripts') {
+        return sendJson(res, 200, { ok: true, regexScripts: store.regexScripts(id) })
       }
 
       if (method === 'POST' && path === `${API_ROOT}/import`) {
@@ -102,13 +107,20 @@ export function createApiHandler(
         return sendJson(res, 201, { ok: true, preset })
       }
 
-      if (method === 'PUT' && id !== null) {
+      if (method === 'PUT' && id !== null && route.resource === undefined) {
         const preset = store.update(id, await readJson(req))
         onChange()
         return sendJson(res, 200, { ok: true, preset })
       }
 
-      if (method === 'DELETE' && id !== null) {
+      if (method === 'PUT' && id !== null && route.resource === 'regex-scripts') {
+        const body = await readJson(req)
+        const preset = store.replaceRegexScripts(id, body.regexScripts)
+        onChange({ kind: 'preset-regex-scripts-updated', presetId: id })
+        return sendJson(res, 200, { ok: true, regexScripts: store.regexScripts(preset.id) })
+      }
+
+      if (method === 'DELETE' && id !== null && route.resource === undefined) {
         store.delete(id)
         selectionPolicy.clearResource?.('preset', id)
         onChange()

@@ -3,7 +3,7 @@ import { API_V1, escapeRegExp } from '../../identity.js'
 import { characterStoreConstants } from './store.js'
 
 export const CHARACTER_API_PREFIX = `${API_V1}/character`
-const CHARACTER_ID_ROUTE = new RegExp(`^${escapeRegExp(API_V1)}/characters/([^/]+)(?:/(json|png|world-book))?$`)
+const CHARACTER_ID_ROUTE = new RegExp(`^${escapeRegExp(API_V1)}/characters/([^/]+)(?:/(json|png|world-book|regex-scripts))?$`)
 export const MAX_CHARACTER_BODY_BYTES = characterStoreConstants.maxArtifactBytes
 export const MAX_CHARACTER_WORLD_BOOK_BODY_BYTES = characterStoreConstants.maxEditedWorldBookBytes
 
@@ -173,6 +173,10 @@ export function createCharacterApiHandler(store, options = {}) {
         return sendArtifact(res, 200, { body: png.bytes, mediaType: png.mediaType, fileName: png.fileName })
       }
 
+      if (route !== null && method === 'GET' && route.resource === 'regex-scripts') {
+        return sendJson(res, 200, { ok: true, regexScripts: store.regexScripts(route.id) })
+      }
+
       if (route !== null && method === 'PATCH' && route.resource === undefined) {
         const body = await readJson(req, characterStoreConstants.maxCharacterDocumentBytes, {
           code: 'CHARACTER_DOCUMENT_TOO_LARGE',
@@ -191,6 +195,16 @@ export function createCharacterApiHandler(store, options = {}) {
         const character = store.updateCharacterBook(route.id, body.characterBook)
         onChange({ kind: 'character-world-book-updated', characterCardId: route.id })
         return sendJson(res, 200, { ok: true, character })
+      }
+
+      if (route !== null && method === 'PUT' && route.resource === 'regex-scripts') {
+        const body = await readJson(req, characterStoreConstants.maxCharacterDocumentBytes, {
+          code: 'CHARACTER_DOCUMENT_TOO_LARGE',
+          label: 'Character regex scripts',
+        })
+        const character = store.replaceRegexScripts(route.id, body.regexScripts)
+        onChange({ kind: 'character-regex-scripts-updated', characterCardId: route.id })
+        return sendJson(res, 200, { ok: true, regexScripts: store.regexScripts(character.id) })
       }
 
       if (route !== null && method === 'DELETE' && route.resource === undefined) {

@@ -127,3 +127,54 @@ test('preset selection policy can reject binding while the session agent is runn
     rmSync(directory, { recursive: true, force: true })
   }
 })
+
+test('preset regex-scripts API reads and replaces the native ST array without rewriting other fields', async () => {
+  const directory = mkdtempSync(join(tmpdir(), 'dsh-tavern-api-preset-regex-'))
+  const store = new PresetStore(directory)
+  const changes = []
+  const preset = store.importSillyTavern(JSON.stringify({
+    prompts: [],
+    prompt_order: [],
+    extensions: {
+      kept: { future: true },
+      regex_scripts: [{ id: 'old', script_name: 'Old', find_regex: '/old/g', replace_string: 'before', disabled: false }],
+    },
+  }), { id: 'preset-regex', name: 'Preset regex' })
+  const handler = createPresetApiHandler(store, change => changes.push(change))
+  try {
+    const read = await invoke(handler, {
+      url: `/pmp-dsh-tavern/api/v1/presets/${preset.id}/regex-scripts`,
+    })
+    assert.equal(read.status, 200)
+    assert.equal(read.body.regexScripts[0].script_name, 'Old')
+
+    const regexScripts = [{
+      id: 'new',
+      script_name: 'New',
+      find_regex: '/new/g',
+      replace_string: 'after',
+      disabled: true,
+      future_extension: { preserved: true },
+    }]
+    const replaced = await invoke(handler, {
+      method: 'PUT',
+      url: `/pmp-dsh-tavern/api/v1/presets/${preset.id}/regex-scripts`,
+      body: { regexScripts },
+    })
+    assert.equal(replaced.status, 200)
+    assert.deepEqual(replaced.body.regexScripts, regexScripts)
+    assert.deepEqual(store.get(preset.id).source.raw.extensions.regex_scripts, regexScripts)
+    assert.equal(store.get(preset.id).source.raw.extensions.kept.future, true)
+    assert.deepEqual(changes, [{ kind: 'preset-regex-scripts-updated', presetId: preset.id }])
+
+    const invalid = await invoke(handler, {
+      method: 'PUT',
+      url: `/pmp-dsh-tavern/api/v1/presets/${preset.id}/regex-scripts`,
+      body: { regexScripts: ['not-an-object'] },
+    })
+    assert.equal(invalid.status, 400)
+    assert.deepEqual(store.get(preset.id).source.raw.extensions.regex_scripts, regexScripts)
+  } finally {
+    rmSync(directory, { recursive: true, force: true })
+  }
+})
