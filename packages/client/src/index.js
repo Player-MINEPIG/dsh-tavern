@@ -883,7 +883,7 @@ function TavernShell({ useSessions, useWorkspaces, createCleanSession, playClien
           onPointerCancel: endDrag,
           onClick: clickLauncher,
           onContextMenu: contextSwitchLauncher,
-        }, chromeMode === 'play' ? 'ST' : 'DS')),
+        }, 'DT')),
       menuOpen ? h('div', { className: 'dtv-menu', role: 'menu' },
         h('div', { className: 'dtv-menu-title', 'aria-live': 'polite' }, chromeError === '' && statusError === '' ? uiMessage('nav.menuTitle', { session: sessionId || translate('nav.session.none') }) : uiMessage('nav.syncFailed', { message: chromeError || statusError })),
         h('button', {
