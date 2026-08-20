@@ -1,11 +1,22 @@
 import DOMPurifyFactory from 'dompurify'
-import { marked } from 'marked'
 import { createElement } from 'react'
+import showdown from 'showdown'
 
 const SANITIZE_OPTIONS = Object.freeze({
   USE_PROFILES: { html: true },
   FORBID_TAGS: ['script', 'iframe', 'object', 'embed', 'form', 'input', 'button', 'textarea', 'select', 'meta', 'link', 'base', 'style'],
   FORBID_ATTR: ['srcdoc'],
+})
+
+const markdownConverter = new showdown.Converter({
+  disableForced4SpacesIndentedSublists: true,
+  emoji: true,
+  literalMidWordUnderscores: true,
+  parseImgDimensions: true,
+  simpleLineBreaks: true,
+  strikethrough: true,
+  tables: true,
+  underline: true,
 })
 
 function escapeHtml(value) {
@@ -26,11 +37,7 @@ function browserPurifier() {
 }
 
 export function markdownToHtml(text) {
-  return marked.parse(String(text ?? ''), {
-    async: false,
-    breaks: true,
-    gfm: true,
-  })
+  return markdownConverter.makeHtml(String(text ?? ''))
 }
 
 export function sanitizeRenderedHtml(html, {

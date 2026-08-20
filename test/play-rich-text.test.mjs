@@ -33,8 +33,32 @@ test('Tavern rich text always delegates browser HTML to the constrained purifier
 
 test('Tavern rich text composes Markdown before sanitization', () => {
   const purifier = { sanitize: html => html }
-  assert.equal(
-    renderRichTextHtml('line 1\nline 2', { purifier, documentObject: null }).trim(),
-    '<p>line 1<br>line 2</p>',
-  )
+  const html = renderRichTextHtml('line 1\nline 2', { purifier, documentObject: null }).trim()
+  assert.match(html, /^<p>line 1<br \/>\nline 2<\/p>$/)
+})
+
+test('Tavern rich text follows ST Showdown semantics inside custom wrapper tags', () => {
+  const html = markdownToHtml(`<StatusBlock>
+>\`\`\`json
+催眠指令：
+无
+>\`\`\`
+</StatusBlock>`)
+
+  assert.match(html, /<StatusBlock>/)
+  assert.match(html, /<blockquote>/)
+  assert.match(html, /<pre><code class="json language-json">催眠指令：\n无/)
+  assert.doesNotMatch(html, /&gt;```/)
+})
+
+test('nested custom wrapper tags do not suppress inner Markdown', () => {
+  const html = markdownToHtml(`<Outer>
+<Inner>
+**Bold**
+</Inner>
+</Outer>`)
+
+  assert.match(html, /<Outer>/)
+  assert.match(html, /<Inner>/)
+  assert.match(html, /<strong>Bold<\/strong>/)
 })
