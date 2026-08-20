@@ -5,11 +5,12 @@ export function defaultViewTarget(selectedView, targetViewId) {
 }
 
 export function DefaultConversationViewAdapter({ useStore, actions, targetViewId, complete }) {
-  const selectedView = useStore(state => state.view)
+  const hasStore = typeof useStore === 'function'
+  const selectedView = hasStore ? useStore(state => state.view) : undefined
 
   useLayoutEffect(() => {
     const target = defaultViewTarget(selectedView, targetViewId)
-    if (target !== null && typeof actions?.setView === 'function') {
+    if (hasStore && target !== null && typeof actions?.setView === 'function') {
       try {
         actions.setView(target)
       } catch {
@@ -17,7 +18,7 @@ export function DefaultConversationViewAdapter({ useStore, actions, targetViewId
       }
     }
     queueMicrotask(complete)
-  }, [actions, complete, selectedView, targetViewId])
+  }, [actions, complete, hasStore, selectedView, targetViewId])
 
   return null
 }

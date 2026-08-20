@@ -12,6 +12,16 @@ export const PLAY_VIEW_ID = 'rp'
 export const PLAY_VIEW_ORDER = -100
 export const PLAY_DEFAULT_VIEW_ATTEMPT_LIMIT = 256
 
+export function findNativeChatStore(slots) {
+  if (typeof slots?.entries !== 'function') return undefined
+  const entries = slots.entries('conversation.view')
+  if (!Array.isArray(entries) && entries?.[Symbol.iterator] === undefined) return undefined
+  for (const entry of entries) {
+    if (entry?.options?.id === 'chat' && entry.store !== undefined) return entry.store
+  }
+  return undefined
+}
+
 export function installPlaySlotOccupancy(ctx, playClient) {
   let mode = 'native'
   let declared = false
@@ -177,21 +187,25 @@ export function installPlaySlotOccupancy(ctx, playClient) {
     if (chatDeclared
       && disposeDefaultViewEntry === null
       && !completedDefaultViewAttempts.has(defaultViewKey)) {
-      const complete = () => {
-        rememberDefaultViewAttempt(defaultViewKey)
-        if (defaultViewEntryKey === defaultViewKey) dropDefaultViewEntry()
+      const nativeChatStore = findNativeChatStore(ctx.slots)
+      if (nativeChatStore !== undefined) {
+        const complete = () => {
+          rememberDefaultViewAttempt(defaultViewKey)
+          if (defaultViewEntryKey === defaultViewKey) dropDefaultViewEntry()
+        }
+        defaultViewEntryKey = defaultViewKey
+        disposeDefaultViewEntry = ctx.slots.register({
+          name: 'conversation.view',
+          id: 'chat',
+          order: 0,
+          priority: PLAY_SLOT_PRIORITY,
+          store: nativeChatStore,
+          inject: () => ({
+            targetViewId: PLAY_VIEW_ID,
+            complete,
+          }),
+        }, DefaultConversationViewAdapter)
       }
-      defaultViewEntryKey = defaultViewKey
-      disposeDefaultViewEntry = ctx.slots.register({
-        name: 'conversation.view',
-        id: 'chat',
-        order: 0,
-        priority: PLAY_SLOT_PRIORITY,
-        inject: () => ({
-          targetViewId: PLAY_VIEW_ID,
-          complete,
-        }),
-      }, DefaultConversationViewAdapter)
     }
     if (!ioDeclared) {
       dropIoEntry()

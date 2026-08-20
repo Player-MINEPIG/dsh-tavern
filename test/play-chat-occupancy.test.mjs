@@ -4,6 +4,7 @@ import {
   PLAY_SLOT_PRIORITY,
   PLAY_VIEW_ID,
   PLAY_VIEW_ORDER,
+  findNativeChatStore,
   installPlaySlotOccupancy,
 } from '../packages/client/src/play/occupancy.js'
 
@@ -23,6 +24,7 @@ test('Mowan adds the default RP view only while the current session belongs to a
   let notifySessions = () => {}
   const registrations = []
   const declarationCleanups = []
+  const nativeChatStore = { create() {} }
   const playthrough = {
     id: 'pt-a',
     path: 'characters/a/playthroughs/pt-a/timeline.json',
@@ -45,6 +47,11 @@ test('Mowan adds the default RP view only while the current session belongs to a
       },
     },
     slots: {
+      entries(name) {
+        return name === 'conversation.view'
+          ? [{ options: { id: 'chat' }, store: nativeChatStore }]
+          : []
+      },
       inject(_name, callback) { declarationCleanups.push(callback()) },
       register(options, component) {
         const registration = { options, component, active: true }
@@ -71,6 +78,7 @@ test('Mowan adds the default RP view only while the current session belongs to a
   assert.ok(firstAdapter)
   assert.equal(firstAdapter.active, true)
   assert.equal(firstAdapter.options.priority, PLAY_SLOT_PRIORITY)
+  assert.equal(firstAdapter.options.store, nativeChatStore)
   assert.equal(firstAdapter.options.inject().targetViewId, PLAY_VIEW_ID)
 
   snapshot = {
@@ -113,6 +121,20 @@ test('Mowan adds the default RP view only while the current session belongs to a
   occupancy.setMode('native')
   assert.equal(chats[2].active, false)
   for (const cleanup of declarationCleanups) cleanup()
+})
+
+test('default view adapter reuses only the native chat store', () => {
+  const nativeChatStore = { create() {} }
+  assert.equal(findNativeChatStore({
+    entries() {
+      return [
+        { options: { id: 'rp' }, store: { create() {} } },
+        { options: { id: 'chat' }, store: nativeChatStore },
+      ]
+    },
+  }), nativeChatStore)
+  assert.equal(findNativeChatStore({ entries() { return [] } }), undefined)
+  assert.equal(findNativeChatStore({}), undefined)
 })
 
 test('Chat classification failures preserve the official view', async () => {

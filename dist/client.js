@@ -5967,17 +5967,18 @@ function defaultViewTarget(selectedView, targetViewId) {
   return selectedView === null || selectedView === void 0 ? targetViewId : null;
 }
 function DefaultConversationViewAdapter({ useStore, actions, targetViewId, complete }) {
-  const selectedView = useStore((state) => state.view);
+  const hasStore = typeof useStore === "function";
+  const selectedView = hasStore ? useStore((state) => state.view) : void 0;
   (0, import_react12.useLayoutEffect)(() => {
     const target = defaultViewTarget(selectedView, targetViewId);
-    if (target !== null && typeof actions?.setView === "function") {
+    if (hasStore && target !== null && typeof actions?.setView === "function") {
       try {
         actions.setView(target);
       } catch {
       }
     }
     queueMicrotask(complete);
-  }, [actions, complete, selectedView, targetViewId]);
+  }, [actions, complete, hasStore, selectedView, targetViewId]);
   return null;
 }
 
@@ -5986,6 +5987,15 @@ var PLAY_SLOT_PRIORITY = -100;
 var PLAY_VIEW_ID = "rp";
 var PLAY_VIEW_ORDER = -100;
 var PLAY_DEFAULT_VIEW_ATTEMPT_LIMIT = 256;
+function findNativeChatStore(slots) {
+  if (typeof slots?.entries !== "function") return void 0;
+  const entries = slots.entries("conversation.view");
+  if (!Array.isArray(entries) && entries?.[Symbol.iterator] === void 0) return void 0;
+  for (const entry of entries) {
+    if (entry?.options?.id === "chat" && entry.store !== void 0) return entry.store;
+  }
+  return void 0;
+}
 function installPlaySlotOccupancy(ctx, playClient) {
   let mode = "native";
   let declared = false;
@@ -6133,21 +6143,25 @@ function installPlaySlotOccupancy(ctx, playClient) {
     }
     const defaultViewKey = `${chatBinding.signature}\0${chatBinding.playthrough.path}`;
     if (chatDeclared && disposeDefaultViewEntry === null && !completedDefaultViewAttempts.has(defaultViewKey)) {
-      const complete = () => {
-        rememberDefaultViewAttempt(defaultViewKey);
-        if (defaultViewEntryKey === defaultViewKey) dropDefaultViewEntry();
-      };
-      defaultViewEntryKey = defaultViewKey;
-      disposeDefaultViewEntry = ctx.slots.register({
-        name: "conversation.view",
-        id: "chat",
-        order: 0,
-        priority: PLAY_SLOT_PRIORITY,
-        inject: () => ({
-          targetViewId: PLAY_VIEW_ID,
-          complete
-        })
-      }, DefaultConversationViewAdapter);
+      const nativeChatStore = findNativeChatStore(ctx.slots);
+      if (nativeChatStore !== void 0) {
+        const complete = () => {
+          rememberDefaultViewAttempt(defaultViewKey);
+          if (defaultViewEntryKey === defaultViewKey) dropDefaultViewEntry();
+        };
+        defaultViewEntryKey = defaultViewKey;
+        disposeDefaultViewEntry = ctx.slots.register({
+          name: "conversation.view",
+          id: "chat",
+          order: 0,
+          priority: PLAY_SLOT_PRIORITY,
+          store: nativeChatStore,
+          inject: () => ({
+            targetViewId: PLAY_VIEW_ID,
+            complete
+          })
+        }, DefaultConversationViewAdapter);
+      }
     }
     if (!ioDeclared) {
       dropIoEntry();
