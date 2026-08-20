@@ -34,6 +34,24 @@ test('completed real message pairs append QA references without copying content'
   assert.equal(JSON.stringify(result.timeline).includes('tool data'), false)
 })
 
+test('model-visible runtime context stays inside the preceding real user turn', () => {
+  const result = appendCompletedTurns({ nodes: [] }, {
+    incompleteTurn: false,
+    messages: [
+      { id: 'user-1', role: 'user', seq: 9, text: '姐我饿了。' },
+      { id: 'runtime-1', role: 'user', seq: 10, text: 'Current runtime context.' },
+      { id: 'assistant-1', role: 'assistant', seq: 1421, text: '给你做蛋包饭。' },
+      { id: 'user-2', role: 'user', seq: 1428, text: '姐我饿了' },
+      { id: 'assistant-2', role: 'assistant', seq: 6497, text: '再给你煮面。' },
+    ],
+  }, 'session-a', { idFactory: ids })
+
+  assert.deepEqual(result.timeline.nodes.map(node => node.variants[0]), [
+    { id: 'variant-session-a-9-1421', sessionId: 'session-a', startEventId: 9, endEventId: 1421 },
+    { id: 'variant-session-a-1428-6497', sessionId: 'session-a', startEventId: 1428, endEventId: 6497 },
+  ])
+})
+
 test('open or already-recorded turns never append a duplicate', () => {
   const existing = {
     nodes: [{

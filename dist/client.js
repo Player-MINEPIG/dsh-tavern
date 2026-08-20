@@ -4315,18 +4315,10 @@ function appendCompletedTurns(timeline, messageState, sessionId, {
   const boundary = recordedEndSeq(timeline, sessionId);
   const messages = [...messageState?.messages ?? []].filter((message) => Number.isSafeInteger(message.seq) && message.seq > boundary).sort((left, right) => left.seq - right.seq);
   const added = [];
-  let cursor = 0;
-  while (cursor < messages.length) {
-    while (cursor < messages.length && messages[cursor].role !== "user") cursor += 1;
-    if (cursor >= messages.length) break;
-    const user = messages[cursor];
-    cursor += 1;
-    let assistant = null;
-    while (cursor < messages.length && messages[cursor].role !== "user") {
-      if (messages[cursor].role === "assistant") assistant = messages[cursor];
-      cursor += 1;
-    }
-    if (assistant === null) break;
+  let user = null;
+  let assistant = null;
+  const appendPair = () => {
+    if (user === null || assistant === null) return;
     const nodeId = idFactory("qa", sessionId, user.seq, assistant.seq);
     const variantId = idFactory("variant", sessionId, user.seq, assistant.seq);
     added.push({
@@ -4342,7 +4334,21 @@ function appendCompletedTurns(timeline, messageState, sessionId, {
         endEventId: assistant.seq
       }]
     });
+  };
+  for (const message of messages) {
+    if (message.role === "user") {
+      if (user === null) {
+        user = message;
+      } else if (assistant !== null) {
+        appendPair();
+        user = message;
+        assistant = null;
+      }
+    } else if (message.role === "assistant" && user !== null) {
+      assistant = message;
+    }
   }
+  appendPair();
   if (added.length === 0) return { timeline, added };
   return { timeline: { ...timeline, nodes: [...timeline.nodes, ...added] }, added };
 }
