@@ -172,10 +172,18 @@ export function normalizeSessionMessages(value, label = 'messages') {
 
 export function normalizeFocus(value, label = 'focus') {
   if (!isRecord(value)) fail(label, 'must be an object')
-  if (value.sessionId !== null && (typeof value.sessionId !== 'string' || value.sessionId === '')) {
-    fail(label, 'sessionId must be a non-empty string or null')
+  const nullableId = (field, fieldLabel) => {
+    if (value[field] !== null && (typeof value[field] !== 'string' || value[field].trim() === '')) {
+      fail(label, `${fieldLabel} must be a non-empty string or null`)
+    }
+    return value[field]
   }
-  return { sessionId: value.sessionId }
+  return {
+    playthroughId: stringId(value.playthroughId, `${label}.playthroughId`),
+    sessionId: nullableId('sessionId', 'sessionId'),
+    nodeId: nullableId('nodeId', 'nodeId'),
+    variantId: nullableId('variantId', 'variantId'),
+  }
 }
 
 export function timelinePath(value, label = 'timeline path') {

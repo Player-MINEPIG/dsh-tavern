@@ -256,10 +256,15 @@ export function createLivePlayClient({
     },
 
     async getFocus(playthrough) {
-      const query = playthrough === undefined
-        ? ''
-        : pathQuery(timelinePath(playthrough))
-      return normalizeFocus(await v2('GET', `/focus${query}`))
+      const playthroughId = playthrough?.id
+      if (typeof playthroughId !== 'string' || playthroughId.trim() === '') {
+        throw new TypeError('playthrough.id must be a non-empty string')
+      }
+      const focus = normalizeFocus(await v2('GET', `/playthroughs/${encodeURIComponent(playthroughId)}/focus`))
+      if (focus.playthroughId !== playthroughId) {
+        throw new TypeError('focus.playthroughId does not match playthrough.id')
+      }
+      return focus
     },
 
     postUserMessage(sessionId, text) {

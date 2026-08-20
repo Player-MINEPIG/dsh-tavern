@@ -90,7 +90,7 @@ test('play schema matches integer event seqs, QA-only timelines, and ContentPart
     incompleteTurn: false,
   }), /non-negative integer/)
   assert.equal(projected.messages[0].seq, 12)
-  assert.deepEqual(normalizeFocus({ sessionId: null }), { sessionId: null })
+  assert.deepEqual(normalizeFocus({ playthroughId: 'playthrough-1', sessionId: null, nodeId: null, variantId: null }), { playthroughId: 'playthrough-1', sessionId: null, nodeId: null, variantId: null })
   assert.equal(projectContentText([{ type: 'text', text: 'a' }, { type: 'tool' }]), 'a⟦tool⟧')
 })
 
@@ -129,7 +129,7 @@ test('live play client parses JSON file envelopes and writes them as content str
     if (url.includes('/sessions/session-1/import-context')) {
       return response({ ok: true, binding: (options.method ?? 'GET') === 'DELETE' ? null : { path: 'character-1/playthrough-1/import-context.json', state: 'pending' } })
     }
-    if (url.includes('/focus?path=')) return response({ ok: true, sessionId: null })
+    if (url.startsWith(API_V2 + '/playthroughs/') && url.endsWith('/focus')) return response({ ok: true, playthroughId: 'playthrough-1', sessionId: null, nodeId: null, variantId: null })
     if (url === API_V1 + '/characters') {
       return response({ ok: true, characters: [{ id: 'character-1', name: 'Guide' }] })
     }
@@ -180,8 +180,9 @@ test('live play client parses JSON file envelopes and writes them as content str
   assert.deepEqual(JSON.parse(JSON.parse(timelinePut.body).content), timeline)
   assert.equal(JSON.parse(timelinePut.body).expectedRevision, timelineRevision)
 
-  const focusCall = calls.find(item => item.url.includes('/focus?path='))
-  assert.match(focusCall.url, /timeline\.json/)
+  const focusCall = calls.find(item => item.url.endsWith('/playthroughs/playthrough-1/focus'))
+  assert.ok(focusCall)
+  assert.doesNotMatch(focusCall.url, /[?&]path=/)
   const branchCall = calls.find(item => item.url.endsWith('/branch'))
   assert.equal(JSON.parse(branchCall.body).atEventId, 19)
   const selectionPosts = calls.filter(item => item.method === 'POST' && item.url === API_V1 + '/character-selection')
@@ -195,6 +196,48 @@ test('live play client parses JSON file envelopes and writes them as content str
   assert.throws(() => client.postBranch('session-1', '19'), /non-negative integer/)
 })
 
+test('live focus uses the encoded playthrough id and validates the stable response', async () => {
+  const calls = []
+  const client = createLivePlayClient({
+    fetchImpl: async url => {
+      calls.push(url)
+      return response({ ok: true, playthroughId: 'run/with space', sessionId: 'session-a', nodeId: 'node-a', variantId: 'variant-a' })
+    },
+  })
+  const result = await client.getFocus({ id: 'run/with space', path: 'ignored/timeline.json' })
+  assert.deepEqual(result, {
+    playthroughId: 'run/with space',
+    sessionId: 'session-a',
+    nodeId: 'node-a',
+    variantId: 'variant-a',
+  })
+  assert.deepEqual(calls, [API_V2 + '/playthroughs/run%2Fwith%20space/focus'])
+})
+
+test('live focus rejects missing ids, mismatched ids, and malformed nullable fields', async () => {
+  let calls = 0
+  const client = createLivePlayClient({
+    fetchImpl: async () => {
+      calls += 1
+      return response({ ok: true, playthroughId: 'other', sessionId: null, nodeId: null, variantId: null })
+    },
+  })
+  await assert.rejects(client.getFocus(), error => error instanceof TypeError && /playthrough\.id/.test(error.message))
+  await assert.rejects(client.getFocus({ id: 'requested' }), error => error instanceof TypeError && /does not match/.test(error.message))
+  assert.equal(calls, 1)
+
+  for (const field of ['sessionId', 'nodeId', 'variantId']) {
+    const malformed = createLivePlayClient({
+      fetchImpl: async () => response({ ok: true, playthroughId: 'requested', sessionId: null, nodeId: null, variantId: null, [field]: '' }),
+    })
+    await assert.rejects(malformed.getFocus({ id: 'requested' }), error => error instanceof TypeError && new RegExp(field).test(error.message))
+  }
+
+  const empty = createLivePlayClient({
+    fetchImpl: async () => response({ ok: true, playthroughId: 'requested', sessionId: null, nodeId: null, variantId: null }),
+  })
+  assert.deepEqual(await empty.getFocus({ id: 'requested' }), { playthroughId: 'requested', sessionId: null, nodeId: null, variantId: null })
+})
 test('live client preserves structured HTTP failures', async () => {
   const client = createLivePlayClient({
     fetchImpl: async () => response({
