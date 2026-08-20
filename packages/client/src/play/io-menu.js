@@ -53,6 +53,7 @@ function downloadDocument(playthrough, document) {
 export function PlayIoMenu({ playClient, playthrough, openSession, trigger = '+', placement = 'composer' }) {
   installStyles()
   const root = useRef(null)
+  const importInput = useRef(null)
   const [open, setOpen] = useState(false)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
@@ -60,7 +61,6 @@ export function PlayIoMenu({ playClient, playthrough, openSession, trigger = '+'
   useEffect(() => {
     if (!open) return undefined
     const close = event => {
-  const importInput = useRef(null)
       if (!root.current?.contains(event.target)) setOpen(false)
     }
     window.document.addEventListener('pointerdown', close)

@@ -5003,13 +5003,13 @@ function downloadDocument(playthrough, document2) {
 function PlayIoMenu({ playClient, playthrough, openSession, trigger = "+", placement = "composer" }) {
   installStyles3();
   const root = (0, import_react9.useRef)(null);
+  const importInput = (0, import_react9.useRef)(null);
   const [open, setOpen] = (0, import_react9.useState)(false);
   const [busy, setBusy] = (0, import_react9.useState)(false);
   const [error, setError] = (0, import_react9.useState)("");
   (0, import_react9.useEffect)(() => {
     if (!open) return void 0;
     const close = (event) => {
-      const importInput2 = (0, import_react9.useRef)(null);
       if (!root.current?.contains(event.target)) setOpen(false);
     };
     window.document.addEventListener("pointerdown", close);
