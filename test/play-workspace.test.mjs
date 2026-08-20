@@ -13,11 +13,27 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { Readable } from 'node:stream'
 import { API_V2 } from '../packages/identity.js'
+import { writeAllSync } from '../packages/play/src/index.js'
 import {
   ChromeStore,
   PlayWorkspaceStore,
   createPlayApiHandler,
 } from '../packages/tavern-loader/src/index.js'
+
+
+
+test('writeAllSync completes partial writes and rejects a no-progress write', () => {
+  const source = Buffer.from('abcdef', 'utf8')
+  const chunks = []
+  const written = writeAllSync('fd', source, (_fd, bytes, offset, length) => {
+    const count = Math.min(2, length)
+    chunks.push(bytes.subarray(offset, offset + count))
+    return count
+  })
+  assert.equal(written, source.length)
+  assert.deepEqual(Buffer.concat(chunks), source)
+  assert.throws(() => writeAllSync('fd', source, () => 0), error => error?.code === 'PLAY_FILE_WRITE_FAILED')
+})
 
 function invoke(handler, { method = 'GET', url, body } = {}) {
   return new Promise((resolve, reject) => {

@@ -85,6 +85,19 @@ function assertExpectedRevision(value, present) {
   }
 }
 
+export function writeAllSync(descriptor, content, write = writeSync) {
+  const bytes = Buffer.isBuffer(content) ? content : Buffer.from(content, 'utf8')
+  let offset = 0
+  while (offset < bytes.length) {
+    const written = write(descriptor, bytes, offset, bytes.length - offset)
+    if (!Number.isInteger(written) || written <= 0) {
+      throw httpError(500, 'temporary file write made no progress', 'PLAY_FILE_WRITE_FAILED')
+    }
+    offset += written
+  }
+  return offset
+}
+
 export function workspaceWarnings(rootPath, { firstSelection = false } = {}) {
   const warnings = [
     {
@@ -300,7 +313,7 @@ export class PlayWorkspaceStore {
       let descriptor = null
       try {
         descriptor = openSync(temporary, 'wx', 0o600)
-        writeSync(descriptor, content, null, 'utf8')
+        writeAllSync(descriptor, content)
         closeSync(descriptor)
         descriptor = null
         if (typeof this.beforeRename === 'function') this.beforeRename({ absolute, parent })

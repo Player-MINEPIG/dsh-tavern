@@ -9,6 +9,7 @@ export {
   createWorkspaceApiHandler,
   playWorkspaceConstants,
   workspaceWarnings,
+  writeAllSync,
 } from './workspace.js'
 export { createPlayApiHandler, isPlayApiPath } from './server.js'
 export {
