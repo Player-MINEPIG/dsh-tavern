@@ -6,6 +6,7 @@ import {
   loadCurrentPlaythrough,
   projectLiveTurns,
   projectTimelineQa,
+  sessionHasConversationHistory,
   sessionIsInRpWorkspace,
 } from '../packages/client/src/play/chat-model.js'
 
@@ -48,6 +49,16 @@ test('current playthrough classification is workspace-first', async () => {
   assert.equal(match.playthrough.id, 'pt-a')
   assert.equal(match.timeline, timeline)
   assert.deepEqual(calls, ['workspace', 'workspace', 'catalog', 'timeline'])
+})
+
+test('conversation history ignores non-conversation session events', () => {
+  assert.equal(sessionHasConversationHistory({ messages: [] }), false)
+  assert.equal(sessionHasConversationHistory({ messages: [
+    { role: 'system' },
+    { role: 'tool' },
+  ] }), false)
+  assert.equal(sessionHasConversationHistory({ messages: [{ role: 'user' }] }), true)
+  assert.equal(sessionHasConversationHistory({ messages: [{ role: 'assistant' }] }), true)
 })
 
 test('variant sessions resolve to their owning playthrough', () => {

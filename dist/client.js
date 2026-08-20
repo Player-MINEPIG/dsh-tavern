@@ -5530,7 +5530,7 @@ function DiagnosticList({ titleKey, items }) {
 function patchDraft(setter, field, value) {
   setter((current2) => current2 === null ? current2 : { ...current2, [field]: value });
 }
-function CharacterPanel({ sessionId, sessionBlank, close }) {
+function CharacterPanel({ sessionId, sessionBlank, hasConversationHistory, close }) {
   const [catalog2, setCatalog] = (0, import_react2.useState)(null);
   const [detail, setDetail] = (0, import_react2.useState)(null);
   const [draft, setDraft] = (0, import_react2.useState)(null);
@@ -5672,7 +5672,10 @@ function CharacterPanel({ sessionId, sessionBlank, close }) {
   const bind = (0, import_react2.useCallback)(() => run(async () => {
     if (!sessionId) throw uiError("character.error.needSession");
     if (dirty) throw uiError("character.error.saveFirst");
-    if (selection?.characterCardId !== binding?.characterCardId && sessionBlank === false && !window.confirm(unwrapText(uiMessage("character.confirmHistoricalSwitch")))) return;
+    if (selection?.characterCardId !== binding?.characterCardId) {
+      const historical = typeof hasConversationHistory === "function" ? await hasConversationHistory(sessionId) : sessionBlank === false;
+      if (historical && !window.confirm(unwrapText(uiMessage("character.confirmHistoricalSwitch")))) return;
+    }
     const data = await api2("/character-selection", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -5683,7 +5686,7 @@ function CharacterPanel({ sessionId, sessionBlank, close }) {
     const rpData = await api2(`/rp-mode?sessionId=${encodeURIComponent(sessionId)}`);
     setRp(rpData.rp ?? { active: false });
     announceTavernRefresh2();
-  }, "character.status.bound"), [binding, dirty, run, selection, sessionBlank, sessionId]);
+  }, "character.status.bound"), [binding, dirty, hasConversationHistory, run, selection, sessionBlank, sessionId]);
   const unbind = (0, import_react2.useCallback)(() => run(async () => {
     if (!sessionId) throw uiError("character.error.noSessionToUnbind");
     await api2("/character-selection", {
@@ -7527,6 +7530,9 @@ function sessionIsInRpWorkspace(workspace, session) {
   if (workspace?.selected !== true || session == null) return false;
   const root = normalizedPath(workspace.rootPath);
   return root !== "" && normalizedPath(session.cwd) === root;
+}
+function sessionHasConversationHistory(response) {
+  return (response?.messages ?? []).some((message) => message?.role === "user" || message?.role === "assistant");
 }
 function findPlaythroughForSession(sessionId, catalog2, timelines = {}) {
   if (typeof sessionId !== "string" || sessionId === "") return null;
@@ -12707,6 +12713,10 @@ function TavernShell({ useSessions, useWorkspaces, createCleanSession, playClien
   const sessionId = useSessions((state) => state.current);
   const sessionBlank = useSessions((state) => state.current === void 0 || state.current === null ? true : state.byId?.[state.current]?.blank === true);
   const workspaceId = useWorkspaces((state) => workspaceTargetId(state, sessionId));
+  const hasConversationHistory = (0, import_react15.useCallback)(async (targetSessionId) => {
+    const messages = await playClient.getMessages(targetSessionId);
+    return sessionHasConversationHistory(messages);
+  }, [playClient]);
   const close = () => setSurface(null);
   if (rpAlert === null || dismissedRpAlerts.current.has(rpAlert.id)) rpAlertRef.current = null;
   else rpAlertRef.current = rpAlert;
@@ -13010,7 +13020,7 @@ function TavernShell({ useSessions, useWorkspaces, createCleanSession, playClien
       autoOpen: false
     }));
   } else if (surface === "character") {
-    panel = h13(CharacterPanel, { sessionId, sessionBlank, close });
+    panel = h13(CharacterPanel, { sessionId, sessionBlank, hasConversationHistory, close });
   } else if (surface === "regex" && chromeMode === "play") {
     panel = h13(RegexPanel, { client: playClient, activeSnapshot, close });
   } else if (surface === "world-info") {

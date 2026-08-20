@@ -36,6 +36,7 @@ import {
 import { createChromeClickController } from './play/chrome.js'
 import { installPlaySlotOccupancy } from './play/occupancy.js'
 import { createLivePlayClient } from './play/live.js'
+import { sessionHasConversationHistory } from './play/chat-model.js'
 import { RegexPanel } from './play/regex-panel.js'
 import { API_V1 as API_ROOT, CLIENT_REFRESH_EVENT, PLUGIN_ID } from '../../identity.js'
 
@@ -510,6 +511,10 @@ function TavernShell({ useSessions, useWorkspaces, createCleanSession, playClien
   const sessionId = useSessions(state => state.current)
   const sessionBlank = useSessions(state => state.current === undefined || state.current === null ? true : state.byId?.[state.current]?.blank === true)
   const workspaceId = useWorkspaces(state => workspaceTargetId(state, sessionId))
+  const hasConversationHistory = useCallback(async targetSessionId => {
+    const messages = await playClient.getMessages(targetSessionId)
+    return sessionHasConversationHistory(messages)
+  }, [playClient])
   const close = () => setSurface(null)
   if (rpAlert === null || dismissedRpAlerts.current.has(rpAlert.id)) rpAlertRef.current = null
   else rpAlertRef.current = rpAlert
@@ -828,7 +833,7 @@ function TavernShell({ useSessions, useWorkspaces, createCleanSession, playClien
       autoOpen: false,
     }))
   } else if (surface === 'character') {
-    panel = h(CharacterPanel, { sessionId, sessionBlank, close })
+    panel = h(CharacterPanel, { sessionId, sessionBlank, hasConversationHistory, close })
   } else if (surface === 'regex' && chromeMode === 'play') {
     panel = h(RegexPanel, { client: playClient, activeSnapshot, close })
   } else if (surface === 'world-info') {

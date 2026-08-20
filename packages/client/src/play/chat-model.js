@@ -70,6 +70,10 @@ export function sessionIsInRpWorkspace(workspace, session) {
   return root !== '' && normalizedPath(session.cwd) === root
 }
 
+export function sessionHasConversationHistory(response) {
+  return (response?.messages ?? []).some(message => message?.role === 'user' || message?.role === 'assistant')
+}
+
 export function findPlaythroughForSession(sessionId, catalog, timelines = {}) {
   if (typeof sessionId !== 'string' || sessionId === '') return null
   for (const playthrough of catalog?.playthroughs ?? []) {

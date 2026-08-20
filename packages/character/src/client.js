@@ -70,7 +70,7 @@ function patchDraft(setter, field, value) {
   setter((current) => current === null ? current : { ...current, [field]: value })
 }
 
-export function CharacterPanel({ sessionId, sessionBlank, close }) {
+export function CharacterPanel({ sessionId, sessionBlank, hasConversationHistory, close }) {
   const [catalog, setCatalog] = useState(null)
   const [detail, setDetail] = useState(null)
   const [draft, setDraft] = useState(null)
@@ -227,9 +227,12 @@ export function CharacterPanel({ sessionId, sessionBlank, close }) {
   const bind = useCallback(() => run(async () => {
     if (!sessionId) throw uiError('character.error.needSession')
     if (dirty) throw uiError('character.error.saveFirst')
-    if (selection?.characterCardId !== binding?.characterCardId
-      && sessionBlank === false
-      && !window.confirm(unwrapText(uiMessage('character.confirmHistoricalSwitch')))) return
+    if (selection?.characterCardId !== binding?.characterCardId) {
+      const historical = typeof hasConversationHistory === 'function'
+        ? await hasConversationHistory(sessionId)
+        : sessionBlank === false
+      if (historical && !window.confirm(unwrapText(uiMessage('character.confirmHistoricalSwitch')))) return
+    }
     const data = await api('/character-selection', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -240,7 +243,7 @@ export function CharacterPanel({ sessionId, sessionBlank, close }) {
     const rpData = await api(`/rp-mode?sessionId=${encodeURIComponent(sessionId)}`)
     setRp(rpData.rp ?? { active: false })
     announceTavernRefresh()
-  }, 'character.status.bound'), [binding, dirty, run, selection, sessionBlank, sessionId])
+  }, 'character.status.bound'), [binding, dirty, hasConversationHistory, run, selection, sessionBlank, sessionId])
 
   const unbind = useCallback(() => run(async () => {
     if (!sessionId) throw uiError('character.error.noSessionToUnbind')
