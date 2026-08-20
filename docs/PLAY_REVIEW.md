@@ -39,7 +39,7 @@ timeline 只保存 session/event 范围引用；路径 API 有根目录、相对
 | 半完成资源 | 不增加跨文件事务。每个生命周期变更 API 使用同一 `operationId` 通过 `ctx.logger` 记录阶段/结果/错误码/耗时；客户端回读并恢复。只记录标识和摘要，不记录正文。 |
 | import-context 请求语义 | 首次 assembly 按原用户 turn/event claim；同一回合 retry/swipe 可重放；中断后新用户消息不重复；成功后保留 lineage 供未来 swipe。 |
 | catalog schema | 已实现：PUT 写前和 GET 读后都校验。id/规范化 path 唯一；id 使用安全段；path 为安全相对路径且以 `/timeline.json` 结尾；校验已知 `ext.pmpDshTavern`，保留第三方 ext。 |
-| focus | 已实现任务 07：稳定入口按已校验 catalog 和安全周目 id 解析路径，返回 playthroughId/sessionId/nodeId/variantId；空周目使用 rootSessionId。旧 /focus?path= 仍兼容，无 path 返回 400；普通 timeline PUT 不再更新 deprecated/ignored 的 activeTimelinePath。bundled client 迁移待任务 08。 |
+| focus | 已实现任务 07：稳定入口按已校验 catalog 和安全周目 id 解析路径，返回 playthroughId/sessionId/nodeId/variantId；空周目使用 rootSessionId。旧 /focus?path= 仍兼容，无 path 返回 400；普通 timeline PUT 不再更新 deprecated/ignored 的 activeTimelinePath。任务 08 已完成 bundled live client 迁移：只传 URL 编码的 playthrough id，并校验四字段及返回 id 一致。 |
 | 路径 TOCTOU | `packages/play/src/workspace.js`、`packages/play/src/paths.js` | 已实现进程内 per-target guard；路径链逐段 `lstat`，拒绝 Node 暴露的 symlink/junction，目录逐层非 recursive 创建并 realpath 复核，临时文件 `openSync(..., 'wx')` 排他创建，写入和 rename 前复验父目录。测试包含根内链接拒绝、父目录替换注入、异常清理/锁释放（当前 Windows 无 symlink 权限时稳定 skip）。 | 这是纯 Node 的实用加固，不是跨进程锁或内核级 no-follow 事务；外部本机进程仍可制造极窄竞态，CAS/native addon 另行处理。 |
 | 更广日志 | 本轮只支持 Cordis `ctx.logger`。其默认是进程内最近 1000 条记录的 ring buffer，未发现本插件自行写持久日志。浏览器 logger、持久有界 journal 和额外 exporter 进入 backlog，不阻塞本轮实现。 |
 
@@ -58,7 +58,7 @@ timeline 只保存 session/event 范围引用；路径 API 有根目录、相对
 | --- | --- | --- | --- |
 | P2 安全（已关闭，任务 03） | `packages/play/src/workspace.js`、`packages/play/src/paths.js` | 已实现实用路径加固：目标锁、逐段 no-follow 检查、逐层创建、realpath 复核、排他临时写和 rename 前父目录复验。 | 纯 Node 不宣称跨进程或内核级 no-follow 事务；外部进程极窄竞态和 revision/CAS 仍单独处理。 |
 | P2 schema/兼容（已关闭，任务 02） | `packages/play/src/timeline.js`、`workspace.js` | catalog/timeline 已在 GET/PUT 两侧统一校验；危险 path、重复 id/path、已知 `pmpDshTavern` 字段坏值均显式返回 `PLAY_CATALOG_INVALID` / `PLAY_TIMELINE_INVALID`，第三方 ext 保留。服务端 revision/CAS 已在同一目标 guard 内完成；TOCTOU 路径加固已完成。 | 内置 live client 原语与普通生命周期 caller 迁移均已完成。 |
-| P2 focus 语义 | 已关闭（任务 07）：稳定 focus 不再依赖最近写入或 lastOpenedAt；activeTimelinePath 仅为兼容字段保留并 deprecated/ignored，普通 timeline PUT 不再更新。 | bundled client 迁移到 playthrough-id focus 仍由任务 08 完成。 |
+| P2 focus 语义 | 已关闭（任务 07/08）：稳定 focus 不再依赖最近写入或 lastOpenedAt；activeTimelinePath 仅为兼容字段保留并 deprecated/ignored，普通 timeline PUT 不再更新。bundled live client 只按 URL 编码的 playthrough id 调用稳定入口，并验证 playthroughId/sessionId/nodeId/variantId。 | 旧 `/focus?path=` 仅保留迁移兼容；custom client 可继续显式传 path。 |
 
 ## 不应在后续实现中倒退的边界
 
