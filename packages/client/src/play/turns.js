@@ -1,3 +1,5 @@
+import { updateTimeline } from './mutations.js'
+
 function recordedEndSeq(timeline, sessionId) {
   let end = -1
   for (const node of timeline?.nodes ?? []) {
@@ -71,11 +73,16 @@ export function createTurnReconciler(client) {
     const task = pending.then(async () => {
       const messages = await client.getMessages(sessionId)
       if (messages.incompleteTurn) return { timeline: null, added: [] }
-      const timeline = await client.getTimeline(playthrough)
-      const next = appendCompletedTurns(timeline, messages, sessionId)
-      if (next.added.length === 0) return next
-      await client.putTimeline(playthrough, next.timeline)
-      return next
+      const initial = await client.getTimeline(playthrough)
+      const initialResult = appendCompletedTurns(initial, messages, sessionId)
+      if (initialResult.added.length === 0) return initialResult
+      let added = initialResult.added
+      const timeline = await updateTimeline(client, playthrough, current => {
+        const next = appendCompletedTurns(current, messages, sessionId)
+        added = next.added
+        return next.timeline
+      }, { initial })
+      return { timeline, added }
     })
     pending = task.catch(() => {})
     return task

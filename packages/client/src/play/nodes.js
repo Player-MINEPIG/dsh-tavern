@@ -1,3 +1,5 @@
+import { updateTimeline } from './mutations.js'
+
 function nodeById(timeline, nodeId) {
   const index = timeline.nodes.findIndex(node => node.id === nodeId)
   if (index < 0) throw new TypeError(`Unknown timeline node ${nodeId}`)
@@ -46,11 +48,10 @@ export function createPlayNodeController(client, {
   }
 
   const update = (playthrough, nodeId, transform) => schedule(async () => {
-    const timeline = await client.getTimeline(playthrough)
-    const { index, node } = nodeById(timeline, nodeId)
-    const next = replaceNode(timeline, index, transform(node))
-    await client.putTimeline(playthrough, next)
-    return next
+    return updateTimeline(client, playthrough, timeline => {
+      const { index, node } = nodeById(timeline, nodeId)
+      return replaceNode(timeline, index, transform(node))
+    })
   })
 
   return {
@@ -69,12 +70,14 @@ export function createPlayNodeController(client, {
     adoptVariant(playthrough, nodeId, variantId) {
       if (typeof variantId !== 'string' || variantId === '') throw new TypeError('variantId is required')
       return schedule(async () => {
-        const timeline = await client.getTimeline(playthrough)
-        const { index, node } = nodeById(timeline, nodeId)
+        const next = await updateTimeline(client, playthrough, timeline => {
+          const { index, node } = nodeById(timeline, nodeId)
+          const variant = node.variants.find(item => item.id === variantId)
+          if (variant === undefined) throw new TypeError(`Unknown variant ${variantId}`)
+          return replaceNode(timeline, index, { ...node, adoptedVariantId: variantId })
+        })
+        const { node } = nodeById(next, nodeId)
         const variant = node.variants.find(item => item.id === variantId)
-        if (variant === undefined) throw new TypeError(`Unknown variant ${variantId}`)
-        const next = replaceNode(timeline, index, { ...node, adoptedVariantId: variantId })
-        await client.putTimeline(playthrough, next)
         const focus = await client.getFocus(playthrough)
         if (focus.sessionId !== variant.sessionId) throw new Error('Saved variant does not match derived focus')
         return { timeline: next, sessionId: variant.sessionId }
@@ -109,8 +112,6 @@ export function createPlayNodeController(client, {
         }
         if (pair === null) throw new Error('Timed out waiting for the swipe reply')
 
-        const latest = await client.getTimeline(playthrough)
-        const current = nodeById(latest, nodeId)
         const variantId = idFactory(pair.user.seq, pair.assistant.seq, newSessionId)
         const variant = {
           id: variantId,
@@ -118,13 +119,18 @@ export function createPlayNodeController(client, {
           startEventId: pair.user.seq,
           endEventId: pair.assistant.seq,
         }
-        const nextNode = {
-          ...current.node,
-          adoptedVariantId: variantId,
-          variants: [...current.node.variants, variant],
-        }
-        const next = replaceNode(latest, current.index, nextNode)
-        await client.putTimeline(playthrough, next)
+        const next = await updateTimeline(client, playthrough, timeline => {
+          const current = nodeById(timeline, nodeId)
+          const existing = current.node.variants.find(item => item.id === variantId)
+          if (existing !== undefined) {
+            return replaceNode(timeline, current.index, { ...current.node, adoptedVariantId: variantId })
+          }
+          return replaceNode(timeline, current.index, {
+            ...current.node,
+            adoptedVariantId: variantId,
+            variants: [...current.node.variants, variant],
+          })
+        })
         const focus = await client.getFocus(playthrough)
         if (focus.sessionId !== newSessionId) throw new Error('Saved swipe does not match derived focus')
         return { timeline: next, sessionId: newSessionId, variantId }

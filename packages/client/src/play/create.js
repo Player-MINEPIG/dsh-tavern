@@ -1,5 +1,6 @@
 import { characterIdFromSelection } from './sidebar-model.js'
 import { loadPlaythroughImportContext } from './import.js'
+import { updateCatalog } from './mutations.js'
 
 const SAFE_SEGMENT = /^[A-Za-z0-9][A-Za-z0-9._-]{0,199}$/
 const SAFE_SESSION_ID = /^[A-Za-z0-9][A-Za-z0-9._:-]{0,199}$/
@@ -90,14 +91,15 @@ export async function renamePlaythrough(client, playthrough, title) {
   if (client == null) throw new TypeError('playClient.required')
   const normalized = typeof title === 'string' ? title.trim() : ''
   if (normalized === '' || normalized.length > 120) throw new TypeError('play.rename.invalid')
-  const catalog = await catalogOrEmpty(client)
-  const index = catalog.playthroughs.findIndex(item => item.id === playthrough?.id && item.path === playthrough?.path)
-  if (index < 0) throw new TypeError('play.rename.missing')
-  const playthroughs = [...catalog.playthroughs]
-  playthroughs[index] = { ...playthroughs[index], title: normalized }
-  await client.putCatalog({ ...catalog, playthroughs })
-  const saved = await client.getCatalog()
-  const renamed = saved.playthroughs.find(item => item.id === playthrough.id && item.path === playthrough.path)
+  const saved = await updateCatalog(client, current => {
+    const freshIndex = current.playthroughs.findIndex(item => item.id === playthrough?.id && item.path === playthrough?.path)
+    if (freshIndex < 0) throw new TypeError('play.rename.missing')
+    const freshPlaythroughs = [...current.playthroughs]
+    freshPlaythroughs[freshIndex] = { ...freshPlaythroughs[freshIndex], title: normalized }
+    return { ...current, playthroughs: freshPlaythroughs }
+  })
+  const verified = saved?.playthroughs === undefined ? await client.getCatalog() : saved
+  const renamed = verified.playthroughs.find(item => item.id === playthrough.id && item.path === playthrough.path)
   if (renamed?.title !== normalized) throw new Error('play.rename.verificationFailed')
   return renamed
 }
@@ -133,8 +135,6 @@ export async function createCharacterPlaythrough(client, {
   if (latest !== null && await playthroughIsReusable(client, latest)) {
     return { sessionId: rootSessionId(latest), playthrough: latest, reused: true }
   }
-  const playthroughNumber = nextPlaythroughNumber(catalog, characterId)
-
   const created = await client.postSession(sourceId)
   const sessionId = safeSessionId(created?.sessionId)
   if (sourceId === null) {
@@ -148,29 +148,41 @@ export async function createCharacterPlaythrough(client, {
   const playthrough = {
     id: playthroughId,
     path,
-    title: `${playthroughNumber}周目`,
+    title: '周目',
     lastOpenedAt: createdAt,
     ext: {
       pmpDshTavern: {
         characterId,
         rootSessionId: sessionId,
-        playthroughNumber,
+        playthroughNumber: 0,
       },
     },
   }
 
   await client.createDirs(directory)
   await client.putTimeline(playthrough, { nodes: [] })
-  await client.putCatalog({
-    ...catalog,
-    playthroughs: [...catalog.playthroughs, playthrough],
+  let saved
+  const savedCatalog = await updateCatalog(client, fresh => {
+    const existing = fresh.playthroughs.find(item => item.id === playthroughId && item.path === path)
+    if (existing !== undefined) {
+      if (existing.ext?.pmpDshTavern?.rootSessionId !== sessionId) throw new Error('playthrough.create.identityConflict')
+      saved = existing
+      return fresh
+    }
+    const playthroughNumber = nextPlaythroughNumber(fresh, characterId)
+    const row = {
+      ...playthrough,
+      title: `${playthroughNumber}周目`,
+      ext: {
+        ...playthrough.ext,
+        pmpDshTavern: { ...playthrough.ext.pmpDshTavern, playthroughNumber },
+      },
+    }
+    saved = row
+    return { ...fresh, playthroughs: [...fresh.playthroughs, row] }
   })
-
-  const [savedCatalog, savedTimeline] = await Promise.all([
-    client.getCatalog(),
-    client.getTimeline(playthrough),
-  ])
-  const saved = savedCatalog.playthroughs.find(item => item.id === playthroughId)
+  const savedTimeline = await client.getTimeline(playthrough)
+  saved ??= savedCatalog?.playthroughs?.find(item => item.id === playthroughId && item.path === path)
   if (saved?.ext?.pmpDshTavern?.rootSessionId !== sessionId || savedTimeline.nodes.length !== 0) {
     throw new Error('playthrough verification failed')
   }
