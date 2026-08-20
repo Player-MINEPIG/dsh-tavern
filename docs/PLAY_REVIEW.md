@@ -35,10 +35,10 @@ timeline 只保存 session/event 范围引用；路径 API 有根目录、相对
 | 原风险 | 已接受的合同 |
 | --- | --- |
 | 历史完整性（已实现，`10250a7`） | 已移除 32 页上限，一直分页到 Host `hasMore: false`；Host 空页、非法 oldest `seq` 或 cursor 重复/不前进时返回 502 `PLAY_HISTORY_CURSOR_STALLED`。插件不摘要/切片；模型上下文超限由 DSH 报错，README 明确区分两层。 |
-| catalog/timeline 并发 | GET 返回 SHA-256 revision；PUT 带 `expectedRevision`，`null` 仅创建；冲突为 409 `PLAY_FILE_REVISION_CONFLICT`。比较、校验、临时写、替换在同一目标锁内；客户端冲突后回读并重放。 |
+| catalog/timeline 并发 | GET/PUT schema/path 校验已实现；revision/CAS、目标锁、临时写/替换一致性仍未实现。当前多客户端整份 PUT 仍可能互相覆盖，后续任务负责显式冲突合同。 |
 | 半完成资源 | 不增加跨文件事务。每个生命周期变更 API 使用同一 `operationId` 通过 `ctx.logger` 记录阶段/结果/错误码/耗时；客户端回读并恢复。只记录标识和摘要，不记录正文。 |
 | import-context 请求语义 | 首次 assembly 按原用户 turn/event claim；同一回合 retry/swipe 可重放；中断后新用户消息不重复；成功后保留 lineage 供未来 swipe。 |
-| catalog schema | PUT 写前和 GET 读后都校验。id/规范化 path 唯一；id 使用安全段；path 为安全相对路径且以 `/timeline.json` 结尾；校验已知 `ext.pmpDshTavern`，保留第三方 ext。 |
+| catalog schema | 已实现：PUT 写前和 GET 读后都校验。id/规范化 path 唯一；id 使用安全段；path 为安全相对路径且以 `/timeline.json` 结尾；校验已知 `ext.pmpDshTavern`，保留第三方 ext。 |
 | focus | 稳定入口改为 `GET /playthroughs/:id/focus`，由已校验 catalog 解析路径，返回 playthroughId/sessionId/nodeId/variantId；空周目使用 rootSessionId。移除无参数默认行为和 timeline PUT 的隐式 active 写入。 |
 | 路径 TOCTOU | 目标锁内逐段 `lstat` 拒绝 symlink/junction/reparse point，逐层创建并 realpath 复核，临时文件排他 `wx`，写/rename 前复验父目录。承认外部本机进程仍可制造极窄竞态，本轮不引入 native addon。 |
 | 更广日志 | 本轮只支持 Cordis `ctx.logger`。其默认是进程内最近 1000 条记录的 ring buffer，未发现本插件自行写持久日志。浏览器 logger、持久有界 journal 和额外 exporter 进入 backlog，不阻塞本轮实现。 |
@@ -57,7 +57,7 @@ timeline 只保存 session/event 范围引用；路径 API 有根目录、相对
 | 级别 | 位置 | 发现与影响 | 建议 |
 | --- | --- | --- | --- |
 | P2 安全 | `packages/play/src/workspace.js:208-226`、`packages/play/src/paths.js:50-91` | 路径先经过 `resolvePlayPath()` 的 realpath 检查，随后 `writeFile()` 才 `mkdirSync()` 和写入；目录创建与写入之间存在 TOCTOU。若同机进程在检查后把未存在的父级替换为根外符号链接，递归 mkdir/临时文件路径可能越过已检查的根。现有测试覆盖静态符号链接逃逸，不覆盖并发替换。 | 采用目录句柄/`open` 的 no-follow 语义，或对每一级父目录做不可跟随的创建与再次 realpath 校验；至少把“路径监狱防止静态逃逸”与“不能抵抗并发文件系统攻击”区分写入安全合同。 |
-| P2 schema/兼容 | `packages/play/src/timeline.js:155-178` | `normalizeCatalog()` 只检查字段类型，不检查 playthrough `id` 或 `path` 唯一性，也不限制 `path` 为根内的 `*/timeline.json` 相对路径。重复条目会让 sidebar 的 `find()`、focus 和客户端整份 PUT 变得不确定；恶意或损坏 catalog 会在后续读文件时才失败。 | 在 v2 catalog 合同中增加唯一 id/path 及安全相对路径校验，并返回明确的 schema 错误；先决定是否兼容已有外部 catalog，再收紧 server/client 两端校验。 |
+| P2 schema/兼容（已关闭，任务 02） | `packages/play/src/timeline.js`、`workspace.js` | catalog/timeline 已在 GET/PUT 两侧统一校验；危险 path、重复 id/path、已知 `pmpDshTavern` 字段坏值均显式返回 `PLAY_CATALOG_INVALID` / `PLAY_TIMELINE_INVALID`，第三方 ext 保留。 | revision/CAS 与 TOCTOU 仍由后续任务处理。 |
 | P2 focus 语义 | `packages/play/src/workspace.js:226`、`packages/play/src/sessions.js:85-102` | 任意文件写入只要 basename 是 `timeline.json` 就更新 `activeTimelinePath`。第三方导入、后台 reconcile 或写入非当前周目时，会改变无 `path` 参数的 `/focus` 默认目标；“active” 实际表示最近写过，不是用户最近打开。 | 明确 active 的写入者：由显式 open/activate endpoint 更新，普通 `PUT timeline` 不应隐式切换；或者把当前“最近写入”改名并从 API 文档中移除默认 focus 的歧义。 |
 
 ## 不应在后续实现中倒退的边界
@@ -71,7 +71,7 @@ timeline 只保存 session/event 范围引用；路径 API 有根目录、相对
 
 ## 更新后的验收顺序
 
-1. 完整 history 已由 `10250a7` 实现并有超过 32 页自动测试；其余逐 commit 实现 catalog/timeline 校验与 CAS、`ctx.logger` 阶段日志、claim/lineage、
+1. 完整 history 已由 `10250a7` 实现并有超过 32 页自动测试；其余逐 commit 实现 catalog/timeline CAS、`ctx.logger` 阶段日志、claim/lineage、
    playthrough-id focus 和路径 TOCTOU 加固；
 2. history 超过 32 页的自动覆盖已完成；继续验收请求失败/取消/中断/重试后的导入上下文、两个标签页并发写同一
    catalog/timeline、损坏文件和 symlink/junction 替换做协议验收；

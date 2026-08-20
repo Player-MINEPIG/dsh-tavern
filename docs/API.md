@@ -21,8 +21,8 @@
 | GET | `/workspace` | 根路径、是否已选、合同版本、警告 | 已实现 |
 | PUT | `/workspace` | 绑定**一棵**已存在的扮演工作区根。首次选择带 `SWIPE_DISK` / 可能的 `SYSTEM_DISK` 警告。不 mkdir 根 | 已实现 |
 | POST | `/workspace/dirs` | `{ path }` 相对路径，由 `PlayWorkspaceStore` 在已绑定根目录内的路径监狱中直接创建。兼容 native/browse Host；不依赖全局 `directory-picker` 或 `apiProxy.host.createDirectory`。未绑根 → 409；拒绝绝对路径、`..`、symlink 逃逸和文件冲突；不新注册 DSH 工作区 | 已实现 |
-| GET | `/workspace/files?path=` | 读根内 UTF-8 文件。2.0 发布目标：受管 catalog/timeline 同时返回 SHA-256 `revision`，读后做 schema/路径校验 | 基础读取已实现；revision/读时校验待实现 |
-| PUT | `/workspace/files?path=` | 当前 `{ content }` 写根内 UTF-8 文件。2.0 发布目标：受管文档要求 `{ content, expectedRevision }`，`null` 仅创建，冲突返回 409 `PLAY_FILE_REVISION_CONFLICT` | 基础写入已实现；CAS/完整加固待实现 |
+| GET | `/workspace/files?path=` | 读根内 UTF-8 文件。`catalog.json` / `timeline.json` 读出后执行对应 schema/path 校验；第三方 `ext` 原样保留 | 已实现读时校验；revision 待实现 |
+| PUT | `/workspace/files?path=` | 当前 `{ content }` 写根内 UTF-8 文件；命中 `catalog.json` / `timeline.json` 时先执行 schema/path 校验，失败不落盘 | 已实现写前校验；CAS/revision 待实现 |
 | GET | `/workspace/files?list=` | 列一层前缀 | 已实现 |
 | POST | `/sessions` | 新开扮演 session。有角色卡时标题=角色名+时间；无角色卡时走 DSH `session.create` 默认标题，不 409。仅当 body 带 `selectionFromSessionId` 才复制 Tavern 绑定。插入扮演工作区。**不写 timeline** | 已实现 |
 | POST | `/sessions/:id/branch` | `{ atEventId }` = 日志 seq。fork，不写 timeline、不代发。开放 turn → 409 | 已实现 |
@@ -40,7 +40,7 @@
 
 import-context 修改由 session 权威状态锁定：只要存在 DSH user/assistant message、开放 turn，或该绑定已经在一次请求中消费，`PUT` / `DELETE` 都返回 `409 PLAY_IMPORT_CONTEXT_LOCKED`；前端隐藏按钮不能替代此检查。`PUT` 会重新读取工作区文件、执行大小/QA 结构限制并核对可选 `expectedHash`，然后把绑定置为 `pending`。`GET` 可在任意状态读取摘要；正文仍通过已有 `/workspace/files?path=` 按明确路径读取。首次实际请求组装时 loader 把内容标为 untrusted read-only context，正常 `turn/end` 后转为 `consumed`，不会写成 DSH 历史。
 
-当前 `PUT` 命中 `timeline.json` / `catalog.json` 时先做 schema 校验，失败不落盘。2.0 发布前还必须补齐 GET 读时校验、catalog id/path 唯一性和安全路径语法，并让受管文档使用 revision/CAS。timeline 只允许真实 `qa` 节点，greeting 从角色卡与 session selection 派生，不进入 timeline。focus 不存盘；稳定 focus 由 playthrough id、catalog 与 timeline 派生。校验不读、不改 DSH 事件。
+当前 `GET` 和 `PUT` 命中 `timeline.json` / `catalog.json` 时都会执行同一 schema/path 校验；PUT 在落盘前校验，GET 在读出后校验，失败均返回明确的 `PLAY_TIMELINE_INVALID` 或 `PLAY_CATALOG_INVALID`，不会改写 DSH 事件。catalog 的 id 使用客户端同源安全段规则、id/path 唯一，path 为安全 POSIX 相对路径且严格以 `/timeline.json` 结尾；已知 `ext.pmpDshTavern` 字段校验但未知第三方字段原样保留。revision/CAS、锁和 TOCTOU 加固仍待实现。timeline 只允许真实 `qa` 节点，greeting 从角色卡与 session selection 派生，不进入 timeline。focus 不存盘；稳定 focus 由 playthrough id、catalog 与 timeline 派生。
 
 ### 周目生命周期组合语义
 
@@ -77,8 +77,8 @@ SillyTavern JSON/JSONL 与本插件 bundle 可由客户端解析后写入该上�
 
 - ✅ history 已实现（`10250a7`）：取消 32 页人为上限并一直分页至 `hasMore: false`；Host 空页、非法 oldest `seq` 或 cursor 重复/不前进时返回 502 `PLAY_HISTORY_CURSOR_STALLED`；插件不摘要/切片。
 - import-context 使用按原用户回合的 claim/lineage 语义，覆盖 retry、swipe、取消和中断后新消息。
-- catalog/timeline GET 返回 revision，PUT 使用 `expectedRevision`；冲突显式 409，所有内置客户端回读重放。
-- catalog/timeline 在 GET 与 PUT 两侧校验；路径、CAS、校验、临时写和替换处于同一目标锁内。
+- catalog/timeline GET 返回 revision，PUT 使用 `expectedRevision`；冲突显式 409，所有内置客户端回读重放（待实现）。
+- ✅ catalog/timeline 已在 GET 读后与 PUT 写前执行同一 schema/path 校验；未知第三方 `ext` 原样保留。revision/CAS、路径锁、TOCTOU、临时写和替换仍待实现。
 - 路径逐段拒绝 symlink/junction/reparse point，逐层创建并 realpath 复核，临时文件使用排他 `wx`。
 - 本轮日志只使用后端 `ctx.logger`，记录生命周期变更阶段和 `operationId`，不记录任何资源或聊天正文。浏览器日志、持久 journal 和额外 exporter 暂缓。
 
