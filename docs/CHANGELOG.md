@@ -1,5 +1,14 @@
 # Development changelog
 
+
+## 2026-08-21 — Document independent RP frontend integration
+
+- Documented forked, independent DSH-plugin, and independent Web-client delivery
+  models for third-party RP frontends.
+- Defined `pmpDshTavernChrome.when()` as the public mode-lifecycle seam while
+  leaving slot ownership and conflict handling to DSH public contracts.
+- Explicitly documented that configuration-file replacement, a frontend
+  provider registry, and a dynamic bundle loader do not exist in 2.0.
 ## 2026-08-21 — Compose Tavern forks from public play APIs
 
 - Added a reply-tail action that branches the adopted DSH session at the

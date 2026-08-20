@@ -24,6 +24,7 @@
 - [特点](#特点)
 - [文档](#文档)
 - [v2.0 前端显示模式与后续规划](#v20-前端显示模式与后续规划)
+- [第三方 RP 前端开发](#第三方-rp-前端开发)
 - [安全风险](#安全风险)
 - [参考](#参考)
 
@@ -277,6 +278,7 @@ RP 是当前 session 的叠加，不是 DSH agent preset。开启后文件沙箱
 - [RP 安全模式](docs/RP_SECURE_MODE.md)：RP 拦住与不拦的工具清单
 - [安装与卸载](docs/INSTALLATION.md)：跨平台参数、刷新恢复与备份
 - [HTTP API](docs/API.md)：v2 稳定面与 v1 bundled UI 合同
+- [第三方 RP 前端接入](docs/FRONTEND_INTEGRATION.zh-CN.md)：独立插件/客户端、模式生命周期与 API 组合
 - [架构说明](docs/ARCHITECTURE.md)：单插件分层与发布边界
 - [Loader contract](docs/LOADER_CONTRACT.md)：session 选择、profile 与安全预算
 - [DSH 消息流](docs/DSH_MESSAGE_FLOW.md)：DSH 原生流程以及本插件的介入点
@@ -294,13 +296,20 @@ RP 是当前 session 的叠加，不是 DSH agent preset。开启后文件沙箱
 | --- | --- |
 | 插件 id / 包名 | `pmp-dsh-tavern` |
 | 本插件资源 API（预设、卡、书、RP、Trace…） | `/pmp-dsh-tavern/api/v1/...` |
-| 扮演表面元 API | `/pmp-dsh-tavern/api/v2/...`（2.0 预发布合同；可靠性加固仍在进行） |
+| 扮演表面元 API | `/pmp-dsh-tavern/api/v2/...`（2.0 预发布合同；可靠性加固已实现，待 rc.8 统一验收） |
 
-v1 是本插件悬浮球 / 侧栏 / Trace 用的 bundled UI 资源合同，不保证给第三方扮演表面用。v2 是给任意扮演前端的稳定面：chrome、扮演工作区文件、session（create / branch / **user-message** / messages）以及按周目查询的只读 **GET `/playthroughs/:id/focus`**。bundled live client 已按非空 playthrough id 调用该稳定入口，并验证返回的 playthroughId/sessionId/nodeId/variantId；旧 `/focus?path=` 仅作为迁移兼容面保留。该 focus 路由及 revision/CAS、读写校验、import claim 和路径竞态加固是 2.0 对外发布前的已接受合同，在 backlog 标为完成前不要把当前预发布实现当成最终稳定版；完整 history 已由 `10250a7` 实现；内置周目生命周期的 catalog/timeline read-modify-write caller 已迁移到 CAS 原语，旧 get/put client 保留一次兼容 fallback，CAS 重放不重复外部 session/branch/message 副作用。`user-message` 只提交下一条用户正文，不是 loader 拼好的完整 prompt；focus 告诉前端上边栏该跟哪条 session，前端自己 `sessions.open`，不用 POST。swipe、删改、周目分支、导入导出都由前端用这些接口拼。想在这套协议上做自己的前端，也用同一套积木拼产品功能（例如「修改并重新生成」= swipe 链路换掉 `user-message` 的 text），不要等本仓库加专用 API。扮演工作区不要放系统盘。greeting 从角色卡与 selection 派生，不写入时间线或 DSH 历史；上边栏对话 / 轨迹 / Tavern Trace 保留。人类可读导出为静态 HTML，另可保存 SillyTavern 聊天 JSON。
+v1 是本插件悬浮球 / 侧栏 / Trace 用的 bundled UI 资源合同，不保证给第三方扮演表面用。v2 是给任意扮演前端的稳定面：chrome、扮演工作区文件、session（create / branch / **user-message** / messages）以及按周目查询的只读 **GET `/playthroughs/:id/focus`**。bundled live client 已按非空 playthrough id 调用该稳定入口，并验证返回的 playthroughId/sessionId/nodeId/variantId；旧 `/focus?path=` 仅作为迁移兼容面保留。完整 history、revision/CAS、读写校验、import claim/lineage、按 id focus 和路径竞态加固已经实现，仍需 rc.8 统一验收后才视为 2.0 稳定发布。`user-message` 只提交下一条用户正文，不是 loader 拼好的完整 prompt；focus 告诉前端上边栏该跟哪条 session，前端自己 `sessions.open`，不用 POST。swipe、删改、周目分支、导入导出都由前端用这些接口拼。扮演工作区不要放系统盘。greeting 从角色卡与 selection 派生，不写入时间线或 DSH 历史；上边栏对话 / 轨迹 / Tavern Trace 保留。
 
 2.0 的 history API 已实现读取 DSH 提供的全部历史，直到 Host 返回 `hasMore: false`（代码 commit `10250a7`）；插件不会在 32 页等人为阈值静默截断，也不会在这一层做摘要或切片。Host 声称仍有更多历史但返回空页、非法 oldest `seq` 或不前进 cursor 时，API 返回 502 `PLAY_HISTORY_CURSOR_STALLED`。**能通过 API 读取全历史，不代表模型的一次请求能够容纳全历史。** 模型上下文超限、DSH 是否压缩上下文以及最终错误提示仍由 DSH/模型层负责；dsh-tavern 不承诺绕过其上下文窗口。
 
 导入上下文同样不在插件层做 summary、QA 切片或 256 KiB/2,000 QA 人为上限；它只校验 JSON/schema/hash，并通过公开 pending-input claim 投影在同一 profile snapshot 下建立持久 claim。通用工作区文件仍有 1 MiB 的存储/传输上限。无 claim 的只读 assembly 不会注入或消费 pending；同一请求在终态前的 provider retry 可重复 assembly，终态后新 claim 不会注入；Tavern swipe 通过公开 branch 复制不含正文的 lineage，第三方原生 fork 不在插件拦截范围。
+
+## 第三方 RP 前端开发
+
+开发者不必 fork 本仓库：可以发布独立 DSH 客户端插件，消费公开 `pmpDshTavernChrome` service、DSH slots/store 与 HTTP v2；也可以写只消费 HTTP v2 的独立 Web 客户端。模式 service 的 `when('play', setup)` 可让第三方 UI 只在魔丸模式挂载，并在离开模式或卸载时自动 dispose。native 模式继续由 DSH 原生表面拥有。
+
+当前没有“导入配置文件替换整个魔丸”、frontend provider registry 或动态 bundle loader；若需要完整替换内置 RP 前端，应安装另一个独立插件或维护 fork，而不是替换 DSH 原生插件。具体合同、示例和卸载/冲突规则见 [第三方 RP 前端接入指南](docs/FRONTEND_INTEGRATION.zh-CN.md)。
+
 
 ## 安全风险
 
