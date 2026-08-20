@@ -88,6 +88,11 @@ test('import context mutation locks after a message, open turn or consumption', 
     error => error.code === 'PLAY_IMPORT_CONTEXT_LOCKED',
   )
   events = []
+  binding = { path: 'context.json', state: 'claimed', claim: { eventSeqs: [1], identity: 'event-seqs:1' } }
+  await assert.rejects(
+    handler.importContext(request({}, 'DELETE'), response().res, 'session-claimed', 'DELETE'),
+    error => error.code === 'PLAY_IMPORT_CONTEXT_LOCKED',
+  )
   binding = { path: 'context.json', state: 'consumed' }
   await assert.rejects(
     handler.importContext(request({}, 'DELETE'), response().res, 'session-consumed', 'DELETE'),

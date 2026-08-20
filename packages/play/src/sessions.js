@@ -85,7 +85,7 @@ async function requireMutableImportContext(host, sessionId) {
   const binding = typeof host.getImportContextBinding === 'function'
     ? await host.getImportContextBinding(sessionId)
     : null
-  if (binding?.state === 'consumed') {
+  if (binding?.state === 'claimed' || binding?.state === 'consumed') {
     throw httpError(409, 'import context is locked after use', 'PLAY_IMPORT_CONTEXT_LOCKED')
   }
   const events = await readAllHistory(host, sessionId)
