@@ -40,7 +40,7 @@
 
 import-context 修改由 session 权威状态锁定：只要存在 DSH user/assistant message、开放 turn，或该绑定已经在一次请求中消费，`PUT` / `DELETE` 都返回 `409 PLAY_IMPORT_CONTEXT_LOCKED`；前端隐藏按钮不能替代此检查。`PUT` 会重新读取工作区文件、执行大小/QA 结构限制并核对可选 `expectedHash`，然后把绑定置为 `pending`。`GET` 可在任意状态读取摘要；正文仍通过已有 `/workspace/files?path=` 按明确路径读取。首次实际请求组装时 loader 把内容标为 untrusted read-only context，正常 `turn/end` 后转为 `consumed`，不会写成 DSH 历史。
 
-当前 `GET` 和 `PUT` 命中 `timeline.json` / `catalog.json` 时都会执行同一 schema/path 校验；PUT 在同一目标 guard 内先比较 `expectedRevision`、再校验内容，GET 在 guard 内读后校验并返回精确 UTF-8 字节的 SHA-256 `revision`。缺字段返回 400 `PLAY_FILE_REVISION_REQUIRED`，格式错误返回 400 `PLAY_FILE_REVISION_INVALID`，目标存在/缺失/hash 不一致统一返回 409 `PLAY_FILE_REVISION_CONFLICT`；冲突不改文件。schema 失败仍返回明确的 `PLAY_TIMELINE_INVALID` 或 `PLAY_CATALOG_INVALID`，不会改写 DSH 事件。catalog 的 id 使用客户端同源安全段规则、id/path 唯一，path 为安全 POSIX 相对路径且严格以 `/timeline.json` 结尾；已知 `ext.pmpDshTavern` 字段校验但未知第三方字段原样保留。timeline 只允许真实 `qa` 节点，greeting 从角色卡与 session selection 派生，不进入 timeline。focus 不存盘；稳定 focus 由 playthrough id、catalog 与 timeline 派生。路径 mutation 已在进程内目标锁中逐段 `lstat` 拒绝 symlink/junction，逐层创建并 realpath 复核；临时文件使用排他 `wx`，写入和 rename 前复验父目录。服务端 CAS 已实现；内置 live client 已实现受管 revision 缓存、`null` create-only、409 作废陈旧缓存和有限冲突重放（默认最多重试 3 次，可配置 1–5）。普通生命周期 caller 仍待任务 06 迁移到这些原语。
+当前 `GET` 和 `PUT` 命中 `timeline.json` / `catalog.json` 时都会执行同一 schema/path 校验；PUT 在同一目标 guard 内先比较 `expectedRevision`、再校验内容，GET 在 guard 内读后校验并返回精确 UTF-8 字节的 SHA-256 `revision`。缺字段返回 400 `PLAY_FILE_REVISION_REQUIRED`，格式错误返回 400 `PLAY_FILE_REVISION_INVALID`，目标存在/缺失/hash 不一致统一返回 409 `PLAY_FILE_REVISION_CONFLICT`；冲突不改文件。schema 失败仍返回明确的 `PLAY_TIMELINE_INVALID` 或 `PLAY_CATALOG_INVALID`，不会改写 DSH 事件。catalog 的 id 使用客户端同源安全段规则、id/path 唯一，path 为安全 POSIX 相对路径且严格以 `/timeline.json` 结尾；已知 `ext.pmpDshTavern` 字段校验但未知第三方字段原样保留。timeline 只允许真实 `qa` 节点，greeting 从角色卡与 session selection 派生，不进入 timeline。focus 不存盘；稳定 focus 由 playthrough id、catalog 与 timeline 派生。路径 mutation 已在进程内目标锁中逐段 `lstat` 拒绝 symlink/junction，逐层创建并 realpath 复核；临时文件使用排他 `wx`，写入和 rename 前复验父目录。服务端 CAS 已实现；内置 live client 已实现受管 revision 缓存、`null` create-only、409 作废陈旧缓存和有限冲突重放（默认最多重试 3 次，可配置 1–5）。任务 06 已将内置周目生命周期 caller（rename、create catalog append、node metadata/adopt、swipe timeline append、turn reconcile）迁移到 `updateCatalog` / `updateTimeline`；mutator 每次只基于 fresh document 重算本地意图，外部 session/branch/user-message/目录/timeline create-only 副作用不会在 CAS 重放中重复。旧自定义 client 若只有 get/put 会走一次兼容 fallback，不提供并发重放保证。
 
 ### 周目生命周期组合语义
 
@@ -55,8 +55,7 @@ session/workspace/timeline/catalog 积木组合同样的流程。当前 bundled 
    读取并校验；显示名为 `x周目`，可通过 catalog 修改后重新读取确认。
 
 这里的“周目事务”是前端对公开原子操作的组合，不等同于服务端跨文件事务。单个客户端的
-controller 会串行同角色创建，但跨标签页或第三方客户端的并发写入仍必须由服务端 CAS
-解决。创建中途失败暂不增加跨文件事务：每个变更 API 使用同一 `operationId` 写 `ctx.logger`，
+controller 会串行同角色创建；内置 caller 使用服务端 CAS 的有限重放保护跨标签页并发写入，但跨文件的 session/目录/timeline/catalog 组合仍不是事务。创建中途失败暂不增加跨文件事务：每个变更 API 使用同一 `operationId` 写 `ctx.logger`，
 客户端依据已完成阶段、回读结果和稳定错误码恢复；不得把组合流程宣传为原子提交。
 
 ### 外部记录导入上下文
@@ -77,7 +76,7 @@ SillyTavern JSON/JSONL 与本插件 bundle 可由客户端解析后写入该上�
 
 - ✅ history 已实现（`10250a7`）：取消 32 页人为上限并一直分页至 `hasMore: false`；Host 空页、非法 oldest `seq` 或 cursor 重复/不前进时返回 502 `PLAY_HISTORY_CURSOR_STALLED`；插件不摘要/切片。
 - import-context 使用按原用户回合的 claim/lineage 语义，覆盖 retry、swipe、取消和中断后新消息。
-- ✅ catalog/timeline GET 返回精确 UTF-8 字节 SHA-256 `revision`，PUT 使用显式 `expectedRevision`；缺失/格式错误分别为 400，目标状态或 hash 不一致为 409，冲突不改文件。服务端合同与内置 live client 的 revision 缓存/有限重放原语已实现；普通生命周期 caller 迁移仍待任务 06。
+- ✅ catalog/timeline GET 返回精确 UTF-8 字节 SHA-256 `revision`，PUT 使用显式 `expectedRevision`；缺失/格式错误分别为 400，目标状态或 hash 不一致为 409，冲突不改文件。服务端合同、内置 live client 的 revision 缓存/有限重放原语，以及内置生命周期 caller 的 CAS 迁移均已实现。
 - ✅ catalog/timeline 已在 GET 读后与 PUT 写前执行同一 schema/path 校验；未知第三方 `ext` 原样保留。revision/CAS 已在同一目标 guard 中实现；路径锁、逐段 no-follow 检查、临时 `wx` 写和 rename 前复验已实现。
 - 路径逐段拒绝 symlink/junction（Node 暴露的链接类型），逐层非 recursive 创建并 realpath 复核，临时文件使用排他 `wx`，写入/rename 前复验父目录；纯 Node 仍无法抵抗外部进程制造的极窄竞态，不引入 native addon。
 - 本轮日志只使用后端 `ctx.logger`，记录生命周期变更阶段和 `operationId`，不记录任何资源或聊天正文。浏览器日志、持久 journal 和额外 exporter 暂缓。

@@ -35,7 +35,7 @@ timeline 只保存 session/event 范围引用；路径 API 有根目录、相对
 | 原风险 | 已接受的合同 |
 | --- | --- |
 | 历史完整性（已实现，`10250a7`） | 已移除 32 页上限，一直分页到 Host `hasMore: false`；Host 空页、非法 oldest `seq` 或 cursor 重复/不前进时返回 502 `PLAY_HISTORY_CURSOR_STALLED`。插件不摘要/切片；模型上下文超限由 DSH 报错，README 明确区分两层。 |
-| catalog/timeline 并发 | GET/PUT schema/path 校验、进程内目标锁、临时写/替换复验和服务端 SHA-256 revision/CAS 已实现。受管 PUT 必须带 `expectedRevision`，冲突统一 409 `PLAY_FILE_REVISION_CONFLICT` 且不改文件；跨进程极窄竞态仍由任务 03 的纯 Node 边界覆盖；内置 live client 的 revision 缓存、create-only 与有限冲突重放已由任务 05 完成，普通生命周期 caller 迁移仍待任务 06。 |
+| catalog/timeline 并发 | GET/PUT schema/path 校验、进程内目标锁、临时写/替换复验和服务端 SHA-256 revision/CAS 已实现。受管 PUT 必须带 `expectedRevision`，冲突统一 409 `PLAY_FILE_REVISION_CONFLICT` 且不改文件；跨进程极窄竞态仍由任务 03 的纯 Node 边界覆盖；内置 live client 的 revision 缓存、create-only 与有限冲突重放已由任务 05 完成；任务 06 已完成普通生命周期 caller 迁移。 |
 | 半完成资源 | 不增加跨文件事务。每个生命周期变更 API 使用同一 `operationId` 通过 `ctx.logger` 记录阶段/结果/错误码/耗时；客户端回读并恢复。只记录标识和摘要，不记录正文。 |
 | import-context 请求语义 | 首次 assembly 按原用户 turn/event claim；同一回合 retry/swipe 可重放；中断后新用户消息不重复；成功后保留 lineage 供未来 swipe。 |
 | catalog schema | 已实现：PUT 写前和 GET 读后都校验。id/规范化 path 唯一；id 使用安全段；path 为安全相对路径且以 `/timeline.json` 结尾；校验已知 `ext.pmpDshTavern`，保留第三方 ext。 |
@@ -57,7 +57,7 @@ timeline 只保存 session/event 范围引用；路径 API 有根目录、相对
 | 级别 | 位置 | 发现与影响 | 建议 |
 | --- | --- | --- | --- |
 | P2 安全（已关闭，任务 03） | `packages/play/src/workspace.js`、`packages/play/src/paths.js` | 已实现实用路径加固：目标锁、逐段 no-follow 检查、逐层创建、realpath 复核、排他临时写和 rename 前父目录复验。 | 纯 Node 不宣称跨进程或内核级 no-follow 事务；外部进程极窄竞态和 revision/CAS 仍单独处理。 |
-| P2 schema/兼容（已关闭，任务 02） | `packages/play/src/timeline.js`、`workspace.js` | catalog/timeline 已在 GET/PUT 两侧统一校验；危险 path、重复 id/path、已知 `pmpDshTavern` 字段坏值均显式返回 `PLAY_CATALOG_INVALID` / `PLAY_TIMELINE_INVALID`，第三方 ext 保留。服务端 revision/CAS 已在同一目标 guard 内完成；TOCTOU 路径加固已完成。 | 内置 live client 原语已完成；普通生命周期 caller 迁移仍属于任务 06。 |
+| P2 schema/兼容（已关闭，任务 02） | `packages/play/src/timeline.js`、`workspace.js` | catalog/timeline 已在 GET/PUT 两侧统一校验；危险 path、重复 id/path、已知 `pmpDshTavern` 字段坏值均显式返回 `PLAY_CATALOG_INVALID` / `PLAY_TIMELINE_INVALID`，第三方 ext 保留。服务端 revision/CAS 已在同一目标 guard 内完成；TOCTOU 路径加固已完成。 | 内置 live client 原语与普通生命周期 caller 迁移均已完成。 |
 | P2 focus 语义 | `packages/play/src/workspace.js:226`、`packages/play/src/sessions.js:85-102` | 任意文件写入只要 basename 是 `timeline.json` 就更新 `activeTimelinePath`。第三方导入、后台 reconcile 或写入非当前周目时，会改变无 `path` 参数的 `/focus` 默认目标；“active” 实际表示最近写过，不是用户最近打开。 | 明确 active 的写入者：由显式 open/activate endpoint 更新，普通 `PUT timeline` 不应隐式切换；或者把当前“最近写入”改名并从 API 文档中移除默认 focus 的歧义。 |
 
 ## 不应在后续实现中倒退的边界
