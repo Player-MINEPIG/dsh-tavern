@@ -220,6 +220,17 @@ export function projectGreeting({
   }
 }
 
+export function applyDisplayNameMacros(text, {
+  user = 'User',
+  character = 'Assistant',
+} = {}) {
+  const names = {
+    user: typeof user === 'string' && user !== '' ? user : 'User',
+    char: typeof character === 'string' && character !== '' ? character : 'Assistant',
+  }
+  return String(text ?? '').replace(/\{\{\s*(user|char)\s*\}\}/gi, (_match, name) => names[name.toLowerCase()])
+}
+
 export function adjacentGreetingIndex(greeting, direction) {
   const options = greeting?.options ?? []
   if (options.length === 0) return null

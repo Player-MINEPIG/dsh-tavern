@@ -7665,6 +7665,16 @@ function projectGreeting({
     options
   };
 }
+function applyDisplayNameMacros(text2, {
+  user = "User",
+  character = "Assistant"
+} = {}) {
+  const names = {
+    user: typeof user === "string" && user !== "" ? user : "User",
+    char: typeof character === "string" && character !== "" ? character : "Assistant"
+  };
+  return String(text2 ?? "").replace(/\{\{\s*(user|char)\s*\}\}/gi, (_match, name2) => names[name2.toLowerCase()]);
+}
 function adjacentGreetingIndex(greeting, direction) {
   const options = greeting?.options ?? [];
   if (options.length === 0) return null;
@@ -9987,9 +9997,16 @@ async function loadChatState(client, sessionId, playthrough) {
       resourceId: bindings.characterId
     })
   ];
+  const character = characterResponse?.character;
+  const characterData = character?.data ?? character;
+  const macros = {
+    user: active?.resources?.user?.name ?? "User",
+    character: characterData?.nickname ?? characterData?.name ?? character?.name ?? "Assistant"
+  };
   const regexDiagnostics = [];
   const renderText = (text2, target, context) => {
-    const result = applyDisplayRegex(text2, rules, bindings, target, context);
+    const expanded = applyDisplayNameMacros(text2, macros);
+    const result = applyDisplayRegex(expanded, rules, bindings, target, context);
     regexDiagnostics.push(...result.diagnostics);
     return result.text;
   };
@@ -10041,21 +10058,21 @@ async function loadChatState(client, sessionId, playthrough) {
     turns,
     greeting: importedTurns.length > 0 ? null : greeting === null ? null : { ...greeting, text: renderText(greeting.text, "assistant") },
     regexDiagnostics,
-    display: { rules, bindings }
+    display: { rules, bindings, macros }
   };
 }
 function applyTurnDisplayRegex(turn, display, { userDepth, assistantDepth } = {}) {
   return {
     ...turn,
     userText: applyDisplayRegex(
-      turn.userText,
+      applyDisplayNameMacros(turn.userText, display.macros),
       display.rules,
       display.bindings,
       "user",
       { depth: userDepth }
     ).text,
     assistantText: applyDisplayRegex(
-      turn.assistantText,
+      applyDisplayNameMacros(turn.assistantText, display.macros),
       display.rules,
       display.bindings,
       "assistant",

@@ -110,7 +110,7 @@ test('Chat applies ST minDepth and maxDepth to existing timeline messages', asyn
 })
 
 test('live turns use the same display rules without changing their source projection', () => {
-  const turn = { id: 'live', userText: 'Alice asks', assistantText: 'Alice answers', reasoningText: 'Alice thinks' }
+  const turn = { id: 'live', userText: '{{user}} asks Alice', assistantText: '{{char}} answers Alice', reasoningText: 'Alice thinks' }
   const before = structuredClone(turn)
   const projected = applyTurnDisplayRegex(turn, {
     rules: [{
@@ -118,9 +118,10 @@ test('live turns use the same display rules without changing their source projec
       target: 'both', scope: { kind: 'global', resourceId: null }, flags: '', ext: {},
     }],
     bindings: {},
+    macros: { user: 'Reader', character: 'Card' },
   })
-  assert.equal(projected.userText, 'Rendered asks')
-  assert.equal(projected.assistantText, 'Rendered answers')
+  assert.equal(projected.userText, 'Reader asks Rendered')
+  assert.equal(projected.assistantText, 'Card answers Rendered')
   assert.equal(projected.reasoningText, 'Alice thinks')
   assert.deepEqual(turn, before)
 })

@@ -50,3 +50,22 @@ test('Chat load never writes while a turn is incomplete', async () => {
   assert.deepEqual(state.turns, [])
   assert.equal(state.greeting, null)
 })
+
+test('Chat display expands bound user and character names without changing greeting source', async () => {
+  const greeting = 'Welcome {{user}}; {{char}} is waiting.'
+  const client = {
+    async getMessages() { return { incompleteTurn: false, messages: [] } },
+    async getTimeline() { return { nodes: [] } },
+    async getCharacterSelection() {
+      return { selection: { characterCardId: 'character-a', character: { greetingIndex: 0 } } }
+    },
+    async getCharacter() {
+      return { character: { id: 'character-a', name: 'Card', data: { nickname: 'Alice', firstMessage: greeting } } }
+    },
+    async getActive() { return { resources: { user: { id: 'user-a', name: 'Reader' } } } },
+  }
+
+  const state = await loadChatState(client, 'session-a', { path: 'timeline.json' })
+  assert.equal(state.greeting.text, 'Welcome Reader; Alice is waiting.')
+  assert.equal(greeting, 'Welcome {{user}}; {{char}} is waiting.')
+})

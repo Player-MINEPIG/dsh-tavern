@@ -15,6 +15,7 @@ import {
   uiMessage,
 } from '../i18n.js'
 import {
+  applyDisplayNameMacros,
   adjacentGreetingIndex,
   latestUserNodeSeq,
   projectGreeting,
@@ -122,9 +123,16 @@ export async function loadChatState(client, sessionId, playthrough) {
       resourceId: bindings.characterId,
     }),
   ]
+  const character = characterResponse?.character
+  const characterData = character?.data ?? character
+  const macros = {
+    user: active?.resources?.user?.name ?? 'User',
+    character: characterData?.nickname ?? characterData?.name ?? character?.name ?? 'Assistant',
+  }
   const regexDiagnostics = []
   const renderText = (text, target, context) => {
-    const result = applyDisplayRegex(text, rules, bindings, target, context)
+    const expanded = applyDisplayNameMacros(text, macros)
+    const result = applyDisplayRegex(expanded, rules, bindings, target, context)
     regexDiagnostics.push(...result.diagnostics)
     return result.text
   }
@@ -169,7 +177,7 @@ export async function loadChatState(client, sessionId, playthrough) {
     turns,
     greeting: importedTurns.length > 0 ? null : greeting === null ? null : { ...greeting, text: renderText(greeting.text, 'assistant') },
     regexDiagnostics,
-    display: { rules, bindings },
+    display: { rules, bindings, macros },
   }
 }
 
@@ -177,14 +185,14 @@ export function applyTurnDisplayRegex(turn, display, { userDepth, assistantDepth
   return {
     ...turn,
     userText: applyDisplayRegex(
-      turn.userText,
+      applyDisplayNameMacros(turn.userText, display.macros),
       display.rules,
       display.bindings,
       'user',
       { depth: userDepth },
     ).text,
     assistantText: applyDisplayRegex(
-      turn.assistantText,
+      applyDisplayNameMacros(turn.assistantText, display.macros),
       display.rules,
       display.bindings,
       'assistant',
