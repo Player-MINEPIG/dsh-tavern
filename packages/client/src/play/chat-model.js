@@ -15,6 +15,34 @@ function adoptedVariant(node) {
   return node?.variants?.find(variant => variant.id === node.adoptedVariantId) ?? null
 }
 
+function recordedEndSeq(timeline, sessionId) {
+  let end = -1
+  for (const node of timeline?.nodes ?? []) {
+    for (const variant of node.variants ?? []) {
+      if (variant.sessionId === sessionId && Number.isSafeInteger(variant.endEventId)) {
+        end = Math.max(end, variant.endEventId)
+      }
+    }
+  }
+  return end
+}
+
+function contentText(content) {
+  if (!Array.isArray(content)) return ''
+  return content
+    .filter(part => part?.type === 'text' && typeof part.text === 'string')
+    .map(part => part.text)
+    .join('')
+}
+
+function assistantText(blocks) {
+  if (!Array.isArray(blocks)) return ''
+  return blocks
+    .filter(block => block?.kind === 'text' && typeof block.text === 'string')
+    .map(block => block.text)
+    .join('')
+}
+
 export function sessionIsInRpWorkspace(workspace, session) {
   if (workspace?.selected !== true || session == null) return false
   const root = normalizedPath(workspace.rootPath)
@@ -93,6 +121,43 @@ export function projectTimelineQa(timeline, messagesBySession = {}) {
     })
   }
   return result
+}
+
+export function projectLiveTurns({
+  timeline,
+  sessionId,
+  nodes,
+  partial,
+  running = false,
+} = {}) {
+  if (typeof sessionId !== 'string' || sessionId === '') return []
+  const boundary = recordedEndSeq(timeline, sessionId)
+  const pending = []
+  let turn = null
+  for (const node of nodes ?? []) {
+    if (!Number.isFinite(node?.seq) || node.seq <= boundary) continue
+    if (node.kind === 'user') {
+      if (turn !== null) pending.push(turn)
+      turn = {
+        id: `live-${node.seq}`,
+        transient: true,
+        userText: contentText(node.content),
+        assistantText: '',
+        running: false,
+      }
+    } else if (node.kind === 'assistant' && turn !== null) {
+      turn.assistantText = assistantText(node.blocks)
+    }
+  }
+  if (turn !== null) pending.push(turn)
+  if (pending.length === 0) return pending
+  const tail = pending[pending.length - 1]
+  if (running) {
+    const streamed = assistantText(partial?.blocks)
+    if (streamed !== '') tail.assistantText = streamed
+    tail.running = true
+  }
+  return pending
 }
 
 export function projectGreeting({

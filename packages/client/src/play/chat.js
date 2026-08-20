@@ -15,6 +15,7 @@ import {
 import {
   adjacentGreetingIndex,
   projectGreeting,
+  projectLiveTurns,
   projectTimelineQa,
 } from './chat-model.js'
 import {
@@ -34,6 +35,7 @@ const css = `
 .dtv-play-greeting{position:relative;align-self:flex-start;max-width:88%;display:grid;grid-template-columns:30px minmax(0,1fr) 30px;align-items:center;gap:6px}.dtv-play-greeting-text{border-radius:14px;padding:13px 15px;background:var(--dsw-alias-bg-layer-2,var(--dsw-specific-block));white-space:pre-wrap;overflow-wrap:anywhere;font-size:14px;line-height:1.65}
 .dtv-play-greeting-button{width:30px;height:34px;border:0;border-radius:9px;background:transparent;color:var(--dsw-alias-label-secondary);cursor:pointer}.dtv-play-greeting-button:hover{background:var(--dsw-alias-interactive-bg-hover)}.dtv-play-greeting-button:disabled{opacity:.4;cursor:default}
 .dtv-play-chat-status{margin:16px 0;padding:12px 14px;border-radius:12px;background:var(--dsw-alias-bg-layer-2,var(--dsw-specific-block));color:var(--dsw-alias-label-tertiary);font-size:12px;line-height:1.55}.dtv-play-chat-status[data-error=true]{color:var(--dsw-alias-state-error)}
+.dtv-play-chat-running{align-self:flex-start;margin:0;color:var(--dsw-alias-label-tertiary);font-size:12px;line-height:1.5}
 `
 
 function installStyles() {
@@ -174,13 +176,16 @@ function Turn({ turn, ...actionProps }) {
   return h('div', { className: 'dtv-play-chat-row' },
     turn.userText === '' ? null : h('div', { className: 'dtv-play-chat-bubble dtv-play-chat-user' }, rawText(turn.userText)),
     turn.assistantText === '' ? null : h('div', { className: 'dtv-play-chat-bubble dtv-play-chat-assistant' }, rawText(turn.assistantText)),
-    turn.imported ? null : h(PlayTurnActions, { turn, ...actionProps }),
+    turn.running === true ? h('p', { className: 'dtv-play-chat-running' }, uiMessage('play.chat.responding')) : null,
+    turn.imported || turn.transient ? null : h(PlayTurnActions, { turn, ...actionProps }),
   )
 }
 
 export function MowanChatView({ sessionId, useSession, playClient, playthrough, openSession }) {
   installStyles()
   const sessionRevision = useSession(state => `${state.nodes?.length ?? 0}:${state.running === true}:${state.blank === true}`)
+  const liveNodes = useSession(state => state.nodes)
+  const partial = useSession(state => state.partial)
   const [revision, setRevision] = useState(0)
   const running = useSession(state => state.running === true)
   const [state, setState] = useState(null)
@@ -222,6 +227,14 @@ export function MowanChatView({ sessionId, useSession, playClient, playthrough, 
     }
   }
 
+  const liveTurns = state === null ? [] : projectLiveTurns({
+    timeline: state.timeline,
+    sessionId,
+    nodes: liveNodes,
+    partial,
+    running,
+  })
+
   return h('div', { className: 'dtv-play-chat' },
     error === '' ? null : h('p', { className: 'dtv-play-chat-status', 'data-error': true }, rawText(error)),
     state === null && error === '' ? h('p', { className: 'dtv-play-chat-status' }, uiMessage('play.chat.loading')) : null,
@@ -237,8 +250,12 @@ export function MowanChatView({ sessionId, useSession, playClient, playthrough, 
         onChanged: () => setRevision(value => value + 1),
         onError: setError,
       })),
-      state.greeting === null && state.turns.length === 0
+      ...liveTurns.map(turn => h(Turn, { key: turn.id, turn })),
+      state.greeting === null && state.turns.length === 0 && liveTurns.length === 0 && !running
         ? h('p', { className: 'dtv-play-chat-status' }, uiMessage('play.chat.empty'))
+        : null,
+      liveTurns.length === 0 && running
+        ? h('p', { className: 'dtv-play-chat-running' }, uiMessage('play.chat.responding'))
         : null,
     ),
   )

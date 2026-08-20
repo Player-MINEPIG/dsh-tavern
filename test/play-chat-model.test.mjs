@@ -3,6 +3,7 @@ import assert from 'node:assert/strict'
 import {
   findPlaythroughForSession,
   loadCurrentPlaythrough,
+  projectLiveTurns,
   projectTimelineQa,
   sessionIsInRpWorkspace,
 } from '../packages/client/src/play/chat-model.js'
@@ -83,4 +84,47 @@ test('timeline projection renders only adopted visible QA ranges', () => {
   assert.equal(display.displayOverridden, true)
   overridden.nodes[0].hidden = true
   assert.equal(projectTimelineQa(overridden, { fork: [] })[0].hidden, true)
+})
+
+test('live projection shows the durable user immediately and streams only assistant text blocks', () => {
+  const live = projectLiveTurns({
+    timeline: { nodes: [] },
+    sessionId: 'root',
+    nodes: [{
+      kind: 'user',
+      seq: 10,
+      content: [{ type: 'text', text: 'Hello now' }],
+    }],
+    partial: {
+      turn: 1,
+      step: 1,
+      blocks: [
+        { kind: 'reasoning', text: 'private reasoning' },
+        { kind: 'text', text: 'Streaming answer' },
+      ],
+    },
+    running: true,
+  })
+  assert.deepEqual(live, [{
+    id: 'live-10',
+    transient: true,
+    userText: 'Hello now',
+    assistantText: 'Streaming answer',
+    running: true,
+  }])
+})
+
+test('live projection disappears after the same session range is adopted by timeline', () => {
+  const nodes = [
+    { kind: 'user', seq: 10, content: [{ type: 'text', text: 'Hello' }] },
+    { kind: 'assistant', seq: 12, blocks: [{ kind: 'text', text: 'Complete' }] },
+  ]
+  assert.equal(projectLiveTurns({ timeline: { nodes: [] }, sessionId: 'root', nodes })[0].assistantText, 'Complete')
+  assert.deepEqual(projectLiveTurns({
+    timeline: {
+      nodes: [{ variants: [{ sessionId: 'root', startEventId: 10, endEventId: 12 }] }],
+    },
+    sessionId: 'root',
+    nodes,
+  }), [])
 })

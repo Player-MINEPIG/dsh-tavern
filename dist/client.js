@@ -162,6 +162,7 @@ var zh_CN_default = Object.freeze({
   "play.chat.label": "\u5BF9\u8BDD",
   "play.chat.loading": "\u6B63\u5728\u8BFB\u53D6\u672C\u5468\u76EE\u8BB0\u5F55\u2026",
   "play.chat.empty": "\u672C\u5468\u76EE\u5C1A\u65E0\u5BF9\u8BDD\uFF0C\u8BF7\u5728\u4E0B\u65B9\u5F00\u59CB\u3002",
+  "play.chat.responding": "\u6B63\u5728\u56DE\u590D\u2026",
   "play.chat.previousGreeting": "\u4E0A\u4E00\u6761\u5F00\u573A\u767D",
   "play.chat.nextGreeting": "\u4E0B\u4E00\u6761\u5F00\u573A\u767D",
   "play.chat.hiddenNode": "\u8FD9\u4E00\u7EC4\u95EE\u7B54\u5DF2\u5728\u9B54\u4E38\u663E\u793A\u4E2D\u9690\u85CF\u3002",
@@ -711,6 +712,7 @@ var en_default = Object.freeze({
   "play.chat.label": "Chat",
   "play.chat.loading": "Loading playthrough\u2026",
   "play.chat.empty": "No turns yet. Start the conversation below.",
+  "play.chat.responding": "Responding\u2026",
   "play.chat.previousGreeting": "Previous greeting",
   "play.chat.nextGreeting": "Next greeting",
   "play.chat.hiddenNode": "This QA is hidden in Mowan display.",
@@ -3831,6 +3833,25 @@ function rootSessionId(playthrough) {
 function adoptedVariant(node) {
   return node?.variants?.find((variant) => variant.id === node.adoptedVariantId) ?? null;
 }
+function recordedEndSeq(timeline, sessionId) {
+  let end = -1;
+  for (const node of timeline?.nodes ?? []) {
+    for (const variant of node.variants ?? []) {
+      if (variant.sessionId === sessionId && Number.isSafeInteger(variant.endEventId)) {
+        end = Math.max(end, variant.endEventId);
+      }
+    }
+  }
+  return end;
+}
+function contentText(content) {
+  if (!Array.isArray(content)) return "";
+  return content.filter((part) => part?.type === "text" && typeof part.text === "string").map((part) => part.text).join("");
+}
+function assistantText(blocks) {
+  if (!Array.isArray(blocks)) return "";
+  return blocks.filter((block) => block?.kind === "text" && typeof block.text === "string").map((block) => block.text).join("");
+}
 function sessionIsInRpWorkspace(workspace, session) {
   if (workspace?.selected !== true || session == null) return false;
   const root = normalizedPath(workspace.rootPath);
@@ -3901,6 +3922,42 @@ function projectTimelineQa(timeline, messagesBySession = {}) {
     });
   }
   return result;
+}
+function projectLiveTurns({
+  timeline,
+  sessionId,
+  nodes,
+  partial,
+  running = false
+} = {}) {
+  if (typeof sessionId !== "string" || sessionId === "") return [];
+  const boundary = recordedEndSeq(timeline, sessionId);
+  const pending = [];
+  let turn = null;
+  for (const node of nodes ?? []) {
+    if (!Number.isFinite(node?.seq) || node.seq <= boundary) continue;
+    if (node.kind === "user") {
+      if (turn !== null) pending.push(turn);
+      turn = {
+        id: `live-${node.seq}`,
+        transient: true,
+        userText: contentText(node.content),
+        assistantText: "",
+        running: false
+      };
+    } else if (node.kind === "assistant" && turn !== null) {
+      turn.assistantText = assistantText(node.blocks);
+    }
+  }
+  if (turn !== null) pending.push(turn);
+  if (pending.length === 0) return pending;
+  const tail = pending[pending.length - 1];
+  if (running) {
+    const streamed = assistantText(partial?.blocks);
+    if (streamed !== "") tail.assistantText = streamed;
+    tail.running = true;
+  }
+  return pending;
 }
 function projectGreeting({
   timeline,
@@ -4294,7 +4351,7 @@ function PlayTurnActions({
 }
 
 // packages/client/src/play/turns.js
-function recordedEndSeq(timeline, sessionId) {
+function recordedEndSeq2(timeline, sessionId) {
   let end = -1;
   for (const node of timeline?.nodes ?? []) {
     for (const variant of node.variants ?? []) {
@@ -4312,7 +4369,7 @@ function appendCompletedTurns(timeline, messageState, sessionId, {
 } = {}) {
   if (typeof sessionId !== "string" || sessionId === "") throw new TypeError("sessionId is required");
   if (messageState?.incompleteTurn === true) return { timeline, added: [] };
-  const boundary = recordedEndSeq(timeline, sessionId);
+  const boundary = recordedEndSeq2(timeline, sessionId);
   const messages = [...messageState?.messages ?? []].filter((message) => Number.isSafeInteger(message.seq) && message.seq > boundary).sort((left, right) => left.seq - right.seq);
   const added = [];
   let user = null;
@@ -4381,6 +4438,7 @@ var css7 = `
 .dtv-play-greeting{position:relative;align-self:flex-start;max-width:88%;display:grid;grid-template-columns:30px minmax(0,1fr) 30px;align-items:center;gap:6px}.dtv-play-greeting-text{border-radius:14px;padding:13px 15px;background:var(--dsw-alias-bg-layer-2,var(--dsw-specific-block));white-space:pre-wrap;overflow-wrap:anywhere;font-size:14px;line-height:1.65}
 .dtv-play-greeting-button{width:30px;height:34px;border:0;border-radius:9px;background:transparent;color:var(--dsw-alias-label-secondary);cursor:pointer}.dtv-play-greeting-button:hover{background:var(--dsw-alias-interactive-bg-hover)}.dtv-play-greeting-button:disabled{opacity:.4;cursor:default}
 .dtv-play-chat-status{margin:16px 0;padding:12px 14px;border-radius:12px;background:var(--dsw-alias-bg-layer-2,var(--dsw-specific-block));color:var(--dsw-alias-label-tertiary);font-size:12px;line-height:1.55}.dtv-play-chat-status[data-error=true]{color:var(--dsw-alias-state-error)}
+.dtv-play-chat-running{align-self:flex-start;margin:0;color:var(--dsw-alias-label-tertiary);font-size:12px;line-height:1.5}
 `;
 function installStyles2() {
   if (document.querySelector(`style[data-plugin-css="${PLUGIN_ID}-play-chat"]`) !== null) return;
@@ -4523,12 +4581,15 @@ function Turn({ turn, ...actionProps }) {
     { className: "dtv-play-chat-row" },
     turn.userText === "" ? null : h8("div", { className: "dtv-play-chat-bubble dtv-play-chat-user" }, rawText(turn.userText)),
     turn.assistantText === "" ? null : h8("div", { className: "dtv-play-chat-bubble dtv-play-chat-assistant" }, rawText(turn.assistantText)),
-    turn.imported ? null : h8(PlayTurnActions, { turn, ...actionProps })
+    turn.running === true ? h8("p", { className: "dtv-play-chat-running" }, uiMessage("play.chat.responding")) : null,
+    turn.imported || turn.transient ? null : h8(PlayTurnActions, { turn, ...actionProps })
   );
 }
 function MowanChatView({ sessionId, useSession, playClient, playthrough, openSession }) {
   installStyles2();
   const sessionRevision = useSession((state2) => `${state2.nodes?.length ?? 0}:${state2.running === true}:${state2.blank === true}`);
+  const liveNodes = useSession((state2) => state2.nodes);
+  const partial = useSession((state2) => state2.partial);
   const [revision, setRevision] = (0, import_react8.useState)(0);
   const running = useSession((state2) => state2.running === true);
   const [state, setState] = (0, import_react8.useState)(null);
@@ -4568,6 +4629,13 @@ function MowanChatView({ sessionId, useSession, playClient, playthrough, openSes
       setGreetingBusy(false);
     }
   };
+  const liveTurns = state === null ? [] : projectLiveTurns({
+    timeline: state.timeline,
+    sessionId,
+    nodes: liveNodes,
+    partial,
+    running
+  });
   return h8(
     "div",
     { className: "dtv-play-chat" },
@@ -4587,7 +4655,9 @@ function MowanChatView({ sessionId, useSession, playClient, playthrough, openSes
         onChanged: () => setRevision((value) => value + 1),
         onError: setError
       })),
-      state.greeting === null && state.turns.length === 0 ? h8("p", { className: "dtv-play-chat-status" }, uiMessage("play.chat.empty")) : null
+      ...liveTurns.map((turn) => h8(Turn, { key: turn.id, turn })),
+      state.greeting === null && state.turns.length === 0 && liveTurns.length === 0 && !running ? h8("p", { className: "dtv-play-chat-status" }, uiMessage("play.chat.empty")) : null,
+      liveTurns.length === 0 && running ? h8("p", { className: "dtv-play-chat-running" }, uiMessage("play.chat.responding")) : null
     )
   );
 }

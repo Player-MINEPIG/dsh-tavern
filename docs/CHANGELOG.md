@@ -4,6 +4,21 @@ This is the staged implementation log for dsh-tavern. It is kept separately
 from the product README so reviewers can follow intent, decisions, verification,
 and known limits chronologically.
 
+## 2026-08-20 — Mowan follows DSH live conversation state
+
+- The play conversation consumes DSH's public `useSession` projection directly:
+  a durable user node appears immediately without waiting for the assistant or
+  for Tavern timeline reconciliation.
+- While the agent is running, Mowan shows an explicit responding state and
+  renders incremental assistant `text` blocks from DSH's `partial` projection.
+  Structured reasoning remains separate and is not flattened into the body.
+- Completed live rows disappear as soon as the same event range is adopted by
+  `timeline.json`; `/v2/messages` remains the durable reconciliation source and
+  no second streaming API was added.
+
+Verification: `test/play-chat-model.test.mjs`, full 303-test suite (301 pass,
+2 skip), and production client build.
+
 ## 2026-08-20 — Accepted launcher and frontend-mode behavior
 
 - The floating launcher always displays `DT`. Left click immediately expands or
