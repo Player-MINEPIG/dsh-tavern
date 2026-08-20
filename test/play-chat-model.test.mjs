@@ -76,6 +76,7 @@ test('timeline projection renders only adopted visible QA ranges', () => {
     id: 'qa-1',
     hidden: false,
     userText: 'Hello',
+    reasoningText: 'internal reasoning',
     assistantText: 'Hi',
     originalAssistantText: 'Hi',
     displayOverridden: false,
@@ -116,6 +117,7 @@ test('live projection shows the durable user immediately and streams only assist
     id: 'live-10',
     transient: true,
     userText: 'Hello now',
+    reasoningText: 'private reasoning',
     assistantText: 'Streaming answer',
     running: true,
   }])
@@ -124,9 +126,14 @@ test('live projection shows the durable user immediately and streams only assist
 test('live projection disappears after the same session range is adopted by timeline', () => {
   const nodes = [
     { kind: 'user', seq: 10, content: [{ type: 'text', text: 'Hello' }] },
-    { kind: 'assistant', seq: 12, blocks: [{ kind: 'text', text: 'Complete' }] },
+    { kind: 'assistant', seq: 12, blocks: [
+      { kind: 'reasoning', text: 'finished reasoning' },
+      { kind: 'text', text: 'Complete' },
+    ] },
   ]
-  assert.equal(projectLiveTurns({ timeline: { nodes: [] }, sessionId: 'root', nodes })[0].assistantText, 'Complete')
+  const projected = projectLiveTurns({ timeline: { nodes: [] }, sessionId: 'root', nodes })[0]
+  assert.equal(projected.reasoningText, 'finished reasoning')
+  assert.equal(projected.assistantText, 'Complete')
   assert.deepEqual(projectLiveTurns({
     timeline: {
       nodes: [{ variants: [{ sessionId: 'root', startEventId: 10, endEventId: 12 }] }],

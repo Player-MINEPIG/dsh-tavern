@@ -35,10 +35,26 @@ function contentText(content) {
     .join('')
 }
 
+function contentReasoning(content) {
+  if (!Array.isArray(content)) return ''
+  return content
+    .filter(part => part?.type === 'reasoning' && typeof part.text === 'string')
+    .map(part => part.text)
+    .join('')
+}
+
 function assistantText(blocks) {
   if (!Array.isArray(blocks)) return ''
   return blocks
     .filter(block => block?.kind === 'text' && typeof block.text === 'string')
+    .map(block => block.text)
+    .join('')
+}
+
+function assistantReasoning(blocks) {
+  if (!Array.isArray(blocks)) return ''
+  return blocks
+    .filter(block => block?.kind === 'reasoning' && typeof block.text === 'string')
     .map(block => block.text)
     .join('')
 }
@@ -117,6 +133,7 @@ export function projectTimelineQa(timeline, messagesBySession = {}) {
       id: node.id,
       hidden: node.hidden === true,
       userText: renderedMessageText(user),
+      reasoningText: contentReasoning(assistant?.content),
       assistantText: node.displayOverride ?? renderedMessageText(assistant),
       originalAssistantText: renderedMessageText(assistant),
       displayOverridden: node.displayOverride !== null,
@@ -147,10 +164,12 @@ export function projectLiveTurns({
         id: `live-${node.seq}`,
         transient: true,
         userText: contentText(node.content),
+        reasoningText: '',
         assistantText: '',
         running: false,
       }
     } else if (node.kind === 'assistant' && turn !== null) {
+      turn.reasoningText = assistantReasoning(node.blocks)
       turn.assistantText = assistantText(node.blocks)
     }
   }
@@ -158,7 +177,9 @@ export function projectLiveTurns({
   if (pending.length === 0) return pending
   const tail = pending[pending.length - 1]
   if (running) {
+    const reasoning = assistantReasoning(partial?.blocks)
     const streamed = assistantText(partial?.blocks)
+    if (reasoning !== '') tail.reasoningText = reasoning
     if (streamed !== '') tail.assistantText = streamed
     tail.running = true
   }

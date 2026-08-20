@@ -96,6 +96,7 @@ export default Object.freeze({
   "play.chat.loading": "正在读取本周目记录…",
   "play.chat.empty": "本周目尚无对话，请在下方开始。",
   "play.chat.thinking": "正在思考…",
+  "play.chat.reasoning": "思考",
   "play.chat.previousGreeting": "上一条开场白",
   "play.chat.nextGreeting": "下一条开场白",
   "play.chat.hiddenNode": "这一组问答已在魔丸显示中隐藏。",

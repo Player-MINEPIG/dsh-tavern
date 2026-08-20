@@ -163,6 +163,7 @@ var zh_CN_default = Object.freeze({
   "play.chat.loading": "\u6B63\u5728\u8BFB\u53D6\u672C\u5468\u76EE\u8BB0\u5F55\u2026",
   "play.chat.empty": "\u672C\u5468\u76EE\u5C1A\u65E0\u5BF9\u8BDD\uFF0C\u8BF7\u5728\u4E0B\u65B9\u5F00\u59CB\u3002",
   "play.chat.thinking": "\u6B63\u5728\u601D\u8003\u2026",
+  "play.chat.reasoning": "\u601D\u8003",
   "play.chat.previousGreeting": "\u4E0A\u4E00\u6761\u5F00\u573A\u767D",
   "play.chat.nextGreeting": "\u4E0B\u4E00\u6761\u5F00\u573A\u767D",
   "play.chat.hiddenNode": "\u8FD9\u4E00\u7EC4\u95EE\u7B54\u5DF2\u5728\u9B54\u4E38\u663E\u793A\u4E2D\u9690\u85CF\u3002",
@@ -713,6 +714,7 @@ var en_default = Object.freeze({
   "play.chat.loading": "Loading playthrough\u2026",
   "play.chat.empty": "No turns yet. Start the conversation below.",
   "play.chat.thinking": "Thinking\u2026",
+  "play.chat.reasoning": "Thinking",
   "play.chat.previousGreeting": "Previous greeting",
   "play.chat.nextGreeting": "Next greeting",
   "play.chat.hiddenNode": "This QA is hidden in Mowan display.",
@@ -3848,9 +3850,17 @@ function contentText(content) {
   if (!Array.isArray(content)) return "";
   return content.filter((part) => part?.type === "text" && typeof part.text === "string").map((part) => part.text).join("");
 }
+function contentReasoning(content) {
+  if (!Array.isArray(content)) return "";
+  return content.filter((part) => part?.type === "reasoning" && typeof part.text === "string").map((part) => part.text).join("");
+}
 function assistantText(blocks) {
   if (!Array.isArray(blocks)) return "";
   return blocks.filter((block) => block?.kind === "text" && typeof block.text === "string").map((block) => block.text).join("");
+}
+function assistantReasoning(blocks) {
+  if (!Array.isArray(blocks)) return "";
+  return blocks.filter((block) => block?.kind === "reasoning" && typeof block.text === "string").map((block) => block.text).join("");
 }
 function renderedMessageText(message) {
   if (Array.isArray(message?.content) && message.content.length > 0) return contentText(message.content);
@@ -3917,6 +3927,7 @@ function projectTimelineQa(timeline, messagesBySession = {}) {
       id: node.id,
       hidden: node.hidden === true,
       userText: renderedMessageText(user),
+      reasoningText: contentReasoning(assistant?.content),
       assistantText: node.displayOverride ?? renderedMessageText(assistant),
       originalAssistantText: renderedMessageText(assistant),
       displayOverridden: node.displayOverride !== null,
@@ -3946,10 +3957,12 @@ function projectLiveTurns({
         id: `live-${node.seq}`,
         transient: true,
         userText: contentText(node.content),
+        reasoningText: "",
         assistantText: "",
         running: false
       };
     } else if (node.kind === "assistant" && turn !== null) {
+      turn.reasoningText = assistantReasoning(node.blocks);
       turn.assistantText = assistantText(node.blocks);
     }
   }
@@ -3957,7 +3970,9 @@ function projectLiveTurns({
   if (pending.length === 0) return pending;
   const tail = pending[pending.length - 1];
   if (running) {
+    const reasoning = assistantReasoning(partial?.blocks);
     const streamed = assistantText(partial?.blocks);
+    if (reasoning !== "") tail.reasoningText = reasoning;
     if (streamed !== "") tail.assistantText = streamed;
     tail.running = true;
   }
@@ -4450,6 +4465,7 @@ var css7 = `
 .dtv-play-greeting-button{width:30px;height:34px;border:0;border-radius:9px;background:transparent;color:var(--dsw-alias-label-secondary);cursor:pointer}.dtv-play-greeting-button:hover{background:var(--dsw-alias-interactive-bg-hover)}.dtv-play-greeting-button:disabled{opacity:.4;cursor:default}
 .dtv-play-chat-status{margin:16px 0;padding:12px 14px;border-radius:12px;background:var(--dsw-alias-bg-layer-2,var(--dsw-specific-block));color:var(--dsw-alias-label-tertiary);font-size:12px;line-height:1.55}.dtv-play-chat-status[data-error=true]{color:var(--dsw-alias-state-error)}
 .dtv-play-chat-running{align-self:flex-start;margin:0;color:var(--dsw-alias-label-tertiary);font-size:12px;line-height:1.5}
+.dtv-play-chat-reasoning{align-self:flex-start;max-width:88%;color:var(--dsw-alias-label-secondary);font-size:13px;line-height:1.6}.dtv-play-chat-reasoning summary{width:max-content;cursor:pointer;user-select:none;color:var(--dsw-alias-label-tertiary);font-size:12px}.dtv-play-chat-reasoning-text{margin-top:8px;padding:10px 12px;border-left:2px solid var(--dsw-alias-border-secondary,var(--dsw-specific-divider));white-space:pre-wrap;overflow-wrap:anywhere}
 `;
 function installStyles2() {
   if (document.querySelector(`style[data-plugin-css="${PLUGIN_ID}-play-chat"]`) !== null) return;
@@ -4591,6 +4607,12 @@ function Turn({ turn, ...actionProps }) {
     "div",
     { className: "dtv-play-chat-row" },
     turn.userText === "" ? null : h8("div", { className: "dtv-play-chat-bubble dtv-play-chat-user" }, rawText(turn.userText)),
+    turn.reasoningText === "" || turn.reasoningText == null ? null : h8(
+      "details",
+      { className: "dtv-play-chat-reasoning" },
+      h8("summary", { title: uiMessage("play.chat.reasoning") }, uiMessage("play.chat.reasoning")),
+      h8("div", { className: "dtv-play-chat-reasoning-text" }, rawText(turn.reasoningText))
+    ),
     turn.assistantText === "" ? null : h8("div", { className: "dtv-play-chat-bubble dtv-play-chat-assistant" }, rawText(turn.assistantText)),
     turn.running === true && turn.assistantText === "" ? h8("p", { className: "dtv-play-chat-running" }, uiMessage("play.chat.thinking")) : null,
     turn.imported || turn.transient ? null : h8(PlayTurnActions, { turn, ...actionProps })
@@ -4607,13 +4629,12 @@ function MowanChatView({ sessionId, useSession, playClient, playthrough, openSes
   const [state, setState] = (0, import_react8.useState)(null);
   const [error, setError] = (0, import_react8.useState)("");
   const [greetingBusy, setGreetingBusy] = (0, import_react8.useState)(false);
-  const scrollRoot = (0, import_react8.useRef)(null);
+  const bottomAnchor = (0, import_react8.useRef)(null);
   const initialScrollSession = (0, import_react8.useRef)(null);
   const userSeqSession = (0, import_react8.useRef)(null);
   const lastUserSeq = (0, import_react8.useRef)(-1);
   const scrollToBottom = () => {
-    const root = scrollRoot.current;
-    if (root !== null) root.scrollTop = root.scrollHeight;
+    bottomAnchor.current?.scrollIntoView({ block: "end" });
   };
   (0, import_react8.useLayoutEffect)(() => {
     if (state === null || initialScrollSession.current === sessionId) return;
@@ -4673,7 +4694,7 @@ function MowanChatView({ sessionId, useSession, playClient, playthrough, openSes
   });
   return h8(
     "div",
-    { className: "dtv-play-chat", ref: scrollRoot },
+    { className: "dtv-play-chat" },
     error === "" ? null : h8("p", { className: "dtv-play-chat-status", "data-error": true }, rawText(error)),
     state === null && error === "" ? h8("p", { className: "dtv-play-chat-status" }, uiMessage("play.chat.loading")) : null,
     state === null ? null : h8(
@@ -4692,7 +4713,8 @@ function MowanChatView({ sessionId, useSession, playClient, playthrough, openSes
       })),
       ...liveTurns.map((turn) => h8(Turn, { key: turn.id, turn })),
       state.greeting === null && state.turns.length === 0 && liveTurns.length === 0 && !running ? h8("p", { className: "dtv-play-chat-status" }, uiMessage("play.chat.empty")) : null,
-      liveTurns.length === 0 && running ? h8("p", { className: "dtv-play-chat-running" }, uiMessage("play.chat.thinking")) : null
+      liveTurns.length === 0 && running ? h8("p", { className: "dtv-play-chat-running" }, uiMessage("play.chat.thinking")) : null,
+      h8("span", { ref: bottomAnchor, "aria-hidden": true })
     )
   );
 }

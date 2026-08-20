@@ -96,6 +96,7 @@ export default Object.freeze({
   "play.chat.loading": "Loading playthrough…",
   "play.chat.empty": "No turns yet. Start the conversation below.",
   "play.chat.thinking": "Thinking…",
+  "play.chat.reasoning": "Thinking",
   "play.chat.previousGreeting": "Previous greeting",
   "play.chat.nextGreeting": "Next greeting",
   "play.chat.hiddenNode": "This QA is hidden in Mowan display.",
