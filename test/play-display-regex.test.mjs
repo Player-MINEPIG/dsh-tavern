@@ -3,7 +3,9 @@ import assert from 'node:assert/strict'
 import {
   applyDisplayRegex,
   importRegexDocument,
+  nativeRegexScript,
   normalizeRegexDocument,
+  resourceRegexInventory,
   resourceRegexRules,
 } from '../packages/client/src/play/regex.js'
 
@@ -107,4 +109,31 @@ test('resource regex import finds preserved V2 card and preset sources without r
   assert.deepEqual(resourceRegexRules({ source: { raw: { name: 'No scripts' } } }, {
     kind: 'preset', resourceId: 'preset-b',
   }), [])
+})
+
+test('resource regex edits serialize back to native ST fields without losing unknown extensions', () => {
+  const [rule] = resourceRegexInventory([{ id: 'native', scriptName: 'Before', findRegex: '/x/g',
+    replaceString: 'y', placement: [1, 5], disabled: false, markdownOnly: true,
+    futureExtension: { kept: true } }], { kind: 'preset', resourceId: 'preset-a' })
+  const native = nativeRegexScript({
+    ...rule,
+    name: 'After',
+    find: '/z/g',
+    replace: 'w',
+    enabled: false,
+    target: 'assistant',
+  })
+  assert.equal(native.scriptName, 'After')
+  assert.equal(native.findRegex, '/z/g')
+  assert.equal(native.replaceString, 'w')
+  assert.equal(native.disabled, true)
+  assert.deepEqual(native.placement, [5, 2])
+  assert.deepEqual(native.futureExtension, { kept: true })
+})
+
+test('resource regex serialization leaves untouched native fields byte-shape-equivalent', () => {
+  const source = { id: 'native', scriptName: 'Before', findRegex: '/x/g', replaceString: 'y',
+    placement: [2, 1, 5], disabled: false, markdownOnly: true, futureExtension: { kept: true } }
+  const [rule] = resourceRegexInventory([source], { kind: 'character', resourceId: 'character-a' })
+  assert.deepEqual(nativeRegexScript(rule), source)
 })

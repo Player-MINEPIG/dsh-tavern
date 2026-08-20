@@ -18,22 +18,22 @@ test('regex panel resolves only active preset and character bindings', () => {
 test('regex panel loads source-owned rules from the active preset and character', async () => {
   const calls = []
   const rules = await activeResourceRegexRules({
-    async getPreset(id) {
+    async getPresetRegexScripts(id) {
       calls.push(['preset', id])
-      return { preset: { source: { raw: { extensions: { regex_scripts: [{
+      return { regexScripts: [{
         id: 'preset-rule', scriptName: 'Preset rule', findRegex: '/<正文>|<\\/正文>/g',
         replaceString: '', placement: [2], disabled: false, markdownOnly: true,
       }, {
         id: 'prompt-rule', scriptName: 'Prompt-only rule', findRegex: '/prompt/g',
         replaceString: '', placement: [2], disabled: false, promptOnly: true, markdownOnly: false,
-      }] } } } } }
+      }] }
     },
-    async getCharacter(id) {
+    async getCharacterRegexScripts(id) {
       calls.push(['character', id])
-      return { character: { source: { raw: { data: { extensions: { regex_scripts: [{
+      return { regexScripts: [{
         id: 'character-rule', scriptName: 'Character rule', findRegex: '/x/g',
         replaceString: 'y', placement: [2], disabled: true, markdownOnly: true,
-      }] } } } } } }
+      }] }
     },
   }, { presetId: 'preset-a', characterId: 'character-a' })
 
@@ -45,6 +45,7 @@ test('regex panel loads source-owned rules from the active preset and character'
   assert.equal(rules.preset[1].sourceDisplayEligible, false)
   assert.equal(rules.character[0].name, 'Character rule')
   assert.equal(rules.character[0].enabled, false)
+  assert.equal(rules.character[0].sourceRaw.findRegex, '/x/g')
 })
 
 test('Mowan regex panel exposes scoped CRUD and import/export without an AI request seam', () => {
@@ -59,6 +60,10 @@ test('Mowan regex panel exposes scoped CRUD and import/export without an AI requ
   for (const kind of ['global', 'preset', 'character']) assert.match(source, new RegExp(`['"]${kind}['"]`))
   assert.match(source, /fileInput\.current\?\.click\(\)/)
   assert.match(source, /downloadJson\(document\)/)
+  assert.match(source, /putPresetRegexScripts/)
+  assert.match(source, /putCharacterRegexScripts/)
+  assert.match(source, /removeSourceRule/)
+  assert.doesNotMatch(source, /busy \|\|= sourceOwned/)
   assert.doesNotMatch(source, /postUserMessage|agent\/request|systemPrompt|putTimeline|getMessages/)
 })
 

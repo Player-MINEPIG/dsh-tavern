@@ -30,8 +30,8 @@ function nativePlacement(value) {
     : typeof value.placement === 'number'
       ? [value.placement]
       : []
-  let markdownOnly = value.markdownOnly === true
-  let promptOnly = value.promptOnly === true
+  let markdownOnly = value.markdownOnly === true || value.markdown_only === true
+  let promptOnly = value.promptOnly === true || value.prompt_only === true
 
   // Match SillyTavern's migration of deprecated MD Display/sendAs placements.
   if (placement.includes(0)) {
@@ -103,27 +103,27 @@ function generatedId() {
 
 export function normalizeRegexRule(value, { scope } = {}) {
   if (!isRecord(value)) throw new TypeError('regex rule must be an object')
-  const source = stringValue(value.find, value.findRegex, value.regex)
+  const source = stringValue(value.find, value.findRegex, value.find_regex, value.regex)
   const native = nativePlacement(value)
   return {
     id: stringValue(value.id) || generatedId(),
     name: stringValue(value.name, value.script_name, value.scriptName) || 'Regex',
     enabled: importedEnabled(value),
     find: source,
-    replace: stringValue(value.replace, value.replaceString, value.replacement),
+    replace: stringValue(value.replace, value.replaceString, value.replace_string, value.replacement),
     flags: stringValue(value.flags),
     target: importedTarget(value),
     scope: normalizeScope(value.scope, scope),
     placement: native.placement,
-    trimStrings: stringList(value.trimStrings),
-    markdownOnly: native.markdownOnly,
-    promptOnly: native.promptOnly,
-    runOnEdit: value.runOnEdit === true,
-    substituteRegex: [0, 1, 2].includes(Number(value.substituteRegex))
-      ? Number(value.substituteRegex)
+    trimStrings: stringList(value.trimStrings ?? value.trim_strings),
+    markdownOnly: native.markdownOnly || value.markdown_only === true,
+    promptOnly: native.promptOnly || value.prompt_only === true,
+    runOnEdit: value.runOnEdit === true || value.run_on_edit === true,
+    substituteRegex: [0, 1, 2].includes(Number(value.substituteRegex ?? value.substitute_regex))
+      ? Number(value.substituteRegex ?? value.substitute_regex)
       : 0,
-    minDepth: finiteDepth(value.minDepth),
-    maxDepth: finiteDepth(value.maxDepth),
+    minDepth: finiteDepth(value.minDepth ?? value.min_depth),
+    maxDepth: finiteDepth(value.maxDepth ?? value.max_depth),
     ext: isRecord(value.ext) ? structuredClone(value.ext) : {},
   }
 }
@@ -145,10 +145,57 @@ export function importRegexDocument(value, { scope = { kind: 'global', resourceI
 export function resourceRegexInventory(value, scope) {
   const candidates = regexCandidates(value)
   if (candidates === null) return []
-  return candidates.map(rule => ({
+  return candidates.map((rule, sourceIndex) => ({
     ...normalizeRegexRule(rule, { scope }),
     sourceDisplayEligible: displayImportCandidate(rule),
+    sourceIndex,
+    sourceRaw: structuredClone(rule),
   }))
+}
+
+function writeNativeField(target, aliases, canonical, value) {
+  const existing = aliases.filter(key => Object.hasOwn(target, key))
+  for (const key of existing.length === 0 ? [canonical] : existing) target[key] = structuredClone(value)
+}
+
+function nativePlacementFor(rule) {
+  const placement = Array.isArray(rule.placement) ? rule.placement : []
+  const retained = placement.filter(item => ![1, 2, 'user', 'assistant', 'user_input', 'ai_output'].includes(item))
+  if (rule.target === 'user' || rule.target === 'both') retained.push(1)
+  if (rule.target === 'assistant' || rule.target === 'both') retained.push(2)
+  return retained
+}
+
+function findWithFlags(source, flags) {
+  if (!source.startsWith('/') || flags === '') return source
+  const closing = source.lastIndexOf('/')
+  if (closing <= 0 || !/^[dgimsuvy]*$/.test(flags)) return source
+  return `${source.slice(0, closing + 1)}${flags}`
+}
+
+export function nativeRegexScript(rule) {
+  const source = isRecord(rule?.sourceRaw) ? structuredClone(rule.sourceRaw) : {}
+  const original = isRecord(rule?.sourceRaw)
+    ? normalizeRegexRule(rule.sourceRaw, { scope: rule.scope })
+    : null
+  if (original === null) source.id = rule.id
+  if (original === null || rule.name !== original.name) {
+    writeNativeField(source, ['scriptName', 'script_name', 'name'], 'scriptName', rule.name)
+  }
+  if (original === null || rule.find !== original.find || rule.flags !== original.flags) {
+    writeNativeField(source, ['findRegex', 'find_regex', 'find', 'regex'], 'findRegex', findWithFlags(rule.find, rule.flags))
+  }
+  if (original === null || rule.replace !== original.replace) {
+    writeNativeField(source, ['replaceString', 'replace_string', 'replace', 'replacement'], 'replaceString', rule.replace)
+  }
+  if (original === null || rule.enabled !== original.enabled) {
+    writeNativeField(source, ['disabled'], 'disabled', !rule.enabled)
+    if (Object.hasOwn(source, 'enabled')) source.enabled = rule.enabled
+  }
+  if (original === null || rule.target !== original.target) {
+    writeNativeField(source, ['placement'], 'placement', nativePlacementFor(rule))
+  }
+  return source
 }
 
 export function resourceRegexRules(value, scope) {

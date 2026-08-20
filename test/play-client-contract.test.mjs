@@ -152,6 +152,8 @@ test('live play client parses JSON file envelopes and writes them as content str
   await client.postBranch('session-1', 19)
   await client.putGreetingIndex('session-1', 1)
   await client.putCharacterSelection('session-2', 'character-1', { greetingIndex: 0 })
+  await client.putPresetRegexScripts('preset-1', [{ id: 'preset-rule' }])
+  await client.putCharacterRegexScripts('character-1', [{ id: 'character-rule' }])
 
   const catalogPut = calls.find(item => item.method === 'PUT' && item.url.includes('path=catalog.json'))
   const timelinePut = calls.find(item => item.method === 'PUT' && item.url.includes('timeline.json'))
@@ -167,6 +169,8 @@ test('live play client parses JSON file envelopes and writes them as content str
   const greetingSelection = selectionPosts.map(item => JSON.parse(item.body)).find(body => body.sessionId === 'session-1')
   assert.equal(directSelection.characterCardId, 'character-1')
   assert.equal(greetingSelection.character.greetingIndex, 1)
+  const regexPuts = calls.filter(item => item.method === 'PUT' && item.url.endsWith('/regex-scripts'))
+  assert.deepEqual(regexPuts.map(item => JSON.parse(item.body).regexScripts[0].id), ['preset-rule', 'character-rule'])
   assert.throws(() => client.getTimeline('character-1/playthrough-1'), /timeline\.json/)
   assert.throws(() => client.postBranch('session-1', '19'), /non-negative integer/)
 })

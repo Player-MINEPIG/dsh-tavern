@@ -190,8 +190,24 @@ export function createLivePlayClient({
       return v1('GET', `/characters/${encodeURIComponent(id)}`)
     },
 
+    getCharacterRegexScripts(id) {
+      return v1('GET', `/characters/${encodeURIComponent(id)}/regex-scripts`)
+    },
+
+    putCharacterRegexScripts(id, regexScripts) {
+      return v1('PUT', `/characters/${encodeURIComponent(id)}/regex-scripts`, { regexScripts })
+    },
+
     getPreset(id) {
       return v1('GET', `/presets/${encodeURIComponent(id)}`)
+    },
+
+    getPresetRegexScripts(id) {
+      return v1('GET', `/presets/${encodeURIComponent(id)}/regex-scripts`)
+    },
+
+    putPresetRegexScripts(id, regexScripts) {
+      return v1('PUT', `/presets/${encodeURIComponent(id)}/regex-scripts`, { regexScripts })
     },
 
     getActive(sessionId) {

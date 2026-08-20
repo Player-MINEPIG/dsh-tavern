@@ -14,6 +14,7 @@ import {
 import {
   getRegexDocument,
   importRegexDocument,
+  nativeRegexScript,
   normalizeRegexRule,
   putRegexDocument,
   resourceRegexInventory,
@@ -60,30 +61,41 @@ function Field({ labelKey, children }) {
 
 export async function activeResourceRegexRules(client, bindings) {
   const [presetResponse, characterResponse] = await Promise.all([
-    typeof bindings.presetId === 'string' && typeof client.getPreset === 'function'
-      ? client.getPreset(bindings.presetId)
-      : null,
-    typeof bindings.characterId === 'string' && typeof client.getCharacter === 'function'
-      ? client.getCharacter(bindings.characterId)
-      : null,
+    typeof bindings.presetId === 'string' && typeof client.getPresetRegexScripts === 'function'
+      ? client.getPresetRegexScripts(bindings.presetId)
+      : typeof bindings.presetId === 'string' && typeof client.getPreset === 'function'
+        ? client.getPreset(bindings.presetId)
+        : null,
+    typeof bindings.characterId === 'string' && typeof client.getCharacterRegexScripts === 'function'
+      ? client.getCharacterRegexScripts(bindings.characterId)
+      : typeof bindings.characterId === 'string' && typeof client.getCharacter === 'function'
+        ? client.getCharacter(bindings.characterId)
+        : null,
   ])
   return {
-    preset: resourceRegexInventory(presetResponse?.preset ?? presetResponse, {
+    preset: resourceRegexInventory(presetResponse?.regexScripts ?? presetResponse?.preset ?? presetResponse, {
       kind: 'preset',
       resourceId: bindings.presetId,
     }),
-    character: resourceRegexInventory(characterResponse?.character ?? characterResponse, {
+    character: resourceRegexInventory(characterResponse?.regexScripts ?? characterResponse?.character ?? characterResponse, {
       kind: 'character',
       resourceId: bindings.characterId,
     }),
   }
 }
 
+async function putActiveResourceRegexRules(client, kind, resourceId, rules) {
+  if (typeof resourceId !== 'string') throw new TypeError(`${kind} regex resource is not bound`)
+  const method = kind === 'preset' ? client.putPresetRegexScripts : client.putCharacterRegexScripts
+  if (typeof method !== 'function') throw new TypeError(`${kind} regex resource API is unavailable`)
+  const response = await method.call(client, resourceId, rules.map(nativeRegexScript))
+  return resourceRegexInventory(response?.regexScripts ?? [], { kind, resourceId })
+}
+
 function RuleEditor({ rule, busy, update, remove, sourceOwned = false }) {
   const set = patch => update({ ...rule, ...patch })
   const setScope = patch => set({ scope: { ...rule.scope, ...patch } })
   const stateLabel = uiMessage(rule.enabled ? 'common.enabled' : 'common.disabled')
-  busy ||= sourceOwned
   return h('details', { className: 'dtv-entry dtv-regex-rule', 'data-enabled': rule.enabled },
     h('summary', null,
       h('span', { className: 'dtv-entry-dot', 'aria-hidden': 'true' }),
@@ -143,7 +155,7 @@ function RuleEditor({ rule, busy, update, remove, sourceOwned = false }) {
         h(Field, { labelKey: 'regex.scope' }, h('select', {
           className: 'dtv-select',
           value: rule.scope.kind,
-          disabled: busy,
+          disabled: busy || sourceOwned,
           onChange: event => setScope({
             kind: event.target.value,
             resourceId: event.target.value === 'global' ? null : rule.scope.resourceId,
@@ -154,13 +166,14 @@ function RuleEditor({ rule, busy, update, remove, sourceOwned = false }) {
         rule.scope.kind === 'global' ? null : h(Field, { labelKey: 'regex.resourceId' }, h('input', {
           className: 'dtv-input',
           value: rule.scope.resourceId ?? '',
-          disabled: busy,
+          disabled: busy || sourceOwned,
           onChange: event => setScope({ resourceId: event.target.value || null }),
         })),
       ),
       sourceOwned
         ? h('p', { className: 'dtv-note' }, uiMessage(rule.sourceDisplayEligible ? 'regex.sourceOwnedDisplay' : 'regex.sourceOwnedPromptOnly'))
-        : h('div', { className: 'dtv-entry-actions' }, h('button', {
+        : null,
+      h('div', { className: 'dtv-entry-actions' }, h('button', {
           className: 'dtv-button dtv-danger',
           type: 'button',
           disabled: busy,
@@ -181,6 +194,8 @@ function RegexScopeSection({
   exportJson,
   update,
   remove,
+  updateSource,
+  removeSource,
 }) {
   const rules = [...editableRules, ...sourceRules]
   const unbound = kind === 'preset' && bindings.presetId === null
@@ -214,8 +229,8 @@ function RegexScopeSection({
             rule,
             busy,
             sourceOwned: true,
-            update: () => {},
-            remove: () => {},
+            update: next => updateSource(index, next),
+            remove: () => removeSource(index),
           })),
         ],
   )
@@ -225,12 +240,14 @@ export function RegexPanel({ client, activeSnapshot, close }) {
   const [document, setDocument] = useState(EMPTY_DOCUMENT)
   const [savedDocument, setSavedDocument] = useState(EMPTY_DOCUMENT)
   const [resourceRules, setResourceRules] = useState({ preset: [], character: [] })
+  const [savedResourceRules, setSavedResourceRules] = useState({ preset: [], character: [] })
   const [busy, setBusy] = useState(false)
   const [status, setStatus] = useState({ text: uiMessage('common.loading'), error: false })
   const fileInput = useRef(null)
   const importScope = useRef('global')
   const bindings = activeRegexBindings(activeSnapshot)
   const dirty = JSON.stringify(document) !== JSON.stringify(savedDocument)
+    || JSON.stringify(resourceRules) !== JSON.stringify(savedResourceRules)
 
   const load = async () => {
     setBusy(true)
@@ -242,6 +259,7 @@ export function RegexPanel({ client, activeSnapshot, close }) {
       setDocument(next)
       setSavedDocument(next)
       setResourceRules(nextResourceRules)
+      setSavedResourceRules(nextResourceRules)
       const count = next.rules.length + nextResourceRules.preset.length + nextResourceRules.character.length
       setStatus({ text: uiMessage('regex.loaded', { count }), error: false })
     } catch (reason) {
@@ -253,13 +271,27 @@ export function RegexPanel({ client, activeSnapshot, close }) {
 
   useEffect(() => { load() }, [client, bindings.presetId, bindings.characterId])
 
-  const persist = async next => {
+  const persist = async (next, nextResourceRules = resourceRules) => {
     setBusy(true)
     try {
-      const saved = await putRegexDocument(client, next)
+      const [saved, savedPresetRules, savedCharacterRules] = await Promise.all([
+        JSON.stringify(next) === JSON.stringify(savedDocument)
+          ? next
+          : putRegexDocument(client, next),
+        JSON.stringify(nextResourceRules.preset) === JSON.stringify(savedResourceRules.preset)
+          ? nextResourceRules.preset
+          : putActiveResourceRegexRules(client, 'preset', bindings.presetId, nextResourceRules.preset),
+        JSON.stringify(nextResourceRules.character) === JSON.stringify(savedResourceRules.character)
+          ? nextResourceRules.character
+          : putActiveResourceRegexRules(client, 'character', bindings.characterId, nextResourceRules.character),
+      ])
+      const savedResources = { preset: savedPresetRules, character: savedCharacterRules }
       setDocument(saved)
       setSavedDocument(saved)
-      setStatus({ text: uiMessage('regex.saved', { count: saved.rules.length }), error: false })
+      setResourceRules(savedResources)
+      setSavedResourceRules(savedResources)
+      const count = saved.rules.length + savedPresetRules.length + savedCharacterRules.length
+      setStatus({ text: uiMessage('regex.saved', { count }), error: false })
       window.dispatchEvent(new Event(CLIENT_REFRESH_EVENT))
     } catch (reason) {
       setStatus({ text: rawText(reason instanceof Error ? reason.message : String(reason)), error: true })
@@ -298,6 +330,16 @@ export function RegexPanel({ client, activeSnapshot, close }) {
   const removeRule = id => setDocument(current => ({
     ...current,
     rules: current.rules.filter(rule => rule.id !== id),
+  }))
+
+  const updateSourceRule = (kind, index, next) => setResourceRules(current => ({
+    ...current,
+    [kind]: current[kind].map((rule, ruleIndex) => ruleIndex === index ? next : rule),
+  }))
+
+  const removeSourceRule = (kind, index) => setResourceRules(current => ({
+    ...current,
+    [kind]: current[kind].filter((_rule, ruleIndex) => ruleIndex !== index),
   }))
 
   const importFile = async event => {
@@ -342,6 +384,8 @@ export function RegexPanel({ client, activeSnapshot, close }) {
         exportJson: () => downloadJson(document),
         update: updateRule,
         remove: removeRule,
+        updateSource: (index, next) => updateSourceRule(kind, index, next),
+        removeSource: index => removeSourceRule(kind, index),
       })),
       h('div', { className: 'dtv-status', 'data-error': status.error }, status.text),
       h('div', { className: 'dtv-regex-footer' },

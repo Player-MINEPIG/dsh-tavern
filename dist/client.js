@@ -133,8 +133,8 @@ var zh_CN_default = Object.freeze({
   "regex.imported": "\u5DF2\u5BFC\u5165\u5E76\u4FDD\u5B58 {count} \u6761\u6B63\u5219",
   "regex.confirmReload": "\u653E\u5F03\u672A\u4FDD\u5B58\u7684\u6B63\u5219\u4FEE\u6539\u5E76\u91CD\u65B0\u8F7D\u5165\uFF1F",
   "regex.confirmClose": "\u5173\u95ED\u5E76\u653E\u5F03\u672A\u4FDD\u5B58\u7684\u6B63\u5219\u4FEE\u6539\uFF1F",
-  "regex.sourceOwnedDisplay": "\u6B64\u89C4\u5219\u6765\u81EA\u5F53\u524D\u7ED1\u5B9A\u8D44\u6E90\uFF0C\u5E76\u6309\u8D44\u6E90\u4E2D\u7684\u539F\u59CB\u5F00\u5173\u53C2\u4E0E\u9B54\u4E38\u663E\u793A\uFF1B\u63D2\u4EF6\u4E0D\u4F1A\u5728\u8FD9\u91CC\u6539\u5199\u9884\u8BBE\u6216\u89D2\u8272\u5361\u3002",
-  "regex.sourceOwnedPromptOnly": "\u6B64\u89C4\u5219\u6765\u81EA\u5F53\u524D\u7ED1\u5B9A\u8D44\u6E90\uFF0C\u4F46\u53EA\u7528\u4E8E\u63D0\u793A\u8BCD\uFF0C\u4E0D\u53C2\u4E0E\u9B54\u4E38\u663E\u793A\uFF1B\u63D2\u4EF6\u4E0D\u4F1A\u5728\u8FD9\u91CC\u6539\u5199\u9884\u8BBE\u6216\u89D2\u8272\u5361\u3002",
+  "regex.sourceOwnedDisplay": "\u6B64\u89C4\u5219\u5B58\u50A8\u5728\u5F53\u524D\u7ED1\u5B9A\u8D44\u6E90\u4E2D\uFF1B\u4FDD\u5B58\u66F4\u6539\u4F1A\u5199\u56DE\u539F\u9884\u8BBE\u6216\u89D2\u8272\u5361\u3002",
+  "regex.sourceOwnedPromptOnly": "\u6B64\u89C4\u5219\u5B58\u50A8\u5728\u5F53\u524D\u7ED1\u5B9A\u8D44\u6E90\u4E2D\uFF0C\u4F46\u53EA\u7528\u4E8E\u63D0\u793A\u8BCD\u3001\u4E0D\u53C2\u4E0E\u9B54\u4E38\u663E\u793A\uFF1B\u4FDD\u5B58\u66F4\u6539\u4F1A\u5199\u56DE\u539F\u9884\u8BBE\u6216\u89D2\u8272\u5361\u3002",
   "nav.session.none": "\u65E0\u4F1A\u8BDD",
   "nav.syncFailed": "\u72B6\u6001\u540C\u6B65\u5931\u8D25\uFF1A{message}",
   "nav.menuTitle": "Tavern \xB7 {session}",
@@ -686,8 +686,8 @@ var en_default = Object.freeze({
   "regex.imported": "{count} regex rules imported and saved",
   "regex.confirmReload": "Discard unsaved regex changes and reload?",
   "regex.confirmClose": "Close and discard unsaved regex changes?",
-  "regex.sourceOwnedDisplay": "This rule comes from the bound resource and its original switch controls Mowan display. This panel does not rewrite the preset or character card.",
-  "regex.sourceOwnedPromptOnly": "This rule comes from the bound resource but only affects prompts, not Mowan display. This panel does not rewrite the preset or character card.",
+  "regex.sourceOwnedDisplay": "This rule is stored in the bound resource. Saving changes writes it back to the original preset or character card.",
+  "regex.sourceOwnedPromptOnly": "This rule is stored in the bound resource but only affects prompts, not Mowan display. Saving changes writes it back to the original preset or character card.",
   "nav.session.none": "No session",
   "nav.syncFailed": "Status sync failed: {message}",
   "nav.menuTitle": "Tavern \xB7 {session}",
@@ -4043,8 +4043,8 @@ function stringList(value) {
 }
 function nativePlacement(value) {
   const placement = Array.isArray(value.placement) ? [...value.placement] : typeof value.placement === "number" ? [value.placement] : [];
-  let markdownOnly = value.markdownOnly === true;
-  let promptOnly = value.promptOnly === true;
+  let markdownOnly = value.markdownOnly === true || value.markdown_only === true;
+  let promptOnly = value.promptOnly === true || value.prompt_only === true;
   if (placement.includes(0)) {
     placement.splice(0, placement.length, ...placement.length === 1 ? [1, 2, 3, 5, 6] : placement.filter((item) => item !== 0));
     markdownOnly = true;
@@ -4100,25 +4100,25 @@ function generatedId() {
 }
 function normalizeRegexRule(value, { scope } = {}) {
   if (!isRecord3(value)) throw new TypeError("regex rule must be an object");
-  const source = stringValue(value.find, value.findRegex, value.regex);
+  const source = stringValue(value.find, value.findRegex, value.find_regex, value.regex);
   const native = nativePlacement(value);
   return {
     id: stringValue(value.id) || generatedId(),
     name: stringValue(value.name, value.script_name, value.scriptName) || "Regex",
     enabled: importedEnabled(value),
     find: source,
-    replace: stringValue(value.replace, value.replaceString, value.replacement),
+    replace: stringValue(value.replace, value.replaceString, value.replace_string, value.replacement),
     flags: stringValue(value.flags),
     target: importedTarget(value),
     scope: normalizeScope(value.scope, scope),
     placement: native.placement,
-    trimStrings: stringList(value.trimStrings),
-    markdownOnly: native.markdownOnly,
-    promptOnly: native.promptOnly,
-    runOnEdit: value.runOnEdit === true,
-    substituteRegex: [0, 1, 2].includes(Number(value.substituteRegex)) ? Number(value.substituteRegex) : 0,
-    minDepth: finiteDepth(value.minDepth),
-    maxDepth: finiteDepth(value.maxDepth),
+    trimStrings: stringList(value.trimStrings ?? value.trim_strings),
+    markdownOnly: native.markdownOnly || value.markdown_only === true,
+    promptOnly: native.promptOnly || value.prompt_only === true,
+    runOnEdit: value.runOnEdit === true || value.run_on_edit === true,
+    substituteRegex: [0, 1, 2].includes(Number(value.substituteRegex ?? value.substitute_regex)) ? Number(value.substituteRegex ?? value.substitute_regex) : 0,
+    minDepth: finiteDepth(value.minDepth ?? value.min_depth),
+    maxDepth: finiteDepth(value.maxDepth ?? value.max_depth),
     ext: isRecord3(value.ext) ? structuredClone(value.ext) : {}
   };
 }
@@ -4135,10 +4135,51 @@ function importRegexDocument(value, { scope = { kind: "global", resourceId: null
 function resourceRegexInventory(value, scope) {
   const candidates = regexCandidates(value);
   if (candidates === null) return [];
-  return candidates.map((rule) => ({
+  return candidates.map((rule, sourceIndex) => ({
     ...normalizeRegexRule(rule, { scope }),
-    sourceDisplayEligible: displayImportCandidate(rule)
+    sourceDisplayEligible: displayImportCandidate(rule),
+    sourceIndex,
+    sourceRaw: structuredClone(rule)
   }));
+}
+function writeNativeField(target, aliases, canonical, value) {
+  const existing = aliases.filter((key) => Object.hasOwn(target, key));
+  for (const key of existing.length === 0 ? [canonical] : existing) target[key] = structuredClone(value);
+}
+function nativePlacementFor(rule) {
+  const placement = Array.isArray(rule.placement) ? rule.placement : [];
+  const retained = placement.filter((item) => ![1, 2, "user", "assistant", "user_input", "ai_output"].includes(item));
+  if (rule.target === "user" || rule.target === "both") retained.push(1);
+  if (rule.target === "assistant" || rule.target === "both") retained.push(2);
+  return retained;
+}
+function findWithFlags(source, flags) {
+  if (!source.startsWith("/") || flags === "") return source;
+  const closing = source.lastIndexOf("/");
+  if (closing <= 0 || !/^[dgimsuvy]*$/.test(flags)) return source;
+  return `${source.slice(0, closing + 1)}${flags}`;
+}
+function nativeRegexScript(rule) {
+  const source = isRecord3(rule?.sourceRaw) ? structuredClone(rule.sourceRaw) : {};
+  const original = isRecord3(rule?.sourceRaw) ? normalizeRegexRule(rule.sourceRaw, { scope: rule.scope }) : null;
+  if (original === null) source.id = rule.id;
+  if (original === null || rule.name !== original.name) {
+    writeNativeField(source, ["scriptName", "script_name", "name"], "scriptName", rule.name);
+  }
+  if (original === null || rule.find !== original.find || rule.flags !== original.flags) {
+    writeNativeField(source, ["findRegex", "find_regex", "find", "regex"], "findRegex", findWithFlags(rule.find, rule.flags));
+  }
+  if (original === null || rule.replace !== original.replace) {
+    writeNativeField(source, ["replaceString", "replace_string", "replace", "replacement"], "replaceString", rule.replace);
+  }
+  if (original === null || rule.enabled !== original.enabled) {
+    writeNativeField(source, ["disabled"], "disabled", !rule.enabled);
+    if (Object.hasOwn(source, "enabled")) source.enabled = rule.enabled;
+  }
+  if (original === null || rule.target !== original.target) {
+    writeNativeField(source, ["placement"], "placement", nativePlacementFor(rule));
+  }
+  return source;
 }
 function resourceRegexRules(value, scope) {
   try {
@@ -9487,8 +9528,20 @@ function createLivePlayClient({
     getCharacter(id) {
       return v1("GET", `/characters/${encodeURIComponent(id)}`);
     },
+    getCharacterRegexScripts(id) {
+      return v1("GET", `/characters/${encodeURIComponent(id)}/regex-scripts`);
+    },
+    putCharacterRegexScripts(id, regexScripts) {
+      return v1("PUT", `/characters/${encodeURIComponent(id)}/regex-scripts`, { regexScripts });
+    },
     getPreset(id) {
       return v1("GET", `/presets/${encodeURIComponent(id)}`);
+    },
+    getPresetRegexScripts(id) {
+      return v1("GET", `/presets/${encodeURIComponent(id)}/regex-scripts`);
+    },
+    putPresetRegexScripts(id, regexScripts) {
+      return v1("PUT", `/presets/${encodeURIComponent(id)}/regex-scripts`, { regexScripts });
     },
     getActive(sessionId) {
       const query = typeof sessionId === "string" && sessionId !== "" ? `?sessionId=${encodeURIComponent(sessionId)}` : "";
@@ -9548,25 +9601,31 @@ function Field5({ labelKey, children }) {
 }
 async function activeResourceRegexRules(client, bindings) {
   const [presetResponse, characterResponse] = await Promise.all([
-    typeof bindings.presetId === "string" && typeof client.getPreset === "function" ? client.getPreset(bindings.presetId) : null,
-    typeof bindings.characterId === "string" && typeof client.getCharacter === "function" ? client.getCharacter(bindings.characterId) : null
+    typeof bindings.presetId === "string" && typeof client.getPresetRegexScripts === "function" ? client.getPresetRegexScripts(bindings.presetId) : typeof bindings.presetId === "string" && typeof client.getPreset === "function" ? client.getPreset(bindings.presetId) : null,
+    typeof bindings.characterId === "string" && typeof client.getCharacterRegexScripts === "function" ? client.getCharacterRegexScripts(bindings.characterId) : typeof bindings.characterId === "string" && typeof client.getCharacter === "function" ? client.getCharacter(bindings.characterId) : null
   ]);
   return {
-    preset: resourceRegexInventory(presetResponse?.preset ?? presetResponse, {
+    preset: resourceRegexInventory(presetResponse?.regexScripts ?? presetResponse?.preset ?? presetResponse, {
       kind: "preset",
       resourceId: bindings.presetId
     }),
-    character: resourceRegexInventory(characterResponse?.character ?? characterResponse, {
+    character: resourceRegexInventory(characterResponse?.regexScripts ?? characterResponse?.character ?? characterResponse, {
       kind: "character",
       resourceId: bindings.characterId
     })
   };
 }
+async function putActiveResourceRegexRules(client, kind, resourceId, rules) {
+  if (typeof resourceId !== "string") throw new TypeError(`${kind} regex resource is not bound`);
+  const method = kind === "preset" ? client.putPresetRegexScripts : client.putCharacterRegexScripts;
+  if (typeof method !== "function") throw new TypeError(`${kind} regex resource API is unavailable`);
+  const response = await method.call(client, resourceId, rules.map(nativeRegexScript));
+  return resourceRegexInventory(response?.regexScripts ?? [], { kind, resourceId });
+}
 function RuleEditor({ rule, busy, update, remove, sourceOwned = false }) {
   const set = (patch) => update({ ...rule, ...patch });
   const setScope = (patch) => set({ scope: { ...rule.scope, ...patch } });
   const stateLabel = uiMessage(rule.enabled ? "common.enabled" : "common.disabled");
-  busy ||= sourceOwned;
   return h12(
     "details",
     { className: "dtv-entry dtv-regex-rule", "data-enabled": rule.enabled },
@@ -9642,7 +9701,7 @@ function RuleEditor({ rule, busy, update, remove, sourceOwned = false }) {
           {
             className: "dtv-select",
             value: rule.scope.kind,
-            disabled: busy,
+            disabled: busy || sourceOwned,
             onChange: (event) => setScope({
               kind: event.target.value,
               resourceId: event.target.value === "global" ? null : rule.scope.resourceId
@@ -9653,11 +9712,12 @@ function RuleEditor({ rule, busy, update, remove, sourceOwned = false }) {
         rule.scope.kind === "global" ? null : h12(Field5, { labelKey: "regex.resourceId" }, h12("input", {
           className: "dtv-input",
           value: rule.scope.resourceId ?? "",
-          disabled: busy,
+          disabled: busy || sourceOwned,
           onChange: (event) => setScope({ resourceId: event.target.value || null })
         }))
       ),
-      sourceOwned ? h12("p", { className: "dtv-note" }, uiMessage(rule.sourceDisplayEligible ? "regex.sourceOwnedDisplay" : "regex.sourceOwnedPromptOnly")) : h12("div", { className: "dtv-entry-actions" }, h12("button", {
+      sourceOwned ? h12("p", { className: "dtv-note" }, uiMessage(rule.sourceDisplayEligible ? "regex.sourceOwnedDisplay" : "regex.sourceOwnedPromptOnly")) : null,
+      h12("div", { className: "dtv-entry-actions" }, h12("button", {
         className: "dtv-button dtv-danger",
         type: "button",
         disabled: busy,
@@ -9676,7 +9736,9 @@ function RegexScopeSection({
   importJson,
   exportJson,
   update,
-  remove
+  remove,
+  updateSource,
+  removeSource
 }) {
   const rules = [...editableRules, ...sourceRules];
   const unbound = kind === "preset" && bindings.presetId === null ? uiMessage("regex.noPreset") : kind === "character" && bindings.characterId === null ? uiMessage("regex.noCharacter") : null;
@@ -9710,10 +9772,8 @@ function RegexScopeSection({
         rule,
         busy,
         sourceOwned: true,
-        update: () => {
-        },
-        remove: () => {
-        }
+        update: (next) => updateSource(index, next),
+        remove: () => removeSource(index)
       }))
     ]
   );
@@ -9722,12 +9782,13 @@ function RegexPanel({ client, activeSnapshot, close }) {
   const [document2, setDocument] = (0, import_react14.useState)(EMPTY_DOCUMENT);
   const [savedDocument, setSavedDocument] = (0, import_react14.useState)(EMPTY_DOCUMENT);
   const [resourceRules, setResourceRules] = (0, import_react14.useState)({ preset: [], character: [] });
+  const [savedResourceRules, setSavedResourceRules] = (0, import_react14.useState)({ preset: [], character: [] });
   const [busy, setBusy] = (0, import_react14.useState)(false);
   const [status, setStatus] = (0, import_react14.useState)({ text: uiMessage("common.loading"), error: false });
   const fileInput = (0, import_react14.useRef)(null);
   const importScope = (0, import_react14.useRef)("global");
   const bindings = activeRegexBindings(activeSnapshot);
-  const dirty = JSON.stringify(document2) !== JSON.stringify(savedDocument);
+  const dirty = JSON.stringify(document2) !== JSON.stringify(savedDocument) || JSON.stringify(resourceRules) !== JSON.stringify(savedResourceRules);
   const load = async () => {
     setBusy(true);
     try {
@@ -9738,6 +9799,7 @@ function RegexPanel({ client, activeSnapshot, close }) {
       setDocument(next);
       setSavedDocument(next);
       setResourceRules(nextResourceRules);
+      setSavedResourceRules(nextResourceRules);
       const count = next.rules.length + nextResourceRules.preset.length + nextResourceRules.character.length;
       setStatus({ text: uiMessage("regex.loaded", { count }), error: false });
     } catch (reason) {
@@ -9749,13 +9811,21 @@ function RegexPanel({ client, activeSnapshot, close }) {
   (0, import_react14.useEffect)(() => {
     load();
   }, [client, bindings.presetId, bindings.characterId]);
-  const persist = async (next) => {
+  const persist = async (next, nextResourceRules = resourceRules) => {
     setBusy(true);
     try {
-      const saved = await putRegexDocument(client, next);
+      const [saved, savedPresetRules, savedCharacterRules] = await Promise.all([
+        JSON.stringify(next) === JSON.stringify(savedDocument) ? next : putRegexDocument(client, next),
+        JSON.stringify(nextResourceRules.preset) === JSON.stringify(savedResourceRules.preset) ? nextResourceRules.preset : putActiveResourceRegexRules(client, "preset", bindings.presetId, nextResourceRules.preset),
+        JSON.stringify(nextResourceRules.character) === JSON.stringify(savedResourceRules.character) ? nextResourceRules.character : putActiveResourceRegexRules(client, "character", bindings.characterId, nextResourceRules.character)
+      ]);
+      const savedResources = { preset: savedPresetRules, character: savedCharacterRules };
       setDocument(saved);
       setSavedDocument(saved);
-      setStatus({ text: uiMessage("regex.saved", { count: saved.rules.length }), error: false });
+      setResourceRules(savedResources);
+      setSavedResourceRules(savedResources);
+      const count = saved.rules.length + savedPresetRules.length + savedCharacterRules.length;
+      setStatus({ text: uiMessage("regex.saved", { count }), error: false });
       window.dispatchEvent(new Event(CLIENT_REFRESH_EVENT));
     } catch (reason) {
       setStatus({ text: rawText(reason instanceof Error ? reason.message : String(reason)), error: true });
@@ -9789,6 +9859,14 @@ function RegexPanel({ client, activeSnapshot, close }) {
   const removeRule = (id) => setDocument((current2) => ({
     ...current2,
     rules: current2.rules.filter((rule) => rule.id !== id)
+  }));
+  const updateSourceRule = (kind, index, next) => setResourceRules((current2) => ({
+    ...current2,
+    [kind]: current2[kind].map((rule, ruleIndex) => ruleIndex === index ? next : rule)
+  }));
+  const removeSourceRule = (kind, index) => setResourceRules((current2) => ({
+    ...current2,
+    [kind]: current2[kind].filter((_rule, ruleIndex) => ruleIndex !== index)
   }));
   const importFile = async (event) => {
     const file = event.target.files?.[0];
@@ -9836,7 +9914,9 @@ function RegexPanel({ client, activeSnapshot, close }) {
         },
         exportJson: () => downloadJson(document2),
         update: updateRule,
-        remove: removeRule
+        remove: removeRule,
+        updateSource: (index, next) => updateSourceRule(kind, index, next),
+        removeSource: (index) => removeSourceRule(kind, index)
       })),
       h12("div", { className: "dtv-status", "data-error": status.error }, status.text),
       h12(
