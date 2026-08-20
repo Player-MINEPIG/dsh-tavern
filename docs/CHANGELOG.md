@@ -4,6 +4,16 @@ This is the staged implementation log for dsh-tavern. It is kept separately
 from the product README so reviewers can follow intent, decisions, verification,
 and known limits chronologically.
 
+## 2026-08-20 — Keep playthrough IO in the sidebar only
+
+- Removed the duplicate `conversation.input.left` registration from the RP
+  occupancy lifecycle.
+- Import, export, and rename remain available from each playthrough's sidebar
+  menu; the native DSH composer and its left-side extension surface are left
+  untouched.
+
+Verification: focused occupancy/menu tests and production client build.
+
 ## 2026-08-20 — Reuse the latest authoritative empty playthrough
 
 - Creating a playthrough now opens the character's highest-numbered existing

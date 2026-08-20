@@ -14,7 +14,7 @@ test('Mowan owns only the sidebar shadow and additive unbound notice while Lingz
     workspaces: { startSession: nativeStart },
     slots: {
       inject(name, callback) {
-        assert.ok(['sidebar.workspaces', 'conversation.input.dock', 'conversation.view', 'conversation.input.left'].includes(name))
+        assert.ok(['sidebar.workspaces', 'conversation.input.dock', 'conversation.view'].includes(name))
         declarationCleanups.push(callback())
       },
       register(options, component) {
@@ -44,6 +44,7 @@ test('Mowan owns only the sidebar shadow and additive unbound notice while Lingz
   assert.equal(notice.options.order, 90)
   assert.equal(registrations.every(item => item.active), true)
   assert.equal(ctx.workspaces.startSession, nativeStart)
+  assert.equal(registrations.some(item => item.options.name === 'conversation.input.left'), false)
 
   occupancy.setMode('play')
   assert.equal(registrations.length, 2)

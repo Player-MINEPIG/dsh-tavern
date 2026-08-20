@@ -10255,148 +10255,8 @@ function MowanChatView({ sessionId, useSession, playClient, playthrough, openSes
   );
 }
 
-// packages/client/src/play/io-menu.js
-var import_react10 = require("react");
-
-// packages/client/src/play/export.js
-function rootSessionId2(playthrough, timeline) {
-  const root = playthrough?.ext?.pmpDshTavern?.rootSessionId;
-  if (typeof root === "string" && root !== "") return root;
-  for (const node of timeline?.nodes ?? []) {
-    const variant = node.variants?.find((item) => item.id === node.adoptedVariantId);
-    if (typeof variant?.sessionId === "string") return variant.sessionId;
-  }
-  return null;
-}
-function allSessionIds(timeline) {
-  const result = /* @__PURE__ */ new Set();
-  for (const node of timeline?.nodes ?? []) {
-    for (const variant of node.variants ?? []) result.add(variant.sessionId);
-  }
-  return [...result];
-}
-async function loadMessages2(client, sessionIds, concurrency = 4) {
-  const result = {};
-  let cursor = 0;
-  const worker = async () => {
-    while (cursor < sessionIds.length) {
-      const sessionId = sessionIds[cursor];
-      cursor += 1;
-      result[sessionId] = await client.getMessages(sessionId);
-    }
-  };
-  await Promise.all(Array.from({ length: Math.min(concurrency, sessionIds.length) }, worker));
-  return result;
-}
-function selectedGreeting(selectionResponse, characterResponse) {
-  const selection = selectionResponse?.selection;
-  const character = characterResponse?.character;
-  if (character?.id !== selection?.characterCardId) return null;
-  const options = characterGreetingOptions(character);
-  const index = Number(selection.character?.greetingIndex ?? 0);
-  const option = options.find((item) => item.index === index) ?? options[0];
-  return option?.text ? option.text : null;
-}
-async function loadPlaythroughExport(client, playthrough) {
-  const timeline = await client.getTimeline(playthrough);
-  const sessionIds = allSessionIds(timeline);
-  const messagesBySession = await loadMessages2(client, sessionIds);
-  const root = rootSessionId2(playthrough, timeline);
-  const selectionResponse = root === null ? null : await client.getCharacterSelection(root);
-  const characterId = selectionResponse?.selection?.characterCardId;
-  const characterResponse = typeof characterId === "string" && characterId !== "" ? await client.getCharacter(characterId) : null;
-  const turns = projectTimelineQa(timeline, messagesBySession);
-  const greeting = selectedGreeting(selectionResponse, characterResponse);
-  const [regexDocument, active] = await Promise.all([
-    typeof client.getFile === "function" ? getRegexDocument(client) : { schemaVersion: 1, rules: [] },
-    root !== null && typeof client.getActive === "function" ? client.getActive(root) : null
-  ]);
-  const bindings = {
-    presetId: active?.selection?.presetId ?? null,
-    characterId: characterId ?? active?.selection?.characterCardId ?? null
-  };
-  const presetResponse = typeof bindings.presetId === "string" && bindings.presetId !== "" && typeof client.getPreset === "function" ? await client.getPreset(bindings.presetId) : null;
-  const rules = [
-    ...regexDocument.rules,
-    ...resourceRegexRules(presetResponse?.preset ?? presetResponse, {
-      kind: "preset",
-      resourceId: bindings.presetId
-    }),
-    ...resourceRegexRules(characterResponse?.character ?? characterResponse, {
-      kind: "character",
-      resourceId: bindings.characterId
-    })
-  ];
-  const render = (text2, target) => applyDisplayRegex(text2, rules, bindings, target).text;
-  return {
-    playthrough,
-    timeline,
-    messagesBySession,
-    turns,
-    displayTurns: turns.map((turn) => ({
-      ...turn,
-      userText: render(turn.userText, "user"),
-      assistantText: render(turn.assistantText, "assistant")
-    })),
-    character: characterResponse?.character ?? null,
-    greeting,
-    displayGreeting: greeting === null ? null : render(greeting, "assistant"),
-    exportedAt: (/* @__PURE__ */ new Date()).toISOString()
-  };
-}
-function escapeHtml2(value) {
-  return String(value).replaceAll("&", "&amp;").replaceAll("<", "&lt;").replaceAll(">", "&gt;");
-}
-function staticHtmlExport(snapshot) {
-  const title = snapshot.playthrough.title || snapshot.character?.name || snapshot.playthrough.id;
-  const rows = (snapshot.displayTurns ?? snapshot.turns).filter((turn) => !turn.hidden).map((turn) => `
-    <article class="turn">
-      <div class="user rich">${renderRichTextHtml(turn.userText)}</div>
-      <div class="assistant rich">${renderRichTextHtml(turn.assistantText)}</div>
-    </article>`).join("");
-  const displayGreeting = snapshot.displayGreeting ?? snapshot.greeting;
-  const greeting = displayGreeting === null || displayGreeting === void 0 ? "" : `<div class="assistant greeting rich">${renderRichTextHtml(displayGreeting)}</div>`;
-  return `<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width"><title>${escapeHtml2(title)}</title><style>body{max-width:800px;margin:32px auto;padding:0 18px;background:#101216;color:#e8eaf0;font:15px/1.65 system-ui}.turn{display:flex;flex-direction:column;gap:10px;margin:24px 0}.user,.assistant{padding:12px 15px;border-radius:14px}.user{align-self:flex-end;background:#1c3651}.assistant{align-self:flex-start;background:#24262d}.greeting{margin:24px 0}.rich>:first-child{margin-top:0}.rich>:last-child{margin-bottom:0}.rich pre{max-width:100%;overflow:auto;white-space:pre-wrap}.rich img,.rich video{max-width:100%;height:auto}.rich table{display:block;max-width:100%;overflow:auto;border-collapse:collapse}.rich th,.rich td{padding:6px 9px;border:1px solid #555}</style></head><body><h1>${escapeHtml2(title)}</h1>${greeting}${rows}</body></html>`;
-}
-function sillyTavernJsonlExport(snapshot) {
-  const characterName = snapshot.character?.data?.name || snapshot.character?.name || "Assistant";
-  const lines = [JSON.stringify({
-    user_name: "User",
-    character_name: characterName,
-    create_date: snapshot.exportedAt,
-    chat_metadata: { source: "pmp-dsh-tavern", playthroughId: snapshot.playthrough.id }
-  })];
-  if (snapshot.greeting !== null) {
-    lines.push(JSON.stringify({ name: characterName, is_user: false, is_name: true, mes: snapshot.greeting }));
-  }
-  for (const turn of snapshot.turns) {
-    if (turn.hidden) continue;
-    lines.push(JSON.stringify({ name: "User", is_user: true, is_name: true, mes: turn.userText }));
-    lines.push(JSON.stringify({ name: characterName, is_user: false, is_name: true, mes: turn.originalAssistantText }));
-  }
-  return `${lines.join("\n")}
-`;
-}
-function portableBundleExport(snapshot) {
-  return JSON.stringify({
-    kind: "pmp-dsh-tavern-playthrough",
-    schemaVersion: 1,
-    exportedAt: snapshot.exportedAt,
-    playthrough: snapshot.playthrough,
-    timeline: snapshot.timeline,
-    messagesBySession: snapshot.messagesBySession,
-    resources: {
-      characterId: snapshot.character?.id ?? null,
-      greeting: snapshot.greeting
-    }
-  }, null, 2);
-}
-function playthroughExportDocument(snapshot, format) {
-  if (format === "html") return { extension: "html", mime: "text/html;charset=utf-8", content: staticHtmlExport(snapshot) };
-  if (format === "st") return { extension: "jsonl", mime: "application/x-ndjson;charset=utf-8", content: sillyTavernJsonlExport(snapshot) };
-  if (format === "bundle") return { extension: "json", mime: "application/json;charset=utf-8", content: portableBundleExport(snapshot) };
-  throw new TypeError(`Unknown export format ${format}`);
-}
+// packages/client/src/play/sidebar.js
+var import_react11 = require("react");
 
 // packages/client/src/play/schema.js
 var CHROME_MODES = /* @__PURE__ */ new Set(["native", "play"]);
@@ -10582,7 +10442,7 @@ function characterIdFromSelection(value) {
   const id = selection?.characterCardId;
   return typeof id === "string" && id !== "" ? id : null;
 }
-function rootSessionId3(playthrough) {
+function rootSessionId2(playthrough) {
   const id = playthrough?.ext?.pmpDshTavern?.rootSessionId;
   return typeof id === "string" && id !== "" ? id : null;
 }
@@ -10605,7 +10465,7 @@ function timelineFor(timelines, playthrough) {
 }
 function playthroughMembers(playthrough, timeline) {
   const ids = /* @__PURE__ */ new Set();
-  const rootId = rootSessionId3(playthrough);
+  const rootId = rootSessionId2(playthrough);
   if (rootId !== null) ids.add(rootId);
   for (const node of timeline?.nodes ?? []) {
     for (const variant of node?.variants ?? []) {
@@ -10742,7 +10602,7 @@ function projectPlaySidebar({
   }
   const claimedRpSessions = /* @__PURE__ */ new Set();
   for (const playthrough of catalog2.playthroughs ?? []) {
-    const rootId = rootSessionId3(playthrough);
+    const rootId = rootSessionId2(playthrough);
     const characterId = playthroughCharacterId(playthrough);
     if (characterId === null) continue;
     const allMembers = playthroughMembers(playthrough, timelineFor(timelines, playthrough));
@@ -10823,7 +10683,7 @@ function playthroughCharacterId2(playthrough) {
   const value = playthrough?.ext?.pmpDshTavern?.characterId;
   return typeof value === "string" && value !== "" ? value : null;
 }
-function rootSessionId4(playthrough) {
+function rootSessionId3(playthrough) {
   const value = playthrough?.ext?.pmpDshTavern?.rootSessionId;
   return typeof value === "string" && value !== "" ? value : null;
 }
@@ -10850,7 +10710,7 @@ function importContextPath(playthrough, timeline) {
   return typeof timelineValue === "string" && timelineValue !== "" ? timelineValue : null;
 }
 async function playthroughIsReusable(client, playthrough) {
-  const sessionId = rootSessionId4(playthrough);
+  const sessionId = rootSessionId3(playthrough);
   if (sessionId === null) return false;
   const timeline = await client.getTimeline(playthrough);
   if ((timeline?.nodes?.length ?? 0) > 0) return false;
@@ -10915,7 +10775,7 @@ async function createCharacterPlaythrough(client, {
   const catalog2 = await catalogOrEmpty(client);
   const latest = latestCharacterPlaythrough(catalog2, characterId);
   if (latest !== null && await playthroughIsReusable(client, latest)) {
-    return { sessionId: rootSessionId4(latest), playthrough: latest, reused: true };
+    return { sessionId: rootSessionId3(latest), playthrough: latest, reused: true };
   }
   const playthroughNumber = nextPlaythroughNumber(catalog2, characterId);
   const created = await client.postSession(sourceId);
@@ -10978,6 +10838,149 @@ function createPlaythroughController(client, dependencies = {}) {
       return task;
     }
   };
+}
+
+// packages/client/src/play/io-menu.js
+var import_react10 = require("react");
+
+// packages/client/src/play/export.js
+function rootSessionId4(playthrough, timeline) {
+  const root = playthrough?.ext?.pmpDshTavern?.rootSessionId;
+  if (typeof root === "string" && root !== "") return root;
+  for (const node of timeline?.nodes ?? []) {
+    const variant = node.variants?.find((item) => item.id === node.adoptedVariantId);
+    if (typeof variant?.sessionId === "string") return variant.sessionId;
+  }
+  return null;
+}
+function allSessionIds(timeline) {
+  const result = /* @__PURE__ */ new Set();
+  for (const node of timeline?.nodes ?? []) {
+    for (const variant of node.variants ?? []) result.add(variant.sessionId);
+  }
+  return [...result];
+}
+async function loadMessages2(client, sessionIds, concurrency = 4) {
+  const result = {};
+  let cursor = 0;
+  const worker = async () => {
+    while (cursor < sessionIds.length) {
+      const sessionId = sessionIds[cursor];
+      cursor += 1;
+      result[sessionId] = await client.getMessages(sessionId);
+    }
+  };
+  await Promise.all(Array.from({ length: Math.min(concurrency, sessionIds.length) }, worker));
+  return result;
+}
+function selectedGreeting(selectionResponse, characterResponse) {
+  const selection = selectionResponse?.selection;
+  const character = characterResponse?.character;
+  if (character?.id !== selection?.characterCardId) return null;
+  const options = characterGreetingOptions(character);
+  const index = Number(selection.character?.greetingIndex ?? 0);
+  const option = options.find((item) => item.index === index) ?? options[0];
+  return option?.text ? option.text : null;
+}
+async function loadPlaythroughExport(client, playthrough) {
+  const timeline = await client.getTimeline(playthrough);
+  const sessionIds = allSessionIds(timeline);
+  const messagesBySession = await loadMessages2(client, sessionIds);
+  const root = rootSessionId4(playthrough, timeline);
+  const selectionResponse = root === null ? null : await client.getCharacterSelection(root);
+  const characterId = selectionResponse?.selection?.characterCardId;
+  const characterResponse = typeof characterId === "string" && characterId !== "" ? await client.getCharacter(characterId) : null;
+  const turns = projectTimelineQa(timeline, messagesBySession);
+  const greeting = selectedGreeting(selectionResponse, characterResponse);
+  const [regexDocument, active] = await Promise.all([
+    typeof client.getFile === "function" ? getRegexDocument(client) : { schemaVersion: 1, rules: [] },
+    root !== null && typeof client.getActive === "function" ? client.getActive(root) : null
+  ]);
+  const bindings = {
+    presetId: active?.selection?.presetId ?? null,
+    characterId: characterId ?? active?.selection?.characterCardId ?? null
+  };
+  const presetResponse = typeof bindings.presetId === "string" && bindings.presetId !== "" && typeof client.getPreset === "function" ? await client.getPreset(bindings.presetId) : null;
+  const rules = [
+    ...regexDocument.rules,
+    ...resourceRegexRules(presetResponse?.preset ?? presetResponse, {
+      kind: "preset",
+      resourceId: bindings.presetId
+    }),
+    ...resourceRegexRules(characterResponse?.character ?? characterResponse, {
+      kind: "character",
+      resourceId: bindings.characterId
+    })
+  ];
+  const render = (text2, target) => applyDisplayRegex(text2, rules, bindings, target).text;
+  return {
+    playthrough,
+    timeline,
+    messagesBySession,
+    turns,
+    displayTurns: turns.map((turn) => ({
+      ...turn,
+      userText: render(turn.userText, "user"),
+      assistantText: render(turn.assistantText, "assistant")
+    })),
+    character: characterResponse?.character ?? null,
+    greeting,
+    displayGreeting: greeting === null ? null : render(greeting, "assistant"),
+    exportedAt: (/* @__PURE__ */ new Date()).toISOString()
+  };
+}
+function escapeHtml2(value) {
+  return String(value).replaceAll("&", "&amp;").replaceAll("<", "&lt;").replaceAll(">", "&gt;");
+}
+function staticHtmlExport(snapshot) {
+  const title = snapshot.playthrough.title || snapshot.character?.name || snapshot.playthrough.id;
+  const rows = (snapshot.displayTurns ?? snapshot.turns).filter((turn) => !turn.hidden).map((turn) => `
+    <article class="turn">
+      <div class="user rich">${renderRichTextHtml(turn.userText)}</div>
+      <div class="assistant rich">${renderRichTextHtml(turn.assistantText)}</div>
+    </article>`).join("");
+  const displayGreeting = snapshot.displayGreeting ?? snapshot.greeting;
+  const greeting = displayGreeting === null || displayGreeting === void 0 ? "" : `<div class="assistant greeting rich">${renderRichTextHtml(displayGreeting)}</div>`;
+  return `<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width"><title>${escapeHtml2(title)}</title><style>body{max-width:800px;margin:32px auto;padding:0 18px;background:#101216;color:#e8eaf0;font:15px/1.65 system-ui}.turn{display:flex;flex-direction:column;gap:10px;margin:24px 0}.user,.assistant{padding:12px 15px;border-radius:14px}.user{align-self:flex-end;background:#1c3651}.assistant{align-self:flex-start;background:#24262d}.greeting{margin:24px 0}.rich>:first-child{margin-top:0}.rich>:last-child{margin-bottom:0}.rich pre{max-width:100%;overflow:auto;white-space:pre-wrap}.rich img,.rich video{max-width:100%;height:auto}.rich table{display:block;max-width:100%;overflow:auto;border-collapse:collapse}.rich th,.rich td{padding:6px 9px;border:1px solid #555}</style></head><body><h1>${escapeHtml2(title)}</h1>${greeting}${rows}</body></html>`;
+}
+function sillyTavernJsonlExport(snapshot) {
+  const characterName = snapshot.character?.data?.name || snapshot.character?.name || "Assistant";
+  const lines = [JSON.stringify({
+    user_name: "User",
+    character_name: characterName,
+    create_date: snapshot.exportedAt,
+    chat_metadata: { source: "pmp-dsh-tavern", playthroughId: snapshot.playthrough.id }
+  })];
+  if (snapshot.greeting !== null) {
+    lines.push(JSON.stringify({ name: characterName, is_user: false, is_name: true, mes: snapshot.greeting }));
+  }
+  for (const turn of snapshot.turns) {
+    if (turn.hidden) continue;
+    lines.push(JSON.stringify({ name: "User", is_user: true, is_name: true, mes: turn.userText }));
+    lines.push(JSON.stringify({ name: characterName, is_user: false, is_name: true, mes: turn.originalAssistantText }));
+  }
+  return `${lines.join("\n")}
+`;
+}
+function portableBundleExport(snapshot) {
+  return JSON.stringify({
+    kind: "pmp-dsh-tavern-playthrough",
+    schemaVersion: 1,
+    exportedAt: snapshot.exportedAt,
+    playthrough: snapshot.playthrough,
+    timeline: snapshot.timeline,
+    messagesBySession: snapshot.messagesBySession,
+    resources: {
+      characterId: snapshot.character?.id ?? null,
+      greeting: snapshot.greeting
+    }
+  }, null, 2);
+}
+function playthroughExportDocument(snapshot, format) {
+  if (format === "html") return { extension: "html", mime: "text/html;charset=utf-8", content: staticHtmlExport(snapshot) };
+  if (format === "st") return { extension: "jsonl", mime: "application/x-ndjson;charset=utf-8", content: sillyTavernJsonlExport(snapshot) };
+  if (format === "bundle") return { extension: "json", mime: "application/json;charset=utf-8", content: portableBundleExport(snapshot) };
+  throw new TypeError(`Unknown export format ${format}`);
 }
 
 // packages/client/src/play/import.js
@@ -11187,7 +11190,6 @@ function PlayIoMenu({ playClient, playthrough, openSession, trigger = "+", place
 }
 
 // packages/client/src/play/sidebar.js
-var import_react11 = require("react");
 var h10 = createLocalizedElement(import_react11.createElement);
 var css9 = `
 .dtv-play-sidebar{height:100%;min-height:0;box-sizing:border-box;display:flex;flex-direction:column;gap:4px;padding:6px 7px 10px;overflow:auto;zoom:var(--dtv-ui-scale,1);color:var(--dsw-alias-label-primary)}
@@ -11728,12 +11730,10 @@ function installPlaySlotOccupancy(ctx, playClient) {
   let disposeNoticeEntry = null;
   let disposeNoticeEffect = null;
   let chatDeclared = false;
-  let ioDeclared = false;
   let chatGeneration = 0;
   let disposeChatEntry = null;
   let disposeDefaultViewEntry = null;
   let defaultViewEntryKey = null;
-  let disposeIoEntry = null;
   let disposeSessionSubscription = null;
   let refreshChatListener = null;
   let chatBinding = null;
@@ -11826,15 +11826,9 @@ function installPlaySlotOccupancy(ctx, playClient) {
     if (completedDefaultViewAttempts.size <= PLAY_DEFAULT_VIEW_ATTEMPT_LIMIT) return;
     completedDefaultViewAttempts.delete(completedDefaultViewAttempts.values().next().value);
   };
-  const dropIoEntry = () => {
-    const disposeIo = disposeIoEntry;
-    disposeIoEntry = null;
-    disposeIo?.();
-  };
   const dropChatEntry = () => {
     dropDefaultViewEntry();
     dropConversationEntry();
-    dropIoEntry();
     chatBinding = null;
   };
   const currentSession = () => {
@@ -11886,25 +11880,11 @@ function installPlaySlotOccupancy(ctx, playClient) {
         }, DefaultConversationViewAdapter);
       }
     }
-    if (!ioDeclared) {
-      dropIoEntry();
-    } else if (disposeIoEntry === null) {
-      disposeIoEntry = ctx.slots.register({
-        name: "conversation.input.left",
-        id: "pmp-dsh-tavern-play-io",
-        order: 80,
-        inject: () => ({
-          playClient,
-          playthrough: chatBinding.playthrough,
-          openSession: (sessionId) => ctx.sessions.open(sessionId)
-        })
-      }, PlayIoMenu);
-    }
   };
   const reconcileChat = (force = false) => {
     if (force !== true) force = false;
     const session = currentSession();
-    if (!chatDeclared && !ioDeclared || mode !== "play" || session === null) {
+    if (!chatDeclared || mode !== "play" || session === null) {
       chatGeneration += 1;
       pendingChatSignature = null;
       dropChatEntry();
@@ -11924,7 +11904,7 @@ function installPlaySlotOccupancy(ctx, playClient) {
     loadCurrentPlaythrough(playClient, session).then((match) => {
       if (generation === chatGeneration) pendingChatSignature = null;
       const latest = currentSession();
-      if (generation !== chatGeneration || mode !== "play" || !chatDeclared && !ioDeclared || latest === null || sessionSignature(latest) !== signature) return;
+      if (generation !== chatGeneration || mode !== "play" || !chatDeclared || latest === null || sessionSignature(latest) !== signature) return;
       if (match === null) {
         dropChatEntry();
         return;
@@ -11984,18 +11964,7 @@ function installPlaySlotOccupancy(ctx, playClient) {
       chatDeclared = false;
       dropDefaultViewEntry();
       dropConversationEntry();
-      if (ioDeclared) reconcileChat(false);
-      else stopChatObserver();
-    };
-  });
-  ctx.slots.inject("conversation.input.left", () => {
-    ioDeclared = true;
-    startChatObserver();
-    return () => {
-      ioDeclared = false;
-      dropIoEntry();
-      if (chatDeclared) reconcileChat(false);
-      else stopChatObserver();
+      stopChatObserver();
     };
   });
   return {

@@ -112,7 +112,7 @@ rc.6 的 `agent/inbox/spliced` 是公开、持久的 Session event；插入、�
 - 用户与 assistant 正文不直接迁移到 `MessageText` / `MarkdownText`。魔丸从 DSH 权威消息取得原始 content，再按“ST 显示正则 → Showdown 2.1.0（与 ST 相同的核心选项）→ DOMPurify 约束清理”执行浏览器显示管线；因此自定义/XML 包裹标签不会阻断其内部 Markdown，嵌套标签和 ST 的宽松引用代码围栏语义也能保留。显示结果只存在于前端，不回写 DSH 消息或 `timeline.json`。DSH `MarkdownText` 会省略 raw HTML，不能作为 ST HTML 兼容渲染器；以后升级 Showdown、清理策略或复用 DSH 低层能力，必须分别对照 ST 输出与恶意 HTML 用例，证明不会改变 Tavern 显示语义或越过 sanitizer 后再单独验收。
 - 思考折叠可采用公开 `DisclosureRow` 和 `IconThinkOutline*`；操作按钮可采用公开图标与 `Tooltip`。DSH bundle 内的 `ReasoningRow`、`MessageIconActions` 虽然存在，但未从 Conversation 的公开 client 入口导出，不属于可依赖接口。
 - **已批准为待办：** 周目导入/导出、资源选择等锚定菜单采用公开 `Menu`（含 portal、滚动/resize 重定位、紧凑模式），减少窄侧栏裁切和自维护定位 CSS；编辑、删除确认逐步采用公开 `Modal` / `Button` / `Input`，复制采用 `writeClipboard`。迁移仍按功能拆分提交和验收。
-- 当前 `conversation.input.left` 的导入/导出 `+` 使用了正确 slot，却与已冻结的产品布局重复；处理方式应是移除该注册、保留侧栏菜单，而不是为重复入口再造一个机制。
+- 已移除曾注册在 `conversation.input.left` 的重复导入/导出 `+`；周目 IO 只保留在侧边栏 `PlayIoMenu`，不会占用或改写原生 composer 左侧动作。
 - 早期为消息滚动写过本地锚点、遮挡量与 composer 高度补偿；已改回 DSH scrollport 的 `scrollTop = scrollHeight` 语义。以后先确认 Host 的滚动所有权，不再用固定像素模拟 sticky composer。
 
 引入 primitives 时必须把 `@deepseek-ai/dsh-client-ui-primitives` 作为明确、同版本族的 client 依赖/注入项；不得借用 DSH 安装目录中的传递依赖。迁移必须逐项验收，不能为了统一外观一次替换所有控件。

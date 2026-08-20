@@ -2,7 +2,6 @@ import { CLIENT_REFRESH_EVENT } from '../../../identity.js'
 import { translate } from '../i18n.js'
 import { MowanChatView } from './chat.js'
 import { loadCurrentPlaythrough } from './chat-model.js'
-import { PlayIoMenu } from './io-menu.js'
 import { PlayWorkspaceBrowser } from './sidebar.js'
 import { PlaySessionDock } from './notice.js'
 import { DefaultConversationViewAdapter } from './view-default.js'
@@ -32,12 +31,10 @@ export function installPlaySlotOccupancy(ctx, playClient) {
   let disposeNoticeEntry = null
   let disposeNoticeEffect = null
   let chatDeclared = false
-  let ioDeclared = false
   let chatGeneration = 0
   let disposeChatEntry = null
   let disposeDefaultViewEntry = null
   let defaultViewEntryKey = null
-  let disposeIoEntry = null
   let disposeSessionSubscription = null
   let refreshChatListener = null
   let chatBinding = null
@@ -142,16 +139,9 @@ export function installPlaySlotOccupancy(ctx, playClient) {
     completedDefaultViewAttempts.delete(completedDefaultViewAttempts.values().next().value)
   }
 
-  const dropIoEntry = () => {
-    const disposeIo = disposeIoEntry
-    disposeIoEntry = null
-    disposeIo?.()
-  }
-
   const dropChatEntry = () => {
     dropDefaultViewEntry()
     dropConversationEntry()
-    dropIoEntry()
     chatBinding = null
   }
 
@@ -208,26 +198,12 @@ export function installPlaySlotOccupancy(ctx, playClient) {
         }, DefaultConversationViewAdapter)
       }
     }
-    if (!ioDeclared) {
-      dropIoEntry()
-    } else if (disposeIoEntry === null) {
-      disposeIoEntry = ctx.slots.register({
-        name: 'conversation.input.left',
-        id: 'pmp-dsh-tavern-play-io',
-        order: 80,
-        inject: () => ({
-          playClient,
-          playthrough: chatBinding.playthrough,
-          openSession: sessionId => ctx.sessions.open(sessionId),
-        }),
-      }, PlayIoMenu)
-    }
   }
 
   const reconcileChat = (force = false) => {
     if (force !== true) force = false
     const session = currentSession()
-    if ((!chatDeclared && !ioDeclared) || mode !== 'play' || session === null) {
+    if (!chatDeclared || mode !== 'play' || session === null) {
       chatGeneration += 1
       pendingChatSignature = null
       dropChatEntry()
@@ -249,7 +225,7 @@ export function installPlaySlotOccupancy(ctx, playClient) {
       const latest = currentSession()
       if (generation !== chatGeneration
         || mode !== 'play'
-        || (!chatDeclared && !ioDeclared)
+        || !chatDeclared
         || latest === null
         || sessionSignature(latest) !== signature) return
       if (match === null) {
@@ -318,19 +294,7 @@ export function installPlaySlotOccupancy(ctx, playClient) {
       chatDeclared = false
       dropDefaultViewEntry()
       dropConversationEntry()
-      if (ioDeclared) reconcileChat(false)
-      else stopChatObserver()
-    }
-  })
-
-  ctx.slots.inject('conversation.input.left', () => {
-    ioDeclared = true
-    startChatObserver()
-    return () => {
-      ioDeclared = false
-      dropIoEntry()
-      if (chatDeclared) reconcileChat(false)
-      else stopChatObserver()
+      stopChatObserver()
     }
   })
 
