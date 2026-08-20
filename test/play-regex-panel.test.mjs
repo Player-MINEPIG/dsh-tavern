@@ -71,3 +71,9 @@ test('regex panel renders global, preset-bound and character-bound sections with
   assert.doesNotMatch(source, /role: 'tab'/)
   assert.doesNotMatch(source, /setScopeKind|scopeKind/)
 })
+
+test('regex panel remains the wheel scrollport over disabled source-owned controls', () => {
+  const source = readFileSync(new URL('../packages/client/src/index.js', import.meta.url), 'utf8')
+  assert.match(source, /\.dtv-regex-panel \.dtv-body\{flex:1 1 auto;overscroll-behavior:contain\}/)
+  assert.match(source, /\.dtv-regex-rule \.dtv-textarea:disabled\{pointer-events:none\}/)
+})
