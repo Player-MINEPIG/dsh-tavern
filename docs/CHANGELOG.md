@@ -36,6 +36,13 @@ Verification: chat/load/export/import focused tests, full 304-test suite
   regex, selection composition, and the RP-root path jail.
 - Corrected the in-progress protocol to describe the current collapsible
   reasoning projection and DSH-scrollport-based entry/user-message behavior.
+- Follow-up product decisions keep user/assistant content on a Tavern-owned
+  frontend pipeline fed by authoritative DSH content, because card, preset,
+  and bundle display rules may intentionally conflict with native rendering.
+  Rendered output remains display-only and is never written to DSH or timeline.
+- Public `Menu`, `Modal`, `Input`, `Button`, and `writeClipboard` migrations are
+  approved follow-ups. Removing the duplicate `conversation.input.left` import
+  and export control remains a separate minimal-change task.
 
 ## 2026-08-20 — Scroll Mowan only for entry and user messages
 
