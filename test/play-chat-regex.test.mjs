@@ -34,3 +34,45 @@ test('Chat applies regex only after displayOverride and keeps source messages un
   assert.equal(state.turns[0].originalAssistantText, 'Original Alice')
   assert.deepEqual(messages, original)
 })
+
+test('Chat automatically composes bound preset and character source regex', async () => {
+  const messages = {
+    incompleteTurn: false,
+    messages: [
+      { id: 'u', role: 'user', seq: 1, content: [], text: 'Alice asks' },
+      { id: 'a', role: 'assistant', seq: 2, content: [], text: 'Alice answers' },
+    ],
+  }
+  const client = {
+    async getMessages() { return messages },
+    async getTimeline() {
+      return { nodes: [{
+        id: 'qa', kind: 'qa', hidden: false, displayOverride: null, adoptedVariantId: 'v',
+        variants: [{ id: 'v', sessionId: 'session-a', startEventId: 1, endEventId: 2 }],
+      }] }
+    },
+    async putTimeline() { throw new Error('must not write') },
+    async getCharacterSelection() {
+      return { selection: { characterCardId: 'character-a', character: { greetingIndex: 0 } } }
+    },
+    async getCharacter() {
+      return { character: {
+        id: 'character-a', name: 'Character', data: { firstMessage: '' },
+        source: { raw: { data: { extensions: { regex_scripts: [
+          { id: 'card', findRegex: '/Preset/g', replaceString: 'Card', placement: [2], disabled: false },
+        ] } } } },
+      } }
+    },
+    async getPreset() {
+      return { preset: { id: 'preset-a', source: { raw: { regex_scripts: [
+        { id: 'preset', findRegex: '/Alice/g', replaceString: 'Preset', placement: [1, 2], disabled: false },
+      ] } } } }
+    },
+    async getActive() { return { selection: { presetId: 'preset-a', characterCardId: 'character-a' } } },
+    async getFile() { return { content: JSON.stringify({ schemaVersion: 1, rules: [] }) } },
+  }
+  const state = await loadChatState(client, 'session-a', { path: 'timeline.json' })
+  assert.equal(state.turns[0].userText, 'Preset asks')
+  assert.equal(state.turns[0].assistantText, 'Card answers')
+  assert.equal(messages.messages[1].text, 'Alice answers')
+})

@@ -24,6 +24,7 @@ import {
 import {
   applyDisplayRegex,
   getRegexDocument,
+  resourceRegexRules,
 } from './regex.js'
 import { PlayTurnActions } from './turn-actions.js'
 import { createTurnReconciler } from './turns.js'
@@ -103,9 +104,25 @@ export async function loadChatState(client, sessionId, playthrough) {
     presetId: active?.selection?.presetId ?? null,
     characterId: characterId ?? active?.selection?.characterCardId ?? null,
   }
+  const presetResponse = typeof bindings.presetId === 'string'
+    && bindings.presetId !== ''
+    && typeof client.getPreset === 'function'
+    ? await client.getPreset(bindings.presetId)
+    : null
+  const rules = [
+    ...regexDocument.rules,
+    ...resourceRegexRules(presetResponse?.preset ?? presetResponse, {
+      kind: 'preset',
+      resourceId: bindings.presetId,
+    }),
+    ...resourceRegexRules(characterResponse?.character ?? characterResponse, {
+      kind: 'character',
+      resourceId: bindings.characterId,
+    }),
+  ]
   const regexDiagnostics = []
   const renderText = (text, target) => {
-    const result = applyDisplayRegex(text, regexDocument.rules, bindings, target)
+    const result = applyDisplayRegex(text, rules, bindings, target)
     regexDiagnostics.push(...result.diagnostics)
     return result.text
   }

@@ -4,6 +4,7 @@ import {
   applyDisplayRegex,
   importRegexDocument,
   normalizeRegexDocument,
+  resourceRegexRules,
 } from '../packages/client/src/play/regex.js'
 
 test('ST regex import preserves each original switch without a safety override', () => {
@@ -44,4 +45,29 @@ test('display regex is a pure projection and cannot mutate request or history da
   }] }).rules
   assert.equal(applyDisplayRegex(request.text, rules, {}, 'user').text, 'A')
   assert.deepEqual(request, before)
+})
+
+test('resource regex import finds preserved V2 card and preset sources without reimporting', () => {
+  const characterRules = resourceRegexRules({
+    source: { raw: { data: { extensions: { regex_scripts: [
+      { id: 'both', scriptName: 'Both', findRegex: '/Alice/g', replaceString: 'A', placement: [1, 2], disabled: false },
+      { id: 'prompt', scriptName: 'Prompt only', findRegex: '/secret/g', replaceString: 'x', placement: [2], promptOnly: true },
+      { id: 'disabled', scriptName: 'Disabled', findRegex: '/off/g', replaceString: 'x', placement: [2], disabled: true },
+    ] } } } },
+  }, { kind: 'character', resourceId: 'character-a' })
+  assert.deepEqual(characterRules.map(rule => ({ id: rule.id, enabled: rule.enabled, target: rule.target })), [
+    { id: 'both', enabled: true, target: 'both' },
+    { id: 'disabled', enabled: false, target: 'assistant' },
+  ])
+
+  const presetRules = resourceRegexRules({
+    source: { raw: { regex_scripts: [
+      { id: 'user', script_name: 'User', findRegex: '/Alice/g', replaceString: 'U', placement: [1] },
+    ] } },
+  }, { kind: 'preset', resourceId: 'preset-a' })
+  assert.equal(presetRules[0].target, 'user')
+  assert.deepEqual(presetRules[0].scope, { kind: 'preset', resourceId: 'preset-a' })
+  assert.deepEqual(resourceRegexRules({ source: { raw: { name: 'No scripts' } } }, {
+    kind: 'preset', resourceId: 'preset-b',
+  }), [])
 })

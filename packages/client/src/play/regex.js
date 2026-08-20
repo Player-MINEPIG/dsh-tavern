@@ -25,6 +25,40 @@ function normalizeTarget(value) {
   return ['user', 'assistant', 'both'].includes(value) ? value : 'assistant'
 }
 
+function importedTarget(value) {
+  if (typeof value.target === 'string') return normalizeTarget(value.target)
+  if (typeof value.placement === 'string') return normalizeTarget(value.placement)
+  if (!Array.isArray(value.placement)) return 'assistant'
+  const user = value.placement.some(item => item === 1 || item === 'user' || item === 'user_input')
+  const assistant = value.placement.some(item => item === 2 || item === 'assistant' || item === 'ai_output')
+  if (user && assistant) return 'both'
+  if (user) return 'user'
+  return 'assistant'
+}
+
+function displayImportCandidate(value) {
+  if (!isRecord(value)) return false
+  if (value.promptOnly === true && value.markdownOnly !== true) return false
+  if (!Array.isArray(value.placement)) return true
+  return value.placement.some(item => item === 1 || item === 2
+    || item === 'user' || item === 'assistant'
+    || item === 'user_input' || item === 'ai_output')
+}
+
+function regexCandidates(value) {
+  if (Array.isArray(value)) return value
+  const candidates = [
+    value?.rules,
+    value?.regex_scripts,
+    value?.extensions?.regex_scripts,
+    value?.data?.extensions?.regex_scripts,
+    value?.source?.raw?.regex_scripts,
+    value?.source?.raw?.extensions?.regex_scripts,
+    value?.source?.raw?.data?.extensions?.regex_scripts,
+  ]
+  return candidates.find(Array.isArray) ?? null
+}
+
 function generatedId() {
   return `regex-${globalThis.crypto?.randomUUID?.() ?? `${Date.now()}-${Math.random()}`}`
 }
@@ -39,7 +73,7 @@ export function normalizeRegexRule(value, { scope } = {}) {
     find: source,
     replace: stringValue(value.replace, value.replaceString, value.replacement),
     flags: stringValue(value.flags),
-    target: normalizeTarget(value.target ?? value.placement),
+    target: importedTarget(value),
     scope: normalizeScope(value.scope, scope),
     ext: isRecord(value.ext) ? structuredClone(value.ext) : {},
   }
@@ -52,17 +86,20 @@ export function normalizeRegexDocument(value) {
 }
 
 export function importRegexDocument(value, { scope = { kind: 'global', resourceId: null } } = {}) {
-  const candidates = Array.isArray(value)
-    ? value
-    : Array.isArray(value?.rules)
-      ? value.rules
-      : Array.isArray(value?.regex_scripts)
-        ? value.regex_scripts
-        : Array.isArray(value?.extensions?.regex_scripts)
-          ? value.extensions.regex_scripts
-          : null
+  const candidates = regexCandidates(value)
   if (candidates === null) throw new TypeError('No regex rules were found')
-  return candidates.map(rule => normalizeRegexRule(rule, { scope }))
+  return candidates
+    .filter(displayImportCandidate)
+    .map(rule => normalizeRegexRule(rule, { scope }))
+}
+
+export function resourceRegexRules(value, scope) {
+  try {
+    return importRegexDocument(value, { scope })
+  } catch (error) {
+    if (error instanceof TypeError && error.message === 'No regex rules were found') return []
+    throw error
+  }
 }
 
 export async function getRegexDocument(client) {
