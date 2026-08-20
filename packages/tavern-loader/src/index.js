@@ -487,6 +487,7 @@ export function apply(ctx, config = {}) {
       chromeStore,
       workspaceStore: playWorkspaceStore,
       host: playHost,
+      logger: ctx.logger,
     })
     const rpPolicyApi = createRpPolicyApiHandler(rpPolicyStore, { onChange: notifyChange })
     const rpModeApi = createRpModeApiHandler(rpMode, {

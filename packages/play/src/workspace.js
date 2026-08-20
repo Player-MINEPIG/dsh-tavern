@@ -85,6 +85,15 @@ function assertExpectedRevision(value, present) {
   }
 }
 
+function safeOperationPath(value) {
+  if (typeof value !== 'string' || value === '') return undefined
+  try {
+    return posixPlayPath(value)
+  } catch {
+    return undefined
+  }
+}
+
 export function writeAllSync(descriptor, content, write = writeSync) {
   const bytes = Buffer.isBuffer(content) ? content : Buffer.from(content, 'utf8')
   let offset = 0
@@ -349,15 +358,24 @@ export function createWorkspaceApiHandler(store, { validateFile } = {}) {
     async getWorkspace(_req, res) {
       return sendJson(res, 200, store.view())
     },
-    async putWorkspace(req, res) {
+    async putWorkspace(req, res, { operation } = {}) {
       const body = await readBoundedJson(req, MAX_BINDING_BYTES)
-      return sendJson(res, 200, await store.bindRoot(body?.path))
+      operation?.stage('request.validated')
+      operation?.stage('mutation.begin', { path: 'workspace' })
+      const result = await store.bindRoot(body?.path)
+      operation?.stage('mutation.committed', { path: 'workspace' })
+      return sendJson(res, 200, result)
     },
-    async postDirs(req, res) {
+    async postDirs(req, res, { operation } = {}) {
       const body = await readBoundedJson(req, MAX_BINDING_BYTES)
-      return sendJson(res, 200, await store.createDir(body?.path))
+      const path = safeOperationPath(body?.path)
+      operation?.stage('request.validated', path === undefined ? {} : { path })
+      operation?.stage('mutation.begin', path === undefined ? {} : { path })
+      const result = await store.createDir(body?.path)
+      operation?.stage('mutation.committed', { path: result.path })
+      return sendJson(res, 200, result)
     },
-    async files(req, res, { method, searchParams }) {
+    async files(req, res, { method, searchParams, operation } = {}) {
       const list = searchParams.get('list')
       if (method === 'GET' && list !== null) return sendJson(res, 200, store.list(list === '' ? undefined : list))
       const path = searchParams.get('path')
@@ -367,12 +385,24 @@ export function createWorkspaceApiHandler(store, { validateFile } = {}) {
       }
       if (method === 'PUT') {
         const body = await readBoundedJson(req, MAX_FILE_BYTES + 1024)
+        const normalizedPath = safeOperationPath(path)
+        operation?.stage('request.validated', normalizedPath === undefined ? {} : { path: normalizedPath })
+        operation?.stage('mutation.begin', normalizedPath === undefined ? {} : { path: normalizedPath })
         const managed = isManagedDocument(posixPlayPath(path))
-        return sendJson(res, 200, store.writeFile(path, body?.content, {
-          validate: validateFile,
+        const validate = typeof validateFile !== 'function'
+          ? validateFile
+          : (filePath, content) => {
+              const result = validateFile(filePath, content)
+              operation?.stage('payload.validated', { path: filePath })
+              return result
+            }
+        const result = store.writeFile(path, body?.content, {
+          validate,
           expectedRevision: body?.expectedRevision,
           expectedRevisionPresent: managed && Object.hasOwn(body ?? {}, 'expectedRevision'),
-        }))
+        })
+        operation?.stage('mutation.committed', { path: result.path })
+        return sendJson(res, 200, result)
       }
       throw httpError(405, 'method not allowed', 'PLAY_METHOD_NOT_ALLOWED')
     },

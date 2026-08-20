@@ -55,8 +55,7 @@ session/workspace/timeline/catalog 积木组合同样的流程。当前 bundled 
    读取并校验；显示名为 `x周目`，可通过 catalog 修改后重新读取确认。
 
 这里的“周目事务”是前端对公开原子操作的组合，不等同于服务端跨文件事务。单个客户端的
-controller 会串行同角色创建；内置 caller 使用服务端 CAS 的有限重放保护跨标签页并发写入，但跨文件的 session/目录/timeline/catalog 组合仍不是事务。创建中途失败暂不增加跨文件事务：每个变更 API 使用同一 `operationId` 写 `ctx.logger`，
-客户端依据已完成阶段、回读结果和稳定错误码恢复；不得把组合流程宣传为原子提交。
+controller 会串行同角色创建；内置 caller 使用服务端 CAS 的有限重放保护跨标签页并发写入，但跨文件的 session/目录/timeline/catalog 组合仍不是事务。创建中途失败暂不增加跨文件事务：当前 workspace bind、目录创建、普通文件写入和 catalog/timeline 写入已使用同一 `operationId` 写 `ctx.logger`；客户端依据已完成阶段、回读结果和稳定错误码恢复。session 创建、import binding、chrome 和前端操作日志仍不在本轮覆盖范围；不得把组合流程宣传为原子提交。
 
 ### 外部记录导入上下文
 
@@ -76,7 +75,7 @@ durable history。当前已实现的基础语义是：首次 assembly 必须按�
 - ✅ catalog/timeline GET 返回精确 UTF-8 字节 SHA-256 `revision`，PUT 使用显式 `expectedRevision`；缺失/格式错误分别为 400，目标状态或 hash 不一致为 409，冲突不改文件。服务端合同、内置 live client 的 revision 缓存/有限重放原语，以及内置生命周期 caller 的 CAS 迁移均已实现。
 - ✅ catalog/timeline 已在 GET 读后与 PUT 写前执行同一 schema/path 校验；未知第三方 `ext` 原样保留。revision/CAS 已在同一目标 guard 中实现；路径锁、逐段 no-follow 检查、临时 `wx` 写和 rename 前复验已实现。
 - 路径逐段拒绝 symlink/junction（Node 暴露的链接类型），逐层非 recursive 创建并 realpath 复核，临时文件使用排他 `wx`，写入/rename 前复验父目录；纯 Node 仍无法抵抗外部进程制造的极窄竞态，不引入 native addon。
-- 本轮日志只使用后端 `ctx.logger`，记录生命周期变更阶段和 `operationId`，不记录任何资源或聊天正文。浏览器日志、持久 journal 和额外 exporter 暂缓。
+- 本轮已接入后端 `ctx.logger` 的 operation log：`PUT /workspace`（bind）、`POST /workspace/dirs`、`PUT /workspace/files?path=`（普通文件及 catalog/timeline）。每次请求记录同一 `operationId` 的 start、request/body validated、mutation begin、payload validated（受管文档）、mutation committed、success 或 failure；不记录资源/聊天正文。GET/list、session、import、chrome 及浏览器日志、持久 journal、额外 exporter 暂缓。
 
 除已标记为已实现的 history 分页外，其余加固在完成代码、自动测试和 rc.8 验收前均不得宣称已经实现。具体风险与决策见 [`PLAY_REVIEW.md`](PLAY_REVIEW.md)。
 
@@ -118,8 +117,7 @@ durable history。当前已实现的基础语义是：首次 assembly 必须按�
 ### 后端 operation log utility
 
 `packages/play/src/operation-log.js` 导出 `createOperationContext` 和
-`operationLogConstants`，供后续 workspace/catalog/timeline/session/import mutation
-接入。它只接受 Cordis `ctx.logger`（或其 callable logger service），以
+`operationLogConstants`，供 workspace/catalog/timeline mutation 及后续 session/import mutation 接入。任务12已接入 workspace bind、目录创建和文件写入 endpoint；session/import 尚未接入。它只接受 Cordis `ctx.logger`（或其 callable logger service），以
 `dsh-tavern.operation ` 前缀输出单行日志；前缀后的部分是稳定 JSON。一次 operation
 在 context 创建时保存 operation 名和开始时刻，并可记录 `start`、多个 `stage`、一次
 `success` 或一次 `failure`。成功和失败终态包含 `result` 与非负 `durationMs`；失败只记录
@@ -131,6 +129,6 @@ durable history。当前已实现的基础语义是：首次 assembly 必须按�
 message text 及未知字段均不会输出，也不做正文摘要。logger 缺失、方法缺失或 logger
 自身抛错时 fail-soft。terminal 之后的 stage 或 terminal 调用无效且不会重复写终态。
 
-本节只声明 utility 已实现；具体业务 endpoint 的接入分为后续任务 12/13，当前不能据此
+本节声明 utility 及任务12 workspace endpoint 接入；任务13再覆盖 session/import。当前不能据此
 声称所有生命周期静默失败都已被日志覆盖。默认 Cordis logger 仍由其自身管理，插件不写
 持久日志文件、浏览器日志或 exporter。

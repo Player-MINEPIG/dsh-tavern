@@ -1,5 +1,12 @@
 # Development changelog
 
+## 2026-08-21 — Integrate workspace mutation operation logs
+
+- Integrated the task-11 fail-soft operation context into `PUT /workspace`, `POST /workspace/dirs`, and `PUT /workspace/files?path=` for ordinary files and managed catalog/timeline documents. Each mutation has one operation id and staged start/validation/begin/commit/success or failure records; GET/list stay quiet.
+- Logging remains content-free and fail-soft; HTTP responses and existing stable error codes are unchanged. Session/import/chrome and browser/persistent exporters remain outside this task.
+
+Verification: `test/play-file-mutation-log.test.mjs`, `test/play-workspace.test.mjs`, `test/play-timeline.test.mjs`; no bundled client artifact was refreshed.
+
 ## 2026-08-21 — Add fail-soft backend operation log utility
 
 - Added `packages/play/src/operation-log.js` and the root play export for a
@@ -7,7 +14,7 @@
 - Logs use a stable single-line plugin prefix, one operation id across stages,
   bounded identifiers, and a single terminal result with duration/error code.
 - Unknown fields and content-bearing values are ignored; logger failures never
-  alter business results. Endpoint integration remains scheduled for tasks 12/13.
+  alter business results. Workspace endpoint integration is recorded in the task entry above; session/import integration remains scheduled for task 13.
 
 Verification: `test/play-operation-log.test.mjs`; no bundled client artifact was refreshed.
 

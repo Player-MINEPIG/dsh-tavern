@@ -4,6 +4,7 @@ import { httpError, parsePlayUrl, sendPlayError } from './http.js'
 import { createSessionApiHandler } from './sessions.js'
 import { validatePlayDocument } from './timeline.js'
 import { createWorkspaceApiHandler } from './workspace.js'
+import { createOperationContext } from './operation-log.js'
 
 export function isPlayApiPath(url) {
   return parsePlayUrl(url, API_V2) !== null
@@ -22,6 +23,8 @@ export function createPlayApiHandler({
   host,
   validateFile = validatePlayDocument,
   now,
+  logger,
+  operationOptions,
 } = {}) {
   if (chromeStore === undefined) throw new TypeError('chromeStore is required')
   const chromeApi = createChromeApiHandler(chromeStore)
@@ -32,7 +35,34 @@ export function createPlayApiHandler({
     ? createSessionApiHandler({ host, workspaceStore, now })
     : null
 
+  const operationDefaults = {
+    ...(operationOptions ?? {}),
+    ...(logger === undefined ? {} : { logger }),
+  }
+
+  function startMutation(req, operation, path) {
+    const context = createOperationContext({
+      ...operationDefaults,
+      operation,
+      meta: { method: String(req.method ?? 'GET').toUpperCase(), ...(path === undefined ? {} : { path }) },
+    })
+    context.start({ method: String(req.method ?? 'GET').toUpperCase(), ...(path === undefined ? {} : { path }) })
+    return context
+  }
+
+  async function runMutation(operation, action) {
+    try {
+      const result = await action()
+      operation.success('committed')
+      return result
+    } catch (error) {
+      operation.failure(error, { status: errorStatus(error) })
+      throw error
+    }
+  }
+
   return async (req, res) => {
+    let operation = null
     try {
       const route = parsePlayUrl(req.url, API_V2)
       if (route === null) throw httpError(404, 'Not found', 'PLAY_NOT_FOUND')
@@ -45,15 +75,25 @@ export function createPlayApiHandler({
         if (method !== 'GET' && method !== 'PUT') throw httpError(405, 'method not allowed', 'PLAY_METHOD_NOT_ALLOWED')
         if (workspaceApi === null) throw httpError(404, 'Not found', 'PLAY_NOT_FOUND')
         if (method === 'GET') return await workspaceApi.getWorkspace(req, res)
-        return await workspaceApi.putWorkspace(req, res)
+        operation = startMutation(req, 'workspace.bind', 'workspace')
+        return await runMutation(operation, () => workspaceApi.putWorkspace(req, res, { operation }))
       }
       if (route.rest === '/workspace/dirs') {
         if (method !== 'POST') throw httpError(405, 'method not allowed', 'PLAY_METHOD_NOT_ALLOWED')
         if (workspaceApi === null) throw httpError(404, 'Not found', 'PLAY_NOT_FOUND')
-        return await workspaceApi.postDirs(req, res)
+        operation = startMutation(req, 'workspace.dir.create')
+        return await runMutation(operation, () => workspaceApi.postDirs(req, res, { operation }))
       }
       if (route.rest === '/workspace/files') {
         if (workspaceApi === null) throw httpError(404, 'Not found', 'PLAY_NOT_FOUND')
+        if (method === 'PUT') {
+          operation = startMutation(req, 'workspace.file.write', safePath(route.searchParams.get('path')))
+          return await runMutation(operation, () => workspaceApi.files(req, res, {
+            method,
+            searchParams: route.searchParams,
+            operation,
+          }))
+        }
         return await workspaceApi.files(req, res, { method, searchParams: route.searchParams })
       }
       if (route.rest === '/focus') {
@@ -82,7 +122,18 @@ export function createPlayApiHandler({
       }
       throw httpError(404, 'Not found', 'PLAY_NOT_FOUND')
     } catch (error) {
+      operation?.failure(error, { status: errorStatus(error) })
       return sendPlayError(res, error)
     }
   }
+}
+
+function errorStatus(error) {
+  return error?.status
+    ?? (error instanceof TypeError || error instanceof SyntaxError ? 400 : 500)
+}
+
+function safePath(value) {
+  if (typeof value !== 'string' || value === '') return undefined
+  return value.replace(/[\u0000-\u001f\u007f]/g, '\ufffd').slice(0, 512)
 }
