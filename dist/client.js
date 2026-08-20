@@ -7013,6 +7013,9 @@ function TavernShell({ useSessions, useWorkspaces, createCleanSession, playClien
   const clickLauncher = (event) => chromeController.current?.click({
     suppressed: consumeSuppressedClick() || event.detail > 1
   });
+  const doubleClickLauncher = () => chromeController.current?.switchMode({
+    suppressed: consumeSuppressedClick()
+  });
   const switchChrome = () => chromeController.current?.switchMode();
   const open = (id) => {
     setMenuOpen(false);
@@ -7083,7 +7086,8 @@ function TavernShell({ useSessions, useWorkspaces, createCleanSession, playClien
         onPointerMove: moveDrag,
         onPointerUp: endDrag,
         onPointerCancel: endDrag,
-        onClick: clickLauncher
+        onClick: clickLauncher,
+        onDoubleClick: doubleClickLauncher
       }, chromeMode === "play" ? "ST" : "DS")),
       menuOpen ? h13(
         "div",
