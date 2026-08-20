@@ -27,7 +27,7 @@
 | POST | `/sessions` | 新开扮演 session。有角色卡时标题=角色名+时间；无角色卡时走 DSH `session.create` 默认标题，不 409。仅当 body 带 `selectionFromSessionId` 才复制 Tavern 绑定。插入扮演工作区。**不写 timeline** | 已实现 |
 | POST | `/sessions/:id/branch` | `{ atEventId }` = 日志 seq。fork，不写 timeline、不代发。开放 turn → 409 | 已实现 |
 | POST | `/sessions/:id/user-message` | `{ text }` 作为下一条用户正文，`session.prompt` `queue` | 已实现 |
-| GET | `/sessions/:id/messages` | `deriveMessages()` + `seq` + `incompleteTurn`。2.0 发布目标为持续读取到 `hasMore: false`，不设插件页数上限 | 基础读取已实现；完整分页待实现 |
+| GET | `/sessions/:id/messages` | `deriveMessages()` + `seq` + `incompleteTurn`。持续读取到 `hasMore: false`，不设插件页数上限；Host 游标空页、非法 seq 或不前进时返回 502 `PLAY_HISTORY_CURSOR_STALLED` | 已实现（`10250a7`） |
 | GET | `/sessions/:id/import-context` | 返回 `{ binding }`；未绑定为 `null`，绑定只含 path/hash/state/数量摘要，不返回记录正文 | 已实现 |
 | PUT | `/sessions/:id/import-context` | `{ reference: { path, expectedHash? } }`；为空 session 绑定或换绑已写入工作区的 import-context | 已实现 |
 | DELETE | `/sessions/:id/import-context` | 为空 session 解绑；幂等返回 `{ binding: null }` | 已实现 |
@@ -73,16 +73,16 @@ retry/swipe 可重放，中断后新发用户消息不重复；成功后保留 l
 SillyTavern JSON/JSONL 与本插件 bundle 可由客户端解析后写入该上下文文件。greeting 仍是
 展示投影，不伪造 assistant 历史。
 
-### 已接受、待实现的 2.0 发布加固
+### 已接受的 2.0 发布加固（部分已实现）
 
-- history 取消 32 页人为上限并一直分页至 `hasMore: false`；只保留 cursor 不前进保护。
+- ✅ history 已实现（`10250a7`）：取消 32 页人为上限并一直分页至 `hasMore: false`；Host 空页、非法 oldest `seq` 或 cursor 重复/不前进时返回 502 `PLAY_HISTORY_CURSOR_STALLED`；插件不摘要/切片。
 - import-context 使用按原用户回合的 claim/lineage 语义，覆盖 retry、swipe、取消和中断后新消息。
 - catalog/timeline GET 返回 revision，PUT 使用 `expectedRevision`；冲突显式 409，所有内置客户端回读重放。
 - catalog/timeline 在 GET 与 PUT 两侧校验；路径、CAS、校验、临时写和替换处于同一目标锁内。
 - 路径逐段拒绝 symlink/junction/reparse point，逐层创建并 realpath 复核，临时文件使用排他 `wx`。
 - 本轮日志只使用后端 `ctx.logger`，记录生命周期变更阶段和 `operationId`，不记录任何资源或聊天正文。浏览器日志、持久 journal 和额外 exporter 暂缓。
 
-以上在完成代码、自动测试和 rc.8 验收前均不得宣称已经实现。具体风险与决策见 [`PLAY_REVIEW.md`](PLAY_REVIEW.md)。
+除已标记为已实现的 history 分页外，其余加固在完成代码、自动测试和 rc.8 验收前均不得宣称已经实现。具体风险与决策见 [`PLAY_REVIEW.md`](PLAY_REVIEW.md)。
 
 `chrome` 是整个前端的蓝/红球，存在插件 data `chrome.json`，默认 `native`。非法 `mode` → 400。GET 不要求 JSON Content-Type。
 

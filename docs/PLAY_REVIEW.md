@@ -30,11 +30,11 @@ timeline 只保存 session/event 范围引用；路径 API 有根目录、相对
 但 v2 作为“第三方可基于协议开发前端”的稳定面，仍有以下发布前风险。2026-08-21 已完成
 协议决策，下面保留原始发现作为证据；新的完成合同以紧随其后的决策表为准。
 
-## 已接受的处理决定（2026-08-21，均待实现）
+## 已接受的处理决定（2026-08-21；状态以各行标注为准）
 
 | 原风险 | 已接受的合同 |
 | --- | --- |
-| 历史完整性 | 移除 32 页上限，一直分页到 Host `hasMore: false`，仅保留 cursor 不前进保护。插件不摘要/切片；模型上下文超限由 DSH 报错，README 明确区分两层。 |
+| 历史完整性（已实现，`10250a7`） | 已移除 32 页上限，一直分页到 Host `hasMore: false`；Host 空页、非法 oldest `seq` 或 cursor 重复/不前进时返回 502 `PLAY_HISTORY_CURSOR_STALLED`。插件不摘要/切片；模型上下文超限由 DSH 报错，README 明确区分两层。 |
 | catalog/timeline 并发 | GET 返回 SHA-256 revision；PUT 带 `expectedRevision`，`null` 仅创建；冲突为 409 `PLAY_FILE_REVISION_CONFLICT`。比较、校验、临时写、替换在同一目标锁内；客户端冲突后回读并重放。 |
 | 半完成资源 | 不增加跨文件事务。每个生命周期变更 API 使用同一 `operationId` 通过 `ctx.logger` 记录阶段/结果/错误码/耗时；客户端回读并恢复。只记录标识和摘要，不记录正文。 |
 | import-context 请求语义 | 首次 assembly 按原用户 turn/event claim；同一回合 retry/swipe 可重放；中断后新用户消息不重复；成功后保留 lineage 供未来 swipe。 |
@@ -49,7 +49,7 @@ timeline 只保存 session/event 范围引用；路径 API 有根目录、相对
 | --- | --- | --- | --- |
 | P1 数据一致性 | `packages/client/src/play/create.js:91-100`、`import.js:68-80`；`packages/client/src/play/nodes.js:48-52,72-77,112-127`；`turns.js:77-80` | catalog/timeline 都是“GET → 本地修改 → PUT 整份文档”。controller 只在同一个 JS 实例内串行；两个标签页、两个插件前端或第三方客户端同时操作时，后写者会覆盖前一个 playthrough、variant、隐藏状态或显示覆盖。v2 没有版本号、ETag、条件写入或冲突响应，违反第三方稳定协议和“卸载后一切如常”所需的持久一致性。 | 在 v2 重新确定 CAS 合同：文档带 generation/ETag，`PUT` 必须带 `If-Match` 并在冲突时返回 409；或增加服务端原子命令（append/adopt/update catalog）。客户端控制器只能作为 UX 优化，不能是唯一并发保护。 |
 | P1 半完成资源 | `packages/play/src/sessions.js:116-136`、`packages/tavern-loader/src/play-host.js:52-69,116-136`；客户端 `create.js:91-96`、`import.js:68-79` | Host session 已创建后，绑定导入上下文、复制 selection、创建目录、写 timeline 或写 catalog 任一步失败，都会留下没有 catalog/timeline 的 DSH session；标题重命名失败也被静默忽略。导入上下文还可能已经写入且处于 pending。当前响应只能报错，不能告诉第三方前端哪些步骤已提交。 | 讨论“周目创建事务”的边界：优先提供 Host/loader 侧可回滚或可补偿的 create transaction；否则返回结构化 `sessionId`、已完成阶段和恢复操作，并让 catalog 采用可恢复状态，而不是声称一次操作原子完成。 |
-| P1 历史完整性 | `packages/play/src/sessions.js:62-74` | `readAllHistory()` 最多读取 32 页；当 Host 仍返回 `hasMore: true` 时循环自然结束，却不返回 truncated、continuation 或错误。`GET /sessions/:id/messages` 因而可能静默返回不完整历史，客户端会把它当作完整历史用于 timeline 对账、导出或生成 variant。每页大小也未由 v2 合同明确限制。 | API 需要明确完整性：继续分页并返回 continuation，或达到上限时返回 413/409 及 `truncated: true`；客户端不得把截断结果当完整消息集。应同时给 Host history 指定 bounded page size。 |
+| P1 历史完整性（已关闭，`10250a7`） | `packages/play/src/sessions.js:62-79` | 原始 32 页上限会在 `hasMore: true` 时静默返回不完整历史。该风险已由无限分页和游标停滞显式失败处理关闭；`GET /sessions/:id/messages` 不返回部分历史假象。 | 已实现：持续分页至 `hasMore !== true`；空页、非法 oldest `seq` 或 cursor 重复/不前进返回 502 `PLAY_HISTORY_CURSOR_STALLED`。插件不摘要/切片。 |
 | P1 请求语义 | `packages/tavern-loader/src/import-context-runtime.js:132-159`、`packages/tavern-loader/src/index.js:385-402` | 导入上下文状态只有在 `session/event` 的 `turn/end` 才从 `pending` 变为 `consumed`。request error、取消、断线或 Host 未发出 `turn/end` 时，binding 会一直 pending；下一次请求会再次注入同一份导入历史。即使正常情况下同一 turn 发生多次 assembly，`contextFor()` 也没有 request/turn token 去保证只消费一次。 | 重新确定 one-shot 的所有权和重试语义：在首次实际 assembly 前建立带 turn/request id 的 claim，处理 request-error/cancel/agent abort/启动恢复；若允许失败后重试，需显式记录 retry 次数，不能依靠“等 turn/end”。补充 Host 终态事件或 loader 的清理接口。 |
 
 ## 原始发现：安全与 schema
@@ -71,9 +71,9 @@ timeline 只保存 session/event 范围引用；路径 API 有根目录、相对
 
 ## 更新后的验收顺序
 
-1. 逐 commit 实现完整 history、catalog/timeline 校验与 CAS、`ctx.logger` 阶段日志、claim/lineage、
+1. 完整 history 已由 `10250a7` 实现并有超过 32 页自动测试；其余逐 commit 实现 catalog/timeline 校验与 CAS、`ctx.logger` 阶段日志、claim/lineage、
    playthrough-id focus 和路径 TOCTOU 加固；
-2. 用超过 32 页的历史、请求失败/取消/中断/重试后的导入上下文、两个标签页并发写同一
+2. history 超过 32 页的自动覆盖已完成；继续验收请求失败/取消/中断/重试后的导入上下文、两个标签页并发写同一
    catalog/timeline、损坏文件和 symlink/junction 替换做协议验收；
 3. 最后统一验收功能按钮，因为 swipe、adopt、hide、display override 和 restore 都依赖
    同一份 timeline、focus 与 import lineage 一致性语义。
