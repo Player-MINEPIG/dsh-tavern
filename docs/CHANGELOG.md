@@ -4,6 +4,21 @@ This is the staged implementation log for dsh-tavern. It is kept separately
 from the product README so reviewers can follow intent, decisions, verification,
 and known limits chronologically.
 
+## 2026-08-20 — Move import binding into the empty-playthrough opening
+
+- Removed import from the sidebar playthrough menu. Empty playthroughs expose
+  a centered import action below their greeting; once bound, the controls move
+  below the imported records and become replace/unbind actions.
+- Imported history remains read-only and marks its latest QA explicitly. The
+  frontend reads the session binding as authority rather than inferring it
+  from catalog metadata.
+- Controls disappear immediately when a user node, running turn, durable QA,
+  or consumed binding makes the playthrough immutable; the backend enforces
+  the same lock independently.
+
+Verification: chat-state, import lifecycle, client-contract, i18n, and
+production build tests.
+
 ## 2026-08-20 — Manage import context on an existing empty session
 
 - Added stable v2 GET/PUT/DELETE operations at

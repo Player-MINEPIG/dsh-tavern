@@ -13,6 +13,7 @@ import {
   createLocalizedElement,
   rawText,
   uiMessage,
+  unwrapText,
 } from '../i18n.js'
 import {
   applyDisplayNameMacros,
@@ -30,7 +31,11 @@ import {
 import { RichText } from './rich-text.js'
 import { PlayTurnActions } from './turn-actions.js'
 import { createTurnReconciler } from './turns.js'
-import { loadPlaythroughImportContext } from './import.js'
+import {
+  bindPlaythroughImport,
+  loadPlaythroughImportContext,
+  unbindPlaythroughImport,
+} from './import.js'
 
 const h = createLocalizedElement(createElement)
 const turnReconcilers = new WeakMap()
@@ -41,6 +46,7 @@ const css = `
 .dtv-play-chat-bubble{max-width:88%;box-sizing:border-box;border-radius:14px;padding:12px 14px;overflow-wrap:anywhere;font-size:14px;line-height:1.65}.dtv-play-chat-user{align-self:flex-end;background:var(--dsw-alias-interactive-bg-selected,var(--dsw-specific-tip))}.dtv-play-chat-assistant{align-self:flex-start;background:var(--dsw-alias-bg-layer-2,var(--dsw-specific-block))}
 .dtv-play-greeting{position:relative;align-self:flex-start;max-width:88%;display:grid;grid-template-columns:30px minmax(0,1fr) 30px;align-items:center;gap:6px}.dtv-play-greeting-text{border-radius:14px;padding:13px 15px;background:var(--dsw-alias-bg-layer-2,var(--dsw-specific-block));overflow-wrap:anywhere;font-size:14px;line-height:1.65}
 .dtv-play-greeting-button{width:30px;height:34px;border:0;border-radius:9px;background:transparent;color:var(--dsw-alias-label-secondary);cursor:pointer}.dtv-play-greeting-button:hover{background:var(--dsw-alias-interactive-bg-hover)}.dtv-play-greeting-button:disabled{opacity:.4;cursor:default}
+.dtv-play-import-controls{align-self:center;display:flex;flex-wrap:wrap;align-items:center;justify-content:center;gap:8px;margin:-8px 0 2px}.dtv-play-import-bound{width:100%;margin:0;text-align:center;color:var(--dsw-alias-label-tertiary);font-size:11px}.dtv-play-import-button{min-height:30px;padding:5px 11px;border:1px solid var(--dsw-alias-border-subtle);border-radius:9px;background:var(--dsw-alias-bg-layer-2,var(--dsw-specific-block));color:var(--dsw-alias-label-primary);font:inherit;font-size:11px;cursor:pointer}.dtv-play-import-button:hover{background:var(--dsw-alias-interactive-bg-hover)}.dtv-play-import-button:disabled{opacity:.45;cursor:default}.dtv-play-import-last{margin:0;color:var(--dsw-alias-label-tertiary);font-size:11px;font-weight:700}
 .dtv-play-chat-status{margin:16px 0;padding:12px 14px;border-radius:12px;background:var(--dsw-alias-bg-layer-2,var(--dsw-specific-block));color:var(--dsw-alias-label-tertiary);font-size:12px;line-height:1.55}.dtv-play-chat-status[data-error=true]{color:var(--dsw-alias-state-error)}
 .dtv-play-chat-running{align-self:flex-start;margin:0;color:var(--dsw-alias-label-tertiary);font-size:12px;line-height:1.5}
 .dtv-play-chat-reasoning{align-self:flex-start;max-width:88%;color:var(--dsw-alias-label-secondary);font-size:13px;line-height:1.6}.dtv-play-chat-reasoning summary{width:max-content;cursor:pointer;user-select:none;color:var(--dsw-alias-label-tertiary);font-size:12px}.dtv-play-chat-reasoning-text{margin-top:8px;padding:10px 12px;border-left:2px solid var(--dsw-alias-border-secondary,var(--dsw-specific-divider));white-space:pre-wrap;overflow-wrap:anywhere}
@@ -156,6 +162,7 @@ export async function loadChatState(client, sessionId, playthrough) {
         id: `import-${index}`, imported: true, hidden: false,
         userText: qa.user,
         assistantText: qa.assistant, originalAssistantText: qa.assistant,
+        importLast: index === imported.qa.length - 1,
       })),
     ]
   }
@@ -242,6 +249,7 @@ function Turn({ turn, ...actionProps }) {
     )
   }
   return h('div', { className: 'dtv-play-chat-row' },
+    turn.importLast === true ? h('p', { className: 'dtv-play-import-last' }, uiMessage('play.import.lastQa')) : null,
     turn.userText === '' ? null : h(RichText, { className: 'dtv-play-chat-bubble dtv-play-chat-user dtv-play-rich', text: turn.userText }),
     turn.reasoningText === '' || turn.reasoningText == null ? null : h('details', { className: 'dtv-play-chat-reasoning' },
       h('summary', { title: uiMessage('play.chat.reasoning') }, uiMessage('play.chat.reasoning')),
@@ -252,6 +260,67 @@ function Turn({ turn, ...actionProps }) {
       ? h('p', { className: 'dtv-play-chat-running' }, uiMessage('play.chat.thinking'))
       : null,
     turn.imported || turn.transient ? null : h(PlayTurnActions, { turn, ...actionProps }),
+  )
+}
+
+function ImportControls({
+  playClient,
+  playthrough,
+  binding,
+  locked,
+  changed,
+  onError,
+}) {
+  const input = useRef(null)
+  const [busy, setBusy] = useState(false)
+  if (locked) return null
+
+  const choose = () => {
+    if (!busy) input.current?.click()
+  }
+  const bind = async event => {
+    const file = event.target.files?.[0]
+    event.target.value = ''
+    if (!file || busy) return
+    setBusy(true)
+    onError('')
+    try {
+      await bindPlaythroughImport(playClient, playthrough, file)
+      changed()
+    } catch (reason) {
+      onError(reason instanceof Error ? reason.message : String(reason))
+    } finally {
+      setBusy(false)
+    }
+  }
+  const unbind = async () => {
+    if (busy || !window.confirm(unwrapText(uiMessage('play.import.unbindConfirm')))) return
+    setBusy(true)
+    onError('')
+    try {
+      await unbindPlaythroughImport(playClient, playthrough)
+      changed()
+    } catch (reason) {
+      onError(reason instanceof Error ? reason.message : String(reason))
+    } finally {
+      setBusy(false)
+    }
+  }
+  return h('div', { className: 'dtv-play-import-controls' },
+    binding === null ? null : h('p', { className: 'dtv-play-import-bound' }, uiMessage('play.import.bound')),
+    h('button', {
+      type: 'button', className: 'dtv-play-import-button', disabled: busy, onClick: choose,
+    }, binding === null ? uiMessage('play.import.bind') : uiMessage('play.import.replace')),
+    binding === null ? null : h('button', {
+      type: 'button', className: 'dtv-play-import-button', disabled: busy, onClick: unbind,
+    }, uiMessage('play.import.unbind')),
+    h('input', {
+      ref: input,
+      hidden: true,
+      type: 'file',
+      accept: '.json,.jsonl,application/json,application/x-ndjson',
+      onChange: bind,
+    }),
   )
 }
 
@@ -346,6 +415,15 @@ export function MowanChatView({ sessionId, useSession, playClient, playthrough, 
     const userDepth = turn.userText === '' ? undefined : liveDepth++
     liveTurns[index] = applyTurnDisplayRegex(turn, state.display, { userDepth, assistantDepth })
   }
+  const importLocked = state?.importMutable !== true || running || latestUserSeq >= 0 || liveTurns.length > 0
+  const importControls = state === null ? null : h(ImportControls, {
+    playClient,
+    playthrough,
+    binding: state.importBinding,
+    locked: importLocked,
+    changed: () => setRevision(value => value + 1),
+    onError: setError,
+  })
 
 
   return h('div', { className: 'dtv-play-chat' },
@@ -353,6 +431,7 @@ export function MowanChatView({ sessionId, useSession, playClient, playthrough, 
     state === null && error === '' ? h('p', { className: 'dtv-play-chat-status' }, uiMessage('play.chat.loading')) : null,
     state === null ? null : h('div', { className: 'dtv-play-chat-list' },
       state.greeting === null ? null : h(Greeting, { greeting: state.greeting, busy: greetingBusy, change: changeGreeting }),
+      state.importBinding === null ? importControls : null,
       ...state.turns.map(turn => h(Turn, {
         key: turn.id,
         turn,
@@ -363,6 +442,7 @@ export function MowanChatView({ sessionId, useSession, playClient, playthrough, 
         onChanged: () => setRevision(value => value + 1),
         onError: setError,
       })),
+      state.importBinding === null ? null : importControls,
       ...liveTurns.map(turn => h(Turn, { key: turn.id, turn })),
       state.greeting === null && state.turns.length === 0 && liveTurns.length === 0 && !running
         ? h('p', { className: 'dtv-play-chat-status' }, uiMessage('play.chat.empty'))

@@ -75,3 +75,46 @@ test('Chat display expands bound user and character names without changing greet
   assert.equal(state.greeting.text, 'Welcome Reader; Alice is waiting.')
   assert.equal(greeting, 'Welcome {{user}}; {{char}} is waiting.')
 })
+
+test('empty imported playthrough exposes authoritative binding, latest QA and mutable opening controls', async () => {
+  const client = {
+    async getMessages() { return { incompleteTurn: false, messages: [] } },
+    async getTimeline() { return { nodes: [] } },
+    async getImportContextBinding() { return { path: 'character-a/pt/import-context.json', state: 'pending' } },
+    async getFile(path) {
+      if (path === 'character-a/pt/import-context.json') {
+        return { content: JSON.stringify({ schemaVersion: 1, greeting: null, qa: [
+          { user: 'Old Q1', assistant: 'Old A1' },
+          { user: 'Old Q2', assistant: 'Old A2' },
+        ] }) }
+      }
+      const error = new Error('missing')
+      error.code = 'PLAY_FILE_NOT_FOUND'
+      throw error
+    },
+    async getCharacterSelection() { return { selection: null } },
+  }
+  const state = await loadChatState(client, 'session-a', {
+    path: 'character-a/pt/timeline.json',
+    ext: { pmpDshTavern: { rootSessionId: 'session-a' } },
+  })
+  assert.equal(state.importBinding.state, 'pending')
+  assert.equal(state.importMutable, true)
+  assert.equal(state.turns.at(-1).importLast, true)
+  assert.equal(state.turns.at(-1).assistantText, 'Old A2')
+})
+
+test('consumed import binding is never mutable even before timeline reconciliation', async () => {
+  const client = {
+    async getMessages() { return { incompleteTurn: false, messages: [] } },
+    async getTimeline() { return { nodes: [] } },
+    async getImportContextBinding() { return { path: 'character-a/pt/import-context.json', state: 'consumed' } },
+    async getFile() { return { content: JSON.stringify({ schemaVersion: 1, greeting: null, qa: [] }) } },
+    async getCharacterSelection() { return { selection: null } },
+  }
+  const state = await loadChatState(client, 'session-a', {
+    path: 'character-a/pt/timeline.json',
+    ext: { pmpDshTavern: { rootSessionId: 'session-a' } },
+  })
+  assert.equal(state.importMutable, false)
+})
