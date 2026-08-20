@@ -124,6 +124,14 @@ export class ImportContextRuntime {
     return structuredClone(this.state.sessions[sessionId])
   }
 
+  unbind(sessionId) {
+    const existed = isRecord(this.state.sessions[sessionId])
+    delete this.state.sessions[sessionId]
+    this.preparedSessions.delete(sessionId)
+    if (existed) this.persist()
+    return existed
+  }
+
   binding(sessionId) {
     const binding = this.state.sessions[sessionId]
     return isRecord(binding) ? structuredClone(binding) : null

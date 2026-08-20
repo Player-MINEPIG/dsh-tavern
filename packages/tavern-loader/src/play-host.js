@@ -119,6 +119,18 @@ export function createPlayHost(ctx, {
       return runtime.bind(sessionId, prepared)
     },
 
+    getImportContextBinding(sessionId) {
+      const runtime = importContexts?.()
+      if (runtime === null || runtime === undefined) throw missing('import context')
+      return runtime.binding(sessionId)
+    },
+
+    unbindImportContext(sessionId) {
+      const runtime = importContexts?.()
+      if (runtime === null || runtime === undefined) throw missing('import context')
+      return runtime.unbind(sessionId)
+    },
+
     characterName(sessionId) {
       if (characters === undefined || selections === undefined) return null
       const characterId = selections.get(sessionId ?? null)?.characterCardId

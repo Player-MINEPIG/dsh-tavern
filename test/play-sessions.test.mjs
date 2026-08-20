@@ -37,6 +37,7 @@ function invoke(handler, { method = 'GET', url, body } = {}) {
 
 function mockHost({ characterName = 'Alice' } = {}) {
   const calls = []
+  let importBinding = null
   return {
     calls,
     async createWorkspace({ path }) {
@@ -79,7 +80,13 @@ function mockHost({ characterName = 'Alice' } = {}) {
     },
     characterName() { return characterName },
     prepareImportContext(reference) { calls.push(['prepareImportContext', reference]); return { path: reference.path, hash: 'hash', qaCount: 1 } },
-    bindImportContext(sessionId, prepared) { calls.push(['bindImportContext', sessionId, prepared]) },
+    bindImportContext(sessionId, prepared) {
+      calls.push(['bindImportContext', sessionId, prepared])
+      importBinding = { ...prepared, state: 'pending' }
+      return importBinding
+    },
+    getImportContextBinding() { return importBinding },
+    unbindImportContext() { importBinding = null; return true },
     copySelection(from, to) { calls.push(['copySelection', from, to]) },
   }
 }
@@ -225,6 +232,25 @@ test('GET messages returns Message.id plus seq and incompleteTurn', async () => 
       { id: 'm2', role: 'assistant', content: [{ type: 'text', text: 'yo' }], seq: 3 },
     ])
     assert.equal(listed.body.incompleteTurn, false)
+  } finally {
+    rmSync(fixture.pluginDir, { recursive: true, force: true })
+    rmSync(fixture.playRoot, { recursive: true, force: true })
+  }
+})
+
+test('session import-context route exposes binding and rejects mutation after history', async () => {
+  const fixture = await boundHandler()
+  try {
+    const read = await invoke(fixture.handler, { url: `${API_V2}/sessions/session-root/import-context` })
+    assert.equal(read.status, 200)
+    assert.equal(read.body.binding, null)
+    const locked = await invoke(fixture.handler, {
+      method: 'PUT',
+      url: `${API_V2}/sessions/session-root/import-context`,
+      body: { reference: { path: 'card/run/import-context.json' } },
+    })
+    assert.equal(locked.status, 409)
+    assert.equal(locked.body.code, 'PLAY_IMPORT_CONTEXT_LOCKED')
   } finally {
     rmSync(fixture.pluginDir, { recursive: true, force: true })
     rmSync(fixture.playRoot, { recursive: true, force: true })

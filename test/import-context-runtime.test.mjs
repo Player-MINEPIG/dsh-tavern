@@ -58,3 +58,19 @@ test('import context rejects changed hashes and conservative oversize input', ()
     rmSync(directory, { recursive: true, force: true })
   }
 })
+
+test('pending import context can be replaced and unbound before use', () => {
+  const directory = mkdtempSync(join(tmpdir(), 'dsh-tavern-import-context-mutable-'))
+  const workspace = { readFile: path => ({ path, content: JSON.stringify({ schemaVersion: 1, qa: [] }) }) }
+  try {
+    const runtime = new ImportContextRuntime(directory, workspace)
+    runtime.bind('session-empty', runtime.prepare('first.json'))
+    runtime.bind('session-empty', runtime.prepare('second.json'))
+    assert.equal(runtime.binding('session-empty').path, 'second.json')
+    assert.equal(runtime.unbind('session-empty'), true)
+    assert.equal(runtime.binding('session-empty'), null)
+    assert.equal(runtime.unbind('session-empty'), false)
+  } finally {
+    rmSync(directory, { recursive: true, force: true })
+  }
+})

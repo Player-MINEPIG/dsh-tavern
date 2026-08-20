@@ -74,6 +74,24 @@ async function readAllHistory(host, sessionId) {
   return collected
 }
 
+async function requireMutableImportContext(host, sessionId) {
+  const binding = typeof host.getImportContextBinding === 'function'
+    ? await host.getImportContextBinding(sessionId)
+    : null
+  if (binding?.state === 'consumed') {
+    throw httpError(409, 'import context is locked after use', 'PLAY_IMPORT_CONTEXT_LOCKED')
+  }
+  const events = await readAllHistory(host, sessionId)
+  const derived = typeof host.deriveMessages === 'function'
+    ? await host.deriveMessages({ sessionId, events })
+    : messagesFromEvents(events)
+  const messages = derived ?? messagesFromEvents(events)
+  if (hasOpenTurn(events) || messages.some(message => message?.role === 'user' || message?.role === 'assistant')) {
+    throw httpError(409, 'import context is locked after conversation starts', 'PLAY_IMPORT_CONTEXT_LOCKED')
+  }
+  return binding
+}
+
 function requireBoundWorkspace(workspaceStore) {
   const binding = workspaceStore.get()
   if (typeof binding.rootPath !== 'string' || binding.rootPath === '') {
@@ -170,6 +188,32 @@ export function createSessionApiHandler({ host, workspaceStore, now = () => new 
         messages: projectMessages(derived ?? messagesFromEvents(events), events),
         incompleteTurn: hasOpenTurn(events),
       })
+    },
+
+    async importContext(req, res, sessionId, method) {
+      requireSessionId(sessionId)
+      if (typeof host.getImportContextBinding !== 'function') {
+        throw httpError(501, 'Host import context is unavailable', 'PLAY_HOST_UNAVAILABLE')
+      }
+      if (method === 'GET') {
+        const binding = await host.getImportContextBinding(sessionId)
+        return sendJson(res, 200, { ok: true, binding })
+      }
+      await requireMutableImportContext(host, sessionId)
+      if (method === 'DELETE') {
+        if (typeof host.unbindImportContext !== 'function') {
+          throw httpError(501, 'Host import context is unavailable', 'PLAY_HOST_UNAVAILABLE')
+        }
+        await host.unbindImportContext(sessionId)
+        return sendJson(res, 200, { ok: true, binding: null })
+      }
+      const body = await readBoundedJson(req, MAX_BODY_BYTES)
+      if (body?.reference === undefined) {
+        throw httpError(400, 'reference is required', 'PLAY_IMPORT_CONTEXT_INVALID')
+      }
+      const prepared = await host.prepareImportContext(body.reference)
+      const binding = await host.bindImportContext(sessionId, prepared)
+      return sendJson(res, 200, { ok: true, binding })
     },
 
     async focus(req, res, searchParams) {

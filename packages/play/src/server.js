@@ -61,6 +61,12 @@ export function createPlayApiHandler({
         if (sessionApi === null) throw httpError(404, 'Not found', 'PLAY_NOT_FOUND')
         return await sessionApi.focus(req, res, route.searchParams)
       }
+      const importContextMatch = route.rest.match(/^\/sessions\/([^/]+)\/import-context$/)
+      if (importContextMatch !== null) {
+        if (!['GET', 'PUT', 'DELETE'].includes(method)) throw httpError(405, 'method not allowed', 'PLAY_METHOD_NOT_ALLOWED')
+        if (sessionApi === null) throw httpError(404, 'Not found', 'PLAY_NOT_FOUND')
+        return await sessionApi.importContext(req, res, importContextMatch[1], method)
+      }
       for (const [pattern, action, required] of SESSION_ROUTES) {
         const match = route.rest.match(pattern)
         if (match === null) continue
