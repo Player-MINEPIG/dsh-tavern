@@ -4,6 +4,14 @@ This is the staged implementation log for dsh-tavern. It is kept separately
 from the product README so reviewers can follow intent, decisions, verification,
 and known limits chronologically.
 
+## 2026-08-21 — Add catalog-authoritative playthrough focus
+
+- Implemented the catalog-authoritative playthrough-id focus endpoint with empty-timeline root-session fallback.
+- Kept explicit path focus for migration, removed the no-path default, and stopped timeline PUT from changing activeTimelinePath.
+- Bundled client migration remains task 08; catalog/timeline failure states have explicit stable error codes.
+
+Verification: test/play-sessions.test.mjs; full suite pending task 07 review.
+
 ## 2026-08-21 — Freeze the remaining v2 release-hardening contracts
 
 - Accepted complete Host history pagination without a plugin page cap; model
