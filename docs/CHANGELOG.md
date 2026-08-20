@@ -4,6 +4,18 @@ This is the staged implementation log for dsh-tavern. It is kept separately
 from the product README so reviewers can follow intent, decisions, verification,
 and known limits chronologically.
 
+## 2026-08-20 — Scroll Mowan only for entry and user messages
+
+- A newly mounted Mowan conversation scrolls to its bottom after the current
+  playthrough finishes loading, so switching from native DSH opens at the
+  latest turn rather than the top of history.
+- After mount, only a newer DSH user-node sequence triggers one additional
+  scroll to the bottom. Assistant partial growth, finalization, and Tavern
+  timeline reconciliation do not move the reader away from the reply start.
+
+Verification: `test/play-chat-model.test.mjs`, full 304-test suite (302 pass,
+2 skip), and production client build.
+
 ## 2026-08-20 — Preserve the Mowan conversation mount across live status updates
 
 - Session-list `running` and `blank` changes no longer unregister and

@@ -160,6 +160,14 @@ export function projectLiveTurns({
   return pending
 }
 
+export function latestUserNodeSeq(nodes) {
+  let latest = -1
+  for (const node of nodes ?? []) {
+    if (node?.kind === 'user' && Number.isFinite(node.seq)) latest = Math.max(latest, node.seq)
+  }
+  return latest
+}
+
 export function projectGreeting({
   timeline,
   messages,

@@ -2,6 +2,7 @@ import test from 'node:test'
 import assert from 'node:assert/strict'
 import {
   findPlaythroughForSession,
+  latestUserNodeSeq,
   loadCurrentPlaythrough,
   projectLiveTurns,
   projectTimelineQa,
@@ -127,4 +128,14 @@ test('live projection disappears after the same session range is adopted by time
     sessionId: 'root',
     nodes,
   }), [])
+})
+
+test('latest user sequence changes only when a newer user node arrives', () => {
+  assert.equal(latestUserNodeSeq(undefined), -1)
+  assert.equal(latestUserNodeSeq([
+    { kind: 'user', seq: 2 },
+    { kind: 'assistant', seq: 9 },
+    { kind: 'context', seq: 10 },
+    { kind: 'user', seq: 7 },
+  ]), 7)
 })

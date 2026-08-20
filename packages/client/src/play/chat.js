@@ -1,6 +1,8 @@
 import {
   createElement,
   useEffect,
+  useLayoutEffect,
+  useRef,
   useState,
 } from 'react'
 import {
@@ -14,6 +16,7 @@ import {
 } from '../i18n.js'
 import {
   adjacentGreetingIndex,
+  latestUserNodeSeq,
   projectGreeting,
   projectLiveTurns,
   projectTimelineQa,
@@ -186,11 +189,38 @@ export function MowanChatView({ sessionId, useSession, playClient, playthrough, 
   const sessionRevision = useSession(state => `${state.nodes?.length ?? 0}:${state.running === true}:${state.blank === true}`)
   const liveNodes = useSession(state => state.nodes)
   const partial = useSession(state => state.partial)
+  const latestUserSeq = latestUserNodeSeq(liveNodes)
   const [revision, setRevision] = useState(0)
   const running = useSession(state => state.running === true)
   const [state, setState] = useState(null)
   const [error, setError] = useState('')
   const [greetingBusy, setGreetingBusy] = useState(false)
+  const scrollRoot = useRef(null)
+  const initialScrollSession = useRef(null)
+  const userSeqSession = useRef(null)
+  const lastUserSeq = useRef(-1)
+
+  const scrollToBottom = () => {
+    const root = scrollRoot.current
+    if (root !== null) root.scrollTop = root.scrollHeight
+  }
+
+  useLayoutEffect(() => {
+    if (state === null || initialScrollSession.current === sessionId) return
+    initialScrollSession.current = sessionId
+    scrollToBottom()
+  }, [sessionId, state])
+
+  useLayoutEffect(() => {
+    if (userSeqSession.current !== sessionId) {
+      userSeqSession.current = sessionId
+      lastUserSeq.current = latestUserSeq
+      return
+    }
+    if (latestUserSeq <= lastUserSeq.current) return
+    lastUserSeq.current = latestUserSeq
+    scrollToBottom()
+  }, [latestUserSeq, sessionId])
 
   useEffect(() => {
     const refresh = () => setRevision(value => value + 1)
@@ -235,7 +265,7 @@ export function MowanChatView({ sessionId, useSession, playClient, playthrough, 
     running,
   })
 
-  return h('div', { className: 'dtv-play-chat' },
+  return h('div', { className: 'dtv-play-chat', ref: scrollRoot },
     error === '' ? null : h('p', { className: 'dtv-play-chat-status', 'data-error': true }, rawText(error)),
     state === null && error === '' ? h('p', { className: 'dtv-play-chat-status' }, uiMessage('play.chat.loading')) : null,
     state === null ? null : h('div', { className: 'dtv-play-chat-list' },

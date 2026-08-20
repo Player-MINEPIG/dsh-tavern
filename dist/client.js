@@ -3959,6 +3959,13 @@ function projectLiveTurns({
   }
   return pending;
 }
+function latestUserNodeSeq(nodes) {
+  let latest = -1;
+  for (const node of nodes ?? []) {
+    if (node?.kind === "user" && Number.isFinite(node.seq)) latest = Math.max(latest, node.seq);
+  }
+  return latest;
+}
 function projectGreeting({
   timeline,
   messages,
@@ -4590,11 +4597,35 @@ function MowanChatView({ sessionId, useSession, playClient, playthrough, openSes
   const sessionRevision = useSession((state2) => `${state2.nodes?.length ?? 0}:${state2.running === true}:${state2.blank === true}`);
   const liveNodes = useSession((state2) => state2.nodes);
   const partial = useSession((state2) => state2.partial);
+  const latestUserSeq = latestUserNodeSeq(liveNodes);
   const [revision, setRevision] = (0, import_react8.useState)(0);
   const running = useSession((state2) => state2.running === true);
   const [state, setState] = (0, import_react8.useState)(null);
   const [error, setError] = (0, import_react8.useState)("");
   const [greetingBusy, setGreetingBusy] = (0, import_react8.useState)(false);
+  const scrollRoot = (0, import_react8.useRef)(null);
+  const initialScrollSession = (0, import_react8.useRef)(null);
+  const userSeqSession = (0, import_react8.useRef)(null);
+  const lastUserSeq = (0, import_react8.useRef)(-1);
+  const scrollToBottom = () => {
+    const root = scrollRoot.current;
+    if (root !== null) root.scrollTop = root.scrollHeight;
+  };
+  (0, import_react8.useLayoutEffect)(() => {
+    if (state === null || initialScrollSession.current === sessionId) return;
+    initialScrollSession.current = sessionId;
+    scrollToBottom();
+  }, [sessionId, state]);
+  (0, import_react8.useLayoutEffect)(() => {
+    if (userSeqSession.current !== sessionId) {
+      userSeqSession.current = sessionId;
+      lastUserSeq.current = latestUserSeq;
+      return;
+    }
+    if (latestUserSeq <= lastUserSeq.current) return;
+    lastUserSeq.current = latestUserSeq;
+    scrollToBottom();
+  }, [latestUserSeq, sessionId]);
   (0, import_react8.useEffect)(() => {
     const refresh = () => setRevision((value) => value + 1);
     window.addEventListener(CLIENT_REFRESH_EVENT, refresh);
@@ -4638,7 +4669,7 @@ function MowanChatView({ sessionId, useSession, playClient, playthrough, openSes
   });
   return h8(
     "div",
-    { className: "dtv-play-chat" },
+    { className: "dtv-play-chat", ref: scrollRoot },
     error === "" ? null : h8("p", { className: "dtv-play-chat-status", "data-error": true }, rawText(error)),
     state === null && error === "" ? h8("p", { className: "dtv-play-chat-status" }, uiMessage("play.chat.loading")) : null,
     state === null ? null : h8(
