@@ -49,7 +49,7 @@ test('operation context keeps one id and records non-negative terminal duration'
 
 test('failure uses stable code and status without error details', () => {
   const sink = loggerSink()
-  const operation = createOperationContext({ logger: sink.logger, operation: 'session.create', idFactory: () => 'op-fail' })
+  const operation = createOperationContext({ logger: sink.logger, operation: 'session.create', idFactory: () => 'op-fail', clock: () => 0 })
   operation.start()
   const error = Object.assign(new Error('prompt and stack must not leak'), {
     code: 'PLAY_CONFLICT',
