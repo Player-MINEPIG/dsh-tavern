@@ -30,10 +30,8 @@ import {
 import {
   TAVERN_MENU_ITEMS,
   clampLauncherAnchor,
-  defaultLauncherAnchor,
   launcherPlacement,
   launcherResourceStatuses,
-  migrateLegacyLauncherAnchor,
 } from './state.js'
 import { createChromeClickController } from './play/chrome.js'
 import { installPlaySlotOccupancy } from './play/occupancy.js'
@@ -51,7 +49,7 @@ const css = `
 .dtv-ball-row{position:absolute;top:0;left:0;right:0;height:52px;display:flex;align-items:flex-start;pointer-events:none}.dtv-launcher[data-side=left] .dtv-ball-row{justify-content:flex-end}.dtv-launcher[data-vertical=up] .dtv-ball-row{top:auto;bottom:0;align-items:flex-end}
 .dtv-ball{pointer-events:auto;touch-action:none;user-select:none;width:44px;height:44px;flex:none;border:2px solid #fff;border-radius:50%;background:conic-gradient(from 225deg,#090909 0 56%,#18569d 56% 100%);box-shadow:0 0 0 2px #174e8a,0 6px 20px rgba(0,0,0,.34),inset 0 0 0 1px rgba(255,255,255,.28);color:#fff;font-size:13px;letter-spacing:-.5px;font-weight:850;text-shadow:0 1px 2px #000;cursor:grab;transition:filter .15s ease,transform .18s ease,box-shadow .18s ease,background .18s ease}.dtv-ball:hover{filter:brightness(1.1);box-shadow:0 0 0 2px #2675c9,0 8px 24px rgba(0,0,0,.4),inset 0 0 0 1px rgba(255,255,255,.35)}.dtv-layer[data-chrome=play] .dtv-ball{background:conic-gradient(from 225deg,#090909 0 56%,#b31319 56% 100%);box-shadow:0 0 0 2px #a50f16,0 6px 20px rgba(0,0,0,.34),inset 0 0 0 1px rgba(255,255,255,.28)}.dtv-layer[data-chrome=play] .dtv-ball:hover{box-shadow:0 0 0 2px #d5222b,0 8px 24px rgba(0,0,0,.4),inset 0 0 0 1px rgba(255,255,255,.35)}.dtv-ball:active{cursor:grabbing}.dtv-launcher[data-open=true] .dtv-ball{transform:scale(.82) rotate(-8deg)}
 .dtv-menu{position:absolute;left:8px;right:8px;top:52px;bottom:8px;padding:1px;display:flex;flex-direction:column;gap:4px;opacity:0;transform:translateY(-6px);transition:opacity .13s ease .1s,transform .18s ease .08s}.dtv-launcher[data-open=true] .dtv-menu{opacity:1;transform:none}.dtv-launcher[data-vertical=up] .dtv-menu{top:8px;bottom:52px;transform:translateY(6px)}.dtv-launcher[data-open=true][data-vertical=up] .dtv-menu{transform:none}
-.dtv-menu-title{padding:5px 8px 7px;font-size:11px;font-weight:650;color:var(--dsw-alias-label-tertiary);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.dtv-menu-title{flex:none;padding:5px 8px 7px;font-size:11px;line-height:1.35;font-weight:650;color:var(--dsw-alias-label-tertiary);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .dtv-menu-item{min-height:43px;border:0;border-radius:9px;padding:5px 8px;background:transparent;color:var(--dsw-alias-label-primary);text-align:left;font:inherit;cursor:pointer;display:grid;grid-template-columns:10px minmax(0,1fr) auto;gap:8px;align-items:center}.dtv-menu-item:hover{background:var(--dsw-alias-interactive-bg-hover)}.dtv-menu-item[data-active=true]{background:var(--dsw-alias-interactive-bg-selected,var(--dsw-specific-tip))}.dtv-binding-dot{width:8px;height:8px;border-radius:50%;background:#d33239;box-shadow:0 0 0 1px rgba(98,0,4,.38)}.dtv-menu-item[data-bound=true] .dtv-binding-dot{background:#44d17a;box-shadow:0 0 5px #31c66b,0 0 10px rgba(49,198,107,.75)}.dtv-item-copy{min-width:0;display:flex;flex-direction:column;gap:1px}.dtv-item-label{font-size:11px;font-weight:700;line-height:1.2}.dtv-item-status{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:10px;line-height:1.25;color:var(--dsw-alias-label-tertiary)}.dtv-item-count{border-radius:10px;padding:2px 6px;background:var(--dsw-specific-tip);font-size:9px;color:var(--dsw-alias-label-secondary)}.dtv-item-planned{font-size:9px;color:var(--dsw-alias-label-tertiary)}
 .dtv-menu-item[data-show-binding=false] .dtv-binding-dot{visibility:hidden}
 .dtv-panel{position:absolute;z-index:1;top:0;right:0;bottom:0;width:min(440px,calc(100vw - 56px));pointer-events:auto;border-left:1px solid var(--dsw-alias-border-l2);box-shadow:var(--ds-shadow-3,-8px 0 28px rgba(0,0,0,.18));background:var(--dsw-alias-bg-base);display:flex;flex-direction:column}
@@ -68,8 +66,7 @@ const css = `
 .dtv-modal-body{margin:0;font-size:13px;line-height:1.55}.dtv-modal .dtv-button{align-self:flex-end;min-width:88px}
 `
 
-const LAUNCHER_STORAGE_KEY = `${PLUGIN_ID}:launcher-position:v2`
-const LEGACY_LAUNCHER_STORAGE_KEY = `${PLUGIN_ID}:launcher-position:v1`
+const LAUNCHER_STORAGE_KEY = `${PLUGIN_ID}:launcher-position:v1`
 
 function viewport() {
   return { width: window.innerWidth, height: window.innerHeight }
@@ -79,16 +76,10 @@ function initialLauncherAnchor() {
   try {
     const stored = window.localStorage.getItem(LAUNCHER_STORAGE_KEY)
     if (stored !== null) return clampLauncherAnchor(JSON.parse(stored), viewport())
-    const legacy = window.localStorage.getItem(LEGACY_LAUNCHER_STORAGE_KEY)
-    if (legacy !== null) {
-      const migrated = migrateLegacyLauncherAnchor(JSON.parse(legacy), viewport())
-      window.localStorage.setItem(LAUNCHER_STORAGE_KEY, JSON.stringify(migrated))
-      return migrated
-    }
   } catch {
     // Fall through to the default when stored state is missing or malformed.
   }
-  return defaultLauncherAnchor(viewport())
+  return clampLauncherAnchor({ x: window.innerWidth - 60, y: 14 }, viewport())
 }
 
 function persistLauncherAnchor(anchor) {
@@ -812,8 +803,9 @@ function TavernShell({ useSessions, useWorkspaces, createCleanSession, playClien
     return true
   }
 
-  const clickLauncher = () => chromeController.current?.click({ suppressed: consumeSuppressedClick() })
-  const doubleClickLauncher = () => chromeController.current?.doubleClick({ suppressed: consumeSuppressedClick() })
+  const clickLauncher = event => chromeController.current?.click({
+    suppressed: consumeSuppressedClick() || event.detail > 1,
+  })
   const switchChrome = () => chromeController.current?.switchMode()
 
   const open = id => {
@@ -886,7 +878,6 @@ function TavernShell({ useSessions, useWorkspaces, createCleanSession, playClien
           onPointerUp: endDrag,
           onPointerCancel: endDrag,
           onClick: clickLauncher,
-          onDoubleClick: doubleClickLauncher,
         }, chromeMode === 'play' ? 'ST' : 'DS')),
       menuOpen ? h('div', { className: 'dtv-menu', role: 'menu' },
         h('div', { className: 'dtv-menu-title', 'aria-live': 'polite' }, chromeError === '' && statusError === '' ? uiMessage('nav.menuTitle', { session: sessionId || translate('nav.session.none') }) : uiMessage('nav.syncFailed', { message: chromeError || statusError })),

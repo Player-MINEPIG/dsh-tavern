@@ -1,7 +1,6 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import {
-  CHROME_CLICK_DELAY,
   createChromeClickController,
   nextChromeMode,
 } from '../packages/client/src/play/chrome.js'
@@ -22,7 +21,6 @@ test('chrome modes toggle only between native and play', () => {
 })
 
 test('a single launcher click opens the menu immediately without waiting for the double-click window', () => {
-  let time = 100
   let opens = 0
   const controller = createChromeClickController({
     getMode: () => 'native',
@@ -30,22 +28,18 @@ test('a single launcher click opens the menu immediately without waiting for the
     openMenu: () => { opens += 1 },
     closeMenu: () => {},
     setMode: () => {},
-    now: () => time,
   })
 
   assert.equal(controller.click(), true)
   assert.equal(opens, 1)
-  time += CHROME_CLICK_DELAY + 1
-  assert.equal(controller.click(), true)
-  assert.equal(opens, 2)
+  assert.equal(controller.click({ suppressed: true }), false)
+  assert.equal(opens, 1)
 })
 
-test('a fast second click switches mode without delaying the first menu opening', async () => {
-  let time = 100
+test('the explicit menu action commits mode only after PUT succeeds', async () => {
   const request = deferred()
   let mode = 'native'
   let requestedMode = null
-  let opens = 0
   let closes = 0
   const controller = createChromeClickController({
     getMode: () => mode,
@@ -53,20 +47,15 @@ test('a fast second click switches mode without delaying the first menu opening'
       requestedMode = desired
       return request.promise
     },
-    openMenu: () => { opens += 1 },
+    openMenu: () => {},
     closeMenu: () => { closes += 1 },
     setMode: saved => { mode = saved },
-    now: () => time,
   })
 
-  controller.click()
-  assert.equal(opens, 1)
-  time += CHROME_CLICK_DELAY - 1
-  const switching = controller.click()
+  const switching = controller.switchMode()
   assert.equal(requestedMode, 'play')
   assert.equal(mode, 'native')
   assert.equal(closes, 1)
-  assert.equal(controller.doubleClick(), false)
 
   request.resolve({ mode: 'play' })
   assert.equal(await switching, true)
@@ -91,9 +80,9 @@ test('failed and suppressed switches never change local chrome state', async () 
   })
 
   assert.equal(controller.click({ suppressed: true }), false)
-  assert.equal(await controller.doubleClick({ suppressed: true }), false)
+  assert.equal(await controller.switchMode({ suppressed: true }), false)
   assert.equal(requests, 0)
-  assert.equal(await controller.doubleClick(), false)
+  assert.equal(await controller.switchMode(), false)
   assert.equal(mode, 'native')
   assert.equal(error, failure)
 
