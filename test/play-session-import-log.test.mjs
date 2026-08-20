@@ -167,3 +167,29 @@ test('logger failures do not change session HTTP result', async () => {
     assert.equal((await invoke(handler, { method: 'POST', url: API_V2 + '/sessions', body: {} })).status, 201)
   } finally { rmSync(pluginDir, { recursive: true, force: true }) }
 })
+
+
+test('user-message success logs acceptance, terminal, and a distinct id per mutation', async () => {
+  const f = fixture({ ids: ['message-ok', 'second'] })
+  try {
+    const result = await invoke(f.handler, { method: 'POST', url: API_V2 + '/sessions/s/user-message', body: { text: 'VERY-SECRET-SUCCESS-PROMPT' } })
+    assert.equal(result.status, 200)
+    assert.deepEqual(result.body, { ok: true, accepted: true })
+    await flush()
+    const entries = opRecords(f, 'message-ok')
+    for (const stage of ['request.validated', 'host.prompt.begin', 'host.prompt.accepted']) {
+      assert.ok(entries.some(item => item.stage === stage && item.sessionId === 's'))
+    }
+    assert.equal(entries.at(-1).stage, 'success')
+    assertOneTerminal(entries)
+    assert.doesNotMatch(f.records.map(([, line]) => line).join('\n'), /VERY-SECRET-SUCCESS-PROMPT|prompt detail|body|content|text/)
+
+    const second = await invoke(f.handler, { method: 'POST', url: API_V2 + '/sessions', body: {} })
+    assert.equal(second.status, 201)
+    await flush()
+    const ids = new Set(payloads(f.records).map(item => item.operationId))
+    assert.ok(ids.has('message-ok'))
+    assert.ok(ids.has('second'))
+    assert.notEqual('message-ok', 'second')
+  } finally { f.cleanup() }
+})
