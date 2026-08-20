@@ -4,6 +4,7 @@ import { loadChatState } from '../packages/client/src/play/chat.js'
 import { readFileSync } from 'node:fs'
 
 const chatSource = readFileSync(new URL('../packages/client/src/play/chat.js', import.meta.url), 'utf8')
+const noticeSource = readFileSync(new URL('../packages/client/src/play/notice.js', import.meta.url), 'utf8')
 
 test('Chat load registers a completed real turn before projecting it', async () => {
   const calls = []
@@ -127,4 +128,12 @@ test('unbound import action always uses the greeting container footer, including
   assert.match(chatSource, /footer: state\.importBinding === null \? importControls : null/)
   assert.match(chatSource, /state\.greeting === null && state\.importBinding !== null \? null : h\(Greeting/)
   assert.doesNotMatch(chatSource, /state\.greeting === null && state\.importBinding === null \? importControls : null/)
+})
+
+test('native blank-session greeting dock mounts the shared import control', () => {
+  assert.match(chatSource, /export function ImportControls\(/)
+  assert.match(noticeSource, /ImportControls,/)
+  assert.match(noticeSource, /const importControls = h\(ImportControls,/)
+  assert.match(noticeSource, /h\('footer', \{ className: 'dtv-play-opening-actions' \},[\s\S]*importControls,/)
+  assert.match(noticeSource, /greeting === null[\s\S]*dtv-play-opening-body-empty/)
 })

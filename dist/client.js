@@ -10085,7 +10085,7 @@ var css7 = `
 .dtv-play-chat-reasoning{align-self:flex-start;max-width:88%;color:var(--dsw-alias-label-secondary);font-size:13px;line-height:1.6}.dtv-play-chat-reasoning summary{width:max-content;cursor:pointer;user-select:none;color:var(--dsw-alias-label-tertiary);font-size:12px}.dtv-play-chat-reasoning-text{margin-top:8px;padding:10px 12px;border-left:2px solid var(--dsw-alias-border-secondary,var(--dsw-specific-divider));white-space:pre-wrap;overflow-wrap:anywhere}
 .dtv-play-rich>:first-child{margin-top:0}.dtv-play-rich>:last-child{margin-bottom:0}.dtv-play-rich p,.dtv-play-rich ul,.dtv-play-rich ol,.dtv-play-rich blockquote,.dtv-play-rich pre,.dtv-play-rich table{margin:0 0 .85em}.dtv-play-rich ul,.dtv-play-rich ol{padding-left:1.5em}.dtv-play-rich blockquote{padding-left:12px;border-left:3px solid var(--dsw-alias-border-secondary,var(--dsw-specific-divider));color:var(--dsw-alias-label-secondary)}.dtv-play-rich pre{max-width:100%;overflow:auto;padding:11px 12px;border-radius:9px;background:var(--dsw-alias-markdown-code-block,var(--dsw-alias-bg-base));white-space:pre}.dtv-play-rich code{font-family:var(--ds-font-family-code,ui-monospace,monospace);font-size:.92em}.dtv-play-rich :not(pre)>code{padding:.12em .35em;border-radius:5px;background:var(--dsw-alias-markdown-code-inline,var(--dsw-alias-bg-base))}.dtv-play-rich table{display:block;max-width:100%;overflow:auto;border-collapse:collapse}.dtv-play-rich th,.dtv-play-rich td{padding:6px 9px;border:1px solid var(--dsw-alias-border-l2)}.dtv-play-rich img,.dtv-play-rich video{max-width:100%;height:auto}.dtv-play-rich a{color:var(--dsw-alias-state-business-primary);text-decoration:underline}.dtv-play-rich hr{border:0;border-top:1px solid var(--dsw-alias-border-l2)}
 `;
-function installStyles2() {
+function installPlayChatStyles() {
   if (document.querySelector(`style[data-plugin-css="${PLUGIN_ID}-play-chat"]`) !== null) return;
   const style = document.createElement("style");
   style.dataset.pluginCss = `${PLUGIN_ID}-play-chat`;
@@ -10359,7 +10359,7 @@ function ImportControls({
   );
 }
 function MowanChatView({ sessionId, useSession, playClient, playthrough, openSession, chatScroll }) {
-  installStyles2();
+  installPlayChatStyles();
   const sessionRevision = useSession((state2) => `${state2.nodes?.length ?? 0}:${state2.running === true}:${state2.blank === true}`);
   const liveNodes = useSession((state2) => state2.nodes);
   const partial = useSession((state2) => state2.partial);
@@ -11237,7 +11237,7 @@ var css8 = `
 .dtv-play-io-menu{position:absolute;z-index:30;left:0;bottom:calc(100% + 6px);min-width:210px;padding:6px;border:1px solid var(--dsw-alias-border-subtle);border-radius:11px;background:var(--dsw-alias-bg-layer-1,#181a20);box-shadow:0 12px 30px #0008;display:flex;flex-direction:column;gap:2px}.dtv-play-io[data-placement=sidebar] .dtv-play-io-menu{left:auto;right:0;bottom:auto;top:calc(100% + 4px);width:max-content;min-width:0;max-width:168px}.dtv-play-io[data-placement=sidebar] .dtv-play-io-item{white-space:nowrap}
 .dtv-play-io-item{min-height:34px;border:0;border-radius:8px;padding:6px 9px;background:transparent;color:var(--dsw-alias-label-primary);font:inherit;font-size:11px;text-align:left;cursor:pointer}.dtv-play-io-item:hover{background:var(--dsw-alias-interactive-bg-hover)}.dtv-play-io-item:disabled{opacity:.45;cursor:default}.dtv-play-io-error{max-width:240px;margin:3px 5px;color:var(--dsw-alias-state-error);font-size:10px;overflow-wrap:anywhere}
 `;
-function installStyles3() {
+function installStyles2() {
   if (document.querySelector(`style[data-plugin-css="${PLUGIN_ID}-play-io"]`) !== null) return;
   const style = document.createElement("style");
   style.dataset.pluginCss = `${PLUGIN_ID}-play-io`;
@@ -11261,7 +11261,7 @@ function downloadDocument(playthrough, document2) {
   queueMicrotask(() => URL.revokeObjectURL(url));
 }
 function PlayIoMenu({ playClient, playthrough, trigger = "+", placement = "composer" }) {
-  installStyles3();
+  installStyles2();
   const root = (0, import_react10.useRef)(null);
   const [open, setOpen] = (0, import_react10.useState)(false);
   const [busy, setBusy] = (0, import_react10.useState)(false);
@@ -11349,7 +11349,7 @@ var css9 = `
 .dtv-play-empty,.dtv-play-status{margin:0;padding:7px 9px;font-size:10px;line-height:1.45;color:var(--dsw-alias-label-tertiary);overflow-wrap:anywhere}.dtv-play-status[data-error=true]{color:var(--dsw-alias-state-error)}
 .dtv-play-rail{height:100%;box-sizing:border-box;padding:7px;display:flex;flex-direction:column;align-items:center;gap:7px;overflow:auto;zoom:var(--dtv-ui-scale,1)}.dtv-play-rail-button{width:38px;height:38px;border:0;border-radius:10px;background:transparent;color:var(--dsw-alias-label-secondary);cursor:pointer;display:grid;place-items:center}.dtv-play-rail-button:hover{background:var(--dsw-alias-interactive-bg-hover)}.dtv-play-rail-button .dtv-play-avatar{width:30px;height:30px}
 `;
-function installStyles4() {
+function installStyles3() {
   if (document.querySelector(`style[data-plugin-css="${PLUGIN_ID}-play-sidebar"]`) !== null) return;
   const style = document.createElement("style");
   style.dataset.pluginCss = `${PLUGIN_ID}-play-sidebar`;
@@ -11494,7 +11494,7 @@ function PlayWorkspaceBrowser({
   playClient,
   openSession
 }) {
-  installStyles4();
+  installStyles3();
   const scale = useUiScale();
   const sessionIds = useSessions((state) => state.ids);
   const sessions = useSessions((state) => state.byId);
@@ -11705,10 +11705,10 @@ var css10 = `
 .dtv-play-unbound-notice{box-sizing:border-box;width:100%;margin:0;padding:7px 10px;border:1px solid color-mix(in srgb,var(--dsw-alias-state-warning,#d79921) 34%,transparent);border-radius:10px;background:color-mix(in srgb,var(--dsw-alias-state-warning,#d79921) 8%,transparent);color:var(--dsw-alias-label-secondary);font-size:11px;line-height:1.45}
 .dtv-play-opening-dock{box-sizing:border-box;width:100%;min-width:0;flex:none;display:flex;flex-direction:column;overflow:hidden;border:1px solid var(--dsw-alias-border-l2);border-radius:14px;background:var(--dsw-alias-bg-layer-2,var(--dsw-specific-block));color:var(--dsw-alias-label-primary);box-shadow:0 4px 18px color-mix(in srgb,var(--dsw-alias-label-primary) 7%,transparent)}
 .dtv-play-opening-header{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:9px 12px;border-bottom:1px solid var(--dsw-alias-border-l2);font-size:12px}.dtv-play-opening-name{min-width:0;overflow:hidden;font-weight:650;text-overflow:ellipsis;white-space:nowrap}.dtv-play-opening-index{flex:none;color:var(--dsw-alias-label-tertiary);font-size:11px}
-.dtv-play-opening-body{box-sizing:border-box;max-height:45dvh;overflow-x:hidden;overflow-y:auto;padding:13px 15px;font-size:14px;line-height:1.65;overflow-wrap:anywhere}.dtv-play-opening-body>:first-child{margin-top:0}.dtv-play-opening-body>:last-child{margin-bottom:0}.dtv-play-opening-body p,.dtv-play-opening-body ul,.dtv-play-opening-body ol,.dtv-play-opening-body blockquote,.dtv-play-opening-body pre,.dtv-play-opening-body table{margin:0 0 .85em}.dtv-play-opening-body ul,.dtv-play-opening-body ol{padding-left:1.5em}.dtv-play-opening-body pre,.dtv-play-opening-body table{max-width:100%;overflow:auto}.dtv-play-opening-body img,.dtv-play-opening-body video{max-width:100%;height:auto}
-.dtv-play-opening-actions{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:8px 10px;border-top:1px solid var(--dsw-alias-border-l2)}.dtv-play-opening-button{min-width:0;padding:6px 10px;border:0;border-radius:9px;background:transparent;color:var(--dsw-alias-label-secondary);font:inherit;font-size:12px;cursor:pointer}.dtv-play-opening-button:hover:not(:disabled){background:var(--dsw-alias-interactive-bg-hover)}.dtv-play-opening-button:disabled{opacity:.4;cursor:default}.dtv-play-opening-error{margin:0;padding:7px 12px;border-top:1px solid var(--dsw-alias-border-l2);color:var(--dsw-alias-state-error);font-size:11px;line-height:1.45}
+.dtv-play-opening-body{box-sizing:border-box;max-height:45dvh;overflow-x:hidden;overflow-y:auto;padding:13px 15px;font-size:14px;line-height:1.65;overflow-wrap:anywhere}.dtv-play-opening-body-empty{min-height:34px}.dtv-play-opening-body>:first-child{margin-top:0}.dtv-play-opening-body>:last-child{margin-bottom:0}.dtv-play-opening-body p,.dtv-play-opening-body ul,.dtv-play-opening-body ol,.dtv-play-opening-body blockquote,.dtv-play-opening-body pre,.dtv-play-opening-body table{margin:0 0 .85em}.dtv-play-opening-body ul,.dtv-play-opening-body ol{padding-left:1.5em}.dtv-play-opening-body pre,.dtv-play-opening-body table{max-width:100%;overflow:auto}.dtv-play-opening-body img,.dtv-play-opening-body video{max-width:100%;height:auto}
+.dtv-play-opening-actions{display:grid;grid-template-columns:minmax(0,1fr) auto minmax(0,1fr);align-items:center;gap:8px;padding:8px 10px;border-top:1px solid var(--dsw-alias-border-l2)}.dtv-play-opening-actions>.dtv-play-opening-button:last-child{justify-self:end}.dtv-play-opening-actions>.dtv-play-import-controls{margin:0}.dtv-play-opening-button{min-width:0;padding:6px 10px;border:0;border-radius:9px;background:transparent;color:var(--dsw-alias-label-secondary);font:inherit;font-size:12px;cursor:pointer}.dtv-play-opening-button:hover:not(:disabled){background:var(--dsw-alias-interactive-bg-hover)}.dtv-play-opening-button:disabled{opacity:.4;cursor:default}.dtv-play-opening-error{margin:0;padding:7px 12px;border-top:1px solid var(--dsw-alias-border-l2);color:var(--dsw-alias-state-error);font-size:11px;line-height:1.45}
 `;
-function installStyles5() {
+function installStyles4() {
   if (document.querySelector(`style[data-plugin-css="${PLUGIN_ID}-play-notice"]`) !== null) return;
   const style = document.createElement("style");
   style.dataset.pluginCss = `${PLUGIN_ID}-play-notice`;
@@ -11716,7 +11716,8 @@ function installStyles5() {
   document.head.append(style);
 }
 function PlaySessionDock({ session, useSessions, playClient }) {
-  installStyles5();
+  installStyles4();
+  installPlayChatStyles();
   const sessionId = session?.sessionId ?? null;
   const sessionBlank = session?.blank === true;
   const composerPhase = session?.composerPhase;
@@ -11758,7 +11759,14 @@ function PlaySessionDock({ session, useSessions, playClient }) {
         }
         loadChatState(playClient, sessionId, binding.playthrough).then((state) => {
           if (!active) return;
-          setContent(state.greeting === null ? null : { kind: "opening", greeting: state.greeting, sessionId });
+          setContent({
+            kind: "opening",
+            greeting: state.greeting,
+            importBinding: state.importBinding,
+            importMutable: state.importMutable,
+            playthrough: binding.playthrough,
+            sessionId
+          });
         }, (reason) => {
           if (active) setError(reason instanceof Error ? reason.message : String(reason));
         });
@@ -11796,20 +11804,29 @@ function PlaySessionDock({ session, useSessions, playClient }) {
   }
   if (content.kind !== "opening" || !sessionBlank || composerPhase !== "blank") return null;
   const greeting = content.greeting;
-  const multiple = greeting.options.length > 1;
-  const position = Math.max(0, greeting.options.findIndex((option) => option.index === greeting.index)) + 1;
+  const options = greeting?.options ?? [];
+  const multiple = options.length > 1;
+  const position = greeting === null ? 0 : Math.max(0, options.findIndex((option) => option.index === greeting.index)) + 1;
+  const importControls = h11(ImportControls, {
+    playClient,
+    playthrough: content.playthrough,
+    binding: content.importBinding,
+    locked: content.importMutable !== true,
+    changed: () => setRevision((value) => value + 1),
+    onError: setError
+  });
   return h11(
     "section",
     {
       className: "dtv-play-opening-dock"
     },
-    h11(
+    greeting === null ? null : h11(
       "header",
       { className: "dtv-play-opening-header" },
       h11("span", { className: "dtv-play-opening-name" }, rawText(greeting.characterName)),
-      h11("span", { className: "dtv-play-opening-index" }, rawText(`${position} / ${greeting.options.length}`))
+      h11("span", { className: "dtv-play-opening-index" }, rawText(`${position} / ${options.length}`))
     ),
-    h11(RichText, { className: "dtv-play-opening-body", text: greeting.text }),
+    greeting === null ? h11("div", { className: "dtv-play-opening-body dtv-play-opening-body-empty", "aria-hidden": true }) : h11(RichText, { className: "dtv-play-opening-body", text: greeting.text }),
     error === "" ? null : h11("p", { className: "dtv-play-opening-error", role: "alert" }, rawText(error)),
     h11(
       "footer",
@@ -11820,6 +11837,7 @@ function PlaySessionDock({ session, useSessions, playClient }) {
         disabled: greetingBusy || !multiple,
         onClick: () => changeGreeting("previous")
       }, uiMessage("play.chat.previousGreeting")),
+      importControls,
       h11("button", {
         type: "button",
         className: "dtv-play-opening-button",
@@ -13362,7 +13380,7 @@ function TavernShell({ useSessions, useWorkspaces, createCleanSession, playClien
     )
   );
 }
-function installStyles6() {
+function installStyles5() {
   if (document.querySelector(`style[data-plugin-css="${PLUGIN_ID}-shell"]`) !== null) return;
   const style = document.createElement("style");
   style.dataset.pluginCss = `${PLUGIN_ID}-shell`;
@@ -13377,7 +13395,7 @@ function apply2(ctx) {
   installWorldBookStyles();
   installUserStyles();
   installTavernTraceStyles();
-  installStyles6();
+  installStyles5();
   registerTavernTraceView(ctx);
   const playClient = createLivePlayClient();
   const playSlots = installPlaySlotOccupancy(ctx, playClient);
