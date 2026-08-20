@@ -93,6 +93,15 @@ export function importRegexDocument(value, { scope = { kind: 'global', resourceI
     .map(rule => normalizeRegexRule(rule, { scope }))
 }
 
+export function resourceRegexInventory(value, scope) {
+  const candidates = regexCandidates(value)
+  if (candidates === null) return []
+  return candidates.map(rule => ({
+    ...normalizeRegexRule(rule, { scope }),
+    sourceDisplayEligible: displayImportCandidate(rule),
+  }))
+}
+
 export function resourceRegexRules(value, scope) {
   try {
     return importRegexDocument(value, { scope })

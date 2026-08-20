@@ -133,6 +133,8 @@ var zh_CN_default = Object.freeze({
   "regex.imported": "\u5DF2\u5BFC\u5165\u5E76\u4FDD\u5B58 {count} \u6761\u6B63\u5219",
   "regex.confirmReload": "\u653E\u5F03\u672A\u4FDD\u5B58\u7684\u6B63\u5219\u4FEE\u6539\u5E76\u91CD\u65B0\u8F7D\u5165\uFF1F",
   "regex.confirmClose": "\u5173\u95ED\u5E76\u653E\u5F03\u672A\u4FDD\u5B58\u7684\u6B63\u5219\u4FEE\u6539\uFF1F",
+  "regex.sourceOwnedDisplay": "\u6B64\u89C4\u5219\u6765\u81EA\u5F53\u524D\u7ED1\u5B9A\u8D44\u6E90\uFF0C\u5E76\u6309\u8D44\u6E90\u4E2D\u7684\u539F\u59CB\u5F00\u5173\u53C2\u4E0E\u9B54\u4E38\u663E\u793A\uFF1B\u63D2\u4EF6\u4E0D\u4F1A\u5728\u8FD9\u91CC\u6539\u5199\u9884\u8BBE\u6216\u89D2\u8272\u5361\u3002",
+  "regex.sourceOwnedPromptOnly": "\u6B64\u89C4\u5219\u6765\u81EA\u5F53\u524D\u7ED1\u5B9A\u8D44\u6E90\uFF0C\u4F46\u53EA\u7528\u4E8E\u63D0\u793A\u8BCD\uFF0C\u4E0D\u53C2\u4E0E\u9B54\u4E38\u663E\u793A\uFF1B\u63D2\u4EF6\u4E0D\u4F1A\u5728\u8FD9\u91CC\u6539\u5199\u9884\u8BBE\u6216\u89D2\u8272\u5361\u3002",
   "nav.session.none": "\u65E0\u4F1A\u8BDD",
   "nav.syncFailed": "\u72B6\u6001\u540C\u6B65\u5931\u8D25\uFF1A{message}",
   "nav.menuTitle": "Tavern \xB7 {session}",
@@ -684,6 +686,8 @@ var en_default = Object.freeze({
   "regex.imported": "{count} regex rules imported and saved",
   "regex.confirmReload": "Discard unsaved regex changes and reload?",
   "regex.confirmClose": "Close and discard unsaved regex changes?",
+  "regex.sourceOwnedDisplay": "This rule comes from the bound resource and its original switch controls Mowan display. This panel does not rewrite the preset or character card.",
+  "regex.sourceOwnedPromptOnly": "This rule comes from the bound resource but only affects prompts, not Mowan display. This panel does not rewrite the preset or character card.",
   "nav.session.none": "No session",
   "nav.syncFailed": "Status sync failed: {message}",
   "nav.menuTitle": "Tavern \xB7 {session}",
@@ -4094,6 +4098,14 @@ function importRegexDocument(value, { scope = { kind: "global", resourceId: null
   const candidates = regexCandidates(value);
   if (candidates === null) throw new TypeError("No regex rules were found");
   return candidates.filter(displayImportCandidate).map((rule) => normalizeRegexRule(rule, { scope }));
+}
+function resourceRegexInventory(value, scope) {
+  const candidates = regexCandidates(value);
+  if (candidates === null) return [];
+  return candidates.map((rule) => ({
+    ...normalizeRegexRule(rule, { scope }),
+    sourceDisplayEligible: displayImportCandidate(rule)
+  }));
 }
 function resourceRegexRules(value, scope) {
   try {
@@ -9461,10 +9473,27 @@ function Field5({ labelKey, children }) {
     children
   );
 }
-function RuleEditor({ rule, busy, update, remove }) {
+async function activeResourceRegexRules(client, bindings) {
+  const [presetResponse, characterResponse] = await Promise.all([
+    typeof bindings.presetId === "string" && typeof client.getPreset === "function" ? client.getPreset(bindings.presetId) : null,
+    typeof bindings.characterId === "string" && typeof client.getCharacter === "function" ? client.getCharacter(bindings.characterId) : null
+  ]);
+  return {
+    preset: resourceRegexInventory(presetResponse?.preset ?? presetResponse, {
+      kind: "preset",
+      resourceId: bindings.presetId
+    }),
+    character: resourceRegexInventory(characterResponse?.character ?? characterResponse, {
+      kind: "character",
+      resourceId: bindings.characterId
+    })
+  };
+}
+function RuleEditor({ rule, busy, update, remove, sourceOwned = false }) {
   const set = (patch) => update({ ...rule, ...patch });
   const setScope = (patch) => set({ scope: { ...rule.scope, ...patch } });
   const stateLabel = uiMessage(rule.enabled ? "common.enabled" : "common.disabled");
+  busy ||= sourceOwned;
   return h12(
     "details",
     { className: "dtv-entry dtv-regex-rule", "data-enabled": rule.enabled },
@@ -9555,7 +9584,7 @@ function RuleEditor({ rule, busy, update, remove }) {
           onChange: (event) => setScope({ resourceId: event.target.value || null })
         }))
       ),
-      h12("div", { className: "dtv-entry-actions" }, h12("button", {
+      sourceOwned ? h12("p", { className: "dtv-note" }, uiMessage(rule.sourceDisplayEligible ? "regex.sourceOwnedDisplay" : "regex.sourceOwnedPromptOnly")) : h12("div", { className: "dtv-entry-actions" }, h12("button", {
         className: "dtv-button dtv-danger",
         type: "button",
         disabled: busy,
@@ -9567,6 +9596,7 @@ function RuleEditor({ rule, busy, update, remove }) {
 function RegexPanel({ client, activeSnapshot, close }) {
   const [document2, setDocument] = (0, import_react14.useState)(EMPTY_DOCUMENT);
   const [savedDocument, setSavedDocument] = (0, import_react14.useState)(EMPTY_DOCUMENT);
+  const [resourceRules, setResourceRules] = (0, import_react14.useState)({ preset: [], character: [] });
   const [scopeKind, setScopeKind] = (0, import_react14.useState)("global");
   const [busy, setBusy] = (0, import_react14.useState)(false);
   const [status, setStatus] = (0, import_react14.useState)({ text: uiMessage("common.loading"), error: false });
@@ -9576,10 +9606,15 @@ function RegexPanel({ client, activeSnapshot, close }) {
   const load = async () => {
     setBusy(true);
     try {
-      const next = await getRegexDocument(client);
+      const [next, nextResourceRules] = await Promise.all([
+        getRegexDocument(client),
+        activeResourceRegexRules(client, bindings)
+      ]);
       setDocument(next);
       setSavedDocument(next);
-      setStatus({ text: uiMessage("regex.loaded", { count: next.rules.length }), error: false });
+      setResourceRules(nextResourceRules);
+      const count = next.rules.length + nextResourceRules.preset.length + nextResourceRules.character.length;
+      setStatus({ text: uiMessage("regex.loaded", { count }), error: false });
     } catch (reason) {
       setStatus({ text: rawText(reason instanceof Error ? reason.message : String(reason)), error: true });
     } finally {
@@ -9588,7 +9623,7 @@ function RegexPanel({ client, activeSnapshot, close }) {
   };
   (0, import_react14.useEffect)(() => {
     load();
-  }, [client]);
+  }, [client, bindings.presetId, bindings.characterId]);
   const persist = async (next) => {
     setBusy(true);
     try {
@@ -9646,7 +9681,9 @@ function RegexPanel({ client, activeSnapshot, close }) {
       setBusy(false);
     }
   };
-  const visibleRules = document2.rules.filter((rule) => rule.scope.kind === scopeKind);
+  const editableRules = document2.rules.filter((rule) => rule.scope.kind === scopeKind);
+  const sourceRules = scopeKind === "preset" ? resourceRules.preset : scopeKind === "character" ? resourceRules.character : [];
+  const visibleRules = [...editableRules, ...sourceRules];
   const title = uiMessage("regex.title");
   const closeLabel = uiMessage("panel.close", { title: unwrapText(title) });
   return h12(
@@ -9684,11 +9721,13 @@ function RegexPanel({ client, activeSnapshot, close }) {
         h12("button", { className: "dtv-button", type: "button", disabled: busy, onClick: () => downloadJson(document2) }, uiMessage("common.exportJson"))
       ),
       h12("input", { ref: fileInput, type: "file", accept: "application/json,.json", hidden: true, onChange: importFile }),
-      visibleRules.length === 0 ? h12("p", { className: "dtv-note" }, uiMessage("regex.emptyScope")) : visibleRules.map((rule) => h12(RuleEditor, {
-        key: rule.id,
+      visibleRules.length === 0 ? h12("p", { className: "dtv-note" }, uiMessage("regex.emptyScope")) : visibleRules.map((rule, index) => h12(RuleEditor, {
+        key: `${rule.scope.kind}-${rule.id}-${index}`,
         rule,
         busy,
-        update: updateRule,
+        sourceOwned: index >= editableRules.length,
+        update: index >= editableRules.length ? () => {
+        } : updateRule,
         remove: () => removeRule(rule.id)
       })),
       h12("div", { className: "dtv-status", "data-error": status.error }, status.text),

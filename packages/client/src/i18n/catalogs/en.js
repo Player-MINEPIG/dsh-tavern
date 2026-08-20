@@ -66,6 +66,8 @@ export default Object.freeze({
   "regex.imported": "{count} regex rules imported and saved",
   "regex.confirmReload": "Discard unsaved regex changes and reload?",
   "regex.confirmClose": "Close and discard unsaved regex changes?",
+  "regex.sourceOwnedDisplay": "This rule comes from the bound resource and its original switch controls Mowan display. This panel does not rewrite the preset or character card.",
+  "regex.sourceOwnedPromptOnly": "This rule comes from the bound resource but only affects prompts, not Mowan display. This panel does not rewrite the preset or character card.",
   "nav.session.none": "No session",
   "nav.syncFailed": "Status sync failed: {message}",
   "nav.menuTitle": "Tavern · {session}",

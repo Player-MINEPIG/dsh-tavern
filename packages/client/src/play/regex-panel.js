@@ -16,6 +16,7 @@ import {
   importRegexDocument,
   normalizeRegexRule,
   putRegexDocument,
+  resourceRegexInventory,
 } from './regex.js'
 
 const h = createLocalizedElement(createElement)
@@ -57,10 +58,32 @@ function Field({ labelKey, children }) {
   )
 }
 
-function RuleEditor({ rule, busy, update, remove }) {
+export async function activeResourceRegexRules(client, bindings) {
+  const [presetResponse, characterResponse] = await Promise.all([
+    typeof bindings.presetId === 'string' && typeof client.getPreset === 'function'
+      ? client.getPreset(bindings.presetId)
+      : null,
+    typeof bindings.characterId === 'string' && typeof client.getCharacter === 'function'
+      ? client.getCharacter(bindings.characterId)
+      : null,
+  ])
+  return {
+    preset: resourceRegexInventory(presetResponse?.preset ?? presetResponse, {
+      kind: 'preset',
+      resourceId: bindings.presetId,
+    }),
+    character: resourceRegexInventory(characterResponse?.character ?? characterResponse, {
+      kind: 'character',
+      resourceId: bindings.characterId,
+    }),
+  }
+}
+
+function RuleEditor({ rule, busy, update, remove, sourceOwned = false }) {
   const set = patch => update({ ...rule, ...patch })
   const setScope = patch => set({ scope: { ...rule.scope, ...patch } })
   const stateLabel = uiMessage(rule.enabled ? 'common.enabled' : 'common.disabled')
+  busy ||= sourceOwned
   return h('details', { className: 'dtv-entry dtv-regex-rule', 'data-enabled': rule.enabled },
     h('summary', null,
       h('span', { className: 'dtv-entry-dot', 'aria-hidden': 'true' }),
@@ -135,12 +158,14 @@ function RuleEditor({ rule, busy, update, remove }) {
           onChange: event => setScope({ resourceId: event.target.value || null }),
         })),
       ),
-      h('div', { className: 'dtv-entry-actions' }, h('button', {
-        className: 'dtv-button dtv-danger',
-        type: 'button',
-        disabled: busy,
-        onClick: remove,
-      }, uiMessage('common.delete'))),
+      sourceOwned
+        ? h('p', { className: 'dtv-note' }, uiMessage(rule.sourceDisplayEligible ? 'regex.sourceOwnedDisplay' : 'regex.sourceOwnedPromptOnly'))
+        : h('div', { className: 'dtv-entry-actions' }, h('button', {
+          className: 'dtv-button dtv-danger',
+          type: 'button',
+          disabled: busy,
+          onClick: remove,
+        }, uiMessage('common.delete'))),
     ),
   )
 }
@@ -148,6 +173,7 @@ function RuleEditor({ rule, busy, update, remove }) {
 export function RegexPanel({ client, activeSnapshot, close }) {
   const [document, setDocument] = useState(EMPTY_DOCUMENT)
   const [savedDocument, setSavedDocument] = useState(EMPTY_DOCUMENT)
+  const [resourceRules, setResourceRules] = useState({ preset: [], character: [] })
   const [scopeKind, setScopeKind] = useState('global')
   const [busy, setBusy] = useState(false)
   const [status, setStatus] = useState({ text: uiMessage('common.loading'), error: false })
@@ -158,10 +184,15 @@ export function RegexPanel({ client, activeSnapshot, close }) {
   const load = async () => {
     setBusy(true)
     try {
-      const next = await getRegexDocument(client)
+      const [next, nextResourceRules] = await Promise.all([
+        getRegexDocument(client),
+        activeResourceRegexRules(client, bindings),
+      ])
       setDocument(next)
       setSavedDocument(next)
-      setStatus({ text: uiMessage('regex.loaded', { count: next.rules.length }), error: false })
+      setResourceRules(nextResourceRules)
+      const count = next.rules.length + nextResourceRules.preset.length + nextResourceRules.character.length
+      setStatus({ text: uiMessage('regex.loaded', { count }), error: false })
     } catch (reason) {
       setStatus({ text: rawText(reason instanceof Error ? reason.message : String(reason)), error: true })
     } finally {
@@ -169,7 +200,7 @@ export function RegexPanel({ client, activeSnapshot, close }) {
     }
   }
 
-  useEffect(() => { load() }, [client])
+  useEffect(() => { load() }, [client, bindings.presetId, bindings.characterId])
 
   const persist = async next => {
     setBusy(true)
@@ -235,7 +266,13 @@ export function RegexPanel({ client, activeSnapshot, close }) {
     }
   }
 
-  const visibleRules = document.rules.filter(rule => rule.scope.kind === scopeKind)
+  const editableRules = document.rules.filter(rule => rule.scope.kind === scopeKind)
+  const sourceRules = scopeKind === 'preset'
+    ? resourceRules.preset
+    : scopeKind === 'character'
+      ? resourceRules.character
+      : []
+  const visibleRules = [...editableRules, ...sourceRules]
   const title = uiMessage('regex.title')
   const closeLabel = uiMessage('panel.close', { title: unwrapText(title) })
   return h('div', { className: 'dtv-panel dtv-regex-panel' },
@@ -269,11 +306,12 @@ export function RegexPanel({ client, activeSnapshot, close }) {
       h('input', { ref: fileInput, type: 'file', accept: 'application/json,.json', hidden: true, onChange: importFile }),
       visibleRules.length === 0
         ? h('p', { className: 'dtv-note' }, uiMessage('regex.emptyScope'))
-        : visibleRules.map(rule => h(RuleEditor, {
-          key: rule.id,
+        : visibleRules.map((rule, index) => h(RuleEditor, {
+          key: `${rule.scope.kind}-${rule.id}-${index}`,
           rule,
           busy,
-          update: updateRule,
+          sourceOwned: index >= editableRules.length,
+          update: index >= editableRules.length ? () => {} : updateRule,
           remove: () => removeRule(rule.id),
         })),
       h('div', { className: 'dtv-status', 'data-error': status.error }, status.text),
