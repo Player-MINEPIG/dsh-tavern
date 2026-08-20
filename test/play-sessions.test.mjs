@@ -1,7 +1,7 @@
 import test from 'node:test'
 import { createHash } from 'node:crypto'
 import assert from 'node:assert/strict'
-import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, unlinkSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { Readable } from 'node:stream'
@@ -403,6 +403,10 @@ test('playthrough focus preserves null focus for hidden non-empty timelines and 
     const badCatalog = await invoke(fixture.handler, { url: API_V2 + '/playthroughs/hidden/focus' })
     assert.equal(badCatalog.status, 400)
     assert.equal(badCatalog.body.code, 'PLAY_CATALOG_INVALID')
+    unlinkSync(join(fixture.playRoot, 'catalog.json'))
+    const missingCatalog = await invoke(fixture.handler, { url: API_V2 + '/playthroughs/hidden/focus' })
+    assert.equal(missingCatalog.status, 409)
+    assert.equal(missingCatalog.body.code, 'PLAY_CATALOG_UNAVAILABLE')
   } finally {
     rmSync(fixture.pluginDir, { recursive: true, force: true })
     rmSync(fixture.playRoot, { recursive: true, force: true })
