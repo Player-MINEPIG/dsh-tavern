@@ -28,10 +28,15 @@
 | POST | `/sessions/:id/branch` | `{ atEventId }` = 日志 seq。fork，不写 timeline、不代发。开放 turn → 409 | 已实现 |
 | POST | `/sessions/:id/user-message` | `{ text }` 作为下一条用户正文，`session.prompt` `queue` | 已实现 |
 | GET | `/sessions/:id/messages` | `deriveMessages()` + `seq` + `incompleteTurn` | 已实现 |
+| GET | `/sessions/:id/import-context` | 返回 `{ binding }`；未绑定为 `null`，绑定只含 path/hash/state/数量摘要，不返回记录正文 | 已实现 |
+| PUT | `/sessions/:id/import-context` | `{ reference: { path, expectedHash? } }`；为空 session 绑定或换绑已写入工作区的 import-context | 已实现 |
+| DELETE | `/sessions/:id/import-context` | 为空 session 解绑；幂等返回 `{ binding: null }` | 已实现 |
 | GET | `/focus` | 只读派生 `{ sessionId }`。前端再 `sessions.open` | 已实现 |
 | POST | `/focus` | 不提供 | 405 |
 
 路径存在、方法不对 → `405 PLAY_METHOD_NOT_ALLOWED`（例如 `POST /chrome`、`POST /focus`、`GET /sessions`）。`404` 只用于路径本身不存在。
+
+import-context 修改由 session 权威状态锁定：只要存在 DSH user/assistant message、开放 turn，或该绑定已经在一次请求中消费，`PUT` / `DELETE` 都返回 `409 PLAY_IMPORT_CONTEXT_LOCKED`；前端隐藏按钮不能替代此检查。`PUT` 会重新读取工作区文件、执行大小/QA 结构限制并核对可选 `expectedHash`，然后把绑定置为 `pending`。`GET` 可在任意状态读取摘要；正文仍通过已有 `/workspace/files?path=` 按明确路径读取。首次实际请求组装时 loader 把内容标为 untrusted read-only context，正常 `turn/end` 后转为 `consumed`，不会写成 DSH 历史。
 
 `PUT` 命中 `timeline.json` / `catalog.json` 时先做 schema 校验，失败不落盘。timeline 只允许真实 `qa` 节点，greeting 从角色卡与 session selection 派生，不进入 timeline。`focusSessionId` 禁止写入。focus 是派生值：仍在渲染（未 `hidden`）的最后一轮 `qa` 的 adopted variant 的 `sessionId`。`GET /focus` 只返回 `{ ok, sessionId }`，不含 path / nodeId。空 timeline 的 `sessionId` 为 `null`。校验不读、不改 DSH 事件。
 

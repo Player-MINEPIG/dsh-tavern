@@ -125,7 +125,7 @@ DSH 当前没有角色卡、周目、greeting、跨 session adopted variant、ST
 
 新建动作只检查该角色卡最高序号周目：timeline 已有 QA、导入上下文已有 QA、DSH 权威消息已有 user/assistant，或存在未完成回合时都不得复用；纯 greeting 不算 durable history。四者均为空才直接打开原 root session，不产生目录、session 或 catalog 写入。读取失败不允许猜测为空，以免权威状态不确定时继续膨胀或覆盖生命周期。
 
-导入记录仍是不可变的 `import-context.json`，既不伪造 DSH message，也不复制进 timeline。导出按“导入 greeting/QA → 后续 timeline 指针解析出的 DSH 原文”组合；portable bundle 显式携带导入上下文，重复导入不会丢掉旧记录。前端在导入结束后重读并校验 context、timeline、catalog 和角色卡 selection；当前 v2 原子组合没有跨 session/文件/catalog 的回滚能力，因此校验只能暴露半完成状态，不能声称事务原子性。
+导入记录仍是不可变的 `import-context.json`，既不伪造 DSH message，也不复制进 timeline。空 session 通过 `/sessions/:id/import-context` GET/PUT/DELETE 管理 loader 的权威绑定；换绑写新文件后替换 pending 引用，解绑只清除引用，保留工作区文件供恢复/审计。存在 DSH 对话、开放 turn 或绑定已消费后，后端锁定修改。导出按“导入 greeting/QA → 后续 timeline 指针解析出的 DSH 原文”组合；portable bundle 显式携带导入上下文，重复导入不会丢掉旧记录。前端还需同步 catalog/timeline 的显示引用并回读校验；当前 v2 没有跨 import binding、文件和 catalog/timeline 的统一事务，因此校验只能暴露半完成状态，不能声称原子提交。
 
 插件自有资源变化继续使用有界的 Tavern refresh event；Session / Workspace / live Chat 变化必须订阅 DSH store，不能用该自定义事件替代 Host 状态管理。
 

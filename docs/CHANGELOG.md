@@ -4,6 +4,19 @@ This is the staged implementation log for dsh-tavern. It is kept separately
 from the product README so reviewers can follow intent, decisions, verification,
 and known limits chronologically.
 
+## 2026-08-20 — Manage import context on an existing empty session
+
+- Added stable v2 GET/PUT/DELETE operations at
+  `/sessions/:id/import-context` so third-party RP frontends can inspect, bind,
+  replace, or clear an import-context reference without creating replacement
+  DSH sessions.
+- Mutations are locked after a user/assistant message, an open turn, or context
+  consumption and return `409 PLAY_IMPORT_CONTEXT_LOCKED`.
+- Responses expose only binding path/hash/state and bounded counts; imported
+  dialogue content stays in the existing jailed workspace file.
+
+Verification: import-runtime, session-handler, route, and Host-adapter tests.
+
 ## 2026-08-20 — Preserve imported context through playthrough export
 
 - HTML, SillyTavern JSONL, and portable bundle exports now include the
