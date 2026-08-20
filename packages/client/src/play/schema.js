@@ -28,7 +28,11 @@ function extRecord(value, label) {
 export function normalizeChrome(value, label = 'chrome') {
   if (!isRecord(value)) fail(label, 'must be an object')
   if (!CHROME_MODES.has(value.mode)) fail(label, 'mode must be native or play')
-  return { mode: value.mode }
+  if (value.revision !== undefined && value.revision !== null
+    && (typeof value.revision !== 'string' || value.revision === '')) {
+    fail(label, 'revision must be a non-empty string or null')
+  }
+  return { mode: value.mode, revision: value.revision ?? null }
 }
 
 export function normalizeWorkspace(value, label = 'workspace') {

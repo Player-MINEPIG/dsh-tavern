@@ -145,6 +145,7 @@ export function createLivePlayClient({
   return {
     mode: 'live',
     apiRoot,
+    chromeEventsUrl: `${apiRoot}/chrome/events`,
     v1Root,
 
     async getChrome() {
