@@ -280,7 +280,7 @@ export function PlayWorkspaceBrowser({
         character,
         selectionFromSessionId: sourceSessionIdForCharacter(character),
       })
-      openSession(result.sessionId)
+      openSession(result.sessionId, result.playthrough)
       window.dispatchEvent(new Event(CLIENT_REFRESH_EVENT))
     } catch (reason) {
       setStatus({ message: reason instanceof Error ? reason.message : String(reason) })
@@ -298,7 +298,7 @@ export function PlayWorkspaceBrowser({
         setStatus({ key: 'play.sidebar.sessionMissing' })
         return
       }
-      openSession(target)
+      openSession(target, playthrough)
     } catch (reason) {
       setStatus({ message: reason instanceof Error ? reason.message : String(reason) })
     }

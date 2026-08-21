@@ -8028,6 +8028,14 @@ async function loadCurrentPlaythrough(client, session, options = {}) {
   const catalog2 = await client.getCatalog();
   const playthroughs = catalog2.playthroughs ?? [];
   const sessionId = session.id ?? session.sessionId;
+  const preferred = typeof options.preferredPlaythroughId === "string" ? playthroughs.find((item) => item.id === options.preferredPlaythroughId) : void 0;
+  if (preferred !== void 0) {
+    const timeline = await client.getTimeline(preferred);
+    const match2 = findPlaythroughForSession(sessionId, { playthroughs: [preferred] }, {
+      [preferred.path]: timeline
+    });
+    if (match2 !== null) return { workspace, ...match2 };
+  }
   const root = playthroughs.find((item) => rootSessionId(item) === sessionId);
   if (root !== void 0) {
     return { workspace, playthrough: root, timeline: await client.getTimeline(root) };
@@ -11288,12 +11296,12 @@ function PlayTurnActions({
     if (target === void 0) throw new TypeError("Reply variant does not exist");
     const result = await controller(playClient).adoptVariant(playthrough, turn.id, target.id);
     queueSwipeTransition(result.sessionId, targetPosition < position ? "previous" : "next", turn.id);
-    openSession(result.sessionId);
+    openSession(result.sessionId, playthrough);
   });
   const generate = () => mutate(async () => {
     const result = await controller(playClient).createReplySwipe(playthrough, turn.id);
     queueSwipeTransition(result.sessionId, "next", result.nodeId ?? turn.id);
-    openSession(result.sessionId);
+    openSession(result.sessionId, playthrough);
     window.dispatchEvent(new Event(CLIENT_REFRESH_EVENT));
   });
   const copy = async () => {
@@ -11371,7 +11379,7 @@ function PlayTurnActions({
       onClick: () => mutate(async () => {
         const result = await controller(playClient).forkPlaythrough(playthrough, turn.id);
         window.dispatchEvent(new Event(CLIENT_REFRESH_EVENT));
-        openSession(result.sessionId);
+        openSession(result.sessionId, result.playthrough);
       })
     }),
     h7(Action, {
@@ -11380,7 +11388,7 @@ function PlayTurnActions({
       disabled,
       onClick: () => mutate(async () => {
         const result = await controller(playClient).rollbackPlaythrough(playthrough, turn.id);
-        openSession(result.sessionId);
+        openSession(result.sessionId, playthrough);
       })
     }),
     h7(Action, {
@@ -12654,7 +12662,7 @@ function PlayWorkspaceBrowser({
         character,
         selectionFromSessionId: sourceSessionIdForCharacter(character)
       });
-      openSession(result.sessionId);
+      openSession(result.sessionId, result.playthrough);
       window.dispatchEvent(new Event(CLIENT_REFRESH_EVENT));
     } catch (reason) {
       setStatus({ message: reason instanceof Error ? reason.message : String(reason) });
@@ -12671,7 +12679,7 @@ function PlayWorkspaceBrowser({
         setStatus({ key: "play.sidebar.sessionMissing" });
         return;
       }
-      openSession(target);
+      openSession(target, playthrough);
     } catch (reason) {
       setStatus({ message: reason instanceof Error ? reason.message : String(reason) });
     }
@@ -12983,6 +12991,7 @@ function installPlaySlotOccupancy(ctx, playClient, { playthroughController } = {
   let refreshChatListener = null;
   let chatBinding = null;
   let pendingChatSignature = null;
+  let preferredPlaythroughId = null;
   const completedDefaultViewAttempts = /* @__PURE__ */ new Set();
   const dropEntry = () => {
     const dispose = disposeEntry;
@@ -13003,7 +13012,7 @@ function installPlaySlotOccupancy(ctx, playClient, { playthroughController } = {
       inject: () => ({
         playClient,
         playthroughController,
-        openSession: (sessionId) => ctx.sessions.open(sessionId)
+        openSession: (sessionId, playthrough = null) => openPlaySession(sessionId, playthrough)
       })
     }, PlayWorkspaceBrowser);
   };
@@ -13085,6 +13094,12 @@ function installPlaySlotOccupancy(ctx, playClient, { playthroughController } = {
     return session == null ? null : { ...session, id: session.id ?? sessionId };
   };
   const sessionSignature = (session) => `${session.id}\0${String(session.cwd ?? "")}`;
+  const openPlaySession = (sessionId, playthrough = null) => {
+    preferredPlaythroughId = typeof playthrough?.id === "string" ? playthrough.id : null;
+    const result = ctx.sessions.open(sessionId);
+    queueMicrotask(() => reconcileChat(true));
+    return result;
+  };
   const syncChatEntries = () => {
     if (chatBinding === null) return;
     if (!chatDeclared) {
@@ -13100,7 +13115,7 @@ function installPlaySlotOccupancy(ctx, playClient, { playthroughController } = {
         inject: () => ({
           playClient,
           playthrough: chatBinding.playthrough,
-          openSession: (sessionId) => ctx.sessions.open(sessionId)
+          openSession: (sessionId, playthrough = chatBinding.playthrough) => openPlaySession(sessionId, playthrough)
         })
       }, MowanChatView);
     }
@@ -13146,7 +13161,10 @@ function installPlaySlotOccupancy(ctx, playClient, { playthroughController } = {
     const generation = chatGeneration;
     pendingChatSignature = signature;
     const sessionId = session.id;
-    loadCurrentPlaythrough(playClient, session).then((match) => {
+    const preferred = preferredPlaythroughId ?? chatBinding?.playthrough?.id ?? null;
+    loadCurrentPlaythrough(playClient, session, {
+      preferredPlaythroughId: preferred
+    }).then((match) => {
       if (generation === chatGeneration) pendingChatSignature = null;
       const latest = currentSession();
       if (generation !== chatGeneration || mode !== "play" || !chatDeclared || latest === null || sessionSignature(latest) !== signature) return;
@@ -13156,6 +13174,7 @@ function installPlaySlotOccupancy(ctx, playClient, { playthroughController } = {
       }
       const samePlaythrough = chatBinding?.playthrough?.path === match.playthrough.path;
       if (!samePlaythrough) dropChatEntry();
+      preferredPlaythroughId = match.playthrough.id;
       chatBinding = { signature, sessionId, playthrough: match.playthrough };
       syncChatEntries();
     }).catch(() => {

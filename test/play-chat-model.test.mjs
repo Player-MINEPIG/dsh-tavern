@@ -67,6 +67,29 @@ test('variant sessions resolve to their owning playthrough', () => {
   assert.equal(findPlaythroughForSession('external', { playthroughs: [playthrough] }, { [playthrough.path]: timeline }), null)
 })
 
+test('explicit playthrough selection disambiguates a session shared by fork histories', async () => {
+  const first = { id: 'first', path: 'first/timeline.json' }
+  const selected = { id: 'selected', path: 'selected/timeline.json' }
+  const firstTimeline = {
+    nodes: [{ id: 'first-qa', variants: [{ id: 'first-v', sessionId: 'shared' }] }],
+  }
+  const selectedTimeline = {
+    nodes: [{ id: 'selected-qa', variants: [{ id: 'selected-v', sessionId: 'shared' }] }],
+  }
+  const client = {
+    async getWorkspace() { return { selected: true, rootPath: '/rp' } },
+    async getCatalog() { return { playthroughs: [first, selected] } },
+    async getTimeline(playthrough) {
+      return playthrough.id === 'first' ? firstTimeline : selectedTimeline
+    },
+  }
+  const match = await loadCurrentPlaythrough(client, { id: 'shared', cwd: '/rp' }, {
+    preferredPlaythroughId: 'selected',
+  })
+  assert.equal(match.playthrough.id, 'selected')
+  assert.equal(match.timeline, selectedTimeline)
+})
+
 test('an unrecorded active branch head still resolves to its owning playthrough', () => {
   const playthrough = { id: 'pt', path: 'card/pt/timeline.json' }
   const timeline = {

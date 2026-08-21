@@ -133,6 +133,16 @@ export async function loadCurrentPlaythrough(client, session, options = {}) {
   const catalog = await client.getCatalog()
   const playthroughs = catalog.playthroughs ?? []
   const sessionId = session.id ?? session.sessionId
+  const preferred = typeof options.preferredPlaythroughId === 'string'
+    ? playthroughs.find(item => item.id === options.preferredPlaythroughId)
+    : undefined
+  if (preferred !== undefined) {
+    const timeline = await client.getTimeline(preferred)
+    const match = findPlaythroughForSession(sessionId, { playthroughs: [preferred] }, {
+      [preferred.path]: timeline,
+    })
+    if (match !== null) return { workspace, ...match }
+  }
   const root = playthroughs.find(item => rootSessionId(item) === sessionId)
   if (root !== undefined) {
     return { workspace, playthrough: root, timeline: await client.getTimeline(root) }

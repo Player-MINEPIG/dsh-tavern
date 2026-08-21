@@ -155,6 +155,54 @@ test('default view adapter reuses only the native chat store', () => {
   assert.equal(findNativeChatStore({}), undefined)
 })
 
+test('sidebar navigation keeps the selected playthrough when fork histories share a session', async () => {
+  let snapshot = {
+    current: null,
+    byId: { shared: { id: 'shared', cwd: '/rp' } },
+  }
+  const registrations = []
+  const first = { id: 'first', path: 'first/timeline.json' }
+  const selected = { id: 'selected', path: 'selected/timeline.json' }
+  const client = {
+    async getWorkspace() { return { selected: true, rootPath: '/rp' } },
+    async getCatalog() { return { playthroughs: [first, selected] } },
+    async getTimeline(playthrough) {
+      return {
+        nodes: [{
+          id: `${playthrough.id}-qa`, kind: 'qa', adoptedVariantId: `${playthrough.id}-v`,
+          variants: [{ id: `${playthrough.id}-v`, sessionId: 'shared', startEventId: 1, endEventId: 2 }],
+        }],
+      }
+    },
+  }
+  const ctx = {
+    sessions: {
+      open(sessionId) { snapshot = { ...snapshot, current: sessionId } },
+      list: {
+        getSnapshot() { return snapshot },
+        subscribe() { return () => {} },
+      },
+    },
+    slots: {
+      entries() { return [] },
+      inject(_name, callback) { callback() },
+      register(options) {
+        registrations.push(options)
+        return () => {}
+      },
+    },
+    effect(body) { return body() },
+  }
+
+  const occupancy = installPlaySlotOccupancy(ctx, client)
+  occupancy.setMode('play')
+  const sidebar = registrations.find(item => item.name === 'sidebar.workspaces')
+  sidebar.inject().openSession('shared', selected)
+  await nextTurn()
+  const chat = registrations.find(item => item.name === 'conversation.view')
+  assert.equal(chat.inject().playthrough.id, 'selected')
+})
+
 test('Chat classification failures preserve the official view', async () => {
   const registrations = []
   const ctx = {
