@@ -75,6 +75,8 @@ export function PlayTurnActions({
   const disabled = running || busy
   const position = Math.max(0, turn.variants.findIndex(item => item.id === turn.variant.id))
   const capabilities = turnActionCapabilities(turn)
+  const hasPreviousVariant = position > 0
+  const hasNextVariant = position + 1 < turn.variants.length
   useEffect(() => setEditor(null), [turn.id, turn.variant.id])
 
   const mutate = async operation => {
@@ -91,9 +93,15 @@ export function PlayTurnActions({
     }
   }
 
-  const adopt = offset => mutate(async () => {
-    const target = turn.variants[(position + offset + turn.variants.length) % turn.variants.length]
+  const adopt = targetPosition => mutate(async () => {
+    const target = turn.variants[targetPosition]
+    if (target === undefined) throw new TypeError('Reply variant does not exist')
     const result = await controller(playClient).adoptVariant(playthrough, turn.id, target.id)
+    openSession(result.sessionId)
+  })
+
+  const generate = () => mutate(async () => {
+    const result = await controller(playClient).createReplySwipe(playthrough, turn.id)
     openSession(result.sessionId)
   })
 
@@ -160,26 +168,16 @@ export function PlayTurnActions({
     !capabilities.variants ? null : h(Action, {
       icon: '‹',
       label: uiMessage('play.chat.previousReply'),
-      disabled: disabled || turn.variants.length < 2,
-      disabledLabel: turn.variants.length < 2 ? uiMessage('play.chat.noOtherReply') : undefined,
-      onClick: () => adopt(-1),
+      disabled: disabled || !hasPreviousVariant,
+      disabledLabel: !hasPreviousVariant ? uiMessage('play.chat.noOtherReply') : undefined,
+      onClick: () => adopt(position - 1),
     }),
     !capabilities.variants || turn.variants.length < 2 ? null : h('span', { className: 'dtv-play-turn-position' }, `${position + 1}/${turn.variants.length}`),
     !capabilities.variants ? null : h(Action, {
       icon: '›',
-      label: uiMessage('play.chat.nextReply'),
-      disabled: disabled || turn.variants.length < 2,
-      disabledLabel: turn.variants.length < 2 ? uiMessage('play.chat.noOtherReply') : undefined,
-      onClick: () => adopt(1),
-    }),
-    !capabilities.generateReply ? null : h(Action, {
-      icon: '✦',
-      label: uiMessage('play.chat.generateReply'),
+      label: uiMessage(hasNextVariant ? 'play.chat.nextReply' : 'play.chat.generateReply'),
       disabled,
-      onClick: () => mutate(async () => {
-        const result = await controller(playClient).createReplySwipe(playthrough, turn.id)
-        openSession(result.sessionId)
-      }),
+      onClick: hasNextVariant ? () => adopt(position + 1) : generate,
     }),
     h(Action, {
       icon: '⑂',

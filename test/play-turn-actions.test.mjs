@@ -34,3 +34,12 @@ test('display editing uses an in-conversation multiline editor instead of browse
   assert.doesNotMatch(source, /window\.prompt/)
   assert.match(source, /turn\.displayOverridden \? h\(Action/)
 })
+
+test('right swipe adopts the next variant or generates one at the end', () => {
+  const source = readFileSync(new URL('../packages/client/src/play/turn-actions.js', import.meta.url), 'utf8')
+  assert.match(source, /const hasPreviousVariant = position > 0/)
+  assert.match(source, /const hasNextVariant = position \+ 1 < turn\.variants\.length/)
+  assert.match(source, /hasNextVariant \? \(\) => adopt\(position \+ 1\) : generate/)
+  assert.match(source, /hasNextVariant \? 'play\.chat\.nextReply' : 'play\.chat\.generateReply'/)
+  assert.doesNotMatch(source, /icon: '✦'/)
+})
