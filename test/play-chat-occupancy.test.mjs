@@ -18,6 +18,7 @@ test('Mowan adds the default RP view only while the current session belongs to a
     current: 'root',
     byId: {
       root: { id: 'root', cwd: '/rp' },
+      swipe: { id: 'swipe', cwd: '/rp' },
       ordinary: { id: 'ordinary', cwd: '/rp' },
       outside: { id: 'outside', cwd: '/other' },
     },
@@ -34,7 +35,14 @@ test('Mowan adds the default RP view only while the current session belongs to a
   const client = {
     async getWorkspace() { return { selected: true, rootPath: '/rp' } },
     async getCatalog() { return { playthroughs: [playthrough] } },
-    async getTimeline() { return { nodes: [] } },
+    async getTimeline() {
+      return {
+        nodes: [{
+          id: 'qa-1', kind: 'qa', adoptedVariantId: 'swipe-v',
+          variants: [{ id: 'swipe-v', sessionId: 'swipe', startEventId: 1, endEventId: 3 }],
+        }],
+      }
+    },
   }
   const ctx = {
     sessions: {
@@ -102,11 +110,18 @@ test('Mowan adds the default RP view only while the current session belongs to a
   await nextTurn()
   assert.equal(registrations.filter(item => item.options.name === 'conversation.view').length, 1)
 
+  snapshot = { ...snapshot, current: 'swipe' }
+  notifySessions()
+  assert.equal(firstChat.active, true)
+  await nextTurn()
+  assert.equal(firstChat.active, true)
+  assert.equal(registrations.filter(item => item.options.name === 'conversation.view').length, 1)
+
   snapshot = { ...snapshot, current: 'ordinary' }
   notifySessions()
-  assert.equal(firstChat.active, false)
+  assert.equal(firstChat.active, true)
   await nextTurn()
-  assert.equal(registrations.filter(item => item.options.name === 'conversation.view').length, 1)
+  assert.equal(firstChat.active, false)
 
   snapshot = { ...snapshot, current: 'outside' }
   notifySessions()

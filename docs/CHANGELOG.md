@@ -1,5 +1,12 @@
 # Development changelog
 
+## 2026-08-21 — Preserve the RP view across swipe sessions
+
+- Kept the registered RP conversation view mounted while resolving a session
+  switch and reused it when the destination belongs to the same playthrough.
+- Deferred view removal until the destination is confirmed as another
+  playthrough or a non-RP session, eliminating adapter-driven full-view flashes.
+
 ## 2026-08-21 — Lock greeting selection after play starts
 
 - Removed greeting navigation from the RP transcript after the first real

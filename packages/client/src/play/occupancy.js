@@ -219,7 +219,6 @@ export function installPlaySlotOccupancy(ctx, playClient, { playthroughControlle
     chatGeneration += 1
     const generation = chatGeneration
     pendingChatSignature = signature
-    if (chatBinding !== null && chatBinding.signature !== signature) dropChatEntry()
     const sessionId = session.id
     loadCurrentPlaythrough(playClient, session).then(match => {
       if (generation === chatGeneration) pendingChatSignature = null
@@ -233,8 +232,12 @@ export function installPlaySlotOccupancy(ctx, playClient, { playthroughControlle
         dropChatEntry()
         return
       }
-      const samePlaythrough = chatBinding?.signature === signature
-        && chatBinding.playthrough?.path === match.playthrough.path
+      // Session navigation is also how a playthrough selects an existing
+      // swipe. Keep the registered RP view alive while classification runs,
+      // and reuse it when the destination belongs to the same playthrough.
+      // Dropping it eagerly makes the entire conversation surface unmount and
+      // visibly flash even though only the authoritative DSH session changed.
+      const samePlaythrough = chatBinding?.playthrough?.path === match.playthrough.path
       if (!samePlaythrough) dropChatEntry()
       chatBinding = { signature, sessionId, playthrough: match.playthrough }
       syncChatEntries()
