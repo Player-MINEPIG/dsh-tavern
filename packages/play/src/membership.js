@@ -127,8 +127,10 @@ function withoutRoot(playthrough) {
   }
 }
 
-function notFound(error) {
-  return error?.status === 404 || error?.code === 'PLAY_PATH_NOT_FOUND'
+function workspaceDocumentAbsent(error) {
+  return error?.status === 404
+    || error?.code === 'PLAY_PATH_NOT_FOUND'
+    || error?.code === 'PLAY_WORKSPACE_UNBOUND'
 }
 
 export class PlayMembershipService {
@@ -142,7 +144,7 @@ export class PlayMembershipService {
       const file = this.workspaceStore.readFile('catalog.json', { validate: validatePlayDocument })
       return { file, catalog: parseCatalogJson(file.content) }
     } catch (error) {
-      if (allowMissing && notFound(error)) return null
+      if (allowMissing && workspaceDocumentAbsent(error)) return null
       throw error
     }
   }

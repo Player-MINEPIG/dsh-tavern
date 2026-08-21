@@ -25,13 +25,14 @@ import {
 import { API_V1 as API_ROOT, CLIENT_REFRESH_EVENT, PLUGIN_ID } from '../../identity.js'
 
 const h = createLocalizedElement(createElement)
+const RUN_SKIPPED = Symbol('run-skipped')
 
 function announceTavernRefresh() {
   window.dispatchEvent(new CustomEvent(CLIENT_REFRESH_EVENT, { detail: { source: 'character' } }))
 }
 
 const css = `
-.dcc-panel{position:absolute;top:0;right:0;bottom:0;width:min(440px,calc(100vw - 56px));pointer-events:auto;border-left:1px solid var(--dsw-alias-border-l2);box-shadow:var(--ds-shadow-3,-8px 0 28px rgba(0,0,0,.18));background:var(--dsw-alias-bg-base);color:var(--dsw-alias-label-primary);display:flex;flex-direction:column;font-family:Inter,var(--dsw-font-family),sans-serif}.dcc-header{height:52px;box-sizing:border-box;display:flex;align-items:center;gap:8px;padding:0 14px;border-bottom:1px solid var(--dsw-alias-border-l2);flex:none}.dcc-title{font-size:16px;font-weight:650;flex:1}.dcc-close{border:0;background:transparent;color:var(--dsw-alias-label-tertiary);cursor:pointer;border-radius:7px;padding:6px 8px;font-size:14px}.dcc-body{min-height:0;overflow:auto;padding:12px;display:flex;flex-direction:column;gap:12px}.dcc-toolbar{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}.dcc-actions{display:grid;grid-template-columns:1fr 1fr;gap:8px}.dcc-button{min-height:36px;border:1px solid var(--dsw-alias-border-l2);border-radius:8px;background:var(--dsw-alias-button-secondary-fill,var(--dsw-alias-bg-base));color:var(--dsw-alias-label-primary);cursor:pointer;padding:7px 10px;font-size:13px;text-decoration:none;display:flex;align-items:center;justify-content:center;box-sizing:border-box}.dcc-button:hover:not(:disabled){background:var(--dsw-alias-interactive-bg-hover)}.dcc-button:disabled{opacity:.5;cursor:default}.dcc-primary{background:var(--dsw-alias-state-business-primary);color:white;border-color:transparent}.dcc-danger{color:var(--dsw-alias-state-error)}.dcc-field{display:flex;flex-direction:column;gap:5px}.dcc-label{font-size:12px;color:var(--dsw-alias-label-tertiary);font-weight:600}.dcc-select,.dcc-input,.dcc-textarea{box-sizing:border-box;width:100%;border:1px solid var(--dsw-alias-border-l2);border-radius:7px;background:var(--dsw-alias-bg-base);color:var(--dsw-alias-label-primary);font:inherit;font-size:13px}.dcc-select,.dcc-input{height:36px;padding:0 9px}.dcc-textarea{min-height:88px;resize:vertical;padding:8px;line-height:1.5}.dcc-note,.dcc-meta{font-size:13px;line-height:1.5;color:var(--dsw-alias-label-tertiary);margin:0;overflow-wrap:anywhere}.dcc-status{font-size:13px;line-height:1.45;border-radius:7px;padding:7px 9px;background:var(--dsw-specific-tip);overflow-wrap:anywhere}.dcc-status[data-error=true]{color:var(--dsw-alias-state-error)}.dcc-status[data-warning=true]{color:var(--dsw-alias-state-warning,var(--dsw-alias-label-primary))}.dcc-card{border-top:1px solid var(--dsw-alias-border-l1);padding-top:12px;display:flex;flex-direction:column;gap:10px}.dcc-card-head{display:flex;gap:11px}.dcc-avatar{width:76px;height:100px;object-fit:cover;border-radius:9px;border:1px solid var(--dsw-alias-border-l1);background:var(--dsw-alias-bg-container);flex:none}.dcc-card-title{font-size:16px;font-weight:650;margin:0 0 5px}.dcc-check{display:flex;gap:7px;align-items:flex-start;font-size:13px;line-height:1.4}.dcc-detail{border:1px solid var(--dsw-alias-border-l1);border-radius:8px;padding:8px}.dcc-detail summary{cursor:pointer;font-size:13px;font-weight:600}.dcc-detail-body{display:flex;flex-direction:column;gap:8px;margin-top:8px}.dcc-diags{margin:7px 0 0;padding-left:18px;font-size:13px;line-height:1.5}.dcc-greetings{display:flex;flex-direction:column;gap:8px}.dcc-greeting-item{border:1px solid var(--dsw-alias-border-l1);border-radius:8px;padding:8px;display:flex;flex-direction:column;gap:6px}.dcc-greeting-head{display:flex;align-items:center;justify-content:space-between;gap:8px}.dcc-footer{position:sticky;bottom:-12px;margin:0 -12px -12px;padding:10px 12px;background:var(--dsw-alias-bg-base);border-top:1px solid var(--dsw-alias-border-l2)}
+.dcc-panel{position:absolute;top:0;right:0;bottom:0;width:min(440px,calc(100vw - 56px));pointer-events:auto;border-left:1px solid var(--dsw-alias-border-l2);box-shadow:var(--ds-shadow-3,-8px 0 28px rgba(0,0,0,.18));background:var(--dsw-alias-bg-base);color:var(--dsw-alias-label-primary);display:flex;flex-direction:column;font-family:Inter,var(--dsw-font-family),sans-serif}.dcc-header{height:52px;box-sizing:border-box;display:flex;align-items:center;gap:8px;padding:0 14px;border-bottom:1px solid var(--dsw-alias-border-l2);flex:none}.dcc-title{font-size:16px;font-weight:650;flex:1}.dcc-close{border:0;background:transparent;color:var(--dsw-alias-label-tertiary);cursor:pointer;border-radius:7px;padding:6px 8px;font-size:14px}.dcc-body{min-height:0;overflow:auto;padding:12px;display:flex;flex-direction:column;gap:12px}.dcc-toolbar{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}.dcc-actions{display:grid;grid-template-columns:1fr 1fr;gap:8px}.dcc-button{min-height:36px;border:1px solid var(--dsw-alias-border-l2);border-radius:8px;background:var(--dsw-alias-button-secondary-fill,var(--dsw-alias-bg-base));color:var(--dsw-alias-label-primary);cursor:pointer;padding:7px 10px;font-size:13px;text-decoration:none;display:flex;align-items:center;justify-content:center;box-sizing:border-box}.dcc-button:hover:not(:disabled){background:var(--dsw-alias-interactive-bg-hover)}.dcc-button:disabled{opacity:.5;cursor:default}.dcc-primary{background:var(--dsw-alias-state-business-primary);color:white;border-color:transparent}.dcc-danger{color:var(--dsw-alias-state-error)}.dcc-field{display:flex;flex-direction:column;gap:5px}.dcc-label{font-size:12px;color:var(--dsw-alias-label-tertiary);font-weight:600}.dcc-select,.dcc-input,.dcc-textarea{box-sizing:border-box;width:100%;border:1px solid var(--dsw-alias-border-l2);border-radius:7px;background:var(--dsw-alias-bg-base);color:var(--dsw-alias-label-primary);font:inherit;font-size:13px}.dcc-select,.dcc-input{height:36px;padding:0 9px}.dcc-textarea{min-height:88px;resize:vertical;padding:8px;line-height:1.5}.dcc-note,.dcc-meta{font-size:13px;line-height:1.5;color:var(--dsw-alias-label-tertiary);margin:0;overflow-wrap:anywhere}.dcc-status{font-size:13px;line-height:1.45;border-radius:7px;padding:7px 9px;background:var(--dsw-specific-tip);overflow-wrap:anywhere}.dcc-status[data-error=true]{color:var(--dsw-alias-state-error)}.dcc-status[data-warning=true]{color:var(--dsw-alias-state-warning,var(--dsw-alias-label-primary))}.dcc-card{border-top:1px solid var(--dsw-alias-border-l1);padding-top:12px;display:flex;flex-direction:column;gap:10px}.dcc-card-head{display:flex;gap:11px}.dcc-avatar{width:76px;height:100px;object-fit:cover;border-radius:9px;border:1px solid var(--dsw-alias-border-l1);background:var(--dsw-alias-bg-container);flex:none}.dcc-card-title{font-size:16px;font-weight:650;margin:0 0 5px}.dcc-check{display:flex;gap:7px;align-items:flex-start;font-size:13px;line-height:1.4}.dcc-detail{border:1px solid var(--dsw-alias-border-l1);border-radius:8px;padding:8px}.dcc-detail summary{cursor:pointer;font-size:13px;font-weight:600}.dcc-detail-body{display:flex;flex-direction:column;gap:8px;margin-top:8px}.dcc-diags{margin:7px 0 0;padding-left:18px;font-size:13px;line-height:1.5}.dcc-greetings{display:flex;flex-direction:column;gap:8px}.dcc-greeting-item{border:1px solid var(--dsw-alias-border-l1);border-radius:8px;padding:8px;display:flex;flex-direction:column;gap:6px}.dcc-greeting-head{display:flex;align-items:center;justify-content:space-between;gap:8px}.dcc-footer{position:sticky;bottom:-12px;margin:0 -12px -12px;padding:10px 12px;background:var(--dsw-alias-bg-base);border-top:1px solid var(--dsw-alias-border-l2)}.dcc-modal-backdrop{position:fixed;inset:0;z-index:2147483500;display:flex;align-items:center;justify-content:center;padding:20px;background:rgba(0,0,0,.42);pointer-events:auto}.dcc-modal{width:min(520px,calc(100vw - 32px));max-height:min(640px,calc(100vh - 40px));overflow:auto;border:1px solid var(--dsw-alias-border-l2);border-radius:12px;background:var(--dsw-alias-bg-base);box-shadow:var(--ds-shadow-4,0 18px 56px rgba(0,0,0,.32));padding:18px;display:flex;flex-direction:column;gap:12px}.dcc-modal h3,.dcc-modal p{margin:0}.dcc-modal-list{margin:0;padding-left:20px;font-size:13px;line-height:1.5}.dcc-modal-actions{display:flex;justify-content:flex-end;gap:8px}
 `
 
 function errorMessage(data, status) {
@@ -50,7 +51,13 @@ async function api(path, options = {}) {
     },
   })
   const data = await response.json().catch(() => null)
-  if (!response.ok || data?.ok === false) throw new Error(errorMessage(data, response.status))
+  if (!response.ok || data?.ok === false) {
+    const error = new Error(errorMessage(data, response.status))
+    error.status = response.status
+    error.code = data?.code ?? data?.error?.code
+    error.details = data?.details ?? data?.error?.details
+    throw error
+  }
   return data
 }
 
@@ -70,7 +77,7 @@ function patchDraft(setter, field, value) {
   setter((current) => current === null ? current : { ...current, [field]: value })
 }
 
-export function CharacterPanel({ sessionId, sessionBlank, hasConversationHistory, close }) {
+export function CharacterPanel({ sessionId, sessionBlank, hasConversationHistory, detachPlaythroughSession, close }) {
   const [catalog, setCatalog] = useState(null)
   const [detail, setDetail] = useState(null)
   const [draft, setDraft] = useState(null)
@@ -79,6 +86,7 @@ export function CharacterPanel({ sessionId, sessionBlank, hasConversationHistory
   const [binding, setBinding] = useState(null)
   const [rp, setRp] = useState({ active: false })
   const [busy, setBusy] = useState(false)
+  const [detachPrompt, setDetachPrompt] = useState(null)
   const [status, setStatus] = useState({ error: false, key: 'common.loading' })
   const fileRef = useRef(null)
   const refreshGeneration = useRef(0)
@@ -100,7 +108,7 @@ export function CharacterPanel({ sessionId, sessionBlank, hasConversationHistory
     setBusy(true)
     try {
       const result = await operation()
-      setStatus({ error: false, key: successKey })
+      if (result !== RUN_SKIPPED) setStatus({ error: false, key: successKey })
       return result
     } catch (error) {
       setStatus(error?.uiKey
@@ -224,6 +232,34 @@ export function CharacterPanel({ sessionId, sessionBlank, hasConversationHistory
     announceTavernRefresh()
   }, 'character.status.saved'), [detail, draft, run])
 
+  const requestSelection = useCallback(async (request, action, { prompt = true } = {}) => {
+    try {
+      return await api('/character-selection', {
+        method: 'POST',
+        body: JSON.stringify(request),
+      })
+    } catch (error) {
+      const conflicts = error?.details?.conflicts
+      if (prompt && error?.code === 'CHARACTER_PLAYTHROUGH_DETACH_REQUIRED' && Array.isArray(conflicts) && conflicts.length > 0) {
+        setDetachPrompt({ request, action, conflicts })
+        return RUN_SKIPPED
+      }
+      throw error
+    }
+  }, [])
+
+  const applySelectionResult = useCallback(async (data, action) => {
+    if (action === 'unbind') {
+      await refresh(detail?.id)
+    } else {
+      setSelection(data.selection)
+      setBinding(data.selection)
+      const rpData = await api(`/rp-mode?sessionId=${encodeURIComponent(sessionId)}`)
+      setRp(rpData.rp ?? { active: false })
+    }
+    announceTavernRefresh()
+  }, [detail?.id, refresh, sessionId])
+
   const bind = useCallback(() => run(async () => {
     if (!sessionId) throw uiError('character.error.needSession')
     if (dirty) throw uiError('character.error.saveFirst')
@@ -233,27 +269,30 @@ export function CharacterPanel({ sessionId, sessionBlank, hasConversationHistory
         : sessionBlank === false
       if (historical && !window.confirm(unwrapText(uiMessage('character.confirmHistoricalSwitch')))) return
     }
-    const data = await api('/character-selection', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ sessionId, ...binding }),
-    })
-    setSelection(data.selection)
-    setBinding(data.selection)
-    const rpData = await api(`/rp-mode?sessionId=${encodeURIComponent(sessionId)}`)
-    setRp(rpData.rp ?? { active: false })
-    announceTavernRefresh()
-  }, 'character.status.bound'), [binding, dirty, hasConversationHistory, run, selection, sessionBlank, sessionId])
+    const data = await requestSelection({ sessionId, ...binding }, 'bind')
+    if (data === RUN_SKIPPED) return RUN_SKIPPED
+    await applySelectionResult(data, 'bind')
+  }, 'character.status.bound'), [applySelectionResult, binding, dirty, hasConversationHistory, requestSelection, run, selection, sessionBlank, sessionId])
 
   const unbind = useCallback(() => run(async () => {
     if (!sessionId) throw uiError('character.error.noSessionToUnbind')
-    await api('/character-selection', {
-      method: 'POST',
-      body: JSON.stringify({ sessionId, characterCardId: null }),
-    })
-    await refresh(detail?.id)
-    announceTavernRefresh()
-  }, 'character.status.unbound'), [detail?.id, refresh, run, sessionId])
+    const data = await requestSelection({ sessionId, characterCardId: null }, 'unbind')
+    if (data === RUN_SKIPPED) return RUN_SKIPPED
+    await applySelectionResult(data, 'unbind')
+  }, 'character.status.unbound'), [applySelectionResult, requestSelection, run, sessionId])
+
+  const confirmDetach = useCallback(() => {
+    if (detachPrompt === null) return
+    run(async () => {
+      if (typeof detachPlaythroughSession !== 'function') throw new Error(unwrapText(uiMessage('character.detachUnavailable')))
+      for (const conflict of detachPrompt.conflicts) {
+        await detachPlaythroughSession(conflict.playthroughId, conflict.sessionId)
+      }
+      const data = await requestSelection(detachPrompt.request, detachPrompt.action, { prompt: false })
+      await applySelectionResult(data, detachPrompt.action)
+      setDetachPrompt(null)
+    }, detachPrompt.action === 'unbind' ? 'character.status.unbound' : 'character.status.bound')
+  }, [applySelectionResult, detachPlaythroughSession, detachPrompt, requestSelection, run])
 
   const toggleRp = useCallback(() => run(async () => {
     if (!sessionId) throw uiError('character.error.needSession')
@@ -474,6 +513,20 @@ export function CharacterPanel({ sessionId, sessionBlank, hasConversationHistory
           h('a', { className: 'dcc-button', href: `${API_ROOT}/characters/${encodeURIComponent(detail.id)}/png`, download: '' }, uiMessage('character.exportPng')),
         ),
         h('div', { className: 'dcc-footer' }, h('button', { className: 'dcc-button dcc-danger', type: 'button', disabled: busy, onClick: remove }, uiMessage('character.delete'))),
+      ),
+    ),
+    detachPrompt === null ? null : h('div', { className: 'dcc-modal-backdrop', role: 'presentation' },
+      h('div', { className: 'dcc-modal', role: 'dialog', 'aria-modal': true, 'aria-labelledby': 'dcc-detach-title' },
+        h('h3', { id: 'dcc-detach-title' }, uiMessage('character.detachTitle')),
+        h('p', { className: 'dcc-note' }, uiMessage('character.detachDescription')),
+        h('ul', { className: 'dcc-modal-list' }, ...detachPrompt.conflicts.map(conflict => h('li', { key: conflict.playthroughId }, uiMessage('character.detachItem', {
+          title: conflict.playthroughTitle,
+          count: conflict.descendantSessionCount,
+        })))),
+        h('div', { className: 'dcc-modal-actions' },
+          h('button', { className: 'dcc-button', type: 'button', disabled: busy, onClick: () => setDetachPrompt(null) }, uiMessage('common.cancel')),
+          h('button', { className: 'dcc-button dcc-danger', type: 'button', disabled: busy, onClick: confirmDetach }, uiMessage('character.detachConfirm')),
+        ),
       ),
     ),
   )

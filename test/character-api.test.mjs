@@ -192,8 +192,12 @@ test('character API returns structured errors and delegates session policy', asy
     beforeSelectionChange: ({ sessionId }) => {
       if (sessionId === 'running') {
         const error = new Error('Session is running')
-        error.code = 'SESSION_RUNNING'
+        error.code = 'CHARACTER_PLAYTHROUGH_DETACH_REQUIRED'
         error.status = 409
+        error.details = { conflicts: [{
+          playthroughId: 'pt-a', playthroughTitle: '1周目', sessionId: 'running',
+          expectedCharacterId: 'card-a', requestedCharacterId: 'card-b', descendantSessionCount: 2,
+        }] }
         throw error
       }
     },
@@ -214,7 +218,11 @@ test('character API returns structured errors and delegates session policy', asy
       body: { sessionId: 'running', characterCardId: 'policy', character: {} },
     })
     assert.equal(blocked.status, 409)
-    assert.equal(blocked.json.error.code, 'SESSION_RUNNING')
+    assert.equal(blocked.json.error.code, 'CHARACTER_PLAYTHROUGH_DETACH_REQUIRED')
+    assert.deepEqual(blocked.json.error.details, { conflicts: [{
+      playthroughId: 'pt-a', playthroughTitle: '1周目', sessionId: 'running',
+      expectedCharacterId: 'card-a', requestedCharacterId: 'card-b', descendantSessionCount: 2,
+    }] })
     assert.equal(store.selection('running'), null)
   } finally {
     rmSync(directory, { recursive: true, force: true })

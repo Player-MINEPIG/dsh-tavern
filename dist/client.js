@@ -4010,6 +4010,11 @@ var zh_CN_default = Object.freeze({
   "character.delete": "\u5220\u9664\u89D2\u8272\u5361",
   "character.confirmDelete": "\u5220\u9664\u89D2\u8272\u5361\u201C{name}\u201D\uFF1F",
   "character.confirmHistoricalSwitch": "\u5F53\u524D\u4F1A\u8BDD\u5DF2\u6709\u5386\u53F2\u3002\u66F4\u6362\u89D2\u8272\u53EA\u5F71\u54CD\u540E\u7EED\u8BF7\u6C42\uFF0C\u4E0D\u4F1A\u91CD\u5199\u5DF2\u6709\u6D88\u606F\uFF1B\u7EE7\u7EED\u5417\uFF1F",
+  "character.detachTitle": "\u8BA9\u4F1A\u8BDD\u8131\u79BB\u5F53\u524D\u5468\u76EE\uFF1F",
+  "character.detachDescription": "\u89D2\u8272\u6362\u7ED1\u4E0E\u5468\u76EE\u89D2\u8272\u4E0D\u4E00\u81F4\u3002\u7EE7\u7EED\u540E\uFF0C\u8BE5\u4F1A\u8BDD\u53CA\u5176\u540E\u4EE3\u5206\u652F\u4F1A\u8131\u79BB\u5468\u76EE\uFF0CDSH \u4F1A\u8BDD\u548C\u539F\u59CB\u8BB0\u5F55\u4E0D\u4F1A\u88AB\u5220\u9664\uFF1B\u7A7A\u5468\u76EE\u4F1A\u4FDD\u7559\u3002",
+  "character.detachItem": "{title}\uFF08\u53E6\u542B {count} \u4E2A\u540E\u4EE3\u4F1A\u8BDD\uFF09",
+  "character.detachConfirm": "\u8131\u79BB\u5E76\u7EE7\u7EED",
+  "character.detachUnavailable": "\u5F53\u524D\u524D\u7AEF\u6CA1\u6709\u63D0\u4F9B\u5468\u76EE\u8131\u79BB\u80FD\u529B\u3002",
   "character.confirmCloseDirty": "\u5F53\u524D\u89D2\u8272\u5361\u6709\u672A\u4FDD\u5B58\u4FEE\u6539\u3002\u4ECD\u7136\u5173\u95ED\u5417\uFF1F",
   "character.confirmDiscardForSwitch": "\u5F53\u524D\u89D2\u8272\u5361\u6709\u672A\u4FDD\u5B58\u4FEE\u6539\u3002\u4ECD\u7136\u5207\u6362\u5417\uFF1F",
   "character.confirmDiscardRefresh": "\u5F53\u524D\u89D2\u8272\u5361\u6709\u672A\u4FDD\u5B58\u4FEE\u6539\u3002\u4ECD\u7136\u5237\u65B0\u5417\uFF1F",
@@ -4611,6 +4616,11 @@ var en_default = Object.freeze({
   "character.delete": "Delete character card",
   "character.confirmDelete": "Delete character card \u201C{name}\u201D?",
   "character.confirmHistoricalSwitch": "This session already has history. Changing the character affects only later requests and does not rewrite existing messages. Continue?",
+  "character.detachTitle": "Detach this session from its playthrough?",
+  "character.detachDescription": "The selected character does not match the playthrough. Continuing detaches this session and its descendant branches without deleting DSH sessions or source history. The empty playthrough remains.",
+  "character.detachItem": "{title} ({count} descendant sessions)",
+  "character.detachConfirm": "Detach and continue",
+  "character.detachUnavailable": "This frontend does not provide playthrough detachment.",
   "character.confirmCloseDirty": "This character card has unsaved changes. Close anyway?",
   "character.confirmDiscardForSwitch": "This character card has unsaved changes. Switch anyway?",
   "character.confirmDiscardRefresh": "This character card has unsaved changes. Refresh anyway?",
@@ -5590,11 +5600,12 @@ function characterEditorPatch(draft) {
 
 // packages/character/src/client.js
 var h2 = createLocalizedElement(import_react2.createElement);
+var RUN_SKIPPED = /* @__PURE__ */ Symbol("run-skipped");
 function announceTavernRefresh2() {
   window.dispatchEvent(new CustomEvent(CLIENT_REFRESH_EVENT, { detail: { source: "character" } }));
 }
 var css2 = `
-.dcc-panel{position:absolute;top:0;right:0;bottom:0;width:min(440px,calc(100vw - 56px));pointer-events:auto;border-left:1px solid var(--dsw-alias-border-l2);box-shadow:var(--ds-shadow-3,-8px 0 28px rgba(0,0,0,.18));background:var(--dsw-alias-bg-base);color:var(--dsw-alias-label-primary);display:flex;flex-direction:column;font-family:Inter,var(--dsw-font-family),sans-serif}.dcc-header{height:52px;box-sizing:border-box;display:flex;align-items:center;gap:8px;padding:0 14px;border-bottom:1px solid var(--dsw-alias-border-l2);flex:none}.dcc-title{font-size:16px;font-weight:650;flex:1}.dcc-close{border:0;background:transparent;color:var(--dsw-alias-label-tertiary);cursor:pointer;border-radius:7px;padding:6px 8px;font-size:14px}.dcc-body{min-height:0;overflow:auto;padding:12px;display:flex;flex-direction:column;gap:12px}.dcc-toolbar{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}.dcc-actions{display:grid;grid-template-columns:1fr 1fr;gap:8px}.dcc-button{min-height:36px;border:1px solid var(--dsw-alias-border-l2);border-radius:8px;background:var(--dsw-alias-button-secondary-fill,var(--dsw-alias-bg-base));color:var(--dsw-alias-label-primary);cursor:pointer;padding:7px 10px;font-size:13px;text-decoration:none;display:flex;align-items:center;justify-content:center;box-sizing:border-box}.dcc-button:hover:not(:disabled){background:var(--dsw-alias-interactive-bg-hover)}.dcc-button:disabled{opacity:.5;cursor:default}.dcc-primary{background:var(--dsw-alias-state-business-primary);color:white;border-color:transparent}.dcc-danger{color:var(--dsw-alias-state-error)}.dcc-field{display:flex;flex-direction:column;gap:5px}.dcc-label{font-size:12px;color:var(--dsw-alias-label-tertiary);font-weight:600}.dcc-select,.dcc-input,.dcc-textarea{box-sizing:border-box;width:100%;border:1px solid var(--dsw-alias-border-l2);border-radius:7px;background:var(--dsw-alias-bg-base);color:var(--dsw-alias-label-primary);font:inherit;font-size:13px}.dcc-select,.dcc-input{height:36px;padding:0 9px}.dcc-textarea{min-height:88px;resize:vertical;padding:8px;line-height:1.5}.dcc-note,.dcc-meta{font-size:13px;line-height:1.5;color:var(--dsw-alias-label-tertiary);margin:0;overflow-wrap:anywhere}.dcc-status{font-size:13px;line-height:1.45;border-radius:7px;padding:7px 9px;background:var(--dsw-specific-tip);overflow-wrap:anywhere}.dcc-status[data-error=true]{color:var(--dsw-alias-state-error)}.dcc-status[data-warning=true]{color:var(--dsw-alias-state-warning,var(--dsw-alias-label-primary))}.dcc-card{border-top:1px solid var(--dsw-alias-border-l1);padding-top:12px;display:flex;flex-direction:column;gap:10px}.dcc-card-head{display:flex;gap:11px}.dcc-avatar{width:76px;height:100px;object-fit:cover;border-radius:9px;border:1px solid var(--dsw-alias-border-l1);background:var(--dsw-alias-bg-container);flex:none}.dcc-card-title{font-size:16px;font-weight:650;margin:0 0 5px}.dcc-check{display:flex;gap:7px;align-items:flex-start;font-size:13px;line-height:1.4}.dcc-detail{border:1px solid var(--dsw-alias-border-l1);border-radius:8px;padding:8px}.dcc-detail summary{cursor:pointer;font-size:13px;font-weight:600}.dcc-detail-body{display:flex;flex-direction:column;gap:8px;margin-top:8px}.dcc-diags{margin:7px 0 0;padding-left:18px;font-size:13px;line-height:1.5}.dcc-greetings{display:flex;flex-direction:column;gap:8px}.dcc-greeting-item{border:1px solid var(--dsw-alias-border-l1);border-radius:8px;padding:8px;display:flex;flex-direction:column;gap:6px}.dcc-greeting-head{display:flex;align-items:center;justify-content:space-between;gap:8px}.dcc-footer{position:sticky;bottom:-12px;margin:0 -12px -12px;padding:10px 12px;background:var(--dsw-alias-bg-base);border-top:1px solid var(--dsw-alias-border-l2)}
+.dcc-panel{position:absolute;top:0;right:0;bottom:0;width:min(440px,calc(100vw - 56px));pointer-events:auto;border-left:1px solid var(--dsw-alias-border-l2);box-shadow:var(--ds-shadow-3,-8px 0 28px rgba(0,0,0,.18));background:var(--dsw-alias-bg-base);color:var(--dsw-alias-label-primary);display:flex;flex-direction:column;font-family:Inter,var(--dsw-font-family),sans-serif}.dcc-header{height:52px;box-sizing:border-box;display:flex;align-items:center;gap:8px;padding:0 14px;border-bottom:1px solid var(--dsw-alias-border-l2);flex:none}.dcc-title{font-size:16px;font-weight:650;flex:1}.dcc-close{border:0;background:transparent;color:var(--dsw-alias-label-tertiary);cursor:pointer;border-radius:7px;padding:6px 8px;font-size:14px}.dcc-body{min-height:0;overflow:auto;padding:12px;display:flex;flex-direction:column;gap:12px}.dcc-toolbar{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}.dcc-actions{display:grid;grid-template-columns:1fr 1fr;gap:8px}.dcc-button{min-height:36px;border:1px solid var(--dsw-alias-border-l2);border-radius:8px;background:var(--dsw-alias-button-secondary-fill,var(--dsw-alias-bg-base));color:var(--dsw-alias-label-primary);cursor:pointer;padding:7px 10px;font-size:13px;text-decoration:none;display:flex;align-items:center;justify-content:center;box-sizing:border-box}.dcc-button:hover:not(:disabled){background:var(--dsw-alias-interactive-bg-hover)}.dcc-button:disabled{opacity:.5;cursor:default}.dcc-primary{background:var(--dsw-alias-state-business-primary);color:white;border-color:transparent}.dcc-danger{color:var(--dsw-alias-state-error)}.dcc-field{display:flex;flex-direction:column;gap:5px}.dcc-label{font-size:12px;color:var(--dsw-alias-label-tertiary);font-weight:600}.dcc-select,.dcc-input,.dcc-textarea{box-sizing:border-box;width:100%;border:1px solid var(--dsw-alias-border-l2);border-radius:7px;background:var(--dsw-alias-bg-base);color:var(--dsw-alias-label-primary);font:inherit;font-size:13px}.dcc-select,.dcc-input{height:36px;padding:0 9px}.dcc-textarea{min-height:88px;resize:vertical;padding:8px;line-height:1.5}.dcc-note,.dcc-meta{font-size:13px;line-height:1.5;color:var(--dsw-alias-label-tertiary);margin:0;overflow-wrap:anywhere}.dcc-status{font-size:13px;line-height:1.45;border-radius:7px;padding:7px 9px;background:var(--dsw-specific-tip);overflow-wrap:anywhere}.dcc-status[data-error=true]{color:var(--dsw-alias-state-error)}.dcc-status[data-warning=true]{color:var(--dsw-alias-state-warning,var(--dsw-alias-label-primary))}.dcc-card{border-top:1px solid var(--dsw-alias-border-l1);padding-top:12px;display:flex;flex-direction:column;gap:10px}.dcc-card-head{display:flex;gap:11px}.dcc-avatar{width:76px;height:100px;object-fit:cover;border-radius:9px;border:1px solid var(--dsw-alias-border-l1);background:var(--dsw-alias-bg-container);flex:none}.dcc-card-title{font-size:16px;font-weight:650;margin:0 0 5px}.dcc-check{display:flex;gap:7px;align-items:flex-start;font-size:13px;line-height:1.4}.dcc-detail{border:1px solid var(--dsw-alias-border-l1);border-radius:8px;padding:8px}.dcc-detail summary{cursor:pointer;font-size:13px;font-weight:600}.dcc-detail-body{display:flex;flex-direction:column;gap:8px;margin-top:8px}.dcc-diags{margin:7px 0 0;padding-left:18px;font-size:13px;line-height:1.5}.dcc-greetings{display:flex;flex-direction:column;gap:8px}.dcc-greeting-item{border:1px solid var(--dsw-alias-border-l1);border-radius:8px;padding:8px;display:flex;flex-direction:column;gap:6px}.dcc-greeting-head{display:flex;align-items:center;justify-content:space-between;gap:8px}.dcc-footer{position:sticky;bottom:-12px;margin:0 -12px -12px;padding:10px 12px;background:var(--dsw-alias-bg-base);border-top:1px solid var(--dsw-alias-border-l2)}.dcc-modal-backdrop{position:fixed;inset:0;z-index:2147483500;display:flex;align-items:center;justify-content:center;padding:20px;background:rgba(0,0,0,.42);pointer-events:auto}.dcc-modal{width:min(520px,calc(100vw - 32px));max-height:min(640px,calc(100vh - 40px));overflow:auto;border:1px solid var(--dsw-alias-border-l2);border-radius:12px;background:var(--dsw-alias-bg-base);box-shadow:var(--ds-shadow-4,0 18px 56px rgba(0,0,0,.32));padding:18px;display:flex;flex-direction:column;gap:12px}.dcc-modal h3,.dcc-modal p{margin:0}.dcc-modal-list{margin:0;padding-left:20px;font-size:13px;line-height:1.5}.dcc-modal-actions{display:flex;justify-content:flex-end;gap:8px}
 `;
 function errorMessage(data, status) {
   if (typeof data?.error === "string") return data.error;
@@ -5611,7 +5622,13 @@ async function api2(path, options = {}) {
     }
   });
   const data = await response.json().catch(() => null);
-  if (!response.ok || data?.ok === false) throw new Error(errorMessage(data, response.status));
+  if (!response.ok || data?.ok === false) {
+    const error = new Error(errorMessage(data, response.status));
+    error.status = response.status;
+    error.code = data?.code ?? data?.error?.code;
+    error.details = data?.details ?? data?.error?.details;
+    throw error;
+  }
   return data;
 }
 function Field2({ label, children }) {
@@ -5629,7 +5646,7 @@ function DiagnosticList({ titleKey, items }) {
 function patchDraft(setter, field, value) {
   setter((current2) => current2 === null ? current2 : { ...current2, [field]: value });
 }
-function CharacterPanel({ sessionId, sessionBlank, hasConversationHistory, close }) {
+function CharacterPanel({ sessionId, sessionBlank, hasConversationHistory, detachPlaythroughSession, close }) {
   const [catalog2, setCatalog] = (0, import_react2.useState)(null);
   const [detail, setDetail] = (0, import_react2.useState)(null);
   const [draft, setDraft] = (0, import_react2.useState)(null);
@@ -5638,6 +5655,7 @@ function CharacterPanel({ sessionId, sessionBlank, hasConversationHistory, close
   const [binding, setBinding] = (0, import_react2.useState)(null);
   const [rp, setRp] = (0, import_react2.useState)({ active: false });
   const [busy, setBusy] = (0, import_react2.useState)(false);
+  const [detachPrompt, setDetachPrompt] = (0, import_react2.useState)(null);
   const [status, setStatus] = (0, import_react2.useState)({ error: false, key: "common.loading" });
   const fileRef = (0, import_react2.useRef)(null);
   const refreshGeneration = (0, import_react2.useRef)(0);
@@ -5655,7 +5673,7 @@ function CharacterPanel({ sessionId, sessionBlank, hasConversationHistory, close
     setBusy(true);
     try {
       const result = await operation();
-      setStatus({ error: false, key: successKey });
+      if (result !== RUN_SKIPPED) setStatus({ error: false, key: successKey });
       return result;
     } catch (error) {
       setStatus(error?.uiKey ? { error: true, key: error.uiKey, values: error.uiValues } : { error: true, text: error instanceof Error ? error.message : String(error) });
@@ -5768,6 +5786,32 @@ function CharacterPanel({ sessionId, sessionBlank, hasConversationHistory, close
     });
     announceTavernRefresh2();
   }, "character.status.saved"), [detail, draft, run]);
+  const requestSelection = (0, import_react2.useCallback)(async (request, action, { prompt = true } = {}) => {
+    try {
+      return await api2("/character-selection", {
+        method: "POST",
+        body: JSON.stringify(request)
+      });
+    } catch (error) {
+      const conflicts = error?.details?.conflicts;
+      if (prompt && error?.code === "CHARACTER_PLAYTHROUGH_DETACH_REQUIRED" && Array.isArray(conflicts) && conflicts.length > 0) {
+        setDetachPrompt({ request, action, conflicts });
+        return RUN_SKIPPED;
+      }
+      throw error;
+    }
+  }, []);
+  const applySelectionResult = (0, import_react2.useCallback)(async (data, action) => {
+    if (action === "unbind") {
+      await refresh(detail?.id);
+    } else {
+      setSelection(data.selection);
+      setBinding(data.selection);
+      const rpData = await api2(`/rp-mode?sessionId=${encodeURIComponent(sessionId)}`);
+      setRp(rpData.rp ?? { active: false });
+    }
+    announceTavernRefresh2();
+  }, [detail?.id, refresh, sessionId]);
   const bind = (0, import_react2.useCallback)(() => run(async () => {
     if (!sessionId) throw uiError("character.error.needSession");
     if (dirty) throw uiError("character.error.saveFirst");
@@ -5775,26 +5819,28 @@ function CharacterPanel({ sessionId, sessionBlank, hasConversationHistory, close
       const historical = typeof hasConversationHistory === "function" ? await hasConversationHistory(sessionId) : sessionBlank === false;
       if (historical && !window.confirm(unwrapText(uiMessage("character.confirmHistoricalSwitch")))) return;
     }
-    const data = await api2("/character-selection", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ sessionId, ...binding })
-    });
-    setSelection(data.selection);
-    setBinding(data.selection);
-    const rpData = await api2(`/rp-mode?sessionId=${encodeURIComponent(sessionId)}`);
-    setRp(rpData.rp ?? { active: false });
-    announceTavernRefresh2();
-  }, "character.status.bound"), [binding, dirty, hasConversationHistory, run, selection, sessionBlank, sessionId]);
+    const data = await requestSelection({ sessionId, ...binding }, "bind");
+    if (data === RUN_SKIPPED) return RUN_SKIPPED;
+    await applySelectionResult(data, "bind");
+  }, "character.status.bound"), [applySelectionResult, binding, dirty, hasConversationHistory, requestSelection, run, selection, sessionBlank, sessionId]);
   const unbind = (0, import_react2.useCallback)(() => run(async () => {
     if (!sessionId) throw uiError("character.error.noSessionToUnbind");
-    await api2("/character-selection", {
-      method: "POST",
-      body: JSON.stringify({ sessionId, characterCardId: null })
-    });
-    await refresh(detail?.id);
-    announceTavernRefresh2();
-  }, "character.status.unbound"), [detail?.id, refresh, run, sessionId]);
+    const data = await requestSelection({ sessionId, characterCardId: null }, "unbind");
+    if (data === RUN_SKIPPED) return RUN_SKIPPED;
+    await applySelectionResult(data, "unbind");
+  }, "character.status.unbound"), [applySelectionResult, requestSelection, run, sessionId]);
+  const confirmDetach = (0, import_react2.useCallback)(() => {
+    if (detachPrompt === null) return;
+    run(async () => {
+      if (typeof detachPlaythroughSession !== "function") throw new Error(unwrapText(uiMessage("character.detachUnavailable")));
+      for (const conflict of detachPrompt.conflicts) {
+        await detachPlaythroughSession(conflict.playthroughId, conflict.sessionId);
+      }
+      const data = await requestSelection(detachPrompt.request, detachPrompt.action, { prompt: false });
+      await applySelectionResult(data, detachPrompt.action);
+      setDetachPrompt(null);
+    }, detachPrompt.action === "unbind" ? "character.status.unbound" : "character.status.bound");
+  }, [applySelectionResult, detachPlaythroughSession, detachPrompt, requestSelection, run]);
   const toggleRp = (0, import_react2.useCallback)(() => run(async () => {
     if (!sessionId) throw uiError("character.error.needSession");
     const data = await api2("/rp-mode", {
@@ -6050,6 +6096,26 @@ function CharacterPanel({ sessionId, sessionBlank, hasConversationHistory, close
           h2("a", { className: "dcc-button", href: `${API_V1}/characters/${encodeURIComponent(detail.id)}/png`, download: "" }, uiMessage("character.exportPng"))
         ),
         h2("div", { className: "dcc-footer" }, h2("button", { className: "dcc-button dcc-danger", type: "button", disabled: busy, onClick: remove }, uiMessage("character.delete")))
+      )
+    ),
+    detachPrompt === null ? null : h2(
+      "div",
+      { className: "dcc-modal-backdrop", role: "presentation" },
+      h2(
+        "div",
+        { className: "dcc-modal", role: "dialog", "aria-modal": true, "aria-labelledby": "dcc-detach-title" },
+        h2("h3", { id: "dcc-detach-title" }, uiMessage("character.detachTitle")),
+        h2("p", { className: "dcc-note" }, uiMessage("character.detachDescription")),
+        h2("ul", { className: "dcc-modal-list" }, ...detachPrompt.conflicts.map((conflict) => h2("li", { key: conflict.playthroughId }, uiMessage("character.detachItem", {
+          title: conflict.playthroughTitle,
+          count: conflict.descendantSessionCount
+        })))),
+        h2(
+          "div",
+          { className: "dcc-modal-actions" },
+          h2("button", { className: "dcc-button", type: "button", disabled: busy, onClick: () => setDetachPrompt(null) }, uiMessage("common.cancel")),
+          h2("button", { className: "dcc-button dcc-danger", type: "button", disabled: busy, onClick: confirmDetach }, uiMessage("character.detachConfirm"))
+        )
       )
     )
   );
@@ -10809,9 +10875,11 @@ function latestCharacterPlaythrough(catalog2, characterId) {
 }
 async function playthroughIsReusable(client, playthrough) {
   const sessionId = rootSessionId4(playthrough);
-  if (sessionId === null) return false;
   const timeline = await client.getTimeline(playthrough);
   if ((timeline?.nodes?.length ?? 0) > 0) return false;
+  if (sessionId === null) {
+    return playthrough?.ext?.pmpDshTavern?.importContextPath === void 0 && timeline?.ext?.pmpDshTavern?.importContextPath === void 0;
+  }
   const imported = await loadPlaythroughImportContext(client, sessionId, playthrough, timeline);
   if (Array.isArray(imported.document?.qa) && imported.document.qa.length > 0) return false;
   const history = await client.getMessages(sessionId);
@@ -10872,10 +10940,42 @@ async function createCharacterPlaythrough(client, {
   const catalog2 = await catalogOrEmpty(client);
   const latest = latestCharacterPlaythrough(catalog2, characterId);
   if (latest !== null && await playthroughIsReusable(client, latest)) {
-    const sessionId2 = rootSessionId4(latest);
+    const existingRoot = rootSessionId4(latest);
+    if (existingRoot !== null) {
+      if (typeof configureSession === "function") await configureSession(existingRoot);
+      await ensureCharacterSelection(client, existingRoot, characterId);
+      return { sessionId: existingRoot, playthrough: latest, reused: true };
+    }
+    const created2 = await client.postSession(sourceId);
+    const sessionId2 = safeSessionId(created2?.sessionId);
     if (typeof configureSession === "function") await configureSession(sessionId2);
     await ensureCharacterSelection(client, sessionId2, characterId);
-    return { sessionId: sessionId2, playthrough: latest, reused: true };
+    let attached;
+    const savedCatalog2 = await updateCatalog(client, (fresh) => {
+      const index = fresh.playthroughs.findIndex((item) => item.id === latest.id && item.path === latest.path);
+      if (index < 0) throw new Error("playthrough.create.missingVacancy");
+      const current2 = fresh.playthroughs[index];
+      const currentRoot = rootSessionId4(current2);
+      if (currentRoot !== null && currentRoot !== sessionId2) throw new Error("playthrough.create.identityConflict");
+      attached = {
+        ...current2,
+        lastOpenedAt: createdAt,
+        ext: {
+          ...current2.ext ?? {},
+          pmpDshTavern: {
+            ...current2.ext?.pmpDshTavern ?? {},
+            characterId,
+            rootSessionId: sessionId2
+          }
+        }
+      };
+      const playthroughs = [...fresh.playthroughs];
+      playthroughs[index] = attached;
+      return { ...fresh, playthroughs };
+    });
+    attached ??= savedCatalog2?.playthroughs?.find((item) => item.id === latest.id && item.path === latest.path);
+    if (rootSessionId4(attached) !== sessionId2) throw new Error("playthrough vacancy attachment did not persist");
+    return { sessionId: sessionId2, playthrough: attached, reused: true, reattached: true };
   }
   const created = await client.postSession(sourceId);
   const sessionId = safeSessionId(created?.sessionId);
@@ -13459,6 +13559,7 @@ function createRequester(fetchImpl, root) {
       error.status = response.status;
       error.code = data?.code ?? data?.error?.code;
       error.diagnostics = data?.diagnostics ?? data?.error?.diagnostics ?? [];
+      error.details = data?.details ?? data?.error?.details;
       throw error;
     }
     return data;
@@ -13660,6 +13761,11 @@ function createLivePlayClient({
         throw new TypeError("focus.playthroughId does not match playthrough.id");
       }
       return focus;
+    },
+    detachPlaythroughSession(playthroughId, sessionId) {
+      if (typeof playthroughId !== "string" || playthroughId === "") throw new TypeError("playthroughId is required");
+      if (typeof sessionId !== "string" || sessionId === "") throw new TypeError("sessionId is required");
+      return v2("POST", `/playthroughs/${encodeURIComponent(playthroughId)}/detach-session`, { sessionId });
     },
     postUserMessage(sessionId, text2) {
       return v2("POST", `/sessions/${encodeURIComponent(sessionId)}/user-message`, { text: text2 });
@@ -15171,7 +15277,13 @@ function TavernShell({ useSessions, useWorkspaces, createCleanSession, createCon
       autoOpen: false
     }));
   } else if (surface === "character") {
-    panel = h13(CharacterPanel, { sessionId, sessionBlank, hasConversationHistory, close });
+    panel = h13(CharacterPanel, {
+      sessionId,
+      sessionBlank,
+      hasConversationHistory,
+      detachPlaythroughSession: (playthroughId, targetSessionId) => playClient.detachPlaythroughSession(playthroughId, targetSessionId),
+      close
+    });
   } else if (surface === "regex" && chromeMode === "play") {
     panel = h13(RegexPanel, { client: playClient, activeSnapshot, close });
   } else if (surface === "world-info") {

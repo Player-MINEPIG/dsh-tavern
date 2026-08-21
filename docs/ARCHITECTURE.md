@@ -93,6 +93,7 @@ rc.6 的 `agent/inbox/spliced` 是公开、持久的 Session event；插入、�
 | --- | --- | --- |
 | DT 悬浮入口 | `shell.overlay` additive slot、Cordis effect 生命周期 | 球体、菜单内容和全局 chrome 状态是产品 UI；不向 `document.body` 另建失控根节点 |
 | 魔丸侧边栏 | `sidebar.workspaces` slot；owner 注入的 `useSessions` / `useWorkspaces`；`ctx.sessions.open()` | 只重组为角色卡 / 周目投影，不改写、不归档、不隐藏 Host session 数据 |
+| DSH 外层新会话 | rc.8 sidebar shell 自有；无公开 slot/service | Tavern 不用哈希 class、DOM capture 或源码替换接管；魔丸保留原生按钮并在文档中标为不推荐，普通区 `+` 只引导返回 native |
 | 普通会话提示 | `conversation.input.dock` 独立整行 slot | 仅显示 Tavern 的 RP 工作区分类结果，不接管原生 composer |
 | 魔丸对话页 | `conversation.view` slot；标准 `useSession` 的 nodes / partial / running | 周目跨 session 聚合是 Tavern 投影；不伪造 DSH 消息，不读取私有 runtime |
 | 魔丸默认视图 | `slots.entries("conversation.view")` 暴露的原生 `chat` store 句柄、session 级 `conversation.input.dock` 及其 `actions.setView()` | 新周目尚未选定视图时在无可见内容的 dock entry 中复用同一 store，切到 `rp` 后立即注销；不向视图环注册第二个 `chat`，保留可手动选择的原生“对话” |
@@ -129,6 +130,8 @@ DSH 当前没有角色卡、周目、greeting、跨 session adopted variant、ST
 周目名称和 DSH session 名称刻意分离：Tavern 在每张角色卡内按已分配的单调序号显示 `N周目`，并把序号保存在 catalog 扩展数据；用户重命名也只修改这一投影。DSH 原始 session 继续由 Host 按“角色卡名 + 时间”命名，便于退出魔丸或卸载插件后辨认权威数据。旧 catalog 没有序号时按该角色卡既有顺序补入计算，但不为兼容而重写旧条目。
 
 新建动作只检查该角色卡最高序号周目：timeline 已有 QA、导入上下文已有 QA、DSH 权威消息已有 user/assistant，或存在未完成回合时都不得复用；纯 greeting 不算 durable history。四者均为空才直接打开原 root session，不产生目录、session 或 catalog 写入。读取失败不允许猜测为空，以免权威状态不确定时继续膨胀或覆盖生命周期。
+
+角色 selection 变更增加前置 membership guard：v1 只报告“需要脱离”及结构化冲突，不在未确认时写 selection；确认后的 v2 detach 在服务端按 `parentVariantId`（旧平面 timeline 按前一 adopted variant）计算目标及后代，以 timeline/catalog 各自 revision 做 CAS。它不删除 DSH session、不重挂兄弟分支；root 脱离后 catalog 保留空周目，下一次同角色创建为其连接新的 blank root session。这个显式生命周期动词避免第三方前端各自实现树裁剪算法。
 
 导入记录仍是不可变的 `import-context.json`，既不伪造 DSH message，也不复制进 timeline。空 session 通过 `/sessions/:id/import-context` GET/PUT/DELETE 管理 loader 的权威绑定；换绑写新文件后替换 pending 引用，解绑只清除引用，保留工作区文件供恢复/审计。存在 DSH 对话、开放 turn 或绑定已消费后，后端锁定修改。导出按“导入 greeting/QA → 后续 timeline 指针解析出的 DSH 原文”组合；portable bundle 显式携带导入上下文，重复导入不会丢掉旧记录。前端还需同步 catalog/timeline 的显示引用并回读校验；当前 v2 没有跨 import binding、文件和 catalog/timeline 的统一事务，因此校验只能暴露半完成状态，不能声称原子提交。
 当前周目生命周期是这些原子能力的前端组合：角色卡侧边栏创建或复用最近的空 root session，写入角色/周目目录、空 timeline 和 catalog 元数据，再重新读取校验；`x周目` 重命名只改 catalog。空会话的 greeting 与外部记录预览挂在 session 级 `conversation.input.dock`，不注册第二个 conversation view。外部记录绑定到现有空 root session 的 import-context 文件，opening footer 提供绑定、换绑、解绑和最近三轮 QA 预览；真实消息、开放 turn 或消费后由 Host API 锁定。

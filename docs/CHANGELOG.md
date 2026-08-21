@@ -1,5 +1,12 @@
 # Development changelog
 
+## 2026-08-22 — Detach mismatched character sessions from playthroughs
+
+- Added the v2 `POST /playthroughs/:id/detach-session` lifecycle endpoint. It removes the target session variants and descendant branches from Tavern timeline metadata while preserving sibling branches, DSH sessions, source history, and the empty playthrough.
+- Added a v1 character-selection membership guard with structured 409 conflicts and a bundled confirmation modal. Confirmed changes detach first and retry the original selection; cancellation changes nothing.
+- Vacant playthroughs now accept a fresh blank root session on the next create action, preserving their title and number.
+- Kept the rc.8 shell-owned outer New Session control untouched. The ordinary-session `+` guides users back to native mode; README and usage docs record why the outer control cannot be intercepted through a public seam.
+
 ## 2026-08-21 — Scope swipe motion to the changed reply
 
 - Added the swiped timeline `nodeId` to the one-shot transition intent.

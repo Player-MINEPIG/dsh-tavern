@@ -881,7 +881,13 @@ function TavernShell({ useSessions, useWorkspaces, createCleanSession, createCon
       autoOpen: false,
     }))
   } else if (surface === 'character') {
-    panel = h(CharacterPanel, { sessionId, sessionBlank, hasConversationHistory, close })
+    panel = h(CharacterPanel, {
+      sessionId,
+      sessionBlank,
+      hasConversationHistory,
+      detachPlaythroughSession: (playthroughId, targetSessionId) => playClient.detachPlaythroughSession(playthroughId, targetSessionId),
+      close,
+    })
   } else if (surface === 'regex' && chromeMode === 'play') {
     panel = h(RegexPanel, { client: playClient, activeSnapshot, close })
   } else if (surface === 'world-info') {

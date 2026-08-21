@@ -50,6 +50,7 @@ function apiError(error) {
         code,
         message: error instanceof Error ? error.message : String(error),
         ...(typeof error?.field === 'string' ? { field: error.field } : {}),
+        ...characterErrorDetails(code, error?.details),
       },
     },
   }
@@ -120,6 +121,22 @@ function selectionPayload(store, sessionId, selectionPolicy) {
       specVersion: character.source?.specVersion,
     },
   }
+}
+
+function characterErrorDetails(code, details) {
+  if (code !== 'CHARACTER_PLAYTHROUGH_DETACH_REQUIRED' || details === null || typeof details !== 'object') return {}
+  if (!Array.isArray(details.conflicts)) return {}
+  const conflicts = details.conflicts.slice(0, 32).map(value => ({
+    playthroughId: String(value?.playthroughId ?? '').slice(0, 200),
+    playthroughTitle: String(value?.playthroughTitle ?? '').slice(0, 200),
+    sessionId: String(value?.sessionId ?? '').slice(0, 200),
+    expectedCharacterId: value?.expectedCharacterId === null ? null : String(value?.expectedCharacterId ?? '').slice(0, 200),
+    requestedCharacterId: value?.requestedCharacterId === null ? null : String(value?.requestedCharacterId ?? '').slice(0, 200),
+    descendantSessionCount: Number.isSafeInteger(value?.descendantSessionCount) && value.descendantSessionCount >= 0
+      ? value.descendantSessionCount
+      : 0,
+  }))
+  return { details: { conflicts } }
 }
 
 function worldBookIdsBody(value) {

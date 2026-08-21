@@ -212,6 +212,36 @@ test('latest empty playthrough is reused without creating workspace or session d
   assert.equal(calls.includes('postSession'), false)
 })
 
+test('an empty detached playthrough receives a new root session instead of creating another playthrough', async () => {
+  const playthrough = {
+    id: 'pt-vacant', path: 'character-a/pt-vacant/timeline.json', title: '2周目',
+    ext: { pmpDshTavern: { characterId: 'character-a', playthroughNumber: 2 } },
+  }
+  let catalog = { playthroughs: [playthrough] }
+  let selection = { selection: null }
+  const calls = []
+  const client = {
+    async getCatalog() { return structuredClone(catalog) },
+    async putCatalog(next) { catalog = structuredClone(next) },
+    async getTimeline() { return { nodes: [] } },
+    async postSession(sourceId) { calls.push(['postSession', sourceId]); return { sessionId: 'session-new' } },
+    async getCharacterSelection() { return selection },
+    async putCharacterSelection(sessionId, characterId, character) {
+      calls.push(['putCharacterSelection', sessionId, characterId, character])
+      selection = { selection: { characterCardId: characterId, character } }
+    },
+    async createDirs() { throw new Error('must not create another directory') },
+    async putTimeline() { throw new Error('must not create another timeline') },
+  }
+  const result = await createCharacterPlaythrough(client, { character: { id: 'character-a' }, ...dependencies })
+  assert.equal(result.reused, true)
+  assert.equal(result.reattached, true)
+  assert.equal(result.playthrough.id, 'pt-vacant')
+  assert.equal(result.playthrough.title, '2周目')
+  assert.equal(result.playthrough.ext.pmpDshTavern.rootSessionId, 'session-new')
+  assert.deepEqual(calls[0], ['postSession', null])
+})
+
 test('a reusable empty playthrough repairs a stale character binding before navigation', async () => {
   const playthrough = {
     id: 'pt-b', path: 'character-b/pt-b/timeline.json',

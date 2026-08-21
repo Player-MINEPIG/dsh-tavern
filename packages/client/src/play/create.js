@@ -75,9 +75,12 @@ function latestCharacterPlaythrough(catalog, characterId) {
 
 export async function playthroughIsReusable(client, playthrough) {
   const sessionId = rootSessionId(playthrough)
-  if (sessionId === null) return false
   const timeline = await client.getTimeline(playthrough)
   if ((timeline?.nodes?.length ?? 0) > 0) return false
+  if (sessionId === null) {
+    return playthrough?.ext?.pmpDshTavern?.importContextPath === undefined
+      && timeline?.ext?.pmpDshTavern?.importContextPath === undefined
+  }
 
   const imported = await loadPlaythroughImportContext(client, sessionId, playthrough, timeline)
   if (Array.isArray(imported.document?.qa) && imported.document.qa.length > 0) return false
@@ -146,10 +149,42 @@ export async function createCharacterPlaythrough(client, {
   const catalog = await catalogOrEmpty(client)
   const latest = latestCharacterPlaythrough(catalog, characterId)
   if (latest !== null && await playthroughIsReusable(client, latest)) {
-    const sessionId = rootSessionId(latest)
+    const existingRoot = rootSessionId(latest)
+    if (existingRoot !== null) {
+      if (typeof configureSession === 'function') await configureSession(existingRoot)
+      await ensureCharacterSelection(client, existingRoot, characterId)
+      return { sessionId: existingRoot, playthrough: latest, reused: true }
+    }
+    const created = await client.postSession(sourceId)
+    const sessionId = safeSessionId(created?.sessionId)
     if (typeof configureSession === 'function') await configureSession(sessionId)
     await ensureCharacterSelection(client, sessionId, characterId)
-    return { sessionId, playthrough: latest, reused: true }
+    let attached
+    const savedCatalog = await updateCatalog(client, fresh => {
+      const index = fresh.playthroughs.findIndex(item => item.id === latest.id && item.path === latest.path)
+      if (index < 0) throw new Error('playthrough.create.missingVacancy')
+      const current = fresh.playthroughs[index]
+      const currentRoot = rootSessionId(current)
+      if (currentRoot !== null && currentRoot !== sessionId) throw new Error('playthrough.create.identityConflict')
+      attached = {
+        ...current,
+        lastOpenedAt: createdAt,
+        ext: {
+          ...(current.ext ?? {}),
+          pmpDshTavern: {
+            ...(current.ext?.pmpDshTavern ?? {}),
+            characterId,
+            rootSessionId: sessionId,
+          },
+        },
+      }
+      const playthroughs = [...fresh.playthroughs]
+      playthroughs[index] = attached
+      return { ...fresh, playthroughs }
+    })
+    attached ??= savedCatalog?.playthroughs?.find(item => item.id === latest.id && item.path === latest.path)
+    if (rootSessionId(attached) !== sessionId) throw new Error('playthrough vacancy attachment did not persist')
+    return { sessionId, playthrough: attached, reused: true, reattached: true }
   }
   const created = await client.postSession(sourceId)
   const sessionId = safeSessionId(created?.sessionId)

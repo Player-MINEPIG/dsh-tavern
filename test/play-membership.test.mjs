@@ -3,14 +3,35 @@ import assert from 'node:assert/strict'
 import { mkdtempSync, rmSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
+import { Readable } from 'node:stream'
+import { API_V2 } from '../packages/identity.js'
 import {
+  ChromeStore,
   PlayMembershipService,
   PlayWorkspaceStore,
+  createPlayApiHandler,
   detachSessionFromTimeline,
   parseCatalogJson,
   parseTimelineJson,
   validatePlayDocument,
 } from '../packages/play/src/index.js'
+
+function invoke(handler, { method = 'GET', url, body } = {}) {
+  return new Promise((resolve, reject) => {
+    const content = body === undefined ? undefined : JSON.stringify(body)
+    const req = Readable.from(content === undefined ? [] : [Buffer.from(content)])
+    req.method = method
+    req.url = url
+    const res = {
+      statusCode: 200,
+      setHeader() {},
+      end(payload = '') {
+        resolve({ status: res.statusCode, body: payload === '' ? null : JSON.parse(String(payload)) })
+      },
+    }
+    Promise.resolve(handler(req, res)).catch(reject)
+  })
+}
 
 function variant(id, sessionId) {
   return { id, sessionId, startEventId: 1, endEventId: 2 }
@@ -111,5 +132,41 @@ test('PlayMembershipService detects character mismatch and commits root detachme
   } finally {
     rmSync(pluginDir, { recursive: true, force: true })
     rmSync(playRoot, { recursive: true, force: true })
+  }
+})
+
+test('v2 detach-session route delegates one logged mutation to the membership service', async () => {
+  const pluginDir = mkdtempSync(join(tmpdir(), 'dsh-tavern-membership-api-'))
+  try {
+    const calls = []
+    const handler = createPlayApiHandler({
+      chromeStore: new ChromeStore(pluginDir),
+      membershipService: {
+        detach(playthroughId, sessionId, { operation }) {
+          calls.push({ playthroughId, sessionId, operation: operation.operation })
+          return { ok: true, detached: true, playthroughId, sessionId, detachedSessionIds: [sessionId], empty: true }
+        },
+      },
+    })
+    const response = await invoke(handler, {
+      method: 'POST',
+      url: `${API_V2}/playthroughs/pt-a/detach-session`,
+      body: { sessionId: 'session-a' },
+    })
+    assert.equal(response.status, 200)
+    assert.equal(response.body.detached, true)
+    assert.deepEqual(calls, [{ playthroughId: 'pt-a', sessionId: 'session-a', operation: 'playthrough.session.detach' }])
+  } finally {
+    rmSync(pluginDir, { recursive: true, force: true })
+  }
+})
+
+test('character selection guard is a no-op before an RP workspace is bound', () => {
+  const pluginDir = mkdtempSync(join(tmpdir(), 'dsh-tavern-membership-unbound-'))
+  try {
+    const service = new PlayMembershipService(new PlayWorkspaceStore(pluginDir))
+    assert.deepEqual(service.conflictsForSelection('ordinary-session', 'card'), [])
+  } finally {
+    rmSync(pluginDir, { recursive: true, force: true })
   }
 })

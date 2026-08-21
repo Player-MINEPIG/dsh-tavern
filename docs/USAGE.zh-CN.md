@@ -77,6 +77,8 @@ description、personality、scenario、example dialogue 等字段会按预设 ma
 - 新会话不会复制 durable history、Inbox、Trace、资源正文或旧运行态；
 - 模板引用的资源已删除时会显示诊断并阻止应用。
 
+DSH rc.8 侧边栏外层的“新建会话”属于原生 sidebar shell，当前公开扩展合同不能拦截或替换其点击。为避免依赖哈希类名或全局 DOM 监听，魔丸保留该按钮的原生行为，且不推荐在魔丸模式中使用。魔丸侧边栏“普通 / 非角色扮演会话”右侧的 `+` 只弹出说明，可关闭或切回 DSH 原生模式；它不会暗中创建、移动或改名 session。周目应从角色卡右侧的 `+` 创建。
+
 正常 UI 只把模板应用到新建 blank session。底层配置 apply API 尚未对任意既有运行中目标提供全局事务锁，详见 `LOADER_CONTRACT.md` 的运行态风险说明。
 
 ## 7. 周目与外部记录开场
@@ -87,6 +89,8 @@ turn，以及是否已有外部导入 QA；因此连续点击不会无限增加�
 重命名。被点击的角色卡是创建事务的权威角色；无论 DSH 新会话继承了哪个最近聚焦配置，
 创建或复用后都会校验并在必要时纠正 root session 的角色绑定，再显示该角色 greeting。
 创建只建立真实 blank DSH session 和周目元数据，不写 greeting 或伪造消息。
+
+已经分配给周目的 session 若在角色卡面板解绑，或换绑为与周目不同的角色卡，会先显示确认框。确认后，目标 session 及其所有后代分支从原周目 timeline 脱离并按新绑定成为游离 session；兄弟分支、DSH 原始历史与空周目保留。取消则 selection 和 timeline 都不变。再次给原角色新建周目时会为这个空周目接入新的 blank DSH session，复用原名称和编号。
 
 空周目尚未出现顶栏时，greeting 会显示在原生对话栏下方的 opening dock 中。左右按钮切换
 角色卡 alternate greeting；角色卡没有 greeting 时仍保留空白区域和同一 footer 布局。点击

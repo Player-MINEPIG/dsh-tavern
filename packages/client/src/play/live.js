@@ -30,6 +30,7 @@ function createRequester(fetchImpl, root) {
       error.status = response.status
       error.code = data?.code ?? data?.error?.code
       error.diagnostics = data?.diagnostics ?? data?.error?.diagnostics ?? []
+      error.details = data?.details ?? data?.error?.details
       throw error
     }
     return data
@@ -266,6 +267,12 @@ export function createLivePlayClient({
         throw new TypeError('focus.playthroughId does not match playthrough.id')
       }
       return focus
+    },
+
+    detachPlaythroughSession(playthroughId, sessionId) {
+      if (typeof playthroughId !== 'string' || playthroughId === '') throw new TypeError('playthroughId is required')
+      if (typeof sessionId !== 'string' || sessionId === '') throw new TypeError('sessionId is required')
+      return v2('POST', `/playthroughs/${encodeURIComponent(playthroughId)}/detach-session`, { sessionId })
     },
 
     postUserMessage(sessionId, text) {

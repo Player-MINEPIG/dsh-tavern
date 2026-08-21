@@ -1,6 +1,6 @@
 import { API_V2 } from '../../identity.js'
 import { createChromeApiHandler, createChromeEventsHandler } from './chrome.js'
-import { httpError, parsePlayUrl, sendPlayError } from './http.js'
+import { httpError, parsePlayUrl, readBoundedJson, sendJson, sendPlayError } from './http.js'
 import { createSessionApiHandler } from './sessions.js'
 import { validatePlayDocument } from './timeline.js'
 import { createWorkspaceApiHandler } from './workspace.js'
@@ -25,6 +25,7 @@ export function createPlayApiHandler({
   now,
   logger,
   operationOptions,
+  membershipService,
 } = {}) {
   if (chromeStore === undefined) throw new TypeError('chromeStore is required')
   const chromeApi = createChromeApiHandler(chromeStore)
@@ -111,6 +112,20 @@ export function createPlayApiHandler({
         if (sessionApi === null) throw httpError(404, 'Not found', 'PLAY_NOT_FOUND')
         return await sessionApi.playthroughFocus(req, res, playthroughFocusMatch[1])
       }
+      const detachSessionMatch = route.rest.match(/^\/playthroughs\/([^/]+)\/detach-session$/)
+      if (detachSessionMatch !== null) {
+        if (method !== 'POST') throw httpError(405, 'method not allowed', 'PLAY_METHOD_NOT_ALLOWED')
+        if (membershipService === undefined) throw httpError(404, 'Not found', 'PLAY_NOT_FOUND')
+        const playthroughId = safeDecodeId(detachSessionMatch[1], 'playthrough id')
+        const body = await readBoundedJson(req, 16 * 1024)
+        if (typeof body.sessionId !== 'string' || body.sessionId.trim() === '') {
+          throw httpError(400, 'sessionId must be a non-empty string', 'PLAY_SESSION_ID_INVALID')
+        }
+        operation = startMutation(req, 'playthrough.session.detach')
+        operation.stage('request.validated', { playthroughId, sessionId: body.sessionId })
+        const result = await runMutation(operation, () => membershipService.detach(playthroughId, body.sessionId, { operation }))
+        return sendJson(res, 200, result)
+      }
       const importContextMatch = route.rest.match(/^\/sessions\/([^/]+)\/import-context$/)
       if (importContextMatch !== null) {
         if (!['GET', 'PUT', 'DELETE'].includes(method)) throw httpError(405, 'method not allowed', 'PLAY_METHOD_NOT_ALLOWED')
@@ -147,4 +162,12 @@ function errorStatus(error) {
 function safePath(value) {
   if (typeof value !== 'string' || value === '') return undefined
   return value.replace(/[\u0000-\u001f\u007f]/g, '\ufffd').slice(0, 512)
+}
+
+function safeDecodeId(value, label) {
+  try {
+    return decodeURIComponent(value)
+  } catch {
+    throw httpError(400, `${label} is not valid URL encoding`, 'PLAY_ID_INVALID')
+  }
 }

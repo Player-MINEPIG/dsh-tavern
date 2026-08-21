@@ -5,7 +5,7 @@ import {
   createApiHandler as createPresetApiHandler,
 } from '../../preset/src/index.js'
 import { API_ROOT, API_V1, PLUGIN_ID, PROFILE_SECTION } from '../../identity.js'
-import { ChromeStore, PlayWorkspaceStore, createChromeEventsHandler, createPlayApiHandler, isPlayApiPath } from '../../play/src/index.js'
+import { ChromeStore, PlayMembershipService, PlayWorkspaceStore, createChromeEventsHandler, createPlayApiHandler, isPlayApiPath } from '../../play/src/index.js'
 import {
   CharacterStore,
   createCharacterAdapter,
@@ -302,6 +302,7 @@ export function apply(ctx, config = {}) {
     onSelectionCopied: sessionId => reconcileRpAfterSelection(sessionId, 'selection copy'),
   })
   const playWorkspaceStore = new PlayWorkspaceStore(storageDir, { host: playHost })
+  const playMemberships = new PlayMembershipService(playWorkspaceStore)
   importContexts = new ImportContextRuntime(storageDir, playWorkspaceStore)
   const runtime = new TavernProfileLoader({
     presetStore: store,
@@ -506,12 +507,20 @@ export function apply(ctx, config = {}) {
       onChange: notifyChange,
       selectionPolicy: characterSelectionPolicy,
       worldBookBindingPolicy: characterWorldBookBindingPolicy,
-      beforeSelectionChange: ({ sessionId }) => {
+      beforeSelectionChange: ({ sessionId, characterCardId }) => {
         const agent = ctx.get('agents')?.get?.(sessionId)
         if (agent?.status === 'running') {
           const error = new Error('The session agent is running; change the character after the current turn finishes.')
           error.code = 'CHARACTER_AGENT_RUNNING'
           error.status = 409
+          throw error
+        }
+        const conflicts = playMemberships.conflictsForSelection(sessionId, characterCardId)
+        if (conflicts.length > 0) {
+          const error = new Error('Changing this character will detach the session and its descendant branches from the playthrough.')
+          error.code = 'CHARACTER_PLAYTHROUGH_DETACH_REQUIRED'
+          error.status = 409
+          error.details = { conflicts }
           throw error
         }
       },
@@ -558,6 +567,7 @@ export function apply(ctx, config = {}) {
       workspaceStore: playWorkspaceStore,
       host: playHost,
       logger: ctx.logger,
+      membershipService: playMemberships,
     })
     const rpPolicyApi = createRpPolicyApiHandler(rpPolicyStore, { onChange: notifyChange })
     const rpModeApi = createRpModeApiHandler(rpMode, {
