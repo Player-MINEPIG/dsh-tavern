@@ -10,7 +10,6 @@ test('human-triggered replies expose the complete RP action set', () => {
     generateReply: true,
     fork: true,
     editDisplay: true,
-    hide: true,
   })
 })
 
@@ -21,7 +20,6 @@ test('context-triggered output exposes retry through its nearest human ancestor'
     generateReply: true,
     fork: true,
     editDisplay: true,
-    hide: true,
   })
 })
 
@@ -42,6 +40,7 @@ test('right swipe adopts the next variant or generates one at the end', () => {
   assert.match(source, /hasNextVariant \? \(\) => adopt\(position \+ 1\) : generate/)
   assert.match(source, /hasNextVariant \? 'play\.chat\.nextReply' : 'play\.chat\.generateReply'/)
   assert.doesNotMatch(source, /icon: '✦'/)
+  assert.doesNotMatch(source, /play\.chat\.hideNode/)
 })
 
 test('forking a playthrough refreshes shared sidebar classification before navigation', () => {

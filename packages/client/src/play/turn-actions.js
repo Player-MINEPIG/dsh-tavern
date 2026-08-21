@@ -54,7 +54,6 @@ export function turnActionCapabilities(turn) {
     generateReply: true,
     fork: true,
     editDisplay: true,
-    hide: true,
   }
 }
 
@@ -110,17 +109,6 @@ export function PlayTurnActions({
     } catch (reason) {
       onError(reason instanceof Error ? reason.message : String(reason))
     }
-  }
-
-  if (turn.hidden) {
-    return h('div', { className: 'dtv-play-turn-actions' },
-      h(Action, {
-        icon: '◉',
-        label: uiMessage('play.chat.restoreNode'),
-        disabled,
-        onClick: () => mutate(() => controller(playClient).setHidden(playthrough, turn.id, false)),
-      }),
-    )
   }
 
   if (editor !== null) {
@@ -199,15 +187,5 @@ export function PlayTurnActions({
       disabled,
       onClick: () => mutate(() => controller(playClient).setDisplayOverride(playthrough, turn.id, null)),
     }) : null,
-    h(Action, {
-      icon: '⊘',
-      label: uiMessage('play.chat.hideNode'),
-      disabled,
-      onClick: () => {
-        if (window.confirm(translate('play.chat.hideConfirm'))) {
-          mutate(() => controller(playClient).setHidden(playthrough, turn.id, true))
-        }
-      },
-    }),
   )
 }
