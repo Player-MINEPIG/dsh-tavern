@@ -26,19 +26,45 @@ export function eventRecord(entry) {
   return entry?.event ?? entry
 }
 
+function boundedSourceText(value, maximum) {
+  return typeof value === 'string' && value !== '' ? value.slice(0, maximum) : null
+}
+
+function messageOrigin(message, event) {
+  if (message?.role === 'assistant') return { kind: 'assistant' }
+  if (message?.role === 'system') return { kind: 'system' }
+  const source = message?.source ?? event?.data?.source ?? event?.data?.message?.source
+  if (event?.type === 'steering/message') return { kind: 'steering' }
+  if (source == null || source?.kind === 'user') return { kind: 'user' }
+  return {
+    kind: 'context',
+    producer: boundedSourceText(source?.kind, 200),
+    form: boundedSourceText(source?.form, 64),
+    summary: boundedSourceText(source?.summary, 1000),
+  }
+}
+
 export function projectMessages(messages, events) {
   const seqById = new Map()
+  const eventById = new Map()
   for (const entry of events ?? []) {
     const event = eventRecord(entry)
     const id = event?.data?.id ?? event?.data?.message?.id
-    if (typeof id === 'string' && Number.isSafeInteger(event.seq)) seqById.set(id, event.seq)
+    if (typeof id === 'string') {
+      eventById.set(id, event)
+      if (Number.isSafeInteger(event.seq)) seqById.set(id, event.seq)
+    }
   }
-  return (messages ?? []).map(message => ({
-    id: message.id,
-    role: message.role,
-    content: message.content,
-    seq: seqById.get(message.id) ?? null,
-  }))
+  return (messages ?? []).map(message => {
+    const event = eventById.get(message.id)
+    return {
+      id: message.id,
+      role: message.role,
+      content: message.content,
+      seq: seqById.get(message.id) ?? null,
+      origin: messageOrigin(message, event),
+    }
+  })
 }
 
 export function messagesFromEvents(events) {

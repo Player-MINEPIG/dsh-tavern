@@ -1,5 +1,6 @@
 const CHROME_MODES = new Set(['native', 'play'])
 const MESSAGE_ROLES = new Set(['user', 'assistant', 'system'])
+const MESSAGE_ORIGIN_KINDS = new Set(['user', 'context', 'steering', 'assistant', 'system'])
 
 function isRecord(value) {
   return value !== null && typeof value === 'object' && !Array.isArray(value)
@@ -163,12 +164,34 @@ export function normalizeSessionMessages(value, label = 'messages') {
     if (!MESSAGE_ROLES.has(item.role)) fail(itemLabel, 'role is invalid')
     if (!Array.isArray(item.content)) fail(itemLabel, 'content must be an array')
     if (item.seq !== null && (!Number.isSafeInteger(item.seq) || item.seq < 0)) fail(itemLabel, 'seq must be a non-negative integer or null')
+    const fallbackKind = item.role === 'assistant' ? 'assistant' : item.role === 'system' ? 'system' : 'user'
+    const origin = item.origin === undefined
+      ? { kind: fallbackKind }
+      : (() => {
+          if (!isRecord(item.origin) || !MESSAGE_ORIGIN_KINDS.has(item.origin.kind)) fail(`${itemLabel}.origin`, 'kind is invalid')
+          if (item.origin.kind !== 'context') return { kind: item.origin.kind }
+          const optional = (field, maximum) => {
+            const fieldValue = item.origin[field]
+            if (fieldValue !== null && fieldValue !== undefined
+              && (typeof fieldValue !== 'string' || fieldValue.length > maximum)) {
+              fail(`${itemLabel}.origin.${field}`, `must be a string up to ${maximum} characters or null`)
+            }
+            return typeof fieldValue === 'string' && fieldValue !== '' ? fieldValue : null
+          }
+          return {
+            kind: 'context',
+            producer: optional('producer', 200),
+            form: optional('form', 64),
+            summary: optional('summary', 1000),
+          }
+        })()
     return {
       id: stringId(item.id, `${itemLabel}.id`),
       role: item.role,
       content: item.content,
       seq: item.seq,
       text: projectContentText(item.content),
+      origin,
     }
   })
   return { messages, incompleteTurn: value.incompleteTurn }

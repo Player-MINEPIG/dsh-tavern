@@ -49,12 +49,14 @@ const messages = {
     {
       id: 'message-user',
       role: 'user',
+      origin: { kind: 'user' },
       content: [{ type: 'text', text: 'Hello ' }, { type: 'image' }],
       seq: 12,
     },
     {
       id: 'message-assistant',
       role: 'assistant',
+      origin: { kind: 'assistant' },
       content: [{ type: 'text', text: 'Welcome.' }],
       seq: 19,
     },
@@ -90,6 +92,17 @@ test('play schema matches integer event seqs, QA-only timelines, and ContentPart
     incompleteTurn: false,
   }), /non-negative integer/)
   assert.equal(projected.messages[0].seq, 12)
+  assert.deepEqual(projected.messages[0].origin, { kind: 'user' })
+  const context = normalizeSessionMessages({
+    messages: [{
+      id: 'context', role: 'user', content: [], seq: 13,
+      origin: { kind: 'context', producer: 'subagent-settled', form: 'notice', summary: 'done' },
+    }],
+    incompleteTurn: false,
+  })
+  assert.deepEqual(context.messages[0].origin, {
+    kind: 'context', producer: 'subagent-settled', form: 'notice', summary: 'done',
+  })
   assert.deepEqual(normalizeFocus({ playthroughId: 'playthrough-1', sessionId: null, nodeId: null, variantId: null }), { playthroughId: 'playthrough-1', sessionId: null, nodeId: null, variantId: null })
   assert.equal(projectContentText([{ type: 'text', text: 'a' }, { type: 'tool' }]), 'a⟦tool⟧')
 })

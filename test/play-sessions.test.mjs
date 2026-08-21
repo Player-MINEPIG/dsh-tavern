@@ -66,7 +66,7 @@ function mockHost({ characterName = 'Alice' } = {}) {
     async history() {
       return {
         events: [
-          { type: 'user/message', seq: 1, data: { id: 'm1', role: 'user', content: [{ type: 'text', text: 'hi' }] } },
+          { type: 'user/message', seq: 1, data: { id: 'm1', role: 'user', content: [{ type: 'text', text: 'hi' }], source: { kind: 'user' } } },
           { type: 'assistant/message', seq: 3, data: { id: 'm2', role: 'assistant', content: [{ type: 'text', text: 'yo' }] } },
           { type: 'turn/end', seq: 4, data: {} },
         ],
@@ -75,7 +75,7 @@ function mockHost({ characterName = 'Alice' } = {}) {
     },
     async deriveMessages() {
       return [
-        { id: 'm1', role: 'user', content: [{ type: 'text', text: 'hi' }] },
+        { id: 'm1', role: 'user', content: [{ type: 'text', text: 'hi' }], source: { kind: 'user' } },
         { id: 'm2', role: 'assistant', content: [{ type: 'text', text: 'yo' }] },
       ]
     },
@@ -229,8 +229,8 @@ test('GET messages returns Message.id plus seq and incompleteTurn', async () => 
     const listed = await invoke(fixture.handler, { url: `${API_V2}/sessions/session-root/messages` })
     assert.equal(listed.status, 200)
     assert.deepEqual(listed.body.messages, [
-      { id: 'm1', role: 'user', content: [{ type: 'text', text: 'hi' }], seq: 1 },
-      { id: 'm2', role: 'assistant', content: [{ type: 'text', text: 'yo' }], seq: 3 },
+      { id: 'm1', role: 'user', content: [{ type: 'text', text: 'hi' }], seq: 1, origin: { kind: 'user' } },
+      { id: 'm2', role: 'assistant', content: [{ type: 'text', text: 'yo' }], seq: 3, origin: { kind: 'assistant' } },
     ])
     assert.equal(listed.body.incompleteTurn, false)
   } finally {
@@ -348,6 +348,40 @@ test('branch reports explicit copy failure after fork', async () => {
   assert.equal(forked, true)
   assert.equal(output.status, 502)
   assert.equal(output.body.code, 'PLAY_BRANCH_COPY_FAILED')
+})
+
+test('GET /sessions messages preserves model role while projecting context provenance', async () => {
+  const fixture = await boundHandler()
+  try {
+    fixture.host.history = async () => ({
+      hasMore: false,
+      events: [
+        { type: 'user/message', seq: 1, data: { id: 'human', role: 'user', content: [], source: { kind: 'user' } } },
+        { type: 'user/message', seq: 2, data: { id: 'report', role: 'user', content: [], source: { kind: 'subagent-report', form: 'relay', senderSessionId: 'child-a' } } },
+        { type: 'user/message', seq: 3, data: { id: 'settled', role: 'user', content: [], source: { kind: 'subagent-settled', form: 'notice', summary: 'Child finished', senderSessionId: 'child-a' } } },
+        { type: 'assistant/message', seq: 4, data: { id: 'answer', role: 'assistant', content: [] } },
+      ],
+    })
+    fixture.host.deriveMessages = async () => [
+      { id: 'human', role: 'user', content: [], source: { kind: 'user' } },
+      { id: 'report', role: 'user', content: [], source: { kind: 'subagent-report', form: 'relay', senderSessionId: 'child-a' } },
+      { id: 'settled', role: 'user', content: [], source: { kind: 'subagent-settled', form: 'notice', summary: 'Child finished', senderSessionId: 'child-a' } },
+      { id: 'answer', role: 'assistant', content: [] },
+    ]
+    const response = await invoke(fixture.handler, {
+      url: `${API_V2}/sessions/session-root/messages`,
+    })
+    assert.equal(response.status, 200)
+    assert.deepEqual(response.body.messages.map(message => [message.role, message.origin]), [
+      ['user', { kind: 'user' }],
+      ['user', { kind: 'context', producer: 'subagent-report', form: 'relay', summary: null }],
+      ['user', { kind: 'context', producer: 'subagent-settled', form: 'notice', summary: 'Child finished' }],
+      ['assistant', { kind: 'assistant' }],
+    ])
+  } finally {
+    rmSync(fixture.pluginDir, { recursive: true, force: true })
+    rmSync(fixture.playRoot, { recursive: true, force: true })
+  }
 })
 test('live play session APIs against a running DSH host', {
   skip: process.env.DSH_TAVERN_PLAY_LIVE !== '1',
