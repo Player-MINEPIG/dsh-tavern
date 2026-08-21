@@ -63,6 +63,31 @@ export function conversationTextFromAgent(agent) {
     .join('\n')
 }
 
+function isDurableUserMessage(message) {
+  return message?.role === 'user'
+    && (message.source == null || message.source?.kind === 'user')
+}
+
+/**
+ * The selected greeting is a first-turn style reference, never durable chat
+ * history. Context/tool injections do not consume it. Once a real assistant
+ * reply exists (or more than one real user turn is present), later assemblies
+ * must not keep re-injecting the opening reference.
+ */
+export function greetingReferenceAppliesToAgent(agent) {
+  if (typeof agent?.session?.deriveMessages !== 'function') return true
+  const messages = agent.session.deriveMessages()
+  if (!Array.isArray(messages)) return true
+  let userMessages = 0
+  for (const message of messages) {
+    if (message?.role === 'assistant') return false
+    if (!isDurableUserMessage(message)) continue
+    userMessages += 1
+    if (userMessages > 1) return false
+  }
+  return true
+}
+
 function normalizedAdapterResult(value, key) {
   if (!isRecord(value)) return { [key]: null, diagnostics: [] }
   return {
@@ -197,6 +222,9 @@ export class TavernProfileLoader {
       character: characterResult.character,
       user: userResult.user,
       characterSelection: selection.character,
+      includeGreetingReference: options.agent === undefined
+        ? true
+        : greetingReferenceAppliesToAgent(options.agent),
       loreEntries: Array.isArray(worldBookResult.loreEntries) ? worldBookResult.loreEntries : [],
       context: options.context ?? {},
       maxProfileBytes: this.maxProfileBytes,
@@ -289,6 +317,7 @@ function compileTavernProfileUnbounded({
   character = null,
   user = null,
   characterSelection = {},
+  includeGreetingReference = true,
   loreEntries = [],
   context = {},
 } = {}) {
@@ -332,6 +361,7 @@ function compileTavernProfileUnbounded({
   const beforeLore = normalizedLore.filter((entry) => entry.position === 'before')
   const afterLore = normalizedLore.filter((entry) => entry.position === 'after')
   const fields = normalizedCharacterFields(characterData, characterSelection)
+  if (!includeGreetingReference) fields.greeting = ''
   const userFields = normalizedUserFields(user)
   const userInjection = {
     selected: user !== null,

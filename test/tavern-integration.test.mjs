@@ -5,6 +5,7 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { CharacterStore } from '../packages/character/src/index.js'
 import { apply } from '../packages/tavern-loader/src/index.js'
+import { greetingReferenceAppliesToAgent } from '../packages/tavern-loader/src/profile-loader.js'
 
 function syntheticCard() {
   return JSON.stringify({
@@ -76,6 +77,17 @@ function agent(id, text = '') {
     },
   }
 }
+
+test('greeting reference is limited to the first real user turn', () => {
+  const withMessages = messages => ({ session: { deriveMessages: () => messages } })
+  const user = { role: 'user', source: { kind: 'user' }, content: [] }
+  const context = { role: 'user', source: { kind: 'plugin' }, content: [] }
+  const assistant = { role: 'assistant', content: [] }
+  assert.equal(greetingReferenceAppliesToAgent(withMessages([])), true)
+  assert.equal(greetingReferenceAppliesToAgent(withMessages([context, user])), true)
+  assert.equal(greetingReferenceAppliesToAgent(withMessages([user, assistant])), false)
+  assert.equal(greetingReferenceAppliesToAgent(withMessages([user, context, user])), false)
+})
 
 test('unified loader injects a selected character and its triggered embedded world book', () => {
   const directory = mkdtempSync(join(tmpdir(), 'dsh-tavern-integration-'))

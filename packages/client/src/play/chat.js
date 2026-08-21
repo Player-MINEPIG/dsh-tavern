@@ -45,7 +45,7 @@ const css = `
 .dtv-play-chat{height:100%;min-height:0;box-sizing:border-box;overflow:auto;padding:22px max(18px,calc((100% - 780px)/2)) 36px;color:var(--dsw-alias-label-primary)}
 .dtv-play-chat-list{display:flex;flex-direction:column;gap:22px}.dtv-play-chat-row{display:flex;flex-direction:column;gap:8px}.dtv-play-chat-role{font-size:11px;font-weight:700;color:var(--dsw-alias-label-tertiary)}
 .dtv-play-chat-bubble{max-width:88%;box-sizing:border-box;border-radius:14px;padding:12px 14px;overflow-wrap:anywhere;font-size:14px;line-height:1.65}.dtv-play-chat-user{align-self:flex-end;background:var(--dsw-alias-interactive-bg-selected,var(--dsw-specific-tip))}.dtv-play-chat-assistant{align-self:flex-start;background:var(--dsw-alias-bg-layer-2,var(--dsw-specific-block))}
-.dtv-play-greeting{position:relative;align-self:flex-start;max-width:88%;display:grid;grid-template-columns:30px minmax(0,1fr) 30px;align-items:center;gap:6px}.dtv-play-greeting-text{border-radius:14px;padding:13px 15px;background:var(--dsw-alias-bg-layer-2,var(--dsw-specific-block));overflow-wrap:anywhere;font-size:14px;line-height:1.65}
+.dtv-play-greeting{position:relative;align-self:flex-start;max-width:88%;display:grid;grid-template-columns:30px minmax(0,1fr) 30px;align-items:center;gap:6px}.dtv-play-greeting[data-locked=true]{grid-template-columns:minmax(0,1fr)}.dtv-play-greeting-text{border-radius:14px;padding:13px 15px;background:var(--dsw-alias-bg-layer-2,var(--dsw-specific-block));overflow-wrap:anywhere;font-size:14px;line-height:1.65}
 .dtv-play-greeting-empty{min-height:34px;visibility:hidden}
 .dtv-play-greeting-button{width:30px;height:34px;border:0;border-radius:9px;background:transparent;color:var(--dsw-alias-label-secondary);cursor:pointer}.dtv-play-greeting-button:hover{background:var(--dsw-alias-interactive-bg-hover)}.dtv-play-greeting-button:disabled{opacity:.4;cursor:default}
 .dtv-play-import-controls{align-self:center;display:flex;flex-wrap:wrap;align-items:center;justify-content:center;gap:8px;margin:0 0 2px}.dtv-play-import-bound{width:100%;margin:0;text-align:center;color:var(--dsw-alias-label-tertiary);font-size:11px}.dtv-play-import-button{min-height:30px;padding:5px 11px;border:1px solid var(--dsw-alias-border-subtle);border-radius:9px;background:var(--dsw-alias-bg-layer-2,var(--dsw-specific-block));color:var(--dsw-alias-label-primary);font:inherit;font-size:11px;cursor:pointer}.dtv-play-import-button:hover{background:var(--dsw-alias-interactive-bg-hover)}.dtv-play-import-button:disabled{opacity:.45;cursor:default}.dtv-play-import-last{margin:0;color:var(--dsw-alias-label-tertiary);font-size:11px;font-weight:700}
@@ -226,12 +226,15 @@ export function applyTurnDisplayRegex(turn, display, { userDepth, assistantDepth
         ).text,
   }
 }
-function Greeting({ greeting, busy, change, footer = null }) {
+function Greeting({ greeting, busy, change, locked = false, footer = null }) {
   const multiple = (greeting?.options?.length ?? 0) > 1
   return h('div', { className: 'dtv-play-chat-row' },
     greeting === null ? null : h('span', { className: 'dtv-play-chat-role' }, rawText(greeting.characterName)),
-    greeting === null ? h('div', { className: 'dtv-play-greeting dtv-play-greeting-empty', 'aria-hidden': true }) : h('div', { className: 'dtv-play-greeting' },
-      h('button', {
+    greeting === null ? h('div', { className: 'dtv-play-greeting dtv-play-greeting-empty', 'aria-hidden': true }) : h('div', {
+      className: 'dtv-play-greeting',
+      'data-locked': locked,
+    },
+      locked ? null : h('button', {
         type: 'button',
         className: 'dtv-play-greeting-button',
         disabled: busy || !multiple,
@@ -240,7 +243,7 @@ function Greeting({ greeting, busy, change, footer = null }) {
         onClick: () => change('previous'),
       }, '‹'),
       h(RichText, { className: 'dtv-play-greeting-text dtv-play-rich', text: greeting.text }),
-      h('button', {
+      locked ? null : h('button', {
         type: 'button',
         className: 'dtv-play-greeting-button',
         disabled: busy || !multiple,
@@ -259,6 +262,12 @@ export function turnHasVisibleRpContent(turn) {
     || (typeof turn?.assistantText === 'string' && turn.assistantText !== '')
     || turn?.displayOverridden === true
     || turn?.running === true
+}
+
+export function greetingSelectionLocked({ turns = [], latestUserSeq = -1, running = false } = {}) {
+  return running
+    || latestUserSeq >= 0
+    || turns.some(turn => turn?.imported !== true)
 }
 
 function Turn({ turn, ...actionProps }) {
@@ -398,8 +407,13 @@ export function MowanChatView({ sessionId, useSession, playClient, playthrough, 
     return () => { active = false }
   }, [playClient, playthrough, revision, sessionId, sessionRevision])
 
+  const greetingLocked = greetingSelectionLocked({
+    turns: state?.turns ?? [],
+    latestUserSeq,
+    running,
+  })
   const changeGreeting = async direction => {
-    if (state?.greeting == null || greetingBusy) return
+    if (state?.greeting == null || greetingBusy || greetingLocked) return
     const next = adjacentGreetingIndex(state.greeting, direction)
     if (next === null) return
     setGreetingBusy(true)
@@ -448,6 +462,7 @@ export function MowanChatView({ sessionId, useSession, playClient, playthrough, 
         greeting: state.greeting,
         busy: greetingBusy,
         change: changeGreeting,
+        locked: greetingLocked,
         footer: state.importBinding === null ? importControls : null,
       }),
       ...state.turns.map(turn => h(Turn, {

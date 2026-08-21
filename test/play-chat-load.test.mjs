@@ -1,6 +1,6 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
-import { loadChatState } from '../packages/client/src/play/chat.js'
+import { greetingSelectionLocked, loadChatState } from '../packages/client/src/play/chat.js'
 import { readFileSync } from 'node:fs'
 
 const chatSource = readFileSync(new URL('../packages/client/src/play/chat.js', import.meta.url), 'utf8')
@@ -124,10 +124,20 @@ test('consumed import binding is never mutable even before timeline reconciliati
 })
 
 test('unbound import action always uses the greeting container footer, including cards without greeting', () => {
-  assert.match(chatSource, /function Greeting\(\{ greeting, busy, change, footer = null \}\)/)
+  assert.match(chatSource, /function Greeting\(\{ greeting, busy, change, locked = false, footer = null \}\)/)
   assert.match(chatSource, /footer: state\.importBinding === null \? importControls : null/)
   assert.match(chatSource, /state\.greeting === null && state\.importBinding !== null \? null : h\(Greeting/)
   assert.doesNotMatch(chatSource, /state\.greeting === null && state\.importBinding === null \? importControls : null/)
+})
+
+test('greeting selection locks only after the real playthrough starts', () => {
+  assert.equal(greetingSelectionLocked(), false)
+  assert.equal(greetingSelectionLocked({ turns: [{ imported: true }] }), false)
+  assert.equal(greetingSelectionLocked({ turns: [{ imported: false }] }), true)
+  assert.equal(greetingSelectionLocked({ latestUserSeq: 1 }), true)
+  assert.equal(greetingSelectionLocked({ running: true }), true)
+  assert.match(chatSource, /locked \? null : h\('button'/)
+  assert.match(chatSource, /greetingBusy \|\| greetingLocked/)
 })
 
 test('native blank-session greeting dock mounts the shared import control', () => {

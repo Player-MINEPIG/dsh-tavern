@@ -68,7 +68,7 @@ dsh 没有 ST 的 `PromptManager`、marker collection 或任意历史深度插�
 | dialogue examples | 读取角色卡字段并作为带来源标签的 system 近似块 | 部分；不是真实 user/assistant 示例消息 |
 | absolute/depth injection | 字段被保留，编译器不执行 | 未实现 |
 | World Info before/after | 角色卡内嵌书与 per-session 多选独立书使用同一 matcher 并填入 | 已接入基础 before/after；严格 depth/outlet 仍降级 |
-| 角色描述、性格、场景、首条消息 | 前三者进入 profile；首条消息仅作 greeting-reference | 部分；不伪造历史 |
+| 角色描述、性格、场景、首条消息 | 前三者进入 profile；首条消息仅在首轮生成作 greeting-reference | 部分；不伪造历史，也不在后续轮次重复注入 |
 | ST macro | 支持常见变量、随机与骰子；缺少完整 ST runtime context | 部分 |
 
 尤其要注意：把 ST 的 `user`/`assistant` prompt 包在 system 文本标签内只保留了审阅信息，并不等价于向模型发送真实 `user`/`assistant` 消息。这是当前兼容层最重要的边界。
@@ -84,7 +84,7 @@ dsh 没有 ST 的 `PromptManager`、marker collection 或任意历史深度插�
 | 用户名字与描述 | 名字解析 `{{user}}`；描述进入一次 `personaDescription`/`{{persona}}`，缺少放置点时诊断并稳定 fallback；不覆盖 DSH Agent persona |
 | 世界信息条目 | 扫描 durable history 与本步骤 claimed 输入，并按 before/after anchor 进入 profile；严格 depth/outlet 仍需要其他宿主能力 |
 | example dialogue | 当前为明确标注的 system 近似；未来需要真实 user/assistant 示例消息 seam |
-| first message / alternate greeting | 当前为 greeting-reference；未来应作为创建会话时的显式 seed message |
+| first message / alternate greeting | 首轮生成作为 greeting-reference；首个真实回复形成后不再注入，且始终不创建 seed/history message |
 | 用户输入与历史 | 始终以 DSH 原生 durable messages 为权威来源；世界书只读扫描，不重复发送 |
 | Agent system prompt | 默认共存并先于 preset；高级 replace 明确由用户承担工具提示丢失风险 |
 

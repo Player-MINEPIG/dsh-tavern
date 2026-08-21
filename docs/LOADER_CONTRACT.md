@@ -170,7 +170,7 @@ loader Host 层的唯一 `PendingInputProjection` 从公开 `agent/inbox/spliced
 
 ### Honest degradation
 
-- greeting 只成为 `<st-character-field name="greeting-reference">`，不伪造 assistant 历史；
+- greeting 只在首轮生成成为 `<st-character-field name="greeting-reference">`；首个真实 assistant 回复形成后不再注入，并且从不伪造 assistant 历史；
 - PHI 位于 Tavern system profile，不宣称严格位于全部历史之后；
 - depth prompt 保存 role/depth 的格式职责归角色模块，loader 首期只能放入明确标注的 system fallback；
 - `user`/`assistant` preset prompt role 仍是可审阅标签，不是真实历史消息 role；

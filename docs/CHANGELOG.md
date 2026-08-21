@@ -1,5 +1,12 @@
 # Development changelog
 
+## 2026-08-21 — Lock greeting selection after play starts
+
+- Removed greeting navigation from the RP transcript after the first real
+  user turn while keeping the chosen opening visible.
+- Limited `greeting-reference` to first-turn assembly; later requests retain
+  the selected card but do not repeatedly inject its opening text.
+
 ## 2026-08-21 — Document session branches over surface replacement
 
 - Documented that DSH surface replacements can themselves be replaced while
