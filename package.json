@@ -56,6 +56,7 @@
     "build": "node build.mjs",
     "test": "node --test",
     "check": "npm run build && npm test",
+    "verify:2.0": "node scripts/verify-2.0.mjs && npm run build && npm run pack:check",
     "pack:check": "npm pack --dry-run --cache .npm-cache",
     "plugin:install": "node scripts/install.mjs",
     "plugin:uninstall": "node scripts/uninstall.mjs"

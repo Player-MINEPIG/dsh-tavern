@@ -20,6 +20,20 @@ import {
   createPlayApiHandler,
 } from '../packages/tavern-loader/src/index.js'
 
+function createDirectoryLink(target, path) {
+  const types = process.platform === 'win32' ? ['junction', 'dir'] : ['dir']
+  let failure
+  for (const type of types) {
+    try {
+      symlinkSync(target, path, type)
+      return
+    } catch (error) {
+      failure = error
+    }
+  }
+  throw failure
+}
+
 
 
 test('writeAllSync completes partial writes and rejects a no-progress write', () => {
@@ -218,7 +232,7 @@ test('workspace dirs and files round-trip; path jail refuses escape', async () =
   }
 })
 
-test('symlink that leaves the play root is refused and does not write outside', async () => {
+test('symlink or junction that leaves the play root is refused and does not write outside', async t => {
   const fixture = setup()
   try {
     await invoke(fixture.handler, {
@@ -229,15 +243,16 @@ test('symlink that leaves the play root is refused and does not write outside', 
     writeFileSync(join(fixture.outside, 'secret.txt'), 'outside')
     const link = join(fixture.playRoot, 'escape')
     try {
-      symlinkSync(fixture.outside, link, 'dir')
-    } catch {
+      createDirectoryLink(fixture.outside, link)
+    } catch (error) {
+      t.skip(`symlink/junction creation unavailable: ${error.code ?? error.message}`)
       return
     }
     const leaked = await invoke(fixture.handler, {
       url: `${API_V2}/workspace/files?path=escape/secret.txt`,
     })
     assert.equal(leaked.status, 403)
-    assert.equal(leaked.body.code, 'PLAY_PATH_ESCAPE')
+    assert.equal(leaked.body.code, 'PLAY_PATH_LINK')
 
     const write = await invoke(fixture.handler, {
       method: 'PUT',
@@ -272,7 +287,7 @@ test('root-in symlink or junction is refused for reads and writes', async t => {
     mkdirSync(join(fixture.playRoot, 'safe'))
     const link = join(fixture.playRoot, 'link')
     try {
-      symlinkSync(join(fixture.playRoot, 'safe'), link, 'dir')
+      createDirectoryLink(join(fixture.playRoot, 'safe'), link)
     } catch (error) {
       t.skip(`symlink/junction creation unavailable: ${error.code ?? error.message}`)
       return
@@ -303,7 +318,7 @@ test('write rechecks a replaced parent before rename and releases the guard', as
         if (replaced) return
         replaced = true
         rmSync(join(fixture.playRoot, 'card'), { recursive: true, force: true })
-        symlinkSync(fixture.outside, join(fixture.playRoot, 'card'), 'dir')
+        createDirectoryLink(fixture.outside, join(fixture.playRoot, 'card'))
       },
     })
     const handler = createPlayApiHandler({
@@ -318,7 +333,7 @@ test('write rechecks a replaced parent before rename and releases the guard', as
     try {
       mkdirSync(join(fixture.playRoot, 'card'))
       rmSync(join(fixture.playRoot, 'card'), { recursive: true, force: true })
-      symlinkSync(fixture.outside, join(fixture.playRoot, 'card'), 'dir')
+      createDirectoryLink(fixture.outside, join(fixture.playRoot, 'card'))
       rmSync(join(fixture.playRoot, 'card'), { recursive: true, force: true })
     } catch (error) {
       t.skip(`symlink/junction creation unavailable: ${error.code ?? error.message}`)
