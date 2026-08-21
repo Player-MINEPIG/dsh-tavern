@@ -100,6 +100,7 @@ export function PlayTurnActions({
   const generate = () => mutate(async () => {
     const result = await controller(playClient).createReplySwipe(playthrough, turn.id)
     openSession(result.sessionId)
+    window.dispatchEvent(new Event(CLIENT_REFRESH_EVENT))
   })
 
   const copy = async () => {
