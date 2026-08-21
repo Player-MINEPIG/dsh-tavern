@@ -48,12 +48,10 @@ function Action({ icon, label, disabled = false, disabledLabel, onClick }) {
 }
 
 export function turnActionCapabilities(turn) {
-  const triggerKind = turn?.triggerKind
-  const replyTrigger = triggerKind == null || triggerKind === 'user' || triggerKind === 'steering'
   return {
     copy: true,
-    variants: replyTrigger,
-    generateReply: replyTrigger,
+    variants: true,
+    generateReply: true,
     fork: true,
     editDisplay: true,
     hide: true,

@@ -1,5 +1,9 @@
 import { updateTimeline } from './mutations.js'
 import { forkPlaythroughAtNode } from './fork.js'
+import {
+  activeTimelineEntries,
+  timelineWithHead,
+} from '../../../play/src/timeline-tree.js'
 
 function nodeById(timeline, nodeId) {
   const index = timeline.nodes.findIndex(node => node.id === nodeId)
@@ -81,7 +85,10 @@ export function createPlayNodeController(client, {
           const { index, node } = nodeById(timeline, nodeId)
           const variant = node.variants.find(item => item.id === variantId)
           if (variant === undefined) throw new TypeError(`Unknown variant ${variantId}`)
-          return replaceNode(timeline, index, { ...node, adoptedVariantId: variantId })
+          return timelineWithHead(
+            replaceNode(timeline, index, { ...node, adoptedVariantId: variantId }),
+            { sessionId: variant.sessionId, nodeId: node.id, variantId: variant.id },
+          )
         })
         const { node } = nodeById(next, nodeId)
         const variant = node.variants.find(item => item.id === variantId)
@@ -93,16 +100,31 @@ export function createPlayNodeController(client, {
     createReplySwipe(playthrough, nodeId) {
       return schedule(async () => {
         const timeline = await client.getTimeline(playthrough)
-        const { node } = nodeById(timeline, nodeId)
-        const adopted = node.variants.find(item => item.id === node.adoptedVariantId)
-        if (adopted === undefined) throw new TypeError('Adopted variant is missing')
-        const source = await client.getMessages(adopted.sessionId)
-        const user = source.messages.find(message => message.role === 'user'
-          && (messageOriginKind(message) === 'user' || messageOriginKind(message) === 'steering')
-          && message.seq >= adopted.startEventId
-          && message.seq <= adopted.endEventId)
-        if (user === undefined || typeof user.text !== 'string' || user.text === '') {
-          throw new TypeError('Adopted variant has no reusable user message')
+        const entries = activeTimelineEntries(timeline)
+        const requestedIndex = entries.findIndex(entry => entry.node.id === nodeId)
+        if (requestedIndex < 0) throw new TypeError(`Unknown active timeline node ${nodeId}`)
+        let sourceNode = null
+        let adopted = null
+        let source = null
+        let user
+        for (let index = requestedIndex; index >= 0; index -= 1) {
+          const candidate = entries[index]
+          const messages = await client.getMessages(candidate.variant.sessionId)
+          const reusable = messages.messages.find(message => message.role === 'user'
+            && (messageOriginKind(message) === 'user' || messageOriginKind(message) === 'steering')
+            && message.seq >= candidate.variant.startEventId
+            && message.seq <= candidate.variant.endEventId)
+          if (reusable !== undefined && typeof reusable.text === 'string' && reusable.text !== '') {
+            sourceNode = candidate.node
+            adopted = candidate.variant
+            source = messages
+            user = reusable
+            break
+          }
+        }
+        if (sourceNode === null || adopted === null || source === null
+          || user === undefined || typeof user.text !== 'string' || user.text === '') {
+          throw new TypeError('Active branch has no reusable user message')
         }
         const forkEventId = Math.max(0, adopted.startEventId - 1)
         const branch = await client.postBranch(adopted.sessionId, forkEventId)
@@ -128,16 +150,22 @@ export function createPlayNodeController(client, {
           endEventId: pair.assistant.seq,
         }
         const next = await updateTimeline(client, playthrough, timeline => {
-          const current = nodeById(timeline, nodeId)
+          const current = nodeById(timeline, sourceNode.id)
           const existing = current.node.variants.find(item => item.id === variantId)
           if (existing !== undefined) {
-            return replaceNode(timeline, current.index, { ...current.node, adoptedVariantId: variantId })
+            return timelineWithHead(
+              replaceNode(timeline, current.index, { ...current.node, adoptedVariantId: variantId }),
+              { sessionId: existing.sessionId, nodeId: current.node.id, variantId },
+            )
           }
-          return replaceNode(timeline, current.index, {
-            ...current.node,
-            adoptedVariantId: variantId,
-            variants: [...current.node.variants, variant],
-          })
+          return timelineWithHead(
+            replaceNode(timeline, current.index, {
+              ...current.node,
+              adoptedVariantId: variantId,
+              variants: [...current.node.variants, variant],
+            }),
+            { sessionId: newSessionId, nodeId: current.node.id, variantId },
+          )
         })
         const focus = await client.getFocus(playthrough)
         if (focus.sessionId !== newSessionId) throw new Error('Saved swipe does not match derived focus')

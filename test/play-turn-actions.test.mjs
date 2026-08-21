@@ -14,11 +14,11 @@ test('human-triggered replies expose the complete RP action set', () => {
   })
 })
 
-test('context-triggered parent output cannot be retried or swiped as a human prompt', () => {
+test('context-triggered output exposes retry through its nearest human ancestor', () => {
   assert.deepEqual(turnActionCapabilities({ triggerKind: 'context' }), {
     copy: true,
-    variants: false,
-    generateReply: false,
+    variants: true,
+    generateReply: true,
     fork: true,
     editDisplay: true,
     hide: true,

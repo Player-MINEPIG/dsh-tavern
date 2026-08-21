@@ -60,6 +60,9 @@ test('reply swipe branches, resends the real user text, waits, then atomically a
 
   assert.equal(result.sessionId, 'session-new')
   assert.equal(timeline.nodes[0].adoptedVariantId, 'variant-new')
+  assert.deepEqual(timeline.head, {
+    sessionId: 'session-new', nodeId: 'qa-1', variantId: 'variant-new',
+  })
   assert.deepEqual(timeline.nodes[0].variants[1], {
     id: 'variant-new',
     sessionId: 'session-new',
@@ -132,4 +135,50 @@ test('reply swipe refuses context injection even though its model-facing role is
     /no reusable user message/,
   )
   assert.equal(branchCalls, 0)
+})
+
+test('retrying a context output swipes the nearest preceding real user turn', async () => {
+  let timeline = {
+    nodes: [
+      {
+        id: 'qa-human', kind: 'qa', hidden: false, displayOverride: null,
+        parentVariantId: null, adoptedVariantId: 'v-human',
+        variants: [{ id: 'v-human', sessionId: 'session-old', startEventId: 1, endEventId: 2 }],
+      },
+      {
+        id: 'qa-context', kind: 'qa', hidden: false, displayOverride: null,
+        parentVariantId: 'v-human', adoptedVariantId: 'v-context',
+        variants: [{ id: 'v-context', sessionId: 'session-old', startEventId: 3, endEventId: 4 }],
+      },
+    ],
+    head: { sessionId: 'session-old', nodeId: 'qa-context', variantId: 'v-context' },
+  }
+  const calls = []
+  const client = {
+    async getTimeline() { return structuredClone(timeline) },
+    async getMessages(sessionId) {
+      if (sessionId === 'session-new') return { incompleteTurn: false, messages: [
+        { role: 'user', seq: 1, text: 'Human prompt', origin: { kind: 'user' } },
+        { role: 'assistant', seq: 5, text: 'Retry' },
+      ] }
+      return { incompleteTurn: false, messages: [
+        { role: 'user', seq: 1, text: 'Human prompt', origin: { kind: 'user' } },
+        { role: 'assistant', seq: 2, text: 'First' },
+        { role: 'user', seq: 3, text: 'Injected', origin: { kind: 'context' } },
+        { role: 'assistant', seq: 4, text: 'Final' },
+      ] }
+    },
+    async postBranch(sessionId, eventId) { calls.push([sessionId, eventId]); return { sessionId: 'session-new' } },
+    async postUserMessage(_sessionId, text) { calls.push(text) },
+    async putTimeline(_playthrough, value) { timeline = structuredClone(value) },
+    async getFocus() { return { sessionId: 'session-new' } },
+  }
+  await createPlayNodeController(client, { idFactory: () => 'v-retry' })
+    .createReplySwipe({}, 'qa-context')
+  assert.deepEqual(calls, [['session-old', 0], 'Human prompt'])
+  assert.equal(timeline.nodes[0].adoptedVariantId, 'v-retry')
+  assert.equal(timeline.nodes[1].adoptedVariantId, 'v-context')
+  assert.deepEqual(timeline.head, {
+    sessionId: 'session-new', nodeId: 'qa-human', variantId: 'v-retry',
+  })
 })
