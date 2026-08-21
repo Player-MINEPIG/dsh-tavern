@@ -51,6 +51,7 @@ const css = `
 .dtv-play-chat-status{margin:16px 0;padding:12px 14px;border-radius:12px;background:var(--dsw-alias-bg-layer-2,var(--dsw-specific-block));color:var(--dsw-alias-label-tertiary);font-size:12px;line-height:1.55}.dtv-play-chat-status[data-error=true]{color:var(--dsw-alias-state-error)}
 .dtv-play-chat-running{align-self:flex-start;margin:0;color:var(--dsw-alias-label-tertiary);font-size:12px;line-height:1.5}
 .dtv-play-chat-reasoning{align-self:flex-start;max-width:88%;color:var(--dsw-alias-label-secondary);font-size:13px;line-height:1.6}.dtv-play-chat-reasoning summary{width:max-content;cursor:pointer;user-select:none;color:var(--dsw-alias-label-tertiary);font-size:12px}.dtv-play-chat-reasoning-text{margin-top:8px;padding:10px 12px;border-left:2px solid var(--dsw-alias-border-secondary,var(--dsw-specific-divider));white-space:pre-wrap;overflow-wrap:anywhere}
+.dtv-play-chat-context{align-self:stretch;color:var(--dsw-alias-label-secondary);font-size:12px;line-height:1.55}.dtv-play-chat-context>summary{cursor:pointer;user-select:none;color:var(--dsw-alias-label-tertiary);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.dtv-play-chat-context-meta{margin-left:5px}.dtv-play-chat-context-body{margin-top:8px;padding:10px 12px;border-left:2px solid var(--dsw-alias-border-secondary,var(--dsw-specific-divider));background:var(--dsw-alias-bg-layer-2,var(--dsw-specific-block));border-radius:0 9px 9px 0;overflow-wrap:anywhere}
 .dtv-play-rich>:first-child{margin-top:0}.dtv-play-rich>:last-child{margin-bottom:0}.dtv-play-rich p,.dtv-play-rich ul,.dtv-play-rich ol,.dtv-play-rich blockquote,.dtv-play-rich pre,.dtv-play-rich table{margin:0 0 .85em}.dtv-play-rich ul,.dtv-play-rich ol{padding-left:1.5em}.dtv-play-rich blockquote{padding-left:12px;border-left:3px solid var(--dsw-alias-border-secondary,var(--dsw-specific-divider));color:var(--dsw-alias-label-secondary)}.dtv-play-rich pre{max-width:100%;overflow:auto;padding:11px 12px;border-radius:9px;background:var(--dsw-alias-markdown-code-block,var(--dsw-alias-bg-base));white-space:pre}.dtv-play-rich code{font-family:var(--ds-font-family-code,ui-monospace,monospace);font-size:.92em}.dtv-play-rich :not(pre)>code{padding:.12em .35em;border-radius:5px;background:var(--dsw-alias-markdown-code-inline,var(--dsw-alias-bg-base))}.dtv-play-rich table{display:block;max-width:100%;overflow:auto;border-collapse:collapse}.dtv-play-rich th,.dtv-play-rich td{padding:6px 9px;border:1px solid var(--dsw-alias-border-l2)}.dtv-play-rich img,.dtv-play-rich video{max-width:100%;height:auto}.dtv-play-rich a{color:var(--dsw-alias-state-business-primary);text-decoration:underline}.dtv-play-rich hr{border:0;border-top:1px solid var(--dsw-alias-border-l2)}
 `
 
@@ -243,6 +244,21 @@ function Greeting({ greeting, busy, change, footer = null }) {
   )
 }
 
+function ContextRow({ context }) {
+  const producer = context.producer || unwrapText(uiMessage('play.chat.contextUnknown'))
+  const summary = context.summary || ''
+  return h('details', { className: 'dtv-play-chat-context' },
+    h('summary', { title: uiMessage('play.chat.contextInjection') },
+      uiMessage('play.chat.contextInjection'),
+      h('span', { className: 'dtv-play-chat-context-meta' }, rawText(`· ${producer}${summary === '' ? '' : ` · ${summary}`}`)),
+    ),
+    context.text === '' ? null : h(RichText, {
+      className: 'dtv-play-chat-context-body dtv-play-rich',
+      text: context.text,
+    }),
+  )
+}
+
 function Turn({ turn, ...actionProps }) {
   if (turn.hidden) {
     return h('div', { className: 'dtv-play-chat-row' },
@@ -253,6 +269,7 @@ function Turn({ turn, ...actionProps }) {
   return h('div', { className: 'dtv-play-chat-row' },
     turn.importLast === true ? h('p', { className: 'dtv-play-import-last' }, uiMessage('play.import.lastQa')) : null,
     turn.userText === '' ? null : h(RichText, { className: 'dtv-play-chat-bubble dtv-play-chat-user dtv-play-rich', text: turn.userText }),
+    ...(turn.contexts ?? []).map(context => h(ContextRow, { key: context.id, context })),
     turn.reasoningText === '' || turn.reasoningText == null ? null : h('details', { className: 'dtv-play-chat-reasoning' },
       h('summary', { title: uiMessage('play.chat.reasoning') }, uiMessage('play.chat.reasoning')),
       h('div', { className: 'dtv-play-chat-reasoning-text' }, rawText(turn.reasoningText)),

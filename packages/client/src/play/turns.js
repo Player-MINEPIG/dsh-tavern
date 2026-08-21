@@ -54,9 +54,9 @@ export function appendCompletedTurns(timeline, messageState, sessionId, {
         user = message
         assistant = null
       }
-      // DSH can append model-visible runtime context as another user message
-      // between the real user input and the assistant. It belongs to the same
-      // turn range; the first user message remains the visible prompt.
+      // DSH records model-visible runtime context with role=user and origin=context.
+      // It stays in the authoritative range but the RP renderer uses origin rather
+      // than presenting it as a human message.
     } else if (message.role === 'assistant' && user !== null) {
       assistant = message
     }

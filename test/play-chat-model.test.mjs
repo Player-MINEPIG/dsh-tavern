@@ -72,7 +72,11 @@ test('timeline projection renders only adopted visible QA ranges', () => {
     fork: { messages: [
       { id: 'system', role: 'system', seq: 1, text: 'hidden context' },
       { id: 'user', role: 'user', seq: 2, text: 'Hello' },
-      { id: 'tool', role: 'tool', seq: 3, text: 'tool output' },
+      {
+        id: 'context', role: 'user', seq: 3, text: 'Background child finished',
+        origin: { kind: 'context', producer: 'subagent-settled', form: 'notice', summary: 'Child finished' },
+      },
+      { id: 'tool', role: 'tool', seq: 3.5, text: 'tool output' },
       {
         id: 'assistant', role: 'assistant', seq: 4, text: 'internal reasoningHi',
         content: [
@@ -87,6 +91,11 @@ test('timeline projection renders only adopted visible QA ranges', () => {
     id: 'qa-1',
     hidden: false,
     userText: 'Hello',
+    contexts: [{
+      id: 'context', seq: 3, text: 'Background child finished',
+      producer: 'subagent-settled', form: 'notice', summary: 'Child finished',
+    }],
+    triggerKind: 'user',
     reasoningText: 'internal reasoning',
     assistantText: 'Hi',
     originalAssistantText: 'Hi',
@@ -128,9 +137,36 @@ test('live projection shows the durable user immediately and streams only assist
     id: 'live-10',
     transient: true,
     userText: 'Hello now',
+    contexts: [],
+    triggerKind: 'user',
     reasoningText: 'private reasoning',
     assistantText: 'Streaming answer',
     running: true,
+  }])
+})
+
+test('context-triggered live output stays a folded context turn instead of a user bubble', () => {
+  const live = projectLiveTurns({
+    timeline: { nodes: [] },
+    sessionId: 'root',
+    nodes: [
+      {
+        kind: 'context', seq: 20,
+        content: [{ type: 'text', text: 'Child report body' }],
+        source: { kind: 'subagent-report', form: 'relay' },
+        provenance: { role: 'inject', label: 'subagent-report' },
+        form: 'relay',
+      },
+      { kind: 'assistant', seq: 22, blocks: [{ kind: 'text', text: 'Still waiting.' }] },
+    ],
+  })
+  assert.deepEqual(live, [{
+    id: 'live-20', transient: true, userText: '', triggerKind: 'context',
+    contexts: [{
+      id: 'context-20', seq: 20, text: 'Child report body',
+      producer: 'subagent-report', form: 'relay', summary: null,
+    }],
+    reasoningText: '', assistantText: 'Still waiting.', running: false,
   }])
 })
 

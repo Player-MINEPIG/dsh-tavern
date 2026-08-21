@@ -64,6 +64,24 @@ function renderedMessageText(message) {
   return typeof message?.text === 'string' ? message.text : ''
 }
 
+function messageOriginKind(message) {
+  const value = message?.origin?.kind
+  if (typeof value === 'string' && value !== '') return value
+  return message?.role === 'assistant' ? 'assistant' : message?.role === 'system' ? 'system' : 'user'
+}
+
+function contextProjection(message) {
+  const origin = message?.origin ?? {}
+  return {
+    id: message?.id ?? `context-${message?.seq ?? 'unknown'}`,
+    seq: message?.seq ?? null,
+    text: renderedMessageText(message),
+    producer: origin.producer ?? null,
+    form: origin.form ?? null,
+    summary: origin.summary ?? null,
+  }
+}
+
 export function sessionIsInRpWorkspace(workspace, session) {
   if (workspace?.selected !== true || session == null) return false
   const root = normalizedPath(workspace.rootPath)
@@ -131,12 +149,19 @@ export function projectTimelineQa(timeline, messagesBySession = {}) {
     const within = messages.filter(message => Number.isSafeInteger(message.seq)
       && message.seq >= variant.startEventId
       && message.seq <= variant.endEventId)
-    const user = within.find(message => message.role === 'user') ?? null
+    const trigger = within.find(message => message.role === 'user') ?? null
+    const user = within.find(message => message.role === 'user'
+      && (messageOriginKind(message) === 'user' || messageOriginKind(message) === 'steering')) ?? null
+    const contexts = within
+      .filter(message => message.role === 'user' && messageOriginKind(message) === 'context')
+      .map(contextProjection)
     const assistant = [...within].reverse().find(message => message.role === 'assistant') ?? null
     result.push({
       id: node.id,
       hidden: node.hidden === true,
       userText: renderedMessageText(user),
+      contexts,
+      triggerKind: messageOriginKind(trigger),
       reasoningText: contentReasoning(assistant?.content),
       assistantText: node.displayOverride ?? renderedMessageText(assistant),
       originalAssistantText: renderedMessageText(assistant),
@@ -160,24 +185,44 @@ export function projectLiveTurns({
   const boundary = recordedEndSeq(timeline, sessionId)
   const pending = []
   let turn = null
+  const appendTurn = () => {
+    if (turn !== null) pending.push(turn)
+    turn = null
+  }
+  const createTurn = (node, triggerKind, userText = '') => ({
+    id: `live-${node.seq}`,
+    transient: true,
+    userText,
+    contexts: [],
+    triggerKind,
+    reasoningText: '',
+    assistantText: '',
+    running: false,
+  })
   for (const node of nodes ?? []) {
     if (!Number.isFinite(node?.seq) || node.seq <= boundary) continue
-    if (node.kind === 'user') {
-      if (turn !== null) pending.push(turn)
-      turn = {
-        id: `live-${node.seq}`,
-        transient: true,
-        userText: contentText(node.content),
-        reasoningText: '',
-        assistantText: '',
-        running: false,
+    if (node.kind === 'user' || node.kind === 'steering') {
+      appendTurn()
+      turn = createTurn(node, node.kind, contentText(node.content))
+    } else if (node.kind === 'context') {
+      if (turn === null || turn.assistantText !== '' || turn.reasoningText !== '') {
+        appendTurn()
+        turn = createTurn(node, 'context')
       }
+      turn.contexts.push({
+        id: `context-${node.seq}`,
+        seq: node.seq,
+        text: contentText(node.content),
+        producer: node.provenance?.label ?? node.source?.kind ?? null,
+        form: node.form ?? node.source?.form ?? null,
+        summary: typeof node.source?.summary === 'string' ? node.source.summary : null,
+      })
     } else if (node.kind === 'assistant' && turn !== null) {
       turn.reasoningText = assistantReasoning(node.blocks)
       turn.assistantText = assistantText(node.blocks)
     }
   }
-  if (turn !== null) pending.push(turn)
+  appendTurn()
   if (pending.length === 0) return pending
   const tail = pending[pending.length - 1]
   if (running) {

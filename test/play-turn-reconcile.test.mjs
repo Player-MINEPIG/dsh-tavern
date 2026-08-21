@@ -39,7 +39,7 @@ test('model-visible runtime context stays inside the preceding real user turn', 
     incompleteTurn: false,
     messages: [
       { id: 'user-1', role: 'user', seq: 9, text: '姐我饿了。' },
-      { id: 'runtime-1', role: 'user', seq: 10, text: 'Current runtime context.' },
+      { id: 'runtime-1', role: 'user', seq: 10, text: 'Current runtime context.', origin: { kind: 'context', producer: 'runtime' } },
       { id: 'assistant-1', role: 'assistant', seq: 1421, text: '给你做蛋包饭。' },
       { id: 'user-2', role: 'user', seq: 1428, text: '姐我饿了' },
       { id: 'assistant-2', role: 'assistant', seq: 6497, text: '再给你煮面。' },
@@ -49,6 +49,22 @@ test('model-visible runtime context stays inside the preceding real user turn', 
   assert.deepEqual(result.timeline.nodes.map(node => node.variants[0]), [
     { id: 'variant-session-a-9-1421', sessionId: 'session-a', startEventId: 9, endEventId: 1421 },
     { id: 'variant-session-a-1428-6497', sessionId: 'session-a', startEventId: 1428, endEventId: 6497 },
+  ])
+})
+
+test('context-triggered parent output keeps a pointer range without becoming a human prompt', () => {
+  const result = appendCompletedTurns({ nodes: [] }, {
+    incompleteTurn: false,
+    messages: [
+      { id: 'user-1', role: 'user', seq: 1, text: 'Start', origin: { kind: 'user' } },
+      { id: 'assistant-1', role: 'assistant', seq: 2, text: 'Dispatched' },
+      { id: 'report', role: 'user', seq: 3, text: 'Child report', origin: { kind: 'context', producer: 'subagent-report' } },
+      { id: 'assistant-2', role: 'assistant', seq: 4, text: 'Aggregating' },
+    ],
+  }, 'session-a', { idFactory: ids })
+  assert.deepEqual(result.timeline.nodes.map(node => node.variants[0]), [
+    { id: 'variant-session-a-1-2', sessionId: 'session-a', startEventId: 1, endEventId: 2 },
+    { id: 'variant-session-a-3-4', sessionId: 'session-a', startEventId: 3, endEventId: 4 },
   ])
 })
 
