@@ -6038,6 +6038,29 @@ function Field3({ label, children }) {
 function parseKeywords(value) {
   return value.split(/[,，]/u).map((item) => item.trim()).filter(Boolean);
 }
+function sameKeywords(left, right) {
+  if (left.length !== right.length) return false;
+  return left.every((value, index) => value === right[index]);
+}
+function reconcileKeywordEditorText(current2, keywords2) {
+  const normalized = Array.isArray(keywords2) ? keywords2.filter((value) => typeof value === "string" && value !== "") : [];
+  return sameKeywords(parseKeywords(current2), normalized) ? current2 : normalized.join(", ");
+}
+function KeywordInput({ keywords: keywords2, onChange }) {
+  const [text2, setText] = (0, import_react3.useState)(() => Array.isArray(keywords2) ? keywords2.join(", ") : "");
+  (0, import_react3.useEffect)(() => {
+    setText((current2) => reconcileKeywordEditorText(current2, keywords2));
+  }, [keywords2]);
+  return h3("input", {
+    className: "dwb-input",
+    value: text2,
+    onChange: (event) => {
+      const next = event.target.value;
+      setText(next);
+      onChange(parseKeywords(next));
+    }
+  });
+}
 function embeddedPosition(entry) {
   const value = entry?.extensions?.position;
   if (Number.isInteger(value) && value >= 0 && value <= 7) return value;
@@ -6061,11 +6084,8 @@ function EmbeddedEntryEditor({ entry, index, update, remove }) {
       "div",
       { className: "dwb-entry-body" },
       h3(Field3, { label: uiMessage("world.entry.title") }, h3("input", { className: "dwb-input", value: entry.comment ?? entry.name ?? "", onChange: (event) => patch({ comment: event.target.value }) })),
-      h3(Field3, { label: uiMessage("world.entry.primaryKeys") }, h3("input", { className: "dwb-input", value: (entry.keys ?? []).join(", "), onChange: (event) => patch({ keys: parseKeywords(event.target.value) }) })),
-      h3(Field3, { label: uiMessage("world.entry.secondaryKeys") }, h3("input", { className: "dwb-input", value: secondaryKeys.join(", "), onChange: (event) => {
-        const keys = parseKeywords(event.target.value);
-        patch({ secondary_keys: keys, selective: keys.length > 0 });
-      } })),
+      h3(Field3, { label: uiMessage("world.entry.primaryKeys") }, h3(KeywordInput, { keywords: entry.keys, onChange: (keys) => patch({ keys }) })),
+      h3(Field3, { label: uiMessage("world.entry.secondaryKeys") }, h3(KeywordInput, { keywords: secondaryKeys, onChange: (keys) => patch({ secondary_keys: keys, selective: keys.length > 0 }) })),
       secondaryKeys.length > 0 ? h3(Field3, { label: uiMessage("world.entry.secondaryLogicShort") }, h3(
         "select",
         {
@@ -6159,11 +6179,8 @@ function EntryEditor({ entry, index, update, remove }) {
       "div",
       { className: "dwb-entry-body" },
       h3(Field3, { label: uiMessage("world.entry.title") }, h3("input", { className: "dwb-input", value: entry.comment ?? "", onChange: (event) => patch({ comment: event.target.value }) })),
-      h3(Field3, { label: uiMessage("world.entry.primaryKeys") }, h3("input", { className: "dwb-input", value: (entry.keys ?? []).join(", "), onChange: (event) => patch({ keys: parseKeywords(event.target.value) }) })),
-      h3(Field3, { label: uiMessage("world.entry.secondaryKeys") }, h3("input", { className: "dwb-input", value: secondary.join(", "), onChange: (event) => {
-        const keys = parseKeywords(event.target.value);
-        patch({ secondaryKeys: keys, selective: keys.length > 0 });
-      } })),
+      h3(Field3, { label: uiMessage("world.entry.primaryKeys") }, h3(KeywordInput, { keywords: entry.keys, onChange: (keys) => patch({ keys }) })),
+      h3(Field3, { label: uiMessage("world.entry.secondaryKeys") }, h3(KeywordInput, { keywords: secondary, onChange: (keys) => patch({ secondaryKeys: keys, selective: keys.length > 0 }) })),
       secondary.length > 0 ? h3(Field3, { label: uiMessage("world.entry.secondaryLogicShort") }, h3(
         "select",
         { className: "dwb-select", value: entry.selectiveLogic ?? "and_any", onChange: (event) => patch({ selectiveLogic: event.target.value, selective: true }) },
@@ -6435,7 +6452,7 @@ function WorldBookPanel({ sessionId, close }) {
             h3("a", { className: "dwb-button", href: `${API_V1}/world-books/${encodeURIComponent(document2.id)}/json`, download: "" }, uiMessage("common.exportJson")),
             h3("button", { className: "dwb-button dwb-danger", type: "button", disabled: busy, onClick: remove }, uiMessage("world.deleteStandalone"))
           ),
-          ...entries2.map((entry, index) => h3(EntryEditor, { key: `${String(entry.uid)}-${index}`, entry, index, update: updateEntry, remove: (itemIndex) => {
+          ...entries2.map((entry, index) => h3(EntryEditor, { key: `${String(document2.id)}-${String(entry.uid)}-${index}`, entry, index, update: updateEntry, remove: (itemIndex) => {
             if (window.confirm(unwrapText(uiMessage("world.confirmDeleteEntry")))) {
               setDraft((current2) => ({ ...current2, entries: current2.entries.filter((_item, candidate) => candidate !== itemIndex) }));
               setDirty(true);
@@ -6503,7 +6520,7 @@ function WorldBookPanel({ sessionId, close }) {
             } }, uiMessage("world.addEmbeddedEntry")),
             h3("button", { className: "dwb-button dwb-primary", type: "button", disabled: busy || !embeddedDirty, onClick: saveEmbedded }, embeddedDirty ? uiMessage("world.saveEmbedded") : uiMessage("world.embeddedSaved"))
           ),
-          ...embeddedEntries.map((entry, index) => h3(EmbeddedEntryEditor, { key: `${String(entry.id)}-${index}`, entry, index, update: (itemIndex, value) => {
+          ...embeddedEntries.map((entry, index) => h3(EmbeddedEntryEditor, { key: `${String(embeddedCharacterId)}-${String(entry.id)}-${index}`, entry, index, update: (itemIndex, value) => {
             setEmbeddedDraft((current2) => {
               const next = structuredClone(current2);
               next.entries[itemIndex] = { ...next.entries[itemIndex], ...value };
