@@ -12822,7 +12822,6 @@ function installPlaySlotOccupancy(ctx, playClient, { playthroughController } = {
     chatGeneration += 1;
     const generation = chatGeneration;
     pendingChatSignature = signature;
-    if (chatBinding !== null && chatBinding.signature !== signature) dropChatEntry();
     const sessionId = session.id;
     loadCurrentPlaythrough(playClient, session).then((match) => {
       if (generation === chatGeneration) pendingChatSignature = null;
@@ -12832,7 +12831,7 @@ function installPlaySlotOccupancy(ctx, playClient, { playthroughController } = {
         dropChatEntry();
         return;
       }
-      const samePlaythrough = chatBinding?.signature === signature && chatBinding.playthrough?.path === match.playthrough.path;
+      const samePlaythrough = chatBinding?.playthrough?.path === match.playthrough.path;
       if (!samePlaythrough) dropChatEntry();
       chatBinding = { signature, sessionId, playthrough: match.playthrough };
       syncChatEntries();
