@@ -2,6 +2,7 @@ import { updateTimeline } from './mutations.js'
 import {
   activeVariantEnd,
   timelineHead,
+  timelineWithHead,
 } from '../../../play/src/timeline-tree.js'
 
 function recordedEndSeq(timeline, sessionId) {
@@ -73,11 +74,10 @@ export function appendCompletedTurns(timeline, messageState, sessionId, {
   const tail = added.at(-1)
   const variant = tail.variants[0]
   return {
-    timeline: {
+    timeline: timelineWithHead({
       ...timeline,
       nodes: [...timeline.nodes, ...added],
-      head: { sessionId, nodeId: tail.id, variantId: variant.id },
-    },
+    }, { sessionId, nodeId: tail.id, variantId: variant.id }),
     added,
   }
 }

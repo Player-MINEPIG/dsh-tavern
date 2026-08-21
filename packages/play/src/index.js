@@ -28,6 +28,7 @@ export {
   isTreeTimeline,
   legacyTimelineHead,
   timelineHead,
+  timelineHeadForVariant,
   timelineWithHead,
 } from './timeline-tree.js'
 export {

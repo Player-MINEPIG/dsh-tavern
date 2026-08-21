@@ -7775,6 +7775,87 @@ var import_react9 = require("react");
 function adoptedVariant(node) {
   return node?.variants?.find((variant) => variant.id === node.adoptedVariantId) ?? null;
 }
+var EXTENSION_KEY = "pmpDshTavern";
+var BRANCH_HEADS_KEY = "branchHeads";
+function variantEntries(timeline) {
+  const entries2 = /* @__PURE__ */ new Map();
+  for (const node of timeline?.nodes ?? []) {
+    for (const variant of node.variants ?? []) {
+      entries2.set(variant.id, { node, variant });
+    }
+  }
+  return entries2;
+}
+function storedBranchHeads(timeline, variants) {
+  const result = /* @__PURE__ */ new Map();
+  const values = timeline?.ext?.[EXTENSION_KEY]?.[BRANCH_HEADS_KEY];
+  if (!Array.isArray(values)) return result;
+  for (const value of values) {
+    if (value === null || typeof value !== "object" || Array.isArray(value)) continue;
+    const branch = variants.get(value.branchVariantId);
+    const head = variants.get(value.variantId);
+    if (branch === void 0 || head === void 0 || head.node.id !== value.nodeId || head.variant.sessionId !== value.sessionId) continue;
+    result.set(value.branchVariantId, {
+      sessionId: value.sessionId,
+      nodeId: value.nodeId,
+      variantId: value.variantId
+    });
+  }
+  return result;
+}
+function headPathContains(timeline, head, variantId) {
+  try {
+    return activeTimelineEntries({ ...timeline, head }).some((entry) => entry.variant.id === variantId);
+  } catch {
+    return false;
+  }
+}
+function uniqueLegacyBranchHead(timeline, variantId, variants) {
+  let currentId = variantId;
+  const visited = /* @__PURE__ */ new Set();
+  while (!visited.has(currentId)) {
+    visited.add(currentId);
+    const children = (timeline?.nodes ?? []).filter((node) => node.parentVariantId === currentId);
+    if (children.length !== 1) break;
+    const next = adoptedVariant(children[0]);
+    if (next === null) break;
+    currentId = next.id;
+  }
+  const entry = variants.get(currentId);
+  return entry === void 0 ? null : {
+    sessionId: entry.variant.sessionId,
+    nodeId: entry.node.id,
+    variantId: entry.variant.id
+  };
+}
+function withRememberedActiveHead(timeline) {
+  const head = timelineHead(timeline);
+  if (head === null) return timeline;
+  let active;
+  try {
+    active = activeTimelineEntries(timeline);
+  } catch {
+    return timeline;
+  }
+  if (active.length === 0) return timeline;
+  const variants = variantEntries(timeline);
+  const remembered = storedBranchHeads(timeline, variants);
+  for (const { variant } of active) remembered.set(variant.id, { ...head });
+  const branchHeads = [...remembered.entries()].map(([branchVariantId, value]) => ({
+    branchVariantId,
+    ...value
+  }));
+  return {
+    ...timeline,
+    ext: {
+      ...timeline.ext ?? {},
+      [EXTENSION_KEY]: {
+        ...timeline.ext?.[EXTENSION_KEY] ?? {},
+        [BRANCH_HEADS_KEY]: branchHeads
+      }
+    }
+  };
+}
 function isTreeTimeline(timeline) {
   return timeline?.head !== void 0 || (timeline?.nodes ?? []).some((node) => Object.hasOwn(node, "parentVariantId"));
 }
@@ -7825,11 +7906,22 @@ function activeTimelineEntries(timeline) {
   return reversed.reverse();
 }
 function timelineWithHead(timeline, head) {
+  const remembered = withRememberedActiveHead(timeline);
   if (head === null) {
-    const { head: _discarded, ...rest } = timeline;
+    const { head: _discarded, ...rest } = remembered;
     return rest;
   }
-  return { ...timeline, head };
+  return withRememberedActiveHead({ ...remembered, head });
+}
+function timelineHeadForVariant(timeline, variantId) {
+  const variants = variantEntries(timeline);
+  const target = variants.get(variantId);
+  if (target === void 0) return null;
+  const current2 = timelineHead(timeline);
+  if (current2 !== null && headPathContains(timeline, current2, variantId)) return current2;
+  const stored = storedBranchHeads(timeline, variants).get(variantId);
+  if (stored !== void 0 && headPathContains(timeline, stored, variantId)) return stored;
+  return uniqueLegacyBranchHead(timeline, variantId, variants);
 }
 function activeVariantEnd(timeline, sessionId) {
   const head = timelineHead(timeline);
@@ -10976,19 +11068,24 @@ function createPlayNodeController(client, {
       if (typeof variantId !== "string" || variantId === "") throw new TypeError("variantId is required");
       return schedule(async () => {
         const next = await updateTimeline(client, playthrough, (timeline) => {
-          const { index, node: node2 } = nodeById2(timeline, nodeId);
-          const variant2 = node2.variants.find((item) => item.id === variantId);
-          if (variant2 === void 0) throw new TypeError(`Unknown variant ${variantId}`);
+          const { index, node } = nodeById2(timeline, nodeId);
+          const variant = node.variants.find((item) => item.id === variantId);
+          if (variant === void 0) throw new TypeError(`Unknown variant ${variantId}`);
+          const head = timelineHeadForVariant(timeline, variantId) ?? {
+            sessionId: variant.sessionId,
+            nodeId: node.id,
+            variantId: variant.id
+          };
           return timelineWithHead(
-            replaceNode(timeline, index, { ...node2, adoptedVariantId: variantId }),
-            { sessionId: variant2.sessionId, nodeId: node2.id, variantId: variant2.id }
+            replaceNode(timeline, index, { ...node, adoptedVariantId: variantId }),
+            head
           );
         });
-        const { node } = nodeById2(next, nodeId);
-        const variant = node.variants.find((item) => item.id === variantId);
         const focus = await client.getFocus(playthrough);
-        if (focus.sessionId !== variant.sessionId) throw new Error("Saved variant does not match derived focus");
-        return { timeline: next, sessionId: variant.sessionId };
+        if (focus.sessionId !== next.head?.sessionId || focus.nodeId !== next.head?.nodeId || focus.variantId !== next.head?.variantId) {
+          throw new Error("Saved variant does not match derived focus");
+        }
+        return { timeline: next, sessionId: focus.sessionId };
       });
     },
     createReplySwipe(playthrough, nodeId) {
@@ -11360,11 +11457,10 @@ function appendCompletedTurns(timeline, messageState, sessionId, {
   const tail = added.at(-1);
   const variant = tail.variants[0];
   return {
-    timeline: {
+    timeline: timelineWithHead({
       ...timeline,
-      nodes: [...timeline.nodes, ...added],
-      head: { sessionId, nodeId: tail.id, variantId: variant.id }
-    },
+      nodes: [...timeline.nodes, ...added]
+    }, { sessionId, nodeId: tail.id, variantId: variant.id }),
     added
   };
 }

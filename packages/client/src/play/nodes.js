@@ -5,6 +5,7 @@ import {
 } from './fork.js'
 import {
   activeTimelineEntries,
+  timelineHeadForVariant,
   timelineWithHead,
 } from '../../../play/src/timeline-tree.js'
 
@@ -99,16 +100,23 @@ export function createPlayNodeController(client, {
           const { index, node } = nodeById(timeline, nodeId)
           const variant = node.variants.find(item => item.id === variantId)
           if (variant === undefined) throw new TypeError(`Unknown variant ${variantId}`)
+          const head = timelineHeadForVariant(timeline, variantId) ?? {
+            sessionId: variant.sessionId,
+            nodeId: node.id,
+            variantId: variant.id,
+          }
           return timelineWithHead(
             replaceNode(timeline, index, { ...node, adoptedVariantId: variantId }),
-            { sessionId: variant.sessionId, nodeId: node.id, variantId: variant.id },
+            head,
           )
         })
-        const { node } = nodeById(next, nodeId)
-        const variant = node.variants.find(item => item.id === variantId)
         const focus = await client.getFocus(playthrough)
-        if (focus.sessionId !== variant.sessionId) throw new Error('Saved variant does not match derived focus')
-        return { timeline: next, sessionId: variant.sessionId }
+        if (focus.sessionId !== next.head?.sessionId
+          || focus.nodeId !== next.head?.nodeId
+          || focus.variantId !== next.head?.variantId) {
+          throw new Error('Saved variant does not match derived focus')
+        }
+        return { timeline: next, sessionId: focus.sessionId }
       })
     },
     createReplySwipe(playthrough, nodeId) {

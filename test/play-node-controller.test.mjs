@@ -54,8 +54,7 @@ test('adopt writes the pointer, verifies focus, and returns navigation only afte
     async putTimeline(_playthrough, next) { calls.push('write'); timeline = structuredClone(next) },
     async getFocus() {
       calls.push('focus')
-      const node = timeline.nodes[0]
-      return { sessionId: node.variants.find(item => item.id === node.adoptedVariantId).sessionId }
+      return { playthroughId: 'pt', ...timeline.head }
     },
   }
   const result = await createPlayNodeController(client).adoptVariant({}, 'qa-1', 'v-2')
@@ -79,6 +78,54 @@ test('failed writes never request focus', async () => {
   })
   await assert.rejects(controller.adoptVariant({}, 'qa-1', 'v-2'), /disk full/)
   assert.equal(focusReads, 0)
+})
+
+test('adopting an ancestor swipe restores its remembered descendant branch head', async () => {
+  let timeline = {
+    nodes: [
+      {
+        id: 'root', kind: 'qa', hidden: false, displayOverride: null,
+        parentVariantId: null, adoptedVariantId: 'root-a',
+        variants: [
+          { id: 'root-a', sessionId: 'session-a', startEventId: 1, endEventId: 2 },
+          { id: 'root-b', sessionId: 'session-b', startEventId: 1, endEventId: 2 },
+        ],
+      },
+      {
+        id: 'abandoned-a', kind: 'qa', hidden: false, displayOverride: null,
+        parentVariantId: 'root-a', adoptedVariantId: 'abandoned-a-v',
+        variants: [{ id: 'abandoned-a-v', sessionId: 'session-old', startEventId: 3, endEventId: 4 }],
+      },
+      {
+        id: 'current-a', kind: 'qa', hidden: false, displayOverride: null,
+        parentVariantId: 'root-a', adoptedVariantId: 'current-a-v',
+        variants: [{ id: 'current-a-v', sessionId: 'session-current', startEventId: 3, endEventId: 4 }],
+      },
+      {
+        id: 'leaf-a', kind: 'qa', hidden: false, displayOverride: null,
+        parentVariantId: 'current-a-v', adoptedVariantId: 'leaf-a-v',
+        variants: [{ id: 'leaf-a-v', sessionId: 'session-current', startEventId: 5, endEventId: 6 }],
+      },
+    ],
+    head: { sessionId: 'session-current', nodeId: 'leaf-a', variantId: 'leaf-a-v' },
+  }
+  const client = {
+    async getTimeline() { return structuredClone(timeline) },
+    async putTimeline(_playthrough, next) { timeline = structuredClone(next) },
+    async getFocus() { return { playthroughId: 'pt', ...timeline.head } },
+  }
+  const controller = createPlayNodeController(client)
+
+  const switchedAway = await controller.adoptVariant({ id: 'pt' }, 'root', 'root-b')
+  assert.equal(switchedAway.sessionId, 'session-b')
+  assert.deepEqual(timeline.head, { sessionId: 'session-b', nodeId: 'root', variantId: 'root-b' })
+
+  const restored = await controller.adoptVariant({ id: 'pt' }, 'root', 'root-a')
+  assert.equal(restored.sessionId, 'session-current')
+  assert.deepEqual(timeline.head, {
+    sessionId: 'session-current', nodeId: 'leaf-a', variantId: 'leaf-a-v',
+  })
+  assert.equal(timeline.nodes[0].adoptedVariantId, 'root-a')
 })
 
 test('rollback reuses DSH branch validation but keeps every node in the same playthrough', async () => {
