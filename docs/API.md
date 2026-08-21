@@ -93,7 +93,7 @@ durable history。当前已实现的基础语义是：首次 assembly 必须按�
 
 | 当你想 | 路径 |
 | --- | --- |
-| 管预设、原生正则、看当前装配、导入/选中 | `/presets`、`/presets/:id/regex-scripts`、`/active`、`/import`、`/select` |
+| 管预设、导出 ST JSON、原生正则、看当前装配、导入/选中 | `/presets`、`/presets/:id/export`、`/presets/:id/regex-scripts`、`/active`、`/import`、`/select` |
 | 管角色卡、原生正则、绑定、导出 json/png、内嵌书 | `/characters`、`/characters/:id/regex-scripts`、`/character-selection` |
 | 管独立世界书和绑定 | `/world-books`、`/world-book-selection` |
 | 管用户、用户-世界书关系 | `/users`、`/user-selection` |
@@ -101,6 +101,17 @@ durable history。当前已实现的基础语义是：首次 assembly 必须按�
 | RP 开关与告警、rp:policy 正文 | `/rp-mode`、`/rp-alert`、`/rp-policy` |
 | 看 Trace | `/traces` |
 | 配置模板、按当前绑定开干净会话 | `/session-templates`、`/session-configurations/preview`、`/apply` |
+
+### 预设导出
+
+`GET /presets/:id/export` 返回 `application/json` 附件。服务端以保存的 ST 原文为底稿，保留未知顶层字段、prompt 字段、其它 `prompt_order` 和扩展；同时用 Tavern 当前规范化状态覆盖名称、采样参数、prompt 内容/顺序/开关以及当前 Chat Completion order。因此导出反映当前编辑结果，不等同于直接下载导入时的 `source.raw`。
+
+导出的正文是可重新传给 `POST /import` 或导入 SillyTavern 的 Chat Completion preset JSON。Tavern 专属的 `systemPromptMode` 没有对应 ST 字段，不写入导出文件；资源携带的原生正则仍位于其原有 ST 路径。该 GET 不改变选择、session、资源或 operation log。
+
+| 方法 | 路径 | 请求 | 成功响应 |
+| --- | --- | --- | --- |
+| GET | `/presets/:id/export` | 无 | ST JSON 附件；`Content-Disposition: attachment` |
+
 
 ### 资源携带的原生 ST 正则
 

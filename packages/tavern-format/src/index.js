@@ -293,6 +293,80 @@ function resolveMacro(body, variables, context) {
   return ''
 }
 
+function setExportedValue(target, key, value) {
+  if (value === undefined) delete target[key]
+  else target[key] = clone(value)
+}
+
+function exportedPrompt(prompt, index) {
+  const raw = isRecord(prompt?.st) ? clone(prompt.st) : {}
+  raw.identifier = promptIdentifier(prompt, index)
+  raw.name = normalizeName(prompt?.name, `Prompt ${index + 1}`)
+  raw.role = normalizeRole(prompt?.role)
+  raw.content = string(prompt?.content)
+  raw.enabled = prompt?.enabled === true
+  raw.marker = prompt?.marker === true
+  raw.system_prompt = prompt?.systemPrompt === true
+  setExportedValue(raw, 'injection_position', finite(prompt?.injectionPosition))
+  setExportedValue(raw, 'injection_depth', finite(prompt?.injectionDepth))
+  return raw
+}
+
+function exportedOrder(raw, preset, prompts) {
+  const orders = Array.isArray(raw.prompt_order)
+    ? raw.prompt_order.filter(isRecord).map(clone)
+    : []
+  const sourceOrderId = preset.source?.selectedOrderCharacterId
+  const selectedOrderId = sourceOrderId === undefined
+    ? CHAT_COMPLETION_ORDER_ID
+    : sourceOrderId
+  const index = orders.findIndex(order => String(order.character_id) === String(selectedOrderId))
+  const order = index === -1 ? { character_id: selectedOrderId } : orders[index]
+  order.order = prompts.map(prompt => ({
+    identifier: prompt.identifier,
+    enabled: prompt.enabled === true,
+  }))
+  if (index === -1) orders.push(order)
+  else orders[index] = order
+  return orders
+}
+
+/**
+ * Serialize the current normalized preset as an ST Chat Completion preset.
+ * Unknown source fields are retained, while editable canonical fields always
+ * reflect the current Tavern document rather than the import-time snapshot.
+ */
+export function exportSillyTavernPreset(preset, options = {}) {
+  if (!isRecord(preset) || preset.schemaVersion !== SCHEMA_VERSION) {
+    throw new TypeError('Unsupported preset document')
+  }
+  const raw = isRecord(preset.source?.raw) ? clone(preset.source.raw) : {}
+  const sampling = isRecord(preset.sampling) ? preset.sampling : {}
+  if (isRecord(sampling.st)) {
+    for (const [key, value] of Object.entries(sampling.st)) raw[key] = clone(value)
+  }
+
+  raw.name = normalizeName(preset.name, 'Exported preset')
+  setExportedValue(raw, 'temperature', finite(sampling.temperature))
+  setExportedValue(raw, 'openai_max_tokens', positiveInteger(sampling.maxTokens))
+  delete raw.max_tokens
+  setExportedValue(raw, 'reasoning_effort', ['low', 'medium', 'high', 'xhigh'].includes(sampling.reasoningEffort)
+    ? sampling.reasoningEffort
+    : undefined)
+  setExportedValue(raw, 'stop', Array.isArray(sampling.stop)
+    ? sampling.stop.filter(item => typeof item === 'string' && item !== '').slice(0, 16)
+    : undefined)
+
+  const prompts = Array.isArray(preset.prompts)
+    ? preset.prompts.map(exportedPrompt)
+    : []
+  raw.prompts = prompts
+  raw.prompt_order = exportedOrder(raw, preset, prompts)
+
+  const space = options.pretty === false ? undefined : 2
+  return `${JSON.stringify(raw, null, space)}${space === undefined ? '' : '\n'}`
+}
+
 export function renderSillyTavernMacros(content, context = {}, variables = new Map()) {
   let rendered = string(content)
   for (let pass = 0; pass < 5 && /\{\{[\s\S]*?\}\}/.test(rendered); pass += 1) {

@@ -63,6 +63,18 @@ test('HTTP API imports, selects, reads, updates, and creates presets', async () 
       body: { name: 'Created API preset' },
     })
     assert.equal(created.status, 201)
+    const exported = await invoke(handler, {
+      url: `/pmp-dsh-tavern/api/v1/presets/${id}/export`,
+    })
+    assert.equal(exported.status, 200)
+    assert.equal(exported.headers['content-type'], 'application/json; charset=utf-8')
+    assert.match(exported.headers['content-disposition'], /Imported%20API%20preset\.json/)
+    assert.equal(exported.body.name, 'Imported API preset')
+    assert.equal(exported.body.prompts[0].content, 'API marker')
+    assert.deepEqual(exported.body.prompt_order[0].order, [
+      { identifier: 'main', enabled: true },
+    ])
+
     assert.equal(created.body.preset.source.format, 'dsh-tavern')
     assert.equal(changes, 3)
   } finally {

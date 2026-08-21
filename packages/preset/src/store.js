@@ -9,6 +9,7 @@ import {
 import { join, resolve } from 'node:path'
 import {
   createBlankPreset,
+  exportSillyTavernPreset,
   editPreset,
   parseSillyTavernPreset,
   readNativeRegexScripts,
@@ -40,6 +41,12 @@ function atomicJson(path, value) {
     try { unlinkSync(temporary) } catch {}
     throw error
   }
+}
+function exportFileName(value) {
+  const cleaned = typeof value === 'string'
+    ? value.replace(/[\u0000-\u001f\u007f]/g, '').trim().slice(0, 250)
+    : ''
+  return `${cleaned === '' ? 'preset' : cleaned}.json`
 }
 
 function summary(preset) {
@@ -109,6 +116,14 @@ export class PresetStore {
 
   update(id, patch, options = {}) {
     return this.save(editPreset(this.get(id), patch, options))
+  }
+
+  json(id) {
+    const preset = this.get(id)
+    return {
+      text: exportSillyTavernPreset(preset),
+      fileName: exportFileName(preset.name),
+    }
   }
 
   regexScripts(id) {

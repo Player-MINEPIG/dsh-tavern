@@ -1,7 +1,7 @@
 import { API_V1, escapeRegExp } from '../../identity.js'
 
 const API_ROOT = API_V1
-const PRESET_ID_ROUTE = new RegExp(`^${escapeRegExp(API_V1)}/presets/([^/]+)(?:/(regex-scripts))?$`)
+const PRESET_ID_ROUTE = new RegExp(`^${escapeRegExp(API_V1)}/presets/([^/]+)(?:/(export|regex-scripts))?$`)
 const MAX_BODY_BYTES = 2 * 1024 * 1024
 
 function sendJson(res, status, payload) {
@@ -9,6 +9,25 @@ function sendJson(res, status, payload) {
   res.statusCode = status
   res.setHeader('Content-Type', 'application/json; charset=utf-8')
   res.setHeader('Content-Length', Buffer.byteLength(body))
+  res.end(body)
+}
+
+function attachment(value) {
+  return `attachment; filename*=UTF-8''${encodeURIComponent(value).replaceAll("'", '%27')}`
+}
+
+function artifactFileName(value) {
+  if (typeof value !== 'string') return 'preset.json'
+  const cleaned = value.replace(/[\u0000-\u001f\u007f]/g, '').trim().slice(0, 255)
+  return cleaned === '' ? 'preset.json' : cleaned
+}
+
+function sendArtifact(res, status, payload) {
+  const body = Buffer.from(payload.body, 'utf8')
+  res.statusCode = status
+  res.setHeader('Content-Type', 'application/json; charset=utf-8')
+  res.setHeader('Content-Length', body.byteLength)
+  res.setHeader('Content-Disposition', attachment(artifactFileName(payload.fileName)))
   res.end(body)
 }
 
@@ -86,6 +105,11 @@ export function createApiHandler(
 
       if (method === 'GET' && id !== null && route.resource === undefined) {
         return sendJson(res, 200, { ok: true, preset: store.get(id) })
+      }
+
+      if (method === 'GET' && id !== null && route.resource === 'export') {
+        const exported = store.json(id)
+        return sendArtifact(res, 200, { body: exported.text, fileName: exported.fileName })
       }
 
       if (method === 'GET' && id !== null && route.resource === 'regex-scripts') {
