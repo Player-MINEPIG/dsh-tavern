@@ -15,8 +15,26 @@ function timelineFixture() {
   }
 }
 
+function twoTurnTimelineFixture() {
+  return {
+    nodes: [
+      timelineFixture().nodes[0],
+      {
+        id: 'qa-2',
+        kind: 'qa',
+        hidden: false,
+        displayOverride: null,
+        parentVariantId: 'v-1',
+        adoptedVariantId: 'v-2',
+        variants: [{ id: 'v-2', sessionId: 'session-old', startEventId: 4, endEventId: 6 }],
+      },
+    ],
+    head: { sessionId: 'session-old', nodeId: 'qa-2', variantId: 'v-2' },
+  }
+}
+
 test('reply swipe branches, resends the real user text, waits, then atomically adopts', async () => {
-  let timeline = timelineFixture()
+  let timeline = twoTurnTimelineFixture()
   let polls = 0
   const calls = []
   const client = {
@@ -27,17 +45,19 @@ test('reply swipe branches, resends the real user text, waits, then atomically a
         return {
           incompleteTurn: false,
           messages: [
-            { role: 'user', seq: 1, text: 'Original user prompt' },
-            { role: 'assistant', seq: 3, text: 'Old answer' },
+            { role: 'user', seq: 1, text: 'Earlier user prompt' },
+            { role: 'assistant', seq: 3, text: 'Earlier answer' },
+            { role: 'user', seq: 4, text: 'Original user prompt' },
+            { role: 'assistant', seq: 6, text: 'Old answer' },
           ],
         }
       }
       polls += 1
       return polls === 1
-        ? { incompleteTurn: true, messages: [{ role: 'user', seq: 1, text: 'Original user prompt' }] }
+        ? { incompleteTurn: true, messages: [{ role: 'user', seq: 4, text: 'Original user prompt' }] }
         : { incompleteTurn: false, messages: [
-          { role: 'user', seq: 1, text: 'Original user prompt' },
-          { role: 'assistant', seq: 4, text: 'New answer' },
+          { role: 'user', seq: 4, text: 'Original user prompt' },
+          { role: 'assistant', seq: 7, text: 'New answer' },
         ] }
     },
     async postBranch(sessionId, atEventId) {
@@ -56,23 +76,23 @@ test('reply swipe branches, resends the real user text, waits, then atomically a
     maxPolls: 3,
     idFactory: () => 'variant-new',
   })
-  const result = await controller.createReplySwipe({ path: 'timeline.json' }, 'qa-1')
+  const result = await controller.createReplySwipe({ path: 'timeline.json' }, 'qa-2')
 
   assert.equal(result.sessionId, 'session-new')
-  assert.equal(timeline.nodes[0].adoptedVariantId, 'variant-new')
+  assert.equal(timeline.nodes[1].adoptedVariantId, 'variant-new')
   assert.deepEqual(timeline.head, {
-    sessionId: 'session-new', nodeId: 'qa-1', variantId: 'variant-new',
+    sessionId: 'session-new', nodeId: 'qa-2', variantId: 'variant-new',
   })
-  assert.deepEqual(timeline.nodes[0].variants[1], {
+  assert.deepEqual(timeline.nodes[1].variants[1], {
     id: 'variant-new',
     sessionId: 'session-new',
-    startEventId: 1,
-    endEventId: 4,
+    startEventId: 4,
+    endEventId: 7,
   })
   assert.deepEqual(calls, [
     'timeline',
     'messages:session-old',
-    'branch:session-old:0',
+    'branch:session-old:3',
     'prompt:session-new:Original user prompt',
     'messages:session-new',
     'delay',
@@ -84,13 +104,13 @@ test('reply swipe branches, resends the real user text, waits, then atomically a
 })
 
 test('branch 409 and wait timeout leave timeline metadata untouched', async () => {
-  const original = timelineFixture()
+  const original = twoTurnTimelineFixture()
   let writes = 0
   const common = {
     async getTimeline() { return structuredClone(original) },
     async getMessages(sessionId) {
       return sessionId === 'session-old'
-        ? { incompleteTurn: false, messages: [{ role: 'user', seq: 1, text: 'Prompt' }] }
+        ? { incompleteTurn: false, messages: [{ role: 'user', seq: 4, text: 'Prompt' }] }
         : { incompleteTurn: false, messages: [] }
     },
     async postUserMessage() { return { accepted: true } },
@@ -100,7 +120,7 @@ test('branch 409 and wait timeout leave timeline metadata untouched', async () =
     createPlayNodeController({
       ...common,
       async postBranch() { const error = new Error('open turn'); error.status = 409; throw error },
-    }).createReplySwipe({}, 'qa-1'),
+    }).createReplySwipe({}, 'qa-2'),
     /open turn/,
   )
   assert.equal(writes, 0)
@@ -109,7 +129,7 @@ test('branch 409 and wait timeout leave timeline metadata untouched', async () =
     createPlayNodeController({
       ...common,
       async postBranch() { return { sessionId: 'session-new' } },
-    }, { delay: async () => {}, maxPolls: 2 }).createReplySwipe({}, 'qa-1'),
+    }, { delay: async () => {}, maxPolls: 2 }).createReplySwipe({}, 'qa-2'),
     /Timed out/,
   )
   assert.equal(writes, 0)
@@ -168,14 +188,17 @@ test('retrying a context output swipes the nearest preceding real user turn', as
         { role: 'assistant', seq: 4, text: 'Final' },
       ] }
     },
-    async postBranch(sessionId, eventId) { calls.push([sessionId, eventId]); return { sessionId: 'session-new' } },
+    async postSession(sessionId, importContextRef) {
+      calls.push(['session', sessionId, importContextRef])
+      return { sessionId: 'session-new' }
+    },
     async postUserMessage(_sessionId, text) { calls.push(text) },
     async putTimeline(_playthrough, value) { timeline = structuredClone(value) },
     async getFocus() { return { sessionId: 'session-new' } },
   }
   await createPlayNodeController(client, { idFactory: () => 'v-retry' })
     .createReplySwipe({}, 'qa-context')
-  assert.deepEqual(calls, [['session-old', 0], 'Human prompt'])
+  assert.deepEqual(calls, [['session', 'session-old', undefined], 'Human prompt'])
   assert.equal(timeline.nodes[0].adoptedVariantId, 'v-retry')
   assert.equal(timeline.nodes[1].adoptedVariantId, 'v-context')
   assert.deepEqual(timeline.head, {

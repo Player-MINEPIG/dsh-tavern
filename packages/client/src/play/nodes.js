@@ -40,10 +40,21 @@ function completedPairAfter(messageState, eventId) {
   const messages = (messageState?.messages ?? [])
     .filter(message => Number.isSafeInteger(message.seq) && message.seq > eventId)
     .sort((left, right) => left.seq - right.seq)
-  const user = messages.find(message => message.role === 'user')
+  const user = messages.find(message => message.role === 'user'
+    && (messageOriginKind(message) === 'user' || messageOriginKind(message) === 'steering'))
   if (user === undefined) return null
   const assistant = [...messages].reverse().find(message => message.role === 'assistant' && message.seq > user.seq)
   return assistant === undefined ? null : { user, assistant }
+}
+
+async function createRootSwipeSession(client, sourceSessionId) {
+  const binding = typeof client.getImportContextBinding === 'function'
+    ? await client.getImportContextBinding(sourceSessionId)
+    : null
+  const importContextRef = typeof binding?.path === 'string' && binding.path !== ''
+    ? { path: binding.path }
+    : undefined
+  return client.postSession(sourceSessionId, importContextRef)
 }
 
 export function createPlayNodeController(client, {
@@ -107,6 +118,7 @@ export function createPlayNodeController(client, {
         const requestedIndex = entries.findIndex(entry => entry.node.id === nodeId)
         if (requestedIndex < 0) throw new TypeError(`Unknown active timeline node ${nodeId}`)
         let sourceNode = null
+        let sourceIndex = -1
         let adopted = null
         let source = null
         let user
@@ -119,6 +131,7 @@ export function createPlayNodeController(client, {
             && message.seq <= candidate.variant.endEventId)
           if (reusable !== undefined && typeof reusable.text === 'string' && reusable.text !== '') {
             sourceNode = candidate.node
+            sourceIndex = index
             adopted = candidate.variant
             source = messages
             user = reusable
@@ -129,8 +142,11 @@ export function createPlayNodeController(client, {
           || user === undefined || typeof user.text !== 'string' || user.text === '') {
           throw new TypeError('Active branch has no reusable user message')
         }
-        const forkEventId = Math.max(0, adopted.startEventId - 1)
-        const branch = await client.postBranch(adopted.sessionId, forkEventId)
+        const parent = sourceIndex > 0 ? entries[sourceIndex - 1] : null
+        const forkEventId = parent?.variant.endEventId ?? -1
+        const branch = parent === null
+          ? await createRootSwipeSession(client, adopted.sessionId)
+          : await client.postBranch(adopted.sessionId, forkEventId)
         const newSessionId = branch?.sessionId
         if (typeof newSessionId !== 'string' || newSessionId === '') {
           throw new TypeError('Branch response has no sessionId')

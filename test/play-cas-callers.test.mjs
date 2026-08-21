@@ -92,10 +92,11 @@ test('node CAS replay applies local intent to fresh timeline and preserves unrel
   assert.equal(saved.nodes.find(item => item.id === 'qa-2').id, 'qa-2')
 })
 
-test('swipe CAS replay keeps branch and prompt side effects single and appends variant once', async () => {
+test('first-QA swipe creates one clean session, preserves import context and appends variant once', async () => {
   let value = timeline()
   let updateAttempts = 0
   let branches = 0
+  let sessions = 0
   let prompts = 0
   const client = {
     async getTimeline() { return structuredClone(value) },
@@ -103,7 +104,14 @@ test('swipe CAS replay keeps branch and prompt side effects single and appends v
       if (sessionId === 'session-a') return { incompleteTurn: false, messages: [{ role: 'user', seq: 1, text: '原问题' }, { role: 'assistant', seq: 3, text: '旧回复' }] }
       return { incompleteTurn: false, messages: [{ role: 'user', seq: 1, text: '原问题' }, { role: 'assistant', seq: 4, text: '新回复' }] }
     },
-    async postBranch() { branches += 1; return { sessionId: 'session-new' } },
+    async getImportContextBinding() { return { path: 'character-a/pt-a/import-context.json' } },
+    async postSession(sourceSessionId, importContextRef) {
+      sessions += 1
+      assert.equal(sourceSessionId, 'session-a')
+      assert.deepEqual(importContextRef, { path: 'character-a/pt-a/import-context.json' })
+      return { sessionId: 'session-new' }
+    },
+    async postBranch() { branches += 1; return { sessionId: 'wrong' } },
     async postUserMessage() { prompts += 1 },
     async updateTimeline(_playthrough, mutator) {
       updateAttempts += 1
@@ -115,10 +123,60 @@ test('swipe CAS replay keeps branch and prompt side effects single and appends v
   }
   const result = await createPlayNodeController(client, { idFactory: () => 'variant-new' }).createReplySwipe(playthrough, 'qa-1')
   assert.equal(updateAttempts, 1)
-  assert.equal(branches, 1)
+  assert.equal(branches, 0)
+  assert.equal(sessions, 1)
   assert.equal(prompts, 1)
   assert.equal(value.nodes[0].variants.filter(item => item.id === 'variant-new').length, 1)
   assert.equal(result.variantId, 'variant-new')
+})
+
+test('later swipe branches the current continuation exactly after the previous active QA', async () => {
+  let value = {
+    nodes: [
+      {
+        id: 'qa-1', kind: 'qa', hidden: false, displayOverride: null,
+        parentVariantId: null, adoptedVariantId: 'v-1',
+        variants: [{ id: 'v-1', sessionId: 'session-ancestor', startEventId: 1, endEventId: 3 }],
+      },
+      {
+        id: 'qa-2', kind: 'qa', hidden: false, displayOverride: null,
+        parentVariantId: 'v-1', adoptedVariantId: 'v-2',
+        variants: [{ id: 'v-2', sessionId: 'session-current', startEventId: 4, endEventId: 6 }],
+      },
+    ],
+    head: { sessionId: 'session-current', nodeId: 'qa-2', variantId: 'v-2' },
+  }
+  const calls = []
+  const client = {
+    async getTimeline() { return structuredClone(value) },
+    async getMessages(sessionId) {
+      if (sessionId === 'session-current') return { incompleteTurn: false, messages: [
+        { role: 'user', seq: 4, text: '第二问' },
+        { role: 'assistant', seq: 6, text: '旧回复' },
+      ] }
+      return { incompleteTurn: false, messages: [
+        { role: 'user', seq: 4, text: '第二问' },
+        { role: 'assistant', seq: 7, text: '新回复' },
+      ] }
+    },
+    async postBranch(sessionId, atEventId) {
+      calls.push(['branch', sessionId, atEventId])
+      return { sessionId: 'session-new' }
+    },
+    async postSession() { throw new Error('later swipe must not create a root session') },
+    async postUserMessage(sessionId, text) { calls.push(['prompt', sessionId, text]) },
+    async updateTimeline(_playthrough, mutator) {
+      value = await mutator(structuredClone(value))
+      return value
+    },
+    async getFocus() { return { sessionId: 'session-new' } },
+  }
+  await createPlayNodeController(client, { idFactory: () => 'variant-new' })
+    .createReplySwipe(playthrough, 'qa-2')
+  assert.deepEqual(calls, [
+    ['branch', 'session-current', 3],
+    ['prompt', 'session-new', '第二问'],
+  ])
 })
 
 test('turn reconcile CAS replay does not duplicate an already recorded QA', async () => {
