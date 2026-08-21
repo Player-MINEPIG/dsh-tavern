@@ -3885,6 +3885,19 @@ var zh_CN_default = Object.freeze({
   "settings.rpWorkspace.unavailable": "\u5F53\u524D\u7ED1\u5B9A\u5DF2\u4E0D\u5728 DSH \u5DE5\u4F5C\u533A\u5217\u8868\u4E2D\uFF1A{path}",
   "settings.rpWorkspace.none": "\u6CA1\u6709\u53EF\u7528\u7684 DSH \u5DE5\u4F5C\u533A",
   "settings.rpWorkspace.verifyError": "\u9ED8\u8BA4 RP \u5DE5\u4F5C\u533A\u5DF2\u66F4\u65B0\uFF0C\u4F46\u56DE\u8BFB\u9A8C\u8BC1\u5931\u8D25\uFF1A{message}",
+  "workspaceAdmission.title": "\u8FDB\u5165\u9B54\u4E38\u524D\u9009\u62E9 RP \u5DE5\u4F5C\u533A",
+  "workspaceAdmission.body": "\u9B54\u4E38\u4F1A\u6309\u89D2\u8272\u5361\u4E0E\u5468\u76EE\u91CD\u7EC4\u6B64\u5DE5\u4F5C\u533A\u4E2D\u7684\u4F1A\u8BDD\u3002\u8BF7\u9009\u62E9\u4E00\u4E2A\u73B0\u6709 DSH \u5DE5\u4F5C\u533A\uFF1B\u63D2\u4EF6\u4E0D\u4F1A\u81EA\u52A8\u66FF\u4F60\u9009\u62E9\uFF0C\u4E5F\u4E0D\u4F1A\u79FB\u52A8\u5DF2\u6709\u4F1A\u8BDD\u3002",
+  "workspaceAdmission.loading": "\u6B63\u5728\u8BFB\u53D6\u540E\u7AEF\u8BB0\u5F55\u7684 RP \u5DE5\u4F5C\u533A\u2026",
+  "workspaceAdmission.unavailable": "\u539F RP \u5DE5\u4F5C\u533A\u5DF2\u4E0D\u5728\u5F53\u524D DSH \u5DE5\u4F5C\u533A\u5217\u8868\u4E2D\uFF1A{path}\u3002\u8BF7\u9009\u62E9\u65B0\u7684\u5DE5\u4F5C\u533A\u540E\u518D\u8FDB\u5165\u9B54\u4E38\u3002",
+  "workspaceAdmission.none": "\u5F53\u524D\u6CA1\u6709\u53EF\u9009\u7684 DSH \u5DE5\u4F5C\u533A\u3002\u8BF7\u8FD4\u56DE DSH \u6A21\u5F0F\u521B\u5EFA\u6216\u6253\u5F00\u5DE5\u4F5C\u533A\uFF0C\u7136\u540E\u91CD\u65B0\u68C0\u67E5\u3002",
+  "workspaceAdmission.choose": "\u9009\u62E9 {name}",
+  "workspaceAdmission.retry": "\u91CD\u65B0\u68C0\u67E5",
+  "workspaceAdmission.native": "\u8FD4\u56DE DSH \u6A21\u5F0F",
+  "workspaceAdmission.saving": "\u6B63\u5728\u7ED1\u5B9A\u5E76\u56DE\u8BFB\u9A8C\u8BC1 RP \u5DE5\u4F5C\u533A\u2026",
+  "workspaceAdmission.loadError": "\u65E0\u6CD5\u8BFB\u53D6 RP \u5DE5\u4F5C\u533A\uFF1A{message}",
+  "workspaceAdmission.saveError": "\u65E0\u6CD5\u7ED1\u5B9A RP \u5DE5\u4F5C\u533A\uFF1A{message}",
+  "workspaceAdmission.verifyError": "RP \u5DE5\u4F5C\u533A\u5DF2\u5199\u5165\uFF0C\u4F46\u56DE\u8BFB\u9A8C\u8BC1\u672A\u901A\u8FC7\uFF1A{message}",
+  "workspaceAdmission.notConfirmed": "\u540E\u7AEF\u672A\u786E\u8BA4\u6240\u9009\u5DE5\u4F5C\u533A\u5F53\u524D\u53EF\u7528",
   "settings.rpPolicy": "RP \u6A21\u5F0F\u63D0\u793A\u8BCD\uFF08rp:policy\uFF09",
   "settings.rpPolicy.help": "\u53EF\u9009\u3002DSH \u4E0D\u80FD\u6309\u6BB5\u52A0\u6743\uFF0C\u8EAB\u4EFD\u548C\u6587\u98CE\u5E94\u5199\u5728\u9884\u8BBE\u6216\u89D2\u8272\u5361\u91CC\u3002\u9ED8\u8BA4\u53EA\u8BF4\u660E\u9AD8\u98CE\u9669\u64CD\u4F5C\u88AB\u9501\u5B9A\u3002\u7559\u7A7A\u5219\u4E0D\u9644\u52A0\u8FD9\u6BB5\u63D0\u793A\uFF0C\u9501\u5B9A\u4ECD\u7136\u6709\u6548\u3002\u5E95\u90E8\u7684\u300C\u6062\u590D\u9ED8\u8BA4\u300D\u53EA\u91CD\u7F6E\u8BED\u8A00\u3001\u7F29\u653E\u548C\u7ED1\u5361\u8DDF\u968F\u3002",
   "settings.rpPolicy.placeholder": "\u7559\u7A7A\uFF1A\u53EA\u542F\u7528\u53EA\u8BFB\u6C99\u7BB1\uFF0C\u4E0D\u9644\u52A0 RP \u63D0\u793A\u8BCD",
@@ -4503,6 +4516,19 @@ var en_default = Object.freeze({
   "settings.rpWorkspace.unavailable": "The current binding is no longer in the DSH workspace list: {path}",
   "settings.rpWorkspace.none": "No DSH workspaces are available",
   "settings.rpWorkspace.verifyError": "The default RP workspace was updated, but read-back verification failed: {message}",
+  "workspaceAdmission.title": "Choose an RP workspace before entering Mowan",
+  "workspaceAdmission.body": "Mowan groups sessions in this workspace by character and playthrough. Choose an existing DSH workspace explicitly; the plugin will not choose for you or move existing sessions.",
+  "workspaceAdmission.loading": "Loading the RP workspace recorded by the backend\u2026",
+  "workspaceAdmission.unavailable": "The previous RP workspace is no longer in the current DSH workspace list: {path}. Choose another workspace before entering Mowan.",
+  "workspaceAdmission.none": "No DSH workspace is available. Return to native DSH mode, create or open a workspace, then check again.",
+  "workspaceAdmission.choose": "Choose {name}",
+  "workspaceAdmission.retry": "Check again",
+  "workspaceAdmission.native": "Return to native DSH mode",
+  "workspaceAdmission.saving": "Binding and verifying the RP workspace\u2026",
+  "workspaceAdmission.loadError": "Could not load the RP workspace: {message}",
+  "workspaceAdmission.saveError": "Could not bind the RP workspace: {message}",
+  "workspaceAdmission.verifyError": "The RP workspace was written, but read-back verification failed: {message}",
+  "workspaceAdmission.notConfirmed": "The backend did not confirm that the selected workspace is available",
   "settings.rpPolicy": "RP mode prompt (rp:policy)",
   "settings.rpPolicy.help": "Optional. DSH cannot weight prompt sections; identity and style belong in the preset or character card. The default only says high-risk actions are locked. Leave empty to skip extra RP text; the lock still applies. Restore defaults at the bottom only resets language, scale, and RP follow.",
   "settings.rpPolicy.placeholder": "Leave empty to use the read-only sandbox with no extra RP prompt",
@@ -14619,17 +14645,27 @@ function comparablePath(value) {
 }
 function projectRpWorkspaceSetting({ workspace, items = [] } = {}) {
   const currentPath = pathOf(workspace?.rootPath === null ? null : { path: workspace?.rootPath });
-  const available = items.filter((item) => isRecord5(item) && pathOf(item) !== null).map((item) => ({
+  const available = (Array.isArray(items) ? items : []).filter((item) => isRecord5(item) && pathOf(item) !== null).map((item) => ({
     id: item.workspaceId ?? item.id ?? pathOf(item),
     path: pathOf(item),
     title: titleOf(item)
   }));
   const current3 = currentPath === null ? null : available.find((item) => comparablePath(item.path) === comparablePath(currentPath)) ?? { id: `unavailable:${currentPath}`, path: currentPath, title: currentPath, unavailable: true };
-  return { currentPath, current: current3, available, selectedPath: current3?.path ?? "", currentAvailable: current3?.unavailable !== true && current3 !== null };
+  const selected = workspace?.selected === true;
+  const currentAvailable = current3?.unavailable !== true && current3 !== null;
+  return {
+    currentPath,
+    current: current3,
+    available,
+    selectedPath: current3?.path ?? "",
+    selected,
+    currentAvailable,
+    ready: selected && currentAvailable
+  };
 }
 function workspaceSelectionRequest(path, { setting } = {}) {
   if (typeof path !== "string" || path === "") throw new TypeError("workspace path must be a non-empty string");
-  if (comparablePath(setting?.currentPath) === comparablePath(path)) return { path, changed: false };
+  if (setting?.ready === true && comparablePath(setting?.currentPath) === comparablePath(path)) return { path, changed: false };
   return { path, changed: true };
 }
 
@@ -14923,6 +14959,11 @@ var css11 = `
 .dtv-regex-panel .dtv-body{flex:1 1 auto;overscroll-behavior:contain}.dtv-regex-section{gap:8px}.dtv-regex-section-title{display:flex;align-items:center;gap:8px}.dtv-regex-section-title .dtv-item-count{margin-left:auto}.dtv-regex-rule{transition:border-color .12s,box-shadow .12s}.dtv-regex-rule[data-dragging=true]{height:4px;min-height:4px;margin:5px 10px;border:0;border-radius:999px;background:var(--dsw-alias-state-business-primary);box-shadow:0 0 0 1px color-mix(in srgb,var(--dsw-alias-state-business-primary) 25%,transparent)}.dtv-regex-rule[data-dragging=true]>*{opacity:0}.dtv-regex-drop-placeholder{box-sizing:border-box;height:42px;border:2px dashed var(--dsw-alias-state-business-primary);border-radius:8px;background:color-mix(in srgb,var(--dsw-alias-state-business-primary) 7%,transparent);display:flex;align-items:center;justify-content:center;color:var(--dsw-alias-state-business-primary);font-size:12px;font-weight:600;pointer-events:none}.dtv-regex-drag{flex:none;border:0;background:transparent;cursor:grab;color:var(--dsw-alias-label-tertiary);padding:1px 2px;font-size:15px;line-height:1;touch-action:none;user-select:none}.dtv-regex-drag:active{cursor:grabbing}.dtv-regex-drag:disabled{cursor:default;opacity:.5}.dtv-regex-rule .dtv-input:disabled,.dtv-regex-rule .dtv-select:disabled,.dtv-regex-rule .dtv-textarea:disabled{pointer-events:none}.dtv-regex-expression{font-family:var(--dsw-font-mono,ui-monospace,SFMono-Regular,Consolas,monospace);min-height:72px}.dtv-regex-footer{position:sticky;bottom:-12px;display:grid;grid-template-columns:1fr 1fr;gap:8px;padding:10px 0 12px;background:var(--dsw-alias-bg-base)}
 .dtv-modal{width:min(420px,100%);border-radius:12px;background:var(--dsw-alias-bg-base);border:1px solid var(--dsw-alias-border-l2);box-shadow:var(--ds-shadow-3,0 16px 40px rgba(0,0,0,.28));padding:18px 16px;display:flex;flex-direction:column;gap:14px}
 .dtv-modal-body{margin:0;font-size:13px;line-height:1.55}.dtv-modal .dtv-button{align-self:flex-end;min-width:88px}
+.dtv-workspace-admission{position:absolute;inset:0;z-index:12;pointer-events:auto;background:var(--dsw-alias-bg-base);display:flex;align-items:center;justify-content:center;padding:clamp(18px,5vw,64px)}
+.dtv-workspace-admission-card{box-sizing:border-box;width:min(720px,100%);max-height:min(720px,calc(100vh - 36px));overflow:auto;border:1px solid var(--dsw-alias-border-l2);border-radius:18px;background:var(--dsw-alias-bg-base);box-shadow:var(--ds-shadow-3,0 18px 52px rgba(0,0,0,.24));padding:clamp(20px,4vw,36px);display:flex;flex-direction:column;gap:16px}
+.dtv-workspace-admission-title{margin:0;font-size:clamp(20px,3vw,28px);line-height:1.25}.dtv-workspace-admission-copy{margin:0;color:var(--dsw-alias-label-secondary);font-size:13px;line-height:1.65}
+.dtv-workspace-admission-list{display:flex;flex-direction:column;gap:8px;max-height:320px;overflow:auto}.dtv-workspace-admission-choice{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:12px;align-items:center;text-align:left}.dtv-workspace-admission-choice-copy{min-width:0;display:flex;flex-direction:column;gap:3px}.dtv-workspace-admission-choice-title{font-weight:650;overflow-wrap:anywhere}.dtv-workspace-admission-choice-path{font-size:10px;color:var(--dsw-alias-label-tertiary);overflow-wrap:anywhere}.dtv-workspace-admission-actions{display:flex;justify-content:flex-end;flex-wrap:wrap;gap:8px}.dtv-workspace-admission-actions .dtv-button{min-width:120px}
+
 `;
 var LAUNCHER_STORAGE_KEY = `${PLUGIN_ID}:launcher-position:v1`;
 function viewport() {
@@ -15190,6 +15231,68 @@ function RpHighRiskDialog({ onDismiss }) {
     )
   );
 }
+function WorkspaceAdmission({ setting, state, error, busy, selectWorkspace, reload, returnToNative }) {
+  const loading = state === "loading" || state === "idle";
+  const unavailable = setting?.current?.unavailable === true;
+  const candidates = setting?.available ?? [];
+  let status = null;
+  if (loading) status = uiMessage("workspaceAdmission.loading");
+  else if (state === "error") status = uiMessage("workspaceAdmission.loadError", { message: error });
+  else if (state === "verify-error") status = uiMessage("workspaceAdmission.verifyError", { message: error });
+  else if (state === "save-error") status = uiMessage("workspaceAdmission.saveError", { message: error });
+  else if (busy) status = uiMessage("workspaceAdmission.saving");
+  else if (unavailable) status = uiMessage("workspaceAdmission.unavailable", { path: setting.current.path });
+  else if (candidates.length === 0) status = uiMessage("workspaceAdmission.none");
+  return h13(
+    "div",
+    {
+      className: "dtv-workspace-admission",
+      role: "dialog",
+      "aria-modal": "true",
+      "aria-labelledby": "dtv-workspace-admission-title"
+    },
+    h13(
+      "div",
+      { className: "dtv-workspace-admission-card" },
+      h13("h2", { id: "dtv-workspace-admission-title", className: "dtv-workspace-admission-title" }, uiMessage("workspaceAdmission.title")),
+      h13("p", { className: "dtv-workspace-admission-copy" }, uiMessage("workspaceAdmission.body")),
+      status === null ? null : h13("p", {
+        className: "dtv-status",
+        "data-error": ["error", "verify-error", "save-error"].includes(state) || unavailable,
+        role: ["error", "verify-error", "save-error"].includes(state) ? "alert" : "status"
+      }, status),
+      candidates.length === 0 ? null : h13(
+        "div",
+        { className: "dtv-workspace-admission-list" },
+        ...candidates.map((item) => h13(
+          "button",
+          {
+            key: item.id,
+            type: "button",
+            className: "dtv-button dtv-workspace-admission-choice",
+            disabled: busy || loading,
+            title: uiMessage("workspaceAdmission.choose", { name: item.title }),
+            "aria-label": uiMessage("workspaceAdmission.choose", { name: item.title }),
+            onClick: () => selectWorkspace(item.path)
+          },
+          h13(
+            "span",
+            { className: "dtv-workspace-admission-choice-copy" },
+            h13("span", { className: "dtv-workspace-admission-choice-title" }, rawText(item.title)),
+            h13("span", { className: "dtv-workspace-admission-choice-path" }, rawText(item.path))
+          ),
+          h13("span", { "aria-hidden": "true" }, "\u2192")
+        ))
+      ),
+      h13(
+        "div",
+        { className: "dtv-workspace-admission-actions" },
+        h13("button", { type: "button", className: "dtv-button", disabled: busy, onClick: reload }, uiMessage("workspaceAdmission.retry")),
+        h13("button", { type: "button", className: "dtv-button dtv-primary", disabled: busy, onClick: returnToNative }, uiMessage("workspaceAdmission.native"))
+      )
+    )
+  );
+}
 function TavernShell({ useSessions, useWorkspaces, createCleanSession, createConfiguredPlaythrough, playClient, playSlots, chromeService }) {
   const [menuOpen, setMenuOpen] = (0, import_react16.useState)(false);
   const [surface, setSurface] = (0, import_react16.useState)(null);
@@ -15209,8 +15312,11 @@ function TavernShell({ useSessions, useWorkspaces, createCleanSession, createCon
   const [rpPolicyLoaded, setRpPolicyLoaded] = (0, import_react16.useState)(false);
   const [rpPolicyBusy, setRpPolicyBusy] = (0, import_react16.useState)(false);
   const [rpWorkspaceSetting, setRpWorkspaceSetting] = (0, import_react16.useState)(null);
+  const [rpWorkspaceLoadState, setRpWorkspaceLoadState] = (0, import_react16.useState)("idle");
+  const [rpWorkspaceError, setRpWorkspaceError] = (0, import_react16.useState)("");
   const [rpWorkspaceBusy, setRpWorkspaceBusy] = (0, import_react16.useState)(false);
   const rpWorkspaceBusyRef = (0, import_react16.useRef)(false);
+  const rpWorkspaceLoadGeneration = (0, import_react16.useRef)(0);
   const [rpAlert, setRpAlert] = (0, import_react16.useState)(null);
   const drag = (0, import_react16.useRef)(null);
   const suppressClick = (0, import_react16.useRef)(false);
@@ -15382,19 +15488,34 @@ function TavernShell({ useSessions, useWorkspaces, createCleanSession, createCon
       active = false;
     };
   }, [surface]);
+  const refreshRpWorkspace = (0, import_react16.useCallback)(async () => {
+    const generation = ++rpWorkspaceLoadGeneration.current;
+    setRpWorkspaceLoadState("loading");
+    setRpWorkspaceError("");
+    try {
+      const workspace = await playClient.getWorkspace();
+      if (generation !== rpWorkspaceLoadGeneration.current) return null;
+      const projected = projectRpWorkspaceSetting({ workspace, items: workspaceItems });
+      setRpWorkspaceSetting(projected);
+      setRpWorkspaceLoadState("ready");
+      return projected;
+    } catch (reason) {
+      if (generation !== rpWorkspaceLoadGeneration.current) return null;
+      setRpWorkspaceError(reason instanceof Error ? reason.message : String(reason));
+      setRpWorkspaceLoadState("error");
+      return null;
+    }
+  }, [playClient, workspaceItems]);
+  const needsRpWorkspace = chromeMode === "play" || surface === "settings";
   (0, import_react16.useEffect)(() => {
-    if (surface !== "settings") return void 0;
-    let active = true;
-    setRpWorkspaceSetting(null);
-    playClient.getWorkspace().then((workspace) => {
-      if (active) setRpWorkspaceSetting(projectRpWorkspaceSetting({ workspace, items: workspaceItems }));
-    }).catch((reason) => {
-      if (active) setSettingsStatus({ text: translate("settings.loadError", { message: reason instanceof Error ? reason.message : String(reason) }), error: true });
-    });
-    return () => {
-      active = false;
-    };
-  }, [playClient, surface, workspaceItems]);
+    if (!needsRpWorkspace) return void 0;
+    refreshRpWorkspace();
+    return void 0;
+  }, [needsRpWorkspace, refreshRpWorkspace]);
+  (0, import_react16.useEffect)(() => {
+    if (surface !== "settings" || rpWorkspaceLoadState !== "error") return;
+    setSettingsStatus({ text: translate("settings.loadError", { message: rpWorkspaceError }), error: true });
+  }, [rpWorkspaceError, rpWorkspaceLoadState, surface]);
   const selectRpWorkspace = async (path) => {
     if (rpWorkspaceBusyRef.current) return;
     const request = workspaceSelectionRequest(path, { setting: rpWorkspaceSetting });
@@ -15404,6 +15525,8 @@ function TavernShell({ useSessions, useWorkspaces, createCleanSession, createCon
     if (requiresSystemWorkspaceConfirmation(path) && !window.confirm(unwrapText(uiMessage("play.sidebar.systemWorkspaceConfirm", { path })))) return;
     rpWorkspaceBusyRef.current = true;
     setRpWorkspaceBusy(true);
+    setRpWorkspaceLoadState("saving");
+    setRpWorkspaceError("");
     setSettingsStatus({ text: translate("settings.saving"), error: false });
     try {
       const written = await playClient.putWorkspace(path);
@@ -15411,13 +15534,23 @@ function TavernShell({ useSessions, useWorkspaces, createCleanSession, createCon
       window.dispatchEvent(new Event(CLIENT_REFRESH_EVENT));
       try {
         const current3 = await playClient.getWorkspace();
-        setRpWorkspaceSetting(projectRpWorkspaceSetting({ workspace: current3, items: workspaceItems }));
+        const verified = projectRpWorkspaceSetting({ workspace: current3, items: workspaceItems });
+        setRpWorkspaceSetting(verified);
+        if (!verified.ready) throw new Error(translate("workspaceAdmission.notConfirmed"));
+        setRpWorkspaceLoadState("ready");
+        setRpWorkspaceError("");
         setSettingsStatus({ text: translate("settings.saved"), error: false });
       } catch (reason) {
-        setSettingsStatus({ text: translate("settings.rpWorkspace.verifyError", { message: reason instanceof Error ? reason.message : String(reason) }), error: true });
+        const message = reason instanceof Error ? reason.message : String(reason);
+        setRpWorkspaceLoadState("verify-error");
+        setRpWorkspaceError(message);
+        setSettingsStatus({ text: translate("settings.rpWorkspace.verifyError", { message }), error: true });
       }
     } catch (reason) {
-      setSettingsStatus({ text: translate("settings.saveError", { message: reason instanceof Error ? reason.message : String(reason) }), error: true });
+      const message = reason instanceof Error ? reason.message : String(reason);
+      setRpWorkspaceLoadState("save-error");
+      setRpWorkspaceError(message);
+      setSettingsStatus({ text: translate("settings.saveError", { message }), error: true });
     } finally {
       rpWorkspaceBusyRef.current = false;
       setRpWorkspaceBusy(false);
@@ -15658,11 +15791,21 @@ function TavernShell({ useSessions, useWorkspaces, createCleanSession, createCon
   const statuses = launcherResourceStatuses(activeSnapshot);
   const chromeSwitchLabel = chromeMode === "play" ? uiMessage("chrome.switchToNative") : uiMessage("chrome.switchToPlay");
   const chromeStatusLabel = chromeMode === "play" ? uiMessage("chrome.currentPlay") : uiMessage("chrome.currentNative");
+  const workspaceAdmissionOpen = chromeMode === "play" && (rpWorkspaceLoadState !== "ready" || rpWorkspaceSetting?.ready !== true);
   return h13(
     "div",
     { className: "dtv-layer", lang: uiSettings.locale, "data-chrome": chromeMode, "data-surface-open": surface !== null, style: { "--dtv-ui-scale": uiSettings.scale } },
     panel,
     rpAlert === null ? null : h13(RpHighRiskDialog, { onDismiss: dismissRpAlert }),
+    workspaceAdmissionOpen ? h13(WorkspaceAdmission, {
+      setting: rpWorkspaceSetting,
+      state: rpWorkspaceLoadState,
+      error: rpWorkspaceError,
+      busy: rpWorkspaceBusy,
+      selectWorkspace: selectRpWorkspace,
+      reload: refreshRpWorkspace,
+      returnToNative: switchChrome
+    }) : null,
     h13(
       "div",
       {

@@ -20,7 +20,7 @@ function comparablePath(value) {
 
 export function projectRpWorkspaceSetting({ workspace, items = [] } = {}) {
   const currentPath = pathOf(workspace?.rootPath === null ? null : { path: workspace?.rootPath })
-  const available = items.filter(item => isRecord(item) && pathOf(item) !== null).map(item => ({
+  const available = (Array.isArray(items) ? items : []).filter(item => isRecord(item) && pathOf(item) !== null).map(item => ({
     id: item.workspaceId ?? item.id ?? pathOf(item),
     path: pathOf(item),
     title: titleOf(item),
@@ -28,11 +28,21 @@ export function projectRpWorkspaceSetting({ workspace, items = [] } = {}) {
   const current = currentPath === null
     ? null
     : available.find(item => comparablePath(item.path) === comparablePath(currentPath)) ?? { id: `unavailable:${currentPath}`, path: currentPath, title: currentPath, unavailable: true }
-  return { currentPath, current, available, selectedPath: current?.path ?? '', currentAvailable: current?.unavailable !== true && current !== null }
+  const selected = workspace?.selected === true
+  const currentAvailable = current?.unavailable !== true && current !== null
+  return {
+    currentPath,
+    current,
+    available,
+    selectedPath: current?.path ?? '',
+    selected,
+    currentAvailable,
+    ready: selected && currentAvailable,
+  }
 }
 
 export function workspaceSelectionRequest(path, { setting } = {}) {
   if (typeof path !== 'string' || path === '') throw new TypeError('workspace path must be a non-empty string')
-  if (comparablePath(setting?.currentPath) === comparablePath(path)) return { path, changed: false }
+  if (setting?.ready === true && comparablePath(setting?.currentPath) === comparablePath(path)) return { path, changed: false }
   return { path, changed: true }
 }

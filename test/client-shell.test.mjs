@@ -332,3 +332,16 @@ test('resource setting panels follow the preset page hierarchy', () => {
   const template = readFileSync(new URL('../packages/session-template/src/client.js', import.meta.url), 'utf8').split("return h('div', { className: 'dtv-panel' }")[1]
   assertOrdered(template, ["template.createFromCurrent", "template.selected", "template.inheritNote", "className: 'dtv-resource'", "className: 'dtv-template-footer'"])
 })
+
+test('Mowan workspace admission is explicit and stays closed until authoritative read-back', () => {
+  const source = readFileSync(new URL('../packages/client/src/index.js', import.meta.url), 'utf8')
+  const selection = source.split('const selectRpWorkspace = async path =>')[1].split('const persistRpPolicy')[0]
+
+  assert.match(source, /chromeMode === 'play'[\s\S]*rpWorkspaceSetting\?\.ready !== true/)
+  assert.match(source, /onClick: \(\) => selectWorkspace\(item\.path\)/)
+  assert.doesNotMatch(selection, /available\?\.\[0\]|available\[0\]/)
+  assertOrdered(selection, ['playClient.putWorkspace(path)', 'playClient.getWorkspace()', 'if (!verified.ready)'])
+  assert.match(source, /setRpWorkspaceLoadState\('saving'\)/)
+  assert.match(source, /returnToNative: switchChrome/)
+  assert.match(source, /role: 'dialog'[\s\S]*'aria-modal': 'true'/)
+})
