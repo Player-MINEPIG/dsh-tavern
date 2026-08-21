@@ -1045,7 +1045,10 @@ export function apply(ctx) {
       chrome.internal.dispose()
     }
   }, 'dsh-tavern: chrome mode service transport')
-  const playSlots = installPlaySlotOccupancy(ctx, playClient, { playthroughController })
+  const playSlots = installPlaySlotOccupancy(ctx, playClient, {
+    playthroughController,
+    switchToNative: () => chrome.face.setMode('native'),
+  })
   ctx.slots.inject('shell.overlay', () => ctx.slots.register({
     name: 'shell.overlay',
     id: `${PLUGIN_ID}-launcher`,

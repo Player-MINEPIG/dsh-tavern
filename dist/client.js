@@ -3815,6 +3815,10 @@ var zh_CN_default = Object.freeze({
   "play.sidebar.unassigned": "\u672A\u5F52\u5165\u5468\u76EE",
   "play.sidebar.other": "\u666E\u901A / \u975E\u89D2\u8272\u626E\u6F14\u4F1A\u8BDD",
   "play.sidebar.otherEmpty": "\u6682\u65E0\u666E\u901A\u6216\u5916\u90E8\u4F1A\u8BDD\u3002",
+  "play.sidebar.createOrdinary": "\u65B0\u5EFA\u666E\u901A\u4F1A\u8BDD",
+  "play.sidebar.ordinaryPrompt": "\u666E\u901A\u4F1A\u8BDD\u8BF7\u5728 DSH \u539F\u751F\u6A21\u5F0F\u4E2D\u521B\u5EFA\u3002\u8FD4\u56DE\u539F\u751F\u6A21\u5F0F\u540E\uFF0C\u53EF\u4F7F\u7528\u4FA7\u8FB9\u680F\u5916\u5C42\u7684\u201C\u65B0\u5EFA\u4F1A\u8BDD\u201D\u6309\u94AE\u3002",
+  "play.sidebar.ordinaryClose": "\u5173\u95ED",
+  "play.sidebar.returnNative": "\u56DE\u5230 DSH \u6A21\u5F0F",
   "play.notice.unbound": "\u672C\u4F1A\u8BDD\u6682\u672A\u7ED1\u5B9A\u89D2\u8272\u5361\uFF1B\u53EF\u4EE5\u6B63\u5E38\u5BF9\u8BDD\u3002\u7ED1\u5B9A\u89D2\u8272\u5361\u540E\u65B0\u5F00\u5468\u76EE\uFF0C\u624D\u4F1A\u542F\u7528\u5F00\u573A\u767D\u3001\u56DE\u590D\u5207\u6362\u3001\u663E\u793A\u7F16\u8F91\u4E0E\u5468\u76EE\u5BFC\u5165/\u5BFC\u51FA\u3002",
   "play.sidebar.sessionMissing": "\u8BE5\u5468\u76EE\u5728\u89D2\u8272\u626E\u6F14\u5DE5\u4F5C\u533A\u4E2D\u6CA1\u6709\u53EF\u7528\u4F1A\u8BDD\u3002",
   "play.sidebar.timelineErrors": "\u6709 {count} \u4E2A\u5468\u76EE\u7684 timeline \u65E0\u6CD5\u8BFB\u53D6\u3002",
@@ -4412,6 +4416,10 @@ var en_default = Object.freeze({
   "play.sidebar.unassigned": "Not in a playthrough",
   "play.sidebar.other": "Regular / non-role-play sessions",
   "play.sidebar.otherEmpty": "No regular or external sessions.",
+  "play.sidebar.createOrdinary": "Create an ordinary session",
+  "play.sidebar.ordinaryPrompt": "Create ordinary sessions in DSH native mode. Return to native mode, then use the outer New Session button in the sidebar.",
+  "play.sidebar.ordinaryClose": "Close",
+  "play.sidebar.returnNative": "Return to DSH mode",
   "play.notice.unbound": "This session is not bound to a character card. You can keep chatting normally; start a new playthrough after binding a card to enable greetings, swipes, display edits, and playthrough import/export.",
   "play.sidebar.sessionMissing": "This playthrough has no available session in the role-play workspace.",
   "play.sidebar.timelineErrors": "{count} playthrough timelines could not be read.",
@@ -12530,6 +12538,7 @@ var css9 = `
 .dtv-play-subgroup{display:flex;flex-direction:column;gap:1px}.dtv-play-subgroup>.dtv-play-group{min-height:30px;padding-left:25px;font-size:10px;font-weight:620;color:var(--dsw-alias-label-secondary)}
 .dtv-play-empty,.dtv-play-status{margin:0;padding:7px 9px;font-size:10px;line-height:1.45;color:var(--dsw-alias-label-tertiary);overflow-wrap:anywhere}.dtv-play-status[data-error=true]{color:var(--dsw-alias-state-error)}
 .dtv-play-rail{height:100%;box-sizing:border-box;padding:7px;display:flex;flex-direction:column;align-items:center;gap:7px;overflow:auto;zoom:var(--dtv-ui-scale,1)}.dtv-play-rail-button{width:38px;height:38px;border:0;border-radius:10px;background:transparent;color:var(--dsw-alias-label-secondary);cursor:pointer;display:grid;place-items:center}.dtv-play-rail-button:hover{background:var(--dsw-alias-interactive-bg-hover)}.dtv-play-rail-button .dtv-play-avatar{width:30px;height:30px}
+.dtv-play-modal-backdrop{position:fixed;inset:0;z-index:40;box-sizing:border-box;padding:20px;background:rgba(0,0,0,.48);display:flex;align-items:center;justify-content:center}.dtv-play-modal{box-sizing:border-box;width:min(420px,100%);border:1px solid var(--dsw-alias-border-l2);border-radius:12px;background:var(--dsw-alias-bg-base);box-shadow:var(--ds-shadow-3,0 16px 40px rgba(0,0,0,.28));padding:17px 16px;display:flex;flex-direction:column;gap:14px}.dtv-play-modal p{margin:0;font-size:13px;line-height:1.55;color:var(--dsw-alias-label-primary)}.dtv-play-modal-actions{display:flex;justify-content:flex-end;gap:8px;flex-wrap:wrap}.dtv-play-modal-button{min-height:34px;border:1px solid var(--dsw-alias-border-l2);border-radius:8px;background:var(--dsw-alias-button-secondary-fill,var(--dsw-alias-bg-base));color:var(--dsw-alias-label-primary);cursor:pointer;padding:7px 11px;font:inherit;font-size:12px}.dtv-play-modal-button[data-primary=true]{border-color:transparent;background:var(--dsw-alias-state-business-primary,#2677d9);color:var(--dsw-alias-button-primary-label,#fff)}
 `;
 function installStyles3() {
   if (document.querySelector(`style[data-plugin-css="${PLUGIN_ID}-play-sidebar"]`) !== null) return;
@@ -12676,6 +12685,7 @@ function PlayWorkspaceBrowser({
   playClient,
   playthroughController,
   openSession,
+  switchToNative,
   getActivePlaythroughId,
   subscribeActivePlaythroughId
 }) {
@@ -12704,6 +12714,7 @@ function PlayWorkspaceBrowser({
   const [collapsedCharacters, setCollapsedCharacters] = (0, import_react11.useState)(() => /* @__PURE__ */ new Set());
   const [expandedUnassigned, setExpandedUnassigned] = (0, import_react11.useState)(() => /* @__PURE__ */ new Set());
   const [otherOpen, setOtherOpen] = (0, import_react11.useState)(false);
+  const [ordinaryPromptOpen, setOrdinaryPromptOpen] = (0, import_react11.useState)(false);
   const [activePlaythroughId, setActivePlaythroughId] = (0, import_react11.useState)(
     () => getActivePlaythroughId?.() ?? null
   );
@@ -12809,6 +12820,16 @@ function PlayWorkspaceBrowser({
       setStatus({ message: reason instanceof Error ? reason.message : String(reason) });
     }
   };
+  const returnToNative = async () => {
+    setStatus(null);
+    try {
+      if (typeof switchToNative !== "function") throw new Error("native mode switch is unavailable");
+      await switchToNative();
+      setOrdinaryPromptOpen(false);
+    } catch (reason) {
+      setStatus({ message: reason instanceof Error ? reason.message : String(reason) });
+    }
+  };
   if (wide === false) return h10(Rail, { model, scale, expandSidebar });
   const toggleSet = (setter, id) => setter((current2) => {
     const next = new Set(current2);
@@ -12867,16 +12888,27 @@ function PlayWorkspaceBrowser({
       "section",
       { className: "dtv-play-section", "data-open": otherOpen },
       h10(
-        "button",
-        {
+        "div",
+        { className: "dtv-play-group-line" },
+        h10(
+          "button",
+          {
+            type: "button",
+            className: "dtv-play-group",
+            "aria-expanded": otherOpen,
+            onClick: () => setOtherOpen((value) => !value)
+          },
+          h10("span", { className: "dtv-play-chevron", "aria-hidden": "true" }, otherOpen ? "\u2304" : "\u203A"),
+          h10("span", { className: "dtv-play-title" }, uiMessage("play.sidebar.other")),
+          h10("span", { className: "dtv-play-count" }, rawText(String(model.otherSessions.length)))
+        ),
+        h10("button", {
           type: "button",
-          className: "dtv-play-group",
-          "aria-expanded": otherOpen,
-          onClick: () => setOtherOpen((value) => !value)
-        },
-        h10("span", { className: "dtv-play-chevron", "aria-hidden": "true" }, otherOpen ? "\u2304" : "\u203A"),
-        h10("span", { className: "dtv-play-title" }, uiMessage("play.sidebar.other")),
-        h10("span", { className: "dtv-play-count" }, rawText(String(model.otherSessions.length)))
+          className: "dtv-play-create",
+          title: uiMessage("play.sidebar.createOrdinary"),
+          "aria-label": uiMessage("play.sidebar.createOrdinary"),
+          onClick: () => setOrdinaryPromptOpen(true)
+        }, "+")
       ),
       otherOpen && model.otherSessions.length === 0 ? h10("p", { className: "dtv-play-empty" }, uiMessage("play.sidebar.otherEmpty")) : null,
       otherOpen ? model.otherSessions.map((session) => h10(
@@ -12892,7 +12924,32 @@ function PlayWorkspaceBrowser({
         h10("span", { className: "dtv-play-chevron", "aria-hidden": "true" }, "\u2022"),
         h10("span", { className: "dtv-play-title" }, rawText(session.title))
       )) : null
-    )
+    ),
+    ordinaryPromptOpen ? h10("div", {
+      className: "dtv-play-modal-backdrop",
+      role: "dialog",
+      "aria-modal": "true",
+      "aria-labelledby": "dtv-play-ordinary-prompt"
+    }, h10(
+      "div",
+      { className: "dtv-play-modal" },
+      h10("p", { id: "dtv-play-ordinary-prompt" }, uiMessage("play.sidebar.ordinaryPrompt")),
+      h10(
+        "div",
+        { className: "dtv-play-modal-actions" },
+        h10("button", {
+          type: "button",
+          className: "dtv-play-modal-button",
+          onClick: () => setOrdinaryPromptOpen(false)
+        }, uiMessage("play.sidebar.ordinaryClose")),
+        h10("button", {
+          type: "button",
+          className: "dtv-play-modal-button",
+          "data-primary": true,
+          onClick: returnToNative
+        }, uiMessage("play.sidebar.returnNative"))
+      )
+    )) : null
   );
 }
 
@@ -13099,7 +13156,7 @@ function findNativeChatStore(slots) {
   }
   return void 0;
 }
-function installPlaySlotOccupancy(ctx, playClient, { playthroughController } = {}) {
+function installPlaySlotOccupancy(ctx, playClient, { playthroughController, switchToNative } = {}) {
   let mode = "native";
   let declared = false;
   let disposeEntry = null;
@@ -13146,6 +13203,7 @@ function installPlaySlotOccupancy(ctx, playClient, { playthroughController } = {
         playthroughController,
         openSession: (sessionId, playthrough = null) => openPlaySession(sessionId, playthrough),
         getActivePlaythroughId: () => preferredPlaythroughId,
+        switchToNative,
         subscribeActivePlaythroughId: (listener) => {
           playthroughSelectionListeners.add(listener);
           return () => playthroughSelectionListeners.delete(listener);
@@ -15280,7 +15338,10 @@ function apply2(ctx) {
       chrome.internal.dispose();
     };
   }, "dsh-tavern: chrome mode service transport");
-  const playSlots = installPlaySlotOccupancy(ctx, playClient, { playthroughController });
+  const playSlots = installPlaySlotOccupancy(ctx, playClient, {
+    playthroughController,
+    switchToNative: () => chrome.face.setMode("native")
+  });
   ctx.slots.inject("shell.overlay", () => ctx.slots.register({
     name: "shell.overlay",
     id: `${PLUGIN_ID}-launcher`,

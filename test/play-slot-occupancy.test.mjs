@@ -32,7 +32,8 @@ test('Mowan owns only the sidebar shadow and additive unbound notice while Lingz
     },
   }
 
-  const occupancy = installPlaySlotOccupancy(ctx, { mode: 'live' })
+  const switchToNative = () => {}
+  const occupancy = installPlaySlotOccupancy(ctx, { mode: 'live' }, { switchToNative })
   assert.equal(registrations.length, 0)
 
   occupancy.setMode('play')
@@ -40,6 +41,7 @@ test('Mowan owns only the sidebar shadow and additive unbound notice while Lingz
   const sidebar = registrations.find(item => item.options.name === 'sidebar.workspaces')
   const notice = registrations.find(item => item.options.name === 'conversation.input.dock')
   assert.equal(sidebar.options.priority, PLAY_SLOT_PRIORITY)
+  assert.equal(sidebar.options.inject().switchToNative, switchToNative)
   assert.equal(notice.options.id, 'pmp-dsh-tavern-session-dock')
   assert.equal(notice.options.order, 90)
   assert.equal(registrations.every(item => item.active), true)

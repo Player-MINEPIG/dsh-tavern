@@ -22,7 +22,7 @@ export function findNativeChatStore(slots) {
   return undefined
 }
 
-export function installPlaySlotOccupancy(ctx, playClient, { playthroughController } = {}) {
+export function installPlaySlotOccupancy(ctx, playClient, { playthroughController, switchToNative } = {}) {
   let mode = 'native'
   let declared = false
   let disposeEntry = null
@@ -73,6 +73,7 @@ export function installPlaySlotOccupancy(ctx, playClient, { playthroughControlle
         playthroughController,
         openSession: (sessionId, playthrough = null) => openPlaySession(sessionId, playthrough),
         getActivePlaythroughId: () => preferredPlaythroughId,
+        switchToNative,
         subscribeActivePlaythroughId: listener => {
           playthroughSelectionListeners.add(listener)
           return () => playthroughSelectionListeners.delete(listener)

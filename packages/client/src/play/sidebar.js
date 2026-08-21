@@ -46,6 +46,7 @@ const css = `
 .dtv-play-subgroup{display:flex;flex-direction:column;gap:1px}.dtv-play-subgroup>.dtv-play-group{min-height:30px;padding-left:25px;font-size:10px;font-weight:620;color:var(--dsw-alias-label-secondary)}
 .dtv-play-empty,.dtv-play-status{margin:0;padding:7px 9px;font-size:10px;line-height:1.45;color:var(--dsw-alias-label-tertiary);overflow-wrap:anywhere}.dtv-play-status[data-error=true]{color:var(--dsw-alias-state-error)}
 .dtv-play-rail{height:100%;box-sizing:border-box;padding:7px;display:flex;flex-direction:column;align-items:center;gap:7px;overflow:auto;zoom:var(--dtv-ui-scale,1)}.dtv-play-rail-button{width:38px;height:38px;border:0;border-radius:10px;background:transparent;color:var(--dsw-alias-label-secondary);cursor:pointer;display:grid;place-items:center}.dtv-play-rail-button:hover{background:var(--dsw-alias-interactive-bg-hover)}.dtv-play-rail-button .dtv-play-avatar{width:30px;height:30px}
+.dtv-play-modal-backdrop{position:fixed;inset:0;z-index:40;box-sizing:border-box;padding:20px;background:rgba(0,0,0,.48);display:flex;align-items:center;justify-content:center}.dtv-play-modal{box-sizing:border-box;width:min(420px,100%);border:1px solid var(--dsw-alias-border-l2);border-radius:12px;background:var(--dsw-alias-bg-base);box-shadow:var(--ds-shadow-3,0 16px 40px rgba(0,0,0,.28));padding:17px 16px;display:flex;flex-direction:column;gap:14px}.dtv-play-modal p{margin:0;font-size:13px;line-height:1.55;color:var(--dsw-alias-label-primary)}.dtv-play-modal-actions{display:flex;justify-content:flex-end;gap:8px;flex-wrap:wrap}.dtv-play-modal-button{min-height:34px;border:1px solid var(--dsw-alias-border-l2);border-radius:8px;background:var(--dsw-alias-button-secondary-fill,var(--dsw-alias-bg-base));color:var(--dsw-alias-label-primary);cursor:pointer;padding:7px 11px;font:inherit;font-size:12px}.dtv-play-modal-button[data-primary=true]{border-color:transparent;background:var(--dsw-alias-state-business-primary,#2677d9);color:var(--dsw-alias-button-primary-label,#fff)}
 `
 
 function installStyles() {
@@ -178,6 +179,7 @@ export function PlayWorkspaceBrowser({
   playClient,
   playthroughController,
   openSession,
+  switchToNative,
   getActivePlaythroughId,
   subscribeActivePlaythroughId,
 }) {
@@ -206,6 +208,7 @@ export function PlayWorkspaceBrowser({
   const [collapsedCharacters, setCollapsedCharacters] = useState(() => new Set())
   const [expandedUnassigned, setExpandedUnassigned] = useState(() => new Set())
   const [otherOpen, setOtherOpen] = useState(false)
+  const [ordinaryPromptOpen, setOrdinaryPromptOpen] = useState(false)
   const [activePlaythroughId, setActivePlaythroughId] = useState(
     () => getActivePlaythroughId?.() ?? null,
   )
@@ -316,6 +319,17 @@ export function PlayWorkspaceBrowser({
     }
   }
 
+  const returnToNative = async () => {
+    setStatus(null)
+    try {
+      if (typeof switchToNative !== 'function') throw new Error('native mode switch is unavailable')
+      await switchToNative()
+      setOrdinaryPromptOpen(false)
+    } catch (reason) {
+      setStatus({ message: reason instanceof Error ? reason.message : String(reason) })
+    }
+  }
+
   if (wide === false) return h(Rail, { model, scale, expandSidebar })
 
   const toggleSet = (setter, id) => setter(current => {
@@ -367,6 +381,7 @@ export function PlayWorkspaceBrowser({
       openSession,
     })),
     h('section', { className: 'dtv-play-section', 'data-open': otherOpen },
+      h('div', { className: 'dtv-play-group-line' },
       h('button', {
         type: 'button',
         className: 'dtv-play-group',
@@ -376,6 +391,14 @@ export function PlayWorkspaceBrowser({
       h('span', { className: 'dtv-play-chevron', 'aria-hidden': 'true' }, otherOpen ? '⌄' : '›'),
       h('span', { className: 'dtv-play-title' }, uiMessage('play.sidebar.other')),
       h('span', { className: 'dtv-play-count' }, rawText(String(model.otherSessions.length))),
+      ),
+      h('button', {
+        type: 'button',
+        className: 'dtv-play-create',
+        title: uiMessage('play.sidebar.createOrdinary'),
+        'aria-label': uiMessage('play.sidebar.createOrdinary'),
+        onClick: () => setOrdinaryPromptOpen(true),
+      }, '+'),
       ),
       otherOpen && model.otherSessions.length === 0 ? h('p', { className: 'dtv-play-empty' }, uiMessage('play.sidebar.otherEmpty')) : null,
       otherOpen ? model.otherSessions.map(session => h('button', {
@@ -390,5 +413,26 @@ export function PlayWorkspaceBrowser({
       h('span', { className: 'dtv-play-title' }, rawText(session.title)),
       )) : null,
     ),
+    ordinaryPromptOpen ? h('div', {
+      className: 'dtv-play-modal-backdrop',
+      role: 'dialog',
+      'aria-modal': 'true',
+      'aria-labelledby': 'dtv-play-ordinary-prompt',
+    }, h('div', { className: 'dtv-play-modal' },
+      h('p', { id: 'dtv-play-ordinary-prompt' }, uiMessage('play.sidebar.ordinaryPrompt')),
+      h('div', { className: 'dtv-play-modal-actions' },
+        h('button', {
+          type: 'button',
+          className: 'dtv-play-modal-button',
+          onClick: () => setOrdinaryPromptOpen(false),
+        }, uiMessage('play.sidebar.ordinaryClose')),
+        h('button', {
+          type: 'button',
+          className: 'dtv-play-modal-button',
+          'data-primary': true,
+          onClick: returnToNative,
+        }, uiMessage('play.sidebar.returnNative')),
+      ),
+    )) : null,
   )
 }
