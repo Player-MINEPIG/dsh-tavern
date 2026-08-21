@@ -85,7 +85,10 @@ export async function loadPlaythroughExport(client, playthrough) {
     assistantText: qa.assistant,
     originalAssistantText: qa.assistant,
   }))
-  const turns = [...importedTurns, ...timelineTurns]
+  const turns = [...importedTurns, ...timelineTurns].map(turn => ({
+    ...turn,
+    ...selectAssistantDisplay(turn),
+  }))
   const hasImportedDisplay = importedTurns.length > 0 || (importContext?.greeting ?? '') !== ''
   const greeting = (importContext?.greeting ?? '') !== ''
     ? importContext.greeting

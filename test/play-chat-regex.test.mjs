@@ -191,7 +191,7 @@ test('display regex may suppress a context-triggered assistant output while pres
   assert.equal(turnHasVisibleRpContent(projected), false)
 })
 
-test('a logical QA displays the latest assistant stage that survives output regex', () => {
+test('a logical QA displays every assistant stage that survives output regex', () => {
   const turn = {
     id: 'subagent-qa', userText: 'Start', assistantText: 'Done',
     originalAssistantText: 'Done',
@@ -213,6 +213,22 @@ test('a logical QA displays the latest assistant stage that survives output rege
   })
   assert.equal(projected.assistantText, 'Final story')
   assert.equal(projected.originalAssistantText, '<正文>Final story</正文>')
+  assert.deepEqual(projected.assistantTexts, ['Final story'])
+})
+
+test('a logical QA keeps all assistant stages when display regex is disabled', () => {
+  const turn = {
+    id: 'subagent-qa', userText: 'Start', assistantText: 'Done',
+    originalAssistantText: 'Done',
+    assistantCandidates: ['Dispatched', '<正文>Final story</正文>', 'Done'],
+    reasoningText: '',
+  }
+  const projected = applyTurnDisplayRegex(turn, {
+    rules: [], bindings: {}, macros: { user: 'User', character: 'Assistant' },
+  })
+  assert.deepEqual(projected.assistantTexts, ['Dispatched', '<正文>Final story</正文>', 'Done'])
+  assert.equal(projected.assistantText, 'Dispatched\n\n<正文>Final story</正文>\n\nDone')
+  assert.equal(projected.originalAssistantText, projected.assistantText)
 })
 
 test('RP visibility ignores reasoning and context while retaining real content and running state', () => {

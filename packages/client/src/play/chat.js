@@ -268,6 +268,7 @@ function Greeting({ greeting, busy, change, locked = false, footer = null }) {
 export function turnHasVisibleRpContent(turn) {
   return turn?.importLast === true
     || (typeof turn?.userText === 'string' && turn.userText !== '')
+    || (Array.isArray(turn?.assistantTexts) && turn.assistantTexts.length > 0)
     || (typeof turn?.assistantText === 'string' && turn.assistantText !== '')
     || turn?.displayOverridden === true
     || turn?.running === true
@@ -281,14 +282,21 @@ export function greetingSelectionLocked({ turns = [], latestUserSeq = -1, runnin
 
 function Turn({ turn, hideUser = false, ...actionProps }) {
   if (!turnHasVisibleRpContent(turn)) return null
+  const assistantTexts = Array.isArray(turn.assistantTexts)
+    ? turn.assistantTexts
+    : turn.assistantText === '' ? [] : [turn.assistantText]
   return h('div', { className: 'dtv-play-chat-row' },
     turn.importLast === true ? h('p', { className: 'dtv-play-import-last' }, uiMessage('play.import.lastQa')) : null,
     hideUser || turn.userText === '' ? null : h(RichText, { className: 'dtv-play-chat-bubble dtv-play-chat-user dtv-play-rich', text: turn.userText }),
-    turn.assistantText === '' ? null : h(RichText, { className: 'dtv-play-chat-bubble dtv-play-chat-assistant dtv-play-rich', text: turn.assistantText }),
-    turn.running === true && turn.assistantText === ''
+    ...assistantTexts.map((text, index) => h(RichText, {
+      key: `assistant-${index}`,
+      className: 'dtv-play-chat-bubble dtv-play-chat-assistant dtv-play-rich',
+      text,
+    })),
+    turn.running === true && assistantTexts.length === 0
       ? h('p', { className: 'dtv-play-chat-running' }, uiMessage('play.chat.thinking'))
       : null,
-    turn.imported || turn.transient || (turn.assistantText === '' && turn.displayOverridden !== true)
+    turn.imported || turn.transient || (assistantTexts.length === 0 && turn.displayOverridden !== true)
       ? null
       : h(PlayTurnActions, { turn, ...actionProps }),
   )

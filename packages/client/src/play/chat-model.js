@@ -217,21 +217,26 @@ export function selectAssistantDisplay(turn, render = value => value) {
     return {
       assistantText: turn.assistantText,
       originalAssistantText: turn.originalAssistantText,
+      assistantTexts: turn.assistantText === '' ? [] : [turn.assistantText],
     }
   }
   const candidates = Array.isArray(turn.assistantCandidates) && turn.assistantCandidates.length > 0
     ? turn.assistantCandidates
     : [turn.assistantText]
-  let selectedRaw = candidates.at(-1) ?? ''
-  let selectedText = ''
+  const rawTexts = []
+  const renderedTexts = []
   for (const candidate of candidates) {
     const rendered = render(candidate)
     if (rendered !== '') {
-      selectedRaw = candidate
-      selectedText = rendered
+      rawTexts.push(candidate)
+      renderedTexts.push(rendered)
     }
   }
-  return { assistantText: selectedText, originalAssistantText: selectedRaw }
+  return {
+    assistantText: renderedTexts.join('\n\n'),
+    originalAssistantText: rawTexts.join('\n\n'),
+    assistantTexts: renderedTexts,
+  }
 }
 
 export function projectLiveTurns({

@@ -8099,20 +8099,25 @@ function selectAssistantDisplay(turn, render = (value) => value) {
   if (turn.displayOverridden === true) {
     return {
       assistantText: turn.assistantText,
-      originalAssistantText: turn.originalAssistantText
+      originalAssistantText: turn.originalAssistantText,
+      assistantTexts: turn.assistantText === "" ? [] : [turn.assistantText]
     };
   }
   const candidates = Array.isArray(turn.assistantCandidates) && turn.assistantCandidates.length > 0 ? turn.assistantCandidates : [turn.assistantText];
-  let selectedRaw = candidates.at(-1) ?? "";
-  let selectedText = "";
+  const rawTexts = [];
+  const renderedTexts = [];
   for (const candidate of candidates) {
     const rendered = render(candidate);
     if (rendered !== "") {
-      selectedRaw = candidate;
-      selectedText = rendered;
+      rawTexts.push(candidate);
+      renderedTexts.push(rendered);
     }
   }
-  return { assistantText: selectedText, originalAssistantText: selectedRaw };
+  return {
+    assistantText: renderedTexts.join("\n\n"),
+    originalAssistantText: rawTexts.join("\n\n"),
+    assistantTexts: renderedTexts
+  };
 }
 function projectLiveTurns({
   timeline,
@@ -11806,21 +11811,26 @@ function Greeting({ greeting, busy, change, locked = false, footer = null }) {
   );
 }
 function turnHasVisibleRpContent(turn) {
-  return turn?.importLast === true || typeof turn?.userText === "string" && turn.userText !== "" || typeof turn?.assistantText === "string" && turn.assistantText !== "" || turn?.displayOverridden === true || turn?.running === true;
+  return turn?.importLast === true || typeof turn?.userText === "string" && turn.userText !== "" || Array.isArray(turn?.assistantTexts) && turn.assistantTexts.length > 0 || typeof turn?.assistantText === "string" && turn.assistantText !== "" || turn?.displayOverridden === true || turn?.running === true;
 }
 function greetingSelectionLocked({ turns = [], latestUserSeq = -1, running = false } = {}) {
   return running || latestUserSeq >= 0 || turns.some((turn) => turn?.imported !== true);
 }
 function Turn({ turn, hideUser = false, ...actionProps }) {
   if (!turnHasVisibleRpContent(turn)) return null;
+  const assistantTexts = Array.isArray(turn.assistantTexts) ? turn.assistantTexts : turn.assistantText === "" ? [] : [turn.assistantText];
   return h8(
     "div",
     { className: "dtv-play-chat-row" },
     turn.importLast === true ? h8("p", { className: "dtv-play-import-last" }, uiMessage("play.import.lastQa")) : null,
     hideUser || turn.userText === "" ? null : h8(RichText, { className: "dtv-play-chat-bubble dtv-play-chat-user dtv-play-rich", text: turn.userText }),
-    turn.assistantText === "" ? null : h8(RichText, { className: "dtv-play-chat-bubble dtv-play-chat-assistant dtv-play-rich", text: turn.assistantText }),
-    turn.running === true && turn.assistantText === "" ? h8("p", { className: "dtv-play-chat-running" }, uiMessage("play.chat.thinking")) : null,
-    turn.imported || turn.transient || turn.assistantText === "" && turn.displayOverridden !== true ? null : h8(PlayTurnActions, { turn, ...actionProps })
+    ...assistantTexts.map((text2, index) => h8(RichText, {
+      key: `assistant-${index}`,
+      className: "dtv-play-chat-bubble dtv-play-chat-assistant dtv-play-rich",
+      text: text2
+    })),
+    turn.running === true && assistantTexts.length === 0 ? h8("p", { className: "dtv-play-chat-running" }, uiMessage("play.chat.thinking")) : null,
+    turn.imported || turn.transient || assistantTexts.length === 0 && turn.displayOverridden !== true ? null : h8(PlayTurnActions, { turn, ...actionProps })
   );
 }
 function ImportControls({
@@ -12298,7 +12308,10 @@ async function loadPlaythroughExport(client, playthrough) {
     assistantText: qa.assistant,
     originalAssistantText: qa.assistant
   }));
-  const turns = [...importedTurns, ...timelineTurns];
+  const turns = [...importedTurns, ...timelineTurns].map((turn) => ({
+    ...turn,
+    ...selectAssistantDisplay(turn)
+  }));
   const hasImportedDisplay = importedTurns.length > 0 || (importContext?.greeting ?? "") !== "";
   const greeting = (importContext?.greeting ?? "") !== "" ? importContext.greeting : hasImportedDisplay ? null : selectedGreeting(selectionResponse, characterResponse);
   const [regexDocument, active] = await Promise.all([
