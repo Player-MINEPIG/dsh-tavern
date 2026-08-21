@@ -1,6 +1,11 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
-import { applyTurnDisplayRegex, loadChatState, turnHasVisibleRpContent } from '../packages/client/src/play/chat.js'
+import {
+  applyTurnDisplayRegex,
+  loadChatState,
+  turnHasDurableQaActions,
+  turnHasVisibleRpContent,
+} from '../packages/client/src/play/chat.js'
 
 test('Chat treats displayOverride as frozen final text and keeps source messages untouched', async () => {
   const messages = {
@@ -240,9 +245,21 @@ test('RP visibility ignores reasoning and context while retaining real content a
   assert.equal(turnHasVisibleRpContent({ userText: '', assistantText: 'reply', running: false }), true)
   assert.equal(turnHasVisibleRpContent({ userText: '', assistantText: '', running: true }), true)
   assert.equal(turnHasVisibleRpContent({
+    userText: '', assistantText: '', assistantTexts: [], running: false,
+    variant: { id: 'variant' }, variants: [{ id: 'variant' }],
+  }), true)
+  assert.equal(turnHasDurableQaActions({
+    userText: '', assistantText: '', assistantTexts: [], running: false,
+    variant: { id: 'variant' }, variants: [{ id: 'variant' }],
+  }), true)
+  assert.equal(turnHasVisibleRpContent({
     userText: '', assistantText: '', displayOverridden: true, running: false,
   }), true)
   assert.equal(turnHasVisibleRpContent({
     hidden: true, userText: '', assistantText: '', running: false,
+  }), false)
+  assert.equal(turnHasVisibleRpContent({
+    hidden: true, userText: 'hidden', assistantText: 'hidden',
+    variant: { id: 'variant' }, variants: [{ id: 'variant' }],
   }), false)
 })

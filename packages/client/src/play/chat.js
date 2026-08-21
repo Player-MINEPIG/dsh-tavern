@@ -265,8 +265,18 @@ function Greeting({ greeting, busy, change, locked = false, footer = null }) {
   )
 }
 
+export function turnHasDurableQaActions(turn) {
+  return turn?.hidden !== true
+    && turn?.imported !== true
+    && turn?.transient !== true
+    && turn?.variant != null
+    && Array.isArray(turn?.variants)
+}
+
 export function turnHasVisibleRpContent(turn) {
-  return turn?.importLast === true
+  if (turn?.hidden === true) return false
+  return turnHasDurableQaActions(turn)
+    || turn?.importLast === true
     || (typeof turn?.userText === 'string' && turn.userText !== '')
     || (Array.isArray(turn?.assistantTexts) && turn.assistantTexts.length > 0)
     || (typeof turn?.assistantText === 'string' && turn.assistantText !== '')
@@ -282,6 +292,7 @@ export function greetingSelectionLocked({ turns = [], latestUserSeq = -1, runnin
 
 function Turn({ turn, hideUser = false, ...actionProps }) {
   if (!turnHasVisibleRpContent(turn)) return null
+  const durableQa = turnHasDurableQaActions(turn)
   const assistantTexts = Array.isArray(turn.assistantTexts)
     ? turn.assistantTexts
     : turn.assistantText === '' ? [] : [turn.assistantText]
@@ -296,9 +307,7 @@ function Turn({ turn, hideUser = false, ...actionProps }) {
     turn.running === true && assistantTexts.length === 0
       ? h('p', { className: 'dtv-play-chat-running' }, uiMessage('play.chat.thinking'))
       : null,
-    turn.imported || turn.transient || (assistantTexts.length === 0 && turn.displayOverridden !== true)
-      ? null
-      : h(PlayTurnActions, { turn, ...actionProps }),
+    durableQa ? h(PlayTurnActions, { turn, ...actionProps }) : null,
   )
 }
 
