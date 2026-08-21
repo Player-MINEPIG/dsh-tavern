@@ -5535,8 +5535,8 @@ function characterBindingDirty(selection, binding) {
   if (selection === null || typeof selection !== "object" || binding === null || typeof binding !== "object") return false;
   if (selection.characterCardId !== binding.characterCardId) return false;
   const applied = characterBindingOptions(selection);
-  const pending = characterBindingOptions(binding);
-  return applied.greetingIndex !== pending.greetingIndex || applied.preferCharacterSystemPrompt !== pending.preferCharacterSystemPrompt || applied.preferCharacterPostHistory !== pending.preferCharacterPostHistory;
+  const pending2 = characterBindingOptions(binding);
+  return applied.greetingIndex !== pending2.greetingIndex || applied.preferCharacterSystemPrompt !== pending2.preferCharacterSystemPrompt || applied.preferCharacterPostHistory !== pending2.preferCharacterPostHistory;
 }
 function characterEditorDraft(character) {
   if (character === null || typeof character !== "object") return null;
@@ -7981,10 +7981,10 @@ function projectLiveTurns({
 } = {}) {
   if (typeof sessionId !== "string" || sessionId === "") return [];
   const boundary = recordedEndSeq(timeline, sessionId);
-  const pending = [];
+  const pending2 = [];
   let turn = null;
   const appendTurn = () => {
-    if (turn !== null) pending.push(turn);
+    if (turn !== null) pending2.push(turn);
     turn = null;
   };
   const createTurn = (node, triggerKind, userText = "") => ({
@@ -8021,8 +8021,8 @@ function projectLiveTurns({
     }
   }
   appendTurn();
-  if (pending.length === 0) return pending;
-  const tail = pending[pending.length - 1];
+  if (pending2.length === 0) return pending2;
+  const tail = pending2[pending2.length - 1];
   if (running) {
     const reasoning = assistantReasoning(partial?.blocks);
     const streamed = assistantText(partial?.blocks);
@@ -8030,7 +8030,7 @@ function projectLiveTurns({
     if (streamed !== "") tail.assistantText = streamed;
     tail.running = true;
   }
-  return pending;
+  return pending2;
 }
 function latestUserNodeSeq(nodes) {
   let latest = -1;
@@ -10461,19 +10461,19 @@ function parseJsonl(text2) {
   const messages = rows.slice(1).filter((row) => typeof row?.mes === "string");
   let greeting = null;
   const qa = [];
-  let pending = null;
+  let pending2 = null;
   for (const message of messages) {
     if (message.is_user === true) {
-      if (pending !== null) throw new TypeError("play.import.unpaired");
-      pending = message.mes;
-    } else if (pending === null && qa.length === 0 && greeting === null) {
+      if (pending2 !== null) throw new TypeError("play.import.unpaired");
+      pending2 = message.mes;
+    } else if (pending2 === null && qa.length === 0 && greeting === null) {
       greeting = message.mes;
-    } else if (pending !== null) {
-      qa.push({ user: pending, assistant: message.mes });
-      pending = null;
+    } else if (pending2 !== null) {
+      qa.push({ user: pending2, assistant: message.mes });
+      pending2 = null;
     }
   }
-  if (pending !== null) throw new TypeError("play.import.unpaired");
+  if (pending2 !== null) throw new TypeError("play.import.unpaired");
   return { greeting, qa, source: { format: "sillytavern-jsonl" } };
 }
 function parseBundle(value) {
@@ -10948,10 +10948,10 @@ function createPlayNodeController(client, {
   idFactory = defaultId
 } = {}) {
   if (client == null) throw new TypeError("playClient.required");
-  let pending = Promise.resolve();
+  let pending2 = Promise.resolve();
   const schedule = (operation) => {
-    const task = pending.then(operation);
-    pending = task.catch(() => {
+    const task = pending2.then(operation);
+    pending2 = task.catch(() => {
     });
     return task;
   };
@@ -11091,6 +11091,24 @@ function createPlayNodeController(client, {
   };
 }
 
+// packages/client/src/play/swipe-transition.js
+var MAX_PENDING_TRANSITIONS = 32;
+var pending = /* @__PURE__ */ new Map();
+function queueSwipeTransition(sessionId, direction) {
+  if (typeof sessionId !== "string" || sessionId === "") return;
+  if (direction !== "previous" && direction !== "next") return;
+  pending.delete(sessionId);
+  pending.set(sessionId, direction);
+  while (pending.size > MAX_PENDING_TRANSITIONS) {
+    pending.delete(pending.keys().next().value);
+  }
+}
+function consumeSwipeTransition(sessionId) {
+  const direction = pending.get(sessionId) ?? null;
+  pending.delete(sessionId);
+  return direction;
+}
+
 // packages/client/src/play/turn-actions.js
 var h7 = createLocalizedElement(import_react8.createElement);
 var controllers = /* @__PURE__ */ new WeakMap();
@@ -11167,10 +11185,12 @@ function PlayTurnActions({
     const target = turn.variants[targetPosition];
     if (target === void 0) throw new TypeError("Reply variant does not exist");
     const result = await controller(playClient).adoptVariant(playthrough, turn.id, target.id);
+    queueSwipeTransition(result.sessionId, targetPosition < position ? "previous" : "next");
     openSession(result.sessionId);
   });
   const generate = () => mutate(async () => {
     const result = await controller(playClient).createReplySwipe(playthrough, turn.id);
+    queueSwipeTransition(result.sessionId, "next");
     openSession(result.sessionId);
     window.dispatchEvent(new Event(CLIENT_REFRESH_EVENT));
   });
@@ -11349,9 +11369,9 @@ function appendCompletedTurns(timeline, messageState, sessionId, {
 }
 function createTurnReconciler(client) {
   if (client == null) throw new TypeError("playClient.required");
-  let pending = Promise.resolve();
+  let pending2 = Promise.resolve();
   return function reconcile(sessionId, playthrough) {
-    const task = pending.then(async () => {
+    const task = pending2.then(async () => {
       const messages = await client.getMessages(sessionId);
       if (messages.incompleteTurn) return { timeline: null, added: [] };
       const initial = await client.getTimeline(playthrough);
@@ -11365,7 +11385,7 @@ function createTurnReconciler(client) {
       }, { initial });
       return { timeline, added };
     });
-    pending = task.catch(() => {
+    pending2 = task.catch(() => {
     });
     return task;
   };
@@ -11374,8 +11394,11 @@ function createTurnReconciler(client) {
 // packages/client/src/play/chat.js
 var h8 = createLocalizedElement(import_react9.createElement);
 var turnReconcilers = /* @__PURE__ */ new WeakMap();
+var chatSnapshots = /* @__PURE__ */ new WeakMap();
+var MAX_CACHED_PLAYTHROUGHS = 32;
 var css7 = `
-.dtv-play-chat{height:100%;min-height:0;box-sizing:border-box;overflow:auto;padding:22px max(18px,calc((100% - 780px)/2)) 36px;color:var(--dsw-alias-label-primary)}
+.dtv-play-chat{height:100%;min-height:0;box-sizing:border-box;overflow-x:hidden;overflow-y:auto;padding:22px max(18px,calc((100% - 780px)/2)) 36px;color:var(--dsw-alias-label-primary)}
+.dtv-play-chat-stage{display:grid;min-width:0}.dtv-play-chat-frame{grid-area:1/1;min-width:0;will-change:transform,opacity}.dtv-play-chat-frame[data-phase=outgoing]{pointer-events:none}.dtv-play-chat-frame[data-phase=incoming][data-direction=next]{animation:dtv-play-swipe-in-next 180ms ease-out both}.dtv-play-chat-frame[data-phase=outgoing][data-direction=next]{animation:dtv-play-swipe-out-next 180ms ease-out both}.dtv-play-chat-frame[data-phase=incoming][data-direction=previous]{animation:dtv-play-swipe-in-previous 180ms ease-out both}.dtv-play-chat-frame[data-phase=outgoing][data-direction=previous]{animation:dtv-play-swipe-out-previous 180ms ease-out both}@keyframes dtv-play-swipe-in-next{from{transform:translateX(42px);opacity:.2}to{transform:translateX(0);opacity:1}}@keyframes dtv-play-swipe-out-next{from{transform:translateX(0);opacity:1}to{transform:translateX(-42px);opacity:0}}@keyframes dtv-play-swipe-in-previous{from{transform:translateX(-42px);opacity:.2}to{transform:translateX(0);opacity:1}}@keyframes dtv-play-swipe-out-previous{from{transform:translateX(0);opacity:1}to{transform:translateX(42px);opacity:0}}@media (prefers-reduced-motion:reduce){.dtv-play-chat-frame[data-phase]{animation-duration:1ms!important}}
 .dtv-play-chat-list{display:flex;flex-direction:column;gap:22px}.dtv-play-chat-row{display:flex;flex-direction:column;gap:8px}.dtv-play-chat-role{font-size:11px;font-weight:700;color:var(--dsw-alias-label-tertiary)}
 .dtv-play-chat-bubble{max-width:88%;box-sizing:border-box;border-radius:14px;padding:12px 14px;overflow-wrap:anywhere;font-size:14px;line-height:1.65}.dtv-play-chat-user{align-self:flex-end;background:var(--dsw-alias-interactive-bg-selected,var(--dsw-specific-tip))}.dtv-play-chat-assistant{align-self:flex-start;background:var(--dsw-alias-bg-layer-2,var(--dsw-specific-block))}
 .dtv-play-greeting{position:relative;align-self:flex-start;max-width:88%;display:grid;grid-template-columns:30px minmax(0,1fr) 30px;align-items:center;gap:6px}.dtv-play-greeting[data-locked=true]{grid-template-columns:minmax(0,1fr)}.dtv-play-greeting-text{border-radius:14px;padding:13px 15px;background:var(--dsw-alias-bg-layer-2,var(--dsw-specific-block));overflow-wrap:anywhere;font-size:14px;line-height:1.65}
@@ -11661,6 +11684,105 @@ function ImportControls({
     })
   );
 }
+function playthroughCacheKey(playthrough) {
+  return typeof playthrough?.path === "string" ? playthrough.path : "";
+}
+function cachedChatSnapshot(client, playthrough) {
+  return chatSnapshots.get(client)?.get(playthroughCacheKey(playthrough)) ?? null;
+}
+function rememberChatSnapshot(client, playthrough, snapshot) {
+  let cache = chatSnapshots.get(client);
+  if (cache === void 0) {
+    cache = /* @__PURE__ */ new Map();
+    chatSnapshots.set(client, cache);
+  }
+  const key = playthroughCacheKey(playthrough);
+  cache.delete(key);
+  cache.set(key, snapshot);
+  while (cache.size > MAX_CACHED_PLAYTHROUGHS) {
+    cache.delete(cache.keys().next().value);
+  }
+}
+function ChatFrame({
+  snapshot,
+  currentSessionId,
+  liveNodes,
+  partial,
+  running,
+  playClient,
+  playthrough,
+  openSession,
+  greetingBusy,
+  changeGreeting,
+  changed,
+  onError,
+  phase = "idle",
+  direction = null,
+  transitionEnded
+}) {
+  const state = snapshot.value;
+  const current2 = snapshot.sessionId === currentSessionId;
+  const interactive = current2 && phase !== "outgoing";
+  const liveSourceTurns = !current2 ? [] : projectLiveTurns({
+    timeline: state.timeline,
+    sessionId: currentSessionId,
+    nodes: liveNodes,
+    partial,
+    running
+  });
+  let liveDepth = 0;
+  const liveTurns = Array(liveSourceTurns.length);
+  for (let index = liveSourceTurns.length - 1; index >= 0; index -= 1) {
+    const turn = liveSourceTurns[index];
+    const assistantDepth = turn.assistantText === "" ? void 0 : liveDepth++;
+    const userDepth = turn.userText === "" ? void 0 : liveDepth++;
+    liveTurns[index] = applyTurnDisplayRegex(turn, state.display, { userDepth, assistantDepth });
+  }
+  const importLocked = !interactive || state.importMutable !== true || running || latestUserNodeSeq(liveNodes) >= 0 || liveTurns.length > 0;
+  const importControls = !interactive ? null : h8(ImportControls, {
+    playClient,
+    playthrough,
+    binding: state.importBinding,
+    locked: importLocked,
+    changed,
+    onError
+  });
+  const greetingLocked = !interactive || greetingSelectionLocked({
+    turns: state.turns,
+    latestUserSeq: latestUserNodeSeq(liveNodes),
+    running
+  });
+  return h8("div", {
+    className: "dtv-play-chat-frame",
+    "data-phase": phase,
+    "data-direction": direction,
+    onAnimationEnd: transitionEnded
+  }, h8(
+    "div",
+    { className: "dtv-play-chat-list" },
+    state.greeting === null && state.importBinding !== null ? null : h8(Greeting, {
+      greeting: state.greeting,
+      busy: greetingBusy,
+      change: changeGreeting,
+      locked: greetingLocked,
+      footer: state.importBinding === null ? importControls : null
+    }),
+    ...state.turns.map((turn) => h8(Turn, {
+      key: turn.id,
+      turn,
+      playthrough,
+      playClient,
+      openSession,
+      running: running || !interactive,
+      onChanged: changed,
+      onError
+    })),
+    state.importBinding === null ? null : importControls,
+    ...liveTurns.map((turn) => h8(Turn, { key: turn.id, turn })),
+    state.greeting === null && state.turns.length === 0 && liveTurns.length === 0 && !running ? h8("p", { className: "dtv-play-chat-status" }, uiMessage("play.chat.empty")) : null,
+    liveTurns.length === 0 && running && current2 ? h8("p", { className: "dtv-play-chat-running" }, uiMessage("play.chat.thinking")) : null
+  ));
+}
 function MowanChatView({ sessionId, useSession, playClient, playthrough, openSession, chatScroll }) {
   installPlayChatStyles();
   const sessionRevision = useSession((state2) => `${state2.nodes?.length ?? 0}:${state2.running === true}:${state2.blank === true}`);
@@ -11669,8 +11791,12 @@ function MowanChatView({ sessionId, useSession, playClient, playthrough, openSes
   const latestUserSeq = latestUserNodeSeq(liveNodes);
   const [revision, setRevision] = (0, import_react9.useState)(0);
   const running = useSession((state2) => state2.running === true);
-  const [loadedState, setLoadedState] = (0, import_react9.useState)(null);
-  const state = loadedState?.sessionId === sessionId ? loadedState.value : null;
+  const [loadedState, setLoadedState] = (0, import_react9.useState)(() => cachedChatSnapshot(playClient, playthrough));
+  const loadedStateRef = (0, import_react9.useRef)(loadedState);
+  const transitionIntent = (0, import_react9.useRef)({ sessionId: null, direction: null });
+  const [transition, setTransition] = (0, import_react9.useState)(null);
+  const state = loadedState?.value ?? null;
+  const stateIsCurrent = loadedState?.sessionId === sessionId;
   const [error, setError] = (0, import_react9.useState)("");
   const [greetingBusy, setGreetingBusy] = (0, import_react9.useState)(false);
   const bottomAnchor = (0, import_react9.useRef)(null);
@@ -11685,10 +11811,10 @@ function MowanChatView({ sessionId, useSession, playClient, playthrough, openSes
     chatScroll?.save(null);
   };
   (0, import_react9.useLayoutEffect)(() => {
-    if (state === null || initialScrollSession.current === sessionId) return;
+    if (!stateIsCurrent || initialScrollSession.current === sessionId) return;
     initialScrollSession.current = sessionId;
     scrollToBottom();
-  }, [sessionId, state]);
+  }, [sessionId, state, stateIsCurrent]);
   (0, import_react9.useLayoutEffect)(() => {
     if (userSeqSession.current !== sessionId) {
       userSeqSession.current = sessionId;
@@ -11705,26 +11831,53 @@ function MowanChatView({ sessionId, useSession, playClient, playthrough, openSes
     return () => window.removeEventListener(CLIENT_REFRESH_EVENT, refresh);
   }, []);
   (0, import_react9.useEffect)(() => {
+    if (transition === null) return void 0;
+    const targetSessionId = transition.to.sessionId;
+    const timer = window.setTimeout(() => {
+      setTransition((current2) => current2?.to.sessionId === targetSessionId ? null : current2);
+    }, 260);
+    return () => window.clearTimeout(timer);
+  }, [transition]);
+  (0, import_react9.useEffect)(() => {
     let active = true;
+    if (transitionIntent.current.sessionId !== sessionId) {
+      transitionIntent.current = {
+        sessionId,
+        direction: consumeSwipeTransition(sessionId)
+      };
+      setTransition(null);
+    }
     setError("");
     loadChatState(playClient, sessionId, playthrough).then((next) => {
-      if (active) setLoadedState({ sessionId, value: next });
+      if (!active) return;
+      const incoming = { sessionId, value: next };
+      const previous = loadedStateRef.current;
+      if (previous !== null && previous.sessionId !== sessionId) {
+        const direction = transitionIntent.current.sessionId === sessionId ? transitionIntent.current.direction : null;
+        setTransition(direction === null ? null : {
+          from: previous,
+          to: incoming,
+          direction
+        });
+      }
+      loadedStateRef.current = incoming;
+      rememberChatSnapshot(playClient, playthrough, incoming);
+      setLoadedState(incoming);
     }).catch((reason) => {
       if (!active) return;
-      setLoadedState(null);
       setError(reason instanceof Error ? reason.message : String(reason));
     });
     return () => {
       active = false;
     };
   }, [playClient, playthrough, revision, sessionId, sessionRevision]);
-  const greetingLocked = greetingSelectionLocked({
-    turns: state?.turns ?? [],
-    latestUserSeq,
-    running
-  });
   const changeGreeting = async (direction) => {
-    if (state?.greeting == null || greetingBusy || greetingLocked) return;
+    const greetingLocked = greetingSelectionLocked({
+      turns: state?.turns ?? [],
+      latestUserSeq,
+      running
+    });
+    if (!stateIsCurrent || state?.greeting == null || greetingBusy || greetingLocked) return;
     const next = adjacentGreetingIndex(state.greeting, direction);
     if (next === null) return;
     setGreetingBusy(true);
@@ -11738,61 +11891,41 @@ function MowanChatView({ sessionId, useSession, playClient, playthrough, openSes
       setGreetingBusy(false);
     }
   };
-  const liveSourceTurns = state === null ? [] : projectLiveTurns({
-    timeline: state.timeline,
-    sessionId,
-    nodes: liveNodes,
+  const changed = () => setRevision((value) => value + 1);
+  const transitionEnded = (event) => {
+    if (event.target !== event.currentTarget) return;
+    setTransition((current2) => current2?.to.sessionId === loadedState?.sessionId ? null : current2);
+  };
+  const frame = (snapshot, phase) => h8(ChatFrame, {
+    key: `${phase}:${snapshot.sessionId}`,
+    snapshot,
+    currentSessionId: sessionId,
+    liveNodes,
     partial,
-    running
-  });
-  let liveDepth = 0;
-  const liveTurns = Array(liveSourceTurns.length);
-  for (let index = liveSourceTurns.length - 1; index >= 0; index -= 1) {
-    const turn = liveSourceTurns[index];
-    const assistantDepth = turn.assistantText === "" ? void 0 : liveDepth++;
-    const userDepth = turn.userText === "" ? void 0 : liveDepth++;
-    liveTurns[index] = applyTurnDisplayRegex(turn, state.display, { userDepth, assistantDepth });
-  }
-  const importLocked = state?.importMutable !== true || running || latestUserSeq >= 0 || liveTurns.length > 0;
-  const importControls = state === null ? null : h8(ImportControls, {
+    running,
     playClient,
     playthrough,
-    binding: state.importBinding,
-    locked: importLocked,
-    changed: () => setRevision((value) => value + 1),
-    onError: setError
+    openSession,
+    greetingBusy,
+    changeGreeting,
+    changed,
+    onError: setError,
+    phase,
+    direction: transition?.direction ?? null,
+    transitionEnded: phase === "incoming" ? transitionEnded : void 0
   });
   return h8(
     "div",
     { className: "dtv-play-chat" },
     error === "" ? null : h8("p", { className: "dtv-play-chat-status", "data-error": true }, rawText(error)),
     state === null && error === "" ? h8("p", { className: "dtv-play-chat-status" }, uiMessage("play.chat.loading")) : null,
-    state === null ? null : h8(
+    loadedState === null ? null : h8(
       "div",
-      { className: "dtv-play-chat-list" },
-      state.greeting === null && state.importBinding !== null ? null : h8(Greeting, {
-        greeting: state.greeting,
-        busy: greetingBusy,
-        change: changeGreeting,
-        locked: greetingLocked,
-        footer: state.importBinding === null ? importControls : null
-      }),
-      ...state.turns.map((turn) => h8(Turn, {
-        key: turn.id,
-        turn,
-        playthrough,
-        playClient,
-        openSession,
-        running,
-        onChanged: () => setRevision((value) => value + 1),
-        onError: setError
-      })),
-      state.importBinding === null ? null : importControls,
-      ...liveTurns.map((turn) => h8(Turn, { key: turn.id, turn })),
-      state.greeting === null && state.turns.length === 0 && liveTurns.length === 0 && !running ? h8("p", { className: "dtv-play-chat-status" }, uiMessage("play.chat.empty")) : null,
-      liveTurns.length === 0 && running ? h8("p", { className: "dtv-play-chat-running" }, uiMessage("play.chat.thinking")) : null,
-      h8("span", { ref: bottomAnchor, "aria-hidden": true })
-    )
+      { className: "dtv-play-chat-stage" },
+      transition === null ? null : frame(transition.from, "outgoing"),
+      frame(loadedState, transition === null ? "idle" : "incoming")
+    ),
+    h8("span", { ref: bottomAnchor, "aria-hidden": true })
   );
 }
 
