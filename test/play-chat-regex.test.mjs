@@ -77,6 +77,35 @@ test('Chat automatically composes bound preset and character source regex', asyn
   assert.equal(messages.messages[1].text, 'Alice answers')
 })
 
+test('Chat does not apply assistant output regex to card greeting metadata', async () => {
+  const client = {
+    async getMessages() { return { incompleteTurn: false, messages: [] } },
+    async getTimeline() { return { nodes: [] } },
+    async getCharacterSelection() {
+      return { selection: { characterCardId: 'character-a', character: { greetingIndex: 0 } } }
+    },
+    async getCharacter() {
+      return { character: {
+        id: 'character-a', name: 'Card', data: { name: 'Alice', firstMessage: 'Hello {{user}}.' },
+      } }
+    },
+    async getPreset() {
+      return { preset: { source: { raw: { regex_scripts: [{
+        id: 'body-only', findRegex: '/^(?![\\s\\S]*<正文>)[\\s\\S]*$/g', replaceString: '',
+        placement: [2], disabled: false,
+      }] } } } }
+    },
+    async getActive() {
+      return { selection: { presetId: 'preset-a', characterCardId: 'character-a' }, resources: { user: { name: 'Reader' } } }
+    },
+    async getFile() { return { content: JSON.stringify({ schemaVersion: 1, rules: [] }) } },
+  }
+  const state = await loadChatState(client, 'session-a', {
+    path: 'timeline.json', ext: { pmpDshTavern: { characterId: 'character-a' } },
+  })
+  assert.equal(state.greeting.text, 'Hello Reader.')
+})
+
 test('Chat applies ST minDepth and maxDepth to existing timeline messages', async () => {
   const messages = { incompleteTurn: false, messages: [
     { id: 'u1', role: 'user', seq: 1, content: [], text: 'old——user' },

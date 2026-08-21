@@ -192,7 +192,14 @@ export async function loadChatState(client, sessionId, playthrough) {
     importBinding: importedContext.binding,
     importContext: importedContext.document,
     importMutable,
-    greeting: importedTurns.length > 0 ? null : greeting === null ? null : { ...greeting, text: renderText(greeting.text, 'assistant') },
+    greeting: importedTurns.length > 0 ? null : greeting === null ? null : {
+      ...greeting,
+      // A greeting is card metadata shown before the first durable turn, not an
+      // assistant message. Output-only display regex (for example "keep only
+      // <正文>") must not erase it merely because the card did not wrap its
+      // greeting in the model-output protocol.
+      text: applyDisplayNameMacros(greeting.text, macros),
+    },
     regexDiagnostics,
     display: { rules, bindings, macros },
   }
