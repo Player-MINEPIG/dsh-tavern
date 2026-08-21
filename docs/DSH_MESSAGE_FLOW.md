@@ -298,11 +298,13 @@ Tavern Trace 位于 Conversation / Trajectory 同级的公开 `conversation.view
 
 ```text
 预检当前选择或模板
-  → DSH workspaces.connectWorkspace() 返回真实 blank session
+  → DSH 模式：workspaces.connectWorkspace() 返回真实 blank session
+    魔丸模式：按预检中的角色复用共享周目控制器，创建或复用权威空周目
   → loader 原子写入完整 Tavern selection
+  → 魔丸模式回读校验 session 角色与周目角色一致
   → DSH sessions.open() 导航
 ```
 
-模板只保存 preset、角色/greeting 开关、用户、独立世界书和 RP 叠加的资源 ID/选项；不会读取或复制 durable messages、Tavern Trace、Inbox、claimed input、turn/step 或资源正文。若任一资源已缺失，预检和应用都会返回诊断并阻止导航，因此不会留下“只应用了一半”的 Tavern 组合。
+模板只保存 preset、角色/greeting 开关、用户、独立世界书和 RP 叠加的资源 ID/选项；不会读取或复制 durable messages、Tavern Trace、Inbox、claimed input、turn/step 或资源正文。魔丸模式要求该投影含角色卡，DSH 模式则允许无角色卡的普通会话。若任一资源已缺失，预检和应用都会返回诊断并阻止导航，因此不会留下“只应用了一半”的 Tavern 组合。
 
 语言、缩放与「绑卡跟随 RP」同样是控制面状态，只写入全局 `ui-settings.json` 并作用于 Tavern 浏览器根节点。它们不进入 profile 编译、world-book matcher、`agent/request` 或 `request/header`。可选的 `rp:policy` 正文写入 `rp-policy.json`，只在 RP 开启时进入 system 段。

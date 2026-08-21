@@ -66,7 +66,8 @@ description、personality、scenario、example dialogue 等字段会按预设 ma
 
 同一会话中切换资源不会删除旧资源已经影响过的 assistant 回复。需要避免上下文残留时，应使用“新会话”：
 
-- “维持当前设置新开对话”把当前 preset、角色/greeting 选项、用户、独立世界书和 RP 状态复制到真实 blank DSH session；
+- DSH 模式下，“维持当前设置新开对话”把当前 preset、角色/greeting 选项、用户、独立世界书和 RP 状态复制到真实 blank DSH session；
+- 魔丸模式下，同一入口及“根据所选模板”入口会读取配置中的角色卡，创建或复用该角色的空周目，再把完整 selection 应用到其 root session；配置未绑定角色卡时会拒绝创建周目，用户可切回 DSH 模式创建普通会话；
 - 配置模板保存同一份有界 selection 投影，可在创建前查看模板内容；
 - 更新模板只从当前 session 的实际设置获取。请先通过 DT 悬浮球的资源面板完成并保存配置；
 - 新会话不会复制 durable history、Inbox、Trace、资源正文或旧运行态；
@@ -79,7 +80,9 @@ description、personality、scenario、example dialogue 等字段会按预设 ma
 在魔丸侧边栏的角色卡下点击新建周目，会创建或复用该角色最近一个没有任何真实记录的
 `x周目`。复用检查同时查看 `timeline.json`、root session 的 DSH user/assistant 消息、开放
 turn，以及是否已有外部导入 QA；因此连续点击不会无限增加空周目。周目标题旁的菜单可以
-重命名。创建只建立真实 blank DSH session 和周目元数据，不写 greeting 或伪造消息。
+重命名。被点击的角色卡是创建事务的权威角色；无论 DSH 新会话继承了哪个最近聚焦配置，
+创建或复用后都会校验并在必要时纠正 root session 的角色绑定，再显示该角色 greeting。
+创建只建立真实 blank DSH session 和周目元数据，不写 greeting 或伪造消息。
 
 空周目尚未出现顶栏时，greeting 会显示在原生对话栏下方的 opening dock 中。左右按钮切换
 角色卡 alternate greeting；角色卡没有 greeting 时仍保留空白区域和同一 footer 布局。点击

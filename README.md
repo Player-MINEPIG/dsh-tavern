@@ -247,7 +247,7 @@ RP 是当前 session 的叠加，不是 DSH agent preset。开启后文件沙箱
 
 ### 新会话与配置模板
 
-“维持当前设置新开对话”会把当前 Tavern 选择复制到真实 blank DSH session，不复制旧历史、Inbox 或 Trace。也可以保存配置模板、查看模板内容，并从模板创建干净会话。它适合在切换角色或预设时避免旧 assistant 回复造成上下文残留。
+“维持当前设置新开对话”会把当前 Tavern 选择复制到真实 blank DSH session，不复制旧历史、Inbox 或 Trace。也可以保存配置模板并查看其内容。DSH 模式下，该入口保持普通干净会话语义；魔丸模式下，它会按配置中绑定的角色卡创建或复用对应周目，并应用完整配置。没有角色卡的配置仍可在 DSH 模式创建普通会话，但不能在魔丸模式伪装成周目。
 
 <p align="center">
   <img src="docs/assets/new-session.png" alt="新会话与 Tavern 配置模板侧栏" width="520">

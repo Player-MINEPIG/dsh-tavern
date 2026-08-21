@@ -73,7 +73,7 @@ SessionSelectionStore ─────────────────┘
 
 ### Clean-session/template policy
 
-“维持当前设置新开对话”与配置模板只复制上述 selection 投影，不调用普通 fork，也不读取或写入 Session events。浏览器通过 DSH 公开的 `workspaces.connectWorkspace(workspaceId)` 得到真实 blank session id；loader API 再次解析来源、验证每个资源，并以一次 `SessionSelectionStore.set(targetId, completeSelection)` 原子提交，之后浏览器才调用公开 `sessions.open(targetId)`。
+“维持当前设置新开对话”与配置模板只复制上述 selection 投影，不调用普通 fork，也不读取或写入 Session events。DSH 模式通过公开 `workspaces.connectWorkspace(workspaceId)` 得到真实 blank session id。魔丸模式先由同一 preview 取得配置角色，再调用共享周目创建控制器：现有 v2 session/目录/timeline/catalog 原子 API 创建或复用该角色的权威空周目，v1 apply 随后以一次 `SessionSelectionStore.set(targetId, completeSelection)` 提交完整配置，并再次校验 root session 的角色绑定与周目角色一致。两种模式都只在成功后调用公开 `sessions.open(targetId)`；没有角色卡的配置只能创建普通 DSH 会话，不能创建周目。
 
 模板删除资源时不被静默改写：preset、角色/greeting、用户或独立世界书的悬空 id 由 preview/apply 返回结构化诊断并阻止创建。DSH 创建失败发生在 selection 写入之前；原子写失败不发布内存状态且不导航。模板不得包含 durable history、Trace、Inbox、turn/step、运行态或资源正文。RP 状态随 selection 投影一起复制。
 

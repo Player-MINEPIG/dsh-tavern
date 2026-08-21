@@ -61,7 +61,7 @@ DSH system prompt + agent request
 
 DSH 原生“新会话”按钮当前默认继承上一个聚焦会话的 preset 等 Tavern 选择/设定；这是 Host 基线。架构和验收不得继续把原生新会话假定为空白配置。
 
-干净会话与配置模板由 `packages/session-template` 保存纯选择投影，loader 注入真实资源库和 `SessionSelectionStore`。浏览器组合根只通过 DSH 公开的 `workspaces.connectWorkspace()` 与 `sessions.open()` 创建/导航；它不 fork 或伪造历史。完整事务边界见 `docs/LOADER_CONTRACT.md`。
+干净会话与配置模板由 `packages/session-template` 保存纯选择投影，loader 注入真实资源库和 `SessionSelectionStore`。DSH 模式下，浏览器组合根只通过公开 `workspaces.connectWorkspace()` 与 `sessions.open()` 创建/导航普通 blank session。魔丸模式下，同一控制面先 preview 配置并取得角色 id，再复用共享周目控制器与现有 v2 原子操作创建/复用该角色周目，最后通过 v1 apply 原子写入完整 selection；不增加“配置周目”专用后端动词。两条路径都不 fork 或伪造历史。完整事务边界见 `docs/LOADER_CONTRACT.md`。
 
 ## Loader-owned ActivationContext
 
@@ -98,7 +98,7 @@ rc.6 的 `agent/inbox/spliced` 是公开、持久的 Session event；插入、�
 | 魔丸默认视图 | `slots.entries("conversation.view")` 暴露的原生 `chat` store 句柄、session 级 `conversation.input.dock` 及其 `actions.setView()` | 新周目尚未选定视图时在无可见内容的 dock entry 中复用同一 store，切到 `rp` 后立即注销；不向视图环注册第二个 `chat`，保留可手动选择的原生“对话” |
 | 实时发送和流式显示 | DSH `useSession` 实时节点与 partial | `/v2/messages` 只做持久消息范围对账，不重复封装 DSH 的浏览器实时 API |
 | 对话滚动 | Conversation 的 `[data-conversation-scroll]` scrollport、sticky composer 几何和注入的 `chatScroll.save(null)` | 只选择何时调用原生“到底部”语义；不计算固定 composer 高度，不维护第二个滚动容器 |
-| 干净新会话 / 配置模板 | `workspaces.connectWorkspace()` 返回 Host 拥有或复用的 blank session；`sessions.open()` 导航 | Tavern 只在目标 session 上原子复制 selection，不构造 Session、不 fork 历史 |
+| 干净新会话 / 配置模板 | DSH 模式复用 `workspaces.connectWorkspace()`；魔丸模式复用周目 v2 `sessions.create` 组合；两者都用 `sessions.open()` 导航 | Tavern 只在目标 session 上原子复制 selection；魔丸额外把配置角色作为周目归属并回读验证，不构造消息、不 fork 历史 |
 | 周目 session 操作 | Host `sessions.create/rename/fork/prompt/history`、`workspace.insertSessionBefore`；Host 侧 `Session.deriveMessages()` | v2 把这些原子操作组成第三方前端可用的周目事务，同时保持 DSH session 为权威历史 |
 | RP 安全模式 | 官方 `sandbox/mode` Session event、`tools.guard`、Session/agent 生命周期 hook | Tavern 只保存 RP 是否启用及跟随来源；不发明第二种沙箱状态 |
 | prompt 与审计 | `systemPrompt.section`、`agent/request`、`request/header`、`Session.deriveMessages()` | loader 只编译选中的 ST 资源；Trace 只记录有界来源元数据 |

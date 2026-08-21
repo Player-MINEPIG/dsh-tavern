@@ -94,4 +94,4 @@ dsh 没有 ST 的 `PromptManager`、marker collection 或任意历史深度插�
 
 这是预期内的上下文效应，不是“旧 preset 仍被直接注入”的必然证据。每次发送前，当前 system prompt 会重新组装，下一条请求只应带当前选择；但旧预设已经影响过的 assistant 回复和后续 user 对话仍存在于 durable conversation history。模型会从这些文本间接推断旧身份、格式或任务，因此产生认知残留。
 
-可靠的干净切换方式是选择新预设后使用“维持当前 Tavern 设置新开对话”，或从旧预设尚未产生回复的位置 fork。插件现已提供显式的干净会话与配置模板操作：它通过 DSH 公开 New Session seam 创建或取得真实 blank session，只复制 Tavern selection 投影，再在导航前原子应用；不会删除、改写、隐藏或复制旧历史。
+可靠的干净切换方式是选择新预设后使用“维持当前 Tavern 设置新开对话”，或从旧预设尚未产生回复的位置 fork。插件现已提供显式的干净会话与配置模板操作：DSH 模式通过公开 New Session seam 创建或取得真实 blank session；魔丸模式按配置角色创建或复用其权威空周目。两者都只复制 Tavern selection 投影并在导航前原子应用，不会删除、改写、隐藏或复制旧历史。
