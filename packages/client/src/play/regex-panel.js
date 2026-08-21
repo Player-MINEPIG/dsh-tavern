@@ -20,11 +20,11 @@ import {
   putRegexDocument,
   resourceRegexInventory,
 } from './regex.js'
+import { reorderAtBoundary } from '../../../preset/src/client-state.js'
 
 const h = createLocalizedElement(createElement)
 const EMPTY_DOCUMENT = Object.freeze({ schemaVersion: 1, rules: Object.freeze([]) })
 const SCOPE_KINDS = Object.freeze(['global', 'preset', 'character'])
-const REGEX_DRAG_TYPE = 'application/x-pmp-dsh-tavern-regex-index'
 
 export function reorderRegexRules(rules, fromIndex, toIndex) {
   if (!Array.isArray(rules)) throw new TypeError('regex rules must be an array')
@@ -42,6 +42,21 @@ export function reorderRegexScope(rules, kind, fromIndex, toIndex) {
     .map((rule, index) => rule?.scope?.kind === kind ? index : -1)
     .filter(index => index >= 0)
   const reordered = reorderRegexRules(indexes.map(index => rules[index]), fromIndex, toIndex)
+  const next = [...rules]
+  indexes.forEach((index, orderedIndex) => { next[index] = reordered[orderedIndex] })
+  return next
+}
+
+export function reorderRegexRulesAtBoundary(rules, fromIndex, boundary) {
+  return reorderAtBoundary(rules, fromIndex, boundary)
+}
+
+export function reorderRegexScopeAtBoundary(rules, kind, fromIndex, boundary) {
+  const indexes = rules
+    .map((rule, index) => rule?.scope?.kind === kind ? index : -1)
+    .filter(index => index >= 0)
+  const reordered = reorderRegexRulesAtBoundary(indexes.map(index => rules[index]), fromIndex, boundary)
+  if (reordered === indexes) return rules
   const next = [...rules]
   indexes.forEach((index, orderedIndex) => { next[index] = reordered[orderedIndex] })
   return next
@@ -157,42 +172,47 @@ export function stageLegacyScopedRegexRules(document, resourceRules, bindings) {
   return { document: nextDocument, resourceRules: nextResourceRules, migrated }
 }
 
-function RuleEditor({ rule, busy, update, remove, sourceOwned = false, dragKind, dragIndex, move }) {
+function RuleEditor({
+  rule,
+  busy,
+  update,
+  remove,
+  sourceOwned = false,
+  dragKind,
+  dragIndex,
+  dragging,
+  onPointerDown,
+  onPointerMove,
+  onPointerUp,
+  onPointerCancel,
+}) {
   const set = patch => update({ ...rule, ...patch })
   const setScope = patch => set({ scope: { ...rule.scope, ...patch } })
   const stateLabel = uiMessage(rule.enabled ? 'common.enabled' : 'common.disabled')
   return h('details', {
     className: 'dtv-entry dtv-regex-rule',
     'data-enabled': rule.enabled,
-    onDragOver: event => {
-      if (busy) return
-      event.preventDefault()
-      event.dataTransfer.dropEffect = 'move'
-    },
-    onDrop: event => {
-      if (busy) return
-      event.preventDefault()
-      event.stopPropagation()
-      try {
-        const source = JSON.parse(event.dataTransfer.getData(REGEX_DRAG_TYPE))
-        if (source?.kind === dragKind) move(source.index, dragIndex)
-      } catch {}
-    },
+    'data-regex-kind': dragKind,
+    'data-regex-index': dragIndex,
+    'data-dragging': dragging || undefined,
   },
     h('summary', null,
-      h('span', {
+      h('button', {
         className: 'dtv-regex-drag',
-        role: 'button',
-        tabIndex: busy ? -1 : 0,
-        draggable: !busy,
+        type: 'button',
+        disabled: busy,
         title: uiMessage('regex.dragToReorder'),
         'aria-label': uiMessage('regex.dragToReorder'),
-        onDragStart: event => {
+        'aria-pressed': dragging,
+        onClick: event => {
+          event.preventDefault()
           event.stopPropagation()
-          event.dataTransfer.effectAllowed = 'move'
-          event.dataTransfer.setData(REGEX_DRAG_TYPE, JSON.stringify({ kind: dragKind, index: dragIndex }))
         },
-      }, '☰'),
+        onPointerDown,
+        onPointerMove,
+        onPointerUp,
+        onPointerCancel,
+      }, '⠿'),
       h('span', { className: 'dtv-entry-dot', 'aria-hidden': 'true' }),
       h('span', { className: 'dtv-entry-name' }, rawText(rule.name || unwrapText(uiMessage('regex.unnamed')))),
       h('span', { className: 'dtv-entry-state' }, stateLabel),
@@ -278,6 +298,21 @@ function RuleEditor({ rule, busy, update, remove, sourceOwned = false, dragKind,
   )
 }
 
+function RegexDropPlaceholder() {
+  return h('div', {
+    className: 'dtv-regex-drop-placeholder',
+    'aria-hidden': true,
+  }, uiMessage('preset.dropHere'))
+}
+
+function regexInsertionBoundary(event, kind) {
+  const target = document.elementFromPoint(event.clientX, event.clientY)?.closest('[data-regex-index]')
+  if (target === null || target.dataset.regexKind !== kind) return null
+  const index = Number(target.dataset.regexIndex)
+  const bounds = target.getBoundingClientRect()
+  return event.clientY < bounds.top + bounds.height / 2 ? index : index + 1
+}
+
 function RegexScopeSection({
   kind,
   bindings,
@@ -292,6 +327,10 @@ function RegexScopeSection({
   updateSource,
   removeSource,
   move,
+  dragFrom,
+  dropIndex,
+  setDragFrom,
+  setDropIndex,
 }) {
   const rules = [...editableRules, ...sourceRules]
   const unbound = kind === 'preset' && bindings.presetId === null
@@ -314,27 +353,56 @@ function RegexScopeSection({
     rules.length === 0
       ? h('p', { className: 'dtv-note' }, uiMessage('regex.emptyScope'))
       : [
-          ...editableRules.map((rule, index) => h(RuleEditor, {
-            key: `${kind}-editable-${rule.id}-${index}`,
-            rule,
-            busy,
-            dragKind: kind,
-            dragIndex: index,
-            move,
-            update,
-            remove: () => remove(rule.id),
-          })),
-          ...sourceRules.map((rule, index) => h(RuleEditor, {
-            key: `${kind}-source-${rule.id}-${index}`,
-            rule,
-            busy,
-            sourceOwned: true,
-            dragKind: kind,
-            dragIndex: index,
-            move,
-            update: next => updateSource(index, next),
-            remove: () => removeSource(index),
-          })),
+          ...rules.flatMap((rule, index) => {
+            const sourceIndex = index - editableRules.length
+            const sourceOwned = sourceIndex >= 0
+            return [
+              dragFrom?.kind === kind && dropIndex === index
+                ? h(RegexDropPlaceholder, { key: `${kind}-drop-${index}` })
+                : null,
+              h(RuleEditor, {
+                key: `${kind}-${sourceOwned ? 'source' : 'editable'}-${rule.id}-${index}`,
+                rule,
+                busy,
+                sourceOwned,
+                dragKind: kind,
+                dragIndex: index,
+                dragging: dragFrom?.kind === kind && dragFrom.index === index,
+                update: sourceOwned ? next => updateSource(sourceIndex, next) : update,
+                remove: sourceOwned ? () => removeSource(sourceIndex) : () => remove(rule.id),
+                onPointerDown: event => {
+                  if (busy) return
+                  event.preventDefault()
+                  event.stopPropagation()
+                  event.currentTarget.setPointerCapture(event.pointerId)
+                  setDragFrom({ kind, index })
+                  setDropIndex(index + 1)
+                },
+                onPointerMove: event => {
+                  if (!event.currentTarget.hasPointerCapture(event.pointerId)) return
+                  const boundary = regexInsertionBoundary(event, kind)
+                  if (boundary !== null) setDropIndex(boundary)
+                },
+                onPointerUp: event => {
+                  event.preventDefault()
+                  const boundary = regexInsertionBoundary(event, kind) ?? dropIndex ?? index + 1
+                  if (event.currentTarget.hasPointerCapture(event.pointerId)) {
+                    event.currentTarget.releasePointerCapture(event.pointerId)
+                  }
+                  move(index, boundary)
+                  setDragFrom(null)
+                  setDropIndex(null)
+                },
+                onPointerCancel: () => {
+                  setDragFrom(null)
+                  setDropIndex(null)
+                },
+              }),
+            ]
+          }),
+          dragFrom?.kind === kind && dropIndex === rules.length
+            ? h(RegexDropPlaceholder, { key: `${kind}-drop-end` })
+            : null,
         ],
   )
 }
@@ -346,6 +414,8 @@ export function RegexPanel({ client, activeSnapshot, close }) {
   const [savedResourceRules, setSavedResourceRules] = useState({ preset: [], character: [] })
   const [busy, setBusy] = useState(false)
   const [status, setStatus] = useState({ text: uiMessage('common.loading'), error: false })
+  const [dragFrom, setDragFrom] = useState(null)
+  const [dropIndex, setDropIndex] = useState(null)
   const fileInput = useRef(null)
   const importScope = useRef('global')
   const bindings = activeRegexBindings(activeSnapshot)
@@ -458,17 +528,17 @@ export function RegexPanel({ client, activeSnapshot, close }) {
     [kind]: current[kind].filter((_rule, ruleIndex) => ruleIndex !== index),
   }))
 
-  const moveRule = (kind, fromIndex, toIndex) => {
+  const moveRule = (kind, fromIndex, boundary) => {
     if (kind === 'global') {
       setDocument(current => ({
         ...current,
-        rules: reorderRegexScope(current.rules, kind, fromIndex, toIndex),
+        rules: reorderRegexScopeAtBoundary(current.rules, kind, fromIndex, boundary),
       }))
       return
     }
     setResourceRules(current => ({
       ...current,
-      [kind]: reorderRegexRules(current[kind], fromIndex, toIndex),
+      [kind]: reorderRegexRulesAtBoundary(current[kind], fromIndex, boundary),
     }))
   }
 
@@ -528,6 +598,10 @@ export function RegexPanel({ client, activeSnapshot, close }) {
         updateSource: (index, next) => updateSourceRule(kind, index, next),
         removeSource: index => removeSourceRule(kind, index),
         move: (fromIndex, toIndex) => moveRule(kind, fromIndex, toIndex),
+        dragFrom,
+        dropIndex,
+        setDragFrom,
+        setDropIndex,
       })),
       h('div', { className: 'dtv-status', 'data-error': status.error }, status.text),
       h('div', { className: 'dtv-regex-footer' },

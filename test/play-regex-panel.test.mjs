@@ -5,7 +5,9 @@ import {
   activeRegexBindings,
   activeResourceRegexRules,
   reorderRegexRules,
+  reorderRegexRulesAtBoundary,
   reorderRegexScope,
+  reorderRegexScopeAtBoundary,
   stageLegacyScopedRegexRules,
 } from '../packages/client/src/play/regex-panel.js'
 
@@ -17,6 +19,16 @@ test('regex ordering moves only within the selected source inventory', () => {
   )
   assert.deepEqual(
     reorderRegexScope([
+      rule('global-a', 'global'), rule('inactive', 'preset'), rule('global-b', 'global'), rule('global-c', 'global'),
+    ], 'global', 2, 0).map(item => item.id),
+    ['global-c', 'inactive', 'global-a', 'global-b'],
+  )
+  assert.deepEqual(
+    reorderRegexRulesAtBoundary([rule('a', 'preset'), rule('b', 'preset'), rule('c', 'preset')], 0, 3).map(item => item.id),
+    ['b', 'c', 'a'],
+  )
+  assert.deepEqual(
+    reorderRegexScopeAtBoundary([
       rule('global-a', 'global'), rule('inactive', 'preset'), rule('global-b', 'global'), rule('global-c', 'global'),
     ], 'global', 2, 0).map(item => item.id),
     ['global-c', 'inactive', 'global-a', 'global-b'],
@@ -120,8 +132,10 @@ test('Mowan regex panel exposes scoped CRUD and import/export without an AI requ
   assert.match(source, /setResourceRules/)
   assert.match(source, /stageLegacyScopedRegexRules/)
   assert.match(source, /removeSourceRule/)
-  assert.match(source, /draggable: !busy/)
-  assert.match(source, /REGEX_DRAG_TYPE/)
+  assert.match(source, /setPointerCapture/)
+  assert.match(source, /regexInsertionBoundary/)
+  assert.match(source, /RegexDropPlaceholder/)
+  assert.match(source, /data-dragging/)
   assert.match(source, /reorderRegexScope/)
   assert.match(source, /reorderRegexRules/)
   assert.doesNotMatch(source, /busy \|\|= sourceOwned/)
