@@ -29,8 +29,8 @@ const POSITIONS = [
 ]
 
 const css = `
-.dwb-panel{position:absolute;top:0;right:0;bottom:0;width:min(500px,calc(100vw - 56px));pointer-events:auto;border-left:1px solid var(--dsw-alias-border-l2);box-shadow:var(--ds-shadow-3,-8px 0 28px rgba(0,0,0,.18));background:var(--dsw-alias-bg-base);color:var(--dsw-alias-label-primary);display:flex;flex-direction:column;font-family:Inter,var(--dsw-font-family),sans-serif}.dwb-header{height:52px;box-sizing:border-box;display:flex;align-items:center;gap:8px;padding:0 14px;border-bottom:1px solid var(--dsw-alias-border-l2);flex:none}.dwb-title{font-size:16px;font-weight:650;flex:1}.dwb-close{border:0;background:transparent;color:var(--dsw-alias-label-tertiary);cursor:pointer;border-radius:7px;padding:6px 8px;font-size:14px}.dwb-body{min-height:0;overflow:auto;padding:12px;display:flex;flex-direction:column;gap:11px}.dwb-toolbar{display:grid;grid-template-columns:repeat(3,1fr);gap:7px}.dwb-actions{display:flex;gap:7px;flex-wrap:wrap}.dwb-button{min-height:36px;border:1px solid var(--dsw-alias-border-l2);border-radius:8px;background:var(--dsw-alias-button-secondary-fill,var(--dsw-alias-bg-base));color:var(--dsw-alias-label-primary);cursor:pointer;padding:7px 10px;font-size:13px;text-decoration:none;display:inline-flex;align-items:center;justify-content:center;box-sizing:border-box}.dwb-button:disabled{opacity:.5;cursor:default}.dwb-primary{background:var(--dsw-alias-state-business-primary);color:white;border-color:transparent}.dwb-danger{color:var(--dsw-alias-state-error)}.dwb-field{display:flex;flex-direction:column;gap:4px}.dwb-label{font-size:12px;font-weight:620;color:var(--dsw-alias-label-tertiary)}.dwb-input,.dwb-select,.dwb-textarea{box-sizing:border-box;width:100%;border:1px solid var(--dsw-alias-border-l2);border-radius:7px;background:var(--dsw-alias-bg-base);color:var(--dsw-alias-label-primary);font:inherit;font-size:13px;padding:7px 8px}.dwb-input,.dwb-select{height:36px}.dwb-textarea{min-height:110px;resize:vertical;line-height:1.5}.dwb-note,.dwb-meta{font-size:13px;line-height:1.5;color:var(--dsw-alias-label-tertiary);margin:0;overflow-wrap:anywhere}.dwb-status{font-size:13px;line-height:1.45;border-radius:7px;padding:8px 10px;background:var(--dsw-specific-tip);overflow-wrap:anywhere}.dwb-status[data-error=true]{color:var(--dsw-alias-state-error)}.dwb-status[data-warning=true]{color:var(--dsw-alias-state-warning,#b46b00)}.dwb-section-title{font-size:15px;font-weight:700;margin:5px 0 0}.dwb-resource{border:1px solid var(--dsw-alias-border-l1);border-radius:9px;padding:10px;display:flex;flex-direction:column;gap:8px}.dwb-resource-title{font-size:14px;font-weight:650}.dwb-bindings{display:grid;grid-template-columns:1fr 1fr;gap:5px}.dwb-check{display:flex;gap:6px;align-items:flex-start;font-size:12px;line-height:1.45}.dwb-entry{border:1px solid var(--dsw-alias-border-l1);border-radius:8px;overflow:hidden}.dwb-entry>summary{list-style:none;cursor:pointer;padding:8px;display:flex;align-items:center;gap:7px;font-size:13px}.dwb-entry>summary::-webkit-details-marker{display:none}.dwb-dot{width:8px;height:8px;flex:none;border-radius:50%;background:var(--dsw-alias-label-tertiary)}.dwb-entry[data-enabled=true] .dwb-dot{background:var(--dsw-alias-state-success,#2fa36b)}.dwb-entry-name{font-weight:620;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.dwb-entry-state{margin-left:auto;flex:none;color:var(--dsw-alias-label-tertiary);font-size:12px}.dwb-entry-body{border-top:1px solid var(--dsw-alias-border-l1);padding:8px;display:flex;flex-direction:column;gap:8px}.dwb-grid{display:grid;grid-template-columns:1fr 1fr;gap:7px}.dwb-checks{display:flex;flex-wrap:wrap;gap:10px}.dwb-list{margin:0;padding-left:18px;font-size:13px;line-height:1.5}
-.dwb-source-section{border:1px solid var(--dsw-alias-border-l2);border-radius:11px;padding:10px;background:color-mix(in srgb,var(--dsw-specific-tip) 35%,transparent);display:flex;flex-direction:column;gap:9px}.dwb-source-section>.dwb-section-title{margin:0}.dwb-source-section>.dwb-resource{background:var(--dsw-alias-bg-base)}.dwb-source-list{margin:0;padding-left:20px;display:flex;flex-direction:column;gap:7px}.dwb-source-book{padding-left:2px}.dwb-source-book-row{display:flex;align-items:center;justify-content:space-between;gap:8px}.dwb-source-book-name{min-width:0;font-size:13px;font-weight:620;overflow-wrap:anywhere}.dwb-source-badge{flex:none;border:1px solid var(--dsw-alias-border-l1);border-radius:999px;padding:2px 7px;font-size:11px;line-height:1.35;color:var(--dsw-alias-label-tertiary);background:var(--dsw-specific-tip)}.dwb-user-bindings{grid-template-columns:1fr}.dwb-user-binding-row{display:flex;align-items:center;gap:7px}.dwb-user-binding-row>.dwb-check{align-items:center;flex:1;min-width:0}.dwb-user-binding-row .dwb-source-badge{margin-left:auto}.dwb-inline-edit{min-height:30px;padding:4px 8px;flex:none}
+.dwb-panel{position:absolute;top:0;right:0;bottom:0;width:min(500px,calc(100vw - 56px));pointer-events:auto;border-left:1px solid var(--dsw-alias-border-l2);box-shadow:var(--ds-shadow-3,-8px 0 28px rgba(0,0,0,.18));background:var(--dsw-alias-bg-base);color:var(--dsw-alias-label-primary);display:flex;flex-direction:column;font-family:Inter,var(--dsw-font-family),sans-serif}.dwb-header{height:52px;box-sizing:border-box;display:flex;align-items:center;gap:8px;padding:0 14px;border-bottom:1px solid var(--dsw-alias-border-l2);flex:none}.dwb-title{font-size:16px;font-weight:650;flex:1}.dwb-close{border:0;background:transparent;color:var(--dsw-alias-label-tertiary);cursor:pointer;border-radius:7px;padding:6px 8px;font-size:14px}.dwb-body{min-height:0;overflow:auto;padding:12px;display:flex;flex-direction:column;gap:11px}.dwb-toolbar{display:grid;grid-template-columns:repeat(3,1fr);gap:7px}.dwb-actions{display:flex;gap:7px;flex-wrap:wrap}.dwb-button{min-height:36px;border:1px solid var(--dsw-alias-border-l2);border-radius:8px;background:var(--dsw-alias-button-secondary-fill,var(--dsw-alias-bg-base));color:var(--dsw-alias-label-primary);cursor:pointer;padding:7px 10px;font-size:13px;text-decoration:none;display:inline-flex;align-items:center;justify-content:center;box-sizing:border-box}.dwb-button:disabled,.dwb-button[data-disabled=true]{opacity:.5;cursor:default;pointer-events:none}.dwb-primary{background:var(--dsw-alias-state-business-primary);color:white;border-color:transparent}.dwb-danger{color:var(--dsw-alias-state-error)}.dwb-field{display:flex;flex-direction:column;gap:4px}.dwb-label{font-size:12px;font-weight:620;color:var(--dsw-alias-label-tertiary)}.dwb-input,.dwb-select,.dwb-textarea{box-sizing:border-box;width:100%;border:1px solid var(--dsw-alias-border-l2);border-radius:7px;background:var(--dsw-alias-bg-base);color:var(--dsw-alias-label-primary);font:inherit;font-size:13px;padding:7px 8px}.dwb-input,.dwb-select{height:36px}.dwb-textarea{min-height:110px;resize:vertical;line-height:1.5}.dwb-note,.dwb-meta{font-size:13px;line-height:1.5;color:var(--dsw-alias-label-tertiary);margin:0;overflow-wrap:anywhere}.dwb-status{font-size:13px;line-height:1.45;border-radius:7px;padding:8px 10px;background:var(--dsw-specific-tip);overflow-wrap:anywhere}.dwb-status[data-error=true]{color:var(--dsw-alias-state-error)}.dwb-status[data-warning=true]{color:var(--dsw-alias-state-warning,#b46b00)}.dwb-section-title{font-size:15px;font-weight:700;margin:5px 0 0}.dwb-resource{border:1px solid var(--dsw-alias-border-l1);border-radius:9px;padding:10px;display:flex;flex-direction:column;gap:8px}.dwb-resource-title{font-size:14px;font-weight:650}.dwb-bindings{display:grid;grid-template-columns:1fr 1fr;gap:5px}.dwb-check{display:flex;gap:6px;align-items:flex-start;font-size:12px;line-height:1.45}.dwb-entry{border:1px solid var(--dsw-alias-border-l1);border-radius:8px;overflow:hidden;transition:border-color .12s,box-shadow .12s}.dwb-entry[data-dragging=true]{height:4px;min-height:4px;margin:5px 10px;border:0;border-radius:999px;background:var(--dsw-alias-state-business-primary);box-shadow:0 0 0 1px color-mix(in srgb,var(--dsw-alias-state-business-primary) 25%,transparent)}.dwb-entry[data-dragging=true]>*{opacity:0}.dwb-entry>summary{list-style:none;cursor:pointer;padding:8px;display:flex;align-items:center;gap:7px;font-size:13px}.dwb-entry>summary::-webkit-details-marker{display:none}.dwb-drag{border:0;background:transparent;color:var(--dsw-alias-label-tertiary);cursor:grab;padding:1px 2px;font-size:15px;line-height:1;touch-action:none;user-select:none}.dwb-drag:active{cursor:grabbing}.dwb-drop-placeholder{box-sizing:border-box;height:42px;border:2px dashed var(--dsw-alias-state-business-primary);border-radius:8px;background:color-mix(in srgb,var(--dsw-alias-state-business-primary) 7%,transparent);display:flex;align-items:center;justify-content:center;color:var(--dsw-alias-state-business-primary);font-size:12px;font-weight:600;pointer-events:none}.dwb-entry-name{font-weight:620;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.dwb-entry-state{margin-left:auto;flex:none;color:var(--dsw-alias-label-tertiary);font-size:12px}.dwb-entry-body{border-top:1px solid var(--dsw-alias-border-l1);padding:8px;display:flex;flex-direction:column;gap:8px}.dwb-grid{display:grid;grid-template-columns:1fr 1fr;gap:7px}.dwb-checks{display:flex;flex-wrap:wrap;gap:10px}.dwb-list{margin:0;padding-left:18px;font-size:13px;line-height:1.5}.dwb-footer{position:sticky;bottom:-12px;margin:0 -12px -12px;padding:10px 12px;background:var(--dsw-alias-bg-base);border-top:1px solid var(--dsw-alias-border-l2);display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.dwb-source-section{border:1px solid var(--dsw-alias-border-l2);border-radius:11px;padding:10px;background:color-mix(in srgb,var(--dsw-specific-tip) 35%,transparent);display:flex;flex-direction:column;gap:9px}.dwb-source-section>.dwb-section-title{margin:0}.dwb-source-section>.dwb-resource{background:var(--dsw-alias-bg-base)}.dwb-source-list{margin:0;padding-left:20px;display:flex;flex-direction:column;gap:7px}.dwb-source-book{padding-left:2px}.dwb-source-book-row{display:flex;align-items:center;justify-content:space-between;gap:8px}.dwb-source-book-name{min-width:0;font-size:13px;font-weight:620;overflow-wrap:anywhere}.dwb-source-badge{flex:none;border:1px solid var(--dsw-alias-border-l1);border-radius:999px;padding:2px 7px;font-size:11px;line-height:1.35;color:var(--dsw-alias-label-tertiary);background:var(--dsw-specific-tip)}.dwb-user-bindings{grid-template-columns:1fr}.dwb-user-binding-row{display:flex;align-items:center;gap:7px}.dwb-user-binding-row>.dwb-check{align-items:center;flex:1;min-width:0}.dwb-user-binding-row .dwb-source-badge{margin-left:auto}.dwb-inline-edit{min-height:30px;padding:4px 8px;flex:none}.dwb-browse{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:7px}
 `
 
 function errorMessage(data, status) {
@@ -97,13 +97,57 @@ function embeddedPosition(entry) {
   return entry?.position === 'before_char' ? 0 : 1
 }
 
-function EmbeddedEntryEditor({ entry, index, update, remove }) {
+export function reorderWorldBookEntriesAtBoundary(entries, from, boundary, orderKey = 'insertionOrder') {
+  if (!Array.isArray(entries)) throw new TypeError('entries must be an array')
+  if (!Number.isSafeInteger(from) || !Number.isSafeInteger(boundary)) return entries
+  if (from < 0 || from >= entries.length || boundary < 0 || boundary > entries.length) return entries
+  const destination = boundary > from ? boundary - 1 : boundary
+  if (destination === from) return entries
+  const reordered = [...entries]
+  const [moved] = reordered.splice(from, 1)
+  reordered.splice(destination, 0, moved)
+  return reordered.map((entry, index) => ({
+    ...entry,
+    [orderKey]: (reordered.length - index) * 100,
+  }))
+}
+
+function EntryDropPlaceholder() {
+  return h('div', { className: 'dwb-drop-placeholder', 'aria-hidden': true }, uiMessage('preset.dropHere'))
+}
+
+function entryInsertionBoundary(event, kind) {
+  const target = document.elementFromPoint(event.clientX, event.clientY)?.closest('[data-world-entry-index]')
+  if (target === null || target.dataset.worldEntryKind !== kind) return null
+  const index = Number(target.dataset.worldEntryIndex)
+  const bounds = target.getBoundingClientRect()
+  return event.clientY < bounds.top + bounds.height / 2 ? index : index + 1
+}
+
+function EntryDragButton({ busy, dragging, onPointerDown, onPointerMove, onPointerUp, onPointerCancel }) {
+  return h('button', {
+    className: 'dwb-drag',
+    type: 'button',
+    disabled: busy,
+    title: uiMessage('preset.dragToReorder'),
+    'aria-label': uiMessage('preset.dragToReorder'),
+    'aria-pressed': dragging,
+    onClick: event => { event.preventDefault(); event.stopPropagation() },
+    onPointerDown,
+    onPointerMove,
+    onPointerUp,
+    onPointerCancel,
+  }, '⠿')
+}
+
+function EmbeddedEntryEditor({ entry, index, update, remove, dragKind, dragging, dragHandlers }) {
   const patch = value => update(index, value)
   const secondaryKeys = Array.isArray(entry.secondary_keys) ? entry.secondary_keys : []
   const position = embeddedPosition(entry)
-  return h('details', { className: 'dwb-entry', 'data-enabled': entry.enabled === true },
+  return h('details', { className: 'dwb-entry', 'data-world-entry-kind': dragKind, 'data-world-entry-index': index, 'data-dragging': dragging || undefined },
     h('summary', null,
-      h('span', { className: 'dwb-dot' }),
+      h(EntryDragButton, { dragging, ...dragHandlers }),
+      h('input', { type: 'checkbox', checked: entry.enabled === true, onClick: event => event.stopPropagation(), onChange: event => patch({ enabled: event.target.checked }) }),
       h('span', { className: 'dwb-entry-name' }, entry.comment || entry.name ? rawText(entry.comment || entry.name) : uiMessage('world.entry.fallback', { id: entry.id ?? index })),
       h('span', { className: 'dwb-entry-state' }, entry.constant ? uiMessage('world.entry.constant') : (entry.keys ?? []).length > 0 ? rawText(entry.keys.join(', ')) : uiMessage('world.entry.noKeywords')),
     ),
@@ -127,7 +171,6 @@ function EmbeddedEntryEditor({ entry, index, update, remove }) {
         h(Field, { label: uiMessage('world.entry.probability') }, h('input', { className: 'dwb-input', type: 'number', min: 0, max: 100, value: entry.probability ?? entry.extensions?.probability ?? 100, onChange: event => patch({ probability: Number(event.target.value), extensions: { ...(entry.extensions ?? {}), probability: Number(event.target.value), useProbability: true } }) })),
       ),
       h('div', { className: 'dwb-checks' },
-        h('label', { className: 'dwb-check' }, h('input', { type: 'checkbox', checked: entry.enabled === true, onChange: event => patch({ enabled: event.target.checked }) }), uiMessage('common.enable')),
         h('label', { className: 'dwb-check' }, h('input', { type: 'checkbox', checked: entry.constant === true, onChange: event => patch({ constant: event.target.checked }) }), uiMessage('world.entry.constant')),
         h('label', { className: 'dwb-check' }, h('input', { type: 'checkbox', checked: (entry.case_sensitive ?? entry.extensions?.case_sensitive) === true, onChange: event => patch({ case_sensitive: event.target.checked, extensions: { ...(entry.extensions ?? {}), case_sensitive: event.target.checked } }) }), uiMessage('world.entry.caseSensitive')),
         h('label', { className: 'dwb-check' }, h('input', { type: 'checkbox', checked: (entry.match_whole_words ?? entry.extensions?.match_whole_words) === true, onChange: event => patch({ match_whole_words: event.target.checked, extensions: { ...(entry.extensions ?? {}), match_whole_words: event.target.checked } }) }), uiMessage('world.entry.wholeWord')),
@@ -248,12 +291,13 @@ function ResourceWorldBookBindingEditor({
   )
 }
 
-function EntryEditor({ entry, index, update, remove }) {
+function EntryEditor({ entry, index, update, remove, dragKind, dragging, dragHandlers }) {
   const patch = value => update(index, value)
   const secondary = Array.isArray(entry.secondaryKeys) ? entry.secondaryKeys : []
-  return h('details', { className: 'dwb-entry', 'data-enabled': entry.enabled === true },
+  return h('details', { className: 'dwb-entry', 'data-world-entry-kind': dragKind, 'data-world-entry-index': index, 'data-dragging': dragging || undefined },
     h('summary', null,
-      h('span', { className: 'dwb-dot' }),
+      h(EntryDragButton, { dragging, ...dragHandlers }),
+      h('input', { type: 'checkbox', checked: entry.enabled === true, onClick: event => event.stopPropagation(), onChange: event => patch({ enabled: event.target.checked }) }),
       h('span', { className: 'dwb-entry-name' }, entry.comment ? rawText(entry.comment) : uiMessage('world.entry.fallback', { id: entry.uid ?? index })),
       h('span', { className: 'dwb-entry-state' }, entry.constant ? uiMessage('world.entry.constant') : (entry.keys ?? []).length > 0 ? rawText(entry.keys.join(', ')) : uiMessage('world.entry.noKeywords')),
     ),
@@ -273,7 +317,6 @@ function EntryEditor({ entry, index, update, remove }) {
         h(Field, { label: uiMessage('world.entry.probability') }, h('input', { className: 'dwb-input', type: 'number', min: 0, max: 100, value: entry.probability ?? 100, onChange: event => patch({ probability: Number(event.target.value), useProbability: true }) })),
       ),
       h('div', { className: 'dwb-checks' },
-        h('label', { className: 'dwb-check' }, h('input', { type: 'checkbox', checked: entry.enabled === true, onChange: event => patch({ enabled: event.target.checked }) }), uiMessage('common.enable')),
         h('label', { className: 'dwb-check' }, h('input', { type: 'checkbox', checked: entry.constant === true, onChange: event => patch({ constant: event.target.checked }) }), uiMessage('world.entry.constant')),
         h('label', { className: 'dwb-check' }, h('input', { type: 'checkbox', checked: entry.caseSensitive === true, onChange: event => patch({ caseSensitive: event.target.checked }) }), uiMessage('world.entry.caseSensitive')),
         h('label', { className: 'dwb-check' }, h('input', { type: 'checkbox', checked: entry.matchWholeWords === true, onChange: event => patch({ matchWholeWords: event.target.checked }) }), uiMessage('world.entry.wholeWord')),
@@ -302,6 +345,8 @@ export function WorldBookPanel({ sessionId, close }) {
   const [dirty, setDirty] = useState(false)
   const [busy, setBusy] = useState(false)
   const [status, setStatus] = useState({ error: false, key: 'common.loading' })
+  const [entryDrag, setEntryDrag] = useState(null)
+  const [entryDropIndex, setEntryDropIndex] = useState(null)
   const fileRef = useRef(null)
   const standaloneEditorRef = useRef(null)
   const generation = useRef(0)
@@ -512,6 +557,49 @@ export function WorldBookPanel({ sessionId, close }) {
     })
     setDirty(true)
   }
+  const moveEntries = (kind, from, boundary) => {
+    if (kind === 'standalone') {
+      setDraft(current => {
+        const entries = reorderWorldBookEntriesAtBoundary(current.entries, from, boundary)
+        return entries === current.entries ? current : { ...current, entries }
+      })
+      setDirty(true)
+      return
+    }
+    setEmbeddedDraft(current => {
+      const entries = reorderWorldBookEntriesAtBoundary(current.entries, from, boundary, 'insertion_order')
+      return entries === current.entries ? current : { ...structuredClone(current), entries }
+    })
+    setEmbeddedDirty(true)
+  }
+  const entryDragHandlers = (kind, index) => ({
+    busy,
+    onPointerDown: event => {
+      if (busy) return
+      event.preventDefault()
+      event.stopPropagation()
+      event.currentTarget.setPointerCapture(event.pointerId)
+      setEntryDrag({ kind, index })
+      setEntryDropIndex(index + 1)
+    },
+    onPointerMove: event => {
+      if (!event.currentTarget.hasPointerCapture(event.pointerId)) return
+      const boundary = entryInsertionBoundary(event, kind)
+      if (boundary !== null) setEntryDropIndex(boundary)
+    },
+    onPointerUp: event => {
+      event.preventDefault()
+      const boundary = entryInsertionBoundary(event, kind) ?? entryDropIndex ?? index + 1
+      if (event.currentTarget.hasPointerCapture(event.pointerId)) event.currentTarget.releasePointerCapture(event.pointerId)
+      moveEntries(kind, index, boundary)
+      setEntryDrag(null)
+      setEntryDropIndex(null)
+    },
+    onPointerCancel: () => {
+      setEntryDrag(null)
+      setEntryDropIndex(null)
+    },
+  })
   const entries = draft?.entries ?? []
   const embeddedEntries = embeddedDraft?.entries ?? []
   const embedded = active?.resources?.worldBooks?.filter(item => item.kind === 'embedded-character-book') ?? []
@@ -532,12 +620,16 @@ export function WorldBookPanel({ sessionId, close }) {
     h('div', { className: 'dwb-body' },
       h('div', { className: 'dwb-toolbar' },
         h('button', { className: 'dwb-button', type: 'button', disabled: busy, onClick: () => fileRef.current?.click() }, uiMessage('world.importJson')),
+        h('a', { className: 'dwb-button', 'data-disabled': document === null || busy ? true : undefined, href: document === null ? undefined : `${API_ROOT}/world-books/${encodeURIComponent(document.id)}/json`, download: '' }, uiMessage('common.exportJson')),
         h('button', { className: 'dwb-button', type: 'button', disabled: busy, onClick: create }, uiMessage('world.create')),
-        h('button', { className: 'dwb-button', type: 'button', disabled: busy, onClick: () => { if (!dirty || window.confirm(unwrapText(uiMessage('world.confirmDiscardChanges')))) run(() => refresh(), 'world.status.refreshed') } }, uiMessage('common.refresh')),
         h('input', { ref: fileRef, hidden: true, type: 'file', accept: '.json,application/json', onChange: event => { const file = event.target.files?.[0]; if (file !== undefined) importFile(file) } }),
       ),
-      h('p', { className: 'dwb-note' }, uiMessage('world.currentSession', { session: sessionId || translate('common.none') })),
-      h('div', { className: 'dwb-status', 'data-error': status.error || undefined, role: 'status', 'aria-live': 'polite' }, statusText(status)),
+      h(Field, { label: uiMessage('world.browse') }, h('div', { className: 'dwb-browse' },
+        h('select', { className: 'dwb-select', value: document?.id ?? '', disabled: busy || !catalog?.worldBooks.length, onChange: event => { if (!dirty || window.confirm(unwrapText(uiMessage('world.confirmDiscardChanges')))) load(event.target.value) } },
+          ...(catalog?.worldBooks.length ? [] : [h('option', { key: 'empty', value: '' }, uiMessage('world.catalogEmpty'))]),
+          ...(catalog?.worldBooks ?? []).map(item => h('option', { key: item.id, value: item.id }, rawText(item.name)))),
+        h('button', { className: 'dwb-button', type: 'button', disabled: busy, onClick: () => { if (!dirty || window.confirm(unwrapText(uiMessage('world.confirmDiscardChanges')))) run(() => refresh(), 'world.status.refreshed') } }, uiMessage('common.refresh')),
+      )),
       h('section', { className: 'dwb-source-section', 'data-source': 'standalone' },
       h('h2', { className: 'dwb-section-title' }, uiMessage('world.standalone')),
       h('div', { className: 'dwb-resource' },
@@ -552,19 +644,36 @@ export function WorldBookPanel({ sessionId, close }) {
           h('button', { className: 'dwb-button', type: 'button', disabled: busy || !sessionId || selection.length === 0, onClick: () => setSelection([]) }, uiMessage('world.clearPending')),
         ),
       ),
-      h(Field, { label: uiMessage('world.browse') }, h('select', { className: 'dwb-select', value: document?.id ?? '', disabled: busy || !catalog?.worldBooks.length, onChange: event => { if (!dirty || window.confirm(unwrapText(uiMessage('world.confirmDiscardChanges')))) load(event.target.value) } },
-        ...(catalog?.worldBooks.length ? [] : [h('option', { key: 'empty', value: '' }, uiMessage('world.catalogEmpty'))]),
-        ...(catalog?.worldBooks ?? []).map(item => h('option', { key: item.id, value: item.id }, rawText(item.name))))),
+      h('p', { className: 'dwb-note' }, uiMessage('world.currentSession', { session: sessionId || translate('common.none') })),
+      h('div', { className: 'dwb-status', 'data-error': status.error || undefined, role: 'status', 'aria-live': 'polite' }, statusText(status)),
       draft === null ? null : h('div', { className: 'dwb-resource', ref: standaloneEditorRef },
         h(Field, { label: uiMessage('world.bookName') }, h('input', { className: 'dwb-input', value: draft.name ?? '', onChange: event => { setDraft(current => ({ ...current, name: event.target.value })); setDirty(true) } })),
         h('p', { className: 'dwb-meta' }, uiMessage('world.documentMeta', { count: entries.length })),
         h('div', { className: 'dwb-actions' },
           h('button', { className: 'dwb-button', type: 'button', onClick: () => { setDraft(current => ({ ...current, entries: [...current.entries, createWorldBookEntry(current.entries)] })); setDirty(true) } }, uiMessage('world.addEntry')),
+        ),
+        ...entries.flatMap((entry, index) => [
+          entryDrag?.kind === 'standalone' && entryDropIndex === index
+            ? h(EntryDropPlaceholder, { key: `standalone-drop-${index}` })
+            : null,
+          h(EntryEditor, {
+            key: `${String(document.id)}-${String(entry.uid)}-${index}`,
+            entry,
+            index,
+            update: updateEntry,
+            remove: itemIndex => { if (window.confirm(unwrapText(uiMessage('world.confirmDeleteEntry')))) { setDraft(current => ({ ...current, entries: current.entries.filter((_item, candidate) => candidate !== itemIndex) })); setDirty(true) } },
+            dragKind: 'standalone',
+            dragging: entryDrag?.kind === 'standalone' && entryDrag.index === index,
+            dragHandlers: entryDragHandlers('standalone', index),
+          }),
+        ]),
+        entryDrag?.kind === 'standalone' && entryDropIndex === entries.length
+          ? h(EntryDropPlaceholder, { key: 'standalone-drop-end' })
+          : null,
+        h('div', { className: 'dwb-footer' },
           h('button', { className: 'dwb-button dwb-primary', type: 'button', disabled: busy || !dirty, onClick: save }, dirty ? uiMessage('common.saveChanges') : uiMessage('common.saved')),
-          h('a', { className: 'dwb-button', href: `${API_ROOT}/world-books/${encodeURIComponent(document.id)}/json`, download: '' }, uiMessage('common.exportJson')),
           h('button', { className: 'dwb-button dwb-danger', type: 'button', disabled: busy, onClick: remove }, uiMessage('world.deleteStandalone')),
         ),
-        ...entries.map((entry, index) => h(EntryEditor, { key: `${String(document.id)}-${String(entry.uid)}-${index}`, entry, index, update: updateEntry, remove: itemIndex => { if (window.confirm(unwrapText(uiMessage('world.confirmDeleteEntry')))) { setDraft(current => ({ ...current, entries: current.entries.filter((_item, candidate) => candidate !== itemIndex) })); setDirty(true) } } })),
       ),
       ),
       h('section', { className: 'dwb-source-section', 'data-source': 'user' },
@@ -651,7 +760,24 @@ export function WorldBookPanel({ sessionId, close }) {
           h('button', { className: 'dwb-button', type: 'button', onClick: () => { const ids = embeddedEntries.map(entry => Number(entry.id)).filter(Number.isSafeInteger); const id = ids.length === 0 ? 0 : Math.max(...ids) + 1; setEmbeddedDraft(current => ({ ...structuredClone(current), entries: [...current.entries, { id, keys: [], secondary_keys: [], comment: translate('world.entry.untitled', { id }), content: '', enabled: true, constant: false, selective: false, insertion_order: 100, position: 'after_char', extensions: { position: 1, probability: 100, useProbability: true } }] })); setEmbeddedDirty(true) } }, uiMessage('world.addEmbeddedEntry')),
           h('button', { className: 'dwb-button dwb-primary', type: 'button', disabled: busy || !embeddedDirty, onClick: saveEmbedded }, embeddedDirty ? uiMessage('world.saveEmbedded') : uiMessage('world.embeddedSaved')),
         ),
-        ...embeddedEntries.map((entry, index) => h(EmbeddedEntryEditor, { key: `${String(embeddedCharacterId)}-${String(entry.id)}-${index}`, entry, index, update: (itemIndex, value) => { setEmbeddedDraft(current => { const next = structuredClone(current); next.entries[itemIndex] = { ...next.entries[itemIndex], ...value }; return next }); setEmbeddedDirty(true) }, remove: itemIndex => { if (window.confirm(unwrapText(uiMessage('world.confirmDeleteEmbeddedEntry')))) { setEmbeddedDraft(current => ({ ...structuredClone(current), entries: current.entries.filter((_item, candidate) => candidate !== itemIndex) })); setEmbeddedDirty(true) } } })),
+        ...embeddedEntries.flatMap((entry, index) => [
+          entryDrag?.kind === 'embedded' && entryDropIndex === index
+            ? h(EntryDropPlaceholder, { key: `embedded-drop-${index}` })
+            : null,
+          h(EmbeddedEntryEditor, {
+            key: `${String(embeddedCharacterId)}-${String(entry.id)}-${index}`,
+            entry,
+            index,
+            update: (itemIndex, value) => { setEmbeddedDraft(current => { const next = structuredClone(current); next.entries[itemIndex] = { ...next.entries[itemIndex], ...value }; return next }); setEmbeddedDirty(true) },
+            remove: itemIndex => { if (window.confirm(unwrapText(uiMessage('world.confirmDeleteEmbeddedEntry')))) { setEmbeddedDraft(current => ({ ...structuredClone(current), entries: current.entries.filter((_item, candidate) => candidate !== itemIndex) })); setEmbeddedDirty(true) } },
+            dragKind: 'embedded',
+            dragging: entryDrag?.kind === 'embedded' && entryDrag.index === index,
+            dragHandlers: entryDragHandlers('embedded', index),
+          }),
+        ]),
+        entryDrag?.kind === 'embedded' && entryDropIndex === embeddedEntries.length
+          ? h(EntryDropPlaceholder, { key: 'embedded-drop-end' })
+          : null,
       ) : embeddedCharacterId === null
         ? h('p', { className: 'dwb-note' }, uiMessage('world.embeddedNoCharacter'))
         : h('div', { className: 'dwb-resource' },
