@@ -10990,6 +10990,8 @@ function PlayTurnActions({
   const disabled = running || busy;
   const position = Math.max(0, turn.variants.findIndex((item) => item.id === turn.variant.id));
   const capabilities = turnActionCapabilities(turn);
+  const hasPreviousVariant = position > 0;
+  const hasNextVariant = position + 1 < turn.variants.length;
   (0, import_react8.useEffect)(() => setEditor(null), [turn.id, turn.variant.id]);
   const mutate = async (operation) => {
     if (disabled) return;
@@ -11004,9 +11006,14 @@ function PlayTurnActions({
       setBusy(false);
     }
   };
-  const adopt = (offset) => mutate(async () => {
-    const target = turn.variants[(position + offset + turn.variants.length) % turn.variants.length];
+  const adopt = (targetPosition) => mutate(async () => {
+    const target = turn.variants[targetPosition];
+    if (target === void 0) throw new TypeError("Reply variant does not exist");
     const result = await controller(playClient).adoptVariant(playthrough, turn.id, target.id);
+    openSession(result.sessionId);
+  });
+  const generate = () => mutate(async () => {
+    const result = await controller(playClient).createReplySwipe(playthrough, turn.id);
     openSession(result.sessionId);
   });
   const copy = async () => {
@@ -11078,26 +11085,16 @@ function PlayTurnActions({
     !capabilities.variants ? null : h7(Action, {
       icon: "\u2039",
       label: uiMessage("play.chat.previousReply"),
-      disabled: disabled || turn.variants.length < 2,
-      disabledLabel: turn.variants.length < 2 ? uiMessage("play.chat.noOtherReply") : void 0,
-      onClick: () => adopt(-1)
+      disabled: disabled || !hasPreviousVariant,
+      disabledLabel: !hasPreviousVariant ? uiMessage("play.chat.noOtherReply") : void 0,
+      onClick: () => adopt(position - 1)
     }),
     !capabilities.variants || turn.variants.length < 2 ? null : h7("span", { className: "dtv-play-turn-position" }, `${position + 1}/${turn.variants.length}`),
     !capabilities.variants ? null : h7(Action, {
       icon: "\u203A",
-      label: uiMessage("play.chat.nextReply"),
-      disabled: disabled || turn.variants.length < 2,
-      disabledLabel: turn.variants.length < 2 ? uiMessage("play.chat.noOtherReply") : void 0,
-      onClick: () => adopt(1)
-    }),
-    !capabilities.generateReply ? null : h7(Action, {
-      icon: "\u2726",
-      label: uiMessage("play.chat.generateReply"),
+      label: uiMessage(hasNextVariant ? "play.chat.nextReply" : "play.chat.generateReply"),
       disabled,
-      onClick: () => mutate(async () => {
-        const result = await controller(playClient).createReplySwipe(playthrough, turn.id);
-        openSession(result.sessionId);
-      })
+      onClick: hasNextVariant ? () => adopt(position + 1) : generate
     }),
     h7(Action, {
       icon: "\u2442",
@@ -11105,6 +11102,7 @@ function PlayTurnActions({
       disabled,
       onClick: () => mutate(async () => {
         const result = await controller(playClient).forkPlaythrough(playthrough, turn.id);
+        window.dispatchEvent(new Event(CLIENT_REFRESH_EVENT));
         openSession(result.sessionId);
       })
     }),
@@ -13041,18 +13039,13 @@ var import_react14 = require("react");
 var h12 = createLocalizedElement(import_react14.createElement);
 var EMPTY_DOCUMENT = Object.freeze({ schemaVersion: 1, rules: Object.freeze([]) });
 var SCOPE_KINDS = Object.freeze(["global", "preset", "character"]);
-var REGEX_DRAG_TYPE = "application/x-pmp-dsh-tavern-regex-index";
-function reorderRegexRules(rules, fromIndex, toIndex) {
-  if (!Array.isArray(rules)) throw new TypeError("regex rules must be an array");
-  if (!Number.isSafeInteger(fromIndex) || !Number.isSafeInteger(toIndex) || fromIndex < 0 || toIndex < 0 || fromIndex >= rules.length || toIndex >= rules.length || fromIndex === toIndex) return [...rules];
-  const next = [...rules];
-  const [moved] = next.splice(fromIndex, 1);
-  next.splice(toIndex, 0, moved);
-  return next;
+function reorderRegexRulesAtBoundary(rules, fromIndex, boundary) {
+  return reorderAtBoundary(rules, fromIndex, boundary);
 }
-function reorderRegexScope(rules, kind, fromIndex, toIndex) {
+function reorderRegexScopeAtBoundary(rules, kind, fromIndex, boundary) {
   const indexes = rules.map((rule, index) => rule?.scope?.kind === kind ? index : -1).filter((index) => index >= 0);
-  const reordered = reorderRegexRules(indexes.map((index) => rules[index]), fromIndex, toIndex);
+  const reordered = reorderRegexRulesAtBoundary(indexes.map((index) => rules[index]), fromIndex, boundary);
+  if (reordered === indexes) return rules;
   const next = [...rules];
   indexes.forEach((index, orderedIndex) => {
     next[index] = reordered[orderedIndex];
@@ -13147,7 +13140,20 @@ function stageLegacyScopedRegexRules(document2, resourceRules, bindings) {
   }
   return { document: nextDocument, resourceRules: nextResourceRules, migrated };
 }
-function RuleEditor({ rule, busy, update, remove, sourceOwned = false, dragKind, dragIndex, move }) {
+function RuleEditor({
+  rule,
+  busy,
+  update,
+  remove,
+  sourceOwned = false,
+  dragKind,
+  dragIndex,
+  dragging,
+  onPointerDown,
+  onPointerMove,
+  onPointerUp,
+  onPointerCancel
+}) {
   const set = (patch) => update({ ...rule, ...patch });
   const setScope = (patch) => set({ scope: { ...rule.scope, ...patch } });
   const stateLabel = uiMessage(rule.enabled ? "common.enabled" : "common.disabled");
@@ -13156,38 +13162,29 @@ function RuleEditor({ rule, busy, update, remove, sourceOwned = false, dragKind,
     {
       className: "dtv-entry dtv-regex-rule",
       "data-enabled": rule.enabled,
-      onDragOver: (event) => {
-        if (busy) return;
-        event.preventDefault();
-        event.dataTransfer.dropEffect = "move";
-      },
-      onDrop: (event) => {
-        if (busy) return;
-        event.preventDefault();
-        event.stopPropagation();
-        try {
-          const source = JSON.parse(event.dataTransfer.getData(REGEX_DRAG_TYPE));
-          if (source?.kind === dragKind) move(source.index, dragIndex);
-        } catch {
-        }
-      }
+      "data-regex-kind": dragKind,
+      "data-regex-index": dragIndex,
+      "data-dragging": dragging || void 0
     },
     h12(
       "summary",
       null,
-      h12("span", {
+      h12("button", {
         className: "dtv-regex-drag",
-        role: "button",
-        tabIndex: busy ? -1 : 0,
-        draggable: !busy,
+        type: "button",
+        disabled: busy,
         title: uiMessage("regex.dragToReorder"),
         "aria-label": uiMessage("regex.dragToReorder"),
-        onDragStart: (event) => {
+        "aria-pressed": dragging,
+        onClick: (event) => {
+          event.preventDefault();
           event.stopPropagation();
-          event.dataTransfer.effectAllowed = "move";
-          event.dataTransfer.setData(REGEX_DRAG_TYPE, JSON.stringify({ kind: dragKind, index: dragIndex }));
-        }
-      }, "\u2630"),
+        },
+        onPointerDown,
+        onPointerMove,
+        onPointerUp,
+        onPointerCancel
+      }, "\u283F"),
       h12("span", { className: "dtv-entry-dot", "aria-hidden": "true" }),
       h12("span", { className: "dtv-entry-name" }, rawText(rule.name || unwrapText(uiMessage("regex.unnamed")))),
       h12("span", { className: "dtv-entry-state" }, stateLabel)
@@ -13282,6 +13279,19 @@ function RuleEditor({ rule, busy, update, remove, sourceOwned = false, dragKind,
     )
   );
 }
+function RegexDropPlaceholder() {
+  return h12("div", {
+    className: "dtv-regex-drop-placeholder",
+    "aria-hidden": true
+  }, uiMessage("preset.dropHere"));
+}
+function regexInsertionBoundary(event, kind) {
+  const target = document.elementFromPoint(event.clientX, event.clientY)?.closest("[data-regex-index]");
+  if (target === null || target.dataset.regexKind !== kind) return null;
+  const index = Number(target.dataset.regexIndex);
+  const bounds = target.getBoundingClientRect();
+  return event.clientY < bounds.top + bounds.height / 2 ? index : index + 1;
+}
 function RegexScopeSection({
   kind,
   bindings,
@@ -13295,7 +13305,11 @@ function RegexScopeSection({
   remove,
   updateSource,
   removeSource,
-  move
+  move,
+  dragFrom,
+  dropIndex,
+  setDragFrom,
+  setDropIndex
 }) {
   const rules = [...editableRules, ...sourceRules];
   const unbound = kind === "preset" && bindings.presetId === null ? uiMessage("regex.noPreset") : kind === "character" && bindings.characterId === null ? uiMessage("regex.noCharacter") : null;
@@ -13318,27 +13332,52 @@ function RegexScopeSection({
       h12("button", { className: "dtv-button", type: "button", disabled: busy, onClick: () => exportJson(rules) }, uiMessage("common.exportJson"))
     ),
     rules.length === 0 ? h12("p", { className: "dtv-note" }, uiMessage("regex.emptyScope")) : [
-      ...editableRules.map((rule, index) => h12(RuleEditor, {
-        key: `${kind}-editable-${rule.id}-${index}`,
-        rule,
-        busy,
-        dragKind: kind,
-        dragIndex: index,
-        move,
-        update,
-        remove: () => remove(rule.id)
-      })),
-      ...sourceRules.map((rule, index) => h12(RuleEditor, {
-        key: `${kind}-source-${rule.id}-${index}`,
-        rule,
-        busy,
-        sourceOwned: true,
-        dragKind: kind,
-        dragIndex: index,
-        move,
-        update: (next) => updateSource(index, next),
-        remove: () => removeSource(index)
-      }))
+      ...rules.flatMap((rule, index) => {
+        const sourceIndex = index - editableRules.length;
+        const sourceOwned = sourceIndex >= 0;
+        return [
+          dragFrom?.kind === kind && dropIndex === index ? h12(RegexDropPlaceholder, { key: `${kind}-drop-${index}` }) : null,
+          h12(RuleEditor, {
+            key: `${kind}-${sourceOwned ? "source" : "editable"}-${rule.id}-${index}`,
+            rule,
+            busy,
+            sourceOwned,
+            dragKind: kind,
+            dragIndex: index,
+            dragging: dragFrom?.kind === kind && dragFrom.index === index,
+            update: sourceOwned ? (next) => updateSource(sourceIndex, next) : update,
+            remove: sourceOwned ? () => removeSource(sourceIndex) : () => remove(rule.id),
+            onPointerDown: (event) => {
+              if (busy) return;
+              event.preventDefault();
+              event.stopPropagation();
+              event.currentTarget.setPointerCapture(event.pointerId);
+              setDragFrom({ kind, index });
+              setDropIndex(index + 1);
+            },
+            onPointerMove: (event) => {
+              if (!event.currentTarget.hasPointerCapture(event.pointerId)) return;
+              const boundary = regexInsertionBoundary(event, kind);
+              if (boundary !== null) setDropIndex(boundary);
+            },
+            onPointerUp: (event) => {
+              event.preventDefault();
+              const boundary = regexInsertionBoundary(event, kind) ?? dropIndex ?? index + 1;
+              if (event.currentTarget.hasPointerCapture(event.pointerId)) {
+                event.currentTarget.releasePointerCapture(event.pointerId);
+              }
+              move(index, boundary);
+              setDragFrom(null);
+              setDropIndex(null);
+            },
+            onPointerCancel: () => {
+              setDragFrom(null);
+              setDropIndex(null);
+            }
+          })
+        ];
+      }),
+      dragFrom?.kind === kind && dropIndex === rules.length ? h12(RegexDropPlaceholder, { key: `${kind}-drop-end` }) : null
     ]
   );
 }
@@ -13349,6 +13388,8 @@ function RegexPanel({ client, activeSnapshot, close }) {
   const [savedResourceRules, setSavedResourceRules] = (0, import_react14.useState)({ preset: [], character: [] });
   const [busy, setBusy] = (0, import_react14.useState)(false);
   const [status, setStatus] = (0, import_react14.useState)({ text: uiMessage("common.loading"), error: false });
+  const [dragFrom, setDragFrom] = (0, import_react14.useState)(null);
+  const [dropIndex, setDropIndex] = (0, import_react14.useState)(null);
   const fileInput = (0, import_react14.useRef)(null);
   const importScope = (0, import_react14.useRef)("global");
   const bindings = activeRegexBindings(activeSnapshot);
@@ -13443,17 +13484,17 @@ function RegexPanel({ client, activeSnapshot, close }) {
     ...current2,
     [kind]: current2[kind].filter((_rule, ruleIndex) => ruleIndex !== index)
   }));
-  const moveRule = (kind, fromIndex, toIndex) => {
+  const moveRule = (kind, fromIndex, boundary) => {
     if (kind === "global") {
       setDocument((current2) => ({
         ...current2,
-        rules: reorderRegexScope(current2.rules, kind, fromIndex, toIndex)
+        rules: reorderRegexScopeAtBoundary(current2.rules, kind, fromIndex, boundary)
       }));
       return;
     }
     setResourceRules((current2) => ({
       ...current2,
-      [kind]: reorderRegexRules(current2[kind], fromIndex, toIndex)
+      [kind]: reorderRegexRulesAtBoundary(current2[kind], fromIndex, boundary)
     }));
   };
   const importFile = async (event) => {
@@ -13516,7 +13557,11 @@ function RegexPanel({ client, activeSnapshot, close }) {
         remove: removeRule,
         updateSource: (index, next) => updateSourceRule(kind, index, next),
         removeSource: (index) => removeSourceRule(kind, index),
-        move: (fromIndex, toIndex) => moveRule(kind, fromIndex, toIndex)
+        move: (fromIndex, toIndex) => moveRule(kind, fromIndex, toIndex),
+        dragFrom,
+        dropIndex,
+        setDragFrom,
+        setDropIndex
       })),
       h12("div", { className: "dtv-status", "data-error": status.error }, status.text),
       h12(
@@ -13849,7 +13894,7 @@ var css11 = `
 .dtv-book-toolbar{display:grid;grid-template-columns:1fr 1fr 1fr;gap:7px}.dtv-entry{border:1px solid var(--dsw-alias-border-l1);border-radius:8px;background:var(--dsw-alias-bg-base);overflow:hidden}.dtv-entry>summary{list-style:none;cursor:pointer;padding:8px;display:flex;align-items:center;gap:7px;font-size:11px}.dtv-entry>summary::-webkit-details-marker{display:none}.dtv-entry-dot{width:8px;height:8px;flex:none;border-radius:50%;background:var(--dsw-alias-label-tertiary)}.dtv-entry[data-enabled=true] .dtv-entry-dot{background:var(--dsw-alias-state-success,#2fa36b)}.dtv-entry-name{font-weight:620;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.dtv-entry-state{margin-left:auto;flex:none;color:var(--dsw-alias-label-tertiary);font-size:10px}.dtv-entry-body{border-top:1px solid var(--dsw-alias-border-l1);padding:8px;display:flex;flex-direction:column;gap:8px}.dtv-field{display:flex;flex-direction:column;gap:4px}.dtv-label{font-size:10px;font-weight:620;color:var(--dsw-alias-label-tertiary)}.dtv-input,.dtv-select,.dtv-textarea{box-sizing:border-box;width:100%;border:1px solid var(--dsw-alias-border-l2);border-radius:7px;background:var(--dsw-alias-bg-base);color:var(--dsw-alias-label-primary);font:inherit;font-size:11px;padding:7px 8px}.dtv-input,.dtv-select{height:32px}.dtv-textarea{min-height:94px;resize:vertical;line-height:1.45}.dtv-policy{min-height:96px}.dtv-entry-grid{display:grid;grid-template-columns:1fr 1fr;gap:7px}.dtv-checks{display:flex;flex-wrap:wrap;gap:10px}.dtv-check{display:flex;gap:5px;align-items:center;font-size:10px}.dtv-entry-actions{display:flex;justify-content:flex-end}.dtv-danger{color:var(--dsw-alias-state-error)}
 .dtv-layer>.dtv-launcher,.dtv-layer>.dtv-panel,.dtv-layer>.dcc-panel,.dtv-layer>.dwb-panel,.dtv-layer>.dtu-panel{zoom:var(--dtv-ui-scale,1)}.dtv-setting-value{font-size:12px;font-variant-numeric:tabular-nums;color:var(--dsw-alias-label-secondary)}
 .dtv-modal-backdrop{position:absolute;inset:0;z-index:20;pointer-events:auto;background:rgba(0,0,0,.48);display:flex;align-items:center;justify-content:center;padding:24px}
-.dtv-regex-panel .dtv-body{flex:1 1 auto;overscroll-behavior:contain}.dtv-regex-section{gap:8px}.dtv-regex-section-title{display:flex;align-items:center;gap:8px}.dtv-regex-section-title .dtv-item-count{margin-left:auto}.dtv-regex-drag{flex:none;cursor:grab;color:var(--dsw-alias-label-tertiary);font-size:14px;line-height:1;user-select:none}.dtv-regex-drag:active{cursor:grabbing}.dtv-regex-rule .dtv-input:disabled,.dtv-regex-rule .dtv-select:disabled,.dtv-regex-rule .dtv-textarea:disabled{pointer-events:none}.dtv-regex-expression{font-family:var(--dsw-font-mono,ui-monospace,SFMono-Regular,Consolas,monospace);min-height:72px}.dtv-regex-footer{position:sticky;bottom:-12px;display:grid;grid-template-columns:1fr 1fr;gap:8px;padding:10px 0 12px;background:var(--dsw-alias-bg-base)}
+.dtv-regex-panel .dtv-body{flex:1 1 auto;overscroll-behavior:contain}.dtv-regex-section{gap:8px}.dtv-regex-section-title{display:flex;align-items:center;gap:8px}.dtv-regex-section-title .dtv-item-count{margin-left:auto}.dtv-regex-rule{transition:border-color .12s,box-shadow .12s}.dtv-regex-rule[data-dragging=true]{height:4px;min-height:4px;margin:5px 10px;border:0;border-radius:999px;background:var(--dsw-alias-state-business-primary);box-shadow:0 0 0 1px color-mix(in srgb,var(--dsw-alias-state-business-primary) 25%,transparent)}.dtv-regex-rule[data-dragging=true]>*{opacity:0}.dtv-regex-drop-placeholder{box-sizing:border-box;height:42px;border:2px dashed var(--dsw-alias-state-business-primary);border-radius:8px;background:color-mix(in srgb,var(--dsw-alias-state-business-primary) 7%,transparent);display:flex;align-items:center;justify-content:center;color:var(--dsw-alias-state-business-primary);font-size:12px;font-weight:600;pointer-events:none}.dtv-regex-drag{flex:none;border:0;background:transparent;cursor:grab;color:var(--dsw-alias-label-tertiary);padding:1px 2px;font-size:15px;line-height:1;touch-action:none;user-select:none}.dtv-regex-drag:active{cursor:grabbing}.dtv-regex-drag:disabled{cursor:default;opacity:.5}.dtv-regex-rule .dtv-input:disabled,.dtv-regex-rule .dtv-select:disabled,.dtv-regex-rule .dtv-textarea:disabled{pointer-events:none}.dtv-regex-expression{font-family:var(--dsw-font-mono,ui-monospace,SFMono-Regular,Consolas,monospace);min-height:72px}.dtv-regex-footer{position:sticky;bottom:-12px;display:grid;grid-template-columns:1fr 1fr;gap:8px;padding:10px 0 12px;background:var(--dsw-alias-bg-base)}
 .dtv-modal{width:min(420px,100%);border-radius:12px;background:var(--dsw-alias-bg-base);border:1px solid var(--dsw-alias-border-l2);box-shadow:var(--ds-shadow-3,0 16px 40px rgba(0,0,0,.28));padding:18px 16px;display:flex;flex-direction:column;gap:14px}
 .dtv-modal-body{margin:0;font-size:13px;line-height:1.55}.dtv-modal .dtv-button{align-self:flex-end;min-width:88px}
 `;
