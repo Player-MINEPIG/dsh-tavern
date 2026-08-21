@@ -43,3 +43,9 @@ test('right swipe adopts the next variant or generates one at the end', () => {
   assert.match(source, /hasNextVariant \? 'play\.chat\.nextReply' : 'play\.chat\.generateReply'/)
   assert.doesNotMatch(source, /icon: '✦'/)
 })
+
+test('forking a playthrough refreshes shared sidebar classification before navigation', () => {
+  const source = readFileSync(new URL('../packages/client/src/play/turn-actions.js', import.meta.url), 'utf8')
+  assert.match(source, /CLIENT_REFRESH_EVENT/)
+  assert.match(source, /forkPlaythrough\(playthrough, turn\.id\)[\s\S]*dispatchEvent\(new Event\(CLIENT_REFRESH_EVENT\)\)[\s\S]*openSession\(result\.sessionId\)/)
+})

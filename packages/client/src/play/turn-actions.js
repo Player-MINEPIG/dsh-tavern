@@ -3,7 +3,7 @@ import {
   useEffect,
   useState,
 } from 'react'
-import { PLUGIN_ID } from '../../../identity.js'
+import { CLIENT_REFRESH_EVENT, PLUGIN_ID } from '../../../identity.js'
 import {
   createLocalizedElement,
   translate,
@@ -185,6 +185,7 @@ export function PlayTurnActions({
       disabled,
       onClick: () => mutate(async () => {
         const result = await controller(playClient).forkPlaythrough(playthrough, turn.id)
+        window.dispatchEvent(new Event(CLIENT_REFRESH_EVENT))
         openSession(result.sessionId)
       }),
     }),
