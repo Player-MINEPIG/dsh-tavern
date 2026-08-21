@@ -32,4 +32,5 @@ test('display editing uses an in-conversation multiline editor instead of browse
   assert.match(source, /setDisplayOverride\(playthrough, turn\.id, value\)/)
   assert.match(source, /event\.key === 'Escape'/)
   assert.doesNotMatch(source, /window\.prompt/)
+  assert.match(source, /turn\.displayOverridden \? h\(Action/)
 })

@@ -171,12 +171,14 @@ export async function loadChatState(client, sessionId, playthrough) {
   let depth = 0
   for (let index = rawTurns.length - 1; index >= 0; index -= 1) {
     const turn = rawTurns[index]
-    const assistantDepth = turn.assistantText === '' ? undefined : depth++
+    const assistantDepth = turn.displayOverridden === true || turn.assistantText !== '' ? depth++ : undefined
     const userDepth = turn.userText === '' ? undefined : depth++
     turns[index] = {
       ...turn,
       userText: renderText(turn.userText, 'user', { depth: userDepth }),
-      assistantText: renderText(turn.assistantText, 'assistant', { depth: assistantDepth }),
+      assistantText: turn.displayOverridden === true
+        ? turn.assistantText
+        : renderText(turn.assistantText, 'assistant', { depth: assistantDepth }),
     }
   }
   const rootMessages = messagesBySession[sessionId]
@@ -206,13 +208,15 @@ export function applyTurnDisplayRegex(turn, display, { userDepth, assistantDepth
       'user',
       { depth: userDepth },
     ).text,
-    assistantText: applyDisplayRegex(
-      applyDisplayNameMacros(turn.assistantText, display.macros),
-      display.rules,
-      display.bindings,
-      'assistant',
-      { depth: assistantDepth },
-    ).text,
+    assistantText: turn.displayOverridden === true
+      ? turn.assistantText
+      : applyDisplayRegex(
+          applyDisplayNameMacros(turn.assistantText, display.macros),
+          display.rules,
+          display.bindings,
+          'assistant',
+          { depth: assistantDepth },
+        ).text,
   }
 }
 function Greeting({ greeting, busy, change, footer = null }) {
@@ -247,6 +251,7 @@ export function turnHasVisibleRpContent(turn) {
     || turn?.importLast === true
     || (typeof turn?.userText === 'string' && turn.userText !== '')
     || (typeof turn?.assistantText === 'string' && turn.assistantText !== '')
+    || turn?.displayOverridden === true
     || turn?.running === true
 }
 
@@ -265,7 +270,7 @@ function Turn({ turn, ...actionProps }) {
     turn.running === true && turn.assistantText === ''
       ? h('p', { className: 'dtv-play-chat-running' }, uiMessage('play.chat.thinking'))
       : null,
-    turn.imported || turn.transient || turn.assistantText === ''
+    turn.imported || turn.transient || (turn.assistantText === '' && turn.displayOverridden !== true)
       ? null
       : h(PlayTurnActions, { turn, ...actionProps }),
   )

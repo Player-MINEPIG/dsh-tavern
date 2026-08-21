@@ -110,6 +110,10 @@ test('timeline projection renders only adopted visible QA ranges', () => {
   const display = projectTimelineQa(overridden, { fork: [] })[0]
   assert.equal(display.assistantText, 'Display only')
   assert.equal(display.displayOverridden, true)
+  overridden.nodes[0].displayOverride = ''
+  const emptyDisplay = projectTimelineQa(overridden, { fork: [] })[0]
+  assert.equal(emptyDisplay.assistantText, '')
+  assert.equal(emptyDisplay.displayOverridden, true)
   overridden.nodes[0].hidden = true
   assert.equal(projectTimelineQa(overridden, { fork: [] })[0].hidden, true)
 })

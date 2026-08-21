@@ -156,6 +156,7 @@ export function projectTimelineQa(timeline, messagesBySession = {}) {
       .filter(message => message.role === 'user' && messageOriginKind(message) === 'context')
       .map(contextProjection)
     const assistant = [...within].reverse().find(message => message.role === 'assistant') ?? null
+    const displayOverridden = typeof node.displayOverride === 'string'
     result.push({
       id: node.id,
       hidden: node.hidden === true,
@@ -163,9 +164,9 @@ export function projectTimelineQa(timeline, messagesBySession = {}) {
       contexts,
       triggerKind: messageOriginKind(trigger),
       reasoningText: contentReasoning(assistant?.content),
-      assistantText: node.displayOverride ?? renderedMessageText(assistant),
+      assistantText: displayOverridden ? node.displayOverride : renderedMessageText(assistant),
       originalAssistantText: renderedMessageText(assistant),
-      displayOverridden: node.displayOverride !== null,
+      displayOverridden,
       variant,
       variants: node.variants,
       variantCount: node.variants.length,

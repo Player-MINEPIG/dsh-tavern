@@ -2,7 +2,7 @@ import test from 'node:test'
 import assert from 'node:assert/strict'
 import { applyTurnDisplayRegex, loadChatState, turnHasVisibleRpContent } from '../packages/client/src/play/chat.js'
 
-test('Chat applies regex only after displayOverride and keeps source messages untouched', async () => {
+test('Chat treats displayOverride as frozen final text and keeps source messages untouched', async () => {
   const messages = {
     incompleteTurn: false,
     messages: [
@@ -30,7 +30,7 @@ test('Chat applies regex only after displayOverride and keeps source messages un
   }
   const state = await loadChatState(client, 'session-a', { path: 'timeline.json' })
   assert.equal(state.turns[0].userText, 'U asks')
-  assert.equal(state.turns[0].assistantText, 'Override A')
+  assert.equal(state.turns[0].assistantText, 'Override Alice')
   assert.equal(state.turns[0].originalAssistantText, 'Original Alice')
   assert.deepEqual(messages, original)
 })
@@ -126,6 +126,22 @@ test('live turns use the same display rules without changing their source projec
   assert.deepEqual(turn, before)
 })
 
+test('display regex and macros do not run again on a frozen display override', () => {
+  const turn = {
+    id: 'saved-display', userText: '', assistantText: 'Final {{char}} Alice',
+    displayOverridden: true, reasoningText: '',
+  }
+  const projected = applyTurnDisplayRegex(turn, {
+    rules: [{
+      id: 'assistant', name: 'assistant', enabled: true, find: '/Alice/g', replace: 'Changed',
+      target: 'assistant', scope: { kind: 'global', resourceId: null }, flags: '', ext: {},
+    }],
+    bindings: {},
+    macros: { user: 'Reader', character: 'Card' },
+  })
+  assert.equal(projected.assistantText, 'Final {{char}} Alice')
+})
+
 test('display regex may suppress a context-triggered assistant output while preserving non-visual provenance', () => {
   const turn = {
     id: 'context-turn', triggerKind: 'context', userText: '',
@@ -154,4 +170,7 @@ test('RP visibility ignores reasoning and context while retaining real content a
   assert.equal(turnHasVisibleRpContent({ userText: 'human', assistantText: '', running: false }), true)
   assert.equal(turnHasVisibleRpContent({ userText: '', assistantText: 'reply', running: false }), true)
   assert.equal(turnHasVisibleRpContent({ userText: '', assistantText: '', running: true }), true)
+  assert.equal(turnHasVisibleRpContent({
+    userText: '', assistantText: '', displayOverridden: true, running: false,
+  }), true)
 })
