@@ -1,6 +1,6 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
-import { applyTurnDisplayRegex, loadChatState } from '../packages/client/src/play/chat.js'
+import { applyTurnDisplayRegex, loadChatState, turnHasVisibleRpContent } from '../packages/client/src/play/chat.js'
 
 test('Chat applies regex only after displayOverride and keeps source messages untouched', async () => {
   const messages = {
@@ -126,7 +126,7 @@ test('live turns use the same display rules without changing their source projec
   assert.deepEqual(turn, before)
 })
 
-test('display regex may suppress a context-triggered assistant output without removing its context row', () => {
+test('display regex may suppress a context-triggered assistant output while preserving non-visual provenance', () => {
   const turn = {
     id: 'context-turn', triggerKind: 'context', userText: '',
     contexts: [{ id: 'context-1', text: 'Background report' }],
@@ -143,4 +143,15 @@ test('display regex may suppress a context-triggered assistant output without re
   })
   assert.equal(projected.assistantText, '')
   assert.deepEqual(projected.contexts, turn.contexts)
+  assert.equal(turnHasVisibleRpContent(projected), false)
+})
+
+test('RP visibility ignores reasoning and context while retaining real content and running state', () => {
+  assert.equal(turnHasVisibleRpContent({
+    userText: '', assistantText: '', reasoningText: 'private',
+    contexts: [{ id: 'context', text: 'injected' }], running: false,
+  }), false)
+  assert.equal(turnHasVisibleRpContent({ userText: 'human', assistantText: '', running: false }), true)
+  assert.equal(turnHasVisibleRpContent({ userText: '', assistantText: 'reply', running: false }), true)
+  assert.equal(turnHasVisibleRpContent({ userText: '', assistantText: '', running: true }), true)
 })

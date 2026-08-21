@@ -145,7 +145,7 @@ test('live projection shows the durable user immediately and streams only assist
   }])
 })
 
-test('context-triggered live output stays a folded context turn instead of a user bubble', () => {
+test('context-triggered live output keeps non-human provenance instead of becoming a user bubble', () => {
   const live = projectLiveTurns({
     timeline: { nodes: [] },
     sessionId: 'root',
