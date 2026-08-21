@@ -67,6 +67,20 @@ test('variant sessions resolve to their owning playthrough', () => {
   assert.equal(findPlaythroughForSession('external', { playthroughs: [playthrough] }, { [playthrough.path]: timeline }), null)
 })
 
+test('an unrecorded active branch head still resolves to its owning playthrough', () => {
+  const playthrough = { id: 'pt', path: 'card/pt/timeline.json' }
+  const timeline = {
+    nodes: [{
+      id: 'qa', kind: 'qa', adoptedVariantId: 'v',
+      variants: [{ id: 'v', sessionId: 'old-session', startEventId: 1, endEventId: 2 }],
+    }],
+    head: { sessionId: 'rollback-session', nodeId: 'qa', variantId: 'v' },
+  }
+  assert.equal(findPlaythroughForSession(
+    'rollback-session', { playthroughs: [playthrough] }, { [playthrough.path]: timeline },
+  )?.playthrough, playthrough)
+})
+
 test('timeline projection renders only adopted visible QA ranges', () => {
   const projected = projectTimelineQa(timeline, {
     fork: { messages: [

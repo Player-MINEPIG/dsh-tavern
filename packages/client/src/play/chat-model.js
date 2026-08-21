@@ -101,6 +101,7 @@ export function findPlaythroughForSession(sessionId, catalog, timelines = {}) {
   for (const playthrough of catalog?.playthroughs ?? []) {
     const timeline = timelines[playthrough.path]
     if (rootSessionId(playthrough) === sessionId) return { playthrough, timeline: timeline ?? null }
+    if (timeline?.head?.sessionId === sessionId) return { playthrough, timeline }
     if (timeline?.nodes?.some(node => node.variants?.some(variant => variant.sessionId === sessionId))) {
       return { playthrough, timeline }
     }

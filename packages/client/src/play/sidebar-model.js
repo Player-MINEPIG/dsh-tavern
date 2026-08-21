@@ -43,6 +43,9 @@ function playthroughMembers(playthrough, timeline) {
   const ids = new Set()
   const rootId = rootSessionId(playthrough)
   if (rootId !== null) ids.add(rootId)
+  if (typeof timeline?.head?.sessionId === 'string' && timeline.head.sessionId !== '') {
+    ids.add(timeline.head.sessionId)
+  }
   for (const node of timeline?.nodes ?? []) {
     for (const variant of node?.variants ?? []) {
       if (typeof variant?.sessionId === 'string' && variant.sessionId !== '') ids.add(variant.sessionId)
