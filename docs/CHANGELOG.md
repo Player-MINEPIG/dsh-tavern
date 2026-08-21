@@ -1,5 +1,13 @@
 # Development changelog
 
+## 2026-08-21 — Order display regex and freeze manual overrides
+
+- Added drag ordering inside each global, preset, and character regex source;
+  saved resource order is the native `regex_scripts` array order.
+- Manual `displayOverride` is now final display text and bypasses subsequent
+  macro/regex passes while still using Markdown and DOMPurify rendering.
+- Empty overrides remain explicit and keep the restore-original action.
+
 ## 2026-08-21 — Edit displayed replies inside the conversation
 
 - Replaced the browser single-line prompt with an inline, resizable multiline
