@@ -81,10 +81,17 @@ function fingerprint(value) {
  * Adapters resolve normalized documents; the compiler owns request semantics.
  */
 export class TavernProfileLoader {
-  constructor({ presetStore, selections, userWorldBooks = null, maxProfileBytes }) {
+  constructor({
+    presetStore,
+    selections,
+    userWorldBooks = null,
+    resourceWorldBooks = null,
+    maxProfileBytes,
+  }) {
     this.presetStore = presetStore
     this.selections = selections
     this.userWorldBooks = userWorldBooks
+    this.resourceWorldBooks = resourceWorldBooks
     this.maxProfileBytes = profileByteLimit(maxProfileBytes)
     this.characterAdapter = null
     this.userAdapter = null
@@ -156,7 +163,18 @@ export class TavernProfileLoader {
     const userBoundIds = userResult.user === null || this.userWorldBooks === null
       ? []
       : this.userWorldBooks.get(userResult.user.id)
-    const worldBookSelection = composeWorldBookSelection(selection.worldBookIds, userBoundIds)
+    const presetBoundIds = preset === null || this.resourceWorldBooks === null
+      ? []
+      : this.resourceWorldBooks.get('preset', preset.id)
+    const characterBoundIds = characterResult.character === null || this.resourceWorldBooks === null
+      ? []
+      : this.resourceWorldBooks.get('character', characterResult.character.id)
+    const worldBookSelection = composeWorldBookSelection(
+      selection.worldBookIds,
+      userBoundIds,
+      presetBoundIds,
+      characterBoundIds,
+    )
     const effectiveSelection = {
       ...selection,
       worldBookIds: worldBookSelection.effectiveIds,

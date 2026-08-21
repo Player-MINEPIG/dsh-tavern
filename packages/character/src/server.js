@@ -3,7 +3,7 @@ import { API_V1, escapeRegExp } from '../../identity.js'
 import { characterStoreConstants } from './store.js'
 
 export const CHARACTER_API_PREFIX = `${API_V1}/character`
-const CHARACTER_ID_ROUTE = new RegExp(`^${escapeRegExp(API_V1)}/characters/([^/]+)(?:/(json|png|world-book|regex-scripts))?$`)
+const CHARACTER_ID_ROUTE = new RegExp(`^${escapeRegExp(API_V1)}/characters/([^/]+)(?:/(json|png|world-book|world-books|regex-scripts))?$`)
 export const MAX_CHARACTER_BODY_BYTES = characterStoreConstants.maxArtifactBytes
 export const MAX_CHARACTER_WORLD_BOOK_BODY_BYTES = characterStoreConstants.maxEditedWorldBookBytes
 
@@ -38,7 +38,7 @@ function sendArtifact(res, status, payload) {
 function apiError(error) {
   const code = error?.code ?? (error instanceof TypeError || error instanceof URIError ? 'INVALID_CHARACTER_REQUEST' : 'CHARACTER_API_ERROR')
   const status = error?.status
-    ?? (code === 'CHARACTER_NOT_FOUND' ? 404
+    ?? (code === 'CHARACTER_NOT_FOUND' || code === 'WORLD_BOOK_NOT_FOUND' ? 404
       : code === 'CHARACTER_ID_EXISTS' ? 409
       : code === 'ARTIFACT_TOO_LARGE' || code === 'CHARACTER_DOCUMENT_TOO_LARGE' ? 413
         : error instanceof TypeError || error instanceof URIError ? 400 : 500)
@@ -122,10 +122,26 @@ function selectionPayload(store, sessionId, selectionPolicy) {
   }
 }
 
+function worldBookIdsBody(value) {
+  if (value === null || typeof value !== 'object' || Array.isArray(value)) {
+    throw new TypeError('Character world-book binding request must be an object')
+  }
+  const unexpected = Object.keys(value).find(key => key !== 'worldBookIds')
+  if (unexpected !== undefined) throw new TypeError(`Unsupported character world-book binding field "${unexpected}"`)
+  if (!Array.isArray(value.worldBookIds)) throw new TypeError('worldBookIds must be an array')
+  return value.worldBookIds
+}
+
+function worldBookBindingPayload(characterCardId, policy) {
+  if (policy?.selection === undefined) throw new Error('Character world-book binding policy is not installed')
+  return { binding: { characterCardId, worldBookIds: policy.selection(characterCardId) } }
+}
+
 export function createCharacterApiHandler(store, options = {}) {
   const onChange = options.onChange ?? (() => {})
   const beforeSelectionChange = options.beforeSelectionChange ?? (() => {})
   const selectionPolicy = options.selectionPolicy
+  const worldBookBindingPolicy = options.worldBookBindingPolicy ?? null
   return async (req, res) => {
     try {
       const url = new URL(req.url ?? '/', 'http://localhost')
@@ -177,6 +193,10 @@ export function createCharacterApiHandler(store, options = {}) {
         return sendJson(res, 200, { ok: true, regexScripts: store.regexScripts(route.id) })
       }
 
+      if (route !== null && method === 'GET' && route.resource === 'world-books') {
+        return sendJson(res, 200, { ok: true, ...worldBookBindingPayload(route.id, worldBookBindingPolicy) })
+      }
+
       if (route !== null && method === 'PATCH' && route.resource === undefined) {
         const body = await readJson(req, characterStoreConstants.maxCharacterDocumentBytes, {
           code: 'CHARACTER_DOCUMENT_TOO_LARGE',
@@ -205,6 +225,13 @@ export function createCharacterApiHandler(store, options = {}) {
         const character = store.replaceRegexScripts(route.id, body.regexScripts)
         onChange({ kind: 'character-regex-scripts-updated', characterCardId: route.id })
         return sendJson(res, 200, { ok: true, regexScripts: store.regexScripts(character.id) })
+      }
+
+      if (route !== null && method === 'PUT' && route.resource === 'world-books') {
+        if (worldBookBindingPolicy?.select === undefined) throw new Error('Character world-book binding policy is not installed')
+        const worldBookIds = await worldBookBindingPolicy.select(route.id, worldBookIdsBody(await readJson(req)))
+        onChange({ kind: 'character-world-book-binding-changed', characterCardId: route.id, worldBookIds })
+        return sendJson(res, 200, { ok: true, ...worldBookBindingPayload(route.id, worldBookBindingPolicy) })
       }
 
       if (route !== null && method === 'DELETE' && route.resource === undefined) {

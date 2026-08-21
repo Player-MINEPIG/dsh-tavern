@@ -247,9 +247,11 @@ test('selected users add their books through loader policy, deduplicate explicit
     assert.deepEqual(first.audit.worldBookSelection, {
       explicitIds: ['explicit-book', 'shared-book'],
       userBoundIds: ['shared-book', 'user-a-book'],
+      presetBoundIds: [],
+      characterBoundIds: [],
       effectiveIds: ['explicit-book', 'shared-book', 'user-a-book'],
       duplicateIds: ['shared-book'],
-      order: 'session-explicit-then-user',
+      order: 'session-explicit-then-user-then-preset-then-character',
     })
     assert.deepEqual(first.resources.worldBooks.map(item => [item.id, item.bindingSources]), [
       ['explicit-book', ['session']],

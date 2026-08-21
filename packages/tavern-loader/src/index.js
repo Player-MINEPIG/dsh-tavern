@@ -21,6 +21,7 @@ import { PresetRuntime } from './preset-runtime.js'
 import { TavernProfileLoader } from './profile-loader.js'
 import { SessionSelectionStore } from './session-policy.js'
 import { UserWorldBookBindingStore } from './user-world-book-policy.js'
+import { ResourceWorldBookBindingStore } from './resource-world-book-policy.js'
 import { createWorldBookAdapter } from './world-book-adapter.js'
 import { PendingInputProjection } from './pending-input-projection.js'
 import { ImportContextRuntime } from './import-context-runtime.js'
@@ -102,7 +103,7 @@ function isUserApiPath(url) {
     || path.startsWith(`${API_V1}/users/`)
 }
 
-export function createCharacterSelectionPolicy(characterStore, selections) {
+export function createCharacterSelectionPolicy(characterStore, selections, resourceWorldBooks = null) {
   return {
     selection(sessionId) {
       if (typeof sessionId !== 'string' || sessionId === '') return null
@@ -124,11 +125,24 @@ export function createCharacterSelectionPolicy(characterStore, selections) {
       selections.set(sessionId, normalized)
       return normalized
     },
-    clearResource: (kind, id) => selections.clearResource(kind, id),
+    clearResource(kind, id) {
+      const sessionChanged = selections.clearResource(kind, id)
+      const bindingChanged = kind === 'character'
+        ? resourceWorldBooks?.clearOwner('character', id) === true
+        : kind === 'character-card'
+          ? resourceWorldBooks?.clearOwner('character', id) === true
+          : false
+      return sessionChanged || bindingChanged
+    },
   }
 }
 
-export function createWorldBookSelectionPolicy(worldBookStore, selections, userWorldBooks = null) {
+export function createWorldBookSelectionPolicy(
+  worldBookStore,
+  selections,
+  userWorldBooks = null,
+  resourceWorldBooks = null,
+) {
   return {
     selection(sessionId) {
       if (typeof sessionId !== 'string' || sessionId === '') return []
@@ -148,7 +162,8 @@ export function createWorldBookSelectionPolicy(worldBookStore, selections, userW
     clearResource(kind, id) {
       const sessionChanged = selections.clearResource(kind, id)
       const userChanged = kind === 'world-book' ? userWorldBooks?.clearWorldBook(id) === true : false
-      return sessionChanged || userChanged
+      const resourceChanged = kind === 'world-book' ? resourceWorldBooks?.clearWorldBook(id) === true : false
+      return sessionChanged || userChanged || resourceChanged
     },
   }
 }
@@ -207,6 +222,36 @@ export function createUserWorldBookBindingPolicy(userStore, worldBookStore, user
   }
 }
 
+export function createResourceWorldBookBindingPolicy(
+  resourceStore,
+  worldBookStore,
+  resourceWorldBooks,
+  kind,
+) {
+  if (kind !== 'preset' && kind !== 'character') throw new TypeError('Resource kind must be preset or character')
+  if (typeof resourceWorldBooks?.get !== 'function' || typeof resourceWorldBooks?.set !== 'function') {
+    throw new TypeError('Resource world-book policy requires a binding store')
+  }
+  const getResource = id => resourceStore.get(id)
+  return {
+    selection(resourceId) {
+      getResource(resourceId)
+      return resourceWorldBooks.get(kind, resourceId)
+    },
+    select(resourceId, worldBookIds) {
+      getResource(resourceId)
+      if (!Array.isArray(worldBookIds)) throw new TypeError('worldBookIds must be an array')
+      if (worldBookIds.length > 100) throw new TypeError(`A ${kind} can bind at most 100 world books`)
+      const normalized = [...new Set(worldBookIds)]
+      for (const id of normalized) {
+        if (typeof id !== 'string' || id === '') throw new TypeError('Every worldBookId must be a non-empty string')
+        worldBookStore.get(id)
+      }
+      return resourceWorldBooks.set(kind, resourceId, normalized)
+    },
+  }
+}
+
 export function apply(ctx, config = {}) {
   const storageDir = resolve(config.storageDir ?? DEFAULT_STORAGE_DIR)
   const store = new PresetStore(storageDir)
@@ -214,6 +259,7 @@ export function apply(ctx, config = {}) {
   const worldBookStore = new WorldBookStore(storageDir)
   const userStore = new UserStore(storageDir)
   const userWorldBooks = new UserWorldBookBindingStore(storageDir, config.userWorldBooks)
+  const resourceWorldBooks = new ResourceWorldBookBindingStore(storageDir, config.resourceWorldBooks)
   const sessionTemplateStore = new SessionTemplateStore(storageDir, config.sessionTemplates)
   const uiSettingsStore = new UiSettingsStore(storageDir)
   const chromeStore = new ChromeStore(storageDir)
@@ -261,6 +307,7 @@ export function apply(ctx, config = {}) {
     presetStore: store,
     selections,
     userWorldBooks,
+    resourceWorldBooks,
     maxProfileBytes: config.limits?.maxProfileBytes,
   })
   const pendingInput = new PendingInputProjection({
@@ -287,10 +334,27 @@ export function apply(ctx, config = {}) {
       return undefined
     }
   }
-  const characterSelectionPolicy = createCharacterSelectionPolicy(characterStore, selections)
-  const worldBookSelectionPolicy = createWorldBookSelectionPolicy(worldBookStore, selections, userWorldBooks)
+  const characterSelectionPolicy = createCharacterSelectionPolicy(characterStore, selections, resourceWorldBooks)
+  const worldBookSelectionPolicy = createWorldBookSelectionPolicy(
+    worldBookStore,
+    selections,
+    userWorldBooks,
+    resourceWorldBooks,
+  )
   const userSelectionPolicy = createUserSelectionPolicy(userStore, selections, userWorldBooks)
   const userWorldBookBindingPolicy = createUserWorldBookBindingPolicy(userStore, worldBookStore, userWorldBooks)
+  const presetWorldBookBindingPolicy = createResourceWorldBookBindingPolicy(
+    store,
+    worldBookStore,
+    resourceWorldBooks,
+    'preset',
+  )
+  const characterWorldBookBindingPolicy = createResourceWorldBookBindingPolicy(
+    characterStore,
+    worldBookStore,
+    resourceWorldBooks,
+    'character',
+  )
   const selectCharacter = characterSelectionPolicy.select.bind(characterSelectionPolicy)
   characterSelectionPolicy.select = (sessionId, patch) => {
     const previousId = characterSelectionPolicy.selection(sessionId)?.characterCardId ?? null
@@ -330,7 +394,12 @@ export function apply(ctx, config = {}) {
         throw error
       }
     },
-    clearResource: (kind, id) => selections.clearResource(kind, id),
+    clearResource: (kind, id) => {
+      const sessionChanged = selections.clearResource(kind, id)
+      const bindingChanged = kind === 'preset' ? resourceWorldBooks.clearOwner('preset', id) : false
+      return sessionChanged || bindingChanged
+    },
+    worldBookBindingPolicy: presetWorldBookBindingPolicy,
   }
 
   ctx.systemPrompt.section({
@@ -436,6 +505,7 @@ export function apply(ctx, config = {}) {
     const characterApi = createCharacterApiHandler(characterStore, {
       onChange: notifyChange,
       selectionPolicy: characterSelectionPolicy,
+      worldBookBindingPolicy: characterWorldBookBindingPolicy,
       beforeSelectionChange: ({ sessionId }) => {
         const agent = ctx.get('agents')?.get?.(sessionId)
         if (agent?.status === 'running') {
@@ -542,6 +612,7 @@ export function apply(ctx, config = {}) {
     worldBookStore: { value: worldBookStore, enumerable: false },
     userStore: { value: userStore, enumerable: false },
     userWorldBooks: { value: userWorldBooks, enumerable: false },
+    resourceWorldBooks: { value: resourceWorldBooks, enumerable: false },
     sessionTemplateStore: { value: sessionTemplateStore, enumerable: false },
     sessionConfigurations: { value: sessionConfigurations, enumerable: false },
     uiSettingsStore: { value: uiSettingsStore, enumerable: false },
@@ -595,6 +666,11 @@ export {
   composeWorldBookSelection,
   userWorldBookPolicyConstants,
 } from './user-world-book-policy.js'
+export {
+  ResourceWorldBookBindingLimitError,
+  ResourceWorldBookBindingStore,
+  resourceWorldBookPolicyConstants,
+} from './resource-world-book-policy.js'
 export { createWorldBookAdapter } from './world-book-adapter.js'
 export { PendingInputProjection, pendingInputProjectionConstants } from './pending-input-projection.js'
 export {

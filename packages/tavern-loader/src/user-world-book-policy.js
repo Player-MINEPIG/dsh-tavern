@@ -203,17 +203,37 @@ export class UserWorldBookBindingStore {
   }
 }
 
-export function composeWorldBookSelection(explicitIds = [], userBoundIds = []) {
+export function composeWorldBookSelection(
+  explicitIds = [],
+  userBoundIds = [],
+  presetBoundIds = [],
+  characterBoundIds = [],
+) {
   const explicit = normalizeWorldBookIds(explicitIds)
   const user = normalizeWorldBookIds(userBoundIds)
-  const explicitSet = new Set(explicit)
-  const duplicateIds = user.filter(id => explicitSet.has(id))
+  const preset = normalizeWorldBookIds(presetBoundIds)
+  const character = normalizeWorldBookIds(characterBoundIds)
+  const effectiveIds = []
+  const seen = new Set()
+  const duplicateIds = []
+  for (const ids of [explicit, user, preset, character]) {
+    for (const id of ids) {
+      if (seen.has(id)) {
+        if (!duplicateIds.includes(id)) duplicateIds.push(id)
+        continue
+      }
+      seen.add(id)
+      effectiveIds.push(id)
+    }
+  }
   return {
     explicitIds: explicit,
     userBoundIds: user,
-    effectiveIds: [...explicit, ...user.filter(id => !explicitSet.has(id))],
+    presetBoundIds: preset,
+    characterBoundIds: character,
+    effectiveIds,
     duplicateIds,
-    order: 'session-explicit-then-user',
+    order: 'session-explicit-then-user-then-preset-then-character',
   }
 }
 

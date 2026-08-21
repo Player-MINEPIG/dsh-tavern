@@ -1,7 +1,7 @@
 import { API_V1, escapeRegExp } from '../../identity.js'
 
 const API_ROOT = API_V1
-const PRESET_ID_ROUTE = new RegExp(`^${escapeRegExp(API_V1)}/presets/([^/]+)(?:/(export|regex-scripts))?$`)
+const PRESET_ID_ROUTE = new RegExp(`^${escapeRegExp(API_V1)}/presets/([^/]+)(?:/(export|regex-scripts|world-books))?$`)
 const MAX_BODY_BYTES = 2 * 1024 * 1024
 
 function sendJson(res, status, payload) {
@@ -71,6 +71,21 @@ function defaultActiveView(store) {
   }
 }
 
+function worldBookIdsBody(value) {
+  if (value === null || typeof value !== 'object' || Array.isArray(value)) {
+    throw new TypeError('Preset world-book binding request must be an object')
+  }
+  const unexpected = Object.keys(value).find(key => key !== 'worldBookIds')
+  if (unexpected !== undefined) throw new TypeError(`Unsupported preset world-book binding field "${unexpected}"`)
+  if (!Array.isArray(value.worldBookIds)) throw new TypeError('worldBookIds must be an array')
+  return value.worldBookIds
+}
+
+function worldBookBindingPayload(presetId, policy) {
+  if (policy?.selection === undefined) throw new Error('Preset world-book binding policy is not installed')
+  return { binding: { presetId, worldBookIds: policy.selection(presetId) } }
+}
+
 export function createApiHandler(
   store,
   onChange = () => {},
@@ -85,6 +100,7 @@ export function createApiHandler(
       const route = presetRoute(path)
       const id = route?.id ?? null
       const sessionId = url.searchParams.get('sessionId') || null
+      const worldBookBindingPolicy = selectionPolicy.worldBookBindingPolicy ?? null
 
       if (method === 'GET' && path === `${API_ROOT}/presets`) {
         return sendJson(res, 200, {
@@ -116,6 +132,10 @@ export function createApiHandler(
         return sendJson(res, 200, { ok: true, regexScripts: store.regexScripts(id) })
       }
 
+      if (method === 'GET' && id !== null && route.resource === 'world-books') {
+        return sendJson(res, 200, { ok: true, ...worldBookBindingPayload(id, worldBookBindingPolicy) })
+      }
+
       if (method === 'POST' && path === `${API_ROOT}/import`) {
         const body = await readJson(req)
         if (typeof body.content !== 'string') return sendJson(res, 400, { ok: false, error: 'content must be a JSON string' })
@@ -144,6 +164,13 @@ export function createApiHandler(
         return sendJson(res, 200, { ok: true, regexScripts: store.regexScripts(preset.id) })
       }
 
+      if (method === 'PUT' && id !== null && route.resource === 'world-books') {
+        if (worldBookBindingPolicy?.select === undefined) throw new Error('Preset world-book binding policy is not installed')
+        const worldBookIds = await worldBookBindingPolicy.select(id, worldBookIdsBody(await readJson(req)))
+        onChange({ kind: 'preset-world-book-binding-changed', presetId: id, worldBookIds })
+        return sendJson(res, 200, { ok: true, ...worldBookBindingPayload(id, worldBookBindingPolicy) })
+      }
+
       if (method === 'DELETE' && id !== null && route.resource === undefined) {
         store.delete(id)
         selectionPolicy.clearResource?.('preset', id)
@@ -165,7 +192,7 @@ export function createApiHandler(
 
       return sendJson(res, 404, { ok: false, error: 'not found' })
     } catch (error) {
-      const status = error?.status ?? (error?.code === 'PRESET_NOT_FOUND' ? 404 : error instanceof TypeError ? 400 : 500)
+      const status = error?.status ?? (error?.code === 'PRESET_NOT_FOUND' || error?.code === 'WORLD_BOOK_NOT_FOUND' ? 404 : error instanceof TypeError ? 400 : 500)
       return sendJson(res, status, { ok: false, error: error instanceof Error ? error.message : String(error) })
     }
   }
