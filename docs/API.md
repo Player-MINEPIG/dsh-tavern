@@ -44,11 +44,11 @@
 `GET /sessions/:id/messages` 中每条消息同时保留两种互不替代的分类：
 
 - `role` 是送给模型的消息角色，当前主要为 `user`、`assistant`、`system`；DSH 的运行时上下文注入在模型侧仍可能是 `role: "user"`。
-- `origin.kind` 是前端来源/显示语义，取值为 `user`、`context`、`steering`、`assistant`、`system`。第三方前端必须用它区分真实用户输入与上下文注入，不得仅凭 `role` 画用户气泡。
+- `origin.kind` 是前端来源/显示语义，取值为 `user`、`context`、`steering`、`assistant`、`system`。第三方前端必须用它区分真实用户输入与上下文注入，不得仅凭 `role` 画用户气泡；具体选择隐藏还是单独呈现由前端决定。
 - `origin.kind: "context"` 可附带 `producer`、`form`、`summary`。三者是有界的可选显示元数据；消息正文仍在原有 `text` / `content` 字段，不复制进 `origin`。
 - 为兼容旧客户端，新增字段是 additive；`role`、`seq`、`text`、`content` 与 `incompleteTurn` 的既有含义不变。旧服务端没有 `origin` 时，客户端只能按 `role` 做保守回退，无法可靠识别上下文注入。
 
-内置魔丸视图把 `origin.kind: "context"` 显示为默认折叠的“上下文注入”行，不显示成用户气泡。上下文行自身没有 Tavern 功能按钮；由真实 `user` / `steering` 触发的 assistant 回复保留回复切换与重新生成，由 `context` 触发的父 agent 输出不提供这两项，避免把报告重新作为人类输入发送。复制、周目分支、显示层编辑和隐藏仍可用。显示正则把 assistant 正文清空时，不显示该输出正文及其按钮，但保留上下文折叠行和 timeline 指针。
+内置魔丸视图完全不渲染 reasoning 与 `origin.kind: "context"`，也不提供展开入口；需要检查运行细节时使用 DSH 原生“对话”视图。由真实 `user` / `steering` 触发的 assistant 回复保留回复切换与重新生成，由 `context` 触发的父 agent 输出不提供这两项，避免把报告重新作为人类输入发送；该父输出若有可见正文，仍可复制、周目分支、显示层编辑和隐藏。显示正则把 assistant 正文清空时，不显示该输出及其按钮，但保留非可视 provenance 与 timeline 指针。
 
 import-context 修改由 session 权威状态锁定：只要存在 DSH user/assistant message、开放 turn，或该绑定已经被 claim，`PUT` / `DELETE` 都返回 `409 PLAY_IMPORT_CONTEXT_LOCKED`；前端隐藏按钮不能替代此检查。`PUT` 会重新读取工作区文件、执行 JSON/schema/hash 校验，然后把绑定置为 `pending`。`GET` 可在任意状态读取摘要；正文仍通过已有 `/workspace/files?path=` 按明确路径读取。首次实际 assembly 必须携带公开 `agent/inbox/spliced` 投影的非负 `claimEventSeqs`；loader 才把绑定持久转为 `claimed`，并在同一 claim identity 的重复 assembly 中重放相同的转义、untrusted、只读上下文。没有 claim 的 view/assembly 不注入，也不会消费 pending；已 claim 的 `turn/end` 才转为 `consumed`，并保存安全整数结束 event seq、turn 与 `reason.kind` 的非正文终态元数据，不写成 DSH 历史。DSH provider 在同一 turn/end 前的 request retry 复用同一 claim；`agent/request-error` 不消费或重置。Tavern swipe 通过公开 branch endpoint，在分叉点早于来源终态时复制 selection 和不含正文的 import lineage；子 session 必须出现新的 public claim 才注入，旧 claim 不直接复用。中断后原 session 的新用户 claim 不再注入。
 

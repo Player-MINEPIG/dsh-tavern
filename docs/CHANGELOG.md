@@ -5,11 +5,12 @@
 - Added additive `origin` provenance to v2 session messages without changing
   the model-facing `role`; context injections retain bounded producer, form,
   and summary metadata for independent frontends.
-- The RP view now folds DSH context injections instead of rendering them as
-  user bubbles. Context-triggered parent output cannot be retried or swiped,
-  and the controller refuses to resend context as human input.
+- The RP view now hides reasoning and DSH context injections completely instead
+  of rendering user bubbles or expandable rows; native DSH chat remains the
+  inspection surface. Context-triggered parent output cannot be retried or
+  swiped, and the controller refuses to resend context as human input.
 - Display regex that removes the complete assistant output also removes its
-  action row while preserving the context row and timeline pointer.
+  action row while preserving non-visual provenance and the timeline pointer.
 
 ## 2026-08-21 — Export current presets as SillyTavern JSON
 
