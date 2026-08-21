@@ -62,6 +62,7 @@ export default Object.freeze({
   "regex.scope": "Scope",
   "regex.resourceId": "Resource ID",
   "regex.loaded": "{count} regex rules loaded",
+  "regex.legacyMigrationPending": "Found {count} legacy Tavern-local resource regex rules. Save to write them into the active preset or character so they travel with resource exports.",
   "regex.saved": "{count} regex rules saved",
   "regex.imported": "{count} regex rules imported and saved",
   "regex.confirmReload": "Discard unsaved regex changes and reload?",

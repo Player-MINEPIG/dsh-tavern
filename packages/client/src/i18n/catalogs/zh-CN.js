@@ -62,6 +62,7 @@ export default Object.freeze({
   "regex.scope": "作用域",
   "regex.resourceId": "资源 ID",
   "regex.loaded": "已加载 {count} 条正则",
+  "regex.legacyMigrationPending": "检测到 {count} 条旧版 Tavern 本地资源正则；点击保存后会写入当前预设或角色卡，并随资源导出。",
   "regex.saved": "已保存 {count} 条正则",
   "regex.imported": "已导入并保存 {count} 条正则",
   "regex.confirmReload": "放弃未保存的正则修改并重新载入？",

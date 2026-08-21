@@ -3783,6 +3783,7 @@ var zh_CN_default = Object.freeze({
   "regex.scope": "\u4F5C\u7528\u57DF",
   "regex.resourceId": "\u8D44\u6E90 ID",
   "regex.loaded": "\u5DF2\u52A0\u8F7D {count} \u6761\u6B63\u5219",
+  "regex.legacyMigrationPending": "\u68C0\u6D4B\u5230 {count} \u6761\u65E7\u7248 Tavern \u672C\u5730\u8D44\u6E90\u6B63\u5219\uFF1B\u70B9\u51FB\u4FDD\u5B58\u540E\u4F1A\u5199\u5165\u5F53\u524D\u9884\u8BBE\u6216\u89D2\u8272\u5361\uFF0C\u5E76\u968F\u8D44\u6E90\u5BFC\u51FA\u3002",
   "regex.saved": "\u5DF2\u4FDD\u5B58 {count} \u6761\u6B63\u5219",
   "regex.imported": "\u5DF2\u5BFC\u5165\u5E76\u4FDD\u5B58 {count} \u6761\u6B63\u5219",
   "regex.confirmReload": "\u653E\u5F03\u672A\u4FDD\u5B58\u7684\u6B63\u5219\u4FEE\u6539\u5E76\u91CD\u65B0\u8F7D\u5165\uFF1F",
@@ -4373,6 +4374,7 @@ var en_default = Object.freeze({
   "regex.scope": "Scope",
   "regex.resourceId": "Resource ID",
   "regex.loaded": "{count} regex rules loaded",
+  "regex.legacyMigrationPending": "Found {count} legacy Tavern-local resource regex rules. Save to write them into the active preset or character so they travel with resource exports.",
   "regex.saved": "{count} regex rules saved",
   "regex.imported": "{count} regex rules imported and saved",
   "regex.confirmReload": "Discard unsaved regex changes and reload?",
@@ -12914,6 +12916,41 @@ async function putActiveResourceRegexRules(client, kind, resourceId, rules) {
   const response = await method.call(client, resourceId, rules.map(nativeRegexScript));
   return resourceRegexInventory(response?.regexScripts ?? [], { kind, resourceId });
 }
+function resourceEditableRule(rule) {
+  return {
+    ...rule,
+    sourceDisplayEligible: true
+  };
+}
+function stageLegacyScopedRegexRules(document2, resourceRules, bindings) {
+  const nextDocument = {
+    ...document2,
+    rules: [...document2.rules]
+  };
+  const nextResourceRules = {
+    preset: [...resourceRules.preset],
+    character: [...resourceRules.character]
+  };
+  let migrated = 0;
+  for (const [kind, resourceId] of [
+    ["preset", bindings.presetId],
+    ["character", bindings.characterId]
+  ]) {
+    if (typeof resourceId !== "string") continue;
+    const local = nextDocument.rules.filter((rule) => rule.scope.kind === kind && rule.scope.resourceId === resourceId);
+    if (local.length === 0) continue;
+    const existingIds = new Set(nextResourceRules[kind].map((rule) => rule.id));
+    for (const rule of local) {
+      if (!existingIds.has(rule.id)) {
+        nextResourceRules[kind].push(resourceEditableRule(rule));
+        existingIds.add(rule.id);
+      }
+    }
+    nextDocument.rules = nextDocument.rules.filter((rule) => !(rule.scope.kind === kind && rule.scope.resourceId === resourceId));
+    migrated += local.length;
+  }
+  return { document: nextDocument, resourceRules: nextResourceRules, migrated };
+}
 function RuleEditor({ rule, busy, update, remove, sourceOwned = false }) {
   const set = (patch) => update({ ...rule, ...patch });
   const setScope = (patch) => set({ scope: { ...rule.scope, ...patch } });
@@ -12993,7 +13030,7 @@ function RuleEditor({ rule, busy, update, remove, sourceOwned = false }) {
           {
             className: "dtv-select",
             value: rule.scope.kind,
-            disabled: busy || sourceOwned,
+            disabled: true,
             onChange: (event) => setScope({
               kind: event.target.value,
               resourceId: event.target.value === "global" ? null : rule.scope.resourceId
@@ -13004,7 +13041,7 @@ function RuleEditor({ rule, busy, update, remove, sourceOwned = false }) {
         rule.scope.kind === "global" ? null : h12(Field5, { labelKey: "regex.resourceId" }, h12("input", {
           className: "dtv-input",
           value: rule.scope.resourceId ?? "",
-          disabled: busy || sourceOwned,
+          disabled: true,
           onChange: (event) => setScope({ resourceId: event.target.value || null })
         }))
       ),
@@ -13034,6 +13071,7 @@ function RegexScopeSection({
 }) {
   const rules = [...editableRules, ...sourceRules];
   const unbound = kind === "preset" && bindings.presetId === null ? uiMessage("regex.noPreset") : kind === "character" && bindings.characterId === null ? uiMessage("regex.noCharacter") : null;
+  const actionsDisabled = busy || unbound !== null;
   return h12(
     "section",
     { className: "dtv-resource dtv-regex-section", "data-scope": kind },
@@ -13047,8 +13085,8 @@ function RegexScopeSection({
     h12(
       "div",
       { className: "dtv-book-toolbar" },
-      h12("button", { className: "dtv-button", type: "button", disabled: busy, onClick: add }, uiMessage("regex.add")),
-      h12("button", { className: "dtv-button", type: "button", disabled: busy, onClick: importJson }, uiMessage("common.importJson")),
+      h12("button", { className: "dtv-button", type: "button", disabled: actionsDisabled, onClick: add }, uiMessage("regex.add")),
+      h12("button", { className: "dtv-button", type: "button", disabled: actionsDisabled, onClick: importJson }, uiMessage("common.importJson")),
       h12("button", { className: "dtv-button", type: "button", disabled: busy, onClick: () => exportJson(rules) }, uiMessage("common.exportJson"))
     ),
     rules.length === 0 ? h12("p", { className: "dtv-note" }, uiMessage("regex.emptyScope")) : [
@@ -13088,12 +13126,16 @@ function RegexPanel({ client, activeSnapshot, close }) {
         getRegexDocument(client),
         activeResourceRegexRules(client, bindings)
       ]);
-      setDocument(next);
+      const staged = stageLegacyScopedRegexRules(next, nextResourceRules, bindings);
+      setDocument(staged.document);
       setSavedDocument(next);
-      setResourceRules(nextResourceRules);
+      setResourceRules(staged.resourceRules);
       setSavedResourceRules(nextResourceRules);
-      const count = next.rules.length + nextResourceRules.preset.length + nextResourceRules.character.length;
-      setStatus({ text: uiMessage("regex.loaded", { count }), error: false });
+      const count = staged.document.rules.length + staged.resourceRules.preset.length + staged.resourceRules.character.length;
+      setStatus({
+        text: staged.migrated > 0 ? uiMessage("regex.legacyMigrationPending", { count: staged.migrated }) : uiMessage("regex.loaded", { count }),
+        error: false
+      });
     } catch (reason) {
       setStatus({ text: rawText(reason instanceof Error ? reason.message : String(reason)), error: true });
     } finally {
@@ -13142,7 +13184,14 @@ function RegexPanel({ client, activeSnapshot, close }) {
       flags: "g",
       target: "assistant"
     }, { scope: scopeFor(kind, bindings) });
-    setDocument((current2) => ({ ...current2, rules: [...current2.rules, rule] }));
+    if (kind === "global") {
+      setDocument((current2) => ({ ...current2, rules: [...current2.rules, rule] }));
+      return;
+    }
+    setResourceRules((current2) => ({
+      ...current2,
+      [kind]: [...current2[kind], resourceEditableRule(rule)]
+    }));
   };
   const updateRule = (next) => setDocument((current2) => ({
     ...current2,
@@ -13169,7 +13218,18 @@ function RegexPanel({ client, activeSnapshot, close }) {
       const imported = importRegexDocument(JSON.parse(await file.text()), {
         scope: scopeFor(importScope.current, bindings)
       });
-      await persist({ ...document2, rules: [...document2.rules, ...imported] });
+      if (importScope.current === "global") {
+        await persist({ ...document2, rules: [...document2.rules, ...imported] });
+      } else {
+        const nextResourceRules = {
+          ...resourceRules,
+          [importScope.current]: [
+            ...resourceRules[importScope.current],
+            ...imported.map(resourceEditableRule)
+          ]
+        };
+        await persist(document2, nextResourceRules);
+      }
       setStatus({ text: uiMessage("regex.imported", { count: imported.length }), error: false });
     } catch (reason) {
       setStatus({ text: rawText(reason instanceof Error ? reason.message : String(reason)), error: true });
@@ -13196,7 +13256,7 @@ function RegexPanel({ client, activeSnapshot, close }) {
         key: kind,
         kind,
         bindings,
-        editableRules: document2.rules.filter((rule) => rule.scope.kind === kind),
+        editableRules: kind === "global" ? document2.rules.filter((rule) => rule.scope.kind === "global") : [],
         sourceRules: kind === "preset" ? resourceRules.preset : kind === "character" ? resourceRules.character : [],
         busy,
         add: () => addRule(kind),

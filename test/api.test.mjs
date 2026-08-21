@@ -179,6 +179,33 @@ test('preset regex-scripts API reads and replaces the native ST array without re
     assert.equal(store.get(preset.id).source.raw.extensions.kept.future, true)
     assert.deepEqual(changes, [{ kind: 'preset-regex-scripts-updated', presetId: preset.id }])
 
+    const exported = await invoke(handler, {
+      url: `/pmp-dsh-tavern/api/v1/presets/${preset.id}/export`,
+    })
+    assert.deepEqual(exported.body.extensions.regex_scripts, regexScripts)
+    assert.equal(exported.body.extensions.kept.future, true)
+
+    const blank = store.create({ id: 'blank-regex', name: 'Blank regex preset' })
+    const blankScripts = [{
+      id: 'created-in-tavern',
+      scriptName: 'Created in Tavern',
+      findRegex: '/<draft>[\\s\\S]*?<\\/draft>/g',
+      replaceString: '',
+      placement: [2],
+      disabled: false,
+      markdownOnly: true,
+    }]
+    const blankSaved = await invoke(handler, {
+      method: 'PUT',
+      url: `/pmp-dsh-tavern/api/v1/presets/${blank.id}/regex-scripts`,
+      body: { regexScripts: blankScripts },
+    })
+    assert.equal(blankSaved.status, 200)
+    const blankExported = await invoke(handler, {
+      url: `/pmp-dsh-tavern/api/v1/presets/${blank.id}/export`,
+    })
+    assert.deepEqual(blankExported.body.extensions.regex_scripts, blankScripts)
+
     const invalid = await invoke(handler, {
       method: 'PUT',
       url: `/pmp-dsh-tavern/api/v1/presets/${preset.id}/regex-scripts`,

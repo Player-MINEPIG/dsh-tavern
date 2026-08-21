@@ -4,6 +4,7 @@ import { readFileSync } from 'node:fs'
 import {
   activeRegexBindings,
   activeResourceRegexRules,
+  stageLegacyScopedRegexRules,
 } from '../packages/client/src/play/regex-panel.js'
 
 test('regex panel resolves only active preset and character bindings', () => {
@@ -48,6 +49,41 @@ test('regex panel loads source-owned rules from the active preset and character'
   assert.equal(rules.character[0].sourceRaw.findRegex, '/x/g')
 })
 
+test('legacy Tavern-local resource scopes stage into native preset and character inventories', () => {
+  const rule = (id, kind, resourceId) => ({
+    id,
+    name: id,
+    enabled: true,
+    find: id,
+    replace: '',
+    flags: 'g',
+    target: 'assistant',
+    scope: { kind, resourceId },
+  })
+  const global = rule('global-rule', 'global', null)
+  const preset = rule('preset-rule', 'preset', 'preset-a')
+  const duplicatePreset = rule('already-native', 'preset', 'preset-a')
+  const inactivePreset = rule('inactive-preset', 'preset', 'preset-b')
+  const character = rule('character-rule', 'character', 'character-a')
+  const existing = { ...duplicatePreset, sourceRaw: { id: 'already-native' } }
+  const result = stageLegacyScopedRegexRules({
+    schemaVersion: 1,
+    rules: [global, preset, duplicatePreset, inactivePreset, character],
+  }, {
+    preset: [existing],
+    character: [],
+  }, {
+    presetId: 'preset-a',
+    characterId: 'character-a',
+  })
+
+  assert.deepEqual(result.document.rules.map(item => item.id), ['global-rule', 'inactive-preset'])
+  assert.deepEqual(result.resourceRules.preset.map(item => item.id), ['already-native', 'preset-rule'])
+  assert.deepEqual(result.resourceRules.character.map(item => item.id), ['character-rule'])
+  assert.equal(result.resourceRules.preset[1].sourceDisplayEligible, true)
+  assert.equal(result.migrated, 3)
+})
+
 test('Mowan regex panel exposes scoped CRUD and import/export without an AI request seam', () => {
   const source = readFileSync(new URL('../packages/client/src/play/regex-panel.js', import.meta.url), 'utf8')
   for (const symbol of [
@@ -64,6 +100,9 @@ test('Mowan regex panel exposes scoped CRUD and import/export without an AI requ
   assert.match(source, /onClick: \(\) => exportJson\(rules\)/)
   assert.match(source, /putPresetRegexScripts/)
   assert.match(source, /putCharacterRegexScripts/)
+  assert.match(source, /kind === 'global'/)
+  assert.match(source, /setResourceRules/)
+  assert.match(source, /stageLegacyScopedRegexRules/)
   assert.match(source, /removeSourceRule/)
   assert.doesNotMatch(source, /busy \|\|= sourceOwned/)
   assert.doesNotMatch(source, /postUserMessage|agent\/request|systemPrompt|putTimeline|getMessages/)
