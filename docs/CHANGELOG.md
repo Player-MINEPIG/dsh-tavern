@@ -1,5 +1,25 @@
 # Development changelog
 
+## 2026-08-21 — Export current presets as SillyTavern JSON
+
+- Added `GET /pmp-dsh-tavern/api/v1/presets/:id/export` as an attachment
+  response compatible with the existing preset import path and SillyTavern
+  Chat Completion presets.
+- Export starts from the preserved ST source so unknown extensions survive,
+  then projects the current Tavern name, sampling values, prompts, order, and
+  enabled flags so edits cannot be hidden behind a stale `source.raw` copy.
+- Tavern-only `systemPromptMode` remains internal because ST has no matching
+  preset field; this read-only route does not change resource selection.
+
+## 2026-08-21 — Preserve world-book keyword delimiters while editing
+
+- Replaced the lossy parse-and-immediate-join keyword inputs with an editor
+  projection that retains in-progress English and Chinese comma delimiters.
+- Parsed keyword arrays still update on every edit, while external resource
+  changes reconcile the displayed text and document-aware keys prevent local
+  input state from leaking between world books.
+
+Verification: full build and test suite; 418 passed, 4 skipped, 0 failed.
 
 ## 2026-08-21 — Document independent RP frontend integration
 
