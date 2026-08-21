@@ -4103,7 +4103,7 @@ var zh_CN_default = Object.freeze({
   "world.user.libraryEmpty": "\u72EC\u7ACB\u4E16\u754C\u4E66\u8D44\u6E90\u5E93\u4E3A\u7A7A\u3002\u8BF7\u5148\u521B\u5EFA\u6216\u5BFC\u5165\u4E16\u754C\u4E66\u3002",
   "world.user.unsaved": "\u7528\u6237\u4E16\u754C\u4E66\u7ED1\u5B9A\u6709\u672A\u4FDD\u5B58\u4FEE\u6539\uFF1B\u5F53\u524D\u52FE\u9009\u5C1A\u672A\u5E94\u7528\u3002",
   "world.user.saved": "\u5F53\u524D\u663E\u793A\u7684\u7528\u6237\u4E16\u754C\u4E66\u7ED1\u5B9A\u5DF2\u4FDD\u5B58\u5E76\u5E94\u7528\u3002",
-  "world.user.order": "\u6709\u6548\u7EC4\u5408\u987A\u5E8F\u4E3A\uFF1A\u5F53\u524D\u4F1A\u8BDD\u663E\u5F0F\u4E16\u754C\u4E66\u5728\u524D\uFF0C\u7528\u6237\u7ED1\u5B9A\u4E16\u754C\u4E66\u968F\u540E\uFF1B\u91CD\u590D\u8D44\u6E90\u53EA\u6267\u884C\u4E00\u6B21\u3002",
+  "world.user.order": "\u72EC\u7ACB\u4E16\u754C\u4E66\u7684\u6709\u6548\u7EC4\u5408\u987A\u5E8F\u4E3A\uFF1A\u4F1A\u8BDD\u3001\u7528\u6237\u3001\u9884\u8BBE\u3001\u89D2\u8272\u5361\uFF1B\u91CD\u590D\u8D44\u6E90\u53EA\u6267\u884C\u4E00\u6B21\u3002\u89D2\u8272\u5361\u5185\u5D4C\u4E16\u754C\u4E66\u6700\u540E\u53C2\u4E0E\u5339\u914D\u3002",
   "world.user.duplicate": "\u4E0E\u4F1A\u8BDD\u7ED1\u5B9A\u91CD\u590D\uFF0C\u5DF2\u53BB\u91CD",
   "world.user.appended": "\u7531\u7528\u6237\u7ED1\u5B9A\u8FFD\u52A0",
   "world.user.pendingAdd": "\u5F85\u6DFB\u52A0",
@@ -4115,8 +4115,29 @@ var zh_CN_default = Object.freeze({
   "world.user.editContent": "\u7F16\u8F91\u5185\u5BB9",
   "world.user.editHint": "\u8FD9\u91CC\u4E0E\u7528\u6237\u9762\u677F\u7F16\u8F91\u540C\u4E00\u4EFD\u7ED1\u5B9A\u5173\u7CFB\uFF1B\u4EFB\u4E00\u5904\u4FDD\u5B58\u540E\uFF0C\u53E6\u4E00\u5904\u4F1A\u540C\u6B65\u5237\u65B0\u3002",
   "world.user.error.noUser": "\u5F53\u524D\u4F1A\u8BDD\u6CA1\u6709\u53EF\u7F16\u8F91\u4E16\u754C\u4E66\u5173\u7CFB\u7684\u7ED1\u5B9A\u7528\u6237",
+  "world.preset.title": "\u9884\u8BBE\u7ED1\u5B9A\u7684\u4E16\u754C\u4E66",
+  "world.preset.current": "\u5F53\u524D\u9884\u8BBE\uFF1A{name}",
+  "world.preset.none": "\u5F53\u524D\u4F1A\u8BDD\u672A\u7ED1\u5B9A\u9884\u8BBE\uFF0C\u56E0\u6B64\u6CA1\u6709\u9884\u8BBE\u6765\u6E90\u7684\u4E16\u754C\u4E66\u3002",
+  "world.character.current": "\u5F53\u524D\u89D2\u8272\u5361\uFF1A{name}",
+  "world.character.none": "\u5F53\u524D\u4F1A\u8BDD\u672A\u7ED1\u5B9A\u89D2\u8272\u5361\uFF0C\u56E0\u6B64\u6CA1\u6709\u89D2\u8272\u5361\u5173\u8054\u7684\u72EC\u7ACB\u4E16\u754C\u4E66\u3002",
+  "world.resource.empty": "\u5F53\u524D\u8D44\u6E90\u6CA1\u6709\u5173\u8054\u72EC\u7ACB\u4E16\u754C\u4E66\u3002",
+  "world.resource.libraryEmpty": "\u72EC\u7ACB\u4E16\u754C\u4E66\u8D44\u6E90\u5E93\u4E3A\u7A7A\u3002\u8BF7\u5148\u521B\u5EFA\u6216\u5BFC\u5165\u4E16\u754C\u4E66\u3002",
+  "world.resource.unsaved": "\u8D44\u6E90\u7684\u4E16\u754C\u4E66\u5173\u8054\u6709\u672A\u4FDD\u5B58\u4FEE\u6539\uFF1B\u5F53\u524D\u52FE\u9009\u5C1A\u672A\u5E94\u7528\u3002",
+  "world.resource.saved": "\u5F53\u524D\u663E\u793A\u7684\u8D44\u6E90\u4E16\u754C\u4E66\u5173\u8054\u5DF2\u4FDD\u5B58\u5E76\u5E94\u7528\u3002",
+  "world.resource.pendingAdd": "\u5F85\u6DFB\u52A0",
+  "world.resource.pendingRemove": "\u5F85\u79FB\u9664",
+  "world.resource.save": "\u4FDD\u5B58\u8D44\u6E90\u5173\u8054\uFF08\u672A\u4FDD\u5B58\uFF09",
+  "world.resource.saveApplied": "\u8D44\u6E90\u5173\u8054\u5DF2\u4FDD\u5B58",
+  "world.resource.clear": "\u6E05\u7A7A\u5F85\u4FDD\u5B58\u9009\u62E9",
+  "world.resource.saveSuccess": "\u8D44\u6E90\u5173\u8054\u7684\u4E16\u754C\u4E66\u5DF2\u4FDD\u5B58\uFF1B\u540E\u7EED\u8BF7\u6C42\u5C06\u4F7F\u7528\u65B0\u7EC4\u5408\u3002",
+  "world.resource.editContent": "\u7F16\u8F91\u5185\u5BB9",
+  "world.resource.error.noPreset": "\u5F53\u524D\u4F1A\u8BDD\u6CA1\u6709\u53EF\u7F16\u8F91\u4E16\u754C\u4E66\u5173\u7CFB\u7684\u7ED1\u5B9A\u9884\u8BBE",
+  "world.resource.error.noCharacter": "\u5F53\u524D\u4F1A\u8BDD\u6CA1\u6709\u53EF\u7F16\u8F91\u4E16\u754C\u4E66\u5173\u7CFB\u7684\u7ED1\u5B9A\u89D2\u8272\u5361",
   "world.embeddedMeta": "{count} \u6761\u3002\u5B83\u4E0E\u72EC\u7ACB\u4E66\u5171\u7528 matcher/loader\uFF1B\u5220\u9664\u72EC\u7ACB\u4E66\u4E0D\u4F1A\u4FEE\u6539\u6216\u89E3\u7ED1\u89D2\u8272\u5361\u5185\u5D4C\u4E66\u3002",
-  "world.embeddedEmpty": "\u5F53\u524D\u4F1A\u8BDD\u6CA1\u6709\u89D2\u8272\u5361\u7ED1\u5B9A\u7684\u5185\u5D4C\u4E16\u754C\u4E66\u3002\u7ED1\u5B9A\u542B character_book \u7684\u89D2\u8272\u5361\u540E\u4F1A\u663E\u793A\u5728\u8FD9\u91CC\u3002",
+  "world.embeddedEmpty": "\u5F53\u524D\u89D2\u8272\u5361\u8FD8\u6CA1\u6709\u5185\u5D4C\u4E16\u754C\u4E66\uFF1B\u521B\u5EFA\u540E\u4F1A\u5199\u5165\u89D2\u8272\u5361\u7684 character_book\uFF0C\u5E76\u968F\u89D2\u8272\u5361\u5BFC\u51FA\u3002",
+  "world.embeddedNoCharacter": "\u5F53\u524D\u4F1A\u8BDD\u672A\u7ED1\u5B9A\u89D2\u8272\u5361\uFF0C\u56E0\u6B64\u4E0D\u80FD\u521B\u5EFA\u6216\u7F16\u8F91\u89D2\u8272\u5361\u5185\u5D4C\u4E16\u754C\u4E66\u3002",
+  "world.embeddedDefaultName": "{name} \u4E16\u754C\u4E66",
+  "world.createEmbedded": "\u521B\u5EFA\u89D2\u8272\u5361\u5185\u5D4C\u4E16\u754C\u4E66",
   "world.diagnostics": "\u8FD0\u884C\u8BCA\u65AD\uFF08{count}\uFF09",
   "world.confirmDelete": "\u5220\u9664\u72EC\u7ACB\u4E16\u754C\u4E66\u201C{name}\u201D\uFF1F\u89D2\u8272\u5361\u5185\u5D4C\u4E16\u754C\u4E66\u4E0D\u4F1A\u53D7\u5230\u5F71\u54CD\u3002",
   "world.confirmDiscardChanges": "\u653E\u5F03\u5C1A\u672A\u4FDD\u5B58\u7684\u4FEE\u6539\uFF1F",
@@ -4672,7 +4693,7 @@ var en_default = Object.freeze({
   "world.user.libraryEmpty": "The standalone world-book library is empty. Create or import a world book first.",
   "world.user.unsaved": "The user world-book binding has unsaved changes; the current selection is not yet applied.",
   "world.user.saved": "The displayed user world-book binding is saved and applied.",
-  "world.user.order": "Effective order: explicit session books first, followed by user-bound books; duplicate resources run only once.",
+  "world.user.order": "Standalone world-book order is session, user, preset, then character; duplicate resources run only once. The embedded character book is matched last.",
   "world.user.duplicate": "Also session-bound; deduplicated",
   "world.user.appended": "Appended from user binding",
   "world.user.pendingAdd": "Pending addition",
@@ -4684,8 +4705,29 @@ var en_default = Object.freeze({
   "world.user.editContent": "Edit contents",
   "world.user.editHint": "This panel and the User panel edit the same binding. Saving in either place refreshes the other.",
   "world.user.error.noUser": "The current session has no bound user whose world-book relationship can be edited",
+  "world.preset.title": "Preset-bound world books",
+  "world.preset.current": "Current preset: {name}",
+  "world.preset.none": "The current session has no bound preset, so it has no preset-sourced world books.",
+  "world.character.current": "Current character: {name}",
+  "world.character.none": "The current session has no bound character, so it has no character-associated standalone world books.",
+  "world.resource.empty": "This resource has no associated standalone world books.",
+  "world.resource.libraryEmpty": "The standalone world-book library is empty. Create or import a world book first.",
+  "world.resource.unsaved": "The resource world-book relation has unsaved changes; the current selection is not yet applied.",
+  "world.resource.saved": "The displayed resource world-book relation is saved and applied.",
+  "world.resource.pendingAdd": "Pending addition",
+  "world.resource.pendingRemove": "Pending removal",
+  "world.resource.save": "Save resource relation (unsaved)",
+  "world.resource.saveApplied": "Resource relation saved",
+  "world.resource.clear": "Clear pending selection",
+  "world.resource.saveSuccess": "The resource-associated world books were saved; later requests will use the new composition.",
+  "world.resource.editContent": "Edit contents",
+  "world.resource.error.noPreset": "The current session has no bound preset whose world-book relationship can be edited",
+  "world.resource.error.noCharacter": "The current session has no bound character whose world-book relationship can be edited",
   "world.embeddedMeta": "{count} entries. It shares the matcher/loader with standalone books; deleting a standalone book never edits or unbinds this embedded book.",
-  "world.embeddedEmpty": "The current session has no character-bound embedded world book. Bind a character card with character_book to show it here.",
+  "world.embeddedEmpty": "The current character has no embedded world book. Creating one writes character_book into the card and includes it in character exports.",
+  "world.embeddedNoCharacter": "The current session has no bound character, so an embedded character world book cannot be created or edited.",
+  "world.embeddedDefaultName": "{name} World Book",
+  "world.createEmbedded": "Create embedded character world book",
   "world.diagnostics": "Runtime diagnostics ({count})",
   "world.confirmDelete": "Delete standalone world book \u201C{name}\u201D? Character-card embedded books will not be affected.",
   "world.confirmDiscardChanges": "Discard unsaved changes?",
@@ -6163,6 +6205,66 @@ function deriveUserWorldBookSource(active, catalog2) {
     }))
   };
 }
+function sameOrderedIds(left, right) {
+  return left.length === right.length && left.every((value, index) => value === right[index]);
+}
+function orderedBindingCatalog(catalog2, selection) {
+  const books = Array.isArray(catalog2?.worldBooks) ? catalog2.worldBooks : [];
+  const byId = new Map(books.map((book) => [book.id, book]));
+  return [
+    ...selection.map((id) => byId.get(id)).filter(Boolean),
+    ...books.filter((book) => !selection.includes(book.id))
+  ];
+}
+function ResourceWorldBookBindingEditor({
+  resource,
+  catalog: catalog2,
+  selection,
+  appliedSelection,
+  setSelection,
+  save,
+  edit,
+  busy,
+  currentKey,
+  noneKey
+}) {
+  if (resource === null || resource === void 0) return h3("p", { className: "dwb-note" }, uiMessage(noneKey));
+  const books = orderedBindingCatalog(catalog2, selection);
+  const dirty = !sameOrderedIds(selection, appliedSelection);
+  return h3(
+    "div",
+    { className: "dwb-resource" },
+    h3("div", { className: "dwb-resource-title" }, uiMessage(currentKey, { name: resource.name || resource.id })),
+    books.length > 0 ? h3("div", { className: "dwb-bindings dwb-user-bindings" }, ...books.map((book) => {
+      const checked = selection.includes(book.id);
+      const wasApplied = appliedSelection.includes(book.id);
+      const badge = checked && !wasApplied ? uiMessage("world.resource.pendingAdd") : !checked && wasApplied ? uiMessage("world.resource.pendingRemove") : null;
+      return h3(
+        "div",
+        { className: "dwb-user-binding-row", key: book.id },
+        h3(
+          "label",
+          { className: "dwb-check" },
+          h3("input", {
+            type: "checkbox",
+            checked,
+            onChange: (event) => setSelection((current2) => event.target.checked ? [...current2, book.id] : current2.filter((id) => id !== book.id))
+          }),
+          h3("span", { className: "dwb-source-book-name" }, rawText(book.name)),
+          badge === null ? null : h3("span", { className: "dwb-source-badge" }, badge)
+        ),
+        checked || wasApplied ? h3("button", { className: "dwb-button dwb-inline-edit", type: "button", disabled: busy, onClick: () => edit(book.id) }, uiMessage("world.resource.editContent")) : null
+      );
+    })) : h3("p", { className: "dwb-note" }, uiMessage("world.resource.libraryEmpty")),
+    dirty ? h3("div", { className: "dwb-status", "data-warning": true }, uiMessage("world.resource.unsaved")) : h3("p", { className: "dwb-note" }, selection.length === 0 ? uiMessage("world.resource.empty") : uiMessage("world.resource.saved")),
+    h3(
+      "div",
+      { className: "dwb-actions" },
+      h3("button", { className: "dwb-button dwb-primary", type: "button", disabled: busy || !dirty, onClick: save }, dirty ? uiMessage("world.resource.save") : uiMessage("world.resource.saveApplied")),
+      h3("button", { className: "dwb-button", type: "button", disabled: busy || selection.length === 0, onClick: () => setSelection([]) }, uiMessage("world.resource.clear"))
+    )
+  );
+}
 function EntryEditor({ entry, index, update, remove }) {
   const patch = (value) => update(index, value);
   const secondary = Array.isArray(entry.secondaryKeys) ? entry.secondaryKeys : [];
@@ -6218,6 +6320,10 @@ function WorldBookPanel({ sessionId, close }) {
   const [appliedSelection, setAppliedSelection] = (0, import_react3.useState)([]);
   const [userSelection, setUserSelection] = (0, import_react3.useState)([]);
   const [appliedUserSelection, setAppliedUserSelection] = (0, import_react3.useState)([]);
+  const [presetSelection, setPresetSelection] = (0, import_react3.useState)([]);
+  const [appliedPresetSelection, setAppliedPresetSelection] = (0, import_react3.useState)([]);
+  const [characterSelection, setCharacterSelection] = (0, import_react3.useState)([]);
+  const [appliedCharacterSelection, setAppliedCharacterSelection] = (0, import_react3.useState)([]);
   const [active, setActive] = (0, import_react3.useState)(null);
   const [embeddedCharacterId, setEmbeddedCharacterId] = (0, import_react3.useState)(null);
   const [embeddedDraft, setEmbeddedDraft] = (0, import_react3.useState)(null);
@@ -6251,12 +6357,14 @@ function WorldBookPanel({ sessionId, close }) {
     const list = await api3("/world-books");
     const selected = sessionId ? await api3(`/world-book-selection?sessionId=${encodeURIComponent(sessionId)}`) : { selection: { worldBookIds: [] } };
     const activeView2 = await api3(`/active${sessionId ? `?sessionId=${encodeURIComponent(sessionId)}` : ""}`);
+    const presetId = activeView2.resources?.preset?.id ?? null;
     const characterId = activeView2.resources?.characterCard?.id ?? null;
-    let embeddedBook = null;
-    if (characterId !== null) {
-      const character = await api3(`/characters/${encodeURIComponent(characterId)}`);
-      embeddedBook = character.character?.data?.characterBook ?? null;
-    }
+    const [presetBinding, characterBinding, characterDetail] = await Promise.all([
+      presetId === null ? { binding: { worldBookIds: [] } } : api3(`/presets/${encodeURIComponent(presetId)}/world-books`),
+      characterId === null ? { binding: { worldBookIds: [] } } : api3(`/characters/${encodeURIComponent(characterId)}/world-books`),
+      characterId === null ? null : api3(`/characters/${encodeURIComponent(characterId)}`)
+    ]);
+    const embeddedBook = characterDetail?.character?.data?.characterBook ?? null;
     if (currentGeneration !== generation.current) return;
     const ids = selected.selection?.worldBookIds ?? [];
     const resolvedUserIds = activeView2.resources?.user === null || activeView2.resources?.user === void 0 ? [] : activeView2.worldBookSelection?.userBoundIds ?? [];
@@ -6266,6 +6374,12 @@ function WorldBookPanel({ sessionId, close }) {
     setAppliedSelection(ids);
     setUserSelection(userIds);
     setAppliedUserSelection(userIds);
+    const presetIds = presetBinding.binding?.worldBookIds ?? [];
+    const characterIds = characterBinding.binding?.worldBookIds ?? [];
+    setPresetSelection(presetIds);
+    setAppliedPresetSelection(presetIds);
+    setCharacterSelection(characterIds);
+    setAppliedCharacterSelection(characterIds);
     setActive(activeView2);
     setEmbeddedCharacterId(characterId);
     setEmbeddedDraft(embeddedBook === null ? null : structuredClone(embeddedBook));
@@ -6302,6 +6416,7 @@ function WorldBookPanel({ sessionId, close }) {
     await load(id);
     requestAnimationFrame(() => standaloneEditorRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }));
   };
+  const editResourceBook = editUserBook;
   const create2 = () => run(async () => {
     const data = await api3("/world-books", { method: "POST", body: JSON.stringify({ name: translate("world.defaultName") }) });
     await refresh(data.worldBook.id);
@@ -6343,6 +6458,30 @@ function WorldBookPanel({ sessionId, close }) {
     setAppliedUserSelection(ids);
     window.dispatchEvent(new Event(CLIENT_REFRESH_EVENT));
   }, "world.user.saveSuccess");
+  const savePresetSelection = () => run(async () => {
+    const presetId = active?.resources?.preset?.id;
+    if (!presetId) throw uiError("world.resource.error.noPreset");
+    const data = await api3(`/presets/${encodeURIComponent(presetId)}/world-books`, {
+      method: "PUT",
+      body: JSON.stringify({ worldBookIds: presetSelection })
+    });
+    const ids = data.binding.worldBookIds;
+    setPresetSelection(ids);
+    setAppliedPresetSelection(ids);
+    window.dispatchEvent(new Event(CLIENT_REFRESH_EVENT));
+  }, "world.resource.saveSuccess");
+  const saveCharacterSelection = () => run(async () => {
+    const characterId = active?.resources?.characterCard?.id;
+    if (!characterId) throw uiError("world.resource.error.noCharacter");
+    const data = await api3(`/characters/${encodeURIComponent(characterId)}/world-books`, {
+      method: "PUT",
+      body: JSON.stringify({ worldBookIds: characterSelection })
+    });
+    const ids = data.binding.worldBookIds;
+    setCharacterSelection(ids);
+    setAppliedCharacterSelection(ids);
+    window.dispatchEvent(new Event(CLIENT_REFRESH_EVENT));
+  }, "world.resource.saveSuccess");
   const remove = () => run(async () => {
     if (document2 === null || !window.confirm(unwrapText(uiMessage("world.confirmDelete", { name: document2.name })))) return;
     await api3(`/world-books/${encodeURIComponent(document2.id)}`, { method: "DELETE" });
@@ -6360,6 +6499,15 @@ function WorldBookPanel({ sessionId, close }) {
     setEmbeddedDirty(false);
     window.dispatchEvent(new Event(CLIENT_REFRESH_EVENT));
   }, "world.status.embeddedSaved");
+  const createEmbedded = () => {
+    const character = active?.resources?.characterCard;
+    if (!character) return;
+    setEmbeddedDraft({
+      name: translate("world.embeddedDefaultName", { name: character.name || character.id }),
+      entries: []
+    });
+    setEmbeddedDirty(true);
+  };
   const updateEntry = (index, patch) => {
     setDraft((current2) => {
       const next = structuredClone(current2);
@@ -6372,8 +6520,8 @@ function WorldBookPanel({ sessionId, close }) {
   const embeddedEntries = embeddedDraft?.entries ?? [];
   const embedded = active?.resources?.worldBooks?.filter((item) => item.kind === "embedded-character-book") ?? [];
   const diagnostics = active?.diagnostics?.filter((item) => String(item.code ?? "").includes("WORLD_BOOK")) ?? [];
-  const selectionDirty = selection.length !== appliedSelection.length || selection.some((id, index) => id !== appliedSelection[index]);
-  const userSelectionDirty = userSelection.length !== appliedUserSelection.length || userSelection.some((id, index) => id !== appliedUserSelection[index]);
+  const selectionDirty = !sameOrderedIds(selection, appliedSelection);
+  const userSelectionDirty = !sameOrderedIds(userSelection, appliedUserSelection);
   const userSource = deriveUserWorldBookSource(active, catalog2);
   const catalogBooks = Array.isArray(catalog2?.worldBooks) ? catalog2.worldBooks : [];
   const catalogById = new Map(catalogBooks.map((book) => [book.id, book]));
@@ -6503,8 +6651,37 @@ function WorldBookPanel({ sessionId, close }) {
       ),
       h3(
         "section",
+        { className: "dwb-source-section", "data-source": "preset" },
+        h3("h2", { className: "dwb-section-title" }, uiMessage("world.preset.title")),
+        h3(ResourceWorldBookBindingEditor, {
+          resource: active?.resources?.preset ?? null,
+          catalog: catalog2,
+          selection: presetSelection,
+          appliedSelection: appliedPresetSelection,
+          setSelection: setPresetSelection,
+          save: savePresetSelection,
+          edit: editResourceBook,
+          busy,
+          currentKey: "world.preset.current",
+          noneKey: "world.preset.none"
+        })
+      ),
+      h3(
+        "section",
         { className: "dwb-source-section", "data-source": "character" },
         h3("h2", { className: "dwb-section-title" }, uiMessage("world.characterBound")),
+        h3(ResourceWorldBookBindingEditor, {
+          resource: active?.resources?.characterCard ?? null,
+          catalog: catalog2,
+          selection: characterSelection,
+          appliedSelection: appliedCharacterSelection,
+          setSelection: setCharacterSelection,
+          save: saveCharacterSelection,
+          edit: editResourceBook,
+          busy,
+          currentKey: "world.character.current",
+          noneKey: "world.character.none"
+        }),
         embeddedDraft !== null ? h3(
           "div",
           { className: "dwb-resource" },
@@ -6534,7 +6711,17 @@ function WorldBookPanel({ sessionId, close }) {
               setEmbeddedDirty(true);
             }
           } }))
-        ) : h3("p", { className: "dwb-note" }, uiMessage("world.embeddedEmpty"))
+        ) : embeddedCharacterId === null ? h3("p", { className: "dwb-note" }, uiMessage("world.embeddedNoCharacter")) : h3(
+          "div",
+          { className: "dwb-resource" },
+          h3("div", { className: "dwb-resource-title" }, uiMessage("world.embeddedTitle")),
+          h3("p", { className: "dwb-note" }, uiMessage("world.embeddedEmpty")),
+          h3(
+            "div",
+            { className: "dwb-actions" },
+            h3("button", { className: "dwb-button dwb-primary", type: "button", disabled: busy, onClick: createEmbedded }, uiMessage("world.createEmbedded"))
+          )
+        )
       ),
       diagnostics.length > 0 ? h3("details", { className: "dwb-resource" }, h3("summary", { className: "dwb-resource-title" }, uiMessage("world.diagnostics", { count: diagnostics.length })), h3("ul", { className: "dwb-list" }, ...diagnostics.map((item, index) => h3("li", { key: `${item.code}-${index}` }, rawText(item.message))))) : null,
       h3("p", { className: "dwb-note" }, uiMessage("world.matcherNote"))
@@ -6553,7 +6740,7 @@ function installWorldBookStyles() {
 var import_react4 = require("react");
 
 // packages/user/src/client-state.js
-function sameOrderedIds(left, right) {
+function sameOrderedIds2(left, right) {
   return Array.isArray(left) && Array.isArray(right) && left.length === right.length && left.every((id, index) => id === right[index]);
 }
 function userResourceDirty(draft, saved) {
@@ -6561,7 +6748,7 @@ function userResourceDirty(draft, saved) {
   return draft.id !== saved.id || draft.name !== saved.name || draft.description !== saved.description;
 }
 function userPanelDirty(draft, saved, worldBookIds, appliedWorldBookIds) {
-  return userResourceDirty(draft, saved) || !sameOrderedIds(worldBookIds, appliedWorldBookIds);
+  return userResourceDirty(draft, saved) || !sameOrderedIds2(worldBookIds, appliedWorldBookIds);
 }
 
 // packages/user/src/client.js
@@ -6608,7 +6795,7 @@ function UserPanel({ sessionId, sessionBlank, close }) {
   const dirty = userPanelDirty(draft, savedDraft, worldBookIds, appliedWorldBookIds);
   dirtyRef.current = dirty;
   const resourceDirty = userResourceDirty(draft, savedDraft);
-  const bindingDirty = !sameOrderedIds(worldBookIds, appliedWorldBookIds);
+  const bindingDirty = !sameOrderedIds2(worldBookIds, appliedWorldBookIds);
   const run = (0, import_react4.useCallback)(async (operation, success, values) => {
     setBusy(true);
     try {

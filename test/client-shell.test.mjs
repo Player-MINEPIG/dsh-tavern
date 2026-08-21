@@ -215,12 +215,13 @@ test('resource mutations announce one shared refresh event consumed by the shell
   assert.match(user, /addEventListener\(CLIENT_REFRESH_EVENT, onRefresh\)/)
 })
 
-test('world-book panel separates session, user and character sources while exposing unapplied binding state', () => {
+test('world-book panel separates session, user, preset and character sources while exposing unapplied binding state', () => {
   const source = readFileSync(new URL('../packages/world-book-library/src/client.js', import.meta.url), 'utf8')
   assert.match(source, /world\.standalone/)
   assert.match(source, /world\.characterBound/)
   assert.match(source, /data-source': 'standalone'/)
   assert.match(source, /data-source': 'user'/)
+  assert.match(source, /data-source': 'preset'/)
   assert.match(source, /data-source': 'character'/)
   assert.match(source, /deriveUserWorldBookSource/)
   assert.match(source, /world\.user\.current/)
@@ -234,6 +235,11 @@ test('world-book panel separates session, user and character sources while expos
   assert.match(source, /world\.user\.editContent/)
   assert.match(source, /scrollIntoView/)
   assert.match(source, /world\.embeddedEmpty/)
+  assert.match(source, /world\.createEmbedded/)
+  assert.match(source, /presets\/\$\{encodeURIComponent\(presetId\)\}\/world-books/)
+  assert.match(source, /characters\/\$\{encodeURIComponent\(characterId\)\}\/world-books/)
+  assert.match(source, /savePresetSelection/)
+  assert.match(source, /saveCharacterSelection/)
   assert.match(source, /world\.bindingUnsaved/)
   assert.match(source, /world\.bindingAppliedButton/)
   assert.doesNotMatch(source, /`\$\{item\.name\} · \$\{item\.sourceFormat\}`/)

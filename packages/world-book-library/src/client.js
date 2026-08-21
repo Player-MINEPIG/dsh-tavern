@@ -181,6 +181,73 @@ export function deriveUserWorldBookSource(active, catalog) {
   }
 }
 
+function sameOrderedIds(left, right) {
+  return left.length === right.length && left.every((value, index) => value === right[index])
+}
+
+function orderedBindingCatalog(catalog, selection) {
+  const books = Array.isArray(catalog?.worldBooks) ? catalog.worldBooks : []
+  const byId = new Map(books.map(book => [book.id, book]))
+  return [
+    ...selection.map(id => byId.get(id)).filter(Boolean),
+    ...books.filter(book => !selection.includes(book.id)),
+  ]
+}
+
+function ResourceWorldBookBindingEditor({
+  resource,
+  catalog,
+  selection,
+  appliedSelection,
+  setSelection,
+  save,
+  edit,
+  busy,
+  currentKey,
+  noneKey,
+}) {
+  if (resource === null || resource === undefined) return h('p', { className: 'dwb-note' }, uiMessage(noneKey))
+  const books = orderedBindingCatalog(catalog, selection)
+  const dirty = !sameOrderedIds(selection, appliedSelection)
+  return h('div', { className: 'dwb-resource' },
+    h('div', { className: 'dwb-resource-title' }, uiMessage(currentKey, { name: resource.name || resource.id })),
+    books.length > 0
+      ? h('div', { className: 'dwb-bindings dwb-user-bindings' }, ...books.map(book => {
+        const checked = selection.includes(book.id)
+        const wasApplied = appliedSelection.includes(book.id)
+        const badge = checked && !wasApplied
+          ? uiMessage('world.resource.pendingAdd')
+          : !checked && wasApplied
+            ? uiMessage('world.resource.pendingRemove')
+            : null
+        return h('div', { className: 'dwb-user-binding-row', key: book.id },
+          h('label', { className: 'dwb-check' },
+            h('input', {
+              type: 'checkbox',
+              checked,
+              onChange: event => setSelection(current => event.target.checked
+                ? [...current, book.id]
+                : current.filter(id => id !== book.id)),
+            }),
+            h('span', { className: 'dwb-source-book-name' }, rawText(book.name)),
+            badge === null ? null : h('span', { className: 'dwb-source-badge' }, badge),
+          ),
+          checked || wasApplied
+            ? h('button', { className: 'dwb-button dwb-inline-edit', type: 'button', disabled: busy, onClick: () => edit(book.id) }, uiMessage('world.resource.editContent'))
+            : null,
+        )
+      }))
+      : h('p', { className: 'dwb-note' }, uiMessage('world.resource.libraryEmpty')),
+    dirty
+      ? h('div', { className: 'dwb-status', 'data-warning': true }, uiMessage('world.resource.unsaved'))
+      : h('p', { className: 'dwb-note' }, selection.length === 0 ? uiMessage('world.resource.empty') : uiMessage('world.resource.saved')),
+    h('div', { className: 'dwb-actions' },
+      h('button', { className: 'dwb-button dwb-primary', type: 'button', disabled: busy || !dirty, onClick: save }, dirty ? uiMessage('world.resource.save') : uiMessage('world.resource.saveApplied')),
+      h('button', { className: 'dwb-button', type: 'button', disabled: busy || selection.length === 0, onClick: () => setSelection([]) }, uiMessage('world.resource.clear')),
+    ),
+  )
+}
+
 function EntryEditor({ entry, index, update, remove }) {
   const patch = value => update(index, value)
   const secondary = Array.isArray(entry.secondaryKeys) ? entry.secondaryKeys : []
@@ -224,6 +291,10 @@ export function WorldBookPanel({ sessionId, close }) {
   const [appliedSelection, setAppliedSelection] = useState([])
   const [userSelection, setUserSelection] = useState([])
   const [appliedUserSelection, setAppliedUserSelection] = useState([])
+  const [presetSelection, setPresetSelection] = useState([])
+  const [appliedPresetSelection, setAppliedPresetSelection] = useState([])
+  const [characterSelection, setCharacterSelection] = useState([])
+  const [appliedCharacterSelection, setAppliedCharacterSelection] = useState([])
   const [active, setActive] = useState(null)
   const [embeddedCharacterId, setEmbeddedCharacterId] = useState(null)
   const [embeddedDraft, setEmbeddedDraft] = useState(null)
@@ -261,12 +332,18 @@ export function WorldBookPanel({ sessionId, close }) {
       ? await api(`/world-book-selection?sessionId=${encodeURIComponent(sessionId)}`)
       : { selection: { worldBookIds: [] } }
     const activeView = await api(`/active${sessionId ? `?sessionId=${encodeURIComponent(sessionId)}` : ''}`)
+    const presetId = activeView.resources?.preset?.id ?? null
     const characterId = activeView.resources?.characterCard?.id ?? null
-    let embeddedBook = null
-    if (characterId !== null) {
-      const character = await api(`/characters/${encodeURIComponent(characterId)}`)
-      embeddedBook = character.character?.data?.characterBook ?? null
-    }
+    const [presetBinding, characterBinding, characterDetail] = await Promise.all([
+      presetId === null
+        ? { binding: { worldBookIds: [] } }
+        : api(`/presets/${encodeURIComponent(presetId)}/world-books`),
+      characterId === null
+        ? { binding: { worldBookIds: [] } }
+        : api(`/characters/${encodeURIComponent(characterId)}/world-books`),
+      characterId === null ? null : api(`/characters/${encodeURIComponent(characterId)}`),
+    ])
+    const embeddedBook = characterDetail?.character?.data?.characterBook ?? null
     if (currentGeneration !== generation.current) return
     const ids = selected.selection?.worldBookIds ?? []
     const resolvedUserIds = activeView.resources?.user === null || activeView.resources?.user === undefined
@@ -278,6 +355,12 @@ export function WorldBookPanel({ sessionId, close }) {
     setAppliedSelection(ids)
     setUserSelection(userIds)
     setAppliedUserSelection(userIds)
+    const presetIds = presetBinding.binding?.worldBookIds ?? []
+    const characterIds = characterBinding.binding?.worldBookIds ?? []
+    setPresetSelection(presetIds)
+    setAppliedPresetSelection(presetIds)
+    setCharacterSelection(characterIds)
+    setAppliedCharacterSelection(characterIds)
     setActive(activeView)
     setEmbeddedCharacterId(characterId)
     setEmbeddedDraft(embeddedBook === null ? null : structuredClone(embeddedBook))
@@ -317,6 +400,8 @@ export function WorldBookPanel({ sessionId, close }) {
     await load(id)
     requestAnimationFrame(() => standaloneEditorRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }))
   }
+
+  const editResourceBook = editUserBook
 
   const create = () => run(async () => {
     const data = await api('/world-books', { method: 'POST', body: JSON.stringify({ name: translate('world.defaultName') }) })
@@ -364,6 +449,32 @@ export function WorldBookPanel({ sessionId, close }) {
     window.dispatchEvent(new Event(CLIENT_REFRESH_EVENT))
   }, 'world.user.saveSuccess')
 
+  const savePresetSelection = () => run(async () => {
+    const presetId = active?.resources?.preset?.id
+    if (!presetId) throw uiError('world.resource.error.noPreset')
+    const data = await api(`/presets/${encodeURIComponent(presetId)}/world-books`, {
+      method: 'PUT',
+      body: JSON.stringify({ worldBookIds: presetSelection }),
+    })
+    const ids = data.binding.worldBookIds
+    setPresetSelection(ids)
+    setAppliedPresetSelection(ids)
+    window.dispatchEvent(new Event(CLIENT_REFRESH_EVENT))
+  }, 'world.resource.saveSuccess')
+
+  const saveCharacterSelection = () => run(async () => {
+    const characterId = active?.resources?.characterCard?.id
+    if (!characterId) throw uiError('world.resource.error.noCharacter')
+    const data = await api(`/characters/${encodeURIComponent(characterId)}/world-books`, {
+      method: 'PUT',
+      body: JSON.stringify({ worldBookIds: characterSelection }),
+    })
+    const ids = data.binding.worldBookIds
+    setCharacterSelection(ids)
+    setAppliedCharacterSelection(ids)
+    window.dispatchEvent(new Event(CLIENT_REFRESH_EVENT))
+  }, 'world.resource.saveSuccess')
+
   const remove = () => run(async () => {
     if (document === null || !window.confirm(unwrapText(uiMessage('world.confirmDelete', { name: document.name })))) return
     await api(`/world-books/${encodeURIComponent(document.id)}`, { method: 'DELETE' })
@@ -383,6 +494,16 @@ export function WorldBookPanel({ sessionId, close }) {
     window.dispatchEvent(new Event(CLIENT_REFRESH_EVENT))
   }, 'world.status.embeddedSaved')
 
+  const createEmbedded = () => {
+    const character = active?.resources?.characterCard
+    if (!character) return
+    setEmbeddedDraft({
+      name: translate('world.embeddedDefaultName', { name: character.name || character.id }),
+      entries: [],
+    })
+    setEmbeddedDirty(true)
+  }
+
   const updateEntry = (index, patch) => {
     setDraft(current => {
       const next = structuredClone(current)
@@ -395,8 +516,8 @@ export function WorldBookPanel({ sessionId, close }) {
   const embeddedEntries = embeddedDraft?.entries ?? []
   const embedded = active?.resources?.worldBooks?.filter(item => item.kind === 'embedded-character-book') ?? []
   const diagnostics = active?.diagnostics?.filter(item => String(item.code ?? '').includes('WORLD_BOOK')) ?? []
-  const selectionDirty = selection.length !== appliedSelection.length || selection.some((id, index) => id !== appliedSelection[index])
-  const userSelectionDirty = userSelection.length !== appliedUserSelection.length || userSelection.some((id, index) => id !== appliedUserSelection[index])
+  const selectionDirty = !sameOrderedIds(selection, appliedSelection)
+  const userSelectionDirty = !sameOrderedIds(userSelection, appliedUserSelection)
   const userSource = deriveUserWorldBookSource(active, catalog)
   const catalogBooks = Array.isArray(catalog?.worldBooks) ? catalog.worldBooks : []
   const catalogById = new Map(catalogBooks.map(book => [book.id, book]))
@@ -494,8 +615,35 @@ export function WorldBookPanel({ sessionId, close }) {
           h('p', { className: 'dwb-note' }, uiMessage('world.user.editHint')),
         ),
       ),
+      h('section', { className: 'dwb-source-section', 'data-source': 'preset' },
+      h('h2', { className: 'dwb-section-title' }, uiMessage('world.preset.title')),
+      h(ResourceWorldBookBindingEditor, {
+        resource: active?.resources?.preset ?? null,
+        catalog,
+        selection: presetSelection,
+        appliedSelection: appliedPresetSelection,
+        setSelection: setPresetSelection,
+        save: savePresetSelection,
+        edit: editResourceBook,
+        busy,
+        currentKey: 'world.preset.current',
+        noneKey: 'world.preset.none',
+      }),
+      ),
       h('section', { className: 'dwb-source-section', 'data-source': 'character' },
       h('h2', { className: 'dwb-section-title' }, uiMessage('world.characterBound')),
+      h(ResourceWorldBookBindingEditor, {
+        resource: active?.resources?.characterCard ?? null,
+        catalog,
+        selection: characterSelection,
+        appliedSelection: appliedCharacterSelection,
+        setSelection: setCharacterSelection,
+        save: saveCharacterSelection,
+        edit: editResourceBook,
+        busy,
+        currentKey: 'world.character.current',
+        noneKey: 'world.character.none',
+      }),
       embeddedDraft !== null ? h('div', { className: 'dwb-resource' },
         h('div', { className: 'dwb-resource-title' }, embeddedDraft.name || embedded[0]?.name ? rawText(embeddedDraft.name || embedded[0]?.name) : uiMessage('world.embeddedTitle')),
         h('p', { className: 'dwb-note' }, uiMessage('world.embeddedMeta', { count: embeddedEntries.length })),
@@ -504,7 +652,15 @@ export function WorldBookPanel({ sessionId, close }) {
           h('button', { className: 'dwb-button dwb-primary', type: 'button', disabled: busy || !embeddedDirty, onClick: saveEmbedded }, embeddedDirty ? uiMessage('world.saveEmbedded') : uiMessage('world.embeddedSaved')),
         ),
         ...embeddedEntries.map((entry, index) => h(EmbeddedEntryEditor, { key: `${String(embeddedCharacterId)}-${String(entry.id)}-${index}`, entry, index, update: (itemIndex, value) => { setEmbeddedDraft(current => { const next = structuredClone(current); next.entries[itemIndex] = { ...next.entries[itemIndex], ...value }; return next }); setEmbeddedDirty(true) }, remove: itemIndex => { if (window.confirm(unwrapText(uiMessage('world.confirmDeleteEmbeddedEntry')))) { setEmbeddedDraft(current => ({ ...structuredClone(current), entries: current.entries.filter((_item, candidate) => candidate !== itemIndex) })); setEmbeddedDirty(true) } } })),
-      ) : h('p', { className: 'dwb-note' }, uiMessage('world.embeddedEmpty')),
+      ) : embeddedCharacterId === null
+        ? h('p', { className: 'dwb-note' }, uiMessage('world.embeddedNoCharacter'))
+        : h('div', { className: 'dwb-resource' },
+          h('div', { className: 'dwb-resource-title' }, uiMessage('world.embeddedTitle')),
+          h('p', { className: 'dwb-note' }, uiMessage('world.embeddedEmpty')),
+          h('div', { className: 'dwb-actions' },
+            h('button', { className: 'dwb-button dwb-primary', type: 'button', disabled: busy, onClick: createEmbedded }, uiMessage('world.createEmbedded')),
+          ),
+        ),
       ),
       diagnostics.length > 0 ? h('details', { className: 'dwb-resource' }, h('summary', { className: 'dwb-resource-title' }, uiMessage('world.diagnostics', { count: diagnostics.length })), h('ul', { className: 'dwb-list' }, ...diagnostics.map((item, index) => h('li', { key: `${item.code}-${index}` }, rawText(item.message))))) : null,
       h('p', { className: 'dwb-note' }, uiMessage('world.matcherNote')),
