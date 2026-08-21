@@ -4205,6 +4205,7 @@ var zh_CN_default = Object.freeze({
   "user.error.noSessionToUnbind": "\u5F53\u524D\u6CA1\u6709\u53EF\u89E3\u7ED1\u7684\u4F1A\u8BDD",
   "template.title": "\u65B0\u4F1A\u8BDD\u4E0E\u914D\u7F6E\u6A21\u677F",
   "template.startCurrent": "\u7EF4\u6301\u5F53\u524D Tavern \u8BBE\u7F6E\u65B0\u5F00\u5BF9\u8BDD",
+  "template.startCurrentPlaythrough": "\u4F7F\u7528\u5F53\u524D Tavern \u8BBE\u7F6E\u65B0\u5EFA\u5468\u76EE",
   "template.inheritNote": "\u53EA\u7EE7\u627F preset\u3001\u89D2\u8272\u5361\u4E0E greeting/\u5F00\u5173\u3001\u7528\u6237\u548C\u72EC\u7ACB\u4E16\u754C\u4E66\u9009\u62E9\u3002DSH \u5386\u53F2\u3001Tavern Trace\u3001Inbox\u3001\u8FD0\u884C\u4E2D turn/step \u548C\u5176\u4ED6\u8FD0\u884C\u6001\u4E0D\u4F1A\u590D\u5236\u3002",
   "template.noWorkspace": "\u6CA1\u6709\u53EF\u7528\u7684 DSH \u76EE\u6807\u5DE5\u4F5C\u533A\u3002\u8BF7\u5148\u5728 DSH \u4FA7\u680F\u4E2D\u52A0\u5165\u6216\u6253\u5F00\u5DE5\u4F5C\u533A\u3002",
   "template.listTitle": "\u914D\u7F6E\u6A21\u677F\uFF08{count}\uFF09",
@@ -4217,6 +4218,7 @@ var zh_CN_default = Object.freeze({
   "template.delete": "\u5220\u9664\u6A21\u677F",
   "template.unusable": "\u8BE5\u6A21\u677F\u6682\u4E0D\u53EF\u7528\u4E8E\u521B\u5EFA\uFF1A",
   "template.startFromTemplate": "\u6839\u636E\u6240\u9009\u6A21\u677F\u65B0\u5F00\u5E72\u51C0\u5BF9\u8BDD",
+  "template.startPlaythroughFromTemplate": "\u4F7F\u7528\u6240\u9009\u6A21\u677F\u65B0\u5EFA\u5468\u76EE",
   "template.ready": "\u6A21\u677F\u4E0E\u65B0\u4F1A\u8BDD\u64CD\u4F5C\u5DF2\u5C31\u7EEA\u3002",
   "template.blankSessionNote": "DSH \u53EF\u80FD\u590D\u7528\u540C\u5DE5\u4F5C\u533A\u4E2D\u5DF2\u6709\u7684\u771F\u5B9E blank session\uFF1B\u8FD9\u662F\u5176\u516C\u5F00 New Session \u8BED\u4E49\u3002\u63D2\u4EF6\u4F1A\u5728\u5BFC\u822A\u524D\u539F\u5B50\u66FF\u6362\u8BE5 blank session \u7684 Tavern \u9009\u62E9\u3002",
   "template.preview.title": "\u4FDD\u5B58\u7684 Tavern \u914D\u7F6E",
@@ -4233,11 +4235,13 @@ var zh_CN_default = Object.freeze({
   "template.status.updated": "\u5DF2\u7528\u5F53\u524D\u8BBE\u7F6E\u66F4\u65B0\u6A21\u677F\uFF1A{name}",
   "template.status.deleted": "\u6A21\u677F\u5DF2\u5220\u9664",
   "template.status.switched": "\u5DF2\u5207\u6362\u5230\u5E72\u51C0\u4F1A\u8BDD\uFF1A{id}",
+  "template.status.playthroughStarted": "\u5DF2\u8FDB\u5165\u5468\u76EE\u4F1A\u8BDD\uFF1A{id}",
   "template.error.needSessionToSave": "\u8BF7\u5148\u6253\u5F00\u4E00\u4E2A\u4F1A\u8BDD\uFF0C\u518D\u4FDD\u5B58\u5F53\u524D Tavern \u8BBE\u7F6E",
   "template.error.needTemplate": "\u8BF7\u5148\u9009\u62E9\u4E00\u4E2A\u6A21\u677F",
   "template.error.needSessionAndTemplate": "\u8BF7\u5148\u6253\u5F00\u4F1A\u8BDD\u5E76\u9009\u62E9\u6A21\u677F",
   "template.error.needSourceSession": "\u8BF7\u5148\u6253\u5F00\u4E00\u4E2A\u6765\u6E90\u4F1A\u8BDD",
   "template.error.needWorkspace": "\u5F53\u524D\u4F1A\u8BDD\u4E0D\u5C5E\u4E8E DSH \u5DE5\u4F5C\u533A\uFF1B\u8BF7\u5148\u628A\u4F1A\u8BDD\u52A0\u5165\u5DE5\u4F5C\u533A",
+  "template.error.needCharacter": "\u9B54\u4E38\u6A21\u5F0F\u4E0B\u65B0\u5EFA\u5468\u76EE\u9700\u8981\u914D\u7F6E\u4E2D\u7ED1\u5B9A\u89D2\u8272\u5361",
   "trace.title": "Tavern Trace",
   "trace.intro": "\u4E0E Conversation / Trajectory \u5E76\u5217\u7684 loader \u5BA1\u8BA1\u89C6\u56FE\u3002DSH request/header \u59CB\u7EC8\u662F\u6700\u7EC8\u53D1\u9001 system\u3001tools \u4E0E\u751F\u6548 config \u7684\u6743\u5A01\u3002",
   "trace.reading": "\u6B63\u5728\u8BFB\u53D6\u5BA1\u8BA1\u8BB0\u5F55\u2026",
@@ -4796,6 +4800,7 @@ var en_default = Object.freeze({
   "user.error.noSessionToUnbind": "There is no session to unbind",
   "template.title": "New session and configuration templates",
   "template.startCurrent": "Start a new conversation with the current Tavern settings",
+  "template.startCurrentPlaythrough": "Start a playthrough with the current Tavern settings",
   "template.inheritNote": "Carries only the preset, character and greeting/options, user, and standalone world-book selections. DSH history, Tavern Trace, Inbox, active turns/steps, and other runtime state are not copied.",
   "template.noWorkspace": "No DSH target workspace is available. Add or open a workspace in the DSH sidebar first.",
   "template.listTitle": "Configuration templates ({count})",
@@ -4808,6 +4813,7 @@ var en_default = Object.freeze({
   "template.delete": "Delete template",
   "template.unusable": "This template cannot currently be used:",
   "template.startFromTemplate": "Start a clean conversation from the selected template",
+  "template.startPlaythroughFromTemplate": "Start a playthrough from the selected template",
   "template.ready": "Template and new-session actions are ready.",
   "template.blankSessionNote": "DSH may reuse an existing real blank session in the same workspace; this is its public New Session behavior. The plugin atomically replaces that blank session\u2019s Tavern selection before navigation.",
   "template.preview.title": "Saved Tavern configuration",
@@ -4824,11 +4830,13 @@ var en_default = Object.freeze({
   "template.status.updated": "Template updated from current settings: {name}",
   "template.status.deleted": "Template deleted",
   "template.status.switched": "Switched to clean session: {id}",
+  "template.status.playthroughStarted": "Opened playthrough session: {id}",
   "template.error.needSessionToSave": "Open a session before saving its current Tavern settings",
   "template.error.needTemplate": "Select a template first",
   "template.error.needSessionAndTemplate": "Open a session and select a template first",
   "template.error.needSourceSession": "Open a source session first",
   "template.error.needWorkspace": "The current session is not in a DSH workspace; add it to a workspace first",
+  "template.error.needCharacter": "Starting a playthrough in Mowan mode requires a bound character card",
   "trace.title": "Tavern Trace",
   "trace.intro": "A loader audit view alongside Conversation and Trajectory. The DSH request/header remains authoritative for the final system, tools, and effective config.",
   "trace.reading": "Reading audit records\u2026",
@@ -7325,7 +7333,7 @@ function TemplatePreview({ template }) {
     )
   );
 }
-function SessionTemplatePanel({ sessionId, workspaceId, createCleanSession, close }) {
+function SessionTemplatePanel({ sessionId, workspaceId, chromeMode = "native", createCleanSession, createConfiguredPlaythrough, close }) {
   const [templates, setTemplates] = (0, import_react6.useState)([]);
   const [selectedId, setSelectedId] = (0, import_react6.useState)(null);
   const [name2, setName] = (0, import_react6.useState)(() => translate("template.defaultName"));
@@ -7413,11 +7421,12 @@ function SessionTemplatePanel({ sessionId, workspaceId, createCleanSession, clos
   };
   const start = (mode) => run(async () => {
     if (mode === "current" && !sessionId) throw uiError("template.error.needSourceSession");
-    if (workspaceId === null) throw uiError("template.error.needWorkspace");
     const source = mode === "current" ? { mode: "current", sessionId } : { mode: "template", templateId: selectedId };
     if (mode === "template" && selectedId === null) throw uiError("template.error.needTemplate");
+    if (chromeMode === "play") return createConfiguredPlaythrough({ source });
+    if (workspaceId === null) throw uiError("template.error.needWorkspace");
     return createCleanSession({ workspaceId, source });
-  }, (id) => ({ key: "template.status.switched", values: { id } }));
+  }, (id) => ({ key: chromeMode === "play" ? "template.status.playthroughStarted" : "template.status.switched", values: { id } }));
   const diagnostics = Array.isArray(selected?.diagnostics) ? selected.diagnostics : [];
   const closeLabel = uiMessage("panel.close", { title: unwrapText(uiMessage("template.title")) });
   return h6(
@@ -7435,11 +7444,11 @@ function SessionTemplatePanel({ sessionId, workspaceId, createCleanSession, clos
       h6("button", {
         className: "dtv-button dtv-primary",
         type: "button",
-        disabled: busy || !sessionId || workspaceId === null,
+        disabled: busy || !sessionId || chromeMode !== "play" && workspaceId === null,
         onClick: () => start("current")
-      }, uiMessage("template.startCurrent")),
+      }, uiMessage(chromeMode === "play" ? "template.startCurrentPlaythrough" : "template.startCurrent")),
       h6("p", { className: "dtv-note" }, uiMessage("template.inheritNote")),
-      workspaceId === null ? h6("div", { className: "dtv-status", "data-error": true }, uiMessage("template.noWorkspace")) : null,
+      chromeMode !== "play" && workspaceId === null ? h6("div", { className: "dtv-status", "data-error": true }, uiMessage("template.noWorkspace")) : null,
       h6(
         "div",
         { className: "dtv-resource" },
@@ -7480,9 +7489,9 @@ function SessionTemplatePanel({ sessionId, workspaceId, createCleanSession, clos
         h6("button", {
           className: "dtv-button dtv-primary",
           type: "button",
-          disabled: busy || selectedId === null || diagnostics.length > 0 || workspaceId === null,
+          disabled: busy || selectedId === null || diagnostics.length > 0 || chromeMode !== "play" && workspaceId === null,
           onClick: () => start("template")
-        }, uiMessage("template.startFromTemplate"))
+        }, uiMessage(chromeMode === "play" ? "template.startPlaythroughFromTemplate" : "template.startFromTemplate"))
       ),
       h6("div", { className: "dtv-status", "data-error": status.error || void 0, role: "status" }, statusText(status)),
       h6("p", { className: "dtv-note" }, uiMessage("template.blankSessionNote"))
@@ -7508,6 +7517,13 @@ var SessionConfigurationUnavailableError = class extends Error {
     this.diagnostics = structuredClone(diagnostics);
   }
 };
+var SessionConfigurationCharacterRequiredError = class extends Error {
+  constructor() {
+    super("Mowan playthrough configuration requires a character card");
+    this.name = "SessionConfigurationCharacterRequiredError";
+    this.uiKey = "template.error.needCharacter";
+  }
+};
 async function createCleanSessionWorkflow({
   workspaceId,
   source,
@@ -7527,6 +7543,32 @@ async function createCleanSessionWorkflow({
   openSession(targetSessionId);
   refresh();
   return targetSessionId;
+}
+async function createConfiguredPlaythroughWorkflow({
+  source,
+  preview,
+  applySelection,
+  playthroughController,
+  openSession,
+  refresh
+}) {
+  const checked = await preview(source);
+  if (checked?.available !== true) throw new SessionConfigurationUnavailableError(checked?.diagnostics);
+  const characterId = checked?.selection?.characterCardId;
+  if (typeof characterId !== "string" || characterId === "") {
+    throw new SessionConfigurationCharacterRequiredError();
+  }
+  const result = await playthroughController.create({
+    character: {
+      id: characterId,
+      name: checked?.contents?.characterCard?.name || characterId
+    },
+    selectionFromSessionId: source?.mode === "current" ? source.sessionId : null,
+    configureSession: (targetSessionId) => applySelection(targetSessionId, source)
+  });
+  openSession(result.sessionId);
+  refresh();
+  return result.sessionId;
 }
 
 // packages/client/src/state.js
@@ -10419,6 +10461,17 @@ function rootSessionId4(playthrough) {
   const value = playthrough?.ext?.pmpDshTavern?.rootSessionId;
   return typeof value === "string" && value !== "" ? value : null;
 }
+async function ensureCharacterSelection(client, sessionId, characterId) {
+  const current2 = await client.getCharacterSelection(sessionId);
+  if (characterIdFromSelection(current2) !== characterId) {
+    await client.putCharacterSelection(sessionId, characterId, { greetingIndex: 0 });
+  }
+  const verified = await client.getCharacterSelection(sessionId);
+  if (characterIdFromSelection(verified) !== characterId) {
+    throw new Error("playthrough character selection did not persist");
+  }
+  return verified;
+}
 function latestCharacterPlaythrough(catalog2, characterId) {
   let latest = null;
   let latestNumber = 0;
@@ -10486,6 +10539,7 @@ function sourceSessionIdForCharacter(character) {
 async function createCharacterPlaythrough(client, {
   character,
   selectionFromSessionId = null,
+  configureSession = null,
   now = () => /* @__PURE__ */ new Date(),
   randomUUID = () => globalThis.crypto.randomUUID()
 } = {}) {
@@ -10499,17 +10553,15 @@ async function createCharacterPlaythrough(client, {
   const catalog2 = await catalogOrEmpty(client);
   const latest = latestCharacterPlaythrough(catalog2, characterId);
   if (latest !== null && await playthroughIsReusable(client, latest)) {
-    return { sessionId: rootSessionId4(latest), playthrough: latest, reused: true };
+    const sessionId2 = rootSessionId4(latest);
+    if (typeof configureSession === "function") await configureSession(sessionId2);
+    await ensureCharacterSelection(client, sessionId2, characterId);
+    return { sessionId: sessionId2, playthrough: latest, reused: true };
   }
   const created = await client.postSession(sourceId);
   const sessionId = safeSessionId(created?.sessionId);
-  if (sourceId === null) {
-    await client.putCharacterSelection(sessionId, characterId, { greetingIndex: 0 });
-  }
-  const selection = await client.getCharacterSelection(sessionId);
-  if (characterIdFromSelection(selection) !== characterId) {
-    throw new Error("playthrough character selection did not persist");
-  }
+  if (typeof configureSession === "function") await configureSession(sessionId);
+  await ensureCharacterSelection(client, sessionId, characterId);
   const playthrough = {
     id: playthroughId,
     path,
@@ -11891,6 +11943,7 @@ function PlayWorkspaceBrowser({
   useSessions,
   useWorkspaces,
   playClient,
+  playthroughController,
   openSession
 }) {
   installStyles3();
@@ -11903,8 +11956,12 @@ function PlayWorkspaceBrowser({
   const cache = (0, import_react11.useRef)(null);
   if (cache.current === null) cache.current = new SessionCharacterBindingCache();
   const creator = (0, import_react11.useRef)(null);
-  if (creator.current?.client !== playClient) {
-    creator.current = { client: playClient, controller: createPlaythroughController(playClient) };
+  if (creator.current?.client !== playClient || creator.current?.provided !== playthroughController) {
+    creator.current = {
+      client: playClient,
+      provided: playthroughController,
+      controller: playthroughController ?? createPlaythroughController(playClient)
+    };
   }
   const [creatingCharacterId, setCreatingCharacterId] = (0, import_react11.useState)(null);
   const [revision, setRevision] = (0, import_react11.useState)(0);
@@ -11988,8 +12045,8 @@ function PlayWorkspaceBrowser({
         character,
         selectionFromSessionId: sourceSessionIdForCharacter(character)
       });
-      window.dispatchEvent(new Event(CLIENT_REFRESH_EVENT));
       openSession(result.sessionId);
+      window.dispatchEvent(new Event(CLIENT_REFRESH_EVENT));
     } catch (reason) {
       setStatus({ message: reason instanceof Error ? reason.message : String(reason) });
     } finally {
@@ -12300,7 +12357,7 @@ function findNativeChatStore(slots) {
   }
   return void 0;
 }
-function installPlaySlotOccupancy(ctx, playClient) {
+function installPlaySlotOccupancy(ctx, playClient, { playthroughController } = {}) {
   let mode = "native";
   let declared = false;
   let disposeEntry = null;
@@ -12336,6 +12393,7 @@ function installPlaySlotOccupancy(ctx, playClient) {
       priority: PLAY_SLOT_PRIORITY,
       inject: () => ({
         playClient,
+        playthroughController,
         openSession: (sessionId) => ctx.sessions.open(sessionId)
       })
     }, PlayWorkspaceBrowser);
@@ -13822,7 +13880,7 @@ function RpHighRiskDialog({ onDismiss }) {
     )
   );
 }
-function TavernShell({ useSessions, useWorkspaces, createCleanSession, playClient, playSlots, chromeService }) {
+function TavernShell({ useSessions, useWorkspaces, createCleanSession, createConfiguredPlaythrough, playClient, playSlots, chromeService }) {
   const [menuOpen, setMenuOpen] = (0, import_react15.useState)(false);
   const [surface, setSurface] = (0, import_react15.useState)(null);
   const [anchor, setAnchor] = (0, import_react15.useState)(initialLauncherAnchor);
@@ -14181,7 +14239,14 @@ function TavernShell({ useSessions, useWorkspaces, createCleanSession, playClien
   } else if (surface === "user") {
     panel = h13(UserPanel, { sessionId, sessionBlank, close });
   } else if (surface === "session-template") {
-    panel = h13(SessionTemplatePanel, { sessionId, workspaceId, createCleanSession, close });
+    panel = h13(SessionTemplatePanel, {
+      sessionId,
+      workspaceId,
+      chromeMode,
+      createCleanSession,
+      createConfiguredPlaythrough,
+      close
+    });
   } else if (surface === "settings") {
     panel = h13(SettingsPanel, {
       settings: uiSettings,
@@ -14316,6 +14381,7 @@ function apply2(ctx) {
   installStyles5();
   registerTavernTraceView(ctx);
   const playClient = createLivePlayClient();
+  const playthroughController = createPlaythroughController(playClient);
   const chrome = createChromeModeServiceCore({
     read: () => playClient.getChrome(),
     write: (mode) => playClient.putChrome(mode)
@@ -14332,7 +14398,7 @@ function apply2(ctx) {
       chrome.internal.dispose();
     };
   }, "dsh-tavern: chrome mode service transport");
-  const playSlots = installPlaySlotOccupancy(ctx, playClient);
+  const playSlots = installPlaySlotOccupancy(ctx, playClient, { playthroughController });
   ctx.slots.inject("shell.overlay", () => ctx.slots.register({
     name: "shell.overlay",
     id: `${PLUGIN_ID}-launcher`,
@@ -14350,6 +14416,17 @@ function apply2(ctx) {
           targetSessionId,
           source: selectedSource
         }),
+        openSession: (id) => ctx.sessions.open(id),
+        refresh: () => window.dispatchEvent(new Event(CLIENT_REFRESH_EVENT))
+      }),
+      createConfiguredPlaythrough: ({ source }) => createConfiguredPlaythroughWorkflow({
+        source,
+        preview: (selectedSource) => sessionConfigurationRequest("/session-configurations/preview", { source: selectedSource }),
+        applySelection: (targetSessionId, selectedSource) => sessionConfigurationRequest("/session-configurations/apply", {
+          targetSessionId,
+          source: selectedSource
+        }),
+        playthroughController,
         openSession: (id) => ctx.sessions.open(id),
         refresh: () => window.dispatchEvent(new Event(CLIENT_REFRESH_EVENT))
       })
