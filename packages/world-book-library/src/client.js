@@ -98,7 +98,7 @@ function embeddedPosition(entry) {
 }
 
 export function reorderWorldBookEntriesAtBoundary(entries, from, boundary, orderKey = 'insertionOrder') {
-  if (!Array.isArray(entries)) throw new TypeError('entries must be an array')
+  if (!Array.isArray(entries)) throw new TypeError()
   if (!Number.isSafeInteger(from) || !Number.isSafeInteger(boundary)) return entries
   if (from < 0 || from >= entries.length || boundary < 0 || boundary > entries.length) return entries
   const destination = boundary > from ? boundary - 1 : boundary

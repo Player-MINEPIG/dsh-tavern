@@ -9,6 +9,16 @@ import {
   surfaceTitle,
 } from '../packages/client/src/state.js'
 
+function assertOrdered(source, labels) {
+  let cursor = -1
+  for (const label of labels) {
+    const next = source.indexOf(label, cursor + 1)
+    assert.notEqual(next, -1, `missing ordered marker: ${label}`)
+    assert.ok(next > cursor, `marker is out of order: ${label}`)
+    cursor = next
+  }
+}
+
 test('one Tavern launcher exposes stable resource surfaces', () => {
   assert.deepEqual(TAVERN_MENU_ITEMS.map(item => item.id), [
     'preset',
@@ -302,4 +312,23 @@ test('user panel edits independent world-book relationships and exposes unsaved-
   assert.match(source, /beforeunload/)
   assert.match(source, /uiMessage\('user\.confirmCloseDirty'\)/)
   assert.doesNotMatch(source, /description:\s*worldBookIds|worldBookIds:\s*draft\.description/)
+})
+
+test('resource setting panels follow the preset page hierarchy', () => {
+  const character = readFileSync(new URL('../packages/character/src/client.js', import.meta.url), 'utf8').split("return h('div', { className: 'dcc-panel' }")[1]
+  assertOrdered(character, ["character.import", "common.exportJson", "character.create", "character.browse", "onClick: bind", "onClick: unbind", "character.sessionBinding", "className: 'dcc-card'", "className: 'dcc-footer'"])
+
+  const user = readFileSync(new URL('../packages/user/src/client.js', import.meta.url), 'utf8').split("return h('div', { className: 'dtu-panel' }")[1]
+  assertOrdered(user, ["user.create", "user.browse", "onClick: bind", "onClick: unbind", "user.sessionBinding", "className: 'dtu-editor'", "className: 'dtu-footer'"])
+
+  const worldBook = readFileSync(new URL('../packages/world-book-library/src/client.js', import.meta.url), 'utf8').split("return h('div', { className: 'dwb-panel' }")[1]
+  assertOrdered(worldBook, ["world.importJson", "common.exportJson", "world.create", "world.browse", "world.sessionBinding", "world.currentSession", "className: 'dwb-footer'"])
+
+  const regex = readFileSync(new URL('../packages/client/src/play/regex-panel.js', import.meta.url), 'utf8')
+  const regexScope = regex.split('function RegexScopeSection(')[1]
+  assertOrdered(regexScope, ["common.importJson", "common.exportJson", "regex.add"])
+  assert.match(regex, /h\('summary'[\s\S]*?type: 'checkbox'[\s\S]*?checked: rule\.enabled/)
+
+  const template = readFileSync(new URL('../packages/session-template/src/client.js', import.meta.url), 'utf8').split("return h('div', { className: 'dtv-panel' }")[1]
+  assertOrdered(template, ["template.createFromCurrent", "template.selected", "template.inheritNote", "className: 'dtv-resource'", "className: 'dtv-template-footer'"])
 })
