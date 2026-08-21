@@ -4,8 +4,24 @@ import { readFileSync } from 'node:fs'
 import {
   activeRegexBindings,
   activeResourceRegexRules,
+  reorderRegexRules,
+  reorderRegexScope,
   stageLegacyScopedRegexRules,
 } from '../packages/client/src/play/regex-panel.js'
+
+test('regex ordering moves only within the selected source inventory', () => {
+  const rule = (id, kind) => ({ id, scope: { kind } })
+  assert.deepEqual(
+    reorderRegexRules([rule('a', 'preset'), rule('b', 'preset'), rule('c', 'preset')], 0, 2).map(item => item.id),
+    ['b', 'c', 'a'],
+  )
+  assert.deepEqual(
+    reorderRegexScope([
+      rule('global-a', 'global'), rule('inactive', 'preset'), rule('global-b', 'global'), rule('global-c', 'global'),
+    ], 'global', 2, 0).map(item => item.id),
+    ['global-c', 'inactive', 'global-a', 'global-b'],
+  )
+})
 
 test('regex panel resolves only active preset and character bindings', () => {
   assert.deepEqual(activeRegexBindings({ selection: {
@@ -104,6 +120,10 @@ test('Mowan regex panel exposes scoped CRUD and import/export without an AI requ
   assert.match(source, /setResourceRules/)
   assert.match(source, /stageLegacyScopedRegexRules/)
   assert.match(source, /removeSourceRule/)
+  assert.match(source, /draggable: !busy/)
+  assert.match(source, /REGEX_DRAG_TYPE/)
+  assert.match(source, /reorderRegexScope/)
+  assert.match(source, /reorderRegexRules/)
   assert.doesNotMatch(source, /busy \|\|= sourceOwned/)
   assert.doesNotMatch(source, /postUserMessage|agent\/request|systemPrompt|putTimeline|getMessages/)
 })

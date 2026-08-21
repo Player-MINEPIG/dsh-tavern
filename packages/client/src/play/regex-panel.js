@@ -24,6 +24,28 @@ import {
 const h = createLocalizedElement(createElement)
 const EMPTY_DOCUMENT = Object.freeze({ schemaVersion: 1, rules: Object.freeze([]) })
 const SCOPE_KINDS = Object.freeze(['global', 'preset', 'character'])
+const REGEX_DRAG_TYPE = 'application/x-pmp-dsh-tavern-regex-index'
+
+export function reorderRegexRules(rules, fromIndex, toIndex) {
+  if (!Array.isArray(rules)) throw new TypeError('regex rules must be an array')
+  if (!Number.isSafeInteger(fromIndex) || !Number.isSafeInteger(toIndex)
+    || fromIndex < 0 || toIndex < 0 || fromIndex >= rules.length || toIndex >= rules.length
+    || fromIndex === toIndex) return [...rules]
+  const next = [...rules]
+  const [moved] = next.splice(fromIndex, 1)
+  next.splice(toIndex, 0, moved)
+  return next
+}
+
+export function reorderRegexScope(rules, kind, fromIndex, toIndex) {
+  const indexes = rules
+    .map((rule, index) => rule?.scope?.kind === kind ? index : -1)
+    .filter(index => index >= 0)
+  const reordered = reorderRegexRules(indexes.map(index => rules[index]), fromIndex, toIndex)
+  const next = [...rules]
+  indexes.forEach((index, orderedIndex) => { next[index] = reordered[orderedIndex] })
+  return next
+}
 
 export function activeRegexBindings(snapshot) {
   return {
@@ -135,12 +157,42 @@ export function stageLegacyScopedRegexRules(document, resourceRules, bindings) {
   return { document: nextDocument, resourceRules: nextResourceRules, migrated }
 }
 
-function RuleEditor({ rule, busy, update, remove, sourceOwned = false }) {
+function RuleEditor({ rule, busy, update, remove, sourceOwned = false, dragKind, dragIndex, move }) {
   const set = patch => update({ ...rule, ...patch })
   const setScope = patch => set({ scope: { ...rule.scope, ...patch } })
   const stateLabel = uiMessage(rule.enabled ? 'common.enabled' : 'common.disabled')
-  return h('details', { className: 'dtv-entry dtv-regex-rule', 'data-enabled': rule.enabled },
+  return h('details', {
+    className: 'dtv-entry dtv-regex-rule',
+    'data-enabled': rule.enabled,
+    onDragOver: event => {
+      if (busy) return
+      event.preventDefault()
+      event.dataTransfer.dropEffect = 'move'
+    },
+    onDrop: event => {
+      if (busy) return
+      event.preventDefault()
+      event.stopPropagation()
+      try {
+        const source = JSON.parse(event.dataTransfer.getData(REGEX_DRAG_TYPE))
+        if (source?.kind === dragKind) move(source.index, dragIndex)
+      } catch {}
+    },
+  },
     h('summary', null,
+      h('span', {
+        className: 'dtv-regex-drag',
+        role: 'button',
+        tabIndex: busy ? -1 : 0,
+        draggable: !busy,
+        title: uiMessage('regex.dragToReorder'),
+        'aria-label': uiMessage('regex.dragToReorder'),
+        onDragStart: event => {
+          event.stopPropagation()
+          event.dataTransfer.effectAllowed = 'move'
+          event.dataTransfer.setData(REGEX_DRAG_TYPE, JSON.stringify({ kind: dragKind, index: dragIndex }))
+        },
+      }, '☰'),
       h('span', { className: 'dtv-entry-dot', 'aria-hidden': 'true' }),
       h('span', { className: 'dtv-entry-name' }, rawText(rule.name || unwrapText(uiMessage('regex.unnamed')))),
       h('span', { className: 'dtv-entry-state' }, stateLabel),
@@ -239,6 +291,7 @@ function RegexScopeSection({
   remove,
   updateSource,
   removeSource,
+  move,
 }) {
   const rules = [...editableRules, ...sourceRules]
   const unbound = kind === 'preset' && bindings.presetId === null
@@ -265,6 +318,9 @@ function RegexScopeSection({
             key: `${kind}-editable-${rule.id}-${index}`,
             rule,
             busy,
+            dragKind: kind,
+            dragIndex: index,
+            move,
             update,
             remove: () => remove(rule.id),
           })),
@@ -273,6 +329,9 @@ function RegexScopeSection({
             rule,
             busy,
             sourceOwned: true,
+            dragKind: kind,
+            dragIndex: index,
+            move,
             update: next => updateSource(index, next),
             remove: () => removeSource(index),
           })),
@@ -399,6 +458,20 @@ export function RegexPanel({ client, activeSnapshot, close }) {
     [kind]: current[kind].filter((_rule, ruleIndex) => ruleIndex !== index),
   }))
 
+  const moveRule = (kind, fromIndex, toIndex) => {
+    if (kind === 'global') {
+      setDocument(current => ({
+        ...current,
+        rules: reorderRegexScope(current.rules, kind, fromIndex, toIndex),
+      }))
+      return
+    }
+    setResourceRules(current => ({
+      ...current,
+      [kind]: reorderRegexRules(current[kind], fromIndex, toIndex),
+    }))
+  }
+
   const importFile = async event => {
     const file = event.target.files?.[0]
     event.target.value = ''
@@ -454,6 +527,7 @@ export function RegexPanel({ client, activeSnapshot, close }) {
         remove: removeRule,
         updateSource: (index, next) => updateSourceRule(kind, index, next),
         removeSource: index => removeSourceRule(kind, index),
+        move: (fromIndex, toIndex) => moveRule(kind, fromIndex, toIndex),
       })),
       h('div', { className: 'dtv-status', 'data-error': status.error }, status.text),
       h('div', { className: 'dtv-regex-footer' },

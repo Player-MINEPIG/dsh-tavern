@@ -40,6 +40,7 @@ export default Object.freeze({
   "nav.regex": "显示正则",
   "nav.regex.empty": "仅用于魔丸显示的规则",
   "regex.title": "显示正则",
+  "regex.dragToReorder": "拖拽调整执行顺序",
   "regex.displayOnlyNote": "这些规则只改变魔丸渲染和静态 HTML，不会改写历史、时间线数据或发送给 AI 的请求。导入规则的开关按原样保留。",
   "regex.scopes": "正则作用域",
   "regex.scope.global": "全局",

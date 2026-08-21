@@ -40,6 +40,7 @@ export default Object.freeze({
   "nav.regex": "Display regex",
   "nav.regex.empty": "Mowan display-only rules",
   "regex.title": "Display regex",
+  "regex.dragToReorder": "Drag to change execution order",
   "regex.displayOnlyNote": "These rules change Mowan rendering and static HTML only. They never rewrite history, timeline data, or AI requests. Imported switches are preserved as supplied.",
   "regex.scopes": "Regex scopes",
   "regex.scope.global": "Global",
