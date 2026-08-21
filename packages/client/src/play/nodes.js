@@ -22,6 +22,12 @@ function defaultId(startEventId, endEventId) {
   return ['variant', startEventId, endEventId, random].join('-').slice(0, 200)
 }
 
+function messageOriginKind(message) {
+  const kind = message?.origin?.kind
+  if (typeof kind === 'string' && kind !== '') return kind
+  return message?.role === 'user' ? 'user' : message?.role
+}
+
 function completedPairAfter(messageState, eventId) {
   if (messageState?.incompleteTurn === true) return null
   const messages = (messageState?.messages ?? [])
@@ -92,6 +98,7 @@ export function createPlayNodeController(client, {
         if (adopted === undefined) throw new TypeError('Adopted variant is missing')
         const source = await client.getMessages(adopted.sessionId)
         const user = source.messages.find(message => message.role === 'user'
+          && (messageOriginKind(message) === 'user' || messageOriginKind(message) === 'steering')
           && message.seq >= adopted.startEventId
           && message.seq <= adopted.endEventId)
         if (user === undefined || typeof user.text !== 'string' || user.text === '') {

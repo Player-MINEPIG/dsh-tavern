@@ -278,7 +278,9 @@ function Turn({ turn, ...actionProps }) {
     turn.running === true && turn.assistantText === ''
       ? h('p', { className: 'dtv-play-chat-running' }, uiMessage('play.chat.thinking'))
       : null,
-    turn.imported || turn.transient ? null : h(PlayTurnActions, { turn, ...actionProps }),
+    turn.imported || turn.transient || turn.assistantText === ''
+      ? null
+      : h(PlayTurnActions, { turn, ...actionProps }),
   )
 }
 

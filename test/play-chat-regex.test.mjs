@@ -125,3 +125,22 @@ test('live turns use the same display rules without changing their source projec
   assert.equal(projected.reasoningText, 'Alice thinks')
   assert.deepEqual(turn, before)
 })
+
+test('display regex may suppress a context-triggered assistant output without removing its context row', () => {
+  const turn = {
+    id: 'context-turn', triggerKind: 'context', userText: '',
+    contexts: [{ id: 'context-1', text: 'Background report' }],
+    assistantText: '<draft>internal</draft>', reasoningText: '',
+  }
+  const projected = applyTurnDisplayRegex(turn, {
+    rules: [{
+      id: 'hide-draft', name: 'hide draft', enabled: true,
+      find: '/<draft>[\\s\\S]*?<\\/draft>/g', replace: '', target: 'assistant',
+      scope: { kind: 'global', resourceId: null }, flags: '', ext: {},
+    }],
+    bindings: {},
+    macros: { user: 'User', character: 'Assistant' },
+  })
+  assert.equal(projected.assistantText, '')
+  assert.deepEqual(projected.contexts, turn.contexts)
+})

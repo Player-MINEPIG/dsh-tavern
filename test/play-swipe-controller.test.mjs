@@ -111,3 +111,25 @@ test('branch 409 and wait timeout leave timeline metadata untouched', async () =
   )
   assert.equal(writes, 0)
 })
+
+test('reply swipe refuses context injection even though its model-facing role is user', async () => {
+  let branchCalls = 0
+  const client = {
+    async getTimeline() { return timelineFixture() },
+    async getMessages() {
+      return { incompleteTurn: false, messages: [
+        {
+          role: 'user', seq: 1, text: 'Background subagent report',
+          origin: { kind: 'context', producer: 'subagent-report' },
+        },
+        { role: 'assistant', seq: 3, text: 'Parent acknowledgement', origin: { kind: 'assistant' } },
+      ] }
+    },
+    async postBranch() { branchCalls += 1; return { sessionId: 'must-not-branch' } },
+  }
+  await assert.rejects(
+    createPlayNodeController(client).createReplySwipe({}, 'qa-1'),
+    /no reusable user message/,
+  )
+  assert.equal(branchCalls, 0)
+})

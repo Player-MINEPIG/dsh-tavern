@@ -45,6 +45,19 @@ function Action({ icon, label, disabled = false, disabledLabel, onClick }) {
   }, icon)
 }
 
+export function turnActionCapabilities(turn) {
+  const triggerKind = turn?.triggerKind
+  const replyTrigger = triggerKind == null || triggerKind === 'user' || triggerKind === 'steering'
+  return {
+    copy: true,
+    variants: replyTrigger,
+    generateReply: replyTrigger,
+    fork: true,
+    editDisplay: true,
+    hide: true,
+  }
+}
+
 export function PlayTurnActions({
   turn,
   playthrough,
@@ -58,6 +71,7 @@ export function PlayTurnActions({
   const [busy, setBusy] = useState(false)
   const disabled = running || busy
   const position = Math.max(0, turn.variants.findIndex(item => item.id === turn.variant.id))
+  const capabilities = turnActionCapabilities(turn)
 
   const mutate = async operation => {
     if (disabled) return
@@ -101,22 +115,22 @@ export function PlayTurnActions({
 
   return h('div', { className: 'dtv-play-turn-actions' },
     h(Action, { icon: '⧉', label: uiMessage('play.chat.copy'), onClick: copy }),
-    h(Action, {
+    !capabilities.variants ? null : h(Action, {
       icon: '‹',
       label: uiMessage('play.chat.previousReply'),
       disabled: disabled || turn.variants.length < 2,
       disabledLabel: turn.variants.length < 2 ? uiMessage('play.chat.noOtherReply') : undefined,
       onClick: () => adopt(-1),
     }),
-    turn.variants.length < 2 ? null : h('span', { className: 'dtv-play-turn-position' }, `${position + 1}/${turn.variants.length}`),
-    h(Action, {
+    !capabilities.variants || turn.variants.length < 2 ? null : h('span', { className: 'dtv-play-turn-position' }, `${position + 1}/${turn.variants.length}`),
+    !capabilities.variants ? null : h(Action, {
       icon: '›',
       label: uiMessage('play.chat.nextReply'),
       disabled: disabled || turn.variants.length < 2,
       disabledLabel: turn.variants.length < 2 ? uiMessage('play.chat.noOtherReply') : undefined,
       onClick: () => adopt(1),
     }),
-    h(Action, {
+    !capabilities.generateReply ? null : h(Action, {
       icon: '✦',
       label: uiMessage('play.chat.generateReply'),
       disabled,
