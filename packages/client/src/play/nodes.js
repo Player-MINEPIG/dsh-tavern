@@ -1,5 +1,8 @@
 import { updateTimeline } from './mutations.js'
-import { forkPlaythroughAtNode } from './fork.js'
+import {
+  branchPlaythroughAtNode,
+  forkPlaythroughAtNode,
+} from './fork.js'
 import {
   activeTimelineEntries,
   timelineWithHead,
@@ -175,6 +178,31 @@ export function createPlayNodeController(client, {
 
     forkPlaythrough(playthrough, nodeId) {
       return schedule(() => forkPlaythroughAtNode(client, { playthrough, nodeId }))
+    },
+
+    rollbackPlaythrough(playthrough, nodeId) {
+      return schedule(async () => {
+        const branch = await branchPlaythroughAtNode(client, { playthrough, nodeId })
+        const next = await updateTimeline(client, playthrough, timeline => {
+          const current = nodeById(timeline, nodeId)
+          const variant = current.node.variants.find(item => item.id === branch.adopted.id)
+          if (variant === undefined) throw new Error('Rollback target changed before commit')
+          return timelineWithHead(
+            replaceNode(timeline, current.index, {
+              ...current.node,
+              adoptedVariantId: variant.id,
+            }),
+            { sessionId: branch.sessionId, nodeId: current.node.id, variantId: variant.id },
+          )
+        })
+        const focus = await client.getFocus(playthrough)
+        if (focus.sessionId !== branch.sessionId
+          || focus.nodeId !== nodeId
+          || focus.variantId !== branch.adopted.id) {
+          throw new Error('Rollback focus verification failed')
+        }
+        return { timeline: next, sessionId: branch.sessionId }
+      })
     },
 
   }

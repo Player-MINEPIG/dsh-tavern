@@ -48,3 +48,10 @@ test('forking a playthrough refreshes shared sidebar classification before navig
   assert.match(source, /CLIENT_REFRESH_EVENT/)
   assert.match(source, /forkPlaythrough\(playthrough, turn\.id\)[\s\S]*dispatchEvent\(new Event\(CLIENT_REFRESH_EVENT\)\)[\s\S]*openSession\(result\.sessionId\)/)
 })
+
+test('same-playthrough rollback shares the message action row and navigates its branch session', () => {
+  const source = readFileSync(new URL('../packages/client/src/play/turn-actions.js', import.meta.url), 'utf8')
+  assert.match(source, /rollbackPlaythrough\(playthrough, turn\.id\)/)
+  assert.match(source, /play\.chat\.rollbackPlaythrough/)
+  assert.match(source, /rollbackPlaythrough\(playthrough, turn\.id\)[\s\S]*openSession\(result\.sessionId\)/)
+})

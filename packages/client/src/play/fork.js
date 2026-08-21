@@ -1,6 +1,7 @@
 import { nextPlaythroughNumber } from './create.js'
 import { updateCatalog } from './mutations.js'
 import { playthroughCharacterId } from './schema.js'
+import { activeTimelineEntries } from '../../../play/src/timeline-tree.js'
 
 const SAFE_SEGMENT = /^[A-Za-z0-9][A-Za-z0-9._-]{0,199}$/
 const SAFE_SESSION_ID = /^[A-Za-z0-9][A-Za-z0-9._:-]{0,199}$/
@@ -25,21 +26,27 @@ function nodeById(timeline, nodeId) {
   return { index, node: timeline.nodes[index] }
 }
 
-function adoptedVariant(node) {
-  const value = node.variants.find(variant => variant.id === node.adoptedVariantId)
-  if (value === undefined) throw new TypeError('Adopted variant is missing')
-  return value
-}
-
 function forkedTimeline(source, nodeIndex, adoptedId, sessionId) {
+  const entries = activeTimelineEntries(source)
+  const activeIndex = entries.findIndex(entry => entry.node.id === source.nodes[nodeIndex].id)
+  if (activeIndex < 0) throw new TypeError('Fork target is not on the active timeline branch')
+  let parentVariantId = null
+  const nodes = entries.slice(0, activeIndex + 1).map(({ node, variant }) => {
+    const copy = {
+      ...node,
+      parentVariantId,
+      adoptedVariantId: variant.id,
+      variants: node.variants.map(item => item.id === adoptedId
+        ? { ...item, sessionId }
+        : { ...item }),
+    }
+    parentVariantId = variant.id
+    return copy
+  })
   return {
     ...source,
-    nodes: source.nodes.slice(0, nodeIndex + 1).map((node, index) => ({
-      ...node,
-      variants: node.variants.map(variant => index === nodeIndex && variant.id === adoptedId
-        ? { ...variant, sessionId }
-        : { ...variant }),
-    })),
+    nodes,
+    head: { sessionId, nodeId: nodes.at(-1).id, variantId: adoptedId },
   }
 }
 
@@ -54,6 +61,22 @@ function inheritedRangeExists(messages, variant) {
   return messages?.incompleteTurn !== true && user && assistant
 }
 
+export async function branchPlaythroughAtNode(client, { playthrough, nodeId } = {}) {
+  if (client == null) throw new TypeError('playClient.required')
+  const source = await client.getTimeline(playthrough)
+  const { index, node } = nodeById(source, nodeId)
+  const active = activeTimelineEntries(source).find(entry => entry.node.id === nodeId)
+  if (active === undefined) throw new TypeError('Branch target is not on the active timeline branch')
+  const adopted = active.variant
+  const branch = await client.postBranch(adopted.sessionId, adopted.endEventId)
+  const sessionId = safeSessionId(branch?.sessionId)
+  const inherited = await client.getMessages(sessionId)
+  if (!inheritedRangeExists(inherited, adopted)) {
+    throw new Error('Forked session does not contain the adopted reply range')
+  }
+  return { source, index, node, adopted, sessionId, inherited }
+}
+
 export async function forkPlaythroughAtNode(client, {
   playthrough,
   nodeId,
@@ -62,15 +85,7 @@ export async function forkPlaythroughAtNode(client, {
 } = {}) {
   if (client == null) throw new TypeError('playClient.required')
   const characterId = safeSegment(playthroughCharacterId(playthrough), 'character.id')
-  const source = await client.getTimeline(playthrough)
-  const { index, node } = nodeById(source, nodeId)
-  const adopted = adoptedVariant(node)
-  const branch = await client.postBranch(adopted.sessionId, adopted.endEventId)
-  const sessionId = safeSessionId(branch?.sessionId)
-  const inherited = await client.getMessages(sessionId)
-  if (!inheritedRangeExists(inherited, adopted)) {
-    throw new Error('Forked session does not contain the adopted reply range')
-  }
+  const { source, index, node, adopted, sessionId } = await branchPlaythroughAtNode(client, { playthrough, nodeId })
 
   const value = now()
   if (!(value instanceof Date) || Number.isNaN(value.valueOf())) throw new TypeError('now must return a valid Date')
