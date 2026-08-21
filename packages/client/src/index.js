@@ -43,6 +43,12 @@ import { projectRpWorkspaceSetting, workspaceSelectionRequest } from './play/wor
 import { requiresSystemWorkspaceConfirmation } from './play/sidebar-model.js'
 import { createChromeModeServiceCore } from './play/chrome-service.js'
 import { startChromeModeTransport } from './play/chrome-transport.js'
+import {
+  CONVERSATION_SCALE_OPTIONS,
+  DEFAULT_CONVERSATION_SETTINGS,
+  getClientConversationSettings,
+  setClientConversationSettings,
+} from './conversation-settings.js'
 import { createPlaythroughController } from './play/create.js'
 import { API_V1 as API_ROOT, CHROME_SERVICE_NAME, CLIENT_REFRESH_EVENT, PLUGIN_ID } from '../../identity.js'
 
@@ -161,6 +167,17 @@ async function uiSettingsRequest(method = 'GET', body) {
   return data.settings
 }
 
+async function conversationSettingsRequest(method = 'GET', body) {
+  const response = await fetch(`${API_ROOT}/conversation-settings`, {
+    method,
+    headers: method === 'GET' ? undefined : { 'Content-Type': 'application/json' },
+    body: body === undefined ? undefined : JSON.stringify(body),
+  })
+  const data = await response.json().catch(() => null)
+  if (!response.ok || data?.ok === false) throw new Error(data?.error ?? `HTTP ${response.status}`)
+  return data.settings
+}
+
 function PanelHeader({ title, titleKey, close }) {
   const titleText = titleKey ? uiMessage(titleKey) : title
   const closeLabel = uiMessage('panel.close', { title: unwrapText(titleText) })
@@ -264,6 +281,32 @@ function SettingsPanel({
       h('div', { className: 'dtv-status', 'data-error': status.error || undefined, role: 'status' }, rawText(status.text)),
       h('div', { className: 'dtv-actions' },
         h('button', { className: 'dtv-button', type: 'button', disabled: busy, onClick: reset }, translate('settings.reset')),
+      ),
+    ),
+  )
+}
+
+function ConversationSettingsPanel({ settings, status, busy, close, update, reset }) {
+  return h('div', { className: 'dtv-panel' },
+    h(PanelHeader, { titleKey: 'conversationSettings.title', close }),
+    h('div', { className: 'dtv-body' },
+      h(Field, { label: translate('conversationSettings.textScale') }, h('select', {
+        className: 'dtv-select',
+        value: settings.textScale,
+        disabled: busy,
+        onChange: event => update({ ...settings, textScale: Number(event.target.value) }),
+      }, ...CONVERSATION_SCALE_OPTIONS.map(scale => h('option', { key: scale, value: scale }, `${Math.round(scale * 100)}%`)))),
+      h('p', { className: 'dtv-note' }, translate('conversationSettings.textScale.help')),
+      h(Field, { label: translate('conversationSettings.actionScale') }, h('select', {
+        className: 'dtv-select',
+        value: settings.actionScale,
+        disabled: busy,
+        onChange: event => update({ ...settings, actionScale: Number(event.target.value) }),
+      }, ...CONVERSATION_SCALE_OPTIONS.map(scale => h('option', { key: scale, value: scale }, `${Math.round(scale * 100)}%`)))),
+      h('p', { className: 'dtv-note' }, translate('conversationSettings.actionScale.help')),
+      h('div', { className: 'dtv-status', 'data-error': status.error || undefined, role: 'status' }, rawText(status.text)),
+      h('div', { className: 'dtv-actions' },
+        h('button', { className: 'dtv-button', type: 'button', disabled: busy, onClick: reset }, translate('conversationSettings.reset')),
       ),
     ),
   )
@@ -523,6 +566,9 @@ function TavernShell({ useSessions, useWorkspaces, createCleanSession, createCon
   const [activeSnapshot, setActiveSnapshot] = useState(null)
   const [statusError, setStatusError] = useState('')
   const [uiSettings, setUiSettings] = useState(getClientUiSettings)
+  const [conversationSettings, setConversationSettings] = useState(getClientConversationSettings)
+  const [conversationSettingsStatus, setConversationSettingsStatus] = useState({ text: translate('conversationSettings.saved'), error: false })
+  const [conversationSettingsBusy, setConversationSettingsBusy] = useState(false)
   const [settingsStatus, setSettingsStatus] = useState({ text: translate('settings.saved'), error: false })
   const [settingsBusy, setSettingsBusy] = useState(false)
   const [rpPolicyDraft, setRpPolicyDraft] = useState('')
@@ -554,7 +600,7 @@ function TavernShell({ useSessions, useWorkspaces, createCleanSession, createCon
     const commitChrome = snapshot => {
       setChromeMode(snapshot.mode)
       playSlots.setMode(snapshot.mode)
-      if (snapshot.mode !== 'play') setSurface(current => current === 'regex' ? null : current)
+      if (snapshot.mode !== 'play') setSurface(current => ['regex', 'conversation-settings'].includes(current) ? null : current)
     }
     const unsubscribe = chromeService.subscribe(snapshot => {
       commitChrome(snapshot)
@@ -586,6 +632,23 @@ function TavernShell({ useSessions, useWorkspaces, createCleanSession, createCon
     }).catch(reason => {
       if (!active) return
       setSettingsStatus({ text: translate('settings.loadError', { message: reason instanceof Error ? reason.message : String(reason) }), error: true })
+    })
+    return () => { active = false }
+  }, [])
+
+  useEffect(() => {
+    let active = true
+    conversationSettingsRequest().then(next => {
+      if (!active) return
+      const normalized = setClientConversationSettings(next)
+      setConversationSettings(normalized)
+      setConversationSettingsStatus({ text: translate('conversationSettings.saved'), error: false })
+    }).catch(reason => {
+      if (!active) return
+      setConversationSettingsStatus({
+        text: translate('conversationSettings.loadError', { message: reason instanceof Error ? reason.message : String(reason) }),
+        error: true,
+      })
     })
     return () => { active = false }
   }, [])
@@ -625,6 +688,50 @@ function TavernShell({ useSessions, useWorkspaces, createCleanSession, createCon
       setSettingsStatus({ text: translate('settings.saveError', { message: reason instanceof Error ? reason.message : String(reason) }), error: true })
     } finally {
       setSettingsBusy(false)
+    }
+  }
+
+  const persistConversationSettings = async next => {
+    const previous = conversationSettings
+    const normalized = setClientConversationSettings(next)
+    setConversationSettings(normalized)
+    setConversationSettingsBusy(true)
+    setConversationSettingsStatus({ text: translate('conversationSettings.saving'), error: false })
+    try {
+      const saved = setClientConversationSettings(await conversationSettingsRequest('PUT', normalized))
+      setConversationSettings(saved)
+      setConversationSettingsStatus({ text: translate('conversationSettings.saved'), error: false })
+    } catch (reason) {
+      setClientConversationSettings(previous)
+      setConversationSettings(previous)
+      setConversationSettingsStatus({
+        text: translate('conversationSettings.saveError', { message: reason instanceof Error ? reason.message : String(reason) }),
+        error: true,
+      })
+    } finally {
+      setConversationSettingsBusy(false)
+    }
+  }
+
+  const resetConversationSettings = async () => {
+    const previous = conversationSettings
+    const defaults = setClientConversationSettings(DEFAULT_CONVERSATION_SETTINGS)
+    setConversationSettings(defaults)
+    setConversationSettingsBusy(true)
+    setConversationSettingsStatus({ text: translate('conversationSettings.saving'), error: false })
+    try {
+      const saved = setClientConversationSettings(await conversationSettingsRequest('DELETE'))
+      setConversationSettings(saved)
+      setConversationSettingsStatus({ text: translate('conversationSettings.saved'), error: false })
+    } catch (reason) {
+      setClientConversationSettings(previous)
+      setConversationSettings(previous)
+      setConversationSettingsStatus({
+        text: translate('conversationSettings.saveError', { message: reason instanceof Error ? reason.message : String(reason) }),
+        error: true,
+      })
+    } finally {
+      setConversationSettingsBusy(false)
     }
   }
 
@@ -902,6 +1009,15 @@ function TavernShell({ useSessions, useWorkspaces, createCleanSession, createCon
       createCleanSession,
       createConfiguredPlaythrough,
       close,
+    })
+  } else if (surface === 'conversation-settings' && chromeMode === 'play') {
+    panel = h(ConversationSettingsPanel, {
+      settings: conversationSettings,
+      status: conversationSettingsStatus,
+      busy: conversationSettingsBusy,
+      close,
+      update: persistConversationSettings,
+      reset: resetConversationSettings,
     })
   } else if (surface === 'settings') {
     panel = h(SettingsPanel, {

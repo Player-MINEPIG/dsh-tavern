@@ -118,9 +118,22 @@ durable history。当前已实现的基础语义是：首次 assembly 必须按�
 | 管独立世界书和绑定 | `/world-books`、`/world-book-selection` |
 | 管用户、用户-世界书关系 | `/users`、`/user-selection` |
 | 界面语言缩放、绑卡跟随 RP | `/ui-settings` |
+| 魔丸 conversation 正文与动作按钮缩放 | `/conversation-settings` |
 | RP 开关与告警、rp:policy 正文 | `/rp-mode`、`/rp-alert`、`/rp-policy` |
 | 看 Trace | `/traces` |
 | 配置模板、按当前绑定开干净会话 | `/session-templates`、`/session-configurations/preview`、`/apply` |
+
+### Conversation 显示设置
+
+`/conversation-settings` 是 v1 bundled UI 合同，与 `/ui-settings` 分离。它只持久化魔丸 RP conversation 的显示偏好，不进入 profile、提示词、timeline、DSH history 或导出正文。
+
+| 方法 | 路径 | 请求 | 成功响应 |
+| --- | --- | --- | --- |
+| GET | `/conversation-settings` | 无 | `{ ok: true, settings: { schemaVersion: 1, textScale, actionScale } }` |
+| PUT | `/conversation-settings` | `{ textScale, actionScale }` | 同 GET |
+| DELETE | `/conversation-settings` | 无 | 恢复两个字段为 `1` |
+
+两个 scale 均为 `0.75`–`1.5` 的有限数值，步进 `0.05`；PUT 是完整替换并拒绝未知字段。`textScale` 作用于魔丸用户/助手正文与 greeting（含空周目 opening dock），`actionScale` 只作用于 durable QA 末尾的复制、swipe、分支、回退和编辑操作行。
 
 ### 预设导出
 

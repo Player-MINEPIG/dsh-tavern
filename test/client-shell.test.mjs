@@ -17,11 +17,13 @@ test('one Tavern launcher exposes stable resource surfaces', () => {
     'regex',
     'user',
     'session-template',
+    'conversation-settings',
     'settings',
   ])
   assert.equal(surfaceTitle('world-info'), 'nav.worldBook')
   assert.equal(TAVERN_MENU_ITEMS.find(item => item.id === 'user').available, true)
   assert.equal(TAVERN_MENU_ITEMS.find(item => item.id === 'regex').playOnly, true)
+  assert.equal(TAVERN_MENU_ITEMS.find(item => item.id === 'conversation-settings').playOnly, true)
   assert.equal(TAVERN_MENU_ITEMS.find(item => item.id === 'settings').showBinding, false)
 })
 

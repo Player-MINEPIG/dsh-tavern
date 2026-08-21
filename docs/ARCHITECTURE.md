@@ -81,6 +81,7 @@ rc.6 的 `agent/inbox/spliced` 是公开、持久的 Session event；插入、�
 
 - 用户与独立世界书的关联已由统一 loader policy 的独立原子文件持有；`UserModel` 仍只有 `id/name/description`，`world-book-library` 文档也不反向保存用户 id。用户 UI 可以编辑关系，但最终以 session 显式来源优先、用户来源随后稳定去重，且只有 loader 的共享 adapter 运行 matcher。
 - UI 缩放、语言与绑卡跟随 RP 已由 `packages/client` 的单一设置入口、共享 locale contract 和逐语言语义 catalog 实现。业务组件只引用语义 key，动态资源值通过显式 raw boundary 插值；运行时不再扫描或替换中文原文。loader 根 API 只持久化有界的全局显示文档（含 `rpFollowCharacter`），资源 JSON、profile 编译和 session selection 不读取显示语言/缩放。可选的 `rp:policy` 正文是另一份有界文件 `rp-policy.json`。
+- Conversation 显示偏好不混入上述外层 UI 文档。loader 通过独立的 `conversation-settings.json` 和 v1 `/conversation-settings` 保存 `textScale/actionScale`；客户端用独立事件只通知魔丸 chat 与空周目 opening dock。正文缩放通过局部 CSS custom property 进入 RP 文本，按钮缩放只进入 durable QA 动作行，因此不会级联改变 DSH native、输入栏、Tavern 面板、提示词或导出内容。
 - 这两项都必须复用现有单插件 API、安全边界、刷新事件和原子持久化模式，不能通过新增第二个可安装插件实现。
 
 ## 原生优先的前端适配策略

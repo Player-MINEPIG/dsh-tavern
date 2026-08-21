@@ -152,6 +152,7 @@ user-world-book-bindings.json  用户—世界书关系
 session-templates.json         配置模板（含 RP 投影）
 tavern-traces.json             有界 Trace 元数据
 ui-settings.json               全局语言、缩放与绑卡跟随 RP
+conversation-settings.json     魔丸正文/开场白与消息动作按钮缩放
 rp-policy.json                 可选的 rp:policy 提示词
 ```
 
@@ -162,6 +163,8 @@ rp-policy.json                 可选的 rp:policy 提示词
 完整安装、刷新恢复、跨平台参数和卸载说明见 `INSTALLATION.md`。
 
 ## 10. 当前兼容边界
+
+魔丸展开菜单中的“对话设置”与“界面设置”相互独立。“正文与开场白字号”只缩放魔丸里的用户/助手消息和开场白；“消息按钮尺寸”只缩放每轮末尾的复制、左右 swipe、分支、回退和编辑操作。两项均可在 75%–150% 间选择，保存后立即生效并在刷新后保持，恢复默认会把两者单独还原为 100%。它们不会改变 DSH 原生对话、Tavern 外层面板、输入栏、提示词、历史或导出内容。
 
 - ST `system`/`user`/`assistant` prompt role 目前作为可审阅标签进入一个 DSH system section，不是真实交错 role message。
 - `chatHistory` 始终由 DSH durable history 提供，插件不复制历史。

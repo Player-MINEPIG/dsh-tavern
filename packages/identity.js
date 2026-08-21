@@ -7,6 +7,7 @@ export const PROFILE_SECTION = `${PLUGIN_ID}:profile`
 export const CLIENT_REFRESH_EVENT = `${PLUGIN_ID}:refresh`
 export const CHROME_SERVICE_NAME = 'pmpDshTavernChrome'
 export const CLIENT_UI_SETTINGS_EVENT = `${PLUGIN_ID}:ui-settings`
+export const CLIENT_CONVERSATION_SETTINGS_EVENT = `${PLUGIN_ID}:conversation-settings`
 
 export function escapeRegExp(value) {
   return String(value).replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
@@ -52,4 +53,5 @@ export const identityConstants = Object.freeze({
   profileSection: PROFILE_SECTION,
   clientRefreshEvent: CLIENT_REFRESH_EVENT,
   clientUiSettingsEvent: CLIENT_UI_SETTINGS_EVENT,
+  clientConversationSettingsEvent: CLIENT_CONVERSATION_SETTINGS_EVENT,
 })

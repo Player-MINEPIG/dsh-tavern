@@ -3683,7 +3683,7 @@ __export(index_exports, {
   name: () => name
 });
 module.exports = __toCommonJS(index_exports);
-var import_react15 = require("react");
+var import_react16 = require("react");
 
 // packages/ui-settings/src/locale-contract.js
 var DEFAULT_UI_LOCALE = "zh-CN";
@@ -3706,6 +3706,7 @@ var PROFILE_SECTION = `${PLUGIN_ID}:profile`;
 var CLIENT_REFRESH_EVENT = `${PLUGIN_ID}:refresh`;
 var CHROME_SERVICE_NAME = "pmpDshTavernChrome";
 var CLIENT_UI_SETTINGS_EVENT = `${PLUGIN_ID}:ui-settings`;
+var CLIENT_CONVERSATION_SETTINGS_EVENT = `${PLUGIN_ID}:conversation-settings`;
 var identityConstants = Object.freeze({
   pluginId: PLUGIN_ID,
   apiRoot: API_ROOT,
@@ -3715,7 +3716,8 @@ var identityConstants = Object.freeze({
   legacyApiRoot: LEGACY_API_ROOT,
   profileSection: PROFILE_SECTION,
   clientRefreshEvent: CLIENT_REFRESH_EVENT,
-  clientUiSettingsEvent: CLIENT_UI_SETTINGS_EVENT
+  clientUiSettingsEvent: CLIENT_UI_SETTINGS_EVENT,
+  clientConversationSettingsEvent: CLIENT_CONVERSATION_SETTINGS_EVENT
 });
 
 // packages/client/src/i18n/catalogs/zh-CN.js
@@ -3758,6 +3760,8 @@ var zh_CN_default = Object.freeze({
   "nav.user.empty": "\u672A\u7ED1\u5B9A\u7528\u6237",
   "nav.sessionTemplate.empty": "\u5F53\u524D\u8BBE\u7F6E\u6216\u914D\u7F6E\u6A21\u677F",
   "nav.settings.empty": "\u8BED\u8A00\u3001\u7F29\u653E\u3001\u9ED8\u8BA4 RP \u5DE5\u4F5C\u533A\u3001RP \u8DDF\u968F\u4E0E\u63D0\u793A\u8BCD",
+  "nav.conversationSettings": "\u5BF9\u8BDD\u8BBE\u7F6E",
+  "nav.conversationSettings.empty": "RP \u6B63\u6587\u5B57\u53F7\u4E0E\u6D88\u606F\u6309\u94AE\u5C3A\u5BF8",
   "nav.regex": "\u663E\u793A\u6B63\u5219",
   "nav.regex.empty": "\u4EC5\u7528\u4E8E\u9B54\u4E38\u663E\u793A\u7684\u89C4\u5219",
   "regex.title": "\u663E\u793A\u6B63\u5219",
@@ -3887,6 +3891,16 @@ var zh_CN_default = Object.freeze({
   "settings.rpPolicy.save": "\u4FDD\u5B58 RP \u63D0\u793A\u8BCD",
   "settings.rpPolicy.reset": "\u6062\u590D\u9ED8\u8BA4 RP \u63D0\u793A\u8BCD",
   "settings.rpPolicy.saved": "RP \u63D0\u793A\u8BCD\u5DF2\u4FDD\u5B58\uFF0C\u4E0B\u4E00\u8F6E\u8BF7\u6C42\u751F\u6548\u3002",
+  "conversationSettings.title": "\u9B54\u4E38\u5BF9\u8BDD\u8BBE\u7F6E",
+  "conversationSettings.textScale": "RP \u6B63\u6587\u4E0E\u5F00\u573A\u767D\u5B57\u53F7",
+  "conversationSettings.textScale.help": "\u53EA\u7F29\u653E\u9B54\u4E38\u4E2D\u7684\u7528\u6237/\u52A9\u624B\u6B63\u6587\u548C\u5F00\u573A\u767D\uFF1B\u4E0D\u6539\u53D8 DSH \u539F\u751F\u5BF9\u8BDD\u3001\u63D0\u793A\u8BCD\u6216\u5BFC\u51FA\u6587\u672C\u3002",
+  "conversationSettings.actionScale": "RP \u6D88\u606F\u6309\u94AE\u5C3A\u5BF8",
+  "conversationSettings.actionScale.help": "\u7F29\u653E\u6BCF\u8F6E\u672B\u5C3E\u7684\u590D\u5236\u3001swipe\u3001\u5206\u652F\u3001\u56DE\u9000\u548C\u7F16\u8F91\u6309\u94AE\uFF0C\u4E0D\u6539\u53D8\u5BF9\u8BDD\u680F\u6216\u5176\u4ED6 Tavern \u9762\u677F\u3002",
+  "conversationSettings.reset": "\u6062\u590D\u5BF9\u8BDD\u663E\u793A\u9ED8\u8BA4\u503C",
+  "conversationSettings.saving": "\u6B63\u5728\u4FDD\u5B58\u5BF9\u8BDD\u8BBE\u7F6E\u2026",
+  "conversationSettings.saved": "\u5BF9\u8BDD\u8BBE\u7F6E\u5DF2\u4FDD\u5B58\u3002",
+  "conversationSettings.loadError": "\u65E0\u6CD5\u8BFB\u53D6\u5BF9\u8BDD\u8BBE\u7F6E\uFF1A{message}",
+  "conversationSettings.saveError": "\u65E0\u6CD5\u4FDD\u5B58\u5BF9\u8BDD\u8BBE\u7F6E\uFF1A{message}",
   "rp.block.body": "Agent \u6B63\u5728\u8FDB\u884C\u5199\u5165\u7B49\u9AD8\u98CE\u9669\u64CD\u4F5C\u3002\u5982\u679C\u4F60\u77E5\u9053\u4F60\u5728\u505A\u4EC0\u4E48\uFF0C\u8BF7\u5173\u95ED RP \u6A21\u5F0F\u540E\u91CD\u8BD5\u3002",
   "rp.block.dismiss": "\u77E5\u9053\u4E86",
   "preset.title": "Tavern \u9884\u8BBE",
@@ -4364,6 +4378,8 @@ var en_default = Object.freeze({
   "nav.user.empty": "No user bound",
   "nav.sessionTemplate.empty": "Current settings or configuration template",
   "nav.settings.empty": "Language, scale, default RP workspace, RP follow, and prompt",
+  "nav.conversationSettings": "Conversation settings",
+  "nav.conversationSettings.empty": "RP text and message action sizes",
   "nav.regex": "Display regex",
   "nav.regex.empty": "Mowan display-only rules",
   "regex.title": "Display regex",
@@ -4493,6 +4509,16 @@ var en_default = Object.freeze({
   "settings.rpPolicy.save": "Save RP prompt",
   "settings.rpPolicy.reset": "Restore default RP prompt",
   "settings.rpPolicy.saved": "RP prompt saved; it applies on the next request.",
+  "conversationSettings.title": "Mowan conversation settings",
+  "conversationSettings.textScale": "RP body and greeting text size",
+  "conversationSettings.textScale.help": "Scales user/assistant body text and greetings only in Mowan; it does not change native DSH chat, prompts, or exported text.",
+  "conversationSettings.actionScale": "RP message action size",
+  "conversationSettings.actionScale.help": "Scales copy, swipe, fork, rollback, and edit controls at the end of each turn without changing the composer or other Tavern panels.",
+  "conversationSettings.reset": "Restore conversation display defaults",
+  "conversationSettings.saving": "Saving conversation settings\u2026",
+  "conversationSettings.saved": "Conversation settings saved.",
+  "conversationSettings.loadError": "Could not load conversation settings: {message}",
+  "conversationSettings.saveError": "Could not save conversation settings: {message}",
   "rp.block.body": "The agent is attempting a high-risk action such as writing files. If you know what you are doing, turn off RP mode and try again.",
   "rp.block.dismiss": "OK",
   "preset.title": "Tavern preset",
@@ -5315,29 +5341,29 @@ function PresetSidebar({ closePanel, openPanel, sessionId, sessionBlank, autoOpe
     await refresh();
     announceTavernRefresh();
   }, "preset.status.deleted"), [draft, refresh, run]);
-  const patchSampling = (patch) => setDraft((current2) => ({
-    ...current2,
-    sampling: { ...current2.sampling, ...patch }
+  const patchSampling = (patch) => setDraft((current3) => ({
+    ...current3,
+    sampling: { ...current3.sampling, ...patch }
   }));
   const patchSt = (key, value) => patchSampling({
     st: { ...draft.sampling.st, [key]: value }
   });
-  const patchPrompt = (index, patch) => setDraft((current2) => ({
-    ...current2,
-    prompts: current2.prompts.map((prompt, at) => at === index ? { ...prompt, ...patch } : prompt)
+  const patchPrompt = (index, patch) => setDraft((current3) => ({
+    ...current3,
+    prompts: current3.prompts.map((prompt, at) => at === index ? { ...prompt, ...patch } : prompt)
   }));
-  const movePrompt = (from, boundary) => setDraft((current2) => {
-    const prompts = reorderAtBoundary(current2.prompts, from, boundary);
-    if (prompts === current2.prompts) return current2;
-    return { ...current2, prompts };
+  const movePrompt = (from, boundary) => setDraft((current3) => {
+    const prompts = reorderAtBoundary(current3.prompts, from, boundary);
+    if (prompts === current3.prompts) return current3;
+    return { ...current3, prompts };
   });
-  const deletePrompt = (index) => setDraft((current2) => ({
-    ...current2,
-    prompts: current2.prompts.filter((_prompt, at) => at !== index)
+  const deletePrompt = (index) => setDraft((current3) => ({
+    ...current3,
+    prompts: current3.prompts.filter((_prompt, at) => at !== index)
   }));
-  const addPrompt = () => setDraft((current2) => ({
-    ...current2,
-    prompts: [...current2.prompts, {
+  const addPrompt = () => setDraft((current3) => ({
+    ...current3,
+    prompts: [...current3.prompts, {
       identifier: `prompt-${Date.now().toString(36)}`,
       name: translate("preset.defaultPromptName"),
       role: "system",
@@ -5405,7 +5431,7 @@ function PresetSidebar({ closePanel, openPanel, sessionId, sessionBlank, autoOpe
         h(Field, { label: uiMessage("preset.name") }, h("input", {
           className: "dtt-input",
           value: draft.name,
-          onChange: (event) => setDraft((current2) => ({ ...current2, name: event.target.value }))
+          onChange: (event) => setDraft((current3) => ({ ...current3, name: event.target.value }))
         })),
         h(
           "div",
@@ -5439,7 +5465,7 @@ function PresetSidebar({ closePanel, openPanel, sessionId, sessionBlank, autoOpe
           {
             className: "dtt-select",
             value: draft.systemPromptMode === "replace" ? "replace" : "append",
-            onChange: (event) => setDraft((current2) => ({ ...current2, systemPromptMode: event.target.value }))
+            onChange: (event) => setDraft((current3) => ({ ...current3, systemPromptMode: event.target.value }))
           },
           h("option", { value: "append" }, uiMessage("preset.systemAppend")),
           h("option", { value: "replace" }, uiMessage("preset.systemReplace"))
@@ -5644,7 +5670,7 @@ function DiagnosticList({ titleKey, items }) {
   );
 }
 function patchDraft(setter, field, value) {
-  setter((current2) => current2 === null ? current2 : { ...current2, [field]: value });
+  setter((current3) => current3 === null ? current3 : { ...current3, [field]: value });
 }
 function CharacterPanel({ sessionId, sessionBlank, hasConversationHistory, detachPlaythroughSession, close }) {
   const [catalog2, setCatalog] = (0, import_react2.useState)(null);
@@ -5773,16 +5799,16 @@ function CharacterPanel({ sessionId, sessionBlank, hasConversationHistory, detac
     setDetail(data.character);
     setDraft(nextDraft);
     setSavedDraft(structuredClone(nextDraft));
-    setCatalog((current2) => current2 === null ? current2 : {
-      ...current2,
-      characters: current2.characters.map((item) => item.id === data.character.id ? { ...item, name: data.character.name } : item)
+    setCatalog((current3) => current3 === null ? current3 : {
+      ...current3,
+      characters: current3.characters.map((item) => item.id === data.character.id ? { ...item, name: data.character.name } : item)
     });
-    setBinding((current2) => {
-      if (current2 === null || current2.characterCardId !== data.character.id) return current2;
+    setBinding((current3) => {
+      if (current3 === null || current3.characterCardId !== data.character.id) return current3;
       const greetings2 = characterGreetingOptions(data.character);
       const maxIndex = Math.max(0, greetings2.length - 1);
-      const greetingIndex2 = Math.min(current2.character?.greetingIndex ?? 0, maxIndex);
-      return { ...current2, character: { ...current2.character, greetingIndex: greetingIndex2 } };
+      const greetingIndex2 = Math.min(current3.character?.greetingIndex ?? 0, maxIndex);
+      return { ...current3, character: { ...current3.character, greetingIndex: greetingIndex2 } };
     });
     announceTavernRefresh2();
   }, "character.status.saved"), [detail, draft, run]);
@@ -5958,10 +5984,10 @@ function CharacterPanel({ sessionId, sessionBlank, hasConversationHistory, detac
         h2(Field2, { label: uiMessage("character.greeting") }, h2("select", {
           className: "dcc-select",
           value: greetingIndex,
-          onChange: (event) => setBinding((current2) => ({ ...current2, character: { ...current2.character, greetingIndex: Number(event.target.value) } }))
+          onChange: (event) => setBinding((current3) => ({ ...current3, character: { ...current3.character, greetingIndex: Number(event.target.value) } }))
         }, ...greetings.map((item) => h2("option", { key: item.index, value: item.index }, uiMessage(item.labelKey, item.labelValues))))),
-        h2("label", { className: "dcc-check" }, h2("input", { type: "checkbox", checked: binding?.character?.preferCharacterSystemPrompt !== false, onChange: (event) => setBinding((current2) => ({ ...current2, character: { ...current2.character, preferCharacterSystemPrompt: event.target.checked } })) }), h2("span", null, uiMessage("character.preferSystem"))),
-        h2("label", { className: "dcc-check" }, h2("input", { type: "checkbox", checked: binding?.character?.preferCharacterPostHistory !== false, onChange: (event) => setBinding((current2) => ({ ...current2, character: { ...current2.character, preferCharacterPostHistory: event.target.checked } })) }), h2("span", null, uiMessage("character.preferPostHistory"))),
+        h2("label", { className: "dcc-check" }, h2("input", { type: "checkbox", checked: binding?.character?.preferCharacterSystemPrompt !== false, onChange: (event) => setBinding((current3) => ({ ...current3, character: { ...current3.character, preferCharacterSystemPrompt: event.target.checked } })) }), h2("span", null, uiMessage("character.preferSystem"))),
+        h2("label", { className: "dcc-check" }, h2("input", { type: "checkbox", checked: binding?.character?.preferCharacterPostHistory !== false, onChange: (event) => setBinding((current3) => ({ ...current3, character: { ...current3.character, preferCharacterPostHistory: event.target.checked } })) }), h2("span", null, uiMessage("character.preferPostHistory"))),
         boundHere ? bindingDirty ? h2("div", { className: "dcc-status", "data-warning": true, role: "status" }, uiMessage("character.bindingUnsaved")) : h2("p", { className: "dcc-note" }, uiMessage("character.bindingApplied")) : null,
         h2(
           "div",
@@ -6014,20 +6040,20 @@ function CharacterPanel({ sessionId, sessionBlank, hasConversationHistory, detac
                     className: "dcc-button dcc-danger",
                     type: "button",
                     disabled: busy,
-                    onClick: () => setDraft((current2) => current2 === null ? current2 : {
-                      ...current2,
-                      alternateGreetings: current2.alternateGreetings.filter((_item, itemIndex) => itemIndex !== index)
+                    onClick: () => setDraft((current3) => current3 === null ? current3 : {
+                      ...current3,
+                      alternateGreetings: current3.alternateGreetings.filter((_item, itemIndex) => itemIndex !== index)
                     })
                   }, uiMessage("common.delete"))
                 ),
                 h2("textarea", {
                   className: "dcc-textarea",
                   value: text2,
-                  onChange: (event) => setDraft((current2) => {
-                    if (current2 === null) return current2;
-                    const alternateGreetings = [...current2.alternateGreetings];
+                  onChange: (event) => setDraft((current3) => {
+                    if (current3 === null) return current3;
+                    const alternateGreetings = [...current3.alternateGreetings];
                     alternateGreetings[index] = event.target.value;
-                    return { ...current2, alternateGreetings };
+                    return { ...current3, alternateGreetings };
                   })
                 })
               ))
@@ -6036,9 +6062,9 @@ function CharacterPanel({ sessionId, sessionBlank, hasConversationHistory, detac
               className: "dcc-button",
               type: "button",
               disabled: busy,
-              onClick: () => setDraft((current2) => current2 === null ? current2 : {
-                ...current2,
-                alternateGreetings: [...current2.alternateGreetings, ""]
+              onClick: () => setDraft((current3) => current3 === null ? current3 : {
+                ...current3,
+                alternateGreetings: [...current3.alternateGreetings, ""]
               })
             }, uiMessage("character.addGreeting"))
           )
@@ -6173,14 +6199,14 @@ function sameKeywords(left, right) {
   if (left.length !== right.length) return false;
   return left.every((value, index) => value === right[index]);
 }
-function reconcileKeywordEditorText(current2, keywords2) {
+function reconcileKeywordEditorText(current3, keywords2) {
   const normalized = Array.isArray(keywords2) ? keywords2.filter((value) => typeof value === "string" && value !== "") : [];
-  return sameKeywords(parseKeywords(current2), normalized) ? current2 : normalized.join(", ");
+  return sameKeywords(parseKeywords(current3), normalized) ? current3 : normalized.join(", ");
 }
 function KeywordInput({ keywords: keywords2, onChange }) {
   const [text2, setText] = (0, import_react3.useState)(() => Array.isArray(keywords2) ? keywords2.join(", ") : "");
   (0, import_react3.useEffect)(() => {
-    setText((current2) => reconcileKeywordEditorText(current2, keywords2));
+    setText((current3) => reconcileKeywordEditorText(current3, keywords2));
   }, [keywords2]);
   return h3("input", {
     className: "dwb-input",
@@ -6336,7 +6362,7 @@ function ResourceWorldBookBindingEditor({
           h3("input", {
             type: "checkbox",
             checked,
-            onChange: (event) => setSelection((current2) => event.target.checked ? [...current2, book.id] : current2.filter((id) => id !== book.id))
+            onChange: (event) => setSelection((current3) => event.target.checked ? [...current3, book.id] : current3.filter((id) => id !== book.id))
           }),
           h3("span", { className: "dwb-source-book-name" }, rawText(book.name)),
           badge === null ? null : h3("span", { className: "dwb-source-badge" }, badge)
@@ -6597,8 +6623,8 @@ function WorldBookPanel({ sessionId, close }) {
     setEmbeddedDirty(true);
   };
   const updateEntry = (index, patch) => {
-    setDraft((current2) => {
-      const next = structuredClone(current2);
+    setDraft((current3) => {
+      const next = structuredClone(current3);
       next.entries[index] = { ...next.entries[index], ...patch };
       return next;
     });
@@ -6651,7 +6677,7 @@ function WorldBookPanel({ sessionId, close }) {
           catalog2?.worldBooks.length ? h3("div", { className: "dwb-bindings" }, ...catalog2.worldBooks.map((item) => h3(
             "label",
             { className: "dwb-check", key: item.id },
-            h3("input", { type: "checkbox", checked: selection.includes(item.id), onChange: (event) => setSelection((current2) => event.target.checked ? [...current2, item.id] : current2.filter((id) => id !== item.id)) }),
+            h3("input", { type: "checkbox", checked: selection.includes(item.id), onChange: (event) => setSelection((current3) => event.target.checked ? [...current3, item.id] : current3.filter((id) => id !== item.id)) }),
             uiMessage("world.catalogItem", { name: item.name, count: item.entryCount })
           ))) : h3("p", { className: "dwb-note" }, uiMessage("world.libraryEmpty")),
           selectionDirty ? h3("div", { className: "dwb-status", "data-warning": true }, uiMessage("world.bindingUnsaved")) : h3("p", { className: "dwb-note" }, uiMessage("world.bindingApplied")),
@@ -6674,7 +6700,7 @@ function WorldBookPanel({ sessionId, close }) {
           "div",
           { className: "dwb-resource", ref: standaloneEditorRef },
           h3(Field3, { label: uiMessage("world.bookName") }, h3("input", { className: "dwb-input", value: draft.name ?? "", onChange: (event) => {
-            setDraft((current2) => ({ ...current2, name: event.target.value }));
+            setDraft((current3) => ({ ...current3, name: event.target.value }));
             setDirty(true);
           } })),
           h3("p", { className: "dwb-meta" }, uiMessage("world.documentMeta", { count: entries2.length })),
@@ -6682,7 +6708,7 @@ function WorldBookPanel({ sessionId, close }) {
             "div",
             { className: "dwb-actions" },
             h3("button", { className: "dwb-button", type: "button", onClick: () => {
-              setDraft((current2) => ({ ...current2, entries: [...current2.entries, createWorldBookEntry(current2.entries)] }));
+              setDraft((current3) => ({ ...current3, entries: [...current3.entries, createWorldBookEntry(current3.entries)] }));
               setDirty(true);
             } }, uiMessage("world.addEntry")),
             h3("button", { className: "dwb-button dwb-primary", type: "button", disabled: busy || !dirty, onClick: save }, dirty ? uiMessage("common.saveChanges") : uiMessage("common.saved")),
@@ -6691,7 +6717,7 @@ function WorldBookPanel({ sessionId, close }) {
           ),
           ...entries2.map((entry, index) => h3(EntryEditor, { key: `${String(document2.id)}-${String(entry.uid)}-${index}`, entry, index, update: updateEntry, remove: (itemIndex) => {
             if (window.confirm(unwrapText(uiMessage("world.confirmDeleteEntry")))) {
-              setDraft((current2) => ({ ...current2, entries: current2.entries.filter((_item, candidate) => candidate !== itemIndex) }));
+              setDraft((current3) => ({ ...current3, entries: current3.entries.filter((_item, candidate) => candidate !== itemIndex) }));
               setDirty(true);
             }
           } }))
@@ -6718,7 +6744,7 @@ function WorldBookPanel({ sessionId, close }) {
                 h3("input", {
                   type: "checkbox",
                   checked,
-                  onChange: (event) => setUserSelection((current2) => event.target.checked ? [...current2, book.id] : current2.filter((id) => id !== book.id))
+                  onChange: (event) => setUserSelection((current3) => event.target.checked ? [...current3, book.id] : current3.filter((id) => id !== book.id))
                 }),
                 h3("span", { className: "dwb-source-book-name" }, rawText(book.name)),
                 badge === null ? null : h3("span", { className: "dwb-source-badge" }, badge)
@@ -6781,21 +6807,21 @@ function WorldBookPanel({ sessionId, close }) {
             h3("button", { className: "dwb-button", type: "button", onClick: () => {
               const ids = embeddedEntries.map((entry) => Number(entry.id)).filter(Number.isSafeInteger);
               const id = ids.length === 0 ? 0 : Math.max(...ids) + 1;
-              setEmbeddedDraft((current2) => ({ ...structuredClone(current2), entries: [...current2.entries, { id, keys: [], secondary_keys: [], comment: translate("world.entry.untitled", { id }), content: "", enabled: true, constant: false, selective: false, insertion_order: 100, position: "after_char", extensions: { position: 1, probability: 100, useProbability: true } }] }));
+              setEmbeddedDraft((current3) => ({ ...structuredClone(current3), entries: [...current3.entries, { id, keys: [], secondary_keys: [], comment: translate("world.entry.untitled", { id }), content: "", enabled: true, constant: false, selective: false, insertion_order: 100, position: "after_char", extensions: { position: 1, probability: 100, useProbability: true } }] }));
               setEmbeddedDirty(true);
             } }, uiMessage("world.addEmbeddedEntry")),
             h3("button", { className: "dwb-button dwb-primary", type: "button", disabled: busy || !embeddedDirty, onClick: saveEmbedded }, embeddedDirty ? uiMessage("world.saveEmbedded") : uiMessage("world.embeddedSaved"))
           ),
           ...embeddedEntries.map((entry, index) => h3(EmbeddedEntryEditor, { key: `${String(embeddedCharacterId)}-${String(entry.id)}-${index}`, entry, index, update: (itemIndex, value) => {
-            setEmbeddedDraft((current2) => {
-              const next = structuredClone(current2);
+            setEmbeddedDraft((current3) => {
+              const next = structuredClone(current3);
               next.entries[itemIndex] = { ...next.entries[itemIndex], ...value };
               return next;
             });
             setEmbeddedDirty(true);
           }, remove: (itemIndex) => {
             if (window.confirm(unwrapText(uiMessage("world.confirmDeleteEmbeddedEntry")))) {
-              setEmbeddedDraft((current2) => ({ ...structuredClone(current2), entries: current2.entries.filter((_item, candidate) => candidate !== itemIndex) }));
+              setEmbeddedDraft((current3) => ({ ...structuredClone(current3), entries: current3.entries.filter((_item, candidate) => candidate !== itemIndex) }));
               setEmbeddedDirty(true);
             }
           } }))
@@ -6903,7 +6929,7 @@ function UserPanel({ sessionId, sessionBlank, close }) {
     }
   }, []);
   const refresh = (0, import_react4.useCallback)(async (preferredId) => {
-    const current2 = ++generation.current;
+    const current3 = ++generation.current;
     const [catalog2, worldBookCatalog, binding] = await Promise.all([
       api4("/users"),
       api4("/world-books"),
@@ -6913,7 +6939,7 @@ function UserPanel({ sessionId, sessionBlank, close }) {
     const preferred = availableIds.has(preferredId) ? preferredId : availableIds.has(binding.selection?.userId) ? binding.selection.userId : null;
     const id = preferred ?? catalog2.users[0]?.id ?? null;
     const relation = id === null ? { binding: { worldBookIds: [] } } : await api4(`/users/${encodeURIComponent(id)}/world-books`);
-    if (current2 !== generation.current) return;
+    if (current3 !== generation.current) return;
     setUsers(catalog2.users);
     setWorldBooks(worldBookCatalog.worldBooks);
     setSelectedUserId(binding.selection?.userId ?? null);
@@ -6966,7 +6992,7 @@ function UserPanel({ sessionId, sessionBlank, close }) {
     draftId.current = data.user.id;
     setDraft(data.user);
     setSavedDraft(structuredClone(data.user));
-    setUsers((current2) => current2?.map((user) => user.id === data.user.id ? data.user : user) ?? current2);
+    setUsers((current3) => current3?.map((user) => user.id === data.user.id ? data.user : user) ?? current3);
     notifyRefresh();
   }, "user.status.saved"), [draft, run]);
   const saveWorldBooks = (0, import_react4.useCallback)(() => run(async () => {
@@ -7054,8 +7080,8 @@ function UserPanel({ sessionId, sessionBlank, close }) {
       draft === null ? h4("p", { className: "dtu-note" }, users === null ? uiMessage("user.loading") : uiMessage("user.emptyHint")) : h4(
         "div",
         { className: "dtu-editor" },
-        h4(Field4, { label: uiMessage("user.name", { macro: "{{user}}" }) }, h4("input", { className: "dtu-input", value: draft.name, maxLength: 200, onChange: (event) => setDraft((current2) => ({ ...current2, name: event.target.value })) })),
-        h4(Field4, { label: uiMessage("user.description") }, h4("textarea", { className: "dtu-textarea", value: draft.description, maxLength: 1e5, onChange: (event) => setDraft((current2) => ({ ...current2, description: event.target.value })) })),
+        h4(Field4, { label: uiMessage("user.name", { macro: "{{user}}" }) }, h4("input", { className: "dtu-input", value: draft.name, maxLength: 200, onChange: (event) => setDraft((current3) => ({ ...current3, name: event.target.value })) })),
+        h4(Field4, { label: uiMessage("user.description") }, h4("textarea", { className: "dtu-textarea", value: draft.description, maxLength: 1e5, onChange: (event) => setDraft((current3) => ({ ...current3, description: event.target.value })) })),
         h4(
           "div",
           { className: "dtu-actions" },
@@ -7070,7 +7096,7 @@ function UserPanel({ sessionId, sessionBlank, close }) {
           h4("input", {
             type: "checkbox",
             checked: worldBookIds.includes(book.id),
-            onChange: (event) => setWorldBookIds((current2) => event.target.checked ? [...current2, book.id] : current2.filter((id) => id !== book.id))
+            onChange: (event) => setWorldBookIds((current3) => event.target.checked ? [...current3, book.id] : current3.filter((id) => id !== book.id))
           }),
           h4("span", null, uiMessage("world.catalogItem", { name: book.name, count: book.entryCount }))
         ))) : h4("p", { className: "dtu-note" }, worldBooks === null ? uiMessage("user.worldBooksLoading") : uiMessage("user.worldBooksEmpty")),
@@ -7657,6 +7683,7 @@ var TAVERN_MENU_ITEMS = Object.freeze([
   { id: "regex", labelKey: "nav.regex", emptyTitleKey: "nav.regex.empty", available: true, binding: false, showBinding: false, playOnly: true },
   { id: "user", labelKey: "nav.user", emptyTitleKey: "nav.user.empty", available: true },
   { id: "session-template", labelKey: "nav.sessionTemplate", emptyTitleKey: "nav.sessionTemplate.empty", available: true, binding: false, showBinding: false },
+  { id: "conversation-settings", labelKey: "nav.conversationSettings", emptyTitleKey: "nav.conversationSettings.empty", available: true, binding: false, showBinding: false, playOnly: true },
   { id: "settings", labelKey: "nav.settings", emptyTitleKey: "nav.settings.empty", available: true, binding: false, showBinding: false }
 ]);
 var TAVERN_LAUNCHER_SIZE = 44;
@@ -7843,7 +7870,7 @@ function createChromeClickController({
 }
 
 // packages/client/src/play/chat.js
-var import_react9 = require("react");
+var import_react10 = require("react");
 
 // packages/play/src/timeline-tree.js
 function adoptedVariant(node) {
@@ -7991,8 +8018,8 @@ function timelineHeadForVariant(timeline, variantId) {
   const variants = variantEntries(timeline);
   const target = variants.get(variantId);
   if (target === void 0) return null;
-  const current2 = timelineHead(timeline);
-  if (current2 !== null && headPathContains(timeline, current2, variantId)) return current2;
+  const current3 = timelineHead(timeline);
+  if (current3 !== null && headPathContains(timeline, current3, variantId)) return current3;
   const stored = storedBranchHeads(timeline, variants).get(variantId);
   if (stored !== void 0 && headPathContains(timeline, stored, variantId)) return stored;
   return uniqueLegacyBranchHead(timeline, variantId, variants);
@@ -10204,15 +10231,15 @@ var import_react8 = require("react");
 // packages/client/src/play/mutations.js
 async function updateCatalog(client, mutator, options) {
   if (typeof client?.updateCatalog === "function") return client.updateCatalog(mutator, options);
-  const current2 = await readCatalogOrEmpty(client);
-  const next = await mutator(current2);
+  const current3 = await readCatalogOrEmpty(client);
+  const next = await mutator(current3);
   const saved = await client.putCatalog(next);
   return saved ?? next;
 }
 async function updateTimeline(client, playthrough, mutator, options) {
   if (typeof client?.updateTimeline === "function") return client.updateTimeline(playthrough, mutator, options);
-  const current2 = options?.initial ?? await client.getTimeline(playthrough);
-  const next = await mutator(current2);
+  const current3 = options?.initial ?? await client.getTimeline(playthrough);
+  const next = await mutator(current3);
   const saved = await client.putTimeline(playthrough, next);
   return saved ?? next;
 }
@@ -10847,8 +10874,8 @@ function rootSessionId4(playthrough) {
   return typeof value === "string" && value !== "" ? value : null;
 }
 async function ensureCharacterSelection(client, sessionId, characterId) {
-  const current2 = await client.getCharacterSelection(sessionId);
-  if (characterIdFromSelection(current2) !== characterId) {
+  const current3 = await client.getCharacterSelection(sessionId);
+  if (characterIdFromSelection(current3) !== characterId) {
     await client.putCharacterSelection(sessionId, characterId, { greetingIndex: 0 });
   }
   const verified = await client.getCharacterSelection(sessionId);
@@ -10901,12 +10928,12 @@ async function renamePlaythrough(client, playthrough, title) {
   if (client == null) throw new TypeError("playClient.required");
   const normalized = typeof title === "string" ? title.trim() : "";
   if (normalized === "" || normalized.length > 120) throw new TypeError("play.rename.invalid");
-  const saved = await updateCatalog(client, (current2) => {
-    const freshIndex = current2.playthroughs.findIndex((item) => item.id === playthrough?.id && item.path === playthrough?.path);
+  const saved = await updateCatalog(client, (current3) => {
+    const freshIndex = current3.playthroughs.findIndex((item) => item.id === playthrough?.id && item.path === playthrough?.path);
     if (freshIndex < 0) throw new TypeError("play.rename.missing");
-    const freshPlaythroughs = [...current2.playthroughs];
+    const freshPlaythroughs = [...current3.playthroughs];
     freshPlaythroughs[freshIndex] = { ...freshPlaythroughs[freshIndex], title: normalized };
-    return { ...current2, playthroughs: freshPlaythroughs };
+    return { ...current3, playthroughs: freshPlaythroughs };
   });
   const verified = saved?.playthroughs === void 0 ? await client.getCatalog() : saved;
   const renamed = verified.playthroughs.find((item) => item.id === playthrough.id && item.path === playthrough.path);
@@ -10954,16 +10981,16 @@ async function createCharacterPlaythrough(client, {
     const savedCatalog2 = await updateCatalog(client, (fresh) => {
       const index = fresh.playthroughs.findIndex((item) => item.id === latest.id && item.path === latest.path);
       if (index < 0) throw new Error("playthrough.create.missingVacancy");
-      const current2 = fresh.playthroughs[index];
-      const currentRoot = rootSessionId4(current2);
+      const current3 = fresh.playthroughs[index];
+      const currentRoot = rootSessionId4(current3);
       if (currentRoot !== null && currentRoot !== sessionId2) throw new Error("playthrough.create.identityConflict");
       attached = {
-        ...current2,
+        ...current3,
         lastOpenedAt: createdAt,
         ext: {
-          ...current2.ext ?? {},
+          ...current3.ext ?? {},
           pmpDshTavern: {
-            ...current2.ext?.pmpDshTavern ?? {},
+            ...current3.ext?.pmpDshTavern ?? {},
             characterId,
             rootSessionId: sessionId2
           }
@@ -11309,21 +11336,21 @@ function createPlayNodeController(client, {
           endEventId: pair.assistant.seq
         };
         const next = await updateTimeline(client, playthrough, (timeline2) => {
-          const current2 = nodeById2(timeline2, sourceNode.id);
-          const existing = current2.node.variants.find((item) => item.id === variantId);
+          const current3 = nodeById2(timeline2, sourceNode.id);
+          const existing = current3.node.variants.find((item) => item.id === variantId);
           if (existing !== void 0) {
             return timelineWithHead(
-              replaceNode(timeline2, current2.index, { ...current2.node, adoptedVariantId: variantId }),
-              { sessionId: existing.sessionId, nodeId: current2.node.id, variantId }
+              replaceNode(timeline2, current3.index, { ...current3.node, adoptedVariantId: variantId }),
+              { sessionId: existing.sessionId, nodeId: current3.node.id, variantId }
             );
           }
           return timelineWithHead(
-            replaceNode(timeline2, current2.index, {
-              ...current2.node,
+            replaceNode(timeline2, current3.index, {
+              ...current3.node,
               adoptedVariantId: variantId,
-              variants: [...current2.node.variants, variant]
+              variants: [...current3.node.variants, variant]
             }),
-            { sessionId: newSessionId, nodeId: current2.node.id, variantId }
+            { sessionId: newSessionId, nodeId: current3.node.id, variantId }
           );
         });
         const focus = await client.getFocus(playthrough);
@@ -11338,15 +11365,15 @@ function createPlayNodeController(client, {
       return schedule(async () => {
         const branch = await branchPlaythroughAtNode(client, { playthrough, nodeId });
         const next = await updateTimeline(client, playthrough, (timeline) => {
-          const current2 = nodeById2(timeline, nodeId);
-          const variant = current2.node.variants.find((item) => item.id === branch.adopted.id);
+          const current3 = nodeById2(timeline, nodeId);
+          const variant = current3.node.variants.find((item) => item.id === branch.adopted.id);
           if (variant === void 0) throw new Error("Rollback target changed before commit");
           return timelineWithHead(
-            replaceNode(timeline, current2.index, {
-              ...current2.node,
+            replaceNode(timeline, current3.index, {
+              ...current3.node,
               adoptedVariantId: variant.id
             }),
-            { sessionId: branch.sessionId, nodeId: current2.node.id, variantId: variant.id }
+            { sessionId: branch.sessionId, nodeId: current3.node.id, variantId: variant.id }
           );
         });
         const focus = await client.getFocus(playthrough);
@@ -11382,7 +11409,7 @@ function consumeSwipeTransition(sessionId) {
 var h7 = createLocalizedElement(import_react8.createElement);
 var controllers = /* @__PURE__ */ new WeakMap();
 var css6 = `
-.dtv-play-turn-actions{display:flex;align-items:center;gap:2px;min-height:28px}.dtv-play-turn-action{width:28px;height:28px;border:0;border-radius:8px;background:transparent;color:var(--dsw-alias-label-tertiary);font:inherit;cursor:pointer;display:grid;place-items:center}.dtv-play-turn-action:hover{background:var(--dsw-alias-interactive-bg-hover);color:var(--dsw-alias-label-primary)}.dtv-play-turn-action:disabled{cursor:default;opacity:.38}.dtv-play-turn-position{padding:0 5px;color:var(--dsw-alias-label-tertiary);font-size:10px}
+.dtv-play-turn-actions{display:flex;align-items:center;gap:calc(2px * var(--dtv-rp-action-scale,1));min-height:calc(28px * var(--dtv-rp-action-scale,1))}.dtv-play-turn-action{width:calc(28px * var(--dtv-rp-action-scale,1));height:calc(28px * var(--dtv-rp-action-scale,1));border:0;border-radius:calc(8px * var(--dtv-rp-action-scale,1));background:transparent;color:var(--dsw-alias-label-tertiary);font:inherit;font-size:calc(14px * var(--dtv-rp-action-scale,1));cursor:pointer;display:grid;place-items:center}.dtv-play-turn-action:hover{background:var(--dsw-alias-interactive-bg-hover);color:var(--dsw-alias-label-primary)}.dtv-play-turn-action:disabled{cursor:default;opacity:.38}.dtv-play-turn-position{padding:0 calc(5px * var(--dtv-rp-action-scale,1));color:var(--dsw-alias-label-tertiary);font-size:calc(10px * var(--dtv-rp-action-scale,1))}
 .dtv-play-display-editor{display:flex;flex-direction:column;align-self:stretch;gap:8px}.dtv-play-display-editor textarea{box-sizing:border-box;width:100%;min-height:180px;max-height:55vh;resize:vertical;padding:12px 14px;border:1px solid var(--dsw-alias-border-l2);border-radius:12px;background:var(--dsw-alias-bg-base);color:var(--dsw-alias-label-primary);font:inherit;font-size:14px;line-height:1.65}.dtv-play-display-editor textarea:focus{outline:2px solid color-mix(in srgb,var(--dsw-alias-state-business-primary,#2677d9) 35%,transparent);border-color:var(--dsw-alias-state-business-primary,#2677d9)}.dtv-play-display-editor-actions{display:flex;justify-content:flex-end;gap:8px}.dtv-play-display-editor-button{min-width:76px;min-height:34px;padding:7px 12px;border:1px solid var(--dsw-alias-border-l2);border-radius:8px;background:var(--dsw-alias-button-secondary-fill,var(--dsw-alias-bg-base));color:var(--dsw-alias-label-primary);font:inherit;cursor:pointer}.dtv-play-display-editor-button[data-primary=true]{border-color:transparent;background:var(--dsw-alias-state-business-primary,#2677d9);color:var(--dsw-alias-button-primary-label,#fff)}.dtv-play-display-editor-button:disabled{cursor:default;opacity:.45}
 `;
 function installStyles() {
@@ -11689,8 +11716,8 @@ function createTurnReconciler(client) {
       if (!initialResult.changed) return initialResult;
       let added = initialResult.added;
       let changed = initialResult.changed;
-      const timeline = await updateTimeline(client, playthrough, (current2) => {
-        const next = appendCompletedTurns(current2, messages, sessionId);
+      const timeline = await updateTimeline(client, playthrough, (current3) => {
+        const next = appendCompletedTurns(current3, messages, sessionId);
         added = next.added;
         changed = next.changed;
         return next.timeline;
@@ -11703,8 +11730,55 @@ function createTurnReconciler(client) {
   };
 }
 
+// packages/client/src/play/display-settings.js
+var import_react9 = require("react");
+
+// packages/client/src/conversation-settings.js
+var DEFAULT_CONVERSATION_SETTINGS = Object.freeze({ textScale: 1, actionScale: 1 });
+var CONVERSATION_SCALE_OPTIONS = Object.freeze([0.75, 0.85, 1, 1.15, 1.25, 1.5]);
+var current2 = { ...DEFAULT_CONVERSATION_SETTINGS };
+function boundedScale(value, fallback) {
+  const numeric = Number(value);
+  return Number.isFinite(numeric) && numeric >= 0.75 && numeric <= 1.5 ? Number(numeric.toFixed(2)) : fallback;
+}
+function getClientConversationSettings() {
+  return { ...current2 };
+}
+function setClientConversationSettings(value, { announce = true } = {}) {
+  current2 = {
+    textScale: boundedScale(value?.textScale, DEFAULT_CONVERSATION_SETTINGS.textScale),
+    actionScale: boundedScale(value?.actionScale, DEFAULT_CONVERSATION_SETTINGS.actionScale)
+  };
+  if (announce && typeof window !== "undefined") {
+    window.dispatchEvent(new CustomEvent(CLIENT_CONVERSATION_SETTINGS_EVENT, {
+      detail: getClientConversationSettings()
+    }));
+  }
+  return getClientConversationSettings();
+}
+
+// packages/client/src/play/display-settings.js
+function useConversationDisplaySettings() {
+  const [settings, setSettings] = (0, import_react9.useState)(getClientConversationSettings);
+  (0, import_react9.useEffect)(() => {
+    const onSettings = (event) => setSettings({
+      textScale: event.detail?.textScale ?? 1,
+      actionScale: event.detail?.actionScale ?? 1
+    });
+    window.addEventListener(CLIENT_CONVERSATION_SETTINGS_EVENT, onSettings);
+    return () => window.removeEventListener(CLIENT_CONVERSATION_SETTINGS_EVENT, onSettings);
+  }, []);
+  return settings;
+}
+function conversationDisplayStyle(settings) {
+  return {
+    "--dtv-rp-text-scale": settings.textScale,
+    "--dtv-rp-action-scale": settings.actionScale
+  };
+}
+
 // packages/client/src/play/chat.js
-var h8 = createLocalizedElement(import_react9.createElement);
+var h8 = createLocalizedElement(import_react10.createElement);
 var turnReconcilers = /* @__PURE__ */ new WeakMap();
 var chatSnapshots = /* @__PURE__ */ new WeakMap();
 var MAX_CACHED_PLAYTHROUGHS = 32;
@@ -11713,8 +11787,8 @@ var css7 = `
 .dtv-play-chat-stage{display:grid;min-width:0}.dtv-play-chat-frame{grid-area:1/1;min-width:0;will-change:transform,opacity}.dtv-play-chat-frame[data-phase=outgoing]{pointer-events:none}.dtv-play-chat-frame[data-phase=incoming][data-direction=next]{animation:dtv-play-swipe-in-next 180ms ease-out both}.dtv-play-chat-frame[data-phase=outgoing][data-direction=next]{animation:dtv-play-swipe-out-next 180ms ease-out both}.dtv-play-chat-frame[data-phase=incoming][data-direction=previous]{animation:dtv-play-swipe-in-previous 180ms ease-out both}.dtv-play-chat-frame[data-phase=outgoing][data-direction=previous]{animation:dtv-play-swipe-out-previous 180ms ease-out both}@keyframes dtv-play-swipe-in-next{from{transform:translateX(42px);opacity:.2}to{transform:translateX(0);opacity:1}}@keyframes dtv-play-swipe-out-next{from{transform:translateX(0);opacity:1}to{transform:translateX(-42px);opacity:0}}@keyframes dtv-play-swipe-in-previous{from{transform:translateX(-42px);opacity:.2}to{transform:translateX(0);opacity:1}}@keyframes dtv-play-swipe-out-previous{from{transform:translateX(0);opacity:1}to{transform:translateX(42px);opacity:0}}@media (prefers-reduced-motion:reduce){.dtv-play-chat-frame[data-phase]{animation-duration:1ms!important}}
 .dtv-play-chat-target{display:flex;min-width:0;flex-direction:column;gap:8px}.dtv-play-chat-suffix{display:grid;min-width:0}.dtv-play-chat-suffix-list{display:flex;min-width:0;flex-direction:column;gap:22px}
 .dtv-play-chat-list{display:flex;flex-direction:column;gap:22px}.dtv-play-chat-row{display:flex;flex-direction:column;gap:8px}.dtv-play-chat-role{font-size:11px;font-weight:700;color:var(--dsw-alias-label-tertiary)}
-.dtv-play-chat-bubble{max-width:88%;box-sizing:border-box;border-radius:14px;padding:12px 14px;overflow-wrap:anywhere;font-size:14px;line-height:1.65}.dtv-play-chat-user{align-self:flex-end;background:var(--dsw-alias-interactive-bg-selected,var(--dsw-specific-tip))}.dtv-play-chat-assistant{align-self:flex-start;background:var(--dsw-alias-bg-layer-2,var(--dsw-specific-block))}
-.dtv-play-greeting{position:relative;align-self:flex-start;max-width:88%;display:grid;grid-template-columns:30px minmax(0,1fr) 30px;align-items:center;gap:6px}.dtv-play-greeting[data-locked=true]{grid-template-columns:minmax(0,1fr)}.dtv-play-greeting-text{border-radius:14px;padding:13px 15px;background:var(--dsw-alias-bg-layer-2,var(--dsw-specific-block));overflow-wrap:anywhere;font-size:14px;line-height:1.65}
+.dtv-play-chat-bubble{max-width:88%;box-sizing:border-box;border-radius:14px;padding:12px 14px;overflow-wrap:anywhere;font-size:calc(14px * var(--dtv-rp-text-scale,1));line-height:1.65}.dtv-play-chat-user{align-self:flex-end;background:var(--dsw-alias-interactive-bg-selected,var(--dsw-specific-tip))}.dtv-play-chat-assistant{align-self:flex-start;background:var(--dsw-alias-bg-layer-2,var(--dsw-specific-block))}
+.dtv-play-greeting{position:relative;align-self:flex-start;max-width:88%;display:grid;grid-template-columns:30px minmax(0,1fr) 30px;align-items:center;gap:6px}.dtv-play-greeting[data-locked=true]{grid-template-columns:minmax(0,1fr)}.dtv-play-greeting-text{border-radius:14px;padding:13px 15px;background:var(--dsw-alias-bg-layer-2,var(--dsw-specific-block));overflow-wrap:anywhere;font-size:calc(14px * var(--dtv-rp-text-scale,1));line-height:1.65}
 .dtv-play-greeting-empty{min-height:34px;visibility:hidden}
 .dtv-play-greeting-button{width:30px;height:34px;border:0;border-radius:9px;background:transparent;color:var(--dsw-alias-label-secondary);cursor:pointer}.dtv-play-greeting-button:hover{background:var(--dsw-alias-interactive-bg-hover)}.dtv-play-greeting-button:disabled{opacity:.4;cursor:default}
 .dtv-play-import-controls{align-self:center;display:flex;flex-wrap:wrap;align-items:center;justify-content:center;gap:8px;margin:0 0 2px}.dtv-play-import-bound{width:100%;margin:0;text-align:center;color:var(--dsw-alias-label-tertiary);font-size:11px}.dtv-play-import-button{min-height:30px;padding:5px 11px;border:1px solid var(--dsw-alias-border-subtle);border-radius:9px;background:var(--dsw-alias-bg-layer-2,var(--dsw-specific-block));color:var(--dsw-alias-label-primary);font:inherit;font-size:11px;cursor:pointer}.dtv-play-import-button:hover{background:var(--dsw-alias-interactive-bg-hover)}.dtv-play-import-button:disabled{opacity:.45;cursor:default}.dtv-play-import-last{margin:0;color:var(--dsw-alias-label-tertiary);font-size:11px;font-weight:700}
@@ -11954,8 +12028,8 @@ function ImportControls({
   changed,
   onError
 }) {
-  const input = (0, import_react9.useRef)(null);
-  const [busy, setBusy] = (0, import_react9.useState)(false);
+  const input = (0, import_react10.useRef)(null);
+  const [busy, setBusy] = (0, import_react10.useState)(false);
   if (locked) return null;
   const choose = () => {
     if (!busy) input.current?.click();
@@ -12050,9 +12124,9 @@ function ChatFrame({
   transitionEnded
 }) {
   const state = snapshot.value;
-  const current2 = snapshot.sessionId === currentSessionId;
-  const interactive = current2 && phase !== "outgoing";
-  const liveSourceTurns = !current2 ? [] : projectLiveTurns({
+  const current3 = snapshot.sessionId === currentSessionId;
+  const interactive = current3 && phase !== "outgoing";
+  const liveSourceTurns = !current3 ? [] : projectLiveTurns({
     timeline: state.timeline,
     sessionId: currentSessionId,
     nodes: liveNodes,
@@ -12109,7 +12183,7 @@ function ChatFrame({
     state.importBinding === null ? null : importControls,
     ...liveTurns.map((turn) => h8(Turn, { key: turn.id, turn })),
     state.greeting === null && state.turns.length === 0 && liveTurns.length === 0 && !running ? h8("p", { className: "dtv-play-chat-status" }, uiMessage("play.chat.empty")) : null,
-    liveTurns.length === 0 && running && current2 ? h8("p", { className: "dtv-play-chat-running" }, uiMessage("play.chat.thinking")) : null
+    liveTurns.length === 0 && running && current3 ? h8("p", { className: "dtv-play-chat-running" }, uiMessage("play.chat.thinking")) : null
   ));
 }
 function swipeTransitionBoundary(transition) {
@@ -12190,24 +12264,25 @@ function TargetedSwipeTransition({
 }
 function MowanChatView({ sessionId, useSession, playClient, playthrough, openSession, chatScroll }) {
   installPlayChatStyles();
+  const displaySettings = useConversationDisplaySettings();
   const sessionRevision = useSession((state2) => `${state2.nodes?.length ?? 0}:${state2.running === true}:${state2.blank === true}`);
   const liveNodes = useSession((state2) => state2.nodes);
   const partial = useSession((state2) => state2.partial);
   const latestUserSeq = latestUserNodeSeq(liveNodes);
-  const [revision, setRevision] = (0, import_react9.useState)(0);
+  const [revision, setRevision] = (0, import_react10.useState)(0);
   const running = useSession((state2) => state2.running === true);
-  const [loadedState, setLoadedState] = (0, import_react9.useState)(() => cachedChatSnapshot(playClient, playthrough));
-  const loadedStateRef = (0, import_react9.useRef)(loadedState);
-  const transitionIntent = (0, import_react9.useRef)({ sessionId: null, intent: null });
-  const [transition, setTransition] = (0, import_react9.useState)(null);
+  const [loadedState, setLoadedState] = (0, import_react10.useState)(() => cachedChatSnapshot(playClient, playthrough));
+  const loadedStateRef = (0, import_react10.useRef)(loadedState);
+  const transitionIntent = (0, import_react10.useRef)({ sessionId: null, intent: null });
+  const [transition, setTransition] = (0, import_react10.useState)(null);
   const state = loadedState?.value ?? null;
   const stateIsCurrent = loadedState?.sessionId === sessionId;
-  const [error, setError] = (0, import_react9.useState)("");
-  const [greetingBusy, setGreetingBusy] = (0, import_react9.useState)(false);
-  const bottomAnchor = (0, import_react9.useRef)(null);
-  const initialScrollSession = (0, import_react9.useRef)(null);
-  const userSeqSession = (0, import_react9.useRef)(null);
-  const lastUserSeq = (0, import_react9.useRef)(-1);
+  const [error, setError] = (0, import_react10.useState)("");
+  const [greetingBusy, setGreetingBusy] = (0, import_react10.useState)(false);
+  const bottomAnchor = (0, import_react10.useRef)(null);
+  const initialScrollSession = (0, import_react10.useRef)(null);
+  const userSeqSession = (0, import_react10.useRef)(null);
+  const lastUserSeq = (0, import_react10.useRef)(-1);
   const scrollToBottom = () => {
     const local = bottomAnchor.current;
     if (local === null) return;
@@ -12215,12 +12290,12 @@ function MowanChatView({ sessionId, useSession, playClient, playthrough, openSes
     scrollport.scrollTop = scrollport.scrollHeight;
     chatScroll?.save(null);
   };
-  (0, import_react9.useLayoutEffect)(() => {
+  (0, import_react10.useLayoutEffect)(() => {
     if (!stateIsCurrent || initialScrollSession.current === sessionId) return;
     initialScrollSession.current = sessionId;
     scrollToBottom();
   }, [sessionId, state, stateIsCurrent]);
-  (0, import_react9.useLayoutEffect)(() => {
+  (0, import_react10.useLayoutEffect)(() => {
     if (userSeqSession.current !== sessionId) {
       userSeqSession.current = sessionId;
       lastUserSeq.current = latestUserSeq;
@@ -12230,20 +12305,20 @@ function MowanChatView({ sessionId, useSession, playClient, playthrough, openSes
     lastUserSeq.current = latestUserSeq;
     scrollToBottom();
   }, [latestUserSeq, sessionId]);
-  (0, import_react9.useEffect)(() => {
+  (0, import_react10.useEffect)(() => {
     const refresh = () => setRevision((value) => value + 1);
     window.addEventListener(CLIENT_REFRESH_EVENT, refresh);
     return () => window.removeEventListener(CLIENT_REFRESH_EVENT, refresh);
   }, []);
-  (0, import_react9.useEffect)(() => {
+  (0, import_react10.useEffect)(() => {
     if (transition === null) return void 0;
     const targetSessionId = transition.to.sessionId;
     const timer = window.setTimeout(() => {
-      setTransition((current2) => current2?.to.sessionId === targetSessionId ? null : current2);
+      setTransition((current3) => current3?.to.sessionId === targetSessionId ? null : current3);
     }, 260);
     return () => window.clearTimeout(timer);
   }, [transition]);
-  (0, import_react9.useEffect)(() => {
+  (0, import_react10.useEffect)(() => {
     let active = true;
     if (transitionIntent.current.sessionId !== sessionId) {
       transitionIntent.current = {
@@ -12300,7 +12375,7 @@ function MowanChatView({ sessionId, useSession, playClient, playthrough, openSes
   const changed = () => setRevision((value) => value + 1);
   const transitionEnded = (event) => {
     if (event.target !== event.currentTarget) return;
-    setTransition((current2) => current2?.to.sessionId === loadedState?.sessionId ? null : current2);
+    setTransition((current3) => current3?.to.sessionId === loadedState?.sessionId ? null : current3);
   };
   const frame = (snapshot, phase) => h8(ChatFrame, {
     key: `${phase}:${snapshot.sessionId}`,
@@ -12323,7 +12398,7 @@ function MowanChatView({ sessionId, useSession, playClient, playthrough, openSes
   const transitionBoundary = swipeTransitionBoundary(transition);
   return h8(
     "div",
-    { className: "dtv-play-chat" },
+    { className: "dtv-play-chat", style: conversationDisplayStyle(displaySettings) },
     error === "" ? null : h8("p", { className: "dtv-play-chat-status", "data-error": true }, rawText(error)),
     state === null && error === "" ? h8("p", { className: "dtv-play-chat-status" }, uiMessage("play.chat.loading")) : null,
     loadedState === null ? null : h8(
@@ -12347,10 +12422,10 @@ function MowanChatView({ sessionId, useSession, playClient, playthrough, openSes
 }
 
 // packages/client/src/play/sidebar.js
-var import_react11 = require("react");
+var import_react12 = require("react");
 
 // packages/client/src/play/io-menu.js
-var import_react10 = require("react");
+var import_react11 = require("react");
 
 // packages/client/src/play/export.js
 function rootSessionId5(playthrough, timeline) {
@@ -12521,7 +12596,7 @@ function playthroughExportDocument(snapshot, format) {
 }
 
 // packages/client/src/play/io-menu.js
-var h9 = createLocalizedElement(import_react10.createElement);
+var h9 = createLocalizedElement(import_react11.createElement);
 var css8 = `
 .dtv-play-io{position:relative;display:inline-flex}.dtv-play-io-trigger{width:30px;height:30px;border:0;border-radius:8px;background:transparent;color:var(--dsw-alias-label-secondary);font:inherit;cursor:pointer}.dtv-play-io-trigger:hover{background:var(--dsw-alias-interactive-bg-hover)}
 .dtv-play-io-menu{position:absolute;z-index:30;left:0;bottom:calc(100% + 6px);min-width:210px;padding:6px;border:1px solid var(--dsw-alias-border-subtle);border-radius:11px;background:var(--dsw-alias-bg-layer-1,#181a20);box-shadow:0 12px 30px #0008;display:flex;flex-direction:column;gap:2px}.dtv-play-io[data-placement=sidebar] .dtv-play-io-menu{left:auto;right:0;bottom:auto;top:calc(100% + 4px);width:max-content;min-width:0;max-width:168px}.dtv-play-io[data-placement=sidebar] .dtv-play-io-item{white-space:nowrap}
@@ -12552,11 +12627,11 @@ function downloadDocument(playthrough, document2) {
 }
 function PlayIoMenu({ playClient, playthrough, trigger = "+", placement = "composer" }) {
   installStyles2();
-  const root = (0, import_react10.useRef)(null);
-  const [open, setOpen] = (0, import_react10.useState)(false);
-  const [busy, setBusy] = (0, import_react10.useState)(false);
-  const [error, setError] = (0, import_react10.useState)("");
-  (0, import_react10.useEffect)(() => {
+  const root = (0, import_react11.useRef)(null);
+  const [open, setOpen] = (0, import_react11.useState)(false);
+  const [busy, setBusy] = (0, import_react11.useState)(false);
+  const [error, setError] = (0, import_react11.useState)("");
+  (0, import_react11.useEffect)(() => {
     if (!open) return void 0;
     const close = (event) => {
       if (!root.current?.contains(event.target)) setOpen(false);
@@ -12625,7 +12700,7 @@ function PlayIoMenu({ playClient, playthrough, trigger = "+", placement = "compo
 }
 
 // packages/client/src/play/sidebar.js
-var h10 = createLocalizedElement(import_react11.createElement);
+var h10 = createLocalizedElement(import_react12.createElement);
 var css9 = `
 .dtv-play-sidebar{height:100%;min-height:0;box-sizing:border-box;display:flex;flex-direction:column;gap:4px;padding:6px 7px 10px;overflow:auto;zoom:var(--dtv-ui-scale,1);color:var(--dsw-alias-label-primary)}
 .dtv-play-section{display:flex;flex-direction:column;gap:2px;border-radius:10px}.dtv-play-section[data-open=true]{padding-bottom:3px}
@@ -12648,8 +12723,8 @@ function installStyles3() {
   document.head.append(style);
 }
 function useUiScale() {
-  const [scale, setScale] = (0, import_react11.useState)(() => getClientUiSettings().scale);
-  (0, import_react11.useEffect)(() => {
+  const [scale, setScale] = (0, import_react12.useState)(() => getClientUiSettings().scale);
+  (0, import_react12.useEffect)(() => {
     const onSettings = (event) => {
       const next = Number(event.detail?.scale);
       if (Number.isFinite(next)) setScale(next);
@@ -12796,9 +12871,9 @@ function PlayWorkspaceBrowser({
   const currentId = useSessions((state) => state.current ?? null);
   const workspaceItems = useWorkspaces((state) => state.items);
   const archivedSessionIds = useWorkspaces((state) => state.archivedSessionIds);
-  const cache = (0, import_react11.useRef)(null);
+  const cache = (0, import_react12.useRef)(null);
   if (cache.current === null) cache.current = new SessionCharacterBindingCache();
-  const creator = (0, import_react11.useRef)(null);
+  const creator = (0, import_react12.useRef)(null);
   if (creator.current?.client !== playClient || creator.current?.provided !== playthroughController) {
     creator.current = {
       client: playClient,
@@ -12806,24 +12881,24 @@ function PlayWorkspaceBrowser({
       controller: playthroughController ?? createPlaythroughController(playClient)
     };
   }
-  const [creatingCharacterId, setCreatingCharacterId] = (0, import_react11.useState)(null);
-  const [revision, setRevision] = (0, import_react11.useState)(0);
-  const [resources, setResources] = (0, import_react11.useState)(null);
-  const [sessionCharacters, setSessionCharacters] = (0, import_react11.useState)({});
-  const [status, setStatus] = (0, import_react11.useState)(null);
-  const [collapsedCharacters, setCollapsedCharacters] = (0, import_react11.useState)(() => /* @__PURE__ */ new Set());
-  const [expandedUnassigned, setExpandedUnassigned] = (0, import_react11.useState)(() => /* @__PURE__ */ new Set());
-  const [otherOpen, setOtherOpen] = (0, import_react11.useState)(false);
-  const [ordinaryPromptOpen, setOrdinaryPromptOpen] = (0, import_react11.useState)(false);
-  const [activePlaythroughId, setActivePlaythroughId] = (0, import_react11.useState)(
+  const [creatingCharacterId, setCreatingCharacterId] = (0, import_react12.useState)(null);
+  const [revision, setRevision] = (0, import_react12.useState)(0);
+  const [resources, setResources] = (0, import_react12.useState)(null);
+  const [sessionCharacters, setSessionCharacters] = (0, import_react12.useState)({});
+  const [status, setStatus] = (0, import_react12.useState)(null);
+  const [collapsedCharacters, setCollapsedCharacters] = (0, import_react12.useState)(() => /* @__PURE__ */ new Set());
+  const [expandedUnassigned, setExpandedUnassigned] = (0, import_react12.useState)(() => /* @__PURE__ */ new Set());
+  const [otherOpen, setOtherOpen] = (0, import_react12.useState)(false);
+  const [ordinaryPromptOpen, setOrdinaryPromptOpen] = (0, import_react12.useState)(false);
+  const [activePlaythroughId, setActivePlaythroughId] = (0, import_react12.useState)(
     () => getActivePlaythroughId?.() ?? null
   );
-  (0, import_react11.useEffect)(() => {
+  (0, import_react12.useEffect)(() => {
     if (typeof subscribeActivePlaythroughId !== "function") return void 0;
     setActivePlaythroughId(getActivePlaythroughId?.() ?? null);
     return subscribeActivePlaythroughId(setActivePlaythroughId);
   }, [getActivePlaythroughId, subscribeActivePlaythroughId]);
-  (0, import_react11.useEffect)(() => {
+  (0, import_react12.useEffect)(() => {
     const refresh = () => {
       cache.current.clear();
       setRevision((value) => value + 1);
@@ -12831,7 +12906,7 @@ function PlayWorkspaceBrowser({
     window.addEventListener(CLIENT_REFRESH_EVENT, refresh);
     return () => window.removeEventListener(CLIENT_REFRESH_EVENT, refresh);
   }, []);
-  (0, import_react11.useEffect)(() => {
+  (0, import_react12.useEffect)(() => {
     let active = true;
     setStatus(null);
     loadPlaySidebarResources(playClient).then((next) => {
@@ -12851,7 +12926,7 @@ function PlayWorkspaceBrowser({
     sessions
   })];
   const rpKey = rpIds.join("\0");
-  (0, import_react11.useEffect)(() => {
+  (0, import_react12.useEffect)(() => {
     let active = true;
     if (resources === null) {
       setSessionCharacters({});
@@ -12931,8 +13006,8 @@ function PlayWorkspaceBrowser({
     }
   };
   if (wide === false) return h10(Rail, { model, scale, expandSidebar });
-  const toggleSet = (setter, id) => setter((current2) => {
-    const next = new Set(current2);
+  const toggleSet = (setter, id) => setter((current3) => {
+    const next = new Set(current3);
     if (next.has(id)) next.delete(id);
     else next.add(id);
     return next;
@@ -13054,13 +13129,13 @@ function PlayWorkspaceBrowser({
 }
 
 // packages/client/src/play/notice.js
-var import_react12 = require("react");
-var h11 = createLocalizedElement(import_react12.createElement);
+var import_react13 = require("react");
+var h11 = createLocalizedElement(import_react13.createElement);
 var css10 = `
 .dtv-play-unbound-notice{box-sizing:border-box;width:100%;margin:0;padding:7px 10px;border:1px solid color-mix(in srgb,var(--dsw-alias-state-warning,#d79921) 34%,transparent);border-radius:10px;background:color-mix(in srgb,var(--dsw-alias-state-warning,#d79921) 8%,transparent);color:var(--dsw-alias-label-secondary);font-size:11px;line-height:1.45}
 .dtv-play-opening-dock{box-sizing:border-box;width:100%;min-width:0;flex:none;display:flex;flex-direction:column;overflow:hidden;border:1px solid var(--dsw-alias-border-l2);border-radius:14px;background:var(--dsw-alias-bg-layer-2,var(--dsw-specific-block));color:var(--dsw-alias-label-primary);box-shadow:0 4px 18px color-mix(in srgb,var(--dsw-alias-label-primary) 7%,transparent)}
 .dtv-play-opening-header{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:9px 12px;border-bottom:1px solid var(--dsw-alias-border-l2);font-size:12px}.dtv-play-opening-name{min-width:0;overflow:hidden;font-weight:650;text-overflow:ellipsis;white-space:nowrap}.dtv-play-opening-index{flex:none;color:var(--dsw-alias-label-tertiary);font-size:11px}
-.dtv-play-opening-body{box-sizing:border-box;max-height:45dvh;overflow-x:hidden;overflow-y:auto;padding:13px 15px;font-size:14px;line-height:1.65;overflow-wrap:anywhere}.dtv-play-opening-body-empty{min-height:34px}.dtv-play-opening-body>:first-child{margin-top:0}.dtv-play-opening-body>:last-child{margin-bottom:0}.dtv-play-opening-body p,.dtv-play-opening-body ul,.dtv-play-opening-body ol,.dtv-play-opening-body blockquote,.dtv-play-opening-body pre,.dtv-play-opening-body table{margin:0 0 .85em}.dtv-play-opening-body ul,.dtv-play-opening-body ol{padding-left:1.5em}.dtv-play-opening-body pre,.dtv-play-opening-body table{max-width:100%;overflow:auto}.dtv-play-opening-body img,.dtv-play-opening-body video{max-width:100%;height:auto}
+.dtv-play-opening-body{box-sizing:border-box;max-height:45dvh;overflow-x:hidden;overflow-y:auto;padding:13px 15px;font-size:calc(14px * var(--dtv-rp-text-scale,1));line-height:1.65;overflow-wrap:anywhere}.dtv-play-opening-body-empty{min-height:34px}.dtv-play-opening-body>:first-child{margin-top:0}.dtv-play-opening-body>:last-child{margin-bottom:0}.dtv-play-opening-body p,.dtv-play-opening-body ul,.dtv-play-opening-body ol,.dtv-play-opening-body blockquote,.dtv-play-opening-body pre,.dtv-play-opening-body table{margin:0 0 .85em}.dtv-play-opening-body ul,.dtv-play-opening-body ol{padding-left:1.5em}.dtv-play-opening-body pre,.dtv-play-opening-body table{max-width:100%;overflow:auto}.dtv-play-opening-body img,.dtv-play-opening-body video{max-width:100%;height:auto}
 .dtv-play-opening-actions{display:grid;grid-template-columns:minmax(0,1fr) auto minmax(0,1fr);align-items:center;gap:8px;padding:8px 10px;border-top:1px solid var(--dsw-alias-border-l2)}.dtv-play-opening-actions>.dtv-play-opening-button:first-child{justify-self:start}.dtv-play-opening-actions>.dtv-play-opening-button:last-child{justify-self:end}.dtv-play-opening-actions>.dtv-play-import-controls{margin:0}.dtv-play-opening-button{min-width:0;padding:6px 10px;border:0;border-radius:9px;background:transparent;color:var(--dsw-alias-label-secondary);font:inherit;font-size:12px;cursor:pointer}.dtv-play-opening-button:hover:not(:disabled){background:var(--dsw-alias-interactive-bg-hover)}.dtv-play-opening-button:disabled{opacity:.4;cursor:default}.dtv-play-opening-error{margin:0;padding:7px 12px;border-top:1px solid var(--dsw-alias-border-l2);color:var(--dsw-alias-state-error);font-size:11px;line-height:1.45}
 `;
 function installStyles4() {
@@ -13077,18 +13152,19 @@ function PlaySessionDock({ session, useSessions, playClient }) {
   const sessionBlank = session?.blank === true;
   const composerPhase = session?.composerPhase;
   const summary = useSessions((state) => sessionId === null ? null : state.byId?.[sessionId] ?? null);
-  const [revision, setRevision] = (0, import_react12.useState)(0);
-  const [content, setContent] = (0, import_react12.useState)(null);
-  const [greetingBusy, setGreetingBusy] = (0, import_react12.useState)(false);
-  const [error, setError] = (0, import_react12.useState)("");
-  (0, import_react12.useEffect)(() => {
+  const [revision, setRevision] = (0, import_react13.useState)(0);
+  const [content, setContent] = (0, import_react13.useState)(null);
+  const [greetingBusy, setGreetingBusy] = (0, import_react13.useState)(false);
+  const [error, setError] = (0, import_react13.useState)("");
+  const displaySettings = useConversationDisplaySettings();
+  (0, import_react13.useEffect)(() => {
     const refresh = () => setRevision((value) => value + 1);
     window.addEventListener(CLIENT_REFRESH_EVENT, refresh);
     return () => window.removeEventListener(CLIENT_REFRESH_EVENT, refresh);
   }, []);
-  (0, import_react12.useEffect)(() => {
+  (0, import_react13.useEffect)(() => {
     let active = true;
-    setContent((current2) => current2?.sessionId === sessionId && current2.kind === "opening" ? current2 : null);
+    setContent((current3) => current3?.sessionId === sessionId && current3.kind === "opening" ? current3 : null);
     setError("");
     if (sessionId === null || summary === null) return () => {
       active = false;
@@ -13175,7 +13251,8 @@ function PlaySessionDock({ session, useSessions, playClient }) {
   return h11(
     "section",
     {
-      className: "dtv-play-opening-dock"
+      className: "dtv-play-opening-dock",
+      style: conversationDisplayStyle(displaySettings)
     },
     greeting === null ? null : h11(
       "header",
@@ -13221,14 +13298,14 @@ function PlaySessionDock({ session, useSessions, playClient }) {
 }
 
 // packages/client/src/play/view-default.js
-var import_react13 = require("react");
+var import_react14 = require("react");
 function defaultViewTarget(selectedView, targetViewId) {
   return selectedView === null || selectedView === void 0 ? targetViewId : null;
 }
 function DefaultConversationViewAdapter({ useStore, actions, targetViewId, complete }) {
   const hasStore = typeof useStore === "function";
   const selectedView = hasStore ? useStore((state) => state.view) : void 0;
-  (0, import_react13.useLayoutEffect)(() => {
+  (0, import_react14.useLayoutEffect)(() => {
     const target = defaultViewTarget(selectedView, targetViewId);
     if (hasStore && target !== null && typeof actions?.setView === "function") {
       try {
@@ -13645,8 +13722,8 @@ function createLivePlayClient({
     if (typeof mutator !== "function") throw new TypeError("mutator must be a function");
     const maxRetries = retryLimit(options);
     for (let retry = 0; ; retry += 1) {
-      const current2 = await getFresh();
-      const next = await mutator(current2);
+      const current3 = await getFresh();
+      const next = await mutator(current3);
       try {
         return await putFresh(next);
       } catch (error) {
@@ -13832,22 +13909,22 @@ function createLivePlayClient({
       if (!Number.isSafeInteger(greetingIndex) || greetingIndex < 0) {
         throw new TypeError("greetingIndex must be a non-negative integer");
       }
-      const current2 = await getCharacterSelection(sessionId);
-      if (typeof current2?.selection?.characterCardId !== "string") {
+      const current3 = await getCharacterSelection(sessionId);
+      if (typeof current3?.selection?.characterCardId !== "string") {
         throw new TypeError("character selection is empty");
       }
       return v1("POST", "/character-selection", {
         sessionId,
-        characterCardId: current2.selection.characterCardId,
-        character: { ...current2.selection.character ?? {}, greetingIndex }
+        characterCardId: current3.selection.characterCardId,
+        character: { ...current3.selection.character ?? {}, greetingIndex }
       });
     }
   };
 }
 
 // packages/client/src/play/regex-panel.js
-var import_react14 = require("react");
-var h12 = createLocalizedElement(import_react14.createElement);
+var import_react15 = require("react");
+var h12 = createLocalizedElement(import_react15.createElement);
 var EMPTY_DOCUMENT = Object.freeze({ schemaVersion: 1, rules: Object.freeze([]) });
 var SCOPE_KINDS = Object.freeze(["global", "preset", "character"]);
 function reorderRegexRulesAtBoundary(rules, fromIndex, boundary) {
@@ -14193,16 +14270,16 @@ function RegexScopeSection({
   );
 }
 function RegexPanel({ client, activeSnapshot, close }) {
-  const [document2, setDocument] = (0, import_react14.useState)(EMPTY_DOCUMENT);
-  const [savedDocument, setSavedDocument] = (0, import_react14.useState)(EMPTY_DOCUMENT);
-  const [resourceRules, setResourceRules] = (0, import_react14.useState)({ preset: [], character: [] });
-  const [savedResourceRules, setSavedResourceRules] = (0, import_react14.useState)({ preset: [], character: [] });
-  const [busy, setBusy] = (0, import_react14.useState)(false);
-  const [status, setStatus] = (0, import_react14.useState)({ text: uiMessage("common.loading"), error: false });
-  const [dragFrom, setDragFrom] = (0, import_react14.useState)(null);
-  const [dropIndex, setDropIndex] = (0, import_react14.useState)(null);
-  const fileInput = (0, import_react14.useRef)(null);
-  const importScope = (0, import_react14.useRef)("global");
+  const [document2, setDocument] = (0, import_react15.useState)(EMPTY_DOCUMENT);
+  const [savedDocument, setSavedDocument] = (0, import_react15.useState)(EMPTY_DOCUMENT);
+  const [resourceRules, setResourceRules] = (0, import_react15.useState)({ preset: [], character: [] });
+  const [savedResourceRules, setSavedResourceRules] = (0, import_react15.useState)({ preset: [], character: [] });
+  const [busy, setBusy] = (0, import_react15.useState)(false);
+  const [status, setStatus] = (0, import_react15.useState)({ text: uiMessage("common.loading"), error: false });
+  const [dragFrom, setDragFrom] = (0, import_react15.useState)(null);
+  const [dropIndex, setDropIndex] = (0, import_react15.useState)(null);
+  const fileInput = (0, import_react15.useRef)(null);
+  const importScope = (0, import_react15.useRef)("global");
   const bindings = activeRegexBindings(activeSnapshot);
   const dirty = JSON.stringify(document2) !== JSON.stringify(savedDocument) || JSON.stringify(resourceRules) !== JSON.stringify(savedResourceRules);
   const load = async () => {
@@ -14228,7 +14305,7 @@ function RegexPanel({ client, activeSnapshot, close }) {
       setBusy(false);
     }
   };
-  (0, import_react14.useEffect)(() => {
+  (0, import_react15.useEffect)(() => {
     load();
   }, [client, bindings.presetId, bindings.characterId]);
   const persist = async (next, nextResourceRules = resourceRules) => {
@@ -14271,41 +14348,41 @@ function RegexPanel({ client, activeSnapshot, close }) {
       target: "assistant"
     }, { scope: scopeFor(kind, bindings) });
     if (kind === "global") {
-      setDocument((current2) => ({ ...current2, rules: [...current2.rules, rule] }));
+      setDocument((current3) => ({ ...current3, rules: [...current3.rules, rule] }));
       return;
     }
-    setResourceRules((current2) => ({
-      ...current2,
-      [kind]: [...current2[kind], resourceEditableRule(rule)]
+    setResourceRules((current3) => ({
+      ...current3,
+      [kind]: [...current3[kind], resourceEditableRule(rule)]
     }));
   };
-  const updateRule = (next) => setDocument((current2) => ({
-    ...current2,
-    rules: current2.rules.map((rule) => rule.id === next.id ? next : rule)
+  const updateRule = (next) => setDocument((current3) => ({
+    ...current3,
+    rules: current3.rules.map((rule) => rule.id === next.id ? next : rule)
   }));
-  const removeRule = (id) => setDocument((current2) => ({
-    ...current2,
-    rules: current2.rules.filter((rule) => rule.id !== id)
+  const removeRule = (id) => setDocument((current3) => ({
+    ...current3,
+    rules: current3.rules.filter((rule) => rule.id !== id)
   }));
-  const updateSourceRule = (kind, index, next) => setResourceRules((current2) => ({
-    ...current2,
-    [kind]: current2[kind].map((rule, ruleIndex) => ruleIndex === index ? next : rule)
+  const updateSourceRule = (kind, index, next) => setResourceRules((current3) => ({
+    ...current3,
+    [kind]: current3[kind].map((rule, ruleIndex) => ruleIndex === index ? next : rule)
   }));
-  const removeSourceRule = (kind, index) => setResourceRules((current2) => ({
-    ...current2,
-    [kind]: current2[kind].filter((_rule, ruleIndex) => ruleIndex !== index)
+  const removeSourceRule = (kind, index) => setResourceRules((current3) => ({
+    ...current3,
+    [kind]: current3[kind].filter((_rule, ruleIndex) => ruleIndex !== index)
   }));
   const moveRule = (kind, fromIndex, boundary) => {
     if (kind === "global") {
-      setDocument((current2) => ({
-        ...current2,
-        rules: reorderRegexScopeAtBoundary(current2.rules, kind, fromIndex, boundary)
+      setDocument((current3) => ({
+        ...current3,
+        rules: reorderRegexScopeAtBoundary(current3.rules, kind, fromIndex, boundary)
       }));
       return;
     }
-    setResourceRules((current2) => ({
-      ...current2,
-      [kind]: reorderRegexRulesAtBoundary(current2[kind], fromIndex, boundary)
+    setResourceRules((current3) => ({
+      ...current3,
+      [kind]: reorderRegexRulesAtBoundary(current3[kind], fromIndex, boundary)
     }));
   };
   const importFile = async (event) => {
@@ -14409,8 +14486,8 @@ function projectRpWorkspaceSetting({ workspace, items = [] } = {}) {
     path: pathOf(item),
     title: titleOf(item)
   }));
-  const current2 = currentPath === null ? null : available.find((item) => comparablePath(item.path) === comparablePath(currentPath)) ?? { id: `unavailable:${currentPath}`, path: currentPath, title: currentPath, unavailable: true };
-  return { currentPath, current: current2, available, selectedPath: current2?.path ?? "", currentAvailable: current2?.unavailable !== true && current2 !== null };
+  const current3 = currentPath === null ? null : available.find((item) => comparablePath(item.path) === comparablePath(currentPath)) ?? { id: `unavailable:${currentPath}`, path: currentPath, title: currentPath, unavailable: true };
+  return { currentPath, current: current3, available, selectedPath: current3?.path ?? "", currentAvailable: current3?.unavailable !== true && current3 !== null };
 }
 function workspaceSelectionRequest(path, { setting } = {}) {
   if (typeof path !== "string" || path === "") throw new TypeError("workspace path must be a non-empty string");
@@ -14682,7 +14759,7 @@ function startChromeModeTransport({
 }
 
 // packages/client/src/index.js
-var h13 = createLocalizedElement(import_react15.createElement);
+var h13 = createLocalizedElement(import_react16.createElement);
 var css11 = `
 .dtv-layer{position:absolute;inset:0;z-index:6;pointer-events:none;font-family:Inter,var(--dsw-font-family),sans-serif;color:var(--dsw-alias-label-primary)}
 .dtv-launcher{position:absolute;z-index:2;width:44px;height:44px;pointer-events:auto;overflow:hidden;border:0 solid transparent;border-radius:22px;background:transparent;box-shadow:none;transition:width .22s ease,height .22s ease,border-radius .22s ease,background-color .18s ease,box-shadow .18s ease;display:block}
@@ -14776,6 +14853,16 @@ async function rpPolicyRequest(method = "GET", body2) {
 }
 async function uiSettingsRequest(method = "GET", body2) {
   const response = await fetch(`${API_V1}/ui-settings`, {
+    method,
+    headers: method === "GET" ? void 0 : { "Content-Type": "application/json" },
+    body: body2 === void 0 ? void 0 : JSON.stringify(body2)
+  });
+  const data = await response.json().catch(() => null);
+  if (!response.ok || data?.ok === false) throw new Error(data?.error ?? `HTTP ${response.status}`);
+  return data.settings;
+}
+async function conversationSettingsRequest(method = "GET", body2) {
+  const response = await fetch(`${API_V1}/conversation-settings`, {
     method,
     headers: method === "GET" ? void 0 : { "Content-Type": "application/json" },
     body: body2 === void 0 ? void 0 : JSON.stringify(body2)
@@ -14903,6 +14990,37 @@ function SettingsPanel({
     )
   );
 }
+function ConversationSettingsPanel({ settings, status, busy, close, update, reset }) {
+  return h13(
+    "div",
+    { className: "dtv-panel" },
+    h13(PanelHeader, { titleKey: "conversationSettings.title", close }),
+    h13(
+      "div",
+      { className: "dtv-body" },
+      h13(Field6, { label: translate("conversationSettings.textScale") }, h13("select", {
+        className: "dtv-select",
+        value: settings.textScale,
+        disabled: busy,
+        onChange: (event) => update({ ...settings, textScale: Number(event.target.value) })
+      }, ...CONVERSATION_SCALE_OPTIONS.map((scale) => h13("option", { key: scale, value: scale }, `${Math.round(scale * 100)}%`)))),
+      h13("p", { className: "dtv-note" }, translate("conversationSettings.textScale.help")),
+      h13(Field6, { label: translate("conversationSettings.actionScale") }, h13("select", {
+        className: "dtv-select",
+        value: settings.actionScale,
+        disabled: busy,
+        onChange: (event) => update({ ...settings, actionScale: Number(event.target.value) })
+      }, ...CONVERSATION_SCALE_OPTIONS.map((scale) => h13("option", { key: scale, value: scale }, `${Math.round(scale * 100)}%`)))),
+      h13("p", { className: "dtv-note" }, translate("conversationSettings.actionScale.help")),
+      h13("div", { className: "dtv-status", "data-error": status.error || void 0, role: "status" }, rawText(status.text)),
+      h13(
+        "div",
+        { className: "dtv-actions" },
+        h13("button", { className: "dtv-button", type: "button", disabled: busy, onClick: reset }, translate("conversationSettings.reset"))
+      )
+    )
+  );
+}
 var LOGIC_KEYS = Object.freeze({
   and_any: "world.logic.andAny",
   and_all: "world.logic.andAll",
@@ -14927,46 +15045,49 @@ function RpHighRiskDialog({ onDismiss }) {
   );
 }
 function TavernShell({ useSessions, useWorkspaces, createCleanSession, createConfiguredPlaythrough, playClient, playSlots, chromeService }) {
-  const [menuOpen, setMenuOpen] = (0, import_react15.useState)(false);
-  const [surface, setSurface] = (0, import_react15.useState)(null);
-  const [anchor, setAnchor] = (0, import_react15.useState)(initialLauncherAnchor);
-  const [chromeMode, setChromeMode] = (0, import_react15.useState)(() => chromeService.getMode());
-  const [chromeAnimation, setChromeAnimation] = (0, import_react15.useState)(0);
-  const [chromeError, setChromeError] = (0, import_react15.useState)("");
-  const [activeSnapshot, setActiveSnapshot] = (0, import_react15.useState)(null);
-  const [statusError, setStatusError] = (0, import_react15.useState)("");
-  const [uiSettings, setUiSettings] = (0, import_react15.useState)(getClientUiSettings);
-  const [settingsStatus, setSettingsStatus] = (0, import_react15.useState)({ text: translate("settings.saved"), error: false });
-  const [settingsBusy, setSettingsBusy] = (0, import_react15.useState)(false);
-  const [rpPolicyDraft, setRpPolicyDraft] = (0, import_react15.useState)("");
-  const [rpPolicyLoaded, setRpPolicyLoaded] = (0, import_react15.useState)(false);
-  const [rpPolicyBusy, setRpPolicyBusy] = (0, import_react15.useState)(false);
-  const [rpWorkspaceSetting, setRpWorkspaceSetting] = (0, import_react15.useState)(null);
-  const [rpWorkspaceBusy, setRpWorkspaceBusy] = (0, import_react15.useState)(false);
-  const rpWorkspaceBusyRef = (0, import_react15.useRef)(false);
-  const [rpAlert, setRpAlert] = (0, import_react15.useState)(null);
-  const drag = (0, import_react15.useRef)(null);
-  const suppressClick = (0, import_react15.useRef)(false);
-  const chromeController = (0, import_react15.useRef)(null);
-  const statusGeneration = (0, import_react15.useRef)(0);
-  const rpAlertRef = (0, import_react15.useRef)(null);
-  const dismissedRpAlerts = (0, import_react15.useRef)(/* @__PURE__ */ new Set());
+  const [menuOpen, setMenuOpen] = (0, import_react16.useState)(false);
+  const [surface, setSurface] = (0, import_react16.useState)(null);
+  const [anchor, setAnchor] = (0, import_react16.useState)(initialLauncherAnchor);
+  const [chromeMode, setChromeMode] = (0, import_react16.useState)(() => chromeService.getMode());
+  const [chromeAnimation, setChromeAnimation] = (0, import_react16.useState)(0);
+  const [chromeError, setChromeError] = (0, import_react16.useState)("");
+  const [activeSnapshot, setActiveSnapshot] = (0, import_react16.useState)(null);
+  const [statusError, setStatusError] = (0, import_react16.useState)("");
+  const [uiSettings, setUiSettings] = (0, import_react16.useState)(getClientUiSettings);
+  const [conversationSettings, setConversationSettings] = (0, import_react16.useState)(getClientConversationSettings);
+  const [conversationSettingsStatus, setConversationSettingsStatus] = (0, import_react16.useState)({ text: translate("conversationSettings.saved"), error: false });
+  const [conversationSettingsBusy, setConversationSettingsBusy] = (0, import_react16.useState)(false);
+  const [settingsStatus, setSettingsStatus] = (0, import_react16.useState)({ text: translate("settings.saved"), error: false });
+  const [settingsBusy, setSettingsBusy] = (0, import_react16.useState)(false);
+  const [rpPolicyDraft, setRpPolicyDraft] = (0, import_react16.useState)("");
+  const [rpPolicyLoaded, setRpPolicyLoaded] = (0, import_react16.useState)(false);
+  const [rpPolicyBusy, setRpPolicyBusy] = (0, import_react16.useState)(false);
+  const [rpWorkspaceSetting, setRpWorkspaceSetting] = (0, import_react16.useState)(null);
+  const [rpWorkspaceBusy, setRpWorkspaceBusy] = (0, import_react16.useState)(false);
+  const rpWorkspaceBusyRef = (0, import_react16.useRef)(false);
+  const [rpAlert, setRpAlert] = (0, import_react16.useState)(null);
+  const drag = (0, import_react16.useRef)(null);
+  const suppressClick = (0, import_react16.useRef)(false);
+  const chromeController = (0, import_react16.useRef)(null);
+  const statusGeneration = (0, import_react16.useRef)(0);
+  const rpAlertRef = (0, import_react16.useRef)(null);
+  const dismissedRpAlerts = (0, import_react16.useRef)(/* @__PURE__ */ new Set());
   const sessionId = useSessions((state) => state.current);
   const sessionBlank = useSessions((state) => state.current === void 0 || state.current === null ? true : state.byId?.[state.current]?.blank === true);
   const workspaceId = useWorkspaces((state) => workspaceTargetId(state, sessionId));
   const workspaceItems = useWorkspaces((state) => state.items);
-  const hasConversationHistory = (0, import_react15.useCallback)(async (targetSessionId) => {
+  const hasConversationHistory = (0, import_react16.useCallback)(async (targetSessionId) => {
     const messages = await playClient.getMessages(targetSessionId);
     return sessionHasConversationHistory(messages);
   }, [playClient]);
   const close = () => setSurface(null);
   if (rpAlert === null || dismissedRpAlerts.current.has(rpAlert.id)) rpAlertRef.current = null;
   else rpAlertRef.current = rpAlert;
-  (0, import_react15.useEffect)(() => {
+  (0, import_react16.useEffect)(() => {
     const commitChrome = (snapshot) => {
       setChromeMode(snapshot.mode);
       playSlots.setMode(snapshot.mode);
-      if (snapshot.mode !== "play") setSurface((current2) => current2 === "regex" ? null : current2);
+      if (snapshot.mode !== "play") setSurface((current3) => ["regex", "conversation-settings"].includes(current3) ? null : current3);
     };
     const unsubscribe = chromeService.subscribe((snapshot) => {
       commitChrome(snapshot);
@@ -14988,7 +15109,7 @@ function TavernShell({ useSessions, useWorkspaces, createCleanSession, createCon
       unsubscribe();
     };
   }, [chromeService, playSlots]);
-  (0, import_react15.useEffect)(() => {
+  (0, import_react16.useEffect)(() => {
     let active = true;
     uiSettingsRequest().then((next) => {
       if (!active) return;
@@ -14998,6 +15119,24 @@ function TavernShell({ useSessions, useWorkspaces, createCleanSession, createCon
     }).catch((reason) => {
       if (!active) return;
       setSettingsStatus({ text: translate("settings.loadError", { message: reason instanceof Error ? reason.message : String(reason) }), error: true });
+    });
+    return () => {
+      active = false;
+    };
+  }, []);
+  (0, import_react16.useEffect)(() => {
+    let active = true;
+    conversationSettingsRequest().then((next) => {
+      if (!active) return;
+      const normalized = setClientConversationSettings(next);
+      setConversationSettings(normalized);
+      setConversationSettingsStatus({ text: translate("conversationSettings.saved"), error: false });
+    }).catch((reason) => {
+      if (!active) return;
+      setConversationSettingsStatus({
+        text: translate("conversationSettings.loadError", { message: reason instanceof Error ? reason.message : String(reason) }),
+        error: true
+      });
     });
     return () => {
       active = false;
@@ -15039,7 +15178,49 @@ function TavernShell({ useSessions, useWorkspaces, createCleanSession, createCon
       setSettingsBusy(false);
     }
   };
-  (0, import_react15.useEffect)(() => {
+  const persistConversationSettings = async (next) => {
+    const previous = conversationSettings;
+    const normalized = setClientConversationSettings(next);
+    setConversationSettings(normalized);
+    setConversationSettingsBusy(true);
+    setConversationSettingsStatus({ text: translate("conversationSettings.saving"), error: false });
+    try {
+      const saved = setClientConversationSettings(await conversationSettingsRequest("PUT", normalized));
+      setConversationSettings(saved);
+      setConversationSettingsStatus({ text: translate("conversationSettings.saved"), error: false });
+    } catch (reason) {
+      setClientConversationSettings(previous);
+      setConversationSettings(previous);
+      setConversationSettingsStatus({
+        text: translate("conversationSettings.saveError", { message: reason instanceof Error ? reason.message : String(reason) }),
+        error: true
+      });
+    } finally {
+      setConversationSettingsBusy(false);
+    }
+  };
+  const resetConversationSettings = async () => {
+    const previous = conversationSettings;
+    const defaults = setClientConversationSettings(DEFAULT_CONVERSATION_SETTINGS);
+    setConversationSettings(defaults);
+    setConversationSettingsBusy(true);
+    setConversationSettingsStatus({ text: translate("conversationSettings.saving"), error: false });
+    try {
+      const saved = setClientConversationSettings(await conversationSettingsRequest("DELETE"));
+      setConversationSettings(saved);
+      setConversationSettingsStatus({ text: translate("conversationSettings.saved"), error: false });
+    } catch (reason) {
+      setClientConversationSettings(previous);
+      setConversationSettings(previous);
+      setConversationSettingsStatus({
+        text: translate("conversationSettings.saveError", { message: reason instanceof Error ? reason.message : String(reason) }),
+        error: true
+      });
+    } finally {
+      setConversationSettingsBusy(false);
+    }
+  };
+  (0, import_react16.useEffect)(() => {
     if (surface !== "settings") return void 0;
     let active = true;
     setRpPolicyLoaded(false);
@@ -15055,7 +15236,7 @@ function TavernShell({ useSessions, useWorkspaces, createCleanSession, createCon
       active = false;
     };
   }, [surface]);
-  (0, import_react15.useEffect)(() => {
+  (0, import_react16.useEffect)(() => {
     if (surface !== "settings") return void 0;
     let active = true;
     setRpWorkspaceSetting(null);
@@ -15083,8 +15264,8 @@ function TavernShell({ useSessions, useWorkspaces, createCleanSession, createCon
       setRpWorkspaceSetting(projectRpWorkspaceSetting({ workspace: written, items: workspaceItems }));
       window.dispatchEvent(new Event(CLIENT_REFRESH_EVENT));
       try {
-        const current2 = await playClient.getWorkspace();
-        setRpWorkspaceSetting(projectRpWorkspaceSetting({ workspace: current2, items: workspaceItems }));
+        const current3 = await playClient.getWorkspace();
+        setRpWorkspaceSetting(projectRpWorkspaceSetting({ workspace: current3, items: workspaceItems }));
         setSettingsStatus({ text: translate("settings.saved"), error: false });
       } catch (reason) {
         setSettingsStatus({ text: translate("settings.rpWorkspace.verifyError", { message: reason instanceof Error ? reason.message : String(reason) }), error: true });
@@ -15124,7 +15305,7 @@ function TavernShell({ useSessions, useWorkspaces, createCleanSession, createCon
       setRpPolicyBusy(false);
     }
   };
-  const refreshStatus = (0, import_react15.useCallback)(async () => {
+  const refreshStatus = (0, import_react16.useCallback)(async () => {
     const generation = ++statusGeneration.current;
     try {
       const next = await activeView(sessionId);
@@ -15136,7 +15317,7 @@ function TavernShell({ useSessions, useWorkspaces, createCleanSession, createCon
       setStatusError(reason instanceof Error ? reason.message : String(reason));
     }
   }, [sessionId]);
-  (0, import_react15.useEffect)(() => {
+  (0, import_react16.useEffect)(() => {
     statusGeneration.current += 1;
     setActiveSnapshot(null);
     setStatusError("");
@@ -15145,28 +15326,28 @@ function TavernShell({ useSessions, useWorkspaces, createCleanSession, createCon
       statusGeneration.current += 1;
     };
   }, [refreshStatus, sessionId]);
-  (0, import_react15.useEffect)(() => {
+  (0, import_react16.useEffect)(() => {
     const onRefresh = () => refreshStatus();
     window.addEventListener(CLIENT_REFRESH_EVENT, onRefresh);
     return () => window.removeEventListener(CLIENT_REFRESH_EVENT, onRefresh);
   }, [refreshStatus]);
-  (0, import_react15.useEffect)(() => {
-    const onResize = () => setAnchor((current2) => {
-      const next = clampLauncherAnchor(current2, viewport(), uiSettings.scale);
+  (0, import_react16.useEffect)(() => {
+    const onResize = () => setAnchor((current3) => {
+      const next = clampLauncherAnchor(current3, viewport(), uiSettings.scale);
       persistLauncherAnchor(next);
       return next;
     });
     window.addEventListener("resize", onResize);
     return () => window.removeEventListener("resize", onResize);
   }, [uiSettings.scale]);
-  (0, import_react15.useEffect)(() => {
-    setAnchor((current2) => {
-      const next = clampLauncherAnchor(current2, viewport(), uiSettings.scale);
+  (0, import_react16.useEffect)(() => {
+    setAnchor((current3) => {
+      const next = clampLauncherAnchor(current3, viewport(), uiSettings.scale);
       persistLauncherAnchor(next);
       return next;
     });
   }, [uiSettings.scale]);
-  (0, import_react15.useEffect)(() => {
+  (0, import_react16.useEffect)(() => {
     if (typeof sessionId !== "string" || sessionId === "") {
       dismissedRpAlerts.current = /* @__PURE__ */ new Set();
       rpAlertRef.current = null;
@@ -15202,7 +15383,7 @@ function TavernShell({ useSessions, useWorkspaces, createCleanSession, createCon
     } catch {
     }
   };
-  (0, import_react15.useEffect)(() => {
+  (0, import_react16.useEffect)(() => {
     const onKeyDown = (event) => {
       if (event.key !== "Escape") return;
       if (rpAlert !== null) dismissRpAlert();
@@ -15298,6 +15479,15 @@ function TavernShell({ useSessions, useWorkspaces, createCleanSession, createCon
       createCleanSession,
       createConfiguredPlaythrough,
       close
+    });
+  } else if (surface === "conversation-settings" && chromeMode === "play") {
+    panel = h13(ConversationSettingsPanel, {
+      settings: conversationSettings,
+      status: conversationSettingsStatus,
+      busy: conversationSettingsBusy,
+      close,
+      update: persistConversationSettings,
+      reset: resetConversationSettings
     });
   } else if (surface === "settings") {
     panel = h13(SettingsPanel, {

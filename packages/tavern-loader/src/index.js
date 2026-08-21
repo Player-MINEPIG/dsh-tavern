@@ -33,6 +33,11 @@ import {
   isUiSettingsApiPath,
 } from './ui-settings.js'
 import {
+  ConversationSettingsStore,
+  createConversationSettingsApiHandler,
+  isConversationSettingsApiPath,
+} from './conversation-settings.js'
+import {
   TavernTraceRecorder,
   TavernTraceStore,
   createTavernTraceApiHandler,
@@ -262,6 +267,7 @@ export function apply(ctx, config = {}) {
   const resourceWorldBooks = new ResourceWorldBookBindingStore(storageDir, config.resourceWorldBooks)
   const sessionTemplateStore = new SessionTemplateStore(storageDir, config.sessionTemplates)
   const uiSettingsStore = new UiSettingsStore(storageDir)
+  const conversationSettingsStore = new ConversationSettingsStore(storageDir)
   const chromeStore = new ChromeStore(storageDir)
   const rpPolicyStore = new RpPolicyStore(storageDir, {
     defaultSection: resolveRpConfig(config.rpMode ?? {}).section,
@@ -562,6 +568,7 @@ export function apply(ctx, config = {}) {
       },
     })
     const uiSettingsApi = createUiSettingsApiHandler(uiSettingsStore)
+    const conversationSettingsApi = createConversationSettingsApiHandler(conversationSettingsStore)
     const playApi = createPlayApiHandler({
       chromeStore,
       workspaceStore: playWorkspaceStore,
@@ -581,6 +588,8 @@ export function apply(ctx, config = {}) {
         ? playApi(req, res)
         : isUiSettingsApiPath(req.url)
         ? uiSettingsApi(req, res)
+        : isConversationSettingsApiPath(req.url)
+          ? conversationSettingsApi(req, res)
         : isRpPolicyApiPath(req.url)
           ? rpPolicyApi(req, res)
         : isRpModeApiPath(req.url)
@@ -626,6 +635,7 @@ export function apply(ctx, config = {}) {
     sessionTemplateStore: { value: sessionTemplateStore, enumerable: false },
     sessionConfigurations: { value: sessionConfigurations, enumerable: false },
     uiSettingsStore: { value: uiSettingsStore, enumerable: false },
+    conversationSettingsStore: { value: conversationSettingsStore, enumerable: false },
     chromeStore: { value: chromeStore, enumerable: false },
     playWorkspaceStore: { value: playWorkspaceStore, enumerable: false },
     rpPolicyStore: { value: rpPolicyStore, enumerable: false },
@@ -732,6 +742,13 @@ export {
   normalizeUiSettings,
   uiSettingsConstants,
 } from './ui-settings.js'
+export {
+  ConversationSettingsStore,
+  conversationSettingsConstants,
+  createConversationSettingsApiHandler,
+  isConversationSettingsApiPath,
+  normalizeConversationSettings,
+} from './conversation-settings.js'
 export { TavernTraceRecorder, TavernTraceStore } from '../../tavern-trace/src/index.js'
 export {
   SessionConfigurationError,
@@ -749,6 +766,7 @@ export {
   API_V2,
   CLIENT_REFRESH_EVENT,
   CLIENT_UI_SETTINGS_EVENT,
+  CLIENT_CONVERSATION_SETTINGS_EVENT,
   LEGACY_API_ROOT,
   PLUGIN_ID,
   PROFILE_SECTION,

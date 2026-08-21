@@ -1,5 +1,11 @@
 # Development changelog
 
+## 2026-08-22 — Separate conversation display scaling from UI settings
+
+- Added a Mowan-only Conversation Settings surface with independent 75%–150% controls for RP body/greeting text and durable-QA message actions.
+- Persisted the two values in bounded `conversation-settings.json` through the separate v1 `/conversation-settings` contract; UI language/global panel scale remain in `ui-settings.json`.
+- Applied local CSS variables only to the RP chat, blank-playthrough opening dock, and message action row. Native DSH, the composer, Tavern resource panels, prompts, history, and exports are unchanged.
+
 ## 2026-08-22 — Detach mismatched character sessions from playthroughs
 
 - Added the v2 `POST /playthroughs/:id/detach-session` lifecycle endpoint. It removes the target session variants and descendant branches from Tavern timeline metadata while preserving sibling branches, DSH sessions, source history, and the empty playthrough.

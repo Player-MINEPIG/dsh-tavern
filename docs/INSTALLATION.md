@@ -90,7 +90,8 @@ tree: presets, normalized character cards, PNG cover images under
 `users/`, bounded Trace metadata in `tavern-traces.json`, and per-session
 resource selections. Copy the whole directory when backing up; copying only
 `presets/` loses other resources, audit metadata and bindings. The same tree
-also holds `ui-settings.json` (locale, scale, character-follow RP) and optional
+also holds `ui-settings.json` (locale, outer UI scale, character-follow RP),
+`conversation-settings.json` (Mowan RP text and message-action scale), and optional
 `rp-policy.json`.
 
 Choose another backup directory or deliberately skip backup with:

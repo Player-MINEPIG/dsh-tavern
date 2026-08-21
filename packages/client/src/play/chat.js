@@ -39,6 +39,7 @@ import {
 } from './import.js'
 import { activeTimelineEntries } from '../../../play/src/timeline-tree.js'
 import { consumeSwipeTransition } from './swipe-transition.js'
+import { conversationDisplayStyle, useConversationDisplaySettings } from './display-settings.js'
 
 const h = createLocalizedElement(createElement)
 const turnReconcilers = new WeakMap()
@@ -50,8 +51,8 @@ const css = `
 .dtv-play-chat-stage{display:grid;min-width:0}.dtv-play-chat-frame{grid-area:1/1;min-width:0;will-change:transform,opacity}.dtv-play-chat-frame[data-phase=outgoing]{pointer-events:none}.dtv-play-chat-frame[data-phase=incoming][data-direction=next]{animation:dtv-play-swipe-in-next 180ms ease-out both}.dtv-play-chat-frame[data-phase=outgoing][data-direction=next]{animation:dtv-play-swipe-out-next 180ms ease-out both}.dtv-play-chat-frame[data-phase=incoming][data-direction=previous]{animation:dtv-play-swipe-in-previous 180ms ease-out both}.dtv-play-chat-frame[data-phase=outgoing][data-direction=previous]{animation:dtv-play-swipe-out-previous 180ms ease-out both}@keyframes dtv-play-swipe-in-next{from{transform:translateX(42px);opacity:.2}to{transform:translateX(0);opacity:1}}@keyframes dtv-play-swipe-out-next{from{transform:translateX(0);opacity:1}to{transform:translateX(-42px);opacity:0}}@keyframes dtv-play-swipe-in-previous{from{transform:translateX(-42px);opacity:.2}to{transform:translateX(0);opacity:1}}@keyframes dtv-play-swipe-out-previous{from{transform:translateX(0);opacity:1}to{transform:translateX(42px);opacity:0}}@media (prefers-reduced-motion:reduce){.dtv-play-chat-frame[data-phase]{animation-duration:1ms!important}}
 .dtv-play-chat-target{display:flex;min-width:0;flex-direction:column;gap:8px}.dtv-play-chat-suffix{display:grid;min-width:0}.dtv-play-chat-suffix-list{display:flex;min-width:0;flex-direction:column;gap:22px}
 .dtv-play-chat-list{display:flex;flex-direction:column;gap:22px}.dtv-play-chat-row{display:flex;flex-direction:column;gap:8px}.dtv-play-chat-role{font-size:11px;font-weight:700;color:var(--dsw-alias-label-tertiary)}
-.dtv-play-chat-bubble{max-width:88%;box-sizing:border-box;border-radius:14px;padding:12px 14px;overflow-wrap:anywhere;font-size:14px;line-height:1.65}.dtv-play-chat-user{align-self:flex-end;background:var(--dsw-alias-interactive-bg-selected,var(--dsw-specific-tip))}.dtv-play-chat-assistant{align-self:flex-start;background:var(--dsw-alias-bg-layer-2,var(--dsw-specific-block))}
-.dtv-play-greeting{position:relative;align-self:flex-start;max-width:88%;display:grid;grid-template-columns:30px minmax(0,1fr) 30px;align-items:center;gap:6px}.dtv-play-greeting[data-locked=true]{grid-template-columns:minmax(0,1fr)}.dtv-play-greeting-text{border-radius:14px;padding:13px 15px;background:var(--dsw-alias-bg-layer-2,var(--dsw-specific-block));overflow-wrap:anywhere;font-size:14px;line-height:1.65}
+.dtv-play-chat-bubble{max-width:88%;box-sizing:border-box;border-radius:14px;padding:12px 14px;overflow-wrap:anywhere;font-size:calc(14px * var(--dtv-rp-text-scale,1));line-height:1.65}.dtv-play-chat-user{align-self:flex-end;background:var(--dsw-alias-interactive-bg-selected,var(--dsw-specific-tip))}.dtv-play-chat-assistant{align-self:flex-start;background:var(--dsw-alias-bg-layer-2,var(--dsw-specific-block))}
+.dtv-play-greeting{position:relative;align-self:flex-start;max-width:88%;display:grid;grid-template-columns:30px minmax(0,1fr) 30px;align-items:center;gap:6px}.dtv-play-greeting[data-locked=true]{grid-template-columns:minmax(0,1fr)}.dtv-play-greeting-text{border-radius:14px;padding:13px 15px;background:var(--dsw-alias-bg-layer-2,var(--dsw-specific-block));overflow-wrap:anywhere;font-size:calc(14px * var(--dtv-rp-text-scale,1));line-height:1.65}
 .dtv-play-greeting-empty{min-height:34px;visibility:hidden}
 .dtv-play-greeting-button{width:30px;height:34px;border:0;border-radius:9px;background:transparent;color:var(--dsw-alias-label-secondary);cursor:pointer}.dtv-play-greeting-button:hover{background:var(--dsw-alias-interactive-bg-hover)}.dtv-play-greeting-button:disabled{opacity:.4;cursor:default}
 .dtv-play-import-controls{align-self:center;display:flex;flex-wrap:wrap;align-items:center;justify-content:center;gap:8px;margin:0 0 2px}.dtv-play-import-bound{width:100%;margin:0;text-align:center;color:var(--dsw-alias-label-tertiary);font-size:11px}.dtv-play-import-button{min-height:30px;padding:5px 11px;border:1px solid var(--dsw-alias-border-subtle);border-radius:9px;background:var(--dsw-alias-bg-layer-2,var(--dsw-specific-block));color:var(--dsw-alias-label-primary);font:inherit;font-size:11px;cursor:pointer}.dtv-play-import-button:hover{background:var(--dsw-alias-interactive-bg-hover)}.dtv-play-import-button:disabled{opacity:.45;cursor:default}.dtv-play-import-last{margin:0;color:var(--dsw-alias-label-tertiary);font-size:11px;font-weight:700}
@@ -556,6 +557,7 @@ function TargetedSwipeTransition({
 
 export function MowanChatView({ sessionId, useSession, playClient, playthrough, openSession, chatScroll }) {
   installPlayChatStyles()
+  const displaySettings = useConversationDisplaySettings()
   const sessionRevision = useSession(state => `${state.nodes?.length ?? 0}:${state.running === true}:${state.blank === true}`)
   const liveNodes = useSession(state => state.nodes)
   const partial = useSession(state => state.partial)
@@ -696,7 +698,7 @@ export function MowanChatView({ sessionId, useSession, playClient, playthrough, 
   })
   const transitionBoundary = swipeTransitionBoundary(transition)
 
-  return h('div', { className: 'dtv-play-chat' },
+  return h('div', { className: 'dtv-play-chat', style: conversationDisplayStyle(displaySettings) },
     error === '' ? null : h('p', { className: 'dtv-play-chat-status', 'data-error': true }, rawText(error)),
     state === null && error === '' ? h('p', { className: 'dtv-play-chat-status' }, uiMessage('play.chat.loading')) : null,
     loadedState === null ? null : h('div', { className: 'dtv-play-chat-stage' },
