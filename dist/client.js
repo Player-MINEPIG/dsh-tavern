@@ -3833,6 +3833,7 @@ var zh_CN_default = Object.freeze({
   "play.chat.noOtherReply": "\u6CA1\u6709\u5176\u4ED6\u5DF2\u6709\u56DE\u590D",
   "play.chat.generateReply": "\u751F\u6210\u4E00\u6761\u65B0\u56DE\u590D",
   "play.chat.forkPlaythrough": "\u4ECE\u8FD9\u91CC\u5206\u652F\u4E3A\u65B0\u5468\u76EE",
+  "play.chat.rollbackPlaythrough": "\u5728\u672C\u5468\u76EE\u4ECE\u8FD9\u91CC\u7EE7\u7EED",
   "play.chat.editDisplay": "\u4FEE\u6539\u663E\u793A\u6587\u5B57",
   "play.chat.editDisplayPrompt": "\u8F93\u5165\u66FF\u4EE3\u539F\u56DE\u590D\u7684\u663E\u793A\u6587\u5B57\uFF1A",
   "play.chat.restoreOriginal": "\u6062\u590D\u539F\u56DE\u590D",
@@ -4429,6 +4430,7 @@ var en_default = Object.freeze({
   "play.chat.noOtherReply": "No other saved reply",
   "play.chat.generateReply": "Generate a new reply",
   "play.chat.forkPlaythrough": "Fork a new playthrough here",
+  "play.chat.rollbackPlaythrough": "Continue this playthrough from here",
   "play.chat.editDisplay": "Edit displayed reply",
   "play.chat.editDisplayPrompt": "Display this text instead of the original reply:",
   "play.chat.restoreOriginal": "Restore original reply",
@@ -7769,6 +7771,73 @@ function createChromeClickController({
 // packages/client/src/play/chat.js
 var import_react9 = require("react");
 
+// packages/play/src/timeline-tree.js
+function adoptedVariant(node) {
+  return node?.variants?.find((variant) => variant.id === node.adoptedVariantId) ?? null;
+}
+function isTreeTimeline(timeline) {
+  return timeline?.head !== void 0 || (timeline?.nodes ?? []).some((node) => Object.hasOwn(node, "parentVariantId"));
+}
+function legacyTimelineHead(timeline) {
+  const nodes = timeline?.nodes ?? [];
+  for (let index = nodes.length - 1; index >= 0; index -= 1) {
+    const node = nodes[index];
+    if (node.hidden === true) continue;
+    const variant = adoptedVariant(node);
+    if (variant !== null) {
+      return { sessionId: variant.sessionId, nodeId: node.id, variantId: variant.id };
+    }
+  }
+  return null;
+}
+function timelineHead(timeline) {
+  const head = timeline?.head;
+  if (head !== void 0 && head !== null) return head;
+  return legacyTimelineHead(timeline);
+}
+function activeTimelineEntries(timeline) {
+  const nodes = timeline?.nodes ?? [];
+  if (!isTreeTimeline(timeline)) {
+    return nodes.map((node) => ({ node, variant: adoptedVariant(node) })).filter((entry) => entry.variant !== null);
+  }
+  const head = timelineHead(timeline);
+  if (head === null) return [];
+  const variants = /* @__PURE__ */ new Map();
+  for (const [index, node] of nodes.entries()) {
+    for (const variant of node.variants ?? []) variants.set(variant.id, { node, variant, index });
+  }
+  const reversed = [];
+  const visited = /* @__PURE__ */ new Set();
+  let variantId = head.variantId;
+  while (variantId !== null) {
+    if (visited.has(variantId)) throw new TypeError("timeline branch contains a cycle");
+    visited.add(variantId);
+    const entry = variants.get(variantId);
+    if (entry === void 0) throw new TypeError(`Unknown active variant ${variantId}`);
+    reversed.push({ node: entry.node, variant: entry.variant });
+    if (Object.hasOwn(entry.node, "parentVariantId")) {
+      variantId = entry.node.parentVariantId;
+    } else {
+      const previous = nodes[entry.index - 1];
+      variantId = adoptedVariant(previous)?.id ?? null;
+    }
+  }
+  return reversed.reverse();
+}
+function timelineWithHead(timeline, head) {
+  if (head === null) {
+    const { head: _discarded, ...rest } = timeline;
+    return rest;
+  }
+  return { ...timeline, head };
+}
+function activeVariantEnd(timeline, sessionId) {
+  const head = timelineHead(timeline);
+  if (head === null || head.sessionId !== sessionId) return -1;
+  const entry = activeTimelineEntries(timeline).at(-1);
+  return entry?.variant?.endEventId ?? -1;
+}
+
 // packages/client/src/play/chat-model.js
 function normalizedPath(value) {
   return typeof value === "string" ? value.replaceAll("\\", "/").replace(/\/+$/, "").toLocaleLowerCase() : "";
@@ -7776,9 +7845,6 @@ function normalizedPath(value) {
 function rootSessionId(playthrough) {
   const value = playthrough?.ext?.pmpDshTavern?.rootSessionId;
   return typeof value === "string" && value !== "" ? value : null;
-}
-function adoptedVariant(node) {
-  return node?.variants?.find((variant) => variant.id === node.adoptedVariantId) ?? null;
 }
 function recordedEndSeq(timeline, sessionId) {
   let end = -1;
@@ -7789,7 +7855,7 @@ function recordedEndSeq(timeline, sessionId) {
       }
     }
   }
-  return end;
+  return Math.max(end, activeVariantEnd(timeline, sessionId));
 }
 function contentText(content) {
   if (!Array.isArray(content)) return "";
@@ -7840,6 +7906,7 @@ function findPlaythroughForSession(sessionId, catalog2, timelines = {}) {
   for (const playthrough of catalog2?.playthroughs ?? []) {
     const timeline = timelines[playthrough.path];
     if (rootSessionId(playthrough) === sessionId) return { playthrough, timeline: timeline ?? null };
+    if (timeline?.head?.sessionId === sessionId) return { playthrough, timeline };
     if (timeline?.nodes?.some((node) => node.variants?.some((variant) => variant.sessionId === sessionId))) {
       return { playthrough, timeline };
     }
@@ -7879,10 +7946,8 @@ async function loadCurrentPlaythrough(client, session, options = {}) {
 }
 function projectTimelineQa(timeline, messagesBySession = {}) {
   const result = [];
-  for (const node of timeline?.nodes ?? []) {
+  for (const { node, variant } of activeTimelineEntries(timeline)) {
     if (node.kind !== "qa") continue;
-    const variant = adoptedVariant(node);
-    if (variant === null) continue;
     const messages = messagesBySession[variant.sessionId]?.messages ?? messagesBySession[variant.sessionId] ?? [];
     const within = messages.filter((message) => Number.isSafeInteger(message.seq) && message.seq >= variant.startEventId && message.seq <= variant.endEventId);
     const trigger = within.find((message) => message.role === "user") ?? null;
@@ -10024,6 +10089,9 @@ function normalizeTimelineNode(value, label = "node") {
     kind: "qa",
     hidden: value.hidden === true,
     displayOverride: value.displayOverride ?? null,
+    ...Object.hasOwn(value, "parentVariantId") ? {
+      parentVariantId: value.parentVariantId === null ? null : stringId(value.parentVariantId, `${label}.parentVariantId`)
+    } : {},
     adoptedVariantId,
     variants,
     ...ext === void 0 ? {} : { ext }
@@ -10034,12 +10102,34 @@ function normalizeTimeline(value, label = "timeline") {
   if (!Array.isArray(value.nodes)) fail(label, "nodes must be an array");
   const nodes = value.nodes.map((item, index) => normalizeTimelineNode(item, `${label}.nodes[${index}]`));
   const ids = /* @__PURE__ */ new Set();
+  const variantOwners = /* @__PURE__ */ new Map();
+  const tree = value.head !== void 0 || nodes.some((node) => Object.hasOwn(node, "parentVariantId"));
   for (const node of nodes) {
     if (ids.has(node.id)) fail(label, `duplicate node id ${node.id}`);
     ids.add(node.id);
+    for (const variant of node.variants) {
+      if (tree && variantOwners.has(variant.id)) fail(label, `duplicate tree variant id ${variant.id}`);
+      variantOwners.set(variant.id, node.id);
+    }
+  }
+  for (const [index, node] of nodes.entries()) {
+    if (!Object.hasOwn(node, "parentVariantId") || node.parentVariantId === null) continue;
+    const parentNodeId = variantOwners.get(node.parentVariantId);
+    if (parentNodeId === void 0) fail(`${label}.nodes[${index}]`, "parentVariantId is unknown");
+    if (nodes.findIndex((item) => item.id === parentNodeId) >= index) fail(`${label}.nodes[${index}]`, "parentVariantId must reference an earlier node");
+  }
+  let head;
+  if (value.head !== void 0) {
+    if (!isRecord4(value.head)) fail(`${label}.head`, "must be an object");
+    head = {
+      sessionId: stringId(value.head.sessionId, `${label}.head.sessionId`),
+      nodeId: stringId(value.head.nodeId, `${label}.head.nodeId`),
+      variantId: stringId(value.head.variantId, `${label}.head.variantId`)
+    };
+    if (variantOwners.get(head.variantId) !== head.nodeId) fail(`${label}.head`, "must reference a variant on its node");
   }
   const ext = extRecord(value.ext, `${label}.ext`);
-  return { nodes, ...ext === void 0 ? {} : { ext } };
+  return { nodes, ...head === void 0 ? {} : { head }, ...ext === void 0 ? {} : { ext } };
 }
 function normalizeCatalog(value, label = "catalog") {
   if (!isRecord4(value)) fail(label, "must be an object");
@@ -10177,6 +10267,9 @@ function playthroughMembers(playthrough, timeline) {
   const ids = /* @__PURE__ */ new Set();
   const rootId = rootSessionId2(playthrough);
   if (rootId !== null) ids.add(rootId);
+  if (typeof timeline?.head?.sessionId === "string" && timeline.head.sessionId !== "") {
+    ids.add(timeline.head.sessionId);
+  }
   for (const node of timeline?.nodes ?? []) {
     for (const variant of node?.variants ?? []) {
       if (typeof variant?.sessionId === "string" && variant.sessionId !== "") ids.add(variant.sessionId);
@@ -10711,18 +10804,25 @@ function nodeById(timeline, nodeId) {
   if (index < 0) throw new TypeError(`Unknown timeline node ${nodeId}`);
   return { index, node: timeline.nodes[index] };
 }
-function adoptedVariant2(node) {
-  const value = node.variants.find((variant) => variant.id === node.adoptedVariantId);
-  if (value === void 0) throw new TypeError("Adopted variant is missing");
-  return value;
-}
 function forkedTimeline(source, nodeIndex, adoptedId, sessionId) {
+  const entries2 = activeTimelineEntries(source);
+  const activeIndex = entries2.findIndex((entry) => entry.node.id === source.nodes[nodeIndex].id);
+  if (activeIndex < 0) throw new TypeError("Fork target is not on the active timeline branch");
+  let parentVariantId = null;
+  const nodes = entries2.slice(0, activeIndex + 1).map(({ node, variant }) => {
+    const copy = {
+      ...node,
+      parentVariantId,
+      adoptedVariantId: variant.id,
+      variants: node.variants.map((item) => item.id === adoptedId ? { ...item, sessionId } : { ...item })
+    };
+    parentVariantId = variant.id;
+    return copy;
+  });
   return {
     ...source,
-    nodes: source.nodes.slice(0, nodeIndex + 1).map((node, index) => ({
-      ...node,
-      variants: node.variants.map((variant) => index === nodeIndex && variant.id === adoptedId ? { ...variant, sessionId } : { ...variant })
-    }))
+    nodes,
+    head: { sessionId, nodeId: nodes.at(-1).id, variantId: adoptedId }
   };
 }
 function inheritedRangeExists(messages, variant) {
@@ -10730,6 +10830,21 @@ function inheritedRangeExists(messages, variant) {
   const user = values.some((message) => message.role === "user" && Number.isSafeInteger(message.seq) && message.seq >= variant.startEventId && message.seq <= variant.endEventId);
   const assistant = values.some((message) => message.role === "assistant" && message.seq === variant.endEventId);
   return messages?.incompleteTurn !== true && user && assistant;
+}
+async function branchPlaythroughAtNode(client, { playthrough, nodeId } = {}) {
+  if (client == null) throw new TypeError("playClient.required");
+  const source = await client.getTimeline(playthrough);
+  const { index, node } = nodeById(source, nodeId);
+  const active = activeTimelineEntries(source).find((entry) => entry.node.id === nodeId);
+  if (active === void 0) throw new TypeError("Branch target is not on the active timeline branch");
+  const adopted = active.variant;
+  const branch = await client.postBranch(adopted.sessionId, adopted.endEventId);
+  const sessionId = safeSessionId2(branch?.sessionId);
+  const inherited = await client.getMessages(sessionId);
+  if (!inheritedRangeExists(inherited, adopted)) {
+    throw new Error("Forked session does not contain the adopted reply range");
+  }
+  return { source, index, node, adopted, sessionId, inherited };
 }
 async function forkPlaythroughAtNode(client, {
   playthrough,
@@ -10739,15 +10854,7 @@ async function forkPlaythroughAtNode(client, {
 } = {}) {
   if (client == null) throw new TypeError("playClient.required");
   const characterId = safeSegment2(playthroughCharacterId(playthrough), "character.id");
-  const source = await client.getTimeline(playthrough);
-  const { index, node } = nodeById(source, nodeId);
-  const adopted = adoptedVariant2(node);
-  const branch = await client.postBranch(adopted.sessionId, adopted.endEventId);
-  const sessionId = safeSessionId2(branch?.sessionId);
-  const inherited = await client.getMessages(sessionId);
-  if (!inheritedRangeExists(inherited, adopted)) {
-    throw new Error("Forked session does not contain the adopted reply range");
-  }
+  const { source, index, node, adopted, sessionId } = await branchPlaythroughAtNode(client, { playthrough, nodeId });
   const value = now();
   if (!(value instanceof Date) || Number.isNaN(value.valueOf())) throw new TypeError("now must return a valid Date");
   const playthroughId = safeSegment2(`playthrough-${randomUUID()}`, "playthrough.id");
@@ -10867,7 +10974,10 @@ function createPlayNodeController(client, {
           const { index, node: node2 } = nodeById2(timeline, nodeId);
           const variant2 = node2.variants.find((item) => item.id === variantId);
           if (variant2 === void 0) throw new TypeError(`Unknown variant ${variantId}`);
-          return replaceNode(timeline, index, { ...node2, adoptedVariantId: variantId });
+          return timelineWithHead(
+            replaceNode(timeline, index, { ...node2, adoptedVariantId: variantId }),
+            { sessionId: variant2.sessionId, nodeId: node2.id, variantId: variant2.id }
+          );
         });
         const { node } = nodeById2(next, nodeId);
         const variant = node.variants.find((item) => item.id === variantId);
@@ -10879,13 +10989,27 @@ function createPlayNodeController(client, {
     createReplySwipe(playthrough, nodeId) {
       return schedule(async () => {
         const timeline = await client.getTimeline(playthrough);
-        const { node } = nodeById2(timeline, nodeId);
-        const adopted = node.variants.find((item) => item.id === node.adoptedVariantId);
-        if (adopted === void 0) throw new TypeError("Adopted variant is missing");
-        const source = await client.getMessages(adopted.sessionId);
-        const user = source.messages.find((message) => message.role === "user" && (messageOriginKind2(message) === "user" || messageOriginKind2(message) === "steering") && message.seq >= adopted.startEventId && message.seq <= adopted.endEventId);
-        if (user === void 0 || typeof user.text !== "string" || user.text === "") {
-          throw new TypeError("Adopted variant has no reusable user message");
+        const entries2 = activeTimelineEntries(timeline);
+        const requestedIndex = entries2.findIndex((entry) => entry.node.id === nodeId);
+        if (requestedIndex < 0) throw new TypeError(`Unknown active timeline node ${nodeId}`);
+        let sourceNode = null;
+        let adopted = null;
+        let source = null;
+        let user;
+        for (let index = requestedIndex; index >= 0; index -= 1) {
+          const candidate = entries2[index];
+          const messages = await client.getMessages(candidate.variant.sessionId);
+          const reusable = messages.messages.find((message) => message.role === "user" && (messageOriginKind2(message) === "user" || messageOriginKind2(message) === "steering") && message.seq >= candidate.variant.startEventId && message.seq <= candidate.variant.endEventId);
+          if (reusable !== void 0 && typeof reusable.text === "string" && reusable.text !== "") {
+            sourceNode = candidate.node;
+            adopted = candidate.variant;
+            source = messages;
+            user = reusable;
+            break;
+          }
+        }
+        if (sourceNode === null || adopted === null || source === null || user === void 0 || typeof user.text !== "string" || user.text === "") {
+          throw new TypeError("Active branch has no reusable user message");
         }
         const forkEventId = Math.max(0, adopted.startEventId - 1);
         const branch = await client.postBranch(adopted.sessionId, forkEventId);
@@ -10909,16 +11033,22 @@ function createPlayNodeController(client, {
           endEventId: pair.assistant.seq
         };
         const next = await updateTimeline(client, playthrough, (timeline2) => {
-          const current2 = nodeById2(timeline2, nodeId);
+          const current2 = nodeById2(timeline2, sourceNode.id);
           const existing = current2.node.variants.find((item) => item.id === variantId);
           if (existing !== void 0) {
-            return replaceNode(timeline2, current2.index, { ...current2.node, adoptedVariantId: variantId });
+            return timelineWithHead(
+              replaceNode(timeline2, current2.index, { ...current2.node, adoptedVariantId: variantId }),
+              { sessionId: existing.sessionId, nodeId: current2.node.id, variantId }
+            );
           }
-          return replaceNode(timeline2, current2.index, {
-            ...current2.node,
-            adoptedVariantId: variantId,
-            variants: [...current2.node.variants, variant]
-          });
+          return timelineWithHead(
+            replaceNode(timeline2, current2.index, {
+              ...current2.node,
+              adoptedVariantId: variantId,
+              variants: [...current2.node.variants, variant]
+            }),
+            { sessionId: newSessionId, nodeId: current2.node.id, variantId }
+          );
         });
         const focus = await client.getFocus(playthrough);
         if (focus.sessionId !== newSessionId) throw new Error("Saved swipe does not match derived focus");
@@ -10927,6 +11057,28 @@ function createPlayNodeController(client, {
     },
     forkPlaythrough(playthrough, nodeId) {
       return schedule(() => forkPlaythroughAtNode(client, { playthrough, nodeId }));
+    },
+    rollbackPlaythrough(playthrough, nodeId) {
+      return schedule(async () => {
+        const branch = await branchPlaythroughAtNode(client, { playthrough, nodeId });
+        const next = await updateTimeline(client, playthrough, (timeline) => {
+          const current2 = nodeById2(timeline, nodeId);
+          const variant = current2.node.variants.find((item) => item.id === branch.adopted.id);
+          if (variant === void 0) throw new Error("Rollback target changed before commit");
+          return timelineWithHead(
+            replaceNode(timeline, current2.index, {
+              ...current2.node,
+              adoptedVariantId: variant.id
+            }),
+            { sessionId: branch.sessionId, nodeId: current2.node.id, variantId: variant.id }
+          );
+        });
+        const focus = await client.getFocus(playthrough);
+        if (focus.sessionId !== branch.sessionId || focus.nodeId !== nodeId || focus.variantId !== branch.adopted.id) {
+          throw new Error("Rollback focus verification failed");
+        }
+        return { timeline: next, sessionId: branch.sessionId };
+      });
     }
   };
 }
@@ -10964,15 +11116,12 @@ function Action({ icon, label, disabled = false, disabledLabel, onClick }) {
   }, icon);
 }
 function turnActionCapabilities(turn) {
-  const triggerKind = turn?.triggerKind;
-  const replyTrigger = triggerKind == null || triggerKind === "user" || triggerKind === "steering";
   return {
     copy: true,
-    variants: replyTrigger,
-    generateReply: replyTrigger,
+    variants: true,
+    generateReply: true,
     fork: true,
-    editDisplay: true,
-    hide: true
+    editDisplay: true
   };
 }
 function PlayTurnActions({
@@ -11024,18 +11173,6 @@ function PlayTurnActions({
       onError(reason instanceof Error ? reason.message : String(reason));
     }
   };
-  if (turn.hidden) {
-    return h7(
-      "div",
-      { className: "dtv-play-turn-actions" },
-      h7(Action, {
-        icon: "\u25C9",
-        label: uiMessage("play.chat.restoreNode"),
-        disabled,
-        onClick: () => mutate(() => controller(playClient).setHidden(playthrough, turn.id, false))
-      })
-    );
-  }
   if (editor !== null) {
     return h7(
       "form",
@@ -11107,6 +11244,15 @@ function PlayTurnActions({
       })
     }),
     h7(Action, {
+      icon: "\u21A9",
+      label: uiMessage("play.chat.rollbackPlaythrough"),
+      disabled,
+      onClick: () => mutate(async () => {
+        const result = await controller(playClient).rollbackPlaythrough(playthrough, turn.id);
+        openSession(result.sessionId);
+      })
+    }),
+    h7(Action, {
       icon: "\u270E",
       label: uiMessage("play.chat.editDisplay"),
       disabled,
@@ -11117,17 +11263,7 @@ function PlayTurnActions({
       label: uiMessage("play.chat.restoreOriginal"),
       disabled,
       onClick: () => mutate(() => controller(playClient).setDisplayOverride(playthrough, turn.id, null))
-    }) : null,
-    h7(Action, {
-      icon: "\u2298",
-      label: uiMessage("play.chat.hideNode"),
-      disabled,
-      onClick: () => {
-        if (window.confirm(translate("play.chat.hideConfirm"))) {
-          mutate(() => controller(playClient).setHidden(playthrough, turn.id, true));
-        }
-      }
-    })
+    }) : null
   );
 }
 
@@ -11139,7 +11275,7 @@ function recordedEndSeq2(timeline, sessionId) {
       if (variant.sessionId === sessionId) end = Math.max(end, variant.endEventId);
     }
   }
-  return end;
+  return Math.max(end, activeVariantEnd(timeline, sessionId));
 }
 function defaultId2(prefix, sessionId, startEventId, endEventId) {
   const random = globalThis.crypto?.randomUUID?.() ?? `${Date.now()}-${Math.random()}`;
@@ -11153,6 +11289,7 @@ function appendCompletedTurns(timeline, messageState, sessionId, {
   const boundary = recordedEndSeq2(timeline, sessionId);
   const messages = [...messageState?.messages ?? []].filter((message) => Number.isSafeInteger(message.seq) && message.seq > boundary).sort((left, right) => left.seq - right.seq);
   const added = [];
+  let parentVariantId = timelineHead(timeline)?.variantId ?? null;
   let user = null;
   let assistant = null;
   const appendPair = () => {
@@ -11164,6 +11301,7 @@ function appendCompletedTurns(timeline, messageState, sessionId, {
       kind: "qa",
       hidden: false,
       displayOverride: null,
+      parentVariantId,
       adoptedVariantId: variantId,
       variants: [{
         id: variantId,
@@ -11172,6 +11310,7 @@ function appendCompletedTurns(timeline, messageState, sessionId, {
         endEventId: assistant.seq
       }]
     });
+    parentVariantId = variantId;
   };
   for (const message of messages) {
     if (message.role === "user") {
@@ -11188,7 +11327,16 @@ function appendCompletedTurns(timeline, messageState, sessionId, {
   }
   appendPair();
   if (added.length === 0) return { timeline, added };
-  return { timeline: { ...timeline, nodes: [...timeline.nodes, ...added] }, added };
+  const tail = added.at(-1);
+  const variant = tail.variants[0];
+  return {
+    timeline: {
+      ...timeline,
+      nodes: [...timeline.nodes, ...added],
+      head: { sessionId, nodeId: tail.id, variantId: variant.id }
+    },
+    added
+  };
 }
 function createTurnReconciler(client) {
   if (client == null) throw new TypeError("playClient.required");
@@ -11238,8 +11386,7 @@ function installPlayChatStyles() {
 }
 function adoptedSessionIds(timeline, currentSessionId) {
   const ids = /* @__PURE__ */ new Set([currentSessionId]);
-  for (const node of timeline?.nodes ?? []) {
-    const variant = node.variants?.find((item) => item.id === node.adoptedVariantId);
+  for (const { variant } of activeTimelineEntries(timeline)) {
     if (typeof variant?.sessionId === "string" && variant.sessionId !== "") ids.add(variant.sessionId);
   }
   return [...ids];
@@ -11356,7 +11503,14 @@ async function loadChatState(client, sessionId, playthrough) {
     importBinding: importedContext.binding,
     importContext: importedContext.document,
     importMutable,
-    greeting: importedTurns.length > 0 ? null : greeting === null ? null : { ...greeting, text: renderText(greeting.text, "assistant") },
+    greeting: importedTurns.length > 0 ? null : greeting === null ? null : {
+      ...greeting,
+      // A greeting is card metadata shown before the first durable turn, not an
+      // assistant message. Output-only display regex (for example "keep only
+      // <正文>") must not erase it merely because the card did not wrap its
+      // greeting in the model-output protocol.
+      text: applyDisplayNameMacros(greeting.text, macros)
+    },
     regexDiagnostics,
     display: { rules, bindings, macros }
   };
@@ -11411,17 +11565,9 @@ function Greeting({ greeting, busy, change, footer = null }) {
   );
 }
 function turnHasVisibleRpContent(turn) {
-  return turn?.hidden === true || turn?.importLast === true || typeof turn?.userText === "string" && turn.userText !== "" || typeof turn?.assistantText === "string" && turn.assistantText !== "" || turn?.displayOverridden === true || turn?.running === true;
+  return turn?.importLast === true || typeof turn?.userText === "string" && turn.userText !== "" || typeof turn?.assistantText === "string" && turn.assistantText !== "" || turn?.displayOverridden === true || turn?.running === true;
 }
 function Turn({ turn, ...actionProps }) {
-  if (turn.hidden) {
-    return h8(
-      "div",
-      { className: "dtv-play-chat-row" },
-      h8("p", { className: "dtv-play-chat-status" }, uiMessage("play.chat.hiddenNode")),
-      h8(PlayTurnActions, { turn, ...actionProps })
-    );
-  }
   if (!turnHasVisibleRpContent(turn)) return null;
   return h8(
     "div",
