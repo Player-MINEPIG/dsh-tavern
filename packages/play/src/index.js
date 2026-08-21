@@ -39,3 +39,4 @@ export {
 } from './sessions.js'
 export { resolvePlayPath, splitRelativeSegments } from './paths.js'
 export { createOperationContext, operationLogConstants } from './operation-log.js'
+export { detachSessionFromTimeline, PlayMembershipService } from './membership.js'
