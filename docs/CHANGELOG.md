@@ -1,5 +1,10 @@
 # Development changelog
 
+## 2026-08-22 — Align the unbound-session notice with the native composer
+
+- Constrained the RP unbound-session notice with DSH's inherited `--dsh-composer-card-max-width` instead of filling the conversation-wide dock after history exists.
+- Kept the notice centered with a 100% fallback, so host or plugin composer-width changes remain authoritative without hashed DOM selectors or a copied pixel width.
+
 ## 2026-08-22 — Separate conversation display scaling from UI settings
 
 - Added a Mowan-only Conversation Settings surface with independent 75%–150% controls for RP body/greeting text and durable-QA message actions.
