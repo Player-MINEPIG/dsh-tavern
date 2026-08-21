@@ -186,9 +186,10 @@ test('only the client composition root owns the Tavern shell overlay', () => {
 test('standalone world-book panel exposes CRUD, multi-binding and all required entry controls', () => {
   const source = readFileSync(new URL('../packages/world-book-library/src/client.js', import.meta.url), 'utf8')
   for (const route of ['world-books/import', 'world-book-selection', 'world-books/']) assert.match(source, new RegExp(route))
-  for (const label of ['world.entry.title', 'world.entry.primaryKeys', 'world.entry.secondaryKeys', 'world.entry.secondaryLogicShort', 'common.enable', 'world.entry.constant', 'world.entry.caseSensitive', 'world.entry.wholeWord', 'world.entry.position', 'world.entry.order', 'world.entry.probability', 'world.entry.body']) {
+  for (const label of ['world.entry.title', 'world.entry.primaryKeys', 'world.entry.secondaryKeys', 'world.entry.secondaryLogicShort', 'world.entry.constant', 'world.entry.caseSensitive', 'world.entry.wholeWord', 'world.entry.position', 'world.entry.order', 'world.entry.probability', 'world.entry.body']) {
     assert.match(source, new RegExp(label.replaceAll('.', '\\.')))
   }
+  assert.match(source, /h\('summary'[\s\S]*?type: 'checkbox'[\s\S]*?checked: entry\.enabled/)
   assert.match(source, /saveEmbedded/)
   assert.match(source, /world\.addEmbeddedEntry/)
 })
@@ -283,7 +284,7 @@ test('session-template primary actions use the shared blue business token', () =
   const source = readFileSync(new URL('../packages/session-template/src/client.js', import.meta.url), 'utf8')
   assert.match(root, /\.dtv-primary\{background:var\(--dsw-alias-state-business-primary,#2677d9\)/)
   assert.doesNotMatch(root, /\.dtv-primary\{background:var\(--dsw-alias-button-primary-fill/)
-  assert.equal(source.match(/className: 'dtv-button dtv-primary'/g)?.length, 2)
+  assert.equal(source.match(/className: 'dtv-button dtv-primary'/g)?.length, 3)
 })
 
 test('user session binding uses the same primary action styling as other binding panels', () => {
