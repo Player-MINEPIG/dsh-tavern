@@ -41,6 +41,7 @@ test('right swipe adopts the next variant or generates one at the end', () => {
   assert.match(source, /hasNextVariant \? 'play\.chat\.nextReply' : 'play\.chat\.generateReply'/)
   assert.doesNotMatch(source, /icon: '✦'/)
   assert.doesNotMatch(source, /play\.chat\.hideNode/)
+  assert.doesNotMatch(source, /turn\.hidden/)
 })
 
 test('forking a playthrough refreshes shared sidebar classification before navigation', () => {

@@ -254,8 +254,7 @@ function Greeting({ greeting, busy, change, footer = null }) {
 }
 
 export function turnHasVisibleRpContent(turn) {
-  return turn?.hidden === true
-    || turn?.importLast === true
+  return turn?.importLast === true
     || (typeof turn?.userText === 'string' && turn.userText !== '')
     || (typeof turn?.assistantText === 'string' && turn.assistantText !== '')
     || turn?.displayOverridden === true
@@ -263,12 +262,6 @@ export function turnHasVisibleRpContent(turn) {
 }
 
 function Turn({ turn, ...actionProps }) {
-  if (turn.hidden) {
-    return h('div', { className: 'dtv-play-chat-row' },
-      h('p', { className: 'dtv-play-chat-status' }, uiMessage('play.chat.hiddenNode')),
-      h(PlayTurnActions, { turn, ...actionProps }),
-    )
-  }
   if (!turnHasVisibleRpContent(turn)) return null
   return h('div', { className: 'dtv-play-chat-row' },
     turn.importLast === true ? h('p', { className: 'dtv-play-import-last' }, uiMessage('play.import.lastQa')) : null,

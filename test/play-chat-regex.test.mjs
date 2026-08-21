@@ -202,4 +202,7 @@ test('RP visibility ignores reasoning and context while retaining real content a
   assert.equal(turnHasVisibleRpContent({
     userText: '', assistantText: '', displayOverridden: true, running: false,
   }), true)
+  assert.equal(turnHasVisibleRpContent({
+    hidden: true, userText: '', assistantText: '', running: false,
+  }), false)
 })
