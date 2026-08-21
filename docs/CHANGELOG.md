@@ -1,5 +1,16 @@
 # Development changelog
 
+## 2026-08-21 — Preserve and render DSH message origin
+
+- Added additive `origin` provenance to v2 session messages without changing
+  the model-facing `role`; context injections retain bounded producer, form,
+  and summary metadata for independent frontends.
+- The RP view now folds DSH context injections instead of rendering them as
+  user bubbles. Context-triggered parent output cannot be retried or swiped,
+  and the controller refuses to resend context as human input.
+- Display regex that removes the complete assistant output also removes its
+  action row while preserving the context row and timeline pointer.
+
 ## 2026-08-21 — Export current presets as SillyTavern JSON
 
 - Added `GET /pmp-dsh-tavern/api/v1/presets/:id/export` as an attachment

@@ -300,6 +300,8 @@ RP 是当前 session 的叠加，不是 DSH agent preset。开启后文件沙箱
 
 v1 是本插件悬浮球 / 侧栏 / Trace 用的 bundled UI 资源合同，不保证给第三方扮演表面用。v2 是给任意扮演前端的稳定面：chrome、扮演工作区文件、session（create / branch / **user-message** / messages）以及按周目查询的只读 **GET `/playthroughs/:id/focus`**。bundled live client 已按非空 playthrough id 调用该稳定入口，并验证返回的 playthroughId/sessionId/nodeId/variantId；旧 `/focus?path=` 仅作为迁移兼容面保留。完整 history、revision/CAS、读写校验、import claim/lineage、按 id focus 和路径竞态加固已经实现，仍需 rc.8 统一验收后才视为 2.0 稳定发布。`user-message` 只提交下一条用户正文，不是 loader 拼好的完整 prompt；focus 告诉前端上边栏该跟哪条 session，前端自己 `sessions.open`，不用 POST。swipe、删改、周目分支、导入导出都由前端用这些接口拼。扮演工作区不要放系统盘。greeting 从角色卡与 selection 派生，不写入时间线或 DSH 历史；上边栏对话 / 轨迹 / Tavern Trace 保留。
 
+v2 消息同时公开模型角色 `role` 和 additive 来源字段 `origin`。DSH 的子 agent 报告、完成通知等上下文可能仍以 `role: "user"` 送给模型，但会投影为 `origin.kind: "context"`；第三方前端应按 `origin` 将其折叠，而不是显示成人类输入。内置魔丸也按来源限制重新生成/滑动，避免把上下文报告作为用户正文重发。
+
 2.0 的 history API 已实现读取 DSH 提供的全部历史，直到 Host 返回 `hasMore: false`（代码 commit `10250a7`）；插件不会在 32 页等人为阈值静默截断，也不会在这一层做摘要或切片。Host 声称仍有更多历史但返回空页、非法 oldest `seq` 或不前进 cursor 时，API 返回 502 `PLAY_HISTORY_CURSOR_STALLED`。**能通过 API 读取全历史，不代表模型的一次请求能够容纳全历史。** 模型上下文超限、DSH 是否压缩上下文以及最终错误提示仍由 DSH/模型层负责；dsh-tavern 不承诺绕过其上下文窗口。
 
 导入上下文同样不在插件层做 summary、QA 切片或 256 KiB/2,000 QA 人为上限；它只校验 JSON/schema/hash，并通过公开 pending-input claim 投影在同一 profile snapshot 下建立持久 claim。通用工作区文件仍有 1 MiB 的存储/传输上限。无 claim 的只读 assembly 不会注入或消费 pending；同一请求在终态前的 provider retry 可重复 assembly，终态后新 claim 不会注入；Tavern swipe 通过公开 branch 复制不含正文的 lineage，第三方原生 fork 不在插件拦截范围。
