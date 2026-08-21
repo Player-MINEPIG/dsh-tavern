@@ -144,3 +144,8 @@ test('native blank-session dock projects only the latest three imported QA turns
   assert.match(noticeSource, /dtv-play-chat-user/)
   assert.match(noticeSource, /dtv-play-chat-assistant/)
 })
+
+test('RP chat never renders one session with another session loaded state', () => {
+  assert.match(chatSource, /const state = loadedState\?\.sessionId === sessionId \? loadedState\.value : null/)
+  assert.match(chatSource, /setLoadedState\(\{ sessionId, value: next \}\)/)
+})

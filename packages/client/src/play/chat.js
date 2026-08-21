@@ -345,7 +345,8 @@ export function MowanChatView({ sessionId, useSession, playClient, playthrough, 
   const latestUserSeq = latestUserNodeSeq(liveNodes)
   const [revision, setRevision] = useState(0)
   const running = useSession(state => state.running === true)
-  const [state, setState] = useState(null)
+  const [loadedState, setLoadedState] = useState(null)
+  const state = loadedState?.sessionId === sessionId ? loadedState.value : null
   const [error, setError] = useState('')
   const [greetingBusy, setGreetingBusy] = useState(false)
   const bottomAnchor = useRef(null)
@@ -388,10 +389,10 @@ export function MowanChatView({ sessionId, useSession, playClient, playthrough, 
     let active = true
     setError('')
     loadChatState(playClient, sessionId, playthrough).then(next => {
-      if (active) setState(next)
+      if (active) setLoadedState({ sessionId, value: next })
     }).catch(reason => {
       if (!active) return
-      setState(null)
+      setLoadedState(null)
       setError(reason instanceof Error ? reason.message : String(reason))
     })
     return () => { active = false }
