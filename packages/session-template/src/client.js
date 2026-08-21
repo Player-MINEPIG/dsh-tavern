@@ -71,7 +71,7 @@ function TemplatePreview({ template }) {
   )
 }
 
-export function SessionTemplatePanel({ sessionId, workspaceId, createCleanSession, close }) {
+export function SessionTemplatePanel({ sessionId, workspaceId, chromeMode = 'native', createCleanSession, createConfiguredPlaythrough, close }) {
   const [templates, setTemplates] = useState([])
   const [selectedId, setSelectedId] = useState(null)
   const [name, setName] = useState(() => translate('template.defaultName'))
@@ -169,13 +169,14 @@ export function SessionTemplatePanel({ sessionId, workspaceId, createCleanSessio
 
   const start = mode => run(async () => {
     if (mode === 'current' && !sessionId) throw uiError('template.error.needSourceSession')
-    if (workspaceId === null) throw uiError('template.error.needWorkspace')
     const source = mode === 'current'
       ? { mode: 'current', sessionId }
       : { mode: 'template', templateId: selectedId }
     if (mode === 'template' && selectedId === null) throw uiError('template.error.needTemplate')
+    if (chromeMode === 'play') return createConfiguredPlaythrough({ source })
+    if (workspaceId === null) throw uiError('template.error.needWorkspace')
     return createCleanSession({ workspaceId, source })
-  }, id => ({ key: 'template.status.switched', values: { id } }))
+  }, id => ({ key: chromeMode === 'play' ? 'template.status.playthroughStarted' : 'template.status.switched', values: { id } }))
 
   const diagnostics = Array.isArray(selected?.diagnostics) ? selected.diagnostics : []
   const closeLabel = uiMessage('panel.close', { title: unwrapText(uiMessage('template.title')) })
@@ -189,11 +190,11 @@ export function SessionTemplatePanel({ sessionId, workspaceId, createCleanSessio
       h('button', {
         className: 'dtv-button dtv-primary',
         type: 'button',
-        disabled: busy || !sessionId || workspaceId === null,
+        disabled: busy || !sessionId || (chromeMode !== 'play' && workspaceId === null),
         onClick: () => start('current'),
-      }, uiMessage('template.startCurrent')),
+      }, uiMessage(chromeMode === 'play' ? 'template.startCurrentPlaythrough' : 'template.startCurrent')),
       h('p', { className: 'dtv-note' }, uiMessage('template.inheritNote')),
-      workspaceId === null
+      chromeMode !== 'play' && workspaceId === null
         ? h('div', { className: 'dtv-status', 'data-error': true }, uiMessage('template.noWorkspace'))
         : null,
       h('div', { className: 'dtv-resource' },
@@ -224,9 +225,9 @@ export function SessionTemplatePanel({ sessionId, workspaceId, createCleanSessio
         h('button', {
           className: 'dtv-button dtv-primary',
           type: 'button',
-          disabled: busy || selectedId === null || diagnostics.length > 0 || workspaceId === null,
+          disabled: busy || selectedId === null || diagnostics.length > 0 || (chromeMode !== 'play' && workspaceId === null),
           onClick: () => start('template'),
-        }, uiMessage('template.startFromTemplate')),
+        }, uiMessage(chromeMode === 'play' ? 'template.startPlaythroughFromTemplate' : 'template.startFromTemplate')),
       ),
       h('div', { className: 'dtv-status', 'data-error': status.error || undefined, role: 'status' }, statusText(status)),
       h('p', { className: 'dtv-note' }, uiMessage('template.blankSessionNote')),

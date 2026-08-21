@@ -175,6 +175,7 @@ export function PlayWorkspaceBrowser({
   useSessions,
   useWorkspaces,
   playClient,
+  playthroughController,
   openSession,
 }) {
   installStyles()
@@ -187,8 +188,12 @@ export function PlayWorkspaceBrowser({
   const cache = useRef(null)
   if (cache.current === null) cache.current = new SessionCharacterBindingCache()
   const creator = useRef(null)
-  if (creator.current?.client !== playClient) {
-    creator.current = { client: playClient, controller: createPlaythroughController(playClient) }
+  if (creator.current?.client !== playClient || creator.current?.provided !== playthroughController) {
+    creator.current = {
+      client: playClient,
+      provided: playthroughController,
+      controller: playthroughController ?? createPlaythroughController(playClient),
+    }
   }
   const [creatingCharacterId, setCreatingCharacterId] = useState(null)
   const [revision, setRevision] = useState(0)

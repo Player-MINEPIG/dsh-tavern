@@ -20,6 +20,14 @@ export class SessionConfigurationUnavailableError extends Error {
   }
 }
 
+export class SessionConfigurationCharacterRequiredError extends Error {
+  constructor() {
+    super('Mowan playthrough configuration requires a character card')
+    this.name = 'SessionConfigurationCharacterRequiredError'
+    this.uiKey = 'template.error.needCharacter'
+  }
+}
+
 /**
  * Runs only through DSH's public WorkspaceRuntime and SessionRuntime faces.
  * Tavern selection persistence is the sole plugin-owned commit and occurs
@@ -44,4 +52,31 @@ export async function createCleanSessionWorkflow({
   openSession(targetSessionId)
   refresh()
   return targetSessionId
+}
+
+export async function createConfiguredPlaythroughWorkflow({
+  source,
+  preview,
+  applySelection,
+  playthroughController,
+  openSession,
+  refresh,
+}) {
+  const checked = await preview(source)
+  if (checked?.available !== true) throw new SessionConfigurationUnavailableError(checked?.diagnostics)
+  const characterId = checked?.selection?.characterCardId
+  if (typeof characterId !== 'string' || characterId === '') {
+    throw new SessionConfigurationCharacterRequiredError()
+  }
+  const result = await playthroughController.create({
+    character: {
+      id: characterId,
+      name: checked?.contents?.characterCard?.name || characterId,
+    },
+    selectionFromSessionId: source?.mode === 'current' ? source.sessionId : null,
+    configureSession: targetSessionId => applySelection(targetSessionId, source),
+  })
+  openSession(result.sessionId)
+  refresh()
+  return result.sessionId
 }

@@ -130,6 +130,7 @@ export function sourceSessionIdForCharacter(character) {
 export async function createCharacterPlaythrough(client, {
   character,
   selectionFromSessionId = null,
+  configureSession = null,
   now = () => new Date(),
   randomUUID = () => globalThis.crypto.randomUUID(),
 } = {}) {
@@ -146,11 +147,13 @@ export async function createCharacterPlaythrough(client, {
   const latest = latestCharacterPlaythrough(catalog, characterId)
   if (latest !== null && await playthroughIsReusable(client, latest)) {
     const sessionId = rootSessionId(latest)
+    if (typeof configureSession === 'function') await configureSession(sessionId)
     await ensureCharacterSelection(client, sessionId, characterId)
     return { sessionId, playthrough: latest, reused: true }
   }
   const created = await client.postSession(sourceId)
   const sessionId = safeSessionId(created?.sessionId)
+  if (typeof configureSession === 'function') await configureSession(sessionId)
   await ensureCharacterSelection(client, sessionId, characterId)
 
   const playthrough = {

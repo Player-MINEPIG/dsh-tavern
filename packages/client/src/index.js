@@ -25,6 +25,7 @@ import { installTavernTraceStyles, registerTavernTraceView } from '../../tavern-
 import { SessionTemplatePanel } from '../../session-template/src/client.js'
 import {
   createCleanSessionWorkflow,
+  createConfiguredPlaythroughWorkflow,
   workspaceTargetId,
 } from '../../session-template/src/client-state.js'
 import {
@@ -42,6 +43,7 @@ import { projectRpWorkspaceSetting, workspaceSelectionRequest } from './play/wor
 import { requiresSystemWorkspaceConfirmation } from './play/sidebar-model.js'
 import { createChromeModeServiceCore } from './play/chrome-service.js'
 import { startChromeModeTransport } from './play/chrome-transport.js'
+import { createPlaythroughController } from './play/create.js'
 import { API_V1 as API_ROOT, CHROME_SERVICE_NAME, CLIENT_REFRESH_EVENT, PLUGIN_ID } from '../../identity.js'
 
 const h = createLocalizedElement(createElement)
@@ -511,7 +513,7 @@ function RpHighRiskDialog({ onDismiss }) {
   )
 }
 
-function TavernShell({ useSessions, useWorkspaces, createCleanSession, playClient, playSlots, chromeService }) {
+function TavernShell({ useSessions, useWorkspaces, createCleanSession, createConfiguredPlaythrough, playClient, playSlots, chromeService }) {
   const [menuOpen, setMenuOpen] = useState(false)
   const [surface, setSurface] = useState(null)
   const [anchor, setAnchor] = useState(initialLauncherAnchor)
@@ -887,7 +889,14 @@ function TavernShell({ useSessions, useWorkspaces, createCleanSession, playClien
   } else if (surface === 'user') {
     panel = h(UserPanel, { sessionId, sessionBlank, close })
   } else if (surface === 'session-template') {
-    panel = h(SessionTemplatePanel, { sessionId, workspaceId, createCleanSession, close })
+    panel = h(SessionTemplatePanel, {
+      sessionId,
+      workspaceId,
+      chromeMode,
+      createCleanSession,
+      createConfiguredPlaythrough,
+      close,
+    })
   } else if (surface === 'settings') {
     panel = h(SettingsPanel, {
       settings: uiSettings,
@@ -1019,6 +1028,7 @@ export function apply(ctx) {
   installStyles()
   registerTavernTraceView(ctx)
   const playClient = createLivePlayClient()
+  const playthroughController = createPlaythroughController(playClient)
   const chrome = createChromeModeServiceCore({
     read: () => playClient.getChrome(),
     write: mode => playClient.putChrome(mode),
@@ -1035,7 +1045,7 @@ export function apply(ctx) {
       chrome.internal.dispose()
     }
   }, 'dsh-tavern: chrome mode service transport')
-  const playSlots = installPlaySlotOccupancy(ctx, playClient)
+  const playSlots = installPlaySlotOccupancy(ctx, playClient, { playthroughController })
   ctx.slots.inject('shell.overlay', () => ctx.slots.register({
     name: 'shell.overlay',
     id: `${PLUGIN_ID}-launcher`,
@@ -1053,6 +1063,17 @@ export function apply(ctx) {
           targetSessionId,
           source: selectedSource,
         }),
+        openSession: id => ctx.sessions.open(id),
+        refresh: () => window.dispatchEvent(new Event(CLIENT_REFRESH_EVENT)),
+      }),
+      createConfiguredPlaythrough: ({ source }) => createConfiguredPlaythroughWorkflow({
+        source,
+        preview: selectedSource => sessionConfigurationRequest('/session-configurations/preview', { source: selectedSource }),
+        applySelection: (targetSessionId, selectedSource) => sessionConfigurationRequest('/session-configurations/apply', {
+          targetSessionId,
+          source: selectedSource,
+        }),
+        playthroughController,
         openSession: id => ctx.sessions.open(id),
         refresh: () => window.dispatchEvent(new Event(CLIENT_REFRESH_EVENT)),
       }),

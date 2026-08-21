@@ -111,6 +111,21 @@ test('copied DSH settings are corrected when they still point at the previously 
   ])
 })
 
+test('configured playthrough applies the full selection before enforcing the owning character', async () => {
+  const client = fakeClient({ copied: true })
+  const configured = []
+  await createCharacterPlaythrough(client, {
+    character: { id: 'character-b', name: 'Bob' },
+    configureSession: async sessionId => {
+      configured.push(sessionId)
+      await client.putCharacterSelection(sessionId, 'character-b', { greetingIndex: 3 })
+    },
+    ...dependencies,
+  })
+  assert.deepEqual(configured, ['session-new'])
+  assert.equal(client.calls.filter(call => call[0] === 'putCharacterSelection').length, 1)
+})
+
 test('playthrough numbers are character-local and survive renamed or legacy rows', () => {
   const catalog = { playthroughs: [
     { id: 'a-old', ext: { pmpDshTavern: { characterId: 'a' } } },
