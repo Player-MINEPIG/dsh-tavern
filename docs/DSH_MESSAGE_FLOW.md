@@ -74,6 +74,22 @@ DSH 的四条数据通道彼此独立：
 - `@deepseek-ai/dsh-session/lib/index.js`：`Session.deriveMessages()`；
 - `@deepseek-ai/dsh-llm/README.zh.md`：消息、call config 与 `request/header` 契约。
 
+### 1.1 为什么周目分支没有使用 message surface replacement
+
+DSH 的 Session 同时保留 append-only 事件日志和 model-visible message surface。surface replacement 不删除原事件，而是追加一个新 message 节点，用它遮蔽当前 surface 上的一段连续节点。替换节点本身仍是当前 surface 节点，因此以后可以再次被 replace；已经被遮蔽的原始 user、assistant 和 tool 事件则继续留在本地 Session 日志中，可供 transcript、审计和重新计算使用。
+
+这项能力仍不是可逆的 ST 式历史重组接口：
+
+- 后续 replacement 只能定位当前 surface 上仍可见的节点，不能执行 `unreplace` 让旧节点原位重新可见；
+- 一次 replacement 是“连续区间 → 一个新 message”，不能原子返回多条 user/assistant 交替消息；
+- `agent/request` 只改变 call config，当前也没有公开的 per-request history waterfall 可在不写 Session 的情况下返回任意 `messages[]`；
+- 用单个 user checkpoint 承载整段 RP 对话会丢失原生 role、tool-call/result 和逐消息 action 边界；把原文复制成多条新消息又会制造第二份 durable history，并需要额外的原子性和并发协议；
+- DSH 原生 compaction 也使用同一 surface replacement。DT 若再把它当分支树使用，会让两种不同语义争用同一个 model-visible surface。
+
+因此 DT 的 swipe、同周目回退和分支新周目采用 DSH 公开 session branch/fork 能力创建 continuation session，而不是改写原 session surface。每个分支都拥有 DSH 原生可解释的历史、工具配对、请求头和独立 compaction；原生“对话”视图、其他插件和卸载后的 Host 仍能按普通 DSH session 工作。Tavern timeline 只保存这些权威消息的指针、父 variant 与活动 head，用多个 session 组合出周目树，不伪造或复制历史正文。
+
+如果以后 DSH 提供公开的 request-time history projection（输入冻结的原生历史，输出仅供本次请求使用的 `messages[]`），或提供原子的多 message surface replacement，RP 模式可以在不改原始 Session 的前提下增加可选的严格 ST 投影策略。在此之前，DT 的 system/context 注入不得宣称等同于历史替换。
+
 ## 2. DT 自己的 flow
 
 DT 内部先把“资源管理”和“运行时编译”分开。前端及 API 属于控制面，不直接给模型发送消息；loader 才是运行时数据面。

@@ -1,5 +1,16 @@
 # Development changelog
 
+## 2026-08-21 — Document session branches over surface replacement
+
+- Documented that DSH surface replacements can themselves be replaced while
+  the append-only source events remain available for transcript and audit.
+- Recorded why the current one-message replacement primitive cannot atomically
+  restore an arbitrary user/assistant sequence or act as a per-request history
+  projection.
+- Kept RP swipe and rollback on public DSH branch sessions so native history,
+  tool pairing, compaction, original Chat and uninstall fallback remain valid;
+  Tavern timeline metadata only composes those sessions into a playthrough tree.
+
 ## 2026-08-21 — Branch RP timelines and retry from message actions
 
 - Added additive `parentVariantId` and active `head` timeline fields so each swipe can own a different downstream branch while DSH messages remain authoritative pointers.
