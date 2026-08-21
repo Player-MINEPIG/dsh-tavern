@@ -1,4 +1,8 @@
 import { updateTimeline } from './mutations.js'
+import {
+  activeVariantEnd,
+  timelineHead,
+} from '../../../play/src/timeline-tree.js'
 
 function recordedEndSeq(timeline, sessionId) {
   let end = -1
@@ -7,7 +11,7 @@ function recordedEndSeq(timeline, sessionId) {
       if (variant.sessionId === sessionId) end = Math.max(end, variant.endEventId)
     }
   }
-  return end
+  return Math.max(end, activeVariantEnd(timeline, sessionId))
 }
 
 function defaultId(prefix, sessionId, startEventId, endEventId) {
@@ -25,6 +29,7 @@ export function appendCompletedTurns(timeline, messageState, sessionId, {
     .filter(message => Number.isSafeInteger(message.seq) && message.seq > boundary)
     .sort((left, right) => left.seq - right.seq)
   const added = []
+  let parentVariantId = timelineHead(timeline)?.variantId ?? null
   let user = null
   let assistant = null
   const appendPair = () => {
@@ -36,6 +41,7 @@ export function appendCompletedTurns(timeline, messageState, sessionId, {
       kind: 'qa',
       hidden: false,
       displayOverride: null,
+      parentVariantId,
       adoptedVariantId: variantId,
       variants: [{
         id: variantId,
@@ -44,6 +50,7 @@ export function appendCompletedTurns(timeline, messageState, sessionId, {
         endEventId: assistant.seq,
       }],
     })
+    parentVariantId = variantId
   }
   for (const message of messages) {
     if (message.role === 'user') {
@@ -63,7 +70,16 @@ export function appendCompletedTurns(timeline, messageState, sessionId, {
   }
   appendPair()
   if (added.length === 0) return { timeline, added }
-  return { timeline: { ...timeline, nodes: [...timeline.nodes, ...added] }, added }
+  const tail = added.at(-1)
+  const variant = tail.variants[0]
+  return {
+    timeline: {
+      ...timeline,
+      nodes: [...timeline.nodes, ...added],
+      head: { sessionId, nodeId: tail.id, variantId: variant.id },
+    },
+    added,
+  }
 }
 
 export function createTurnReconciler(client) {

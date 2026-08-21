@@ -1,16 +1,19 @@
 import { httpError } from './http.js'
+import { timelineHead } from './timeline-tree.js'
 
 const NODE_KEYS = new Set([
   'id',
   'kind',
   'hidden',
   'displayOverride',
+  'parentVariantId',
   'adoptedVariantId',
   'variants',
   'ext',
 ])
 const VARIANT_KEYS = new Set(['id', 'sessionId', 'startEventId', 'endEventId', 'ext'])
-const TIMELINE_KEYS = new Set(['nodes', 'ext'])
+const TIMELINE_KEYS = new Set(['nodes', 'head', 'ext'])
+const HEAD_KEYS = new Set(['sessionId', 'nodeId', 'variantId'])
 
 function isRecord(value) {
   return value !== null && typeof value === 'object' && !Array.isArray(value)
@@ -100,6 +103,11 @@ export function normalizeNode(value, label = 'node') {
     kind: value.kind,
     hidden: value.hidden === true,
     displayOverride: value.displayOverride === undefined ? null : value.displayOverride,
+    ...(Object.hasOwn(value, 'parentVariantId') ? {
+      parentVariantId: value.parentVariantId === null
+        ? null
+        : requireId(value.parentVariantId, `${label}.parentVariantId`),
+    } : {}),
     adoptedVariantId,
     variants,
     ...(value.ext === undefined ? {} : { ext: normalizeExt(value.ext, `${label}.ext`) }),
@@ -113,12 +121,41 @@ export function normalizeTimeline(value) {
   if (!Array.isArray(value.nodes)) throw httpError(400, 'timeline.nodes must be an array', 'PLAY_TIMELINE_INVALID')
   const nodes = value.nodes.map((node, index) => normalizeNode(node, `nodes[${index}]`))
   const ids = new Set()
+  const variantOwners = new Map()
   for (const node of nodes) {
     if (ids.has(node.id)) throw httpError(400, 'timeline node ids must be unique', 'PLAY_TIMELINE_INVALID')
     ids.add(node.id)
+    for (const variant of node.variants) {
+      if (variantOwners.has(variant.id) && (value.head !== undefined || nodes.some(item => Object.hasOwn(item, 'parentVariantId')))) {
+        throw httpError(400, 'tree timeline variant ids must be globally unique', 'PLAY_TIMELINE_INVALID')
+      }
+      variantOwners.set(variant.id, node.id)
+    }
+  }
+  for (const [index, node] of nodes.entries()) {
+    if (!Object.hasOwn(node, 'parentVariantId') || node.parentVariantId === null) continue
+    const parentNodeId = variantOwners.get(node.parentVariantId)
+    if (parentNodeId === undefined) throw httpError(400, `nodes[${index}].parentVariantId is unknown`, 'PLAY_TIMELINE_INVALID')
+    const parentIndex = nodes.findIndex(item => item.id === parentNodeId)
+    if (parentIndex >= index) throw httpError(400, `nodes[${index}].parentVariantId must reference an earlier node`, 'PLAY_TIMELINE_INVALID')
+  }
+  let head
+  if (value.head !== undefined) {
+    if (!isRecord(value.head)) throw httpError(400, 'timeline.head must be an object', 'PLAY_TIMELINE_INVALID')
+    unexpectedKey(value.head, HEAD_KEYS, 'timeline.head')
+    head = {
+      sessionId: requireId(value.head.sessionId, 'timeline.head.sessionId'),
+      nodeId: requireId(value.head.nodeId, 'timeline.head.nodeId'),
+      variantId: requireId(value.head.variantId, 'timeline.head.variantId'),
+    }
+    const owner = variantOwners.get(head.variantId)
+    if (owner === undefined || owner !== head.nodeId) {
+      throw httpError(400, 'timeline.head must reference a variant on its node', 'PLAY_TIMELINE_INVALID')
+    }
   }
   return {
     nodes,
+    ...(head === undefined ? {} : { head }),
     ...(value.ext === undefined ? {} : { ext: validateKnownTimelineExt(normalizeExt(value.ext, 'timeline.ext'), 'timeline.ext') }),
   }
 }
@@ -138,7 +175,10 @@ export function parseTimelineJson(text) {
  * Hidden QA nodes are not rendered. Empty timelines have no focus session.
  */
 export function deriveFocus(timeline) {
-  const nodes = Array.isArray(timeline?.nodes) ? timeline.nodes : normalizeTimeline(timeline).nodes
+  const normalized = Array.isArray(timeline?.nodes) ? timeline : normalizeTimeline(timeline)
+  const explicit = timelineHead(normalized)
+  if (normalized.head !== undefined && explicit !== null) return explicit
+  const nodes = normalized.nodes
   for (let index = nodes.length - 1; index >= 0; index -= 1) {
     const node = nodes[index]
     if (node.hidden === true) continue

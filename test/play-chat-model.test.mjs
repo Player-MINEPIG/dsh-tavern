@@ -118,6 +118,40 @@ test('timeline projection renders only adopted visible QA ranges', () => {
   assert.equal(projectTimelineQa(overridden, { fork: [] })[0].hidden, true)
 })
 
+test('tree timeline projection follows only ancestors of the active head', () => {
+  const timeline = {
+    nodes: [
+      {
+        id: 'root', kind: 'qa', hidden: false, displayOverride: null,
+        parentVariantId: null, adoptedVariantId: 'root-a', variants: [
+          { id: 'root-a', sessionId: 'a', startEventId: 1, endEventId: 2 },
+          { id: 'root-b', sessionId: 'b', startEventId: 1, endEventId: 2 },
+        ],
+      },
+      {
+        id: 'a-child', kind: 'qa', hidden: false, displayOverride: null,
+        parentVariantId: 'root-a', adoptedVariantId: 'a-child-v', variants: [
+          { id: 'a-child-v', sessionId: 'a', startEventId: 3, endEventId: 4 },
+        ],
+      },
+      {
+        id: 'b-child', kind: 'qa', hidden: false, displayOverride: null,
+        parentVariantId: 'root-b', adoptedVariantId: 'b-child-v', variants: [
+          { id: 'b-child-v', sessionId: 'b', startEventId: 3, endEventId: 4 },
+        ],
+      },
+    ],
+    head: { sessionId: 'b', nodeId: 'b-child', variantId: 'b-child-v' },
+  }
+  const message = (text, seq, role) => ({ text, seq, role, content: [{ type: 'text', text }] })
+  const projected = projectTimelineQa(timeline, {
+    a: { messages: [message('A user', 1, 'user'), message('A reply', 2, 'assistant'), message('A2 user', 3, 'user'), message('A2 reply', 4, 'assistant')] },
+    b: { messages: [message('B user', 1, 'user'), message('B reply', 2, 'assistant'), message('B2 user', 3, 'user'), message('B2 reply', 4, 'assistant')] },
+  })
+  assert.deepEqual(projected.map(turn => turn.id), ['root', 'b-child'])
+  assert.deepEqual(projected.map(turn => turn.assistantText), ['B reply', 'B2 reply'])
+})
+
 test('live projection shows the durable user immediately and streams only assistant text blocks', () => {
   const live = projectLiveTurns({
     timeline: { nodes: [] },

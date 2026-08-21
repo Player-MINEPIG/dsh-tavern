@@ -112,6 +112,7 @@ test('an interrupted durable assistant prefix becomes a normal QA reference', ()
     kind: 'qa',
     hidden: false,
     displayOverride: null,
+    parentVariantId: null,
     adoptedVariantId: 'variant-session-a-10-12',
     variants: [{
       id: 'variant-session-a-10-12',

@@ -1,4 +1,8 @@
 import { characterGreetingOptions } from '../../../character/src/client-state.js'
+import {
+  activeTimelineEntries,
+  activeVariantEnd,
+} from '../../../play/src/timeline-tree.js'
 
 function normalizedPath(value) {
   return typeof value === 'string'
@@ -24,7 +28,7 @@ function recordedEndSeq(timeline, sessionId) {
       }
     }
   }
-  return end
+  return Math.max(end, activeVariantEnd(timeline, sessionId))
 }
 
 function contentText(content) {
@@ -139,10 +143,8 @@ export async function loadCurrentPlaythrough(client, session, options = {}) {
 
 export function projectTimelineQa(timeline, messagesBySession = {}) {
   const result = []
-  for (const node of timeline?.nodes ?? []) {
+  for (const { node, variant } of activeTimelineEntries(timeline)) {
     if (node.kind !== 'qa') continue
-    const variant = adoptedVariant(node)
-    if (variant === null) continue
     const messages = messagesBySession[variant.sessionId]?.messages
       ?? messagesBySession[variant.sessionId]
       ?? []

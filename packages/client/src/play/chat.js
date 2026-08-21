@@ -36,6 +36,7 @@ import {
   loadPlaythroughImportContext,
   unbindPlaythroughImport,
 } from './import.js'
+import { activeTimelineEntries } from '../../../play/src/timeline-tree.js'
 
 const h = createLocalizedElement(createElement)
 const turnReconcilers = new WeakMap()
@@ -63,8 +64,7 @@ export function installPlayChatStyles() {
 
 function adoptedSessionIds(timeline, currentSessionId) {
   const ids = new Set([currentSessionId])
-  for (const node of timeline?.nodes ?? []) {
-    const variant = node.variants?.find(item => item.id === node.adoptedVariantId)
+  for (const { variant } of activeTimelineEntries(timeline)) {
     if (typeof variant?.sessionId === 'string' && variant.sessionId !== '') ids.add(variant.sessionId)
   }
   return [...ids]

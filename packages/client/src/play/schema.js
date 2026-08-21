@@ -96,6 +96,11 @@ export function normalizeTimelineNode(value, label = 'node') {
     kind: 'qa',
     hidden: value.hidden === true,
     displayOverride: value.displayOverride ?? null,
+    ...(Object.hasOwn(value, 'parentVariantId') ? {
+      parentVariantId: value.parentVariantId === null
+        ? null
+        : stringId(value.parentVariantId, `${label}.parentVariantId`),
+    } : {}),
     adoptedVariantId,
     variants,
     ...(ext === undefined ? {} : { ext }),
@@ -107,12 +112,34 @@ export function normalizeTimeline(value, label = 'timeline') {
   if (!Array.isArray(value.nodes)) fail(label, 'nodes must be an array')
   const nodes = value.nodes.map((item, index) => normalizeTimelineNode(item, `${label}.nodes[${index}]`))
   const ids = new Set()
+  const variantOwners = new Map()
+  const tree = value.head !== undefined || nodes.some(node => Object.hasOwn(node, 'parentVariantId'))
   for (const node of nodes) {
     if (ids.has(node.id)) fail(label, `duplicate node id ${node.id}`)
     ids.add(node.id)
+    for (const variant of node.variants) {
+      if (tree && variantOwners.has(variant.id)) fail(label, `duplicate tree variant id ${variant.id}`)
+      variantOwners.set(variant.id, node.id)
+    }
+  }
+  for (const [index, node] of nodes.entries()) {
+    if (!Object.hasOwn(node, 'parentVariantId') || node.parentVariantId === null) continue
+    const parentNodeId = variantOwners.get(node.parentVariantId)
+    if (parentNodeId === undefined) fail(`${label}.nodes[${index}]`, 'parentVariantId is unknown')
+    if (nodes.findIndex(item => item.id === parentNodeId) >= index) fail(`${label}.nodes[${index}]`, 'parentVariantId must reference an earlier node')
+  }
+  let head
+  if (value.head !== undefined) {
+    if (!isRecord(value.head)) fail(`${label}.head`, 'must be an object')
+    head = {
+      sessionId: stringId(value.head.sessionId, `${label}.head.sessionId`),
+      nodeId: stringId(value.head.nodeId, `${label}.head.nodeId`),
+      variantId: stringId(value.head.variantId, `${label}.head.variantId`),
+    }
+    if (variantOwners.get(head.variantId) !== head.nodeId) fail(`${label}.head`, 'must reference a variant on its node')
   }
   const ext = extRecord(value.ext, `${label}.ext`)
-  return { nodes, ...(ext === undefined ? {} : { ext }) }
+  return { nodes, ...(head === undefined ? {} : { head }), ...(ext === undefined ? {} : { ext }) }
 }
 
 export function normalizeCatalog(value, label = 'catalog') {

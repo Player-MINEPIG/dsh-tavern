@@ -22,6 +22,15 @@ export {
   validatePlayDocument,
 } from './timeline.js'
 export {
+  activeTimelineEntries,
+  activeTimelineNodes,
+  activeVariantEnd,
+  isTreeTimeline,
+  legacyTimelineHead,
+  timelineHead,
+  timelineWithHead,
+} from './timeline-tree.js'
+export {
   createSessionApiHandler,
   formatPlaySessionTitle,
   hasOpenTurn,

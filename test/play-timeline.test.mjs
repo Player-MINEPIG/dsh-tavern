@@ -99,6 +99,32 @@ test('deriveFocus uses the last rendered QA adopted variant and ignores unused o
   assert.equal(deriveFocus(hiddenTail).sessionId, 'session-root')
 })
 
+test('tree timeline derives focus from the explicit active branch head', () => {
+  const tree = {
+    nodes: [
+      {
+        id: 'root', kind: 'qa', hidden: false, displayOverride: null,
+        parentVariantId: null, adoptedVariantId: 'root-a', variants: [
+          { id: 'root-a', sessionId: 'session-a', startEventId: 1, endEventId: 2 },
+          { id: 'root-b', sessionId: 'session-b', startEventId: 1, endEventId: 3 },
+        ],
+      },
+      {
+        id: 'child-a', kind: 'qa', hidden: false, displayOverride: null,
+        parentVariantId: 'root-a', adoptedVariantId: 'child-a-v', variants: [
+          { id: 'child-a-v', sessionId: 'session-a', startEventId: 4, endEventId: 5 },
+        ],
+      },
+    ],
+    head: { sessionId: 'session-b', nodeId: 'root', variantId: 'root-b' },
+  }
+  assert.deepEqual(normalizeTimeline(tree), tree)
+  assert.deepEqual(deriveFocus(tree), tree.head)
+  assert.throws(() => normalizeTimeline({
+    ...tree, head: { sessionId: 'session-b', nodeId: 'child-a', variantId: 'root-b' },
+  }), /head must reference/)
+})
+
 test('PUT timeline.json validates before writing; catalog.json likewise', async () => {
   const pluginDir = mkdtempSync(join(tmpdir(), 'dsh-tavern-play-timeline-plugin-'))
   const playRoot = mkdtempSync(join(tmpdir(), 'dsh-tavern-play-timeline-root-'))
