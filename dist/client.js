@@ -3728,6 +3728,7 @@ var zh_CN_default = Object.freeze({
   "common.refresh": "\u5237\u65B0",
   "common.delete": "\u5220\u9664",
   "common.save": "\u4FDD\u5B58",
+  "common.cancel": "\u53D6\u6D88",
   "common.saveChanges": "\u4FDD\u5B58\u4FEE\u6539",
   "common.saved": "\u5DF2\u4FDD\u5B58",
   "common.reload": "\u91CD\u65B0\u8F7D\u5165",
@@ -4322,6 +4323,7 @@ var en_default = Object.freeze({
   "common.refresh": "Refresh",
   "common.delete": "Delete",
   "common.save": "Save",
+  "common.cancel": "Cancel",
   "common.saveChanges": "Save changes",
   "common.saved": "Saved",
   "common.reload": "Reload",
@@ -10931,6 +10933,7 @@ var h7 = createLocalizedElement(import_react8.createElement);
 var controllers = /* @__PURE__ */ new WeakMap();
 var css6 = `
 .dtv-play-turn-actions{display:flex;align-items:center;gap:2px;min-height:28px}.dtv-play-turn-action{width:28px;height:28px;border:0;border-radius:8px;background:transparent;color:var(--dsw-alias-label-tertiary);font:inherit;cursor:pointer;display:grid;place-items:center}.dtv-play-turn-action:hover{background:var(--dsw-alias-interactive-bg-hover);color:var(--dsw-alias-label-primary)}.dtv-play-turn-action:disabled{cursor:default;opacity:.38}.dtv-play-turn-position{padding:0 5px;color:var(--dsw-alias-label-tertiary);font-size:10px}
+.dtv-play-display-editor{display:flex;flex-direction:column;align-self:stretch;gap:8px}.dtv-play-display-editor textarea{box-sizing:border-box;width:100%;min-height:180px;max-height:55vh;resize:vertical;padding:12px 14px;border:1px solid var(--dsw-alias-border-l2);border-radius:12px;background:var(--dsw-alias-bg-base);color:var(--dsw-alias-label-primary);font:inherit;font-size:14px;line-height:1.65}.dtv-play-display-editor textarea:focus{outline:2px solid color-mix(in srgb,var(--dsw-alias-state-business-primary,#2677d9) 35%,transparent);border-color:var(--dsw-alias-state-business-primary,#2677d9)}.dtv-play-display-editor-actions{display:flex;justify-content:flex-end;gap:8px}.dtv-play-display-editor-button{min-width:76px;min-height:34px;padding:7px 12px;border:1px solid var(--dsw-alias-border-l2);border-radius:8px;background:var(--dsw-alias-button-secondary-fill,var(--dsw-alias-bg-base));color:var(--dsw-alias-label-primary);font:inherit;cursor:pointer}.dtv-play-display-editor-button[data-primary=true]{border-color:transparent;background:var(--dsw-alias-state-business-primary,#2677d9);color:var(--dsw-alias-button-primary-label,#fff)}.dtv-play-display-editor-button:disabled{cursor:default;opacity:.45}
 `;
 function installStyles() {
   if (document.querySelector(`style[data-plugin-css="${PLUGIN_ID}-play-turn-actions"]`) !== null) return;
@@ -10980,9 +10983,11 @@ function PlayTurnActions({
 }) {
   installStyles();
   const [busy, setBusy] = (0, import_react8.useState)(false);
+  const [editor, setEditor] = (0, import_react8.useState)(null);
   const disabled = running || busy;
   const position = Math.max(0, turn.variants.findIndex((item) => item.id === turn.variant.id));
   const capabilities = turnActionCapabilities(turn);
+  (0, import_react8.useEffect)(() => setEditor(null), [turn.id, turn.variant.id]);
   const mutate = async (operation) => {
     if (disabled) return;
     setBusy(true);
@@ -11019,6 +11024,48 @@ function PlayTurnActions({
         disabled,
         onClick: () => mutate(() => controller(playClient).setHidden(playthrough, turn.id, false))
       })
+    );
+  }
+  if (editor !== null) {
+    return h7(
+      "form",
+      {
+        className: "dtv-play-display-editor",
+        onSubmit: (event) => {
+          event.preventDefault();
+          const value = editor;
+          mutate(async () => {
+            await controller(playClient).setDisplayOverride(playthrough, turn.id, value);
+            setEditor(null);
+          });
+        }
+      },
+      h7("textarea", {
+        value: editor,
+        autoFocus: true,
+        disabled,
+        "aria-label": uiMessage("play.chat.editDisplayPrompt"),
+        onChange: (event) => setEditor(event.target.value),
+        onKeyDown: (event) => {
+          if (event.key === "Escape" && !disabled) setEditor(null);
+        }
+      }),
+      h7(
+        "div",
+        { className: "dtv-play-display-editor-actions" },
+        h7("button", {
+          type: "button",
+          className: "dtv-play-display-editor-button",
+          disabled,
+          onClick: () => setEditor(null)
+        }, uiMessage("common.cancel")),
+        h7("button", {
+          type: "submit",
+          className: "dtv-play-display-editor-button",
+          "data-primary": true,
+          disabled
+        }, uiMessage("common.save"))
+      )
     );
   }
   return h7(
@@ -11062,10 +11109,7 @@ function PlayTurnActions({
       icon: "\u270E",
       label: uiMessage("play.chat.editDisplay"),
       disabled,
-      onClick: () => {
-        const value = window.prompt(translate("play.chat.editDisplayPrompt"), turn.assistantText);
-        if (value !== null) mutate(() => controller(playClient).setDisplayOverride(playthrough, turn.id, value));
-      }
+      onClick: () => setEditor(turn.assistantText)
     }),
     turn.displayOverridden ? h7(Action, {
       icon: "\u21BA",
