@@ -218,6 +218,11 @@ export function projectPlaySidebar({
   for (const id of ids) {
     const session = sessions[id]
     if (session == null || archived.has(id)) continue
+    // DSH exposes durable subagents through the ordinary session mirror so their
+    // transcripts can reuse the conversation machinery. They retain a distinct
+    // public origin and belong in DSH's subagent catalog, not Tavern's ordinary
+    // or unassigned-session groups. Ordinary forks do not carry this origin.
+    if (session.origin === 'subagent') continue
     if (!rpSessionIds.has(id)) {
       otherSessions.push({ id, title: sessionTitle(session, id), active: currentId === id, kind: 'external' })
       continue

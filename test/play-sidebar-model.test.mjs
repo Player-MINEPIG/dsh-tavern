@@ -20,11 +20,12 @@ test('RP workspace membership wins over timeline metadata and character binding'
     's-root': session('s-root', 'D:\\Roleplay'),
     's-unassigned': session('s-unassigned', 'D:\\Roleplay', 'Loose card session'),
     's-ordinary': session('s-ordinary', 'D:\\Roleplay', 'Regular session'),
+    's-subagent': { ...session('s-subagent', 'D:\\Roleplay', 'Child worker'), origin: 'subagent', parentSession: 's-root' },
     's-archived': session('s-archived', 'D:\\Roleplay'),
     's-external': session('s-external', 'D:\\Other', 'Moved outside RP'),
   }
   const workspace = { selected: true, rootPath: 'D:\\Roleplay', workspaceId: 'workspace-rp' }
-  const workspaceItems = [{ workspaceId: 'workspace-rp', sessionIds: ['s-play', 's-root', 's-unassigned', 's-ordinary', 's-archived'] }]
+  const workspaceItems = [{ workspaceId: 'workspace-rp', sessionIds: ['s-play', 's-root', 's-unassigned', 's-ordinary', 's-subagent', 's-archived'] }]
   const catalog = {
     playthroughs: [{
       id: 'pt-a',
@@ -68,6 +69,7 @@ test('RP workspace membership wins over timeline metadata and character binding'
     ['s-ordinary', 'ordinary'],
     ['s-external', 'external'],
   ])
+  assert.equal(model.characters.some(item => item.unassigned.some(entry => entry.id === 's-subagent')), false)
   assert.deepEqual(model.playSessionIds.sort(), ['s-play', 's-root'])
 })
 

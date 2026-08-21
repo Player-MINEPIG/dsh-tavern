@@ -10570,6 +10570,7 @@ function projectPlaySidebar({
   for (const id of ids) {
     const session = sessions[id];
     if (session == null || archived.has(id)) continue;
+    if (session.origin === "subagent") continue;
     if (!rpSessionIds.has(id)) {
       otherSessions.push({ id, title: sessionTitle(session, id), active: currentId === id, kind: "external" });
       continue;
