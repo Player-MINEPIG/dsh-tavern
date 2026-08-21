@@ -10490,6 +10490,7 @@ function projectPlaySidebar({
   sessionIds = [],
   archivedSessionIds = [],
   currentId = null,
+  activePlaythroughId = null,
   sessionCharacters = {}
 } = {}) {
   const archived = new Set(archivedSessionIds);
@@ -10516,7 +10517,7 @@ function projectPlaySidebar({
       title: typeof playthrough.title === "string" && playthrough.title !== "" ? playthrough.title : playthrough.id,
       rootSessionId: rootId !== null && members.includes(rootId) ? rootId : null,
       sessionIds: members,
-      active: currentId !== null && members.includes(currentId),
+      active: typeof activePlaythroughId === "string" && activePlaythroughId !== "" ? playthrough.id === activePlaythroughId : currentId !== null && members.includes(currentId),
       missing: members.length === 0
     });
   }
@@ -12561,7 +12562,9 @@ function PlayWorkspaceBrowser({
   useWorkspaces,
   playClient,
   playthroughController,
-  openSession
+  openSession,
+  getActivePlaythroughId,
+  subscribeActivePlaythroughId
 }) {
   installStyles3();
   const scale = useUiScale();
@@ -12588,6 +12591,14 @@ function PlayWorkspaceBrowser({
   const [collapsedCharacters, setCollapsedCharacters] = (0, import_react11.useState)(() => /* @__PURE__ */ new Set());
   const [expandedUnassigned, setExpandedUnassigned] = (0, import_react11.useState)(() => /* @__PURE__ */ new Set());
   const [otherOpen, setOtherOpen] = (0, import_react11.useState)(false);
+  const [activePlaythroughId, setActivePlaythroughId] = (0, import_react11.useState)(
+    () => getActivePlaythroughId?.() ?? null
+  );
+  (0, import_react11.useEffect)(() => {
+    if (typeof subscribeActivePlaythroughId !== "function") return void 0;
+    setActivePlaythroughId(getActivePlaythroughId?.() ?? null);
+    return subscribeActivePlaythroughId(setActivePlaythroughId);
+  }, [getActivePlaythroughId, subscribeActivePlaythroughId]);
   (0, import_react11.useEffect)(() => {
     const refresh = () => {
       cache.current.clear();
@@ -12641,6 +12652,7 @@ function PlayWorkspaceBrowser({
     sessionIds,
     archivedSessionIds,
     currentId,
+    activePlaythroughId,
     sessionCharacters
   });
   const bindWorkspace = async (workspace) => {
@@ -12992,7 +13004,14 @@ function installPlaySlotOccupancy(ctx, playClient, { playthroughController } = {
   let chatBinding = null;
   let pendingChatSignature = null;
   let preferredPlaythroughId = null;
+  const playthroughSelectionListeners = /* @__PURE__ */ new Set();
   const completedDefaultViewAttempts = /* @__PURE__ */ new Set();
+  const selectPlaythrough = (playthroughId) => {
+    const next = typeof playthroughId === "string" && playthroughId !== "" ? playthroughId : null;
+    if (next === preferredPlaythroughId) return;
+    preferredPlaythroughId = next;
+    for (const listener of playthroughSelectionListeners) listener(next);
+  };
   const dropEntry = () => {
     const dispose = disposeEntry;
     disposeEntry = null;
@@ -13012,7 +13031,12 @@ function installPlaySlotOccupancy(ctx, playClient, { playthroughController } = {
       inject: () => ({
         playClient,
         playthroughController,
-        openSession: (sessionId, playthrough = null) => openPlaySession(sessionId, playthrough)
+        openSession: (sessionId, playthrough = null) => openPlaySession(sessionId, playthrough),
+        getActivePlaythroughId: () => preferredPlaythroughId,
+        subscribeActivePlaythroughId: (listener) => {
+          playthroughSelectionListeners.add(listener);
+          return () => playthroughSelectionListeners.delete(listener);
+        }
       })
     }, PlayWorkspaceBrowser);
   };
@@ -13095,7 +13119,7 @@ function installPlaySlotOccupancy(ctx, playClient, { playthroughController } = {
   };
   const sessionSignature = (session) => `${session.id}\0${String(session.cwd ?? "")}`;
   const openPlaySession = (sessionId, playthrough = null) => {
-    preferredPlaythroughId = typeof playthrough?.id === "string" ? playthrough.id : null;
+    selectPlaythrough(playthrough?.id);
     const result = ctx.sessions.open(sessionId);
     queueMicrotask(() => reconcileChat(true));
     return result;
@@ -13169,12 +13193,13 @@ function installPlaySlotOccupancy(ctx, playClient, { playthroughController } = {
       const latest = currentSession();
       if (generation !== chatGeneration || mode !== "play" || !chatDeclared || latest === null || sessionSignature(latest) !== signature) return;
       if (match === null) {
+        selectPlaythrough(null);
         dropChatEntry();
         return;
       }
       const samePlaythrough = chatBinding?.playthrough?.path === match.playthrough.path;
       if (!samePlaythrough) dropChatEntry();
-      preferredPlaythroughId = match.playthrough.id;
+      selectPlaythrough(match.playthrough.id);
       chatBinding = { signature, sessionId, playthrough: match.playthrough };
       syncChatEntries();
     }).catch(() => {

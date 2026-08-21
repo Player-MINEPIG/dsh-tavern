@@ -40,7 +40,15 @@ export function installPlaySlotOccupancy(ctx, playClient, { playthroughControlle
   let chatBinding = null
   let pendingChatSignature = null
   let preferredPlaythroughId = null
+  const playthroughSelectionListeners = new Set()
   const completedDefaultViewAttempts = new Set()
+
+  const selectPlaythrough = playthroughId => {
+    const next = typeof playthroughId === 'string' && playthroughId !== '' ? playthroughId : null
+    if (next === preferredPlaythroughId) return
+    preferredPlaythroughId = next
+    for (const listener of playthroughSelectionListeners) listener(next)
+  }
 
   const dropEntry = () => {
     const dispose = disposeEntry
@@ -64,6 +72,11 @@ export function installPlaySlotOccupancy(ctx, playClient, { playthroughControlle
         playClient,
         playthroughController,
         openSession: (sessionId, playthrough = null) => openPlaySession(sessionId, playthrough),
+        getActivePlaythroughId: () => preferredPlaythroughId,
+        subscribeActivePlaythroughId: listener => {
+          playthroughSelectionListeners.add(listener)
+          return () => playthroughSelectionListeners.delete(listener)
+        },
       }),
     }, PlayWorkspaceBrowser)
   }
@@ -158,7 +171,7 @@ export function installPlaySlotOccupancy(ctx, playClient, { playthroughControlle
   const sessionSignature = session => `${session.id}\u0000${String(session.cwd ?? '')}`
 
   const openPlaySession = (sessionId, playthrough = null) => {
-    preferredPlaythroughId = typeof playthrough?.id === 'string' ? playthrough.id : null
+    selectPlaythrough(playthrough?.id)
     const result = ctx.sessions.open(sessionId)
     queueMicrotask(() => reconcileChat(true))
     return result
@@ -240,6 +253,7 @@ export function installPlaySlotOccupancy(ctx, playClient, { playthroughControlle
         || latest === null
         || sessionSignature(latest) !== signature) return
       if (match === null) {
+        selectPlaythrough(null)
         dropChatEntry()
         return
       }
@@ -250,7 +264,7 @@ export function installPlaySlotOccupancy(ctx, playClient, { playthroughControlle
       // visibly flash even though only the authoritative DSH session changed.
       const samePlaythrough = chatBinding?.playthrough?.path === match.playthrough.path
       if (!samePlaythrough) dropChatEntry()
-      preferredPlaythroughId = match.playthrough.id
+      selectPlaythrough(match.playthrough.id)
       chatBinding = { signature, sessionId, playthrough: match.playthrough }
       syncChatEntries()
     }).catch(() => {

@@ -178,6 +178,8 @@ export function PlayWorkspaceBrowser({
   playClient,
   playthroughController,
   openSession,
+  getActivePlaythroughId,
+  subscribeActivePlaythroughId,
 }) {
   installStyles()
   const scale = useUiScale()
@@ -204,6 +206,15 @@ export function PlayWorkspaceBrowser({
   const [collapsedCharacters, setCollapsedCharacters] = useState(() => new Set())
   const [expandedUnassigned, setExpandedUnassigned] = useState(() => new Set())
   const [otherOpen, setOtherOpen] = useState(false)
+  const [activePlaythroughId, setActivePlaythroughId] = useState(
+    () => getActivePlaythroughId?.() ?? null,
+  )
+
+  useEffect(() => {
+    if (typeof subscribeActivePlaythroughId !== 'function') return undefined
+    setActivePlaythroughId(getActivePlaythroughId?.() ?? null)
+    return subscribeActivePlaythroughId(setActivePlaythroughId)
+  }, [getActivePlaythroughId, subscribeActivePlaythroughId])
 
   useEffect(() => {
     const refresh = () => {
@@ -256,6 +267,7 @@ export function PlayWorkspaceBrowser({
     sessionIds,
     archivedSessionIds,
     currentId,
+    activePlaythroughId,
     sessionCharacters,
   })
 

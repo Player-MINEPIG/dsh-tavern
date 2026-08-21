@@ -178,6 +178,7 @@ export function projectPlaySidebar({
   sessionIds = [],
   archivedSessionIds = [],
   currentId = null,
+  activePlaythroughId = null,
   sessionCharacters = {},
 } = {}) {
   const archived = new Set(archivedSessionIds)
@@ -205,7 +206,9 @@ export function projectPlaySidebar({
       title: typeof playthrough.title === 'string' && playthrough.title !== '' ? playthrough.title : playthrough.id,
       rootSessionId: rootId !== null && members.includes(rootId) ? rootId : null,
       sessionIds: members,
-      active: currentId !== null && members.includes(currentId),
+      active: typeof activePlaythroughId === 'string' && activePlaythroughId !== ''
+        ? playthrough.id === activePlaythroughId
+        : currentId !== null && members.includes(currentId),
       missing: members.length === 0,
     })
   }

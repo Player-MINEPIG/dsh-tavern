@@ -95,6 +95,38 @@ test('outside the selected RP workspace every session stays non-RP despite stale
   assert.deepEqual(model.otherSessions.map(item => [item.id, item.kind]), [['outside', 'external']])
 })
 
+test('an explicit playthrough selection stays unique when histories share the current session', () => {
+  const shared = session('shared', '/rp')
+  const catalog = {
+    playthroughs: ['first', 'second'].map(id => ({
+      id,
+      path: `character/${id}/timeline.json`,
+      ext: { pmpDshTavern: { characterId: 'character' } },
+    })),
+  }
+  const timelines = Object.fromEntries(catalog.playthroughs.map(playthrough => [
+    playthrough.path,
+    { nodes: [{ id: `qa-${playthrough.id}`, variants: [{ id: `v-${playthrough.id}`, sessionId: 'shared' }] }] },
+  ]))
+
+  const model = projectPlaySidebar({
+    workspace: { selected: true, rootPath: '/rp', workspaceId: 'rp' },
+    workspaceItems: [{ workspaceId: 'rp', sessionIds: ['shared'] }],
+    characters: [{ id: 'character', name: 'Character' }],
+    catalog,
+    timelines,
+    sessions: { shared },
+    sessionIds: ['shared'],
+    currentId: 'shared',
+    activePlaythroughId: 'second',
+  })
+
+  assert.deepEqual(model.characters[0].playthroughs.map(item => [item.id, item.active]), [
+    ['first', false],
+    ['second', true],
+  ])
+})
+
 test('workspace path fallback is canonicalized when the DSH workspace row is not loaded yet', () => {
   const ids = sessionIdsInRpWorkspace({
     workspace: { selected: true, rootPath: 'D:\\Roleplay\\', workspaceId: 'pending' },
