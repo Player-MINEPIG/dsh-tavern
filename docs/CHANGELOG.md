@@ -1,5 +1,12 @@
 # Development changelog
 
+## 2026-08-21 — Edit displayed replies inside the conversation
+
+- Replaced the browser single-line prompt with an inline, resizable multiline
+  editor at the assistant reply position.
+- Save still writes only the timeline `displayOverride`; Cancel or Escape
+  discards the draft, and the DSH message remains unchanged.
+
 ## 2026-08-21 — Preserve and render DSH message origin
 
 - Added additive `origin` provenance to v2 session messages without changing

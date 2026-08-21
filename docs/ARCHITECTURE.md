@@ -113,6 +113,7 @@ rc.6 的 `agent/inbox/spliced` 是公开、持久的 Session event；插入、�
 - 魔丸不渲染 reasoning 或 runtime context，也不提供展开入口；公开 `DisclosureRow` / Think icon 因此不再是该视图的迁移目标。用户需要运行细节时回到 DSH 原生“对话”。操作按钮仍可逐步采用公开图标与 `Tooltip`；DSH bundle 内未公开的 `ReasoningRow`、`MessageIconActions` 不属于可依赖接口。
 - DSH 的模型消息 `role` 与界面来源不是同一维度：公开 ConversationNode 已把运行时注入表示为 `kind: "context"`，但持久 history 投影仍可能给它 `role: "user"`。v2 因此在不改变 `role` 的前提下增加 additive `origin.kind`，并保留 `producer` / `form` / `summary` 等可选来源元数据。RP 前端必须按 `origin` 投影气泡、隐藏/单独呈现上下文和计算动作能力，不能靠文本、位置或“是否最后一段输出”猜测。
 - 内置动作能力遵循来源：真实用户/steering 触发的 assistant 输出可切换 variant 和重新生成；context 触发的父 agent 输出只保留不会重发触发内容的复制、周目分支、显示编辑与隐藏。控制器还会再次拒绝把 `origin=context` 当用户提示重发，避免 UI 缺陷绕过协议边界。显示正则清空输出时不渲染正文或动作，但 timeline 引用和 provenance 保留。
+- `displayOverride` 由 conversation 内的多行编辑器修改；保存、取消/Esc 均留在当前回复位置，不使用浏览器 `window.prompt`。保存继续通过既有 node controller 与 timeline CAS 写显示元数据，不改 DSH 原文或模型上下文。
 - **已批准为待办：** 周目导入/导出、资源选择等锚定菜单采用公开 `Menu`（含 portal、滚动/resize 重定位、紧凑模式），减少窄侧栏裁切和自维护定位 CSS；编辑、删除确认逐步采用公开 `Modal` / `Button` / `Input`，复制采用 `writeClipboard`。迁移仍按功能拆分提交和验收。
 - 已移除曾注册在 `conversation.input.left` 的重复导入/导出 `+`；周目 IO 只保留在侧边栏 `PlayIoMenu`，不会占用或改写原生 composer 左侧动作。
 - 早期为消息滚动写过本地锚点、遮挡量与 composer 高度补偿；已改回 DSH scrollport 的 `scrollTop = scrollHeight` 语义。以后先确认 Host 的滚动所有权，不再用固定像素模拟 sticky composer。

@@ -22,7 +22,7 @@ timeline 只保存 session/event 范围引用；路径 API 有根目录、相对
 | 外部记录绑定 | 已实现、已验收 | 绑定到当前空 root session，不新建 session 或 timeline；支持绑定、换绑、解绑，解绑后恢复 greeting。服务端会重复空会话锁定检查。 |
 | 最近三轮 QA | 已实现、已验收 | opening dock 显示导入记录最后三轮 QA；这是显示预览，不是 DSH 历史。 |
 | 一次性注入 | 已实现，待统一验收 | 首次 assembly 使用公开 `claimEventSeqs` 建立持久 claim；同一终态前可重放，终态后新 claim 不再注入。Tavern branch/swipe 复制不含正文的 lineage；中断后原 session 新消息不重复注入。 |
-| 功能按钮与周目分支 | 已实现，待统一验收 | hidden/displayOverride、已有 variant 切换、回复 swipe、中断 durable 前缀交接，以及从 adopted 回复创建可继续对话的新周目。 |
+| 功能按钮与周目分支 | 已实现，待统一验收 | hidden/displayOverride、已有 variant 切换、回复 swipe、中断 durable 前缀交接，以及从 adopted 回复创建可继续对话的新周目。显示编辑已改为 conversation 内多行编辑器，支持保存、取消与 Esc，不再使用浏览器 prompt。 |
 | 子 agent / 上下文注入显示 | 已实现，待统一验收 | v2 消息保留模型 `role` 并增加 `origin`；魔丸完全隐藏 reasoning/context，不画用户气泡也不提供展开。context 触发输出禁用回复切换/重新生成，控制器拒绝重发 context；正则清空输出时同步隐藏动作。 |
 
 表内“已验收”行为曾在 DSH 0.1.0-rc.8 通过用户验收。此后的 P0 加固、mode service/动画、默认工作区、功能按钮与周目分支已通过自动测试，仍等待 rc.8 统一人工验收和最终发布回归。
