@@ -5631,7 +5631,7 @@ function announceTavernRefresh2() {
   window.dispatchEvent(new CustomEvent(CLIENT_REFRESH_EVENT, { detail: { source: "character" } }));
 }
 var css2 = `
-.dcc-panel{position:absolute;top:0;right:0;bottom:0;width:min(440px,calc(100vw - 56px));pointer-events:auto;border-left:1px solid var(--dsw-alias-border-l2);box-shadow:var(--ds-shadow-3,-8px 0 28px rgba(0,0,0,.18));background:var(--dsw-alias-bg-base);color:var(--dsw-alias-label-primary);display:flex;flex-direction:column;font-family:Inter,var(--dsw-font-family),sans-serif}.dcc-header{height:52px;box-sizing:border-box;display:flex;align-items:center;gap:8px;padding:0 14px;border-bottom:1px solid var(--dsw-alias-border-l2);flex:none}.dcc-title{font-size:16px;font-weight:650;flex:1}.dcc-close{border:0;background:transparent;color:var(--dsw-alias-label-tertiary);cursor:pointer;border-radius:7px;padding:6px 8px;font-size:14px}.dcc-body{min-height:0;overflow:auto;padding:12px;display:flex;flex-direction:column;gap:12px}.dcc-toolbar{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}.dcc-actions{display:grid;grid-template-columns:1fr 1fr;gap:8px}.dcc-button{min-height:36px;border:1px solid var(--dsw-alias-border-l2);border-radius:8px;background:var(--dsw-alias-button-secondary-fill,var(--dsw-alias-bg-base));color:var(--dsw-alias-label-primary);cursor:pointer;padding:7px 10px;font-size:13px;text-decoration:none;display:flex;align-items:center;justify-content:center;box-sizing:border-box}.dcc-button:hover:not(:disabled){background:var(--dsw-alias-interactive-bg-hover)}.dcc-button:disabled{opacity:.5;cursor:default}.dcc-primary{background:var(--dsw-alias-state-business-primary);color:white;border-color:transparent}.dcc-danger{color:var(--dsw-alias-state-error)}.dcc-field{display:flex;flex-direction:column;gap:5px}.dcc-label{font-size:12px;color:var(--dsw-alias-label-tertiary);font-weight:600}.dcc-select,.dcc-input,.dcc-textarea{box-sizing:border-box;width:100%;border:1px solid var(--dsw-alias-border-l2);border-radius:7px;background:var(--dsw-alias-bg-base);color:var(--dsw-alias-label-primary);font:inherit;font-size:13px}.dcc-select,.dcc-input{height:36px;padding:0 9px}.dcc-textarea{min-height:88px;resize:vertical;padding:8px;line-height:1.5}.dcc-note,.dcc-meta{font-size:13px;line-height:1.5;color:var(--dsw-alias-label-tertiary);margin:0;overflow-wrap:anywhere}.dcc-status{font-size:13px;line-height:1.45;border-radius:7px;padding:7px 9px;background:var(--dsw-specific-tip);overflow-wrap:anywhere}.dcc-status[data-error=true]{color:var(--dsw-alias-state-error)}.dcc-status[data-warning=true]{color:var(--dsw-alias-state-warning,var(--dsw-alias-label-primary))}.dcc-card{border-top:1px solid var(--dsw-alias-border-l1);padding-top:12px;display:flex;flex-direction:column;gap:10px}.dcc-card-head{display:flex;gap:11px}.dcc-avatar{width:76px;height:100px;object-fit:cover;border-radius:9px;border:1px solid var(--dsw-alias-border-l1);background:var(--dsw-alias-bg-container);flex:none}.dcc-card-title{font-size:16px;font-weight:650;margin:0 0 5px}.dcc-check{display:flex;gap:7px;align-items:flex-start;font-size:13px;line-height:1.4}.dcc-detail{border:1px solid var(--dsw-alias-border-l1);border-radius:8px;padding:8px}.dcc-detail summary{cursor:pointer;font-size:13px;font-weight:600}.dcc-detail-body{display:flex;flex-direction:column;gap:8px;margin-top:8px}.dcc-diags{margin:7px 0 0;padding-left:18px;font-size:13px;line-height:1.5}.dcc-greetings{display:flex;flex-direction:column;gap:8px}.dcc-greeting-item{border:1px solid var(--dsw-alias-border-l1);border-radius:8px;padding:8px;display:flex;flex-direction:column;gap:6px}.dcc-greeting-head{display:flex;align-items:center;justify-content:space-between;gap:8px}.dcc-footer{position:sticky;bottom:-12px;margin:0 -12px -12px;padding:10px 12px;background:var(--dsw-alias-bg-base);border-top:1px solid var(--dsw-alias-border-l2)}.dcc-modal-backdrop{position:fixed;inset:0;z-index:2147483500;display:flex;align-items:center;justify-content:center;padding:20px;background:rgba(0,0,0,.42);pointer-events:auto}.dcc-modal{width:min(520px,calc(100vw - 32px));max-height:min(640px,calc(100vh - 40px));overflow:auto;border:1px solid var(--dsw-alias-border-l2);border-radius:12px;background:var(--dsw-alias-bg-base);box-shadow:var(--ds-shadow-4,0 18px 56px rgba(0,0,0,.32));padding:18px;display:flex;flex-direction:column;gap:12px}.dcc-modal h3,.dcc-modal p{margin:0}.dcc-modal-list{margin:0;padding-left:20px;font-size:13px;line-height:1.5}.dcc-modal-actions{display:flex;justify-content:flex-end;gap:8px}
+.dcc-panel{position:absolute;top:0;right:0;bottom:0;width:min(440px,calc(100vw - 56px));pointer-events:auto;border-left:1px solid var(--dsw-alias-border-l2);box-shadow:var(--ds-shadow-3,-8px 0 28px rgba(0,0,0,.18));background:var(--dsw-alias-bg-base);color:var(--dsw-alias-label-primary);display:flex;flex-direction:column;font-family:Inter,var(--dsw-font-family),sans-serif}.dcc-header{height:52px;box-sizing:border-box;display:flex;align-items:center;gap:8px;padding:0 14px;border-bottom:1px solid var(--dsw-alias-border-l2);flex:none}.dcc-title{font-size:16px;font-weight:650;flex:1}.dcc-close{border:0;background:transparent;color:var(--dsw-alias-label-tertiary);cursor:pointer;border-radius:7px;padding:6px 8px;font-size:14px}.dcc-body{min-height:0;overflow:auto;padding:12px;display:flex;flex-direction:column;gap:12px}.dcc-toolbar{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}.dcc-actions,.dcc-footer{display:grid;grid-template-columns:1fr 1fr;gap:8px}.dcc-browse{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:8px}.dcc-button{min-height:36px;border:1px solid var(--dsw-alias-border-l2);border-radius:8px;background:var(--dsw-alias-button-secondary-fill,var(--dsw-alias-bg-base));color:var(--dsw-alias-label-primary);cursor:pointer;padding:7px 10px;font-size:13px;text-decoration:none;display:flex;align-items:center;justify-content:center;box-sizing:border-box}.dcc-button:hover:not(:disabled){background:var(--dsw-alias-interactive-bg-hover)}.dcc-button:disabled{opacity:.5;cursor:default}.dcc-primary{background:var(--dsw-alias-state-business-primary);color:white;border-color:transparent}.dcc-danger{color:var(--dsw-alias-state-error)}.dcc-field{display:flex;flex-direction:column;gap:5px}.dcc-label{font-size:12px;color:var(--dsw-alias-label-tertiary);font-weight:600}.dcc-select,.dcc-input,.dcc-textarea{box-sizing:border-box;width:100%;border:1px solid var(--dsw-alias-border-l2);border-radius:7px;background:var(--dsw-alias-bg-base);color:var(--dsw-alias-label-primary);font:inherit;font-size:13px}.dcc-select,.dcc-input{height:36px;padding:0 9px}.dcc-textarea{min-height:88px;resize:vertical;padding:8px;line-height:1.5}.dcc-note,.dcc-meta{font-size:13px;line-height:1.5;color:var(--dsw-alias-label-tertiary);margin:0;overflow-wrap:anywhere}.dcc-status{font-size:13px;line-height:1.45;border-radius:7px;padding:7px 9px;background:var(--dsw-specific-tip);overflow-wrap:anywhere}.dcc-status[data-error=true]{color:var(--dsw-alias-state-error)}.dcc-status[data-warning=true]{color:var(--dsw-alias-state-warning,var(--dsw-alias-label-primary))}.dcc-card{border-top:1px solid var(--dsw-alias-border-l1);padding-top:12px;display:flex;flex-direction:column;gap:10px}.dcc-card-head{display:flex;gap:11px}.dcc-card-head>div{min-width:0;display:flex;flex-direction:column;align-items:flex-start;gap:5px}.dcc-avatar{width:76px;height:100px;object-fit:cover;border-radius:9px;border:1px solid var(--dsw-alias-border-l1);background:var(--dsw-alias-bg-container);flex:none}.dcc-card-title{font-size:16px;font-weight:650;margin:0}.dcc-check{display:flex;gap:7px;align-items:flex-start;font-size:13px;line-height:1.4}.dcc-detail{border:1px solid var(--dsw-alias-border-l1);border-radius:8px;padding:8px}.dcc-detail summary{cursor:pointer;font-size:13px;font-weight:600}.dcc-detail-body{display:flex;flex-direction:column;gap:8px;margin-top:8px}.dcc-diags{margin:7px 0 0;padding-left:18px;font-size:13px;line-height:1.5}.dcc-greetings{display:flex;flex-direction:column;gap:8px}.dcc-greeting-item{border:1px solid var(--dsw-alias-border-l1);border-radius:8px;padding:8px;display:flex;flex-direction:column;gap:6px}.dcc-greeting-head{display:flex;align-items:center;justify-content:space-between;gap:8px}.dcc-footer{position:sticky;bottom:-12px;margin:0 -12px -12px;padding:10px 12px;background:var(--dsw-alias-bg-base);border-top:1px solid var(--dsw-alias-border-l2)}.dcc-modal-backdrop{position:fixed;inset:0;z-index:2147483500;display:flex;align-items:center;justify-content:center;padding:20px;background:rgba(0,0,0,.42);pointer-events:auto}.dcc-modal{width:min(520px,calc(100vw - 32px));max-height:min(640px,calc(100vh - 40px));overflow:auto;border:1px solid var(--dsw-alias-border-l2);border-radius:12px;background:var(--dsw-alias-bg-base);box-shadow:var(--ds-shadow-4,0 18px 56px rgba(0,0,0,.32));padding:18px;display:flex;flex-direction:column;gap:12px}.dcc-modal h3,.dcc-modal p{margin:0}.dcc-modal-list{margin:0;padding-left:20px;font-size:13px;line-height:1.5}.dcc-modal-actions{display:flex;justify-content:flex-end;gap:8px}
 `;
 function errorMessage(data, status) {
   if (typeof data?.error === "string") return data.error;
@@ -5911,34 +5911,46 @@ function CharacterPanel({ sessionId, sessionBlank, hasConversationHistory, detac
       h2(
         "div",
         { className: "dcc-toolbar" },
-        h2("button", { className: "dcc-button", type: "button", disabled: busy, onClick: create2 }, uiMessage("character.create")),
         h2("button", { className: "dcc-button", type: "button", disabled: busy, onClick: () => fileRef.current?.click() }, uiMessage("character.import")),
-        h2("button", { className: "dcc-button", type: "button", disabled: busy, onClick: () => {
-          if (dirty && !window.confirm(unwrapText(uiMessage("character.confirmDiscardRefresh")))) return;
-          run(() => refresh(detail?.id), "character.status.libraryRefreshed");
-        } }, uiMessage("common.refresh")),
+        h2("a", { className: "dcc-button", href: detail === null ? void 0 : `${API_V1}/characters/${encodeURIComponent(detail.id)}/json`, download: "" }, uiMessage("common.exportJson")),
+        h2("button", { className: "dcc-button", type: "button", disabled: busy, onClick: create2 }, uiMessage("character.create")),
         h2("input", { ref: fileRef, hidden: true, type: "file", accept: ".json,.png,application/json,image/png", onChange: (event) => {
           const file = event.target.files?.[0];
           if (file !== void 0) importFile(file);
         } })
       ),
       h2(Field2, { label: uiMessage("character.browse") }, h2(
-        "select",
-        {
-          className: "dcc-select",
-          value: detail?.id ?? "",
-          disabled: busy || catalog2 === null || catalog2.characters.length === 0,
-          onChange: (event) => chooseCharacter(event.target.value)
-        },
-        ...catalog2?.characters.length ? [] : [h2("option", { key: "empty", value: "" }, uiMessage("character.libraryEmpty"))],
-        ...(catalog2?.characters ?? []).map((item) => h2("option", { key: item.id, value: item.id }, rawText(item.name)))
+        "div",
+        { className: "dcc-browse" },
+        h2(
+          "select",
+          {
+            className: "dcc-select",
+            value: detail?.id ?? "",
+            disabled: busy || catalog2 === null || catalog2.characters.length === 0,
+            onChange: (event) => chooseCharacter(event.target.value)
+          },
+          ...catalog2?.characters.length ? [] : [h2("option", { key: "empty", value: "" }, uiMessage("character.libraryEmpty"))],
+          ...(catalog2?.characters ?? []).map((item) => h2("option", { key: item.id, value: item.id }, rawText(item.name)))
+        ),
+        h2("button", { className: "dcc-button", type: "button", disabled: busy, onClick: () => {
+          if (dirty && !window.confirm(unwrapText(uiMessage("character.confirmDiscardRefresh")))) return;
+          run(() => refresh(detail?.id), "character.status.libraryRefreshed");
+        } }, uiMessage("common.refresh"))
       )),
+      h2(
+        "div",
+        { className: "dcc-actions" },
+        h2("button", { className: "dcc-button dcc-primary", type: "button", disabled: busy || !sessionId || detail === null || dirty || boundHere && !bindingDirty, onClick: bind }, dirty ? uiMessage("character.saveFirst") : boundHere ? bindingDirty ? uiMessage("character.bindUpdate") : uiMessage("character.bindingAppliedButton") : uiMessage("character.bind")),
+        h2("button", { className: "dcc-button", type: "button", disabled: busy || !sessionId || selection === null, onClick: unbind }, uiMessage("character.unbind"))
+      ),
       h2("p", { className: "dcc-note" }, uiMessage("character.sessionBinding", {
         session: sessionId || translate("common.none"),
         name: activeName
       })),
       h2("div", { className: "dcc-status", "data-error": status.error || void 0, role: "status", "aria-live": "polite" }, statusText(status)),
       dirty ? h2("div", { className: "dcc-status", "data-warning": true, role: "status" }, uiMessage("character.dirty")) : detail === null ? null : h2("p", { className: "dcc-note" }, uiMessage("character.savedNote")),
+      boundHere ? bindingDirty ? h2("div", { className: "dcc-status", "data-warning": true, role: "status" }, uiMessage("character.bindingUnsaved")) : h2("p", { className: "dcc-note" }, uiMessage("character.bindingApplied")) : null,
       detail === null || draft === null ? h2("p", { className: "dcc-note" }, catalog2 === null ? uiMessage("character.loading") : uiMessage("character.emptyHint")) : h2(
         "div",
         { className: "dcc-card" },
@@ -5951,7 +5963,8 @@ function CharacterPanel({ sessionId, sessionBlank, hasConversationHistory, detac
             null,
             h2("h3", { className: "dcc-card-title" }, rawText(detail.name)),
             h2("p", { className: "dcc-meta" }, rawText(`${detail.source.format}${detail.source.specVersion ? ` \xB7 ${detail.source.specVersion}` : ""} \xB7 ${detail.source.container}`)),
-            h2("p", { className: "dcc-meta" }, rawText(`${draft.creator || translate("common.unknownAuthor")}${draft.characterVersion ? ` \xB7 ${draft.characterVersion}` : ""}`))
+            h2("p", { className: "dcc-meta" }, rawText(`${draft.creator || translate("common.unknownAuthor")}${draft.characterVersion ? ` \xB7 ${draft.characterVersion}` : ""}`)),
+            h2("a", { className: "dcc-button", href: `${API_V1}/characters/${encodeURIComponent(detail.id)}/png`, download: "" }, uiMessage("character.exportPng"))
           )
         ),
         h2(Field2, { label: uiMessage("common.name") }, h2("input", {
@@ -5988,14 +6001,6 @@ function CharacterPanel({ sessionId, sessionBlank, hasConversationHistory, detac
         }, ...greetings.map((item) => h2("option", { key: item.index, value: item.index }, uiMessage(item.labelKey, item.labelValues))))),
         h2("label", { className: "dcc-check" }, h2("input", { type: "checkbox", checked: binding?.character?.preferCharacterSystemPrompt !== false, onChange: (event) => setBinding((current3) => ({ ...current3, character: { ...current3.character, preferCharacterSystemPrompt: event.target.checked } })) }), h2("span", null, uiMessage("character.preferSystem"))),
         h2("label", { className: "dcc-check" }, h2("input", { type: "checkbox", checked: binding?.character?.preferCharacterPostHistory !== false, onChange: (event) => setBinding((current3) => ({ ...current3, character: { ...current3.character, preferCharacterPostHistory: event.target.checked } })) }), h2("span", null, uiMessage("character.preferPostHistory"))),
-        boundHere ? bindingDirty ? h2("div", { className: "dcc-status", "data-warning": true, role: "status" }, uiMessage("character.bindingUnsaved")) : h2("p", { className: "dcc-note" }, uiMessage("character.bindingApplied")) : null,
-        h2(
-          "div",
-          { className: "dcc-actions" },
-          h2("button", { className: "dcc-button dcc-primary", type: "button", disabled: busy || !dirty, onClick: save }, dirty ? uiMessage("character.saveResource") : uiMessage("character.resourceSaved")),
-          h2("button", { className: "dcc-button dcc-primary", type: "button", disabled: busy || !sessionId || dirty || boundHere && !bindingDirty, onClick: bind }, dirty ? uiMessage("character.saveFirst") : boundHere ? bindingDirty ? uiMessage("character.bindUpdate") : uiMessage("character.bindingAppliedButton") : uiMessage("character.bind"))
-        ),
-        h2("button", { className: "dcc-button", type: "button", disabled: busy || !sessionId || selection === null, onClick: unbind }, uiMessage("character.unbind")),
         h2(
           "label",
           { className: "dcc-check" },
@@ -6117,11 +6122,10 @@ function CharacterPanel({ sessionId, sessionBlank, hasConversationHistory, detac
         detail.compatibility.unknownMacroNames.length > 0 ? h2("div", { className: "dcc-status" }, uiMessage("character.unknownMacros", { names: detail.compatibility.unknownMacroNames.join(", ") })) : null,
         h2(
           "div",
-          { className: "dcc-actions" },
-          h2("a", { className: "dcc-button", href: `${API_V1}/characters/${encodeURIComponent(detail.id)}/json`, download: "" }, uiMessage("common.exportJson")),
-          h2("a", { className: "dcc-button", href: `${API_V1}/characters/${encodeURIComponent(detail.id)}/png`, download: "" }, uiMessage("character.exportPng"))
-        ),
-        h2("div", { className: "dcc-footer" }, h2("button", { className: "dcc-button dcc-danger", type: "button", disabled: busy, onClick: remove }, uiMessage("character.delete")))
+          { className: "dcc-footer" },
+          h2("button", { className: "dcc-button dcc-primary", type: "button", disabled: busy || !dirty, onClick: save }, dirty ? uiMessage("character.saveResource") : uiMessage("character.resourceSaved")),
+          h2("button", { className: "dcc-button dcc-danger", type: "button", disabled: busy, onClick: remove }, uiMessage("character.delete"))
+        )
       )
     ),
     detachPrompt === null ? null : h2(
@@ -6168,8 +6172,8 @@ var POSITIONS = [
   ["outlet", "world.position.outlet"]
 ];
 var css3 = `
-.dwb-panel{position:absolute;top:0;right:0;bottom:0;width:min(500px,calc(100vw - 56px));pointer-events:auto;border-left:1px solid var(--dsw-alias-border-l2);box-shadow:var(--ds-shadow-3,-8px 0 28px rgba(0,0,0,.18));background:var(--dsw-alias-bg-base);color:var(--dsw-alias-label-primary);display:flex;flex-direction:column;font-family:Inter,var(--dsw-font-family),sans-serif}.dwb-header{height:52px;box-sizing:border-box;display:flex;align-items:center;gap:8px;padding:0 14px;border-bottom:1px solid var(--dsw-alias-border-l2);flex:none}.dwb-title{font-size:16px;font-weight:650;flex:1}.dwb-close{border:0;background:transparent;color:var(--dsw-alias-label-tertiary);cursor:pointer;border-radius:7px;padding:6px 8px;font-size:14px}.dwb-body{min-height:0;overflow:auto;padding:12px;display:flex;flex-direction:column;gap:11px}.dwb-toolbar{display:grid;grid-template-columns:repeat(3,1fr);gap:7px}.dwb-actions{display:flex;gap:7px;flex-wrap:wrap}.dwb-button{min-height:36px;border:1px solid var(--dsw-alias-border-l2);border-radius:8px;background:var(--dsw-alias-button-secondary-fill,var(--dsw-alias-bg-base));color:var(--dsw-alias-label-primary);cursor:pointer;padding:7px 10px;font-size:13px;text-decoration:none;display:inline-flex;align-items:center;justify-content:center;box-sizing:border-box}.dwb-button:disabled{opacity:.5;cursor:default}.dwb-primary{background:var(--dsw-alias-state-business-primary);color:white;border-color:transparent}.dwb-danger{color:var(--dsw-alias-state-error)}.dwb-field{display:flex;flex-direction:column;gap:4px}.dwb-label{font-size:12px;font-weight:620;color:var(--dsw-alias-label-tertiary)}.dwb-input,.dwb-select,.dwb-textarea{box-sizing:border-box;width:100%;border:1px solid var(--dsw-alias-border-l2);border-radius:7px;background:var(--dsw-alias-bg-base);color:var(--dsw-alias-label-primary);font:inherit;font-size:13px;padding:7px 8px}.dwb-input,.dwb-select{height:36px}.dwb-textarea{min-height:110px;resize:vertical;line-height:1.5}.dwb-note,.dwb-meta{font-size:13px;line-height:1.5;color:var(--dsw-alias-label-tertiary);margin:0;overflow-wrap:anywhere}.dwb-status{font-size:13px;line-height:1.45;border-radius:7px;padding:8px 10px;background:var(--dsw-specific-tip);overflow-wrap:anywhere}.dwb-status[data-error=true]{color:var(--dsw-alias-state-error)}.dwb-status[data-warning=true]{color:var(--dsw-alias-state-warning,#b46b00)}.dwb-section-title{font-size:15px;font-weight:700;margin:5px 0 0}.dwb-resource{border:1px solid var(--dsw-alias-border-l1);border-radius:9px;padding:10px;display:flex;flex-direction:column;gap:8px}.dwb-resource-title{font-size:14px;font-weight:650}.dwb-bindings{display:grid;grid-template-columns:1fr 1fr;gap:5px}.dwb-check{display:flex;gap:6px;align-items:flex-start;font-size:12px;line-height:1.45}.dwb-entry{border:1px solid var(--dsw-alias-border-l1);border-radius:8px;overflow:hidden}.dwb-entry>summary{list-style:none;cursor:pointer;padding:8px;display:flex;align-items:center;gap:7px;font-size:13px}.dwb-entry>summary::-webkit-details-marker{display:none}.dwb-dot{width:8px;height:8px;flex:none;border-radius:50%;background:var(--dsw-alias-label-tertiary)}.dwb-entry[data-enabled=true] .dwb-dot{background:var(--dsw-alias-state-success,#2fa36b)}.dwb-entry-name{font-weight:620;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.dwb-entry-state{margin-left:auto;flex:none;color:var(--dsw-alias-label-tertiary);font-size:12px}.dwb-entry-body{border-top:1px solid var(--dsw-alias-border-l1);padding:8px;display:flex;flex-direction:column;gap:8px}.dwb-grid{display:grid;grid-template-columns:1fr 1fr;gap:7px}.dwb-checks{display:flex;flex-wrap:wrap;gap:10px}.dwb-list{margin:0;padding-left:18px;font-size:13px;line-height:1.5}
-.dwb-source-section{border:1px solid var(--dsw-alias-border-l2);border-radius:11px;padding:10px;background:color-mix(in srgb,var(--dsw-specific-tip) 35%,transparent);display:flex;flex-direction:column;gap:9px}.dwb-source-section>.dwb-section-title{margin:0}.dwb-source-section>.dwb-resource{background:var(--dsw-alias-bg-base)}.dwb-source-list{margin:0;padding-left:20px;display:flex;flex-direction:column;gap:7px}.dwb-source-book{padding-left:2px}.dwb-source-book-row{display:flex;align-items:center;justify-content:space-between;gap:8px}.dwb-source-book-name{min-width:0;font-size:13px;font-weight:620;overflow-wrap:anywhere}.dwb-source-badge{flex:none;border:1px solid var(--dsw-alias-border-l1);border-radius:999px;padding:2px 7px;font-size:11px;line-height:1.35;color:var(--dsw-alias-label-tertiary);background:var(--dsw-specific-tip)}.dwb-user-bindings{grid-template-columns:1fr}.dwb-user-binding-row{display:flex;align-items:center;gap:7px}.dwb-user-binding-row>.dwb-check{align-items:center;flex:1;min-width:0}.dwb-user-binding-row .dwb-source-badge{margin-left:auto}.dwb-inline-edit{min-height:30px;padding:4px 8px;flex:none}
+.dwb-panel{position:absolute;top:0;right:0;bottom:0;width:min(500px,calc(100vw - 56px));pointer-events:auto;border-left:1px solid var(--dsw-alias-border-l2);box-shadow:var(--ds-shadow-3,-8px 0 28px rgba(0,0,0,.18));background:var(--dsw-alias-bg-base);color:var(--dsw-alias-label-primary);display:flex;flex-direction:column;font-family:Inter,var(--dsw-font-family),sans-serif}.dwb-header{height:52px;box-sizing:border-box;display:flex;align-items:center;gap:8px;padding:0 14px;border-bottom:1px solid var(--dsw-alias-border-l2);flex:none}.dwb-title{font-size:16px;font-weight:650;flex:1}.dwb-close{border:0;background:transparent;color:var(--dsw-alias-label-tertiary);cursor:pointer;border-radius:7px;padding:6px 8px;font-size:14px}.dwb-body{min-height:0;overflow:auto;padding:12px;display:flex;flex-direction:column;gap:11px}.dwb-toolbar{display:grid;grid-template-columns:repeat(3,1fr);gap:7px}.dwb-actions{display:flex;gap:7px;flex-wrap:wrap}.dwb-button{min-height:36px;border:1px solid var(--dsw-alias-border-l2);border-radius:8px;background:var(--dsw-alias-button-secondary-fill,var(--dsw-alias-bg-base));color:var(--dsw-alias-label-primary);cursor:pointer;padding:7px 10px;font-size:13px;text-decoration:none;display:inline-flex;align-items:center;justify-content:center;box-sizing:border-box}.dwb-button:disabled,.dwb-button[data-disabled=true]{opacity:.5;cursor:default;pointer-events:none}.dwb-primary{background:var(--dsw-alias-state-business-primary);color:white;border-color:transparent}.dwb-danger{color:var(--dsw-alias-state-error)}.dwb-field{display:flex;flex-direction:column;gap:4px}.dwb-label{font-size:12px;font-weight:620;color:var(--dsw-alias-label-tertiary)}.dwb-input,.dwb-select,.dwb-textarea{box-sizing:border-box;width:100%;border:1px solid var(--dsw-alias-border-l2);border-radius:7px;background:var(--dsw-alias-bg-base);color:var(--dsw-alias-label-primary);font:inherit;font-size:13px;padding:7px 8px}.dwb-input,.dwb-select{height:36px}.dwb-textarea{min-height:110px;resize:vertical;line-height:1.5}.dwb-note,.dwb-meta{font-size:13px;line-height:1.5;color:var(--dsw-alias-label-tertiary);margin:0;overflow-wrap:anywhere}.dwb-status{font-size:13px;line-height:1.45;border-radius:7px;padding:8px 10px;background:var(--dsw-specific-tip);overflow-wrap:anywhere}.dwb-status[data-error=true]{color:var(--dsw-alias-state-error)}.dwb-status[data-warning=true]{color:var(--dsw-alias-state-warning,#b46b00)}.dwb-section-title{font-size:15px;font-weight:700;margin:5px 0 0}.dwb-resource{border:1px solid var(--dsw-alias-border-l1);border-radius:9px;padding:10px;display:flex;flex-direction:column;gap:8px}.dwb-resource-title{font-size:14px;font-weight:650}.dwb-bindings{display:grid;grid-template-columns:1fr 1fr;gap:5px}.dwb-check{display:flex;gap:6px;align-items:flex-start;font-size:12px;line-height:1.45}.dwb-entry{border:1px solid var(--dsw-alias-border-l1);border-radius:8px;overflow:hidden;transition:border-color .12s,box-shadow .12s}.dwb-entry[data-dragging=true]{height:4px;min-height:4px;margin:5px 10px;border:0;border-radius:999px;background:var(--dsw-alias-state-business-primary);box-shadow:0 0 0 1px color-mix(in srgb,var(--dsw-alias-state-business-primary) 25%,transparent)}.dwb-entry[data-dragging=true]>*{opacity:0}.dwb-entry>summary{list-style:none;cursor:pointer;padding:8px;display:flex;align-items:center;gap:7px;font-size:13px}.dwb-entry>summary::-webkit-details-marker{display:none}.dwb-drag{border:0;background:transparent;color:var(--dsw-alias-label-tertiary);cursor:grab;padding:1px 2px;font-size:15px;line-height:1;touch-action:none;user-select:none}.dwb-drag:active{cursor:grabbing}.dwb-drop-placeholder{box-sizing:border-box;height:42px;border:2px dashed var(--dsw-alias-state-business-primary);border-radius:8px;background:color-mix(in srgb,var(--dsw-alias-state-business-primary) 7%,transparent);display:flex;align-items:center;justify-content:center;color:var(--dsw-alias-state-business-primary);font-size:12px;font-weight:600;pointer-events:none}.dwb-entry-name{font-weight:620;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.dwb-entry-state{margin-left:auto;flex:none;color:var(--dsw-alias-label-tertiary);font-size:12px}.dwb-entry-body{border-top:1px solid var(--dsw-alias-border-l1);padding:8px;display:flex;flex-direction:column;gap:8px}.dwb-grid{display:grid;grid-template-columns:1fr 1fr;gap:7px}.dwb-checks{display:flex;flex-wrap:wrap;gap:10px}.dwb-list{margin:0;padding-left:18px;font-size:13px;line-height:1.5}.dwb-footer{position:sticky;bottom:-12px;margin:0 -12px -12px;padding:10px 12px;background:var(--dsw-alias-bg-base);border-top:1px solid var(--dsw-alias-border-l2);display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.dwb-source-section{border:1px solid var(--dsw-alias-border-l2);border-radius:11px;padding:10px;background:color-mix(in srgb,var(--dsw-specific-tip) 35%,transparent);display:flex;flex-direction:column;gap:9px}.dwb-source-section>.dwb-section-title{margin:0}.dwb-source-section>.dwb-resource{background:var(--dsw-alias-bg-base)}.dwb-source-list{margin:0;padding-left:20px;display:flex;flex-direction:column;gap:7px}.dwb-source-book{padding-left:2px}.dwb-source-book-row{display:flex;align-items:center;justify-content:space-between;gap:8px}.dwb-source-book-name{min-width:0;font-size:13px;font-weight:620;overflow-wrap:anywhere}.dwb-source-badge{flex:none;border:1px solid var(--dsw-alias-border-l1);border-radius:999px;padding:2px 7px;font-size:11px;line-height:1.35;color:var(--dsw-alias-label-tertiary);background:var(--dsw-specific-tip)}.dwb-user-bindings{grid-template-columns:1fr}.dwb-user-binding-row{display:flex;align-items:center;gap:7px}.dwb-user-binding-row>.dwb-check{align-items:center;flex:1;min-width:0}.dwb-user-binding-row .dwb-source-badge{margin-left:auto}.dwb-inline-edit{min-height:30px;padding:4px 8px;flex:none}.dwb-browse{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:7px}
 `;
 function errorMessage2(data, status) {
   if (typeof data?.error?.message === "string") return data.error.message;
@@ -6223,17 +6227,60 @@ function embeddedPosition(entry) {
   if (Number.isInteger(value) && value >= 0 && value <= 7) return value;
   return entry?.position === "before_char" ? 0 : 1;
 }
-function EmbeddedEntryEditor({ entry, index, update, remove }) {
+function reorderWorldBookEntriesAtBoundary(entries2, from, boundary, orderKey = "insertionOrder") {
+  if (!Array.isArray(entries2)) throw new TypeError("entries must be an array");
+  if (!Number.isSafeInteger(from) || !Number.isSafeInteger(boundary)) return entries2;
+  if (from < 0 || from >= entries2.length || boundary < 0 || boundary > entries2.length) return entries2;
+  const destination = boundary > from ? boundary - 1 : boundary;
+  if (destination === from) return entries2;
+  const reordered = [...entries2];
+  const [moved] = reordered.splice(from, 1);
+  reordered.splice(destination, 0, moved);
+  return reordered.map((entry, index) => ({
+    ...entry,
+    [orderKey]: (reordered.length - index) * 100
+  }));
+}
+function EntryDropPlaceholder() {
+  return h3("div", { className: "dwb-drop-placeholder", "aria-hidden": true }, uiMessage("preset.dropHere"));
+}
+function entryInsertionBoundary(event, kind) {
+  const target = document.elementFromPoint(event.clientX, event.clientY)?.closest("[data-world-entry-index]");
+  if (target === null || target.dataset.worldEntryKind !== kind) return null;
+  const index = Number(target.dataset.worldEntryIndex);
+  const bounds = target.getBoundingClientRect();
+  return event.clientY < bounds.top + bounds.height / 2 ? index : index + 1;
+}
+function EntryDragButton({ busy, dragging, onPointerDown, onPointerMove, onPointerUp, onPointerCancel }) {
+  return h3("button", {
+    className: "dwb-drag",
+    type: "button",
+    disabled: busy,
+    title: uiMessage("preset.dragToReorder"),
+    "aria-label": uiMessage("preset.dragToReorder"),
+    "aria-pressed": dragging,
+    onClick: (event) => {
+      event.preventDefault();
+      event.stopPropagation();
+    },
+    onPointerDown,
+    onPointerMove,
+    onPointerUp,
+    onPointerCancel
+  }, "\u283F");
+}
+function EmbeddedEntryEditor({ entry, index, update, remove, dragKind, dragging, dragHandlers }) {
   const patch = (value) => update(index, value);
   const secondaryKeys = Array.isArray(entry.secondary_keys) ? entry.secondary_keys : [];
   const position = embeddedPosition(entry);
   return h3(
     "details",
-    { className: "dwb-entry", "data-enabled": entry.enabled === true },
+    { className: "dwb-entry", "data-world-entry-kind": dragKind, "data-world-entry-index": index, "data-dragging": dragging || void 0 },
     h3(
       "summary",
       null,
-      h3("span", { className: "dwb-dot" }),
+      h3(EntryDragButton, { dragging, ...dragHandlers }),
+      h3("input", { type: "checkbox", checked: entry.enabled === true, onClick: (event) => event.stopPropagation(), onChange: (event) => patch({ enabled: event.target.checked }) }),
       h3("span", { className: "dwb-entry-name" }, entry.comment || entry.name ? rawText(entry.comment || entry.name) : uiMessage("world.entry.fallback", { id: entry.id ?? index })),
       h3("span", { className: "dwb-entry-state" }, entry.constant ? uiMessage("world.entry.constant") : (entry.keys ?? []).length > 0 ? rawText(entry.keys.join(", ")) : uiMessage("world.entry.noKeywords"))
     ),
@@ -6269,7 +6316,6 @@ function EmbeddedEntryEditor({ entry, index, update, remove }) {
       h3(
         "div",
         { className: "dwb-checks" },
-        h3("label", { className: "dwb-check" }, h3("input", { type: "checkbox", checked: entry.enabled === true, onChange: (event) => patch({ enabled: event.target.checked }) }), uiMessage("common.enable")),
         h3("label", { className: "dwb-check" }, h3("input", { type: "checkbox", checked: entry.constant === true, onChange: (event) => patch({ constant: event.target.checked }) }), uiMessage("world.entry.constant")),
         h3("label", { className: "dwb-check" }, h3("input", { type: "checkbox", checked: (entry.case_sensitive ?? entry.extensions?.case_sensitive) === true, onChange: (event) => patch({ case_sensitive: event.target.checked, extensions: { ...entry.extensions ?? {}, case_sensitive: event.target.checked } }) }), uiMessage("world.entry.caseSensitive")),
         h3("label", { className: "dwb-check" }, h3("input", { type: "checkbox", checked: (entry.match_whole_words ?? entry.extensions?.match_whole_words) === true, onChange: (event) => patch({ match_whole_words: event.target.checked, extensions: { ...entry.extensions ?? {}, match_whole_words: event.target.checked } }) }), uiMessage("world.entry.wholeWord"))
@@ -6379,16 +6425,17 @@ function ResourceWorldBookBindingEditor({
     )
   );
 }
-function EntryEditor({ entry, index, update, remove }) {
+function EntryEditor({ entry, index, update, remove, dragKind, dragging, dragHandlers }) {
   const patch = (value) => update(index, value);
   const secondary = Array.isArray(entry.secondaryKeys) ? entry.secondaryKeys : [];
   return h3(
     "details",
-    { className: "dwb-entry", "data-enabled": entry.enabled === true },
+    { className: "dwb-entry", "data-world-entry-kind": dragKind, "data-world-entry-index": index, "data-dragging": dragging || void 0 },
     h3(
       "summary",
       null,
-      h3("span", { className: "dwb-dot" }),
+      h3(EntryDragButton, { dragging, ...dragHandlers }),
+      h3("input", { type: "checkbox", checked: entry.enabled === true, onClick: (event) => event.stopPropagation(), onChange: (event) => patch({ enabled: event.target.checked }) }),
       h3("span", { className: "dwb-entry-name" }, entry.comment ? rawText(entry.comment) : uiMessage("world.entry.fallback", { id: entry.uid ?? index })),
       h3("span", { className: "dwb-entry-state" }, entry.constant ? uiMessage("world.entry.constant") : (entry.keys ?? []).length > 0 ? rawText(entry.keys.join(", ")) : uiMessage("world.entry.noKeywords"))
     ),
@@ -6417,7 +6464,6 @@ function EntryEditor({ entry, index, update, remove }) {
       h3(
         "div",
         { className: "dwb-checks" },
-        h3("label", { className: "dwb-check" }, h3("input", { type: "checkbox", checked: entry.enabled === true, onChange: (event) => patch({ enabled: event.target.checked }) }), uiMessage("common.enable")),
         h3("label", { className: "dwb-check" }, h3("input", { type: "checkbox", checked: entry.constant === true, onChange: (event) => patch({ constant: event.target.checked }) }), uiMessage("world.entry.constant")),
         h3("label", { className: "dwb-check" }, h3("input", { type: "checkbox", checked: entry.caseSensitive === true, onChange: (event) => patch({ caseSensitive: event.target.checked }) }), uiMessage("world.entry.caseSensitive")),
         h3("label", { className: "dwb-check" }, h3("input", { type: "checkbox", checked: entry.matchWholeWords === true, onChange: (event) => patch({ matchWholeWords: event.target.checked }) }), uiMessage("world.entry.wholeWord"))
@@ -6445,6 +6491,8 @@ function WorldBookPanel({ sessionId, close }) {
   const [dirty, setDirty] = (0, import_react3.useState)(false);
   const [busy, setBusy] = (0, import_react3.useState)(false);
   const [status, setStatus] = (0, import_react3.useState)({ error: false, key: "common.loading" });
+  const [entryDrag, setEntryDrag] = (0, import_react3.useState)(null);
+  const [entryDropIndex, setEntryDropIndex] = (0, import_react3.useState)(null);
   const fileRef = (0, import_react3.useRef)(null);
   const standaloneEditorRef = (0, import_react3.useRef)(null);
   const generation = (0, import_react3.useRef)(0);
@@ -6630,6 +6678,49 @@ function WorldBookPanel({ sessionId, close }) {
     });
     setDirty(true);
   };
+  const moveEntries = (kind, from, boundary) => {
+    if (kind === "standalone") {
+      setDraft((current3) => {
+        const entries3 = reorderWorldBookEntriesAtBoundary(current3.entries, from, boundary);
+        return entries3 === current3.entries ? current3 : { ...current3, entries: entries3 };
+      });
+      setDirty(true);
+      return;
+    }
+    setEmbeddedDraft((current3) => {
+      const entries3 = reorderWorldBookEntriesAtBoundary(current3.entries, from, boundary, "insertion_order");
+      return entries3 === current3.entries ? current3 : { ...structuredClone(current3), entries: entries3 };
+    });
+    setEmbeddedDirty(true);
+  };
+  const entryDragHandlers = (kind, index) => ({
+    busy,
+    onPointerDown: (event) => {
+      if (busy) return;
+      event.preventDefault();
+      event.stopPropagation();
+      event.currentTarget.setPointerCapture(event.pointerId);
+      setEntryDrag({ kind, index });
+      setEntryDropIndex(index + 1);
+    },
+    onPointerMove: (event) => {
+      if (!event.currentTarget.hasPointerCapture(event.pointerId)) return;
+      const boundary = entryInsertionBoundary(event, kind);
+      if (boundary !== null) setEntryDropIndex(boundary);
+    },
+    onPointerUp: (event) => {
+      event.preventDefault();
+      const boundary = entryInsertionBoundary(event, kind) ?? entryDropIndex ?? index + 1;
+      if (event.currentTarget.hasPointerCapture(event.pointerId)) event.currentTarget.releasePointerCapture(event.pointerId);
+      moveEntries(kind, index, boundary);
+      setEntryDrag(null);
+      setEntryDropIndex(null);
+    },
+    onPointerCancel: () => {
+      setEntryDrag(null);
+      setEntryDropIndex(null);
+    }
+  });
   const entries2 = draft?.entries ?? [];
   const embeddedEntries = embeddedDraft?.entries ?? [];
   const embedded = active?.resources?.worldBooks?.filter((item) => item.kind === "embedded-character-book") ?? [];
@@ -6655,17 +6746,28 @@ function WorldBookPanel({ sessionId, close }) {
         "div",
         { className: "dwb-toolbar" },
         h3("button", { className: "dwb-button", type: "button", disabled: busy, onClick: () => fileRef.current?.click() }, uiMessage("world.importJson")),
+        h3("a", { className: "dwb-button", "data-disabled": document2 === null || busy ? true : void 0, href: document2 === null ? void 0 : `${API_V1}/world-books/${encodeURIComponent(document2.id)}/json`, download: "" }, uiMessage("common.exportJson")),
         h3("button", { className: "dwb-button", type: "button", disabled: busy, onClick: create2 }, uiMessage("world.create")),
-        h3("button", { className: "dwb-button", type: "button", disabled: busy, onClick: () => {
-          if (!dirty || window.confirm(unwrapText(uiMessage("world.confirmDiscardChanges")))) run(() => refresh(), "world.status.refreshed");
-        } }, uiMessage("common.refresh")),
         h3("input", { ref: fileRef, hidden: true, type: "file", accept: ".json,application/json", onChange: (event) => {
           const file = event.target.files?.[0];
           if (file !== void 0) importFile(file);
         } })
       ),
-      h3("p", { className: "dwb-note" }, uiMessage("world.currentSession", { session: sessionId || translate("common.none") })),
-      h3("div", { className: "dwb-status", "data-error": status.error || void 0, role: "status", "aria-live": "polite" }, statusText(status)),
+      h3(Field3, { label: uiMessage("world.browse") }, h3(
+        "div",
+        { className: "dwb-browse" },
+        h3(
+          "select",
+          { className: "dwb-select", value: document2?.id ?? "", disabled: busy || !catalog2?.worldBooks.length, onChange: (event) => {
+            if (!dirty || window.confirm(unwrapText(uiMessage("world.confirmDiscardChanges")))) load(event.target.value);
+          } },
+          ...catalog2?.worldBooks.length ? [] : [h3("option", { key: "empty", value: "" }, uiMessage("world.catalogEmpty"))],
+          ...(catalog2?.worldBooks ?? []).map((item) => h3("option", { key: item.id, value: item.id }, rawText(item.name)))
+        ),
+        h3("button", { className: "dwb-button", type: "button", disabled: busy, onClick: () => {
+          if (!dirty || window.confirm(unwrapText(uiMessage("world.confirmDiscardChanges")))) run(() => refresh(), "world.status.refreshed");
+        } }, uiMessage("common.refresh"))
+      )),
       h3(
         "section",
         { className: "dwb-source-section", "data-source": "standalone" },
@@ -6688,14 +6790,8 @@ function WorldBookPanel({ sessionId, close }) {
             h3("button", { className: "dwb-button", type: "button", disabled: busy || !sessionId || selection.length === 0, onClick: () => setSelection([]) }, uiMessage("world.clearPending"))
           )
         ),
-        h3(Field3, { label: uiMessage("world.browse") }, h3(
-          "select",
-          { className: "dwb-select", value: document2?.id ?? "", disabled: busy || !catalog2?.worldBooks.length, onChange: (event) => {
-            if (!dirty || window.confirm(unwrapText(uiMessage("world.confirmDiscardChanges")))) load(event.target.value);
-          } },
-          ...catalog2?.worldBooks.length ? [] : [h3("option", { key: "empty", value: "" }, uiMessage("world.catalogEmpty"))],
-          ...(catalog2?.worldBooks ?? []).map((item) => h3("option", { key: item.id, value: item.id }, rawText(item.name)))
-        )),
+        h3("p", { className: "dwb-note" }, uiMessage("world.currentSession", { session: sessionId || translate("common.none") })),
+        h3("div", { className: "dwb-status", "data-error": status.error || void 0, role: "status", "aria-live": "polite" }, statusText(status)),
         draft === null ? null : h3(
           "div",
           { className: "dwb-resource", ref: standaloneEditorRef },
@@ -6710,17 +6806,33 @@ function WorldBookPanel({ sessionId, close }) {
             h3("button", { className: "dwb-button", type: "button", onClick: () => {
               setDraft((current3) => ({ ...current3, entries: [...current3.entries, createWorldBookEntry(current3.entries)] }));
               setDirty(true);
-            } }, uiMessage("world.addEntry")),
-            h3("button", { className: "dwb-button dwb-primary", type: "button", disabled: busy || !dirty, onClick: save }, dirty ? uiMessage("common.saveChanges") : uiMessage("common.saved")),
-            h3("a", { className: "dwb-button", href: `${API_V1}/world-books/${encodeURIComponent(document2.id)}/json`, download: "" }, uiMessage("common.exportJson")),
-            h3("button", { className: "dwb-button dwb-danger", type: "button", disabled: busy, onClick: remove }, uiMessage("world.deleteStandalone"))
+            } }, uiMessage("world.addEntry"))
           ),
-          ...entries2.map((entry, index) => h3(EntryEditor, { key: `${String(document2.id)}-${String(entry.uid)}-${index}`, entry, index, update: updateEntry, remove: (itemIndex) => {
-            if (window.confirm(unwrapText(uiMessage("world.confirmDeleteEntry")))) {
-              setDraft((current3) => ({ ...current3, entries: current3.entries.filter((_item, candidate) => candidate !== itemIndex) }));
-              setDirty(true);
-            }
-          } }))
+          ...entries2.flatMap((entry, index) => [
+            entryDrag?.kind === "standalone" && entryDropIndex === index ? h3(EntryDropPlaceholder, { key: `standalone-drop-${index}` }) : null,
+            h3(EntryEditor, {
+              key: `${String(document2.id)}-${String(entry.uid)}-${index}`,
+              entry,
+              index,
+              update: updateEntry,
+              remove: (itemIndex) => {
+                if (window.confirm(unwrapText(uiMessage("world.confirmDeleteEntry")))) {
+                  setDraft((current3) => ({ ...current3, entries: current3.entries.filter((_item, candidate) => candidate !== itemIndex) }));
+                  setDirty(true);
+                }
+              },
+              dragKind: "standalone",
+              dragging: entryDrag?.kind === "standalone" && entryDrag.index === index,
+              dragHandlers: entryDragHandlers("standalone", index)
+            })
+          ]),
+          entryDrag?.kind === "standalone" && entryDropIndex === entries2.length ? h3(EntryDropPlaceholder, { key: "standalone-drop-end" }) : null,
+          h3(
+            "div",
+            { className: "dwb-footer" },
+            h3("button", { className: "dwb-button dwb-primary", type: "button", disabled: busy || !dirty, onClick: save }, dirty ? uiMessage("common.saveChanges") : uiMessage("common.saved")),
+            h3("button", { className: "dwb-button dwb-danger", type: "button", disabled: busy, onClick: remove }, uiMessage("world.deleteStandalone"))
+          )
         )
       ),
       h3(
@@ -6812,19 +6924,32 @@ function WorldBookPanel({ sessionId, close }) {
             } }, uiMessage("world.addEmbeddedEntry")),
             h3("button", { className: "dwb-button dwb-primary", type: "button", disabled: busy || !embeddedDirty, onClick: saveEmbedded }, embeddedDirty ? uiMessage("world.saveEmbedded") : uiMessage("world.embeddedSaved"))
           ),
-          ...embeddedEntries.map((entry, index) => h3(EmbeddedEntryEditor, { key: `${String(embeddedCharacterId)}-${String(entry.id)}-${index}`, entry, index, update: (itemIndex, value) => {
-            setEmbeddedDraft((current3) => {
-              const next = structuredClone(current3);
-              next.entries[itemIndex] = { ...next.entries[itemIndex], ...value };
-              return next;
-            });
-            setEmbeddedDirty(true);
-          }, remove: (itemIndex) => {
-            if (window.confirm(unwrapText(uiMessage("world.confirmDeleteEmbeddedEntry")))) {
-              setEmbeddedDraft((current3) => ({ ...structuredClone(current3), entries: current3.entries.filter((_item, candidate) => candidate !== itemIndex) }));
-              setEmbeddedDirty(true);
-            }
-          } }))
+          ...embeddedEntries.flatMap((entry, index) => [
+            entryDrag?.kind === "embedded" && entryDropIndex === index ? h3(EntryDropPlaceholder, { key: `embedded-drop-${index}` }) : null,
+            h3(EmbeddedEntryEditor, {
+              key: `${String(embeddedCharacterId)}-${String(entry.id)}-${index}`,
+              entry,
+              index,
+              update: (itemIndex, value) => {
+                setEmbeddedDraft((current3) => {
+                  const next = structuredClone(current3);
+                  next.entries[itemIndex] = { ...next.entries[itemIndex], ...value };
+                  return next;
+                });
+                setEmbeddedDirty(true);
+              },
+              remove: (itemIndex) => {
+                if (window.confirm(unwrapText(uiMessage("world.confirmDeleteEmbeddedEntry")))) {
+                  setEmbeddedDraft((current3) => ({ ...structuredClone(current3), entries: current3.entries.filter((_item, candidate) => candidate !== itemIndex) }));
+                  setEmbeddedDirty(true);
+                }
+              },
+              dragKind: "embedded",
+              dragging: entryDrag?.kind === "embedded" && entryDrag.index === index,
+              dragHandlers: entryDragHandlers("embedded", index)
+            })
+          ]),
+          entryDrag?.kind === "embedded" && entryDropIndex === embeddedEntries.length ? h3(EntryDropPlaceholder, { key: "embedded-drop-end" }) : null
         ) : embeddedCharacterId === null ? h3("p", { className: "dwb-note" }, uiMessage("world.embeddedNoCharacter")) : h3(
           "div",
           { className: "dwb-resource" },
@@ -6868,7 +6993,7 @@ function userPanelDirty(draft, saved, worldBookIds, appliedWorldBookIds) {
 // packages/user/src/client.js
 var h4 = createLocalizedElement(import_react4.createElement);
 var css4 = `
-.dtu-panel{position:absolute;top:0;right:0;bottom:0;width:min(440px,calc(100vw - 56px));pointer-events:auto;border-left:1px solid var(--dsw-alias-border-l2);box-shadow:var(--ds-shadow-3,-8px 0 28px rgba(0,0,0,.18));background:var(--dsw-alias-bg-base);color:var(--dsw-alias-label-primary);display:flex;flex-direction:column;font-family:Inter,var(--dsw-font-family),sans-serif}.dtu-header{height:52px;box-sizing:border-box;display:flex;align-items:center;gap:8px;padding:0 14px;border-bottom:1px solid var(--dsw-alias-border-l2);flex:none}.dtu-title{font-size:16px;font-weight:650;flex:1}.dtu-close{border:0;background:transparent;color:var(--dsw-alias-label-tertiary);cursor:pointer;border-radius:7px;padding:6px 8px;font-size:14px}.dtu-body{min-height:0;overflow:auto;padding:12px;display:flex;flex-direction:column;gap:12px}.dtu-toolbar,.dtu-actions{display:grid;grid-template-columns:1fr 1fr;gap:8px}.dtu-button{min-height:36px;border:1px solid var(--dsw-alias-border-l2);border-radius:8px;background:var(--dsw-alias-button-secondary-fill,var(--dsw-alias-bg-base));color:var(--dsw-alias-label-primary);cursor:pointer;padding:7px 10px;font-size:13px}.dtu-button:hover:not(:disabled){background:var(--dsw-alias-interactive-bg-hover)}.dtu-button:disabled{opacity:.5;cursor:default}.dtu-primary{background:var(--dsw-alias-state-business-primary);color:white;border-color:transparent}.dtu-danger{color:var(--dsw-alias-state-error)}.dtu-field{display:flex;flex-direction:column;gap:5px}.dtu-label{font-size:12px;color:var(--dsw-alias-label-tertiary);font-weight:600}.dtu-input,.dtu-textarea,.dtu-select{box-sizing:border-box;width:100%;border:1px solid var(--dsw-alias-border-l2);border-radius:7px;background:var(--dsw-alias-bg-base);color:var(--dsw-alias-label-primary);font:inherit;font-size:13px;padding:8px 9px}.dtu-input,.dtu-select{height:36px}.dtu-textarea{min-height:220px;line-height:1.5;resize:vertical}.dtu-note{font-size:13px;line-height:1.5;color:var(--dsw-alias-label-tertiary);margin:0;overflow-wrap:anywhere}.dtu-status{font-size:13px;line-height:1.45;border-radius:7px;padding:7px 9px;background:var(--dsw-specific-tip);overflow-wrap:anywhere}.dtu-status[data-error=true]{color:var(--dsw-alias-state-error)}.dtu-status[data-warning=true]{color:var(--dsw-alias-state-warning,var(--dsw-alias-label-primary))}.dtu-editor{border-top:1px solid var(--dsw-alias-border-l1);padding-top:12px;display:flex;flex-direction:column;gap:10px}.dtu-bindings{display:flex;flex-direction:column;gap:8px;border:1px solid var(--dsw-alias-border-l1);border-radius:8px;padding:9px}.dtu-check{display:flex;align-items:flex-start;gap:8px;font-size:13px;line-height:1.4}.dtu-section-title{font-size:14px;margin:4px 0 0}.dtu-footer{position:sticky;bottom:-12px;margin:0 -12px -12px;padding:10px 12px;background:var(--dsw-alias-bg-base);border-top:1px solid var(--dsw-alias-border-l2)}
+.dtu-panel{position:absolute;top:0;right:0;bottom:0;width:min(440px,calc(100vw - 56px));pointer-events:auto;border-left:1px solid var(--dsw-alias-border-l2);box-shadow:var(--ds-shadow-3,-8px 0 28px rgba(0,0,0,.18));background:var(--dsw-alias-bg-base);color:var(--dsw-alias-label-primary);display:flex;flex-direction:column;font-family:Inter,var(--dsw-font-family),sans-serif}.dtu-header{height:52px;box-sizing:border-box;display:flex;align-items:center;gap:8px;padding:0 14px;border-bottom:1px solid var(--dsw-alias-border-l2);flex:none}.dtu-title{font-size:16px;font-weight:650;flex:1}.dtu-close{border:0;background:transparent;color:var(--dsw-alias-label-tertiary);cursor:pointer;border-radius:7px;padding:6px 8px;font-size:14px}.dtu-body{min-height:0;overflow:auto;padding:12px;display:flex;flex-direction:column;gap:12px}.dtu-toolbar{display:grid;grid-template-columns:1fr;gap:8px}.dtu-actions,.dtu-footer{display:grid;grid-template-columns:1fr 1fr;gap:8px}.dtu-browse{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:8px}.dtu-button{min-height:36px;border:1px solid var(--dsw-alias-border-l2);border-radius:8px;background:var(--dsw-alias-button-secondary-fill,var(--dsw-alias-bg-base));color:var(--dsw-alias-label-primary);cursor:pointer;padding:7px 10px;font-size:13px}.dtu-button:hover:not(:disabled){background:var(--dsw-alias-interactive-bg-hover)}.dtu-button:disabled{opacity:.5;cursor:default}.dtu-primary{background:var(--dsw-alias-state-business-primary);color:white;border-color:transparent}.dtu-danger{color:var(--dsw-alias-state-error)}.dtu-field{display:flex;flex-direction:column;gap:5px}.dtu-label{font-size:12px;color:var(--dsw-alias-label-tertiary);font-weight:600}.dtu-input,.dtu-textarea,.dtu-select{box-sizing:border-box;width:100%;border:1px solid var(--dsw-alias-border-l2);border-radius:7px;background:var(--dsw-alias-bg-base);color:var(--dsw-alias-label-primary);font:inherit;font-size:13px;padding:8px 9px}.dtu-input,.dtu-select{height:36px}.dtu-textarea{min-height:220px;line-height:1.5;resize:vertical}.dtu-note{font-size:13px;line-height:1.5;color:var(--dsw-alias-label-tertiary);margin:0;overflow-wrap:anywhere}.dtu-status{font-size:13px;line-height:1.45;border-radius:7px;padding:7px 9px;background:var(--dsw-specific-tip);overflow-wrap:anywhere}.dtu-status[data-error=true]{color:var(--dsw-alias-state-error)}.dtu-status[data-warning=true]{color:var(--dsw-alias-state-warning,var(--dsw-alias-label-primary))}.dtu-editor{border-top:1px solid var(--dsw-alias-border-l1);padding-top:12px;display:flex;flex-direction:column;gap:10px}.dtu-bindings{display:flex;flex-direction:column;gap:8px;border:1px solid var(--dsw-alias-border-l1);border-radius:8px;padding:9px}.dtu-check{display:flex;align-items:flex-start;gap:8px;font-size:13px;line-height:1.4}.dtu-section-title{font-size:14px;margin:4px 0 0}.dtu-footer{position:sticky;bottom:-12px;margin:0 -12px -12px;padding:10px 12px;background:var(--dsw-alias-bg-base);border-top:1px solid var(--dsw-alias-border-l2)}
 `;
 function errorMessage3(data, status) {
   return data?.error?.message ?? data?.error ?? `HTTP ${status}`;
@@ -7058,22 +7183,32 @@ function UserPanel({ sessionId, sessionBlank, close }) {
       h4(
         "div",
         { className: "dtu-toolbar" },
-        h4("button", { className: "dtu-button", type: "button", disabled: busy, onClick: create2 }, uiMessage("user.create")),
+        h4("button", { className: "dtu-button", type: "button", disabled: busy, onClick: create2 }, uiMessage("user.create"))
+      ),
+      h4(Field4, { label: uiMessage("user.browse") }, h4(
+        "div",
+        { className: "dtu-browse" },
+        h4(
+          "select",
+          {
+            className: "dtu-select",
+            value: draft?.id ?? "",
+            disabled: busy || users === null || users.length === 0,
+            onChange: (event) => chooseUser(event.target.value)
+          },
+          ...users?.length ? [] : [h4("option", { key: "empty", value: "" }, uiMessage("user.libraryEmpty"))],
+          ...(users ?? []).map((user) => h4("option", { key: user.id, value: user.id }, rawText(user.name)))
+        ),
         h4("button", { className: "dtu-button", type: "button", disabled: busy, onClick: () => {
           if (!dirty || window.confirm(unwrapText(uiMessage("user.confirmDiscardRefresh")))) run(() => refresh(draft?.id), "user.status.refreshed");
         } }, uiMessage("common.refresh"))
-      ),
-      h4(Field4, { label: uiMessage("user.browse") }, h4(
-        "select",
-        {
-          className: "dtu-select",
-          value: draft?.id ?? "",
-          disabled: busy || users === null || users.length === 0,
-          onChange: (event) => chooseUser(event.target.value)
-        },
-        ...users?.length ? [] : [h4("option", { key: "empty", value: "" }, uiMessage("user.libraryEmpty"))],
-        ...(users ?? []).map((user) => h4("option", { key: user.id, value: user.id }, rawText(user.name)))
       )),
+      h4(
+        "div",
+        { className: "dtu-actions" },
+        h4("button", { className: "dtu-button dtu-primary", type: "button", disabled: busy || !sessionId || draft === null || dirty, onClick: bind }, dirty ? uiMessage("user.saveFirst") : selectedUserId === draft?.id ? uiMessage("user.refreshBinding") : uiMessage("user.bind")),
+        h4("button", { className: "dtu-button", type: "button", disabled: busy || !sessionId || selectedUserId === null, onClick: unbind }, uiMessage("user.unbind"))
+      ),
       h4("p", { className: "dtu-note" }, uiMessage("user.sessionBinding", { session: sessionId || translate("common.none"), name: activeName })),
       h4("div", { className: "dtu-status", "data-error": status.error || void 0, role: "status", "aria-live": "polite" }, statusText(status)),
       dirty ? h4("div", { className: "dtu-status", "data-warning": true, role: "status" }, dirtyText) : h4("p", { className: "dtu-note" }, uiMessage("user.savedNote")),
@@ -7082,12 +7217,6 @@ function UserPanel({ sessionId, sessionBlank, close }) {
         { className: "dtu-editor" },
         h4(Field4, { label: uiMessage("user.name", { macro: "{{user}}" }) }, h4("input", { className: "dtu-input", value: draft.name, maxLength: 200, onChange: (event) => setDraft((current3) => ({ ...current3, name: event.target.value })) })),
         h4(Field4, { label: uiMessage("user.description") }, h4("textarea", { className: "dtu-textarea", value: draft.description, maxLength: 1e5, onChange: (event) => setDraft((current3) => ({ ...current3, description: event.target.value })) })),
-        h4(
-          "div",
-          { className: "dtu-actions" },
-          h4("button", { className: "dtu-button dtu-primary", type: "button", disabled: busy || !resourceDirty, onClick: save }, resourceDirty ? uiMessage("user.saveResource") : uiMessage("user.resourceSaved")),
-          h4("button", { className: "dtu-button dtu-primary", type: "button", disabled: busy || !sessionId || dirty, onClick: bind }, dirty ? uiMessage("user.saveFirst") : selectedUserId === draft.id ? uiMessage("user.refreshBinding") : uiMessage("user.bind"))
-        ),
         h4("h2", { className: "dtu-section-title" }, uiMessage("user.worldBooksTitle")),
         h4("p", { className: "dtu-note" }, uiMessage("user.worldBooksHint")),
         worldBooks?.length ? h4("div", { className: "dtu-bindings" }, ...worldBooks.map((book) => h4(
@@ -7106,9 +7235,13 @@ function UserPanel({ sessionId, sessionBlank, close }) {
           h4("button", { className: "dtu-button dtu-primary", type: "button", disabled: busy || !bindingDirty, onClick: saveWorldBooks }, bindingDirty ? uiMessage("user.saveWorldBooks") : uiMessage("user.worldBooksSaved")),
           h4("button", { className: "dtu-button", type: "button", disabled: busy || worldBookIds.length === 0, onClick: () => setWorldBookIds([]) }, uiMessage("user.clearPending"))
         ),
-        h4("button", { className: "dtu-button", type: "button", disabled: busy || !sessionId || selectedUserId === null, onClick: unbind }, uiMessage("user.unbind")),
         h4("p", { className: "dtu-note" }, uiMessage("user.identityNote")),
-        h4("div", { className: "dtu-footer" }, h4("button", { className: "dtu-button dtu-danger", type: "button", disabled: busy, onClick: remove }, uiMessage("user.delete")))
+        h4(
+          "div",
+          { className: "dtu-footer" },
+          h4("button", { className: "dtu-button dtu-primary", type: "button", disabled: busy || !resourceDirty, onClick: save }, resourceDirty ? uiMessage("user.saveResource") : uiMessage("user.resourceSaved")),
+          h4("button", { className: "dtu-button dtu-danger", type: "button", disabled: busy, onClick: remove }, uiMessage("user.delete"))
+        )
       )
     )
   );
@@ -7545,14 +7678,32 @@ function SessionTemplatePanel({ sessionId, workspaceId, chromeMode = "native", c
     h6(
       "div",
       { className: "dtv-body" },
-      h6("button", {
-        className: "dtv-button dtv-primary",
-        type: "button",
-        disabled: busy || !sessionId || chromeMode !== "play" && workspaceId === null,
-        onClick: () => start("current")
-      }, uiMessage(chromeMode === "play" ? "template.startCurrentPlaythrough" : "template.startCurrent")),
+      h6(
+        "div",
+        { className: "dtv-template-toolbar" },
+        h6("button", { className: "dtv-button", type: "button", disabled: busy || !sessionId, onClick: create2 }, uiMessage("template.createFromCurrent")),
+        h6("button", {
+          className: "dtv-button dtv-primary",
+          type: "button",
+          disabled: busy || !sessionId || chromeMode !== "play" && workspaceId === null,
+          onClick: () => start("current")
+        }, uiMessage(chromeMode === "play" ? "template.startCurrentPlaythrough" : "template.startCurrent"))
+      ),
+      h6(
+        "label",
+        { className: "dtv-field" },
+        h6("span", { className: "dtv-label" }, uiMessage("template.selected")),
+        h6(
+          "select",
+          { className: "dtv-select", value: selectedId ?? "", disabled: busy, onChange: select },
+          h6("option", { value: "" }, uiMessage("template.noneSelected")),
+          ...templates.map((template) => h6("option", { key: template.id, value: template.id }, rawText(template.name)))
+        )
+      ),
       h6("p", { className: "dtv-note" }, uiMessage("template.inheritNote")),
       chromeMode !== "play" && workspaceId === null ? h6("div", { className: "dtv-status", "data-error": true }, uiMessage("template.noWorkspace")) : null,
+      h6("div", { className: "dtv-status", "data-error": status.error || void 0, role: "status" }, statusText(status)),
+      h6("p", { className: "dtv-note" }, uiMessage("template.blankSessionNote")),
       h6(
         "div",
         { className: "dtv-resource" },
@@ -7560,27 +7711,13 @@ function SessionTemplatePanel({ sessionId, workspaceId, chromeMode = "native", c
         h6(
           "label",
           { className: "dtv-field" },
-          h6("span", { className: "dtv-label" }, uiMessage("template.selected")),
-          h6(
-            "select",
-            { className: "dtv-select", value: selectedId ?? "", disabled: busy, onChange: select },
-            h6("option", { value: "" }, uiMessage("template.noneSelected")),
-            ...templates.map((template) => h6("option", { key: template.id, value: template.id }, rawText(template.name)))
-          )
-        ),
-        h6(
-          "label",
-          { className: "dtv-field" },
           h6("span", { className: "dtv-label" }, uiMessage("template.name")),
-          h6("input", { className: "dtv-input", value: name2, maxLength: 120, disabled: busy, onChange: (event) => setName(event.target.value) })
-        ),
-        h6(
-          "div",
-          { className: "dtv-template-actions" },
-          h6("button", { className: "dtv-button", type: "button", disabled: busy || !sessionId, onClick: create2 }, uiMessage("template.createFromCurrent")),
-          h6("button", { className: "dtv-button", type: "button", disabled: busy || selectedId === null, onClick: rename }, uiMessage("template.saveNameOnly")),
-          h6("button", { className: "dtv-button", type: "button", disabled: busy || !sessionId || selectedId === null, onClick: update }, uiMessage("template.updateFromCurrent")),
-          h6("button", { className: "dtv-button dtv-danger", type: "button", disabled: busy || selectedId === null, onClick: remove }, uiMessage("template.delete"))
+          h6(
+            "div",
+            { className: "dtv-template-name" },
+            h6("input", { className: "dtv-input", value: name2, maxLength: 120, disabled: busy, onChange: (event) => setName(event.target.value) }),
+            h6("button", { className: "dtv-button", type: "button", disabled: busy || selectedId === null, onClick: rename }, uiMessage("template.saveNameOnly"))
+          )
         ),
         h6("p", { className: "dtv-note" }, uiMessage("template.currentSettingsReminder")),
         selected === null ? null : h6(TemplatePreview, { template: selected }),
@@ -7597,8 +7734,12 @@ function SessionTemplatePanel({ sessionId, workspaceId, chromeMode = "native", c
           onClick: () => start("template")
         }, uiMessage(chromeMode === "play" ? "template.startPlaythroughFromTemplate" : "template.startFromTemplate"))
       ),
-      h6("div", { className: "dtv-status", "data-error": status.error || void 0, role: "status" }, statusText(status)),
-      h6("p", { className: "dtv-note" }, uiMessage("template.blankSessionNote"))
+      h6(
+        "div",
+        { className: "dtv-template-footer" },
+        h6("button", { className: "dtv-button dtv-primary", type: "button", disabled: busy || !sessionId || selectedId === null, onClick: update }, uiMessage("template.updateFromCurrent")),
+        h6("button", { className: "dtv-button dtv-danger", type: "button", disabled: busy || selectedId === null, onClick: remove }, uiMessage("template.delete"))
+      )
     )
   );
 }
@@ -14073,24 +14214,21 @@ function RuleEditor({
         onPointerUp,
         onPointerCancel
       }, "\u283F"),
-      h12("span", { className: "dtv-entry-dot", "aria-hidden": "true" }),
+      h12("input", {
+        type: "checkbox",
+        checked: rule.enabled,
+        disabled: busy,
+        title: stateLabel,
+        "aria-label": stateLabel,
+        onClick: (event) => event.stopPropagation(),
+        onChange: (event) => set({ enabled: event.target.checked })
+      }),
       h12("span", { className: "dtv-entry-name" }, rawText(rule.name || unwrapText(uiMessage("regex.unnamed")))),
       h12("span", { className: "dtv-entry-state" }, stateLabel)
     ),
     h12(
       "div",
       { className: "dtv-entry-body" },
-      h12(
-        "label",
-        { className: "dtv-check" },
-        h12("input", {
-          type: "checkbox",
-          checked: rule.enabled,
-          disabled: busy,
-          onChange: (event) => set({ enabled: event.target.checked })
-        }),
-        uiMessage("regex.enabled")
-      ),
       h12(Field5, { labelKey: "regex.name" }, h12("input", {
         className: "dtv-input",
         value: rule.name,
@@ -14215,9 +14353,9 @@ function RegexScopeSection({
     h12(
       "div",
       { className: "dtv-book-toolbar" },
-      h12("button", { className: "dtv-button", type: "button", disabled: actionsDisabled, onClick: add }, uiMessage("regex.add")),
       h12("button", { className: "dtv-button", type: "button", disabled: actionsDisabled, onClick: importJson }, uiMessage("common.importJson")),
-      h12("button", { className: "dtv-button", type: "button", disabled: busy, onClick: () => exportJson(rules) }, uiMessage("common.exportJson"))
+      h12("button", { className: "dtv-button", type: "button", disabled: busy, onClick: () => exportJson(rules) }, uiMessage("common.exportJson")),
+      h12("button", { className: "dtv-button", type: "button", disabled: actionsDisabled, onClick: add }, uiMessage("regex.add"))
     ),
     rules.length === 0 ? h12("p", { className: "dtv-note" }, uiMessage("regex.emptyScope")) : [
       ...rules.flatMap((rule, index) => {
@@ -14777,7 +14915,7 @@ var css11 = `
 .dtv-header{height:52px;box-sizing:border-box;display:flex;align-items:center;gap:8px;padding:0 14px;border-bottom:1px solid var(--dsw-alias-border-l2);flex:none}.dtv-title{font-size:14px;font-weight:650;flex:1}.dtv-close{border:0;background:transparent;color:var(--dsw-alias-label-tertiary);cursor:pointer;border-radius:7px;padding:6px 8px}.dtv-close:hover{background:var(--dsw-alias-interactive-bg-hover)}
 .dtv-body{min-height:0;overflow:auto;padding:12px;display:flex;flex-direction:column;gap:12px}.dtv-note{font-size:11px;line-height:1.5;color:var(--dsw-alias-label-tertiary);margin:0;overflow-wrap:anywhere}.dtv-status{font-size:11px;line-height:1.45;border-radius:7px;padding:8px 10px;background:var(--dsw-specific-tip);overflow-wrap:anywhere}.dtv-status[data-error=true]{color:var(--dsw-alias-state-error)}
 .dtv-actions{display:grid;grid-template-columns:1fr 1fr;gap:8px}.dtv-button{min-height:34px;border:1px solid var(--dsw-alias-border-l2);border-radius:8px;background:var(--dsw-alias-button-secondary-fill,var(--dsw-alias-bg-base));color:var(--dsw-alias-label-primary);cursor:pointer;padding:7px 10px;font-size:12px}.dtv-button:hover:not(:disabled){background:var(--dsw-alias-interactive-bg-hover)}.dtv-button:disabled{opacity:.5;cursor:default}
-.dtv-primary{background:var(--dsw-alias-state-business-primary,#2677d9);border-color:transparent;color:var(--dsw-alias-button-primary-label,#fff)}.dtv-primary:hover:not(:disabled){filter:brightness(1.08);background:var(--dsw-alias-state-business-primary,#2677d9)}.dtv-template-actions{display:grid;grid-template-columns:1fr 1fr;gap:7px}
+.dtv-primary{background:var(--dsw-alias-state-business-primary,#2677d9);border-color:transparent;color:var(--dsw-alias-button-primary-label,#fff)}.dtv-primary:hover:not(:disabled){filter:brightness(1.08);background:var(--dsw-alias-state-business-primary,#2677d9)}.dtv-template-actions,.dtv-template-toolbar,.dtv-template-footer,.dtv-template-name{display:grid;grid-template-columns:1fr 1fr;gap:7px}.dtv-template-name{grid-template-columns:minmax(0,1fr) auto}.dtv-template-footer,.dtv-settings-footer{position:sticky;bottom:-12px;margin:0 -12px -12px;padding:10px 12px;background:var(--dsw-alias-bg-base);border-top:1px solid var(--dsw-alias-border-l2)}.dtv-settings-section{border-top:1px solid var(--dsw-alias-border-l1);padding-top:12px;display:flex;flex-direction:column;gap:10px}
 .dtv-resource{border:1px solid var(--dsw-alias-border-l1);border-radius:9px;padding:10px;display:flex;flex-direction:column;gap:7px}.dtv-resource-title{font-size:12px;font-weight:650}.dtv-resource-meta{font-size:11px;line-height:1.45;color:var(--dsw-alias-label-tertiary)}.dtv-list{margin:0;padding-left:18px;font-size:11px;line-height:1.55}.dtv-preview{border:1px solid var(--dsw-alias-border-l1);border-radius:8px;background:var(--dsw-specific-tip);padding:9px;display:flex;flex-direction:column;gap:6px}.dtv-preview-title{font-size:12px;font-weight:700}.dtv-preview-row{display:grid;grid-template-columns:112px minmax(0,1fr);gap:8px;font-size:11px;line-height:1.45}.dtv-preview-label{color:var(--dsw-alias-label-tertiary)}.dtv-preview-value{overflow-wrap:anywhere}.dtv-preview-options{margin-left:120px;display:flex;flex-direction:column;gap:2px;font-size:10px;color:var(--dsw-alias-label-tertiary)}.dtv-preview-list{margin:0;padding-left:18px}.dtv-preview-row[data-missing=true] .dtv-preview-value,.dtv-preview-list>[data-missing=true]{color:var(--dsw-alias-state-error)}
 .dtv-book-toolbar{display:grid;grid-template-columns:1fr 1fr 1fr;gap:7px}.dtv-entry{border:1px solid var(--dsw-alias-border-l1);border-radius:8px;background:var(--dsw-alias-bg-base);overflow:hidden}.dtv-entry>summary{list-style:none;cursor:pointer;padding:8px;display:flex;align-items:center;gap:7px;font-size:11px}.dtv-entry>summary::-webkit-details-marker{display:none}.dtv-entry-dot{width:8px;height:8px;flex:none;border-radius:50%;background:var(--dsw-alias-label-tertiary)}.dtv-entry[data-enabled=true] .dtv-entry-dot{background:var(--dsw-alias-state-success,#2fa36b)}.dtv-entry-name{font-weight:620;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.dtv-entry-state{margin-left:auto;flex:none;color:var(--dsw-alias-label-tertiary);font-size:10px}.dtv-entry-body{border-top:1px solid var(--dsw-alias-border-l1);padding:8px;display:flex;flex-direction:column;gap:8px}.dtv-field{display:flex;flex-direction:column;gap:4px}.dtv-label{font-size:10px;font-weight:620;color:var(--dsw-alias-label-tertiary)}.dtv-input,.dtv-select,.dtv-textarea{box-sizing:border-box;width:100%;border:1px solid var(--dsw-alias-border-l2);border-radius:7px;background:var(--dsw-alias-bg-base);color:var(--dsw-alias-label-primary);font:inherit;font-size:11px;padding:7px 8px}.dtv-input,.dtv-select{height:32px}.dtv-textarea{min-height:94px;resize:vertical;line-height:1.45}.dtv-policy{min-height:96px}.dtv-entry-grid{display:grid;grid-template-columns:1fr 1fr;gap:7px}.dtv-checks{display:flex;flex-wrap:wrap;gap:10px}.dtv-check{display:flex;gap:5px;align-items:center;font-size:10px}.dtv-entry-actions{display:flex;justify-content:flex-end}.dtv-danger{color:var(--dsw-alias-state-error)}
 .dtv-layer>.dtv-launcher,.dtv-layer>.dtv-panel,.dtv-layer>.dcc-panel,.dtv-layer>.dwb-panel,.dtv-layer>.dtu-panel{zoom:var(--dtv-ui-scale,1)}.dtv-setting-value{font-size:12px;font-variant-numeric:tabular-nums;color:var(--dsw-alias-label-secondary)}
@@ -14914,77 +15052,81 @@ function SettingsPanel({
     h13(
       "div",
       { className: "dtv-body" },
-      h13(Field6, { label: translate("settings.language") }, h13(
-        "select",
-        {
-          className: "dtv-select",
-          value: settings.locale,
-          disabled: busy,
-          onChange: (event) => update({ ...settings, locale: event.target.value })
-        },
-        ...UI_LOCALES.map((locale) => h13("option", { key: locale.id, value: locale.id }, rawText(locale.nativeName)))
-      )),
-      h13(Field6, { label: translate("settings.scale") }, h13("select", {
-        className: "dtv-select",
-        value: settings.scale,
-        disabled: busy,
-        onChange: (event) => update({ ...settings, scale: Number(event.target.value) })
-      }, ...UI_SCALE_OPTIONS.map((scale) => h13("option", { key: scale, value: scale }, `${Math.round(scale * 100)}%`)))),
-      h13("div", { className: "dtv-setting-value" }, translate("settings.currentScale", { scale: percent })),
-      h13("p", { className: "dtv-note" }, translate("settings.scale.help")),
-      h13(
-        "label",
-        { className: "dtv-check" },
-        h13("input", {
-          type: "checkbox",
-          checked: settings.rpFollowCharacter !== false,
-          disabled: busy,
-          onChange: (event) => update({ ...settings, rpFollowCharacter: event.target.checked })
-        }),
-        h13("span", null, translate("settings.rpFollow"))
-      ),
-      h13("p", { className: "dtv-note" }, translate("settings.rpFollow.help")),
-      h13(Field6, { label: translate("settings.rpWorkspace") }, h13(
-        "select",
-        {
-          className: "dtv-select",
-          value: workspaceSetting?.selectedPath ?? "",
-          disabled: busy || workspaceBusy || workspaceSetting === null,
-          onChange: (event) => selectWorkspace(event.target.value)
-        },
-        workspaceSetting?.current === null && workspaceSetting.available.length > 0 ? h13("option", { value: "", disabled: true }, translate("settings.rpWorkspace.unselected")) : null,
-        workspaceSetting?.current?.unavailable === true ? h13("option", { value: workspaceSetting.current.path, disabled: true }, translate("settings.rpWorkspace.unavailable", { path: workspaceSetting.current.path })) : null,
-        workspaceSetting?.available?.length > 0 ? workspaceSetting.available.map((item) => h13("option", { key: item.id, value: item.path }, rawText(item.title))) : h13("option", { value: "", disabled: true }, translate("settings.rpWorkspace.none"))
-      )),
-      h13("p", { className: "dtv-note" }, translate("settings.rpWorkspace.help")),
-      h13(Field6, { label: translate("settings.rpPolicy") }, h13("textarea", {
-        className: "dtv-textarea dtv-policy",
-        value: policyDraft,
-        placeholder: translate("settings.rpPolicy.placeholder"),
-        disabled: busy || policyBusy || policyLoaded !== true,
-        onChange: (event) => onPolicyDraft(event.target.value)
-      })),
-      h13("p", { className: "dtv-note" }, translate("settings.rpPolicy.help")),
-      h13(
-        "div",
-        { className: "dtv-actions" },
-        h13("button", {
-          className: "dtv-button dtv-primary",
-          type: "button",
-          disabled: busy || policyBusy || policyLoaded !== true,
-          onClick: savePolicy
-        }, translate("settings.rpPolicy.save")),
-        h13("button", {
-          className: "dtv-button",
-          type: "button",
-          disabled: busy || policyBusy || policyLoaded !== true,
-          onClick: resetPolicy
-        }, translate("settings.rpPolicy.reset"))
-      ),
       h13("div", { className: "dtv-status", "data-error": status.error || void 0, role: "status" }, rawText(status.text)),
       h13(
         "div",
-        { className: "dtv-actions" },
+        { className: "dtv-settings-section" },
+        h13(Field6, { label: translate("settings.language") }, h13(
+          "select",
+          {
+            className: "dtv-select",
+            value: settings.locale,
+            disabled: busy,
+            onChange: (event) => update({ ...settings, locale: event.target.value })
+          },
+          ...UI_LOCALES.map((locale) => h13("option", { key: locale.id, value: locale.id }, rawText(locale.nativeName)))
+        )),
+        h13(Field6, { label: translate("settings.scale") }, h13("select", {
+          className: "dtv-select",
+          value: settings.scale,
+          disabled: busy,
+          onChange: (event) => update({ ...settings, scale: Number(event.target.value) })
+        }, ...UI_SCALE_OPTIONS.map((scale) => h13("option", { key: scale, value: scale }, `${Math.round(scale * 100)}%`)))),
+        h13("div", { className: "dtv-setting-value" }, translate("settings.currentScale", { scale: percent })),
+        h13("p", { className: "dtv-note" }, translate("settings.scale.help")),
+        h13(
+          "label",
+          { className: "dtv-check" },
+          h13("input", {
+            type: "checkbox",
+            checked: settings.rpFollowCharacter !== false,
+            disabled: busy,
+            onChange: (event) => update({ ...settings, rpFollowCharacter: event.target.checked })
+          }),
+          h13("span", null, translate("settings.rpFollow"))
+        ),
+        h13("p", { className: "dtv-note" }, translate("settings.rpFollow.help")),
+        h13(Field6, { label: translate("settings.rpWorkspace") }, h13(
+          "select",
+          {
+            className: "dtv-select",
+            value: workspaceSetting?.selectedPath ?? "",
+            disabled: busy || workspaceBusy || workspaceSetting === null,
+            onChange: (event) => selectWorkspace(event.target.value)
+          },
+          workspaceSetting?.current === null && workspaceSetting.available.length > 0 ? h13("option", { value: "", disabled: true }, translate("settings.rpWorkspace.unselected")) : null,
+          workspaceSetting?.current?.unavailable === true ? h13("option", { value: workspaceSetting.current.path, disabled: true }, translate("settings.rpWorkspace.unavailable", { path: workspaceSetting.current.path })) : null,
+          workspaceSetting?.available?.length > 0 ? workspaceSetting.available.map((item) => h13("option", { key: item.id, value: item.path }, rawText(item.title))) : h13("option", { value: "", disabled: true }, translate("settings.rpWorkspace.none"))
+        )),
+        h13("p", { className: "dtv-note" }, translate("settings.rpWorkspace.help")),
+        h13(Field6, { label: translate("settings.rpPolicy") }, h13("textarea", {
+          className: "dtv-textarea dtv-policy",
+          value: policyDraft,
+          placeholder: translate("settings.rpPolicy.placeholder"),
+          disabled: busy || policyBusy || policyLoaded !== true,
+          onChange: (event) => onPolicyDraft(event.target.value)
+        })),
+        h13("p", { className: "dtv-note" }, translate("settings.rpPolicy.help")),
+        h13(
+          "div",
+          { className: "dtv-actions" },
+          h13("button", {
+            className: "dtv-button dtv-primary",
+            type: "button",
+            disabled: busy || policyBusy || policyLoaded !== true,
+            onClick: savePolicy
+          }, translate("settings.rpPolicy.save")),
+          h13("button", {
+            className: "dtv-button",
+            type: "button",
+            disabled: busy || policyBusy || policyLoaded !== true,
+            onClick: resetPolicy
+          }, translate("settings.rpPolicy.reset"))
+        )
+      ),
+      h13(
+        "div",
+        { className: "dtv-settings-footer" },
         h13("button", { className: "dtv-button", type: "button", disabled: busy, onClick: reset }, translate("settings.reset"))
       )
     )
@@ -14998,24 +15140,28 @@ function ConversationSettingsPanel({ settings, status, busy, close, update, rese
     h13(
       "div",
       { className: "dtv-body" },
-      h13(Field6, { label: translate("conversationSettings.textScale") }, h13("select", {
-        className: "dtv-select",
-        value: settings.textScale,
-        disabled: busy,
-        onChange: (event) => update({ ...settings, textScale: Number(event.target.value) })
-      }, ...CONVERSATION_SCALE_OPTIONS.map((scale) => h13("option", { key: scale, value: scale }, `${Math.round(scale * 100)}%`)))),
-      h13("p", { className: "dtv-note" }, translate("conversationSettings.textScale.help")),
-      h13(Field6, { label: translate("conversationSettings.actionScale") }, h13("select", {
-        className: "dtv-select",
-        value: settings.actionScale,
-        disabled: busy,
-        onChange: (event) => update({ ...settings, actionScale: Number(event.target.value) })
-      }, ...CONVERSATION_SCALE_OPTIONS.map((scale) => h13("option", { key: scale, value: scale }, `${Math.round(scale * 100)}%`)))),
-      h13("p", { className: "dtv-note" }, translate("conversationSettings.actionScale.help")),
       h13("div", { className: "dtv-status", "data-error": status.error || void 0, role: "status" }, rawText(status.text)),
       h13(
         "div",
-        { className: "dtv-actions" },
+        { className: "dtv-settings-section" },
+        h13(Field6, { label: translate("conversationSettings.textScale") }, h13("select", {
+          className: "dtv-select",
+          value: settings.textScale,
+          disabled: busy,
+          onChange: (event) => update({ ...settings, textScale: Number(event.target.value) })
+        }, ...CONVERSATION_SCALE_OPTIONS.map((scale) => h13("option", { key: scale, value: scale }, `${Math.round(scale * 100)}%`)))),
+        h13("p", { className: "dtv-note" }, translate("conversationSettings.textScale.help")),
+        h13(Field6, { label: translate("conversationSettings.actionScale") }, h13("select", {
+          className: "dtv-select",
+          value: settings.actionScale,
+          disabled: busy,
+          onChange: (event) => update({ ...settings, actionScale: Number(event.target.value) })
+        }, ...CONVERSATION_SCALE_OPTIONS.map((scale) => h13("option", { key: scale, value: scale }, `${Math.round(scale * 100)}%`)))),
+        h13("p", { className: "dtv-note" }, translate("conversationSettings.actionScale.help"))
+      ),
+      h13(
+        "div",
+        { className: "dtv-settings-footer" },
         h13("button", { className: "dtv-button", type: "button", disabled: busy, onClick: reset }, translate("conversationSettings.reset"))
       )
     )
