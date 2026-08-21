@@ -3761,6 +3761,7 @@ var zh_CN_default = Object.freeze({
   "nav.regex": "\u663E\u793A\u6B63\u5219",
   "nav.regex.empty": "\u4EC5\u7528\u4E8E\u9B54\u4E38\u663E\u793A\u7684\u89C4\u5219",
   "regex.title": "\u663E\u793A\u6B63\u5219",
+  "regex.dragToReorder": "\u62D6\u62FD\u8C03\u6574\u6267\u884C\u987A\u5E8F",
   "regex.displayOnlyNote": "\u8FD9\u4E9B\u89C4\u5219\u53EA\u6539\u53D8\u9B54\u4E38\u6E32\u67D3\u548C\u9759\u6001 HTML\uFF0C\u4E0D\u4F1A\u6539\u5199\u5386\u53F2\u3001\u65F6\u95F4\u7EBF\u6570\u636E\u6216\u53D1\u9001\u7ED9 AI \u7684\u8BF7\u6C42\u3002\u5BFC\u5165\u89C4\u5219\u7684\u5F00\u5173\u6309\u539F\u6837\u4FDD\u7559\u3002",
   "regex.scopes": "\u6B63\u5219\u4F5C\u7528\u57DF",
   "regex.scope.global": "\u5168\u5C40",
@@ -4356,6 +4357,7 @@ var en_default = Object.freeze({
   "nav.regex": "Display regex",
   "nav.regex.empty": "Mowan display-only rules",
   "regex.title": "Display regex",
+  "regex.dragToReorder": "Drag to change execution order",
   "regex.displayOnlyNote": "These rules change Mowan rendering and static HTML only. They never rewrite history, timeline data, or AI requests. Imported switches are preserved as supplied.",
   "regex.scopes": "Regex scopes",
   "regex.scope.global": "Global",
@@ -7887,6 +7889,7 @@ function projectTimelineQa(timeline, messagesBySession = {}) {
     const user = within.find((message) => message.role === "user" && (messageOriginKind(message) === "user" || messageOriginKind(message) === "steering")) ?? null;
     const contexts = within.filter((message) => message.role === "user" && messageOriginKind(message) === "context").map(contextProjection);
     const assistant = [...within].reverse().find((message) => message.role === "assistant") ?? null;
+    const displayOverridden = typeof node.displayOverride === "string";
     result.push({
       id: node.id,
       hidden: node.hidden === true,
@@ -7894,9 +7897,9 @@ function projectTimelineQa(timeline, messagesBySession = {}) {
       contexts,
       triggerKind: messageOriginKind(trigger),
       reasoningText: contentReasoning(assistant?.content),
-      assistantText: node.displayOverride ?? renderedMessageText(assistant),
+      assistantText: displayOverridden ? node.displayOverride : renderedMessageText(assistant),
       originalAssistantText: renderedMessageText(assistant),
-      displayOverridden: node.displayOverride !== null,
+      displayOverridden,
       variant,
       variants: node.variants,
       variantCount: node.variants.length
@@ -11339,12 +11342,12 @@ async function loadChatState(client, sessionId, playthrough) {
   let depth = 0;
   for (let index = rawTurns.length - 1; index >= 0; index -= 1) {
     const turn = rawTurns[index];
-    const assistantDepth = turn.assistantText === "" ? void 0 : depth++;
+    const assistantDepth = turn.displayOverridden === true || turn.assistantText !== "" ? depth++ : void 0;
     const userDepth = turn.userText === "" ? void 0 : depth++;
     turns[index] = {
       ...turn,
       userText: renderText(turn.userText, "user", { depth: userDepth }),
-      assistantText: renderText(turn.assistantText, "assistant", { depth: assistantDepth })
+      assistantText: turn.displayOverridden === true ? turn.assistantText : renderText(turn.assistantText, "assistant", { depth: assistantDepth })
     };
   }
   const rootMessages = messagesBySession[sessionId];
@@ -11370,7 +11373,7 @@ function applyTurnDisplayRegex(turn, display, { userDepth, assistantDepth } = {}
       "user",
       { depth: userDepth }
     ).text,
-    assistantText: applyDisplayRegex(
+    assistantText: turn.displayOverridden === true ? turn.assistantText : applyDisplayRegex(
       applyDisplayNameMacros(turn.assistantText, display.macros),
       display.rules,
       display.bindings,
@@ -11410,7 +11413,7 @@ function Greeting({ greeting, busy, change, footer = null }) {
   );
 }
 function turnHasVisibleRpContent(turn) {
-  return turn?.hidden === true || turn?.importLast === true || typeof turn?.userText === "string" && turn.userText !== "" || typeof turn?.assistantText === "string" && turn.assistantText !== "" || turn?.running === true;
+  return turn?.hidden === true || turn?.importLast === true || typeof turn?.userText === "string" && turn.userText !== "" || typeof turn?.assistantText === "string" && turn.assistantText !== "" || turn?.displayOverridden === true || turn?.running === true;
 }
 function Turn({ turn, ...actionProps }) {
   if (turn.hidden) {
@@ -11429,7 +11432,7 @@ function Turn({ turn, ...actionProps }) {
     turn.userText === "" ? null : h8(RichText, { className: "dtv-play-chat-bubble dtv-play-chat-user dtv-play-rich", text: turn.userText }),
     turn.assistantText === "" ? null : h8(RichText, { className: "dtv-play-chat-bubble dtv-play-chat-assistant dtv-play-rich", text: turn.assistantText }),
     turn.running === true && turn.assistantText === "" ? h8("p", { className: "dtv-play-chat-running" }, uiMessage("play.chat.thinking")) : null,
-    turn.imported || turn.transient || turn.assistantText === "" ? null : h8(PlayTurnActions, { turn, ...actionProps })
+    turn.imported || turn.transient || turn.assistantText === "" && turn.displayOverridden !== true ? null : h8(PlayTurnActions, { turn, ...actionProps })
   );
 }
 function ImportControls({
@@ -13038,6 +13041,24 @@ var import_react14 = require("react");
 var h12 = createLocalizedElement(import_react14.createElement);
 var EMPTY_DOCUMENT = Object.freeze({ schemaVersion: 1, rules: Object.freeze([]) });
 var SCOPE_KINDS = Object.freeze(["global", "preset", "character"]);
+var REGEX_DRAG_TYPE = "application/x-pmp-dsh-tavern-regex-index";
+function reorderRegexRules(rules, fromIndex, toIndex) {
+  if (!Array.isArray(rules)) throw new TypeError("regex rules must be an array");
+  if (!Number.isSafeInteger(fromIndex) || !Number.isSafeInteger(toIndex) || fromIndex < 0 || toIndex < 0 || fromIndex >= rules.length || toIndex >= rules.length || fromIndex === toIndex) return [...rules];
+  const next = [...rules];
+  const [moved] = next.splice(fromIndex, 1);
+  next.splice(toIndex, 0, moved);
+  return next;
+}
+function reorderRegexScope(rules, kind, fromIndex, toIndex) {
+  const indexes = rules.map((rule, index) => rule?.scope?.kind === kind ? index : -1).filter((index) => index >= 0);
+  const reordered = reorderRegexRules(indexes.map((index) => rules[index]), fromIndex, toIndex);
+  const next = [...rules];
+  indexes.forEach((index, orderedIndex) => {
+    next[index] = reordered[orderedIndex];
+  });
+  return next;
+}
 function activeRegexBindings(snapshot) {
   return {
     presetId: typeof snapshot?.selection?.presetId === "string" ? snapshot.selection.presetId : null,
@@ -13126,16 +13147,47 @@ function stageLegacyScopedRegexRules(document2, resourceRules, bindings) {
   }
   return { document: nextDocument, resourceRules: nextResourceRules, migrated };
 }
-function RuleEditor({ rule, busy, update, remove, sourceOwned = false }) {
+function RuleEditor({ rule, busy, update, remove, sourceOwned = false, dragKind, dragIndex, move }) {
   const set = (patch) => update({ ...rule, ...patch });
   const setScope = (patch) => set({ scope: { ...rule.scope, ...patch } });
   const stateLabel = uiMessage(rule.enabled ? "common.enabled" : "common.disabled");
   return h12(
     "details",
-    { className: "dtv-entry dtv-regex-rule", "data-enabled": rule.enabled },
+    {
+      className: "dtv-entry dtv-regex-rule",
+      "data-enabled": rule.enabled,
+      onDragOver: (event) => {
+        if (busy) return;
+        event.preventDefault();
+        event.dataTransfer.dropEffect = "move";
+      },
+      onDrop: (event) => {
+        if (busy) return;
+        event.preventDefault();
+        event.stopPropagation();
+        try {
+          const source = JSON.parse(event.dataTransfer.getData(REGEX_DRAG_TYPE));
+          if (source?.kind === dragKind) move(source.index, dragIndex);
+        } catch {
+        }
+      }
+    },
     h12(
       "summary",
       null,
+      h12("span", {
+        className: "dtv-regex-drag",
+        role: "button",
+        tabIndex: busy ? -1 : 0,
+        draggable: !busy,
+        title: uiMessage("regex.dragToReorder"),
+        "aria-label": uiMessage("regex.dragToReorder"),
+        onDragStart: (event) => {
+          event.stopPropagation();
+          event.dataTransfer.effectAllowed = "move";
+          event.dataTransfer.setData(REGEX_DRAG_TYPE, JSON.stringify({ kind: dragKind, index: dragIndex }));
+        }
+      }, "\u2630"),
       h12("span", { className: "dtv-entry-dot", "aria-hidden": "true" }),
       h12("span", { className: "dtv-entry-name" }, rawText(rule.name || unwrapText(uiMessage("regex.unnamed")))),
       h12("span", { className: "dtv-entry-state" }, stateLabel)
@@ -13242,7 +13294,8 @@ function RegexScopeSection({
   update,
   remove,
   updateSource,
-  removeSource
+  removeSource,
+  move
 }) {
   const rules = [...editableRules, ...sourceRules];
   const unbound = kind === "preset" && bindings.presetId === null ? uiMessage("regex.noPreset") : kind === "character" && bindings.characterId === null ? uiMessage("regex.noCharacter") : null;
@@ -13269,6 +13322,9 @@ function RegexScopeSection({
         key: `${kind}-editable-${rule.id}-${index}`,
         rule,
         busy,
+        dragKind: kind,
+        dragIndex: index,
+        move,
         update,
         remove: () => remove(rule.id)
       })),
@@ -13277,6 +13333,9 @@ function RegexScopeSection({
         rule,
         busy,
         sourceOwned: true,
+        dragKind: kind,
+        dragIndex: index,
+        move,
         update: (next) => updateSource(index, next),
         remove: () => removeSource(index)
       }))
@@ -13384,6 +13443,19 @@ function RegexPanel({ client, activeSnapshot, close }) {
     ...current2,
     [kind]: current2[kind].filter((_rule, ruleIndex) => ruleIndex !== index)
   }));
+  const moveRule = (kind, fromIndex, toIndex) => {
+    if (kind === "global") {
+      setDocument((current2) => ({
+        ...current2,
+        rules: reorderRegexScope(current2.rules, kind, fromIndex, toIndex)
+      }));
+      return;
+    }
+    setResourceRules((current2) => ({
+      ...current2,
+      [kind]: reorderRegexRules(current2[kind], fromIndex, toIndex)
+    }));
+  };
   const importFile = async (event) => {
     const file = event.target.files?.[0];
     event.target.value = "";
@@ -13443,7 +13515,8 @@ function RegexPanel({ client, activeSnapshot, close }) {
         update: updateRule,
         remove: removeRule,
         updateSource: (index, next) => updateSourceRule(kind, index, next),
-        removeSource: (index) => removeSourceRule(kind, index)
+        removeSource: (index) => removeSourceRule(kind, index),
+        move: (fromIndex, toIndex) => moveRule(kind, fromIndex, toIndex)
       })),
       h12("div", { className: "dtv-status", "data-error": status.error }, status.text),
       h12(
@@ -13776,7 +13849,7 @@ var css11 = `
 .dtv-book-toolbar{display:grid;grid-template-columns:1fr 1fr 1fr;gap:7px}.dtv-entry{border:1px solid var(--dsw-alias-border-l1);border-radius:8px;background:var(--dsw-alias-bg-base);overflow:hidden}.dtv-entry>summary{list-style:none;cursor:pointer;padding:8px;display:flex;align-items:center;gap:7px;font-size:11px}.dtv-entry>summary::-webkit-details-marker{display:none}.dtv-entry-dot{width:8px;height:8px;flex:none;border-radius:50%;background:var(--dsw-alias-label-tertiary)}.dtv-entry[data-enabled=true] .dtv-entry-dot{background:var(--dsw-alias-state-success,#2fa36b)}.dtv-entry-name{font-weight:620;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.dtv-entry-state{margin-left:auto;flex:none;color:var(--dsw-alias-label-tertiary);font-size:10px}.dtv-entry-body{border-top:1px solid var(--dsw-alias-border-l1);padding:8px;display:flex;flex-direction:column;gap:8px}.dtv-field{display:flex;flex-direction:column;gap:4px}.dtv-label{font-size:10px;font-weight:620;color:var(--dsw-alias-label-tertiary)}.dtv-input,.dtv-select,.dtv-textarea{box-sizing:border-box;width:100%;border:1px solid var(--dsw-alias-border-l2);border-radius:7px;background:var(--dsw-alias-bg-base);color:var(--dsw-alias-label-primary);font:inherit;font-size:11px;padding:7px 8px}.dtv-input,.dtv-select{height:32px}.dtv-textarea{min-height:94px;resize:vertical;line-height:1.45}.dtv-policy{min-height:96px}.dtv-entry-grid{display:grid;grid-template-columns:1fr 1fr;gap:7px}.dtv-checks{display:flex;flex-wrap:wrap;gap:10px}.dtv-check{display:flex;gap:5px;align-items:center;font-size:10px}.dtv-entry-actions{display:flex;justify-content:flex-end}.dtv-danger{color:var(--dsw-alias-state-error)}
 .dtv-layer>.dtv-launcher,.dtv-layer>.dtv-panel,.dtv-layer>.dcc-panel,.dtv-layer>.dwb-panel,.dtv-layer>.dtu-panel{zoom:var(--dtv-ui-scale,1)}.dtv-setting-value{font-size:12px;font-variant-numeric:tabular-nums;color:var(--dsw-alias-label-secondary)}
 .dtv-modal-backdrop{position:absolute;inset:0;z-index:20;pointer-events:auto;background:rgba(0,0,0,.48);display:flex;align-items:center;justify-content:center;padding:24px}
-.dtv-regex-panel .dtv-body{flex:1 1 auto;overscroll-behavior:contain}.dtv-regex-section{gap:8px}.dtv-regex-section-title{display:flex;align-items:center;gap:8px}.dtv-regex-section-title .dtv-item-count{margin-left:auto}.dtv-regex-rule .dtv-input:disabled,.dtv-regex-rule .dtv-select:disabled,.dtv-regex-rule .dtv-textarea:disabled{pointer-events:none}.dtv-regex-expression{font-family:var(--dsw-font-mono,ui-monospace,SFMono-Regular,Consolas,monospace);min-height:72px}.dtv-regex-footer{position:sticky;bottom:-12px;display:grid;grid-template-columns:1fr 1fr;gap:8px;padding:10px 0 12px;background:var(--dsw-alias-bg-base)}
+.dtv-regex-panel .dtv-body{flex:1 1 auto;overscroll-behavior:contain}.dtv-regex-section{gap:8px}.dtv-regex-section-title{display:flex;align-items:center;gap:8px}.dtv-regex-section-title .dtv-item-count{margin-left:auto}.dtv-regex-drag{flex:none;cursor:grab;color:var(--dsw-alias-label-tertiary);font-size:14px;line-height:1;user-select:none}.dtv-regex-drag:active{cursor:grabbing}.dtv-regex-rule .dtv-input:disabled,.dtv-regex-rule .dtv-select:disabled,.dtv-regex-rule .dtv-textarea:disabled{pointer-events:none}.dtv-regex-expression{font-family:var(--dsw-font-mono,ui-monospace,SFMono-Regular,Consolas,monospace);min-height:72px}.dtv-regex-footer{position:sticky;bottom:-12px;display:grid;grid-template-columns:1fr 1fr;gap:8px;padding:10px 0 12px;background:var(--dsw-alias-bg-base)}
 .dtv-modal{width:min(420px,100%);border-radius:12px;background:var(--dsw-alias-bg-base);border:1px solid var(--dsw-alias-border-l2);box-shadow:var(--ds-shadow-3,0 16px 40px rgba(0,0,0,.28));padding:18px 16px;display:flex;flex-direction:column;gap:14px}
 .dtv-modal-body{margin:0;font-size:13px;line-height:1.55}.dtv-modal .dtv-button{align-self:flex-end;min-width:88px}
 `;
