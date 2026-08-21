@@ -25,6 +25,8 @@ export function appendCompletedTurns(timeline, messageState, sessionId, {
 } = {}) {
   if (typeof sessionId !== 'string' || sessionId === '') throw new TypeError('sessionId is required')
   if (messageState?.incompleteTurn === true) return { timeline, added: [] }
+  const head = timelineHead(timeline)
+  if (head !== null && head.sessionId !== sessionId) return { timeline, added: [] }
   const boundary = recordedEndSeq(timeline, sessionId)
   const messages = [...(messageState?.messages ?? [])]
     .filter(message => Number.isSafeInteger(message.seq) && message.seq > boundary)

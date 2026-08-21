@@ -7996,9 +7996,16 @@ function sessionHasConversationHistory(response) {
 function findPlaythroughForSession(sessionId, catalog2, timelines = {}) {
   if (typeof sessionId !== "string" || sessionId === "") return null;
   for (const playthrough of catalog2?.playthroughs ?? []) {
+    if (rootSessionId(playthrough) === sessionId) {
+      return { playthrough, timeline: timelines[playthrough.path] ?? null };
+    }
+  }
+  for (const playthrough of catalog2?.playthroughs ?? []) {
     const timeline = timelines[playthrough.path];
-    if (rootSessionId(playthrough) === sessionId) return { playthrough, timeline: timeline ?? null };
-    if (timeline?.head?.sessionId === sessionId) return { playthrough, timeline };
+    if (timelineHead(timeline)?.sessionId === sessionId) return { playthrough, timeline };
+  }
+  for (const playthrough of catalog2?.playthroughs ?? []) {
+    const timeline = timelines[playthrough.path];
     if (timeline?.nodes?.some((node) => node.variants?.some((variant) => variant.sessionId === sessionId))) {
       return { playthrough, timeline };
     }
@@ -8031,10 +8038,9 @@ async function loadCurrentPlaythrough(client, session, options = {}) {
   const preferred = typeof options.preferredPlaythroughId === "string" ? playthroughs.find((item) => item.id === options.preferredPlaythroughId) : void 0;
   if (preferred !== void 0) {
     const timeline = await client.getTimeline(preferred);
-    const match2 = findPlaythroughForSession(sessionId, { playthroughs: [preferred] }, {
-      [preferred.path]: timeline
-    });
-    if (match2 !== null) return { workspace, ...match2 };
+    if (rootSessionId(preferred) === sessionId || timelineHead(timeline)?.sessionId === sessionId) {
+      return { workspace, playthrough: preferred, timeline };
+    }
   }
   const root = playthroughs.find((item) => rootSessionId(item) === sessionId);
   if (root !== void 0) {
@@ -8080,6 +8086,8 @@ function projectLiveTurns({
   running = false
 } = {}) {
   if (typeof sessionId !== "string" || sessionId === "") return [];
+  const head = timelineHead(timeline);
+  if (head !== null && head.sessionId !== sessionId) return [];
   const boundary = recordedEndSeq(timeline, sessionId);
   const pending2 = [];
   let turn = null;
@@ -11426,6 +11434,8 @@ function appendCompletedTurns(timeline, messageState, sessionId, {
 } = {}) {
   if (typeof sessionId !== "string" || sessionId === "") throw new TypeError("sessionId is required");
   if (messageState?.incompleteTurn === true) return { timeline, added: [] };
+  const head = timelineHead(timeline);
+  if (head !== null && head.sessionId !== sessionId) return { timeline, added: [] };
   const boundary = recordedEndSeq2(timeline, sessionId);
   const messages = [...messageState?.messages ?? []].filter((message) => Number.isSafeInteger(message.seq) && message.seq > boundary).sort((left, right) => left.seq - right.seq);
   const added = [];

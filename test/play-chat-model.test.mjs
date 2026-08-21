@@ -72,9 +72,11 @@ test('explicit playthrough selection disambiguates a session shared by fork hist
   const selected = { id: 'selected', path: 'selected/timeline.json' }
   const firstTimeline = {
     nodes: [{ id: 'first-qa', variants: [{ id: 'first-v', sessionId: 'shared' }] }],
+    head: { sessionId: 'shared', nodeId: 'first-qa', variantId: 'first-v' },
   }
   const selectedTimeline = {
     nodes: [{ id: 'selected-qa', variants: [{ id: 'selected-v', sessionId: 'shared' }] }],
+    head: { sessionId: 'shared', nodeId: 'selected-qa', variantId: 'selected-v' },
   }
   const client = {
     async getWorkspace() { return { selected: true, rootPath: '/rp' } },
@@ -88,6 +90,31 @@ test('explicit playthrough selection disambiguates a session shared by fork hist
   })
   assert.equal(match.playthrough.id, 'selected')
   assert.equal(match.timeline, selectedTimeline)
+})
+
+test('a historical membership never outranks another playthrough active head', async () => {
+  const historical = { id: 'historical', path: 'historical/timeline.json' }
+  const active = { id: 'active', path: 'active/timeline.json' }
+  const historicalTimeline = {
+    nodes: [{ id: 'old', variants: [{ id: 'old-v', sessionId: 'shared' }] }],
+    head: { sessionId: 'other', nodeId: 'old', variantId: 'old-v' },
+  }
+  const activeTimeline = {
+    nodes: [{ id: 'active', variants: [{ id: 'active-v', sessionId: 'shared' }] }],
+    head: { sessionId: 'shared', nodeId: 'active', variantId: 'active-v' },
+  }
+  const client = {
+    async getWorkspace() { return { selected: true, rootPath: '/rp' } },
+    async getCatalog() { return { playthroughs: [historical, active] } },
+    async getTimeline(playthrough) {
+      return playthrough.id === 'historical' ? historicalTimeline : activeTimeline
+    },
+  }
+
+  const match = await loadCurrentPlaythrough(client, { id: 'shared', cwd: '/rp' }, {
+    preferredPlaythroughId: 'historical',
+  })
+  assert.equal(match.playthrough.id, 'active')
 })
 
 test('an unrecorded active branch head still resolves to its owning playthrough', () => {
@@ -262,6 +289,24 @@ test('live projection disappears after the same session range is adopted by time
     },
     sessionId: 'root',
     nodes,
+  }), [])
+})
+
+test('live projection ignores a historical session that is not the active head', () => {
+  const tree = {
+    nodes: [{
+      id: 'qa', parentVariantId: null, adoptedVariantId: 'head-v',
+      variants: [{ id: 'head-v', sessionId: 'head-session', startEventId: 1, endEventId: 2 }],
+    }],
+    head: { sessionId: 'head-session', nodeId: 'qa', variantId: 'head-v' },
+  }
+  assert.deepEqual(projectLiveTurns({
+    timeline: tree,
+    sessionId: 'historical-session',
+    nodes: [
+      { kind: 'user', seq: 1, content: [{ type: 'text', text: 'foreign user' }] },
+      { kind: 'assistant', seq: 2, blocks: [{ kind: 'text', text: 'foreign answer' }] },
+    ],
   }), [])
 })
 

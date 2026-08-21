@@ -197,3 +197,29 @@ test('turn reconcile CAS replay does not duplicate an already recorded QA', asyn
   assert.equal(result.added.length, 0)
   assert.equal(value.nodes.length, 1)
 })
+
+test('turn reconcile never appends a historical session after another active head', async () => {
+  const value = {
+    nodes: [{
+      id: 'qa-head', kind: 'qa', parentVariantId: null, adoptedVariantId: 'v-head',
+      variants: [{ id: 'v-head', sessionId: 'head-session', startEventId: 1, endEventId: 2 }],
+    }],
+    head: { sessionId: 'head-session', nodeId: 'qa-head', variantId: 'v-head' },
+  }
+  let writes = 0
+  const client = {
+    async getMessages() {
+      return { incompleteTurn: false, messages: [
+        { role: 'user', seq: 1, text: 'foreign user' },
+        { role: 'assistant', seq: 2, text: 'foreign answer' },
+      ] }
+    },
+    async getTimeline() { return structuredClone(value) },
+    async updateTimeline() { writes += 1; throw new Error('must not write') },
+  }
+
+  const result = await createTurnReconciler(client)('historical-session', playthrough)
+  assert.equal(result.added.length, 0)
+  assert.deepEqual(result.timeline, value)
+  assert.equal(writes, 0)
+})

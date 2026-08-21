@@ -2,6 +2,7 @@ import { characterGreetingOptions } from '../../../character/src/client-state.js
 import {
   activeTimelineEntries,
   activeVariantEnd,
+  timelineHead,
 } from '../../../play/src/timeline-tree.js'
 
 function normalizedPath(value) {
@@ -99,9 +100,16 @@ export function sessionHasConversationHistory(response) {
 export function findPlaythroughForSession(sessionId, catalog, timelines = {}) {
   if (typeof sessionId !== 'string' || sessionId === '') return null
   for (const playthrough of catalog?.playthroughs ?? []) {
+    if (rootSessionId(playthrough) === sessionId) {
+      return { playthrough, timeline: timelines[playthrough.path] ?? null }
+    }
+  }
+  for (const playthrough of catalog?.playthroughs ?? []) {
     const timeline = timelines[playthrough.path]
-    if (rootSessionId(playthrough) === sessionId) return { playthrough, timeline: timeline ?? null }
-    if (timeline?.head?.sessionId === sessionId) return { playthrough, timeline }
+    if (timelineHead(timeline)?.sessionId === sessionId) return { playthrough, timeline }
+  }
+  for (const playthrough of catalog?.playthroughs ?? []) {
+    const timeline = timelines[playthrough.path]
     if (timeline?.nodes?.some(node => node.variants?.some(variant => variant.sessionId === sessionId))) {
       return { playthrough, timeline }
     }
@@ -138,10 +146,9 @@ export async function loadCurrentPlaythrough(client, session, options = {}) {
     : undefined
   if (preferred !== undefined) {
     const timeline = await client.getTimeline(preferred)
-    const match = findPlaythroughForSession(sessionId, { playthroughs: [preferred] }, {
-      [preferred.path]: timeline,
-    })
-    if (match !== null) return { workspace, ...match }
+    if (rootSessionId(preferred) === sessionId || timelineHead(timeline)?.sessionId === sessionId) {
+      return { workspace, playthrough: preferred, timeline }
+    }
   }
   const root = playthroughs.find(item => rootSessionId(item) === sessionId)
   if (root !== undefined) {
@@ -196,6 +203,8 @@ export function projectLiveTurns({
   running = false,
 } = {}) {
   if (typeof sessionId !== 'string' || sessionId === '') return []
+  const head = timelineHead(timeline)
+  if (head !== null && head.sessionId !== sessionId) return []
   const boundary = recordedEndSeq(timeline, sessionId)
   const pending = []
   let turn = null
