@@ -8,11 +8,11 @@
 - Export starts from the preserved ST source so unknown extensions survive,
   then projects the current Tavern name, sampling values, prompts, order, and
   enabled flags so edits cannot be hidden behind a stale `source.raw` copy.
+  preset field; this read-only route does not change resource selection.
 - Tavern-only `systemPromptMode` remains internal because ST has no matching
 - Added a preset-panel `Export JSON` button that reuses the public attachment
   endpoint; the toolbar auto-fits columns and wraps on narrow panels without
   changing the two-column binding controls.
-  preset field; this read-only route does not change resource selection.
 
 ## 2026-08-21 — Preserve world-book keyword delimiters while editing
 
