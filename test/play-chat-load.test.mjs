@@ -155,7 +155,11 @@ test('native blank-session dock projects only the latest three imported QA turns
   assert.match(noticeSource, /dtv-play-chat-assistant/)
 })
 
-test('RP chat never renders one session with another session loaded state', () => {
-  assert.match(chatSource, /const state = loadedState\?\.sessionId === sessionId \? loadedState\.value : null/)
-  assert.match(chatSource, /setLoadedState\(\{ sessionId, value: next \}\)/)
+test('RP chat retains the prior snapshot without current-session live data until an atomic swipe handoff', () => {
+  assert.match(chatSource, /const state = loadedState\?\.value \?\? null/)
+  assert.match(chatSource, /const current = snapshot\.sessionId === currentSessionId/)
+  assert.match(chatSource, /const liveSourceTurns = !current \? \[\] : projectLiveTurns/)
+  assert.match(chatSource, /transition === null \? null : frame\(transition\.from, 'outgoing'\)/)
+  assert.match(chatSource, /frame\(loadedState, transition === null \? 'idle' : 'incoming'\)/)
+  assert.match(chatSource, /useState\(\(\) => cachedChatSnapshot\(playClient, playthrough\)\)/)
 })

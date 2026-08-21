@@ -37,12 +37,16 @@ import {
   unbindPlaythroughImport,
 } from './import.js'
 import { activeTimelineEntries } from '../../../play/src/timeline-tree.js'
+import { consumeSwipeTransition } from './swipe-transition.js'
 
 const h = createLocalizedElement(createElement)
 const turnReconcilers = new WeakMap()
+const chatSnapshots = new WeakMap()
+const MAX_CACHED_PLAYTHROUGHS = 32
 
 const css = `
-.dtv-play-chat{height:100%;min-height:0;box-sizing:border-box;overflow:auto;padding:22px max(18px,calc((100% - 780px)/2)) 36px;color:var(--dsw-alias-label-primary)}
+.dtv-play-chat{height:100%;min-height:0;box-sizing:border-box;overflow-x:hidden;overflow-y:auto;padding:22px max(18px,calc((100% - 780px)/2)) 36px;color:var(--dsw-alias-label-primary)}
+.dtv-play-chat-stage{display:grid;min-width:0}.dtv-play-chat-frame{grid-area:1/1;min-width:0;will-change:transform,opacity}.dtv-play-chat-frame[data-phase=outgoing]{pointer-events:none}.dtv-play-chat-frame[data-phase=incoming][data-direction=next]{animation:dtv-play-swipe-in-next 180ms ease-out both}.dtv-play-chat-frame[data-phase=outgoing][data-direction=next]{animation:dtv-play-swipe-out-next 180ms ease-out both}.dtv-play-chat-frame[data-phase=incoming][data-direction=previous]{animation:dtv-play-swipe-in-previous 180ms ease-out both}.dtv-play-chat-frame[data-phase=outgoing][data-direction=previous]{animation:dtv-play-swipe-out-previous 180ms ease-out both}@keyframes dtv-play-swipe-in-next{from{transform:translateX(42px);opacity:.2}to{transform:translateX(0);opacity:1}}@keyframes dtv-play-swipe-out-next{from{transform:translateX(0);opacity:1}to{transform:translateX(-42px);opacity:0}}@keyframes dtv-play-swipe-in-previous{from{transform:translateX(-42px);opacity:.2}to{transform:translateX(0);opacity:1}}@keyframes dtv-play-swipe-out-previous{from{transform:translateX(0);opacity:1}to{transform:translateX(42px);opacity:0}}@media (prefers-reduced-motion:reduce){.dtv-play-chat-frame[data-phase]{animation-duration:1ms!important}}
 .dtv-play-chat-list{display:flex;flex-direction:column;gap:22px}.dtv-play-chat-row{display:flex;flex-direction:column;gap:8px}.dtv-play-chat-role{font-size:11px;font-weight:700;color:var(--dsw-alias-label-tertiary)}
 .dtv-play-chat-bubble{max-width:88%;box-sizing:border-box;border-radius:14px;padding:12px 14px;overflow-wrap:anywhere;font-size:14px;line-height:1.65}.dtv-play-chat-user{align-self:flex-end;background:var(--dsw-alias-interactive-bg-selected,var(--dsw-specific-tip))}.dtv-play-chat-assistant{align-self:flex-start;background:var(--dsw-alias-bg-layer-2,var(--dsw-specific-block))}
 .dtv-play-greeting{position:relative;align-self:flex-start;max-width:88%;display:grid;grid-template-columns:30px minmax(0,1fr) 30px;align-items:center;gap:6px}.dtv-play-greeting[data-locked=true]{grid-template-columns:minmax(0,1fr)}.dtv-play-greeting-text{border-radius:14px;padding:13px 15px;background:var(--dsw-alias-bg-layer-2,var(--dsw-specific-block));overflow-wrap:anywhere;font-size:14px;line-height:1.65}
@@ -346,6 +350,116 @@ export function ImportControls({
   )
 }
 
+function playthroughCacheKey(playthrough) {
+  return typeof playthrough?.path === 'string' ? playthrough.path : ''
+}
+
+function cachedChatSnapshot(client, playthrough) {
+  return chatSnapshots.get(client)?.get(playthroughCacheKey(playthrough)) ?? null
+}
+
+function rememberChatSnapshot(client, playthrough, snapshot) {
+  let cache = chatSnapshots.get(client)
+  if (cache === undefined) {
+    cache = new Map()
+    chatSnapshots.set(client, cache)
+  }
+  const key = playthroughCacheKey(playthrough)
+  cache.delete(key)
+  cache.set(key, snapshot)
+  while (cache.size > MAX_CACHED_PLAYTHROUGHS) {
+    cache.delete(cache.keys().next().value)
+  }
+}
+
+function ChatFrame({
+  snapshot,
+  currentSessionId,
+  liveNodes,
+  partial,
+  running,
+  playClient,
+  playthrough,
+  openSession,
+  greetingBusy,
+  changeGreeting,
+  changed,
+  onError,
+  phase = 'idle',
+  direction = null,
+  transitionEnded,
+}) {
+  const state = snapshot.value
+  const current = snapshot.sessionId === currentSessionId
+  const interactive = current && phase !== 'outgoing'
+  const liveSourceTurns = !current ? [] : projectLiveTurns({
+    timeline: state.timeline,
+    sessionId: currentSessionId,
+    nodes: liveNodes,
+    partial,
+    running,
+  })
+  let liveDepth = 0
+  const liveTurns = Array(liveSourceTurns.length)
+  for (let index = liveSourceTurns.length - 1; index >= 0; index -= 1) {
+    const turn = liveSourceTurns[index]
+    const assistantDepth = turn.assistantText === '' ? undefined : liveDepth++
+    const userDepth = turn.userText === '' ? undefined : liveDepth++
+    liveTurns[index] = applyTurnDisplayRegex(turn, state.display, { userDepth, assistantDepth })
+  }
+  const importLocked = !interactive
+    || state.importMutable !== true
+    || running
+    || latestUserNodeSeq(liveNodes) >= 0
+    || liveTurns.length > 0
+  const importControls = !interactive ? null : h(ImportControls, {
+    playClient,
+    playthrough,
+    binding: state.importBinding,
+    locked: importLocked,
+    changed,
+    onError,
+  })
+  const greetingLocked = !interactive || greetingSelectionLocked({
+    turns: state.turns,
+    latestUserSeq: latestUserNodeSeq(liveNodes),
+    running,
+  })
+
+  return h('div', {
+    className: 'dtv-play-chat-frame',
+    'data-phase': phase,
+    'data-direction': direction,
+    onAnimationEnd: transitionEnded,
+  }, h('div', { className: 'dtv-play-chat-list' },
+    state.greeting === null && state.importBinding !== null ? null : h(Greeting, {
+      greeting: state.greeting,
+      busy: greetingBusy,
+      change: changeGreeting,
+      locked: greetingLocked,
+      footer: state.importBinding === null ? importControls : null,
+    }),
+    ...state.turns.map(turn => h(Turn, {
+      key: turn.id,
+      turn,
+      playthrough,
+      playClient,
+      openSession,
+      running: running || !interactive,
+      onChanged: changed,
+      onError,
+    })),
+    state.importBinding === null ? null : importControls,
+    ...liveTurns.map(turn => h(Turn, { key: turn.id, turn })),
+    state.greeting === null && state.turns.length === 0 && liveTurns.length === 0 && !running
+      ? h('p', { className: 'dtv-play-chat-status' }, uiMessage('play.chat.empty'))
+      : null,
+    liveTurns.length === 0 && running && current
+      ? h('p', { className: 'dtv-play-chat-running' }, uiMessage('play.chat.thinking'))
+      : null,
+  ))
+}
+
 export function MowanChatView({ sessionId, useSession, playClient, playthrough, openSession, chatScroll }) {
   installPlayChatStyles()
   const sessionRevision = useSession(state => `${state.nodes?.length ?? 0}:${state.running === true}:${state.blank === true}`)
@@ -354,8 +468,12 @@ export function MowanChatView({ sessionId, useSession, playClient, playthrough, 
   const latestUserSeq = latestUserNodeSeq(liveNodes)
   const [revision, setRevision] = useState(0)
   const running = useSession(state => state.running === true)
-  const [loadedState, setLoadedState] = useState(null)
-  const state = loadedState?.sessionId === sessionId ? loadedState.value : null
+  const [loadedState, setLoadedState] = useState(() => cachedChatSnapshot(playClient, playthrough))
+  const loadedStateRef = useRef(loadedState)
+  const transitionIntent = useRef({ sessionId: null, direction: null })
+  const [transition, setTransition] = useState(null)
+  const state = loadedState?.value ?? null
+  const stateIsCurrent = loadedState?.sessionId === sessionId
   const [error, setError] = useState('')
   const [greetingBusy, setGreetingBusy] = useState(false)
   const bottomAnchor = useRef(null)
@@ -372,10 +490,10 @@ export function MowanChatView({ sessionId, useSession, playClient, playthrough, 
   }
 
   useLayoutEffect(() => {
-    if (state === null || initialScrollSession.current === sessionId) return
+    if (!stateIsCurrent || initialScrollSession.current === sessionId) return
     initialScrollSession.current = sessionId
     scrollToBottom()
-  }, [sessionId, state])
+  }, [sessionId, state, stateIsCurrent])
 
   useLayoutEffect(() => {
     if (userSeqSession.current !== sessionId) {
@@ -395,25 +513,55 @@ export function MowanChatView({ sessionId, useSession, playClient, playthrough, 
   }, [])
 
   useEffect(() => {
+    if (transition === null) return undefined
+    const targetSessionId = transition.to.sessionId
+    const timer = window.setTimeout(() => {
+      setTransition(current => current?.to.sessionId === targetSessionId ? null : current)
+    }, 260)
+    return () => window.clearTimeout(timer)
+  }, [transition])
+
+  useEffect(() => {
     let active = true
+    if (transitionIntent.current.sessionId !== sessionId) {
+      transitionIntent.current = {
+        sessionId,
+        direction: consumeSwipeTransition(sessionId),
+      }
+      setTransition(null)
+    }
     setError('')
     loadChatState(playClient, sessionId, playthrough).then(next => {
-      if (active) setLoadedState({ sessionId, value: next })
+      if (!active) return
+      const incoming = { sessionId, value: next }
+      const previous = loadedStateRef.current
+      if (previous !== null && previous.sessionId !== sessionId) {
+        const direction = transitionIntent.current.sessionId === sessionId
+          ? transitionIntent.current.direction
+          : null
+        setTransition(direction === null ? null : {
+          from: previous,
+          to: incoming,
+          direction,
+        })
+      }
+      loadedStateRef.current = incoming
+      rememberChatSnapshot(playClient, playthrough, incoming)
+      setLoadedState(incoming)
     }).catch(reason => {
       if (!active) return
-      setLoadedState(null)
       setError(reason instanceof Error ? reason.message : String(reason))
     })
     return () => { active = false }
   }, [playClient, playthrough, revision, sessionId, sessionRevision])
 
-  const greetingLocked = greetingSelectionLocked({
-    turns: state?.turns ?? [],
-    latestUserSeq,
-    running,
-  })
   const changeGreeting = async direction => {
-    if (state?.greeting == null || greetingBusy || greetingLocked) return
+    const greetingLocked = greetingSelectionLocked({
+      turns: state?.turns ?? [],
+      latestUserSeq,
+      running,
+    })
+    if (!stateIsCurrent || state?.greeting == null || greetingBusy || greetingLocked) return
     const next = adjacentGreetingIndex(state.greeting, direction)
     if (next === null) return
     setGreetingBusy(true)
@@ -428,62 +576,37 @@ export function MowanChatView({ sessionId, useSession, playClient, playthrough, 
     }
   }
 
-  const liveSourceTurns = state === null ? [] : projectLiveTurns({
-    timeline: state.timeline,
-    sessionId,
-    nodes: liveNodes,
+  const changed = () => setRevision(value => value + 1)
+  const transitionEnded = event => {
+    if (event.target !== event.currentTarget) return
+    setTransition(current => current?.to.sessionId === loadedState?.sessionId ? null : current)
+  }
+  const frame = (snapshot, phase) => h(ChatFrame, {
+    key: `${phase}:${snapshot.sessionId}`,
+    snapshot,
+    currentSessionId: sessionId,
+    liveNodes,
     partial,
     running,
-  })
-  let liveDepth = 0
-  const liveTurns = Array(liveSourceTurns.length)
-  for (let index = liveSourceTurns.length - 1; index >= 0; index -= 1) {
-    const turn = liveSourceTurns[index]
-    const assistantDepth = turn.assistantText === '' ? undefined : liveDepth++
-    const userDepth = turn.userText === '' ? undefined : liveDepth++
-    liveTurns[index] = applyTurnDisplayRegex(turn, state.display, { userDepth, assistantDepth })
-  }
-  const importLocked = state?.importMutable !== true || running || latestUserSeq >= 0 || liveTurns.length > 0
-  const importControls = state === null ? null : h(ImportControls, {
     playClient,
     playthrough,
-    binding: state.importBinding,
-    locked: importLocked,
-    changed: () => setRevision(value => value + 1),
+    openSession,
+    greetingBusy,
+    changeGreeting,
+    changed,
     onError: setError,
+    phase,
+    direction: transition?.direction ?? null,
+    transitionEnded: phase === 'incoming' ? transitionEnded : undefined,
   })
-
 
   return h('div', { className: 'dtv-play-chat' },
     error === '' ? null : h('p', { className: 'dtv-play-chat-status', 'data-error': true }, rawText(error)),
     state === null && error === '' ? h('p', { className: 'dtv-play-chat-status' }, uiMessage('play.chat.loading')) : null,
-    state === null ? null : h('div', { className: 'dtv-play-chat-list' },
-      state.greeting === null && state.importBinding !== null ? null : h(Greeting, {
-        greeting: state.greeting,
-        busy: greetingBusy,
-        change: changeGreeting,
-        locked: greetingLocked,
-        footer: state.importBinding === null ? importControls : null,
-      }),
-      ...state.turns.map(turn => h(Turn, {
-        key: turn.id,
-        turn,
-        playthrough,
-        playClient,
-        openSession,
-        running,
-        onChanged: () => setRevision(value => value + 1),
-        onError: setError,
-      })),
-      state.importBinding === null ? null : importControls,
-      ...liveTurns.map(turn => h(Turn, { key: turn.id, turn })),
-      state.greeting === null && state.turns.length === 0 && liveTurns.length === 0 && !running
-        ? h('p', { className: 'dtv-play-chat-status' }, uiMessage('play.chat.empty'))
-        : null,
-      liveTurns.length === 0 && running
-        ? h('p', { className: 'dtv-play-chat-running' }, uiMessage('play.chat.thinking'))
-        : null,
-      h('span', { ref: bottomAnchor, 'aria-hidden': true }),
+    loadedState === null ? null : h('div', { className: 'dtv-play-chat-stage' },
+      transition === null ? null : frame(transition.from, 'outgoing'),
+      frame(loadedState, transition === null ? 'idle' : 'incoming'),
     ),
+    h('span', { ref: bottomAnchor, 'aria-hidden': true }),
   )
 }

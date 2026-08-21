@@ -10,6 +10,7 @@ import {
   uiMessage,
 } from '../i18n.js'
 import { createPlayNodeController } from './nodes.js'
+import { queueSwipeTransition } from './swipe-transition.js'
 
 const h = createLocalizedElement(createElement)
 const controllers = new WeakMap()
@@ -94,11 +95,13 @@ export function PlayTurnActions({
     const target = turn.variants[targetPosition]
     if (target === undefined) throw new TypeError('Reply variant does not exist')
     const result = await controller(playClient).adoptVariant(playthrough, turn.id, target.id)
+    queueSwipeTransition(result.sessionId, targetPosition < position ? 'previous' : 'next')
     openSession(result.sessionId)
   })
 
   const generate = () => mutate(async () => {
     const result = await controller(playClient).createReplySwipe(playthrough, turn.id)
+    queueSwipeTransition(result.sessionId, 'next')
     openSession(result.sessionId)
     window.dispatchEvent(new Event(CLIENT_REFRESH_EVENT))
   })

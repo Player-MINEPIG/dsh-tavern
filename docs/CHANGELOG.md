@@ -1,5 +1,14 @@
 # Development changelog
 
+## 2026-08-21 — Animate atomic RP swipe handoffs
+
+- Retained the outgoing conversation snapshot until the destination session
+  finished loading, then rendered both snapshots for a directional handoff.
+- Added previous/next swipe motion with reduced-motion fallback, bounded
+  in-memory snapshot reuse across host remounts, and a timed cleanup fallback.
+- Kept stale snapshots non-interactive and excluded them from current-session
+  live-node projection while the destination loads.
+
 ## 2026-08-21 — Preserve the RP view across swipe sessions
 
 - Kept the registered RP conversation view mounted while resolving a session
