@@ -1,6 +1,6 @@
 # dsh-tavern package architecture
 
-状态：2026-08-20，安装标识为 `pmp-dsh-tavern`；HTTP 挂载 `/pmp-dsh-tavern/api`，资源走 `/v1`。RP 会话叠加与委派子 agent 固化父选择仍然有效。本文是当前架构决策与发布审查门槛，不是产品 README。
+状态：2026-08-22，安装标识为 `pmp-dsh-tavern`；HTTP 挂载 `/pmp-dsh-tavern/api`，资源走 `/v1`，扮演表面合同走 `/v2`。RP 会话叠加与委派子 agent 固化父选择仍然有效。本文是当前架构决策与发布审查门槛，不是产品 README。
 
 ## 决策结论
 
@@ -115,7 +115,7 @@ rc.6 的 `agent/inbox/spliced` 是公开、持久的 Session event；插入、�
 - 魔丸不渲染 reasoning 或 runtime context，也不提供展开入口；公开 `DisclosureRow` / Think icon 因此不再是该视图的迁移目标。用户需要运行细节时回到 DSH 原生“对话”。操作按钮仍可逐步采用公开图标与 `Tooltip`；DSH bundle 内未公开的 `ReasoningRow`、`MessageIconActions` 不属于可依赖接口。
 - DSH 的模型消息 `role` 与界面来源不是同一维度：公开 ConversationNode 已把运行时注入表示为 `kind: "context"`，但持久 history 投影仍可能给它 `role: "user"`。v2 因此在不改变 `role` 的前提下增加 additive `origin.kind`，并保留 `producer` / `form` / `summary` 等可选来源元数据。RP 前端必须按 `origin` 投影气泡、隐藏/单独呈现上下文和计算动作能力，不能靠文本、位置或“是否最后一段输出”猜测。
 - timeline 以 `parentVariantId` 与活动 `head` 表示树状分支；显示、focus 和新 QA 对账只沿 head 的祖先路径工作。head 的 session 可以是刚 branch、尚无新 QA 的 continuation anchor，因此侧栏归类也必须把 head session 视为周目成员。旧平面 timeline 继续可读，下一次对账进入树结构。
-- 内置动作行对所有可见 assistant 正文提供左右 swipe。真实 user/steering 输出直接重试自身；context 触发的父输出向前寻找最近真实用户 turn 并重跑整轮，控制器绝不把 `origin=context` 当用户提示重发。分支新周目与同周目回退复用同一 DSH branch/继承区间校验，区别仅是创建 catalog 副本还是移动原 timeline head。屏蔽动作和 hidden 投影已移除；显示正则清空输出时不渲染正文或动作，但 timeline 引用和 provenance 保留。
+- 内置动作行归属于 durable QA，而不是某一段可见 assistant 正文。真实 user/steering 输出直接重试自身；context 触发的父输出向前寻找最近真实用户 turn 并重跑整轮，控制器绝不把 `origin=context` 当用户提示重发。分支新周目与同周目回退复用同一 DSH branch/继承区间校验，区别仅是创建 catalog 副本还是移动原 timeline head。屏蔽动作和 hidden 投影已移除；显示正则只决定各段正文是否渲染，一次 QA 无论包含多少段 assistant 输出、甚至全部被清空，都只在 QA 末尾保留一组动作；timeline 引用和 provenance 始终保留。
 - DSH message surface replacement 可反复遮蔽当前节点，原始 append-only 事件仍可读取，但当前公开语义只有“连续区间 → 一个 message”，没有 `unreplace`、原子多 message 恢复或 per-request history projection。它适合原生 compaction/checkpoint，不适合承载 RP 分支树。DT 因此用多个公开 branch session 保存各条 continuation，让 DSH 历史、role/tool 配对、原生对话视图和卸载回退保持有效；timeline 只把这些 session 指针组合成活动周目路径。完整取舍见 `DSH_MESSAGE_FLOW.md` §1.1。
 - `displayOverride` 由 conversation 内的多行编辑器修改；保存、取消/Esc 均留在当前回复位置，不使用浏览器 `window.prompt`。覆盖值定义为最终显示文本，跳过后续宏与显示正则，仍进入 Showdown/DOMPurify。空字符串也是有效覆盖并保留恢复按钮；恢复为 `null` 后重新从 DSH 原文执行当前显示管线。保存继续通过既有 node controller 与 timeline CAS 写显示元数据，不改 DSH 原文或模型上下文。
 - **已批准为待办：** 周目导入/导出、资源选择等锚定菜单采用公开 `Menu`（含 portal、滚动/resize 重定位、紧凑模式），减少窄侧栏裁切和自维护定位 CSS；编辑、删除确认逐步采用公开 `Modal` / `Button` / `Input`，复制采用 `writeClipboard`。迁移仍按功能拆分提交和验收。

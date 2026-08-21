@@ -24,9 +24,10 @@ timeline 只保存 session/event 范围引用；路径 API 有根目录、相对
 | 一次性注入 | 已实现，待统一验收 | 首次 assembly 使用公开 `claimEventSeqs` 建立持久 claim；同一终态前可重放，终态后新 claim 不再注入。Tavern branch/swipe 复制不含正文的 lineage；中断后原 session 新消息不重复注入。 |
 | 功能按钮与树状周目分支 | 已实现，待统一验收 | displayOverride、已有 variant 切换、同操作行左右 swipe、新周目分支与同周目回退。屏蔽已移除，旧 hidden 投影不再隐藏正文。context 输出的右 swipe 重跑最近真实用户 turn，不重发 context。timeline 用 parent/head 保存各 swipe 后续；活动 branch anchor session 仍归入原周目。 |
 | 显示正则顺序 | 已实现，待统一验收 | 全局、预设、角色卡各自支持与预设 prompt 相同的指针拖拽、收缩线和落点占位动画；保存分别写工作区文档或原生 `regex_scripts` 数组。跨来源禁止拖动，组合顺序固定全局→预设→角色卡。 |
-| 子 agent / 上下文注入显示 | 已实现，待统一验收 | v2 消息保留模型 `role` 并增加 `origin`；魔丸完全隐藏 reasoning/context，不画用户气泡也不提供展开。context 触发输出的 retry 向前定位真实用户 turn，控制器拒绝重发 context；正则清空输出时同步隐藏动作。 |
+| 子 agent / 上下文注入显示 | 已实现、已验收 | v2 消息保留模型 `role` 并增加 `origin`；魔丸完全隐藏 reasoning/context，不画用户气泡也不提供展开。context 触发输出的 retry 向前定位真实用户 turn，控制器拒绝重发 context；显示正则只控制正文，各段全被清空时仍在 durable QA 末尾保留一组动作。 |
 
-表内“已验收”行为曾在 DSH 0.1.0-rc.8 通过用户验收。此后的 P0 加固、mode service/动画、默认工作区、功能按钮与周目分支已通过自动测试，仍等待 rc.8 统一人工验收和最终发布回归。
+表内“已验收”行为曾在 DSH 0.1.0-rc.8 通过用户验收。P0 加固现已全部进入 `npm run verify:2.0` 分组回归；Windows junction、根内 reparse point 与 rename 前父目录替换在本机实际执行通过，不再因创建 symlink 权限而跳过。真实 rc.8 Host 的 chrome/workspace 权威只读冒烟已通过；写入交互、浏览器双标签页通知、工作区准入视觉、禁用/卸载回退及最终 rc.8 交互仍按人工清单验收。
+工作区准入已实现：魔丸在 v2 workspace 未绑定、候选失效或读取失败时阻断 RP 内容，只消费 DSH 公开 workspace 列表；候选必须显式选择，PUT 后回读验证，失败可重试或返回 native，不保存浏览器工作区副本。
 
 下面保留原始发现作为证据；其是否关闭以紧随其后的决策表为准。
 
@@ -41,7 +42,7 @@ timeline 只保存 session/event 范围引用；路径 API 有根目录、相对
 | catalog schema | 已实现：PUT 写前和 GET 读后都校验。id/规范化 path 唯一；id 使用安全段；path 为安全相对路径且以 `/timeline.json` 结尾；校验已知 `ext.pmpDshTavern`，保留第三方 ext。 |
 | focus | 已实现任务 07：稳定入口按已校验 catalog 和安全周目 id 解析路径，返回 playthroughId/sessionId/nodeId/variantId；空周目使用 rootSessionId。旧 /focus?path= 仍兼容，无 path 返回 400；普通 timeline PUT 不再更新 deprecated/ignored 的 activeTimelinePath。任务 08 已完成 bundled live client 迁移：只传 URL 编码的 playthrough id，并校验四字段及返回 id 一致。 |
 | 路径 TOCTOU | 已实现进程内 per-target guard；路径链逐段 `lstat` 拒绝 symlink/junction，目录逐层创建并 realpath 复核，临时文件排他 `wx`，写入和 rename 前复验父目录。纯 Node 不宣称跨进程或内核级 no-follow 事务；外部本机进程仍可能制造极窄竞态。 |
-| 更广日志 | 本轮只支持 Cordis `ctx.logger`。其默认是进程内最近 1000 条记录的 ring buffer，未发现本插件自行写持久日志。浏览器 logger、持久有界 journal 和额外 exporter 进入 backlog，不阻塞本轮实现。 |
+| 更广日志 | 本轮只支持 Cordis `ctx.logger`。日志保留量、输出目标与轮转由 DSH/Cordis Host 管理；本插件不自行写持久日志文件，也不把 Host 日志承诺成持久审计。浏览器 logger、持久有界 journal 和额外 exporter 进入 backlog，不阻塞本轮实现。 |
 
 ## 原始发现：API 与生命周期语义
 
@@ -71,6 +72,7 @@ timeline 只保存 session/event 范围引用；路径 API 有根目录、相对
 
 ## 更新后的验收顺序
 
-1. P0 自动实现已完成；统一验收长 history、六种 import claim 场景、双标签页 CAS、损坏文件、focus 和 symlink/junction 防护。
-2. 统一验收 mode service/动画、默认 RP 工作区和功能按钮：正常及中断回复、树状 swipe/adopt、displayOverride、新周目分支与同周目回退。
-3. 完成第三方前端指南、`npm run check`、`npm run pack:check`、跟踪文件/包清单扫描和 rc.8 安装冒烟。
+1. 自动证据：运行 `npm run verify:2.0`。完整 history、六种 import claim/lineage、schema/CAS、损坏文件、按 id focus、operation log、Windows junction/reparse/rename 前父目录替换以及 mode service dispose 均由确定性测试验证。
+2. 真实 Host/浏览器：先以 `DSH_TAVERN_PLAY_LIVE=1` 和 `DSH_TAVERN_PLAY_LIVE_URL` 运行只读 Host 冒烟；再用双标签页观察 chrome SSE/focus/poll 收敛与 CAS 冲突，在全新数据中验证工作区准入的无候选/单候选/多候选/失效候选/失败恢复；正常与中断回复只做一轮代表性 UI 回归。
+3. 兼容回退：禁用或卸载 Tavern 后确认 DSH native 与其它插件仍可用，再恢复插件数据；不要用这一步验证会删除资源的 `--no-backup`。
+4. 发布门：`npm run verify:2.0` 已包含 build 与 pack dry-run；再核对实际 rc.8 安装副本 hash、正式文档和版本号后才打 2.0 tag。

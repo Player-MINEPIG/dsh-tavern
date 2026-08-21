@@ -1,5 +1,19 @@
 # Development changelog
 
+## 2026-08-22 — Require a verified RP workspace before entering Mowan
+
+- Added a blocking first-run workspace admission view that consumes the public DSH workspace list and the existing v2 workspace authority.
+- Required an explicit user choice even for a single candidate; no browser-side workspace truth or automatic selection was added.
+- Kept the gate open through PUT and authoritative GET read-back. Missing lists, stale paths and read/write failures remain recoverable through retry or a return to native DSH mode.
+
+## 2026-08-22 — Add grouped 2.0 release verification
+
+- Added `npm run verify:2.0` for named history, managed-document/CAS/path, claim/logging, chrome/workspace-admission, and package-boundary evidence, followed by build and pack dry-run.
+- Made Windows path-hardening tests fall back to junctions, so external/root-in reparse points and parent replacement before rename execute instead of silently passing or skipping when directory symlinks require extra privileges.
+- Replaced the live-Host placeholder assertion with real, read-only requests to the running DSH chrome and workspace authority; no live data is mutated by this smoke test.
+- Kept mutating Host/browser checks separate: multi-tab notification, first-run visual states and disable/uninstall fallback remain manual release gates.
+
+
 ## 2026-08-22 — Align the unbound-session notice with the native composer
 
 - Constrained the RP unbound-session notice with DSH's inherited `--dsh-composer-card-max-width` instead of filling the conversation-wide dock after history exists.

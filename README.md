@@ -300,15 +300,19 @@ DSH rc.8 侧边栏外层的“新建会话”由原生 sidebar shell 独占，�
 | --- | --- |
 | 插件 id / 包名 | `pmp-dsh-tavern` |
 | 本插件资源 API（预设、卡、书、RP、Trace…） | `/pmp-dsh-tavern/api/v1/...` |
-| 扮演表面元 API | `/pmp-dsh-tavern/api/v2/...`（2.0 预发布合同；可靠性加固已实现，待 rc.8 统一验收） |
+| 扮演表面元 API | `/pmp-dsh-tavern/api/v2/...`（2.0 预发布合同；可靠性加固已通过自动回归，待 rc.8 最终交互验收） |
 
-v1 是本插件悬浮球 / 侧栏 / Trace 用的 bundled UI 资源合同，不保证给第三方扮演表面用。v2 是给任意扮演前端的稳定面：chrome、扮演工作区文件、session（create / branch / **user-message** / messages）以及按周目查询的只读 **GET `/playthroughs/:id/focus`**。bundled live client 已按非空 playthrough id 调用该稳定入口，并验证返回的 playthroughId/sessionId/nodeId/variantId；旧 `/focus?path=` 仅作为迁移兼容面保留。完整 history、revision/CAS、读写校验、import claim/lineage、按 id focus 和路径竞态加固已经实现，仍需 rc.8 统一验收后才视为 2.0 稳定发布。`user-message` 只提交下一条用户正文，不是 loader 拼好的完整 prompt；focus 告诉前端上边栏该跟哪条 session，前端自己 `sessions.open`，不用 POST。swipe、删改、周目分支、导入导出都由前端用这些接口拼。扮演工作区不要放系统盘。greeting 从角色卡与 selection 派生，不写入时间线或 DSH 历史；上边栏对话 / 轨迹 / Tavern Trace 保留。
+v1 是本插件悬浮球 / 侧栏 / Trace 用的 bundled UI 资源合同，不保证给第三方扮演表面用。v2 是给任意扮演前端的预发布稳定面：chrome、扮演工作区文件、session（create / branch / **user-message** / messages）以及按周目查询的只读 **GET `/playthroughs/:id/focus`**。bundled live client 已按非空 playthrough id 调用该稳定入口，并验证返回的 playthroughId/sessionId/nodeId/variantId；旧 `/focus?path=` 仅作为迁移兼容面保留。完整 history、revision/CAS、读写校验、import claim/lineage、按 id focus 和路径竞态加固已经实现并通过分组自动回归；真实 Host 和 rc.8 浏览器交互通过最终清单后才视为 2.0 稳定发布。`user-message` 只提交下一条用户正文，不是 loader 拼好的完整 prompt；focus 告诉前端上边栏该跟哪条 session，前端自己 `sessions.open`，不用 POST。swipe、删改、周目分支、导入导出都由前端用这些接口拼。扮演工作区不要放系统盘。greeting 从角色卡与 selection 派生，不写入时间线或 DSH 历史；上边栏对话 / 轨迹 / Tavern Trace 保留。
 
 v2 消息同时公开模型角色 `role` 和 additive 来源字段 `origin`。DSH 的子 agent 报告、完成通知等上下文可能仍以 `role: "user"` 送给模型，但会投影为 `origin.kind: "context"`；第三方前端应按 `origin` 将其隐藏或单独呈现，不能显示成人类输入。内置魔丸只显示 RP 用户/assistant 正文，完全隐藏 reasoning 与 context；需要查看这些运行细节时切回 DSH 原生“对话”。动作仍按来源限制重新生成/滑动，避免把上下文报告作为用户正文重发。
+
+进入魔丸时，客户端先读取 v2 权威 RP 工作区并与 DSH 公开 workspace 列表核对；尚未绑定、原路径已失效或回读失败时，会先显示阻断式工作区选择页。一个或多个候选都必须由用户明确点击，插件不会自动代选，也不在浏览器保存第二份工作区真相。PUT 后必须再次 GET 并确认候选仍可用才进入 RP 内容；无候选或失败时可重试，也可直接返回 DSH 原生模式。
 
 2.0 的 history API 已实现读取 DSH 提供的全部历史，直到 Host 返回 `hasMore: false`（代码 commit `10250a7`）；插件不会在 32 页等人为阈值静默截断，也不会在这一层做摘要或切片。Host 声称仍有更多历史但返回空页、非法 oldest `seq` 或不前进 cursor 时，API 返回 502 `PLAY_HISTORY_CURSOR_STALLED`。**能通过 API 读取全历史，不代表模型的一次请求能够容纳全历史。** 模型上下文超限、DSH 是否压缩上下文以及最终错误提示仍由 DSH/模型层负责；dsh-tavern 不承诺绕过其上下文窗口。
 
 导入上下文同样不在插件层做 summary、QA 切片或 256 KiB/2,000 QA 人为上限；它只校验 JSON/schema/hash，并通过公开 pending-input claim 投影在同一 profile snapshot 下建立持久 claim。通用工作区文件仍有 1 MiB 的存储/传输上限。无 claim 的只读 assembly 不会注入或消费 pending；同一请求在终态前的 provider retry 可重复 assembly，终态后新 claim 不会注入；Tavern swipe 通过公开 branch 复制不含正文的 lineage，第三方原生 fork 不在插件拦截范围。
+
+维护者可运行 `npm run verify:2.0`，按“完整 history”“catalog/timeline 校验、CAS、focus 与路径加固”“import claim/lineage 与无正文日志”“chrome service/slot/工作区准入”“本地化与安装包边界”五组执行回归，随后自动 build 和 `npm pack --dry-run`。这套命令用于协议与发布证据；真实浏览器布局、两个真实标签页的通知以及禁用/卸载后的视觉回退仍按人工清单验证。
 
 ## 第三方 RP 前端开发
 
@@ -331,7 +335,7 @@ v2 消息同时公开模型角色 `role` 和 additive 来源字段 `origin`。DS
 - **角色卡内嵌书的导入期诊断仍可加强**：角色卡导入有 32 MiB 上限；编辑和运行时解析有完整结构守卫，但导入时不会提前拒绝所有最终不可运行的超复杂内嵌书。
 - **兼容不等于完整复刻 ST**：真实 role/depth 拓扑、greeting 历史和部分高级世界书状态尚未实现。请以 Tavern Trace 与 DSH `request/header` 验证实际行为。
 - **v2.0 扮演 swipe/周目分支会放大磁盘占用**：回复 swipe 和从回复创建新周目都按 DSH 分支新开 session，每份分支带着分叉点之前的完整会话日志。请把扮演工作区放在空间充足的磁盘，不要放在系统盘（Windows 上避免 `C:\`）。自动清理未采用的分支尚未提供。
-- **生命周期日志当前只使用 Host 的 `ctx.logger`**：workspace bind、目录创建、文件及 catalog/timeline 写入，以及 `POST /v2/sessions`、`POST /v2/sessions/:id/branch`、`POST /v2/sessions/:id/user-message` 和 import-context PUT/DELETE 都记录 operationId、阶段、结果和稳定错误码；GET session/messages/focus/import-context、chrome 和浏览器操作仍保持安静。user-message 只记录 Host 接受阶段，绝不记录正文、长度或摘要。日志不记录聊天或资源正文；默认日志是进程内有界记录，重启后不应视为持久审计；持久 journal 和额外 exporter 暂缓。
+- **生命周期日志当前只使用 Host 的 `ctx.logger`**：workspace bind、目录创建、文件及 catalog/timeline 写入，以及 `POST /v2/sessions`、`POST /v2/sessions/:id/branch`、`POST /v2/sessions/:id/user-message` 和 import-context PUT/DELETE 都记录 operationId、阶段、结果和稳定错误码；GET session/messages/focus/import-context、chrome 和浏览器操作仍保持安静。user-message 只记录 Host 接受阶段，绝不记录正文、长度或摘要。日志不记录聊天或资源正文；日志保留量、输出目标与轮转由 DSH/Cordis Host 管理，插件本身不写持久日志文件，因此不能把它当作持久审计。持久 journal 和额外 exporter 暂缓。
 
 更完整的安全预算、运行态变更缺口和数据边界见 [Loader contract](docs/LOADER_CONTRACT.md)。
 

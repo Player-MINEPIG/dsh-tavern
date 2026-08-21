@@ -1,6 +1,6 @@
 # Cross-platform installation and removal
 
-Status: current for the 2026-08-15 public release candidate. The root README provides the short script/manual/Agent paths; this file is the detailed lifecycle and recovery contract.
+Status: current for the 2026-08-22 2.0 release-candidate worktree. The root README provides the short script/manual/Agent paths; this file is the detailed lifecycle, verification, and recovery contract.
 
 The scripts use Node.js as their common entry point and normalize paths for
 Windows, macOS, and Linux. macOS/Linux execute `dsh` directly. Windows safely
@@ -68,6 +68,24 @@ Windows paths may be passed normally, for example:
 ```text
 node scripts/install.mjs --dsh-home .\test-envs\review
 ```
+
+## Verify the 2.0 release candidate
+
+Before packaging or installing a release candidate, run:
+
+```text
+npm run verify:2.0
+```
+
+The command runs five named regression groups for complete history and cursor
+guards; managed-document validation/CAS/focus/path hardening; import
+claim/lineage and privacy-safe lifecycle logs; chrome transport/slot ownership
+and workspace admission; and localization/installer boundaries. It then builds
+the tracked browser bundle and performs `npm pack --dry-run`.
+
+This command does not replace real-browser review. Use the private release
+acceptance checklist for multi-tab notification, first-run workspace choice,
+and disable/uninstall fallback against the target DSH rc build.
 
 ## Uninstall
 

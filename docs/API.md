@@ -1,6 +1,6 @@
 # HTTP API
 
-状态：2026-08-21。根：`/pmp-dsh-tavern/api`。鉴权仍是本机 TCP peer、Host、Origin、Content-Type（见 loader 安全中间件）。成功响应带 `ok: true`；失败带 `ok: false` 与 `error`。
+状态：2026-08-22。根：`/pmp-dsh-tavern/api`。鉴权仍是本机 TCP peer、Host、Origin、Content-Type（见 loader 安全中间件）。成功响应带 `ok: true`；失败带 `ok: false` 与 `error`。
 
 两栏合同：
 
@@ -49,7 +49,7 @@
 - `origin.kind: "context"` 可附带 `producer`、`form`、`summary`。三者是有界的可选显示元数据；消息正文仍在原有 `text` / `content` 字段，不复制进 `origin`。
 - 为兼容旧客户端，新增字段是 additive；`role`、`seq`、`text`、`content` 与 `incompleteTurn` 的既有含义不变。旧服务端没有 `origin` 时，客户端只能按 `role` 做保守回退，无法可靠识别上下文注入。
 
-内置魔丸视图完全不渲染 reasoning 与 `origin.kind: "context"`，也不提供展开入口；需要检查运行细节时使用 DSH 原生“对话”视图。回复 swipe 是客户端对 branch/user-message/timeline CAS 的组合，不存在 `/swipe` 动词。点击由 `context` 触发的父输出时，控制器向活动分支前方寻找最近的真实 `user` / `steering`，从其前方重跑整轮，绝不会把 context 报告重新作为人类输入发送；若活动分支没有真实用户消息则显式失败。可见输出提供复制、左右 swipe、分支新周目、同周目回退和显示层编辑；不再提供屏蔽。显示正则把 assistant 正文清空时，不显示该输出及其按钮，但保留非可视 provenance 与 timeline 指针。
+内置魔丸视图完全不渲染 reasoning 与 `origin.kind: "context"`，也不提供展开入口；需要检查运行细节时使用 DSH 原生“对话”视图。回复 swipe 是客户端对 branch/user-message/timeline CAS 的组合，不存在 `/swipe` 动词。点击由 `context` 触发的父输出时，控制器向活动分支前方寻找最近的真实 `user` / `steering`，从其前方重跑整轮，绝不会把 context 报告重新作为人类输入发送；若活动分支没有真实用户消息则显式失败。durable QA 提供复制、左右 swipe、分支新周目、同周目回退和显示层编辑；不再提供屏蔽。显示正则逐段决定 assistant 正文是否可见，但动作归属于 QA：多段输出只出现一组动作，全部正文被清空时仍保留该组动作以及非可视 provenance 与 timeline 指针。
 
 import-context 修改由 session 权威状态锁定：只要存在 DSH user/assistant message、开放 turn，或该绑定已经被 claim，`PUT` / `DELETE` 都返回 `409 PLAY_IMPORT_CONTEXT_LOCKED`；前端隐藏按钮不能替代此检查。`PUT` 会重新读取工作区文件、执行 JSON/schema/hash 校验，然后把绑定置为 `pending`。`GET` 可在任意状态读取摘要；正文仍通过已有 `/workspace/files?path=` 按明确路径读取。首次实际 assembly 必须携带公开 `agent/inbox/spliced` 投影的非负 `claimEventSeqs`；loader 才把绑定持久转为 `claimed`，并在同一 claim identity 的重复 assembly 中重放相同的转义、untrusted、只读上下文。没有 claim 的 view/assembly 不注入，也不会消费 pending；已 claim 的 `turn/end` 才转为 `consumed`，并保存安全整数结束 event seq、turn 与 `reason.kind` 的非正文终态元数据，不写成 DSH 历史。DSH provider 在同一 turn/end 前的 request retry 复用同一 claim；`agent/request-error` 不消费或重置。Tavern swipe 通过公开 branch endpoint，在分叉点早于来源终态时复制 selection 和不含正文的 import lineage；子 session 必须出现新的 public claim 才注入，旧 claim 不直接复用。中断后原 session 的新用户 claim 不再注入。
 
@@ -76,7 +76,7 @@ session/workspace/timeline/catalog 积木组合同样的流程。当前 bundled 
 detach 删除目标 session 的所有 variant 以及以其为父节点的全部后代 variant，不重挂幸存节点；同一节点的兄弟 swipe 和其他分支保留。若 root 被移除，catalog 清除 `rootSessionId` 与旧 import-context 引用，但保留周目行、名称和编号。下次新建同角色周目时，bundled client 为该空周目创建新的 DSH root session 并以 catalog CAS 重新挂入，不创建新目录或新编号。操作不会删除、归档或改名任何 DSH session。
 
 这里的“周目事务”是前端对公开原子操作的组合，不等同于服务端跨文件事务。单个客户端的
-controller 会串行同角色创建；内置 caller 使用服务端 CAS 的有限重放保护跨标签页并发写入，但跨文件的 session/目录/timeline/catalog 组合仍不是事务。创建中途失败暂不增加跨文件事务：当前 workspace bind、目录创建、普通文件写入和 catalog/timeline 写入已使用同一 `operationId` 写 `ctx.logger`；客户端依据已完成阶段、回读结果和稳定错误码恢复。session 创建、import binding、chrome 和前端操作日志仍不在本轮覆盖范围；不得把组合流程宣传为原子提交。
+controller 会串行同角色创建；内置 caller 使用服务端 CAS 的有限重放保护跨标签页并发写入，但跨文件的 session/目录/timeline/catalog 组合仍不是事务。创建中途失败暂不增加跨文件事务：workspace bind、目录创建、普通文件与 catalog/timeline 写入、周目 detach，以及 session create/branch/user-message 和 import-context PUT/DELETE 都各自在单次变更请求内使用一个 `operationId` 写 `ctx.logger`；客户端依据已完成阶段、回读结果和稳定错误码恢复。不同 API 请求不共享 operationId，chrome、GET 和浏览器前端操作仍保持安静；不得把组合流程宣传为原子提交。
 
 ### 外部记录导入上下文
 
@@ -89,7 +89,7 @@ durable history。当前已实现的基础语义是：首次 assembly 必须按�
 请求体为 `{ reference: { path, expectedHash? } }`。文件必须位于已绑定工作区根内，文档为
 `schemaVersion: 1` 且含 `qa` 数组。import parser 不做 256 KiB 或 QA 数量的人为上下文截断，也不做 summary/切片；模型上下文是否超限交给 DSH/provider。通用 `/workspace/files` 仍有 1 MiB 文件层读写上限。普通 SillyTavern JSON/JSONL 与本插件 bundle 可由客户端解析后写入该上下文文件。greeting 仍是展示投影，不伪造 assistant 历史。
 
-### 已接受的 2.0 发布加固（部分已实现）
+### 2.0 发布加固（已实现并纳入分组自动回归）
 
 - ✅ history 已实现（`10250a7`）：取消 32 页人为上限并一直分页至 `hasMore: false`；Host 空页、非法 oldest `seq` 或 cursor 重复/不前进时返回 502 `PLAY_HISTORY_CURSOR_STALLED`；插件不摘要/切片。
 - import-context claim/终态/lineage 已实现：公开 `claimEventSeqs` 驱动 pending → claimed；terminal 前同一 identity 可重放，`turn/end` 保存 event seq、turn、reason.kind 等非正文元数据并转 consumed；terminal 后新 claim 不注入。Tavern swipe 通过公开 branch 复制 selection 与不含正文的 pending lineage，旧 claim 不直接复用；第三方原生 fork 不在插件拦截范围。
@@ -98,7 +98,7 @@ durable history。当前已实现的基础语义是：首次 assembly 必须按�
 - 路径逐段拒绝 symlink/junction（Node 暴露的链接类型），逐层非 recursive 创建并 realpath 复核，临时文件使用排他 `wx`，写入/rename 前复验父目录；纯 Node 仍无法抵抗外部进程制造的极窄竞态，不引入 native addon。
 - 本轮已接入后端 `ctx.logger` 的 operation log：`PUT /workspace`（bind）、`POST /workspace/dirs`、`PUT /workspace/files?path=`（普通文件及 catalog/timeline）、`POST /playthroughs/:id/detach-session`，以及 session create/branch/user-message 和 import-context PUT/DELETE。每次变更请求记录同一 `operationId` 的 start、request.validated、Host/prepare/bind/copy 或 timeline/catalog detach 阶段、success 或 failure；不记录资源/聊天正文。user-message 只记录 Host prompt accepted 阶段，不记录正文、长度或摘要。GET/list、session/messages/focus/import-context、chrome 及浏览器日志、持久 journal、额外 exporter 暂缓。
 
-除已标记为已实现的 history 分页外，其余加固在完成代码、自动测试和 rc.8 验收前均不得宣称已经实现。具体风险与决策见 [`PLAY_REVIEW.md`](PLAY_REVIEW.md)。
+上述加固均已实现并纳入 `npm run verify:2.0`；该命令验证 history、schema/CAS/focus/路径防护、claim/lineage、无正文 operation log、chrome service/slot、工作区准入、本地化与发布包边界。设置 `DSH_TAVERN_PLAY_LIVE=1` 与 `DSH_TAVERN_PLAY_LIVE_URL` 后还会对运行中的 DSH Host 实际读取 chrome/workspace 权威状态；真实写入、浏览器双标签页通知和最终 rc.8 交互仍在发布验收清单中。具体风险与决策见 [`PLAY_REVIEW.md`](PLAY_REVIEW.md)。
 
 `chrome` 是整个前端的蓝/红球，存在插件 data `chrome.json`，默认 `native`。非法 `mode` → 400。GET 不要求 JSON Content-Type。
 `GET /chrome/events` 是 Tavern 自有的 SSE 变更面，不是 DSH Host API。连接后立即发送 `event: chrome/change` 当前快照；成功的 `PUT /chrome` 在实际 mode 变化后广播一次同名事件，事件 data 只含 `{ mode, revision }`。SSE 使用 `text/event-stream`、禁止缓存并在连接关闭时清理订阅；非 GET → 405。旧客户端只读取 `mode` 仍兼容，无法使用 SSE 的客户端应回退 GET/focus 刷新或短轮询。直接编辑 `chrome.json`、其他进程写入以及 DSH 私有 transport 不在该事件合同内。
