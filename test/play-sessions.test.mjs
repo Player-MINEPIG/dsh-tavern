@@ -383,10 +383,39 @@ test('GET /sessions messages preserves model role while projecting context prove
     rmSync(fixture.playRoot, { recursive: true, force: true })
   }
 })
-test('live play session APIs against a running DSH host', {
+test('live play session APIs expose chrome and workspace authority from a running DSH host', {
   skip: process.env.DSH_TAVERN_PLAY_LIVE !== '1',
 }, async () => {
   assert.ok(process.env.DSH_TAVERN_PLAY_LIVE_URL, 'DSH_TAVERN_PLAY_LIVE_URL is required for live play tests')
+  const baseUrl = new URL(process.env.DSH_TAVERN_PLAY_LIVE_URL)
+  const readJson = async path => {
+    const response = await fetch(new URL(path, baseUrl), {
+      headers: {
+        accept: 'application/json',
+        origin: baseUrl.origin,
+      },
+    })
+    const text = await response.text()
+    assert.equal(response.status, 200, `${path} returned ${response.status}: ${text}`)
+    assert.match(response.headers.get('content-type') || '', /^application\/json\b/)
+    return JSON.parse(text)
+  }
+
+  const chrome = await readJson(`${API_V2}/chrome`)
+  assert.equal(chrome.ok, true)
+  assert.ok(chrome.mode === 'native' || chrome.mode === 'play')
+  assert.equal(typeof chrome.revision, 'string')
+  assert.ok(chrome.revision.length > 0)
+
+  const workspace = await readJson(`${API_V2}/workspace`)
+  assert.equal(workspace.ok, true)
+  assert.equal(typeof workspace.selected, 'boolean')
+  if (workspace.selected) {
+    assert.equal(typeof workspace.rootPath, 'string')
+    assert.ok(workspace.rootPath.length > 0)
+    assert.equal(typeof workspace.workspaceId, 'string')
+    assert.ok(workspace.workspaceId.length > 0)
+  }
 })
 test('GET /playthroughs/:id/focus derives catalog authority and does not use active timeline', async () => {
   const fixture = await boundHandler()
