@@ -10931,10 +10931,15 @@ function messageOriginKind2(message) {
 function completedPairAfter(messageState, eventId) {
   if (messageState?.incompleteTurn === true) return null;
   const messages = (messageState?.messages ?? []).filter((message) => Number.isSafeInteger(message.seq) && message.seq > eventId).sort((left, right) => left.seq - right.seq);
-  const user = messages.find((message) => message.role === "user");
+  const user = messages.find((message) => message.role === "user" && (messageOriginKind2(message) === "user" || messageOriginKind2(message) === "steering"));
   if (user === void 0) return null;
   const assistant = [...messages].reverse().find((message) => message.role === "assistant" && message.seq > user.seq);
   return assistant === void 0 ? null : { user, assistant };
+}
+async function createRootSwipeSession(client, sourceSessionId) {
+  const binding = typeof client.getImportContextBinding === "function" ? await client.getImportContextBinding(sourceSessionId) : null;
+  const importContextRef = typeof binding?.path === "string" && binding.path !== "" ? { path: binding.path } : void 0;
+  return client.postSession(sourceSessionId, importContextRef);
 }
 function createPlayNodeController(client, {
   delay = defaultDelay,
@@ -10993,6 +10998,7 @@ function createPlayNodeController(client, {
         const requestedIndex = entries2.findIndex((entry) => entry.node.id === nodeId);
         if (requestedIndex < 0) throw new TypeError(`Unknown active timeline node ${nodeId}`);
         let sourceNode = null;
+        let sourceIndex = -1;
         let adopted = null;
         let source = null;
         let user;
@@ -11002,6 +11008,7 @@ function createPlayNodeController(client, {
           const reusable = messages.messages.find((message) => message.role === "user" && (messageOriginKind2(message) === "user" || messageOriginKind2(message) === "steering") && message.seq >= candidate.variant.startEventId && message.seq <= candidate.variant.endEventId);
           if (reusable !== void 0 && typeof reusable.text === "string" && reusable.text !== "") {
             sourceNode = candidate.node;
+            sourceIndex = index;
             adopted = candidate.variant;
             source = messages;
             user = reusable;
@@ -11011,8 +11018,9 @@ function createPlayNodeController(client, {
         if (sourceNode === null || adopted === null || source === null || user === void 0 || typeof user.text !== "string" || user.text === "") {
           throw new TypeError("Active branch has no reusable user message");
         }
-        const forkEventId = Math.max(0, adopted.startEventId - 1);
-        const branch = await client.postBranch(adopted.sessionId, forkEventId);
+        const parent = sourceIndex > 0 ? entries2[sourceIndex - 1] : null;
+        const forkEventId = parent?.variant.endEventId ?? -1;
+        const branch = parent === null ? await createRootSwipeSession(client, adopted.sessionId) : await client.postBranch(adopted.sessionId, forkEventId);
         const newSessionId = branch?.sessionId;
         if (typeof newSessionId !== "string" || newSessionId === "") {
           throw new TypeError("Branch response has no sessionId");
@@ -11164,6 +11172,7 @@ function PlayTurnActions({
   const generate = () => mutate(async () => {
     const result = await controller(playClient).createReplySwipe(playthrough, turn.id);
     openSession(result.sessionId);
+    window.dispatchEvent(new Event(CLIENT_REFRESH_EVENT));
   });
   const copy = async () => {
     try {
@@ -11369,7 +11378,7 @@ var css7 = `
 .dtv-play-chat{height:100%;min-height:0;box-sizing:border-box;overflow:auto;padding:22px max(18px,calc((100% - 780px)/2)) 36px;color:var(--dsw-alias-label-primary)}
 .dtv-play-chat-list{display:flex;flex-direction:column;gap:22px}.dtv-play-chat-row{display:flex;flex-direction:column;gap:8px}.dtv-play-chat-role{font-size:11px;font-weight:700;color:var(--dsw-alias-label-tertiary)}
 .dtv-play-chat-bubble{max-width:88%;box-sizing:border-box;border-radius:14px;padding:12px 14px;overflow-wrap:anywhere;font-size:14px;line-height:1.65}.dtv-play-chat-user{align-self:flex-end;background:var(--dsw-alias-interactive-bg-selected,var(--dsw-specific-tip))}.dtv-play-chat-assistant{align-self:flex-start;background:var(--dsw-alias-bg-layer-2,var(--dsw-specific-block))}
-.dtv-play-greeting{position:relative;align-self:flex-start;max-width:88%;display:grid;grid-template-columns:30px minmax(0,1fr) 30px;align-items:center;gap:6px}.dtv-play-greeting-text{border-radius:14px;padding:13px 15px;background:var(--dsw-alias-bg-layer-2,var(--dsw-specific-block));overflow-wrap:anywhere;font-size:14px;line-height:1.65}
+.dtv-play-greeting{position:relative;align-self:flex-start;max-width:88%;display:grid;grid-template-columns:30px minmax(0,1fr) 30px;align-items:center;gap:6px}.dtv-play-greeting[data-locked=true]{grid-template-columns:minmax(0,1fr)}.dtv-play-greeting-text{border-radius:14px;padding:13px 15px;background:var(--dsw-alias-bg-layer-2,var(--dsw-specific-block));overflow-wrap:anywhere;font-size:14px;line-height:1.65}
 .dtv-play-greeting-empty{min-height:34px;visibility:hidden}
 .dtv-play-greeting-button{width:30px;height:34px;border:0;border-radius:9px;background:transparent;color:var(--dsw-alias-label-secondary);cursor:pointer}.dtv-play-greeting-button:hover{background:var(--dsw-alias-interactive-bg-hover)}.dtv-play-greeting-button:disabled{opacity:.4;cursor:default}
 .dtv-play-import-controls{align-self:center;display:flex;flex-wrap:wrap;align-items:center;justify-content:center;gap:8px;margin:0 0 2px}.dtv-play-import-bound{width:100%;margin:0;text-align:center;color:var(--dsw-alias-label-tertiary);font-size:11px}.dtv-play-import-button{min-height:30px;padding:5px 11px;border:1px solid var(--dsw-alias-border-subtle);border-radius:9px;background:var(--dsw-alias-bg-layer-2,var(--dsw-specific-block));color:var(--dsw-alias-label-primary);font:inherit;font-size:11px;cursor:pointer}.dtv-play-import-button:hover{background:var(--dsw-alias-interactive-bg-hover)}.dtv-play-import-button:disabled{opacity:.45;cursor:default}.dtv-play-import-last{margin:0;color:var(--dsw-alias-label-tertiary);font-size:11px;font-weight:700}
@@ -11534,7 +11543,7 @@ function applyTurnDisplayRegex(turn, display, { userDepth, assistantDepth } = {}
     ).text
   };
 }
-function Greeting({ greeting, busy, change, footer = null }) {
+function Greeting({ greeting, busy, change, locked = false, footer = null }) {
   const multiple = (greeting?.options?.length ?? 0) > 1;
   return h8(
     "div",
@@ -11542,8 +11551,11 @@ function Greeting({ greeting, busy, change, footer = null }) {
     greeting === null ? null : h8("span", { className: "dtv-play-chat-role" }, rawText(greeting.characterName)),
     greeting === null ? h8("div", { className: "dtv-play-greeting dtv-play-greeting-empty", "aria-hidden": true }) : h8(
       "div",
-      { className: "dtv-play-greeting" },
-      h8("button", {
+      {
+        className: "dtv-play-greeting",
+        "data-locked": locked
+      },
+      locked ? null : h8("button", {
         type: "button",
         className: "dtv-play-greeting-button",
         disabled: busy || !multiple,
@@ -11552,7 +11564,7 @@ function Greeting({ greeting, busy, change, footer = null }) {
         onClick: () => change("previous")
       }, "\u2039"),
       h8(RichText, { className: "dtv-play-greeting-text dtv-play-rich", text: greeting.text }),
-      h8("button", {
+      locked ? null : h8("button", {
         type: "button",
         className: "dtv-play-greeting-button",
         disabled: busy || !multiple,
@@ -11566,6 +11578,9 @@ function Greeting({ greeting, busy, change, footer = null }) {
 }
 function turnHasVisibleRpContent(turn) {
   return turn?.importLast === true || typeof turn?.userText === "string" && turn.userText !== "" || typeof turn?.assistantText === "string" && turn.assistantText !== "" || turn?.displayOverridden === true || turn?.running === true;
+}
+function greetingSelectionLocked({ turns = [], latestUserSeq = -1, running = false } = {}) {
+  return running || latestUserSeq >= 0 || turns.some((turn) => turn?.imported !== true);
 }
 function Turn({ turn, ...actionProps }) {
   if (!turnHasVisibleRpContent(turn)) return null;
@@ -11654,7 +11669,8 @@ function MowanChatView({ sessionId, useSession, playClient, playthrough, openSes
   const latestUserSeq = latestUserNodeSeq(liveNodes);
   const [revision, setRevision] = (0, import_react9.useState)(0);
   const running = useSession((state2) => state2.running === true);
-  const [state, setState] = (0, import_react9.useState)(null);
+  const [loadedState, setLoadedState] = (0, import_react9.useState)(null);
+  const state = loadedState?.sessionId === sessionId ? loadedState.value : null;
   const [error, setError] = (0, import_react9.useState)("");
   const [greetingBusy, setGreetingBusy] = (0, import_react9.useState)(false);
   const bottomAnchor = (0, import_react9.useRef)(null);
@@ -11692,18 +11708,23 @@ function MowanChatView({ sessionId, useSession, playClient, playthrough, openSes
     let active = true;
     setError("");
     loadChatState(playClient, sessionId, playthrough).then((next) => {
-      if (active) setState(next);
+      if (active) setLoadedState({ sessionId, value: next });
     }).catch((reason) => {
       if (!active) return;
-      setState(null);
+      setLoadedState(null);
       setError(reason instanceof Error ? reason.message : String(reason));
     });
     return () => {
       active = false;
     };
   }, [playClient, playthrough, revision, sessionId, sessionRevision]);
+  const greetingLocked = greetingSelectionLocked({
+    turns: state?.turns ?? [],
+    latestUserSeq,
+    running
+  });
   const changeGreeting = async (direction) => {
-    if (state?.greeting == null || greetingBusy) return;
+    if (state?.greeting == null || greetingBusy || greetingLocked) return;
     const next = adjacentGreetingIndex(state.greeting, direction);
     if (next === null) return;
     setGreetingBusy(true);
@@ -11753,6 +11774,7 @@ function MowanChatView({ sessionId, useSession, playClient, playthrough, openSes
         greeting: state.greeting,
         busy: greetingBusy,
         change: changeGreeting,
+        locked: greetingLocked,
         footer: state.importBinding === null ? importControls : null
       }),
       ...state.turns.map((turn) => h8(Turn, {
