@@ -22,6 +22,7 @@ import {
   projectGreeting,
   projectLiveTurns,
   projectTimelineQa,
+  selectAssistantDisplay,
 } from './chat-model.js'
 import {
   applyDisplayRegex,
@@ -176,14 +177,18 @@ export async function loadChatState(client, sessionId, playthrough) {
   let depth = 0
   for (let index = rawTurns.length - 1; index >= 0; index -= 1) {
     const turn = rawTurns[index]
-    const assistantDepth = turn.displayOverridden === true || turn.assistantText !== '' ? depth++ : undefined
+    const hasAssistant = turn.displayOverridden === true
+      || (turn.assistantCandidates ?? [turn.assistantText]).some(text => text !== '')
+    const assistantDepth = hasAssistant ? depth++ : undefined
     const userDepth = turn.userText === '' ? undefined : depth++
+    const assistant = selectAssistantDisplay(
+      turn,
+      text => renderText(text, 'assistant', { depth: assistantDepth }),
+    )
     turns[index] = {
       ...turn,
       userText: renderText(turn.userText, 'user', { depth: userDepth }),
-      assistantText: turn.displayOverridden === true
-        ? turn.assistantText
-        : renderText(turn.assistantText, 'assistant', { depth: assistantDepth }),
+      ...assistant,
     }
   }
   const rootMessages = messagesBySession[sessionId]
@@ -211,6 +216,13 @@ export async function loadChatState(client, sessionId, playthrough) {
 }
 
 export function applyTurnDisplayRegex(turn, display, { userDepth, assistantDepth } = {}) {
+  const assistant = selectAssistantDisplay(turn, text => applyDisplayRegex(
+    applyDisplayNameMacros(text, display.macros),
+    display.rules,
+    display.bindings,
+    'assistant',
+    { depth: assistantDepth },
+  ).text)
   return {
     ...turn,
     userText: applyDisplayRegex(
@@ -220,15 +232,7 @@ export function applyTurnDisplayRegex(turn, display, { userDepth, assistantDepth
       'user',
       { depth: userDepth },
     ).text,
-    assistantText: turn.displayOverridden === true
-      ? turn.assistantText
-      : applyDisplayRegex(
-          applyDisplayNameMacros(turn.assistantText, display.macros),
-          display.rules,
-          display.bindings,
-          'assistant',
-          { depth: assistantDepth },
-        ).text,
+    ...assistant,
   }
 }
 function Greeting({ greeting, busy, change, locked = false, footer = null }) {

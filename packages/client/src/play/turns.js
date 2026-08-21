@@ -20,21 +20,52 @@ function defaultId(prefix, sessionId, startEventId, endEventId) {
   return `${prefix}-${startEventId}-${endEventId}-${random}`.slice(0, 200)
 }
 
+function messageOriginKind(message) {
+  const value = message?.origin?.kind
+  if (typeof value === 'string' && value !== '') return value
+  return message?.role === 'assistant' ? 'assistant' : message?.role === 'system' ? 'system' : 'user'
+}
+
+function isRealUserMessage(message) {
+  const origin = messageOriginKind(message)
+  return message?.role === 'user' && (origin === 'user' || origin === 'steering')
+}
+
+function extendHeadVariant(timeline, sessionId, endEventId) {
+  const head = timelineHead(timeline)
+  if (head === null || head.sessionId !== sessionId) return { timeline, changed: false }
+  let changed = false
+  const nodes = (timeline?.nodes ?? []).map(node => {
+    if (node.id !== head.nodeId) return node
+    const variants = (node.variants ?? []).map(variant => {
+      if (variant.id !== head.variantId || variant.sessionId !== sessionId
+        || endEventId <= variant.endEventId) return variant
+      changed = true
+      return { ...variant, endEventId }
+    })
+    return changed ? { ...node, variants } : node
+  })
+  return changed ? { timeline: { ...timeline, nodes }, changed } : { timeline, changed }
+}
+
 export function appendCompletedTurns(timeline, messageState, sessionId, {
   idFactory = defaultId,
 } = {}) {
   if (typeof sessionId !== 'string' || sessionId === '') throw new TypeError('sessionId is required')
-  if (messageState?.incompleteTurn === true) return { timeline, added: [] }
+  if (messageState?.incompleteTurn === true) return { timeline, added: [], changed: false }
   const head = timelineHead(timeline)
-  if (head !== null && head.sessionId !== sessionId) return { timeline, added: [] }
+  if (head !== null && head.sessionId !== sessionId) return { timeline, added: [], changed: false }
   const boundary = recordedEndSeq(timeline, sessionId)
   const messages = [...(messageState?.messages ?? [])]
     .filter(message => Number.isSafeInteger(message.seq) && message.seq > boundary)
     .sort((left, right) => left.seq - right.seq)
   const added = []
+  let nextTimeline = timeline
+  let changed = false
   let parentVariantId = timelineHead(timeline)?.variantId ?? null
   let user = null
   let assistant = null
+  let continuationAssistant = null
   const appendPair = () => {
     if (user === null || assistant === null) return
     const nodeId = idFactory('qa', sessionId, user.seq, assistant.seq)
@@ -56,31 +87,44 @@ export function appendCompletedTurns(timeline, messageState, sessionId, {
     parentVariantId = variantId
   }
   for (const message of messages) {
-    if (message.role === 'user') {
-      if (user === null) {
-        user = message
-      } else if (assistant !== null) {
+    if (isRealUserMessage(message)) {
+      if (user !== null && assistant !== null) {
         appendPair()
-        user = message
-        assistant = null
       }
-      // DSH records model-visible runtime context with role=user and origin=context.
-      // It stays in the authoritative range but the RP renderer uses origin rather
-      // than presenting it as a human message.
+      if (user === null && continuationAssistant !== null) {
+        const extended = extendHeadVariant(nextTimeline, sessionId, continuationAssistant.seq)
+        nextTimeline = extended.timeline
+        changed ||= extended.changed
+        parentVariantId = timelineHead(nextTimeline)?.variantId ?? parentVariantId
+      }
+      user = message
+      assistant = null
+      continuationAssistant = null
     } else if (message.role === 'assistant' && user !== null) {
       assistant = message
+    } else if (message.role === 'assistant') {
+      // Context/tool/subagent messages do not open a new QA. A later parent reply
+      // extends the active real-user turn, including when DSH persists it in a
+      // separate completed host turn.
+      continuationAssistant = message
     }
   }
   appendPair()
-  if (added.length === 0) return { timeline, added }
+  if (user === null && continuationAssistant !== null) {
+    const extended = extendHeadVariant(nextTimeline, sessionId, continuationAssistant.seq)
+    nextTimeline = extended.timeline
+    changed ||= extended.changed
+  }
+  if (added.length === 0) return { timeline: nextTimeline, added, changed }
   const tail = added.at(-1)
   const variant = tail.variants[0]
   return {
     timeline: timelineWithHead({
-      ...timeline,
-      nodes: [...timeline.nodes, ...added],
+      ...nextTimeline,
+      nodes: [...nextTimeline.nodes, ...added],
     }, { sessionId, nodeId: tail.id, variantId: variant.id }),
     added,
+    changed: true,
   }
 }
 
@@ -90,17 +134,19 @@ export function createTurnReconciler(client) {
   return function reconcile(sessionId, playthrough) {
     const task = pending.then(async () => {
       const messages = await client.getMessages(sessionId)
-      if (messages.incompleteTurn) return { timeline: null, added: [] }
+      if (messages.incompleteTurn) return { timeline: null, added: [], changed: false }
       const initial = await client.getTimeline(playthrough)
       const initialResult = appendCompletedTurns(initial, messages, sessionId)
-      if (initialResult.added.length === 0) return initialResult
+      if (!initialResult.changed) return initialResult
       let added = initialResult.added
+      let changed = initialResult.changed
       const timeline = await updateTimeline(client, playthrough, current => {
         const next = appendCompletedTurns(current, messages, sessionId)
         added = next.added
+        changed = next.changed
         return next.timeline
       }, { initial })
-      return { timeline, added }
+      return { timeline, added, changed }
     })
     pending = task.catch(() => {})
     return task

@@ -8059,9 +8059,10 @@ function projectTimelineQa(timeline, messagesBySession = {}) {
     const trigger = within.find((message) => message.role === "user") ?? null;
     const user = within.find((message) => message.role === "user" && (messageOriginKind(message) === "user" || messageOriginKind(message) === "steering")) ?? null;
     const contexts = within.filter((message) => message.role === "user" && messageOriginKind(message) === "context").map(contextProjection);
-    const assistant = [...within].reverse().find((message) => message.role === "assistant") ?? null;
+    const assistants = within.filter((message) => message.role === "assistant");
+    const assistant = assistants.at(-1) ?? null;
     const displayOverridden = typeof node.displayOverride === "string";
-    result.push({
+    const projected = {
       id: node.id,
       hidden: node.hidden === true,
       userText: renderedMessageText(user),
@@ -8070,13 +8071,48 @@ function projectTimelineQa(timeline, messagesBySession = {}) {
       reasoningText: contentReasoning(assistant?.content),
       assistantText: displayOverridden ? node.displayOverride : renderedMessageText(assistant),
       originalAssistantText: renderedMessageText(assistant),
+      assistantCandidates: assistants.map(renderedMessageText),
       displayOverridden,
       variant,
       variants: node.variants,
       variantCount: node.variants.length
-    });
+    };
+    const previous = result.at(-1);
+    if (user === null && previous !== void 0 && previous.variant.sessionId === variant.sessionId) {
+      previous.contexts.push(...projected.contexts);
+      previous.assistantCandidates.push(...projected.assistantCandidates);
+      if (displayOverridden) {
+        previous.assistantText = projected.assistantText;
+        previous.displayOverridden = true;
+      } else if (!previous.displayOverridden && projected.assistantCandidates.length > 0) {
+        previous.assistantText = projected.assistantText;
+      }
+      if (projected.originalAssistantText !== "") previous.originalAssistantText = projected.originalAssistantText;
+      if (projected.reasoningText !== "") previous.reasoningText = projected.reasoningText;
+    } else {
+      result.push(projected);
+    }
   }
   return result;
+}
+function selectAssistantDisplay(turn, render = (value) => value) {
+  if (turn.displayOverridden === true) {
+    return {
+      assistantText: turn.assistantText,
+      originalAssistantText: turn.originalAssistantText
+    };
+  }
+  const candidates = Array.isArray(turn.assistantCandidates) && turn.assistantCandidates.length > 0 ? turn.assistantCandidates : [turn.assistantText];
+  let selectedRaw = candidates.at(-1) ?? "";
+  let selectedText = "";
+  for (const candidate of candidates) {
+    const rendered = render(candidate);
+    if (rendered !== "") {
+      selectedRaw = candidate;
+      selectedText = rendered;
+    }
+  }
+  return { assistantText: selectedText, originalAssistantText: selectedRaw };
 }
 function projectLiveTurns({
   timeline,
@@ -11429,19 +11465,46 @@ function defaultId2(prefix, sessionId, startEventId, endEventId) {
   const random = globalThis.crypto?.randomUUID?.() ?? `${Date.now()}-${Math.random()}`;
   return `${prefix}-${startEventId}-${endEventId}-${random}`.slice(0, 200);
 }
+function messageOriginKind3(message) {
+  const value = message?.origin?.kind;
+  if (typeof value === "string" && value !== "") return value;
+  return message?.role === "assistant" ? "assistant" : message?.role === "system" ? "system" : "user";
+}
+function isRealUserMessage(message) {
+  const origin = messageOriginKind3(message);
+  return message?.role === "user" && (origin === "user" || origin === "steering");
+}
+function extendHeadVariant(timeline, sessionId, endEventId) {
+  const head = timelineHead(timeline);
+  if (head === null || head.sessionId !== sessionId) return { timeline, changed: false };
+  let changed = false;
+  const nodes = (timeline?.nodes ?? []).map((node) => {
+    if (node.id !== head.nodeId) return node;
+    const variants = (node.variants ?? []).map((variant) => {
+      if (variant.id !== head.variantId || variant.sessionId !== sessionId || endEventId <= variant.endEventId) return variant;
+      changed = true;
+      return { ...variant, endEventId };
+    });
+    return changed ? { ...node, variants } : node;
+  });
+  return changed ? { timeline: { ...timeline, nodes }, changed } : { timeline, changed };
+}
 function appendCompletedTurns(timeline, messageState, sessionId, {
   idFactory = defaultId2
 } = {}) {
   if (typeof sessionId !== "string" || sessionId === "") throw new TypeError("sessionId is required");
-  if (messageState?.incompleteTurn === true) return { timeline, added: [] };
+  if (messageState?.incompleteTurn === true) return { timeline, added: [], changed: false };
   const head = timelineHead(timeline);
-  if (head !== null && head.sessionId !== sessionId) return { timeline, added: [] };
+  if (head !== null && head.sessionId !== sessionId) return { timeline, added: [], changed: false };
   const boundary = recordedEndSeq2(timeline, sessionId);
   const messages = [...messageState?.messages ?? []].filter((message) => Number.isSafeInteger(message.seq) && message.seq > boundary).sort((left, right) => left.seq - right.seq);
   const added = [];
+  let nextTimeline = timeline;
+  let changed = false;
   let parentVariantId = timelineHead(timeline)?.variantId ?? null;
   let user = null;
   let assistant = null;
+  let continuationAssistant = null;
   const appendPair = () => {
     if (user === null || assistant === null) return;
     const nodeId = idFactory("qa", sessionId, user.seq, assistant.seq);
@@ -11463,28 +11526,41 @@ function appendCompletedTurns(timeline, messageState, sessionId, {
     parentVariantId = variantId;
   };
   for (const message of messages) {
-    if (message.role === "user") {
-      if (user === null) {
-        user = message;
-      } else if (assistant !== null) {
+    if (isRealUserMessage(message)) {
+      if (user !== null && assistant !== null) {
         appendPair();
-        user = message;
-        assistant = null;
       }
+      if (user === null && continuationAssistant !== null) {
+        const extended = extendHeadVariant(nextTimeline, sessionId, continuationAssistant.seq);
+        nextTimeline = extended.timeline;
+        changed ||= extended.changed;
+        parentVariantId = timelineHead(nextTimeline)?.variantId ?? parentVariantId;
+      }
+      user = message;
+      assistant = null;
+      continuationAssistant = null;
     } else if (message.role === "assistant" && user !== null) {
       assistant = message;
+    } else if (message.role === "assistant") {
+      continuationAssistant = message;
     }
   }
   appendPair();
-  if (added.length === 0) return { timeline, added };
+  if (user === null && continuationAssistant !== null) {
+    const extended = extendHeadVariant(nextTimeline, sessionId, continuationAssistant.seq);
+    nextTimeline = extended.timeline;
+    changed ||= extended.changed;
+  }
+  if (added.length === 0) return { timeline: nextTimeline, added, changed };
   const tail = added.at(-1);
   const variant = tail.variants[0];
   return {
     timeline: timelineWithHead({
-      ...timeline,
-      nodes: [...timeline.nodes, ...added]
+      ...nextTimeline,
+      nodes: [...nextTimeline.nodes, ...added]
     }, { sessionId, nodeId: tail.id, variantId: variant.id }),
-    added
+    added,
+    changed: true
   };
 }
 function createTurnReconciler(client) {
@@ -11493,17 +11569,19 @@ function createTurnReconciler(client) {
   return function reconcile(sessionId, playthrough) {
     const task = pending2.then(async () => {
       const messages = await client.getMessages(sessionId);
-      if (messages.incompleteTurn) return { timeline: null, added: [] };
+      if (messages.incompleteTurn) return { timeline: null, added: [], changed: false };
       const initial = await client.getTimeline(playthrough);
       const initialResult = appendCompletedTurns(initial, messages, sessionId);
-      if (initialResult.added.length === 0) return initialResult;
+      if (!initialResult.changed) return initialResult;
       let added = initialResult.added;
+      let changed = initialResult.changed;
       const timeline = await updateTimeline(client, playthrough, (current2) => {
         const next = appendCompletedTurns(current2, messages, sessionId);
         added = next.added;
+        changed = next.changed;
         return next.timeline;
       }, { initial });
-      return { timeline, added };
+      return { timeline, added, changed };
     });
     pending2 = task.catch(() => {
     });
@@ -11640,12 +11718,17 @@ async function loadChatState(client, sessionId, playthrough) {
   let depth = 0;
   for (let index = rawTurns.length - 1; index >= 0; index -= 1) {
     const turn = rawTurns[index];
-    const assistantDepth = turn.displayOverridden === true || turn.assistantText !== "" ? depth++ : void 0;
+    const hasAssistant = turn.displayOverridden === true || (turn.assistantCandidates ?? [turn.assistantText]).some((text2) => text2 !== "");
+    const assistantDepth = hasAssistant ? depth++ : void 0;
     const userDepth = turn.userText === "" ? void 0 : depth++;
+    const assistant = selectAssistantDisplay(
+      turn,
+      (text2) => renderText(text2, "assistant", { depth: assistantDepth })
+    );
     turns[index] = {
       ...turn,
       userText: renderText(turn.userText, "user", { depth: userDepth }),
-      assistantText: turn.displayOverridden === true ? turn.assistantText : renderText(turn.assistantText, "assistant", { depth: assistantDepth })
+      ...assistant
     };
   }
   const rootMessages = messagesBySession[sessionId];
@@ -11669,6 +11752,13 @@ async function loadChatState(client, sessionId, playthrough) {
   };
 }
 function applyTurnDisplayRegex(turn, display, { userDepth, assistantDepth } = {}) {
+  const assistant = selectAssistantDisplay(turn, (text2) => applyDisplayRegex(
+    applyDisplayNameMacros(text2, display.macros),
+    display.rules,
+    display.bindings,
+    "assistant",
+    { depth: assistantDepth }
+  ).text);
   return {
     ...turn,
     userText: applyDisplayRegex(
@@ -11678,13 +11768,7 @@ function applyTurnDisplayRegex(turn, display, { userDepth, assistantDepth } = {}
       "user",
       { depth: userDepth }
     ).text,
-    assistantText: turn.displayOverridden === true ? turn.assistantText : applyDisplayRegex(
-      applyDisplayNameMacros(turn.assistantText, display.macros),
-      display.rules,
-      display.bindings,
-      "assistant",
-      { depth: assistantDepth }
-    ).text
+    ...assistant
   };
 }
 function Greeting({ greeting, busy, change, locked = false, footer = null }) {
@@ -12245,7 +12329,7 @@ async function loadPlaythroughExport(client, playthrough) {
     displayTurns: turns.map((turn) => ({
       ...turn,
       userText: render(turn.userText, "user"),
-      assistantText: render(turn.assistantText, "assistant")
+      ...selectAssistantDisplay(turn, (text2) => render(text2, "assistant"))
     })),
     character: characterResponse?.character ?? null,
     importContext,

@@ -163,6 +163,7 @@ test('timeline projection renders only adopted visible QA ranges', () => {
     reasoningText: 'internal reasoning',
     assistantText: 'Hi',
     originalAssistantText: 'Hi',
+    assistantCandidates: ['Hi'],
     displayOverridden: false,
     variant: timeline.nodes[0].variants[0],
     variants: timeline.nodes[0].variants,
@@ -180,6 +181,37 @@ test('timeline projection renders only adopted visible QA ranges', () => {
   assert.equal(emptyDisplay.displayOverridden, true)
   overridden.nodes[0].hidden = true
   assert.equal(projectTimelineQa(overridden, { fork: [] })[0].hidden, true)
+})
+
+test('legacy reply-level subagent nodes project as one real-user QA', () => {
+  const timeline = {
+    nodes: [
+      {
+        id: 'root', kind: 'qa', hidden: false, displayOverride: null,
+        parentVariantId: null, adoptedVariantId: 'root-v', variants: [
+          { id: 'root-v', sessionId: 'session-a', startEventId: 1, endEventId: 2 },
+        ],
+      },
+      {
+        id: 'context-child', kind: 'qa', hidden: false, displayOverride: null,
+        parentVariantId: 'root-v', adoptedVariantId: 'context-v', variants: [
+          { id: 'context-v', sessionId: 'session-a', startEventId: 3, endEventId: 4 },
+        ],
+      },
+    ],
+    head: { sessionId: 'session-a', nodeId: 'context-child', variantId: 'context-v' },
+  }
+  const projected = projectTimelineQa(timeline, { 'session-a': { messages: [
+    { role: 'user', seq: 1, text: 'Start', origin: { kind: 'user' } },
+    { role: 'assistant', seq: 2, text: 'Dispatched' },
+    { role: 'user', seq: 3, text: 'Child result', origin: { kind: 'context', producer: 'subagent-report' } },
+    { role: 'assistant', seq: 4, text: '<正文>Final</正文>' },
+  ] } })
+  assert.equal(projected.length, 1)
+  assert.equal(projected[0].id, 'root')
+  assert.equal(projected[0].userText, 'Start')
+  assert.deepEqual(projected[0].assistantCandidates, ['Dispatched', '<正文>Final</正文>'])
+  assert.equal(projected[0].contexts[0].producer, 'subagent-report')
 })
 
 test('tree timeline projection follows only ancestors of the active head', () => {

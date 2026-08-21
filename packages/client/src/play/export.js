@@ -1,5 +1,5 @@
 import { characterGreetingOptions } from '../../../character/src/client-state.js'
-import { projectTimelineQa } from './chat-model.js'
+import { projectTimelineQa, selectAssistantDisplay } from './chat-model.js'
 import {
   applyDisplayRegex,
   getRegexDocument,
@@ -127,7 +127,7 @@ export async function loadPlaythroughExport(client, playthrough) {
     displayTurns: turns.map(turn => ({
       ...turn,
       userText: render(turn.userText, 'user'),
-      assistantText: render(turn.assistantText, 'assistant'),
+      ...selectAssistantDisplay(turn, text => render(text, 'assistant')),
     })),
     character: characterResponse?.character ?? null,
     importContext,

@@ -175,9 +175,10 @@ export function projectTimelineQa(timeline, messagesBySession = {}) {
     const contexts = within
       .filter(message => message.role === 'user' && messageOriginKind(message) === 'context')
       .map(contextProjection)
-    const assistant = [...within].reverse().find(message => message.role === 'assistant') ?? null
+    const assistants = within.filter(message => message.role === 'assistant')
+    const assistant = assistants.at(-1) ?? null
     const displayOverridden = typeof node.displayOverride === 'string'
-    result.push({
+    const projected = {
       id: node.id,
       hidden: node.hidden === true,
       userText: renderedMessageText(user),
@@ -186,13 +187,51 @@ export function projectTimelineQa(timeline, messagesBySession = {}) {
       reasoningText: contentReasoning(assistant?.content),
       assistantText: displayOverridden ? node.displayOverride : renderedMessageText(assistant),
       originalAssistantText: renderedMessageText(assistant),
+      assistantCandidates: assistants.map(renderedMessageText),
       displayOverridden,
       variant,
       variants: node.variants,
       variantCount: node.variants.length,
-    })
+    }
+    const previous = result.at(-1)
+    if (user === null && previous !== undefined && previous.variant.sessionId === variant.sessionId) {
+      previous.contexts.push(...projected.contexts)
+      previous.assistantCandidates.push(...projected.assistantCandidates)
+      if (displayOverridden) {
+        previous.assistantText = projected.assistantText
+        previous.displayOverridden = true
+      } else if (!previous.displayOverridden && projected.assistantCandidates.length > 0) {
+        previous.assistantText = projected.assistantText
+      }
+      if (projected.originalAssistantText !== '') previous.originalAssistantText = projected.originalAssistantText
+      if (projected.reasoningText !== '') previous.reasoningText = projected.reasoningText
+    } else {
+      result.push(projected)
+    }
   }
   return result
+}
+
+export function selectAssistantDisplay(turn, render = value => value) {
+  if (turn.displayOverridden === true) {
+    return {
+      assistantText: turn.assistantText,
+      originalAssistantText: turn.originalAssistantText,
+    }
+  }
+  const candidates = Array.isArray(turn.assistantCandidates) && turn.assistantCandidates.length > 0
+    ? turn.assistantCandidates
+    : [turn.assistantText]
+  let selectedRaw = candidates.at(-1) ?? ''
+  let selectedText = ''
+  for (const candidate of candidates) {
+    const rendered = render(candidate)
+    if (rendered !== '') {
+      selectedRaw = candidate
+      selectedText = rendered
+    }
+  }
+  return { assistantText: selectedText, originalAssistantText: selectedRaw }
 }
 
 export function projectLiveTurns({

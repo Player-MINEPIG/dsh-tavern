@@ -63,9 +63,31 @@ test('context-triggered parent output keeps a pointer range without becoming a h
     ],
   }, 'session-a', { idFactory: ids })
   assert.deepEqual(result.timeline.nodes.map(node => node.variants[0]), [
-    { id: 'variant-session-a-1-2', sessionId: 'session-a', startEventId: 1, endEventId: 2 },
-    { id: 'variant-session-a-3-4', sessionId: 'session-a', startEventId: 3, endEventId: 4 },
+    { id: 'variant-session-a-1-4', sessionId: 'session-a', startEventId: 1, endEventId: 4 },
   ])
+})
+
+test('a later completed subagent stage extends the active QA instead of appending a reply node', () => {
+  const existing = appendCompletedTurns({ nodes: [] }, {
+    incompleteTurn: false,
+    messages: [
+      { role: 'user', seq: 1, origin: { kind: 'user' } },
+      { role: 'assistant', seq: 2 },
+    ],
+  }, 'session-a', { idFactory: ids }).timeline
+  const result = appendCompletedTurns(existing, {
+    incompleteTurn: false,
+    messages: [
+      { role: 'user', seq: 1, origin: { kind: 'user' } },
+      { role: 'assistant', seq: 2 },
+      { role: 'user', seq: 3, origin: { kind: 'context', producer: 'subagent-report' } },
+      { role: 'assistant', seq: 4 },
+    ],
+  }, 'session-a', { idFactory: ids })
+  assert.equal(result.added.length, 0)
+  assert.equal(result.changed, true)
+  assert.equal(result.timeline.nodes.length, 1)
+  assert.equal(result.timeline.nodes[0].variants[0].endEventId, 4)
 })
 
 test('open or already-recorded turns never append a duplicate', () => {
