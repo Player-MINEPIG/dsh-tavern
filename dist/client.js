@@ -3820,9 +3820,6 @@ var zh_CN_default = Object.freeze({
   "play.chat.loading": "\u6B63\u5728\u8BFB\u53D6\u672C\u5468\u76EE\u8BB0\u5F55\u2026",
   "play.chat.empty": "\u672C\u5468\u76EE\u5C1A\u65E0\u5BF9\u8BDD\uFF0C\u8BF7\u5728\u4E0B\u65B9\u5F00\u59CB\u3002",
   "play.chat.thinking": "\u6B63\u5728\u601D\u8003\u2026",
-  "play.chat.reasoning": "\u601D\u8003",
-  "play.chat.contextInjection": "\u4E0A\u4E0B\u6587\u6CE8\u5165",
-  "play.chat.contextUnknown": "\u672A\u77E5\u6765\u6E90",
   "play.chat.previousGreeting": "\u4E0A\u4E00\u6761\u5F00\u573A\u767D",
   "play.chat.nextGreeting": "\u4E0B\u4E00\u6761\u5F00\u573A\u767D",
   "play.chat.hiddenNode": "\u8FD9\u4E00\u7EC4\u95EE\u7B54\u5DF2\u5728\u9B54\u4E38\u663E\u793A\u4E2D\u9690\u85CF\u3002",
@@ -4417,9 +4414,6 @@ var en_default = Object.freeze({
   "play.chat.loading": "Loading playthrough\u2026",
   "play.chat.empty": "No turns yet. Start the conversation below.",
   "play.chat.thinking": "Thinking\u2026",
-  "play.chat.reasoning": "Thinking",
-  "play.chat.contextInjection": "Context injection",
-  "play.chat.contextUnknown": "Unknown source",
   "play.chat.previousGreeting": "Previous greeting",
   "play.chat.nextGreeting": "Next greeting",
   "play.chat.hiddenNode": "This QA is hidden in Mowan display.",
@@ -11188,8 +11182,6 @@ var css7 = `
 .dtv-play-import-controls{align-self:center;display:flex;flex-wrap:wrap;align-items:center;justify-content:center;gap:8px;margin:0 0 2px}.dtv-play-import-bound{width:100%;margin:0;text-align:center;color:var(--dsw-alias-label-tertiary);font-size:11px}.dtv-play-import-button{min-height:30px;padding:5px 11px;border:1px solid var(--dsw-alias-border-subtle);border-radius:9px;background:var(--dsw-alias-bg-layer-2,var(--dsw-specific-block));color:var(--dsw-alias-label-primary);font:inherit;font-size:11px;cursor:pointer}.dtv-play-import-button:hover{background:var(--dsw-alias-interactive-bg-hover)}.dtv-play-import-button:disabled{opacity:.45;cursor:default}.dtv-play-import-last{margin:0;color:var(--dsw-alias-label-tertiary);font-size:11px;font-weight:700}
 .dtv-play-chat-status{margin:16px 0;padding:12px 14px;border-radius:12px;background:var(--dsw-alias-bg-layer-2,var(--dsw-specific-block));color:var(--dsw-alias-label-tertiary);font-size:12px;line-height:1.55}.dtv-play-chat-status[data-error=true]{color:var(--dsw-alias-state-error)}
 .dtv-play-chat-running{align-self:flex-start;margin:0;color:var(--dsw-alias-label-tertiary);font-size:12px;line-height:1.5}
-.dtv-play-chat-reasoning{align-self:flex-start;max-width:88%;color:var(--dsw-alias-label-secondary);font-size:13px;line-height:1.6}.dtv-play-chat-reasoning summary{width:max-content;cursor:pointer;user-select:none;color:var(--dsw-alias-label-tertiary);font-size:12px}.dtv-play-chat-reasoning-text{margin-top:8px;padding:10px 12px;border-left:2px solid var(--dsw-alias-border-secondary,var(--dsw-specific-divider));white-space:pre-wrap;overflow-wrap:anywhere}
-.dtv-play-chat-context{align-self:stretch;color:var(--dsw-alias-label-secondary);font-size:12px;line-height:1.55}.dtv-play-chat-context>summary{cursor:pointer;user-select:none;color:var(--dsw-alias-label-tertiary);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.dtv-play-chat-context-meta{margin-left:5px}.dtv-play-chat-context-body{margin-top:8px;padding:10px 12px;border-left:2px solid var(--dsw-alias-border-secondary,var(--dsw-specific-divider));background:var(--dsw-alias-bg-layer-2,var(--dsw-specific-block));border-radius:0 9px 9px 0;overflow-wrap:anywhere}
 .dtv-play-rich>:first-child{margin-top:0}.dtv-play-rich>:last-child{margin-bottom:0}.dtv-play-rich p,.dtv-play-rich ul,.dtv-play-rich ol,.dtv-play-rich blockquote,.dtv-play-rich pre,.dtv-play-rich table{margin:0 0 .85em}.dtv-play-rich ul,.dtv-play-rich ol{padding-left:1.5em}.dtv-play-rich blockquote{padding-left:12px;border-left:3px solid var(--dsw-alias-border-secondary,var(--dsw-specific-divider));color:var(--dsw-alias-label-secondary)}.dtv-play-rich pre{max-width:100%;overflow:auto;padding:11px 12px;border-radius:9px;background:var(--dsw-alias-markdown-code-block,var(--dsw-alias-bg-base));white-space:pre}.dtv-play-rich code{font-family:var(--ds-font-family-code,ui-monospace,monospace);font-size:.92em}.dtv-play-rich :not(pre)>code{padding:.12em .35em;border-radius:5px;background:var(--dsw-alias-markdown-code-inline,var(--dsw-alias-bg-base))}.dtv-play-rich table{display:block;max-width:100%;overflow:auto;border-collapse:collapse}.dtv-play-rich th,.dtv-play-rich td{padding:6px 9px;border:1px solid var(--dsw-alias-border-l2)}.dtv-play-rich img,.dtv-play-rich video{max-width:100%;height:auto}.dtv-play-rich a{color:var(--dsw-alias-state-business-primary);text-decoration:underline}.dtv-play-rich hr{border:0;border-top:1px solid var(--dsw-alias-border-l2)}
 `;
 function installPlayChatStyles() {
@@ -11373,23 +11365,8 @@ function Greeting({ greeting, busy, change, footer = null }) {
     footer
   );
 }
-function ContextRow({ context }) {
-  const producer = context.producer || unwrapText(uiMessage("play.chat.contextUnknown"));
-  const summary = context.summary || "";
-  return h8(
-    "details",
-    { className: "dtv-play-chat-context" },
-    h8(
-      "summary",
-      { title: uiMessage("play.chat.contextInjection") },
-      uiMessage("play.chat.contextInjection"),
-      h8("span", { className: "dtv-play-chat-context-meta" }, rawText(`\xB7 ${producer}${summary === "" ? "" : ` \xB7 ${summary}`}`))
-    ),
-    context.text === "" ? null : h8(RichText, {
-      className: "dtv-play-chat-context-body dtv-play-rich",
-      text: context.text
-    })
-  );
+function turnHasVisibleRpContent(turn) {
+  return turn?.hidden === true || turn?.importLast === true || typeof turn?.userText === "string" && turn.userText !== "" || typeof turn?.assistantText === "string" && turn.assistantText !== "" || turn?.running === true;
 }
 function Turn({ turn, ...actionProps }) {
   if (turn.hidden) {
@@ -11400,18 +11377,12 @@ function Turn({ turn, ...actionProps }) {
       h8(PlayTurnActions, { turn, ...actionProps })
     );
   }
+  if (!turnHasVisibleRpContent(turn)) return null;
   return h8(
     "div",
     { className: "dtv-play-chat-row" },
     turn.importLast === true ? h8("p", { className: "dtv-play-import-last" }, uiMessage("play.import.lastQa")) : null,
     turn.userText === "" ? null : h8(RichText, { className: "dtv-play-chat-bubble dtv-play-chat-user dtv-play-rich", text: turn.userText }),
-    ...(turn.contexts ?? []).map((context) => h8(ContextRow, { key: context.id, context })),
-    turn.reasoningText === "" || turn.reasoningText == null ? null : h8(
-      "details",
-      { className: "dtv-play-chat-reasoning" },
-      h8("summary", { title: uiMessage("play.chat.reasoning") }, uiMessage("play.chat.reasoning")),
-      h8("div", { className: "dtv-play-chat-reasoning-text" }, rawText(turn.reasoningText))
-    ),
     turn.assistantText === "" ? null : h8(RichText, { className: "dtv-play-chat-bubble dtv-play-chat-assistant dtv-play-rich", text: turn.assistantText }),
     turn.running === true && turn.assistantText === "" ? h8("p", { className: "dtv-play-chat-running" }, uiMessage("play.chat.thinking")) : null,
     turn.imported || turn.transient || turn.assistantText === "" ? null : h8(PlayTurnActions, { turn, ...actionProps })
