@@ -3821,6 +3821,8 @@ var zh_CN_default = Object.freeze({
   "play.chat.empty": "\u672C\u5468\u76EE\u5C1A\u65E0\u5BF9\u8BDD\uFF0C\u8BF7\u5728\u4E0B\u65B9\u5F00\u59CB\u3002",
   "play.chat.thinking": "\u6B63\u5728\u601D\u8003\u2026",
   "play.chat.reasoning": "\u601D\u8003",
+  "play.chat.contextInjection": "\u4E0A\u4E0B\u6587\u6CE8\u5165",
+  "play.chat.contextUnknown": "\u672A\u77E5\u6765\u6E90",
   "play.chat.previousGreeting": "\u4E0A\u4E00\u6761\u5F00\u573A\u767D",
   "play.chat.nextGreeting": "\u4E0B\u4E00\u6761\u5F00\u573A\u767D",
   "play.chat.hiddenNode": "\u8FD9\u4E00\u7EC4\u95EE\u7B54\u5DF2\u5728\u9B54\u4E38\u663E\u793A\u4E2D\u9690\u85CF\u3002",
@@ -4416,6 +4418,8 @@ var en_default = Object.freeze({
   "play.chat.empty": "No turns yet. Start the conversation below.",
   "play.chat.thinking": "Thinking\u2026",
   "play.chat.reasoning": "Thinking",
+  "play.chat.contextInjection": "Context injection",
+  "play.chat.contextUnknown": "Unknown source",
   "play.chat.previousGreeting": "Previous greeting",
   "play.chat.nextGreeting": "Next greeting",
   "play.chat.hiddenNode": "This QA is hidden in Mowan display.",
@@ -7809,6 +7813,22 @@ function renderedMessageText(message) {
   if (Array.isArray(message?.content) && message.content.length > 0) return contentText(message.content);
   return typeof message?.text === "string" ? message.text : "";
 }
+function messageOriginKind(message) {
+  const value = message?.origin?.kind;
+  if (typeof value === "string" && value !== "") return value;
+  return message?.role === "assistant" ? "assistant" : message?.role === "system" ? "system" : "user";
+}
+function contextProjection(message) {
+  const origin = message?.origin ?? {};
+  return {
+    id: message?.id ?? `context-${message?.seq ?? "unknown"}`,
+    seq: message?.seq ?? null,
+    text: renderedMessageText(message),
+    producer: origin.producer ?? null,
+    form: origin.form ?? null,
+    summary: origin.summary ?? null
+  };
+}
 function sessionIsInRpWorkspace(workspace, session) {
   if (workspace?.selected !== true || session == null) return false;
   const root = normalizedPath(workspace.rootPath);
@@ -7867,12 +7887,16 @@ function projectTimelineQa(timeline, messagesBySession = {}) {
     if (variant === null) continue;
     const messages = messagesBySession[variant.sessionId]?.messages ?? messagesBySession[variant.sessionId] ?? [];
     const within = messages.filter((message) => Number.isSafeInteger(message.seq) && message.seq >= variant.startEventId && message.seq <= variant.endEventId);
-    const user = within.find((message) => message.role === "user") ?? null;
+    const trigger = within.find((message) => message.role === "user") ?? null;
+    const user = within.find((message) => message.role === "user" && (messageOriginKind(message) === "user" || messageOriginKind(message) === "steering")) ?? null;
+    const contexts = within.filter((message) => message.role === "user" && messageOriginKind(message) === "context").map(contextProjection);
     const assistant = [...within].reverse().find((message) => message.role === "assistant") ?? null;
     result.push({
       id: node.id,
       hidden: node.hidden === true,
       userText: renderedMessageText(user),
+      contexts,
+      triggerKind: messageOriginKind(trigger),
       reasoningText: contentReasoning(assistant?.content),
       assistantText: node.displayOverride ?? renderedMessageText(assistant),
       originalAssistantText: renderedMessageText(assistant),
@@ -7895,24 +7919,44 @@ function projectLiveTurns({
   const boundary = recordedEndSeq(timeline, sessionId);
   const pending = [];
   let turn = null;
+  const appendTurn = () => {
+    if (turn !== null) pending.push(turn);
+    turn = null;
+  };
+  const createTurn = (node, triggerKind, userText = "") => ({
+    id: `live-${node.seq}`,
+    transient: true,
+    userText,
+    contexts: [],
+    triggerKind,
+    reasoningText: "",
+    assistantText: "",
+    running: false
+  });
   for (const node of nodes ?? []) {
     if (!Number.isFinite(node?.seq) || node.seq <= boundary) continue;
-    if (node.kind === "user") {
-      if (turn !== null) pending.push(turn);
-      turn = {
-        id: `live-${node.seq}`,
-        transient: true,
-        userText: contentText(node.content),
-        reasoningText: "",
-        assistantText: "",
-        running: false
-      };
+    if (node.kind === "user" || node.kind === "steering") {
+      appendTurn();
+      turn = createTurn(node, node.kind, contentText(node.content));
+    } else if (node.kind === "context") {
+      if (turn === null || turn.assistantText !== "" || turn.reasoningText !== "") {
+        appendTurn();
+        turn = createTurn(node, "context");
+      }
+      turn.contexts.push({
+        id: `context-${node.seq}`,
+        seq: node.seq,
+        text: contentText(node.content),
+        producer: node.provenance?.label ?? node.source?.kind ?? null,
+        form: node.form ?? node.source?.form ?? null,
+        summary: typeof node.source?.summary === "string" ? node.source.summary : null
+      });
     } else if (node.kind === "assistant" && turn !== null) {
       turn.reasoningText = assistantReasoning(node.blocks);
       turn.assistantText = assistantText(node.blocks);
     }
   }
-  if (turn !== null) pending.push(turn);
+  appendTurn();
   if (pending.length === 0) return pending;
   const tail = pending[pending.length - 1];
   if (running) {
@@ -9897,6 +9941,7 @@ async function readCatalogOrEmpty(client) {
 // packages/client/src/play/schema.js
 var CHROME_MODES = /* @__PURE__ */ new Set(["native", "play"]);
 var MESSAGE_ROLES = /* @__PURE__ */ new Set(["user", "assistant", "system"]);
+var MESSAGE_ORIGIN_KINDS = /* @__PURE__ */ new Set(["user", "context", "steering", "assistant", "system"]);
 function isRecord4(value) {
   return value !== null && typeof value === "object" && !Array.isArray(value);
 }
@@ -10043,12 +10088,31 @@ function normalizeSessionMessages(value, label = "messages") {
     if (!MESSAGE_ROLES.has(item.role)) fail(itemLabel, "role is invalid");
     if (!Array.isArray(item.content)) fail(itemLabel, "content must be an array");
     if (item.seq !== null && (!Number.isSafeInteger(item.seq) || item.seq < 0)) fail(itemLabel, "seq must be a non-negative integer or null");
+    const fallbackKind = item.role === "assistant" ? "assistant" : item.role === "system" ? "system" : "user";
+    const origin = item.origin === void 0 ? { kind: fallbackKind } : (() => {
+      if (!isRecord4(item.origin) || !MESSAGE_ORIGIN_KINDS.has(item.origin.kind)) fail(`${itemLabel}.origin`, "kind is invalid");
+      if (item.origin.kind !== "context") return { kind: item.origin.kind };
+      const optional = (field, maximum) => {
+        const fieldValue = item.origin[field];
+        if (fieldValue !== null && fieldValue !== void 0 && (typeof fieldValue !== "string" || fieldValue.length > maximum)) {
+          fail(`${itemLabel}.origin.${field}`, `must be a string up to ${maximum} characters or null`);
+        }
+        return typeof fieldValue === "string" && fieldValue !== "" ? fieldValue : null;
+      };
+      return {
+        kind: "context",
+        producer: optional("producer", 200),
+        form: optional("form", 64),
+        summary: optional("summary", 1e3)
+      };
+    })();
     return {
       id: stringId(item.id, `${itemLabel}.id`),
       role: item.role,
       content: item.content,
       seq: item.seq,
-      text: projectContentText(item.content)
+      text: projectContentText(item.content),
+      origin
     };
   });
   return { messages, incompleteTurn: value.incompleteTurn };
@@ -10753,6 +10817,11 @@ function defaultId(startEventId, endEventId) {
   const random = globalThis.crypto?.randomUUID?.() ?? Date.now();
   return ["variant", startEventId, endEventId, random].join("-").slice(0, 200);
 }
+function messageOriginKind2(message) {
+  const kind = message?.origin?.kind;
+  if (typeof kind === "string" && kind !== "") return kind;
+  return message?.role === "user" ? "user" : message?.role;
+}
 function completedPairAfter(messageState, eventId) {
   if (messageState?.incompleteTurn === true) return null;
   const messages = (messageState?.messages ?? []).filter((message) => Number.isSafeInteger(message.seq) && message.seq > eventId).sort((left, right) => left.seq - right.seq);
@@ -10815,7 +10884,7 @@ function createPlayNodeController(client, {
         const adopted = node.variants.find((item) => item.id === node.adoptedVariantId);
         if (adopted === void 0) throw new TypeError("Adopted variant is missing");
         const source = await client.getMessages(adopted.sessionId);
-        const user = source.messages.find((message) => message.role === "user" && message.seq >= adopted.startEventId && message.seq <= adopted.endEventId);
+        const user = source.messages.find((message) => message.role === "user" && (messageOriginKind2(message) === "user" || messageOriginKind2(message) === "steering") && message.seq >= adopted.startEventId && message.seq <= adopted.endEventId);
         if (user === void 0 || typeof user.text !== "string" || user.text === "") {
           throw new TypeError("Adopted variant has no reusable user message");
         }
@@ -10894,6 +10963,18 @@ function Action({ icon, label, disabled = false, disabledLabel, onClick }) {
     onClick
   }, icon);
 }
+function turnActionCapabilities(turn) {
+  const triggerKind = turn?.triggerKind;
+  const replyTrigger = triggerKind == null || triggerKind === "user" || triggerKind === "steering";
+  return {
+    copy: true,
+    variants: replyTrigger,
+    generateReply: replyTrigger,
+    fork: true,
+    editDisplay: true,
+    hide: true
+  };
+}
 function PlayTurnActions({
   turn,
   playthrough,
@@ -10907,6 +10988,7 @@ function PlayTurnActions({
   const [busy, setBusy] = (0, import_react8.useState)(false);
   const disabled = running || busy;
   const position = Math.max(0, turn.variants.findIndex((item) => item.id === turn.variant.id));
+  const capabilities = turnActionCapabilities(turn);
   const mutate = async (operation) => {
     if (disabled) return;
     setBusy(true);
@@ -10949,22 +11031,22 @@ function PlayTurnActions({
     "div",
     { className: "dtv-play-turn-actions" },
     h7(Action, { icon: "\u29C9", label: uiMessage("play.chat.copy"), onClick: copy }),
-    h7(Action, {
+    !capabilities.variants ? null : h7(Action, {
       icon: "\u2039",
       label: uiMessage("play.chat.previousReply"),
       disabled: disabled || turn.variants.length < 2,
       disabledLabel: turn.variants.length < 2 ? uiMessage("play.chat.noOtherReply") : void 0,
       onClick: () => adopt(-1)
     }),
-    turn.variants.length < 2 ? null : h7("span", { className: "dtv-play-turn-position" }, `${position + 1}/${turn.variants.length}`),
-    h7(Action, {
+    !capabilities.variants || turn.variants.length < 2 ? null : h7("span", { className: "dtv-play-turn-position" }, `${position + 1}/${turn.variants.length}`),
+    !capabilities.variants ? null : h7(Action, {
       icon: "\u203A",
       label: uiMessage("play.chat.nextReply"),
       disabled: disabled || turn.variants.length < 2,
       disabledLabel: turn.variants.length < 2 ? uiMessage("play.chat.noOtherReply") : void 0,
       onClick: () => adopt(1)
     }),
-    h7(Action, {
+    !capabilities.generateReply ? null : h7(Action, {
       icon: "\u2726",
       label: uiMessage("play.chat.generateReply"),
       disabled,
@@ -11107,6 +11189,7 @@ var css7 = `
 .dtv-play-chat-status{margin:16px 0;padding:12px 14px;border-radius:12px;background:var(--dsw-alias-bg-layer-2,var(--dsw-specific-block));color:var(--dsw-alias-label-tertiary);font-size:12px;line-height:1.55}.dtv-play-chat-status[data-error=true]{color:var(--dsw-alias-state-error)}
 .dtv-play-chat-running{align-self:flex-start;margin:0;color:var(--dsw-alias-label-tertiary);font-size:12px;line-height:1.5}
 .dtv-play-chat-reasoning{align-self:flex-start;max-width:88%;color:var(--dsw-alias-label-secondary);font-size:13px;line-height:1.6}.dtv-play-chat-reasoning summary{width:max-content;cursor:pointer;user-select:none;color:var(--dsw-alias-label-tertiary);font-size:12px}.dtv-play-chat-reasoning-text{margin-top:8px;padding:10px 12px;border-left:2px solid var(--dsw-alias-border-secondary,var(--dsw-specific-divider));white-space:pre-wrap;overflow-wrap:anywhere}
+.dtv-play-chat-context{align-self:stretch;color:var(--dsw-alias-label-secondary);font-size:12px;line-height:1.55}.dtv-play-chat-context>summary{cursor:pointer;user-select:none;color:var(--dsw-alias-label-tertiary);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.dtv-play-chat-context-meta{margin-left:5px}.dtv-play-chat-context-body{margin-top:8px;padding:10px 12px;border-left:2px solid var(--dsw-alias-border-secondary,var(--dsw-specific-divider));background:var(--dsw-alias-bg-layer-2,var(--dsw-specific-block));border-radius:0 9px 9px 0;overflow-wrap:anywhere}
 .dtv-play-rich>:first-child{margin-top:0}.dtv-play-rich>:last-child{margin-bottom:0}.dtv-play-rich p,.dtv-play-rich ul,.dtv-play-rich ol,.dtv-play-rich blockquote,.dtv-play-rich pre,.dtv-play-rich table{margin:0 0 .85em}.dtv-play-rich ul,.dtv-play-rich ol{padding-left:1.5em}.dtv-play-rich blockquote{padding-left:12px;border-left:3px solid var(--dsw-alias-border-secondary,var(--dsw-specific-divider));color:var(--dsw-alias-label-secondary)}.dtv-play-rich pre{max-width:100%;overflow:auto;padding:11px 12px;border-radius:9px;background:var(--dsw-alias-markdown-code-block,var(--dsw-alias-bg-base));white-space:pre}.dtv-play-rich code{font-family:var(--ds-font-family-code,ui-monospace,monospace);font-size:.92em}.dtv-play-rich :not(pre)>code{padding:.12em .35em;border-radius:5px;background:var(--dsw-alias-markdown-code-inline,var(--dsw-alias-bg-base))}.dtv-play-rich table{display:block;max-width:100%;overflow:auto;border-collapse:collapse}.dtv-play-rich th,.dtv-play-rich td{padding:6px 9px;border:1px solid var(--dsw-alias-border-l2)}.dtv-play-rich img,.dtv-play-rich video{max-width:100%;height:auto}.dtv-play-rich a{color:var(--dsw-alias-state-business-primary);text-decoration:underline}.dtv-play-rich hr{border:0;border-top:1px solid var(--dsw-alias-border-l2)}
 `;
 function installPlayChatStyles() {
@@ -11290,6 +11373,24 @@ function Greeting({ greeting, busy, change, footer = null }) {
     footer
   );
 }
+function ContextRow({ context }) {
+  const producer = context.producer || unwrapText(uiMessage("play.chat.contextUnknown"));
+  const summary = context.summary || "";
+  return h8(
+    "details",
+    { className: "dtv-play-chat-context" },
+    h8(
+      "summary",
+      { title: uiMessage("play.chat.contextInjection") },
+      uiMessage("play.chat.contextInjection"),
+      h8("span", { className: "dtv-play-chat-context-meta" }, rawText(`\xB7 ${producer}${summary === "" ? "" : ` \xB7 ${summary}`}`))
+    ),
+    context.text === "" ? null : h8(RichText, {
+      className: "dtv-play-chat-context-body dtv-play-rich",
+      text: context.text
+    })
+  );
+}
 function Turn({ turn, ...actionProps }) {
   if (turn.hidden) {
     return h8(
@@ -11304,6 +11405,7 @@ function Turn({ turn, ...actionProps }) {
     { className: "dtv-play-chat-row" },
     turn.importLast === true ? h8("p", { className: "dtv-play-import-last" }, uiMessage("play.import.lastQa")) : null,
     turn.userText === "" ? null : h8(RichText, { className: "dtv-play-chat-bubble dtv-play-chat-user dtv-play-rich", text: turn.userText }),
+    ...(turn.contexts ?? []).map((context) => h8(ContextRow, { key: context.id, context })),
     turn.reasoningText === "" || turn.reasoningText == null ? null : h8(
       "details",
       { className: "dtv-play-chat-reasoning" },
@@ -11312,7 +11414,7 @@ function Turn({ turn, ...actionProps }) {
     ),
     turn.assistantText === "" ? null : h8(RichText, { className: "dtv-play-chat-bubble dtv-play-chat-assistant dtv-play-rich", text: turn.assistantText }),
     turn.running === true && turn.assistantText === "" ? h8("p", { className: "dtv-play-chat-running" }, uiMessage("play.chat.thinking")) : null,
-    turn.imported || turn.transient ? null : h8(PlayTurnActions, { turn, ...actionProps })
+    turn.imported || turn.transient || turn.assistantText === "" ? null : h8(PlayTurnActions, { turn, ...actionProps })
   );
 }
 function ImportControls({
