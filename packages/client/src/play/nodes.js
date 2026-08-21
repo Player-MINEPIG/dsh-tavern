@@ -188,7 +188,7 @@ export function createPlayNodeController(client, {
         })
         const focus = await client.getFocus(playthrough)
         if (focus.sessionId !== newSessionId) throw new Error('Saved swipe does not match derived focus')
-        return { timeline: next, sessionId: newSessionId, variantId }
+        return { timeline: next, sessionId: newSessionId, nodeId: sourceNode.id, variantId }
       })
     },
 

@@ -1,6 +1,10 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
-import { greetingSelectionLocked, loadChatState } from '../packages/client/src/play/chat.js'
+import {
+  greetingSelectionLocked,
+  loadChatState,
+  swipeTransitionBoundary,
+} from '../packages/client/src/play/chat.js'
 import { readFileSync } from 'node:fs'
 
 const chatSource = readFileSync(new URL('../packages/client/src/play/chat.js', import.meta.url), 'utf8')
@@ -159,7 +163,22 @@ test('RP chat retains the prior snapshot without current-session live data until
   assert.match(chatSource, /const state = loadedState\?\.value \?\? null/)
   assert.match(chatSource, /const current = snapshot\.sessionId === currentSessionId/)
   assert.match(chatSource, /const liveSourceTurns = !current \? \[\] : projectLiveTurns/)
-  assert.match(chatSource, /transition === null \? null : frame\(transition\.from, 'outgoing'\)/)
-  assert.match(chatSource, /frame\(loadedState, transition === null \? 'idle' : 'incoming'\)/)
+  assert.match(chatSource, /transitionBoundary === null \? frame\(loadedState, 'idle'\) : h\(TargetedSwipeTransition/)
+  assert.match(chatSource, /hideUser: index === 0/)
   assert.match(chatSource, /useState\(\(\) => cachedChatSnapshot\(playClient, playthrough\)\)/)
+})
+
+test('swipe transition boundary targets one reply and leaves its prefix static', () => {
+  const turns = [{ id: 'qa-1' }, { id: 'qa-2' }, { id: 'qa-3' }]
+  const boundary = swipeTransitionBoundary({
+    nodeId: 'qa-2',
+    from: { value: { turns } },
+    to: { value: { turns: [...turns] } },
+  })
+  assert.deepEqual(boundary, { incomingIndex: 1, outgoingIndex: 1 })
+  assert.equal(swipeTransitionBoundary({
+    nodeId: 'missing',
+    from: { value: { turns } },
+    to: { value: { turns } },
+  }), null)
 })

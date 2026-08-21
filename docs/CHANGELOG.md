@@ -1,5 +1,13 @@
 # Development changelog
 
+## 2026-08-21 — Scope swipe motion to the changed reply
+
+- Added the swiped timeline `nodeId` to the one-shot transition intent.
+- Kept the greeting, common QA prefix and target user bubble stationary; only
+  the selected assistant reply and any divergent descendant branch now move.
+- Returned the actual source node from context-output retry so its animation
+  follows the nearest reusable real-user QA rather than the context row.
+
 ## 2026-08-21 — Animate atomic RP swipe handoffs
 
 - Retained the outgoing conversation snapshot until the destination session

@@ -95,13 +95,13 @@ export function PlayTurnActions({
     const target = turn.variants[targetPosition]
     if (target === undefined) throw new TypeError('Reply variant does not exist')
     const result = await controller(playClient).adoptVariant(playthrough, turn.id, target.id)
-    queueSwipeTransition(result.sessionId, targetPosition < position ? 'previous' : 'next')
+    queueSwipeTransition(result.sessionId, targetPosition < position ? 'previous' : 'next', turn.id)
     openSession(result.sessionId)
   })
 
   const generate = () => mutate(async () => {
     const result = await controller(playClient).createReplySwipe(playthrough, turn.id)
-    queueSwipeTransition(result.sessionId, 'next')
+    queueSwipeTransition(result.sessionId, 'next', result.nodeId ?? turn.id)
     openSession(result.sessionId)
     window.dispatchEvent(new Event(CLIENT_REFRESH_EVENT))
   })

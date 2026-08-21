@@ -47,6 +47,7 @@ const MAX_CACHED_PLAYTHROUGHS = 32
 const css = `
 .dtv-play-chat{height:100%;min-height:0;box-sizing:border-box;overflow-x:hidden;overflow-y:auto;padding:22px max(18px,calc((100% - 780px)/2)) 36px;color:var(--dsw-alias-label-primary)}
 .dtv-play-chat-stage{display:grid;min-width:0}.dtv-play-chat-frame{grid-area:1/1;min-width:0;will-change:transform,opacity}.dtv-play-chat-frame[data-phase=outgoing]{pointer-events:none}.dtv-play-chat-frame[data-phase=incoming][data-direction=next]{animation:dtv-play-swipe-in-next 180ms ease-out both}.dtv-play-chat-frame[data-phase=outgoing][data-direction=next]{animation:dtv-play-swipe-out-next 180ms ease-out both}.dtv-play-chat-frame[data-phase=incoming][data-direction=previous]{animation:dtv-play-swipe-in-previous 180ms ease-out both}.dtv-play-chat-frame[data-phase=outgoing][data-direction=previous]{animation:dtv-play-swipe-out-previous 180ms ease-out both}@keyframes dtv-play-swipe-in-next{from{transform:translateX(42px);opacity:.2}to{transform:translateX(0);opacity:1}}@keyframes dtv-play-swipe-out-next{from{transform:translateX(0);opacity:1}to{transform:translateX(-42px);opacity:0}}@keyframes dtv-play-swipe-in-previous{from{transform:translateX(-42px);opacity:.2}to{transform:translateX(0);opacity:1}}@keyframes dtv-play-swipe-out-previous{from{transform:translateX(0);opacity:1}to{transform:translateX(42px);opacity:0}}@media (prefers-reduced-motion:reduce){.dtv-play-chat-frame[data-phase]{animation-duration:1ms!important}}
+.dtv-play-chat-target{display:flex;min-width:0;flex-direction:column;gap:8px}.dtv-play-chat-suffix{display:grid;min-width:0}.dtv-play-chat-suffix-list{display:flex;min-width:0;flex-direction:column;gap:22px}
 .dtv-play-chat-list{display:flex;flex-direction:column;gap:22px}.dtv-play-chat-row{display:flex;flex-direction:column;gap:8px}.dtv-play-chat-role{font-size:11px;font-weight:700;color:var(--dsw-alias-label-tertiary)}
 .dtv-play-chat-bubble{max-width:88%;box-sizing:border-box;border-radius:14px;padding:12px 14px;overflow-wrap:anywhere;font-size:14px;line-height:1.65}.dtv-play-chat-user{align-self:flex-end;background:var(--dsw-alias-interactive-bg-selected,var(--dsw-specific-tip))}.dtv-play-chat-assistant{align-self:flex-start;background:var(--dsw-alias-bg-layer-2,var(--dsw-specific-block))}
 .dtv-play-greeting{position:relative;align-self:flex-start;max-width:88%;display:grid;grid-template-columns:30px minmax(0,1fr) 30px;align-items:center;gap:6px}.dtv-play-greeting[data-locked=true]{grid-template-columns:minmax(0,1fr)}.dtv-play-greeting-text{border-radius:14px;padding:13px 15px;background:var(--dsw-alias-bg-layer-2,var(--dsw-specific-block));overflow-wrap:anywhere;font-size:14px;line-height:1.65}
@@ -274,11 +275,11 @@ export function greetingSelectionLocked({ turns = [], latestUserSeq = -1, runnin
     || turns.some(turn => turn?.imported !== true)
 }
 
-function Turn({ turn, ...actionProps }) {
+function Turn({ turn, hideUser = false, ...actionProps }) {
   if (!turnHasVisibleRpContent(turn)) return null
   return h('div', { className: 'dtv-play-chat-row' },
     turn.importLast === true ? h('p', { className: 'dtv-play-import-last' }, uiMessage('play.import.lastQa')) : null,
-    turn.userText === '' ? null : h(RichText, { className: 'dtv-play-chat-bubble dtv-play-chat-user dtv-play-rich', text: turn.userText }),
+    hideUser || turn.userText === '' ? null : h(RichText, { className: 'dtv-play-chat-bubble dtv-play-chat-user dtv-play-rich', text: turn.userText }),
     turn.assistantText === '' ? null : h(RichText, { className: 'dtv-play-chat-bubble dtv-play-chat-assistant dtv-play-rich', text: turn.assistantText }),
     turn.running === true && turn.assistantText === ''
       ? h('p', { className: 'dtv-play-chat-running' }, uiMessage('play.chat.thinking'))
@@ -460,6 +461,78 @@ function ChatFrame({
   ))
 }
 
+export function swipeTransitionBoundary(transition) {
+  if (transition === null || typeof transition?.nodeId !== 'string') return null
+  const incomingIndex = transition.to?.value?.turns?.findIndex(turn => turn.id === transition.nodeId) ?? -1
+  const outgoingIndex = transition.from?.value?.turns?.findIndex(turn => turn.id === transition.nodeId) ?? -1
+  return incomingIndex < 0 || outgoingIndex < 0 ? null : { incomingIndex, outgoingIndex }
+}
+
+function TargetedSwipeTransition({
+  transition,
+  boundary,
+  playClient,
+  playthrough,
+  openSession,
+  greetingBusy,
+  changeGreeting,
+  changed,
+  onError,
+  transitionEnded,
+}) {
+  const incomingState = transition.to.value
+  const outgoingState = transition.from.value
+  const { incomingIndex, outgoingIndex } = boundary
+
+  const actionProps = {
+    playthrough,
+    playClient,
+    openSession,
+    running: true,
+    onChanged: changed,
+    onError,
+  }
+  const renderSuffix = (turns, start, phase) => h('div', {
+    key: `${phase}:${transition.nodeId}`,
+    className: 'dtv-play-chat-frame',
+    'data-phase': phase,
+    'data-direction': transition.direction,
+    onAnimationEnd: phase === 'incoming' ? transitionEnded : undefined,
+  }, h('div', { className: 'dtv-play-chat-suffix-list' },
+    ...turns.slice(start).map((turn, index) => h(Turn, {
+      key: turn.id,
+      turn,
+      hideUser: index === 0,
+      ...actionProps,
+    })),
+  ))
+  const target = incomingState.turns[incomingIndex]
+
+  return h('div', { className: 'dtv-play-chat-list' },
+    incomingState.greeting === null && incomingState.importBinding !== null ? null : h(Greeting, {
+      greeting: incomingState.greeting,
+      busy: greetingBusy,
+      change: changeGreeting,
+      locked: true,
+    }),
+    ...incomingState.turns.slice(0, incomingIndex).map(turn => h(Turn, {
+      key: turn.id,
+      turn,
+      ...actionProps,
+    })),
+    h('div', { className: 'dtv-play-chat-target' },
+      target.userText === '' ? null : h(RichText, {
+        className: 'dtv-play-chat-bubble dtv-play-chat-user dtv-play-rich',
+        text: target.userText,
+      }),
+      h('div', { className: 'dtv-play-chat-suffix' },
+        renderSuffix(outgoingState.turns, outgoingIndex, 'outgoing'),
+        renderSuffix(incomingState.turns, incomingIndex, 'incoming'),
+      ),
+    ),
+  )
+}
+
 export function MowanChatView({ sessionId, useSession, playClient, playthrough, openSession, chatScroll }) {
   installPlayChatStyles()
   const sessionRevision = useSession(state => `${state.nodes?.length ?? 0}:${state.running === true}:${state.blank === true}`)
@@ -470,7 +543,7 @@ export function MowanChatView({ sessionId, useSession, playClient, playthrough, 
   const running = useSession(state => state.running === true)
   const [loadedState, setLoadedState] = useState(() => cachedChatSnapshot(playClient, playthrough))
   const loadedStateRef = useRef(loadedState)
-  const transitionIntent = useRef({ sessionId: null, direction: null })
+  const transitionIntent = useRef({ sessionId: null, intent: null })
   const [transition, setTransition] = useState(null)
   const state = loadedState?.value ?? null
   const stateIsCurrent = loadedState?.sessionId === sessionId
@@ -526,7 +599,7 @@ export function MowanChatView({ sessionId, useSession, playClient, playthrough, 
     if (transitionIntent.current.sessionId !== sessionId) {
       transitionIntent.current = {
         sessionId,
-        direction: consumeSwipeTransition(sessionId),
+        intent: consumeSwipeTransition(sessionId),
       }
       setTransition(null)
     }
@@ -536,13 +609,14 @@ export function MowanChatView({ sessionId, useSession, playClient, playthrough, 
       const incoming = { sessionId, value: next }
       const previous = loadedStateRef.current
       if (previous !== null && previous.sessionId !== sessionId) {
-        const direction = transitionIntent.current.sessionId === sessionId
-          ? transitionIntent.current.direction
+        const intent = transitionIntent.current.sessionId === sessionId
+          ? transitionIntent.current.intent
           : null
-        setTransition(direction === null ? null : {
+        setTransition(intent === null ? null : {
           from: previous,
           to: incoming,
-          direction,
+          direction: intent.direction,
+          nodeId: intent.nodeId,
         })
       }
       loadedStateRef.current = incoming
@@ -599,13 +673,24 @@ export function MowanChatView({ sessionId, useSession, playClient, playthrough, 
     direction: transition?.direction ?? null,
     transitionEnded: phase === 'incoming' ? transitionEnded : undefined,
   })
+  const transitionBoundary = swipeTransitionBoundary(transition)
 
   return h('div', { className: 'dtv-play-chat' },
     error === '' ? null : h('p', { className: 'dtv-play-chat-status', 'data-error': true }, rawText(error)),
     state === null && error === '' ? h('p', { className: 'dtv-play-chat-status' }, uiMessage('play.chat.loading')) : null,
     loadedState === null ? null : h('div', { className: 'dtv-play-chat-stage' },
-      transition === null ? null : frame(transition.from, 'outgoing'),
-      frame(loadedState, transition === null ? 'idle' : 'incoming'),
+      transitionBoundary === null ? frame(loadedState, 'idle') : h(TargetedSwipeTransition, {
+        transition,
+        boundary: transitionBoundary,
+        playClient,
+        playthrough,
+        openSession,
+        greetingBusy,
+        changeGreeting,
+        changed,
+        onError: setError,
+        transitionEnded,
+      }),
     ),
     h('span', { ref: bottomAnchor, 'aria-hidden': true }),
   )
