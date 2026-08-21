@@ -1,5 +1,6 @@
 import {
   createElement,
+  useEffect,
   useState,
 } from 'react'
 import { PLUGIN_ID } from '../../../identity.js'
@@ -15,6 +16,7 @@ const controllers = new WeakMap()
 
 const css = `
 .dtv-play-turn-actions{display:flex;align-items:center;gap:2px;min-height:28px}.dtv-play-turn-action{width:28px;height:28px;border:0;border-radius:8px;background:transparent;color:var(--dsw-alias-label-tertiary);font:inherit;cursor:pointer;display:grid;place-items:center}.dtv-play-turn-action:hover{background:var(--dsw-alias-interactive-bg-hover);color:var(--dsw-alias-label-primary)}.dtv-play-turn-action:disabled{cursor:default;opacity:.38}.dtv-play-turn-position{padding:0 5px;color:var(--dsw-alias-label-tertiary);font-size:10px}
+.dtv-play-display-editor{display:flex;flex-direction:column;align-self:stretch;gap:8px}.dtv-play-display-editor textarea{box-sizing:border-box;width:100%;min-height:180px;max-height:55vh;resize:vertical;padding:12px 14px;border:1px solid var(--dsw-alias-border-l2);border-radius:12px;background:var(--dsw-alias-bg-base);color:var(--dsw-alias-label-primary);font:inherit;font-size:14px;line-height:1.65}.dtv-play-display-editor textarea:focus{outline:2px solid color-mix(in srgb,var(--dsw-alias-state-business-primary,#2677d9) 35%,transparent);border-color:var(--dsw-alias-state-business-primary,#2677d9)}.dtv-play-display-editor-actions{display:flex;justify-content:flex-end;gap:8px}.dtv-play-display-editor-button{min-width:76px;min-height:34px;padding:7px 12px;border:1px solid var(--dsw-alias-border-l2);border-radius:8px;background:var(--dsw-alias-button-secondary-fill,var(--dsw-alias-bg-base));color:var(--dsw-alias-label-primary);font:inherit;cursor:pointer}.dtv-play-display-editor-button[data-primary=true]{border-color:transparent;background:var(--dsw-alias-state-business-primary,#2677d9);color:var(--dsw-alias-button-primary-label,#fff)}.dtv-play-display-editor-button:disabled{cursor:default;opacity:.45}
 `
 
 function installStyles() {
@@ -69,9 +71,11 @@ export function PlayTurnActions({
 }) {
   installStyles()
   const [busy, setBusy] = useState(false)
+  const [editor, setEditor] = useState(null)
   const disabled = running || busy
   const position = Math.max(0, turn.variants.findIndex(item => item.id === turn.variant.id))
   const capabilities = turnActionCapabilities(turn)
+  useEffect(() => setEditor(null), [turn.id, turn.variant.id])
 
   const mutate = async operation => {
     if (disabled) return
@@ -113,6 +117,44 @@ export function PlayTurnActions({
     )
   }
 
+  if (editor !== null) {
+    return h('form', {
+      className: 'dtv-play-display-editor',
+      onSubmit: event => {
+        event.preventDefault()
+        const value = editor
+        mutate(async () => {
+          await controller(playClient).setDisplayOverride(playthrough, turn.id, value)
+          setEditor(null)
+        })
+      },
+    },
+    h('textarea', {
+      value: editor,
+      autoFocus: true,
+      disabled,
+      'aria-label': uiMessage('play.chat.editDisplayPrompt'),
+      onChange: event => setEditor(event.target.value),
+      onKeyDown: event => {
+        if (event.key === 'Escape' && !disabled) setEditor(null)
+      },
+    }),
+    h('div', { className: 'dtv-play-display-editor-actions' },
+      h('button', {
+        type: 'button',
+        className: 'dtv-play-display-editor-button',
+        disabled,
+        onClick: () => setEditor(null),
+      }, uiMessage('common.cancel')),
+      h('button', {
+        type: 'submit',
+        className: 'dtv-play-display-editor-button',
+        'data-primary': true,
+        disabled,
+      }, uiMessage('common.save')),
+    ))
+  }
+
   return h('div', { className: 'dtv-play-turn-actions' },
     h(Action, { icon: '⧉', label: uiMessage('play.chat.copy'), onClick: copy }),
     !capabilities.variants ? null : h(Action, {
@@ -152,10 +194,7 @@ export function PlayTurnActions({
       icon: '✎',
       label: uiMessage('play.chat.editDisplay'),
       disabled,
-      onClick: () => {
-        const value = window.prompt(translate('play.chat.editDisplayPrompt'), turn.assistantText)
-        if (value !== null) mutate(() => controller(playClient).setDisplayOverride(playthrough, turn.id, value))
-      },
+      onClick: () => setEditor(turn.assistantText),
     }),
     turn.displayOverridden ? h(Action, {
       icon: '↺',

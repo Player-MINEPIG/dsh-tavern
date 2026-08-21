@@ -7,6 +7,7 @@ export default Object.freeze({
   "common.refresh": "Refresh",
   "common.delete": "Delete",
   "common.save": "Save",
+  "common.cancel": "Cancel",
   "common.saveChanges": "Save changes",
   "common.saved": "Saved",
   "common.reload": "Reload",

@@ -7,6 +7,7 @@ export default Object.freeze({
   "common.refresh": "刷新",
   "common.delete": "删除",
   "common.save": "保存",
+  "common.cancel": "取消",
   "common.saveChanges": "保存修改",
   "common.saved": "已保存",
   "common.reload": "重新载入",
