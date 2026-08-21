@@ -44,6 +44,18 @@ function rootSessionId(playthrough) {
   return typeof value === 'string' && value !== '' ? value : null
 }
 
+async function ensureCharacterSelection(client, sessionId, characterId) {
+  const current = await client.getCharacterSelection(sessionId)
+  if (characterIdFromSelection(current) !== characterId) {
+    await client.putCharacterSelection(sessionId, characterId, { greetingIndex: 0 })
+  }
+  const verified = await client.getCharacterSelection(sessionId)
+  if (characterIdFromSelection(verified) !== characterId) {
+    throw new Error('playthrough character selection did not persist')
+  }
+  return verified
+}
+
 function latestCharacterPlaythrough(catalog, characterId) {
   let latest = null
   let latestNumber = 0
@@ -133,17 +145,13 @@ export async function createCharacterPlaythrough(client, {
   const catalog = await catalogOrEmpty(client)
   const latest = latestCharacterPlaythrough(catalog, characterId)
   if (latest !== null && await playthroughIsReusable(client, latest)) {
-    return { sessionId: rootSessionId(latest), playthrough: latest, reused: true }
+    const sessionId = rootSessionId(latest)
+    await ensureCharacterSelection(client, sessionId, characterId)
+    return { sessionId, playthrough: latest, reused: true }
   }
   const created = await client.postSession(sourceId)
   const sessionId = safeSessionId(created?.sessionId)
-  if (sourceId === null) {
-    await client.putCharacterSelection(sessionId, characterId, { greetingIndex: 0 })
-  }
-  const selection = await client.getCharacterSelection(sessionId)
-  if (characterIdFromSelection(selection) !== characterId) {
-    throw new Error('playthrough character selection did not persist')
-  }
+  await ensureCharacterSelection(client, sessionId, characterId)
 
   const playthrough = {
     id: playthroughId,

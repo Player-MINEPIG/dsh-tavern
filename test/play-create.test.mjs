@@ -76,7 +76,8 @@ test('new card playthrough binds the card and persists an empty verified timelin
   assert.equal(result.playthrough.ext.pmpDshTavern.playthroughNumber, 1)
   assert.deepEqual(client.calls[0], ['getCatalog'])
   assert.deepEqual(client.calls[1], ['postSession', null])
-  assert.deepEqual(client.calls[2], ['putCharacterSelection', 'session-new', 'character-a', { greetingIndex: 0 }])
+  assert.deepEqual(client.calls[2], ['getCharacterSelection', 'session-new'])
+  assert.deepEqual(client.calls[3], ['putCharacterSelection', 'session-new', 'character-a', { greetingIndex: 0 }])
   const timelineWrite = client.calls.find(call => call[0] === 'putTimeline')
   assert.match(timelineWrite[1], /^character-a\/playthrough-[^/]+\/timeline\.json$/)
   assert.deepEqual(timelineWrite[2], { nodes: [] })
@@ -94,6 +95,20 @@ test('existing card session is copied instead of rebinding only the character', 
   assert.equal(result.playthrough.title, '1周目')
   assert.deepEqual(client.calls[1], ['postSession', 'session-source'])
   assert.equal(client.calls.some(call => call[0] === 'putCharacterSelection'), false)
+  assert.equal(client.calls.filter(call => call[0] === 'getCharacterSelection').length, 2)
+})
+
+test('copied DSH settings are corrected when they still point at the previously focused character', async () => {
+  const client = fakeClient({ copied: true })
+  const result = await createCharacterPlaythrough(client, {
+    character: { id: 'character-b', name: 'Bob' },
+    selectionFromSessionId: 'session-b-source',
+    ...dependencies,
+  })
+  assert.equal(result.playthrough.ext.pmpDshTavern.characterId, 'character-b')
+  assert.deepEqual(client.calls.find(call => call[0] === 'putCharacterSelection'), [
+    'putCharacterSelection', 'session-new', 'character-b', { greetingIndex: 0 },
+  ])
 })
 
 test('playthrough numbers are character-local and survive renamed or legacy rows', () => {
@@ -171,6 +186,7 @@ test('latest empty playthrough is reused without creating workspace or session d
     async getCatalog() { calls.push('catalog'); return { playthroughs: [playthrough] } },
     async getTimeline() { calls.push('timeline'); return { nodes: [] } },
     async getMessages(id) { calls.push(['messages', id]); return { incompleteTurn: false, messages: [{ role: 'system' }] } },
+    async getCharacterSelection(id) { calls.push(['selection', id]); return { selection: { characterCardId: 'character-a' } } },
     async postSession() { calls.push('postSession'); throw new Error('must not create') },
   }
   const result = await createCharacterPlaythrough(client, {
@@ -179,6 +195,35 @@ test('latest empty playthrough is reused without creating workspace or session d
   })
   assert.deepEqual(result, { sessionId: 'session-empty', playthrough, reused: true })
   assert.equal(calls.includes('postSession'), false)
+})
+
+test('a reusable empty playthrough repairs a stale character binding before navigation', async () => {
+  const playthrough = {
+    id: 'pt-b', path: 'character-b/pt-b/timeline.json',
+    ext: { pmpDshTavern: { characterId: 'character-b', rootSessionId: 'session-empty', playthroughNumber: 1 } },
+  }
+  let selection = { selection: { characterCardId: 'character-a' } }
+  const calls = []
+  const client = {
+    async getCatalog() { return { playthroughs: [playthrough] } },
+    async getTimeline() { return { nodes: [] } },
+    async getMessages() { return { incompleteTurn: false, messages: [] } },
+    async getCharacterSelection() { calls.push('get'); return selection },
+    async putCharacterSelection(sessionId, characterId, options) {
+      calls.push(['put', sessionId, characterId, options])
+      selection = { selection: { characterCardId: characterId, character: options } }
+    },
+  }
+  const result = await createCharacterPlaythrough(client, {
+    character: { id: 'character-b' },
+    ...dependencies,
+  })
+  assert.equal(result.reused, true)
+  assert.deepEqual(calls, [
+    'get',
+    ['put', 'session-empty', 'character-b', { greetingIndex: 0 }],
+    'get',
+  ])
 })
 
 test('greeting-only import remains reusable but imported QA does not', async () => {
@@ -191,6 +236,7 @@ test('greeting-only import remains reusable but imported QA does not', async () 
     async getTimeline() { return { nodes: [], ext: { pmpDshTavern: { importContextPath: 'character-a/pt/import-context.json' } } } },
     async getFile() { return { content: JSON.stringify({ greeting: 'Hello', qa }) } },
     async getMessages() { return { incompleteTurn: false, messages: [] } },
+    async getCharacterSelection() { return { selection: { characterCardId: 'character-a' } } },
   }
   assert.equal(await playthroughIsReusable(client, playthrough), true)
   qa = [{ user: 'u', assistant: 'a' }]
@@ -204,6 +250,7 @@ test('timeline QA, authoritative messages and incomplete turns each prevent empt
     history: { incompleteTurn: false, messages: [] },
     async getTimeline() { return this.timeline },
     async getMessages() { return this.history },
+    async getCharacterSelection() { return { selection: { characterCardId: 'character-a' } } },
   }
   assert.equal(await playthroughIsReusable(client, playthrough), false)
   client.timeline = { nodes: [] }

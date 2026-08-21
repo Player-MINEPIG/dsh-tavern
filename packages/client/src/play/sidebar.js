@@ -274,8 +274,8 @@ export function PlayWorkspaceBrowser({
         character,
         selectionFromSessionId: sourceSessionIdForCharacter(character),
       })
-      window.dispatchEvent(new Event(CLIENT_REFRESH_EVENT))
       openSession(result.sessionId)
+      window.dispatchEvent(new Event(CLIENT_REFRESH_EVENT))
     } catch (reason) {
       setStatus({ message: reason instanceof Error ? reason.message : String(reason) })
     } finally {
