@@ -27,6 +27,7 @@ import {
   loadPlaySidebarResources,
   requiresSystemWorkspaceConfirmation,
   loadSessionCharacterBindings,
+  playthroughFocusTarget,
   projectPlaySidebar,
   sessionIdsInRpWorkspace,
 } from './sidebar-model.js'
@@ -292,8 +293,8 @@ export function PlayWorkspaceBrowser({
     setStatus(null)
     try {
       const focus = await playClient.getFocus(playthrough)
-      const target = typeof focus.sessionId === 'string' ? focus.sessionId : playthrough.rootSessionId
-      if (typeof target !== 'string' || !playthrough.sessionIds.includes(target)) {
+      const target = playthroughFocusTarget({ focus, playthrough, rpSessionIds: rpIds })
+      if (target === null) {
         setStatus({ key: 'play.sidebar.sessionMissing' })
         return
       }

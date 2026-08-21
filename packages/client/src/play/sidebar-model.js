@@ -237,6 +237,13 @@ export function projectPlaySidebar({
   }
 }
 
+export function playthroughFocusTarget({ focus, playthrough, rpSessionIds = [] } = {}) {
+  const target = typeof focus?.sessionId === 'string'
+    ? focus.sessionId
+    : playthrough?.rootSessionId
+  return typeof target === 'string' && new Set(rpSessionIds).has(target) ? target : null
+}
+
 export function shouldShowUnboundNotice({ workspace, session, selection } = {}) {
   if (workspace == null || session == null) return false
   if (workspace.selected !== true) return true

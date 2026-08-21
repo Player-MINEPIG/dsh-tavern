@@ -3,6 +3,7 @@ import assert from 'node:assert/strict'
 import {
   SessionCharacterBindingCache,
   loadSessionCharacterBindings,
+  playthroughFocusTarget,
   projectPlaySidebar,
   requiresSystemWorkspaceConfirmation,
   shouldShowUnboundNotice,
@@ -104,6 +105,20 @@ test('workspace path fallback is canonicalized when the DSH workspace row is not
     },
   })
   assert.deepEqual([...ids], ['matching'])
+})
+
+test('fresh focus can open an RP session even when the playthrough projection is stale', () => {
+  const playthrough = { rootSessionId: 'root', sessionIds: ['root'] }
+  assert.equal(playthroughFocusTarget({
+    focus: { sessionId: 'new-swipe-session' },
+    playthrough,
+    rpSessionIds: ['root', 'new-swipe-session'],
+  }), 'new-swipe-session')
+  assert.equal(playthroughFocusTarget({
+    focus: { sessionId: 'outside' },
+    playthrough,
+    rpSessionIds: ['root', 'new-swipe-session'],
+  }), null)
 })
 
 test('character selection reads are cached and never exceed four concurrent requests', async () => {
