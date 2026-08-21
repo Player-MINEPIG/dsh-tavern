@@ -11060,7 +11060,7 @@ function createPlayNodeController(client, {
         });
         const focus = await client.getFocus(playthrough);
         if (focus.sessionId !== newSessionId) throw new Error("Saved swipe does not match derived focus");
-        return { timeline: next, sessionId: newSessionId, variantId };
+        return { timeline: next, sessionId: newSessionId, nodeId: sourceNode.id, variantId };
       });
     },
     forkPlaythrough(playthrough, nodeId) {
@@ -11094,19 +11094,20 @@ function createPlayNodeController(client, {
 // packages/client/src/play/swipe-transition.js
 var MAX_PENDING_TRANSITIONS = 32;
 var pending = /* @__PURE__ */ new Map();
-function queueSwipeTransition(sessionId, direction) {
+function queueSwipeTransition(sessionId, direction, nodeId) {
   if (typeof sessionId !== "string" || sessionId === "") return;
   if (direction !== "previous" && direction !== "next") return;
+  if (typeof nodeId !== "string" || nodeId === "") return;
   pending.delete(sessionId);
-  pending.set(sessionId, direction);
+  pending.set(sessionId, { direction, nodeId });
   while (pending.size > MAX_PENDING_TRANSITIONS) {
     pending.delete(pending.keys().next().value);
   }
 }
 function consumeSwipeTransition(sessionId) {
-  const direction = pending.get(sessionId) ?? null;
+  const intent = pending.get(sessionId) ?? null;
   pending.delete(sessionId);
-  return direction;
+  return intent;
 }
 
 // packages/client/src/play/turn-actions.js
@@ -11185,12 +11186,12 @@ function PlayTurnActions({
     const target = turn.variants[targetPosition];
     if (target === void 0) throw new TypeError("Reply variant does not exist");
     const result = await controller(playClient).adoptVariant(playthrough, turn.id, target.id);
-    queueSwipeTransition(result.sessionId, targetPosition < position ? "previous" : "next");
+    queueSwipeTransition(result.sessionId, targetPosition < position ? "previous" : "next", turn.id);
     openSession(result.sessionId);
   });
   const generate = () => mutate(async () => {
     const result = await controller(playClient).createReplySwipe(playthrough, turn.id);
-    queueSwipeTransition(result.sessionId, "next");
+    queueSwipeTransition(result.sessionId, "next", result.nodeId ?? turn.id);
     openSession(result.sessionId);
     window.dispatchEvent(new Event(CLIENT_REFRESH_EVENT));
   });
@@ -11399,6 +11400,7 @@ var MAX_CACHED_PLAYTHROUGHS = 32;
 var css7 = `
 .dtv-play-chat{height:100%;min-height:0;box-sizing:border-box;overflow-x:hidden;overflow-y:auto;padding:22px max(18px,calc((100% - 780px)/2)) 36px;color:var(--dsw-alias-label-primary)}
 .dtv-play-chat-stage{display:grid;min-width:0}.dtv-play-chat-frame{grid-area:1/1;min-width:0;will-change:transform,opacity}.dtv-play-chat-frame[data-phase=outgoing]{pointer-events:none}.dtv-play-chat-frame[data-phase=incoming][data-direction=next]{animation:dtv-play-swipe-in-next 180ms ease-out both}.dtv-play-chat-frame[data-phase=outgoing][data-direction=next]{animation:dtv-play-swipe-out-next 180ms ease-out both}.dtv-play-chat-frame[data-phase=incoming][data-direction=previous]{animation:dtv-play-swipe-in-previous 180ms ease-out both}.dtv-play-chat-frame[data-phase=outgoing][data-direction=previous]{animation:dtv-play-swipe-out-previous 180ms ease-out both}@keyframes dtv-play-swipe-in-next{from{transform:translateX(42px);opacity:.2}to{transform:translateX(0);opacity:1}}@keyframes dtv-play-swipe-out-next{from{transform:translateX(0);opacity:1}to{transform:translateX(-42px);opacity:0}}@keyframes dtv-play-swipe-in-previous{from{transform:translateX(-42px);opacity:.2}to{transform:translateX(0);opacity:1}}@keyframes dtv-play-swipe-out-previous{from{transform:translateX(0);opacity:1}to{transform:translateX(42px);opacity:0}}@media (prefers-reduced-motion:reduce){.dtv-play-chat-frame[data-phase]{animation-duration:1ms!important}}
+.dtv-play-chat-target{display:flex;min-width:0;flex-direction:column;gap:8px}.dtv-play-chat-suffix{display:grid;min-width:0}.dtv-play-chat-suffix-list{display:flex;min-width:0;flex-direction:column;gap:22px}
 .dtv-play-chat-list{display:flex;flex-direction:column;gap:22px}.dtv-play-chat-row{display:flex;flex-direction:column;gap:8px}.dtv-play-chat-role{font-size:11px;font-weight:700;color:var(--dsw-alias-label-tertiary)}
 .dtv-play-chat-bubble{max-width:88%;box-sizing:border-box;border-radius:14px;padding:12px 14px;overflow-wrap:anywhere;font-size:14px;line-height:1.65}.dtv-play-chat-user{align-self:flex-end;background:var(--dsw-alias-interactive-bg-selected,var(--dsw-specific-tip))}.dtv-play-chat-assistant{align-self:flex-start;background:var(--dsw-alias-bg-layer-2,var(--dsw-specific-block))}
 .dtv-play-greeting{position:relative;align-self:flex-start;max-width:88%;display:grid;grid-template-columns:30px minmax(0,1fr) 30px;align-items:center;gap:6px}.dtv-play-greeting[data-locked=true]{grid-template-columns:minmax(0,1fr)}.dtv-play-greeting-text{border-radius:14px;padding:13px 15px;background:var(--dsw-alias-bg-layer-2,var(--dsw-specific-block));overflow-wrap:anywhere;font-size:14px;line-height:1.65}
@@ -11605,13 +11607,13 @@ function turnHasVisibleRpContent(turn) {
 function greetingSelectionLocked({ turns = [], latestUserSeq = -1, running = false } = {}) {
   return running || latestUserSeq >= 0 || turns.some((turn) => turn?.imported !== true);
 }
-function Turn({ turn, ...actionProps }) {
+function Turn({ turn, hideUser = false, ...actionProps }) {
   if (!turnHasVisibleRpContent(turn)) return null;
   return h8(
     "div",
     { className: "dtv-play-chat-row" },
     turn.importLast === true ? h8("p", { className: "dtv-play-import-last" }, uiMessage("play.import.lastQa")) : null,
-    turn.userText === "" ? null : h8(RichText, { className: "dtv-play-chat-bubble dtv-play-chat-user dtv-play-rich", text: turn.userText }),
+    hideUser || turn.userText === "" ? null : h8(RichText, { className: "dtv-play-chat-bubble dtv-play-chat-user dtv-play-rich", text: turn.userText }),
     turn.assistantText === "" ? null : h8(RichText, { className: "dtv-play-chat-bubble dtv-play-chat-assistant dtv-play-rich", text: turn.assistantText }),
     turn.running === true && turn.assistantText === "" ? h8("p", { className: "dtv-play-chat-running" }, uiMessage("play.chat.thinking")) : null,
     turn.imported || turn.transient || turn.assistantText === "" && turn.displayOverridden !== true ? null : h8(PlayTurnActions, { turn, ...actionProps })
@@ -11783,6 +11785,82 @@ function ChatFrame({
     liveTurns.length === 0 && running && current2 ? h8("p", { className: "dtv-play-chat-running" }, uiMessage("play.chat.thinking")) : null
   ));
 }
+function swipeTransitionBoundary(transition) {
+  if (transition === null || typeof transition?.nodeId !== "string") return null;
+  const incomingIndex = transition.to?.value?.turns?.findIndex((turn) => turn.id === transition.nodeId) ?? -1;
+  const outgoingIndex = transition.from?.value?.turns?.findIndex((turn) => turn.id === transition.nodeId) ?? -1;
+  return incomingIndex < 0 || outgoingIndex < 0 ? null : { incomingIndex, outgoingIndex };
+}
+function TargetedSwipeTransition({
+  transition,
+  boundary,
+  playClient,
+  playthrough,
+  openSession,
+  greetingBusy,
+  changeGreeting,
+  changed,
+  onError,
+  transitionEnded
+}) {
+  const incomingState = transition.to.value;
+  const outgoingState = transition.from.value;
+  const { incomingIndex, outgoingIndex } = boundary;
+  const actionProps = {
+    playthrough,
+    playClient,
+    openSession,
+    running: true,
+    onChanged: changed,
+    onError
+  };
+  const renderSuffix = (turns, start, phase) => h8("div", {
+    key: `${phase}:${transition.nodeId}`,
+    className: "dtv-play-chat-frame",
+    "data-phase": phase,
+    "data-direction": transition.direction,
+    onAnimationEnd: phase === "incoming" ? transitionEnded : void 0
+  }, h8(
+    "div",
+    { className: "dtv-play-chat-suffix-list" },
+    ...turns.slice(start).map((turn, index) => h8(Turn, {
+      key: turn.id,
+      turn,
+      hideUser: index === 0,
+      ...actionProps
+    }))
+  ));
+  const target = incomingState.turns[incomingIndex];
+  return h8(
+    "div",
+    { className: "dtv-play-chat-list" },
+    incomingState.greeting === null && incomingState.importBinding !== null ? null : h8(Greeting, {
+      greeting: incomingState.greeting,
+      busy: greetingBusy,
+      change: changeGreeting,
+      locked: true
+    }),
+    ...incomingState.turns.slice(0, incomingIndex).map((turn) => h8(Turn, {
+      key: turn.id,
+      turn,
+      ...actionProps
+    })),
+    h8(
+      "div",
+      { className: "dtv-play-chat-target" },
+      target.userText === "" ? null : h8(RichText, {
+        className: "dtv-play-chat-bubble dtv-play-chat-user dtv-play-rich",
+        text: target.userText
+      }),
+      h8(
+        "div",
+        { className: "dtv-play-chat-suffix" },
+        renderSuffix(outgoingState.turns, outgoingIndex, "outgoing"),
+        renderSuffix(incomingState.turns, incomingIndex, "incoming")
+      )
+    )
+  );
+}
 function MowanChatView({ sessionId, useSession, playClient, playthrough, openSession, chatScroll }) {
   installPlayChatStyles();
   const sessionRevision = useSession((state2) => `${state2.nodes?.length ?? 0}:${state2.running === true}:${state2.blank === true}`);
@@ -11793,7 +11871,7 @@ function MowanChatView({ sessionId, useSession, playClient, playthrough, openSes
   const running = useSession((state2) => state2.running === true);
   const [loadedState, setLoadedState] = (0, import_react9.useState)(() => cachedChatSnapshot(playClient, playthrough));
   const loadedStateRef = (0, import_react9.useRef)(loadedState);
-  const transitionIntent = (0, import_react9.useRef)({ sessionId: null, direction: null });
+  const transitionIntent = (0, import_react9.useRef)({ sessionId: null, intent: null });
   const [transition, setTransition] = (0, import_react9.useState)(null);
   const state = loadedState?.value ?? null;
   const stateIsCurrent = loadedState?.sessionId === sessionId;
@@ -11843,7 +11921,7 @@ function MowanChatView({ sessionId, useSession, playClient, playthrough, openSes
     if (transitionIntent.current.sessionId !== sessionId) {
       transitionIntent.current = {
         sessionId,
-        direction: consumeSwipeTransition(sessionId)
+        intent: consumeSwipeTransition(sessionId)
       };
       setTransition(null);
     }
@@ -11853,11 +11931,12 @@ function MowanChatView({ sessionId, useSession, playClient, playthrough, openSes
       const incoming = { sessionId, value: next };
       const previous = loadedStateRef.current;
       if (previous !== null && previous.sessionId !== sessionId) {
-        const direction = transitionIntent.current.sessionId === sessionId ? transitionIntent.current.direction : null;
-        setTransition(direction === null ? null : {
+        const intent = transitionIntent.current.sessionId === sessionId ? transitionIntent.current.intent : null;
+        setTransition(intent === null ? null : {
           from: previous,
           to: incoming,
-          direction
+          direction: intent.direction,
+          nodeId: intent.nodeId
         });
       }
       loadedStateRef.current = incoming;
@@ -11914,6 +11993,7 @@ function MowanChatView({ sessionId, useSession, playClient, playthrough, openSes
     direction: transition?.direction ?? null,
     transitionEnded: phase === "incoming" ? transitionEnded : void 0
   });
+  const transitionBoundary = swipeTransitionBoundary(transition);
   return h8(
     "div",
     { className: "dtv-play-chat" },
@@ -11922,8 +12002,18 @@ function MowanChatView({ sessionId, useSession, playClient, playthrough, openSes
     loadedState === null ? null : h8(
       "div",
       { className: "dtv-play-chat-stage" },
-      transition === null ? null : frame(transition.from, "outgoing"),
-      frame(loadedState, transition === null ? "idle" : "incoming")
+      transitionBoundary === null ? frame(loadedState, "idle") : h8(TargetedSwipeTransition, {
+        transition,
+        boundary: transitionBoundary,
+        playClient,
+        playthrough,
+        openSession,
+        greetingBusy,
+        changeGreeting,
+        changed,
+        onError: setError,
+        transitionEnded
+      })
     ),
     h8("span", { ref: bottomAnchor, "aria-hidden": true })
   );
