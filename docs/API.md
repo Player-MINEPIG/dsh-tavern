@@ -93,8 +93,8 @@ durable history。当前已实现的基础语义是：首次 assembly 必须按�
 
 | 当你想 | 路径 |
 | --- | --- |
-| 管预设、导出 ST JSON、原生正则、看当前装配、导入/选中 | `/presets`、`/presets/:id/export`、`/presets/:id/regex-scripts`、`/active`、`/import`、`/select` |
-| 管角色卡、原生正则、绑定、导出 json/png、内嵌书 | `/characters`、`/characters/:id/regex-scripts`、`/character-selection` |
+| 管预设、导出 ST JSON、原生正则、独立世界书关系、看当前装配、导入/选中 | `/presets`、`/presets/:id/export`、`/presets/:id/regex-scripts`、`/presets/:id/world-books`、`/active`、`/import`、`/select` |
+| 管角色卡、原生正则、独立世界书关系、绑定、导出 json/png、内嵌书 | `/characters`、`/characters/:id/regex-scripts`、`/characters/:id/world-books`、`/characters/:id/world-book`、`/character-selection` |
 | 管独立世界书和绑定 | `/world-books`、`/world-book-selection` |
 | 管用户、用户-世界书关系 | `/users`、`/user-selection` |
 | 界面语言缩放、绑卡跟随 RP | `/ui-settings` |
@@ -127,6 +127,27 @@ durable history。当前已实现的基础语义是：首次 assembly 必须按�
 `PUT` 是完整替换，不是逐字段 merge。数组元素必须是对象；服务端不改写原生 ST 字段，也不丢弃规则内未知扩展字段。适配器优先写回资源已有的 `regex_scripts` 路径；没有现有数组时，预设写入 `extensions.regex_scripts`，V2/V3 角色卡写入 `data.extensions.regex_scripts`，V1 角色卡写入 `extensions.regex_scripts`。资源中的其他字段保持不变，写入仍经过对应 store 的原子保存和总文档体积限制。
 
 这个 v1 子资源只编辑预设或角色卡原文。它不组合全局正则，不计算当前 session 最终生效集合，不修改历史、timeline 或 AI 请求；魔丸显示管线只把保存后的资源数据作为渲染投影读取。失败响应沿用所属资源 API 的既有格式与状态码。
+
+### 预设/角色卡关联独立世界书
+
+预设与角色卡可以关联零本或多本已经存在的独立世界书：
+
+| 方法 | 路径 | 请求 | 成功响应 |
+| --- | --- | --- | --- |
+| GET | `/presets/:id/world-books` | 无 | `{ ok: true, binding: { presetId, worldBookIds } }` |
+| PUT | `/presets/:id/world-books` | `{ worldBookIds: [...] }` | 同 GET |
+| GET | `/characters/:id/world-books` | 无 | `{ ok: true, binding: { characterCardId, worldBookIds } }` |
+| PUT | `/characters/:id/world-books` | `{ worldBookIds: [...] }` | 同 GET |
+
+`PUT` 完整替换该资源的有序关系，重复 ID 稳定去重；资源或世界书不存在时拒绝写入。每个预设或角色卡最多关联 100 本。关系由 loader-owned 的 `resource-world-book-bindings.json` 原子保存，不向 ST 预设或角色卡原文写入 Tavern 私有字段。因此：
+
+- 预设导出、角色卡 JSON/PNG 导出不会夹带这些 Tavern 本地关联；卸载插件后原资源仍可按 ST 原生语义使用；
+- `DELETE /presets/:id` 或 `DELETE /characters/:id` 清理该资源拥有的关系；删除独立世界书会从会话、用户、预设和角色卡关系中清理对应 ID；
+- 角色卡复数路径 `/world-books` 表示关联独立资源；单数路径 `/world-book` 仍表示编辑角色卡自身的 `character_book`。两者可以同时存在。
+
+loader 的独立书合成顺序固定为：会话显式绑定、用户关系、预设关系、角色卡关系；相同 ID 只执行一次，但 audit/resource summary 保留全部 `bindingSources`。角色卡内嵌 `character_book` 在上述独立书之后进入同一个 matcher。`GET /active` 的 `worldBookSelection` 公开 `explicitIds`、`userBoundIds`、`presetBoundIds`、`characterBoundIds`、`effectiveIds`、`duplicateIds` 和 `order`。
+
+世界书面板直接陈列这些来源。当前角色卡没有 `character_book` 时，前端可以先建立 `{ name, entries: [] }` 草稿，再由现有 `PATCH /characters/:id/world-book` 保存；这是创建可随卡导出的内嵌书，不等同于绑定独立书。
 
 ### Tavern 周目分支组合
 
