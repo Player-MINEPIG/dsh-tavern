@@ -22,9 +22,9 @@ timeline 只保存 session/event 范围引用；路径 API 有根目录、相对
 | 外部记录绑定 | 已实现、已验收 | 绑定到当前空 root session，不新建 session 或 timeline；支持绑定、换绑、解绑，解绑后恢复 greeting。服务端会重复空会话锁定检查。 |
 | 最近三轮 QA | 已实现、已验收 | opening dock 显示导入记录最后三轮 QA；这是显示预览，不是 DSH 历史。 |
 | 一次性注入 | 已实现，待统一验收 | 首次 assembly 使用公开 `claimEventSeqs` 建立持久 claim；同一终态前可重放，终态后新 claim 不再注入。Tavern branch/swipe 复制不含正文的 lineage；中断后原 session 新消息不重复注入。 |
-| 功能按钮与周目分支 | 已实现，待统一验收 | hidden/displayOverride、已有 variant 切换、回复 swipe、中断 durable 前缀交接，以及从 adopted 回复创建可继续对话的新周目。显示编辑已改为 conversation 内多行编辑器；覆盖冻结为最终显示文本，空覆盖仍可恢复。右 swipe 在末项自动生成新 variant；分支提交 catalog 后广播刷新，避免新 session 暂时落入未归类区。 |
+| 功能按钮与树状周目分支 | 已实现，待统一验收 | displayOverride、已有 variant 切换、同操作行左右 swipe、新周目分支与同周目回退。屏蔽已移除，旧 hidden 投影不再隐藏正文。context 输出的右 swipe 重跑最近真实用户 turn，不重发 context。timeline 用 parent/head 保存各 swipe 后续；活动 branch anchor session 仍归入原周目。 |
 | 显示正则顺序 | 已实现，待统一验收 | 全局、预设、角色卡各自支持与预设 prompt 相同的指针拖拽、收缩线和落点占位动画；保存分别写工作区文档或原生 `regex_scripts` 数组。跨来源禁止拖动，组合顺序固定全局→预设→角色卡。 |
-| 子 agent / 上下文注入显示 | 已实现，待统一验收 | v2 消息保留模型 `role` 并增加 `origin`；魔丸完全隐藏 reasoning/context，不画用户气泡也不提供展开。context 触发输出禁用回复切换/重新生成，控制器拒绝重发 context；正则清空输出时同步隐藏动作。 |
+| 子 agent / 上下文注入显示 | 已实现，待统一验收 | v2 消息保留模型 `role` 并增加 `origin`；魔丸完全隐藏 reasoning/context，不画用户气泡也不提供展开。context 触发输出的 retry 向前定位真实用户 turn，控制器拒绝重发 context；正则清空输出时同步隐藏动作。 |
 
 表内“已验收”行为曾在 DSH 0.1.0-rc.8 通过用户验收。此后的 P0 加固、mode service/动画、默认工作区、功能按钮与周目分支已通过自动测试，仍等待 rc.8 统一人工验收和最终发布回归。
 
@@ -72,5 +72,5 @@ timeline 只保存 session/event 范围引用；路径 API 有根目录、相对
 ## 更新后的验收顺序
 
 1. P0 自动实现已完成；统一验收长 history、六种 import claim 场景、双标签页 CAS、损坏文件、focus 和 symlink/junction 防护。
-2. 统一验收 mode service/动画、默认 RP 工作区和功能按钮：正常及中断回复、swipe/adopt、hidden/displayOverride、Tavern 周目分支。
+2. 统一验收 mode service/动画、默认 RP 工作区和功能按钮：正常及中断回复、树状 swipe/adopt、displayOverride、新周目分支与同周目回退。
 3. 完成第三方前端指南、`npm run check`、`npm run pack:check`、跟踪文件/包清单扫描和 rc.8 安装冒烟。

@@ -101,9 +101,10 @@ v2 不为每个按钮增加专用 endpoint。推荐组合：
 | 隐藏渲染 | CAS 修改目标 node 的 `hidden` |
 | 显示层改字 | CAS 修改 `displayOverride`；DSH 原文不变 |
 | 左右切已有回复 | CAS 修改 `adoptedVariantId` → GET focus → `sessions.open` |
-| 回复 swipe | 读 adopted 原用户消息 → branch 到用户前 → user-message 原文 → 等 durable pair → CAS 添加/采用 variant → focus |
+| 回复 swipe | 由当前输出向前找最近真实 user/steering → branch 到用户前 → user-message 原文 → 等 durable pair → CAS 添加/采用 variant 并移动 tree head → focus；不得重发 context |
 | 修改并重新生成 | 与 swipe 相同，只把新分支的 user-message 换成编辑后的文字；内置魔丸不提供此按钮 |
 | 周目分支 | branch 到 adopted assistant 末尾 → 验证子 session durable 区间 → 创建目录/timeline 副本 → 把副本末 adopted 指针重定向到子 session → catalog CAS → focus |
+| 同周目回退 | 复用相同 branch/继承区间校验 → timeline CAS 只移动活动 head → focus；不建目录、timeline 副本或 catalog 行 |
 | 新发一轮 | user-message → 等 messages 完成 → CAS append QA 指针 |
 
 branch、session、目录、timeline 和 catalog 是多个原子操作，不构成跨资源大事务。副作用只做一次，CAS 冲突只重放纯文档意图；中途失败根据 operation log、已返回 session id、文件回读和稳定错误码恢复。不要通过删除或改写 DSH 历史伪造回滚。

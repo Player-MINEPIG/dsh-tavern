@@ -1,5 +1,12 @@
 # Development changelog
 
+## 2026-08-21 — Branch RP timelines and retry from message actions
+
+- Added additive `parentVariantId` and active `head` timeline fields so each swipe can own a different downstream branch while DSH messages remain authoritative pointers.
+- Put previous/next/retry on the normal message action row. Context-triggered output retries the nearest preceding real user turn and never resends injected context as human input.
+- Added same-playthrough rollback by reusing the existing DSH branch and inherited-range validation without creating a catalog row; removed the hide action and retired hidden projection.
+- Kept card greeting metadata outside assistant output regex so an output-only “keep `<正文>`” rule cannot erase the opening dock.
+
 ## 2026-08-21 — Order display regex and freeze manual overrides
 
 - Added drag ordering inside each global, preset, and character regex source;
