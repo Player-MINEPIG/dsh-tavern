@@ -20,7 +20,7 @@ import { API_V1 as API_ROOT, CLIENT_REFRESH_EVENT, PLUGIN_ID } from '../../ident
 const h = createLocalizedElement(createElement)
 
 const css = `
-.dtu-panel{position:absolute;top:0;right:0;bottom:0;width:min(440px,calc(100vw - 56px));pointer-events:auto;border-left:1px solid var(--dsw-alias-border-l2);box-shadow:var(--ds-shadow-3,-8px 0 28px rgba(0,0,0,.18));background:var(--dsw-alias-bg-base);color:var(--dsw-alias-label-primary);display:flex;flex-direction:column;font-family:Inter,var(--dsw-font-family),sans-serif}.dtu-header{height:52px;box-sizing:border-box;display:flex;align-items:center;gap:8px;padding:0 14px;border-bottom:1px solid var(--dsw-alias-border-l2);flex:none}.dtu-title{font-size:16px;font-weight:650;flex:1}.dtu-close{border:0;background:transparent;color:var(--dsw-alias-label-tertiary);cursor:pointer;border-radius:7px;padding:6px 8px;font-size:14px}.dtu-body{min-height:0;overflow:auto;padding:12px;display:flex;flex-direction:column;gap:12px}.dtu-toolbar,.dtu-actions{display:grid;grid-template-columns:1fr 1fr;gap:8px}.dtu-button{min-height:36px;border:1px solid var(--dsw-alias-border-l2);border-radius:8px;background:var(--dsw-alias-button-secondary-fill,var(--dsw-alias-bg-base));color:var(--dsw-alias-label-primary);cursor:pointer;padding:7px 10px;font-size:13px}.dtu-button:hover:not(:disabled){background:var(--dsw-alias-interactive-bg-hover)}.dtu-button:disabled{opacity:.5;cursor:default}.dtu-primary{background:var(--dsw-alias-state-business-primary);color:white;border-color:transparent}.dtu-danger{color:var(--dsw-alias-state-error)}.dtu-field{display:flex;flex-direction:column;gap:5px}.dtu-label{font-size:12px;color:var(--dsw-alias-label-tertiary);font-weight:600}.dtu-input,.dtu-textarea,.dtu-select{box-sizing:border-box;width:100%;border:1px solid var(--dsw-alias-border-l2);border-radius:7px;background:var(--dsw-alias-bg-base);color:var(--dsw-alias-label-primary);font:inherit;font-size:13px;padding:8px 9px}.dtu-input,.dtu-select{height:36px}.dtu-textarea{min-height:220px;line-height:1.5;resize:vertical}.dtu-note{font-size:13px;line-height:1.5;color:var(--dsw-alias-label-tertiary);margin:0;overflow-wrap:anywhere}.dtu-status{font-size:13px;line-height:1.45;border-radius:7px;padding:7px 9px;background:var(--dsw-specific-tip);overflow-wrap:anywhere}.dtu-status[data-error=true]{color:var(--dsw-alias-state-error)}.dtu-status[data-warning=true]{color:var(--dsw-alias-state-warning,var(--dsw-alias-label-primary))}.dtu-editor{border-top:1px solid var(--dsw-alias-border-l1);padding-top:12px;display:flex;flex-direction:column;gap:10px}.dtu-bindings{display:flex;flex-direction:column;gap:8px;border:1px solid var(--dsw-alias-border-l1);border-radius:8px;padding:9px}.dtu-check{display:flex;align-items:flex-start;gap:8px;font-size:13px;line-height:1.4}.dtu-section-title{font-size:14px;margin:4px 0 0}.dtu-footer{position:sticky;bottom:-12px;margin:0 -12px -12px;padding:10px 12px;background:var(--dsw-alias-bg-base);border-top:1px solid var(--dsw-alias-border-l2)}
+.dtu-panel{position:absolute;top:0;right:0;bottom:0;width:min(440px,calc(100vw - 56px));pointer-events:auto;border-left:1px solid var(--dsw-alias-border-l2);box-shadow:var(--ds-shadow-3,-8px 0 28px rgba(0,0,0,.18));background:var(--dsw-alias-bg-base);color:var(--dsw-alias-label-primary);display:flex;flex-direction:column;font-family:Inter,var(--dsw-font-family),sans-serif}.dtu-header{height:52px;box-sizing:border-box;display:flex;align-items:center;gap:8px;padding:0 14px;border-bottom:1px solid var(--dsw-alias-border-l2);flex:none}.dtu-title{font-size:16px;font-weight:650;flex:1}.dtu-close{border:0;background:transparent;color:var(--dsw-alias-label-tertiary);cursor:pointer;border-radius:7px;padding:6px 8px;font-size:14px}.dtu-body{min-height:0;overflow:auto;padding:12px;display:flex;flex-direction:column;gap:12px}.dtu-toolbar{display:grid;grid-template-columns:1fr;gap:8px}.dtu-actions,.dtu-footer{display:grid;grid-template-columns:1fr 1fr;gap:8px}.dtu-browse{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:8px}.dtu-button{min-height:36px;border:1px solid var(--dsw-alias-border-l2);border-radius:8px;background:var(--dsw-alias-button-secondary-fill,var(--dsw-alias-bg-base));color:var(--dsw-alias-label-primary);cursor:pointer;padding:7px 10px;font-size:13px}.dtu-button:hover:not(:disabled){background:var(--dsw-alias-interactive-bg-hover)}.dtu-button:disabled{opacity:.5;cursor:default}.dtu-primary{background:var(--dsw-alias-state-business-primary);color:white;border-color:transparent}.dtu-danger{color:var(--dsw-alias-state-error)}.dtu-field{display:flex;flex-direction:column;gap:5px}.dtu-label{font-size:12px;color:var(--dsw-alias-label-tertiary);font-weight:600}.dtu-input,.dtu-textarea,.dtu-select{box-sizing:border-box;width:100%;border:1px solid var(--dsw-alias-border-l2);border-radius:7px;background:var(--dsw-alias-bg-base);color:var(--dsw-alias-label-primary);font:inherit;font-size:13px;padding:8px 9px}.dtu-input,.dtu-select{height:36px}.dtu-textarea{min-height:220px;line-height:1.5;resize:vertical}.dtu-note{font-size:13px;line-height:1.5;color:var(--dsw-alias-label-tertiary);margin:0;overflow-wrap:anywhere}.dtu-status{font-size:13px;line-height:1.45;border-radius:7px;padding:7px 9px;background:var(--dsw-specific-tip);overflow-wrap:anywhere}.dtu-status[data-error=true]{color:var(--dsw-alias-state-error)}.dtu-status[data-warning=true]{color:var(--dsw-alias-state-warning,var(--dsw-alias-label-primary))}.dtu-editor{border-top:1px solid var(--dsw-alias-border-l1);padding-top:12px;display:flex;flex-direction:column;gap:10px}.dtu-bindings{display:flex;flex-direction:column;gap:8px;border:1px solid var(--dsw-alias-border-l1);border-radius:8px;padding:9px}.dtu-check{display:flex;align-items:flex-start;gap:8px;font-size:13px;line-height:1.4}.dtu-section-title{font-size:14px;margin:4px 0 0}.dtu-footer{position:sticky;bottom:-12px;margin:0 -12px -12px;padding:10px 12px;background:var(--dsw-alias-bg-base);border-top:1px solid var(--dsw-alias-border-l2)}
 `
 
 function errorMessage(data, status) {
@@ -230,16 +230,22 @@ export function UserPanel({ sessionId, sessionBlank, close }) {
     h('div', { className: 'dtu-body' },
       h('div', { className: 'dtu-toolbar' },
         h('button', { className: 'dtu-button', type: 'button', disabled: busy, onClick: create }, uiMessage('user.create')),
-        h('button', { className: 'dtu-button', type: 'button', disabled: busy, onClick: () => { if (!dirty || window.confirm(unwrapText(uiMessage('user.confirmDiscardRefresh')))) run(() => refresh(draft?.id), 'user.status.refreshed') } }, uiMessage('common.refresh')),
       ),
-      h(Field, { label: uiMessage('user.browse') }, h('select', {
-        className: 'dtu-select',
-        value: draft?.id ?? '',
-        disabled: busy || users === null || users.length === 0,
-        onChange: event => chooseUser(event.target.value),
-      },
-      ...(users?.length ? [] : [h('option', { key: 'empty', value: '' }, uiMessage('user.libraryEmpty'))]),
-      ...(users ?? []).map(user => h('option', { key: user.id, value: user.id }, rawText(user.name))))),
+      h(Field, { label: uiMessage('user.browse') }, h('div', { className: 'dtu-browse' },
+        h('select', {
+          className: 'dtu-select',
+          value: draft?.id ?? '',
+          disabled: busy || users === null || users.length === 0,
+          onChange: event => chooseUser(event.target.value),
+        },
+        ...(users?.length ? [] : [h('option', { key: 'empty', value: '' }, uiMessage('user.libraryEmpty'))]),
+        ...(users ?? []).map(user => h('option', { key: user.id, value: user.id }, rawText(user.name)))),
+        h('button', { className: 'dtu-button', type: 'button', disabled: busy, onClick: () => { if (!dirty || window.confirm(unwrapText(uiMessage('user.confirmDiscardRefresh')))) run(() => refresh(draft?.id), 'user.status.refreshed') } }, uiMessage('common.refresh')),
+      )),
+      h('div', { className: 'dtu-actions' },
+        h('button', { className: 'dtu-button dtu-primary', type: 'button', disabled: busy || !sessionId || draft === null || dirty, onClick: bind }, dirty ? uiMessage('user.saveFirst') : selectedUserId === draft?.id ? uiMessage('user.refreshBinding') : uiMessage('user.bind')),
+        h('button', { className: 'dtu-button', type: 'button', disabled: busy || !sessionId || selectedUserId === null, onClick: unbind }, uiMessage('user.unbind')),
+      ),
       h('p', { className: 'dtu-note' }, uiMessage('user.sessionBinding', { session: sessionId || translate('common.none'), name: activeName })),
       h('div', { className: 'dtu-status', 'data-error': status.error || undefined, role: 'status', 'aria-live': 'polite' }, statusText(status)),
       dirty
@@ -250,10 +256,6 @@ export function UserPanel({ sessionId, sessionBlank, close }) {
         : h('div', { className: 'dtu-editor' },
           h(Field, { label: uiMessage('user.name', { macro: '{{user}}' }) }, h('input', { className: 'dtu-input', value: draft.name, maxLength: 200, onChange: event => setDraft(current => ({ ...current, name: event.target.value })) })),
           h(Field, { label: uiMessage('user.description') }, h('textarea', { className: 'dtu-textarea', value: draft.description, maxLength: 100000, onChange: event => setDraft(current => ({ ...current, description: event.target.value })) })),
-          h('div', { className: 'dtu-actions' },
-            h('button', { className: 'dtu-button dtu-primary', type: 'button', disabled: busy || !resourceDirty, onClick: save }, resourceDirty ? uiMessage('user.saveResource') : uiMessage('user.resourceSaved')),
-            h('button', { className: 'dtu-button dtu-primary', type: 'button', disabled: busy || !sessionId || dirty, onClick: bind }, dirty ? uiMessage('user.saveFirst') : selectedUserId === draft.id ? uiMessage('user.refreshBinding') : uiMessage('user.bind')),
-          ),
           h('h2', { className: 'dtu-section-title' }, uiMessage('user.worldBooksTitle')),
           h('p', { className: 'dtu-note' }, uiMessage('user.worldBooksHint')),
           worldBooks?.length
@@ -272,9 +274,11 @@ export function UserPanel({ sessionId, sessionBlank, close }) {
             h('button', { className: 'dtu-button dtu-primary', type: 'button', disabled: busy || !bindingDirty, onClick: saveWorldBooks }, bindingDirty ? uiMessage('user.saveWorldBooks') : uiMessage('user.worldBooksSaved')),
             h('button', { className: 'dtu-button', type: 'button', disabled: busy || worldBookIds.length === 0, onClick: () => setWorldBookIds([]) }, uiMessage('user.clearPending')),
           ),
-          h('button', { className: 'dtu-button', type: 'button', disabled: busy || !sessionId || selectedUserId === null, onClick: unbind }, uiMessage('user.unbind')),
           h('p', { className: 'dtu-note' }, uiMessage('user.identityNote')),
-          h('div', { className: 'dtu-footer' }, h('button', { className: 'dtu-button dtu-danger', type: 'button', disabled: busy, onClick: remove }, uiMessage('user.delete'))),
+          h('div', { className: 'dtu-footer' },
+            h('button', { className: 'dtu-button dtu-primary', type: 'button', disabled: busy || !resourceDirty, onClick: save }, resourceDirty ? uiMessage('user.saveResource') : uiMessage('user.resourceSaved')),
+            h('button', { className: 'dtu-button dtu-danger', type: 'button', disabled: busy, onClick: remove }, uiMessage('user.delete')),
+          ),
         ),
     ),
   )
