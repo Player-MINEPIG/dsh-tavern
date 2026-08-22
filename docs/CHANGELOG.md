@@ -1,5 +1,13 @@
 # Development changelog
 
+
+## 2026-08-22 — Stabilize RP admission and add character-card ordering
+
+- Deferred the Mowan workspace admission overlay until the authoritative workspace read finishes. A valid existing binding no longer renders a transient selection dialog while switching modes; failures and confirmed missing bindings still open the blocking gate.
+- Renamed the ordinary-session notice around its actual boundary: the session is not attached to a playthrough in the selected RP workspace. The notice no longer implies that a stale character selection alone makes the session part of a playthrough.
+- Added preset-style pointer dragging for character-card groups in the RP sidebar. Before customization, cards sort by `updatedAt` descending and then name/ID A→Z; dragging persists an exact resource order without rewriting card documents or timestamps.
+- Added the v1 `PUT /characters/order` resource contract, bounded durable `characterOrder` state, deletion cleanup, optimistic UI updates with authoritative read-back, and API/client/store regressions.
+- Rebuilt the browser bundle and completed the full suite with 488 passing, 2 fixture-dependent skips, and 0 failures.
 ## 2026-08-22 — Require a verified RP workspace before entering Mowan
 
 - Added a blocking first-run workspace admission view that consumes the public DSH workspace list and the existing v2 workspace authority.
