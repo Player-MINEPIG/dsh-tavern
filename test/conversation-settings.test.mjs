@@ -75,6 +75,7 @@ test('Mowan conversation components consume separate display variables', () => {
   assert.match(shell, /surface === 'conversation-settings'/)
   assert.match(shell, /conversationSettingsRequest\('PUT'/)
   assert.match(chat, /--dtv-rp-text-scale/)
+  assert.match(chat, /dtv-play-chat-running[^}]*font-size:calc\(12px \* var\(--dtv-rp-text-scale,1\)\)/)
   assert.match(notice, /--dtv-rp-text-scale/)
   assert.match(notice, /max-width:var\(--dsh-composer-card-max-width,100%\);align-self:center/)
   assert.match(actions, /--dtv-rp-action-scale/)

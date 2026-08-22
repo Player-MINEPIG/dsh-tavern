@@ -5,6 +5,7 @@
 
 - Displayed the reply position from the first variant onward, beginning at `1/1` instead of waiting for a second swipe.
 - Added an optimistic RP-only thinking projection as soon as “generate next swipe” is clicked. It preserves the user turn, temporarily replaces the old assistant display, restores it on failure, and yields to the new session only after the existing atomic branch/timeline workflow succeeds.
+- Made both optimistic and live “thinking” labels consume the RP conversation text scale instead of keeping a fixed 12 px size.
 
 
 ## 2026-08-22 — Separate character sort modes and recover missing cards
