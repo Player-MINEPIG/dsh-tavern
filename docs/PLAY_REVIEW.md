@@ -1,5 +1,7 @@
 # 周目 v2 实现审查记录
 
+[English](PLAY_REVIEW_en.md)
+
 审查基线：`codex/v2-lingzhu-mowan-frontend`，最初审查为 `6ede09d`（2026-08-20）；风险关闭与产品实现记录已更新至 `bb10a3b`（2026-08-21）。
 原始发现保留作审计证据；每一项当前状态以“已接受的处理决定”和 implementation audit 为准。
 

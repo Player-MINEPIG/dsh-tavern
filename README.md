@@ -1,12 +1,10 @@
 # pmp-dsh-tavern
 
+[English](README_en.md)
+
 为 DeepSeek Harness（DSH）提供 Tavern 资源兼容、RP 工作流与第三方前端协议的开源插件。
 
 > 当前文档对应 `2.0.0`。项目代码采用 [MIT License](LICENSE)。
-
-> **图片占位｜v2.0 项目封面 / Happy Path 视频封面**
-> 建议文件名：`docs/assets/v2-hero.png`
-> 建议内容：DT 悬浮球、DSH 原生模式与 RP 视图并列，并标注“灵珠魔丸 v2.0”。
 
 ## 设计理念
 
@@ -85,18 +83,18 @@ npm run plugin:install
 
 ![对话](.\docs\assets\对话.png)
 
-完整操作与边界见 [中文使用指南](docs/USAGE.zh-CN.md)。
+完整操作与边界见 [中文使用指南](docs/USAGE_zh-CN.md)。
 
 ## v2.0 功能概览
 
 | 模块 | 主要能力 | 详细文档 |
 | --- | --- | --- |
-| 资源 | ST 预设、V1/V2/V3 JSON/PNG 角色卡、独立/内嵌世界书、用户资料、资源绑定与导出 | [中文使用指南](docs/USAGE.zh-CN.md) |
-| RP 前端 | 角色卡/周目侧栏、greeting、正文渲染、显示正则、swipe、分支、回退和显示层编辑 | [中文使用指南](docs/USAGE.zh-CN.md) |
+| 资源 | ST 预设、V1/V2/V3 JSON/PNG 角色卡、独立/内嵌世界书、用户资料、资源绑定与导出 | [中文使用指南](docs/USAGE_zh-CN.md) |
+| RP 前端 | 角色卡/周目侧栏、greeting、正文渲染、显示正则、swipe、分支、回退和显示层编辑 | [中文使用指南](docs/USAGE_zh-CN.md) |
 | 周目数据 | DSH 权威 session、树状 timeline、工作区 catalog、外部记录首轮只读注入、静态 HTML 与 ST JSONL 导出 | [API](docs/API.md) · [架构](docs/ARCHITECTURE.md) |
 | 安全 | RP 权限叠加、同源/loopback API、工作区路径防护、CAS、DOMPurify、无正文 operation log | [RP 安全模式](docs/RP_SECURE_MODE.md) · [安全策略](SECURITY.md) |
 | 调试 | Tavern Trace 展示本轮资源、世界书命中与 request/header 对齐信息，不记录完整正文 | [DSH 消息流](docs/DSH_MESSAGE_FLOW.md) |
-| 第三方开发 | v2 HTTP API、`pmpDshTavernChrome` 模式服务、DSH slots/store 与独立客户端接入 | [第三方 RP 前端接入](docs/FRONTEND_INTEGRATION.zh-CN.md) |
+| 第三方开发 | v2 HTTP API、`pmpDshTavernChrome` 模式服务、DSH slots/store 与独立客户端接入 | [第三方 RP 前端接入](docs/FRONTEND_INTEGRATION_zh-CN.md) |
 
 > **图片占位｜v2.0 其他功能拼图**
 > 建议文件名：`docs/assets/v2-feature-overview.png`
@@ -114,18 +112,21 @@ npm run plugin:install
 
 ## 文档导航
 
-- [中文使用指南](docs/USAGE.zh-CN.md)：全部用户功能、操作步骤与兼容边界
-- [安装与卸载](docs/INSTALLATION.md)：安装参数、更新恢复、备份与卸载
-- [HTTP API](docs/API.md)：v1 资源合同与 v2 RP 前端稳定面
-- [第三方 RP 前端接入](docs/FRONTEND_INTEGRATION.zh-CN.md)：模式生命周期、交付方式与动作组合
-- [架构说明](docs/ARCHITECTURE.md)：最小改动原则、模块边界与 DSH 公开 seam
-- [Loader contract](docs/LOADER_CONTRACT.md)：session selection、profile 组合与运行时限制
-- [DSH 消息流](docs/DSH_MESSAGE_FLOW.md)：DSH 原生流程以及插件介入点
-- [Prompt pipeline](docs/PROMPT_PIPELINE.md)：ST 格式、宏、角色字段与世界书兼容范围
-- [RP 安全模式](docs/RP_SECURE_MODE.md)：RP 模式拦截与不拦截的能力
-- [世界书设计](docs/world-book/DESIGN.md)：World Info 格式、匹配与投影契约
-- [发布变更](docs/CHANGELOG.md)
-- [安全策略](SECURITY.md)
+默认文档为中文。英文入口见 [README_en.md](README_en.md)（无截图）。
+
+- [中文使用指南](docs/USAGE_zh-CN.md) · [Usage](docs/USAGE_en.md)：全部用户功能、操作步骤与兼容边界
+- [安装与卸载](docs/INSTALLATION.md) · [Installation](docs/INSTALLATION_en.md)：安装参数、更新恢复、备份与卸载
+- [HTTP API](docs/API.md) · [HTTP API](docs/API_en.md)：v1 资源合同与 v2 RP 前端稳定面
+- [第三方 RP 前端接入](docs/FRONTEND_INTEGRATION_zh-CN.md) · [RP frontend integration](docs/FRONTEND_INTEGRATION_en.md)：模式生命周期、交付方式与动作组合
+- [架构说明](docs/ARCHITECTURE.md) · [Architecture](docs/ARCHITECTURE_en.md)：最小改动原则、模块边界与 DSH 公开 seam
+- [Loader contract](docs/LOADER_CONTRACT.md) · [Loader contract](docs/LOADER_CONTRACT_en.md)：session selection、profile 组合与运行时限制
+- [DSH 消息流](docs/DSH_MESSAGE_FLOW.md) · [DSH message flow](docs/DSH_MESSAGE_FLOW_en.md)：DSH 原生流程以及插件介入点
+- [Prompt pipeline](docs/PROMPT_PIPELINE.md) · [Prompt pipeline](docs/PROMPT_PIPELINE_en.md)：ST 格式、宏、角色字段与世界书兼容范围
+- [RP 安全模式](docs/RP_SECURE_MODE.md) · [RP secure mode](docs/RP_SECURE_MODE_en.md)：RP 模式拦截与不拦截的能力
+- [世界书设计](docs/world-book/DESIGN.md) · [World-book design](docs/world-book/DESIGN_en.md)：World Info 格式、匹配与投影契约
+- [周目审查记录](docs/PLAY_REVIEW.md) · [Playthrough review](docs/PLAY_REVIEW_en.md)
+- [发布变更](docs/CHANGELOG.md)（英文）
+- [安全策略](SECURITY.md) · [Security policy](SECURITY_en.md)
 
 ## 共同开发
 

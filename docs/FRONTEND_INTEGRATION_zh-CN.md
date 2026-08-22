@@ -1,5 +1,7 @@
 # 第三方 RP 前端接入指南
 
+[English](FRONTEND_INTEGRATION_en.md)
+
 状态：面向 dsh-tavern 2.0 与 DSH rc.8。HTTP 字段以 [API.md](API.md) 为准；本页说明交付方式、模式生命周期和产品动作组合。
 
 ## 1. 先理解双模式兼容边界

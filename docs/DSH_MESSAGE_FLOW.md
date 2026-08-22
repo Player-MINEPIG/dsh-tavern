@@ -1,5 +1,7 @@
 # DSH 与 dsh-tavern（DT）消息流
 
+[English](DSH_MESSAGE_FLOW_en.md)
+
 状态：消息流基线于 2026-08-18 按本机 `@deepseek-ai/dsh 0.1.0-rc.6` 的公开 README 与已安装源码核对；2.0 发布候选已在 2026-08-22 对 DSH rc.8 做自动回归和安装验证，但没有把后续段落冒充为一次新的完整上游源码审计。本文分别描述 DSH 原生流程、DT 自身流程、DT 对 DSH 的介入，以及安装 DT 后一次完整模型 step 的实际流程；它不是 README。
 
 本文中的 `DT` 是 `dsh-tavern` 的简称。SillyTavern（ST）是 DT 兼容的资源格式与部分语义来源，不是本插件或其界面的产品身份。

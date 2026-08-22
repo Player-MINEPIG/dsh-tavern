@@ -1,5 +1,16 @@
 # Development changelog
 
+## 2026-08-22 — Add English documentation pair
+
+- Added English counterparts for the public Chinese guides. The default README remains Chinese and keeps screenshots; `README_en.md` has no images.
+- Paired localized files with `_en.md` / `_zh-CN.md` suffixes and language-switch links.
+- Listed the new English files in `package.json#files` so the published package ships both languages. This changelog stays English-only.
+
+## 2026-08-22 — Make installation Chinese by default
+
+- `docs/INSTALLATION.md` is now the Chinese install contract. English moved to `docs/INSTALLATION_en.md`.
+- Language-suffixed docs use underscore (`_en.md`, `_zh-CN.md`) rather than an extra dot.
+
 ## 2026-08-22 — Surface complete import failures
 
 - Added one localized modal for imports that fail before a usable resource or verified playthrough binding is produced. Successful imports with compatibility diagnostics do not open it.
@@ -903,7 +914,7 @@ current instructions.
 - Added only the project-owner-supplied DT launcher screenshot to the README;
   removed the other screenshot placeholders because detailed UI demonstration
   will be provided by the project video.
-- Added `docs/USAGE.zh-CN.md` with detailed launcher, preset, character,
+- Added `docs/USAGE_zh-CN.md` with detailed launcher, preset, character,
   three-source world-book, user, template/new-session, Trace and data-lifecycle
   workflows.
 - Replaced the old three-feature integration checklist with the current release

@@ -1,5 +1,7 @@
 # WorldBookModel 设计与接口契约
 
+[English](DESIGN_en.md)
+
 状态：2026-08-14 已采用，并由首个公开发布候选版本的共享 parser/matcher/loader adapter 实现。
 
 ## 模块边界

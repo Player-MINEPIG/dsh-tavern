@@ -1,5 +1,7 @@
 # dsh-tavern 中文使用指南
 
+[English](USAGE_en.md)
+
 状态：2026-08-22，对应当前悬浮球交互、前端显示模式切换、RP 工作区准入、角色卡创建/编辑、周目生命周期、外部记录开场绑定、RP 安全模式与委派子 agent 继承父级 Tavern 选择。本文介绍实际操作；消息流、架构和安全契约分别见 `DSH_MESSAGE_FLOW.md`、`ARCHITECTURE.md` 与 `LOADER_CONTRACT.md`。RP 拦/不拦清单见 [RP_SECURE_MODE.md](RP_SECURE_MODE.md)。
 
 ## Quick Start：最短 RP 路径
@@ -187,7 +189,7 @@ import-context-bindings.json   外部记录运行时 claim 状态
 
 重复执行安装脚本会先暂存并恢复插件内 `data/`。卸载脚本默认备份到 `<DSH_HOME>/backups/pmp-dsh-tavern/<timestamp>/`；只有确认不需要数据时才使用 `--no-backup`。外部导入源文件和外部 `storageDir` 不会被卸载器删除。
 
-完整安装、刷新恢复、跨平台参数和卸载说明见 `INSTALLATION.md`。
+完整安装、刷新恢复、跨平台参数和卸载说明见 [安装与卸载](INSTALLATION.md)。
 
 ## 11. 当前兼容边界
 

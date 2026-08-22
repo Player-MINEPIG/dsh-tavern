@@ -1,5 +1,7 @@
 # dsh-tavern package architecture
 
+[English](ARCHITECTURE_en.md)
+
 状态：2026-08-22，安装标识为 `pmp-dsh-tavern`；HTTP 挂载 `/pmp-dsh-tavern/api`，资源走 `/v1`，扮演表面合同走 `/v2`。RP 会话叠加与委派子 agent 固化父选择仍然有效。本文是当前架构决策与发布审查门槛，不是产品 README。
 
 ## 决策结论

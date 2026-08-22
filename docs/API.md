@@ -1,5 +1,7 @@
 # HTTP API
 
+[English](API_en.md)
+
 状态：2026-08-22。根：`/pmp-dsh-tavern/api`。鉴权仍是本机 TCP peer、Host、Origin、Content-Type（见 loader 安全中间件）。成功响应带 `ok: true`；失败带 `ok: false` 与 `error`。
 
 两栏合同：
@@ -262,4 +264,4 @@ Tavern client 通过 rc.8 公开 Cordis `ctx.provide` 注册稳定服务名 `pmp
 
 内部 transport 使用 `GET /v2/chrome/events`；不支持 EventSource、连接失败或断线时降级为初始 GET、window focus 回读和1秒轮询，SSE恢复后停止轮询。BroadcastChannel 不属于合同。服务卸载会停止transport并清理所有 `when` effect；多个第三方插件的注册互相独立，各自只清理自己拥有的slot/UI。
 
-第三方 DSH 插件、独立 Web 客户端、surface 所有权、原子动作组合与卸载降级的完整说明见 [FRONTEND_INTEGRATION.zh-CN.md](FRONTEND_INTEGRATION.zh-CN.md)。当前没有配置文件一键替换魔丸、frontend provider registry 或动态 bundle loader。
+第三方 DSH 插件、独立 Web 客户端、surface 所有权、原子动作组合与卸载降级的完整说明见 [FRONTEND_INTEGRATION_zh-CN.md](FRONTEND_INTEGRATION_zh-CN.md)。当前没有配置文件一键替换魔丸、frontend provider registry 或动态 bundle loader。

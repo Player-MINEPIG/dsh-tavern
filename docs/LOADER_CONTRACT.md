@@ -1,5 +1,7 @@
 # Unified Tavern loader contract
 
+[English](LOADER_CONTRACT_en.md)
+
 状态：2026-08-18，已包含 RP 会话叠加（`selection.rp` + `rp:policy`）以及 delegated subagent 固化父选择。本文是资源与加载器的运行契约，不是 README。
 
 ## 目标与所有权

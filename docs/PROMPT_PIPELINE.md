@@ -1,5 +1,7 @@
 # Prompt pipeline and compatibility map
 
+[English](PROMPT_PIPELINE_en.md)
+
 状态：2026-08-18，已对齐 RP `rp:policy` 段与当前输入提前识别实现。
 
 本文说明 Tavern 资源在 SillyTavern、TauriTavern 和 dsh-tavern 中如何进入一次模型请求，并明确当前版本没有实现的映射。DSH 自身的 turn/step、Inbox、Session、system assembly 和 request/header 顺序另见 `docs/DSH_MESSAGE_FLOW.md`。它是技术评审文档，不是产品 README。
