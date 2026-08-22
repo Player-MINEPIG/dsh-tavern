@@ -4,7 +4,7 @@
 
 ## 模块边界
 
-新模块位于 `packages/world-book`，只使用 JavaScript 平台能力。它不导入 DSH、Node 文件系统、UI、网络、preset 或 `tavern-loader`。根包只增加 `dsh-tavern/world-book` 子路径导出。
+纯模块位于 `packages/world-book`，只使用 JavaScript 平台能力。它不导入 DSH、Node 文件系统、UI、网络、preset 或 `tavern-loader`。根包通过 `pmp-dsh-tavern/world-book` 子路径导出；可安装插件仍只有根包一个。
 
 ```text
 ST world JSON ───────────┐
@@ -81,7 +81,7 @@ nextCard.data.character_book = embedded
 
 ## 公共 API
 
-根包子路径为 `dsh-tavern/world-book`：
+根包子路径为 `pmp-dsh-tavern/world-book`：
 
 - `detectWorldBookFormat(input)`：按 `entries` 外形识别，不抛出 JSON/结构错误；
 - `validateWorldBook(input, options)`：返回 format、valid 和结构化 diagnostics；
@@ -97,24 +97,10 @@ nextCard.data.character_book = embedded
 
 ## registerWorldBookAdapter 桥接
 
-loader 分支的 `registerWorldBookAdapter().resolve({ selection, sessionId, agent, conversationText, character, context })` 是用例组合点。本模块不注册它；未来管理层 adapter 只需在该回调中读取 `selection.worldBookIds` 对应的已标准化模型，把 loader 已提供的 `conversationText` 交给 matcher，再投影和合并：
+根 loader 已通过 `createWorldBookAdapter(worldBookStore, options)` 注册管理层 adapter。`resolve({ selection, worldBookSelection, agent, conversationText, activationContext, character })` 是用例组合点：它按 session 显式、用户绑定、预设绑定、角色卡绑定的稳定顺序读取 `selection.worldBookIds` 对应的独立书，记录每本书的实际绑定来源，再把角色卡内嵌书加入同一次有界匹配、投影和合并。本纯模块本身仍不注册 Host seam，也不读取这些存储：
 
 ```js
-loader.registerWorldBookAdapter({
-  resolve({ selection, conversationText, character, context }) {
-    const results = selection.worldBookIds.map((id) => {
-      const model = worldBookStore.get(id)
-      const candidates = computeWorldBookCandidates(model, {
-        text: conversationText,
-        // tokenizer cost、角色来源文本和显式策略值由该用例层补充
-      })
-      return projectWorldBookForLoader(model, candidates, {
-        resource: { id, name: model.name },
-      })
-    })
-    return mergeWorldBookLoaderResults(results)
-  },
-})
+loader.registerWorldBookAdapter(createWorldBookAdapter(worldBookStore, options))
 ```
 
 角色卡模块解析出的 embedded `character_book` 也得到同一个 `WorldBookModel`，进入同一 matcher/projector，不应复制匹配实现。

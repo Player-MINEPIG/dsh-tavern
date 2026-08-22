@@ -111,13 +111,13 @@ rc.6 的 `agent/inbox/spliced` 是公开、持久的 Session event；插入、�
 
 以下是升级候选，不代表当前轮次已经授权修改：
 
-- 用户与 assistant 正文不直接迁移到 `MessageText` / `MarkdownText`。未覆盖消息从 DSH 权威 content 按“宏替换 → ST 显示正则（全局 → 预设 → 角色卡，各来源保持数组顺序）→ Showdown 2.1.0 → DOMPurify”执行浏览器显示管线；因此自定义/XML 包裹标签不会阻断其内部 Markdown，嵌套标签和 ST 的宽松引用代码围栏语义也能保留。规则页只允许同来源拖拽，保存后全局写工作区文档，资源规则写回原生 `regex_scripts` 数组。DSH `MarkdownText` 会省略 raw HTML，不能作为 ST HTML 兼容渲染器；以后升级 Showdown、清理策略或复用 DSH 低层能力，必须分别对照 ST 输出与恶意 HTML 用例，证明不会改变 Tavern 显示语义或越过 sanitizer 后再单独验收。
+- 用户与 assistant 正文不直接迁移到 `MessageText` / `MarkdownText`。未覆盖消息从 DSH 权威 content 按“宏替换 → ST 显示正则（全局 → 预设 → 角色卡，各来源保持数组顺序）→ Marked 18.0.10 → DOMPurify”执行浏览器显示管线；因此自定义/XML 包裹标签不会阻断其内部 Markdown，嵌套标签和 ST 的宽松引用代码围栏语义也能保留。规则页只允许同来源拖拽，保存后全局写工作区文档，资源规则写回原生 `regex_scripts` 数组。DSH `MarkdownText` 会省略 raw HTML，不能作为 ST HTML 兼容渲染器；以后升级 Marked、清理策略或复用 DSH 低层能力，必须分别对照 ST 输出与恶意 HTML 用例，证明不会改变 Tavern 显示语义或越过 sanitizer 后再单独验收。
 - 魔丸不渲染 reasoning 或 runtime context，也不提供展开入口；公开 `DisclosureRow` / Think icon 因此不再是该视图的迁移目标。用户需要运行细节时回到 DSH 原生“对话”。操作按钮仍可逐步采用公开图标与 `Tooltip`；DSH bundle 内未公开的 `ReasoningRow`、`MessageIconActions` 不属于可依赖接口。
 - DSH 的模型消息 `role` 与界面来源不是同一维度：公开 ConversationNode 已把运行时注入表示为 `kind: "context"`，但持久 history 投影仍可能给它 `role: "user"`。v2 因此在不改变 `role` 的前提下增加 additive `origin.kind`，并保留 `producer` / `form` / `summary` 等可选来源元数据。RP 前端必须按 `origin` 投影气泡、隐藏/单独呈现上下文和计算动作能力，不能靠文本、位置或“是否最后一段输出”猜测。
 - timeline 以 `parentVariantId` 与活动 `head` 表示树状分支；显示、focus 和新 QA 对账只沿 head 的祖先路径工作。head 的 session 可以是刚 branch、尚无新 QA 的 continuation anchor，因此侧栏归类也必须把 head session 视为周目成员。旧平面 timeline 继续可读，下一次对账进入树结构。
 - 内置动作行归属于 durable QA，而不是某一段可见 assistant 正文。真实 user/steering 输出直接重试自身；context 触发的父输出向前寻找最近真实用户 turn 并重跑整轮，控制器绝不把 `origin=context` 当用户提示重发。分支新周目与同周目回退复用同一 DSH branch/继承区间校验，区别仅是创建 catalog 副本还是移动原 timeline head。屏蔽动作和 hidden 投影已移除；显示正则只决定各段正文是否渲染，一次 QA 无论包含多少段 assistant 输出、甚至全部被清空，都只在 QA 末尾保留一组动作；timeline 引用和 provenance 始终保留。
 - DSH message surface replacement 可反复遮蔽当前节点，原始 append-only 事件仍可读取，但当前公开语义只有“连续区间 → 一个 message”，没有 `unreplace`、原子多 message 恢复或 per-request history projection。它适合原生 compaction/checkpoint，不适合承载 RP 分支树。DT 因此用多个公开 branch session 保存各条 continuation，让 DSH 历史、role/tool 配对、原生对话视图和卸载回退保持有效；timeline 只把这些 session 指针组合成活动周目路径。完整取舍见 `DSH_MESSAGE_FLOW.md` §1.1。
-- `displayOverride` 由 conversation 内的多行编辑器修改；保存、取消/Esc 均留在当前回复位置，不使用浏览器 `window.prompt`。覆盖值定义为最终显示文本，跳过后续宏与显示正则，仍进入 Showdown/DOMPurify。空字符串也是有效覆盖并保留恢复按钮；恢复为 `null` 后重新从 DSH 原文执行当前显示管线。保存继续通过既有 node controller 与 timeline CAS 写显示元数据，不改 DSH 原文或模型上下文。
+- `displayOverride` 由 conversation 内的多行编辑器修改；保存、取消/Esc 均留在当前回复位置，不使用浏览器 `window.prompt`。覆盖值定义为最终显示文本，跳过后续宏与显示正则，仍进入 Marked/DOMPurify。空字符串也是有效覆盖并保留恢复按钮；恢复为 `null` 后重新从 DSH 原文执行当前显示管线。保存继续通过既有 node controller 与 timeline CAS 写显示元数据，不改 DSH 原文或模型上下文。
 - **已批准为待办：** 周目导入/导出、资源选择等锚定菜单采用公开 `Menu`（含 portal、滚动/resize 重定位、紧凑模式），减少窄侧栏裁切和自维护定位 CSS；编辑、删除确认逐步采用公开 `Modal` / `Button` / `Input`，复制采用 `writeClipboard`。迁移仍按功能拆分提交和验收。
 - 已移除曾注册在 `conversation.input.left` 的重复导入/导出 `+`；周目 IO 只保留在侧边栏 `PlayIoMenu`，不会占用或改写原生 composer 左侧动作。
 - 早期为消息滚动写过本地锚点、遮挡量与 composer 高度补偿；已改回 DSH scrollport 的 `scrollTop = scrollHeight` 语义。以后先确认 Host 的滚动所有权，不再用固定像素模拟 sticky composer。
@@ -170,7 +170,7 @@ rc.8 的默认视图仍由 DSH chat store 持有，`conversation.view` owner 不
 
 1. 运行格式兼容验收，证明 ST 解析、未知字段保留和归一化结果稳定；
 2. 运行加载验收，证明 per-session 选择、system profile、call config、当前输入激活、API 与 Trace 不回归；
-3. 运行 `npm run check` 与 `npm run pack:check`，确认生成 bundle 稳定且发布包不包含 docs、测试、运行数据或外部 fixture；
+3. 运行 `npm run check` 与 `npm run pack:check`，确认生成 bundle 稳定；npm 包应包含 `package.json#files` 明确列出的公开文档和图片资源，但不得包含测试、运行数据、私有开发计划或外部 fixture；
 4. 用隔离 `DSH_HOME` 安装根插件并启动真实 DSH，至少完成 launcher、资源绑定、新会话和一次 request/header/Trace 对齐检查；
 5. 扫描跟踪文件和 npm 包清单，确认没有本机绝对路径、API key、私有 fixture 或第三方导入内容；
 6. README、使用指南、安全风险、验收记录和 changelog 与实现同步后再合并、打标签和推送。

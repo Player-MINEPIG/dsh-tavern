@@ -58,17 +58,19 @@ description、personality、scenario、example dialogue 等字段会按预设 ma
 
 ## 4. 世界书
 
-世界书面板把来源分成三类：
+世界书面板直接陈列五路来源：
 
 - 当前 session 显式选择的独立世界书；
 - 当前用户绑定的独立世界书；
+- 当前预设绑定的独立世界书；
+- 当前角色卡绑定的独立世界书；
 - 当前角色卡内嵌的 `character_book`。
 
-独立世界书可以导入、创建、编辑、导出和删除。勾选当前 session 的世界书后，面板会显示未应用状态；必须点击蓝色应用按钮才写入 session。用户绑定书和角色内嵌书分别显示来源，不会混成同一资源文档；独立书可从任一来源入口打开同一个编辑器。
+独立世界书可以导入、创建、编辑、导出和删除。勾选当前 session 的世界书后，面板会显示未应用状态；必须点击蓝色应用按钮才写入 session。用户、预设、角色卡绑定书和角色内嵌书分别显示来源，不会混成同一资源文档；独立书可从任一来源入口打开同一个编辑器。
 
 条目编辑支持主/附加关键词（英文逗号或中文逗号分隔）、secondary logic、常驻、启用、大小写、全词匹配、position、order、probability 和正文。折叠标题会显示常驻、禁用或关键词条件。普通关键词会扫描有界的 durable history 与本步骤 claimed 输入，所以空会话第一条消息也可以在同一轮激活；JavaScript regex 关键词默认阻断。
 
-组合顺序为 session 显式独立书、用户绑定独立书、角色内嵌书。ID 稳定去重，前一来源优先。每次请求的 matcher 输入合计最多 10,000 条；后面的资源若不能整体放入会跳过并产生诊断。
+组合顺序为 session 显式独立书 → 用户绑定独立书 → 预设绑定独立书 → 角色卡绑定独立书 → 角色内嵌书。独立书先按 ID 稳定去重，前一来源优先；角色内嵌书随后以独立资源参与同一次 matcher。每次请求的 matcher 输入合计最多 10,000 条；后面的资源若不能整体放入会跳过并产生诊断。
 
 ## 5. 用户
 
@@ -123,6 +125,9 @@ footer 中央的导入按钮可从 SillyTavern JSON/JSONL 绑定外部记录；�
 “从这里分支为新周目”复制截至该回复的活动路径并加入一个新周目；“在本周目从这里继续”只把当前周目的活动 head 移到该回复的 DSH branch session。二者都保留旧 DSH 历史，区别仅在是否创建新周目。回退后的下一轮形成树状后续，旧后续仍存储但不在当前活动路径渲染。
 
 点击回复下方的“修改显示文字”后，编辑器直接在该回复位置展开为可拉伸的多行输入框，不调用浏览器单行 prompt。保存只更新 timeline 的 `displayOverride`，取消或按 Esc 放弃本次修改；DSH 原始 assistant 消息和后续模型上下文都不会改变。保存值是最终显示文本，之后不再执行宏替换或显示正则，但仍经过 Markdown/HTML 与 DOMPurify 安全渲染。即使保存为空也保留“恢复原回复”按钮；恢复会清除覆盖并重新从 DSH 原文按当前正则生成显示结果。
+
+周目右侧三点菜单提供“导出静态 HTML”和“导出 SillyTavern JSONL”。静态 HTML 导出当前活动路径上的 greeting、用户消息和按当前显示规则处理后的 assistant 正文，适合直接阅读或分享。SillyTavern JSONL 导出 greeting、当前活动路径及每组 QA 的 `swipes` / `swipe_id`，可导入 ST；它会保存每个活动 QA 已知的回复切换项，但 ST JSONL 不能表达完整周目树，因此不会保存未采用后续分支、跨 session lineage 或 Tavern catalog。需要保留完整可切换树时，应备份整个 RP 工作区，而不是把 JSONL 当作项目备份。
+
 [周目审查记录](PLAY_REVIEW.md)。
 导入文件和绑定摘要保存在已选扮演工作区根内；服务端会校验路径、哈希和 `schemaVersion: 1`/QA 结构。import parser 不做 summary、QA 切片或 256 KiB/2,000 QA 人为上限；模型上下文超限交给 DSH/provider，通用工作区文件仍有 1 MiB 文件层上限。
 
@@ -134,7 +139,7 @@ Tavern Trace 位于 Conversation、Trajectory 同级视图，用来解释某一 
 
 Trace 不保存完整 Tavern profile、用户消息、资源正文或工具 schema，也不能替代 DSH 的 `request/header`；后者仍是模型实际请求头的权威记录。Trace 使用有界插件存储，刷新或 Host 重启后可恢复近期记录。
 
-## 8. RP 安全模式
+## 9. RP 安全模式
 
 RP 是当前 session 的叠加，不是 DSH agent preset。
 
@@ -146,7 +151,7 @@ RP 是当前 session 的叠加，不是 DSH agent preset。
 
 完整拦/不拦清单见 [RP_SECURE_MODE.md](RP_SECURE_MODE.md)。
 
-## 9. 数据、备份与卸载
+## 10. 数据、备份与卸载
 
 默认数据位于：
 
@@ -158,26 +163,32 @@ RP 是当前 session 的叠加，不是 DSH agent preset。
 
 ```text
 presets/                       预设标准化文档
+state.json                     当前默认预设状态
 characters/                    角色卡当前文档
 character-artifacts/           PNG 导入留下的封面图（无卡数据）
+character-state.json           角色卡排序、缺失卡墓碑等 UI 状态
 world-books/                   独立世界书
 users/                         用户名字与描述
 session-selections.json        per-session 选择（含 RP 状态）
 user-world-book-bindings.json  用户—世界书关系
+resource-world-book-bindings.json 预设/角色卡—世界书关系
 session-templates.json         配置模板（含 RP 投影）
 tavern-traces.json             有界 Trace 元数据
 ui-settings.json               全局语言、缩放与绑卡跟随 RP
 conversation-settings.json     魔丸正文/开场白与消息动作按钮缩放
 rp-policy.json                 可选的 rp:policy 提示词
+chrome.json                    灵珠/魔丸模式与角色卡排序模式
+play-workspace.json            当前 RP 工作区绑定
+import-context-bindings.json   外部记录运行时 claim 状态
 ```
 
-如插件配置指定外部 `storageDir`，以上数据改存该目录。备份时复制整个 `data/`，不要只复制 `presets/`。
+如插件配置指定外部 `storageDir`，以上数据改存该目录。备份时复制整个 `data/`，不要只复制 `presets/`。`play-workspace.json` 只保存 RP 工作区指针；真正的 `catalog.json`、各周目 `timeline.json`、显示正则和外部导入记录位于所选 DSH 工作区内，完整备份还必须复制该工作区。
 
 重复执行安装脚本会先暂存并恢复插件内 `data/`。卸载脚本默认备份到 `<DSH_HOME>/backups/pmp-dsh-tavern/<timestamp>/`；只有确认不需要数据时才使用 `--no-backup`。外部导入源文件和外部 `storageDir` 不会被卸载器删除。
 
 完整安装、刷新恢复、跨平台参数和卸载说明见 `INSTALLATION.md`。
 
-## 10. 当前兼容边界
+## 11. 当前兼容边界
 
 魔丸展开菜单中的“对话设置”与“界面设置”相互独立。“正文与开场白字号”只缩放魔丸里的用户/助手消息、开场白和“正在思考”状态；“消息按钮尺寸”只缩放每轮末尾的复制、左右 swipe、分支、回退和编辑操作。两项均可在 75%–150% 间选择，保存后立即生效并在刷新后保持，恢复默认会把两者单独还原为 100%。它们不会改变 DSH 原生对话、Tavern 外层面板、输入栏、提示词、历史或导出内容。
 

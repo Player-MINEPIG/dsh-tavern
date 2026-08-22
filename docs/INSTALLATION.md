@@ -107,10 +107,19 @@ tree: presets, normalized character cards, PNG cover images under
 `world-books/`, three-field user resources under
 `users/`, bounded Trace metadata in `tavern-traces.json`, and per-session
 resource selections. Copy the whole directory when backing up; copying only
-`presets/` loses other resources, audit metadata and bindings. The same tree
-also holds `ui-settings.json` (locale, outer UI scale, character-follow RP),
-`conversation-settings.json` (Mowan RP text and message-action scale), and optional
-`rp-policy.json`.
+`presets/` loses other resources, audit metadata and bindings. In particular,
+the same tree holds `state.json`, `character-state.json`,
+`user-world-book-bindings.json`, `resource-world-book-bindings.json`,
+`session-templates.json`, `chrome.json`, `play-workspace.json`,
+`import-context-bindings.json`, `ui-settings.json` (locale, outer UI scale,
+character-follow RP), `conversation-settings.json` (Mowan RP text and
+message-action scale), and optional `rp-policy.json`.
+
+`play-workspace.json` is only a pointer. The selected DSH RP workspace owns the
+actual `catalog.json`, per-playthrough `timeline.json`, display regex document,
+and imported context files. Back up that workspace as well if playthroughs must
+be recoverable; an ST JSONL export preserves only the selected linear chat and
+known swipes, not the complete Tavern branch topology.
 
 Choose another backup directory or deliberately skip backup with:
 
