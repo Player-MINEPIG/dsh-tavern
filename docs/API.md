@@ -132,7 +132,7 @@ durable history。当前已实现的基础语义是：首次 assembly 必须按�
 | --- | --- | --- | --- |
 | PUT | `/characters/order` | `{ mode, characterIds? }` | `{ ok: true, characters: [...], sorting: { mode } }` |
 
-`mode` 必须是 `updated`、`name`、`custom` 之一。只有 `custom` 接受 `characterIds`，且必须恰好包含当前存储中的全部角色卡 ID，每个 ID 只出现一次，最多 4096 项；未知、重复或遗漏均返回 400，失败时原状态不变。成功模式和自定义顺序分别保存在 `character-state.json` 的 `characterSortMode`、`characterOrder`。自定义模式中新建或导入的角色卡追加到末尾，删除角色卡同步清理其顺序项。`GET /characters` 同时返回 `sorting: { mode }`。
+`mode` 必须是 `updated`、`name`、`custom` 之一。`custom` 不带 `characterIds` 表示切回并恢复已保存的自定义顺序；若尚无保存序列，则以当前资源顺序初始化，并把切出期间新增的卡追加到末尾。只有真正重排时才传 `characterIds`，它必须恰好包含当前存储中的全部角色卡 ID，每个 ID 只出现一次，最多 4096 项；未知、重复或遗漏均返回 400，失败时原状态不变。其它模式拒绝 `characterIds`。成功模式和自定义顺序分别保存在 `character-state.json` 的 `characterSortMode`、`characterOrder`。自定义模式中新建或导入的角色卡追加到末尾，删除角色卡同步清理其顺序项。`GET /characters` 同时返回 `sorting: { mode }`。
 
 ### 缺失角色卡与重新关联
 

@@ -314,6 +314,19 @@ export class CharacterStore {
       this.saveState()
       return { characters: this.list(), sorting: this.sorting() }
     }
+    if (characterIds === undefined) {
+      const current = this.list()
+      const knownIds = new Set(current.map(character => character.id))
+      const next = this.state.characterOrder.filter(id => knownIds.has(id))
+      const retained = new Set(next)
+      for (const character of current) {
+        if (!retained.has(character.id)) next.push(character.id)
+      }
+      this.state.characterSortMode = 'custom'
+      this.state.characterOrder = next
+      this.saveState()
+      return { characters: this.list(), sorting: this.sorting() }
+    }
     if (!Array.isArray(characterIds)) throw new TypeError('characterIds must be an array')
     if (characterIds.length > MAX_CHARACTER_ORDER_ENTRIES) {
       throw new TypeError(`characterIds cannot contain more than ${MAX_CHARACTER_ORDER_ENTRIES} entries`)

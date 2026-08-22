@@ -13528,8 +13528,7 @@ function PlayWorkspaceBrowser({
     setReorderingCharacters(true);
     setStatus(null);
     try {
-      const characterIds = mode === "custom" ? resources.characters.map((character) => character.id) : void 0;
-      const response = await playClient.putCharacterOrder(mode, characterIds);
+      const response = await playClient.putCharacterOrder(mode);
       setResources((current3) => current3 === null ? null : {
         ...current3,
         characters: Array.isArray(response?.characters) ? response.characters : current3.characters,

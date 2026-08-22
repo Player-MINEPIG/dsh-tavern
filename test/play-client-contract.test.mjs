@@ -289,4 +289,7 @@ test('live client writes character order through the v1 resource contract', asyn
   assert.equal(calls[0].url, `${API_V1}/characters/order`)
   assert.equal(calls[0].options.method, 'PUT')
   assert.deepEqual(JSON.parse(calls[0].options.body), { mode: 'custom', characterIds: ['b', 'a'] })
+
+  await client.putCharacterOrder('custom')
+  assert.deepEqual(JSON.parse(calls[1].options.body), { mode: 'custom' })
 })

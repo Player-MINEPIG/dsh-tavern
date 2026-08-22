@@ -165,6 +165,11 @@ test('character API persists an exact custom sidebar order', async () => {
     const named = await invoke(handler, { method: 'PUT', url: '/pmp-dsh-tavern/api/v1/characters/order', body: { mode: 'name' } })
     assert.equal(named.status, 200)
     assert.deepEqual(named.json.sorting, { mode: 'name' })
+
+    const restored = await invoke(handler, { method: 'PUT', url: '/pmp-dsh-tavern/api/v1/characters/order', body: { mode: 'custom' } })
+    assert.equal(restored.status, 200)
+    assert.deepEqual(restored.json.characters.map(character => character.id), ['a', 'b'])
+    assert.deepEqual(restored.json.sorting, { mode: 'custom' })
   } finally {
     rmSync(directory, { recursive: true, force: true })
   }
