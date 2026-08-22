@@ -2,6 +2,19 @@
 
 状态：2026-08-22，对应当前悬浮球交互、前端显示模式切换、RP 工作区准入、角色卡创建/编辑、周目生命周期、外部记录开场绑定、RP 安全模式与委派子 agent 继承父级 Tavern 选择。本文介绍实际操作；消息流、架构和安全契约分别见 `DSH_MESSAGE_FLOW.md`、`ARCHITECTURE.md` 与 `LOADER_CONTRACT.md`。RP 拦/不拦清单见 [RP_SECURE_MODE.md](RP_SECURE_MODE.md)。
 
+## Quick Start：最短 RP 路径
+
+第一次使用时，按下面顺序完成一轮即可；带图片占位和视频对应画面的版本见根目录 [README](../README.md#quick-start从角色卡到第一轮-rp-对话)。
+
+1. 左键打开 `DT` 悬浮球，在“角色卡”页面导入 ST JSON 或 PNG 角色卡。
+2. 回到 DSH 原生界面，使用 DSH 自己的入口创建一个准备专门用于 RP 的工作区。
+3. 右键单击 `DT` 切到魔丸；首次进入时，从 DSH 已有工作区中明确选择刚创建的 RP 工作区。
+4. 在 RP 侧边栏点击目标角色卡右侧的 `+`，创建或复用该角色最近的空周目。
+5. 在 opening dock 中选择 greeting；没有备选时直接保留当前开场白。
+6. 使用 DSH 原生输入栏发送第一条用户消息，开始对话。
+
+这条路径不会把 greeting 写成历史，也不会复制 DSH session。导入其他资源、显示正则、swipe、分支、回退、外部记录和导出均可在第一轮跑通后继续配置。
+
 ## 1. 打开和切换面板
 
 安装并重启 DSH Web 后，页面会显示始终标记为 `DT` 的悬浮球：native（灵珠）为蓝白配色，play（魔丸）为红黑配色。
@@ -96,7 +109,7 @@ turn，以及是否已有外部导入 QA；因此连续点击不会无限增加�
 
 空周目尚未出现顶栏时，greeting 会显示在原生对话栏下方的 opening dock 中。左右按钮切换
 角色卡 alternate greeting；角色卡没有 greeting 时仍保留空白区域和同一 footer 布局。点击
-footer 中央的导入按钮可从 JSON/JSONL 或本插件 bundle 绑定外部记录；已有绑定时按钮变为
+footer 中央的导入按钮可从 SillyTavern JSON/JSONL 绑定外部记录；已有绑定时按钮变为
 换绑和解绑。绑定后 dock 显示最近三轮 QA，显示内容只是本地渲染预览。
 
 外部记录只允许绑定到仍为空的 root session。第一次实际发送请求时，loader 只在同一 profile snapshot 提供至少一个公开 `claimEventSeqs` 后建立持久 claim，再将内容作为转义的、标明 `untrusted` 的只读上下文交给模型；它不会成为 DSH durable history，也不会写入 `timeline.json`，所以不会伪造一轮 QA。没有 claim 的 view/assembly 不注入，也不会消费 pending；同一 claim identity 在 terminal 前可重复 assembly，`turn/end` 只会消费已 claimed 绑定并保存 event seq、turn、reason.kind 等非正文元数据。DSH provider 的 request retry 不会消费或重置 claim；Tavern swipe 通过公开 branch 复制不含正文的 lineage，子 session 需要新的 claim；中断后原 session 的新 claim 不再注入。真实 user/assistant 消息、开放 turn 或绑定已 claim 后，都不能再改绑或解绑。

@@ -88,7 +88,7 @@ controller 会串行同角色创建；内置 caller 使用服务端 CAS 的有�
 durable history。当前已实现的基础语义是：首次 assembly 必须按原用户 turn/event 的公开 `claimEventSeqs` 建立持久 claim；同一 claim identity 可重复 assembly，未 claim 的 pending 不会因 view 或无关 turn/end 被消费。retry/swipe lineage 与取消/中断终态已实现：终态只保存 event seq、turn、reason.kind 等非正文元数据；同一请求在 terminal 前可重复 assembly，terminal 后新 claim 不再注入；Tavern swipe 仅通过公开 branch 接缝复制 selection/lineage，不宣称拦截所有第三方原生 fork。
 
 请求体为 `{ reference: { path, expectedHash? } }`。文件必须位于已绑定工作区根内，文档为
-`schemaVersion: 1` 且含 `qa` 数组。import parser 不做 256 KiB 或 QA 数量的人为上下文截断，也不做 summary/切片；模型上下文是否超限交给 DSH/provider。通用 `/workspace/files` 仍有 1 MiB 文件层读写上限。普通 SillyTavern JSON/JSONL 与本插件 bundle 可由客户端解析后写入该上下文文件。greeting 仍是展示投影，不伪造 assistant 历史。
+`schemaVersion: 1` 且含 `qa` 数组。import parser 不做 256 KiB 或 QA 数量的人为上下文截断，也不做 summary/切片；模型上下文是否超限交给 DSH/provider。通用 `/workspace/files` 仍有 1 MiB 文件层读写上限。普通 SillyTavern JSON/JSONL 可由客户端解析后写入该上下文文件。2.0 不再公开 portable bundle 格式；ST JSONL 只表达当前活动线性历史，不能保存完整周目树拓扑。greeting 仍是展示投影，不伪造 assistant 历史。
 
 ### 2.0 发布加固（已实现并纳入分组自动回归）
 
