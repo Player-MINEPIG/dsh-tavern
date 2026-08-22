@@ -74,6 +74,6 @@
   "license": "MIT",
   "dependencies": {
     "dompurify": "3.4.14",
-    "showdown": "2.1.0"
+    "marked": "18.0.10"
   }
 }

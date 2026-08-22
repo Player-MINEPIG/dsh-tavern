@@ -1,6 +1,6 @@
 import DOMPurifyFactory from 'dompurify'
+import { Marked } from 'marked'
 import { createElement } from 'react'
-import showdown from 'showdown'
 
 const SANITIZE_OPTIONS = Object.freeze({
   USE_PROFILES: { html: true },
@@ -8,16 +8,78 @@ const SANITIZE_OPTIONS = Object.freeze({
   FORBID_ATTR: ['srcdoc'],
 })
 
-const markdownConverter = new showdown.Converter({
-  disableForced4SpacesIndentedSublists: true,
-  emoji: true,
-  literalMidWordUnderscores: true,
-  parseImgDimensions: true,
-  simpleLineBreaks: true,
-  strikethrough: true,
-  tables: true,
-  underline: true,
+const markdownConverter = new Marked({
+  async: false,
+  breaks: true,
+  gfm: true,
 })
+
+const STANDALONE_WRAPPER_TAG = /^\s*(<\/?[\p{L}][^<>]*?>)\s*$/u
+const FENCE_MARKER = /^\s{0,3}(`{3,}|~{3,})/
+
+function normalizeStQuotedFences(source) {
+  let quotedFence = null
+  return source
+    .split('\n')
+    .map(line => {
+      if (quotedFence) {
+        const closing = line.match(/^\s*>\s*(`{3,}|~{3,})\s*$/)
+        if (closing && closing[1][0] === quotedFence.marker) {
+          quotedFence = null
+          return `> ${closing[1]}`
+        }
+        return /^\s*>/.test(line) ? line : `> ${line}`
+      }
+
+      const opening = line.match(/^\s*>\s*(`{3,}|~{3,})(.*)$/)
+      if (!opening) return line
+      quotedFence = { marker: opening[1][0] }
+      return `> ${opening[1]}${opening[2]}`
+    })
+    .join('\n')
+}
+
+function protectStandaloneWrapperTags(source) {
+  const wrappers = []
+  let fence = null
+  let prefix = 'DSHTAVERNWRAPPER'
+
+  while (source.includes(prefix)) prefix += 'X'
+
+  const text = source
+    .split('\n')
+    .map(line => {
+      const fenceMatch = line.match(FENCE_MARKER)
+      if (fenceMatch) {
+        const marker = fenceMatch[1]
+        if (!fence) fence = marker[0]
+        else if (marker[0] === fence && marker.length >= 3) fence = null
+        return line
+      }
+      if (fence) return line
+
+      const tagMatch = line.match(STANDALONE_WRAPPER_TAG)
+      if (!tagMatch) return line
+
+      const token = `${prefix}${wrappers.length}END`
+      wrappers.push(tagMatch[1])
+      return token
+    })
+    .join('\n')
+
+  return { prefix, text, wrappers }
+}
+
+function restoreStandaloneWrapperTags(html, { prefix, wrappers }) {
+  let restored = html
+  wrappers.forEach((tag, index) => {
+    const token = `${prefix}${index}END`
+    restored = restored
+      .replace(`<p>${token}</p>`, tag)
+      .replaceAll(token, tag)
+  })
+  return restored
+}
 
 function escapeHtml(value) {
   return String(value)
@@ -37,7 +99,10 @@ function browserPurifier() {
 }
 
 export function markdownToHtml(text) {
-  return markdownConverter.makeHtml(String(text ?? ''))
+  const normalizedSource = normalizeStQuotedFences(String(text ?? ''))
+  const protectedSource = protectStandaloneWrapperTags(normalizedSource)
+  const html = markdownConverter.parse(protectedSource.text)
+  return restoreStandaloneWrapperTags(html, protectedSource)
 }
 
 export function sanitizeRenderedHtml(html, {
