@@ -23,6 +23,7 @@ import {
   defaultCharacterSelection,
 } from './client-state.js'
 import { API_V1 as API_ROOT, CLIENT_REFRESH_EVENT, PLUGIN_ID } from '../../identity.js'
+import { announceImportFailure } from '../../client/src/import-failure.js'
 
 const h = createLocalizedElement(createElement)
 const RUN_SKIPPED = Symbol('run-skipped')
@@ -194,13 +195,19 @@ export function CharacterPanel({ sessionId, sessionBlank, hasConversationHistory
   }, [dirty, refresh, run])
 
   const importFile = useCallback((file) => run(async () => {
-    const response = await fetch(`${API_ROOT}/characters/import?filename=${encodeURIComponent(file.name)}`, {
-      method: 'POST',
-      headers: { 'Content-Type': file.type || 'application/octet-stream' },
-      body: file,
-    })
-    const data = await response.json().catch(() => null)
-    if (!response.ok || data?.ok === false) throw new Error(errorMessage(data, response.status))
+    let data
+    try {
+      const response = await fetch(`${API_ROOT}/characters/import?filename=${encodeURIComponent(file.name)}`, {
+        method: 'POST',
+        headers: { 'Content-Type': file.type || 'application/octet-stream' },
+        body: file,
+      })
+      data = await response.json().catch(() => null)
+      if (!response.ok || data?.ok === false) throw new Error(errorMessage(data, response.status))
+    } catch (error) {
+      announceImportFailure(error)
+      throw error
+    }
     await refresh(data.character.id)
     announceTavernRefresh()
     if (fileRef.current !== null) fileRef.current.value = ''
@@ -342,6 +349,7 @@ export function CharacterPanel({ sessionId, sessionBlank, hasConversationHistory
         h('button', { className: 'dcc-button', type: 'button', disabled: busy, onClick: create }, uiMessage('character.create')),
         h('input', { ref: fileRef, hidden: true, type: 'file', accept: '.json,.png,application/json,image/png', onChange: (event) => {
           const file = event.target.files?.[0]
+          event.target.value = ''
           if (file !== undefined) importFile(file)
         } }),
       ),

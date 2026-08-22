@@ -50,7 +50,13 @@ import {
   setClientConversationSettings,
 } from './conversation-settings.js'
 import { createPlaythroughController } from './play/create.js'
-import { API_V1 as API_ROOT, CHROME_SERVICE_NAME, CLIENT_REFRESH_EVENT, PLUGIN_ID } from '../../identity.js'
+import {
+  API_V1 as API_ROOT,
+  CHROME_SERVICE_NAME,
+  CLIENT_IMPORT_FAILURE_EVENT,
+  CLIENT_REFRESH_EVENT,
+  PLUGIN_ID,
+} from '../../identity.js'
 
 const h = createLocalizedElement(createElement)
 
@@ -78,7 +84,7 @@ const css = `
 .dtv-modal-backdrop{position:absolute;inset:0;z-index:20;pointer-events:auto;background:rgba(0,0,0,.48);display:flex;align-items:center;justify-content:center;padding:24px}
 .dtv-regex-panel .dtv-body{flex:1 1 auto;overscroll-behavior:contain}.dtv-regex-section{gap:8px}.dtv-regex-section-title{display:flex;align-items:center;gap:8px}.dtv-regex-section-title .dtv-item-count{margin-left:auto}.dtv-regex-rule{transition:border-color .12s,box-shadow .12s}.dtv-regex-rule[data-dragging=true]{height:4px;min-height:4px;margin:5px 10px;border:0;border-radius:999px;background:var(--dsw-alias-state-business-primary);box-shadow:0 0 0 1px color-mix(in srgb,var(--dsw-alias-state-business-primary) 25%,transparent)}.dtv-regex-rule[data-dragging=true]>*{opacity:0}.dtv-regex-drop-placeholder{box-sizing:border-box;height:42px;border:2px dashed var(--dsw-alias-state-business-primary);border-radius:8px;background:color-mix(in srgb,var(--dsw-alias-state-business-primary) 7%,transparent);display:flex;align-items:center;justify-content:center;color:var(--dsw-alias-state-business-primary);font-size:12px;font-weight:600;pointer-events:none}.dtv-regex-drag{flex:none;border:0;background:transparent;cursor:grab;color:var(--dsw-alias-label-tertiary);padding:1px 2px;font-size:15px;line-height:1;touch-action:none;user-select:none}.dtv-regex-drag:active{cursor:grabbing}.dtv-regex-drag:disabled{cursor:default;opacity:.5}.dtv-regex-rule .dtv-input:disabled,.dtv-regex-rule .dtv-select:disabled,.dtv-regex-rule .dtv-textarea:disabled{pointer-events:none}.dtv-regex-expression{font-family:var(--dsw-font-mono,ui-monospace,SFMono-Regular,Consolas,monospace);min-height:72px}.dtv-regex-footer{position:sticky;bottom:-12px;display:grid;grid-template-columns:1fr 1fr;gap:8px;padding:10px 0 12px;background:var(--dsw-alias-bg-base)}
 .dtv-modal{width:min(420px,100%);border-radius:12px;background:var(--dsw-alias-bg-base);border:1px solid var(--dsw-alias-border-l2);box-shadow:var(--ds-shadow-3,0 16px 40px rgba(0,0,0,.28));padding:18px 16px;display:flex;flex-direction:column;gap:14px}
-.dtv-modal-body{margin:0;font-size:13px;line-height:1.55}.dtv-modal .dtv-button{align-self:flex-end;min-width:88px}
+.dtv-modal-title{margin:0;font-size:16px;line-height:1.35}.dtv-modal-body{margin:0;font-size:13px;line-height:1.55;overflow-wrap:anywhere}.dtv-modal .dtv-button{align-self:flex-end;min-width:88px}
 .dtv-workspace-admission{position:absolute;inset:0;z-index:12;pointer-events:auto;background:var(--dsw-alias-bg-base);display:flex;align-items:center;justify-content:center;padding:clamp(18px,5vw,64px)}
 .dtv-workspace-admission-card{box-sizing:border-box;width:min(720px,100%);max-height:min(720px,calc(100vh - 36px));overflow:auto;border:1px solid var(--dsw-alias-border-l2);border-radius:18px;background:var(--dsw-alias-bg-base);box-shadow:var(--ds-shadow-3,0 18px 52px rgba(0,0,0,.24));padding:clamp(20px,4vw,36px);display:flex;flex-direction:column;gap:16px}
 .dtv-workspace-admission-title{margin:0;font-size:clamp(20px,3vw,28px);line-height:1.25}.dtv-workspace-admission-copy{margin:0;color:var(--dsw-alias-label-secondary);font-size:13px;line-height:1.65}
@@ -565,6 +571,21 @@ function RpHighRiskDialog({ onDismiss }) {
   )
 }
 
+function ImportFailureDialog({ message, onDismiss }) {
+  return h('div', {
+    className: 'dtv-modal-backdrop',
+    role: 'alertdialog',
+    'aria-modal': 'true',
+    'aria-labelledby': 'dtv-import-failure-title',
+    'aria-describedby': 'dtv-import-failure-body',
+  },
+  h('div', { className: 'dtv-modal' },
+    h('h2', { id: 'dtv-import-failure-title', className: 'dtv-modal-title' }, uiMessage('import.failureTitle')),
+    h('p', { id: 'dtv-import-failure-body', className: 'dtv-modal-body' }, rawText(message)),
+    h('button', { className: 'dtv-button dtv-primary', type: 'button', onClick: onDismiss }, uiMessage('common.close')),
+  ))
+}
+
 function WorkspaceAdmission({ setting, state, error, busy, selectWorkspace, reload, returnToNative }) {
   const loading = state === 'loading' || state === 'idle'
   const unavailable = setting?.current?.unavailable === true
@@ -641,6 +662,7 @@ function TavernShell({ useSessions, useWorkspaces, createCleanSession, createCon
   const rpWorkspaceBusyRef = useRef(false)
   const rpWorkspaceLoadGeneration = useRef(0)
   const [rpAlert, setRpAlert] = useState(null)
+  const [importFailure, setImportFailure] = useState(null)
   const drag = useRef(null)
   const suppressClick = useRef(false)
   const chromeController = useRef(null)
@@ -1002,15 +1024,25 @@ function TavernShell({ useSessions, useWorkspaces, createCleanSession, createCon
   }
 
   useEffect(() => {
+    const onImportFailure = event => {
+      const message = typeof event?.detail?.message === 'string' ? event.detail.message.trim() : ''
+      if (message !== '') setImportFailure(message.slice(0, 1000))
+    }
+    window.addEventListener(CLIENT_IMPORT_FAILURE_EVENT, onImportFailure)
+    return () => window.removeEventListener(CLIENT_IMPORT_FAILURE_EVENT, onImportFailure)
+  }, [])
+
+  useEffect(() => {
     const onKeyDown = event => {
       if (event.key !== 'Escape') return
-      if (rpAlert !== null) dismissRpAlert()
+      if (importFailure !== null) setImportFailure(null)
+      else if (rpAlert !== null) dismissRpAlert()
       else if (menuOpen) setMenuOpen(false)
       else if (surface !== null) setSurface(null)
     }
     window.addEventListener('keydown', onKeyDown)
     return () => window.removeEventListener('keydown', onKeyDown)
-  }, [menuOpen, rpAlert, surface])
+  }, [importFailure, menuOpen, rpAlert, surface])
 
   const startDrag = event => {
     if (event.button !== 0) return
@@ -1146,6 +1178,7 @@ function TavernShell({ useSessions, useWorkspaces, createCleanSession, createCon
 
   return h('div', { className: 'dtv-layer', lang: uiSettings.locale, 'data-chrome': chromeMode, 'data-surface-open': surface !== null, style: { '--dtv-ui-scale': uiSettings.scale } },
     panel,
+    importFailure === null ? null : h(ImportFailureDialog, { message: importFailure, onDismiss: () => setImportFailure(null) }),
     rpAlert === null ? null : h(RpHighRiskDialog, { onDismiss: dismissRpAlert }),
     workspaceAdmissionOpen ? h(WorkspaceAdmission, {
       setting: rpWorkspaceSetting,

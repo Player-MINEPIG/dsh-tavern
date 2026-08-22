@@ -21,6 +21,7 @@ import {
   resourceRegexInventory,
 } from './regex.js'
 import { reorderAtBoundary } from '../../../preset/src/client-state.js'
+import { announceImportFailure } from '../import-failure.js'
 
 const h = createLocalizedElement(createElement)
 const EMPTY_DOCUMENT = Object.freeze({ schemaVersion: 1, rules: Object.freeze([]) })
@@ -449,7 +450,7 @@ export function RegexPanel({ client, activeSnapshot, close }) {
 
   useEffect(() => { load() }, [client, bindings.presetId, bindings.characterId])
 
-  const persist = async (next, nextResourceRules = resourceRules) => {
+  const persist = async (next, nextResourceRules = resourceRules, { rethrow = false } = {}) => {
     setBusy(true)
     try {
       const [saved, savedPresetRules, savedCharacterRules] = await Promise.all([
@@ -473,6 +474,7 @@ export function RegexPanel({ client, activeSnapshot, close }) {
       window.dispatchEvent(new Event(CLIENT_REFRESH_EVENT))
     } catch (reason) {
       setStatus({ text: rawText(reason instanceof Error ? reason.message : String(reason)), error: true })
+      if (rethrow) throw reason
     } finally {
       setBusy(false)
     }
@@ -551,7 +553,11 @@ export function RegexPanel({ client, activeSnapshot, close }) {
         scope: scopeFor(importScope.current, bindings),
       })
       if (importScope.current === 'global') {
-        await persist({ ...document, rules: [...document.rules, ...imported] })
+        await persist(
+          { ...document, rules: [...document.rules, ...imported] },
+          resourceRules,
+          { rethrow: true },
+        )
       } else {
         const nextResourceRules = {
           ...resourceRules,
@@ -560,10 +566,11 @@ export function RegexPanel({ client, activeSnapshot, close }) {
             ...imported.map(resourceEditableRule),
           ],
         }
-        await persist(document, nextResourceRules)
+        await persist(document, nextResourceRules, { rethrow: true })
       }
       setStatus({ text: uiMessage('regex.imported', { count: imported.length }), error: false })
     } catch (reason) {
+      announceImportFailure(reason)
       setStatus({ text: rawText(reason instanceof Error ? reason.message : String(reason)), error: true })
       setBusy(false)
     }

@@ -37,6 +37,7 @@ import {
   loadPlaythroughImportContext,
   unbindPlaythroughImport,
 } from './import.js'
+import { announceImportFailure } from '../import-failure.js'
 import { activeTimelineEntries } from '../../../play/src/timeline-tree.js'
 import { consumeSwipeTransition } from './swipe-transition.js'
 import { conversationDisplayStyle, useConversationDisplaySettings } from './display-settings.js'
@@ -340,6 +341,7 @@ export function ImportControls({
       await bindPlaythroughImport(playClient, playthrough, file)
       changed()
     } catch (reason) {
+      announceImportFailure(reason)
       onError(reason instanceof Error ? reason.message : String(reason))
     } finally {
       setBusy(false)

@@ -15,6 +15,7 @@ import {
   unwrapText,
 } from '../../client/src/i18n.js'
 import { API_V1 as API_ROOT, CLIENT_REFRESH_EVENT, PLUGIN_ID } from '../../identity.js'
+import { announceImportFailure } from '../../client/src/import-failure.js'
 
 const h = createLocalizedElement(createElement)
 const POSITIONS = [
@@ -454,13 +455,19 @@ export function WorldBookPanel({ sessionId, close }) {
   }, 'world.status.created')
 
   const importFile = file => run(async () => {
-    const response = await fetch(`${API_ROOT}/world-books/import?filename=${encodeURIComponent(file.name)}`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: file,
-    })
-    const data = await response.json().catch(() => null)
-    if (!response.ok || data?.ok === false) throw new Error(errorMessage(data, response.status))
+    let data
+    try {
+      const response = await fetch(`${API_ROOT}/world-books/import?filename=${encodeURIComponent(file.name)}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: file,
+      })
+      data = await response.json().catch(() => null)
+      if (!response.ok || data?.ok === false) throw new Error(errorMessage(data, response.status))
+    } catch (error) {
+      announceImportFailure(error)
+      throw error
+    }
     if (fileRef.current !== null) fileRef.current.value = ''
     await refresh(data.worldBook.id)
   }, 'world.status.imported')
@@ -622,7 +629,7 @@ export function WorldBookPanel({ sessionId, close }) {
         h('button', { className: 'dwb-button', type: 'button', disabled: busy, onClick: () => fileRef.current?.click() }, uiMessage('world.importJson')),
         h('a', { className: 'dwb-button', 'data-disabled': document === null || busy ? true : undefined, href: document === null ? undefined : `${API_ROOT}/world-books/${encodeURIComponent(document.id)}/json`, download: '' }, uiMessage('common.exportJson')),
         h('button', { className: 'dwb-button', type: 'button', disabled: busy, onClick: create }, uiMessage('world.create')),
-        h('input', { ref: fileRef, hidden: true, type: 'file', accept: '.json,application/json', onChange: event => { const file = event.target.files?.[0]; if (file !== undefined) importFile(file) } }),
+        h('input', { ref: fileRef, hidden: true, type: 'file', accept: '.json,application/json', onChange: event => { const file = event.target.files?.[0]; event.target.value = ''; if (file !== undefined) importFile(file) } }),
       ),
       h(Field, { label: uiMessage('world.browse') }, h('div', { className: 'dwb-browse' },
         h('select', { className: 'dwb-select', value: document?.id ?? '', disabled: busy || !catalog?.worldBooks.length, onChange: event => { if (!dirty || window.confirm(unwrapText(uiMessage('world.confirmDiscardChanges')))) load(event.target.value) } },

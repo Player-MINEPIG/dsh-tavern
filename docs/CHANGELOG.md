@@ -1,5 +1,12 @@
 # Development changelog
 
+## 2026-08-22 — Surface complete import failures
+
+- Added one localized modal for imports that fail before a usable resource or verified playthrough binding is produced. Successful imports with compatibility diagnostics do not open it.
+- Connected preset, character-card, world-book, display-regex and external-history imports while retaining each panel's existing inline status details.
+- Corrected regex import persistence so a failed save is rethrown to the import boundary instead of being followed by a false success state. Ordinary regex saves keep their existing inline error behavior.
+- Reset file pickers as soon as a selection is accepted so the same failed file can be selected again immediately.
+
 ## 2026-08-22 — Remove the unreleased timeline hide field
 
 - Removed the development-only QA hide action and timeline field before the 2.0 public contract was released; no migration or compatibility branch is retained.

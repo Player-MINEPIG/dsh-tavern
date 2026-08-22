@@ -16,6 +16,7 @@ import {
 } from '../../client/src/i18n.js'
 import { reorderAtBoundary } from './client-state.js'
 import { API_V1 as API_ROOT, CLIENT_REFRESH_EVENT, PLUGIN_ID } from '../../identity.js'
+import { announceImportFailure } from '../../client/src/import-failure.js'
 
 const h = createLocalizedElement(createElement)
 
@@ -260,11 +261,17 @@ export function PresetSidebar({ closePanel, openPanel, sessionId, sessionBlank, 
   }, 'preset.status.created'), [refresh, run])
 
   const importFile = useCallback((file) => run(async () => {
-    const content = await file.text()
-    const imported = await api('/import', {
-      method: 'POST',
-      body: body({ name: file.name.replace(/\.json$/i, ''), content }),
-    })
+    let imported
+    try {
+      const content = await file.text()
+      imported = await api('/import', {
+        method: 'POST',
+        body: body({ name: file.name.replace(/\.json$/i, ''), content }),
+      })
+    } catch (error) {
+      announceImportFailure(error)
+      throw error
+    }
     await refresh(imported.preset.id)
     announceTavernRefresh()
     if (fileRef.current !== null) fileRef.current.value = ''
@@ -340,6 +347,7 @@ export function PresetSidebar({ closePanel, openPanel, sessionId, sessionBlank, 
           accept: '.json,application/json',
           onChange: (event) => {
             const file = event.target.files?.[0]
+            event.target.value = ''
             if (file !== undefined) importFile(file)
           },
         }),

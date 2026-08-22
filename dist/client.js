@@ -55,6 +55,7 @@ var CLIENT_REFRESH_EVENT = `${PLUGIN_ID}:refresh`;
 var CHROME_SERVICE_NAME = "pmpDshTavernChrome";
 var CLIENT_UI_SETTINGS_EVENT = `${PLUGIN_ID}:ui-settings`;
 var CLIENT_CONVERSATION_SETTINGS_EVENT = `${PLUGIN_ID}:conversation-settings`;
+var CLIENT_IMPORT_FAILURE_EVENT = `${PLUGIN_ID}:import-failure`;
 var identityConstants = Object.freeze({
   pluginId: PLUGIN_ID,
   apiRoot: API_ROOT,
@@ -65,7 +66,8 @@ var identityConstants = Object.freeze({
   profileSection: PROFILE_SECTION,
   clientRefreshEvent: CLIENT_REFRESH_EVENT,
   clientUiSettingsEvent: CLIENT_UI_SETTINGS_EVENT,
-  clientConversationSettingsEvent: CLIENT_CONVERSATION_SETTINGS_EVENT
+  clientConversationSettingsEvent: CLIENT_CONVERSATION_SETTINGS_EVENT,
+  clientImportFailureEvent: CLIENT_IMPORT_FAILURE_EVENT
 });
 
 // packages/client/src/i18n/catalogs/zh-CN.js
@@ -79,6 +81,7 @@ var zh_CN_default = Object.freeze({
   "common.delete": "\u5220\u9664",
   "common.save": "\u4FDD\u5B58",
   "common.cancel": "\u53D6\u6D88",
+  "common.close": "\u5173\u95ED",
   "common.saveChanges": "\u4FDD\u5B58\u4FEE\u6539",
   "common.saved": "\u5DF2\u4FDD\u5B58",
   "common.reload": "\u91CD\u65B0\u8F7D\u5165",
@@ -95,6 +98,7 @@ var zh_CN_default = Object.freeze({
   "common.exportJson": "\u5BFC\u51FA JSON",
   "common.importJson": "\u5BFC\u5165 JSON",
   "common.enable": "\u542F\u7528",
+  "import.failureTitle": "\u5BFC\u5165\u5931\u8D25",
   "panel.close": "\u5173\u95ED{title}\u4FA7\u8FB9\u680F",
   "nav.preset": "\u9884\u8BBE",
   "nav.character": "\u89D2\u8272\u5361",
@@ -720,6 +724,7 @@ var en_default = Object.freeze({
   "common.delete": "Delete",
   "common.save": "Save",
   "common.cancel": "Cancel",
+  "common.close": "Close",
   "common.saveChanges": "Save changes",
   "common.saved": "Saved",
   "common.reload": "Reload",
@@ -736,6 +741,7 @@ var en_default = Object.freeze({
   "common.exportJson": "Export JSON",
   "common.importJson": "Import JSON",
   "common.enable": "Enabled",
+  "import.failureTitle": "Import failed",
   "panel.close": "Close the {title} sidebar",
   "nav.preset": "Preset",
   "nav.character": "Character card",
@@ -1484,6 +1490,20 @@ function reorderAtBoundary(items, from, boundary) {
   return reorder(items, from, destination);
 }
 
+// packages/client/src/import-failure.js
+function importFailureMessage(reason) {
+  if (typeof reason?.message === "string" && reason.message.trim() !== "") return reason.message.trim().slice(0, 1e3);
+  const value = String(reason ?? "").trim();
+  return value === "" ? "Unknown import error" : value.slice(0, 1e3);
+}
+function announceImportFailure(reason, target = globalThis.window) {
+  const message = importFailureMessage(reason);
+  target?.dispatchEvent?.(new CustomEvent(CLIENT_IMPORT_FAILURE_EVENT, {
+    detail: { message }
+  }));
+  return message;
+}
+
 // packages/preset/src/client.js
 var h = createLocalizedElement(import_react.createElement);
 function announceTavernRefresh() {
@@ -1711,11 +1731,17 @@ function PresetSidebar({ closePanel, openPanel, sessionId, sessionBlank, autoOpe
     announceTavernRefresh();
   }, "preset.status.created"), [refresh, run]);
   const importFile = (0, import_react.useCallback)((file) => run(async () => {
-    const content = await file.text();
-    const imported = await api("/import", {
-      method: "POST",
-      body: body({ name: file.name.replace(/\.json$/i, ""), content })
-    });
+    let imported;
+    try {
+      const content = await file.text();
+      imported = await api("/import", {
+        method: "POST",
+        body: body({ name: file.name.replace(/\.json$/i, ""), content })
+      });
+    } catch (error) {
+      announceImportFailure(error);
+      throw error;
+    }
     await refresh(imported.preset.id);
     announceTavernRefresh();
     if (fileRef.current !== null) fileRef.current.value = "";
@@ -1794,6 +1820,7 @@ function PresetSidebar({ closePanel, openPanel, sessionId, sessionBlank, autoOpe
           accept: ".json,application/json",
           onChange: (event) => {
             const file = event.target.files?.[0];
+            event.target.value = "";
             if (file !== void 0) importFile(file);
           }
         })
@@ -2172,13 +2199,19 @@ function CharacterPanel({ sessionId, sessionBlank, hasConversationHistory, detac
     }, "character.status.created");
   }, [dirty, refresh, run]);
   const importFile = (0, import_react2.useCallback)((file) => run(async () => {
-    const response = await fetch(`${API_V1}/characters/import?filename=${encodeURIComponent(file.name)}`, {
-      method: "POST",
-      headers: { "Content-Type": file.type || "application/octet-stream" },
-      body: file
-    });
-    const data = await response.json().catch(() => null);
-    if (!response.ok || data?.ok === false) throw new Error(errorMessage(data, response.status));
+    let data;
+    try {
+      const response = await fetch(`${API_V1}/characters/import?filename=${encodeURIComponent(file.name)}`, {
+        method: "POST",
+        headers: { "Content-Type": file.type || "application/octet-stream" },
+        body: file
+      });
+      data = await response.json().catch(() => null);
+      if (!response.ok || data?.ok === false) throw new Error(errorMessage(data, response.status));
+    } catch (error) {
+      announceImportFailure(error);
+      throw error;
+    }
     await refresh(data.character.id);
     announceTavernRefresh2();
     if (fileRef.current !== null) fileRef.current.value = "";
@@ -2310,6 +2343,7 @@ function CharacterPanel({ sessionId, sessionBlank, hasConversationHistory, detac
         h2("button", { className: "dcc-button", type: "button", disabled: busy, onClick: create2 }, uiMessage("character.create")),
         h2("input", { ref: fileRef, hidden: true, type: "file", accept: ".json,.png,application/json,image/png", onChange: (event) => {
           const file = event.target.files?.[0];
+          event.target.value = "";
           if (file !== void 0) importFile(file);
         } })
       ),
@@ -2978,13 +3012,19 @@ function WorldBookPanel({ sessionId, close }) {
     await refresh(data.worldBook.id);
   }, "world.status.created");
   const importFile = (file) => run(async () => {
-    const response = await fetch(`${API_V1}/world-books/import?filename=${encodeURIComponent(file.name)}`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: file
-    });
-    const data = await response.json().catch(() => null);
-    if (!response.ok || data?.ok === false) throw new Error(errorMessage2(data, response.status));
+    let data;
+    try {
+      const response = await fetch(`${API_V1}/world-books/import?filename=${encodeURIComponent(file.name)}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: file
+      });
+      data = await response.json().catch(() => null);
+      if (!response.ok || data?.ok === false) throw new Error(errorMessage2(data, response.status));
+    } catch (error) {
+      announceImportFailure(error);
+      throw error;
+    }
     if (fileRef.current !== null) fileRef.current.value = "";
     await refresh(data.worldBook.id);
   }, "world.status.imported");
@@ -3144,6 +3184,7 @@ function WorldBookPanel({ sessionId, close }) {
         h3("button", { className: "dwb-button", type: "button", disabled: busy, onClick: create2 }, uiMessage("world.create")),
         h3("input", { ref: fileRef, hidden: true, type: "file", accept: ".json,application/json", onChange: (event) => {
           const file = event.target.files?.[0];
+          event.target.value = "";
           if (file !== void 0) importFile(file);
         } })
       ),
@@ -9969,6 +10010,7 @@ function ImportControls({
       await bindPlaythroughImport(playClient, playthrough, file);
       changed();
     } catch (reason) {
+      announceImportFailure(reason);
       onError(reason instanceof Error ? reason.message : String(reason));
     } finally {
       setBusy(false);
@@ -12657,7 +12699,7 @@ function RegexPanel({ client, activeSnapshot, close }) {
   (0, import_react15.useEffect)(() => {
     load();
   }, [client, bindings.presetId, bindings.characterId]);
-  const persist = async (next, nextResourceRules = resourceRules) => {
+  const persist = async (next, nextResourceRules = resourceRules, { rethrow = false } = {}) => {
     setBusy(true);
     try {
       const [saved, savedPresetRules, savedCharacterRules] = await Promise.all([
@@ -12675,6 +12717,7 @@ function RegexPanel({ client, activeSnapshot, close }) {
       window.dispatchEvent(new Event(CLIENT_REFRESH_EVENT));
     } catch (reason) {
       setStatus({ text: rawText(reason instanceof Error ? reason.message : String(reason)), error: true });
+      if (rethrow) throw reason;
     } finally {
       setBusy(false);
     }
@@ -12744,7 +12787,11 @@ function RegexPanel({ client, activeSnapshot, close }) {
         scope: scopeFor(importScope.current, bindings)
       });
       if (importScope.current === "global") {
-        await persist({ ...document2, rules: [...document2.rules, ...imported] });
+        await persist(
+          { ...document2, rules: [...document2.rules, ...imported] },
+          resourceRules,
+          { rethrow: true }
+        );
       } else {
         const nextResourceRules = {
           ...resourceRules,
@@ -12753,10 +12800,11 @@ function RegexPanel({ client, activeSnapshot, close }) {
             ...imported.map(resourceEditableRule)
           ]
         };
-        await persist(document2, nextResourceRules);
+        await persist(document2, nextResourceRules, { rethrow: true });
       }
       setStatus({ text: uiMessage("regex.imported", { count: imported.length }), error: false });
     } catch (reason) {
+      announceImportFailure(reason);
       setStatus({ text: rawText(reason instanceof Error ? reason.message : String(reason)), error: true });
       setBusy(false);
     }
@@ -13143,7 +13191,7 @@ var css11 = `
 .dtv-modal-backdrop{position:absolute;inset:0;z-index:20;pointer-events:auto;background:rgba(0,0,0,.48);display:flex;align-items:center;justify-content:center;padding:24px}
 .dtv-regex-panel .dtv-body{flex:1 1 auto;overscroll-behavior:contain}.dtv-regex-section{gap:8px}.dtv-regex-section-title{display:flex;align-items:center;gap:8px}.dtv-regex-section-title .dtv-item-count{margin-left:auto}.dtv-regex-rule{transition:border-color .12s,box-shadow .12s}.dtv-regex-rule[data-dragging=true]{height:4px;min-height:4px;margin:5px 10px;border:0;border-radius:999px;background:var(--dsw-alias-state-business-primary);box-shadow:0 0 0 1px color-mix(in srgb,var(--dsw-alias-state-business-primary) 25%,transparent)}.dtv-regex-rule[data-dragging=true]>*{opacity:0}.dtv-regex-drop-placeholder{box-sizing:border-box;height:42px;border:2px dashed var(--dsw-alias-state-business-primary);border-radius:8px;background:color-mix(in srgb,var(--dsw-alias-state-business-primary) 7%,transparent);display:flex;align-items:center;justify-content:center;color:var(--dsw-alias-state-business-primary);font-size:12px;font-weight:600;pointer-events:none}.dtv-regex-drag{flex:none;border:0;background:transparent;cursor:grab;color:var(--dsw-alias-label-tertiary);padding:1px 2px;font-size:15px;line-height:1;touch-action:none;user-select:none}.dtv-regex-drag:active{cursor:grabbing}.dtv-regex-drag:disabled{cursor:default;opacity:.5}.dtv-regex-rule .dtv-input:disabled,.dtv-regex-rule .dtv-select:disabled,.dtv-regex-rule .dtv-textarea:disabled{pointer-events:none}.dtv-regex-expression{font-family:var(--dsw-font-mono,ui-monospace,SFMono-Regular,Consolas,monospace);min-height:72px}.dtv-regex-footer{position:sticky;bottom:-12px;display:grid;grid-template-columns:1fr 1fr;gap:8px;padding:10px 0 12px;background:var(--dsw-alias-bg-base)}
 .dtv-modal{width:min(420px,100%);border-radius:12px;background:var(--dsw-alias-bg-base);border:1px solid var(--dsw-alias-border-l2);box-shadow:var(--ds-shadow-3,0 16px 40px rgba(0,0,0,.28));padding:18px 16px;display:flex;flex-direction:column;gap:14px}
-.dtv-modal-body{margin:0;font-size:13px;line-height:1.55}.dtv-modal .dtv-button{align-self:flex-end;min-width:88px}
+.dtv-modal-title{margin:0;font-size:16px;line-height:1.35}.dtv-modal-body{margin:0;font-size:13px;line-height:1.55;overflow-wrap:anywhere}.dtv-modal .dtv-button{align-self:flex-end;min-width:88px}
 .dtv-workspace-admission{position:absolute;inset:0;z-index:12;pointer-events:auto;background:var(--dsw-alias-bg-base);display:flex;align-items:center;justify-content:center;padding:clamp(18px,5vw,64px)}
 .dtv-workspace-admission-card{box-sizing:border-box;width:min(720px,100%);max-height:min(720px,calc(100vh - 36px));overflow:auto;border:1px solid var(--dsw-alias-border-l2);border-radius:18px;background:var(--dsw-alias-bg-base);box-shadow:var(--ds-shadow-3,0 18px 52px rgba(0,0,0,.24));padding:clamp(20px,4vw,36px);display:flex;flex-direction:column;gap:16px}
 .dtv-workspace-admission-title{margin:0;font-size:clamp(20px,3vw,28px);line-height:1.25}.dtv-workspace-admission-copy{margin:0;color:var(--dsw-alias-label-secondary);font-size:13px;line-height:1.65}
@@ -13416,6 +13464,25 @@ function RpHighRiskDialog({ onDismiss }) {
     )
   );
 }
+function ImportFailureDialog({ message, onDismiss }) {
+  return h13(
+    "div",
+    {
+      className: "dtv-modal-backdrop",
+      role: "alertdialog",
+      "aria-modal": "true",
+      "aria-labelledby": "dtv-import-failure-title",
+      "aria-describedby": "dtv-import-failure-body"
+    },
+    h13(
+      "div",
+      { className: "dtv-modal" },
+      h13("h2", { id: "dtv-import-failure-title", className: "dtv-modal-title" }, uiMessage("import.failureTitle")),
+      h13("p", { id: "dtv-import-failure-body", className: "dtv-modal-body" }, rawText(message)),
+      h13("button", { className: "dtv-button dtv-primary", type: "button", onClick: onDismiss }, uiMessage("common.close"))
+    )
+  );
+}
 function WorkspaceAdmission({ setting, state, error, busy, selectWorkspace, reload, returnToNative }) {
   const loading = state === "loading" || state === "idle";
   const unavailable = setting?.current?.unavailable === true;
@@ -13503,6 +13570,7 @@ function TavernShell({ useSessions, useWorkspaces, createCleanSession, createCon
   const rpWorkspaceBusyRef = (0, import_react16.useRef)(false);
   const rpWorkspaceLoadGeneration = (0, import_react16.useRef)(0);
   const [rpAlert, setRpAlert] = (0, import_react16.useState)(null);
+  const [importFailure, setImportFailure] = (0, import_react16.useState)(null);
   const drag = (0, import_react16.useRef)(null);
   const suppressClick = (0, import_react16.useRef)(false);
   const chromeController = (0, import_react16.useRef)(null);
@@ -13848,15 +13916,24 @@ function TavernShell({ useSessions, useWorkspaces, createCleanSession, createCon
     }
   };
   (0, import_react16.useEffect)(() => {
+    const onImportFailure = (event) => {
+      const message = typeof event?.detail?.message === "string" ? event.detail.message.trim() : "";
+      if (message !== "") setImportFailure(message.slice(0, 1e3));
+    };
+    window.addEventListener(CLIENT_IMPORT_FAILURE_EVENT, onImportFailure);
+    return () => window.removeEventListener(CLIENT_IMPORT_FAILURE_EVENT, onImportFailure);
+  }, []);
+  (0, import_react16.useEffect)(() => {
     const onKeyDown = (event) => {
       if (event.key !== "Escape") return;
-      if (rpAlert !== null) dismissRpAlert();
+      if (importFailure !== null) setImportFailure(null);
+      else if (rpAlert !== null) dismissRpAlert();
       else if (menuOpen) setMenuOpen(false);
       else if (surface !== null) setSurface(null);
     };
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
-  }, [menuOpen, rpAlert, surface]);
+  }, [importFailure, menuOpen, rpAlert, surface]);
   const startDrag = (event) => {
     if (event.button !== 0) return;
     event.currentTarget.setPointerCapture?.(event.pointerId);
@@ -13981,6 +14058,7 @@ function TavernShell({ useSessions, useWorkspaces, createCleanSession, createCon
     "div",
     { className: "dtv-layer", lang: uiSettings.locale, "data-chrome": chromeMode, "data-surface-open": surface !== null, style: { "--dtv-ui-scale": uiSettings.scale } },
     panel,
+    importFailure === null ? null : h13(ImportFailureDialog, { message: importFailure, onDismiss: () => setImportFailure(null) }),
     rpAlert === null ? null : h13(RpHighRiskDialog, { onDismiss: dismissRpAlert }),
     workspaceAdmissionOpen ? h13(WorkspaceAdmission, {
       setting: rpWorkspaceSetting,
