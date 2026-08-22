@@ -280,9 +280,9 @@ test('live client writes character order through the v1 resource contract', asyn
     },
   })
 
-  const result = await client.putCharacterOrder(['b', 'a'])
+  const result = await client.putCharacterOrder('custom', ['b', 'a'])
   assert.deepEqual(result.characters.map(character => character.id), ['b', 'a'])
   assert.equal(calls[0].url, `${API_V1}/characters/order`)
   assert.equal(calls[0].options.method, 'PUT')
-  assert.deepEqual(JSON.parse(calls[0].options.body), { characterIds: ['b', 'a'] })
+  assert.deepEqual(JSON.parse(calls[0].options.body), { mode: 'custom', characterIds: ['b', 'a'] })
 })

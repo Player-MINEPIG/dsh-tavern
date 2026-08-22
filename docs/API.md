@@ -125,13 +125,13 @@ durable history。当前已实现的基础语义是：首次 assembly 必须按�
 
 ### 角色卡侧边栏顺序
 
-角色卡列表在没有自定义顺序时按 `updatedAt` 降序排列，同一更新时间再按名称 A→Z、ID A→Z 稳定排序。拖拽只写资源库状态，不修改角色卡原文或 `updatedAt`。
+角色卡列表明确区分三种排序模式：`updated` 按 `updatedAt` 降序（同一时间再按名称、ID），`name` 按名称 A→Z（中文使用 `zh-CN` 排序），`custom` 按用户拖拽顺序。拖拽只写资源库状态，不修改角色卡原文或 `updatedAt`；切换到其他模式也不会清除已保存的自定义顺序。
 
 | 方法 | 路径 | 请求 | 成功响应 |
 | --- | --- | --- | --- |
-| PUT | `/characters/order` | `{ characterIds: [...] }` | `{ ok: true, characters: [...] }` |
+| PUT | `/characters/order` | `{ mode, characterIds? }` | `{ ok: true, characters: [...], sorting: { mode } }` |
 
-`characterIds` 必须恰好包含当前存储中的全部角色卡 ID，每个 ID 只出现一次，最多 4096 项；未知、重复或遗漏均返回 400，失败时原顺序不变。成功顺序保存在 `character-state.json` 的 `characterOrder`，之后 `GET /characters` 直接按该顺序返回。新导入而尚未出现在自定义顺序中的角色卡按默认规则排列在已排序角色卡之后；删除角色卡会同步清理其顺序项。
+`mode` 必须是 `updated`、`name`、`custom` 之一。只有 `custom` 接受 `characterIds`，且必须恰好包含当前存储中的全部角色卡 ID，每个 ID 只出现一次，最多 4096 项；未知、重复或遗漏均返回 400，失败时原状态不变。成功模式和自定义顺序分别保存在 `character-state.json` 的 `characterSortMode`、`characterOrder`。自定义模式中新建或导入的角色卡追加到末尾，删除角色卡同步清理其顺序项。`GET /characters` 同时返回 `sorting: { mode }`。
 
 ### Conversation 显示设置
 

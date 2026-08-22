@@ -39,6 +39,7 @@ const css = `
 .dtv-play-character-drag{width:20px;min-width:20px;align-self:stretch;border:0;border-radius:7px;background:transparent;color:var(--dsw-alias-label-tertiary);cursor:grab;padding:0;font:inherit;font-size:14px;touch-action:none;user-select:none}.dtv-play-character-drag:hover{background:var(--dsw-alias-interactive-bg-hover)}.dtv-play-character-drag:active{cursor:grabbing}.dtv-play-character-drag:disabled{cursor:default;opacity:.4}
 .dtv-play-section[data-dragging=true]{height:4px;min-height:4px;margin:5px 10px;overflow:hidden;border-radius:999px;background:var(--dsw-alias-state-business-primary);box-shadow:0 0 0 1px color-mix(in srgb,var(--dsw-alias-state-business-primary) 25%,transparent)}.dtv-play-section[data-dragging=true]>*{opacity:0}
 .dtv-play-character-drop{box-sizing:border-box;height:38px;flex:none;border:2px dashed var(--dsw-alias-state-business-primary);border-radius:8px;background:color-mix(in srgb,var(--dsw-alias-state-business-primary) 7%,transparent);display:flex;align-items:center;justify-content:center;color:var(--dsw-alias-state-business-primary);font-size:10px;font-weight:600;pointer-events:none}
+.dtv-play-sort{display:flex;align-items:center;justify-content:flex-end;gap:6px;padding:1px 5px 3px;color:var(--dsw-alias-label-tertiary);font-size:10px}.dtv-play-sort select{min-width:92px;height:26px;border:1px solid var(--dsw-alias-border-l2);border-radius:7px;background:var(--dsw-alias-bg-base);color:var(--dsw-alias-label-primary);font:inherit;padding:2px 6px}.dtv-play-sort select:disabled{opacity:.55}
 .dtv-play-sidebar{height:100%;min-height:0;box-sizing:border-box;display:flex;flex-direction:column;gap:4px;padding:6px 7px 10px;overflow:auto;zoom:var(--dtv-ui-scale,1);color:var(--dsw-alias-label-primary)}
 .dtv-play-section{display:flex;flex-direction:column;gap:2px;border-radius:10px}.dtv-play-section[data-open=true]{padding-bottom:3px}
 .dtv-play-group,.dtv-play-row{width:100%;box-sizing:border-box;border:0;border-radius:8px;background:transparent;color:inherit;font:inherit;text-align:left;cursor:pointer;display:flex;align-items:center;gap:7px}.dtv-play-group:hover,.dtv-play-row:hover{background:var(--dsw-alias-interactive-bg-hover)}
@@ -368,7 +369,7 @@ export function PlayWorkspaceBrowser({
   }
 
   const moveCharacter = async (from, boundary) => {
-    if (resources === null || reorderingCharacters) return
+    if (resources === null || reorderingCharacters || resources.characterSorting?.mode !== 'custom') return
     const reordered = reorderAtBoundary(model.characters, from, boundary)
     const storedIds = new Set(resources.characters.map(character => character.id))
     const characterIds = reordered.map(character => character.id).filter(id => storedIds.has(id))
@@ -383,10 +384,36 @@ export function PlayWorkspaceBrowser({
     setStatus(null)
     try {
       if (typeof playClient.putCharacterOrder !== 'function') throw new Error('character order API is unavailable')
-      const response = await playClient.putCharacterOrder(characterIds)
+      const response = await playClient.putCharacterOrder('custom', characterIds)
       if (Array.isArray(response?.characters)) {
-        setResources(current => current === null ? null : { ...current, characters: response.characters })
+        setResources(current => current === null ? null : {
+          ...current,
+          characters: response.characters,
+          characterSorting: response.sorting ?? current.characterSorting,
+        })
       }
+      window.dispatchEvent(new Event(CLIENT_REFRESH_EVENT))
+    } catch (reason) {
+      setStatus({ message: reason instanceof Error ? reason.message : String(reason) })
+      setRevision(value => value + 1)
+    } finally {
+      setReorderingCharacters(false)
+    }
+  }
+
+  const changeCharacterSortMode = async event => {
+    const mode = event.currentTarget.value
+    if (resources === null || reorderingCharacters || mode === resources.characterSorting?.mode) return
+    setReorderingCharacters(true)
+    setStatus(null)
+    try {
+      const characterIds = mode === 'custom' ? resources.characters.map(character => character.id) : undefined
+      const response = await playClient.putCharacterOrder(mode, characterIds)
+      setResources(current => current === null ? null : {
+        ...current,
+        characters: Array.isArray(response?.characters) ? response.characters : current.characters,
+        characterSorting: response?.sorting ?? { mode },
+      })
       window.dispatchEvent(new Event(CLIENT_REFRESH_EVENT))
     } catch (reason) {
       setStatus({ message: reason instanceof Error ? reason.message : String(reason) })
@@ -431,6 +458,18 @@ export function PlayWorkspaceBrowser({
       className: 'dtv-play-status',
       'data-error': true,
     }, rawText(`${diagnostic.path}: ${diagnostic.message}`))),
+    resources === null ? null : h('label', { className: 'dtv-play-sort' },
+      h('span', null, uiMessage('play.sidebar.sort')),
+      h('select', {
+        value: resources.characterSorting?.mode ?? 'updated',
+        disabled: reorderingCharacters,
+        onChange: changeCharacterSortMode,
+      },
+      h('option', { value: 'updated' }, uiMessage('play.sidebar.sortUpdated')),
+      h('option', { value: 'name' }, uiMessage('play.sidebar.sortName')),
+      h('option', { value: 'custom' }, uiMessage('play.sidebar.sortCustom')),
+      ),
+    ),
     resources !== null && model.characters.length === 0 ? h('p', { className: 'dtv-play-empty' }, uiMessage('play.sidebar.noCharacters')) : null,
     ...model.characters.flatMap((character, index) => [
       characterDragFrom !== null && characterDropIndex === index
@@ -442,6 +481,7 @@ export function PlayWorkspaceBrowser({
         index,
         dragging: characterDragFrom === index,
         reorderDisabled: reorderingCharacters
+          || resources?.characterSorting?.mode !== 'custom'
           || model.characters.length < 2
           || !resources?.characters.some(item => item.id === character.id),
         onPointerDown: (event) => {

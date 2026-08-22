@@ -52,17 +52,26 @@ test('orders characters by recency then A to Z until a custom order is saved', (
     store.create({ id: 'alpha', name: 'Alpha', now: '2026-08-15T00:00:00.000Z' })
     assert.deepEqual(store.list().map(character => character.id), ['alpha', 'zulu', 'older'])
 
-    store.setOrder(['zulu', 'older', 'alpha'])
+    store.setSorting('custom', ['zulu', 'older', 'alpha'])
     assert.deepEqual(new CharacterStore(directory).list().map(character => character.id), ['zulu', 'older', 'alpha'])
     assert.deepEqual(JSON.parse(readFileSync(join(directory, 'character-state.json'), 'utf8')).characterOrder, ['zulu', 'older', 'alpha'])
+    assert.deepEqual(store.sorting(), { mode: 'custom' })
 
-    assert.throws(() => store.setOrder(['zulu', 'zulu', 'alpha']), /Duplicate character id/)
-    assert.throws(() => store.setOrder(['zulu', 'missing', 'alpha']), /Unknown character id/)
-    assert.throws(() => store.setOrder(['zulu', 'alpha']), /every stored character/)
+    assert.throws(() => store.setSorting('custom', ['zulu', 'zulu', 'alpha']), /Duplicate character id/)
+    assert.throws(() => store.setSorting('custom', ['zulu', 'missing', 'alpha']), /Unknown character id/)
+    assert.throws(() => store.setSorting('custom', ['zulu', 'alpha']), /every stored character/)
+
+    store.setSorting('name')
+    assert.deepEqual(store.list().map(character => character.id), ['alpha', 'older', 'zulu'])
+    store.setSorting('updated')
+    assert.deepEqual(store.list().map(character => character.id), ['alpha', 'zulu', 'older'])
+    store.setSorting('custom', ['older', 'alpha', 'zulu'])
+    store.create({ id: 'new', name: 'New', now: '2026-08-16T00:00:00.000Z' })
+    assert.deepEqual(store.list().map(character => character.id), ['older', 'alpha', 'zulu', 'new'])
 
     store.delete('zulu')
-    assert.deepEqual(new CharacterStore(directory).list().map(character => character.id), ['older', 'alpha'])
-    assert.deepEqual(JSON.parse(readFileSync(join(directory, 'character-state.json'), 'utf8')).characterOrder, ['older', 'alpha'])
+    assert.deepEqual(new CharacterStore(directory).list().map(character => character.id), ['older', 'alpha', 'new'])
+    assert.deepEqual(JSON.parse(readFileSync(join(directory, 'character-state.json'), 'utf8')).characterOrder, ['older', 'alpha', 'new'])
   } finally {
     rmSync(directory, { recursive: true, force: true })
   }

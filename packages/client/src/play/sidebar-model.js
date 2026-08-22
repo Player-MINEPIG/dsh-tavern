@@ -143,7 +143,8 @@ export async function loadPlaySidebarResources(client) {
     client.getCharacters(),
   ])
   const characters = Array.isArray(characterResponse?.characters) ? characterResponse.characters : []
-  if (workspace.selected !== true) return { workspace, characters, catalog: { playthroughs: [] }, timelines: {}, diagnostics: [] }
+  const characterSorting = characterResponse?.sorting ?? { mode: 'updated' }
+  if (workspace.selected !== true) return { workspace, characters, characterSorting, catalog: { playthroughs: [] }, timelines: {}, diagnostics: [] }
 
   let catalog
   try {
@@ -165,7 +166,7 @@ export async function loadPlaySidebarResources(client) {
       })
     }
   })
-  return { workspace, characters, catalog, timelines, diagnostics }
+  return { workspace, characters, characterSorting, catalog, timelines, diagnostics }
 }
 
 export function projectPlaySidebar({

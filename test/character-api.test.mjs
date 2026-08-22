@@ -118,15 +118,20 @@ test('character API persists an exact custom sidebar order', async () => {
     const reordered = await invoke(handler, {
       method: 'PUT',
       url: '/pmp-dsh-tavern/api/v1/characters/order',
-      body: { characterIds: ['a', 'b'] },
+      body: { mode: 'custom', characterIds: ['a', 'b'] },
     })
     assert.equal(reordered.status, 200)
     assert.deepEqual(reordered.json.characters.map(character => character.id), ['a', 'b'])
     assert.deepEqual((await invoke(handler, { url: '/pmp-dsh-tavern/api/v1/characters' })).json.characters.map(character => character.id), ['a', 'b'])
-    assert.deepEqual(changes, [{ kind: 'character-order-changed', characterCardIds: ['a', 'b'] }])
+    assert.deepEqual(reordered.json.sorting, { mode: 'custom' })
+    assert.deepEqual(changes, [{ kind: 'character-order-changed', mode: 'custom', characterCardIds: ['a', 'b'] }])
 
-    const invalid = await invoke(handler, { method: 'PUT', url: '/pmp-dsh-tavern/api/v1/characters/order', body: { characterIds: ['a'] } })
+    const invalid = await invoke(handler, { method: 'PUT', url: '/pmp-dsh-tavern/api/v1/characters/order', body: { mode: 'custom', characterIds: ['a'] } })
     assert.equal(invalid.status, 400)
+
+    const named = await invoke(handler, { method: 'PUT', url: '/pmp-dsh-tavern/api/v1/characters/order', body: { mode: 'name' } })
+    assert.equal(named.status, 200)
+    assert.deepEqual(named.json.sorting, { mode: 'name' })
   } finally {
     rmSync(directory, { recursive: true, force: true })
   }

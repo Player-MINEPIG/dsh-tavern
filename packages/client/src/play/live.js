@@ -318,8 +318,11 @@ export function createLivePlayClient({
       return v1('GET', '/characters')
     },
 
-    putCharacterOrder(characterIds) {
-      return v1('PUT', '/characters/order', { characterIds })
+    putCharacterOrder(mode, characterIds) {
+      return v1('PUT', '/characters/order', {
+        mode,
+        ...(characterIds === undefined ? {} : { characterIds }),
+      })
     },
 
     getCharacter(id) {

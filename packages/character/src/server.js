@@ -143,10 +143,10 @@ function characterOrderBody(value) {
   if (value === null || typeof value !== 'object' || Array.isArray(value)) {
     throw new TypeError('Character order request must be an object')
   }
-  const unexpected = Object.keys(value).find(key => key !== 'characterIds')
+  const unexpected = Object.keys(value).find(key => key !== 'mode' && key !== 'characterIds')
   if (unexpected !== undefined) throw new TypeError(`Unsupported character order field "${unexpected}"`)
-  if (!Array.isArray(value.characterIds)) throw new TypeError('characterIds must be an array')
-  return value.characterIds
+  if (typeof value.mode !== 'string') throw new TypeError('mode must be a string')
+  return { mode: value.mode, characterIds: value.characterIds }
 }
 
 function worldBookIdsBody(value) {
@@ -176,13 +176,14 @@ export function createCharacterApiHandler(store, options = {}) {
       const method = req.method ?? 'GET'
       const route = characterRoute(path)
       if (method === 'PUT' && path === `${API_V1}/characters/order`) {
-        const characters = store.setOrder(characterOrderBody(await readJson(req, 512 * 1024)))
-        onChange({ kind: 'character-order-changed', characterCardIds: characters.map(character => character.id) })
-        return sendJson(res, 200, { ok: true, characters })
+        const body = characterOrderBody(await readJson(req, 512 * 1024))
+        const result = store.setSorting(body.mode, body.characterIds)
+        onChange({ kind: 'character-order-changed', mode: result.sorting.mode, characterCardIds: result.characters.map(character => character.id) })
+        return sendJson(res, 200, { ok: true, ...result })
       }
 
       if (method === 'GET' && path === `${API_V1}/characters`) {
-        return sendJson(res, 200, { ok: true, characters: store.list() })
+        return sendJson(res, 200, { ok: true, characters: store.list(), sorting: store.sorting() })
       }
 
       if (method === 'POST' && path === `${API_V1}/characters`) {

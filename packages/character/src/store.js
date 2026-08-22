@@ -145,19 +145,26 @@ function validateDocument(character) {
 function compareDefaultSummaries(left, right) {
   const updated = right.updatedAt.localeCompare(left.updatedAt)
   if (updated !== 0) return updated
-  const named = left.name.localeCompare(right.name, 'en', { numeric: true, sensitivity: 'base' })
+  const named = compareNames(left, right)
   return named !== 0 ? named : left.id.localeCompare(right.id)
 }
 
-function stateShape(selections, characterOrder = []) {
-  return { schemaVersion: 1, selectedBySessionId: selections, characterOrder }
+function compareNames(left, right) {
+  const named = left.name.localeCompare(right.name, 'zh-CN', { numeric: true, sensitivity: 'base' })
+  return named !== 0 ? named : left.id.localeCompare(right.id)
+}
+
+const CHARACTER_SORT_MODES = new Set(['updated', 'name', 'custom'])
+
+function stateShape(selections, characterSortMode = 'updated', characterOrder = []) {
+  return { schemaVersion: 1, selectedBySessionId: selections, characterSortMode, characterOrder }
 }
 
 function normalizeState(value) {
   const selections = Object.create(null)
   const characterOrder = []
   if (!isRecord(value) || value.schemaVersion !== 1 || !isRecord(value.selectedBySessionId)) {
-    return stateShape(selections, characterOrder)
+    return stateShape(selections, 'updated', characterOrder)
   }
   for (const [sessionId, selection] of Object.entries(value.selectedBySessionId)) {
     try {
@@ -174,7 +181,10 @@ function normalizeState(value) {
       seen.add(id)
     } catch {}
   }
-  return stateShape(selections, characterOrder)
+  const characterSortMode = CHARACTER_SORT_MODES.has(value.characterSortMode)
+    ? value.characterSortMode
+    : characterOrder.length > 0 ? 'custom' : 'updated'
+  return stateShape(selections, characterSortMode, characterOrder)
 }
 
 function greetingCount(character) {
@@ -236,6 +246,8 @@ export class CharacterStore {
           return []
         }
       })
+    if (this.state.characterSortMode === 'updated') return characters.toSorted(compareDefaultSummaries)
+    if (this.state.characterSortMode === 'name') return characters.toSorted(compareNames)
     const order = new Map(this.state.characterOrder.map((id, index) => [id, index]))
     return characters.toSorted((left, right) => {
       const leftIndex = order.get(left.id)
@@ -247,7 +259,18 @@ export class CharacterStore {
     })
   }
 
-  setOrder(characterIds) {
+  sorting() {
+    return { mode: this.state.characterSortMode }
+  }
+
+  setSorting(mode, characterIds) {
+    if (!CHARACTER_SORT_MODES.has(mode)) throw new TypeError(`Unsupported character sort mode "${mode}"`)
+    if (mode !== 'custom') {
+      if (characterIds !== undefined) throw new TypeError('characterIds is only supported in custom sort mode')
+      this.state.characterSortMode = mode
+      this.saveState()
+      return { characters: this.list(), sorting: this.sorting() }
+    }
     if (!Array.isArray(characterIds)) throw new TypeError('characterIds must be an array')
     if (characterIds.length > MAX_CHARACTER_ORDER_ENTRIES) {
       throw new TypeError(`characterIds cannot contain more than ${MAX_CHARACTER_ORDER_ENTRIES} entries`)
@@ -261,9 +284,10 @@ export class CharacterStore {
       next.push(id)
     }
     if (next.length !== knownIds.size) throw new TypeError('characterIds must contain every stored character exactly once')
+    this.state.characterSortMode = 'custom'
     this.state.characterOrder = next
     this.saveState()
-    return this.list()
+    return { characters: this.list(), sorting: this.sorting() }
   }
 
   get(id) {
@@ -304,6 +328,10 @@ export class CharacterStore {
     try {
       if (cover !== null) atomicBytes(coverPath, cover)
       atomicJson(documentPath, character)
+      if (this.state.characterSortMode === 'custom') {
+        this.state.characterOrder.push(character.id)
+        this.saveState()
+      }
     } catch (error) {
       try { unlinkSync(documentPath) } catch {}
       try { unlinkSync(coverPath) } catch {}
@@ -321,6 +349,10 @@ export class CharacterStore {
       throw error
     }
     atomicJson(documentPath, character)
+    if (this.state.characterSortMode === 'custom') {
+      this.state.characterOrder.push(character.id)
+      this.saveState()
+    }
     return character
   }
 
