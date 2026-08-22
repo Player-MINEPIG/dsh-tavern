@@ -139,6 +139,16 @@ function characterErrorDetails(code, details) {
   return { details: { conflicts } }
 }
 
+function characterOrderBody(value) {
+  if (value === null || typeof value !== 'object' || Array.isArray(value)) {
+    throw new TypeError('Character order request must be an object')
+  }
+  const unexpected = Object.keys(value).find(key => key !== 'characterIds')
+  if (unexpected !== undefined) throw new TypeError(`Unsupported character order field "${unexpected}"`)
+  if (!Array.isArray(value.characterIds)) throw new TypeError('characterIds must be an array')
+  return value.characterIds
+}
+
 function worldBookIdsBody(value) {
   if (value === null || typeof value !== 'object' || Array.isArray(value)) {
     throw new TypeError('Character world-book binding request must be an object')
@@ -165,6 +175,11 @@ export function createCharacterApiHandler(store, options = {}) {
       const path = url.pathname
       const method = req.method ?? 'GET'
       const route = characterRoute(path)
+      if (method === 'PUT' && path === `${API_V1}/characters/order`) {
+        const characters = store.setOrder(characterOrderBody(await readJson(req, 512 * 1024)))
+        onChange({ kind: 'character-order-changed', characterCardIds: characters.map(character => character.id) })
+        return sendJson(res, 200, { ok: true, characters })
+      }
 
       if (method === 'GET' && path === `${API_V1}/characters`) {
         return sendJson(res, 200, { ok: true, characters: store.list() })

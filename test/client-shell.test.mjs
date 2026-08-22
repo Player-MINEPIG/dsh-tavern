@@ -349,4 +349,15 @@ test('Mowan workspace admission is explicit and stays closed until authoritative
   assert.match(source, /setRpWorkspaceLoadState\('saving'\)/)
   assert.match(source, /returnToNative: switchChrome/)
   assert.match(source, /role: 'dialog'[\s\S]*'aria-modal': 'true'/)
+
+})
+test('RP sidebar character order uses preset-style pointer dragging and the v1 resource API', () => {
+  const source = readFileSync(new URL('../packages/client/src/play/sidebar.js', import.meta.url), 'utf8')
+
+  assert.match(source, /reorderAtBoundary/)
+  assert.match(source, /data-character-index/)
+  assert.match(source, /data-dragging/)
+  assert.match(source, /setPointerCapture/)
+  assert.match(source, /CharacterDropPlaceholder/)
+  assert.match(source, /playClient\.putCharacterOrder\(characterIds\)/)
 })

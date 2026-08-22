@@ -114,7 +114,7 @@ durable history。当前已实现的基础语义是：首次 assembly 必须按�
 | 当你想 | 路径 |
 | --- | --- |
 | 管预设、导出 ST JSON、原生正则、独立世界书关系、看当前装配、导入/选中 | `/presets`、`/presets/:id/export`、`/presets/:id/regex-scripts`、`/presets/:id/world-books`、`/active`、`/import`、`/select` |
-| 管角色卡、原生正则、独立世界书关系、绑定、导出 json/png、内嵌书 | `/characters`、`/characters/:id/regex-scripts`、`/characters/:id/world-books`、`/characters/:id/world-book`、`/character-selection` |
+| 管角色卡、侧边栏顺序、原生正则、独立世界书关系、绑定、导出 json/png、内嵌书 | `/characters`、`/characters/order`、`/characters/:id/regex-scripts`、`/characters/:id/world-books`、`/characters/:id/world-book`、`/character-selection` |
 | 管独立世界书和绑定 | `/world-books`、`/world-book-selection` |
 | 管用户、用户-世界书关系 | `/users`、`/user-selection` |
 | 界面语言缩放、绑卡跟随 RP | `/ui-settings` |
@@ -122,6 +122,16 @@ durable history。当前已实现的基础语义是：首次 assembly 必须按�
 | RP 开关与告警、rp:policy 正文 | `/rp-mode`、`/rp-alert`、`/rp-policy` |
 | 看 Trace | `/traces` |
 | 配置模板、按当前绑定开干净会话 | `/session-templates`、`/session-configurations/preview`、`/apply` |
+
+### 角色卡侧边栏顺序
+
+角色卡列表在没有自定义顺序时按 `updatedAt` 降序排列，同一更新时间再按名称 A→Z、ID A→Z 稳定排序。拖拽只写资源库状态，不修改角色卡原文或 `updatedAt`。
+
+| 方法 | 路径 | 请求 | 成功响应 |
+| --- | --- | --- | --- |
+| PUT | `/characters/order` | `{ characterIds: [...] }` | `{ ok: true, characters: [...] }` |
+
+`characterIds` 必须恰好包含当前存储中的全部角色卡 ID，每个 ID 只出现一次，最多 4096 项；未知、重复或遗漏均返回 400，失败时原顺序不变。成功顺序保存在 `character-state.json` 的 `characterOrder`，之后 `GET /characters` 直接按该顺序返回。新导入而尚未出现在自定义顺序中的角色卡按默认规则排列在已排序角色卡之后；删除角色卡会同步清理其顺序项。
 
 ### Conversation 显示设置
 

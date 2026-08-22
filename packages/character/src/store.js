@@ -28,6 +28,7 @@ import {
 } from '../../world-book/src/index.js'
 
 const ID_PATTERN = /^[a-zA-Z0-9_-]{1,100}$/
+const MAX_CHARACTER_ORDER_ENTRIES = 4096
 const MAX_ARTIFACT_BYTES = 32 * 1024 * 1024
 const MAX_EDITED_WORLD_BOOK_BYTES = 4 * 1024 * 1024
 const MAX_CHARACTER_DOCUMENT_BYTES = 16 * 1024 * 1024
@@ -141,10 +142,22 @@ function validateDocument(character) {
   return character
 }
 
+function compareDefaultSummaries(left, right) {
+  const updated = right.updatedAt.localeCompare(left.updatedAt)
+  if (updated !== 0) return updated
+  const named = left.name.localeCompare(right.name, 'en', { numeric: true, sensitivity: 'base' })
+  return named !== 0 ? named : left.id.localeCompare(right.id)
+}
+
+function stateShape(selections, characterOrder = []) {
+  return { schemaVersion: 1, selectedBySessionId: selections, characterOrder }
+}
+
 function normalizeState(value) {
   const selections = Object.create(null)
+  const characterOrder = []
   if (!isRecord(value) || value.schemaVersion !== 1 || !isRecord(value.selectedBySessionId)) {
-    return { schemaVersion: 1, selectedBySessionId: selections }
+    return stateShape(selections, characterOrder)
   }
   for (const [sessionId, selection] of Object.entries(value.selectedBySessionId)) {
     try {
@@ -153,7 +166,15 @@ function normalizeState(value) {
       if (isRecord(selection?.character)) selections[sessionId] = clone(selection)
     } catch {}
   }
-  return { schemaVersion: 1, selectedBySessionId: selections }
+  const seen = new Set()
+  for (const id of Array.isArray(value.characterOrder) ? value.characterOrder : []) {
+    try {
+      validateId(id)
+      if (!seen.has(id) && characterOrder.length < MAX_CHARACTER_ORDER_ENTRIES) characterOrder.push(id)
+      seen.add(id)
+    } catch {}
+  }
+  return stateShape(selections, characterOrder)
 }
 
 function greetingCount(character) {
@@ -194,7 +215,7 @@ export class CharacterStore {
     this.statePath = join(this.storageDir, 'character-state.json')
     mkdirSync(this.charactersDir, { recursive: true })
     mkdirSync(this.artifactsDir, { recursive: true })
-    this.state = normalizeState(readJson(this.statePath, { schemaVersion: 1, selectedBySessionId: {} }))
+    this.state = normalizeState(readJson(this.statePath, stateShape({})))
   }
 
   characterPath(id) {
@@ -206,7 +227,7 @@ export class CharacterStore {
   }
 
   list() {
-    return readdirSync(this.charactersDir, { withFileTypes: true })
+    const characters = readdirSync(this.charactersDir, { withFileTypes: true })
       .filter((entry) => entry.isFile() && entry.name.endsWith('.json'))
       .flatMap((entry) => {
         try {
@@ -215,7 +236,34 @@ export class CharacterStore {
           return []
         }
       })
-      .toSorted((left, right) => right.updatedAt.localeCompare(left.updatedAt))
+    const order = new Map(this.state.characterOrder.map((id, index) => [id, index]))
+    return characters.toSorted((left, right) => {
+      const leftIndex = order.get(left.id)
+      const rightIndex = order.get(right.id)
+      if (leftIndex === undefined && rightIndex === undefined) return compareDefaultSummaries(left, right)
+      if (leftIndex === undefined) return 1
+      if (rightIndex === undefined) return -1
+      return leftIndex - rightIndex
+    })
+  }
+
+  setOrder(characterIds) {
+    if (!Array.isArray(characterIds)) throw new TypeError('characterIds must be an array')
+    if (characterIds.length > MAX_CHARACTER_ORDER_ENTRIES) {
+      throw new TypeError(`characterIds cannot contain more than ${MAX_CHARACTER_ORDER_ENTRIES} entries`)
+    }
+    const knownIds = new Set(this.list().map(character => character.id))
+    const next = []
+    for (const id of characterIds) {
+      validateId(id)
+      if (!knownIds.has(id)) throw new TypeError(`Unknown character id "${id}"`)
+      if (next.includes(id)) throw new TypeError(`Duplicate character id "${id}"`)
+      next.push(id)
+    }
+    if (next.length !== knownIds.size) throw new TypeError('characterIds must contain every stored character exactly once')
+    this.state.characterOrder = next
+    this.saveState()
+    return this.list()
   }
 
   get(id) {
@@ -357,6 +405,11 @@ export class CharacterStore {
     try { unlinkSync(this.characterPath(id)) } catch (error) { if (error?.code !== 'ENOENT') throw error }
     try { unlinkSync(this.artifactPath(id)) } catch (error) { if (error?.code !== 'ENOENT') throw error }
     let changed = false
+    const orderIndex = this.state.characterOrder.indexOf(id)
+    if (orderIndex !== -1) {
+      this.state.characterOrder.splice(orderIndex, 1)
+      changed = true
+    }
     for (const [sessionId, selection] of Object.entries(this.state.selectedBySessionId)) {
       if (selection?.characterCardId === id) {
         delete this.state.selectedBySessionId[sessionId]
@@ -450,4 +503,5 @@ export const characterStoreConstants = Object.freeze({
   maxEditedWorldBookBytes: MAX_EDITED_WORLD_BOOK_BYTES,
   maxCharacterDocumentBytes: MAX_CHARACTER_DOCUMENT_BYTES,
   maxWorldBookEntries: MAX_WORLD_BOOK_ENTRIES,
+  maxCharacterOrderEntries: MAX_CHARACTER_ORDER_ENTRIES,
 })

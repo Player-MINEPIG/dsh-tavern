@@ -270,3 +270,19 @@ test('live client preserves structured HTTP failures', async () => {
     return true
   })
 })
+
+test('live client writes character order through the v1 resource contract', async () => {
+  const calls = []
+  const client = createLivePlayClient({
+    fetchImpl: async (url, options) => {
+      calls.push({ url, options })
+      return response({ ok: true, characters: [{ id: 'b' }, { id: 'a' }] })
+    },
+  })
+
+  const result = await client.putCharacterOrder(['b', 'a'])
+  assert.deepEqual(result.characters.map(character => character.id), ['b', 'a'])
+  assert.equal(calls[0].url, `${API_V1}/characters/order`)
+  assert.equal(calls[0].options.method, 'PUT')
+  assert.deepEqual(JSON.parse(calls[0].options.body), { characterIds: ['b', 'a'] })
+})

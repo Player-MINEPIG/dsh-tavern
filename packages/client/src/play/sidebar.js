@@ -31,10 +31,14 @@ import {
   projectPlaySidebar,
   sessionIdsInRpWorkspace,
 } from './sidebar-model.js'
+import { reorderAtBoundary } from '../../../preset/src/client-state.js'
 
 const h = createLocalizedElement(createElement)
 
 const css = `
+.dtv-play-character-drag{width:20px;min-width:20px;align-self:stretch;border:0;border-radius:7px;background:transparent;color:var(--dsw-alias-label-tertiary);cursor:grab;padding:0;font:inherit;font-size:14px;touch-action:none;user-select:none}.dtv-play-character-drag:hover{background:var(--dsw-alias-interactive-bg-hover)}.dtv-play-character-drag:active{cursor:grabbing}.dtv-play-character-drag:disabled{cursor:default;opacity:.4}
+.dtv-play-section[data-dragging=true]{height:4px;min-height:4px;margin:5px 10px;overflow:hidden;border-radius:999px;background:var(--dsw-alias-state-business-primary);box-shadow:0 0 0 1px color-mix(in srgb,var(--dsw-alias-state-business-primary) 25%,transparent)}.dtv-play-section[data-dragging=true]>*{opacity:0}
+.dtv-play-character-drop{box-sizing:border-box;height:38px;flex:none;border:2px dashed var(--dsw-alias-state-business-primary);border-radius:8px;background:color-mix(in srgb,var(--dsw-alias-state-business-primary) 7%,transparent);display:flex;align-items:center;justify-content:center;color:var(--dsw-alias-state-business-primary);font-size:10px;font-weight:600;pointer-events:none}
 .dtv-play-sidebar{height:100%;min-height:0;box-sizing:border-box;display:flex;flex-direction:column;gap:4px;padding:6px 7px 10px;overflow:auto;zoom:var(--dtv-ui-scale,1);color:var(--dsw-alias-label-primary)}
 .dtv-play-section{display:flex;flex-direction:column;gap:2px;border-radius:10px}.dtv-play-section[data-open=true]{padding-bottom:3px}
 .dtv-play-group,.dtv-play-row{width:100%;box-sizing:border-box;border:0;border-radius:8px;background:transparent;color:inherit;font:inherit;text-align:left;cursor:pointer;display:flex;align-items:center;gap:7px}.dtv-play-group:hover,.dtv-play-row:hover{background:var(--dsw-alias-interactive-bg-hover)}
@@ -102,10 +106,39 @@ function Rail({ model, scale, expandSidebar }) {
   )
 }
 
-function CharacterGroup({ character, collapsed, unassignedOpen, creating, createDisabled, toggle, toggleUnassigned, createPlaythrough, openPlaythrough, openSession, playClient }) {
+function CharacterDropPlaceholder() {
+  return h('div', { className: 'dtv-play-character-drop', 'aria-hidden': true }, uiMessage('preset.dropHere'))
+}
+
+function characterInsertionBoundary(event) {
+  const target = document.elementFromPoint(event.clientX, event.clientY)?.closest('[data-character-index]')
+  if (target === null) return null
+  const index = Number(target.dataset.characterIndex)
+  const bounds = target.getBoundingClientRect()
+  return event.clientY < bounds.top + bounds.height / 2 ? index : index + 1
+}
+
+function CharacterGroup({ character, index, dragging, reorderDisabled, onPointerDown, onPointerMove, onPointerUp, onPointerCancel, collapsed, unassignedOpen, creating, createDisabled, toggle, toggleUnassigned, createPlaythrough, openPlaythrough, openSession, playClient }) {
   const count = character.playthroughs.length + character.unassigned.length
-  return h('section', { className: 'dtv-play-section', 'data-open': !collapsed },
+  return h('section', {
+    className: 'dtv-play-section',
+    'data-open': !collapsed,
+    'data-character-index': index,
+    'data-dragging': dragging || undefined,
+  },
     h('div', { className: 'dtv-play-group-line' },
+    h('button', {
+      type: 'button',
+      className: 'dtv-play-character-drag',
+      disabled: reorderDisabled,
+      title: uiMessage('preset.dragOrder'),
+      'aria-label': uiMessage('preset.dragNamed', { name: character.name }),
+      'aria-pressed': dragging,
+      onPointerDown,
+      onPointerMove,
+      onPointerUp,
+      onPointerCancel,
+    }, '⠿'),
     h('button', {
       type: 'button',
       className: 'dtv-play-group',
@@ -212,6 +245,10 @@ export function PlayWorkspaceBrowser({
   const [activePlaythroughId, setActivePlaythroughId] = useState(
     () => getActivePlaythroughId?.() ?? null,
   )
+
+  const [characterDragFrom, setCharacterDragFrom] = useState(null)
+  const [characterDropIndex, setCharacterDropIndex] = useState(null)
+  const [reorderingCharacters, setReorderingCharacters] = useState(false)
 
   useEffect(() => {
     if (typeof subscribeActivePlaythroughId !== 'function') return undefined
@@ -330,6 +367,35 @@ export function PlayWorkspaceBrowser({
     }
   }
 
+  const moveCharacter = async (from, boundary) => {
+    if (resources === null || reorderingCharacters) return
+    const reordered = reorderAtBoundary(model.characters, from, boundary)
+    const storedIds = new Set(resources.characters.map(character => character.id))
+    const characterIds = reordered.map(character => character.id).filter(id => storedIds.has(id))
+    if (characterIds.every((id, index) => resources.characters[index]?.id === id)) return
+
+    const byId = new Map(resources.characters.map(character => [character.id, character]))
+    setResources(current => current === null ? null : {
+      ...current,
+      characters: characterIds.map(id => byId.get(id)).filter(Boolean),
+    })
+    setReorderingCharacters(true)
+    setStatus(null)
+    try {
+      if (typeof playClient.putCharacterOrder !== 'function') throw new Error('character order API is unavailable')
+      const response = await playClient.putCharacterOrder(characterIds)
+      if (Array.isArray(response?.characters)) {
+        setResources(current => current === null ? null : { ...current, characters: response.characters })
+      }
+      window.dispatchEvent(new Event(CLIENT_REFRESH_EVENT))
+    } catch (reason) {
+      setStatus({ message: reason instanceof Error ? reason.message : String(reason) })
+      setRevision(value => value + 1)
+    } finally {
+      setReorderingCharacters(false)
+    }
+  }
+
   if (wide === false) return h(Rail, { model, scale, expandSidebar })
 
   const toggleSet = (setter, id) => setter(current => {
@@ -366,20 +432,57 @@ export function PlayWorkspaceBrowser({
       'data-error': true,
     }, rawText(`${diagnostic.path}: ${diagnostic.message}`))),
     resources !== null && model.characters.length === 0 ? h('p', { className: 'dtv-play-empty' }, uiMessage('play.sidebar.noCharacters')) : null,
-    ...model.characters.map(character => h(CharacterGroup, {
-      key: character.id,
-      character,
-      collapsed: collapsedCharacters.has(character.id),
-      unassignedOpen: expandedUnassigned.has(character.id),
-      creating: creatingCharacterId === character.id,
-      createDisabled: !model.workspaceReady || creatingCharacterId !== null,
-      createPlaythrough,
-      playClient,
-      toggle: () => toggleSet(setCollapsedCharacters, character.id),
-      toggleUnassigned: () => toggleSet(setExpandedUnassigned, character.id),
-      openPlaythrough,
-      openSession,
-    })),
+    ...model.characters.flatMap((character, index) => [
+      characterDragFrom !== null && characterDropIndex === index
+        ? h(CharacterDropPlaceholder, { key: `drop-${index}` })
+        : null,
+      h(CharacterGroup, {
+        key: character.id,
+        character,
+        index,
+        dragging: characterDragFrom === index,
+        reorderDisabled: reorderingCharacters
+          || model.characters.length < 2
+          || !resources?.characters.some(item => item.id === character.id),
+        onPointerDown: (event) => {
+          event.preventDefault()
+          event.stopPropagation()
+          event.currentTarget.setPointerCapture(event.pointerId)
+          setCharacterDragFrom(index)
+          setCharacterDropIndex(index + 1)
+        },
+        onPointerMove: (event) => {
+          if (!event.currentTarget.hasPointerCapture(event.pointerId)) return
+          const boundary = characterInsertionBoundary(event)
+          if (boundary !== null) setCharacterDropIndex(boundary)
+        },
+        onPointerUp: (event) => {
+          event.preventDefault()
+          const boundary = characterInsertionBoundary(event) ?? characterDropIndex ?? index + 1
+          if (event.currentTarget.hasPointerCapture(event.pointerId)) event.currentTarget.releasePointerCapture(event.pointerId)
+          setCharacterDragFrom(null)
+          setCharacterDropIndex(null)
+          void moveCharacter(index, boundary)
+        },
+        onPointerCancel: () => {
+          setCharacterDragFrom(null)
+          setCharacterDropIndex(null)
+        },
+        collapsed: collapsedCharacters.has(character.id),
+        unassignedOpen: expandedUnassigned.has(character.id),
+        creating: creatingCharacterId === character.id,
+        createDisabled: !model.workspaceReady || creatingCharacterId !== null,
+        createPlaythrough,
+        playClient,
+        toggle: () => toggleSet(setCollapsedCharacters, character.id),
+        toggleUnassigned: () => toggleSet(setExpandedUnassigned, character.id),
+        openPlaythrough,
+        openSession,
+      }),
+    ]),
+    characterDragFrom !== null && characterDropIndex === model.characters.length
+      ? h(CharacterDropPlaceholder, { key: 'drop-end' })
+      : null,
     h('section', { className: 'dtv-play-section', 'data-open': otherOpen },
       h('div', { className: 'dtv-play-group-line' },
       h('button', {

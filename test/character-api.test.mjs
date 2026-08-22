@@ -107,6 +107,31 @@ test('character API imports raw bytes, reads resources, selects, exports, and de
   }
 })
 
+test('character API persists an exact custom sidebar order', async () => {
+  const directory = mkdtempSync(join(tmpdir(), 'dsh-tavern-character-order-api-'))
+  const store = new CharacterStore(directory)
+  const changes = []
+  const handler = createCharacterApiHandler(store, { onChange: change => changes.push(change) })
+  try {
+    store.create({ id: 'a', name: 'Alpha', now: '2026-08-15T00:00:00.000Z' })
+    store.create({ id: 'b', name: 'Beta', now: '2026-08-16T00:00:00.000Z' })
+    const reordered = await invoke(handler, {
+      method: 'PUT',
+      url: '/pmp-dsh-tavern/api/v1/characters/order',
+      body: { characterIds: ['a', 'b'] },
+    })
+    assert.equal(reordered.status, 200)
+    assert.deepEqual(reordered.json.characters.map(character => character.id), ['a', 'b'])
+    assert.deepEqual((await invoke(handler, { url: '/pmp-dsh-tavern/api/v1/characters' })).json.characters.map(character => character.id), ['a', 'b'])
+    assert.deepEqual(changes, [{ kind: 'character-order-changed', characterCardIds: ['a', 'b'] }])
+
+    const invalid = await invoke(handler, { method: 'PUT', url: '/pmp-dsh-tavern/api/v1/characters/order', body: { characterIds: ['a'] } })
+    assert.equal(invalid.status, 400)
+  } finally {
+    rmSync(directory, { recursive: true, force: true })
+  }
+})
+
 test('character API patches fields, exports current PNG, and rejects invalid updates', async () => {
   const directory = mkdtempSync(join(tmpdir(), 'dsh-tavern-character-patch-'))
   const store = new CharacterStore(directory)

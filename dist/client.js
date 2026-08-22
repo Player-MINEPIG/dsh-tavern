@@ -3823,7 +3823,7 @@ var zh_CN_default = Object.freeze({
   "play.sidebar.ordinaryPrompt": "\u666E\u901A\u4F1A\u8BDD\u8BF7\u5728 DSH \u539F\u751F\u6A21\u5F0F\u4E2D\u521B\u5EFA\u3002\u8FD4\u56DE\u539F\u751F\u6A21\u5F0F\u540E\uFF0C\u53EF\u4F7F\u7528\u4FA7\u8FB9\u680F\u5916\u5C42\u7684\u201C\u65B0\u5EFA\u4F1A\u8BDD\u201D\u6309\u94AE\u3002",
   "play.sidebar.ordinaryClose": "\u5173\u95ED",
   "play.sidebar.returnNative": "\u56DE\u5230 DSH \u6A21\u5F0F",
-  "play.notice.unbound": "\u672C\u4F1A\u8BDD\u6682\u672A\u7ED1\u5B9A\u89D2\u8272\u5361\uFF1B\u53EF\u4EE5\u6B63\u5E38\u5BF9\u8BDD\u3002\u7ED1\u5B9A\u89D2\u8272\u5361\u540E\u65B0\u5F00\u5468\u76EE\uFF0C\u624D\u4F1A\u542F\u7528\u5F00\u573A\u767D\u3001\u56DE\u590D\u5207\u6362\u3001\u663E\u793A\u7F16\u8F91\u4E0E\u5468\u76EE\u5BFC\u5165/\u5BFC\u51FA\u3002",
+  "play.notice.unbound": "\u672C\u4F1A\u8BDD\u6682\u672A\u7ED1\u5B9A\u5230\u6307\u5B9A RP \u5DE5\u4F5C\u533A\u5185\u7684\u5468\u76EE\uFF1B\u53EF\u4EE5\u6B63\u5E38\u5BF9\u8BDD\u3002\u8FDB\u5165\u89D2\u8272\u5361\u4E0B\u7684\u5468\u76EE\u540E\uFF0C\u624D\u4F1A\u542F\u7528\u5F00\u573A\u767D\u3001\u56DE\u590D\u5207\u6362\u3001\u663E\u793A\u7F16\u8F91\u4E0E\u5468\u76EE\u5BFC\u5165/\u5BFC\u51FA\u3002",
   "play.sidebar.sessionMissing": "\u8BE5\u5468\u76EE\u5728\u89D2\u8272\u626E\u6F14\u5DE5\u4F5C\u533A\u4E2D\u6CA1\u6709\u53EF\u7528\u4F1A\u8BDD\u3002",
   "play.sidebar.timelineErrors": "\u6709 {count} \u4E2A\u5468\u76EE\u7684 timeline \u65E0\u6CD5\u8BFB\u53D6\u3002",
   "play.chat.label": "RP\u89C6\u56FE",
@@ -4454,7 +4454,7 @@ var en_default = Object.freeze({
   "play.sidebar.ordinaryPrompt": "Create ordinary sessions in DSH native mode. Return to native mode, then use the outer New Session button in the sidebar.",
   "play.sidebar.ordinaryClose": "Close",
   "play.sidebar.returnNative": "Return to DSH mode",
-  "play.notice.unbound": "This session is not bound to a character card. You can keep chatting normally; start a new playthrough after binding a card to enable greetings, swipes, display edits, and playthrough import/export.",
+  "play.notice.unbound": "This session is not attached to a playthrough in the selected RP workspace. You can keep chatting normally; enter a character playthrough to enable greetings, swipes, display edits, and playthrough import/export.",
   "play.sidebar.sessionMissing": "This playthrough has no available session in the role-play workspace.",
   "play.sidebar.timelineErrors": "{count} playthrough timelines could not be read.",
   "play.chat.label": "RP View",
@@ -12869,6 +12869,9 @@ function PlayIoMenu({ playClient, playthrough, trigger = "+", placement = "compo
 // packages/client/src/play/sidebar.js
 var h10 = createLocalizedElement(import_react12.createElement);
 var css9 = `
+.dtv-play-character-drag{width:20px;min-width:20px;align-self:stretch;border:0;border-radius:7px;background:transparent;color:var(--dsw-alias-label-tertiary);cursor:grab;padding:0;font:inherit;font-size:14px;touch-action:none;user-select:none}.dtv-play-character-drag:hover{background:var(--dsw-alias-interactive-bg-hover)}.dtv-play-character-drag:active{cursor:grabbing}.dtv-play-character-drag:disabled{cursor:default;opacity:.4}
+.dtv-play-section[data-dragging=true]{height:4px;min-height:4px;margin:5px 10px;overflow:hidden;border-radius:999px;background:var(--dsw-alias-state-business-primary);box-shadow:0 0 0 1px color-mix(in srgb,var(--dsw-alias-state-business-primary) 25%,transparent)}.dtv-play-section[data-dragging=true]>*{opacity:0}
+.dtv-play-character-drop{box-sizing:border-box;height:38px;flex:none;border:2px dashed var(--dsw-alias-state-business-primary);border-radius:8px;background:color-mix(in srgb,var(--dsw-alias-state-business-primary) 7%,transparent);display:flex;align-items:center;justify-content:center;color:var(--dsw-alias-state-business-primary);font-size:10px;font-weight:600;pointer-events:none}
 .dtv-play-sidebar{height:100%;min-height:0;box-sizing:border-box;display:flex;flex-direction:column;gap:4px;padding:6px 7px 10px;overflow:auto;zoom:var(--dtv-ui-scale,1);color:var(--dsw-alias-label-primary)}
 .dtv-play-section{display:flex;flex-direction:column;gap:2px;border-radius:10px}.dtv-play-section[data-open=true]{padding-bottom:3px}
 .dtv-play-group,.dtv-play-row{width:100%;box-sizing:border-box;border:0;border-radius:8px;background:transparent;color:inherit;font:inherit;text-align:left;cursor:pointer;display:flex;align-items:center;gap:7px}.dtv-play-group:hover,.dtv-play-row:hover{background:var(--dsw-alias-interactive-bg-hover)}
@@ -12937,14 +12940,41 @@ function Rail({ model, scale, expandSidebar }) {
     }, "\u2630")
   );
 }
-function CharacterGroup({ character, collapsed, unassignedOpen, creating, createDisabled, toggle, toggleUnassigned, createPlaythrough, openPlaythrough, openSession, playClient }) {
+function CharacterDropPlaceholder() {
+  return h10("div", { className: "dtv-play-character-drop", "aria-hidden": true }, uiMessage("preset.dropHere"));
+}
+function characterInsertionBoundary(event) {
+  const target = document.elementFromPoint(event.clientX, event.clientY)?.closest("[data-character-index]");
+  if (target === null) return null;
+  const index = Number(target.dataset.characterIndex);
+  const bounds = target.getBoundingClientRect();
+  return event.clientY < bounds.top + bounds.height / 2 ? index : index + 1;
+}
+function CharacterGroup({ character, index, dragging, reorderDisabled, onPointerDown, onPointerMove, onPointerUp, onPointerCancel, collapsed, unassignedOpen, creating, createDisabled, toggle, toggleUnassigned, createPlaythrough, openPlaythrough, openSession, playClient }) {
   const count = character.playthroughs.length + character.unassigned.length;
   return h10(
     "section",
-    { className: "dtv-play-section", "data-open": !collapsed },
+    {
+      className: "dtv-play-section",
+      "data-open": !collapsed,
+      "data-character-index": index,
+      "data-dragging": dragging || void 0
+    },
     h10(
       "div",
       { className: "dtv-play-group-line" },
+      h10("button", {
+        type: "button",
+        className: "dtv-play-character-drag",
+        disabled: reorderDisabled,
+        title: uiMessage("preset.dragOrder"),
+        "aria-label": uiMessage("preset.dragNamed", { name: character.name }),
+        "aria-pressed": dragging,
+        onPointerDown,
+        onPointerMove,
+        onPointerUp,
+        onPointerCancel
+      }, "\u283F"),
       h10(
         "button",
         {
@@ -13060,6 +13090,9 @@ function PlayWorkspaceBrowser({
   const [activePlaythroughId, setActivePlaythroughId] = (0, import_react12.useState)(
     () => getActivePlaythroughId?.() ?? null
   );
+  const [characterDragFrom, setCharacterDragFrom] = (0, import_react12.useState)(null);
+  const [characterDropIndex, setCharacterDropIndex] = (0, import_react12.useState)(null);
+  const [reorderingCharacters, setReorderingCharacters] = (0, import_react12.useState)(false);
   (0, import_react12.useEffect)(() => {
     if (typeof subscribeActivePlaythroughId !== "function") return void 0;
     setActivePlaythroughId(getActivePlaythroughId?.() ?? null);
@@ -13172,6 +13205,33 @@ function PlayWorkspaceBrowser({
       setStatus({ message: reason instanceof Error ? reason.message : String(reason) });
     }
   };
+  const moveCharacter = async (from, boundary) => {
+    if (resources === null || reorderingCharacters) return;
+    const reordered = reorderAtBoundary(model.characters, from, boundary);
+    const storedIds = new Set(resources.characters.map((character) => character.id));
+    const characterIds = reordered.map((character) => character.id).filter((id) => storedIds.has(id));
+    if (characterIds.every((id, index) => resources.characters[index]?.id === id)) return;
+    const byId = new Map(resources.characters.map((character) => [character.id, character]));
+    setResources((current3) => current3 === null ? null : {
+      ...current3,
+      characters: characterIds.map((id) => byId.get(id)).filter(Boolean)
+    });
+    setReorderingCharacters(true);
+    setStatus(null);
+    try {
+      if (typeof playClient.putCharacterOrder !== "function") throw new Error("character order API is unavailable");
+      const response = await playClient.putCharacterOrder(characterIds);
+      if (Array.isArray(response?.characters)) {
+        setResources((current3) => current3 === null ? null : { ...current3, characters: response.characters });
+      }
+      window.dispatchEvent(new Event(CLIENT_REFRESH_EVENT));
+    } catch (reason) {
+      setStatus({ message: reason instanceof Error ? reason.message : String(reason) });
+      setRevision((value) => value + 1);
+    } finally {
+      setReorderingCharacters(false);
+    }
+  };
   if (wide === false) return h10(Rail, { model, scale, expandSidebar });
   const toggleSet = (setter, id) => setter((current3) => {
     const next = new Set(current3);
@@ -13212,20 +13272,51 @@ function PlayWorkspaceBrowser({
       "data-error": true
     }, rawText(`${diagnostic.path}: ${diagnostic.message}`))),
     resources !== null && model.characters.length === 0 ? h10("p", { className: "dtv-play-empty" }, uiMessage("play.sidebar.noCharacters")) : null,
-    ...model.characters.map((character) => h10(CharacterGroup, {
-      key: character.id,
-      character,
-      collapsed: collapsedCharacters.has(character.id),
-      unassignedOpen: expandedUnassigned.has(character.id),
-      creating: creatingCharacterId === character.id,
-      createDisabled: !model.workspaceReady || creatingCharacterId !== null,
-      createPlaythrough,
-      playClient,
-      toggle: () => toggleSet(setCollapsedCharacters, character.id),
-      toggleUnassigned: () => toggleSet(setExpandedUnassigned, character.id),
-      openPlaythrough,
-      openSession
-    })),
+    ...model.characters.flatMap((character, index) => [
+      characterDragFrom !== null && characterDropIndex === index ? h10(CharacterDropPlaceholder, { key: `drop-${index}` }) : null,
+      h10(CharacterGroup, {
+        key: character.id,
+        character,
+        index,
+        dragging: characterDragFrom === index,
+        reorderDisabled: reorderingCharacters || model.characters.length < 2 || !resources?.characters.some((item) => item.id === character.id),
+        onPointerDown: (event) => {
+          event.preventDefault();
+          event.stopPropagation();
+          event.currentTarget.setPointerCapture(event.pointerId);
+          setCharacterDragFrom(index);
+          setCharacterDropIndex(index + 1);
+        },
+        onPointerMove: (event) => {
+          if (!event.currentTarget.hasPointerCapture(event.pointerId)) return;
+          const boundary = characterInsertionBoundary(event);
+          if (boundary !== null) setCharacterDropIndex(boundary);
+        },
+        onPointerUp: (event) => {
+          event.preventDefault();
+          const boundary = characterInsertionBoundary(event) ?? characterDropIndex ?? index + 1;
+          if (event.currentTarget.hasPointerCapture(event.pointerId)) event.currentTarget.releasePointerCapture(event.pointerId);
+          setCharacterDragFrom(null);
+          setCharacterDropIndex(null);
+          void moveCharacter(index, boundary);
+        },
+        onPointerCancel: () => {
+          setCharacterDragFrom(null);
+          setCharacterDropIndex(null);
+        },
+        collapsed: collapsedCharacters.has(character.id),
+        unassignedOpen: expandedUnassigned.has(character.id),
+        creating: creatingCharacterId === character.id,
+        createDisabled: !model.workspaceReady || creatingCharacterId !== null,
+        createPlaythrough,
+        playClient,
+        toggle: () => toggleSet(setCollapsedCharacters, character.id),
+        toggleUnassigned: () => toggleSet(setExpandedUnassigned, character.id),
+        openPlaythrough,
+        openSession
+      })
+    ]),
+    characterDragFrom !== null && characterDropIndex === model.characters.length ? h10(CharacterDropPlaceholder, { key: "drop-end" }) : null,
     h10(
       "section",
       { className: "dtv-play-section", "data-open": otherOpen },
@@ -14048,6 +14139,9 @@ function createLivePlayClient({
     },
     getCharacters() {
       return v1("GET", "/characters");
+    },
+    putCharacterOrder(characterIds) {
+      return v1("PUT", "/characters/order", { characterIds });
     },
     getCharacter(id) {
       return v1("GET", `/characters/${encodeURIComponent(id)}`);
@@ -15791,7 +15885,7 @@ function TavernShell({ useSessions, useWorkspaces, createCleanSession, createCon
   const statuses = launcherResourceStatuses(activeSnapshot);
   const chromeSwitchLabel = chromeMode === "play" ? uiMessage("chrome.switchToNative") : uiMessage("chrome.switchToPlay");
   const chromeStatusLabel = chromeMode === "play" ? uiMessage("chrome.currentPlay") : uiMessage("chrome.currentNative");
-  const workspaceAdmissionOpen = chromeMode === "play" && (rpWorkspaceLoadState !== "ready" || rpWorkspaceSetting?.ready !== true);
+  const workspaceAdmissionOpen = chromeMode === "play" && rpWorkspaceLoadState !== "idle" && rpWorkspaceLoadState !== "loading" && rpWorkspaceSetting?.ready !== true;
   return h13(
     "div",
     { className: "dtv-layer", lang: uiSettings.locale, "data-chrome": chromeMode, "data-surface-open": surface !== null, style: { "--dtv-ui-scale": uiSettings.scale } },
