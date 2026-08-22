@@ -51,6 +51,33 @@ test('import context claims from public input event seqs and is repeatable for t
   }
 })
 
+test('import context expands Tavern macros before DSH prompt assembly', () => {
+  const directory = mkdtempSync(join(tmpdir(), 'dsh-tavern-import-context-macros-'))
+  const content = JSON.stringify({
+    schemaVersion: 1,
+    greeting: 'Hello {{user}} from {{char}}',
+    qa: [{
+      user: '{{user}} asks & waits',
+      assistant: '{{char}} answers <now> {{unsupported}}',
+    }],
+  })
+  try {
+    const runtime = makeRuntime(directory, content)
+    runtime.bind('macro-session', runtime.prepare('context.json'))
+    const prompt = runtime.contextFor(
+      'macro-session',
+      { claimEventSeqs: [1] },
+      { user: 'Reader', character: 'Ally' },
+    )
+    assert.match(prompt, /Hello Reader from Ally/)
+    assert.match(prompt, /Reader asks &amp; waits/)
+    assert.match(prompt, /Ally answers &lt;now&gt;/)
+    assert.doesNotMatch(prompt, /\{\{/)
+  } finally {
+    rmSync(directory, { recursive: true, force: true })
+  }
+})
+
 test('pending terminal events do not consume and terminal metadata closes a claim', () => {
   const directory = mkdtempSync(join(tmpdir(), 'dsh-tavern-import-context-terminal-'))
   try {
@@ -175,7 +202,8 @@ test('loader snapshot supplies claim metadata once to import context runtime', (
     runtime.bind('loader-session', runtime.prepare('context.json'))
     const snapshot = profile.forAssembleContext({ agent: { id: 'loader-session', session: { deriveMessages: () => [] } } })
     assert.deepEqual(snapshot.audit.activation.claimEventSeqs, [21])
-    assert.match(runtime.contextFor('loader-session', snapshot.audit.activation), /imported-playthrough-context/)
+    assert.deepEqual(snapshot.macroContext, { user: 'User', character: 'Assistant' })
+    assert.match(runtime.contextFor('loader-session', snapshot.audit.activation, snapshot.macroContext), /imported-playthrough-context/)
     assert.equal(providerCalls, 1)
   } finally {
     rmSync(directory, { recursive: true, force: true })

@@ -57,13 +57,14 @@ test('HTML honors display state while ST keeps authoritative raw data and swipes
   assert.doesNotMatch(html, /Original reply|Hidden reply|<script/i)
 
   const st = playthroughExportDocument(snapshot, 'st').content
-  assert.ok(st.includes('Alt {{user}} from {{char}}'))
+  assert.ok(st.includes('Alt Reader from Ally'))
   assert.match(st, /Original reply/)
   assert.doesNotMatch(st, /Displayed|Hidden reply/)
+  assert.doesNotMatch(st, /\{\{(?:user|char)\}\}/)
   const stRows = st.trim().split('\n').map(line => JSON.parse(line))
-  assert.deepEqual(stRows[1].swipes, ['Hi', 'Alt {{user}} from {{char}}'])
+  assert.deepEqual(stRows[1].swipes, ['Hi', 'Alt Reader from Ally'])
   assert.equal(stRows[1].swipe_id, 1)
-  assert.equal(stRows[1].mes, 'Alt {{user}} from {{char}}')
+  assert.equal(stRows[1].mes, 'Alt Reader from Ally')
   assert.deepEqual(stRows[3].swipes, ['Original reply', 'Alternative reply'])
   assert.equal(stRows[3].swipe_id, 0)
   assert.equal(stRows[3].mes, 'Original reply')

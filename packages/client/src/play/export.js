@@ -177,6 +177,7 @@ export async function loadPlaythroughExport(client, playthrough) {
     // Greeting is card metadata, not model output. Keep static export aligned
     // with the RP view: expand names, but do not run output-only regex rules.
     displayGreeting: greeting === null ? null : applyDisplayNameMacros(greeting, greetingMacros),
+    displayGreetingSwipes: greetingSwipes.map(text => applyDisplayNameMacros(text, greetingMacros)),
     exportedAt: new Date().toISOString(),
   }
 }
@@ -230,7 +231,11 @@ export function sillyTavernJsonlExport(snapshot) {
       is_user: false,
       is_name: true,
       send_date: snapshot.exportedAt,
-      ...stSwipeFields(snapshot.greetingSwipes ?? [snapshot.greeting], snapshot.greetingSwipeId, snapshot.exportedAt),
+      ...stSwipeFields(
+        snapshot.displayGreetingSwipes ?? snapshot.greetingSwipes ?? [snapshot.greeting],
+        snapshot.greetingSwipeId,
+        snapshot.exportedAt,
+      ),
     }))
   }
   for (const turn of snapshot.turns) {

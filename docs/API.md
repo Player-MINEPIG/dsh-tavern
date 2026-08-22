@@ -84,7 +84,7 @@ controller 会串行同角色创建；内置 caller 使用服务端 CAS 的有�
 空周目的 opening dock 使用当前 root session 绑定外部记录，不另建 session，也不写 greeting
 或 timeline 节点。绑定、换绑和解绑分别通过 `PUT` / `DELETE /sessions/:id/import-context`
 完成；客户端在同一 footer 中显示操作，绑定后预览最近三轮 QA。绑定状态为 `pending` 时，首次
-实际请求才注入完整内容；loader 将其转义并标记为 `untrusted`、只读上下文，不把它写入 DSH
+实际请求才注入完整内容；loader 使用同一 profile snapshot 的 user/character 名称展开 greeting 与 QA 中的 Tavern 宏，再将其转义并标记为 `untrusted`、只读上下文，避免 ST 占位符进入 DSH prompt variable 解析；它不把内容写入 DSH
 durable history。当前已实现的基础语义是：首次 assembly 必须按原用户 turn/event 的公开 `claimEventSeqs` 建立持久 claim；同一 claim identity 可重复 assembly，未 claim 的 pending 不会因 view 或无关 turn/end 被消费。retry/swipe lineage 与取消/中断终态已实现：终态只保存 event seq、turn、reason.kind 等非正文元数据；同一请求在 terminal 前可重复 assembly，terminal 后新 claim 不再注入；Tavern swipe 仅通过公开 branch 接缝复制 selection/lineage，不宣称拦截所有第三方原生 fork。
 
 请求体为 `{ reference: { path, expectedHash? } }`。文件必须位于已绑定工作区根内，文档为

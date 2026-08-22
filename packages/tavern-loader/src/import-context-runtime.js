@@ -2,6 +2,7 @@ import { createHash } from 'node:crypto'
 import { existsSync } from 'node:fs'
 import { join, resolve } from 'node:path'
 import { atomicJson, readJsonFile } from '../../play/src/atomic-json.js'
+import { renderSillyTavernMacros } from '../../tavern-format/src/index.js'
 
 const FILE_NAME = 'import-context-bindings.json'
 const MAX_STORE_BYTES = 256 * 1024
@@ -20,6 +21,10 @@ function escapeText(value) {
     .replaceAll('&', '&amp;')
     .replaceAll('<', '&lt;')
     .replaceAll('>', '&gt;')
+}
+
+function renderImportedText(value, macroContext) {
+  return escapeText(renderSillyTavernMacros(String(value ?? ''), macroContext))
 }
 
 function normalizeDocument(text) {
@@ -157,7 +162,7 @@ export class ImportContextRuntime {
     return isRecord(binding) ? structuredClone(binding) : null
   }
 
-  contextFor(sessionId, claimMetadata) {
+  contextFor(sessionId, claimMetadata, macroContext = {}) {
     const binding = this.state.sessions[sessionId]
     if (!isRecord(binding) || (binding.state !== 'pending' && binding.state !== 'claimed')) return ''
     const eventSeqs = normalizeClaimEventSeqs(claimMetadata)
@@ -180,9 +185,9 @@ export class ImportContextRuntime {
     const document = normalizeDocument(file.content)
     const greeting = document.greeting === null
       ? ''
-      : `<greeting>${escapeText(document.greeting)}</greeting>\n`
+      : `<greeting>${renderImportedText(document.greeting, macroContext)}</greeting>\n`
     const qa = document.qa.map((entry, index) => (
-      `<qa index="${index + 1}"><user>${escapeText(entry.user)}</user><assistant>${escapeText(entry.assistant)}</assistant></qa>`
+      `<qa index="${index + 1}"><user>${renderImportedText(entry.user, macroContext)}</user><assistant>${renderImportedText(entry.assistant, macroContext)}</assistant></qa>`
     )).join('\n')
     if (nextBinding !== binding) {
       this.state.sessions[sessionId] = nextBinding

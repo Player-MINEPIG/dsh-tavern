@@ -217,6 +217,18 @@ export class TavernProfileLoader {
     )
     diagnostics.push(...worldBookResult.diagnostics)
 
+    const baseContext = isRecord(options.context) ? options.context : {}
+    const characterData = isRecord(characterResult.character?.data)
+      ? characterResult.character.data
+      : characterResult.character
+    const macroContext = {
+      user: userResult.user?.name ?? baseContext.user ?? 'User',
+      character: baseContext.character
+        ?? characterData?.nickname
+        ?? characterData?.name
+        ?? characterResult.character?.name
+        ?? 'Assistant',
+    }
     const compiled = compileTavernProfile({
       preset,
       character: characterResult.character,
@@ -226,7 +238,7 @@ export class TavernProfileLoader {
         ? true
         : greetingReferenceAppliesToAgent(options.agent),
       loreEntries: Array.isArray(worldBookResult.loreEntries) ? worldBookResult.loreEntries : [],
-      context: options.context ?? {},
+      context: { ...baseContext, ...macroContext },
       maxProfileBytes: this.maxProfileBytes,
     })
     diagnostics.push(...compiled.diagnostics)
@@ -273,6 +285,7 @@ export class TavernProfileLoader {
 
     return {
       ...compiled,
+      macroContext,
       diagnostics,
       resources,
       audit: { ...audit, fingerprint: fingerprint(audit) },
