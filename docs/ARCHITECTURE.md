@@ -28,11 +28,14 @@ chrome / 扮演工作区 files / timeline 校验 / focus 派生（纯逻辑+HTTP
        ▼
 packages/tavern-loader ◄── DSH session/event（PendingInputProjection）
 DSH 编译策略、session/request 策略、Host hooks、v1+v2 HTTP
-       │
-       ├── packages/tavern-trace
-       │   最小化审计模型、有界插件存储/API、conversation.view
-       │
-       ▼
+        │
+        ├── packages/session-template（由 loader 组合）
+        │   干净会话配置投影、原子存储/API（不含历史）
+        │
+        ├── packages/tavern-trace
+        │   最小化审计模型、有界插件存储/API、conversation.view
+        │
+        ▼
 DSH system prompt + agent request
 ```
 

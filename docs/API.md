@@ -220,12 +220,13 @@ loader 的独立书合成顺序固定为：会话显式绑定、用户关系、�
 ### 后端 operation log utility
 
 `packages/play/src/operation-log.js` 导出 `createOperationContext` 和
-`operationLogConstants`，供 workspace/catalog/timeline 及 session/import
+`operationLogConstants`，供 workspace/catalog/timeline、session/import 及 playthrough
 mutation 接入。当前已接入以下写操作：
 
 - `PUT /workspace`（bind）、`POST /workspace/dirs`、`PUT /workspace/files?path=`；
 - `POST /sessions`、`POST /sessions/:id/branch`、`POST /sessions/:id/user-message`；
-- `PUT /sessions/:id/import-context` 和 `DELETE /sessions/:id/import-context`。
+- `PUT /sessions/:id/import-context` 和 `DELETE /sessions/:id/import-context`；
+- `POST /playthroughs/:id/detach-session` 和 `POST /playthroughs/:id/relink-character`。
 
 只读的 GET 不产 operation 日志。它只接受 Cordis `ctx.logger`（或其 callable
 logger service），以 `dsh-tavern.operation ` 前缀输出单行日志；前缀后的部分是稳定
@@ -241,7 +242,7 @@ preset、正则、资源正文、请求 body、message text 及未知字段均�
 正文摘要。logger 缺失、方法缺失或 logger 自身抛错时 fail-soft。terminal 之后的
 stage 或 terminal 调用无效且不会重复写终态。
 
-本节声明 utility 及上述 workspace/session/import endpoint 接入；当前不能据此声称
+本节声明 utility 及上述 workspace/session/import/playthrough endpoint 接入；当前不能据此声称
 所有生命周期静默失败都已被日志覆盖。默认 Cordis logger 仍由其自身管理，插件不写
 持久日志文件、浏览器日志或 exporter。
 
