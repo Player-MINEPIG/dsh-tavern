@@ -329,6 +329,12 @@ export function createLivePlayClient({
       return v1('POST', '/characters/relink', { previousCharacterId, characterId })
     },
 
+    relinkPlaythroughCharacter(playthroughId, characterId) {
+      if (typeof playthroughId !== 'string' || playthroughId === '') throw new TypeError('playthroughId is required')
+      if (typeof characterId !== 'string' || characterId === '') throw new TypeError('characterId is required')
+      return v2('POST', `/playthroughs/${encodeURIComponent(playthroughId)}/relink-character`, { characterId })
+    },
+
     getCharacter(id) {
       return v1('GET', `/characters/${encodeURIComponent(id)}`)
     },

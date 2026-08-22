@@ -598,6 +598,11 @@ export function apply(ctx, config = {}) {
       host: playHost,
       logger: ctx.logger,
       membershipService: playMemberships,
+      resolveCharacter: characterId => characterStore.list().find(item => item.id === characterId) ?? null,
+      relinkPlaythrough: (playthroughId, character, { operation }) => playMemberships.relinkPlaythrough(playthroughId, character, {
+        operation,
+        selectionPolicy: characterSelectionPolicy,
+      }),
     })
     const rpPolicyApi = createRpPolicyApiHandler(rpPolicyStore, { onChange: notifyChange })
     const rpModeApi = createRpModeApiHandler(rpMode, {

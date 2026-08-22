@@ -29,6 +29,39 @@ function historicalCharacterName(playthrough, sessions, fallback) {
   return inferred !== '' && inferred !== root ? inferred : fallback
 }
 
+function normalizedCharacterName(value) {
+  return String(value ?? '').trim().toLocaleLowerCase('zh-CN')
+}
+
+export function assessPlaythroughCharacterRelink({
+  playthrough,
+  target,
+  characters = [],
+  missingCharacters = [],
+} = {}) {
+  const reference = playthrough?.ext?.pmpDshTavern ?? {}
+  const currentId = playthroughCharacterId(playthrough)
+  if (typeof target?.id !== 'string' || target.id === '') return { automatic: false, reason: 'target-missing' }
+  if (target.id === currentId) return { automatic: true, reason: 'unchanged' }
+
+  if (typeof reference.characterSha256 === 'string' && reference.characterSha256 !== '') {
+    const shaMatches = characters.filter(character => character.sha256 === reference.characterSha256)
+    if (shaMatches.length === 1 && shaMatches[0].id === target.id) return { automatic: true, reason: 'sha256' }
+  }
+
+  const name = normalizedCharacterName(reference.characterName)
+  if (name !== '') {
+    const missingNameMatches = missingCharacters.filter(character => normalizedCharacterName(character.name) === name)
+    const currentNameMatches = characters.filter(character => normalizedCharacterName(character.name) === name)
+    const missingIdentityIsUnique = missingNameMatches.length === 0
+      || (missingNameMatches.length === 1 && missingNameMatches[0].id === currentId)
+    if (missingIdentityIsUnique && currentNameMatches.length === 1 && currentNameMatches[0].id === target.id) {
+      return { automatic: true, reason: 'name' }
+    }
+  }
+  return { automatic: false, reason: 'manual' }
+}
+
 function normalizedPath(value) {
   if (typeof value !== 'string') return ''
   const normalized = value.replaceAll('\\', '/').replace(/\/+$/, '')

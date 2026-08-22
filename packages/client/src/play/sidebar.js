@@ -24,6 +24,7 @@ import {
 import { PlayIoMenu } from './io-menu.js'
 import {
   SessionCharacterBindingCache,
+  assessPlaythroughCharacterRelink,
   loadPlaySidebarResources,
   requiresSystemWorkspaceConfirmation,
   loadSessionCharacterBindings,
@@ -49,7 +50,7 @@ const css = `
 .dtv-play-chevron{width:10px;flex:none;text-align:center;color:var(--dsw-alias-label-tertiary)}.dtv-play-title{min-width:0;flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.dtv-play-count{flex:none;border-radius:9px;padding:1px 6px;background:var(--dsw-specific-tip);color:var(--dsw-alias-label-tertiary);font-size:9px}
 .dtv-play-avatar{position:relative;width:25px;height:25px;flex:none;border-radius:50%;overflow:hidden;background:var(--dsw-specific-tip);display:grid;place-items:center;color:var(--dsw-alias-label-secondary);font-size:10px}.dtv-play-avatar img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
 .dtv-play-subgroup{display:flex;flex-direction:column;gap:1px}.dtv-play-subgroup>.dtv-play-group{min-height:30px;padding-left:25px;font-size:10px;font-weight:620;color:var(--dsw-alias-label-secondary)}
-.dtv-play-missing{border-top:1px solid var(--dsw-alias-border-subtle);margin-top:3px;padding-top:3px}.dtv-play-missing-card{margin-left:10px}.dtv-play-relink{width:30px;height:30px;flex:none;border:0;border-radius:8px;background:transparent;color:var(--dsw-alias-state-business-primary);cursor:pointer;font:inherit;font-size:13px}.dtv-play-relink:hover{background:var(--dsw-alias-interactive-bg-hover)}.dtv-play-modal select{width:100%;box-sizing:border-box;min-height:36px;border:1px solid var(--dsw-alias-border-l2);border-radius:8px;background:var(--dsw-alias-bg-base);color:var(--dsw-alias-label-primary);font:inherit;padding:6px 8px}
+.dtv-play-missing{border-top:1px solid var(--dsw-alias-border-subtle);margin-top:3px;padding-top:3px}.dtv-play-missing-card{margin-left:10px}.dtv-play-relink{width:30px;height:30px;flex:none;border:0;border-radius:8px;background:transparent;color:var(--dsw-alias-state-business-primary);cursor:pointer;font:inherit;font-size:13px}.dtv-play-relink:hover{background:var(--dsw-alias-interactive-bg-hover)}.dtv-play-modal select{width:100%;box-sizing:border-box;min-height:36px;border:1px solid var(--dsw-alias-border-l2);border-radius:8px;background:var(--dsw-alias-bg-base);color:var(--dsw-alias-label-primary);font:inherit;padding:6px 8px}.dtv-play-modal .dtv-play-relink-warning{padding:9px 10px;border:1px solid color-mix(in srgb,var(--dsw-alias-state-warning,#d9822b) 45%,transparent);border-radius:8px;background:color-mix(in srgb,var(--dsw-alias-state-warning,#d9822b) 10%,transparent);color:var(--dsw-alias-state-warning,#c86f16);font-size:11px}
 .dtv-play-empty,.dtv-play-status{margin:0;padding:7px 9px;font-size:10px;line-height:1.45;color:var(--dsw-alias-label-tertiary);overflow-wrap:anywhere}.dtv-play-status[data-error=true]{color:var(--dsw-alias-state-error)}
 .dtv-play-rail{height:100%;box-sizing:border-box;padding:7px;display:flex;flex-direction:column;align-items:center;gap:7px;overflow:auto;zoom:var(--dtv-ui-scale,1)}.dtv-play-rail-button{width:38px;height:38px;border:0;border-radius:10px;background:transparent;color:var(--dsw-alias-label-secondary);cursor:pointer;display:grid;place-items:center}.dtv-play-rail-button:hover{background:var(--dsw-alias-interactive-bg-hover)}.dtv-play-rail-button .dtv-play-avatar{width:30px;height:30px}
 .dtv-play-modal-backdrop{position:fixed;inset:0;z-index:40;box-sizing:border-box;padding:20px;background:rgba(0,0,0,.48);display:flex;align-items:center;justify-content:center}.dtv-play-modal{box-sizing:border-box;width:min(420px,100%);border:1px solid var(--dsw-alias-border-l2);border-radius:12px;background:var(--dsw-alias-bg-base);box-shadow:var(--ds-shadow-3,0 16px 40px rgba(0,0,0,.28));padding:17px 16px;display:flex;flex-direction:column;gap:14px}.dtv-play-modal p{margin:0;font-size:13px;line-height:1.55;color:var(--dsw-alias-label-primary)}.dtv-play-modal-actions{display:flex;justify-content:flex-end;gap:8px;flex-wrap:wrap}.dtv-play-modal-button{min-height:34px;border:1px solid var(--dsw-alias-border-l2);border-radius:8px;background:var(--dsw-alias-button-secondary-fill,var(--dsw-alias-bg-base));color:var(--dsw-alias-label-primary);cursor:pointer;padding:7px 11px;font:inherit;font-size:12px}.dtv-play-modal-button[data-primary=true]{border-color:transparent;background:var(--dsw-alias-state-business-primary,#2677d9);color:var(--dsw-alias-button-primary-label,#fff)}
@@ -120,7 +121,7 @@ function characterInsertionBoundary(event) {
   return event.clientY < bounds.top + bounds.height / 2 ? index : index + 1
 }
 
-function CharacterGroup({ character, index, dragging, reorderDisabled, onPointerDown, onPointerMove, onPointerUp, onPointerCancel, collapsed, unassignedOpen, creating, createDisabled, toggle, toggleUnassigned, createPlaythrough, openPlaythrough, openSession, playClient }) {
+function CharacterGroup({ character, index, dragging, reorderDisabled, onPointerDown, onPointerMove, onPointerUp, onPointerCancel, collapsed, unassignedOpen, creating, createDisabled, toggle, toggleUnassigned, createPlaythrough, openPlaythrough, openSession, playClient, beginPlaythroughRelink }) {
   const count = character.playthroughs.length + character.unassigned.length
   return h('section', {
     className: 'dtv-play-section',
@@ -179,7 +180,14 @@ function CharacterGroup({ character, index, dragging, reorderDisabled, onPointer
     h('span', { className: 'dtv-play-chevron', 'aria-hidden': 'true' }, '◆'),
     h('span', { className: 'dtv-play-title' }, rawText(playthrough.title)),
     ),
-    h(PlayIoMenu, { playClient, playthrough, openSession, trigger: '⋯', placement: 'sidebar' }),
+    h(PlayIoMenu, {
+      playClient,
+      playthrough,
+      openSession,
+      trigger: '⋯',
+      placement: 'sidebar',
+      onRelink: () => beginPlaythroughRelink(playthrough, character),
+    }),
     )),
     collapsed || character.unassigned.length === 0 ? null : h('div', { className: 'dtv-play-subgroup' },
       h('button', {
@@ -206,7 +214,7 @@ function CharacterGroup({ character, index, dragging, reorderDisabled, onPointer
   )
 }
 
-function MissingCharacterGroup({ character, collapsed, toggle, beginRelink, openPlaythrough, openSession, playClient, relinkDisabled }) {
+function MissingCharacterGroup({ character, collapsed, toggle, beginRelink, beginPlaythroughRelink, openPlaythrough, openSession, playClient, relinkDisabled }) {
   return h('section', { className: 'dtv-play-section dtv-play-missing-card', 'data-open': !collapsed },
     h('div', { className: 'dtv-play-group-line' },
       h('button', {
@@ -244,7 +252,14 @@ function MissingCharacterGroup({ character, collapsed, toggle, beginRelink, open
     h('span', { className: 'dtv-play-chevron', 'aria-hidden': 'true' }, '◆'),
     h('span', { className: 'dtv-play-title' }, rawText(playthrough.title)),
     ),
-    h(PlayIoMenu, { playClient, playthrough, openSession, trigger: '⋯', placement: 'sidebar' }),
+    h(PlayIoMenu, {
+      playClient,
+      playthrough,
+      openSession,
+      trigger: '⋯',
+      placement: 'sidebar',
+      onRelink: () => beginPlaythroughRelink(playthrough, character),
+    }),
     )),
   )
 }
@@ -290,7 +305,7 @@ export function PlayWorkspaceBrowser({
   const [ordinaryPromptOpen, setOrdinaryPromptOpen] = useState(false)
   const [missingOpen, setMissingOpen] = useState(true)
   const [collapsedMissingCharacters, setCollapsedMissingCharacters] = useState(() => new Set())
-  const [relinkCharacter, setRelinkCharacter] = useState(null)
+  const [relinkRequest, setRelinkRequest] = useState(null)
   const [relinkTargetId, setRelinkTargetId] = useState('')
   const [relinkBusy, setRelinkBusy] = useState(false)
   const [activePlaythroughId, setActivePlaythroughId] = useState(
@@ -522,18 +537,29 @@ export function PlayWorkspaceBrowser({
   }
 
   const beginRelink = character => {
-    setRelinkCharacter(character)
+    setRelinkRequest({ kind: 'character', character })
     setRelinkTargetId(resources?.characters[0]?.id ?? '')
   }
 
+  const beginPlaythroughRelink = (playthrough, character) => {
+    const target = resources?.characters.find(item => item.id !== character.id)
+    setRelinkRequest({ kind: 'playthrough', playthrough, character })
+    setRelinkTargetId(target?.id ?? '')
+  }
+
   const commitRelink = async () => {
-    if (relinkCharacter === null || relinkTargetId === '' || relinkBusy) return
+    if (relinkRequest === null || relinkTargetId === '' || relinkBusy) return
     setRelinkBusy(true)
     setStatus(null)
     try {
-      if (typeof playClient.relinkCharacter !== 'function') throw new Error('character relink API is unavailable')
-      await playClient.relinkCharacter(relinkCharacter.id, relinkTargetId)
-      setRelinkCharacter(null)
+      if (relinkRequest.kind === 'playthrough') {
+        if (typeof playClient.relinkPlaythroughCharacter !== 'function') throw new Error('playthrough character relink API is unavailable')
+        await playClient.relinkPlaythroughCharacter(relinkRequest.playthrough.id, relinkTargetId)
+      } else {
+        if (typeof playClient.relinkCharacter !== 'function') throw new Error('character relink API is unavailable')
+        await playClient.relinkCharacter(relinkRequest.character.id, relinkTargetId)
+      }
+      setRelinkRequest(null)
       cache.current.clear()
       window.dispatchEvent(new Event(CLIENT_REFRESH_EVENT))
     } catch (reason) {
@@ -638,6 +664,7 @@ export function PlayWorkspaceBrowser({
         toggleUnassigned: () => toggleSet(setExpandedUnassigned, character.id),
         openPlaythrough,
         openSession,
+        beginPlaythroughRelink,
       }),
     ]),
     characterDragFrom !== null && characterDropIndex === model.characters.length
@@ -660,6 +687,7 @@ export function PlayWorkspaceBrowser({
         collapsed: collapsedMissingCharacters.has(character.id),
         toggle: () => toggleSet(setCollapsedMissingCharacters, character.id),
         beginRelink,
+        beginPlaythroughRelink,
         relinkDisabled: (resources?.characters.length ?? 0) === 0 || relinkBusy,
         openPlaythrough,
         openSession,
@@ -720,24 +748,34 @@ export function PlayWorkspaceBrowser({
         }, uiMessage('play.sidebar.returnNative')),
       ),
     )) : null,
-    relinkCharacter === null ? null : h('div', {
+    relinkRequest === null ? null : h('div', {
       className: 'dtv-play-modal-backdrop',
       role: 'dialog',
       'aria-modal': 'true',
       'aria-labelledby': 'dtv-play-relink-prompt',
     }, h('div', { className: 'dtv-play-modal' },
-      h('p', { id: 'dtv-play-relink-prompt' }, uiMessage('play.sidebar.relinkPrompt', { name: relinkCharacter.name })),
+      h('p', { id: 'dtv-play-relink-prompt' }, relinkRequest.kind === 'playthrough'
+        ? uiMessage('play.sidebar.relinkPlaythroughPrompt', { name: relinkRequest.playthrough.title })
+        : uiMessage('play.sidebar.relinkPrompt', { name: relinkRequest.character.name })),
       h('select', {
         value: relinkTargetId,
         disabled: relinkBusy,
         onChange: event => setRelinkTargetId(event.currentTarget.value),
-      }, ...(resources?.characters ?? []).map(character => h('option', { key: character.id, value: character.id }, rawText(character.name)))),
+      }, ...(resources?.characters ?? [])
+        .filter(character => relinkRequest.kind !== 'playthrough' || character.id !== relinkRequest.character.id)
+        .map(character => h('option', { key: character.id, value: character.id }, rawText(character.name)))),
+      relinkRequest.kind !== 'playthrough' || assessPlaythroughCharacterRelink({
+        playthrough: relinkRequest.playthrough,
+        target: resources?.characters.find(character => character.id === relinkTargetId),
+        characters: resources?.characters,
+        missingCharacters: resources?.missingCharacters,
+      }).automatic ? null : h('p', { className: 'dtv-play-relink-warning' }, uiMessage('play.sidebar.relinkMismatchWarning')),
       h('div', { className: 'dtv-play-modal-actions' },
         h('button', {
           type: 'button',
           className: 'dtv-play-modal-button',
           disabled: relinkBusy,
-          onClick: () => setRelinkCharacter(null),
+          onClick: () => setRelinkRequest(null),
         }, uiMessage('play.sidebar.ordinaryClose')),
         h('button', {
           type: 'button',

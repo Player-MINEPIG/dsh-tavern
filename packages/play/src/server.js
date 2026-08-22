@@ -26,6 +26,8 @@ export function createPlayApiHandler({
   logger,
   operationOptions,
   membershipService,
+  resolveCharacter,
+  relinkPlaythrough,
 } = {}) {
   if (chromeStore === undefined) throw new TypeError('chromeStore is required')
   const chromeApi = createChromeApiHandler(chromeStore)
@@ -111,6 +113,27 @@ export function createPlayApiHandler({
         if (method !== 'GET') throw httpError(405, 'method not allowed', 'PLAY_METHOD_NOT_ALLOWED')
         if (sessionApi === null) throw httpError(404, 'Not found', 'PLAY_NOT_FOUND')
         return await sessionApi.playthroughFocus(req, res, playthroughFocusMatch[1])
+      }
+      const relinkCharacterMatch = route.rest.match(/^\/playthroughs\/([^/]+)\/relink-character$/)
+      if (relinkCharacterMatch !== null) {
+        if (method !== 'POST') throw httpError(405, 'method not allowed', 'PLAY_METHOD_NOT_ALLOWED')
+        if (typeof resolveCharacter !== 'function' || typeof relinkPlaythrough !== 'function') {
+          throw httpError(404, 'Not found', 'PLAY_NOT_FOUND')
+        }
+        const playthroughId = safeDecodeId(relinkCharacterMatch[1], 'playthrough id')
+        const body = await readBoundedJson(req, 16 * 1024)
+        if (typeof body.characterId !== 'string' || body.characterId.trim() === '') {
+          throw httpError(400, 'characterId must be a non-empty string', 'PLAY_CHARACTER_ID_INVALID')
+        }
+        const characterId = body.characterId.trim()
+        const character = await resolveCharacter(characterId)
+        if (character === null || character === undefined) {
+          throw httpError(404, 'character not found', 'CHARACTER_NOT_FOUND')
+        }
+        operation = startMutation(req, 'playthrough.character.relink')
+        operation.stage('request.validated', { playthroughId, characterId })
+        const result = await runMutation(operation, () => relinkPlaythrough(playthroughId, character, { operation }))
+        return sendJson(res, 200, result)
       }
       const detachSessionMatch = route.rest.match(/^\/playthroughs\/([^/]+)\/detach-session$/)
       if (detachSessionMatch !== null) {

@@ -2,6 +2,7 @@ import test from 'node:test'
 import assert from 'node:assert/strict'
 import {
   SessionCharacterBindingCache,
+  assessPlaythroughCharacterRelink,
   loadSessionCharacterBindings,
   playthroughFocusTarget,
   projectPlaySidebar,
@@ -9,6 +10,36 @@ import {
   shouldShowUnboundNotice,
   sessionIdsInRpWorkspace,
 } from '../packages/client/src/play/sidebar-model.js'
+
+test('manual playthrough relink assessment follows automatic SHA and unique-name rules', () => {
+  const playthrough = {
+    id: 'pt',
+    path: 'old/pt/timeline.json',
+    ext: { pmpDshTavern: { characterId: 'old', characterName: 'Alice', characterSha256: 'a'.repeat(64) } },
+  }
+  const exact = { id: 'exact', name: 'Alice v2', sha256: 'a'.repeat(64) }
+  const named = { id: 'named', name: 'Alice', sha256: 'b'.repeat(64) }
+  const unrelated = { id: 'other', name: 'Bob', sha256: 'c'.repeat(64) }
+
+  assert.deepEqual(assessPlaythroughCharacterRelink({
+    playthrough,
+    target: exact,
+    characters: [exact, unrelated],
+    missingCharacters: [{ id: 'old', name: 'Alice', sha256: 'a'.repeat(64) }],
+  }), { automatic: true, reason: 'sha256' })
+  assert.deepEqual(assessPlaythroughCharacterRelink({
+    playthrough: { ...playthrough, ext: { pmpDshTavern: { characterId: 'old', characterName: 'Alice' } } },
+    target: named,
+    characters: [named, unrelated],
+    missingCharacters: [{ id: 'old', name: 'Alice' }],
+  }), { automatic: true, reason: 'name' })
+  assert.deepEqual(assessPlaythroughCharacterRelink({
+    playthrough,
+    target: unrelated,
+    characters: [exact, unrelated],
+    missingCharacters: [{ id: 'old', name: 'Alice' }],
+  }), { automatic: false, reason: 'manual' })
+})
 
 function session(id, cwd, title = id) {
   return { id, cwd, displayTitle: title, blank: false }

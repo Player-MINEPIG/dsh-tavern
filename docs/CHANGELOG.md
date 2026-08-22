@@ -5,6 +5,7 @@
 
 - Replaced mixed character ordering with explicit recently-updated, name A–Z, and custom modes; drag handles are active only in custom mode and saved custom order survives mode switches.
 - Added bounded deleted-character tombstones, a centralized missing-character sidebar section, unique SHA/name recovery, manual relinking, catalog CAS and atomic descendant-session selection updates.
+- Added per-playthrough character relinking to every playthrough menu. It migrates only the selected playthrough tree, warns when the target falls outside SHA/unique-name automatic classification, and preserves an explicit user override through the v2 lifecycle API.
 
 
 ## 2026-08-22 — Stabilize RP admission and add character-card ordering

@@ -51,7 +51,7 @@ function downloadDocument(playthrough, document) {
   queueMicrotask(() => URL.revokeObjectURL(url))
 }
 
-export function PlayIoMenu({ playClient, playthrough, trigger = '+', placement = 'composer' }) {
+export function PlayIoMenu({ playClient, playthrough, trigger = '+', placement = 'composer', onRelink }) {
   installStyles()
   const root = useRef(null)
   const [open, setOpen] = useState(false)
@@ -113,6 +113,12 @@ export function PlayIoMenu({ playClient, playthrough, trigger = '+', placement =
     }, rawText(trigger)),
     !open ? null : h('div', { className: 'dtv-play-io-menu' },
       h('button', { type: 'button', className: 'dtv-play-io-item', disabled: busy, onClick: rename }, uiMessage('play.io.rename')),
+      typeof onRelink !== 'function' ? null : h('button', {
+        type: 'button',
+        className: 'dtv-play-io-item',
+        disabled: busy,
+        onClick: () => { setOpen(false); onRelink() },
+      }, uiMessage('play.io.relinkCharacter')),
       h('button', { type: 'button', className: 'dtv-play-io-item', disabled: busy, onClick: () => exportAs('html') }, uiMessage('play.io.exportHtml')),
       h('button', { type: 'button', className: 'dtv-play-io-item', disabled: busy, onClick: () => exportAs('st') }, uiMessage('play.io.exportSt')),
       h('button', { type: 'button', className: 'dtv-play-io-item', disabled: busy, onClick: () => exportAs('bundle') }, uiMessage('play.io.exportBundle')),

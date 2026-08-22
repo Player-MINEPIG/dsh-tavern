@@ -33,6 +33,7 @@
 | PUT | `/sessions/:id/import-context` | `{ reference: { path, expectedHash? } }`；为空 session 绑定或换绑已写入工作区的 import-context | 已实现 |
 | DELETE | `/sessions/:id/import-context` | 为空 session 解绑；幂等返回 `{ binding: null }` | 已实现 |
 | GET | `/playthroughs/:id/focus` | 2.0 稳定合同：经 catalog 解析周目，返回 `{ playthroughId, sessionId, nodeId, variantId }`；空周目使用 `rootSessionId` | 已实现；bundled live client 已迁移 |
+| POST | `/playthroughs/:id/relink-character` | `{ characterId }`；只把指定周目及其 root/swipe/branch 后代 session 重新绑定到一张现存角色卡。显式用户选择不受自动归类规则限制 | 已实现 |
 | POST | `/playthroughs/:id/detach-session` | `{ sessionId }`；把目标 session 对应 timeline variant 及其后代从该周目移除，保留兄弟分支、DSH session/历史和空 catalog 周目。服务端校验树并以受管文件 revision/CAS 提交 | 已实现 |
 | GET | `/focus?path=` | 迁移期低层兼容：按显式 timeline path 派生 `{ sessionId }`；2.0 内置前端不再依赖 | 已实现，迁移兼容面 |
 | GET | `/focus`（无 path） | 2.0 不提供默认目标；不再把“最近写入 timeline”当作用户 focus | 已移除默认行为，400 PLAY_FOCUS_PATH_REQUIRED |
@@ -96,7 +97,7 @@ durable history。当前已实现的基础语义是：首次 assembly 必须按�
 - ✅ catalog/timeline GET 返回精确 UTF-8 字节 SHA-256 `revision`，PUT 使用显式 `expectedRevision`；缺失/格式错误分别为 400，目标状态或 hash 不一致为 409，冲突不改文件。服务端合同、内置 live client 的 revision 缓存/有限重放原语，以及内置生命周期 caller 的 CAS 迁移均已实现。
 - ✅ catalog/timeline 已在 GET 读后与 PUT 写前执行同一 schema/path 校验；未知第三方 `ext` 原样保留。revision/CAS 已在同一目标 guard 中实现；路径锁、逐段 no-follow 检查、临时 `wx` 写和 rename 前复验已实现。
 - 路径逐段拒绝 symlink/junction（Node 暴露的链接类型），逐层非 recursive 创建并 realpath 复核，临时文件使用排他 `wx`，写入/rename 前复验父目录；纯 Node 仍无法抵抗外部进程制造的极窄竞态，不引入 native addon。
-- 本轮已接入后端 `ctx.logger` 的 operation log：`PUT /workspace`（bind）、`POST /workspace/dirs`、`PUT /workspace/files?path=`（普通文件及 catalog/timeline）、`POST /playthroughs/:id/detach-session`，以及 session create/branch/user-message 和 import-context PUT/DELETE。每次变更请求记录同一 `operationId` 的 start、request.validated、Host/prepare/bind/copy 或 timeline/catalog detach 阶段、success 或 failure；不记录资源/聊天正文。user-message 只记录 Host prompt accepted 阶段，不记录正文、长度或摘要。GET/list、session/messages/focus/import-context、chrome 及浏览器日志、持久 journal、额外 exporter 暂缓。
+- 本轮已接入后端 `ctx.logger` 的 operation log：`PUT /workspace`（bind）、`POST /workspace/dirs`、`PUT /workspace/files?path=`（普通文件及 catalog/timeline）、`POST /playthroughs/:id/detach-session`、`POST /playthroughs/:id/relink-character`，以及 session create/branch/user-message 和 import-context PUT/DELETE。每次变更请求记录同一 `operationId` 的 start、request.validated、Host/prepare/bind/copy 或 timeline/catalog 变更阶段、success 或 failure；不记录资源/聊天正文。user-message 只记录 Host prompt accepted 阶段，不记录正文、长度或摘要。GET/list、session/messages/focus/import-context、chrome 及浏览器日志、持久 journal、额外 exporter 暂缓。
 
 上述加固均已实现并纳入 `npm run verify:2.0`；该命令验证 history、schema/CAS/focus/路径防护、claim/lineage、无正文 operation log、chrome service/slot、工作区准入、本地化与发布包边界。设置 `DSH_TAVERN_PLAY_LIVE=1` 与 `DSH_TAVERN_PLAY_LIVE_URL` 后还会对运行中的 DSH Host 实际读取 chrome/workspace 权威状态；真实写入、浏览器双标签页通知和最终 rc.8 交互仍在发布验收清单中。具体风险与决策见 [`PLAY_REVIEW.md`](PLAY_REVIEW.md)。
 
@@ -143,7 +144,9 @@ durable history。当前已实现的基础语义是：首次 assembly 必须按�
 | --- | --- | --- | --- |
 | POST | `/characters/relink` | `{ previousCharacterId, characterId }` | `{ ok: true, relinkedPlaythroughCount, relinkedSessionCount }` |
 
-重新关联会以 catalog revision 作 CAS，把所有引用旧 ID 的周目归属改为目标卡，并在同一批 session selection 写入中更新 root、swipe、branch 后代会话。若其中任何 session 已绑定另一张现存角色卡则返回 409；session 批量写入失败时会以刚写入的 revision 尝试回滚 catalog。成功后才清除 tombstone。工作区未绑定时自动恢复会延后而不会静默丢弃 tombstone。关键开始、成功与延后原因写入 `ctx.logger`。
+v1 `/characters/relink` 是缺失资源恢复面：它以 catalog revision 作 CAS，把所有引用旧 ID 的周目归属改为目标卡，并在同一批 session selection 写入中更新 root、swipe、branch 后代会话。v2 `/playthroughs/:id/relink-character` 是周目生命周期面：只迁移指定周目和它的全部后代 session。内置前端会按“唯一 SHA-256，其次双方唯一同名”的自动归类规则评估目标；不匹配时显示警告，但用户仍可明确确认，后端不会用启发式规则否决显式选择。
+
+两种重新关联都会拒绝覆盖与待迁移周目原归属无关的第三张角色卡绑定。session 批量写入失败时会以刚写入的 revision 尝试回滚 catalog。v1 恢复成功后才清除 tombstone；工作区未绑定时自动恢复会延后而不会静默丢弃 tombstone。关键开始、成功与延后原因写入 `ctx.logger`。
 
 ### Conversation 显示设置
 

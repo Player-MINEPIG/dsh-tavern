@@ -189,6 +189,52 @@ test('PlayMembershipService atomically relinks catalog ownership and every timel
   }
 })
 
+test('PlayMembershipService relinks exactly one playthrough and accepts its current character binding', async () => {
+  const pluginDir = mkdtempSync(join(tmpdir(), 'dsh-tavern-membership-single-relink-plugin-'))
+  const playRoot = mkdtempSync(join(tmpdir(), 'dsh-tavern-membership-single-relink-root-'))
+  try {
+    const store = new PlayWorkspaceStore(pluginDir)
+    await store.bindRoot(playRoot)
+    store.createDir('old-card/first')
+    store.createDir('old-card/second')
+    for (const path of ['old-card/first/timeline.json', 'old-card/second/timeline.json']) {
+      store.writeFile(path, JSON.stringify(sampleTimeline()), {
+        expectedRevision: null,
+        expectedRevisionPresent: true,
+        validate: validatePlayDocument,
+      })
+    }
+    store.writeFile('catalog.json', JSON.stringify({
+      playthroughs: [
+        { id: 'first', path: 'old-card/first/timeline.json', title: '1周目', ext: { pmpDshTavern: { characterId: 'old-card', characterName: 'Old card' } } },
+        { id: 'second', path: 'old-card/second/timeline.json', title: '2周目', ext: { pmpDshTavern: { characterId: 'old-card', characterName: 'Old card' } } },
+      ],
+    }), {
+      expectedRevision: null,
+      expectedRevisionPresent: true,
+      validate: validatePlayDocument,
+    })
+    const selected = []
+    const service = new PlayMembershipService(store)
+    const result = service.relinkPlaythrough('first', { id: 'new-card', name: 'New card' }, {
+      selectionPolicy: {
+        selection: () => ({ characterCardId: 'old-card' }),
+        selectMany(sessionIds, patch) { selected.push({ sessionIds, patch }) },
+      },
+    })
+    assert.equal(result.playthroughId, 'first')
+    assert.equal(result.previousCharacterId, 'old-card')
+    assert.equal(result.relinkedPlaythroughCount, 1)
+    const saved = parseCatalogJson(store.readFile('catalog.json', { validate: validatePlayDocument }).content)
+    assert.equal(saved.playthroughs[0].ext.pmpDshTavern.characterId, 'new-card')
+    assert.equal(saved.playthroughs[1].ext.pmpDshTavern.characterId, 'old-card')
+    assert.equal(selected.length, 1)
+  } finally {
+    rmSync(pluginDir, { recursive: true, force: true })
+    rmSync(playRoot, { recursive: true, force: true })
+  }
+})
+
 test('v2 detach-session route delegates one logged mutation to the membership service', async () => {
   const pluginDir = mkdtempSync(join(tmpdir(), 'dsh-tavern-membership-api-'))
   try {
@@ -210,6 +256,35 @@ test('v2 detach-session route delegates one logged mutation to the membership se
     assert.equal(response.status, 200)
     assert.equal(response.body.detached, true)
     assert.deepEqual(calls, [{ playthroughId: 'pt-a', sessionId: 'session-a', operation: 'playthrough.session.detach' }])
+  } finally {
+    rmSync(pluginDir, { recursive: true, force: true })
+  }
+})
+
+test('v2 playthrough character relink route resolves the card and logs one scoped mutation', async () => {
+  const pluginDir = mkdtempSync(join(tmpdir(), 'dsh-tavern-membership-relink-api-'))
+  try {
+    const calls = []
+    const handler = createPlayApiHandler({
+      chromeStore: new ChromeStore(pluginDir),
+      resolveCharacter: characterId => characterId === 'card-b' ? { id: 'card-b', name: 'B' } : null,
+      relinkPlaythrough(playthroughId, character, { operation }) {
+        calls.push({ playthroughId, character, operation: operation.operation })
+        return { ok: true, playthroughId, characterId: character.id, relinkedPlaythroughCount: 1, relinkedSessionCount: 2 }
+      },
+    })
+    const response = await invoke(handler, {
+      method: 'POST',
+      url: `${API_V2}/playthroughs/pt-a/relink-character`,
+      body: { characterId: 'card-b' },
+    })
+    assert.equal(response.status, 200)
+    assert.equal(response.body.characterId, 'card-b')
+    assert.deepEqual(calls, [{
+      playthroughId: 'pt-a',
+      character: { id: 'card-b', name: 'B' },
+      operation: 'playthrough.character.relink',
+    }])
   } finally {
     rmSync(pluginDir, { recursive: true, force: true })
   }

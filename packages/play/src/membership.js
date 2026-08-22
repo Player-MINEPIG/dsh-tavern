@@ -209,6 +209,40 @@ export class PlayMembershipService {
     const matches = catalogDocument.catalog.playthroughs.filter(item => characterIdFor(item) === previousCharacterId)
     if (matches.length === 0) return { relinkedPlaythroughCount: 0, relinkedSessionCount: 0 }
 
+    return this.relinkMatches(catalogDocument, matches, character, { selectionPolicy, operation })
+  }
+
+  relinkPlaythrough(playthroughId, character, { selectionPolicy, operation } = {}) {
+    if (typeof playthroughId !== 'string' || playthroughId === '') throw new TypeError('playthroughId is required')
+    if (typeof character?.id !== 'string' || character.id === '' || typeof character.name !== 'string') throw new TypeError('character is required')
+    const catalogDocument = this.readCatalog()
+    const playthrough = catalogDocument.catalog.playthroughs.find(item => item.id === playthroughId)
+    if (playthrough === undefined) throw httpError(404, 'playthrough not found', 'PLAYTHROUGH_NOT_FOUND')
+    const previousCharacterId = characterIdFor(playthrough)
+    if (previousCharacterId === character.id) {
+      return {
+        ok: true,
+        playthroughId,
+        previousCharacterId,
+        characterId: character.id,
+        relinkedPlaythroughCount: 0,
+        relinkedSessionCount: 0,
+      }
+    }
+    const result = this.relinkMatches(catalogDocument, [playthrough], character, { selectionPolicy, operation })
+    return {
+      ok: true,
+      playthroughId,
+      previousCharacterId,
+      characterId: character.id,
+      ...result,
+    }
+  }
+
+  relinkMatches(catalogDocument, matches, character, { selectionPolicy, operation } = {}) {
+    const matchedIds = new Set(matches.map(item => item.id))
+    const previousCharacterIds = new Set(matches.map(characterIdFor).filter(Boolean))
+
     const sessionIds = new Set()
     for (const playthrough of matches) {
       const root = playthrough.ext?.[EXTENSION_KEY]?.rootSessionId
@@ -218,7 +252,10 @@ export class PlayMembershipService {
     }
     for (const sessionId of sessionIds) {
       const selected = selectionPolicy?.selection?.(sessionId)
-      if (selected !== null && selected !== undefined && selected.characterCardId !== character.id) {
+      if (selected !== null
+        && selected !== undefined
+        && selected.characterCardId !== character.id
+        && !previousCharacterIds.has(selected.characterCardId)) {
         throw httpError(409, `session "${sessionId}" is already bound to another character`, 'PLAY_CHARACTER_RELINK_CONFLICT')
       }
     }
@@ -226,10 +263,15 @@ export class PlayMembershipService {
     const nextCatalog = {
       ...catalogDocument.catalog,
       playthroughs: catalogDocument.catalog.playthroughs.map(item => (
-        characterIdFor(item) === previousCharacterId ? playthroughWithCharacter(item, character) : item
+        matchedIds.has(item.id) ? playthroughWithCharacter(item, character) : item
       )),
     }
-    operation?.stage('catalog.character-relink.begin', { previousCharacterId, characterId: character.id, playthroughCount: matches.length })
+    operation?.stage('catalog.character-relink.begin', {
+      previousCharacterIds: [...previousCharacterIds],
+      characterId: character.id,
+      playthroughIds: [...matchedIds],
+      playthroughCount: matches.length,
+    })
     const written = this.workspaceStore.writeFile('catalog.json', JSON.stringify(nextCatalog), {
       expectedRevision: catalogDocument.file.revision,
       expectedRevisionPresent: true,
@@ -255,7 +297,12 @@ export class PlayMembershipService {
       }
       throw error
     }
-    operation?.stage('catalog.character-relink.committed', { previousCharacterId, characterId: character.id, sessionCount: sessionIds.size })
+    operation?.stage('catalog.character-relink.committed', {
+      previousCharacterIds: [...previousCharacterIds],
+      characterId: character.id,
+      playthroughIds: [...matchedIds],
+      sessionCount: sessionIds.size,
+    })
     return { relinkedPlaythroughCount: matches.length, relinkedSessionCount: sessionIds.size }
   }
 
