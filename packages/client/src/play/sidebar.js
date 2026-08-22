@@ -367,6 +367,7 @@ export function PlayWorkspaceBrowser({
     workspace: resources?.workspace,
     workspaceItems,
     characters: resources?.characters,
+    characterSorting: resources?.characterSorting,
     missingCharacters: resources?.missingCharacters,
     catalog: resources?.catalog,
     timelines: resources?.timelines,

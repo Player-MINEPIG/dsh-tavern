@@ -10692,6 +10692,32 @@ function sessionTitle(session, id) {
   if (typeof session?.title === "string" && session.title !== "") return session.title;
   return id;
 }
+function timestamp(value) {
+  if (Number.isFinite(value)) return value;
+  if (typeof value !== "string" || value === "") return 0;
+  const parsed = Date.parse(value);
+  return Number.isFinite(parsed) ? parsed : 0;
+}
+function latestCharacterSessionActivity(character, sessions) {
+  let latest = 0;
+  for (const playthrough of character.playthroughs) {
+    for (const id of playthrough.sessionIds) latest = Math.max(latest, timestamp(sessions[id]?.updatedAt));
+  }
+  for (const session of character.unassigned) latest = Math.max(latest, timestamp(sessions[session.id]?.updatedAt));
+  return latest;
+}
+function compareProjectedNames(left, right) {
+  const named = left.name.localeCompare(right.name, "zh-CN", { numeric: true, sensitivity: "base" });
+  return named !== 0 ? named : left.id.localeCompare(right.id);
+}
+function sortCharactersByRecentConversation(characters, sessions) {
+  return characters.toSorted((left, right) => {
+    const activity = latestCharacterSessionActivity(right, sessions) - latestCharacterSessionActivity(left, sessions);
+    if (activity !== 0) return activity;
+    const resourceUpdate = timestamp(right.updatedAt) - timestamp(left.updatedAt);
+    return resourceUpdate !== 0 ? resourceUpdate : compareProjectedNames(left, right);
+  });
+}
 function historicalCharacterName(playthrough, sessions, fallback) {
   const preserved = playthrough?.ext?.pmpDshTavern?.characterName;
   if (typeof preserved === "string" && preserved.trim() !== "") return preserved;
@@ -10864,6 +10890,7 @@ function projectPlaySidebar({
   workspace = { selected: false },
   workspaceItems = [],
   characters = [],
+  characterSorting = { mode: "updated" },
   missingCharacters = [],
   catalog: catalog2 = { playthroughs: [] },
   timelines = {},
@@ -10894,7 +10921,16 @@ function projectPlaySidebar({
       }
       return missingCharacterById.get(id);
     }
-    if (!characterById.has(id)) characterById.set(id, { id, name: name2, playthroughs: [], unassigned: [] });
+    if (!characterById.has(id)) {
+      const resource = characters.find((item) => item?.id === id);
+      characterById.set(id, {
+        id,
+        name: name2,
+        ...typeof resource?.updatedAt === "string" ? { updatedAt: resource.updatedAt } : {},
+        playthroughs: [],
+        unassigned: []
+      });
+    }
     return characterById.get(id);
   };
   for (const character of characters) {
@@ -10941,11 +10977,12 @@ function projectPlaySidebar({
     }
     otherSessions.push({ id, title: sessionTitle(session, id), active: currentId === id, kind: "ordinary" });
   }
+  const projectedCharacters = [...characterById.values()];
   return {
     workspaceReady: workspace.selected === true,
     rpSessionIds: [...rpSessionIds],
     playSessionIds: [...claimedRpSessions],
-    characters: [...characterById.values()],
+    characters: characterSorting?.mode === "updated" ? sortCharactersByRecentConversation(projectedCharacters, sessions) : projectedCharacters,
     missingCharacters: [...missingCharacterById.values()],
     otherSessions
   };
@@ -13348,6 +13385,7 @@ function PlayWorkspaceBrowser({
     workspace: resources?.workspace,
     workspaceItems,
     characters: resources?.characters,
+    characterSorting: resources?.characterSorting,
     missingCharacters: resources?.missingCharacters,
     catalog: resources?.catalog,
     timelines: resources?.timelines,

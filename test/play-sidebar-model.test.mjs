@@ -9,6 +9,7 @@ import {
   requiresSystemWorkspaceConfirmation,
   shouldShowUnboundNotice,
   sessionIdsInRpWorkspace,
+  sortCharactersByRecentConversation,
 } from '../packages/client/src/play/sidebar-model.js'
 
 test('manual playthrough relink assessment follows automatic SHA and unique-name rules', () => {
@@ -44,6 +45,31 @@ test('manual playthrough relink assessment follows automatic SHA and unique-name
 function session(id, cwd, title = id) {
   return { id, cwd, displayTitle: title, blank: false }
 }
+
+test('recent-conversation sorting follows the newest native DSH session activity', () => {
+  const characters = [
+    { id: 'alice', name: 'Alice', updatedAt: '2026-08-22T12:00:00.000Z', playthroughs: [{ sessionIds: ['alice-root'] }], unassigned: [] },
+    { id: 'bob', name: 'Bob', updatedAt: '2026-08-22T13:00:00.000Z', playthroughs: [{ sessionIds: ['bob-root'] }], unassigned: [] },
+    { id: 'carol', name: 'Carol', updatedAt: '2026-08-22T14:00:00.000Z', playthroughs: [], unassigned: [] },
+  ]
+  const sessions = {
+    'alice-root': { updatedAt: 300 },
+    'bob-root': { updatedAt: 200 },
+  }
+
+  assert.deepEqual(sortCharactersByRecentConversation(characters, sessions).map(item => item.id), [
+    'alice',
+    'bob',
+    'carol',
+  ])
+
+  sessions['bob-root'] = { updatedAt: 400 }
+  assert.deepEqual(sortCharactersByRecentConversation(characters, sessions).map(item => item.id), [
+    'bob',
+    'alice',
+    'carol',
+  ])
+})
 
 test('RP workspace membership wins over timeline metadata and character binding', () => {
   const sessions = {
