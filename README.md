@@ -51,45 +51,39 @@ npm run plugin:install
 
 左键点击 `DT` 悬浮球打开菜单，进入“角色卡”，导入 SillyTavern JSON 或 PNG 角色卡。导入只创建资源，不会伪造会话或自动发送消息。
 
-> **图片占位｜Quick Start 01：导入角色卡**
-> 建议文件名：`docs/assets/v2-quick-start-01-character.png`
-> 建议内容：悬浮球菜单、角色卡页面和导入按钮。
+![悬浮球角色卡](.\docs\assets\悬浮球角色卡.png)
+
+![导入角色卡](.\docs\assets\导入角色卡.png)
 
 ### 2. 创建 DSH 工作区
 
 回到 DSH 原生界面，使用 DSH 自己的工作区能力创建一个准备专门用于 RP 的工作区。所有周目 session 都会归入同一工作区，避免多个角色会话散落并遮挡普通工作。
 
-> **图片占位｜Quick Start 02：创建 RP 工作区**
-> 建议文件名：`docs/assets/v2-quick-start-02-workspace.png`
-> 建议内容：DSH 原生工作区创建入口和新工作区名称。
+![新建工作区](.\docs\assets\新建工作区.png)
 
 ### 3. 进入 RP 前端并选择工作区
 
 右键单击 `DT` 悬浮球，或在菜单中点击“切换到自定义前端模式”。首次进入魔丸时，插件会要求从 DSH 已有工作区中明确选择 RP 工作区；写入并回读确认前不会进入 RP 内容。
 
-> **图片占位｜Quick Start 03：选择 RP 工作区**
-> 建议文件名：`docs/assets/v2-quick-start-03-admission.png`
-> 建议内容：魔丸工作区选择页与确认后的 RP 侧边栏。
+![切换](.\docs\assets\切换.png)
 
 ### 4. 创建周目
 
 在 RP 侧边栏找到刚导入的角色卡，点击角色卡右侧的 `+`。插件会创建或复用该角色最近一个完全空白的 `N周目`，并确保 root session 绑定的是你实际点击的角色卡。
 
+![创建周目](.\docs\assets\创建周目.png)
+
 ### 5. 选择开场白
 
 空周目的 opening dock 会显示角色卡 greeting。存在备选开场白时可用左右按钮选择；这只是前端展示与首轮提示词参考，不会伪造成一次已经发生的 assistant 回复。
 
-> **图片占位｜Quick Start 04：创建周目与选择开场白**
-> 建议文件名：`docs/assets/v2-quick-start-04-greeting.png`
-> 建议内容：角色卡右侧 `+`、新周目和 greeting 左右切换按钮。
+![开场白](.\docs\assets\开场白.png)
 
 ### 6. 开始对话
 
 在 DSH 原生输入栏发送第一条用户消息。用户消息会立即出现在 RP 视图中；随后可继续使用 swipe、分支新周目、同周目回退、显示文字编辑及导入/导出等功能。
 
-> **图片占位｜Quick Start 05：第一轮 RP 对话**
-> 建议文件名：`docs/assets/v2-quick-start-05-conversation.png`
-> 建议内容：开场白、用户消息、模型正文与一组 QA 动作按钮。
+![对话](.\docs\assets\对话.png)
 
 完整操作与边界见 [中文使用指南](docs/USAGE.zh-CN.md)。
 
