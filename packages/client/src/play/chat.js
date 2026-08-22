@@ -312,6 +312,7 @@ function Turn({ turn, hideUser = false, swipePending = false, ...actionProps }) 
       turn,
       ...actionProps,
       running: actionProps.running === true || swipePending,
+      pendingVariant: swipePending,
     }) : null,
   )
 }

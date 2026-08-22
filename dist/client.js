@@ -11709,13 +11709,16 @@ function PlayTurnActions({
   running,
   onChanged,
   onError,
-  onSwipePending
+  onSwipePending,
+  pendingVariant = false
 }) {
   installStyles();
   const [busy, setBusy] = (0, import_react8.useState)(false);
   const [editor, setEditor] = (0, import_react8.useState)(null);
   const disabled = running || busy;
   const position = Math.max(0, turn.variants.findIndex((item) => item.id === turn.variant.id));
+  const displayedPosition = pendingVariant ? turn.variants.length : position;
+  const displayedVariantCount = pendingVariant ? turn.variants.length + 1 : turn.variants.length;
   const capabilities = turnActionCapabilities(turn);
   const hasPreviousVariant = position > 0;
   const hasNextVariant = position + 1 < turn.variants.length;
@@ -11819,7 +11822,7 @@ function PlayTurnActions({
       disabledLabel: !hasPreviousVariant ? uiMessage("play.chat.noOtherReply") : void 0,
       onClick: () => adopt(position - 1)
     }),
-    !capabilities.variants ? null : h7("span", { className: "dtv-play-turn-position" }, `${position + 1}/${turn.variants.length}`),
+    !capabilities.variants ? null : h7("span", { className: "dtv-play-turn-position" }, `${displayedPosition + 1}/${displayedVariantCount}`),
     !capabilities.variants ? null : h7(Action, {
       icon: "\u203A",
       label: uiMessage(hasNextVariant ? "play.chat.nextReply" : "play.chat.generateReply"),
@@ -12288,7 +12291,8 @@ function Turn({ turn, hideUser = false, swipePending = false, ...actionProps }) 
     durableQa ? h8(PlayTurnActions, {
       turn,
       ...actionProps,
-      running: actionProps.running === true || swipePending
+      running: actionProps.running === true || swipePending,
+      pendingVariant: swipePending
     }) : null
   );
 }

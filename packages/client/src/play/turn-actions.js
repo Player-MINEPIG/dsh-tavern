@@ -67,12 +67,15 @@ export function PlayTurnActions({
   onChanged,
   onError,
   onSwipePending,
+  pendingVariant = false,
 }) {
   installStyles()
   const [busy, setBusy] = useState(false)
   const [editor, setEditor] = useState(null)
   const disabled = running || busy
   const position = Math.max(0, turn.variants.findIndex(item => item.id === turn.variant.id))
+  const displayedPosition = pendingVariant ? turn.variants.length : position
+  const displayedVariantCount = pendingVariant ? turn.variants.length + 1 : turn.variants.length
   const capabilities = turnActionCapabilities(turn)
   const hasPreviousVariant = position > 0
   const hasNextVariant = position + 1 < turn.variants.length
@@ -175,7 +178,7 @@ export function PlayTurnActions({
       disabledLabel: !hasPreviousVariant ? uiMessage('play.chat.noOtherReply') : undefined,
       onClick: () => adopt(position - 1),
     }),
-    !capabilities.variants ? null : h('span', { className: 'dtv-play-turn-position' }, `${position + 1}/${turn.variants.length}`),
+    !capabilities.variants ? null : h('span', { className: 'dtv-play-turn-position' }, `${displayedPosition + 1}/${displayedVariantCount}`),
     !capabilities.variants ? null : h(Action, {
       icon: '›',
       label: uiMessage(hasNextVariant ? 'play.chat.nextReply' : 'play.chat.generateReply'),
