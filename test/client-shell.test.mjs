@@ -337,7 +337,12 @@ test('Mowan workspace admission is explicit and stays closed until authoritative
   const source = readFileSync(new URL('../packages/client/src/index.js', import.meta.url), 'utf8')
   const selection = source.split('const selectRpWorkspace = async path =>')[1].split('const persistRpPolicy')[0]
 
-  assert.match(source, /chromeMode === 'play'[\s\S]*rpWorkspaceSetting\?\.ready !== true/)
+  assertOrdered(source, [
+    "chromeMode === 'play'",
+    "rpWorkspaceLoadState !== 'idle'",
+    "rpWorkspaceLoadState !== 'loading'",
+    'rpWorkspaceSetting?.ready !== true',
+  ])
   assert.match(source, /onClick: \(\) => selectWorkspace\(item\.path\)/)
   assert.doesNotMatch(selection, /available\?\.\[0\]|available\[0\]/)
   assertOrdered(selection, ['playClient.putWorkspace(path)', 'playClient.getWorkspace()', 'if (!verified.ready)'])

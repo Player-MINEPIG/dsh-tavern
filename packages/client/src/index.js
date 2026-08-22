@@ -1140,7 +1140,9 @@ function TavernShell({ useSessions, useWorkspaces, createCleanSession, createCon
     : uiMessage('chrome.switchToPlay')
   const chromeStatusLabel = chromeMode === 'play' ? uiMessage('chrome.currentPlay') : uiMessage('chrome.currentNative')
   const workspaceAdmissionOpen = chromeMode === 'play'
-    && (rpWorkspaceLoadState !== 'ready' || rpWorkspaceSetting?.ready !== true)
+    && rpWorkspaceLoadState !== 'idle'
+    && rpWorkspaceLoadState !== 'loading'
+    && rpWorkspaceSetting?.ready !== true
 
   return h('div', { className: 'dtv-layer', lang: uiSettings.locale, 'data-chrome': chromeMode, 'data-surface-open': surface !== null, style: { '--dtv-ui-scale': uiSettings.scale } },
     panel,
