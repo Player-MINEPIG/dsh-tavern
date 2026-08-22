@@ -12,10 +12,11 @@ import {
   uiMessage,
   unwrapText,
 } from '../../client/src/i18n.js'
+import { API_V1, CLIENT_UI_SETTINGS_EVENT, PLUGIN_ID } from '../../identity.js'
 
 const h = createLocalizedElement(createElement)
 
-const TRACE_API = '/dsh-tavern/api/traces'
+const TRACE_API = `${API_V1}/traces`
 
 const css = `
 .dttrace-root{height:100%;min-height:0;display:flex;flex-direction:column;overflow:hidden;background:var(--dsw-alias-bg-base);color:var(--dsw-alias-label-primary);font-family:Inter,var(--dsw-font-family),sans-serif}
@@ -214,8 +215,8 @@ export function TavernTraceView({ sessionId, useSession }) {
   useEffect(() => { refresh() }, [refresh, lastVisibleSeq, running])
   useEffect(() => {
     const onSettings = event => setUiSettings(event.detail ?? getClientUiSettings())
-    window.addEventListener('dsh-tavern:ui-settings', onSettings)
-    return () => window.removeEventListener('dsh-tavern:ui-settings', onSettings)
+    window.addEventListener(CLIENT_UI_SETTINGS_EVENT, onSettings)
+    return () => window.removeEventListener(CLIENT_UI_SETTINGS_EVENT, onSettings)
   }, [])
 
   const records = [...(data?.records ?? [])].reverse()
@@ -242,9 +243,9 @@ export function TavernTraceView({ sessionId, useSession }) {
 }
 
 export function installTavernTraceStyles() {
-  if (document.querySelector('style[data-plugin-css="dsh-tavern-trace"]') !== null) return
+  if (document.querySelector(`style[data-plugin-css="${PLUGIN_ID}-trace"]`) !== null) return
   const style = document.createElement('style')
-  style.dataset.pluginCss = 'dsh-tavern-trace'
+  style.dataset.pluginCss = `${PLUGIN_ID}-trace`
   style.textContent = css
   document.head.append(style)
 }

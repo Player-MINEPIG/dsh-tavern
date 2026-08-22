@@ -13,10 +13,9 @@ import {
   uiMessage,
   unwrapText,
 } from '../../client/src/i18n.js'
+import { API_V1 as API_ROOT, CLIENT_REFRESH_EVENT } from '../../identity.js'
 
 const h = createLocalizedElement(createElement)
-
-const API_ROOT = '/dsh-tavern/api'
 
 async function api(path, options = {}) {
   const response = await fetch(`${API_ROOT}${path}`, {
@@ -72,7 +71,7 @@ function TemplatePreview({ template }) {
   )
 }
 
-export function SessionTemplatePanel({ sessionId, workspaceId, createCleanSession, close }) {
+export function SessionTemplatePanel({ sessionId, workspaceId, chromeMode = 'native', createCleanSession, createConfiguredPlaythrough, close }) {
   const [templates, setTemplates] = useState([])
   const [selectedId, setSelectedId] = useState(null)
   const [name, setName] = useState(() => translate('template.defaultName'))
@@ -102,8 +101,8 @@ export function SessionTemplatePanel({ sessionId, workspaceId, createCleanSessio
       values: reason.uiValues,
       text: reason instanceof Error ? reason.message : String(reason),
     }))
-    window.addEventListener('dsh-tavern:refresh', onRefresh)
-    return () => window.removeEventListener('dsh-tavern:refresh', onRefresh)
+    window.addEventListener(CLIENT_REFRESH_EVENT, onRefresh)
+    return () => window.removeEventListener(CLIENT_REFRESH_EVENT, onRefresh)
   }, [refresh])
 
   const run = useCallback(async (operation, success) => {
@@ -113,7 +112,7 @@ export function SessionTemplatePanel({ sessionId, workspaceId, createCleanSessio
       const next = typeof success === 'function' ? success(result) : success
       setStatus(typeof next === 'string' ? { error: false, key: next } : { error: false, ...next })
       await refresh()
-      window.dispatchEvent(new Event('dsh-tavern:refresh'))
+      window.dispatchEvent(new Event(CLIENT_REFRESH_EVENT))
       return result
     } catch (reason) {
       const diagnostics = Array.isArray(reason?.diagnostics) ? reason.diagnostics : []
@@ -170,13 +169,14 @@ export function SessionTemplatePanel({ sessionId, workspaceId, createCleanSessio
 
   const start = mode => run(async () => {
     if (mode === 'current' && !sessionId) throw uiError('template.error.needSourceSession')
-    if (workspaceId === null) throw uiError('template.error.needWorkspace')
     const source = mode === 'current'
       ? { mode: 'current', sessionId }
       : { mode: 'template', templateId: selectedId }
     if (mode === 'template' && selectedId === null) throw uiError('template.error.needTemplate')
+    if (chromeMode === 'play') return createConfiguredPlaythrough({ source })
+    if (workspaceId === null) throw uiError('template.error.needWorkspace')
     return createCleanSession({ workspaceId, source })
-  }, id => ({ key: 'template.status.switched', values: { id } }))
+  }, id => ({ key: chromeMode === 'play' ? 'template.status.playthroughStarted' : 'template.status.switched', values: { id } }))
 
   const diagnostics = Array.isArray(selected?.diagnostics) ? selected.diagnostics : []
   const closeLabel = uiMessage('panel.close', { title: unwrapText(uiMessage('template.title')) })
@@ -187,34 +187,36 @@ export function SessionTemplatePanel({ sessionId, workspaceId, createCleanSessio
       h('button', { className: 'dtv-close', type: 'button', title: closeLabel, 'aria-label': closeLabel, onClick: close }, '✕'),
     ),
     h('div', { className: 'dtv-body' },
-      h('button', {
-        className: 'dtv-button dtv-primary',
-        type: 'button',
-        disabled: busy || !sessionId || workspaceId === null,
-        onClick: () => start('current'),
-      }, uiMessage('template.startCurrent')),
+      h('div', { className: 'dtv-template-toolbar' },
+        h('button', { className: 'dtv-button', type: 'button', disabled: busy || !sessionId, onClick: create }, uiMessage('template.createFromCurrent')),
+        h('button', {
+          className: 'dtv-button dtv-primary',
+          type: 'button',
+          disabled: busy || !sessionId || (chromeMode !== 'play' && workspaceId === null),
+          onClick: () => start('current'),
+        }, uiMessage(chromeMode === 'play' ? 'template.startCurrentPlaythrough' : 'template.startCurrent')),
+      ),
+      h('label', { className: 'dtv-field' },
+        h('span', { className: 'dtv-label' }, uiMessage('template.selected')),
+        h('select', { className: 'dtv-select', value: selectedId ?? '', disabled: busy, onChange: select },
+          h('option', { value: '' }, uiMessage('template.noneSelected')),
+          ...templates.map(template => h('option', { key: template.id, value: template.id }, rawText(template.name))),
+        ),
+      ),
       h('p', { className: 'dtv-note' }, uiMessage('template.inheritNote')),
-      workspaceId === null
+      chromeMode !== 'play' && workspaceId === null
         ? h('div', { className: 'dtv-status', 'data-error': true }, uiMessage('template.noWorkspace'))
         : null,
+      h('div', { className: 'dtv-status', 'data-error': status.error || undefined, role: 'status' }, statusText(status)),
+      h('p', { className: 'dtv-note' }, uiMessage('template.blankSessionNote')),
       h('div', { className: 'dtv-resource' },
         h('div', { className: 'dtv-resource-title' }, uiMessage('template.listTitle', { count: templates.length })),
         h('label', { className: 'dtv-field' },
-          h('span', { className: 'dtv-label' }, uiMessage('template.selected')),
-          h('select', { className: 'dtv-select', value: selectedId ?? '', disabled: busy, onChange: select },
-            h('option', { value: '' }, uiMessage('template.noneSelected')),
-            ...templates.map(template => h('option', { key: template.id, value: template.id }, rawText(template.name))),
-          ),
-        ),
-        h('label', { className: 'dtv-field' },
           h('span', { className: 'dtv-label' }, uiMessage('template.name')),
-          h('input', { className: 'dtv-input', value: name, maxLength: 120, disabled: busy, onChange: event => setName(event.target.value) }),
-        ),
-        h('div', { className: 'dtv-template-actions' },
-          h('button', { className: 'dtv-button', type: 'button', disabled: busy || !sessionId, onClick: create }, uiMessage('template.createFromCurrent')),
-          h('button', { className: 'dtv-button', type: 'button', disabled: busy || selectedId === null, onClick: rename }, uiMessage('template.saveNameOnly')),
-          h('button', { className: 'dtv-button', type: 'button', disabled: busy || !sessionId || selectedId === null, onClick: update }, uiMessage('template.updateFromCurrent')),
-          h('button', { className: 'dtv-button dtv-danger', type: 'button', disabled: busy || selectedId === null, onClick: remove }, uiMessage('template.delete')),
+          h('div', { className: 'dtv-template-name' },
+            h('input', { className: 'dtv-input', value: name, maxLength: 120, disabled: busy, onChange: event => setName(event.target.value) }),
+            h('button', { className: 'dtv-button', type: 'button', disabled: busy || selectedId === null, onClick: rename }, uiMessage('template.saveNameOnly')),
+          ),
         ),
         h('p', { className: 'dtv-note' }, uiMessage('template.currentSettingsReminder')),
         selected === null ? null : h(TemplatePreview, { template: selected }),
@@ -225,12 +227,14 @@ export function SessionTemplatePanel({ sessionId, workspaceId, createCleanSessio
         h('button', {
           className: 'dtv-button dtv-primary',
           type: 'button',
-          disabled: busy || selectedId === null || diagnostics.length > 0 || workspaceId === null,
+          disabled: busy || selectedId === null || diagnostics.length > 0 || (chromeMode !== 'play' && workspaceId === null),
           onClick: () => start('template'),
-        }, uiMessage('template.startFromTemplate')),
+        }, uiMessage(chromeMode === 'play' ? 'template.startPlaythroughFromTemplate' : 'template.startFromTemplate')),
       ),
-      h('div', { className: 'dtv-status', 'data-error': status.error || undefined, role: 'status' }, statusText(status)),
-      h('p', { className: 'dtv-note' }, uiMessage('template.blankSessionNote')),
+      h('div', { className: 'dtv-template-footer' },
+        h('button', { className: 'dtv-button dtv-primary', type: 'button', disabled: busy || !sessionId || selectedId === null, onClick: update }, uiMessage('template.updateFromCurrent')),
+        h('button', { className: 'dtv-button dtv-danger', type: 'button', disabled: busy || selectedId === null, onClick: remove }, uiMessage('template.delete')),
+      ),
     ),
   )
 }

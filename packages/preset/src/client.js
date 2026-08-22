@@ -15,13 +15,13 @@ import {
   unwrapText,
 } from '../../client/src/i18n.js'
 import { reorderAtBoundary } from './client-state.js'
+import { API_V1 as API_ROOT, CLIENT_REFRESH_EVENT, PLUGIN_ID } from '../../identity.js'
+import { announceImportFailure } from '../../client/src/import-failure.js'
 
 const h = createLocalizedElement(createElement)
 
-const API_ROOT = '/dsh-tavern/api'
-
 function announceTavernRefresh() {
-  window.dispatchEvent(new CustomEvent('dsh-tavern:refresh', { detail: { source: 'preset' } }))
+  window.dispatchEvent(new CustomEvent(CLIENT_REFRESH_EVENT, { detail: { source: 'preset' } }))
 }
 
 const ST_NUMBER_FIELDS = [
@@ -41,7 +41,7 @@ const css = `
 .dtt-title{font-size:16px;font-weight:650;flex:1;min-width:0}.dtt-active{font-size:13px;color:var(--dsw-alias-state-success);margin-left:7px}
 .dtt-icon{border:0;background:transparent;color:var(--dsw-alias-label-tertiary);cursor:pointer;border-radius:7px;padding:6px 8px}.dtt-icon:hover{background:var(--dsw-alias-interactive-bg-hover)}
 .dtt-body{min-height:0;overflow:auto;padding:12px;display:flex;flex-direction:column;gap:12px}
-.dtt-toolbar,.dtt-actions{display:grid;grid-template-columns:1fr 1fr;gap:8px}.dtt-button{height:36px;border:1px solid var(--dsw-alias-border-l2);border-radius:8px;background:var(--dsw-alias-button-secondary-fill,var(--dsw-alias-bg-base));color:var(--dsw-alias-label-primary);cursor:pointer;padding:0 10px;font-size:13px}.dtt-button:hover:not(:disabled){background:var(--dsw-alias-interactive-bg-hover)}.dtt-button:disabled{opacity:.5;cursor:default}.dtt-button-primary{background:var(--dsw-alias-state-business-primary);color:white;border-color:transparent}.dtt-danger{color:var(--dsw-alias-state-error)}
+.dtt-toolbar,.dtt-actions{display:grid;gap:8px}.dtt-toolbar{grid-template-columns:repeat(auto-fit,minmax(120px,1fr))}.dtt-actions{grid-template-columns:1fr 1fr}.dtt-button{box-sizing:border-box;height:36px;border:1px solid var(--dsw-alias-border-l2);border-radius:8px;background:var(--dsw-alias-button-secondary-fill,var(--dsw-alias-bg-base));color:var(--dsw-alias-label-primary);cursor:pointer;padding:0 10px;font-size:13px;text-decoration:none;display:flex;align-items:center;justify-content:center}.dtt-button:hover:not(:disabled){background:var(--dsw-alias-interactive-bg-hover)}.dtt-button:disabled{opacity:.5;cursor:default}.dtt-button-primary{background:var(--dsw-alias-state-business-primary);color:white;border-color:transparent}.dtt-danger{color:var(--dsw-alias-state-error)}
 .dtt-field{display:flex;flex-direction:column;gap:5px}.dtt-label{font-size:12px;color:var(--dsw-alias-label-tertiary);font-weight:600}.dtt-input,.dtt-select,.dtt-textarea{box-sizing:border-box;width:100%;border:1px solid var(--dsw-alias-border-l2);border-radius:7px;background:var(--dsw-alias-bg-base);color:var(--dsw-alias-label-primary);font:inherit;font-size:13px;outline:none}.dtt-input,.dtt-select{height:36px;padding:0 9px}.dtt-textarea{min-height:110px;resize:vertical;padding:8px;line-height:1.5}.dtt-input:focus,.dtt-select:focus,.dtt-textarea:focus{border-color:var(--dsw-alias-state-business-primary)}
 .dtt-grid{display:grid;grid-template-columns:1fr 1fr;gap:9px}.dtt-section{border-top:1px solid var(--dsw-alias-border-l1);padding-top:12px;display:flex;flex-direction:column;gap:10px}.dtt-section-title{font-size:14px;font-weight:650;display:flex;align-items:center;justify-content:space-between}
 .dtt-note{font-size:13px;line-height:1.5;color:var(--dsw-alias-label-tertiary);margin:0}.dtt-status{font-size:13px;line-height:1.45;border-radius:7px;padding:7px 9px;background:var(--dsw-specific-tip);word-break:break-word}.dtt-status[data-error=true]{color:var(--dsw-alias-state-error)}.dtt-status[data-warning=true]{color:var(--dsw-alias-state-warning,var(--dsw-alias-label-primary))}
@@ -226,8 +226,8 @@ export function PresetSidebar({ closePanel, openPanel, sessionId, sessionBlank, 
       if (event.detail?.source === 'preset') return
       run(() => refresh(), 'preset.status.refreshed')
     }
-    window.addEventListener('dsh-tavern:refresh', onRefresh)
-    return () => window.removeEventListener('dsh-tavern:refresh', onRefresh)
+    window.addEventListener(CLIENT_REFRESH_EVENT, onRefresh)
+    return () => window.removeEventListener(CLIENT_REFRESH_EVENT, onRefresh)
   }, [refresh, run])
 
   const browse = useCallback((id) => run(async () => {
@@ -261,11 +261,17 @@ export function PresetSidebar({ closePanel, openPanel, sessionId, sessionBlank, 
   }, 'preset.status.created'), [refresh, run])
 
   const importFile = useCallback((file) => run(async () => {
-    const content = await file.text()
-    const imported = await api('/import', {
-      method: 'POST',
-      body: body({ name: file.name.replace(/\.json$/i, ''), content }),
-    })
+    let imported
+    try {
+      const content = await file.text()
+      imported = await api('/import', {
+        method: 'POST',
+        body: body({ name: file.name.replace(/\.json$/i, ''), content }),
+      })
+    } catch (error) {
+      announceImportFailure(error)
+      throw error
+    }
     await refresh(imported.preset.id)
     announceTavernRefresh()
     if (fileRef.current !== null) fileRef.current.value = ''
@@ -332,6 +338,7 @@ export function PresetSidebar({ closePanel, openPanel, sessionId, sessionBlank, 
     h('div', { className: 'dtt-body' },
       h('div', { className: 'dtt-toolbar' },
         h('button', { className: 'dtt-button', type: 'button', disabled: busy, onClick: () => fileRef.current?.click() }, uiMessage('preset.importStJson')),
+        draft === null ? null : h('a', { className: 'dtt-button', href: `${API_ROOT}/presets/${encodeURIComponent(draft.id)}/export`, download: '' }, uiMessage('common.exportJson')),
         h('button', { className: 'dtt-button', type: 'button', disabled: busy, onClick: createPreset }, uiMessage('preset.create')),
         h('input', {
           ref: fileRef,
@@ -340,6 +347,7 @@ export function PresetSidebar({ closePanel, openPanel, sessionId, sessionBlank, 
           accept: '.json,application/json',
           onChange: (event) => {
             const file = event.target.files?.[0]
+            event.target.value = ''
             if (file !== undefined) importFile(file)
           },
         }),
@@ -460,9 +468,9 @@ export function PresetSidebar({ closePanel, openPanel, sessionId, sessionBlank, 
 }
 
 export function installPresetStyles() {
-  if (document.querySelector('style[data-plugin-css="dsh-tavern"]') !== null) return
+  if (document.querySelector(`style[data-plugin-css="${PLUGIN_ID}"]`) !== null) return
   const style = document.createElement('style')
-  style.dataset.pluginCss = 'dsh-tavern'
+  style.dataset.pluginCss = PLUGIN_ID
   style.textContent = css
   document.head.append(style)
 }

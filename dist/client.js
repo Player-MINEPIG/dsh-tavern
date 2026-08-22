@@ -1,5 +1,5 @@
 window.__ModuleLoader__.load({
-	id: "dsh-tavern",
+	id: "pmp-dsh-tavern",
 	factory: (require) => {
 		var module = { exports: {} };
 		var exports = module.exports;
@@ -26,12 +26,12 @@ var __toCommonJS = (mod) => __copyProps(__defProp({}, "__esModule", { value: tru
 var index_exports = {};
 __export(index_exports, {
   PanelHeader: () => PanelHeader,
-  apply: () => apply,
+  apply: () => apply2,
   inject: () => inject,
   name: () => name
 });
 module.exports = __toCommonJS(index_exports);
-var import_react7 = require("react");
+var import_react16 = require("react");
 
 // packages/ui-settings/src/locale-contract.js
 var DEFAULT_UI_LOCALE = "zh-CN";
@@ -44,6 +44,32 @@ function isSupportedUiLocale(value) {
   return typeof value === "string" && SUPPORTED_UI_LOCALES.includes(value);
 }
 
+// packages/identity.js
+var PLUGIN_ID = "pmp-dsh-tavern";
+var API_ROOT = `/${PLUGIN_ID}/api`;
+var API_V1 = `${API_ROOT}/v1`;
+var API_V2 = `${API_ROOT}/v2`;
+var LEGACY_API_ROOT = "/dsh-tavern/api";
+var PROFILE_SECTION = `${PLUGIN_ID}:profile`;
+var CLIENT_REFRESH_EVENT = `${PLUGIN_ID}:refresh`;
+var CHROME_SERVICE_NAME = "pmpDshTavernChrome";
+var CLIENT_UI_SETTINGS_EVENT = `${PLUGIN_ID}:ui-settings`;
+var CLIENT_CONVERSATION_SETTINGS_EVENT = `${PLUGIN_ID}:conversation-settings`;
+var CLIENT_IMPORT_FAILURE_EVENT = `${PLUGIN_ID}:import-failure`;
+var identityConstants = Object.freeze({
+  pluginId: PLUGIN_ID,
+  apiRoot: API_ROOT,
+  apiV1: API_V1,
+  apiV2: API_V2,
+  chromeServiceName: CHROME_SERVICE_NAME,
+  legacyApiRoot: LEGACY_API_ROOT,
+  profileSection: PROFILE_SECTION,
+  clientRefreshEvent: CLIENT_REFRESH_EVENT,
+  clientUiSettingsEvent: CLIENT_UI_SETTINGS_EVENT,
+  clientConversationSettingsEvent: CLIENT_CONVERSATION_SETTINGS_EVENT,
+  clientImportFailureEvent: CLIENT_IMPORT_FAILURE_EVENT
+});
+
 // packages/client/src/i18n/catalogs/zh-CN.js
 var zh_CN_default = Object.freeze({
   "common.unavailable": "\u754C\u9762\u6587\u672C\u6682\u4E0D\u53EF\u7528",
@@ -54,6 +80,8 @@ var zh_CN_default = Object.freeze({
   "common.refresh": "\u5237\u65B0",
   "common.delete": "\u5220\u9664",
   "common.save": "\u4FDD\u5B58",
+  "common.cancel": "\u53D6\u6D88",
+  "common.close": "\u5173\u95ED",
   "common.saveChanges": "\u4FDD\u5B58\u4FEE\u6539",
   "common.saved": "\u5DF2\u4FDD\u5B58",
   "common.reload": "\u91CD\u65B0\u8F7D\u5165",
@@ -70,6 +98,7 @@ var zh_CN_default = Object.freeze({
   "common.exportJson": "\u5BFC\u51FA JSON",
   "common.importJson": "\u5BFC\u5165 JSON",
   "common.enable": "\u542F\u7528",
+  "import.failureTitle": "\u5BFC\u5165\u5931\u8D25",
   "panel.close": "\u5173\u95ED{title}\u4FA7\u8FB9\u680F",
   "nav.preset": "\u9884\u8BBE",
   "nav.character": "\u89D2\u8272\u5361",
@@ -82,7 +111,43 @@ var zh_CN_default = Object.freeze({
   "nav.worldBook.empty": "\u672A\u7ED1\u5B9A\u4E16\u754C\u4E66",
   "nav.user.empty": "\u672A\u7ED1\u5B9A\u7528\u6237",
   "nav.sessionTemplate.empty": "\u5F53\u524D\u8BBE\u7F6E\u6216\u914D\u7F6E\u6A21\u677F",
-  "nav.settings.empty": "\u8BED\u8A00\u3001\u7F29\u653E\u3001RP \u8DDF\u968F\u4E0E RP \u63D0\u793A\u8BCD",
+  "nav.settings.empty": "\u8BED\u8A00\u3001\u7F29\u653E\u3001\u9ED8\u8BA4 RP \u5DE5\u4F5C\u533A\u3001RP \u8DDF\u968F\u4E0E\u63D0\u793A\u8BCD",
+  "nav.conversationSettings": "\u5BF9\u8BDD\u8BBE\u7F6E",
+  "nav.conversationSettings.empty": "RP \u6B63\u6587\u5B57\u53F7\u4E0E\u6D88\u606F\u6309\u94AE\u5C3A\u5BF8",
+  "nav.regex": "\u663E\u793A\u6B63\u5219",
+  "nav.regex.empty": "\u4EC5\u7528\u4E8E\u9B54\u4E38\u663E\u793A\u7684\u89C4\u5219",
+  "regex.title": "\u663E\u793A\u6B63\u5219",
+  "regex.dragToReorder": "\u62D6\u62FD\u8C03\u6574\u6267\u884C\u987A\u5E8F",
+  "regex.displayOnlyNote": "\u8FD9\u4E9B\u89C4\u5219\u53EA\u6539\u53D8\u9B54\u4E38\u6E32\u67D3\u548C\u9759\u6001 HTML\uFF0C\u4E0D\u4F1A\u6539\u5199\u5386\u53F2\u3001\u65F6\u95F4\u7EBF\u6570\u636E\u6216\u53D1\u9001\u7ED9 AI \u7684\u8BF7\u6C42\u3002\u5BFC\u5165\u89C4\u5219\u7684\u5F00\u5173\u6309\u539F\u6837\u4FDD\u7559\u3002",
+  "regex.scopes": "\u6B63\u5219\u4F5C\u7528\u57DF",
+  "regex.scope.global": "\u5168\u5C40",
+  "regex.scope.preset": "\u9884\u8BBE\u7ED1\u5B9A",
+  "regex.scope.character": "\u89D2\u8272\u5361\u7ED1\u5B9A",
+  "regex.noPreset": "\u5F53\u524D\u672A\u9009\u62E9\u9884\u8BBE\uFF1B\u9884\u8BBE\u4F5C\u7528\u57DF\u7684\u65B0\u89C4\u5219\u9700\u8981\u586B\u5199\u8D44\u6E90 ID \u540E\u624D\u80FD\u5339\u914D\u3002",
+  "regex.noCharacter": "\u5F53\u524D\u672A\u7ED1\u5B9A\u89D2\u8272\u5361\uFF1B\u89D2\u8272\u5361\u4F5C\u7528\u57DF\u7684\u65B0\u89C4\u5219\u9700\u8981\u586B\u5199\u8D44\u6E90 ID \u540E\u624D\u80FD\u5339\u914D\u3002",
+  "regex.add": "\u65B0\u5EFA\u89C4\u5219",
+  "regex.emptyScope": "\u6B64\u4F5C\u7528\u57DF\u6682\u65E0\u89C4\u5219\u3002",
+  "regex.enabled": "\u4F7F\u7528\u6B64\u89C4\u5219",
+  "regex.name": "\u89C4\u5219\u540D\u79F0",
+  "regex.unnamed": "\u672A\u547D\u540D\u89C4\u5219",
+  "regex.newRule": "\u65B0\u6B63\u5219",
+  "regex.find": "\u67E5\u627E\u8868\u8FBE\u5F0F",
+  "regex.replace": "\u66FF\u6362\u5185\u5BB9",
+  "regex.flags": "\u6807\u5FD7",
+  "regex.target": "\u6E32\u67D3\u6D88\u606F",
+  "regex.target.assistant": "\u52A9\u624B",
+  "regex.target.user": "\u7528\u6237",
+  "regex.target.both": "\u4E24\u8005",
+  "regex.scope": "\u4F5C\u7528\u57DF",
+  "regex.resourceId": "\u8D44\u6E90 ID",
+  "regex.loaded": "\u5DF2\u52A0\u8F7D {count} \u6761\u6B63\u5219",
+  "regex.legacyMigrationPending": "\u68C0\u6D4B\u5230 {count} \u6761\u65E7\u7248 Tavern \u672C\u5730\u8D44\u6E90\u6B63\u5219\uFF1B\u70B9\u51FB\u4FDD\u5B58\u540E\u4F1A\u5199\u5165\u5F53\u524D\u9884\u8BBE\u6216\u89D2\u8272\u5361\uFF0C\u5E76\u968F\u8D44\u6E90\u5BFC\u51FA\u3002",
+  "regex.saved": "\u5DF2\u4FDD\u5B58 {count} \u6761\u6B63\u5219",
+  "regex.imported": "\u5DF2\u5BFC\u5165\u5E76\u4FDD\u5B58 {count} \u6761\u6B63\u5219",
+  "regex.confirmReload": "\u653E\u5F03\u672A\u4FDD\u5B58\u7684\u6B63\u5219\u4FEE\u6539\u5E76\u91CD\u65B0\u8F7D\u5165\uFF1F",
+  "regex.confirmClose": "\u5173\u95ED\u5E76\u653E\u5F03\u672A\u4FDD\u5B58\u7684\u6B63\u5219\u4FEE\u6539\uFF1F",
+  "regex.sourceOwnedDisplay": "\u6B64\u89C4\u5219\u5B58\u50A8\u5728\u5F53\u524D\u7ED1\u5B9A\u8D44\u6E90\u4E2D\uFF1B\u4FDD\u5B58\u66F4\u6539\u4F1A\u5199\u56DE\u539F\u9884\u8BBE\u6216\u89D2\u8272\u5361\u3002",
+  "regex.sourceOwnedPromptOnly": "\u6B64\u89C4\u5219\u5B58\u50A8\u5728\u5F53\u524D\u7ED1\u5B9A\u8D44\u6E90\u4E2D\uFF0C\u4F46\u53EA\u7528\u4E8E\u63D0\u793A\u8BCD\u3001\u4E0D\u53C2\u4E0E\u9B54\u4E38\u663E\u793A\uFF1B\u4FDD\u5B58\u66F4\u6539\u4F1A\u5199\u56DE\u539F\u9884\u8BBE\u6216\u89D2\u8272\u5361\u3002",
   "nav.session.none": "\u65E0\u4F1A\u8BDD",
   "nav.syncFailed": "\u72B6\u6001\u540C\u6B65\u5931\u8D25\uFF1A{message}",
   "nav.menuTitle": "Tavern \xB7 {session}",
@@ -91,7 +156,75 @@ var zh_CN_default = Object.freeze({
   "nav.itemAriaBound": "{label}\uFF0C{title}\uFF0C{state}",
   "nav.itemAria": "{label}\uFF0C{title}",
   "nav.bookCount": "{count} \u672C",
-  "nav.launcher": "\u62D6\u52A8\u53EF\u79FB\u52A8\uFF1B\u70B9\u51FB\u5C55\u5F00 Tavern \u8D44\u6E90\u9762\u677F",
+  "nav.launcher": "\u62D6\u52A8\u53EF\u79FB\u52A8\uFF1B\u5DE6\u952E\u5C55\u5F00\u9762\u677F\uFF1B\u53F3\u952E\u5207\u6362\u524D\u7AEF\u663E\u793A\u6A21\u5F0F",
+  "chrome.switchToPlay": "\u5207\u6362\u5230\u81EA\u5B9A\u4E49\u524D\u7AEF\u6A21\u5F0F",
+  "chrome.switchToNative": "\u5207\u6362\u5230 DSH \u539F\u751F\u6A21\u5F0F",
+  "chrome.currentPlay": "\u5F53\u524D\uFF1A\u9B54\u4E38",
+  "chrome.currentNative": "\u5F53\u524D\uFF1ADSH \u539F\u751F",
+  "play.sidebar.loading": "\u6B63\u5728\u8BFB\u53D6\u89D2\u8272\u626E\u6F14\u5DE5\u4F5C\u533A\u2026",
+  "play.sidebar.workspaceMissing": "\u5C1A\u672A\u9009\u62E9\u89D2\u8272\u626E\u6F14\u5DE5\u4F5C\u533A\uFF1B\u7075\u73E0\u6A21\u5F0F\u4E2D\u7684\u539F\u751F\u4F1A\u8BDD\u4ECD\u53EF\u6B63\u5E38\u4F7F\u7528\u3002",
+  "play.sidebar.selectWorkspace": "\u5C06 {name} \u8BBE\u4E3A\u89D2\u8272\u626E\u6F14\u5DE5\u4F5C\u533A",
+  "play.sidebar.systemWorkspaceConfirm": "{path} \u4F4D\u4E8E\u7CFB\u7EDF\u76D8\uFF0C\u4ECD\u8981\u5C06\u5176\u8BBE\u4E3A\u89D2\u8272\u626E\u6F14\u5DE5\u4F5C\u533A\u5417\uFF1F",
+  "play.sidebar.newPlaythrough": "\u4E0E {name} \u65B0\u5F00\u5468\u76EE",
+  "play.sidebar.noCharacters": "\u6682\u65E0\u89D2\u8272\u5361\u3002",
+  "play.sidebar.sort": "\u6392\u5E8F",
+  "play.sidebar.sortUpdated": "\u66F4\u65B0\u65F6\u95F4",
+  "play.sidebar.sortName": "\u540D\u79F0 A\u2013Z",
+  "play.sidebar.sortCustom": "\u81EA\u5B9A\u4E49",
+  "play.sidebar.missingCharacters": "\u7F3A\u5931\u89D2\u8272\u5361",
+  "play.sidebar.relinkCharacter": "\u91CD\u65B0\u5173\u8054\u89D2\u8272\u5361",
+  "play.sidebar.relinkCharacterNamed": "\u4E3A {name} \u91CD\u65B0\u5173\u8054\u89D2\u8272\u5361",
+  "play.sidebar.relinkPrompt": "\u201C{name}\u201D\u7684\u539F\u89D2\u8272\u5361\u5DF2\u7F3A\u5931\u3002\u9009\u62E9\u4E00\u5F20\u5F53\u524D\u89D2\u8272\u5361\u540E\uFF0C\u4F1A\u5C06\u5176\u5168\u90E8\u5468\u76EE\u548C\u4F1A\u8BDD\u91CD\u65B0\u5173\u8054\u5230\u65B0\u5361\u3002",
+  "play.sidebar.relinkPlaythroughPrompt": "\u4E3A\u201C{name}\u201D\u9009\u62E9\u65B0\u7684\u89D2\u8272\u5361\u3002\u53EA\u4F1A\u91CD\u65B0\u7ED1\u5B9A\u6B64\u5468\u76EE\u53CA\u5176\u5168\u90E8\u5206\u652F\u4F1A\u8BDD\u3002",
+  "play.sidebar.relinkMismatchWarning": "\u6240\u9009\u89D2\u8272\u5361\u4E0D\u7B26\u5408 SHA-256 \u6216\u552F\u4E00\u540C\u540D\u81EA\u52A8\u5F52\u7C7B\u89C4\u5219\u3002\u7EE7\u7EED\u64CD\u4F5C\u4ECD\u4F1A\u6309\u4F60\u7684\u9009\u62E9\u91CD\u65B0\u7ED1\u5B9A\u6B64\u5468\u76EE\u3002",
+  "play.sidebar.relinkConfirm": "\u91CD\u65B0\u5173\u8054",
+  "play.sidebar.noPlaythroughs": "\u5C1A\u672A\u521B\u5EFA\u5468\u76EE\u3002",
+  "play.sidebar.unassigned": "\u672A\u5F52\u5165\u5468\u76EE",
+  "play.sidebar.other": "\u666E\u901A / \u975E\u89D2\u8272\u626E\u6F14\u4F1A\u8BDD",
+  "play.sidebar.otherEmpty": "\u6682\u65E0\u666E\u901A\u6216\u5916\u90E8\u4F1A\u8BDD\u3002",
+  "play.sidebar.createOrdinary": "\u65B0\u5EFA\u666E\u901A\u4F1A\u8BDD",
+  "play.sidebar.ordinaryPrompt": "\u666E\u901A\u4F1A\u8BDD\u8BF7\u5728 DSH \u539F\u751F\u6A21\u5F0F\u4E2D\u521B\u5EFA\u3002\u8FD4\u56DE\u539F\u751F\u6A21\u5F0F\u540E\uFF0C\u53EF\u4F7F\u7528\u4FA7\u8FB9\u680F\u5916\u5C42\u7684\u201C\u65B0\u5EFA\u4F1A\u8BDD\u201D\u6309\u94AE\u3002",
+  "play.sidebar.ordinaryClose": "\u5173\u95ED",
+  "play.sidebar.returnNative": "\u56DE\u5230 DSH \u6A21\u5F0F",
+  "play.notice.unbound": "\u672C\u4F1A\u8BDD\u6682\u672A\u7ED1\u5B9A\u5230\u6307\u5B9A RP \u5DE5\u4F5C\u533A\u5185\u7684\u5468\u76EE\uFF1B\u53EF\u4EE5\u6B63\u5E38\u5BF9\u8BDD\u3002\u8FDB\u5165\u89D2\u8272\u5361\u4E0B\u7684\u5468\u76EE\u540E\uFF0C\u624D\u4F1A\u542F\u7528\u5F00\u573A\u767D\u3001\u56DE\u590D\u5207\u6362\u3001\u663E\u793A\u7F16\u8F91\u4E0E\u5468\u76EE\u5BFC\u5165/\u5BFC\u51FA\u3002",
+  "play.sidebar.sessionMissing": "\u8BE5\u5468\u76EE\u5728\u89D2\u8272\u626E\u6F14\u5DE5\u4F5C\u533A\u4E2D\u6CA1\u6709\u53EF\u7528\u4F1A\u8BDD\u3002",
+  "play.sidebar.timelineErrors": "\u6709 {count} \u4E2A\u5468\u76EE\u7684 timeline \u65E0\u6CD5\u8BFB\u53D6\u3002",
+  "play.chat.label": "RP\u89C6\u56FE",
+  "play.chat.loading": "\u6B63\u5728\u8BFB\u53D6\u672C\u5468\u76EE\u8BB0\u5F55\u2026",
+  "play.chat.empty": "\u672C\u5468\u76EE\u5C1A\u65E0\u5BF9\u8BDD\uFF0C\u8BF7\u5728\u4E0B\u65B9\u5F00\u59CB\u3002",
+  "play.chat.thinking": "\u6B63\u5728\u601D\u8003\u2026",
+  "play.chat.previousGreeting": "\u4E0A\u4E00\u6761\u5F00\u573A\u767D",
+  "play.chat.nextGreeting": "\u4E0B\u4E00\u6761\u5F00\u573A\u767D",
+  "play.chat.runningDisabled": "Agent \u8FD0\u884C\u4E2D\u4E0D\u53EF\u64CD\u4F5C",
+  "play.chat.copy": "\u590D\u5236\u5F53\u524D\u663E\u793A\u56DE\u590D",
+  "play.chat.copyUnavailable": "\u5F53\u524D\u73AF\u5883\u65E0\u6CD5\u8BBF\u95EE\u526A\u8D34\u677F\u3002",
+  "play.chat.previousReply": "\u4E0A\u4E00\u6761\u5DF2\u6709\u56DE\u590D",
+  "play.chat.nextReply": "\u4E0B\u4E00\u6761\u5DF2\u6709\u56DE\u590D",
+  "play.chat.noOtherReply": "\u6CA1\u6709\u5176\u4ED6\u5DF2\u6709\u56DE\u590D",
+  "play.chat.generateReply": "\u751F\u6210\u4E00\u6761\u65B0\u56DE\u590D",
+  "play.chat.forkPlaythrough": "\u4ECE\u8FD9\u91CC\u5206\u652F\u4E3A\u65B0\u5468\u76EE",
+  "play.chat.rollbackPlaythrough": "\u5728\u672C\u5468\u76EE\u4ECE\u8FD9\u91CC\u7EE7\u7EED",
+  "play.chat.editDisplay": "\u4FEE\u6539\u663E\u793A\u6587\u5B57",
+  "play.chat.editDisplayPrompt": "\u8F93\u5165\u66FF\u4EE3\u539F\u56DE\u590D\u7684\u663E\u793A\u6587\u5B57\uFF1A",
+  "play.chat.restoreOriginal": "\u6062\u590D\u539F\u56DE\u590D",
+  "play.chat.hideNode": "\u4ECE\u9B54\u4E38\u663E\u793A\u4E2D\u9690\u85CF\u672C\u7EC4\u95EE\u7B54",
+  "play.chat.hideConfirm": "\u8981\u4ECE\u9B54\u4E38\u663E\u793A\u4E2D\u9690\u85CF\u672C\u7EC4\u95EE\u7B54\u5417\uFF1F\u539F\u59CB DSH \u6D88\u606F\u4E0D\u4F1A\u88AB\u5220\u9664\u3002",
+  "play.chat.restoreNode": "\u6062\u590D\u663E\u793A\u672C\u7EC4\u95EE\u7B54",
+  "play.io.menu": "\u5468\u76EE\u5BFC\u5165 / \u5BFC\u51FA",
+  "play.io.rename": "\u91CD\u547D\u540D\u5468\u76EE",
+  "play.io.relinkCharacter": "\u91CD\u65B0\u7ED1\u5B9A\u89D2\u8272\u5361",
+  "play.io.renamePrompt": "\u8F93\u5165\u65B0\u7684\u5468\u76EE\u540D\u79F0\uFF1A",
+  "play.io.renameInvalid": "\u5468\u76EE\u540D\u79F0\u4E0D\u80FD\u4E3A\u7A7A\uFF0C\u4E14\u4E0D\u80FD\u8D85\u8FC7 120 \u4E2A\u5B57\u7B26\u3002",
+  "play.io.exportHtml": "\u5BFC\u51FA\u9759\u6001 HTML",
+  "play.io.exportSt": "\u5BFC\u51FA SillyTavern JSONL",
+  "play.io.import": "\u5BFC\u5165\u5E76\u65B0\u5F00 session",
+  "play.io.importUnavailable": "\u540E\u7AEF\u5C1A\u672A\u63D0\u4F9B\u907F\u514D\u4F2A\u9020 DSH \u5386\u53F2\u6240\u9700\u7684\u4E00\u6B21\u6027 import-context reference\uFF0C\u56E0\u6B64\u6682\u4E0D\u5F00\u653E\u5BFC\u5165\u3002",
+  "play.import.bind": "\u5BFC\u5165\u5916\u90E8\u8BB0\u5F55",
+  "play.import.replace": "\u6362\u7ED1",
+  "play.import.unbind": "\u89E3\u7ED1",
+  "play.import.bound": "\u5DF2\u7ED1\u5B9A\u5916\u90E8\u5BFC\u5165\u8BB0\u5F55",
+  "play.import.lastQa": "\u5916\u90E8\u5BFC\u5165\u8BB0\u5F55 \xB7 \u6700\u540E\u4E00\u8F6E",
+  "play.import.unbindConfirm": "\u89E3\u7ED1\u5F53\u524D\u5916\u90E8\u5BFC\u5165\u8BB0\u5F55\uFF1F\u8BB0\u5F55\u6587\u4EF6\u4F1A\u4FDD\u7559\uFF0C\u4F46\u672C\u5468\u76EE\u4E0D\u518D\u663E\u793A\u6216\u53D1\u9001\u8BE5\u4E0A\u4E0B\u6587\u3002",
   "settings.menu": "\u754C\u9762\u8BBE\u7F6E",
   "settings.title": "Tavern \u754C\u9762\u8BBE\u7F6E",
   "settings.language": "\u754C\u9762\u8BED\u8A00",
@@ -108,12 +241,41 @@ var zh_CN_default = Object.freeze({
   "settings.close": "\u5173\u95ED\u754C\u9762\u8BBE\u7F6E\u4FA7\u8FB9\u680F",
   "settings.rpFollow": "\u7ED1\u5B9A\u89D2\u8272\u5361\u65F6\u81EA\u52A8\u8FDB\u5165 RP \u6A21\u5F0F",
   "settings.rpFollow.help": "\u5F00\u542F\u540E\uFF0C\u7ED1\u5B9A\u89D2\u8272\u5361\u4F1A\u8FDB\u5165\u89D2\u8272\u626E\u6F14\u5E76\u628A\u6587\u4EF6\u6C99\u7BB1\u9489\u5728\u53EA\u8BFB\u3002\u5199\u5165\u3001\u7EC8\u7AEF\u3001\u5916\u8FDE\u548C\u5DE5\u4F5C\u533A\u5916\u6216\u673A\u5BC6\u6587\u4EF6\u8BFB\u53D6\u4F1A\u88AB\u62E6\u4F4F\u5E76\u4E2D\u65AD\u8BE5 agent\uFF1B\u5B50 agent \u53EF\u4EE5\u6D3E\uFF0C\u4F46\u540C\u6837\u53D7\u9650\u5236\u3002\u804A\u5929\u680F\u6539\u6743\u9650\u65E0\u6548\u3002\u8981\u505A\u8FD9\u4E9B\u4E8B\u5FC5\u987B\u5148\u5173\u6389 RP\uFF08\u6216 /rp off\uFF09\u3002",
+  "settings.rpWorkspace": "\u9ED8\u8BA4 RP \u5DE5\u4F5C\u533A",
+  "settings.rpWorkspace.help": "\u65B0\u5EFA\u5468\u76EE\u9ED8\u8BA4\u4F7F\u7528\u6B64\u5DE5\u4F5C\u533A\u3002\u66F4\u6539\u53EA\u5F71\u54CD\u4E4B\u540E\u7684\u9ED8\u8BA4\u843D\u70B9\u548C RP \u4F1A\u8BDD\u5206\u7C7B\uFF0C\u4E0D\u79FB\u52A8\u5DF2\u6709\u4F1A\u8BDD\u3001\u76EE\u5F55\u6216\u5468\u76EE\u3002",
+  "settings.rpWorkspace.unselected": "\u5C1A\u672A\u9009\u62E9 RP \u5DE5\u4F5C\u533A",
+  "settings.rpWorkspace.unavailable": "\u5F53\u524D\u7ED1\u5B9A\u5DF2\u4E0D\u5728 DSH \u5DE5\u4F5C\u533A\u5217\u8868\u4E2D\uFF1A{path}",
+  "settings.rpWorkspace.none": "\u6CA1\u6709\u53EF\u7528\u7684 DSH \u5DE5\u4F5C\u533A",
+  "settings.rpWorkspace.verifyError": "\u9ED8\u8BA4 RP \u5DE5\u4F5C\u533A\u5DF2\u66F4\u65B0\uFF0C\u4F46\u56DE\u8BFB\u9A8C\u8BC1\u5931\u8D25\uFF1A{message}",
+  "workspaceAdmission.title": "\u8FDB\u5165\u9B54\u4E38\u524D\u9009\u62E9 RP \u5DE5\u4F5C\u533A",
+  "workspaceAdmission.body": "\u9B54\u4E38\u4F1A\u6309\u89D2\u8272\u5361\u4E0E\u5468\u76EE\u91CD\u7EC4\u6B64\u5DE5\u4F5C\u533A\u4E2D\u7684\u4F1A\u8BDD\u3002\u8BF7\u9009\u62E9\u4E00\u4E2A\u73B0\u6709 DSH \u5DE5\u4F5C\u533A\uFF1B\u63D2\u4EF6\u4E0D\u4F1A\u81EA\u52A8\u66FF\u4F60\u9009\u62E9\uFF0C\u4E5F\u4E0D\u4F1A\u79FB\u52A8\u5DF2\u6709\u4F1A\u8BDD\u3002",
+  "workspaceAdmission.loading": "\u6B63\u5728\u8BFB\u53D6\u540E\u7AEF\u8BB0\u5F55\u7684 RP \u5DE5\u4F5C\u533A\u2026",
+  "workspaceAdmission.unavailable": "\u539F RP \u5DE5\u4F5C\u533A\u5DF2\u4E0D\u5728\u5F53\u524D DSH \u5DE5\u4F5C\u533A\u5217\u8868\u4E2D\uFF1A{path}\u3002\u8BF7\u9009\u62E9\u65B0\u7684\u5DE5\u4F5C\u533A\u540E\u518D\u8FDB\u5165\u9B54\u4E38\u3002",
+  "workspaceAdmission.none": "\u5F53\u524D\u6CA1\u6709\u53EF\u9009\u7684 DSH \u5DE5\u4F5C\u533A\u3002\u8BF7\u8FD4\u56DE DSH \u6A21\u5F0F\u521B\u5EFA\u6216\u6253\u5F00\u5DE5\u4F5C\u533A\uFF0C\u7136\u540E\u91CD\u65B0\u68C0\u67E5\u3002",
+  "workspaceAdmission.choose": "\u9009\u62E9 {name}",
+  "workspaceAdmission.retry": "\u91CD\u65B0\u68C0\u67E5",
+  "workspaceAdmission.native": "\u8FD4\u56DE DSH \u6A21\u5F0F",
+  "workspaceAdmission.saving": "\u6B63\u5728\u7ED1\u5B9A\u5E76\u56DE\u8BFB\u9A8C\u8BC1 RP \u5DE5\u4F5C\u533A\u2026",
+  "workspaceAdmission.loadError": "\u65E0\u6CD5\u8BFB\u53D6 RP \u5DE5\u4F5C\u533A\uFF1A{message}",
+  "workspaceAdmission.saveError": "\u65E0\u6CD5\u7ED1\u5B9A RP \u5DE5\u4F5C\u533A\uFF1A{message}",
+  "workspaceAdmission.verifyError": "RP \u5DE5\u4F5C\u533A\u5DF2\u5199\u5165\uFF0C\u4F46\u56DE\u8BFB\u9A8C\u8BC1\u672A\u901A\u8FC7\uFF1A{message}",
+  "workspaceAdmission.notConfirmed": "\u540E\u7AEF\u672A\u786E\u8BA4\u6240\u9009\u5DE5\u4F5C\u533A\u5F53\u524D\u53EF\u7528",
   "settings.rpPolicy": "RP \u6A21\u5F0F\u63D0\u793A\u8BCD\uFF08rp:policy\uFF09",
   "settings.rpPolicy.help": "\u53EF\u9009\u3002DSH \u4E0D\u80FD\u6309\u6BB5\u52A0\u6743\uFF0C\u8EAB\u4EFD\u548C\u6587\u98CE\u5E94\u5199\u5728\u9884\u8BBE\u6216\u89D2\u8272\u5361\u91CC\u3002\u9ED8\u8BA4\u53EA\u8BF4\u660E\u9AD8\u98CE\u9669\u64CD\u4F5C\u88AB\u9501\u5B9A\u3002\u7559\u7A7A\u5219\u4E0D\u9644\u52A0\u8FD9\u6BB5\u63D0\u793A\uFF0C\u9501\u5B9A\u4ECD\u7136\u6709\u6548\u3002\u5E95\u90E8\u7684\u300C\u6062\u590D\u9ED8\u8BA4\u300D\u53EA\u91CD\u7F6E\u8BED\u8A00\u3001\u7F29\u653E\u548C\u7ED1\u5361\u8DDF\u968F\u3002",
   "settings.rpPolicy.placeholder": "\u7559\u7A7A\uFF1A\u53EA\u542F\u7528\u53EA\u8BFB\u6C99\u7BB1\uFF0C\u4E0D\u9644\u52A0 RP \u63D0\u793A\u8BCD",
   "settings.rpPolicy.save": "\u4FDD\u5B58 RP \u63D0\u793A\u8BCD",
   "settings.rpPolicy.reset": "\u6062\u590D\u9ED8\u8BA4 RP \u63D0\u793A\u8BCD",
   "settings.rpPolicy.saved": "RP \u63D0\u793A\u8BCD\u5DF2\u4FDD\u5B58\uFF0C\u4E0B\u4E00\u8F6E\u8BF7\u6C42\u751F\u6548\u3002",
+  "conversationSettings.title": "\u9B54\u4E38\u5BF9\u8BDD\u8BBE\u7F6E",
+  "conversationSettings.textScale": "RP \u6B63\u6587\u4E0E\u5F00\u573A\u767D\u5B57\u53F7",
+  "conversationSettings.textScale.help": "\u53EA\u7F29\u653E\u9B54\u4E38\u4E2D\u7684\u7528\u6237/\u52A9\u624B\u6B63\u6587\u548C\u5F00\u573A\u767D\uFF1B\u4E0D\u6539\u53D8 DSH \u539F\u751F\u5BF9\u8BDD\u3001\u63D0\u793A\u8BCD\u6216\u5BFC\u51FA\u6587\u672C\u3002",
+  "conversationSettings.actionScale": "RP \u6D88\u606F\u6309\u94AE\u5C3A\u5BF8",
+  "conversationSettings.actionScale.help": "\u7F29\u653E\u6BCF\u8F6E\u672B\u5C3E\u7684\u590D\u5236\u3001swipe\u3001\u5206\u652F\u3001\u56DE\u9000\u548C\u7F16\u8F91\u6309\u94AE\uFF0C\u4E0D\u6539\u53D8\u5BF9\u8BDD\u680F\u6216\u5176\u4ED6 Tavern \u9762\u677F\u3002",
+  "conversationSettings.reset": "\u6062\u590D\u5BF9\u8BDD\u663E\u793A\u9ED8\u8BA4\u503C",
+  "conversationSettings.saving": "\u6B63\u5728\u4FDD\u5B58\u5BF9\u8BDD\u8BBE\u7F6E\u2026",
+  "conversationSettings.saved": "\u5BF9\u8BDD\u8BBE\u7F6E\u5DF2\u4FDD\u5B58\u3002",
+  "conversationSettings.loadError": "\u65E0\u6CD5\u8BFB\u53D6\u5BF9\u8BDD\u8BBE\u7F6E\uFF1A{message}",
+  "conversationSettings.saveError": "\u65E0\u6CD5\u4FDD\u5B58\u5BF9\u8BDD\u8BBE\u7F6E\uFF1A{message}",
   "rp.block.body": "Agent \u6B63\u5728\u8FDB\u884C\u5199\u5165\u7B49\u9AD8\u98CE\u9669\u64CD\u4F5C\u3002\u5982\u679C\u4F60\u77E5\u9053\u4F60\u5728\u505A\u4EC0\u4E48\uFF0C\u8BF7\u5173\u95ED RP \u6A21\u5F0F\u540E\u91CD\u8BD5\u3002",
   "rp.block.dismiss": "\u77E5\u9053\u4E86",
   "preset.title": "Tavern \u9884\u8BBE",
@@ -237,6 +399,11 @@ var zh_CN_default = Object.freeze({
   "character.delete": "\u5220\u9664\u89D2\u8272\u5361",
   "character.confirmDelete": "\u5220\u9664\u89D2\u8272\u5361\u201C{name}\u201D\uFF1F",
   "character.confirmHistoricalSwitch": "\u5F53\u524D\u4F1A\u8BDD\u5DF2\u6709\u5386\u53F2\u3002\u66F4\u6362\u89D2\u8272\u53EA\u5F71\u54CD\u540E\u7EED\u8BF7\u6C42\uFF0C\u4E0D\u4F1A\u91CD\u5199\u5DF2\u6709\u6D88\u606F\uFF1B\u7EE7\u7EED\u5417\uFF1F",
+  "character.detachTitle": "\u8BA9\u4F1A\u8BDD\u8131\u79BB\u5F53\u524D\u5468\u76EE\uFF1F",
+  "character.detachDescription": "\u89D2\u8272\u6362\u7ED1\u4E0E\u5468\u76EE\u89D2\u8272\u4E0D\u4E00\u81F4\u3002\u7EE7\u7EED\u540E\uFF0C\u8BE5\u4F1A\u8BDD\u53CA\u5176\u540E\u4EE3\u5206\u652F\u4F1A\u8131\u79BB\u5468\u76EE\uFF0CDSH \u4F1A\u8BDD\u548C\u539F\u59CB\u8BB0\u5F55\u4E0D\u4F1A\u88AB\u5220\u9664\uFF1B\u7A7A\u5468\u76EE\u4F1A\u4FDD\u7559\u3002",
+  "character.detachItem": "{title}\uFF08\u53E6\u542B {count} \u4E2A\u540E\u4EE3\u4F1A\u8BDD\uFF09",
+  "character.detachConfirm": "\u8131\u79BB\u5E76\u7EE7\u7EED",
+  "character.detachUnavailable": "\u5F53\u524D\u524D\u7AEF\u6CA1\u6709\u63D0\u4F9B\u5468\u76EE\u8131\u79BB\u80FD\u529B\u3002",
   "character.confirmCloseDirty": "\u5F53\u524D\u89D2\u8272\u5361\u6709\u672A\u4FDD\u5B58\u4FEE\u6539\u3002\u4ECD\u7136\u5173\u95ED\u5417\uFF1F",
   "character.confirmDiscardForSwitch": "\u5F53\u524D\u89D2\u8272\u5361\u6709\u672A\u4FDD\u5B58\u4FEE\u6539\u3002\u4ECD\u7136\u5207\u6362\u5417\uFF1F",
   "character.confirmDiscardRefresh": "\u5F53\u524D\u89D2\u8272\u5361\u6709\u672A\u4FDD\u5B58\u4FEE\u6539\u3002\u4ECD\u7136\u5237\u65B0\u5417\uFF1F",
@@ -337,7 +504,7 @@ var zh_CN_default = Object.freeze({
   "world.user.libraryEmpty": "\u72EC\u7ACB\u4E16\u754C\u4E66\u8D44\u6E90\u5E93\u4E3A\u7A7A\u3002\u8BF7\u5148\u521B\u5EFA\u6216\u5BFC\u5165\u4E16\u754C\u4E66\u3002",
   "world.user.unsaved": "\u7528\u6237\u4E16\u754C\u4E66\u7ED1\u5B9A\u6709\u672A\u4FDD\u5B58\u4FEE\u6539\uFF1B\u5F53\u524D\u52FE\u9009\u5C1A\u672A\u5E94\u7528\u3002",
   "world.user.saved": "\u5F53\u524D\u663E\u793A\u7684\u7528\u6237\u4E16\u754C\u4E66\u7ED1\u5B9A\u5DF2\u4FDD\u5B58\u5E76\u5E94\u7528\u3002",
-  "world.user.order": "\u6709\u6548\u7EC4\u5408\u987A\u5E8F\u4E3A\uFF1A\u5F53\u524D\u4F1A\u8BDD\u663E\u5F0F\u4E16\u754C\u4E66\u5728\u524D\uFF0C\u7528\u6237\u7ED1\u5B9A\u4E16\u754C\u4E66\u968F\u540E\uFF1B\u91CD\u590D\u8D44\u6E90\u53EA\u6267\u884C\u4E00\u6B21\u3002",
+  "world.user.order": "\u72EC\u7ACB\u4E16\u754C\u4E66\u7684\u6709\u6548\u7EC4\u5408\u987A\u5E8F\u4E3A\uFF1A\u4F1A\u8BDD\u3001\u7528\u6237\u3001\u9884\u8BBE\u3001\u89D2\u8272\u5361\uFF1B\u91CD\u590D\u8D44\u6E90\u53EA\u6267\u884C\u4E00\u6B21\u3002\u89D2\u8272\u5361\u5185\u5D4C\u4E16\u754C\u4E66\u6700\u540E\u53C2\u4E0E\u5339\u914D\u3002",
   "world.user.duplicate": "\u4E0E\u4F1A\u8BDD\u7ED1\u5B9A\u91CD\u590D\uFF0C\u5DF2\u53BB\u91CD",
   "world.user.appended": "\u7531\u7528\u6237\u7ED1\u5B9A\u8FFD\u52A0",
   "world.user.pendingAdd": "\u5F85\u6DFB\u52A0",
@@ -349,8 +516,29 @@ var zh_CN_default = Object.freeze({
   "world.user.editContent": "\u7F16\u8F91\u5185\u5BB9",
   "world.user.editHint": "\u8FD9\u91CC\u4E0E\u7528\u6237\u9762\u677F\u7F16\u8F91\u540C\u4E00\u4EFD\u7ED1\u5B9A\u5173\u7CFB\uFF1B\u4EFB\u4E00\u5904\u4FDD\u5B58\u540E\uFF0C\u53E6\u4E00\u5904\u4F1A\u540C\u6B65\u5237\u65B0\u3002",
   "world.user.error.noUser": "\u5F53\u524D\u4F1A\u8BDD\u6CA1\u6709\u53EF\u7F16\u8F91\u4E16\u754C\u4E66\u5173\u7CFB\u7684\u7ED1\u5B9A\u7528\u6237",
+  "world.preset.title": "\u9884\u8BBE\u7ED1\u5B9A\u7684\u4E16\u754C\u4E66",
+  "world.preset.current": "\u5F53\u524D\u9884\u8BBE\uFF1A{name}",
+  "world.preset.none": "\u5F53\u524D\u4F1A\u8BDD\u672A\u7ED1\u5B9A\u9884\u8BBE\uFF0C\u56E0\u6B64\u6CA1\u6709\u9884\u8BBE\u6765\u6E90\u7684\u4E16\u754C\u4E66\u3002",
+  "world.character.current": "\u5F53\u524D\u89D2\u8272\u5361\uFF1A{name}",
+  "world.character.none": "\u5F53\u524D\u4F1A\u8BDD\u672A\u7ED1\u5B9A\u89D2\u8272\u5361\uFF0C\u56E0\u6B64\u6CA1\u6709\u89D2\u8272\u5361\u5173\u8054\u7684\u72EC\u7ACB\u4E16\u754C\u4E66\u3002",
+  "world.resource.empty": "\u5F53\u524D\u8D44\u6E90\u6CA1\u6709\u5173\u8054\u72EC\u7ACB\u4E16\u754C\u4E66\u3002",
+  "world.resource.libraryEmpty": "\u72EC\u7ACB\u4E16\u754C\u4E66\u8D44\u6E90\u5E93\u4E3A\u7A7A\u3002\u8BF7\u5148\u521B\u5EFA\u6216\u5BFC\u5165\u4E16\u754C\u4E66\u3002",
+  "world.resource.unsaved": "\u8D44\u6E90\u7684\u4E16\u754C\u4E66\u5173\u8054\u6709\u672A\u4FDD\u5B58\u4FEE\u6539\uFF1B\u5F53\u524D\u52FE\u9009\u5C1A\u672A\u5E94\u7528\u3002",
+  "world.resource.saved": "\u5F53\u524D\u663E\u793A\u7684\u8D44\u6E90\u4E16\u754C\u4E66\u5173\u8054\u5DF2\u4FDD\u5B58\u5E76\u5E94\u7528\u3002",
+  "world.resource.pendingAdd": "\u5F85\u6DFB\u52A0",
+  "world.resource.pendingRemove": "\u5F85\u79FB\u9664",
+  "world.resource.save": "\u4FDD\u5B58\u8D44\u6E90\u5173\u8054\uFF08\u672A\u4FDD\u5B58\uFF09",
+  "world.resource.saveApplied": "\u8D44\u6E90\u5173\u8054\u5DF2\u4FDD\u5B58",
+  "world.resource.clear": "\u6E05\u7A7A\u5F85\u4FDD\u5B58\u9009\u62E9",
+  "world.resource.saveSuccess": "\u8D44\u6E90\u5173\u8054\u7684\u4E16\u754C\u4E66\u5DF2\u4FDD\u5B58\uFF1B\u540E\u7EED\u8BF7\u6C42\u5C06\u4F7F\u7528\u65B0\u7EC4\u5408\u3002",
+  "world.resource.editContent": "\u7F16\u8F91\u5185\u5BB9",
+  "world.resource.error.noPreset": "\u5F53\u524D\u4F1A\u8BDD\u6CA1\u6709\u53EF\u7F16\u8F91\u4E16\u754C\u4E66\u5173\u7CFB\u7684\u7ED1\u5B9A\u9884\u8BBE",
+  "world.resource.error.noCharacter": "\u5F53\u524D\u4F1A\u8BDD\u6CA1\u6709\u53EF\u7F16\u8F91\u4E16\u754C\u4E66\u5173\u7CFB\u7684\u7ED1\u5B9A\u89D2\u8272\u5361",
   "world.embeddedMeta": "{count} \u6761\u3002\u5B83\u4E0E\u72EC\u7ACB\u4E66\u5171\u7528 matcher/loader\uFF1B\u5220\u9664\u72EC\u7ACB\u4E66\u4E0D\u4F1A\u4FEE\u6539\u6216\u89E3\u7ED1\u89D2\u8272\u5361\u5185\u5D4C\u4E66\u3002",
-  "world.embeddedEmpty": "\u5F53\u524D\u4F1A\u8BDD\u6CA1\u6709\u89D2\u8272\u5361\u7ED1\u5B9A\u7684\u5185\u5D4C\u4E16\u754C\u4E66\u3002\u7ED1\u5B9A\u542B character_book \u7684\u89D2\u8272\u5361\u540E\u4F1A\u663E\u793A\u5728\u8FD9\u91CC\u3002",
+  "world.embeddedEmpty": "\u5F53\u524D\u89D2\u8272\u5361\u8FD8\u6CA1\u6709\u5185\u5D4C\u4E16\u754C\u4E66\uFF1B\u521B\u5EFA\u540E\u4F1A\u5199\u5165\u89D2\u8272\u5361\u7684 character_book\uFF0C\u5E76\u968F\u89D2\u8272\u5361\u5BFC\u51FA\u3002",
+  "world.embeddedNoCharacter": "\u5F53\u524D\u4F1A\u8BDD\u672A\u7ED1\u5B9A\u89D2\u8272\u5361\uFF0C\u56E0\u6B64\u4E0D\u80FD\u521B\u5EFA\u6216\u7F16\u8F91\u89D2\u8272\u5361\u5185\u5D4C\u4E16\u754C\u4E66\u3002",
+  "world.embeddedDefaultName": "{name} \u4E16\u754C\u4E66",
+  "world.createEmbedded": "\u521B\u5EFA\u89D2\u8272\u5361\u5185\u5D4C\u4E16\u754C\u4E66",
   "world.diagnostics": "\u8FD0\u884C\u8BCA\u65AD\uFF08{count}\uFF09",
   "world.confirmDelete": "\u5220\u9664\u72EC\u7ACB\u4E16\u754C\u4E66\u201C{name}\u201D\uFF1F\u89D2\u8272\u5361\u5185\u5D4C\u4E16\u754C\u4E66\u4E0D\u4F1A\u53D7\u5230\u5F71\u54CD\u3002",
   "world.confirmDiscardChanges": "\u653E\u5F03\u5C1A\u672A\u4FDD\u5B58\u7684\u4FEE\u6539\uFF1F",
@@ -417,6 +605,7 @@ var zh_CN_default = Object.freeze({
   "user.error.noSessionToUnbind": "\u5F53\u524D\u6CA1\u6709\u53EF\u89E3\u7ED1\u7684\u4F1A\u8BDD",
   "template.title": "\u65B0\u4F1A\u8BDD\u4E0E\u914D\u7F6E\u6A21\u677F",
   "template.startCurrent": "\u7EF4\u6301\u5F53\u524D Tavern \u8BBE\u7F6E\u65B0\u5F00\u5BF9\u8BDD",
+  "template.startCurrentPlaythrough": "\u4F7F\u7528\u5F53\u524D Tavern \u8BBE\u7F6E\u65B0\u5EFA\u5468\u76EE",
   "template.inheritNote": "\u53EA\u7EE7\u627F preset\u3001\u89D2\u8272\u5361\u4E0E greeting/\u5F00\u5173\u3001\u7528\u6237\u548C\u72EC\u7ACB\u4E16\u754C\u4E66\u9009\u62E9\u3002DSH \u5386\u53F2\u3001Tavern Trace\u3001Inbox\u3001\u8FD0\u884C\u4E2D turn/step \u548C\u5176\u4ED6\u8FD0\u884C\u6001\u4E0D\u4F1A\u590D\u5236\u3002",
   "template.noWorkspace": "\u6CA1\u6709\u53EF\u7528\u7684 DSH \u76EE\u6807\u5DE5\u4F5C\u533A\u3002\u8BF7\u5148\u5728 DSH \u4FA7\u680F\u4E2D\u52A0\u5165\u6216\u6253\u5F00\u5DE5\u4F5C\u533A\u3002",
   "template.listTitle": "\u914D\u7F6E\u6A21\u677F\uFF08{count}\uFF09",
@@ -429,6 +618,7 @@ var zh_CN_default = Object.freeze({
   "template.delete": "\u5220\u9664\u6A21\u677F",
   "template.unusable": "\u8BE5\u6A21\u677F\u6682\u4E0D\u53EF\u7528\u4E8E\u521B\u5EFA\uFF1A",
   "template.startFromTemplate": "\u6839\u636E\u6240\u9009\u6A21\u677F\u65B0\u5F00\u5E72\u51C0\u5BF9\u8BDD",
+  "template.startPlaythroughFromTemplate": "\u4F7F\u7528\u6240\u9009\u6A21\u677F\u65B0\u5EFA\u5468\u76EE",
   "template.ready": "\u6A21\u677F\u4E0E\u65B0\u4F1A\u8BDD\u64CD\u4F5C\u5DF2\u5C31\u7EEA\u3002",
   "template.blankSessionNote": "DSH \u53EF\u80FD\u590D\u7528\u540C\u5DE5\u4F5C\u533A\u4E2D\u5DF2\u6709\u7684\u771F\u5B9E blank session\uFF1B\u8FD9\u662F\u5176\u516C\u5F00 New Session \u8BED\u4E49\u3002\u63D2\u4EF6\u4F1A\u5728\u5BFC\u822A\u524D\u539F\u5B50\u66FF\u6362\u8BE5 blank session \u7684 Tavern \u9009\u62E9\u3002",
   "template.preview.title": "\u4FDD\u5B58\u7684 Tavern \u914D\u7F6E",
@@ -445,11 +635,13 @@ var zh_CN_default = Object.freeze({
   "template.status.updated": "\u5DF2\u7528\u5F53\u524D\u8BBE\u7F6E\u66F4\u65B0\u6A21\u677F\uFF1A{name}",
   "template.status.deleted": "\u6A21\u677F\u5DF2\u5220\u9664",
   "template.status.switched": "\u5DF2\u5207\u6362\u5230\u5E72\u51C0\u4F1A\u8BDD\uFF1A{id}",
+  "template.status.playthroughStarted": "\u5DF2\u8FDB\u5165\u5468\u76EE\u4F1A\u8BDD\uFF1A{id}",
   "template.error.needSessionToSave": "\u8BF7\u5148\u6253\u5F00\u4E00\u4E2A\u4F1A\u8BDD\uFF0C\u518D\u4FDD\u5B58\u5F53\u524D Tavern \u8BBE\u7F6E",
   "template.error.needTemplate": "\u8BF7\u5148\u9009\u62E9\u4E00\u4E2A\u6A21\u677F",
   "template.error.needSessionAndTemplate": "\u8BF7\u5148\u6253\u5F00\u4F1A\u8BDD\u5E76\u9009\u62E9\u6A21\u677F",
   "template.error.needSourceSession": "\u8BF7\u5148\u6253\u5F00\u4E00\u4E2A\u6765\u6E90\u4F1A\u8BDD",
   "template.error.needWorkspace": "\u5F53\u524D\u4F1A\u8BDD\u4E0D\u5C5E\u4E8E DSH \u5DE5\u4F5C\u533A\uFF1B\u8BF7\u5148\u628A\u4F1A\u8BDD\u52A0\u5165\u5DE5\u4F5C\u533A",
+  "template.error.needCharacter": "\u9B54\u4E38\u6A21\u5F0F\u4E0B\u65B0\u5EFA\u5468\u76EE\u9700\u8981\u914D\u7F6E\u4E2D\u7ED1\u5B9A\u89D2\u8272\u5361",
   "trace.title": "Tavern Trace",
   "trace.intro": "\u4E0E Conversation / Trajectory \u5E76\u5217\u7684 loader \u5BA1\u8BA1\u89C6\u56FE\u3002DSH request/header \u59CB\u7EC8\u662F\u6700\u7EC8\u53D1\u9001 system\u3001tools \u4E0E\u751F\u6548 config \u7684\u6743\u5A01\u3002",
   "trace.reading": "\u6B63\u5728\u8BFB\u53D6\u5BA1\u8BA1\u8BB0\u5F55\u2026",
@@ -531,6 +723,8 @@ var en_default = Object.freeze({
   "common.refresh": "Refresh",
   "common.delete": "Delete",
   "common.save": "Save",
+  "common.cancel": "Cancel",
+  "common.close": "Close",
   "common.saveChanges": "Save changes",
   "common.saved": "Saved",
   "common.reload": "Reload",
@@ -547,6 +741,7 @@ var en_default = Object.freeze({
   "common.exportJson": "Export JSON",
   "common.importJson": "Import JSON",
   "common.enable": "Enabled",
+  "import.failureTitle": "Import failed",
   "panel.close": "Close the {title} sidebar",
   "nav.preset": "Preset",
   "nav.character": "Character card",
@@ -559,7 +754,43 @@ var en_default = Object.freeze({
   "nav.worldBook.empty": "No world book bound",
   "nav.user.empty": "No user bound",
   "nav.sessionTemplate.empty": "Current settings or configuration template",
-  "nav.settings.empty": "Language, scale, RP follow, and RP prompt",
+  "nav.settings.empty": "Language, scale, default RP workspace, RP follow, and prompt",
+  "nav.conversationSettings": "Conversation settings",
+  "nav.conversationSettings.empty": "RP text and message action sizes",
+  "nav.regex": "Display regex",
+  "nav.regex.empty": "Mowan display-only rules",
+  "regex.title": "Display regex",
+  "regex.dragToReorder": "Drag to change execution order",
+  "regex.displayOnlyNote": "These rules change Mowan rendering and static HTML only. They never rewrite history, timeline data, or AI requests. Imported switches are preserved as supplied.",
+  "regex.scopes": "Regex scopes",
+  "regex.scope.global": "Global",
+  "regex.scope.preset": "Preset-bound",
+  "regex.scope.character": "Character-bound",
+  "regex.noPreset": "No preset is selected. New preset-scoped rules need a resource ID before they can match.",
+  "regex.noCharacter": "No character card is bound. New character-scoped rules need a resource ID before they can match.",
+  "regex.add": "New rule",
+  "regex.emptyScope": "No rules in this scope.",
+  "regex.enabled": "Use this rule",
+  "regex.name": "Rule name",
+  "regex.unnamed": "Unnamed rule",
+  "regex.newRule": "New regex",
+  "regex.find": "Find expression",
+  "regex.replace": "Replacement",
+  "regex.flags": "Flags",
+  "regex.target": "Rendered messages",
+  "regex.target.assistant": "Assistant",
+  "regex.target.user": "User",
+  "regex.target.both": "Both",
+  "regex.scope": "Scope",
+  "regex.resourceId": "Resource ID",
+  "regex.loaded": "{count} regex rules loaded",
+  "regex.legacyMigrationPending": "Found {count} legacy Tavern-local resource regex rules. Save to write them into the active preset or character so they travel with resource exports.",
+  "regex.saved": "{count} regex rules saved",
+  "regex.imported": "{count} regex rules imported and saved",
+  "regex.confirmReload": "Discard unsaved regex changes and reload?",
+  "regex.confirmClose": "Close and discard unsaved regex changes?",
+  "regex.sourceOwnedDisplay": "This rule is stored in the bound resource. Saving changes writes it back to the original preset or character card.",
+  "regex.sourceOwnedPromptOnly": "This rule is stored in the bound resource but only affects prompts, not Mowan display. Saving changes writes it back to the original preset or character card.",
   "nav.session.none": "No session",
   "nav.syncFailed": "Status sync failed: {message}",
   "nav.menuTitle": "Tavern \xB7 {session}",
@@ -568,7 +799,75 @@ var en_default = Object.freeze({
   "nav.itemAriaBound": "{label}, {title}, {state}",
   "nav.itemAria": "{label}, {title}",
   "nav.bookCount": "{count} books",
-  "nav.launcher": "Drag to move; click to open Tavern resource panels",
+  "nav.launcher": "Drag to move; left-click to open panels; right-click to switch frontend display mode",
+  "chrome.switchToPlay": "Switch to custom frontend mode",
+  "chrome.switchToNative": "Switch to native DSH mode",
+  "chrome.currentPlay": "Current: Mowan",
+  "chrome.currentNative": "Current: native DSH",
+  "play.sidebar.loading": "Loading role-play workspace\u2026",
+  "play.sidebar.workspaceMissing": "No role-play workspace is selected. Native sessions remain available in Lingzhu mode.",
+  "play.sidebar.selectWorkspace": "Use {name} as the role-play workspace",
+  "play.sidebar.systemWorkspaceConfirm": "{path} is on the system disk. Use it as the role-play workspace anyway?",
+  "play.sidebar.newPlaythrough": "Start a new playthrough with {name}",
+  "play.sidebar.noCharacters": "No character cards are available.",
+  "play.sidebar.sort": "Sort",
+  "play.sidebar.sortUpdated": "Recently updated",
+  "play.sidebar.sortName": "Name A\u2013Z",
+  "play.sidebar.sortCustom": "Custom",
+  "play.sidebar.missingCharacters": "Missing character cards",
+  "play.sidebar.relinkCharacter": "Relink character card",
+  "play.sidebar.relinkCharacterNamed": "Relink the character card for {name}",
+  "play.sidebar.relinkPrompt": "The original card for \u201C{name}\u201D is missing. Select a current card to relink all of its playthroughs and sessions.",
+  "play.sidebar.relinkPlaythroughPrompt": "Choose a new character card for \u201C{name}\u201D. Only this playthrough and all of its branch sessions will be relinked.",
+  "play.sidebar.relinkMismatchWarning": "The selected card does not satisfy the SHA-256 or unique-name automatic classification rules. Continuing will still relink this playthrough to your explicit choice.",
+  "play.sidebar.relinkConfirm": "Relink",
+  "play.sidebar.noPlaythroughs": "No playthroughs yet.",
+  "play.sidebar.unassigned": "Not in a playthrough",
+  "play.sidebar.other": "Regular / non-role-play sessions",
+  "play.sidebar.otherEmpty": "No regular or external sessions.",
+  "play.sidebar.createOrdinary": "Create an ordinary session",
+  "play.sidebar.ordinaryPrompt": "Create ordinary sessions in DSH native mode. Return to native mode, then use the outer New Session button in the sidebar.",
+  "play.sidebar.ordinaryClose": "Close",
+  "play.sidebar.returnNative": "Return to DSH mode",
+  "play.notice.unbound": "This session is not attached to a playthrough in the selected RP workspace. You can keep chatting normally; enter a character playthrough to enable greetings, swipes, display edits, and playthrough import/export.",
+  "play.sidebar.sessionMissing": "This playthrough has no available session in the role-play workspace.",
+  "play.sidebar.timelineErrors": "{count} playthrough timelines could not be read.",
+  "play.chat.label": "RP View",
+  "play.chat.loading": "Loading playthrough\u2026",
+  "play.chat.empty": "No turns yet. Start the conversation below.",
+  "play.chat.thinking": "Thinking\u2026",
+  "play.chat.previousGreeting": "Previous greeting",
+  "play.chat.nextGreeting": "Next greeting",
+  "play.chat.runningDisabled": "Unavailable while the agent is running",
+  "play.chat.copy": "Copy displayed reply",
+  "play.chat.copyUnavailable": "Clipboard access is unavailable.",
+  "play.chat.previousReply": "Previous saved reply",
+  "play.chat.nextReply": "Next saved reply",
+  "play.chat.noOtherReply": "No other saved reply",
+  "play.chat.generateReply": "Generate a new reply",
+  "play.chat.forkPlaythrough": "Fork a new playthrough here",
+  "play.chat.rollbackPlaythrough": "Continue this playthrough from here",
+  "play.chat.editDisplay": "Edit displayed reply",
+  "play.chat.editDisplayPrompt": "Display this text instead of the original reply:",
+  "play.chat.restoreOriginal": "Restore original reply",
+  "play.chat.hideNode": "Hide this QA from Mowan display",
+  "play.chat.hideConfirm": "Hide this QA from Mowan display? The original DSH messages will not be deleted.",
+  "play.chat.restoreNode": "Restore this QA to Mowan display",
+  "play.io.menu": "Playthrough import / export",
+  "play.io.rename": "Rename playthrough",
+  "play.io.relinkCharacter": "Relink character card",
+  "play.io.renamePrompt": "Enter a new playthrough name:",
+  "play.io.renameInvalid": "The playthrough name must contain 1\u2013120 characters.",
+  "play.io.exportHtml": "Export static HTML",
+  "play.io.exportSt": "Export SillyTavern JSONL",
+  "play.io.import": "Import into a new session",
+  "play.io.importUnavailable": "Import is unavailable until the backend provides the one-shot import-context reference required to avoid fake DSH history.",
+  "play.import.bind": "Import external history",
+  "play.import.replace": "Replace binding",
+  "play.import.unbind": "Unbind",
+  "play.import.bound": "External imported history is bound",
+  "play.import.lastQa": "Imported history \xB7 latest turn",
+  "play.import.unbindConfirm": "Unbind the current imported history? Its file will remain, but this playthrough will no longer display or send that context.",
   "settings.menu": "UI settings",
   "settings.title": "Tavern UI settings",
   "settings.language": "Interface language",
@@ -585,12 +884,41 @@ var en_default = Object.freeze({
   "settings.close": "Close the UI settings sidebar",
   "settings.rpFollow": "Enter RP mode when a character card is bound",
   "settings.rpFollow.help": "When enabled, binding a character card enters roleplay and pins the file sandbox to read-only. Writes, shell, outbound fetch, and reads outside the workspace or of secret files are refused and that agent is cancelled. Subagents may still be spawned and inherit the same lock. The chat permission chip cannot override this; turn RP off on the character card (or /rp off) first.",
+  "settings.rpWorkspace": "Default RP workspace",
+  "settings.rpWorkspace.help": "New playthroughs use this workspace by default. Changing it only affects future placement and RP-session classification; it does not move existing sessions, directories, or playthroughs.",
+  "settings.rpWorkspace.unselected": "No RP workspace selected",
+  "settings.rpWorkspace.unavailable": "The current binding is no longer in the DSH workspace list: {path}",
+  "settings.rpWorkspace.none": "No DSH workspaces are available",
+  "settings.rpWorkspace.verifyError": "The default RP workspace was updated, but read-back verification failed: {message}",
+  "workspaceAdmission.title": "Choose an RP workspace before entering Mowan",
+  "workspaceAdmission.body": "Mowan groups sessions in this workspace by character and playthrough. Choose an existing DSH workspace explicitly; the plugin will not choose for you or move existing sessions.",
+  "workspaceAdmission.loading": "Loading the RP workspace recorded by the backend\u2026",
+  "workspaceAdmission.unavailable": "The previous RP workspace is no longer in the current DSH workspace list: {path}. Choose another workspace before entering Mowan.",
+  "workspaceAdmission.none": "No DSH workspace is available. Return to native DSH mode, create or open a workspace, then check again.",
+  "workspaceAdmission.choose": "Choose {name}",
+  "workspaceAdmission.retry": "Check again",
+  "workspaceAdmission.native": "Return to native DSH mode",
+  "workspaceAdmission.saving": "Binding and verifying the RP workspace\u2026",
+  "workspaceAdmission.loadError": "Could not load the RP workspace: {message}",
+  "workspaceAdmission.saveError": "Could not bind the RP workspace: {message}",
+  "workspaceAdmission.verifyError": "The RP workspace was written, but read-back verification failed: {message}",
+  "workspaceAdmission.notConfirmed": "The backend did not confirm that the selected workspace is available",
   "settings.rpPolicy": "RP mode prompt (rp:policy)",
   "settings.rpPolicy.help": "Optional. DSH cannot weight prompt sections; identity and style belong in the preset or character card. The default only says high-risk actions are locked. Leave empty to skip extra RP text; the lock still applies. Restore defaults at the bottom only resets language, scale, and RP follow.",
   "settings.rpPolicy.placeholder": "Leave empty to use the read-only sandbox with no extra RP prompt",
   "settings.rpPolicy.save": "Save RP prompt",
   "settings.rpPolicy.reset": "Restore default RP prompt",
   "settings.rpPolicy.saved": "RP prompt saved; it applies on the next request.",
+  "conversationSettings.title": "Mowan conversation settings",
+  "conversationSettings.textScale": "RP body and greeting text size",
+  "conversationSettings.textScale.help": "Scales user/assistant body text and greetings only in Mowan; it does not change native DSH chat, prompts, or exported text.",
+  "conversationSettings.actionScale": "RP message action size",
+  "conversationSettings.actionScale.help": "Scales copy, swipe, fork, rollback, and edit controls at the end of each turn without changing the composer or other Tavern panels.",
+  "conversationSettings.reset": "Restore conversation display defaults",
+  "conversationSettings.saving": "Saving conversation settings\u2026",
+  "conversationSettings.saved": "Conversation settings saved.",
+  "conversationSettings.loadError": "Could not load conversation settings: {message}",
+  "conversationSettings.saveError": "Could not save conversation settings: {message}",
   "rp.block.body": "The agent is attempting a high-risk action such as writing files. If you know what you are doing, turn off RP mode and try again.",
   "rp.block.dismiss": "OK",
   "preset.title": "Tavern preset",
@@ -714,6 +1042,11 @@ var en_default = Object.freeze({
   "character.delete": "Delete character card",
   "character.confirmDelete": "Delete character card \u201C{name}\u201D?",
   "character.confirmHistoricalSwitch": "This session already has history. Changing the character affects only later requests and does not rewrite existing messages. Continue?",
+  "character.detachTitle": "Detach this session from its playthrough?",
+  "character.detachDescription": "The selected character does not match the playthrough. Continuing detaches this session and its descendant branches without deleting DSH sessions or source history. The empty playthrough remains.",
+  "character.detachItem": "{title} ({count} descendant sessions)",
+  "character.detachConfirm": "Detach and continue",
+  "character.detachUnavailable": "This frontend does not provide playthrough detachment.",
   "character.confirmCloseDirty": "This character card has unsaved changes. Close anyway?",
   "character.confirmDiscardForSwitch": "This character card has unsaved changes. Switch anyway?",
   "character.confirmDiscardRefresh": "This character card has unsaved changes. Refresh anyway?",
@@ -814,7 +1147,7 @@ var en_default = Object.freeze({
   "world.user.libraryEmpty": "The standalone world-book library is empty. Create or import a world book first.",
   "world.user.unsaved": "The user world-book binding has unsaved changes; the current selection is not yet applied.",
   "world.user.saved": "The displayed user world-book binding is saved and applied.",
-  "world.user.order": "Effective order: explicit session books first, followed by user-bound books; duplicate resources run only once.",
+  "world.user.order": "Standalone world-book order is session, user, preset, then character; duplicate resources run only once. The embedded character book is matched last.",
   "world.user.duplicate": "Also session-bound; deduplicated",
   "world.user.appended": "Appended from user binding",
   "world.user.pendingAdd": "Pending addition",
@@ -826,8 +1159,29 @@ var en_default = Object.freeze({
   "world.user.editContent": "Edit contents",
   "world.user.editHint": "This panel and the User panel edit the same binding. Saving in either place refreshes the other.",
   "world.user.error.noUser": "The current session has no bound user whose world-book relationship can be edited",
+  "world.preset.title": "Preset-bound world books",
+  "world.preset.current": "Current preset: {name}",
+  "world.preset.none": "The current session has no bound preset, so it has no preset-sourced world books.",
+  "world.character.current": "Current character: {name}",
+  "world.character.none": "The current session has no bound character, so it has no character-associated standalone world books.",
+  "world.resource.empty": "This resource has no associated standalone world books.",
+  "world.resource.libraryEmpty": "The standalone world-book library is empty. Create or import a world book first.",
+  "world.resource.unsaved": "The resource world-book relation has unsaved changes; the current selection is not yet applied.",
+  "world.resource.saved": "The displayed resource world-book relation is saved and applied.",
+  "world.resource.pendingAdd": "Pending addition",
+  "world.resource.pendingRemove": "Pending removal",
+  "world.resource.save": "Save resource relation (unsaved)",
+  "world.resource.saveApplied": "Resource relation saved",
+  "world.resource.clear": "Clear pending selection",
+  "world.resource.saveSuccess": "The resource-associated world books were saved; later requests will use the new composition.",
+  "world.resource.editContent": "Edit contents",
+  "world.resource.error.noPreset": "The current session has no bound preset whose world-book relationship can be edited",
+  "world.resource.error.noCharacter": "The current session has no bound character whose world-book relationship can be edited",
   "world.embeddedMeta": "{count} entries. It shares the matcher/loader with standalone books; deleting a standalone book never edits or unbinds this embedded book.",
-  "world.embeddedEmpty": "The current session has no character-bound embedded world book. Bind a character card with character_book to show it here.",
+  "world.embeddedEmpty": "The current character has no embedded world book. Creating one writes character_book into the card and includes it in character exports.",
+  "world.embeddedNoCharacter": "The current session has no bound character, so an embedded character world book cannot be created or edited.",
+  "world.embeddedDefaultName": "{name} World Book",
+  "world.createEmbedded": "Create embedded character world book",
   "world.diagnostics": "Runtime diagnostics ({count})",
   "world.confirmDelete": "Delete standalone world book \u201C{name}\u201D? Character-card embedded books will not be affected.",
   "world.confirmDiscardChanges": "Discard unsaved changes?",
@@ -894,6 +1248,7 @@ var en_default = Object.freeze({
   "user.error.noSessionToUnbind": "There is no session to unbind",
   "template.title": "New session and configuration templates",
   "template.startCurrent": "Start a new conversation with the current Tavern settings",
+  "template.startCurrentPlaythrough": "Start a playthrough with the current Tavern settings",
   "template.inheritNote": "Carries only the preset, character and greeting/options, user, and standalone world-book selections. DSH history, Tavern Trace, Inbox, active turns/steps, and other runtime state are not copied.",
   "template.noWorkspace": "No DSH target workspace is available. Add or open a workspace in the DSH sidebar first.",
   "template.listTitle": "Configuration templates ({count})",
@@ -906,6 +1261,7 @@ var en_default = Object.freeze({
   "template.delete": "Delete template",
   "template.unusable": "This template cannot currently be used:",
   "template.startFromTemplate": "Start a clean conversation from the selected template",
+  "template.startPlaythroughFromTemplate": "Start a playthrough from the selected template",
   "template.ready": "Template and new-session actions are ready.",
   "template.blankSessionNote": "DSH may reuse an existing real blank session in the same workspace; this is its public New Session behavior. The plugin atomically replaces that blank session\u2019s Tavern selection before navigation.",
   "template.preview.title": "Saved Tavern configuration",
@@ -922,11 +1278,13 @@ var en_default = Object.freeze({
   "template.status.updated": "Template updated from current settings: {name}",
   "template.status.deleted": "Template deleted",
   "template.status.switched": "Switched to clean session: {id}",
+  "template.status.playthroughStarted": "Opened playthrough session: {id}",
   "template.error.needSessionToSave": "Open a session before saving its current Tavern settings",
   "template.error.needTemplate": "Select a template first",
   "template.error.needSessionAndTemplate": "Open a session and select a template first",
   "template.error.needSourceSession": "Open a source session first",
   "template.error.needWorkspace": "The current session is not in a DSH workspace; add it to a workspace first",
+  "template.error.needCharacter": "Starting a playthrough in Mowan mode requires a bound character card",
   "trace.title": "Tavern Trace",
   "trace.intro": "A loader audit view alongside Conversation and Trajectory. The DSH request/header remains authoritative for the final system, tools, and effective config.",
   "trace.reading": "Reading audit records\u2026",
@@ -1085,7 +1443,7 @@ function localizeChild(value) {
   if (Array.isArray(value)) return value.map(localizeChild);
   return value;
 }
-function createLocalizedElement(createElement8) {
+function createLocalizedElement(createElement15) {
   return (type, props, ...children) => {
     let localizedProps = props;
     if (props !== null && props !== void 0) {
@@ -1094,7 +1452,7 @@ function createLocalizedElement(createElement8) {
         if (isRawText(localizedProps[key])) localizedProps[key] = localizedProps[key].value;
       }
     }
-    return createElement8(type, localizedProps, ...children.map(localizeChild));
+    return createElement15(type, localizedProps, ...children.map(localizeChild));
   };
 }
 function getClientUiSettings() {
@@ -1108,7 +1466,7 @@ function setClientUiSettings(value, { announce = true } = {}) {
   const rpFollowCharacter = value?.rpFollowCharacter !== false;
   current = { locale, scale, rpFollowCharacter };
   if (announce && typeof window !== "undefined") {
-    window.dispatchEvent(new CustomEvent("dsh-tavern:ui-settings", { detail: getClientUiSettings() }));
+    window.dispatchEvent(new CustomEvent(CLIENT_UI_SETTINGS_EVENT, { detail: getClientUiSettings() }));
   }
   return getClientUiSettings();
 }
@@ -1132,11 +1490,24 @@ function reorderAtBoundary(items, from, boundary) {
   return reorder(items, from, destination);
 }
 
+// packages/client/src/import-failure.js
+function importFailureMessage(reason) {
+  if (typeof reason?.message === "string" && reason.message.trim() !== "") return reason.message.trim().slice(0, 1e3);
+  const value = String(reason ?? "").trim();
+  return value === "" ? "Unknown import error" : value.slice(0, 1e3);
+}
+function announceImportFailure(reason, target = globalThis.window) {
+  const message = importFailureMessage(reason);
+  target?.dispatchEvent?.(new CustomEvent(CLIENT_IMPORT_FAILURE_EVENT, {
+    detail: { message }
+  }));
+  return message;
+}
+
 // packages/preset/src/client.js
 var h = createLocalizedElement(import_react.createElement);
-var API_ROOT = "/dsh-tavern/api";
 function announceTavernRefresh() {
-  window.dispatchEvent(new CustomEvent("dsh-tavern:refresh", { detail: { source: "preset" } }));
+  window.dispatchEvent(new CustomEvent(CLIENT_REFRESH_EVENT, { detail: { source: "preset" } }));
 }
 var ST_NUMBER_FIELDS = [
   ["top_p", "preset.sampling.topP"],
@@ -1154,7 +1525,7 @@ var css = `
 .dtt-title{font-size:16px;font-weight:650;flex:1;min-width:0}.dtt-active{font-size:13px;color:var(--dsw-alias-state-success);margin-left:7px}
 .dtt-icon{border:0;background:transparent;color:var(--dsw-alias-label-tertiary);cursor:pointer;border-radius:7px;padding:6px 8px}.dtt-icon:hover{background:var(--dsw-alias-interactive-bg-hover)}
 .dtt-body{min-height:0;overflow:auto;padding:12px;display:flex;flex-direction:column;gap:12px}
-.dtt-toolbar,.dtt-actions{display:grid;grid-template-columns:1fr 1fr;gap:8px}.dtt-button{height:36px;border:1px solid var(--dsw-alias-border-l2);border-radius:8px;background:var(--dsw-alias-button-secondary-fill,var(--dsw-alias-bg-base));color:var(--dsw-alias-label-primary);cursor:pointer;padding:0 10px;font-size:13px}.dtt-button:hover:not(:disabled){background:var(--dsw-alias-interactive-bg-hover)}.dtt-button:disabled{opacity:.5;cursor:default}.dtt-button-primary{background:var(--dsw-alias-state-business-primary);color:white;border-color:transparent}.dtt-danger{color:var(--dsw-alias-state-error)}
+.dtt-toolbar,.dtt-actions{display:grid;gap:8px}.dtt-toolbar{grid-template-columns:repeat(auto-fit,minmax(120px,1fr))}.dtt-actions{grid-template-columns:1fr 1fr}.dtt-button{box-sizing:border-box;height:36px;border:1px solid var(--dsw-alias-border-l2);border-radius:8px;background:var(--dsw-alias-button-secondary-fill,var(--dsw-alias-bg-base));color:var(--dsw-alias-label-primary);cursor:pointer;padding:0 10px;font-size:13px;text-decoration:none;display:flex;align-items:center;justify-content:center}.dtt-button:hover:not(:disabled){background:var(--dsw-alias-interactive-bg-hover)}.dtt-button:disabled{opacity:.5;cursor:default}.dtt-button-primary{background:var(--dsw-alias-state-business-primary);color:white;border-color:transparent}.dtt-danger{color:var(--dsw-alias-state-error)}
 .dtt-field{display:flex;flex-direction:column;gap:5px}.dtt-label{font-size:12px;color:var(--dsw-alias-label-tertiary);font-weight:600}.dtt-input,.dtt-select,.dtt-textarea{box-sizing:border-box;width:100%;border:1px solid var(--dsw-alias-border-l2);border-radius:7px;background:var(--dsw-alias-bg-base);color:var(--dsw-alias-label-primary);font:inherit;font-size:13px;outline:none}.dtt-input,.dtt-select{height:36px;padding:0 9px}.dtt-textarea{min-height:110px;resize:vertical;padding:8px;line-height:1.5}.dtt-input:focus,.dtt-select:focus,.dtt-textarea:focus{border-color:var(--dsw-alias-state-business-primary)}
 .dtt-grid{display:grid;grid-template-columns:1fr 1fr;gap:9px}.dtt-section{border-top:1px solid var(--dsw-alias-border-l1);padding-top:12px;display:flex;flex-direction:column;gap:10px}.dtt-section-title{font-size:14px;font-weight:650;display:flex;align-items:center;justify-content:space-between}
 .dtt-note{font-size:13px;line-height:1.5;color:var(--dsw-alias-label-tertiary);margin:0}.dtt-status{font-size:13px;line-height:1.45;border-radius:7px;padding:7px 9px;background:var(--dsw-specific-tip);word-break:break-word}.dtt-status[data-error=true]{color:var(--dsw-alias-state-error)}.dtt-status[data-warning=true]{color:var(--dsw-alias-state-warning,var(--dsw-alias-label-primary))}
@@ -1163,7 +1534,7 @@ var css = `
 `;
 async function api(path, options = {}) {
   const method = String(options.method ?? "GET").toUpperCase();
-  const response = await fetch(`${API_ROOT}${path}`, {
+  const response = await fetch(`${API_V1}${path}`, {
     ...options,
     headers: {
       ...method === "GET" || method === "HEAD" ? {} : { "Content-Type": "application/json" },
@@ -1333,8 +1704,8 @@ function PresetSidebar({ closePanel, openPanel, sessionId, sessionBlank, autoOpe
       if (event.detail?.source === "preset") return;
       run(() => refresh(), "preset.status.refreshed");
     };
-    window.addEventListener("dsh-tavern:refresh", onRefresh);
-    return () => window.removeEventListener("dsh-tavern:refresh", onRefresh);
+    window.addEventListener(CLIENT_REFRESH_EVENT, onRefresh);
+    return () => window.removeEventListener(CLIENT_REFRESH_EVENT, onRefresh);
   }, [refresh, run]);
   const browse = (0, import_react.useCallback)((id) => run(async () => {
     const detail = await api(`/presets/${encodeURIComponent(id)}`);
@@ -1360,11 +1731,17 @@ function PresetSidebar({ closePanel, openPanel, sessionId, sessionBlank, autoOpe
     announceTavernRefresh();
   }, "preset.status.created"), [refresh, run]);
   const importFile = (0, import_react.useCallback)((file) => run(async () => {
-    const content = await file.text();
-    const imported = await api("/import", {
-      method: "POST",
-      body: body({ name: file.name.replace(/\.json$/i, ""), content })
-    });
+    let imported;
+    try {
+      const content = await file.text();
+      imported = await api("/import", {
+        method: "POST",
+        body: body({ name: file.name.replace(/\.json$/i, ""), content })
+      });
+    } catch (error) {
+      announceImportFailure(error);
+      throw error;
+    }
     await refresh(imported.preset.id);
     announceTavernRefresh();
     if (fileRef.current !== null) fileRef.current.value = "";
@@ -1384,29 +1761,29 @@ function PresetSidebar({ closePanel, openPanel, sessionId, sessionBlank, autoOpe
     await refresh();
     announceTavernRefresh();
   }, "preset.status.deleted"), [draft, refresh, run]);
-  const patchSampling = (patch) => setDraft((current2) => ({
-    ...current2,
-    sampling: { ...current2.sampling, ...patch }
+  const patchSampling = (patch) => setDraft((current3) => ({
+    ...current3,
+    sampling: { ...current3.sampling, ...patch }
   }));
   const patchSt = (key, value) => patchSampling({
     st: { ...draft.sampling.st, [key]: value }
   });
-  const patchPrompt = (index, patch) => setDraft((current2) => ({
-    ...current2,
-    prompts: current2.prompts.map((prompt, at) => at === index ? { ...prompt, ...patch } : prompt)
+  const patchPrompt = (index, patch) => setDraft((current3) => ({
+    ...current3,
+    prompts: current3.prompts.map((prompt, at2) => at2 === index ? { ...prompt, ...patch } : prompt)
   }));
-  const movePrompt = (from, boundary) => setDraft((current2) => {
-    const prompts = reorderAtBoundary(current2.prompts, from, boundary);
-    if (prompts === current2.prompts) return current2;
-    return { ...current2, prompts };
+  const movePrompt = (from, boundary) => setDraft((current3) => {
+    const prompts = reorderAtBoundary(current3.prompts, from, boundary);
+    if (prompts === current3.prompts) return current3;
+    return { ...current3, prompts };
   });
-  const deletePrompt = (index) => setDraft((current2) => ({
-    ...current2,
-    prompts: current2.prompts.filter((_prompt, at) => at !== index)
+  const deletePrompt = (index) => setDraft((current3) => ({
+    ...current3,
+    prompts: current3.prompts.filter((_prompt, at2) => at2 !== index)
   }));
-  const addPrompt = () => setDraft((current2) => ({
-    ...current2,
-    prompts: [...current2.prompts, {
+  const addPrompt = () => setDraft((current3) => ({
+    ...current3,
+    prompts: [...current3.prompts, {
       identifier: `prompt-${Date.now().toString(36)}`,
       name: translate("preset.defaultPromptName"),
       role: "system",
@@ -1434,6 +1811,7 @@ function PresetSidebar({ closePanel, openPanel, sessionId, sessionBlank, autoOpe
         "div",
         { className: "dtt-toolbar" },
         h("button", { className: "dtt-button", type: "button", disabled: busy, onClick: () => fileRef.current?.click() }, uiMessage("preset.importStJson")),
+        draft === null ? null : h("a", { className: "dtt-button", href: `${API_V1}/presets/${encodeURIComponent(draft.id)}/export`, download: "" }, uiMessage("common.exportJson")),
         h("button", { className: "dtt-button", type: "button", disabled: busy, onClick: createPreset }, uiMessage("preset.create")),
         h("input", {
           ref: fileRef,
@@ -1442,6 +1820,7 @@ function PresetSidebar({ closePanel, openPanel, sessionId, sessionBlank, autoOpe
           accept: ".json,application/json",
           onChange: (event) => {
             const file = event.target.files?.[0];
+            event.target.value = "";
             if (file !== void 0) importFile(file);
           }
         })
@@ -1473,7 +1852,7 @@ function PresetSidebar({ closePanel, openPanel, sessionId, sessionBlank, autoOpe
         h(Field, { label: uiMessage("preset.name") }, h("input", {
           className: "dtt-input",
           value: draft.name,
-          onChange: (event) => setDraft((current2) => ({ ...current2, name: event.target.value }))
+          onChange: (event) => setDraft((current3) => ({ ...current3, name: event.target.value }))
         })),
         h(
           "div",
@@ -1507,7 +1886,7 @@ function PresetSidebar({ closePanel, openPanel, sessionId, sessionBlank, autoOpe
           {
             className: "dtt-select",
             value: draft.systemPromptMode === "replace" ? "replace" : "append",
-            onChange: (event) => setDraft((current2) => ({ ...current2, systemPromptMode: event.target.value }))
+            onChange: (event) => setDraft((current3) => ({ ...current3, systemPromptMode: event.target.value }))
           },
           h("option", { value: "append" }, uiMessage("preset.systemAppend")),
           h("option", { value: "replace" }, uiMessage("preset.systemReplace"))
@@ -1574,9 +1953,9 @@ function PresetSidebar({ closePanel, openPanel, sessionId, sessionBlank, autoOpe
   );
 }
 function installPresetStyles() {
-  if (document.querySelector('style[data-plugin-css="dsh-tavern"]') !== null) return;
+  if (document.querySelector(`style[data-plugin-css="${PLUGIN_ID}"]`) !== null) return;
   const style = document.createElement("style");
-  style.dataset.pluginCss = "dsh-tavern";
+  style.dataset.pluginCss = PLUGIN_ID;
   style.textContent = css;
   document.head.append(style);
 }
@@ -1591,11 +1970,11 @@ function characterGreetingOptions(character) {
   const alternates = Array.isArray(character.data?.alternateGreetings) ? character.data.alternateGreetings.filter((item) => typeof item === "string") : [];
   return [
     { index: 0, labelKey: first === "" ? "character.greeting.defaultEmpty" : "character.greeting.default", text: first },
-    ...alternates.map((text, index) => ({
+    ...alternates.map((text2, index) => ({
       index: index + 1,
       labelKey: "character.greeting.alternate",
       labelValues: { index: index + 1 },
-      text
+      text: text2
     }))
   ];
 }
@@ -1621,8 +2000,8 @@ function characterBindingDirty(selection, binding) {
   if (selection === null || typeof selection !== "object" || binding === null || typeof binding !== "object") return false;
   if (selection.characterCardId !== binding.characterCardId) return false;
   const applied = characterBindingOptions(selection);
-  const pending = characterBindingOptions(binding);
-  return applied.greetingIndex !== pending.greetingIndex || applied.preferCharacterSystemPrompt !== pending.preferCharacterSystemPrompt || applied.preferCharacterPostHistory !== pending.preferCharacterPostHistory;
+  const pending2 = characterBindingOptions(binding);
+  return applied.greetingIndex !== pending2.greetingIndex || applied.preferCharacterSystemPrompt !== pending2.preferCharacterSystemPrompt || applied.preferCharacterPostHistory !== pending2.preferCharacterPostHistory;
 }
 function characterEditorDraft(character) {
   if (character === null || typeof character !== "object") return null;
@@ -1668,12 +2047,12 @@ function characterEditorPatch(draft) {
 
 // packages/character/src/client.js
 var h2 = createLocalizedElement(import_react2.createElement);
-var API_ROOT2 = "/dsh-tavern/api";
+var RUN_SKIPPED = /* @__PURE__ */ Symbol("run-skipped");
 function announceTavernRefresh2() {
-  window.dispatchEvent(new CustomEvent("dsh-tavern:refresh", { detail: { source: "character" } }));
+  window.dispatchEvent(new CustomEvent(CLIENT_REFRESH_EVENT, { detail: { source: "character" } }));
 }
 var css2 = `
-.dcc-panel{position:absolute;top:0;right:0;bottom:0;width:min(440px,calc(100vw - 56px));pointer-events:auto;border-left:1px solid var(--dsw-alias-border-l2);box-shadow:var(--ds-shadow-3,-8px 0 28px rgba(0,0,0,.18));background:var(--dsw-alias-bg-base);color:var(--dsw-alias-label-primary);display:flex;flex-direction:column;font-family:Inter,var(--dsw-font-family),sans-serif}.dcc-header{height:52px;box-sizing:border-box;display:flex;align-items:center;gap:8px;padding:0 14px;border-bottom:1px solid var(--dsw-alias-border-l2);flex:none}.dcc-title{font-size:16px;font-weight:650;flex:1}.dcc-close{border:0;background:transparent;color:var(--dsw-alias-label-tertiary);cursor:pointer;border-radius:7px;padding:6px 8px;font-size:14px}.dcc-body{min-height:0;overflow:auto;padding:12px;display:flex;flex-direction:column;gap:12px}.dcc-toolbar{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}.dcc-actions{display:grid;grid-template-columns:1fr 1fr;gap:8px}.dcc-button{min-height:36px;border:1px solid var(--dsw-alias-border-l2);border-radius:8px;background:var(--dsw-alias-button-secondary-fill,var(--dsw-alias-bg-base));color:var(--dsw-alias-label-primary);cursor:pointer;padding:7px 10px;font-size:13px;text-decoration:none;display:flex;align-items:center;justify-content:center;box-sizing:border-box}.dcc-button:hover:not(:disabled){background:var(--dsw-alias-interactive-bg-hover)}.dcc-button:disabled{opacity:.5;cursor:default}.dcc-primary{background:var(--dsw-alias-state-business-primary);color:white;border-color:transparent}.dcc-danger{color:var(--dsw-alias-state-error)}.dcc-field{display:flex;flex-direction:column;gap:5px}.dcc-label{font-size:12px;color:var(--dsw-alias-label-tertiary);font-weight:600}.dcc-select,.dcc-input,.dcc-textarea{box-sizing:border-box;width:100%;border:1px solid var(--dsw-alias-border-l2);border-radius:7px;background:var(--dsw-alias-bg-base);color:var(--dsw-alias-label-primary);font:inherit;font-size:13px}.dcc-select,.dcc-input{height:36px;padding:0 9px}.dcc-textarea{min-height:88px;resize:vertical;padding:8px;line-height:1.5}.dcc-note,.dcc-meta{font-size:13px;line-height:1.5;color:var(--dsw-alias-label-tertiary);margin:0;overflow-wrap:anywhere}.dcc-status{font-size:13px;line-height:1.45;border-radius:7px;padding:7px 9px;background:var(--dsw-specific-tip);overflow-wrap:anywhere}.dcc-status[data-error=true]{color:var(--dsw-alias-state-error)}.dcc-status[data-warning=true]{color:var(--dsw-alias-state-warning,var(--dsw-alias-label-primary))}.dcc-card{border-top:1px solid var(--dsw-alias-border-l1);padding-top:12px;display:flex;flex-direction:column;gap:10px}.dcc-card-head{display:flex;gap:11px}.dcc-avatar{width:76px;height:100px;object-fit:cover;border-radius:9px;border:1px solid var(--dsw-alias-border-l1);background:var(--dsw-alias-bg-container);flex:none}.dcc-card-title{font-size:16px;font-weight:650;margin:0 0 5px}.dcc-check{display:flex;gap:7px;align-items:flex-start;font-size:13px;line-height:1.4}.dcc-detail{border:1px solid var(--dsw-alias-border-l1);border-radius:8px;padding:8px}.dcc-detail summary{cursor:pointer;font-size:13px;font-weight:600}.dcc-detail-body{display:flex;flex-direction:column;gap:8px;margin-top:8px}.dcc-diags{margin:7px 0 0;padding-left:18px;font-size:13px;line-height:1.5}.dcc-greetings{display:flex;flex-direction:column;gap:8px}.dcc-greeting-item{border:1px solid var(--dsw-alias-border-l1);border-radius:8px;padding:8px;display:flex;flex-direction:column;gap:6px}.dcc-greeting-head{display:flex;align-items:center;justify-content:space-between;gap:8px}.dcc-footer{position:sticky;bottom:-12px;margin:0 -12px -12px;padding:10px 12px;background:var(--dsw-alias-bg-base);border-top:1px solid var(--dsw-alias-border-l2)}
+.dcc-panel{position:absolute;top:0;right:0;bottom:0;width:min(440px,calc(100vw - 56px));pointer-events:auto;border-left:1px solid var(--dsw-alias-border-l2);box-shadow:var(--ds-shadow-3,-8px 0 28px rgba(0,0,0,.18));background:var(--dsw-alias-bg-base);color:var(--dsw-alias-label-primary);display:flex;flex-direction:column;font-family:Inter,var(--dsw-font-family),sans-serif}.dcc-header{height:52px;box-sizing:border-box;display:flex;align-items:center;gap:8px;padding:0 14px;border-bottom:1px solid var(--dsw-alias-border-l2);flex:none}.dcc-title{font-size:16px;font-weight:650;flex:1}.dcc-close{border:0;background:transparent;color:var(--dsw-alias-label-tertiary);cursor:pointer;border-radius:7px;padding:6px 8px;font-size:14px}.dcc-body{min-height:0;overflow:auto;padding:12px;display:flex;flex-direction:column;gap:12px}.dcc-toolbar{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}.dcc-actions,.dcc-footer{display:grid;grid-template-columns:1fr 1fr;gap:8px}.dcc-browse{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:8px}.dcc-button{min-height:36px;border:1px solid var(--dsw-alias-border-l2);border-radius:8px;background:var(--dsw-alias-button-secondary-fill,var(--dsw-alias-bg-base));color:var(--dsw-alias-label-primary);cursor:pointer;padding:7px 10px;font-size:13px;text-decoration:none;display:flex;align-items:center;justify-content:center;box-sizing:border-box}.dcc-button:hover:not(:disabled):not([data-disabled=true]){background:var(--dsw-alias-interactive-bg-hover)}.dcc-button:disabled,.dcc-button[data-disabled=true]{opacity:.5;cursor:default;pointer-events:none}.dcc-primary{background:var(--dsw-alias-state-business-primary);color:white;border-color:transparent}.dcc-danger{color:var(--dsw-alias-state-error)}.dcc-field{display:flex;flex-direction:column;gap:5px}.dcc-label{font-size:12px;color:var(--dsw-alias-label-tertiary);font-weight:600}.dcc-select,.dcc-input,.dcc-textarea{box-sizing:border-box;width:100%;border:1px solid var(--dsw-alias-border-l2);border-radius:7px;background:var(--dsw-alias-bg-base);color:var(--dsw-alias-label-primary);font:inherit;font-size:13px}.dcc-select,.dcc-input{height:36px;padding:0 9px}.dcc-textarea{min-height:88px;resize:vertical;padding:8px;line-height:1.5}.dcc-note,.dcc-meta{font-size:13px;line-height:1.5;color:var(--dsw-alias-label-tertiary);margin:0;overflow-wrap:anywhere}.dcc-status{font-size:13px;line-height:1.45;border-radius:7px;padding:7px 9px;background:var(--dsw-specific-tip);overflow-wrap:anywhere}.dcc-status[data-error=true]{color:var(--dsw-alias-state-error)}.dcc-status[data-warning=true]{color:var(--dsw-alias-state-warning,var(--dsw-alias-label-primary))}.dcc-card{border-top:1px solid var(--dsw-alias-border-l1);padding-top:12px;display:flex;flex-direction:column;gap:10px}.dcc-card-head{display:flex;gap:11px}.dcc-card-head>div{min-width:0;display:flex;flex-direction:column;align-items:flex-start;gap:5px}.dcc-avatar{width:76px;height:100px;object-fit:cover;border-radius:9px;border:1px solid var(--dsw-alias-border-l1);background:var(--dsw-alias-bg-container);flex:none}.dcc-card-title{font-size:16px;font-weight:650;margin:0}.dcc-check{display:flex;gap:7px;align-items:flex-start;font-size:13px;line-height:1.4}.dcc-detail{border:1px solid var(--dsw-alias-border-l1);border-radius:8px;padding:8px}.dcc-detail summary{cursor:pointer;font-size:13px;font-weight:600}.dcc-detail-body{display:flex;flex-direction:column;gap:8px;margin-top:8px}.dcc-diags{margin:7px 0 0;padding-left:18px;font-size:13px;line-height:1.5}.dcc-greetings{display:flex;flex-direction:column;gap:8px}.dcc-greeting-item{border:1px solid var(--dsw-alias-border-l1);border-radius:8px;padding:8px;display:flex;flex-direction:column;gap:6px}.dcc-greeting-head{display:flex;align-items:center;justify-content:space-between;gap:8px}.dcc-footer{position:sticky;bottom:-12px;margin:0 -12px -12px;padding:10px 12px;background:var(--dsw-alias-bg-base);border-top:1px solid var(--dsw-alias-border-l2)}.dcc-modal-backdrop{position:fixed;inset:0;z-index:2147483500;display:flex;align-items:center;justify-content:center;padding:20px;background:rgba(0,0,0,.42);pointer-events:auto}.dcc-modal{width:min(520px,calc(100vw - 32px));max-height:min(640px,calc(100vh - 40px));overflow:auto;border:1px solid var(--dsw-alias-border-l2);border-radius:12px;background:var(--dsw-alias-bg-base);box-shadow:var(--ds-shadow-4,0 18px 56px rgba(0,0,0,.32));padding:18px;display:flex;flex-direction:column;gap:12px}.dcc-modal h3,.dcc-modal p{margin:0}.dcc-modal-list{margin:0;padding-left:20px;font-size:13px;line-height:1.5}.dcc-modal-actions{display:flex;justify-content:flex-end;gap:8px}
 `;
 function errorMessage(data, status) {
   if (typeof data?.error === "string") return data.error;
@@ -1682,7 +2061,7 @@ function errorMessage(data, status) {
 }
 async function api2(path, options = {}) {
   const method = String(options.method ?? "GET").toUpperCase();
-  const response = await fetch(`${API_ROOT2}${path}`, {
+  const response = await fetch(`${API_V1}${path}`, {
     ...options,
     headers: {
       ...method === "GET" || method === "HEAD" ? {} : { "Content-Type": "application/json" },
@@ -1690,7 +2069,13 @@ async function api2(path, options = {}) {
     }
   });
   const data = await response.json().catch(() => null);
-  if (!response.ok || data?.ok === false) throw new Error(errorMessage(data, response.status));
+  if (!response.ok || data?.ok === false) {
+    const error = new Error(errorMessage(data, response.status));
+    error.status = response.status;
+    error.code = data?.code ?? data?.error?.code;
+    error.details = data?.details ?? data?.error?.details;
+    throw error;
+  }
   return data;
 }
 function Field2({ label, children }) {
@@ -1706,9 +2091,9 @@ function DiagnosticList({ titleKey, items }) {
   );
 }
 function patchDraft(setter, field, value) {
-  setter((current2) => current2 === null ? current2 : { ...current2, [field]: value });
+  setter((current3) => current3 === null ? current3 : { ...current3, [field]: value });
 }
-function CharacterPanel({ sessionId, sessionBlank, close }) {
+function CharacterPanel({ sessionId, sessionBlank, hasConversationHistory, detachPlaythroughSession, close }) {
   const [catalog2, setCatalog] = (0, import_react2.useState)(null);
   const [detail, setDetail] = (0, import_react2.useState)(null);
   const [draft, setDraft] = (0, import_react2.useState)(null);
@@ -1717,6 +2102,7 @@ function CharacterPanel({ sessionId, sessionBlank, close }) {
   const [binding, setBinding] = (0, import_react2.useState)(null);
   const [rp, setRp] = (0, import_react2.useState)({ active: false });
   const [busy, setBusy] = (0, import_react2.useState)(false);
+  const [detachPrompt, setDetachPrompt] = (0, import_react2.useState)(null);
   const [status, setStatus] = (0, import_react2.useState)({ error: false, key: "common.loading" });
   const fileRef = (0, import_react2.useRef)(null);
   const refreshGeneration = (0, import_react2.useRef)(0);
@@ -1734,7 +2120,7 @@ function CharacterPanel({ sessionId, sessionBlank, close }) {
     setBusy(true);
     try {
       const result = await operation();
-      setStatus({ error: false, key: successKey });
+      if (result !== RUN_SKIPPED) setStatus({ error: false, key: successKey });
       return result;
     } catch (error) {
       setStatus(error?.uiKey ? { error: true, key: error.uiKey, values: error.uiValues } : { error: true, text: error instanceof Error ? error.message : String(error) });
@@ -1792,8 +2178,8 @@ function CharacterPanel({ sessionId, sessionBlank, close }) {
       }
       run(() => refresh(detail?.id), "character.status.refreshed");
     };
-    window.addEventListener("dsh-tavern:refresh", onRefresh);
-    return () => window.removeEventListener("dsh-tavern:refresh", onRefresh);
+    window.addEventListener(CLIENT_REFRESH_EVENT, onRefresh);
+    return () => window.removeEventListener(CLIENT_REFRESH_EVENT, onRefresh);
   }, [detail?.id, refresh, run]);
   (0, import_react2.useEffect)(() => {
     if (!dirty) return void 0;
@@ -1804,7 +2190,7 @@ function CharacterPanel({ sessionId, sessionBlank, close }) {
     window.addEventListener("beforeunload", warn);
     return () => window.removeEventListener("beforeunload", warn);
   }, [dirty]);
-  const create = (0, import_react2.useCallback)(() => {
+  const create2 = (0, import_react2.useCallback)(() => {
     if (dirty && !window.confirm(unwrapText(uiMessage("character.confirmDiscardForCreate")))) return;
     run(async () => {
       const data = await api2("/characters", { method: "POST", body: JSON.stringify({ name: translate("character.defaultName") }) });
@@ -1813,13 +2199,19 @@ function CharacterPanel({ sessionId, sessionBlank, close }) {
     }, "character.status.created");
   }, [dirty, refresh, run]);
   const importFile = (0, import_react2.useCallback)((file) => run(async () => {
-    const response = await fetch(`${API_ROOT2}/characters/import?filename=${encodeURIComponent(file.name)}`, {
-      method: "POST",
-      headers: { "Content-Type": file.type || "application/octet-stream" },
-      body: file
-    });
-    const data = await response.json().catch(() => null);
-    if (!response.ok || data?.ok === false) throw new Error(errorMessage(data, response.status));
+    let data;
+    try {
+      const response = await fetch(`${API_V1}/characters/import?filename=${encodeURIComponent(file.name)}`, {
+        method: "POST",
+        headers: { "Content-Type": file.type || "application/octet-stream" },
+        body: file
+      });
+      data = await response.json().catch(() => null);
+      if (!response.ok || data?.ok === false) throw new Error(errorMessage(data, response.status));
+    } catch (error) {
+      announceImportFailure(error);
+      throw error;
+    }
     await refresh(data.character.id);
     announceTavernRefresh2();
     if (fileRef.current !== null) fileRef.current.value = "";
@@ -1834,42 +2226,74 @@ function CharacterPanel({ sessionId, sessionBlank, close }) {
     setDetail(data.character);
     setDraft(nextDraft);
     setSavedDraft(structuredClone(nextDraft));
-    setCatalog((current2) => current2 === null ? current2 : {
-      ...current2,
-      characters: current2.characters.map((item) => item.id === data.character.id ? { ...item, name: data.character.name } : item)
+    setCatalog((current3) => current3 === null ? current3 : {
+      ...current3,
+      characters: current3.characters.map((item) => item.id === data.character.id ? { ...item, name: data.character.name } : item)
     });
-    setBinding((current2) => {
-      if (current2 === null || current2.characterCardId !== data.character.id) return current2;
+    setBinding((current3) => {
+      if (current3 === null || current3.characterCardId !== data.character.id) return current3;
       const greetings2 = characterGreetingOptions(data.character);
       const maxIndex = Math.max(0, greetings2.length - 1);
-      const greetingIndex2 = Math.min(current2.character?.greetingIndex ?? 0, maxIndex);
-      return { ...current2, character: { ...current2.character, greetingIndex: greetingIndex2 } };
+      const greetingIndex2 = Math.min(current3.character?.greetingIndex ?? 0, maxIndex);
+      return { ...current3, character: { ...current3.character, greetingIndex: greetingIndex2 } };
     });
     announceTavernRefresh2();
   }, "character.status.saved"), [detail, draft, run]);
+  const requestSelection = (0, import_react2.useCallback)(async (request, action, { prompt = true } = {}) => {
+    try {
+      return await api2("/character-selection", {
+        method: "POST",
+        body: JSON.stringify(request)
+      });
+    } catch (error) {
+      const conflicts = error?.details?.conflicts;
+      if (prompt && error?.code === "CHARACTER_PLAYTHROUGH_DETACH_REQUIRED" && Array.isArray(conflicts) && conflicts.length > 0) {
+        setDetachPrompt({ request, action, conflicts });
+        return RUN_SKIPPED;
+      }
+      throw error;
+    }
+  }, []);
+  const applySelectionResult = (0, import_react2.useCallback)(async (data, action) => {
+    if (action === "unbind") {
+      await refresh(detail?.id);
+    } else {
+      setSelection(data.selection);
+      setBinding(data.selection);
+      const rpData = await api2(`/rp-mode?sessionId=${encodeURIComponent(sessionId)}`);
+      setRp(rpData.rp ?? { active: false });
+    }
+    announceTavernRefresh2();
+  }, [detail?.id, refresh, sessionId]);
   const bind = (0, import_react2.useCallback)(() => run(async () => {
     if (!sessionId) throw uiError("character.error.needSession");
     if (dirty) throw uiError("character.error.saveFirst");
-    if (selection?.characterCardId !== binding?.characterCardId && sessionBlank === false && !window.confirm(unwrapText(uiMessage("character.confirmHistoricalSwitch")))) return;
-    const data = await api2("/character-selection", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ sessionId, ...binding })
-    });
-    setSelection(data.selection);
-    setBinding(data.selection);
-    const rpData = await api2(`/rp-mode?sessionId=${encodeURIComponent(sessionId)}`);
-    setRp(rpData.rp ?? { active: false });
-    announceTavernRefresh2();
-  }, "character.status.bound"), [binding, dirty, run, selection, sessionBlank, sessionId]);
+    if (selection?.characterCardId !== binding?.characterCardId) {
+      const historical = typeof hasConversationHistory === "function" ? await hasConversationHistory(sessionId) : sessionBlank === false;
+      if (historical && !window.confirm(unwrapText(uiMessage("character.confirmHistoricalSwitch")))) return;
+    }
+    const data = await requestSelection({ sessionId, ...binding }, "bind");
+    if (data === RUN_SKIPPED) return RUN_SKIPPED;
+    await applySelectionResult(data, "bind");
+  }, "character.status.bound"), [applySelectionResult, binding, dirty, hasConversationHistory, requestSelection, run, selection, sessionBlank, sessionId]);
   const unbind = (0, import_react2.useCallback)(() => run(async () => {
     if (!sessionId) throw uiError("character.error.noSessionToUnbind");
-    await api2("/character-selection", {
-      method: "POST",
-      body: JSON.stringify({ sessionId, characterCardId: null })
-    });
-    await refresh(detail?.id);
-  }, "character.status.unbound"), [detail?.id, refresh, run, sessionId]);
+    const data = await requestSelection({ sessionId, characterCardId: null }, "unbind");
+    if (data === RUN_SKIPPED) return RUN_SKIPPED;
+    await applySelectionResult(data, "unbind");
+  }, "character.status.unbound"), [applySelectionResult, requestSelection, run, sessionId]);
+  const confirmDetach = (0, import_react2.useCallback)(() => {
+    if (detachPrompt === null) return;
+    run(async () => {
+      if (typeof detachPlaythroughSession !== "function") throw new Error(unwrapText(uiMessage("character.detachUnavailable")));
+      for (const conflict of detachPrompt.conflicts) {
+        await detachPlaythroughSession(conflict.playthroughId, conflict.sessionId);
+      }
+      const data = await requestSelection(detachPrompt.request, detachPrompt.action, { prompt: false });
+      await applySelectionResult(data, detachPrompt.action);
+      setDetachPrompt(null);
+    }, detachPrompt.action === "unbind" ? "character.status.unbound" : "character.status.bound");
+  }, [applySelectionResult, detachPlaythroughSession, detachPrompt, requestSelection, run]);
   const toggleRp = (0, import_react2.useCallback)(() => run(async () => {
     if (!sessionId) throw uiError("character.error.needSession");
     const data = await api2("/rp-mode", {
@@ -1898,7 +2322,7 @@ function CharacterPanel({ sessionId, sessionBlank, close }) {
   const bindingDirty = characterBindingDirty(selection, binding);
   const activeName = selection === null ? translate("nav.character.empty") : catalog2?.characters.find((item) => item.id === selection.characterCardId)?.name ?? selection.characterCardId;
   const closeLabel = uiMessage("panel.close", { title: unwrapText(uiMessage("character.title")) });
-  const avatarSrc = detail === null ? null : `${API_ROOT2}/characters/${encodeURIComponent(detail.id)}/png`;
+  const avatarSrc = detail === null ? null : `${API_V1}/characters/${encodeURIComponent(detail.id)}/png`;
   return h2(
     "div",
     { className: "dcc-panel" },
@@ -1914,34 +2338,47 @@ function CharacterPanel({ sessionId, sessionBlank, close }) {
       h2(
         "div",
         { className: "dcc-toolbar" },
-        h2("button", { className: "dcc-button", type: "button", disabled: busy, onClick: create }, uiMessage("character.create")),
         h2("button", { className: "dcc-button", type: "button", disabled: busy, onClick: () => fileRef.current?.click() }, uiMessage("character.import")),
-        h2("button", { className: "dcc-button", type: "button", disabled: busy, onClick: () => {
-          if (dirty && !window.confirm(unwrapText(uiMessage("character.confirmDiscardRefresh")))) return;
-          run(() => refresh(detail?.id), "character.status.libraryRefreshed");
-        } }, uiMessage("common.refresh")),
+        h2("a", { className: "dcc-button", "data-disabled": detail === null || busy ? true : void 0, href: detail === null ? void 0 : `${API_V1}/characters/${encodeURIComponent(detail.id)}/json`, download: "" }, uiMessage("common.exportJson")),
+        h2("button", { className: "dcc-button", type: "button", disabled: busy, onClick: create2 }, uiMessage("character.create")),
         h2("input", { ref: fileRef, hidden: true, type: "file", accept: ".json,.png,application/json,image/png", onChange: (event) => {
           const file = event.target.files?.[0];
+          event.target.value = "";
           if (file !== void 0) importFile(file);
         } })
       ),
       h2(Field2, { label: uiMessage("character.browse") }, h2(
-        "select",
-        {
-          className: "dcc-select",
-          value: detail?.id ?? "",
-          disabled: busy || catalog2 === null || catalog2.characters.length === 0,
-          onChange: (event) => chooseCharacter(event.target.value)
-        },
-        ...catalog2?.characters.length ? [] : [h2("option", { key: "empty", value: "" }, uiMessage("character.libraryEmpty"))],
-        ...(catalog2?.characters ?? []).map((item) => h2("option", { key: item.id, value: item.id }, rawText(item.name)))
+        "div",
+        { className: "dcc-browse" },
+        h2(
+          "select",
+          {
+            className: "dcc-select",
+            value: detail?.id ?? "",
+            disabled: busy || catalog2 === null || catalog2.characters.length === 0,
+            onChange: (event) => chooseCharacter(event.target.value)
+          },
+          ...catalog2?.characters.length ? [] : [h2("option", { key: "empty", value: "" }, uiMessage("character.libraryEmpty"))],
+          ...(catalog2?.characters ?? []).map((item) => h2("option", { key: item.id, value: item.id }, rawText(item.name)))
+        ),
+        h2("button", { className: "dcc-button", type: "button", disabled: busy, onClick: () => {
+          if (dirty && !window.confirm(unwrapText(uiMessage("character.confirmDiscardRefresh")))) return;
+          run(() => refresh(detail?.id), "character.status.libraryRefreshed");
+        } }, uiMessage("common.refresh"))
       )),
+      h2(
+        "div",
+        { className: "dcc-actions" },
+        h2("button", { className: "dcc-button dcc-primary", type: "button", disabled: busy || !sessionId || detail === null || dirty || boundHere && !bindingDirty, onClick: bind }, dirty ? uiMessage("character.saveFirst") : boundHere ? bindingDirty ? uiMessage("character.bindUpdate") : uiMessage("character.bindingAppliedButton") : uiMessage("character.bind")),
+        h2("button", { className: "dcc-button", type: "button", disabled: busy || !sessionId || selection === null, onClick: unbind }, uiMessage("character.unbind"))
+      ),
       h2("p", { className: "dcc-note" }, uiMessage("character.sessionBinding", {
         session: sessionId || translate("common.none"),
         name: activeName
       })),
       h2("div", { className: "dcc-status", "data-error": status.error || void 0, role: "status", "aria-live": "polite" }, statusText(status)),
       dirty ? h2("div", { className: "dcc-status", "data-warning": true, role: "status" }, uiMessage("character.dirty")) : detail === null ? null : h2("p", { className: "dcc-note" }, uiMessage("character.savedNote")),
+      boundHere ? bindingDirty ? h2("div", { className: "dcc-status", "data-warning": true, role: "status" }, uiMessage("character.bindingUnsaved")) : h2("p", { className: "dcc-note" }, uiMessage("character.bindingApplied")) : null,
       detail === null || draft === null ? h2("p", { className: "dcc-note" }, catalog2 === null ? uiMessage("character.loading") : uiMessage("character.emptyHint")) : h2(
         "div",
         { className: "dcc-card" },
@@ -1954,7 +2391,8 @@ function CharacterPanel({ sessionId, sessionBlank, close }) {
             null,
             h2("h3", { className: "dcc-card-title" }, rawText(detail.name)),
             h2("p", { className: "dcc-meta" }, rawText(`${detail.source.format}${detail.source.specVersion ? ` \xB7 ${detail.source.specVersion}` : ""} \xB7 ${detail.source.container}`)),
-            h2("p", { className: "dcc-meta" }, rawText(`${draft.creator || translate("common.unknownAuthor")}${draft.characterVersion ? ` \xB7 ${draft.characterVersion}` : ""}`))
+            h2("p", { className: "dcc-meta" }, rawText(`${draft.creator || translate("common.unknownAuthor")}${draft.characterVersion ? ` \xB7 ${draft.characterVersion}` : ""}`)),
+            h2("a", { className: "dcc-button", href: `${API_V1}/characters/${encodeURIComponent(detail.id)}/png`, download: "" }, uiMessage("character.exportPng"))
           )
         ),
         h2(Field2, { label: uiMessage("common.name") }, h2("input", {
@@ -1987,18 +2425,10 @@ function CharacterPanel({ sessionId, sessionBlank, close }) {
         h2(Field2, { label: uiMessage("character.greeting") }, h2("select", {
           className: "dcc-select",
           value: greetingIndex,
-          onChange: (event) => setBinding((current2) => ({ ...current2, character: { ...current2.character, greetingIndex: Number(event.target.value) } }))
+          onChange: (event) => setBinding((current3) => ({ ...current3, character: { ...current3.character, greetingIndex: Number(event.target.value) } }))
         }, ...greetings.map((item) => h2("option", { key: item.index, value: item.index }, uiMessage(item.labelKey, item.labelValues))))),
-        h2("label", { className: "dcc-check" }, h2("input", { type: "checkbox", checked: binding?.character?.preferCharacterSystemPrompt !== false, onChange: (event) => setBinding((current2) => ({ ...current2, character: { ...current2.character, preferCharacterSystemPrompt: event.target.checked } })) }), h2("span", null, uiMessage("character.preferSystem"))),
-        h2("label", { className: "dcc-check" }, h2("input", { type: "checkbox", checked: binding?.character?.preferCharacterPostHistory !== false, onChange: (event) => setBinding((current2) => ({ ...current2, character: { ...current2.character, preferCharacterPostHistory: event.target.checked } })) }), h2("span", null, uiMessage("character.preferPostHistory"))),
-        boundHere ? bindingDirty ? h2("div", { className: "dcc-status", "data-warning": true, role: "status" }, uiMessage("character.bindingUnsaved")) : h2("p", { className: "dcc-note" }, uiMessage("character.bindingApplied")) : null,
-        h2(
-          "div",
-          { className: "dcc-actions" },
-          h2("button", { className: "dcc-button dcc-primary", type: "button", disabled: busy || !dirty, onClick: save }, dirty ? uiMessage("character.saveResource") : uiMessage("character.resourceSaved")),
-          h2("button", { className: "dcc-button dcc-primary", type: "button", disabled: busy || !sessionId || dirty || boundHere && !bindingDirty, onClick: bind }, dirty ? uiMessage("character.saveFirst") : boundHere ? bindingDirty ? uiMessage("character.bindUpdate") : uiMessage("character.bindingAppliedButton") : uiMessage("character.bind"))
-        ),
-        h2("button", { className: "dcc-button", type: "button", disabled: busy || !sessionId || selection === null, onClick: unbind }, uiMessage("character.unbind")),
+        h2("label", { className: "dcc-check" }, h2("input", { type: "checkbox", checked: binding?.character?.preferCharacterSystemPrompt !== false, onChange: (event) => setBinding((current3) => ({ ...current3, character: { ...current3.character, preferCharacterSystemPrompt: event.target.checked } })) }), h2("span", null, uiMessage("character.preferSystem"))),
+        h2("label", { className: "dcc-check" }, h2("input", { type: "checkbox", checked: binding?.character?.preferCharacterPostHistory !== false, onChange: (event) => setBinding((current3) => ({ ...current3, character: { ...current3.character, preferCharacterPostHistory: event.target.checked } })) }), h2("span", null, uiMessage("character.preferPostHistory"))),
         h2(
           "label",
           { className: "dcc-check" },
@@ -2032,7 +2462,7 @@ function CharacterPanel({ sessionId, sessionBlank, close }) {
             h2(
               "div",
               { className: "dcc-greetings" },
-              ...draft.alternateGreetings.map((text, index) => h2(
+              ...draft.alternateGreetings.map((text2, index) => h2(
                 "div",
                 { className: "dcc-greeting-item", key: `alt-${index}` },
                 h2(
@@ -2043,20 +2473,20 @@ function CharacterPanel({ sessionId, sessionBlank, close }) {
                     className: "dcc-button dcc-danger",
                     type: "button",
                     disabled: busy,
-                    onClick: () => setDraft((current2) => current2 === null ? current2 : {
-                      ...current2,
-                      alternateGreetings: current2.alternateGreetings.filter((_item, itemIndex) => itemIndex !== index)
+                    onClick: () => setDraft((current3) => current3 === null ? current3 : {
+                      ...current3,
+                      alternateGreetings: current3.alternateGreetings.filter((_item, itemIndex) => itemIndex !== index)
                     })
                   }, uiMessage("common.delete"))
                 ),
                 h2("textarea", {
                   className: "dcc-textarea",
-                  value: text,
-                  onChange: (event) => setDraft((current2) => {
-                    if (current2 === null) return current2;
-                    const alternateGreetings = [...current2.alternateGreetings];
+                  value: text2,
+                  onChange: (event) => setDraft((current3) => {
+                    if (current3 === null) return current3;
+                    const alternateGreetings = [...current3.alternateGreetings];
                     alternateGreetings[index] = event.target.value;
-                    return { ...current2, alternateGreetings };
+                    return { ...current3, alternateGreetings };
                   })
                 })
               ))
@@ -2065,9 +2495,9 @@ function CharacterPanel({ sessionId, sessionBlank, close }) {
               className: "dcc-button",
               type: "button",
               disabled: busy,
-              onClick: () => setDraft((current2) => current2 === null ? current2 : {
-                ...current2,
-                alternateGreetings: [...current2.alternateGreetings, ""]
+              onClick: () => setDraft((current3) => current3 === null ? current3 : {
+                ...current3,
+                alternateGreetings: [...current3.alternateGreetings, ""]
               })
             }, uiMessage("character.addGreeting"))
           )
@@ -2120,19 +2550,38 @@ function CharacterPanel({ sessionId, sessionBlank, close }) {
         detail.compatibility.unknownMacroNames.length > 0 ? h2("div", { className: "dcc-status" }, uiMessage("character.unknownMacros", { names: detail.compatibility.unknownMacroNames.join(", ") })) : null,
         h2(
           "div",
-          { className: "dcc-actions" },
-          h2("a", { className: "dcc-button", href: `${API_ROOT2}/characters/${encodeURIComponent(detail.id)}/json`, download: "" }, uiMessage("common.exportJson")),
-          h2("a", { className: "dcc-button", href: `${API_ROOT2}/characters/${encodeURIComponent(detail.id)}/png`, download: "" }, uiMessage("character.exportPng"))
-        ),
-        h2("div", { className: "dcc-footer" }, h2("button", { className: "dcc-button dcc-danger", type: "button", disabled: busy, onClick: remove }, uiMessage("character.delete")))
+          { className: "dcc-footer" },
+          h2("button", { className: "dcc-button dcc-primary", type: "button", disabled: busy || !dirty, onClick: save }, dirty ? uiMessage("character.saveResource") : uiMessage("character.resourceSaved")),
+          h2("button", { className: "dcc-button dcc-danger", type: "button", disabled: busy, onClick: remove }, uiMessage("character.delete"))
+        )
+      )
+    ),
+    detachPrompt === null ? null : h2(
+      "div",
+      { className: "dcc-modal-backdrop", role: "presentation" },
+      h2(
+        "div",
+        { className: "dcc-modal", role: "dialog", "aria-modal": true, "aria-labelledby": "dcc-detach-title" },
+        h2("h3", { id: "dcc-detach-title" }, uiMessage("character.detachTitle")),
+        h2("p", { className: "dcc-note" }, uiMessage("character.detachDescription")),
+        h2("ul", { className: "dcc-modal-list" }, ...detachPrompt.conflicts.map((conflict) => h2("li", { key: conflict.playthroughId }, uiMessage("character.detachItem", {
+          title: conflict.playthroughTitle,
+          count: conflict.descendantSessionCount
+        })))),
+        h2(
+          "div",
+          { className: "dcc-modal-actions" },
+          h2("button", { className: "dcc-button", type: "button", disabled: busy, onClick: () => setDetachPrompt(null) }, uiMessage("common.cancel")),
+          h2("button", { className: "dcc-button dcc-danger", type: "button", disabled: busy, onClick: confirmDetach }, uiMessage("character.detachConfirm"))
+        )
       )
     )
   );
 }
 function installCharacterStyles() {
-  if (document.querySelector('style[data-plugin-css="dsh-tavern-character"]') !== null) return;
+  if (document.querySelector(`style[data-plugin-css="${PLUGIN_ID}-character"]`) !== null) return;
   const style = document.createElement("style");
-  style.dataset.pluginCss = "dsh-tavern-character";
+  style.dataset.pluginCss = `${PLUGIN_ID}-character`;
   style.textContent = css2;
   document.head.append(style);
 }
@@ -2140,7 +2589,6 @@ function installCharacterStyles() {
 // packages/world-book-library/src/client.js
 var import_react3 = require("react");
 var h3 = createLocalizedElement(import_react3.createElement);
-var API_ROOT3 = "/dsh-tavern/api";
 var POSITIONS = [
   ["before_character_definition", "world.position.beforeCharacter"],
   ["after_character_definition", "world.position.afterCharacter"],
@@ -2152,8 +2600,8 @@ var POSITIONS = [
   ["outlet", "world.position.outlet"]
 ];
 var css3 = `
-.dwb-panel{position:absolute;top:0;right:0;bottom:0;width:min(500px,calc(100vw - 56px));pointer-events:auto;border-left:1px solid var(--dsw-alias-border-l2);box-shadow:var(--ds-shadow-3,-8px 0 28px rgba(0,0,0,.18));background:var(--dsw-alias-bg-base);color:var(--dsw-alias-label-primary);display:flex;flex-direction:column;font-family:Inter,var(--dsw-font-family),sans-serif}.dwb-header{height:52px;box-sizing:border-box;display:flex;align-items:center;gap:8px;padding:0 14px;border-bottom:1px solid var(--dsw-alias-border-l2);flex:none}.dwb-title{font-size:16px;font-weight:650;flex:1}.dwb-close{border:0;background:transparent;color:var(--dsw-alias-label-tertiary);cursor:pointer;border-radius:7px;padding:6px 8px;font-size:14px}.dwb-body{min-height:0;overflow:auto;padding:12px;display:flex;flex-direction:column;gap:11px}.dwb-toolbar{display:grid;grid-template-columns:repeat(3,1fr);gap:7px}.dwb-actions{display:flex;gap:7px;flex-wrap:wrap}.dwb-button{min-height:36px;border:1px solid var(--dsw-alias-border-l2);border-radius:8px;background:var(--dsw-alias-button-secondary-fill,var(--dsw-alias-bg-base));color:var(--dsw-alias-label-primary);cursor:pointer;padding:7px 10px;font-size:13px;text-decoration:none;display:inline-flex;align-items:center;justify-content:center;box-sizing:border-box}.dwb-button:disabled{opacity:.5;cursor:default}.dwb-primary{background:var(--dsw-alias-state-business-primary);color:white;border-color:transparent}.dwb-danger{color:var(--dsw-alias-state-error)}.dwb-field{display:flex;flex-direction:column;gap:4px}.dwb-label{font-size:12px;font-weight:620;color:var(--dsw-alias-label-tertiary)}.dwb-input,.dwb-select,.dwb-textarea{box-sizing:border-box;width:100%;border:1px solid var(--dsw-alias-border-l2);border-radius:7px;background:var(--dsw-alias-bg-base);color:var(--dsw-alias-label-primary);font:inherit;font-size:13px;padding:7px 8px}.dwb-input,.dwb-select{height:36px}.dwb-textarea{min-height:110px;resize:vertical;line-height:1.5}.dwb-note,.dwb-meta{font-size:13px;line-height:1.5;color:var(--dsw-alias-label-tertiary);margin:0;overflow-wrap:anywhere}.dwb-status{font-size:13px;line-height:1.45;border-radius:7px;padding:8px 10px;background:var(--dsw-specific-tip);overflow-wrap:anywhere}.dwb-status[data-error=true]{color:var(--dsw-alias-state-error)}.dwb-status[data-warning=true]{color:var(--dsw-alias-state-warning,#b46b00)}.dwb-section-title{font-size:15px;font-weight:700;margin:5px 0 0}.dwb-resource{border:1px solid var(--dsw-alias-border-l1);border-radius:9px;padding:10px;display:flex;flex-direction:column;gap:8px}.dwb-resource-title{font-size:14px;font-weight:650}.dwb-bindings{display:grid;grid-template-columns:1fr 1fr;gap:5px}.dwb-check{display:flex;gap:6px;align-items:flex-start;font-size:12px;line-height:1.45}.dwb-entry{border:1px solid var(--dsw-alias-border-l1);border-radius:8px;overflow:hidden}.dwb-entry>summary{list-style:none;cursor:pointer;padding:8px;display:flex;align-items:center;gap:7px;font-size:13px}.dwb-entry>summary::-webkit-details-marker{display:none}.dwb-dot{width:8px;height:8px;flex:none;border-radius:50%;background:var(--dsw-alias-label-tertiary)}.dwb-entry[data-enabled=true] .dwb-dot{background:var(--dsw-alias-state-success,#2fa36b)}.dwb-entry-name{font-weight:620;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.dwb-entry-state{margin-left:auto;flex:none;color:var(--dsw-alias-label-tertiary);font-size:12px}.dwb-entry-body{border-top:1px solid var(--dsw-alias-border-l1);padding:8px;display:flex;flex-direction:column;gap:8px}.dwb-grid{display:grid;grid-template-columns:1fr 1fr;gap:7px}.dwb-checks{display:flex;flex-wrap:wrap;gap:10px}.dwb-list{margin:0;padding-left:18px;font-size:13px;line-height:1.5}
-.dwb-source-section{border:1px solid var(--dsw-alias-border-l2);border-radius:11px;padding:10px;background:color-mix(in srgb,var(--dsw-specific-tip) 35%,transparent);display:flex;flex-direction:column;gap:9px}.dwb-source-section>.dwb-section-title{margin:0}.dwb-source-section>.dwb-resource{background:var(--dsw-alias-bg-base)}.dwb-source-list{margin:0;padding-left:20px;display:flex;flex-direction:column;gap:7px}.dwb-source-book{padding-left:2px}.dwb-source-book-row{display:flex;align-items:center;justify-content:space-between;gap:8px}.dwb-source-book-name{min-width:0;font-size:13px;font-weight:620;overflow-wrap:anywhere}.dwb-source-badge{flex:none;border:1px solid var(--dsw-alias-border-l1);border-radius:999px;padding:2px 7px;font-size:11px;line-height:1.35;color:var(--dsw-alias-label-tertiary);background:var(--dsw-specific-tip)}.dwb-user-bindings{grid-template-columns:1fr}.dwb-user-binding-row{display:flex;align-items:center;gap:7px}.dwb-user-binding-row>.dwb-check{align-items:center;flex:1;min-width:0}.dwb-user-binding-row .dwb-source-badge{margin-left:auto}.dwb-inline-edit{min-height:30px;padding:4px 8px;flex:none}
+.dwb-panel{position:absolute;top:0;right:0;bottom:0;width:min(500px,calc(100vw - 56px));pointer-events:auto;border-left:1px solid var(--dsw-alias-border-l2);box-shadow:var(--ds-shadow-3,-8px 0 28px rgba(0,0,0,.18));background:var(--dsw-alias-bg-base);color:var(--dsw-alias-label-primary);display:flex;flex-direction:column;font-family:Inter,var(--dsw-font-family),sans-serif}.dwb-header{height:52px;box-sizing:border-box;display:flex;align-items:center;gap:8px;padding:0 14px;border-bottom:1px solid var(--dsw-alias-border-l2);flex:none}.dwb-title{font-size:16px;font-weight:650;flex:1}.dwb-close{border:0;background:transparent;color:var(--dsw-alias-label-tertiary);cursor:pointer;border-radius:7px;padding:6px 8px;font-size:14px}.dwb-body{min-height:0;overflow:auto;padding:12px;display:flex;flex-direction:column;gap:11px}.dwb-toolbar{display:grid;grid-template-columns:repeat(3,1fr);gap:7px}.dwb-actions{display:flex;gap:7px;flex-wrap:wrap}.dwb-button{min-height:36px;border:1px solid var(--dsw-alias-border-l2);border-radius:8px;background:var(--dsw-alias-button-secondary-fill,var(--dsw-alias-bg-base));color:var(--dsw-alias-label-primary);cursor:pointer;padding:7px 10px;font-size:13px;text-decoration:none;display:inline-flex;align-items:center;justify-content:center;box-sizing:border-box}.dwb-button:disabled,.dwb-button[data-disabled=true]{opacity:.5;cursor:default;pointer-events:none}.dwb-primary{background:var(--dsw-alias-state-business-primary);color:white;border-color:transparent}.dwb-danger{color:var(--dsw-alias-state-error)}.dwb-field{display:flex;flex-direction:column;gap:4px}.dwb-label{font-size:12px;font-weight:620;color:var(--dsw-alias-label-tertiary)}.dwb-input,.dwb-select,.dwb-textarea{box-sizing:border-box;width:100%;border:1px solid var(--dsw-alias-border-l2);border-radius:7px;background:var(--dsw-alias-bg-base);color:var(--dsw-alias-label-primary);font:inherit;font-size:13px;padding:7px 8px}.dwb-input,.dwb-select{height:36px}.dwb-textarea{min-height:110px;resize:vertical;line-height:1.5}.dwb-note,.dwb-meta{font-size:13px;line-height:1.5;color:var(--dsw-alias-label-tertiary);margin:0;overflow-wrap:anywhere}.dwb-status{font-size:13px;line-height:1.45;border-radius:7px;padding:8px 10px;background:var(--dsw-specific-tip);overflow-wrap:anywhere}.dwb-status[data-error=true]{color:var(--dsw-alias-state-error)}.dwb-status[data-warning=true]{color:var(--dsw-alias-state-warning,#b46b00)}.dwb-section-title{font-size:15px;font-weight:700;margin:5px 0 0}.dwb-resource{border:1px solid var(--dsw-alias-border-l1);border-radius:9px;padding:10px;display:flex;flex-direction:column;gap:8px}.dwb-resource-title{font-size:14px;font-weight:650}.dwb-bindings{display:grid;grid-template-columns:1fr 1fr;gap:5px}.dwb-check{display:flex;gap:6px;align-items:flex-start;font-size:12px;line-height:1.45}.dwb-entry{border:1px solid var(--dsw-alias-border-l1);border-radius:8px;overflow:hidden;transition:border-color .12s,box-shadow .12s}.dwb-entry[data-dragging=true]{height:4px;min-height:4px;margin:5px 10px;border:0;border-radius:999px;background:var(--dsw-alias-state-business-primary);box-shadow:0 0 0 1px color-mix(in srgb,var(--dsw-alias-state-business-primary) 25%,transparent)}.dwb-entry[data-dragging=true]>*{opacity:0}.dwb-entry>summary{list-style:none;cursor:pointer;padding:8px;display:flex;align-items:center;gap:7px;font-size:13px}.dwb-entry>summary::-webkit-details-marker{display:none}.dwb-drag{border:0;background:transparent;color:var(--dsw-alias-label-tertiary);cursor:grab;padding:1px 2px;font-size:15px;line-height:1;touch-action:none;user-select:none}.dwb-drag:active{cursor:grabbing}.dwb-drop-placeholder{box-sizing:border-box;height:42px;border:2px dashed var(--dsw-alias-state-business-primary);border-radius:8px;background:color-mix(in srgb,var(--dsw-alias-state-business-primary) 7%,transparent);display:flex;align-items:center;justify-content:center;color:var(--dsw-alias-state-business-primary);font-size:12px;font-weight:600;pointer-events:none}.dwb-entry-name{font-weight:620;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.dwb-entry-state{margin-left:auto;flex:none;color:var(--dsw-alias-label-tertiary);font-size:12px}.dwb-entry-body{border-top:1px solid var(--dsw-alias-border-l1);padding:8px;display:flex;flex-direction:column;gap:8px}.dwb-grid{display:grid;grid-template-columns:1fr 1fr;gap:7px}.dwb-checks{display:flex;flex-wrap:wrap;gap:10px}.dwb-list{margin:0;padding-left:18px;font-size:13px;line-height:1.5}.dwb-footer{position:sticky;bottom:-12px;margin:0 -12px -12px;padding:10px 12px;background:var(--dsw-alias-bg-base);border-top:1px solid var(--dsw-alias-border-l2);display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.dwb-source-section{border:1px solid var(--dsw-alias-border-l2);border-radius:11px;padding:10px;background:color-mix(in srgb,var(--dsw-specific-tip) 35%,transparent);display:flex;flex-direction:column;gap:9px}.dwb-source-section>.dwb-section-title{margin:0}.dwb-source-section>.dwb-resource{background:var(--dsw-alias-bg-base)}.dwb-source-list{margin:0;padding-left:20px;display:flex;flex-direction:column;gap:7px}.dwb-source-book{padding-left:2px}.dwb-source-book-row{display:flex;align-items:center;justify-content:space-between;gap:8px}.dwb-source-book-name{min-width:0;font-size:13px;font-weight:620;overflow-wrap:anywhere}.dwb-source-badge{flex:none;border:1px solid var(--dsw-alias-border-l1);border-radius:999px;padding:2px 7px;font-size:11px;line-height:1.35;color:var(--dsw-alias-label-tertiary);background:var(--dsw-specific-tip)}.dwb-user-bindings{grid-template-columns:1fr}.dwb-user-binding-row{display:flex;align-items:center;gap:7px}.dwb-user-binding-row>.dwb-check{align-items:center;flex:1;min-width:0}.dwb-user-binding-row .dwb-source-badge{margin-left:auto}.dwb-inline-edit{min-height:30px;padding:4px 8px;flex:none}.dwb-browse{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:7px}
 `;
 function errorMessage2(data, status) {
   if (typeof data?.error?.message === "string") return data.error.message;
@@ -2162,7 +2610,7 @@ function errorMessage2(data, status) {
 }
 async function api3(path, options = {}) {
   const method = String(options.method ?? "GET").toUpperCase();
-  const response = await fetch(`${API_ROOT3}${path}`, {
+  const response = await fetch(`${API_V1}${path}`, {
     ...options,
     headers: {
       ...method === "GET" || method === "HEAD" ? {} : { "Content-Type": "application/json" },
@@ -2179,22 +2627,88 @@ function Field3({ label, children }) {
 function parseKeywords(value) {
   return value.split(/[,，]/u).map((item) => item.trim()).filter(Boolean);
 }
+function sameKeywords(left, right) {
+  if (left.length !== right.length) return false;
+  return left.every((value, index) => value === right[index]);
+}
+function reconcileKeywordEditorText(current3, keywords2) {
+  const normalized = Array.isArray(keywords2) ? keywords2.filter((value) => typeof value === "string" && value !== "") : [];
+  return sameKeywords(parseKeywords(current3), normalized) ? current3 : normalized.join(", ");
+}
+function KeywordInput({ keywords: keywords2, onChange }) {
+  const [text2, setText] = (0, import_react3.useState)(() => Array.isArray(keywords2) ? keywords2.join(", ") : "");
+  (0, import_react3.useEffect)(() => {
+    setText((current3) => reconcileKeywordEditorText(current3, keywords2));
+  }, [keywords2]);
+  return h3("input", {
+    className: "dwb-input",
+    value: text2,
+    onChange: (event) => {
+      const next = event.target.value;
+      setText(next);
+      onChange(parseKeywords(next));
+    }
+  });
+}
 function embeddedPosition(entry) {
   const value = entry?.extensions?.position;
   if (Number.isInteger(value) && value >= 0 && value <= 7) return value;
   return entry?.position === "before_char" ? 0 : 1;
 }
-function EmbeddedEntryEditor({ entry, index, update, remove }) {
+function reorderWorldBookEntriesAtBoundary(entries2, from, boundary, orderKey = "insertionOrder") {
+  if (!Array.isArray(entries2)) throw new TypeError();
+  if (!Number.isSafeInteger(from) || !Number.isSafeInteger(boundary)) return entries2;
+  if (from < 0 || from >= entries2.length || boundary < 0 || boundary > entries2.length) return entries2;
+  const destination = boundary > from ? boundary - 1 : boundary;
+  if (destination === from) return entries2;
+  const reordered = [...entries2];
+  const [moved] = reordered.splice(from, 1);
+  reordered.splice(destination, 0, moved);
+  return reordered.map((entry, index) => ({
+    ...entry,
+    [orderKey]: (reordered.length - index) * 100
+  }));
+}
+function EntryDropPlaceholder() {
+  return h3("div", { className: "dwb-drop-placeholder", "aria-hidden": true }, uiMessage("preset.dropHere"));
+}
+function entryInsertionBoundary(event, kind) {
+  const target = document.elementFromPoint(event.clientX, event.clientY)?.closest("[data-world-entry-index]");
+  if (target === null || target.dataset.worldEntryKind !== kind) return null;
+  const index = Number(target.dataset.worldEntryIndex);
+  const bounds = target.getBoundingClientRect();
+  return event.clientY < bounds.top + bounds.height / 2 ? index : index + 1;
+}
+function EntryDragButton({ busy, dragging, onPointerDown, onPointerMove, onPointerUp, onPointerCancel }) {
+  return h3("button", {
+    className: "dwb-drag",
+    type: "button",
+    disabled: busy,
+    title: uiMessage("preset.dragToReorder"),
+    "aria-label": uiMessage("preset.dragToReorder"),
+    "aria-pressed": dragging,
+    onClick: (event) => {
+      event.preventDefault();
+      event.stopPropagation();
+    },
+    onPointerDown,
+    onPointerMove,
+    onPointerUp,
+    onPointerCancel
+  }, "\u283F");
+}
+function EmbeddedEntryEditor({ entry, index, update, remove, dragKind, dragging, dragHandlers }) {
   const patch = (value) => update(index, value);
   const secondaryKeys = Array.isArray(entry.secondary_keys) ? entry.secondary_keys : [];
   const position = embeddedPosition(entry);
   return h3(
     "details",
-    { className: "dwb-entry", "data-enabled": entry.enabled === true },
+    { className: "dwb-entry", "data-world-entry-kind": dragKind, "data-world-entry-index": index, "data-dragging": dragging || void 0 },
     h3(
       "summary",
       null,
-      h3("span", { className: "dwb-dot" }),
+      h3(EntryDragButton, { dragging, ...dragHandlers }),
+      h3("input", { type: "checkbox", checked: entry.enabled === true, onClick: (event) => event.stopPropagation(), onChange: (event) => patch({ enabled: event.target.checked }) }),
       h3("span", { className: "dwb-entry-name" }, entry.comment || entry.name ? rawText(entry.comment || entry.name) : uiMessage("world.entry.fallback", { id: entry.id ?? index })),
       h3("span", { className: "dwb-entry-state" }, entry.constant ? uiMessage("world.entry.constant") : (entry.keys ?? []).length > 0 ? rawText(entry.keys.join(", ")) : uiMessage("world.entry.noKeywords"))
     ),
@@ -2202,11 +2716,8 @@ function EmbeddedEntryEditor({ entry, index, update, remove }) {
       "div",
       { className: "dwb-entry-body" },
       h3(Field3, { label: uiMessage("world.entry.title") }, h3("input", { className: "dwb-input", value: entry.comment ?? entry.name ?? "", onChange: (event) => patch({ comment: event.target.value }) })),
-      h3(Field3, { label: uiMessage("world.entry.primaryKeys") }, h3("input", { className: "dwb-input", value: (entry.keys ?? []).join(", "), onChange: (event) => patch({ keys: parseKeywords(event.target.value) }) })),
-      h3(Field3, { label: uiMessage("world.entry.secondaryKeys") }, h3("input", { className: "dwb-input", value: secondaryKeys.join(", "), onChange: (event) => {
-        const keys = parseKeywords(event.target.value);
-        patch({ secondary_keys: keys, selective: keys.length > 0 });
-      } })),
+      h3(Field3, { label: uiMessage("world.entry.primaryKeys") }, h3(KeywordInput, { keywords: entry.keys, onChange: (keys) => patch({ keys }) })),
+      h3(Field3, { label: uiMessage("world.entry.secondaryKeys") }, h3(KeywordInput, { keywords: secondaryKeys, onChange: (keys) => patch({ secondary_keys: keys, selective: keys.length > 0 }) })),
       secondaryKeys.length > 0 ? h3(Field3, { label: uiMessage("world.entry.secondaryLogicShort") }, h3(
         "select",
         {
@@ -2233,7 +2744,6 @@ function EmbeddedEntryEditor({ entry, index, update, remove }) {
       h3(
         "div",
         { className: "dwb-checks" },
-        h3("label", { className: "dwb-check" }, h3("input", { type: "checkbox", checked: entry.enabled === true, onChange: (event) => patch({ enabled: event.target.checked }) }), uiMessage("common.enable")),
         h3("label", { className: "dwb-check" }, h3("input", { type: "checkbox", checked: entry.constant === true, onChange: (event) => patch({ constant: event.target.checked }) }), uiMessage("world.entry.constant")),
         h3("label", { className: "dwb-check" }, h3("input", { type: "checkbox", checked: (entry.case_sensitive ?? entry.extensions?.case_sensitive) === true, onChange: (event) => patch({ case_sensitive: event.target.checked, extensions: { ...entry.extensions ?? {}, case_sensitive: event.target.checked } }) }), uiMessage("world.entry.caseSensitive")),
         h3("label", { className: "dwb-check" }, h3("input", { type: "checkbox", checked: (entry.match_whole_words ?? entry.extensions?.match_whole_words) === true, onChange: (event) => patch({ match_whole_words: event.target.checked, extensions: { ...entry.extensions ?? {}, match_whole_words: event.target.checked } }) }), uiMessage("world.entry.wholeWord"))
@@ -2242,12 +2752,12 @@ function EmbeddedEntryEditor({ entry, index, update, remove }) {
     )
   );
 }
-function nextUid(entries) {
-  const numeric = entries.map((entry) => entry.uid).filter(Number.isSafeInteger);
+function nextUid(entries2) {
+  const numeric = entries2.map((entry) => entry.uid).filter(Number.isSafeInteger);
   return numeric.length === 0 ? 0 : Math.max(...numeric) + 1;
 }
-function createWorldBookEntry(entries = []) {
-  const uid = nextUid(entries);
+function createWorldBookEntry(entries2 = []) {
+  const uid = nextUid(entries2);
   return {
     uid,
     keys: [],
@@ -2283,16 +2793,77 @@ function deriveUserWorldBookSource(active, catalog2) {
     }))
   };
 }
-function EntryEditor({ entry, index, update, remove }) {
+function sameOrderedIds(left, right) {
+  return left.length === right.length && left.every((value, index) => value === right[index]);
+}
+function orderedBindingCatalog(catalog2, selection) {
+  const books = Array.isArray(catalog2?.worldBooks) ? catalog2.worldBooks : [];
+  const byId = new Map(books.map((book) => [book.id, book]));
+  return [
+    ...selection.map((id) => byId.get(id)).filter(Boolean),
+    ...books.filter((book) => !selection.includes(book.id))
+  ];
+}
+function ResourceWorldBookBindingEditor({
+  resource,
+  catalog: catalog2,
+  selection,
+  appliedSelection,
+  setSelection,
+  save,
+  edit,
+  busy,
+  currentKey,
+  noneKey
+}) {
+  if (resource === null || resource === void 0) return h3("p", { className: "dwb-note" }, uiMessage(noneKey));
+  const books = orderedBindingCatalog(catalog2, selection);
+  const dirty = !sameOrderedIds(selection, appliedSelection);
+  return h3(
+    "div",
+    { className: "dwb-resource" },
+    h3("div", { className: "dwb-resource-title" }, uiMessage(currentKey, { name: resource.name || resource.id })),
+    books.length > 0 ? h3("div", { className: "dwb-bindings dwb-user-bindings" }, ...books.map((book) => {
+      const checked = selection.includes(book.id);
+      const wasApplied = appliedSelection.includes(book.id);
+      const badge = checked && !wasApplied ? uiMessage("world.resource.pendingAdd") : !checked && wasApplied ? uiMessage("world.resource.pendingRemove") : null;
+      return h3(
+        "div",
+        { className: "dwb-user-binding-row", key: book.id },
+        h3(
+          "label",
+          { className: "dwb-check" },
+          h3("input", {
+            type: "checkbox",
+            checked,
+            onChange: (event) => setSelection((current3) => event.target.checked ? [...current3, book.id] : current3.filter((id) => id !== book.id))
+          }),
+          h3("span", { className: "dwb-source-book-name" }, rawText(book.name)),
+          badge === null ? null : h3("span", { className: "dwb-source-badge" }, badge)
+        ),
+        checked || wasApplied ? h3("button", { className: "dwb-button dwb-inline-edit", type: "button", disabled: busy, onClick: () => edit(book.id) }, uiMessage("world.resource.editContent")) : null
+      );
+    })) : h3("p", { className: "dwb-note" }, uiMessage("world.resource.libraryEmpty")),
+    dirty ? h3("div", { className: "dwb-status", "data-warning": true }, uiMessage("world.resource.unsaved")) : h3("p", { className: "dwb-note" }, selection.length === 0 ? uiMessage("world.resource.empty") : uiMessage("world.resource.saved")),
+    h3(
+      "div",
+      { className: "dwb-actions" },
+      h3("button", { className: "dwb-button dwb-primary", type: "button", disabled: busy || !dirty, onClick: save }, dirty ? uiMessage("world.resource.save") : uiMessage("world.resource.saveApplied")),
+      h3("button", { className: "dwb-button", type: "button", disabled: busy || selection.length === 0, onClick: () => setSelection([]) }, uiMessage("world.resource.clear"))
+    )
+  );
+}
+function EntryEditor({ entry, index, update, remove, dragKind, dragging, dragHandlers }) {
   const patch = (value) => update(index, value);
   const secondary = Array.isArray(entry.secondaryKeys) ? entry.secondaryKeys : [];
   return h3(
     "details",
-    { className: "dwb-entry", "data-enabled": entry.enabled === true },
+    { className: "dwb-entry", "data-world-entry-kind": dragKind, "data-world-entry-index": index, "data-dragging": dragging || void 0 },
     h3(
       "summary",
       null,
-      h3("span", { className: "dwb-dot" }),
+      h3(EntryDragButton, { dragging, ...dragHandlers }),
+      h3("input", { type: "checkbox", checked: entry.enabled === true, onClick: (event) => event.stopPropagation(), onChange: (event) => patch({ enabled: event.target.checked }) }),
       h3("span", { className: "dwb-entry-name" }, entry.comment ? rawText(entry.comment) : uiMessage("world.entry.fallback", { id: entry.uid ?? index })),
       h3("span", { className: "dwb-entry-state" }, entry.constant ? uiMessage("world.entry.constant") : (entry.keys ?? []).length > 0 ? rawText(entry.keys.join(", ")) : uiMessage("world.entry.noKeywords"))
     ),
@@ -2300,11 +2871,8 @@ function EntryEditor({ entry, index, update, remove }) {
       "div",
       { className: "dwb-entry-body" },
       h3(Field3, { label: uiMessage("world.entry.title") }, h3("input", { className: "dwb-input", value: entry.comment ?? "", onChange: (event) => patch({ comment: event.target.value }) })),
-      h3(Field3, { label: uiMessage("world.entry.primaryKeys") }, h3("input", { className: "dwb-input", value: (entry.keys ?? []).join(", "), onChange: (event) => patch({ keys: parseKeywords(event.target.value) }) })),
-      h3(Field3, { label: uiMessage("world.entry.secondaryKeys") }, h3("input", { className: "dwb-input", value: secondary.join(", "), onChange: (event) => {
-        const keys = parseKeywords(event.target.value);
-        patch({ secondaryKeys: keys, selective: keys.length > 0 });
-      } })),
+      h3(Field3, { label: uiMessage("world.entry.primaryKeys") }, h3(KeywordInput, { keywords: entry.keys, onChange: (keys) => patch({ keys }) })),
+      h3(Field3, { label: uiMessage("world.entry.secondaryKeys") }, h3(KeywordInput, { keywords: secondary, onChange: (keys) => patch({ secondaryKeys: keys, selective: keys.length > 0 }) })),
       secondary.length > 0 ? h3(Field3, { label: uiMessage("world.entry.secondaryLogicShort") }, h3(
         "select",
         { className: "dwb-select", value: entry.selectiveLogic ?? "and_any", onChange: (event) => patch({ selectiveLogic: event.target.value, selective: true }) },
@@ -2324,7 +2892,6 @@ function EntryEditor({ entry, index, update, remove }) {
       h3(
         "div",
         { className: "dwb-checks" },
-        h3("label", { className: "dwb-check" }, h3("input", { type: "checkbox", checked: entry.enabled === true, onChange: (event) => patch({ enabled: event.target.checked }) }), uiMessage("common.enable")),
         h3("label", { className: "dwb-check" }, h3("input", { type: "checkbox", checked: entry.constant === true, onChange: (event) => patch({ constant: event.target.checked }) }), uiMessage("world.entry.constant")),
         h3("label", { className: "dwb-check" }, h3("input", { type: "checkbox", checked: entry.caseSensitive === true, onChange: (event) => patch({ caseSensitive: event.target.checked }) }), uiMessage("world.entry.caseSensitive")),
         h3("label", { className: "dwb-check" }, h3("input", { type: "checkbox", checked: entry.matchWholeWords === true, onChange: (event) => patch({ matchWholeWords: event.target.checked }) }), uiMessage("world.entry.wholeWord"))
@@ -2341,6 +2908,10 @@ function WorldBookPanel({ sessionId, close }) {
   const [appliedSelection, setAppliedSelection] = (0, import_react3.useState)([]);
   const [userSelection, setUserSelection] = (0, import_react3.useState)([]);
   const [appliedUserSelection, setAppliedUserSelection] = (0, import_react3.useState)([]);
+  const [presetSelection, setPresetSelection] = (0, import_react3.useState)([]);
+  const [appliedPresetSelection, setAppliedPresetSelection] = (0, import_react3.useState)([]);
+  const [characterSelection, setCharacterSelection] = (0, import_react3.useState)([]);
+  const [appliedCharacterSelection, setAppliedCharacterSelection] = (0, import_react3.useState)([]);
   const [active, setActive] = (0, import_react3.useState)(null);
   const [embeddedCharacterId, setEmbeddedCharacterId] = (0, import_react3.useState)(null);
   const [embeddedDraft, setEmbeddedDraft] = (0, import_react3.useState)(null);
@@ -2348,6 +2919,8 @@ function WorldBookPanel({ sessionId, close }) {
   const [dirty, setDirty] = (0, import_react3.useState)(false);
   const [busy, setBusy] = (0, import_react3.useState)(false);
   const [status, setStatus] = (0, import_react3.useState)({ error: false, key: "common.loading" });
+  const [entryDrag, setEntryDrag] = (0, import_react3.useState)(null);
+  const [entryDropIndex, setEntryDropIndex] = (0, import_react3.useState)(null);
   const fileRef = (0, import_react3.useRef)(null);
   const standaloneEditorRef = (0, import_react3.useRef)(null);
   const generation = (0, import_react3.useRef)(0);
@@ -2374,12 +2947,14 @@ function WorldBookPanel({ sessionId, close }) {
     const list = await api3("/world-books");
     const selected = sessionId ? await api3(`/world-book-selection?sessionId=${encodeURIComponent(sessionId)}`) : { selection: { worldBookIds: [] } };
     const activeView2 = await api3(`/active${sessionId ? `?sessionId=${encodeURIComponent(sessionId)}` : ""}`);
+    const presetId = activeView2.resources?.preset?.id ?? null;
     const characterId = activeView2.resources?.characterCard?.id ?? null;
-    let embeddedBook = null;
-    if (characterId !== null) {
-      const character = await api3(`/characters/${encodeURIComponent(characterId)}`);
-      embeddedBook = character.character?.data?.characterBook ?? null;
-    }
+    const [presetBinding, characterBinding, characterDetail] = await Promise.all([
+      presetId === null ? { binding: { worldBookIds: [] } } : api3(`/presets/${encodeURIComponent(presetId)}/world-books`),
+      characterId === null ? { binding: { worldBookIds: [] } } : api3(`/characters/${encodeURIComponent(characterId)}/world-books`),
+      characterId === null ? null : api3(`/characters/${encodeURIComponent(characterId)}`)
+    ]);
+    const embeddedBook = characterDetail?.character?.data?.characterBook ?? null;
     if (currentGeneration !== generation.current) return;
     const ids = selected.selection?.worldBookIds ?? [];
     const resolvedUserIds = activeView2.resources?.user === null || activeView2.resources?.user === void 0 ? [] : activeView2.worldBookSelection?.userBoundIds ?? [];
@@ -2389,6 +2964,12 @@ function WorldBookPanel({ sessionId, close }) {
     setAppliedSelection(ids);
     setUserSelection(userIds);
     setAppliedUserSelection(userIds);
+    const presetIds = presetBinding.binding?.worldBookIds ?? [];
+    const characterIds = characterBinding.binding?.worldBookIds ?? [];
+    setPresetSelection(presetIds);
+    setAppliedPresetSelection(presetIds);
+    setCharacterSelection(characterIds);
+    setAppliedCharacterSelection(characterIds);
     setActive(activeView2);
     setEmbeddedCharacterId(characterId);
     setEmbeddedDraft(embeddedBook === null ? null : structuredClone(embeddedBook));
@@ -2409,10 +2990,10 @@ function WorldBookPanel({ sessionId, close }) {
   (0, import_react3.useEffect)(() => {
     run(() => refresh(), "world.status.loaded");
     const onRefresh = () => run(() => refresh(), "world.status.refreshed");
-    window.addEventListener("dsh-tavern:refresh", onRefresh);
+    window.addEventListener(CLIENT_REFRESH_EVENT, onRefresh);
     return () => {
       generation.current += 1;
-      window.removeEventListener("dsh-tavern:refresh", onRefresh);
+      window.removeEventListener(CLIENT_REFRESH_EVENT, onRefresh);
     };
   }, [refresh, run]);
   const load = (id) => run(async () => {
@@ -2425,18 +3006,25 @@ function WorldBookPanel({ sessionId, close }) {
     await load(id);
     requestAnimationFrame(() => standaloneEditorRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }));
   };
-  const create = () => run(async () => {
+  const editResourceBook = editUserBook;
+  const create2 = () => run(async () => {
     const data = await api3("/world-books", { method: "POST", body: JSON.stringify({ name: translate("world.defaultName") }) });
     await refresh(data.worldBook.id);
   }, "world.status.created");
   const importFile = (file) => run(async () => {
-    const response = await fetch(`${API_ROOT3}/world-books/import?filename=${encodeURIComponent(file.name)}`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: file
-    });
-    const data = await response.json().catch(() => null);
-    if (!response.ok || data?.ok === false) throw new Error(errorMessage2(data, response.status));
+    let data;
+    try {
+      const response = await fetch(`${API_V1}/world-books/import?filename=${encodeURIComponent(file.name)}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: file
+      });
+      data = await response.json().catch(() => null);
+      if (!response.ok || data?.ok === false) throw new Error(errorMessage2(data, response.status));
+    } catch (error) {
+      announceImportFailure(error);
+      throw error;
+    }
     if (fileRef.current !== null) fileRef.current.value = "";
     await refresh(data.worldBook.id);
   }, "world.status.imported");
@@ -2445,14 +3033,14 @@ function WorldBookPanel({ sessionId, close }) {
     setDocument(data.worldBook);
     setDraft(structuredClone(data.worldBook.book));
     setDirty(false);
-    window.dispatchEvent(new Event("dsh-tavern:refresh"));
+    window.dispatchEvent(new Event(CLIENT_REFRESH_EVENT));
   }, "world.status.saved");
   const saveSelection = () => run(async () => {
     if (!sessionId) throw uiError("world.error.needSession");
     const data = await api3("/world-book-selection", { method: "POST", body: JSON.stringify({ sessionId, worldBookIds: selection }) });
     setSelection(data.selection.worldBookIds);
     setAppliedSelection(data.selection.worldBookIds);
-    window.dispatchEvent(new Event("dsh-tavern:refresh"));
+    window.dispatchEvent(new Event(CLIENT_REFRESH_EVENT));
   }, "world.status.bindingSaved");
   const saveUserSelection = () => run(async () => {
     const userId = active?.resources?.user?.id;
@@ -2464,15 +3052,39 @@ function WorldBookPanel({ sessionId, close }) {
     const ids = data.binding.worldBookIds;
     setUserSelection(ids);
     setAppliedUserSelection(ids);
-    window.dispatchEvent(new Event("dsh-tavern:refresh"));
+    window.dispatchEvent(new Event(CLIENT_REFRESH_EVENT));
   }, "world.user.saveSuccess");
+  const savePresetSelection = () => run(async () => {
+    const presetId = active?.resources?.preset?.id;
+    if (!presetId) throw uiError("world.resource.error.noPreset");
+    const data = await api3(`/presets/${encodeURIComponent(presetId)}/world-books`, {
+      method: "PUT",
+      body: JSON.stringify({ worldBookIds: presetSelection })
+    });
+    const ids = data.binding.worldBookIds;
+    setPresetSelection(ids);
+    setAppliedPresetSelection(ids);
+    window.dispatchEvent(new Event(CLIENT_REFRESH_EVENT));
+  }, "world.resource.saveSuccess");
+  const saveCharacterSelection = () => run(async () => {
+    const characterId = active?.resources?.characterCard?.id;
+    if (!characterId) throw uiError("world.resource.error.noCharacter");
+    const data = await api3(`/characters/${encodeURIComponent(characterId)}/world-books`, {
+      method: "PUT",
+      body: JSON.stringify({ worldBookIds: characterSelection })
+    });
+    const ids = data.binding.worldBookIds;
+    setCharacterSelection(ids);
+    setAppliedCharacterSelection(ids);
+    window.dispatchEvent(new Event(CLIENT_REFRESH_EVENT));
+  }, "world.resource.saveSuccess");
   const remove = () => run(async () => {
     if (document2 === null || !window.confirm(unwrapText(uiMessage("world.confirmDelete", { name: document2.name })))) return;
     await api3(`/world-books/${encodeURIComponent(document2.id)}`, { method: "DELETE" });
     setDocument(null);
     setDraft(null);
     await refresh(null);
-    window.dispatchEvent(new Event("dsh-tavern:refresh"));
+    window.dispatchEvent(new Event(CLIENT_REFRESH_EVENT));
   }, "world.status.deleted");
   const saveEmbedded = () => run(async () => {
     const data = await api3(`/characters/${encodeURIComponent(embeddedCharacterId)}/world-book`, {
@@ -2481,22 +3093,74 @@ function WorldBookPanel({ sessionId, close }) {
     });
     setEmbeddedDraft(structuredClone(data.character.data.characterBook));
     setEmbeddedDirty(false);
-    window.dispatchEvent(new Event("dsh-tavern:refresh"));
+    window.dispatchEvent(new Event(CLIENT_REFRESH_EVENT));
   }, "world.status.embeddedSaved");
+  const createEmbedded = () => {
+    const character = active?.resources?.characterCard;
+    if (!character) return;
+    setEmbeddedDraft({
+      name: translate("world.embeddedDefaultName", { name: character.name || character.id }),
+      entries: []
+    });
+    setEmbeddedDirty(true);
+  };
   const updateEntry = (index, patch) => {
-    setDraft((current2) => {
-      const next = structuredClone(current2);
+    setDraft((current3) => {
+      const next = structuredClone(current3);
       next.entries[index] = { ...next.entries[index], ...patch };
       return next;
     });
     setDirty(true);
   };
-  const entries = draft?.entries ?? [];
+  const moveEntries = (kind, from, boundary) => {
+    if (kind === "standalone") {
+      setDraft((current3) => {
+        const entries3 = reorderWorldBookEntriesAtBoundary(current3.entries, from, boundary);
+        return entries3 === current3.entries ? current3 : { ...current3, entries: entries3 };
+      });
+      setDirty(true);
+      return;
+    }
+    setEmbeddedDraft((current3) => {
+      const entries3 = reorderWorldBookEntriesAtBoundary(current3.entries, from, boundary, "insertion_order");
+      return entries3 === current3.entries ? current3 : { ...structuredClone(current3), entries: entries3 };
+    });
+    setEmbeddedDirty(true);
+  };
+  const entryDragHandlers = (kind, index) => ({
+    busy,
+    onPointerDown: (event) => {
+      if (busy) return;
+      event.preventDefault();
+      event.stopPropagation();
+      event.currentTarget.setPointerCapture(event.pointerId);
+      setEntryDrag({ kind, index });
+      setEntryDropIndex(index + 1);
+    },
+    onPointerMove: (event) => {
+      if (!event.currentTarget.hasPointerCapture(event.pointerId)) return;
+      const boundary = entryInsertionBoundary(event, kind);
+      if (boundary !== null) setEntryDropIndex(boundary);
+    },
+    onPointerUp: (event) => {
+      event.preventDefault();
+      const boundary = entryInsertionBoundary(event, kind) ?? entryDropIndex ?? index + 1;
+      if (event.currentTarget.hasPointerCapture(event.pointerId)) event.currentTarget.releasePointerCapture(event.pointerId);
+      moveEntries(kind, index, boundary);
+      setEntryDrag(null);
+      setEntryDropIndex(null);
+    },
+    onPointerCancel: () => {
+      setEntryDrag(null);
+      setEntryDropIndex(null);
+    }
+  });
+  const entries2 = draft?.entries ?? [];
   const embeddedEntries = embeddedDraft?.entries ?? [];
   const embedded = active?.resources?.worldBooks?.filter((item) => item.kind === "embedded-character-book") ?? [];
   const diagnostics = active?.diagnostics?.filter((item) => String(item.code ?? "").includes("WORLD_BOOK")) ?? [];
-  const selectionDirty = selection.length !== appliedSelection.length || selection.some((id, index) => id !== appliedSelection[index]);
-  const userSelectionDirty = userSelection.length !== appliedUserSelection.length || userSelection.some((id, index) => id !== appliedUserSelection[index]);
+  const selectionDirty = !sameOrderedIds(selection, appliedSelection);
+  const userSelectionDirty = !sameOrderedIds(userSelection, appliedUserSelection);
   const userSource = deriveUserWorldBookSource(active, catalog2);
   const catalogBooks = Array.isArray(catalog2?.worldBooks) ? catalog2.worldBooks : [];
   const catalogById = new Map(catalogBooks.map((book) => [book.id, book]));
@@ -2516,17 +3180,29 @@ function WorldBookPanel({ sessionId, close }) {
         "div",
         { className: "dwb-toolbar" },
         h3("button", { className: "dwb-button", type: "button", disabled: busy, onClick: () => fileRef.current?.click() }, uiMessage("world.importJson")),
-        h3("button", { className: "dwb-button", type: "button", disabled: busy, onClick: create }, uiMessage("world.create")),
-        h3("button", { className: "dwb-button", type: "button", disabled: busy, onClick: () => {
-          if (!dirty || window.confirm(unwrapText(uiMessage("world.confirmDiscardChanges")))) run(() => refresh(), "world.status.refreshed");
-        } }, uiMessage("common.refresh")),
+        h3("a", { className: "dwb-button", "data-disabled": document2 === null || busy ? true : void 0, href: document2 === null ? void 0 : `${API_V1}/world-books/${encodeURIComponent(document2.id)}/json`, download: "" }, uiMessage("common.exportJson")),
+        h3("button", { className: "dwb-button", type: "button", disabled: busy, onClick: create2 }, uiMessage("world.create")),
         h3("input", { ref: fileRef, hidden: true, type: "file", accept: ".json,application/json", onChange: (event) => {
           const file = event.target.files?.[0];
+          event.target.value = "";
           if (file !== void 0) importFile(file);
         } })
       ),
-      h3("p", { className: "dwb-note" }, uiMessage("world.currentSession", { session: sessionId || translate("common.none") })),
-      h3("div", { className: "dwb-status", "data-error": status.error || void 0, role: "status", "aria-live": "polite" }, statusText(status)),
+      h3(Field3, { label: uiMessage("world.browse") }, h3(
+        "div",
+        { className: "dwb-browse" },
+        h3(
+          "select",
+          { className: "dwb-select", value: document2?.id ?? "", disabled: busy || !catalog2?.worldBooks.length, onChange: (event) => {
+            if (!dirty || window.confirm(unwrapText(uiMessage("world.confirmDiscardChanges")))) load(event.target.value);
+          } },
+          ...catalog2?.worldBooks.length ? [] : [h3("option", { key: "empty", value: "" }, uiMessage("world.catalogEmpty"))],
+          ...(catalog2?.worldBooks ?? []).map((item) => h3("option", { key: item.id, value: item.id }, rawText(item.name)))
+        ),
+        h3("button", { className: "dwb-button", type: "button", disabled: busy, onClick: () => {
+          if (!dirty || window.confirm(unwrapText(uiMessage("world.confirmDiscardChanges")))) run(() => refresh(), "world.status.refreshed");
+        } }, uiMessage("common.refresh"))
+      )),
       h3(
         "section",
         { className: "dwb-source-section", "data-source": "standalone" },
@@ -2538,7 +3214,7 @@ function WorldBookPanel({ sessionId, close }) {
           catalog2?.worldBooks.length ? h3("div", { className: "dwb-bindings" }, ...catalog2.worldBooks.map((item) => h3(
             "label",
             { className: "dwb-check", key: item.id },
-            h3("input", { type: "checkbox", checked: selection.includes(item.id), onChange: (event) => setSelection((current2) => event.target.checked ? [...current2, item.id] : current2.filter((id) => id !== item.id)) }),
+            h3("input", { type: "checkbox", checked: selection.includes(item.id), onChange: (event) => setSelection((current3) => event.target.checked ? [...current3, item.id] : current3.filter((id) => id !== item.id)) }),
             uiMessage("world.catalogItem", { name: item.name, count: item.entryCount })
           ))) : h3("p", { className: "dwb-note" }, uiMessage("world.libraryEmpty")),
           selectionDirty ? h3("div", { className: "dwb-status", "data-warning": true }, uiMessage("world.bindingUnsaved")) : h3("p", { className: "dwb-note" }, uiMessage("world.bindingApplied")),
@@ -2549,39 +3225,49 @@ function WorldBookPanel({ sessionId, close }) {
             h3("button", { className: "dwb-button", type: "button", disabled: busy || !sessionId || selection.length === 0, onClick: () => setSelection([]) }, uiMessage("world.clearPending"))
           )
         ),
-        h3(Field3, { label: uiMessage("world.browse") }, h3(
-          "select",
-          { className: "dwb-select", value: document2?.id ?? "", disabled: busy || !catalog2?.worldBooks.length, onChange: (event) => {
-            if (!dirty || window.confirm(unwrapText(uiMessage("world.confirmDiscardChanges")))) load(event.target.value);
-          } },
-          ...catalog2?.worldBooks.length ? [] : [h3("option", { key: "empty", value: "" }, uiMessage("world.catalogEmpty"))],
-          ...(catalog2?.worldBooks ?? []).map((item) => h3("option", { key: item.id, value: item.id }, rawText(item.name)))
-        )),
+        h3("p", { className: "dwb-note" }, uiMessage("world.currentSession", { session: sessionId || translate("common.none") })),
+        h3("div", { className: "dwb-status", "data-error": status.error || void 0, role: "status", "aria-live": "polite" }, statusText(status)),
         draft === null ? null : h3(
           "div",
           { className: "dwb-resource", ref: standaloneEditorRef },
           h3(Field3, { label: uiMessage("world.bookName") }, h3("input", { className: "dwb-input", value: draft.name ?? "", onChange: (event) => {
-            setDraft((current2) => ({ ...current2, name: event.target.value }));
+            setDraft((current3) => ({ ...current3, name: event.target.value }));
             setDirty(true);
           } })),
-          h3("p", { className: "dwb-meta" }, uiMessage("world.documentMeta", { count: entries.length })),
+          h3("p", { className: "dwb-meta" }, uiMessage("world.documentMeta", { count: entries2.length })),
           h3(
             "div",
             { className: "dwb-actions" },
             h3("button", { className: "dwb-button", type: "button", onClick: () => {
-              setDraft((current2) => ({ ...current2, entries: [...current2.entries, createWorldBookEntry(current2.entries)] }));
+              setDraft((current3) => ({ ...current3, entries: [...current3.entries, createWorldBookEntry(current3.entries)] }));
               setDirty(true);
-            } }, uiMessage("world.addEntry")),
-            h3("button", { className: "dwb-button dwb-primary", type: "button", disabled: busy || !dirty, onClick: save }, dirty ? uiMessage("common.saveChanges") : uiMessage("common.saved")),
-            h3("a", { className: "dwb-button", href: `${API_ROOT3}/world-books/${encodeURIComponent(document2.id)}/json`, download: "" }, uiMessage("common.exportJson")),
-            h3("button", { className: "dwb-button dwb-danger", type: "button", disabled: busy, onClick: remove }, uiMessage("world.deleteStandalone"))
+            } }, uiMessage("world.addEntry"))
           ),
-          ...entries.map((entry, index) => h3(EntryEditor, { key: `${String(entry.uid)}-${index}`, entry, index, update: updateEntry, remove: (itemIndex) => {
-            if (window.confirm(unwrapText(uiMessage("world.confirmDeleteEntry")))) {
-              setDraft((current2) => ({ ...current2, entries: current2.entries.filter((_item, candidate) => candidate !== itemIndex) }));
-              setDirty(true);
-            }
-          } }))
+          ...entries2.flatMap((entry, index) => [
+            entryDrag?.kind === "standalone" && entryDropIndex === index ? h3(EntryDropPlaceholder, { key: `standalone-drop-${index}` }) : null,
+            h3(EntryEditor, {
+              key: `${String(document2.id)}-${String(entry.uid)}-${index}`,
+              entry,
+              index,
+              update: updateEntry,
+              remove: (itemIndex) => {
+                if (window.confirm(unwrapText(uiMessage("world.confirmDeleteEntry")))) {
+                  setDraft((current3) => ({ ...current3, entries: current3.entries.filter((_item, candidate) => candidate !== itemIndex) }));
+                  setDirty(true);
+                }
+              },
+              dragKind: "standalone",
+              dragging: entryDrag?.kind === "standalone" && entryDrag.index === index,
+              dragHandlers: entryDragHandlers("standalone", index)
+            })
+          ]),
+          entryDrag?.kind === "standalone" && entryDropIndex === entries2.length ? h3(EntryDropPlaceholder, { key: "standalone-drop-end" }) : null,
+          h3(
+            "div",
+            { className: "dwb-footer" },
+            h3("button", { className: "dwb-button dwb-primary", type: "button", disabled: busy || !dirty, onClick: save }, dirty ? uiMessage("common.saveChanges") : uiMessage("common.saved")),
+            h3("button", { className: "dwb-button dwb-danger", type: "button", disabled: busy, onClick: remove }, uiMessage("world.deleteStandalone"))
+          )
         )
       ),
       h3(
@@ -2605,7 +3291,7 @@ function WorldBookPanel({ sessionId, close }) {
                 h3("input", {
                   type: "checkbox",
                   checked,
-                  onChange: (event) => setUserSelection((current2) => event.target.checked ? [...current2, book.id] : current2.filter((id) => id !== book.id))
+                  onChange: (event) => setUserSelection((current3) => event.target.checked ? [...current3, book.id] : current3.filter((id) => id !== book.id))
                 }),
                 h3("span", { className: "dwb-source-book-name" }, rawText(book.name)),
                 badge === null ? null : h3("span", { className: "dwb-source-badge" }, badge)
@@ -2626,8 +3312,37 @@ function WorldBookPanel({ sessionId, close }) {
       ),
       h3(
         "section",
+        { className: "dwb-source-section", "data-source": "preset" },
+        h3("h2", { className: "dwb-section-title" }, uiMessage("world.preset.title")),
+        h3(ResourceWorldBookBindingEditor, {
+          resource: active?.resources?.preset ?? null,
+          catalog: catalog2,
+          selection: presetSelection,
+          appliedSelection: appliedPresetSelection,
+          setSelection: setPresetSelection,
+          save: savePresetSelection,
+          edit: editResourceBook,
+          busy,
+          currentKey: "world.preset.current",
+          noneKey: "world.preset.none"
+        })
+      ),
+      h3(
+        "section",
         { className: "dwb-source-section", "data-source": "character" },
         h3("h2", { className: "dwb-section-title" }, uiMessage("world.characterBound")),
+        h3(ResourceWorldBookBindingEditor, {
+          resource: active?.resources?.characterCard ?? null,
+          catalog: catalog2,
+          selection: characterSelection,
+          appliedSelection: appliedCharacterSelection,
+          setSelection: setCharacterSelection,
+          save: saveCharacterSelection,
+          edit: editResourceBook,
+          busy,
+          currentKey: "world.character.current",
+          noneKey: "world.character.none"
+        }),
         embeddedDraft !== null ? h3(
           "div",
           { className: "dwb-resource" },
@@ -2639,25 +3354,48 @@ function WorldBookPanel({ sessionId, close }) {
             h3("button", { className: "dwb-button", type: "button", onClick: () => {
               const ids = embeddedEntries.map((entry) => Number(entry.id)).filter(Number.isSafeInteger);
               const id = ids.length === 0 ? 0 : Math.max(...ids) + 1;
-              setEmbeddedDraft((current2) => ({ ...structuredClone(current2), entries: [...current2.entries, { id, keys: [], secondary_keys: [], comment: translate("world.entry.untitled", { id }), content: "", enabled: true, constant: false, selective: false, insertion_order: 100, position: "after_char", extensions: { position: 1, probability: 100, useProbability: true } }] }));
+              setEmbeddedDraft((current3) => ({ ...structuredClone(current3), entries: [...current3.entries, { id, keys: [], secondary_keys: [], comment: translate("world.entry.untitled", { id }), content: "", enabled: true, constant: false, selective: false, insertion_order: 100, position: "after_char", extensions: { position: 1, probability: 100, useProbability: true } }] }));
               setEmbeddedDirty(true);
             } }, uiMessage("world.addEmbeddedEntry")),
             h3("button", { className: "dwb-button dwb-primary", type: "button", disabled: busy || !embeddedDirty, onClick: saveEmbedded }, embeddedDirty ? uiMessage("world.saveEmbedded") : uiMessage("world.embeddedSaved"))
           ),
-          ...embeddedEntries.map((entry, index) => h3(EmbeddedEntryEditor, { key: `${String(entry.id)}-${index}`, entry, index, update: (itemIndex, value) => {
-            setEmbeddedDraft((current2) => {
-              const next = structuredClone(current2);
-              next.entries[itemIndex] = { ...next.entries[itemIndex], ...value };
-              return next;
-            });
-            setEmbeddedDirty(true);
-          }, remove: (itemIndex) => {
-            if (window.confirm(unwrapText(uiMessage("world.confirmDeleteEmbeddedEntry")))) {
-              setEmbeddedDraft((current2) => ({ ...structuredClone(current2), entries: current2.entries.filter((_item, candidate) => candidate !== itemIndex) }));
-              setEmbeddedDirty(true);
-            }
-          } }))
-        ) : h3("p", { className: "dwb-note" }, uiMessage("world.embeddedEmpty"))
+          ...embeddedEntries.flatMap((entry, index) => [
+            entryDrag?.kind === "embedded" && entryDropIndex === index ? h3(EntryDropPlaceholder, { key: `embedded-drop-${index}` }) : null,
+            h3(EmbeddedEntryEditor, {
+              key: `${String(embeddedCharacterId)}-${String(entry.id)}-${index}`,
+              entry,
+              index,
+              update: (itemIndex, value) => {
+                setEmbeddedDraft((current3) => {
+                  const next = structuredClone(current3);
+                  next.entries[itemIndex] = { ...next.entries[itemIndex], ...value };
+                  return next;
+                });
+                setEmbeddedDirty(true);
+              },
+              remove: (itemIndex) => {
+                if (window.confirm(unwrapText(uiMessage("world.confirmDeleteEmbeddedEntry")))) {
+                  setEmbeddedDraft((current3) => ({ ...structuredClone(current3), entries: current3.entries.filter((_item, candidate) => candidate !== itemIndex) }));
+                  setEmbeddedDirty(true);
+                }
+              },
+              dragKind: "embedded",
+              dragging: entryDrag?.kind === "embedded" && entryDrag.index === index,
+              dragHandlers: entryDragHandlers("embedded", index)
+            })
+          ]),
+          entryDrag?.kind === "embedded" && entryDropIndex === embeddedEntries.length ? h3(EntryDropPlaceholder, { key: "embedded-drop-end" }) : null
+        ) : embeddedCharacterId === null ? h3("p", { className: "dwb-note" }, uiMessage("world.embeddedNoCharacter")) : h3(
+          "div",
+          { className: "dwb-resource" },
+          h3("div", { className: "dwb-resource-title" }, uiMessage("world.embeddedTitle")),
+          h3("p", { className: "dwb-note" }, uiMessage("world.embeddedEmpty")),
+          h3(
+            "div",
+            { className: "dwb-actions" },
+            h3("button", { className: "dwb-button dwb-primary", type: "button", disabled: busy, onClick: createEmbedded }, uiMessage("world.createEmbedded"))
+          )
+        )
       ),
       diagnostics.length > 0 ? h3("details", { className: "dwb-resource" }, h3("summary", { className: "dwb-resource-title" }, uiMessage("world.diagnostics", { count: diagnostics.length })), h3("ul", { className: "dwb-list" }, ...diagnostics.map((item, index) => h3("li", { key: `${item.code}-${index}` }, rawText(item.message))))) : null,
       h3("p", { className: "dwb-note" }, uiMessage("world.matcherNote"))
@@ -2665,9 +3403,9 @@ function WorldBookPanel({ sessionId, close }) {
   );
 }
 function installWorldBookStyles() {
-  if (document.querySelector('style[data-plugin-css="dsh-tavern-world-book"]') !== null) return;
+  if (document.querySelector(`style[data-plugin-css="${PLUGIN_ID}-world-book"]`) !== null) return;
   const style = document.createElement("style");
-  style.dataset.pluginCss = "dsh-tavern-world-book";
+  style.dataset.pluginCss = `${PLUGIN_ID}-world-book`;
   style.textContent = css3;
   document.head.append(style);
 }
@@ -2676,7 +3414,7 @@ function installWorldBookStyles() {
 var import_react4 = require("react");
 
 // packages/user/src/client-state.js
-function sameOrderedIds(left, right) {
+function sameOrderedIds2(left, right) {
   return Array.isArray(left) && Array.isArray(right) && left.length === right.length && left.every((id, index) => id === right[index]);
 }
 function userResourceDirty(draft, saved) {
@@ -2684,21 +3422,20 @@ function userResourceDirty(draft, saved) {
   return draft.id !== saved.id || draft.name !== saved.name || draft.description !== saved.description;
 }
 function userPanelDirty(draft, saved, worldBookIds, appliedWorldBookIds) {
-  return userResourceDirty(draft, saved) || !sameOrderedIds(worldBookIds, appliedWorldBookIds);
+  return userResourceDirty(draft, saved) || !sameOrderedIds2(worldBookIds, appliedWorldBookIds);
 }
 
 // packages/user/src/client.js
 var h4 = createLocalizedElement(import_react4.createElement);
-var API_ROOT4 = "/dsh-tavern/api";
 var css4 = `
-.dtu-panel{position:absolute;top:0;right:0;bottom:0;width:min(440px,calc(100vw - 56px));pointer-events:auto;border-left:1px solid var(--dsw-alias-border-l2);box-shadow:var(--ds-shadow-3,-8px 0 28px rgba(0,0,0,.18));background:var(--dsw-alias-bg-base);color:var(--dsw-alias-label-primary);display:flex;flex-direction:column;font-family:Inter,var(--dsw-font-family),sans-serif}.dtu-header{height:52px;box-sizing:border-box;display:flex;align-items:center;gap:8px;padding:0 14px;border-bottom:1px solid var(--dsw-alias-border-l2);flex:none}.dtu-title{font-size:16px;font-weight:650;flex:1}.dtu-close{border:0;background:transparent;color:var(--dsw-alias-label-tertiary);cursor:pointer;border-radius:7px;padding:6px 8px;font-size:14px}.dtu-body{min-height:0;overflow:auto;padding:12px;display:flex;flex-direction:column;gap:12px}.dtu-toolbar,.dtu-actions{display:grid;grid-template-columns:1fr 1fr;gap:8px}.dtu-button{min-height:36px;border:1px solid var(--dsw-alias-border-l2);border-radius:8px;background:var(--dsw-alias-button-secondary-fill,var(--dsw-alias-bg-base));color:var(--dsw-alias-label-primary);cursor:pointer;padding:7px 10px;font-size:13px}.dtu-button:hover:not(:disabled){background:var(--dsw-alias-interactive-bg-hover)}.dtu-button:disabled{opacity:.5;cursor:default}.dtu-primary{background:var(--dsw-alias-state-business-primary);color:white;border-color:transparent}.dtu-danger{color:var(--dsw-alias-state-error)}.dtu-field{display:flex;flex-direction:column;gap:5px}.dtu-label{font-size:12px;color:var(--dsw-alias-label-tertiary);font-weight:600}.dtu-input,.dtu-textarea,.dtu-select{box-sizing:border-box;width:100%;border:1px solid var(--dsw-alias-border-l2);border-radius:7px;background:var(--dsw-alias-bg-base);color:var(--dsw-alias-label-primary);font:inherit;font-size:13px;padding:8px 9px}.dtu-input,.dtu-select{height:36px}.dtu-textarea{min-height:220px;line-height:1.5;resize:vertical}.dtu-note{font-size:13px;line-height:1.5;color:var(--dsw-alias-label-tertiary);margin:0;overflow-wrap:anywhere}.dtu-status{font-size:13px;line-height:1.45;border-radius:7px;padding:7px 9px;background:var(--dsw-specific-tip);overflow-wrap:anywhere}.dtu-status[data-error=true]{color:var(--dsw-alias-state-error)}.dtu-status[data-warning=true]{color:var(--dsw-alias-state-warning,var(--dsw-alias-label-primary))}.dtu-editor{border-top:1px solid var(--dsw-alias-border-l1);padding-top:12px;display:flex;flex-direction:column;gap:10px}.dtu-bindings{display:flex;flex-direction:column;gap:8px;border:1px solid var(--dsw-alias-border-l1);border-radius:8px;padding:9px}.dtu-check{display:flex;align-items:flex-start;gap:8px;font-size:13px;line-height:1.4}.dtu-section-title{font-size:14px;margin:4px 0 0}.dtu-footer{position:sticky;bottom:-12px;margin:0 -12px -12px;padding:10px 12px;background:var(--dsw-alias-bg-base);border-top:1px solid var(--dsw-alias-border-l2)}
+.dtu-panel{position:absolute;top:0;right:0;bottom:0;width:min(440px,calc(100vw - 56px));pointer-events:auto;border-left:1px solid var(--dsw-alias-border-l2);box-shadow:var(--ds-shadow-3,-8px 0 28px rgba(0,0,0,.18));background:var(--dsw-alias-bg-base);color:var(--dsw-alias-label-primary);display:flex;flex-direction:column;font-family:Inter,var(--dsw-font-family),sans-serif}.dtu-header{height:52px;box-sizing:border-box;display:flex;align-items:center;gap:8px;padding:0 14px;border-bottom:1px solid var(--dsw-alias-border-l2);flex:none}.dtu-title{font-size:16px;font-weight:650;flex:1}.dtu-close{border:0;background:transparent;color:var(--dsw-alias-label-tertiary);cursor:pointer;border-radius:7px;padding:6px 8px;font-size:14px}.dtu-body{min-height:0;overflow:auto;padding:12px;display:flex;flex-direction:column;gap:12px}.dtu-toolbar{display:grid;grid-template-columns:1fr;gap:8px}.dtu-actions,.dtu-footer{display:grid;grid-template-columns:1fr 1fr;gap:8px}.dtu-browse{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:8px}.dtu-button{min-height:36px;border:1px solid var(--dsw-alias-border-l2);border-radius:8px;background:var(--dsw-alias-button-secondary-fill,var(--dsw-alias-bg-base));color:var(--dsw-alias-label-primary);cursor:pointer;padding:7px 10px;font-size:13px}.dtu-button:hover:not(:disabled){background:var(--dsw-alias-interactive-bg-hover)}.dtu-button:disabled{opacity:.5;cursor:default}.dtu-primary{background:var(--dsw-alias-state-business-primary);color:white;border-color:transparent}.dtu-danger{color:var(--dsw-alias-state-error)}.dtu-field{display:flex;flex-direction:column;gap:5px}.dtu-label{font-size:12px;color:var(--dsw-alias-label-tertiary);font-weight:600}.dtu-input,.dtu-textarea,.dtu-select{box-sizing:border-box;width:100%;border:1px solid var(--dsw-alias-border-l2);border-radius:7px;background:var(--dsw-alias-bg-base);color:var(--dsw-alias-label-primary);font:inherit;font-size:13px;padding:8px 9px}.dtu-input,.dtu-select{height:36px}.dtu-textarea{min-height:220px;line-height:1.5;resize:vertical}.dtu-note{font-size:13px;line-height:1.5;color:var(--dsw-alias-label-tertiary);margin:0;overflow-wrap:anywhere}.dtu-status{font-size:13px;line-height:1.45;border-radius:7px;padding:7px 9px;background:var(--dsw-specific-tip);overflow-wrap:anywhere}.dtu-status[data-error=true]{color:var(--dsw-alias-state-error)}.dtu-status[data-warning=true]{color:var(--dsw-alias-state-warning,var(--dsw-alias-label-primary))}.dtu-editor{border-top:1px solid var(--dsw-alias-border-l1);padding-top:12px;display:flex;flex-direction:column;gap:10px}.dtu-bindings{display:flex;flex-direction:column;gap:8px;border:1px solid var(--dsw-alias-border-l1);border-radius:8px;padding:9px}.dtu-check{display:flex;align-items:flex-start;gap:8px;font-size:13px;line-height:1.4}.dtu-section-title{font-size:14px;margin:4px 0 0}.dtu-footer{position:sticky;bottom:-12px;margin:0 -12px -12px;padding:10px 12px;background:var(--dsw-alias-bg-base);border-top:1px solid var(--dsw-alias-border-l2)}
 `;
 function errorMessage3(data, status) {
   return data?.error?.message ?? data?.error ?? `HTTP ${status}`;
 }
 async function api4(path, options = {}) {
   const method = String(options.method ?? "GET").toUpperCase();
-  const response = await fetch(`${API_ROOT4}${path}`, {
+  const response = await fetch(`${API_V1}${path}`, {
     ...options,
     headers: {
       ...method === "GET" || method === "HEAD" ? {} : { "Content-Type": "application/json" },
@@ -2713,7 +3450,7 @@ function Field4({ label, children }) {
   return h4("label", { className: "dtu-field" }, h4("span", { className: "dtu-label" }, label), children);
 }
 function notifyRefresh() {
-  window.dispatchEvent(new Event("dsh-tavern:refresh"));
+  window.dispatchEvent(new Event(CLIENT_REFRESH_EVENT));
 }
 function UserPanel({ sessionId, sessionBlank, close }) {
   const [users, setUsers] = (0, import_react4.useState)(null);
@@ -2732,7 +3469,7 @@ function UserPanel({ sessionId, sessionBlank, close }) {
   const dirty = userPanelDirty(draft, savedDraft, worldBookIds, appliedWorldBookIds);
   dirtyRef.current = dirty;
   const resourceDirty = userResourceDirty(draft, savedDraft);
-  const bindingDirty = !sameOrderedIds(worldBookIds, appliedWorldBookIds);
+  const bindingDirty = !sameOrderedIds2(worldBookIds, appliedWorldBookIds);
   const run = (0, import_react4.useCallback)(async (operation, success, values) => {
     setBusy(true);
     try {
@@ -2752,7 +3489,7 @@ function UserPanel({ sessionId, sessionBlank, close }) {
     }
   }, []);
   const refresh = (0, import_react4.useCallback)(async (preferredId) => {
-    const current2 = ++generation.current;
+    const current3 = ++generation.current;
     const [catalog2, worldBookCatalog, binding] = await Promise.all([
       api4("/users"),
       api4("/world-books"),
@@ -2762,7 +3499,7 @@ function UserPanel({ sessionId, sessionBlank, close }) {
     const preferred = availableIds.has(preferredId) ? preferredId : availableIds.has(binding.selection?.userId) ? binding.selection.userId : null;
     const id = preferred ?? catalog2.users[0]?.id ?? null;
     const relation = id === null ? { binding: { worldBookIds: [] } } : await api4(`/users/${encodeURIComponent(id)}/world-books`);
-    if (current2 !== generation.current) return;
+    if (current3 !== generation.current) return;
     setUsers(catalog2.users);
     setWorldBooks(worldBookCatalog.worldBooks);
     setSelectedUserId(binding.selection?.userId ?? null);
@@ -2782,10 +3519,10 @@ function UserPanel({ sessionId, sessionBlank, close }) {
       }
       run(() => refresh(draftId.current), "user.status.refreshed");
     };
-    window.addEventListener("dsh-tavern:refresh", onRefresh);
+    window.addEventListener(CLIENT_REFRESH_EVENT, onRefresh);
     return () => {
       generation.current += 1;
-      window.removeEventListener("dsh-tavern:refresh", onRefresh);
+      window.removeEventListener(CLIENT_REFRESH_EVENT, onRefresh);
     };
   }, [refresh, run]);
   (0, import_react4.useEffect)(() => {
@@ -2797,7 +3534,7 @@ function UserPanel({ sessionId, sessionBlank, close }) {
     window.addEventListener("beforeunload", warn);
     return () => window.removeEventListener("beforeunload", warn);
   }, [dirty]);
-  const create = (0, import_react4.useCallback)(() => {
+  const create2 = (0, import_react4.useCallback)(() => {
     if (dirty && !window.confirm(unwrapText(uiMessage("user.confirmDiscardForCreate")))) return;
     run(async () => {
       const data = await api4("/users", { method: "POST", body: JSON.stringify({ name: translate("user.defaultName"), description: "" }) });
@@ -2815,7 +3552,7 @@ function UserPanel({ sessionId, sessionBlank, close }) {
     draftId.current = data.user.id;
     setDraft(data.user);
     setSavedDraft(structuredClone(data.user));
-    setUsers((current2) => current2?.map((user) => user.id === data.user.id ? data.user : user) ?? current2);
+    setUsers((current3) => current3?.map((user) => user.id === data.user.id ? data.user : user) ?? current3);
     notifyRefresh();
   }, "user.status.saved"), [draft, run]);
   const saveWorldBooks = (0, import_react4.useCallback)(() => run(async () => {
@@ -2881,36 +3618,40 @@ function UserPanel({ sessionId, sessionBlank, close }) {
       h4(
         "div",
         { className: "dtu-toolbar" },
-        h4("button", { className: "dtu-button", type: "button", disabled: busy, onClick: create }, uiMessage("user.create")),
+        h4("button", { className: "dtu-button", type: "button", disabled: busy, onClick: create2 }, uiMessage("user.create"))
+      ),
+      h4(Field4, { label: uiMessage("user.browse") }, h4(
+        "div",
+        { className: "dtu-browse" },
+        h4(
+          "select",
+          {
+            className: "dtu-select",
+            value: draft?.id ?? "",
+            disabled: busy || users === null || users.length === 0,
+            onChange: (event) => chooseUser(event.target.value)
+          },
+          ...users?.length ? [] : [h4("option", { key: "empty", value: "" }, uiMessage("user.libraryEmpty"))],
+          ...(users ?? []).map((user) => h4("option", { key: user.id, value: user.id }, rawText(user.name)))
+        ),
         h4("button", { className: "dtu-button", type: "button", disabled: busy, onClick: () => {
           if (!dirty || window.confirm(unwrapText(uiMessage("user.confirmDiscardRefresh")))) run(() => refresh(draft?.id), "user.status.refreshed");
         } }, uiMessage("common.refresh"))
-      ),
-      h4(Field4, { label: uiMessage("user.browse") }, h4(
-        "select",
-        {
-          className: "dtu-select",
-          value: draft?.id ?? "",
-          disabled: busy || users === null || users.length === 0,
-          onChange: (event) => chooseUser(event.target.value)
-        },
-        ...users?.length ? [] : [h4("option", { key: "empty", value: "" }, uiMessage("user.libraryEmpty"))],
-        ...(users ?? []).map((user) => h4("option", { key: user.id, value: user.id }, rawText(user.name)))
       )),
+      h4(
+        "div",
+        { className: "dtu-actions" },
+        h4("button", { className: "dtu-button dtu-primary", type: "button", disabled: busy || !sessionId || draft === null || dirty, onClick: bind }, dirty ? uiMessage("user.saveFirst") : selectedUserId === draft?.id ? uiMessage("user.refreshBinding") : uiMessage("user.bind")),
+        h4("button", { className: "dtu-button", type: "button", disabled: busy || !sessionId || selectedUserId === null, onClick: unbind }, uiMessage("user.unbind"))
+      ),
       h4("p", { className: "dtu-note" }, uiMessage("user.sessionBinding", { session: sessionId || translate("common.none"), name: activeName })),
       h4("div", { className: "dtu-status", "data-error": status.error || void 0, role: "status", "aria-live": "polite" }, statusText(status)),
       dirty ? h4("div", { className: "dtu-status", "data-warning": true, role: "status" }, dirtyText) : h4("p", { className: "dtu-note" }, uiMessage("user.savedNote")),
       draft === null ? h4("p", { className: "dtu-note" }, users === null ? uiMessage("user.loading") : uiMessage("user.emptyHint")) : h4(
         "div",
         { className: "dtu-editor" },
-        h4(Field4, { label: uiMessage("user.name", { macro: "{{user}}" }) }, h4("input", { className: "dtu-input", value: draft.name, maxLength: 200, onChange: (event) => setDraft((current2) => ({ ...current2, name: event.target.value })) })),
-        h4(Field4, { label: uiMessage("user.description") }, h4("textarea", { className: "dtu-textarea", value: draft.description, maxLength: 1e5, onChange: (event) => setDraft((current2) => ({ ...current2, description: event.target.value })) })),
-        h4(
-          "div",
-          { className: "dtu-actions" },
-          h4("button", { className: "dtu-button dtu-primary", type: "button", disabled: busy || !resourceDirty, onClick: save }, resourceDirty ? uiMessage("user.saveResource") : uiMessage("user.resourceSaved")),
-          h4("button", { className: "dtu-button dtu-primary", type: "button", disabled: busy || !sessionId || dirty, onClick: bind }, dirty ? uiMessage("user.saveFirst") : selectedUserId === draft.id ? uiMessage("user.refreshBinding") : uiMessage("user.bind"))
-        ),
+        h4(Field4, { label: uiMessage("user.name", { macro: "{{user}}" }) }, h4("input", { className: "dtu-input", value: draft.name, maxLength: 200, onChange: (event) => setDraft((current3) => ({ ...current3, name: event.target.value })) })),
+        h4(Field4, { label: uiMessage("user.description") }, h4("textarea", { className: "dtu-textarea", value: draft.description, maxLength: 1e5, onChange: (event) => setDraft((current3) => ({ ...current3, description: event.target.value })) })),
         h4("h2", { className: "dtu-section-title" }, uiMessage("user.worldBooksTitle")),
         h4("p", { className: "dtu-note" }, uiMessage("user.worldBooksHint")),
         worldBooks?.length ? h4("div", { className: "dtu-bindings" }, ...worldBooks.map((book) => h4(
@@ -2919,7 +3660,7 @@ function UserPanel({ sessionId, sessionBlank, close }) {
           h4("input", {
             type: "checkbox",
             checked: worldBookIds.includes(book.id),
-            onChange: (event) => setWorldBookIds((current2) => event.target.checked ? [...current2, book.id] : current2.filter((id) => id !== book.id))
+            onChange: (event) => setWorldBookIds((current3) => event.target.checked ? [...current3, book.id] : current3.filter((id) => id !== book.id))
           }),
           h4("span", null, uiMessage("world.catalogItem", { name: book.name, count: book.entryCount }))
         ))) : h4("p", { className: "dtu-note" }, worldBooks === null ? uiMessage("user.worldBooksLoading") : uiMessage("user.worldBooksEmpty")),
@@ -2929,17 +3670,21 @@ function UserPanel({ sessionId, sessionBlank, close }) {
           h4("button", { className: "dtu-button dtu-primary", type: "button", disabled: busy || !bindingDirty, onClick: saveWorldBooks }, bindingDirty ? uiMessage("user.saveWorldBooks") : uiMessage("user.worldBooksSaved")),
           h4("button", { className: "dtu-button", type: "button", disabled: busy || worldBookIds.length === 0, onClick: () => setWorldBookIds([]) }, uiMessage("user.clearPending"))
         ),
-        h4("button", { className: "dtu-button", type: "button", disabled: busy || !sessionId || selectedUserId === null, onClick: unbind }, uiMessage("user.unbind")),
         h4("p", { className: "dtu-note" }, uiMessage("user.identityNote")),
-        h4("div", { className: "dtu-footer" }, h4("button", { className: "dtu-button dtu-danger", type: "button", disabled: busy, onClick: remove }, uiMessage("user.delete")))
+        h4(
+          "div",
+          { className: "dtu-footer" },
+          h4("button", { className: "dtu-button dtu-primary", type: "button", disabled: busy || !resourceDirty, onClick: save }, resourceDirty ? uiMessage("user.saveResource") : uiMessage("user.resourceSaved")),
+          h4("button", { className: "dtu-button dtu-danger", type: "button", disabled: busy, onClick: remove }, uiMessage("user.delete"))
+        )
       )
     )
   );
 }
 function installUserStyles() {
-  if (document.querySelector('style[data-plugin-css="dsh-tavern-user"]') !== null) return;
+  if (document.querySelector(`style[data-plugin-css="${PLUGIN_ID}-user"]`) !== null) return;
   const style = document.createElement("style");
-  style.dataset.pluginCss = "dsh-tavern-user";
+  style.dataset.pluginCss = `${PLUGIN_ID}-user`;
   style.textContent = css4;
   document.head.append(style);
 }
@@ -2947,7 +3692,7 @@ function installUserStyles() {
 // packages/tavern-trace/src/client.js
 var import_react5 = require("react");
 var h5 = createLocalizedElement(import_react5.createElement);
-var TRACE_API = "/dsh-tavern/api/traces";
+var TRACE_API = `${API_V1}/traces`;
 var css5 = `
 .dttrace-root{height:100%;min-height:0;display:flex;flex-direction:column;overflow:hidden;background:var(--dsw-alias-bg-base);color:var(--dsw-alias-label-primary);font-family:Inter,var(--dsw-font-family),sans-serif}
 .dttrace-toolbar{min-height:48px;box-sizing:border-box;padding:8px 14px;border-bottom:1px solid var(--dsw-alias-border-l2);display:flex;align-items:center;gap:10px;flex:none;zoom:var(--dtv-trace-scale,1);width:calc(100%/var(--dtv-trace-scale,1))}.dttrace-title{font-size:16px;font-weight:680;flex:1}.dttrace-button{border:1px solid var(--dsw-alias-border-l2);border-radius:7px;background:var(--dsw-alias-bg-base);color:inherit;padding:7px 10px;font-size:13px;cursor:pointer}.dttrace-button:hover{background:var(--dsw-alias-interactive-bg-hover)}
@@ -3155,8 +3900,8 @@ function TavernTraceView({ sessionId, useSession }) {
   }, [refresh, lastVisibleSeq, running]);
   (0, import_react5.useEffect)(() => {
     const onSettings = (event) => setUiSettings(event.detail ?? getClientUiSettings());
-    window.addEventListener("dsh-tavern:ui-settings", onSettings);
-    return () => window.removeEventListener("dsh-tavern:ui-settings", onSettings);
+    window.addEventListener(CLIENT_UI_SETTINGS_EVENT, onSettings);
+    return () => window.removeEventListener(CLIENT_UI_SETTINGS_EVENT, onSettings);
   }, []);
   const records = [...data?.records ?? []].reverse();
   return h5(
@@ -3189,9 +3934,9 @@ function TavernTraceView({ sessionId, useSession }) {
   );
 }
 function installTavernTraceStyles() {
-  if (document.querySelector('style[data-plugin-css="dsh-tavern-trace"]') !== null) return;
+  if (document.querySelector(`style[data-plugin-css="${PLUGIN_ID}-trace"]`) !== null) return;
   const style = document.createElement("style");
-  style.dataset.pluginCss = "dsh-tavern-trace";
+  style.dataset.pluginCss = `${PLUGIN_ID}-trace`;
   style.textContent = css5;
   document.head.append(style);
 }
@@ -3208,9 +3953,8 @@ function registerTavernTraceView(ctx) {
 // packages/session-template/src/client.js
 var import_react6 = require("react");
 var h6 = createLocalizedElement(import_react6.createElement);
-var API_ROOT5 = "/dsh-tavern/api";
 async function api5(path, options = {}) {
-  const response = await fetch(`${API_ROOT5}${path}`, {
+  const response = await fetch(`${API_V1}${path}`, {
     ...options,
     headers: options.body === void 0 ? options.headers : { "Content-Type": "application/json", ...options.headers }
   });
@@ -3261,7 +4005,7 @@ function TemplatePreview({ template }) {
     )
   );
 }
-function SessionTemplatePanel({ sessionId, workspaceId, createCleanSession, close }) {
+function SessionTemplatePanel({ sessionId, workspaceId, chromeMode = "native", createCleanSession, createConfiguredPlaythrough, close }) {
   const [templates, setTemplates] = (0, import_react6.useState)([]);
   const [selectedId, setSelectedId] = (0, import_react6.useState)(null);
   const [name2, setName] = (0, import_react6.useState)(() => translate("template.defaultName"));
@@ -3288,8 +4032,8 @@ function SessionTemplatePanel({ sessionId, workspaceId, createCleanSession, clos
       values: reason.uiValues,
       text: reason instanceof Error ? reason.message : String(reason)
     }));
-    window.addEventListener("dsh-tavern:refresh", onRefresh);
-    return () => window.removeEventListener("dsh-tavern:refresh", onRefresh);
+    window.addEventListener(CLIENT_REFRESH_EVENT, onRefresh);
+    return () => window.removeEventListener(CLIENT_REFRESH_EVENT, onRefresh);
   }, [refresh]);
   const run = (0, import_react6.useCallback)(async (operation, success) => {
     setBusy(true);
@@ -3298,7 +4042,7 @@ function SessionTemplatePanel({ sessionId, workspaceId, createCleanSession, clos
       const next = typeof success === "function" ? success(result) : success;
       setStatus(typeof next === "string" ? { error: false, key: next } : { error: false, ...next });
       await refresh();
-      window.dispatchEvent(new Event("dsh-tavern:refresh"));
+      window.dispatchEvent(new Event(CLIENT_REFRESH_EVENT));
       return result;
     } catch (reason) {
       const diagnostics2 = Array.isArray(reason?.diagnostics) ? reason.diagnostics : [];
@@ -3322,7 +4066,7 @@ function SessionTemplatePanel({ sessionId, workspaceId, createCleanSession, clos
     setSelectedId(data.selectedId);
     if (data.template !== null) setName(data.template.name);
   }, "template.status.selected");
-  const create = () => run(async () => {
+  const create2 = () => run(async () => {
     if (!sessionId) throw uiError("template.error.needSessionToSave");
     return api5("/session-templates", {
       method: "POST",
@@ -3349,11 +4093,12 @@ function SessionTemplatePanel({ sessionId, workspaceId, createCleanSession, clos
   };
   const start = (mode) => run(async () => {
     if (mode === "current" && !sessionId) throw uiError("template.error.needSourceSession");
-    if (workspaceId === null) throw uiError("template.error.needWorkspace");
     const source = mode === "current" ? { mode: "current", sessionId } : { mode: "template", templateId: selectedId };
     if (mode === "template" && selectedId === null) throw uiError("template.error.needTemplate");
+    if (chromeMode === "play") return createConfiguredPlaythrough({ source });
+    if (workspaceId === null) throw uiError("template.error.needWorkspace");
     return createCleanSession({ workspaceId, source });
-  }, (id) => ({ key: "template.status.switched", values: { id } }));
+  }, (id) => ({ key: chromeMode === "play" ? "template.status.playthroughStarted" : "template.status.switched", values: { id } }));
   const diagnostics = Array.isArray(selected?.diagnostics) ? selected.diagnostics : [];
   const closeLabel = uiMessage("panel.close", { title: unwrapText(uiMessage("template.title")) });
   return h6(
@@ -3368,14 +4113,32 @@ function SessionTemplatePanel({ sessionId, workspaceId, createCleanSession, clos
     h6(
       "div",
       { className: "dtv-body" },
-      h6("button", {
-        className: "dtv-button dtv-primary",
-        type: "button",
-        disabled: busy || !sessionId || workspaceId === null,
-        onClick: () => start("current")
-      }, uiMessage("template.startCurrent")),
+      h6(
+        "div",
+        { className: "dtv-template-toolbar" },
+        h6("button", { className: "dtv-button", type: "button", disabled: busy || !sessionId, onClick: create2 }, uiMessage("template.createFromCurrent")),
+        h6("button", {
+          className: "dtv-button dtv-primary",
+          type: "button",
+          disabled: busy || !sessionId || chromeMode !== "play" && workspaceId === null,
+          onClick: () => start("current")
+        }, uiMessage(chromeMode === "play" ? "template.startCurrentPlaythrough" : "template.startCurrent"))
+      ),
+      h6(
+        "label",
+        { className: "dtv-field" },
+        h6("span", { className: "dtv-label" }, uiMessage("template.selected")),
+        h6(
+          "select",
+          { className: "dtv-select", value: selectedId ?? "", disabled: busy, onChange: select },
+          h6("option", { value: "" }, uiMessage("template.noneSelected")),
+          ...templates.map((template) => h6("option", { key: template.id, value: template.id }, rawText(template.name)))
+        )
+      ),
       h6("p", { className: "dtv-note" }, uiMessage("template.inheritNote")),
-      workspaceId === null ? h6("div", { className: "dtv-status", "data-error": true }, uiMessage("template.noWorkspace")) : null,
+      chromeMode !== "play" && workspaceId === null ? h6("div", { className: "dtv-status", "data-error": true }, uiMessage("template.noWorkspace")) : null,
+      h6("div", { className: "dtv-status", "data-error": status.error || void 0, role: "status" }, statusText(status)),
+      h6("p", { className: "dtv-note" }, uiMessage("template.blankSessionNote")),
       h6(
         "div",
         { className: "dtv-resource" },
@@ -3383,27 +4146,13 @@ function SessionTemplatePanel({ sessionId, workspaceId, createCleanSession, clos
         h6(
           "label",
           { className: "dtv-field" },
-          h6("span", { className: "dtv-label" }, uiMessage("template.selected")),
-          h6(
-            "select",
-            { className: "dtv-select", value: selectedId ?? "", disabled: busy, onChange: select },
-            h6("option", { value: "" }, uiMessage("template.noneSelected")),
-            ...templates.map((template) => h6("option", { key: template.id, value: template.id }, rawText(template.name)))
-          )
-        ),
-        h6(
-          "label",
-          { className: "dtv-field" },
           h6("span", { className: "dtv-label" }, uiMessage("template.name")),
-          h6("input", { className: "dtv-input", value: name2, maxLength: 120, disabled: busy, onChange: (event) => setName(event.target.value) })
-        ),
-        h6(
-          "div",
-          { className: "dtv-template-actions" },
-          h6("button", { className: "dtv-button", type: "button", disabled: busy || !sessionId, onClick: create }, uiMessage("template.createFromCurrent")),
-          h6("button", { className: "dtv-button", type: "button", disabled: busy || selectedId === null, onClick: rename }, uiMessage("template.saveNameOnly")),
-          h6("button", { className: "dtv-button", type: "button", disabled: busy || !sessionId || selectedId === null, onClick: update }, uiMessage("template.updateFromCurrent")),
-          h6("button", { className: "dtv-button dtv-danger", type: "button", disabled: busy || selectedId === null, onClick: remove }, uiMessage("template.delete"))
+          h6(
+            "div",
+            { className: "dtv-template-name" },
+            h6("input", { className: "dtv-input", value: name2, maxLength: 120, disabled: busy, onChange: (event) => setName(event.target.value) }),
+            h6("button", { className: "dtv-button", type: "button", disabled: busy || selectedId === null, onClick: rename }, uiMessage("template.saveNameOnly"))
+          )
         ),
         h6("p", { className: "dtv-note" }, uiMessage("template.currentSettingsReminder")),
         selected === null ? null : h6(TemplatePreview, { template: selected }),
@@ -3416,12 +4165,16 @@ function SessionTemplatePanel({ sessionId, workspaceId, createCleanSession, clos
         h6("button", {
           className: "dtv-button dtv-primary",
           type: "button",
-          disabled: busy || selectedId === null || diagnostics.length > 0 || workspaceId === null,
+          disabled: busy || selectedId === null || diagnostics.length > 0 || chromeMode !== "play" && workspaceId === null,
           onClick: () => start("template")
-        }, uiMessage("template.startFromTemplate"))
+        }, uiMessage(chromeMode === "play" ? "template.startPlaythroughFromTemplate" : "template.startFromTemplate"))
       ),
-      h6("div", { className: "dtv-status", "data-error": status.error || void 0, role: "status" }, statusText(status)),
-      h6("p", { className: "dtv-note" }, uiMessage("template.blankSessionNote"))
+      h6(
+        "div",
+        { className: "dtv-template-footer" },
+        h6("button", { className: "dtv-button dtv-primary", type: "button", disabled: busy || !sessionId || selectedId === null, onClick: update }, uiMessage("template.updateFromCurrent")),
+        h6("button", { className: "dtv-button dtv-danger", type: "button", disabled: busy || selectedId === null, onClick: remove }, uiMessage("template.delete"))
+      )
     )
   );
 }
@@ -3444,6 +4197,13 @@ var SessionConfigurationUnavailableError = class extends Error {
     this.diagnostics = structuredClone(diagnostics);
   }
 };
+var SessionConfigurationCharacterRequiredError = class extends Error {
+  constructor() {
+    super("Mowan playthrough configuration requires a character card");
+    this.name = "SessionConfigurationCharacterRequiredError";
+    this.uiKey = "template.error.needCharacter";
+  }
+};
 async function createCleanSessionWorkflow({
   workspaceId,
   source,
@@ -3464,14 +4224,42 @@ async function createCleanSessionWorkflow({
   refresh();
   return targetSessionId;
 }
+async function createConfiguredPlaythroughWorkflow({
+  source,
+  preview,
+  applySelection,
+  playthroughController,
+  openSession,
+  refresh
+}) {
+  const checked = await preview(source);
+  if (checked?.available !== true) throw new SessionConfigurationUnavailableError(checked?.diagnostics);
+  const characterId = checked?.selection?.characterCardId;
+  if (typeof characterId !== "string" || characterId === "") {
+    throw new SessionConfigurationCharacterRequiredError();
+  }
+  const result = await playthroughController.create({
+    character: {
+      id: characterId,
+      name: checked?.contents?.characterCard?.name || characterId
+    },
+    selectionFromSessionId: source?.mode === "current" ? source.sessionId : null,
+    configureSession: (targetSessionId) => applySelection(targetSessionId, source)
+  });
+  openSession(result.sessionId);
+  refresh();
+  return result.sessionId;
+}
 
 // packages/client/src/state.js
 var TAVERN_MENU_ITEMS = Object.freeze([
   { id: "preset", labelKey: "nav.preset", emptyTitleKey: "nav.preset.empty", available: true },
   { id: "character", labelKey: "nav.character", emptyTitleKey: "nav.character.empty", available: true },
   { id: "world-info", labelKey: "nav.worldBook", emptyTitleKey: "nav.worldBook.empty", available: true },
+  { id: "regex", labelKey: "nav.regex", emptyTitleKey: "nav.regex.empty", available: true, binding: false, showBinding: false, playOnly: true },
   { id: "user", labelKey: "nav.user", emptyTitleKey: "nav.user.empty", available: true },
   { id: "session-template", labelKey: "nav.sessionTemplate", emptyTitleKey: "nav.sessionTemplate.empty", available: true, binding: false, showBinding: false },
+  { id: "conversation-settings", labelKey: "nav.conversationSettings", emptyTitleKey: "nav.conversationSettings.empty", available: true, binding: false, showBinding: false, playOnly: true },
   { id: "settings", labelKey: "nav.settings", emptyTitleKey: "nav.settings.empty", available: true, binding: false, showBinding: false }
 ]);
 var TAVERN_LAUNCHER_SIZE = 44;
@@ -3576,7 +4364,8 @@ function launcherResourceStatuses(snapshot) {
       emptyTitleKey: "nav.user.empty"
     }),
     "session-template": { bound: false, count: 0, title: null, titleKey: "nav.sessionTemplate.empty" },
-    settings: { bound: false, count: 0, title: null, titleKey: "nav.settings.empty" }
+    settings: { bound: false, count: 0, title: null, titleKey: "nav.settings.empty" },
+    regex: { bound: false, count: 0, title: null, titleKey: "nav.regex.empty" }
   };
 }
 function clampLauncherAnchor(position, viewport2, scale = 1) {
@@ -3606,32 +4395,8810 @@ function launcherPlacement(anchor, viewport2, expanded = false, scale = 1) {
   };
 }
 
-// packages/client/src/index.js
-var h7 = createLocalizedElement(import_react7.createElement);
-var API_ROOT6 = "/dsh-tavern/api";
+// packages/client/src/play/chrome.js
+function nextChromeMode(mode) {
+  return mode === "play" ? "native" : "play";
+}
+function createChromeClickController({
+  getMode,
+  persistMode,
+  openMenu,
+  closeMenu,
+  setMode,
+  setError = () => {
+  }
+}) {
+  if (typeof getMode !== "function") throw new TypeError("getMode is required");
+  if (typeof persistMode !== "function") throw new TypeError("persistMode is required");
+  if (typeof openMenu !== "function") throw new TypeError("openMenu is required");
+  if (typeof closeMenu !== "function") throw new TypeError("closeMenu is required");
+  if (typeof setMode !== "function") throw new TypeError("setMode is required");
+  let switching = false;
+  let disposed = false;
+  const switchMode = async ({ suppressed = false } = {}) => {
+    closeMenu();
+    if (disposed || suppressed || switching) return false;
+    switching = true;
+    try {
+      const saved = await persistMode(nextChromeMode(getMode()));
+      if (disposed) return false;
+      setMode(saved.mode);
+      setError(null);
+      return true;
+    } catch (reason) {
+      if (!disposed) setError(reason);
+      return false;
+    } finally {
+      switching = false;
+    }
+  };
+  return {
+    click({ suppressed = false } = {}) {
+      if (disposed || suppressed || switching) return false;
+      openMenu();
+      return true;
+    },
+    switchMode,
+    dispose() {
+      disposed = true;
+    }
+  };
+}
+
+// packages/client/src/play/chat.js
+var import_react10 = require("react");
+
+// packages/play/src/timeline-tree.js
+function adoptedVariant(node) {
+  return node?.variants?.find((variant) => variant.id === node.adoptedVariantId) ?? null;
+}
+var EXTENSION_KEY = "pmpDshTavern";
+var BRANCH_HEADS_KEY = "branchHeads";
+function variantEntries(timeline) {
+  const entries2 = /* @__PURE__ */ new Map();
+  for (const node of timeline?.nodes ?? []) {
+    for (const variant of node.variants ?? []) {
+      entries2.set(variant.id, { node, variant });
+    }
+  }
+  return entries2;
+}
+function storedBranchHeads(timeline, variants) {
+  const result = /* @__PURE__ */ new Map();
+  const values = timeline?.ext?.[EXTENSION_KEY]?.[BRANCH_HEADS_KEY];
+  if (!Array.isArray(values)) return result;
+  for (const value of values) {
+    if (value === null || typeof value !== "object" || Array.isArray(value)) continue;
+    const branch = variants.get(value.branchVariantId);
+    const head = variants.get(value.variantId);
+    if (branch === void 0 || head === void 0 || head.node.id !== value.nodeId || head.variant.sessionId !== value.sessionId) continue;
+    result.set(value.branchVariantId, {
+      sessionId: value.sessionId,
+      nodeId: value.nodeId,
+      variantId: value.variantId
+    });
+  }
+  return result;
+}
+function headPathContains(timeline, head, variantId) {
+  try {
+    return activeTimelineEntries({ ...timeline, head }).some((entry) => entry.variant.id === variantId);
+  } catch {
+    return false;
+  }
+}
+function uniqueLegacyBranchHead(timeline, variantId, variants) {
+  let currentId = variantId;
+  const visited = /* @__PURE__ */ new Set();
+  while (!visited.has(currentId)) {
+    visited.add(currentId);
+    const children = (timeline?.nodes ?? []).filter((node) => node.parentVariantId === currentId);
+    if (children.length !== 1) break;
+    const next = adoptedVariant(children[0]);
+    if (next === null) break;
+    currentId = next.id;
+  }
+  const entry = variants.get(currentId);
+  return entry === void 0 ? null : {
+    sessionId: entry.variant.sessionId,
+    nodeId: entry.node.id,
+    variantId: entry.variant.id
+  };
+}
+function withRememberedActiveHead(timeline) {
+  const head = timelineHead(timeline);
+  if (head === null) return timeline;
+  let active;
+  try {
+    active = activeTimelineEntries(timeline);
+  } catch {
+    return timeline;
+  }
+  if (active.length === 0) return timeline;
+  const variants = variantEntries(timeline);
+  const remembered = storedBranchHeads(timeline, variants);
+  for (const { variant } of active) remembered.set(variant.id, { ...head });
+  const branchHeads = [...remembered.entries()].map(([branchVariantId, value]) => ({
+    branchVariantId,
+    ...value
+  }));
+  return {
+    ...timeline,
+    ext: {
+      ...timeline.ext ?? {},
+      [EXTENSION_KEY]: {
+        ...timeline.ext?.[EXTENSION_KEY] ?? {},
+        [BRANCH_HEADS_KEY]: branchHeads
+      }
+    }
+  };
+}
+function isTreeTimeline(timeline) {
+  return timeline?.head !== void 0 || (timeline?.nodes ?? []).some((node) => Object.hasOwn(node, "parentVariantId"));
+}
+function legacyTimelineHead(timeline) {
+  const nodes = timeline?.nodes ?? [];
+  for (let index = nodes.length - 1; index >= 0; index -= 1) {
+    const node = nodes[index];
+    const variant = adoptedVariant(node);
+    if (variant !== null) {
+      return { sessionId: variant.sessionId, nodeId: node.id, variantId: variant.id };
+    }
+  }
+  return null;
+}
+function timelineHead(timeline) {
+  const head = timeline?.head;
+  if (head !== void 0 && head !== null) return head;
+  return legacyTimelineHead(timeline);
+}
+function activeTimelineEntries(timeline) {
+  const nodes = timeline?.nodes ?? [];
+  if (!isTreeTimeline(timeline)) {
+    return nodes.map((node) => ({ node, variant: adoptedVariant(node) })).filter((entry) => entry.variant !== null);
+  }
+  const head = timelineHead(timeline);
+  if (head === null) return [];
+  const variants = /* @__PURE__ */ new Map();
+  for (const [index, node] of nodes.entries()) {
+    for (const variant of node.variants ?? []) variants.set(variant.id, { node, variant, index });
+  }
+  const reversed = [];
+  const visited = /* @__PURE__ */ new Set();
+  let variantId = head.variantId;
+  while (variantId !== null) {
+    if (visited.has(variantId)) throw new TypeError("timeline branch contains a cycle");
+    visited.add(variantId);
+    const entry = variants.get(variantId);
+    if (entry === void 0) throw new TypeError(`Unknown active variant ${variantId}`);
+    reversed.push({ node: entry.node, variant: entry.variant });
+    if (Object.hasOwn(entry.node, "parentVariantId")) {
+      variantId = entry.node.parentVariantId;
+    } else {
+      const previous = nodes[entry.index - 1];
+      variantId = adoptedVariant(previous)?.id ?? null;
+    }
+  }
+  return reversed.reverse();
+}
+function timelineWithHead(timeline, head) {
+  const remembered = withRememberedActiveHead(timeline);
+  if (head === null) {
+    const { head: _discarded, ...rest } = remembered;
+    return rest;
+  }
+  return withRememberedActiveHead({ ...remembered, head });
+}
+function timelineHeadForVariant(timeline, variantId) {
+  const variants = variantEntries(timeline);
+  const target = variants.get(variantId);
+  if (target === void 0) return null;
+  const current3 = timelineHead(timeline);
+  if (current3 !== null && headPathContains(timeline, current3, variantId)) return current3;
+  const stored = storedBranchHeads(timeline, variants).get(variantId);
+  if (stored !== void 0 && headPathContains(timeline, stored, variantId)) return stored;
+  return uniqueLegacyBranchHead(timeline, variantId, variants);
+}
+function activeVariantEnd(timeline, sessionId) {
+  const head = timelineHead(timeline);
+  if (head === null || head.sessionId !== sessionId) return -1;
+  const entry = activeTimelineEntries(timeline).at(-1);
+  return entry?.variant?.endEventId ?? -1;
+}
+
+// packages/client/src/play/chat-model.js
+function normalizedPath(value) {
+  return typeof value === "string" ? value.replaceAll("\\", "/").replace(/\/+$/, "").toLocaleLowerCase() : "";
+}
+function rootSessionId(playthrough) {
+  const value = playthrough?.ext?.pmpDshTavern?.rootSessionId;
+  return typeof value === "string" && value !== "" ? value : null;
+}
+function recordedEndSeq(timeline, sessionId) {
+  let end = -1;
+  for (const node of timeline?.nodes ?? []) {
+    for (const variant of node.variants ?? []) {
+      if (variant.sessionId === sessionId && Number.isSafeInteger(variant.endEventId)) {
+        end = Math.max(end, variant.endEventId);
+      }
+    }
+  }
+  return Math.max(end, activeVariantEnd(timeline, sessionId));
+}
+function contentText(content) {
+  if (!Array.isArray(content)) return "";
+  return content.filter((part) => part?.type === "text" && typeof part.text === "string").map((part) => part.text).join("");
+}
+function contentReasoning(content) {
+  if (!Array.isArray(content)) return "";
+  return content.filter((part) => part?.type === "reasoning" && typeof part.text === "string").map((part) => part.text).join("");
+}
+function assistantText(blocks) {
+  if (!Array.isArray(blocks)) return "";
+  return blocks.filter((block) => block?.kind === "text" && typeof block.text === "string").map((block) => block.text).join("");
+}
+function assistantReasoning(blocks) {
+  if (!Array.isArray(blocks)) return "";
+  return blocks.filter((block) => block?.kind === "reasoning" && typeof block.text === "string").map((block) => block.text).join("");
+}
+function renderedMessageText(message) {
+  if (Array.isArray(message?.content) && message.content.length > 0) return contentText(message.content);
+  return typeof message?.text === "string" ? message.text : "";
+}
+function messageOriginKind(message) {
+  const value = message?.origin?.kind;
+  if (typeof value === "string" && value !== "") return value;
+  return message?.role === "assistant" ? "assistant" : message?.role === "system" ? "system" : "user";
+}
+function contextProjection(message) {
+  const origin = message?.origin ?? {};
+  return {
+    id: message?.id ?? `context-${message?.seq ?? "unknown"}`,
+    seq: message?.seq ?? null,
+    text: renderedMessageText(message),
+    producer: origin.producer ?? null,
+    form: origin.form ?? null,
+    summary: origin.summary ?? null
+  };
+}
+function sessionIsInRpWorkspace(workspace, session) {
+  if (workspace?.selected !== true || session == null) return false;
+  const root = normalizedPath(workspace.rootPath);
+  return root !== "" && normalizedPath(session.cwd) === root;
+}
+function sessionHasConversationHistory(response) {
+  return (response?.messages ?? []).some((message) => message?.role === "user" || message?.role === "assistant");
+}
+function findPlaythroughForSession(sessionId, catalog2, timelines = {}) {
+  if (typeof sessionId !== "string" || sessionId === "") return null;
+  for (const playthrough of catalog2?.playthroughs ?? []) {
+    if (rootSessionId(playthrough) === sessionId) {
+      return { playthrough, timeline: timelines[playthrough.path] ?? null };
+    }
+  }
+  for (const playthrough of catalog2?.playthroughs ?? []) {
+    const timeline = timelines[playthrough.path];
+    if (timelineHead(timeline)?.sessionId === sessionId) return { playthrough, timeline };
+  }
+  for (const playthrough of catalog2?.playthroughs ?? []) {
+    const timeline = timelines[playthrough.path];
+    if (timeline?.nodes?.some((node) => node.variants?.some((variant) => variant.sessionId === sessionId))) {
+      return { playthrough, timeline };
+    }
+  }
+  return null;
+}
+async function loadTimelines(client, playthroughs, concurrency = 4) {
+  const result = {};
+  let cursor = 0;
+  const worker = async () => {
+    while (cursor < playthroughs.length) {
+      const playthrough = playthroughs[cursor];
+      cursor += 1;
+      result[playthrough.path] = await client.getTimeline(playthrough);
+    }
+  };
+  await Promise.all(Array.from(
+    { length: Math.min(Math.max(1, concurrency), playthroughs.length) },
+    worker
+  ));
+  return result;
+}
+async function loadCurrentPlaythrough(client, session, options = {}) {
+  if (client == null) throw new TypeError("playClient.required");
+  const workspace = await client.getWorkspace();
+  if (!sessionIsInRpWorkspace(workspace, session)) return null;
+  const catalog2 = await client.getCatalog();
+  const playthroughs = catalog2.playthroughs ?? [];
+  const sessionId = session.id ?? session.sessionId;
+  const preferred = typeof options.preferredPlaythroughId === "string" ? playthroughs.find((item) => item.id === options.preferredPlaythroughId) : void 0;
+  if (preferred !== void 0) {
+    const timeline = await client.getTimeline(preferred);
+    if (rootSessionId(preferred) === sessionId || timelineHead(timeline)?.sessionId === sessionId) {
+      return { workspace, playthrough: preferred, timeline };
+    }
+  }
+  const root = playthroughs.find((item) => rootSessionId(item) === sessionId);
+  if (root !== void 0) {
+    return { workspace, playthrough: root, timeline: await client.getTimeline(root) };
+  }
+  const timelines = await loadTimelines(client, playthroughs, options.concurrency);
+  const match = findPlaythroughForSession(sessionId, catalog2, timelines);
+  return match === null ? null : { workspace, ...match };
+}
+function projectTimelineVariant(node, variant, messagesBySession = {}) {
+  const messages = messagesBySession[variant.sessionId]?.messages ?? messagesBySession[variant.sessionId] ?? [];
+  const within = messages.filter((message) => Number.isSafeInteger(message.seq) && message.seq >= variant.startEventId && message.seq <= variant.endEventId);
+  const trigger = within.find((message) => message.role === "user") ?? null;
+  const user = within.find((message) => message.role === "user" && (messageOriginKind(message) === "user" || messageOriginKind(message) === "steering")) ?? null;
+  const contexts = within.filter((message) => message.role === "user" && messageOriginKind(message) === "context").map(contextProjection);
+  const assistants = within.filter((message) => message.role === "assistant");
+  const assistant = assistants.at(-1) ?? null;
+  const displayOverridden = typeof node.displayOverride === "string";
+  return {
+    id: node.id,
+    userText: renderedMessageText(user),
+    userPresent: user !== null,
+    contexts,
+    triggerKind: messageOriginKind(trigger),
+    reasoningText: contentReasoning(assistant?.content),
+    assistantText: displayOverridden ? node.displayOverride : renderedMessageText(assistant),
+    originalAssistantText: renderedMessageText(assistant),
+    assistantCandidates: assistants.map(renderedMessageText),
+    displayOverridden,
+    variant,
+    variants: node.variants,
+    variantCount: node.variants.length
+  };
+}
+function projectTimelineQa(timeline, messagesBySession = {}) {
+  const result = [];
+  for (const { node, variant } of activeTimelineEntries(timeline)) {
+    if (node.kind !== "qa") continue;
+    const projected = projectTimelineVariant(node, variant, messagesBySession);
+    const previous = result.at(-1);
+    if (!projected.userPresent && previous !== void 0 && previous.variant.sessionId === variant.sessionId) {
+      previous.contexts.push(...projected.contexts);
+      previous.assistantCandidates.push(...projected.assistantCandidates);
+      if (projected.displayOverridden) {
+        previous.assistantText = projected.assistantText;
+        previous.displayOverridden = true;
+      } else if (!previous.displayOverridden && projected.assistantCandidates.length > 0) {
+        previous.assistantText = projected.assistantText;
+      }
+      if (projected.originalAssistantText !== "") previous.originalAssistantText = projected.originalAssistantText;
+      if (projected.reasoningText !== "") previous.reasoningText = projected.reasoningText;
+    } else {
+      const { userPresent: _userPresent, ...turn } = projected;
+      result.push(turn);
+    }
+  }
+  return result;
+}
+function selectAssistantDisplay(turn, render = (value) => value) {
+  if (turn.displayOverridden === true) {
+    return {
+      assistantText: turn.assistantText,
+      originalAssistantText: turn.originalAssistantText,
+      assistantTexts: turn.assistantText === "" ? [] : [turn.assistantText]
+    };
+  }
+  const candidates = Array.isArray(turn.assistantCandidates) && turn.assistantCandidates.length > 0 ? turn.assistantCandidates : [turn.assistantText];
+  const rawTexts = [];
+  const renderedTexts = [];
+  for (const candidate of candidates) {
+    const rendered = render(candidate);
+    if (rendered !== "") {
+      rawTexts.push(candidate);
+      renderedTexts.push(rendered);
+    }
+  }
+  return {
+    assistantText: renderedTexts.join("\n\n"),
+    originalAssistantText: rawTexts.join("\n\n"),
+    assistantTexts: renderedTexts
+  };
+}
+function projectLiveTurns({
+  timeline,
+  sessionId,
+  nodes,
+  partial,
+  running = false
+} = {}) {
+  if (typeof sessionId !== "string" || sessionId === "") return [];
+  const head = timelineHead(timeline);
+  if (head !== null && head.sessionId !== sessionId) return [];
+  const boundary = recordedEndSeq(timeline, sessionId);
+  const pending2 = [];
+  let turn = null;
+  const appendTurn = () => {
+    if (turn !== null) pending2.push(turn);
+    turn = null;
+  };
+  const createTurn = (node, triggerKind, userText = "") => ({
+    id: `live-${node.seq}`,
+    transient: true,
+    userText,
+    contexts: [],
+    triggerKind,
+    reasoningText: "",
+    assistantText: "",
+    running: false
+  });
+  for (const node of nodes ?? []) {
+    if (!Number.isFinite(node?.seq) || node.seq <= boundary) continue;
+    if (node.kind === "user" || node.kind === "steering") {
+      appendTurn();
+      turn = createTurn(node, node.kind, contentText(node.content));
+    } else if (node.kind === "context") {
+      if (turn === null || turn.assistantText !== "" || turn.reasoningText !== "") {
+        appendTurn();
+        turn = createTurn(node, "context");
+      }
+      turn.contexts.push({
+        id: `context-${node.seq}`,
+        seq: node.seq,
+        text: contentText(node.content),
+        producer: node.provenance?.label ?? node.source?.kind ?? null,
+        form: node.form ?? node.source?.form ?? null,
+        summary: typeof node.source?.summary === "string" ? node.source.summary : null
+      });
+    } else if (node.kind === "assistant" && turn !== null) {
+      turn.reasoningText = assistantReasoning(node.blocks);
+      turn.assistantText = assistantText(node.blocks);
+    }
+  }
+  appendTurn();
+  if (pending2.length === 0) return pending2;
+  const tail = pending2[pending2.length - 1];
+  if (running) {
+    const reasoning = assistantReasoning(partial?.blocks);
+    const streamed = assistantText(partial?.blocks);
+    if (reasoning !== "") tail.reasoningText = reasoning;
+    if (streamed !== "") tail.assistantText = streamed;
+    tail.running = true;
+  }
+  return pending2;
+}
+function latestUserNodeSeq(nodes) {
+  let latest = -1;
+  for (const node of nodes ?? []) {
+    if (node?.kind === "user" && Number.isFinite(node.seq)) latest = Math.max(latest, node.seq);
+  }
+  return latest;
+}
+function projectGreeting({
+  openingCharacterId,
+  selectionResponse,
+  characterResponse
+} = {}) {
+  const selection = selectionResponse?.selection;
+  const character = characterResponse?.character;
+  if (typeof selection?.characterCardId !== "string" || selection.characterCardId === "" || selection.characterCardId !== openingCharacterId || character?.id !== selection.characterCardId) return null;
+  const options = characterGreetingOptions(character);
+  if (options.length === 0) return null;
+  const requested = Number(selection.character?.greetingIndex ?? 0);
+  const selected = options.find((option) => option.index === requested) ?? options[0];
+  if (selected.text === "") return null;
+  return {
+    characterId: character.id,
+    characterName: character.data?.nickname || character.data?.name || character.name || character.id,
+    index: selected.index,
+    text: selected.text,
+    options
+  };
+}
+function applyDisplayNameMacros(text2, {
+  user = "User",
+  character = "Assistant"
+} = {}) {
+  const names = {
+    user: typeof user === "string" && user !== "" ? user : "User",
+    char: typeof character === "string" && character !== "" ? character : "Assistant"
+  };
+  return String(text2 ?? "").replace(/\{\{\s*(user|char)\s*\}\}/gi, (_match, name2) => names[name2.toLowerCase()]);
+}
+function adjacentGreetingIndex(greeting, direction) {
+  const options = greeting?.options ?? [];
+  if (options.length === 0) return null;
+  const cursor = Math.max(0, options.findIndex((option) => option.index === greeting.index));
+  const offset = direction === "previous" ? -1 : 1;
+  return options[(cursor + offset + options.length) % options.length].index;
+}
+
+// packages/client/src/play/regex.js
+var REGEX_PATH = "ui/regex.json";
+function isRecord3(value) {
+  return value !== null && typeof value === "object" && !Array.isArray(value);
+}
+function stringValue(...values) {
+  return values.find((value) => typeof value === "string") ?? "";
+}
+function importedEnabled(value) {
+  if (typeof value.enabled === "boolean") return value.enabled;
+  if (typeof value.disabled === "boolean") return !value.disabled;
+  return true;
+}
+function finiteDepth(value) {
+  if (value === null || value === void 0 || value === "") return null;
+  const number = Number(value);
+  return Number.isFinite(number) ? number : null;
+}
+function stringList(value) {
+  return Array.isArray(value) ? value.filter((item) => typeof item === "string") : [];
+}
+function nativePlacement(value) {
+  const placement = Array.isArray(value.placement) ? [...value.placement] : typeof value.placement === "number" ? [value.placement] : [];
+  let markdownOnly = value.markdownOnly === true || value.markdown_only === true;
+  let promptOnly = value.promptOnly === true || value.prompt_only === true;
+  if (placement.includes(0)) {
+    placement.splice(0, placement.length, ...placement.length === 1 ? [1, 2, 3, 5, 6] : placement.filter((item) => item !== 0));
+    markdownOnly = true;
+    promptOnly = true;
+  }
+  if (placement.includes(4)) {
+    placement.splice(0, placement.length, ...placement.length === 1 ? [3] : placement.filter((item) => item !== 4));
+  }
+  return { placement, markdownOnly, promptOnly };
+}
+function normalizeScope(value, fallback = { kind: "global", resourceId: null }) {
+  const source = isRecord3(value) ? value : fallback;
+  const kind = ["global", "preset", "character"].includes(source.kind) ? source.kind : fallback.kind;
+  const resourceId = kind === "global" ? null : stringValue(source.resourceId, fallback.resourceId);
+  return { kind, resourceId: resourceId || null };
+}
+function normalizeTarget(value) {
+  return ["user", "assistant", "both"].includes(value) ? value : "assistant";
+}
+function importedTarget(value) {
+  if (typeof value.target === "string") return normalizeTarget(value.target);
+  if (typeof value.placement === "string") return normalizeTarget(value.placement);
+  const { placement } = nativePlacement(value);
+  if (placement.length === 0) return "assistant";
+  const user = placement.some((item) => item === 1 || item === "user" || item === "user_input");
+  const assistant = placement.some((item) => item === 2 || item === "assistant" || item === "ai_output");
+  if (user && assistant) return "both";
+  if (user) return "user";
+  return "assistant";
+}
+function displayImportCandidate(value) {
+  if (!isRecord3(value)) return false;
+  const native = nativePlacement(value);
+  if (native.promptOnly && !native.markdownOnly) return false;
+  if (native.placement.length === 0) return true;
+  return native.placement.some((item) => item === 1 || item === 2 || item === "user" || item === "assistant" || item === "user_input" || item === "ai_output");
+}
+function regexCandidates(value) {
+  if (Array.isArray(value)) return value;
+  if (isRecord3(value) && [value.find, value.findRegex, value.find_regex, value.regex].some((item) => typeof item === "string")) {
+    return [value];
+  }
+  const candidates = [
+    value?.rules,
+    value?.regex_scripts,
+    value?.extensions?.regex_scripts,
+    value?.data?.extensions?.regex_scripts,
+    value?.source?.raw?.regex_scripts,
+    value?.source?.raw?.extensions?.regex_scripts,
+    value?.source?.raw?.data?.extensions?.regex_scripts
+  ];
+  return candidates.find(Array.isArray) ?? null;
+}
+function generatedId() {
+  return `regex-${globalThis.crypto?.randomUUID?.() ?? `${Date.now()}-${Math.random()}`}`;
+}
+function normalizeRegexRule(value, { scope } = {}) {
+  if (!isRecord3(value)) throw new TypeError("regex rule must be an object");
+  const source = stringValue(value.find, value.findRegex, value.find_regex, value.regex);
+  const native = nativePlacement(value);
+  return {
+    id: stringValue(value.id) || generatedId(),
+    name: stringValue(value.name, value.script_name, value.scriptName) || "Regex",
+    enabled: importedEnabled(value),
+    find: source,
+    replace: stringValue(value.replace, value.replaceString, value.replace_string, value.replacement),
+    flags: stringValue(value.flags),
+    target: importedTarget(value),
+    scope: normalizeScope(value.scope, scope),
+    placement: native.placement,
+    trimStrings: stringList(value.trimStrings ?? value.trim_strings),
+    markdownOnly: native.markdownOnly || value.markdown_only === true,
+    promptOnly: native.promptOnly || value.prompt_only === true,
+    runOnEdit: value.runOnEdit === true || value.run_on_edit === true,
+    substituteRegex: [0, 1, 2].includes(Number(value.substituteRegex ?? value.substitute_regex)) ? Number(value.substituteRegex ?? value.substitute_regex) : 0,
+    minDepth: finiteDepth(value.minDepth ?? value.min_depth),
+    maxDepth: finiteDepth(value.maxDepth ?? value.max_depth),
+    ext: isRecord3(value.ext) ? structuredClone(value.ext) : {}
+  };
+}
+function normalizeRegexDocument(value) {
+  if (!isRecord3(value)) throw new TypeError("regex document must be an object");
+  const rules = Array.isArray(value.rules) ? value.rules : [];
+  return { schemaVersion: 1, rules: rules.map((rule) => normalizeRegexRule(rule)) };
+}
+function importRegexDocument(value, { scope = { kind: "global", resourceId: null } } = {}) {
+  const candidates = regexCandidates(value);
+  if (candidates === null) throw new TypeError("No regex rules were found");
+  return candidates.filter(displayImportCandidate).map((rule) => normalizeRegexRule(rule, { scope }));
+}
+function resourceRegexInventory(value, scope) {
+  const candidates = regexCandidates(value);
+  if (candidates === null) return [];
+  return candidates.map((rule, sourceIndex) => ({
+    ...normalizeRegexRule(rule, { scope }),
+    sourceDisplayEligible: displayImportCandidate(rule),
+    sourceIndex,
+    sourceRaw: structuredClone(rule)
+  }));
+}
+function writeNativeField(target, aliases, canonical, value) {
+  const existing = aliases.filter((key) => Object.hasOwn(target, key));
+  for (const key of existing.length === 0 ? [canonical] : existing) target[key] = structuredClone(value);
+}
+function nativePlacementFor(rule) {
+  const placement = Array.isArray(rule.placement) ? rule.placement : [];
+  const retained = placement.filter((item) => ![1, 2, "user", "assistant", "user_input", "ai_output"].includes(item));
+  if (rule.target === "user" || rule.target === "both") retained.push(1);
+  if (rule.target === "assistant" || rule.target === "both") retained.push(2);
+  return retained;
+}
+function findWithFlags(source, flags) {
+  if (!source.startsWith("/") || flags === "") return source;
+  const closing = source.lastIndexOf("/");
+  if (closing <= 0 || !/^[dgimsuvy]*$/.test(flags)) return source;
+  return `${source.slice(0, closing + 1)}${flags}`;
+}
+function nativeRegexScript(rule) {
+  const source = isRecord3(rule?.sourceRaw) ? structuredClone(rule.sourceRaw) : {};
+  const original = isRecord3(rule?.sourceRaw) ? normalizeRegexRule(rule.sourceRaw, { scope: rule.scope }) : null;
+  if (original === null) source.id = rule.id;
+  if (original === null || rule.name !== original.name) {
+    writeNativeField(source, ["scriptName", "script_name", "name"], "scriptName", rule.name);
+  }
+  if (original === null || rule.find !== original.find || rule.flags !== original.flags) {
+    writeNativeField(source, ["findRegex", "find_regex", "find", "regex"], "findRegex", findWithFlags(rule.find, rule.flags));
+  }
+  if (original === null || rule.replace !== original.replace) {
+    writeNativeField(source, ["replaceString", "replace_string", "replace", "replacement"], "replaceString", rule.replace);
+  }
+  if (original === null || rule.enabled !== original.enabled) {
+    writeNativeField(source, ["disabled"], "disabled", !rule.enabled);
+    if (Object.hasOwn(source, "enabled")) source.enabled = rule.enabled;
+  }
+  if (original === null || rule.target !== original.target) {
+    writeNativeField(source, ["placement"], "placement", nativePlacementFor(rule));
+  }
+  if (original === null) {
+    source.trimStrings = structuredClone(rule.trimStrings);
+    source.markdownOnly = rule.markdownOnly;
+    source.promptOnly = rule.promptOnly;
+    source.runOnEdit = rule.runOnEdit;
+    source.substituteRegex = rule.substituteRegex;
+    source.minDepth = rule.minDepth;
+    source.maxDepth = rule.maxDepth;
+  }
+  return source;
+}
+function exportNativeRegexScripts(rules) {
+  if (!Array.isArray(rules)) throw new TypeError("regex rules must be an array");
+  return rules.map(nativeRegexScript);
+}
+function resourceRegexRules(value, scope) {
+  try {
+    return importRegexDocument(value, { scope });
+  } catch (error) {
+    if (error instanceof TypeError && error.message === "No regex rules were found") return [];
+    throw error;
+  }
+}
+async function getRegexDocument(client) {
+  try {
+    const file = await client.getFile(REGEX_PATH);
+    return normalizeRegexDocument(JSON.parse(file.content));
+  } catch (error) {
+    if (error?.status === 404 || error?.code === "PLAY_FILE_NOT_FOUND") {
+      return { schemaVersion: 1, rules: [] };
+    }
+    throw error;
+  }
+}
+async function putRegexDocument(client, document2) {
+  const normalized = normalizeRegexDocument(document2);
+  await client.createDirs("ui");
+  await client.putFile(REGEX_PATH, JSON.stringify(normalized, null, 2));
+  return normalized;
+}
+function expression(rule, context) {
+  const source = rule.substituteRegex !== 0 && typeof context?.substituteRegex === "function" ? context.substituteRegex(rule.find, { escaped: rule.substituteRegex === 2 }) : rule.find;
+  if (source.startsWith("/")) {
+    const closing = source.lastIndexOf("/");
+    if (closing > 0) {
+      const pattern = source.slice(1, closing);
+      const flags = rule.flags || source.slice(closing + 1);
+      return new RegExp(pattern, flags);
+    }
+  }
+  return new RegExp(source, rule.flags || "g");
+}
+function applies(rule, bindings, target, context) {
+  if (!rule.enabled || rule.target !== "both" && rule.target !== target) return false;
+  if (typeof context?.depth === "number") {
+    if (rule.minDepth !== null && rule.minDepth >= -1 && context.depth < rule.minDepth) return false;
+    if (rule.maxDepth !== null && rule.maxDepth >= 0 && context.depth > rule.maxDepth) return false;
+  }
+  if (rule.scope.kind === "global") return true;
+  if (rule.scope.kind === "preset") return rule.scope.resourceId === bindings?.presetId;
+  return rule.scope.resourceId === bindings?.characterId;
+}
+function replacement(rule, context) {
+  return function replaceMatch(match, ...args) {
+    const groups = isRecord3(args.at(-1)) ? args.at(-1) : null;
+    let value = rule.replace.replace(/\{\{match\}\}/gi, "$0");
+    value = value.replaceAll(/\$(\d+)|\$<([^>]+)>/g, (_token, number, groupName) => {
+      const captureIndex = Number(number);
+      const captured = groupName === void 0 ? captureIndex === 0 ? match : args[captureIndex - 1] : groups?.[groupName];
+      if (!captured) return "";
+      return rule.trimStrings.reduce(
+        (result, trim) => result.replaceAll(trim, ""),
+        String(captured)
+      );
+    });
+    return typeof context?.substituteReplacement === "function" ? context.substituteReplacement(value) : value;
+  };
+}
+function applyDisplayRegex(text2, rules, bindings, target = "assistant", context = {}) {
+  let output = String(text2 ?? "");
+  const diagnostics = [];
+  for (const rule of rules ?? []) {
+    if (!applies(rule, bindings, target, context)) continue;
+    try {
+      output = output.replace(expression(rule, context), replacement(rule, context));
+    } catch (error) {
+      diagnostics.push({ ruleId: rule.id, message: error instanceof Error ? error.message : String(error) });
+    }
+  }
+  return { text: output, diagnostics };
+}
+
+// node_modules/dompurify/dist/purify.es.mjs
+function _arrayLikeToArray(r, a) {
+  (null == a || a > r.length) && (a = r.length);
+  for (var e = 0, n = Array(a); e < a; e++) n[e] = r[e];
+  return n;
+}
+function _arrayWithHoles(r) {
+  if (Array.isArray(r)) return r;
+}
+function _iterableToArrayLimit(r, l3) {
+  var t = null == r ? null : "undefined" != typeof Symbol && r[Symbol.iterator] || r["@@iterator"];
+  if (null != t) {
+    var e, n, i, u, a = [], f2 = true, o = false;
+    try {
+      if (i = (t = t.call(r)).next, 0 === l3) ;
+      else for (; !(f2 = (e = i.call(t)).done) && (a.push(e.value), a.length !== l3); f2 = true) ;
+    } catch (r2) {
+      o = true, n = r2;
+    } finally {
+      try {
+        if (!f2 && null != t.return && (u = t.return(), Object(u) !== u)) return;
+      } finally {
+        if (o) throw n;
+      }
+    }
+    return a;
+  }
+}
+function _nonIterableRest() {
+  throw new TypeError("Invalid attempt to destructure non-iterable instance.\nIn order to be iterable, non-array objects must have a [Symbol.iterator]() method.");
+}
+function _slicedToArray(r, e) {
+  return _arrayWithHoles(r) || _iterableToArrayLimit(r, e) || _unsupportedIterableToArray(r, e) || _nonIterableRest();
+}
+function _unsupportedIterableToArray(r, a) {
+  if (r) {
+    if ("string" == typeof r) return _arrayLikeToArray(r, a);
+    var t = {}.toString.call(r).slice(8, -1);
+    return "Object" === t && r.constructor && (t = r.constructor.name), "Map" === t || "Set" === t ? Array.from(r) : "Arguments" === t || /^(?:Ui|I)nt(?:8|16|32)(?:Clamped)?Array$/.test(t) ? _arrayLikeToArray(r, a) : void 0;
+  }
+}
+var entries = Object.entries;
+var setPrototypeOf = Object.setPrototypeOf;
+var isFrozen = Object.isFrozen;
+var getPrototypeOf = Object.getPrototypeOf;
+var getOwnPropertyDescriptor = Object.getOwnPropertyDescriptor;
+var freeze = Object.freeze;
+var seal = Object.seal;
+var create = Object.create;
+var _ref = typeof Reflect !== "undefined" && Reflect;
+var apply = _ref.apply;
+var construct = _ref.construct;
+if (!freeze) {
+  freeze = function freeze2(x2) {
+    return x2;
+  };
+}
+if (!seal) {
+  seal = function seal2(x2) {
+    return x2;
+  };
+}
+if (!apply) {
+  apply = function apply3(func, thisArg) {
+    for (var _len = arguments.length, args = new Array(_len > 2 ? _len - 2 : 0), _key = 2; _key < _len; _key++) {
+      args[_key - 2] = arguments[_key];
+    }
+    return func.apply(thisArg, args);
+  };
+}
+if (!construct) {
+  construct = function construct2(Func) {
+    for (var _len2 = arguments.length, args = new Array(_len2 > 1 ? _len2 - 1 : 0), _key2 = 1; _key2 < _len2; _key2++) {
+      args[_key2 - 1] = arguments[_key2];
+    }
+    return new Func(...args);
+  };
+}
+var arrayForEach = unapply(Array.prototype.forEach);
+var arrayLastIndexOf = unapply(Array.prototype.lastIndexOf);
+var arrayPop = unapply(Array.prototype.pop);
+var arrayPush = unapply(Array.prototype.push);
+var arraySplice = unapply(Array.prototype.splice);
+var arrayIsArray = Array.isArray;
+var stringToLowerCase = unapply(String.prototype.toLowerCase);
+var stringToString = unapply(String.prototype.toString);
+var stringMatch = unapply(String.prototype.match);
+var stringReplace = unapply(String.prototype.replace);
+var stringIndexOf = unapply(String.prototype.indexOf);
+var stringTrim = unapply(String.prototype.trim);
+var numberToString = unapply(Number.prototype.toString);
+var booleanToString = unapply(Boolean.prototype.toString);
+var bigintToString = typeof BigInt === "undefined" ? null : unapply(BigInt.prototype.toString);
+var symbolToString = typeof Symbol === "undefined" ? null : unapply(Symbol.prototype.toString);
+var objectHasOwnProperty = unapply(Object.prototype.hasOwnProperty);
+var objectToString = unapply(Object.prototype.toString);
+var regExpTest = unapply(RegExp.prototype.test);
+var typeErrorCreate = unconstruct(TypeError);
+function unapply(func) {
+  return function(thisArg) {
+    if (thisArg instanceof RegExp) {
+      thisArg.lastIndex = 0;
+    }
+    for (var _len3 = arguments.length, args = new Array(_len3 > 1 ? _len3 - 1 : 0), _key3 = 1; _key3 < _len3; _key3++) {
+      args[_key3 - 1] = arguments[_key3];
+    }
+    return apply(func, thisArg, args);
+  };
+}
+function unconstruct(Func) {
+  return function() {
+    for (var _len4 = arguments.length, args = new Array(_len4), _key4 = 0; _key4 < _len4; _key4++) {
+      args[_key4] = arguments[_key4];
+    }
+    return construct(Func, args);
+  };
+}
+function addToSet(set, array) {
+  let transformCaseFunc = arguments.length > 2 && arguments[2] !== void 0 ? arguments[2] : stringToLowerCase;
+  if (setPrototypeOf) {
+    setPrototypeOf(set, null);
+  }
+  if (!arrayIsArray(array)) {
+    return set;
+  }
+  let l3 = array.length;
+  while (l3--) {
+    let element = array[l3];
+    if (typeof element === "string") {
+      const lcElement = transformCaseFunc(element);
+      if (lcElement !== element) {
+        if (!isFrozen(array)) {
+          array[l3] = lcElement;
+        }
+        element = lcElement;
+      }
+    }
+    set[element] = true;
+  }
+  return set;
+}
+function cleanArray(array) {
+  for (let index = 0; index < array.length; index++) {
+    const isPropertyExist = objectHasOwnProperty(array, index);
+    if (!isPropertyExist) {
+      array[index] = null;
+    }
+  }
+  return array;
+}
+function clone(object) {
+  const newObject = create(null);
+  for (const _ref2 of entries(object)) {
+    var _ref3 = _slicedToArray(_ref2, 2);
+    const property = _ref3[0];
+    const value = _ref3[1];
+    const isPropertyExist = objectHasOwnProperty(object, property);
+    if (isPropertyExist) {
+      if (arrayIsArray(value)) {
+        newObject[property] = cleanArray(value);
+      } else if (value && typeof value === "object" && value.constructor === Object) {
+        newObject[property] = clone(value);
+      } else {
+        newObject[property] = value;
+      }
+    }
+  }
+  return newObject;
+}
+function stringifyValue(value) {
+  switch (typeof value) {
+    case "string": {
+      return value;
+    }
+    case "number": {
+      return numberToString(value);
+    }
+    case "boolean": {
+      return booleanToString(value);
+    }
+    case "bigint": {
+      return bigintToString ? bigintToString(value) : "0";
+    }
+    case "symbol": {
+      return symbolToString ? symbolToString(value) : "Symbol()";
+    }
+    case "undefined": {
+      return objectToString(value);
+    }
+    case "function":
+    case "object": {
+      if (value === null) {
+        return objectToString(value);
+      }
+      const valueAsRecord = value;
+      const valueToString = lookupGetter(valueAsRecord, "toString");
+      if (typeof valueToString === "function") {
+        const stringified = valueToString(valueAsRecord);
+        return typeof stringified === "string" ? stringified : objectToString(stringified);
+      }
+      return objectToString(value);
+    }
+    default: {
+      return objectToString(value);
+    }
+  }
+}
+function lookupGetter(object, prop) {
+  while (object !== null) {
+    const desc = getOwnPropertyDescriptor(object, prop);
+    if (desc) {
+      if (desc.get) {
+        return unapply(desc.get);
+      }
+      if (typeof desc.value === "function") {
+        return unapply(desc.value);
+      }
+    }
+    object = getPrototypeOf(object);
+  }
+  function fallbackValue() {
+    return null;
+  }
+  return fallbackValue;
+}
+function isRegex(value) {
+  try {
+    regExpTest(value, "");
+    return true;
+  } catch (_unused) {
+    return false;
+  }
+}
+var html$1 = freeze(["a", "abbr", "acronym", "address", "area", "article", "aside", "audio", "b", "bdi", "bdo", "big", "blink", "blockquote", "body", "br", "button", "canvas", "caption", "center", "cite", "code", "col", "colgroup", "content", "data", "datalist", "dd", "decorator", "del", "details", "dfn", "dialog", "dir", "div", "dl", "dt", "element", "em", "fieldset", "figcaption", "figure", "font", "footer", "form", "h1", "h2", "h3", "h4", "h5", "h6", "head", "header", "hgroup", "hr", "html", "i", "img", "input", "ins", "kbd", "label", "legend", "li", "main", "map", "mark", "marquee", "menu", "menuitem", "meter", "nav", "nobr", "ol", "optgroup", "option", "output", "p", "picture", "pre", "progress", "q", "rp", "rt", "ruby", "s", "samp", "search", "section", "select", "shadow", "slot", "small", "source", "spacer", "span", "strike", "strong", "style", "sub", "summary", "sup", "table", "tbody", "td", "template", "textarea", "tfoot", "th", "thead", "time", "tr", "track", "tt", "u", "ul", "var", "video", "wbr"]);
+var svg$1 = freeze(["svg", "a", "altglyph", "altglyphdef", "altglyphitem", "animatecolor", "animatemotion", "animatetransform", "circle", "clippath", "defs", "desc", "ellipse", "enterkeyhint", "exportparts", "filter", "font", "g", "glyph", "glyphref", "hkern", "image", "inputmode", "line", "lineargradient", "marker", "mask", "metadata", "mpath", "part", "path", "pattern", "polygon", "polyline", "radialgradient", "rect", "stop", "style", "switch", "symbol", "text", "textpath", "title", "tref", "tspan", "view", "vkern"]);
+var svgFilters = freeze(["feBlend", "feColorMatrix", "feComponentTransfer", "feComposite", "feConvolveMatrix", "feDiffuseLighting", "feDisplacementMap", "feDistantLight", "feDropShadow", "feFlood", "feFuncA", "feFuncB", "feFuncG", "feFuncR", "feGaussianBlur", "feImage", "feMerge", "feMergeNode", "feMorphology", "feOffset", "fePointLight", "feSpecularLighting", "feSpotLight", "feTile", "feTurbulence"]);
+var svgDisallowed = freeze(["animate", "color-profile", "cursor", "discard", "font-face", "font-face-format", "font-face-name", "font-face-src", "font-face-uri", "foreignobject", "hatch", "hatchpath", "mesh", "meshgradient", "meshpatch", "meshrow", "missing-glyph", "script", "set", "solidcolor", "unknown", "use"]);
+var mathMl$1 = freeze(["math", "menclose", "merror", "mfenced", "mfrac", "mglyph", "mi", "mlabeledtr", "mmultiscripts", "mn", "mo", "mover", "mpadded", "mphantom", "mroot", "mrow", "ms", "mspace", "msqrt", "mstyle", "msub", "msup", "msubsup", "mtable", "mtd", "mtext", "mtr", "munder", "munderover", "mprescripts"]);
+var mathMlDisallowed = freeze(["maction", "maligngroup", "malignmark", "mlongdiv", "mscarries", "mscarry", "msgroup", "mstack", "msline", "msrow", "semantics", "annotation", "annotation-xml", "mprescripts", "none"]);
+var text = freeze(["#text"]);
+var html = freeze(["accept", "action", "align", "alt", "autocapitalize", "autocomplete", "autopictureinpicture", "autoplay", "background", "bgcolor", "border", "capture", "cellpadding", "cellspacing", "checked", "cite", "class", "clear", "color", "cols", "colspan", "command", "commandfor", "controls", "controlslist", "coords", "crossorigin", "datetime", "decoding", "default", "dir", "disabled", "disablepictureinpicture", "disableremoteplayback", "download", "draggable", "enctype", "enterkeyhint", "exportparts", "face", "for", "headers", "height", "hidden", "high", "href", "hreflang", "id", "inert", "inputmode", "integrity", "ismap", "kind", "label", "lang", "list", "loading", "loop", "low", "max", "maxlength", "media", "method", "min", "minlength", "multiple", "muted", "name", "nonce", "noshade", "novalidate", "nowrap", "open", "optimum", "part", "pattern", "placeholder", "playsinline", "popover", "popovertarget", "popovertargetaction", "poster", "preload", "pubdate", "radiogroup", "readonly", "rel", "required", "rev", "reversed", "role", "rows", "rowspan", "spellcheck", "scope", "selected", "shape", "size", "sizes", "slot", "span", "srclang", "start", "src", "srcset", "step", "style", "summary", "tabindex", "title", "translate", "type", "usemap", "valign", "value", "width", "wrap", "xmlns"]);
+var svg = freeze(["accent-height", "accumulate", "additive", "alignment-baseline", "amplitude", "ascent", "attributename", "attributetype", "azimuth", "basefrequency", "baseline-shift", "begin", "bias", "by", "class", "clip", "clippathunits", "clip-path", "clip-rule", "color", "color-interpolation", "color-interpolation-filters", "color-profile", "color-rendering", "cx", "cy", "d", "dx", "dy", "diffuseconstant", "direction", "display", "divisor", "dominant-baseline", "dur", "edgemode", "elevation", "end", "exponent", "fill", "fill-opacity", "fill-rule", "filter", "filterunits", "flood-color", "flood-opacity", "font-family", "font-size", "font-size-adjust", "font-stretch", "font-style", "font-variant", "font-weight", "fx", "fy", "g1", "g2", "glyph-name", "glyphref", "gradientunits", "gradienttransform", "height", "href", "id", "image-rendering", "in", "in2", "intercept", "k", "k1", "k2", "k3", "k4", "kerning", "keypoints", "keysplines", "keytimes", "lang", "lengthadjust", "letter-spacing", "kernelmatrix", "kernelunitlength", "lighting-color", "local", "marker-end", "marker-mid", "marker-start", "markerheight", "markerunits", "markerwidth", "maskcontentunits", "maskunits", "max", "mask", "mask-type", "media", "method", "mode", "min", "name", "numoctaves", "offset", "operator", "opacity", "order", "orient", "orientation", "origin", "overflow", "paint-order", "path", "pathlength", "patterncontentunits", "patterntransform", "patternunits", "pointer-events", "points", "preservealpha", "preserveaspectratio", "primitiveunits", "r", "rx", "ry", "radius", "refx", "refy", "repeatcount", "repeatdur", "restart", "result", "rotate", "scale", "seed", "shape-rendering", "slope", "specularconstant", "specularexponent", "spreadmethod", "startoffset", "stddeviation", "stitchtiles", "stop-color", "stop-opacity", "stroke-dasharray", "stroke-dashoffset", "stroke-linecap", "stroke-linejoin", "stroke-miterlimit", "stroke-opacity", "stroke", "stroke-width", "style", "surfacescale", "systemlanguage", "tabindex", "tablevalues", "targetx", "targety", "transform", "transform-origin", "text-anchor", "text-decoration", "text-orientation", "text-rendering", "textlength", "type", "u1", "u2", "unicode", "values", "vector-effect", "viewbox", "visibility", "version", "vert-adv-y", "vert-origin-x", "vert-origin-y", "width", "word-spacing", "wrap", "writing-mode", "xchannelselector", "ychannelselector", "x", "x1", "x2", "xmlns", "y", "y1", "y2", "z", "zoomandpan"]);
+var mathMl = freeze(["accent", "accentunder", "align", "bevelled", "close", "columnalign", "columnlines", "columnspacing", "columnspan", "denomalign", "depth", "dir", "display", "displaystyle", "encoding", "fence", "frame", "height", "href", "id", "largeop", "length", "linethickness", "lquote", "lspace", "mathbackground", "mathcolor", "mathsize", "mathvariant", "maxsize", "minsize", "movablelimits", "notation", "numalign", "open", "rowalign", "rowlines", "rowspacing", "rowspan", "rspace", "rquote", "scriptlevel", "scriptminsize", "scriptsizemultiplier", "selection", "separator", "separators", "stretchy", "subscriptshift", "supscriptshift", "symmetric", "voffset", "width", "xmlns"]);
+var xml = freeze(["xlink:href", "xml:id", "xlink:title", "xml:space", "xmlns:xlink"]);
+var MUSTACHE_EXPR = seal(/{{[\w\W]*|^[\w\W]*}}/g);
+var ERB_EXPR = seal(/<%[\w\W]*|^[\w\W]*%>/g);
+var TMPLIT_EXPR = seal(/\${[\w\W]*/g);
+var DATA_ATTR = seal(/^data-[\-\w.\u00B7-\uFFFF]+$/);
+var ARIA_ATTR = seal(/^aria-[\-\w]+$/);
+var IS_ALLOWED_URI = seal(
+  /^(?:(?:(?:f|ht)tps?|mailto|tel|callto|sms|cid|xmpp|matrix):|[^a-z]|[a-z+.\-]+(?:[^a-z+.\-:]|$))/i
+  // eslint-disable-line no-useless-escape
+);
+var IS_SCRIPT_OR_DATA = seal(/^(?:\w+script|data):/i);
+var ATTR_WHITESPACE = seal(
+  /[\u0000-\u0020\u00A0\u1680\u180E\u2000-\u2029\u205F\u3000]/g
+  // eslint-disable-line no-control-regex
+);
+var DOCTYPE_NAME = seal(/^html$/i);
+var CUSTOM_ELEMENT = seal(/^[a-z][.\w]*(-[.\w]+)+$/i);
+var ELEMENT_MARKUP_PROBE = seal(/<[/\w!]/g);
+var COMMENT_MARKUP_PROBE = seal(/<[/\w]/g);
+var FALLBACK_TAG_CLOSE = seal(/<\/no(script|embed|frames)/i);
+var SELF_CLOSING_TAG = seal(/\/>/i);
+var NODE_TYPE = {
+  element: 1,
+  attribute: 2,
+  text: 3,
+  cdataSection: 4,
+  entityReference: 5,
+  // Deprecated
+  entityNode: 6,
+  // Deprecated
+  processingInstruction: 7,
+  comment: 8,
+  document: 9,
+  documentType: 10,
+  documentFragment: 11,
+  notation: 12
+  // Deprecated
+};
+var LITERAL_TEXT_ELEMENT_NAMES = ["style", "script", "xmp", "iframe", "noembed", "noframes", "plaintext", "noscript"];
+var LITERAL_TEXT_ELEMENTS = freeze(addToSet({}, LITERAL_TEXT_ELEMENT_NAMES));
+var LITERAL_TEXT_CLOSE = (function() {
+  const map = {};
+  arrayForEach(LITERAL_TEXT_ELEMENT_NAMES, (name2) => {
+    map[name2] = seal(new RegExp("</" + name2 + "(?=[\\t\\n\\f\\r />])", "i"));
+  });
+  return freeze(map);
+})();
+var getGlobal = function getGlobal2() {
+  return typeof window === "undefined" ? null : window;
+};
+var _createTrustedTypesPolicy = function _createTrustedTypesPolicy2(trustedTypes, purifyHostElement) {
+  if (typeof trustedTypes !== "object" || typeof trustedTypes.createPolicy !== "function") {
+    return null;
+  }
+  let suffix = null;
+  const ATTR_NAME = "data-tt-policy-suffix";
+  if (purifyHostElement && purifyHostElement.hasAttribute(ATTR_NAME)) {
+    suffix = purifyHostElement.getAttribute(ATTR_NAME);
+  }
+  const policyName = "dompurify" + (suffix ? "#" + suffix : "");
+  try {
+    return trustedTypes.createPolicy(policyName, {
+      createHTML(html2) {
+        return html2;
+      },
+      createScriptURL(scriptUrl) {
+        return scriptUrl;
+      }
+    });
+  } catch (_2) {
+    console.warn("TrustedTypes policy " + policyName + " could not be created.");
+    return null;
+  }
+};
+var _createHooksMap = function _createHooksMap2() {
+  return {
+    afterSanitizeAttributes: [],
+    afterSanitizeElements: [],
+    afterSanitizeShadowDOM: [],
+    beforeSanitizeAttributes: [],
+    beforeSanitizeElements: [],
+    beforeSanitizeShadowDOM: [],
+    uponSanitizeAttribute: [],
+    uponSanitizeElement: [],
+    uponSanitizeShadowNode: []
+  };
+};
+var _resolveSetOption = function _resolveSetOption2(cfg, key, fallback, options) {
+  return objectHasOwnProperty(cfg, key) && arrayIsArray(cfg[key]) ? addToSet(options.base ? clone(options.base) : {}, cfg[key], options.transform) : fallback;
+};
+var _resolveObjectOption = function _resolveObjectOption2(cfg, key, makeFallback) {
+  const value = objectHasOwnProperty(cfg, key) ? cfg[key] : void 0;
+  return value && typeof value === "object" ? clone(value) : makeFallback();
+};
+function createDOMPurify() {
+  let window2 = arguments.length > 0 && arguments[0] !== void 0 ? arguments[0] : getGlobal();
+  const DOMPurify = (root) => createDOMPurify(root);
+  DOMPurify.version = "3.4.14";
+  DOMPurify.removed = [];
+  if (!window2 || !window2.document || window2.document.nodeType !== NODE_TYPE.document || !window2.Element) {
+    DOMPurify.isSupported = false;
+    return DOMPurify;
+  }
+  let document2 = window2.document;
+  const originalDocument = document2;
+  const currentScript = originalDocument.currentScript;
+  window2.DocumentFragment;
+  const HTMLTemplateElement = window2.HTMLTemplateElement, Node = window2.Node, Element = window2.Element, NodeFilter = window2.NodeFilter, _window$NamedNodeMap = window2.NamedNodeMap;
+  _window$NamedNodeMap === void 0 ? window2.NamedNodeMap || window2.MozNamedAttrMap : _window$NamedNodeMap;
+  window2.HTMLFormElement;
+  const DOMParser = window2.DOMParser, trustedTypes = window2.trustedTypes;
+  const ElementPrototype = Element.prototype;
+  const cloneNode = lookupGetter(ElementPrototype, "cloneNode");
+  const remove = lookupGetter(ElementPrototype, "remove");
+  const getNextSibling = lookupGetter(ElementPrototype, "nextSibling");
+  const getChildNodes = lookupGetter(ElementPrototype, "childNodes");
+  const getParentNode = lookupGetter(ElementPrototype, "parentNode");
+  const getShadowRoot = lookupGetter(ElementPrototype, "shadowRoot");
+  const getAttributes = lookupGetter(ElementPrototype, "attributes");
+  const getNodeType = Node && Node.prototype ? lookupGetter(Node.prototype, "nodeType") : null;
+  const getNodeName = Node && Node.prototype ? lookupGetter(Node.prototype, "nodeName") : null;
+  const getOwnerDocument = Node && Node.prototype ? lookupGetter(Node.prototype, "ownerDocument") : null;
+  const _readNodeType = function _readNodeType2(node) {
+    return getNodeType ? getNodeType(node) : node.nodeType;
+  };
+  const _readNodeName = function _readNodeName2(node) {
+    return getNodeName ? getNodeName(node) : node.nodeName;
+  };
+  if (typeof HTMLTemplateElement === "function") {
+    const template = document2.createElement("template");
+    if (template.content && template.content.ownerDocument) {
+      document2 = template.content.ownerDocument;
+    }
+  }
+  let trustedTypesPolicy;
+  let emptyHTML = "";
+  let defaultTrustedTypesPolicy;
+  let defaultTrustedTypesPolicyResolved = false;
+  let IN_TRUSTED_TYPES_POLICY = 0;
+  const _assertNotInTrustedTypesPolicy = function _assertNotInTrustedTypesPolicy2() {
+    if (IN_TRUSTED_TYPES_POLICY > 0) {
+      throw typeErrorCreate('A configured TRUSTED_TYPES_POLICY callback (createHTML or createScriptURL) must not call DOMPurify.sanitize, as that causes infinite recursion. Do not pass a policy whose callbacks wrap DOMPurify as TRUSTED_TYPES_POLICY; see the "DOMPurify and Trusted Types" section of the README.');
+    }
+  };
+  const _createTrustedHTML = function _createTrustedHTML2(html2) {
+    _assertNotInTrustedTypesPolicy();
+    IN_TRUSTED_TYPES_POLICY++;
+    try {
+      return trustedTypesPolicy.createHTML(html2);
+    } finally {
+      IN_TRUSTED_TYPES_POLICY--;
+    }
+  };
+  const _createTrustedScriptURL = function _createTrustedScriptURL2(scriptUrl) {
+    _assertNotInTrustedTypesPolicy();
+    IN_TRUSTED_TYPES_POLICY++;
+    try {
+      return trustedTypesPolicy.createScriptURL(scriptUrl);
+    } finally {
+      IN_TRUSTED_TYPES_POLICY--;
+    }
+  };
+  const _getDefaultTrustedTypesPolicy = function _getDefaultTrustedTypesPolicy2() {
+    if (!defaultTrustedTypesPolicyResolved) {
+      defaultTrustedTypesPolicy = _createTrustedTypesPolicy(trustedTypes, currentScript);
+      defaultTrustedTypesPolicyResolved = true;
+    }
+    return defaultTrustedTypesPolicy;
+  };
+  const _document = document2, implementation = _document.implementation, createNodeIterator = _document.createNodeIterator, createDocumentFragment = _document.createDocumentFragment, getElementsByTagName = _document.getElementsByTagName;
+  const importNode = originalDocument.importNode;
+  let hooks = _createHooksMap();
+  DOMPurify.isSupported = typeof entries === "function" && typeof getParentNode === "function" && implementation && implementation.createHTMLDocument !== void 0;
+  const MUSTACHE_EXPR$1 = MUSTACHE_EXPR, ERB_EXPR$1 = ERB_EXPR, TMPLIT_EXPR$1 = TMPLIT_EXPR, DATA_ATTR$1 = DATA_ATTR, ARIA_ATTR$1 = ARIA_ATTR, IS_SCRIPT_OR_DATA$1 = IS_SCRIPT_OR_DATA, ATTR_WHITESPACE$1 = ATTR_WHITESPACE, CUSTOM_ELEMENT$1 = CUSTOM_ELEMENT;
+  let IS_ALLOWED_URI$1 = IS_ALLOWED_URI;
+  let ALLOWED_TAGS = null;
+  const DEFAULT_ALLOWED_TAGS = addToSet({}, [...html$1, ...svg$1, ...svgFilters, ...mathMl$1, ...text]);
+  let ALLOWED_ATTR = null;
+  const DEFAULT_ALLOWED_ATTR = addToSet({}, [...html, ...svg, ...mathMl, ...xml]);
+  let CUSTOM_ELEMENT_HANDLING = Object.seal(create(null, {
+    tagNameCheck: {
+      writable: true,
+      configurable: false,
+      enumerable: true,
+      value: null
+    },
+    attributeNameCheck: {
+      writable: true,
+      configurable: false,
+      enumerable: true,
+      value: null
+    },
+    allowCustomizedBuiltInElements: {
+      writable: true,
+      configurable: false,
+      enumerable: true,
+      value: false
+    }
+  }));
+  let FORBID_TAGS = null;
+  let FORBID_ATTR = null;
+  const EXTRA_ELEMENT_HANDLING = Object.seal(create(null, {
+    tagCheck: {
+      writable: true,
+      configurable: false,
+      enumerable: true,
+      value: null
+    },
+    attributeCheck: {
+      writable: true,
+      configurable: false,
+      enumerable: true,
+      value: null
+    }
+  }));
+  let ALLOW_ARIA_ATTR = true;
+  let ALLOW_DATA_ATTR = true;
+  let ALLOW_UNKNOWN_PROTOCOLS = false;
+  let ALLOW_SELF_CLOSE_IN_ATTR = true;
+  let SAFE_FOR_TEMPLATES = false;
+  let SAFE_FOR_XML = true;
+  let WHOLE_DOCUMENT = false;
+  let SET_CONFIG = false;
+  let SET_CONFIG_ALLOWED_TAGS = null;
+  let SET_CONFIG_ALLOWED_ATTR = null;
+  let FORCE_BODY = false;
+  let RETURN_DOM = false;
+  let RETURN_DOM_FRAGMENT = false;
+  let RETURN_TRUSTED_TYPE = false;
+  let SANITIZE_DOM = true;
+  let SANITIZE_NAMED_PROPS = false;
+  const SANITIZE_NAMED_PROPS_PREFIX = "user-content-";
+  let KEEP_CONTENT = true;
+  let IN_PLACE = false;
+  let USE_PROFILES = {};
+  let FORBID_CONTENTS = null;
+  const DEFAULT_FORBID_CONTENTS = addToSet({}, [
+    "annotation-xml",
+    "audio",
+    "colgroup",
+    "desc",
+    "foreignobject",
+    "head",
+    "iframe",
+    "math",
+    "mi",
+    "mn",
+    "mo",
+    "ms",
+    "mtext",
+    "noembed",
+    "noframes",
+    "noscript",
+    "plaintext",
+    "script",
+    // <selectedcontent> mirrors the selected <option>'s subtree, cloned by
+    // the UA (customizable <select>) — including any on* handlers — and the
+    // engine re-mirrors synchronously whenever a removal changes which
+    // option/selectedcontent is current, even inside DOMPurify's inert
+    // DOMParser document. Hoisting its children on removal re-inserts a fresh
+    // mirror target ahead of the walk, which the engine refills, looping
+    // forever (DoS) and amplifying output. Dropping its content on removal
+    // (rather than hoisting) breaks that cascade; the content is a duplicate
+    // of the option, which is sanitized on its own. See campaign-3 F1/F6.
+    "selectedcontent",
+    "style",
+    "svg",
+    "template",
+    "thead",
+    "title",
+    "video",
+    "xmp"
+  ]);
+  let DATA_URI_TAGS = null;
+  const DEFAULT_DATA_URI_TAGS = addToSet({}, ["audio", "video", "img", "source", "image", "track"]);
+  let URI_SAFE_ATTRIBUTES = null;
+  const DEFAULT_URI_SAFE_ATTRIBUTES = addToSet({}, ["alt", "class", "for", "id", "label", "name", "pattern", "placeholder", "role", "summary", "title", "value", "style", "xmlns"]);
+  const MATHML_NAMESPACE = "http://www.w3.org/1998/Math/MathML";
+  const SVG_NAMESPACE = "http://www.w3.org/2000/svg";
+  const HTML_NAMESPACE = "http://www.w3.org/1999/xhtml";
+  let NAMESPACE = HTML_NAMESPACE;
+  let IS_EMPTY_INPUT = false;
+  let ALLOWED_NAMESPACES = null;
+  const DEFAULT_ALLOWED_NAMESPACES = addToSet({}, [MATHML_NAMESPACE, SVG_NAMESPACE, HTML_NAMESPACE], stringToString);
+  const DEFAULT_MATHML_TEXT_INTEGRATION_POINTS = freeze(["mi", "mo", "mn", "ms", "mtext"]);
+  let MATHML_TEXT_INTEGRATION_POINTS = addToSet({}, DEFAULT_MATHML_TEXT_INTEGRATION_POINTS);
+  const DEFAULT_HTML_INTEGRATION_POINTS = freeze(["annotation-xml"]);
+  let HTML_INTEGRATION_POINTS = addToSet({}, DEFAULT_HTML_INTEGRATION_POINTS);
+  const COMMON_SVG_AND_HTML_ELEMENTS = addToSet({}, ["title", "style", "font", "a", "script"]);
+  let PARSER_MEDIA_TYPE = null;
+  const SUPPORTED_PARSER_MEDIA_TYPES = ["application/xhtml+xml", "text/html"];
+  const DEFAULT_PARSER_MEDIA_TYPE = "text/html";
+  let transformCaseFunc = null;
+  let CONFIG = null;
+  const formElement = document2.createElement("form");
+  const isRegexOrFunction = function isRegexOrFunction2(testValue) {
+    return testValue instanceof RegExp || testValue instanceof Function;
+  };
+  const _parseConfig = function _parseConfig2() {
+    let cfg = arguments.length > 0 && arguments[0] !== void 0 ? arguments[0] : {};
+    if (CONFIG && CONFIG === cfg) {
+      return;
+    }
+    if (!cfg || typeof cfg !== "object") {
+      cfg = {};
+    }
+    cfg = clone(cfg);
+    PARSER_MEDIA_TYPE = // eslint-disable-next-line unicorn/prefer-includes
+    SUPPORTED_PARSER_MEDIA_TYPES.indexOf(cfg.PARSER_MEDIA_TYPE) === -1 ? DEFAULT_PARSER_MEDIA_TYPE : cfg.PARSER_MEDIA_TYPE;
+    transformCaseFunc = PARSER_MEDIA_TYPE === "application/xhtml+xml" ? stringToString : stringToLowerCase;
+    ALLOWED_TAGS = _resolveSetOption(cfg, "ALLOWED_TAGS", DEFAULT_ALLOWED_TAGS, {
+      transform: transformCaseFunc
+    });
+    ALLOWED_ATTR = _resolveSetOption(cfg, "ALLOWED_ATTR", DEFAULT_ALLOWED_ATTR, {
+      transform: transformCaseFunc
+    });
+    ALLOWED_NAMESPACES = _resolveSetOption(cfg, "ALLOWED_NAMESPACES", DEFAULT_ALLOWED_NAMESPACES, {
+      transform: stringToString
+    });
+    URI_SAFE_ATTRIBUTES = _resolveSetOption(cfg, "ADD_URI_SAFE_ATTR", DEFAULT_URI_SAFE_ATTRIBUTES, {
+      transform: transformCaseFunc,
+      base: DEFAULT_URI_SAFE_ATTRIBUTES
+    });
+    DATA_URI_TAGS = _resolveSetOption(cfg, "ADD_DATA_URI_TAGS", DEFAULT_DATA_URI_TAGS, {
+      transform: transformCaseFunc,
+      base: DEFAULT_DATA_URI_TAGS
+    });
+    FORBID_CONTENTS = _resolveSetOption(cfg, "FORBID_CONTENTS", DEFAULT_FORBID_CONTENTS, {
+      transform: transformCaseFunc
+    });
+    FORBID_TAGS = _resolveSetOption(cfg, "FORBID_TAGS", clone({}), {
+      transform: transformCaseFunc
+    });
+    FORBID_ATTR = _resolveSetOption(cfg, "FORBID_ATTR", clone({}), {
+      transform: transformCaseFunc
+    });
+    USE_PROFILES = objectHasOwnProperty(cfg, "USE_PROFILES") ? cfg.USE_PROFILES && typeof cfg.USE_PROFILES === "object" ? clone(cfg.USE_PROFILES) : cfg.USE_PROFILES : false;
+    ALLOW_ARIA_ATTR = cfg.ALLOW_ARIA_ATTR !== false;
+    ALLOW_DATA_ATTR = cfg.ALLOW_DATA_ATTR !== false;
+    ALLOW_UNKNOWN_PROTOCOLS = cfg.ALLOW_UNKNOWN_PROTOCOLS || false;
+    ALLOW_SELF_CLOSE_IN_ATTR = cfg.ALLOW_SELF_CLOSE_IN_ATTR !== false;
+    SAFE_FOR_TEMPLATES = cfg.SAFE_FOR_TEMPLATES || false;
+    SAFE_FOR_XML = cfg.SAFE_FOR_XML !== false;
+    WHOLE_DOCUMENT = cfg.WHOLE_DOCUMENT || false;
+    RETURN_DOM = cfg.RETURN_DOM || false;
+    RETURN_DOM_FRAGMENT = cfg.RETURN_DOM_FRAGMENT || false;
+    RETURN_TRUSTED_TYPE = cfg.RETURN_TRUSTED_TYPE || false;
+    FORCE_BODY = cfg.FORCE_BODY || false;
+    SANITIZE_DOM = cfg.SANITIZE_DOM !== false;
+    SANITIZE_NAMED_PROPS = cfg.SANITIZE_NAMED_PROPS || false;
+    KEEP_CONTENT = cfg.KEEP_CONTENT !== false;
+    IN_PLACE = cfg.IN_PLACE || false;
+    IS_ALLOWED_URI$1 = isRegex(cfg.ALLOWED_URI_REGEXP) ? cfg.ALLOWED_URI_REGEXP : IS_ALLOWED_URI;
+    NAMESPACE = typeof cfg.NAMESPACE === "string" ? cfg.NAMESPACE : HTML_NAMESPACE;
+    MATHML_TEXT_INTEGRATION_POINTS = _resolveObjectOption(
+      cfg,
+      "MATHML_TEXT_INTEGRATION_POINTS",
+      () => addToSet({}, DEFAULT_MATHML_TEXT_INTEGRATION_POINTS)
+      // Default built-in map
+    );
+    HTML_INTEGRATION_POINTS = _resolveObjectOption(
+      cfg,
+      "HTML_INTEGRATION_POINTS",
+      () => addToSet({}, DEFAULT_HTML_INTEGRATION_POINTS)
+      // Default built-in map
+    );
+    const customElementHandling = _resolveObjectOption(cfg, "CUSTOM_ELEMENT_HANDLING", () => create(null));
+    CUSTOM_ELEMENT_HANDLING = create(null);
+    if (objectHasOwnProperty(customElementHandling, "tagNameCheck") && isRegexOrFunction(customElementHandling.tagNameCheck)) {
+      CUSTOM_ELEMENT_HANDLING.tagNameCheck = customElementHandling.tagNameCheck;
+    }
+    if (objectHasOwnProperty(customElementHandling, "attributeNameCheck") && isRegexOrFunction(customElementHandling.attributeNameCheck)) {
+      CUSTOM_ELEMENT_HANDLING.attributeNameCheck = customElementHandling.attributeNameCheck;
+    }
+    if (objectHasOwnProperty(customElementHandling, "allowCustomizedBuiltInElements") && typeof customElementHandling.allowCustomizedBuiltInElements === "boolean") {
+      CUSTOM_ELEMENT_HANDLING.allowCustomizedBuiltInElements = customElementHandling.allowCustomizedBuiltInElements;
+    }
+    seal(CUSTOM_ELEMENT_HANDLING);
+    if (SAFE_FOR_TEMPLATES) {
+      ALLOW_DATA_ATTR = false;
+    }
+    if (RETURN_DOM_FRAGMENT) {
+      RETURN_DOM = true;
+    }
+    if (USE_PROFILES) {
+      ALLOWED_TAGS = addToSet({}, text);
+      ALLOWED_ATTR = create(null);
+      if (USE_PROFILES.html === true) {
+        addToSet(ALLOWED_TAGS, html$1);
+        addToSet(ALLOWED_ATTR, html);
+      }
+      if (USE_PROFILES.svg === true) {
+        addToSet(ALLOWED_TAGS, svg$1);
+        addToSet(ALLOWED_ATTR, svg);
+        addToSet(ALLOWED_ATTR, xml);
+      }
+      if (USE_PROFILES.svgFilters === true) {
+        addToSet(ALLOWED_TAGS, svgFilters);
+        addToSet(ALLOWED_ATTR, svg);
+        addToSet(ALLOWED_ATTR, xml);
+      }
+      if (USE_PROFILES.mathMl === true) {
+        addToSet(ALLOWED_TAGS, mathMl$1);
+        addToSet(ALLOWED_ATTR, mathMl);
+        addToSet(ALLOWED_ATTR, xml);
+      }
+    }
+    EXTRA_ELEMENT_HANDLING.tagCheck = null;
+    EXTRA_ELEMENT_HANDLING.attributeCheck = null;
+    if (objectHasOwnProperty(cfg, "ADD_TAGS")) {
+      if (typeof cfg.ADD_TAGS === "function") {
+        EXTRA_ELEMENT_HANDLING.tagCheck = cfg.ADD_TAGS;
+      } else if (arrayIsArray(cfg.ADD_TAGS)) {
+        if (ALLOWED_TAGS === DEFAULT_ALLOWED_TAGS) {
+          ALLOWED_TAGS = clone(ALLOWED_TAGS);
+        }
+        addToSet(ALLOWED_TAGS, cfg.ADD_TAGS, transformCaseFunc);
+      }
+    }
+    if (objectHasOwnProperty(cfg, "ADD_ATTR")) {
+      if (typeof cfg.ADD_ATTR === "function") {
+        EXTRA_ELEMENT_HANDLING.attributeCheck = cfg.ADD_ATTR;
+      } else if (arrayIsArray(cfg.ADD_ATTR)) {
+        if (ALLOWED_ATTR === DEFAULT_ALLOWED_ATTR) {
+          ALLOWED_ATTR = clone(ALLOWED_ATTR);
+        }
+        addToSet(ALLOWED_ATTR, cfg.ADD_ATTR, transformCaseFunc);
+      }
+    }
+    if (objectHasOwnProperty(cfg, "ADD_FORBID_CONTENTS") && arrayIsArray(cfg.ADD_FORBID_CONTENTS)) {
+      if (FORBID_CONTENTS === DEFAULT_FORBID_CONTENTS) {
+        FORBID_CONTENTS = clone(FORBID_CONTENTS);
+      }
+      addToSet(FORBID_CONTENTS, cfg.ADD_FORBID_CONTENTS, transformCaseFunc);
+    }
+    if (KEEP_CONTENT) {
+      ALLOWED_TAGS["#text"] = true;
+    }
+    if (WHOLE_DOCUMENT) {
+      addToSet(ALLOWED_TAGS, ["html", "head", "body"]);
+    }
+    if (ALLOWED_TAGS.table) {
+      addToSet(ALLOWED_TAGS, ["tbody"]);
+      delete FORBID_TAGS.tbody;
+    }
+    if (cfg.TRUSTED_TYPES_POLICY) {
+      if (typeof cfg.TRUSTED_TYPES_POLICY.createHTML !== "function") {
+        throw typeErrorCreate('TRUSTED_TYPES_POLICY configuration option must provide a "createHTML" hook.');
+      }
+      if (typeof cfg.TRUSTED_TYPES_POLICY.createScriptURL !== "function") {
+        throw typeErrorCreate('TRUSTED_TYPES_POLICY configuration option must provide a "createScriptURL" hook.');
+      }
+      const previousTrustedTypesPolicy = trustedTypesPolicy;
+      trustedTypesPolicy = cfg.TRUSTED_TYPES_POLICY;
+      try {
+        emptyHTML = _createTrustedHTML("");
+      } catch (error) {
+        trustedTypesPolicy = previousTrustedTypesPolicy;
+        throw error;
+      }
+    } else if (cfg.TRUSTED_TYPES_POLICY === null) {
+      trustedTypesPolicy = void 0;
+      emptyHTML = "";
+    } else {
+      if (trustedTypesPolicy === void 0) {
+        trustedTypesPolicy = _getDefaultTrustedTypesPolicy();
+      }
+      if (trustedTypesPolicy && typeof emptyHTML === "string") {
+        emptyHTML = _createTrustedHTML("");
+      }
+    }
+    if (freeze) {
+      freeze(cfg);
+    }
+    CONFIG = cfg;
+  };
+  const ALL_SVG_TAGS = addToSet({}, [...svg$1, ...svgFilters, ...svgDisallowed]);
+  const ALL_MATHML_TAGS = addToSet({}, [...mathMl$1, ...mathMlDisallowed]);
+  const _checkSvgNamespace = function _checkSvgNamespace2(tagName, parent, parentTagName) {
+    if (parent.namespaceURI === HTML_NAMESPACE) {
+      return tagName === "svg";
+    }
+    if (parent.namespaceURI === MATHML_NAMESPACE) {
+      return tagName === "svg" && (parentTagName === "annotation-xml" || MATHML_TEXT_INTEGRATION_POINTS[parentTagName]);
+    }
+    return Boolean(ALL_SVG_TAGS[tagName]);
+  };
+  const _checkMathMlNamespace = function _checkMathMlNamespace2(tagName, parent, parentTagName) {
+    if (parent.namespaceURI === HTML_NAMESPACE) {
+      return tagName === "math";
+    }
+    if (parent.namespaceURI === SVG_NAMESPACE) {
+      return tagName === "math" && HTML_INTEGRATION_POINTS[parentTagName];
+    }
+    return Boolean(ALL_MATHML_TAGS[tagName]);
+  };
+  const _checkHtmlNamespace = function _checkHtmlNamespace2(tagName, parent, parentTagName) {
+    if (parent.namespaceURI === SVG_NAMESPACE && !HTML_INTEGRATION_POINTS[parentTagName]) {
+      return false;
+    }
+    if (parent.namespaceURI === MATHML_NAMESPACE && !MATHML_TEXT_INTEGRATION_POINTS[parentTagName]) {
+      return false;
+    }
+    return !ALL_MATHML_TAGS[tagName] && (COMMON_SVG_AND_HTML_ELEMENTS[tagName] || !ALL_SVG_TAGS[tagName]);
+  };
+  const _checkValidNamespace = function _checkValidNamespace2(element) {
+    let parent = getParentNode(element);
+    if (!parent || !parent.tagName) {
+      parent = {
+        namespaceURI: NAMESPACE,
+        tagName: "template"
+      };
+    }
+    const tagName = stringToLowerCase(element.tagName);
+    const parentTagName = stringToLowerCase(parent.tagName);
+    if (!ALLOWED_NAMESPACES[element.namespaceURI]) {
+      return false;
+    }
+    if (element.namespaceURI === SVG_NAMESPACE) {
+      return _checkSvgNamespace(tagName, parent, parentTagName);
+    }
+    if (element.namespaceURI === MATHML_NAMESPACE) {
+      return _checkMathMlNamespace(tagName, parent, parentTagName);
+    }
+    if (element.namespaceURI === HTML_NAMESPACE) {
+      return _checkHtmlNamespace(tagName, parent, parentTagName);
+    }
+    if (PARSER_MEDIA_TYPE === "application/xhtml+xml" && ALLOWED_NAMESPACES[element.namespaceURI]) {
+      return true;
+    }
+    return false;
+  };
+  const _forceRemove = function _forceRemove2(node) {
+    arrayPush(DOMPurify.removed, {
+      element: node
+    });
+    try {
+      getParentNode(node).removeChild(node);
+    } catch (_2) {
+      remove(node);
+      if (!getParentNode(node)) {
+        throw typeErrorCreate("a node selected for removal could not be detached from its tree and cannot be safely returned; refusing to sanitize in place");
+      }
+    }
+  };
+  const _stripAttributeNode = function _stripAttributeNode2(element, attribute, name2) {
+    try {
+      element.removeAttributeNode(attribute);
+    } catch (_2) {
+      try {
+        element.removeAttribute(name2);
+      } catch (_3) {
+      }
+    }
+  };
+  const _neutralizeRoot = function _neutralizeRoot2(root) {
+    _neutralizeSubtree(root);
+    const childNodes = getChildNodes(root);
+    if (childNodes) {
+      const snapshot = [];
+      arrayForEach(childNodes, (child) => {
+        arrayPush(snapshot, child);
+      });
+      arrayForEach(snapshot, (child) => {
+        try {
+          remove(child);
+        } catch (_2) {
+        }
+      });
+    }
+    const attributes = getAttributes(root);
+    if (attributes) {
+      for (let i = attributes.length - 1; i >= 0; --i) {
+        const attribute = attributes[i];
+        const name2 = attribute && attribute.name;
+        if (typeof name2 === "string") {
+          _stripAttributeNode(root, attribute, name2);
+        }
+      }
+    }
+  };
+  const _removeAttribute = function _removeAttribute2(name2, element, attr) {
+    if (!attr) {
+      try {
+        attr = element.getAttributeNode(name2);
+      } catch (_2) {
+        attr = null;
+      }
+    }
+    arrayPush(DOMPurify.removed, {
+      attribute: attr || null,
+      from: element
+    });
+    try {
+      if (attr) {
+        element.removeAttributeNode(attr);
+      } else {
+        element.removeAttribute(name2);
+      }
+    } catch (_2) {
+      try {
+        element.removeAttribute(name2);
+      } catch (_3) {
+      }
+    }
+    if (name2 === "is") {
+      if (RETURN_DOM || RETURN_DOM_FRAGMENT) {
+        try {
+          _forceRemove(element);
+        } catch (_2) {
+        }
+      } else {
+        try {
+          element.setAttribute(name2, "");
+        } catch (_2) {
+        }
+      }
+    }
+  };
+  const _stripDisallowedAttributes = function _stripDisallowedAttributes2(element) {
+    const attributes = getAttributes(element);
+    if (!attributes) {
+      return;
+    }
+    for (let i = attributes.length - 1; i >= 0; --i) {
+      const attribute = attributes[i];
+      const name2 = attribute && attribute.name;
+      if (typeof name2 !== "string" || ALLOWED_ATTR[transformCaseFunc(name2)]) {
+        continue;
+      }
+      _stripAttributeNode(element, attribute, name2);
+    }
+  };
+  const _neutralizeSubtree = function _neutralizeSubtree2(root) {
+    const stack = [root];
+    while (stack.length > 0) {
+      const node = stack.pop();
+      const nodeType = _readNodeType(node);
+      if (nodeType === NODE_TYPE.element) {
+        _stripDisallowedAttributes(node);
+      }
+      const childNodes = getChildNodes(node);
+      if (childNodes) {
+        for (let i = childNodes.length - 1; i >= 0; --i) {
+          stack.push(childNodes[i]);
+        }
+      }
+    }
+  };
+  const _isPatchLinkageAttribute = function _isPatchLinkageAttribute2(lcName, lcTag) {
+    if (!SAFE_FOR_XML) {
+      return false;
+    }
+    if (lcName === "patchsrc") {
+      return true;
+    }
+    return lcName === "for" && lcTag !== "label" && lcTag !== "output";
+  };
+  const _neutralizePatchLinkage = function _neutralizePatchLinkage2(root) {
+    if (!SAFE_FOR_XML) {
+      return;
+    }
+    const stack = [root];
+    while (stack.length > 0) {
+      const node = stack.pop();
+      const nodeType = _readNodeType(node);
+      if (nodeType === NODE_TYPE.processingInstruction || nodeType === NODE_TYPE.comment && regExpTest(COMMENT_MARKUP_PROBE, node.data)) {
+        try {
+          remove(node);
+        } catch (_2) {
+        }
+        continue;
+      }
+      if (nodeType === NODE_TYPE.element) {
+        const element = node;
+        const lcTag = transformCaseFunc(_readNodeName(node));
+        try {
+          if (element.hasAttribute && element.hasAttribute("patchsrc")) {
+            element.removeAttribute("patchsrc");
+          }
+          if (element.hasAttribute && element.hasAttribute("for") && _isPatchLinkageAttribute("for", lcTag)) {
+            element.removeAttribute("for");
+          }
+        } catch (_2) {
+        }
+      }
+      const childNodes = getChildNodes(node);
+      if (childNodes) {
+        for (let i = childNodes.length - 1; i >= 0; --i) {
+          stack.push(childNodes[i]);
+        }
+      }
+    }
+  };
+  const _initDocument = function _initDocument2(dirty) {
+    let doc = null;
+    let leadingWhitespace = null;
+    if (FORCE_BODY) {
+      dirty = "<remove></remove>" + dirty;
+    } else {
+      const matches = stringMatch(dirty, /^[\r\n\t ]+/);
+      leadingWhitespace = matches && matches[0];
+    }
+    if (PARSER_MEDIA_TYPE === "application/xhtml+xml" && NAMESPACE === HTML_NAMESPACE) {
+      dirty = '<html xmlns="http://www.w3.org/1999/xhtml"><head></head><body>' + dirty + "</body></html>";
+    }
+    const dirtyPayload = trustedTypesPolicy ? _createTrustedHTML(dirty) : dirty;
+    if (NAMESPACE === HTML_NAMESPACE) {
+      try {
+        doc = new DOMParser().parseFromString(dirtyPayload, PARSER_MEDIA_TYPE);
+      } catch (_2) {
+      }
+    }
+    if (!doc || !doc.documentElement) {
+      doc = implementation.createDocument(NAMESPACE, "template", null);
+      try {
+        doc.documentElement.innerHTML = IS_EMPTY_INPUT ? emptyHTML : dirtyPayload;
+      } catch (_2) {
+      }
+    }
+    const body2 = doc.body || doc.documentElement;
+    if (dirty && leadingWhitespace) {
+      body2.insertBefore(document2.createTextNode(leadingWhitespace), body2.childNodes[0] || null);
+    }
+    if (NAMESPACE === HTML_NAMESPACE) {
+      return getElementsByTagName.call(doc, WHOLE_DOCUMENT ? "html" : "body")[0];
+    }
+    return WHOLE_DOCUMENT ? doc.documentElement : body2;
+  };
+  const _createNodeIterator = function _createNodeIterator2(root) {
+    const doc = getOwnerDocument ? getOwnerDocument(root) : root.ownerDocument;
+    return createNodeIterator.call(
+      doc || root,
+      root,
+      // eslint-disable-next-line no-bitwise
+      NodeFilter.SHOW_ELEMENT | NodeFilter.SHOW_COMMENT | NodeFilter.SHOW_TEXT | NodeFilter.SHOW_PROCESSING_INSTRUCTION | NodeFilter.SHOW_CDATA_SECTION,
+      null
+    );
+  };
+  const _stripTemplateExpressions = function _stripTemplateExpressions2(value) {
+    value = stringReplace(value, MUSTACHE_EXPR$1, " ");
+    value = stringReplace(value, ERB_EXPR$1, " ");
+    value = stringReplace(value, TMPLIT_EXPR$1, " ");
+    return value;
+  };
+  const _scrubTemplateExpressions2 = function _scrubTemplateExpressions(node) {
+    var _node$querySelectorAl;
+    node.normalize();
+    const doc = getOwnerDocument ? getOwnerDocument(node) : node.ownerDocument;
+    const walker = createNodeIterator.call(
+      doc || node,
+      node,
+      // eslint-disable-next-line no-bitwise
+      NodeFilter.SHOW_TEXT | NodeFilter.SHOW_COMMENT | NodeFilter.SHOW_CDATA_SECTION | NodeFilter.SHOW_PROCESSING_INSTRUCTION,
+      null
+    );
+    let currentNode = walker.nextNode();
+    while (currentNode) {
+      currentNode.data = _stripTemplateExpressions(currentNode.data);
+      currentNode = walker.nextNode();
+    }
+    const templates = (_node$querySelectorAl = node.querySelectorAll) === null || _node$querySelectorAl === void 0 ? void 0 : _node$querySelectorAl.call(node, "template");
+    if (templates) {
+      arrayForEach(templates, (tmpl) => {
+        if (_isDocumentFragment(tmpl.content)) {
+          _scrubTemplateExpressions2(tmpl.content);
+        }
+      });
+    }
+  };
+  const _isClobbered = function _isClobbered2(element) {
+    const realTagName = getNodeName ? getNodeName(element) : null;
+    if (typeof realTagName !== "string") {
+      return false;
+    }
+    if (transformCaseFunc(realTagName) !== "form") {
+      return false;
+    }
+    return typeof element.nodeName !== "string" || typeof element.textContent !== "string" || typeof element.removeChild !== "function" || // Realm-safe NamedNodeMap detection: equality against the cached
+    // prototype getter. Clobbered .attributes (e.g. <input name="attributes">)
+    // makes the direct read diverge from the cached read; a clean form
+    // (same-realm OR foreign-realm) has both reads pointing at the same
+    // canonical NamedNodeMap.
+    element.attributes !== getAttributes(element) || typeof element.removeAttribute !== "function" || typeof element.setAttribute !== "function" || typeof element.namespaceURI !== "string" || typeof element.insertBefore !== "function" || typeof element.hasChildNodes !== "function" || // NodeType clobbering probe. Cached Node.prototype.nodeType getter
+    // returns the integer 1 for any Element regardless of realm; direct
+    // read on a clobbered form (e.g. <input name="nodeType">) returns
+    // the named child element. Cheap addition — nodeType is read from
+    // an internal slot, no serialization cost — and removes a residual
+    // clobbering surface used by several mXSS / PI / comment branches
+    // in _sanitizeElements that compare currentNode.nodeType directly.
+    element.nodeType !== getNodeType(element) || // HTMLFormElement has [LegacyOverrideBuiltIns]: a descendant named
+    // "childNodes" shadows the prototype getter. Direct reads of
+    // form.childNodes from a clobbered form return the named child
+    // instead of the real NodeList, so any walk that reads it directly
+    // skips the form's real children. Compare the direct read to the
+    // cached Node.prototype getter — when the form's named-property
+    // getter intercepts the read, the two values differ and we flag
+    // the form. This catches every clobbering child type (input,
+    // select, etc.) regardless of whether the named child happens to
+    // carry a numeric .length, which a typeof-based probe would miss
+    // (e.g. HTMLSelectElement.length is a defined unsigned-long).
+    element.childNodes !== getChildNodes(element);
+  };
+  const _isDocumentFragment = function _isDocumentFragment2(value) {
+    if (!getNodeType || typeof value !== "object" || value === null) {
+      return false;
+    }
+    try {
+      return getNodeType(value) === NODE_TYPE.documentFragment;
+    } catch (_2) {
+      return false;
+    }
+  };
+  const _isNode = function _isNode2(value) {
+    if (!getNodeType || typeof value !== "object" || value === null) {
+      return false;
+    }
+    try {
+      return typeof getNodeType(value) === "number";
+    } catch (_2) {
+      return false;
+    }
+  };
+  function _executeHooks(hooks2, currentNode, data) {
+    if (hooks2.length === 0) {
+      return;
+    }
+    arrayForEach(hooks2, (hook) => {
+      hook.call(DOMPurify, currentNode, data, CONFIG);
+    });
+  }
+  const _isUnsafeNode = function _isUnsafeNode2(currentNode, tagName) {
+    if (SAFE_FOR_XML && currentNode.hasChildNodes() && !_isNode(currentNode.firstElementChild) && regExpTest(ELEMENT_MARKUP_PROBE, currentNode.textContent) && regExpTest(ELEMENT_MARKUP_PROBE, currentNode.innerHTML)) {
+      return true;
+    }
+    if (SAFE_FOR_XML && currentNode.namespaceURI === HTML_NAMESPACE && LITERAL_TEXT_ELEMENTS[tagName] && (_isNode(currentNode.firstElementChild) || typeof currentNode.textContent === "string" && regExpTest(LITERAL_TEXT_CLOSE[tagName], currentNode.textContent))) {
+      return true;
+    }
+    if (currentNode.nodeType === NODE_TYPE.processingInstruction) {
+      return true;
+    }
+    if (SAFE_FOR_XML && currentNode.nodeType === NODE_TYPE.comment && regExpTest(COMMENT_MARKUP_PROBE, currentNode.data)) {
+      return true;
+    }
+    return false;
+  };
+  const _matchesNameCheck = function _matchesNameCheck2(check, name2) {
+    if (check instanceof RegExp) {
+      return regExpTest(check, name2);
+    }
+    if (check instanceof Function) {
+      for (var _len = arguments.length, args = new Array(_len > 2 ? _len - 2 : 0), _key = 2; _key < _len; _key++) {
+        args[_key - 2] = arguments[_key];
+      }
+      return Boolean(check(name2, ...args));
+    }
+    return false;
+  };
+  const _sanitizeDisallowedNode = function _sanitizeDisallowedNode2(currentNode, tagName, root) {
+    if (!FORBID_TAGS[tagName] && _isBasicCustomElement(tagName) && _matchesNameCheck(CUSTOM_ELEMENT_HANDLING.tagNameCheck, tagName)) {
+      return false;
+    }
+    if (KEEP_CONTENT && !FORBID_CONTENTS[tagName]) {
+      const parentNode = getParentNode(currentNode);
+      const childNodes = getChildNodes(currentNode);
+      if (childNodes && parentNode) {
+        const childCount = childNodes.length;
+        for (let i = childCount - 1; i >= 0; --i) {
+          const hoisted = currentNode === root ? cloneNode(childNodes[i], true) : childNodes[i];
+          parentNode.insertBefore(hoisted, getNextSibling(currentNode));
+        }
+      }
+    }
+    _forceRemove(currentNode);
+    return true;
+  };
+  const _forkSharedAllowlist = function _forkSharedAllowlist2(hookList, set, defaultSet, setConfigSet) {
+    if (hookList.length === 0) {
+      return set;
+    }
+    return set === defaultSet || set === setConfigSet ? clone(set) : set;
+  };
+  const _handleHookDetachedNode = function _handleHookDetachedNode2(currentNode, root) {
+    if (currentNode === root || getParentNode(currentNode) !== null) {
+      return false;
+    }
+    if (IN_PLACE) {
+      _neutralizeSubtree(currentNode);
+    }
+    return true;
+  };
+  const _sanitizeElements = function _sanitizeElements2(currentNode, root) {
+    _executeHooks(hooks.beforeSanitizeElements, currentNode, null);
+    if (_handleHookDetachedNode(currentNode, root)) {
+      return true;
+    }
+    if (_isClobbered(currentNode)) {
+      _forceRemove(currentNode);
+      return true;
+    }
+    const tagName = transformCaseFunc(_readNodeName(currentNode));
+    ALLOWED_TAGS = _forkSharedAllowlist(hooks.uponSanitizeElement, ALLOWED_TAGS, DEFAULT_ALLOWED_TAGS, SET_CONFIG_ALLOWED_TAGS);
+    _executeHooks(hooks.uponSanitizeElement, currentNode, {
+      tagName,
+      allowedTags: ALLOWED_TAGS
+    });
+    if (_handleHookDetachedNode(currentNode, root)) {
+      return true;
+    }
+    if (_isUnsafeNode(currentNode, tagName)) {
+      _forceRemove(currentNode);
+      return true;
+    }
+    if (FORBID_TAGS[tagName] || !(EXTRA_ELEMENT_HANDLING.tagCheck instanceof Function && EXTRA_ELEMENT_HANDLING.tagCheck(tagName)) && !ALLOWED_TAGS[tagName]) {
+      const removed = _sanitizeDisallowedNode(currentNode, tagName, root);
+      if (removed === false) {
+        _executeHooks(hooks.afterSanitizeElements, currentNode, null);
+      }
+      return removed;
+    }
+    const nt2 = _readNodeType(currentNode);
+    if (nt2 === NODE_TYPE.element && !_checkValidNamespace(currentNode)) {
+      _forceRemove(currentNode);
+      return true;
+    }
+    if ((tagName === "noscript" || tagName === "noembed" || tagName === "noframes") && regExpTest(FALLBACK_TAG_CLOSE, currentNode.innerHTML)) {
+      _forceRemove(currentNode);
+      return true;
+    }
+    if (SAFE_FOR_TEMPLATES && currentNode.nodeType === NODE_TYPE.text) {
+      const content = _stripTemplateExpressions(currentNode.textContent);
+      if (currentNode.textContent !== content) {
+        arrayPush(DOMPurify.removed, {
+          element: currentNode.cloneNode()
+        });
+        currentNode.textContent = content;
+      }
+    }
+    _executeHooks(hooks.afterSanitizeElements, currentNode, null);
+    return false;
+  };
+  const _isValidAttribute = function _isValidAttribute2(lcTag, lcName, value) {
+    if (FORBID_ATTR[lcName]) {
+      return false;
+    }
+    if (_isPatchLinkageAttribute(lcName, lcTag)) {
+      return false;
+    }
+    if (SANITIZE_DOM && (lcName === "id" || lcName === "name") && (value in document2 || value in formElement)) {
+      return false;
+    }
+    const nameIsPermitted = ALLOWED_ATTR[lcName] || EXTRA_ELEMENT_HANDLING.attributeCheck instanceof Function && EXTRA_ELEMENT_HANDLING.attributeCheck(lcName, lcTag);
+    if (ALLOW_DATA_ATTR && regExpTest(DATA_ATTR$1, lcName)) {
+      return true;
+    }
+    if (ALLOW_ARIA_ATTR && regExpTest(ARIA_ATTR$1, lcName)) {
+      return true;
+    }
+    if (!nameIsPermitted) {
+      return (
+        // Condition a) covers a basically valid custom element tag name whose
+        // tag passes the configured tagNameCheck and whose attribute name
+        // passes the configured attributeNameCheck ...
+        _isBasicCustomElement(lcTag) && _matchesNameCheck(CUSTOM_ELEMENT_HANDLING.tagNameCheck, lcTag) && _matchesNameCheck(CUSTOM_ELEMENT_HANDLING.attributeNameCheck, lcName, lcTag) || // Condition b) covers an `is` attribute whose value passes the
+        // configured tagNameCheck while customized built-in elements are
+        // allowed.
+        lcName === "is" && CUSTOM_ELEMENT_HANDLING.allowCustomizedBuiltInElements && _matchesNameCheck(CUSTOM_ELEMENT_HANDLING.tagNameCheck, value)
+      );
+    }
+    if (URI_SAFE_ATTRIBUTES[lcName]) {
+      return true;
+    }
+    if (regExpTest(IS_ALLOWED_URI$1, stringReplace(value, ATTR_WHITESPACE$1, ""))) {
+      return true;
+    }
+    if ((lcName === "src" || lcName === "xlink:href" || lcName === "href") && lcTag !== "script" && stringIndexOf(value, "data:") === 0 && DATA_URI_TAGS[lcTag]) {
+      return true;
+    }
+    if (ALLOW_UNKNOWN_PROTOCOLS && !regExpTest(IS_SCRIPT_OR_DATA$1, stringReplace(value, ATTR_WHITESPACE$1, ""))) {
+      return true;
+    }
+    return !value;
+  };
+  const RESERVED_CUSTOM_ELEMENT_NAMES = addToSet({}, ["annotation-xml", "color-profile", "font-face", "font-face-format", "font-face-name", "font-face-src", "font-face-uri", "missing-glyph"]);
+  const _isBasicCustomElement = function _isBasicCustomElement2(tagName) {
+    return !RESERVED_CUSTOM_ELEMENT_NAMES[stringToLowerCase(tagName)] && regExpTest(CUSTOM_ELEMENT$1, tagName);
+  };
+  const _applyTrustedTypesToAttribute = function _applyTrustedTypesToAttribute2(lcTag, lcName, namespaceURI, value) {
+    if (trustedTypesPolicy && typeof trustedTypes === "object" && typeof trustedTypes.getAttributeType === "function" && !namespaceURI) {
+      switch (trustedTypes.getAttributeType(lcTag, lcName)) {
+        case "TrustedHTML": {
+          return _createTrustedHTML(value);
+        }
+        case "TrustedScriptURL": {
+          return _createTrustedScriptURL(value);
+        }
+      }
+    }
+    return value;
+  };
+  const _setAttributeValue = function _setAttributeValue2(currentNode, name2, namespaceURI, value) {
+    try {
+      if (namespaceURI) {
+        currentNode.setAttributeNS(namespaceURI, name2, value);
+      } else {
+        currentNode.setAttribute(name2, value);
+      }
+      if (_isClobbered(currentNode)) {
+        _forceRemove(currentNode);
+      } else {
+        arrayPop(DOMPurify.removed);
+      }
+    } catch (_2) {
+      _removeAttribute(name2, currentNode);
+    }
+  };
+  const _sanitizeAttributes = function _sanitizeAttributes2(currentNode) {
+    _executeHooks(hooks.beforeSanitizeAttributes, currentNode, null);
+    const attributes = currentNode.attributes;
+    if (!attributes || _isClobbered(currentNode)) {
+      return;
+    }
+    ALLOWED_ATTR = _forkSharedAllowlist(hooks.uponSanitizeAttribute, ALLOWED_ATTR, DEFAULT_ALLOWED_ATTR, SET_CONFIG_ALLOWED_ATTR);
+    const hookEvent = {
+      attrName: "",
+      attrValue: "",
+      keepAttr: true,
+      allowedAttributes: ALLOWED_ATTR,
+      forceKeepAttr: void 0
+    };
+    let l3 = attributes.length;
+    const lcTag = transformCaseFunc(currentNode.nodeName);
+    while (l3--) {
+      const attr = attributes[l3];
+      const name2 = attr.name, namespaceURI = attr.namespaceURI, attrValue = attr.value;
+      const lcName = transformCaseFunc(name2);
+      const initValue = attrValue;
+      let value = name2 === "value" ? initValue : stringTrim(initValue);
+      hookEvent.attrName = lcName;
+      hookEvent.attrValue = value;
+      hookEvent.keepAttr = true;
+      hookEvent.forceKeepAttr = void 0;
+      _executeHooks(hooks.uponSanitizeAttribute, currentNode, hookEvent);
+      value = hookEvent.attrValue;
+      if (SANITIZE_NAMED_PROPS && (lcName === "id" || lcName === "name") && stringIndexOf(value, SANITIZE_NAMED_PROPS_PREFIX) !== 0) {
+        _removeAttribute(name2, currentNode, attr);
+        value = SANITIZE_NAMED_PROPS_PREFIX + value;
+      }
+      if (SAFE_FOR_XML && regExpTest(/((--!?|])>)|<\/(style|script|title|xmp|textarea|noscript|iframe|noembed|noframes)/i, value)) {
+        _removeAttribute(name2, currentNode, attr);
+        continue;
+      }
+      if (lcName === "attributename" && stringMatch(value, "href")) {
+        _removeAttribute(name2, currentNode, attr);
+        continue;
+      }
+      if (hookEvent.forceKeepAttr) {
+        continue;
+      }
+      if (!hookEvent.keepAttr) {
+        _removeAttribute(name2, currentNode, attr);
+        continue;
+      }
+      if (!ALLOW_SELF_CLOSE_IN_ATTR && regExpTest(SELF_CLOSING_TAG, value)) {
+        _removeAttribute(name2, currentNode, attr);
+        continue;
+      }
+      if (SAFE_FOR_TEMPLATES) {
+        value = _stripTemplateExpressions(value);
+      }
+      if (!_isValidAttribute(lcTag, lcName, value)) {
+        _removeAttribute(name2, currentNode, attr);
+        continue;
+      }
+      value = _applyTrustedTypesToAttribute(lcTag, lcName, namespaceURI, value);
+      if (value !== initValue) {
+        _setAttributeValue(currentNode, name2, namespaceURI, value);
+      }
+    }
+    _executeHooks(hooks.afterSanitizeAttributes, currentNode, null);
+  };
+  const _sanitizeShadowDOM2 = function _sanitizeShadowDOM(fragment) {
+    let shadowNode = null;
+    const shadowIterator = _createNodeIterator(fragment);
+    _executeHooks(hooks.beforeSanitizeShadowDOM, fragment, null);
+    while (shadowNode = shadowIterator.nextNode()) {
+      _executeHooks(hooks.uponSanitizeShadowNode, shadowNode, null);
+      _sanitizeElements(shadowNode, fragment);
+      _sanitizeAttributes(shadowNode);
+      if (_isDocumentFragment(shadowNode.content)) {
+        _sanitizeShadowDOM2(shadowNode.content);
+      }
+      if (_readNodeType(shadowNode) === NODE_TYPE.element) {
+        const innerSr = getShadowRoot(shadowNode);
+        if (_isDocumentFragment(innerSr)) {
+          _sanitizeAttachedShadowRoots(innerSr);
+          _sanitizeShadowDOM2(innerSr);
+        }
+      }
+    }
+    _executeHooks(hooks.afterSanitizeShadowDOM, fragment, null);
+  };
+  const _sanitizeAttachedShadowRoots = function _sanitizeAttachedShadowRoots2(root) {
+    const stack = [{
+      node: root,
+      shadow: null
+    }];
+    while (stack.length > 0) {
+      const item = stack.pop();
+      if (item.shadow) {
+        _sanitizeShadowDOM2(item.shadow);
+        continue;
+      }
+      const node = item.node;
+      const nodeType = _readNodeType(node);
+      const isElement = nodeType === NODE_TYPE.element;
+      const childNodes = getChildNodes(node);
+      if (childNodes) {
+        for (let i = childNodes.length - 1; i >= 0; --i) {
+          stack.push({
+            node: childNodes[i],
+            shadow: null
+          });
+        }
+      }
+      if (isElement) {
+        const rootName = getNodeName ? getNodeName(node) : null;
+        if (typeof rootName === "string" && transformCaseFunc(rootName) === "template") {
+          const content = node.content;
+          if (_isDocumentFragment(content)) {
+            stack.push({
+              node: content,
+              shadow: null
+            });
+          }
+        }
+      }
+      if (isElement) {
+        const sr = getShadowRoot(node);
+        if (_isDocumentFragment(sr)) {
+          stack.push({
+            node: null,
+            shadow: sr
+          }, {
+            node: sr,
+            shadow: null
+          });
+        }
+      }
+    }
+  };
+  DOMPurify.sanitize = function(dirty) {
+    let cfg = arguments.length > 1 && arguments[1] !== void 0 ? arguments[1] : {};
+    let body2 = null;
+    let importedNode = null;
+    let currentNode = null;
+    let returnNode = null;
+    IS_EMPTY_INPUT = !dirty;
+    if (IS_EMPTY_INPUT) {
+      dirty = "<!-->";
+    }
+    if (typeof dirty !== "string" && !_isNode(dirty)) {
+      dirty = stringifyValue(dirty);
+      if (typeof dirty !== "string") {
+        throw typeErrorCreate("dirty is not a string, aborting");
+      }
+    }
+    if (!DOMPurify.isSupported) {
+      return dirty;
+    }
+    if (SET_CONFIG) {
+      ALLOWED_TAGS = SET_CONFIG_ALLOWED_TAGS;
+      ALLOWED_ATTR = SET_CONFIG_ALLOWED_ATTR;
+    } else {
+      _parseConfig(cfg);
+    }
+    if (hooks.uponSanitizeElement.length > 0 || hooks.uponSanitizeAttribute.length > 0) {
+      ALLOWED_TAGS = clone(ALLOWED_TAGS);
+    }
+    if (hooks.uponSanitizeAttribute.length > 0) {
+      ALLOWED_ATTR = clone(ALLOWED_ATTR);
+    }
+    DOMPurify.removed = [];
+    const inPlace = IN_PLACE && typeof dirty !== "string" && _isNode(dirty);
+    if (inPlace) {
+      _neutralizePatchLinkage(dirty);
+      const nn2 = _readNodeName(dirty);
+      if (typeof nn2 === "string") {
+        const tagName = transformCaseFunc(nn2);
+        if (!ALLOWED_TAGS[tagName] || FORBID_TAGS[tagName]) {
+          _neutralizeRoot(dirty);
+          throw typeErrorCreate("root node is forbidden and cannot be sanitized in-place");
+        }
+      }
+      if (_isClobbered(dirty)) {
+        _neutralizeRoot(dirty);
+        throw typeErrorCreate("root node is clobbered and cannot be sanitized in-place");
+      }
+      try {
+        _sanitizeAttachedShadowRoots(dirty);
+      } catch (error) {
+        _neutralizeRoot(dirty);
+        throw error;
+      }
+    } else if (_isNode(dirty)) {
+      body2 = _initDocument("<!---->");
+      importedNode = body2.ownerDocument.importNode(dirty, true);
+      if (importedNode.nodeType === NODE_TYPE.element && importedNode.nodeName === "BODY") {
+        body2 = importedNode;
+      } else if (importedNode.nodeName === "HTML") {
+        body2 = importedNode;
+      } else {
+        body2.appendChild(importedNode);
+      }
+      _sanitizeAttachedShadowRoots(importedNode);
+    } else {
+      if (!RETURN_DOM && !SAFE_FOR_TEMPLATES && !WHOLE_DOCUMENT && // eslint-disable-next-line unicorn/prefer-includes
+      dirty.indexOf("<") === -1) {
+        return trustedTypesPolicy && RETURN_TRUSTED_TYPE ? _createTrustedHTML(dirty) : dirty;
+      }
+      body2 = _initDocument(dirty);
+      if (!body2) {
+        return RETURN_DOM ? null : RETURN_TRUSTED_TYPE ? emptyHTML : "";
+      }
+    }
+    if (body2 && FORCE_BODY) {
+      _forceRemove(body2.firstChild);
+    }
+    const walkRoot = inPlace ? dirty : body2;
+    try {
+      const nodeIterator = _createNodeIterator(walkRoot);
+      while (currentNode = nodeIterator.nextNode()) {
+        _sanitizeElements(currentNode, walkRoot);
+        _sanitizeAttributes(currentNode);
+        if (_isDocumentFragment(currentNode.content)) {
+          _sanitizeShadowDOM2(currentNode.content);
+        }
+      }
+    } catch (error) {
+      if (inPlace) {
+        _neutralizeRoot(dirty);
+        arrayForEach(DOMPurify.removed, (entry) => {
+          if (entry.element) {
+            _neutralizeSubtree(entry.element);
+          }
+        });
+      }
+      throw error;
+    }
+    if (inPlace) {
+      arrayForEach(DOMPurify.removed, (entry) => {
+        if (entry.element) {
+          _neutralizeSubtree(entry.element);
+        }
+      });
+      if (SAFE_FOR_TEMPLATES) {
+        _scrubTemplateExpressions2(dirty);
+      }
+      return dirty;
+    }
+    if (RETURN_DOM) {
+      if (SAFE_FOR_TEMPLATES) {
+        _scrubTemplateExpressions2(body2);
+      }
+      if (RETURN_DOM_FRAGMENT) {
+        returnNode = createDocumentFragment.call(body2.ownerDocument);
+        while (body2.firstChild) {
+          returnNode.appendChild(body2.firstChild);
+        }
+      } else {
+        returnNode = body2;
+      }
+      if (ALLOWED_ATTR.shadowroot || ALLOWED_ATTR.shadowrootmode) {
+        returnNode = importNode.call(originalDocument, returnNode, true);
+      }
+      return returnNode;
+    }
+    let serializedHTML = WHOLE_DOCUMENT ? body2.outerHTML : body2.innerHTML;
+    if (WHOLE_DOCUMENT && ALLOWED_TAGS["!doctype"] && body2.ownerDocument && body2.ownerDocument.doctype && body2.ownerDocument.doctype.name && regExpTest(DOCTYPE_NAME, body2.ownerDocument.doctype.name)) {
+      serializedHTML = "<!DOCTYPE " + body2.ownerDocument.doctype.name + ">\n" + serializedHTML;
+    }
+    if (SAFE_FOR_TEMPLATES) {
+      serializedHTML = _stripTemplateExpressions(serializedHTML);
+    }
+    return trustedTypesPolicy && RETURN_TRUSTED_TYPE ? _createTrustedHTML(serializedHTML) : serializedHTML;
+  };
+  DOMPurify.setConfig = function() {
+    let cfg = arguments.length > 0 && arguments[0] !== void 0 ? arguments[0] : {};
+    _parseConfig(cfg);
+    SET_CONFIG = true;
+    SET_CONFIG_ALLOWED_TAGS = ALLOWED_TAGS;
+    SET_CONFIG_ALLOWED_ATTR = ALLOWED_ATTR;
+  };
+  DOMPurify.clearConfig = function() {
+    CONFIG = null;
+    SET_CONFIG = false;
+    SET_CONFIG_ALLOWED_TAGS = null;
+    SET_CONFIG_ALLOWED_ATTR = null;
+    trustedTypesPolicy = defaultTrustedTypesPolicy;
+    emptyHTML = "";
+  };
+  DOMPurify.isValidAttribute = function(tag, attr, value) {
+    if (!CONFIG) {
+      _parseConfig({});
+    }
+    const lcTag = transformCaseFunc(tag);
+    const lcName = transformCaseFunc(attr);
+    return _isValidAttribute(lcTag, lcName, value);
+  };
+  DOMPurify.addHook = function(entryPoint, hookFunction) {
+    if (typeof hookFunction !== "function") {
+      return;
+    }
+    if (!objectHasOwnProperty(hooks, entryPoint)) {
+      return;
+    }
+    arrayPush(hooks[entryPoint], hookFunction);
+  };
+  DOMPurify.removeHook = function(entryPoint, hookFunction) {
+    if (!objectHasOwnProperty(hooks, entryPoint)) {
+      return void 0;
+    }
+    if (hookFunction !== void 0) {
+      const index = arrayLastIndexOf(hooks[entryPoint], hookFunction);
+      return index === -1 ? void 0 : arraySplice(hooks[entryPoint], index, 1)[0];
+    }
+    return arrayPop(hooks[entryPoint]);
+  };
+  DOMPurify.removeHooks = function(entryPoint) {
+    if (!objectHasOwnProperty(hooks, entryPoint)) {
+      return;
+    }
+    hooks[entryPoint] = [];
+  };
+  DOMPurify.removeAllHooks = function() {
+    hooks = _createHooksMap();
+  };
+  return DOMPurify;
+}
+var purify = createDOMPurify();
+
+// node_modules/marked/lib/marked.esm.js
+function C() {
+  return { async: false, breaks: false, extensions: null, gfm: true, hooks: null, pedantic: false, renderer: null, silent: false, tokenizer: null, walkTokens: null };
+}
+var R = C();
+function j(l3) {
+  R = l3;
+}
+var z = { exec: () => null };
+function A(l3) {
+  let e = [];
+  return (t) => {
+    let n = Math.max(0, Math.min(3, t - 1)), s = e[n];
+    return s || (s = l3(n), e[n] = s), s;
+  };
+}
+function d(l3, e = "") {
+  let t = typeof l3 == "string" ? l3 : l3.source, n = { replace: (s, r) => {
+    let i = typeof r == "string" ? r : r.source;
+    return i = i.replace(m.caret, "$1"), t = t.replace(s, i), n;
+  }, getRegex: () => new RegExp(t, e) };
+  return n;
+}
+var Te = ((l3 = "") => {
+  try {
+    return !!new RegExp("(?<=1)(?<!1)" + l3);
+  } catch {
+    return false;
+  }
+})();
+var m = { codeRemoveIndent: /^(?: {1,4}| {0,3}\t)/gm, outputLinkReplace: /\\([\[\]])/g, indentCodeCompensation: /^(\s+)(?:```)/, beginningSpace: /^\s+/, endingHash: /#$/, startingSpaceChar: /^ /, endingSpaceChar: / $/, nonSpaceChar: /[^ ]/, newLineCharGlobal: /\n/g, tabCharGlobal: /\t/g, multipleSpaceGlobal: /\s+/g, blankLine: /^[ \t]*$/, doubleBlankLine: /\n[ \t]*\n[ \t]*$/, blockquoteStart: /^ {0,3}>/, blockquoteSetextReplace: /\n {0,3}((?:=+|-+) *)(?=\n|$)/g, blockquoteSetextReplace2: /^ {0,3}>[ \t]?/gm, listReplaceNesting: /^ {1,4}(?=( {4})*[^ ])/g, listIsTask: /^\[[ xX]\] +\S/, listReplaceTask: /^\[[ xX]\] +/, listTaskCheckbox: /\[[ xX]\]/, anyLine: /\n.*\n/, hrefBrackets: /^<(.*)>$/, tableDelimiter: /[:|]/, tableAlignChars: /^\||\| *$/g, tableRowBlankLine: /\n[ \t]*$/, tableAlignRight: /^ *-+: *$/, tableAlignCenter: /^ *:-+: *$/, tableAlignLeft: /^ *:-+ *$/, startATag: /^<a /i, endATag: /^<\/a>/i, startPreScriptTag: /^<(pre|code|kbd|script)(\s|>)/i, endPreScriptTag: /^<\/(pre|code|kbd|script)(\s|>)/i, startAngleBracket: /^</, endAngleBracket: />$/, pedanticHrefTitle: /^([^'"]*[^\s])\s+(['"])(.*)\2/, unicodeAlphaNumeric: /[\p{L}\p{N}]/u, escapeTest: /[&<>"']/, escapeReplace: /[&<>"']/g, escapeTestNoEncode: /[<>"']|&(?!(#\d{1,7}|#[Xx][a-fA-F0-9]{1,6}|\w+);)/, escapeReplaceNoEncode: /[<>"']|&(?!(#\d{1,7}|#[Xx][a-fA-F0-9]{1,6}|\w+);)/g, caret: /(^|[^\[])\^/g, percentDecode: /%25/g, findPipe: /\|/g, splitPipe: / \|/, slashPipe: /\\\|/g, carriageReturn: /\r\n|\r/g, spaceLine: /^ +$/gm, notSpaceStart: /^\S*/, endingNewline: /\n$/, listItemRegex: (l3) => new RegExp(`^( {0,3}${l3})((?:[	 ][^\\n]*)?(?:\\n|$))`), nextBulletRegex: A((l3) => new RegExp(`^ {0,${l3}}(?:[*+-]|\\d{1,9}[.)])((?:[ 	][^\\n]*)?(?:\\n|$))`)), hrRegex: A((l3) => new RegExp(`^ {0,${l3}}((?:- *){3,}|(?:_ *){3,}|(?:\\* *){3,})(?:\\n+|$)`)), fencesBeginRegex: A((l3) => new RegExp(`^ {0,${l3}}(?:\`\`\`|~~~)`)), headingBeginRegex: A((l3) => new RegExp(`^ {0,${l3}}#`)), htmlBeginRegex: A((l3) => new RegExp(`^ {0,${l3}}<(?:[a-z].*>|!--)`, "i")), blockquoteBeginRegex: A((l3) => new RegExp(`^ {0,${l3}}>`)) };
+var Oe = /^(?:[ \t]*(?:\n|$))+/;
+var we = /^((?: {4}| {0,3}\t)[^\n]+(?:\n(?:[ \t]*(?:\n|$))*)?)+/;
+var ye = /^ {0,3}(`{3,}(?=[^`\n]*(?:\n|$))|~{3,})([^\n]*)(?:\n|$)(?:|([\s\S]*?)(?:\n|$))(?: {0,3}\1[~`]* *(?=\n|$)|$)/;
+var q = /^ {0,3}((?:-[\t ]*){3,}|(?:_[ \t]*){3,}|(?:\*[ \t]*){3,})(?:\n+|$)/;
+var Pe = /^ {0,3}(#{1,6})(?=\s|$)(.*)(?:\n+|$)/;
+var U = / {0,3}(?:[*+-]|\d{1,9}[.)])/;
+var oe = /^(?!bull |blockCode|fences|blockquote|heading|html|table)((?:.|\n(?!\s*?\n|bull |blockCode|fences|blockquote|heading|html|table))+?)\n {0,3}(=+|-+) *(?:\n+|$)/;
+var ae = d(oe).replace(/bull/g, U).replace(/blockCode/g, /(?: {4}| {0,3}\t)/).replace(/fences/g, / {0,3}(?:`{3,}|~{3,})/).replace(/blockquote/g, / {0,3}>/).replace(/heading/g, / {0,3}#{1,6}(?:\s|$)/).replace(/html/g, / {0,3}<[^\n>]+>\n/).replace(/\|table/g, "").getRegex();
+var Se = d(oe).replace(/bull/g, U).replace(/blockCode/g, /(?: {4}| {0,3}\t)/).replace(/fences/g, / {0,3}(?:`{3,}|~{3,})/).replace(/blockquote/g, / {0,3}>/).replace(/heading/g, / {0,3}#{1,6}(?:\s|$)/).replace(/html/g, / {0,3}<[^\n>]+>\n/).replace(/table/g, / {0,3}\|?(?:[:\- ]*\|)+[\:\- ]*\n/).getRegex();
+var K = /^([^\n]+(?:\n(?!hr|heading|lheading|blockquote|fences|list|html|table|[ \t]+\n)[^\n]+)*)/;
+var _e = /^[^\n]+/;
+var W = /(?!\s*\])(?:\\[\s\S]|[^\[\]\\])+/;
+var $e = d(/^ {0,3}\[(label)\]: *(?:\n[ \t]*)?([^<\s][^\s]*|<.*?>)(?:(?: +(?:\n[ \t]*)?| *\n[ \t]*)(title))? *(?:\n+|$)/).replace("label", W).replace("title", /(?:"(?:\\"?|[^"\\])*"|'[^'\n]*(?:\n[^'\n]+)*\n?'|\([^()]*\))/).getRegex();
+var Le = d(/^(bull)([ \t][^\n]*?)?(?:\n|$)/).replace(/bull/g, U).getRegex();
+var Q = "address|article|aside|base|basefont|blockquote|body|caption|center|col|colgroup|dd|details|dialog|dir|div|dl|dt|fieldset|figcaption|figure|footer|form|frame|frameset|h[1-6]|head|header|hr|html|iframe|legend|li|link|main|menu|menuitem|meta|nav|noframes|ol|optgroup|option|p|param|search|section|summary|table|tbody|td|tfoot|th|thead|title|tr|track|ul";
+var X = /<!--(?:-?>|[\s\S]*?(?:-->|$))/;
+var Me = d("^ {0,3}(?:<(script|pre|style|textarea)[\\s>][\\s\\S]*?(?:</\\1>[^\\n]*\\n*|$)|comment[^\\n]*(\\n+|$)|<\\?[\\s\\S]*?(?:\\?>[^\\n]*\\n*|$)|<![A-Z][\\s\\S]*?(?:>[^\\n]*\\n*|$)|<!\\[CDATA\\[[\\s\\S]*?(?:\\]\\]>[^\\n]*\\n*|$)|</?(tag)(?: +|\\n|/?>)[\\s\\S]*?(?:(?:\\n[ 	]*)+\\n|$)|<(?!script|pre|style|textarea)([a-z][\\w-]*)(?:attribute)*? */?>(?=[ \\t]*(?:\\n|$))[\\s\\S]*?(?:(?:\\n[ 	]*)+\\n|$)|</(?!script|pre|style|textarea)[a-z][\\w-]*\\s*>(?=[ \\t]*(?:\\n|$))[\\s\\S]*?(?:(?:\\n[ 	]*)+\\n|$))", "i").replace("comment", X).replace("tag", Q).replace("attribute", / +[a-zA-Z:_][\w.:-]*(?: *= *"[^"\n]*"| *= *'[^'\n]*'| *= *[^\s"'=<>`]+)?/).getRegex();
+var le = (l3) => d(K).replace("hr", q).replace("heading", " {0,3}#{1,6}(?:\\s|$)").replace("|lheading", "").replace("|table", "").replace("blockquote", " {0,3}>").replace("fences", " {0,3}(?:`{3,}(?=[^`\\n]*(?:\\n|$))|~~~)[^\\n]*(?:\\n|$)").replace("list", l3).replace("html", "</?(?:tag)(?: +|\\n|/?>)|<(?:script|pre|style|textarea|!--)").replace("tag", Q).getRegex();
+var ze = le(/ {0,3}(?:[*+-]|1[.)])[ \t]+[^ \t\n]/);
+var Ee = le(/ {0,3}(?:[*+-]|\d{1,9}[.)])(?:[ \t]|\n|$)/);
+var Ce = d(/^( {0,3}> ?(paragraph|[^\n]*)(?:\n|$))+/).replace("paragraph", Ee).getRegex();
+var J = { blockquote: Ce, code: we, def: $e, fences: ye, heading: Pe, hr: q, html: Me, lheading: ae, list: Le, newline: Oe, paragraph: ze, table: z, text: _e };
+var se = d("^ *([^\\n ].*)\\n {0,3}((?:\\| *)?:?-+:? *(?:\\| *:?-+:? *)*(?:\\| *)?)(?:\\n((?:(?! *\\n|hr|heading|blockquote|code|fences|list|html).*(?:\\n|$))*)\\n*|$)").replace("hr", q).replace("heading", " {0,3}#{1,6}(?:\\s|$)").replace("blockquote", " {0,3}>").replace("code", "(?: {4}| {0,3}	)[^\\n]").replace("fences", " {0,3}(?:`{3,}(?=[^`\\n]*(?:\\n|$))|~~~)[^\\n]*(?:\\n|$)").replace("list", " {0,3}(?:[*+-]|1[.)])[ \\t]").replace("html", "</?(?:tag)(?: +|\\n|/?>)|<(?:script|pre|style|textarea|!--)").replace("tag", Q).getRegex();
+var Ae = { ...J, lheading: Se, table: se, paragraph: d(K).replace("hr", q).replace("heading", " {0,3}#{1,6}(?:\\s|$)").replace("|lheading", "").replace("table", se).replace("blockquote", " {0,3}>").replace("fences", " {0,3}(?:`{3,}(?=[^`\\n]*(?:\\n|$))|~~~)[^\\n]*(?:\\n|$)").replace("list", " {0,3}(?:[*+-]|1[.)])[ \\t]+[^ \\t\\n]").replace("html", "</?(?:tag)(?: +|\\n|/?>)|<(?:script|pre|style|textarea|!--)").replace("tag", Q).getRegex() };
+var Ie = { ...J, html: d(`^ *(?:comment *(?:\\n|\\s*$)|<(tag)[\\s\\S]+?</\\1> *(?:\\n{2,}|\\s*$)|<tag(?:"[^"]*"|'[^']*'|\\s[^'"/>\\s]*)*?/?> *(?:\\n{2,}|\\s*$))`).replace("comment", X).replace(/tag/g, "(?!(?:a|em|strong|small|s|cite|q|dfn|abbr|data|time|code|var|samp|kbd|sub|sup|i|b|u|mark|ruby|rt|rp|bdi|bdo|span|br|wbr|ins|del|img)\\b)\\w+(?!:|[^\\w\\s@]*@)\\b").getRegex(), def: /^ *\[([^\]]+)\]: *<?([^\s>]+)>?(?: +(["(][^\n]+[")]))? *(?:\n+|$)/, heading: /^(#{1,6})(.*)(?:\n+|$)/, fences: z, lheading: /^(.+?)\n {0,3}(=+|-+) *(?:\n+|$)/, paragraph: d(K).replace("hr", q).replace("heading", ` *#{1,6} *[^
+]`).replace("lheading", ae).replace("|table", "").replace("blockquote", " {0,3}>").replace("|fences", "").replace("|list", "").replace("|html", "").replace("|tag", "").getRegex() };
+var Be = /^\\([!"#$%&'()*+,\-./:;<=>?@\[\]\\^_`{|}~])/;
+var De = /^(`+)([^`]|[^`][\s\S]*?[^`])\1(?!`)/;
+var pe = /^( {2,}|\\)\n(?!\s*$)/;
+var qe = /^(`+|[^`])(?:(?= {2,}\n)|[\s\S]*?(?:(?=[\\<!\[`*_]|\b_|$)|[^ ](?= {2,}\n)))/;
+var _ = /[\p{P}\p{S}]/u;
+var I = /[\s\p{P}\p{S}]/u;
+var v = /[^\s\p{P}\p{S}]/u;
+var ve = d(/^((?![*_])punctSpace)/, "u").replace(/punctSpace/g, I).getRegex();
+var He = /[\p{Pi}\p{Ps}"']/u;
+var ue = /(?!~)[\p{P}\p{S}]/u;
+var Ze = /(?!~)[\s\p{P}\p{S}]/u;
+var Ge = /(?:[^\s\p{P}\p{S}]|~)/u;
+var Qe = d(/link|precode-code|html/, "g").replace("link", /\[(?:[^\[\]`]|(?<a>`+)[^`]+\k<a>(?!`))*?\]\((?:\\[\s\S]|[^\\\(\)]|\((?:\\[\s\S]|[^\\\(\)])*\))*\)/).replace("precode-", Te ? "(?<!`)()" : "(^^|[^`])").replace("code", /(?<b>`+)[^`]+\k<b>(?!`)/).replace("html", /<(?! )[^<>]*?>/).getRegex();
+var ce = /^(?:\*+(?:((?!\*)punct)|([^\s*]))?)|^_+(?:((?!_)punct)|([^\s_]))?/;
+var Ne = d(ce, "u").replace(/punct/g, _).getRegex();
+var je = d(ce, "u").replace(/punct/g, ue).getRegex();
+var Fe = /^(?:\*+(?:((?!\*)(?!openQuote)punct)|([^\s*]))?)|^_+(?:((?!_)(?!openQuote)punct)|([^\s_]))?/;
+var Ue = d(Fe, "u").replace(/openQuote/g, He).replace(/punct/g, _).getRegex();
+var he = "^[^_*]*?__[^_*]*?\\*[^_*]*?(?=__)|[^*]+(?=[^*])|(?!\\*)punct(\\*+)(?=[\\s]|$)|notPunctSpace(\\*+)(?!\\*)(?=punctSpace|$)|(?!\\*)punctSpace(\\*+)(?=notPunctSpace)|[\\s](\\*+)(?!\\*)(?=punct)|(?!\\*)punct(\\*+)(?!\\*)(?=punct)|notPunctSpace(\\*+)(?=notPunctSpace)";
+var Ke = d(he, "gu").replace(/notPunctSpace/g, v).replace(/punctSpace/g, I).replace(/punct/g, _).getRegex();
+var We = d(he, "gu").replace(/notPunctSpace/g, Ge).replace(/punctSpace/g, Ze).replace(/punct/g, ue).getRegex();
+var Xe = "^[^_*]*?__[^_*]*?\\*[^_*]*?(?=__)|[^*]+(?=[^*])|(?!\\*)punct(\\*+)(?=[\\s]|$)|notPunctSpace(\\*+)(?!\\*)(?=punctSpace|$)|(?!\\*)[\\s](\\*+)(?=notPunctSpace)|[\\s](\\*+)(?!\\*)(?=punct)|(?!\\*)punct(\\*+)(?!\\*)(?=punct)|(?:(?!\\*)punct|notPunctSpace)(\\*+)(?!\\*)(?=notPunctSpace)";
+var Je = d(Xe, "gu").replace(/notPunctSpace/g, v).replace(/punctSpace/g, I).replace(/punct/g, _).getRegex();
+var Ve = d("^[^_*]*?\\*\\*[^_*]*?_[^_*]*?(?=\\*\\*)|[^_]+(?=[^_])|(?!_)punct(_+)(?=[\\s]|$)|notPunctSpace(_+)(?!_)(?=punctSpace|$)|(?!_)punctSpace(_+)(?=notPunctSpace)|[\\s](_+)(?!_)(?=punct)|(?!_)punct(_+)(?!_)(?=punct)", "gu").replace(/notPunctSpace/g, v).replace(/punctSpace/g, I).replace(/punct/g, _).getRegex();
+var Ye = "^[^_*]*?\\*\\*[^_*]*?_[^_*]*?(?=\\*\\*)|[^_]+(?=[^_])|(?!_)punct(_+)(?=[\\s]|$)|notPunctSpace(_+)(?!_)(?=punctSpace|$)|(?!_)[\\s](_+)(?=notPunctSpace)|[\\s](_+)(?!_)(?=punct)|(?!_)punct(_+)(?!_)(?=punct)|(?:(?!_)punct|notPunctSpace)(_+)(?!_)(?=notPunctSpace)";
+var et = d(Ye, "gu").replace(/notPunctSpace/g, v).replace(/punctSpace/g, I).replace(/punct/g, _).getRegex();
+var tt = d(/^~~?(?:((?!~)punct)|[^\s~])/, "u").replace(/punct/g, _).getRegex();
+var nt = "^[^~]+(?=[^~])|(?!~)punct(~~?)(?=[\\s]|$)|notPunctSpace(~~?)(?!~)(?=punctSpace|$)|(?!~)punctSpace(~~?)(?=notPunctSpace)|[\\s](~~?)(?!~)(?=punct)|(?!~)punct(~~?)(?!~)(?=punct)|notPunctSpace(~~?)(?=notPunctSpace)";
+var rt = d(nt, "gu").replace(/notPunctSpace/g, v).replace(/punctSpace/g, I).replace(/punct/g, _).getRegex();
+var st = d(/\\(punct)/, "gu").replace(/punct/g, _).getRegex();
+var it = d(/^<(scheme:[^\s\x00-\x1f<>]*|email)>/).replace("scheme", /[a-zA-Z][a-zA-Z0-9+.-]{1,31}/).replace("email", /[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+(@)[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)+(?![-_])/).getRegex();
+var ot = d(X).replace("(?:-->|$)", "-->").getRegex();
+var at = d("^comment|^</[a-zA-Z][\\w:-]*\\s*>|^<[a-zA-Z][\\w-]*(?:attribute)*?\\s*/?>|^<\\?[\\s\\S]*?\\?>|^<![a-zA-Z]+\\s[\\s\\S]*?>|^<!\\[CDATA\\[[\\s\\S]*?\\]\\]>").replace("comment", ot).replace("attribute", /\s+[a-zA-Z:_][\w.:-]*(?:\s*=\s*"[^"]*"|\s*=\s*'[^']*'|\s*=\s*[^\s"'=<>`]+)?/).getRegex();
+var G = /(?:\[(?:\\[\s\S]|[^\[\]\\])*\]|\\[\s\S]|`+(?!`)[^`]*?`+(?!`)|``+(?=\])|[^\[\]\\`])*?/;
+var lt = d(/^!?\[(label)\]\(\s*(href)(?:(?:[ \t]+(?:\n[ \t]*)?|\n[ \t]*)(title))?\s*\)/).replace("label", G).replace("href", /<(?:\\.|[^\n<>\\])+>|[^ \t\n\x00-\x1f]+|(?=\))/).replace("title", /"(?:\\"?|[^"\\])*"|'(?:\\'?|[^'\\])*'|\((?:\\\)?|[^)\\])*\)/).getRegex();
+var de = d(/^!?\[(label)\]\[(ref)\]/).replace("label", G).replace("ref", W).getRegex();
+var ke = d(/^!?\[(ref)\](?:\[\])?/).replace("ref", W).getRegex();
+var pt = d("reflink|nolink(?!\\()", "g").replace("reflink", de).replace("nolink", ke).getRegex();
+var ie = /[hH][tT][tT][pP][sS]?|[fF][tT][pP]/;
+var V = { _backpedal: z, anyPunctuation: st, autolink: it, blockSkip: Qe, br: pe, code: De, del: z, delLDelim: z, delRDelim: z, emStrongLDelim: Ne, emStrongRDelimAst: Ke, emStrongRDelimUnd: Ve, escape: Be, link: lt, nolink: ke, punctuation: ve, reflink: de, reflinkSearch: pt, tag: at, text: qe, url: z };
+var ut = { ...V, emStrongLDelim: Ue, emStrongRDelimAst: Je, emStrongRDelimUnd: et, link: d(/^!?\[(label)\]\((.*?)\)/).replace("label", G).getRegex(), reflink: d(/^!?\[(label)\]\s*\[([^\]]*)\]/).replace("label", G).getRegex() };
+var F = { ...V, emStrongRDelimAst: We, emStrongLDelim: je, delLDelim: tt, delRDelim: rt, url: d(/^((?:protocol):\/\/|www\.)(?:[a-zA-Z0-9\-]+\.?)+[^\s<]*|^email/).replace("protocol", ie).replace("email", /[A-Za-z0-9._+-]+(@)[a-zA-Z0-9-_]+(?:\.[a-zA-Z0-9-_]*[a-zA-Z0-9])+(?![-_])/).getRegex(), _backpedal: /(?:[^?!.,:;*_'"~()&]+|\([^)]*\)|&(?![a-zA-Z0-9]+;$)|[?!.,:;*_'"~)]+(?!$))+/, del: /^(~~?)(?=[^\s~])((?:\\[\s\S]|[^\\])*?(?:\\[\s\S]|[^\s~\\]))\1(?=[^~]|$)/, text: d(/^(`+|~+|[^`~])(?:(?=[`~])|(?= {2,}\n)|(?=[a-zA-Z0-9.!#$%&'*+\/=?_`{\|}~-]+@)|[\s\S]*?(?:(?=[\\<!\[`*~_]|\b_|protocol:\/\/|www\.|$)|[^ ](?= {2,}\n)|[^a-zA-Z0-9.!#$%&'*+\/=?_`{\|}~-](?=[a-zA-Z0-9.!#$%&'*+\/=?_`{\|}~-]+@)))/).replace("protocol", ie).getRegex() };
+var ct = { ...F, br: d(pe).replace("{2,}", "*").getRegex(), text: d(F.text).replace("\\b_", "\\b_| {2,}\\n").replace(/\{2,\}/g, "*").getRegex() };
+var H = { normal: J, gfm: Ae, pedantic: Ie };
+var B = { normal: V, gfm: F, breaks: ct, pedantic: ut };
+var ht = { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" };
+var ge = (l3) => ht[l3];
+function O(l3, e) {
+  if (e) {
+    if (m.escapeTest.test(l3)) return l3.replace(m.escapeReplace, ge);
+  } else if (m.escapeTestNoEncode.test(l3)) return l3.replace(m.escapeReplaceNoEncode, ge);
+  return l3;
+}
+function Y(l3) {
+  try {
+    l3 = encodeURI(l3).replace(m.percentDecode, "%");
+  } catch {
+    return null;
+  }
+  return l3;
+}
+function ee(l3, e) {
+  let t = l3.replace(m.findPipe, (r, i, o) => {
+    let p = false, a = i;
+    for (; --a >= 0 && o[a] === "\\"; ) p = !p;
+    return p ? "|" : " |";
+  }), n = t.split(m.splitPipe), s = 0;
+  if (n[0].trim() || n.shift(), n.length > 0 && !n.at(-1)?.trim() && n.pop(), e) if (n.length > e) n.splice(e);
+  else for (; n.length < e; ) n.push("");
+  for (; s < n.length; s++) n[s] = n[s].trim().replace(m.slashPipe, "|");
+  return n;
+}
+function $(l3, e, t) {
+  let n = l3.length;
+  if (n === 0) return "";
+  let s = 0;
+  for (; s < n; ) {
+    let r = l3.charAt(n - s - 1);
+    if (r === e && !t) s++;
+    else if (r !== e && t) s++;
+    else break;
+  }
+  return l3.slice(0, n - s);
+}
+function te(l3) {
+  let e = l3.split(`
+`), t = e.length - 1;
+  for (; t >= 0 && m.blankLine.test(e[t]); ) t--;
+  return e.length - t <= 2 ? l3 : e.slice(0, t + 1).join(`
+`);
+}
+function fe(l3, e) {
+  if (l3.indexOf(e[1]) === -1) return -1;
+  let t = 0;
+  for (let n = 0; n < l3.length; n++) if (l3[n] === "\\") n++;
+  else if (l3[n] === e[0]) t++;
+  else if (l3[n] === e[1] && (t--, t < 0)) return n;
+  return t > 0 ? -2 : -1;
+}
+function me(l3, e = 0) {
+  let t = e, n = "";
+  for (let s of l3) if (s === "	") {
+    let r = 4 - t % 4;
+    n += " ".repeat(r), t += r;
+  } else n += s, t++;
+  return n;
+}
+function xe(l3, e, t, n, s) {
+  let r = e.href, i = e.title || null, o = l3[1].replace(s.other.outputLinkReplace, "$1");
+  n.state.inLink = true;
+  let p = { type: l3[0].charAt(0) === "!" ? "image" : "link", raw: t, href: r, title: i, text: o, tokens: n.inlineTokens(o) };
+  return n.state.inLink = false, p;
+}
+function dt(l3, e, t) {
+  let n = l3.match(t.other.indentCodeCompensation);
+  if (n === null) return e;
+  let s = n[1];
+  return e.split(`
+`).map((r) => {
+    let i = r.match(t.other.beginningSpace);
+    if (i === null) return r;
+    let [o] = i;
+    return o.length >= s.length ? r.slice(s.length) : r;
+  }).join(`
+`);
+}
+var y = class {
+  options;
+  rules;
+  lexer;
+  constructor(e) {
+    this.options = e || R;
+  }
+  space(e) {
+    let t = this.rules.block.newline.exec(e);
+    if (t && t[0].length > 0) return { type: "space", raw: t[0] };
+  }
+  code(e) {
+    let t = this.rules.block.code.exec(e);
+    if (t) {
+      let n = this.options.pedantic ? t[0] : te(t[0]), s = n.replace(this.rules.other.codeRemoveIndent, "");
+      return { type: "code", raw: n, codeBlockStyle: "indented", text: s };
+    }
+  }
+  fences(e) {
+    let t = this.rules.block.fences.exec(e);
+    if (t) {
+      let n = t[0], s = dt(n, t[3] || "", this.rules);
+      return { type: "code", raw: n, lang: t[2] ? t[2].trim().replace(this.rules.inline.anyPunctuation, "$1") : t[2], text: s };
+    }
+  }
+  heading(e) {
+    let t = this.rules.block.heading.exec(e);
+    if (t) {
+      let n = t[2].trim();
+      if (this.rules.other.endingHash.test(n)) {
+        let s = $(n, "#");
+        (this.options.pedantic || !s || this.rules.other.endingSpaceChar.test(s)) && (n = s.trim());
+      }
+      return { type: "heading", raw: $(t[0], `
+`), depth: t[1].length, text: n, tokens: this.lexer.inline(n) };
+    }
+  }
+  hr(e) {
+    let t = this.rules.block.hr.exec(e);
+    if (t) return { type: "hr", raw: $(t[0], `
+`) };
+  }
+  blockquote(e) {
+    let t = this.rules.block.blockquote.exec(e);
+    if (t) {
+      let n = $(t[0], `
+`).split(`
+`), s = "", r = "", i = [];
+      for (; n.length > 0; ) {
+        let o = false, p = [], a;
+        for (a = 0; a < n.length; a++) if (this.rules.other.blockquoteStart.test(n[a])) p.push(n[a]), o = true;
+        else if (!o) p.push(n[a]);
+        else break;
+        n = n.slice(a);
+        let u = p.join(`
+`), c = u.replace(this.rules.other.blockquoteSetextReplace, `
+    $1`).replace(this.rules.other.blockquoteSetextReplace2, "");
+        s = s ? `${s}
+${u}` : u, r = r ? `${r}
+${c}` : c;
+        let h14 = this.lexer.state.top;
+        if (this.lexer.state.top = true, this.lexer.blockTokens(c, i, true), this.lexer.state.top = h14, n.length === 0) break;
+        let k = i.at(-1);
+        if (k?.type === "code") break;
+        if (k?.type === "blockquote") {
+          let T = k, g = n.join(`
+`), w = T.raw + `
+` + g.replace(this.rules.other.blockquoteSetextReplace2, ""), M = this.blockquote(w);
+          i[i.length - 1] = M, s = `${s}
+${g}`, r = r.substring(0, r.length - T.text.length) + M.text;
+          break;
+        } else if (k?.type === "list") {
+          let T = k, g = T.raw + `
+` + n.join(`
+`), w = this.list(g);
+          i[i.length - 1] = w, s = s.substring(0, s.length - k.raw.length) + w.raw, r = r.substring(0, r.length - T.raw.length) + w.raw, n = g.substring(i.at(-1).raw.length).split(`
+`);
+          continue;
+        }
+      }
+      return { type: "blockquote", raw: s, tokens: i, text: r };
+    }
+  }
+  list(e) {
+    let t = this.rules.block.list.exec(e);
+    if (t) {
+      let n = t[1].trim(), s = n.length > 1, r = { type: "list", raw: "", ordered: s, start: s ? +n.slice(0, -1) : "", loose: false, items: [] };
+      n = s ? `\\d{1,9}\\${n.slice(-1)}` : `\\${n}`, this.options.pedantic && (n = s ? n : "[*+-]");
+      let i = this.rules.other.listItemRegex(n), o = false;
+      for (; e; ) {
+        let a = false, u = "", c = "";
+        if (!(t = i.exec(e)) || this.rules.block.hr.test(e)) break;
+        u = t[0], e = e.substring(u.length);
+        let h14 = me(t[2].split(`
+`, 1)[0], t[1].length), k = e.split(`
+`, 1)[0], T = !h14.trim(), g = 0;
+        if (this.options.pedantic ? (g = 2, c = h14.trimStart()) : T ? g = t[1].length + 1 : (g = h14.search(this.rules.other.nonSpaceChar), g = g > 4 ? 1 : g, c = h14.slice(g), g += t[1].length), T && this.rules.other.blankLine.test(k) && (u += k + `
+`, e = e.substring(k.length + 1), a = true), !a) {
+          let w = this.rules.other.nextBulletRegex(g), M = this.rules.other.hrRegex(g), ne = this.rules.other.fencesBeginRegex(g), re = this.rules.other.headingBeginRegex(g), be = this.rules.other.htmlBeginRegex(g), Re = this.rules.other.blockquoteBeginRegex(g);
+          for (; e; ) {
+            let N = e.split(`
+`, 1)[0], D;
+            if (k = N, this.options.pedantic ? (k = k.replace(this.rules.other.listReplaceNesting, "  "), D = k) : D = k.replace(this.rules.other.tabCharGlobal, "    "), ne.test(k) || re.test(k) || be.test(k) || Re.test(k) || w.test(k) || M.test(k)) break;
+            if (D.search(this.rules.other.nonSpaceChar) >= g || !k.trim()) c += `
+` + D.slice(g);
+            else {
+              if (T || h14.replace(this.rules.other.tabCharGlobal, "    ").search(this.rules.other.nonSpaceChar) >= 4 || ne.test(h14) || re.test(h14) || M.test(h14)) break;
+              c += `
+` + k;
+            }
+            T = !k.trim(), u += N + `
+`, e = e.substring(N.length + 1), h14 = D.slice(g);
+          }
+        }
+        r.loose || (o ? r.loose = true : this.rules.other.doubleBlankLine.test(u) && (o = true)), r.items.push({ type: "list_item", raw: u, task: !!this.options.gfm && this.rules.other.listIsTask.test(c), loose: false, text: c, tokens: [] }), r.raw += u;
+      }
+      let p = r.items.at(-1);
+      if (p) p.raw = p.raw.trimEnd(), p.text = p.text.trimEnd();
+      else return;
+      r.raw = r.raw.trimEnd();
+      for (let a of r.items) if (this.lexer.state.top = false, a.tokens = this.lexer.blockTokens(a.text, []), !r.loose) {
+        let u = a.tokens.filter((h14) => h14.type === "space"), c = u.length > 0 && u.some((h14) => this.rules.other.anyLine.test(h14.raw));
+        r.loose = c;
+      }
+      for (let a of r.items) {
+        let u = a.tokens[0];
+        if (a.task && (u?.type === "text" || u?.type === "paragraph")) {
+          a.text = a.text.replace(this.rules.other.listReplaceTask, ""), u.raw = u.raw.replace(this.rules.other.listReplaceTask, ""), u.text = u.text.replace(this.rules.other.listReplaceTask, "");
+          for (let h14 = this.lexer.inlineQueue.length - 1; h14 >= 0; h14--) if (this.rules.other.listIsTask.test(this.lexer.inlineQueue[h14].src)) {
+            this.lexer.inlineQueue[h14].src = this.lexer.inlineQueue[h14].src.replace(this.rules.other.listReplaceTask, "");
+            break;
+          }
+          let c = this.rules.other.listTaskCheckbox.exec(a.raw);
+          if (c) {
+            let h14 = { type: "checkbox", raw: c[0] + " ", checked: c[0] !== "[ ]" };
+            a.checked = h14.checked, r.loose ? a.tokens[0] && ["paragraph", "text"].includes(a.tokens[0].type) && "tokens" in a.tokens[0] && a.tokens[0].tokens ? (a.tokens[0].raw = h14.raw + a.tokens[0].raw, a.tokens[0].text = h14.raw + a.tokens[0].text, a.tokens[0].tokens.unshift(h14)) : a.tokens.unshift({ type: "paragraph", raw: h14.raw, text: h14.raw, tokens: [h14] }) : a.tokens.unshift(h14);
+          }
+        } else a.task && (a.task = false);
+      }
+      if (r.loose) for (let a of r.items) {
+        a.loose = true;
+        for (let u of a.tokens) u.type === "text" && (u.type = "paragraph");
+      }
+      return r;
+    }
+  }
+  html(e) {
+    let t = this.rules.block.html.exec(e);
+    if (t) {
+      let n = te(t[0]);
+      return { type: "html", block: true, raw: n, pre: t[1] === "pre" || t[1] === "script" || t[1] === "style", text: n };
+    }
+  }
+  def(e) {
+    let t = this.rules.block.def.exec(e);
+    if (t) {
+      let n = t[1].toLowerCase().replace(this.rules.other.multipleSpaceGlobal, " "), s = t[2] ? t[2].replace(this.rules.other.hrefBrackets, "$1").replace(this.rules.inline.anyPunctuation, "$1") : "", r = t[3] ? t[3].substring(1, t[3].length - 1).replace(this.rules.inline.anyPunctuation, "$1") : t[3];
+      return { type: "def", tag: n, raw: $(t[0], `
+`), href: s, title: r };
+    }
+  }
+  table(e) {
+    let t = this.rules.block.table.exec(e);
+    if (!t || !this.rules.other.tableDelimiter.test(t[2])) return;
+    let n = ee(t[1]), s = t[2].replace(this.rules.other.tableAlignChars, "").split("|"), r = t[3]?.trim() ? t[3].replace(this.rules.other.tableRowBlankLine, "").split(`
+`) : [], i = { type: "table", raw: $(t[0], `
+`), header: [], align: [], rows: [] };
+    if (n.length === s.length) {
+      for (let o of s) this.rules.other.tableAlignRight.test(o) ? i.align.push("right") : this.rules.other.tableAlignCenter.test(o) ? i.align.push("center") : this.rules.other.tableAlignLeft.test(o) ? i.align.push("left") : i.align.push(null);
+      for (let o = 0; o < n.length; o++) i.header.push({ text: n[o], tokens: this.lexer.inline(n[o]), header: true, align: i.align[o] });
+      for (let o of r) i.rows.push(ee(o, i.header.length).map((p, a) => ({ text: p, tokens: this.lexer.inline(p), header: false, align: i.align[a] })));
+      return i;
+    }
+  }
+  lheading(e) {
+    let t = this.rules.block.lheading.exec(e);
+    if (t) {
+      let n = t[1].trim();
+      return { type: "heading", raw: $(t[0], `
+`), depth: t[2].charAt(0) === "=" ? 1 : 2, text: n, tokens: this.lexer.inline(n) };
+    }
+  }
+  paragraph(e) {
+    let t = this.rules.block.paragraph.exec(e);
+    if (t) {
+      let n = t[1].charAt(t[1].length - 1) === `
+` ? t[1].slice(0, -1) : t[1];
+      return { type: "paragraph", raw: t[0], text: n, tokens: this.lexer.inline(n) };
+    }
+  }
+  text(e) {
+    let t = this.rules.block.text.exec(e);
+    if (t) return { type: "text", raw: t[0], text: t[0], tokens: this.lexer.inline(t[0]) };
+  }
+  escape(e) {
+    let t = this.rules.inline.escape.exec(e);
+    if (t) return { type: "escape", raw: t[0], text: t[1] };
+  }
+  tag(e) {
+    let t = this.rules.inline.tag.exec(e);
+    if (t) return !this.lexer.state.inLink && this.rules.other.startATag.test(t[0]) ? this.lexer.state.inLink = true : this.lexer.state.inLink && this.rules.other.endATag.test(t[0]) && (this.lexer.state.inLink = false), !this.lexer.state.inRawBlock && this.rules.other.startPreScriptTag.test(t[0]) ? this.lexer.state.inRawBlock = true : this.lexer.state.inRawBlock && this.rules.other.endPreScriptTag.test(t[0]) && (this.lexer.state.inRawBlock = false), { type: "html", raw: t[0], inLink: this.lexer.state.inLink, inRawBlock: this.lexer.state.inRawBlock, block: false, text: t[0] };
+  }
+  link(e) {
+    let t = this.rules.inline.link.exec(e);
+    if (t) {
+      let n = t[2].trim();
+      if (!this.options.pedantic && this.rules.other.startAngleBracket.test(n)) {
+        if (!this.rules.other.endAngleBracket.test(n)) return;
+        let i = $(n.slice(0, -1), "\\");
+        if ((n.length - i.length) % 2 === 0) return;
+      } else {
+        let i = fe(t[2], "()");
+        if (i === -2) return;
+        if (i > -1) {
+          let p = (t[0].indexOf("!") === 0 ? 5 : 4) + t[1].length + i;
+          t[2] = t[2].substring(0, i), t[0] = t[0].substring(0, p).trim(), t[3] = "";
+        }
+      }
+      let s = t[2], r = "";
+      if (this.options.pedantic) {
+        let i = this.rules.other.pedanticHrefTitle.exec(s);
+        i && (s = i[1], r = i[3]);
+      } else r = t[3] ? t[3].slice(1, -1) : "";
+      return s = s.trim(), this.rules.other.startAngleBracket.test(s) && (this.options.pedantic && !this.rules.other.endAngleBracket.test(n) ? s = s.slice(1) : s = s.slice(1, -1)), xe(t, { href: s && s.replace(this.rules.inline.anyPunctuation, "$1"), title: r && r.replace(this.rules.inline.anyPunctuation, "$1") }, t[0], this.lexer, this.rules);
+    }
+  }
+  reflink(e, t) {
+    let n;
+    if ((n = this.rules.inline.reflink.exec(e)) || (n = this.rules.inline.nolink.exec(e))) {
+      let s = (n[2] || n[1]).replace(this.rules.other.multipleSpaceGlobal, " "), r = t[s.toLowerCase()];
+      if (!r) {
+        let i = n[0].charAt(0);
+        return { type: "text", raw: i, text: i };
+      }
+      return xe(n, r, n[0], this.lexer, this.rules);
+    }
+  }
+  emStrong(e, t, n = "") {
+    let s = this.rules.inline.emStrongLDelim.exec(e);
+    if (!s || !s[1] && !s[2] && !s[3] && !s[4] || s[4] && n.match(this.rules.other.unicodeAlphaNumeric)) return;
+    if (!(s[1] || s[3] || "") || !n || this.rules.inline.punctuation.exec(n)) {
+      let i = [...s[0]].length - 1, o, p, a = i, u = 0, c = s[0][0], h14 = n === c, k = c === "*" ? this.rules.inline.emStrongRDelimAst : this.rules.inline.emStrongRDelimUnd;
+      for (k.lastIndex = 0, t = t.slice(-1 * e.length + i); (s = k.exec(t)) !== null; ) {
+        if (o = s[1] || s[2] || s[3] || s[4] || s[5] || s[6], !o) continue;
+        if (p = [...o].length, s[3] || s[4]) {
+          a += p;
+          continue;
+        } else if (s[5] || s[6]) {
+          if (i % 3 && !((i + p) % 3)) {
+            u += p;
+            continue;
+          }
+          if (h14) break;
+        }
+        if (a -= p, a > 0) continue;
+        p = Math.min(p, p + a + u);
+        let T = [...s[0]][0].length, g = e.slice(0, i + s.index + T + p);
+        if (Math.min(i, p) % 2) {
+          let M = g.slice(1, -1);
+          return { type: "em", raw: g, text: M, tokens: this.lexer.inlineTokens(M) };
+        }
+        let w = g.slice(2, -2);
+        return { type: "strong", raw: g, text: w, tokens: this.lexer.inlineTokens(w) };
+      }
+    }
+  }
+  codespan(e) {
+    let t = this.rules.inline.code.exec(e);
+    if (t) {
+      let n = t[2].replace(this.rules.other.newLineCharGlobal, " "), s = this.rules.other.nonSpaceChar.test(n), r = this.rules.other.startingSpaceChar.test(n) && this.rules.other.endingSpaceChar.test(n);
+      return s && r && (n = n.substring(1, n.length - 1)), { type: "codespan", raw: t[0], text: n };
+    }
+  }
+  br(e) {
+    let t = this.rules.inline.br.exec(e);
+    if (t) return { type: "br", raw: t[0] };
+  }
+  del(e, t, n = "") {
+    let s = this.rules.inline.delLDelim.exec(e);
+    if (!s) return;
+    if (!(s[1] || "") || !n || this.rules.inline.punctuation.exec(n)) {
+      let i = [...s[0]].length - 1, o, p, a = i, u = this.rules.inline.delRDelim;
+      for (u.lastIndex = 0, t = t.slice(-1 * e.length + i); (s = u.exec(t)) !== null; ) {
+        if (o = s[1] || s[2] || s[3] || s[4] || s[5] || s[6], !o || (p = [...o].length, p !== i)) continue;
+        if (s[3] || s[4]) {
+          a += p;
+          continue;
+        }
+        if (a -= p, a > 0) continue;
+        p = Math.min(p, p + a);
+        let c = [...s[0]][0].length, h14 = e.slice(0, i + s.index + c + p), k = h14.slice(i, -i);
+        return { type: "del", raw: h14, text: k, tokens: this.lexer.inlineTokens(k) };
+      }
+    }
+  }
+  autolink(e) {
+    let t = this.rules.inline.autolink.exec(e);
+    if (t) {
+      let n, s;
+      return t[2] === "@" ? (n = t[1], s = "mailto:" + n) : (n = t[1], s = n), { type: "link", raw: t[0], text: n, href: s, tokens: [{ type: "text", raw: n, text: n }] };
+    }
+  }
+  url(e) {
+    let t;
+    if (t = this.rules.inline.url.exec(e)) {
+      let n, s;
+      if (t[2] === "@") n = t[0], s = "mailto:" + n;
+      else {
+        let r;
+        do
+          r = t[0], t[0] = this.rules.inline._backpedal.exec(t[0])?.[0] ?? "";
+        while (r !== t[0]);
+        n = t[0], t[1] === "www." ? s = "http://" + t[0] : s = t[0];
+      }
+      return { type: "link", raw: t[0], text: n, href: s, tokens: [{ type: "text", raw: n, text: n }] };
+    }
+  }
+  inlineText(e) {
+    let t = this.rules.inline.text.exec(e);
+    if (t) {
+      let n = this.lexer.state.inRawBlock;
+      return { type: "text", raw: t[0], text: t[0], escaped: n };
+    }
+  }
+};
+var x = class l {
+  tokens;
+  options;
+  state;
+  inlineQueue;
+  tokenizer;
+  constructor(e) {
+    this.tokens = [], this.tokens.links = /* @__PURE__ */ Object.create(null), this.options = e || R, this.options.tokenizer = this.options.tokenizer || new y(), this.tokenizer = this.options.tokenizer, this.tokenizer.options = this.options, this.tokenizer.lexer = this, this.inlineQueue = [], this.state = { inLink: false, inRawBlock: false, top: true };
+    let t = { other: m, block: H.normal, inline: B.normal };
+    this.options.pedantic ? (t.block = H.pedantic, t.inline = B.pedantic) : this.options.gfm && (t.block = H.gfm, this.options.breaks ? t.inline = B.breaks : t.inline = B.gfm), this.tokenizer.rules = t;
+  }
+  static get rules() {
+    return { block: H, inline: B };
+  }
+  static lex(e, t) {
+    return new l(t).lex(e);
+  }
+  static lexInline(e, t) {
+    return new l(t).inlineTokens(e);
+  }
+  lex(e) {
+    e = e.replace(m.carriageReturn, `
+`), this.blockTokens(e, this.tokens);
+    for (let t = 0; t < this.inlineQueue.length; t++) {
+      let n = this.inlineQueue[t];
+      this.inlineTokens(n.src, n.tokens);
+    }
+    return this.inlineQueue = [], this.tokens;
+  }
+  blockTokens(e, t = [], n = false) {
+    this.tokenizer.lexer = this, this.options.pedantic && (e = e.replace(m.tabCharGlobal, "    ").replace(m.spaceLine, ""));
+    let s = 1 / 0;
+    for (; e; ) {
+      if (e.length < s) s = e.length;
+      else {
+        this.infiniteLoopError(e.charCodeAt(0));
+        break;
+      }
+      let r;
+      if (this.options.extensions?.block?.some((o) => (r = o.call({ lexer: this }, e, t)) ? (e = e.substring(r.raw.length), t.push(r), true) : false)) continue;
+      if (r = this.tokenizer.space(e)) {
+        e = e.substring(r.raw.length);
+        let o = t.at(-1);
+        r.raw.length === 1 && o !== void 0 ? o.raw += `
+` : t.push(r);
+        continue;
+      }
+      if (r = this.tokenizer.code(e)) {
+        e = e.substring(r.raw.length);
+        let o = t.at(-1);
+        o?.type === "paragraph" || o?.type === "text" ? (o.raw += (o.raw.endsWith(`
+`) ? "" : `
+`) + r.raw, o.text += `
+` + r.text, this.inlineQueue.at(-1).src = o.text) : t.push(r);
+        continue;
+      }
+      if (r = this.tokenizer.fences(e)) {
+        e = e.substring(r.raw.length), t.push(r);
+        continue;
+      }
+      if (r = this.tokenizer.heading(e)) {
+        e = e.substring(r.raw.length), t.push(r);
+        continue;
+      }
+      if (r = this.tokenizer.hr(e)) {
+        e = e.substring(r.raw.length), t.push(r);
+        continue;
+      }
+      if (r = this.tokenizer.blockquote(e)) {
+        e = e.substring(r.raw.length), t.push(r);
+        continue;
+      }
+      if (r = this.tokenizer.list(e)) {
+        e = e.substring(r.raw.length), t.push(r);
+        continue;
+      }
+      if (r = this.tokenizer.html(e)) {
+        e = e.substring(r.raw.length), t.push(r);
+        continue;
+      }
+      if (r = this.tokenizer.def(e)) {
+        e = e.substring(r.raw.length);
+        let o = t.at(-1);
+        o?.type === "paragraph" || o?.type === "text" ? (o.raw += (o.raw.endsWith(`
+`) ? "" : `
+`) + r.raw, o.text += `
+` + r.raw, this.inlineQueue.at(-1).src = o.text) : this.tokens.links[r.tag] || (this.tokens.links[r.tag] = { href: r.href, title: r.title }, t.push(r));
+        continue;
+      }
+      if (r = this.tokenizer.table(e)) {
+        e = e.substring(r.raw.length), t.push(r);
+        continue;
+      }
+      if (r = this.tokenizer.lheading(e)) {
+        e = e.substring(r.raw.length), t.push(r);
+        continue;
+      }
+      let i = e;
+      if (this.options.extensions?.startBlock) {
+        let o = 1 / 0, p = e.slice(1), a;
+        this.options.extensions.startBlock.forEach((u) => {
+          a = u.call({ lexer: this }, p), typeof a == "number" && a >= 0 && (o = Math.min(o, a));
+        }), o < 1 / 0 && o >= 0 && (i = e.substring(0, o + 1));
+      }
+      if (this.state.top && (r = this.tokenizer.paragraph(i))) {
+        let o = t.at(-1);
+        n && o?.type === "paragraph" ? (o.raw += (o.raw.endsWith(`
+`) ? "" : `
+`) + r.raw, o.text += `
+` + r.text, this.inlineQueue.pop(), this.inlineQueue.at(-1).src = o.text) : t.push(r), n = i.length !== e.length, e = e.substring(r.raw.length);
+        continue;
+      }
+      if (r = this.tokenizer.text(e)) {
+        e = e.substring(r.raw.length);
+        let o = t.at(-1);
+        o?.type === "text" ? (o.raw += (o.raw.endsWith(`
+`) ? "" : `
+`) + r.raw, o.text += `
+` + r.text, this.inlineQueue.pop(), this.inlineQueue.at(-1).src = o.text) : t.push(r);
+        continue;
+      }
+      if (e) {
+        this.infiniteLoopError(e.charCodeAt(0));
+        break;
+      }
+    }
+    return this.state.top = true, t;
+  }
+  inline(e, t = []) {
+    return this.inlineQueue.push({ src: e, tokens: t }), t;
+  }
+  inlineTokens(e, t = []) {
+    this.tokenizer.lexer = this;
+    let n = e;
+    if (this.tokens.links) {
+      let o = Object.keys(this.tokens.links);
+      o.length > 0 && (n = n.replace(this.tokenizer.rules.inline.reflinkSearch, (p) => o.includes(p.slice(p.lastIndexOf("[") + 1, -1)) ? "[" + "a".repeat(p.length - 2) + "]" : p));
+    }
+    n = n.replace(this.tokenizer.rules.inline.anyPunctuation, (o) => "+".repeat(o.length)), n = n.replace(this.tokenizer.rules.inline.blockSkip, (o, p, a) => {
+      let u = a ? a.length : 0;
+      return o.slice(0, u) + "[" + "a".repeat(o.length - u - 2) + "]";
+    }), n = this.options.hooks?.emStrongMask?.call({ lexer: this }, n) ?? n;
+    let s = false, r = "", i = 1 / 0;
+    for (; e; ) {
+      if (e.length < i) i = e.length;
+      else {
+        this.infiniteLoopError(e.charCodeAt(0));
+        break;
+      }
+      s || (r = ""), s = false;
+      let o;
+      if (this.options.extensions?.inline?.some((a) => (o = a.call({ lexer: this }, e, t)) ? (e = e.substring(o.raw.length), t.push(o), true) : false)) continue;
+      if (o = this.tokenizer.escape(e)) {
+        e = e.substring(o.raw.length), t.push(o);
+        continue;
+      }
+      if (o = this.tokenizer.tag(e)) {
+        e = e.substring(o.raw.length), t.push(o);
+        continue;
+      }
+      if (o = this.tokenizer.link(e)) {
+        e = e.substring(o.raw.length), t.push(o);
+        continue;
+      }
+      if (o = this.tokenizer.reflink(e, this.tokens.links)) {
+        e = e.substring(o.raw.length);
+        let a = t.at(-1);
+        o.type === "text" && a?.type === "text" ? (a.raw += o.raw, a.text += o.text) : t.push(o);
+        continue;
+      }
+      if (o = this.tokenizer.emStrong(e, n, r)) {
+        e = e.substring(o.raw.length), t.push(o);
+        continue;
+      }
+      if (o = this.tokenizer.codespan(e)) {
+        e = e.substring(o.raw.length), t.push(o);
+        continue;
+      }
+      if (o = this.tokenizer.br(e)) {
+        e = e.substring(o.raw.length), t.push(o);
+        continue;
+      }
+      if (o = this.tokenizer.del(e, n, r)) {
+        e = e.substring(o.raw.length), t.push(o);
+        continue;
+      }
+      if (o = this.tokenizer.autolink(e)) {
+        e = e.substring(o.raw.length), t.push(o);
+        continue;
+      }
+      if (!this.state.inLink && (o = this.tokenizer.url(e))) {
+        e = e.substring(o.raw.length), t.push(o);
+        continue;
+      }
+      let p = e;
+      if (this.options.extensions?.startInline) {
+        let a = 1 / 0, u = e.slice(1), c;
+        this.options.extensions.startInline.forEach((h14) => {
+          c = h14.call({ lexer: this }, u), typeof c == "number" && c >= 0 && (a = Math.min(a, c));
+        }), a < 1 / 0 && a >= 0 && (p = e.substring(0, a + 1));
+      }
+      if (o = this.tokenizer.inlineText(p)) {
+        e = e.substring(o.raw.length), o.raw.slice(-1) !== "_" && (r = o.raw.slice(-1)), s = true;
+        let a = t.at(-1);
+        a?.type === "text" ? (a.raw += o.raw, a.text += o.text) : t.push(o);
+        continue;
+      }
+      if (e) {
+        this.infiniteLoopError(e.charCodeAt(0));
+        break;
+      }
+    }
+    return t;
+  }
+  infiniteLoopError(e) {
+    let t = "Infinite loop on byte: " + e;
+    if (this.options.silent) console.error(t);
+    else throw new Error(t);
+  }
+};
+var P = class {
+  options;
+  parser;
+  constructor(e) {
+    this.options = e || R;
+  }
+  space(e) {
+    return "";
+  }
+  code({ text: e, lang: t, escaped: n }) {
+    let s = (t || "").match(m.notSpaceStart)?.[0], r = e.replace(m.endingNewline, "") + `
+`;
+    return s ? '<pre><code class="language-' + O(s) + '">' + (n ? r : O(r, true)) + `</code></pre>
+` : "<pre><code>" + (n ? r : O(r, true)) + `</code></pre>
+`;
+  }
+  blockquote({ tokens: e }) {
+    return `<blockquote>
+${this.parser.parse(e)}</blockquote>
+`;
+  }
+  html({ text: e }) {
+    return e;
+  }
+  def(e) {
+    return "";
+  }
+  heading({ tokens: e, depth: t }) {
+    return `<h${t}>${this.parser.parseInline(e)}</h${t}>
+`;
+  }
+  hr(e) {
+    return `<hr>
+`;
+  }
+  list(e) {
+    let t = e.ordered, n = e.start, s = "";
+    for (let o = 0; o < e.items.length; o++) {
+      let p = e.items[o];
+      s += this.listitem(p);
+    }
+    let r = t ? "ol" : "ul", i = t && n !== 1 ? ' start="' + n + '"' : "";
+    return "<" + r + i + `>
+` + s + "</" + r + `>
+`;
+  }
+  listitem(e) {
+    return `<li>${this.parser.parse(e.tokens)}</li>
+`;
+  }
+  checkbox({ checked: e }) {
+    return "<input " + (e ? 'checked="" ' : "") + 'disabled="" type="checkbox"> ';
+  }
+  paragraph({ tokens: e }) {
+    return `<p>${this.parser.parseInline(e)}</p>
+`;
+  }
+  table(e) {
+    let t = "", n = "";
+    for (let r = 0; r < e.header.length; r++) n += this.tablecell(e.header[r]);
+    t += this.tablerow({ text: n });
+    let s = "";
+    for (let r = 0; r < e.rows.length; r++) {
+      let i = e.rows[r];
+      n = "";
+      for (let o = 0; o < i.length; o++) n += this.tablecell(i[o]);
+      s += this.tablerow({ text: n });
+    }
+    return s && (s = `<tbody>${s}</tbody>`), `<table>
+<thead>
+` + t + `</thead>
+` + s + `</table>
+`;
+  }
+  tablerow({ text: e }) {
+    return `<tr>
+${e}</tr>
+`;
+  }
+  tablecell(e) {
+    let t = this.parser.parseInline(e.tokens), n = e.header ? "th" : "td";
+    return (e.align ? `<${n} align="${e.align}">` : `<${n}>`) + t + `</${n}>
+`;
+  }
+  strong({ tokens: e }) {
+    return `<strong>${this.parser.parseInline(e)}</strong>`;
+  }
+  em({ tokens: e }) {
+    return `<em>${this.parser.parseInline(e)}</em>`;
+  }
+  codespan({ text: e }) {
+    return `<code>${O(e, true)}</code>`;
+  }
+  br(e) {
+    return "<br>";
+  }
+  del({ tokens: e }) {
+    return `<del>${this.parser.parseInline(e)}</del>`;
+  }
+  link({ href: e, title: t, tokens: n }) {
+    let s = this.parser.parseInline(n), r = Y(e);
+    if (r === null) return s;
+    e = r;
+    let i = '<a href="' + e + '"';
+    return t && (i += ' title="' + O(t) + '"'), i += ">" + s + "</a>", i;
+  }
+  image({ href: e, title: t, text: n, tokens: s }) {
+    s && (n = this.parser.parseInline(s, this.parser.textRenderer));
+    let r = Y(e);
+    if (r === null) return O(n);
+    e = r;
+    let i = `<img src="${e}" alt="${O(n)}"`;
+    return t && (i += ` title="${O(t)}"`), i += ">", i;
+  }
+  text(e) {
+    return "tokens" in e && e.tokens ? this.parser.parseInline(e.tokens) : "escaped" in e && e.escaped ? e.text : O(e.text);
+  }
+};
+var L = class {
+  strong({ text: e }) {
+    return e;
+  }
+  em({ text: e }) {
+    return e;
+  }
+  codespan({ text: e }) {
+    return e;
+  }
+  del({ text: e }) {
+    return e;
+  }
+  html({ text: e }) {
+    return e;
+  }
+  text({ text: e }) {
+    return e;
+  }
+  link({ text: e }) {
+    return "" + e;
+  }
+  image({ text: e }) {
+    return "" + e;
+  }
+  br() {
+    return "";
+  }
+  checkbox({ raw: e }) {
+    return e;
+  }
+};
+var b = class l2 {
+  options;
+  renderer;
+  textRenderer;
+  constructor(e) {
+    this.options = e || R, this.options.renderer = this.options.renderer || new P(), this.renderer = this.options.renderer, this.renderer.options = this.options, this.renderer.parser = this, this.textRenderer = new L();
+  }
+  static parse(e, t) {
+    return new l2(t).parse(e);
+  }
+  static parseInline(e, t) {
+    return new l2(t).parseInline(e);
+  }
+  parse(e) {
+    this.renderer.parser = this;
+    let t = "";
+    for (let n = 0; n < e.length; n++) {
+      let s = e[n];
+      if (this.options.extensions?.renderers?.[s.type]) {
+        let i = s, o = this.options.extensions.renderers[i.type].call({ parser: this }, i);
+        if (o !== false || !["space", "hr", "heading", "code", "table", "blockquote", "list", "checkbox", "html", "def", "paragraph", "text"].includes(i.type)) {
+          t += o || "";
+          continue;
+        }
+      }
+      let r = s;
+      switch (r.type) {
+        case "space": {
+          t += this.renderer.space(r);
+          break;
+        }
+        case "hr": {
+          t += this.renderer.hr(r);
+          break;
+        }
+        case "heading": {
+          t += this.renderer.heading(r);
+          break;
+        }
+        case "code": {
+          t += this.renderer.code(r);
+          break;
+        }
+        case "table": {
+          t += this.renderer.table(r);
+          break;
+        }
+        case "blockquote": {
+          t += this.renderer.blockquote(r);
+          break;
+        }
+        case "list": {
+          t += this.renderer.list(r);
+          break;
+        }
+        case "checkbox": {
+          t += this.renderer.checkbox(r);
+          break;
+        }
+        case "html": {
+          t += this.renderer.html(r);
+          break;
+        }
+        case "def": {
+          t += this.renderer.def(r);
+          break;
+        }
+        case "paragraph": {
+          t += this.renderer.paragraph(r);
+          break;
+        }
+        case "text": {
+          t += this.renderer.text(r);
+          break;
+        }
+        default: {
+          let i = 'Token with "' + r.type + '" type was not found.';
+          if (this.options.silent) return console.error(i), "";
+          throw new Error(i);
+        }
+      }
+    }
+    return t;
+  }
+  parseInline(e, t = this.renderer) {
+    this.renderer.parser = this;
+    let n = "";
+    for (let s = 0; s < e.length; s++) {
+      let r = e[s];
+      if (this.options.extensions?.renderers?.[r.type]) {
+        let o = this.options.extensions.renderers[r.type].call({ parser: this }, r);
+        if (o !== false || !["escape", "html", "link", "image", "checkbox", "strong", "em", "codespan", "br", "del", "text"].includes(r.type)) {
+          n += o || "";
+          continue;
+        }
+      }
+      let i = r;
+      switch (i.type) {
+        case "escape": {
+          n += t.text(i);
+          break;
+        }
+        case "html": {
+          n += t.html(i);
+          break;
+        }
+        case "link": {
+          n += t.link(i);
+          break;
+        }
+        case "image": {
+          n += t.image(i);
+          break;
+        }
+        case "checkbox": {
+          n += t.checkbox(i);
+          break;
+        }
+        case "strong": {
+          n += t.strong(i);
+          break;
+        }
+        case "em": {
+          n += t.em(i);
+          break;
+        }
+        case "codespan": {
+          n += t.codespan(i);
+          break;
+        }
+        case "br": {
+          n += t.br(i);
+          break;
+        }
+        case "del": {
+          n += t.del(i);
+          break;
+        }
+        case "text": {
+          n += t.text(i);
+          break;
+        }
+        default: {
+          let o = 'Token with "' + i.type + '" type was not found.';
+          if (this.options.silent) return console.error(o), "";
+          throw new Error(o);
+        }
+      }
+    }
+    return n;
+  }
+};
+var S = class {
+  options;
+  block;
+  constructor(e) {
+    this.options = e || R;
+  }
+  static passThroughHooks = /* @__PURE__ */ new Set(["preprocess", "postprocess", "processAllTokens", "emStrongMask"]);
+  static passThroughHooksRespectAsync = /* @__PURE__ */ new Set(["preprocess", "postprocess", "processAllTokens"]);
+  preprocess(e) {
+    return e;
+  }
+  postprocess(e) {
+    return e;
+  }
+  processAllTokens(e) {
+    return e;
+  }
+  emStrongMask(e) {
+    return e;
+  }
+  provideLexer(e = this.block) {
+    return e ? x.lex : x.lexInline;
+  }
+  provideParser(e = this.block) {
+    return e ? b.parse : b.parseInline;
+  }
+};
+var Z = class {
+  defaults = C();
+  options = this.setOptions;
+  parse = this.parseMarkdown(true);
+  parseInline = this.parseMarkdown(false);
+  Parser = b;
+  Renderer = P;
+  TextRenderer = L;
+  Lexer = x;
+  Tokenizer = y;
+  Hooks = S;
+  constructor(...e) {
+    this.use(...e);
+  }
+  walkTokens(e, t) {
+    let n = [];
+    for (let s of e) switch (n = n.concat(t.call(this, s)), s.type) {
+      case "table": {
+        let r = s;
+        for (let i of r.header) n = n.concat(this.walkTokens(i.tokens, t));
+        for (let i of r.rows) for (let o of i) n = n.concat(this.walkTokens(o.tokens, t));
+        break;
+      }
+      case "list": {
+        let r = s;
+        n = n.concat(this.walkTokens(r.items, t));
+        break;
+      }
+      default: {
+        let r = s;
+        this.defaults.extensions?.childTokens?.[r.type] ? this.defaults.extensions.childTokens[r.type].forEach((i) => {
+          let o = r[i].flat(1 / 0);
+          n = n.concat(this.walkTokens(o, t));
+        }) : r.tokens && (n = n.concat(this.walkTokens(r.tokens, t)));
+      }
+    }
+    return n;
+  }
+  use(...e) {
+    let t = this.defaults.extensions || { renderers: {}, childTokens: {} };
+    return e.forEach((n) => {
+      let s = { ...n };
+      if (s.async = this.defaults.async || s.async || false, n.extensions && (n.extensions.forEach((r) => {
+        if (!r.name) throw new Error("extension name required");
+        if ("renderer" in r) {
+          let i = t.renderers[r.name];
+          i ? t.renderers[r.name] = function(...o) {
+            let p = r.renderer.apply(this, o);
+            return p === false && (p = i.apply(this, o)), p;
+          } : t.renderers[r.name] = r.renderer;
+        }
+        if ("tokenizer" in r) {
+          if (!r.level || r.level !== "block" && r.level !== "inline") throw new Error("extension level must be 'block' or 'inline'");
+          let i = t[r.level];
+          i ? i.unshift(r.tokenizer) : t[r.level] = [r.tokenizer], r.start && (r.level === "block" ? t.startBlock ? t.startBlock.push(r.start) : t.startBlock = [r.start] : r.level === "inline" && (t.startInline ? t.startInline.push(r.start) : t.startInline = [r.start]));
+        }
+        "childTokens" in r && r.childTokens && (t.childTokens[r.name] = r.childTokens);
+      }), s.extensions = t), n.renderer) {
+        let r = this.defaults.renderer || new P(this.defaults);
+        for (let i in n.renderer) {
+          if (!(i in r)) throw new Error(`renderer '${i}' does not exist`);
+          if (["options", "parser"].includes(i)) continue;
+          let o = i, p = n.renderer[o], a = r[o];
+          r[o] = (...u) => {
+            let c = p.apply(r, u);
+            return c === false && (c = a.apply(r, u)), c || "";
+          };
+        }
+        s.renderer = r;
+      }
+      if (n.tokenizer) {
+        let r = this.defaults.tokenizer || new y(this.defaults);
+        for (let i in n.tokenizer) {
+          if (!(i in r)) throw new Error(`tokenizer '${i}' does not exist`);
+          if (["options", "rules", "lexer"].includes(i)) continue;
+          let o = i, p = n.tokenizer[o], a = r[o];
+          r[o] = (...u) => {
+            let c = p.apply(r, u);
+            return c === false && (c = a.apply(r, u)), c;
+          };
+        }
+        s.tokenizer = r;
+      }
+      if (n.hooks) {
+        let r = this.defaults.hooks || new S();
+        for (let i in n.hooks) {
+          if (!(i in r)) throw new Error(`hook '${i}' does not exist`);
+          if (["options", "block"].includes(i)) continue;
+          let o = i, p = n.hooks[o], a = r[o];
+          S.passThroughHooks.has(i) ? r[o] = (u) => {
+            if (this.defaults.async && S.passThroughHooksRespectAsync.has(i)) return (async () => {
+              let h14 = await p.call(r, u);
+              return a.call(r, h14);
+            })();
+            let c = p.call(r, u);
+            return a.call(r, c);
+          } : r[o] = (...u) => {
+            if (this.defaults.async) return (async () => {
+              let h14 = await p.apply(r, u);
+              return h14 === false && (h14 = await a.apply(r, u)), h14;
+            })();
+            let c = p.apply(r, u);
+            return c === false && (c = a.apply(r, u)), c;
+          };
+        }
+        s.hooks = r;
+      }
+      if (n.walkTokens) {
+        let r = this.defaults.walkTokens, i = n.walkTokens;
+        s.walkTokens = function(o) {
+          let p = [];
+          return p.push(i.call(this, o)), r && (p = p.concat(r.call(this, o))), p;
+        };
+      }
+      this.defaults = { ...this.defaults, ...s };
+    }), this;
+  }
+  setOptions(e) {
+    return this.defaults = { ...this.defaults, ...e }, this;
+  }
+  lexer(e, t) {
+    return x.lex(e, t ?? this.defaults);
+  }
+  parser(e, t) {
+    return b.parse(e, t ?? this.defaults);
+  }
+  parseMarkdown(e) {
+    return (n, s) => {
+      let r = { ...s }, i = { ...this.defaults, ...r }, o = this.onError(!!i.silent, !!i.async);
+      if (this.defaults.async === true && r.async === false) return o(new Error("marked(): The async option was set to true by an extension. Remove async: false from the parse options object to return a Promise."));
+      if (typeof n > "u" || n === null) return o(new Error("marked(): input parameter is undefined or null"));
+      if (typeof n != "string") return o(new Error("marked(): input parameter is of type " + Object.prototype.toString.call(n) + ", string expected"));
+      if (i.hooks && (i.hooks.options = i, i.hooks.block = e), i.async) return (async () => {
+        let p = i.hooks ? await i.hooks.preprocess(n) : n, u = await (i.hooks ? await i.hooks.provideLexer(e) : e ? x.lex : x.lexInline)(p, i), c = i.hooks ? await i.hooks.processAllTokens(u) : u;
+        i.walkTokens && await Promise.all(this.walkTokens(c, i.walkTokens));
+        let k = await (i.hooks ? await i.hooks.provideParser(e) : e ? b.parse : b.parseInline)(c, i);
+        return i.hooks ? await i.hooks.postprocess(k) : k;
+      })().catch(o);
+      try {
+        i.hooks && (n = i.hooks.preprocess(n));
+        let a = (i.hooks ? i.hooks.provideLexer(e) : e ? x.lex : x.lexInline)(n, i);
+        i.hooks && (a = i.hooks.processAllTokens(a)), i.walkTokens && this.walkTokens(a, i.walkTokens);
+        let c = (i.hooks ? i.hooks.provideParser(e) : e ? b.parse : b.parseInline)(a, i);
+        return i.hooks && (c = i.hooks.postprocess(c)), c;
+      } catch (p) {
+        return o(p);
+      }
+    };
+  }
+  onError(e, t) {
+    return (n) => {
+      if (n.message += `
+Please report this to https://github.com/markedjs/marked.`, e) {
+        let s = "<p>An error occurred:</p><pre>" + O(n.message + "", true) + "</pre>";
+        return t ? Promise.resolve(s) : s;
+      }
+      if (t) return Promise.reject(n);
+      throw n;
+    };
+  }
+};
+var E = new Z();
+function f(l3, e) {
+  return E.parse(l3, e);
+}
+f.options = f.setOptions = function(l3) {
+  return E.setOptions(l3), f.defaults = E.defaults, j(f.defaults), f;
+};
+f.getDefaults = C;
+f.defaults = R;
+function kt(...l3) {
+  return E.use(...l3), f.defaults = E.defaults, j(f.defaults), f;
+}
+f.use = kt;
+f.walkTokens = function(l3, e) {
+  return E.walkTokens(l3, e);
+};
+f.parseInline = E.parseInline;
+f.Parser = b;
+f.parser = b.parse;
+f.Renderer = P;
+f.TextRenderer = L;
+f.Lexer = x;
+f.lexer = x.lex;
+f.Tokenizer = y;
+f.Hooks = S;
+f.parse = f;
+var nn = f.options;
+var rn = f.setOptions;
+var sn = f.walkTokens;
+var on = f.parseInline;
+var ln = b.parse;
+var pn = x.lex;
+
+// packages/client/src/play/rich-text.js
+var import_react7 = require("react");
+var SANITIZE_OPTIONS = Object.freeze({
+  USE_PROFILES: { html: true },
+  FORBID_TAGS: ["script", "iframe", "object", "embed", "form", "input", "button", "textarea", "select", "meta", "link", "base", "style"],
+  FORBID_ATTR: ["srcdoc"]
+});
+var markdownConverter = new Z({
+  async: false,
+  breaks: true,
+  gfm: true
+});
+var STANDALONE_WRAPPER_TAG = /^\s*(<\/?[\p{L}][^<>]*?>)\s*$/u;
+var FENCE_MARKER = /^\s{0,3}(`{3,}|~{3,})/;
+function normalizeStQuotedFences(source) {
+  let quotedFence = null;
+  return source.split("\n").map((line) => {
+    if (quotedFence) {
+      const closing = line.match(/^\s*>\s*(`{3,}|~{3,})\s*$/);
+      if (closing && closing[1][0] === quotedFence.marker) {
+        quotedFence = null;
+        return `> ${closing[1]}`;
+      }
+      return /^\s*>/.test(line) ? line : `> ${line}`;
+    }
+    const opening = line.match(/^\s*>\s*(`{3,}|~{3,})(.*)$/);
+    if (!opening) return line;
+    quotedFence = { marker: opening[1][0] };
+    return `> ${opening[1]}${opening[2]}`;
+  }).join("\n");
+}
+function protectStandaloneWrapperTags(source) {
+  const wrappers = [];
+  let fence = null;
+  let prefix = "DSHTAVERNWRAPPER";
+  while (source.includes(prefix)) prefix += "X";
+  const text2 = source.split("\n").map((line) => {
+    const fenceMatch = line.match(FENCE_MARKER);
+    if (fenceMatch) {
+      const marker = fenceMatch[1];
+      if (!fence) fence = marker[0];
+      else if (marker[0] === fence && marker.length >= 3) fence = null;
+      return line;
+    }
+    if (fence) return line;
+    const tagMatch = line.match(STANDALONE_WRAPPER_TAG);
+    if (!tagMatch) return line;
+    const token = `${prefix}${wrappers.length}END`;
+    wrappers.push(tagMatch[1]);
+    return token;
+  }).join("\n");
+  return { prefix, text: text2, wrappers };
+}
+function restoreStandaloneWrapperTags(html2, { prefix, wrappers }) {
+  let restored = html2;
+  wrappers.forEach((tag, index) => {
+    const token = `${prefix}${index}END`;
+    restored = restored.replace(`<p>${token}</p>`, tag).replaceAll(token, tag);
+  });
+  return restored;
+}
+function escapeHtml(value) {
+  return String(value).replaceAll("&", "&amp;").replaceAll("<", "&lt;").replaceAll(">", "&gt;").replaceAll('"', "&quot;").replaceAll("'", "&#39;");
+}
+function browserPurifier() {
+  if (typeof purify?.sanitize === "function") return purify;
+  if (typeof purify === "function" && globalThis.window?.document != null) {
+    return purify(globalThis.window);
+  }
+  return null;
+}
+function markdownToHtml(text2) {
+  const normalizedSource = normalizeStQuotedFences(String(text2 ?? ""));
+  const protectedSource = protectStandaloneWrapperTags(normalizedSource);
+  const html2 = markdownConverter.parse(protectedSource.text);
+  return restoreStandaloneWrapperTags(html2, protectedSource);
+}
+function sanitizeRenderedHtml(html2, {
+  purifier = browserPurifier(),
+  documentObject = globalThis.document
+} = {}) {
+  if (purifier === null || typeof purifier?.sanitize !== "function") return escapeHtml(html2);
+  const clean = String(purifier.sanitize(String(html2), SANITIZE_OPTIONS));
+  if (documentObject == null || typeof documentObject.createElement !== "function") return clean;
+  const template = documentObject.createElement("template");
+  template.innerHTML = clean;
+  for (const link of template.content.querySelectorAll("a[href]")) {
+    const href = link.getAttribute("href") ?? "";
+    if (href.startsWith("#")) continue;
+    link.setAttribute("target", "_blank");
+    link.setAttribute("rel", "noopener noreferrer");
+  }
+  return template.innerHTML;
+}
+function renderRichTextHtml(text2, options) {
+  return sanitizeRenderedHtml(markdownToHtml(text2), options);
+}
+function RichText({ text: text2, className }) {
+  return (0, import_react7.createElement)("div", {
+    className,
+    "data-dtv-rich-text": "",
+    dangerouslySetInnerHTML: { __html: renderRichTextHtml(text2) }
+  });
+}
+
+// packages/client/src/play/turn-actions.js
+var import_react8 = require("react");
+
+// packages/client/src/play/mutations.js
+async function updateCatalog(client, mutator, options) {
+  if (typeof client?.updateCatalog === "function") return client.updateCatalog(mutator, options);
+  const current3 = await readCatalogOrEmpty(client);
+  const next = await mutator(current3);
+  const saved = await client.putCatalog(next);
+  return saved ?? next;
+}
+async function updateTimeline(client, playthrough, mutator, options) {
+  if (typeof client?.updateTimeline === "function") return client.updateTimeline(playthrough, mutator, options);
+  const current3 = options?.initial ?? await client.getTimeline(playthrough);
+  const next = await mutator(current3);
+  const saved = await client.putTimeline(playthrough, next);
+  return saved ?? next;
+}
+async function readCatalogOrEmpty(client) {
+  try {
+    return await client.getCatalog();
+  } catch (error) {
+    if (error?.code === "PLAY_PATH_NOT_FOUND" && (error?.status === void 0 || error?.status === 404)) return { playthroughs: [] };
+    throw error;
+  }
+}
+
+// packages/client/src/play/schema.js
+var CHROME_MODES = /* @__PURE__ */ new Set(["native", "play"]);
+var MESSAGE_ROLES = /* @__PURE__ */ new Set(["user", "assistant", "system"]);
+var MESSAGE_ORIGIN_KINDS = /* @__PURE__ */ new Set(["user", "context", "steering", "assistant", "system"]);
+function isRecord4(value) {
+  return value !== null && typeof value === "object" && !Array.isArray(value);
+}
+function fail(label, detail) {
+  throw new TypeError(`${label}: ${detail}`);
+}
+function stringId(value, label) {
+  if (typeof value !== "string" || value.trim() === "") fail(label, "must be a non-empty string");
+  return value;
+}
+function eventSeq(value, label) {
+  if (!Number.isSafeInteger(value) || value < 0) fail(label, "must be a non-negative integer");
+  return value;
+}
+function extRecord(value, label) {
+  if (value === void 0) return void 0;
+  if (!isRecord4(value)) fail(label, "must be an object");
+  return value;
+}
+function normalizeChrome(value, label = "chrome") {
+  if (!isRecord4(value)) fail(label, "must be an object");
+  if (!CHROME_MODES.has(value.mode)) fail(label, "mode must be native or play");
+  if (value.revision !== void 0 && value.revision !== null && (typeof value.revision !== "string" || value.revision === "")) {
+    fail(label, "revision must be a non-empty string or null");
+  }
+  return { mode: value.mode, revision: value.revision ?? null };
+}
+function normalizeWorkspace(value, label = "workspace") {
+  if (!isRecord4(value)) fail(label, "must be an object");
+  if (typeof value.selected !== "boolean") fail(label, "selected must be a boolean");
+  if (value.rootPath !== null && value.rootPath !== void 0 && typeof value.rootPath !== "string") {
+    fail(label, "rootPath must be a string or null");
+  }
+  if (!Number.isSafeInteger(value.contractVersion) || value.contractVersion < 1) {
+    fail(label, "contractVersion must be a positive integer");
+  }
+  const warnings = Array.isArray(value.warnings) ? value.warnings.filter(isRecord4).map((item) => ({
+    code: typeof item.code === "string" ? item.code : "",
+    message: typeof item.message === "string" ? item.message : ""
+  })) : [];
+  return {
+    selected: value.selected,
+    rootPath: value.rootPath ?? null,
+    workspaceId: typeof value.workspaceId === "string" ? value.workspaceId : null,
+    contractVersion: value.contractVersion,
+    activeTimelinePath: typeof value.activeTimelinePath === "string" ? value.activeTimelinePath : null,
+    firstSelection: value.firstSelection === true,
+    warnings
+  };
+}
+function normalizeTimelineVariant(value, label = "variant") {
+  if (!isRecord4(value)) fail(label, "must be an object");
+  const startEventId = eventSeq(value.startEventId, `${label}.startEventId`);
+  const endEventId = eventSeq(value.endEventId, `${label}.endEventId`);
+  if (startEventId > endEventId) fail(label, "startEventId must not exceed endEventId");
+  const ext = extRecord(value.ext, `${label}.ext`);
+  return {
+    id: stringId(value.id, `${label}.id`),
+    sessionId: stringId(value.sessionId, `${label}.sessionId`),
+    startEventId,
+    endEventId,
+    ...ext === void 0 ? {} : { ext }
+  };
+}
+function normalizeTimelineNode(value, label = "node") {
+  if (!isRecord4(value)) fail(label, "must be an object");
+  if (value.kind !== "qa") fail(label, "kind must be qa");
+  if (!Array.isArray(value.variants) || value.variants.length === 0) {
+    fail(label, "variants must be a non-empty array");
+  }
+  const variants = value.variants.map((item, index) => normalizeTimelineVariant(item, `${label}.variants[${index}]`));
+  const adoptedVariantId = stringId(value.adoptedVariantId, `${label}.adoptedVariantId`);
+  if (!variants.some((item) => item.id === adoptedVariantId)) fail(label, "adoptedVariantId must match a variant");
+  if (value.displayOverride !== void 0 && value.displayOverride !== null && typeof value.displayOverride !== "string") {
+    fail(label, "displayOverride must be a string or null");
+  }
+  const ext = extRecord(value.ext, `${label}.ext`);
+  return {
+    id: stringId(value.id, `${label}.id`),
+    kind: "qa",
+    displayOverride: value.displayOverride ?? null,
+    ...Object.hasOwn(value, "parentVariantId") ? {
+      parentVariantId: value.parentVariantId === null ? null : stringId(value.parentVariantId, `${label}.parentVariantId`)
+    } : {},
+    adoptedVariantId,
+    variants,
+    ...ext === void 0 ? {} : { ext }
+  };
+}
+function normalizeTimeline(value, label = "timeline") {
+  if (!isRecord4(value)) fail(label, "must be an object");
+  if (!Array.isArray(value.nodes)) fail(label, "nodes must be an array");
+  const nodes = value.nodes.map((item, index) => normalizeTimelineNode(item, `${label}.nodes[${index}]`));
+  const ids = /* @__PURE__ */ new Set();
+  const variantOwners = /* @__PURE__ */ new Map();
+  const tree = value.head !== void 0 || nodes.some((node) => Object.hasOwn(node, "parentVariantId"));
+  for (const node of nodes) {
+    if (ids.has(node.id)) fail(label, `duplicate node id ${node.id}`);
+    ids.add(node.id);
+    for (const variant of node.variants) {
+      if (tree && variantOwners.has(variant.id)) fail(label, `duplicate tree variant id ${variant.id}`);
+      variantOwners.set(variant.id, node.id);
+    }
+  }
+  for (const [index, node] of nodes.entries()) {
+    if (!Object.hasOwn(node, "parentVariantId") || node.parentVariantId === null) continue;
+    const parentNodeId = variantOwners.get(node.parentVariantId);
+    if (parentNodeId === void 0) fail(`${label}.nodes[${index}]`, "parentVariantId is unknown");
+    if (nodes.findIndex((item) => item.id === parentNodeId) >= index) fail(`${label}.nodes[${index}]`, "parentVariantId must reference an earlier node");
+  }
+  let head;
+  if (value.head !== void 0) {
+    if (!isRecord4(value.head)) fail(`${label}.head`, "must be an object");
+    head = {
+      sessionId: stringId(value.head.sessionId, `${label}.head.sessionId`),
+      nodeId: stringId(value.head.nodeId, `${label}.head.nodeId`),
+      variantId: stringId(value.head.variantId, `${label}.head.variantId`)
+    };
+    if (variantOwners.get(head.variantId) !== head.nodeId) fail(`${label}.head`, "must reference a variant on its node");
+  }
+  const ext = extRecord(value.ext, `${label}.ext`);
+  return { nodes, ...head === void 0 ? {} : { head }, ...ext === void 0 ? {} : { ext } };
+}
+function normalizeCatalog(value, label = "catalog") {
+  if (!isRecord4(value)) fail(label, "must be an object");
+  if (!Array.isArray(value.playthroughs)) fail(label, "playthroughs must be an array");
+  const playthroughs = value.playthroughs.map((item, index) => {
+    const itemLabel = `${label}.playthroughs[${index}]`;
+    if (!isRecord4(item)) fail(itemLabel, "must be an object");
+    const ext2 = extRecord(item.ext, `${itemLabel}.ext`);
+    return {
+      id: stringId(item.id, `${itemLabel}.id`),
+      path: stringId(item.path, `${itemLabel}.path`),
+      ...typeof item.title === "string" ? { title: item.title } : {},
+      ...typeof item.lastOpenedAt === "string" ? { lastOpenedAt: item.lastOpenedAt } : {},
+      ...ext2 === void 0 ? {} : { ext: ext2 }
+    };
+  });
+  const ext = extRecord(value.ext, `${label}.ext`);
+  return { playthroughs, ...ext === void 0 ? {} : { ext } };
+}
+function parseJsonDocument(content, normalize, label) {
+  if (typeof content !== "string") fail(label, "content must be a JSON string");
+  let parsed;
+  try {
+    parsed = JSON.parse(content);
+  } catch {
+    fail(label, "content must be valid JSON");
+  }
+  return normalize(parsed, label);
+}
+function projectContentText(content) {
+  if (!Array.isArray(content)) return "";
+  return content.map((part) => {
+    if (!isRecord4(part)) return "";
+    if (typeof part.text === "string") return part.text;
+    return typeof part.type === "string" && part.type !== "text" ? `\u27E6${part.type}\u27E7` : "";
+  }).join("");
+}
+function normalizeSessionMessages(value, label = "messages") {
+  if (!isRecord4(value)) fail(label, "must be an object");
+  if (!Array.isArray(value.messages)) fail(label, "messages must be an array");
+  if (typeof value.incompleteTurn !== "boolean") fail(label, "incompleteTurn must be a boolean");
+  const messages = value.messages.map((item, index) => {
+    const itemLabel = `${label}.messages[${index}]`;
+    if (!isRecord4(item)) fail(itemLabel, "must be an object");
+    if (!MESSAGE_ROLES.has(item.role)) fail(itemLabel, "role is invalid");
+    if (!Array.isArray(item.content)) fail(itemLabel, "content must be an array");
+    if (item.seq !== null && (!Number.isSafeInteger(item.seq) || item.seq < 0)) fail(itemLabel, "seq must be a non-negative integer or null");
+    const fallbackKind = item.role === "assistant" ? "assistant" : item.role === "system" ? "system" : "user";
+    const origin = item.origin === void 0 ? { kind: fallbackKind } : (() => {
+      if (!isRecord4(item.origin) || !MESSAGE_ORIGIN_KINDS.has(item.origin.kind)) fail(`${itemLabel}.origin`, "kind is invalid");
+      if (item.origin.kind !== "context") return { kind: item.origin.kind };
+      const optional = (field, maximum) => {
+        const fieldValue = item.origin[field];
+        if (fieldValue !== null && fieldValue !== void 0 && (typeof fieldValue !== "string" || fieldValue.length > maximum)) {
+          fail(`${itemLabel}.origin.${field}`, `must be a string up to ${maximum} characters or null`);
+        }
+        return typeof fieldValue === "string" && fieldValue !== "" ? fieldValue : null;
+      };
+      return {
+        kind: "context",
+        producer: optional("producer", 200),
+        form: optional("form", 64),
+        summary: optional("summary", 1e3)
+      };
+    })();
+    return {
+      id: stringId(item.id, `${itemLabel}.id`),
+      role: item.role,
+      content: item.content,
+      seq: item.seq,
+      text: projectContentText(item.content),
+      origin
+    };
+  });
+  return { messages, incompleteTurn: value.incompleteTurn };
+}
+function normalizeFocus(value, label = "focus") {
+  if (!isRecord4(value)) fail(label, "must be an object");
+  const nullableId = (field, fieldLabel) => {
+    if (value[field] !== null && (typeof value[field] !== "string" || value[field].trim() === "")) {
+      fail(label, `${fieldLabel} must be a non-empty string or null`);
+    }
+    return value[field];
+  };
+  return {
+    playthroughId: stringId(value.playthroughId, `${label}.playthroughId`),
+    sessionId: nullableId("sessionId", "sessionId"),
+    nodeId: nullableId("nodeId", "nodeId"),
+    variantId: nullableId("variantId", "variantId")
+  };
+}
+function timelinePath(value, label = "timeline path") {
+  const path = typeof value === "string" ? value : value?.path;
+  stringId(path, label);
+  if (!path.endsWith("timeline.json")) fail(label, "must point to timeline.json");
+  return path;
+}
+function playthroughCharacterId(playthrough) {
+  const explicit = playthrough?.ext?.pmpDshTavern?.characterId;
+  if (typeof explicit === "string" && explicit !== "") return explicit;
+  const path = typeof playthrough?.path === "string" ? playthrough.path.replaceAll("\\", "/") : "";
+  const first = path.split("/").filter(Boolean)[0];
+  return first || null;
+}
+
+// packages/client/src/play/sidebar-model.js
+var SIDEBAR_LOAD_CONCURRENCY = 4;
+function characterIdFromSelection(value) {
+  const selection = value?.selection ?? value;
+  const id = selection?.characterCardId;
+  return typeof id === "string" && id !== "" ? id : null;
+}
+function rootSessionId2(playthrough) {
+  const id = playthrough?.ext?.pmpDshTavern?.rootSessionId;
+  return typeof id === "string" && id !== "" ? id : null;
+}
+function sessionTitle(session, id) {
+  if (typeof session?.displayTitle === "string" && session.displayTitle !== "") return session.displayTitle;
+  if (typeof session?.title === "string" && session.title !== "") return session.title;
+  return id;
+}
+function timestamp(value) {
+  if (Number.isFinite(value)) return value;
+  if (typeof value !== "string" || value === "") return 0;
+  const parsed = Date.parse(value);
+  return Number.isFinite(parsed) ? parsed : 0;
+}
+function latestCharacterSessionActivity(character, sessions) {
+  let latest = 0;
+  for (const playthrough of character.playthroughs) {
+    for (const id of playthrough.sessionIds) latest = Math.max(latest, timestamp(sessions[id]?.updatedAt));
+  }
+  for (const session of character.unassigned) latest = Math.max(latest, timestamp(sessions[session.id]?.updatedAt));
+  return latest;
+}
+function compareProjectedNames(left, right) {
+  const named = left.name.localeCompare(right.name, "zh-CN", { numeric: true, sensitivity: "base" });
+  return named !== 0 ? named : left.id.localeCompare(right.id);
+}
+function sortCharactersByRecentConversation(characters, sessions) {
+  return characters.toSorted((left, right) => {
+    const activity = latestCharacterSessionActivity(right, sessions) - latestCharacterSessionActivity(left, sessions);
+    if (activity !== 0) return activity;
+    const resourceUpdate = timestamp(right.updatedAt) - timestamp(left.updatedAt);
+    return resourceUpdate !== 0 ? resourceUpdate : compareProjectedNames(left, right);
+  });
+}
+function historicalCharacterName(playthrough, sessions, fallback) {
+  const preserved = playthrough?.ext?.pmpDshTavern?.characterName;
+  if (typeof preserved === "string" && preserved.trim() !== "") return preserved;
+  const root = rootSessionId2(playthrough);
+  if (root === null) return fallback;
+  const title = sessionTitle(sessions[root], root);
+  const inferred = title.replace(/\s+\d{4}-\d{2}-\d{2}\s+\d{2}:\d{2}$/, "").trim();
+  return inferred !== "" && inferred !== root ? inferred : fallback;
+}
+function normalizedCharacterName(value) {
+  return String(value ?? "").trim().toLocaleLowerCase("zh-CN");
+}
+function assessPlaythroughCharacterRelink({
+  playthrough,
+  target,
+  characters = [],
+  missingCharacters = []
+} = {}) {
+  const reference = playthrough?.ext?.pmpDshTavern ?? {};
+  const currentId = playthroughCharacterId(playthrough);
+  if (typeof target?.id !== "string" || target.id === "") return { automatic: false, reason: "target-missing" };
+  if (target.id === currentId) return { automatic: true, reason: "unchanged" };
+  if (typeof reference.characterSha256 === "string" && reference.characterSha256 !== "") {
+    const shaMatches = characters.filter((character) => character.sha256 === reference.characterSha256);
+    if (shaMatches.length === 1 && shaMatches[0].id === target.id) return { automatic: true, reason: "sha256" };
+  }
+  const name2 = normalizedCharacterName(reference.characterName);
+  if (name2 !== "") {
+    const missingNameMatches = missingCharacters.filter((character) => normalizedCharacterName(character.name) === name2);
+    const currentNameMatches = characters.filter((character) => normalizedCharacterName(character.name) === name2);
+    const missingIdentityIsUnique = missingNameMatches.length === 0 || missingNameMatches.length === 1 && missingNameMatches[0].id === currentId;
+    if (missingIdentityIsUnique && currentNameMatches.length === 1 && currentNameMatches[0].id === target.id) {
+      return { automatic: true, reason: "name" };
+    }
+  }
+  return { automatic: false, reason: "manual" };
+}
+function normalizedPath2(value) {
+  if (typeof value !== "string") return "";
+  const normalized = value.replaceAll("\\", "/").replace(/\/+$/, "");
+  return /^[a-z]:\//i.test(normalized) ? normalized.toLowerCase() : normalized;
+}
+function requiresSystemWorkspaceConfirmation(value) {
+  const path = typeof value === "string" ? value.replaceAll("\\", "/") : "";
+  return /^c:\//i.test(path) || path === "/" || path === "/usr" || path.startsWith("/usr/") || path === "/System" || path.startsWith("/System/");
+}
+function timelineFor(timelines, playthrough) {
+  return timelines?.[playthrough.path] ?? timelines?.[playthrough.id] ?? null;
+}
+function playthroughMembers(playthrough, timeline) {
+  const ids = /* @__PURE__ */ new Set();
+  const rootId = rootSessionId2(playthrough);
+  if (rootId !== null) ids.add(rootId);
+  if (typeof timeline?.head?.sessionId === "string" && timeline.head.sessionId !== "") {
+    ids.add(timeline.head.sessionId);
+  }
+  for (const node of timeline?.nodes ?? []) {
+    for (const variant of node?.variants ?? []) {
+      if (typeof variant?.sessionId === "string" && variant.sessionId !== "") ids.add(variant.sessionId);
+    }
+  }
+  return ids;
+}
+function sessionIdsInRpWorkspace({ workspace, workspaceItems = [], sessions = {} } = {}) {
+  const ids = /* @__PURE__ */ new Set();
+  if (workspace?.selected !== true) return ids;
+  if (typeof workspace.workspaceId === "string" && workspace.workspaceId !== "") {
+    const item = workspaceItems.find((candidate) => candidate?.workspaceId === workspace.workspaceId);
+    if (item !== void 0) {
+      for (const id of item.sessionIds ?? []) if (typeof id === "string" && id !== "") ids.add(id);
+      return ids;
+    }
+  }
+  const root = normalizedPath2(workspace.rootPath);
+  if (root === "") return ids;
+  for (const [id, session] of Object.entries(sessions)) {
+    if (normalizedPath2(session?.cwd) === root) ids.add(id);
+  }
+  return ids;
+}
+var SessionCharacterBindingCache = class {
+  constructor() {
+    this.entries = /* @__PURE__ */ new Map();
+    this.generation = 0;
+  }
+  clear() {
+    this.generation += 1;
+    this.entries.clear();
+  }
+  get(client, sessionId) {
+    const cached = this.entries.get(sessionId);
+    if (cached !== void 0) return cached.promise ?? Promise.resolve(cached.value);
+    const generation = this.generation;
+    const readSelection = typeof client.getSelection === "function" ? client.getSelection.bind(client) : client.getCharacterSelection.bind(client);
+    const promise = readSelection(sessionId).then(characterIdFromSelection, () => null);
+    this.entries.set(sessionId, { promise });
+    promise.then((value) => {
+      if (this.generation === generation) this.entries.set(sessionId, { value });
+    });
+    return promise;
+  }
+};
+async function loadSessionCharacterBindings(client, sessionIds, {
+  concurrency = SIDEBAR_LOAD_CONCURRENCY,
+  cache = new SessionCharacterBindingCache()
+} = {}) {
+  if (client == null || typeof client.getSelection !== "function" && typeof client.getCharacterSelection !== "function") return {};
+  const ids = [...new Set(sessionIds)].filter((id) => typeof id === "string" && id !== "");
+  const result = {};
+  let cursor = 0;
+  const worker = async () => {
+    while (cursor < ids.length) {
+      const index = cursor;
+      cursor += 1;
+      const id = ids[index];
+      result[id] = await cache.get(client, id);
+    }
+  };
+  const requested = Number.isFinite(concurrency) ? Math.floor(concurrency) : SIDEBAR_LOAD_CONCURRENCY;
+  const workerCount = Math.min(ids.length, Math.max(1, Math.min(SIDEBAR_LOAD_CONCURRENCY, requested)));
+  await Promise.all(Array.from({ length: workerCount }, worker));
+  return result;
+}
+async function mapConcurrent(values, mapper, concurrency = SIDEBAR_LOAD_CONCURRENCY) {
+  const result = new Array(values.length);
+  let cursor = 0;
+  const worker = async () => {
+    while (cursor < values.length) {
+      const index = cursor;
+      cursor += 1;
+      result[index] = await mapper(values[index], index);
+    }
+  };
+  await Promise.all(Array.from({ length: Math.min(values.length, concurrency) }, worker));
+  return result;
+}
+async function loadPlaySidebarResources(client) {
+  if (client == null) throw new TypeError("playClient.required");
+  const [workspace, characterResponse] = await Promise.all([
+    client.getWorkspace(),
+    client.getCharacters()
+  ]);
+  const characters = Array.isArray(characterResponse?.characters) ? characterResponse.characters : [];
+  const missingCharacters = Array.isArray(characterResponse?.missingCharacters) ? characterResponse.missingCharacters : [];
+  const characterSorting = characterResponse?.sorting ?? { mode: "updated" };
+  if (workspace.selected !== true) return { workspace, characters, missingCharacters, characterSorting, catalog: { playthroughs: [] }, timelines: {}, diagnostics: [] };
+  let catalog2;
+  try {
+    catalog2 = await client.getCatalog();
+  } catch (reason) {
+    if (reason?.code !== "PLAY_PATH_NOT_FOUND") throw reason;
+    catalog2 = { playthroughs: [] };
+  }
+  const timelines = {};
+  const diagnostics = [];
+  await mapConcurrent(catalog2.playthroughs, async (playthrough) => {
+    try {
+      timelines[playthrough.path] = await client.getTimeline(playthrough);
+    } catch (reason) {
+      diagnostics.push({
+        playthroughId: playthrough.id,
+        path: playthrough.path,
+        message: reason instanceof Error ? reason.message : String(reason)
+      });
+    }
+  });
+  return { workspace, characters, missingCharacters, characterSorting, catalog: catalog2, timelines, diagnostics };
+}
+function projectPlaySidebar({
+  workspace = { selected: false },
+  workspaceItems = [],
+  characters = [],
+  characterSorting = { mode: "updated" },
+  missingCharacters = [],
+  catalog: catalog2 = { playthroughs: [] },
+  timelines = {},
+  sessions = {},
+  sessionIds = [],
+  archivedSessionIds = [],
+  currentId = null,
+  activePlaythroughId = null,
+  sessionCharacters = {}
+} = {}) {
+  const archived = new Set(archivedSessionIds);
+  const rpSessionIds = sessionIdsInRpWorkspace({ workspace, workspaceItems, sessions });
+  const characterById = /* @__PURE__ */ new Map();
+  const missingById = new Map(missingCharacters.map((item) => [item.id, item]));
+  const missingCharacterById = /* @__PURE__ */ new Map();
+  const ensureCharacter = (id, name2 = id) => {
+    if (!characterById.has(id) && !characters.some((item) => item?.id === id)) {
+      if (!missingCharacterById.has(id)) {
+        const missing = missingById.get(id);
+        missingCharacterById.set(id, {
+          id,
+          name: missing?.name ?? name2,
+          ...typeof missing?.sha256 === "string" ? { sha256: missing.sha256 } : {},
+          playthroughs: [],
+          unassigned: [],
+          missing: true
+        });
+      }
+      return missingCharacterById.get(id);
+    }
+    if (!characterById.has(id)) {
+      const resource = characters.find((item) => item?.id === id);
+      characterById.set(id, {
+        id,
+        name: name2,
+        ...typeof resource?.updatedAt === "string" ? { updatedAt: resource.updatedAt } : {},
+        playthroughs: [],
+        unassigned: []
+      });
+    }
+    return characterById.get(id);
+  };
+  for (const character of characters) {
+    if (typeof character?.id !== "string" || character.id === "") continue;
+    ensureCharacter(character.id, typeof character.name === "string" && character.name !== "" ? character.name : character.id);
+  }
+  const claimedRpSessions = /* @__PURE__ */ new Set();
+  for (const playthrough of catalog2.playthroughs ?? []) {
+    const rootId = rootSessionId2(playthrough);
+    const characterId = playthroughCharacterId(playthrough);
+    if (characterId === null) continue;
+    const characterReference = playthrough.ext?.pmpDshTavern ?? {};
+    const allMembers = playthroughMembers(playthrough, timelineFor(timelines, playthrough));
+    const members = [...allMembers].filter((id) => rpSessionIds.has(id) && !archived.has(id));
+    for (const id of members) claimedRpSessions.add(id);
+    const characterGroup = ensureCharacter(characterId, historicalCharacterName(playthrough, sessions, characterId));
+    if (characterGroup.missing === true && characterGroup.sha256 === void 0 && typeof characterReference.characterSha256 === "string") {
+      characterGroup.sha256 = characterReference.characterSha256;
+    }
+    characterGroup.playthroughs.push({
+      ...playthrough,
+      title: typeof playthrough.title === "string" && playthrough.title !== "" ? playthrough.title : playthrough.id,
+      rootSessionId: rootId !== null && members.includes(rootId) ? rootId : null,
+      sessionIds: members,
+      active: typeof activePlaythroughId === "string" && activePlaythroughId !== "" ? playthrough.id === activePlaythroughId : currentId !== null && members.includes(currentId),
+      missing: members.length === 0
+    });
+  }
+  const ids = sessionIds.length > 0 ? sessionIds : Object.keys(sessions);
+  const otherSessions = [];
+  for (const id of ids) {
+    const session = sessions[id];
+    if (session == null || archived.has(id)) continue;
+    if (session.origin === "subagent") continue;
+    if (!rpSessionIds.has(id)) {
+      otherSessions.push({ id, title: sessionTitle(session, id), active: currentId === id, kind: "external" });
+      continue;
+    }
+    if (claimedRpSessions.has(id)) continue;
+    const characterId = sessionCharacters[id];
+    if (typeof characterId === "string" && characterId !== "") {
+      ensureCharacter(characterId).unassigned.push({ id, title: sessionTitle(session, id), active: currentId === id });
+      continue;
+    }
+    otherSessions.push({ id, title: sessionTitle(session, id), active: currentId === id, kind: "ordinary" });
+  }
+  const projectedCharacters = [...characterById.values()];
+  return {
+    workspaceReady: workspace.selected === true,
+    rpSessionIds: [...rpSessionIds],
+    playSessionIds: [...claimedRpSessions],
+    characters: characterSorting?.mode === "updated" ? sortCharactersByRecentConversation(projectedCharacters, sessions) : projectedCharacters,
+    missingCharacters: [...missingCharacterById.values()],
+    otherSessions
+  };
+}
+function playthroughFocusTarget({ focus, playthrough, rpSessionIds = [] } = {}) {
+  const target = typeof focus?.sessionId === "string" ? focus.sessionId : playthrough?.rootSessionId;
+  return typeof target === "string" && new Set(rpSessionIds).has(target) ? target : null;
+}
+function shouldShowUnboundNotice({ workspace, session, selection } = {}) {
+  if (workspace == null || session == null) return false;
+  if (workspace.selected !== true) return true;
+  const workspacePath = normalizedPath2(workspace.rootPath);
+  const sessionPath = normalizedPath2(session.cwd);
+  if (workspacePath === "" || sessionPath !== workspacePath) return true;
+  return characterIdFromSelection(selection) === null;
+}
+
+// packages/client/src/play/import.js
+function parseJsonl(text2) {
+  const rows = text2.split(/\r?\n/).filter(Boolean).map((line) => JSON.parse(line));
+  if (rows.length === 0) throw new TypeError("play.import.empty");
+  if (rows[0]?.kind === "pmp-dsh-tavern-playthrough") throw new TypeError("play.import.unsupported");
+  const messages = rows.slice(1).filter((row) => typeof row?.mes === "string");
+  let greeting = null;
+  const qa = [];
+  let pending2 = null;
+  for (const message of messages) {
+    if (message.is_user === true) {
+      if (pending2 !== null) throw new TypeError("play.import.unpaired");
+      pending2 = message.mes;
+    } else if (pending2 === null && qa.length === 0 && greeting === null) {
+      greeting = message.mes;
+    } else if (pending2 !== null) {
+      qa.push({ user: pending2, assistant: message.mes });
+      pending2 = null;
+    }
+  }
+  if (pending2 !== null) throw new TypeError("play.import.unpaired");
+  return { greeting, qa, source: { format: "sillytavern-jsonl" } };
+}
+function parsePlaythroughImport(text2, fileName = "") {
+  if (typeof text2 !== "string" || text2.trim() === "") throw new TypeError("play.import.empty");
+  const parsed = parseJsonl(text2);
+  return { schemaVersion: 1, ...parsed, source: { ...parsed.source, fileName } };
+}
+function rootSessionId3(playthrough) {
+  const value = playthrough?.ext?.pmpDshTavern?.rootSessionId;
+  return typeof value === "string" && value !== "" ? value : null;
+}
+function playthroughDirectory(playthrough) {
+  const path = typeof playthrough?.path === "string" ? playthrough.path.replaceAll("\\", "/") : "";
+  if (!path.endsWith("/timeline.json")) throw new TypeError("play.import.timelineRequired");
+  return path.slice(0, -"/timeline.json".length);
+}
+function fallbackImportPath(playthrough, timeline) {
+  const direct = playthrough?.ext?.pmpDshTavern?.importContextPath;
+  if (typeof direct === "string" && direct !== "") return direct;
+  const nested = timeline?.ext?.pmpDshTavern?.importContextPath;
+  return typeof nested === "string" && nested !== "" ? nested : null;
+}
+async function getPlaythroughImportBinding(client, sessionId, playthrough, timeline) {
+  if (typeof client.getImportContextBinding === "function") {
+    return client.getImportContextBinding(sessionId);
+  }
+  const path = fallbackImportPath(playthrough, timeline);
+  return path === null ? null : { path, state: "pending" };
+}
+async function loadPlaythroughImportContext(client, sessionId, playthrough, timeline) {
+  const binding = await getPlaythroughImportBinding(client, sessionId, playthrough, timeline);
+  if (typeof binding?.path !== "string" || binding.path === "") return { binding: null, document: null };
+  const document2 = JSON.parse((await client.getFile(binding.path)).content);
+  return { binding, document: document2 };
+}
+function assertLocallyMutable(timeline, messages) {
+  if ((timeline?.nodes?.length ?? 0) > 0 || messages?.incompleteTurn === true || (messages?.messages ?? []).some((message) => message?.role === "user" || message?.role === "assistant")) {
+    const error = new Error("play.import.locked");
+    error.code = "PLAY_IMPORT_CONTEXT_LOCKED";
+    throw error;
+  }
+}
+async function bindPlaythroughImport(client, playthrough, file, {
+  randomUUID = () => globalThis.crypto.randomUUID()
+} = {}) {
+  const document2 = parsePlaythroughImport(await file.text(), file.name);
+  const sessionId = rootSessionId3(playthrough);
+  if (sessionId === null) throw new TypeError("play.import.sessionRequired");
+  const [timeline, messages] = await Promise.all([
+    client.getTimeline(playthrough),
+    client.getMessages(sessionId)
+  ]);
+  assertLocallyMutable(timeline, messages);
+  const directory = playthroughDirectory(playthrough);
+  const token = String(randomUUID());
+  if (!/^[A-Za-z0-9][A-Za-z0-9._-]{0,199}$/.test(token)) throw new TypeError("play.import.idInvalid");
+  const contextPath = `${directory}/import-context-${token}.json`;
+  await client.createDirs(directory);
+  await client.putFile(contextPath, JSON.stringify(document2, null, 2));
+  const bound = await client.putImportContextBinding(sessionId, { path: contextPath });
+  const [savedFile, savedBinding] = await Promise.all([
+    client.getFile(contextPath),
+    client.getImportContextBinding(sessionId)
+  ]);
+  const savedDocument = JSON.parse(savedFile.content);
+  if (bound?.path !== contextPath || savedBinding?.path !== contextPath || savedBinding?.state !== "pending" || savedDocument.schemaVersion !== document2.schemaVersion || savedDocument.qa?.length !== document2.qa.length) {
+    throw new Error("play.import.verificationFailed");
+  }
+  return { sessionId, binding: savedBinding, document: document2 };
+}
+async function unbindPlaythroughImport(client, playthrough) {
+  const sessionId = rootSessionId3(playthrough);
+  if (sessionId === null) throw new TypeError("play.import.sessionRequired");
+  const [timeline, messages] = await Promise.all([
+    client.getTimeline(playthrough),
+    client.getMessages(sessionId)
+  ]);
+  assertLocallyMutable(timeline, messages);
+  await client.deleteImportContextBinding(sessionId);
+  const saved = await client.getImportContextBinding(sessionId);
+  if (saved !== null) throw new Error("play.import.verificationFailed");
+  return { sessionId, binding: null };
+}
+
+// packages/client/src/play/create.js
+var SAFE_SEGMENT = /^[A-Za-z0-9][A-Za-z0-9._-]{0,199}$/;
+var SAFE_SESSION_ID = /^[A-Za-z0-9][A-Za-z0-9._:-]{0,199}$/;
+function safeSegment(value, label) {
+  if (typeof value !== "string" || !SAFE_SEGMENT.test(value)) {
+    throw new TypeError(`${label} must be a safe path segment`);
+  }
+  return value;
+}
+function safeSessionId(value) {
+  if (typeof value !== "string" || !SAFE_SESSION_ID.test(value)) {
+    throw new TypeError("session.id must be a valid DSH session id");
+  }
+  return value;
+}
+function isoNow(now) {
+  const value = now();
+  if (!(value instanceof Date) || Number.isNaN(value.valueOf())) throw new TypeError("now must return a valid Date");
+  return value.toISOString();
+}
+async function catalogOrEmpty(client) {
+  try {
+    return await client.getCatalog();
+  } catch (reason) {
+    if (reason?.code === "PLAY_PATH_NOT_FOUND") return { playthroughs: [] };
+    throw reason;
+  }
+}
+function playthroughCharacterId2(playthrough) {
+  const value = playthrough?.ext?.pmpDshTavern?.characterId;
+  return typeof value === "string" && value !== "" ? value : null;
+}
+function rootSessionId4(playthrough) {
+  const value = playthrough?.ext?.pmpDshTavern?.rootSessionId;
+  return typeof value === "string" && value !== "" ? value : null;
+}
+async function ensureCharacterSelection(client, sessionId, characterId) {
+  const current3 = await client.getCharacterSelection(sessionId);
+  if (characterIdFromSelection(current3) !== characterId) {
+    await client.putCharacterSelection(sessionId, characterId, { greetingIndex: 0 });
+  }
+  const verified = await client.getCharacterSelection(sessionId);
+  if (characterIdFromSelection(verified) !== characterId) {
+    throw new Error("playthrough character selection did not persist");
+  }
+  return verified;
+}
+function latestCharacterPlaythrough(catalog2, characterId) {
+  let latest = null;
+  let latestNumber = 0;
+  let ordinal = 0;
+  for (const playthrough of catalog2?.playthroughs ?? []) {
+    if (playthroughCharacterId2(playthrough) !== characterId) continue;
+    ordinal += 1;
+    const explicit = playthrough?.ext?.pmpDshTavern?.playthroughNumber;
+    const number = Number.isSafeInteger(explicit) && explicit > 0 ? explicit : ordinal;
+    if (latest === null || number >= latestNumber) {
+      latest = playthrough;
+      latestNumber = number;
+    }
+  }
+  return latest;
+}
+async function playthroughIsReusable(client, playthrough) {
+  const sessionId = rootSessionId4(playthrough);
+  const timeline = await client.getTimeline(playthrough);
+  if ((timeline?.nodes?.length ?? 0) > 0) return false;
+  if (sessionId === null) {
+    return playthrough?.ext?.pmpDshTavern?.importContextPath === void 0 && timeline?.ext?.pmpDshTavern?.importContextPath === void 0;
+  }
+  const imported = await loadPlaythroughImportContext(client, sessionId, playthrough, timeline);
+  if (Array.isArray(imported.document?.qa) && imported.document.qa.length > 0) return false;
+  const history = await client.getMessages(sessionId);
+  if (history?.incompleteTurn === true) return false;
+  return !(history?.messages ?? []).some((message) => message?.role === "user" || message?.role === "assistant");
+}
+function nextPlaythroughNumber(catalog2, characterId) {
+  let maximum = 0;
+  let legacyOrdinal = 0;
+  for (const playthrough of catalog2?.playthroughs ?? []) {
+    if (playthroughCharacterId2(playthrough) !== characterId) continue;
+    legacyOrdinal += 1;
+    const explicit = playthrough?.ext?.pmpDshTavern?.playthroughNumber;
+    maximum = Math.max(maximum, Number.isSafeInteger(explicit) && explicit > 0 ? explicit : legacyOrdinal);
+  }
+  return maximum + 1;
+}
+async function renamePlaythrough(client, playthrough, title) {
+  if (client == null) throw new TypeError("playClient.required");
+  const normalized = typeof title === "string" ? title.trim() : "";
+  if (normalized === "" || normalized.length > 120) throw new TypeError("play.rename.invalid");
+  const saved = await updateCatalog(client, (current3) => {
+    const freshIndex = current3.playthroughs.findIndex((item) => item.id === playthrough?.id && item.path === playthrough?.path);
+    if (freshIndex < 0) throw new TypeError("play.rename.missing");
+    const freshPlaythroughs = [...current3.playthroughs];
+    freshPlaythroughs[freshIndex] = { ...freshPlaythroughs[freshIndex], title: normalized };
+    return { ...current3, playthroughs: freshPlaythroughs };
+  });
+  const verified = saved?.playthroughs === void 0 ? await client.getCatalog() : saved;
+  const renamed = verified.playthroughs.find((item) => item.id === playthrough.id && item.path === playthrough.path);
+  if (renamed?.title !== normalized) throw new Error("play.rename.verificationFailed");
+  return renamed;
+}
+function sourceSessionIdForCharacter(character) {
+  const activePlaythrough = character?.playthroughs?.find((item) => item.active && typeof item.rootSessionId === "string");
+  if (activePlaythrough !== void 0) return activePlaythrough.rootSessionId;
+  const activeLoose = character?.unassigned?.find((item) => item.active);
+  if (activeLoose !== void 0) return activeLoose.id;
+  const loose = character?.unassigned?.find((item) => typeof item.id === "string");
+  if (loose !== void 0) return loose.id;
+  const rooted = character?.playthroughs?.find((item) => typeof item.rootSessionId === "string");
+  return rooted?.rootSessionId ?? null;
+}
+async function createCharacterPlaythrough(client, {
+  character,
+  selectionFromSessionId = null,
+  configureSession = null,
+  now = () => /* @__PURE__ */ new Date(),
+  randomUUID = () => globalThis.crypto.randomUUID()
+} = {}) {
+  if (client == null) throw new TypeError("playClient.required");
+  const characterId = safeSegment(character?.id, "character.id");
+  const createdAt = isoNow(now);
+  const playthroughId = safeSegment(`playthrough-${randomUUID()}`, "playthrough.id");
+  const directory = `${characterId}/${playthroughId}`;
+  const path = `${directory}/timeline.json`;
+  const sourceId = typeof selectionFromSessionId === "string" && selectionFromSessionId !== "" ? selectionFromSessionId : null;
+  const catalog2 = await catalogOrEmpty(client);
+  const latest = latestCharacterPlaythrough(catalog2, characterId);
+  if (latest !== null && await playthroughIsReusable(client, latest)) {
+    const existingRoot = rootSessionId4(latest);
+    if (existingRoot !== null) {
+      if (typeof configureSession === "function") await configureSession(existingRoot);
+      await ensureCharacterSelection(client, existingRoot, characterId);
+      return { sessionId: existingRoot, playthrough: latest, reused: true };
+    }
+    const created2 = await client.postSession(sourceId);
+    const sessionId2 = safeSessionId(created2?.sessionId);
+    if (typeof configureSession === "function") await configureSession(sessionId2);
+    await ensureCharacterSelection(client, sessionId2, characterId);
+    let attached;
+    const savedCatalog2 = await updateCatalog(client, (fresh) => {
+      const index = fresh.playthroughs.findIndex((item) => item.id === latest.id && item.path === latest.path);
+      if (index < 0) throw new Error("playthrough.create.missingVacancy");
+      const current3 = fresh.playthroughs[index];
+      const currentRoot = rootSessionId4(current3);
+      if (currentRoot !== null && currentRoot !== sessionId2) throw new Error("playthrough.create.identityConflict");
+      attached = {
+        ...current3,
+        lastOpenedAt: createdAt,
+        ext: {
+          ...current3.ext ?? {},
+          pmpDshTavern: {
+            ...current3.ext?.pmpDshTavern ?? {},
+            characterId,
+            rootSessionId: sessionId2
+          }
+        }
+      };
+      const playthroughs = [...fresh.playthroughs];
+      playthroughs[index] = attached;
+      return { ...fresh, playthroughs };
+    });
+    attached ??= savedCatalog2?.playthroughs?.find((item) => item.id === latest.id && item.path === latest.path);
+    if (rootSessionId4(attached) !== sessionId2) throw new Error("playthrough vacancy attachment did not persist");
+    return { sessionId: sessionId2, playthrough: attached, reused: true, reattached: true };
+  }
+  const created = await client.postSession(sourceId);
+  const sessionId = safeSessionId(created?.sessionId);
+  if (typeof configureSession === "function") await configureSession(sessionId);
+  await ensureCharacterSelection(client, sessionId, characterId);
+  const playthrough = {
+    id: playthroughId,
+    path,
+    title: "\u5468\u76EE",
+    lastOpenedAt: createdAt,
+    ext: {
+      pmpDshTavern: {
+        characterId,
+        characterName: character.name,
+        ...typeof character.sha256 === "string" ? { characterSha256: character.sha256 } : {},
+        rootSessionId: sessionId,
+        playthroughNumber: 0
+      }
+    }
+  };
+  await client.createDirs(directory);
+  await client.putTimeline(playthrough, { nodes: [] });
+  let saved;
+  const savedCatalog = await updateCatalog(client, (fresh) => {
+    const existing = fresh.playthroughs.find((item) => item.id === playthroughId && item.path === path);
+    if (existing !== void 0) {
+      if (existing.ext?.pmpDshTavern?.rootSessionId !== sessionId) throw new Error("playthrough.create.identityConflict");
+      saved = existing;
+      return fresh;
+    }
+    const playthroughNumber = nextPlaythroughNumber(fresh, characterId);
+    const row = {
+      ...playthrough,
+      title: `${playthroughNumber}\u5468\u76EE`,
+      ext: {
+        ...playthrough.ext,
+        pmpDshTavern: { ...playthrough.ext.pmpDshTavern, playthroughNumber }
+      }
+    };
+    saved = row;
+    return { ...fresh, playthroughs: [...fresh.playthroughs, row] };
+  });
+  const savedTimeline = await client.getTimeline(playthrough);
+  saved ??= savedCatalog?.playthroughs?.find((item) => item.id === playthroughId && item.path === path);
+  if (saved?.ext?.pmpDshTavern?.rootSessionId !== sessionId || savedTimeline.nodes.length !== 0) {
+    throw new Error("playthrough verification failed");
+  }
+  return { sessionId, playthrough: saved, reused: false };
+}
+function createPlaythroughController(client, dependencies = {}) {
+  const inFlight = /* @__PURE__ */ new Map();
+  let tail = Promise.resolve();
+  return {
+    create(args) {
+      const characterId = safeSegment(args?.character?.id, "character.id");
+      const existing = inFlight.get(characterId);
+      if (existing !== void 0) return existing;
+      const task = tail.catch(() => {
+      }).then(() => createCharacterPlaythrough(client, {
+        ...dependencies,
+        ...args
+      }));
+      tail = task;
+      inFlight.set(characterId, task);
+      task.finally(() => {
+        if (inFlight.get(characterId) === task) inFlight.delete(characterId);
+      }).catch(() => {
+      });
+      return task;
+    }
+  };
+}
+
+// packages/client/src/play/fork.js
+var SAFE_SEGMENT2 = /^[A-Za-z0-9][A-Za-z0-9._-]{0,199}$/;
+var SAFE_SESSION_ID2 = /^[A-Za-z0-9][A-Za-z0-9._:-]{0,199}$/;
+function safeSegment2(value, label) {
+  if (typeof value !== "string" || !SAFE_SEGMENT2.test(value)) {
+    throw new TypeError(`${label} must be a safe path segment`);
+  }
+  return value;
+}
+function safeSessionId2(value) {
+  if (typeof value !== "string" || !SAFE_SESSION_ID2.test(value)) {
+    throw new TypeError("session.id must be a valid DSH session id");
+  }
+  return value;
+}
+function nodeById(timeline, nodeId) {
+  const index = timeline.nodes.findIndex((node) => node.id === nodeId);
+  if (index < 0) throw new TypeError(`Unknown timeline node ${nodeId}`);
+  return { index, node: timeline.nodes[index] };
+}
+function forkedTimeline(source, nodeIndex, adoptedId, sessionId) {
+  const entries2 = activeTimelineEntries(source);
+  const activeIndex = entries2.findIndex((entry) => entry.node.id === source.nodes[nodeIndex].id);
+  if (activeIndex < 0) throw new TypeError("Fork target is not on the active timeline branch");
+  let parentVariantId = null;
+  const nodes = entries2.slice(0, activeIndex + 1).map(({ node, variant }) => {
+    const copy = {
+      ...node,
+      parentVariantId,
+      adoptedVariantId: variant.id,
+      variants: node.variants.map((item) => item.id === adoptedId ? { ...item, sessionId } : { ...item })
+    };
+    parentVariantId = variant.id;
+    return copy;
+  });
+  return {
+    ...source,
+    nodes,
+    head: { sessionId, nodeId: nodes.at(-1).id, variantId: adoptedId }
+  };
+}
+function inheritedRangeExists(messages, variant) {
+  const values = messages?.messages ?? [];
+  const user = values.some((message) => message.role === "user" && Number.isSafeInteger(message.seq) && message.seq >= variant.startEventId && message.seq <= variant.endEventId);
+  const assistant = values.some((message) => message.role === "assistant" && message.seq === variant.endEventId);
+  return messages?.incompleteTurn !== true && user && assistant;
+}
+async function branchPlaythroughAtNode(client, { playthrough, nodeId } = {}) {
+  if (client == null) throw new TypeError("playClient.required");
+  const source = await client.getTimeline(playthrough);
+  const { index, node } = nodeById(source, nodeId);
+  const active = activeTimelineEntries(source).find((entry) => entry.node.id === nodeId);
+  if (active === void 0) throw new TypeError("Branch target is not on the active timeline branch");
+  const adopted = active.variant;
+  const branch = await client.postBranch(adopted.sessionId, adopted.endEventId);
+  const sessionId = safeSessionId2(branch?.sessionId);
+  const inherited = await client.getMessages(sessionId);
+  if (!inheritedRangeExists(inherited, adopted)) {
+    throw new Error("Forked session does not contain the adopted reply range");
+  }
+  return { source, index, node, adopted, sessionId, inherited };
+}
+async function forkPlaythroughAtNode(client, {
+  playthrough,
+  nodeId,
+  now = () => /* @__PURE__ */ new Date(),
+  randomUUID = () => globalThis.crypto.randomUUID()
+} = {}) {
+  if (client == null) throw new TypeError("playClient.required");
+  const characterId = safeSegment2(playthroughCharacterId(playthrough), "character.id");
+  const { source, index, node, adopted, sessionId } = await branchPlaythroughAtNode(client, { playthrough, nodeId });
+  const value = now();
+  if (!(value instanceof Date) || Number.isNaN(value.valueOf())) throw new TypeError("now must return a valid Date");
+  const playthroughId = safeSegment2(`playthrough-${randomUUID()}`, "playthrough.id");
+  const directory = `${characterId}/${playthroughId}`;
+  const path = `${directory}/timeline.json`;
+  const timeline = forkedTimeline(source, index, adopted.id, sessionId);
+  const draft = {
+    id: playthroughId,
+    path,
+    title: "\u5468\u76EE",
+    lastOpenedAt: value.toISOString(),
+    ext: {
+      pmpDshTavern: {
+        characterId,
+        rootSessionId: sessionId,
+        playthroughNumber: 0
+      }
+    }
+  };
+  await client.createDirs(directory);
+  await client.putTimeline(draft, timeline);
+  let saved;
+  const catalog2 = await updateCatalog(client, (fresh) => {
+    const existing = fresh.playthroughs.find((item) => item.id === playthroughId && item.path === path);
+    if (existing !== void 0) {
+      if (existing.ext?.pmpDshTavern?.rootSessionId !== sessionId) {
+        throw new Error("playthrough.fork.identityConflict");
+      }
+      saved = existing;
+      return fresh;
+    }
+    const playthroughNumber = nextPlaythroughNumber(fresh, characterId);
+    saved = {
+      ...draft,
+      title: `${playthroughNumber}\u5468\u76EE`,
+      ext: {
+        ...draft.ext,
+        pmpDshTavern: { ...draft.ext.pmpDshTavern, playthroughNumber }
+      }
+    };
+    return { ...fresh, playthroughs: [...fresh.playthroughs, saved] };
+  });
+  saved ??= catalog2?.playthroughs?.find((item) => item.id === playthroughId && item.path === path);
+  const focus = await client.getFocus(saved ?? draft);
+  if (focus.sessionId !== sessionId || focus.nodeId !== node.id || focus.variantId !== adopted.id) {
+    throw new Error("Forked playthrough focus verification failed");
+  }
+  return { sessionId, playthrough: saved ?? draft, timeline };
+}
+
+// packages/client/src/play/nodes.js
+function nodeById2(timeline, nodeId) {
+  const index = timeline.nodes.findIndex((node) => node.id === nodeId);
+  if (index < 0) throw new TypeError(`Unknown timeline node ${nodeId}`);
+  return { index, node: timeline.nodes[index] };
+}
+function replaceNode(timeline, index, node) {
+  const nodes = [...timeline.nodes];
+  nodes[index] = node;
+  return { ...timeline, nodes };
+}
+function defaultDelay(milliseconds) {
+  return new Promise((resolve) => setTimeout(resolve, milliseconds));
+}
+function defaultId(startEventId, endEventId) {
+  const random = globalThis.crypto?.randomUUID?.() ?? Date.now();
+  return ["variant", startEventId, endEventId, random].join("-").slice(0, 200);
+}
+function messageOriginKind2(message) {
+  const kind = message?.origin?.kind;
+  if (typeof kind === "string" && kind !== "") return kind;
+  return message?.role === "user" ? "user" : message?.role;
+}
+function completedPairAfter(messageState, eventId) {
+  if (messageState?.incompleteTurn === true) return null;
+  const messages = (messageState?.messages ?? []).filter((message) => Number.isSafeInteger(message.seq) && message.seq > eventId).sort((left, right) => left.seq - right.seq);
+  const user = messages.find((message) => message.role === "user" && (messageOriginKind2(message) === "user" || messageOriginKind2(message) === "steering"));
+  if (user === void 0) return null;
+  const assistant = [...messages].reverse().find((message) => message.role === "assistant" && message.seq > user.seq);
+  return assistant === void 0 ? null : { user, assistant };
+}
+async function createRootSwipeSession(client, sourceSessionId) {
+  const binding = typeof client.getImportContextBinding === "function" ? await client.getImportContextBinding(sourceSessionId) : null;
+  const importContextRef = typeof binding?.path === "string" && binding.path !== "" ? { path: binding.path } : void 0;
+  return client.postSession(sourceSessionId, importContextRef);
+}
+function createPlayNodeController(client, {
+  delay = defaultDelay,
+  pollInterval = 500,
+  maxPolls = 240,
+  idFactory = defaultId
+} = {}) {
+  if (client == null) throw new TypeError("playClient.required");
+  let pending2 = Promise.resolve();
+  const schedule = (operation) => {
+    const task = pending2.then(operation);
+    pending2 = task.catch(() => {
+    });
+    return task;
+  };
+  const update = (playthrough, nodeId, transform) => schedule(async () => {
+    return updateTimeline(client, playthrough, (timeline) => {
+      const { index, node } = nodeById2(timeline, nodeId);
+      return replaceNode(timeline, index, transform(node));
+    });
+  });
+  return {
+    setDisplayOverride(playthrough, nodeId, value) {
+      if (value !== null && typeof value !== "string") {
+        throw new TypeError("displayOverride must be a string or null");
+      }
+      return update(playthrough, nodeId, (node) => ({ ...node, displayOverride: value }));
+    },
+    adoptVariant(playthrough, nodeId, variantId) {
+      if (typeof variantId !== "string" || variantId === "") throw new TypeError("variantId is required");
+      return schedule(async () => {
+        const next = await updateTimeline(client, playthrough, (timeline) => {
+          const { index, node } = nodeById2(timeline, nodeId);
+          const variant = node.variants.find((item) => item.id === variantId);
+          if (variant === void 0) throw new TypeError(`Unknown variant ${variantId}`);
+          const head = timelineHeadForVariant(timeline, variantId) ?? {
+            sessionId: variant.sessionId,
+            nodeId: node.id,
+            variantId: variant.id
+          };
+          return timelineWithHead(
+            replaceNode(timeline, index, { ...node, adoptedVariantId: variantId }),
+            head
+          );
+        });
+        const focus = await client.getFocus(playthrough);
+        if (focus.sessionId !== next.head?.sessionId || focus.nodeId !== next.head?.nodeId || focus.variantId !== next.head?.variantId) {
+          throw new Error("Saved variant does not match derived focus");
+        }
+        return { timeline: next, sessionId: focus.sessionId };
+      });
+    },
+    createReplySwipe(playthrough, nodeId) {
+      return schedule(async () => {
+        const timeline = await client.getTimeline(playthrough);
+        const entries2 = activeTimelineEntries(timeline);
+        const requestedIndex = entries2.findIndex((entry) => entry.node.id === nodeId);
+        if (requestedIndex < 0) throw new TypeError(`Unknown active timeline node ${nodeId}`);
+        let sourceNode = null;
+        let sourceIndex = -1;
+        let adopted = null;
+        let source = null;
+        let user;
+        for (let index = requestedIndex; index >= 0; index -= 1) {
+          const candidate = entries2[index];
+          const messages = await client.getMessages(candidate.variant.sessionId);
+          const reusable = messages.messages.find((message) => message.role === "user" && (messageOriginKind2(message) === "user" || messageOriginKind2(message) === "steering") && message.seq >= candidate.variant.startEventId && message.seq <= candidate.variant.endEventId);
+          if (reusable !== void 0 && typeof reusable.text === "string" && reusable.text !== "") {
+            sourceNode = candidate.node;
+            sourceIndex = index;
+            adopted = candidate.variant;
+            source = messages;
+            user = reusable;
+            break;
+          }
+        }
+        if (sourceNode === null || adopted === null || source === null || user === void 0 || typeof user.text !== "string" || user.text === "") {
+          throw new TypeError("Active branch has no reusable user message");
+        }
+        const parent = sourceIndex > 0 ? entries2[sourceIndex - 1] : null;
+        const forkEventId = parent?.variant.endEventId ?? -1;
+        const branch = parent === null ? await createRootSwipeSession(client, adopted.sessionId) : await client.postBranch(adopted.sessionId, forkEventId);
+        const newSessionId = branch?.sessionId;
+        if (typeof newSessionId !== "string" || newSessionId === "") {
+          throw new TypeError("Branch response has no sessionId");
+        }
+        await client.postUserMessage(newSessionId, user.text);
+        let pair = null;
+        for (let attempt = 0; attempt < maxPolls; attempt += 1) {
+          pair = completedPairAfter(await client.getMessages(newSessionId), forkEventId);
+          if (pair !== null) break;
+          if (attempt + 1 < maxPolls) await delay(pollInterval);
+        }
+        if (pair === null) throw new Error("Timed out waiting for the swipe reply");
+        const variantId = idFactory(pair.user.seq, pair.assistant.seq, newSessionId);
+        const variant = {
+          id: variantId,
+          sessionId: newSessionId,
+          startEventId: pair.user.seq,
+          endEventId: pair.assistant.seq
+        };
+        const next = await updateTimeline(client, playthrough, (timeline2) => {
+          const current3 = nodeById2(timeline2, sourceNode.id);
+          const existing = current3.node.variants.find((item) => item.id === variantId);
+          if (existing !== void 0) {
+            return timelineWithHead(
+              replaceNode(timeline2, current3.index, { ...current3.node, adoptedVariantId: variantId }),
+              { sessionId: existing.sessionId, nodeId: current3.node.id, variantId }
+            );
+          }
+          return timelineWithHead(
+            replaceNode(timeline2, current3.index, {
+              ...current3.node,
+              adoptedVariantId: variantId,
+              variants: [...current3.node.variants, variant]
+            }),
+            { sessionId: newSessionId, nodeId: current3.node.id, variantId }
+          );
+        });
+        const focus = await client.getFocus(playthrough);
+        if (focus.sessionId !== newSessionId) throw new Error("Saved swipe does not match derived focus");
+        return { timeline: next, sessionId: newSessionId, nodeId: sourceNode.id, variantId };
+      });
+    },
+    forkPlaythrough(playthrough, nodeId) {
+      return schedule(() => forkPlaythroughAtNode(client, { playthrough, nodeId }));
+    },
+    rollbackPlaythrough(playthrough, nodeId) {
+      return schedule(async () => {
+        const branch = await branchPlaythroughAtNode(client, { playthrough, nodeId });
+        const next = await updateTimeline(client, playthrough, (timeline) => {
+          const current3 = nodeById2(timeline, nodeId);
+          const variant = current3.node.variants.find((item) => item.id === branch.adopted.id);
+          if (variant === void 0) throw new Error("Rollback target changed before commit");
+          return timelineWithHead(
+            replaceNode(timeline, current3.index, {
+              ...current3.node,
+              adoptedVariantId: variant.id
+            }),
+            { sessionId: branch.sessionId, nodeId: current3.node.id, variantId: variant.id }
+          );
+        });
+        const focus = await client.getFocus(playthrough);
+        if (focus.sessionId !== branch.sessionId || focus.nodeId !== nodeId || focus.variantId !== branch.adopted.id) {
+          throw new Error("Rollback focus verification failed");
+        }
+        return { timeline: next, sessionId: branch.sessionId };
+      });
+    }
+  };
+}
+
+// packages/client/src/play/swipe-transition.js
+var MAX_PENDING_TRANSITIONS = 32;
+var pending = /* @__PURE__ */ new Map();
+function queueSwipeTransition(sessionId, direction, nodeId) {
+  if (typeof sessionId !== "string" || sessionId === "") return;
+  if (direction !== "previous" && direction !== "next") return;
+  if (typeof nodeId !== "string" || nodeId === "") return;
+  pending.delete(sessionId);
+  pending.set(sessionId, { direction, nodeId });
+  while (pending.size > MAX_PENDING_TRANSITIONS) {
+    pending.delete(pending.keys().next().value);
+  }
+}
+function consumeSwipeTransition(sessionId) {
+  const intent = pending.get(sessionId) ?? null;
+  pending.delete(sessionId);
+  return intent;
+}
+
+// packages/client/src/play/turn-actions.js
+var h7 = createLocalizedElement(import_react8.createElement);
+var controllers = /* @__PURE__ */ new WeakMap();
 var css6 = `
+.dtv-play-turn-actions{display:flex;align-items:center;gap:calc(2px * var(--dtv-rp-action-scale,1));min-height:calc(28px * var(--dtv-rp-action-scale,1))}.dtv-play-turn-action{width:calc(28px * var(--dtv-rp-action-scale,1));height:calc(28px * var(--dtv-rp-action-scale,1));border:0;border-radius:calc(8px * var(--dtv-rp-action-scale,1));background:transparent;color:var(--dsw-alias-label-tertiary);font:inherit;font-size:calc(14px * var(--dtv-rp-action-scale,1));cursor:pointer;display:grid;place-items:center}.dtv-play-turn-action:hover{background:var(--dsw-alias-interactive-bg-hover);color:var(--dsw-alias-label-primary)}.dtv-play-turn-action:disabled{cursor:default;opacity:.38}.dtv-play-turn-position{padding:0 calc(5px * var(--dtv-rp-action-scale,1));color:var(--dsw-alias-label-tertiary);font-size:calc(10px * var(--dtv-rp-action-scale,1))}
+.dtv-play-display-editor{display:flex;flex-direction:column;align-self:stretch;gap:8px}.dtv-play-display-editor textarea{box-sizing:border-box;width:100%;min-height:180px;max-height:55vh;resize:vertical;padding:12px 14px;border:1px solid var(--dsw-alias-border-l2);border-radius:12px;background:var(--dsw-alias-bg-base);color:var(--dsw-alias-label-primary);font:inherit;font-size:14px;line-height:1.65}.dtv-play-display-editor textarea:focus{outline:2px solid color-mix(in srgb,var(--dsw-alias-state-business-primary,#2677d9) 35%,transparent);border-color:var(--dsw-alias-state-business-primary,#2677d9)}.dtv-play-display-editor-actions{display:flex;justify-content:flex-end;gap:8px}.dtv-play-display-editor-button{min-width:76px;min-height:34px;padding:7px 12px;border:1px solid var(--dsw-alias-border-l2);border-radius:8px;background:var(--dsw-alias-button-secondary-fill,var(--dsw-alias-bg-base));color:var(--dsw-alias-label-primary);font:inherit;cursor:pointer}.dtv-play-display-editor-button[data-primary=true]{border-color:transparent;background:var(--dsw-alias-state-business-primary,#2677d9);color:var(--dsw-alias-button-primary-label,#fff)}.dtv-play-display-editor-button:disabled{cursor:default;opacity:.45}
+`;
+function installStyles() {
+  if (document.querySelector(`style[data-plugin-css="${PLUGIN_ID}-play-turn-actions"]`) !== null) return;
+  const style = document.createElement("style");
+  style.dataset.pluginCss = `${PLUGIN_ID}-play-turn-actions`;
+  style.textContent = css6;
+  document.head.append(style);
+}
+function controller(client) {
+  let value = controllers.get(client);
+  if (value === void 0) {
+    value = createPlayNodeController(client);
+    controllers.set(client, value);
+  }
+  return value;
+}
+function Action({ icon, label, disabled = false, disabledLabel, onClick }) {
+  return h7("button", {
+    type: "button",
+    className: "dtv-play-turn-action",
+    disabled,
+    title: disabled ? disabledLabel ?? uiMessage("play.chat.runningDisabled") : label,
+    "aria-label": label,
+    onClick
+  }, icon);
+}
+function turnActionCapabilities(turn) {
+  return {
+    copy: true,
+    variants: true,
+    generateReply: true,
+    fork: true,
+    editDisplay: true
+  };
+}
+function PlayTurnActions({
+  turn,
+  playthrough,
+  playClient,
+  openSession,
+  running,
+  onChanged,
+  onError,
+  onSwipePending,
+  pendingVariant = false
+}) {
+  installStyles();
+  const [busy, setBusy] = (0, import_react8.useState)(false);
+  const [editor, setEditor] = (0, import_react8.useState)(null);
+  const disabled = running || busy;
+  const position = Math.max(0, turn.variants.findIndex((item) => item.id === turn.variant.id));
+  const displayedPosition = pendingVariant ? turn.variants.length : position;
+  const displayedVariantCount = pendingVariant ? turn.variants.length + 1 : turn.variants.length;
+  const capabilities = turnActionCapabilities(turn);
+  const hasPreviousVariant = position > 0;
+  const hasNextVariant = position + 1 < turn.variants.length;
+  (0, import_react8.useEffect)(() => setEditor(null), [turn.id, turn.variant.id]);
+  const mutate = async (operation) => {
+    if (disabled) return;
+    setBusy(true);
+    onError("");
+    try {
+      await operation();
+      onChanged();
+    } catch (reason) {
+      onError(reason instanceof Error ? reason.message : String(reason));
+    } finally {
+      setBusy(false);
+    }
+  };
+  const adopt = (targetPosition) => mutate(async () => {
+    const target = turn.variants[targetPosition];
+    if (target === void 0) throw new TypeError("Reply variant does not exist");
+    const result = await controller(playClient).adoptVariant(playthrough, turn.id, target.id);
+    queueSwipeTransition(result.sessionId, targetPosition < position ? "previous" : "next", turn.id);
+    openSession(result.sessionId, playthrough);
+  });
+  const generate = async () => {
+    if (disabled) return;
+    setBusy(true);
+    onError("");
+    onSwipePending?.(turn.id, true);
+    try {
+      const result = await controller(playClient).createReplySwipe(playthrough, turn.id);
+      queueSwipeTransition(result.sessionId, "next", result.nodeId ?? turn.id);
+      openSession(result.sessionId, playthrough);
+      window.dispatchEvent(new Event(CLIENT_REFRESH_EVENT));
+      onChanged();
+    } catch (reason) {
+      onSwipePending?.(turn.id, false);
+      onError(reason instanceof Error ? reason.message : String(reason));
+    } finally {
+      setBusy(false);
+    }
+  };
+  const copy = async () => {
+    try {
+      if (typeof navigator.clipboard?.writeText !== "function") throw new Error(translate("play.chat.copyUnavailable"));
+      await navigator.clipboard.writeText(turn.assistantText);
+    } catch (reason) {
+      onError(reason instanceof Error ? reason.message : String(reason));
+    }
+  };
+  if (editor !== null) {
+    return h7(
+      "form",
+      {
+        className: "dtv-play-display-editor",
+        onSubmit: (event) => {
+          event.preventDefault();
+          const value = editor;
+          mutate(async () => {
+            await controller(playClient).setDisplayOverride(playthrough, turn.id, value);
+            setEditor(null);
+          });
+        }
+      },
+      h7("textarea", {
+        value: editor,
+        autoFocus: true,
+        disabled,
+        "aria-label": uiMessage("play.chat.editDisplayPrompt"),
+        onChange: (event) => setEditor(event.target.value),
+        onKeyDown: (event) => {
+          if (event.key === "Escape" && !disabled) setEditor(null);
+        }
+      }),
+      h7(
+        "div",
+        { className: "dtv-play-display-editor-actions" },
+        h7("button", {
+          type: "button",
+          className: "dtv-play-display-editor-button",
+          disabled,
+          onClick: () => setEditor(null)
+        }, uiMessage("common.cancel")),
+        h7("button", {
+          type: "submit",
+          className: "dtv-play-display-editor-button",
+          "data-primary": true,
+          disabled
+        }, uiMessage("common.save"))
+      )
+    );
+  }
+  return h7(
+    "div",
+    { className: "dtv-play-turn-actions" },
+    h7(Action, { icon: "\u29C9", label: uiMessage("play.chat.copy"), onClick: copy }),
+    !capabilities.variants ? null : h7(Action, {
+      icon: "\u2039",
+      label: uiMessage("play.chat.previousReply"),
+      disabled: disabled || !hasPreviousVariant,
+      disabledLabel: !hasPreviousVariant ? uiMessage("play.chat.noOtherReply") : void 0,
+      onClick: () => adopt(position - 1)
+    }),
+    !capabilities.variants ? null : h7("span", { className: "dtv-play-turn-position" }, `${displayedPosition + 1}/${displayedVariantCount}`),
+    !capabilities.variants ? null : h7(Action, {
+      icon: "\u203A",
+      label: uiMessage(hasNextVariant ? "play.chat.nextReply" : "play.chat.generateReply"),
+      disabled,
+      onClick: hasNextVariant ? () => adopt(position + 1) : generate
+    }),
+    h7(Action, {
+      icon: "\u2442",
+      label: uiMessage("play.chat.forkPlaythrough"),
+      disabled,
+      onClick: () => mutate(async () => {
+        const result = await controller(playClient).forkPlaythrough(playthrough, turn.id);
+        window.dispatchEvent(new Event(CLIENT_REFRESH_EVENT));
+        openSession(result.sessionId, result.playthrough);
+      })
+    }),
+    h7(Action, {
+      icon: "\u21A9",
+      label: uiMessage("play.chat.rollbackPlaythrough"),
+      disabled,
+      onClick: () => mutate(async () => {
+        const result = await controller(playClient).rollbackPlaythrough(playthrough, turn.id);
+        openSession(result.sessionId, playthrough);
+      })
+    }),
+    h7(Action, {
+      icon: "\u270E",
+      label: uiMessage("play.chat.editDisplay"),
+      disabled,
+      onClick: () => setEditor(turn.assistantText)
+    }),
+    turn.displayOverridden ? h7(Action, {
+      icon: "\u21BA",
+      label: uiMessage("play.chat.restoreOriginal"),
+      disabled,
+      onClick: () => mutate(() => controller(playClient).setDisplayOverride(playthrough, turn.id, null))
+    }) : null
+  );
+}
+
+// packages/client/src/play/turns.js
+function recordedEndSeq2(timeline, sessionId) {
+  let end = -1;
+  for (const node of timeline?.nodes ?? []) {
+    for (const variant of node.variants ?? []) {
+      if (variant.sessionId === sessionId) end = Math.max(end, variant.endEventId);
+    }
+  }
+  return Math.max(end, activeVariantEnd(timeline, sessionId));
+}
+function defaultId2(prefix, sessionId, startEventId, endEventId) {
+  const random = globalThis.crypto?.randomUUID?.() ?? `${Date.now()}-${Math.random()}`;
+  return `${prefix}-${startEventId}-${endEventId}-${random}`.slice(0, 200);
+}
+function messageOriginKind3(message) {
+  const value = message?.origin?.kind;
+  if (typeof value === "string" && value !== "") return value;
+  return message?.role === "assistant" ? "assistant" : message?.role === "system" ? "system" : "user";
+}
+function isRealUserMessage(message) {
+  const origin = messageOriginKind3(message);
+  return message?.role === "user" && (origin === "user" || origin === "steering");
+}
+function extendHeadVariant(timeline, sessionId, endEventId) {
+  const head = timelineHead(timeline);
+  if (head === null || head.sessionId !== sessionId) return { timeline, changed: false };
+  let changed = false;
+  const nodes = (timeline?.nodes ?? []).map((node) => {
+    if (node.id !== head.nodeId) return node;
+    const variants = (node.variants ?? []).map((variant) => {
+      if (variant.id !== head.variantId || variant.sessionId !== sessionId || endEventId <= variant.endEventId) return variant;
+      changed = true;
+      return { ...variant, endEventId };
+    });
+    return changed ? { ...node, variants } : node;
+  });
+  return changed ? { timeline: { ...timeline, nodes }, changed } : { timeline, changed };
+}
+function appendCompletedTurns(timeline, messageState, sessionId, {
+  idFactory = defaultId2
+} = {}) {
+  if (typeof sessionId !== "string" || sessionId === "") throw new TypeError("sessionId is required");
+  if (messageState?.incompleteTurn === true) return { timeline, added: [], changed: false };
+  const head = timelineHead(timeline);
+  if (head !== null && head.sessionId !== sessionId) return { timeline, added: [], changed: false };
+  const boundary = recordedEndSeq2(timeline, sessionId);
+  const messages = [...messageState?.messages ?? []].filter((message) => Number.isSafeInteger(message.seq) && message.seq > boundary).sort((left, right) => left.seq - right.seq);
+  const added = [];
+  let nextTimeline = timeline;
+  let changed = false;
+  let parentVariantId = timelineHead(timeline)?.variantId ?? null;
+  let user = null;
+  let assistant = null;
+  let continuationAssistant = null;
+  const appendPair = () => {
+    if (user === null || assistant === null) return;
+    const nodeId = idFactory("qa", sessionId, user.seq, assistant.seq);
+    const variantId = idFactory("variant", sessionId, user.seq, assistant.seq);
+    added.push({
+      id: nodeId,
+      kind: "qa",
+      displayOverride: null,
+      parentVariantId,
+      adoptedVariantId: variantId,
+      variants: [{
+        id: variantId,
+        sessionId,
+        startEventId: user.seq,
+        endEventId: assistant.seq
+      }]
+    });
+    parentVariantId = variantId;
+  };
+  for (const message of messages) {
+    if (isRealUserMessage(message)) {
+      if (user !== null && assistant !== null) {
+        appendPair();
+      }
+      if (user === null && continuationAssistant !== null) {
+        const extended = extendHeadVariant(nextTimeline, sessionId, continuationAssistant.seq);
+        nextTimeline = extended.timeline;
+        changed ||= extended.changed;
+        parentVariantId = timelineHead(nextTimeline)?.variantId ?? parentVariantId;
+      }
+      user = message;
+      assistant = null;
+      continuationAssistant = null;
+    } else if (message.role === "assistant" && user !== null) {
+      assistant = message;
+    } else if (message.role === "assistant") {
+      continuationAssistant = message;
+    }
+  }
+  appendPair();
+  if (user === null && continuationAssistant !== null) {
+    const extended = extendHeadVariant(nextTimeline, sessionId, continuationAssistant.seq);
+    nextTimeline = extended.timeline;
+    changed ||= extended.changed;
+  }
+  if (added.length === 0) return { timeline: nextTimeline, added, changed };
+  const tail = added.at(-1);
+  const variant = tail.variants[0];
+  return {
+    timeline: timelineWithHead({
+      ...nextTimeline,
+      nodes: [...nextTimeline.nodes, ...added]
+    }, { sessionId, nodeId: tail.id, variantId: variant.id }),
+    added,
+    changed: true
+  };
+}
+function createTurnReconciler(client) {
+  if (client == null) throw new TypeError("playClient.required");
+  let pending2 = Promise.resolve();
+  return function reconcile(sessionId, playthrough) {
+    const task = pending2.then(async () => {
+      const messages = await client.getMessages(sessionId);
+      if (messages.incompleteTurn) return { timeline: null, added: [], changed: false };
+      const initial = await client.getTimeline(playthrough);
+      const initialResult = appendCompletedTurns(initial, messages, sessionId);
+      if (!initialResult.changed) return initialResult;
+      let added = initialResult.added;
+      let changed = initialResult.changed;
+      const timeline = await updateTimeline(client, playthrough, (current3) => {
+        const next = appendCompletedTurns(current3, messages, sessionId);
+        added = next.added;
+        changed = next.changed;
+        return next.timeline;
+      }, { initial });
+      return { timeline, added, changed };
+    });
+    pending2 = task.catch(() => {
+    });
+    return task;
+  };
+}
+
+// packages/client/src/play/display-settings.js
+var import_react9 = require("react");
+
+// packages/client/src/conversation-settings.js
+var DEFAULT_CONVERSATION_SETTINGS = Object.freeze({ textScale: 1, actionScale: 1 });
+var CONVERSATION_SCALE_OPTIONS = Object.freeze([0.75, 0.85, 1, 1.15, 1.25, 1.5]);
+var current2 = { ...DEFAULT_CONVERSATION_SETTINGS };
+function boundedScale(value, fallback) {
+  const numeric = Number(value);
+  return Number.isFinite(numeric) && numeric >= 0.75 && numeric <= 1.5 ? Number(numeric.toFixed(2)) : fallback;
+}
+function getClientConversationSettings() {
+  return { ...current2 };
+}
+function setClientConversationSettings(value, { announce = true } = {}) {
+  current2 = {
+    textScale: boundedScale(value?.textScale, DEFAULT_CONVERSATION_SETTINGS.textScale),
+    actionScale: boundedScale(value?.actionScale, DEFAULT_CONVERSATION_SETTINGS.actionScale)
+  };
+  if (announce && typeof window !== "undefined") {
+    window.dispatchEvent(new CustomEvent(CLIENT_CONVERSATION_SETTINGS_EVENT, {
+      detail: getClientConversationSettings()
+    }));
+  }
+  return getClientConversationSettings();
+}
+
+// packages/client/src/play/display-settings.js
+function useConversationDisplaySettings() {
+  const [settings, setSettings] = (0, import_react9.useState)(getClientConversationSettings);
+  (0, import_react9.useEffect)(() => {
+    const onSettings = (event) => setSettings({
+      textScale: event.detail?.textScale ?? 1,
+      actionScale: event.detail?.actionScale ?? 1
+    });
+    window.addEventListener(CLIENT_CONVERSATION_SETTINGS_EVENT, onSettings);
+    return () => window.removeEventListener(CLIENT_CONVERSATION_SETTINGS_EVENT, onSettings);
+  }, []);
+  return settings;
+}
+function conversationDisplayStyle(settings) {
+  return {
+    "--dtv-rp-text-scale": settings.textScale,
+    "--dtv-rp-action-scale": settings.actionScale
+  };
+}
+
+// packages/client/src/play/chat.js
+var h8 = createLocalizedElement(import_react10.createElement);
+var turnReconcilers = /* @__PURE__ */ new WeakMap();
+var chatSnapshots = /* @__PURE__ */ new WeakMap();
+var MAX_CACHED_PLAYTHROUGHS = 32;
+var css7 = `
+.dtv-play-chat{height:100%;min-height:0;box-sizing:border-box;overflow-x:hidden;overflow-y:auto;padding:22px max(18px,calc((100% - 780px)/2)) 36px;color:var(--dsw-alias-label-primary)}
+.dtv-play-chat-stage{display:grid;min-width:0}.dtv-play-chat-frame{grid-area:1/1;min-width:0;will-change:transform,opacity}.dtv-play-chat-frame[data-phase=outgoing]{pointer-events:none}.dtv-play-chat-frame[data-phase=incoming][data-direction=next]{animation:dtv-play-swipe-in-next 180ms ease-out both}.dtv-play-chat-frame[data-phase=outgoing][data-direction=next]{animation:dtv-play-swipe-out-next 180ms ease-out both}.dtv-play-chat-frame[data-phase=incoming][data-direction=previous]{animation:dtv-play-swipe-in-previous 180ms ease-out both}.dtv-play-chat-frame[data-phase=outgoing][data-direction=previous]{animation:dtv-play-swipe-out-previous 180ms ease-out both}@keyframes dtv-play-swipe-in-next{from{transform:translateX(42px);opacity:.2}to{transform:translateX(0);opacity:1}}@keyframes dtv-play-swipe-out-next{from{transform:translateX(0);opacity:1}to{transform:translateX(-42px);opacity:0}}@keyframes dtv-play-swipe-in-previous{from{transform:translateX(-42px);opacity:.2}to{transform:translateX(0);opacity:1}}@keyframes dtv-play-swipe-out-previous{from{transform:translateX(0);opacity:1}to{transform:translateX(42px);opacity:0}}@media (prefers-reduced-motion:reduce){.dtv-play-chat-frame[data-phase]{animation-duration:1ms!important}}
+.dtv-play-chat-target{display:flex;min-width:0;flex-direction:column;gap:8px}.dtv-play-chat-suffix{display:grid;min-width:0}.dtv-play-chat-suffix-list{display:flex;min-width:0;flex-direction:column;gap:22px}
+.dtv-play-chat-list{display:flex;flex-direction:column;gap:22px}.dtv-play-chat-row{display:flex;flex-direction:column;gap:8px}.dtv-play-chat-role{font-size:11px;font-weight:700;color:var(--dsw-alias-label-tertiary)}
+.dtv-play-chat-bubble{max-width:88%;box-sizing:border-box;border-radius:14px;padding:12px 14px;overflow-wrap:anywhere;font-size:calc(14px * var(--dtv-rp-text-scale,1));line-height:1.65}.dtv-play-chat-user{align-self:flex-end;background:var(--dsw-alias-interactive-bg-selected,var(--dsw-specific-tip))}.dtv-play-chat-assistant{align-self:flex-start;background:var(--dsw-alias-bg-layer-2,var(--dsw-specific-block))}
+.dtv-play-greeting{position:relative;align-self:flex-start;max-width:88%;display:grid;grid-template-columns:30px minmax(0,1fr) 30px;align-items:center;gap:6px}.dtv-play-greeting[data-locked=true]{grid-template-columns:minmax(0,1fr)}.dtv-play-greeting-text{border-radius:14px;padding:13px 15px;background:var(--dsw-alias-bg-layer-2,var(--dsw-specific-block));overflow-wrap:anywhere;font-size:calc(14px * var(--dtv-rp-text-scale,1));line-height:1.65}
+.dtv-play-greeting-empty{min-height:34px;visibility:hidden}
+.dtv-play-greeting-button{width:30px;height:34px;border:0;border-radius:9px;background:transparent;color:var(--dsw-alias-label-secondary);cursor:pointer}.dtv-play-greeting-button:hover{background:var(--dsw-alias-interactive-bg-hover)}.dtv-play-greeting-button:disabled{opacity:.4;cursor:default}
+.dtv-play-import-controls{align-self:center;display:flex;flex-wrap:wrap;align-items:center;justify-content:center;gap:8px;margin:0 0 2px}.dtv-play-import-bound{width:100%;margin:0;text-align:center;color:var(--dsw-alias-label-tertiary);font-size:11px}.dtv-play-import-button{min-height:30px;padding:5px 11px;border:1px solid var(--dsw-alias-border-subtle);border-radius:9px;background:var(--dsw-alias-bg-layer-2,var(--dsw-specific-block));color:var(--dsw-alias-label-primary);font:inherit;font-size:11px;cursor:pointer}.dtv-play-import-button:hover{background:var(--dsw-alias-interactive-bg-hover)}.dtv-play-import-button:disabled{opacity:.45;cursor:default}.dtv-play-import-last{margin:0;color:var(--dsw-alias-label-tertiary);font-size:11px;font-weight:700}
+.dtv-play-chat-status{margin:16px 0;padding:12px 14px;border-radius:12px;background:var(--dsw-alias-bg-layer-2,var(--dsw-specific-block));color:var(--dsw-alias-label-tertiary);font-size:12px;line-height:1.55}.dtv-play-chat-status[data-error=true]{color:var(--dsw-alias-state-error)}
+.dtv-play-chat-running{align-self:flex-start;margin:0;color:var(--dsw-alias-label-tertiary);font-size:calc(12px * var(--dtv-rp-text-scale,1));line-height:1.5}
+.dtv-play-rich>:first-child{margin-top:0}.dtv-play-rich>:last-child{margin-bottom:0}.dtv-play-rich p,.dtv-play-rich ul,.dtv-play-rich ol,.dtv-play-rich blockquote,.dtv-play-rich pre,.dtv-play-rich table{margin:0 0 .85em}.dtv-play-rich ul,.dtv-play-rich ol{padding-left:1.5em}.dtv-play-rich blockquote{padding-left:12px;border-left:3px solid var(--dsw-alias-border-secondary,var(--dsw-specific-divider));color:var(--dsw-alias-label-secondary)}.dtv-play-rich pre{max-width:100%;overflow:auto;padding:11px 12px;border-radius:9px;background:var(--dsw-alias-markdown-code-block,var(--dsw-alias-bg-base));white-space:pre}.dtv-play-rich code{font-family:var(--ds-font-family-code,ui-monospace,monospace);font-size:.92em}.dtv-play-rich :not(pre)>code{padding:.12em .35em;border-radius:5px;background:var(--dsw-alias-markdown-code-inline,var(--dsw-alias-bg-base))}.dtv-play-rich table{display:block;max-width:100%;overflow:auto;border-collapse:collapse}.dtv-play-rich th,.dtv-play-rich td{padding:6px 9px;border:1px solid var(--dsw-alias-border-l2)}.dtv-play-rich img,.dtv-play-rich video{max-width:100%;height:auto}.dtv-play-rich a{color:var(--dsw-alias-state-business-primary);text-decoration:underline}.dtv-play-rich hr{border:0;border-top:1px solid var(--dsw-alias-border-l2)}
+`;
+function installPlayChatStyles() {
+  if (document.querySelector(`style[data-plugin-css="${PLUGIN_ID}-play-chat"]`) !== null) return;
+  const style = document.createElement("style");
+  style.dataset.pluginCss = `${PLUGIN_ID}-play-chat`;
+  style.textContent = css7;
+  document.head.append(style);
+}
+function adoptedSessionIds(timeline, currentSessionId) {
+  const ids = /* @__PURE__ */ new Set([currentSessionId]);
+  for (const { variant } of activeTimelineEntries(timeline)) {
+    if (typeof variant?.sessionId === "string" && variant.sessionId !== "") ids.add(variant.sessionId);
+  }
+  return [...ids];
+}
+async function loadMessages(client, sessionIds, concurrency = 4) {
+  const result = {};
+  let cursor = 0;
+  const worker = async () => {
+    while (cursor < sessionIds.length) {
+      const sessionId = sessionIds[cursor];
+      cursor += 1;
+      result[sessionId] = await client.getMessages(sessionId);
+    }
+  };
+  await Promise.all(Array.from({ length: Math.min(concurrency, sessionIds.length) }, worker));
+  return result;
+}
+function turnReconciler(client) {
+  let reconcile = turnReconcilers.get(client);
+  if (reconcile === void 0) {
+    reconcile = createTurnReconciler(client);
+    turnReconcilers.set(client, reconcile);
+  }
+  return reconcile;
+}
+async function loadChatState(client, sessionId, playthrough) {
+  const reconciled = await turnReconciler(client)(sessionId, playthrough);
+  const timeline = reconciled.timeline ?? await client.getTimeline(playthrough);
+  const messagesBySession = await loadMessages(client, adoptedSessionIds(timeline, sessionId));
+  const selectionResponse = await client.getCharacterSelection(sessionId);
+  const characterId = selectionResponse?.selection?.characterCardId;
+  const characterResponse = typeof characterId === "string" && characterId !== "" ? await client.getCharacter(characterId) : null;
+  const [regexDocument, active] = await Promise.all([
+    typeof client.getFile === "function" ? getRegexDocument(client) : { schemaVersion: 1, rules: [] },
+    typeof client.getActive === "function" ? client.getActive(sessionId) : null
+  ]);
+  const bindings = {
+    presetId: active?.selection?.presetId ?? null,
+    characterId: characterId ?? active?.selection?.characterCardId ?? null
+  };
+  const presetResponse = typeof bindings.presetId === "string" && bindings.presetId !== "" && typeof client.getPreset === "function" ? await client.getPreset(bindings.presetId) : null;
+  const rules = [
+    ...regexDocument.rules,
+    ...resourceRegexRules(presetResponse?.preset ?? presetResponse, {
+      kind: "preset",
+      resourceId: bindings.presetId
+    }),
+    ...resourceRegexRules(characterResponse?.character ?? characterResponse, {
+      kind: "character",
+      resourceId: bindings.characterId
+    })
+  ];
+  const character = characterResponse?.character;
+  const characterData = character?.data ?? character;
+  const macros = {
+    user: active?.resources?.user?.name || "User",
+    character: characterData?.nickname || characterData?.name || character?.name || "Assistant"
+  };
+  const regexDiagnostics = [];
+  const renderText = (text2, target, context) => {
+    const expanded = applyDisplayNameMacros(text2, macros);
+    const result = applyDisplayRegex(expanded, rules, bindings, target, context);
+    regexDiagnostics.push(...result.diagnostics);
+    return result.text;
+  };
+  const timelineTurns = projectTimelineQa(timeline, messagesBySession);
+  const greeting = projectGreeting({
+    openingCharacterId: playthrough?.ext?.pmpDshTavern?.characterId,
+    selectionResponse,
+    characterResponse
+  });
+  const importedContext = await loadPlaythroughImportContext(client, sessionId, playthrough, timeline);
+  let importedTurns = [];
+  if (importedContext.document !== null) {
+    const imported = importedContext.document;
+    importedTurns = [
+      ...typeof imported.greeting === "string" && imported.greeting !== "" ? [{
+        id: "import-greeting",
+        imported: true,
+        userText: "",
+        assistantText: imported.greeting,
+        originalAssistantText: imported.greeting
+      }] : [],
+      ...(imported.qa ?? []).map((qa, index) => ({
+        id: `import-${index}`,
+        imported: true,
+        userText: qa.user,
+        assistantText: qa.assistant,
+        originalAssistantText: qa.assistant,
+        importLast: index === imported.qa.length - 1
+      }))
+    ];
+  }
+  const rawTurns = [...importedTurns, ...timelineTurns];
+  const turns = Array(rawTurns.length);
+  let depth = 0;
+  for (let index = rawTurns.length - 1; index >= 0; index -= 1) {
+    const turn = rawTurns[index];
+    const hasAssistant = turn.displayOverridden === true || (turn.assistantCandidates ?? [turn.assistantText]).some((text2) => text2 !== "");
+    const assistantDepth = hasAssistant ? depth++ : void 0;
+    const userDepth = turn.userText === "" ? void 0 : depth++;
+    const assistant = selectAssistantDisplay(
+      turn,
+      (text2) => renderText(text2, "assistant", { depth: assistantDepth })
+    );
+    turns[index] = {
+      ...turn,
+      userText: renderText(turn.userText, "user", { depth: userDepth }),
+      ...assistant
+    };
+  }
+  const rootMessages = messagesBySession[sessionId];
+  const importMutable = (timeline?.nodes?.length ?? 0) === 0 && rootMessages?.incompleteTurn !== true && !(rootMessages?.messages ?? []).some((message) => message?.role === "user" || message?.role === "assistant") && importedContext.binding?.state !== "consumed";
+  return {
+    timeline,
+    turns,
+    importBinding: importedContext.binding,
+    importContext: importedContext.document,
+    importMutable,
+    greeting: importedTurns.length > 0 ? null : greeting === null ? null : {
+      ...greeting,
+      // A greeting is card metadata shown before the first durable turn, not an
+      // assistant message. Output-only display regex (for example "keep only
+      // <正文>") must not erase it merely because the card did not wrap its
+      // greeting in the model-output protocol.
+      text: applyDisplayNameMacros(greeting.text, macros)
+    },
+    regexDiagnostics,
+    display: { rules, bindings, macros }
+  };
+}
+function applyTurnDisplayRegex(turn, display, { userDepth, assistantDepth } = {}) {
+  const assistant = selectAssistantDisplay(turn, (text2) => applyDisplayRegex(
+    applyDisplayNameMacros(text2, display.macros),
+    display.rules,
+    display.bindings,
+    "assistant",
+    { depth: assistantDepth }
+  ).text);
+  return {
+    ...turn,
+    userText: applyDisplayRegex(
+      applyDisplayNameMacros(turn.userText, display.macros),
+      display.rules,
+      display.bindings,
+      "user",
+      { depth: userDepth }
+    ).text,
+    ...assistant
+  };
+}
+function Greeting({ greeting, busy, change, locked = false, footer = null }) {
+  const multiple = (greeting?.options?.length ?? 0) > 1;
+  return h8(
+    "div",
+    { className: "dtv-play-chat-row" },
+    greeting === null ? null : h8("span", { className: "dtv-play-chat-role" }, rawText(greeting.characterName)),
+    greeting === null ? h8("div", { className: "dtv-play-greeting dtv-play-greeting-empty", "aria-hidden": true }) : h8(
+      "div",
+      {
+        className: "dtv-play-greeting",
+        "data-locked": locked
+      },
+      locked ? null : h8("button", {
+        type: "button",
+        className: "dtv-play-greeting-button",
+        disabled: busy || !multiple,
+        title: uiMessage("play.chat.previousGreeting"),
+        "aria-label": uiMessage("play.chat.previousGreeting"),
+        onClick: () => change("previous")
+      }, "\u2039"),
+      h8(RichText, { className: "dtv-play-greeting-text dtv-play-rich", text: greeting.text }),
+      locked ? null : h8("button", {
+        type: "button",
+        className: "dtv-play-greeting-button",
+        disabled: busy || !multiple,
+        title: uiMessage("play.chat.nextGreeting"),
+        "aria-label": uiMessage("play.chat.nextGreeting"),
+        onClick: () => change("next")
+      }, "\u203A")
+    ),
+    footer
+  );
+}
+function turnHasDurableQaActions(turn) {
+  return turn?.imported !== true && turn?.transient !== true && turn?.variant != null && Array.isArray(turn?.variants);
+}
+function turnHasVisibleRpContent(turn) {
+  return turnHasDurableQaActions(turn) || turn?.importLast === true || typeof turn?.userText === "string" && turn.userText !== "" || Array.isArray(turn?.assistantTexts) && turn.assistantTexts.length > 0 || typeof turn?.assistantText === "string" && turn.assistantText !== "" || turn?.displayOverridden === true || turn?.running === true;
+}
+function greetingSelectionLocked({ turns = [], latestUserSeq = -1, running = false } = {}) {
+  return running || latestUserSeq >= 0 || turns.some((turn) => turn?.imported !== true);
+}
+function Turn({ turn, hideUser = false, swipePending = false, ...actionProps }) {
+  if (!turnHasVisibleRpContent(turn)) return null;
+  const durableQa = turnHasDurableQaActions(turn);
+  const assistantTexts = swipePending ? [] : Array.isArray(turn.assistantTexts) ? turn.assistantTexts : turn.assistantText === "" ? [] : [turn.assistantText];
+  return h8(
+    "div",
+    { className: "dtv-play-chat-row" },
+    turn.importLast === true ? h8("p", { className: "dtv-play-import-last" }, uiMessage("play.import.lastQa")) : null,
+    hideUser || turn.userText === "" ? null : h8(RichText, { className: "dtv-play-chat-bubble dtv-play-chat-user dtv-play-rich", text: turn.userText }),
+    ...assistantTexts.map((text2, index) => h8(RichText, {
+      key: `assistant-${index}`,
+      className: "dtv-play-chat-bubble dtv-play-chat-assistant dtv-play-rich",
+      text: text2
+    })),
+    (swipePending || turn.running === true) && assistantTexts.length === 0 ? h8("p", { className: "dtv-play-chat-running" }, uiMessage("play.chat.thinking")) : null,
+    durableQa ? h8(PlayTurnActions, {
+      turn,
+      ...actionProps,
+      running: actionProps.running === true || swipePending,
+      pendingVariant: swipePending
+    }) : null
+  );
+}
+function ImportControls({
+  playClient,
+  playthrough,
+  binding,
+  locked,
+  changed,
+  onError
+}) {
+  const input = (0, import_react10.useRef)(null);
+  const [busy, setBusy] = (0, import_react10.useState)(false);
+  if (locked) return null;
+  const choose = () => {
+    if (!busy) input.current?.click();
+  };
+  const bind = async (event) => {
+    const file = event.target.files?.[0];
+    event.target.value = "";
+    if (!file || busy) return;
+    setBusy(true);
+    onError("");
+    try {
+      await bindPlaythroughImport(playClient, playthrough, file);
+      changed();
+    } catch (reason) {
+      announceImportFailure(reason);
+      onError(reason instanceof Error ? reason.message : String(reason));
+    } finally {
+      setBusy(false);
+    }
+  };
+  const unbind = async () => {
+    if (busy || !window.confirm(unwrapText(uiMessage("play.import.unbindConfirm")))) return;
+    setBusy(true);
+    onError("");
+    try {
+      await unbindPlaythroughImport(playClient, playthrough);
+      changed();
+    } catch (reason) {
+      onError(reason instanceof Error ? reason.message : String(reason));
+    } finally {
+      setBusy(false);
+    }
+  };
+  return h8(
+    "div",
+    { className: "dtv-play-import-controls" },
+    binding === null ? null : h8("p", { className: "dtv-play-import-bound" }, uiMessage("play.import.bound")),
+    h8("button", {
+      type: "button",
+      className: "dtv-play-import-button",
+      disabled: busy,
+      onClick: choose
+    }, binding === null ? uiMessage("play.import.bind") : uiMessage("play.import.replace")),
+    binding === null ? null : h8("button", {
+      type: "button",
+      className: "dtv-play-import-button",
+      disabled: busy,
+      onClick: unbind
+    }, uiMessage("play.import.unbind")),
+    h8("input", {
+      ref: input,
+      hidden: true,
+      type: "file",
+      accept: ".json,.jsonl,application/json,application/x-ndjson",
+      onChange: bind
+    })
+  );
+}
+function playthroughCacheKey(playthrough) {
+  return typeof playthrough?.path === "string" ? playthrough.path : "";
+}
+function cachedChatSnapshot(client, playthrough) {
+  return chatSnapshots.get(client)?.get(playthroughCacheKey(playthrough)) ?? null;
+}
+function rememberChatSnapshot(client, playthrough, snapshot) {
+  let cache = chatSnapshots.get(client);
+  if (cache === void 0) {
+    cache = /* @__PURE__ */ new Map();
+    chatSnapshots.set(client, cache);
+  }
+  const key = playthroughCacheKey(playthrough);
+  cache.delete(key);
+  cache.set(key, snapshot);
+  while (cache.size > MAX_CACHED_PLAYTHROUGHS) {
+    cache.delete(cache.keys().next().value);
+  }
+}
+function ChatFrame({
+  snapshot,
+  currentSessionId,
+  liveNodes,
+  partial,
+  running,
+  playClient,
+  playthrough,
+  openSession,
+  greetingBusy,
+  changeGreeting,
+  changed,
+  onError,
+  phase = "idle",
+  direction = null,
+  transitionEnded,
+  pendingSwipe,
+  onSwipePending
+}) {
+  const state = snapshot.value;
+  const current3 = snapshot.sessionId === currentSessionId;
+  const interactive = current3 && phase !== "outgoing";
+  const liveSourceTurns = !current3 ? [] : projectLiveTurns({
+    timeline: state.timeline,
+    sessionId: currentSessionId,
+    nodes: liveNodes,
+    partial,
+    running
+  });
+  let liveDepth = 0;
+  const liveTurns = Array(liveSourceTurns.length);
+  for (let index = liveSourceTurns.length - 1; index >= 0; index -= 1) {
+    const turn = liveSourceTurns[index];
+    const assistantDepth = turn.assistantText === "" ? void 0 : liveDepth++;
+    const userDepth = turn.userText === "" ? void 0 : liveDepth++;
+    liveTurns[index] = applyTurnDisplayRegex(turn, state.display, { userDepth, assistantDepth });
+  }
+  const importLocked = !interactive || state.importMutable !== true || running || latestUserNodeSeq(liveNodes) >= 0 || liveTurns.length > 0;
+  const importControls = !interactive ? null : h8(ImportControls, {
+    playClient,
+    playthrough,
+    binding: state.importBinding,
+    locked: importLocked,
+    changed,
+    onError
+  });
+  const greetingLocked = !interactive || greetingSelectionLocked({
+    turns: state.turns,
+    latestUserSeq: latestUserNodeSeq(liveNodes),
+    running
+  });
+  return h8("div", {
+    className: "dtv-play-chat-frame",
+    "data-phase": phase,
+    "data-direction": direction,
+    onAnimationEnd: transitionEnded
+  }, h8(
+    "div",
+    { className: "dtv-play-chat-list" },
+    state.greeting === null && state.importBinding !== null ? null : h8(Greeting, {
+      greeting: state.greeting,
+      busy: greetingBusy,
+      change: changeGreeting,
+      locked: greetingLocked,
+      footer: state.importBinding === null ? importControls : null
+    }),
+    ...state.turns.map((turn) => h8(Turn, {
+      key: turn.id,
+      turn,
+      playthrough,
+      playClient,
+      openSession,
+      running: running || !interactive,
+      onChanged: changed,
+      onError,
+      onSwipePending,
+      swipePending: pendingSwipe?.nodeId === turn.id
+    })),
+    state.importBinding === null ? null : importControls,
+    ...liveTurns.map((turn) => h8(Turn, { key: turn.id, turn })),
+    state.greeting === null && state.turns.length === 0 && liveTurns.length === 0 && !running ? h8("p", { className: "dtv-play-chat-status" }, uiMessage("play.chat.empty")) : null,
+    liveTurns.length === 0 && running && current3 ? h8("p", { className: "dtv-play-chat-running" }, uiMessage("play.chat.thinking")) : null
+  ));
+}
+function swipeTransitionBoundary(transition) {
+  if (transition === null || typeof transition?.nodeId !== "string") return null;
+  const incomingIndex = transition.to?.value?.turns?.findIndex((turn) => turn.id === transition.nodeId) ?? -1;
+  const outgoingIndex = transition.from?.value?.turns?.findIndex((turn) => turn.id === transition.nodeId) ?? -1;
+  return incomingIndex < 0 || outgoingIndex < 0 ? null : { incomingIndex, outgoingIndex };
+}
+function TargetedSwipeTransition({
+  transition,
+  boundary,
+  playClient,
+  playthrough,
+  openSession,
+  greetingBusy,
+  changeGreeting,
+  changed,
+  onError,
+  transitionEnded
+}) {
+  const incomingState = transition.to.value;
+  const outgoingState = transition.from.value;
+  const { incomingIndex, outgoingIndex } = boundary;
+  const actionProps = {
+    playthrough,
+    playClient,
+    openSession,
+    running: true,
+    onChanged: changed,
+    onError
+  };
+  const renderSuffix = (turns, start, phase) => h8("div", {
+    key: `${phase}:${transition.nodeId}`,
+    className: "dtv-play-chat-frame",
+    "data-phase": phase,
+    "data-direction": transition.direction,
+    onAnimationEnd: phase === "incoming" ? transitionEnded : void 0
+  }, h8(
+    "div",
+    { className: "dtv-play-chat-suffix-list" },
+    ...turns.slice(start).map((turn, index) => h8(Turn, {
+      key: turn.id,
+      turn,
+      hideUser: index === 0,
+      ...actionProps
+    }))
+  ));
+  const target = incomingState.turns[incomingIndex];
+  return h8(
+    "div",
+    { className: "dtv-play-chat-list" },
+    incomingState.greeting === null && incomingState.importBinding !== null ? null : h8(Greeting, {
+      greeting: incomingState.greeting,
+      busy: greetingBusy,
+      change: changeGreeting,
+      locked: true
+    }),
+    ...incomingState.turns.slice(0, incomingIndex).map((turn) => h8(Turn, {
+      key: turn.id,
+      turn,
+      ...actionProps
+    })),
+    h8(
+      "div",
+      { className: "dtv-play-chat-target" },
+      target.userText === "" ? null : h8(RichText, {
+        className: "dtv-play-chat-bubble dtv-play-chat-user dtv-play-rich",
+        text: target.userText
+      }),
+      h8(
+        "div",
+        { className: "dtv-play-chat-suffix" },
+        renderSuffix(outgoingState.turns, outgoingIndex, "outgoing"),
+        renderSuffix(incomingState.turns, incomingIndex, "incoming")
+      )
+    )
+  );
+}
+function MowanChatView({ sessionId, useSession, playClient, playthrough, openSession, chatScroll }) {
+  installPlayChatStyles();
+  const displaySettings = useConversationDisplaySettings();
+  const sessionRevision = useSession((state2) => `${state2.nodes?.length ?? 0}:${state2.running === true}:${state2.blank === true}`);
+  const liveNodes = useSession((state2) => state2.nodes);
+  const partial = useSession((state2) => state2.partial);
+  const latestUserSeq = latestUserNodeSeq(liveNodes);
+  const [revision, setRevision] = (0, import_react10.useState)(0);
+  const running = useSession((state2) => state2.running === true);
+  const [loadedState, setLoadedState] = (0, import_react10.useState)(() => cachedChatSnapshot(playClient, playthrough));
+  const loadedStateRef = (0, import_react10.useRef)(loadedState);
+  const transitionIntent = (0, import_react10.useRef)({ sessionId: null, intent: null });
+  const [transition, setTransition] = (0, import_react10.useState)(null);
+  const state = loadedState?.value ?? null;
+  const stateIsCurrent = loadedState?.sessionId === sessionId;
+  const [error, setError] = (0, import_react10.useState)("");
+  const [greetingBusy, setGreetingBusy] = (0, import_react10.useState)(false);
+  const [pendingSwipe, setPendingSwipe] = (0, import_react10.useState)(null);
+  const bottomAnchor = (0, import_react10.useRef)(null);
+  const initialScrollSession = (0, import_react10.useRef)(null);
+  const userSeqSession = (0, import_react10.useRef)(null);
+  const lastUserSeq = (0, import_react10.useRef)(-1);
+  const scrollToBottom = () => {
+    const local = bottomAnchor.current;
+    if (local === null) return;
+    const scrollport = local.closest("[data-conversation-scroll]") ?? local;
+    scrollport.scrollTop = scrollport.scrollHeight;
+    chatScroll?.save(null);
+  };
+  (0, import_react10.useLayoutEffect)(() => {
+    if (!stateIsCurrent || initialScrollSession.current === sessionId) return;
+    initialScrollSession.current = sessionId;
+    scrollToBottom();
+  }, [sessionId, state, stateIsCurrent]);
+  (0, import_react10.useLayoutEffect)(() => {
+    if (userSeqSession.current !== sessionId) {
+      userSeqSession.current = sessionId;
+      lastUserSeq.current = latestUserSeq;
+      return;
+    }
+    if (latestUserSeq <= lastUserSeq.current) return;
+    lastUserSeq.current = latestUserSeq;
+    scrollToBottom();
+  }, [latestUserSeq, sessionId]);
+  (0, import_react10.useEffect)(() => {
+    const refresh = () => setRevision((value) => value + 1);
+    window.addEventListener(CLIENT_REFRESH_EVENT, refresh);
+    return () => window.removeEventListener(CLIENT_REFRESH_EVENT, refresh);
+  }, []);
+  (0, import_react10.useEffect)(() => {
+    if (transition === null) return void 0;
+    const targetSessionId = transition.to.sessionId;
+    const timer = window.setTimeout(() => {
+      setTransition((current3) => current3?.to.sessionId === targetSessionId ? null : current3);
+    }, 260);
+    return () => window.clearTimeout(timer);
+  }, [transition]);
+  (0, import_react10.useEffect)(() => {
+    let active = true;
+    if (transitionIntent.current.sessionId !== sessionId) {
+      transitionIntent.current = {
+        sessionId,
+        intent: consumeSwipeTransition(sessionId)
+      };
+      setTransition(null);
+    }
+    setError("");
+    loadChatState(playClient, sessionId, playthrough).then((next) => {
+      if (!active) return;
+      const incoming = { sessionId, value: next };
+      const previous = loadedStateRef.current;
+      if (previous !== null && previous.sessionId !== sessionId) {
+        const intent = transitionIntent.current.sessionId === sessionId ? transitionIntent.current.intent : null;
+        setTransition(intent === null ? null : {
+          from: previous,
+          to: incoming,
+          direction: intent.direction,
+          nodeId: intent.nodeId
+        });
+      }
+      loadedStateRef.current = incoming;
+      rememberChatSnapshot(playClient, playthrough, incoming);
+      setPendingSwipe((current3) => current3?.sourceSessionId !== sessionId ? null : current3);
+      setLoadedState(incoming);
+    }).catch((reason) => {
+      if (!active) return;
+      setError(reason instanceof Error ? reason.message : String(reason));
+    });
+    return () => {
+      active = false;
+    };
+  }, [playClient, playthrough, revision, sessionId, sessionRevision]);
+  const changeGreeting = async (direction) => {
+    const greetingLocked = greetingSelectionLocked({
+      turns: state?.turns ?? [],
+      latestUserSeq,
+      running
+    });
+    if (!stateIsCurrent || state?.greeting == null || greetingBusy || greetingLocked) return;
+    const next = adjacentGreetingIndex(state.greeting, direction);
+    if (next === null) return;
+    setGreetingBusy(true);
+    setError("");
+    try {
+      await playClient.putGreetingIndex(sessionId, next);
+      setRevision((value) => value + 1);
+    } catch (reason) {
+      setError(reason instanceof Error ? reason.message : String(reason));
+    } finally {
+      setGreetingBusy(false);
+    }
+  };
+  const changed = () => setRevision((value) => value + 1);
+  const swipePending = (nodeId, active) => {
+    setPendingSwipe(active ? { nodeId, sourceSessionId: sessionId } : null);
+  };
+  const transitionEnded = (event) => {
+    if (event.target !== event.currentTarget) return;
+    setTransition((current3) => current3?.to.sessionId === loadedState?.sessionId ? null : current3);
+  };
+  const frame = (snapshot, phase) => h8(ChatFrame, {
+    key: `${phase}:${snapshot.sessionId}`,
+    snapshot,
+    currentSessionId: sessionId,
+    liveNodes,
+    partial,
+    running,
+    playClient,
+    playthrough,
+    openSession,
+    greetingBusy,
+    changeGreeting,
+    changed,
+    onError: setError,
+    pendingSwipe,
+    onSwipePending: swipePending,
+    phase,
+    direction: transition?.direction ?? null,
+    transitionEnded: phase === "incoming" ? transitionEnded : void 0
+  });
+  const transitionBoundary = swipeTransitionBoundary(transition);
+  return h8(
+    "div",
+    { className: "dtv-play-chat", style: conversationDisplayStyle(displaySettings) },
+    error === "" ? null : h8("p", { className: "dtv-play-chat-status", "data-error": true }, rawText(error)),
+    state === null && error === "" ? h8("p", { className: "dtv-play-chat-status" }, uiMessage("play.chat.loading")) : null,
+    loadedState === null ? null : h8(
+      "div",
+      { className: "dtv-play-chat-stage" },
+      transitionBoundary === null ? frame(loadedState, "idle") : h8(TargetedSwipeTransition, {
+        transition,
+        boundary: transitionBoundary,
+        playClient,
+        playthrough,
+        openSession,
+        greetingBusy,
+        changeGreeting,
+        changed,
+        onError: setError,
+        transitionEnded
+      })
+    ),
+    h8("span", { ref: bottomAnchor, "aria-hidden": true })
+  );
+}
+
+// packages/client/src/play/sidebar.js
+var import_react12 = require("react");
+
+// packages/client/src/play/io-menu.js
+var import_react11 = require("react");
+
+// packages/client/src/play/export.js
+function rootSessionId5(playthrough, timeline) {
+  const root = playthrough?.ext?.pmpDshTavern?.rootSessionId;
+  if (typeof root === "string" && root !== "") return root;
+  for (const node of timeline?.nodes ?? []) {
+    const variant = node.variants?.find((item) => item.id === node.adoptedVariantId);
+    if (typeof variant?.sessionId === "string") return variant.sessionId;
+  }
+  return null;
+}
+function allSessionIds(timeline) {
+  const result = /* @__PURE__ */ new Set();
+  for (const node of timeline?.nodes ?? []) {
+    for (const variant of node.variants ?? []) result.add(variant.sessionId);
+  }
+  return [...result];
+}
+async function loadMessages2(client, sessionIds, concurrency = 4) {
+  const result = {};
+  let cursor = 0;
+  const worker = async () => {
+    while (cursor < sessionIds.length) {
+      const sessionId = sessionIds[cursor];
+      cursor += 1;
+      result[sessionId] = await client.getMessages(sessionId);
+    }
+  };
+  await Promise.all(Array.from({ length: Math.min(concurrency, sessionIds.length) }, worker));
+  return result;
+}
+function normalizeImportContext(value) {
+  if (value === null) return null;
+  return {
+    schemaVersion: value?.schemaVersion ?? 1,
+    greeting: typeof value?.greeting === "string" ? value.greeting : null,
+    qa: Array.isArray(value?.qa) ? value.qa.map((item) => ({
+      user: typeof item?.user === "string" ? item.user : "",
+      assistant: typeof item?.assistant === "string" ? item.assistant : ""
+    })) : [],
+    source: value?.source ?? null
+  };
+}
+function selectedGreetingState(selectionResponse, characterResponse) {
+  const selection = selectionResponse?.selection;
+  const character = characterResponse?.character;
+  if (selection == null || character == null || character.id !== selection.characterCardId) return null;
+  const options = characterGreetingOptions(character);
+  const requested = Number(selection.character?.greetingIndex ?? 0);
+  const selectedIndex = Math.max(0, options.findIndex((item) => item.index === requested));
+  const option = options[selectedIndex] ?? options[0];
+  if (typeof option?.text !== "string" || option.text === "") return null;
+  return {
+    text: option.text,
+    swipes: options.map((item) => item.text),
+    selectedIndex
+  };
+}
+function timelineSwipeState(turn, timeline, messagesBySession) {
+  const node = timeline?.nodes?.find((item) => item.id === turn.id);
+  if (node?.kind !== "qa" || !Array.isArray(node.variants) || node.variants.length === 0) {
+    return { assistantSwipes: [turn.originalAssistantText], assistantSwipeId: 0 };
+  }
+  const selectedIndex = Math.max(0, node.variants.findIndex((item) => item.id === node.adoptedVariantId));
+  const swipes = node.variants.map((variant) => selectAssistantDisplay(
+    projectTimelineVariant(node, variant, messagesBySession)
+  ).originalAssistantText);
+  swipes[selectedIndex] = turn.originalAssistantText;
+  return { assistantSwipes: swipes, assistantSwipeId: selectedIndex };
+}
+async function loadPlaythroughExport(client, playthrough) {
+  const timeline = await client.getTimeline(playthrough);
+  const sessionIds = allSessionIds(timeline);
+  const messagesBySession = await loadMessages2(client, sessionIds);
+  const root = rootSessionId5(playthrough, timeline);
+  const importContext = root === null ? null : normalizeImportContext((await loadPlaythroughImportContext(client, root, playthrough, timeline)).document);
+  const selectionResponse = root === null ? null : await client.getCharacterSelection(root);
+  const characterId = selectionResponse?.selection?.characterCardId;
+  const characterResponse = typeof characterId === "string" && characterId !== "" ? await client.getCharacter(characterId) : null;
+  const timelineTurns = projectTimelineQa(timeline, messagesBySession);
+  const importedTurns = (importContext?.qa ?? []).map((qa, index) => ({
+    id: `import-${index}`,
+    imported: true,
+    userText: qa.user,
+    assistantText: qa.assistant,
+    originalAssistantText: qa.assistant
+  }));
+  const turns = [...importedTurns, ...timelineTurns].map((turn) => {
+    const selected = { ...turn, ...selectAssistantDisplay(turn) };
+    return { ...selected, ...timelineSwipeState(selected, timeline, messagesBySession) };
+  });
+  const hasImportedDisplay = importedTurns.length > 0 || (importContext?.greeting ?? "") !== "";
+  const greetingState = selectedGreetingState(selectionResponse, characterResponse);
+  const greeting = (importContext?.greeting ?? "") !== "" ? importContext.greeting : hasImportedDisplay ? null : greetingState?.text ?? null;
+  const greetingSwipes = greeting === null ? [] : (importContext?.greeting ?? "") !== "" ? [greeting] : greetingState?.swipes ?? [greeting];
+  const greetingSwipeId = (importContext?.greeting ?? "") !== "" ? 0 : greetingState?.selectedIndex ?? 0;
+  const [regexDocument, active] = await Promise.all([
+    typeof client.getFile === "function" ? getRegexDocument(client) : { schemaVersion: 1, rules: [] },
+    root !== null && typeof client.getActive === "function" ? client.getActive(root) : null
+  ]);
+  const bindings = {
+    presetId: active?.selection?.presetId ?? null,
+    characterId: characterId ?? active?.selection?.characterCardId ?? null
+  };
+  const presetResponse = typeof bindings.presetId === "string" && bindings.presetId !== "" && typeof client.getPreset === "function" ? await client.getPreset(bindings.presetId) : null;
+  const rules = [
+    ...regexDocument.rules,
+    ...resourceRegexRules(presetResponse?.preset ?? presetResponse, {
+      kind: "preset",
+      resourceId: bindings.presetId
+    }),
+    ...resourceRegexRules(characterResponse?.character ?? characterResponse, {
+      kind: "character",
+      resourceId: bindings.characterId
+    })
+  ];
+  const render = (text2, target) => applyDisplayRegex(text2, rules, bindings, target).text;
+  const character = characterResponse?.character ?? null;
+  const characterData = character?.data ?? character;
+  const greetingMacros = {
+    user: active?.resources?.user?.name || "User",
+    character: characterData?.nickname || characterData?.name || character?.name || "Assistant"
+  };
+  return {
+    playthrough,
+    timeline,
+    messagesBySession,
+    turns,
+    displayTurns: turns.map((turn) => ({
+      ...turn,
+      userText: render(turn.userText, "user"),
+      ...selectAssistantDisplay(turn, (text2) => render(text2, "assistant"))
+    })),
+    character,
+    importContext,
+    greeting,
+    greetingSwipes,
+    greetingSwipeId,
+    // Greeting is card metadata, not model output. Keep static export aligned
+    // with the RP view: expand names, but do not run output-only regex rules.
+    displayGreeting: greeting === null ? null : applyDisplayNameMacros(greeting, greetingMacros),
+    displayGreetingSwipes: greetingSwipes.map((text2) => applyDisplayNameMacros(text2, greetingMacros)),
+    exportedAt: (/* @__PURE__ */ new Date()).toISOString()
+  };
+}
+function escapeHtml2(value) {
+  return String(value).replaceAll("&", "&amp;").replaceAll("<", "&lt;").replaceAll(">", "&gt;");
+}
+function staticHtmlExport(snapshot) {
+  const title = snapshot.playthrough.title || snapshot.character?.name || snapshot.playthrough.id;
+  const rows = (snapshot.displayTurns ?? snapshot.turns).map((turn) => `
+    <article class="turn">
+      <div class="user rich">${renderRichTextHtml(turn.userText)}</div>
+      <div class="assistant rich">${renderRichTextHtml(turn.assistantText)}</div>
+    </article>`).join("");
+  const displayGreeting = snapshot.displayGreeting ?? snapshot.greeting;
+  const greeting = displayGreeting === null || displayGreeting === void 0 ? "" : `<div class="assistant greeting rich">${renderRichTextHtml(displayGreeting)}</div>`;
+  return `<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width"><title>${escapeHtml2(title)}</title><style>body{max-width:800px;margin:32px auto;padding:0 18px;background:#101216;color:#e8eaf0;font:15px/1.65 system-ui}.turn{display:flex;flex-direction:column;gap:10px;margin:24px 0}.user,.assistant{padding:12px 15px;border-radius:14px}.user{align-self:flex-end;background:#1c3651}.assistant{align-self:flex-start;background:#24262d}.greeting{margin:24px 0}.rich>:first-child{margin-top:0}.rich>:last-child{margin-bottom:0}.rich pre{max-width:100%;overflow:auto;white-space:pre-wrap}.rich img,.rich video{max-width:100%;height:auto}.rich table{display:block;max-width:100%;overflow:auto;border-collapse:collapse}.rich th,.rich td{padding:6px 9px;border:1px solid #555}</style></head><body><h1>${escapeHtml2(title)}</h1>${greeting}${rows}</body></html>`;
+}
+function stSwipeFields(values, selectedIndex, sendDate) {
+  const swipes = Array.isArray(values) && values.length > 0 ? values.map((value) => String(value ?? "")) : [""];
+  const swipeId = Number.isSafeInteger(selectedIndex) && selectedIndex >= 0 && selectedIndex < swipes.length ? selectedIndex : 0;
+  return {
+    mes: swipes[swipeId],
+    swipes,
+    swipe_id: swipeId,
+    swipe_info: swipes.map(() => ({ send_date: sendDate }))
+  };
+}
+function sillyTavernJsonlExport(snapshot) {
+  const characterName = snapshot.character?.data?.name || snapshot.character?.name || "Assistant";
+  const lines = [JSON.stringify({
+    user_name: "User",
+    character_name: characterName,
+    create_date: snapshot.exportedAt,
+    chat_metadata: { source: "pmp-dsh-tavern", playthroughId: snapshot.playthrough.id }
+  })];
+  if (snapshot.greeting !== null) {
+    lines.push(JSON.stringify({
+      name: characterName,
+      is_user: false,
+      is_name: true,
+      send_date: snapshot.exportedAt,
+      ...stSwipeFields(
+        snapshot.displayGreetingSwipes ?? snapshot.greetingSwipes ?? [snapshot.greeting],
+        snapshot.greetingSwipeId,
+        snapshot.exportedAt
+      )
+    }));
+  }
+  for (const turn of snapshot.turns) {
+    lines.push(JSON.stringify({
+      name: "User",
+      is_user: true,
+      is_name: true,
+      send_date: snapshot.exportedAt,
+      mes: turn.userText
+    }));
+    lines.push(JSON.stringify({
+      name: characterName,
+      is_user: false,
+      is_name: true,
+      send_date: snapshot.exportedAt,
+      ...stSwipeFields(turn.assistantSwipes ?? [turn.originalAssistantText], turn.assistantSwipeId, snapshot.exportedAt)
+    }));
+  }
+  return `${lines.join("\n")}
+`;
+}
+function playthroughExportDocument(snapshot, format) {
+  if (format === "html") return { extension: "html", mime: "text/html;charset=utf-8", content: staticHtmlExport(snapshot) };
+  if (format === "st") return { extension: "jsonl", mime: "application/x-ndjson;charset=utf-8", content: sillyTavernJsonlExport(snapshot) };
+  throw new TypeError(`Unknown export format ${format}`);
+}
+
+// packages/client/src/play/io-menu.js
+var h9 = createLocalizedElement(import_react11.createElement);
+var css8 = `
+.dtv-play-io{position:relative;display:inline-flex}.dtv-play-io-trigger{width:30px;height:30px;border:0;border-radius:8px;background:transparent;color:var(--dsw-alias-label-secondary);font:inherit;cursor:pointer}.dtv-play-io-trigger:hover{background:var(--dsw-alias-interactive-bg-hover)}
+.dtv-play-io-menu{position:absolute;z-index:30;left:0;bottom:calc(100% + 6px);min-width:210px;padding:6px;border:1px solid var(--dsw-alias-border-subtle);border-radius:11px;background:var(--dsw-alias-bg-layer-1,#181a20);box-shadow:0 12px 30px #0008;display:flex;flex-direction:column;gap:2px}.dtv-play-io[data-placement=sidebar] .dtv-play-io-menu{left:auto;right:0;bottom:auto;top:calc(100% + 4px);width:max-content;min-width:0;max-width:168px}.dtv-play-io[data-placement=sidebar] .dtv-play-io-item{white-space:nowrap}
+.dtv-play-io-item{min-height:34px;border:0;border-radius:8px;padding:6px 9px;background:transparent;color:var(--dsw-alias-label-primary);font:inherit;font-size:11px;text-align:left;cursor:pointer}.dtv-play-io-item:hover{background:var(--dsw-alias-interactive-bg-hover)}.dtv-play-io-item:disabled{opacity:.45;cursor:default}.dtv-play-io-error{max-width:240px;margin:3px 5px;color:var(--dsw-alias-state-error);font-size:10px;overflow-wrap:anywhere}
+`;
+function installStyles2() {
+  if (document.querySelector(`style[data-plugin-css="${PLUGIN_ID}-play-io"]`) !== null) return;
+  const style = document.createElement("style");
+  style.dataset.pluginCss = `${PLUGIN_ID}-play-io`;
+  style.textContent = css8;
+  document.head.append(style);
+}
+function safeFilename(value) {
+  const normalized = String(value ?? "playthrough").replace(/[<>:"/\\|?*\u0000-\u001f]/g, "-").trim();
+  return normalized === "" ? "playthrough" : normalized.slice(0, 100);
+}
+function downloadDocument(playthrough, document2) {
+  const blob = new Blob([document2.content], { type: document2.mime });
+  const url = URL.createObjectURL(blob);
+  const anchor = window.document.createElement("a");
+  anchor.href = url;
+  anchor.download = `${safeFilename(playthrough.title || playthrough.id)}.${document2.extension}`;
+  anchor.style.display = "none";
+  window.document.body.append(anchor);
+  anchor.click();
+  anchor.remove();
+  queueMicrotask(() => URL.revokeObjectURL(url));
+}
+function PlayIoMenu({ playClient, playthrough, trigger = "+", placement = "composer", onRelink }) {
+  installStyles2();
+  const root = (0, import_react11.useRef)(null);
+  const [open, setOpen] = (0, import_react11.useState)(false);
+  const [busy, setBusy] = (0, import_react11.useState)(false);
+  const [error, setError] = (0, import_react11.useState)("");
+  (0, import_react11.useEffect)(() => {
+    if (!open) return void 0;
+    const close = (event) => {
+      if (!root.current?.contains(event.target)) setOpen(false);
+    };
+    window.document.addEventListener("pointerdown", close);
+    return () => window.document.removeEventListener("pointerdown", close);
+  }, [open]);
+  const exportAs = async (format) => {
+    if (busy) return;
+    setBusy(true);
+    setError("");
+    try {
+      const snapshot = await loadPlaythroughExport(playClient, playthrough);
+      downloadDocument(playthrough, playthroughExportDocument(snapshot, format));
+      setOpen(false);
+    } catch (reason) {
+      setError(reason instanceof Error ? reason.message : String(reason));
+    } finally {
+      setBusy(false);
+    }
+  };
+  const rename = async () => {
+    if (busy) return;
+    const title = window.prompt(unwrapText(uiMessage("play.io.renamePrompt")), playthrough.title ?? "");
+    if (title === null) return;
+    if (title.trim() === "" || title.trim().length > 120) {
+      setError(unwrapText(uiMessage("play.io.renameInvalid")));
+      return;
+    }
+    setBusy(true);
+    setError("");
+    try {
+      await renamePlaythrough(playClient, playthrough, title);
+      window.dispatchEvent(new Event("pmp-dsh-tavern:refresh"));
+      setOpen(false);
+    } catch (reason) {
+      setError(reason instanceof Error ? reason.message : String(reason));
+    } finally {
+      setBusy(false);
+    }
+  };
+  return h9(
+    "div",
+    { ref: root, className: "dtv-play-io", "data-placement": placement },
+    h9("button", {
+      type: "button",
+      className: "dtv-play-io-trigger",
+      title: uiMessage("play.io.menu"),
+      "aria-label": uiMessage("play.io.menu"),
+      "aria-expanded": open,
+      onClick: (event) => {
+        event.stopPropagation();
+        setOpen((value) => !value);
+      }
+    }, rawText(trigger)),
+    !open ? null : h9(
+      "div",
+      { className: "dtv-play-io-menu" },
+      h9("button", { type: "button", className: "dtv-play-io-item", disabled: busy, onClick: rename }, uiMessage("play.io.rename")),
+      typeof onRelink !== "function" ? null : h9("button", {
+        type: "button",
+        className: "dtv-play-io-item",
+        disabled: busy,
+        onClick: () => {
+          setOpen(false);
+          onRelink();
+        }
+      }, uiMessage("play.io.relinkCharacter")),
+      h9("button", { type: "button", className: "dtv-play-io-item", disabled: busy, onClick: () => exportAs("html") }, uiMessage("play.io.exportHtml")),
+      h9("button", { type: "button", className: "dtv-play-io-item", disabled: busy, onClick: () => exportAs("st") }, uiMessage("play.io.exportSt")),
+      error === "" ? null : h9("p", { className: "dtv-play-io-error" }, rawText(error))
+    )
+  );
+}
+
+// packages/client/src/play/sidebar.js
+var h10 = createLocalizedElement(import_react12.createElement);
+var css9 = `
+.dtv-play-character-drag{width:20px;min-width:20px;align-self:stretch;border:0;border-radius:7px;background:transparent;color:var(--dsw-alias-label-tertiary);cursor:grab;padding:0;font:inherit;font-size:14px;touch-action:none;user-select:none}.dtv-play-character-drag:hover{background:var(--dsw-alias-interactive-bg-hover)}.dtv-play-character-drag:active{cursor:grabbing}.dtv-play-character-drag:disabled{cursor:default;opacity:.4}
+.dtv-play-section[data-dragging=true]{height:4px;min-height:4px;margin:5px 10px;overflow:hidden;border-radius:999px;background:var(--dsw-alias-state-business-primary);box-shadow:0 0 0 1px color-mix(in srgb,var(--dsw-alias-state-business-primary) 25%,transparent)}.dtv-play-section[data-dragging=true]>*{opacity:0}
+.dtv-play-character-drop{box-sizing:border-box;height:38px;flex:none;border:2px dashed var(--dsw-alias-state-business-primary);border-radius:8px;background:color-mix(in srgb,var(--dsw-alias-state-business-primary) 7%,transparent);display:flex;align-items:center;justify-content:center;color:var(--dsw-alias-state-business-primary);font-size:10px;font-weight:600;pointer-events:none}
+.dtv-play-sort{display:flex;align-items:center;justify-content:flex-end;gap:6px;padding:1px 5px 3px;color:var(--dsw-alias-label-tertiary);font-size:10px}.dtv-play-sort select{min-width:92px;height:26px;border:1px solid var(--dsw-alias-border-l2);border-radius:7px;background:var(--dsw-alias-bg-base);color:var(--dsw-alias-label-primary);font:inherit;padding:2px 6px}.dtv-play-sort select:disabled{opacity:.55}
+.dtv-play-sidebar{height:100%;min-height:0;box-sizing:border-box;display:flex;flex-direction:column;gap:4px;padding:6px 7px 10px;overflow:auto;zoom:var(--dtv-ui-scale,1);color:var(--dsw-alias-label-primary)}
+.dtv-play-section{display:flex;flex-direction:column;gap:2px;border-radius:10px}.dtv-play-section[data-open=true]{padding-bottom:3px}
+.dtv-play-group,.dtv-play-row{width:100%;box-sizing:border-box;border:0;border-radius:8px;background:transparent;color:inherit;font:inherit;text-align:left;cursor:pointer;display:flex;align-items:center;gap:7px}.dtv-play-group:hover,.dtv-play-row:hover{background:var(--dsw-alias-interactive-bg-hover)}
+.dtv-play-row-line{display:flex;align-items:center;gap:2px}.dtv-play-row-line>.dtv-play-row{min-width:0;flex:1}.dtv-play-row-line>.dtv-play-io{flex:none}
+.dtv-play-group{min-height:38px;padding:4px 6px;font-size:12px;font-weight:680}.dtv-play-row{min-height:32px;padding:4px 7px 4px 27px;font-size:11px}.dtv-play-row[data-active=true]{background:var(--dsw-alias-interactive-bg-selected,var(--dsw-specific-tip));font-weight:650}.dtv-play-row:disabled{cursor:default;opacity:.55}
+.dtv-play-group-line{display:flex;align-items:center;gap:3px}.dtv-play-group-line>.dtv-play-group{min-width:0;flex:1}.dtv-play-create{width:30px;height:30px;flex:none;border:0;border-radius:8px;background:transparent;color:var(--dsw-alias-label-secondary);font:inherit;cursor:pointer}.dtv-play-create:hover{background:var(--dsw-alias-interactive-bg-hover)}.dtv-play-create:disabled{cursor:default;opacity:.5}
+.dtv-play-chevron{width:10px;flex:none;text-align:center;color:var(--dsw-alias-label-tertiary)}.dtv-play-title{min-width:0;flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.dtv-play-count{flex:none;border-radius:9px;padding:1px 6px;background:var(--dsw-specific-tip);color:var(--dsw-alias-label-tertiary);font-size:9px}
+.dtv-play-avatar{position:relative;width:25px;height:25px;flex:none;border-radius:50%;overflow:hidden;background:var(--dsw-specific-tip);display:grid;place-items:center;color:var(--dsw-alias-label-secondary);font-size:10px}.dtv-play-avatar img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+.dtv-play-subgroup{display:flex;flex-direction:column;gap:1px}.dtv-play-subgroup>.dtv-play-group{min-height:30px;padding-left:25px;font-size:10px;font-weight:620;color:var(--dsw-alias-label-secondary)}
+.dtv-play-missing{border-top:1px solid var(--dsw-alias-border-subtle);margin-top:3px;padding-top:3px}.dtv-play-missing-card{margin-left:10px}.dtv-play-relink{width:30px;height:30px;flex:none;border:0;border-radius:8px;background:transparent;color:var(--dsw-alias-state-business-primary);cursor:pointer;font:inherit;font-size:13px}.dtv-play-relink:hover{background:var(--dsw-alias-interactive-bg-hover)}.dtv-play-modal select{width:100%;box-sizing:border-box;min-height:36px;border:1px solid var(--dsw-alias-border-l2);border-radius:8px;background:var(--dsw-alias-bg-base);color:var(--dsw-alias-label-primary);font:inherit;padding:6px 8px}.dtv-play-modal .dtv-play-relink-warning{padding:9px 10px;border:1px solid color-mix(in srgb,var(--dsw-alias-state-warning,#d9822b) 45%,transparent);border-radius:8px;background:color-mix(in srgb,var(--dsw-alias-state-warning,#d9822b) 10%,transparent);color:var(--dsw-alias-state-warning,#c86f16);font-size:11px}
+.dtv-play-empty,.dtv-play-status{margin:0;padding:7px 9px;font-size:10px;line-height:1.45;color:var(--dsw-alias-label-tertiary);overflow-wrap:anywhere}.dtv-play-status[data-error=true]{color:var(--dsw-alias-state-error)}
+.dtv-play-rail{height:100%;box-sizing:border-box;padding:7px;display:flex;flex-direction:column;align-items:center;gap:7px;overflow:auto;zoom:var(--dtv-ui-scale,1)}.dtv-play-rail-button{width:38px;height:38px;border:0;border-radius:10px;background:transparent;color:var(--dsw-alias-label-secondary);cursor:pointer;display:grid;place-items:center}.dtv-play-rail-button:hover{background:var(--dsw-alias-interactive-bg-hover)}.dtv-play-rail-button .dtv-play-avatar{width:30px;height:30px}
+.dtv-play-modal-backdrop{position:fixed;inset:0;z-index:40;box-sizing:border-box;padding:20px;background:rgba(0,0,0,.48);display:flex;align-items:center;justify-content:center}.dtv-play-modal{box-sizing:border-box;width:min(420px,100%);border:1px solid var(--dsw-alias-border-l2);border-radius:12px;background:var(--dsw-alias-bg-base);box-shadow:var(--ds-shadow-3,0 16px 40px rgba(0,0,0,.28));padding:17px 16px;display:flex;flex-direction:column;gap:14px}.dtv-play-modal p{margin:0;font-size:13px;line-height:1.55;color:var(--dsw-alias-label-primary)}.dtv-play-modal-actions{display:flex;justify-content:flex-end;gap:8px;flex-wrap:wrap}.dtv-play-modal-button{min-height:34px;border:1px solid var(--dsw-alias-border-l2);border-radius:8px;background:var(--dsw-alias-button-secondary-fill,var(--dsw-alias-bg-base));color:var(--dsw-alias-label-primary);cursor:pointer;padding:7px 11px;font:inherit;font-size:12px}.dtv-play-modal-button[data-primary=true]{border-color:transparent;background:var(--dsw-alias-state-business-primary,#2677d9);color:var(--dsw-alias-button-primary-label,#fff)}
+`;
+function installStyles3() {
+  if (document.querySelector(`style[data-plugin-css="${PLUGIN_ID}-play-sidebar"]`) !== null) return;
+  const style = document.createElement("style");
+  style.dataset.pluginCss = `${PLUGIN_ID}-play-sidebar`;
+  style.textContent = css9;
+  document.head.append(style);
+}
+function useUiScale() {
+  const [scale, setScale] = (0, import_react12.useState)(() => getClientUiSettings().scale);
+  (0, import_react12.useEffect)(() => {
+    const onSettings = (event) => {
+      const next = Number(event.detail?.scale);
+      if (Number.isFinite(next)) setScale(next);
+    };
+    window.addEventListener(CLIENT_UI_SETTINGS_EVENT, onSettings);
+    return () => window.removeEventListener(CLIENT_UI_SETTINGS_EVENT, onSettings);
+  }, []);
+  return scale;
+}
+function Avatar({ character }) {
+  const fallback = (character.name || character.id).slice(0, 1).toUpperCase();
+  return h10(
+    "span",
+    { className: "dtv-play-avatar", "aria-hidden": "true" },
+    rawText(fallback),
+    h10("img", {
+      src: `${API_V1}/characters/${encodeURIComponent(character.id)}/png`,
+      alt: "",
+      onError: (event) => {
+        event.currentTarget.hidden = true;
+      }
+    })
+  );
+}
+function Rail({ model, scale, expandSidebar }) {
+  return h10(
+    "div",
+    { className: "dtv-play-rail", style: { "--dtv-ui-scale": scale } },
+    ...model.characters.map((character) => h10("button", {
+      key: character.id,
+      type: "button",
+      className: "dtv-play-rail-button",
+      title: rawText(character.name),
+      "aria-label": rawText(character.name),
+      onClick: expandSidebar
+    }, h10(Avatar, { character }))),
+    h10("button", {
+      type: "button",
+      className: "dtv-play-rail-button",
+      title: uiMessage("play.sidebar.other"),
+      "aria-label": uiMessage("play.sidebar.other"),
+      onClick: expandSidebar
+    }, "\u2630")
+  );
+}
+function CharacterDropPlaceholder() {
+  return h10("div", { className: "dtv-play-character-drop", "aria-hidden": true }, uiMessage("preset.dropHere"));
+}
+function characterInsertionBoundary(event) {
+  const target = document.elementFromPoint(event.clientX, event.clientY)?.closest("[data-character-index]");
+  if (target === null) return null;
+  const index = Number(target.dataset.characterIndex);
+  const bounds = target.getBoundingClientRect();
+  return event.clientY < bounds.top + bounds.height / 2 ? index : index + 1;
+}
+function CharacterGroup({ character, index, dragging, reorderDisabled, onPointerDown, onPointerMove, onPointerUp, onPointerCancel, collapsed, unassignedOpen, creating, createDisabled, toggle, toggleUnassigned, createPlaythrough, openPlaythrough, openSession, playClient, beginPlaythroughRelink }) {
+  const count = character.playthroughs.length + character.unassigned.length;
+  return h10(
+    "section",
+    {
+      className: "dtv-play-section",
+      "data-open": !collapsed,
+      "data-character-index": index,
+      "data-dragging": dragging || void 0
+    },
+    h10(
+      "div",
+      { className: "dtv-play-group-line" },
+      h10("button", {
+        type: "button",
+        className: "dtv-play-character-drag",
+        disabled: reorderDisabled,
+        title: uiMessage("preset.dragOrder"),
+        "aria-label": uiMessage("preset.dragNamed", { name: character.name }),
+        "aria-pressed": dragging,
+        onPointerDown,
+        onPointerMove,
+        onPointerUp,
+        onPointerCancel
+      }, "\u283F"),
+      h10(
+        "button",
+        {
+          type: "button",
+          className: "dtv-play-group",
+          "aria-expanded": !collapsed,
+          onClick: toggle
+        },
+        h10("span", { className: "dtv-play-chevron", "aria-hidden": "true" }, collapsed ? "\u203A" : "\u2304"),
+        h10(Avatar, { character }),
+        h10("span", { className: "dtv-play-title" }, rawText(character.name)),
+        h10("span", { className: "dtv-play-count" }, rawText(String(count)))
+      ),
+      h10("button", {
+        type: "button",
+        className: "dtv-play-create",
+        disabled: createDisabled,
+        title: uiMessage("play.sidebar.newPlaythrough", { name: character.name }),
+        "aria-label": uiMessage("play.sidebar.newPlaythrough", { name: character.name }),
+        onClick: () => createPlaythrough(character)
+      }, creating ? "\u2026" : "+")
+    ),
+    collapsed ? null : character.playthroughs.length === 0 && character.unassigned.length === 0 ? h10("p", { className: "dtv-play-empty" }, uiMessage("play.sidebar.noPlaythroughs")) : null,
+    collapsed ? null : character.playthroughs.map((playthrough) => h10(
+      "div",
+      {
+        key: playthrough.id,
+        className: "dtv-play-row-line"
+      },
+      h10(
+        "button",
+        {
+          type: "button",
+          className: "dtv-play-row",
+          "data-active": playthrough.active,
+          disabled: playthrough.missing,
+          title: playthrough.missing ? uiMessage("play.sidebar.sessionMissing") : rawText(playthrough.title),
+          onClick: () => openPlaythrough(playthrough)
+        },
+        h10("span", { className: "dtv-play-chevron", "aria-hidden": "true" }, "\u25C6"),
+        h10("span", { className: "dtv-play-title" }, rawText(playthrough.title))
+      ),
+      h10(PlayIoMenu, {
+        playClient,
+        playthrough,
+        openSession,
+        trigger: "\u22EF",
+        placement: "sidebar",
+        onRelink: () => beginPlaythroughRelink(playthrough, character)
+      })
+    )),
+    collapsed || character.unassigned.length === 0 ? null : h10(
+      "div",
+      { className: "dtv-play-subgroup" },
+      h10(
+        "button",
+        {
+          type: "button",
+          className: "dtv-play-group",
+          "aria-expanded": unassignedOpen,
+          onClick: toggleUnassigned
+        },
+        h10("span", { className: "dtv-play-chevron", "aria-hidden": "true" }, unassignedOpen ? "\u2304" : "\u203A"),
+        h10("span", { className: "dtv-play-title" }, uiMessage("play.sidebar.unassigned")),
+        h10("span", { className: "dtv-play-count" }, rawText(String(character.unassigned.length)))
+      ),
+      unassignedOpen ? character.unassigned.map((session) => h10(
+        "button",
+        {
+          key: session.id,
+          type: "button",
+          className: "dtv-play-row",
+          "data-active": session.active,
+          onClick: () => openSession(session.id)
+        },
+        h10("span", { className: "dtv-play-chevron", "aria-hidden": "true" }, "\u2022"),
+        h10("span", { className: "dtv-play-title" }, rawText(session.title))
+      )) : null
+    )
+  );
+}
+function MissingCharacterGroup({ character, collapsed, toggle, beginRelink, beginPlaythroughRelink, openPlaythrough, openSession, playClient, relinkDisabled }) {
+  return h10(
+    "section",
+    { className: "dtv-play-section dtv-play-missing-card", "data-open": !collapsed },
+    h10(
+      "div",
+      { className: "dtv-play-group-line" },
+      h10(
+        "button",
+        {
+          type: "button",
+          className: "dtv-play-group",
+          "aria-expanded": !collapsed,
+          onClick: toggle
+        },
+        h10("span", { className: "dtv-play-chevron", "aria-hidden": "true" }, collapsed ? "\u203A" : "\u2304"),
+        h10("span", { className: "dtv-play-avatar", "aria-hidden": "true" }, "?"),
+        h10("span", { className: "dtv-play-title" }, rawText(character.name)),
+        h10("span", { className: "dtv-play-count" }, rawText(String(character.playthroughs.length)))
+      ),
+      h10("button", {
+        type: "button",
+        className: "dtv-play-relink",
+        disabled: relinkDisabled,
+        title: uiMessage("play.sidebar.relinkCharacter"),
+        "aria-label": uiMessage("play.sidebar.relinkCharacterNamed", { name: character.name }),
+        onClick: () => beginRelink(character)
+      }, "\u21BB")
+    ),
+    collapsed ? null : character.playthroughs.map((playthrough) => h10(
+      "div",
+      {
+        key: playthrough.id,
+        className: "dtv-play-row-line"
+      },
+      h10(
+        "button",
+        {
+          type: "button",
+          className: "dtv-play-row",
+          "data-active": playthrough.active,
+          disabled: playthrough.missing,
+          title: playthrough.missing ? uiMessage("play.sidebar.sessionMissing") : rawText(playthrough.title),
+          onClick: () => openPlaythrough(playthrough)
+        },
+        h10("span", { className: "dtv-play-chevron", "aria-hidden": "true" }, "\u25C6"),
+        h10("span", { className: "dtv-play-title" }, rawText(playthrough.title))
+      ),
+      h10(PlayIoMenu, {
+        playClient,
+        playthrough,
+        openSession,
+        trigger: "\u22EF",
+        placement: "sidebar",
+        onRelink: () => beginPlaythroughRelink(playthrough, character)
+      })
+    ))
+  );
+}
+function PlayWorkspaceBrowser({
+  wide = true,
+  expandSidebar,
+  useSessions,
+  useWorkspaces,
+  playClient,
+  playthroughController,
+  openSession,
+  switchToNative,
+  getActivePlaythroughId,
+  subscribeActivePlaythroughId
+}) {
+  installStyles3();
+  const scale = useUiScale();
+  const sessionIds = useSessions((state) => state.ids);
+  const sessions = useSessions((state) => state.byId);
+  const currentId = useSessions((state) => state.current ?? null);
+  const workspaceItems = useWorkspaces((state) => state.items);
+  const archivedSessionIds = useWorkspaces((state) => state.archivedSessionIds);
+  const cache = (0, import_react12.useRef)(null);
+  if (cache.current === null) cache.current = new SessionCharacterBindingCache();
+  const automaticRelinks = (0, import_react12.useRef)(/* @__PURE__ */ new Set());
+  const creator = (0, import_react12.useRef)(null);
+  if (creator.current?.client !== playClient || creator.current?.provided !== playthroughController) {
+    creator.current = {
+      client: playClient,
+      provided: playthroughController,
+      controller: playthroughController ?? createPlaythroughController(playClient)
+    };
+  }
+  const [creatingCharacterId, setCreatingCharacterId] = (0, import_react12.useState)(null);
+  const [revision, setRevision] = (0, import_react12.useState)(0);
+  const [resources, setResources] = (0, import_react12.useState)(null);
+  const [sessionCharacters, setSessionCharacters] = (0, import_react12.useState)({});
+  const [status, setStatus] = (0, import_react12.useState)(null);
+  const [collapsedCharacters, setCollapsedCharacters] = (0, import_react12.useState)(() => /* @__PURE__ */ new Set());
+  const [expandedUnassigned, setExpandedUnassigned] = (0, import_react12.useState)(() => /* @__PURE__ */ new Set());
+  const [otherOpen, setOtherOpen] = (0, import_react12.useState)(false);
+  const [ordinaryPromptOpen, setOrdinaryPromptOpen] = (0, import_react12.useState)(false);
+  const [missingOpen, setMissingOpen] = (0, import_react12.useState)(true);
+  const [collapsedMissingCharacters, setCollapsedMissingCharacters] = (0, import_react12.useState)(() => /* @__PURE__ */ new Set());
+  const [relinkRequest, setRelinkRequest] = (0, import_react12.useState)(null);
+  const [relinkTargetId, setRelinkTargetId] = (0, import_react12.useState)("");
+  const [relinkBusy, setRelinkBusy] = (0, import_react12.useState)(false);
+  const [activePlaythroughId, setActivePlaythroughId] = (0, import_react12.useState)(
+    () => getActivePlaythroughId?.() ?? null
+  );
+  const [characterDragFrom, setCharacterDragFrom] = (0, import_react12.useState)(null);
+  const [characterDropIndex, setCharacterDropIndex] = (0, import_react12.useState)(null);
+  const [reorderingCharacters, setReorderingCharacters] = (0, import_react12.useState)(false);
+  (0, import_react12.useEffect)(() => {
+    if (typeof subscribeActivePlaythroughId !== "function") return void 0;
+    setActivePlaythroughId(getActivePlaythroughId?.() ?? null);
+    return subscribeActivePlaythroughId(setActivePlaythroughId);
+  }, [getActivePlaythroughId, subscribeActivePlaythroughId]);
+  (0, import_react12.useEffect)(() => {
+    const refresh = () => {
+      cache.current.clear();
+      setRevision((value) => value + 1);
+    };
+    window.addEventListener(CLIENT_REFRESH_EVENT, refresh);
+    return () => window.removeEventListener(CLIENT_REFRESH_EVENT, refresh);
+  }, []);
+  (0, import_react12.useEffect)(() => {
+    let active = true;
+    setStatus(null);
+    loadPlaySidebarResources(playClient).then((next) => {
+      if (active) setResources(next);
+    }).catch((reason) => {
+      if (!active) return;
+      setResources(null);
+      setStatus({ message: reason instanceof Error ? reason.message : String(reason) });
+    });
+    return () => {
+      active = false;
+    };
+  }, [playClient, revision]);
+  const rpIds = resources === null ? [] : [...sessionIdsInRpWorkspace({
+    workspace: resources.workspace,
+    workspaceItems,
+    sessions
+  })];
+  const rpKey = rpIds.join("\0");
+  (0, import_react12.useEffect)(() => {
+    let active = true;
+    if (resources === null) {
+      setSessionCharacters({});
+      return () => {
+        active = false;
+      };
+    }
+    loadSessionCharacterBindings(playClient, rpIds, { cache: cache.current }).then((next) => {
+      if (active) setSessionCharacters(next);
+    });
+    return () => {
+      active = false;
+    };
+  }, [playClient, resources, rpKey, revision]);
+  const model = projectPlaySidebar({
+    workspace: resources?.workspace,
+    workspaceItems,
+    characters: resources?.characters,
+    characterSorting: resources?.characterSorting,
+    missingCharacters: resources?.missingCharacters,
+    catalog: resources?.catalog,
+    timelines: resources?.timelines,
+    sessions,
+    sessionIds,
+    archivedSessionIds,
+    currentId,
+    activePlaythroughId,
+    sessionCharacters
+  });
+  const automaticRelinkKey = [
+    ...model.characters.map((item) => `${item.id}:${item.name}:${item.sha256 ?? ""}`),
+    "|",
+    ...model.missingCharacters.map((item) => `${item.id}:${item.name}:${item.sha256 ?? ""}`)
+  ].join("\0");
+  (0, import_react12.useEffect)(() => {
+    if (resources === null || model.missingCharacters.length === 0 || model.characters.length === 0) return void 0;
+    let active = true;
+    const normalizedName = (value) => String(value ?? "").trim().toLocaleLowerCase("zh-CN");
+    const recoveries = [];
+    for (const missing of model.missingCharacters) {
+      let candidates = typeof missing.sha256 === "string" ? model.characters.filter((character) => character.sha256 === missing.sha256) : [];
+      if (candidates.length !== 1) {
+        const name2 = normalizedName(missing.name);
+        const sameMissing = model.missingCharacters.filter((item) => normalizedName(item.name) === name2);
+        candidates = sameMissing.length === 1 ? model.characters.filter((character) => normalizedName(character.name) === name2) : [];
+      }
+      if (candidates.length !== 1) continue;
+      const key = `${missing.id}\0${candidates[0].id}`;
+      if (automaticRelinks.current.has(key)) continue;
+      automaticRelinks.current.add(key);
+      recoveries.push({ missing, character: candidates[0] });
+    }
+    if (recoveries.length === 0) return void 0;
+    void (async () => {
+      let changed = false;
+      for (const recovery of recoveries) {
+        if (!active) return;
+        try {
+          await playClient.relinkCharacter(recovery.missing.id, recovery.character.id);
+          changed = true;
+        } catch (reason) {
+          if (active) setStatus({ message: reason instanceof Error ? reason.message : String(reason) });
+        }
+      }
+      if (active && changed) {
+        cache.current.clear();
+        window.dispatchEvent(new Event(CLIENT_REFRESH_EVENT));
+      }
+    })();
+    return () => {
+      active = false;
+    };
+  }, [automaticRelinkKey, playClient]);
+  const bindWorkspace = async (workspace) => {
+    if (requiresSystemWorkspaceConfirmation(workspace.path) && !window.confirm(unwrapText(uiMessage("play.sidebar.systemWorkspaceConfirm", { path: workspace.path })))) return;
+    setStatus(null);
+    try {
+      await playClient.putWorkspace(workspace.path);
+      window.dispatchEvent(new Event(CLIENT_REFRESH_EVENT));
+    } catch (reason) {
+      setStatus({ message: reason instanceof Error ? reason.message : String(reason) });
+    }
+  };
+  const createPlaythrough = async (character) => {
+    if (creatingCharacterId !== null) return;
+    setCreatingCharacterId(character.id);
+    setStatus(null);
+    try {
+      const result = await creator.current.controller.create({
+        character,
+        selectionFromSessionId: sourceSessionIdForCharacter(character)
+      });
+      openSession(result.sessionId, result.playthrough);
+      window.dispatchEvent(new Event(CLIENT_REFRESH_EVENT));
+    } catch (reason) {
+      setStatus({ message: reason instanceof Error ? reason.message : String(reason) });
+    } finally {
+      setCreatingCharacterId(null);
+    }
+  };
+  const openPlaythrough = async (playthrough) => {
+    setStatus(null);
+    try {
+      const focus = await playClient.getFocus(playthrough);
+      const target = playthroughFocusTarget({ focus, playthrough, rpSessionIds: rpIds });
+      if (target === null) {
+        setStatus({ key: "play.sidebar.sessionMissing" });
+        return;
+      }
+      openSession(target, playthrough);
+    } catch (reason) {
+      setStatus({ message: reason instanceof Error ? reason.message : String(reason) });
+    }
+  };
+  const returnToNative = async () => {
+    setStatus(null);
+    try {
+      if (typeof switchToNative !== "function") throw new Error("native mode switch is unavailable");
+      await switchToNative();
+      setOrdinaryPromptOpen(false);
+    } catch (reason) {
+      setStatus({ message: reason instanceof Error ? reason.message : String(reason) });
+    }
+  };
+  const moveCharacter = async (from, boundary) => {
+    if (resources === null || reorderingCharacters || resources.characterSorting?.mode !== "custom") return;
+    const reordered = reorderAtBoundary(model.characters, from, boundary);
+    const storedIds = new Set(resources.characters.map((character) => character.id));
+    const characterIds = reordered.map((character) => character.id).filter((id) => storedIds.has(id));
+    if (characterIds.every((id, index) => resources.characters[index]?.id === id)) return;
+    const byId = new Map(resources.characters.map((character) => [character.id, character]));
+    setResources((current3) => current3 === null ? null : {
+      ...current3,
+      characters: characterIds.map((id) => byId.get(id)).filter(Boolean)
+    });
+    setReorderingCharacters(true);
+    setStatus(null);
+    try {
+      if (typeof playClient.putCharacterOrder !== "function") throw new Error("character order API is unavailable");
+      const response = await playClient.putCharacterOrder("custom", characterIds);
+      if (Array.isArray(response?.characters)) {
+        setResources((current3) => current3 === null ? null : {
+          ...current3,
+          characters: response.characters,
+          characterSorting: response.sorting ?? current3.characterSorting
+        });
+      }
+      window.dispatchEvent(new Event(CLIENT_REFRESH_EVENT));
+    } catch (reason) {
+      setStatus({ message: reason instanceof Error ? reason.message : String(reason) });
+      setRevision((value) => value + 1);
+    } finally {
+      setReorderingCharacters(false);
+    }
+  };
+  const changeCharacterSortMode = async (event) => {
+    const mode = event.currentTarget.value;
+    if (resources === null || reorderingCharacters || mode === resources.characterSorting?.mode) return;
+    setReorderingCharacters(true);
+    setStatus(null);
+    try {
+      const response = await playClient.putCharacterOrder(mode);
+      setResources((current3) => current3 === null ? null : {
+        ...current3,
+        characters: Array.isArray(response?.characters) ? response.characters : current3.characters,
+        characterSorting: response?.sorting ?? { mode }
+      });
+      window.dispatchEvent(new Event(CLIENT_REFRESH_EVENT));
+    } catch (reason) {
+      setStatus({ message: reason instanceof Error ? reason.message : String(reason) });
+      setRevision((value) => value + 1);
+    } finally {
+      setReorderingCharacters(false);
+    }
+  };
+  const beginRelink = (character) => {
+    setRelinkRequest({ kind: "character", character });
+    setRelinkTargetId(resources?.characters[0]?.id ?? "");
+  };
+  const beginPlaythroughRelink = (playthrough, character) => {
+    const target = resources?.characters.find((item) => item.id !== character.id);
+    setRelinkRequest({ kind: "playthrough", playthrough, character });
+    setRelinkTargetId(target?.id ?? "");
+  };
+  const commitRelink = async () => {
+    if (relinkRequest === null || relinkTargetId === "" || relinkBusy) return;
+    setRelinkBusy(true);
+    setStatus(null);
+    try {
+      if (relinkRequest.kind === "playthrough") {
+        if (typeof playClient.relinkPlaythroughCharacter !== "function") throw new Error("playthrough character relink API is unavailable");
+        await playClient.relinkPlaythroughCharacter(relinkRequest.playthrough.id, relinkTargetId);
+      } else {
+        if (typeof playClient.relinkCharacter !== "function") throw new Error("character relink API is unavailable");
+        await playClient.relinkCharacter(relinkRequest.character.id, relinkTargetId);
+      }
+      setRelinkRequest(null);
+      cache.current.clear();
+      window.dispatchEvent(new Event(CLIENT_REFRESH_EVENT));
+    } catch (reason) {
+      setStatus({ message: reason instanceof Error ? reason.message : String(reason) });
+    } finally {
+      setRelinkBusy(false);
+    }
+  };
+  if (wide === false) return h10(Rail, { model, scale, expandSidebar });
+  const toggleSet = (setter, id) => setter((current3) => {
+    const next = new Set(current3);
+    if (next.has(id)) next.delete(id);
+    else next.add(id);
+    return next;
+  });
+  return h10(
+    "div",
+    { className: "dtv-play-sidebar", style: { "--dtv-ui-scale": scale } },
+    resources === null && status === null ? h10("p", { className: "dtv-play-status" }, uiMessage("play.sidebar.loading")) : null,
+    resources?.workspace?.selected === false ? h10(
+      "section",
+      { className: "dtv-play-section", "data-open": true },
+      h10("p", { className: "dtv-play-status" }, uiMessage("play.sidebar.workspaceMissing")),
+      ...workspaceItems.map((workspace) => {
+        const label = uiMessage("play.sidebar.selectWorkspace", { name: workspace.title });
+        return h10(
+          "button",
+          {
+            key: workspace.workspaceId,
+            type: "button",
+            className: "dtv-play-row",
+            title: label,
+            "aria-label": label,
+            onClick: () => bindWorkspace(workspace)
+          },
+          h10("span", { className: "dtv-play-chevron", "aria-hidden": "true" }, "\u25C7"),
+          h10("span", { className: "dtv-play-title" }, rawText(workspace.title))
+        );
+      })
+    ) : null,
+    status === null ? null : h10("p", { className: "dtv-play-status", "data-error": true }, status.key ? uiMessage(status.key) : rawText(status.message)),
+    (resources?.diagnostics.length ?? 0) === 0 ? null : h10("p", { className: "dtv-play-status", "data-error": true }, uiMessage("play.sidebar.timelineErrors", { count: resources.diagnostics.length })),
+    ...(resources?.diagnostics ?? []).map((diagnostic) => h10("p", {
+      key: diagnostic.playthroughId,
+      className: "dtv-play-status",
+      "data-error": true
+    }, rawText(`${diagnostic.path}: ${diagnostic.message}`))),
+    resources === null ? null : h10(
+      "label",
+      { className: "dtv-play-sort" },
+      h10("span", null, uiMessage("play.sidebar.sort")),
+      h10(
+        "select",
+        {
+          value: resources.characterSorting?.mode ?? "updated",
+          disabled: reorderingCharacters,
+          onChange: changeCharacterSortMode
+        },
+        h10("option", { value: "updated" }, uiMessage("play.sidebar.sortUpdated")),
+        h10("option", { value: "name" }, uiMessage("play.sidebar.sortName")),
+        h10("option", { value: "custom" }, uiMessage("play.sidebar.sortCustom"))
+      )
+    ),
+    resources !== null && model.characters.length === 0 ? h10("p", { className: "dtv-play-empty" }, uiMessage("play.sidebar.noCharacters")) : null,
+    ...model.characters.flatMap((character, index) => [
+      characterDragFrom !== null && characterDropIndex === index ? h10(CharacterDropPlaceholder, { key: `drop-${index}` }) : null,
+      h10(CharacterGroup, {
+        key: character.id,
+        character,
+        index,
+        dragging: characterDragFrom === index,
+        reorderDisabled: reorderingCharacters || resources?.characterSorting?.mode !== "custom" || model.characters.length < 2 || !resources?.characters.some((item) => item.id === character.id),
+        onPointerDown: (event) => {
+          event.preventDefault();
+          event.stopPropagation();
+          event.currentTarget.setPointerCapture(event.pointerId);
+          setCharacterDragFrom(index);
+          setCharacterDropIndex(index + 1);
+        },
+        onPointerMove: (event) => {
+          if (!event.currentTarget.hasPointerCapture(event.pointerId)) return;
+          const boundary = characterInsertionBoundary(event);
+          if (boundary !== null) setCharacterDropIndex(boundary);
+        },
+        onPointerUp: (event) => {
+          event.preventDefault();
+          const boundary = characterInsertionBoundary(event) ?? characterDropIndex ?? index + 1;
+          if (event.currentTarget.hasPointerCapture(event.pointerId)) event.currentTarget.releasePointerCapture(event.pointerId);
+          setCharacterDragFrom(null);
+          setCharacterDropIndex(null);
+          void moveCharacter(index, boundary);
+        },
+        onPointerCancel: () => {
+          setCharacterDragFrom(null);
+          setCharacterDropIndex(null);
+        },
+        collapsed: collapsedCharacters.has(character.id),
+        unassignedOpen: expandedUnassigned.has(character.id),
+        creating: creatingCharacterId === character.id,
+        createDisabled: !model.workspaceReady || creatingCharacterId !== null,
+        createPlaythrough,
+        playClient,
+        toggle: () => toggleSet(setCollapsedCharacters, character.id),
+        toggleUnassigned: () => toggleSet(setExpandedUnassigned, character.id),
+        openPlaythrough,
+        openSession,
+        beginPlaythroughRelink
+      })
+    ]),
+    characterDragFrom !== null && characterDropIndex === model.characters.length ? h10(CharacterDropPlaceholder, { key: "drop-end" }) : null,
+    model.missingCharacters.length === 0 ? null : h10(
+      "section",
+      { className: "dtv-play-section dtv-play-missing", "data-open": missingOpen },
+      h10(
+        "button",
+        {
+          type: "button",
+          className: "dtv-play-group",
+          "aria-expanded": missingOpen,
+          onClick: () => setMissingOpen((value) => !value)
+        },
+        h10("span", { className: "dtv-play-chevron", "aria-hidden": "true" }, missingOpen ? "\u2304" : "\u203A"),
+        h10("span", { className: "dtv-play-title" }, uiMessage("play.sidebar.missingCharacters")),
+        h10("span", { className: "dtv-play-count" }, rawText(String(model.missingCharacters.length)))
+      ),
+      missingOpen ? model.missingCharacters.map((character) => h10(MissingCharacterGroup, {
+        key: character.id,
+        character,
+        collapsed: collapsedMissingCharacters.has(character.id),
+        toggle: () => toggleSet(setCollapsedMissingCharacters, character.id),
+        beginRelink,
+        beginPlaythroughRelink,
+        relinkDisabled: (resources?.characters.length ?? 0) === 0 || relinkBusy,
+        openPlaythrough,
+        openSession,
+        playClient
+      })) : null
+    ),
+    h10(
+      "section",
+      { className: "dtv-play-section", "data-open": otherOpen },
+      h10(
+        "div",
+        { className: "dtv-play-group-line" },
+        h10(
+          "button",
+          {
+            type: "button",
+            className: "dtv-play-group",
+            "aria-expanded": otherOpen,
+            onClick: () => setOtherOpen((value) => !value)
+          },
+          h10("span", { className: "dtv-play-chevron", "aria-hidden": "true" }, otherOpen ? "\u2304" : "\u203A"),
+          h10("span", { className: "dtv-play-title" }, uiMessage("play.sidebar.other")),
+          h10("span", { className: "dtv-play-count" }, rawText(String(model.otherSessions.length)))
+        ),
+        h10("button", {
+          type: "button",
+          className: "dtv-play-create",
+          title: uiMessage("play.sidebar.createOrdinary"),
+          "aria-label": uiMessage("play.sidebar.createOrdinary"),
+          onClick: () => setOrdinaryPromptOpen(true)
+        }, "+")
+      ),
+      otherOpen && model.otherSessions.length === 0 ? h10("p", { className: "dtv-play-empty" }, uiMessage("play.sidebar.otherEmpty")) : null,
+      otherOpen ? model.otherSessions.map((session) => h10(
+        "button",
+        {
+          key: session.id,
+          type: "button",
+          className: "dtv-play-row",
+          "data-active": session.active,
+          "data-kind": session.kind,
+          onClick: () => openSession(session.id)
+        },
+        h10("span", { className: "dtv-play-chevron", "aria-hidden": "true" }, "\u2022"),
+        h10("span", { className: "dtv-play-title" }, rawText(session.title))
+      )) : null
+    ),
+    ordinaryPromptOpen ? h10("div", {
+      className: "dtv-play-modal-backdrop",
+      role: "dialog",
+      "aria-modal": "true",
+      "aria-labelledby": "dtv-play-ordinary-prompt"
+    }, h10(
+      "div",
+      { className: "dtv-play-modal" },
+      h10("p", { id: "dtv-play-ordinary-prompt" }, uiMessage("play.sidebar.ordinaryPrompt")),
+      h10(
+        "div",
+        { className: "dtv-play-modal-actions" },
+        h10("button", {
+          type: "button",
+          className: "dtv-play-modal-button",
+          onClick: () => setOrdinaryPromptOpen(false)
+        }, uiMessage("play.sidebar.ordinaryClose")),
+        h10("button", {
+          type: "button",
+          className: "dtv-play-modal-button",
+          "data-primary": true,
+          onClick: returnToNative
+        }, uiMessage("play.sidebar.returnNative"))
+      )
+    )) : null,
+    relinkRequest === null ? null : h10("div", {
+      className: "dtv-play-modal-backdrop",
+      role: "dialog",
+      "aria-modal": "true",
+      "aria-labelledby": "dtv-play-relink-prompt"
+    }, h10(
+      "div",
+      { className: "dtv-play-modal" },
+      h10("p", { id: "dtv-play-relink-prompt" }, relinkRequest.kind === "playthrough" ? uiMessage("play.sidebar.relinkPlaythroughPrompt", { name: relinkRequest.playthrough.title }) : uiMessage("play.sidebar.relinkPrompt", { name: relinkRequest.character.name })),
+      h10("select", {
+        value: relinkTargetId,
+        disabled: relinkBusy,
+        onChange: (event) => setRelinkTargetId(event.currentTarget.value)
+      }, ...(resources?.characters ?? []).filter((character) => relinkRequest.kind !== "playthrough" || character.id !== relinkRequest.character.id).map((character) => h10("option", { key: character.id, value: character.id }, rawText(character.name)))),
+      relinkRequest.kind !== "playthrough" || assessPlaythroughCharacterRelink({
+        playthrough: relinkRequest.playthrough,
+        target: resources?.characters.find((character) => character.id === relinkTargetId),
+        characters: resources?.characters,
+        missingCharacters: resources?.missingCharacters
+      }).automatic ? null : h10("p", { className: "dtv-play-relink-warning" }, uiMessage("play.sidebar.relinkMismatchWarning")),
+      h10(
+        "div",
+        { className: "dtv-play-modal-actions" },
+        h10("button", {
+          type: "button",
+          className: "dtv-play-modal-button",
+          disabled: relinkBusy,
+          onClick: () => setRelinkRequest(null)
+        }, uiMessage("play.sidebar.ordinaryClose")),
+        h10("button", {
+          type: "button",
+          className: "dtv-play-modal-button",
+          "data-primary": true,
+          disabled: relinkBusy || relinkTargetId === "",
+          onClick: commitRelink
+        }, relinkBusy ? rawText("\u2026") : uiMessage("play.sidebar.relinkConfirm"))
+      )
+    ))
+  );
+}
+
+// packages/client/src/play/notice.js
+var import_react13 = require("react");
+var h11 = createLocalizedElement(import_react13.createElement);
+var css10 = `
+.dtv-play-unbound-notice{box-sizing:border-box;width:100%;max-width:var(--dsh-composer-card-max-width,100%);align-self:center;margin:0;padding:7px 10px;border:1px solid color-mix(in srgb,var(--dsw-alias-state-warning,#d79921) 34%,transparent);border-radius:10px;background:color-mix(in srgb,var(--dsw-alias-state-warning,#d79921) 8%,transparent);color:var(--dsw-alias-label-secondary);font-size:11px;line-height:1.45}
+.dtv-play-opening-dock{box-sizing:border-box;width:100%;min-width:0;flex:none;display:flex;flex-direction:column;overflow:hidden;border:1px solid var(--dsw-alias-border-l2);border-radius:14px;background:var(--dsw-alias-bg-layer-2,var(--dsw-specific-block));color:var(--dsw-alias-label-primary);box-shadow:0 4px 18px color-mix(in srgb,var(--dsw-alias-label-primary) 7%,transparent)}
+.dtv-play-opening-header{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:9px 12px;border-bottom:1px solid var(--dsw-alias-border-l2);font-size:12px}.dtv-play-opening-name{min-width:0;overflow:hidden;font-weight:650;text-overflow:ellipsis;white-space:nowrap}.dtv-play-opening-index{flex:none;color:var(--dsw-alias-label-tertiary);font-size:11px}
+.dtv-play-opening-body{box-sizing:border-box;max-height:45dvh;overflow-x:hidden;overflow-y:auto;padding:13px 15px;font-size:calc(14px * var(--dtv-rp-text-scale,1));line-height:1.65;overflow-wrap:anywhere}.dtv-play-opening-body-empty{min-height:34px}.dtv-play-opening-body>:first-child{margin-top:0}.dtv-play-opening-body>:last-child{margin-bottom:0}.dtv-play-opening-body p,.dtv-play-opening-body ul,.dtv-play-opening-body ol,.dtv-play-opening-body blockquote,.dtv-play-opening-body pre,.dtv-play-opening-body table{margin:0 0 .85em}.dtv-play-opening-body ul,.dtv-play-opening-body ol{padding-left:1.5em}.dtv-play-opening-body pre,.dtv-play-opening-body table{max-width:100%;overflow:auto}.dtv-play-opening-body img,.dtv-play-opening-body video{max-width:100%;height:auto}
+.dtv-play-opening-actions{display:grid;grid-template-columns:minmax(0,1fr) auto minmax(0,1fr);align-items:center;gap:8px;padding:8px 10px;border-top:1px solid var(--dsw-alias-border-l2)}.dtv-play-opening-actions>.dtv-play-opening-button:first-child{justify-self:start}.dtv-play-opening-actions>.dtv-play-opening-button:last-child{justify-self:end}.dtv-play-opening-actions>.dtv-play-import-controls{margin:0}.dtv-play-opening-button{min-width:0;padding:6px 10px;border:0;border-radius:9px;background:transparent;color:var(--dsw-alias-label-secondary);font:inherit;font-size:12px;cursor:pointer}.dtv-play-opening-button:hover:not(:disabled){background:var(--dsw-alias-interactive-bg-hover)}.dtv-play-opening-button:disabled{opacity:.4;cursor:default}.dtv-play-opening-error{margin:0;padding:7px 12px;border-top:1px solid var(--dsw-alias-border-l2);color:var(--dsw-alias-state-error);font-size:11px;line-height:1.45}
+`;
+function installStyles4() {
+  if (document.querySelector(`style[data-plugin-css="${PLUGIN_ID}-play-notice"]`) !== null) return;
+  const style = document.createElement("style");
+  style.dataset.pluginCss = `${PLUGIN_ID}-play-notice`;
+  style.textContent = css10;
+  document.head.append(style);
+}
+function PlaySessionDock({ session, useSessions, playClient }) {
+  installStyles4();
+  installPlayChatStyles();
+  const sessionId = session?.sessionId ?? null;
+  const sessionBlank = session?.blank === true;
+  const composerPhase = session?.composerPhase;
+  const summary = useSessions((state) => sessionId === null ? null : state.byId?.[sessionId] ?? null);
+  const [revision, setRevision] = (0, import_react13.useState)(0);
+  const [content, setContent] = (0, import_react13.useState)(null);
+  const [greetingBusy, setGreetingBusy] = (0, import_react13.useState)(false);
+  const [error, setError] = (0, import_react13.useState)("");
+  const displaySettings = useConversationDisplaySettings();
+  (0, import_react13.useEffect)(() => {
+    const refresh = () => setRevision((value) => value + 1);
+    window.addEventListener(CLIENT_REFRESH_EVENT, refresh);
+    return () => window.removeEventListener(CLIENT_REFRESH_EVENT, refresh);
+  }, []);
+  (0, import_react13.useEffect)(() => {
+    let active = true;
+    setContent((current3) => current3?.sessionId === sessionId && current3.kind === "opening" ? current3 : null);
+    setError("");
+    if (sessionId === null || summary === null) return () => {
+      active = false;
+    };
+    Promise.all([
+      playClient.getWorkspace(),
+      playClient.getCharacterSelection(sessionId)
+    ]).then(([workspace, selection]) => {
+      if (!active) return;
+      if (shouldShowUnboundNotice({ workspace, session: summary, selection })) {
+        setContent({ kind: "unbound", sessionId });
+        return;
+      }
+      if (!sessionBlank || composerPhase !== "blank") {
+        setContent(null);
+        return;
+      }
+      loadCurrentPlaythrough(playClient, summary).then((binding) => {
+        if (!active) return;
+        if (binding === null || (binding.timeline?.nodes?.length ?? 0) !== 0) {
+          setContent(null);
+          return;
+        }
+        loadChatState(playClient, sessionId, binding.playthrough).then((state) => {
+          if (!active) return;
+          setContent({
+            kind: "opening",
+            greeting: state.greeting,
+            importBinding: state.importBinding,
+            importMutable: state.importMutable,
+            importTurns: state.turns.filter((turn) => turn.imported === true && turn.id !== "import-greeting").slice(-3),
+            playthrough: binding.playthrough,
+            sessionId
+          });
+        }, (reason) => {
+          if (active) setError(reason instanceof Error ? reason.message : String(reason));
+        });
+      }, (reason) => {
+        if (active) setError(reason instanceof Error ? reason.message : String(reason));
+      });
+    }, (reason) => {
+      if (active) setError(reason instanceof Error ? reason.message : String(reason));
+    });
+    return () => {
+      active = false;
+    };
+  }, [composerPhase, playClient, revision, sessionBlank, sessionId, summary]);
+  const changeGreeting = async (direction) => {
+    if (content?.kind !== "opening" || greetingBusy || sessionId === null) return;
+    const next = adjacentGreetingIndex(content.greeting, direction);
+    if (next === null) return;
+    setGreetingBusy(true);
+    setError("");
+    try {
+      await playClient.putGreetingIndex(sessionId, next);
+      setRevision((value) => value + 1);
+    } catch (reason) {
+      setError(reason instanceof Error ? reason.message : String(reason));
+    } finally {
+      setGreetingBusy(false);
+    }
+  };
+  if (content?.sessionId !== sessionId) return null;
+  if (content.kind === "unbound") {
+    return h11("p", {
+      className: "dtv-play-unbound-notice",
+      role: "note"
+    }, uiMessage("play.notice.unbound"));
+  }
+  if (content.kind !== "opening" || !sessionBlank || composerPhase !== "blank") return null;
+  const greeting = content.greeting;
+  const importTurns = content.importTurns ?? [];
+  const options = greeting?.options ?? [];
+  const multiple = options.length > 1;
+  const position = greeting === null ? 0 : Math.max(0, options.findIndex((option) => option.index === greeting.index)) + 1;
+  const importControls = h11(ImportControls, {
+    playClient,
+    playthrough: content.playthrough,
+    binding: content.importBinding,
+    locked: content.importMutable !== true,
+    changed: () => setRevision((value) => value + 1),
+    onError: setError
+  });
+  return h11(
+    "section",
+    {
+      className: "dtv-play-opening-dock",
+      style: conversationDisplayStyle(displaySettings)
+    },
+    greeting === null ? null : h11(
+      "header",
+      { className: "dtv-play-opening-header" },
+      h11("span", { className: "dtv-play-opening-name" }, rawText(greeting.characterName)),
+      h11("span", { className: "dtv-play-opening-index" }, rawText(`${position} / ${options.length}`))
+    ),
+    importTurns.length > 0 ? h11(
+      "div",
+      { className: "dtv-play-opening-body dtv-play-chat-list" },
+      ...importTurns.map((turn) => h11(
+        "div",
+        { key: turn.id, className: "dtv-play-chat-row" },
+        turn.userText === "" ? null : h11(RichText, {
+          className: "dtv-play-chat-bubble dtv-play-chat-user dtv-play-rich",
+          text: turn.userText
+        }),
+        turn.assistantText === "" ? null : h11(RichText, {
+          className: "dtv-play-chat-bubble dtv-play-chat-assistant dtv-play-rich",
+          text: turn.assistantText
+        })
+      ))
+    ) : greeting === null ? h11("div", { className: "dtv-play-opening-body dtv-play-opening-body-empty", "aria-hidden": true }) : h11(RichText, { className: "dtv-play-opening-body", text: greeting.text }),
+    error === "" ? null : h11("p", { className: "dtv-play-opening-error", role: "alert" }, rawText(error)),
+    h11(
+      "footer",
+      { className: "dtv-play-opening-actions" },
+      h11("button", {
+        type: "button",
+        className: "dtv-play-opening-button",
+        disabled: greetingBusy || !multiple,
+        onClick: () => changeGreeting("previous")
+      }, uiMessage("play.chat.previousGreeting")),
+      importControls,
+      h11("button", {
+        type: "button",
+        className: "dtv-play-opening-button",
+        disabled: greetingBusy || !multiple,
+        onClick: () => changeGreeting("next")
+      }, uiMessage("play.chat.nextGreeting"))
+    )
+  );
+}
+
+// packages/client/src/play/view-default.js
+var import_react14 = require("react");
+function defaultViewTarget(selectedView, targetViewId) {
+  return selectedView === null || selectedView === void 0 ? targetViewId : null;
+}
+function DefaultConversationViewAdapter({ useStore, actions, targetViewId, complete }) {
+  const hasStore = typeof useStore === "function";
+  const selectedView = hasStore ? useStore((state) => state.view) : void 0;
+  (0, import_react14.useLayoutEffect)(() => {
+    const target = defaultViewTarget(selectedView, targetViewId);
+    if (hasStore && target !== null && typeof actions?.setView === "function") {
+      try {
+        actions.setView(target);
+      } catch {
+      }
+    }
+    queueMicrotask(complete);
+  }, [actions, complete, hasStore, selectedView, targetViewId]);
+  return null;
+}
+
+// packages/client/src/play/occupancy.js
+var PLAY_SLOT_PRIORITY = -100;
+var PLAY_VIEW_ID = "rp";
+var PLAY_VIEW_ORDER = -100;
+var PLAY_DEFAULT_VIEW_ADAPTER_ID = "pmp-dsh-tavern-default-rp-view";
+var PLAY_DEFAULT_VIEW_ATTEMPT_LIMIT = 256;
+function findNativeChatStore(slots) {
+  if (typeof slots?.entries !== "function") return void 0;
+  const entries2 = slots.entries("conversation.view");
+  if (!Array.isArray(entries2) && entries2?.[Symbol.iterator] === void 0) return void 0;
+  for (const entry of entries2) {
+    if (entry?.options?.id === "chat" && entry.store !== void 0) return entry.store;
+  }
+  return void 0;
+}
+function installPlaySlotOccupancy(ctx, playClient, { playthroughController, switchToNative } = {}) {
+  let mode = "native";
+  let declared = false;
+  let disposeEntry = null;
+  let disposeEffect = null;
+  let noticeDeclared = false;
+  let disposeNoticeEntry = null;
+  let disposeNoticeEffect = null;
+  let chatDeclared = false;
+  let chatGeneration = 0;
+  let disposeChatEntry = null;
+  let disposeDefaultViewEntry = null;
+  let defaultViewEntryKey = null;
+  let disposeSessionSubscription = null;
+  let refreshChatListener = null;
+  let chatBinding = null;
+  let pendingChatSignature = null;
+  let preferredPlaythroughId = null;
+  const playthroughSelectionListeners = /* @__PURE__ */ new Set();
+  const completedDefaultViewAttempts = /* @__PURE__ */ new Set();
+  const selectPlaythrough = (playthroughId) => {
+    const next = typeof playthroughId === "string" && playthroughId !== "" ? playthroughId : null;
+    if (next === preferredPlaythroughId) return;
+    preferredPlaythroughId = next;
+    for (const listener of playthroughSelectionListeners) listener(next);
+  };
+  const dropEntry = () => {
+    const dispose = disposeEntry;
+    disposeEntry = null;
+    dispose?.();
+  };
+  const dropEffect = () => {
+    const dispose = disposeEffect;
+    disposeEffect = null;
+    dispose?.();
+    dropEntry();
+  };
+  const mount = () => {
+    if (!declared || mode !== "play" || disposeEntry !== null) return;
+    disposeEntry = ctx.slots.register({
+      name: "sidebar.workspaces",
+      priority: PLAY_SLOT_PRIORITY,
+      inject: () => ({
+        playClient,
+        playthroughController,
+        openSession: (sessionId, playthrough = null) => openPlaySession(sessionId, playthrough),
+        getActivePlaythroughId: () => preferredPlaythroughId,
+        switchToNative,
+        subscribeActivePlaythroughId: (listener) => {
+          playthroughSelectionListeners.add(listener);
+          return () => playthroughSelectionListeners.delete(listener);
+        }
+      })
+    }, PlayWorkspaceBrowser);
+  };
+  const reconcile = () => {
+    dropEffect();
+    if (!declared || mode !== "play") return;
+    const effect = () => {
+      mount();
+      return dropEntry;
+    };
+    if (typeof ctx.effect === "function") {
+      const dispose = ctx.effect(effect, "pmp-dsh-tavern:play-sidebar-shadow");
+      disposeEffect = typeof dispose === "function" ? dispose : null;
+    } else {
+      disposeEffect = effect();
+    }
+  };
+  const dropNoticeEntry = () => {
+    const dispose = disposeNoticeEntry;
+    disposeNoticeEntry = null;
+    dispose?.();
+  };
+  const dropNoticeEffect = () => {
+    const dispose = disposeNoticeEffect;
+    disposeNoticeEffect = null;
+    dispose?.();
+    dropNoticeEntry();
+  };
+  const mountNotice = () => {
+    if (!noticeDeclared || mode !== "play" || disposeNoticeEntry !== null) return;
+    disposeNoticeEntry = ctx.slots.register({
+      name: "conversation.input.dock",
+      id: "pmp-dsh-tavern-session-dock",
+      order: 90,
+      inject: () => ({ playClient })
+    }, PlaySessionDock);
+  };
+  const reconcileNotice = () => {
+    dropNoticeEffect();
+    if (!noticeDeclared || mode !== "play") return;
+    const effect = () => {
+      mountNotice();
+      return dropNoticeEntry;
+    };
+    if (typeof ctx.effect === "function") {
+      const dispose = ctx.effect(effect, "pmp-dsh-tavern:play-unbound-notice");
+      disposeNoticeEffect = typeof dispose === "function" ? dispose : null;
+    } else {
+      disposeNoticeEffect = effect();
+    }
+  };
+  const dropConversationEntry = () => {
+    const dispose = disposeChatEntry;
+    disposeChatEntry = null;
+    dispose?.();
+  };
+  const dropDefaultViewEntry = () => {
+    const dispose = disposeDefaultViewEntry;
+    disposeDefaultViewEntry = null;
+    defaultViewEntryKey = null;
+    dispose?.();
+  };
+  const rememberDefaultViewAttempt = (key) => {
+    completedDefaultViewAttempts.delete(key);
+    completedDefaultViewAttempts.add(key);
+    if (completedDefaultViewAttempts.size <= PLAY_DEFAULT_VIEW_ATTEMPT_LIMIT) return;
+    completedDefaultViewAttempts.delete(completedDefaultViewAttempts.values().next().value);
+  };
+  const dropChatEntry = () => {
+    dropDefaultViewEntry();
+    dropConversationEntry();
+    chatBinding = null;
+  };
+  const currentSession = () => {
+    const snapshot = ctx.sessions?.list?.getSnapshot?.();
+    const sessionId = snapshot?.current;
+    if (typeof sessionId !== "string" || sessionId === "") return null;
+    const session = snapshot.byId?.[sessionId];
+    return session == null ? null : { ...session, id: session.id ?? sessionId };
+  };
+  const sessionSignature = (session) => `${session.id}\0${String(session.cwd ?? "")}`;
+  const openPlaySession = (sessionId, playthrough = null) => {
+    selectPlaythrough(playthrough?.id);
+    const result = ctx.sessions.open(sessionId);
+    queueMicrotask(() => reconcileChat(true));
+    return result;
+  };
+  const syncChatEntries = () => {
+    if (chatBinding === null) return;
+    if (!chatDeclared) {
+      dropDefaultViewEntry();
+      dropConversationEntry();
+    } else if (disposeChatEntry === null) {
+      disposeChatEntry = ctx.slots.register({
+        name: "conversation.view",
+        id: PLAY_VIEW_ID,
+        order: PLAY_VIEW_ORDER,
+        priority: PLAY_SLOT_PRIORITY,
+        label: () => translate("play.chat.label"),
+        inject: () => ({
+          playClient,
+          playthrough: chatBinding.playthrough,
+          openSession: (sessionId, playthrough = chatBinding.playthrough) => openPlaySession(sessionId, playthrough)
+        })
+      }, MowanChatView);
+    }
+    const defaultViewKey = `${chatBinding.signature}\0${chatBinding.playthrough.path}`;
+    if (chatDeclared && disposeDefaultViewEntry === null && !completedDefaultViewAttempts.has(defaultViewKey)) {
+      const nativeChatStore = findNativeChatStore(ctx.slots);
+      if (nativeChatStore !== void 0) {
+        const complete = () => {
+          rememberDefaultViewAttempt(defaultViewKey);
+          if (defaultViewEntryKey === defaultViewKey) dropDefaultViewEntry();
+        };
+        defaultViewEntryKey = defaultViewKey;
+        disposeDefaultViewEntry = ctx.slots.register({
+          name: "conversation.input.dock",
+          id: PLAY_DEFAULT_VIEW_ADAPTER_ID,
+          order: -1e3,
+          priority: PLAY_SLOT_PRIORITY,
+          store: nativeChatStore,
+          inject: () => ({
+            targetViewId: PLAY_VIEW_ID,
+            complete
+          })
+        }, DefaultConversationViewAdapter);
+      }
+    }
+  };
+  const reconcileChat = (force = false) => {
+    if (force !== true) force = false;
+    const session = currentSession();
+    if (!chatDeclared || mode !== "play" || session === null) {
+      chatGeneration += 1;
+      pendingChatSignature = null;
+      dropChatEntry();
+      return;
+    }
+    const signature = sessionSignature(session);
+    if (!force && chatBinding?.signature === signature) {
+      syncChatEntries();
+      return;
+    }
+    if (!force && pendingChatSignature === signature) return;
+    chatGeneration += 1;
+    const generation = chatGeneration;
+    pendingChatSignature = signature;
+    const sessionId = session.id;
+    const preferred = preferredPlaythroughId ?? chatBinding?.playthrough?.id ?? null;
+    loadCurrentPlaythrough(playClient, session, {
+      preferredPlaythroughId: preferred
+    }).then((match) => {
+      if (generation === chatGeneration) pendingChatSignature = null;
+      const latest = currentSession();
+      if (generation !== chatGeneration || mode !== "play" || !chatDeclared || latest === null || sessionSignature(latest) !== signature) return;
+      if (match === null) {
+        selectPlaythrough(null);
+        dropChatEntry();
+        return;
+      }
+      const samePlaythrough = chatBinding?.playthrough?.path === match.playthrough.path;
+      if (!samePlaythrough) dropChatEntry();
+      selectPlaythrough(match.playthrough.id);
+      chatBinding = { signature, sessionId, playthrough: match.playthrough };
+      syncChatEntries();
+    }).catch(() => {
+      if (generation === chatGeneration) pendingChatSignature = null;
+    });
+  };
+  const stopChatObserver = () => {
+    chatGeneration += 1;
+    pendingChatSignature = null;
+    dropChatEntry();
+    const dispose = disposeSessionSubscription;
+    disposeSessionSubscription = null;
+    dispose?.();
+    if (refreshChatListener !== null && typeof window !== "undefined") {
+      window.removeEventListener(CLIENT_REFRESH_EVENT, refreshChatListener);
+    }
+    refreshChatListener = null;
+  };
+  const startChatObserver = () => {
+    const list = ctx.sessions?.list;
+    if (disposeSessionSubscription === null && typeof list?.subscribe === "function") {
+      const dispose = list.subscribe(() => reconcileChat(false));
+      disposeSessionSubscription = typeof dispose === "function" ? dispose : null;
+    }
+    if (refreshChatListener === null && typeof window !== "undefined") {
+      refreshChatListener = () => reconcileChat(true);
+      window.addEventListener(CLIENT_REFRESH_EVENT, refreshChatListener);
+    }
+    reconcileChat(false);
+  };
+  ctx.slots.inject("sidebar.workspaces", () => {
+    declared = true;
+    reconcile();
+    return () => {
+      declared = false;
+      dropEffect();
+    };
+  });
+  ctx.slots.inject("conversation.input.dock", () => {
+    noticeDeclared = true;
+    reconcileNotice();
+    return () => {
+      noticeDeclared = false;
+      dropNoticeEffect();
+    };
+  });
+  ctx.slots.inject("conversation.view", () => {
+    chatDeclared = true;
+    startChatObserver();
+    return () => {
+      chatDeclared = false;
+      dropDefaultViewEntry();
+      dropConversationEntry();
+      stopChatObserver();
+    };
+  });
+  return {
+    setMode(next) {
+      const normalized = next === "play" ? "play" : "native";
+      if (mode === normalized) return;
+      mode = normalized;
+      reconcile();
+      reconcileNotice();
+      reconcileChat(true);
+    }
+  };
+}
+
+// packages/client/src/play/live.js
+function errorMessage4(data, status) {
+  if (typeof data?.error === "string") return data.error;
+  if (typeof data?.error?.message === "string") return data.error.message;
+  return `HTTP ${status}`;
+}
+function createRequester(fetchImpl, root) {
+  return async function request(method, path, body2) {
+    const hasBody = body2 !== void 0;
+    const response = await fetchImpl(`${root}${path}`, {
+      method,
+      headers: hasBody ? { "Content-Type": "application/json" } : void 0,
+      body: hasBody ? JSON.stringify(body2) : void 0
+    });
+    const data = await response.json().catch(() => null);
+    if (!response.ok || data?.ok === false) {
+      const error = new Error(errorMessage4(data, response.status));
+      error.status = response.status;
+      error.code = data?.code ?? data?.error?.code;
+      error.diagnostics = data?.diagnostics ?? data?.error?.diagnostics ?? [];
+      error.details = data?.details ?? data?.error?.details;
+      throw error;
+    }
+    return data;
+  };
+}
+function fileContent(value, label) {
+  if (typeof value?.content !== "string") throw new TypeError(`${label}: content must be a string`);
+  return value.content;
+}
+var REVISION_PATTERN = /^[0-9a-f]{64}$/;
+function fileRevision(value, label) {
+  if (typeof value?.revision !== "string" || !REVISION_PATTERN.test(value.revision)) {
+    throw new TypeError(`${label}: revision must be a 64-character lowercase SHA-256 hex string`);
+  }
+  return value.revision;
+}
+function pathQuery(path) {
+  return `?path=${encodeURIComponent(path)}`;
+}
+function createLivePlayClient({
+  fetchImpl = globalThis.fetch,
+  apiRoot = API_V2,
+  v1Root = API_V1
+} = {}) {
+  if (typeof fetchImpl !== "function") throw new TypeError("fetchImpl is required");
+  const v1 = createRequester(fetchImpl, v1Root);
+  const v2 = createRequester(fetchImpl, apiRoot);
+  const managedRevisions = /* @__PURE__ */ new Map();
+  function invalidateRevision(path) {
+    managedRevisions.delete(path);
+  }
+  function expectedRevision(path) {
+    return managedRevisions.has(path) ? managedRevisions.get(path) : null;
+  }
+  async function getCharacterSelection(sessionId) {
+    const query = typeof sessionId === "string" && sessionId !== "" ? `?sessionId=${encodeURIComponent(sessionId)}` : "";
+    return v1("GET", `/character-selection${query}`);
+  }
+  async function getJsonFile(path, normalize, label) {
+    let response;
+    try {
+      response = await v2("GET", `/workspace/files${pathQuery(path)}`);
+    } catch (error) {
+      if (error?.status === 404 && error?.code === "PLAY_PATH_NOT_FOUND") {
+        managedRevisions.set(path, null);
+      }
+      throw error;
+    }
+    const content = fileContent(response, label);
+    const revision = fileRevision(response, label);
+    const parsed = parseJsonDocument(content, normalize, label);
+    managedRevisions.set(path, revision);
+    return parsed;
+  }
+  async function putJsonFile(path, value, normalize, label) {
+    const normalized = normalize(value, label);
+    const body2 = {
+      content: JSON.stringify(normalized),
+      expectedRevision: expectedRevision(path)
+    };
+    try {
+      const response = await v2("PUT", `/workspace/files${pathQuery(path)}`, body2);
+      const revision = fileRevision(response, label);
+      managedRevisions.set(path, revision);
+    } catch (error) {
+      if (error?.status === 409 && error?.code === "PLAY_FILE_REVISION_CONFLICT") {
+        invalidateRevision(path);
+      } else if (error instanceof TypeError) {
+        invalidateRevision(path);
+      }
+      throw error;
+    }
+    return normalized;
+  }
+  function retryLimit(options) {
+    const value = options?.maxRetries ?? options?.retries ?? 3;
+    if (!Number.isSafeInteger(value) || value < 1 || value > 5) {
+      throw new TypeError("maxRetries must be an integer from 1 to 5");
+    }
+    return value;
+  }
+  async function updateJsonFile({ getFresh, putFresh, mutator, options }) {
+    if (typeof mutator !== "function") throw new TypeError("mutator must be a function");
+    const maxRetries = retryLimit(options);
+    for (let retry = 0; ; retry += 1) {
+      const current3 = await getFresh();
+      const next = await mutator(current3);
+      try {
+        return await putFresh(next);
+      } catch (error) {
+        if (error?.status !== 409 || error?.code !== "PLAY_FILE_REVISION_CONFLICT" || retry >= maxRetries) {
+          throw error;
+        }
+      }
+    }
+  }
+  return {
+    mode: "live",
+    apiRoot,
+    chromeEventsUrl: `${apiRoot}/chrome/events`,
+    v1Root,
+    async getChrome() {
+      return normalizeChrome(await v2("GET", "/chrome"));
+    },
+    async putChrome(mode) {
+      return normalizeChrome(await v2("PUT", "/chrome", { mode }));
+    },
+    async getWorkspace() {
+      return normalizeWorkspace(await v2("GET", "/workspace"));
+    },
+    async putWorkspace(path) {
+      return normalizeWorkspace(await v2("PUT", "/workspace", { path }));
+    },
+    async createDirs(path) {
+      return v2("POST", "/workspace/dirs", { path });
+    },
+    async listFiles(prefix = "") {
+      return v2("GET", `/workspace/files?list=${encodeURIComponent(prefix)}`);
+    },
+    async getFile(path) {
+      const response = await v2("GET", `/workspace/files${pathQuery(path)}`);
+      return {
+        path: response.path,
+        content: fileContent(response, path),
+        ...response.revision === void 0 ? {} : { revision: response.revision }
+      };
+    },
+    async putFile(path, content, options = {}) {
+      if (typeof content !== "string") throw new TypeError("content must be a string");
+      const body2 = { content };
+      if (options !== null && typeof options === "object" && Object.hasOwn(options, "expectedRevision")) {
+        body2.expectedRevision = options.expectedRevision;
+      }
+      return v2("PUT", `/workspace/files${pathQuery(path)}`, body2);
+    },
+    getCatalog() {
+      return getJsonFile("catalog.json", normalizeCatalog, "catalog");
+    },
+    putCatalog(catalog2) {
+      return putJsonFile("catalog.json", catalog2, normalizeCatalog, "catalog");
+    },
+    updateCatalog(mutator, options) {
+      return updateJsonFile({
+        getFresh: async () => {
+          try {
+            return await getJsonFile("catalog.json", normalizeCatalog, "catalog");
+          } catch (error) {
+            if (error?.status === 404 && error?.code === "PLAY_PATH_NOT_FOUND") {
+              return { playthroughs: [] };
+            }
+            throw error;
+          }
+        },
+        putFresh: (value) => putJsonFile("catalog.json", value, normalizeCatalog, "catalog"),
+        mutator,
+        options
+      });
+    },
+    getTimeline(playthrough) {
+      const path = timelinePath(playthrough);
+      return getJsonFile(path, normalizeTimeline, "timeline");
+    },
+    putTimeline(playthrough, timeline) {
+      const path = timelinePath(playthrough);
+      return putJsonFile(path, timeline, normalizeTimeline, "timeline");
+    },
+    updateTimeline(playthrough, mutator, options) {
+      const path = timelinePath(playthrough);
+      return updateJsonFile({
+        getFresh: () => getJsonFile(path, normalizeTimeline, "timeline"),
+        putFresh: (value) => putJsonFile(path, value, normalizeTimeline, "timeline"),
+        mutator,
+        options
+      });
+    },
+    async getMessages(sessionId) {
+      const response = await v2("GET", `/sessions/${encodeURIComponent(sessionId)}/messages`);
+      return normalizeSessionMessages(response);
+    },
+    async getImportContextBinding(sessionId) {
+      const response = await v2("GET", `/sessions/${encodeURIComponent(sessionId)}/import-context`);
+      return response?.binding ?? null;
+    },
+    async putImportContextBinding(sessionId, reference) {
+      const response = await v2("PUT", `/sessions/${encodeURIComponent(sessionId)}/import-context`, { reference });
+      return response?.binding ?? null;
+    },
+    async deleteImportContextBinding(sessionId) {
+      const response = await v2("DELETE", `/sessions/${encodeURIComponent(sessionId)}/import-context`, {});
+      return response?.binding ?? null;
+    },
+    async getFocus(playthrough) {
+      const playthroughId = playthrough?.id;
+      if (typeof playthroughId !== "string" || playthroughId.trim() === "") {
+        throw new TypeError("playthrough.id must be a non-empty string");
+      }
+      const focus = normalizeFocus(await v2("GET", `/playthroughs/${encodeURIComponent(playthroughId)}/focus`));
+      if (focus.playthroughId !== playthroughId) {
+        throw new TypeError("focus.playthroughId does not match playthrough.id");
+      }
+      return focus;
+    },
+    detachPlaythroughSession(playthroughId, sessionId) {
+      if (typeof playthroughId !== "string" || playthroughId === "") throw new TypeError("playthroughId is required");
+      if (typeof sessionId !== "string" || sessionId === "") throw new TypeError("sessionId is required");
+      return v2("POST", `/playthroughs/${encodeURIComponent(playthroughId)}/detach-session`, { sessionId });
+    },
+    postUserMessage(sessionId, text2) {
+      return v2("POST", `/sessions/${encodeURIComponent(sessionId)}/user-message`, { text: text2 });
+    },
+    postBranch(sessionId, atEventId) {
+      if (!Number.isSafeInteger(atEventId) || atEventId < 0) {
+        throw new TypeError("atEventId must be a non-negative integer");
+      }
+      return v2("POST", `/sessions/${encodeURIComponent(sessionId)}/branch`, { atEventId });
+    },
+    postSession(selectionFromSessionId, importContextRef) {
+      const body2 = {
+        ...typeof selectionFromSessionId === "string" && selectionFromSessionId !== "" ? { selectionFromSessionId } : {},
+        ...importContextRef === void 0 ? {} : { importContextRef }
+      };
+      return v2("POST", "/sessions", body2);
+    },
+    getCharacterSelection,
+    async getSelection(sessionId) {
+      const response = await getCharacterSelection(sessionId);
+      return response?.selection ?? null;
+    },
+    putCharacterSelection(sessionId, characterCardId, character = {}) {
+      if (typeof sessionId !== "string" || sessionId === "") throw new TypeError("sessionId is required");
+      if (typeof characterCardId !== "string" || characterCardId === "") {
+        throw new TypeError("characterCardId is required");
+      }
+      if (character === null || typeof character !== "object" || Array.isArray(character)) {
+        throw new TypeError("character selection options must be an object");
+      }
+      return v1("POST", "/character-selection", {
+        sessionId,
+        characterCardId,
+        character
+      });
+    },
+    getCharacters() {
+      return v1("GET", "/characters");
+    },
+    putCharacterOrder(mode, characterIds) {
+      return v1("PUT", "/characters/order", {
+        mode,
+        ...characterIds === void 0 ? {} : { characterIds }
+      });
+    },
+    relinkCharacter(previousCharacterId, characterId) {
+      return v1("POST", "/characters/relink", { previousCharacterId, characterId });
+    },
+    relinkPlaythroughCharacter(playthroughId, characterId) {
+      if (typeof playthroughId !== "string" || playthroughId === "") throw new TypeError("playthroughId is required");
+      if (typeof characterId !== "string" || characterId === "") throw new TypeError("characterId is required");
+      return v2("POST", `/playthroughs/${encodeURIComponent(playthroughId)}/relink-character`, { characterId });
+    },
+    getCharacter(id) {
+      return v1("GET", `/characters/${encodeURIComponent(id)}`);
+    },
+    getCharacterRegexScripts(id) {
+      return v1("GET", `/characters/${encodeURIComponent(id)}/regex-scripts`);
+    },
+    putCharacterRegexScripts(id, regexScripts) {
+      return v1("PUT", `/characters/${encodeURIComponent(id)}/regex-scripts`, { regexScripts });
+    },
+    getPreset(id) {
+      return v1("GET", `/presets/${encodeURIComponent(id)}`);
+    },
+    getPresetRegexScripts(id) {
+      return v1("GET", `/presets/${encodeURIComponent(id)}/regex-scripts`);
+    },
+    putPresetRegexScripts(id, regexScripts) {
+      return v1("PUT", `/presets/${encodeURIComponent(id)}/regex-scripts`, { regexScripts });
+    },
+    getActive(sessionId) {
+      const query = typeof sessionId === "string" && sessionId !== "" ? `?sessionId=${encodeURIComponent(sessionId)}` : "";
+      return v1("GET", `/active${query}`);
+    },
+    async putGreetingIndex(sessionId, greetingIndex) {
+      if (typeof sessionId !== "string" || sessionId === "") throw new TypeError("sessionId is required");
+      if (!Number.isSafeInteger(greetingIndex) || greetingIndex < 0) {
+        throw new TypeError("greetingIndex must be a non-negative integer");
+      }
+      const current3 = await getCharacterSelection(sessionId);
+      if (typeof current3?.selection?.characterCardId !== "string") {
+        throw new TypeError("character selection is empty");
+      }
+      return v1("POST", "/character-selection", {
+        sessionId,
+        characterCardId: current3.selection.characterCardId,
+        character: { ...current3.selection.character ?? {}, greetingIndex }
+      });
+    }
+  };
+}
+
+// packages/client/src/play/regex-panel.js
+var import_react15 = require("react");
+var h12 = createLocalizedElement(import_react15.createElement);
+var EMPTY_DOCUMENT = Object.freeze({ schemaVersion: 1, rules: Object.freeze([]) });
+var SCOPE_KINDS = Object.freeze(["global", "preset", "character"]);
+function reorderRegexRulesAtBoundary(rules, fromIndex, boundary) {
+  return reorderAtBoundary(rules, fromIndex, boundary);
+}
+function reorderRegexScopeAtBoundary(rules, kind, fromIndex, boundary) {
+  const indexes = rules.map((rule, index) => rule?.scope?.kind === kind ? index : -1).filter((index) => index >= 0);
+  const reordered = reorderRegexRulesAtBoundary(indexes.map((index) => rules[index]), fromIndex, boundary);
+  if (reordered === indexes) return rules;
+  const next = [...rules];
+  indexes.forEach((index, orderedIndex) => {
+    next[index] = reordered[orderedIndex];
+  });
+  return next;
+}
+function activeRegexBindings(snapshot) {
+  return {
+    presetId: typeof snapshot?.selection?.presetId === "string" ? snapshot.selection.presetId : null,
+    characterId: typeof snapshot?.selection?.characterCardId === "string" ? snapshot.selection.characterCardId : typeof snapshot?.selection?.characterId === "string" ? snapshot.selection.characterId : null
+  };
+}
+function scopeFor(kind, bindings) {
+  return {
+    kind,
+    resourceId: kind === "global" ? null : kind === "preset" ? bindings.presetId : bindings.characterId
+  };
+}
+function downloadRegexScripts(rules, kind) {
+  const scripts = exportNativeRegexScripts(rules);
+  const blob = new Blob([JSON.stringify(scripts, null, 2)], { type: "application/json" });
+  const url = URL.createObjectURL(blob);
+  const anchor = window.document.createElement("a");
+  anchor.href = url;
+  anchor.download = `regex-${kind}.json`;
+  anchor.click();
+  URL.revokeObjectURL(url);
+}
+function Field5({ labelKey, children }) {
+  return h12(
+    "label",
+    { className: "dtv-field" },
+    h12("span", { className: "dtv-label" }, uiMessage(labelKey)),
+    children
+  );
+}
+async function activeResourceRegexRules(client, bindings) {
+  const [presetResponse, characterResponse] = await Promise.all([
+    typeof bindings.presetId === "string" && typeof client.getPresetRegexScripts === "function" ? client.getPresetRegexScripts(bindings.presetId) : typeof bindings.presetId === "string" && typeof client.getPreset === "function" ? client.getPreset(bindings.presetId) : null,
+    typeof bindings.characterId === "string" && typeof client.getCharacterRegexScripts === "function" ? client.getCharacterRegexScripts(bindings.characterId) : typeof bindings.characterId === "string" && typeof client.getCharacter === "function" ? client.getCharacter(bindings.characterId) : null
+  ]);
+  return {
+    preset: resourceRegexInventory(presetResponse?.regexScripts ?? presetResponse?.preset ?? presetResponse, {
+      kind: "preset",
+      resourceId: bindings.presetId
+    }),
+    character: resourceRegexInventory(characterResponse?.regexScripts ?? characterResponse?.character ?? characterResponse, {
+      kind: "character",
+      resourceId: bindings.characterId
+    })
+  };
+}
+async function putActiveResourceRegexRules(client, kind, resourceId, rules) {
+  if (typeof resourceId !== "string") throw new TypeError(`${kind} regex resource is not bound`);
+  const method = kind === "preset" ? client.putPresetRegexScripts : client.putCharacterRegexScripts;
+  if (typeof method !== "function") throw new TypeError(`${kind} regex resource API is unavailable`);
+  const response = await method.call(client, resourceId, rules.map(nativeRegexScript));
+  return resourceRegexInventory(response?.regexScripts ?? [], { kind, resourceId });
+}
+function resourceEditableRule(rule) {
+  return {
+    ...rule,
+    sourceDisplayEligible: true
+  };
+}
+function stageLegacyScopedRegexRules(document2, resourceRules, bindings) {
+  const nextDocument = {
+    ...document2,
+    rules: [...document2.rules]
+  };
+  const nextResourceRules = {
+    preset: [...resourceRules.preset],
+    character: [...resourceRules.character]
+  };
+  let migrated = 0;
+  for (const [kind, resourceId] of [
+    ["preset", bindings.presetId],
+    ["character", bindings.characterId]
+  ]) {
+    if (typeof resourceId !== "string") continue;
+    const local = nextDocument.rules.filter((rule) => rule.scope.kind === kind && rule.scope.resourceId === resourceId);
+    if (local.length === 0) continue;
+    const existingIds = new Set(nextResourceRules[kind].map((rule) => rule.id));
+    for (const rule of local) {
+      if (!existingIds.has(rule.id)) {
+        nextResourceRules[kind].push(resourceEditableRule(rule));
+        existingIds.add(rule.id);
+      }
+    }
+    nextDocument.rules = nextDocument.rules.filter((rule) => !(rule.scope.kind === kind && rule.scope.resourceId === resourceId));
+    migrated += local.length;
+  }
+  return { document: nextDocument, resourceRules: nextResourceRules, migrated };
+}
+function RuleEditor({
+  rule,
+  busy,
+  update,
+  remove,
+  sourceOwned = false,
+  dragKind,
+  dragIndex,
+  dragging,
+  onPointerDown,
+  onPointerMove,
+  onPointerUp,
+  onPointerCancel
+}) {
+  const set = (patch) => update({ ...rule, ...patch });
+  const setScope = (patch) => set({ scope: { ...rule.scope, ...patch } });
+  const stateLabel = uiMessage(rule.enabled ? "common.enabled" : "common.disabled");
+  return h12(
+    "details",
+    {
+      className: "dtv-entry dtv-regex-rule",
+      "data-enabled": rule.enabled,
+      "data-regex-kind": dragKind,
+      "data-regex-index": dragIndex,
+      "data-dragging": dragging || void 0
+    },
+    h12(
+      "summary",
+      null,
+      h12("button", {
+        className: "dtv-regex-drag",
+        type: "button",
+        disabled: busy,
+        title: uiMessage("regex.dragToReorder"),
+        "aria-label": uiMessage("regex.dragToReorder"),
+        "aria-pressed": dragging,
+        onClick: (event) => {
+          event.preventDefault();
+          event.stopPropagation();
+        },
+        onPointerDown,
+        onPointerMove,
+        onPointerUp,
+        onPointerCancel
+      }, "\u283F"),
+      h12("input", {
+        type: "checkbox",
+        checked: rule.enabled,
+        disabled: busy,
+        title: stateLabel,
+        "aria-label": stateLabel,
+        onClick: (event) => event.stopPropagation(),
+        onChange: (event) => set({ enabled: event.target.checked })
+      }),
+      h12("span", { className: "dtv-entry-name" }, rawText(rule.name || unwrapText(uiMessage("regex.unnamed")))),
+      h12("span", { className: "dtv-entry-state" }, stateLabel)
+    ),
+    h12(
+      "div",
+      { className: "dtv-entry-body" },
+      h12(Field5, { labelKey: "regex.name" }, h12("input", {
+        className: "dtv-input",
+        value: rule.name,
+        disabled: busy,
+        onChange: (event) => set({ name: event.target.value })
+      })),
+      h12(Field5, { labelKey: "regex.find" }, h12("textarea", {
+        className: "dtv-textarea dtv-regex-expression",
+        value: rule.find,
+        disabled: busy,
+        spellCheck: false,
+        onChange: (event) => set({ find: event.target.value })
+      })),
+      h12(Field5, { labelKey: "regex.replace" }, h12("textarea", {
+        className: "dtv-textarea dtv-regex-expression",
+        value: rule.replace,
+        disabled: busy,
+        spellCheck: false,
+        onChange: (event) => set({ replace: event.target.value })
+      })),
+      h12(
+        "div",
+        { className: "dtv-entry-grid" },
+        h12(Field5, { labelKey: "regex.flags" }, h12("input", {
+          className: "dtv-input",
+          value: rule.flags,
+          disabled: busy,
+          spellCheck: false,
+          onChange: (event) => set({ flags: event.target.value })
+        })),
+        h12(Field5, { labelKey: "regex.target" }, h12(
+          "select",
+          {
+            className: "dtv-select",
+            value: rule.target,
+            disabled: busy,
+            onChange: (event) => set({ target: event.target.value })
+          },
+          h12("option", { value: "assistant" }, uiMessage("regex.target.assistant")),
+          h12("option", { value: "user" }, uiMessage("regex.target.user")),
+          h12("option", { value: "both" }, uiMessage("regex.target.both"))
+        ))
+      ),
+      h12(
+        "div",
+        { className: "dtv-entry-grid" },
+        h12(Field5, { labelKey: "regex.scope" }, h12(
+          "select",
+          {
+            className: "dtv-select",
+            value: rule.scope.kind,
+            disabled: true,
+            onChange: (event) => setScope({
+              kind: event.target.value,
+              resourceId: event.target.value === "global" ? null : rule.scope.resourceId
+            })
+          },
+          ...SCOPE_KINDS.map((kind) => h12("option", { key: kind, value: kind }, uiMessage(`regex.scope.${kind}`)))
+        )),
+        rule.scope.kind === "global" ? null : h12(Field5, { labelKey: "regex.resourceId" }, h12("input", {
+          className: "dtv-input",
+          value: rule.scope.resourceId ?? "",
+          disabled: true,
+          onChange: (event) => setScope({ resourceId: event.target.value || null })
+        }))
+      ),
+      sourceOwned ? h12("p", { className: "dtv-note" }, uiMessage(rule.sourceDisplayEligible ? "regex.sourceOwnedDisplay" : "regex.sourceOwnedPromptOnly")) : null,
+      h12("div", { className: "dtv-entry-actions" }, h12("button", {
+        className: "dtv-button dtv-danger",
+        type: "button",
+        disabled: busy,
+        onClick: remove
+      }, uiMessage("common.delete")))
+    )
+  );
+}
+function RegexDropPlaceholder() {
+  return h12("div", {
+    className: "dtv-regex-drop-placeholder",
+    "aria-hidden": true
+  }, uiMessage("preset.dropHere"));
+}
+function regexInsertionBoundary(event, kind) {
+  const target = document.elementFromPoint(event.clientX, event.clientY)?.closest("[data-regex-index]");
+  if (target === null || target.dataset.regexKind !== kind) return null;
+  const index = Number(target.dataset.regexIndex);
+  const bounds = target.getBoundingClientRect();
+  return event.clientY < bounds.top + bounds.height / 2 ? index : index + 1;
+}
+function RegexScopeSection({
+  kind,
+  bindings,
+  editableRules,
+  sourceRules,
+  busy,
+  add,
+  importJson,
+  exportJson,
+  update,
+  remove,
+  updateSource,
+  removeSource,
+  move,
+  dragFrom,
+  dropIndex,
+  setDragFrom,
+  setDropIndex
+}) {
+  const rules = [...editableRules, ...sourceRules];
+  const unbound = kind === "preset" && bindings.presetId === null ? uiMessage("regex.noPreset") : kind === "character" && bindings.characterId === null ? uiMessage("regex.noCharacter") : null;
+  const actionsDisabled = busy || unbound !== null;
+  return h12(
+    "section",
+    { className: "dtv-resource dtv-regex-section", "data-scope": kind },
+    h12(
+      "div",
+      { className: "dtv-regex-section-title" },
+      h12("div", { className: "dtv-resource-title" }, uiMessage(`regex.scope.${kind}`)),
+      h12("span", { className: "dtv-item-count" }, rawText(String(rules.length)))
+    ),
+    unbound === null ? null : h12("p", { className: "dtv-note" }, unbound),
+    h12(
+      "div",
+      { className: "dtv-book-toolbar" },
+      h12("button", { className: "dtv-button", type: "button", disabled: actionsDisabled, onClick: importJson }, uiMessage("common.importJson")),
+      h12("button", { className: "dtv-button", type: "button", disabled: busy, onClick: () => exportJson(rules) }, uiMessage("common.exportJson")),
+      h12("button", { className: "dtv-button", type: "button", disabled: actionsDisabled, onClick: add }, uiMessage("regex.add"))
+    ),
+    rules.length === 0 ? h12("p", { className: "dtv-note" }, uiMessage("regex.emptyScope")) : [
+      ...rules.flatMap((rule, index) => {
+        const sourceIndex = index - editableRules.length;
+        const sourceOwned = sourceIndex >= 0;
+        return [
+          dragFrom?.kind === kind && dropIndex === index ? h12(RegexDropPlaceholder, { key: `${kind}-drop-${index}` }) : null,
+          h12(RuleEditor, {
+            key: `${kind}-${sourceOwned ? "source" : "editable"}-${rule.id}-${index}`,
+            rule,
+            busy,
+            sourceOwned,
+            dragKind: kind,
+            dragIndex: index,
+            dragging: dragFrom?.kind === kind && dragFrom.index === index,
+            update: sourceOwned ? (next) => updateSource(sourceIndex, next) : update,
+            remove: sourceOwned ? () => removeSource(sourceIndex) : () => remove(rule.id),
+            onPointerDown: (event) => {
+              if (busy) return;
+              event.preventDefault();
+              event.stopPropagation();
+              event.currentTarget.setPointerCapture(event.pointerId);
+              setDragFrom({ kind, index });
+              setDropIndex(index + 1);
+            },
+            onPointerMove: (event) => {
+              if (!event.currentTarget.hasPointerCapture(event.pointerId)) return;
+              const boundary = regexInsertionBoundary(event, kind);
+              if (boundary !== null) setDropIndex(boundary);
+            },
+            onPointerUp: (event) => {
+              event.preventDefault();
+              const boundary = regexInsertionBoundary(event, kind) ?? dropIndex ?? index + 1;
+              if (event.currentTarget.hasPointerCapture(event.pointerId)) {
+                event.currentTarget.releasePointerCapture(event.pointerId);
+              }
+              move(index, boundary);
+              setDragFrom(null);
+              setDropIndex(null);
+            },
+            onPointerCancel: () => {
+              setDragFrom(null);
+              setDropIndex(null);
+            }
+          })
+        ];
+      }),
+      dragFrom?.kind === kind && dropIndex === rules.length ? h12(RegexDropPlaceholder, { key: `${kind}-drop-end` }) : null
+    ]
+  );
+}
+function RegexPanel({ client, activeSnapshot, close }) {
+  const [document2, setDocument] = (0, import_react15.useState)(EMPTY_DOCUMENT);
+  const [savedDocument, setSavedDocument] = (0, import_react15.useState)(EMPTY_DOCUMENT);
+  const [resourceRules, setResourceRules] = (0, import_react15.useState)({ preset: [], character: [] });
+  const [savedResourceRules, setSavedResourceRules] = (0, import_react15.useState)({ preset: [], character: [] });
+  const [busy, setBusy] = (0, import_react15.useState)(false);
+  const [status, setStatus] = (0, import_react15.useState)({ text: uiMessage("common.loading"), error: false });
+  const [dragFrom, setDragFrom] = (0, import_react15.useState)(null);
+  const [dropIndex, setDropIndex] = (0, import_react15.useState)(null);
+  const fileInput = (0, import_react15.useRef)(null);
+  const importScope = (0, import_react15.useRef)("global");
+  const bindings = activeRegexBindings(activeSnapshot);
+  const dirty = JSON.stringify(document2) !== JSON.stringify(savedDocument) || JSON.stringify(resourceRules) !== JSON.stringify(savedResourceRules);
+  const load = async () => {
+    setBusy(true);
+    try {
+      const [next, nextResourceRules] = await Promise.all([
+        getRegexDocument(client),
+        activeResourceRegexRules(client, bindings)
+      ]);
+      const staged = stageLegacyScopedRegexRules(next, nextResourceRules, bindings);
+      setDocument(staged.document);
+      setSavedDocument(next);
+      setResourceRules(staged.resourceRules);
+      setSavedResourceRules(nextResourceRules);
+      const count = staged.document.rules.length + staged.resourceRules.preset.length + staged.resourceRules.character.length;
+      setStatus({
+        text: staged.migrated > 0 ? uiMessage("regex.legacyMigrationPending", { count: staged.migrated }) : uiMessage("regex.loaded", { count }),
+        error: false
+      });
+    } catch (reason) {
+      setStatus({ text: rawText(reason instanceof Error ? reason.message : String(reason)), error: true });
+    } finally {
+      setBusy(false);
+    }
+  };
+  (0, import_react15.useEffect)(() => {
+    load();
+  }, [client, bindings.presetId, bindings.characterId]);
+  const persist = async (next, nextResourceRules = resourceRules, { rethrow = false } = {}) => {
+    setBusy(true);
+    try {
+      const [saved, savedPresetRules, savedCharacterRules] = await Promise.all([
+        JSON.stringify(next) === JSON.stringify(savedDocument) ? next : putRegexDocument(client, next),
+        JSON.stringify(nextResourceRules.preset) === JSON.stringify(savedResourceRules.preset) ? nextResourceRules.preset : putActiveResourceRegexRules(client, "preset", bindings.presetId, nextResourceRules.preset),
+        JSON.stringify(nextResourceRules.character) === JSON.stringify(savedResourceRules.character) ? nextResourceRules.character : putActiveResourceRegexRules(client, "character", bindings.characterId, nextResourceRules.character)
+      ]);
+      const savedResources = { preset: savedPresetRules, character: savedCharacterRules };
+      setDocument(saved);
+      setSavedDocument(saved);
+      setResourceRules(savedResources);
+      setSavedResourceRules(savedResources);
+      const count = saved.rules.length + savedPresetRules.length + savedCharacterRules.length;
+      setStatus({ text: uiMessage("regex.saved", { count }), error: false });
+      window.dispatchEvent(new Event(CLIENT_REFRESH_EVENT));
+    } catch (reason) {
+      setStatus({ text: rawText(reason instanceof Error ? reason.message : String(reason)), error: true });
+      if (rethrow) throw reason;
+    } finally {
+      setBusy(false);
+    }
+  };
+  const guardedLoad = () => {
+    if (dirty && !window.confirm(unwrapText(uiMessage("regex.confirmReload")))) return;
+    load();
+  };
+  const guardedClose = () => {
+    if (dirty && !window.confirm(unwrapText(uiMessage("regex.confirmClose")))) return;
+    close();
+  };
+  const addRule = (kind) => {
+    const rule = normalizeRegexRule({
+      name: unwrapText(uiMessage("regex.newRule")),
+      enabled: true,
+      find: "",
+      replace: "",
+      flags: "g",
+      target: "assistant"
+    }, { scope: scopeFor(kind, bindings) });
+    if (kind === "global") {
+      setDocument((current3) => ({ ...current3, rules: [...current3.rules, rule] }));
+      return;
+    }
+    setResourceRules((current3) => ({
+      ...current3,
+      [kind]: [...current3[kind], resourceEditableRule(rule)]
+    }));
+  };
+  const updateRule = (next) => setDocument((current3) => ({
+    ...current3,
+    rules: current3.rules.map((rule) => rule.id === next.id ? next : rule)
+  }));
+  const removeRule = (id) => setDocument((current3) => ({
+    ...current3,
+    rules: current3.rules.filter((rule) => rule.id !== id)
+  }));
+  const updateSourceRule = (kind, index, next) => setResourceRules((current3) => ({
+    ...current3,
+    [kind]: current3[kind].map((rule, ruleIndex) => ruleIndex === index ? next : rule)
+  }));
+  const removeSourceRule = (kind, index) => setResourceRules((current3) => ({
+    ...current3,
+    [kind]: current3[kind].filter((_rule, ruleIndex) => ruleIndex !== index)
+  }));
+  const moveRule = (kind, fromIndex, boundary) => {
+    if (kind === "global") {
+      setDocument((current3) => ({
+        ...current3,
+        rules: reorderRegexScopeAtBoundary(current3.rules, kind, fromIndex, boundary)
+      }));
+      return;
+    }
+    setResourceRules((current3) => ({
+      ...current3,
+      [kind]: reorderRegexRulesAtBoundary(current3[kind], fromIndex, boundary)
+    }));
+  };
+  const importFile = async (event) => {
+    const file = event.target.files?.[0];
+    event.target.value = "";
+    if (!file) return;
+    setBusy(true);
+    try {
+      const imported = importRegexDocument(JSON.parse(await file.text()), {
+        scope: scopeFor(importScope.current, bindings)
+      });
+      if (importScope.current === "global") {
+        await persist(
+          { ...document2, rules: [...document2.rules, ...imported] },
+          resourceRules,
+          { rethrow: true }
+        );
+      } else {
+        const nextResourceRules = {
+          ...resourceRules,
+          [importScope.current]: [
+            ...resourceRules[importScope.current],
+            ...imported.map(resourceEditableRule)
+          ]
+        };
+        await persist(document2, nextResourceRules, { rethrow: true });
+      }
+      setStatus({ text: uiMessage("regex.imported", { count: imported.length }), error: false });
+    } catch (reason) {
+      announceImportFailure(reason);
+      setStatus({ text: rawText(reason instanceof Error ? reason.message : String(reason)), error: true });
+      setBusy(false);
+    }
+  };
+  const title = uiMessage("regex.title");
+  const closeLabel = uiMessage("panel.close", { title: unwrapText(title) });
+  return h12(
+    "div",
+    { className: "dtv-panel dtv-regex-panel" },
+    h12(
+      "div",
+      { className: "dtv-header" },
+      h12("div", { className: "dtv-title" }, title),
+      h12("button", { className: "dtv-close", type: "button", title: closeLabel, "aria-label": closeLabel, onClick: guardedClose }, "\u2715")
+    ),
+    h12(
+      "div",
+      { className: "dtv-body" },
+      h12("p", { className: "dtv-note" }, uiMessage("regex.displayOnlyNote")),
+      h12("input", { ref: fileInput, type: "file", accept: "application/json,.json", hidden: true, onChange: importFile }),
+      ...SCOPE_KINDS.map((kind) => h12(RegexScopeSection, {
+        key: kind,
+        kind,
+        bindings,
+        editableRules: kind === "global" ? document2.rules.filter((rule) => rule.scope.kind === "global") : [],
+        sourceRules: kind === "preset" ? resourceRules.preset : kind === "character" ? resourceRules.character : [],
+        busy,
+        add: () => addRule(kind),
+        importJson: () => {
+          importScope.current = kind;
+          fileInput.current?.click();
+        },
+        exportJson: (rules) => downloadRegexScripts(rules, kind),
+        update: updateRule,
+        remove: removeRule,
+        updateSource: (index, next) => updateSourceRule(kind, index, next),
+        removeSource: (index) => removeSourceRule(kind, index),
+        move: (fromIndex, toIndex) => moveRule(kind, fromIndex, toIndex),
+        dragFrom,
+        dropIndex,
+        setDragFrom,
+        setDropIndex
+      })),
+      h12("div", { className: "dtv-status", "data-error": status.error }, status.text),
+      h12(
+        "div",
+        { className: "dtv-regex-footer" },
+        h12("button", { className: "dtv-button", type: "button", disabled: busy, onClick: guardedLoad }, uiMessage("common.reload")),
+        h12("button", { className: "dtv-button dtv-primary", type: "button", disabled: busy || !dirty, onClick: () => persist(document2) }, busy ? uiMessage("common.working") : uiMessage("common.saveChanges"))
+      )
+    )
+  );
+}
+
+// packages/client/src/play/workspace-setting.js
+function isRecord5(value) {
+  return value !== null && typeof value === "object" && !Array.isArray(value);
+}
+function pathOf(value) {
+  return typeof value?.path === "string" && value.path !== "" ? value.path : null;
+}
+function titleOf(value) {
+  if (typeof value?.title === "string" && value.title.trim() !== "") return value.title.trim();
+  if (typeof value?.name === "string" && value.name.trim() !== "") return value.name.trim();
+  return pathOf(value) ?? "";
+}
+function comparablePath(value) {
+  if (typeof value !== "string") return "";
+  const normalized = value.replaceAll("\\", "/").replace(/\/+$/, "");
+  return /^[a-z]:\//i.test(normalized) ? normalized.toLowerCase() : normalized;
+}
+function projectRpWorkspaceSetting({ workspace, items = [] } = {}) {
+  const currentPath = pathOf(workspace?.rootPath === null ? null : { path: workspace?.rootPath });
+  const available = (Array.isArray(items) ? items : []).filter((item) => isRecord5(item) && pathOf(item) !== null).map((item) => ({
+    id: item.workspaceId ?? item.id ?? pathOf(item),
+    path: pathOf(item),
+    title: titleOf(item)
+  }));
+  const current3 = currentPath === null ? null : available.find((item) => comparablePath(item.path) === comparablePath(currentPath)) ?? { id: `unavailable:${currentPath}`, path: currentPath, title: currentPath, unavailable: true };
+  const selected = workspace?.selected === true;
+  const currentAvailable = current3?.unavailable !== true && current3 !== null;
+  return {
+    currentPath,
+    current: current3,
+    available,
+    selectedPath: current3?.path ?? "",
+    selected,
+    currentAvailable,
+    ready: selected && currentAvailable
+  };
+}
+function workspaceSelectionRequest(path, { setting } = {}) {
+  if (typeof path !== "string" || path === "") throw new TypeError("workspace path must be a non-empty string");
+  if (setting?.ready === true && comparablePath(setting?.currentPath) === comparablePath(path)) return { path, changed: false };
+  return { path, changed: true };
+}
+
+// packages/client/src/play/chrome-service.js
+var CHROME_MODES2 = /* @__PURE__ */ new Set(["native", "play"]);
+function serviceError() {
+  const error = new Error("Chrome mode service is disposed");
+  error.code = "CHROME_SERVICE_DISPOSED";
+  return error;
+}
+function normalizeSnapshot(value) {
+  if (value === null || typeof value !== "object" || Array.isArray(value)) throw new TypeError("chrome snapshot must be an object");
+  if (!CHROME_MODES2.has(value.mode)) throw new TypeError("chrome snapshot mode must be native or play");
+  if (value.revision !== void 0 && value.revision !== null && (typeof value.revision !== "string" || value.revision === "")) {
+    throw new TypeError("chrome snapshot revision must be a non-empty string or null");
+  }
+  return Object.freeze({ mode: value.mode, revision: value.revision ?? null });
+}
+function safely(action) {
+  try {
+    action();
+  } catch {
+  }
+}
+function createChromeModeServiceCore({
+  initial = { mode: "native", revision: null },
+  read,
+  write
+} = {}) {
+  if (typeof read !== "function") throw new TypeError("read must be a function");
+  if (typeof write !== "function") throw new TypeError("write must be a function");
+  let snapshot = normalizeSnapshot(initial);
+  let disposed = false;
+  let queue = Promise.resolve();
+  let intentMode = snapshot.mode;
+  let intentVersion = 0;
+  let pendingWrites = 0;
+  const listeners = /* @__PURE__ */ new Set();
+  const effects = /* @__PURE__ */ new Set();
+  const notify = () => {
+    for (const listener of [...listeners]) safely(() => listener(snapshot));
+  };
+  const stopEffect = (effect) => {
+    effect.generation += 1;
+    if (effect.dispose !== null) safely(effect.dispose);
+    effect.dispose = null;
+  };
+  const startEffect = (effect) => {
+    if (!effect.active || disposed || snapshot.mode !== effect.mode) return;
+    const generation = ++effect.generation;
+    let result;
+    try {
+      result = effect.setup({ snapshot });
+    } catch {
+      return;
+    }
+    Promise.resolve(result).then((dispose) => {
+      if (typeof dispose !== "function") return;
+      if (!effect.active || disposed || effect.generation !== generation || snapshot.mode !== effect.mode) {
+        safely(dispose);
+        return;
+      }
+      effect.dispose = dispose;
+    }, () => {
+    });
+  };
+  const commit = (value) => {
+    const next = normalizeSnapshot(value);
+    if (next.mode === snapshot.mode && next.revision === snapshot.revision) return snapshot;
+    const previousMode = snapshot.mode;
+    snapshot = next;
+    if (previousMode !== next.mode) {
+      for (const effect of effects) stopEffect(effect);
+      for (const effect of effects) startEffect(effect);
+    }
+    notify();
+    return snapshot;
+  };
+  const enqueue = (action) => {
+    const result = queue.then(() => {
+      if (disposed) throw serviceError();
+      return action();
+    });
+    queue = result.catch(() => {
+    });
+    return result;
+  };
+  const planWrite = (mode) => {
+    if (!CHROME_MODES2.has(mode)) return Promise.reject(new TypeError("chrome mode must be native or play"));
+    const version = ++intentVersion;
+    intentMode = mode;
+    pendingWrites += 1;
+    return enqueue(async () => {
+      try {
+        const value = await write(mode);
+        if (disposed) throw serviceError();
+        const confirmed = commit(value);
+        if (version === intentVersion) intentMode = confirmed.mode;
+        return confirmed;
+      } catch (error) {
+        if (version === intentVersion) intentMode = snapshot.mode;
+        throw error;
+      } finally {
+        pendingWrites -= 1;
+      }
+    });
+  };
+  const face = Object.freeze({
+    getMode() {
+      return snapshot.mode;
+    },
+    getSnapshot() {
+      return snapshot;
+    },
+    subscribe(listener) {
+      if (typeof listener !== "function") throw new TypeError("listener must be a function");
+      if (disposed) return () => {
+      };
+      listeners.add(listener);
+      safely(() => listener(snapshot));
+      let active = true;
+      return () => {
+        if (!active) return;
+        active = false;
+        listeners.delete(listener);
+      };
+    },
+    refresh() {
+      const version = intentVersion;
+      return enqueue(async () => {
+        const value = await read();
+        if (disposed) throw serviceError();
+        const confirmed = commit(value);
+        if (version === intentVersion) intentMode = confirmed.mode;
+        return confirmed;
+      });
+    },
+    setMode(mode) {
+      return planWrite(mode);
+    },
+    switchMode() {
+      const next = intentMode === "native" ? "play" : "native";
+      return planWrite(next);
+    },
+    when(mode, setup) {
+      if (!CHROME_MODES2.has(mode)) throw new TypeError("chrome mode must be native or play");
+      if (typeof setup !== "function") throw new TypeError("setup must be a function");
+      if (disposed) return () => {
+      };
+      const effect = { mode, setup, active: true, generation: 0, dispose: null };
+      effects.add(effect);
+      startEffect(effect);
+      return () => {
+        if (!effect.active) return;
+        effect.active = false;
+        stopEffect(effect);
+        effects.delete(effect);
+      };
+    }
+  });
+  const internal = Object.freeze({
+    acceptSnapshot(value) {
+      if (disposed) throw serviceError();
+      const confirmed = commit(value);
+      if (pendingWrites === 0) {
+        intentMode = confirmed.mode;
+        intentVersion += 1;
+      }
+      return confirmed;
+    },
+    dispose() {
+      if (disposed) return;
+      disposed = true;
+      listeners.clear();
+      for (const effect of [...effects]) {
+        effect.active = false;
+        stopEffect(effect);
+      }
+      effects.clear();
+    }
+  });
+  return Object.freeze({ face, internal });
+}
+var chromeModeServiceConstants = Object.freeze({
+  modes: Object.freeze([...CHROME_MODES2]),
+  disposedCode: "CHROME_SERVICE_DISPOSED"
+});
+
+// packages/client/src/play/chrome-transport.js
+function startChromeModeTransport({
+  face,
+  internal,
+  eventsUrl,
+  EventSourceImpl = globalThis.EventSource,
+  focusTarget = globalThis.window,
+  pollIntervalMs = 1e3,
+  setIntervalImpl = globalThis.setInterval,
+  clearIntervalImpl = globalThis.clearInterval
+} = {}) {
+  if (typeof face?.refresh !== "function") throw new TypeError("face.refresh is required");
+  if (typeof internal?.acceptSnapshot !== "function") throw new TypeError("internal.acceptSnapshot is required");
+  if (typeof eventsUrl !== "string" || eventsUrl === "") throw new TypeError("eventsUrl is required");
+  if (!Number.isSafeInteger(pollIntervalMs) || pollIntervalMs < 250 || pollIntervalMs > 6e4) {
+    throw new TypeError("pollIntervalMs must be an integer from 250 to 60000");
+  }
+  if (typeof setIntervalImpl !== "function" || typeof clearIntervalImpl !== "function") {
+    throw new TypeError("timer functions are required");
+  }
+  let disposed = false;
+  let source = null;
+  let pollTimer = null;
+  const refresh = () => {
+    if (disposed) return Promise.resolve();
+    return Promise.resolve(face.refresh()).catch(() => {
+    });
+  };
+  const stopPolling = () => {
+    if (pollTimer === null) return;
+    clearIntervalImpl(pollTimer);
+    pollTimer = null;
+  };
+  const startPolling = () => {
+    if (disposed || pollTimer !== null) return;
+    pollTimer = setIntervalImpl(() => {
+      void refresh();
+    }, pollIntervalMs);
+  };
+  const acceptEvent = (event) => {
+    if (disposed) return;
+    try {
+      internal.acceptSnapshot(JSON.parse(String(event?.data ?? "")));
+    } catch {
+      void refresh();
+    }
+  };
+  const focus = () => {
+    void refresh();
+  };
+  focusTarget?.addEventListener?.("focus", focus);
+  if (typeof EventSourceImpl === "function") {
+    try {
+      source = new EventSourceImpl(eventsUrl);
+      source.addEventListener?.("chrome/change", acceptEvent);
+      source.addEventListener?.("open", stopPolling);
+      source.addEventListener?.("error", startPolling);
+    } catch {
+      source = null;
+      startPolling();
+    }
+  } else {
+    startPolling();
+  }
+  void refresh();
+  return () => {
+    if (disposed) return;
+    disposed = true;
+    stopPolling();
+    focusTarget?.removeEventListener?.("focus", focus);
+    source?.removeEventListener?.("chrome/change", acceptEvent);
+    source?.removeEventListener?.("open", stopPolling);
+    source?.removeEventListener?.("error", startPolling);
+    source?.close?.();
+    source = null;
+  };
+}
+
+// packages/client/src/index.js
+var h13 = createLocalizedElement(import_react16.createElement);
+var css11 = `
 .dtv-layer{position:absolute;inset:0;z-index:6;pointer-events:none;font-family:Inter,var(--dsw-font-family),sans-serif;color:var(--dsw-alias-label-primary)}
 .dtv-launcher{position:absolute;z-index:2;width:44px;height:44px;pointer-events:auto;overflow:hidden;border:0 solid transparent;border-radius:22px;background:transparent;box-shadow:none;transition:width .22s ease,height .22s ease,border-radius .22s ease,background-color .18s ease,box-shadow .18s ease;display:block}
+.dtv-launcher[data-open=true] .dtv-menu{overflow-y:auto}
 .dtv-launcher[data-open=true]{width:300px;height:376px;border-width:1px;border-color:var(--dsw-alias-border-l2);border-radius:18px;background:var(--dsw-alias-bg-base);box-shadow:var(--ds-shadow-3,0 12px 34px rgba(0,0,0,.24))}
 .dtv-ball-row{position:absolute;top:0;left:0;right:0;height:52px;display:flex;align-items:flex-start;pointer-events:none}.dtv-launcher[data-side=left] .dtv-ball-row{justify-content:flex-end}.dtv-launcher[data-vertical=up] .dtv-ball-row{top:auto;bottom:0;align-items:flex-end}
-.dtv-ball{pointer-events:auto;touch-action:none;user-select:none;width:44px;height:44px;flex:none;border:2px solid #fff;border-radius:50%;background:conic-gradient(from 225deg,#090909 0 56%,#b31319 56% 100%);box-shadow:0 0 0 2px #a50f16,0 6px 20px rgba(0,0,0,.34),inset 0 0 0 1px rgba(255,255,255,.28);color:#fff;font-size:13px;letter-spacing:-.5px;font-weight:850;text-shadow:0 1px 2px #000;cursor:grab;transition:filter .15s ease,transform .18s ease,box-shadow .18s ease}.dtv-ball:hover{filter:brightness(1.1);box-shadow:0 0 0 2px #d5222b,0 8px 24px rgba(0,0,0,.4),inset 0 0 0 1px rgba(255,255,255,.35)}.dtv-ball:active{cursor:grabbing}.dtv-launcher[data-open=true] .dtv-ball{transform:scale(.82) rotate(-8deg)}
-.dtv-menu{position:absolute;left:8px;right:8px;top:52px;bottom:8px;padding:1px;display:flex;flex-direction:column;gap:4px;opacity:0;transform:translateY(-6px);transition:opacity .13s ease .1s,transform .18s ease .08s}.dtv-launcher[data-open=true] .dtv-menu{opacity:1;transform:none}.dtv-launcher[data-vertical=up] .dtv-menu{top:8px;bottom:52px;transform:translateY(6px)}.dtv-launcher[data-open=true][data-vertical=up] .dtv-menu{transform:none}
-.dtv-menu-title{padding:5px 8px 7px;font-size:11px;font-weight:650;color:var(--dsw-alias-label-tertiary);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+@property --dtv-orb-a{syntax:"<color>";inherits:true;initial-value:#f7fbff}@property --dtv-orb-b{syntax:"<color>";inherits:true;initial-value:#18569d}@property --dtv-orb-ring{syntax:"<color>";inherits:true;initial-value:#174e8a}
+.dtv-ball{--dtv-orb-a:#f7fbff;--dtv-orb-b:#18569d;--dtv-orb-ring:#174e8a;pointer-events:auto;touch-action:none;user-select:none;position:relative;isolation:isolate;overflow:hidden;width:44px;height:44px;flex:none;border:2px solid #fff;border-radius:50%;background:transparent;box-shadow:0 0 0 2px var(--dtv-orb-ring),0 6px 20px rgba(0,0,0,.34),inset 0 0 0 1px rgba(255,255,255,.28);color:#fff;font-size:13px;letter-spacing:-.5px;font-weight:850;text-shadow:0 1px 2px #000;cursor:grab;transition:filter .15s ease,transform .18s ease,box-shadow .18s ease,--dtv-orb-a .32s ease,--dtv-orb-b .32s ease,--dtv-orb-ring .32s ease}.dtv-ball-face{position:absolute;inset:0;border-radius:inherit;background:conic-gradient(from 225deg,var(--dtv-orb-a) 0 50%,var(--dtv-orb-b) 50% 100%);z-index:-1}.dtv-ball-face[data-animate=true]{animation:dtv-orb-switch .48s cubic-bezier(.3,.7,.2,1)}.dtv-ball-label{position:relative;z-index:1}.dtv-ball:hover{filter:brightness(1.1);box-shadow:0 0 0 2px #2675c9,0 8px 24px rgba(0,0,0,.4),inset 0 0 0 1px rgba(255,255,255,.35)}.dtv-layer[data-chrome=play] .dtv-ball{--dtv-orb-a:#090909;--dtv-orb-b:#b31319;--dtv-orb-ring:#a50f16}.dtv-layer[data-chrome=play] .dtv-ball:hover{box-shadow:0 0 0 2px #d5222b,0 8px 24px rgba(0,0,0,.4),inset 0 0 0 1px rgba(255,255,255,.35)}.dtv-ball:active{cursor:grabbing}.dtv-launcher[data-open=true] .dtv-ball{transform:scale(.82) rotate(-8deg)}
+@keyframes dtv-orb-switch{to{transform:rotate(1turn)}}@media (prefers-reduced-motion:reduce){.dtv-ball{transition:filter .15s ease,transform .18s ease,box-shadow .18s ease}.dtv-ball-face[data-animate=true]{animation:none}}
+.dtv-menu{position:absolute;left:8px;right:8px;top:52px;bottom:8px;padding:1px;display:flex;flex-direction:column;gap:4px;opacity:0;visibility:hidden;pointer-events:none;transform:translateY(-6px);transition:opacity .12s ease,transform .18s ease,visibility 0s linear .18s}.dtv-launcher[data-open=true] .dtv-menu{opacity:1;visibility:visible;pointer-events:auto;transform:none;transition-delay:.22s,.16s,.22s}.dtv-launcher[data-vertical=up] .dtv-menu{top:8px;bottom:52px;transform:translateY(6px)}.dtv-launcher[data-open=true][data-vertical=up] .dtv-menu{transform:none}
+.dtv-menu-title{flex:none;padding:5px 8px 7px;font-size:11px;line-height:1.35;font-weight:650;color:var(--dsw-alias-label-tertiary);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .dtv-menu-item{min-height:43px;border:0;border-radius:9px;padding:5px 8px;background:transparent;color:var(--dsw-alias-label-primary);text-align:left;font:inherit;cursor:pointer;display:grid;grid-template-columns:10px minmax(0,1fr) auto;gap:8px;align-items:center}.dtv-menu-item:hover{background:var(--dsw-alias-interactive-bg-hover)}.dtv-menu-item[data-active=true]{background:var(--dsw-alias-interactive-bg-selected,var(--dsw-specific-tip))}.dtv-binding-dot{width:8px;height:8px;border-radius:50%;background:#d33239;box-shadow:0 0 0 1px rgba(98,0,4,.38)}.dtv-menu-item[data-bound=true] .dtv-binding-dot{background:#44d17a;box-shadow:0 0 5px #31c66b,0 0 10px rgba(49,198,107,.75)}.dtv-item-copy{min-width:0;display:flex;flex-direction:column;gap:1px}.dtv-item-label{font-size:11px;font-weight:700;line-height:1.2}.dtv-item-status{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:10px;line-height:1.25;color:var(--dsw-alias-label-tertiary)}.dtv-item-count{border-radius:10px;padding:2px 6px;background:var(--dsw-specific-tip);font-size:9px;color:var(--dsw-alias-label-secondary)}.dtv-item-planned{font-size:9px;color:var(--dsw-alias-label-tertiary)}
 .dtv-menu-item[data-show-binding=false] .dtv-binding-dot{visibility:hidden}
 .dtv-panel{position:absolute;z-index:1;top:0;right:0;bottom:0;width:min(440px,calc(100vw - 56px));pointer-events:auto;border-left:1px solid var(--dsw-alias-border-l2);box-shadow:var(--ds-shadow-3,-8px 0 28px rgba(0,0,0,.18));background:var(--dsw-alias-bg-base);display:flex;flex-direction:column}
 .dtv-header{height:52px;box-sizing:border-box;display:flex;align-items:center;gap:8px;padding:0 14px;border-bottom:1px solid var(--dsw-alias-border-l2);flex:none}.dtv-title{font-size:14px;font-weight:650;flex:1}.dtv-close{border:0;background:transparent;color:var(--dsw-alias-label-tertiary);cursor:pointer;border-radius:7px;padding:6px 8px}.dtv-close:hover{background:var(--dsw-alias-interactive-bg-hover)}
 .dtv-body{min-height:0;overflow:auto;padding:12px;display:flex;flex-direction:column;gap:12px}.dtv-note{font-size:11px;line-height:1.5;color:var(--dsw-alias-label-tertiary);margin:0;overflow-wrap:anywhere}.dtv-status{font-size:11px;line-height:1.45;border-radius:7px;padding:8px 10px;background:var(--dsw-specific-tip);overflow-wrap:anywhere}.dtv-status[data-error=true]{color:var(--dsw-alias-state-error)}
 .dtv-actions{display:grid;grid-template-columns:1fr 1fr;gap:8px}.dtv-button{min-height:34px;border:1px solid var(--dsw-alias-border-l2);border-radius:8px;background:var(--dsw-alias-button-secondary-fill,var(--dsw-alias-bg-base));color:var(--dsw-alias-label-primary);cursor:pointer;padding:7px 10px;font-size:12px}.dtv-button:hover:not(:disabled){background:var(--dsw-alias-interactive-bg-hover)}.dtv-button:disabled{opacity:.5;cursor:default}
-.dtv-primary{background:var(--dsw-alias-state-business-primary,#2677d9);border-color:transparent;color:var(--dsw-alias-button-primary-label,#fff)}.dtv-primary:hover:not(:disabled){filter:brightness(1.08);background:var(--dsw-alias-state-business-primary,#2677d9)}.dtv-template-actions{display:grid;grid-template-columns:1fr 1fr;gap:7px}
+.dtv-primary{background:var(--dsw-alias-state-business-primary,#2677d9);border-color:transparent;color:var(--dsw-alias-button-primary-label,#fff)}.dtv-primary:hover:not(:disabled){filter:brightness(1.08);background:var(--dsw-alias-state-business-primary,#2677d9)}.dtv-template-actions,.dtv-template-toolbar,.dtv-template-footer,.dtv-template-name{display:grid;grid-template-columns:1fr 1fr;gap:7px}.dtv-template-name{grid-template-columns:minmax(0,1fr) auto}.dtv-template-footer,.dtv-settings-footer{position:sticky;bottom:-12px;margin:0 -12px -12px;padding:10px 12px;background:var(--dsw-alias-bg-base);border-top:1px solid var(--dsw-alias-border-l2)}.dtv-settings-section{border-top:1px solid var(--dsw-alias-border-l1);padding-top:12px;display:flex;flex-direction:column;gap:10px}
 .dtv-resource{border:1px solid var(--dsw-alias-border-l1);border-radius:9px;padding:10px;display:flex;flex-direction:column;gap:7px}.dtv-resource-title{font-size:12px;font-weight:650}.dtv-resource-meta{font-size:11px;line-height:1.45;color:var(--dsw-alias-label-tertiary)}.dtv-list{margin:0;padding-left:18px;font-size:11px;line-height:1.55}.dtv-preview{border:1px solid var(--dsw-alias-border-l1);border-radius:8px;background:var(--dsw-specific-tip);padding:9px;display:flex;flex-direction:column;gap:6px}.dtv-preview-title{font-size:12px;font-weight:700}.dtv-preview-row{display:grid;grid-template-columns:112px minmax(0,1fr);gap:8px;font-size:11px;line-height:1.45}.dtv-preview-label{color:var(--dsw-alias-label-tertiary)}.dtv-preview-value{overflow-wrap:anywhere}.dtv-preview-options{margin-left:120px;display:flex;flex-direction:column;gap:2px;font-size:10px;color:var(--dsw-alias-label-tertiary)}.dtv-preview-list{margin:0;padding-left:18px}.dtv-preview-row[data-missing=true] .dtv-preview-value,.dtv-preview-list>[data-missing=true]{color:var(--dsw-alias-state-error)}
 .dtv-book-toolbar{display:grid;grid-template-columns:1fr 1fr 1fr;gap:7px}.dtv-entry{border:1px solid var(--dsw-alias-border-l1);border-radius:8px;background:var(--dsw-alias-bg-base);overflow:hidden}.dtv-entry>summary{list-style:none;cursor:pointer;padding:8px;display:flex;align-items:center;gap:7px;font-size:11px}.dtv-entry>summary::-webkit-details-marker{display:none}.dtv-entry-dot{width:8px;height:8px;flex:none;border-radius:50%;background:var(--dsw-alias-label-tertiary)}.dtv-entry[data-enabled=true] .dtv-entry-dot{background:var(--dsw-alias-state-success,#2fa36b)}.dtv-entry-name{font-weight:620;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.dtv-entry-state{margin-left:auto;flex:none;color:var(--dsw-alias-label-tertiary);font-size:10px}.dtv-entry-body{border-top:1px solid var(--dsw-alias-border-l1);padding:8px;display:flex;flex-direction:column;gap:8px}.dtv-field{display:flex;flex-direction:column;gap:4px}.dtv-label{font-size:10px;font-weight:620;color:var(--dsw-alias-label-tertiary)}.dtv-input,.dtv-select,.dtv-textarea{box-sizing:border-box;width:100%;border:1px solid var(--dsw-alias-border-l2);border-radius:7px;background:var(--dsw-alias-bg-base);color:var(--dsw-alias-label-primary);font:inherit;font-size:11px;padding:7px 8px}.dtv-input,.dtv-select{height:32px}.dtv-textarea{min-height:94px;resize:vertical;line-height:1.45}.dtv-policy{min-height:96px}.dtv-entry-grid{display:grid;grid-template-columns:1fr 1fr;gap:7px}.dtv-checks{display:flex;flex-wrap:wrap;gap:10px}.dtv-check{display:flex;gap:5px;align-items:center;font-size:10px}.dtv-entry-actions{display:flex;justify-content:flex-end}.dtv-danger{color:var(--dsw-alias-state-error)}
 .dtv-layer>.dtv-launcher,.dtv-layer>.dtv-panel,.dtv-layer>.dcc-panel,.dtv-layer>.dwb-panel,.dtv-layer>.dtu-panel{zoom:var(--dtv-ui-scale,1)}.dtv-setting-value{font-size:12px;font-variant-numeric:tabular-nums;color:var(--dsw-alias-label-secondary)}
 .dtv-modal-backdrop{position:absolute;inset:0;z-index:20;pointer-events:auto;background:rgba(0,0,0,.48);display:flex;align-items:center;justify-content:center;padding:24px}
+.dtv-regex-panel .dtv-body{flex:1 1 auto;overscroll-behavior:contain}.dtv-regex-section{gap:8px}.dtv-regex-section-title{display:flex;align-items:center;gap:8px}.dtv-regex-section-title .dtv-item-count{margin-left:auto}.dtv-regex-rule{transition:border-color .12s,box-shadow .12s}.dtv-regex-rule[data-dragging=true]{height:4px;min-height:4px;margin:5px 10px;border:0;border-radius:999px;background:var(--dsw-alias-state-business-primary);box-shadow:0 0 0 1px color-mix(in srgb,var(--dsw-alias-state-business-primary) 25%,transparent)}.dtv-regex-rule[data-dragging=true]>*{opacity:0}.dtv-regex-drop-placeholder{box-sizing:border-box;height:42px;border:2px dashed var(--dsw-alias-state-business-primary);border-radius:8px;background:color-mix(in srgb,var(--dsw-alias-state-business-primary) 7%,transparent);display:flex;align-items:center;justify-content:center;color:var(--dsw-alias-state-business-primary);font-size:12px;font-weight:600;pointer-events:none}.dtv-regex-drag{flex:none;border:0;background:transparent;cursor:grab;color:var(--dsw-alias-label-tertiary);padding:1px 2px;font-size:15px;line-height:1;touch-action:none;user-select:none}.dtv-regex-drag:active{cursor:grabbing}.dtv-regex-drag:disabled{cursor:default;opacity:.5}.dtv-regex-rule .dtv-input:disabled,.dtv-regex-rule .dtv-select:disabled,.dtv-regex-rule .dtv-textarea:disabled{pointer-events:none}.dtv-regex-expression{font-family:var(--dsw-font-mono,ui-monospace,SFMono-Regular,Consolas,monospace);min-height:72px}.dtv-regex-footer{position:sticky;bottom:-12px;display:grid;grid-template-columns:1fr 1fr;gap:8px;padding:10px 0 12px;background:var(--dsw-alias-bg-base)}
 .dtv-modal{width:min(420px,100%);border-radius:12px;background:var(--dsw-alias-bg-base);border:1px solid var(--dsw-alias-border-l2);box-shadow:var(--ds-shadow-3,0 16px 40px rgba(0,0,0,.28));padding:18px 16px;display:flex;flex-direction:column;gap:14px}
-.dtv-modal-body{margin:0;font-size:13px;line-height:1.55}.dtv-modal .dtv-button{align-self:flex-end;min-width:88px}
+.dtv-modal-title{margin:0;font-size:16px;line-height:1.35}.dtv-modal-body{margin:0;font-size:13px;line-height:1.55;overflow-wrap:anywhere}.dtv-modal .dtv-button{align-self:flex-end;min-width:88px}
+.dtv-workspace-admission{position:absolute;inset:0;z-index:12;pointer-events:auto;background:var(--dsw-alias-bg-base);display:flex;align-items:center;justify-content:center;padding:clamp(18px,5vw,64px)}
+.dtv-workspace-admission-card{box-sizing:border-box;width:min(720px,100%);max-height:min(720px,calc(100vh - 36px));overflow:auto;border:1px solid var(--dsw-alias-border-l2);border-radius:18px;background:var(--dsw-alias-bg-base);box-shadow:var(--ds-shadow-3,0 18px 52px rgba(0,0,0,.24));padding:clamp(20px,4vw,36px);display:flex;flex-direction:column;gap:16px}
+.dtv-workspace-admission-title{margin:0;font-size:clamp(20px,3vw,28px);line-height:1.25}.dtv-workspace-admission-copy{margin:0;color:var(--dsw-alias-label-secondary);font-size:13px;line-height:1.65}
+.dtv-workspace-admission-list{display:flex;flex-direction:column;gap:8px;max-height:320px;overflow:auto}.dtv-workspace-admission-choice{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:12px;align-items:center;text-align:left}.dtv-workspace-admission-choice-copy{min-width:0;display:flex;flex-direction:column;gap:3px}.dtv-workspace-admission-choice-title{font-weight:650;overflow-wrap:anywhere}.dtv-workspace-admission-choice-path{font-size:10px;color:var(--dsw-alias-label-tertiary);overflow-wrap:anywhere}.dtv-workspace-admission-actions{display:flex;justify-content:flex-end;flex-wrap:wrap;gap:8px}.dtv-workspace-admission-actions .dtv-button{min-width:120px}
+
 `;
-var LAUNCHER_STORAGE_KEY = "dsh-tavern:launcher-position:v1";
+var LAUNCHER_STORAGE_KEY = `${PLUGIN_ID}:launcher-position:v1`;
 function viewport() {
   return { width: window.innerWidth, height: window.innerHeight };
 }
@@ -3651,7 +13218,7 @@ function persistLauncherAnchor(anchor) {
 }
 async function activeView(sessionId) {
   const query = sessionId ? `?sessionId=${encodeURIComponent(sessionId)}` : "";
-  const response = await fetch(`${API_ROOT6}/active${query}`);
+  const response = await fetch(`${API_V1}/active${query}`);
   const data = await response.json().catch(() => null);
   if (!response.ok || data?.ok === false) {
     const message = typeof data?.error === "string" ? data.error : data?.error?.message;
@@ -3660,7 +13227,7 @@ async function activeView(sessionId) {
   return data;
 }
 async function sessionConfigurationRequest(path, body2) {
-  const response = await fetch(`${API_ROOT6}${path}`, {
+  const response = await fetch(`${API_V1}${path}`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(body2)
@@ -3677,7 +13244,7 @@ async function rpAlertRequest(sessionId, { method = "GET", id } = {}) {
   const params = new URLSearchParams({ sessionId });
   if (id !== void 0) params.set("id", String(id));
   const mutating = method !== "GET" && method !== "HEAD";
-  const response = await fetch(`${API_ROOT6}/rp-alert?${params}`, {
+  const response = await fetch(`${API_V1}/rp-alert?${params}`, {
     method,
     headers: mutating ? { "Content-Type": "application/json" } : void 0,
     body: mutating ? "{}" : void 0
@@ -3687,7 +13254,7 @@ async function rpAlertRequest(sessionId, { method = "GET", id } = {}) {
   return data;
 }
 async function rpPolicyRequest(method = "GET", body2) {
-  const response = await fetch(`${API_ROOT6}/rp-policy`, {
+  const response = await fetch(`${API_V1}/rp-policy`, {
     method,
     headers: method === "GET" ? void 0 : { "Content-Type": "application/json" },
     body: body2 === void 0 ? void 0 : JSON.stringify(body2)
@@ -3697,7 +13264,17 @@ async function rpPolicyRequest(method = "GET", body2) {
   return data;
 }
 async function uiSettingsRequest(method = "GET", body2) {
-  const response = await fetch(`${API_ROOT6}/ui-settings`, {
+  const response = await fetch(`${API_V1}/ui-settings`, {
+    method,
+    headers: method === "GET" ? void 0 : { "Content-Type": "application/json" },
+    body: body2 === void 0 ? void 0 : JSON.stringify(body2)
+  });
+  const data = await response.json().catch(() => null);
+  if (!response.ok || data?.ok === false) throw new Error(data?.error ?? `HTTP ${response.status}`);
+  return data.settings;
+}
+async function conversationSettingsRequest(method = "GET", body2) {
+  const response = await fetch(`${API_V1}/conversation-settings`, {
     method,
     headers: method === "GET" ? void 0 : { "Content-Type": "application/json" },
     body: body2 === void 0 ? void 0 : JSON.stringify(body2)
@@ -3709,15 +13286,15 @@ async function uiSettingsRequest(method = "GET", body2) {
 function PanelHeader({ title, titleKey, close }) {
   const titleText = titleKey ? uiMessage(titleKey) : title;
   const closeLabel = uiMessage("panel.close", { title: unwrapText(titleText) });
-  return h7(
+  return h13(
     "div",
     { className: "dtv-header" },
-    h7("div", { className: "dtv-title" }, titleText),
-    h7("button", { className: "dtv-close", type: "button", title: closeLabel, "aria-label": closeLabel, onClick: close }, "\u2715")
+    h13("div", { className: "dtv-title" }, titleText),
+    h13("button", { className: "dtv-close", type: "button", title: closeLabel, "aria-label": closeLabel, onClick: close }, "\u2715")
   );
 }
-function Field5({ label, children }) {
-  return h7("label", { className: "dtv-field" }, h7("span", { className: "dtv-label" }, label), children);
+function Field6({ label, children }) {
+  return h13("label", { className: "dtv-field" }, h13("span", { className: "dtv-label" }, label), children);
 }
 function SettingsPanel({
   settings,
@@ -3731,80 +13308,135 @@ function SettingsPanel({
   policyLoaded,
   onPolicyDraft,
   savePolicy,
-  resetPolicy
+  resetPolicy,
+  workspaceSetting,
+  workspaceBusy,
+  selectWorkspace
 }) {
   const percent = Math.round(settings.scale * 100);
-  return h7(
+  return h13(
     "div",
     { className: "dtv-panel" },
-    h7(
+    h13(
       "div",
       { className: "dtv-header" },
-      h7("div", { className: "dtv-title" }, translate("settings.title")),
-      h7("button", { className: "dtv-close", type: "button", title: translate("settings.close"), "aria-label": translate("settings.close"), onClick: close }, "\u2715")
+      h13("div", { className: "dtv-title" }, translate("settings.title")),
+      h13("button", { className: "dtv-close", type: "button", title: translate("settings.close"), "aria-label": translate("settings.close"), onClick: close }, "\u2715")
     ),
-    h7(
+    h13(
       "div",
       { className: "dtv-body" },
-      h7(Field5, { label: translate("settings.language") }, h7(
-        "select",
-        {
+      h13("div", { className: "dtv-status", "data-error": status.error || void 0, role: "status" }, rawText(status.text)),
+      h13(
+        "div",
+        { className: "dtv-settings-section" },
+        h13(Field6, { label: translate("settings.language") }, h13(
+          "select",
+          {
+            className: "dtv-select",
+            value: settings.locale,
+            disabled: busy,
+            onChange: (event) => update({ ...settings, locale: event.target.value })
+          },
+          ...UI_LOCALES.map((locale) => h13("option", { key: locale.id, value: locale.id }, rawText(locale.nativeName)))
+        )),
+        h13(Field6, { label: translate("settings.scale") }, h13("select", {
           className: "dtv-select",
-          value: settings.locale,
+          value: settings.scale,
           disabled: busy,
-          onChange: (event) => update({ ...settings, locale: event.target.value })
-        },
-        ...UI_LOCALES.map((locale) => h7("option", { key: locale.id, value: locale.id }, rawText(locale.nativeName)))
-      )),
-      h7(Field5, { label: translate("settings.scale") }, h7("select", {
-        className: "dtv-select",
-        value: settings.scale,
-        disabled: busy,
-        onChange: (event) => update({ ...settings, scale: Number(event.target.value) })
-      }, ...UI_SCALE_OPTIONS.map((scale) => h7("option", { key: scale, value: scale }, `${Math.round(scale * 100)}%`)))),
-      h7("div", { className: "dtv-setting-value" }, translate("settings.currentScale", { scale: percent })),
-      h7("p", { className: "dtv-note" }, translate("settings.scale.help")),
-      h7(
-        "label",
-        { className: "dtv-check" },
-        h7("input", {
-          type: "checkbox",
-          checked: settings.rpFollowCharacter !== false,
+          onChange: (event) => update({ ...settings, scale: Number(event.target.value) })
+        }, ...UI_SCALE_OPTIONS.map((scale) => h13("option", { key: scale, value: scale }, `${Math.round(scale * 100)}%`)))),
+        h13("div", { className: "dtv-setting-value" }, translate("settings.currentScale", { scale: percent })),
+        h13("p", { className: "dtv-note" }, translate("settings.scale.help")),
+        h13(
+          "label",
+          { className: "dtv-check" },
+          h13("input", {
+            type: "checkbox",
+            checked: settings.rpFollowCharacter !== false,
+            disabled: busy,
+            onChange: (event) => update({ ...settings, rpFollowCharacter: event.target.checked })
+          }),
+          h13("span", null, translate("settings.rpFollow"))
+        ),
+        h13("p", { className: "dtv-note" }, translate("settings.rpFollow.help")),
+        h13(Field6, { label: translate("settings.rpWorkspace") }, h13(
+          "select",
+          {
+            className: "dtv-select",
+            value: workspaceSetting?.selectedPath ?? "",
+            disabled: busy || workspaceBusy || workspaceSetting === null,
+            onChange: (event) => selectWorkspace(event.target.value)
+          },
+          workspaceSetting?.current === null && workspaceSetting.available.length > 0 ? h13("option", { value: "", disabled: true }, translate("settings.rpWorkspace.unselected")) : null,
+          workspaceSetting?.current?.unavailable === true ? h13("option", { value: workspaceSetting.current.path, disabled: true }, translate("settings.rpWorkspace.unavailable", { path: workspaceSetting.current.path })) : null,
+          workspaceSetting?.available?.length > 0 ? workspaceSetting.available.map((item) => h13("option", { key: item.id, value: item.path }, rawText(item.title))) : h13("option", { value: "", disabled: true }, translate("settings.rpWorkspace.none"))
+        )),
+        h13("p", { className: "dtv-note" }, translate("settings.rpWorkspace.help")),
+        h13(Field6, { label: translate("settings.rpPolicy") }, h13("textarea", {
+          className: "dtv-textarea dtv-policy",
+          value: policyDraft,
+          placeholder: translate("settings.rpPolicy.placeholder"),
+          disabled: busy || policyBusy || policyLoaded !== true,
+          onChange: (event) => onPolicyDraft(event.target.value)
+        })),
+        h13("p", { className: "dtv-note" }, translate("settings.rpPolicy.help")),
+        h13(
+          "div",
+          { className: "dtv-actions" },
+          h13("button", {
+            className: "dtv-button dtv-primary",
+            type: "button",
+            disabled: busy || policyBusy || policyLoaded !== true,
+            onClick: savePolicy
+          }, translate("settings.rpPolicy.save")),
+          h13("button", {
+            className: "dtv-button",
+            type: "button",
+            disabled: busy || policyBusy || policyLoaded !== true,
+            onClick: resetPolicy
+          }, translate("settings.rpPolicy.reset"))
+        )
+      ),
+      h13(
+        "div",
+        { className: "dtv-settings-footer" },
+        h13("button", { className: "dtv-button", type: "button", disabled: busy, onClick: reset }, translate("settings.reset"))
+      )
+    )
+  );
+}
+function ConversationSettingsPanel({ settings, status, busy, close, update, reset }) {
+  return h13(
+    "div",
+    { className: "dtv-panel" },
+    h13(PanelHeader, { titleKey: "conversationSettings.title", close }),
+    h13(
+      "div",
+      { className: "dtv-body" },
+      h13("div", { className: "dtv-status", "data-error": status.error || void 0, role: "status" }, rawText(status.text)),
+      h13(
+        "div",
+        { className: "dtv-settings-section" },
+        h13(Field6, { label: translate("conversationSettings.textScale") }, h13("select", {
+          className: "dtv-select",
+          value: settings.textScale,
           disabled: busy,
-          onChange: (event) => update({ ...settings, rpFollowCharacter: event.target.checked })
-        }),
-        h7("span", null, translate("settings.rpFollow"))
+          onChange: (event) => update({ ...settings, textScale: Number(event.target.value) })
+        }, ...CONVERSATION_SCALE_OPTIONS.map((scale) => h13("option", { key: scale, value: scale }, `${Math.round(scale * 100)}%`)))),
+        h13("p", { className: "dtv-note" }, translate("conversationSettings.textScale.help")),
+        h13(Field6, { label: translate("conversationSettings.actionScale") }, h13("select", {
+          className: "dtv-select",
+          value: settings.actionScale,
+          disabled: busy,
+          onChange: (event) => update({ ...settings, actionScale: Number(event.target.value) })
+        }, ...CONVERSATION_SCALE_OPTIONS.map((scale) => h13("option", { key: scale, value: scale }, `${Math.round(scale * 100)}%`)))),
+        h13("p", { className: "dtv-note" }, translate("conversationSettings.actionScale.help"))
       ),
-      h7("p", { className: "dtv-note" }, translate("settings.rpFollow.help")),
-      h7(Field5, { label: translate("settings.rpPolicy") }, h7("textarea", {
-        className: "dtv-textarea dtv-policy",
-        value: policyDraft,
-        placeholder: translate("settings.rpPolicy.placeholder"),
-        disabled: busy || policyBusy || policyLoaded !== true,
-        onChange: (event) => onPolicyDraft(event.target.value)
-      })),
-      h7("p", { className: "dtv-note" }, translate("settings.rpPolicy.help")),
-      h7(
+      h13(
         "div",
-        { className: "dtv-actions" },
-        h7("button", {
-          className: "dtv-button dtv-primary",
-          type: "button",
-          disabled: busy || policyBusy || policyLoaded !== true,
-          onClick: savePolicy
-        }, translate("settings.rpPolicy.save")),
-        h7("button", {
-          className: "dtv-button",
-          type: "button",
-          disabled: busy || policyBusy || policyLoaded !== true,
-          onClick: resetPolicy
-        }, translate("settings.rpPolicy.reset"))
-      ),
-      h7("div", { className: "dtv-status", "data-error": status.error || void 0, role: "status" }, rawText(status.text)),
-      h7(
-        "div",
-        { className: "dtv-actions" },
-        h7("button", { className: "dtv-button", type: "button", disabled: busy, onClick: reset }, translate("settings.reset"))
+        { className: "dtv-settings-footer" },
+        h13("button", { className: "dtv-button", type: "button", disabled: busy, onClick: reset }, translate("conversationSettings.reset"))
       )
     )
   );
@@ -3816,7 +13448,7 @@ var LOGIC_KEYS = Object.freeze({
   not_all: "world.logic.notAll"
 });
 function RpHighRiskDialog({ onDismiss }) {
-  return h7(
+  return h13(
     "div",
     {
       className: "dtv-modal-backdrop",
@@ -3824,39 +13456,165 @@ function RpHighRiskDialog({ onDismiss }) {
       "aria-modal": "true",
       "aria-labelledby": "dtv-rp-block-body"
     },
-    h7(
+    h13(
       "div",
       { className: "dtv-modal" },
-      h7("p", { id: "dtv-rp-block-body", className: "dtv-modal-body" }, translate("rp.block.body")),
-      h7("button", { className: "dtv-button dtv-primary", type: "button", onClick: onDismiss }, translate("rp.block.dismiss"))
+      h13("p", { id: "dtv-rp-block-body", className: "dtv-modal-body" }, translate("rp.block.body")),
+      h13("button", { className: "dtv-button dtv-primary", type: "button", onClick: onDismiss }, translate("rp.block.dismiss"))
     )
   );
 }
-function TavernShell({ useSessions, useWorkspaces, createCleanSession }) {
-  const [menuOpen, setMenuOpen] = (0, import_react7.useState)(false);
-  const [surface, setSurface] = (0, import_react7.useState)(null);
-  const [anchor, setAnchor] = (0, import_react7.useState)(initialLauncherAnchor);
-  const [activeSnapshot, setActiveSnapshot] = (0, import_react7.useState)(null);
-  const [statusError, setStatusError] = (0, import_react7.useState)("");
-  const [uiSettings, setUiSettings] = (0, import_react7.useState)(getClientUiSettings);
-  const [settingsStatus, setSettingsStatus] = (0, import_react7.useState)({ text: translate("settings.saved"), error: false });
-  const [settingsBusy, setSettingsBusy] = (0, import_react7.useState)(false);
-  const [rpPolicyDraft, setRpPolicyDraft] = (0, import_react7.useState)("");
-  const [rpPolicyLoaded, setRpPolicyLoaded] = (0, import_react7.useState)(false);
-  const [rpPolicyBusy, setRpPolicyBusy] = (0, import_react7.useState)(false);
-  const [rpAlert, setRpAlert] = (0, import_react7.useState)(null);
-  const drag = (0, import_react7.useRef)(null);
-  const suppressClick = (0, import_react7.useRef)(false);
-  const statusGeneration = (0, import_react7.useRef)(0);
-  const rpAlertRef = (0, import_react7.useRef)(null);
-  const dismissedRpAlerts = (0, import_react7.useRef)(/* @__PURE__ */ new Set());
+function ImportFailureDialog({ message, onDismiss }) {
+  return h13(
+    "div",
+    {
+      className: "dtv-modal-backdrop",
+      role: "alertdialog",
+      "aria-modal": "true",
+      "aria-labelledby": "dtv-import-failure-title",
+      "aria-describedby": "dtv-import-failure-body"
+    },
+    h13(
+      "div",
+      { className: "dtv-modal" },
+      h13("h2", { id: "dtv-import-failure-title", className: "dtv-modal-title" }, uiMessage("import.failureTitle")),
+      h13("p", { id: "dtv-import-failure-body", className: "dtv-modal-body" }, rawText(message)),
+      h13("button", { className: "dtv-button dtv-primary", type: "button", onClick: onDismiss }, uiMessage("common.close"))
+    )
+  );
+}
+function WorkspaceAdmission({ setting, state, error, busy, selectWorkspace, reload, returnToNative }) {
+  const loading = state === "loading" || state === "idle";
+  const unavailable = setting?.current?.unavailable === true;
+  const candidates = setting?.available ?? [];
+  let status = null;
+  if (loading) status = uiMessage("workspaceAdmission.loading");
+  else if (state === "error") status = uiMessage("workspaceAdmission.loadError", { message: error });
+  else if (state === "verify-error") status = uiMessage("workspaceAdmission.verifyError", { message: error });
+  else if (state === "save-error") status = uiMessage("workspaceAdmission.saveError", { message: error });
+  else if (busy) status = uiMessage("workspaceAdmission.saving");
+  else if (unavailable) status = uiMessage("workspaceAdmission.unavailable", { path: setting.current.path });
+  else if (candidates.length === 0) status = uiMessage("workspaceAdmission.none");
+  return h13(
+    "div",
+    {
+      className: "dtv-workspace-admission",
+      role: "dialog",
+      "aria-modal": "true",
+      "aria-labelledby": "dtv-workspace-admission-title"
+    },
+    h13(
+      "div",
+      { className: "dtv-workspace-admission-card" },
+      h13("h2", { id: "dtv-workspace-admission-title", className: "dtv-workspace-admission-title" }, uiMessage("workspaceAdmission.title")),
+      h13("p", { className: "dtv-workspace-admission-copy" }, uiMessage("workspaceAdmission.body")),
+      status === null ? null : h13("p", {
+        className: "dtv-status",
+        "data-error": ["error", "verify-error", "save-error"].includes(state) || unavailable,
+        role: ["error", "verify-error", "save-error"].includes(state) ? "alert" : "status"
+      }, status),
+      candidates.length === 0 ? null : h13(
+        "div",
+        { className: "dtv-workspace-admission-list" },
+        ...candidates.map((item) => h13(
+          "button",
+          {
+            key: item.id,
+            type: "button",
+            className: "dtv-button dtv-workspace-admission-choice",
+            disabled: busy || loading,
+            title: uiMessage("workspaceAdmission.choose", { name: item.title }),
+            "aria-label": uiMessage("workspaceAdmission.choose", { name: item.title }),
+            onClick: () => selectWorkspace(item.path)
+          },
+          h13(
+            "span",
+            { className: "dtv-workspace-admission-choice-copy" },
+            h13("span", { className: "dtv-workspace-admission-choice-title" }, rawText(item.title)),
+            h13("span", { className: "dtv-workspace-admission-choice-path" }, rawText(item.path))
+          ),
+          h13("span", { "aria-hidden": "true" }, "\u2192")
+        ))
+      ),
+      h13(
+        "div",
+        { className: "dtv-workspace-admission-actions" },
+        h13("button", { type: "button", className: "dtv-button", disabled: busy, onClick: reload }, uiMessage("workspaceAdmission.retry")),
+        h13("button", { type: "button", className: "dtv-button dtv-primary", disabled: busy, onClick: returnToNative }, uiMessage("workspaceAdmission.native"))
+      )
+    )
+  );
+}
+function TavernShell({ useSessions, useWorkspaces, createCleanSession, createConfiguredPlaythrough, playClient, playSlots, chromeService }) {
+  const [menuOpen, setMenuOpen] = (0, import_react16.useState)(false);
+  const [surface, setSurface] = (0, import_react16.useState)(null);
+  const [anchor, setAnchor] = (0, import_react16.useState)(initialLauncherAnchor);
+  const [chromeMode, setChromeMode] = (0, import_react16.useState)(() => chromeService.getMode());
+  const [chromeAnimation, setChromeAnimation] = (0, import_react16.useState)(0);
+  const [chromeError, setChromeError] = (0, import_react16.useState)("");
+  const [activeSnapshot, setActiveSnapshot] = (0, import_react16.useState)(null);
+  const [statusError, setStatusError] = (0, import_react16.useState)("");
+  const [uiSettings, setUiSettings] = (0, import_react16.useState)(getClientUiSettings);
+  const [conversationSettings, setConversationSettings] = (0, import_react16.useState)(getClientConversationSettings);
+  const [conversationSettingsStatus, setConversationSettingsStatus] = (0, import_react16.useState)({ text: translate("conversationSettings.saved"), error: false });
+  const [conversationSettingsBusy, setConversationSettingsBusy] = (0, import_react16.useState)(false);
+  const [settingsStatus, setSettingsStatus] = (0, import_react16.useState)({ text: translate("settings.saved"), error: false });
+  const [settingsBusy, setSettingsBusy] = (0, import_react16.useState)(false);
+  const [rpPolicyDraft, setRpPolicyDraft] = (0, import_react16.useState)("");
+  const [rpPolicyLoaded, setRpPolicyLoaded] = (0, import_react16.useState)(false);
+  const [rpPolicyBusy, setRpPolicyBusy] = (0, import_react16.useState)(false);
+  const [rpWorkspaceSetting, setRpWorkspaceSetting] = (0, import_react16.useState)(null);
+  const [rpWorkspaceLoadState, setRpWorkspaceLoadState] = (0, import_react16.useState)("idle");
+  const [rpWorkspaceError, setRpWorkspaceError] = (0, import_react16.useState)("");
+  const [rpWorkspaceBusy, setRpWorkspaceBusy] = (0, import_react16.useState)(false);
+  const rpWorkspaceBusyRef = (0, import_react16.useRef)(false);
+  const rpWorkspaceLoadGeneration = (0, import_react16.useRef)(0);
+  const [rpAlert, setRpAlert] = (0, import_react16.useState)(null);
+  const [importFailure, setImportFailure] = (0, import_react16.useState)(null);
+  const drag = (0, import_react16.useRef)(null);
+  const suppressClick = (0, import_react16.useRef)(false);
+  const chromeController = (0, import_react16.useRef)(null);
+  const statusGeneration = (0, import_react16.useRef)(0);
+  const rpAlertRef = (0, import_react16.useRef)(null);
+  const dismissedRpAlerts = (0, import_react16.useRef)(/* @__PURE__ */ new Set());
   const sessionId = useSessions((state) => state.current);
   const sessionBlank = useSessions((state) => state.current === void 0 || state.current === null ? true : state.byId?.[state.current]?.blank === true);
   const workspaceId = useWorkspaces((state) => workspaceTargetId(state, sessionId));
+  const workspaceItems = useWorkspaces((state) => state.items);
+  const hasConversationHistory = (0, import_react16.useCallback)(async (targetSessionId) => {
+    const messages = await playClient.getMessages(targetSessionId);
+    return sessionHasConversationHistory(messages);
+  }, [playClient]);
   const close = () => setSurface(null);
   if (rpAlert === null || dismissedRpAlerts.current.has(rpAlert.id)) rpAlertRef.current = null;
   else rpAlertRef.current = rpAlert;
-  (0, import_react7.useEffect)(() => {
+  (0, import_react16.useEffect)(() => {
+    const commitChrome = (snapshot) => {
+      setChromeMode(snapshot.mode);
+      playSlots.setMode(snapshot.mode);
+      if (snapshot.mode !== "play") setSurface((current3) => ["regex", "conversation-settings"].includes(current3) ? null : current3);
+    };
+    const unsubscribe = chromeService.subscribe((snapshot) => {
+      commitChrome(snapshot);
+      setChromeError("");
+    });
+    const controller2 = createChromeClickController({
+      getMode: () => chromeService.getMode(),
+      persistMode: (mode) => chromeService.setMode(mode),
+      openMenu: () => setMenuOpen((value) => !value),
+      closeMenu: () => setMenuOpen(false),
+      setMode: () => {
+      },
+      setError: (reason) => setChromeError(reason instanceof Error ? reason.message : reason == null ? "" : String(reason))
+    });
+    chromeController.current = controller2;
+    return () => {
+      controller2.dispose();
+      if (chromeController.current === controller2) chromeController.current = null;
+      unsubscribe();
+    };
+  }, [chromeService, playSlots]);
+  (0, import_react16.useEffect)(() => {
     let active = true;
     uiSettingsRequest().then((next) => {
       if (!active) return;
@@ -3866,6 +13624,24 @@ function TavernShell({ useSessions, useWorkspaces, createCleanSession }) {
     }).catch((reason) => {
       if (!active) return;
       setSettingsStatus({ text: translate("settings.loadError", { message: reason instanceof Error ? reason.message : String(reason) }), error: true });
+    });
+    return () => {
+      active = false;
+    };
+  }, []);
+  (0, import_react16.useEffect)(() => {
+    let active = true;
+    conversationSettingsRequest().then((next) => {
+      if (!active) return;
+      const normalized = setClientConversationSettings(next);
+      setConversationSettings(normalized);
+      setConversationSettingsStatus({ text: translate("conversationSettings.saved"), error: false });
+    }).catch((reason) => {
+      if (!active) return;
+      setConversationSettingsStatus({
+        text: translate("conversationSettings.loadError", { message: reason instanceof Error ? reason.message : String(reason) }),
+        error: true
+      });
     });
     return () => {
       active = false;
@@ -3907,7 +13683,49 @@ function TavernShell({ useSessions, useWorkspaces, createCleanSession }) {
       setSettingsBusy(false);
     }
   };
-  (0, import_react7.useEffect)(() => {
+  const persistConversationSettings = async (next) => {
+    const previous = conversationSettings;
+    const normalized = setClientConversationSettings(next);
+    setConversationSettings(normalized);
+    setConversationSettingsBusy(true);
+    setConversationSettingsStatus({ text: translate("conversationSettings.saving"), error: false });
+    try {
+      const saved = setClientConversationSettings(await conversationSettingsRequest("PUT", normalized));
+      setConversationSettings(saved);
+      setConversationSettingsStatus({ text: translate("conversationSettings.saved"), error: false });
+    } catch (reason) {
+      setClientConversationSettings(previous);
+      setConversationSettings(previous);
+      setConversationSettingsStatus({
+        text: translate("conversationSettings.saveError", { message: reason instanceof Error ? reason.message : String(reason) }),
+        error: true
+      });
+    } finally {
+      setConversationSettingsBusy(false);
+    }
+  };
+  const resetConversationSettings = async () => {
+    const previous = conversationSettings;
+    const defaults = setClientConversationSettings(DEFAULT_CONVERSATION_SETTINGS);
+    setConversationSettings(defaults);
+    setConversationSettingsBusy(true);
+    setConversationSettingsStatus({ text: translate("conversationSettings.saving"), error: false });
+    try {
+      const saved = setClientConversationSettings(await conversationSettingsRequest("DELETE"));
+      setConversationSettings(saved);
+      setConversationSettingsStatus({ text: translate("conversationSettings.saved"), error: false });
+    } catch (reason) {
+      setClientConversationSettings(previous);
+      setConversationSettings(previous);
+      setConversationSettingsStatus({
+        text: translate("conversationSettings.saveError", { message: reason instanceof Error ? reason.message : String(reason) }),
+        error: true
+      });
+    } finally {
+      setConversationSettingsBusy(false);
+    }
+  };
+  (0, import_react16.useEffect)(() => {
     if (surface !== "settings") return void 0;
     let active = true;
     setRpPolicyLoaded(false);
@@ -3923,6 +13741,74 @@ function TavernShell({ useSessions, useWorkspaces, createCleanSession }) {
       active = false;
     };
   }, [surface]);
+  const refreshRpWorkspace = (0, import_react16.useCallback)(async () => {
+    const generation = ++rpWorkspaceLoadGeneration.current;
+    setRpWorkspaceLoadState("loading");
+    setRpWorkspaceError("");
+    try {
+      const workspace = await playClient.getWorkspace();
+      if (generation !== rpWorkspaceLoadGeneration.current) return null;
+      const projected = projectRpWorkspaceSetting({ workspace, items: workspaceItems });
+      setRpWorkspaceSetting(projected);
+      setRpWorkspaceLoadState("ready");
+      return projected;
+    } catch (reason) {
+      if (generation !== rpWorkspaceLoadGeneration.current) return null;
+      setRpWorkspaceError(reason instanceof Error ? reason.message : String(reason));
+      setRpWorkspaceLoadState("error");
+      return null;
+    }
+  }, [playClient, workspaceItems]);
+  const needsRpWorkspace = chromeMode === "play" || surface === "settings";
+  (0, import_react16.useEffect)(() => {
+    if (!needsRpWorkspace) return void 0;
+    refreshRpWorkspace();
+    return void 0;
+  }, [needsRpWorkspace, refreshRpWorkspace]);
+  (0, import_react16.useEffect)(() => {
+    if (surface !== "settings" || rpWorkspaceLoadState !== "error") return;
+    setSettingsStatus({ text: translate("settings.loadError", { message: rpWorkspaceError }), error: true });
+  }, [rpWorkspaceError, rpWorkspaceLoadState, surface]);
+  const selectRpWorkspace = async (path) => {
+    if (rpWorkspaceBusyRef.current) return;
+    const request = workspaceSelectionRequest(path, { setting: rpWorkspaceSetting });
+    if (!request.changed) return;
+    const item = rpWorkspaceSetting?.available?.find((candidate) => candidate.path === path);
+    if (item === void 0) return;
+    if (requiresSystemWorkspaceConfirmation(path) && !window.confirm(unwrapText(uiMessage("play.sidebar.systemWorkspaceConfirm", { path })))) return;
+    rpWorkspaceBusyRef.current = true;
+    setRpWorkspaceBusy(true);
+    setRpWorkspaceLoadState("saving");
+    setRpWorkspaceError("");
+    setSettingsStatus({ text: translate("settings.saving"), error: false });
+    try {
+      const written = await playClient.putWorkspace(path);
+      setRpWorkspaceSetting(projectRpWorkspaceSetting({ workspace: written, items: workspaceItems }));
+      window.dispatchEvent(new Event(CLIENT_REFRESH_EVENT));
+      try {
+        const current3 = await playClient.getWorkspace();
+        const verified = projectRpWorkspaceSetting({ workspace: current3, items: workspaceItems });
+        setRpWorkspaceSetting(verified);
+        if (!verified.ready) throw new Error(translate("workspaceAdmission.notConfirmed"));
+        setRpWorkspaceLoadState("ready");
+        setRpWorkspaceError("");
+        setSettingsStatus({ text: translate("settings.saved"), error: false });
+      } catch (reason) {
+        const message = reason instanceof Error ? reason.message : String(reason);
+        setRpWorkspaceLoadState("verify-error");
+        setRpWorkspaceError(message);
+        setSettingsStatus({ text: translate("settings.rpWorkspace.verifyError", { message }), error: true });
+      }
+    } catch (reason) {
+      const message = reason instanceof Error ? reason.message : String(reason);
+      setRpWorkspaceLoadState("save-error");
+      setRpWorkspaceError(message);
+      setSettingsStatus({ text: translate("settings.saveError", { message }), error: true });
+    } finally {
+      rpWorkspaceBusyRef.current = false;
+      setRpWorkspaceBusy(false);
+    }
+  };
   const persistRpPolicy = async () => {
     setRpPolicyBusy(true);
     setSettingsStatus({ text: translate("settings.saving"), error: false });
@@ -3951,7 +13837,7 @@ function TavernShell({ useSessions, useWorkspaces, createCleanSession }) {
       setRpPolicyBusy(false);
     }
   };
-  const refreshStatus = (0, import_react7.useCallback)(async () => {
+  const refreshStatus = (0, import_react16.useCallback)(async () => {
     const generation = ++statusGeneration.current;
     try {
       const next = await activeView(sessionId);
@@ -3963,7 +13849,7 @@ function TavernShell({ useSessions, useWorkspaces, createCleanSession }) {
       setStatusError(reason instanceof Error ? reason.message : String(reason));
     }
   }, [sessionId]);
-  (0, import_react7.useEffect)(() => {
+  (0, import_react16.useEffect)(() => {
     statusGeneration.current += 1;
     setActiveSnapshot(null);
     setStatusError("");
@@ -3972,28 +13858,28 @@ function TavernShell({ useSessions, useWorkspaces, createCleanSession }) {
       statusGeneration.current += 1;
     };
   }, [refreshStatus, sessionId]);
-  (0, import_react7.useEffect)(() => {
+  (0, import_react16.useEffect)(() => {
     const onRefresh = () => refreshStatus();
-    window.addEventListener("dsh-tavern:refresh", onRefresh);
-    return () => window.removeEventListener("dsh-tavern:refresh", onRefresh);
+    window.addEventListener(CLIENT_REFRESH_EVENT, onRefresh);
+    return () => window.removeEventListener(CLIENT_REFRESH_EVENT, onRefresh);
   }, [refreshStatus]);
-  (0, import_react7.useEffect)(() => {
-    const onResize = () => setAnchor((current2) => {
-      const next = clampLauncherAnchor(current2, viewport(), uiSettings.scale);
+  (0, import_react16.useEffect)(() => {
+    const onResize = () => setAnchor((current3) => {
+      const next = clampLauncherAnchor(current3, viewport(), uiSettings.scale);
       persistLauncherAnchor(next);
       return next;
     });
     window.addEventListener("resize", onResize);
     return () => window.removeEventListener("resize", onResize);
   }, [uiSettings.scale]);
-  (0, import_react7.useEffect)(() => {
-    setAnchor((current2) => {
-      const next = clampLauncherAnchor(current2, viewport(), uiSettings.scale);
+  (0, import_react16.useEffect)(() => {
+    setAnchor((current3) => {
+      const next = clampLauncherAnchor(current3, viewport(), uiSettings.scale);
       persistLauncherAnchor(next);
       return next;
     });
   }, [uiSettings.scale]);
-  (0, import_react7.useEffect)(() => {
+  (0, import_react16.useEffect)(() => {
     if (typeof sessionId !== "string" || sessionId === "") {
       dismissedRpAlerts.current = /* @__PURE__ */ new Set();
       rpAlertRef.current = null;
@@ -4029,16 +13915,25 @@ function TavernShell({ useSessions, useWorkspaces, createCleanSession }) {
     } catch {
     }
   };
-  (0, import_react7.useEffect)(() => {
+  (0, import_react16.useEffect)(() => {
+    const onImportFailure = (event) => {
+      const message = typeof event?.detail?.message === "string" ? event.detail.message.trim() : "";
+      if (message !== "") setImportFailure(message.slice(0, 1e3));
+    };
+    window.addEventListener(CLIENT_IMPORT_FAILURE_EVENT, onImportFailure);
+    return () => window.removeEventListener(CLIENT_IMPORT_FAILURE_EVENT, onImportFailure);
+  }, []);
+  (0, import_react16.useEffect)(() => {
     const onKeyDown = (event) => {
       if (event.key !== "Escape") return;
-      if (rpAlert !== null) dismissRpAlert();
+      if (importFailure !== null) setImportFailure(null);
+      else if (rpAlert !== null) dismissRpAlert();
       else if (menuOpen) setMenuOpen(false);
       else if (surface !== null) setSurface(null);
     };
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
-  }, [menuOpen, rpAlert, surface]);
+  }, [importFailure, menuOpen, rpAlert, surface]);
   const startDrag = (event) => {
     if (event.button !== 0) return;
     event.currentTarget.setPointerCapture?.(event.pointerId);
@@ -4072,21 +13967,30 @@ function TavernShell({ useSessions, useWorkspaces, createCleanSession }) {
     }
     drag.current = null;
   };
-  const toggleMenu = () => {
-    if (suppressClick.current) {
-      suppressClick.current = false;
-      return;
-    }
-    setMenuOpen((value) => !value);
+  const consumeSuppressedClick = () => {
+    if (!suppressClick.current) return false;
+    suppressClick.current = false;
+    return true;
   };
+  const clickLauncher = () => chromeController.current?.click({
+    suppressed: consumeSuppressedClick()
+  });
+  const contextSwitchLauncher = (event) => {
+    event.preventDefault();
+    const switching = chromeController.current?.switchMode({ suppressed: consumeSuppressedClick() });
+    Promise.resolve(switching).then((changed) => {
+      if (changed) setChromeAnimation((value) => value + 1);
+    });
+  };
+  const switchChrome = () => chromeController.current?.switchMode();
   const open = (id) => {
     setMenuOpen(false);
     setSurface(id);
-    window.dispatchEvent(new Event("dsh-tavern:refresh"));
+    window.dispatchEvent(new Event(CLIENT_REFRESH_EVENT));
   };
   let panel = null;
   if (surface === "preset") {
-    panel = h7("div", { className: "dtv-panel" }, h7(PresetSidebar, {
+    panel = h13("div", { className: "dtv-panel" }, h13(PresetSidebar, {
       closePanel: close,
       openPanel: () => {
       },
@@ -4095,15 +13999,39 @@ function TavernShell({ useSessions, useWorkspaces, createCleanSession }) {
       autoOpen: false
     }));
   } else if (surface === "character") {
-    panel = h7(CharacterPanel, { sessionId, sessionBlank, close });
+    panel = h13(CharacterPanel, {
+      sessionId,
+      sessionBlank,
+      hasConversationHistory,
+      detachPlaythroughSession: (playthroughId, targetSessionId) => playClient.detachPlaythroughSession(playthroughId, targetSessionId),
+      close
+    });
+  } else if (surface === "regex" && chromeMode === "play") {
+    panel = h13(RegexPanel, { client: playClient, activeSnapshot, close });
   } else if (surface === "world-info") {
-    panel = h7(WorldBookPanel, { sessionId, close });
+    panel = h13(WorldBookPanel, { sessionId, close });
   } else if (surface === "user") {
-    panel = h7(UserPanel, { sessionId, sessionBlank, close });
+    panel = h13(UserPanel, { sessionId, sessionBlank, close });
   } else if (surface === "session-template") {
-    panel = h7(SessionTemplatePanel, { sessionId, workspaceId, createCleanSession, close });
+    panel = h13(SessionTemplatePanel, {
+      sessionId,
+      workspaceId,
+      chromeMode,
+      createCleanSession,
+      createConfiguredPlaythrough,
+      close
+    });
+  } else if (surface === "conversation-settings" && chromeMode === "play") {
+    panel = h13(ConversationSettingsPanel, {
+      settings: conversationSettings,
+      status: conversationSettingsStatus,
+      busy: conversationSettingsBusy,
+      close,
+      update: persistConversationSettings,
+      reset: resetConversationSettings
+    });
   } else if (surface === "settings") {
-    panel = h7(SettingsPanel, {
+    panel = h13(SettingsPanel, {
       settings: uiSettings,
       status: settingsStatus,
       busy: settingsBusy,
@@ -4115,17 +14043,33 @@ function TavernShell({ useSessions, useWorkspaces, createCleanSession }) {
       policyLoaded: rpPolicyLoaded,
       onPolicyDraft: setRpPolicyDraft,
       savePolicy: persistRpPolicy,
-      resetPolicy: resetRpPolicy
+      resetPolicy: resetRpPolicy,
+      workspaceSetting: rpWorkspaceSetting,
+      workspaceBusy: rpWorkspaceBusy,
+      selectWorkspace: selectRpWorkspace
     });
   }
   const placement = launcherPlacement(anchor, viewport(), menuOpen, uiSettings.scale);
   const statuses = launcherResourceStatuses(activeSnapshot);
-  return h7(
+  const chromeSwitchLabel = chromeMode === "play" ? uiMessage("chrome.switchToNative") : uiMessage("chrome.switchToPlay");
+  const chromeStatusLabel = chromeMode === "play" ? uiMessage("chrome.currentPlay") : uiMessage("chrome.currentNative");
+  const workspaceAdmissionOpen = chromeMode === "play" && rpWorkspaceLoadState !== "idle" && rpWorkspaceLoadState !== "loading" && rpWorkspaceSetting?.ready !== true;
+  return h13(
     "div",
-    { className: "dtv-layer", lang: uiSettings.locale, "data-surface-open": surface !== null, style: { "--dtv-ui-scale": uiSettings.scale } },
+    { className: "dtv-layer", lang: uiSettings.locale, "data-chrome": chromeMode, "data-surface-open": surface !== null, style: { "--dtv-ui-scale": uiSettings.scale } },
     panel,
-    rpAlert === null ? null : h7(RpHighRiskDialog, { onDismiss: dismissRpAlert }),
-    h7(
+    importFailure === null ? null : h13(ImportFailureDialog, { message: importFailure, onDismiss: () => setImportFailure(null) }),
+    rpAlert === null ? null : h13(RpHighRiskDialog, { onDismiss: dismissRpAlert }),
+    workspaceAdmissionOpen ? h13(WorkspaceAdmission, {
+      setting: rpWorkspaceSetting,
+      state: rpWorkspaceLoadState,
+      error: rpWorkspaceError,
+      busy: rpWorkspaceBusy,
+      selectWorkspace: selectRpWorkspace,
+      reload: refreshRpWorkspace,
+      returnToNative: switchChrome
+    }) : null,
+    h13(
       "div",
       {
         className: "dtv-launcher",
@@ -4134,30 +14078,56 @@ function TavernShell({ useSessions, useWorkspaces, createCleanSession }) {
         "data-vertical": placement.vertical,
         style: { left: placement.left / uiSettings.scale, top: placement.top / uiSettings.scale }
       },
-      h7("div", { className: "dtv-ball-row" }, h7("button", {
-        className: "dtv-ball",
-        type: "button",
-        title: uiMessage("nav.launcher"),
-        "aria-label": uiMessage("nav.launcher"),
-        "aria-expanded": menuOpen,
-        onPointerDown: startDrag,
-        onPointerMove: moveDrag,
-        onPointerUp: endDrag,
-        onPointerCancel: endDrag,
-        onClick: toggleMenu
-      }, "DT")),
-      menuOpen ? h7(
+      h13("div", { className: "dtv-ball-row" }, h13(
+        "button",
+        {
+          className: "dtv-ball",
+          type: "button",
+          title: uiMessage("nav.launcher"),
+          "aria-label": uiMessage("nav.launcher"),
+          "aria-expanded": menuOpen,
+          onPointerDown: startDrag,
+          onPointerMove: moveDrag,
+          onPointerUp: endDrag,
+          onPointerCancel: endDrag,
+          onClick: clickLauncher,
+          onContextMenu: contextSwitchLauncher
+        },
+        h13("span", { key: chromeAnimation, className: "dtv-ball-face", "data-animate": chromeAnimation > 0, "aria-hidden": "true" }),
+        h13("span", { className: "dtv-ball-label" }, "DT")
+      )),
+      h13(
         "div",
         { className: "dtv-menu", role: "menu" },
-        h7("div", { className: "dtv-menu-title", "aria-live": "polite" }, statusError === "" ? uiMessage("nav.menuTitle", { session: sessionId || translate("nav.session.none") }) : uiMessage("nav.syncFailed", { message: statusError })),
-        ...TAVERN_MENU_ITEMS.map((item) => {
+        h13("div", { className: "dtv-menu-title", "aria-live": "polite" }, chromeError === "" && statusError === "" ? uiMessage("nav.menuTitle", { session: sessionId || translate("nav.session.none") }) : uiMessage("nav.syncFailed", { message: chromeError || statusError })),
+        h13(
+          "button",
+          {
+            className: "dtv-menu-item",
+            type: "button",
+            role: "menuitem",
+            title: chromeSwitchLabel,
+            "aria-label": chromeSwitchLabel,
+            "data-show-binding": false,
+            onClick: switchChrome
+          },
+          h13("span", { "aria-hidden": "true" }, "\u2194"),
+          h13(
+            "span",
+            { className: "dtv-item-copy" },
+            h13("span", { className: "dtv-item-label" }, chromeSwitchLabel),
+            h13("span", { className: "dtv-item-status" }, chromeStatusLabel)
+          ),
+          h13("span", { className: "dtv-item-planned" }, chromeMode === "play" ? "ST" : "DSH")
+        ),
+        ...TAVERN_MENU_ITEMS.filter((item) => !item.playOnly || chromeMode === "play").map((item) => {
           const status = statuses[item.id] ?? { bound: false, count: 0, titleKey: item.emptyTitleKey };
           const itemLabel = unwrapText(uiMessage(item.labelKey));
           const statusTitle = status.bound ? status.title : unwrapText(uiMessage(status.titleKey ?? item.emptyTitleKey));
           const stateLabel = item.binding === false ? "" : unwrapText(uiMessage(status.bound ? "common.bound" : "common.unbound"));
           const titleText = stateLabel ? uiMessage("nav.itemTitleBound", { label: itemLabel, title: statusTitle, state: stateLabel }) : uiMessage("nav.itemTitle", { label: itemLabel, title: statusTitle });
           const ariaText = stateLabel ? uiMessage("nav.itemAriaBound", { label: itemLabel, title: statusTitle, state: stateLabel }) : uiMessage("nav.itemAria", { label: itemLabel, title: statusTitle });
-          return h7(
+          return h13(
             "button",
             {
               className: "dtv-menu-item",
@@ -4173,42 +14143,67 @@ function TavernShell({ useSessions, useWorkspaces, createCleanSession }) {
               "aria-label": ariaText,
               onClick: () => open(item.id)
             },
-            item.binding === false ? h7("span", { "aria-hidden": "true" }) : h7("span", { className: "dtv-binding-dot", "aria-hidden": "true" }),
-            h7(
+            item.binding === false ? h13("span", { "aria-hidden": "true" }) : h13("span", { className: "dtv-binding-dot", "aria-hidden": "true" }),
+            h13(
               "span",
               { className: "dtv-item-copy" },
-              h7("span", { className: "dtv-item-label" }, uiMessage(item.labelKey)),
-              h7("span", { className: "dtv-item-status" }, status.bound ? rawText(status.title) : uiMessage(status.titleKey ?? item.emptyTitleKey))
+              h13("span", { className: "dtv-item-label" }, uiMessage(item.labelKey)),
+              h13("span", { className: "dtv-item-status" }, status.bound ? rawText(status.title) : uiMessage(status.titleKey ?? item.emptyTitleKey))
             ),
-            status.count > 1 ? h7("span", { className: "dtv-item-count", "aria-label": uiMessage("nav.bookCount", { count: status.count }) }, uiMessage("nav.bookCount", { count: status.count })) : item.available ? null : h7("span", { className: "dtv-item-planned" }, uiMessage("common.planned"))
+            status.count > 1 ? h13("span", { className: "dtv-item-count", "aria-label": uiMessage("nav.bookCount", { count: status.count }) }, uiMessage("nav.bookCount", { count: status.count })) : item.available ? null : h13("span", { className: "dtv-item-planned" }, uiMessage("common.planned"))
           );
         })
-      ) : null
+      )
     )
   );
 }
-function installStyles() {
-  if (document.querySelector('style[data-plugin-css="dsh-tavern-shell"]') !== null) return;
+function installStyles5() {
+  if (document.querySelector(`style[data-plugin-css="${PLUGIN_ID}-shell"]`) !== null) return;
   const style = document.createElement("style");
-  style.dataset.pluginCss = "dsh-tavern-shell";
-  style.textContent = css6;
+  style.dataset.pluginCss = `${PLUGIN_ID}-shell`;
+  style.textContent = css11;
   document.head.append(style);
 }
-var name = "dsh-tavern";
+var name = PLUGIN_ID;
 var inject = ["slots", "layout", "sessions", "workspaces"];
-function apply(ctx) {
+function apply2(ctx) {
   installPresetStyles();
   installCharacterStyles();
   installWorldBookStyles();
   installUserStyles();
   installTavernTraceStyles();
-  installStyles();
+  installStyles5();
   registerTavernTraceView(ctx);
+  const playClient = createLivePlayClient();
+  const playthroughController = createPlaythroughController(playClient);
+  const chrome = createChromeModeServiceCore({
+    read: () => playClient.getChrome(),
+    write: (mode) => playClient.putChrome(mode)
+  });
+  ctx.provide(CHROME_SERVICE_NAME, chrome.face);
+  ctx.effect(() => {
+    const stopTransport = startChromeModeTransport({
+      face: chrome.face,
+      internal: chrome.internal,
+      eventsUrl: playClient.chromeEventsUrl
+    });
+    return () => {
+      stopTransport();
+      chrome.internal.dispose();
+    };
+  }, "dsh-tavern: chrome mode service transport");
+  const playSlots = installPlaySlotOccupancy(ctx, playClient, {
+    playthroughController,
+    switchToNative: () => chrome.face.setMode("native")
+  });
   ctx.slots.inject("shell.overlay", () => ctx.slots.register({
     name: "shell.overlay",
-    id: "dsh-tavern-launcher",
+    id: `${PLUGIN_ID}-launcher`,
     order: 80,
     inject: () => ({
+      playClient,
+      chromeService: chrome.face,
+      playSlots,
       createCleanSession: ({ workspaceId, source }) => createCleanSessionWorkflow({
         workspaceId,
         source,
@@ -4219,11 +14214,27 @@ function apply(ctx) {
           source: selectedSource
         }),
         openSession: (id) => ctx.sessions.open(id),
-        refresh: () => window.dispatchEvent(new Event("dsh-tavern:refresh"))
+        refresh: () => window.dispatchEvent(new Event(CLIENT_REFRESH_EVENT))
+      }),
+      createConfiguredPlaythrough: ({ source }) => createConfiguredPlaythroughWorkflow({
+        source,
+        preview: (selectedSource) => sessionConfigurationRequest("/session-configurations/preview", { source: selectedSource }),
+        applySelection: (targetSessionId, selectedSource) => sessionConfigurationRequest("/session-configurations/apply", {
+          targetSessionId,
+          source: selectedSource
+        }),
+        playthroughController,
+        openSession: (id) => ctx.sessions.open(id),
+        refresh: () => window.dispatchEvent(new Event(CLIENT_REFRESH_EVENT))
       })
     })
   }, TavernShell));
 }
+/*! Bundled license information:
+
+dompurify/dist/purify.es.mjs:
+  (*! @license DOMPurify 3.4.14 | (c) Cure53 and other contributors | Released under the Apache license 2.0 and Mozilla Public License 2.0 | github.com/cure53/DOMPurify/blob/3.4.14/LICENSE *)
+*/
 
 		return module.exports;
 	}

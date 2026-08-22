@@ -1,5 +1,7 @@
 # Prompt pipeline and compatibility map
 
+[English](PROMPT_PIPELINE_en.md)
+
 状态：2026-08-18，已对齐 RP `rp:policy` 段与当前输入提前识别实现。
 
 本文说明 Tavern 资源在 SillyTavern、TauriTavern 和 dsh-tavern 中如何进入一次模型请求，并明确当前版本没有实现的映射。DSH 自身的 turn/step、Inbox、Session、system assembly 和 request/header 顺序另见 `docs/DSH_MESSAGE_FLOW.md`。它是技术评审文档，不是产品 README。
@@ -43,7 +45,7 @@ dsh 没有 ST 的 `PromptManager`、marker collection 或任意历史深度插�
 1. 导入时把 preset、角色卡和 World Info/Character Book 分别归一化，并保留未知字段。
 2. loader 根据当前 session 选择读取 preset、角色卡和一个用户资源；角色卡内嵌 `character_book` 自动成为世界信息来源。
 3. loader 从公开 `agent/inbox/spliced` 投影本次 claimed batch，与 DSH durable user/assistant 历史按稳定 message id 去重并有界组合；世界信息 matcher 在首个 assembly 就据此得到本次激活条目。
-4. loader 按 preset marker 组合静态 prompt、用户名/描述、角色字段和激活 lore，形成唯一 `dsh-tavern:profile` system section。
+4. loader 按 preset marker 组合静态 prompt、用户名/描述、角色字段和激活 lore，形成唯一 `pmp-dsh-tavern:profile` system section。
 5. DSH 自己继续从 Session 投影用户输入、历史和工具结果；插件不复制 `chatHistory`。
 6. `temperature`、`maxTokens`、`reasoningEffort` 和 `stop` 通过 `agent/request` 映射；其他 ST sampler 目前只保存，不宣称已经下发。
 
@@ -68,7 +70,7 @@ dsh 没有 ST 的 `PromptManager`、marker collection 或任意历史深度插�
 | dialogue examples | 读取角色卡字段并作为带来源标签的 system 近似块 | 部分；不是真实 user/assistant 示例消息 |
 | absolute/depth injection | 字段被保留，编译器不执行 | 未实现 |
 | World Info before/after | 角色卡内嵌书与 per-session 多选独立书使用同一 matcher 并填入 | 已接入基础 before/after；严格 depth/outlet 仍降级 |
-| 角色描述、性格、场景、首条消息 | 前三者进入 profile；首条消息仅作 greeting-reference | 部分；不伪造历史 |
+| 角色描述、性格、场景、首条消息 | 前三者进入 profile；首条消息仅在首轮生成作 greeting-reference | 部分；不伪造历史，也不在后续轮次重复注入 |
 | ST macro | 支持常见变量、随机与骰子；缺少完整 ST runtime context | 部分 |
 
 尤其要注意：把 ST 的 `user`/`assistant` prompt 包在 system 文本标签内只保留了审阅信息，并不等价于向模型发送真实 `user`/`assistant` 消息。这是当前兼容层最重要的边界。
@@ -84,7 +86,7 @@ dsh 没有 ST 的 `PromptManager`、marker collection 或任意历史深度插�
 | 用户名字与描述 | 名字解析 `{{user}}`；描述进入一次 `personaDescription`/`{{persona}}`，缺少放置点时诊断并稳定 fallback；不覆盖 DSH Agent persona |
 | 世界信息条目 | 扫描 durable history 与本步骤 claimed 输入，并按 before/after anchor 进入 profile；严格 depth/outlet 仍需要其他宿主能力 |
 | example dialogue | 当前为明确标注的 system 近似；未来需要真实 user/assistant 示例消息 seam |
-| first message / alternate greeting | 当前为 greeting-reference；未来应作为创建会话时的显式 seed message |
+| first message / alternate greeting | 首轮生成作为 greeting-reference；首个真实回复形成后不再注入，且始终不创建 seed/history message |
 | 用户输入与历史 | 始终以 DSH 原生 durable messages 为权威来源；世界书只读扫描，不重复发送 |
 | Agent system prompt | 默认共存并先于 preset；高级 replace 明确由用户承担工具提示丢失风险 |
 
@@ -94,4 +96,4 @@ dsh 没有 ST 的 `PromptManager`、marker collection 或任意历史深度插�
 
 这是预期内的上下文效应，不是“旧 preset 仍被直接注入”的必然证据。每次发送前，当前 system prompt 会重新组装，下一条请求只应带当前选择；但旧预设已经影响过的 assistant 回复和后续 user 对话仍存在于 durable conversation history。模型会从这些文本间接推断旧身份、格式或任务，因此产生认知残留。
 
-可靠的干净切换方式是选择新预设后使用“维持当前 Tavern 设置新开对话”，或从旧预设尚未产生回复的位置 fork。插件现已提供显式的干净会话与配置模板操作：它通过 DSH 公开 New Session seam 创建或取得真实 blank session，只复制 Tavern selection 投影，再在导航前原子应用；不会删除、改写、隐藏或复制旧历史。
+可靠的干净切换方式是选择新预设后使用“维持当前 Tavern 设置新开对话”，或从旧预设尚未产生回复的位置 fork。插件现已提供显式的干净会话与配置模板操作：DSH 模式通过公开 New Session seam 创建或取得真实 blank session；魔丸模式按配置角色创建或复用其权威空周目。两者都只复制 Tavern selection 投影并在导航前原子应用，不会删除、改写、隐藏或复制旧历史。

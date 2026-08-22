@@ -44,6 +44,67 @@ test('persists a single character document without a duplicate JSON artifact', (
   }
 })
 
+test('orders characters by recency then A to Z until a custom order is saved', () => {
+  const { directory, store } = temporaryStore()
+  try {
+    store.create({ id: 'older', name: 'Older', now: '2026-08-14T00:00:00.000Z' })
+    store.create({ id: 'zulu', name: 'Zulu', now: '2026-08-15T00:00:00.000Z' })
+    store.create({ id: 'alpha', name: 'Alpha', now: '2026-08-15T00:00:00.000Z' })
+    assert.deepEqual(store.list().map(character => character.id), ['alpha', 'zulu', 'older'])
+
+    store.setSorting('custom', ['zulu', 'older', 'alpha'])
+    assert.deepEqual(new CharacterStore(directory).list().map(character => character.id), ['zulu', 'older', 'alpha'])
+    assert.deepEqual(JSON.parse(readFileSync(join(directory, 'character-state.json'), 'utf8')).characterOrder, ['zulu', 'older', 'alpha'])
+    assert.deepEqual(store.sorting(), { mode: 'custom' })
+
+    assert.throws(() => store.setSorting('custom', ['zulu', 'zulu', 'alpha']), /Duplicate character id/)
+    assert.throws(() => store.setSorting('custom', ['zulu', 'missing', 'alpha']), /Unknown character id/)
+    assert.throws(() => store.setSorting('custom', ['zulu', 'alpha']), /every stored character/)
+
+    store.setSorting('name')
+    assert.deepEqual(store.list().map(character => character.id), ['alpha', 'older', 'zulu'])
+    store.setSorting('updated')
+    assert.deepEqual(store.list().map(character => character.id), ['alpha', 'zulu', 'older'])
+    store.setSorting('custom')
+    assert.deepEqual(store.list().map(character => character.id), ['zulu', 'older', 'alpha'])
+    store.setSorting('name')
+    store.create({ id: 'new', name: 'New', now: '2026-08-16T00:00:00.000Z' })
+    store.setSorting('custom')
+    assert.deepEqual(store.list().map(character => character.id), ['zulu', 'older', 'alpha', 'new'])
+
+    store.delete('zulu')
+    assert.deepEqual(new CharacterStore(directory).list().map(character => character.id), ['older', 'alpha', 'new'])
+    assert.deepEqual(JSON.parse(readFileSync(join(directory, 'character-state.json'), 'utf8')).characterOrder, ['older', 'alpha', 'new'])
+  } finally {
+    rmSync(directory, { recursive: true, force: true })
+  }
+})
+
+test('keeps a deleted character tombstone and safely identifies a reimported card', () => {
+  const { directory, store } = temporaryStore()
+  const source = Buffer.from(synthetic('Returning card'))
+  try {
+    store.import(source, { id: 'old-card' })
+    store.delete('old-card')
+    assert.deepEqual(store.missing(), [{
+      id: 'old-card',
+      name: 'Returning card',
+      sha256: createHash('sha256').update(source).digest('hex'),
+    }])
+
+    store.import(source, { id: 'new-card' })
+    assert.deepEqual(store.recoveryFor('new-card'), {
+      previousId: 'old-card',
+      characterId: 'new-card',
+      match: 'sha256',
+    })
+    assert.equal(store.resolveMissing('old-card'), true)
+    assert.deepEqual(new CharacterStore(directory).missing(), [])
+  } finally {
+    rmSync(directory, { recursive: true, force: true })
+  }
+})
+
 test('keeps per-session selections durable and clears references on delete', () => {
   const { directory, store } = temporaryStore()
   try {

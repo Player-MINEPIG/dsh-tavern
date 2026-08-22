@@ -9,17 +9,31 @@ import {
   surfaceTitle,
 } from '../packages/client/src/state.js'
 
+function assertOrdered(source, labels) {
+  let cursor = -1
+  for (const label of labels) {
+    const next = source.indexOf(label, cursor + 1)
+    assert.notEqual(next, -1, `missing ordered marker: ${label}`)
+    assert.ok(next > cursor, `marker is out of order: ${label}`)
+    cursor = next
+  }
+}
+
 test('one Tavern launcher exposes stable resource surfaces', () => {
   assert.deepEqual(TAVERN_MENU_ITEMS.map(item => item.id), [
     'preset',
     'character',
     'world-info',
+    'regex',
     'user',
     'session-template',
+    'conversation-settings',
     'settings',
   ])
   assert.equal(surfaceTitle('world-info'), 'nav.worldBook')
   assert.equal(TAVERN_MENU_ITEMS.find(item => item.id === 'user').available, true)
+  assert.equal(TAVERN_MENU_ITEMS.find(item => item.id === 'regex').playOnly, true)
+  assert.equal(TAVERN_MENU_ITEMS.find(item => item.id === 'conversation-settings').playOnly, true)
   assert.equal(TAVERN_MENU_ITEMS.find(item => item.id === 'settings').showBinding, false)
 })
 
@@ -118,22 +132,54 @@ test('legacy active responses and missing optional fields remain safe', () => {
 
 test('only the client composition root owns the Tavern shell overlay', () => {
   const root = readFileSync(new URL('../packages/client/src/index.js', import.meta.url), 'utf8')
+  assert.match(root, /ctx\.provide\(CHROME_SERVICE_NAME, chrome\.face\)/)
+  assert.match(root, /startChromeModeTransport\(\{/)
+  assert.match(root, /chromeService: chrome\.face/)
+  assert.match(root, /chromeService\.subscribe\(snapshot =>/)
+  assert.match(root, /persistMode: mode => chromeService\.setMode\(mode\)/)
+  assert.doesNotMatch(root, /new BroadcastChannel|chromeModeRef/)
+  assert.match(root, /stopTransport\(\)[\s\S]*chrome\.internal\.dispose\(\)/)
   const preset = readFileSync(new URL('../packages/preset/src/client.js', import.meta.url), 'utf8')
   const character = readFileSync(new URL('../packages/character/src/client.js', import.meta.url), 'utf8')
   const user = readFileSync(new URL('../packages/user/src/client.js', import.meta.url), 'utf8')
   assert.equal(root.match(/slots\.inject\('shell\.overlay'/g)?.length, 1)
-  assert.match(root, /id: 'dsh-tavern-launcher'/)
-  assert.match(root, /}, 'DT'\)\)/)
-  assert.doesNotMatch(root, /}, 'ST'\)\)/)
+  assert.match(root, /id: `\$\{PLUGIN_ID\}-launcher`/)
+  assert.match(root, /'data-chrome': chromeMode/)
+  assert.doesNotMatch(root, /onDoubleClick|doubleClickLauncher|event\.detail > 1/)
+  assert.match(root, /onContextMenu: contextSwitchLauncher/)
+  assert.match(root, /contextSwitchLauncher = event => \{[\s\S]*event\.preventDefault\(\)[\s\S]*chromeController\.current\?\.switchMode/)
+  assert.match(root, /Promise\.resolve\(switching\)\.then\(changed => \{[\s\S]*if \(changed\) setChromeAnimation/)
+  assert.match(root, /className: 'dtv-ball-face'[\s\S]*'data-animate': chromeAnimation > 0/)
+  assert.match(root, /prefers-reduced-motion:reduce/)
+  assert.match(root, /\.dtv-menu-title\{flex:none;/)
+  assert.match(root, /\.dtv-menu\{[^}]*visibility:hidden;pointer-events:none;[^}]*transition:[^}]*visibility 0s linear \.18s\}/)
+  assert.match(root, /\.dtv-launcher\[data-open=true\] \.dtv-menu\{[^}]*visibility:visible;pointer-events:auto;[^}]*transition-delay:\.22s,\.16s,\.22s\}/)
+  assert.doesNotMatch(root, /menuOpen \? h\('div', \{ className: 'dtv-menu'/)
+  assert.match(root, /className: 'dtv-ball-label' \}, 'DT'\)\)\)/)
+  assert.doesNotMatch(root, /chromeMode === 'play' \? 'ST' : 'DS'/)
+  assert.match(root, /chromeController\.current\?\.switchMode\(\)/)
+  assert.match(root, /uiMessage\('chrome\.switchToPlay'\)/)
+  assert.match(root, /role: 'menuitem'[\s\S]*onClick: switchChrome/)
+  assert.match(root, /#18569d/)
+  assert.match(root, /#f7fbff/)
+  assert.match(root, /data-chrome=play[^\n]+#b31319/)
+  assert.match(root, /--dtv-orb-a:#090909/)
+  assert.match(root, /@keyframes dtv-orb-switch\{to\{transform:rotate\(1turn\)\}\}/)
+  assert.match(root, /createLivePlayClient\(\)/)
+  assert.match(root, /playClient,/)
+  assert.match(root, /playClient\.getMessages\(targetSessionId\)/)
+  assert.match(root, /CharacterPanel, \{[\s\S]*sessionId,[\s\S]*sessionBlank,[\s\S]*hasConversationHistory,[\s\S]*detachPlaythroughSession:/)
   assert.match(root, /'data-active': surface === item\.id/)
   assert.match(root, /'data-bound': item\.binding === false \? undefined : status\.bound/)
   assert.match(root, /setActiveSnapshot\(null\)[\s\S]*refreshStatus\(\)/)
   assert.match(root, /event\.key !== 'Escape'/)
   assert.match(root, /'data-surface-open': surface !== null/)
-  assert.match(root, /setSurface\(id\)[\s\S]*dsh-tavern:refresh/)
+  assert.match(root, /setSurface\(id\)[\s\S]*CLIENT_REFRESH_EVENT/)
   assert.doesNotMatch(root, /surface === null \? h\('div', \{\s*className: 'dtv-launcher'/)
   assert.doesNotMatch(preset, /slots\.inject|dsh-tavern-preset-launcher/)
   assert.doesNotMatch(character, /slots\.inject|dsh-tavern-character-overlay/)
+  assert.match(root, /RegexPanel/)
+  assert.match(root, /filter\(item => !item\.playOnly \|\| chromeMode === 'play'\)/)
   assert.doesNotMatch(user, /slots\.inject|avatar|image\/|<img/)
   assert.match(root, /WorldBookPanel/)
   assert.match(root, /UserPanel/)
@@ -150,9 +196,10 @@ test('only the client composition root owns the Tavern shell overlay', () => {
 test('standalone world-book panel exposes CRUD, multi-binding and all required entry controls', () => {
   const source = readFileSync(new URL('../packages/world-book-library/src/client.js', import.meta.url), 'utf8')
   for (const route of ['world-books/import', 'world-book-selection', 'world-books/']) assert.match(source, new RegExp(route))
-  for (const label of ['world.entry.title', 'world.entry.primaryKeys', 'world.entry.secondaryKeys', 'world.entry.secondaryLogicShort', 'common.enable', 'world.entry.constant', 'world.entry.caseSensitive', 'world.entry.wholeWord', 'world.entry.position', 'world.entry.order', 'world.entry.probability', 'world.entry.body']) {
+  for (const label of ['world.entry.title', 'world.entry.primaryKeys', 'world.entry.secondaryKeys', 'world.entry.secondaryLogicShort', 'world.entry.constant', 'world.entry.caseSensitive', 'world.entry.wholeWord', 'world.entry.position', 'world.entry.order', 'world.entry.probability', 'world.entry.body']) {
     assert.match(source, new RegExp(label.replaceAll('.', '\\.')))
   }
+  assert.match(source, /h\('summary'[\s\S]*?type: 'checkbox'[\s\S]*?checked: entry\.enabled/)
   assert.match(source, /saveEmbedded/)
   assert.match(source, /world\.addEmbeddedEntry/)
 })
@@ -164,27 +211,30 @@ test('resource mutations announce one shared refresh event consumed by the shell
   const worldBook = readFileSync(new URL('../packages/world-book-library/src/client.js', import.meta.url), 'utf8')
   const user = readFileSync(new URL('../packages/user/src/client.js', import.meta.url), 'utf8')
 
-  assert.match(root, /addEventListener\('dsh-tavern:refresh', onRefresh\)/)
+  assert.match(root, /addEventListener\(CLIENT_REFRESH_EVENT, onRefresh\)/)
   assert.ok((preset.match(/announceTavernRefresh\(\)/g)?.length ?? 0) >= 6)
-  assert.equal(character.match(/announceTavernRefresh\(\)/g)?.length, 7)
-  assert.match(character, /addEventListener\('dsh-tavern:refresh', onRefresh\)/)
+  assert.ok((character.match(/announceTavernRefresh\(\)/g)?.length ?? 0) >= 7)
+  assert.match(character, /const applySelectionResult = useCallback[\s\S]*?await refresh\(detail\?\.id\)[\s\S]*?announceTavernRefresh\(\)/)
+  assert.match(character, /await hasConversationHistory\(sessionId\)/)
+  assert.match(character, /addEventListener\(CLIENT_REFRESH_EVENT, onRefresh\)/)
   assert.match(character, /rawText\(item\.name\)/)
   assert.doesNotMatch(character, /item\.sourceFormat/)
   assert.match(character, /character\.bindingUnsaved/)
   assert.match(character, /character\.bindingApplied/)
   assert.match(character, /characterBindingDirty\(selection, binding\)/)
-  assert.match(worldBook, /dispatchEvent\(new Event\('dsh-tavern:refresh'\)\)/)
+  assert.match(worldBook, /dispatchEvent\(new Event\(CLIENT_REFRESH_EVENT\)\)/)
   assert.match(user, /notifyRefresh\(\)/)
-  assert.match(worldBook, /addEventListener\('dsh-tavern:refresh', onRefresh\)/)
-  assert.match(user, /addEventListener\('dsh-tavern:refresh', onRefresh\)/)
+  assert.match(worldBook, /addEventListener\(CLIENT_REFRESH_EVENT, onRefresh\)/)
+  assert.match(user, /addEventListener\(CLIENT_REFRESH_EVENT, onRefresh\)/)
 })
 
-test('world-book panel separates session, user and character sources while exposing unapplied binding state', () => {
+test('world-book panel separates session, user, preset and character sources while exposing unapplied binding state', () => {
   const source = readFileSync(new URL('../packages/world-book-library/src/client.js', import.meta.url), 'utf8')
   assert.match(source, /world\.standalone/)
   assert.match(source, /world\.characterBound/)
   assert.match(source, /data-source': 'standalone'/)
   assert.match(source, /data-source': 'user'/)
+  assert.match(source, /data-source': 'preset'/)
   assert.match(source, /data-source': 'character'/)
   assert.match(source, /deriveUserWorldBookSource/)
   assert.match(source, /world\.user\.current/)
@@ -198,6 +248,11 @@ test('world-book panel separates session, user and character sources while expos
   assert.match(source, /world\.user\.editContent/)
   assert.match(source, /scrollIntoView/)
   assert.match(source, /world\.embeddedEmpty/)
+  assert.match(source, /world\.createEmbedded/)
+  assert.match(source, /presets\/\$\{encodeURIComponent\(presetId\)\}\/world-books/)
+  assert.match(source, /characters\/\$\{encodeURIComponent\(characterId\)\}\/world-books/)
+  assert.match(source, /savePresetSelection/)
+  assert.match(source, /saveCharacterSelection/)
   assert.match(source, /world\.bindingUnsaved/)
   assert.match(source, /world\.bindingAppliedButton/)
   assert.doesNotMatch(source, /`\$\{item\.name\} · \$\{item\.sourceFormat\}`/)
@@ -216,6 +271,10 @@ test('preset browsing is separate from explicit per-session binding', () => {
   assert.match(source, /preset\.status\.created/)
   assert.match(source, /preset\.status\.imported/)
   assert.equal(source.match(/api\('\/select'/g)?.length, 2)
+  assert.match(source, /href: `\$\{API_ROOT\}\/presets\/\$\{encodeURIComponent\(draft\.id\)\}\/export`/)
+  assert.match(source, /download: ''[^\n]+uiMessage\('common\.exportJson'\)/)
+  assert.match(source, /\.dtt-toolbar\{grid-template-columns:repeat\(auto-fit,minmax\(120px,1fr\)\)\}/)
+  assert.match(source, /\.dtt-actions\{grid-template-columns:1fr 1fr\}/)
   assert.match(root, /PresetSidebar,[\s\S]*sessionId,[\s\S]*sessionBlank/)
   assert.match(server, /beforeSelectionChange\?\.\(\{ sessionId: targetSessionId, presetId: selectedId \}\)/)
 })
@@ -235,7 +294,7 @@ test('session-template primary actions use the shared blue business token', () =
   const source = readFileSync(new URL('../packages/session-template/src/client.js', import.meta.url), 'utf8')
   assert.match(root, /\.dtv-primary\{background:var\(--dsw-alias-state-business-primary,#2677d9\)/)
   assert.doesNotMatch(root, /\.dtv-primary\{background:var\(--dsw-alias-button-primary-fill/)
-  assert.equal(source.match(/className: 'dtv-button dtv-primary'/g)?.length, 2)
+  assert.equal(source.match(/className: 'dtv-button dtv-primary'/g)?.length, 3)
 })
 
 test('user session binding uses the same primary action styling as other binding panels', () => {
@@ -253,4 +312,58 @@ test('user panel edits independent world-book relationships and exposes unsaved-
   assert.match(source, /beforeunload/)
   assert.match(source, /uiMessage\('user\.confirmCloseDirty'\)/)
   assert.doesNotMatch(source, /description:\s*worldBookIds|worldBookIds:\s*draft\.description/)
+})
+
+test('resource setting panels follow the preset page hierarchy', () => {
+  const character = readFileSync(new URL('../packages/character/src/client.js', import.meta.url), 'utf8').split("return h('div', { className: 'dcc-panel' }")[1]
+  assertOrdered(character, ["character.import", "common.exportJson", "character.create", "character.browse", "onClick: bind", "onClick: unbind", "character.sessionBinding", "className: 'dcc-card'", "className: 'dcc-footer'"])
+
+  const user = readFileSync(new URL('../packages/user/src/client.js', import.meta.url), 'utf8').split("return h('div', { className: 'dtu-panel' }")[1]
+  assertOrdered(user, ["user.create", "user.browse", "onClick: bind", "onClick: unbind", "user.sessionBinding", "className: 'dtu-editor'", "className: 'dtu-footer'"])
+
+  const worldBook = readFileSync(new URL('../packages/world-book-library/src/client.js', import.meta.url), 'utf8').split("return h('div', { className: 'dwb-panel' }")[1]
+  assertOrdered(worldBook, ["world.importJson", "common.exportJson", "world.create", "world.browse", "world.sessionBinding", "world.currentSession", "className: 'dwb-footer'"])
+
+  const regex = readFileSync(new URL('../packages/client/src/play/regex-panel.js', import.meta.url), 'utf8')
+  const regexScope = regex.split('function RegexScopeSection(')[1]
+  assertOrdered(regexScope, ["common.importJson", "common.exportJson", "regex.add"])
+  assert.match(regex, /h\('summary'[\s\S]*?type: 'checkbox'[\s\S]*?checked: rule\.enabled/)
+
+  const template = readFileSync(new URL('../packages/session-template/src/client.js', import.meta.url), 'utf8').split("return h('div', { className: 'dtv-panel' }")[1]
+  assertOrdered(template, ["template.createFromCurrent", "template.selected", "template.inheritNote", "className: 'dtv-resource'", "className: 'dtv-template-footer'"])
+})
+
+test('Mowan workspace admission is explicit and stays closed until authoritative read-back', () => {
+  const source = readFileSync(new URL('../packages/client/src/index.js', import.meta.url), 'utf8')
+  const selection = source.split('const selectRpWorkspace = async path =>')[1].split('const persistRpPolicy')[0]
+
+  assertOrdered(source, [
+    "chromeMode === 'play'",
+    "rpWorkspaceLoadState !== 'idle'",
+    "rpWorkspaceLoadState !== 'loading'",
+    'rpWorkspaceSetting?.ready !== true',
+  ])
+  assert.match(source, /onClick: \(\) => selectWorkspace\(item\.path\)/)
+  assert.doesNotMatch(selection, /available\?\.\[0\]|available\[0\]/)
+  assertOrdered(selection, ['playClient.putWorkspace(path)', 'playClient.getWorkspace()', 'if (!verified.ready)'])
+  assert.match(source, /setRpWorkspaceLoadState\('saving'\)/)
+  assert.match(source, /returnToNative: switchChrome/)
+  assert.match(source, /role: 'dialog'[\s\S]*'aria-modal': 'true'/)
+
+})
+test('RP sidebar separates automatic sort modes from preset-style custom dragging', () => {
+  const source = readFileSync(new URL('../packages/client/src/play/sidebar.js', import.meta.url), 'utf8')
+
+  assert.match(source, /reorderAtBoundary/)
+  assert.match(source, /data-character-index/)
+  assert.match(source, /data-dragging/)
+  assert.match(source, /setPointerCapture/)
+  assert.match(source, /CharacterDropPlaceholder/)
+  assert.match(source, /playClient\.putCharacterOrder\('custom', characterIds\)/)
+  assert.match(source, /const response = await playClient\.putCharacterOrder\(mode\)/)
+  assert.match(source, /value: resources\.characterSorting\?\.mode \?\? 'updated'/)
+  assert.match(source, /resources\?\.characterSorting\?\.mode !== 'custom'/)
+  assert.match(source, /await playClient\.relinkCharacter\(recovery\.missing\.id, recovery\.character\.id\)/)
+  assert.match(source, /await playClient\.relinkPlaythroughCharacter\(relinkRequest\.playthrough\.id, relinkTargetId\)/)
+  assert.match(source, /assessPlaythroughCharacterRelink/)
 })

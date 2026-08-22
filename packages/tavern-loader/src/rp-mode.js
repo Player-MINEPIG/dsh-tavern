@@ -1,4 +1,5 @@
 import { resolveRpReadTarget } from './rp-secure-path.js'
+import { API_V1 } from '../../identity.js'
 
 const RP_SOURCES = new Set(['command', 'character-follow'])
 const SANDBOX_MODES = new Set(['read-only', 'workspace-write', 'danger-full-access'])
@@ -434,7 +435,7 @@ function sendJson(res, status, payload) {
 
 export function isRpModeApiPath(url) {
   const path = new URL(url ?? '/', 'http://localhost').pathname
-  return path === '/dsh-tavern/api/rp-mode' || path === '/dsh-tavern/api/rp-alert'
+  return path === `${API_V1}/rp-mode` || path === `${API_V1}/rp-alert`
 }
 
 export function createRpModeApiHandler(controller, { beforeChange = async () => {} } = {}) {
@@ -442,7 +443,7 @@ export function createRpModeApiHandler(controller, { beforeChange = async () => 
     try {
       const url = new URL(req.url ?? '/', 'http://localhost')
       const method = String(req.method ?? 'GET').toUpperCase()
-      if (url.pathname === '/dsh-tavern/api/rp-alert') {
+      if (url.pathname === `${API_V1}/rp-alert`) {
         const sessionId = url.searchParams.get('sessionId')
         if (typeof sessionId !== 'string' || sessionId === '') throw new TypeError('sessionId must be a string')
         if (method === 'GET') return sendJson(res, 200, { ok: true, alert: controller.peekHighRiskAlert(sessionId) })

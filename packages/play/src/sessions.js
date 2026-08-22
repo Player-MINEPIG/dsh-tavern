@@ -1,0 +1,350 @@
+import { httpError, readBoundedJson, sendJson } from './http.js'
+import { deriveFocus, isSafeCatalogSegment, parseCatalogJson, parseTimelineJson } from './timeline.js'
+
+const MAX_BODY_BYTES = 64 * 1024
+const SESSION_ID_PATTERN = /^[A-Za-z0-9][A-Za-z0-9._:-]{0,199}$/
+
+function requireSessionId(value) {
+  if (typeof value !== 'string' || !SESSION_ID_PATTERN.test(value)) {
+    throw httpError(400, 'Invalid session id', 'PLAY_SESSION_INVALID')
+  }
+  return value
+}
+
+export function hasOpenTurn(events) {
+  let open = false
+  if (!Array.isArray(events)) return false
+  for (const entry of events) {
+    const event = entry?.event ?? entry
+    if (event?.type === 'turn/start') open = true
+    else if (event?.type === 'turn/end') open = false
+  }
+  return open
+}
+
+export function eventRecord(entry) {
+  return entry?.event ?? entry
+}
+
+function boundedSourceText(value, maximum) {
+  return typeof value === 'string' && value !== '' ? value.slice(0, maximum) : null
+}
+
+function messageOrigin(message, event) {
+  if (message?.role === 'assistant') return { kind: 'assistant' }
+  if (message?.role === 'system') return { kind: 'system' }
+  const source = message?.source ?? event?.data?.source ?? event?.data?.message?.source
+  if (event?.type === 'steering/message') return { kind: 'steering' }
+  if (source == null || source?.kind === 'user') return { kind: 'user' }
+  return {
+    kind: 'context',
+    producer: boundedSourceText(source?.kind, 200),
+    form: boundedSourceText(source?.form, 64),
+    summary: boundedSourceText(source?.summary, 1000),
+  }
+}
+
+export function projectMessages(messages, events) {
+  const seqById = new Map()
+  const eventById = new Map()
+  for (const entry of events ?? []) {
+    const event = eventRecord(entry)
+    const id = event?.data?.id ?? event?.data?.message?.id
+    if (typeof id === 'string') {
+      eventById.set(id, event)
+      if (Number.isSafeInteger(event.seq)) seqById.set(id, event.seq)
+    }
+  }
+  return (messages ?? []).map(message => {
+    const event = eventById.get(message.id)
+    return {
+      id: message.id,
+      role: message.role,
+      content: message.content,
+      seq: seqById.get(message.id) ?? null,
+      origin: messageOrigin(message, event),
+    }
+  })
+}
+
+export function messagesFromEvents(events) {
+  const messages = []
+  for (const entry of events ?? []) {
+    const event = eventRecord(entry)
+    if (event?.type !== 'user/message' && event?.type !== 'assistant/message') continue
+    const message = event.data?.role ? event.data : event.data?.message
+    if (typeof message?.id === 'string') messages.push(message)
+  }
+  return messages
+}
+
+export function formatPlaySessionTitle(characterName, now = new Date()) {
+  const stamp = now.toISOString().slice(0, 16).replace('T', ' ')
+  const name = typeof characterName === 'string' && characterName.trim() !== '' ? characterName.trim() : 'Play'
+  return `${name} ${stamp}`
+}
+
+async function readAllHistory(host, sessionId) {
+  const collected = []
+  let beforeSeq
+  for (;;) {
+    const result = await host.history({ sessionId, beforeSeq })
+    const events = result?.events ?? []
+    collected.unshift(...events)
+    if (result?.hasMore !== true) break
+    if (events.length === 0) {
+      throw httpError(502, 'Host history cursor stalled: hasMore=true with an empty page', 'PLAY_HISTORY_CURSOR_STALLED')
+    }
+    const oldest = eventRecord(events[0])
+    if (!Number.isSafeInteger(oldest?.seq)) {
+      throw httpError(502, 'Host history cursor stalled: page has no valid oldest sequence', 'PLAY_HISTORY_CURSOR_STALLED')
+    }
+    if (beforeSeq !== undefined && oldest.seq >= beforeSeq) {
+      throw httpError(502, 'Host history cursor stalled: oldest sequence did not move backward', 'PLAY_HISTORY_CURSOR_STALLED')
+    }
+    beforeSeq = oldest.seq
+  }
+  return collected
+}
+
+async function requireMutableImportContext(host, sessionId, operation) {
+  const binding = typeof host.getImportContextBinding === 'function'
+    ? await host.getImportContextBinding(sessionId)
+    : null
+  if (binding?.state === 'claimed' || binding?.state === 'consumed') {
+    throw httpError(409, 'import context is locked after use', 'PLAY_IMPORT_CONTEXT_LOCKED')
+  }
+  operation?.stage('authority.checked', { sessionId })
+  const events = await readAllHistory(host, sessionId)
+  const derived = typeof host.deriveMessages === 'function'
+    ? await host.deriveMessages({ sessionId, events })
+    : messagesFromEvents(events)
+  const messages = derived ?? messagesFromEvents(events)
+  if (hasOpenTurn(events) || messages.some(message => message?.role === 'user' || message?.role === 'assistant')) {
+    throw httpError(409, 'import context is locked after conversation starts', 'PLAY_IMPORT_CONTEXT_LOCKED')
+  }
+  operation?.stage('history.lock.checked', { sessionId })
+  return binding
+}
+
+function requireBoundWorkspace(workspaceStore) {
+  const binding = workspaceStore.get()
+  if (typeof binding.rootPath !== 'string' || binding.rootPath === '') {
+    throw httpError(409, 'play workspace root is not bound', 'PLAY_WORKSPACE_UNBOUND')
+  }
+  return binding
+}
+
+function playthroughNotFound(id) {
+  throw httpError(404, `playthrough "${id}" was not found`, 'PLAY_PLAYTHROUGH_NOT_FOUND')
+}
+
+function catalogUnavailable(cause) {
+  const error = httpError(409, 'play catalog is unavailable', 'PLAY_CATALOG_UNAVAILABLE')
+  error.cause = cause
+  return error
+}
+
+function focusUnavailable(id, cause) {
+  const error = httpError(409, `focus for playthrough "${id}" is unavailable`, 'PLAY_FOCUS_UNAVAILABLE')
+  error.cause = cause
+  return error
+}
+
+async function readTimelineForFocus(workspaceStore, relativePath) {
+  if (typeof relativePath !== 'string' || relativePath === '') {
+    throw httpError(400, 'path is required', 'PLAY_FOCUS_PATH_REQUIRED')
+  }
+  return { path: relativePath, timeline: parseTimelineJson(workspaceStore.readFile(relativePath).content) }
+}
+
+export function createSessionApiHandler({ host, workspaceStore, now = () => new Date() } = {}) {
+  if (host === undefined) throw new TypeError('host is required')
+  if (workspaceStore === undefined) throw new TypeError('workspaceStore is required')
+
+  return {
+    async create(req, res, operation) {
+      const body = await readBoundedJson(req, MAX_BODY_BYTES)
+      const binding = requireBoundWorkspace(workspaceStore)
+      const sourceId = body?.selectionFromSessionId === undefined || body.selectionFromSessionId === null
+        ? null
+        : requireSessionId(body.selectionFromSessionId)
+      operation?.stage('request.validated', sourceId === null ? {} : { sessionId: sourceId })
+      const importPath = typeof body?.importContextRef?.path === 'string' ? body.importContextRef.path : undefined
+      if (body?.importContextRef !== undefined) operation?.stage('import.prepare.begin', importPath === undefined ? {} : { path: importPath })
+      const preparedImport = body?.importContextRef === undefined
+        ? null
+        : await host.prepareImportContext(body.importContextRef)
+      if (preparedImport !== null) {
+        const preparedPath = typeof preparedImport.path === 'string' ? preparedImport.path : importPath
+        operation?.stage('import.prepared', preparedPath === undefined ? {} : { path: preparedPath })
+      }
+      const characterName = typeof host.characterName === 'function'
+        ? host.characterName(sourceId)
+        : null
+      const title = typeof characterName === 'string' && characterName.trim() !== ''
+        ? formatPlaySessionTitle(characterName, now())
+        : undefined
+      operation?.stage('host.session.create.begin')
+      const created = await host.createSession({
+        workspaceId: binding.workspaceId,
+        cwd: binding.rootPath,
+        title,
+      })
+      const sessionId = requireSessionId(created?.sessionId)
+      operation?.stage('host.session.created', { sessionId })
+      if (preparedImport !== null) {
+        operation?.stage('import.bind.begin', { sessionId })
+        await host.bindImportContext(sessionId, preparedImport)
+        operation?.stage('import.bind.committed', { sessionId })
+      }
+      if (sourceId !== null && typeof host.copySelection === 'function') {
+        operation?.stage('selection.copy.begin', { sessionId })
+        await host.copySelection(sourceId, sessionId)
+        operation?.stage('selection.copy.committed', { sessionId })
+      }
+      return sendJson(res, 201, title === undefined ? { ok: true, sessionId } : { ok: true, sessionId, title })
+    },
+
+    async branch(req, res, sessionId, operation) {
+      const body = await readBoundedJson(req, MAX_BODY_BYTES)
+      requireSessionId(sessionId)
+      if (!Number.isSafeInteger(body?.atEventId) || body.atEventId < 0) {
+        throw httpError(400, 'atEventId must be a non-negative event seq', 'PLAY_EVENT_INVALID')
+      }
+      operation?.stage('request.validated', { sessionId })
+      operation?.stage('host.fork.begin', { sessionId })
+      const created = await host.forkSession({ sessionId, atSeq: body.atEventId })
+      const childSessionId = requireSessionId(created?.sessionId)
+      operation?.stage('host.forked', { sessionId: childSessionId })
+      try {
+        if (typeof host.copySelection === 'function') {
+          operation?.stage('selection.copy.begin', { sessionId: childSessionId })
+          await host.copySelection(sessionId, childSessionId)
+          operation?.stage('selection.copy.committed', { sessionId: childSessionId })
+        } else {
+          operation?.stage('selection.copy.skipped', { sessionId: childSessionId })
+        }
+        if (typeof host.copyImportContextLineage === 'function') {
+          operation?.stage('import.lineage.copy.begin', { sessionId: childSessionId })
+          await host.copyImportContextLineage(sessionId, childSessionId, body.atEventId)
+          operation?.stage('import.lineage.copy.committed', { sessionId: childSessionId })
+        } else {
+          operation?.stage('import.lineage.copy.skipped', { sessionId: childSessionId })
+        }
+      } catch (error) {
+        const failure = httpError(502, 'Fork succeeded but branch context copy failed', 'PLAY_BRANCH_COPY_FAILED')
+        failure.cause = error
+        throw failure
+      }
+      return sendJson(res, 201, { ok: true, sessionId: childSessionId })
+    },
+
+    async userMessage(req, res, sessionId, operation) {
+      const body = await readBoundedJson(req, MAX_BODY_BYTES)
+      requireSessionId(sessionId)
+      if (typeof body?.text !== 'string') throw httpError(400, 'text must be a string', 'PLAY_MESSAGE_INVALID')
+      operation?.stage('request.validated', { sessionId })
+      operation?.stage('host.prompt.begin', { sessionId })
+      await host.promptSession({
+        sessionId,
+        mode: 'queue',
+        text: body.text,
+      })
+      operation?.stage('host.prompt.accepted', { sessionId })
+      return sendJson(res, 200, { ok: true, accepted: true })
+    },
+
+    async messages(_req, res, sessionId) {
+      requireSessionId(sessionId)
+      const events = await readAllHistory(host, sessionId)
+      const derived = typeof host.deriveMessages === 'function'
+        ? await host.deriveMessages({ sessionId, events })
+        : messagesFromEvents(events)
+      return sendJson(res, 200, {
+        ok: true,
+        messages: projectMessages(derived ?? messagesFromEvents(events), events),
+        incompleteTurn: hasOpenTurn(events),
+      })
+    },
+
+    async importContext(req, res, sessionId, method, operation) {
+      requireSessionId(sessionId)
+      if (typeof host.getImportContextBinding !== 'function') {
+        throw httpError(501, 'Host import context is unavailable', 'PLAY_HOST_UNAVAILABLE')
+      }
+      if (method === 'GET') {
+        const binding = await host.getImportContextBinding(sessionId)
+        return sendJson(res, 200, { ok: true, binding })
+      }
+      await requireMutableImportContext(host, sessionId, operation)
+      operation?.stage('request.validated', { sessionId })
+      if (method === 'DELETE') {
+        if (typeof host.unbindImportContext !== 'function') {
+          throw httpError(501, 'Host import context is unavailable', 'PLAY_HOST_UNAVAILABLE')
+        }
+        operation?.stage('unbind.begin', { sessionId })
+        await host.unbindImportContext(sessionId)
+        operation?.stage('unbind.committed', { sessionId })
+        return sendJson(res, 200, { ok: true, binding: null })
+      }
+      const body = await readBoundedJson(req, MAX_BODY_BYTES)
+      if (body?.reference === undefined) {
+        throw httpError(400, 'reference is required', 'PLAY_IMPORT_CONTEXT_INVALID')
+      }
+      operation?.stage('prepare.begin', typeof body.reference.path === 'string' ? { path: body.reference.path } : {})
+      const prepared = await host.prepareImportContext(body.reference)
+      operation?.stage('prepared', typeof prepared?.path === 'string' ? { path: prepared.path } : {})
+      operation?.stage('bind.begin', { sessionId })
+      const binding = await host.bindImportContext(sessionId, prepared)
+      operation?.stage('bind.committed', { sessionId })
+      return sendJson(res, 200, { ok: true, binding })
+    },
+
+    async focus(req, res, searchParams) {
+      requireBoundWorkspace(workspaceStore)
+      const requested = searchParams.get('path')
+      if (requested === null) throw httpError(400, 'path is required', 'PLAY_FOCUS_PATH_REQUIRED')
+      const { timeline } = await readTimelineForFocus(workspaceStore, requested)
+      const focus = deriveFocus(timeline)
+      return sendJson(res, 200, { ok: true, sessionId: focus.sessionId })
+    },
+
+    async playthroughFocus(_req, res, playthroughId) {
+      requireBoundWorkspace(workspaceStore)
+      let id
+      try { id = decodeURIComponent(playthroughId) } catch (error) { throw httpError(400, 'playthrough id is not valid URL encoding', 'PLAY_PLAYTHROUGH_ID_INVALID') }
+      if (!isSafeCatalogSegment(id)) throw httpError(400, 'playthrough id must be a safe path segment', 'PLAY_PLAYTHROUGH_ID_INVALID')
+      let catalog
+      try {
+        catalog = parseCatalogJson(workspaceStore.readFile('catalog.json').content)
+      } catch (error) {
+        if (error?.code === 'PLAY_CATALOG_INVALID') throw error
+        throw catalogUnavailable(error)
+      }
+      const playthrough = catalog.playthroughs.find(item => item.id === id)
+      if (playthrough === undefined) playthroughNotFound(id)
+      let timeline, focus
+      try {
+        timeline = parseTimelineJson(workspaceStore.readFile(playthrough.path).content)
+        focus = deriveFocus(timeline)
+      } catch (error) {
+        throw focusUnavailable(id, error)
+      }
+      const rootSessionId = playthrough.ext?.pmpDshTavern?.rootSessionId ?? null
+      const emptyTimeline = timeline.nodes.length === 0
+      return sendJson(res, 200, {
+        ok: true,
+        playthroughId: id,
+        sessionId: emptyTimeline ? rootSessionId : focus.sessionId,
+        nodeId: focus.nodeId,
+        variantId: focus.variantId,
+      })
+    },
+  }
+}
+
+export const playSessionConstants = Object.freeze({
+  sessionIdPattern: SESSION_ID_PATTERN,
+  maxBodyBytes: MAX_BODY_BYTES,
+})

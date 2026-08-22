@@ -34,7 +34,7 @@ test('HTTP API imports, selects, reads, updates, and creates presets', async () 
   try {
     const imported = await invoke(handler, {
       method: 'POST',
-      url: '/dsh-tavern/api/import',
+      url: '/pmp-dsh-tavern/api/v1/import',
       body: {
         name: 'Imported API preset',
         content: JSON.stringify({
@@ -48,21 +48,33 @@ test('HTTP API imports, selects, reads, updates, and creates presets', async () 
 
     const selected = await invoke(handler, {
       method: 'POST',
-      url: '/dsh-tavern/api/select',
+      url: '/pmp-dsh-tavern/api/v1/select',
       body: { id },
     })
     assert.equal(selected.body.selected.id, id)
 
-    const active = await invoke(handler, { url: '/dsh-tavern/api/active' })
+    const active = await invoke(handler, { url: '/pmp-dsh-tavern/api/v1/active' })
     assert.equal(active.body.selected.id, id)
     assert.equal(Object.hasOwn(active.body, 'compiledPrompt'), false)
 
     const created = await invoke(handler, {
       method: 'POST',
-      url: '/dsh-tavern/api/presets',
+      url: '/pmp-dsh-tavern/api/v1/presets',
       body: { name: 'Created API preset' },
     })
     assert.equal(created.status, 201)
+    const exported = await invoke(handler, {
+      url: `/pmp-dsh-tavern/api/v1/presets/${id}/export`,
+    })
+    assert.equal(exported.status, 200)
+    assert.equal(exported.headers['content-type'], 'application/json; charset=utf-8')
+    assert.match(exported.headers['content-disposition'], /Imported%20API%20preset\.json/)
+    assert.equal(exported.body.name, 'Imported API preset')
+    assert.equal(exported.body.prompts[0].content, 'API marker')
+    assert.deepEqual(exported.body.prompt_order[0].order, [
+      { identifier: 'main', enabled: true },
+    ])
+
     assert.equal(created.body.preset.source.format, 'dsh-tavern')
     assert.equal(changes, 3)
   } finally {
@@ -80,18 +92,18 @@ test('HTTP API keeps preset selection isolated by DSH session id', async () => {
   try {
     await invoke(handler, {
       method: 'POST',
-      url: '/dsh-tavern/api/select',
+      url: '/pmp-dsh-tavern/api/v1/select',
       body: { id: second.id, sessionId: 'session-a' },
     })
     await invoke(handler, {
       method: 'POST',
-      url: '/dsh-tavern/api/select',
+      url: '/pmp-dsh-tavern/api/v1/select',
       body: { id: null, sessionId: 'session-b' },
     })
 
-    const sessionA = await invoke(handler, { url: '/dsh-tavern/api/presets?sessionId=session-a' })
-    const sessionB = await invoke(handler, { url: '/dsh-tavern/api/presets?sessionId=session-b' })
-    const legacy = await invoke(handler, { url: '/dsh-tavern/api/presets' })
+    const sessionA = await invoke(handler, { url: '/pmp-dsh-tavern/api/v1/presets?sessionId=session-a' })
+    const sessionB = await invoke(handler, { url: '/pmp-dsh-tavern/api/v1/presets?sessionId=session-b' })
+    const legacy = await invoke(handler, { url: '/pmp-dsh-tavern/api/v1/presets' })
     assert.equal(sessionA.body.selectedId, second.id)
     assert.equal(sessionB.body.selectedId, null)
     assert.equal(legacy.body.selectedId, first.id)
@@ -118,11 +130,89 @@ test('preset selection policy can reject binding while the session agent is runn
   try {
     const response = await invoke(handler, {
       method: 'POST',
-      url: '/dsh-tavern/api/select',
+      url: '/pmp-dsh-tavern/api/v1/select',
       body: { id: preset.id, sessionId: 'session-running' },
     })
     assert.equal(response.status, 409)
     assert.equal(selected, false)
+  } finally {
+    rmSync(directory, { recursive: true, force: true })
+  }
+})
+
+test('preset regex-scripts API reads and replaces the native ST array without rewriting other fields', async () => {
+  const directory = mkdtempSync(join(tmpdir(), 'dsh-tavern-api-preset-regex-'))
+  const store = new PresetStore(directory)
+  const changes = []
+  const preset = store.importSillyTavern(JSON.stringify({
+    prompts: [],
+    prompt_order: [],
+    extensions: {
+      kept: { future: true },
+      regex_scripts: [{ id: 'old', script_name: 'Old', find_regex: '/old/g', replace_string: 'before', disabled: false }],
+    },
+  }), { id: 'preset-regex', name: 'Preset regex' })
+  const handler = createPresetApiHandler(store, change => changes.push(change))
+  try {
+    const read = await invoke(handler, {
+      url: `/pmp-dsh-tavern/api/v1/presets/${preset.id}/regex-scripts`,
+    })
+    assert.equal(read.status, 200)
+    assert.equal(read.body.regexScripts[0].script_name, 'Old')
+
+    const regexScripts = [{
+      id: 'new',
+      script_name: 'New',
+      find_regex: '/new/g',
+      replace_string: 'after',
+      disabled: true,
+      future_extension: { preserved: true },
+    }]
+    const replaced = await invoke(handler, {
+      method: 'PUT',
+      url: `/pmp-dsh-tavern/api/v1/presets/${preset.id}/regex-scripts`,
+      body: { regexScripts },
+    })
+    assert.equal(replaced.status, 200)
+    assert.deepEqual(replaced.body.regexScripts, regexScripts)
+    assert.deepEqual(store.get(preset.id).source.raw.extensions.regex_scripts, regexScripts)
+    assert.equal(store.get(preset.id).source.raw.extensions.kept.future, true)
+    assert.deepEqual(changes, [{ kind: 'preset-regex-scripts-updated', presetId: preset.id }])
+
+    const exported = await invoke(handler, {
+      url: `/pmp-dsh-tavern/api/v1/presets/${preset.id}/export`,
+    })
+    assert.deepEqual(exported.body.extensions.regex_scripts, regexScripts)
+    assert.equal(exported.body.extensions.kept.future, true)
+
+    const blank = store.create({ id: 'blank-regex', name: 'Blank regex preset' })
+    const blankScripts = [{
+      id: 'created-in-tavern',
+      scriptName: 'Created in Tavern',
+      findRegex: '/<draft>[\\s\\S]*?<\\/draft>/g',
+      replaceString: '',
+      placement: [2],
+      disabled: false,
+      markdownOnly: true,
+    }]
+    const blankSaved = await invoke(handler, {
+      method: 'PUT',
+      url: `/pmp-dsh-tavern/api/v1/presets/${blank.id}/regex-scripts`,
+      body: { regexScripts: blankScripts },
+    })
+    assert.equal(blankSaved.status, 200)
+    const blankExported = await invoke(handler, {
+      url: `/pmp-dsh-tavern/api/v1/presets/${blank.id}/export`,
+    })
+    assert.deepEqual(blankExported.body.extensions.regex_scripts, blankScripts)
+
+    const invalid = await invoke(handler, {
+      method: 'PUT',
+      url: `/pmp-dsh-tavern/api/v1/presets/${preset.id}/regex-scripts`,
+      body: { regexScripts: ['not-an-object'] },
+    })
+    assert.equal(invalid.status, 400)
+    assert.deepEqual(store.get(preset.id).source.raw.extensions.regex_scripts, regexScripts)
   } finally {
     rmSync(directory, { recursive: true, force: true })
   }

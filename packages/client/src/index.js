@@ -25,6 +25,7 @@ import { installTavernTraceStyles, registerTavernTraceView } from '../../tavern-
 import { SessionTemplatePanel } from '../../session-template/src/client.js'
 import {
   createCleanSessionWorkflow,
+  createConfiguredPlaythroughWorkflow,
   workspaceTargetId,
 } from '../../session-template/src/client-state.js'
 import {
@@ -33,35 +34,65 @@ import {
   launcherPlacement,
   launcherResourceStatuses,
 } from './state.js'
+import { createChromeClickController } from './play/chrome.js'
+import { installPlaySlotOccupancy } from './play/occupancy.js'
+import { createLivePlayClient } from './play/live.js'
+import { sessionHasConversationHistory } from './play/chat-model.js'
+import { RegexPanel } from './play/regex-panel.js'
+import { projectRpWorkspaceSetting, workspaceSelectionRequest } from './play/workspace-setting.js'
+import { requiresSystemWorkspaceConfirmation } from './play/sidebar-model.js'
+import { createChromeModeServiceCore } from './play/chrome-service.js'
+import { startChromeModeTransport } from './play/chrome-transport.js'
+import {
+  CONVERSATION_SCALE_OPTIONS,
+  DEFAULT_CONVERSATION_SETTINGS,
+  getClientConversationSettings,
+  setClientConversationSettings,
+} from './conversation-settings.js'
+import { createPlaythroughController } from './play/create.js'
+import {
+  API_V1 as API_ROOT,
+  CHROME_SERVICE_NAME,
+  CLIENT_IMPORT_FAILURE_EVENT,
+  CLIENT_REFRESH_EVENT,
+  PLUGIN_ID,
+} from '../../identity.js'
 
 const h = createLocalizedElement(createElement)
-
-const API_ROOT = '/dsh-tavern/api'
 
 const css = `
 .dtv-layer{position:absolute;inset:0;z-index:6;pointer-events:none;font-family:Inter,var(--dsw-font-family),sans-serif;color:var(--dsw-alias-label-primary)}
 .dtv-launcher{position:absolute;z-index:2;width:44px;height:44px;pointer-events:auto;overflow:hidden;border:0 solid transparent;border-radius:22px;background:transparent;box-shadow:none;transition:width .22s ease,height .22s ease,border-radius .22s ease,background-color .18s ease,box-shadow .18s ease;display:block}
+.dtv-launcher[data-open=true] .dtv-menu{overflow-y:auto}
 .dtv-launcher[data-open=true]{width:300px;height:376px;border-width:1px;border-color:var(--dsw-alias-border-l2);border-radius:18px;background:var(--dsw-alias-bg-base);box-shadow:var(--ds-shadow-3,0 12px 34px rgba(0,0,0,.24))}
 .dtv-ball-row{position:absolute;top:0;left:0;right:0;height:52px;display:flex;align-items:flex-start;pointer-events:none}.dtv-launcher[data-side=left] .dtv-ball-row{justify-content:flex-end}.dtv-launcher[data-vertical=up] .dtv-ball-row{top:auto;bottom:0;align-items:flex-end}
-.dtv-ball{pointer-events:auto;touch-action:none;user-select:none;width:44px;height:44px;flex:none;border:2px solid #fff;border-radius:50%;background:conic-gradient(from 225deg,#090909 0 56%,#b31319 56% 100%);box-shadow:0 0 0 2px #a50f16,0 6px 20px rgba(0,0,0,.34),inset 0 0 0 1px rgba(255,255,255,.28);color:#fff;font-size:13px;letter-spacing:-.5px;font-weight:850;text-shadow:0 1px 2px #000;cursor:grab;transition:filter .15s ease,transform .18s ease,box-shadow .18s ease}.dtv-ball:hover{filter:brightness(1.1);box-shadow:0 0 0 2px #d5222b,0 8px 24px rgba(0,0,0,.4),inset 0 0 0 1px rgba(255,255,255,.35)}.dtv-ball:active{cursor:grabbing}.dtv-launcher[data-open=true] .dtv-ball{transform:scale(.82) rotate(-8deg)}
-.dtv-menu{position:absolute;left:8px;right:8px;top:52px;bottom:8px;padding:1px;display:flex;flex-direction:column;gap:4px;opacity:0;transform:translateY(-6px);transition:opacity .13s ease .1s,transform .18s ease .08s}.dtv-launcher[data-open=true] .dtv-menu{opacity:1;transform:none}.dtv-launcher[data-vertical=up] .dtv-menu{top:8px;bottom:52px;transform:translateY(6px)}.dtv-launcher[data-open=true][data-vertical=up] .dtv-menu{transform:none}
-.dtv-menu-title{padding:5px 8px 7px;font-size:11px;font-weight:650;color:var(--dsw-alias-label-tertiary);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+@property --dtv-orb-a{syntax:"<color>";inherits:true;initial-value:#f7fbff}@property --dtv-orb-b{syntax:"<color>";inherits:true;initial-value:#18569d}@property --dtv-orb-ring{syntax:"<color>";inherits:true;initial-value:#174e8a}
+.dtv-ball{--dtv-orb-a:#f7fbff;--dtv-orb-b:#18569d;--dtv-orb-ring:#174e8a;pointer-events:auto;touch-action:none;user-select:none;position:relative;isolation:isolate;overflow:hidden;width:44px;height:44px;flex:none;border:2px solid #fff;border-radius:50%;background:transparent;box-shadow:0 0 0 2px var(--dtv-orb-ring),0 6px 20px rgba(0,0,0,.34),inset 0 0 0 1px rgba(255,255,255,.28);color:#fff;font-size:13px;letter-spacing:-.5px;font-weight:850;text-shadow:0 1px 2px #000;cursor:grab;transition:filter .15s ease,transform .18s ease,box-shadow .18s ease,--dtv-orb-a .32s ease,--dtv-orb-b .32s ease,--dtv-orb-ring .32s ease}.dtv-ball-face{position:absolute;inset:0;border-radius:inherit;background:conic-gradient(from 225deg,var(--dtv-orb-a) 0 50%,var(--dtv-orb-b) 50% 100%);z-index:-1}.dtv-ball-face[data-animate=true]{animation:dtv-orb-switch .48s cubic-bezier(.3,.7,.2,1)}.dtv-ball-label{position:relative;z-index:1}.dtv-ball:hover{filter:brightness(1.1);box-shadow:0 0 0 2px #2675c9,0 8px 24px rgba(0,0,0,.4),inset 0 0 0 1px rgba(255,255,255,.35)}.dtv-layer[data-chrome=play] .dtv-ball{--dtv-orb-a:#090909;--dtv-orb-b:#b31319;--dtv-orb-ring:#a50f16}.dtv-layer[data-chrome=play] .dtv-ball:hover{box-shadow:0 0 0 2px #d5222b,0 8px 24px rgba(0,0,0,.4),inset 0 0 0 1px rgba(255,255,255,.35)}.dtv-ball:active{cursor:grabbing}.dtv-launcher[data-open=true] .dtv-ball{transform:scale(.82) rotate(-8deg)}
+@keyframes dtv-orb-switch{to{transform:rotate(1turn)}}@media (prefers-reduced-motion:reduce){.dtv-ball{transition:filter .15s ease,transform .18s ease,box-shadow .18s ease}.dtv-ball-face[data-animate=true]{animation:none}}
+.dtv-menu{position:absolute;left:8px;right:8px;top:52px;bottom:8px;padding:1px;display:flex;flex-direction:column;gap:4px;opacity:0;visibility:hidden;pointer-events:none;transform:translateY(-6px);transition:opacity .12s ease,transform .18s ease,visibility 0s linear .18s}.dtv-launcher[data-open=true] .dtv-menu{opacity:1;visibility:visible;pointer-events:auto;transform:none;transition-delay:.22s,.16s,.22s}.dtv-launcher[data-vertical=up] .dtv-menu{top:8px;bottom:52px;transform:translateY(6px)}.dtv-launcher[data-open=true][data-vertical=up] .dtv-menu{transform:none}
+.dtv-menu-title{flex:none;padding:5px 8px 7px;font-size:11px;line-height:1.35;font-weight:650;color:var(--dsw-alias-label-tertiary);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .dtv-menu-item{min-height:43px;border:0;border-radius:9px;padding:5px 8px;background:transparent;color:var(--dsw-alias-label-primary);text-align:left;font:inherit;cursor:pointer;display:grid;grid-template-columns:10px minmax(0,1fr) auto;gap:8px;align-items:center}.dtv-menu-item:hover{background:var(--dsw-alias-interactive-bg-hover)}.dtv-menu-item[data-active=true]{background:var(--dsw-alias-interactive-bg-selected,var(--dsw-specific-tip))}.dtv-binding-dot{width:8px;height:8px;border-radius:50%;background:#d33239;box-shadow:0 0 0 1px rgba(98,0,4,.38)}.dtv-menu-item[data-bound=true] .dtv-binding-dot{background:#44d17a;box-shadow:0 0 5px #31c66b,0 0 10px rgba(49,198,107,.75)}.dtv-item-copy{min-width:0;display:flex;flex-direction:column;gap:1px}.dtv-item-label{font-size:11px;font-weight:700;line-height:1.2}.dtv-item-status{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:10px;line-height:1.25;color:var(--dsw-alias-label-tertiary)}.dtv-item-count{border-radius:10px;padding:2px 6px;background:var(--dsw-specific-tip);font-size:9px;color:var(--dsw-alias-label-secondary)}.dtv-item-planned{font-size:9px;color:var(--dsw-alias-label-tertiary)}
 .dtv-menu-item[data-show-binding=false] .dtv-binding-dot{visibility:hidden}
 .dtv-panel{position:absolute;z-index:1;top:0;right:0;bottom:0;width:min(440px,calc(100vw - 56px));pointer-events:auto;border-left:1px solid var(--dsw-alias-border-l2);box-shadow:var(--ds-shadow-3,-8px 0 28px rgba(0,0,0,.18));background:var(--dsw-alias-bg-base);display:flex;flex-direction:column}
 .dtv-header{height:52px;box-sizing:border-box;display:flex;align-items:center;gap:8px;padding:0 14px;border-bottom:1px solid var(--dsw-alias-border-l2);flex:none}.dtv-title{font-size:14px;font-weight:650;flex:1}.dtv-close{border:0;background:transparent;color:var(--dsw-alias-label-tertiary);cursor:pointer;border-radius:7px;padding:6px 8px}.dtv-close:hover{background:var(--dsw-alias-interactive-bg-hover)}
 .dtv-body{min-height:0;overflow:auto;padding:12px;display:flex;flex-direction:column;gap:12px}.dtv-note{font-size:11px;line-height:1.5;color:var(--dsw-alias-label-tertiary);margin:0;overflow-wrap:anywhere}.dtv-status{font-size:11px;line-height:1.45;border-radius:7px;padding:8px 10px;background:var(--dsw-specific-tip);overflow-wrap:anywhere}.dtv-status[data-error=true]{color:var(--dsw-alias-state-error)}
 .dtv-actions{display:grid;grid-template-columns:1fr 1fr;gap:8px}.dtv-button{min-height:34px;border:1px solid var(--dsw-alias-border-l2);border-radius:8px;background:var(--dsw-alias-button-secondary-fill,var(--dsw-alias-bg-base));color:var(--dsw-alias-label-primary);cursor:pointer;padding:7px 10px;font-size:12px}.dtv-button:hover:not(:disabled){background:var(--dsw-alias-interactive-bg-hover)}.dtv-button:disabled{opacity:.5;cursor:default}
-.dtv-primary{background:var(--dsw-alias-state-business-primary,#2677d9);border-color:transparent;color:var(--dsw-alias-button-primary-label,#fff)}.dtv-primary:hover:not(:disabled){filter:brightness(1.08);background:var(--dsw-alias-state-business-primary,#2677d9)}.dtv-template-actions{display:grid;grid-template-columns:1fr 1fr;gap:7px}
+.dtv-primary{background:var(--dsw-alias-state-business-primary,#2677d9);border-color:transparent;color:var(--dsw-alias-button-primary-label,#fff)}.dtv-primary:hover:not(:disabled){filter:brightness(1.08);background:var(--dsw-alias-state-business-primary,#2677d9)}.dtv-template-actions,.dtv-template-toolbar,.dtv-template-footer,.dtv-template-name{display:grid;grid-template-columns:1fr 1fr;gap:7px}.dtv-template-name{grid-template-columns:minmax(0,1fr) auto}.dtv-template-footer,.dtv-settings-footer{position:sticky;bottom:-12px;margin:0 -12px -12px;padding:10px 12px;background:var(--dsw-alias-bg-base);border-top:1px solid var(--dsw-alias-border-l2)}.dtv-settings-section{border-top:1px solid var(--dsw-alias-border-l1);padding-top:12px;display:flex;flex-direction:column;gap:10px}
 .dtv-resource{border:1px solid var(--dsw-alias-border-l1);border-radius:9px;padding:10px;display:flex;flex-direction:column;gap:7px}.dtv-resource-title{font-size:12px;font-weight:650}.dtv-resource-meta{font-size:11px;line-height:1.45;color:var(--dsw-alias-label-tertiary)}.dtv-list{margin:0;padding-left:18px;font-size:11px;line-height:1.55}.dtv-preview{border:1px solid var(--dsw-alias-border-l1);border-radius:8px;background:var(--dsw-specific-tip);padding:9px;display:flex;flex-direction:column;gap:6px}.dtv-preview-title{font-size:12px;font-weight:700}.dtv-preview-row{display:grid;grid-template-columns:112px minmax(0,1fr);gap:8px;font-size:11px;line-height:1.45}.dtv-preview-label{color:var(--dsw-alias-label-tertiary)}.dtv-preview-value{overflow-wrap:anywhere}.dtv-preview-options{margin-left:120px;display:flex;flex-direction:column;gap:2px;font-size:10px;color:var(--dsw-alias-label-tertiary)}.dtv-preview-list{margin:0;padding-left:18px}.dtv-preview-row[data-missing=true] .dtv-preview-value,.dtv-preview-list>[data-missing=true]{color:var(--dsw-alias-state-error)}
 .dtv-book-toolbar{display:grid;grid-template-columns:1fr 1fr 1fr;gap:7px}.dtv-entry{border:1px solid var(--dsw-alias-border-l1);border-radius:8px;background:var(--dsw-alias-bg-base);overflow:hidden}.dtv-entry>summary{list-style:none;cursor:pointer;padding:8px;display:flex;align-items:center;gap:7px;font-size:11px}.dtv-entry>summary::-webkit-details-marker{display:none}.dtv-entry-dot{width:8px;height:8px;flex:none;border-radius:50%;background:var(--dsw-alias-label-tertiary)}.dtv-entry[data-enabled=true] .dtv-entry-dot{background:var(--dsw-alias-state-success,#2fa36b)}.dtv-entry-name{font-weight:620;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.dtv-entry-state{margin-left:auto;flex:none;color:var(--dsw-alias-label-tertiary);font-size:10px}.dtv-entry-body{border-top:1px solid var(--dsw-alias-border-l1);padding:8px;display:flex;flex-direction:column;gap:8px}.dtv-field{display:flex;flex-direction:column;gap:4px}.dtv-label{font-size:10px;font-weight:620;color:var(--dsw-alias-label-tertiary)}.dtv-input,.dtv-select,.dtv-textarea{box-sizing:border-box;width:100%;border:1px solid var(--dsw-alias-border-l2);border-radius:7px;background:var(--dsw-alias-bg-base);color:var(--dsw-alias-label-primary);font:inherit;font-size:11px;padding:7px 8px}.dtv-input,.dtv-select{height:32px}.dtv-textarea{min-height:94px;resize:vertical;line-height:1.45}.dtv-policy{min-height:96px}.dtv-entry-grid{display:grid;grid-template-columns:1fr 1fr;gap:7px}.dtv-checks{display:flex;flex-wrap:wrap;gap:10px}.dtv-check{display:flex;gap:5px;align-items:center;font-size:10px}.dtv-entry-actions{display:flex;justify-content:flex-end}.dtv-danger{color:var(--dsw-alias-state-error)}
 .dtv-layer>.dtv-launcher,.dtv-layer>.dtv-panel,.dtv-layer>.dcc-panel,.dtv-layer>.dwb-panel,.dtv-layer>.dtu-panel{zoom:var(--dtv-ui-scale,1)}.dtv-setting-value{font-size:12px;font-variant-numeric:tabular-nums;color:var(--dsw-alias-label-secondary)}
 .dtv-modal-backdrop{position:absolute;inset:0;z-index:20;pointer-events:auto;background:rgba(0,0,0,.48);display:flex;align-items:center;justify-content:center;padding:24px}
+.dtv-regex-panel .dtv-body{flex:1 1 auto;overscroll-behavior:contain}.dtv-regex-section{gap:8px}.dtv-regex-section-title{display:flex;align-items:center;gap:8px}.dtv-regex-section-title .dtv-item-count{margin-left:auto}.dtv-regex-rule{transition:border-color .12s,box-shadow .12s}.dtv-regex-rule[data-dragging=true]{height:4px;min-height:4px;margin:5px 10px;border:0;border-radius:999px;background:var(--dsw-alias-state-business-primary);box-shadow:0 0 0 1px color-mix(in srgb,var(--dsw-alias-state-business-primary) 25%,transparent)}.dtv-regex-rule[data-dragging=true]>*{opacity:0}.dtv-regex-drop-placeholder{box-sizing:border-box;height:42px;border:2px dashed var(--dsw-alias-state-business-primary);border-radius:8px;background:color-mix(in srgb,var(--dsw-alias-state-business-primary) 7%,transparent);display:flex;align-items:center;justify-content:center;color:var(--dsw-alias-state-business-primary);font-size:12px;font-weight:600;pointer-events:none}.dtv-regex-drag{flex:none;border:0;background:transparent;cursor:grab;color:var(--dsw-alias-label-tertiary);padding:1px 2px;font-size:15px;line-height:1;touch-action:none;user-select:none}.dtv-regex-drag:active{cursor:grabbing}.dtv-regex-drag:disabled{cursor:default;opacity:.5}.dtv-regex-rule .dtv-input:disabled,.dtv-regex-rule .dtv-select:disabled,.dtv-regex-rule .dtv-textarea:disabled{pointer-events:none}.dtv-regex-expression{font-family:var(--dsw-font-mono,ui-monospace,SFMono-Regular,Consolas,monospace);min-height:72px}.dtv-regex-footer{position:sticky;bottom:-12px;display:grid;grid-template-columns:1fr 1fr;gap:8px;padding:10px 0 12px;background:var(--dsw-alias-bg-base)}
 .dtv-modal{width:min(420px,100%);border-radius:12px;background:var(--dsw-alias-bg-base);border:1px solid var(--dsw-alias-border-l2);box-shadow:var(--ds-shadow-3,0 16px 40px rgba(0,0,0,.28));padding:18px 16px;display:flex;flex-direction:column;gap:14px}
-.dtv-modal-body{margin:0;font-size:13px;line-height:1.55}.dtv-modal .dtv-button{align-self:flex-end;min-width:88px}
+.dtv-modal-title{margin:0;font-size:16px;line-height:1.35}.dtv-modal-body{margin:0;font-size:13px;line-height:1.55;overflow-wrap:anywhere}.dtv-modal .dtv-button{align-self:flex-end;min-width:88px}
+.dtv-workspace-admission{position:absolute;inset:0;z-index:12;pointer-events:auto;background:var(--dsw-alias-bg-base);display:flex;align-items:center;justify-content:center;padding:clamp(18px,5vw,64px)}
+.dtv-workspace-admission-card{box-sizing:border-box;width:min(720px,100%);max-height:min(720px,calc(100vh - 36px));overflow:auto;border:1px solid var(--dsw-alias-border-l2);border-radius:18px;background:var(--dsw-alias-bg-base);box-shadow:var(--ds-shadow-3,0 18px 52px rgba(0,0,0,.24));padding:clamp(20px,4vw,36px);display:flex;flex-direction:column;gap:16px}
+.dtv-workspace-admission-title{margin:0;font-size:clamp(20px,3vw,28px);line-height:1.25}.dtv-workspace-admission-copy{margin:0;color:var(--dsw-alias-label-secondary);font-size:13px;line-height:1.65}
+.dtv-workspace-admission-list{display:flex;flex-direction:column;gap:8px;max-height:320px;overflow:auto}.dtv-workspace-admission-choice{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:12px;align-items:center;text-align:left}.dtv-workspace-admission-choice-copy{min-width:0;display:flex;flex-direction:column;gap:3px}.dtv-workspace-admission-choice-title{font-weight:650;overflow-wrap:anywhere}.dtv-workspace-admission-choice-path{font-size:10px;color:var(--dsw-alias-label-tertiary);overflow-wrap:anywhere}.dtv-workspace-admission-actions{display:flex;justify-content:flex-end;flex-wrap:wrap;gap:8px}.dtv-workspace-admission-actions .dtv-button{min-width:120px}
+
 `
 
-const LAUNCHER_STORAGE_KEY = 'dsh-tavern:launcher-position:v1'
+const LAUNCHER_STORAGE_KEY = `${PLUGIN_ID}:launcher-position:v1`
 
 function viewport() {
   return { width: window.innerWidth, height: window.innerHeight }
@@ -147,6 +178,17 @@ async function uiSettingsRequest(method = 'GET', body) {
   return data.settings
 }
 
+async function conversationSettingsRequest(method = 'GET', body) {
+  const response = await fetch(`${API_ROOT}/conversation-settings`, {
+    method,
+    headers: method === 'GET' ? undefined : { 'Content-Type': 'application/json' },
+    body: body === undefined ? undefined : JSON.stringify(body),
+  })
+  const data = await response.json().catch(() => null)
+  if (!response.ok || data?.ok === false) throw new Error(data?.error ?? `HTTP ${response.status}`)
+  return data.settings
+}
+
 function PanelHeader({ title, titleKey, close }) {
   const titleText = titleKey ? uiMessage(titleKey) : title
   const closeLabel = uiMessage('panel.close', { title: unwrapText(titleText) })
@@ -173,6 +215,9 @@ function SettingsPanel({
   onPolicyDraft,
   savePolicy,
   resetPolicy,
+  workspaceSetting,
+  workspaceBusy,
+  selectWorkspace,
 }) {
   const percent = Math.round(settings.scale * 100)
   return h('div', { className: 'dtv-panel' },
@@ -181,6 +226,8 @@ function SettingsPanel({
       h('button', { className: 'dtv-close', type: 'button', title: translate('settings.close'), 'aria-label': translate('settings.close'), onClick: close }, '✕'),
     ),
     h('div', { className: 'dtv-body' },
+      h('div', { className: 'dtv-status', 'data-error': status.error || undefined, role: 'status' }, rawText(status.text)),
+      h('div', { className: 'dtv-settings-section' },
       h(Field, { label: translate('settings.language') }, h('select', {
         className: 'dtv-select',
         value: settings.locale,
@@ -206,6 +253,22 @@ function SettingsPanel({
         h('span', null, translate('settings.rpFollow')),
       ),
       h('p', { className: 'dtv-note' }, translate('settings.rpFollow.help')),
+      h(Field, { label: translate('settings.rpWorkspace') }, h('select', {
+        className: 'dtv-select',
+        value: workspaceSetting?.selectedPath ?? '',
+        disabled: busy || workspaceBusy || workspaceSetting === null,
+        onChange: event => selectWorkspace(event.target.value),
+      },
+      workspaceSetting?.current === null && workspaceSetting.available.length > 0
+        ? h('option', { value: '', disabled: true }, translate('settings.rpWorkspace.unselected'))
+        : null,
+      workspaceSetting?.current?.unavailable === true
+        ? h('option', { value: workspaceSetting.current.path, disabled: true }, translate('settings.rpWorkspace.unavailable', { path: workspaceSetting.current.path }))
+        : null,
+      workspaceSetting?.available?.length > 0
+        ? workspaceSetting.available.map(item => h('option', { key: item.id, value: item.path }, rawText(item.title)))
+        : h('option', { value: '', disabled: true }, translate('settings.rpWorkspace.none')))),
+      h('p', { className: 'dtv-note' }, translate('settings.rpWorkspace.help')),
       h(Field, { label: translate('settings.rpPolicy') }, h('textarea', {
         className: 'dtv-textarea dtv-policy',
         value: policyDraft,
@@ -228,9 +291,37 @@ function SettingsPanel({
           onClick: resetPolicy,
         }, translate('settings.rpPolicy.reset')),
       ),
-      h('div', { className: 'dtv-status', 'data-error': status.error || undefined, role: 'status' }, rawText(status.text)),
-      h('div', { className: 'dtv-actions' },
+      ),
+      h('div', { className: 'dtv-settings-footer' },
         h('button', { className: 'dtv-button', type: 'button', disabled: busy, onClick: reset }, translate('settings.reset')),
+      ),
+    ),
+  )
+}
+
+function ConversationSettingsPanel({ settings, status, busy, close, update, reset }) {
+  return h('div', { className: 'dtv-panel' },
+    h(PanelHeader, { titleKey: 'conversationSettings.title', close }),
+    h('div', { className: 'dtv-body' },
+      h('div', { className: 'dtv-status', 'data-error': status.error || undefined, role: 'status' }, rawText(status.text)),
+      h('div', { className: 'dtv-settings-section' },
+      h(Field, { label: translate('conversationSettings.textScale') }, h('select', {
+        className: 'dtv-select',
+        value: settings.textScale,
+        disabled: busy,
+        onChange: event => update({ ...settings, textScale: Number(event.target.value) }),
+      }, ...CONVERSATION_SCALE_OPTIONS.map(scale => h('option', { key: scale, value: scale }, `${Math.round(scale * 100)}%`)))),
+      h('p', { className: 'dtv-note' }, translate('conversationSettings.textScale.help')),
+      h(Field, { label: translate('conversationSettings.actionScale') }, h('select', {
+        className: 'dtv-select',
+        value: settings.actionScale,
+        disabled: busy,
+        onChange: event => update({ ...settings, actionScale: Number(event.target.value) }),
+      }, ...CONVERSATION_SCALE_OPTIONS.map(scale => h('option', { key: scale, value: scale }, `${Math.round(scale * 100)}%`)))),
+      h('p', { className: 'dtv-note' }, translate('conversationSettings.actionScale.help')),
+      ),
+      h('div', { className: 'dtv-settings-footer' },
+        h('button', { className: 'dtv-button', type: 'button', disabled: busy, onClick: reset }, translate('conversationSettings.reset')),
       ),
     ),
   )
@@ -367,9 +458,9 @@ function WorldInfoPanel({ sessionId, close }) {
   useEffect(() => {
     refresh()
     const onRefresh = () => refresh()
-    window.addEventListener('dsh-tavern:refresh', onRefresh)
+    window.addEventListener(CLIENT_REFRESH_EVENT, onRefresh)
     return () => {
-      window.removeEventListener('dsh-tavern:refresh', onRefresh)
+      window.removeEventListener(CLIENT_REFRESH_EVENT, onRefresh)
     }
   }, [refresh])
 
@@ -429,7 +520,7 @@ function WorldInfoPanel({ sessionId, close }) {
       setDraft(structuredClone(data.character.data.characterBook))
       setDirty(false)
       setError('')
-      window.dispatchEvent(new Event('dsh-tavern:refresh'))
+      window.dispatchEvent(new Event(CLIENT_REFRESH_EVENT))
     } catch (reason) {
       setError(reason instanceof Error ? reason.message : String(reason))
     } finally {
@@ -480,30 +571,141 @@ function RpHighRiskDialog({ onDismiss }) {
   )
 }
 
-function TavernShell({ useSessions, useWorkspaces, createCleanSession }) {
+function ImportFailureDialog({ message, onDismiss }) {
+  return h('div', {
+    className: 'dtv-modal-backdrop',
+    role: 'alertdialog',
+    'aria-modal': 'true',
+    'aria-labelledby': 'dtv-import-failure-title',
+    'aria-describedby': 'dtv-import-failure-body',
+  },
+  h('div', { className: 'dtv-modal' },
+    h('h2', { id: 'dtv-import-failure-title', className: 'dtv-modal-title' }, uiMessage('import.failureTitle')),
+    h('p', { id: 'dtv-import-failure-body', className: 'dtv-modal-body' }, rawText(message)),
+    h('button', { className: 'dtv-button dtv-primary', type: 'button', onClick: onDismiss }, uiMessage('common.close')),
+  ))
+}
+
+function WorkspaceAdmission({ setting, state, error, busy, selectWorkspace, reload, returnToNative }) {
+  const loading = state === 'loading' || state === 'idle'
+  const unavailable = setting?.current?.unavailable === true
+  const candidates = setting?.available ?? []
+  let status = null
+  if (loading) status = uiMessage('workspaceAdmission.loading')
+  else if (state === 'error') status = uiMessage('workspaceAdmission.loadError', { message: error })
+  else if (state === 'verify-error') status = uiMessage('workspaceAdmission.verifyError', { message: error })
+  else if (state === 'save-error') status = uiMessage('workspaceAdmission.saveError', { message: error })
+  else if (busy) status = uiMessage('workspaceAdmission.saving')
+  else if (unavailable) status = uiMessage('workspaceAdmission.unavailable', { path: setting.current.path })
+  else if (candidates.length === 0) status = uiMessage('workspaceAdmission.none')
+
+  return h('div', {
+    className: 'dtv-workspace-admission',
+    role: 'dialog',
+    'aria-modal': 'true',
+    'aria-labelledby': 'dtv-workspace-admission-title',
+  },
+  h('div', { className: 'dtv-workspace-admission-card' },
+    h('h2', { id: 'dtv-workspace-admission-title', className: 'dtv-workspace-admission-title' }, uiMessage('workspaceAdmission.title')),
+    h('p', { className: 'dtv-workspace-admission-copy' }, uiMessage('workspaceAdmission.body')),
+    status === null ? null : h('p', {
+      className: 'dtv-status',
+      'data-error': ['error', 'verify-error', 'save-error'].includes(state) || unavailable,
+      role: ['error', 'verify-error', 'save-error'].includes(state) ? 'alert' : 'status',
+    }, status),
+    candidates.length === 0 ? null : h('div', { className: 'dtv-workspace-admission-list' },
+      ...candidates.map(item => h('button', {
+        key: item.id,
+        type: 'button',
+        className: 'dtv-button dtv-workspace-admission-choice',
+        disabled: busy || loading,
+        title: uiMessage('workspaceAdmission.choose', { name: item.title }),
+        'aria-label': uiMessage('workspaceAdmission.choose', { name: item.title }),
+        onClick: () => selectWorkspace(item.path),
+      },
+      h('span', { className: 'dtv-workspace-admission-choice-copy' },
+        h('span', { className: 'dtv-workspace-admission-choice-title' }, rawText(item.title)),
+        h('span', { className: 'dtv-workspace-admission-choice-path' }, rawText(item.path)),
+      ),
+      h('span', { 'aria-hidden': 'true' }, '→'),
+      )),
+    ),
+    h('div', { className: 'dtv-workspace-admission-actions' },
+      h('button', { type: 'button', className: 'dtv-button', disabled: busy, onClick: reload }, uiMessage('workspaceAdmission.retry')),
+      h('button', { type: 'button', className: 'dtv-button dtv-primary', disabled: busy, onClick: returnToNative }, uiMessage('workspaceAdmission.native')),
+    ),
+  ))
+}
+
+function TavernShell({ useSessions, useWorkspaces, createCleanSession, createConfiguredPlaythrough, playClient, playSlots, chromeService }) {
   const [menuOpen, setMenuOpen] = useState(false)
   const [surface, setSurface] = useState(null)
   const [anchor, setAnchor] = useState(initialLauncherAnchor)
+  const [chromeMode, setChromeMode] = useState(() => chromeService.getMode())
+  const [chromeAnimation, setChromeAnimation] = useState(0)
+  const [chromeError, setChromeError] = useState('')
   const [activeSnapshot, setActiveSnapshot] = useState(null)
   const [statusError, setStatusError] = useState('')
   const [uiSettings, setUiSettings] = useState(getClientUiSettings)
+  const [conversationSettings, setConversationSettings] = useState(getClientConversationSettings)
+  const [conversationSettingsStatus, setConversationSettingsStatus] = useState({ text: translate('conversationSettings.saved'), error: false })
+  const [conversationSettingsBusy, setConversationSettingsBusy] = useState(false)
   const [settingsStatus, setSettingsStatus] = useState({ text: translate('settings.saved'), error: false })
   const [settingsBusy, setSettingsBusy] = useState(false)
   const [rpPolicyDraft, setRpPolicyDraft] = useState('')
   const [rpPolicyLoaded, setRpPolicyLoaded] = useState(false)
   const [rpPolicyBusy, setRpPolicyBusy] = useState(false)
+  const [rpWorkspaceSetting, setRpWorkspaceSetting] = useState(null)
+  const [rpWorkspaceLoadState, setRpWorkspaceLoadState] = useState('idle')
+  const [rpWorkspaceError, setRpWorkspaceError] = useState('')
+  const [rpWorkspaceBusy, setRpWorkspaceBusy] = useState(false)
+  const rpWorkspaceBusyRef = useRef(false)
+  const rpWorkspaceLoadGeneration = useRef(0)
   const [rpAlert, setRpAlert] = useState(null)
+  const [importFailure, setImportFailure] = useState(null)
   const drag = useRef(null)
   const suppressClick = useRef(false)
+  const chromeController = useRef(null)
   const statusGeneration = useRef(0)
   const rpAlertRef = useRef(null)
   const dismissedRpAlerts = useRef(new Set())
   const sessionId = useSessions(state => state.current)
   const sessionBlank = useSessions(state => state.current === undefined || state.current === null ? true : state.byId?.[state.current]?.blank === true)
   const workspaceId = useWorkspaces(state => workspaceTargetId(state, sessionId))
+  const workspaceItems = useWorkspaces(state => state.items)
+  const hasConversationHistory = useCallback(async targetSessionId => {
+    const messages = await playClient.getMessages(targetSessionId)
+    return sessionHasConversationHistory(messages)
+  }, [playClient])
   const close = () => setSurface(null)
   if (rpAlert === null || dismissedRpAlerts.current.has(rpAlert.id)) rpAlertRef.current = null
   else rpAlertRef.current = rpAlert
+
+  useEffect(() => {
+    const commitChrome = snapshot => {
+      setChromeMode(snapshot.mode)
+      playSlots.setMode(snapshot.mode)
+      if (snapshot.mode !== 'play') setSurface(current => ['regex', 'conversation-settings'].includes(current) ? null : current)
+    }
+    const unsubscribe = chromeService.subscribe(snapshot => {
+      commitChrome(snapshot)
+      setChromeError('')
+    })
+    const controller = createChromeClickController({
+      getMode: () => chromeService.getMode(),
+      persistMode: mode => chromeService.setMode(mode),
+      openMenu: () => setMenuOpen(value => !value),
+      closeMenu: () => setMenuOpen(false),
+      setMode: () => {},
+      setError: reason => setChromeError(reason instanceof Error ? reason.message : reason == null ? '' : String(reason)),
+    })
+    chromeController.current = controller
+    return () => {
+      controller.dispose()
+      if (chromeController.current === controller) chromeController.current = null
+      unsubscribe()
+    }
+  }, [chromeService, playSlots])
 
   useEffect(() => {
     let active = true
@@ -515,6 +717,23 @@ function TavernShell({ useSessions, useWorkspaces, createCleanSession }) {
     }).catch(reason => {
       if (!active) return
       setSettingsStatus({ text: translate('settings.loadError', { message: reason instanceof Error ? reason.message : String(reason) }), error: true })
+    })
+    return () => { active = false }
+  }, [])
+
+  useEffect(() => {
+    let active = true
+    conversationSettingsRequest().then(next => {
+      if (!active) return
+      const normalized = setClientConversationSettings(next)
+      setConversationSettings(normalized)
+      setConversationSettingsStatus({ text: translate('conversationSettings.saved'), error: false })
+    }).catch(reason => {
+      if (!active) return
+      setConversationSettingsStatus({
+        text: translate('conversationSettings.loadError', { message: reason instanceof Error ? reason.message : String(reason) }),
+        error: true,
+      })
     })
     return () => { active = false }
   }, [])
@@ -557,6 +776,50 @@ function TavernShell({ useSessions, useWorkspaces, createCleanSession }) {
     }
   }
 
+  const persistConversationSettings = async next => {
+    const previous = conversationSettings
+    const normalized = setClientConversationSettings(next)
+    setConversationSettings(normalized)
+    setConversationSettingsBusy(true)
+    setConversationSettingsStatus({ text: translate('conversationSettings.saving'), error: false })
+    try {
+      const saved = setClientConversationSettings(await conversationSettingsRequest('PUT', normalized))
+      setConversationSettings(saved)
+      setConversationSettingsStatus({ text: translate('conversationSettings.saved'), error: false })
+    } catch (reason) {
+      setClientConversationSettings(previous)
+      setConversationSettings(previous)
+      setConversationSettingsStatus({
+        text: translate('conversationSettings.saveError', { message: reason instanceof Error ? reason.message : String(reason) }),
+        error: true,
+      })
+    } finally {
+      setConversationSettingsBusy(false)
+    }
+  }
+
+  const resetConversationSettings = async () => {
+    const previous = conversationSettings
+    const defaults = setClientConversationSettings(DEFAULT_CONVERSATION_SETTINGS)
+    setConversationSettings(defaults)
+    setConversationSettingsBusy(true)
+    setConversationSettingsStatus({ text: translate('conversationSettings.saving'), error: false })
+    try {
+      const saved = setClientConversationSettings(await conversationSettingsRequest('DELETE'))
+      setConversationSettings(saved)
+      setConversationSettingsStatus({ text: translate('conversationSettings.saved'), error: false })
+    } catch (reason) {
+      setClientConversationSettings(previous)
+      setConversationSettings(previous)
+      setConversationSettingsStatus({
+        text: translate('conversationSettings.saveError', { message: reason instanceof Error ? reason.message : String(reason) }),
+        error: true,
+      })
+    } finally {
+      setConversationSettingsBusy(false)
+    }
+  }
+
   useEffect(() => {
     if (surface !== 'settings') return undefined
     let active = true
@@ -571,6 +834,79 @@ function TavernShell({ useSessions, useWorkspaces, createCleanSession }) {
     })
     return () => { active = false }
   }, [surface])
+
+  const refreshRpWorkspace = useCallback(async () => {
+    const generation = ++rpWorkspaceLoadGeneration.current
+    setRpWorkspaceLoadState('loading')
+    setRpWorkspaceError('')
+    try {
+      const workspace = await playClient.getWorkspace()
+      if (generation !== rpWorkspaceLoadGeneration.current) return null
+      const projected = projectRpWorkspaceSetting({ workspace, items: workspaceItems })
+      setRpWorkspaceSetting(projected)
+      setRpWorkspaceLoadState('ready')
+      return projected
+    } catch (reason) {
+      if (generation !== rpWorkspaceLoadGeneration.current) return null
+      setRpWorkspaceError(reason instanceof Error ? reason.message : String(reason))
+      setRpWorkspaceLoadState('error')
+      return null
+    }
+  }, [playClient, workspaceItems])
+
+  const needsRpWorkspace = chromeMode === 'play' || surface === 'settings'
+  useEffect(() => {
+    if (!needsRpWorkspace) return undefined
+    refreshRpWorkspace()
+    return undefined
+  }, [needsRpWorkspace, refreshRpWorkspace])
+
+  useEffect(() => {
+    if (surface !== 'settings' || rpWorkspaceLoadState !== 'error') return
+    setSettingsStatus({ text: translate('settings.loadError', { message: rpWorkspaceError }), error: true })
+  }, [rpWorkspaceError, rpWorkspaceLoadState, surface])
+
+  const selectRpWorkspace = async path => {
+    if (rpWorkspaceBusyRef.current) return
+    const request = workspaceSelectionRequest(path, { setting: rpWorkspaceSetting })
+    if (!request.changed) return
+    const item = rpWorkspaceSetting?.available?.find(candidate => candidate.path === path)
+    if (item === undefined) return
+    if (requiresSystemWorkspaceConfirmation(path)
+      && !window.confirm(unwrapText(uiMessage('play.sidebar.systemWorkspaceConfirm', { path })))) return
+    rpWorkspaceBusyRef.current = true
+    setRpWorkspaceBusy(true)
+    setRpWorkspaceLoadState('saving')
+    setRpWorkspaceError('')
+    setSettingsStatus({ text: translate('settings.saving'), error: false })
+    try {
+      const written = await playClient.putWorkspace(path)
+      setRpWorkspaceSetting(projectRpWorkspaceSetting({ workspace: written, items: workspaceItems }))
+      window.dispatchEvent(new Event(CLIENT_REFRESH_EVENT))
+      try {
+        const current = await playClient.getWorkspace()
+        const verified = projectRpWorkspaceSetting({ workspace: current, items: workspaceItems })
+        setRpWorkspaceSetting(verified)
+        if (!verified.ready) throw new Error(translate('workspaceAdmission.notConfirmed'))
+        setRpWorkspaceLoadState('ready')
+        setRpWorkspaceError('')
+        setSettingsStatus({ text: translate('settings.saved'), error: false })
+      } catch (reason) {
+        const message = reason instanceof Error ? reason.message : String(reason)
+        setRpWorkspaceLoadState('verify-error')
+        setRpWorkspaceError(message)
+        setSettingsStatus({ text: translate('settings.rpWorkspace.verifyError', { message }), error: true })
+      }
+    } catch (reason) {
+      const message = reason instanceof Error ? reason.message : String(reason)
+      setRpWorkspaceLoadState('save-error')
+      setRpWorkspaceError(message)
+      setSettingsStatus({ text: translate('settings.saveError', { message }), error: true })
+    } finally {
+      rpWorkspaceBusyRef.current = false
+      setRpWorkspaceBusy(false)
+    }
+  }
 
   const persistRpPolicy = async () => {
     setRpPolicyBusy(true)
@@ -625,8 +961,8 @@ function TavernShell({ useSessions, useWorkspaces, createCleanSession }) {
 
   useEffect(() => {
     const onRefresh = () => refreshStatus()
-    window.addEventListener('dsh-tavern:refresh', onRefresh)
-    return () => window.removeEventListener('dsh-tavern:refresh', onRefresh)
+    window.addEventListener(CLIENT_REFRESH_EVENT, onRefresh)
+    return () => window.removeEventListener(CLIENT_REFRESH_EVENT, onRefresh)
   }, [refreshStatus])
 
   useEffect(() => {
@@ -688,15 +1024,25 @@ function TavernShell({ useSessions, useWorkspaces, createCleanSession }) {
   }
 
   useEffect(() => {
+    const onImportFailure = event => {
+      const message = typeof event?.detail?.message === 'string' ? event.detail.message.trim() : ''
+      if (message !== '') setImportFailure(message.slice(0, 1000))
+    }
+    window.addEventListener(CLIENT_IMPORT_FAILURE_EVENT, onImportFailure)
+    return () => window.removeEventListener(CLIENT_IMPORT_FAILURE_EVENT, onImportFailure)
+  }, [])
+
+  useEffect(() => {
     const onKeyDown = event => {
       if (event.key !== 'Escape') return
-      if (rpAlert !== null) dismissRpAlert()
+      if (importFailure !== null) setImportFailure(null)
+      else if (rpAlert !== null) dismissRpAlert()
       else if (menuOpen) setMenuOpen(false)
       else if (surface !== null) setSurface(null)
     }
     window.addEventListener('keydown', onKeyDown)
     return () => window.removeEventListener('keydown', onKeyDown)
-  }, [menuOpen, rpAlert, surface])
+  }, [importFailure, menuOpen, rpAlert, surface])
 
   const startDrag = event => {
     if (event.button !== 0) return
@@ -734,18 +1080,28 @@ function TavernShell({ useSessions, useWorkspaces, createCleanSession }) {
     drag.current = null
   }
 
-  const toggleMenu = () => {
-    if (suppressClick.current) {
-      suppressClick.current = false
-      return
-    }
-    setMenuOpen(value => !value)
+  const consumeSuppressedClick = () => {
+    if (!suppressClick.current) return false
+    suppressClick.current = false
+    return true
   }
+
+  const clickLauncher = () => chromeController.current?.click({
+    suppressed: consumeSuppressedClick(),
+  })
+  const contextSwitchLauncher = event => {
+    event.preventDefault()
+    const switching = chromeController.current?.switchMode({ suppressed: consumeSuppressedClick() })
+    Promise.resolve(switching).then(changed => {
+      if (changed) setChromeAnimation(value => value + 1)
+    })
+  }
+  const switchChrome = () => chromeController.current?.switchMode()
 
   const open = id => {
     setMenuOpen(false)
     setSurface(id)
-    window.dispatchEvent(new Event('dsh-tavern:refresh'))
+    window.dispatchEvent(new Event(CLIENT_REFRESH_EVENT))
   }
 
   let panel = null
@@ -758,13 +1114,37 @@ function TavernShell({ useSessions, useWorkspaces, createCleanSession }) {
       autoOpen: false,
     }))
   } else if (surface === 'character') {
-    panel = h(CharacterPanel, { sessionId, sessionBlank, close })
+    panel = h(CharacterPanel, {
+      sessionId,
+      sessionBlank,
+      hasConversationHistory,
+      detachPlaythroughSession: (playthroughId, targetSessionId) => playClient.detachPlaythroughSession(playthroughId, targetSessionId),
+      close,
+    })
+  } else if (surface === 'regex' && chromeMode === 'play') {
+    panel = h(RegexPanel, { client: playClient, activeSnapshot, close })
   } else if (surface === 'world-info') {
     panel = h(WorldBookPanel, { sessionId, close })
   } else if (surface === 'user') {
     panel = h(UserPanel, { sessionId, sessionBlank, close })
   } else if (surface === 'session-template') {
-    panel = h(SessionTemplatePanel, { sessionId, workspaceId, createCleanSession, close })
+    panel = h(SessionTemplatePanel, {
+      sessionId,
+      workspaceId,
+      chromeMode,
+      createCleanSession,
+      createConfiguredPlaythrough,
+      close,
+    })
+  } else if (surface === 'conversation-settings' && chromeMode === 'play') {
+    panel = h(ConversationSettingsPanel, {
+      settings: conversationSettings,
+      status: conversationSettingsStatus,
+      busy: conversationSettingsBusy,
+      close,
+      update: persistConversationSettings,
+      reset: resetConversationSettings,
+    })
   } else if (surface === 'settings') {
     panel = h(SettingsPanel, {
       settings: uiSettings,
@@ -779,15 +1159,36 @@ function TavernShell({ useSessions, useWorkspaces, createCleanSession }) {
       onPolicyDraft: setRpPolicyDraft,
       savePolicy: persistRpPolicy,
       resetPolicy: resetRpPolicy,
+      workspaceSetting: rpWorkspaceSetting,
+      workspaceBusy: rpWorkspaceBusy,
+      selectWorkspace: selectRpWorkspace,
     })
   }
 
   const placement = launcherPlacement(anchor, viewport(), menuOpen, uiSettings.scale)
   const statuses = launcherResourceStatuses(activeSnapshot)
+  const chromeSwitchLabel = chromeMode === 'play'
+    ? uiMessage('chrome.switchToNative')
+    : uiMessage('chrome.switchToPlay')
+  const chromeStatusLabel = chromeMode === 'play' ? uiMessage('chrome.currentPlay') : uiMessage('chrome.currentNative')
+  const workspaceAdmissionOpen = chromeMode === 'play'
+    && rpWorkspaceLoadState !== 'idle'
+    && rpWorkspaceLoadState !== 'loading'
+    && rpWorkspaceSetting?.ready !== true
 
-  return h('div', { className: 'dtv-layer', lang: uiSettings.locale, 'data-surface-open': surface !== null, style: { '--dtv-ui-scale': uiSettings.scale } },
+  return h('div', { className: 'dtv-layer', lang: uiSettings.locale, 'data-chrome': chromeMode, 'data-surface-open': surface !== null, style: { '--dtv-ui-scale': uiSettings.scale } },
     panel,
+    importFailure === null ? null : h(ImportFailureDialog, { message: importFailure, onDismiss: () => setImportFailure(null) }),
     rpAlert === null ? null : h(RpHighRiskDialog, { onDismiss: dismissRpAlert }),
+    workspaceAdmissionOpen ? h(WorkspaceAdmission, {
+      setting: rpWorkspaceSetting,
+      state: rpWorkspaceLoadState,
+      error: rpWorkspaceError,
+      busy: rpWorkspaceBusy,
+      selectWorkspace: selectRpWorkspace,
+      reload: refreshRpWorkspace,
+      returnToNative: switchChrome,
+    }) : null,
     h('div', {
       className: 'dtv-launcher',
       'data-open': menuOpen,
@@ -805,11 +1206,30 @@ function TavernShell({ useSessions, useWorkspaces, createCleanSession }) {
           onPointerMove: moveDrag,
           onPointerUp: endDrag,
           onPointerCancel: endDrag,
-          onClick: toggleMenu,
-        }, 'DT')),
-      menuOpen ? h('div', { className: 'dtv-menu', role: 'menu' },
-        h('div', { className: 'dtv-menu-title', 'aria-live': 'polite' }, statusError === '' ? uiMessage('nav.menuTitle', { session: sessionId || translate('nav.session.none') }) : uiMessage('nav.syncFailed', { message: statusError })),
-        ...TAVERN_MENU_ITEMS.map(item => {
+          onClick: clickLauncher,
+          onContextMenu: contextSwitchLauncher,
+        },
+        h('span', { key: chromeAnimation, className: 'dtv-ball-face', 'data-animate': chromeAnimation > 0, 'aria-hidden': 'true' }),
+        h('span', { className: 'dtv-ball-label' }, 'DT'))),
+      h('div', { className: 'dtv-menu', role: 'menu' },
+        h('div', { className: 'dtv-menu-title', 'aria-live': 'polite' }, chromeError === '' && statusError === '' ? uiMessage('nav.menuTitle', { session: sessionId || translate('nav.session.none') }) : uiMessage('nav.syncFailed', { message: chromeError || statusError })),
+        h('button', {
+          className: 'dtv-menu-item',
+          type: 'button',
+          role: 'menuitem',
+          title: chromeSwitchLabel,
+          'aria-label': chromeSwitchLabel,
+          'data-show-binding': false,
+          onClick: switchChrome,
+        },
+        h('span', { 'aria-hidden': 'true' }, '↔'),
+        h('span', { className: 'dtv-item-copy' },
+          h('span', { className: 'dtv-item-label' }, chromeSwitchLabel),
+          h('span', { className: 'dtv-item-status' }, chromeStatusLabel),
+        ),
+        h('span', { className: 'dtv-item-planned' }, chromeMode === 'play' ? 'ST' : 'DSH'),
+        ),
+        ...TAVERN_MENU_ITEMS.filter(item => !item.playOnly || chromeMode === 'play').map(item => {
           const status = statuses[item.id] ?? { bound: false, count: 0, titleKey: item.emptyTitleKey }
           const itemLabel = unwrapText(uiMessage(item.labelKey))
           const statusTitle = status.bound ? status.title : unwrapText(uiMessage(status.titleKey ?? item.emptyTitleKey))
@@ -844,20 +1264,20 @@ function TavernShell({ useSessions, useWorkspaces, createCleanSession }) {
             : item.available ? null : h('span', { className: 'dtv-item-planned' }, uiMessage('common.planned')),
           )
         }),
-      ) : null,
+      ),
     ),
   )
 }
 
 function installStyles() {
-  if (document.querySelector('style[data-plugin-css="dsh-tavern-shell"]') !== null) return
+  if (document.querySelector(`style[data-plugin-css="${PLUGIN_ID}-shell"]`) !== null) return
   const style = document.createElement('style')
-  style.dataset.pluginCss = 'dsh-tavern-shell'
+  style.dataset.pluginCss = `${PLUGIN_ID}-shell`
   style.textContent = css
   document.head.append(style)
 }
 
-export const name = 'dsh-tavern'
+export const name = PLUGIN_ID
 export const inject = ['slots', 'layout', 'sessions', 'workspaces']
 export { PanelHeader }
 
@@ -869,11 +1289,36 @@ export function apply(ctx) {
   installTavernTraceStyles()
   installStyles()
   registerTavernTraceView(ctx)
+  const playClient = createLivePlayClient()
+  const playthroughController = createPlaythroughController(playClient)
+  const chrome = createChromeModeServiceCore({
+    read: () => playClient.getChrome(),
+    write: mode => playClient.putChrome(mode),
+  })
+  ctx.provide(CHROME_SERVICE_NAME, chrome.face)
+  ctx.effect(() => {
+    const stopTransport = startChromeModeTransport({
+      face: chrome.face,
+      internal: chrome.internal,
+      eventsUrl: playClient.chromeEventsUrl,
+    })
+    return () => {
+      stopTransport()
+      chrome.internal.dispose()
+    }
+  }, 'dsh-tavern: chrome mode service transport')
+  const playSlots = installPlaySlotOccupancy(ctx, playClient, {
+    playthroughController,
+    switchToNative: () => chrome.face.setMode('native'),
+  })
   ctx.slots.inject('shell.overlay', () => ctx.slots.register({
     name: 'shell.overlay',
-    id: 'dsh-tavern-launcher',
+    id: `${PLUGIN_ID}-launcher`,
     order: 80,
     inject: () => ({
+      playClient,
+      chromeService: chrome.face,
+      playSlots,
       createCleanSession: ({ workspaceId, source }) => createCleanSessionWorkflow({
         workspaceId,
         source,
@@ -884,7 +1329,18 @@ export function apply(ctx) {
           source: selectedSource,
         }),
         openSession: id => ctx.sessions.open(id),
-        refresh: () => window.dispatchEvent(new Event('dsh-tavern:refresh')),
+        refresh: () => window.dispatchEvent(new Event(CLIENT_REFRESH_EVENT)),
+      }),
+      createConfiguredPlaythrough: ({ source }) => createConfiguredPlaythroughWorkflow({
+        source,
+        preview: selectedSource => sessionConfigurationRequest('/session-configurations/preview', { source: selectedSource }),
+        applySelection: (targetSessionId, selectedSource) => sessionConfigurationRequest('/session-configurations/apply', {
+          targetSessionId,
+          source: selectedSource,
+        }),
+        playthroughController,
+        openSession: id => ctx.sessions.open(id),
+        refresh: () => window.dispatchEvent(new Event(CLIENT_REFRESH_EVENT)),
       }),
     }),
   }, TavernShell))

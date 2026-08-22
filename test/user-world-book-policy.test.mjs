@@ -18,9 +18,11 @@ test('user world-book bindings persist independently and compose explicit books 
     assert.deepEqual(composeWorldBookSelection(['session-only', 'shared'], bindings.get('reader-a')), {
       explicitIds: ['session-only', 'shared'],
       userBoundIds: ['shared', 'user-only'],
+      presetBoundIds: [],
+      characterBoundIds: [],
       effectiveIds: ['session-only', 'shared', 'user-only'],
       duplicateIds: ['shared'],
-      order: 'session-explicit-then-user',
+      order: 'session-explicit-then-user-then-preset-then-character',
     })
 
     const stored = JSON.parse(readFileSync(join(directory, 'user-world-book-bindings.json'), 'utf8'))

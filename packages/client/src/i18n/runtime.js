@@ -4,6 +4,7 @@ import {
   UI_LOCALES,
   isSupportedUiLocale,
 } from '../../../ui-settings/src/locale-contract.js'
+import { CLIENT_UI_SETTINGS_EVENT } from '../../../identity.js'
 import { PRODUCTION_CATALOGS } from './catalogs/index.js'
 
 export { UI_LOCALES }
@@ -163,7 +164,7 @@ export function setClientUiSettings(value, { announce = true } = {}) {
   const rpFollowCharacter = value?.rpFollowCharacter !== false
   current = { locale, scale, rpFollowCharacter }
   if (announce && typeof window !== 'undefined') {
-    window.dispatchEvent(new CustomEvent('dsh-tavern:ui-settings', { detail: getClientUiSettings() }))
+    window.dispatchEvent(new CustomEvent(CLIENT_UI_SETTINGS_EVENT, { detail: getClientUiSettings() }))
   }
   return getClientUiSettings()
 }

@@ -229,8 +229,10 @@ test('client production sources outside catalogs do not contain UI-owned Chinese
   const allowed = [
     /^[a-z][a-z0-9]*(\.[a-z0-9_-]+)+$/i,
     /^dsh-tavern/,
+    /^pmp-dsh-tavern/,
     /^dtv-|^dtt-|^dcc-|^dwb-|^dtu-|^dttrace-/,
     /^\/dsh-tavern\//,
+    /^\/pmp-dsh-tavern\//,
     /^[A-Za-z0-9_./:?&=+-]+$/,
     /^[0-9.%]+$/,
     /^request\/header/,

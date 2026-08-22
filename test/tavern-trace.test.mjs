@@ -195,7 +195,7 @@ test('Trace bounds records and sessions and the GET API restores the persisted s
     const response = await invoke(createTavernTraceApiHandler(new TavernTraceStore(directory, {
       maxSessions: 2,
       maxRecordsPerSession: 2,
-    })), '/dsh-tavern/api/traces?sessionId=session-c')
+    })), '/pmp-dsh-tavern/api/v1/traces?sessionId=session-c')
     assert.equal(response.status, 200)
     assert.deepEqual(response.body.records.map(record => record.turn), [2, 3])
     assert.deepEqual(response.body.storage, {
@@ -274,7 +274,7 @@ test('Trace enforces one global byte budget across sessions, reload and GET resp
 
     const response = await invoke(
       createTavernTraceApiHandler(tightened),
-      '/dsh-tavern/api/traces?sessionId=session-0',
+      '/pmp-dsh-tavern/api/v1/traces?sessionId=session-0',
     )
     assert.equal(response.status, 200)
     assert.ok(response.bytes <= 3 * 1024)
@@ -295,7 +295,7 @@ test('Trace GET compacts response metadata before dropping the only latest recor
     })
     const response = await invoke(
       createTavernTraceApiHandler(store),
-      '/dsh-tavern/api/traces?sessionId=session-latest',
+      '/pmp-dsh-tavern/api/v1/traces?sessionId=session-latest',
     )
     assert.equal(response.status, 200)
     assert.ok(response.bytes <= store.maxTotalBytes)

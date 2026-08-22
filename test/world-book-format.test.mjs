@@ -20,7 +20,7 @@ const snapshot = name => readFileSync(new URL(`./snapshots/${name}`, import.meta
   .trimEnd()
 
 test('exposes the world-book API through the root package subpath', async () => {
-  const api = await import('dsh-tavern/world-book')
+  const api = await import('pmp-dsh-tavern/world-book')
   assert.equal(typeof api.parseWorldBook, 'function')
   assert.equal(typeof api.computeWorldBookCandidates, 'function')
   assert.equal(typeof api.projectWorldBookForLoader, 'function')

@@ -14,10 +14,10 @@ import {
   uiMessage,
   unwrapText,
 } from '../../client/src/i18n.js'
+import { API_V1 as API_ROOT, CLIENT_REFRESH_EVENT, PLUGIN_ID } from '../../identity.js'
+import { announceImportFailure } from '../../client/src/import-failure.js'
 
 const h = createLocalizedElement(createElement)
-
-const API_ROOT = '/dsh-tavern/api'
 const POSITIONS = [
   ['before_character_definition', 'world.position.beforeCharacter'],
   ['after_character_definition', 'world.position.afterCharacter'],
@@ -30,8 +30,8 @@ const POSITIONS = [
 ]
 
 const css = `
-.dwb-panel{position:absolute;top:0;right:0;bottom:0;width:min(500px,calc(100vw - 56px));pointer-events:auto;border-left:1px solid var(--dsw-alias-border-l2);box-shadow:var(--ds-shadow-3,-8px 0 28px rgba(0,0,0,.18));background:var(--dsw-alias-bg-base);color:var(--dsw-alias-label-primary);display:flex;flex-direction:column;font-family:Inter,var(--dsw-font-family),sans-serif}.dwb-header{height:52px;box-sizing:border-box;display:flex;align-items:center;gap:8px;padding:0 14px;border-bottom:1px solid var(--dsw-alias-border-l2);flex:none}.dwb-title{font-size:16px;font-weight:650;flex:1}.dwb-close{border:0;background:transparent;color:var(--dsw-alias-label-tertiary);cursor:pointer;border-radius:7px;padding:6px 8px;font-size:14px}.dwb-body{min-height:0;overflow:auto;padding:12px;display:flex;flex-direction:column;gap:11px}.dwb-toolbar{display:grid;grid-template-columns:repeat(3,1fr);gap:7px}.dwb-actions{display:flex;gap:7px;flex-wrap:wrap}.dwb-button{min-height:36px;border:1px solid var(--dsw-alias-border-l2);border-radius:8px;background:var(--dsw-alias-button-secondary-fill,var(--dsw-alias-bg-base));color:var(--dsw-alias-label-primary);cursor:pointer;padding:7px 10px;font-size:13px;text-decoration:none;display:inline-flex;align-items:center;justify-content:center;box-sizing:border-box}.dwb-button:disabled{opacity:.5;cursor:default}.dwb-primary{background:var(--dsw-alias-state-business-primary);color:white;border-color:transparent}.dwb-danger{color:var(--dsw-alias-state-error)}.dwb-field{display:flex;flex-direction:column;gap:4px}.dwb-label{font-size:12px;font-weight:620;color:var(--dsw-alias-label-tertiary)}.dwb-input,.dwb-select,.dwb-textarea{box-sizing:border-box;width:100%;border:1px solid var(--dsw-alias-border-l2);border-radius:7px;background:var(--dsw-alias-bg-base);color:var(--dsw-alias-label-primary);font:inherit;font-size:13px;padding:7px 8px}.dwb-input,.dwb-select{height:36px}.dwb-textarea{min-height:110px;resize:vertical;line-height:1.5}.dwb-note,.dwb-meta{font-size:13px;line-height:1.5;color:var(--dsw-alias-label-tertiary);margin:0;overflow-wrap:anywhere}.dwb-status{font-size:13px;line-height:1.45;border-radius:7px;padding:8px 10px;background:var(--dsw-specific-tip);overflow-wrap:anywhere}.dwb-status[data-error=true]{color:var(--dsw-alias-state-error)}.dwb-status[data-warning=true]{color:var(--dsw-alias-state-warning,#b46b00)}.dwb-section-title{font-size:15px;font-weight:700;margin:5px 0 0}.dwb-resource{border:1px solid var(--dsw-alias-border-l1);border-radius:9px;padding:10px;display:flex;flex-direction:column;gap:8px}.dwb-resource-title{font-size:14px;font-weight:650}.dwb-bindings{display:grid;grid-template-columns:1fr 1fr;gap:5px}.dwb-check{display:flex;gap:6px;align-items:flex-start;font-size:12px;line-height:1.45}.dwb-entry{border:1px solid var(--dsw-alias-border-l1);border-radius:8px;overflow:hidden}.dwb-entry>summary{list-style:none;cursor:pointer;padding:8px;display:flex;align-items:center;gap:7px;font-size:13px}.dwb-entry>summary::-webkit-details-marker{display:none}.dwb-dot{width:8px;height:8px;flex:none;border-radius:50%;background:var(--dsw-alias-label-tertiary)}.dwb-entry[data-enabled=true] .dwb-dot{background:var(--dsw-alias-state-success,#2fa36b)}.dwb-entry-name{font-weight:620;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.dwb-entry-state{margin-left:auto;flex:none;color:var(--dsw-alias-label-tertiary);font-size:12px}.dwb-entry-body{border-top:1px solid var(--dsw-alias-border-l1);padding:8px;display:flex;flex-direction:column;gap:8px}.dwb-grid{display:grid;grid-template-columns:1fr 1fr;gap:7px}.dwb-checks{display:flex;flex-wrap:wrap;gap:10px}.dwb-list{margin:0;padding-left:18px;font-size:13px;line-height:1.5}
-.dwb-source-section{border:1px solid var(--dsw-alias-border-l2);border-radius:11px;padding:10px;background:color-mix(in srgb,var(--dsw-specific-tip) 35%,transparent);display:flex;flex-direction:column;gap:9px}.dwb-source-section>.dwb-section-title{margin:0}.dwb-source-section>.dwb-resource{background:var(--dsw-alias-bg-base)}.dwb-source-list{margin:0;padding-left:20px;display:flex;flex-direction:column;gap:7px}.dwb-source-book{padding-left:2px}.dwb-source-book-row{display:flex;align-items:center;justify-content:space-between;gap:8px}.dwb-source-book-name{min-width:0;font-size:13px;font-weight:620;overflow-wrap:anywhere}.dwb-source-badge{flex:none;border:1px solid var(--dsw-alias-border-l1);border-radius:999px;padding:2px 7px;font-size:11px;line-height:1.35;color:var(--dsw-alias-label-tertiary);background:var(--dsw-specific-tip)}.dwb-user-bindings{grid-template-columns:1fr}.dwb-user-binding-row{display:flex;align-items:center;gap:7px}.dwb-user-binding-row>.dwb-check{align-items:center;flex:1;min-width:0}.dwb-user-binding-row .dwb-source-badge{margin-left:auto}.dwb-inline-edit{min-height:30px;padding:4px 8px;flex:none}
+.dwb-panel{position:absolute;top:0;right:0;bottom:0;width:min(500px,calc(100vw - 56px));pointer-events:auto;border-left:1px solid var(--dsw-alias-border-l2);box-shadow:var(--ds-shadow-3,-8px 0 28px rgba(0,0,0,.18));background:var(--dsw-alias-bg-base);color:var(--dsw-alias-label-primary);display:flex;flex-direction:column;font-family:Inter,var(--dsw-font-family),sans-serif}.dwb-header{height:52px;box-sizing:border-box;display:flex;align-items:center;gap:8px;padding:0 14px;border-bottom:1px solid var(--dsw-alias-border-l2);flex:none}.dwb-title{font-size:16px;font-weight:650;flex:1}.dwb-close{border:0;background:transparent;color:var(--dsw-alias-label-tertiary);cursor:pointer;border-radius:7px;padding:6px 8px;font-size:14px}.dwb-body{min-height:0;overflow:auto;padding:12px;display:flex;flex-direction:column;gap:11px}.dwb-toolbar{display:grid;grid-template-columns:repeat(3,1fr);gap:7px}.dwb-actions{display:flex;gap:7px;flex-wrap:wrap}.dwb-button{min-height:36px;border:1px solid var(--dsw-alias-border-l2);border-radius:8px;background:var(--dsw-alias-button-secondary-fill,var(--dsw-alias-bg-base));color:var(--dsw-alias-label-primary);cursor:pointer;padding:7px 10px;font-size:13px;text-decoration:none;display:inline-flex;align-items:center;justify-content:center;box-sizing:border-box}.dwb-button:disabled,.dwb-button[data-disabled=true]{opacity:.5;cursor:default;pointer-events:none}.dwb-primary{background:var(--dsw-alias-state-business-primary);color:white;border-color:transparent}.dwb-danger{color:var(--dsw-alias-state-error)}.dwb-field{display:flex;flex-direction:column;gap:4px}.dwb-label{font-size:12px;font-weight:620;color:var(--dsw-alias-label-tertiary)}.dwb-input,.dwb-select,.dwb-textarea{box-sizing:border-box;width:100%;border:1px solid var(--dsw-alias-border-l2);border-radius:7px;background:var(--dsw-alias-bg-base);color:var(--dsw-alias-label-primary);font:inherit;font-size:13px;padding:7px 8px}.dwb-input,.dwb-select{height:36px}.dwb-textarea{min-height:110px;resize:vertical;line-height:1.5}.dwb-note,.dwb-meta{font-size:13px;line-height:1.5;color:var(--dsw-alias-label-tertiary);margin:0;overflow-wrap:anywhere}.dwb-status{font-size:13px;line-height:1.45;border-radius:7px;padding:8px 10px;background:var(--dsw-specific-tip);overflow-wrap:anywhere}.dwb-status[data-error=true]{color:var(--dsw-alias-state-error)}.dwb-status[data-warning=true]{color:var(--dsw-alias-state-warning,#b46b00)}.dwb-section-title{font-size:15px;font-weight:700;margin:5px 0 0}.dwb-resource{border:1px solid var(--dsw-alias-border-l1);border-radius:9px;padding:10px;display:flex;flex-direction:column;gap:8px}.dwb-resource-title{font-size:14px;font-weight:650}.dwb-bindings{display:grid;grid-template-columns:1fr 1fr;gap:5px}.dwb-check{display:flex;gap:6px;align-items:flex-start;font-size:12px;line-height:1.45}.dwb-entry{border:1px solid var(--dsw-alias-border-l1);border-radius:8px;overflow:hidden;transition:border-color .12s,box-shadow .12s}.dwb-entry[data-dragging=true]{height:4px;min-height:4px;margin:5px 10px;border:0;border-radius:999px;background:var(--dsw-alias-state-business-primary);box-shadow:0 0 0 1px color-mix(in srgb,var(--dsw-alias-state-business-primary) 25%,transparent)}.dwb-entry[data-dragging=true]>*{opacity:0}.dwb-entry>summary{list-style:none;cursor:pointer;padding:8px;display:flex;align-items:center;gap:7px;font-size:13px}.dwb-entry>summary::-webkit-details-marker{display:none}.dwb-drag{border:0;background:transparent;color:var(--dsw-alias-label-tertiary);cursor:grab;padding:1px 2px;font-size:15px;line-height:1;touch-action:none;user-select:none}.dwb-drag:active{cursor:grabbing}.dwb-drop-placeholder{box-sizing:border-box;height:42px;border:2px dashed var(--dsw-alias-state-business-primary);border-radius:8px;background:color-mix(in srgb,var(--dsw-alias-state-business-primary) 7%,transparent);display:flex;align-items:center;justify-content:center;color:var(--dsw-alias-state-business-primary);font-size:12px;font-weight:600;pointer-events:none}.dwb-entry-name{font-weight:620;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.dwb-entry-state{margin-left:auto;flex:none;color:var(--dsw-alias-label-tertiary);font-size:12px}.dwb-entry-body{border-top:1px solid var(--dsw-alias-border-l1);padding:8px;display:flex;flex-direction:column;gap:8px}.dwb-grid{display:grid;grid-template-columns:1fr 1fr;gap:7px}.dwb-checks{display:flex;flex-wrap:wrap;gap:10px}.dwb-list{margin:0;padding-left:18px;font-size:13px;line-height:1.5}.dwb-footer{position:sticky;bottom:-12px;margin:0 -12px -12px;padding:10px 12px;background:var(--dsw-alias-bg-base);border-top:1px solid var(--dsw-alias-border-l2);display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.dwb-source-section{border:1px solid var(--dsw-alias-border-l2);border-radius:11px;padding:10px;background:color-mix(in srgb,var(--dsw-specific-tip) 35%,transparent);display:flex;flex-direction:column;gap:9px}.dwb-source-section>.dwb-section-title{margin:0}.dwb-source-section>.dwb-resource{background:var(--dsw-alias-bg-base)}.dwb-source-list{margin:0;padding-left:20px;display:flex;flex-direction:column;gap:7px}.dwb-source-book{padding-left:2px}.dwb-source-book-row{display:flex;align-items:center;justify-content:space-between;gap:8px}.dwb-source-book-name{min-width:0;font-size:13px;font-weight:620;overflow-wrap:anywhere}.dwb-source-badge{flex:none;border:1px solid var(--dsw-alias-border-l1);border-radius:999px;padding:2px 7px;font-size:11px;line-height:1.35;color:var(--dsw-alias-label-tertiary);background:var(--dsw-specific-tip)}.dwb-user-bindings{grid-template-columns:1fr}.dwb-user-binding-row{display:flex;align-items:center;gap:7px}.dwb-user-binding-row>.dwb-check{align-items:center;flex:1;min-width:0}.dwb-user-binding-row .dwb-source-badge{margin-left:auto}.dwb-inline-edit{min-height:30px;padding:4px 8px;flex:none}.dwb-browse{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:7px}
 `
 
 function errorMessage(data, status) {
@@ -62,26 +62,100 @@ export function parseKeywords(value) {
   return value.split(/[,，]/u).map(item => item.trim()).filter(Boolean)
 }
 
+function sameKeywords(left, right) {
+  if (left.length !== right.length) return false
+  return left.every((value, index) => value === right[index])
+}
+
+export function reconcileKeywordEditorText(current, keywords) {
+  const normalized = Array.isArray(keywords)
+    ? keywords.filter(value => typeof value === 'string' && value !== '')
+    : []
+  return sameKeywords(parseKeywords(current), normalized)
+    ? current
+    : normalized.join(', ')
+}
+
+function KeywordInput({ keywords, onChange }) {
+  const [text, setText] = useState(() => Array.isArray(keywords) ? keywords.join(', ') : '')
+  useEffect(() => {
+    setText(current => reconcileKeywordEditorText(current, keywords))
+  }, [keywords])
+  return h('input', {
+    className: 'dwb-input',
+    value: text,
+    onChange: event => {
+      const next = event.target.value
+      setText(next)
+      onChange(parseKeywords(next))
+    },
+  })
+}
+
 function embeddedPosition(entry) {
   const value = entry?.extensions?.position
   if (Number.isInteger(value) && value >= 0 && value <= 7) return value
   return entry?.position === 'before_char' ? 0 : 1
 }
 
-function EmbeddedEntryEditor({ entry, index, update, remove }) {
+export function reorderWorldBookEntriesAtBoundary(entries, from, boundary, orderKey = 'insertionOrder') {
+  if (!Array.isArray(entries)) throw new TypeError()
+  if (!Number.isSafeInteger(from) || !Number.isSafeInteger(boundary)) return entries
+  if (from < 0 || from >= entries.length || boundary < 0 || boundary > entries.length) return entries
+  const destination = boundary > from ? boundary - 1 : boundary
+  if (destination === from) return entries
+  const reordered = [...entries]
+  const [moved] = reordered.splice(from, 1)
+  reordered.splice(destination, 0, moved)
+  return reordered.map((entry, index) => ({
+    ...entry,
+    [orderKey]: (reordered.length - index) * 100,
+  }))
+}
+
+function EntryDropPlaceholder() {
+  return h('div', { className: 'dwb-drop-placeholder', 'aria-hidden': true }, uiMessage('preset.dropHere'))
+}
+
+function entryInsertionBoundary(event, kind) {
+  const target = document.elementFromPoint(event.clientX, event.clientY)?.closest('[data-world-entry-index]')
+  if (target === null || target.dataset.worldEntryKind !== kind) return null
+  const index = Number(target.dataset.worldEntryIndex)
+  const bounds = target.getBoundingClientRect()
+  return event.clientY < bounds.top + bounds.height / 2 ? index : index + 1
+}
+
+function EntryDragButton({ busy, dragging, onPointerDown, onPointerMove, onPointerUp, onPointerCancel }) {
+  return h('button', {
+    className: 'dwb-drag',
+    type: 'button',
+    disabled: busy,
+    title: uiMessage('preset.dragToReorder'),
+    'aria-label': uiMessage('preset.dragToReorder'),
+    'aria-pressed': dragging,
+    onClick: event => { event.preventDefault(); event.stopPropagation() },
+    onPointerDown,
+    onPointerMove,
+    onPointerUp,
+    onPointerCancel,
+  }, '⠿')
+}
+
+function EmbeddedEntryEditor({ entry, index, update, remove, dragKind, dragging, dragHandlers }) {
   const patch = value => update(index, value)
   const secondaryKeys = Array.isArray(entry.secondary_keys) ? entry.secondary_keys : []
   const position = embeddedPosition(entry)
-  return h('details', { className: 'dwb-entry', 'data-enabled': entry.enabled === true },
+  return h('details', { className: 'dwb-entry', 'data-world-entry-kind': dragKind, 'data-world-entry-index': index, 'data-dragging': dragging || undefined },
     h('summary', null,
-      h('span', { className: 'dwb-dot' }),
+      h(EntryDragButton, { dragging, ...dragHandlers }),
+      h('input', { type: 'checkbox', checked: entry.enabled === true, onClick: event => event.stopPropagation(), onChange: event => patch({ enabled: event.target.checked }) }),
       h('span', { className: 'dwb-entry-name' }, entry.comment || entry.name ? rawText(entry.comment || entry.name) : uiMessage('world.entry.fallback', { id: entry.id ?? index })),
       h('span', { className: 'dwb-entry-state' }, entry.constant ? uiMessage('world.entry.constant') : (entry.keys ?? []).length > 0 ? rawText(entry.keys.join(', ')) : uiMessage('world.entry.noKeywords')),
     ),
     h('div', { className: 'dwb-entry-body' },
       h(Field, { label: uiMessage('world.entry.title') }, h('input', { className: 'dwb-input', value: entry.comment ?? entry.name ?? '', onChange: event => patch({ comment: event.target.value }) })),
-      h(Field, { label: uiMessage('world.entry.primaryKeys') }, h('input', { className: 'dwb-input', value: (entry.keys ?? []).join(', '), onChange: event => patch({ keys: parseKeywords(event.target.value) }) })),
-      h(Field, { label: uiMessage('world.entry.secondaryKeys') }, h('input', { className: 'dwb-input', value: secondaryKeys.join(', '), onChange: event => { const keys = parseKeywords(event.target.value); patch({ secondary_keys: keys, selective: keys.length > 0 }) } })),
+      h(Field, { label: uiMessage('world.entry.primaryKeys') }, h(KeywordInput, { keywords: entry.keys, onChange: keys => patch({ keys }) })),
+      h(Field, { label: uiMessage('world.entry.secondaryKeys') }, h(KeywordInput, { keywords: secondaryKeys, onChange: keys => patch({ secondary_keys: keys, selective: keys.length > 0 }) })),
       secondaryKeys.length > 0 ? h(Field, { label: uiMessage('world.entry.secondaryLogicShort') }, h('select', {
         className: 'dwb-select',
         value: entry.selectiveLogic ?? entry.extensions?.selectiveLogic ?? 'and_any',
@@ -98,7 +172,6 @@ function EmbeddedEntryEditor({ entry, index, update, remove }) {
         h(Field, { label: uiMessage('world.entry.probability') }, h('input', { className: 'dwb-input', type: 'number', min: 0, max: 100, value: entry.probability ?? entry.extensions?.probability ?? 100, onChange: event => patch({ probability: Number(event.target.value), extensions: { ...(entry.extensions ?? {}), probability: Number(event.target.value), useProbability: true } }) })),
       ),
       h('div', { className: 'dwb-checks' },
-        h('label', { className: 'dwb-check' }, h('input', { type: 'checkbox', checked: entry.enabled === true, onChange: event => patch({ enabled: event.target.checked }) }), uiMessage('common.enable')),
         h('label', { className: 'dwb-check' }, h('input', { type: 'checkbox', checked: entry.constant === true, onChange: event => patch({ constant: event.target.checked }) }), uiMessage('world.entry.constant')),
         h('label', { className: 'dwb-check' }, h('input', { type: 'checkbox', checked: (entry.case_sensitive ?? entry.extensions?.case_sensitive) === true, onChange: event => patch({ case_sensitive: event.target.checked, extensions: { ...(entry.extensions ?? {}), case_sensitive: event.target.checked } }) }), uiMessage('world.entry.caseSensitive')),
         h('label', { className: 'dwb-check' }, h('input', { type: 'checkbox', checked: (entry.match_whole_words ?? entry.extensions?.match_whole_words) === true, onChange: event => patch({ match_whole_words: event.target.checked, extensions: { ...(entry.extensions ?? {}), match_whole_words: event.target.checked } }) }), uiMessage('world.entry.wholeWord')),
@@ -152,19 +225,87 @@ export function deriveUserWorldBookSource(active, catalog) {
   }
 }
 
-function EntryEditor({ entry, index, update, remove }) {
+function sameOrderedIds(left, right) {
+  return left.length === right.length && left.every((value, index) => value === right[index])
+}
+
+function orderedBindingCatalog(catalog, selection) {
+  const books = Array.isArray(catalog?.worldBooks) ? catalog.worldBooks : []
+  const byId = new Map(books.map(book => [book.id, book]))
+  return [
+    ...selection.map(id => byId.get(id)).filter(Boolean),
+    ...books.filter(book => !selection.includes(book.id)),
+  ]
+}
+
+function ResourceWorldBookBindingEditor({
+  resource,
+  catalog,
+  selection,
+  appliedSelection,
+  setSelection,
+  save,
+  edit,
+  busy,
+  currentKey,
+  noneKey,
+}) {
+  if (resource === null || resource === undefined) return h('p', { className: 'dwb-note' }, uiMessage(noneKey))
+  const books = orderedBindingCatalog(catalog, selection)
+  const dirty = !sameOrderedIds(selection, appliedSelection)
+  return h('div', { className: 'dwb-resource' },
+    h('div', { className: 'dwb-resource-title' }, uiMessage(currentKey, { name: resource.name || resource.id })),
+    books.length > 0
+      ? h('div', { className: 'dwb-bindings dwb-user-bindings' }, ...books.map(book => {
+        const checked = selection.includes(book.id)
+        const wasApplied = appliedSelection.includes(book.id)
+        const badge = checked && !wasApplied
+          ? uiMessage('world.resource.pendingAdd')
+          : !checked && wasApplied
+            ? uiMessage('world.resource.pendingRemove')
+            : null
+        return h('div', { className: 'dwb-user-binding-row', key: book.id },
+          h('label', { className: 'dwb-check' },
+            h('input', {
+              type: 'checkbox',
+              checked,
+              onChange: event => setSelection(current => event.target.checked
+                ? [...current, book.id]
+                : current.filter(id => id !== book.id)),
+            }),
+            h('span', { className: 'dwb-source-book-name' }, rawText(book.name)),
+            badge === null ? null : h('span', { className: 'dwb-source-badge' }, badge),
+          ),
+          checked || wasApplied
+            ? h('button', { className: 'dwb-button dwb-inline-edit', type: 'button', disabled: busy, onClick: () => edit(book.id) }, uiMessage('world.resource.editContent'))
+            : null,
+        )
+      }))
+      : h('p', { className: 'dwb-note' }, uiMessage('world.resource.libraryEmpty')),
+    dirty
+      ? h('div', { className: 'dwb-status', 'data-warning': true }, uiMessage('world.resource.unsaved'))
+      : h('p', { className: 'dwb-note' }, selection.length === 0 ? uiMessage('world.resource.empty') : uiMessage('world.resource.saved')),
+    h('div', { className: 'dwb-actions' },
+      h('button', { className: 'dwb-button dwb-primary', type: 'button', disabled: busy || !dirty, onClick: save }, dirty ? uiMessage('world.resource.save') : uiMessage('world.resource.saveApplied')),
+      h('button', { className: 'dwb-button', type: 'button', disabled: busy || selection.length === 0, onClick: () => setSelection([]) }, uiMessage('world.resource.clear')),
+    ),
+  )
+}
+
+function EntryEditor({ entry, index, update, remove, dragKind, dragging, dragHandlers }) {
   const patch = value => update(index, value)
   const secondary = Array.isArray(entry.secondaryKeys) ? entry.secondaryKeys : []
-  return h('details', { className: 'dwb-entry', 'data-enabled': entry.enabled === true },
+  return h('details', { className: 'dwb-entry', 'data-world-entry-kind': dragKind, 'data-world-entry-index': index, 'data-dragging': dragging || undefined },
     h('summary', null,
-      h('span', { className: 'dwb-dot' }),
+      h(EntryDragButton, { dragging, ...dragHandlers }),
+      h('input', { type: 'checkbox', checked: entry.enabled === true, onClick: event => event.stopPropagation(), onChange: event => patch({ enabled: event.target.checked }) }),
       h('span', { className: 'dwb-entry-name' }, entry.comment ? rawText(entry.comment) : uiMessage('world.entry.fallback', { id: entry.uid ?? index })),
       h('span', { className: 'dwb-entry-state' }, entry.constant ? uiMessage('world.entry.constant') : (entry.keys ?? []).length > 0 ? rawText(entry.keys.join(', ')) : uiMessage('world.entry.noKeywords')),
     ),
     h('div', { className: 'dwb-entry-body' },
       h(Field, { label: uiMessage('world.entry.title') }, h('input', { className: 'dwb-input', value: entry.comment ?? '', onChange: event => patch({ comment: event.target.value }) })),
-      h(Field, { label: uiMessage('world.entry.primaryKeys') }, h('input', { className: 'dwb-input', value: (entry.keys ?? []).join(', '), onChange: event => patch({ keys: parseKeywords(event.target.value) }) })),
-      h(Field, { label: uiMessage('world.entry.secondaryKeys') }, h('input', { className: 'dwb-input', value: secondary.join(', '), onChange: event => { const keys = parseKeywords(event.target.value); patch({ secondaryKeys: keys, selective: keys.length > 0 }) } })),
+      h(Field, { label: uiMessage('world.entry.primaryKeys') }, h(KeywordInput, { keywords: entry.keys, onChange: keys => patch({ keys }) })),
+      h(Field, { label: uiMessage('world.entry.secondaryKeys') }, h(KeywordInput, { keywords: secondary, onChange: keys => patch({ secondaryKeys: keys, selective: keys.length > 0 }) })),
       secondary.length > 0 ? h(Field, { label: uiMessage('world.entry.secondaryLogicShort') }, h('select', { className: 'dwb-select', value: entry.selectiveLogic ?? 'and_any', onChange: event => patch({ selectiveLogic: event.target.value, selective: true }) },
         h('option', { value: 'and_any' }, uiMessage('world.logic.andAny')),
         h('option', { value: 'and_all' }, uiMessage('world.logic.andAll')),
@@ -177,7 +318,6 @@ function EntryEditor({ entry, index, update, remove }) {
         h(Field, { label: uiMessage('world.entry.probability') }, h('input', { className: 'dwb-input', type: 'number', min: 0, max: 100, value: entry.probability ?? 100, onChange: event => patch({ probability: Number(event.target.value), useProbability: true }) })),
       ),
       h('div', { className: 'dwb-checks' },
-        h('label', { className: 'dwb-check' }, h('input', { type: 'checkbox', checked: entry.enabled === true, onChange: event => patch({ enabled: event.target.checked }) }), uiMessage('common.enable')),
         h('label', { className: 'dwb-check' }, h('input', { type: 'checkbox', checked: entry.constant === true, onChange: event => patch({ constant: event.target.checked }) }), uiMessage('world.entry.constant')),
         h('label', { className: 'dwb-check' }, h('input', { type: 'checkbox', checked: entry.caseSensitive === true, onChange: event => patch({ caseSensitive: event.target.checked }) }), uiMessage('world.entry.caseSensitive')),
         h('label', { className: 'dwb-check' }, h('input', { type: 'checkbox', checked: entry.matchWholeWords === true, onChange: event => patch({ matchWholeWords: event.target.checked }) }), uiMessage('world.entry.wholeWord')),
@@ -195,6 +335,10 @@ export function WorldBookPanel({ sessionId, close }) {
   const [appliedSelection, setAppliedSelection] = useState([])
   const [userSelection, setUserSelection] = useState([])
   const [appliedUserSelection, setAppliedUserSelection] = useState([])
+  const [presetSelection, setPresetSelection] = useState([])
+  const [appliedPresetSelection, setAppliedPresetSelection] = useState([])
+  const [characterSelection, setCharacterSelection] = useState([])
+  const [appliedCharacterSelection, setAppliedCharacterSelection] = useState([])
   const [active, setActive] = useState(null)
   const [embeddedCharacterId, setEmbeddedCharacterId] = useState(null)
   const [embeddedDraft, setEmbeddedDraft] = useState(null)
@@ -202,6 +346,8 @@ export function WorldBookPanel({ sessionId, close }) {
   const [dirty, setDirty] = useState(false)
   const [busy, setBusy] = useState(false)
   const [status, setStatus] = useState({ error: false, key: 'common.loading' })
+  const [entryDrag, setEntryDrag] = useState(null)
+  const [entryDropIndex, setEntryDropIndex] = useState(null)
   const fileRef = useRef(null)
   const standaloneEditorRef = useRef(null)
   const generation = useRef(0)
@@ -232,12 +378,18 @@ export function WorldBookPanel({ sessionId, close }) {
       ? await api(`/world-book-selection?sessionId=${encodeURIComponent(sessionId)}`)
       : { selection: { worldBookIds: [] } }
     const activeView = await api(`/active${sessionId ? `?sessionId=${encodeURIComponent(sessionId)}` : ''}`)
+    const presetId = activeView.resources?.preset?.id ?? null
     const characterId = activeView.resources?.characterCard?.id ?? null
-    let embeddedBook = null
-    if (characterId !== null) {
-      const character = await api(`/characters/${encodeURIComponent(characterId)}`)
-      embeddedBook = character.character?.data?.characterBook ?? null
-    }
+    const [presetBinding, characterBinding, characterDetail] = await Promise.all([
+      presetId === null
+        ? { binding: { worldBookIds: [] } }
+        : api(`/presets/${encodeURIComponent(presetId)}/world-books`),
+      characterId === null
+        ? { binding: { worldBookIds: [] } }
+        : api(`/characters/${encodeURIComponent(characterId)}/world-books`),
+      characterId === null ? null : api(`/characters/${encodeURIComponent(characterId)}`),
+    ])
+    const embeddedBook = characterDetail?.character?.data?.characterBook ?? null
     if (currentGeneration !== generation.current) return
     const ids = selected.selection?.worldBookIds ?? []
     const resolvedUserIds = activeView.resources?.user === null || activeView.resources?.user === undefined
@@ -249,6 +401,12 @@ export function WorldBookPanel({ sessionId, close }) {
     setAppliedSelection(ids)
     setUserSelection(userIds)
     setAppliedUserSelection(userIds)
+    const presetIds = presetBinding.binding?.worldBookIds ?? []
+    const characterIds = characterBinding.binding?.worldBookIds ?? []
+    setPresetSelection(presetIds)
+    setAppliedPresetSelection(presetIds)
+    setCharacterSelection(characterIds)
+    setAppliedCharacterSelection(characterIds)
     setActive(activeView)
     setEmbeddedCharacterId(characterId)
     setEmbeddedDraft(embeddedBook === null ? null : structuredClone(embeddedBook))
@@ -270,10 +428,10 @@ export function WorldBookPanel({ sessionId, close }) {
   useEffect(() => {
     run(() => refresh(), 'world.status.loaded')
     const onRefresh = () => run(() => refresh(), 'world.status.refreshed')
-    window.addEventListener('dsh-tavern:refresh', onRefresh)
+    window.addEventListener(CLIENT_REFRESH_EVENT, onRefresh)
     return () => {
       generation.current += 1
-      window.removeEventListener('dsh-tavern:refresh', onRefresh)
+      window.removeEventListener(CLIENT_REFRESH_EVENT, onRefresh)
     }
   }, [refresh, run])
 
@@ -289,19 +447,27 @@ export function WorldBookPanel({ sessionId, close }) {
     requestAnimationFrame(() => standaloneEditorRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }))
   }
 
+  const editResourceBook = editUserBook
+
   const create = () => run(async () => {
     const data = await api('/world-books', { method: 'POST', body: JSON.stringify({ name: translate('world.defaultName') }) })
     await refresh(data.worldBook.id)
   }, 'world.status.created')
 
   const importFile = file => run(async () => {
-    const response = await fetch(`${API_ROOT}/world-books/import?filename=${encodeURIComponent(file.name)}`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: file,
-    })
-    const data = await response.json().catch(() => null)
-    if (!response.ok || data?.ok === false) throw new Error(errorMessage(data, response.status))
+    let data
+    try {
+      const response = await fetch(`${API_ROOT}/world-books/import?filename=${encodeURIComponent(file.name)}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: file,
+      })
+      data = await response.json().catch(() => null)
+      if (!response.ok || data?.ok === false) throw new Error(errorMessage(data, response.status))
+    } catch (error) {
+      announceImportFailure(error)
+      throw error
+    }
     if (fileRef.current !== null) fileRef.current.value = ''
     await refresh(data.worldBook.id)
   }, 'world.status.imported')
@@ -311,7 +477,7 @@ export function WorldBookPanel({ sessionId, close }) {
     setDocument(data.worldBook)
     setDraft(structuredClone(data.worldBook.book))
     setDirty(false)
-    window.dispatchEvent(new Event('dsh-tavern:refresh'))
+    window.dispatchEvent(new Event(CLIENT_REFRESH_EVENT))
   }, 'world.status.saved')
 
   const saveSelection = () => run(async () => {
@@ -319,7 +485,7 @@ export function WorldBookPanel({ sessionId, close }) {
     const data = await api('/world-book-selection', { method: 'POST', body: JSON.stringify({ sessionId, worldBookIds: selection }) })
     setSelection(data.selection.worldBookIds)
     setAppliedSelection(data.selection.worldBookIds)
-    window.dispatchEvent(new Event('dsh-tavern:refresh'))
+    window.dispatchEvent(new Event(CLIENT_REFRESH_EVENT))
   }, 'world.status.bindingSaved')
 
   const saveUserSelection = () => run(async () => {
@@ -332,8 +498,34 @@ export function WorldBookPanel({ sessionId, close }) {
     const ids = data.binding.worldBookIds
     setUserSelection(ids)
     setAppliedUserSelection(ids)
-    window.dispatchEvent(new Event('dsh-tavern:refresh'))
+    window.dispatchEvent(new Event(CLIENT_REFRESH_EVENT))
   }, 'world.user.saveSuccess')
+
+  const savePresetSelection = () => run(async () => {
+    const presetId = active?.resources?.preset?.id
+    if (!presetId) throw uiError('world.resource.error.noPreset')
+    const data = await api(`/presets/${encodeURIComponent(presetId)}/world-books`, {
+      method: 'PUT',
+      body: JSON.stringify({ worldBookIds: presetSelection }),
+    })
+    const ids = data.binding.worldBookIds
+    setPresetSelection(ids)
+    setAppliedPresetSelection(ids)
+    window.dispatchEvent(new Event(CLIENT_REFRESH_EVENT))
+  }, 'world.resource.saveSuccess')
+
+  const saveCharacterSelection = () => run(async () => {
+    const characterId = active?.resources?.characterCard?.id
+    if (!characterId) throw uiError('world.resource.error.noCharacter')
+    const data = await api(`/characters/${encodeURIComponent(characterId)}/world-books`, {
+      method: 'PUT',
+      body: JSON.stringify({ worldBookIds: characterSelection }),
+    })
+    const ids = data.binding.worldBookIds
+    setCharacterSelection(ids)
+    setAppliedCharacterSelection(ids)
+    window.dispatchEvent(new Event(CLIENT_REFRESH_EVENT))
+  }, 'world.resource.saveSuccess')
 
   const remove = () => run(async () => {
     if (document === null || !window.confirm(unwrapText(uiMessage('world.confirmDelete', { name: document.name })))) return
@@ -341,7 +533,7 @@ export function WorldBookPanel({ sessionId, close }) {
     setDocument(null)
     setDraft(null)
     await refresh(null)
-    window.dispatchEvent(new Event('dsh-tavern:refresh'))
+    window.dispatchEvent(new Event(CLIENT_REFRESH_EVENT))
   }, 'world.status.deleted')
 
   const saveEmbedded = () => run(async () => {
@@ -351,8 +543,18 @@ export function WorldBookPanel({ sessionId, close }) {
     })
     setEmbeddedDraft(structuredClone(data.character.data.characterBook))
     setEmbeddedDirty(false)
-    window.dispatchEvent(new Event('dsh-tavern:refresh'))
+    window.dispatchEvent(new Event(CLIENT_REFRESH_EVENT))
   }, 'world.status.embeddedSaved')
+
+  const createEmbedded = () => {
+    const character = active?.resources?.characterCard
+    if (!character) return
+    setEmbeddedDraft({
+      name: translate('world.embeddedDefaultName', { name: character.name || character.id }),
+      entries: [],
+    })
+    setEmbeddedDirty(true)
+  }
 
   const updateEntry = (index, patch) => {
     setDraft(current => {
@@ -362,12 +564,55 @@ export function WorldBookPanel({ sessionId, close }) {
     })
     setDirty(true)
   }
+  const moveEntries = (kind, from, boundary) => {
+    if (kind === 'standalone') {
+      setDraft(current => {
+        const entries = reorderWorldBookEntriesAtBoundary(current.entries, from, boundary)
+        return entries === current.entries ? current : { ...current, entries }
+      })
+      setDirty(true)
+      return
+    }
+    setEmbeddedDraft(current => {
+      const entries = reorderWorldBookEntriesAtBoundary(current.entries, from, boundary, 'insertion_order')
+      return entries === current.entries ? current : { ...structuredClone(current), entries }
+    })
+    setEmbeddedDirty(true)
+  }
+  const entryDragHandlers = (kind, index) => ({
+    busy,
+    onPointerDown: event => {
+      if (busy) return
+      event.preventDefault()
+      event.stopPropagation()
+      event.currentTarget.setPointerCapture(event.pointerId)
+      setEntryDrag({ kind, index })
+      setEntryDropIndex(index + 1)
+    },
+    onPointerMove: event => {
+      if (!event.currentTarget.hasPointerCapture(event.pointerId)) return
+      const boundary = entryInsertionBoundary(event, kind)
+      if (boundary !== null) setEntryDropIndex(boundary)
+    },
+    onPointerUp: event => {
+      event.preventDefault()
+      const boundary = entryInsertionBoundary(event, kind) ?? entryDropIndex ?? index + 1
+      if (event.currentTarget.hasPointerCapture(event.pointerId)) event.currentTarget.releasePointerCapture(event.pointerId)
+      moveEntries(kind, index, boundary)
+      setEntryDrag(null)
+      setEntryDropIndex(null)
+    },
+    onPointerCancel: () => {
+      setEntryDrag(null)
+      setEntryDropIndex(null)
+    },
+  })
   const entries = draft?.entries ?? []
   const embeddedEntries = embeddedDraft?.entries ?? []
   const embedded = active?.resources?.worldBooks?.filter(item => item.kind === 'embedded-character-book') ?? []
   const diagnostics = active?.diagnostics?.filter(item => String(item.code ?? '').includes('WORLD_BOOK')) ?? []
-  const selectionDirty = selection.length !== appliedSelection.length || selection.some((id, index) => id !== appliedSelection[index])
-  const userSelectionDirty = userSelection.length !== appliedUserSelection.length || userSelection.some((id, index) => id !== appliedUserSelection[index])
+  const selectionDirty = !sameOrderedIds(selection, appliedSelection)
+  const userSelectionDirty = !sameOrderedIds(userSelection, appliedUserSelection)
   const userSource = deriveUserWorldBookSource(active, catalog)
   const catalogBooks = Array.isArray(catalog?.worldBooks) ? catalog.worldBooks : []
   const catalogById = new Map(catalogBooks.map(book => [book.id, book]))
@@ -382,12 +627,16 @@ export function WorldBookPanel({ sessionId, close }) {
     h('div', { className: 'dwb-body' },
       h('div', { className: 'dwb-toolbar' },
         h('button', { className: 'dwb-button', type: 'button', disabled: busy, onClick: () => fileRef.current?.click() }, uiMessage('world.importJson')),
+        h('a', { className: 'dwb-button', 'data-disabled': document === null || busy ? true : undefined, href: document === null ? undefined : `${API_ROOT}/world-books/${encodeURIComponent(document.id)}/json`, download: '' }, uiMessage('common.exportJson')),
         h('button', { className: 'dwb-button', type: 'button', disabled: busy, onClick: create }, uiMessage('world.create')),
-        h('button', { className: 'dwb-button', type: 'button', disabled: busy, onClick: () => { if (!dirty || window.confirm(unwrapText(uiMessage('world.confirmDiscardChanges')))) run(() => refresh(), 'world.status.refreshed') } }, uiMessage('common.refresh')),
-        h('input', { ref: fileRef, hidden: true, type: 'file', accept: '.json,application/json', onChange: event => { const file = event.target.files?.[0]; if (file !== undefined) importFile(file) } }),
+        h('input', { ref: fileRef, hidden: true, type: 'file', accept: '.json,application/json', onChange: event => { const file = event.target.files?.[0]; event.target.value = ''; if (file !== undefined) importFile(file) } }),
       ),
-      h('p', { className: 'dwb-note' }, uiMessage('world.currentSession', { session: sessionId || translate('common.none') })),
-      h('div', { className: 'dwb-status', 'data-error': status.error || undefined, role: 'status', 'aria-live': 'polite' }, statusText(status)),
+      h(Field, { label: uiMessage('world.browse') }, h('div', { className: 'dwb-browse' },
+        h('select', { className: 'dwb-select', value: document?.id ?? '', disabled: busy || !catalog?.worldBooks.length, onChange: event => { if (!dirty || window.confirm(unwrapText(uiMessage('world.confirmDiscardChanges')))) load(event.target.value) } },
+          ...(catalog?.worldBooks.length ? [] : [h('option', { key: 'empty', value: '' }, uiMessage('world.catalogEmpty'))]),
+          ...(catalog?.worldBooks ?? []).map(item => h('option', { key: item.id, value: item.id }, rawText(item.name)))),
+        h('button', { className: 'dwb-button', type: 'button', disabled: busy, onClick: () => { if (!dirty || window.confirm(unwrapText(uiMessage('world.confirmDiscardChanges')))) run(() => refresh(), 'world.status.refreshed') } }, uiMessage('common.refresh')),
+      )),
       h('section', { className: 'dwb-source-section', 'data-source': 'standalone' },
       h('h2', { className: 'dwb-section-title' }, uiMessage('world.standalone')),
       h('div', { className: 'dwb-resource' },
@@ -402,19 +651,36 @@ export function WorldBookPanel({ sessionId, close }) {
           h('button', { className: 'dwb-button', type: 'button', disabled: busy || !sessionId || selection.length === 0, onClick: () => setSelection([]) }, uiMessage('world.clearPending')),
         ),
       ),
-      h(Field, { label: uiMessage('world.browse') }, h('select', { className: 'dwb-select', value: document?.id ?? '', disabled: busy || !catalog?.worldBooks.length, onChange: event => { if (!dirty || window.confirm(unwrapText(uiMessage('world.confirmDiscardChanges')))) load(event.target.value) } },
-        ...(catalog?.worldBooks.length ? [] : [h('option', { key: 'empty', value: '' }, uiMessage('world.catalogEmpty'))]),
-        ...(catalog?.worldBooks ?? []).map(item => h('option', { key: item.id, value: item.id }, rawText(item.name))))),
+      h('p', { className: 'dwb-note' }, uiMessage('world.currentSession', { session: sessionId || translate('common.none') })),
+      h('div', { className: 'dwb-status', 'data-error': status.error || undefined, role: 'status', 'aria-live': 'polite' }, statusText(status)),
       draft === null ? null : h('div', { className: 'dwb-resource', ref: standaloneEditorRef },
         h(Field, { label: uiMessage('world.bookName') }, h('input', { className: 'dwb-input', value: draft.name ?? '', onChange: event => { setDraft(current => ({ ...current, name: event.target.value })); setDirty(true) } })),
         h('p', { className: 'dwb-meta' }, uiMessage('world.documentMeta', { count: entries.length })),
         h('div', { className: 'dwb-actions' },
           h('button', { className: 'dwb-button', type: 'button', onClick: () => { setDraft(current => ({ ...current, entries: [...current.entries, createWorldBookEntry(current.entries)] })); setDirty(true) } }, uiMessage('world.addEntry')),
+        ),
+        ...entries.flatMap((entry, index) => [
+          entryDrag?.kind === 'standalone' && entryDropIndex === index
+            ? h(EntryDropPlaceholder, { key: `standalone-drop-${index}` })
+            : null,
+          h(EntryEditor, {
+            key: `${String(document.id)}-${String(entry.uid)}-${index}`,
+            entry,
+            index,
+            update: updateEntry,
+            remove: itemIndex => { if (window.confirm(unwrapText(uiMessage('world.confirmDeleteEntry')))) { setDraft(current => ({ ...current, entries: current.entries.filter((_item, candidate) => candidate !== itemIndex) })); setDirty(true) } },
+            dragKind: 'standalone',
+            dragging: entryDrag?.kind === 'standalone' && entryDrag.index === index,
+            dragHandlers: entryDragHandlers('standalone', index),
+          }),
+        ]),
+        entryDrag?.kind === 'standalone' && entryDropIndex === entries.length
+          ? h(EntryDropPlaceholder, { key: 'standalone-drop-end' })
+          : null,
+        h('div', { className: 'dwb-footer' },
           h('button', { className: 'dwb-button dwb-primary', type: 'button', disabled: busy || !dirty, onClick: save }, dirty ? uiMessage('common.saveChanges') : uiMessage('common.saved')),
-          h('a', { className: 'dwb-button', href: `${API_ROOT}/world-books/${encodeURIComponent(document.id)}/json`, download: '' }, uiMessage('common.exportJson')),
           h('button', { className: 'dwb-button dwb-danger', type: 'button', disabled: busy, onClick: remove }, uiMessage('world.deleteStandalone')),
         ),
-        ...entries.map((entry, index) => h(EntryEditor, { key: `${String(entry.uid)}-${index}`, entry, index, update: updateEntry, remove: itemIndex => { if (window.confirm(unwrapText(uiMessage('world.confirmDeleteEntry')))) { setDraft(current => ({ ...current, entries: current.entries.filter((_item, candidate) => candidate !== itemIndex) })); setDirty(true) } } })),
       ),
       ),
       h('section', { className: 'dwb-source-section', 'data-source': 'user' },
@@ -465,8 +731,35 @@ export function WorldBookPanel({ sessionId, close }) {
           h('p', { className: 'dwb-note' }, uiMessage('world.user.editHint')),
         ),
       ),
+      h('section', { className: 'dwb-source-section', 'data-source': 'preset' },
+      h('h2', { className: 'dwb-section-title' }, uiMessage('world.preset.title')),
+      h(ResourceWorldBookBindingEditor, {
+        resource: active?.resources?.preset ?? null,
+        catalog,
+        selection: presetSelection,
+        appliedSelection: appliedPresetSelection,
+        setSelection: setPresetSelection,
+        save: savePresetSelection,
+        edit: editResourceBook,
+        busy,
+        currentKey: 'world.preset.current',
+        noneKey: 'world.preset.none',
+      }),
+      ),
       h('section', { className: 'dwb-source-section', 'data-source': 'character' },
       h('h2', { className: 'dwb-section-title' }, uiMessage('world.characterBound')),
+      h(ResourceWorldBookBindingEditor, {
+        resource: active?.resources?.characterCard ?? null,
+        catalog,
+        selection: characterSelection,
+        appliedSelection: appliedCharacterSelection,
+        setSelection: setCharacterSelection,
+        save: saveCharacterSelection,
+        edit: editResourceBook,
+        busy,
+        currentKey: 'world.character.current',
+        noneKey: 'world.character.none',
+      }),
       embeddedDraft !== null ? h('div', { className: 'dwb-resource' },
         h('div', { className: 'dwb-resource-title' }, embeddedDraft.name || embedded[0]?.name ? rawText(embeddedDraft.name || embedded[0]?.name) : uiMessage('world.embeddedTitle')),
         h('p', { className: 'dwb-note' }, uiMessage('world.embeddedMeta', { count: embeddedEntries.length })),
@@ -474,8 +767,33 @@ export function WorldBookPanel({ sessionId, close }) {
           h('button', { className: 'dwb-button', type: 'button', onClick: () => { const ids = embeddedEntries.map(entry => Number(entry.id)).filter(Number.isSafeInteger); const id = ids.length === 0 ? 0 : Math.max(...ids) + 1; setEmbeddedDraft(current => ({ ...structuredClone(current), entries: [...current.entries, { id, keys: [], secondary_keys: [], comment: translate('world.entry.untitled', { id }), content: '', enabled: true, constant: false, selective: false, insertion_order: 100, position: 'after_char', extensions: { position: 1, probability: 100, useProbability: true } }] })); setEmbeddedDirty(true) } }, uiMessage('world.addEmbeddedEntry')),
           h('button', { className: 'dwb-button dwb-primary', type: 'button', disabled: busy || !embeddedDirty, onClick: saveEmbedded }, embeddedDirty ? uiMessage('world.saveEmbedded') : uiMessage('world.embeddedSaved')),
         ),
-        ...embeddedEntries.map((entry, index) => h(EmbeddedEntryEditor, { key: `${String(entry.id)}-${index}`, entry, index, update: (itemIndex, value) => { setEmbeddedDraft(current => { const next = structuredClone(current); next.entries[itemIndex] = { ...next.entries[itemIndex], ...value }; return next }); setEmbeddedDirty(true) }, remove: itemIndex => { if (window.confirm(unwrapText(uiMessage('world.confirmDeleteEmbeddedEntry')))) { setEmbeddedDraft(current => ({ ...structuredClone(current), entries: current.entries.filter((_item, candidate) => candidate !== itemIndex) })); setEmbeddedDirty(true) } } })),
-      ) : h('p', { className: 'dwb-note' }, uiMessage('world.embeddedEmpty')),
+        ...embeddedEntries.flatMap((entry, index) => [
+          entryDrag?.kind === 'embedded' && entryDropIndex === index
+            ? h(EntryDropPlaceholder, { key: `embedded-drop-${index}` })
+            : null,
+          h(EmbeddedEntryEditor, {
+            key: `${String(embeddedCharacterId)}-${String(entry.id)}-${index}`,
+            entry,
+            index,
+            update: (itemIndex, value) => { setEmbeddedDraft(current => { const next = structuredClone(current); next.entries[itemIndex] = { ...next.entries[itemIndex], ...value }; return next }); setEmbeddedDirty(true) },
+            remove: itemIndex => { if (window.confirm(unwrapText(uiMessage('world.confirmDeleteEmbeddedEntry')))) { setEmbeddedDraft(current => ({ ...structuredClone(current), entries: current.entries.filter((_item, candidate) => candidate !== itemIndex) })); setEmbeddedDirty(true) } },
+            dragKind: 'embedded',
+            dragging: entryDrag?.kind === 'embedded' && entryDrag.index === index,
+            dragHandlers: entryDragHandlers('embedded', index),
+          }),
+        ]),
+        entryDrag?.kind === 'embedded' && entryDropIndex === embeddedEntries.length
+          ? h(EntryDropPlaceholder, { key: 'embedded-drop-end' })
+          : null,
+      ) : embeddedCharacterId === null
+        ? h('p', { className: 'dwb-note' }, uiMessage('world.embeddedNoCharacter'))
+        : h('div', { className: 'dwb-resource' },
+          h('div', { className: 'dwb-resource-title' }, uiMessage('world.embeddedTitle')),
+          h('p', { className: 'dwb-note' }, uiMessage('world.embeddedEmpty')),
+          h('div', { className: 'dwb-actions' },
+            h('button', { className: 'dwb-button dwb-primary', type: 'button', disabled: busy, onClick: createEmbedded }, uiMessage('world.createEmbedded')),
+          ),
+        ),
       ),
       diagnostics.length > 0 ? h('details', { className: 'dwb-resource' }, h('summary', { className: 'dwb-resource-title' }, uiMessage('world.diagnostics', { count: diagnostics.length })), h('ul', { className: 'dwb-list' }, ...diagnostics.map((item, index) => h('li', { key: `${item.code}-${index}` }, rawText(item.message))))) : null,
       h('p', { className: 'dwb-note' }, uiMessage('world.matcherNote')),
@@ -484,9 +802,9 @@ export function WorldBookPanel({ sessionId, close }) {
 }
 
 export function installWorldBookStyles() {
-  if (document.querySelector('style[data-plugin-css="dsh-tavern-world-book"]') !== null) return
+  if (document.querySelector(`style[data-plugin-css="${PLUGIN_ID}-world-book"]`) !== null) return
   const style = document.createElement('style')
-  style.dataset.pluginCss = 'dsh-tavern-world-book'
+  style.dataset.pluginCss = `${PLUGIN_ID}-world-book`
   style.textContent = css
   document.head.append(style)
 }

@@ -1,8 +1,788 @@
 # Development changelog
 
+## 2026-08-22 — Add English documentation pair
+
+- Added English counterparts for the public Chinese guides. The default README remains Chinese and keeps screenshots; `README_en.md` has no images.
+- Paired localized files with `_en.md` / `_zh-CN.md` suffixes and language-switch links.
+- Listed the new English files in `package.json#files` so the published package ships both languages. This changelog stays English-only.
+
+## 2026-08-22 — Make installation Chinese by default
+
+- `docs/INSTALLATION.md` is now the Chinese install contract. English moved to `docs/INSTALLATION_en.md`.
+- Language-suffixed docs use underscore (`_en.md`, `_zh-CN.md`) rather than an extra dot.
+
+## 2026-08-22 — Surface complete import failures
+
+- Added one localized modal for imports that fail before a usable resource or verified playthrough binding is produced. Successful imports with compatibility diagnostics do not open it.
+- Connected preset, character-card, world-book, display-regex and external-history imports while retaining each panel's existing inline status details.
+- Corrected regex import persistence so a failed save is rethrown to the import boundary instead of being followed by a false success state. Ordinary regex saves keep their existing inline error behavior.
+- Reset file pickers as soon as a selection is accepted so the same failed file can be selected again immediately.
+
+## 2026-08-22 — Remove the unreleased timeline hide field
+
+- Removed the development-only QA hide action and timeline field before the 2.0 public contract was released; no migration or compatibility branch is retained.
+- Kept display regex and `displayOverride` as the two explicit RP display-layer mechanisms. Neither rewrites DSH durable history or the AI request.
+- Made the v2 server reject the removed top-level field as an unsupported timeline field, while third-party metadata remains confined to protocol-supported `ext` objects.
+- Updated the API, architecture, review and third-party integration guides so downstream frontends do not persist a field that the bundled UI no longer exposes.
+
+## 2026-08-22 — Refocus public documentation around the happy path
+
+- Rebuilt the root README as a concise public landing page: design philosophy, dual-mode compatibility, installation entry, the complete character-card → workspace → RP admission → playthrough → greeting → conversation happy path, feature navigation and contribution routes.
+- Removed every reference to the old screenshots. Added explicit placeholders with proposed v2 asset names and shot descriptions so new release images can be supplied without silently reusing 1.x/early-2.0 visuals; the old asset files remain unreferenced and were not deleted.
+- Added the same minimal path to the full Chinese usage guide, expanded the third-party development invitation, and removed stale documentation that still advertised the withdrawn portable bundle import format.
+- Added a prominent README safety warning that separates Agent/tool, RP overlay, local backend/API, browser rendering/regex and data-lifecycle risks; expanded the formal security policy to state the consequences of prompt injection against high-permission Agents and the limits of inherited RP restrictions.
+
+Verification: documentation links, image references, generic-path policy and Markdown structure checked locally; no runtime bundle change.
+
+## 2026-08-22 — Version 2.0.0 release
+
+- Released the dual-display Tavern frontend: DSH native remains untouched in native mode, while Mowan adds the RP sidebar, playthrough tree, greeting dock, display regex, swipe/branch/rollback actions, import/export and independent conversation scaling.
+- Stabilized the v2 RP frontend protocol around authoritative chrome, workspace, session/history, managed files with revision/CAS, import claim/lineage and playthrough focus; v1 remains the bundled resource-editor contract.
+- Completed rc.8 user acceptance for resource editing, RP rendering, playthrough lifecycle, workspace admission, sorting, settings, native fallback and uninstall recovery.
+- Kept DSH durable history authoritative. Greetings and imported QA are not forged as history; timeline documents contain pointers and display metadata rather than copied messages.
+- Corrected playthrough exports: static HTML now retains the visible greeting, while SillyTavern JSONL carries greeting alternatives and per-QA swipes / swipe_id along the active path. Exported greetings resolve `{{user}}` / `{{char}}`, and imported greeting/QA text passes through Tavern macro expansion before DSH template assembly so ST placeholders cannot become unknown DSH prompt variables. Removed the unreleased portable bundle because it could not round-trip the full timeline tree.
+- Replaced the unmaintained vulnerable Showdown dependency with maintained Marked while preserving ST wrapper-tag Markdown semantics and the mandatory DOMPurify boundary. Production dependency audit now reports zero known vulnerabilities.
+- Added a public security policy covering local-only API assumptions, untrusted Tavern content, regex/remote-resource residual risks, privacy-safe operation logs and the rule that public commits/packages contain no real developer-machine paths or private imports.
+- Set the package and lockfile version to `2.0.0`; release verification remains `npm audit --omit=dev` plus `npm run verify:2.0` and target-DSH browser/uninstall checks.
+
+
+## 2026-08-22 — Make swipe generation immediately visible
+
+- Displayed the reply position from the first variant onward, beginning at `1/1` instead of waiting for a second swipe.
+- Added an optimistic RP-only thinking projection as soon as “generate next swipe” is clicked. It preserves the user turn, temporarily replaces the old assistant display, restores it on failure, and yields to the new session only after the existing atomic branch/timeline workflow succeeds.
+- Made both optimistic and live “thinking” labels consume the RP conversation text scale instead of keeping a fixed 12 px size.
+- Advanced the pending swipe counter from `n/n` to `n+1/n+1` immediately; failures restore the previous counter and successful timeline adoption replaces it with the same authoritative value.
+
+
+## 2026-08-22 — Separate character sort modes and recover missing cards
+
+- Preserved custom character ordering across mode switches. Calling the v1 order endpoint with `mode: custom` and no `characterIds` now restores the saved order; only an explicit full ID array replaces it.
+- Corrected the RP sidebar's “recently updated” mode to use the newest native DSH session activity across each character's playthrough and unassigned sessions. New conversation activity now reorders the character immediately without rewriting the card or maintaining a second activity store.
+- Replaced mixed character ordering with explicit recently-updated, name A–Z, and custom modes; drag handles are active only in custom mode and saved custom order survives mode switches.
+- Added bounded deleted-character tombstones, a centralized missing-character sidebar section, unique SHA/name recovery, manual relinking, catalog CAS and atomic descendant-session selection updates.
+- Added per-playthrough character relinking to every playthrough menu. It migrates only the selected playthrough tree, warns when the target falls outside SHA/unique-name automatic classification, and preserves an explicit user override through the v2 lifecycle API.
+
+
+## 2026-08-22 — Stabilize RP admission and add character-card ordering
+
+- Deferred the Mowan workspace admission overlay until the authoritative workspace read finishes. A valid existing binding no longer renders a transient selection dialog while switching modes; failures and confirmed missing bindings still open the blocking gate.
+- Renamed the ordinary-session notice around its actual boundary: the session is not attached to a playthrough in the selected RP workspace. The notice no longer implies that a stale character selection alone makes the session part of a playthrough.
+- Added preset-style pointer dragging for character-card groups in the RP sidebar. Before customization, cards sort by `updatedAt` descending and then name/ID A→Z; dragging persists an exact resource order without rewriting card documents or timestamps.
+- Added the v1 `PUT /characters/order` resource contract, bounded durable `characterOrder` state, deletion cleanup, optimistic UI updates with authoritative read-back, and API/client/store regressions.
+- Rebuilt the browser bundle and completed the full suite with 488 passing, 2 fixture-dependent skips, and 0 failures.
+## 2026-08-22 — Require a verified RP workspace before entering Mowan
+
+- Added a blocking first-run workspace admission view that consumes the public DSH workspace list and the existing v2 workspace authority.
+- Required an explicit user choice even for a single candidate; no browser-side workspace truth or automatic selection was added.
+- Kept the gate open through PUT and authoritative GET read-back. Missing lists, stale paths and read/write failures remain recoverable through retry or a return to native DSH mode.
+
+## 2026-08-22 — Add grouped 2.0 release verification
+
+- Added `npm run verify:2.0` for named history, managed-document/CAS/path, claim/logging, chrome/workspace-admission, and package-boundary evidence, followed by build and pack dry-run.
+- Made Windows path-hardening tests fall back to junctions, so external/root-in reparse points and parent replacement before rename execute instead of silently passing or skipping when directory symlinks require extra privileges.
+- Replaced the live-Host placeholder assertion with real, read-only requests to the running DSH chrome and workspace authority; no live data is mutated by this smoke test.
+- Kept mutating Host/browser checks separate: multi-tab notification, first-run visual states and disable/uninstall fallback remain manual release gates.
+
+
+## 2026-08-22 — Align the unbound-session notice with the native composer
+
+- Constrained the RP unbound-session notice with DSH's inherited `--dsh-composer-card-max-width` instead of filling the conversation-wide dock after history exists.
+- Kept the notice centered with a 100% fallback, so host or plugin composer-width changes remain authoritative without hashed DOM selectors or a copied pixel width.
+
+## 2026-08-22 — Separate conversation display scaling from UI settings
+
+- Added a Mowan-only Conversation Settings surface with independent 75%–150% controls for RP body/greeting text and durable-QA message actions.
+- Persisted the two values in bounded `conversation-settings.json` through the separate v1 `/conversation-settings` contract; UI language/global panel scale remain in `ui-settings.json`.
+- Applied local CSS variables only to the RP chat, blank-playthrough opening dock, and message action row. Native DSH, the composer, Tavern resource panels, prompts, history, and exports are unchanged.
+
+## 2026-08-22 — Detach mismatched character sessions from playthroughs
+
+- Added the v2 `POST /playthroughs/:id/detach-session` lifecycle endpoint. It removes the target session variants and descendant branches from Tavern timeline metadata while preserving sibling branches, DSH sessions, source history, and the empty playthrough.
+- Added a v1 character-selection membership guard with structured 409 conflicts and a bundled confirmation modal. Confirmed changes detach first and retry the original selection; cancellation changes nothing.
+- Vacant playthroughs now accept a fresh blank root session on the next create action, preserving their title and number.
+- Kept the rc.8 shell-owned outer New Session control untouched. The ordinary-session `+` guides users back to native mode; README and usage docs record why the outer control cannot be intercepted through a public seam.
+
+## 2026-08-21 — Scope swipe motion to the changed reply
+
+- Added the swiped timeline `nodeId` to the one-shot transition intent.
+- Kept the greeting, common QA prefix and target user bubble stationary; only
+  the selected assistant reply and any divergent descendant branch now move.
+- Returned the actual source node from context-output retry so its animation
+  follows the nearest reusable real-user QA rather than the context row.
+
+## 2026-08-21 — Animate atomic RP swipe handoffs
+
+- Retained the outgoing conversation snapshot until the destination session
+  finished loading, then rendered both snapshots for a directional handoff.
+- Added previous/next swipe motion with reduced-motion fallback, bounded
+  in-memory snapshot reuse across host remounts, and a timed cleanup fallback.
+- Kept stale snapshots non-interactive and excluded them from current-session
+  live-node projection while the destination loads.
+
+## 2026-08-21 — Preserve the RP view across swipe sessions
+
+- Kept the registered RP conversation view mounted while resolving a session
+  switch and reused it when the destination belongs to the same playthrough.
+- Deferred view removal until the destination is confirmed as another
+  playthrough or a non-RP session, eliminating adapter-driven full-view flashes.
+
+## 2026-08-21 — Lock greeting selection after play starts
+
+- Removed greeting navigation from the RP transcript after the first real
+  user turn while keeping the chosen opening visible.
+- Limited `greeting-reference` to first-turn assembly; later requests retain
+  the selected card but do not repeatedly inject its opening text.
+
+## 2026-08-21 — Document session branches over surface replacement
+
+- Documented that DSH surface replacements can themselves be replaced while
+  the append-only source events remain available for transcript and audit.
+- Recorded why the current one-message replacement primitive cannot atomically
+  restore an arbitrary user/assistant sequence or act as a per-request history
+  projection.
+- Kept RP swipe and rollback on public DSH branch sessions so native history,
+  tool pairing, compaction, original Chat and uninstall fallback remain valid;
+  Tavern timeline metadata only composes those sessions into a playthrough tree.
+
+## 2026-08-21 — Branch RP timelines and retry from message actions
+
+- Added additive `parentVariantId` and active `head` timeline fields so each swipe can own a different downstream branch while DSH messages remain authoritative pointers.
+- Put previous/next/retry on the normal message action row. Context-triggered output retries the nearest preceding real user turn and never resends injected context as human input.
+- Added same-playthrough rollback by reusing the existing DSH branch and inherited-range validation without creating a catalog row; removed the hide action and retired hidden projection.
+- Kept card greeting metadata outside assistant output regex so an output-only “keep `<正文>`” rule cannot erase the opening dock.
+
+## 2026-08-21 — Order display regex and freeze manual overrides
+
+- Added drag ordering inside each global, preset, and character regex source;
+  saved resource order is the native `regex_scripts` array order.
+- Manual `displayOverride` is now final display text and bypasses subsequent
+  macro/regex passes while still using Markdown and DOMPurify rendering.
+- Empty overrides remain explicit and keep the restore-original action.
+
+## 2026-08-21 — Edit displayed replies inside the conversation
+
+- Replaced the browser single-line prompt with an inline, resizable multiline
+  editor at the assistant reply position.
+- Save still writes only the timeline `displayOverride`; Cancel or Escape
+  discards the draft, and the DSH message remains unchanged.
+
+## 2026-08-21 — Preserve and render DSH message origin
+
+- Added additive `origin` provenance to v2 session messages without changing
+  the model-facing `role`; context injections retain bounded producer, form,
+  and summary metadata for independent frontends.
+- The RP view now hides reasoning and DSH context injections completely instead
+  of rendering user bubbles or expandable rows; native DSH chat remains the
+  inspection surface. Context-triggered parent output cannot be retried or
+  swiped, and the controller refuses to resend context as human input.
+- Display regex that removes the complete assistant output also removes its
+  action row while preserving non-visual provenance and the timeline pointer.
+
+## 2026-08-21 — Export current presets as SillyTavern JSON
+
+- Added `GET /pmp-dsh-tavern/api/v1/presets/:id/export` as an attachment
+  response compatible with the existing preset import path and SillyTavern
+  Chat Completion presets.
+- Export starts from the preserved ST source so unknown extensions survive,
+  then projects the current Tavern name, sampling values, prompts, order, and
+  enabled flags so edits cannot be hidden behind a stale `source.raw` copy.
+- Tavern-only `systemPromptMode` remains internal because ST has no matching
+  preset field; this read-only route does not change resource selection.
+- Added a preset-panel `Export JSON` button that reuses the public attachment
+  endpoint; the toolbar auto-fits columns and wraps on narrow panels without
+  changing the two-column binding controls.
+
+## 2026-08-21 — Preserve world-book keyword delimiters while editing
+
+- Replaced the lossy parse-and-immediate-join keyword inputs with an editor
+  projection that retains in-progress English and Chinese comma delimiters.
+- Parsed keyword arrays still update on every edit, while external resource
+  changes reconcile the displayed text and document-aware keys prevent local
+  input state from leaking between world books.
+
+Verification: full build and test suite; 418 passed, 4 skipped, 0 failed.
+
+## 2026-08-21 — Document independent RP frontend integration
+
+- Documented forked, independent DSH-plugin, and independent Web-client delivery
+  models for third-party RP frontends.
+- Defined `pmpDshTavernChrome.when()` as the public mode-lifecycle seam while
+  leaving slot ownership and conflict handling to DSH public contracts.
+- Explicitly documented that configuration-file replacement, a frontend
+  provider registry, and a dynamic bundle loader do not exist in 2.0.
+## 2026-08-21 — Compose Tavern forks from public play APIs
+
+- Added a reply-tail action that branches the adopted DSH session at the
+  selected assistant event, copies the playthrough through that QA, and opens
+  the new playthrough root session.
+- The copied target variant is rebound to the child session so stable focus
+  returns to the continuation session instead of the ancestor. Source timeline
+  metadata and DSH messages remain unchanged.
+- The client verifies the inherited durable user/assistant range before any
+  workspace write and uses catalog CAS for the final catalog append.
+
+## 2026-08-21 — Integrate session/import mutation operation logs
+
+- Added content-free, fail-soft operation logging for session create, branch, user-message, and import-context bind/unbind mutations via Host ctx.logger.
+- Each request has one operation id and one terminal success/failure; staged logs cover validation, Host create/fork/prompt, import prepare/bind/unbind, selection/lineage copy, and authority/history locks.
+- GET messages/focus/import-context, chrome, browser logs, and persistent exporters remain quiet/out of scope. user-message logs only the Host acceptance stage and never text, length, or summary.
+
+Verification: test/play-session-import-log.test.mjs, related session tests, and git diff --check; no bundled client artifact was refreshed.
+## 2026-08-21 — Integrate workspace mutation operation logs
+
+- Integrated the task-11 fail-soft operation context into `PUT /workspace`, `POST /workspace/dirs`, and `PUT /workspace/files?path=` for ordinary files and managed catalog/timeline documents. Each mutation has one operation id and staged start/validation/begin/commit/success or failure records; GET/list stay quiet.
+- Logging remains content-free and fail-soft; HTTP responses and existing stable error codes are unchanged. Session/import/chrome and browser/persistent exporters remain outside this task.
+
+Verification: `test/play-file-mutation-log.test.mjs`, `test/play-workspace.test.mjs`, `test/play-timeline.test.mjs`; no bundled client artifact was refreshed.
+
+## 2026-08-21 — Add fail-soft backend operation log utility
+
+- Added `packages/play/src/operation-log.js` and the root play export for a
+  content-free operation context using Cordis `ctx.logger`.
+- Logs use a stable single-line plugin prefix, one operation id across stages,
+  bounded identifiers, and a single terminal result with duration/error code.
+- Unknown fields and content-bearing values are ignored; logger failures never
+  alter business results. Workspace endpoint integration is recorded in the task entry above; session/import integration remains scheduled for task 13.
+
+Verification: `test/play-operation-log.test.mjs`; no bundled client artifact was refreshed.
+
 This is the staged implementation log for dsh-tavern. It is kept separately
 from the product README so reviewers can follow intent, decisions, verification,
 and known limits chronologically.
+
+## 2026-08-21 — Add catalog-authoritative playthrough focus
+
+- Implemented the catalog-authoritative playthrough-id focus endpoint with empty-timeline root-session fallback.
+- Kept explicit path focus for migration, removed the no-path default, and stopped timeline PUT from changing activeTimelinePath.
+- Bundled client migration remains task 08; catalog/timeline failure states have explicit stable error codes.
+
+Verification: test/play-sessions.test.mjs; full suite pending task 07 review.
+
+## 2026-08-21 — Freeze the remaining v2 release-hardening contracts
+
+- Accepted complete Host history pagination without a plugin page cap; model
+  context overflow remains owned by DSH rather than a Tavern summarizer.
+- Accepted read/write catalog validation, revision/CAS writes, playthrough-id
+  focus, import-context claim lineage, and practical path TOCTOU hardening as
+  release blockers rather than silently treating the reviewed risks as done.
+- Kept playthrough lifecycle as a composition of public atomic APIs. Mutation
+  stages will use backend `ctx.logger` with operation ids and no resource or
+  conversation bodies; browser and persistent logging remain deferred.
+
+Documentation only; runtime implementation and rc.8 verification remain open.
+
+## 2026-08-20 — Use one opening layout with or without greeting
+
+- Cards without greeting now keep the same opening container and import-footer
+  placement as cards with greeting; only the greeting content slot is empty.
+- Removed the separate no-greeting import layout branch.
+
+Verification: focused opening-layout test and production client build.
+
+## 2026-08-20 — Keep the import action inside the greeting container
+
+- The unbound empty-playthrough import action is now rendered as the greeting
+  row's footer instead of a negatively offset sibling.
+- Cards without a greeting retain the same action in the standalone opening
+  position; bound replace/unbind controls remain below imported history.
+
+Verification: focused chat-state/layout test and production client build.
+
+## 2026-08-20 — Move import binding into the empty-playthrough opening
+
+- Removed import from the sidebar playthrough menu. Empty playthroughs expose
+  a centered import action below their greeting; once bound, the controls move
+  below the imported records and become replace/unbind actions.
+- Imported history remains read-only and marks its latest QA explicitly. The
+  frontend reads the session binding as authority rather than inferring it
+  from catalog metadata.
+- Controls disappear immediately when a user node, running turn, durable QA,
+  or consumed binding makes the playthrough immutable; the backend enforces
+  the same lock independently.
+
+Verification: chat-state, import lifecycle, client-contract, i18n, and
+production build tests.
+
+## 2026-08-20 — Manage import context on an existing empty session
+
+- Added stable v2 GET/PUT/DELETE operations at
+  `/sessions/:id/import-context` so third-party RP frontends can inspect, bind,
+  replace, or clear an import-context reference without creating replacement
+  DSH sessions.
+- Mutations are locked after a user/assistant message, an open turn, or context
+  consumption and return `409 PLAY_IMPORT_CONTEXT_LOCKED`.
+- Responses expose binding path/hash/state, bounded counts, and claim identity/event-seq metadata without content; imported
+  dialogue content stays in the existing jailed workspace file. Pending bindings are claimed only from the public pending-input projection; parser-level QA/context caps are not applied.
+
+Verification: import-runtime, session-handler, route, and Host-adapter tests.
+
+## 2026-08-20 — Preserve imported context through playthrough export
+
+- HTML and SillyTavern JSONL exports include the read-only imported greeting/QA
+  before later DSH-backed timeline turns.
+- Static HTML includes the visible greeting. ST JSONL preserves greeting
+  alternatives and per-QA swipes on the active path; it does not claim to
+  encode the complete Tavern timeline tree.
+- Import rereads the context, empty timeline, catalog row, and copied character
+  selection before navigation. This detects partial writes but does not claim
+  atomic rollback from the current composition API.
+
+Verification: focused import/export tests and production client build.
+
+## 2026-08-20 — Keep playthrough IO in the sidebar only
+
+- Removed the duplicate `conversation.input.left` registration from the RP
+  occupancy lifecycle.
+- Import, export, and rename remain available from each playthrough's sidebar
+  menu; the native DSH composer and its left-side extension surface are left
+  untouched.
+
+Verification: focused occupancy/menu tests and production client build.
+
+## 2026-08-20 — Reuse the latest authoritative empty playthrough
+
+- Creating a playthrough now opens the character's highest-numbered existing
+  playthrough when it is still empty instead of appending another empty row.
+- Empty means no timeline QA, no imported QA, no DSH user/assistant message,
+  and no incomplete turn. A greeting-only import remains an opening choice and
+  therefore does not make the playthrough nonempty.
+- The check reads DSH messages through the existing v2 contract and fails on
+  unreadable state instead of treating uncertainty as an empty playthrough.
+
+Verification: focused lifecycle tests and production client build.
+
+## 2026-08-20 — Number and rename playthrough projections
+
+- New and imported playthroughs receive a character-local monotonic title such
+  as `1周目`; the underlying DSH session keeps the Host-owned
+  `角色卡名 + 时间` title so native Chat remains easy to inspect.
+- The assigned ordinal is stored in Tavern catalog extension data. Legacy
+  entries without the field participate by their existing character-local
+  order, and renamed titles do not affect later allocation.
+- The sidebar playthrough menu can rename a single Tavern projection. The
+  operation changes only `catalog.json`, rereads it for verification, and does
+  not rename or rewrite the authoritative DSH session.
+
+Verification: focused create/import/i18n/shell tests and production client
+build.
+## 2026-08-21 — Accept the playthrough lifecycle and opening import surface
+
+- The character-card sidebar now creates a numbered `x周目` under the selected
+  character, reuses the nearest preceding empty playthrough instead of adding
+  unbounded blank entries, and exposes playthrough rename. A new playthrough
+  remains a real blank DSH session; no greeting, imported QA, or fabricated
+  user/assistant message is written during creation.
+- The empty-session opening is rendered in the same native composer dock as the
+  greeting. Previous/next greeting controls remain in the outer positions;
+  import controls occupy the center footer. A card without a greeting still
+  keeps the empty opening area and its action layout.
+- External history is now bound to the current empty playthrough rather than
+  creating a second playthrough/session. The opening surface can bind, rebind,
+  or unbind the imported context. After binding it previews the latest three
+  imported QA pairs; after unbinding it returns to the selected greeting.
+  Binding and unbinding are locked after a DSH user/assistant message, an open
+  turn, or one-shot context consumption. The server repeats this check; hiding
+  the client controls is not the authority.
+- The loader injects a bound import as escaped, read-only and explicitly
+  untrusted context for the first actual request. It is not a DSH durable
+  message and does not enter `timeline.json`; normal `turn/end` changes the
+  binding from `pending` to `consumed`. Retry/abort semantics remain a review
+  item (see [`PLAY_REVIEW.md`](PLAY_REVIEW.md)).
+
+Verification: production client build, 347 tests passed and 2 skipped; the
+opening greeting, three-QA preview, bind/rebind/unbind, and playthrough
+lifecycle passed user acceptance on DSH 0.1.0-rc.8.
+
+## 2026-08-20 — Review the playthrough lifecycle boundary
+
+- Added [`PLAY_REVIEW.md`](PLAY_REVIEW.md), a read-only review of the v2
+  playthrough implementation at `6ede09d`.
+- Recorded the remaining lifecycle risks: cross-client catalog/timeline lost
+  updates, half-created Host sessions after downstream failure, silently
+  truncated history pagination, import-context retry semantics, filesystem
+  TOCTOU hardening, catalog uniqueness/path validation, and ambiguous default
+  focus selection.
+- Confirmed the current native-first boundaries that must remain: Host RPC and
+  public session projections stay authoritative, imported history remains a
+  bounded untrusted context, and the client does not write fabricated DSH
+  messages.
+
+## 2026-08-20 — Move the default-view adapter out of the view ring
+
+- Kept the accepted native-chat-store adapter semantics, but mounted its
+  null-rendering component in the session-scoped `conversation.input.dock`.
+- Reusing the same public store handle and session scope still supplies the
+  native `setView('rp')` action; the adapter retires immediately after its one
+  attempt.
+- The adapter no longer registers a second `conversation.view` entry with
+  `id: 'chat'`, so an unrendered first WebUI frame cannot expose a duplicate
+  Chat tab.
+- No DSH source, DOM, native Chat registration, or second store is modified.
+
+Verification: focused default-view/occupancy tests and production client build.
+
+## 2026-08-20 — Default new playthroughs to the selectable RP view
+
+- Kept DSH's native Conversation view installed and separately selectable,
+  while naming the Tavern projection `RP视图` and making it the initial view
+  for a newly opened playthrough whose DSH chat store has no explicit view.
+- The plugin briefly shadows the `chat` cell with an adapter that reuses the
+  native chat entry's public store handle, calls the existing `setView('rp')`
+  action, and then unregisters itself. It does not replace the DSH
+  conversation plugin, create a second chat store, or mutate the DOM.
+- The adapter fails closed: if the native store handle is not exposed, it is
+  not registered; if its owner props are unavailable at render time, it
+  retires without changing the native view. This prevents a stale `chat` tab
+  from surviving a future DSH contract change.
+- User acceptance passed on DSH 0.1.0-rc.8 after verifying both the automatic
+  switch and removal of the transient `chat` occupancy.
+
+Verification: focused default-view/occupancy tests, production client build,
+and full 306-test suite (304 pass, 2 skip).
+
+## 2026-08-20 — Keep reasoning out of the Mowan body projection
+
+- Completed Mowan turns now project only DSH `content` parts whose type is
+  `text`; structured `reasoning` remains in DSH's authoritative message but is
+  not flattened into the role-play body. Empty legacy content arrays still
+  fall back to the compatibility `text` field.
+- During a live turn, Mowan shows “正在思考…” / “Thinking…” only until the
+  first assistant text block appears. Once body streaming begins, the text
+  itself is the activity indicator and no “responding” label remains.
+- Regex, Markdown/other rich-text rendering, and a configurable body font size
+  remain separate follow-up items.
+
+Verification: chat/load/export/import focused tests, full 304-test suite
+(302 pass, 2 skip), and production client build.
+
+## 2026-08-20 — Document native-first frontend compatibility policy
+
+- Performed a read-only audit of the Mowan client against DSH rc.6's documented
+  slots, stores, Host operations, Session events, and public package exports.
+  No feature code changed in this audit.
+- Recorded the native seams already reused by the launcher, sidebar,
+  conversation, live projection, scrolling, clean-session flow, RP lock, prompt
+  assembly, Trace, and theme styling.
+- Recorded migration candidates in the public UI-primitives package
+  (`MessageText`/`MarkdownText`, `DisclosureRow`, `Menu`, icons/`Tooltip`,
+  `Modal`, and clipboard helpers), while explicitly rejecting imports from DSH
+  source paths or unexported conversation internals.
+- Kept Tavern-owned semantics custom where DSH has no equivalent model:
+  playthrough timelines, cross-session adopted variants, greetings, display
+  regex, selection composition, and the RP-root path jail.
+- Corrected the in-progress protocol to describe the current collapsible
+  reasoning projection and DSH-scrollport-based entry/user-message behavior.
+- Follow-up product decisions keep user/assistant content on a Tavern-owned
+  frontend pipeline fed by authoritative DSH content, because card, preset,
+  and bundle display rules may intentionally conflict with native rendering.
+  Rendered output remains display-only and is never written to DSH or timeline.
+- Public `Menu`, `Modal`, `Input`, `Button`, and `writeClipboard` migrations are
+  approved follow-ups. Removing the duplicate `conversation.input.left` import
+  and export control remains a separate minimal-change task.
+
+## 2026-08-20 — Scroll Mowan only for entry and user messages
+
+- A newly mounted Mowan conversation scrolls to its bottom after the current
+  playthrough finishes loading, so switching from native DSH opens at the
+  latest turn rather than the top of history.
+- After mount, only a newer DSH user-node sequence triggers one additional
+  scroll to the bottom. Assistant partial growth, finalization, and Tavern
+  timeline reconciliation do not move the reader away from the reply start.
+- User acceptance passed after the implementation was aligned with DSH's
+  Conversation scrollport and `chatScroll` semantics; no fixed composer-height
+  compensation remains.
+
+Verification: `test/play-chat-model.test.mjs`, full 304-test suite (302 pass,
+2 skip), and production client build.
+
+## 2026-08-20 — Preserve the Mowan conversation mount across live status updates
+
+- Session-list `running` and `blank` changes no longer unregister and
+  asynchronously recreate the Mowan `conversation.view`. The existing React
+  view and its scroll container remain mounted while a prompt starts and runs.
+- Occupancy is reclassified only when the frontend mode, current session/cwd,
+  or an explicit Tavern refresh can change playthrough membership. A refresh
+  that resolves to the same playthrough updates the binding without remounting
+  the view.
+- Conversation and input-left registrations are synchronized independently,
+  so declaration changes no longer restart the shared observer or tear down an
+  unrelated entry.
+
+Verification: `test/play-chat-occupancy.test.mjs`, focused occupancy/chat tests,
+full 303-test suite (301 pass, 2 skip), and production client build.
+
+## 2026-08-20 — Mowan follows DSH live conversation state
+
+- The play conversation consumes DSH's public `useSession` projection directly:
+  a durable user node appears immediately without waiting for the assistant or
+  for Tavern timeline reconciliation.
+- While the agent is running, Mowan shows an explicit responding state and
+  renders incremental assistant `text` blocks from DSH's `partial` projection.
+  Structured reasoning remains separate and is not flattened into the body.
+- Completed live rows disappear as soon as the same event range is adopted by
+  `timeline.json`; `/v2/messages` remains the durable reconciliation source and
+  no second streaming API was added.
+
+Verification: `test/play-chat-model.test.mjs`, full 303-test suite (301 pass,
+2 skip), and production client build.
+
+## 2026-08-20 — Accepted launcher and frontend-mode behavior
+
+- The floating launcher always displays `DT`. Left click immediately expands or
+  collapses the menu; rapid repeated clicks repeat that default action, and
+  double-click has no special behavior.
+- Right-click toggles the frontend display mode. The menu exposes the exact
+  labels “切换到自定义前端模式” / “切换到 DSH 原生模式” and can show
+  “当前：魔丸” / “当前：DSH 原生”. The hover title is “切换前端显示模式”
+  and does not use Lingzhu/Mowan promotional wording.
+- The menu remains mounted while opening. Its contents fade in after the 220 ms
+  container expansion completes, preventing the first-row switch button from
+  flashing. This behavior has passed user acceptance.
+
+## 2026-08-20 — Host New Session baseline and acceptance observations
+
+- DSH native New Session currently inherits the preset and other Tavern
+  selection/settings from the previously focused session by Host behavior. This
+  is a Host baseline, not a promise that native New Session starts blank.
+- The acceptance pass observed the following without inferring root causes:
+  an unbound-character-card notice whose width does not match the conversation
+  bar; starting a new playthrough from the Mowan character-card sidebar showed
+  `host.createDirectory needs browse capability` and did not auto-bind the
+  character card; an inherited-configuration new session did not automatically
+  switch RP safety mode with the character card; a new session from a bound
+  character card was not grouped into the new playthrough; and regex supplied
+  by presets/character cards was not recognized.
+
+## 2026-08-20 — Play workspace directory creation contract corrected
+
+- `POST /v2/workspace/dirs` now creates directories directly through
+  `PlayWorkspaceStore` inside the bound RP root's path jail. It does not depend
+  on the global native directory picker or `apiProxy.host.createDirectory`, so
+  both native and browse Host modes are supported.
+- The path jail still rejects absolute paths, `..`, symlink escapes, and file
+  conflicts. The earlier Host-only wording remains in the historical 2026-08-19
+  implementation entry; the current API contract is the one documented above.
+
+## 2026-08-20 — Launcher clicks are immediate and literal
+
+- Every left click immediately performs the normal menu toggle; rapid clicks
+  repeat that same action and double-click has no separate binding.
+- Right click suppresses the browser context menu and uses the same
+  transactional Lingzhu/Mowan switch as the explicit menu action.
+
+Verification: test/play-chrome-client.test.mjs, test/client-shell.test.mjs.
+
+## 2026-08-19 — Character groups create verified empty playthroughs
+
+- Each character group exposes an icon-only, named new-playthrough action.
+- Existing character sessions seed the complete Tavern selection through the
+  v2 session-copy contract; a card with no session uses the existing v1
+  selection mutation after creating the blank session.
+- The controller writes `nodes: []`, stores character/root ownership only in
+  playthrough ext, then rereads catalog and timeline before navigation.
+- Catalog writes are serialized and a same-character double click shares one
+  in-flight transaction. No greeting, user message, or assistant turn is
+  appended during creation.
+
+## 2026-08-19 — Ordinary sessions keep native Chat with an additive notice
+
+- Mowan registers one additive `conversation.input.dock` row and never
+  shadows Chat or the composer for an ordinary session.
+- The notice classifies workspace membership before character selection, so a
+  stale binding outside the configured role-play workspace remains ordinary.
+- The row is non-blocking, hides while classification is unresolved, and is
+  disposed completely when the chrome returns to Lingzhu mode.
+
+## 2026-08-19 — Mowan projects sessions through the workspace slot
+
+- Play chrome shadows only the official sidebar.workspaces cell at priority
+  -100; returning to native chrome disposes the entry and restores DSH.
+- RP classification starts with the selected DSH workspace account, then
+  timeline/root-session membership, then cached character selection.
+- Playthrough sessions are hidden under character → playthrough rows;
+  unassigned card sessions stay in a collapsed subgroup and ordinary/external
+  sessions stay in the collapsed bottom group.
+- Character selection reads are invalidatable, deduplicated, and capped at
+  four concurrent requests. Timeline damage is reported with its file path.
+- The empty state can bind an existing DSH workspace, with a second
+  confirmation for paths covered by the backend system-disk warning policy.
+- Native New Session and ctx.workspaces.startSession are not patched.
+
+## 2026-08-19 — Chrome switch is keyboard reachable
+
+- The launcher menu exposes an explicit Lingzhu/Mowan switch with current-mode
+  text, title, and aria label.
+- Menu activation and pointer double-click share the same transactional
+  controller, including PUT-before-render and failure rollback.
+
+Verification: test/play-chrome-client.test.mjs, test/client-shell.test.mjs.
+## 2026-08-19 — Lingzhu/Mowan chrome is transactional
+
+- The single floating launcher defaults to the blue-black native chrome and
+  switches to the red-black play chrome on double-click.
+- A delayed single-click keeps menu opening distinct from double-click, while
+  pointer dragging suppresses both actions.
+- Chrome changes reach the UI only after PUT /v2/chrome succeeds and sync
+  across browser windows without storing a second client-side source of truth.
+
+Verification: test/play-chrome-client.test.mjs, test/client-shell.test.mjs.
+
+## 2026-08-19 — Live play client follows the real wire contract
+
+- Added one v1/v2 requester for chrome, workspace, catalog, timeline, sessions, focus, and greeting selection.
+- Workspace JSON files are parsed from `{ content }` and written back as JSON strings in that envelope.
+- Session messages retain `ContentPart[]` and integer/null `seq`, with a separate safe display-text projection.
+- Timeline paths must point to the actual `timeline.json` file; catalog character ownership lives in `ext`.
+
+Verification: `test/play-client-contract.test.mjs`.
+
+## 2026-08-19 — Greeting removed from play timeline contract
+
+- Timeline nodes now represent real QA spans only; `kind: "greeting"` is rejected.
+- New playthroughs use an empty `nodes` array until the first real turn.
+- Greeting remains character/session-selection data and is not materialized as a DSH event.
+
+Verification: `test/play-timeline.test.mjs`, `test/play-sessions.test.mjs`.
+
+## 2026-08-19 — Play dirs use Host createDirectory only
+
+Purpose: keep directory creation on the Host browse API so path joining stays
+on one OS-native implementation.
+
+- `POST /v2/workspace/dirs` calls `createDirectory({ path, name })` for each
+  missing segment. It does not fall back to local `mkdir`. Missing Host
+  capability returns `501 PLAY_HOST_UNAVAILABLE` and writes nothing.
+
+Verification: `test/play-workspace.test.mjs`.
+
+
+## 2026-08-19 — Align profile section and browser events with `pmp-dsh-tavern`
+
+Purpose: finish the identity rename so Host assembly and bundled UI events use
+the same plugin id as the Cordis package.
+
+- Host system section is now `pmp-dsh-tavern:profile` (`PROFILE_SECTION`).
+  After upgrade the plugin only registers this name, so assembly never
+  includes `dsh-tavern:profile`. Replace-mode keeps the current profile
+  section and `rp:policy`.
+- Browser CustomEvents are `pmp-dsh-tavern:refresh` and
+  `pmp-dsh-tavern:ui-settings`. Old `dsh-tavern:*` event names are not
+  dispatched. `dist/client.js` is rebuilt.
+
+Verification: `test/host-contract.test.mjs`, `test/client-shell.test.mjs`,
+`test/identity.test.mjs`, plus `npm run build`.
+
+
+## 2026-08-19 — Play API: 405, derived focus, default session create
+
+Purpose: match HTTP method semantics, keep focus a derived session id, and stop
+requiring a character card to create a play session.
+
+- Known v2 paths with the wrong method return `405 PLAY_METHOD_NOT_ALLOWED`.
+  `404` is only for paths that do not exist.
+- `GET /v2/focus` returns `{ ok, sessionId }` only. `POST /focus` is 405.
+- `POST /v2/sessions` without a bound character uses DSH `session.create`
+  (no extra title). Title `{characterName} {UTC stamp}` only when a character
+  name is available. `copySelection` runs only when `selectionFromSessionId`
+  is provided.
+
+Verification: `test/play-chrome.test.mjs`, `test/play-sessions.test.mjs`.
+
+
+## 2026-08-19 — Play session meta API
+
+Purpose: wrap DSH `session.create` / `fork` / `prompt(queue)` / `history` as
+plugin HTTP without writing timeline nodes or posting focus.
+
+- `POST /v2/sessions` titles the session `{characterName} {UTC stamp}` when a
+  character name is available; otherwise it leaves DSH's default title.
+  Optional Tavern selection is copied only with `selectionFromSessionId`.
+  The new session is `insertSessionBefore`'d into the bound play workspace.
+  It does not write `timeline.json`.
+- `POST .../branch { atEventId }` maps eventId to log seq. Open-turn
+  `fork-unavailable` / `OPEN_TURN` become HTTP 409. Branch does not prompt.
+- `POST .../user-message { text }` is the next user utterance only, mode
+  `queue`. `GET .../messages` returns Message.id plus seq and `incompleteTurn`.
+- `GET /v2/focus` is read-only `deriveFocus` (`sessionId` only). `POST /focus`
+  is 405.
+- Host calls go through `ctx.get('apiProxy')` when present. Unit tests mock
+  that face. Live coverage is opt-in (`DSH_TAVERN_PLAY_LIVE=1`).
+
+Verification: `test/play-sessions.test.mjs`.
+
+
+## 2026-08-19 — Play timeline/catalog validation and deriveFocus
+
+Purpose: keep playthrough pointer files valid without writing a stored focus
+session, and derive focus from the last rendered QA node.
+
+- `PUT /workspace/files` validates `timeline.json` and `catalog.json` before
+  disk write. Illegal kind, missing event seq pointers, or `focusSessionId`
+  return 400 and leave no file.
+- `deriveFocus(timeline)` is the adopted variant `sessionId` of the last
+  non-hidden `qa` node. Greeting-only timelines have `sessionId: null`.
+  Unused older swipe variants are ignored. This module does not read DSH
+  events.
+
+Verification: `test/play-timeline.test.mjs`.
+
+
+## 2026-08-19 — Play workspace files/dirs path jail
+
+Purpose: bind one existing play-workspace directory and read/write plugin
+files without leaving that root or registering extra DSH workspaces.
+
+- `GET/PUT /pmp-dsh-tavern/api/v2/workspace` persist the chosen root in
+  plugin data. First selection returns swipe-disk (and system-disk when
+  applicable) warnings. The directory must already exist.
+- `POST /workspace/dirs` stays inside the bound root via Host
+  `createDirectory` (no local mkdir fallback). `GET/PUT /workspace/files`
+  stay inside the bound root: `..`, absolute paths, and symlink escape
+  return 400/403 and do not write. Unbound roots return 409.
+  `archiveSession` is not used.
+- Host `workspaces.create` is optional in this module (filled in M4). Unit
+  tests use temporary directories.
+
+Verification: `test/play-workspace.test.mjs` plus `npm test`.
+
+
+## 2026-08-19 — Play chrome GET/PUT `/v2/chrome`
+
+Purpose: persist the global native/play surface switch independently of RP
+and of the current DSH session, as the first v2 play-surface route.
+
+- New `packages/play` owns chrome storage (`chrome.json`) and the v2 HTTP
+  dispatcher. Loader mounts it on the existing `/pmp-dsh-tavern/api` prefix
+  via `secureTavernApi`; GET/PUT `/pmp-dsh-tavern/api/v2/chrome` are live.
+- Default mode is `native`. `PUT { "mode": "play" }` is atomic and survives
+  store recreation. Illegal modes and unknown fields return 400. There is no
+  `POST /chrome`. Chrome does not read or write RP selection.
+- Documented in [docs/API.md](API.md) (v2 stable vs v1 bundled).
+
+Verification: `test/play-chrome.test.mjs` plus `npm test`.
+
+
+## 2026-08-19 — Plugin identity `pmp-dsh-tavern` and v1 HTTP root
+
+Purpose: stop colliding with other DSH plugins named `dsh-tavern`, and put the
+existing resource API under a versioned prefix before play-surface v2 routes
+land on the same Host prefix.
+
+- Package name, Cordis id, installer plugin name, browser bundle id, and the
+  Host `export const name` are now `pmp-dsh-tavern`. Shared constants live in
+  `packages/identity.js` (`PLUGIN_ID`, `API_ROOT`, `API_V1`, `API_V2`).
+- HTTP is mounted at `/pmp-dsh-tavern/api`. Existing resource routes moved to
+  `/pmp-dsh-tavern/api/v1/...`. The old `/dsh-tavern/api` root is not
+  registered and returns 404. There is no dual-root compatibility window.
+- Browser clients, launcher storage key, and `data-plugin-css` attributes
+  follow the new id. Host system section was later renamed to
+  `pmp-dsh-tavern:profile` (same day; see the identity-alignment entry).
+- Data and backup directories follow the new package name:
+  `node_modules/pmp-dsh-tavern/data/` and `backups/pmp-dsh-tavern/`.
+
+Verification: `npm test` plus a leftover-path scan of `packages/` and
+`scripts/` for callable `/dsh-tavern/api` roots.
+
 
 ## 2026-08-18 — RP secure mode and delegated subagent snapshot
 
@@ -134,7 +914,7 @@ current instructions.
 - Added only the project-owner-supplied DT launcher screenshot to the README;
   removed the other screenshot placeholders because detailed UI demonstration
   will be provided by the project video.
-- Added `docs/USAGE.zh-CN.md` with detailed launcher, preset, character,
+- Added `docs/USAGE_zh-CN.md` with detailed launcher, preset, character,
   three-source world-book, user, template/new-session, Trace and data-lifecycle
   workflows.
 - Replaced the old three-feature integration checklist with the current release

@@ -22,17 +22,18 @@ import {
   characterGreetingOptions,
   defaultCharacterSelection,
 } from './client-state.js'
+import { API_V1 as API_ROOT, CLIENT_REFRESH_EVENT, PLUGIN_ID } from '../../identity.js'
+import { announceImportFailure } from '../../client/src/import-failure.js'
 
 const h = createLocalizedElement(createElement)
-
-const API_ROOT = '/dsh-tavern/api'
+const RUN_SKIPPED = Symbol('run-skipped')
 
 function announceTavernRefresh() {
-  window.dispatchEvent(new CustomEvent('dsh-tavern:refresh', { detail: { source: 'character' } }))
+  window.dispatchEvent(new CustomEvent(CLIENT_REFRESH_EVENT, { detail: { source: 'character' } }))
 }
 
 const css = `
-.dcc-panel{position:absolute;top:0;right:0;bottom:0;width:min(440px,calc(100vw - 56px));pointer-events:auto;border-left:1px solid var(--dsw-alias-border-l2);box-shadow:var(--ds-shadow-3,-8px 0 28px rgba(0,0,0,.18));background:var(--dsw-alias-bg-base);color:var(--dsw-alias-label-primary);display:flex;flex-direction:column;font-family:Inter,var(--dsw-font-family),sans-serif}.dcc-header{height:52px;box-sizing:border-box;display:flex;align-items:center;gap:8px;padding:0 14px;border-bottom:1px solid var(--dsw-alias-border-l2);flex:none}.dcc-title{font-size:16px;font-weight:650;flex:1}.dcc-close{border:0;background:transparent;color:var(--dsw-alias-label-tertiary);cursor:pointer;border-radius:7px;padding:6px 8px;font-size:14px}.dcc-body{min-height:0;overflow:auto;padding:12px;display:flex;flex-direction:column;gap:12px}.dcc-toolbar{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}.dcc-actions{display:grid;grid-template-columns:1fr 1fr;gap:8px}.dcc-button{min-height:36px;border:1px solid var(--dsw-alias-border-l2);border-radius:8px;background:var(--dsw-alias-button-secondary-fill,var(--dsw-alias-bg-base));color:var(--dsw-alias-label-primary);cursor:pointer;padding:7px 10px;font-size:13px;text-decoration:none;display:flex;align-items:center;justify-content:center;box-sizing:border-box}.dcc-button:hover:not(:disabled){background:var(--dsw-alias-interactive-bg-hover)}.dcc-button:disabled{opacity:.5;cursor:default}.dcc-primary{background:var(--dsw-alias-state-business-primary);color:white;border-color:transparent}.dcc-danger{color:var(--dsw-alias-state-error)}.dcc-field{display:flex;flex-direction:column;gap:5px}.dcc-label{font-size:12px;color:var(--dsw-alias-label-tertiary);font-weight:600}.dcc-select,.dcc-input,.dcc-textarea{box-sizing:border-box;width:100%;border:1px solid var(--dsw-alias-border-l2);border-radius:7px;background:var(--dsw-alias-bg-base);color:var(--dsw-alias-label-primary);font:inherit;font-size:13px}.dcc-select,.dcc-input{height:36px;padding:0 9px}.dcc-textarea{min-height:88px;resize:vertical;padding:8px;line-height:1.5}.dcc-note,.dcc-meta{font-size:13px;line-height:1.5;color:var(--dsw-alias-label-tertiary);margin:0;overflow-wrap:anywhere}.dcc-status{font-size:13px;line-height:1.45;border-radius:7px;padding:7px 9px;background:var(--dsw-specific-tip);overflow-wrap:anywhere}.dcc-status[data-error=true]{color:var(--dsw-alias-state-error)}.dcc-status[data-warning=true]{color:var(--dsw-alias-state-warning,var(--dsw-alias-label-primary))}.dcc-card{border-top:1px solid var(--dsw-alias-border-l1);padding-top:12px;display:flex;flex-direction:column;gap:10px}.dcc-card-head{display:flex;gap:11px}.dcc-avatar{width:76px;height:100px;object-fit:cover;border-radius:9px;border:1px solid var(--dsw-alias-border-l1);background:var(--dsw-alias-bg-container);flex:none}.dcc-card-title{font-size:16px;font-weight:650;margin:0 0 5px}.dcc-check{display:flex;gap:7px;align-items:flex-start;font-size:13px;line-height:1.4}.dcc-detail{border:1px solid var(--dsw-alias-border-l1);border-radius:8px;padding:8px}.dcc-detail summary{cursor:pointer;font-size:13px;font-weight:600}.dcc-detail-body{display:flex;flex-direction:column;gap:8px;margin-top:8px}.dcc-diags{margin:7px 0 0;padding-left:18px;font-size:13px;line-height:1.5}.dcc-greetings{display:flex;flex-direction:column;gap:8px}.dcc-greeting-item{border:1px solid var(--dsw-alias-border-l1);border-radius:8px;padding:8px;display:flex;flex-direction:column;gap:6px}.dcc-greeting-head{display:flex;align-items:center;justify-content:space-between;gap:8px}.dcc-footer{position:sticky;bottom:-12px;margin:0 -12px -12px;padding:10px 12px;background:var(--dsw-alias-bg-base);border-top:1px solid var(--dsw-alias-border-l2)}
+.dcc-panel{position:absolute;top:0;right:0;bottom:0;width:min(440px,calc(100vw - 56px));pointer-events:auto;border-left:1px solid var(--dsw-alias-border-l2);box-shadow:var(--ds-shadow-3,-8px 0 28px rgba(0,0,0,.18));background:var(--dsw-alias-bg-base);color:var(--dsw-alias-label-primary);display:flex;flex-direction:column;font-family:Inter,var(--dsw-font-family),sans-serif}.dcc-header{height:52px;box-sizing:border-box;display:flex;align-items:center;gap:8px;padding:0 14px;border-bottom:1px solid var(--dsw-alias-border-l2);flex:none}.dcc-title{font-size:16px;font-weight:650;flex:1}.dcc-close{border:0;background:transparent;color:var(--dsw-alias-label-tertiary);cursor:pointer;border-radius:7px;padding:6px 8px;font-size:14px}.dcc-body{min-height:0;overflow:auto;padding:12px;display:flex;flex-direction:column;gap:12px}.dcc-toolbar{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}.dcc-actions,.dcc-footer{display:grid;grid-template-columns:1fr 1fr;gap:8px}.dcc-browse{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:8px}.dcc-button{min-height:36px;border:1px solid var(--dsw-alias-border-l2);border-radius:8px;background:var(--dsw-alias-button-secondary-fill,var(--dsw-alias-bg-base));color:var(--dsw-alias-label-primary);cursor:pointer;padding:7px 10px;font-size:13px;text-decoration:none;display:flex;align-items:center;justify-content:center;box-sizing:border-box}.dcc-button:hover:not(:disabled):not([data-disabled=true]){background:var(--dsw-alias-interactive-bg-hover)}.dcc-button:disabled,.dcc-button[data-disabled=true]{opacity:.5;cursor:default;pointer-events:none}.dcc-primary{background:var(--dsw-alias-state-business-primary);color:white;border-color:transparent}.dcc-danger{color:var(--dsw-alias-state-error)}.dcc-field{display:flex;flex-direction:column;gap:5px}.dcc-label{font-size:12px;color:var(--dsw-alias-label-tertiary);font-weight:600}.dcc-select,.dcc-input,.dcc-textarea{box-sizing:border-box;width:100%;border:1px solid var(--dsw-alias-border-l2);border-radius:7px;background:var(--dsw-alias-bg-base);color:var(--dsw-alias-label-primary);font:inherit;font-size:13px}.dcc-select,.dcc-input{height:36px;padding:0 9px}.dcc-textarea{min-height:88px;resize:vertical;padding:8px;line-height:1.5}.dcc-note,.dcc-meta{font-size:13px;line-height:1.5;color:var(--dsw-alias-label-tertiary);margin:0;overflow-wrap:anywhere}.dcc-status{font-size:13px;line-height:1.45;border-radius:7px;padding:7px 9px;background:var(--dsw-specific-tip);overflow-wrap:anywhere}.dcc-status[data-error=true]{color:var(--dsw-alias-state-error)}.dcc-status[data-warning=true]{color:var(--dsw-alias-state-warning,var(--dsw-alias-label-primary))}.dcc-card{border-top:1px solid var(--dsw-alias-border-l1);padding-top:12px;display:flex;flex-direction:column;gap:10px}.dcc-card-head{display:flex;gap:11px}.dcc-card-head>div{min-width:0;display:flex;flex-direction:column;align-items:flex-start;gap:5px}.dcc-avatar{width:76px;height:100px;object-fit:cover;border-radius:9px;border:1px solid var(--dsw-alias-border-l1);background:var(--dsw-alias-bg-container);flex:none}.dcc-card-title{font-size:16px;font-weight:650;margin:0}.dcc-check{display:flex;gap:7px;align-items:flex-start;font-size:13px;line-height:1.4}.dcc-detail{border:1px solid var(--dsw-alias-border-l1);border-radius:8px;padding:8px}.dcc-detail summary{cursor:pointer;font-size:13px;font-weight:600}.dcc-detail-body{display:flex;flex-direction:column;gap:8px;margin-top:8px}.dcc-diags{margin:7px 0 0;padding-left:18px;font-size:13px;line-height:1.5}.dcc-greetings{display:flex;flex-direction:column;gap:8px}.dcc-greeting-item{border:1px solid var(--dsw-alias-border-l1);border-radius:8px;padding:8px;display:flex;flex-direction:column;gap:6px}.dcc-greeting-head{display:flex;align-items:center;justify-content:space-between;gap:8px}.dcc-footer{position:sticky;bottom:-12px;margin:0 -12px -12px;padding:10px 12px;background:var(--dsw-alias-bg-base);border-top:1px solid var(--dsw-alias-border-l2)}.dcc-modal-backdrop{position:fixed;inset:0;z-index:2147483500;display:flex;align-items:center;justify-content:center;padding:20px;background:rgba(0,0,0,.42);pointer-events:auto}.dcc-modal{width:min(520px,calc(100vw - 32px));max-height:min(640px,calc(100vh - 40px));overflow:auto;border:1px solid var(--dsw-alias-border-l2);border-radius:12px;background:var(--dsw-alias-bg-base);box-shadow:var(--ds-shadow-4,0 18px 56px rgba(0,0,0,.32));padding:18px;display:flex;flex-direction:column;gap:12px}.dcc-modal h3,.dcc-modal p{margin:0}.dcc-modal-list{margin:0;padding-left:20px;font-size:13px;line-height:1.5}.dcc-modal-actions{display:flex;justify-content:flex-end;gap:8px}
 `
 
 function errorMessage(data, status) {
@@ -51,7 +52,13 @@ async function api(path, options = {}) {
     },
   })
   const data = await response.json().catch(() => null)
-  if (!response.ok || data?.ok === false) throw new Error(errorMessage(data, response.status))
+  if (!response.ok || data?.ok === false) {
+    const error = new Error(errorMessage(data, response.status))
+    error.status = response.status
+    error.code = data?.code ?? data?.error?.code
+    error.details = data?.details ?? data?.error?.details
+    throw error
+  }
   return data
 }
 
@@ -71,7 +78,7 @@ function patchDraft(setter, field, value) {
   setter((current) => current === null ? current : { ...current, [field]: value })
 }
 
-export function CharacterPanel({ sessionId, sessionBlank, close }) {
+export function CharacterPanel({ sessionId, sessionBlank, hasConversationHistory, detachPlaythroughSession, close }) {
   const [catalog, setCatalog] = useState(null)
   const [detail, setDetail] = useState(null)
   const [draft, setDraft] = useState(null)
@@ -80,6 +87,7 @@ export function CharacterPanel({ sessionId, sessionBlank, close }) {
   const [binding, setBinding] = useState(null)
   const [rp, setRp] = useState({ active: false })
   const [busy, setBusy] = useState(false)
+  const [detachPrompt, setDetachPrompt] = useState(null)
   const [status, setStatus] = useState({ error: false, key: 'common.loading' })
   const fileRef = useRef(null)
   const refreshGeneration = useRef(0)
@@ -101,7 +109,7 @@ export function CharacterPanel({ sessionId, sessionBlank, close }) {
     setBusy(true)
     try {
       const result = await operation()
-      setStatus({ error: false, key: successKey })
+      if (result !== RUN_SKIPPED) setStatus({ error: false, key: successKey })
       return result
     } catch (error) {
       setStatus(error?.uiKey
@@ -163,8 +171,8 @@ export function CharacterPanel({ sessionId, sessionBlank, close }) {
       }
       run(() => refresh(detail?.id), 'character.status.refreshed')
     }
-    window.addEventListener('dsh-tavern:refresh', onRefresh)
-    return () => window.removeEventListener('dsh-tavern:refresh', onRefresh)
+    window.addEventListener(CLIENT_REFRESH_EVENT, onRefresh)
+    return () => window.removeEventListener(CLIENT_REFRESH_EVENT, onRefresh)
   }, [detail?.id, refresh, run])
 
   useEffect(() => {
@@ -187,13 +195,19 @@ export function CharacterPanel({ sessionId, sessionBlank, close }) {
   }, [dirty, refresh, run])
 
   const importFile = useCallback((file) => run(async () => {
-    const response = await fetch(`${API_ROOT}/characters/import?filename=${encodeURIComponent(file.name)}`, {
-      method: 'POST',
-      headers: { 'Content-Type': file.type || 'application/octet-stream' },
-      body: file,
-    })
-    const data = await response.json().catch(() => null)
-    if (!response.ok || data?.ok === false) throw new Error(errorMessage(data, response.status))
+    let data
+    try {
+      const response = await fetch(`${API_ROOT}/characters/import?filename=${encodeURIComponent(file.name)}`, {
+        method: 'POST',
+        headers: { 'Content-Type': file.type || 'application/octet-stream' },
+        body: file,
+      })
+      data = await response.json().catch(() => null)
+      if (!response.ok || data?.ok === false) throw new Error(errorMessage(data, response.status))
+    } catch (error) {
+      announceImportFailure(error)
+      throw error
+    }
     await refresh(data.character.id)
     announceTavernRefresh()
     if (fileRef.current !== null) fileRef.current.value = ''
@@ -225,32 +239,67 @@ export function CharacterPanel({ sessionId, sessionBlank, close }) {
     announceTavernRefresh()
   }, 'character.status.saved'), [detail, draft, run])
 
+  const requestSelection = useCallback(async (request, action, { prompt = true } = {}) => {
+    try {
+      return await api('/character-selection', {
+        method: 'POST',
+        body: JSON.stringify(request),
+      })
+    } catch (error) {
+      const conflicts = error?.details?.conflicts
+      if (prompt && error?.code === 'CHARACTER_PLAYTHROUGH_DETACH_REQUIRED' && Array.isArray(conflicts) && conflicts.length > 0) {
+        setDetachPrompt({ request, action, conflicts })
+        return RUN_SKIPPED
+      }
+      throw error
+    }
+  }, [])
+
+  const applySelectionResult = useCallback(async (data, action) => {
+    if (action === 'unbind') {
+      await refresh(detail?.id)
+    } else {
+      setSelection(data.selection)
+      setBinding(data.selection)
+      const rpData = await api(`/rp-mode?sessionId=${encodeURIComponent(sessionId)}`)
+      setRp(rpData.rp ?? { active: false })
+    }
+    announceTavernRefresh()
+  }, [detail?.id, refresh, sessionId])
+
   const bind = useCallback(() => run(async () => {
     if (!sessionId) throw uiError('character.error.needSession')
     if (dirty) throw uiError('character.error.saveFirst')
-    if (selection?.characterCardId !== binding?.characterCardId
-      && sessionBlank === false
-      && !window.confirm(unwrapText(uiMessage('character.confirmHistoricalSwitch')))) return
-    const data = await api('/character-selection', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ sessionId, ...binding }),
-    })
-    setSelection(data.selection)
-    setBinding(data.selection)
-    const rpData = await api(`/rp-mode?sessionId=${encodeURIComponent(sessionId)}`)
-    setRp(rpData.rp ?? { active: false })
-    announceTavernRefresh()
-  }, 'character.status.bound'), [binding, dirty, run, selection, sessionBlank, sessionId])
+    if (selection?.characterCardId !== binding?.characterCardId) {
+      const historical = typeof hasConversationHistory === 'function'
+        ? await hasConversationHistory(sessionId)
+        : sessionBlank === false
+      if (historical && !window.confirm(unwrapText(uiMessage('character.confirmHistoricalSwitch')))) return
+    }
+    const data = await requestSelection({ sessionId, ...binding }, 'bind')
+    if (data === RUN_SKIPPED) return RUN_SKIPPED
+    await applySelectionResult(data, 'bind')
+  }, 'character.status.bound'), [applySelectionResult, binding, dirty, hasConversationHistory, requestSelection, run, selection, sessionBlank, sessionId])
 
   const unbind = useCallback(() => run(async () => {
     if (!sessionId) throw uiError('character.error.noSessionToUnbind')
-    await api('/character-selection', {
-      method: 'POST',
-      body: JSON.stringify({ sessionId, characterCardId: null }),
-    })
-    await refresh(detail?.id)
-  }, 'character.status.unbound'), [detail?.id, refresh, run, sessionId])
+    const data = await requestSelection({ sessionId, characterCardId: null }, 'unbind')
+    if (data === RUN_SKIPPED) return RUN_SKIPPED
+    await applySelectionResult(data, 'unbind')
+  }, 'character.status.unbound'), [applySelectionResult, requestSelection, run, sessionId])
+
+  const confirmDetach = useCallback(() => {
+    if (detachPrompt === null) return
+    run(async () => {
+      if (typeof detachPlaythroughSession !== 'function') throw new Error(unwrapText(uiMessage('character.detachUnavailable')))
+      for (const conflict of detachPrompt.conflicts) {
+        await detachPlaythroughSession(conflict.playthroughId, conflict.sessionId)
+      }
+      const data = await requestSelection(detachPrompt.request, detachPrompt.action, { prompt: false })
+      await applySelectionResult(data, detachPrompt.action)
+      setDetachPrompt(null)
+    }, detachPrompt.action === 'unbind' ? 'character.status.unbound' : 'character.status.bound')
+  }, [applySelectionResult, detachPlaythroughSession, detachPrompt, requestSelection, run])
 
   const toggleRp = useCallback(() => run(async () => {
     if (!sessionId) throw uiError('character.error.needSession')
@@ -295,25 +344,33 @@ export function CharacterPanel({ sessionId, sessionBlank, close }) {
     ),
     h('div', { className: 'dcc-body' },
       h('div', { className: 'dcc-toolbar' },
-        h('button', { className: 'dcc-button', type: 'button', disabled: busy, onClick: create }, uiMessage('character.create')),
         h('button', { className: 'dcc-button', type: 'button', disabled: busy, onClick: () => fileRef.current?.click() }, uiMessage('character.import')),
+        h('a', { className: 'dcc-button', 'data-disabled': detail === null || busy ? true : undefined, href: detail === null ? undefined : `${API_ROOT}/characters/${encodeURIComponent(detail.id)}/json`, download: '' }, uiMessage('common.exportJson')),
+        h('button', { className: 'dcc-button', type: 'button', disabled: busy, onClick: create }, uiMessage('character.create')),
+        h('input', { ref: fileRef, hidden: true, type: 'file', accept: '.json,.png,application/json,image/png', onChange: (event) => {
+          const file = event.target.files?.[0]
+          event.target.value = ''
+          if (file !== undefined) importFile(file)
+        } }),
+      ),
+      h(Field, { label: uiMessage('character.browse') }, h('div', { className: 'dcc-browse' },
+        h('select', {
+          className: 'dcc-select',
+          value: detail?.id ?? '',
+          disabled: busy || catalog === null || catalog.characters.length === 0,
+          onChange: (event) => chooseCharacter(event.target.value),
+        },
+        ...(catalog?.characters.length ? [] : [h('option', { key: 'empty', value: '' }, uiMessage('character.libraryEmpty'))]),
+        ...(catalog?.characters ?? []).map((item) => h('option', { key: item.id, value: item.id }, rawText(item.name)))),
         h('button', { className: 'dcc-button', type: 'button', disabled: busy, onClick: () => {
           if (dirty && !window.confirm(unwrapText(uiMessage('character.confirmDiscardRefresh')))) return
           run(() => refresh(detail?.id), 'character.status.libraryRefreshed')
         } }, uiMessage('common.refresh')),
-        h('input', { ref: fileRef, hidden: true, type: 'file', accept: '.json,.png,application/json,image/png', onChange: (event) => {
-          const file = event.target.files?.[0]
-          if (file !== undefined) importFile(file)
-        } }),
+      )),
+      h('div', { className: 'dcc-actions' },
+        h('button', { className: 'dcc-button dcc-primary', type: 'button', disabled: busy || !sessionId || detail === null || dirty || (boundHere && !bindingDirty), onClick: bind }, dirty ? uiMessage('character.saveFirst') : boundHere ? (bindingDirty ? uiMessage('character.bindUpdate') : uiMessage('character.bindingAppliedButton')) : uiMessage('character.bind')),
+        h('button', { className: 'dcc-button', type: 'button', disabled: busy || !sessionId || selection === null, onClick: unbind }, uiMessage('character.unbind')),
       ),
-      h(Field, { label: uiMessage('character.browse') }, h('select', {
-        className: 'dcc-select',
-        value: detail?.id ?? '',
-        disabled: busy || catalog === null || catalog.characters.length === 0,
-        onChange: (event) => chooseCharacter(event.target.value),
-      },
-      ...(catalog?.characters.length ? [] : [h('option', { key: 'empty', value: '' }, uiMessage('character.libraryEmpty'))]),
-      ...(catalog?.characters ?? []).map((item) => h('option', { key: item.id, value: item.id }, rawText(item.name))))),
       h('p', { className: 'dcc-note' }, uiMessage('character.sessionBinding', {
         session: sessionId || translate('common.none'),
         name: activeName,
@@ -322,6 +379,11 @@ export function CharacterPanel({ sessionId, sessionBlank, close }) {
       dirty
         ? h('div', { className: 'dcc-status', 'data-warning': true, role: 'status' }, uiMessage('character.dirty'))
         : detail === null ? null : h('p', { className: 'dcc-note' }, uiMessage('character.savedNote')),
+      boundHere
+        ? (bindingDirty
+          ? h('div', { className: 'dcc-status', 'data-warning': true, role: 'status' }, uiMessage('character.bindingUnsaved'))
+          : h('p', { className: 'dcc-note' }, uiMessage('character.bindingApplied')))
+        : null,
       detail === null || draft === null ? h('p', { className: 'dcc-note' }, catalog === null ? uiMessage('character.loading') : uiMessage('character.emptyHint')) : h('div', { className: 'dcc-card' },
         h('div', { className: 'dcc-card-head' },
           h('img', { className: 'dcc-avatar', src: avatarSrc, alt: uiMessage('character.imageAlt', { name: detail.name }) }),
@@ -329,6 +391,7 @@ export function CharacterPanel({ sessionId, sessionBlank, close }) {
             h('h3', { className: 'dcc-card-title' }, rawText(detail.name)),
             h('p', { className: 'dcc-meta' }, rawText(`${detail.source.format}${detail.source.specVersion ? ` · ${detail.source.specVersion}` : ''} · ${detail.source.container}`)),
             h('p', { className: 'dcc-meta' }, rawText(`${draft.creator || translate('common.unknownAuthor')}${draft.characterVersion ? ` · ${draft.characterVersion}` : ''}`)),
+            h('a', { className: 'dcc-button', href: `${API_ROOT}/characters/${encodeURIComponent(detail.id)}/png`, download: '' }, uiMessage('character.exportPng')),
           ),
         ),
         h(Field, { label: uiMessage('common.name') }, h('input', {
@@ -365,16 +428,6 @@ export function CharacterPanel({ sessionId, sessionBlank, close }) {
         }, ...greetings.map((item) => h('option', { key: item.index, value: item.index }, uiMessage(item.labelKey, item.labelValues))))),
         h('label', { className: 'dcc-check' }, h('input', { type: 'checkbox', checked: binding?.character?.preferCharacterSystemPrompt !== false, onChange: (event) => setBinding((current) => ({ ...current, character: { ...current.character, preferCharacterSystemPrompt: event.target.checked } })) }), h('span', null, uiMessage('character.preferSystem'))),
         h('label', { className: 'dcc-check' }, h('input', { type: 'checkbox', checked: binding?.character?.preferCharacterPostHistory !== false, onChange: (event) => setBinding((current) => ({ ...current, character: { ...current.character, preferCharacterPostHistory: event.target.checked } })) }), h('span', null, uiMessage('character.preferPostHistory'))),
-        boundHere
-          ? (bindingDirty
-            ? h('div', { className: 'dcc-status', 'data-warning': true, role: 'status' }, uiMessage('character.bindingUnsaved'))
-            : h('p', { className: 'dcc-note' }, uiMessage('character.bindingApplied')))
-          : null,
-        h('div', { className: 'dcc-actions' },
-          h('button', { className: 'dcc-button dcc-primary', type: 'button', disabled: busy || !dirty, onClick: save }, dirty ? uiMessage('character.saveResource') : uiMessage('character.resourceSaved')),
-          h('button', { className: 'dcc-button dcc-primary', type: 'button', disabled: busy || !sessionId || dirty || (boundHere && !bindingDirty), onClick: bind }, dirty ? uiMessage('character.saveFirst') : boundHere ? (bindingDirty ? uiMessage('character.bindUpdate') : uiMessage('character.bindingAppliedButton')) : uiMessage('character.bind')),
-        ),
-        h('button', { className: 'dcc-button', type: 'button', disabled: busy || !sessionId || selection === null, onClick: unbind }, uiMessage('character.unbind')),
         h('label', { className: 'dcc-check' },
           h('input', {
             type: 'checkbox',
@@ -466,20 +519,33 @@ export function CharacterPanel({ sessionId, sessionBlank, close }) {
         h(DiagnosticList, { titleKey: 'character.warnings', items: detail.compatibility.warnings }),
         h(DiagnosticList, { titleKey: 'character.unsupported', items: detail.compatibility.unsupportedFeatures }),
         detail.compatibility.unknownMacroNames.length > 0 ? h('div', { className: 'dcc-status' }, uiMessage('character.unknownMacros', { names: detail.compatibility.unknownMacroNames.join(', ') })) : null,
-        h('div', { className: 'dcc-actions' },
-          h('a', { className: 'dcc-button', href: `${API_ROOT}/characters/${encodeURIComponent(detail.id)}/json`, download: '' }, uiMessage('common.exportJson')),
-          h('a', { className: 'dcc-button', href: `${API_ROOT}/characters/${encodeURIComponent(detail.id)}/png`, download: '' }, uiMessage('character.exportPng')),
+        h('div', { className: 'dcc-footer' },
+          h('button', { className: 'dcc-button dcc-primary', type: 'button', disabled: busy || !dirty, onClick: save }, dirty ? uiMessage('character.saveResource') : uiMessage('character.resourceSaved')),
+          h('button', { className: 'dcc-button dcc-danger', type: 'button', disabled: busy, onClick: remove }, uiMessage('character.delete')),
         ),
-        h('div', { className: 'dcc-footer' }, h('button', { className: 'dcc-button dcc-danger', type: 'button', disabled: busy, onClick: remove }, uiMessage('character.delete'))),
+      ),
+    ),
+    detachPrompt === null ? null : h('div', { className: 'dcc-modal-backdrop', role: 'presentation' },
+      h('div', { className: 'dcc-modal', role: 'dialog', 'aria-modal': true, 'aria-labelledby': 'dcc-detach-title' },
+        h('h3', { id: 'dcc-detach-title' }, uiMessage('character.detachTitle')),
+        h('p', { className: 'dcc-note' }, uiMessage('character.detachDescription')),
+        h('ul', { className: 'dcc-modal-list' }, ...detachPrompt.conflicts.map(conflict => h('li', { key: conflict.playthroughId }, uiMessage('character.detachItem', {
+          title: conflict.playthroughTitle,
+          count: conflict.descendantSessionCount,
+        })))),
+        h('div', { className: 'dcc-modal-actions' },
+          h('button', { className: 'dcc-button', type: 'button', disabled: busy, onClick: () => setDetachPrompt(null) }, uiMessage('common.cancel')),
+          h('button', { className: 'dcc-button dcc-danger', type: 'button', disabled: busy, onClick: confirmDetach }, uiMessage('character.detachConfirm')),
+        ),
       ),
     ),
   )
 }
 
 export function installCharacterStyles() {
-  if (document.querySelector('style[data-plugin-css="dsh-tavern-character"]') !== null) return
+  if (document.querySelector(`style[data-plugin-css="${PLUGIN_ID}-character"]`) !== null) return
   const style = document.createElement('style')
-  style.dataset.pluginCss = 'dsh-tavern-character'
+  style.dataset.pluginCss = `${PLUGIN_ID}-character`
   style.textContent = css
   document.head.append(style)
 }

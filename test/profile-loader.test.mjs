@@ -241,3 +241,16 @@ test('V2 alternate greeting index 1 uses the second greeting string', () => {
   assert.match(result.systemText, /Second greeting/)
   assert.doesNotMatch(result.systemText, /First greeting/)
 })
+
+test('greeting reference can be omitted after the first turn without changing the selected card', () => {
+  const result = compileTavernProfile({
+    character: {
+      id: 'opening-card',
+      data: { name: 'Guide', firstMessage: 'Opening reference' },
+    },
+    includeGreetingReference: false,
+  })
+  assert.doesNotMatch(result.systemText, /greeting-reference/)
+  assert.doesNotMatch(result.systemText, /Opening reference/)
+  assert.match(result.systemText, /character-id: opening-card/)
+})

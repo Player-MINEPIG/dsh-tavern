@@ -1,7 +1,9 @@
 import { Buffer } from 'node:buffer'
+import { API_V1, escapeRegExp } from '../../identity.js'
 import { worldBookStoreConstants } from './store.js'
 
-export const WORLD_BOOK_API_PREFIX = '/dsh-tavern/api/world-book'
+export const WORLD_BOOK_API_PREFIX = `${API_V1}/world-book`
+const WORLD_BOOK_ID_ROUTE = new RegExp(`^${escapeRegExp(API_V1)}/world-books/([^/]+)(?:/(json))?$`)
 export const MAX_WORLD_BOOK_BODY_BYTES = worldBookStoreConstants.maxArtifactBytes
 
 function sendJson(res, status, payload) {
@@ -59,7 +61,7 @@ async function readJson(req) {
 }
 
 function route(path) {
-  const match = /^\/dsh-tavern\/api\/world-books\/([^/]+)(?:\/(json))?$/.exec(path)
+  const match = WORLD_BOOK_ID_ROUTE.exec(path)
   if (match === null) return null
   return { id: decodeURIComponent(match[1]), resource: match[2] }
 }
@@ -105,16 +107,16 @@ export function createWorldBookApiHandler(store, options = {}) {
       const method = String(req.method ?? 'GET').toUpperCase()
       const matched = route(path)
 
-      if (method === 'GET' && path === '/dsh-tavern/api/world-books') {
+      if (method === 'GET' && path === `${API_V1}/world-books`) {
         return sendJson(res, 200, { ok: true, worldBooks: store.list() })
       }
-      if (method === 'POST' && path === '/dsh-tavern/api/world-books') {
+      if (method === 'POST' && path === `${API_V1}/world-books`) {
         const body = await readJson(req)
         const document = store.create({ name: body.name })
         onChange({ kind: 'world-book-created', worldBookId: document.id })
         return sendJson(res, 201, { ok: true, worldBook: document })
       }
-      if (method === 'POST' && path === '/dsh-tavern/api/world-books/import') {
+      if (method === 'POST' && path === `${API_V1}/world-books/import`) {
         const bytes = await readBytes(req)
         if (bytes.length === 0) throw new TypeError('World-book import body is empty')
         const document = store.import(bytes, { fileName: url.searchParams.get('filename') ?? 'world-book.json' })
@@ -146,10 +148,10 @@ export function createWorldBookApiHandler(store, options = {}) {
         onChange({ kind: 'world-book-deleted', worldBookId: matched.id })
         return sendJson(res, 200, { ok: true })
       }
-      if (method === 'GET' && path === '/dsh-tavern/api/world-book-selection') {
+      if (method === 'GET' && path === `${API_V1}/world-book-selection`) {
         return sendJson(res, 200, { ok: true, ...selectionPayload(store, url.searchParams.get('sessionId'), selectionPolicy) })
       }
-      if (method === 'POST' && path === '/dsh-tavern/api/world-book-selection') {
+      if (method === 'POST' && path === `${API_V1}/world-book-selection`) {
         const body = await readJson(req)
         if (typeof body.sessionId !== 'string') throw new TypeError('sessionId must be a string')
         await beforeSelectionChange({ sessionId: body.sessionId, worldBookIds: body.worldBookIds })

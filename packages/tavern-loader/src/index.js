@@ -2,9 +2,10 @@ import { fileURLToPath } from 'node:url'
 import { resolve } from 'node:path'
 import {
   PresetStore,
-  API_ROOT,
   createApiHandler as createPresetApiHandler,
 } from '../../preset/src/index.js'
+import { API_ROOT, API_V1, PLUGIN_ID, PROFILE_SECTION } from '../../identity.js'
+import { ChromeStore, PlayMembershipService, PlayWorkspaceStore, createChromeEventsHandler, createPlayApiHandler, isPlayApiPath } from '../../play/src/index.js'
 import {
   CharacterStore,
   createCharacterAdapter,
@@ -20,14 +21,22 @@ import { PresetRuntime } from './preset-runtime.js'
 import { TavernProfileLoader } from './profile-loader.js'
 import { SessionSelectionStore } from './session-policy.js'
 import { UserWorldBookBindingStore } from './user-world-book-policy.js'
+import { ResourceWorldBookBindingStore } from './resource-world-book-policy.js'
 import { createWorldBookAdapter } from './world-book-adapter.js'
 import { PendingInputProjection } from './pending-input-projection.js'
+import { ImportContextRuntime } from './import-context-runtime.js'
+import { createPlayHost } from './play-host.js'
 import { secureTavernApi } from './api-security.js'
 import {
   UiSettingsStore,
   createUiSettingsApiHandler,
   isUiSettingsApiPath,
 } from './ui-settings.js'
+import {
+  ConversationSettingsStore,
+  createConversationSettingsApiHandler,
+  isConversationSettingsApiPath,
+} from './conversation-settings.js'
 import {
   TavernTraceRecorder,
   TavernTraceStore,
@@ -55,7 +64,7 @@ import {
   rpModeConstants,
 } from './rp-mode.js'
 
-export const name = 'dsh-tavern'
+export const name = PLUGIN_ID
 export const inject = ['systemPrompt']
 
 const DEFAULT_STORAGE_DIR = fileURLToPath(new URL('../../../data', import.meta.url))
@@ -80,26 +89,26 @@ function migrateCharacterSelections(characterStore, selections) {
 
 function isCharacterApiPath(url) {
   const path = new URL(url ?? '/', 'http://localhost').pathname
-  return path === '/dsh-tavern/api/character-selection'
-    || path === '/dsh-tavern/api/characters'
-    || path.startsWith('/dsh-tavern/api/characters/')
+  return path === `${API_V1}/character-selection`
+    || path === `${API_V1}/characters`
+    || path.startsWith(`${API_V1}/characters/`)
 }
 
 function isWorldBookApiPath(url) {
   const path = new URL(url ?? '/', 'http://localhost').pathname
-  return path === '/dsh-tavern/api/world-book-selection'
-    || path === '/dsh-tavern/api/world-books'
-    || path.startsWith('/dsh-tavern/api/world-books/')
+  return path === `${API_V1}/world-book-selection`
+    || path === `${API_V1}/world-books`
+    || path.startsWith(`${API_V1}/world-books/`)
 }
 
 function isUserApiPath(url) {
   const path = new URL(url ?? '/', 'http://localhost').pathname
-  return path === '/dsh-tavern/api/user-selection'
-    || path === '/dsh-tavern/api/users'
-    || path.startsWith('/dsh-tavern/api/users/')
+  return path === `${API_V1}/user-selection`
+    || path === `${API_V1}/users`
+    || path.startsWith(`${API_V1}/users/`)
 }
 
-export function createCharacterSelectionPolicy(characterStore, selections) {
+export function createCharacterSelectionPolicy(characterStore, selections, resourceWorldBooks = null) {
   return {
     selection(sessionId) {
       if (typeof sessionId !== 'string' || sessionId === '') return null
@@ -121,11 +130,31 @@ export function createCharacterSelectionPolicy(characterStore, selections) {
       selections.set(sessionId, normalized)
       return normalized
     },
-    clearResource: (kind, id) => selections.clearResource(kind, id),
+    selectMany(sessionIds, patch) {
+      if (patch === null || patch.characterCardId === null) {
+        return selections.setMany(sessionIds, { characterCardId: null, character: {} })
+      }
+      const normalized = characterStore.normalizeSelection(patch.characterCardId, patch)
+      return selections.setMany(sessionIds, normalized)
+    },
+    clearResource(kind, id) {
+      const sessionChanged = selections.clearResource(kind, id)
+      const bindingChanged = kind === 'character'
+        ? resourceWorldBooks?.clearOwner('character', id) === true
+        : kind === 'character-card'
+          ? resourceWorldBooks?.clearOwner('character', id) === true
+          : false
+      return sessionChanged || bindingChanged
+    },
   }
 }
 
-export function createWorldBookSelectionPolicy(worldBookStore, selections, userWorldBooks = null) {
+export function createWorldBookSelectionPolicy(
+  worldBookStore,
+  selections,
+  userWorldBooks = null,
+  resourceWorldBooks = null,
+) {
   return {
     selection(sessionId) {
       if (typeof sessionId !== 'string' || sessionId === '') return []
@@ -145,7 +174,8 @@ export function createWorldBookSelectionPolicy(worldBookStore, selections, userW
     clearResource(kind, id) {
       const sessionChanged = selections.clearResource(kind, id)
       const userChanged = kind === 'world-book' ? userWorldBooks?.clearWorldBook(id) === true : false
-      return sessionChanged || userChanged
+      const resourceChanged = kind === 'world-book' ? resourceWorldBooks?.clearWorldBook(id) === true : false
+      return sessionChanged || userChanged || resourceChanged
     },
   }
 }
@@ -204,6 +234,36 @@ export function createUserWorldBookBindingPolicy(userStore, worldBookStore, user
   }
 }
 
+export function createResourceWorldBookBindingPolicy(
+  resourceStore,
+  worldBookStore,
+  resourceWorldBooks,
+  kind,
+) {
+  if (kind !== 'preset' && kind !== 'character') throw new TypeError('Resource kind must be preset or character')
+  if (typeof resourceWorldBooks?.get !== 'function' || typeof resourceWorldBooks?.set !== 'function') {
+    throw new TypeError('Resource world-book policy requires a binding store')
+  }
+  const getResource = id => resourceStore.get(id)
+  return {
+    selection(resourceId) {
+      getResource(resourceId)
+      return resourceWorldBooks.get(kind, resourceId)
+    },
+    select(resourceId, worldBookIds) {
+      getResource(resourceId)
+      if (!Array.isArray(worldBookIds)) throw new TypeError('worldBookIds must be an array')
+      if (worldBookIds.length > 100) throw new TypeError(`A ${kind} can bind at most 100 world books`)
+      const normalized = [...new Set(worldBookIds)]
+      for (const id of normalized) {
+        if (typeof id !== 'string' || id === '') throw new TypeError('Every worldBookId must be a non-empty string')
+        worldBookStore.get(id)
+      }
+      return resourceWorldBooks.set(kind, resourceId, normalized)
+    },
+  }
+}
+
 export function apply(ctx, config = {}) {
   const storageDir = resolve(config.storageDir ?? DEFAULT_STORAGE_DIR)
   const store = new PresetStore(storageDir)
@@ -211,8 +271,11 @@ export function apply(ctx, config = {}) {
   const worldBookStore = new WorldBookStore(storageDir)
   const userStore = new UserStore(storageDir)
   const userWorldBooks = new UserWorldBookBindingStore(storageDir, config.userWorldBooks)
+  const resourceWorldBooks = new ResourceWorldBookBindingStore(storageDir, config.resourceWorldBooks)
   const sessionTemplateStore = new SessionTemplateStore(storageDir, config.sessionTemplates)
   const uiSettingsStore = new UiSettingsStore(storageDir)
+  const conversationSettingsStore = new ConversationSettingsStore(storageDir)
+  const chromeStore = new ChromeStore(storageDir)
   const rpPolicyStore = new RpPolicyStore(storageDir, {
     defaultSection: resolveRpConfig(config.rpMode ?? {}).section,
   })
@@ -221,10 +284,44 @@ export function apply(ctx, config = {}) {
     defaultSelection: () => ({ presetId: store.state.selectedId }),
   })
   migrateCharacterSelections(characterStore, selections)
+  const rpMode = new RpModeController({
+    selections,
+    uiSettings: uiSettingsStore,
+    agents: () => ctx.get('agents'),
+    sandboxDefault: () => ctx.get('sandboxPolicy')?.defaultMode,
+    workspaceRoot: () => {
+      const root = ctx.get('sandboxPolicy')?.workspaceRoot
+      return typeof root === 'string' && root !== '' ? root : process.cwd()
+    },
+    logger: ctx.logger,
+    policyStore: rpPolicyStore,
+    section: rpPolicyStore.defaultSection,
+  })
+  const reconcileRpAfterSelection = (sessionId, operation) => {
+    const liveAgent = ctx.get('agents')?.get?.(sessionId)
+    const session = liveAgent === undefined ? ctx.get('sessions')?.get?.(sessionId) : undefined
+    const agent = liveAgent ?? (session === undefined ? { id: sessionId } : { id: sessionId, session })
+    try {
+      rpMode.onSessionStart(agent)
+    } catch (error) {
+      ctx.logger.warn?.(`dsh-tavern: RP mode ${operation} failed: ${error instanceof Error ? error.message : String(error)}`)
+    }
+  }
+  let importContexts = null
+  const playHost = createPlayHost(ctx, {
+    selections,
+    characters: characterStore,
+    importContexts: () => importContexts,
+    onSelectionCopied: sessionId => reconcileRpAfterSelection(sessionId, 'selection copy'),
+  })
+  const playWorkspaceStore = new PlayWorkspaceStore(storageDir, { host: playHost })
+  const playMemberships = new PlayMembershipService(playWorkspaceStore)
+  importContexts = new ImportContextRuntime(storageDir, playWorkspaceStore)
   const runtime = new TavernProfileLoader({
     presetStore: store,
     selections,
     userWorldBooks,
+    resourceWorldBooks,
     maxProfileBytes: config.limits?.maxProfileBytes,
   })
   const pendingInput = new PendingInputProjection({
@@ -251,24 +348,29 @@ export function apply(ctx, config = {}) {
       return undefined
     }
   }
-  const characterSelectionPolicy = createCharacterSelectionPolicy(characterStore, selections)
-  const worldBookSelectionPolicy = createWorldBookSelectionPolicy(worldBookStore, selections, userWorldBooks)
+  const characterSelectionPolicy = createCharacterSelectionPolicy(characterStore, selections, resourceWorldBooks)
+  const worldBookSelectionPolicy = createWorldBookSelectionPolicy(
+    worldBookStore,
+    selections,
+    userWorldBooks,
+    resourceWorldBooks,
+  )
   const userSelectionPolicy = createUserSelectionPolicy(userStore, selections, userWorldBooks)
   const userWorldBookBindingPolicy = createUserWorldBookBindingPolicy(userStore, worldBookStore, userWorldBooks)
-  const rpMode = new RpModeController({
-    selections,
-    uiSettings: uiSettingsStore,
-    agents: () => ctx.get('agents'),
-    sandboxDefault: () => ctx.get('sandboxPolicy')?.defaultMode,
-    workspaceRoot: () => {
-      const root = ctx.get('sandboxPolicy')?.workspaceRoot
-      return typeof root === 'string' && root !== '' ? root : process.cwd()
-    },
-    logger: ctx.logger,
-    policyStore: rpPolicyStore,
-    section: rpPolicyStore.defaultSection,
-  })
+  const presetWorldBookBindingPolicy = createResourceWorldBookBindingPolicy(
+    store,
+    worldBookStore,
+    resourceWorldBooks,
+    'preset',
+  )
+  const characterWorldBookBindingPolicy = createResourceWorldBookBindingPolicy(
+    characterStore,
+    worldBookStore,
+    resourceWorldBooks,
+    'character',
+  )
   const selectCharacter = characterSelectionPolicy.select.bind(characterSelectionPolicy)
+  const selectManyCharacters = characterSelectionPolicy.selectMany.bind(characterSelectionPolicy)
   characterSelectionPolicy.select = (sessionId, patch) => {
     const previousId = characterSelectionPolicy.selection(sessionId)?.characterCardId ?? null
     const result = selectCharacter(sessionId, patch)
@@ -276,6 +378,17 @@ export function apply(ctx, config = {}) {
       previousId,
       nextId: result?.characterCardId ?? null,
     })
+    return result
+  }
+  characterSelectionPolicy.selectMany = (sessionIds, patch) => {
+    const previous = new Map(sessionIds.map(sessionId => [sessionId, characterSelectionPolicy.selection(sessionId)?.characterCardId ?? null]))
+    const result = selectManyCharacters(sessionIds, patch)
+    for (const sessionId of sessionIds) {
+      rpMode.followCharacterChange(sessionId, {
+        previousId: previous.get(sessionId) ?? null,
+        nextId: result?.[sessionId]?.characterCardId ?? null,
+      })
+    }
     return result
   }
   const sessionConfigurations = new SessionConfigurationService({
@@ -307,13 +420,22 @@ export function apply(ctx, config = {}) {
         throw error
       }
     },
-    clearResource: (kind, id) => selections.clearResource(kind, id),
+    clearResource: (kind, id) => {
+      const sessionChanged = selections.clearResource(kind, id)
+      const bindingChanged = kind === 'preset' ? resourceWorldBooks.clearOwner('preset', id) : false
+      return sessionChanged || bindingChanged
+    },
+    worldBookBindingPolicy: presetWorldBookBindingPolicy,
   }
 
   ctx.systemPrompt.section({
-    name: 'dsh-tavern:profile',
+    name: PROFILE_SECTION,
     order: 10,
-    text: (context) => runtime.forAssembleContext(context).systemText,
+    text: (context) => {
+      const snapshot = runtime.forAssembleContext(context)
+      const claimMetadata = snapshot.audit?.activation ?? null
+      return [snapshot.systemText, importContexts.contextFor(context.agent?.id, claimMetadata, snapshot.macroContext)].filter(Boolean).join('\n\n')
+    },
   })
   ctx.systemPrompt.section({
     name: rpModeConstants.sectionName,
@@ -361,7 +483,10 @@ export function apply(ctx, config = {}) {
 
   ctx.on('session/event', (session, event) => {
     pendingInput.observeSessionEvent(session, event)
-    if (event?.type === 'turn/end') pendingInput.clearClaimed(session)
+    if (event?.type === 'turn/end') {
+      pendingInput.clearClaimed(session)
+      importContexts.consumeAfterTurn(session?.id, event)
+    }
     if (event?.type === 'sandbox/mode') {
       try { rpMode.enforceReadOnly(session) } catch (error) {
         ctx.logger.warn?.(`dsh-tavern: RP sandbox pin failed: ${error instanceof Error ? error.message : String(error)}`)
@@ -384,11 +509,11 @@ export function apply(ctx, config = {}) {
       : [...assembly.contexts, ...snapshot.runtimeContexts]
     if (snapshot.systemPromptMode !== 'replace') return { ...assembly, contexts }
     const profileSections = assembly.sections.filter((section) => (
-      section.name === 'dsh-tavern:profile' || section.name === rpModeConstants.sectionName
+      section.name === PROFILE_SECTION || section.name === rpModeConstants.sectionName
     ))
     const sections = profileSections.length > 0 || snapshot.systemText === ''
       ? profileSections
-      : [{ name: 'dsh-tavern:profile', text: snapshot.systemText }]
+      : [{ name: PROFILE_SECTION, text: snapshot.systemText }]
     const rpSection = assembly.sections.find((section) => section.name === rpModeConstants.sectionName)
     if (rpSection !== undefined && !sections.some((section) => section.name === rpModeConstants.sectionName)) {
       sections.push(rpSection)
@@ -405,13 +530,26 @@ export function apply(ctx, config = {}) {
     )
     const characterApi = createCharacterApiHandler(characterStore, {
       onChange: notifyChange,
+      logger: ctx.logger,
       selectionPolicy: characterSelectionPolicy,
-      beforeSelectionChange: ({ sessionId }) => {
+      relinkCharacter: (previousCharacterId, character) => playMemberships.relinkCharacter(previousCharacterId, character, {
+        selectionPolicy: characterSelectionPolicy,
+      }),
+      worldBookBindingPolicy: characterWorldBookBindingPolicy,
+      beforeSelectionChange: ({ sessionId, characterCardId }) => {
         const agent = ctx.get('agents')?.get?.(sessionId)
         if (agent?.status === 'running') {
           const error = new Error('The session agent is running; change the character after the current turn finishes.')
           error.code = 'CHARACTER_AGENT_RUNNING'
           error.status = 409
+          throw error
+        }
+        const conflicts = playMemberships.conflictsForSelection(sessionId, characterCardId)
+        if (conflicts.length > 0) {
+          const error = new Error('Changing this character will detach the session and its descendant branches from the playthrough.')
+          error.code = 'CHARACTER_PLAYTHROUGH_DETACH_REQUIRED'
+          error.status = 409
+          error.details = { conflicts }
           throw error
         }
       },
@@ -448,16 +586,24 @@ export function apply(ctx, config = {}) {
       onChange: change => {
         if (change.kind === 'session-configuration-applied') {
           notifyChange()
-          const agent = ctx.get('agents')?.get?.(change.sessionId)
-          if (agent !== undefined) {
-            try { rpMode.onSessionStart(agent) } catch (error) {
-              ctx.logger.warn?.(`dsh-tavern: RP mode apply failed: ${error instanceof Error ? error.message : String(error)}`)
-            }
-          }
+          reconcileRpAfterSelection(change.sessionId, 'configuration apply')
         }
       },
     })
     const uiSettingsApi = createUiSettingsApiHandler(uiSettingsStore)
+    const conversationSettingsApi = createConversationSettingsApiHandler(conversationSettingsStore)
+    const playApi = createPlayApiHandler({
+      chromeStore,
+      workspaceStore: playWorkspaceStore,
+      host: playHost,
+      logger: ctx.logger,
+      membershipService: playMemberships,
+      resolveCharacter: characterId => characterStore.list().find(item => item.id === characterId) ?? null,
+      relinkPlaythrough: (playthroughId, character, { operation }) => playMemberships.relinkPlaythrough(playthroughId, character, {
+        operation,
+        selectionPolicy: characterSelectionPolicy,
+      }),
+    })
     const rpPolicyApi = createRpPolicyApiHandler(rpPolicyStore, { onChange: notifyChange })
     const rpModeApi = createRpModeApiHandler(rpMode, {
       beforeChange: ({ sessionId, active }) => {
@@ -466,8 +612,12 @@ export function apply(ctx, config = {}) {
       },
     })
     const api = secureTavernApi(
-      (req, res) => isUiSettingsApiPath(req.url)
+      (req, res) => isPlayApiPath(req.url)
+        ? playApi(req, res)
+        : isUiSettingsApiPath(req.url)
         ? uiSettingsApi(req, res)
+        : isConversationSettingsApiPath(req.url)
+          ? conversationSettingsApi(req, res)
         : isRpPolicyApiPath(req.url)
           ? rpPolicyApi(req, res)
         : isRpModeApiPath(req.url)
@@ -486,11 +636,17 @@ export function apply(ctx, config = {}) {
       config.security,
     )
     ctx.effect(
-      () => ctx.get('webServer').register({
-        kind: 'prefix',
-        path: API_ROOT,
-        handler: api,
-      }),
+      () => {
+        const disposeRoute = ctx.get('webServer').register({
+          kind: 'prefix',
+          path: API_ROOT,
+          handler: api,
+        })
+        return () => {
+          disposeRoute?.()
+          chromeStore.dispose()
+        }
+      },
       'dsh-tavern: HTTP Tavern API',
     )
   }
@@ -503,9 +659,13 @@ export function apply(ctx, config = {}) {
     worldBookStore: { value: worldBookStore, enumerable: false },
     userStore: { value: userStore, enumerable: false },
     userWorldBooks: { value: userWorldBooks, enumerable: false },
+    resourceWorldBooks: { value: resourceWorldBooks, enumerable: false },
     sessionTemplateStore: { value: sessionTemplateStore, enumerable: false },
     sessionConfigurations: { value: sessionConfigurations, enumerable: false },
     uiSettingsStore: { value: uiSettingsStore, enumerable: false },
+    conversationSettingsStore: { value: conversationSettingsStore, enumerable: false },
+    chromeStore: { value: chromeStore, enumerable: false },
+    playWorkspaceStore: { value: playWorkspaceStore, enumerable: false },
     rpPolicyStore: { value: rpPolicyStore, enumerable: false },
     traceStore: { value: traceStore, enumerable: false },
     traceRecorder: { value: traceRecorder, enumerable: false },
@@ -554,6 +714,11 @@ export {
   composeWorldBookSelection,
   userWorldBookPolicyConstants,
 } from './user-world-book-policy.js'
+export {
+  ResourceWorldBookBindingLimitError,
+  ResourceWorldBookBindingStore,
+  resourceWorldBookPolicyConstants,
+} from './resource-world-book-policy.js'
 export { createWorldBookAdapter } from './world-book-adapter.js'
 export { PendingInputProjection, pendingInputProjectionConstants } from './pending-input-projection.js'
 export {
@@ -582,6 +747,20 @@ export {
   rpWorkspaceReadGuardReason,
   rpWriteGuardReason,
 } from './rp-mode.js'
+export { createPlayHost } from './play-host.js'
+export {
+  ChromeStore,
+  PlayWorkspaceStore,
+  chromeConstants,
+  createChromeEventsHandler,
+  createPlayApiHandler,
+  deriveFocus,
+  isPlayApiPath,
+  normalizeChrome,
+  normalizeTimeline,
+  playWorkspaceConstants,
+  validatePlayDocument,
+} from '../../play/src/index.js'
 export { WorldBookStore, createWorldBookApiHandler } from '../../world-book-library/src/index.js'
 export { secureTavernApi, apiSecurityConstants } from './api-security.js'
 export {
@@ -591,6 +770,13 @@ export {
   normalizeUiSettings,
   uiSettingsConstants,
 } from './ui-settings.js'
+export {
+  ConversationSettingsStore,
+  conversationSettingsConstants,
+  createConversationSettingsApiHandler,
+  isConversationSettingsApiPath,
+  normalizeConversationSettings,
+} from './conversation-settings.js'
 export { TavernTraceRecorder, TavernTraceStore } from '../../tavern-trace/src/index.js'
 export {
   SessionConfigurationError,
@@ -602,3 +788,15 @@ export {
   sessionTemplateStoreConstants,
 } from '../../session-template/src/index.js'
 export { PresetStore } from '../../preset/src/index.js'
+export {
+  API_ROOT,
+  API_V1,
+  API_V2,
+  CLIENT_REFRESH_EVENT,
+  CLIENT_UI_SETTINGS_EVENT,
+  CLIENT_CONVERSATION_SETTINGS_EVENT,
+  LEGACY_API_ROOT,
+  PLUGIN_ID,
+  PROFILE_SECTION,
+  identityConstants,
+} from '../../identity.js'

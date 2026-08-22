@@ -1,6 +1,6 @@
 {
-  "name": "dsh-tavern",
-  "version": "1.0.0",
+  "name": "pmp-dsh-tavern",
+  "version": "2.0.0",
   "description": "SillyTavern-compatible content adapters for DeepSeek Harness.",
   "type": "module",
   "main": "packages/tavern-loader/src/index.js",
@@ -16,13 +16,39 @@
     "./trace": "./packages/tavern-trace/src/index.js",
     "./session-template": "./packages/session-template/src/index.js",
     "./client": "./dist/client.js",
+    "./identity": "./packages/identity.js",
     "./package.json": "./package.json"
   },
   "files": [
+    "README_en.md",
+    "SECURITY.md",
+    "SECURITY_en.md",
     "packages",
     "dist",
     "scripts",
     "docs/assets",
+    "docs/API.md",
+    "docs/API_en.md",
+    "docs/ARCHITECTURE.md",
+    "docs/ARCHITECTURE_en.md",
+    "docs/CHANGELOG.md",
+    "docs/DSH_MESSAGE_FLOW.md",
+    "docs/DSH_MESSAGE_FLOW_en.md",
+    "docs/FRONTEND_INTEGRATION_zh-CN.md",
+    "docs/FRONTEND_INTEGRATION_en.md",
+    "docs/INSTALLATION.md",
+    "docs/INSTALLATION_en.md",
+    "docs/LOADER_CONTRACT.md",
+    "docs/LOADER_CONTRACT_en.md",
+    "docs/PLAY_REVIEW.md",
+    "docs/PLAY_REVIEW_en.md",
+    "docs/PROMPT_PIPELINE.md",
+    "docs/PROMPT_PIPELINE_en.md",
+    "docs/RP_SECURE_MODE.md",
+    "docs/RP_SECURE_MODE_en.md",
+    "docs/USAGE_zh-CN.md",
+    "docs/USAGE_en.md",
+    "docs/world-book",
     "cordis.patch.yml"
   ],
   "dsh": {
@@ -43,6 +69,7 @@
     "build": "node build.mjs",
     "test": "node --test",
     "check": "npm run build && npm test",
+    "verify:2.0": "node scripts/verify-2.0.mjs && npm run build && npm run pack:check",
     "pack:check": "npm pack --dry-run --cache .npm-cache",
     "plugin:install": "node scripts/install.mjs",
     "plugin:uninstall": "node scripts/uninstall.mjs"
@@ -57,5 +84,9 @@
     "esbuild": "^0.28.2",
     "react": "18.3.1"
   },
-  "license": "MIT"
+  "license": "MIT",
+  "dependencies": {
+    "dompurify": "3.4.14",
+    "marked": "18.0.10"
+  }
 }

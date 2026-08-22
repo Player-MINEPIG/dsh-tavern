@@ -1,0 +1,205 @@
+# dsh-tavern 中文使用指南
+
+[English](USAGE_en.md)
+
+状态：2026-08-22，对应当前悬浮球交互、前端显示模式切换、RP 工作区准入、角色卡创建/编辑、周目生命周期、外部记录开场绑定、RP 安全模式与委派子 agent 继承父级 Tavern 选择。本文介绍实际操作；消息流、架构和安全契约分别见 `DSH_MESSAGE_FLOW.md`、`ARCHITECTURE.md` 与 `LOADER_CONTRACT.md`。RP 拦/不拦清单见 [RP_SECURE_MODE.md](RP_SECURE_MODE.md)。
+
+## Quick Start：最短 RP 路径
+
+第一次使用时，按下面顺序完成一轮即可；带图片占位和视频对应画面的版本见根目录 [README](../README.md#quick-start从角色卡到第一轮-rp-对话)。
+
+1. 左键打开 `DT` 悬浮球，在“角色卡”页面导入 ST JSON 或 PNG 角色卡。
+2. 回到 DSH 原生界面，使用 DSH 自己的入口创建一个准备专门用于 RP 的工作区。
+3. 右键单击 `DT` 切到魔丸；首次进入时，从 DSH 已有工作区中明确选择刚创建的 RP 工作区。
+4. 在 RP 侧边栏点击目标角色卡右侧的 `+`，创建或复用该角色最近的空周目。
+5. 在 opening dock 中选择 greeting；没有备选时直接保留当前开场白。
+6. 使用 DSH 原生输入栏发送第一条用户消息，开始对话。
+
+这条路径不会把 greeting 写成历史，也不会复制 DSH session。导入其他资源、显示正则、swipe、分支、回退、外部记录和导出均可在第一轮跑通后继续配置。
+
+## 1. 打开和切换面板
+
+安装并重启 DSH Web 后，页面会显示始终标记为 `DT` 的悬浮球：native（灵珠）为蓝白配色，play（魔丸）为红黑配色。
+
+- 拖动球体可改变位置，位置会在浏览器中记忆；拖动结束不会误触展开。
+- 左键立即展开或收起菜单；快速重复点击就是重复执行这个默认切换，双击没有特殊效果。右键单击切换前端显示模式；服务端确认后分界线旋转一周并过渡到目标配色，模式状态不等待动画。系统启用“减少动态效果”时不旋转。
+- 菜单按钮文案为“切换到自定义前端模式”或“切换到 DSH 原生模式”，并可显示“当前：魔丸”或“当前：DSH 原生”。悬浮提示为“切换前端显示模式”，不使用宣传语。
+- 菜单始终挂载，容器在 220ms 展开完成后再淡入内容，以避免首行切换按钮闪烁。打开任一侧栏后，球体仍然保留，可直接切换到其他模块。
+- 资源旁的发光绿点表示当前 session 已启用该类资源，红点表示未启用；世界书绿点表示存在有效绑定，不等于本轮关键词已经命中。
+- 资源标题旁显示当前启用内容。面板内的“浏览/编辑对象”可能与当前 session 已绑定对象不同，请以绑定状态和“未应用”提示为准。
+- 预设、角色卡、世界书、显示正则或外部记录完全无法导入时，界面会在原有行内错误之外显示“导入失败”弹窗；若资源已成功导入、只是附带兼容性诊断或警告，则只保留面板中的诊断，不弹失败窗。
+- “界面设置”可切换简体中文/English、把 Tavern UI 缩放到 75%–150%，并从 DSH 已有工作区中选择默认 RP 工作区；还可开关「绑卡跟随 RP」，以及编辑可选的 `rp:policy` 提示词。默认 RP 工作区由 `GET/PUT /v2/workspace` 单独作为权威来源，不写入界面设置副本。更改后只影响新周目的默认落点和 RP/普通会话分类，不移动已有 session、目录、catalog 或 timeline。语言/缩放/跟随是全局设置；RP 开关本身是 per-session。RP 锁定清单见 [RP 安全模式](RP_SECURE_MODE.md)。
+- 首次进入魔丸但尚未设置 RP 工作区时，会先出现工作区选择页，而不是空 RP 界面。页面只列出 DSH 已有工作区；即使只有一个候选也不会自动选择。点击候选后需等待写入与回读验证完成。原绑定已失效、读取或写入失败时可“重新检查”，也可“返回 DSH 模式”处理工作区；系统盘候选仍会二次确认。
+
+## 2. 预设
+
+预设面板支持导入 SillyTavern Chat Completion preset JSON，也可以创建空白预设。
+
+1. 从目录选择一个预设只是打开它供浏览和编辑，不会自动影响当前 session。
+2. 可修改名称、append/replace system 策略、DSH 当前支持的采样参数，以及 prompt 块的启用、role、内容和顺序。
+3. 拖拽 prompt 左侧横杠调整顺序；拖动来源收缩为横杠，实际落点显示占位框。
+4. 保存资源正文后，点击蓝色绑定/更新按钮才把它应用到当前 session；解除绑定不会删除资源。
+5. agent 正在运行时，显式预设切换会被拒绝，待当前 turn 结束后重试。
+
+`append` 保留 DSH 原有 system sections；`replace` 仅保留 Tavern profile 的模型可见 system 文本，可能使 Code Mode、结构化输出或工具提示可靠性下降，但不会关闭文件沙箱、审批和工具执行权限。
+
+## 3. 角色卡
+
+角色卡面板支持 SillyTavern V1/V2/V3 JSON，以及包含 `chara`/`ccv3` 数据的 PNG。
+
+1. 导入或创建后可编辑名称、描述、性格、场景、开场白（含备选）、示例对话等字段；保存字段与绑定到会话是两步。插件只保存一份当前角色卡文档；PNG 导入另留去掉卡数据后的封面图，没有封面时导出 PNG 使用占位图。没有「导出原件」。
+2. 选择 greeting，并配置是否优先采用角色卡 system prompt 与 post-history instructions。已绑定当前卡时，改开场或策略但尚未点绑定，会提示未应用到会话。
+3. 点击绑定/更新应用到当前 session；另一个 session 可以绑定不同角色。delegated subagent 会固化父会话当时的 Tavern 选择（与「用当前配置新开对话」相同）；是否在委派说明里收窄由主 agent / 预设作者决定。
+4. 解绑只移除 session 选择；删除会删除插件资源库中的角色卡文档和封面图，并清理失效的 session 选择。仍引用该卡的周目集中进入魔丸侧边栏“缺失角色卡”，显示删除前的名称。重新导入同一文件（SHA-256 唯一匹配）或唯一同名卡时会自动恢复周目和全部后代 session 的绑定；无法唯一判断时可点击缺失卡旁的重新关联按钮手动选择，不会仅凭重名猜测。每个周目的三点菜单也提供“重新绑定角色卡”，只迁移该周目及其分支会话；若目标不符合自动归类规则会先显示警告，但仍允许用户确认自己的选择。
+5. 魔丸侧边栏顶部可选择“更新时间”“名称 A–Z”“自定义”三种角色卡排序。“更新时间”直接复用 DSH session 摘要，按角色卡下最近一次对话活动从新到旧排列；没有会话的角色卡才按资源更新时间兜底。只有自定义模式允许拖拽；切换模式不会清空以前保存的自定义顺序。
+
+description、personality、scenario、example dialogue 等字段会按预设 marker 或稳定 fallback 进入统一 Tavern profile。greeting 目前只是明确标注的参考内容，不会伪造成已经发生的 assistant 历史消息。
+
+### 显示正则
+
+显示正则页按全局、当前预设、当前角色卡三个来源直接陈列规则。拖动规则标题左侧的横杠可调整同一来源内的执行顺序；交互与预设 prompt 排序一致：被拖动项收缩为横线，实际落点显示虚线占位框。点击“保存修改”后，全局顺序写入工作区正则文档，预设/角色卡顺序写回各自原生 `regex_scripts` 数组。不同来源不能互相拖动，最终组合顺序固定为全局 → 预设 → 角色卡。正则从上到下执行，因此条件清空、标签提取等相互依赖的规则必须按预期排列。
+
+## 4. 世界书
+
+世界书面板直接陈列五路来源：
+
+- 当前 session 显式选择的独立世界书；
+- 当前用户绑定的独立世界书；
+- 当前预设绑定的独立世界书；
+- 当前角色卡绑定的独立世界书；
+- 当前角色卡内嵌的 `character_book`。
+
+独立世界书可以导入、创建、编辑、导出和删除。勾选当前 session 的世界书后，面板会显示未应用状态；必须点击蓝色应用按钮才写入 session。用户、预设、角色卡绑定书和角色内嵌书分别显示来源，不会混成同一资源文档；独立书可从任一来源入口打开同一个编辑器。
+
+条目编辑支持主/附加关键词（英文逗号或中文逗号分隔）、secondary logic、常驻、启用、大小写、全词匹配、position、order、probability 和正文。折叠标题会显示常驻、禁用或关键词条件。普通关键词会扫描有界的 durable history 与本步骤 claimed 输入，所以空会话第一条消息也可以在同一轮激活；JavaScript regex 关键词默认阻断。
+
+组合顺序为 session 显式独立书 → 用户绑定独立书 → 预设绑定独立书 → 角色卡绑定独立书 → 角色内嵌书。独立书先按 ID 稳定去重，前一来源优先；角色内嵌书随后以独立资源参与同一次 matcher。每次请求的 matcher 输入合计最多 10,000 条；后面的资源若不能整体放入会跳过并产生诊断。
+
+## 5. 用户
+
+用户资源严格只有名字和描述，不包含头像，也不会覆盖 DSH Agent 身份。
+
+1. 创建或选择用户，填写希望模型如何称呼你的名字和用户描述。
+2. 名字可用于 `{{user}}`；描述由 `personaDescription` marker、`{{persona}}` 或稳定 fallback 放置一次，避免重复发送。
+3. 用户可绑定零本或多本独立世界书。用户正文和世界书关系是两个独立保存动作，面板会提示未保存修改。
+4. 保存后再绑定/更新到当前 session。解绑用户会移除用户描述及其世界书来源，但不会删除 session 自己显式选择的世界书。
+
+用户—世界书关系是全局资源关系：修改后会影响以后所有绑定该用户的 session 请求，但不会回写已经冻结的 request/header 或既有历史。
+
+## 6. 新会话与配置模板
+
+同一会话中切换资源不会删除旧资源已经影响过的 assistant 回复。需要避免上下文残留时，应使用“新会话”：
+
+- DSH 模式下，“维持当前设置新开对话”把当前 preset、角色/greeting 选项、用户、独立世界书和 RP 状态复制到真实 blank DSH session；
+- 魔丸模式下，同一入口及“根据所选模板”入口会读取配置中的角色卡，创建或复用该角色的空周目，再把完整 selection 应用到其 root session；配置未绑定角色卡时会拒绝创建周目，用户可切回 DSH 模式创建普通会话；
+- 配置模板保存同一份有界 selection 投影，可在创建前查看模板内容；
+- 更新模板只从当前 session 的实际设置获取。请先通过 DT 悬浮球的资源面板完成并保存配置；
+- 新会话不会复制 durable history、Inbox、Trace、资源正文或旧运行态；
+- 模板引用的资源已删除时会显示诊断并阻止应用。
+
+DSH rc.8 侧边栏外层的“新建会话”属于原生 sidebar shell，当前公开扩展合同不能拦截或替换其点击。为避免依赖哈希类名或全局 DOM 监听，魔丸保留该按钮的原生行为，且不推荐在魔丸模式中使用。魔丸侧边栏“普通 / 非角色扮演会话”右侧的 `+` 只弹出说明，可关闭或切回 DSH 原生模式；它不会暗中创建、移动或改名 session。周目应从角色卡右侧的 `+` 创建。
+
+正常 UI 只把模板应用到新建 blank session。底层配置 apply API 尚未对任意既有运行中目标提供全局事务锁，详见 `LOADER_CONTRACT.md` 的运行态风险说明。
+
+## 7. 周目与外部记录开场
+
+在魔丸侧边栏的角色卡下点击新建周目，会创建或复用该角色最近一个没有任何真实记录的
+`x周目`。复用检查同时查看 `timeline.json`、root session 的 DSH user/assistant 消息、开放
+turn，以及是否已有外部导入 QA；因此连续点击不会无限增加空周目。周目标题旁的菜单可以
+重命名。被点击的角色卡是创建事务的权威角色；无论 DSH 新会话继承了哪个最近聚焦配置，
+创建或复用后都会校验并在必要时纠正 root session 的角色绑定，再显示该角色 greeting。
+创建只建立真实 blank DSH session 和周目元数据，不写 greeting 或伪造消息。
+
+已经分配给周目的 session 若在角色卡面板解绑，或换绑为与周目不同的角色卡，会先显示确认框。确认后，目标 session 及其所有后代分支从原周目 timeline 脱离并按新绑定成为游离 session；兄弟分支、DSH 原始历史与空周目保留。取消则 selection 和 timeline 都不变。再次给原角色新建周目时会为这个空周目接入新的 blank DSH session，复用原名称和编号。
+
+空周目尚未出现顶栏时，greeting 会显示在原生对话栏下方的 opening dock 中。左右按钮切换
+角色卡 alternate greeting；角色卡没有 greeting 时仍保留空白区域和同一 footer 布局。点击
+footer 中央的导入按钮可从 SillyTavern JSON/JSONL 绑定外部记录；已有绑定时按钮变为
+换绑和解绑。绑定后 dock 显示最近三轮 QA，显示内容只是本地渲染预览。
+
+外部记录只允许绑定到仍为空的 root session。第一次实际发送请求时，loader 只在同一 profile snapshot 提供至少一个公开 `claimEventSeqs` 后建立持久 claim，再将内容作为转义的、标明 `untrusted` 的只读上下文交给模型；它不会成为 DSH durable history，也不会写入 `timeline.json`，所以不会伪造一轮 QA。没有 claim 的 view/assembly 不注入，也不会消费 pending；同一 claim identity 在 terminal 前可重复 assembly，`turn/end` 只会消费已 claimed 绑定并保存 event seq、turn、reason.kind 等非正文元数据。DSH provider 的 request retry 不会消费或重置 claim；Tavern swipe 通过公开 branch 复制不含正文的 lineage，子 session 需要新的 claim；中断后原 session 的新 claim 不再注入。真实 user/assistant 消息、开放 turn 或绑定已 claim 后，都不能再改绑或解绑。
+
+每轮回复尾部的分支按钮会从该 adopted 回复创建一个新周目。新周目继承截至该处的 DSH durable 历史，复制当前显示时间线，并自动打开可继续对话的子 session；源周目和源消息不会被改写。该操作由多个公开原子 API 组合，极端的磁盘或网络失败可能留下未加入 catalog 的子 session/文件，诊断时按后端 operation log 的各步骤处理。
+
+魔丸完全隐藏 reasoning、子 agent 报告、完成通知、工具 context 等运行细节，不提供展开按钮；需要查看时切回 DSH 原生“对话”视图。由这些上下文触发的父 agent 输出仍归入同一次 durable QA。对该 QA 执行右 swipe 时会向前找到最近一条真实用户消息并重跑整轮，而不会把 context 报告伪装成用户消息；找不到真实用户消息则显式报错。屏蔽功能已经移除。显示正则逐段处理 assistant 正文，被清空的段落不渲染；无论一次 QA 含多少段 assistant 回复、甚至全部正文都被清空，QA 末尾始终只保留一组可用动作，非可视来源数据与周目指针也继续保留。
+
+真实用户触发的回复使用 ST 式左右 swipe：序号从初始回复起始终显示（初始为 `1/1`）；左箭头只采用已有上一项；右侧存在已有项时采用下一项，已经位于最后一项时同一个右箭头自动变为“再试一次”，创建并采用一个新 swipe，不另外显示星形生成按钮。点击“再试一次”后，魔丸立即保留该轮用户消息、隐藏旧回复、显示“正在思考”，并把序号从 `n/n` 乐观更新为 `n+1/n+1`，不等待分支 session 的完整回复才给反馈；失败时正文与序号一起恢复，成功后由新 session 的权威消息和 timeline 原子交接。
+
+“从这里分支为新周目”复制截至该回复的活动路径并加入一个新周目；“在本周目从这里继续”只把当前周目的活动 head 移到该回复的 DSH branch session。二者都保留旧 DSH 历史，区别仅在是否创建新周目。回退后的下一轮形成树状后续，旧后续仍存储但不在当前活动路径渲染。
+
+点击回复下方的“修改显示文字”后，编辑器直接在该回复位置展开为可拉伸的多行输入框，不调用浏览器单行 prompt。保存只更新 timeline 的 `displayOverride`，取消或按 Esc 放弃本次修改；DSH 原始 assistant 消息和后续模型上下文都不会改变。保存值是最终显示文本，之后不再执行宏替换或显示正则，但仍经过 Markdown/HTML 与 DOMPurify 安全渲染。即使保存为空也保留“恢复原回复”按钮；恢复会清除覆盖并重新从 DSH 原文按当前正则生成显示结果。
+
+周目右侧三点菜单提供“导出静态 HTML”和“导出 SillyTavern JSONL”。静态 HTML 导出当前活动路径上的 greeting、用户消息和按当前显示规则处理后的 assistant 正文，适合直接阅读或分享。SillyTavern JSONL 导出 greeting、当前活动路径及每组 QA 的 `swipes` / `swipe_id`，可导入 ST；它会保存每个活动 QA 已知的回复切换项，但 ST JSONL 不能表达完整周目树，因此不会保存未采用后续分支、跨 session lineage 或 Tavern catalog。需要保留完整可切换树时，应备份整个 RP 工作区，而不是把 JSONL 当作项目备份。
+
+[周目审查记录](PLAY_REVIEW.md)。
+导入文件和绑定摘要保存在已选扮演工作区根内；服务端会校验路径、哈希和 `schemaVersion: 1`/QA 结构。import parser 不做 summary、QA 切片或 256 KiB/2,000 QA 人为上限；模型上下文超限交给 DSH/provider，通用工作区文件仍有 1 MiB 文件层上限。
+
+## 8. Tavern Trace
+
+Tavern Trace 位于 Conversation、Trajectory 同级视图，用来解释某一 turn/step 实际采用了哪些 Tavern 配置。
+
+它会显示 preset、角色卡、用户和世界书摘要，世界书配置关键词、本轮匹配关键词、接受/拒绝原因、预算以及 request/header 对齐信息。当前输入提前识别的 metadata 也会与同一轮记录对齐。
+
+Trace 不保存完整 Tavern profile、用户消息、资源正文或工具 schema，也不能替代 DSH 的 `request/header`；后者仍是模型实际请求头的权威记录。Trace 使用有界插件存储，刷新或 Host 重启后可恢复近期记录。
+
+## 9. RP 安全模式
+
+RP 是当前 session 的叠加，不是 DSH agent preset。
+
+1. 角色卡面板上的 RP 开关控制本会话。界面设置里的「绑卡跟随」默认开启，绑定角色卡会自动进入 RP。
+2. 关掉该开关或发送 `/rp off` 即可离开。聊天栏改文件权限不能解除锁定。
+3. 开启后：写文件、终端、外连抓取被拒绝；本地读取只限当前工作区，且不读 `.env` 等机密文件名。触发拦截时弹出告知窗（不是审批），并中断该 agent 当前轮。
+4. 子 agent 可以派。孩子继承同一套限制，并固化父会话当时的 Tavern 选择（与「用当前配置新开对话」相同）。委派任务是否收窄由主 agent 的 spawn 提示决定；插件不往 `rp:policy` 里写委派策略。
+5. 界面设置里可改可选的 `rp:policy` 提示词。默认只说明高风险操作被锁。身份和文风写在预设或角色卡。留空则不附加这段文本，锁定仍有效。底部「恢复默认」只重置语言、缩放和绑卡跟随，不会改这段提示词。
+
+完整拦/不拦清单见 [RP_SECURE_MODE.md](RP_SECURE_MODE.md)。
+
+## 10. 数据、备份与卸载
+
+默认数据位于：
+
+```text
+<DSH_HOME>/profiles/<profile>/node_modules/pmp-dsh-tavern/data/
+```
+
+主要内容包括：
+
+```text
+presets/                       预设标准化文档
+state.json                     当前默认预设状态
+characters/                    角色卡当前文档
+character-artifacts/           PNG 导入留下的封面图（无卡数据）
+character-state.json           角色卡排序、缺失卡墓碑等 UI 状态
+world-books/                   独立世界书
+users/                         用户名字与描述
+session-selections.json        per-session 选择（含 RP 状态）
+user-world-book-bindings.json  用户—世界书关系
+resource-world-book-bindings.json 预设/角色卡—世界书关系
+session-templates.json         配置模板（含 RP 投影）
+tavern-traces.json             有界 Trace 元数据
+ui-settings.json               全局语言、缩放与绑卡跟随 RP
+conversation-settings.json     魔丸正文/开场白与消息动作按钮缩放
+rp-policy.json                 可选的 rp:policy 提示词
+chrome.json                    灵珠/魔丸前端显示模式与 revision
+play-workspace.json            当前 RP 工作区绑定
+import-context-bindings.json   外部记录运行时 claim 状态
+```
+
+如插件配置指定外部 `storageDir`，以上数据改存该目录。备份时复制整个 `data/`，不要只复制 `presets/`。`play-workspace.json` 只保存 RP 工作区指针；真正的 `catalog.json`、各周目 `timeline.json`、显示正则和外部导入记录位于所选 DSH 工作区内，完整备份还必须复制该工作区。
+
+重复执行安装脚本会先暂存并恢复插件内 `data/`。卸载脚本默认备份到 `<DSH_HOME>/backups/pmp-dsh-tavern/<timestamp>/`；只有确认不需要数据时才使用 `--no-backup`。外部导入源文件和外部 `storageDir` 不会被卸载器删除。
+
+完整安装、刷新恢复、跨平台参数和卸载说明见 [安装与卸载](INSTALLATION.md)。
+
+## 11. 当前兼容边界
+
+魔丸展开菜单中的“对话设置”与“界面设置”相互独立。“正文与开场白字号”只缩放魔丸里的用户/助手消息、开场白和“正在思考”状态；“消息按钮尺寸”只缩放每轮末尾的复制、左右 swipe、分支、回退和编辑操作。两项均可在 75%–150% 间选择，保存后立即生效并在刷新后保持，恢复默认会把两者单独还原为 100%。它们不会改变 DSH 原生对话、Tavern 外层面板、输入栏、提示词、历史或导出内容。
+
+- ST `system`/`user`/`assistant` prompt role 目前作为可审阅标签进入一个 DSH system section，不是真实交错 role message。
+- `chatHistory` 始终由 DSH durable history 提供，插件不复制历史。
+- example dialogue、greeting、PHI 和 depth/absolute placement 采用明确标注的 system 近似或诊断降级。
+- 世界书尚未完整执行 recursive、sticky/cooldown/delay、vector、严格 depth/role 和 outlet 语义。
+- 只映射 DSH 当前明确支持的 `temperature`、`maxTokens`、`reasoningEffort` 与 `stop`；其他 ST sampler 会保留但不宣称已下发。
+- ST macro 只实现常用子集，不具备完整 SillyTavern runtime。
+
+更精确的 ST、TauriTavern 与 DSH 消息拓扑差异见 `PROMPT_PIPELINE.md`。

@@ -1,7 +1,7 @@
 import { build } from 'esbuild'
 import { readFileSync, rmSync, writeFileSync } from 'node:fs'
 
-const id = 'dsh-tavern'
+const id = 'pmp-dsh-tavern'
 
 await build({
   entryPoints: ['packages/client/src/index.js'],

@@ -1,6 +1,8 @@
 import { Buffer } from 'node:buffer'
+import { API_V1, escapeRegExp } from '../../identity.js'
 
 const MAX_BODY_BYTES = 256 * 1024
+const USER_ID_ROUTE = new RegExp(`^${escapeRegExp(API_V1)}/users/([^/]+)(?:/(world-books))?$`)
 
 function sendJson(res, status, payload) {
   const body = JSON.stringify(payload)
@@ -59,7 +61,7 @@ function readJson(req) {
 }
 
 function userRoute(path) {
-  const match = /^\/dsh-tavern\/api\/users\/([^/]+)(?:\/(world-books))?$/.exec(path)
+  const match = USER_ID_ROUTE.exec(path)
   return match === null ? null : { id: decodeURIComponent(match[1]), resource: match[2] }
 }
 
@@ -105,10 +107,10 @@ export function createUserApiHandler(store, options = {}) {
       const method = String(req.method ?? 'GET').toUpperCase()
       const matched = userRoute(path)
 
-      if (method === 'GET' && path === '/dsh-tavern/api/users') {
+      if (method === 'GET' && path === `${API_V1}/users`) {
         return sendJson(res, 200, { ok: true, users: store.list() })
       }
-      if (method === 'POST' && path === '/dsh-tavern/api/users') {
+      if (method === 'POST' && path === `${API_V1}/users`) {
         const user = store.create(await readJson(req))
         onChange({ kind: 'user-created', userId: user.id })
         return sendJson(res, 201, { ok: true, user })
@@ -136,11 +138,11 @@ export function createUserApiHandler(store, options = {}) {
         onChange({ kind: 'user-deleted', userId: matched.id })
         return sendJson(res, 200, { ok: true })
       }
-      if (method === 'GET' && path === '/dsh-tavern/api/user-selection') {
+      if (method === 'GET' && path === `${API_V1}/user-selection`) {
         const sessionId = url.searchParams.get('sessionId')
         return sendJson(res, 200, { ok: true, ...selectionPayload(store, sessionId, selectionPolicy) })
       }
-      if (method === 'POST' && path === '/dsh-tavern/api/user-selection') {
+      if (method === 'POST' && path === `${API_V1}/user-selection`) {
         const body = await readJson(req)
         if (typeof body.sessionId !== 'string') throw new TypeError('sessionId must be a string')
         if (body.userId !== null && typeof body.userId !== 'string') throw new TypeError('userId must be a string or null')

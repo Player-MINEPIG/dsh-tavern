@@ -19,7 +19,7 @@ function invoke(handler, { method = 'GET', body, rawBody } = {}) {
     const content = rawBody ?? (body === undefined ? undefined : JSON.stringify(body))
     const req = Readable.from(content === undefined ? [] : [Buffer.from(content)])
     req.method = method
-    req.url = '/dsh-tavern/api/rp-policy'
+    req.url = '/pmp-dsh-tavern/api/v1/rp-policy'
     const res = {
       statusCode: 200,
       setHeader() {},

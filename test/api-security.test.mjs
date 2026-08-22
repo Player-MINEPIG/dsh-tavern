@@ -5,7 +5,7 @@ import { secureTavernApi } from '../packages/tavern-loader/src/index.js'
 
 function invoke(handler, {
   method = 'GET',
-  url = '/dsh-tavern/api/presets',
+  url = '/pmp-dsh-tavern/api/v1/presets',
   headers = {},
   remoteAddress = '127.0.0.1',
 } = {}) {
@@ -125,14 +125,14 @@ test('character imports allow only the bounded binary and JSON media types', asy
   const headers = { host: 'localhost:53101', origin: 'http://localhost:53101' }
   const png = await invoke(handler, {
     method: 'POST',
-    url: '/dsh-tavern/api/characters/import?filename=card.png',
+    url: '/pmp-dsh-tavern/api/v1/characters/import?filename=card.png',
     headers: { ...headers, 'content-type': 'image/png' },
   })
   assert.equal(png.status, 204)
 
   const form = await invoke(handler, {
     method: 'POST',
-    url: '/dsh-tavern/api/characters/import?filename=card.png',
+    url: '/pmp-dsh-tavern/api/v1/characters/import?filename=card.png',
     headers: { ...headers, 'content-type': 'multipart/form-data; boundary=x' },
   })
   assert.equal(form.status, 415)
@@ -143,14 +143,14 @@ test('standalone world-book imports remain same-origin JSON-only mutations', asy
   const headers = { host: 'localhost:53101', origin: 'http://localhost:53101' }
   const json = await invoke(handler, {
     method: 'POST',
-    url: '/dsh-tavern/api/world-books/import?filename=book.json',
+    url: '/pmp-dsh-tavern/api/v1/world-books/import?filename=book.json',
     headers: { ...headers, 'content-type': 'application/json' },
   })
   assert.equal(json.status, 204)
 
   const binary = await invoke(handler, {
     method: 'POST',
-    url: '/dsh-tavern/api/world-books/import?filename=book.json',
+    url: '/pmp-dsh-tavern/api/v1/world-books/import?filename=book.json',
     headers: { ...headers, 'content-type': 'application/octet-stream' },
   })
   assert.equal(binary.status, 415)

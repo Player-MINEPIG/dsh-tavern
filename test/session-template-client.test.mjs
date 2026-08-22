@@ -3,6 +3,7 @@ import assert from 'node:assert/strict'
 import {
   SessionConfigurationUnavailableError,
   createCleanSessionWorkflow,
+  createConfiguredPlaythroughWorkflow,
   workspaceIdForSession,
   workspaceTargetId,
 } from '../packages/session-template/src/client-state.js'
@@ -26,6 +27,54 @@ test('clean-session workflow uses public DSH create/navigation seams in transact
     'openSession',
     'refresh',
   ])
+})
+
+test('Mowan configuration workflow creates a character-owned playthrough and applies the exact source', async () => {
+  const calls = []
+  const source = { mode: 'template', templateId: 'template-b' }
+  const target = await createConfiguredPlaythroughWorkflow({
+    source,
+    preview: async value => {
+      calls.push(['preview', value])
+      return {
+        available: true,
+        selection: { characterCardId: 'character-b' },
+        contents: { characterCard: { id: 'character-b', name: 'Bob' } },
+        diagnostics: [],
+      }
+    },
+    applySelection: async (sessionId, value) => { calls.push(['apply', sessionId, value]) },
+    playthroughController: {
+      async create(args) {
+        calls.push(['create', args.character, args.selectionFromSessionId])
+        await args.configureSession('session-b')
+        return { sessionId: 'session-b', playthrough: { id: 'pt-b' } }
+      },
+    },
+    openSession: id => calls.push(['open', id]),
+    refresh: () => calls.push(['refresh']),
+  })
+  assert.equal(target, 'session-b')
+  assert.deepEqual(calls, [
+    ['preview', source],
+    ['create', { id: 'character-b', name: 'Bob' }, null],
+    ['apply', 'session-b', source],
+    ['open', 'session-b'],
+    ['refresh'],
+  ])
+})
+
+test('Mowan configuration workflow rejects configurations without a character before creating a session', async () => {
+  let created = false
+  await assert.rejects(createConfiguredPlaythroughWorkflow({
+    source: { mode: 'current', sessionId: 'ordinary' },
+    preview: async () => ({ available: true, selection: { characterCardId: null }, diagnostics: [] }),
+    applySelection: async () => {},
+    playthroughController: { create: async () => { created = true } },
+    openSession: () => {},
+    refresh: () => {},
+  }), error => error.uiKey === 'template.error.needCharacter')
+  assert.equal(created, false)
 })
 
 test('diagnostic, creation and apply failures never navigate or refresh', async () => {

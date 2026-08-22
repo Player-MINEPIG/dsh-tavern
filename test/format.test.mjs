@@ -1,6 +1,7 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import {
+  exportSillyTavernPreset,
   parseSillyTavernPreset,
   renderSillyTavernMacros,
 } from '../packages/tavern-format/src/index.js'
@@ -36,6 +37,61 @@ function sample() {
     extensions: { future: { retained: true } },
   }
 }
+test('exports the current normalized preset as ST JSON while preserving unknown fields', () => {
+
+  const imported = parseSillyTavernPreset(sample(), {
+    id: 'export-fixture',
+    name: 'Before edit',
+    now: '2026-08-14T00:00:00.000Z',
+  })
+  const edited = {
+    ...imported,
+    name: 'After edit',
+    sampling: {
+      ...imported.sampling,
+      temperature: 1.1,
+      maxTokens: 4096,
+      reasoningEffort: 'high',
+      stop: ['STOP'],
+      st: { ...imported.sampling.st, top_p: 0.8 },
+    },
+    prompts: [
+      {
+        ...imported.prompts.find(prompt => prompt.identifier === 'vars'),
+        name: 'Variables edited',
+        content: 'Edited content',
+        enabled: false,
+      },
+      {
+        identifier: 'added',
+        name: 'Added',
+        role: 'assistant',
+        content: 'New prompt',
+        enabled: true,
+        marker: false,
+        systemPrompt: false,
+        st: { future_prompt_field: true },
+      },
+    ],
+  }
+
+  const exported = JSON.parse(exportSillyTavernPreset(edited))
+  assert.equal(exported.name, 'After edit')
+  assert.equal(exported.temperature, 1.1)
+  assert.equal(exported.openai_max_tokens, 4096)
+  assert.equal(exported.reasoning_effort, 'high')
+  assert.equal(exported.top_p, 0.8)
+  assert.deepEqual(exported.stop, ['STOP'])
+  assert.equal(exported.extensions.future.retained, true)
+  assert.deepEqual(exported.prompts.map(prompt => prompt.identifier), ['vars', 'added'])
+  assert.equal(exported.prompts[0].content, 'Edited content')
+  assert.equal(exported.prompts[1].future_prompt_field, true)
+  assert.deepEqual(exported.prompt_order.find(order => order.character_id === 100001).order, [
+    { identifier: 'vars', enabled: false },
+    { identifier: 'added', enabled: true },
+  ])
+  assert.deepEqual(exported.prompt_order.find(order => order.character_id === 100000).order, [{ identifier: 'unused', enabled: true }])
+})
 
 test('imports ST Chat Completion order and preserves unknown data', () => {
   const preset = parseSillyTavernPreset(sample(), {

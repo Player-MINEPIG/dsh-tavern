@@ -1,4 +1,5 @@
 import { createHash } from 'node:crypto'
+import { PROFILE_SECTION } from '../../identity.js'
 
 const CALL_CONFIG_FIELDS = ['temperature', 'maxTokens', 'reasoningEffort', 'stop']
 const MAX_DIAGNOSTICS = 64
@@ -209,7 +210,7 @@ export class TavernTraceRecorder {
       status: 'awaiting-header',
       assembly: {
         fingerprint: stringOrNull(audit.fingerprint),
-        profileSection: 'dsh-tavern:profile',
+        profileSection: PROFILE_SECTION,
         profileOrder: 10,
         systemPromptMode: snapshot?.systemPromptMode === 'replace' ? 'replace' : 'append',
         systemCharacters: expectedSystemText.length,

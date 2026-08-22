@@ -1,6 +1,8 @@
 # DSH 与 dsh-tavern（DT）消息流
 
-状态：2026-08-18，基于本机 `@deepseek-ai/dsh 0.1.0-rc.6` 的公开 README 与已安装源码核对，并包含 RP 会话叠加。本文分别描述 DSH 原生流程、DT 自身流程、DT 对 DSH 的介入，以及安装 DT 后一次完整模型 step 的实际流程；它不是 README。
+[English](DSH_MESSAGE_FLOW_en.md)
+
+状态：消息流基线于 2026-08-18 按本机 `@deepseek-ai/dsh 0.1.0-rc.6` 的公开 README 与已安装源码核对；2.0 发布候选已在 2026-08-22 对 DSH rc.8 做自动回归和安装验证，但没有把后续段落冒充为一次新的完整上游源码审计。本文分别描述 DSH 原生流程、DT 自身流程、DT 对 DSH 的介入，以及安装 DT 后一次完整模型 step 的实际流程；它不是 README。
 
 本文中的 `DT` 是 `dsh-tavern` 的简称。SillyTavern（ST）是 DT 兼容的资源格式与部分语义来源，不是本插件或其界面的产品身份。
 
@@ -74,6 +76,22 @@ DSH 的四条数据通道彼此独立：
 - `@deepseek-ai/dsh-session/lib/index.js`：`Session.deriveMessages()`；
 - `@deepseek-ai/dsh-llm/README.zh.md`：消息、call config 与 `request/header` 契约。
 
+### 1.1 为什么周目分支没有使用 message surface replacement
+
+DSH 的 Session 同时保留 append-only 事件日志和 model-visible message surface。surface replacement 不删除原事件，而是追加一个新 message 节点，用它遮蔽当前 surface 上的一段连续节点。替换节点本身仍是当前 surface 节点，因此以后可以再次被 replace；已经被遮蔽的原始 user、assistant 和 tool 事件则继续留在本地 Session 日志中，可供 transcript、审计和重新计算使用。
+
+这项能力仍不是可逆的 ST 式历史重组接口：
+
+- 后续 replacement 只能定位当前 surface 上仍可见的节点，不能执行 `unreplace` 让旧节点原位重新可见；
+- 一次 replacement 是“连续区间 → 一个新 message”，不能原子返回多条 user/assistant 交替消息；
+- `agent/request` 只改变 call config，当前也没有公开的 per-request history waterfall 可在不写 Session 的情况下返回任意 `messages[]`；
+- 用单个 user checkpoint 承载整段 RP 对话会丢失原生 role、tool-call/result 和逐消息 action 边界；把原文复制成多条新消息又会制造第二份 durable history，并需要额外的原子性和并发协议；
+- DSH 原生 compaction 也使用同一 surface replacement。DT 若再把它当分支树使用，会让两种不同语义争用同一个 model-visible surface。
+
+因此 DT 的 swipe、同周目回退和分支新周目采用 DSH 公开 session branch/fork 能力创建 continuation session，而不是改写原 session surface。每个分支都拥有 DSH 原生可解释的历史、工具配对、请求头和独立 compaction；原生“对话”视图、其他插件和卸载后的 Host 仍能按普通 DSH session 工作。Tavern timeline 只保存这些权威消息的指针、父 variant 与活动 head，用多个 session 组合出周目树，不伪造或复制历史正文。
+
+如果以后 DSH 提供公开的 request-time history projection（输入冻结的原生历史，输出仅供本次请求使用的 `messages[]`），或提供原子的多 message surface replacement，RP 模式可以在不改原始 Session 的前提下增加可选的严格 ST 投影策略。在此之前，DT 的 system/context 注入不得宣称等同于历史替换。
+
 ## 2. DT 自己的 flow
 
 DT 内部先把“资源管理”和“运行时编译”分开。前端及 API 属于控制面，不直接给模型发送消息；loader 才是运行时数据面。
@@ -84,7 +102,7 @@ DT 内部先把“资源管理”和“运行时编译”分开。前端及 API 
 DT 悬浮球 / 资源侧栏
   │
   ▼
-/dsh-tavern/api/*
+/pmp-dsh-tavern/api/v1/*
   │
   ├─ PresetStore
   ├─ CharacterStore
@@ -132,7 +150,7 @@ DT 不替换 agent loop，也不维护第二套会话历史。它通过 DSH 的�
 | DSH 扩展点 | DT 的动作 | 对最终请求的影响 |
 | --- | --- | --- |
 | `agent/session-start` | 为 agent 建立或恢复 session 资源选择；RP 开启时钉只读沙箱 | 决定本 session 可加载哪些 DT 资源，以及是否进入 RP 锁 |
-| `systemPrompt.section` | 注册 `dsh-tavern:profile`（order 10）与 `rp:policy`（order 45） | 把编译后的 Tavern profile 与可选 RP 锁说明贡献给 system assembly |
+| `systemPrompt.section` | 注册 `pmp-dsh-tavern:profile`（order 10）与 `rp:policy`（order 45） | 把编译后的 Tavern profile 与可选 RP 锁说明贡献给 system assembly |
 | `system-prompt/assemble` | 追加 DT runtime contexts；高级 replace 模式可只保留 DT profile 与 `rp:policy` | 改变最终 `system`/context，但不改历史与工具执行权限 |
 | `agent/pre-step` | RP 边界提交待处理开关，并再次钉只读沙箱 | 不改 messages；保证聊天栏改权限无法在下一步前解开 RP |
 | `tools.guard` | RP 开启时拒绝高风险工具并 `agent.cancel` | 不进入执行；告警弹窗记在父会话（子 agent 违规时） |
@@ -162,7 +180,7 @@ DT 明确不做以下改动：
 ```text
 【请求前：DT 控制面】
 用户在 DT UI 导入/编辑资源
-  → /dsh-tavern/api/*
+  → /pmp-dsh-tavern/api/v1/*
   → 插件资源库
   → SessionSelectionStore 保存当前 session 绑定
 
@@ -177,7 +195,7 @@ DSH systemPrompt.assemble(agent scope)
   │
   ├─ 收集 DSH 原生 system sections / contexts / tools / variables
   │
-  ├─ 调用 DT 的 dsh-tavern:profile section
+  ├─ 调用 DT 的 pmp-dsh-tavern:profile section
   │    ├─ 读取该 session 的资源选择
   │    ├─ 解析 preset / character / user / world books
   │    ├─ matcher 扫描 deriveMessages() + 去重后的本步骤 claimed batch
@@ -287,7 +305,7 @@ agent/inbox/spliced（插入消息）
 1. DSH 持久 `request/header`：最终 system、tools 和生效 call config；
 2. 请求对应的 `Session.deriveMessages()`：最终历史消息数组；
 3. Tavern Trace：解释该 turn/step 使用的 DT 资源、世界书决策，以及它与 header seq/摘要是否对齐；
-4. loader `/dsh-tavern/api/active?sessionId=...`：当前选择、资源、诊断和不含 claimed 当前输入的预览；
+4. loader `/pmp-dsh-tavern/api/v1/active?sessionId=...`：当前选择、资源、诊断和不含 claimed 当前输入的预览；
 5. DT 侧栏：资源编辑和绑定控制面，不是模型请求日志。
 
 Tavern Trace 位于 Conversation / Trajectory 同级的公开 `conversation.view` 槽中。它是对实际 loader snapshot 的最小化解释层，不取代 `request/header`，也不会进入模型上下文。
@@ -298,11 +316,13 @@ Tavern Trace 位于 Conversation / Trajectory 同级的公开 `conversation.view
 
 ```text
 预检当前选择或模板
-  → DSH workspaces.connectWorkspace() 返回真实 blank session
+  → DSH 模式：workspaces.connectWorkspace() 返回真实 blank session
+    魔丸模式：按预检中的角色复用共享周目控制器，创建或复用权威空周目
   → loader 原子写入完整 Tavern selection
+  → 魔丸模式回读校验 session 角色与周目角色一致
   → DSH sessions.open() 导航
 ```
 
-模板只保存 preset、角色/greeting 开关、用户、独立世界书和 RP 叠加的资源 ID/选项；不会读取或复制 durable messages、Tavern Trace、Inbox、claimed input、turn/step 或资源正文。若任一资源已缺失，预检和应用都会返回诊断并阻止导航，因此不会留下“只应用了一半”的 Tavern 组合。
+模板只保存 preset、角色/greeting 开关、用户、独立世界书和 RP 叠加的资源 ID/选项；不会读取或复制 durable messages、Tavern Trace、Inbox、claimed input、turn/step 或资源正文。魔丸模式要求该投影含角色卡，DSH 模式则允许无角色卡的普通会话。若任一资源已缺失，预检和应用都会返回诊断并阻止导航，因此不会留下“只应用了一半”的 Tavern 组合。
 
 语言、缩放与「绑卡跟随 RP」同样是控制面状态，只写入全局 `ui-settings.json` 并作用于 Tavern 浏览器根节点。它们不进入 profile 编译、world-book matcher、`agent/request` 或 `request/header`。可选的 `rp:policy` 正文写入 `rp-policy.json`，只在 RP 开启时进入 system 段。

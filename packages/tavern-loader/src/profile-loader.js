@@ -1,4 +1,5 @@
 import { createHash } from 'node:crypto'
+import { PROFILE_SECTION } from '../../identity.js'
 import { compilePresetForDsh, projectPresetCallConfig } from './profile-compiler.js'
 import { composeWorldBookSelection } from './user-world-book-policy.js'
 import { renderSillyTavernMacros } from '../../tavern-format/src/index.js'
@@ -62,6 +63,31 @@ export function conversationTextFromAgent(agent) {
     .join('\n')
 }
 
+function isDurableUserMessage(message) {
+  return message?.role === 'user'
+    && (message.source == null || message.source?.kind === 'user')
+}
+
+/**
+ * The selected greeting is a first-turn style reference, never durable chat
+ * history. Context/tool injections do not consume it. Once a real assistant
+ * reply exists (or more than one real user turn is present), later assemblies
+ * must not keep re-injecting the opening reference.
+ */
+export function greetingReferenceAppliesToAgent(agent) {
+  if (typeof agent?.session?.deriveMessages !== 'function') return true
+  const messages = agent.session.deriveMessages()
+  if (!Array.isArray(messages)) return true
+  let userMessages = 0
+  for (const message of messages) {
+    if (message?.role === 'assistant') return false
+    if (!isDurableUserMessage(message)) continue
+    userMessages += 1
+    if (userMessages > 1) return false
+  }
+  return true
+}
+
 function normalizedAdapterResult(value, key) {
   if (!isRecord(value)) return { [key]: null, diagnostics: [] }
   return {
@@ -80,10 +106,17 @@ function fingerprint(value) {
  * Adapters resolve normalized documents; the compiler owns request semantics.
  */
 export class TavernProfileLoader {
-  constructor({ presetStore, selections, userWorldBooks = null, maxProfileBytes }) {
+  constructor({
+    presetStore,
+    selections,
+    userWorldBooks = null,
+    resourceWorldBooks = null,
+    maxProfileBytes,
+  }) {
     this.presetStore = presetStore
     this.selections = selections
     this.userWorldBooks = userWorldBooks
+    this.resourceWorldBooks = resourceWorldBooks
     this.maxProfileBytes = profileByteLimit(maxProfileBytes)
     this.characterAdapter = null
     this.userAdapter = null
@@ -155,7 +188,18 @@ export class TavernProfileLoader {
     const userBoundIds = userResult.user === null || this.userWorldBooks === null
       ? []
       : this.userWorldBooks.get(userResult.user.id)
-    const worldBookSelection = composeWorldBookSelection(selection.worldBookIds, userBoundIds)
+    const presetBoundIds = preset === null || this.resourceWorldBooks === null
+      ? []
+      : this.resourceWorldBooks.get('preset', preset.id)
+    const characterBoundIds = characterResult.character === null || this.resourceWorldBooks === null
+      ? []
+      : this.resourceWorldBooks.get('character', characterResult.character.id)
+    const worldBookSelection = composeWorldBookSelection(
+      selection.worldBookIds,
+      userBoundIds,
+      presetBoundIds,
+      characterBoundIds,
+    )
     const effectiveSelection = {
       ...selection,
       worldBookIds: worldBookSelection.effectiveIds,
@@ -173,13 +217,28 @@ export class TavernProfileLoader {
     )
     diagnostics.push(...worldBookResult.diagnostics)
 
+    const baseContext = isRecord(options.context) ? options.context : {}
+    const characterData = isRecord(characterResult.character?.data)
+      ? characterResult.character.data
+      : characterResult.character
+    const macroContext = {
+      user: userResult.user?.name ?? baseContext.user ?? 'User',
+      character: baseContext.character
+        ?? characterData?.nickname
+        ?? characterData?.name
+        ?? characterResult.character?.name
+        ?? 'Assistant',
+    }
     const compiled = compileTavernProfile({
       preset,
       character: characterResult.character,
       user: userResult.user,
       characterSelection: selection.character,
+      includeGreetingReference: options.agent === undefined
+        ? true
+        : greetingReferenceAppliesToAgent(options.agent),
       loreEntries: Array.isArray(worldBookResult.loreEntries) ? worldBookResult.loreEntries : [],
-      context: options.context ?? {},
+      context: { ...baseContext, ...macroContext },
       maxProfileBytes: this.maxProfileBytes,
     })
     diagnostics.push(...compiled.diagnostics)
@@ -217,7 +276,7 @@ export class TavernProfileLoader {
         invalidEventCount: 0,
       }),
       composition: {
-        section: { name: 'dsh-tavern:profile', order: 10 },
+        section: { name: PROFILE_SECTION, order: 10 },
         systemPromptMode: compiled.systemPromptMode,
         profileCharacters: compiled.systemText.length,
         callConfigFields: Object.keys(compiled.callConfig),
@@ -226,6 +285,7 @@ export class TavernProfileLoader {
 
     return {
       ...compiled,
+      macroContext,
       diagnostics,
       resources,
       audit: { ...audit, fingerprint: fingerprint(audit) },
@@ -270,6 +330,7 @@ function compileTavernProfileUnbounded({
   character = null,
   user = null,
   characterSelection = {},
+  includeGreetingReference = true,
   loreEntries = [],
   context = {},
 } = {}) {
@@ -313,6 +374,7 @@ function compileTavernProfileUnbounded({
   const beforeLore = normalizedLore.filter((entry) => entry.position === 'before')
   const afterLore = normalizedLore.filter((entry) => entry.position === 'after')
   const fields = normalizedCharacterFields(characterData, characterSelection)
+  if (!includeGreetingReference) fields.greeting = ''
   const userFields = normalizedUserFields(user)
   const userInjection = {
     selected: user !== null,

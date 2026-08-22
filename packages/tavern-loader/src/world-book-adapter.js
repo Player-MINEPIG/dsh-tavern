@@ -144,6 +144,8 @@ export function createWorldBookAdapter(storeOrOptions = {}, maybeOptions = {}) {
             const bindingSources = [
               ...(worldBookSelection?.explicitIds?.includes(id) ? ['session'] : []),
               ...(worldBookSelection?.userBoundIds?.includes(id) ? ['user'] : []),
+              ...(worldBookSelection?.presetBoundIds?.includes(id) ? ['preset'] : []),
+              ...(worldBookSelection?.characterBoundIds?.includes(id) ? ['character'] : []),
             ]
             if (bindingSources.length === 0) bindingSources.push('session')
             results.push(projectBook(document, {

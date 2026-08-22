@@ -2,8 +2,10 @@ export const TAVERN_MENU_ITEMS = Object.freeze([
   { id: 'preset', labelKey: 'nav.preset', emptyTitleKey: 'nav.preset.empty', available: true },
   { id: 'character', labelKey: 'nav.character', emptyTitleKey: 'nav.character.empty', available: true },
   { id: 'world-info', labelKey: 'nav.worldBook', emptyTitleKey: 'nav.worldBook.empty', available: true },
+  { id: 'regex', labelKey: 'nav.regex', emptyTitleKey: 'nav.regex.empty', available: true, binding: false, showBinding: false, playOnly: true },
   { id: 'user', labelKey: 'nav.user', emptyTitleKey: 'nav.user.empty', available: true },
   { id: 'session-template', labelKey: 'nav.sessionTemplate', emptyTitleKey: 'nav.sessionTemplate.empty', available: true, binding: false, showBinding: false },
+  { id: 'conversation-settings', labelKey: 'nav.conversationSettings', emptyTitleKey: 'nav.conversationSettings.empty', available: true, binding: false, showBinding: false, playOnly: true },
   { id: 'settings', labelKey: 'nav.settings', emptyTitleKey: 'nav.settings.empty', available: true, binding: false, showBinding: false },
 ])
 
@@ -140,6 +142,7 @@ export function launcherResourceStatuses(snapshot) {
     }),
     'session-template': { bound: false, count: 0, title: null, titleKey: 'nav.sessionTemplate.empty' },
     settings: { bound: false, count: 0, title: null, titleKey: 'nav.settings.empty' },
+    regex: { bound: false, count: 0, title: null, titleKey: 'nav.regex.empty' },
   }
 }
 
