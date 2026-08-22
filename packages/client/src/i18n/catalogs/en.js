@@ -100,7 +100,7 @@ export default Object.freeze({
   "play.sidebar.ordinaryPrompt": "Create ordinary sessions in DSH native mode. Return to native mode, then use the outer New Session button in the sidebar.",
   "play.sidebar.ordinaryClose": "Close",
   "play.sidebar.returnNative": "Return to DSH mode",
-  "play.notice.unbound": "This session is not bound to a character card. You can keep chatting normally; start a new playthrough after binding a card to enable greetings, swipes, display edits, and playthrough import/export.",
+  "play.notice.unbound": "This session is not attached to a playthrough in the selected RP workspace. You can keep chatting normally; enter a character playthrough to enable greetings, swipes, display edits, and playthrough import/export.",
   "play.sidebar.sessionMissing": "This playthrough has no available session in the role-play workspace.",
   "play.sidebar.timelineErrors": "{count} playthrough timelines could not be read.",
   "play.chat.label": "RP View",

@@ -100,7 +100,7 @@ export default Object.freeze({
   "play.sidebar.ordinaryPrompt": "普通会话请在 DSH 原生模式中创建。返回原生模式后，可使用侧边栏外层的“新建会话”按钮。",
   "play.sidebar.ordinaryClose": "关闭",
   "play.sidebar.returnNative": "回到 DSH 模式",
-  "play.notice.unbound": "本会话暂未绑定角色卡；可以正常对话。绑定角色卡后新开周目，才会启用开场白、回复切换、显示编辑与周目导入/导出。",
+  "play.notice.unbound": "本会话暂未绑定到指定 RP 工作区内的周目；可以正常对话。进入角色卡下的周目后，才会启用开场白、回复切换、显示编辑与周目导入/导出。",
   "play.sidebar.sessionMissing": "该周目在角色扮演工作区中没有可用会话。",
   "play.sidebar.timelineErrors": "有 {count} 个周目的 timeline 无法读取。",
   "play.chat.label": "RP视图",
