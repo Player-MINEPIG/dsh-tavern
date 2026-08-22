@@ -98,7 +98,6 @@ v2 不为每个按钮增加专用 endpoint。推荐组合：
 
 | 产品动作 | 组合 |
 | --- | --- |
-| 隐藏渲染 | CAS 修改目标 node 的 `hidden` |
 | 显示层改字 | CAS 修改 `displayOverride`；DSH 原文不变 |
 | 左右切已有回复 | CAS 修改 `adoptedVariantId` → GET focus → `sessions.open` |
 | 回复 swipe | 由当前输出向前找最近真实 user/steering → branch 到用户前 → user-message 原文 → 等 durable pair → CAS 添加/采用 variant 并移动 tree head → focus；不得重发 context |
@@ -108,6 +107,8 @@ v2 不为每个按钮增加专用 endpoint。推荐组合：
 | 新发一轮 | user-message → 等 messages 完成 → CAS append QA 指针 |
 
 branch、session、目录、timeline 和 catalog 是多个原子操作，不构成跨资源大事务。副作用只做一次，CAS 冲突只重放纯文档意图；中途失败根据 operation log、已返回 session id、文件回读和稳定错误码恢复。不要通过删除或改写 DSH 历史伪造回滚。
+
+v2 timeline 不提供隐藏或屏蔽 QA 的字段。需要按内容控制 RP 正文时使用显示正则；需要人工改写最终显示文本时使用 `displayOverride`。两者都只影响 RP 投影，不修改 DSH 权威历史或 AI 请求。需要回到较早节点时使用同周目回退或新周目分支，不要向 timeline 写入未声明字段；第三方扩展元数据只能放在协议允许保留的 `ext` 中。
 
 ## 7. v1 资源面与 v2 RP 面
 
@@ -130,7 +131,7 @@ v2 是第三方 RP 表面的稳定协议。v1 是本插件 bundled UI 的资源�
 3. 刷新、另一标签页和 HTTP 改 mode 都会收敛；缺少 SSE 时仍可回读。
 4. 插件缺失、API 失败、分类失败时回到原生表面，不显示猜测数据。
 5. timeline 写入使用 revision/CAS；冲突不会静默覆盖别的标签页修改。
-6. 所有显示正则、hidden、displayOverride 都不改变 AI 请求或 DSH 原文。
+6. 所有显示正则和 `displayOverride` 都不改变 AI 请求或 DSH 原文。
 7. 卸载第三方插件后内置魔丸恢复；卸载 dsh-tavern 后 DSH native 仍可查看会话。
 8. 包内没有本机路径、密钥、私有 fixture 或用户导入内容。
 

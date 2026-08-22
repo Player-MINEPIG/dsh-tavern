@@ -7,7 +7,6 @@ function fixture() {
     nodes: [{
       id: 'qa-1',
       kind: 'qa',
-      hidden: false,
       displayOverride: null,
       adoptedVariantId: 'v-1',
       variants: [
@@ -36,12 +35,11 @@ test('node controller rereads and serializes display-only metadata writes', asyn
   }
   const controller = createPlayNodeController(client)
   await Promise.all([
-    controller.setHidden({}, 'qa-1', true),
+    controller.setDisplayOverride({}, 'qa-1', 'first display'),
     controller.setDisplayOverride({}, 'qa-1', 'display only'),
   ])
   assert.equal(writes, 2)
   assert.equal(maximum, 1)
-  assert.equal(timeline.nodes[0].hidden, true)
   assert.equal(timeline.nodes[0].displayOverride, 'display only')
   assert.throws(() => controller.setDisplayOverride({}, 'qa-1', 42), /string or null/)
 })
@@ -84,7 +82,7 @@ test('adopting an ancestor swipe restores its remembered descendant branch head'
   let timeline = {
     nodes: [
       {
-        id: 'root', kind: 'qa', hidden: false, displayOverride: null,
+        id: 'root', kind: 'qa', displayOverride: null,
         parentVariantId: null, adoptedVariantId: 'root-a',
         variants: [
           { id: 'root-a', sessionId: 'session-a', startEventId: 1, endEventId: 2 },
@@ -92,17 +90,17 @@ test('adopting an ancestor swipe restores its remembered descendant branch head'
         ],
       },
       {
-        id: 'abandoned-a', kind: 'qa', hidden: false, displayOverride: null,
+        id: 'abandoned-a', kind: 'qa', displayOverride: null,
         parentVariantId: 'root-a', adoptedVariantId: 'abandoned-a-v',
         variants: [{ id: 'abandoned-a-v', sessionId: 'session-old', startEventId: 3, endEventId: 4 }],
       },
       {
-        id: 'current-a', kind: 'qa', hidden: false, displayOverride: null,
+        id: 'current-a', kind: 'qa', displayOverride: null,
         parentVariantId: 'root-a', adoptedVariantId: 'current-a-v',
         variants: [{ id: 'current-a-v', sessionId: 'session-current', startEventId: 3, endEventId: 4 }],
       },
       {
-        id: 'leaf-a', kind: 'qa', hidden: false, displayOverride: null,
+        id: 'leaf-a', kind: 'qa', displayOverride: null,
         parentVariantId: 'current-a-v', adoptedVariantId: 'leaf-a-v',
         variants: [{ id: 'leaf-a-v', sessionId: 'session-current', startEventId: 5, endEventId: 6 }],
       },
@@ -132,12 +130,12 @@ test('rollback reuses DSH branch validation but keeps every node in the same pla
   let timeline = {
     nodes: [
       {
-        id: 'qa-1', kind: 'qa', hidden: false, displayOverride: null,
+        id: 'qa-1', kind: 'qa', displayOverride: null,
         parentVariantId: null, adoptedVariantId: 'v-1',
         variants: [{ id: 'v-1', sessionId: 'session-old', startEventId: 1, endEventId: 2 }],
       },
       {
-        id: 'qa-2', kind: 'qa', hidden: false, displayOverride: null,
+        id: 'qa-2', kind: 'qa', displayOverride: null,
         parentVariantId: 'v-1', adoptedVariantId: 'v-2',
         variants: [{ id: 'v-2', sessionId: 'session-old', startEventId: 3, endEventId: 4 }],
       },

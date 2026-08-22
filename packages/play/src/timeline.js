@@ -4,7 +4,6 @@ import { timelineHead } from './timeline-tree.js'
 const NODE_KEYS = new Set([
   'id',
   'kind',
-  'hidden',
   'displayOverride',
   'parentVariantId',
   'adoptedVariantId',
@@ -77,9 +76,6 @@ export function normalizeNode(value, label = 'node') {
   if (value.kind !== 'qa') {
     throw httpError(400, `${label}.kind must be qa`, 'PLAY_TIMELINE_INVALID')
   }
-  if (value.hidden !== undefined && typeof value.hidden !== 'boolean') {
-    throw httpError(400, `${label}.hidden must be a boolean`, 'PLAY_TIMELINE_INVALID')
-  }
   if (value.displayOverride !== undefined && value.displayOverride !== null && typeof value.displayOverride !== 'string') {
     throw httpError(400, `${label}.displayOverride must be a string or null`, 'PLAY_TIMELINE_INVALID')
   }
@@ -101,7 +97,6 @@ export function normalizeNode(value, label = 'node') {
   return {
     id: requireId(value.id, `${label}.id`),
     kind: value.kind,
-    hidden: value.hidden === true,
     displayOverride: value.displayOverride === undefined ? null : value.displayOverride,
     ...(Object.hasOwn(value, 'parentVariantId') ? {
       parentVariantId: value.parentVariantId === null
@@ -171,8 +166,7 @@ export function parseTimelineJson(text) {
 }
 
 /**
- * Focus is the session of the adopted variant on the last still-rendered QA node.
- * Hidden QA nodes are not rendered. Empty timelines have no focus session.
+ * Focus is the session of the adopted variant on the last QA node. Empty timelines have no focus session.
  */
 export function deriveFocus(timeline) {
   const normalized = Array.isArray(timeline?.nodes) ? timeline : normalizeTimeline(timeline)
@@ -181,7 +175,6 @@ export function deriveFocus(timeline) {
   const nodes = normalized.nodes
   for (let index = nodes.length - 1; index >= 0; index -= 1) {
     const node = nodes[index]
-    if (node.hidden === true) continue
     const adopted = node.variants.find(variant => variant.id === node.adoptedVariantId)
     if (adopted === undefined) {
       throw httpError(400, 'adopted variant is missing', 'PLAY_TIMELINE_INVALID')

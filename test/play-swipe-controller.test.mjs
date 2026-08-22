@@ -7,7 +7,6 @@ function timelineFixture() {
     nodes: [{
       id: 'qa-1',
       kind: 'qa',
-      hidden: false,
       displayOverride: null,
       adoptedVariantId: 'v-1',
       variants: [{ id: 'v-1', sessionId: 'session-old', startEventId: 1, endEventId: 3 }],
@@ -22,7 +21,6 @@ function twoTurnTimelineFixture() {
       {
         id: 'qa-2',
         kind: 'qa',
-        hidden: false,
         displayOverride: null,
         parentVariantId: 'v-1',
         adoptedVariantId: 'v-2',
@@ -161,12 +159,12 @@ test('retrying a context output swipes the nearest preceding real user turn', as
   let timeline = {
     nodes: [
       {
-        id: 'qa-human', kind: 'qa', hidden: false, displayOverride: null,
+        id: 'qa-human', kind: 'qa', displayOverride: null,
         parentVariantId: null, adoptedVariantId: 'v-human',
         variants: [{ id: 'v-human', sessionId: 'session-old', startEventId: 1, endEventId: 2 }],
       },
       {
-        id: 'qa-context', kind: 'qa', hidden: false, displayOverride: null,
+        id: 'qa-context', kind: 'qa', displayOverride: null,
         parentVariantId: 'v-human', adoptedVariantId: 'v-context',
         variants: [{ id: 'v-context', sessionId: 'session-old', startEventId: 3, endEventId: 4 }],
       },

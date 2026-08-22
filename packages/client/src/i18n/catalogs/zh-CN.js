@@ -120,7 +120,6 @@ export default Object.freeze({
   "play.chat.thinking": "正在思考…",
   "play.chat.previousGreeting": "上一条开场白",
   "play.chat.nextGreeting": "下一条开场白",
-  "play.chat.hiddenNode": "这一组问答已在魔丸显示中隐藏。",
   "play.chat.runningDisabled": "Agent 运行中不可操作",
   "play.chat.copy": "复制当前显示回复",
   "play.chat.copyUnavailable": "当前环境无法访问剪贴板。",

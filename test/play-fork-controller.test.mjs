@@ -5,12 +5,12 @@ import { forkPlaythroughAtNode } from '../packages/client/src/play/fork.js'
 function sourceTimeline() {
   return { nodes: [
     {
-      id: 'qa-1', kind: 'qa', hidden: false, displayOverride: null,
+      id: 'qa-1', kind: 'qa', displayOverride: null,
       adoptedVariantId: 'v-1',
       variants: [{ id: 'v-1', sessionId: 'ancestor-a', startEventId: 1, endEventId: 3 }],
     },
     {
-      id: 'qa-2', kind: 'qa', hidden: false, displayOverride: 'display only',
+      id: 'qa-2', kind: 'qa', displayOverride: 'display only',
       adoptedVariantId: 'v-2b',
       variants: [
         { id: 'v-2a', sessionId: 'ancestor-a', startEventId: 4, endEventId: 6 },
@@ -18,7 +18,7 @@ function sourceTimeline() {
       ],
     },
     {
-      id: 'qa-3', kind: 'qa', hidden: false, displayOverride: null,
+      id: 'qa-3', kind: 'qa', displayOverride: null,
       adoptedVariantId: 'v-3',
       variants: [{ id: 'v-3', sessionId: 'later', startEventId: 8, endEventId: 9 }],
     },

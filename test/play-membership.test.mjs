@@ -40,10 +40,10 @@ function variant(id, sessionId) {
 function sampleTimeline() {
   return {
     nodes: [
-      { id: 'n-root', kind: 'qa', hidden: false, displayOverride: null, parentVariantId: null, adoptedVariantId: 'v-root', variants: [variant('v-root', 'root')] },
-      { id: 'n-swipe', kind: 'qa', hidden: false, displayOverride: null, parentVariantId: 'v-root', adoptedVariantId: 'v-target', variants: [variant('v-target', 'target'), variant('v-sibling', 'sibling')] },
-      { id: 'n-child', kind: 'qa', hidden: false, displayOverride: null, parentVariantId: 'v-target', adoptedVariantId: 'v-child', variants: [variant('v-child', 'child')] },
-      { id: 'n-kept', kind: 'qa', hidden: false, displayOverride: null, parentVariantId: 'v-sibling', adoptedVariantId: 'v-kept', variants: [variant('v-kept', 'kept')] },
+      { id: 'n-root', kind: 'qa', displayOverride: null, parentVariantId: null, adoptedVariantId: 'v-root', variants: [variant('v-root', 'root')] },
+      { id: 'n-swipe', kind: 'qa', displayOverride: null, parentVariantId: 'v-root', adoptedVariantId: 'v-target', variants: [variant('v-target', 'target'), variant('v-sibling', 'sibling')] },
+      { id: 'n-child', kind: 'qa', displayOverride: null, parentVariantId: 'v-target', adoptedVariantId: 'v-child', variants: [variant('v-child', 'child')] },
+      { id: 'n-kept', kind: 'qa', displayOverride: null, parentVariantId: 'v-sibling', adoptedVariantId: 'v-kept', variants: [variant('v-kept', 'kept')] },
     ],
     head: { sessionId: 'child', nodeId: 'n-child', variantId: 'v-child' },
     ext: {

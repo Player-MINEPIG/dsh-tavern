@@ -101,7 +101,6 @@ export function legacyTimelineHead(timeline) {
   const nodes = timeline?.nodes ?? []
   for (let index = nodes.length - 1; index >= 0; index -= 1) {
     const node = nodes[index]
-    if (node.hidden === true) continue
     const variant = adoptedVariant(node)
     if (variant !== null) {
       return { sessionId: variant.sessionId, nodeId: node.id, variantId: variant.id }

@@ -73,7 +73,6 @@ export function appendCompletedTurns(timeline, messageState, sessionId, {
     added.push({
       id: nodeId,
       kind: 'qa',
-      hidden: false,
       displayOverride: null,
       parentVariantId,
       adoptedVariantId: variantId,

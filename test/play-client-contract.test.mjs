@@ -15,7 +15,6 @@ const timeline = {
   nodes: [{
     id: 'qa-1',
     kind: 'qa',
-    hidden: false,
     displayOverride: null,
     adoptedVariantId: 'variant-1',
     variants: [{

@@ -95,7 +95,6 @@ test('open or already-recorded turns never append a duplicate', () => {
     nodes: [{
       id: 'qa-old',
       kind: 'qa',
-      hidden: false,
       displayOverride: null,
       adoptedVariantId: 'variant-old',
       variants: [{ id: 'variant-old', sessionId: 'session-a', startEventId: 1, endEventId: 3 }],
@@ -132,7 +131,6 @@ test('an interrupted durable assistant prefix becomes a normal QA reference', ()
   assert.deepEqual(result.added, [{
     id: 'qa-session-a-10-12',
     kind: 'qa',
-    hidden: false,
     displayOverride: null,
     parentVariantId: null,
     adoptedVariantId: 'variant-session-a-10-12',

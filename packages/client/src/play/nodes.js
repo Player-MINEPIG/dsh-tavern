@@ -81,11 +81,6 @@ export function createPlayNodeController(client, {
   })
 
   return {
-    setHidden(playthrough, nodeId, hidden) {
-      if (typeof hidden !== 'boolean') throw new TypeError('hidden must be a boolean')
-      return update(playthrough, nodeId, node => ({ ...node, hidden }))
-    },
-
     setDisplayOverride(playthrough, nodeId, value) {
       if (value !== null && typeof value !== 'string') {
         throw new TypeError('displayOverride must be a string or null')

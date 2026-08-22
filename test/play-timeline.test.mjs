@@ -39,7 +39,6 @@ const emptyTimeline = { nodes: [] }
 const qaNode = {
   id: 'q0',
   kind: 'qa',
-  hidden: false,
   displayOverride: null,
   adoptedVariantId: 'v0',
   variants: [{ id: 'v0', sessionId: 'session-root', startEventId: 0, endEventId: 1 }],
@@ -50,7 +49,6 @@ const multiQaUnusedVariant = {
     {
       id: 'q1',
       kind: 'qa',
-      hidden: false,
       adoptedVariantId: 'v-old',
       variants: [
         { id: 'v-old', sessionId: 'session-root', startEventId: 1, endEventId: 4 },
@@ -60,7 +58,6 @@ const multiQaUnusedVariant = {
     {
       id: 'q2',
       kind: 'qa',
-      hidden: false,
       adoptedVariantId: 'v-new',
       variants: [
         { id: 'v-old', sessionId: 'session-root', startEventId: 5, endEventId: 8 },
@@ -70,9 +67,10 @@ const multiQaUnusedVariant = {
   ],
 }
 
-test('normalizeTimeline accepts legal documents and rejects bad kind, missing event ids, and focusSessionId', () => {
+test('normalizeTimeline accepts legal documents and rejects unsupported fields, bad kind, missing event ids, and focusSessionId', () => {
   assert.deepEqual(normalizeTimeline(emptyTimeline), emptyTimeline)
   assert.equal(normalizeTimeline({ nodes: [qaNode] }).nodes[0].kind, 'qa')
+  assert.throws(() => normalizeTimeline({ nodes: [{ ...qaNode, hidden: true }] }), /unsupported field.*hidden/)
   assert.throws(() => normalizeTimeline({ nodes: [{ ...qaNode, kind: 'greeting' }] }), /kind must be qa/)
   assert.throws(() => normalizeTimeline({ nodes: [{ ...qaNode, kind: 'swipe' }] }), /kind must be qa/)
   assert.throws(() => normalizeTimeline({
@@ -87,30 +85,27 @@ test('normalizeTimeline accepts legal documents and rejects bad kind, missing ev
   }), /focusSessionId/)
 })
 
-test('deriveFocus uses the last rendered QA adopted variant and ignores unused older swipes', () => {
+test('deriveFocus uses the last QA adopted variant and ignores unused older swipes', () => {
   assert.deepEqual(deriveFocus(emptyTimeline), { sessionId: null, nodeId: null, variantId: null })
   assert.deepEqual(deriveFocus(multiQaUnusedVariant), {
     sessionId: 'session-focus',
     nodeId: 'q2',
     variantId: 'v-new',
   })
-  const hiddenTail = structuredClone(multiQaUnusedVariant)
-  hiddenTail.nodes[1].hidden = true
-  assert.equal(deriveFocus(hiddenTail).sessionId, 'session-root')
 })
 
 test('tree timeline derives focus from the explicit active branch head', () => {
   const tree = {
     nodes: [
       {
-        id: 'root', kind: 'qa', hidden: false, displayOverride: null,
+        id: 'root', kind: 'qa', displayOverride: null,
         parentVariantId: null, adoptedVariantId: 'root-a', variants: [
           { id: 'root-a', sessionId: 'session-a', startEventId: 1, endEventId: 2 },
           { id: 'root-b', sessionId: 'session-b', startEventId: 1, endEventId: 3 },
         ],
       },
       {
-        id: 'child-a', kind: 'qa', hidden: false, displayOverride: null,
+        id: 'child-a', kind: 'qa', displayOverride: null,
         parentVariantId: 'root-a', adoptedVariantId: 'child-a-v', variants: [
           { id: 'child-a-v', sessionId: 'session-a', startEventId: 4, endEventId: 5 },
         ],

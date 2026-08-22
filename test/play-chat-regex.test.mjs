@@ -17,7 +17,7 @@ test('Chat treats displayOverride as frozen final text and keeps source messages
   }
   const original = structuredClone(messages)
   const timeline = { nodes: [{
-    id: 'qa', kind: 'qa', hidden: false, displayOverride: 'Override Alice', adoptedVariantId: 'v',
+    id: 'qa', kind: 'qa', displayOverride: 'Override Alice', adoptedVariantId: 'v',
     variants: [{ id: 'v', sessionId: 'session-a', startEventId: 1, endEventId: 2 }],
   }] }
   const client = {
@@ -52,7 +52,7 @@ test('Chat automatically composes bound preset and character source regex', asyn
     async getMessages() { return messages },
     async getTimeline() {
       return { nodes: [{
-        id: 'qa', kind: 'qa', hidden: false, displayOverride: null, adoptedVariantId: 'v',
+        id: 'qa', kind: 'qa', displayOverride: null, adoptedVariantId: 'v',
         variants: [{ id: 'v', sessionId: 'session-a', startEventId: 1, endEventId: 2 }],
       }] }
     },
@@ -119,10 +119,10 @@ test('Chat applies ST minDepth and maxDepth to existing timeline messages', asyn
     { id: 'a2', role: 'assistant', seq: 4, content: [], text: 'new——assistant' },
   ] }
   const timeline = { nodes: [
-    { id: 'qa1', kind: 'qa', hidden: false, displayOverride: null, adoptedVariantId: 'v1', variants: [
+    { id: 'qa1', kind: 'qa', displayOverride: null, adoptedVariantId: 'v1', variants: [
       { id: 'v1', sessionId: 'session-a', startEventId: 1, endEventId: 2 },
     ] },
-    { id: 'qa2', kind: 'qa', hidden: false, displayOverride: null, adoptedVariantId: 'v2', variants: [
+    { id: 'qa2', kind: 'qa', displayOverride: null, adoptedVariantId: 'v2', variants: [
       { id: 'v2', sessionId: 'session-a', startEventId: 3, endEventId: 4 },
     ] },
   ] }
@@ -255,11 +255,4 @@ test('RP visibility ignores reasoning and context while retaining real content a
   assert.equal(turnHasVisibleRpContent({
     userText: '', assistantText: '', displayOverridden: true, running: false,
   }), true)
-  assert.equal(turnHasVisibleRpContent({
-    hidden: true, userText: '', assistantText: '', running: false,
-  }), false)
-  assert.equal(turnHasVisibleRpContent({
-    hidden: true, userText: 'hidden', assistantText: 'hidden',
-    variant: { id: 'variant' }, variants: [{ id: 'variant' }],
-  }), false)
 })

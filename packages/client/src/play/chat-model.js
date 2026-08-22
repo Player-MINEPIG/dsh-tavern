@@ -177,7 +177,6 @@ export function projectTimelineVariant(node, variant, messagesBySession = {}) {
   const displayOverridden = typeof node.displayOverride === 'string'
   return {
     id: node.id,
-    hidden: node.hidden === true,
     userText: renderedMessageText(user),
     userPresent: user !== null,
     contexts,

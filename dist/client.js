@@ -191,7 +191,6 @@ var zh_CN_default = Object.freeze({
   "play.chat.thinking": "\u6B63\u5728\u601D\u8003\u2026",
   "play.chat.previousGreeting": "\u4E0A\u4E00\u6761\u5F00\u573A\u767D",
   "play.chat.nextGreeting": "\u4E0B\u4E00\u6761\u5F00\u573A\u767D",
-  "play.chat.hiddenNode": "\u8FD9\u4E00\u7EC4\u95EE\u7B54\u5DF2\u5728\u9B54\u4E38\u663E\u793A\u4E2D\u9690\u85CF\u3002",
   "play.chat.runningDisabled": "Agent \u8FD0\u884C\u4E2D\u4E0D\u53EF\u64CD\u4F5C",
   "play.chat.copy": "\u590D\u5236\u5F53\u524D\u663E\u793A\u56DE\u590D",
   "play.chat.copyUnavailable": "\u5F53\u524D\u73AF\u5883\u65E0\u6CD5\u8BBF\u95EE\u526A\u8D34\u677F\u3002",
@@ -833,7 +832,6 @@ var en_default = Object.freeze({
   "play.chat.thinking": "Thinking\u2026",
   "play.chat.previousGreeting": "Previous greeting",
   "play.chat.nextGreeting": "Next greeting",
-  "play.chat.hiddenNode": "This QA is hidden in Mowan display.",
   "play.chat.runningDisabled": "Unavailable while the agent is running",
   "play.chat.copy": "Copy displayed reply",
   "play.chat.copyUnavailable": "Clipboard access is unavailable.",
@@ -4501,7 +4499,6 @@ function legacyTimelineHead(timeline) {
   const nodes = timeline?.nodes ?? [];
   for (let index = nodes.length - 1; index >= 0; index -= 1) {
     const node = nodes[index];
-    if (node.hidden === true) continue;
     const variant = adoptedVariant(node);
     if (variant !== null) {
       return { sessionId: variant.sessionId, nodeId: node.id, variantId: variant.id };
@@ -4699,7 +4696,6 @@ function projectTimelineVariant(node, variant, messagesBySession = {}) {
   const displayOverridden = typeof node.displayOverride === "string";
   return {
     id: node.id,
-    hidden: node.hidden === true,
     userText: renderedMessageText(user),
     userPresent: user !== null,
     contexts,
@@ -8168,7 +8164,6 @@ function normalizeTimelineNode(value, label = "node") {
   const variants = value.variants.map((item, index) => normalizeTimelineVariant(item, `${label}.variants[${index}]`));
   const adoptedVariantId = stringId(value.adoptedVariantId, `${label}.adoptedVariantId`);
   if (!variants.some((item) => item.id === adoptedVariantId)) fail(label, "adoptedVariantId must match a variant");
-  if (value.hidden !== void 0 && typeof value.hidden !== "boolean") fail(label, "hidden must be a boolean");
   if (value.displayOverride !== void 0 && value.displayOverride !== null && typeof value.displayOverride !== "string") {
     fail(label, "displayOverride must be a string or null");
   }
@@ -8176,7 +8171,6 @@ function normalizeTimelineNode(value, label = "node") {
   return {
     id: stringId(value.id, `${label}.id`),
     kind: "qa",
-    hidden: value.hidden === true,
     displayOverride: value.displayOverride ?? null,
     ...Object.hasOwn(value, "parentVariantId") ? {
       parentVariantId: value.parentVariantId === null ? null : stringId(value.parentVariantId, `${label}.parentVariantId`)
@@ -9170,10 +9164,6 @@ function createPlayNodeController(client, {
     });
   });
   return {
-    setHidden(playthrough, nodeId, hidden) {
-      if (typeof hidden !== "boolean") throw new TypeError("hidden must be a boolean");
-      return update(playthrough, nodeId, (node) => ({ ...node, hidden }));
-    },
     setDisplayOverride(playthrough, nodeId, value) {
       if (value !== null && typeof value !== "string") {
         throw new TypeError("displayOverride must be a string or null");
@@ -9587,7 +9577,6 @@ function appendCompletedTurns(timeline, messageState, sessionId, {
     added.push({
       id: nodeId,
       kind: "qa",
-      hidden: false,
       displayOverride: null,
       parentVariantId,
       adoptedVariantId: variantId,
@@ -9819,7 +9808,6 @@ async function loadChatState(client, sessionId, playthrough) {
       ...typeof imported.greeting === "string" && imported.greeting !== "" ? [{
         id: "import-greeting",
         imported: true,
-        hidden: false,
         userText: "",
         assistantText: imported.greeting,
         originalAssistantText: imported.greeting
@@ -9827,7 +9815,6 @@ async function loadChatState(client, sessionId, playthrough) {
       ...(imported.qa ?? []).map((qa, index) => ({
         id: `import-${index}`,
         imported: true,
-        hidden: false,
         userText: qa.user,
         assistantText: qa.assistant,
         originalAssistantText: qa.assistant,
@@ -9927,10 +9914,9 @@ function Greeting({ greeting, busy, change, locked = false, footer = null }) {
   );
 }
 function turnHasDurableQaActions(turn) {
-  return turn?.hidden !== true && turn?.imported !== true && turn?.transient !== true && turn?.variant != null && Array.isArray(turn?.variants);
+  return turn?.imported !== true && turn?.transient !== true && turn?.variant != null && Array.isArray(turn?.variants);
 }
 function turnHasVisibleRpContent(turn) {
-  if (turn?.hidden === true) return false;
   return turnHasDurableQaActions(turn) || turn?.importLast === true || typeof turn?.userText === "string" && turn.userText !== "" || Array.isArray(turn?.assistantTexts) && turn.assistantTexts.length > 0 || typeof turn?.assistantText === "string" && turn.assistantText !== "" || turn?.displayOverridden === true || turn?.running === true;
 }
 function greetingSelectionLocked({ turns = [], latestUserSeq = -1, running = false } = {}) {
@@ -10459,7 +10445,6 @@ async function loadPlaythroughExport(client, playthrough) {
   const importedTurns = (importContext?.qa ?? []).map((qa, index) => ({
     id: `import-${index}`,
     imported: true,
-    hidden: false,
     userText: qa.user,
     assistantText: qa.assistant,
     originalAssistantText: qa.assistant
@@ -10527,7 +10512,7 @@ function escapeHtml2(value) {
 }
 function staticHtmlExport(snapshot) {
   const title = snapshot.playthrough.title || snapshot.character?.name || snapshot.playthrough.id;
-  const rows = (snapshot.displayTurns ?? snapshot.turns).filter((turn) => !turn.hidden).map((turn) => `
+  const rows = (snapshot.displayTurns ?? snapshot.turns).map((turn) => `
     <article class="turn">
       <div class="user rich">${renderRichTextHtml(turn.userText)}</div>
       <div class="assistant rich">${renderRichTextHtml(turn.assistantText)}</div>
@@ -10568,7 +10553,6 @@ function sillyTavernJsonlExport(snapshot) {
     }));
   }
   for (const turn of snapshot.turns) {
-    if (turn.hidden) continue;
     lines.push(JSON.stringify({
       name: "User",
       is_user: true,

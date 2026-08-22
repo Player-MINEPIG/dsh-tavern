@@ -14,7 +14,7 @@ const playthrough = {
 function timeline() {
   return {
     nodes: [{
-      id: 'qa-1', kind: 'qa', hidden: false, displayOverride: null, adoptedVariantId: 'v-1',
+      id: 'qa-1', kind: 'qa', displayOverride: null, adoptedVariantId: 'v-1',
       variants: [{ id: 'v-1', sessionId: 'session-a', startEventId: 1, endEventId: 3 }],
     }],
   }
@@ -81,14 +81,14 @@ test('node CAS replay applies local intent to fresh timeline and preserves unrel
     async updateTimeline(_playthrough, mutator) {
       attempt += 1
       await mutator(structuredClone(value))
-      value.nodes.push({ id: 'qa-2', kind: 'qa', hidden: false, displayOverride: null, adoptedVariantId: 'v-2', variants: [{ id: 'v-2', sessionId: 's2', startEventId: 4, endEventId: 6 }] })
+      value.nodes.push({ id: 'qa-2', kind: 'qa', displayOverride: null, adoptedVariantId: 'v-2', variants: [{ id: 'v-2', sessionId: 's2', startEventId: 4, endEventId: 6 }] })
       value = await mutator(structuredClone(value))
       return value
     },
   }
-  const saved = await createPlayNodeController(client).setHidden(playthrough, 'qa-1', true)
+  const saved = await createPlayNodeController(client).setDisplayOverride(playthrough, 'qa-1', 'local display')
   assert.equal(attempt, 1)
-  assert.equal(saved.nodes.find(item => item.id === 'qa-1').hidden, true)
+  assert.equal(saved.nodes.find(item => item.id === 'qa-1').displayOverride, 'local display')
   assert.equal(saved.nodes.find(item => item.id === 'qa-2').id, 'qa-2')
 })
 
@@ -134,12 +134,12 @@ test('later swipe branches the current continuation exactly after the previous a
   let value = {
     nodes: [
       {
-        id: 'qa-1', kind: 'qa', hidden: false, displayOverride: null,
+        id: 'qa-1', kind: 'qa', displayOverride: null,
         parentVariantId: null, adoptedVariantId: 'v-1',
         variants: [{ id: 'v-1', sessionId: 'session-ancestor', startEventId: 1, endEventId: 3 }],
       },
       {
-        id: 'qa-2', kind: 'qa', hidden: false, displayOverride: null,
+        id: 'qa-2', kind: 'qa', displayOverride: null,
         parentVariantId: 'v-1', adoptedVariantId: 'v-2',
         variants: [{ id: 'v-2', sessionId: 'session-current', startEventId: 4, endEventId: 6 }],
       },

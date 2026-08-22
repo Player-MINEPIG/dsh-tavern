@@ -86,7 +86,6 @@ export function normalizeTimelineNode(value, label = 'node') {
   const variants = value.variants.map((item, index) => normalizeTimelineVariant(item, `${label}.variants[${index}]`))
   const adoptedVariantId = stringId(value.adoptedVariantId, `${label}.adoptedVariantId`)
   if (!variants.some(item => item.id === adoptedVariantId)) fail(label, 'adoptedVariantId must match a variant')
-  if (value.hidden !== undefined && typeof value.hidden !== 'boolean') fail(label, 'hidden must be a boolean')
   if (value.displayOverride !== undefined && value.displayOverride !== null && typeof value.displayOverride !== 'string') {
     fail(label, 'displayOverride must be a string or null')
   }
@@ -94,7 +93,6 @@ export function normalizeTimelineNode(value, label = 'node') {
   return {
     id: stringId(value.id, `${label}.id`),
     kind: 'qa',
-    hidden: value.hidden === true,
     displayOverride: value.displayOverride ?? null,
     ...(Object.hasOwn(value, 'parentVariantId') ? {
       parentVariantId: value.parentVariantId === null

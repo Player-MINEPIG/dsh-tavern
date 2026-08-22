@@ -106,7 +106,6 @@ export async function loadPlaythroughExport(client, playthrough) {
   const importedTurns = (importContext?.qa ?? []).map((qa, index) => ({
     id: `import-${index}`,
     imported: true,
-    hidden: false,
     userText: qa.user,
     assistantText: qa.assistant,
     originalAssistantText: qa.assistant,
@@ -188,7 +187,7 @@ function escapeHtml(value) {
 
 export function staticHtmlExport(snapshot) {
   const title = snapshot.playthrough.title || snapshot.character?.name || snapshot.playthrough.id
-  const rows = (snapshot.displayTurns ?? snapshot.turns).filter(turn => !turn.hidden).map(turn => `
+  const rows = (snapshot.displayTurns ?? snapshot.turns).map(turn => `
     <article class="turn">
       <div class="user rich">${renderRichTextHtml(turn.userText)}</div>
       <div class="assistant rich">${renderRichTextHtml(turn.assistantText)}</div>
@@ -239,7 +238,6 @@ export function sillyTavernJsonlExport(snapshot) {
     }))
   }
   for (const turn of snapshot.turns) {
-    if (turn.hidden) continue
     lines.push(JSON.stringify({
       name: 'User',
       is_user: true,

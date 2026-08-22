@@ -162,11 +162,11 @@ export async function loadChatState(client, sessionId, playthrough) {
     const imported = importedContext.document
     importedTurns = [
       ...(typeof imported.greeting === 'string' && imported.greeting !== '' ? [{
-        id: 'import-greeting', imported: true, hidden: false, userText: '',
+        id: 'import-greeting', imported: true, userText: '',
         assistantText: imported.greeting, originalAssistantText: imported.greeting,
       }] : []),
       ...(imported.qa ?? []).map((qa, index) => ({
-        id: `import-${index}`, imported: true, hidden: false,
+        id: `import-${index}`, imported: true,
         userText: qa.user,
         assistantText: qa.assistant, originalAssistantText: qa.assistant,
         importLast: index === imported.qa.length - 1,
@@ -267,15 +267,13 @@ function Greeting({ greeting, busy, change, locked = false, footer = null }) {
 }
 
 export function turnHasDurableQaActions(turn) {
-  return turn?.hidden !== true
-    && turn?.imported !== true
+  return turn?.imported !== true
     && turn?.transient !== true
     && turn?.variant != null
     && Array.isArray(turn?.variants)
 }
 
 export function turnHasVisibleRpContent(turn) {
-  if (turn?.hidden === true) return false
   return turnHasDurableQaActions(turn)
     || turn?.importLast === true
     || (typeof turn?.userText === 'string' && turn.userText !== '')

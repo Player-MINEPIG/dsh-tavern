@@ -19,7 +19,6 @@ const timeline = {
   nodes: [{
     id: 'qa-1',
     kind: 'qa',
-    hidden: false,
     displayOverride: null,
     adoptedVariantId: 'variant-a',
     variants: [{ id: 'variant-a', sessionId: 'fork', startEventId: 2, endEventId: 4 }],
@@ -153,7 +152,6 @@ test('timeline projection renders only adopted visible QA ranges', () => {
   })
   assert.deepEqual(projected, [{
     id: 'qa-1',
-    hidden: false,
     userText: 'Hello',
     contexts: [{
       id: 'context', seq: 3, text: 'Background child finished',
@@ -179,21 +177,19 @@ test('timeline projection renders only adopted visible QA ranges', () => {
   const emptyDisplay = projectTimelineQa(overridden, { fork: [] })[0]
   assert.equal(emptyDisplay.assistantText, '')
   assert.equal(emptyDisplay.displayOverridden, true)
-  overridden.nodes[0].hidden = true
-  assert.equal(projectTimelineQa(overridden, { fork: [] })[0].hidden, true)
 })
 
 test('legacy reply-level subagent nodes project as one real-user QA', () => {
   const timeline = {
     nodes: [
       {
-        id: 'root', kind: 'qa', hidden: false, displayOverride: null,
+        id: 'root', kind: 'qa', displayOverride: null,
         parentVariantId: null, adoptedVariantId: 'root-v', variants: [
           { id: 'root-v', sessionId: 'session-a', startEventId: 1, endEventId: 2 },
         ],
       },
       {
-        id: 'context-child', kind: 'qa', hidden: false, displayOverride: null,
+        id: 'context-child', kind: 'qa', displayOverride: null,
         parentVariantId: 'root-v', adoptedVariantId: 'context-v', variants: [
           { id: 'context-v', sessionId: 'session-a', startEventId: 3, endEventId: 4 },
         ],
@@ -218,20 +214,20 @@ test('tree timeline projection follows only ancestors of the active head', () =>
   const timeline = {
     nodes: [
       {
-        id: 'root', kind: 'qa', hidden: false, displayOverride: null,
+        id: 'root', kind: 'qa', displayOverride: null,
         parentVariantId: null, adoptedVariantId: 'root-a', variants: [
           { id: 'root-a', sessionId: 'a', startEventId: 1, endEventId: 2 },
           { id: 'root-b', sessionId: 'b', startEventId: 1, endEventId: 2 },
         ],
       },
       {
-        id: 'a-child', kind: 'qa', hidden: false, displayOverride: null,
+        id: 'a-child', kind: 'qa', displayOverride: null,
         parentVariantId: 'root-a', adoptedVariantId: 'a-child-v', variants: [
           { id: 'a-child-v', sessionId: 'a', startEventId: 3, endEventId: 4 },
         ],
       },
       {
-        id: 'b-child', kind: 'qa', hidden: false, displayOverride: null,
+        id: 'b-child', kind: 'qa', displayOverride: null,
         parentVariantId: 'root-b', adoptedVariantId: 'b-child-v', variants: [
           { id: 'b-child-v', sessionId: 'b', startEventId: 3, endEventId: 4 },
         ],

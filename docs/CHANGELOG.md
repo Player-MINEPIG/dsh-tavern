@@ -1,5 +1,12 @@
 # Development changelog
 
+## 2026-08-22 — Remove the unreleased timeline hide field
+
+- Removed the development-only QA hide action and timeline field before the 2.0 public contract was released; no migration or compatibility branch is retained.
+- Kept display regex and `displayOverride` as the two explicit RP display-layer mechanisms. Neither rewrites DSH durable history or the AI request.
+- Made the v2 server reject the removed top-level field as an unsupported timeline field, while third-party metadata remains confined to protocol-supported `ext` objects.
+- Updated the API, architecture, review and third-party integration guides so downstream frontends do not persist a field that the bundled UI no longer exposes.
+
 ## 2026-08-22 — Refocus public documentation around the happy path
 
 - Rebuilt the root README as a concise public landing page: design philosophy, dual-mode compatibility, installation entry, the complete character-card → workspace → RP admission → playthrough → greeting → conversation happy path, feature navigation and contribution routes.

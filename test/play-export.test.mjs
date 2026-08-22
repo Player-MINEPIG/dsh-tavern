@@ -14,22 +14,22 @@ test('HTML honors display state while ST keeps authoritative raw data and swipes
   }
   const timeline = { nodes: [
     {
-      id: 'qa-1', kind: 'qa', hidden: false, displayOverride: 'Displayed <reply>', adoptedVariantId: 'v-1',
+      id: 'qa-1', kind: 'qa', displayOverride: 'Displayed <reply>', adoptedVariantId: 'v-1',
       variants: [
         { id: 'v-1', sessionId: 'session-a', startEventId: 1, endEventId: 2 },
         { id: 'v-1-alt', sessionId: 'session-b', startEventId: 1, endEventId: 2 },
       ],
     },
     {
-      id: 'qa-2', kind: 'qa', hidden: true, displayOverride: null, adoptedVariantId: 'v-2',
+      id: 'qa-2', kind: 'qa', displayOverride: null, adoptedVariantId: 'v-2',
       variants: [{ id: 'v-2', sessionId: 'session-a', startEventId: 3, endEventId: 4 }],
     },
   ] }
   const messages = { incompleteTurn: false, messages: [
     { id: 'u1', role: 'user', seq: 1, content: [], text: 'Hello' },
     { id: 'a1', role: 'assistant', seq: 2, content: [], text: 'Original reply' },
-    { id: 'u2', role: 'user', seq: 3, content: [], text: 'Hidden user' },
-    { id: 'a2', role: 'assistant', seq: 4, content: [], text: 'Hidden reply' },
+    { id: 'u2', role: 'user', seq: 3, content: [], text: 'Second user' },
+    { id: 'a2', role: 'assistant', seq: 4, content: [], text: 'Second reply' },
   ] }
   const alternateMessages = { incompleteTurn: false, messages: [
     { id: 'u1-alt', role: 'user', seq: 1, content: [], text: 'Hello' },
@@ -54,12 +54,14 @@ test('HTML honors display state while ST keeps authoritative raw data and swipes
   const html = playthroughExportDocument(snapshot, 'html').content
   assert.match(html, /Alt Reader from Ally/)
   assert.match(html, /Displayed &lt;reply&gt;/)
-  assert.doesNotMatch(html, /Original reply|Hidden reply|<script/i)
+  assert.doesNotMatch(html, /Original reply|<script/i)
+  assert.match(html, /Second reply/)
 
   const st = playthroughExportDocument(snapshot, 'st').content
   assert.ok(st.includes('Alt Reader from Ally'))
   assert.match(st, /Original reply/)
-  assert.doesNotMatch(st, /Displayed|Hidden reply/)
+  assert.doesNotMatch(st, /Displayed/)
+  assert.match(st, /Second reply/)
   assert.doesNotMatch(st, /\{\{(?:user|char)\}\}/)
   const stRows = st.trim().split('\n').map(line => JSON.parse(line))
   assert.deepEqual(stRows[1].swipes, ['Hi', 'Alt Reader from Ally'])
@@ -69,6 +71,7 @@ test('HTML honors display state while ST keeps authoritative raw data and swipes
   assert.equal(stRows[3].swipe_id, 0)
   assert.equal(stRows[3].mes, 'Original reply')
   assert.equal(stRows[3].swipe_info.length, 2)
+  assert.equal(stRows[5].mes, 'Second reply')
   assert.throws(() => playthroughExportDocument(snapshot, 'bundle'), /Unknown export format/)
 
 })
@@ -79,7 +82,7 @@ test('exports retain imported read-only history before later DSH timeline turns'
     ext: { pmpDshTavern: { rootSessionId: 'session-a', importContextPath: 'a/pt/import-context.json' } },
   }
   const timeline = { nodes: [{
-    id: 'qa-live', kind: 'qa', hidden: false, displayOverride: null, adoptedVariantId: 'v-live',
+    id: 'qa-live', kind: 'qa', displayOverride: null, adoptedVariantId: 'v-live',
     variants: [{ id: 'v-live', sessionId: 'session-a', startEventId: 1, endEventId: 2 }],
   }] }
   const client = {
