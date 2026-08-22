@@ -1,5 +1,15 @@
 # Development changelog
 
+## 2026-08-22 — Version 2.0.0 release
+
+- Released the dual-display Tavern frontend: DSH native remains untouched in native mode, while Mowan adds the RP sidebar, playthrough tree, greeting dock, display regex, swipe/branch/rollback actions, import/export and independent conversation scaling.
+- Stabilized the v2 RP frontend protocol around authoritative chrome, workspace, session/history, managed files with revision/CAS, import claim/lineage and playthrough focus; v1 remains the bundled resource-editor contract.
+- Completed rc.8 user acceptance for resource editing, RP rendering, playthrough lifecycle, workspace admission, sorting, settings, native fallback and uninstall recovery.
+- Kept DSH durable history authoritative. Greetings and imported QA are not forged as history; timeline documents contain pointers and display metadata rather than copied messages.
+- Replaced the unmaintained vulnerable Showdown dependency with maintained Marked while preserving ST wrapper-tag Markdown semantics and the mandatory DOMPurify boundary. Production dependency audit now reports zero known vulnerabilities.
+- Added a public security policy covering local-only API assumptions, untrusted Tavern content, regex/remote-resource residual risks, privacy-safe operation logs and the rule that public commits/packages contain no real developer-machine paths or private imports.
+- Set the package and lockfile version to `2.0.0`; release verification remains `npm audit --omit=dev` plus `npm run verify:2.0` and target-DSH browser/uninstall checks.
+
 
 ## 2026-08-22 — Make swipe generation immediately visible
 

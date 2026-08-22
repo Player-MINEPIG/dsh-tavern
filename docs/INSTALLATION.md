@@ -1,6 +1,6 @@
 # Cross-platform installation and removal
 
-Status: current for the 2026-08-22 2.0 release-candidate worktree. The root README provides the short script/manual/Agent paths; this file is the detailed lifecycle, verification, and recovery contract.
+Status: current for the 2026-08-22 `2.0.0` release. The root README provides the short script/manual/Agent paths; this file is the detailed lifecycle, verification, and recovery contract.
 
 The scripts use Node.js as their common entry point and normalize paths for
 Windows, macOS, and Linux. macOS/Linux execute `dsh` directly. Windows safely
@@ -69,9 +69,9 @@ Windows paths may be passed normally, for example:
 node scripts/install.mjs --dsh-home .\test-envs\review
 ```
 
-## Verify the 2.0 release candidate
+## Verify a 2.0 release
 
-Before packaging or installing a release candidate, run:
+Before packaging or installing a 2.0 release, run:
 
 ```text
 npm run verify:2.0

@@ -13,7 +13,7 @@ timeline 只保存 session/event 范围引用；路径 API 有根目录、相对
 
 ## 后续验收状态
 
-以下是审查基线之后的产品验收记录；未人工验收的新实现会明确标为待统一验收：
+以下是审查基线之后的产品验收记录。2.0 发布范围已经完成人工验收；后续变更仍需重新走对应条目：
 
 | 范围 | 当前状态 | 说明 |
 | --- | --- | --- |
@@ -21,12 +21,12 @@ timeline 只保存 session/event 范围引用；路径 API 有根目录、相对
 | 空会话 greeting dock | 已实现、已验收 | 在原生 composer dock 展示 greeting；左右切换按钮保持两侧，卡无 greeting 时保留空白 opening 和 footer。 |
 | 外部记录绑定 | 已实现、已验收 | 绑定到当前空 root session，不新建 session 或 timeline；支持绑定、换绑、解绑，解绑后恢复 greeting。服务端会重复空会话锁定检查。 |
 | 最近三轮 QA | 已实现、已验收 | opening dock 显示导入记录最后三轮 QA；这是显示预览，不是 DSH 历史。 |
-| 一次性注入 | 已实现，待统一验收 | 首次 assembly 使用公开 `claimEventSeqs` 建立持久 claim；同一终态前可重放，终态后新 claim 不再注入。Tavern branch/swipe 复制不含正文的 lineage；中断后原 session 新消息不重复注入。 |
-| 功能按钮与树状周目分支 | 已实现，待统一验收 | displayOverride、已有 variant 切换、同操作行左右 swipe、新周目分支与同周目回退。屏蔽已移除，旧 hidden 投影不再隐藏正文。context 输出的右 swipe 重跑最近真实用户 turn，不重发 context。timeline 用 parent/head 保存各 swipe 后续；活动 branch anchor session 仍归入原周目。 |
-| 显示正则顺序 | 已实现，待统一验收 | 全局、预设、角色卡各自支持与预设 prompt 相同的指针拖拽、收缩线和落点占位动画；保存分别写工作区文档或原生 `regex_scripts` 数组。跨来源禁止拖动，组合顺序固定全局→预设→角色卡。 |
+| 一次性注入 | 已实现、已验收 | 首次 assembly 使用公开 `claimEventSeqs` 建立持久 claim；同一终态前可重放，终态后新 claim 不再注入。Tavern branch/swipe 复制不含正文的 lineage；中断后原 session 新消息不重复注入。 |
+| 功能按钮与树状周目分支 | 已实现、已验收 | displayOverride、已有 variant 切换、同操作行左右 swipe、新周目分支与同周目回退。屏蔽已移除，旧 hidden 投影不再隐藏正文。context 输出的右 swipe 重跑最近真实用户 turn，不重发 context。timeline 用 parent/head 保存各 swipe 后续；活动 branch anchor session 仍归入原周目。 |
+| 显示正则顺序 | 已实现、已验收 | 全局、预设、角色卡各自支持与预设 prompt 相同的指针拖拽、收缩线和落点占位动画；保存分别写工作区文档或原生 `regex_scripts` 数组。跨来源禁止拖动，组合顺序固定全局→预设→角色卡。 |
 | 子 agent / 上下文注入显示 | 已实现、已验收 | v2 消息保留模型 `role` 并增加 `origin`；魔丸完全隐藏 reasoning/context，不画用户气泡也不提供展开。context 触发输出的 retry 向前定位真实用户 turn，控制器拒绝重发 context；显示正则只控制正文，各段全被清空时仍在 durable QA 末尾保留一组动作。 |
 
-表内“已验收”行为曾在 DSH 0.1.0-rc.8 通过用户验收。P0 加固现已全部进入 `npm run verify:2.0` 分组回归；Windows junction、根内 reparse point 与 rename 前父目录替换在本机实际执行通过，不再因创建 symlink 权限而跳过。真实 rc.8 Host 的 chrome/workspace 权威只读冒烟已通过；写入交互、浏览器双标签页通知、工作区准入视觉、禁用/卸载回退及最终 rc.8 交互仍按人工清单验收。
+表内行为均在 DSH 0.1.0-rc.8 完成用户验收。P0 加固已全部进入 `npm run verify:2.0` 分组回归；Windows junction、根内 reparse point 与 rename 前父目录替换在本机实际执行通过，不再因创建 symlink 权限而跳过。真实 rc.8 Host 的 chrome/workspace 权威只读冒烟、写入交互、工作区准入视觉、功能按钮、显示正则、周目生命周期和卸载回退均已完成；双标签页与底层竞态仍由确定性自动测试和后续版本回归共同约束。
 工作区准入已实现：魔丸在 v2 workspace 未绑定、候选失效或读取失败时阻断 RP 内容，只消费 DSH 公开 workspace 列表；候选必须显式选择，PUT 后回读验证，失败可重试或返回 native，不保存浏览器工作区副本。
 
 下面保留原始发现作为证据；其是否关闭以紧随其后的决策表为准。
@@ -75,4 +75,4 @@ timeline 只保存 session/event 范围引用；路径 API 有根目录、相对
 1. 自动证据：运行 `npm run verify:2.0`。完整 history、六种 import claim/lineage、schema/CAS、损坏文件、按 id focus、operation log、Windows junction/reparse/rename 前父目录替换以及 mode service dispose 均由确定性测试验证。
 2. 真实 Host/浏览器：先以 `DSH_TAVERN_PLAY_LIVE=1` 和 `DSH_TAVERN_PLAY_LIVE_URL` 运行只读 Host 冒烟；再用双标签页观察 chrome SSE/focus/poll 收敛与 CAS 冲突，在全新数据中验证工作区准入的无候选/单候选/多候选/失效候选/失败恢复；正常与中断回复只做一轮代表性 UI 回归。
 3. 兼容回退：禁用或卸载 Tavern 后确认 DSH native 与其它插件仍可用，再恢复插件数据；不要用这一步验证会删除资源的 `--no-backup`。
-4. 发布门：`npm run verify:2.0` 已包含 build 与 pack dry-run；再核对实际 rc.8 安装副本 hash、正式文档和版本号后才打 2.0 tag。
+4. 发布门：`npm run verify:2.0` 已包含 build 与 pack dry-run；再核对依赖审计、公开路径/秘密扫描、正式文档和版本号后才打 2.0 tag。
