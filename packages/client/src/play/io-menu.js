@@ -121,7 +121,6 @@ export function PlayIoMenu({ playClient, playthrough, trigger = '+', placement =
       }, uiMessage('play.io.relinkCharacter')),
       h('button', { type: 'button', className: 'dtv-play-io-item', disabled: busy, onClick: () => exportAs('html') }, uiMessage('play.io.exportHtml')),
       h('button', { type: 'button', className: 'dtv-play-io-item', disabled: busy, onClick: () => exportAs('st') }, uiMessage('play.io.exportSt')),
-      h('button', { type: 'button', className: 'dtv-play-io-item', disabled: busy, onClick: () => exportAs('bundle') }, uiMessage('play.io.exportBundle')),
       error === '' ? null : h('p', { className: 'dtv-play-io-error' }, rawText(error)),
     ),
   )

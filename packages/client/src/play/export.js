@@ -253,25 +253,8 @@ export function sillyTavernJsonlExport(snapshot) {
   return `${lines.join('\n')}\n`
 }
 
-export function portableBundleExport(snapshot) {
-  return JSON.stringify({
-    kind: 'pmp-dsh-tavern-playthrough',
-    schemaVersion: 1,
-    exportedAt: snapshot.exportedAt,
-    playthrough: snapshot.playthrough,
-    timeline: snapshot.timeline,
-    messagesBySession: snapshot.messagesBySession,
-    resources: {
-      characterId: snapshot.character?.id ?? null,
-      greeting: snapshot.greeting,
-      importContext: snapshot.importContext,
-    },
-  }, null, 2)
-}
-
 export function playthroughExportDocument(snapshot, format) {
   if (format === 'html') return { extension: 'html', mime: 'text/html;charset=utf-8', content: staticHtmlExport(snapshot) }
   if (format === 'st') return { extension: 'jsonl', mime: 'application/x-ndjson;charset=utf-8', content: sillyTavernJsonlExport(snapshot) }
-  if (format === 'bundle') return { extension: 'json', mime: 'application/json;charset=utf-8', content: portableBundleExport(snapshot) }
   throw new TypeError(`Unknown export format ${format}`)
 }

@@ -143,7 +143,6 @@ export default Object.freeze({
   "play.io.renameInvalid": "周目名称不能为空，且不能超过 120 个字符。",
   "play.io.exportHtml": "导出静态 HTML",
   "play.io.exportSt": "导出 SillyTavern JSONL",
-  "play.io.exportBundle": "导出 portable bundle",
   "play.io.import": "导入并新开 session",
   "play.io.importUnavailable": "后端尚未提供避免伪造 DSH 历史所需的一次性 import-context reference，因此暂不开放导入。",
   "play.import.bind": "导入外部记录",

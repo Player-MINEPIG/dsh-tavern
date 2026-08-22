@@ -143,7 +143,6 @@ export default Object.freeze({
   "play.io.renameInvalid": "The playthrough name must contain 1–120 characters.",
   "play.io.exportHtml": "Export static HTML",
   "play.io.exportSt": "Export SillyTavern JSONL",
-  "play.io.exportBundle": "Export portable bundle",
   "play.io.import": "Import into a new session",
   "play.io.importUnavailable": "Import is unavailable until the backend provides the one-shot import-context reference required to avoid fake DSH history.",
   "play.import.bind": "Import external history",

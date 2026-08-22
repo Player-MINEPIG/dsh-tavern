@@ -12,3 +12,9 @@ test('sidebar IO menu sizes to its content within the narrow sidebar budget', ()
   assert.match(source, /data-placement=sidebar[^}]*width:max-content;min-width:0;max-width:168px/)
   assert.match(source, /data-placement=sidebar[^}]*\.dtv-play-io-item\{white-space:nowrap\}/)
 })
+
+test('sidebar IO menu exposes only static HTML and SillyTavern JSONL exports', () => {
+  assert.match(source, /exportAs\('html'\)/)
+  assert.match(source, /exportAs\('st'\)/)
+  assert.doesNotMatch(source, /exportAs\('bundle'\)|exportBundle/)
+})

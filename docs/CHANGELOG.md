@@ -6,6 +6,7 @@
 - Stabilized the v2 RP frontend protocol around authoritative chrome, workspace, session/history, managed files with revision/CAS, import claim/lineage and playthrough focus; v1 remains the bundled resource-editor contract.
 - Completed rc.8 user acceptance for resource editing, RP rendering, playthrough lifecycle, workspace admission, sorting, settings, native fallback and uninstall recovery.
 - Kept DSH durable history authoritative. Greetings and imported QA are not forged as history; timeline documents contain pointers and display metadata rather than copied messages.
+- Corrected playthrough exports: static HTML now retains the visible greeting, while SillyTavern JSONL carries greeting alternatives and per-QA swipes / swipe_id along the active path. Removed the unreleased portable bundle because it could not round-trip the full timeline tree.
 - Replaced the unmaintained vulnerable Showdown dependency with maintained Marked while preserving ST wrapper-tag Markdown semantics and the mandatory DOMPurify boundary. Production dependency audit now reports zero known vulnerabilities.
 - Added a public security policy covering local-only API assumptions, untrusted Tavern content, regex/remote-resource residual risks, privacy-safe operation logs and the rule that public commits/packages contain no real developer-machine paths or private imports.
 - Set the package and lockfile version to `2.0.0`; release verification remains `npm audit --omit=dev` plus `npm run verify:2.0` and target-DSH browser/uninstall checks.
@@ -283,10 +284,11 @@ Verification: import-runtime, session-handler, route, and Host-adapter tests.
 
 ## 2026-08-20 — Preserve imported context through playthrough export
 
-- HTML, SillyTavern JSONL, and portable bundle exports now include the
-  read-only imported greeting/QA before later DSH-backed timeline turns.
-- Portable bundles carry the immutable import-context document and restore it
-  on reimport without turning those records into DSH history.
+- HTML and SillyTavern JSONL exports include the read-only imported greeting/QA
+  before later DSH-backed timeline turns.
+- Static HTML includes the visible greeting. ST JSONL preserves greeting
+  alternatives and per-QA swipes on the active path; it does not claim to
+  encode the complete Tavern timeline tree.
 - Import rereads the context, empty timeline, catalog row, and copied character
   selection before navigation. This detects partial writes but does not claim
   atomic rollback from the current composition API.

@@ -67,27 +67,9 @@ test('frontend import mutation fails closed after authoritative conversation sta
   } }), error => error.code === 'PLAY_IMPORT_CONTEXT_LOCKED')
 })
 
-test('portable bundle reimport keeps earlier imported context before native timeline turns', () => {
-  const bundle = JSON.stringify({
-    kind: 'pmp-dsh-tavern-playthrough', schemaVersion: 1,
-    playthrough: { id: 'pt' },
-    timeline: { nodes: [{
-      id: 'qa-2', kind: 'qa', adoptedVariantId: 'v',
-      variants: [{ id: 'v', sessionId: 's', startEventId: 1, endEventId: 2 }],
-    }] },
-    messagesBySession: { s: { messages: [
-      { role: 'user', seq: 1, text: 'new user' },
-      { role: 'assistant', seq: 2, text: 'new assistant' },
-    ] } },
-    resources: {
-      greeting: 'old greeting',
-      importContext: { greeting: 'import greeting', qa: [{ user: 'old user', assistant: 'old assistant' }] },
-    },
-  })
-  const parsed = parsePlaythroughImport(bundle, 'bundle.json')
-  assert.equal(parsed.greeting, 'import greeting')
-  assert.deepEqual(parsed.qa, [
-    { user: 'old user', assistant: 'old assistant' },
-    { user: 'new user', assistant: 'new assistant' },
-  ])
+test('retired portable bundle fails explicitly instead of importing an empty history', () => {
+  assert.throws(() => parsePlaythroughImport(JSON.stringify({
+    kind: 'pmp-dsh-tavern-playthrough',
+    schemaVersion: 1,
+  }), 'bundle.json'), /play\.import\.unsupported/)
 })

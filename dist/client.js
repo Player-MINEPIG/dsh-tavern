@@ -214,7 +214,6 @@ var zh_CN_default = Object.freeze({
   "play.io.renameInvalid": "\u5468\u76EE\u540D\u79F0\u4E0D\u80FD\u4E3A\u7A7A\uFF0C\u4E14\u4E0D\u80FD\u8D85\u8FC7 120 \u4E2A\u5B57\u7B26\u3002",
   "play.io.exportHtml": "\u5BFC\u51FA\u9759\u6001 HTML",
   "play.io.exportSt": "\u5BFC\u51FA SillyTavern JSONL",
-  "play.io.exportBundle": "\u5BFC\u51FA portable bundle",
   "play.io.import": "\u5BFC\u5165\u5E76\u65B0\u5F00 session",
   "play.io.importUnavailable": "\u540E\u7AEF\u5C1A\u672A\u63D0\u4F9B\u907F\u514D\u4F2A\u9020 DSH \u5386\u53F2\u6240\u9700\u7684\u4E00\u6B21\u6027 import-context reference\uFF0C\u56E0\u6B64\u6682\u4E0D\u5F00\u653E\u5BFC\u5165\u3002",
   "play.import.bind": "\u5BFC\u5165\u5916\u90E8\u8BB0\u5F55",
@@ -857,7 +856,6 @@ var en_default = Object.freeze({
   "play.io.renameInvalid": "The playthrough name must contain 1\u2013120 characters.",
   "play.io.exportHtml": "Export static HTML",
   "play.io.exportSt": "Export SillyTavern JSONL",
-  "play.io.exportBundle": "Export portable bundle",
   "play.io.import": "Import into a new session",
   "play.io.importUnavailable": "Import is unavailable until the backend provides the one-shot import-context reference required to avoid fake DSH history.",
   "play.import.bind": "Import external history",
@@ -8654,6 +8652,7 @@ function shouldShowUnboundNotice({ workspace, session, selection } = {}) {
 function parseJsonl(text2) {
   const rows = text2.split(/\r?\n/).filter(Boolean).map((line) => JSON.parse(line));
   if (rows.length === 0) throw new TypeError("play.import.empty");
+  if (rows[0]?.kind === "pmp-dsh-tavern-playthrough") throw new TypeError("play.import.unsupported");
   const messages = rows.slice(1).filter((row) => typeof row?.mes === "string");
   let greeting = null;
   const qa = [];
@@ -8672,32 +8671,9 @@ function parseJsonl(text2) {
   if (pending2 !== null) throw new TypeError("play.import.unpaired");
   return { greeting, qa, source: { format: "sillytavern-jsonl" } };
 }
-function parseBundle(value) {
-  if (value?.kind !== "pmp-dsh-tavern-playthrough" || value.schemaVersion !== 1) {
-    throw new TypeError("play.import.unsupported");
-  }
-  const turns = projectTimelineQa(value.timeline, value.messagesBySession);
-  const imported = value.resources?.importContext;
-  const importedQa = Array.isArray(imported?.qa) ? imported.qa.map((item) => ({ user: String(item?.user ?? ""), assistant: String(item?.assistant ?? "") })) : [];
-  return {
-    greeting: typeof imported?.greeting === "string" ? imported.greeting : typeof value.resources?.greeting === "string" ? value.resources.greeting : null,
-    qa: [
-      ...importedQa,
-      ...turns.filter((turn) => !turn.hidden).map((turn) => ({ user: turn.userText, assistant: turn.originalAssistantText }))
-    ],
-    source: { format: "pmp-dsh-tavern-bundle", playthroughId: value.playthrough?.id ?? null }
-  };
-}
 function parsePlaythroughImport(text2, fileName = "") {
   if (typeof text2 !== "string" || text2.trim() === "") throw new TypeError("play.import.empty");
-  const parsed = text2.trimStart().startsWith("{") && !text2.trimStart().includes("\n") ? parseBundle(JSON.parse(text2)) : (() => {
-    try {
-      return parseBundle(JSON.parse(text2));
-    } catch (error) {
-      if (text2.includes("\n")) return parseJsonl(text2);
-      throw error;
-    }
-  })();
+  const parsed = parseJsonl(text2);
   return { schemaVersion: 1, ...parsed, source: { ...parsed.source, fileName } };
 }
 function rootSessionId3(playthrough) {
@@ -10606,25 +10582,9 @@ function sillyTavernJsonlExport(snapshot) {
   return `${lines.join("\n")}
 `;
 }
-function portableBundleExport(snapshot) {
-  return JSON.stringify({
-    kind: "pmp-dsh-tavern-playthrough",
-    schemaVersion: 1,
-    exportedAt: snapshot.exportedAt,
-    playthrough: snapshot.playthrough,
-    timeline: snapshot.timeline,
-    messagesBySession: snapshot.messagesBySession,
-    resources: {
-      characterId: snapshot.character?.id ?? null,
-      greeting: snapshot.greeting,
-      importContext: snapshot.importContext
-    }
-  }, null, 2);
-}
 function playthroughExportDocument(snapshot, format) {
   if (format === "html") return { extension: "html", mime: "text/html;charset=utf-8", content: staticHtmlExport(snapshot) };
   if (format === "st") return { extension: "jsonl", mime: "application/x-ndjson;charset=utf-8", content: sillyTavernJsonlExport(snapshot) };
-  if (format === "bundle") return { extension: "json", mime: "application/json;charset=utf-8", content: portableBundleExport(snapshot) };
   throw new TypeError(`Unknown export format ${format}`);
 }
 
@@ -10735,7 +10695,6 @@ function PlayIoMenu({ playClient, playthrough, trigger = "+", placement = "compo
       }, uiMessage("play.io.relinkCharacter")),
       h9("button", { type: "button", className: "dtv-play-io-item", disabled: busy, onClick: () => exportAs("html") }, uiMessage("play.io.exportHtml")),
       h9("button", { type: "button", className: "dtv-play-io-item", disabled: busy, onClick: () => exportAs("st") }, uiMessage("play.io.exportSt")),
-      h9("button", { type: "button", className: "dtv-play-io-item", disabled: busy, onClick: () => exportAs("bundle") }, uiMessage("play.io.exportBundle")),
       error === "" ? null : h9("p", { className: "dtv-play-io-error" }, rawText(error))
     )
   );

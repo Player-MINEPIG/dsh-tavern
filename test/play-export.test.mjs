@@ -5,7 +5,7 @@ import {
   playthroughExportDocument,
 } from '../packages/client/src/play/export.js'
 
-test('three exports honor display state without changing raw ST or bundle data', async () => {
+test('HTML honors display state while ST keeps authoritative raw data and swipes', async () => {
   const playthrough = {
     id: 'pt-a',
     title: '<Alice run>',
@@ -68,11 +68,8 @@ test('three exports honor display state without changing raw ST or bundle data',
   assert.equal(stRows[3].swipe_id, 0)
   assert.equal(stRows[3].mes, 'Original reply')
   assert.equal(stRows[3].swipe_info.length, 2)
+  assert.throws(() => playthroughExportDocument(snapshot, 'bundle'), /Unknown export format/)
 
-  const bundle = JSON.parse(playthroughExportDocument(snapshot, 'bundle').content)
-  assert.equal(bundle.kind, 'pmp-dsh-tavern-playthrough')
-  assert.equal(bundle.timeline.nodes[1].hidden, true)
-  assert.equal(bundle.messagesBySession['session-a'].messages[3].text, 'Hidden reply')
 })
 
 test('exports retain imported read-only history before later DSH timeline turns', async () => {
@@ -110,6 +107,4 @@ test('exports retain imported read-only history before later DSH timeline turns'
   assert.match(st, /Imported hello/)
   assert.match(st, /Old Q/)
   assert.match(st, /New A/)
-  const bundle = JSON.parse(playthroughExportDocument(snapshot, 'bundle').content)
-  assert.equal(bundle.resources.importContext.qa[0].assistant, 'Old A')
 })

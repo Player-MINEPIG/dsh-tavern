@@ -1,8 +1,7 @@
-import { projectTimelineQa } from './chat-model.js'
-
 function parseJsonl(text) {
   const rows = text.split(/\r?\n/).filter(Boolean).map(line => JSON.parse(line))
   if (rows.length === 0) throw new TypeError('play.import.empty')
+  if (rows[0]?.kind === 'pmp-dsh-tavern-playthrough') throw new TypeError('play.import.unsupported')
   const messages = rows.slice(1).filter(row => typeof row?.mes === 'string')
   let greeting = null
   const qa = []
@@ -22,37 +21,9 @@ function parseJsonl(text) {
   return { greeting, qa, source: { format: 'sillytavern-jsonl' } }
 }
 
-function parseBundle(value) {
-  if (value?.kind !== 'pmp-dsh-tavern-playthrough' || value.schemaVersion !== 1) {
-    throw new TypeError('play.import.unsupported')
-  }
-  const turns = projectTimelineQa(value.timeline, value.messagesBySession)
-  const imported = value.resources?.importContext
-  const importedQa = Array.isArray(imported?.qa)
-    ? imported.qa.map(item => ({ user: String(item?.user ?? ''), assistant: String(item?.assistant ?? '') }))
-    : []
-  return {
-    greeting: typeof imported?.greeting === 'string'
-      ? imported.greeting
-      : typeof value.resources?.greeting === 'string' ? value.resources.greeting : null,
-    qa: [
-      ...importedQa,
-      ...turns.filter(turn => !turn.hidden).map(turn => ({ user: turn.userText, assistant: turn.originalAssistantText })),
-    ],
-    source: { format: 'pmp-dsh-tavern-bundle', playthroughId: value.playthrough?.id ?? null },
-  }
-}
-
 export function parsePlaythroughImport(text, fileName = '') {
   if (typeof text !== 'string' || text.trim() === '') throw new TypeError('play.import.empty')
-  const parsed = text.trimStart().startsWith('{') && !text.trimStart().includes('\n')
-    ? parseBundle(JSON.parse(text))
-    : (() => {
-      try { return parseBundle(JSON.parse(text)) } catch (error) {
-        if (text.includes('\n')) return parseJsonl(text)
-        throw error
-      }
-    })()
+  const parsed = parseJsonl(text)
   return { schemaVersion: 1, ...parsed, source: { ...parsed.source, fileName } }
 }
 
