@@ -5,6 +5,7 @@
 - Rebuilt the root README as a concise public landing page: design philosophy, dual-mode compatibility, installation entry, the complete character-card → workspace → RP admission → playthrough → greeting → conversation happy path, feature navigation and contribution routes.
 - Removed every reference to the old screenshots. Added explicit placeholders with proposed v2 asset names and shot descriptions so new release images can be supplied without silently reusing 1.x/early-2.0 visuals; the old asset files remain unreferenced and were not deleted.
 - Added the same minimal path to the full Chinese usage guide, expanded the third-party development invitation, and removed stale documentation that still advertised the withdrawn portable bundle import format.
+- Added a prominent README safety warning that separates Agent/tool, RP overlay, local backend/API, browser rendering/regex and data-lifecycle risks; expanded the formal security policy to state the consequences of prompt injection against high-permission Agents and the limits of inherited RP restrictions.
 
 Verification: documentation links, image references, generic-path policy and Markdown structure checked locally; no runtime bundle change.
 
