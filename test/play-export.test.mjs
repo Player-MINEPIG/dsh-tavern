@@ -15,7 +15,10 @@ test('three exports honor display state without changing raw ST or bundle data',
   const timeline = { nodes: [
     {
       id: 'qa-1', kind: 'qa', hidden: false, displayOverride: 'Displayed <reply>', adoptedVariantId: 'v-1',
-      variants: [{ id: 'v-1', sessionId: 'session-a', startEventId: 1, endEventId: 2 }],
+      variants: [
+        { id: 'v-1', sessionId: 'session-a', startEventId: 1, endEventId: 2 },
+        { id: 'v-1-alt', sessionId: 'session-b', startEventId: 1, endEventId: 2 },
+      ],
     },
     {
       id: 'qa-2', kind: 'qa', hidden: true, displayOverride: null, adoptedVariantId: 'v-2',
@@ -28,9 +31,13 @@ test('three exports honor display state without changing raw ST or bundle data',
     { id: 'u2', role: 'user', seq: 3, content: [], text: 'Hidden user' },
     { id: 'a2', role: 'assistant', seq: 4, content: [], text: 'Hidden reply' },
   ] }
+  const alternateMessages = { incompleteTurn: false, messages: [
+    { id: 'u1-alt', role: 'user', seq: 1, content: [], text: 'Hello' },
+    { id: 'a1-alt', role: 'assistant', seq: 2, content: [], text: 'Alternative reply' },
+  ] }
   const client = {
     async getTimeline() { return timeline },
-    async getMessages() { return messages },
+    async getMessages(sessionId) { return sessionId === 'session-b' ? alternateMessages : messages },
     async getCharacterSelection() {
       return { selection: { characterCardId: 'character-a', character: { greetingIndex: 1 } } }
     },
@@ -53,6 +60,14 @@ test('three exports honor display state without changing raw ST or bundle data',
   assert.ok(st.includes('Alt {{user}} from {{char}}'))
   assert.match(st, /Original reply/)
   assert.doesNotMatch(st, /Displayed|Hidden reply/)
+  const stRows = st.trim().split('\n').map(line => JSON.parse(line))
+  assert.deepEqual(stRows[1].swipes, ['Hi', 'Alt {{user}} from {{char}}'])
+  assert.equal(stRows[1].swipe_id, 1)
+  assert.equal(stRows[1].mes, 'Alt {{user}} from {{char}}')
+  assert.deepEqual(stRows[3].swipes, ['Original reply', 'Alternative reply'])
+  assert.equal(stRows[3].swipe_id, 0)
+  assert.equal(stRows[3].mes, 'Original reply')
+  assert.equal(stRows[3].swipe_info.length, 2)
 
   const bundle = JSON.parse(playthroughExportDocument(snapshot, 'bundle').content)
   assert.equal(bundle.kind, 'pmp-dsh-tavern-playthrough')

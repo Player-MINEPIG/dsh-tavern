@@ -159,45 +159,50 @@ export async function loadCurrentPlaythrough(client, session, options = {}) {
   return match === null ? null : { workspace, ...match }
 }
 
+export function projectTimelineVariant(node, variant, messagesBySession = {}) {
+  const messages = messagesBySession[variant.sessionId]?.messages
+    ?? messagesBySession[variant.sessionId]
+    ?? []
+  const within = messages.filter(message => Number.isSafeInteger(message.seq)
+    && message.seq >= variant.startEventId
+    && message.seq <= variant.endEventId)
+  const trigger = within.find(message => message.role === 'user') ?? null
+  const user = within.find(message => message.role === 'user'
+    && (messageOriginKind(message) === 'user' || messageOriginKind(message) === 'steering')) ?? null
+  const contexts = within
+    .filter(message => message.role === 'user' && messageOriginKind(message) === 'context')
+    .map(contextProjection)
+  const assistants = within.filter(message => message.role === 'assistant')
+  const assistant = assistants.at(-1) ?? null
+  const displayOverridden = typeof node.displayOverride === 'string'
+  return {
+    id: node.id,
+    hidden: node.hidden === true,
+    userText: renderedMessageText(user),
+    userPresent: user !== null,
+    contexts,
+    triggerKind: messageOriginKind(trigger),
+    reasoningText: contentReasoning(assistant?.content),
+    assistantText: displayOverridden ? node.displayOverride : renderedMessageText(assistant),
+    originalAssistantText: renderedMessageText(assistant),
+    assistantCandidates: assistants.map(renderedMessageText),
+    displayOverridden,
+    variant,
+    variants: node.variants,
+    variantCount: node.variants.length,
+  }
+}
+
 export function projectTimelineQa(timeline, messagesBySession = {}) {
   const result = []
   for (const { node, variant } of activeTimelineEntries(timeline)) {
     if (node.kind !== 'qa') continue
-    const messages = messagesBySession[variant.sessionId]?.messages
-      ?? messagesBySession[variant.sessionId]
-      ?? []
-    const within = messages.filter(message => Number.isSafeInteger(message.seq)
-      && message.seq >= variant.startEventId
-      && message.seq <= variant.endEventId)
-    const trigger = within.find(message => message.role === 'user') ?? null
-    const user = within.find(message => message.role === 'user'
-      && (messageOriginKind(message) === 'user' || messageOriginKind(message) === 'steering')) ?? null
-    const contexts = within
-      .filter(message => message.role === 'user' && messageOriginKind(message) === 'context')
-      .map(contextProjection)
-    const assistants = within.filter(message => message.role === 'assistant')
-    const assistant = assistants.at(-1) ?? null
-    const displayOverridden = typeof node.displayOverride === 'string'
-    const projected = {
-      id: node.id,
-      hidden: node.hidden === true,
-      userText: renderedMessageText(user),
-      contexts,
-      triggerKind: messageOriginKind(trigger),
-      reasoningText: contentReasoning(assistant?.content),
-      assistantText: displayOverridden ? node.displayOverride : renderedMessageText(assistant),
-      originalAssistantText: renderedMessageText(assistant),
-      assistantCandidates: assistants.map(renderedMessageText),
-      displayOverridden,
-      variant,
-      variants: node.variants,
-      variantCount: node.variants.length,
-    }
+    const projected = projectTimelineVariant(node, variant, messagesBySession)
     const previous = result.at(-1)
-    if (user === null && previous !== undefined && previous.variant.sessionId === variant.sessionId) {
+    if (!projected.userPresent && previous !== undefined && previous.variant.sessionId === variant.sessionId) {
       previous.contexts.push(...projected.contexts)
       previous.assistantCandidates.push(...projected.assistantCandidates)
-      if (displayOverridden) {
+      if (projected.displayOverridden) {
         previous.assistantText = projected.assistantText
         previous.displayOverridden = true
       } else if (!previous.displayOverridden && projected.assistantCandidates.length > 0) {
@@ -206,7 +211,8 @@ export function projectTimelineQa(timeline, messagesBySession = {}) {
       if (projected.originalAssistantText !== '') previous.originalAssistantText = projected.originalAssistantText
       if (projected.reasoningText !== '') previous.reasoningText = projected.reasoningText
     } else {
-      result.push(projected)
+      const { userPresent: _userPresent, ...turn } = projected
+      result.push(turn)
     }
   }
   return result
