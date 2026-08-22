@@ -32,6 +32,8 @@ pmp-dsh-tavern 不是用另一套界面取代 DSH，也不会复制一份会话�
 
 ## Quick Start：从角色卡到第一轮 RP 对话
 
+视频演示：[pmp-dsh-tavern v2.0「灵珠魔丸」](https://www.bilibili.com/video/BV1cf8265Ehf/)
+
 ### 0. 安装
 
 环境要求：Node.js 20 或更高版本、可从 `PATH` 调用的 DSH，以及一个已经初始化的 DSH profile（默认 `web`）。
@@ -49,39 +51,39 @@ npm run plugin:install
 
 左键点击 `DT` 悬浮球打开菜单，进入“角色卡”，导入 SillyTavern JSON 或 PNG 角色卡。导入只创建资源，不会伪造会话或自动发送消息。
 
-![悬浮球角色卡](.\docs\assets\悬浮球角色卡.png)
+![悬浮球角色卡](docs/assets/悬浮球角色卡.png)
 
-![导入角色卡](.\docs\assets\导入角色卡.png)
+![导入角色卡](docs/assets/导入角色卡.png)
 
 ### 2. 创建 DSH 工作区
 
 回到 DSH 原生界面，使用 DSH 自己的工作区能力创建一个准备专门用于 RP 的工作区。所有周目 session 都会归入同一工作区，避免多个角色会话散落并遮挡普通工作。
 
-![新建工作区](.\docs\assets\新建工作区.png)
+![新建工作区](docs/assets/新建工作区.png)
 
 ### 3. 进入 RP 前端并选择工作区
 
 右键单击 `DT` 悬浮球，或在菜单中点击“切换到自定义前端模式”。首次进入魔丸时，插件会要求从 DSH 已有工作区中明确选择 RP 工作区；写入并回读确认前不会进入 RP 内容。
 
-![切换](.\docs\assets\切换.png)
+![切换](docs/assets/切换.png)
 
 ### 4. 创建周目
 
 在 RP 侧边栏找到刚导入的角色卡，点击角色卡右侧的 `+`。插件会创建或复用该角色最近一个完全空白的 `N周目`，并确保 root session 绑定的是你实际点击的角色卡。
 
-![创建周目](.\docs\assets\创建周目.png)
+![创建周目](docs/assets/创建周目.png)
 
 ### 5. 选择开场白
 
 空周目的 opening dock 会显示角色卡 greeting。存在备选开场白时可用左右按钮选择；这只是前端展示与首轮提示词参考，不会伪造成一次已经发生的 assistant 回复。
 
-![开场白](.\docs\assets\开场白.png)
+![开场白](docs/assets/开场白.png)
 
 ### 6. 开始对话
 
 在 DSH 原生输入栏发送第一条用户消息。用户消息会立即出现在 RP 视图中；随后可继续使用 swipe、分支新周目、同周目回退、显示文字编辑及导入/导出等功能。
 
-![对话](.\docs\assets\对话.png)
+![对话](docs/assets/对话.png)
 
 完整操作与边界见 [中文使用指南](docs/USAGE_zh-CN.md)。
 
