@@ -351,7 +351,7 @@ test('Mowan workspace admission is explicit and stays closed until authoritative
   assert.match(source, /role: 'dialog'[\s\S]*'aria-modal': 'true'/)
 
 })
-test('RP sidebar character order uses preset-style pointer dragging and the v1 resource API', () => {
+test('RP sidebar separates automatic sort modes from preset-style custom dragging', () => {
   const source = readFileSync(new URL('../packages/client/src/play/sidebar.js', import.meta.url), 'utf8')
 
   assert.match(source, /reorderAtBoundary/)
@@ -359,5 +359,8 @@ test('RP sidebar character order uses preset-style pointer dragging and the v1 r
   assert.match(source, /data-dragging/)
   assert.match(source, /setPointerCapture/)
   assert.match(source, /CharacterDropPlaceholder/)
-  assert.match(source, /playClient\.putCharacterOrder\(characterIds\)/)
+  assert.match(source, /playClient\.putCharacterOrder\('custom', characterIds\)/)
+  assert.match(source, /value: resources\.characterSorting\?\.mode \?\? 'updated'/)
+  assert.match(source, /resources\?\.characterSorting\?\.mode !== 'custom'/)
+  assert.match(source, /await playClient\.relinkCharacter\(recovery\.missing\.id, recovery\.character\.id\)/)
 })

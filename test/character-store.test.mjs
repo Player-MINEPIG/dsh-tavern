@@ -77,6 +77,31 @@ test('orders characters by recency then A to Z until a custom order is saved', (
   }
 })
 
+test('keeps a deleted character tombstone and safely identifies a reimported card', () => {
+  const { directory, store } = temporaryStore()
+  const source = Buffer.from(synthetic('Returning card'))
+  try {
+    store.import(source, { id: 'old-card' })
+    store.delete('old-card')
+    assert.deepEqual(store.missing(), [{
+      id: 'old-card',
+      name: 'Returning card',
+      sha256: createHash('sha256').update(source).digest('hex'),
+    }])
+
+    store.import(source, { id: 'new-card' })
+    assert.deepEqual(store.recoveryFor('new-card'), {
+      previousId: 'old-card',
+      characterId: 'new-card',
+      match: 'sha256',
+    })
+    assert.equal(store.resolveMissing('old-card'), true)
+    assert.deepEqual(new CharacterStore(directory).missing(), [])
+  } finally {
+    rmSync(directory, { recursive: true, force: true })
+  }
+})
+
 test('keeps per-session selections durable and clears references on delete', () => {
   const { directory, store } = temporaryStore()
   try {

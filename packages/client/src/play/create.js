@@ -199,6 +199,8 @@ export async function createCharacterPlaythrough(client, {
     ext: {
       pmpDshTavern: {
         characterId,
+        characterName: character.name,
+        ...(typeof character.sha256 === 'string' ? { characterSha256: character.sha256 } : {}),
         rootSessionId: sessionId,
         playthroughNumber: 0,
       },

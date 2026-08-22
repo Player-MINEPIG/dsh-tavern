@@ -242,6 +242,12 @@ function validateKnownPlaythroughExt(ext, label) {
   if (known !== undefined) {
     if (!isRecord(known)) catalogError(`${label}.pmpDshTavern must be an object`)
     if (known.characterId !== undefined) safeSegment(known.characterId, `${label}.pmpDshTavern.characterId`)
+    if (known.characterName !== undefined && (typeof known.characterName !== 'string' || known.characterName.length > 200)) {
+      catalogError(`${label}.pmpDshTavern.characterName must be a string of at most 200 characters`)
+    }
+    if (known.characterSha256 !== undefined && (typeof known.characterSha256 !== 'string' || !/^[a-f0-9]{64}$/i.test(known.characterSha256))) {
+      catalogError(`${label}.pmpDshTavern.characterSha256 must be a SHA-256 hex digest`)
+    }
     if (known.rootSessionId !== undefined) safeSessionId(known.rootSessionId, `${label}.pmpDshTavern.rootSessionId`)
     if (known.playthroughNumber !== undefined && (!Number.isSafeInteger(known.playthroughNumber) || known.playthroughNumber < 1)) {
       catalogError(`${label}.pmpDshTavern.playthroughNumber must be a positive safe integer`)

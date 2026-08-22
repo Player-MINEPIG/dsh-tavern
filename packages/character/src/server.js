@@ -149,6 +149,15 @@ function characterOrderBody(value) {
   return { mode: value.mode, characterIds: value.characterIds }
 }
 
+function characterRelinkBody(value) {
+  if (value === null || typeof value !== 'object' || Array.isArray(value)) throw new TypeError('Character relink request must be an object')
+  const unexpected = Object.keys(value).find(key => key !== 'previousCharacterId' && key !== 'characterId')
+  if (unexpected !== undefined) throw new TypeError(`Unsupported character relink field "${unexpected}"`)
+  if (typeof value.previousCharacterId !== 'string' || value.previousCharacterId === '') throw new TypeError('previousCharacterId must be a non-empty string')
+  if (typeof value.characterId !== 'string' || value.characterId === '') throw new TypeError('characterId must be a non-empty string')
+  return { previousCharacterId: value.previousCharacterId, characterId: value.characterId }
+}
+
 function worldBookIdsBody(value) {
   if (value === null || typeof value !== 'object' || Array.isArray(value)) {
     throw new TypeError('Character world-book binding request must be an object')
@@ -167,6 +176,8 @@ function worldBookBindingPayload(characterCardId, policy) {
 export function createCharacterApiHandler(store, options = {}) {
   const onChange = options.onChange ?? (() => {})
   const beforeSelectionChange = options.beforeSelectionChange ?? (() => {})
+  const relinkCharacter = options.relinkCharacter
+  const logger = options.logger
   const selectionPolicy = options.selectionPolicy
   const worldBookBindingPolicy = options.worldBookBindingPolicy ?? null
   return async (req, res) => {
@@ -175,6 +186,21 @@ export function createCharacterApiHandler(store, options = {}) {
       const path = url.pathname
       const method = req.method ?? 'GET'
       const route = characterRoute(path)
+      if (method === 'POST' && path === `${API_V1}/characters/relink`) {
+        if (typeof relinkCharacter !== 'function') throw new Error('Character relink service is not installed')
+        const body = characterRelinkBody(await readJson(req, 64 * 1024))
+        const character = store.list().find(item => item.id === body.characterId)
+        if (character === undefined) {
+          store.get(body.characterId)
+          throw new Error('Character summary is unavailable')
+        }
+        logger?.info?.(`dsh-tavern: character relink begin ${body.previousCharacterId} -> ${body.characterId}`)
+        const result = await relinkCharacter(body.previousCharacterId, character)
+        store.resolveMissing(body.previousCharacterId)
+        logger?.info?.(`dsh-tavern: character relink committed ${body.previousCharacterId} -> ${body.characterId}; playthroughs=${result.relinkedPlaythroughCount ?? 0}; sessions=${result.relinkedSessionCount ?? 0}`)
+        onChange({ kind: 'character-relinked', previousCharacterCardId: body.previousCharacterId, characterCardId: body.characterId })
+        return sendJson(res, 200, { ok: true, ...result })
+      }
       if (method === 'PUT' && path === `${API_V1}/characters/order`) {
         const body = characterOrderBody(await readJson(req, 512 * 1024))
         const result = store.setSorting(body.mode, body.characterIds)
@@ -183,7 +209,7 @@ export function createCharacterApiHandler(store, options = {}) {
       }
 
       if (method === 'GET' && path === `${API_V1}/characters`) {
-        return sendJson(res, 200, { ok: true, characters: store.list(), sorting: store.sorting() })
+        return sendJson(res, 200, { ok: true, characters: store.list(), sorting: store.sorting(), missingCharacters: store.missing() })
       }
 
       if (method === 'POST' && path === `${API_V1}/characters`) {
@@ -200,11 +226,25 @@ export function createCharacterApiHandler(store, options = {}) {
         const bytes = await readBytes(req)
         if (bytes.length === 0) throw new TypeError('Character import body is empty')
         const character = store.import(bytes, { fileName: fileName(url.searchParams.get('filename'), 'character') })
+        let recovery = store.recoveryFor(character.id)
+        if (recovery !== null && typeof relinkCharacter === 'function') {
+          try {
+            logger?.info?.(`dsh-tavern: automatic character recovery begin ${recovery.previousId} -> ${character.id}; match=${recovery.match}`)
+            const result = await relinkCharacter(recovery.previousId, store.list().find(item => item.id === character.id))
+            store.resolveMissing(recovery.previousId)
+            recovery = { ...recovery, restored: true, ...result }
+            logger?.info?.(`dsh-tavern: automatic character recovery committed ${recovery.previousId} -> ${character.id}`)
+          } catch (error) {
+            recovery = { ...recovery, restored: false, error: error instanceof Error ? error.message : String(error) }
+            logger?.warn?.(`dsh-tavern: automatic character recovery deferred ${recovery.previousId} -> ${character.id}: ${recovery.error}`)
+          }
+        }
         onChange({ kind: 'character-imported', characterCardId: character.id })
         return sendJson(res, 201, {
           ok: true,
           character: store.list().find((item) => item.id === character.id),
           compatibility: character.compatibility,
+          ...(recovery === null ? {} : { recovery }),
         })
       }
 

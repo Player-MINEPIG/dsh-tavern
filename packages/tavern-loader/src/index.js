@@ -130,6 +130,13 @@ export function createCharacterSelectionPolicy(characterStore, selections, resou
       selections.set(sessionId, normalized)
       return normalized
     },
+    selectMany(sessionIds, patch) {
+      if (patch === null || patch.characterCardId === null) {
+        return selections.setMany(sessionIds, { characterCardId: null, character: {} })
+      }
+      const normalized = characterStore.normalizeSelection(patch.characterCardId, patch)
+      return selections.setMany(sessionIds, normalized)
+    },
     clearResource(kind, id) {
       const sessionChanged = selections.clearResource(kind, id)
       const bindingChanged = kind === 'character'
@@ -363,6 +370,7 @@ export function apply(ctx, config = {}) {
     'character',
   )
   const selectCharacter = characterSelectionPolicy.select.bind(characterSelectionPolicy)
+  const selectManyCharacters = characterSelectionPolicy.selectMany.bind(characterSelectionPolicy)
   characterSelectionPolicy.select = (sessionId, patch) => {
     const previousId = characterSelectionPolicy.selection(sessionId)?.characterCardId ?? null
     const result = selectCharacter(sessionId, patch)
@@ -370,6 +378,17 @@ export function apply(ctx, config = {}) {
       previousId,
       nextId: result?.characterCardId ?? null,
     })
+    return result
+  }
+  characterSelectionPolicy.selectMany = (sessionIds, patch) => {
+    const previous = new Map(sessionIds.map(sessionId => [sessionId, characterSelectionPolicy.selection(sessionId)?.characterCardId ?? null]))
+    const result = selectManyCharacters(sessionIds, patch)
+    for (const sessionId of sessionIds) {
+      rpMode.followCharacterChange(sessionId, {
+        previousId: previous.get(sessionId) ?? null,
+        nextId: result?.[sessionId]?.characterCardId ?? null,
+      })
+    }
     return result
   }
   const sessionConfigurations = new SessionConfigurationService({
@@ -511,7 +530,11 @@ export function apply(ctx, config = {}) {
     )
     const characterApi = createCharacterApiHandler(characterStore, {
       onChange: notifyChange,
+      logger: ctx.logger,
       selectionPolicy: characterSelectionPolicy,
+      relinkCharacter: (previousCharacterId, character) => playMemberships.relinkCharacter(previousCharacterId, character, {
+        selectionPolicy: characterSelectionPolicy,
+      }),
       worldBookBindingPolicy: characterWorldBookBindingPolicy,
       beforeSelectionChange: ({ sessionId, characterCardId }) => {
         const agent = ctx.get('agents')?.get?.(sessionId)

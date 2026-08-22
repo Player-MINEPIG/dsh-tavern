@@ -223,6 +223,20 @@ export class SessionSelectionStore {
     return this.get(key)
   }
 
+  setMany(ids, patch) {
+    if (!Array.isArray(ids)) throw new TypeError('Session ids must be an array')
+    const updates = new Map()
+    for (const value of ids) {
+      const key = sessionId(value)
+      if (key === null) throw new TypeError('Every session id must be non-empty')
+      updates.set(key, normalizeSelection({ ...this.get(key), ...clone(patch) }))
+    }
+    this.commit((next) => {
+      for (const [key, selection] of updates) next.sessions[key] = { selection, updatedAt: this.now() }
+    })
+    return Object.fromEntries([...updates.keys()].map(key => [key, this.get(key)]))
+  }
+
   ensureAgent(agent) {
     const key = sessionId(agent?.id)
     if (key === null) return this.defaults()

@@ -114,6 +114,17 @@ function sessionIdsInTimeline(timeline) {
   return new Set(timeline.nodes.flatMap(node => node.variants.map(variant => variant.sessionId)))
 }
 
+function playthroughWithCharacter(playthrough, character) {
+  const ext = { ...(playthrough.ext ?? {}) }
+  ext[EXTENSION_KEY] = {
+    ...(ext[EXTENSION_KEY] ?? {}),
+    characterId: character.id,
+    characterName: character.name,
+    ...(typeof character.sha256 === 'string' ? { characterSha256: character.sha256 } : {}),
+  }
+  return { ...playthrough, ext }
+}
+
 function withoutRoot(playthrough) {
   const ext = { ...(playthrough.ext ?? {}) }
   const known = { ...(ext[EXTENSION_KEY] ?? {}) }
@@ -183,6 +194,69 @@ export class PlayMembershipService {
       })
     }
     return conflicts
+  }
+
+  relinkCharacter(previousCharacterId, character, { selectionPolicy, operation } = {}) {
+    if (typeof previousCharacterId !== 'string' || previousCharacterId === '') throw new TypeError('previousCharacterId is required')
+    if (typeof character?.id !== 'string' || character.id === '' || typeof character.name !== 'string') throw new TypeError('character is required')
+    let catalogDocument
+    try {
+      catalogDocument = this.readCatalog()
+    } catch (error) {
+      if (error?.code === 'PLAY_PATH_NOT_FOUND') return { relinkedPlaythroughCount: 0, relinkedSessionCount: 0 }
+      throw error
+    }
+    const matches = catalogDocument.catalog.playthroughs.filter(item => characterIdFor(item) === previousCharacterId)
+    if (matches.length === 0) return { relinkedPlaythroughCount: 0, relinkedSessionCount: 0 }
+
+    const sessionIds = new Set()
+    for (const playthrough of matches) {
+      const root = playthrough.ext?.[EXTENSION_KEY]?.rootSessionId
+      if (typeof root === 'string' && root !== '') sessionIds.add(root)
+      const { timeline } = this.readTimeline(playthrough)
+      for (const id of sessionIdsInTimeline(timeline)) sessionIds.add(id)
+    }
+    for (const sessionId of sessionIds) {
+      const selected = selectionPolicy?.selection?.(sessionId)
+      if (selected !== null && selected !== undefined && selected.characterCardId !== character.id) {
+        throw httpError(409, `session "${sessionId}" is already bound to another character`, 'PLAY_CHARACTER_RELINK_CONFLICT')
+      }
+    }
+
+    const nextCatalog = {
+      ...catalogDocument.catalog,
+      playthroughs: catalogDocument.catalog.playthroughs.map(item => (
+        characterIdFor(item) === previousCharacterId ? playthroughWithCharacter(item, character) : item
+      )),
+    }
+    operation?.stage('catalog.character-relink.begin', { previousCharacterId, characterId: character.id, playthroughCount: matches.length })
+    const written = this.workspaceStore.writeFile('catalog.json', JSON.stringify(nextCatalog), {
+      expectedRevision: catalogDocument.file.revision,
+      expectedRevisionPresent: true,
+      validate: validatePlayDocument,
+    })
+    try {
+      const patch = { characterCardId: character.id, character: { greetingIndex: 0 } }
+      if (sessionIds.size > 0) {
+        if (typeof selectionPolicy?.selectMany === 'function') selectionPolicy.selectMany([...sessionIds], patch)
+        else if (typeof selectionPolicy?.select === 'function') {
+          for (const sessionId of sessionIds) selectionPolicy.select(sessionId, patch)
+        } else throw new Error('Character selection policy is not installed')
+      }
+    } catch (error) {
+      try {
+        this.workspaceStore.writeFile('catalog.json', JSON.stringify(catalogDocument.catalog), {
+          expectedRevision: written.revision,
+          expectedRevisionPresent: true,
+          validate: validatePlayDocument,
+        })
+      } catch (rollbackError) {
+        error.rollbackError = rollbackError
+      }
+      throw error
+    }
+    operation?.stage('catalog.character-relink.committed', { previousCharacterId, characterId: character.id, sessionCount: sessionIds.size })
+    return { relinkedPlaythroughCount: matches.length, relinkedSessionCount: sessionIds.size }
   }
 
   detach(playthroughId, sessionId, { operation } = {}) {

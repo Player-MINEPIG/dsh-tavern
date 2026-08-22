@@ -19,6 +19,16 @@ function sessionTitle(session, id) {
   return id
 }
 
+function historicalCharacterName(playthrough, sessions, fallback) {
+  const preserved = playthrough?.ext?.pmpDshTavern?.characterName
+  if (typeof preserved === 'string' && preserved.trim() !== '') return preserved
+  const root = rootSessionId(playthrough)
+  if (root === null) return fallback
+  const title = sessionTitle(sessions[root], root)
+  const inferred = title.replace(/\s+\d{4}-\d{2}-\d{2}\s+\d{2}:\d{2}$/, '').trim()
+  return inferred !== '' && inferred !== root ? inferred : fallback
+}
+
 function normalizedPath(value) {
   if (typeof value !== 'string') return ''
   const normalized = value.replaceAll('\\', '/').replace(/\/+$/, '')
@@ -143,8 +153,9 @@ export async function loadPlaySidebarResources(client) {
     client.getCharacters(),
   ])
   const characters = Array.isArray(characterResponse?.characters) ? characterResponse.characters : []
+  const missingCharacters = Array.isArray(characterResponse?.missingCharacters) ? characterResponse.missingCharacters : []
   const characterSorting = characterResponse?.sorting ?? { mode: 'updated' }
-  if (workspace.selected !== true) return { workspace, characters, characterSorting, catalog: { playthroughs: [] }, timelines: {}, diagnostics: [] }
+  if (workspace.selected !== true) return { workspace, characters, missingCharacters, characterSorting, catalog: { playthroughs: [] }, timelines: {}, diagnostics: [] }
 
   let catalog
   try {
@@ -166,13 +177,14 @@ export async function loadPlaySidebarResources(client) {
       })
     }
   })
-  return { workspace, characters, characterSorting, catalog, timelines, diagnostics }
+  return { workspace, characters, missingCharacters, characterSorting, catalog, timelines, diagnostics }
 }
 
 export function projectPlaySidebar({
   workspace = { selected: false },
   workspaceItems = [],
   characters = [],
+  missingCharacters = [],
   catalog = { playthroughs: [] },
   timelines = {},
   sessions = {},
@@ -185,7 +197,23 @@ export function projectPlaySidebar({
   const archived = new Set(archivedSessionIds)
   const rpSessionIds = sessionIdsInRpWorkspace({ workspace, workspaceItems, sessions })
   const characterById = new Map()
+  const missingById = new Map(missingCharacters.map(item => [item.id, item]))
+  const missingCharacterById = new Map()
   const ensureCharacter = (id, name = id) => {
+    if (!characterById.has(id) && !characters.some(item => item?.id === id)) {
+      if (!missingCharacterById.has(id)) {
+        const missing = missingById.get(id)
+        missingCharacterById.set(id, {
+          id,
+          name: missing?.name ?? name,
+          ...(typeof missing?.sha256 === 'string' ? { sha256: missing.sha256 } : {}),
+          playthroughs: [],
+          unassigned: [],
+          missing: true,
+        })
+      }
+      return missingCharacterById.get(id)
+    }
     if (!characterById.has(id)) characterById.set(id, { id, name, playthroughs: [], unassigned: [] })
     return characterById.get(id)
   }
@@ -199,10 +227,15 @@ export function projectPlaySidebar({
     const rootId = rootSessionId(playthrough)
     const characterId = playthroughCharacterId(playthrough)
     if (characterId === null) continue
+    const characterReference = playthrough.ext?.pmpDshTavern ?? {}
     const allMembers = playthroughMembers(playthrough, timelineFor(timelines, playthrough))
     const members = [...allMembers].filter(id => rpSessionIds.has(id) && !archived.has(id))
     for (const id of members) claimedRpSessions.add(id)
-    ensureCharacter(characterId).playthroughs.push({
+    const characterGroup = ensureCharacter(characterId, historicalCharacterName(playthrough, sessions, characterId))
+    if (characterGroup.missing === true && characterGroup.sha256 === undefined && typeof characterReference.characterSha256 === 'string') {
+      characterGroup.sha256 = characterReference.characterSha256
+    }
+    characterGroup.playthroughs.push({
       ...playthrough,
       title: typeof playthrough.title === 'string' && playthrough.title !== '' ? playthrough.title : playthrough.id,
       rootSessionId: rootId !== null && members.includes(rootId) ? rootId : null,
@@ -242,6 +275,7 @@ export function projectPlaySidebar({
     rpSessionIds: [...rpSessionIds],
     playSessionIds: [...claimedRpSessions],
     characters: [...characterById.values()],
+    missingCharacters: [...missingCharacterById.values()],
     otherSessions,
   }
 }

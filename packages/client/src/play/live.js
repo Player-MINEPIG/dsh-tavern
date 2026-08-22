@@ -325,6 +325,10 @@ export function createLivePlayClient({
       })
     },
 
+    relinkCharacter(previousCharacterId, characterId) {
+      return v1('POST', '/characters/relink', { previousCharacterId, characterId })
+    },
+
     getCharacter(id) {
       return v1('GET', `/characters/${encodeURIComponent(id)}`)
     },

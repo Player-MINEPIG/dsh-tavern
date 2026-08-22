@@ -107,6 +107,39 @@ test('character API imports raw bytes, reads resources, selects, exports, and de
   }
 })
 
+test('character import automatically relinks one uniquely matching deleted card', async () => {
+  const directory = mkdtempSync(join(tmpdir(), 'dsh-tavern-character-recovery-api-'))
+  const store = new CharacterStore(directory)
+  const relinks = []
+  const handler = createCharacterApiHandler(store, {
+    relinkCharacter(previousCharacterId, character) {
+      relinks.push({ previousCharacterId, characterId: character.id })
+      return { relinkedPlaythroughCount: 2, relinkedSessionCount: 3 }
+    },
+  })
+  const source = Buffer.from(JSON.stringify({ name: 'Returning card', first_mes: 'Hello' }))
+  try {
+    const original = await invoke(handler, {
+      method: 'POST',
+      url: '/pmp-dsh-tavern/api/v1/characters/import?filename=returning.json',
+      body: source,
+    })
+    await invoke(handler, { method: 'DELETE', url: `/pmp-dsh-tavern/api/v1/characters/${original.json.character.id}` })
+    const restored = await invoke(handler, {
+      method: 'POST',
+      url: '/pmp-dsh-tavern/api/v1/characters/import?filename=returning.json',
+      body: source,
+    })
+    assert.equal(restored.status, 201)
+    assert.equal(restored.json.recovery.match, 'sha256')
+    assert.equal(restored.json.recovery.restored, true)
+    assert.deepEqual(relinks, [{ previousCharacterId: original.json.character.id, characterId: restored.json.character.id }])
+    assert.deepEqual(store.missing(), [])
+  } finally {
+    rmSync(directory, { recursive: true, force: true })
+  }
+})
+
 test('character API persists an exact custom sidebar order', async () => {
   const directory = mkdtempSync(join(tmpdir(), 'dsh-tavern-character-order-api-'))
   const store = new CharacterStore(directory)

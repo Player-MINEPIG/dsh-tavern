@@ -155,16 +155,18 @@ function compareNames(left, right) {
 }
 
 const CHARACTER_SORT_MODES = new Set(['updated', 'name', 'custom'])
+const MAX_MISSING_CHARACTERS = 4096
 
-function stateShape(selections, characterSortMode = 'updated', characterOrder = []) {
-  return { schemaVersion: 1, selectedBySessionId: selections, characterSortMode, characterOrder }
+function stateShape(selections, characterSortMode = 'updated', characterOrder = [], missingCharacters = []) {
+  return { schemaVersion: 1, selectedBySessionId: selections, characterSortMode, characterOrder, missingCharacters }
 }
 
 function normalizeState(value) {
   const selections = Object.create(null)
   const characterOrder = []
+  const missingCharacters = []
   if (!isRecord(value) || value.schemaVersion !== 1 || !isRecord(value.selectedBySessionId)) {
-    return stateShape(selections, 'updated', characterOrder)
+    return stateShape(selections, 'updated', characterOrder, missingCharacters)
   }
   for (const [sessionId, selection] of Object.entries(value.selectedBySessionId)) {
     try {
@@ -184,7 +186,21 @@ function normalizeState(value) {
   const characterSortMode = CHARACTER_SORT_MODES.has(value.characterSortMode)
     ? value.characterSortMode
     : characterOrder.length > 0 ? 'custom' : 'updated'
-  return stateShape(selections, characterSortMode, characterOrder)
+  const missingIds = new Set()
+  for (const item of Array.isArray(value.missingCharacters) ? value.missingCharacters : []) {
+    try {
+      validateId(item?.id)
+      if (missingIds.has(item.id) || typeof item.name !== 'string' || item.name.trim() === '') continue
+      missingIds.add(item.id)
+      missingCharacters.push({
+        id: item.id,
+        name: item.name.slice(0, 200),
+        ...(typeof item.sha256 === 'string' && /^[a-f0-9]{64}$/i.test(item.sha256) ? { sha256: item.sha256.toLowerCase() } : {}),
+      })
+      if (missingCharacters.length >= MAX_MISSING_CHARACTERS) break
+    } catch {}
+  }
+  return stateShape(selections, characterSortMode, characterOrder, missingCharacters)
 }
 
 function greetingCount(character) {
@@ -261,6 +277,33 @@ export class CharacterStore {
 
   sorting() {
     return { mode: this.state.characterSortMode }
+  }
+
+  missing() {
+    return clone(this.state.missingCharacters)
+  }
+
+  recoveryFor(id) {
+    const character = summary(this.get(id))
+    const byHash = typeof character.sha256 === 'string'
+      ? this.state.missingCharacters.filter(item => item.sha256 === character.sha256)
+      : []
+    if (byHash.length === 1) return { previousId: byHash[0].id, characterId: id, match: 'sha256' }
+    const normalizedName = character.name.trim().toLocaleLowerCase('zh-CN')
+    const missingByName = this.state.missingCharacters.filter(item => item.name.trim().toLocaleLowerCase('zh-CN') === normalizedName)
+    const currentByName = this.list().filter(item => item.name.trim().toLocaleLowerCase('zh-CN') === normalizedName)
+    return missingByName.length === 1 && currentByName.length === 1
+      ? { previousId: missingByName[0].id, characterId: id, match: 'name' }
+      : null
+  }
+
+  resolveMissing(id) {
+    validateId(id)
+    const next = this.state.missingCharacters.filter(item => item.id !== id)
+    if (next.length === this.state.missingCharacters.length) return false
+    this.state.missingCharacters = next
+    this.saveState()
+    return true
   }
 
   setSorting(mode, characterIds) {
@@ -434,9 +477,24 @@ export class CharacterStore {
 
   delete(id) {
     validateId(id)
+    const character = this.get(id)
+    const deletedSummary = summary(character)
     try { unlinkSync(this.characterPath(id)) } catch (error) { if (error?.code !== 'ENOENT') throw error }
     try { unlinkSync(this.artifactPath(id)) } catch (error) { if (error?.code !== 'ENOENT') throw error }
     let changed = false
+    const missingIndex = this.state.missingCharacters.findIndex(item => item.id === id)
+    const missing = {
+      id,
+      name: deletedSummary.name,
+      ...(typeof deletedSummary.sha256 === 'string' ? { sha256: deletedSummary.sha256 } : {}),
+    }
+    if (missingIndex === -1) {
+      this.state.missingCharacters.push(missing)
+      if (this.state.missingCharacters.length > MAX_MISSING_CHARACTERS) this.state.missingCharacters.shift()
+    } else {
+      this.state.missingCharacters[missingIndex] = missing
+    }
+    changed = true
     const orderIndex = this.state.characterOrder.indexOf(id)
     if (orderIndex !== -1) {
       this.state.characterOrder.splice(orderIndex, 1)

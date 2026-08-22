@@ -3815,6 +3815,15 @@ var zh_CN_default = Object.freeze({
   "play.sidebar.systemWorkspaceConfirm": "{path} \u4F4D\u4E8E\u7CFB\u7EDF\u76D8\uFF0C\u4ECD\u8981\u5C06\u5176\u8BBE\u4E3A\u89D2\u8272\u626E\u6F14\u5DE5\u4F5C\u533A\u5417\uFF1F",
   "play.sidebar.newPlaythrough": "\u4E0E {name} \u65B0\u5F00\u5468\u76EE",
   "play.sidebar.noCharacters": "\u6682\u65E0\u89D2\u8272\u5361\u3002",
+  "play.sidebar.sort": "\u6392\u5E8F",
+  "play.sidebar.sortUpdated": "\u66F4\u65B0\u65F6\u95F4",
+  "play.sidebar.sortName": "\u540D\u79F0 A\u2013Z",
+  "play.sidebar.sortCustom": "\u81EA\u5B9A\u4E49",
+  "play.sidebar.missingCharacters": "\u7F3A\u5931\u89D2\u8272\u5361",
+  "play.sidebar.relinkCharacter": "\u91CD\u65B0\u5173\u8054\u89D2\u8272\u5361",
+  "play.sidebar.relinkCharacterNamed": "\u4E3A {name} \u91CD\u65B0\u5173\u8054\u89D2\u8272\u5361",
+  "play.sidebar.relinkPrompt": "\u201C{name}\u201D\u7684\u539F\u89D2\u8272\u5361\u5DF2\u7F3A\u5931\u3002\u9009\u62E9\u4E00\u5F20\u5F53\u524D\u89D2\u8272\u5361\u540E\uFF0C\u4F1A\u5C06\u5176\u5168\u90E8\u5468\u76EE\u548C\u4F1A\u8BDD\u91CD\u65B0\u5173\u8054\u5230\u65B0\u5361\u3002",
+  "play.sidebar.relinkConfirm": "\u91CD\u65B0\u5173\u8054",
   "play.sidebar.noPlaythroughs": "\u5C1A\u672A\u521B\u5EFA\u5468\u76EE\u3002",
   "play.sidebar.unassigned": "\u672A\u5F52\u5165\u5468\u76EE",
   "play.sidebar.other": "\u666E\u901A / \u975E\u89D2\u8272\u626E\u6F14\u4F1A\u8BDD",
@@ -4446,6 +4455,15 @@ var en_default = Object.freeze({
   "play.sidebar.systemWorkspaceConfirm": "{path} is on the system disk. Use it as the role-play workspace anyway?",
   "play.sidebar.newPlaythrough": "Start a new playthrough with {name}",
   "play.sidebar.noCharacters": "No character cards are available.",
+  "play.sidebar.sort": "Sort",
+  "play.sidebar.sortUpdated": "Recently updated",
+  "play.sidebar.sortName": "Name A\u2013Z",
+  "play.sidebar.sortCustom": "Custom",
+  "play.sidebar.missingCharacters": "Missing character cards",
+  "play.sidebar.relinkCharacter": "Relink character card",
+  "play.sidebar.relinkCharacterNamed": "Relink the character card for {name}",
+  "play.sidebar.relinkPrompt": "The original card for \u201C{name}\u201D is missing. Select a current card to relink all of its playthroughs and sessions.",
+  "play.sidebar.relinkConfirm": "Relink",
   "play.sidebar.noPlaythroughs": "No playthroughs yet.",
   "play.sidebar.unassigned": "Not in a playthrough",
   "play.sidebar.other": "Regular / non-role-play sessions",
@@ -10668,6 +10686,15 @@ function sessionTitle(session, id) {
   if (typeof session?.title === "string" && session.title !== "") return session.title;
   return id;
 }
+function historicalCharacterName(playthrough, sessions, fallback) {
+  const preserved = playthrough?.ext?.pmpDshTavern?.characterName;
+  if (typeof preserved === "string" && preserved.trim() !== "") return preserved;
+  const root = rootSessionId2(playthrough);
+  if (root === null) return fallback;
+  const title = sessionTitle(sessions[root], root);
+  const inferred = title.replace(/\s+\d{4}-\d{2}-\d{2}\s+\d{2}:\d{2}$/, "").trim();
+  return inferred !== "" && inferred !== root ? inferred : fallback;
+}
 function normalizedPath2(value) {
   if (typeof value !== "string") return "";
   const normalized = value.replaceAll("\\", "/").replace(/\/+$/, "");
@@ -10774,7 +10801,9 @@ async function loadPlaySidebarResources(client) {
     client.getCharacters()
   ]);
   const characters = Array.isArray(characterResponse?.characters) ? characterResponse.characters : [];
-  if (workspace.selected !== true) return { workspace, characters, catalog: { playthroughs: [] }, timelines: {}, diagnostics: [] };
+  const missingCharacters = Array.isArray(characterResponse?.missingCharacters) ? characterResponse.missingCharacters : [];
+  const characterSorting = characterResponse?.sorting ?? { mode: "updated" };
+  if (workspace.selected !== true) return { workspace, characters, missingCharacters, characterSorting, catalog: { playthroughs: [] }, timelines: {}, diagnostics: [] };
   let catalog2;
   try {
     catalog2 = await client.getCatalog();
@@ -10795,12 +10824,13 @@ async function loadPlaySidebarResources(client) {
       });
     }
   });
-  return { workspace, characters, catalog: catalog2, timelines, diagnostics };
+  return { workspace, characters, missingCharacters, characterSorting, catalog: catalog2, timelines, diagnostics };
 }
 function projectPlaySidebar({
   workspace = { selected: false },
   workspaceItems = [],
   characters = [],
+  missingCharacters = [],
   catalog: catalog2 = { playthroughs: [] },
   timelines = {},
   sessions = {},
@@ -10813,7 +10843,23 @@ function projectPlaySidebar({
   const archived = new Set(archivedSessionIds);
   const rpSessionIds = sessionIdsInRpWorkspace({ workspace, workspaceItems, sessions });
   const characterById = /* @__PURE__ */ new Map();
+  const missingById = new Map(missingCharacters.map((item) => [item.id, item]));
+  const missingCharacterById = /* @__PURE__ */ new Map();
   const ensureCharacter = (id, name2 = id) => {
+    if (!characterById.has(id) && !characters.some((item) => item?.id === id)) {
+      if (!missingCharacterById.has(id)) {
+        const missing = missingById.get(id);
+        missingCharacterById.set(id, {
+          id,
+          name: missing?.name ?? name2,
+          ...typeof missing?.sha256 === "string" ? { sha256: missing.sha256 } : {},
+          playthroughs: [],
+          unassigned: [],
+          missing: true
+        });
+      }
+      return missingCharacterById.get(id);
+    }
     if (!characterById.has(id)) characterById.set(id, { id, name: name2, playthroughs: [], unassigned: [] });
     return characterById.get(id);
   };
@@ -10826,10 +10872,15 @@ function projectPlaySidebar({
     const rootId = rootSessionId2(playthrough);
     const characterId = playthroughCharacterId(playthrough);
     if (characterId === null) continue;
+    const characterReference = playthrough.ext?.pmpDshTavern ?? {};
     const allMembers = playthroughMembers(playthrough, timelineFor(timelines, playthrough));
     const members = [...allMembers].filter((id) => rpSessionIds.has(id) && !archived.has(id));
     for (const id of members) claimedRpSessions.add(id);
-    ensureCharacter(characterId).playthroughs.push({
+    const characterGroup = ensureCharacter(characterId, historicalCharacterName(playthrough, sessions, characterId));
+    if (characterGroup.missing === true && characterGroup.sha256 === void 0 && typeof characterReference.characterSha256 === "string") {
+      characterGroup.sha256 = characterReference.characterSha256;
+    }
+    characterGroup.playthroughs.push({
       ...playthrough,
       title: typeof playthrough.title === "string" && playthrough.title !== "" ? playthrough.title : playthrough.id,
       rootSessionId: rootId !== null && members.includes(rootId) ? rootId : null,
@@ -10861,6 +10912,7 @@ function projectPlaySidebar({
     rpSessionIds: [...rpSessionIds],
     playSessionIds: [...claimedRpSessions],
     characters: [...characterById.values()],
+    missingCharacters: [...missingCharacterById.values()],
     otherSessions
   };
 }
@@ -11183,6 +11235,8 @@ async function createCharacterPlaythrough(client, {
     ext: {
       pmpDshTavern: {
         characterId,
+        characterName: character.name,
+        ...typeof character.sha256 === "string" ? { characterSha256: character.sha256 } : {},
         rootSessionId: sessionId,
         playthroughNumber: 0
       }
@@ -12872,6 +12926,7 @@ var css9 = `
 .dtv-play-character-drag{width:20px;min-width:20px;align-self:stretch;border:0;border-radius:7px;background:transparent;color:var(--dsw-alias-label-tertiary);cursor:grab;padding:0;font:inherit;font-size:14px;touch-action:none;user-select:none}.dtv-play-character-drag:hover{background:var(--dsw-alias-interactive-bg-hover)}.dtv-play-character-drag:active{cursor:grabbing}.dtv-play-character-drag:disabled{cursor:default;opacity:.4}
 .dtv-play-section[data-dragging=true]{height:4px;min-height:4px;margin:5px 10px;overflow:hidden;border-radius:999px;background:var(--dsw-alias-state-business-primary);box-shadow:0 0 0 1px color-mix(in srgb,var(--dsw-alias-state-business-primary) 25%,transparent)}.dtv-play-section[data-dragging=true]>*{opacity:0}
 .dtv-play-character-drop{box-sizing:border-box;height:38px;flex:none;border:2px dashed var(--dsw-alias-state-business-primary);border-radius:8px;background:color-mix(in srgb,var(--dsw-alias-state-business-primary) 7%,transparent);display:flex;align-items:center;justify-content:center;color:var(--dsw-alias-state-business-primary);font-size:10px;font-weight:600;pointer-events:none}
+.dtv-play-sort{display:flex;align-items:center;justify-content:flex-end;gap:6px;padding:1px 5px 3px;color:var(--dsw-alias-label-tertiary);font-size:10px}.dtv-play-sort select{min-width:92px;height:26px;border:1px solid var(--dsw-alias-border-l2);border-radius:7px;background:var(--dsw-alias-bg-base);color:var(--dsw-alias-label-primary);font:inherit;padding:2px 6px}.dtv-play-sort select:disabled{opacity:.55}
 .dtv-play-sidebar{height:100%;min-height:0;box-sizing:border-box;display:flex;flex-direction:column;gap:4px;padding:6px 7px 10px;overflow:auto;zoom:var(--dtv-ui-scale,1);color:var(--dsw-alias-label-primary)}
 .dtv-play-section{display:flex;flex-direction:column;gap:2px;border-radius:10px}.dtv-play-section[data-open=true]{padding-bottom:3px}
 .dtv-play-group,.dtv-play-row{width:100%;box-sizing:border-box;border:0;border-radius:8px;background:transparent;color:inherit;font:inherit;text-align:left;cursor:pointer;display:flex;align-items:center;gap:7px}.dtv-play-group:hover,.dtv-play-row:hover{background:var(--dsw-alias-interactive-bg-hover)}
@@ -12881,6 +12936,7 @@ var css9 = `
 .dtv-play-chevron{width:10px;flex:none;text-align:center;color:var(--dsw-alias-label-tertiary)}.dtv-play-title{min-width:0;flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.dtv-play-count{flex:none;border-radius:9px;padding:1px 6px;background:var(--dsw-specific-tip);color:var(--dsw-alias-label-tertiary);font-size:9px}
 .dtv-play-avatar{position:relative;width:25px;height:25px;flex:none;border-radius:50%;overflow:hidden;background:var(--dsw-specific-tip);display:grid;place-items:center;color:var(--dsw-alias-label-secondary);font-size:10px}.dtv-play-avatar img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
 .dtv-play-subgroup{display:flex;flex-direction:column;gap:1px}.dtv-play-subgroup>.dtv-play-group{min-height:30px;padding-left:25px;font-size:10px;font-weight:620;color:var(--dsw-alias-label-secondary)}
+.dtv-play-missing{border-top:1px solid var(--dsw-alias-border-subtle);margin-top:3px;padding-top:3px}.dtv-play-missing-card{margin-left:10px}.dtv-play-relink{width:30px;height:30px;flex:none;border:0;border-radius:8px;background:transparent;color:var(--dsw-alias-state-business-primary);cursor:pointer;font:inherit;font-size:13px}.dtv-play-relink:hover{background:var(--dsw-alias-interactive-bg-hover)}.dtv-play-modal select{width:100%;box-sizing:border-box;min-height:36px;border:1px solid var(--dsw-alias-border-l2);border-radius:8px;background:var(--dsw-alias-bg-base);color:var(--dsw-alias-label-primary);font:inherit;padding:6px 8px}
 .dtv-play-empty,.dtv-play-status{margin:0;padding:7px 9px;font-size:10px;line-height:1.45;color:var(--dsw-alias-label-tertiary);overflow-wrap:anywhere}.dtv-play-status[data-error=true]{color:var(--dsw-alias-state-error)}
 .dtv-play-rail{height:100%;box-sizing:border-box;padding:7px;display:flex;flex-direction:column;align-items:center;gap:7px;overflow:auto;zoom:var(--dtv-ui-scale,1)}.dtv-play-rail-button{width:38px;height:38px;border:0;border-radius:10px;background:transparent;color:var(--dsw-alias-label-secondary);cursor:pointer;display:grid;place-items:center}.dtv-play-rail-button:hover{background:var(--dsw-alias-interactive-bg-hover)}.dtv-play-rail-button .dtv-play-avatar{width:30px;height:30px}
 .dtv-play-modal-backdrop{position:fixed;inset:0;z-index:40;box-sizing:border-box;padding:20px;background:rgba(0,0,0,.48);display:flex;align-items:center;justify-content:center}.dtv-play-modal{box-sizing:border-box;width:min(420px,100%);border:1px solid var(--dsw-alias-border-l2);border-radius:12px;background:var(--dsw-alias-bg-base);box-shadow:var(--ds-shadow-3,0 16px 40px rgba(0,0,0,.28));padding:17px 16px;display:flex;flex-direction:column;gap:14px}.dtv-play-modal p{margin:0;font-size:13px;line-height:1.55;color:var(--dsw-alias-label-primary)}.dtv-play-modal-actions{display:flex;justify-content:flex-end;gap:8px;flex-wrap:wrap}.dtv-play-modal-button{min-height:34px;border:1px solid var(--dsw-alias-border-l2);border-radius:8px;background:var(--dsw-alias-button-secondary-fill,var(--dsw-alias-bg-base));color:var(--dsw-alias-label-primary);cursor:pointer;padding:7px 11px;font:inherit;font-size:12px}.dtv-play-modal-button[data-primary=true]{border-color:transparent;background:var(--dsw-alias-state-business-primary,#2677d9);color:var(--dsw-alias-button-primary-label,#fff)}
@@ -13049,6 +13105,58 @@ function CharacterGroup({ character, index, dragging, reorderDisabled, onPointer
     )
   );
 }
+function MissingCharacterGroup({ character, collapsed, toggle, beginRelink, openPlaythrough, openSession, playClient, relinkDisabled }) {
+  return h10(
+    "section",
+    { className: "dtv-play-section dtv-play-missing-card", "data-open": !collapsed },
+    h10(
+      "div",
+      { className: "dtv-play-group-line" },
+      h10(
+        "button",
+        {
+          type: "button",
+          className: "dtv-play-group",
+          "aria-expanded": !collapsed,
+          onClick: toggle
+        },
+        h10("span", { className: "dtv-play-chevron", "aria-hidden": "true" }, collapsed ? "\u203A" : "\u2304"),
+        h10("span", { className: "dtv-play-avatar", "aria-hidden": "true" }, "?"),
+        h10("span", { className: "dtv-play-title" }, rawText(character.name)),
+        h10("span", { className: "dtv-play-count" }, rawText(String(character.playthroughs.length)))
+      ),
+      h10("button", {
+        type: "button",
+        className: "dtv-play-relink",
+        disabled: relinkDisabled,
+        title: uiMessage("play.sidebar.relinkCharacter"),
+        "aria-label": uiMessage("play.sidebar.relinkCharacterNamed", { name: character.name }),
+        onClick: () => beginRelink(character)
+      }, "\u21BB")
+    ),
+    collapsed ? null : character.playthroughs.map((playthrough) => h10(
+      "div",
+      {
+        key: playthrough.id,
+        className: "dtv-play-row-line"
+      },
+      h10(
+        "button",
+        {
+          type: "button",
+          className: "dtv-play-row",
+          "data-active": playthrough.active,
+          disabled: playthrough.missing,
+          title: playthrough.missing ? uiMessage("play.sidebar.sessionMissing") : rawText(playthrough.title),
+          onClick: () => openPlaythrough(playthrough)
+        },
+        h10("span", { className: "dtv-play-chevron", "aria-hidden": "true" }, "\u25C6"),
+        h10("span", { className: "dtv-play-title" }, rawText(playthrough.title))
+      ),
+      h10(PlayIoMenu, { playClient, playthrough, openSession, trigger: "\u22EF", placement: "sidebar" })
+    ))
+  );
+}
 function PlayWorkspaceBrowser({
   wide = true,
   expandSidebar,
@@ -13070,6 +13178,7 @@ function PlayWorkspaceBrowser({
   const archivedSessionIds = useWorkspaces((state) => state.archivedSessionIds);
   const cache = (0, import_react12.useRef)(null);
   if (cache.current === null) cache.current = new SessionCharacterBindingCache();
+  const automaticRelinks = (0, import_react12.useRef)(/* @__PURE__ */ new Set());
   const creator = (0, import_react12.useRef)(null);
   if (creator.current?.client !== playClient || creator.current?.provided !== playthroughController) {
     creator.current = {
@@ -13087,6 +13196,11 @@ function PlayWorkspaceBrowser({
   const [expandedUnassigned, setExpandedUnassigned] = (0, import_react12.useState)(() => /* @__PURE__ */ new Set());
   const [otherOpen, setOtherOpen] = (0, import_react12.useState)(false);
   const [ordinaryPromptOpen, setOrdinaryPromptOpen] = (0, import_react12.useState)(false);
+  const [missingOpen, setMissingOpen] = (0, import_react12.useState)(true);
+  const [collapsedMissingCharacters, setCollapsedMissingCharacters] = (0, import_react12.useState)(() => /* @__PURE__ */ new Set());
+  const [relinkCharacter, setRelinkCharacter] = (0, import_react12.useState)(null);
+  const [relinkTargetId, setRelinkTargetId] = (0, import_react12.useState)("");
+  const [relinkBusy, setRelinkBusy] = (0, import_react12.useState)(false);
   const [activePlaythroughId, setActivePlaythroughId] = (0, import_react12.useState)(
     () => getActivePlaythroughId?.() ?? null
   );
@@ -13145,6 +13259,7 @@ function PlayWorkspaceBrowser({
     workspace: resources?.workspace,
     workspaceItems,
     characters: resources?.characters,
+    missingCharacters: resources?.missingCharacters,
     catalog: resources?.catalog,
     timelines: resources?.timelines,
     sessions,
@@ -13154,6 +13269,50 @@ function PlayWorkspaceBrowser({
     activePlaythroughId,
     sessionCharacters
   });
+  const automaticRelinkKey = [
+    ...model.characters.map((item) => `${item.id}:${item.name}:${item.sha256 ?? ""}`),
+    "|",
+    ...model.missingCharacters.map((item) => `${item.id}:${item.name}:${item.sha256 ?? ""}`)
+  ].join("\0");
+  (0, import_react12.useEffect)(() => {
+    if (resources === null || model.missingCharacters.length === 0 || model.characters.length === 0) return void 0;
+    let active = true;
+    const normalizedName = (value) => String(value ?? "").trim().toLocaleLowerCase("zh-CN");
+    const recoveries = [];
+    for (const missing of model.missingCharacters) {
+      let candidates = typeof missing.sha256 === "string" ? model.characters.filter((character) => character.sha256 === missing.sha256) : [];
+      if (candidates.length !== 1) {
+        const name2 = normalizedName(missing.name);
+        const sameMissing = model.missingCharacters.filter((item) => normalizedName(item.name) === name2);
+        candidates = sameMissing.length === 1 ? model.characters.filter((character) => normalizedName(character.name) === name2) : [];
+      }
+      if (candidates.length !== 1) continue;
+      const key = `${missing.id}\0${candidates[0].id}`;
+      if (automaticRelinks.current.has(key)) continue;
+      automaticRelinks.current.add(key);
+      recoveries.push({ missing, character: candidates[0] });
+    }
+    if (recoveries.length === 0) return void 0;
+    void (async () => {
+      let changed = false;
+      for (const recovery of recoveries) {
+        if (!active) return;
+        try {
+          await playClient.relinkCharacter(recovery.missing.id, recovery.character.id);
+          changed = true;
+        } catch (reason) {
+          if (active) setStatus({ message: reason instanceof Error ? reason.message : String(reason) });
+        }
+      }
+      if (active && changed) {
+        cache.current.clear();
+        window.dispatchEvent(new Event(CLIENT_REFRESH_EVENT));
+      }
+    })();
+    return () => {
+      active = false;
+    };
+  }, [automaticRelinkKey, playClient]);
   const bindWorkspace = async (workspace) => {
     if (requiresSystemWorkspaceConfirmation(workspace.path) && !window.confirm(unwrapText(uiMessage("play.sidebar.systemWorkspaceConfirm", { path: workspace.path })))) return;
     setStatus(null);
@@ -13206,7 +13365,7 @@ function PlayWorkspaceBrowser({
     }
   };
   const moveCharacter = async (from, boundary) => {
-    if (resources === null || reorderingCharacters) return;
+    if (resources === null || reorderingCharacters || resources.characterSorting?.mode !== "custom") return;
     const reordered = reorderAtBoundary(model.characters, from, boundary);
     const storedIds = new Set(resources.characters.map((character) => character.id));
     const characterIds = reordered.map((character) => character.id).filter((id) => storedIds.has(id));
@@ -13220,9 +13379,13 @@ function PlayWorkspaceBrowser({
     setStatus(null);
     try {
       if (typeof playClient.putCharacterOrder !== "function") throw new Error("character order API is unavailable");
-      const response = await playClient.putCharacterOrder(characterIds);
+      const response = await playClient.putCharacterOrder("custom", characterIds);
       if (Array.isArray(response?.characters)) {
-        setResources((current3) => current3 === null ? null : { ...current3, characters: response.characters });
+        setResources((current3) => current3 === null ? null : {
+          ...current3,
+          characters: response.characters,
+          characterSorting: response.sorting ?? current3.characterSorting
+        });
       }
       window.dispatchEvent(new Event(CLIENT_REFRESH_EVENT));
     } catch (reason) {
@@ -13230,6 +13393,47 @@ function PlayWorkspaceBrowser({
       setRevision((value) => value + 1);
     } finally {
       setReorderingCharacters(false);
+    }
+  };
+  const changeCharacterSortMode = async (event) => {
+    const mode = event.currentTarget.value;
+    if (resources === null || reorderingCharacters || mode === resources.characterSorting?.mode) return;
+    setReorderingCharacters(true);
+    setStatus(null);
+    try {
+      const characterIds = mode === "custom" ? resources.characters.map((character) => character.id) : void 0;
+      const response = await playClient.putCharacterOrder(mode, characterIds);
+      setResources((current3) => current3 === null ? null : {
+        ...current3,
+        characters: Array.isArray(response?.characters) ? response.characters : current3.characters,
+        characterSorting: response?.sorting ?? { mode }
+      });
+      window.dispatchEvent(new Event(CLIENT_REFRESH_EVENT));
+    } catch (reason) {
+      setStatus({ message: reason instanceof Error ? reason.message : String(reason) });
+      setRevision((value) => value + 1);
+    } finally {
+      setReorderingCharacters(false);
+    }
+  };
+  const beginRelink = (character) => {
+    setRelinkCharacter(character);
+    setRelinkTargetId(resources?.characters[0]?.id ?? "");
+  };
+  const commitRelink = async () => {
+    if (relinkCharacter === null || relinkTargetId === "" || relinkBusy) return;
+    setRelinkBusy(true);
+    setStatus(null);
+    try {
+      if (typeof playClient.relinkCharacter !== "function") throw new Error("character relink API is unavailable");
+      await playClient.relinkCharacter(relinkCharacter.id, relinkTargetId);
+      setRelinkCharacter(null);
+      cache.current.clear();
+      window.dispatchEvent(new Event(CLIENT_REFRESH_EVENT));
+    } catch (reason) {
+      setStatus({ message: reason instanceof Error ? reason.message : String(reason) });
+    } finally {
+      setRelinkBusy(false);
     }
   };
   if (wide === false) return h10(Rail, { model, scale, expandSidebar });
@@ -13271,6 +13475,22 @@ function PlayWorkspaceBrowser({
       className: "dtv-play-status",
       "data-error": true
     }, rawText(`${diagnostic.path}: ${diagnostic.message}`))),
+    resources === null ? null : h10(
+      "label",
+      { className: "dtv-play-sort" },
+      h10("span", null, uiMessage("play.sidebar.sort")),
+      h10(
+        "select",
+        {
+          value: resources.characterSorting?.mode ?? "updated",
+          disabled: reorderingCharacters,
+          onChange: changeCharacterSortMode
+        },
+        h10("option", { value: "updated" }, uiMessage("play.sidebar.sortUpdated")),
+        h10("option", { value: "name" }, uiMessage("play.sidebar.sortName")),
+        h10("option", { value: "custom" }, uiMessage("play.sidebar.sortCustom"))
+      )
+    ),
     resources !== null && model.characters.length === 0 ? h10("p", { className: "dtv-play-empty" }, uiMessage("play.sidebar.noCharacters")) : null,
     ...model.characters.flatMap((character, index) => [
       characterDragFrom !== null && characterDropIndex === index ? h10(CharacterDropPlaceholder, { key: `drop-${index}` }) : null,
@@ -13279,7 +13499,7 @@ function PlayWorkspaceBrowser({
         character,
         index,
         dragging: characterDragFrom === index,
-        reorderDisabled: reorderingCharacters || model.characters.length < 2 || !resources?.characters.some((item) => item.id === character.id),
+        reorderDisabled: reorderingCharacters || resources?.characterSorting?.mode !== "custom" || model.characters.length < 2 || !resources?.characters.some((item) => item.id === character.id),
         onPointerDown: (event) => {
           event.preventDefault();
           event.stopPropagation();
@@ -13317,6 +13537,33 @@ function PlayWorkspaceBrowser({
       })
     ]),
     characterDragFrom !== null && characterDropIndex === model.characters.length ? h10(CharacterDropPlaceholder, { key: "drop-end" }) : null,
+    model.missingCharacters.length === 0 ? null : h10(
+      "section",
+      { className: "dtv-play-section dtv-play-missing", "data-open": missingOpen },
+      h10(
+        "button",
+        {
+          type: "button",
+          className: "dtv-play-group",
+          "aria-expanded": missingOpen,
+          onClick: () => setMissingOpen((value) => !value)
+        },
+        h10("span", { className: "dtv-play-chevron", "aria-hidden": "true" }, missingOpen ? "\u2304" : "\u203A"),
+        h10("span", { className: "dtv-play-title" }, uiMessage("play.sidebar.missingCharacters")),
+        h10("span", { className: "dtv-play-count" }, rawText(String(model.missingCharacters.length)))
+      ),
+      missingOpen ? model.missingCharacters.map((character) => h10(MissingCharacterGroup, {
+        key: character.id,
+        character,
+        collapsed: collapsedMissingCharacters.has(character.id),
+        toggle: () => toggleSet(setCollapsedMissingCharacters, character.id),
+        beginRelink,
+        relinkDisabled: (resources?.characters.length ?? 0) === 0 || relinkBusy,
+        openPlaythrough,
+        openSession,
+        playClient
+      })) : null
+    ),
     h10(
       "section",
       { className: "dtv-play-section", "data-open": otherOpen },
@@ -13382,7 +13629,39 @@ function PlayWorkspaceBrowser({
           onClick: returnToNative
         }, uiMessage("play.sidebar.returnNative"))
       )
-    )) : null
+    )) : null,
+    relinkCharacter === null ? null : h10("div", {
+      className: "dtv-play-modal-backdrop",
+      role: "dialog",
+      "aria-modal": "true",
+      "aria-labelledby": "dtv-play-relink-prompt"
+    }, h10(
+      "div",
+      { className: "dtv-play-modal" },
+      h10("p", { id: "dtv-play-relink-prompt" }, uiMessage("play.sidebar.relinkPrompt", { name: relinkCharacter.name })),
+      h10("select", {
+        value: relinkTargetId,
+        disabled: relinkBusy,
+        onChange: (event) => setRelinkTargetId(event.currentTarget.value)
+      }, ...(resources?.characters ?? []).map((character) => h10("option", { key: character.id, value: character.id }, rawText(character.name)))),
+      h10(
+        "div",
+        { className: "dtv-play-modal-actions" },
+        h10("button", {
+          type: "button",
+          className: "dtv-play-modal-button",
+          disabled: relinkBusy,
+          onClick: () => setRelinkCharacter(null)
+        }, uiMessage("play.sidebar.ordinaryClose")),
+        h10("button", {
+          type: "button",
+          className: "dtv-play-modal-button",
+          "data-primary": true,
+          disabled: relinkBusy || relinkTargetId === "",
+          onClick: commitRelink
+        }, relinkBusy ? rawText("\u2026") : uiMessage("play.sidebar.relinkConfirm"))
+      )
+    ))
   );
 }
 
@@ -14140,8 +14419,14 @@ function createLivePlayClient({
     getCharacters() {
       return v1("GET", "/characters");
     },
-    putCharacterOrder(characterIds) {
-      return v1("PUT", "/characters/order", { characterIds });
+    putCharacterOrder(mode, characterIds) {
+      return v1("PUT", "/characters/order", {
+        mode,
+        ...characterIds === void 0 ? {} : { characterIds }
+      });
+    },
+    relinkCharacter(previousCharacterId, characterId) {
+      return v1("POST", "/characters/relink", { previousCharacterId, characterId });
     },
     getCharacter(id) {
       return v1("GET", `/characters/${encodeURIComponent(id)}`);

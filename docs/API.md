@@ -114,7 +114,7 @@ durable history。当前已实现的基础语义是：首次 assembly 必须按�
 | 当你想 | 路径 |
 | --- | --- |
 | 管预设、导出 ST JSON、原生正则、独立世界书关系、看当前装配、导入/选中 | `/presets`、`/presets/:id/export`、`/presets/:id/regex-scripts`、`/presets/:id/world-books`、`/active`、`/import`、`/select` |
-| 管角色卡、侧边栏顺序、原生正则、独立世界书关系、绑定、导出 json/png、内嵌书 | `/characters`、`/characters/order`、`/characters/:id/regex-scripts`、`/characters/:id/world-books`、`/characters/:id/world-book`、`/character-selection` |
+| 管角色卡、侧边栏顺序、缺失卡重关联、原生正则、独立世界书关系、绑定、导出 json/png、内嵌书 | `/characters`、`/characters/order`、`/characters/relink`、`/characters/:id/regex-scripts`、`/characters/:id/world-books`、`/characters/:id/world-book`、`/character-selection` |
 | 管独立世界书和绑定 | `/world-books`、`/world-book-selection` |
 | 管用户、用户-世界书关系 | `/users`、`/user-selection` |
 | 界面语言缩放、绑卡跟随 RP | `/ui-settings` |
@@ -132,6 +132,18 @@ durable history。当前已实现的基础语义是：首次 assembly 必须按�
 | PUT | `/characters/order` | `{ mode, characterIds? }` | `{ ok: true, characters: [...], sorting: { mode } }` |
 
 `mode` 必须是 `updated`、`name`、`custom` 之一。只有 `custom` 接受 `characterIds`，且必须恰好包含当前存储中的全部角色卡 ID，每个 ID 只出现一次，最多 4096 项；未知、重复或遗漏均返回 400，失败时原状态不变。成功模式和自定义顺序分别保存在 `character-state.json` 的 `characterSortMode`、`characterOrder`。自定义模式中新建或导入的角色卡追加到末尾，删除角色卡同步清理其顺序项。`GET /characters` 同时返回 `sorting: { mode }`。
+
+### 缺失角色卡与重新关联
+
+删除角色卡时，资源正文和封面仍会删除，session 的失效选择仍会清理；角色卡库另外保留一条有界 tombstone（原 ID、显示名称、可用时的源文件 SHA-256），使 catalog 中仍引用该卡的周目可以显示在人类可读的“缺失角色卡”区域。新建周目同时在 `ext.pmpDshTavern` 快照 `characterId`、`characterName`、可用时的 `characterSha256`，不会把角色卡正文复制到 timeline。
+
+重新导入角色卡后，先用唯一 SHA-256 匹配 tombstone；没有散列匹配时，仅在缺失名称和现存名称双方都唯一时使用规范化同名匹配。唯一匹配会自动重关联；多个同名候选不自动猜测，由侧边栏选择目标卡。
+
+| 方法 | 路径 | 请求 | 成功响应 |
+| --- | --- | --- | --- |
+| POST | `/characters/relink` | `{ previousCharacterId, characterId }` | `{ ok: true, relinkedPlaythroughCount, relinkedSessionCount }` |
+
+重新关联会以 catalog revision 作 CAS，把所有引用旧 ID 的周目归属改为目标卡，并在同一批 session selection 写入中更新 root、swipe、branch 后代会话。若其中任何 session 已绑定另一张现存角色卡则返回 409；session 批量写入失败时会以刚写入的 revision 尝试回滚 catalog。成功后才清除 tombstone。工作区未绑定时自动恢复会延后而不会静默丢弃 tombstone。关键开始、成功与延后原因写入 `ctx.logger`。
 
 ### Conversation 显示设置
 

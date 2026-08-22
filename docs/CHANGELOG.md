@@ -1,6 +1,12 @@
 # Development changelog
 
 
+## 2026-08-22 — Separate character sort modes and recover missing cards
+
+- Replaced mixed character ordering with explicit recently-updated, name A–Z, and custom modes; drag handles are active only in custom mode and saved custom order survives mode switches.
+- Added bounded deleted-character tombstones, a centralized missing-character sidebar section, unique SHA/name recovery, manual relinking, catalog CAS and atomic descendant-session selection updates.
+
+
 ## 2026-08-22 — Stabilize RP admission and add character-card ordering
 
 - Deferred the Mowan workspace admission overlay until the authoritative workspace read finishes. A valid existing binding no longer renders a transient selection dialog while switching modes; failures and confirmed missing bindings still open the blocking gate.

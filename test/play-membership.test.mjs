@@ -135,6 +135,60 @@ test('PlayMembershipService detects character mismatch and commits root detachme
   }
 })
 
+test('PlayMembershipService atomically relinks catalog ownership and every timeline session', async () => {
+  const pluginDir = mkdtempSync(join(tmpdir(), 'dsh-tavern-membership-relink-plugin-'))
+  const playRoot = mkdtempSync(join(tmpdir(), 'dsh-tavern-membership-relink-root-'))
+  try {
+    const store = new PlayWorkspaceStore(pluginDir)
+    await store.bindRoot(playRoot)
+    store.createDir('old-card/pt')
+    const timeline = sampleTimeline()
+    const catalog = {
+      playthroughs: [{
+        id: 'pt',
+        path: 'old-card/pt/timeline.json',
+        title: '1周目',
+        ext: { pmpDshTavern: { characterId: 'old-card', characterName: 'Old card', rootSessionId: 'root' } },
+      }],
+    }
+    store.writeFile('old-card/pt/timeline.json', JSON.stringify(timeline), {
+      expectedRevision: null,
+      expectedRevisionPresent: true,
+      validate: validatePlayDocument,
+    })
+    store.writeFile('catalog.json', JSON.stringify(catalog), {
+      expectedRevision: null,
+      expectedRevisionPresent: true,
+      validate: validatePlayDocument,
+    })
+    const selected = []
+    const service = new PlayMembershipService(store)
+    const result = service.relinkCharacter('old-card', {
+      id: 'new-card',
+      name: 'Restored card',
+      sha256: 'b'.repeat(64),
+    }, {
+      selectionPolicy: {
+        selection: () => null,
+        selectMany(sessionIds, patch) { selected.push({ sessionIds, patch }) },
+      },
+    })
+    assert.deepEqual(result, { relinkedPlaythroughCount: 1, relinkedSessionCount: 5 })
+    const saved = parseCatalogJson(store.readFile('catalog.json', { validate: validatePlayDocument }).content)
+    assert.deepEqual(saved.playthroughs[0].ext.pmpDshTavern, {
+      characterId: 'new-card',
+      characterName: 'Restored card',
+      characterSha256: 'b'.repeat(64),
+      rootSessionId: 'root',
+    })
+    assert.deepEqual(new Set(selected[0].sessionIds), new Set(['root', 'target', 'sibling', 'child', 'kept']))
+    assert.deepEqual(selected[0].patch, { characterCardId: 'new-card', character: { greetingIndex: 0 } })
+  } finally {
+    rmSync(pluginDir, { recursive: true, force: true })
+    rmSync(playRoot, { recursive: true, force: true })
+  }
+})
+
 test('v2 detach-session route delegates one logged mutation to the membership service', async () => {
   const pluginDir = mkdtempSync(join(tmpdir(), 'dsh-tavern-membership-api-'))
   try {

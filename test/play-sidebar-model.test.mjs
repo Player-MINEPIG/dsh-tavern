@@ -73,6 +73,31 @@ test('RP workspace membership wins over timeline metadata and character binding'
   assert.deepEqual(model.playSessionIds.sort(), ['s-play', 's-root'])
 })
 
+test('missing character playthroughs are centralized under their preserved card name', () => {
+  const model = projectPlaySidebar({
+    workspace: { selected: true, rootPath: '/rp', workspaceId: 'rp' },
+    workspaceItems: [{ workspaceId: 'rp', sessionIds: ['root'] }],
+    characters: [{ id: 'present', name: 'Present' }],
+    missingCharacters: [{ id: 'deleted-id', name: 'Deleted Alice', sha256: 'a'.repeat(64) }],
+    catalog: {
+      playthroughs: [{
+        id: 'missing-pt',
+        title: '1周目',
+        path: 'deleted-id/missing-pt/timeline.json',
+        ext: { pmpDshTavern: { characterId: 'deleted-id', rootSessionId: 'root' } },
+      }],
+    },
+    timelines: { 'deleted-id/missing-pt/timeline.json': { nodes: [] } },
+    sessions: { root: session('root', '/rp', 'Deleted Alice 2026-08-22 12:30') },
+    sessionIds: ['root'],
+  })
+
+  assert.deepEqual(model.characters.map(item => item.id), ['present'])
+  assert.equal(model.missingCharacters.length, 1)
+  assert.equal(model.missingCharacters[0].name, 'Deleted Alice')
+  assert.equal(model.missingCharacters[0].playthroughs[0].id, 'missing-pt')
+})
+
 test('outside the selected RP workspace every session stays non-RP despite stale bindings', () => {
   const sessions = {
     outside: session('outside', '/other'),
