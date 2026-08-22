@@ -35,16 +35,22 @@ test('three exports honor display state without changing raw ST or bundle data',
       return { selection: { characterCardId: 'character-a', character: { greetingIndex: 1 } } }
     },
     async getCharacter() {
-      return { character: { id: 'character-a', name: 'Alice card', data: { name: 'Alice', firstMessage: 'Hi', alternateGreetings: ['Alt hello'] } } }
+      return { character: { id: 'character-a', name: 'Alice card', data: { name: 'Alice', nickname: 'Ally', firstMessage: 'Hi', alternateGreetings: ['Alt {{user}} from {{char}}'] } } }
     },
+    async getActive() { return { selection: {}, resources: { user: { name: 'Reader' } } } },
+    async getFile() { return { content: JSON.stringify({ schemaVersion: 1, rules: [{
+      id: 'erase-greeting', name: 'Output protocol', enabled: true, find: '/^Alt.*$/s', replace: '',
+      target: 'assistant', scope: { kind: 'global', resourceId: null },
+    }] }) } },
   }
   const snapshot = await loadPlaythroughExport(client, playthrough)
   const html = playthroughExportDocument(snapshot, 'html').content
+  assert.match(html, /Alt Reader from Ally/)
   assert.match(html, /Displayed &lt;reply&gt;/)
   assert.doesNotMatch(html, /Original reply|Hidden reply|<script/i)
 
   const st = playthroughExportDocument(snapshot, 'st').content
-  assert.match(st, /Alt hello/)
+  assert.ok(st.includes('Alt {{user}} from {{char}}'))
   assert.match(st, /Original reply/)
   assert.doesNotMatch(st, /Displayed|Hidden reply/)
 

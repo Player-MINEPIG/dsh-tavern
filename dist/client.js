@@ -10492,6 +10492,12 @@ async function loadPlaythroughExport(client, playthrough) {
     })
   ];
   const render = (text2, target) => applyDisplayRegex(text2, rules, bindings, target).text;
+  const character = characterResponse?.character ?? null;
+  const characterData = character?.data ?? character;
+  const greetingMacros = {
+    user: active?.resources?.user?.name || "User",
+    character: characterData?.nickname || characterData?.name || character?.name || "Assistant"
+  };
   return {
     playthrough,
     timeline,
@@ -10502,10 +10508,12 @@ async function loadPlaythroughExport(client, playthrough) {
       userText: render(turn.userText, "user"),
       ...selectAssistantDisplay(turn, (text2) => render(text2, "assistant"))
     })),
-    character: characterResponse?.character ?? null,
+    character,
     importContext,
     greeting,
-    displayGreeting: greeting === null ? null : render(greeting, "assistant"),
+    // Greeting is card metadata, not model output. Keep static export aligned
+    // with the RP view: expand names, but do not run output-only regex rules.
+    displayGreeting: greeting === null ? null : applyDisplayNameMacros(greeting, greetingMacros),
     exportedAt: (/* @__PURE__ */ new Date()).toISOString()
   };
 }
