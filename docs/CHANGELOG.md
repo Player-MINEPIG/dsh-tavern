@@ -1,6 +1,12 @@
 # Development changelog
 
 
+## 2026-08-22 — Make swipe generation immediately visible
+
+- Displayed the reply position from the first variant onward, beginning at `1/1` instead of waiting for a second swipe.
+- Added an optimistic RP-only thinking projection as soon as “generate next swipe” is clicked. It preserves the user turn, temporarily replaces the old assistant display, restores it on failure, and yields to the new session only after the existing atomic branch/timeline workflow succeeds.
+
+
 ## 2026-08-22 — Separate character sort modes and recover missing cards
 
 - Replaced mixed character ordering with explicit recently-updated, name A–Z, and custom modes; drag handles are active only in custom mode and saved custom order survives mode switches.

@@ -66,6 +66,7 @@ export function PlayTurnActions({
   running,
   onChanged,
   onError,
+  onSwipePending,
 }) {
   installStyles()
   const [busy, setBusy] = useState(false)
@@ -99,12 +100,24 @@ export function PlayTurnActions({
     openSession(result.sessionId, playthrough)
   })
 
-  const generate = () => mutate(async () => {
-    const result = await controller(playClient).createReplySwipe(playthrough, turn.id)
-    queueSwipeTransition(result.sessionId, 'next', result.nodeId ?? turn.id)
-    openSession(result.sessionId, playthrough)
-    window.dispatchEvent(new Event(CLIENT_REFRESH_EVENT))
-  })
+  const generate = async () => {
+    if (disabled) return
+    setBusy(true)
+    onError('')
+    onSwipePending?.(turn.id, true)
+    try {
+      const result = await controller(playClient).createReplySwipe(playthrough, turn.id)
+      queueSwipeTransition(result.sessionId, 'next', result.nodeId ?? turn.id)
+      openSession(result.sessionId, playthrough)
+      window.dispatchEvent(new Event(CLIENT_REFRESH_EVENT))
+      onChanged()
+    } catch (reason) {
+      onSwipePending?.(turn.id, false)
+      onError(reason instanceof Error ? reason.message : String(reason))
+    } finally {
+      setBusy(false)
+    }
+  }
 
   const copy = async () => {
     try {
@@ -162,7 +175,7 @@ export function PlayTurnActions({
       disabledLabel: !hasPreviousVariant ? uiMessage('play.chat.noOtherReply') : undefined,
       onClick: () => adopt(position - 1),
     }),
-    !capabilities.variants || turn.variants.length < 2 ? null : h('span', { className: 'dtv-play-turn-position' }, `${position + 1}/${turn.variants.length}`),
+    !capabilities.variants ? null : h('span', { className: 'dtv-play-turn-position' }, `${position + 1}/${turn.variants.length}`),
     !capabilities.variants ? null : h(Action, {
       icon: '›',
       label: uiMessage(hasNextVariant ? 'play.chat.nextReply' : 'play.chat.generateReply'),

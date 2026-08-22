@@ -182,3 +182,14 @@ test('swipe transition boundary targets one reply and leaves its prefix static',
     to: { value: { turns } },
   }), null)
 })
+
+test('swipe controls always expose position and project an immediate thinking state while generating', () => {
+  const actionsSource = readFileSync(new URL('../packages/client/src/play/turn-actions.js', import.meta.url), 'utf8')
+  assert.match(actionsSource, /onSwipePending\?\.\(turn\.id, true\)[\s\S]*createReplySwipe/)
+  assert.match(actionsSource, /onSwipePending\?\.\(turn\.id, false\)/)
+  assert.match(actionsSource, /dtv-play-turn-position'[\s\S]*position \+ 1[\s\S]*turn\.variants\.length/)
+  assert.doesNotMatch(actionsSource, /turn\.variants\.length < 2 \? null : h\('span', \{ className: 'dtv-play-turn-position'/)
+  assert.match(chatSource, /const assistantTexts = swipePending \? \[\]/)
+  assert.match(chatSource, /swipePending \|\| turn\.running === true/)
+  assert.match(chatSource, /pendingSwipe\?\.nodeId === turn\.id/)
+})

@@ -291,10 +291,10 @@ export function greetingSelectionLocked({ turns = [], latestUserSeq = -1, runnin
     || turns.some(turn => turn?.imported !== true)
 }
 
-function Turn({ turn, hideUser = false, ...actionProps }) {
+function Turn({ turn, hideUser = false, swipePending = false, ...actionProps }) {
   if (!turnHasVisibleRpContent(turn)) return null
   const durableQa = turnHasDurableQaActions(turn)
-  const assistantTexts = Array.isArray(turn.assistantTexts)
+  const assistantTexts = swipePending ? [] : Array.isArray(turn.assistantTexts)
     ? turn.assistantTexts
     : turn.assistantText === '' ? [] : [turn.assistantText]
   return h('div', { className: 'dtv-play-chat-row' },
@@ -305,10 +305,14 @@ function Turn({ turn, hideUser = false, ...actionProps }) {
       className: 'dtv-play-chat-bubble dtv-play-chat-assistant dtv-play-rich',
       text,
     })),
-    turn.running === true && assistantTexts.length === 0
+    (swipePending || turn.running === true) && assistantTexts.length === 0
       ? h('p', { className: 'dtv-play-chat-running' }, uiMessage('play.chat.thinking'))
       : null,
-    durableQa ? h(PlayTurnActions, { turn, ...actionProps }) : null,
+    durableQa ? h(PlayTurnActions, {
+      turn,
+      ...actionProps,
+      running: actionProps.running === true || swipePending,
+    }) : null,
   )
 }
 
@@ -411,6 +415,8 @@ function ChatFrame({
   phase = 'idle',
   direction = null,
   transitionEnded,
+  pendingSwipe,
+  onSwipePending,
 }) {
   const state = snapshot.value
   const current = snapshot.sessionId === currentSessionId
@@ -471,6 +477,8 @@ function ChatFrame({
       running: running || !interactive,
       onChanged: changed,
       onError,
+      onSwipePending,
+      swipePending: pendingSwipe?.nodeId === turn.id,
     })),
     state.importBinding === null ? null : importControls,
     ...liveTurns.map(turn => h(Turn, { key: turn.id, turn })),
@@ -572,6 +580,7 @@ export function MowanChatView({ sessionId, useSession, playClient, playthrough, 
   const stateIsCurrent = loadedState?.sessionId === sessionId
   const [error, setError] = useState('')
   const [greetingBusy, setGreetingBusy] = useState(false)
+  const [pendingSwipe, setPendingSwipe] = useState(null)
   const bottomAnchor = useRef(null)
   const initialScrollSession = useRef(null)
   const userSeqSession = useRef(null)
@@ -644,6 +653,7 @@ export function MowanChatView({ sessionId, useSession, playClient, playthrough, 
       }
       loadedStateRef.current = incoming
       rememberChatSnapshot(playClient, playthrough, incoming)
+      setPendingSwipe(current => current?.sourceSessionId !== sessionId ? null : current)
       setLoadedState(incoming)
     }).catch(reason => {
       if (!active) return
@@ -674,6 +684,9 @@ export function MowanChatView({ sessionId, useSession, playClient, playthrough, 
   }
 
   const changed = () => setRevision(value => value + 1)
+  const swipePending = (nodeId, active) => {
+    setPendingSwipe(active ? { nodeId, sourceSessionId: sessionId } : null)
+  }
   const transitionEnded = event => {
     if (event.target !== event.currentTarget) return
     setTransition(current => current?.to.sessionId === loadedState?.sessionId ? null : current)
@@ -692,6 +705,8 @@ export function MowanChatView({ sessionId, useSession, playClient, playthrough, 
     changeGreeting,
     changed,
     onError: setError,
+    pendingSwipe,
+    onSwipePending: swipePending,
     phase,
     direction: transition?.direction ?? null,
     transitionEnded: phase === 'incoming' ? transitionEnded : undefined,

@@ -11708,7 +11708,8 @@ function PlayTurnActions({
   openSession,
   running,
   onChanged,
-  onError
+  onError,
+  onSwipePending
 }) {
   installStyles();
   const [busy, setBusy] = (0, import_react8.useState)(false);
@@ -11739,12 +11740,24 @@ function PlayTurnActions({
     queueSwipeTransition(result.sessionId, targetPosition < position ? "previous" : "next", turn.id);
     openSession(result.sessionId, playthrough);
   });
-  const generate = () => mutate(async () => {
-    const result = await controller(playClient).createReplySwipe(playthrough, turn.id);
-    queueSwipeTransition(result.sessionId, "next", result.nodeId ?? turn.id);
-    openSession(result.sessionId, playthrough);
-    window.dispatchEvent(new Event(CLIENT_REFRESH_EVENT));
-  });
+  const generate = async () => {
+    if (disabled) return;
+    setBusy(true);
+    onError("");
+    onSwipePending?.(turn.id, true);
+    try {
+      const result = await controller(playClient).createReplySwipe(playthrough, turn.id);
+      queueSwipeTransition(result.sessionId, "next", result.nodeId ?? turn.id);
+      openSession(result.sessionId, playthrough);
+      window.dispatchEvent(new Event(CLIENT_REFRESH_EVENT));
+      onChanged();
+    } catch (reason) {
+      onSwipePending?.(turn.id, false);
+      onError(reason instanceof Error ? reason.message : String(reason));
+    } finally {
+      setBusy(false);
+    }
+  };
   const copy = async () => {
     try {
       if (typeof navigator.clipboard?.writeText !== "function") throw new Error(translate("play.chat.copyUnavailable"));
@@ -11806,7 +11819,7 @@ function PlayTurnActions({
       disabledLabel: !hasPreviousVariant ? uiMessage("play.chat.noOtherReply") : void 0,
       onClick: () => adopt(position - 1)
     }),
-    !capabilities.variants || turn.variants.length < 2 ? null : h7("span", { className: "dtv-play-turn-position" }, `${position + 1}/${turn.variants.length}`),
+    !capabilities.variants ? null : h7("span", { className: "dtv-play-turn-position" }, `${position + 1}/${turn.variants.length}`),
     !capabilities.variants ? null : h7(Action, {
       icon: "\u203A",
       label: uiMessage(hasNextVariant ? "play.chat.nextReply" : "play.chat.generateReply"),
@@ -12257,10 +12270,10 @@ function turnHasVisibleRpContent(turn) {
 function greetingSelectionLocked({ turns = [], latestUserSeq = -1, running = false } = {}) {
   return running || latestUserSeq >= 0 || turns.some((turn) => turn?.imported !== true);
 }
-function Turn({ turn, hideUser = false, ...actionProps }) {
+function Turn({ turn, hideUser = false, swipePending = false, ...actionProps }) {
   if (!turnHasVisibleRpContent(turn)) return null;
   const durableQa = turnHasDurableQaActions(turn);
-  const assistantTexts = Array.isArray(turn.assistantTexts) ? turn.assistantTexts : turn.assistantText === "" ? [] : [turn.assistantText];
+  const assistantTexts = swipePending ? [] : Array.isArray(turn.assistantTexts) ? turn.assistantTexts : turn.assistantText === "" ? [] : [turn.assistantText];
   return h8(
     "div",
     { className: "dtv-play-chat-row" },
@@ -12271,8 +12284,12 @@ function Turn({ turn, hideUser = false, ...actionProps }) {
       className: "dtv-play-chat-bubble dtv-play-chat-assistant dtv-play-rich",
       text: text2
     })),
-    turn.running === true && assistantTexts.length === 0 ? h8("p", { className: "dtv-play-chat-running" }, uiMessage("play.chat.thinking")) : null,
-    durableQa ? h8(PlayTurnActions, { turn, ...actionProps }) : null
+    (swipePending || turn.running === true) && assistantTexts.length === 0 ? h8("p", { className: "dtv-play-chat-running" }, uiMessage("play.chat.thinking")) : null,
+    durableQa ? h8(PlayTurnActions, {
+      turn,
+      ...actionProps,
+      running: actionProps.running === true || swipePending
+    }) : null
   );
 }
 function ImportControls({
@@ -12376,7 +12393,9 @@ function ChatFrame({
   onError,
   phase = "idle",
   direction = null,
-  transitionEnded
+  transitionEnded,
+  pendingSwipe,
+  onSwipePending
 }) {
   const state = snapshot.value;
   const current3 = snapshot.sessionId === currentSessionId;
@@ -12433,7 +12452,9 @@ function ChatFrame({
       openSession,
       running: running || !interactive,
       onChanged: changed,
-      onError
+      onError,
+      onSwipePending,
+      swipePending: pendingSwipe?.nodeId === turn.id
     })),
     state.importBinding === null ? null : importControls,
     ...liveTurns.map((turn) => h8(Turn, { key: turn.id, turn })),
@@ -12534,6 +12555,7 @@ function MowanChatView({ sessionId, useSession, playClient, playthrough, openSes
   const stateIsCurrent = loadedState?.sessionId === sessionId;
   const [error, setError] = (0, import_react10.useState)("");
   const [greetingBusy, setGreetingBusy] = (0, import_react10.useState)(false);
+  const [pendingSwipe, setPendingSwipe] = (0, import_react10.useState)(null);
   const bottomAnchor = (0, import_react10.useRef)(null);
   const initialScrollSession = (0, import_react10.useRef)(null);
   const userSeqSession = (0, import_react10.useRef)(null);
@@ -12598,6 +12620,7 @@ function MowanChatView({ sessionId, useSession, playClient, playthrough, openSes
       }
       loadedStateRef.current = incoming;
       rememberChatSnapshot(playClient, playthrough, incoming);
+      setPendingSwipe((current3) => current3?.sourceSessionId !== sessionId ? null : current3);
       setLoadedState(incoming);
     }).catch((reason) => {
       if (!active) return;
@@ -12628,6 +12651,9 @@ function MowanChatView({ sessionId, useSession, playClient, playthrough, openSes
     }
   };
   const changed = () => setRevision((value) => value + 1);
+  const swipePending = (nodeId, active) => {
+    setPendingSwipe(active ? { nodeId, sourceSessionId: sessionId } : null);
+  };
   const transitionEnded = (event) => {
     if (event.target !== event.currentTarget) return;
     setTransition((current3) => current3?.to.sessionId === loadedState?.sessionId ? null : current3);
@@ -12646,6 +12672,8 @@ function MowanChatView({ sessionId, useSession, playClient, playthrough, openSes
     changeGreeting,
     changed,
     onError: setError,
+    pendingSwipe,
+    onSwipePending: swipePending,
     phase,
     direction: transition?.direction ?? null,
     transitionEnded: phase === "incoming" ? transitionEnded : void 0
