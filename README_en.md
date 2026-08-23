@@ -6,6 +6,8 @@ An open-source DeepSeek Harness (DSH) plugin for Tavern resource compatibility, 
 
 > This documentation matches `2.0.0`. The project is released under the [MIT License](LICENSE).
 >
+> **Compatibility baseline:** this release was developed and validated against DSH `rc.8`. Newer DSH releases provide better native implementations for some capabilities, but this plugin has not yet migrated to them.
+>
 > The default project README is the [Chinese version](README.md). This English file has no screenshots.
 
 ## Design
