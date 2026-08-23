@@ -31,4 +31,4 @@ Treat other documented project principles as current constraints, not immutable 
 - Never copy private development-plan content, repository coordinates, user data, or absolute local paths into the public repository without explicit approval.
 - Never push, publish, create a tag or release, or open or update a pull request without explicit user permission.
 
-Always report the change and verification performed. Report affected contracts, DSH or Node refs, omitted integration checks, risks, open decisions, and a commit SHA only when they materially affect the task or confidence in the result.
+Report the outcome and verification or evidence used. When files changed, report what changed and why. Report affected contracts, DSH or Node refs, omitted integration checks, risks, open decisions, and a commit SHA only when they materially affect the task or confidence in the result.

@@ -6,12 +6,14 @@ Use this reference whenever work depends on DSH behavior rather than Tavern-only
 
 Use sources in this order:
 
-1. The DSH version named by the task or reported by the actual installation.
-2. Code, exported types, and official documentation at that version's immutable upstream tag or commit.
-3. dsh-tavern compatibility documents and tests written for that version.
-4. Upstream `master` only as migration research; never present it as an available contract on an older target.
+1. The target DSH version explicitly named by the task.
+2. If the task names no target, the compatibility baseline recorded by the applicable dsh-tavern version and documents.
+3. The actual installed DSH version only as the available validation environment. If it differs from the target, report the mismatch; it does not replace the target contract.
+4. Code, exported types, and official documentation at the target version's immutable upstream tag or commit.
+5. dsh-tavern compatibility documents and tests written for that target.
+6. Upstream `master` only as migration research; never present it as an available contract on an older target.
 
-The accepted dsh-tavern 2.0 baseline is DSH `0.1.0-rc.8` (upstream ref `dsh-v0.1.0-rc.8`) unless the task establishes another target. DSH is pre-release software and may intentionally change names, packages, services, persistence, and compatibility behavior between refs. Do not infer backward compatibility from the latest source.
+The recorded dsh-tavern 2.0 baseline is DSH `0.1.0-rc.8` (upstream ref `dsh-v0.1.0-rc.8`). It applies only when the task does not name another target. DSH is pre-release software and may intentionally change names, packages, services, persistence, and compatibility behavior between refs. Do not infer backward compatibility from the latest source.
 
 For each DSH seam used or changed, verify the relevant contract dimensions at the target ref, such as its service or slot name, type signature, scope, owner/store semantics, lifecycle/disposal behavior, events or Remote transport, durable schema, and failure behavior. Local Tavern documents describe the integration but do not override the target DSH implementation.
 
@@ -19,7 +21,7 @@ For each DSH seam used or changed, verify the relevant contract dimensions at th
 
 - The Tavern package declares Node `>=20`, and its CI tests Node 20 and 22.
 - Integration with DSH must also satisfy the selected DSH ref's own `engines.node` requirement.
-- Run actual Host checks on a Node version in the intersection. Do not use Tavern's standalone range to claim that a newer DSH installation supports Node 20.
+- When an actual Host check is required, run it on a Node version in the intersection. Do not use Tavern's standalone range to claim that a newer DSH installation supports Node 20.
 
 ## Choose the smallest sufficient validation
 
