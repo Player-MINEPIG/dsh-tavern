@@ -1,4 +1,4 @@
 interface:
   display_name: "DSH Tavern Development"
-  short_description: "Develop dsh-tavern from public and active plans"
-  default_prompt: "Use $dsh-tavern-development to implement this dsh-tavern change with the project workflow."
+  short_description: "Develop dsh-tavern against versioned DSH contracts"
+  default_prompt: "Use $dsh-tavern-development to implement this change against the correct DSH version and project contracts."
