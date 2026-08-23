@@ -23,7 +23,7 @@ This skill supplies DSH Tavern source authority, architecture contracts, DSH-ver
 - Integrate only through public seams of the target DSH version.
 - Removing Tavern must leave native DSH usable and its original sessions readable.
 
-Treat other documented project principles as current constraints, not immutable doctrine. If a materially better approach conflicts with one, identify the conflict and discuss the tradeoff with the user instead of rejecting it or silently changing the principle. Record finalized decisions in the appropriate development and public documents.
+Treat other documented project principles as current constraints, not immutable doctrine. If a materially better approach conflicts with one, identify the conflict and discuss the tradeoff with the user instead of rejecting it or silently changing the principle. When the task authorizes finalizing a project decision, update the applicable development record and externally relevant public contract; otherwise report the required documentation follow-up.
 
 ## Work and remote boundaries
 
@@ -31,4 +31,4 @@ Treat other documented project principles as current constraints, not immutable 
 - Never copy private development-plan content, repository coordinates, user data, or absolute local paths into the public repository without explicit approval.
 - Never push, publish, create a tag or release, or open or update a pull request without explicit user permission.
 
-Every delivery, whether committed or not, reports what changed and why, affected contracts, the DSH version or ref used, checks run and omitted, assumptions/risks/open decisions, and the commit SHA when one exists.
+Always report the change and verification performed. Report affected contracts, DSH or Node refs, omitted integration checks, risks, open decisions, and a commit SHA only when they materially affect the task or confidence in the result.
