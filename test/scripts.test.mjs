@@ -6,13 +6,14 @@ import path from 'node:path'
 import test from 'node:test'
 import { fileURLToPath } from 'node:url'
 import {
-  backupPresetData,
+  backupTavernData,
   dshInvocation,
   dshPluginArgs,
   installedDataPath,
   localPackageSpec,
   materializeInstalledPackage,
   parseOptions,
+  persistentDataPath,
   profileHasPlugin,
   profileStoreDir,
 } from '../scripts/shared.mjs'
@@ -38,10 +39,19 @@ test('parses portable install and uninstall options', () => {
   const uninstall = parseOptions([
     '--profile', 'review-1',
     '--backup-dir', './backup',
+    '--storage-dir', './tavern-data',
   ], 'uninstall')
   assert.equal(uninstall.backupDir, path.resolve('./backup'))
+  assert.equal(uninstall.storageDir, path.resolve('./tavern-data'))
   assert.equal(uninstall.noBackup, false)
   assert.throws(() => parseOptions(['--profile', '../escape'], 'install'), /profile/)
+})
+
+test('places persistent Tavern data directly under DSH_HOME', () => {
+  assert.equal(
+    persistentDataPath(path.join(path.sep, 'srv', 'dsh-home')),
+    path.join(path.sep, 'srv', 'dsh-home', 'pmp-dsh-tavern'),
+  )
 })
 
 test('builds dsh plugin arguments without a shell', () => {
@@ -163,29 +173,54 @@ test('interrupted refresh repairs a leftover package without removing a missing 
   }
 })
 
-test('backs up installed preset data outside the plugin directory', async () => {
+test('backs up legacy installed Tavern data outside the plugin directory', async () => {
   const temporary = await mkdtemp(path.join(os.tmpdir(), 'dsh-tavern-script-test-'))
   try {
     const source = installedDataPath(temporary, 'web')
     await mkdir(source, { recursive: true })
     await writeFile(path.join(source, 'state.json'), '{"selectedId":null}')
     await assert.rejects(
-      backupPresetData({
+      backupTavernData({
         source,
         dshHome: temporary,
         destination: path.join(source, 'nested-backup'),
+        unsafeRoot: path.dirname(source),
       }),
-      /outside the installed plugin directory/,
+      /outside the Tavern data safety root/,
     )
     const destination = path.join(temporary, 'review-backup')
-    const backup = await backupPresetData({
+    const backup = await backupTavernData({
       source,
       dshHome: temporary,
       destination,
+      unsafeRoot: path.dirname(source),
       now: new Date('2026-08-14T00:00:00.000Z'),
     })
     assert.equal(backup, destination)
     assert.equal(await readFile(path.join(destination, 'state.json'), 'utf8'), '{"selectedId":null}')
+  } finally {
+    await rm(temporary, { recursive: true, force: true })
+  }
+})
+
+test('backs up persistent Tavern data without treating DSH_HOME as unsafe', async () => {
+  const temporary = await mkdtemp(path.join(os.tmpdir(), 'dsh-tavern-persistent-backup-'))
+  try {
+    const source = persistentDataPath(temporary)
+    await mkdir(source, { recursive: true })
+    await writeFile(path.join(source, 'state.json'), '{"selectedId":"kept"}')
+
+    const backup = await backupTavernData({
+      source,
+      dshHome: temporary,
+      now: new Date('2026-08-14T00:00:00.000Z'),
+    })
+
+    assert.equal(
+      backup,
+      path.join(temporary, 'backups', 'pmp-dsh-tavern', '2026-08-14T00-00-00-000Z'),
+    )
+    assert.equal(await readFile(path.join(backup, 'state.json'), 'utf8'), '{"selectedId":"kept"}')
   } finally {
     await rm(temporary, { recursive: true, force: true })
   }

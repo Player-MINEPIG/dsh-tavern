@@ -25,6 +25,7 @@ export function parseOptions(argv, mode) {
     skipBuild: false,
     noBackup: false,
     backupDir: undefined,
+    storageDir: undefined,
   }
 
   for (let index = 0; index < argv.length; index += 1) {
@@ -49,6 +50,9 @@ export function parseOptions(argv, mode) {
     } else if (mode === 'uninstall' && argument === '--backup-dir') {
       options.backupDir = path.resolve(valueAfter(argv, index, argument))
       index += 1
+    } else if (mode === 'uninstall' && argument === '--storage-dir') {
+      options.storageDir = path.resolve(valueAfter(argv, index, argument))
+      index += 1
     } else {
       throw new Error(`unknown option: ${argument}`)
     }
@@ -66,6 +70,10 @@ export function dshHomePath(options, environment = process.env, home = os.homedi
 
 export function installedDataPath(dshHome, profile) {
   return path.join(dshHome, 'profiles', profile, 'node_modules', PLUGIN_NAME, 'data')
+}
+
+export function persistentDataPath(dshHome) {
+  return path.join(dshHome, PLUGIN_NAME)
 }
 
 function isPathInside(parent, child) {
@@ -244,14 +252,20 @@ function timestamp(now) {
   return now.toISOString().replaceAll(':', '-').replaceAll('.', '-')
 }
 
-export async function backupPresetData({ source, dshHome, destination, now = new Date() }) {
+export async function backupTavernData({
+  source,
+  dshHome,
+  destination,
+  unsafeRoot = source,
+  now = new Date(),
+}) {
   if (!(await directoryExists(source))) return null
 
   const resolvedSource = path.resolve(source)
-  const installedPluginRoot = path.dirname(resolvedSource)
+  const resolvedUnsafeRoot = path.resolve(unsafeRoot)
   const target = path.resolve(destination ?? path.join(dshHome, 'backups', PLUGIN_NAME, timestamp(now)))
-  if (target === installedPluginRoot || target.startsWith(`${installedPluginRoot}${path.sep}`)) {
-    throw new Error('backup destination must be outside the installed plugin directory')
+  if (target === resolvedUnsafeRoot || target.startsWith(`${resolvedUnsafeRoot}${path.sep}`)) {
+    throw new Error('backup destination must be outside the Tavern data safety root')
   }
   await mkdir(path.dirname(target), { recursive: true })
   await cp(resolvedSource, target, {

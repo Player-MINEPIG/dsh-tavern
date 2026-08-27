@@ -13,6 +13,7 @@ import {
   localPackageSpec,
   materializeInstalledPackage,
   parseOptions,
+  persistentDataPath,
   profileHasPlugin,
   profileStoreDir,
   run,
@@ -34,10 +35,10 @@ Options:
   --dry-run            print commands without changing anything
   -h, --help           show this help
 
-An existing installation is refreshed with remove/add. Its plugin-local data
-is copied to a persistent pending-recovery directory and restored after a
-successful add. A later run resumes that recovery automatically if refresh was
-interrupted.
+An existing installation is refreshed with remove/add. Legacy package-local
+data is copied to a pending-recovery directory and restored after a successful
+add so the next Host start can migrate it. Persistent Tavern data under
+DSH_HOME is outside the package and is never removed by this refresh.
 `
 
 async function installFresh(invocation, options, spec, projectRoot, environment) {
@@ -76,7 +77,7 @@ async function refreshExisting(invocation, options, spec, projectRoot, environme
           errorOnExist: false,
           force: true,
         })
-        console.log('[dsh-tavern] restored plugin-local data from the interrupted refresh')
+        console.log('[dsh-tavern] restored legacy package-local data from the interrupted refresh')
         await rm(recoveryRoot, { recursive: true, force: true })
       }
     } catch (error) {
@@ -88,7 +89,7 @@ async function refreshExisting(invocation, options, spec, projectRoot, environme
 
   console.log('[dsh-tavern] existing installation found; refreshing package files')
   if (hasRecovery) {
-    console.log('[dsh-tavern] resuming plugin-local data recovery from an interrupted refresh')
+    console.log('[dsh-tavern] resuming legacy package-local data recovery from an interrupted refresh')
   } else if (!options.dryRun && existsSync(dataPath)) {
     await mkdir(recoveryRoot, { recursive: true })
     await cp(dataPath, recoveryData, {
@@ -98,7 +99,7 @@ async function refreshExisting(invocation, options, spec, projectRoot, environme
       force: false,
     })
     hasRecovery = true
-    console.log('[dsh-tavern] preserving plugin-local data during refresh')
+    console.log('[dsh-tavern] preserving legacy package-local data during refresh')
   }
 
   let refreshed = false
@@ -119,7 +120,7 @@ async function refreshExisting(invocation, options, spec, projectRoot, environme
         errorOnExist: false,
         force: true,
       })
-      console.log('[dsh-tavern] restored plugin-local data')
+      console.log('[dsh-tavern] restored legacy package-local data')
     }
     refreshed = true
   } catch (error) {
@@ -168,6 +169,7 @@ try {
   const invocation = dshInvocation(process.platform, environment)
   console.log(`[dsh-tavern] installing into dsh profile ${installOptions.profile}`)
   await refreshExisting(invocation, installOptions, spec, projectRoot, environment)
+  console.log(`[dsh-tavern] persistent data directory: ${persistentDataPath(dshHome)}`)
   console.log('[dsh-tavern] installation complete; restart dsh web if it is already running')
 } catch (error) {
   console.error(`[dsh-tavern] install failed: ${error.message}`)
