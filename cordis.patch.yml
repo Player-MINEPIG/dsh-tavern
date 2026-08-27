@@ -2,4 +2,5 @@
 - insert:
     - id: pmp-dsh-tavern
       name: 'pmp-dsh-tavern'
-      config: {}
+      config:
+        storageDir: !!js dshHomePath('pmp-dsh-tavern')

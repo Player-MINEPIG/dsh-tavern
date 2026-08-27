@@ -1,5 +1,3 @@
-import { fileURLToPath } from 'node:url'
-import { resolve } from 'node:path'
 import {
   PresetStore,
   createApiHandler as createPresetApiHandler,
@@ -63,11 +61,10 @@ import {
   resolveRpConfig,
   rpModeConstants,
 } from './rp-mode.js'
+import { prepareStorageDir } from './storage-location.js'
 
 export const name = PLUGIN_ID
 export const inject = ['systemPrompt']
-
-const DEFAULT_STORAGE_DIR = fileURLToPath(new URL('../../../data', import.meta.url))
 
 function migrateCharacterSelections(characterStore, selections) {
   for (const [sessionId, legacy] of Object.entries(characterStore.state.selectedBySessionId)) {
@@ -265,7 +262,10 @@ export function createResourceWorldBookBindingPolicy(
 }
 
 export function apply(ctx, config = {}) {
-  const storageDir = resolve(config.storageDir ?? DEFAULT_STORAGE_DIR)
+  const { path: storageDir } = prepareStorageDir({
+    storageDir: config.storageDir,
+    logger: ctx.logger,
+  })
   const store = new PresetStore(storageDir)
   const characterStore = new CharacterStore(storageDir)
   const worldBookStore = new WorldBookStore(storageDir)
