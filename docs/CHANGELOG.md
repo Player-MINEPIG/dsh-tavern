@@ -7,6 +7,7 @@
 - Added the tested `dsh plugin --profile web add github:Player-MINEPIG/dsh-tavern` path to both language entry points and installation guides, plus an author-owned storefront screenshot order in `screenshots.json`.
 - Moved the default Tavern resource/settings/binding tree from package-local `data/` to `<DSH_HOME>/pmp-dsh-tavern/`, outside both pnpm-managed package files and DSH's reserved `storages/` backend root. Plain package removal now retains Tavern data; the project uninstaller still creates an optional pre-removal snapshot.
 - Added a one-time legacy migration before Store construction: an empty target receives an atomically published copy and migration marker while the old package-local source is retained; a populated target is never overwritten. The source installer preserves legacy data across its remove/add bridge, and lifecycle scripts now describe and back up the external directory.
+- Passed `npm run verify:2.0`, build, and package dry-run with the storage runtime included. In a fresh isolated `DSH_HOME` on DSH `0.1.1-rc.2` and Node `22.23.1`, a legacy package-local character/chrome sentinel migrated and loaded through the real Host API; plain remove retained it, reinstall loaded the same revision, and the project uninstaller produced byte-matching backups while retaining the original persistent directory.
 - Validated the branch on DSH `0.1.1-rc.2` without changing the release's recorded `0.1.0-rc.8` compatibility baseline.
 
 ## 2026-08-22 — Add English documentation pair
