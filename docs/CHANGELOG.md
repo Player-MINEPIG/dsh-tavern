@@ -5,7 +5,8 @@
 - Registered the HTTP API through optional `webServer` injection so the route activates when DSH provides the service after Tavern loads; retained a fallback for minimal/older Host contexts.
 - Removed the unused direct `@deepseek-ai/cordis` peer dependency. Tavern consumes DSH services through the Host context and never imports Cordis, so the peer only caused a missing-dependency warning during GitHub installation.
 - Added the tested `dsh plugin --profile web add github:Player-MINEPIG/dsh-tavern` path to both language entry points and installation guides, plus an author-owned storefront screenshot order in `screenshots.json`.
-- Documented the verified plain-remove boundary: DSH removes package-local Tavern data without running the project's backup-aware uninstaller, while authoritative DSH sessions remain outside that plugin data.
+- Moved the default Tavern resource/settings/binding tree from package-local `data/` to `<DSH_HOME>/pmp-dsh-tavern/`, outside both pnpm-managed package files and DSH's reserved `storages/` backend root. Plain package removal now retains Tavern data; the project uninstaller still creates an optional pre-removal snapshot.
+- Added a one-time legacy migration before Store construction: an empty target receives an atomically published copy and migration marker while the old package-local source is retained; a populated target is never overwritten. The source installer preserves legacy data across its remove/add bridge, and lifecycle scripts now describe and back up the external directory.
 - Validated the branch on DSH `0.1.1-rc.2` without changing the release's recorded `0.1.0-rc.8` compatibility baseline.
 
 ## 2026-08-22 — Add English documentation pair

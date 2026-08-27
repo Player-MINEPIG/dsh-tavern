@@ -44,7 +44,7 @@ Requirements: Node.js 20 or newer, `dsh` on `PATH`, and an initialized DSH profi
 dsh plugin --profile web add github:Player-MINEPIG/dsh-tavern
 ```
 
-Clone the repository only for source development, data-preserving refreshes, or the project's backup-aware uninstall flow:
+Clone the repository only for source development, safe migration from legacy package-local data, or the project's backup-aware uninstall flow:
 
 ```sh
 git clone https://github.com/Player-MINEPIG/dsh-tavern.git
@@ -53,7 +53,7 @@ npm install --cache .npm-cache
 npm run plugin:install
 ```
 
-Restart DSH Web after install. **Do not use plain `dsh plugin remove` if you need to keep Tavern character cards, presets, world books, or bindings: it deletes package-local data without invoking the project backup.** Clone the repository and use its backup-aware uninstall flow. Stop the target `dsh web` before updating an existing install; the installer keeps plugin data across refresh. Other profiles, a separate `DSH_HOME`, manual install, backup, and uninstall: [Installation](docs/INSTALLATION_en.md).
+Restart DSH Web after install. Tavern stores character cards, presets, world books, settings, and bindings under `<DSH_HOME>/pmp-dsh-tavern/` by default. Plain `dsh plugin remove` retains that directory but does not create a pre-removal snapshot; clone the repository and use its uninstaller when a snapshot is required. On the first upgrade from a version that still stores data inside the package, stop the target `dsh web` and use the project installer so pnpm cannot replace the old package before its data is preserved. The new Host copies that data to the external directory on first start and retains the old copy. Other profiles, a separate `DSH_HOME`, manual install, backup, and uninstall: [Installation](docs/INSTALLATION_en.md).
 
 ### 1. Import a character card
 

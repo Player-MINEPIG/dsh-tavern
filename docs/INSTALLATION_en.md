@@ -26,14 +26,16 @@ Ordinary users can install the plugin directly from GitHub into the default
 dsh plugin --profile web add github:Player-MINEPIG/dsh-tavern
 ```
 
-Direct installation does not change the data lifecycle: Tavern resources still
-live under the installed package's `data/` directory. Plain
-`dsh plugin remove` deletes that directory without invoking this project's
-backup logic. To keep character cards, presets, world books, and bindings,
-clone the repository and use `npm run plugin:uninstall` below.
+On first start, Tavern automatically creates `<DSH_HOME>/pmp-dsh-tavern/` and
+does not ask the user to choose an internal storage location. Plain
+`dsh plugin remove` removes only the package from the profile and retains that
+directory, but it does not invoke this project's backup logic or create a
+pre-removal snapshot. Clone the repository and use `npm run plugin:uninstall`
+below when a snapshot is required.
 
-For source development, data-preserving refreshes, or the backup-aware
-uninstall flow below, clone the repository and install its dependencies once:
+For source development, safe migration from legacy package-local `data/`, or
+the backup-aware uninstall flow below, clone the repository and install its
+dependencies once:
 
 ```text
 npm install --cache .npm-cache
@@ -45,25 +47,25 @@ shell, and prints a restart reminder. Restart a currently running `dsh web`
 process before review.
 
 Stop the target `dsh web` process before updating an existing installation.
-Repeated installation is supported: the script preserves the
-installed `data/`, removes the stale local `file:` package, adds the current
-worktree again, and restores the data. This is necessary because pnpm can report
-`Already up to date` while leaving newly added source files absent from an
-earlier local-directory snapshot. It can also hardlink source files: editing
-one inode then replacing another may otherwise produce a package whose entry
-file is new but one imported module is old. After every add, the installer
-therefore replaces the package's declared `files` entries with independent
-copies from the current worktree. It does not touch the installed `data/` or
-pnpm-managed nested `node_modules`, and validates that the resolved package
-target remains inside the selected profile before removing any stale package
-directory. Pending recovery data is kept under
-`<DSH_HOME>/backups/pmp-dsh-tavern/pending-refresh-<profile>/`; a successful refresh
-removes it. If remove/add fails, the error prints the retained path and the next
-installer run repairs an interrupted dependency registration and restores that
-data automatically. Do not delete the pending directory while recovery is due.
-When `--store-dir` is omitted, the updater reads the store already recorded in
-the profile's `node_modules/.modules.yaml`; this prevents pnpm's
-`ERR_PNPM_UNEXPECTED_STORE` on profiles created with a different store root.
+Repeated installation does not touch the persistent directory because it sits
+outside the package. To bridge installations that still use package-local
+`data/`, the script stages that legacy directory under
+`<DSH_HOME>/backups/pmp-dsh-tavern/pending-refresh-<profile>/` before remove/add
+and restores it into the new package after add. On the next Host start, if the
+external directory is empty, Tavern copies the legacy tree through a sibling
+temporary directory, publishes it atomically at `<DSH_HOME>/pmp-dsh-tavern/`,
+writes a migration marker, and retains the old copy. A populated external
+directory is never overwritten and produces a warning. If remove/add fails,
+the error prints the pending path; the next installer run repairs dependency
+registration and resumes recovery. Do not delete that directory while recovery
+is due.
+
+The refresh still materializes the worktree's declared `files` entries as
+independent copies to avoid stale pnpm directory snapshots and mixed hardlink
+versions. It leaves pnpm-managed nested `node_modules` untouched and validates
+that the install target stays inside the selected profile. When `--store-dir`
+is omitted, it reuses the store recorded in `node_modules/.modules.yaml` to
+avoid `ERR_PNPM_UNEXPECTED_STORE`.
 
 Useful options:
 
@@ -108,16 +110,15 @@ and disable/uninstall fallback against the target DSH rc build.
 npm run plugin:uninstall
 ```
 
-Before calling `dsh plugin ... remove`, the uninstaller copies the installed
-`data/` directory to:
+Before calling `dsh plugin ... remove`, the uninstaller copies the default
+persistent directory to:
 
 ```text
 <DSH_HOME>/backups/pmp-dsh-tavern/<timestamp>/
 ```
 
-This is important because dsh/pnpm removes the installed plugin directory,
-which is also where this version stores the complete plugin-local `data/`
-tree: presets, normalized character cards, PNG cover images under
+The default source is `<DSH_HOME>/pmp-dsh-tavern/`. It holds presets,
+normalized character cards, PNG cover images under
 `character-artifacts/` when a card was imported from PNG, standalone world books under
 `world-books/`, three-field user resources under
 `users/`, bounded Trace metadata in `tavern-traces.json`, and per-session
@@ -140,13 +141,17 @@ Choose another backup directory or deliberately skip backup with:
 
 ```text
 node scripts/uninstall.mjs --backup-dir /absolute/backup/path
+node scripts/uninstall.mjs --storage-dir /absolute/custom/storage
 node scripts/uninstall.mjs --no-backup
 ```
 
-`--no-backup` permanently discards all plugin-local Tavern resources and
-session bindings when dsh removes the package. It does not delete an external
-ST file originally used for import. A `storageDir` explicitly configured
-outside the installed package is not removed by this script.
+`--storage-dir` snapshots an explicitly configured custom storage directory.
+`--no-backup` skips only this snapshot. Ordinary removal still retains the
+default or custom persistent directory and does not delete an external ST file
+used for import. If the user explicitly wants to purge data, delete the
+persistent directory separately after confirming a backup; package removal
+does not implicitly erase user content.
 
 All common options work for uninstall too: `--profile`, `--dsh-home`,
-`--store-dir`, and `--dry-run`. Use `--help` for the complete command summary.
+`--store-dir`, `--storage-dir`, and `--dry-run`. Use `--help` for the complete
+command summary.

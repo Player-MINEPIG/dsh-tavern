@@ -151,7 +151,7 @@ Full block/allow list: [RP_SECURE_MODE_en.md](RP_SECURE_MODE_en.md).
 Default data location:
 
 ```text
-<DSH_HOME>/profiles/<profile>/node_modules/pmp-dsh-tavern/data/
+<DSH_HOME>/pmp-dsh-tavern/
 ```
 
 Main contents:
@@ -177,9 +177,9 @@ play-workspace.json            Current RP workspace binding
 import-context-bindings.json   Runtime claim state for imported records
 ```
 
-If the plugin is configured with an external `storageDir`, the same tree is stored there. Back up the whole `data/` directory; do not copy only `presets/`. `play-workspace.json` stores only the RP workspace pointer. The actual `catalog.json`, per-playthrough `timeline.json`, display regex, and imported records live in the chosen DSH workspace. A complete backup must copy that workspace too.
+If the plugin is configured with a custom `storageDir`, the same tree is stored there. Back up the whole Tavern directory; do not copy only `presets/`. `play-workspace.json` stores only the RP workspace pointer. The actual `catalog.json`, per-playthrough `timeline.json`, display regex, and imported records live in the chosen DSH workspace. A complete backup must copy that workspace too.
 
-Re-running the installer stages and restores in-plugin `data/`. The uninstaller backs up to `<DSH_HOME>/backups/pmp-dsh-tavern/<timestamp>/` by default. Use `--no-backup` only when you are sure the data is not needed. External import source files and an external `storageDir` are not deleted by the uninstaller.
+On the first upgrade from legacy package-local `data/`, the project installer stages and restores that old tree across remove/add. If the external directory is empty, the new Host copies it atomically, writes a migration marker, and retains the old copy; a populated target is never overwritten. The uninstaller snapshots the persistent directory to `<DSH_HOME>/backups/pmp-dsh-tavern/<timestamp>/` by default, then removes only the package and retains the original directory. `--no-backup` skips the snapshot rather than erasing content; pass `--storage-dir` to snapshot a custom location.
 
 Full install, refresh recovery, cross-platform options, and uninstall: [Installation](INSTALLATION_en.md).
 

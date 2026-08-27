@@ -76,5 +76,5 @@ timeline 只保存 session/event 范围引用；路径 API 有根目录、相对
 
 1. 自动证据：运行 `npm run verify:2.0`。完整 history、六种 import claim/lineage、schema/CAS、损坏文件、按 id focus、operation log、Windows junction/reparse/rename 前父目录替换以及 mode service dispose 均由确定性测试验证。
 2. 真实 Host/浏览器：先以 `DSH_TAVERN_PLAY_LIVE=1` 和 `DSH_TAVERN_PLAY_LIVE_URL` 运行只读 Host 冒烟；再用双标签页观察 chrome SSE/focus/poll 收敛与 CAS 冲突，在全新数据中验证工作区准入的无候选/单候选/多候选/失效候选/失败恢复；正常与中断回复只做一轮代表性 UI 回归。
-3. 兼容回退：禁用或卸载 Tavern 后确认 DSH native 与其它插件仍可用，再恢复插件数据；不要用这一步验证会删除资源的 `--no-backup`。
+3. 兼容回退：禁用或卸载 Tavern 后确认 DSH native 与其它插件仍可用，再重新安装并确认外部持久数据仍可读取；`--no-backup` 只跳过卸载前快照，不应清除资源。
 4. 发布门：`npm run verify:2.0` 已包含 build 与 pack dry-run；再核对依赖审计、公开路径/秘密扫描、正式文档和版本号后才打 2.0 tag。

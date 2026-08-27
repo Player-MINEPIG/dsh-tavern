@@ -159,7 +159,7 @@ RP 是当前 session 的叠加，不是 DSH agent preset。
 默认数据位于：
 
 ```text
-<DSH_HOME>/profiles/<profile>/node_modules/pmp-dsh-tavern/data/
+<DSH_HOME>/pmp-dsh-tavern/
 ```
 
 主要内容包括：
@@ -185,9 +185,9 @@ play-workspace.json            当前 RP 工作区绑定
 import-context-bindings.json   外部记录运行时 claim 状态
 ```
 
-如插件配置指定外部 `storageDir`，以上数据改存该目录。备份时复制整个 `data/`，不要只复制 `presets/`。`play-workspace.json` 只保存 RP 工作区指针；真正的 `catalog.json`、各周目 `timeline.json`、显示正则和外部导入记录位于所选 DSH 工作区内，完整备份还必须复制该工作区。
+如插件配置指定自定义 `storageDir`，以上数据改存该目录。备份时复制整个 Tavern 目录，不要只复制 `presets/`。`play-workspace.json` 只保存 RP 工作区指针；真正的 `catalog.json`、各周目 `timeline.json`、显示正则和外部导入记录位于所选 DSH 工作区内，完整备份还必须复制该工作区。
 
-重复执行安装脚本会先暂存并恢复插件内 `data/`。卸载脚本默认备份到 `<DSH_HOME>/backups/pmp-dsh-tavern/<timestamp>/`；只有确认不需要数据时才使用 `--no-backup`。外部导入源文件和外部 `storageDir` 不会被卸载器删除。
+从旧版包内 `data/` 首次升级时，项目安装脚本会在 remove/add 期间暂存并恢复旧数据；新 Host 在外部目录为空时原子复制过去、写入迁移标记并保留旧副本，目标已有数据时不覆盖。卸载脚本默认把持久目录快照到 `<DSH_HOME>/backups/pmp-dsh-tavern/<timestamp>/`，随后只移除软件包并保留原目录。`--no-backup` 只跳过快照，不清空内容；自定义 `storageDir` 可通过同名参数指定为快照源。
 
 完整安装、刷新恢复、跨平台参数和卸载说明见 [安装与卸载](INSTALLATION.md)。
 

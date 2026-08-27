@@ -43,6 +43,8 @@ DSH system prompt + agent request
 
 Dependencies only go down: `tavern-loader → play/preset/character/user/world-book-library/world-book/tavern-trace → tavern-format`. The format layer and the `world-book` pure library must not import DSH, the filesystem, or UI. The preset, character, user, world-book-library, and `play` use-case layers must not register `systemPrompt`, `agent/request`, or other Host seams. Only the loader is the root `main` entry and may depend on the DSH runtime. `tavern-trace` accepts ordinary snapshot/session-event data from the loader, but it does not import DSH or append Session events. It owns only a minimal audit format, bounded plugin storage, a read-only API, and a browser view. The browser side is composed by `packages/client` from the use-case UIs. It is not the Host loader.
 
+Before constructing any Store, the loader resolves one shared `storageDir`. The default bundle uses DSH `dshHomePath()` to set it to `<DSH_HOME>/pmp-dsh-tavern/`; it neither occupies `<DSH_HOME>/storages/`, which is managed by `dsh-storage-json`, nor leaves user content under pnpm-replaceable `node_modules`. An explicit `storageDir` still has highest priority. Legacy package-local `data/` migrates only when the target is empty, through a sibling temporary copy and atomic publication. The source copy is retained and a populated target is never overwritten. This directory owns Tavern resources, settings, and bindings; DSH durable sessions and the selected RP workspace remain under their respective Host contracts.
+
 ## Layer responsibilities
 
 | Layer | Question it answers | Current contents | Explicitly not responsible for |

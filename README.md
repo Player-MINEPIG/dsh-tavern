@@ -44,7 +44,7 @@ pmp-dsh-tavern 不是用另一套界面取代 DSH，也不会复制一份会话�
 dsh plugin --profile web add github:Player-MINEPIG/dsh-tavern
 ```
 
-从源码开发、执行保留 Tavern 数据的刷新，或使用项目提供的备份卸载流程时，再检出仓库：
+从源码开发、从旧版包内数据安全迁移，或使用项目提供的备份卸载流程时，再检出仓库：
 
 ```sh
 git clone https://github.com/Player-MINEPIG/dsh-tavern.git
@@ -53,7 +53,7 @@ npm install --cache .npm-cache
 npm run plugin:install
 ```
 
-安装完成后重启 DSH Web。**如果需要保留 Tavern 的角色卡、预设、世界书与绑定，不要直接执行普通 `dsh plugin remove`；它会删除包内数据且不会调用项目备份。**请检出仓库并使用项目提供的备份卸载流程。更新已有安装前请先停止目标 `dsh web`；安装脚本会在刷新期间保留插件数据。其他 profile、独立 `DSH_HOME`、手动安装、备份与卸载方法见 [安装与卸载](docs/INSTALLATION.md)。
+安装完成后重启 DSH Web。Tavern 默认把角色卡、预设、世界书、设置与绑定保存在 `<DSH_HOME>/pmp-dsh-tavern/`，普通 `dsh plugin remove` 不会删除该目录，但也不会创建卸载前快照；需要快照时请检出仓库并使用项目卸载脚本。从仍把数据放在插件包内的旧版本首次升级时，先停止目标 `dsh web` 并使用项目安装脚本，以便在 pnpm 替换旧包前保住数据；新 Host 首次启动会复制到外部目录并保留旧副本。其他 profile、独立 `DSH_HOME`、手动安装、备份与卸载方法见 [安装与卸载](docs/INSTALLATION.md)。
 
 ### 1. 导入角色卡
 

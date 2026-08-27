@@ -43,6 +43,8 @@ DSH system prompt + agent request
 
 依赖只能向下：`tavern-loader → play/preset/character/user/world-book-library/world-book/tavern-trace → tavern-format`。格式层和 `world-book` 纯库不能导入 DSH、文件系统或 UI；preset、character、user、world-book-library 和 `play` 用例层不能注册 `systemPrompt`、`agent/request` 等 Host seam；只有 loader 是根 `main` 入口并允许依赖 DSH 运行时。`tavern-trace` 接受 loader 传入的普通 snapshot/session event 数据，但不导入 DSH、不 append Session；它只拥有最小化审计格式、有界插件存储、只读 API 和浏览器 view。浏览器侧由 `packages/client` 组合各用例 UI，它不是 Host loader。
 
+loader 在任何 Store 构造前解析统一 `storageDir`。默认 bundle 通过 DSH 的 `dshHomePath()` 把它设为 `<DSH_HOME>/pmp-dsh-tavern/`，不直接占用由 `dsh-storage-json` 管理的 `<DSH_HOME>/storages/`，也不把用户内容留在可被 pnpm 替换的 `node_modules` 内。显式 `storageDir` 仍具有最高优先级。旧版包内 `data/` 只在目标为空时通过同父目录临时副本迁移并原子发布；源副本保留，非空目标不覆盖。该目录保存 Tavern 资源、设置和绑定；DSH durable session 与所选 RP workspace 继续由各自 Host 合同拥有。
+
 ## 各层职责
 
 | 层 | 回答的问题 | 当前内容 | 明确不负责 |
