@@ -19,11 +19,24 @@ but by itself it intentionally has no agent-loading effect.
 
 ## Install
 
-Install dependencies once, then install the plugin into the default `web`
-profile:
+Ordinary users can install the plugin directly from GitHub into the default
+`web` profile:
 
 ```text
-npm install --cache .npm-cache --legacy-peer-deps
+dsh plugin --profile web add github:Player-MINEPIG/dsh-tavern
+```
+
+Direct installation does not change the data lifecycle: Tavern resources still
+live under the installed package's `data/` directory. Plain
+`dsh plugin remove` deletes that directory without invoking this project's
+backup logic. To keep character cards, presets, world books, and bindings,
+clone the repository and use `npm run plugin:uninstall` below.
+
+For source development, data-preserving refreshes, or the backup-aware
+uninstall flow below, clone the repository and install its dependencies once:
+
+```text
+npm install --cache .npm-cache
 npm run plugin:install
 ```
 

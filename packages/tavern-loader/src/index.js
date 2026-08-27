@@ -521,7 +521,7 @@ export function apply(ctx, config = {}) {
     return { ...assembly, sections, contexts }
   })
 
-  if (ctx.get('webServer') !== undefined) {
+  const registerHttpApi = webCtx => {
     const presetApi = createPresetApiHandler(
       store,
       notifyChange,
@@ -637,7 +637,7 @@ export function apply(ctx, config = {}) {
     )
     ctx.effect(
       () => {
-        const disposeRoute = ctx.get('webServer').register({
+        const disposeRoute = webCtx.webServer.register({
           kind: 'prefix',
           path: API_ROOT,
           handler: api,
@@ -649,6 +649,12 @@ export function apply(ctx, config = {}) {
       },
       'dsh-tavern: HTTP Tavern API',
     )
+  }
+  if (typeof ctx.inject === 'function') {
+    ctx.inject(['webServer'], registerHttpApi)
+  } else {
+    const webServer = ctx.get('webServer')
+    if (webServer !== undefined) registerHttpApi({ webServer })
   }
 
   ctx.logger.info(`dsh-tavern: Tavern profile loader ready (${storageDir})`)

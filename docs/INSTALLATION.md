@@ -10,10 +10,18 @@
 
 ## 安装
 
-先安装一次依赖，再把插件装进默认 `web` profile：
+普通用户可直接从 GitHub 把插件装进默认 `web` profile：
 
 ```text
-npm install --cache .npm-cache --legacy-peer-deps
+dsh plugin --profile web add github:Player-MINEPIG/dsh-tavern
+```
+
+直装不会改变数据生命周期：Tavern 资源仍位于已安装包的 `data/`。普通 `dsh plugin remove` 会删除该目录，且不会调用本项目的备份逻辑；需要保留角色卡、预设、世界书和绑定时，必须先按下文检出仓库并使用 `npm run plugin:uninstall`。
+
+从源码开发、需要保留 Tavern 数据的重复刷新，或准备使用下文的备份卸载流程时，先检出仓库并安装一次依赖：
+
+```text
+npm install --cache .npm-cache
 npm run plugin:install
 ```
 

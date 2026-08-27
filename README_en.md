@@ -41,13 +41,19 @@ If behavior looks suspicious, stop the Agent, switch back to DSH native mode, an
 Requirements: Node.js 20 or newer, `dsh` on `PATH`, and an initialized DSH profile (default `web`).
 
 ```sh
+dsh plugin --profile web add github:Player-MINEPIG/dsh-tavern
+```
+
+Clone the repository only for source development, data-preserving refreshes, or the project's backup-aware uninstall flow:
+
+```sh
 git clone https://github.com/Player-MINEPIG/dsh-tavern.git
 cd dsh-tavern
-npm install --cache .npm-cache --legacy-peer-deps
+npm install --cache .npm-cache
 npm run plugin:install
 ```
 
-Restart DSH Web after install. Stop the target `dsh web` before updating an existing install; the installer keeps plugin data across refresh. Other profiles, a separate `DSH_HOME`, manual install, backup, and uninstall: [Installation](docs/INSTALLATION_en.md).
+Restart DSH Web after install. **Do not use plain `dsh plugin remove` if you need to keep Tavern character cards, presets, world books, or bindings: it deletes package-local data without invoking the project backup.** Clone the repository and use its backup-aware uninstall flow. Stop the target `dsh web` before updating an existing install; the installer keeps plugin data across refresh. Other profiles, a separate `DSH_HOME`, manual install, backup, and uninstall: [Installation](docs/INSTALLATION_en.md).
 
 ### 1. Import a character card
 

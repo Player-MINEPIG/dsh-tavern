@@ -62,6 +62,7 @@ function host() {
       on: (name, listener) => listeners.set(name, listener),
       emit: () => {},
       get: () => undefined,
+      inject: () => {},
       effect: () => {},
       logger: { info: () => {} },
     },
@@ -139,15 +140,21 @@ test('legacy character selections migrate once into the loader session policy', 
   }
 })
 
-test('Host registers one broad API prefix so character and preset routes cannot shadow each other', () => {
+test('Host registers one broad API prefix after the optional webServer becomes available', () => {
   const directory = mkdtempSync(join(tmpdir(), 'dsh-tavern-routes-'))
   const routes = []
   const webServer = { register: route => { routes.push(route); return () => {} } }
   const { ctx } = host()
-  ctx.get = name => name === 'webServer' ? webServer : undefined
+  let activateWebServer
+  ctx.inject = (services, activate) => {
+    if (services.length === 1 && services[0] === 'webServer') activateWebServer = activate
+  }
   ctx.effect = install => install()
   try {
     apply(ctx, { storageDir: directory })
+    assert.deepEqual(routes, [])
+    assert.equal(typeof activateWebServer, 'function')
+    activateWebServer({ webServer })
     assert.deepEqual(routes.map(route => route.path), ['/pmp-dsh-tavern/api'])
   } finally {
     rmSync(directory, { recursive: true, force: true })

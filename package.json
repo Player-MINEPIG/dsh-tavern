@@ -20,6 +20,7 @@
     "./package.json": "./package.json"
   },
   "files": [
+    "screenshots.json",
     "README_en.md",
     "SECURITY.md",
     "SECURITY_en.md",
@@ -76,9 +77,6 @@
   },
   "engines": {
     "node": ">=20"
-  },
-  "peerDependencies": {
-    "@deepseek-ai/cordis": "^4.0.1"
   },
   "devDependencies": {
     "esbuild": "^0.28.2",
