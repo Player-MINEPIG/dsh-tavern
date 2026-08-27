@@ -28,7 +28,7 @@ timeline 只保存 session/event 范围引用；路径 API 有根目录、相对
 | 显示正则顺序 | 已实现、已验收 | 全局、预设、角色卡各自支持与预设 prompt 相同的指针拖拽、收缩线和落点占位动画；保存分别写工作区文档或原生 `regex_scripts` 数组。跨来源禁止拖动，组合顺序固定全局→预设→角色卡。 |
 | 子 agent / 上下文注入显示 | 已实现、已验收 | v2 消息保留模型 `role` 并增加 `origin`；魔丸完全隐藏 reasoning/context，不画用户气泡也不提供展开。context 触发输出的 retry 向前定位真实用户 turn，控制器拒绝重发 context；显示正则只控制正文，各段全被清空时仍在 durable QA 末尾保留一组动作。 |
 
-表内行为均在 DSH 0.1.0-rc.8 完成用户验收。P0 加固已全部进入 `npm run verify:2.0` 分组回归；Windows junction、根内 reparse point 与 rename 前父目录替换在本机实际执行通过，不再因创建 symlink 权限而跳过。真实 rc.8 Host 的 chrome/workspace 权威只读冒烟、写入交互、工作区准入视觉、功能按钮、显示正则、周目生命周期和卸载回退均已完成；双标签页与底层竞态仍由确定性自动测试和后续版本回归共同约束。
+表内行为均在 DSH `0.1.0-rc.8` 完成用户验收。P0 加固已全部进入 `npm run verify:2.0` 分组回归；Windows junction、根内 reparse point 与 rename 前父目录替换在本机实际执行通过，不再因创建 symlink 权限而跳过。真实 DSH `0.1.0-rc.8` Host 的 chrome/workspace 权威只读冒烟、写入交互、工作区准入视觉、功能按钮、显示正则、周目生命周期和卸载回退均已完成；双标签页与底层竞态仍由确定性自动测试和后续版本回归共同约束。
 工作区准入已实现：魔丸在 v2 workspace 未绑定、候选失效或读取失败时阻断 RP 内容，只消费 DSH 公开 workspace 列表；候选必须显式选择，PUT 后回读验证，失败可重试或返回 native，不保存浏览器工作区副本。
 
 下面保留原始发现作为证据；其是否关闭以紧随其后的决策表为准。

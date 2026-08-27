@@ -97,7 +97,7 @@ Switching resources in the same session does not delete assistant replies alread
 - New sessions do not copy durable history, Inbox, Trace, resource bodies, or old runtime state.
 - Missing template resources show diagnostics and block apply.
 
-The DSH rc.8 outer **New session** control belongs to the native sidebar shell. The public extension contract cannot intercept or replace its click. Mowan keeps the native button and does not recommend it in RP mode. The `+` next to **Ordinary / non-RP sessions** only shows an explanation; it can be dismissed or used to return to native DSH. It does not silently create, move, or rename sessions. Create playthroughs with the `+` on a character card.
+The DSH `0.1.0-rc.8` outer **New session** control belongs to the native sidebar shell. The public extension contract cannot intercept or replace its click. Mowan keeps the native button and does not recommend it in RP mode. The `+` next to **Ordinary / non-RP sessions** only shows an explanation; it can be dismissed or used to return to native DSH. It does not silently create, move, or rename sessions. Create playthroughs with the `+` on a character card.
 
 The normal UI applies templates only to a newly created blank session. The underlying apply API still has no global transaction lock against an arbitrary already-running target. See the running-agent risk notes in `LOADER_CONTRACT_en.md`.
 

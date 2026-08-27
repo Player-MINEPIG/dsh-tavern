@@ -9,6 +9,7 @@
 - Added a one-time legacy migration before Store construction: an empty target receives an atomically published copy and migration marker while the old package-local source is retained; a populated target is never overwritten. The source installer preserves legacy data across its remove/add bridge, and lifecycle scripts now describe and back up the external directory.
 - Passed `npm run verify:2.0`, build, and package dry-run with the storage runtime included. In a fresh isolated `DSH_HOME` on DSH `0.1.1-rc.2` and Node `22.23.1`, a legacy package-local character/chrome sentinel migrated and loaded through the real Host API; plain remove retained it, reinstall loaded the same revision, and the project uninstaller produced byte-matching backups while retaining the original persistent directory.
 - Validated the branch on DSH `0.1.1-rc.2` without changing the release's recorded `0.1.0-rc.8` compatibility baseline.
+- Expanded DSH prerelease references throughout public documentation to their complete versions, such as `0.1.0-rc.8`, instead of ambiguous truncated labels.
 
 ## 2026-08-22 — Add English documentation pair
 
@@ -48,7 +49,7 @@ Verification: documentation links, image references, generic-path policy and Mar
 
 - Released the dual-display Tavern frontend: DSH native remains untouched in native mode, while Mowan adds the RP sidebar, playthrough tree, greeting dock, display regex, swipe/branch/rollback actions, import/export and independent conversation scaling.
 - Stabilized the v2 RP frontend protocol around authoritative chrome, workspace, session/history, managed files with revision/CAS, import claim/lineage and playthrough focus; v1 remains the bundled resource-editor contract.
-- Completed rc.8 user acceptance for resource editing, RP rendering, playthrough lifecycle, workspace admission, sorting, settings, native fallback and uninstall recovery.
+- Completed DSH `0.1.0-rc.8` user acceptance for resource editing, RP rendering, playthrough lifecycle, workspace admission, sorting, settings, native fallback and uninstall recovery.
 - Kept DSH durable history authoritative. Greetings and imported QA are not forged as history; timeline documents contain pointers and display metadata rather than copied messages.
 - Corrected playthrough exports: static HTML now retains the visible greeting, while SillyTavern JSONL carries greeting alternatives and per-QA swipes / swipe_id along the active path. Exported greetings resolve `{{user}}` / `{{char}}`, and imported greeting/QA text passes through Tavern macro expansion before DSH template assembly so ST placeholders cannot become unknown DSH prompt variables. Removed the unreleased portable bundle because it could not round-trip the full timeline tree.
 - Replaced the unmaintained vulnerable Showdown dependency with maintained Marked while preserving ST wrapper-tag Markdown semantics and the mandatory DOMPurify boundary. Production dependency audit now reports zero known vulnerabilities.
@@ -110,7 +111,7 @@ Verification: documentation links, image references, generic-path policy and Mar
 - Added the v2 `POST /playthroughs/:id/detach-session` lifecycle endpoint. It removes the target session variants and descendant branches from Tavern timeline metadata while preserving sibling branches, DSH sessions, source history, and the empty playthrough.
 - Added a v1 character-selection membership guard with structured 409 conflicts and a bundled confirmation modal. Confirmed changes detach first and retry the original selection; cancellation changes nothing.
 - Vacant playthroughs now accept a fresh blank root session on the next create action, preserving their title and number.
-- Kept the rc.8 shell-owned outer New Session control untouched. The ordinary-session `+` guides users back to native mode; README and usage docs record why the outer control cannot be intercepted through a public seam.
+- Kept the DSH `0.1.0-rc.8` shell-owned outer New Session control untouched. The ordinary-session `+` guides users back to native mode; README and usage docs record why the outer control cannot be intercepted through a public seam.
 
 ## 2026-08-21 — Scope swipe motion to the changed reply
 
@@ -279,7 +280,7 @@ Verification: test/play-sessions.test.mjs; full suite pending task 07 review.
   stages will use backend `ctx.logger` with operation ids and no resource or
   conversation bodies; browser and persistent logging remain deferred.
 
-Documentation only; runtime implementation and rc.8 verification remain open.
+Documentation only; runtime implementation and DSH `0.1.0-rc.8` verification remain open.
 
 ## 2026-08-20 — Use one opening layout with or without greeting
 
@@ -467,7 +468,7 @@ Verification: chat/load/export/import focused tests, full 304-test suite
 
 ## 2026-08-20 — Document native-first frontend compatibility policy
 
-- Performed a read-only audit of the Mowan client against DSH rc.6's documented
+- Performed a read-only audit of the Mowan client against DSH `0.1.0-rc.6`'s documented
   slots, stores, Host operations, Session events, and public package exports.
   No feature code changed in this audit.
 - Recorded the native seams already reused by the launcher, sidebar,
@@ -1238,7 +1239,7 @@ Purpose: start a clean DSH conversation while carrying only the current or saved
 
 - Added bounded, atomic configuration-template storage with create/name, persistent selection, rename/update and delete workflows.
 - Added current-settings and template preview/apply APIs under the existing secured Tavern dispatcher. Missing preset, character/greeting, user or independent world-book ids remain visible as structured diagnostics and block creation.
-- Used DSH rc.6's public `workspaces.connectWorkspace()` New Session seam and `sessions.open()` navigation seam. Direct/private SessionRuntime creation, history forks and fabricated messages are not used.
+- Used DSH `0.1.0-rc.6`'s public `workspaces.connectWorkspace()` New Session seam and `sessions.open()` navigation seam. Direct/private SessionRuntime creation, history forks and fabricated messages are not used.
 - Applied the complete target selection only after DSH returns a real blank session and before navigation. Preview and apply both validate resources; capacity/write failures retain the previous store state and never navigate.
 - Added the **新会话** launcher panel and shared refresh hand-off. Templates contain only preset, character/greeting/switches, user and world-book selection fields; durable history, Trace, Inbox and running state are absent by construction.
 - Added store, API, client-workflow, architecture and launcher regressions plus `docs/session-template/IMPLEMENTATION_AND_ACCEPTANCE.md`.
@@ -1594,7 +1595,7 @@ DSH Session events.
   secondary keywords, secondary logic, explicit probability roll, budget,
   token cost, requested position, applied position and approximation state.
 - Added plugin-owned atomic bounded JSON persistence and a read-only same-origin
-  API because DSH rc.6 has no stable third-party persistent Session event-type
+  API because DSH `0.1.0-rc.6` has no stable third-party persistent Session event-type
   registration seam. Current defaults are 128 sessions, 128 records per
   session, 64 KiB per record and 8 MiB total after the bounded-persistence
   hardening above; Trace persistence failure cannot veto a model request.
@@ -1793,7 +1794,7 @@ World Info runtime honestly, and document the exact DSH request boundary.
   planned capability rather than exposing a non-functional control.
 - Corrected the character-card UI: embedded `character_book` is matched by the
   unified loader while the card is bound and stops contributing after unbind.
-- Added `docs/DSH_MESSAGE_FLOW.md`, verified against installed DSH rc.6 source,
+- Added `docs/DSH_MESSAGE_FLOW.md`, verified against installed DSH `0.1.0-rc.6` source,
   covering Inbox claim, system assembly, durable message projection,
   `agent/request`, `request/header`, streaming, plugin hooks and same-turn lore
   limitations.
