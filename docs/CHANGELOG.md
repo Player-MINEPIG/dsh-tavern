@@ -1,6 +1,6 @@
 # Development changelog
 
-## 2026-08-27 — Prepare GitHub Market installation
+## 2026-08-27 — Version 2.1.0-rc.1 release candidate
 
 - Registered the HTTP API through optional `webServer` injection so the route activates when DSH provides the service after Tavern loads; retained a fallback for minimal/older Host contexts.
 - Removed the unused direct `@deepseek-ai/cordis` peer dependency. Tavern consumes DSH services through the Host context and never imports Cordis, so the peer only caused a missing-dependency warning during GitHub installation.
@@ -10,6 +10,7 @@
 - Passed `npm run verify:2.0`, build, and package dry-run with the storage runtime included. In a fresh isolated `DSH_HOME` on DSH `0.1.1-rc.2` and Node `22.23.1`, a legacy package-local character/chrome sentinel migrated and loaded through the real Host API; plain remove retained it, reinstall loaded the same revision, and the project uninstaller produced byte-matching backups while retaining the original persistent directory.
 - Validated the branch on DSH `0.1.1-rc.2` without changing the release's recorded `0.1.0-rc.8` compatibility baseline.
 - Expanded DSH prerelease references throughout public documentation to their complete versions, such as `0.1.0-rc.8`, instead of ambiguous truncated labels.
+- Set the package, lockfile, and public status lines to `2.1.0-rc.1` for GitHub-branch acceptance. Promotion to `2.1.0` still requires final browser/product acceptance and an exact-ref storefront install.
 
 ## 2026-08-22 — Add English documentation pair
 

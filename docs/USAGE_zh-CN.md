@@ -2,7 +2,7 @@
 
 [English](USAGE_en.md)
 
-状态：2026-08-22，对应当前悬浮球交互、前端显示模式切换、RP 工作区准入、角色卡创建/编辑、周目生命周期、外部记录开场绑定、RP 安全模式与委派子 agent 继承父级 Tavern 选择。本文介绍实际操作；消息流、架构和安全契约分别见 `DSH_MESSAGE_FLOW.md`、`ARCHITECTURE.md` 与 `LOADER_CONTRACT.md`。RP 拦/不拦清单见 [RP_SECURE_MODE.md](RP_SECURE_MODE.md)。
+状态：2026-08-27，对应当前悬浮球交互、前端显示模式切换、RP 工作区准入、角色卡创建/编辑、周目生命周期、外部记录开场绑定、外部持久目录、RP 安全模式与委派子 agent 继承父级 Tavern 选择。本文介绍实际操作；消息流、架构和安全契约分别见 `DSH_MESSAGE_FLOW.md`、`ARCHITECTURE.md` 与 `LOADER_CONTRACT.md`。RP 拦/不拦清单见 [RP_SECURE_MODE.md](RP_SECURE_MODE.md)。
 
 ## Quick Start：最短 RP 路径
 

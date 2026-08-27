@@ -2,7 +2,7 @@
 
 [中文](USAGE_zh-CN.md)
 
-Status: 2026-08-22. Covers the current orb interaction, frontend display-mode switch, RP workspace admission, character-card create/edit, playthrough lifecycle, imported-record opening bind, RP secure mode, and delegated child agents inheriting the parent's Tavern selection. This page is operational. Message flow, architecture, and security contracts are in `DSH_MESSAGE_FLOW_en.md`, `ARCHITECTURE_en.md`, and `LOADER_CONTRACT_en.md`. RP block/allow list: [RP_SECURE_MODE_en.md](RP_SECURE_MODE_en.md).
+Status: 2026-08-27. Covers the current orb interaction, frontend display-mode switch, RP workspace admission, character-card create/edit, playthrough lifecycle, imported-record opening bind, external persistent storage, RP secure mode, and delegated child agents inheriting the parent's Tavern selection. This page is operational. Message flow, architecture, and security contracts are in `DSH_MESSAGE_FLOW_en.md`, `ARCHITECTURE_en.md`, and `LOADER_CONTRACT_en.md`. RP block/allow list: [RP_SECURE_MODE_en.md](RP_SECURE_MODE_en.md).
 
 ## Quick Start: shortest RP path
 

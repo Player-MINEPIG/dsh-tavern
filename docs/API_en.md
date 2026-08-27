@@ -2,7 +2,7 @@
 
 [中文](API.md)
 
-Status: 2026-08-22. Root: `/pmp-dsh-tavern/api`. Auth is still local TCP peer, Host, Origin, and Content-Type (see the loader security middleware). Success responses include `ok: true`; failures include `ok: false` and `error`.
+Status: 2026-08-27. Root: `/pmp-dsh-tavern/api`. Auth is still local TCP peer, Host, Origin, and Content-Type (see the loader security middleware). Success responses include `ok: true`; failures include `ok: false` and `error`.
 
 Two contracts:
 

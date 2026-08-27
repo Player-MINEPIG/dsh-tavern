@@ -2,7 +2,7 @@
 
 [中文](ARCHITECTURE.md)
 
-Status: 2026-08-22. Install identity is `pmp-dsh-tavern`. HTTP mounts at `/pmp-dsh-tavern/api`; resources use `/v1`; the play-surface contract uses `/v2`. RP session overlay and delegated child agents freezing the parent selection remain in force. This page is current architecture decisions and release-review gates, not a product README.
+Status: 2026-08-27. Install identity is `pmp-dsh-tavern`. HTTP mounts at `/pmp-dsh-tavern/api`; resources use `/v1`; the play-surface contract uses `/v2`. RP session overlay, external persistent storage, and delegated child agents freezing the parent selection remain in force. This page is current architecture decisions and release-review gates, not a product README.
 
 ## Decisions
 

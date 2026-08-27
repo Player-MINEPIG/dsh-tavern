@@ -2,7 +2,7 @@
 
 [中文](INSTALLATION.md)
 
-Status: current for the 2026-08-22 `2.0.0` release. The default root [README](../README.md) is Chinese. The English landing page is [README_en.md](../README_en.md) (no screenshots). This file is the detailed lifecycle, verification, and recovery contract.
+Status: current for the 2026-08-27 `2.1.0-rc.1` release candidate. The default root [README](../README.md) is Chinese. The English landing page is [README_en.md](../README_en.md) (no screenshots). This file is the detailed lifecycle, verification, and recovery contract.
 
 The scripts use Node.js as their common entry point and normalize paths for
 Windows, macOS, and Linux. macOS/Linux execute `dsh` directly. Windows safely

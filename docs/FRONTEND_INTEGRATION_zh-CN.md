@@ -2,7 +2,7 @@
 
 [English](FRONTEND_INTEGRATION_en.md)
 
-状态：面向 dsh-tavern 2.0 与 DSH `0.1.0-rc.8`。HTTP 字段以 [API.md](API.md) 为准；本页说明交付方式、模式生命周期和产品动作组合。
+状态：面向 dsh-tavern `2.1.0-rc.1` 与 DSH `0.1.0-rc.8`。HTTP 字段以 [API.md](API.md) 为准；本页说明交付方式、模式生命周期和产品动作组合。
 
 ## 1. 先理解双模式兼容边界
 

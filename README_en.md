@@ -4,7 +4,7 @@
 
 An open-source DeepSeek Harness (DSH) plugin for Tavern resource compatibility, RP workflow, and a third-party frontend protocol.
 
-> This documentation matches `2.0.0`. The project is released under the [MIT License](LICENSE).
+> This documentation matches the `2.1.0-rc.1` release candidate. The project is released under the [MIT License](LICENSE).
 >
 > **Compatibility baseline:** this release was developed and validated against DSH `0.1.0-rc.8`. Newer DSH releases provide better native implementations for some capabilities, but this plugin has not yet migrated to them.
 >
