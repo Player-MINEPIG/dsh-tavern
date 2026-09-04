@@ -62,6 +62,14 @@ test('plugin identity uses pmp-dsh-tavern with versioned API roots', () => {
   assert.equal(CLIENT_UI_SETTINGS_EVENT, 'pmp-dsh-tavern:ui-settings')
 })
 
+test('the runtime UUID helper is owned as a direct package dependency', () => {
+  const packageJson = JSON.parse(readFileSync(new URL('../package.json', import.meta.url), 'utf8'))
+  assert.equal(packageJson.dependencies['@deepseek-ai/cordis'], '4.0.2')
+  assert.equal(packageJson.dependencies['@deepseek-ai/dsh-util-crypto'], '0.1.2-rc.1')
+  assert.equal(packageJson.devDependencies?.['@deepseek-ai/dsh-util-crypto'], undefined)
+  assert.equal(packageJson.peerDependencies?.['@deepseek-ai/dsh-util-crypto'], undefined)
+})
+
 test('legacy /dsh-tavern/api resource paths are not served', async () => {
   const directory = mkdtempSync(join(tmpdir(), 'dsh-tavern-legacy-api-'))
   const store = new PresetStore(directory)

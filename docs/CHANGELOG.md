@@ -8,6 +8,7 @@
 - Declared all nine DSH client contract owners directly and moved blank-workspace navigation to `uiWorkspace.connectWorkspace()`.
 - Added an editable draw.io current-architecture source and rendered preview, and synchronized current Chinese/English compatibility documentation while keeping older audit evidence historical.
 - Localized generated playthrough titles as `{number}周目` or `Playthrough {number}` at display/export time. Explicit user renames remain verbatim, and legacy generated Chinese titles are recognized without rewriting catalogs.
+- Ship the directly imported DSH UUID helper as Tavern's runtime dependency instead of requiring every profile to provide it as a peer; isolated-profile peer validation is clean after installation.
 - Passed `npm run check` and `npm run verify:2.0` with 515 passing tests and 2 fixture-dependent skips on Node `22.23.1`; the same 517-test suite passed on Node 20. Production dependency audit reports zero known vulnerabilities. The 161-file dry-run package includes both architecture artifacts and excludes tests, runtime data, and `docs/DEV_PLAN.md`.
 - Set the package, lockfile, and public status lines to `2.1.0-rc.2`. This remains a release candidate until isolated DSH installation and the documented real-provider/browser acceptance pass complete.
 
