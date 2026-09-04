@@ -6,7 +6,7 @@ An open-source DeepSeek Harness (DSH) plugin for Tavern resource compatibility, 
 
 > This documentation matches the `2.1.0-rc.1` release candidate. The project is released under the [MIT License](LICENSE).
 >
-> **Compatibility baseline:** this release was developed and validated against DSH `0.1.0-rc.8`. Newer DSH releases provide better native implementations for some capabilities, but this plugin has not yet migrated to them.
+> **Compatibility baseline:** the current candidate code targets DSH `0.1.2-rc.1`. Automated regression covers the Host controllers, stable history pagination, Session snapshots, and client contract owners; real-provider and browser interaction remain release-acceptance items.
 >
 > The default project README is the [Chinese version](README.md). This English file has no screenshots.
 
@@ -99,7 +99,7 @@ Full operations and boundaries: [English usage guide](docs/USAGE_en.md).
 - Display regex affects Mowan rendering only. It does not rewrite the model request, DSH original messages, or the authoritative text used for export.
 - Mowan hides reasoning, tool context, and child-agent notices. Switch back to native DSH **Chat** for full runtime detail.
 - There is no dynamic frontend loader that replaces all of Mowan from one config file. Full replacement requires a separate DSH plugin, a standalone web client, or a fork.
-- DSH `0.1.0-rc.8` outer **New session** has no public click-intercept seam. Mowan does not overlay it with private DOM. Create playthroughs with the `+` on a character card.
+- DSH `0.1.2-rc.1` outer **New session** has no public click-intercept seam for Tavern. Mowan does not overlay it with private DOM. Create playthroughs with the `+` on a character card.
 - This plugin targets local loopback DSH Web. Do not expose it to a LAN or the public internet.
 
 ## Documentation

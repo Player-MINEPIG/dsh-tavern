@@ -2,7 +2,7 @@
 
 [English](API_en.md)
 
-状态：2026-08-27。根：`/pmp-dsh-tavern/api`。鉴权仍是本机 TCP peer、Host、Origin、Content-Type（见 loader 安全中间件）。成功响应带 `ok: true`；失败带 `ok: false` 与 `error`。
+状态：2026-09-05，Host 兼容基线为 DSH `0.1.2-rc.1`。根：`/pmp-dsh-tavern/api`。鉴权仍是本机 TCP peer、Host、Origin、Content-Type（见 loader 安全中间件）。成功响应带 `ok: true`；失败带 `ok: false` 与 `error`。
 
 两栏合同：
 
@@ -23,7 +23,7 @@
 | POST | `/chrome` | 不提供 | 405 |
 | GET | `/workspace` | 根路径、是否已选、合同版本、警告 | 已实现 |
 | PUT | `/workspace` | 绑定**一棵**已存在的扮演工作区根。首次选择带 `SWIPE_DISK` / 可能的 `SYSTEM_DISK` 警告。不 mkdir 根 | 已实现 |
-| POST | `/workspace/dirs` | `{ path }` 相对路径，由 `PlayWorkspaceStore` 在已绑定根目录内的路径监狱中直接创建。兼容 native/browse Host；不依赖全局 `directory-picker` 或 `apiProxy.host.createDirectory`。未绑根 → 409；拒绝绝对路径、`..`、symlink 逃逸和文件冲突；不新注册 DSH 工作区 | 已实现 |
+| POST | `/workspace/dirs` | `{ path }` 相对路径，由 `PlayWorkspaceStore` 在已绑定根目录内的路径监狱中直接创建。兼容 native/browse Host；不调用全局目录选择器，也不新注册 DSH 工作区。未绑根 → 409；拒绝绝对路径、`..`、symlink 逃逸和文件冲突 | 已实现 |
 | GET | `/workspace/files?path=` | 读根内 UTF-8 文件。`catalog.json` / `timeline.json` 读出后执行对应 schema/path 校验；第三方 `ext` 原样保留；受管文档响应增加精确 UTF-8 字节的 SHA-256 `revision`（64 位小写 hex） | 已实现 |
 | PUT | `/workspace/files?path=` | 普通文件仍使用 `{ content }`；`catalog.json` / `timeline.json` 必须显式带 `expectedRevision`：`null` 仅创建缺失目标，64 位小写 SHA-256 仅在当前字节 hash 相等时替换。校验、CAS、临时写和 rename 在同一目标 guard 内 | 已实现 |
 | GET | `/workspace/files?list=` | 列一层前缀 | 已实现 |
@@ -101,14 +101,14 @@ durable history。当前已实现的基础语义是：首次 assembly 必须按�
 - 路径逐段拒绝 symlink/junction（Node 暴露的链接类型），逐层非 recursive 创建并 realpath 复核，临时文件使用排他 `wx`，写入/rename 前复验父目录；纯 Node 仍无法抵抗外部进程制造的极窄竞态，不引入 native addon。
 - 本轮已接入后端 `ctx.logger` 的 operation log：`PUT /workspace`（bind）、`POST /workspace/dirs`、`PUT /workspace/files?path=`（普通文件及 catalog/timeline）、`POST /playthroughs/:id/detach-session`、`POST /playthroughs/:id/relink-character`，以及 session create/branch/user-message 和 import-context PUT/DELETE。每次变更请求记录同一 `operationId` 的 start、request.validated、Host/prepare/bind/copy 或 timeline/catalog 变更阶段、success 或 failure；不记录资源/聊天正文。user-message 只记录 Host prompt accepted 阶段，不记录正文、长度或摘要。GET/list、session/messages/focus/import-context、chrome 及浏览器日志、持久 journal、额外 exporter 暂缓。
 
-上述加固均已实现并纳入 `npm run verify:2.0`；该命令验证 history、schema/CAS/focus/路径防护、claim/lineage、无正文 operation log、chrome service/slot、工作区准入、本地化与发布包边界。设置 `DSH_TAVERN_PLAY_LIVE=1` 与 `DSH_TAVERN_PLAY_LIVE_URL` 后还会对运行中的 DSH Host 实际读取 chrome/workspace 权威状态；真实写入、浏览器双标签页通知和最终 DSH `0.1.0-rc.8` 交互仍在发布验收清单中。具体风险与决策见 [`PLAY_REVIEW.md`](PLAY_REVIEW.md)。
+上述加固均已实现并纳入 `npm run verify:2.0`；该命令验证 history、schema/CAS/focus/路径防护、claim/lineage、无正文 operation log、chrome service/slot、工作区准入、本地化与发布包边界。设置 `DSH_TAVERN_PLAY_LIVE=1` 与 `DSH_TAVERN_PLAY_LIVE_URL` 后还会对运行中的 DSH Host 实际读取 chrome/workspace 权威状态；真实写入、浏览器双标签页通知和最终 DSH `0.1.2-rc.1` 交互仍在发布验收清单中。具体风险与决策见 [`PLAY_REVIEW.md`](PLAY_REVIEW.md)。
 
 `chrome` 是整个前端的蓝/红球，存在插件 data `chrome.json`，默认 `native`。非法 `mode` → 400。GET 不要求 JSON Content-Type。
 `GET /chrome/events` 是 Tavern 自有的 SSE 变更面，不是 DSH Host API。连接后立即发送 `event: chrome/change` 当前快照；成功的 `PUT /chrome` 在实际 mode 变化后广播一次同名事件，事件 data 只含 `{ mode, revision }`。SSE 使用 `text/event-stream`、禁止缓存并在连接关闭时清理订阅；非 GET → 405。旧客户端只读取 `mode` 仍兼容，无法使用 SSE 的客户端应回退 GET/focus 刷新或短轮询。直接编辑 `chrome.json`、其他进程写入以及 DSH 私有 transport 不在该事件合同内。
 
 客户端入口始终显示 `DT`。左键立即展开/收起菜单，快速重复点击重复同一默认行为，双击没有特殊效果；右键单击切换前端显示模式。菜单按钮使用“切换到自定义前端模式 / 切换到 DSH 原生模式”，当前状态可显示“当前：魔丸 / 当前：DSH 原生”；悬浮提示固定为“切换前端显示模式”。菜单始终挂载，容器展开完成（220ms）后内容再淡入。
 
-`PUT /workspace` 的目录必须事先存在（DSH `workspace.create` 也不 mkdir）。`POST /workspace/dirs` 由 `PlayWorkspaceStore` 在已绑定根目录内直接创建角色卡 / 周目子目录，不依赖全局 `directory-picker` 或 `apiProxy.host.createDirectory`，因此 native/browse Host 都兼容。路径监狱拒绝 `..`、绝对路径、指向根外的符号链接和文件冲突。未选根时 files/dirs 返回 409。不要用 `archiveSession` 收纳会话。`user-message` 的 body 不是完整 prompt。session 元 API 经 Host `apiProxy`：`session.create` / `session.fork({ atSeq })` / `session.prompt({ mode: "queue" })` / `session.history`；`PUT /workspace` 调用 `workspace.create`；开放 turn 的 fork 映射为 HTTP 409。
+`PUT /workspace` 的目录必须事先存在（DSH `workspaceController.create` 也不 mkdir）。`POST /workspace/dirs` 由 `PlayWorkspaceStore` 在已绑定根目录内直接创建角色卡 / 周目子目录，不调用全局目录选择器，因此 native/browse Host 都兼容。路径监狱拒绝 `..`、绝对路径、指向根外的符号链接和文件冲突。未选根时 files/dirs 返回 409。不要用 archive 收纳会话。`user-message` 的 body 不是完整 prompt。session 元 API 由 loader 的 Play Host adapter 显式调用 `sessionController.create()`、`rename()`、`fork()`、`prompt()`、`inspect()` 与 `page()`；一次 history 读取固定首个 inclusive `throughSeq`，并在全部页复用。`PUT /workspace` 调用 `workspaceController.create()`；开放 turn 的 fork 映射为 HTTP 409。
 
 ## v1 bundled UI 合同
 
@@ -250,7 +250,7 @@ stage 或 terminal 调用无效且不会重复写终态。
 
 ## 浏览器端 Chrome 模式服务
 
-Tavern client 通过 DSH `0.1.0-rc.8` 公开 Cordis `ctx.provide` 注册稳定服务名 `pmpDshTavernChrome`。这是 Tavern v2 自有合同，不是 DSH Host API；它只提供 `native|play` 生命周期，不拥有或仲裁任何 slot、view 或第三方插件 UI。
+Tavern client 通过 DSH `0.1.2-rc.1` 公开 Cordis `ctx.provide` 注册稳定服务名 `pmpDshTavernChrome`。这是 Tavern v2 自有合同，不是 DSH Host API；它只提供 `native|play` 生命周期，不拥有或仲裁任何 slot、view 或第三方插件 UI。
 
 公开 face：
 

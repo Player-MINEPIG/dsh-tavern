@@ -1,0 +1,129 @@
+<mxfile host="Electron" modified="2026-09-05T00:00:00.000Z" agent="Codex" version="24.7.17">
+  <diagram id="current-architecture" name="Current architecture">
+    <mxGraphModel dx="1600" dy="1100" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1654" pageHeight="1169" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="title" value="pmp-dsh-tavern — current architecture (DSH 0.1.2-rc.1)" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;fontSize=26;fontStyle=1;fontColor=#172B4D;" vertex="1" parent="1">
+          <mxGeometry x="40" y="25" width="1040" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="subtitle" value="Public DSH contracts at the boundary; Tavern policy and imported resources stay independent." style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;fontSize=13;fontColor=#5E6C84;" vertex="1" parent="1">
+          <mxGeometry x="40" y="65" width="900" height="24" as="geometry" />
+        </mxCell>
+
+        <mxCell id="dsh-host-lane" value="DSH HOST — authoritative runtime" style="swimlane;html=1;rounded=1;horizontal=1;startSize=38;fillColor=#E9F2FF;swimlaneFillColor=#F7FAFF;strokeColor=#4C9AFF;fontColor=#0747A6;fontStyle=1;fontSize=15;" vertex="1" parent="1">
+          <mxGeometry x="40" y="110" width="430" height="530" as="geometry" />
+        </mxCell>
+        <mxCell id="controllers" value="Public controllers&#xa;session · workspace · directory picker" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#DEEBFF;strokeColor=#2684FF;fontColor=#0747A6;fontStyle=1;fontSize=13;spacing=8;" vertex="1" parent="dsh-host-lane">
+          <mxGeometry x="35" y="70" width="360" height="72" as="geometry" />
+        </mxCell>
+        <mxCell id="host-hooks" value="Cordis Host services &amp; hooks&#xa;system prompt · request · session event · web server" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#DEEBFF;strokeColor=#2684FF;fontColor=#0747A6;fontSize=13;spacing=8;" vertex="1" parent="dsh-host-lane">
+          <mxGeometry x="35" y="172" width="360" height="78" as="geometry" />
+        </mxCell>
+        <mxCell id="dsh-history" value="DSH session history&#xa;authoritative event log" style="shape=cylinder3;whiteSpace=wrap;html=1;boundedLbl=1;backgroundOutline=1;size=12;fillColor=#B3D4FF;strokeColor=#0065FF;fontColor=#0747A6;fontStyle=1;fontSize=13;" vertex="1" parent="dsh-host-lane">
+          <mxGeometry x="110" y="304" width="210" height="94" as="geometry" />
+        </mxCell>
+        <mxCell id="history-note" value="inspect/page + stable throughSeq&#xa;snapshotEvents / ownEvents" style="rounded=1;whiteSpace=wrap;html=1;dashed=1;fillColor=#FFFFFF;strokeColor=#97A0AF;fontColor=#42526E;fontSize=11;" vertex="1" parent="dsh-host-lane">
+          <mxGeometry x="80" y="426" width="270" height="56" as="geometry" />
+        </mxCell>
+
+        <mxCell id="tavern-host-lane" value="TAVERN HOST — composition and policy" style="swimlane;html=1;rounded=1;horizontal=1;startSize=38;fillColor=#E3FCEF;swimlaneFillColor=#F3FFF8;strokeColor=#36B37E;fontColor=#006644;fontStyle=1;fontSize=15;" vertex="1" parent="1">
+          <mxGeometry x="510" y="110" width="660" height="530" as="geometry" />
+        </mxCell>
+        <mxCell id="loader" value="tavern-loader&#xa;composition root" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ABF5D1;strokeColor=#00A86B;fontColor=#006644;fontStyle=1;fontSize=14;spacing=8;" vertex="1" parent="tavern-host-lane">
+          <mxGeometry x="235" y="68" width="190" height="70" as="geometry" />
+        </mxCell>
+        <mxCell id="play-adapter" value="Play Host adapter&#xa;Tavern port ↔ DSH controllers" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#E3FCEF;strokeColor=#36B37E;fontColor=#006644;fontStyle=1;fontSize=12;spacing=8;" vertex="1" parent="tavern-host-lane">
+          <mxGeometry x="35" y="178" width="250" height="72" as="geometry" />
+        </mxCell>
+        <mxCell id="runtime-policy" value="Runtime policy&#xa;profile assembly · RP guard&#xa;pending input · trace" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#E3FCEF;strokeColor=#36B37E;fontColor=#006644;fontSize=12;spacing=8;" vertex="1" parent="tavern-host-lane">
+          <mxGeometry x="375" y="178" width="250" height="86" as="geometry" />
+        </mxCell>
+        <mxCell id="pure-core" value="Pure resource &amp; use-case packages&#xa;format adapters · preset · character · user&#xa;world book · session template · play" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFF0B3;strokeColor=#FFAB00;fontColor=#7A4E00;fontStyle=1;fontSize=13;spacing=8;" vertex="1" parent="tavern-host-lane">
+          <mxGeometry x="115" y="312" width="430" height="92" as="geometry" />
+        </mxCell>
+        <mxCell id="http-api" value="Tavern HTTP API&#xa;same-origin, loopback, bounded writes" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#EAE6FF;strokeColor=#6554C0;fontColor=#403294;fontSize=12;spacing=8;" vertex="1" parent="tavern-host-lane">
+          <mxGeometry x="200" y="438" width="260" height="58" as="geometry" />
+        </mxCell>
+
+        <mxCell id="storage-lane" value="PERSISTENCE — separate ownership" style="swimlane;html=1;rounded=1;horizontal=1;startSize=38;fillColor=#FFF7E6;swimlaneFillColor=#FFFBF3;strokeColor=#FFAB00;fontColor=#7A4E00;fontStyle=1;fontSize=15;" vertex="1" parent="1">
+          <mxGeometry x="1210" y="110" width="390" height="530" as="geometry" />
+        </mxCell>
+        <mxCell id="tavern-storage" value="Tavern-owned data&#xa;&amp;lt;DSH_HOME&amp;gt;/pmp-dsh-tavern&#xa;resources · selections · settings · trace" style="shape=cylinder3;whiteSpace=wrap;html=1;boundedLbl=1;backgroundOutline=1;size=12;fillColor=#FFE380;strokeColor=#FF991F;fontColor=#7A4E00;fontStyle=1;fontSize=12;" vertex="1" parent="storage-lane">
+          <mxGeometry x="75" y="82" width="240" height="118" as="geometry" />
+        </mxCell>
+        <mxCell id="play-files" value="Play workspace files&#xa;catalog · timelines · imports&#xa;user-selected workspace root" style="shape=cylinder3;whiteSpace=wrap;html=1;boundedLbl=1;backgroundOutline=1;size=12;fillColor=#FFE380;strokeColor=#FF991F;fontColor=#7A4E00;fontSize=12;" vertex="1" parent="storage-lane">
+          <mxGeometry x="75" y="258" width="240" height="110" as="geometry" />
+        </mxCell>
+        <mxCell id="storage-rule" value="Uninstall removes code, not user data.&#xa;No duplicated DSH message history." style="rounded=1;whiteSpace=wrap;html=1;dashed=1;fillColor=#FFFFFF;strokeColor=#97A0AF;fontColor=#42526E;fontSize=11;" vertex="1" parent="storage-lane">
+          <mxGeometry x="55" y="412" width="280" height="58" as="geometry" />
+        </mxCell>
+
+        <mxCell id="browser-lane" value="DSH WEB CLIENT — public services and slots" style="swimlane;html=1;rounded=1;horizontal=1;startSize=38;fillColor=#EAE6FF;swimlaneFillColor=#FAF9FF;strokeColor=#6554C0;fontColor=#403294;fontStyle=1;fontSize=15;" vertex="1" parent="1">
+          <mxGeometry x="40" y="690" width="1560" height="300" as="geometry" />
+        </mxCell>
+        <mxCell id="client-services" value="Injected DSH client services&#xa;sessions · workspaces · uiWorkspace · layout · slots" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#EAE6FF;strokeColor=#6554C0;fontColor=#403294;fontStyle=1;fontSize=13;spacing=8;" vertex="1" parent="browser-lane">
+          <mxGeometry x="45" y="78" width="360" height="78" as="geometry" />
+        </mxCell>
+        <mxCell id="client-root" value="Tavern client composition root&#xa;launcher · resources · locale · chrome lifecycle" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#C0B6F2;strokeColor=#5243AA;fontColor=#352C63;fontStyle=1;fontSize=13;spacing=8;" vertex="1" parent="browser-lane">
+          <mxGeometry x="520" y="72" width="360" height="90" as="geometry" />
+        </mxCell>
+        <mxCell id="slots" value="Public slot occupancy&#xa;shell.overlay · sidebar.panel · conversation.view&#xa;input dock · empty dock" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#EAE6FF;strokeColor=#6554C0;fontColor=#403294;fontSize=12;spacing=8;" vertex="1" parent="browser-lane">
+          <mxGeometry x="995" y="78" width="390" height="78" as="geometry" />
+        </mxCell>
+        <mxCell id="rp-view" value="Mowan RP view adapter&#xa;reuses native Chat store; owns no second history" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFEBE6;strokeColor=#DE350B;fontColor=#BF2600;fontSize=12;spacing=8;" vertex="1" parent="browser-lane">
+          <mxGeometry x="1010" y="194" width="360" height="62" as="geometry" />
+        </mxCell>
+
+        <mxCell id="edge-controller-adapter" value="explicit services" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeColor=#2684FF;fontColor=#0747A6;fontSize=11;" edge="1" parent="1" source="controllers" target="play-adapter">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge-hooks-loader" value="inject / events" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=1;exitY=0;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;endArrow=block;endFill=1;strokeColor=#2684FF;fontColor=#0747A6;fontSize=11;" edge="1" parent="1" source="host-hooks" target="loader">
+          <mxGeometry x="-0.25" y="-12" relative="1" as="geometry">
+            <mxPoint as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="edge-history-adapter" value="inspect + page" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeColor=#2684FF;fontColor=#0747A6;fontSize=11;" edge="1" parent="1" source="dsh-history" target="play-adapter">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge-loader-adapter" value="compose" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeColor=#36B37E;fontColor=#006644;fontSize=11;" edge="1" parent="1" source="loader" target="play-adapter">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge-loader-policy" value="compose" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeColor=#36B37E;fontColor=#006644;fontSize=11;" edge="1" parent="1" source="loader" target="runtime-policy">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge-pure-loader" value="resources / ports" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeColor=#FFAB00;fontColor=#7A4E00;fontSize=11;" edge="1" parent="1" source="pure-core" target="loader">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge-api-pure" value="atomic operations" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeColor=#6554C0;fontColor=#403294;fontSize=11;" edge="1" parent="1" source="http-api" target="pure-core">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge-storage-policy" value="bounded documents" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeColor=#FF991F;fontColor=#7A4E00;fontSize=11;" edge="1" parent="1" source="runtime-policy" target="tavern-storage">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge-play-files" value="jailed file port" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeColor=#FF991F;fontColor=#7A4E00;fontSize=11;" edge="1" parent="1" source="play-adapter" target="play-files">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge-services-root" value="ctx injection" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeColor=#6554C0;fontColor=#403294;fontSize=11;" edge="1" parent="1" source="client-services" target="client-root">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge-root-slots" value="register / dispose" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeColor=#6554C0;fontColor=#403294;fontSize=11;" edge="1" parent="1" source="client-root" target="slots">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge-slots-rp" value="public store handle" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeColor=#DE350B;fontColor=#BF2600;fontSize=11;" edge="1" parent="1" source="slots" target="rp-view">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge-client-api" value="same-origin HTTP / SSE" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeColor=#6554C0;fontColor=#403294;fontSize=11;" edge="1" parent="1" source="client-root" target="http-api">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge-rp-history" value="native Chat authority" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;dashed=1;strokeColor=#2684FF;fontColor=#0747A6;fontSize=11;" edge="1" parent="1" source="rp-view" target="dsh-history">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <mxCell id="legend" value="Legend: blue = DSH-owned · green = Tavern Host · purple = browser composition · yellow = pure/data boundary · red = RP adapter" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#DFE1E6;fontColor=#42526E;fontSize=11;align=left;spacingLeft=10;" vertex="1" parent="1">
+          <mxGeometry x="40" y="1020" width="1120" height="36" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

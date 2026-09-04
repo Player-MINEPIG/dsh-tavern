@@ -2,7 +2,7 @@
 
 [中文](API.md)
 
-Status: 2026-08-27. Root: `/pmp-dsh-tavern/api`. Auth is still local TCP peer, Host, Origin, and Content-Type (see the loader security middleware). Success responses include `ok: true`; failures include `ok: false` and `error`.
+Status: 2026-09-05. The Host compatibility baseline is DSH `0.1.2-rc.1`. Root: `/pmp-dsh-tavern/api`. Auth is still local TCP peer, Host, Origin, and Content-Type (see the loader security middleware). Success responses include `ok: true`; failures include `ok: false` and `error`.
 
 Two contracts:
 
@@ -23,7 +23,7 @@ Prefix: `/pmp-dsh-tavern/api/v2`.
 | POST | `/chrome` | Not provided | 405 |
 | GET | `/workspace` | Root path, whether a root is selected, contract version, warnings | Implemented |
 | PUT | `/workspace` | Bind **one** existing play-workspace root. First selection may carry `SWIPE_DISK` / possible `SYSTEM_DISK` warnings. Does not mkdir the root | Implemented |
-| POST | `/workspace/dirs` | `{ path }` relative path. `PlayWorkspaceStore` creates it inside the already-bound root jail. Compatible with native/browse Host; does not depend on the global `directory-picker` or `apiProxy.host.createDirectory`. Unbound root → 409. Rejects absolute paths, `..`, symlink escape, and file conflicts. Does not register a new DSH workspace | Implemented |
+| POST | `/workspace/dirs` | `{ path }` relative path. `PlayWorkspaceStore` creates it inside the already-bound root jail. Compatible with native/browse Host; does not invoke the global directory picker or register a new DSH workspace. Unbound root → 409. Rejects absolute paths, `..`, symlink escape, and file conflicts | Implemented |
 | GET | `/workspace/files?path=` | Read a UTF-8 file under the root. `catalog.json` / `timeline.json` run the matching schema/path checks after read. Third-party `ext` is kept as-is. Managed documents add a SHA-256 `revision` of the exact UTF-8 bytes (64 lowercase hex) | Implemented |
 | PUT | `/workspace/files?path=` | Ordinary files still use `{ content }`. `catalog.json` / `timeline.json` must send `expectedRevision`: `null` creates a missing target only; a 64-hex lowercase SHA-256 replaces only when the current byte hash matches. Validation, CAS, temp write, and rename share one target guard | Implemented |
 | GET | `/workspace/files?list=` | List one prefix level | Implemented |
@@ -91,14 +91,14 @@ The body is `{ reference: { path, expectedHash? } }`. The file must sit inside t
 - Paths reject symlink/junction (link types Node exposes) per segment, create non-recursively layer by layer, recheck with realpath, use exclusive `wx` temps, and recheck the parent before write/rename. Pure Node still cannot resist an extremely narrow race from an external process. No native addon is introduced.
 - This round wired backend `ctx.logger` operation log: `PUT /workspace` (bind), `POST /workspace/dirs`, `PUT /workspace/files?path=` (ordinary files and catalog/timeline), `POST /playthroughs/:id/detach-session`, `POST /playthroughs/:id/relink-character`, plus session create/branch/user-message and import-context PUT/DELETE. Each mutation records the same `operationId` through start, request.validated, Host/prepare/bind/copy or timeline/catalog stages, and success or failure. Resource/chat bodies are not logged. user-message records only the Host prompt-accepted stage, not body, length, or summary. GET/list, session/messages/focus/import-context, chrome, browser logs, a persistent journal, and extra exporters are deferred.
 
-The hardening above is implemented and included in `npm run verify:2.0`. That command checks history, schema/CAS/focus/path jail, claim/lineage, content-free operation log, chrome service/slot, workspace admission, localization, and package boundaries. With `DSH_TAVERN_PLAY_LIVE=1` and `DSH_TAVERN_PLAY_LIVE_URL` it also reads chrome/workspace authority from a running DSH Host. Real writes, browser two-tab notification, and final DSH `0.1.0-rc.8` interaction remain on the release acceptance list. Risks and decisions: [`PLAY_REVIEW_en.md`](PLAY_REVIEW_en.md).
+The hardening above is implemented and included in `npm run verify:2.0`. That command checks history, schema/CAS/focus/path jail, claim/lineage, content-free operation log, chrome service/slot, workspace admission, localization, and package boundaries. With `DSH_TAVERN_PLAY_LIVE=1` and `DSH_TAVERN_PLAY_LIVE_URL` it also reads chrome/workspace authority from a running DSH Host. Real writes, browser two-tab notification, and final DSH `0.1.2-rc.1` interaction remain on the release acceptance list. Risks and decisions: [`PLAY_REVIEW_en.md`](PLAY_REVIEW_en.md).
 
 `chrome` is the whole frontend's blue/red orb. It lives in plugin data `chrome.json` and defaults to `native`. Illegal `mode` → 400. GET does not require JSON Content-Type.
 `GET /chrome/events` is Tavern-owned SSE, not a DSH Host API. On connect it immediately sends `event: chrome/change` with the current snapshot. A successful `PUT /chrome` broadcasts the same event once after mode actually changes. Event data is only `{ mode, revision }`. SSE uses `text/event-stream`, disables cache, and clears subscribers on close. Non-GET → 405. Older clients that only read `mode` stay compatible. Clients that cannot use SSE should fall back to GET/focus refresh or short polling. Direct edits of `chrome.json`, other-process writes, and DSH private transport are outside this event contract.
 
 The client entry always shows `DT`. Left-click immediately expands or collapses the menu. Rapid repeated clicks repeat that default. Double-click has no special effect. Right-click switches frontend display mode. Menu buttons say **Switch to custom frontend mode** / **Switch to DSH native mode**. Current state may show **Current: Mowan** / **Current: DSH native**. The tooltip is always **Switch frontend display mode**. The menu stays mounted; content fades in after the 220ms expand.
 
-The `PUT /workspace` directory must already exist (`workspace.create` also does not mkdir). `POST /workspace/dirs` is created by `PlayWorkspaceStore` inside the bound root for character/playthrough subdirectories. It does not depend on the global `directory-picker` or `apiProxy.host.createDirectory`, so native/browse Hosts both work. The path jail rejects `..`, absolute paths, symlinks that point outside the root, and file conflicts. files/dirs return 409 when no root is selected. Do not use `archiveSession` to tuck sessions away. The `user-message` body is not a full prompt. Session meta APIs go through Host `apiProxy`: `session.create` / `session.fork({ atSeq })` / `session.prompt({ mode: "queue" })` / `session.history`. `PUT /workspace` calls `workspace.create`. Fork of an open turn maps to HTTP 409.
+The `PUT /workspace` directory must already exist (`workspaceController.create` also does not mkdir). `POST /workspace/dirs` is created by `PlayWorkspaceStore` inside the bound root for character/playthrough subdirectories. It does not invoke the global directory picker, so native/browse Hosts both work. The path jail rejects `..`, absolute paths, symlinks that point outside the root, and file conflicts. files/dirs return 409 when no root is selected. Do not use archive to tuck sessions away. The `user-message` body is not a full prompt. The loader's Play Host adapter explicitly calls `sessionController.create()`, `rename()`, `fork()`, `prompt()`, `inspect()`, and `page()`. One history read pins its first inclusive `throughSeq` across every page. `PUT /workspace` calls `workspaceController.create()`. Fork of an open turn maps to HTTP 409.
 
 ## v1 bundled UI contract
 
@@ -225,7 +225,7 @@ This section documents the utility and the workspace/session/import/playthrough 
 
 ## Browser chrome mode service
 
-The Tavern client registers the stable service name `pmpDshTavernChrome` through DSH `0.1.0-rc.8` public Cordis `ctx.provide`. This is a Tavern v2 contract, not a DSH Host API. It provides only the `native|play` lifecycle. It does not own or arbitrate any slot, view, or third-party plugin UI.
+The Tavern client registers the stable service name `pmpDshTavernChrome` through DSH `0.1.2-rc.1` public Cordis `ctx.provide`. This is a Tavern v2 contract, not a DSH Host API. It provides only the `native|play` lifecycle. It does not own or arbitrate any slot, view, or third-party plugin UI.
 
 Public face:
 

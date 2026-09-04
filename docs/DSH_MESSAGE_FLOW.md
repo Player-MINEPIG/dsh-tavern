@@ -4,6 +4,8 @@
 
 状态：消息流基线于 2026-08-18 按本机 `@deepseek-ai/dsh 0.1.0-rc.6` 的公开 README 与已安装源码核对；2.0 发布候选已在 2026-08-22 对 DSH `0.1.0-rc.8` 做自动回归和安装验证，但没有把后续段落冒充为一次新的完整上游源码审计。本文分别描述 DSH 原生流程、DT 自身流程、DT 对 DSH 的介入，以及安装 DT 后一次完整模型 step 的实际流程；它不是 README。
 
+`0.1.2-rc.1` 兼容增量（2026-09-05）：本文原始消息流基线保留为历史审计证据；当前 Tavern Host 不再经过已删除的 `apiProxy`，而由 Play Host adapter 显式调用 session/workspace/directory-picker controllers。history 先用 `inspect()` 固定 inclusive `throughSeq`，再用 `page()` 读完同一快照；进程内事件读取使用 `session.seq`、`snapshotEvents()` 与 `ownEvents()`，不再读取 `Session.events` 或 `header.seedLength`。这些变化没有改变下文的 durable message 所有权、prompt assembly 顺序或 Trace 不保存正文的结论。
+
 本文中的 `DT` 是 `dsh-tavern` 的简称。SillyTavern（ST）是 DT 兼容的资源格式与部分语义来源，不是本插件或其界面的产品身份。
 
 ## 1. DSH 原来的 flow
@@ -316,7 +318,7 @@ Tavern Trace 位于 Conversation / Trajectory 同级的公开 `conversation.view
 
 ```text
 预检当前选择或模板
-  → DSH 模式：workspaces.connectWorkspace() 返回真实 blank session
+  → DSH 模式：uiWorkspace.connectWorkspace() 返回真实 blank session
     魔丸模式：按预检中的角色复用共享周目控制器，创建或复用权威空周目
   → loader 原子写入完整 Tavern selection
   → 魔丸模式回读校验 session 角色与周目角色一致

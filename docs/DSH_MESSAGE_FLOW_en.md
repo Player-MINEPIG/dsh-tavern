@@ -4,6 +4,8 @@
 
 Status: the message-flow baseline was checked on 2026-08-18 against the public README and installed source of local `@deepseek-ai/dsh 0.1.0-rc.6`. The 2.0 release candidate ran automated regression and install verification against DSH `0.1.0-rc.8` on 2026-08-22, but later sections are not presented as a new full upstream source audit. This page describes the native DSH flow, DT's own flow, how DT inserts into DSH, and one complete model step after DT is installed. It is not a README.
 
+DSH `0.1.2-rc.1` compatibility delta (2026-09-05): the original message-flow baseline above remains historical audit evidence. The current Tavern Host no longer uses the removed `apiProxy`; its Play Host adapter explicitly calls the session/workspace/directory-picker controllers. History pins an inclusive `throughSeq` with `inspect()` and finishes the same snapshot with `page()`. In-process event reads use `session.seq`, `snapshotEvents()`, and `ownEvents()` instead of `Session.events` or `header.seedLength`. These changes do not alter the durable-message ownership, prompt-assembly order, or body-free Trace conclusions below.
+
 `DT` here is short for `dsh-tavern`. SillyTavern (ST) is the resource format and part of the semantics DT compatibilizes. It is not the product identity of this plugin or its UI.
 
 ## 1. Native DSH flow
@@ -317,7 +319,7 @@ Tavern Trace sits in a public `conversation.view` slot sibling to Conversation /
 
 ```text
 Preview the current selection or template
-  → DSH mode: workspaces.connectWorkspace() returns a real blank session
+  → DSH mode: uiWorkspace.connectWorkspace() returns a real blank session
     Mowan: reuse the shared playthrough controller for the previewed character, create or reuse the authoritative empty playthrough
   → loader writes the complete Tavern selection atomically
   → Mowan read-back-validates that the session character matches the playthrough character

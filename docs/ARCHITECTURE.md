@@ -2,7 +2,11 @@
 
 [English](ARCHITECTURE_en.md)
 
-状态：2026-08-27，安装标识为 `pmp-dsh-tavern`；HTTP 挂载 `/pmp-dsh-tavern/api`，资源走 `/v1`，扮演表面合同走 `/v2`。RP 会话叠加、外部持久目录与委派子 agent 固化父选择仍然有效。本文是当前架构决策与发布审查门槛，不是产品 README。
+状态：2026-09-05，DSH 兼容基线为完整版本 `0.1.2-rc.1`；安装标识为 `pmp-dsh-tavern`。HTTP 挂载 `/pmp-dsh-tavern/api`，资源走 `/v1`，扮演表面合同走 `/v2`。本文是当前架构决策与发布审查门槛，不是产品 README。
+
+![当前架构](assets/dsh-tavern-architecture.png)
+
+可编辑源文件：[dsh-tavern-architecture.drawio](assets/dsh-tavern-architecture.drawio)。图中 DSH session history 是唯一权威事件历史；Tavern 的外部目录只保存资源、选择、设置、Trace 与周目投影。
 
 ## 决策结论
 
@@ -68,11 +72,11 @@ loader 在任何 Store 构造前解析统一 `storageDir`。默认 bundle 通过
 
 DSH 原生“新会话”按钮当前默认继承上一个聚焦会话的 preset 等 Tavern 选择/设定；这是 Host 基线。架构和验收不得继续把原生新会话假定为空白配置。
 
-干净会话与配置模板由 `packages/session-template` 保存纯选择投影，loader 注入真实资源库和 `SessionSelectionStore`。DSH 模式下，浏览器组合根只通过公开 `workspaces.connectWorkspace()` 与 `sessions.open()` 创建/导航普通 blank session。魔丸模式下，同一控制面先 preview 配置并取得角色 id，再复用共享周目控制器与现有 v2 原子操作创建/复用该角色周目，最后通过 v1 apply 原子写入完整 selection；不增加“配置周目”专用后端动词。两条路径都不 fork 或伪造历史。完整事务边界见 `docs/LOADER_CONTRACT.md`。
+干净会话与配置模板由 `packages/session-template` 保存纯选择投影，loader 注入真实资源库和 `SessionSelectionStore`。DSH 模式下，浏览器组合根只通过公开 `uiWorkspace.connectWorkspace()` 与 `sessions.open()` 创建/导航普通 blank session。魔丸模式下，同一控制面先 preview 配置并取得角色 id，再复用共享周目控制器与现有 v2 原子操作创建/复用该角色周目，最后通过 v1 apply 原子写入完整 selection；不增加“配置周目”专用后端动词。两条路径都不 fork 或伪造历史。完整事务边界见 `docs/LOADER_CONTRACT.md`。
 
 ## Loader-owned ActivationContext
 
-DSH `0.1.0-rc.6` 的 `agent/inbox/spliced` 是公开、持久的 Session event；插入、替换、取消和 claim 都先 append 该事件并同步通知 `session/event`，随后实时 Inbox 才改变。loader 在这个边界维护唯一 `PendingInputProjection`，把 durable history 与本次 claimed batch 去重后组合为临时 `ActivationContext`，供 world-book matcher 只读消费。
+DSH `0.1.2-rc.1` 的 `agent/inbox/spliced` 是公开、持久的 Session event；插入、替换、取消和 claim 都先 append 该事件并同步通知 `session/event`，随后实时 Inbox 才改变。loader 在这个边界维护唯一 `PendingInputProjection`，通过 `Session.ownEvents()` 排除 fork 继承前缀，把 durable history 与本次 claimed batch 去重后组合为临时 `ActivationContext`，供 world-book matcher 只读消费。其他当前日志读取集中使用 `session.seq` 与 `snapshotEvents()`，不再访问已删除的 `Session.events`。
 
 这个投影属于 Host adapter，不下沉到纯模块：
 
@@ -101,13 +105,13 @@ DSH `0.1.0-rc.6` 的 `agent/inbox/spliced` 是公开、持久的 Session event�
 | --- | --- | --- |
 | DT 悬浮入口 | `shell.overlay` additive slot、Cordis effect 生命周期 | 球体、菜单内容和全局 chrome 状态是产品 UI；不向 `document.body` 另建失控根节点 |
 | 魔丸侧边栏 | `sidebar.workspaces` slot；owner 注入的 `useSessions` / `useWorkspaces`；`ctx.sessions.open()` | 只重组为角色卡 / 周目投影，不改写、不归档、不隐藏 Host session 数据 |
-| DSH 外层新会话 | DSH `0.1.0-rc.8` sidebar shell 自有；无公开 slot/service | Tavern 不用哈希 class、DOM capture 或源码替换接管；魔丸保留原生按钮并在文档中标为不推荐，普通区 `+` 只引导返回 native |
+| DSH 外层新会话 | DSH `0.1.2-rc.1` sidebar shell 自有；无供 Tavern 接管点击的公开 slot/service | Tavern 不用哈希 class、DOM capture 或源码替换接管；魔丸保留原生按钮并在文档中标为不推荐，普通区 `+` 只引导返回 native |
 | 普通会话提示 | `conversation.input.dock` 独立整行 slot、继承的 `--dsh-composer-card-max-width` | 仅显示 Tavern 的 RP 工作区分类结果；提示按 Host composer 宽度居中，不接管原生 composer、不复制固定像素或读取哈希 class |
 | 魔丸对话页 | `conversation.view` slot；标准 `useSession` 的 nodes / partial / running | 周目跨 session 聚合是 Tavern 投影；不伪造 DSH 消息，不读取私有 runtime |
 | 魔丸默认视图 | `slots.entries("conversation.view")` 暴露的原生 `chat` store 句柄、session 级 `conversation.input.dock` 及其 `actions.setView()` | 新周目尚未选定视图时在无可见内容的 dock entry 中复用同一 store，切到 `rp` 后立即注销；不向视图环注册第二个 `chat`，保留可手动选择的原生“对话” |
 | 实时发送和流式显示 | DSH `useSession` 实时节点与 partial | `/v2/messages` 只做持久消息范围对账，不重复封装 DSH 的浏览器实时 API |
 | 对话滚动 | Conversation 的 `[data-conversation-scroll]` scrollport、sticky composer 几何和注入的 `chatScroll.save(null)` | 只选择何时调用原生“到底部”语义；不计算固定 composer 高度，不维护第二个滚动容器 |
-| 干净新会话 / 配置模板 | DSH 模式复用 `workspaces.connectWorkspace()`；魔丸模式复用周目 v2 `sessions.create` 组合；两者都用 `sessions.open()` 导航 | Tavern 只在目标 session 上原子复制 selection；魔丸额外把配置角色作为周目归属并回读验证，不构造消息、不 fork 历史 |
+| 干净新会话 / 配置模板 | DSH 模式复用 `uiWorkspace.connectWorkspace()`；魔丸模式复用周目 v2 session-controller 组合；两者都用 `sessions.open()` 导航 | Tavern 只在目标 session 上原子复制 selection；魔丸额外把配置角色作为周目归属并回读验证，不构造消息、不 fork 历史 |
 | 周目 session 操作 | Host `sessions.create/rename/fork/prompt/history`、`workspace.insertSessionBefore`；Host 侧 `Session.deriveMessages()` | v2 把这些原子操作组成第三方前端可用的周目事务，同时保持 DSH session 为权威历史 |
 | RP 安全模式 | 官方 `sandbox/mode` Session event、`tools.guard`、Session/agent 生命周期 hook | Tavern 只保存 RP 是否启用及跟随来源；不发明第二种沙箱状态 |
 | prompt 与审计 | `systemPrompt.section`、`agent/request`、`request/header`、`Session.deriveMessages()` | loader 只编译选中的 ST 资源；Trace 只记录有界来源元数据 |
@@ -152,7 +156,7 @@ DSH 当前没有角色卡、周目、greeting、跨 session adopted variant、ST
 
 每次升级 DSH 版本先做只读差异审计：核对插件清单的 inject、公开包根导出、slot owner props、store 字段、Host RPC 和 README 合同；然后运行 native/play 双模式及卸载回退验收。若公开 seam 消失，优先让对应增强失败关闭并保留原生表面，再讨论协议调整；禁止临时改为 DOM 查询、内部 bundle 符号或私有 runtime。新增前端功能的设计记录必须明确写出“复用的原生机制 / 自定义原因 / 官方升级观察点”。
 
-DSH `0.1.0-rc.8` 的默认视图仍由 DSH chat store 持有，`conversation.view` owner 不会自动把另一条目的 store 注入插件视图。因此默认 RP adapter 必须显式复用原生 `chat` 条目在公开 slot 快照中的同一 store 句柄，不能自建第二个 store。DSH 按 store handle × session scope 复用实例，所以 adapter 挂在不产生视图按钮的 session 级 `conversation.input.dock`，返回 `null`，只处理 `view` 尚未选定的状态并在执行后注销；不得再用同名 `conversation.view` 条目取得 actions。找不到公开句柄或组件拿不到 store 时失败关闭并清除临时占用。升级时应回归：新周目首条消息后默认进入 RP、原生“对话”仍可手动选择、顶栏从首帧起只有一个 `chat`、切回 native/卸载插件不改变 DSH 原组件。
+DSH `0.1.2-rc.1` 的默认视图仍由 DSH chat store 持有，`conversation.view` owner 不会自动把另一条目的 store 注入插件视图。因此默认 RP adapter 必须显式复用原生 `chat` 条目在公开 slot 快照中的同一 store 句柄，不能自建第二个 store。DSH 按 store handle × session scope 复用实例，所以 adapter 挂在不产生视图按钮的 session 级 `conversation.input.dock`，返回 `null`，只处理 `view` 尚未选定的状态并在执行后注销；不得再用同名 `conversation.view` 条目取得 actions。找不到公开句柄或组件拿不到 store 时失败关闭并清除临时占用。升级时应回归：新周目首条消息后默认进入 RP、原生“对话”仍可手动选择、顶栏从首帧起只有一个 `chat`、切回 native/卸载插件不改变 DSH 原组件。
 
 ## 为什么不是两个 DSH 插件
 
@@ -169,7 +173,7 @@ DSH `0.1.0-rc.8` 的默认视图仍由 DSH chat store 持有，`conversation.vie
 - 两个插件都可能争用 API、存储或 UI 生命周期；
 - 安装、卸载、备份和故障排查成本翻倍。
 
-因此发布与安装单位固定为根包 `pmp-dsh-tavern`（产品名仍是 dsh-tavern），内部包边界用于代码复用和测试隔离。浏览器与 Host 共用 `packages/identity.js` 的 `PLUGIN_ID`、`API_ROOT`、`API_V1`、`API_V2`。HTTP 挂载前缀是 `/pmp-dsh-tavern/api`；现有资源走 `/v1`，扮演元 API 走 `/v2`。旧根 `/dsh-tavern/api` 已废止。`packages/play` 不导入 DSH；loader 通过 `ctx.get('apiProxy')`（有则用之）把 v2 session/workspace 接到 Host 公开 RPC，并挂到现有 `secureTavernApi`。`package.json` 的 `./format`、`./preset`、`./character`、`./user`、`./world-book`、`./world-book-library`、`./trace`、`./loader` exports 是程序接口，不代表可分别安装的插件。
+因此发布与安装单位固定为根包 `pmp-dsh-tavern`（产品名仍是 dsh-tavern），内部包边界用于代码复用和测试隔离。浏览器与 Host 共用 `packages/identity.js` 的 `PLUGIN_ID`、`API_ROOT`、`API_V1`、`API_V2`。HTTP 挂载前缀是 `/pmp-dsh-tavern/api`；现有资源走 `/v1`，扮演元 API 走 `/v2`。旧根 `/dsh-tavern/api` 已废止。`packages/play` 不导入 DSH；loader 以显式注入的 `sessionController`、`workspaceController` 与 `directoryPickerController` 实现 Tavern Play Host port，并挂到现有 `secureTavernApi`。`package.json` 的 `./format`、`./preset`、`./character`、`./user`、`./world-book`、`./world-book-library`、`./trace`、`./loader` exports 是程序接口，不代表可分别安装的插件。
 
 ## 当前发布门槛
 

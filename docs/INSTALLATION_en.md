@@ -2,14 +2,14 @@
 
 [中文](INSTALLATION.md)
 
-Status: current for the 2026-08-27 `2.1.0-rc.1` release candidate. The default root [README](../README.md) is Chinese. The English landing page is [README_en.md](../README_en.md) (no screenshots). This file is the detailed lifecycle, verification, and recovery contract.
+Status: current for the 2026-09-05 `2.1.0-rc.1` candidate code, targeting the full DSH version `0.1.2-rc.1`. The default root [README](../README.md) is Chinese. The English landing page is [README_en.md](../README_en.md) (no screenshots). This file is the detailed lifecycle, verification, and recovery contract.
 
 The scripts use Node.js as their common entry point and normalize paths for
 Windows, macOS, and Linux. macOS/Linux execute `dsh` directly. Windows safely
 locates npm's `dsh.ps1` shim and invokes it through the system PowerShell with
 an argument array, so paths are not reconstructed as shell command text. Run
-the scripts from the `dsh-tavern` checkout with Node.js 20 or newer and `dsh`
-on `PATH`.
+the scripts from the `dsh-tavern` checkout with Node.js 20 or newer and DSH
+`0.1.2-rc.1` on `PATH`.
 
 Only the repository root is installed. `packages/tavern-format`,
 `packages/preset`, and `packages/tavern-loader` are internal boundaries shipped
