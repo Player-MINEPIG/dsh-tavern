@@ -17,6 +17,7 @@ import {
 } from './export.js'
 
 import { renamePlaythrough } from './create.js'
+import { playthroughDisplayTitle } from './title.js'
 const h = createLocalizedElement(createElement)
 
 const css = `
@@ -57,6 +58,7 @@ export function PlayIoMenu({ playClient, playthrough, trigger = '+', placement =
   const [open, setOpen] = useState(false)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
+  const displayTitle = playthroughDisplayTitle(playthrough)
 
   useEffect(() => {
     if (!open) return undefined
@@ -73,7 +75,8 @@ export function PlayIoMenu({ playClient, playthrough, trigger = '+', placement =
     setError('')
     try {
       const snapshot = await loadPlaythroughExport(playClient, playthrough)
-      downloadDocument(playthrough, playthroughExportDocument(snapshot, format))
+      const localizedPlaythrough = { ...snapshot.playthrough, title: displayTitle }
+      downloadDocument(localizedPlaythrough, playthroughExportDocument({ ...snapshot, playthrough: localizedPlaythrough }, format))
       setOpen(false)
     } catch (reason) {
       setError(reason instanceof Error ? reason.message : String(reason))
@@ -84,7 +87,7 @@ export function PlayIoMenu({ playClient, playthrough, trigger = '+', placement =
 
   const rename = async () => {
     if (busy) return
-    const title = window.prompt(unwrapText(uiMessage('play.io.renamePrompt')), playthrough.title ?? '')
+    const title = window.prompt(unwrapText(uiMessage('play.io.renamePrompt')), displayTitle)
     if (title === null) return
     if (title.trim() === '' || title.trim().length > 120) {
       setError(unwrapText(uiMessage('play.io.renameInvalid')))

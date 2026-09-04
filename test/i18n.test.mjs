@@ -24,6 +24,7 @@ import {
 } from '../packages/ui-settings/src/locale-contract.js'
 import { uiSettingsConstants } from '../packages/tavern-loader/src/index.js'
 import { PanelHeader } from '../packages/client/src/index.js'
+import { playthroughDisplayTitle } from '../packages/client/src/play/title.js'
 
 const root = dirname(fileURLToPath(new URL('../package.json', import.meta.url)))
 
@@ -100,6 +101,27 @@ test('translate falls back through DEFAULT_UI_LOCALE rather than a hardcoded loc
   assert.equal(translate('settings.title'), MESSAGE_CATALOG[other]['settings.title'])
   assert.equal(translate('catalog.key.that.does.not.exist'), MESSAGE_CATALOG[DEFAULT_UI_LOCALE]['common.unavailable'])
   assert.notEqual(translate('catalog.key.that.does.not.exist'), 'catalog.key.that.does.not.exist')
+})
+
+test('automatic playthrough titles follow locale while explicit renames remain raw', () => {
+  const automatic = {
+    id: 'pt-1',
+    title: '1周目',
+    ext: { pmpDshTavern: { playthroughNumber: 1, autoTitle: true } },
+  }
+  setClientUiSettings({ locale: 'zh-CN', scale: 1 }, { announce: false })
+  assert.equal(playthroughDisplayTitle(automatic), '1周目')
+  setClientUiSettings({ locale: 'en', scale: 1 }, { announce: false })
+  assert.equal(playthroughDisplayTitle(automatic), 'Playthrough 1')
+  assert.equal(playthroughDisplayTitle({
+    ...automatic,
+    title: '夜班线',
+    ext: { pmpDshTavern: { playthroughNumber: 1, autoTitle: false } },
+  }), '夜班线')
+  assert.equal(playthroughDisplayTitle({
+    ...automatic,
+    ext: { pmpDshTavern: { playthroughNumber: 1 } },
+  }), 'Playthrough 1', 'legacy generated titles are inferred without rewriting the catalog')
 })
 
 test('synthetic third locale can change panel.close word order without editing business components', () => {

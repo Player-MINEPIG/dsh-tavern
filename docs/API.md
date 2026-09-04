@@ -72,7 +72,7 @@ session/workspace/timeline/catalog 积木组合同样的流程。当前 bundled 
 2. 对已有来源 session，使用 v2 的 `selectionFromSessionId` 复制 Tavern selection；无来源
    session 再通过 v1 绑定角色卡；
 3. 在已绑定工作区根内创建角色/周目目录，写入空 `timeline.json`，再写入 catalog，最后重新
-   读取并校验；显示名为 `x周目`，可通过 catalog 修改后重新读取确认。
+   读取并校验；自动显示名随当前语言使用 `{number}周目` / `Playthrough {number}`，主动重命名则按原文显示并可通过 catalog 重新读取确认。
 
 角色解绑或换绑是例外：`POST /v1/character-selection` 在写 selection 前检查 session 是否属于角色不一致的周目。若存在冲突，返回 409 `CHARACTER_PLAYTHROUGH_DETACH_REQUIRED`，`error.details.conflicts[]` 含 `playthroughId`、`playthroughTitle`、`sessionId`、`expectedCharacterId`、`requestedCharacterId` 与 `descendantSessionCount`，且本次 selection 不写入。前端取得用户确认后，应逐项调用 `POST /v2/playthroughs/:id/detach-session`，全部成功后重试原 v1 请求。detach 由服务端根据 timeline 树计算，客户端不得自行猜测或重写后代关系。
 

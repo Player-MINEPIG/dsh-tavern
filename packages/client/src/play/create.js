@@ -110,12 +110,22 @@ export async function renamePlaythrough(client, playthrough, title) {
     const freshIndex = current.playthroughs.findIndex(item => item.id === playthrough?.id && item.path === playthrough?.path)
     if (freshIndex < 0) throw new TypeError('play.rename.missing')
     const freshPlaythroughs = [...current.playthroughs]
-    freshPlaythroughs[freshIndex] = { ...freshPlaythroughs[freshIndex], title: normalized }
+    const fresh = freshPlaythroughs[freshIndex]
+    freshPlaythroughs[freshIndex] = {
+      ...fresh,
+      title: normalized,
+      ext: {
+        ...fresh.ext,
+        pmpDshTavern: { ...fresh.ext?.pmpDshTavern, autoTitle: false },
+      },
+    }
     return { ...current, playthroughs: freshPlaythroughs }
   })
   const verified = saved?.playthroughs === undefined ? await client.getCatalog() : saved
   const renamed = verified.playthroughs.find(item => item.id === playthrough.id && item.path === playthrough.path)
-  if (renamed?.title !== normalized) throw new Error('play.rename.verificationFailed')
+  if (renamed?.title !== normalized || renamed.ext?.pmpDshTavern?.autoTitle !== false) {
+    throw new Error('play.rename.verificationFailed')
+  }
   return renamed
 }
 
@@ -203,6 +213,7 @@ export async function createCharacterPlaythrough(client, {
         ...(typeof character.sha256 === 'string' ? { characterSha256: character.sha256 } : {}),
         rootSessionId: sessionId,
         playthroughNumber: 0,
+        autoTitle: true,
       },
     },
   }
@@ -223,7 +234,7 @@ export async function createCharacterPlaythrough(client, {
       title: `${playthroughNumber}周目`,
       ext: {
         ...playthrough.ext,
-        pmpDshTavern: { ...playthrough.ext.pmpDshTavern, playthroughNumber },
+        pmpDshTavern: { ...playthrough.ext.pmpDshTavern, playthroughNumber, autoTitle: true },
       },
     }
     saved = row

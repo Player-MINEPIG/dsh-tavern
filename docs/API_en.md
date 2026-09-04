@@ -68,7 +68,7 @@ v2 does not turn character card, playthrough, and greeting into one irreplaceabl
 
 1. Read the character directory and check whether that character's last playthrough is still empty. Reuse it if empty; otherwise `POST /sessions` creates a real blank DSH session.
 2. For an existing source session, copy Tavern selection with v2 `selectionFromSessionId`. Without a source session, bind the card through v1.
-3. Create the character/playthrough directory inside the bound workspace root, write an empty `timeline.json`, write catalog, then reread and validate. The display name is `N playthrough` and can be confirmed after a catalog edit.
+3. Create the character/playthrough directory inside the bound workspace root, write an empty `timeline.json`, write catalog, then reread and validate. The generated display name is `Playthrough N` in English and `{number}周目` in Chinese; an explicit rename is stored and displayed verbatim.
 
 Character unbind/rebind is the exception: `POST /v1/character-selection` checks whether the session belongs to a playthrough whose character does not match, before writing selection. On conflict it returns 409 `CHARACTER_PLAYTHROUGH_DETACH_REQUIRED`. `error.details.conflicts[]` includes `playthroughId`, `playthroughTitle`, `sessionId`, `expectedCharacterId`, `requestedCharacterId`, and `descendantSessionCount`. Selection is not written. After user confirm, the frontend should call `POST /v2/playthroughs/:id/detach-session` per conflict, then retry the original v1 request. Detach is computed by the server from the timeline tree. Clients must not guess or rewrite descendant relations.
 

@@ -221,6 +221,7 @@ test('catalog and timeline documents are validated on GET and PUT with stable er
       { playthroughs: [{ id: 'pt', path: 'alice/pt/timeline.json', ext: { pmpDshTavern: { characterId: 'bad id' } } }] },
       { playthroughs: [{ id: 'pt', path: 'alice/pt/timeline.json', ext: { pmpDshTavern: { rootSessionId: ':bad' } } }] },
       { playthroughs: [{ id: 'pt', path: 'alice/pt/timeline.json', ext: { pmpDshTavern: { playthroughNumber: 0 } } }] },
+      { playthroughs: [{ id: 'pt', path: 'alice/pt/timeline.json', ext: { pmpDshTavern: { autoTitle: 'yes' } } }] },
       { playthroughs: [{ id: 'pt', path: 'alice/pt/timeline.json', ext: { pmpDshTavern: { importContextPath: 'alice/pt/context.json' } } }] },
     ]
     for (const [index, content] of badCatalogs.entries()) {

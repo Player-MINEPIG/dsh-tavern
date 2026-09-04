@@ -4,7 +4,7 @@
 
 An open-source DeepSeek Harness (DSH) plugin for Tavern resource compatibility, RP workflow, and a third-party frontend protocol.
 
-> This documentation matches the `2.1.0-rc.1` release candidate. The project is released under the [MIT License](LICENSE).
+> This documentation matches the `2.1.0-rc.2` release candidate. The project is released under the [MIT License](LICENSE).
 >
 > **Compatibility baseline:** the current candidate code targets DSH `0.1.2-rc.1`. Automated regression covers the Host controllers, stable history pagination, Session snapshots, and client contract owners; real-provider and browser interaction remain release-acceptance items.
 >
@@ -69,7 +69,7 @@ Right-click the `DT` orb, or choose **Switch to custom frontend mode** in the me
 
 ### 4. Create a playthrough
 
-In the RP sidebar, click `+` on the imported character card. The plugin creates or reuses that character's latest fully empty `N playthrough`, and binds the root session to the card you actually clicked.
+In the RP sidebar, click `+` on the imported character card. The plugin creates or reuses that character's latest fully empty `Playthrough N`, and binds the root session to the card you actually clicked. Generated names follow the UI language; explicit renames remain unchanged.
 
 ### 5. Choose a greeting
 

@@ -2,7 +2,7 @@
 
 [English](INSTALLATION_en.md)
 
-状态：对应 2026-09-05 的 `2.1.0-rc.1` 候选代码，目标 DSH 为完整版本 `0.1.2-rc.1`。根目录默认 [README](../README.md) 为中文；英文落地页是 [README_en.md](../README_en.md)（无截图）。本文是安装生命周期、验收与恢复合同。
+状态：对应 2026-09-05 的 `2.1.0-rc.2` 候选版本，目标 DSH 为完整版本 `0.1.2-rc.1`。根目录默认 [README](../README.md) 为中文；英文落地页是 [README_en.md](../README_en.md)（无截图）。本文是安装生命周期、验收与恢复合同。
 
 脚本以 Node.js 为统一入口，并规范化 Windows、macOS 和 Linux 路径。macOS/Linux 直接执行 `dsh`。Windows 会安全定位 npm 的 `dsh.ps1` shim，再通过系统 PowerShell 以参数数组调用，因此路径不会被拼回 shell 命令文本。请在 `dsh-tavern` 检出目录中运行脚本，并准备 Node.js 20 或更高版本，以及位于 `PATH` 上的 DSH `0.1.2-rc.1`。
 

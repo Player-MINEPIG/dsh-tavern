@@ -245,6 +245,9 @@ function validateKnownPlaythroughExt(ext, label) {
     if (known.playthroughNumber !== undefined && (!Number.isSafeInteger(known.playthroughNumber) || known.playthroughNumber < 1)) {
       catalogError(`${label}.pmpDshTavern.playthroughNumber must be a positive safe integer`)
     }
+    if (known.autoTitle !== undefined && typeof known.autoTitle !== 'boolean') {
+      catalogError(`${label}.pmpDshTavern.autoTitle must be a boolean`)
+    }
     if (known.importContextPath !== undefined) {
       safeRelativePath(known.importContextPath, `${label}.pmpDshTavern.importContextPath`, 'import-context.json')
     }

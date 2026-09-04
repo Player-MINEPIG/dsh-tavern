@@ -67,6 +67,7 @@ test('Tavern fork branches durable history and rebases only the copied focus var
   assert.equal(result.sessionId, 'child')
   assert.equal(result.playthrough.title, '2周目')
   assert.equal(result.playthrough.ext.pmpDshTavern.rootSessionId, 'child')
+  assert.equal(result.playthrough.ext.pmpDshTavern.autoTitle, true)
   assert.equal(savedTimeline.nodes.length, 2)
   assert.equal(savedTimeline.nodes[0].variants[0].sessionId, 'ancestor-a')
   assert.equal(savedTimeline.nodes[1].variants[0].sessionId, 'ancestor-a')

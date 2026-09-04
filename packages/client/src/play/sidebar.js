@@ -22,6 +22,7 @@ import {
   sourceSessionIdForCharacter,
 } from './create.js'
 import { PlayIoMenu } from './io-menu.js'
+import { playthroughDisplayTitle } from './title.js'
 import {
   SessionCharacterBindingCache,
   assessPlaythroughCharacterRelink,
@@ -174,11 +175,11 @@ function CharacterGroup({ character, index, dragging, reorderDisabled, onPointer
       className: 'dtv-play-row',
       'data-active': playthrough.active,
       disabled: playthrough.missing,
-      title: playthrough.missing ? uiMessage('play.sidebar.sessionMissing') : rawText(playthrough.title),
+      title: playthrough.missing ? uiMessage('play.sidebar.sessionMissing') : rawText(playthroughDisplayTitle(playthrough)),
       onClick: () => openPlaythrough(playthrough),
     },
     h('span', { className: 'dtv-play-chevron', 'aria-hidden': 'true' }, '◆'),
-    h('span', { className: 'dtv-play-title' }, rawText(playthrough.title)),
+    h('span', { className: 'dtv-play-title' }, rawText(playthroughDisplayTitle(playthrough))),
     ),
     h(PlayIoMenu, {
       playClient,
@@ -246,11 +247,11 @@ function MissingCharacterGroup({ character, collapsed, toggle, beginRelink, begi
       className: 'dtv-play-row',
       'data-active': playthrough.active,
       disabled: playthrough.missing,
-      title: playthrough.missing ? uiMessage('play.sidebar.sessionMissing') : rawText(playthrough.title),
+      title: playthrough.missing ? uiMessage('play.sidebar.sessionMissing') : rawText(playthroughDisplayTitle(playthrough)),
       onClick: () => openPlaythrough(playthrough),
     },
     h('span', { className: 'dtv-play-chevron', 'aria-hidden': 'true' }, '◆'),
-    h('span', { className: 'dtv-play-title' }, rawText(playthrough.title)),
+    h('span', { className: 'dtv-play-title' }, rawText(playthroughDisplayTitle(playthrough))),
     ),
     h(PlayIoMenu, {
       playClient,
@@ -755,7 +756,7 @@ export function PlayWorkspaceBrowser({
       'aria-labelledby': 'dtv-play-relink-prompt',
     }, h('div', { className: 'dtv-play-modal' },
       h('p', { id: 'dtv-play-relink-prompt' }, relinkRequest.kind === 'playthrough'
-        ? uiMessage('play.sidebar.relinkPlaythroughPrompt', { name: relinkRequest.playthrough.title })
+        ? uiMessage('play.sidebar.relinkPlaythroughPrompt', { name: playthroughDisplayTitle(relinkRequest.playthrough) })
         : uiMessage('play.sidebar.relinkPrompt', { name: relinkRequest.character.name })),
       h('select', {
         value: relinkTargetId,

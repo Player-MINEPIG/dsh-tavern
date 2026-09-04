@@ -104,7 +104,7 @@ DSH `0.1.2-rc.1` 侧边栏外层的“新建会话”属于原生 sidebar shell�
 ## 7. 周目与外部记录开场
 
 在魔丸侧边栏的角色卡下点击新建周目，会创建或复用该角色最近一个没有任何真实记录的
-`x周目`。复用检查同时查看 `timeline.json`、root session 的 DSH user/assistant 消息、开放
+`x周目`。自动标题会随界面语言显示为 `{number}周目` 或 `Playthrough {number}`；主动重命名后保持原文。复用检查同时查看 `timeline.json`、root session 的 DSH user/assistant 消息、开放
 turn，以及是否已有外部导入 QA；因此连续点击不会无限增加空周目。周目标题旁的菜单可以
 重命名。被点击的角色卡是创建事务的权威角色；无论 DSH 新会话继承了哪个最近聚焦配置，
 创建或复用后都会校验并在必要时纠正 root session 的角色绑定，再显示该角色 greeting。

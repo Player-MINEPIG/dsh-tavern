@@ -179,6 +179,7 @@ var zh_CN_default = Object.freeze({
   "play.sidebar.relinkMismatchWarning": "\u6240\u9009\u89D2\u8272\u5361\u4E0D\u7B26\u5408 SHA-256 \u6216\u552F\u4E00\u540C\u540D\u81EA\u52A8\u5F52\u7C7B\u89C4\u5219\u3002\u7EE7\u7EED\u64CD\u4F5C\u4ECD\u4F1A\u6309\u4F60\u7684\u9009\u62E9\u91CD\u65B0\u7ED1\u5B9A\u6B64\u5468\u76EE\u3002",
   "play.sidebar.relinkConfirm": "\u91CD\u65B0\u5173\u8054",
   "play.sidebar.noPlaythroughs": "\u5C1A\u672A\u521B\u5EFA\u5468\u76EE\u3002",
+  "play.sidebar.defaultTitle": "{number}\u5468\u76EE",
   "play.sidebar.unassigned": "\u672A\u5F52\u5165\u5468\u76EE",
   "play.sidebar.other": "\u666E\u901A / \u975E\u89D2\u8272\u626E\u6F14\u4F1A\u8BDD",
   "play.sidebar.otherEmpty": "\u6682\u65E0\u666E\u901A\u6216\u5916\u90E8\u4F1A\u8BDD\u3002",
@@ -822,6 +823,7 @@ var en_default = Object.freeze({
   "play.sidebar.relinkMismatchWarning": "The selected card does not satisfy the SHA-256 or unique-name automatic classification rules. Continuing will still relink this playthrough to your explicit choice.",
   "play.sidebar.relinkConfirm": "Relink",
   "play.sidebar.noPlaythroughs": "No playthroughs yet.",
+  "play.sidebar.defaultTitle": "Playthrough {number}",
   "play.sidebar.unassigned": "Not in a playthrough",
   "play.sidebar.other": "Regular / non-role-play sessions",
   "play.sidebar.otherEmpty": "No regular or external sessions.",
@@ -8883,12 +8885,22 @@ async function renamePlaythrough(client, playthrough, title) {
     const freshIndex = current3.playthroughs.findIndex((item) => item.id === playthrough?.id && item.path === playthrough?.path);
     if (freshIndex < 0) throw new TypeError("play.rename.missing");
     const freshPlaythroughs = [...current3.playthroughs];
-    freshPlaythroughs[freshIndex] = { ...freshPlaythroughs[freshIndex], title: normalized };
+    const fresh = freshPlaythroughs[freshIndex];
+    freshPlaythroughs[freshIndex] = {
+      ...fresh,
+      title: normalized,
+      ext: {
+        ...fresh.ext,
+        pmpDshTavern: { ...fresh.ext?.pmpDshTavern, autoTitle: false }
+      }
+    };
     return { ...current3, playthroughs: freshPlaythroughs };
   });
   const verified = saved?.playthroughs === void 0 ? await client.getCatalog() : saved;
   const renamed = verified.playthroughs.find((item) => item.id === playthrough.id && item.path === playthrough.path);
-  if (renamed?.title !== normalized) throw new Error("play.rename.verificationFailed");
+  if (renamed?.title !== normalized || renamed.ext?.pmpDshTavern?.autoTitle !== false) {
+    throw new Error("play.rename.verificationFailed");
+  }
   return renamed;
 }
 function sourceSessionIdForCharacter(character) {
@@ -8970,7 +8982,8 @@ async function createCharacterPlaythrough(client, {
         characterName: character.name,
         ...typeof character.sha256 === "string" ? { characterSha256: character.sha256 } : {},
         rootSessionId: sessionId,
-        playthroughNumber: 0
+        playthroughNumber: 0,
+        autoTitle: true
       }
     }
   };
@@ -8984,13 +8997,13 @@ async function createCharacterPlaythrough(client, {
       saved = existing;
       return fresh;
     }
-    const playthroughNumber = nextPlaythroughNumber(fresh, characterId);
+    const playthroughNumber2 = nextPlaythroughNumber(fresh, characterId);
     const row = {
       ...playthrough,
-      title: `${playthroughNumber}\u5468\u76EE`,
+      title: `${playthroughNumber2}\u5468\u76EE`,
       ext: {
         ...playthrough.ext,
-        pmpDshTavern: { ...playthrough.ext.pmpDshTavern, playthroughNumber }
+        pmpDshTavern: { ...playthrough.ext.pmpDshTavern, playthroughNumber: playthroughNumber2, autoTitle: true }
       }
     };
     saved = row;
@@ -9113,7 +9126,8 @@ async function forkPlaythroughAtNode(client, {
       pmpDshTavern: {
         characterId,
         rootSessionId: sessionId,
-        playthroughNumber: 0
+        playthroughNumber: 0,
+        autoTitle: true
       }
     }
   };
@@ -9129,13 +9143,13 @@ async function forkPlaythroughAtNode(client, {
       saved = existing;
       return fresh;
     }
-    const playthroughNumber = nextPlaythroughNumber(fresh, characterId);
+    const playthroughNumber2 = nextPlaythroughNumber(fresh, characterId);
     saved = {
       ...draft,
-      title: `${playthroughNumber}\u5468\u76EE`,
+      title: `${playthroughNumber2}\u5468\u76EE`,
       ext: {
         ...draft.ext,
-        pmpDshTavern: { ...draft.ext.pmpDshTavern, playthroughNumber }
+        pmpDshTavern: { ...draft.ext.pmpDshTavern, playthroughNumber: playthroughNumber2, autoTitle: true }
       }
     };
     return { ...fresh, playthroughs: [...fresh.playthroughs, saved] };
@@ -10619,6 +10633,31 @@ function playthroughExportDocument(snapshot, format) {
   throw new TypeError(`Unknown export format ${format}`);
 }
 
+// packages/client/src/play/title.js
+function playthroughNumber(playthrough) {
+  const value = playthrough?.ext?.pmpDshTavern?.playthroughNumber;
+  return Number.isSafeInteger(value) && value > 0 ? value : null;
+}
+function isLegacyAutomaticTitle(title, number) {
+  return title === "\u5468\u76EE" || title === `${number}\u5468\u76EE` || title === `Playthrough ${number}`;
+}
+function hasAutomaticPlaythroughTitle(playthrough) {
+  const number = playthroughNumber(playthrough);
+  if (number === null) return false;
+  const declared = playthrough?.ext?.pmpDshTavern?.autoTitle;
+  if (declared === true) return true;
+  if (declared === false) return false;
+  return isLegacyAutomaticTitle(playthrough?.title, number);
+}
+function playthroughDisplayTitle(playthrough) {
+  const number = playthroughNumber(playthrough);
+  if (number !== null && hasAutomaticPlaythroughTitle(playthrough)) {
+    return translate("play.sidebar.defaultTitle", { number });
+  }
+  const title = playthrough?.title;
+  return typeof title === "string" && title !== "" ? title : String(playthrough?.id ?? "");
+}
+
 // packages/client/src/play/io-menu.js
 var h9 = createLocalizedElement(import_react11.createElement);
 var css8 = `
@@ -10655,6 +10694,7 @@ function PlayIoMenu({ playClient, playthrough, trigger = "+", placement = "compo
   const [open, setOpen] = (0, import_react11.useState)(false);
   const [busy, setBusy] = (0, import_react11.useState)(false);
   const [error, setError] = (0, import_react11.useState)("");
+  const displayTitle = playthroughDisplayTitle(playthrough);
   (0, import_react11.useEffect)(() => {
     if (!open) return void 0;
     const close = (event) => {
@@ -10669,7 +10709,8 @@ function PlayIoMenu({ playClient, playthrough, trigger = "+", placement = "compo
     setError("");
     try {
       const snapshot = await loadPlaythroughExport(playClient, playthrough);
-      downloadDocument(playthrough, playthroughExportDocument(snapshot, format));
+      const localizedPlaythrough = { ...snapshot.playthrough, title: displayTitle };
+      downloadDocument(localizedPlaythrough, playthroughExportDocument({ ...snapshot, playthrough: localizedPlaythrough }, format));
       setOpen(false);
     } catch (reason) {
       setError(reason instanceof Error ? reason.message : String(reason));
@@ -10679,7 +10720,7 @@ function PlayIoMenu({ playClient, playthrough, trigger = "+", placement = "compo
   };
   const rename = async () => {
     if (busy) return;
-    const title = window.prompt(unwrapText(uiMessage("play.io.renamePrompt")), playthrough.title ?? "");
+    const title = window.prompt(unwrapText(uiMessage("play.io.renamePrompt")), displayTitle);
     if (title === null) return;
     if (title.trim() === "" || title.trim().length > 120) {
       setError(unwrapText(uiMessage("play.io.renameInvalid")));
@@ -10878,11 +10919,11 @@ function CharacterGroup({ character, index, dragging, reorderDisabled, onPointer
           className: "dtv-play-row",
           "data-active": playthrough.active,
           disabled: playthrough.missing,
-          title: playthrough.missing ? uiMessage("play.sidebar.sessionMissing") : rawText(playthrough.title),
+          title: playthrough.missing ? uiMessage("play.sidebar.sessionMissing") : rawText(playthroughDisplayTitle(playthrough)),
           onClick: () => openPlaythrough(playthrough)
         },
         h10("span", { className: "dtv-play-chevron", "aria-hidden": "true" }, "\u25C6"),
-        h10("span", { className: "dtv-play-title" }, rawText(playthrough.title))
+        h10("span", { className: "dtv-play-title" }, rawText(playthroughDisplayTitle(playthrough)))
       ),
       h10(PlayIoMenu, {
         playClient,
@@ -10965,11 +11006,11 @@ function MissingCharacterGroup({ character, collapsed, toggle, beginRelink, begi
           className: "dtv-play-row",
           "data-active": playthrough.active,
           disabled: playthrough.missing,
-          title: playthrough.missing ? uiMessage("play.sidebar.sessionMissing") : rawText(playthrough.title),
+          title: playthrough.missing ? uiMessage("play.sidebar.sessionMissing") : rawText(playthroughDisplayTitle(playthrough)),
           onClick: () => openPlaythrough(playthrough)
         },
         h10("span", { className: "dtv-play-chevron", "aria-hidden": "true" }, "\u25C6"),
-        h10("span", { className: "dtv-play-title" }, rawText(playthrough.title))
+        h10("span", { className: "dtv-play-title" }, rawText(playthroughDisplayTitle(playthrough)))
       ),
       h10(PlayIoMenu, {
         playClient,
@@ -11475,7 +11516,7 @@ function PlayWorkspaceBrowser({
     }, h10(
       "div",
       { className: "dtv-play-modal" },
-      h10("p", { id: "dtv-play-relink-prompt" }, relinkRequest.kind === "playthrough" ? uiMessage("play.sidebar.relinkPlaythroughPrompt", { name: relinkRequest.playthrough.title }) : uiMessage("play.sidebar.relinkPrompt", { name: relinkRequest.character.name })),
+      h10("p", { id: "dtv-play-relink-prompt" }, relinkRequest.kind === "playthrough" ? uiMessage("play.sidebar.relinkPlaythroughPrompt", { name: playthroughDisplayTitle(relinkRequest.playthrough) }) : uiMessage("play.sidebar.relinkPrompt", { name: relinkRequest.character.name })),
       h10("select", {
         value: relinkTargetId,
         disabled: relinkBusy,

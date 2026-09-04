@@ -74,6 +74,7 @@ test('new card playthrough binds the card and persists an empty verified timelin
   assert.equal(result.playthrough.ext.pmpDshTavern.rootSessionId, 'session-new')
   assert.equal(result.playthrough.title, '1周目')
   assert.equal(result.playthrough.ext.pmpDshTavern.playthroughNumber, 1)
+  assert.equal(result.playthrough.ext.pmpDshTavern.autoTitle, true)
   assert.deepEqual(client.calls[0], ['getCatalog'])
   assert.deepEqual(client.calls[1], ['postSession', null])
   assert.deepEqual(client.calls[2], ['getCharacterSelection', 'session-new'])
@@ -146,6 +147,7 @@ test('renaming changes only the catalog display title and verifies the write', a
   const renamed = await renamePlaythrough(client, catalog.playthroughs[0], '  夜班线  ')
   assert.equal(renamed.title, '夜班线')
   assert.equal(renamed.ext.pmpDshTavern.rootSessionId, 'session-a')
+  assert.equal(renamed.ext.pmpDshTavern.autoTitle, false)
   await assert.rejects(renamePlaythrough(client, catalog.playthroughs[0], '   '), /play\.rename\.invalid/)
 })
 

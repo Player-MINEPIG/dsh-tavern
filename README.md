@@ -4,7 +4,7 @@
 
 为 DeepSeek Harness（DSH）提供 Tavern 资源兼容、RP 工作流与第三方前端协议的开源插件。
 
-> 当前文档对应 `2.1.0-rc.1` 候选版本。项目代码采用 [MIT License](LICENSE)。
+> 当前文档对应 `2.1.0-rc.2` 候选版本。项目代码采用 [MIT License](LICENSE)。
 >
 > **兼容性基线：** 当前候选代码面向 DSH `0.1.2-rc.1`。Host controller、稳定 history 分页、Session snapshot 与客户端 contract owner 迁移已经完成自动回归；真实 provider 与浏览器交互仍按发布验收表执行。
 
@@ -77,7 +77,7 @@ npm run plugin:install
 
 ### 4. 创建周目
 
-在 RP 侧边栏找到刚导入的角色卡，点击角色卡右侧的 `+`。插件会创建或复用该角色最近一个完全空白的 `N周目`，并确保 root session 绑定的是你实际点击的角色卡。
+在 RP 侧边栏找到刚导入的角色卡，点击角色卡右侧的 `+`。插件会创建或复用该角色最近一个完全空白的 `N周目`，并确保 root session 绑定的是你实际点击的角色卡。自动名称随 UI 语言显示，用户主动重命名的标题保持原文。
 
 ![创建周目](docs/assets/创建周目.png)
 

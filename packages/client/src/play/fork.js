@@ -103,6 +103,7 @@ export async function forkPlaythroughAtNode(client, {
         characterId,
         rootSessionId: sessionId,
         playthroughNumber: 0,
+        autoTitle: true,
       },
     },
   }
@@ -125,7 +126,7 @@ export async function forkPlaythroughAtNode(client, {
       title: `${playthroughNumber}周目`,
       ext: {
         ...draft.ext,
-        pmpDshTavern: { ...draft.ext.pmpDshTavern, playthroughNumber },
+        pmpDshTavern: { ...draft.ext.pmpDshTavern, playthroughNumber, autoTitle: true },
       },
     }
     return { ...fresh, playthroughs: [...fresh.playthroughs, saved] }

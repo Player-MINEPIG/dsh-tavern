@@ -106,6 +106,7 @@ export default Object.freeze({
   "play.sidebar.relinkMismatchWarning": "The selected card does not satisfy the SHA-256 or unique-name automatic classification rules. Continuing will still relink this playthrough to your explicit choice.",
   "play.sidebar.relinkConfirm": "Relink",
   "play.sidebar.noPlaythroughs": "No playthroughs yet.",
+  "play.sidebar.defaultTitle": "Playthrough {number}",
   "play.sidebar.unassigned": "Not in a playthrough",
   "play.sidebar.other": "Regular / non-role-play sessions",
   "play.sidebar.otherEmpty": "No regular or external sessions.",

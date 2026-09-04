@@ -106,6 +106,7 @@ export default Object.freeze({
   "play.sidebar.relinkMismatchWarning": "所选角色卡不符合 SHA-256 或唯一同名自动归类规则。继续操作仍会按你的选择重新绑定此周目。",
   "play.sidebar.relinkConfirm": "重新关联",
   "play.sidebar.noPlaythroughs": "尚未创建周目。",
+  "play.sidebar.defaultTitle": "{number}周目",
   "play.sidebar.unassigned": "未归入周目",
   "play.sidebar.other": "普通 / 非角色扮演会话",
   "play.sidebar.otherEmpty": "暂无普通或外部会话。",

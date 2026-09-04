@@ -1,6 +1,6 @@
 # DSH 0.1.2 Compatibility and Market Release Plan
 
-Status: active development plan. This document describes work on the
+Status: implementation complete; automated and manual acceptance in progress. This document describes work on the
 `codex/dsh-0.1.2-compat` branch. It is not a statement about a published
 release until the implementation and acceptance gates below are complete.
 
