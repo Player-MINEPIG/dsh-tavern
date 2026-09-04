@@ -1,79 +1,68 @@
-import { callHost, mapHostError } from '../../play/src/host.js'
+import { randomUUID } from '@deepseek-ai/dsh-util-crypto'
+import { mapHostError } from '../../play/src/host.js'
 import { httpError } from '../../play/src/http.js'
 
 function missing(name) {
   return httpError(501, `Host ${name} is unavailable`, 'PLAY_HOST_UNAVAILABLE')
 }
 
-export function createPlayHost(ctx, {
+async function callController(name, controller, method, ...args) {
+  const operation = controller?.[method]
+  if (typeof operation !== 'function') throw missing(name)
+  try {
+    return await operation.apply(controller, args)
+  } catch (error) {
+    if (error?.status !== undefined) throw error
+    throw mapHostError(error)
+  }
+}
+
+export function createPlayHost({
+  sessionController,
+  workspaceController,
+  directoryPickerController,
+  sessions,
+} = {}, {
   selections,
   characters,
   importContexts,
   onSelectionCopied,
 } = {}) {
-  const api = () => ctx.get('apiProxy')
-  const clientWorkspaces = () => ctx.get('workspaces')
-
   return {
     async createWorkspace({ path }) {
-      const proxy = api()
-      if (typeof proxy?.workspace?.create === 'function') {
-        const value = await callHost(payload => proxy.workspace.create(payload), { path })
-        return {
-          workspaceId: value?.workspace?.workspaceId ?? value?.workspaceId ?? null,
-          workspace: value?.workspace ?? value,
-          created: value?.created,
-        }
+      const value = await callController('workspace.create', workspaceController, 'create', { path })
+      return {
+        workspaceId: value?.workspace?.workspaceId ?? null,
+        workspace: value?.workspace ?? null,
+        created: value?.created,
       }
-      const workspaces = clientWorkspaces()
-      if (typeof workspaces?.create === 'function') {
-        const workspace = await workspaces.create({ path })
-        return {
-          workspaceId: workspace?.workspaceId ?? workspace?.id ?? null,
-          workspace,
-        }
-      }
-      return { workspaceId: null }
     },
 
     async createDirectory({ path, name }) {
-      const proxy = api()
-      if (typeof proxy?.host?.createDirectory === 'function') {
-        const value = await callHost(payload => proxy.host.createDirectory(payload), { path, name })
-        return value?.path ?? value
-      }
-      const workspaces = clientWorkspaces()
-      if (typeof workspaces?.createDirectory === 'function') {
-        return workspaces.createDirectory(path, name)
-      }
-      throw missing('createDirectory')
+      return callController('directoryPicker.createDirectory', directoryPickerController, 'createDirectory', path, name)
     },
 
     async createSession({ workspaceId, cwd, title }) {
-      const proxy = api()
-      if (typeof proxy?.sessions?.create !== 'function') throw missing('session.create')
       const payload = workspaceId ? { workspaceId } : { cwd }
-      const value = await callHost(request => proxy.sessions.create(request), payload)
+      const value = await callController('session.create', sessionController, 'create', payload)
       const sessionId = value?.sessionId
       if (typeof sessionId !== 'string' || sessionId === '') throw missing('session.create')
-      if (typeof title === 'string' && title !== '' && typeof proxy.sessions.rename === 'function') {
+      if (typeof title === 'string' && title !== '' && typeof sessionController?.rename === 'function') {
         try {
-          await callHost(request => proxy.sessions.rename(request), { sessionId, title })
+          await sessionController.rename({ sessionId, title })
         } catch {
           // Title is best-effort; the session itself is already created.
         }
       }
-      if (workspaceId && typeof proxy.workspace?.insertSessionBefore === 'function') {
-        await callHost(request => proxy.workspace.insertSessionBefore(request), { workspaceId, sessionId })
+      if (workspaceId && typeof workspaceController?.insertSessionBefore === 'function') {
+        await callController('workspace.insertSessionBefore', workspaceController, 'insertSessionBefore', { workspaceId, sessionId })
       }
       return { sessionId }
     },
 
     async forkSession({ sessionId, atSeq }) {
-      const proxy = api()
-      if (typeof proxy?.sessions?.fork !== 'function') throw missing('session.fork')
       try {
-        const value = await callHost(request => proxy.sessions.fork(request), { sessionId, atSeq })
+        const value = await callController('session.fork', sessionController, 'fork', { sessionId, atSeq })
         return { sessionId: value.sessionId }
       } catch (error) {
         throw mapHostError(error)
@@ -87,28 +76,32 @@ export function createPlayHost(ctx, {
     },
 
     async promptSession({ sessionId, text, mode = 'queue' }) {
-      const proxy = api()
-      if (typeof proxy?.sessions?.prompt !== 'function') throw missing('session.prompt')
-      await callHost(request => proxy.sessions.prompt(request), {
+      await callController('session.prompt', sessionController, 'prompt', {
+        requestId: randomUUID(),
         sessionId,
         mode,
         content: [{ type: 'text', text }],
-      })
+      }, new AbortController().signal)
       return { accepted: true }
     },
 
     async history({ sessionId, beforeSeq, maxMessages }) {
-      const proxy = api()
-      if (typeof proxy?.sessions?.history !== 'function') throw missing('session.history')
-      return callHost(request => proxy.sessions.history(request), {
-        sessionId,
+      const inspection = await callController('session.inspect', sessionController, 'inspect', sessionId)
+      const throughSeq = inspection?.events?.at(-1)?.seq ?? -1
+      const page = await callController('session.page', sessionController, 'page', {
+        address: { kind: 'session', sessionId },
+        throughSeq,
         ...(beforeSeq === undefined ? {} : { beforeSeq }),
         ...(maxMessages === undefined ? {} : { maxMessages }),
-      })
+      }, new AbortController().signal)
+      return {
+        events: page?.records ?? [],
+        hasMore: page?.hasMore === true,
+      }
     },
 
     async deriveMessages({ sessionId }) {
-      const session = ctx.get('sessions')?.get?.(sessionId)
+      const session = sessions?.get?.(sessionId)
       if (typeof session?.deriveMessages === 'function') return session.deriveMessages()
       return null
     },
@@ -155,5 +148,3 @@ export function createPlayHost(ctx, {
     },
   }
 }
-
-export { rpcRequest, unwrapRpc } from '../../play/src/host.js'

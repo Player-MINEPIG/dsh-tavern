@@ -294,40 +294,82 @@ test('GET /focus is derived sessionId only; POST /focus is 405', async () => {
   }
 })
 
-test('createPlayHost maps session.fork RPC fork-unavailable to 409 and prompts with queue', async () => {
+test('createPlayHost maps DSH controllers to the Tavern Host port', async () => {
   const recorded = []
-  const ctx = {
-    get(name) {
-      if (name !== 'apiProxy') return undefined
-      return {
-        sessions: {
-          async fork(request) {
-            recorded.push(['fork', request.payload])
-            return {
-              rpcId: request.rpcId,
-              result: {
-                ok: false,
-                error: { code: 'fork-unavailable', message: 'open turn', details: { sessionId: request.payload.sessionId } },
-              },
-            }
-          },
-          async prompt(request) {
-            recorded.push(['prompt', request.payload])
-            return { rpcId: request.rpcId, result: { ok: true, value: { accepted: true } } }
-          },
-        },
-      }
+  const host = createPlayHost({
+    sessionController: {
+      async create(request) { recorded.push(['create', request]); return { sessionId: 's-new' } },
+      async rename(request) { recorded.push(['rename', request]); return { title: request.title, seq: 0 } },
+      async fork(request) {
+        recorded.push(['fork', request])
+        const error = new Error('open turn')
+        error.code = 'session/fork-unavailable'
+        throw error
+      },
+      async prompt(request, signal) {
+        recorded.push(['prompt', request, signal])
+        return { accepted: true }
+      },
+      async inspect(sessionId) {
+        recorded.push(['inspect', sessionId])
+        return { events: [{ type: 'turn/end', seq: 4, data: {} }] }
+      },
+      async page(request, signal) {
+        recorded.push(['page', request, signal])
+        return { records: [{ type: 'event', event: { type: 'turn/end', seq: 4, data: {} } }], hasMore: false }
+      },
     },
-  }
-  const host = createPlayHost(ctx)
+    workspaceController: {
+      async create(request) {
+        recorded.push(['workspace.create', request])
+        return { workspace: { workspaceId: 'ws-new', path: request.path }, created: true }
+      },
+      async insertSessionBefore(request) {
+        recorded.push(['workspace.insertSessionBefore', request])
+        return { workspace: { workspaceId: request.workspaceId } }
+      },
+    },
+    directoryPickerController: {
+      async createDirectory(path, name) {
+        recorded.push(['directory.create', path, name])
+        return `${path}/${name}`
+      },
+    },
+  })
+
+  assert.deepEqual(await host.createWorkspace({ path: '/play' }), {
+    workspaceId: 'ws-new',
+    workspace: { workspaceId: 'ws-new', path: '/play' },
+    created: true,
+  })
+  assert.equal(await host.createDirectory({ path: '/play', name: 'Alice' }), '/play/Alice')
+  assert.deepEqual(await host.createSession({ workspaceId: 'ws-new', title: 'Alice 1' }), { sessionId: 's-new' })
   await assert.rejects(() => host.forkSession({ sessionId: 's1', atSeq: 3 }), error => {
     assert.equal(error.status, 409)
     assert.equal(error.code, 'PLAY_FORK_UNAVAILABLE')
     return true
   })
   await host.promptSession({ sessionId: 's1', text: 'next line', mode: 'queue' })
-  assert.equal(recorded[1][1].mode, 'queue')
-  assert.deepEqual(recorded[1][1].content, [{ type: 'text', text: 'next line' }])
+  assert.deepEqual(await host.history({ sessionId: 's1', maxMessages: 10 }), {
+    events: [{ type: 'event', event: { type: 'turn/end', seq: 4, data: {} } }],
+    hasMore: false,
+  })
+  assert.deepEqual(recorded.find(call => call[0] === 'create'), ['create', { workspaceId: 'ws-new' }])
+  assert.deepEqual(recorded.find(call => call[0] === 'rename'), ['rename', { sessionId: 's-new', title: 'Alice 1' }])
+  assert.deepEqual(recorded.find(call => call[0] === 'workspace.insertSessionBefore'), [
+    'workspace.insertSessionBefore',
+    { workspaceId: 'ws-new', sessionId: 's-new' },
+  ])
+  const prompt = recorded.find(call => call[0] === 'prompt')
+  assert.match(prompt[1].requestId, /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i)
+  assert.equal(prompt[1].mode, 'queue')
+  assert.deepEqual(prompt[1].content, [{ type: 'text', text: 'next line' }])
+  assert.equal(prompt[2].aborted, false)
+  assert.deepEqual(recorded.find(call => call[0] === 'page')[1], {
+    address: { kind: 'session', sessionId: 's1' },
+    throughSeq: 4,
+    maxMessages: 10,
+  })
 })
 
 test('branch reports explicit copy failure after fork', async () => {

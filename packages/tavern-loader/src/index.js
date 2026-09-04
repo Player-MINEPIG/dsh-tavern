@@ -64,7 +64,12 @@ import {
 import { prepareStorageDir } from './storage-location.js'
 
 export const name = PLUGIN_ID
-export const inject = ['systemPrompt']
+export const inject = [
+  'systemPrompt',
+  'sessionController',
+  'workspaceController',
+  'directoryPickerController',
+]
 
 function migrateCharacterSelections(characterStore, selections) {
   for (const [sessionId, legacy] of Object.entries(characterStore.state.selectedBySessionId)) {
@@ -308,7 +313,12 @@ export function apply(ctx, config = {}) {
     }
   }
   let importContexts = null
-  const playHost = createPlayHost(ctx, {
+  const playHost = createPlayHost({
+    sessionController: ctx.get('sessionController'),
+    workspaceController: ctx.get('workspaceController'),
+    directoryPickerController: ctx.get('directoryPickerController'),
+    sessions: ctx.get('sessions'),
+  }, {
     selections,
     characters: characterStore,
     importContexts: () => importContexts,
