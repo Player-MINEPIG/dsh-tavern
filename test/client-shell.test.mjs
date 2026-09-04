@@ -19,6 +19,21 @@ function assertOrdered(source, labels) {
   }
 }
 
+test('client manifest injects every DSH 0.1.2 contract owner it consumes', () => {
+  const manifest = JSON.parse(readFileSync(new URL('../package.json', import.meta.url), 'utf8'))
+  assert.deepEqual(manifest.dsh.client.inject, [
+    '@deepseek-ai/dsh-api-session-controller',
+    '@deepseek-ai/dsh-api-workspace-controller',
+    '@deepseek-ai/dsh-client-ui-renderer',
+    '@deepseek-ai/dsh-client-ui-session',
+    '@deepseek-ai/dsh-client-ui-workspace',
+    '@deepseek-ai/dsh-client-ui-conversation',
+    '@deepseek-ai/dsh-client-ui-layout',
+    '@deepseek-ai/dsh-client-ui-sidebar',
+    '@deepseek-ai/dsh-client-ui-chat',
+  ])
+})
+
 test('one Tavern launcher exposes stable resource surfaces', () => {
   assert.deepEqual(TAVERN_MENU_ITEMS.map(item => item.id), [
     'preset',
@@ -184,7 +199,8 @@ test('only the client composition root owns the Tavern shell overlay', () => {
   assert.match(root, /WorldBookPanel/)
   assert.match(root, /UserPanel/)
   assert.match(root, /SessionTemplatePanel/)
-  assert.match(root, /ctx\.workspaces\.connectWorkspace/)
+  assert.match(root, /ctx\.uiWorkspace\.connectWorkspace/)
+  assert.doesNotMatch(root, /ctx\.workspaces\.connectWorkspace/)
   assert.match(root, /ctx\.sessions\.open/)
   assert.match(root, /session-configurations\/preview/)
   assert.match(root, /session-configurations\/apply/)

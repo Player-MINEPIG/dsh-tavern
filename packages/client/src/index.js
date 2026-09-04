@@ -1323,7 +1323,7 @@ export function apply(ctx) {
         workspaceId,
         source,
         preview: selectedSource => sessionConfigurationRequest('/session-configurations/preview', { source: selectedSource }),
-        connectWorkspace: id => ctx.workspaces.connectWorkspace(id),
+        connectWorkspace: id => ctx.uiWorkspace.connectWorkspace(id),
         applySelection: (targetSessionId, selectedSource) => sessionConfigurationRequest('/session-configurations/apply', {
           targetSessionId,
           source: selectedSource,
