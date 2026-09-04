@@ -1,5 +1,6 @@
 import { createHash } from 'node:crypto'
 import { PROFILE_SECTION } from '../../identity.js'
+import { snapshotSessionEvents } from '../../session-events.js'
 
 const CALL_CONFIG_FIELDS = ['temperature', 'maxTokens', 'reasoningEffort', 'stop']
 const MAX_DIAGNOSTICS = 64
@@ -137,7 +138,7 @@ function activation(value) {
 }
 
 function latestHeaderEvent(session) {
-  const events = Array.isArray(session?.events) ? session.events : []
+  const events = snapshotSessionEvents(session)
   return events.findLast(event => event?.type === 'request/header') ?? null
 }
 

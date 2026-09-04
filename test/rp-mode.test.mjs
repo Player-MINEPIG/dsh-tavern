@@ -21,13 +21,17 @@ import {
 } from '../packages/tavern-loader/src/rp-mode.js'
 
 function createAgent(id, events = [], header = {}) {
+  const log = [...events]
   const session = {
     id,
     header: { ...header, id },
-    events,
+    inheritedEventCount: 0,
+    get seq() { return log.length },
+    snapshotEvents(from = 0, toExclusive = log.length) { return log.slice(from, toExclusive) },
+    ownEvents() { return log.slice(this.inheritedEventCount) },
     append(type, data) {
-      const event = { type, seq: this.events.length, time: 1, data }
-      this.events.push(event)
+      const event = { type, seq: log.length, time: 1, data }
+      log.push(event)
       return event
     },
   }
@@ -102,12 +106,12 @@ test('idle RP entry switches sandbox to read-only and leave restores the previou
     assert.equal(controller.set(agent, true), 'committed')
     assert.equal(controller.stored(agent.id).active, true)
     assert.equal(controller.stored(agent.id).sandboxBefore, 'workspace-write')
-    assert.equal(foldSandboxMode(agent.session.events), 'read-only')
+    assert.equal(foldSandboxMode(agent.session.snapshotEvents()), 'read-only')
     assert.equal(controller.isActive(agent), true)
     assert.equal(controller.set(agent, false, { followSuppressed: true }), 'committed')
     assert.equal(controller.stored(agent.id).active, false)
     assert.equal(controller.stored(agent.id).followSuppressed, true)
-    assert.equal(foldSandboxMode(agent.session.events), 'workspace-write')
+    assert.equal(foldSandboxMode(agent.session.snapshotEvents()), 'workspace-write')
   } finally {
     rmSync(directory, { recursive: true, force: true })
   }
@@ -121,9 +125,9 @@ test('RP pins the file sandbox to read-only if the chat permission chip changes'
     controller.set(agent, true)
     agent.session.append('sandbox/mode', { mode: 'danger-full-access' })
     assert.equal(controller.enforceReadOnly(agent.session), true)
-    assert.equal(foldSandboxMode(agent.session.events), 'read-only')
+    assert.equal(foldSandboxMode(agent.session.snapshotEvents()), 'read-only')
     controller.set(agent, false)
-    assert.equal(foldSandboxMode(agent.session.events), 'workspace-write')
+    assert.equal(foldSandboxMode(agent.session.snapshotEvents()), 'workspace-write')
   } finally {
     rmSync(directory, { recursive: true, force: true })
   }
@@ -139,7 +143,7 @@ test('open-turn RP selection stays pending until the next accepted pre-step', ()
     assert.equal(controller.isActive(agent), true)
     controller.onBoundary(agent)
     assert.equal(controller.stored(agent.id).active, true)
-    assert.equal(foldSandboxMode(agent.session.events), 'read-only')
+    assert.equal(foldSandboxMode(agent.session.snapshotEvents()), 'read-only')
   } finally {
     rmSync(directory, { recursive: true, force: true })
   }
@@ -156,7 +160,7 @@ test('binding a character follows into RP and unbinding always leaves', () => {
     assert.equal(controller.stored(agent.id).source, 'character-follow')
     controller.followCharacterChange(agent.id, { previousId: 'card-a', nextId: null })
     assert.equal(controller.stored(agent.id).active, false)
-    assert.equal(foldSandboxMode(agent.session.events), 'workspace-write')
+    assert.equal(foldSandboxMode(agent.session.snapshotEvents()), 'workspace-write')
   } finally {
     rmSync(directory, { recursive: true, force: true })
   }
@@ -175,7 +179,7 @@ test('a character selection copied after session start still enters RP and pins 
 
     assert.equal(controller.stored(agent.id).active, true)
     assert.equal(controller.stored(agent.id).source, 'character-follow')
-    assert.equal(foldSandboxMode(agent.session.events), 'read-only')
+    assert.equal(foldSandboxMode(agent.session.snapshotEvents()), 'read-only')
   } finally {
     rmSync(directory, { recursive: true, force: true })
   }
@@ -195,7 +199,7 @@ test('an active RP selection copied after session start still commits the read-o
 
     assert.equal(controller.stored(agent.id).active, true)
     assert.equal(controller.stored(agent.id).sandboxBefore, 'workspace-write')
-    assert.equal(foldSandboxMode(agent.session.events), 'read-only')
+    assert.equal(foldSandboxMode(agent.session.snapshotEvents()), 'read-only')
   } finally {
     rmSync(directory, { recursive: true, force: true })
   }
@@ -370,7 +374,7 @@ test('RP lock applies to subagents while still allowing the parent to spawn them
     assert.equal(cancelled.length, 1)
     controller.onSessionStart(child)
     assert.equal(controller.stored('child').active, true)
-    assert.equal(foldSandboxMode(child.session.events), 'read-only')
+    assert.equal(foldSandboxMode(child.session.snapshotEvents()), 'read-only')
   } finally {
     rmSync(directory, { recursive: true, force: true })
   }

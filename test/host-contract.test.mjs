@@ -169,10 +169,13 @@ test('Host traces the exact assembled snapshot even if selection changes before 
     effect: () => {},
     logger: { info: () => {} },
   }
+  const sessionEvents = []
   const session = {
     id: 'session-traced',
     header: {},
-    events: [],
+    get seq() { return sessionEvents.length },
+    snapshotEvents: (from = 0, toExclusive = sessionEvents.length) => sessionEvents.slice(from, toExclusive),
+    ownEvents: () => [...sessionEvents],
     deriveMessages: () => [],
     requestHeader: () => undefined,
   }
@@ -205,7 +208,7 @@ test('Host traces the exact assembled snapshot even if selection changes before 
     assert.equal(trace.step, 1)
     assert.equal(trace.resources.preset.id, assembled.id)
     assert.equal(trace.assembly.callConfig.temperature, 0.2)
-    assert.equal(session.events.length, 0)
+    assert.equal(session.seq, 0)
   } finally {
     rmSync(directory, { recursive: true, force: true })
   }

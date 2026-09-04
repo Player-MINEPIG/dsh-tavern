@@ -1,5 +1,6 @@
 import { resolveRpReadTarget } from './rp-secure-path.js'
 import { API_V1 } from '../../identity.js'
+import { snapshotSessionEvents } from '../../session-events.js'
 
 const RP_SOURCES = new Set(['command', 'character-follow'])
 const SANDBOX_MODES = new Set(['read-only', 'workspace-write', 'danger-full-access'])
@@ -275,7 +276,7 @@ export class RpModeController {
   }
 
   currentSandbox(session) {
-    return foldSandboxMode(session?.events) ?? this.sandboxDefault()
+    return foldSandboxMode(snapshotSessionEvents(session)) ?? this.sandboxDefault()
   }
 
   applySandbox(session, { active, previous }) {
@@ -355,7 +356,7 @@ export class RpModeController {
       this.pendingIntents.delete(agent.session)
       return 'cancelled'
     }
-    if (agent?.session !== undefined && hasOpenTurn(agent.session.events)) {
+    if (agent?.session !== undefined && hasOpenTurn(snapshotSessionEvents(agent.session))) {
       this.pendingIntents.set(agent.session, { rp: next })
       return 'queued'
     }

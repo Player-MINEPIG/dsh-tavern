@@ -1,3 +1,5 @@
+import { ownSessionEvents } from '../../session-events.js'
+
 const DEFAULT_MAX_SCAN_CHARACTERS = 64 * 1024
 const DEFAULT_MAX_SCAN_MESSAGES = 128
 const DEFAULT_MAX_QUEUED_CHARACTERS = 256 * 1024
@@ -114,10 +116,8 @@ export class PendingInputProjection {
     const existing = this.sessions.get(session)
     if (existing !== undefined) return existing
     const state = projectionState()
-    const seedLength = Number.isSafeInteger(session.header?.seedLength) ? session.header.seedLength : 0
-    const events = Array.isArray(session.events) ? session.events : []
-    for (let index = seedLength; index < events.length; index += 1) {
-      const event = events[index]
+    const events = ownSessionEvents(session)
+    for (const event of events) {
       if (event === beforeEvent || (Number.isSafeInteger(beforeEvent?.seq) && event?.seq >= beforeEvent.seq)) break
       this.#apply(state, event, false)
     }

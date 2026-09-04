@@ -93,7 +93,9 @@ function session(id, headerEvent) {
   const events = headerEvent === undefined ? [] : [headerEvent]
   return {
     id,
-    events,
+    get seq() { return events.length },
+    snapshotEvents: (from = 0, toExclusive = events.length) => events.slice(from, toExclusive),
+    ownEvents: () => [...events],
     requestHeader: () => events.findLast(event => event.type === 'request/header')?.data.header,
     append: () => { throw new Error('Tavern Trace must never append a Session event') },
   }
@@ -367,7 +369,7 @@ test('Trace reuses the latest authoritative header without creating model histor
       },
     }
     const liveSession = session('session-reused', headerEvent)
-    const before = structuredClone(liveSession.events)
+    const before = structuredClone(liveSession.snapshotEvents())
     const agent = { id: 'session-reused', session: liveSession }
     recorder.begin({ agent, turn: 2, step: 1, snapshot: model })
     recorder.observeSessionEvent(liveSession, {
@@ -380,7 +382,7 @@ test('Trace reuses the latest authoritative header without creating model histor
     const record = store.list('session-reused')[0]
     assert.equal(record.authority.headerEventSeq, 2)
     assert.equal(record.authority.headerReused, true)
-    assert.deepEqual(liveSession.events, before)
+    assert.deepEqual(liveSession.snapshotEvents(), before)
     assert.equal(record.entersModelHistory, false)
   } finally {
     rmSync(directory, { recursive: true, force: true })

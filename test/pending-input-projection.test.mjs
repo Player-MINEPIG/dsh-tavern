@@ -9,14 +9,26 @@ function message(id, text) {
   return { id, role: 'user', source: { kind: 'user' }, content: [{ type: 'text', text }] }
 }
 
-function session(id, durable = []) {
-  return { id, header: {}, events: [], deriveMessages: () => durable }
+function session(id, durable = [], inheritedEvents = []) {
+  const log = [...inheritedEvents]
+  return {
+    id,
+    header: {},
+    inheritedEventCount: log.length,
+    get seq() { return log.length },
+    snapshotEvents(from = 0, toExclusive = log.length) { return log.slice(from, toExclusive) },
+    ownEvents() { return log.slice(this.inheritedEventCount) },
+    append(type, data) {
+      const event = { seq: log.length, type, data }
+      log.push(event)
+      return event
+    },
+    deriveMessages: () => durable,
+  }
 }
 
 function append(sessionValue, type, data) {
-  const event = { seq: sessionValue.events.length, type, data }
-  sessionValue.events.push(event)
-  return event
+  return sessionValue.append(type, data)
 }
 
 test('projection reconstructs public splices, distinguishes cancellation from claim, and consumes once', () => {
@@ -82,6 +94,29 @@ test('projection combines next-step steering before the claimed next-turn messag
   assert.equal(activation.metadata.claimEventSeqs.length, 2)
 })
 
+test('projection reconstructs only events owned by a seeded child session', () => {
+  const inherited = [{
+    seq: 0,
+    type: 'agent/inbox/spliced',
+    data: { target: 'next-turn', start: 0, inserted: [message('parent-input', 'parent secret')] },
+  }]
+  const projection = new PendingInputProjection()
+  const value = session('seeded-child', [], inherited)
+  append(value, 'agent/inbox/spliced', {
+    target: 'next-turn', start: 0, inserted: [message('child-input', 'child scene')],
+  })
+  projection.ensureSession(value)
+  const claim = append(value, 'agent/inbox/spliced', {
+    target: 'next-turn', start: 0, removedCount: 1, inserted: [],
+  })
+  projection.observeSessionEvent(value, claim)
+
+  const activation = projection.activationContext({ id: value.id, session: value })
+  assert.equal(activation.text, 'child scene')
+  assert.equal(activation.text.includes('parent secret'), false)
+  assert.deepEqual(activation.metadata.claimEventSeqs, [claim.seq])
+})
+
 test('projection keeps sessions isolated and enforces message and character scan limits', () => {
   const projection = new PendingInputProjection({ maxScanMessages: 2, maxScanCharacters: 8 })
   const first = session('first')
@@ -143,7 +178,7 @@ test('a single first agent step matches claimed input before profile assembly an
     const context = { agent }
     const profile = sections[0].text(context)
     assert.match(profile, /EARLY_LORE/)
-    assert.equal(value.events.some(event => event.type === 'user/message'), false)
+    assert.equal(value.snapshotEvents().some(event => event.type === 'user/message'), false)
     await listeners.get('agent/request')({ agent, turn: 1, step: 1 }, async () => ({ provider: 'test', model: 'model' }))
 
     const trace = store.traceStore.list(agent.id)[0]
