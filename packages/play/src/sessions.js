@@ -86,10 +86,19 @@ export function formatPlaySessionTitle(characterName, now = new Date()) {
 
 async function readAllHistory(host, sessionId) {
   const collected = []
+  let throughSeq
   let beforeSeq
   for (;;) {
-    const result = await host.history({ sessionId, beforeSeq })
+    const result = await host.history({ sessionId, throughSeq, beforeSeq })
     const events = result?.events ?? []
+    if (throughSeq === undefined) {
+      if (!Number.isSafeInteger(result?.throughSeq) || result.throughSeq < -1) {
+        throw httpError(502, 'Host history page has no valid snapshot sequence', 'PLAY_HISTORY_SNAPSHOT_INVALID')
+      }
+      throughSeq = result.throughSeq
+    } else if (result?.throughSeq !== throughSeq) {
+      throw httpError(502, 'Host history snapshot sequence changed during pagination', 'PLAY_HISTORY_SNAPSHOT_CHANGED')
+    }
     collected.unshift(...events)
     if (result?.hasMore !== true) break
     if (events.length === 0) {

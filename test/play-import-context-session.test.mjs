@@ -44,7 +44,7 @@ test('session creation validates import context before create and binds it to th
 test('empty session import context can be read, replaced and unbound', async () => {
   let binding = null
   const host = {
-    async history() { return { events: [], hasMore: false } },
+    async history() { return { events: [], hasMore: false, throughSeq: -1 } },
     async deriveMessages() { return [] },
     getImportContextBinding() { return binding },
     prepareImportContext(reference) { return { path: reference.path, hash: `hash-${reference.path}`, qaCount: 1 } },
@@ -70,7 +70,7 @@ test('import context mutation locks after a message, open turn or consumption', 
   let events = [{ event: { type: 'user/message', data: { id: 'u', role: 'user', content: [] }, seq: 1 } }]
   let binding = null
   const host = {
-    async history() { return { events, hasMore: false } },
+    async history() { return { events, hasMore: false, throughSeq: events.at(-1)?.event?.seq ?? -1 } },
     async deriveMessages() { return events.some(item => item.event.type === 'user/message') ? [{ role: 'user' }] : [] },
     getImportContextBinding() { return binding },
     prepareImportContext() { return { path: 'context.json', hash: 'hash' } },

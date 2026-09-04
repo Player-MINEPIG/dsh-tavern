@@ -56,17 +56,20 @@ const messagesUrl = `${API_V2}/sessions/session-history/messages`
 
 test('GET messages reads all history pages beyond the old 32-page limit in order', async () => {
   const calls = []
-  const fixture = makeHandler(({ beforeSeq }) => {
-    calls.push(beforeSeq)
+  const fixture = makeHandler(({ throughSeq, beforeSeq }) => {
+    calls.push([throughSeq, beforeSeq])
     const seq = beforeSeq === undefined ? 40 : beforeSeq - 1
-    return { events: [messageEvent(seq)], hasMore: seq > 1 }
+    return { events: [messageEvent(seq)], hasMore: seq > 1, throughSeq: throughSeq ?? 40 }
   })
   try {
     const result = await invoke(fixture.handler, { url: messagesUrl })
     assert.equal(result.status, 200)
     assert.equal(result.body.messages.length, 40)
     assert.deepEqual(result.body.messages.map(message => message.seq), Array.from({ length: 40 }, (_, index) => index + 1))
-    assert.deepEqual(calls, [undefined, ...Array.from({ length: 39 }, (_, index) => 40 - index)])
+    assert.deepEqual(calls, [
+      [undefined, undefined],
+      ...Array.from({ length: 39 }, (_, index) => [40, 40 - index]),
+    ])
   } finally {
     fixture.cleanup()
   }
@@ -76,7 +79,7 @@ test('GET messages stops normally when Host returns hasMore=false', async () => 
   let calls = 0
   const fixture = makeHandler(() => {
     calls += 1
-    return { events: [messageEvent(1)], hasMore: false }
+    return { events: [messageEvent(1)], hasMore: false, throughSeq: 1 }
   })
   try {
     const result = await invoke(fixture.handler, { url: messagesUrl })
@@ -89,8 +92,8 @@ test('GET messages stops normally when Host returns hasMore=false', async () => 
 })
 
 for (const [name, history] of [
-  ['empty page', () => ({ events: [], hasMore: true })],
-  ['non-integer oldest seq', () => ({ events: [messageEvent('oldest')], hasMore: true })],
+  ['empty page', () => ({ events: [], hasMore: true, throughSeq: 1 })],
+  ['non-integer oldest seq', () => ({ events: [messageEvent('oldest')], hasMore: true, throughSeq: 1 })],
 ]) {
   test(`GET messages rejects Host ${name} with an explicit cursor-stalled error`, async () => {
     const fixture = makeHandler(history)
@@ -106,14 +109,25 @@ for (const [name, history] of [
 }
 
 test('GET messages rejects a repeated beforeSeq cursor instead of looping or returning partial history', async () => {
-  const fixture = makeHandler(({ beforeSeq }) => beforeSeq === undefined
-    ? { events: [messageEvent(2)], hasMore: true }
-    : { events: [messageEvent(2)], hasMore: true })
+  const fixture = makeHandler(({ throughSeq, beforeSeq }) => beforeSeq === undefined
+    ? { events: [messageEvent(2)], hasMore: true, throughSeq: 2 }
+    : { events: [messageEvent(2)], hasMore: true, throughSeq })
   try {
     const result = await invoke(fixture.handler, { url: messagesUrl })
     assert.equal(result.status, 502)
     assert.equal(result.body.ok, false)
     assert.equal(result.body.code, 'PLAY_HISTORY_CURSOR_STALLED')
+  } finally {
+    fixture.cleanup()
+  }
+})
+
+test('GET messages rejects a missing history snapshot sequence', async () => {
+  const fixture = makeHandler(() => ({ events: [], hasMore: false }))
+  try {
+    const result = await invoke(fixture.handler, { url: messagesUrl })
+    assert.equal(result.status, 502)
+    assert.equal(result.body.code, 'PLAY_HISTORY_SNAPSHOT_INVALID')
   } finally {
     fixture.cleanup()
   }

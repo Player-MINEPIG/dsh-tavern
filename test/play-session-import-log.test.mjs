@@ -34,7 +34,7 @@ function fixture({ ids = [], overrides = {} } = {}) {
     async bindImportContext(sessionId, prepared) { calls.push(['bind', sessionId, prepared]); binding = { path: prepared.path, state: 'pending' }; return binding },
     async unbindImportContext(sessionId) { calls.push(['unbind', sessionId]); binding = null },
     async getImportContextBinding() { return binding },
-    async history() { return { events: [], hasMore: false } },
+    async history() { return { events: [], hasMore: false, throughSeq: -1 } },
     async deriveMessages() { return [] },
     async copySelection(source, child) { calls.push(['selection', source, child]) },
     async copyImportContextLineage(source, child, atEventId) { calls.push(['lineage', source, child, atEventId]) },
@@ -148,7 +148,7 @@ test('import PUT/DELETE log mutations while GET stays quiet and lock failure is 
     assert.ok(entries.some(item => item.stage === 'unbind.committed' && item.sessionId === 's'))
     assertOneTerminal(entries)
   } finally { f.cleanup() }
-  const locked = fixture({ ids: ['locked'], overrides: { async history() { return { events: [{ type: 'user/message', seq: 1, data: { role: 'user' } }], hasMore: false } }, async deriveMessages() { return [{ role: 'user' }] } } })
+  const locked = fixture({ ids: ['locked'], overrides: { async history() { return { events: [{ type: 'user/message', seq: 1, data: { role: 'user' } }], hasMore: false, throughSeq: 1 } }, async deriveMessages() { return [{ role: 'user' }] } } })
   try {
     const result = await invoke(locked.handler, { method: 'PUT', url: API_V2 + '/sessions/s/import-context', body: { reference: { path: 'card/run/import-context.json' } } })
     assert.equal(result.status, 409)

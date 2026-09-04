@@ -85,9 +85,10 @@ export function createPlayHost({
       return { accepted: true }
     },
 
-    async history({ sessionId, beforeSeq, maxMessages }) {
-      const inspection = await callController('session.inspect', sessionController, 'inspect', sessionId)
-      const throughSeq = inspection?.events?.at(-1)?.seq ?? -1
+    async history({ sessionId, throughSeq: requestedThroughSeq, beforeSeq, maxMessages }) {
+      const throughSeq = requestedThroughSeq === undefined
+        ? (await callController('session.inspect', sessionController, 'inspect', sessionId))?.events?.at(-1)?.seq ?? -1
+        : requestedThroughSeq
       const page = await callController('session.page', sessionController, 'page', {
         address: { kind: 'session', sessionId },
         throughSeq,
@@ -97,6 +98,7 @@ export function createPlayHost({
       return {
         events: page?.records ?? [],
         hasMore: page?.hasMore === true,
+        throughSeq,
       }
     },
 

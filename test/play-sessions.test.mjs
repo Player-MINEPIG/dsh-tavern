@@ -71,6 +71,7 @@ function mockHost({ characterName = 'Alice' } = {}) {
           { type: 'turn/end', seq: 4, data: {} },
         ],
         hasMore: false,
+        throughSeq: 4,
       }
     },
     async deriveMessages() {
@@ -239,6 +240,71 @@ test('GET messages returns Message.id plus seq and incompleteTurn', async () => 
   }
 })
 
+test('GET messages pins one Host history snapshot across every page', async () => {
+  const historyCalls = []
+  const handler = createPlayApiHandler({
+    chromeStore: new ChromeStore(mkdtempSync(join(tmpdir(), 'dsh-tavern-history-cut-chrome-'))),
+    workspaceStore: {},
+    host: {
+      async history(request) {
+        historyCalls.push(request)
+        if (request.beforeSeq === undefined) {
+          return {
+            events: [
+              { type: 'event', event: { type: 'assistant/message', seq: 3, data: { id: 'm2', role: 'assistant', content: [] } } },
+              { type: 'event', event: { type: 'turn/end', seq: 4, data: {} } },
+            ],
+            hasMore: true,
+            throughSeq: 4,
+          }
+        }
+        return {
+          events: [
+            { type: 'event', event: { type: 'user/message', seq: 1, data: { id: 'm1', role: 'user', content: [] } } },
+            { type: 'chunks', event: { type: 'chunkrow/v1', seq: 2, time: 1, data: { fragments: ['a'] } } },
+          ],
+          hasMore: false,
+          throughSeq: request.throughSeq,
+        }
+      },
+      async deriveMessages() {
+        return [
+          { id: 'm1', role: 'user', content: [] },
+          { id: 'm2', role: 'assistant', content: [] },
+        ]
+      },
+    },
+  })
+
+  const listed = await invoke(handler, { url: `${API_V2}/sessions/session-root/messages` })
+  assert.equal(listed.status, 200)
+  assert.deepEqual(historyCalls, [
+    { sessionId: 'session-root', throughSeq: undefined, beforeSeq: undefined },
+    { sessionId: 'session-root', throughSeq: 4, beforeSeq: 3 },
+  ])
+  assert.deepEqual(listed.body.messages.map(message => [message.id, message.seq]), [['m1', 1], ['m2', 3]])
+})
+
+test('GET messages rejects a Host that changes its history snapshot cut', async () => {
+  let page = 0
+  const handler = createPlayApiHandler({
+    chromeStore: new ChromeStore(mkdtempSync(join(tmpdir(), 'dsh-tavern-history-change-chrome-'))),
+    workspaceStore: {},
+    host: {
+      async history() {
+        page += 1
+        return page === 1
+          ? { events: [{ type: 'turn/end', seq: 4, data: {} }], hasMore: true, throughSeq: 4 }
+          : { events: [{ type: 'turn/start', seq: 1, data: {} }], hasMore: false, throughSeq: 5 }
+      },
+    },
+  })
+
+  const result = await invoke(handler, { url: `${API_V2}/sessions/session-root/messages` })
+  assert.equal(result.status, 502)
+  assert.equal(result.body.code, 'PLAY_HISTORY_SNAPSHOT_CHANGED')
+})
+
 test('session import-context route exposes binding and rejects mutation after history', async () => {
   const fixture = await boundHandler()
   try {
@@ -353,6 +419,7 @@ test('createPlayHost maps DSH controllers to the Tavern Host port', async () => 
   assert.deepEqual(await host.history({ sessionId: 's1', maxMessages: 10 }), {
     events: [{ type: 'event', event: { type: 'turn/end', seq: 4, data: {} } }],
     hasMore: false,
+    throughSeq: 4,
   })
   assert.deepEqual(recorded.find(call => call[0] === 'create'), ['create', { workspaceId: 'ws-new' }])
   assert.deepEqual(recorded.find(call => call[0] === 'rename'), ['rename', { sessionId: 's-new', title: 'Alice 1' }])
@@ -397,6 +464,7 @@ test('GET /sessions messages preserves model role while projecting context prove
   try {
     fixture.host.history = async () => ({
       hasMore: false,
+      throughSeq: 4,
       events: [
         { type: 'user/message', seq: 1, data: { id: 'human', role: 'user', content: [], source: { kind: 'user' } } },
         { type: 'user/message', seq: 2, data: { id: 'report', role: 'user', content: [], source: { kind: 'subagent-report', form: 'relay', senderSessionId: 'child-a' } } },
