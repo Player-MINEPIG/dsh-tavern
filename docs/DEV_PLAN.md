@@ -1,8 +1,10 @@
 # DSH 0.1.2 Compatibility and Market Release Plan
 
-Status: implementation complete; automated and manual acceptance in progress. This document describes work on the
-`codex/dsh-0.1.2-compat` branch. It is not a statement about a published
-release until the implementation and acceptance gates below are complete.
+Status: implementation and local automated acceptance complete; exact
+GitHub-source installation and manual acceptance remain. This document
+describes work on the `codex/dsh-0.1.2-compat` branch. It is not a statement
+about a published release until the remaining acceptance gates below are
+complete.
 
 Target integration baseline: DSH `0.1.2-rc.1` at upstream tag
 `dsh-v0.1.2-rc.1`. The previous Tavern candidate commit `eb7e257` remains the
@@ -12,6 +14,19 @@ rollback point. This work intentionally does not provide a dual adapter for DSH
 Every numbered implementation stage is an independent Git commit. A stage is
 complete only when its focused tests pass. No release tag, publication, or
 remote push is implied by this plan.
+
+## Commit ledger
+
+| Stage | Commit | Persisted outcome |
+| --- | --- | --- |
+| Plan | `08e0405` | Recorded the DSH `0.1.2-rc.1` compatibility, release, rollback, and acceptance plan. |
+| Commit 1 | `c76ecbc` | Replaced the removed Host proxy with the Tavern-owned controller adapter and UUID request ids. |
+| Commit 2 | `79eebef` | Added cold-safe, stable-cut, unbounded message-aligned history pagination. |
+| Commit 3 | `5d512e8` | Centralized supported Session event snapshots and seeded-child ownership reads. |
+| Commit 4 | `01eb78a` | Declared the nine client contract owners and adopted public workspace navigation. |
+| Commit 5 | `47856ed` | Synchronized full-version documentation and added editable/rendered current architecture views. |
+| Commit 6 | `2566192` | Prepared `2.1.0-rc.2`, including locale-aware generated playthrough titles and package boundaries. |
+| Acceptance fix | `37f637b` | Made Tavern own the DSH UUID helper's complete runtime dependency chain, removing profile peer warnings. |
 
 ## P0: runtime compatibility
 
@@ -114,15 +129,21 @@ Rollback boundary: release metadata and Market assets only.
 
 ## Automated acceptance
 
-- Focused tests at every commit.
-- `npm run check`, `npm run verify:2.0`, and package dry-run after P0/P1.
-- Node 20 and Node 22 standalone Tavern tests; an actual DSH Host claim is made
-  only on a Node version supported by both projects.
-- Clean remove/install from the GitHub branch in an isolated `DSH_HOME`, DSH Web
-  boot, HTTP smoke, data-retention check, and browser checks that do not require
-  provider credentials.
-- Native/play mode, slot ownership, language switching, refresh, and uninstall
-  fallback in the target DSH runtime.
+- Complete: focused tests at every implementation commit.
+- Complete: `npm run check`, `npm run verify:2.0`, and package dry-run. The
+  518-test suite has 516 passes, two fixture-dependent skips, and no failures
+  on Node 20 and Node `22.23.1`; production audit reports zero vulnerabilities.
+- Complete: draw.io source validation, rendered export, and visual inspection.
+- Complete: local-source install, uninstall with backup, retained-data check,
+  clean reinstall, peer check, DSH Web boot, and HTTP smoke in the isolated
+  `DSH_HOME` using DSH `0.1.2-rc.1`. The installed package is
+  `2.1.0-rc.2` and the Tavern data directory remains outside the package.
+- Complete: browser smoke for the launcher, native/play navigation, existing
+  playthrough history, Tavern Trace registration, locale switching, refresh,
+  and generated `1周目` / `Playthrough 1` display. The test environment was
+  restored to Chinese afterward.
+- Pending until remote push is authorized: repeat the same clean install from
+  the exact GitHub branch/ref instead of the local source path.
 
 ## Manual acceptance
 

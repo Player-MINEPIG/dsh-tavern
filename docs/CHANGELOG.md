@@ -9,8 +9,10 @@
 - Added an editable draw.io current-architecture source and rendered preview, and synchronized current Chinese/English compatibility documentation while keeping older audit evidence historical.
 - Localized generated playthrough titles as `{number}周目` or `Playthrough {number}` at display/export time. Explicit user renames remain verbatim, and legacy generated Chinese titles are recognized without rewriting catalogs.
 - Ship the directly imported DSH UUID helper as Tavern's runtime dependency instead of requiring every profile to provide it as a peer; isolated-profile peer validation is clean after installation.
-- Passed `npm run check` and `npm run verify:2.0` with 515 passing tests and 2 fixture-dependent skips on Node `22.23.1`; the same 517-test suite passed on Node 20. Production dependency audit reports zero known vulnerabilities. The 161-file dry-run package includes both architecture artifacts and excludes tests, runtime data, and `docs/DEV_PLAN.md`.
-- Set the package, lockfile, and public status lines to `2.1.0-rc.2`. This remains a release candidate until isolated DSH installation and the documented real-provider/browser acceptance pass complete.
+- Passed `npm run check` and `npm run verify:2.0` with 516 passing tests and 2 fixture-dependent skips on Node `22.23.1`; the same 518-test suite passed on Node 20. Production dependency audit reports zero known vulnerabilities. The 161-file dry-run package includes both architecture artifacts and excludes tests, runtime data, and `docs/DEV_PLAN.md`.
+- Installed `2.1.0-rc.2` locally into an isolated DSH `0.1.2-rc.1` profile, removed it with a complete retained-data backup, confirmed the plugin route was absent while DSH still booted, and reinstalled it without peer issues. Host API and browser smoke then recovered the existing characters, playthrough, history, launcher, and Tavern Trace view.
+- Browser locale acceptance confirmed that legacy generated `1周目` titles become `Playthrough 1` after selecting Tavern English and refreshing, then return to Chinese without rewriting saved catalogs. Entering the existing playthrough kept the launcher visible. The isolated environment was restored to Chinese.
+- Set the package, lockfile, and public status lines to `2.1.0-rc.2`. This remains a release candidate until exact-ref GitHub installation, real-provider behavior, and human copy/screenshot review complete.
 
 ## 2026-08-27 — Version 2.1.0-rc.1 release candidate
 
