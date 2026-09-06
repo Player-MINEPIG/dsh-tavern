@@ -1,5 +1,37 @@
 # DSH 0.1.2 Compatibility and Market Release Plan
 
+## RP error notice follow-up (2026-09-07)
+
+User acceptance now confirms initial credential onboarding and exact-ref
+GitHub installation of `03354a81752ded3bf73db67afb87a71bad550ce2`.
+These results supersede the pending entries in the earlier dated ledger.
+An invalid API key exposed a remaining RP failure-display gap.
+
+Work on `codex/rp-error-notice`, based on `03354a8`, in two rollback stages:
+
+1. **Implementation and tests:** aggregate public DSH `0.1.2-rc.1` Session
+   errors with the latest Chat timeline terminal error. Add one localized,
+   sticky RP notice directing readers to native Chat. Do not copy provider
+   details, alter credentials, persist errors, or change durable history.
+   Cover later success/cancellation, in-progress submission/retry, empty
+   turns, separate sessions, and locale changes.
+2. **Documentation and evidence:** synchronize paired architecture, frontend
+   and usage guides, changelog, editable diagram and PNG. Record automated,
+   browser and user-confirmed acceptance separately. No push/tag/release.
+
+Implementation status: complete in `4f8a698`. `npm run check`: 528 pass, 2 existing skips.
+Independent read-only review: no required findings; 9 focused tests pass.
+The local candidate was installed in the older isolated profile and loaded
+in DSH Web; completed-history and blank-opening rendering showed no false
+notice. The exact-ref acceptance profile was left unchanged.
+
+Remaining runtime gate: reproduce an actual provider failure with this new
+bundle, inspect details in native Chat, then verify successful retry clears
+the RP notice. Evidence identifier: `rp-error-notice-20260907`; the private
+report, Host screenshot and accessibility capture stay outside this repository.
+Unit/component tests cover these state transitions but are
+not a replacement for the real-provider gate. Credentials were not changed.
+
 ## Computer-use regression fixes (2026-09-06)
 
 The real-browser pass found client contract regressions despite the earlier

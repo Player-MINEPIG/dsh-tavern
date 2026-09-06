@@ -8,6 +8,10 @@
 
 可编辑源文件：[dsh-tavern-architecture.drawio](assets/dsh-tavern-architecture.drawio)。图中 DSH session history 是唯一权威事件历史；Tavern 的外部目录只保存资源、选择、设置、Trace 与周目投影。
 
+## RP 错误提示（2026-09-07）
+
+展示层通过 DSH `0.1.2-rc.1` 的公开 `useChat` timeline 读取最新回合的 `turn/end.reason.kind === 'error'`，并汇总 `useSession` 的 `promptError`、`lastAgentError` 和 `openError`。只显示随 Tavern 语言变化的统一提示，详细诊断保留在原生“对话”视图；不匹配提供方错误文本、不保存第二份错误历史。新提交和生成期间隐藏旧回合提示，后续回合开始、成功或主动取消不会继续显示历史失败；当前 Session 错误不被 busy 状态掩盖。浏览器崩溃和未到达这些公开入口的连接故障不属于此提示的保证范围。
+
 ## 决策结论
 
 `dsh-tavern` 保持为一个可安装的 DSH 插件，在同一仓库和发布包内拆成单向依赖的内部层。preset、角色卡、用户、独立世界书和 Tavern Trace 均由统一 loader/client 组合；不要求用户安装多个互相配套的 DSH 插件。
@@ -107,7 +111,7 @@ DSH `0.1.2-rc.1` 的 `agent/inbox/spliced` 是公开、持久的 Session event�
 | 魔丸侧边栏 | `sidebar.workspaces` slot；owner 注入的 `useSessions` / `useWorkspaces`；`ctx.sessions.open()` | 只重组为角色卡 / 周目投影，不改写、不归档、不隐藏 Host session 数据 |
 | DSH 外层新会话 | DSH `0.1.2-rc.1` sidebar shell 自有；无供 Tavern 接管点击的公开 slot/service | Tavern 不用哈希 class、DOM capture 或源码替换接管；魔丸保留原生按钮并在文档中标为不推荐，普通区 `+` 只引导返回 native |
 | 普通会话提示 | `conversation.input.dock` 独立整行 slot、继承的 `--dsh-composer-card-max-width` | 仅显示 Tavern 的 RP 工作区分类结果；提示按 Host composer 宽度居中，不接管原生 composer、不复制固定像素或读取哈希 class |
-| 魔丸对话页 | `conversation.view` slot；`useChat` 的 `legacy.nodes/partial`；`useSession` 的生命周期字段 | 周目跨 session 聚合是 Tavern 投影；不伪造 DSH 消息，不读取私有 runtime |
+| 魔丸对话页 | `conversation.view` slot；`useChat` 的 `legacy.nodes/partial` 与 `timeline`；`useSession` 的生命周期和错误字段 | 周目跨 session 聚合是 Tavern 投影；不伪造 DSH 消息，不读取私有 runtime |
 | 魔丸默认视图 | `slots.entries("conversation.session")` 暴露的 Conversation store 句柄、session 级 `conversation.input.dock` 及其 `actions.setView()` | 新周目尚未选定视图时复用同一 store，处理后立即注销；不向视图环注册第二个 `chat`，保留手动选择 |
 | 实时发送和流式显示 | DSH `useChat` 的公开 `legacy` 消息投影 | `/v2/messages` 只做持久消息范围对账；Session 不再提供 `nodes/partial`，Chat 顶层 `nodes` 不是数组 |
 | 空白周目开场 | 公开 `conversationPhase(session, conversation)` 与 `useConversation` | 不读取已删除的 Session `composerPhase`，不开第二套阶段状态机 |

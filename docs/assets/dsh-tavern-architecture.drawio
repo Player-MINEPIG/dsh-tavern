@@ -1,4 +1,4 @@
-<mxfile host="Electron" modified="2026-09-06T00:00:00.000Z" agent="Codex" version="24.7.17">
+<mxfile host="Electron" modified="2026-09-07T00:00:00.000Z" agent="Codex" version="24.7.17">
   <diagram id="current-architecture" name="Current architecture">
     <mxGraphModel dx="1600" dy="1100" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1654" pageHeight="1169" math="0" shadow="0">
       <root>
@@ -74,10 +74,10 @@
         <mxCell id="rp-view" value="Default RP adapter (unset view only)&#xa;Conversation store → actions.setView('rp')&#xa;shared session scope; no second Chat store" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFEBE6;strokeColor=#DE350B;fontColor=#BF2600;fontSize=12;spacing=8;" vertex="1" parent="browser-lane">
           <mxGeometry x="995" y="204" width="390" height="72" as="geometry" />
         </mxCell>
-        <mxCell id="client-snapshots" value="RP / Trace live data&#xa;Session: lifecycle (useSession)&#xa;Chat: legacy.nodes / partial (useChat)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#DEEBFF;strokeColor=#2684FF;fontColor=#0747A6;fontSize=12;spacing=8;" vertex="1" parent="browser-lane">
+        <mxCell id="client-snapshots" value="RP / Trace: public DSH snapshots&#xa;Session: lifecycle + errors&#xa;Chat: legacy messages + latest turn/end" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#DEEBFF;strokeColor=#2684FF;fontColor=#0747A6;fontSize=12;spacing=8;" vertex="1" parent="browser-lane">
           <mxGeometry x="45" y="204" width="360" height="72" as="geometry" />
         </mxCell>
-        <mxCell id="client-presentation" value="Opening + localized presentation&#xa;conversationPhase(Session, Conversation)&#xa;locale event → RP / sidebar / dock + tab roster" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#EAE6FF;strokeColor=#6554C0;fontColor=#403294;fontSize=12;spacing=8;" vertex="1" parent="browser-lane">
+        <mxCell id="client-presentation" value="Localized opening + RP error notice&#xa;conversationPhase(Session, Conversation)&#xa;Error details remain in native Chat" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#EAE6FF;strokeColor=#6554C0;fontColor=#403294;fontSize=12;spacing=8;" vertex="1" parent="browser-lane">
           <mxGeometry x="520" y="204" width="360" height="72" as="geometry" />
         </mxCell>
 

@@ -8,6 +8,10 @@ Status: 2026-09-06. The full DSH compatibility baseline is `0.1.2-rc.1`; install
 
 Editable source: [dsh-tavern-architecture.drawio](assets/dsh-tavern-architecture.drawio). DSH session history is the only authoritative event history in the diagram; Tavern's external directory stores only resources, selections, settings, Trace, and playthrough projections.
 
+## RP error notice (2026-09-07)
+
+The presentation layer reads the latest turn's `turn/end.reason.kind === 'error'` through the public DSH `0.1.2-rc.1` `useChat` timeline and combines it with `useSession`'s `promptError`, `lastAgentError`, and `openError`. One Tavern-localized notice directs users to native Chat for detailed diagnostics; no provider-message matching or duplicate error history is introduced. New submissions and active generation hide the previous terminal notice; a later open, successful or cancelled turn supersedes old failures. Current Session errors remain visible even while busy. Browser crashes and connection failures that never reach these public outlets are outside this notice's guarantees.
+
 ## Decisions
 
 `dsh-tavern` stays one installable DSH plugin, split into one-way internal layers inside the same repo and release package. Preset, character card, user, standalone world book, and Tavern Trace are composed by one loader/client. Users are not asked to install several matching DSH plugins.
@@ -107,7 +111,7 @@ The frontend long-term rule is “minimal change, maximum compatibility”: firs
 | Mowan sidebar | `sidebar.workspaces` slot; owner-injected `useSessions` / `useWorkspaces`; `ctx.sessions.open()` | Reproject as character/playthrough only. Do not rewrite, archive, or hide Host session data |
 | DSH outer New session | Owned by the DSH `0.1.2-rc.1` sidebar shell; no public slot/service for Tavern to take over its click | Tavern does not take it over with hashed classes, DOM capture, or source replacement. Mowan keeps the native button and documents it as not recommended. Ordinary-area `+` only guides back to native |
 | Ordinary-session hint | Independent full-row `conversation.input.dock` slot, inherited `--dsh-composer-card-max-width` | Shows only Tavern's RP-workspace classification. The hint is centered to Host composer width. It does not take over the native composer, copy fixed pixels, or read hashed classes |
-| Mowan conversation page | `conversation.view`; `useChat` with `legacy.nodes/partial`; `useSession` lifecycle fields | Cross-session aggregation is a Tavern projection. Do not forge DSH messages or read private runtime |
+| Mowan conversation page | `conversation.view`; `useChat` with `legacy.nodes/partial` and `timeline`; `useSession` lifecycle and error fields | Cross-session aggregation is a Tavern projection. Do not forge DSH messages or read private runtime |
 | Mowan default view | Conversation store handle from `slots.entries("conversation.session")`, session-scoped `conversation.input.dock` and `actions.setView()` | Reuse the same store for an unset view, then unregister. Do not register a second `chat` or override explicit choices |
 | Live send and streaming | The public `legacy` message projection from DSH `useChat` | `/v2/messages` only reconciles durable ranges. Session no longer has `nodes/partial`; top-level Chat `nodes` is not an array |
 | Blank-playthrough opening | Public `conversationPhase(session, conversation)` and `useConversation` | Do not read removed Session `composerPhase` or duplicate the phase state machine |

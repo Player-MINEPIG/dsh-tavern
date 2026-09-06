@@ -71,6 +71,8 @@ Third-party plugins may use the same kinds of public seams, but must:
 
 `pmpDshTavernChrome` does not guarantee your slot wins. Slot contention, order, priority, and owner props stay under the DSH public slot contract.
 
+The RP error notice subscribes to `useSession`'s `promptError/lastAgentError/openError` and the latest turn boundary in `useChat`'s `timeline`. The latter uses the same `turn/end` error fact as native `turn-error` nodes while recognizing newer turns without assistant messages. Do not leave a permanent notice based on any historical error. Hide old terminal failures during submission/generation without masking current Session errors. Localize the generic copy through Tavern i18n and leave diagnostics in native Chat.
+
 ## 5. HTTP v2 data plane
 
 Embedded clients on DSH `0.1.2-rc.1` read lifecycle from `useSession`, `legacy.nodes/partial` from `useChat`, and interaction state from `useConversation`. Derive opening phase with the package-root `conversationPhase(session, conversation)` export. Default-view selection uses the Conversation store on `conversation.session`, not the native Chat store. Standalone HTTP clients do not use these browser hooks. Tavern UI settings events refresh presentation only; they cannot replace the Host live-message source.

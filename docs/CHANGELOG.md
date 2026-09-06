@@ -1,5 +1,12 @@
 # Development changelog
 
+## 2026-09-07 — Surface DSH failures in RP (2.1.0-rc.2)
+
+- Added a localized, sticky RP error notice directing readers to native Chat. It combines public DSH `0.1.2-rc.1` Session send/stop, live-agent and history-open errors with the latest Chat timeline `turn/end` error, including failures without assistant output.
+- Ignore older failed turns after a later turn starts, completes or is cancelled; hide the previous terminal notice during a new submission. In-progress model retries and recoverable tool errors alone do not imply terminal failure. Native Chat retains detailed diagnostics; no credential, history or storage-schema changes.
+- Synchronized bilingual usage, frontend and architecture contracts, including the editable diagram and PNG. Automated check: 528 pass, 2 existing skips; independent review found no required changes. Real-provider failure/recovery with this bundle remains an explicit acceptance gate.
+- Initial credential onboarding and exact-ref GitHub installation of the preceding candidate are now user-confirmed, superseding the earlier pending status. This follow-up is not a release or remote push.
+
 ## 2026-09-06 — Computer-use acceptance repairs (2.1.0-rc.2)
 
 - Corrected DSH `0.1.2-rc.1` client state ownership: RP and Trace read the public Chat `legacy.nodes/partial` projection; Session supplies lifecycle only. This restores live RP output and prevents Trace from crashing on removed Session fields.

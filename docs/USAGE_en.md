@@ -4,6 +4,10 @@
 
 Status: 2026-08-27. Covers the current orb interaction, frontend display-mode switch, RP workspace admission, character-card create/edit, playthrough lifecycle, imported-record opening bind, external persistent storage, RP secure mode, and delegated child agents inheriting the parent's Tavern selection. This page is operational. Message flow, architecture, and security contracts are in `DSH_MESSAGE_FLOW_en.md`, `ARCHITECTURE_en.md`, and `LOADER_CONTRACT_en.md`. RP block/allow list: [RP_SECURE_MODE_en.md](RP_SECURE_MODE_en.md).
 
+## When an error occurs in RP
+
+On DSH `0.1.2-rc.1`, exposed Session errors or the latest turn's terminal failure show: “An error occurred. Switch to the Chat view for more information.” Select DSH's Chat tab for the detailed cause. RP does not switch views automatically or duplicate provider diagnostics. The notice follows Tavern's UI language. A new request in progress hides the previous turn's failure; later success or intentional cancellation supersedes old errors. Automatic retries in progress and recoverable tool errors alone are not terminal failures.
+
 ## Quick Start: shortest RP path
 
 Do one full turn in this order the first time. The screenshot version is in the Chinese [README](../README.md#quick-start从角色卡到第一轮-rp-对话). The [English README](../README_en.md) has no images.
