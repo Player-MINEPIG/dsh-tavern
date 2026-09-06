@@ -1,5 +1,32 @@
 # DSH 0.1.2 Compatibility and Market Release Plan
 
+## Computer-use regression fixes (2026-09-06)
+
+The real-browser pass found client contract regressions despite the earlier
+automated checks. Work on `codex/cu-acceptance-fixes`, starting at `248bede`:
+
+1. **Chat/Trace data ownership:** replace removed Session `nodes/partial`
+   reads with the public DSH `0.1.2-rc.1` Chat projection; add split-snapshot
+   regressions, retaining Session lifecycle and DSH durable-history authority.
+2. **Opening dock/default RP:** derive blank/engaging phase from the public
+   Conversation contract and reuse the Conversation-owned view store (not the
+   Chat store). Verify greeting before the first send, default RP after send,
+   explicit native Chat selection, and disposal on mode/session changes.
+3. **Live localization:** subscribe RP/sidebar/dock presentation to locale as
+   well as scale, preserve raw resource/user titles, and repair the missing
+   world-book drag label. Verify Chinese/English switching without reload.
+4. **Documentation and diagram:** synchronize both architecture languages,
+   frontend guidance, changelog, editable draw.io source and rendered PNG with
+   Session/Conversation/Chat ownership; preserve the existing overall design.
+5. **Runtime acceptance:** build/install this local candidate only in the
+   isolated test profile; repeat the failed browser checks with screenshots,
+   console and session/header evidence, then record the result. No push/tag.
+
+Each meaningful implementation stage is committed separately with its tests
+so it can be reverted. Initial credential onboarding and controlled provider
+error/retry are separate unverified gates, not fixes inferred from this pass.
+Progress: plan recorded; implementation pending.
+
 Status: implementation and local automated acceptance complete; exact
 GitHub-source installation and manual acceptance remain. This document
 describes work on the `codex/dsh-0.1.2-compat` branch. It is not a statement
