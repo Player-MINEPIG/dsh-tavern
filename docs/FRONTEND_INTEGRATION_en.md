@@ -73,6 +73,8 @@ Third-party plugins may use the same kinds of public seams, but must:
 
 ## 5. HTTP v2 data plane
 
+Embedded clients on DSH `0.1.2-rc.1` read lifecycle from `useSession`, `legacy.nodes/partial` from `useChat`, and interaction state from `useConversation`. Derive opening phase with the package-root `conversationPhase(session, conversation)` export. Default-view selection uses the Conversation store on `conversation.session`, not the native Chat store. Standalone HTTP clients do not use these browser hooks. Tavern UI settings events refresh presentation only; they cannot replace the Host live-message source.
+
 Root: `/pmp-dsh-tavern/api/v2`. It is for any RP frontend and provides:
 
 - chrome authority and SSE;

@@ -1,5 +1,14 @@
 # Development changelog
 
+## 2026-09-06 — Computer-use acceptance repairs (2.1.0-rc.2)
+
+- Corrected DSH `0.1.2-rc.1` client state ownership: RP and Trace read the public Chat `legacy.nodes/partial` projection; Session supplies lifecycle only. This restores live RP output and prevents Trace from crashing on removed Session fields.
+- Derived the empty-playthrough opening phase with public `conversationPhase()` and shared the Conversation store from `conversation.session` for default-view selection. Greeting is visible before sending, new unselected conversations default to RP, and explicit native Chat choices stay intact.
+- Isolated browser-owned DSH imports in the client entry so ordinary UI modules remain importable by Node tests without installing the DSH browser runtime as a Tavern dependency.
+- Made locale-only changes rerender the RP sidebar, conversation, and opening dock; refreshed Tavern's own RP tab label without repeating default-view selection. Generated titles follow locale, while custom titles and resource bodies remain verbatim. Fixed the world-book reorder button's missing translation key.
+- Synchronized Chinese/English architecture and frontend contracts, the editable draw.io source, and its PNG preview. No Host storage, timeline schema, or message-authority change.
+- Verified the local candidate on isolated DSH `0.1.2-rc.1`: blank greeting, first-send default RP, partial output while generation is active, completed output, aligned Trace records, live Chinese/English switching, native selection retention, and world-book labels. Full check: 522 passing tests, 2 fixture-dependent skips; independent focused review: 25 passing tests and no required findings. Exact-ref GitHub installation and initial credential onboarding remain separate release gates; no release or remote push is implied.
+
 ## 2026-09-05 — Version 2.1.0-rc.2 release candidate
 
 - Migrated the Play Host bridge from the removed RPC proxy to explicit DSH `0.1.2-rc.1` session, workspace, and directory-picker controllers, including official UUID request ids and namespaced error mapping.

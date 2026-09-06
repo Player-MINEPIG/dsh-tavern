@@ -73,6 +73,8 @@ export function apply(ctx) {
 
 ## 5. HTTP v2 数据面
 
+DSH `0.1.2-rc.1` 的嵌入式客户端需分别读取：`useSession` 的生命周期、`useChat` 的 `legacy.nodes/partial`、`useConversation` 的交互状态。开场阶段用包根导出的 `conversationPhase(session, conversation)`；默认 view 使用 `conversation.session` 的 Conversation store，不是原生 Chat store。普通 HTTP 前端不使用这些浏览器 hook。Tavern UI 设置事件只刷新产品呈现，不能代替 Host 实时消息源。
+
 根路径：`/pmp-dsh-tavern/api/v2`。它面向任意 RP 前端，提供：
 
 - chrome 权威状态与 SSE；

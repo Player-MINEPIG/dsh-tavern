@@ -1,4 +1,4 @@
-<mxfile host="Electron" modified="2026-09-05T00:00:00.000Z" agent="Codex" version="24.7.17">
+<mxfile host="Electron" modified="2026-09-06T00:00:00.000Z" agent="Codex" version="24.7.17">
   <diagram id="current-architecture" name="Current architecture">
     <mxGraphModel dx="1600" dy="1100" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1654" pageHeight="1169" math="0" shadow="0">
       <root>
@@ -65,14 +65,20 @@
         <mxCell id="client-services" value="Injected DSH client services&#xa;sessions · workspaces · uiWorkspace · layout · slots" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#EAE6FF;strokeColor=#6554C0;fontColor=#403294;fontStyle=1;fontSize=13;spacing=8;" vertex="1" parent="browser-lane">
           <mxGeometry x="45" y="78" width="360" height="78" as="geometry" />
         </mxCell>
-        <mxCell id="client-root" value="Tavern client composition root&#xa;launcher · resources · locale · chrome lifecycle" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#C0B6F2;strokeColor=#5243AA;fontColor=#352C63;fontStyle=1;fontSize=13;spacing=8;" vertex="1" parent="browser-lane">
+        <mxCell id="client-root" value="Tavern client entry → composition root&#xa;DSH imports · resources · locale · chrome lifecycle" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#C0B6F2;strokeColor=#5243AA;fontColor=#352C63;fontStyle=1;fontSize=13;spacing=8;" vertex="1" parent="browser-lane">
           <mxGeometry x="520" y="72" width="360" height="90" as="geometry" />
         </mxCell>
         <mxCell id="slots" value="Public slot occupancy&#xa;shell.overlay · sidebar.panel · conversation.view&#xa;input dock · empty dock" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#EAE6FF;strokeColor=#6554C0;fontColor=#403294;fontSize=12;spacing=8;" vertex="1" parent="browser-lane">
           <mxGeometry x="995" y="78" width="390" height="78" as="geometry" />
         </mxCell>
-        <mxCell id="rp-view" value="Mowan RP view adapter&#xa;reuses native Chat store; owns no second history" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFEBE6;strokeColor=#DE350B;fontColor=#BF2600;fontSize=12;spacing=8;" vertex="1" parent="browser-lane">
-          <mxGeometry x="1010" y="194" width="360" height="62" as="geometry" />
+        <mxCell id="rp-view" value="Default RP adapter (unset view only)&#xa;Conversation store → actions.setView('rp')&#xa;shared session scope; no second Chat store" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFEBE6;strokeColor=#DE350B;fontColor=#BF2600;fontSize=12;spacing=8;" vertex="1" parent="browser-lane">
+          <mxGeometry x="995" y="204" width="390" height="72" as="geometry" />
+        </mxCell>
+        <mxCell id="client-snapshots" value="RP / Trace live data&#xa;Session: lifecycle (useSession)&#xa;Chat: legacy.nodes / partial (useChat)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#DEEBFF;strokeColor=#2684FF;fontColor=#0747A6;fontSize=12;spacing=8;" vertex="1" parent="browser-lane">
+          <mxGeometry x="45" y="204" width="360" height="72" as="geometry" />
+        </mxCell>
+        <mxCell id="client-presentation" value="Opening + localized presentation&#xa;conversationPhase(Session, Conversation)&#xa;locale event → RP / sidebar / dock + tab roster" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#EAE6FF;strokeColor=#6554C0;fontColor=#403294;fontSize=12;spacing=8;" vertex="1" parent="browser-lane">
+          <mxGeometry x="520" y="204" width="360" height="72" as="geometry" />
         </mxCell>
 
         <mxCell id="edge-controller-adapter" value="explicit services" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeColor=#2684FF;fontColor=#0747A6;fontSize=11;" edge="1" parent="1" source="controllers" target="play-adapter">
@@ -83,8 +89,8 @@
             <mxPoint as="offset" />
           </mxGeometry>
         </mxCell>
-        <mxCell id="edge-history-adapter" value="inspect + page" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeColor=#2684FF;fontColor=#0747A6;fontSize=11;" edge="1" parent="1" source="dsh-history" target="play-adapter">
-          <mxGeometry relative="1" as="geometry" />
+        <mxCell id="edge-history-adapter" value="inspect + page" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.75;entryDx=0;entryDy=0;endArrow=block;endFill=1;strokeColor=#2684FF;fontColor=#0747A6;fontSize=11;" edge="1" parent="1" source="dsh-history" target="play-adapter">
+          <mxGeometry relative="1" as="geometry"><Array as="points"><mxPoint x="490" y="461" /><mxPoint x="490" y="342" /></Array></mxGeometry>
         </mxCell>
         <mxCell id="edge-loader-adapter" value="compose" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeColor=#36B37E;fontColor=#006644;fontSize=11;" edge="1" parent="1" source="loader" target="play-adapter">
           <mxGeometry relative="1" as="geometry" />
@@ -101,8 +107,8 @@
         <mxCell id="edge-storage-policy" value="bounded documents" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeColor=#FF991F;fontColor=#7A4E00;fontSize=11;" edge="1" parent="1" source="runtime-policy" target="tavern-storage">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
-        <mxCell id="edge-play-files" value="jailed file port" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeColor=#FF991F;fontColor=#7A4E00;fontSize=11;" edge="1" parent="1" source="play-adapter" target="play-files">
-          <mxGeometry relative="1" as="geometry" />
+        <mxCell id="edge-play-files" value="jailed file port" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;endArrow=block;endFill=1;strokeColor=#FF991F;fontColor=#7A4E00;fontSize=11;" edge="1" parent="1" source="play-adapter" target="play-files">
+          <mxGeometry relative="1" as="geometry"><Array as="points"><mxPoint x="670" y="395" /><mxPoint x="1190" y="395" /><mxPoint x="1190" y="423" /></Array></mxGeometry>
         </mxCell>
         <mxCell id="edge-services-root" value="ctx injection" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeColor=#6554C0;fontColor=#403294;fontSize=11;" edge="1" parent="1" source="client-services" target="client-root">
           <mxGeometry relative="1" as="geometry" />
@@ -110,13 +116,19 @@
         <mxCell id="edge-root-slots" value="register / dispose" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeColor=#6554C0;fontColor=#403294;fontSize=11;" edge="1" parent="1" source="client-root" target="slots">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
-        <mxCell id="edge-slots-rp" value="public store handle" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeColor=#DE350B;fontColor=#BF2600;fontSize=11;" edge="1" parent="1" source="slots" target="rp-view">
+        <mxCell id="edge-slots-rp" value="conversation.session store" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeColor=#DE350B;fontColor=#BF2600;fontSize=11;" edge="1" parent="1" source="slots" target="rp-view">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
         <mxCell id="edge-client-api" value="same-origin HTTP / SSE" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeColor=#6554C0;fontColor=#403294;fontSize=11;" edge="1" parent="1" source="client-root" target="http-api">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
-        <mxCell id="edge-rp-history" value="native Chat authority" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;dashed=1;strokeColor=#2684FF;fontColor=#0747A6;fontSize=11;" edge="1" parent="1" source="rp-view" target="dsh-history">
+        <mxCell id="edge-rp-history" value="authoritative projection" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;endArrow=block;endFill=1;dashed=1;strokeColor=#2684FF;fontColor=#0747A6;fontSize=11;" edge="1" parent="1" source="client-snapshots" target="dsh-history">
+          <mxGeometry relative="1" as="geometry"><Array as="points"><mxPoint x="25" y="930" /><mxPoint x="25" y="461" /></Array><mxPoint x="90" y="0" as="offset" /></mxGeometry>
+        </mxCell>
+        <mxCell id="edge-services-snapshots" value="standard hooks" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;endFill=1;strokeColor=#2684FF;fontColor=#0747A6;fontSize=11;" edge="1" parent="1" source="client-services" target="client-snapshots">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge-root-presentation" value="public helper / settings" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;endFill=1;strokeColor=#6554C0;fontColor=#403294;fontSize=11;" edge="1" parent="1" source="client-root" target="client-presentation">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
 
