@@ -32,6 +32,7 @@ __export(index_exports, {
 });
 module.exports = __toCommonJS(index_exports);
 var import_react16 = require("react");
+var import_dsh_client_ui_conversation = require("@deepseek-ai/dsh-client-ui-conversation");
 
 // packages/ui-settings/src/locale-contract.js
 var DEFAULT_UI_LOCALE = "zh-CN";
@@ -11567,12 +11568,13 @@ function installStyles4() {
   style.textContent = css10;
   document.head.append(style);
 }
-function PlaySessionDock({ session, useSessions, playClient }) {
+function PlaySessionDock({ session, useSessions, useConversation, conversationPhase: conversationPhase2, playClient }) {
   installStyles4();
   installPlayChatStyles();
   const sessionId = session?.sessionId ?? null;
   const sessionBlank = session?.blank === true;
-  const composerPhase = session?.composerPhase;
+  const conversation = useConversation((state) => state);
+  const composerPhase = conversationPhase2(session, conversation);
   const summary = useSessions((state) => sessionId === null ? null : state.byId?.[sessionId] ?? null);
   const [revision, setRevision] = (0, import_react13.useState)(0);
   const [content, setContent] = (0, import_react13.useState)(null);
@@ -11746,16 +11748,16 @@ var PLAY_VIEW_ID = "rp";
 var PLAY_VIEW_ORDER = -100;
 var PLAY_DEFAULT_VIEW_ADAPTER_ID = "pmp-dsh-tavern-default-rp-view";
 var PLAY_DEFAULT_VIEW_ATTEMPT_LIMIT = 256;
-function findNativeChatStore(slots) {
+function findConversationStore(slots) {
   if (typeof slots?.entries !== "function") return void 0;
-  const entries2 = slots.entries("conversation.view");
+  const entries2 = slots.entries("conversation.session");
   if (!Array.isArray(entries2) && entries2?.[Symbol.iterator] === void 0) return void 0;
   for (const entry of entries2) {
-    if (entry?.options?.id === "chat" && entry.store !== void 0) return entry.store;
+    if (entry?.store !== void 0) return entry.store;
   }
   return void 0;
 }
-function installPlaySlotOccupancy(ctx, playClient, { playthroughController, switchToNative } = {}) {
+function installPlaySlotOccupancy(ctx, playClient, { playthroughController, switchToNative, conversationPhase: conversationPhase2 } = {}) {
   let mode = "native";
   let declared = false;
   let disposeEntry = null;
@@ -11841,7 +11843,7 @@ function installPlaySlotOccupancy(ctx, playClient, { playthroughController, swit
       name: "conversation.input.dock",
       id: "pmp-dsh-tavern-session-dock",
       order: 90,
-      inject: () => ({ playClient })
+      inject: () => ({ playClient, conversationPhase: conversationPhase2 })
     }, PlaySessionDock);
   };
   const reconcileNotice = () => {
@@ -11915,8 +11917,8 @@ function installPlaySlotOccupancy(ctx, playClient, { playthroughController, swit
     }
     const defaultViewKey = `${chatBinding.signature}\0${chatBinding.playthrough.path}`;
     if (chatDeclared && disposeDefaultViewEntry === null && !completedDefaultViewAttempts.has(defaultViewKey)) {
-      const nativeChatStore = findNativeChatStore(ctx.slots);
-      if (nativeChatStore !== void 0) {
+      const conversationStore = findConversationStore(ctx.slots);
+      if (conversationStore !== void 0) {
         const complete = () => {
           rememberDefaultViewAttempt(defaultViewKey);
           if (defaultViewEntryKey === defaultViewKey) dropDefaultViewEntry();
@@ -11927,7 +11929,7 @@ function installPlaySlotOccupancy(ctx, playClient, { playthroughController, swit
           id: PLAY_DEFAULT_VIEW_ADAPTER_ID,
           order: -1e3,
           priority: PLAY_SLOT_PRIORITY,
-          store: nativeChatStore,
+          store: conversationStore,
           inject: () => ({
             targetViewId: PLAY_VIEW_ID,
             complete
@@ -14235,6 +14237,7 @@ function apply2(ctx) {
     };
   }, "dsh-tavern: chrome mode service transport");
   const playSlots = installPlaySlotOccupancy(ctx, playClient, {
+    conversationPhase: import_dsh_client_ui_conversation.conversationPhase,
     playthroughController,
     switchToNative: () => chrome.face.setMode("native")
   });

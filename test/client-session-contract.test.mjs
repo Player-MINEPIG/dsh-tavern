@@ -3,6 +3,7 @@ import assert from 'node:assert/strict'
 import React from 'react'
 import { MowanChatView } from '../packages/client/src/play/chat.js'
 import { TavernTraceView } from '../packages/tavern-trace/src/client.js'
+import { PlaySessionDock } from '../packages/client/src/play/notice.js'
 
 // Exercise the component selectors against the split 0.1.2 contract. Effects
 // are deliberately not run here; real mounting and streaming are browser gates.
@@ -23,6 +24,29 @@ function renderSelectors(component, props) {
     globalThis.document = previousDocument
   }
 }
+
+test('opening dock derives phase from the public Conversation function and split snapshots', () => {
+  const conversation = { activeTargets: new Set() }
+  const session = new Proxy({ sessionId: 's', blank: true }, {
+    get(target, key) {
+      assert.notEqual(key, 'composerPhase')
+      return target[key]
+    },
+  })
+  let calls = 0
+  renderSelectors(PlaySessionDock, {
+    session,
+    useSessions: select => select({ byId: {} }),
+    useConversation: select => select(conversation),
+    conversationPhase(s, c) {
+      assert.equal(s, session)
+      assert.equal(c, conversation)
+      calls += 1
+      return 'blank'
+    },
+  })
+  assert.equal(calls, 1)
+})
 
 for (const component of [MowanChatView, TavernTraceView]) {
   test(`${component.name} reads Chat data without asking Session for removed fields`, () => {

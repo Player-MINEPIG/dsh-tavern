@@ -40,12 +40,13 @@ function installStyles() {
   document.head.append(style)
 }
 
-export function PlaySessionDock({ session, useSessions, playClient }) {
+export function PlaySessionDock({ session, useSessions, useConversation, conversationPhase, playClient }) {
   installStyles()
   installPlayChatStyles()
   const sessionId = session?.sessionId ?? null
   const sessionBlank = session?.blank === true
-  const composerPhase = session?.composerPhase
+  const conversation = useConversation(state => state)
+  const composerPhase = conversationPhase(session, conversation)
   const summary = useSessions(state => sessionId === null ? null : state.byId?.[sessionId] ?? null)
   const [revision, setRevision] = useState(0)
   const [content, setContent] = useState(null)

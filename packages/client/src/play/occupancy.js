@@ -12,17 +12,17 @@ export const PLAY_VIEW_ORDER = -100
 export const PLAY_DEFAULT_VIEW_ADAPTER_ID = 'pmp-dsh-tavern-default-rp-view'
 export const PLAY_DEFAULT_VIEW_ATTEMPT_LIMIT = 256
 
-export function findNativeChatStore(slots) {
+export function findConversationStore(slots) {
   if (typeof slots?.entries !== 'function') return undefined
-  const entries = slots.entries('conversation.view')
+  const entries = slots.entries('conversation.session')
   if (!Array.isArray(entries) && entries?.[Symbol.iterator] === undefined) return undefined
   for (const entry of entries) {
-    if (entry?.options?.id === 'chat' && entry.store !== undefined) return entry.store
+    if (entry?.store !== undefined) return entry.store
   }
   return undefined
 }
 
-export function installPlaySlotOccupancy(ctx, playClient, { playthroughController, switchToNative } = {}) {
+export function installPlaySlotOccupancy(ctx, playClient, { playthroughController, switchToNative, conversationPhase } = {}) {
   let mode = 'native'
   let declared = false
   let disposeEntry = null
@@ -116,7 +116,7 @@ export function installPlaySlotOccupancy(ctx, playClient, { playthroughControlle
       name: 'conversation.input.dock',
       id: 'pmp-dsh-tavern-session-dock',
       order: 90,
-      inject: () => ({ playClient }),
+      inject: () => ({ playClient, conversationPhase }),
     }, PlaySessionDock)
   }
 
@@ -201,8 +201,8 @@ export function installPlaySlotOccupancy(ctx, playClient, { playthroughControlle
     if (chatDeclared
       && disposeDefaultViewEntry === null
       && !completedDefaultViewAttempts.has(defaultViewKey)) {
-      const nativeChatStore = findNativeChatStore(ctx.slots)
-      if (nativeChatStore !== undefined) {
+      const conversationStore = findConversationStore(ctx.slots)
+      if (conversationStore !== undefined) {
         const complete = () => {
           rememberDefaultViewAttempt(defaultViewKey)
           if (defaultViewEntryKey === defaultViewKey) dropDefaultViewEntry()
@@ -213,7 +213,7 @@ export function installPlaySlotOccupancy(ctx, playClient, { playthroughControlle
           id: PLAY_DEFAULT_VIEW_ADAPTER_ID,
           order: -1000,
           priority: PLAY_SLOT_PRIORITY,
-          store: nativeChatStore,
+          store: conversationStore,
           inject: () => ({
             targetViewId: PLAY_VIEW_ID,
             complete,

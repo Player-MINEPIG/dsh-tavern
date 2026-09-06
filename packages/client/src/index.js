@@ -5,6 +5,7 @@ import {
   useRef,
   useState,
 } from 'react'
+import { conversationPhase } from '@deepseek-ai/dsh-client-ui-conversation'
 import {
   DEFAULT_UI_SETTINGS,
   UI_LOCALES,
@@ -1308,6 +1309,7 @@ export function apply(ctx) {
     }
   }, 'dsh-tavern: chrome mode service transport')
   const playSlots = installPlaySlotOccupancy(ctx, playClient, {
+    conversationPhase,
     playthroughController,
     switchToNative: () => chrome.face.setMode('native'),
   })

@@ -5,7 +5,7 @@ import {
   PLAY_SLOT_PRIORITY,
   PLAY_VIEW_ID,
   PLAY_VIEW_ORDER,
-  findNativeChatStore,
+  findConversationStore,
   installPlaySlotOccupancy,
 } from '../packages/client/src/play/occupancy.js'
 
@@ -57,8 +57,8 @@ test('Mowan adds the default RP view only while the current session belongs to a
     },
     slots: {
       entries(name) {
-        return name === 'conversation.view'
-          ? [{ options: { id: 'chat' }, store: nativeChatStore }]
+        return name === 'conversation.session'
+          ? [{ options: {}, store: nativeChatStore }]
           : []
       },
       inject(_name, callback) { declarationCleanups.push(callback()) },
@@ -141,18 +141,19 @@ test('Mowan adds the default RP view only while the current session belongs to a
   for (const cleanup of declarationCleanups) cleanup()
 })
 
-test('default view adapter reuses only the native chat store', () => {
+test('default view adapter reuses the Conversation shell store, not the Chat target store', () => {
   const nativeChatStore = { create() {} }
-  assert.equal(findNativeChatStore({
-    entries() {
+  assert.equal(findConversationStore({
+    entries(name) {
+      assert.equal(name, 'conversation.session')
       return [
-        { options: { id: 'rp' }, store: { create() {} } },
-        { options: { id: 'chat' }, store: nativeChatStore },
+        { options: {} },
+        { options: {}, store: nativeChatStore },
       ]
     },
   }), nativeChatStore)
-  assert.equal(findNativeChatStore({ entries() { return [] } }), undefined)
-  assert.equal(findNativeChatStore({}), undefined)
+  assert.equal(findConversationStore({ entries() { return [] } }), undefined)
+  assert.equal(findConversationStore({}), undefined)
 })
 
 test('sidebar navigation keeps the selected playthrough when fork histories share a session', async () => {
