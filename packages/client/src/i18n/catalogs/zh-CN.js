@@ -119,6 +119,7 @@ export default Object.freeze({
   "play.sidebar.timelineErrors": "有 {count} 个周目的 timeline 无法读取。",
   "play.chat.label": "RP视图",
   "play.chat.loading": "正在读取本周目记录…",
+  "play.chat.failure": "出现错误，请切换到「对话」视图查看更多信息。",
   "play.chat.empty": "本周目尚无对话，请在下方开始。",
   "play.chat.thinking": "正在思考…",
   "play.chat.previousGreeting": "上一条开场白",

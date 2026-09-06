@@ -119,6 +119,7 @@ export default Object.freeze({
   "play.sidebar.timelineErrors": "{count} playthrough timelines could not be read.",
   "play.chat.label": "RP View",
   "play.chat.loading": "Loading playthrough…",
+  "play.chat.failure": "An error occurred. Switch to the Chat view for more information.",
   "play.chat.empty": "No turns yet. Start the conversation below.",
   "play.chat.thinking": "Thinking…",
   "play.chat.previousGreeting": "Previous greeting",

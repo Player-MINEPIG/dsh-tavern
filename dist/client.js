@@ -194,6 +194,7 @@ var zh_CN_default = Object.freeze({
   "play.sidebar.timelineErrors": "\u6709 {count} \u4E2A\u5468\u76EE\u7684 timeline \u65E0\u6CD5\u8BFB\u53D6\u3002",
   "play.chat.label": "RP\u89C6\u56FE",
   "play.chat.loading": "\u6B63\u5728\u8BFB\u53D6\u672C\u5468\u76EE\u8BB0\u5F55\u2026",
+  "play.chat.failure": "\u51FA\u73B0\u9519\u8BEF\uFF0C\u8BF7\u5207\u6362\u5230\u300C\u5BF9\u8BDD\u300D\u89C6\u56FE\u67E5\u770B\u66F4\u591A\u4FE1\u606F\u3002",
   "play.chat.empty": "\u672C\u5468\u76EE\u5C1A\u65E0\u5BF9\u8BDD\uFF0C\u8BF7\u5728\u4E0B\u65B9\u5F00\u59CB\u3002",
   "play.chat.thinking": "\u6B63\u5728\u601D\u8003\u2026",
   "play.chat.previousGreeting": "\u4E0A\u4E00\u6761\u5F00\u573A\u767D",
@@ -839,6 +840,7 @@ var en_default = Object.freeze({
   "play.sidebar.timelineErrors": "{count} playthrough timelines could not be read.",
   "play.chat.label": "RP View",
   "play.chat.loading": "Loading playthrough\u2026",
+  "play.chat.failure": "An error occurred. Switch to the Chat view for more information.",
   "play.chat.empty": "No turns yet. Start the conversation below.",
   "play.chat.thinking": "Thinking\u2026",
   "play.chat.previousGreeting": "Previous greeting",
@@ -9772,6 +9774,19 @@ function useClientUiSettings() {
   return settings;
 }
 
+// packages/client/src/play/chat-failure.js
+function latestTurnFailed(chat) {
+  const { timeline } = chat;
+  const latest = timeline.turns.get(timeline.turnOrder.at(-1));
+  return latest?.end?.data.reason.kind === "error";
+}
+function sessionFailed(session) {
+  return session.promptError != null || session.lastAgentError != null || session.openError != null;
+}
+function submissionInProgress(session) {
+  return session.running === true || session.awaitingFirstTurn === true || (session.pendingSubmissions?.length ?? 0) > 0;
+}
+
 // packages/client/src/play/chat.js
 var h8 = createLocalizedElement(import_react11.createElement);
 var turnReconcilers = /* @__PURE__ */ new WeakMap();
@@ -9788,6 +9803,7 @@ var css7 = `
 .dtv-play-greeting-button{width:30px;height:34px;border:0;border-radius:9px;background:transparent;color:var(--dsw-alias-label-secondary);cursor:pointer}.dtv-play-greeting-button:hover{background:var(--dsw-alias-interactive-bg-hover)}.dtv-play-greeting-button:disabled{opacity:.4;cursor:default}
 .dtv-play-import-controls{align-self:center;display:flex;flex-wrap:wrap;align-items:center;justify-content:center;gap:8px;margin:0 0 2px}.dtv-play-import-bound{width:100%;margin:0;text-align:center;color:var(--dsw-alias-label-tertiary);font-size:11px}.dtv-play-import-button{min-height:30px;padding:5px 11px;border:1px solid var(--dsw-alias-border-subtle);border-radius:9px;background:var(--dsw-alias-bg-layer-2,var(--dsw-specific-block));color:var(--dsw-alias-label-primary);font:inherit;font-size:11px;cursor:pointer}.dtv-play-import-button:hover{background:var(--dsw-alias-interactive-bg-hover)}.dtv-play-import-button:disabled{opacity:.45;cursor:default}.dtv-play-import-last{margin:0;color:var(--dsw-alias-label-tertiary);font-size:11px;font-weight:700}
 .dtv-play-chat-status{margin:16px 0;padding:12px 14px;border-radius:12px;background:var(--dsw-alias-bg-layer-2,var(--dsw-specific-block));color:var(--dsw-alias-label-tertiary);font-size:12px;line-height:1.55}.dtv-play-chat-status[data-error=true]{color:var(--dsw-alias-state-error)}
+.dtv-play-chat-failure{position:sticky;top:0;z-index:1;border:1px solid currentColor}
 .dtv-play-chat-running{align-self:flex-start;margin:0;color:var(--dsw-alias-label-tertiary);font-size:calc(12px * var(--dtv-rp-text-scale,1));line-height:1.5}
 .dtv-play-rich>:first-child{margin-top:0}.dtv-play-rich>:last-child{margin-bottom:0}.dtv-play-rich p,.dtv-play-rich ul,.dtv-play-rich ol,.dtv-play-rich blockquote,.dtv-play-rich pre,.dtv-play-rich table{margin:0 0 .85em}.dtv-play-rich ul,.dtv-play-rich ol{padding-left:1.5em}.dtv-play-rich blockquote{padding-left:12px;border-left:3px solid var(--dsw-alias-border-secondary,var(--dsw-specific-divider));color:var(--dsw-alias-label-secondary)}.dtv-play-rich pre{max-width:100%;overflow:auto;padding:11px 12px;border-radius:9px;background:var(--dsw-alias-markdown-code-block,var(--dsw-alias-bg-base));white-space:pre}.dtv-play-rich code{font-family:var(--ds-font-family-code,ui-monospace,monospace);font-size:.92em}.dtv-play-rich :not(pre)>code{padding:.12em .35em;border-radius:5px;background:var(--dsw-alias-markdown-code-inline,var(--dsw-alias-bg-base))}.dtv-play-rich table{display:block;max-width:100%;overflow:auto;border-collapse:collapse}.dtv-play-rich th,.dtv-play-rich td{padding:6px 9px;border:1px solid var(--dsw-alias-border-l2)}.dtv-play-rich img,.dtv-play-rich video{max-width:100%;height:auto}.dtv-play-rich a{color:var(--dsw-alias-state-business-primary);text-decoration:underline}.dtv-play-rich hr{border:0;border-top:1px solid var(--dsw-alias-border-l2)}
 `;
@@ -10275,6 +10291,10 @@ function MowanChatView({ sessionId, useSession, useChat, playClient, playthrough
   const latestUserSeq = latestUserNodeSeq(liveNodes);
   const [revision, setRevision] = (0, import_react11.useState)(0);
   const running = useSession((state2) => state2.running === true);
+  const hostFailed = useSession(sessionFailed);
+  const submitting = useSession(submissionInProgress);
+  const turnFailed = useChat(latestTurnFailed);
+  const showHostFailure = hostFailed || !submitting && turnFailed;
   const [loadedState, setLoadedState] = (0, import_react11.useState)(() => cachedChatSnapshot(playClient, playthrough));
   const loadedStateRef = (0, import_react11.useRef)(loadedState);
   const transitionIntent = (0, import_react11.useRef)({ sessionId: null, intent: null });
@@ -10410,6 +10430,11 @@ function MowanChatView({ sessionId, useSession, useChat, playClient, playthrough
   return h8(
     "div",
     { className: "dtv-play-chat", style: conversationDisplayStyle(displaySettings) },
+    showHostFailure ? h8("p", {
+      className: "dtv-play-chat-status dtv-play-chat-failure",
+      "data-error": true,
+      role: "alert"
+    }, uiMessage("play.chat.failure")) : null,
     error === "" ? null : h8("p", { className: "dtv-play-chat-status", "data-error": true }, rawText(error)),
     state === null && error === "" ? h8("p", { className: "dtv-play-chat-status" }, uiMessage("play.chat.loading")) : null,
     loadedState === null ? null : h8(
