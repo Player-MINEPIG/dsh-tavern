@@ -3880,8 +3880,8 @@ function TraceRecord({ record, latest }) {
     )
   );
 }
-function TavernTraceView({ sessionId, useSession }) {
-  const lastVisibleSeq = useSession((snapshot) => snapshot.nodes.at(-1)?.seq ?? -1);
+function TavernTraceView({ sessionId, useSession, useChat }) {
+  const lastVisibleSeq = useChat((snapshot) => snapshot.legacy.nodes.at(-1)?.seq ?? -1);
   const running = useSession((snapshot) => snapshot.running);
   const [data, setData] = (0, import_react5.useState)(null);
   const [error, setError] = (0, import_react5.useState)("");
@@ -10247,12 +10247,13 @@ function TargetedSwipeTransition({
     )
   );
 }
-function MowanChatView({ sessionId, useSession, playClient, playthrough, openSession, chatScroll }) {
+function MowanChatView({ sessionId, useSession, useChat, playClient, playthrough, openSession, chatScroll }) {
   installPlayChatStyles();
   const displaySettings = useConversationDisplaySettings();
-  const sessionRevision = useSession((state2) => `${state2.nodes?.length ?? 0}:${state2.running === true}:${state2.blank === true}`);
-  const liveNodes = useSession((state2) => state2.nodes);
-  const partial = useSession((state2) => state2.partial);
+  const liveNodes = useChat((state2) => state2.legacy.nodes);
+  const partial = useChat((state2) => state2.legacy.partial);
+  const lifecycleRevision = useSession((state2) => `${state2.running === true}:${state2.blank === true}`);
+  const sessionRevision = `${liveNodes.at(-1)?.seq ?? -1}:${lifecycleRevision}`;
   const latestUserSeq = latestUserNodeSeq(liveNodes);
   const [revision, setRevision] = (0, import_react10.useState)(0);
   const running = useSession((state2) => state2.running === true);

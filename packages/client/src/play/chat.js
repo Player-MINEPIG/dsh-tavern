@@ -564,12 +564,14 @@ function TargetedSwipeTransition({
   )
 }
 
-export function MowanChatView({ sessionId, useSession, playClient, playthrough, openSession, chatScroll }) {
+export function MowanChatView({ sessionId, useSession, useChat, playClient, playthrough, openSession, chatScroll }) {
   installPlayChatStyles()
   const displaySettings = useConversationDisplaySettings()
-  const sessionRevision = useSession(state => `${state.nodes?.length ?? 0}:${state.running === true}:${state.blank === true}`)
-  const liveNodes = useSession(state => state.nodes)
-  const partial = useSession(state => state.partial)
+  // DSH 0.1.2 publishes this documented projection on Chat, not Session.
+  const liveNodes = useChat(state => state.legacy.nodes)
+  const partial = useChat(state => state.legacy.partial)
+  const lifecycleRevision = useSession(state => `${state.running === true}:${state.blank === true}`)
+  const sessionRevision = `${liveNodes.at(-1)?.seq ?? -1}:${lifecycleRevision}`
   const latestUserSeq = latestUserNodeSeq(liveNodes)
   const [revision, setRevision] = useState(0)
   const running = useSession(state => state.running === true)

@@ -193,8 +193,8 @@ function TraceRecord({ record, latest }) {
   )
 }
 
-export function TavernTraceView({ sessionId, useSession }) {
-  const lastVisibleSeq = useSession(snapshot => snapshot.nodes.at(-1)?.seq ?? -1)
+export function TavernTraceView({ sessionId, useSession, useChat }) {
+  const lastVisibleSeq = useChat(snapshot => snapshot.legacy.nodes.at(-1)?.seq ?? -1)
   const running = useSession(snapshot => snapshot.running)
   const [data, setData] = useState(null)
   const [error, setError] = useState('')
