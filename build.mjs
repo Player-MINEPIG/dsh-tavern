@@ -4,7 +4,7 @@ import { readFileSync, rmSync, writeFileSync } from 'node:fs'
 const id = 'pmp-dsh-tavern'
 
 await build({
-  entryPoints: ['packages/client/src/index.js'],
+  entryPoints: ['packages/client/src/entry.js'],
   bundle: true,
   format: 'cjs',
   platform: 'browser',

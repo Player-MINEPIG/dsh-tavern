@@ -5,7 +5,6 @@ import {
   useRef,
   useState,
 } from 'react'
-import { conversationPhase } from '@deepseek-ai/dsh-client-ui-conversation'
 import {
   DEFAULT_UI_SETTINGS,
   UI_LOCALES,
@@ -1282,7 +1281,7 @@ export const name = PLUGIN_ID
 export const inject = ['slots', 'layout', 'sessions', 'workspaces']
 export { PanelHeader }
 
-export function apply(ctx) {
+export function apply(ctx, { conversationPhase }) {
   installPresetStyles()
   installCharacterStyles()
   installWorldBookStyles()

@@ -22,17 +22,18 @@ var __copyProps = (to, from, except, desc) => {
 };
 var __toCommonJS = (mod) => __copyProps(__defProp({}, "__esModule", { value: true }), mod);
 
-// packages/client/src/index.js
-var index_exports = {};
-__export(index_exports, {
-  PanelHeader: () => PanelHeader,
-  apply: () => apply2,
+// packages/client/src/entry.js
+var entry_exports = {};
+__export(entry_exports, {
+  apply: () => apply3,
   inject: () => inject,
   name: () => name
 });
-module.exports = __toCommonJS(index_exports);
-var import_react16 = require("react");
+module.exports = __toCommonJS(entry_exports);
 var import_dsh_client_ui_conversation = require("@deepseek-ai/dsh-client-ui-conversation");
+
+// packages/client/src/index.js
+var import_react16 = require("react");
 
 // packages/ui-settings/src/locale-contract.js
 var DEFAULT_UI_LOCALE = "zh-CN";
@@ -5227,7 +5228,7 @@ if (!seal) {
   };
 }
 if (!apply) {
-  apply = function apply3(func, thisArg) {
+  apply = function apply4(func, thisArg) {
     for (var _len = arguments.length, args = new Array(_len > 2 ? _len - 2 : 0), _key = 2; _key < _len; _key++) {
       args[_key - 2] = arguments[_key];
     }
@@ -14210,7 +14211,7 @@ function installStyles5() {
 }
 var name = PLUGIN_ID;
 var inject = ["slots", "layout", "sessions", "workspaces"];
-function apply2(ctx) {
+function apply2(ctx, { conversationPhase: conversationPhase2 }) {
   installPresetStyles();
   installCharacterStyles();
   installWorldBookStyles();
@@ -14237,7 +14238,7 @@ function apply2(ctx) {
     };
   }, "dsh-tavern: chrome mode service transport");
   const playSlots = installPlaySlotOccupancy(ctx, playClient, {
-    conversationPhase: import_dsh_client_ui_conversation.conversationPhase,
+    conversationPhase: conversationPhase2,
     playthroughController,
     switchToNative: () => chrome.face.setMode("native")
   });
@@ -14274,6 +14275,11 @@ function apply2(ctx) {
       })
     })
   }, TavernShell));
+}
+
+// packages/client/src/entry.js
+function apply3(ctx) {
+  return apply2(ctx, { conversationPhase: import_dsh_client_ui_conversation.conversationPhase });
 }
 /*! Bundled license information:
 
