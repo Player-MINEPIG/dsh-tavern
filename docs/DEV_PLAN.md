@@ -25,11 +25,43 @@ automated checks. Work on `codex/cu-acceptance-fixes`, starting at `248bede`:
 Each meaningful implementation stage is committed separately with its tests
 so it can be reverted. Initial credential onboarding and controlled provider
 error/retry are separate unverified gates, not fixes inferred from this pass.
-Progress: plan recorded; implementation pending.
+Progress: all five repair stages completed locally on 2026-09-06. The five
+reported browser regressions and the missing world-book label are closed for
+the tested conditions. This is not a declaration that every release gate passed.
 
-Status: implementation and local automated acceptance complete; exact
-GitHub-source installation and manual acceptance remain. This document
-describes work on the `codex/dsh-0.1.2-compat` branch. It is not a statement
+| Repair stage | Commit | Result |
+| --- | --- | --- |
+| Plan | `e9e4b7e` | Recorded scope and independent rollback stages |
+| Chat / Trace | `eb753eb` | Public Chat projection replaces removed Session fields |
+| Opening / default | `ae1e7bc` | Official Conversation phase and shared view store |
+| Browser boundary | `ebdf867` | Runtime imports isolated at the browser entry |
+| Locale / world book | `cc9f056` | Reactive settings consumers and complete drag labels |
+| Locale roster follow-up | `6796ed4` | RP tab changes language without repeating default choice |
+| Documentation / diagram | `1400aea` | Paired contracts, changelog, editable source and PNG |
+
+Verification: `npm run check` passed (522 pass, 2 fixture-dependent skips),
+`npm run verify:2.0` passed (163 package files), and independent read-only
+review reported no required findings with 25 focused tests passing. The local
+installed bundle equals the repository bundle byte for byte.
+
+Computer-use retest: empty greeting; first-send default RP; partial text while
+generation is active; completed text; old/new Trace views; live bilingual
+sidebar/dock/RP/tab labels; native selection retained on locale change;
+world-book label; and native/play mode disposal/reentry. Three real-provider
+turns have durable terminal events and actual header references (including
+header reuse). Evidence identifier: `cu-fixes-20260906`; the private report,
+screenshots, DOM, raw synthetic-session export and source index stay outside
+the public repository. Original `cu-acceptance-20260906` evidence is unchanged.
+
+Still separate gates: initial credential onboarding, controlled provider-error
+retry and complete cancellation semantics, exact-ref GitHub installation,
+broader import/export/uninstall matrix, external-plugin compatibility, and
+personal RP/Market screenshot review. No credentials were replaced, no normal
+profile was modified, and no push/tag/release was performed.
+
+Original compatibility-stage status: implementation and local automated
+acceptance complete; the repair addendum above supersedes its browser-failure
+status. The ledger below describes `codex/dsh-0.1.2-compat` work. It is not a statement
 about a published release until the remaining acceptance gates below are
 complete.
 
