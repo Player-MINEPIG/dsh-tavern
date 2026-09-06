@@ -1,5 +1,7 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
+import { CLIENT_UI_SETTINGS_EVENT } from '../packages/identity.js'
+import { getClientUiSettings, setClientUiSettings } from '../packages/client/src/i18n.js'
 import {
   PLAY_DEFAULT_VIEW_ADAPTER_ID,
   PLAY_SLOT_PRIORITY,
@@ -12,6 +14,55 @@ import {
 function nextTurn() {
   return new Promise(resolve => setImmediate(resolve))
 }
+
+test('locale refresh updates the view roster without repeating the default-view choice', async () => {
+  const previousWindow = globalThis.window
+  const previousSettings = getClientUiSettings()
+  globalThis.window = new EventTarget()
+  const registrations = [], cleanups = []
+  const playthrough = { id: 'pt', path: 'pt/timeline.json', ext: { pmpDshTavern: { rootSessionId: 's' } } }
+  const ctx = {
+    sessions: { list: { getSnapshot: () => ({ current: 's', byId: { s: { id: 's', cwd: '/rp' } } }) } },
+    slots: {
+      entries: () => [{ store: {} }],
+      inject(_name, callback) { cleanups.push(callback()) },
+      register(options) {
+        const entry = { options, active: true, label: options.label?.() }
+        registrations.push(entry)
+        return () => { entry.active = false }
+      },
+    },
+  }
+  try {
+    setClientUiSettings({ locale: 'zh-CN', scale: 1 }, { announce: false })
+    const occupancy = installPlaySlotOccupancy(ctx, {
+      getWorkspace: async () => ({ selected: true, rootPath: '/rp' }),
+      getCatalog: async () => ({ playthroughs: [playthrough] }),
+      getTimeline: async () => ({ nodes: [] }),
+    })
+    occupancy.setMode('play')
+    await nextTurn()
+    const original = registrations.find(e => e.options.id === PLAY_VIEW_ID)
+    registrations.find(e => e.options.id === PLAY_DEFAULT_VIEW_ADAPTER_ID).options.inject().complete()
+    setClientUiSettings({ locale: 'en', scale: 1 }, { announce: false })
+    window.dispatchEvent(new Event(CLIENT_UI_SETTINGS_EVENT))
+    assert.equal(original.active, false)
+    const views = registrations.filter(e => e.options.id === PLAY_VIEW_ID)
+    assert.equal(views.length, 2)
+    assert.equal(views[1].label, 'RP View')
+    assert.equal(registrations.filter(e => e.options.id === PLAY_DEFAULT_VIEW_ADAPTER_ID).length, 1)
+    window.dispatchEvent(new Event(CLIENT_UI_SETTINGS_EVENT))
+    assert.equal(registrations.filter(e => e.options.id === PLAY_VIEW_ID).length, 2)
+    for (const cleanup of cleanups) cleanup()
+    setClientUiSettings({ locale: 'zh-CN', scale: 1 }, { announce: false })
+    window.dispatchEvent(new Event(CLIENT_UI_SETTINGS_EVENT))
+    assert.equal(registrations.filter(e => e.options.id === PLAY_VIEW_ID).length, 2)
+  } finally {
+    for (const cleanup of cleanups) cleanup()
+    globalThis.window = previousWindow
+    setClientUiSettings(previousSettings, { announce: false })
+  }
+})
 
 test('Mowan adds the default RP view only while the current session belongs to a playthrough', async () => {
   let snapshot = {

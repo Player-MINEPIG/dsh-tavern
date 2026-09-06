@@ -11778,6 +11778,7 @@ function installPlaySlotOccupancy(ctx, playClient, { playthroughController, swit
   let defaultViewEntryKey = null;
   let disposeSessionSubscription = null;
   let refreshChatListener = null;
+  let refreshLocaleListener = null;
   let chatBinding = null;
   let pendingChatSignature = null;
   let preferredPlaythroughId = null;
@@ -11995,6 +11996,10 @@ function installPlaySlotOccupancy(ctx, playClient, { playthroughController, swit
       window.removeEventListener(CLIENT_REFRESH_EVENT, refreshChatListener);
     }
     refreshChatListener = null;
+    if (refreshLocaleListener !== null && typeof window !== "undefined") {
+      window.removeEventListener(CLIENT_UI_SETTINGS_EVENT, refreshLocaleListener);
+    }
+    refreshLocaleListener = null;
   };
   const startChatObserver = () => {
     const list = ctx.sessions?.list;
@@ -12005,6 +12010,17 @@ function installPlaySlotOccupancy(ctx, playClient, { playthroughController, swit
     if (refreshChatListener === null && typeof window !== "undefined") {
       refreshChatListener = () => reconcileChat(true);
       window.addEventListener(CLIENT_REFRESH_EVENT, refreshChatListener);
+    }
+    if (refreshLocaleListener === null && typeof window !== "undefined") {
+      let locale = getClientUiSettings().locale;
+      refreshLocaleListener = () => {
+        const next = getClientUiSettings().locale;
+        if (next === locale) return;
+        locale = next;
+        dropConversationEntry();
+        syncChatEntries();
+      };
+      window.addEventListener(CLIENT_UI_SETTINGS_EVENT, refreshLocaleListener);
     }
     reconcileChat(false);
   };

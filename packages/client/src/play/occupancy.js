@@ -1,5 +1,5 @@
-import { CLIENT_REFRESH_EVENT } from '../../../identity.js'
-import { translate } from '../i18n.js'
+import { CLIENT_REFRESH_EVENT, CLIENT_UI_SETTINGS_EVENT } from '../../../identity.js'
+import { getClientUiSettings, translate } from '../i18n.js'
 import { MowanChatView } from './chat.js'
 import { loadCurrentPlaythrough } from './chat-model.js'
 import { PlayWorkspaceBrowser } from './sidebar.js'
@@ -37,6 +37,7 @@ export function installPlaySlotOccupancy(ctx, playClient, { playthroughControlle
   let defaultViewEntryKey = null
   let disposeSessionSubscription = null
   let refreshChatListener = null
+  let refreshLocaleListener = null
   let chatBinding = null
   let pendingChatSignature = null
   let preferredPlaythroughId = null
@@ -285,6 +286,10 @@ export function installPlaySlotOccupancy(ctx, playClient, { playthroughControlle
       window.removeEventListener(CLIENT_REFRESH_EVENT, refreshChatListener)
     }
     refreshChatListener = null
+    if (refreshLocaleListener !== null && typeof window !== 'undefined') {
+      window.removeEventListener(CLIENT_UI_SETTINGS_EVENT, refreshLocaleListener)
+    }
+    refreshLocaleListener = null
   }
 
   const startChatObserver = () => {
@@ -296,6 +301,19 @@ export function installPlaySlotOccupancy(ctx, playClient, { playthroughControlle
     if (refreshChatListener === null && typeof window !== 'undefined') {
       refreshChatListener = () => reconcileChat(true)
       window.addEventListener(CLIENT_REFRESH_EVENT, refreshChatListener)
+    }
+    if (refreshLocaleListener === null && typeof window !== 'undefined') {
+      let locale = getClientUiSettings().locale
+      refreshLocaleListener = () => {
+        const next = getClientUiSettings().locale
+        if (next === locale) return
+        locale = next
+        // DSH snapshots string labels into its view roster. Refresh only our
+        // entry; keep the Conversation store and completed default choice.
+        dropConversationEntry()
+        syncChatEntries()
+      }
+      window.addEventListener(CLIENT_UI_SETTINGS_EVENT, refreshLocaleListener)
     }
     reconcileChat(false)
   }
