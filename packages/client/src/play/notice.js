@@ -21,6 +21,7 @@ import {
 import { RichText } from './rich-text.js'
 import { shouldShowUnboundNotice } from './sidebar-model.js'
 import { conversationDisplayStyle, useConversationDisplaySettings } from './display-settings.js'
+import { useClientUiSettings } from '../i18n/use-ui-settings.js'
 
 const h = createLocalizedElement(createElement)
 
@@ -41,6 +42,7 @@ function installStyles() {
 }
 
 export function PlaySessionDock({ session, useSessions, useConversation, conversationPhase, playClient }) {
+  useClientUiSettings()
   installStyles()
   installPlayChatStyles()
   const sessionId = session?.sessionId ?? null

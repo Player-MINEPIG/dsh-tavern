@@ -33,7 +33,7 @@ module.exports = __toCommonJS(entry_exports);
 var import_dsh_client_ui_conversation = require("@deepseek-ai/dsh-client-ui-conversation");
 
 // packages/client/src/index.js
-var import_react16 = require("react");
+var import_react17 = require("react");
 
 // packages/ui-settings/src/locale-contract.js
 var DEFAULT_UI_LOCALE = "zh-CN";
@@ -459,6 +459,7 @@ var zh_CN_default = Object.freeze({
   "world.infoPendingIds": "\u5DF2\u9009\u62E9 {count} \u4E2A\u72EC\u7ACB\u4E16\u754C\u4FE1\u606F ID\uFF0C\u4F46\u72EC\u7ACB\u8D44\u6E90\u5E93/API \u5C1A\u672A\u63A5\u5165\uFF0C\u672C\u9636\u6BB5\u4E0D\u4F1A\u52A0\u8F7D\u8FD9\u4E9B ID\u3002",
   "world.infoSaveNote": "\u4FDD\u5B58\u4F1A\u66F4\u65B0\u89D2\u8272\u5361\u6587\u6863\u53CA\u5176 JSON/PNG \u5BFC\u51FA\u3002matcher \u4F1A\u5728\u9996\u6B21\u8BF7\u6C42\u7EC4\u88C5\u524D\u628A\u672C\u6B65\u9AA4 claimed \u8F93\u5165\u4E0E Session \u5386\u53F2\u7EC4\u5408\u626B\u63CF\uFF0C\u4E0D\u4F1A\u5411\u5386\u53F2\u5199\u5165\u526F\u672C\u3002",
   "world.entry.untitled": "\u65B0\u6761\u76EE {id}",
+  "world.entry.dragToReorder": "\u62D6\u62FD\u8C03\u6574\u6761\u76EE\u987A\u5E8F",
   "world.entry.fallback": "\u6761\u76EE {id}",
   "world.entry.title": "\u6761\u76EE\u6807\u9898",
   "world.entry.nameNote": "\u6761\u76EE\u540D\u79F0 / \u5907\u6CE8",
@@ -1103,6 +1104,7 @@ var en_default = Object.freeze({
   "world.infoPendingIds": "{count} standalone World Info IDs are selected, but the standalone library/API is not wired in this phase and those IDs will not be loaded.",
   "world.infoSaveNote": "Saving updates the character card document and its JSON/PNG export. Before the first request assembly, the matcher scans this step\u2019s claimed input together with Session history without writing a duplicate into history.",
   "world.entry.untitled": "New entry {id}",
+  "world.entry.dragToReorder": "Drag to reorder entries",
   "world.entry.fallback": "Entry {id}",
   "world.entry.title": "Entry title",
   "world.entry.nameNote": "Entry name / note",
@@ -2688,8 +2690,8 @@ function EntryDragButton({ busy, dragging, onPointerDown, onPointerMove, onPoint
     className: "dwb-drag",
     type: "button",
     disabled: busy,
-    title: uiMessage("preset.dragToReorder"),
-    "aria-label": uiMessage("preset.dragToReorder"),
+    title: uiMessage("world.entry.dragToReorder"),
+    "aria-label": uiMessage("world.entry.dragToReorder"),
     "aria-pressed": dragging,
     onClick: (event) => {
       event.preventDefault();
@@ -4450,7 +4452,7 @@ function createChromeClickController({
 }
 
 // packages/client/src/play/chat.js
-var import_react10 = require("react");
+var import_react11 = require("react");
 
 // packages/play/src/timeline-tree.js
 function adoptedVariant(node) {
@@ -9757,8 +9759,21 @@ function conversationDisplayStyle(settings) {
   };
 }
 
+// packages/client/src/i18n/use-ui-settings.js
+var import_react10 = require("react");
+function useClientUiSettings() {
+  const [settings, setSettings] = (0, import_react10.useState)(getClientUiSettings);
+  (0, import_react10.useEffect)(() => {
+    const refresh = () => setSettings(getClientUiSettings());
+    window.addEventListener(CLIENT_UI_SETTINGS_EVENT, refresh);
+    refresh();
+    return () => window.removeEventListener(CLIENT_UI_SETTINGS_EVENT, refresh);
+  }, []);
+  return settings;
+}
+
 // packages/client/src/play/chat.js
-var h8 = createLocalizedElement(import_react10.createElement);
+var h8 = createLocalizedElement(import_react11.createElement);
 var turnReconcilers = /* @__PURE__ */ new WeakMap();
 var chatSnapshots = /* @__PURE__ */ new WeakMap();
 var MAX_CACHED_PLAYTHROUGHS = 32;
@@ -10010,8 +10025,8 @@ function ImportControls({
   changed,
   onError
 }) {
-  const input = (0, import_react10.useRef)(null);
-  const [busy, setBusy] = (0, import_react10.useState)(false);
+  const input = (0, import_react11.useRef)(null);
+  const [busy, setBusy] = (0, import_react11.useState)(false);
   if (locked) return null;
   const choose = () => {
     if (!busy) input.current?.click();
@@ -10250,6 +10265,7 @@ function TargetedSwipeTransition({
   );
 }
 function MowanChatView({ sessionId, useSession, useChat, playClient, playthrough, openSession, chatScroll }) {
+  useClientUiSettings();
   installPlayChatStyles();
   const displaySettings = useConversationDisplaySettings();
   const liveNodes = useChat((state2) => state2.legacy.nodes);
@@ -10257,21 +10273,21 @@ function MowanChatView({ sessionId, useSession, useChat, playClient, playthrough
   const lifecycleRevision = useSession((state2) => `${state2.running === true}:${state2.blank === true}`);
   const sessionRevision = `${liveNodes.at(-1)?.seq ?? -1}:${lifecycleRevision}`;
   const latestUserSeq = latestUserNodeSeq(liveNodes);
-  const [revision, setRevision] = (0, import_react10.useState)(0);
+  const [revision, setRevision] = (0, import_react11.useState)(0);
   const running = useSession((state2) => state2.running === true);
-  const [loadedState, setLoadedState] = (0, import_react10.useState)(() => cachedChatSnapshot(playClient, playthrough));
-  const loadedStateRef = (0, import_react10.useRef)(loadedState);
-  const transitionIntent = (0, import_react10.useRef)({ sessionId: null, intent: null });
-  const [transition, setTransition] = (0, import_react10.useState)(null);
+  const [loadedState, setLoadedState] = (0, import_react11.useState)(() => cachedChatSnapshot(playClient, playthrough));
+  const loadedStateRef = (0, import_react11.useRef)(loadedState);
+  const transitionIntent = (0, import_react11.useRef)({ sessionId: null, intent: null });
+  const [transition, setTransition] = (0, import_react11.useState)(null);
   const state = loadedState?.value ?? null;
   const stateIsCurrent = loadedState?.sessionId === sessionId;
-  const [error, setError] = (0, import_react10.useState)("");
-  const [greetingBusy, setGreetingBusy] = (0, import_react10.useState)(false);
-  const [pendingSwipe, setPendingSwipe] = (0, import_react10.useState)(null);
-  const bottomAnchor = (0, import_react10.useRef)(null);
-  const initialScrollSession = (0, import_react10.useRef)(null);
-  const userSeqSession = (0, import_react10.useRef)(null);
-  const lastUserSeq = (0, import_react10.useRef)(-1);
+  const [error, setError] = (0, import_react11.useState)("");
+  const [greetingBusy, setGreetingBusy] = (0, import_react11.useState)(false);
+  const [pendingSwipe, setPendingSwipe] = (0, import_react11.useState)(null);
+  const bottomAnchor = (0, import_react11.useRef)(null);
+  const initialScrollSession = (0, import_react11.useRef)(null);
+  const userSeqSession = (0, import_react11.useRef)(null);
+  const lastUserSeq = (0, import_react11.useRef)(-1);
   const scrollToBottom = () => {
     const local = bottomAnchor.current;
     if (local === null) return;
@@ -10279,12 +10295,12 @@ function MowanChatView({ sessionId, useSession, useChat, playClient, playthrough
     scrollport.scrollTop = scrollport.scrollHeight;
     chatScroll?.save(null);
   };
-  (0, import_react10.useLayoutEffect)(() => {
+  (0, import_react11.useLayoutEffect)(() => {
     if (!stateIsCurrent || initialScrollSession.current === sessionId) return;
     initialScrollSession.current = sessionId;
     scrollToBottom();
   }, [sessionId, state, stateIsCurrent]);
-  (0, import_react10.useLayoutEffect)(() => {
+  (0, import_react11.useLayoutEffect)(() => {
     if (userSeqSession.current !== sessionId) {
       userSeqSession.current = sessionId;
       lastUserSeq.current = latestUserSeq;
@@ -10294,12 +10310,12 @@ function MowanChatView({ sessionId, useSession, useChat, playClient, playthrough
     lastUserSeq.current = latestUserSeq;
     scrollToBottom();
   }, [latestUserSeq, sessionId]);
-  (0, import_react10.useEffect)(() => {
+  (0, import_react11.useEffect)(() => {
     const refresh = () => setRevision((value) => value + 1);
     window.addEventListener(CLIENT_REFRESH_EVENT, refresh);
     return () => window.removeEventListener(CLIENT_REFRESH_EVENT, refresh);
   }, []);
-  (0, import_react10.useEffect)(() => {
+  (0, import_react11.useEffect)(() => {
     if (transition === null) return void 0;
     const targetSessionId = transition.to.sessionId;
     const timer = window.setTimeout(() => {
@@ -10307,7 +10323,7 @@ function MowanChatView({ sessionId, useSession, useChat, playClient, playthrough
     }, 260);
     return () => window.clearTimeout(timer);
   }, [transition]);
-  (0, import_react10.useEffect)(() => {
+  (0, import_react11.useEffect)(() => {
     let active = true;
     if (transitionIntent.current.sessionId !== sessionId) {
       transitionIntent.current = {
@@ -10417,10 +10433,10 @@ function MowanChatView({ sessionId, useSession, useChat, playClient, playthrough
 }
 
 // packages/client/src/play/sidebar.js
-var import_react12 = require("react");
+var import_react13 = require("react");
 
 // packages/client/src/play/io-menu.js
-var import_react11 = require("react");
+var import_react12 = require("react");
 
 // packages/client/src/play/export.js
 function rootSessionId5(playthrough, timeline) {
@@ -10662,7 +10678,7 @@ function playthroughDisplayTitle(playthrough) {
 }
 
 // packages/client/src/play/io-menu.js
-var h9 = createLocalizedElement(import_react11.createElement);
+var h9 = createLocalizedElement(import_react12.createElement);
 var css8 = `
 .dtv-play-io{position:relative;display:inline-flex}.dtv-play-io-trigger{width:30px;height:30px;border:0;border-radius:8px;background:transparent;color:var(--dsw-alias-label-secondary);font:inherit;cursor:pointer}.dtv-play-io-trigger:hover{background:var(--dsw-alias-interactive-bg-hover)}
 .dtv-play-io-menu{position:absolute;z-index:30;left:0;bottom:calc(100% + 6px);min-width:210px;padding:6px;border:1px solid var(--dsw-alias-border-subtle);border-radius:11px;background:var(--dsw-alias-bg-layer-1,#181a20);box-shadow:0 12px 30px #0008;display:flex;flex-direction:column;gap:2px}.dtv-play-io[data-placement=sidebar] .dtv-play-io-menu{left:auto;right:0;bottom:auto;top:calc(100% + 4px);width:max-content;min-width:0;max-width:168px}.dtv-play-io[data-placement=sidebar] .dtv-play-io-item{white-space:nowrap}
@@ -10693,12 +10709,12 @@ function downloadDocument(playthrough, document2) {
 }
 function PlayIoMenu({ playClient, playthrough, trigger = "+", placement = "composer", onRelink }) {
   installStyles2();
-  const root = (0, import_react11.useRef)(null);
-  const [open, setOpen] = (0, import_react11.useState)(false);
-  const [busy, setBusy] = (0, import_react11.useState)(false);
-  const [error, setError] = (0, import_react11.useState)("");
+  const root = (0, import_react12.useRef)(null);
+  const [open, setOpen] = (0, import_react12.useState)(false);
+  const [busy, setBusy] = (0, import_react12.useState)(false);
+  const [error, setError] = (0, import_react12.useState)("");
   const displayTitle = playthroughDisplayTitle(playthrough);
-  (0, import_react11.useEffect)(() => {
+  (0, import_react12.useEffect)(() => {
     if (!open) return void 0;
     const close = (event) => {
       if (!root.current?.contains(event.target)) setOpen(false);
@@ -10776,7 +10792,7 @@ function PlayIoMenu({ playClient, playthrough, trigger = "+", placement = "compo
 }
 
 // packages/client/src/play/sidebar.js
-var h10 = createLocalizedElement(import_react12.createElement);
+var h10 = createLocalizedElement(import_react13.createElement);
 var css9 = `
 .dtv-play-character-drag{width:20px;min-width:20px;align-self:stretch;border:0;border-radius:7px;background:transparent;color:var(--dsw-alias-label-tertiary);cursor:grab;padding:0;font:inherit;font-size:14px;touch-action:none;user-select:none}.dtv-play-character-drag:hover{background:var(--dsw-alias-interactive-bg-hover)}.dtv-play-character-drag:active{cursor:grabbing}.dtv-play-character-drag:disabled{cursor:default;opacity:.4}
 .dtv-play-section[data-dragging=true]{height:4px;min-height:4px;margin:5px 10px;overflow:hidden;border-radius:999px;background:var(--dsw-alias-state-business-primary);box-shadow:0 0 0 1px color-mix(in srgb,var(--dsw-alias-state-business-primary) 25%,transparent)}.dtv-play-section[data-dragging=true]>*{opacity:0}
@@ -10802,18 +10818,6 @@ function installStyles3() {
   style.dataset.pluginCss = `${PLUGIN_ID}-play-sidebar`;
   style.textContent = css9;
   document.head.append(style);
-}
-function useUiScale() {
-  const [scale, setScale] = (0, import_react12.useState)(() => getClientUiSettings().scale);
-  (0, import_react12.useEffect)(() => {
-    const onSettings = (event) => {
-      const next = Number(event.detail?.scale);
-      if (Number.isFinite(next)) setScale(next);
-    };
-    window.addEventListener(CLIENT_UI_SETTINGS_EVENT, onSettings);
-    return () => window.removeEventListener(CLIENT_UI_SETTINGS_EVENT, onSettings);
-  }, []);
-  return scale;
 }
 function Avatar({ character }) {
   const fallback = (character.name || character.id).slice(0, 1).toUpperCase();
@@ -11039,16 +11043,16 @@ function PlayWorkspaceBrowser({
   subscribeActivePlaythroughId
 }) {
   installStyles3();
-  const scale = useUiScale();
+  const { scale } = useClientUiSettings();
   const sessionIds = useSessions((state) => state.ids);
   const sessions = useSessions((state) => state.byId);
   const currentId = useSessions((state) => state.current ?? null);
   const workspaceItems = useWorkspaces((state) => state.items);
   const archivedSessionIds = useWorkspaces((state) => state.archivedSessionIds);
-  const cache = (0, import_react12.useRef)(null);
+  const cache = (0, import_react13.useRef)(null);
   if (cache.current === null) cache.current = new SessionCharacterBindingCache();
-  const automaticRelinks = (0, import_react12.useRef)(/* @__PURE__ */ new Set());
-  const creator = (0, import_react12.useRef)(null);
+  const automaticRelinks = (0, import_react13.useRef)(/* @__PURE__ */ new Set());
+  const creator = (0, import_react13.useRef)(null);
   if (creator.current?.client !== playClient || creator.current?.provided !== playthroughController) {
     creator.current = {
       client: playClient,
@@ -11056,32 +11060,32 @@ function PlayWorkspaceBrowser({
       controller: playthroughController ?? createPlaythroughController(playClient)
     };
   }
-  const [creatingCharacterId, setCreatingCharacterId] = (0, import_react12.useState)(null);
-  const [revision, setRevision] = (0, import_react12.useState)(0);
-  const [resources, setResources] = (0, import_react12.useState)(null);
-  const [sessionCharacters, setSessionCharacters] = (0, import_react12.useState)({});
-  const [status, setStatus] = (0, import_react12.useState)(null);
-  const [collapsedCharacters, setCollapsedCharacters] = (0, import_react12.useState)(() => /* @__PURE__ */ new Set());
-  const [expandedUnassigned, setExpandedUnassigned] = (0, import_react12.useState)(() => /* @__PURE__ */ new Set());
-  const [otherOpen, setOtherOpen] = (0, import_react12.useState)(false);
-  const [ordinaryPromptOpen, setOrdinaryPromptOpen] = (0, import_react12.useState)(false);
-  const [missingOpen, setMissingOpen] = (0, import_react12.useState)(true);
-  const [collapsedMissingCharacters, setCollapsedMissingCharacters] = (0, import_react12.useState)(() => /* @__PURE__ */ new Set());
-  const [relinkRequest, setRelinkRequest] = (0, import_react12.useState)(null);
-  const [relinkTargetId, setRelinkTargetId] = (0, import_react12.useState)("");
-  const [relinkBusy, setRelinkBusy] = (0, import_react12.useState)(false);
-  const [activePlaythroughId, setActivePlaythroughId] = (0, import_react12.useState)(
+  const [creatingCharacterId, setCreatingCharacterId] = (0, import_react13.useState)(null);
+  const [revision, setRevision] = (0, import_react13.useState)(0);
+  const [resources, setResources] = (0, import_react13.useState)(null);
+  const [sessionCharacters, setSessionCharacters] = (0, import_react13.useState)({});
+  const [status, setStatus] = (0, import_react13.useState)(null);
+  const [collapsedCharacters, setCollapsedCharacters] = (0, import_react13.useState)(() => /* @__PURE__ */ new Set());
+  const [expandedUnassigned, setExpandedUnassigned] = (0, import_react13.useState)(() => /* @__PURE__ */ new Set());
+  const [otherOpen, setOtherOpen] = (0, import_react13.useState)(false);
+  const [ordinaryPromptOpen, setOrdinaryPromptOpen] = (0, import_react13.useState)(false);
+  const [missingOpen, setMissingOpen] = (0, import_react13.useState)(true);
+  const [collapsedMissingCharacters, setCollapsedMissingCharacters] = (0, import_react13.useState)(() => /* @__PURE__ */ new Set());
+  const [relinkRequest, setRelinkRequest] = (0, import_react13.useState)(null);
+  const [relinkTargetId, setRelinkTargetId] = (0, import_react13.useState)("");
+  const [relinkBusy, setRelinkBusy] = (0, import_react13.useState)(false);
+  const [activePlaythroughId, setActivePlaythroughId] = (0, import_react13.useState)(
     () => getActivePlaythroughId?.() ?? null
   );
-  const [characterDragFrom, setCharacterDragFrom] = (0, import_react12.useState)(null);
-  const [characterDropIndex, setCharacterDropIndex] = (0, import_react12.useState)(null);
-  const [reorderingCharacters, setReorderingCharacters] = (0, import_react12.useState)(false);
-  (0, import_react12.useEffect)(() => {
+  const [characterDragFrom, setCharacterDragFrom] = (0, import_react13.useState)(null);
+  const [characterDropIndex, setCharacterDropIndex] = (0, import_react13.useState)(null);
+  const [reorderingCharacters, setReorderingCharacters] = (0, import_react13.useState)(false);
+  (0, import_react13.useEffect)(() => {
     if (typeof subscribeActivePlaythroughId !== "function") return void 0;
     setActivePlaythroughId(getActivePlaythroughId?.() ?? null);
     return subscribeActivePlaythroughId(setActivePlaythroughId);
   }, [getActivePlaythroughId, subscribeActivePlaythroughId]);
-  (0, import_react12.useEffect)(() => {
+  (0, import_react13.useEffect)(() => {
     const refresh = () => {
       cache.current.clear();
       setRevision((value) => value + 1);
@@ -11089,7 +11093,7 @@ function PlayWorkspaceBrowser({
     window.addEventListener(CLIENT_REFRESH_EVENT, refresh);
     return () => window.removeEventListener(CLIENT_REFRESH_EVENT, refresh);
   }, []);
-  (0, import_react12.useEffect)(() => {
+  (0, import_react13.useEffect)(() => {
     let active = true;
     setStatus(null);
     loadPlaySidebarResources(playClient).then((next) => {
@@ -11109,7 +11113,7 @@ function PlayWorkspaceBrowser({
     sessions
   })];
   const rpKey = rpIds.join("\0");
-  (0, import_react12.useEffect)(() => {
+  (0, import_react13.useEffect)(() => {
     let active = true;
     if (resources === null) {
       setSessionCharacters({});
@@ -11144,7 +11148,7 @@ function PlayWorkspaceBrowser({
     "|",
     ...model.missingCharacters.map((item) => `${item.id}:${item.name}:${item.sha256 ?? ""}`)
   ].join("\0");
-  (0, import_react12.useEffect)(() => {
+  (0, import_react13.useEffect)(() => {
     if (resources === null || model.missingCharacters.length === 0 || model.characters.length === 0) return void 0;
     let active = true;
     const normalizedName = (value) => String(value ?? "").trim().toLocaleLowerCase("zh-CN");
@@ -11553,8 +11557,8 @@ function PlayWorkspaceBrowser({
 }
 
 // packages/client/src/play/notice.js
-var import_react13 = require("react");
-var h11 = createLocalizedElement(import_react13.createElement);
+var import_react14 = require("react");
+var h11 = createLocalizedElement(import_react14.createElement);
 var css10 = `
 .dtv-play-unbound-notice{box-sizing:border-box;width:100%;max-width:var(--dsh-composer-card-max-width,100%);align-self:center;margin:0;padding:7px 10px;border:1px solid color-mix(in srgb,var(--dsw-alias-state-warning,#d79921) 34%,transparent);border-radius:10px;background:color-mix(in srgb,var(--dsw-alias-state-warning,#d79921) 8%,transparent);color:var(--dsw-alias-label-secondary);font-size:11px;line-height:1.45}
 .dtv-play-opening-dock{box-sizing:border-box;width:100%;min-width:0;flex:none;display:flex;flex-direction:column;overflow:hidden;border:1px solid var(--dsw-alias-border-l2);border-radius:14px;background:var(--dsw-alias-bg-layer-2,var(--dsw-specific-block));color:var(--dsw-alias-label-primary);box-shadow:0 4px 18px color-mix(in srgb,var(--dsw-alias-label-primary) 7%,transparent)}
@@ -11570,6 +11574,7 @@ function installStyles4() {
   document.head.append(style);
 }
 function PlaySessionDock({ session, useSessions, useConversation, conversationPhase: conversationPhase2, playClient }) {
+  useClientUiSettings();
   installStyles4();
   installPlayChatStyles();
   const sessionId = session?.sessionId ?? null;
@@ -11577,17 +11582,17 @@ function PlaySessionDock({ session, useSessions, useConversation, conversationPh
   const conversation = useConversation((state) => state);
   const composerPhase = conversationPhase2(session, conversation);
   const summary = useSessions((state) => sessionId === null ? null : state.byId?.[sessionId] ?? null);
-  const [revision, setRevision] = (0, import_react13.useState)(0);
-  const [content, setContent] = (0, import_react13.useState)(null);
-  const [greetingBusy, setGreetingBusy] = (0, import_react13.useState)(false);
-  const [error, setError] = (0, import_react13.useState)("");
+  const [revision, setRevision] = (0, import_react14.useState)(0);
+  const [content, setContent] = (0, import_react14.useState)(null);
+  const [greetingBusy, setGreetingBusy] = (0, import_react14.useState)(false);
+  const [error, setError] = (0, import_react14.useState)("");
   const displaySettings = useConversationDisplaySettings();
-  (0, import_react13.useEffect)(() => {
+  (0, import_react14.useEffect)(() => {
     const refresh = () => setRevision((value) => value + 1);
     window.addEventListener(CLIENT_REFRESH_EVENT, refresh);
     return () => window.removeEventListener(CLIENT_REFRESH_EVENT, refresh);
   }, []);
-  (0, import_react13.useEffect)(() => {
+  (0, import_react14.useEffect)(() => {
     let active = true;
     setContent((current3) => current3?.sessionId === sessionId && current3.kind === "opening" ? current3 : null);
     setError("");
@@ -11723,14 +11728,14 @@ function PlaySessionDock({ session, useSessions, useConversation, conversationPh
 }
 
 // packages/client/src/play/view-default.js
-var import_react14 = require("react");
+var import_react15 = require("react");
 function defaultViewTarget(selectedView, targetViewId) {
   return selectedView === null || selectedView === void 0 ? targetViewId : null;
 }
 function DefaultConversationViewAdapter({ useStore, actions, targetViewId, complete }) {
   const hasStore = typeof useStore === "function";
   const selectedView = hasStore ? useStore((state) => state.view) : void 0;
-  (0, import_react14.useLayoutEffect)(() => {
+  (0, import_react15.useLayoutEffect)(() => {
     const target = defaultViewTarget(selectedView, targetViewId);
     if (hasStore && target !== null && typeof actions?.setView === "function") {
       try {
@@ -12362,8 +12367,8 @@ function createLivePlayClient({
 }
 
 // packages/client/src/play/regex-panel.js
-var import_react15 = require("react");
-var h12 = createLocalizedElement(import_react15.createElement);
+var import_react16 = require("react");
+var h12 = createLocalizedElement(import_react16.createElement);
 var EMPTY_DOCUMENT = Object.freeze({ schemaVersion: 1, rules: Object.freeze([]) });
 var SCOPE_KINDS = Object.freeze(["global", "preset", "character"]);
 function reorderRegexRulesAtBoundary(rules, fromIndex, boundary) {
@@ -12706,16 +12711,16 @@ function RegexScopeSection({
   );
 }
 function RegexPanel({ client, activeSnapshot, close }) {
-  const [document2, setDocument] = (0, import_react15.useState)(EMPTY_DOCUMENT);
-  const [savedDocument, setSavedDocument] = (0, import_react15.useState)(EMPTY_DOCUMENT);
-  const [resourceRules, setResourceRules] = (0, import_react15.useState)({ preset: [], character: [] });
-  const [savedResourceRules, setSavedResourceRules] = (0, import_react15.useState)({ preset: [], character: [] });
-  const [busy, setBusy] = (0, import_react15.useState)(false);
-  const [status, setStatus] = (0, import_react15.useState)({ text: uiMessage("common.loading"), error: false });
-  const [dragFrom, setDragFrom] = (0, import_react15.useState)(null);
-  const [dropIndex, setDropIndex] = (0, import_react15.useState)(null);
-  const fileInput = (0, import_react15.useRef)(null);
-  const importScope = (0, import_react15.useRef)("global");
+  const [document2, setDocument] = (0, import_react16.useState)(EMPTY_DOCUMENT);
+  const [savedDocument, setSavedDocument] = (0, import_react16.useState)(EMPTY_DOCUMENT);
+  const [resourceRules, setResourceRules] = (0, import_react16.useState)({ preset: [], character: [] });
+  const [savedResourceRules, setSavedResourceRules] = (0, import_react16.useState)({ preset: [], character: [] });
+  const [busy, setBusy] = (0, import_react16.useState)(false);
+  const [status, setStatus] = (0, import_react16.useState)({ text: uiMessage("common.loading"), error: false });
+  const [dragFrom, setDragFrom] = (0, import_react16.useState)(null);
+  const [dropIndex, setDropIndex] = (0, import_react16.useState)(null);
+  const fileInput = (0, import_react16.useRef)(null);
+  const importScope = (0, import_react16.useRef)("global");
   const bindings = activeRegexBindings(activeSnapshot);
   const dirty = JSON.stringify(document2) !== JSON.stringify(savedDocument) || JSON.stringify(resourceRules) !== JSON.stringify(savedResourceRules);
   const load = async () => {
@@ -12741,7 +12746,7 @@ function RegexPanel({ client, activeSnapshot, close }) {
       setBusy(false);
     }
   };
-  (0, import_react15.useEffect)(() => {
+  (0, import_react16.useEffect)(() => {
     load();
   }, [client, bindings.presetId, bindings.characterId]);
   const persist = async (next, nextResourceRules = resourceRules, { rethrow = false } = {}) => {
@@ -13211,7 +13216,7 @@ function startChromeModeTransport({
 }
 
 // packages/client/src/index.js
-var h13 = createLocalizedElement(import_react16.createElement);
+var h13 = createLocalizedElement(import_react17.createElement);
 var css11 = `
 .dtv-layer{position:absolute;inset:0;z-index:6;pointer-events:none;font-family:Inter,var(--dsw-font-family),sans-serif;color:var(--dsw-alias-label-primary)}
 .dtv-launcher{position:absolute;z-index:2;width:44px;height:44px;pointer-events:auto;overflow:hidden;border:0 solid transparent;border-radius:22px;background:transparent;box-shadow:none;transition:width .22s ease,height .22s ease,border-radius .22s ease,background-color .18s ease,box-shadow .18s ease;display:block}
@@ -13591,49 +13596,49 @@ function WorkspaceAdmission({ setting, state, error, busy, selectWorkspace, relo
   );
 }
 function TavernShell({ useSessions, useWorkspaces, createCleanSession, createConfiguredPlaythrough, playClient, playSlots, chromeService }) {
-  const [menuOpen, setMenuOpen] = (0, import_react16.useState)(false);
-  const [surface, setSurface] = (0, import_react16.useState)(null);
-  const [anchor, setAnchor] = (0, import_react16.useState)(initialLauncherAnchor);
-  const [chromeMode, setChromeMode] = (0, import_react16.useState)(() => chromeService.getMode());
-  const [chromeAnimation, setChromeAnimation] = (0, import_react16.useState)(0);
-  const [chromeError, setChromeError] = (0, import_react16.useState)("");
-  const [activeSnapshot, setActiveSnapshot] = (0, import_react16.useState)(null);
-  const [statusError, setStatusError] = (0, import_react16.useState)("");
-  const [uiSettings, setUiSettings] = (0, import_react16.useState)(getClientUiSettings);
-  const [conversationSettings, setConversationSettings] = (0, import_react16.useState)(getClientConversationSettings);
-  const [conversationSettingsStatus, setConversationSettingsStatus] = (0, import_react16.useState)({ text: translate("conversationSettings.saved"), error: false });
-  const [conversationSettingsBusy, setConversationSettingsBusy] = (0, import_react16.useState)(false);
-  const [settingsStatus, setSettingsStatus] = (0, import_react16.useState)({ text: translate("settings.saved"), error: false });
-  const [settingsBusy, setSettingsBusy] = (0, import_react16.useState)(false);
-  const [rpPolicyDraft, setRpPolicyDraft] = (0, import_react16.useState)("");
-  const [rpPolicyLoaded, setRpPolicyLoaded] = (0, import_react16.useState)(false);
-  const [rpPolicyBusy, setRpPolicyBusy] = (0, import_react16.useState)(false);
-  const [rpWorkspaceSetting, setRpWorkspaceSetting] = (0, import_react16.useState)(null);
-  const [rpWorkspaceLoadState, setRpWorkspaceLoadState] = (0, import_react16.useState)("idle");
-  const [rpWorkspaceError, setRpWorkspaceError] = (0, import_react16.useState)("");
-  const [rpWorkspaceBusy, setRpWorkspaceBusy] = (0, import_react16.useState)(false);
-  const rpWorkspaceBusyRef = (0, import_react16.useRef)(false);
-  const rpWorkspaceLoadGeneration = (0, import_react16.useRef)(0);
-  const [rpAlert, setRpAlert] = (0, import_react16.useState)(null);
-  const [importFailure, setImportFailure] = (0, import_react16.useState)(null);
-  const drag = (0, import_react16.useRef)(null);
-  const suppressClick = (0, import_react16.useRef)(false);
-  const chromeController = (0, import_react16.useRef)(null);
-  const statusGeneration = (0, import_react16.useRef)(0);
-  const rpAlertRef = (0, import_react16.useRef)(null);
-  const dismissedRpAlerts = (0, import_react16.useRef)(/* @__PURE__ */ new Set());
+  const [menuOpen, setMenuOpen] = (0, import_react17.useState)(false);
+  const [surface, setSurface] = (0, import_react17.useState)(null);
+  const [anchor, setAnchor] = (0, import_react17.useState)(initialLauncherAnchor);
+  const [chromeMode, setChromeMode] = (0, import_react17.useState)(() => chromeService.getMode());
+  const [chromeAnimation, setChromeAnimation] = (0, import_react17.useState)(0);
+  const [chromeError, setChromeError] = (0, import_react17.useState)("");
+  const [activeSnapshot, setActiveSnapshot] = (0, import_react17.useState)(null);
+  const [statusError, setStatusError] = (0, import_react17.useState)("");
+  const [uiSettings, setUiSettings] = (0, import_react17.useState)(getClientUiSettings);
+  const [conversationSettings, setConversationSettings] = (0, import_react17.useState)(getClientConversationSettings);
+  const [conversationSettingsStatus, setConversationSettingsStatus] = (0, import_react17.useState)({ text: translate("conversationSettings.saved"), error: false });
+  const [conversationSettingsBusy, setConversationSettingsBusy] = (0, import_react17.useState)(false);
+  const [settingsStatus, setSettingsStatus] = (0, import_react17.useState)({ text: translate("settings.saved"), error: false });
+  const [settingsBusy, setSettingsBusy] = (0, import_react17.useState)(false);
+  const [rpPolicyDraft, setRpPolicyDraft] = (0, import_react17.useState)("");
+  const [rpPolicyLoaded, setRpPolicyLoaded] = (0, import_react17.useState)(false);
+  const [rpPolicyBusy, setRpPolicyBusy] = (0, import_react17.useState)(false);
+  const [rpWorkspaceSetting, setRpWorkspaceSetting] = (0, import_react17.useState)(null);
+  const [rpWorkspaceLoadState, setRpWorkspaceLoadState] = (0, import_react17.useState)("idle");
+  const [rpWorkspaceError, setRpWorkspaceError] = (0, import_react17.useState)("");
+  const [rpWorkspaceBusy, setRpWorkspaceBusy] = (0, import_react17.useState)(false);
+  const rpWorkspaceBusyRef = (0, import_react17.useRef)(false);
+  const rpWorkspaceLoadGeneration = (0, import_react17.useRef)(0);
+  const [rpAlert, setRpAlert] = (0, import_react17.useState)(null);
+  const [importFailure, setImportFailure] = (0, import_react17.useState)(null);
+  const drag = (0, import_react17.useRef)(null);
+  const suppressClick = (0, import_react17.useRef)(false);
+  const chromeController = (0, import_react17.useRef)(null);
+  const statusGeneration = (0, import_react17.useRef)(0);
+  const rpAlertRef = (0, import_react17.useRef)(null);
+  const dismissedRpAlerts = (0, import_react17.useRef)(/* @__PURE__ */ new Set());
   const sessionId = useSessions((state) => state.current);
   const sessionBlank = useSessions((state) => state.current === void 0 || state.current === null ? true : state.byId?.[state.current]?.blank === true);
   const workspaceId = useWorkspaces((state) => workspaceTargetId(state, sessionId));
   const workspaceItems = useWorkspaces((state) => state.items);
-  const hasConversationHistory = (0, import_react16.useCallback)(async (targetSessionId) => {
+  const hasConversationHistory = (0, import_react17.useCallback)(async (targetSessionId) => {
     const messages = await playClient.getMessages(targetSessionId);
     return sessionHasConversationHistory(messages);
   }, [playClient]);
   const close = () => setSurface(null);
   if (rpAlert === null || dismissedRpAlerts.current.has(rpAlert.id)) rpAlertRef.current = null;
   else rpAlertRef.current = rpAlert;
-  (0, import_react16.useEffect)(() => {
+  (0, import_react17.useEffect)(() => {
     const commitChrome = (snapshot) => {
       setChromeMode(snapshot.mode);
       playSlots.setMode(snapshot.mode);
@@ -13659,7 +13664,7 @@ function TavernShell({ useSessions, useWorkspaces, createCleanSession, createCon
       unsubscribe();
     };
   }, [chromeService, playSlots]);
-  (0, import_react16.useEffect)(() => {
+  (0, import_react17.useEffect)(() => {
     let active = true;
     uiSettingsRequest().then((next) => {
       if (!active) return;
@@ -13674,7 +13679,7 @@ function TavernShell({ useSessions, useWorkspaces, createCleanSession, createCon
       active = false;
     };
   }, []);
-  (0, import_react16.useEffect)(() => {
+  (0, import_react17.useEffect)(() => {
     let active = true;
     conversationSettingsRequest().then((next) => {
       if (!active) return;
@@ -13770,7 +13775,7 @@ function TavernShell({ useSessions, useWorkspaces, createCleanSession, createCon
       setConversationSettingsBusy(false);
     }
   };
-  (0, import_react16.useEffect)(() => {
+  (0, import_react17.useEffect)(() => {
     if (surface !== "settings") return void 0;
     let active = true;
     setRpPolicyLoaded(false);
@@ -13786,7 +13791,7 @@ function TavernShell({ useSessions, useWorkspaces, createCleanSession, createCon
       active = false;
     };
   }, [surface]);
-  const refreshRpWorkspace = (0, import_react16.useCallback)(async () => {
+  const refreshRpWorkspace = (0, import_react17.useCallback)(async () => {
     const generation = ++rpWorkspaceLoadGeneration.current;
     setRpWorkspaceLoadState("loading");
     setRpWorkspaceError("");
@@ -13805,12 +13810,12 @@ function TavernShell({ useSessions, useWorkspaces, createCleanSession, createCon
     }
   }, [playClient, workspaceItems]);
   const needsRpWorkspace = chromeMode === "play" || surface === "settings";
-  (0, import_react16.useEffect)(() => {
+  (0, import_react17.useEffect)(() => {
     if (!needsRpWorkspace) return void 0;
     refreshRpWorkspace();
     return void 0;
   }, [needsRpWorkspace, refreshRpWorkspace]);
-  (0, import_react16.useEffect)(() => {
+  (0, import_react17.useEffect)(() => {
     if (surface !== "settings" || rpWorkspaceLoadState !== "error") return;
     setSettingsStatus({ text: translate("settings.loadError", { message: rpWorkspaceError }), error: true });
   }, [rpWorkspaceError, rpWorkspaceLoadState, surface]);
@@ -13882,7 +13887,7 @@ function TavernShell({ useSessions, useWorkspaces, createCleanSession, createCon
       setRpPolicyBusy(false);
     }
   };
-  const refreshStatus = (0, import_react16.useCallback)(async () => {
+  const refreshStatus = (0, import_react17.useCallback)(async () => {
     const generation = ++statusGeneration.current;
     try {
       const next = await activeView(sessionId);
@@ -13894,7 +13899,7 @@ function TavernShell({ useSessions, useWorkspaces, createCleanSession, createCon
       setStatusError(reason instanceof Error ? reason.message : String(reason));
     }
   }, [sessionId]);
-  (0, import_react16.useEffect)(() => {
+  (0, import_react17.useEffect)(() => {
     statusGeneration.current += 1;
     setActiveSnapshot(null);
     setStatusError("");
@@ -13903,12 +13908,12 @@ function TavernShell({ useSessions, useWorkspaces, createCleanSession, createCon
       statusGeneration.current += 1;
     };
   }, [refreshStatus, sessionId]);
-  (0, import_react16.useEffect)(() => {
+  (0, import_react17.useEffect)(() => {
     const onRefresh = () => refreshStatus();
     window.addEventListener(CLIENT_REFRESH_EVENT, onRefresh);
     return () => window.removeEventListener(CLIENT_REFRESH_EVENT, onRefresh);
   }, [refreshStatus]);
-  (0, import_react16.useEffect)(() => {
+  (0, import_react17.useEffect)(() => {
     const onResize = () => setAnchor((current3) => {
       const next = clampLauncherAnchor(current3, viewport(), uiSettings.scale);
       persistLauncherAnchor(next);
@@ -13917,14 +13922,14 @@ function TavernShell({ useSessions, useWorkspaces, createCleanSession, createCon
     window.addEventListener("resize", onResize);
     return () => window.removeEventListener("resize", onResize);
   }, [uiSettings.scale]);
-  (0, import_react16.useEffect)(() => {
+  (0, import_react17.useEffect)(() => {
     setAnchor((current3) => {
       const next = clampLauncherAnchor(current3, viewport(), uiSettings.scale);
       persistLauncherAnchor(next);
       return next;
     });
   }, [uiSettings.scale]);
-  (0, import_react16.useEffect)(() => {
+  (0, import_react17.useEffect)(() => {
     if (typeof sessionId !== "string" || sessionId === "") {
       dismissedRpAlerts.current = /* @__PURE__ */ new Set();
       rpAlertRef.current = null;
@@ -13960,7 +13965,7 @@ function TavernShell({ useSessions, useWorkspaces, createCleanSession, createCon
     } catch {
     }
   };
-  (0, import_react16.useEffect)(() => {
+  (0, import_react17.useEffect)(() => {
     const onImportFailure = (event) => {
       const message = typeof event?.detail?.message === "string" ? event.detail.message.trim() : "";
       if (message !== "") setImportFailure(message.slice(0, 1e3));
@@ -13968,7 +13973,7 @@ function TavernShell({ useSessions, useWorkspaces, createCleanSession, createCon
     window.addEventListener(CLIENT_IMPORT_FAILURE_EVENT, onImportFailure);
     return () => window.removeEventListener(CLIENT_IMPORT_FAILURE_EVENT, onImportFailure);
   }, []);
-  (0, import_react16.useEffect)(() => {
+  (0, import_react17.useEffect)(() => {
     const onKeyDown = (event) => {
       if (event.key !== "Escape") return;
       if (importFailure !== null) setImportFailure(null);

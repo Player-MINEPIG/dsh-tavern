@@ -7,12 +7,10 @@ import {
 import {
   API_V1,
   CLIENT_REFRESH_EVENT,
-  CLIENT_UI_SETTINGS_EVENT,
   PLUGIN_ID,
 } from '../../../identity.js'
 import {
   createLocalizedElement,
-  getClientUiSettings,
   rawText,
   uiMessage,
   unwrapText,
@@ -34,6 +32,7 @@ import {
   sessionIdsInRpWorkspace,
 } from './sidebar-model.js'
 import { reorderAtBoundary } from '../../../preset/src/client-state.js'
+import { useClientUiSettings } from '../i18n/use-ui-settings.js'
 
 const h = createLocalizedElement(createElement)
 
@@ -63,19 +62,6 @@ function installStyles() {
   style.dataset.pluginCss = `${PLUGIN_ID}-play-sidebar`
   style.textContent = css
   document.head.append(style)
-}
-
-function useUiScale() {
-  const [scale, setScale] = useState(() => getClientUiSettings().scale)
-  useEffect(() => {
-    const onSettings = event => {
-      const next = Number(event.detail?.scale)
-      if (Number.isFinite(next)) setScale(next)
-    }
-    window.addEventListener(CLIENT_UI_SETTINGS_EVENT, onSettings)
-    return () => window.removeEventListener(CLIENT_UI_SETTINGS_EVENT, onSettings)
-  }, [])
-  return scale
 }
 
 function Avatar({ character }) {
@@ -278,7 +264,7 @@ export function PlayWorkspaceBrowser({
   subscribeActivePlaythroughId,
 }) {
   installStyles()
-  const scale = useUiScale()
+  const { scale } = useClientUiSettings()
   const sessionIds = useSessions(state => state.ids)
   const sessions = useSessions(state => state.byId)
   const currentId = useSessions(state => state.current ?? null)

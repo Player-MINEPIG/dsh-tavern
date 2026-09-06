@@ -384,6 +384,7 @@ export default Object.freeze({
   "world.infoPendingIds": "已选择 {count} 个独立世界信息 ID，但独立资源库/API 尚未接入，本阶段不会加载这些 ID。",
   "world.infoSaveNote": "保存会更新角色卡文档及其 JSON/PNG 导出。matcher 会在首次请求组装前把本步骤 claimed 输入与 Session 历史组合扫描，不会向历史写入副本。",
   "world.entry.untitled": "新条目 {id}",
+  "world.entry.dragToReorder": "拖拽调整条目顺序",
   "world.entry.fallback": "条目 {id}",
   "world.entry.title": "条目标题",
   "world.entry.nameNote": "条目名称 / 备注",

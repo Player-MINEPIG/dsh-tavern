@@ -41,6 +41,7 @@ import { announceImportFailure } from '../import-failure.js'
 import { activeTimelineEntries } from '../../../play/src/timeline-tree.js'
 import { consumeSwipeTransition } from './swipe-transition.js'
 import { conversationDisplayStyle, useConversationDisplaySettings } from './display-settings.js'
+import { useClientUiSettings } from '../i18n/use-ui-settings.js'
 
 const h = createLocalizedElement(createElement)
 const turnReconcilers = new WeakMap()
@@ -565,6 +566,7 @@ function TargetedSwipeTransition({
 }
 
 export function MowanChatView({ sessionId, useSession, useChat, playClient, playthrough, openSession, chatScroll }) {
+  useClientUiSettings()
   installPlayChatStyles()
   const displaySettings = useConversationDisplaySettings()
   // DSH 0.1.2 publishes this documented projection on Chat, not Session.

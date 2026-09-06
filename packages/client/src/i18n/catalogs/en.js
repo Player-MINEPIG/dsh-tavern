@@ -384,6 +384,7 @@ export default Object.freeze({
   "world.infoPendingIds": "{count} standalone World Info IDs are selected, but the standalone library/API is not wired in this phase and those IDs will not be loaded.",
   "world.infoSaveNote": "Saving updates the character card document and its JSON/PNG export. Before the first request assembly, the matcher scans this step’s claimed input together with Session history without writing a duplicate into history.",
   "world.entry.untitled": "New entry {id}",
+  "world.entry.dragToReorder": "Drag to reorder entries",
   "world.entry.fallback": "Entry {id}",
   "world.entry.title": "Entry title",
   "world.entry.nameNote": "Entry name / note",

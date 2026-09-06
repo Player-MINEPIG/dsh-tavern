@@ -28,6 +28,13 @@ import { playthroughDisplayTitle } from '../packages/client/src/play/title.js'
 
 const root = dirname(fileURLToPath(new URL('../package.json', import.meta.url)))
 
+test('world-book reorder controls have meaningful labels in both primary locales', () => {
+  for (const locale of ['zh-CN', 'en']) {
+    setClientUiSettings({ locale, scale: 1 }, { announce: false })
+    assert.notEqual(translate('world.entry.dragToReorder'), translate('common.unavailable'))
+  }
+})
+
 test.afterEach(() => {
   resetMessageCatalogs()
   setClientUiSettings({ locale: DEFAULT_UI_LOCALE, scale: 1 }, { announce: false })
