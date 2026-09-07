@@ -70,23 +70,24 @@ await card(3, '02-three-routes', 'Keep your Agent. Add roleplay.',
    crop('01-roleplay', null, 925, 410, 790)]);
 
 await card(4, '03-session-resources', 'Keep your cast close.',
-  'A character card and preset, bound to the current session and one click away.',
+  'Assets are bound per session. Check the current bindings from the floating orb’s top-level menu.',
   rect(55, 235, 670, 858) +
   text(805, 286, 'SESSION RESOURCES → ROLEPLAY', 25, '#79d4e7', 700) +
-  text(810, 858, 'Character + preset', 36, '#f7f9fc', 700) +
-  text(810, 912, 'Open the floating panel to inspect or change either.', 26),
+  text(810, 858, 'Your session. Its own assets.', 36, '#f7f9fc', 700) +
+  text(810, 912, 'Click the orb to see what is bound, at a glance.', 26),
   [crop('03-session-resources', [8, 8, 377, 472], 65, 245, 650),
    crop('01-roleplay', [0, 263, 825, 277], 795, 405, 950)]);
 
 await card(5, '04-preset', 'Give the story a direction.',
-  'Reusable preset prompts shape the roleplay without extra instructions in every message.',
+  'Bring ST-compatible presets, character cards, world books, and more into DSH.',
   rect(810, 212, 930, 896) +
-  text(70, 340, 'Set the tone.', 42, '#f7f9fc', 700) +
-  text(70, 405, 'Keep the character’s voice in focus.', 28) +
-  text(70, 595, 'Define the flow.', 42, '#f7f9fc', 700) +
-  text(70, 660, 'Here: explore three narrative routes,', 28) +
-  text(70, 703, 'then return one coherent scene.', 28) +
-  text(70, 922, 'Configured once. Applied by the preset.', 27, '#79d4e7'),
+  text(70, 340, 'Presets', 42, '#f7f9fc', 700) +
+  text(70, 405, 'Shape prompts, tone, and narrative flow.', 28) +
+  text(70, 535, 'Character cards', 42, '#f7f9fc', 700) +
+  text(70, 600, 'Bring a character’s voice and background.', 28) +
+  text(70, 730, 'World books & more', 42, '#f7f9fc', 700) +
+  text(70, 795, 'Add lore, display regex, and other assets.', 28) +
+  text(70, 975, 'Create · Import · Edit · Export', 30, '#79d4e7'),
   [crop('04-preset', [1190, 315, 520, 510], 825, 220, 900)]);
 
 await card(6, '05-display-regex', 'Show the story, not the process.',
@@ -109,17 +110,14 @@ await card(7, '06-native-history', 'Same conversation. Different views.',
    crop('01-roleplay', [0, 263, 825, 277], 935, 490, 795)]);
 
 await card(2, '07-swipe-paths', 'Swipe a reply. Its story follows.',
-  'Revisit an earlier reply: the continuation below switches to that saved path automatically.',
-  rect(55, 250, 790, 830) + rect(955, 250, 790, 830) +
-  text(85, 305, 'CANDIDATE 1 / 3', 28, '#79d4e7', 700) +
-  text(985, 305, 'CANDIDATE 3 / 3', 28, '#79d4e7', 700) +
-  text(865, 475, '⇄', 64, '#79d4e7') +
-  text(861, 525, 'Swipe', 25, '#79d4e7') +
-  text(85, 625, '↓  ITS SAVED CONTINUATION', 25, '#79d4e7', 700) +
-  text(985, 625, '↓  ITS SAVED CONTINUATION', 25, '#79d4e7', 700) +
-  text(85, 1018, 'Same playthrough. Different saved paths.', 26) +
-  text(985, 1018, 'Switching restores; it does not regenerate.', 26),
-  [crop('swipe-a', [605, 250, 520, 90], 80, 355, 740),
-   crop('swipe-c', [605, 250, 520, 90], 980, 355, 740),
-   crop('swipe-a', [605, 415, 520, 148], 80, 675, 740),
-   crop('swipe-c', [605, 415, 520, 148], 980, 675, 740)]);
+  'Switch an earlier reply: its later user messages and replies return together, automatically.',
+  rect(45, 245, 820, 850) + rect(935, 245, 820, 850) +
+  text(70, 298, 'FIRST REPLY 1 / 2', 28, '#79d4e7', 700) +
+  text(960, 298, 'FIRST REPLY 2 / 2', 28, '#79d4e7', 700) +
+  text(875, 555, '⇄', 48, '#79d4e7') +
+  text(75, 1020, 'Next turn: stay outside and block the wind.', 25) +
+  text(965, 1020, 'Next turn: bring a new box and a towel.', 25) +
+  text(75, 1060, 'Both paths stay saved in the same playthrough.', 24) +
+  text(965, 1060, 'Switch back to restore — no regeneration.', 24),
+  [crop('swipe-dark-a', [600, 190, 800, 560], 55, 330, 800),
+   crop('swipe-dark-b', [600, 128, 800, 620], 945, 330, 800)]);

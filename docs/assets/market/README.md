@@ -9,16 +9,16 @@ The compositions use cropped, scaled screenshots with captions outside the UI. N
 | Image | Shows |
 | --- | --- |
 | [Roleplay](01-roleplay.png) | Character dialogue with a legend for copy, swipe, generate, branch, rewind, and display editing |
-| [Swipe paths](07-swipe-paths.png) | An earlier reply and its corresponding saved continuation change together |
+| [Swipe paths](07-swipe-paths.png) | Two continuous dark-mode conversations: switching the first reply restores its distinct second user message and reply |
 | [Agent capabilities](02-three-routes.png) | Native DSH capabilities, with three completed subagents as one example |
-| [Session resources](03-session-resources.png) | Character and preset bound to the current session |
-| [Preset](04-preset.png) | A reusable narrative coordination prompt |
+| [Session resources](03-session-resources.png) | Session-scoped asset bindings visible from the floating orb's top-level menu |
+| [ST-compatible assets](04-preset.png) | Presets, character cards, world books, display regex, and asset creation/import/editing/export |
 | [Display regex](05-display-regex.png) | Rules and the resulting RP display side by side |
 | [Native history](06-native-history.png) | Native tool records and the same turn's RP dialogue side by side |
 
 The manifest uses seven repository-relative paths, within the [Market screenshot requirements](https://github.com/awesome-dsh-plugin/awesome-dsh-plugin/blob/main/contributing.md#screenshots--截图optional-recommended--可选推荐). Push the assets and manifest together when publishing; a local commit alone does not make them available to Market.
 
-The swipe comparison uses assistant-reply excerpts from 基米's first playthrough: candidates `1/3` and `3/3`, plus their corresponding follow-ups. These are separate real screenshots of saved paths, not synthetic before/after text. The new follow-up on the third path completed after network connectivity recovered; switching back restored the first path's original follow-up. Existing-candidate switching does not regenerate later messages. The right arrow generates only when already at the final candidate; actions are disabled while the Agent is running. Button glyphs in the legend match the UI, and display editing does not change the model's original context.
+The swipe comparison uses fresh dark-mode captures from 基米's fourth playthrough: candidates `1/2` and `2/2`. Each side is one continuous crop, retaining the same opening user message, its candidate reply, a different second user message, and that path's reply and controls. It does not reuse the earlier light-mode material or splice individual messages. The first path offers to sit outside and block the wind; the second brings a new box and a towel. Switching back restored the first path's original user input and reply without regeneration. Capture settings were 125% RP body text and 150% message controls for readability. Existing-candidate switching does not regenerate later messages. The right arrow generates only when already at the final candidate; actions are disabled while the Agent is running. Button glyphs in the legend match the UI, and display editing does not change the model's original context.
 
 ## Gallery
 
@@ -26,7 +26,7 @@ The swipe comparison uses assistant-reply excerpts from 基米's first playthrou
 ![Swipe-linked continuations](07-swipe-paths.png)
 ![Native Agent capabilities](02-three-routes.png)
 ![Session resources](03-session-resources.png)
-![Reusable preset](04-preset.png)
+![ST-compatible assets](04-preset.png)
 ![Display-only regex](05-display-regex.png)
 ![Native and RP views](06-native-history.png)
 
