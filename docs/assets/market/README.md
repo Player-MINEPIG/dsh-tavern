@@ -1,26 +1,30 @@
 # Market screenshots
 
-Six submission-ready **1800 × 1200 (3:2) PNGs**, ordered in the repository's `screenshots.json`. They compose real UI captures of dsh-tavern at `7ebcfca`, using the Chinese-language 基米 character card. English headings explain the features while the UI and roleplay remain Chinese.
+Seven submission-ready **1800 × 1200 (3:2) PNGs**, ordered in the repository's `screenshots.json`. They compose real UI captures of dsh-tavern at `7ebcfca`, using the Chinese-language 基米 character card. English headings explain the features while the UI and roleplay remain Chinese.
 
-The order leads with the player experience, then demonstrates the configurable subagent workflow, session resources, presets, display filtering, and original DSH records. The subagent workflow is an example preset, not a mandatory or built-in three-agent mode.
+The order leads with the player experience and a button legend, then shows swipe-linked continuations, native Agent capabilities, session resources, presets, display filtering, and original DSH records. Tavern supplies an RP compatibility framework rather than replacing the DSH Agent preset. Subagents, local workspace reading, and Agent preset composition remain available within the applicable DSH permissions and RP safety rules. The three-subagent workflow is an example, not a mandatory mode or a fixed limit.
 
 The compositions use cropped, scaled screenshots with captions outside the UI. No dialogue or UI text has been rewritten in the images. The player message shown is natural roleplay, without an instruction to invoke a preset. Original captures are retained in `sources/`; those are not listed for Market submission.
 
 | Image | Shows |
 | --- | --- |
-| [Roleplay](01-roleplay.png) | Character dialogue and message controls |
-| [Three routes](02-three-routes.png) | Three completed subagents alongside the continuing story |
+| [Roleplay](01-roleplay.png) | Character dialogue with a legend for copy, swipe, generate, branch, rewind, and display editing |
+| [Swipe paths](07-swipe-paths.png) | An earlier reply and its corresponding saved continuation change together |
+| [Agent capabilities](02-three-routes.png) | Native DSH capabilities, with three completed subagents as one example |
 | [Session resources](03-session-resources.png) | Character and preset bound to the current session |
 | [Preset](04-preset.png) | A reusable narrative coordination prompt |
 | [Display regex](05-display-regex.png) | Rules and the resulting RP display side by side |
 | [Native history](06-native-history.png) | Native tool records and the same turn's RP dialogue side by side |
 
-The manifest uses six repository-relative paths, within the [Market screenshot requirements](https://github.com/awesome-dsh-plugin/awesome-dsh-plugin/blob/main/contributing.md#screenshots--截图optional-recommended--可选推荐). Push the assets and manifest together when publishing; a local commit alone does not make them available to Market.
+The manifest uses seven repository-relative paths, within the [Market screenshot requirements](https://github.com/awesome-dsh-plugin/awesome-dsh-plugin/blob/main/contributing.md#screenshots--截图optional-recommended--可选推荐). Push the assets and manifest together when publishing; a local commit alone does not make them available to Market.
+
+The swipe comparison uses assistant-reply excerpts from 基米's first playthrough: candidates `1/3` and `3/3`, plus their corresponding follow-ups. These are separate real screenshots of saved paths, not synthetic before/after text. The new follow-up on the third path completed after network connectivity recovered; switching back restored the first path's original follow-up. Existing-candidate switching does not regenerate later messages. The right arrow generates only when already at the final candidate; actions are disabled while the Agent is running. Button glyphs in the legend match the UI, and display editing does not change the model's original context.
 
 ## Gallery
 
 ![Character-driven roleplay](01-roleplay.png)
-![Three narrative routes](02-three-routes.png)
+![Swipe-linked continuations](07-swipe-paths.png)
+![Native Agent capabilities](02-three-routes.png)
 ![Session resources](03-session-resources.png)
 ![Reusable preset](04-preset.png)
 ![Display-only regex](05-display-regex.png)
