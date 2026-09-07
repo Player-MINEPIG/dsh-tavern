@@ -2,7 +2,7 @@
 
 [English](INSTALLATION_en.md)
 
-状态：对应 2026-09-05 的 `2.1.0-rc.2` 候选版本，目标 DSH 为完整版本 `0.1.2-rc.1`。根目录默认 [README](../README.md) 为中文；英文落地页是 [README_en.md](../README_en.md)（无截图）。本文是安装生命周期、验收与恢复合同。
+状态：对应 `2.1.0-rc.2` 候选版本，依赖说明更新于 2026-09-07。仅支持 DSH `0.1.2-rc.1`；更早版本接口不兼容，后续版本未经验证、不承诺兼容。根目录默认 [README](../README.md) 为中文；英文落地页是 [README_en.md](../README_en.md)（无截图）。本文是安装生命周期、验收与恢复合同。
 
 脚本以 Node.js 为统一入口，并规范化 Windows、macOS 和 Linux 路径。macOS/Linux 直接执行 `dsh`。Windows 会安全定位 npm 的 `dsh.ps1` shim，再通过系统 PowerShell 以参数数组调用，因此路径不会被拼回 shell 命令文本。请在 `dsh-tavern` 检出目录中运行脚本，并准备 Node.js 20 或更高版本，以及位于 `PATH` 上的 DSH `0.1.2-rc.1`。
 
@@ -15,6 +15,16 @@
 ```text
 dsh plugin --profile web add github:Player-MINEPIG/dsh-tavern
 ```
+
+### 官方运行依赖由 DSH 提供
+
+`@deepseek-ai/dsh-util-crypto` 的 `0.1.2-rc.1` 与 `@deepseek-ai/cordis` 的 `4.0.2` 声明为精确版本的必需 `peerDependencies`，不再作为普通运行依赖安装第二份。源码开发通过同版本 `devDependencies` 提供构建和测试环境。浏览器合同仍由 `dsh.client.inject` 声明、由 DSH 提供，没有改成随 Tavern 打包。
+
+DSH `0.1.2-rc.1` profile 默认使用 `nodeLinker: hoisted` 和 `autoInstallPeers: false`；启动时，它在 `<DSH_HOME>/profiles/node_modules` 提供自身安装所携带的包，供插件按 Node 的父目录规则解析。因此 `dsh plugin add` 或 `pnpm peers check` 可能报告这两个包缺失：该静态检查不识别 DSH 的启动期依赖提供机制。已在全新 profile 验证标准安装、Host API 及 UUID 调用正常，且两个包均解析到 DSH 安装目录。
+
+若重启后仍出现 `ERR_MODULE_NOT_FOUND`，则不是可忽略的安装警告；请检查 `PATH` 中的 DSH 是否为 `0.1.2-rc.1`、安装是否完整及实际模块解析路径。不要为消除警告把必需 peer 标成 optional。精确 peer 声明约束的是对应包，不是自动检查整个 DSH 版本的启动门禁。
+
+### 数据与源码安装
 
 首次启动时，Tavern 会在 `<DSH_HOME>/pmp-dsh-tavern/` 自动创建持久目录，不要求用户选择内部存储位置。普通 `dsh plugin remove` 只移除 profile 中的软件包，保留该目录，但不会调用项目的备份逻辑或创建卸载前快照；需要快照时请按下文检出仓库并使用 `npm run plugin:uninstall`。
 

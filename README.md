@@ -6,7 +6,7 @@
 
 > 当前文档对应 `2.1.0-rc.2` 候选版本。项目代码采用 [MIT License](LICENSE)。
 >
-> **兼容性基线：** 当前候选代码面向 DSH `0.1.2-rc.1`。Host controller、稳定 history 分页、Session snapshot 与客户端 contract owner 迁移已经完成自动回归；真实 provider 与浏览器交互仍按发布验收表执行。
+> **兼容范围：** 当前候选仅支持 DSH `0.1.2-rc.1`。更早版本接口不兼容；后续版本未经验证，不承诺兼容。适配、真实 RP 交互及 API 错误提示已通过验收。
 
 ## 设计理念
 

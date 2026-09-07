@@ -1,5 +1,12 @@
 # Development changelog
 
+## 2026-09-07 — Use DSH-provided runtime peers (2.1.0-rc.2)
+
+- Move `@deepseek-ai/dsh-util-crypto` `0.1.2-rc.1` and `@deepseek-ai/cordis` `4.0.2` from ordinary dependencies to exact required peers, with matching development dependencies. DSH supplies the runtime instances; no client bundle, RP behavior, installer, or data format changed.
+- Limit the supported DSH version to `0.1.2-rc.1`: earlier interfaces are incompatible and later versions are unverified. Explain DSH's startup module fallback and why pnpm's static missing-peer report does not by itself prove a runtime failure.
+- A fresh isolated DSH `0.1.2-rc.1` profile on macOS / Node `22.23.1` installed the packed candidate through standard `dsh plugin add`. Both peers resolved to the DSH installation without profile-local copies; the installed prompt bridge produced a valid UUID and live chrome/workspace API checks passed. Removing Tavern retained its persistent data and the DSH peers; reinstalling and restarting restored the APIs. Full check: 528 passing tests, 2 existing skips; release verification, build, and package dry-run passed.
+- User confirmed API error-notice acceptance, closing the pending item below. The seven Market screenshots are also accepted and retained unchanged.
+
 ## 2026-09-07 — Surface DSH failures in RP (2.1.0-rc.2)
 
 - Added a localized, sticky RP error notice directing readers to native Chat. It combines public DSH `0.1.2-rc.1` Session send/stop, live-agent and history-open errors with the latest Chat timeline `turn/end` error, including failures without assistant output.

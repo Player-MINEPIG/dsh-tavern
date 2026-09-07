@@ -2,7 +2,7 @@
 
 [中文](INSTALLATION.md)
 
-Status: current for the 2026-09-05 `2.1.0-rc.2` release candidate, targeting the full DSH version `0.1.2-rc.1`. The default root [README](../README.md) is Chinese. The English landing page is [README_en.md](../README_en.md) (no screenshots). This file is the detailed lifecycle, verification, and recovery contract.
+Status: the `2.1.0-rc.2` release candidate, with dependency guidance updated on 2026-09-07. Only DSH `0.1.2-rc.1` is supported; earlier interfaces are incompatible, and later versions are unverified with no compatibility promise. The default root [README](../README.md) is Chinese. The English landing page is [README_en.md](../README_en.md) (no screenshots). This file is the detailed lifecycle, verification, and recovery contract.
 
 The scripts use Node.js as their common entry point and normalize paths for
 Windows, macOS, and Linux. macOS/Linux execute `dsh` directly. Windows safely
@@ -25,6 +25,16 @@ Ordinary users can install the plugin directly from GitHub into the default
 ```text
 dsh plugin --profile web add github:Player-MINEPIG/dsh-tavern
 ```
+
+### DSH provides the official runtime peers
+
+`@deepseek-ai/dsh-util-crypto` at `0.1.2-rc.1` and `@deepseek-ai/cordis` at `4.0.2` are exact, required `peerDependencies`, rather than ordinary dependencies installing another copy. Matching `devDependencies` support source builds and tests. Browser contracts remain declared in `dsh.client.inject` and supplied by DSH, not bundled into Tavern.
+
+DSH `0.1.2-rc.1` profiles default to `nodeLinker: hoisted` and `autoInstallPeers: false`. At startup, DSH exposes its installation packages through `<DSH_HOME>/profiles/node_modules`, where Node's parent-directory resolution finds them for external plugins. Consequently, `dsh plugin add` or `pnpm peers check` may report these two peers as missing: that static check does not recognize DSH's startup-provided packages. A fresh-profile check confirmed standard installation, Host APIs, and the UUID call, with both packages resolving to the DSH installation.
+
+An `ERR_MODULE_NOT_FOUND` after restart is not an ignorable install warning: check that DSH on `PATH` is `0.1.2-rc.1`, its installation is complete, and module resolution reaches its packages. Do not mark required peers optional to hide warnings. Exact peer declarations constrain those packages; they are not a startup gate checking the entire DSH version.
+
+### Data and source installation
 
 On first start, Tavern automatically creates `<DSH_HOME>/pmp-dsh-tavern/` and
 does not ask the user to choose an internal storage location. Plain
