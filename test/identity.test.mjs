@@ -62,12 +62,20 @@ test('plugin identity uses pmp-dsh-tavern with versioned API roots', () => {
   assert.equal(CLIENT_UI_SETTINGS_EVENT, 'pmp-dsh-tavern:ui-settings')
 })
 
-test('the runtime UUID helper is owned as a direct package dependency', () => {
+test('official runtime packages are exact required peers with matching development versions', () => {
   const packageJson = JSON.parse(readFileSync(new URL('../package.json', import.meta.url), 'utf8'))
-  assert.equal(packageJson.dependencies['@deepseek-ai/cordis'], '4.0.2')
-  assert.equal(packageJson.dependencies['@deepseek-ai/dsh-util-crypto'], '0.1.2-rc.1')
-  assert.equal(packageJson.devDependencies?.['@deepseek-ai/dsh-util-crypto'], undefined)
-  assert.equal(packageJson.peerDependencies?.['@deepseek-ai/dsh-util-crypto'], undefined)
+  const peers = {
+    '@deepseek-ai/cordis': '4.0.2',
+    '@deepseek-ai/dsh-util-crypto': '0.1.2-rc.1',
+  }
+  assert.deepEqual(packageJson.peerDependencies, peers)
+  for (const [name, version] of Object.entries(peers)) {
+    assert.equal(packageJson.devDependencies[name], version)
+    assert.equal(packageJson.peerDependenciesMeta?.[name]?.optional, undefined)
+  }
+  for (const field of ['dependencies', 'optionalDependencies']) {
+    assert.deepEqual(Object.keys(packageJson[field] ?? {}).filter(name => name.startsWith('@deepseek-ai/')), [])
+  }
 })
 
 test('legacy /dsh-tavern/api resource paths are not served', async () => {
