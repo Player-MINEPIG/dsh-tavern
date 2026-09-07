@@ -1,15 +1,40 @@
 # Market screenshots
 
-Real UI captures of dsh-tavern at `7ebcfca`, using the Chinese-language 基米 character card. The images retain the Chinese roleplay and UI; no generated UI or explanatory overlays were added. The roleplay detail is cropped; the remaining images are full browser viewport captures.
+Six submission-ready **1800 × 1200 (3:2) PNGs**, ordered in the repository's `screenshots.json`. They compose real UI captures of dsh-tavern at `7ebcfca`, using the Chinese-language 基米 character card. English headings explain the features while the UI and roleplay remain Chinese.
+
+The order leads with the player experience, then demonstrates the configurable subagent workflow, session resources, presets, display filtering, and original DSH records. The subagent workflow is an example preset, not a mandatory or built-in three-agent mode.
+
+The compositions use cropped, scaled screenshots with captions outside the UI. No dialogue or UI text has been rewritten in the images. The player message shown is natural roleplay, without an instruction to invoke a preset. Original captures are retained in `sources/`; those are not listed for Market submission.
 
 | Image | Shows |
 | --- | --- |
-| [Roleplay](01-roleplay.jpg) | Character dialogue and message controls |
-| [Three routes](02-three-routes.jpg) | Three completed subagents exploring different narrative routes |
-| [Session resources](03-session-resources.jpg) | Character and preset bound to the current session |
-| [Preset](04-preset.jpg) | The narrative coordination prompt in the preset editor |
-| [Display regex](05-display-regex.jpg) | Assistant-only rules that hide process notes and unwrap the story |
-| [Native history](06-native-history.jpg) | Original DSH records, including subagent calls |
+| [Roleplay](01-roleplay.png) | Character dialogue and message controls |
+| [Three routes](02-three-routes.png) | Three completed subagents alongside the continuing story |
+| [Session resources](03-session-resources.png) | Character and preset bound to the current session |
+| [Preset](04-preset.png) | A reusable narrative coordination prompt |
+| [Display regex](05-display-regex.png) | Rules and the resulting RP display side by side |
+| [Native history](06-native-history.png) | Native tool records and the same turn's RP dialogue side by side |
+
+The manifest uses six repository-relative paths, within the [Market screenshot requirements](https://github.com/awesome-dsh-plugin/awesome-dsh-plugin/blob/main/contributing.md#screenshots--截图optional-recommended--可选推荐). Push the assets and manifest together when publishing; a local commit alone does not make them available to Market.
+
+## Gallery
+
+![Character-driven roleplay](01-roleplay.png)
+![Three narrative routes](02-three-routes.png)
+![Session resources](03-session-resources.png)
+![Reusable preset](04-preset.png)
+![Display-only regex](05-display-regex.png)
+![Native and RP views](06-native-history.png)
+
+## Rebuild the images
+
+`render.mjs` performs deterministic cropping, scaling, framing, and caption layout using Sharp. It does not generate UI or story content. With Sharp available:
+
+```sh
+node docs/assets/market/render.mjs
+```
+
+Alternatively, pass an existing Sharp module path as the first argument. This optional asset-authoring tool is not a plugin runtime dependency.
 
 ## Reproduce the demonstration
 
@@ -38,11 +63,10 @@ Bind these two display rules to the preset, in this order, for assistant message
 
 These are presentation rules, not deletion or a security boundary. Untagged assistant messages are hidden in the RP view, including untagged failure explanations; consult native history to inspect tool results or troubleshoot missing output. If the model emits multiple story messages, each remains visible.
 
-Opening message:
+Suggested opening message (the preset supplies the coordination instructions):
 
 ```text
 傍晚突然下起雨，我抱着最后一袋小鱼干躲进旧书店的屋檐。基米已经占着唯一干燥的纸箱，偏偏向里挪了一点，又装作没看见我。我把袋子放在我们中间：“借半个屋檐？租金在这儿。”
-按三岔路口预设，实际开三个子代理探索三条路线，等他们返回后汇总成一段基米的回应。
 ```
 
 Follow-up:
