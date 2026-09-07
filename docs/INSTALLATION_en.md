@@ -2,7 +2,7 @@
 
 [中文](INSTALLATION.md)
 
-Status: the `2.1.0-rc.2` release candidate, with dependency guidance updated on 2026-09-07. Only DSH `0.1.2-rc.1` is supported; earlier interfaces are incompatible, and later versions are unverified with no compatibility promise. The default root [README](../README.md) is Chinese. The English landing page is [README_en.md](../README_en.md) (no screenshots). This file is the detailed lifecycle, verification, and recovery contract.
+Status: `2.1.0`, updated on 2026-09-07. Only DSH `0.1.2-rc.1` is supported; earlier interfaces are incompatible, and later versions are unverified with no compatibility promise. The default root [README](../README.md) is Chinese. The English landing page is [README_en.md](../README_en.md) (no screenshots). This file is the detailed lifecycle, verification, and recovery contract.
 
 The scripts use Node.js as their common entry point and normalize paths for
 Windows, macOS, and Linux. macOS/Linux execute `dsh` directly. Windows safely
@@ -96,9 +96,9 @@ Windows paths may be passed normally, for example:
 node scripts/install.mjs --dsh-home .\test-envs\review
 ```
 
-## Verify a 2.0 release
+## Release verification
 
-Before packaging or installing a 2.0 release, run:
+Before packaging or installing `2.1.0`, run the existing release verification command (its name remains `verify:2.0`):
 
 ```text
 npm run verify:2.0
@@ -110,9 +110,9 @@ claim/lineage and privacy-safe lifecycle logs; chrome transport/slot ownership
 and workspace admission; and localization/installer boundaries. It then builds
 the tracked browser bundle and performs `npm pack --dry-run`.
 
-This command does not replace real-browser review. Use the private release
-acceptance checklist for multi-tab notification, first-run workspace choice,
-and disable/uninstall fallback against the target DSH rc build.
+This command does not replace real-browser review. For multi-tab notification,
+first-run workspace choice, and disable/uninstall fallback against DSH
+`0.1.2-rc.1`, see the [acceptance record and sequence](PLAY_REVIEW_en.md).
 
 ## Uninstall
 

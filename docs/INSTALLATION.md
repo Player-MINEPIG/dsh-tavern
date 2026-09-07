@@ -2,7 +2,7 @@
 
 [English](INSTALLATION_en.md)
 
-状态：对应 `2.1.0-rc.2` 候选版本，依赖说明更新于 2026-09-07。仅支持 DSH `0.1.2-rc.1`；更早版本接口不兼容，后续版本未经验证、不承诺兼容。根目录默认 [README](../README.md) 为中文；英文落地页是 [README_en.md](../README_en.md)（无截图）。本文是安装生命周期、验收与恢复合同。
+状态：对应 `2.1.0`，更新于 2026-09-07。仅支持 DSH `0.1.2-rc.1`；更早版本接口不兼容，后续版本未经验证、不承诺兼容。根目录默认 [README](../README.md) 为中文；英文落地页是 [README_en.md](../README_en.md)（无截图）。本文是安装生命周期、验收与恢复合同。
 
 脚本以 Node.js 为统一入口，并规范化 Windows、macOS 和 Linux 路径。macOS/Linux 直接执行 `dsh`。Windows 会安全定位 npm 的 `dsh.ps1` shim，再通过系统 PowerShell 以参数数组调用，因此路径不会被拼回 shell 命令文本。请在 `dsh-tavern` 检出目录中运行脚本，并准备 Node.js 20 或更高版本，以及位于 `PATH` 上的 DSH `0.1.2-rc.1`。
 
@@ -59,9 +59,9 @@ Windows 路径可按本机写法传入，例如：
 node scripts/install.mjs --dsh-home .\test-envs\review
 ```
 
-## 验收 2.0 发布
+## 发布验收
 
-打包或安装 2.0 发布前，运行：
+打包或安装 `2.1.0` 前，运行现有发布验证命令（保留 `verify:2.0` 名称）：
 
 ```text
 npm run verify:2.0
@@ -69,7 +69,7 @@ npm run verify:2.0
 
 该命令会跑五组具名回归：完整 history 与游标守卫；受管文档校验 / CAS / focus / 路径加固；import claim/lineage 与不含正文的生命周期日志；chrome transport / slot 所有权与工作区准入；以及本地化 / 安装器边界。随后构建已跟踪的浏览器 bundle，并执行 `npm pack --dry-run`。
 
-这条命令不能替代真实浏览器审查。多标签页通知、首次选择工作区、以及针对目标 DSH rc 的禁用/卸载回退，请使用内部发布验收清单。
+这条命令不能替代真实浏览器审查。多标签页通知、首次选择工作区、以及针对 DSH `0.1.2-rc.1` 的禁用/卸载回退，见 [验收记录与顺序](PLAY_REVIEW.md)。
 
 ## 卸载
 

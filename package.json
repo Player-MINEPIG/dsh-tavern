@@ -1,6 +1,6 @@
 {
   "name": "pmp-dsh-tavern",
-  "version": "2.1.0-rc.2",
+  "version": "2.1.0",
   "description": "SillyTavern-compatible content adapters for DeepSeek Harness.",
   "type": "module",
   "main": "packages/tavern-loader/src/index.js",

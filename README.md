@@ -4,9 +4,9 @@
 
 为 DeepSeek Harness（DSH）提供 Tavern 资源兼容、RP 工作流与第三方前端协议的开源插件。
 
-> 当前文档对应 `2.1.0-rc.2` 候选版本。项目代码采用 [MIT License](LICENSE)。
+> 当前文档对应 `2.1.0`。项目代码采用 [MIT License](LICENSE)。
 >
-> **兼容范围：** 当前候选仅支持 DSH `0.1.2-rc.1`。更早版本接口不兼容；后续版本未经验证，不承诺兼容。适配、真实 RP 交互及 API 错误提示已通过验收。
+> **兼容范围：** `2.1.0` 仅支持 DSH `0.1.2-rc.1`。更早版本接口不兼容；后续版本未经验证，不承诺兼容。适配、真实 RP 交互及 API 错误提示已通过验收。
 
 ## 设计理念
 
@@ -95,7 +95,7 @@ npm run plugin:install
 
 完整操作与边界见 [中文使用指南](docs/USAGE_zh-CN.md)。
 
-## v2.0 功能概览
+## v2.1.0 功能概览
 
 | 模块 | 主要能力 | 详细文档 |
 | --- | --- | --- |
@@ -106,9 +106,9 @@ npm run plugin:install
 | 调试 | Tavern Trace 展示本轮资源、世界书命中与 request/header 对齐信息，不记录完整正文 | [DSH 消息流](docs/DSH_MESSAGE_FLOW.md) |
 | 第三方开发 | v2 HTTP API、`pmpDshTavernChrome` 模式服务、DSH slots/store 与独立客户端接入 | [第三方 RP 前端接入](docs/FRONTEND_INTEGRATION_zh-CN.md) |
 
-> **图片占位｜v2.0 其他功能拼图**
-> 建议文件名：`docs/assets/v2-feature-overview.png`
-> 建议内容：正则、世界书、swipe、周目导入导出、设置页各取一个局部画面。
+![切换首轮 swipe，同时恢复各自后续的用户输入与回复](docs/assets/market/07-swipe-paths.png)
+
+更多交互按钮、原生 Agent 能力、会话资产绑定、ST 兼容资源、显示正则和原生会话对比，见 [功能图集](docs/assets/market/README.md#gallery)。
 
 ## 重要边界
 

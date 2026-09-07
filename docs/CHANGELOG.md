@@ -1,5 +1,27 @@
 # Development changelog
 
+## 2.1.0 — Unreleased
+
+### Compatibility and installation
+
+- Support only DSH `0.1.2-rc.1` (upstream tag `dsh-v0.1.2-rc.1`). Earlier DSH interfaces are incompatible; later versions are unverified and compatibility is not promised.
+- Migrate the Host bridge to public session/workspace/directory-picker controllers, preserve a stable history cut across pagination, and use the current Session lifecycle and Chat message projections. Declare all nine browser contract owners through `dsh.client.inject`.
+- Use exact required runtime peers supplied by DSH: `@deepseek-ai/dsh-util-crypto` `0.1.2-rc.1` and `@deepseek-ai/cordis` `4.0.2`, with matching development dependencies. Document the startup-provided module fallback and pnpm's static missing-peer warning.
+- Support direct GitHub installation. Store Tavern resources, settings, and bindings in `<DSH_HOME>/pmp-dsh-tavern/`, outside the package; plain removal retains them. Provide one-time legacy data migration, source-installer preservation across updates, and backup-aware removal.
+
+### RP experience and documentation
+
+- Restore blank-playthrough greetings, first-send RP selection, streaming/completed output, and Tavern Trace on DSH `0.1.2-rc.1`, while retaining explicit native Chat choices.
+- Localize generated playthrough names and refresh RP surfaces when the UI language changes. Keep custom titles and resource content verbatim.
+- Surface public DSH terminal failures in a localized RP notice linking users to native Chat diagnostics; a new submission, later success, or cancellation supersedes the previous failure.
+- Include seven accepted, annotated 3:2 Market screenshots covering message actions, swipe-linked continuations, native Agent capabilities, session-bound assets, ST-compatible resources, display regex, and native/RP views. Replace the remaining README image placeholder and synchronize bilingual version and acceptance documentation.
+
+### Acceptance
+
+- Candidate validation on macOS / Node `22.23.1` passed the full check (528 tests passed, 2 existing skips), grouped release verification, build, and package dry-run. Real DSH `0.1.2-rc.1` RP, locale, credential-onboarding, API-error, and screenshot acceptance is complete.
+- A fresh isolated profile installed the GitHub dependency-compatibility branch at `a2e2566`; the installed files matched that commit. Host chrome/workspace reads and the installed UUID prompt bridge passed, with both required peers resolved from DSH rather than profile-local copies. Packed-candidate removal/reinstallation retained data and restored Host APIs.
+- The package and lockfile are prepared as `2.1.0`. Release review, merge, and tagging remain separate from these completed acceptance checks. Historical RC entries below record the state at their dates; their pending items are superseded by this summary.
+
 ## 2026-09-07 — Use DSH-provided runtime peers (2.1.0-rc.2)
 
 - Move `@deepseek-ai/dsh-util-crypto` `0.1.2-rc.1` and `@deepseek-ai/cordis` `4.0.2` from ordinary dependencies to exact required peers, with matching development dependencies. DSH supplies the runtime instances; no client bundle, RP behavior, installer, or data format changed.

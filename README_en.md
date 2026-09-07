@@ -4,9 +4,9 @@
 
 An open-source DeepSeek Harness (DSH) plugin for Tavern resource compatibility, RP workflow, and a third-party frontend protocol.
 
-> This documentation matches the `2.1.0-rc.2` release candidate. The project is released under the [MIT License](LICENSE).
+> This documentation matches `2.1.0`. The project is licensed under the [MIT License](LICENSE).
 >
-> **Compatibility:** this candidate supports only DSH `0.1.2-rc.1`. Earlier interfaces are incompatible; later versions are unverified and compatibility is not promised. Migration, real RP interaction, and API error notices have passed acceptance.
+> **Compatibility:** `2.1.0` supports only DSH `0.1.2-rc.1`. Earlier interfaces are incompatible; later versions are unverified and compatibility is not promised. Migration, real RP interaction, and API error notices have passed acceptance.
 >
 > The default project README is the [Chinese version](README.md). This English file has no screenshots.
 
@@ -81,7 +81,7 @@ Send the first user message from the native DSH composer. It appears immediately
 
 Full operations and boundaries: [English usage guide](docs/USAGE_en.md).
 
-## v2.0 feature map
+## v2.1.0 feature map
 
 | Area | Main capabilities | Details |
 | --- | --- | --- |
@@ -91,6 +91,8 @@ Full operations and boundaries: [English usage guide](docs/USAGE_en.md).
 | Security | RP permission overlay, same-origin/loopback API, workspace path jail, CAS, DOMPurify, content-free operation log | [RP secure mode](docs/RP_SECURE_MODE_en.md) · [Security policy](SECURITY_en.md) |
 | Debugging | Tavern Trace shows this turn's resources, world-book hits, and request/header alignment; it does not store full bodies | [DSH message flow](docs/DSH_MESSAGE_FLOW_en.md) |
 | Third-party | v2 HTTP API, `pmpDshTavernChrome` mode service, DSH slots/store, standalone clients | [RP frontend integration](docs/FRONTEND_INTEGRATION_en.md) |
+
+See the [feature gallery](docs/assets/market/README.md#gallery) for annotated examples of message actions, swipe-linked continuations, native Agent capabilities, session-bound assets, ST-compatible resources, display regex, and native/RP views.
 
 ## Important boundaries
 

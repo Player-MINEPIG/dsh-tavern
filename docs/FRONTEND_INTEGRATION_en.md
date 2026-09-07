@@ -2,7 +2,7 @@
 
 [中文](FRONTEND_INTEGRATION_zh-CN.md)
 
-Status: dsh-tavern `2.1.0-rc.2` and DSH `0.1.2-rc.1`. HTTP fields follow [API_en.md](API_en.md). This page covers delivery, mode lifecycle, and product-action composition.
+Status: dsh-tavern `2.1.0` and DSH `0.1.2-rc.1`. HTTP fields follow [API_en.md](API_en.md). This page covers delivery, mode lifecycle, and product-action composition.
 
 ## 1. Understand the dual-mode compatibility boundary first
 
