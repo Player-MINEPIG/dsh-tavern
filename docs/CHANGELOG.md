@@ -1,6 +1,11 @@
 # Development changelog
 
-## 2.1.0 — Unreleased
+## 2026-09-09 — Documentation status correction
+
+- Reconcile the changelog, review guides, API guides, and development ledger with completed `2.1.0` acceptance and Git tagging. Distinguish historical pending items from the regression workflow for future changes.
+- Documentation-only follow-up: the package remains `2.1.0`, the existing `v2.1.0` tag is unchanged, and no GitHub Release is created.
+
+## 2.1.0 — Tagged 2026-09-07
 
 ### Compatibility and installation
 
@@ -20,7 +25,7 @@
 
 - Candidate validation on macOS / Node `22.23.1` passed the full check (528 tests passed, 2 existing skips), grouped release verification, build, and package dry-run. Real DSH `0.1.2-rc.1` RP, locale, credential-onboarding, API-error, and screenshot acceptance is complete.
 - A fresh isolated profile installed the GitHub dependency-compatibility branch at `a2e2566`; the installed files matched that commit. Host chrome/workspace reads and the installed UUID prompt bridge passed, with both required peers resolved from DSH rather than profile-local copies. Packed-candidate removal/reinstallation retained data and restored Host APIs.
-- The package and lockfile are prepared as `2.1.0`. Release review, merge, and tagging remain separate from these completed acceptance checks. Historical RC entries below record the state at their dates; their pending items are superseded by this summary.
+- The package and lockfile are `2.1.0`. Final review and merge are complete; `main` and the `v2.1.0` tag were pushed at `d9fedf7` on 2026-09-07. No GitHub Release was created. Historical RC entries below record the state at their dates; their pending items are superseded by this summary.
 
 ## 2026-09-07 — Use DSH-provided runtime peers (2.1.0-rc.2)
 

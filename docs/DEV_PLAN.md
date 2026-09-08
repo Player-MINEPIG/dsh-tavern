@@ -1,5 +1,20 @@
 # DSH 0.1.2 Compatibility and Market Release Plan
 
+## Current status (2026-09-09)
+
+Tavern `2.1.0` acceptance and final review are complete. The approved changes
+were merged, and `main` and the `v2.1.0` tag were pushed at `d9fedf7` on
+2026-09-07. No GitHub Release was created. Supported DSH remains exactly
+`0.1.2-rc.1` (upstream tag `dsh-v0.1.2-rc.1`).
+
+User-confirmed credential onboarding, API error notices, and Market screenshots,
+plus fresh-profile GitHub installation of the dependency-compatibility candidate,
+close the corresponding earlier gates. See [the acceptance summary](PLAY_REVIEW_en.md)
+and [changelog](CHANGELOG.md) for completed checks and future regression guidance.
+The dated development records below retain their original scope and evidence;
+their pending labels describe those historical stages, not outstanding `2.1.0`
+acceptance. They do not imply that every possible integration scenario was tested.
+
 ## RP error notice follow-up (2026-09-07)
 
 User acceptance now confirms initial credential onboarding and exact-ref
@@ -25,12 +40,12 @@ The local candidate was installed in the older isolated profile and loaded
 in DSH Web; completed-history and blank-opening rendering showed no false
 notice. The exact-ref acceptance profile was left unchanged.
 
-Remaining runtime gate: reproduce an actual provider failure with this new
+Historical runtime gate (subsequently closed by user acceptance): reproduce an actual provider failure with this new
 bundle, inspect details in native Chat, then verify successful retry clears
 the RP notice. Evidence identifier: `rp-error-notice-20260907`; the private
 report, Host screenshot and accessibility capture stay outside this repository.
 Unit/component tests cover these state transitions but are
-not a replacement for the real-provider gate. Credentials were not changed.
+not a replacement for real-provider acceptance. Credentials were not changed.
 
 ## Computer-use regression fixes (2026-09-06)
 

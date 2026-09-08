@@ -32,7 +32,9 @@ timeline 只保存 session/event 范围引用；路径 API 有根目录、相对
 
 `2.1.0` 的兼容回归已迁到 DSH `0.1.2-rc.1` 的 controllers、稳定 history cut、Session snapshot 与 client contract owner。上段 `0.1.0-rc.8` 记录保留为历史证据。当前版本已完成真实 RP、空周目 greeting、首轮发送、流式与完成态输出、Trace、双语言切换和原生视图选择保留的验收；首次密钥输入及 API 错误提示已由用户确认通过。Market 素材还验证了三子 agent 叙事、显示正则，以及切换首轮 swipe 后恢复各自后续用户输入与回复，七张图片已获用户验收。
 
-依赖兼容分支 `a2e2566` 已在全新 DSH `0.1.2-rc.1` 隔离 profile 通过 GitHub 安装，Host 只读 API 和已安装 prompt bridge 的 UUID 调用通过，必需 peers 均来自 DSH 安装目录。打包候选的卸载/重装保留数据并恢复 API。完整自动检查为 528 通过、2 项既有跳过，发布分组验证、构建和打包预检通过。下方顺序保留为后续版本回归流程，不再把上述已完成项目列为待验；`2.1.0` 的最终审核、合并与打标签尚待执行。
+依赖兼容分支 `a2e2566` 已在全新 DSH `0.1.2-rc.1` 隔离 profile 通过 GitHub 安装，Host 只读 API 和已安装 prompt bridge 的 UUID 调用通过，必需 peers 均来自 DSH 安装目录。打包候选的卸载/重装保留数据并恢复 API。完整自动检查为 528 通过、2 项既有跳过，发布分组验证、构建和打包预检通过。下方顺序保留为后续版本回归流程，不再把上述已完成项目列为待验。
+
+`2.1.0` 已完成最终审核与合并；`main` 和 `v2.1.0` tag 已于 2026-09-07 推送，指向 `d9fedf7`。未创建 GitHub Release。
 
 工作区准入已实现：魔丸在 v2 workspace 未绑定、候选失效或读取失败时阻断 RP 内容，只消费 DSH 公开 workspace 列表；候选必须显式选择，PUT 后回读验证，失败可重试或返回 native，不保存浏览器工作区副本。
 
@@ -82,4 +84,4 @@ timeline 只保存 session/event 范围引用；路径 API 有根目录、相对
 1. 自动证据：运行 `npm run verify:2.0`。完整 history、六种 import claim/lineage、schema/CAS、损坏文件、按 id focus、operation log、Windows junction/reparse/rename 前父目录替换以及 mode service dispose 均由确定性测试验证。
 2. 真实 Host/浏览器：先以 `DSH_TAVERN_PLAY_LIVE=1` 和 `DSH_TAVERN_PLAY_LIVE_URL` 运行只读 Host 冒烟；再用双标签页观察 chrome SSE/focus/poll 收敛与 CAS 冲突，在全新数据中验证工作区准入的无候选/单候选/多候选/失效候选/失败恢复；正常与中断回复只做一轮代表性 UI 回归。
 3. 兼容回退：禁用或卸载 Tavern 后确认 DSH native 与其它插件仍可用，再重新安装并确认外部持久数据仍可读取；`--no-backup` 只跳过卸载前快照，不应清除资源。
-4. 发布门：`npm run verify:2.0` 已包含 build 与 pack dry-run；再核对依赖审计、公开路径/秘密扫描、正式文档和版本号。`2.1.0` 验收状态见上文；最终审核通过并获得授权后，再合并并创建 `v2.1.0` tag。
+4. 发布门：`npm run verify:2.0` 已包含 build 与 pack dry-run；再核对依赖审计、公开路径/秘密扫描、正式文档和版本号。后续版本在最终审核通过并获得授权后，再合并并创建对应版本 tag；`2.1.0` 已完成状态见上文。
