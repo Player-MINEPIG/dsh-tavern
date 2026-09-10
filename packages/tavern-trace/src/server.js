@@ -75,7 +75,7 @@ export function createTavernTraceApiHandler(store) {
           maxTotalBytes: store.maxTotalBytes,
           persistedBytes: store.persistedBytes,
         },
-        authority: 'DSH request/header is authoritative for final model request content.',
+        authority: 'DSH request/header owns config and tools; V3 system/message owns the effective system prompt (V2: header.system).',
       }, store.maxTotalBytes)
     } catch (error) {
       const status = error instanceof TypeError ? 400 : 500

@@ -1,6 +1,6 @@
 {
   "name": "pmp-dsh-tavern",
-  "version": "2.1.0",
+  "version": "2.2.0",
   "description": "SillyTavern-compatible content adapters for DeepSeek Harness.",
   "type": "module",
   "main": "packages/tavern-loader/src/index.js",
@@ -33,6 +33,8 @@
     "docs/ARCHITECTURE.md",
     "docs/ARCHITECTURE_en.md",
     "docs/CHANGELOG.md",
+    "docs/DSH_0.1.5_MIGRATION.md",
+    "docs/DSH_0.1.5_MIGRATION_en.md",
     "docs/DSH_MESSAGE_FLOW.md",
     "docs/DSH_MESSAGE_FLOW_en.md",
     "docs/FRONTEND_INTEGRATION_zh-CN.md",
@@ -91,7 +93,7 @@
   },
   "peerDependencies": {
     "@deepseek-ai/cordis": "4.0.2",
-    "@deepseek-ai/dsh-util-crypto": "0.1.2-rc.1"
+    "@deepseek-ai/dsh-util-crypto": "0.1.2-rc.1 || 0.1.5-rc.1"
   },
   "license": "MIT",
   "dependencies": {

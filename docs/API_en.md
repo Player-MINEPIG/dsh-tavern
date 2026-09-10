@@ -1,8 +1,10 @@
 # HTTP API
 
+Tavern `2.2.0` (unreleased), DSH `0.1.5-rc.1` delta: messages add format metadata, a read-only coordinates endpoint is available, branch accepts the coordinate format, and timeline GET/PUT refuses unmigrated references. See the [V3 migration contract](DSH_0.1.5_MIGRATION_en.md) for fields and errors. V3 Trace reads effective system/message for the prompt and request/header for config and tools.
+
 [中文](API.md)
 
-Status: 2026-09-05. The Host compatibility baseline is DSH `0.1.2-rc.1`. Root: `/pmp-dsh-tavern/api`. Auth is still local TCP peer, Host, Origin, and Content-Type (see the loader security middleware). Success responses include `ok: true`; failures include `ok: false` and `error`.
+Status: Tavern `2.2.0` (unreleased), updated 2026-09-10. Host checks cover DSH `0.1.2-rc.1` and `0.1.5-rc.1`. Root: `/pmp-dsh-tavern/api`. Auth is still local TCP peer, Host, Origin, and Content-Type (see the loader security middleware). Success responses include `ok: true`; failures include `ok: false` and `error`.
 
 Two contracts:
 
@@ -28,9 +30,10 @@ Prefix: `/pmp-dsh-tavern/api/v2`.
 | PUT | `/workspace/files?path=` | Ordinary files still use `{ content }`. `catalog.json` / `timeline.json` must send `expectedRevision`: `null` creates a missing target only; a 64-hex lowercase SHA-256 replaces only when the current byte hash matches. Validation, CAS, temp write, and rename share one target guard | Implemented |
 | GET | `/workspace/files?list=` | List one prefix level | Implemented |
 | POST | `/sessions` | Open a play session. With a character card, title = character name + time. Without a card, DSH `session.create` default title is used; no 409. Tavern bindings are copied only when the body has `selectionFromSessionId`. Inserts into the play workspace. **Does not write timeline** | Implemented |
-| POST | `/sessions/:id/branch` | `{ atEventId }` = log seq. After fork, copy the public selection. If the source import claim already ended at an earlier terminal, copy body-free pending lineage. Does not write timeline or send on behalf of the user. Copy failure is explicit 502 `PLAY_BRANCH_COPY_FAILED`. Open turn → 409 | Implemented |
+| POST | `/sessions/:id/branch` | `{ atEventId, sessionFormatVersion? }`: log seq and its format version; migration checks below. After fork, copy the public selection. If the source import claim already ended at an earlier terminal, copy body-free pending lineage. Does not write timeline or send on behalf of the user. Copy failure is explicit 502 `PLAY_BRANCH_COPY_FAILED`. Open turn → 409 | Implemented |
 | POST | `/sessions/:id/user-message` | `{ text }` as the next user body, `session.prompt` `queue` | Implemented |
-| GET | `/sessions/:id/messages` | `deriveMessages()` + `seq` + `incompleteTurn` + per-message `origin`. Reads until `hasMore: false`; no plugin page cap. Empty Host cursor page, illegal seq, or a cursor that does not advance → 502 `PLAY_HISTORY_CURSOR_STALLED` | Implemented |
+| GET | `/sessions/:id/messages` | `deriveMessages()` + `seq` + `incompleteTurn` + per-message `origin`; optional top-level `sessionFormatVersion` / `migratedFromV2`. Reads until `hasMore: false`; no plugin page cap. Empty Host cursor page, illegal seq, or a cursor that does not advance → 502 `PLAY_HISTORY_CURSOR_STALLED` | Implemented |
+| GET | `/sessions/:id/coordinates` | Read current logical Session format and migration marker without message bodies. [Fields and examples](#session-coordinates) | Added in 2.2.0 |
 | GET | `/sessions/:id/import-context` | Returns `{ binding }`. Unbound is `null`. A binding includes path/hash/state/count summaries and, when claimed, body-free claim identity/event-seq summaries. Record bodies are not returned | Implemented |
 | PUT | `/sessions/:id/import-context` | `{ reference: { path, expectedHash? } }`. Bind or rebind an already-written workspace import-context on an empty session | Implemented |
 | DELETE | `/sessions/:id/import-context` | Unbind an empty session. Idempotent `{ binding: null }` | Implemented |
@@ -42,6 +45,112 @@ Prefix: `/pmp-dsh-tavern/api/v2`.
 | POST | `/focus`, `/playthroughs/:id/focus` | Not provided | 405 |
 
 Path exists but method is wrong → `405 PLAY_METHOD_NOT_ALLOWED` (for example `POST /chrome`, `POST /focus`, `GET /sessions`). On the stable focus path, a missing playthrough id is 404 `PLAY_PLAYTHROUGH_NOT_FOUND`; a missing catalog is 409 `PLAY_CATALOG_UNAVAILABLE`; a corrupt catalog stays 400 `PLAY_CATALOG_INVALID`; a missing or corrupt timeline is uniformly 409 `PLAY_FOCUS_UNAVAILABLE`. The stable entry does not accept a client path, does not read DSH history, and does not write files. Old `/focus?path=` remains migration compatibility only.
+
+<a id="session-coordinates"></a>
+### Query and use Session coordinate versions
+
+Available from Tavern `2.2.0`, the public read-only `GET /sessions/:id/coordinates` endpoint reports **the format governing the specified Session's current event sequence numbers**. It takes no body or query parameters; URL-encode the DSH Session ID. It returns no message bodies, log paths, storage schema, or old-to-new sequence map, and does not migrate Tavern data. External frontends can query it before reusing saved event references.
+
+#### Request and fields
+
+Call from a same-origin page that already has access to DSH Web. Existing Host access controls apply; there is no separate Tavern API key:
+
+```js
+async function queryCoordinates(sessionId) {
+  const response = await fetch(
+    `/pmp-dsh-tavern/api/v2/sessions/${encodeURIComponent(sessionId)}/coordinates`,
+    { credentials: 'same-origin', headers: { Accept: 'application/json' } },
+  )
+  const data = await response.json()
+  if (!response.ok || data.ok !== true) {
+    throw Object.assign(new Error(data.error ?? `HTTP ${response.status}`), {
+      status: response.status, code: data.code,
+    })
+  }
+  return data
+}
+```
+
+Example success (HTTP 200):
+
+```json
+{
+  "ok": true,
+  "sessionFormatVersion": 3,
+  "migratedFromV2": true
+}
+```
+
+| Field | Type | Meaning and limits |
+| --- | --- | --- |
+| `ok` | boolean | `true` on success. |
+| `sessionFormatVersion` | integer or null | The Session format version **defined by upstream DSH**, read from public `session.inspect()` metadata at `meta.version`. This is not the DSH software version, Tavern version, or HTTP `/v2` version. `0` is valid: do not use a truthiness check. `null` means the Host did not provide a usable version, not zero or compatible. |
+| `migratedFromV2` | boolean | A **Tavern inference**: `true` when current events contain a synthetic V2→V3 system-message ID matching the upstream naming rule. V0/V1 restored through that edge can also return `true`. `false` only means no marker was detected; it does not prove the Session was never migrated or authoritatively report migration completion. |
+
+The value describes the **logical Session format currently read by the Host**; it does not guarantee the original disk file has already been rewritten. Actual DSH `0.1.2-rc.1` checks returned `0`, and `0.1.5-rc.1` current Sessions returned `3`. Do not infer this from software versions or treat `>= 3` as a future-format compatibility promise. Tavern defines the API field names; DSH defines the format semantics and conversion rules.
+
+If messages are already needed, use the top-level `sessionFormatVersion` and `migratedFromV2` from `GET /sessions/:id/messages` instead of making another request. Those message fields are optional, and older plugins may lack the standalone endpoint; missing/null means unknown. The endpoint avoids returning message bodies but still inspects the Session, so its cost is not guaranteed to be independent of history length.
+
+#### Save, compare, and branch
+
+1. When creating a QA range from messages, save the version from **that same response** in `variant.ext.pmpDshTavern.sessionFormatVersion`. For example: `startEventId: 9`, `endEventId: 16`, version `3`. Never query a version after an upgrade and use it to relabel old integers with unknown provenance.
+2. Before reusing a saved range, query its variant's `sessionId` and compare versions for **equality**. A mismatch, unknown version, or unversioned reference with a migration marker requires verification/recovery before reuse. Absence of a marker does not establish that an old unversioned range is valid.
+3. Send the saved range's version when branching. This conservative external-client example accepts only explicitly versioned, matching references; legacy unversioned data needs provenance verification first.
+
+```js
+async function branchSavedVariant(variant) {
+  const savedVersion = variant.ext?.pmpDshTavern?.sessionFormatVersion
+  const current = await queryCoordinates(variant.sessionId)
+  if (!Number.isSafeInteger(savedVersion) || savedVersion < 0
+    || savedVersion !== current.sessionFormatVersion) {
+    throw new Error('Verify or migrate the saved event range before branching')
+  }
+  const response = await fetch(
+    `/pmp-dsh-tavern/api/v2/sessions/${encodeURIComponent(variant.sessionId)}/branch`,
+    {
+      method: 'POST', credentials: 'same-origin',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        atEventId: variant.endEventId,
+        sessionFormatVersion: savedVersion,
+      }),
+    },
+  )
+  const data = await response.json()
+  if (!response.ok || data.ok !== true) {
+    throw Object.assign(new Error(data.error ?? `HTTP ${response.status}`), {
+      status: response.status, code: data.code,
+    })
+  }
+  return data // HTTP 201: { ok: true, sessionId: child Session ID }
+}
+```
+
+Equality only passes the format check; it does not prove an arbitrary event exists or identifies the intended reply. A query is not a lock or CAS token. The server rechecks before fork and still checks whether DSH permits the branch. Do not cache versions indefinitely, especially across Host upgrades or reconnects.
+
+#### Errors and recovery
+
+The query accepts no old coordinates, so a detected migration marker still returns 200. Old references are rejected when reading/writing a timeline, branching, or using import context.
+
+| Request/status | `code` | Client action |
+| --- | --- | --- |
+| Query, 400 | `PLAY_SESSION_INVALID` | Correct the Session ID. |
+| Query, 404 | `PLAY_SESSION_NOT_FOUND` | Refresh the Session selection; this does not mean unknown format. |
+| Query, 405 | `PLAY_METHOD_NOT_ALLOWED` | Use GET. |
+| Branch, 400 | `PLAY_COORDINATES_INVALID` | Supply a nonnegative safe integer version, not `null`. |
+| Timeline/branch, 409 | `PLAY_COORDINATES_MIGRATION_REQUIRED` | Stop reusing old references and follow migration guidance. Do not merely change the version marker and retry. |
+
+Example v2 error: `code` is **top-level** and `error` is a string:
+
+```json
+{
+  "ok": false,
+  "error": "Session event references need migration. Back up the playthrough and run scripts/migrate-session-coordinates.mjs with the retained source and V3 logs.",
+  "code": "PLAY_COORDINATES_MIGRATION_REQUIRED"
+}
+```
+
+Preserve references and backups. Follow the [offline migration guide](DSH_0.1.5_MIGRATION_en.md) to validate source/target logs, preview and apply the mapping, then reread the timeline and messages. The current tool is verified only for V0/V1/V2→V3. Unknown future formats need new adaptation and tests; this query does not supply conversion rules automatically.
 
 ### Message origin and display semantics
 

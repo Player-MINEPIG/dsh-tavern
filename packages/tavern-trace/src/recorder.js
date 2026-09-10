@@ -142,7 +142,16 @@ function latestHeaderEvent(session) {
   return events.findLast(event => event?.type === 'request/header') ?? null
 }
 
-function headerAuthority(headerEvent, header, expectedSystemText, expectedCallConfig, headerReused = null) {
+function effectiveSystem(session, header) {
+  if ((session?.header?.version ?? 0) < 3) return { text: typeof header?.system === 'string' ? header.system : '', source: 'request/header' }
+  if (typeof session?.deriveMessages !== 'function') return { text: null, source: 'system/message' }
+  const messages = session.deriveMessages()
+  return { text: messages.filter(message => message.role === 'system')
+    .flatMap(message => message.content ?? []).filter(block => block.type === 'text')
+    .map(block => block.text).join('\n\n'), source: 'system/message' }
+}
+
+function headerAuthority(headerEvent, header, expectedSystemText, expectedCallConfig, headerReused = null, effective = null) {
   if (header === undefined || header === null) {
     return {
       kind: 'dsh-request-header',
@@ -156,7 +165,7 @@ function headerAuthority(headerEvent, header, expectedSystemText, expectedCallCo
       tavernCallConfigApplied: null,
     }
   }
-  const system = typeof header.system === 'string' ? header.system : ''
+  const system = effective === null ? (typeof header.system === 'string' ? header.system : '') : effective.text
   const actualConfig = header.config ?? {}
   return {
     kind: 'dsh-request-header',
@@ -164,9 +173,10 @@ function headerAuthority(headerEvent, header, expectedSystemText, expectedCallCo
     headerReason: stringOrNull(headerEvent?.data?.reason),
     headerReused,
     headerFingerprint: hash(header),
-    systemFingerprint: hash(system),
+    systemFingerprint: system === null ? null : hash(system),
+    systemSource: effective?.source ?? 'request/header',
     configFingerprint: hash(actualConfig),
-    tavernProfilePresent: expectedSystemText === '' ? null : system.includes(expectedSystemText),
+    tavernProfilePresent: expectedSystemText === '' || system === null ? null : system.includes(expectedSystemText),
     tavernCallConfigApplied: Object.entries(expectedCallConfig).every(([key, value]) => JSON.stringify(actualConfig[key]) === JSON.stringify(value)),
   }
 }
@@ -294,6 +304,7 @@ export class TavernTraceRecorder {
         pending.expectedSystemText,
         pending.expectedCallConfig,
         latest === null ? null : observedHeaderEvent?.type !== 'request/header',
+        effectiveSystem(session, header),
       ),
     }
     this.store.upsert(sessionId, record)

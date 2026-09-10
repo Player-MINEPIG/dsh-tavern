@@ -68,7 +68,7 @@ export async function branchPlaythroughAtNode(client, { playthrough, nodeId } = 
   const active = activeTimelineEntries(source).find(entry => entry.node.id === nodeId)
   if (active === undefined) throw new TypeError('Branch target is not on the active timeline branch')
   const adopted = active.variant
-  const branch = await client.postBranch(adopted.sessionId, adopted.endEventId)
+  const branch = await client.postBranch(adopted.sessionId, adopted.endEventId, adopted.ext?.pmpDshTavern?.sessionFormatVersion)
   const sessionId = safeSessionId(branch?.sessionId)
   const inherited = await client.getMessages(sessionId)
   if (!inheritedRangeExists(inherited, adopted)) {

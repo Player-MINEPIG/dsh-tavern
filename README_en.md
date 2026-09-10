@@ -4,9 +4,11 @@
 
 An open-source DeepSeek Harness (DSH) plugin for Tavern resource compatibility, RP workflow, and a third-party frontend protocol.
 
-> This documentation matches `2.1.0`. The project is licensed under the [MIT License](LICENSE).
+> This documentation matches `2.2.0` (unreleased). The project is licensed under the [MIT License](LICENSE).
 >
-> **Compatibility:** `2.1.0` supports only DSH `0.1.2-rc.1`. Earlier interfaces are incompatible; later versions are unverified and compatibility is not promised. Migration, real RP interaction, and API error notices have passed acceptance.
+> **Compatibility:** `2.2.0` supports DSH `0.1.2-rc.1` and `0.1.5-rc.1`. Other versions were not verified in this update and compatibility is not promised.
+
+> **This update:** Primarily DSH compatibility fixes, with no new UI features. The public coordinate query API and additive compatibility fields warrant minor version `2.2.0`. Existing playthroughs upgraded to DSH V3 need coordinate migration; see the [upgrade guide](docs/DSH_0.1.5_MIGRATION_en.md).
 >
 > The default project README is the [Chinese version](README.md). This English file has no screenshots.
 
@@ -81,7 +83,7 @@ Send the first user message from the native DSH composer. It appears immediately
 
 Full operations and boundaries: [English usage guide](docs/USAGE_en.md).
 
-## v2.1.0 feature map
+## v2.2.0 feature map
 
 | Area | Main capabilities | Details |
 | --- | --- | --- |

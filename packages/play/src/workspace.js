@@ -15,6 +15,8 @@ import { createHash } from 'node:crypto'
 import { basename, join, resolve } from 'node:path'
 import { atomicJson, readJsonFile } from './atomic-json.js'
 import { httpError, readBoundedJson, sendJson } from './http.js'
+import { parseTimelineJson } from './timeline.js'
+import { validateTimelineCoordinates } from './session-coordinates.js'
 import { assertNoLink, assertSafeRoot, isSystemDiskPath, posixPlayPath, resolvePlayPath, splitRelativeSegments } from './paths.js'
 
 const BINDING_FILE = 'play-workspace.json'
@@ -353,7 +355,12 @@ export class PlayWorkspaceStore {
 
 }
 
-export function createWorkspaceApiHandler(store, { validateFile } = {}) {
+export function createWorkspaceApiHandler(store, { validateFile, coordinates } = {}) {
+  const checkCoordinates = async (path, content) => {
+    if (typeof path === 'string' && path.split('/').at(-1) === 'timeline.json' && typeof coordinates === 'function') {
+      await validateTimelineCoordinates(parseTimelineJson(content), coordinates)
+    }
+  }
   return {
     async getWorkspace(_req, res) {
       return sendJson(res, 200, store.view())
@@ -381,11 +388,13 @@ export function createWorkspaceApiHandler(store, { validateFile } = {}) {
       const path = searchParams.get('path')
       if (method === 'GET') {
         const file = store.readFile(path, { validate: validateFile })
+        await checkCoordinates(path, file.content)
         return sendJson(res, 200, file)
       }
       if (method === 'PUT') {
         const body = await readBoundedJson(req, MAX_FILE_BYTES + 1024)
         const normalizedPath = safeOperationPath(path)
+        await checkCoordinates(normalizedPath, body?.content)
         operation?.stage('request.validated', normalizedPath === undefined ? {} : { path: normalizedPath })
         operation?.stage('mutation.begin', normalizedPath === undefined ? {} : { path: normalizedPath })
         const managed = isManagedDocument(posixPlayPath(path))

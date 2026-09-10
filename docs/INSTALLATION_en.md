@@ -1,15 +1,17 @@
 # Cross-platform installation and removal
 
+The unreleased `2.2.0` source adds `0.1.5-rc.1` compatibility; migrate existing playthroughs using the [upgrade guide](DSH_0.1.5_MIGRATION_en.md). This DSH release requires Node `^22.19.0 || >=24.0.0`, regardless of Tavern's standalone Node 20 declaration.
+
 [中文](INSTALLATION.md)
 
-Status: `2.1.0`, updated on 2026-09-07. Only DSH `0.1.2-rc.1` is supported; earlier interfaces are incompatible, and later versions are unverified with no compatibility promise. The default root [README](../README.md) is Chinese. The English landing page is [README_en.md](../README_en.md) (no screenshots). This file is the detailed lifecycle, verification, and recovery contract.
+Status: `2.2.0` (unreleased), updated on 2026-09-10. DSH `0.1.2-rc.1` and `0.1.5-rc.1` are supported; other versions were not verified in this update and compatibility is not promised. The default root [README](../README.md) is Chinese. The English landing page is [README_en.md](../README_en.md) (no screenshots). This file is the detailed lifecycle, verification, and recovery contract.
 
 The scripts use Node.js as their common entry point and normalize paths for
 Windows, macOS, and Linux. macOS/Linux execute `dsh` directly. Windows safely
 locates npm's `dsh.ps1` shim and invokes it through the system PowerShell with
 an argument array, so paths are not reconstructed as shell command text. Run
 the scripts from the `dsh-tavern` checkout with Node.js 20 or newer and DSH
-`0.1.2-rc.1` on `PATH`.
+`0.1.2-rc.1` or `0.1.5-rc.1` on `PATH` (the latter requires the newer Node range above).
 
 Only the repository root is installed. `packages/tavern-format`,
 `packages/preset`, and `packages/tavern-loader` are internal boundaries shipped
@@ -28,11 +30,11 @@ dsh plugin --profile web add github:Player-MINEPIG/dsh-tavern
 
 ### DSH provides the official runtime peers
 
-`@deepseek-ai/dsh-util-crypto` at `0.1.2-rc.1` and `@deepseek-ai/cordis` at `4.0.2` are exact, required `peerDependencies`, rather than ordinary dependencies installing another copy. Matching `devDependencies` support source builds and tests. Browser contracts remain declared in `dsh.client.inject` and supplied by DSH, not bundled into Tavern.
+`@deepseek-ai/dsh-util-crypto` at `0.1.2-rc.1 || 0.1.5-rc.1` and `@deepseek-ai/cordis` at `4.0.2` are required `peerDependencies` admitting only the tested releases, rather than ordinary dependencies installing another copy. Baseline 0.1.2 `devDependencies` support source builds and tests. Browser contracts remain declared in `dsh.client.inject` and supplied by DSH, not bundled into Tavern.
 
 DSH `0.1.2-rc.1` profiles default to `nodeLinker: hoisted` and `autoInstallPeers: false`. At startup, DSH exposes its installation packages through `<DSH_HOME>/profiles/node_modules`, where Node's parent-directory resolution finds them for external plugins. Consequently, `dsh plugin add` or `pnpm peers check` may report these two peers as missing: that static check does not recognize DSH's startup-provided packages. A fresh-profile check confirmed standard installation, Host APIs, and the UUID call, with both packages resolving to the DSH installation.
 
-An `ERR_MODULE_NOT_FOUND` after restart is not an ignorable install warning: check that DSH on `PATH` is `0.1.2-rc.1`, its installation is complete, and module resolution reaches its packages. Do not mark required peers optional to hide warnings. Exact peer declarations constrain those packages; they are not a startup gate checking the entire DSH version.
+An `ERR_MODULE_NOT_FOUND` after restart is not an ignorable install warning: check that DSH on `PATH` is `0.1.2-rc.1` or `0.1.5-rc.1`, its installation is complete, and module resolution reaches its packages. Do not mark required peers optional to hide warnings. Exact peer declarations constrain those packages; they are not a startup gate checking the entire DSH version.
 
 ### Data and source installation
 
@@ -98,7 +100,7 @@ node scripts/install.mjs --dsh-home .\test-envs\review
 
 ## Release verification
 
-Before packaging or installing `2.1.0`, run the existing release verification command (its name remains `verify:2.0`):
+Before packaging or installing `2.2.0`, run the existing release verification command (its name remains `verify:2.0`):
 
 ```text
 npm run verify:2.0

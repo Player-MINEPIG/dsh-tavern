@@ -1,5 +1,7 @@
 # Unified Tavern loader contract
 
+DSH V3 增量：本文 `request/header.system` 表述指 V2。`0.1.5-rc.1` 中，编译的 systemText 经 system/message 进入有效消息 surface；Trace 从公共 Session.deriveMessages() 读取该权威，request/header 仍提供 config/tools。参见 [迁移合同](DSH_0.1.5_MIGRATION.md)。
+
 [English](LOADER_CONTRACT_en.md)
 
 状态：2026-08-18，已包含 RP 会话叠加（`selection.rp` + `rp:policy`）以及 delegated subagent 固化父选择。本文是资源与加载器的运行契约，不是 README。

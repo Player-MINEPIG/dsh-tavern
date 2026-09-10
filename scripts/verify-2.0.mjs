@@ -4,6 +4,10 @@ import { spawnSync } from 'node:child_process'
 
 const groups = [
   {
+    name: 'DSH V3 coordinates and Trace compatibility',
+    files: ['test/session-coordinates.test.mjs', 'test/coordinate-migration-integration.test.mjs', 'test/tavern-trace.test.mjs'],
+  },
+  {
     name: 'P0 complete history and cursor guards',
     files: ['test/play-history-pagination.test.mjs'],
   },

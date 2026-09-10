@@ -86,6 +86,7 @@ export function formatPlaySessionTitle(characterName, now = new Date()) {
 
 async function readAllHistory(host, sessionId) {
   const collected = []
+  let coordinates = {}
   let throughSeq
   let beforeSeq
   for (;;) {
@@ -96,6 +97,10 @@ async function readAllHistory(host, sessionId) {
         throw httpError(502, 'Host history page has no valid snapshot sequence', 'PLAY_HISTORY_SNAPSHOT_INVALID')
       }
       throughSeq = result.throughSeq
+      if (Number.isSafeInteger(result.sessionFormatVersion)) coordinates = {
+        sessionFormatVersion: result.sessionFormatVersion,
+        migratedFromV2: result.migratedFromV2 === true,
+      }
     } else if (result?.throughSeq !== throughSeq) {
       throw httpError(502, 'Host history snapshot sequence changed during pagination', 'PLAY_HISTORY_SNAPSHOT_CHANGED')
     }
@@ -113,7 +118,7 @@ async function readAllHistory(host, sessionId) {
     }
     beforeSeq = oldest.seq
   }
-  return collected
+  return { events: collected, coordinates }
 }
 
 async function requireMutableImportContext(host, sessionId, operation) {
@@ -124,7 +129,7 @@ async function requireMutableImportContext(host, sessionId, operation) {
     throw httpError(409, 'import context is locked after use', 'PLAY_IMPORT_CONTEXT_LOCKED')
   }
   operation?.stage('authority.checked', { sessionId })
-  const events = await readAllHistory(host, sessionId)
+  const { events } = await readAllHistory(host, sessionId)
   const derived = typeof host.deriveMessages === 'function'
     ? await host.deriveMessages({ sessionId, events })
     : messagesFromEvents(events)
@@ -223,7 +228,9 @@ export function createSessionApiHandler({ host, workspaceStore, now = () => new 
       }
       operation?.stage('request.validated', { sessionId })
       operation?.stage('host.fork.begin', { sessionId })
-      const created = await host.forkSession({ sessionId, atSeq: body.atEventId })
+      const created = await host.forkSession({ sessionId, atSeq: body.atEventId,
+        ...(body.sessionFormatVersion === undefined ? {} : { sessionFormatVersion: body.sessionFormatVersion }),
+      })
       const childSessionId = requireSessionId(created?.sessionId)
       operation?.stage('host.forked', { sessionId: childSessionId })
       try {
@@ -266,7 +273,7 @@ export function createSessionApiHandler({ host, workspaceStore, now = () => new 
 
     async messages(_req, res, sessionId) {
       requireSessionId(sessionId)
-      const events = await readAllHistory(host, sessionId)
+      const { events, coordinates } = await readAllHistory(host, sessionId)
       const derived = typeof host.deriveMessages === 'function'
         ? await host.deriveMessages({ sessionId, events })
         : messagesFromEvents(events)
@@ -274,7 +281,14 @@ export function createSessionApiHandler({ host, workspaceStore, now = () => new 
         ok: true,
         messages: projectMessages(derived ?? messagesFromEvents(events), events),
         incompleteTurn: hasOpenTurn(events),
+        ...coordinates,
       })
+    },
+
+    async coordinates(_req, res, sessionId) {
+      requireSessionId(sessionId)
+      const value = typeof host.coordinates === 'function' ? await host.coordinates(sessionId) : { sessionFormatVersion: null, migratedFromV2: false }
+      return sendJson(res, 200, { ok: true, ...value })
     },
 
     async importContext(req, res, sessionId, method, operation) {

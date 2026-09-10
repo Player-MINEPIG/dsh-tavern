@@ -2,7 +2,7 @@
 
 [中文](FRONTEND_INTEGRATION_zh-CN.md)
 
-Status: dsh-tavern `2.1.0` and DSH `0.1.2-rc.1`. HTTP fields follow [API_en.md](API_en.md). This page covers delivery, mode lifecycle, and product-action composition.
+Status: dsh-tavern `2.2.0` (unreleased) and DSH `0.1.2-rc.1` / `0.1.5-rc.1`. HTTP fields follow [API_en.md](API_en.md). This page covers delivery, mode lifecycle, and product-action composition.
 
 ## 1. Understand the dual-mode compatibility boundary first
 
@@ -82,15 +82,18 @@ Root: `/pmp-dsh-tavern/api/v2`. It is for any RP frontend and provides:
 - chrome authority and SSE;
 - RP workspace bind, directories, and managed files;
 - session create / branch / user-message / full messages;
+- `GET /sessions/:id/coordinates` to query a Session coordinate version without returning bodies;
 - import-context reference;
 - `GET /playthroughs/:id/focus`.
+
+Upstream DSH defines the Session format version. The coordinate endpoint reports the current logical format and a Tavern-inferred migration marker, not a storage schema or automatic migration. Save the message response version with each new range; compare before reuse and send the saved version when branching. See [coordinate API usage](API_en.md#session-coordinates) for requests, fields, branch examples, and recovery. If messages are already requested, use their top-level format fields.
 
 Important constraints:
 
 - `timeline.json` stores session/event pointers and display metadata only. It does not copy QA bodies.
 - Greeting is derived from the character card and session selection. It does not forge an assistant message.
 - `/user-message` submits user text only. It does not accept a frontend-assembled full prompt.
-- Managed catalog/timeline GET returns `revision`. PUT must send `expectedRevision`. After 409, read the new document and replay local intent.
+- Managed catalog/timeline GET returns `revision`. PUT must send `expectedRevision`. After `409 PLAY_FILE_REVISION_CONFLICT`, read the new document and replay local intent. `PLAY_COORDINATES_MIGRATION_REQUIRED` needs migration instead of repeated retries or merely changing a version marker.
 - Focus is queried by a non-empty playthrough id. The old path entry is migration compatibility only.
 - Imported records inject on the first turn through claim/lineage. They are not written as history.
 - The history API reads until Host `hasMore: false`. Whether the model context fits is decided by DSH/provider.

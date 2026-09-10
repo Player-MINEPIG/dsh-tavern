@@ -62,15 +62,15 @@ test('plugin identity uses pmp-dsh-tavern with versioned API roots', () => {
   assert.equal(CLIENT_UI_SETTINGS_EVENT, 'pmp-dsh-tavern:ui-settings')
 })
 
-test('official runtime packages are exact required peers with matching development versions', () => {
+test('official runtime peers admit only the tested releases and retain the development baseline', () => {
   const packageJson = JSON.parse(readFileSync(new URL('../package.json', import.meta.url), 'utf8'))
   const peers = {
     '@deepseek-ai/cordis': '4.0.2',
-    '@deepseek-ai/dsh-util-crypto': '0.1.2-rc.1',
+    '@deepseek-ai/dsh-util-crypto': '0.1.2-rc.1 || 0.1.5-rc.1',
   }
   assert.deepEqual(packageJson.peerDependencies, peers)
   for (const [name, version] of Object.entries(peers)) {
-    assert.equal(packageJson.devDependencies[name], version)
+    assert.ok(version.split(' || ').includes(packageJson.devDependencies[name]))
     assert.equal(packageJson.peerDependenciesMeta?.[name]?.optional, undefined)
   }
   for (const field of ['dependencies', 'optionalDependencies']) {

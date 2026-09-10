@@ -1,10 +1,12 @@
 # 跨平台安装与卸载
 
+`2.2.0` 未发布源码已加入 `0.1.5-rc.1` 兼容修复；旧周目先按 [升级指南](DSH_0.1.5_MIGRATION.md) 迁移。新版 DSH 要求 Node `^22.19.0 || >=24.0.0`，不能只依据 Tavern 的 Node 20 声明。
+
 [English](INSTALLATION_en.md)
 
-状态：对应 `2.1.0`，更新于 2026-09-07。仅支持 DSH `0.1.2-rc.1`；更早版本接口不兼容，后续版本未经验证、不承诺兼容。根目录默认 [README](../README.md) 为中文；英文落地页是 [README_en.md](../README_en.md)（无截图）。本文是安装生命周期、验收与恢复合同。
+状态：对应 `2.2.0`（尚未发布），更新于 2026-09-10。支持 DSH `0.1.2-rc.1` 和 `0.1.5-rc.1`；其他版本未经本次验证、不承诺兼容。根目录默认 [README](../README.md) 为中文；英文落地页是 [README_en.md](../README_en.md)（无截图）。本文是安装生命周期、验收与恢复合同。
 
-脚本以 Node.js 为统一入口，并规范化 Windows、macOS 和 Linux 路径。macOS/Linux 直接执行 `dsh`。Windows 会安全定位 npm 的 `dsh.ps1` shim，再通过系统 PowerShell 以参数数组调用，因此路径不会被拼回 shell 命令文本。请在 `dsh-tavern` 检出目录中运行脚本，并准备 Node.js 20 或更高版本，以及位于 `PATH` 上的 DSH `0.1.2-rc.1`。
+脚本以 Node.js 为统一入口，并规范化 Windows、macOS 和 Linux 路径。macOS/Linux 直接执行 `dsh`。Windows 会安全定位 npm 的 `dsh.ps1` shim，再通过系统 PowerShell 以参数数组调用，因此路径不会被拼回 shell 命令文本。请在 `dsh-tavern` 检出目录中运行脚本，并准备 Node.js 20 或更高版本，以及位于 `PATH` 上的 DSH `0.1.2-rc.1` 或 `0.1.5-rc.1`（后者需满足上面的 Node 要求）。
 
 只安装仓库根包。`packages/tavern-format`、`packages/preset` 和 `packages/tavern-loader` 是随同一插件发布的内部边界，不要单独把它们加进 dsh。格式层可通过根包导出作为 JavaScript 库使用，但它本身故意没有把内容发给 agent 的效果。
 
@@ -18,11 +20,11 @@ dsh plugin --profile web add github:Player-MINEPIG/dsh-tavern
 
 ### 官方运行依赖由 DSH 提供
 
-`@deepseek-ai/dsh-util-crypto` 的 `0.1.2-rc.1` 与 `@deepseek-ai/cordis` 的 `4.0.2` 声明为精确版本的必需 `peerDependencies`，不再作为普通运行依赖安装第二份。源码开发通过同版本 `devDependencies` 提供构建和测试环境。浏览器合同仍由 `dsh.client.inject` 声明、由 DSH 提供，没有改成随 Tavern 打包。
+`@deepseek-ai/dsh-util-crypto` 的 `0.1.2-rc.1 || 0.1.5-rc.1` 与 `@deepseek-ai/cordis` 的 `4.0.2` 声明为仅接受已测版本的必需 `peerDependencies`，不再作为普通运行依赖安装第二份。源码开发仍通过 0.1.2 基线的 `devDependencies` 提供构建和测试环境。浏览器合同仍由 `dsh.client.inject` 声明、由 DSH 提供，没有改成随 Tavern 打包。
 
 DSH `0.1.2-rc.1` profile 默认使用 `nodeLinker: hoisted` 和 `autoInstallPeers: false`；启动时，它在 `<DSH_HOME>/profiles/node_modules` 提供自身安装所携带的包，供插件按 Node 的父目录规则解析。因此 `dsh plugin add` 或 `pnpm peers check` 可能报告这两个包缺失：该静态检查不识别 DSH 的启动期依赖提供机制。已在全新 profile 验证标准安装、Host API 及 UUID 调用正常，且两个包均解析到 DSH 安装目录。
 
-若重启后仍出现 `ERR_MODULE_NOT_FOUND`，则不是可忽略的安装警告；请检查 `PATH` 中的 DSH 是否为 `0.1.2-rc.1`、安装是否完整及实际模块解析路径。不要为消除警告把必需 peer 标成 optional。精确 peer 声明约束的是对应包，不是自动检查整个 DSH 版本的启动门禁。
+若重启后仍出现 `ERR_MODULE_NOT_FOUND`，则不是可忽略的安装警告；请检查 `PATH` 中的 DSH 是否为 `0.1.2-rc.1` 或 `0.1.5-rc.1`、安装是否完整及实际模块解析路径。不要为消除警告把必需 peer 标成 optional。精确 peer 声明约束的是对应包，不是自动检查整个 DSH 版本的启动门禁。
 
 ### 数据与源码安装
 
@@ -61,7 +63,7 @@ node scripts/install.mjs --dsh-home .\test-envs\review
 
 ## 发布验收
 
-打包或安装 `2.1.0` 前，运行现有发布验证命令（保留 `verify:2.0` 名称）：
+打包或安装 `2.2.0` 前，运行现有发布验证命令（保留 `verify:2.0` 名称）：
 
 ```text
 npm run verify:2.0

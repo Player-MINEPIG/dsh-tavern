@@ -81,6 +81,9 @@ export function appendCompletedTurns(timeline, messageState, sessionId, {
         sessionId,
         startEventId: user.seq,
         endEventId: assistant.seq,
+        ...(Number.isSafeInteger(messageState.sessionFormatVersion) ? {
+          ext: { pmpDshTavern: { sessionFormatVersion: messageState.sessionFormatVersion } },
+        } : {}),
       }],
     })
     parentVariantId = variantId

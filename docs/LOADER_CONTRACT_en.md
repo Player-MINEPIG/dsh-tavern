@@ -1,5 +1,7 @@
 # Unified Tavern loader contract
 
+DSH V3 delta: references here to request/header.system describe V2. On `0.1.5-rc.1`, compiled systemText enters the effective surface through system/message; Trace reads it through public Session.deriveMessages(), while request/header owns config/tools. See the [migration contract](DSH_0.1.5_MIGRATION_en.md).
+
 [中文](LOADER_CONTRACT.md)
 
 Status: 2026-08-18. Includes the RP session overlay (`selection.rp` + `rp:policy`) and delegated subagents freezing the parent selection. This is the runtime contract between resources and the loader, not a README.

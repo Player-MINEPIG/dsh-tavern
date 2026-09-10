@@ -1,5 +1,7 @@
 # DSH and dsh-tavern (DT) message flow
 
+DSH `0.1.5-rc.1` delta: descriptions below of system text inside request/header apply to the historical V2 flow. V3 places the prompt in the effective system/message surface; request/header retains config/tools. Current Trace selects the versioned authority. Coordinate changes and migration are covered by the [upgrade guide](DSH_0.1.5_MIGRATION_en.md).
+
 [中文](DSH_MESSAGE_FLOW.md)
 
 Status: the message-flow baseline was checked on 2026-08-18 against the public README and installed source of local `@deepseek-ai/dsh 0.1.0-rc.6`. The 2.0 release candidate ran automated regression and install verification against DSH `0.1.0-rc.8` on 2026-08-22, but later sections are not presented as a new full upstream source audit. This page describes the native DSH flow, DT's own flow, how DT inserts into DSH, and one complete model step after DT is installed. It is not a README.

@@ -1,6 +1,7 @@
 import { randomUUID } from '@deepseek-ai/dsh-util-crypto'
 import { mapHostError } from '../../play/src/host.js'
 import { httpError } from '../../play/src/http.js'
+import { sessionCoordinates, requireCoordinates } from '../../play/src/session-coordinates.js'
 
 function missing(name) {
   return httpError(501, `Host ${name} is unavailable`, 'PLAY_HOST_UNAVAILABLE')
@@ -29,6 +30,9 @@ export function createPlayHost({
   onSelectionCopied,
 } = {}) {
   return {
+    async coordinates(sessionId) {
+      return sessionCoordinates(await callController('session.inspect', sessionController, 'inspect', sessionId))
+    },
     async createWorkspace({ path }) {
       const value = await callController('workspace.create', workspaceController, 'create', { path })
       return {
@@ -60,8 +64,11 @@ export function createPlayHost({
       return { sessionId }
     },
 
-    async forkSession({ sessionId, atSeq }) {
+    async forkSession({ sessionId, atSeq, sessionFormatVersion }) {
       try {
+        const coordinates = await this.coordinates(sessionId)
+        requireCoordinates(sessionFormatVersion, coordinates)
+        importContexts?.()?.ensureCoordinates?.(sessionId, coordinates)
         const value = await callController('session.fork', sessionController, 'fork', { sessionId, atSeq })
         return { sessionId: value.sessionId }
       } catch (error) {
@@ -86,8 +93,10 @@ export function createPlayHost({
     },
 
     async history({ sessionId, throughSeq: requestedThroughSeq, beforeSeq, maxMessages }) {
+      const inspection = requestedThroughSeq === undefined
+        ? await callController('session.inspect', sessionController, 'inspect', sessionId) : null
       const throughSeq = requestedThroughSeq === undefined
-        ? (await callController('session.inspect', sessionController, 'inspect', sessionId))?.events?.at(-1)?.seq ?? -1
+        ? inspection?.events?.at(-1)?.seq ?? -1
         : requestedThroughSeq
       const page = await callController('session.page', sessionController, 'page', {
         address: { kind: 'session', sessionId },
@@ -99,6 +108,7 @@ export function createPlayHost({
         events: page?.records ?? [],
         hasMore: page?.hasMore === true,
         throughSeq,
+        ...(Number.isSafeInteger(inspection?.meta?.version) ? sessionCoordinates(inspection) : {}),
       }
     },
 

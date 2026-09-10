@@ -1,5 +1,7 @@
 # DSH 0.1.2 Compatibility and Market Release Plan
 
+Current workspace: `2.2.0` (unreleased), a DSH compatibility update with additive public API support. See [the migration guide](DSH_0.1.5_MIGRATION_en.md) for scope and verification. The completed `2.1.0` ledger below remains historical.
+
 ## Current status (2026-09-09)
 
 Tavern `2.1.0` acceptance and final review are complete. The approved changes

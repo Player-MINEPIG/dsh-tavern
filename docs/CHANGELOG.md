@@ -1,5 +1,15 @@
 # Development changelog
 
+## 2.2.0 — Unreleased — DSH 0.1.5-rc.1 compatibility
+
+- Document the retained public coordinates API with same-origin query/branch examples, upstream version ownership, inferred-marker limits, unknown-version handling, and migration recovery.
+- Version rationale: no new UI feature is introduced, but the public coordinates endpoint and additive API fields expand the public contract. Use a minor version under [SemVer](https://semver.org/), rather than the patch version appropriate to internal compatibility fixes alone.
+
+- Keep the 0.1.2 Host path and read V3 Trace system authority from the effective message surface, without persisting prompt text.
+- Version new QA/swipe and import coordinates; refuse stale or unversioned migrated ranges before timeline use and Host fork.
+- Add an offline, preview-first V0/V1/V2→V3 coordinate migration using the official 0.1.5 codecs, exact successor verification, original-file backups, and idempotent per-file replacement.
+- Admit both tested crypto peer releases and document the newer Host Node requirement. Package and lockfile versions are `2.2.0`; this work is not yet tagged or published. The existing `v2.1.0` tag is unchanged.
+
 ## 2026-09-09 — Documentation status correction
 
 - Reconcile the changelog, review guides, API guides, and development ledger with completed `2.1.0` acceptance and Git tagging. Distinguish historical pending items from the regression workflow for future changes.

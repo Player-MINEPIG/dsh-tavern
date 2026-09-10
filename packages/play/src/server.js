@@ -14,6 +14,7 @@ const SESSION_ROUTES = [
   [/^\/sessions\/([^/]+)\/branch$/, 'branch', 'POST'],
   [/^\/sessions\/([^/]+)\/user-message$/, 'userMessage', 'POST'],
   [/^\/sessions\/([^/]+)\/messages$/, 'messages', 'GET'],
+  [/^\/sessions\/([^/]+)\/coordinates$/, 'coordinates', 'GET'],
   [/^\/sessions$/, 'create', 'POST'],
 ]
 
@@ -34,7 +35,7 @@ export function createPlayApiHandler({
   const chromeEventsApi = createChromeEventsHandler(chromeStore)
   const workspaceApi = workspaceStore === undefined
     ? null
-    : createWorkspaceApiHandler(workspaceStore, { validateFile })
+    : createWorkspaceApiHandler(workspaceStore, { validateFile, coordinates: host?.coordinates?.bind(host) })
   const sessionApi = host !== undefined && workspaceStore !== undefined
     ? createSessionApiHandler({ host, workspaceStore, now })
     : null
@@ -162,7 +163,7 @@ export function createPlayApiHandler({
         if (match === null) continue
         if (method !== required) throw httpError(405, 'method not allowed', 'PLAY_METHOD_NOT_ALLOWED')
         if (sessionApi === null) throw httpError(404, 'Not found', 'PLAY_NOT_FOUND')
-        if (action === 'messages') return await sessionApi[action](req, res, match[1])
+        if (action === 'messages' || action === 'coordinates') return await sessionApi[action](req, res, match[1])
         const operationName = action === 'create' ? 'session.create' : action === 'branch' ? 'session.branch' : 'session.user-message'
         operation = startMutation(req, operationName)
         return await runMutation(operation, () => action === 'create'

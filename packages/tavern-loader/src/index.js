@@ -444,7 +444,7 @@ export function apply(ctx, config = {}) {
     text: (context) => {
       const snapshot = runtime.forAssembleContext(context)
       const claimMetadata = snapshot.audit?.activation ?? null
-      return [snapshot.systemText, importContexts.contextFor(context.agent?.id, claimMetadata, snapshot.macroContext)].filter(Boolean).join('\n\n')
+      return [snapshot.systemText, importContexts.contextFor(context.agent?.id, claimMetadata, snapshot.macroContext, context.agent?.session)].filter(Boolean).join('\n\n')
     },
   })
   ctx.systemPrompt.section({
@@ -495,7 +495,7 @@ export function apply(ctx, config = {}) {
     pendingInput.observeSessionEvent(session, event)
     if (event?.type === 'turn/end') {
       pendingInput.clearClaimed(session)
-      importContexts.consumeAfterTurn(session?.id, event)
+      importContexts.consumeAfterTurn(session?.id, event, session)
     }
     if (event?.type === 'sandbox/mode') {
       try { rpMode.enforceReadOnly(session) } catch (error) {

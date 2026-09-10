@@ -1,5 +1,7 @@
 # DSH 与 dsh-tavern（DT）消息流
 
+DSH `0.1.5-rc.1` 增量：以下历史流程中“request/header 保存 system”的描述仅适用于 V2；V3 的系统提示词由 system/message 进入有效消息 surface，request/header 仅保留 config/tools 等字段。当前 Trace 已按该版本分支读取。会话坐标变化及迁移步骤见 [升级指南](DSH_0.1.5_MIGRATION.md)。
+
 [English](DSH_MESSAGE_FLOW_en.md)
 
 状态：消息流基线于 2026-08-18 按本机 `@deepseek-ai/dsh 0.1.0-rc.6` 的公开 README 与已安装源码核对；2.0 发布候选已在 2026-08-22 对 DSH `0.1.0-rc.8` 做自动回归和安装验证，但没有把后续段落冒充为一次新的完整上游源码审计。本文分别描述 DSH 原生流程、DT 自身流程、DT 对 DSH 的介入，以及安装 DT 后一次完整模型 step 的实际流程；它不是 README。

@@ -648,7 +648,7 @@ var zh_CN_default = Object.freeze({
   "template.error.needWorkspace": "\u5F53\u524D\u4F1A\u8BDD\u4E0D\u5C5E\u4E8E DSH \u5DE5\u4F5C\u533A\uFF1B\u8BF7\u5148\u628A\u4F1A\u8BDD\u52A0\u5165\u5DE5\u4F5C\u533A",
   "template.error.needCharacter": "\u9B54\u4E38\u6A21\u5F0F\u4E0B\u65B0\u5EFA\u5468\u76EE\u9700\u8981\u914D\u7F6E\u4E2D\u7ED1\u5B9A\u89D2\u8272\u5361",
   "trace.title": "Tavern Trace",
-  "trace.intro": "\u4E0E Conversation / Trajectory \u5E76\u5217\u7684 loader \u5BA1\u8BA1\u89C6\u56FE\u3002DSH request/header \u59CB\u7EC8\u662F\u6700\u7EC8\u53D1\u9001 system\u3001tools \u4E0E\u751F\u6548 config \u7684\u6743\u5A01\u3002",
+  "trace.intro": "\u4E0E Conversation / Trajectory \u5E76\u5217\u7684 loader \u5BA1\u8BA1\u89C6\u56FE\u3002DSH request/header \u662F tools \u4E0E config \u7684\u6743\u5A01\uFF1BV3 \u7531 system/message \u63D0\u4F9B\u751F\u6548\u7CFB\u7EDF\u63D0\u793A\u8BCD\uFF08V2 \u4F7F\u7528 header.system\uFF09\u3002",
   "trace.reading": "\u6B63\u5728\u8BFB\u53D6\u5BA1\u8BA1\u8BB0\u5F55\u2026",
   "trace.empty": "\u6B64\u4F1A\u8BDD\u8FD8\u6CA1\u6709 Tavern \u8BF7\u6C42\u5BA1\u8BA1\u8BB0\u5F55\u3002\u53D1\u9001\u4E0B\u4E00\u6761\u6D88\u606F\u540E\u518D\u67E5\u770B\u3002",
   "trace.privacy": "\u9690\u79C1\u8FB9\u754C\uFF1A\u8FD9\u91CC\u53EA\u4FDD\u5B58\u8D44\u6E90\u6458\u8981\u3001\u914D\u7F6E/\u547D\u4E2D\u5173\u952E\u8BCD\u3001\u51B3\u7B56\u539F\u56E0\u3001\u4F4D\u7F6E\u3001\u9884\u7B97\u548C SHA-256 \u6458\u8981\uFF1B\u4E0D\u4FDD\u5B58 preset/\u89D2\u8272/user/\u4E16\u754C\u4E66\u6B63\u6587\u3001\u5B8C\u6574 system\u3001\u804A\u5929\u5386\u53F2\u3001header \u5185\u5BB9\u6216 tool payload\u3002",
@@ -1294,7 +1294,7 @@ var en_default = Object.freeze({
   "template.error.needWorkspace": "The current session is not in a DSH workspace; add it to a workspace first",
   "template.error.needCharacter": "Starting a playthrough in Mowan mode requires a bound character card",
   "trace.title": "Tavern Trace",
-  "trace.intro": "A loader audit view alongside Conversation and Trajectory. The DSH request/header remains authoritative for the final system, tools, and effective config.",
+  "trace.intro": "A loader audit view alongside Conversation and Trajectory. DSH request/header owns tools and config; V3 system/message owns the effective system prompt (V2: header.system).",
   "trace.reading": "Reading audit records\u2026",
   "trace.empty": "This session has no Tavern request audit records yet. Send the next message and check again.",
   "trace.privacy": "Privacy boundary: this stores only resource summaries, configured/matched keywords, decision reasons, placement, budgets, and SHA-256 digests\u2014not resource bodies, full system text, chat history, header content, or tool payloads.",
@@ -8336,7 +8336,11 @@ function normalizeSessionMessages(value, label = "messages") {
       origin
     };
   });
-  return { messages, incompleteTurn: value.incompleteTurn };
+  return {
+    messages,
+    incompleteTurn: value.incompleteTurn,
+    ...Number.isSafeInteger(value.sessionFormatVersion) ? { sessionFormatVersion: value.sessionFormatVersion } : {}
+  };
 }
 function normalizeFocus(value, label = "focus") {
   if (!isRecord4(value)) fail(label, "must be an object");
@@ -9100,7 +9104,7 @@ async function branchPlaythroughAtNode(client, { playthrough, nodeId } = {}) {
   const active = activeTimelineEntries(source).find((entry) => entry.node.id === nodeId);
   if (active === void 0) throw new TypeError("Branch target is not on the active timeline branch");
   const adopted = active.variant;
-  const branch = await client.postBranch(adopted.sessionId, adopted.endEventId);
+  const branch = await client.postBranch(adopted.sessionId, adopted.endEventId, adopted.ext?.pmpDshTavern?.sessionFormatVersion);
   const sessionId = safeSessionId2(branch?.sessionId);
   const inherited = await client.getMessages(sessionId);
   if (!inheritedRangeExists(inherited, adopted)) {
@@ -9197,7 +9201,7 @@ function completedPairAfter(messageState, eventId) {
   const user = messages.find((message) => message.role === "user" && (messageOriginKind2(message) === "user" || messageOriginKind2(message) === "steering"));
   if (user === void 0) return null;
   const assistant = [...messages].reverse().find((message) => message.role === "assistant" && message.seq > user.seq);
-  return assistant === void 0 ? null : { user, assistant };
+  return assistant === void 0 ? null : { user, assistant, sessionFormatVersion: messageState.sessionFormatVersion };
 }
 async function createRootSwipeSession(client, sourceSessionId) {
   const binding = typeof client.getImportContextBinding === "function" ? await client.getImportContextBinding(sourceSessionId) : null;
@@ -9302,7 +9306,10 @@ function createPlayNodeController(client, {
           id: variantId,
           sessionId: newSessionId,
           startEventId: pair.user.seq,
-          endEventId: pair.assistant.seq
+          endEventId: pair.assistant.seq,
+          ...Number.isSafeInteger(pair.sessionFormatVersion) ? {
+            ext: { pmpDshTavern: { sessionFormatVersion: pair.sessionFormatVersion } }
+          } : {}
         };
         const next = await updateTimeline(client, playthrough, (timeline2) => {
           const current3 = nodeById2(timeline2, sourceNode.id);
@@ -9645,7 +9652,10 @@ function appendCompletedTurns(timeline, messageState, sessionId, {
         id: variantId,
         sessionId,
         startEventId: user.seq,
-        endEventId: assistant.seq
+        endEventId: assistant.seq,
+        ...Number.isSafeInteger(messageState.sessionFormatVersion) ? {
+          ext: { pmpDshTavern: { sessionFormatVersion: messageState.sessionFormatVersion } }
+        } : {}
       }]
     });
     parentVariantId = variantId;
@@ -12136,6 +12146,7 @@ function createLivePlayClient({
   const v1 = createRequester(fetchImpl, v1Root);
   const v2 = createRequester(fetchImpl, apiRoot);
   const managedRevisions = /* @__PURE__ */ new Map();
+  const coordinateVersions = /* @__PURE__ */ new Map();
   function invalidateRevision(path) {
     managedRevisions.delete(path);
   }
@@ -12285,6 +12296,7 @@ function createLivePlayClient({
     },
     async getMessages(sessionId) {
       const response = await v2("GET", `/sessions/${encodeURIComponent(sessionId)}/messages`);
+      if (Number.isSafeInteger(response.sessionFormatVersion)) coordinateVersions.set(sessionId, response.sessionFormatVersion);
       return normalizeSessionMessages(response);
     },
     async getImportContextBinding(sessionId) {
@@ -12318,11 +12330,14 @@ function createLivePlayClient({
     postUserMessage(sessionId, text2) {
       return v2("POST", `/sessions/${encodeURIComponent(sessionId)}/user-message`, { text: text2 });
     },
-    postBranch(sessionId, atEventId) {
+    postBranch(sessionId, atEventId, sessionFormatVersion = coordinateVersions.get(sessionId)) {
       if (!Number.isSafeInteger(atEventId) || atEventId < 0) {
         throw new TypeError("atEventId must be a non-negative integer");
       }
-      return v2("POST", `/sessions/${encodeURIComponent(sessionId)}/branch`, { atEventId });
+      return v2("POST", `/sessions/${encodeURIComponent(sessionId)}/branch`, {
+        atEventId,
+        ...sessionFormatVersion === void 0 ? {} : { sessionFormatVersion }
+      });
     },
     postSession(selectionFromSessionId, importContextRef) {
       const body2 = {

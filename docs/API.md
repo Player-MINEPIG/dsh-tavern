@@ -1,8 +1,10 @@
 # HTTP API
 
+Tavern `2.2.0`（尚未发布）的 DSH `0.1.5-rc.1` 兼容增量：messages 响应增加格式信息，新增只读 coordinates endpoint，branch 接收坐标格式版本，timeline GET/PUT 拒绝未迁移引用。具体字段与错误码见 [V3 迁移合同](DSH_0.1.5_MIGRATION.md)。Trace 的 V3 系统提示词权威来自有效 system/message，配置与工具仍来自 request/header。
+
 [English](API_en.md)
 
-状态：2026-09-05，Host 兼容基线为 DSH `0.1.2-rc.1`。根：`/pmp-dsh-tavern/api`。鉴权仍是本机 TCP peer、Host、Origin、Content-Type（见 loader 安全中间件）。成功响应带 `ok: true`；失败带 `ok: false` 与 `error`。
+状态：Tavern `2.2.0`（尚未发布），更新于 2026-09-10；Host 已验证 DSH `0.1.2-rc.1` 和 `0.1.5-rc.1`。根：`/pmp-dsh-tavern/api`。鉴权仍是本机 TCP peer、Host、Origin、Content-Type（见 loader 安全中间件）。成功响应带 `ok: true`；失败带 `ok: false` 与 `error`。
 
 两栏合同：
 
@@ -28,9 +30,10 @@
 | PUT | `/workspace/files?path=` | 普通文件仍使用 `{ content }`；`catalog.json` / `timeline.json` 必须显式带 `expectedRevision`：`null` 仅创建缺失目标，64 位小写 SHA-256 仅在当前字节 hash 相等时替换。校验、CAS、临时写和 rename 在同一目标 guard 内 | 已实现 |
 | GET | `/workspace/files?list=` | 列一层前缀 | 已实现 |
 | POST | `/sessions` | 新开扮演 session。有角色卡时标题=角色名+时间；无角色卡时走 DSH `session.create` 默认标题，不 409。仅当 body 带 `selectionFromSessionId` 才复制 Tavern 绑定。插入扮演工作区。**不写 timeline** | 已实现 |
-| POST | `/sessions/:id/branch` | `{ atEventId }` = 日志 seq。fork 后复制公开 selection；若来源 import claim 已在更早 terminal 结束，则复制不含正文的 pending lineage；不写 timeline、不代发。复制失败显式返回 502 `PLAY_BRANCH_COPY_FAILED`；开放 turn → 409 | 已实现 |
+| POST | `/sessions/:id/branch` | `{ atEventId, sessionFormatVersion? }`：日志 seq 与其格式版本；迁移检查见下文。fork 后复制公开 selection；若来源 import claim 已在更早 terminal 结束，则复制不含正文的 pending lineage；不写 timeline、不代发。复制失败显式返回 502 `PLAY_BRANCH_COPY_FAILED`；开放 turn → 409 | 已实现 |
 | POST | `/sessions/:id/user-message` | `{ text }` 作为下一条用户正文，`session.prompt` `queue` | 已实现 |
-| GET | `/sessions/:id/messages` | `deriveMessages()` + `seq` + `incompleteTurn` + 每条消息的 `origin`。持续读取到 `hasMore: false`，不设插件页数上限；Host 游标空页、非法 seq 或不前进时返回 502 `PLAY_HISTORY_CURSOR_STALLED` | 已实现 |
+| GET | `/sessions/:id/messages` | `deriveMessages()` + `seq` + `incompleteTurn` + 每条消息的 `origin`；顶层可附带 `sessionFormatVersion` / `migratedFromV2`。持续读取到 `hasMore: false`，不设插件页数上限；Host 游标空页、非法 seq 或不前进时返回 502 `PLAY_HISTORY_CURSOR_STALLED` | 已实现 |
+| GET | `/sessions/:id/coordinates` | 只读查询当前逻辑会话的格式版本与迁移标记；无消息正文。[字段与调用示例](#session-coordinates) | 2.2.0 新增 |
 | GET | `/sessions/:id/import-context` | 返回 `{ binding }`；未绑定为 `null`，绑定含 path/hash/state/数量摘要及（已 claim 时）不含正文的 claim identity/event seq 摘要，不返回记录正文 | 已实现 |
 | PUT | `/sessions/:id/import-context` | `{ reference: { path, expectedHash? } }`；为空 session 绑定或换绑已写入工作区的 import-context | 已实现 |
 | DELETE | `/sessions/:id/import-context` | 为空 session 解绑；幂等返回 `{ binding: null }` | 已实现 |
@@ -42,6 +45,112 @@
 | POST | `/focus`、`/playthroughs/:id/focus` | 不提供 | 405 |
 
 路径存在、方法不对 → `405 PLAY_METHOD_NOT_ALLOWED`（例如 `POST /chrome`、`POST /focus`、`GET /sessions`）。稳定 focus 中周目 id 不存在返回 404 PLAY_PLAYTHROUGH_NOT_FOUND；catalog 缺失返回 409 PLAY_CATALOG_UNAVAILABLE，catalog 损坏保留 400 PLAY_CATALOG_INVALID；timeline 缺失或损坏统一返回 409 PLAY_FOCUS_UNAVAILABLE。稳定入口不接受客户端 path，不读取 DSH history，也不写文件。旧 /focus?path= 仅保留迁移兼容。
+
+<a id="session-coordinates"></a>
+### 会话坐标版本查询与使用
+
+从 Tavern `2.2.0` 起，公开只读接口 `GET /sessions/:id/coordinates` 用于检查**指定会话当前事件序号采用的格式版本**。不需要请求正文或查询参数；`:id` 是 DSH Session ID，客户端须 URL 编码。接口不返回消息正文、日志路径、存储 schema 或旧→新序号映射，也不执行 Tavern 数据迁移。它适合外部前端在使用已保存的事件引用前查询格式。
+
+#### 请求与字段
+
+在已通过 DSH Web 访问认证的同源页面中调用；沿用该 Host 的访问控制，不另设 Tavern API key：
+
+```js
+async function queryCoordinates(sessionId) {
+  const response = await fetch(
+    `/pmp-dsh-tavern/api/v2/sessions/${encodeURIComponent(sessionId)}/coordinates`,
+    { credentials: 'same-origin', headers: { Accept: 'application/json' } },
+  )
+  const data = await response.json()
+  if (!response.ok || data.ok !== true) {
+    throw Object.assign(new Error(data.error ?? `HTTP ${response.status}`), {
+      status: response.status, code: data.code,
+    })
+  }
+  return data
+}
+```
+
+成功示例（HTTP 200）：
+
+```json
+{
+  "ok": true,
+  "sessionFormatVersion": 3,
+  "migratedFromV2": true
+}
+```
+
+| 字段 | 类型 | 定义及使用边界 |
+| --- | --- | --- |
+| `ok` | boolean | 成功时为 `true`。 |
+| `sessionFormatVersion` | integer 或 null | **DSH 上游定义**的会话格式版本，由公共 `session.inspect()` 的 `meta.version` 读取；不是 DSH 软件版本、Tavern 版本或 HTTP `/v2` 的版本。`0` 是有效版本，不能用真假值检查。`null` 表示当前 Host 未提供可用版本，不能当作 `0` 或“兼容”。 |
+| `migratedFromV2` | boolean | **Tavern 推断**的标记：在当前事件中检测到符合上游命名规则的 V2→V3 合成 system message ID 时为 `true`。V0/V1 经完整迁移链到 V3 也可为 `true`；`false` 仅表示未检测到，不能证明从未迁移，也不是迁移是否完成的权威状态。 |
+
+返回的是 Host 当前读取到的**逻辑会话格式**，不保证磁盘上原始文件也已改写成该版本。DSH `0.1.2-rc.1` 的实测值为 `0`，`0.1.5-rc.1` 当前会话为 `3`；不要从软件版本字符串猜测，也不要把 `>= 3` 当作未来格式兼容承诺。字段名由 Tavern 定义，格式含义和转换规则由 DSH 上游定义。
+
+若本来就需要消息，直接读取 `GET /sessions/:id/messages` 的顶层 `sessionFormatVersion`、`migratedFromV2` 即可，不必再查此接口。消息响应中这两个字段可缺省，旧插件可能没有独立接口；缺失或 `null` 应视为未知。独立接口减少返回正文的需要，但实现仍会 inspect 会话，不能假定查询成本与历史长度无关。
+
+#### 保存、比较和分支
+
+1. 从消息响应获取新的 QA 范围时，把**同一响应**的 `sessionFormatVersion` 与范围一起保存到 `variant.ext.pmpDshTavern.sessionFormatVersion`。例如 `startEventId: 9`、`endEventId: 16`、版本 `3`。不要在升级后查询一次版本，再用它补标来源不明的旧整数。
+2. 复用已存范围前，按该 variant 的 `sessionId` 查询当前版本，并与所保存的版本做**相等比较**。版本不同、未知，或无版本且发现迁移标记时，应停止使用旧范围并进入恢复/迁移流程。即使没有标记，也不能据此确认来源不明的旧范围有效。
+3. 验证后，分支请求发送所保存范围的版本。下面是一个保守的外部前端示例：只接受已标记且版本相符的引用；未标记旧数据需要先核对来源。
+
+```js
+async function branchSavedVariant(variant) {
+  const savedVersion = variant.ext?.pmpDshTavern?.sessionFormatVersion
+  const current = await queryCoordinates(variant.sessionId)
+  if (!Number.isSafeInteger(savedVersion) || savedVersion < 0
+    || savedVersion !== current.sessionFormatVersion) {
+    throw new Error('Verify or migrate the saved event range before branching')
+  }
+  const response = await fetch(
+    `/pmp-dsh-tavern/api/v2/sessions/${encodeURIComponent(variant.sessionId)}/branch`,
+    {
+      method: 'POST', credentials: 'same-origin',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        atEventId: variant.endEventId,
+        sessionFormatVersion: savedVersion,
+      }),
+    },
+  )
+  const data = await response.json()
+  if (!response.ok || data.ok !== true) {
+    throw Object.assign(new Error(data.error ?? `HTTP ${response.status}`), {
+      status: response.status, code: data.code,
+    })
+  }
+  return data // HTTP 201: { ok: true, sessionId: 子会话 ID }
+}
+```
+
+版本相同只通过格式检查，不证明任意序号一定存在或属于目标回复。查询不是锁或 CAS 凭证；服务端仍在 fork 前重新校验，并检查 DSH 是否允许该分支。不要永久缓存版本，尤其在 Host 升级或重连后。
+
+#### 错误与恢复
+
+查询本身不接收旧坐标，因此检测到迁移标记仍返回 200。旧引用的拒绝发生在 timeline GET/PUT、branch 或导入上下文使用阶段。
+
+| 请求/状态 | `code` | 调用方处理 |
+| --- | --- | --- |
+| 查询，400 | `PLAY_SESSION_INVALID` | 修正 Session ID。 |
+| 查询，404 | `PLAY_SESSION_NOT_FOUND` | 目标会话不存在；刷新选择，不解释为格式未知。 |
+| 查询，405 | `PLAY_METHOD_NOT_ALLOWED` | 使用 GET。 |
+| branch，400 | `PLAY_COORDINATES_INVALID` | 传入非负安全整数版本；不能发送 `null`。 |
+| timeline/branch，409 | `PLAY_COORDINATES_MIGRATION_REQUIRED` | 停止复用旧引用，按迁移指南处理；不能只修改版本标记后重试。 |
+
+v2 错误示例；`code` 在**响应顶层**，`error` 是字符串：
+
+```json
+{
+  "ok": false,
+  "error": "Session event references need migration. Back up the playthrough and run scripts/migrate-session-coordinates.mjs with the retained source and V3 logs.",
+  "code": "PLAY_COORDINATES_MIGRATION_REQUIRED"
+}
+```
+
+恢复时保留原引用与备份，按 [离线迁移指南](DSH_0.1.5_MIGRATION.md) 验证 source/target 日志、预览并应用映射，然后重新读取 timeline 和消息。当前迁移工具只验证了 V0/V1/V2→V3；未知未来格式需要新的适配与测试，查询接口不会自动提供转换规则。
 
 ### 消息来源与显示语义
 

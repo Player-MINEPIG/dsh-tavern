@@ -219,7 +219,9 @@ export function normalizeSessionMessages(value, label = 'messages') {
       origin,
     }
   })
-  return { messages, incompleteTurn: value.incompleteTurn }
+  return { messages, incompleteTurn: value.incompleteTurn,
+    ...(Number.isSafeInteger(value.sessionFormatVersion) ? { sessionFormatVersion: value.sessionFormatVersion } : {}),
+  }
 }
 
 export function normalizeFocus(value, label = 'focus') {

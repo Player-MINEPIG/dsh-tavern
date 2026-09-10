@@ -573,7 +573,7 @@ export default Object.freeze({
   "template.error.needWorkspace": "The current session is not in a DSH workspace; add it to a workspace first",
   "template.error.needCharacter": "Starting a playthrough in Mowan mode requires a bound character card",
   "trace.title": "Tavern Trace",
-  "trace.intro": "A loader audit view alongside Conversation and Trajectory. The DSH request/header remains authoritative for the final system, tools, and effective config.",
+  "trace.intro": "A loader audit view alongside Conversation and Trajectory. DSH request/header owns tools and config; V3 system/message owns the effective system prompt (V2: header.system).",
   "trace.reading": "Reading audit records…",
   "trace.empty": "This session has no Tavern request audit records yet. Send the next message and check again.",
   "trace.privacy": "Privacy boundary: this stores only resource summaries, configured/matched keywords, decision reasons, placement, budgets, and SHA-256 digests—not resource bodies, full system text, chat history, header content, or tool payloads.",

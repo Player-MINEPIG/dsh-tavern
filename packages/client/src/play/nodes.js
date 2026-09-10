@@ -45,7 +45,7 @@ function completedPairAfter(messageState, eventId) {
     && (messageOriginKind(message) === 'user' || messageOriginKind(message) === 'steering'))
   if (user === undefined) return null
   const assistant = [...messages].reverse().find(message => message.role === 'assistant' && message.seq > user.seq)
-  return assistant === undefined ? null : { user, assistant }
+  return assistant === undefined ? null : { user, assistant, sessionFormatVersion: messageState.sessionFormatVersion }
 }
 
 async function createRootSwipeSession(client, sourceSessionId) {
@@ -170,6 +170,9 @@ export function createPlayNodeController(client, {
           sessionId: newSessionId,
           startEventId: pair.user.seq,
           endEventId: pair.assistant.seq,
+          ...(Number.isSafeInteger(pair.sessionFormatVersion) ? {
+            ext: { pmpDshTavern: { sessionFormatVersion: pair.sessionFormatVersion } },
+          } : {}),
         }
         const next = await updateTimeline(client, playthrough, timeline => {
           const current = nodeById(timeline, sourceNode.id)

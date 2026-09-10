@@ -2,7 +2,7 @@
 
 [English](FRONTEND_INTEGRATION_en.md)
 
-状态：面向 dsh-tavern `2.1.0` 与 DSH `0.1.2-rc.1`。HTTP 字段以 [API.md](API.md) 为准；本页说明交付方式、模式生命周期和产品动作组合。
+状态：面向 dsh-tavern `2.2.0`（尚未发布）与 DSH `0.1.2-rc.1` / `0.1.5-rc.1`。HTTP 字段以 [API.md](API.md) 为准；本页说明交付方式、模式生命周期和产品动作组合。
 
 ## 1. 先理解双模式兼容边界
 
@@ -82,15 +82,18 @@ DSH `0.1.2-rc.1` 的嵌入式客户端需分别读取：`useSession` 的生命�
 - chrome 权威状态与 SSE；
 - RP 工作区绑定、目录与受管文件；
 - session create / branch / user-message / 完整 messages；
+- `GET /sessions/:id/coordinates`：不获取正文即可查询指定会话的坐标版本；
 - import-context reference；
 - `GET /playthroughs/:id/focus`。
+
+会话格式版本由 DSH 上游定义；坐标接口报告当前逻辑格式及 Tavern 推断的迁移标记，不提供日志结构或自动迁移。保存新范围时记录消息响应的版本；复用旧范围前比较版本，并在 branch 中携带原范围的版本。完整请求、字段、分支示例和错误恢复见 [坐标 API 使用说明](API.md#session-coordinates)。若已请求 messages，可直接使用其顶层格式字段。
 
 重要约束：
 
 - `timeline.json` 只保存 session/event 指针和显示元数据，不复制 QA 正文；
 - greeting 从角色卡和 session selection 派生，不伪造 assistant message；
 - `/user-message` 只提交用户正文，不接受前端拼好的完整 prompt；
-- 受管 catalog/timeline GET 返回 revision，PUT 必须带 `expectedRevision`；409 后回读新文档并重放局部意图；
+- 受管 catalog/timeline GET 返回 revision，PUT 必须带 `expectedRevision`；`409 PLAY_FILE_REVISION_CONFLICT` 后回读新文档并重放局部意图；`PLAY_COORDINATES_MIGRATION_REQUIRED` 则需迁移，不能循环重试或仅改版本标记；
 - focus 按非空 playthrough id 查询；旧 path 入口仅作迁移兼容；
 - 导入记录通过 claim/lineage 首轮注入，不写成历史；
 - history API 读到 Host `hasMore: false`，但模型上下文能否容纳由 DSH/provider 决定；

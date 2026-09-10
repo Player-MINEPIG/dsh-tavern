@@ -573,7 +573,7 @@ export default Object.freeze({
   "template.error.needWorkspace": "当前会话不属于 DSH 工作区；请先把会话加入工作区",
   "template.error.needCharacter": "魔丸模式下新建周目需要配置中绑定角色卡",
   "trace.title": "Tavern Trace",
-  "trace.intro": "与 Conversation / Trajectory 并列的 loader 审计视图。DSH request/header 始终是最终发送 system、tools 与生效 config 的权威。",
+  "trace.intro": "与 Conversation / Trajectory 并列的 loader 审计视图。DSH request/header 是 tools 与 config 的权威；V3 由 system/message 提供生效系统提示词（V2 使用 header.system）。",
   "trace.reading": "正在读取审计记录…",
   "trace.empty": "此会话还没有 Tavern 请求审计记录。发送下一条消息后再查看。",
   "trace.privacy": "隐私边界：这里只保存资源摘要、配置/命中关键词、决策原因、位置、预算和 SHA-256 摘要；不保存 preset/角色/user/世界书正文、完整 system、聊天历史、header 内容或 tool payload。",

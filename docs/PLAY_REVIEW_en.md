@@ -1,5 +1,7 @@
 # Playthrough v2 implementation review
 
+The workspace is `2.2.0` (unreleased), primarily adapting DSH `0.1.5-rc.1` and adding the public coordinate API. See the [upgrade guide](DSH_0.1.5_MIGRATION_en.md) for current acceptance. The `2.1.0` acceptance and tag status below remain historical records.
+
 [中文](PLAY_REVIEW.md)
 
 Review baseline: `codex/v2-lingzhu-mowan-frontend`. First review was `6ede09d` (2026-08-20). Risk-close and product-implementation notes were updated through `bb10a3b` (2026-08-21).

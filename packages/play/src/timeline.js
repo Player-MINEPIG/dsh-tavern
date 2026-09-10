@@ -49,6 +49,11 @@ export function normalizeVariant(value, label = 'variant') {
   if (!isRecord(value)) throw httpError(400, `${label} must be an object`, 'PLAY_TIMELINE_INVALID')
   rejectFocusField(value, label)
   unexpectedKey(value, VARIANT_KEYS, label)
+  const known = value.ext?.pmpDshTavern
+  if (known !== undefined && (!isRecord(known)
+    || (known.sessionFormatVersion !== undefined && (!Number.isSafeInteger(known.sessionFormatVersion) || known.sessionFormatVersion < 0)))) {
+    throw httpError(400, `${label} has invalid Session coordinate metadata`, 'PLAY_TIMELINE_INVALID')
+  }
   const startEventId = requireSeq(value.startEventId, `${label}.startEventId`)
   const endEventId = requireSeq(value.endEventId, `${label}.endEventId`)
   if (startEventId > endEventId) {
