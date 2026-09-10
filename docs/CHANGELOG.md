@@ -2,6 +2,7 @@
 
 ## 2.2.0 — Unreleased — DSH 0.1.5-rc.1 compatibility
 
+- Fix migration CLI entry detection through symlinked installation paths, found during GitHub branch download acceptance.
 - Document the retained public coordinates API with same-origin query/branch examples, upstream version ownership, inferred-marker limits, unknown-version handling, and migration recovery.
 - Version rationale: no new UI feature is introduced, but the public coordinates endpoint and additive API fields expand the public contract. Use a minor version under [SemVer](https://semver.org/), rather than the patch version appropriate to internal compatibility fixes alone.
 

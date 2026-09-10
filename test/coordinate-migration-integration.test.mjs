@@ -1,10 +1,11 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import { createRequire } from 'node:module'
-import { pathToFileURL } from 'node:url'
+import { pathToFileURL, fileURLToPath } from 'node:url'
+import { execFileSync } from 'node:child_process'
 import { join, resolve } from 'node:path'
 import { tmpdir } from 'node:os'
-import { mkdtempSync, mkdirSync, readFileSync, writeFileSync, rmSync } from 'node:fs'
+import { mkdtempSync, mkdirSync, readFileSync, writeFileSync, rmSync, symlinkSync } from 'node:fs'
 import * as zlib from 'node:zlib'
 import { migrateManifest } from '../scripts/migrate-session-coordinates.mjs'
 
@@ -102,5 +103,16 @@ for (const version of [0, 1]) test(`real V${version}→V3 migration handles coll
     assert.equal(variant.ext.pmpDshTavern.sessionFormatVersion, 3)
     assert.equal(JSON.parse(readFileSync(bindingPath)).sessions[header.id].terminal.endEventSeq, 8)
     assert.deepEqual((await migrateManifest(manifest, { apply: true })).files, [])
+  } finally { rmSync(directory, { recursive: true, force: true }) }
+})
+
+
+test('migration CLI executes through a symlinked installation path', () => {
+  const directory = mkdtempSync(join(tmpdir(), 'tavern-migration-cli-'))
+  try {
+    const linkedRoot = join(directory, 'plugin')
+    symlinkSync(fileURLToPath(new URL('..', import.meta.url)), linkedRoot, process.platform === 'win32' ? 'junction' : 'dir')
+    const output = execFileSync(process.execPath, [join(linkedRoot, 'scripts/migrate-session-coordinates.mjs'), '--help'], { encoding: 'utf8' })
+    assert.match(output, /Usage: node scripts\/migrate-session-coordinates\.mjs/)
   } finally { rmSync(directory, { recursive: true, force: true }) }
 })

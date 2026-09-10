@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 // Offline, explicit historical reference migration. Never writes a DSH session log.
-import { readFileSync, writeFileSync, renameSync, unlinkSync, lstatSync, existsSync } from 'node:fs'
+import { readFileSync, writeFileSync, renameSync, unlinkSync, lstatSync, existsSync, realpathSync } from 'node:fs'
 import { createRequire } from 'node:module'
 import { resolve, join } from 'node:path'
 import { pathToFileURL } from 'node:url'
@@ -177,7 +177,7 @@ export async function migrateManifest(manifest, { apply = false } = {}) {
   return { applied: apply, sessions: [...maps.keys()], files: plans.map(item => item.path) }
 }
 
-if (process.argv[1] && import.meta.url === pathToFileURL(resolve(process.argv[1])).href) {
+if (process.argv[1] && import.meta.url === pathToFileURL(realpathSync(process.argv[1])).href) {
   try {
     const args = process.argv.slice(2)
     if (args.includes('--help') || args.length === 0) console.log(help)
