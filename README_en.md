@@ -2,7 +2,7 @@
 
 [中文](README.md)
 
-An open-source DeepSeek Harness (DSH) plugin for Tavern resource compatibility, RP workflow, and a third-party frontend protocol.
+A SillyTavern compatibility plugin that keeps DeepSeek Harness (DSH) authoritative over sessions and execution, with frontend and backend APIs for composing Tavern capabilities with native DSH features.
 
 > This documentation matches `2.2.0` (released 2026-09-11). The project is licensed under the [MIT License](LICENSE).
 >

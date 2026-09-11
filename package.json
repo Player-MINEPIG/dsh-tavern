@@ -1,7 +1,7 @@
 {
   "name": "pmp-dsh-tavern",
   "version": "2.2.0",
-  "description": "SillyTavern-compatible content adapters for DeepSeek Harness.",
+  "description": "A SillyTavern compatibility plugin that keeps DSH authoritative over sessions and execution, with frontend and backend APIs for composing Tavern capabilities with native DSH features.",
   "type": "module",
   "main": "packages/tavern-loader/src/index.js",
   "exports": {

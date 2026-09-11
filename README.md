@@ -2,7 +2,7 @@
 
 [English](README_en.md)
 
-为 DeepSeek Harness（DSH）提供 Tavern 资源兼容、RP 工作流与第三方前端协议的开源插件。
+以 DeepSeek Harness（DSH）原生会话与执行机制为权威的酒馆兼容插件，提供前后端 API，支持自由组合酒馆能力与 DSH 原生功能。
 
 > 当前文档对应 `2.2.0`（2026-09-11 发布）。项目代码采用 [MIT License](LICENSE)。
 >
