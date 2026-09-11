@@ -63,6 +63,14 @@ description, personality, scenario, example dialogue, and similar fields enter t
 
 The display-regex page lists rules from global, current preset, and current character card. Drag the handle left of a rule title to reorder within the same source. The interaction matches preset prompt sorting: the dragged item shrinks to a line and the drop target shows a dashed placeholder. After **Save changes**, global order is written to the workspace regex document; preset/card order is written back to each native `regex_scripts` array. Sources cannot be dragged across each other. Combined order is always global → preset → character. Rules run top to bottom, so interdependent rules such as conditional clears and tag extraction must stay in the intended order.
 
+### Markdown, HTML, and template styles
+
+Markdown inside `<details><summary>Title</summary>` is parsed without requiring extra blank lines after summary. Nested details, lists, emphasis, and fenced code are supported. Fences remain literal code; ordinary raw HTML containers retain HTML semantics.
+
+Templates can use `<style>`, Flex/Grid, and CSS `@keyframes` for horizontal bars, blinking, and transitions, with native `<details>` for expansion. Stylesheets are isolated per message and inherit the current font, color, and CSS variables; template selectors cannot style other messages or DSH chrome. Content is clipped to its message boundary. Replace page-level `html`/`body` selectors with a template root class. Template JavaScript, event handlers, and iframes remain blocked. Templates that rely on scripted line splitting, button behavior, or parent-page theme reads need a script-free adaptation. Static HTML exports retain the same isolated styles and require a modern browser with declarative Shadow DOM support.
+
+Display regex `trimStrings` removes every occurrence of each listed literal string from captures. To preserve inner HTML, do not include `<`, `>`, spaces, or backticks. Remove only intended wrapper markers, such as `<!-- begin_of_Subtext_think -->` and `<!-- end_of_Subtext_think -->`. The renderer cannot reconstruct tags already deleted by a rule. Edit or replace the imported rule and **Save changes**; avoid running old and new copies on the same content. Original DSH messages stay unchanged; redisplaying them applies the updated rules.
+
 ## 4. World books
 
 The world-book panel lists five sources:

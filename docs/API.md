@@ -1,10 +1,10 @@
 # HTTP API
 
-Tavern `2.2.0`（尚未发布）的 DSH `0.1.5-rc.1` 兼容增量：messages 响应增加格式信息，新增只读 coordinates endpoint，branch 接收坐标格式版本，timeline GET/PUT 拒绝未迁移引用。具体字段与错误码见 [V3 迁移合同](DSH_0.1.5_MIGRATION.md)。Trace 的 V3 系统提示词权威来自有效 system/message，配置与工具仍来自 request/header。
+Tavern `2.2.0`（2026-09-11 发布）的 DSH `0.1.5-rc.1` 兼容增量：messages 响应增加格式信息，新增只读 coordinates endpoint，branch 接收坐标格式版本，timeline GET/PUT 拒绝未迁移引用。具体字段与错误码见 [V3 迁移合同](DSH_0.1.5_MIGRATION.md)。Trace 的 V3 系统提示词权威来自有效 system/message，配置与工具仍来自 request/header。
 
 [English](API_en.md)
 
-状态：Tavern `2.2.0`（尚未发布），更新于 2026-09-10；Host 已验证 DSH `0.1.2-rc.1` 和 `0.1.5-rc.1`。根：`/pmp-dsh-tavern/api`。鉴权仍是本机 TCP peer、Host、Origin、Content-Type（见 loader 安全中间件）。成功响应带 `ok: true`；失败带 `ok: false` 与 `error`。
+状态：Tavern `2.2.0`（2026-09-11 发布），更新于 2026-09-10；Host 已验证 DSH `0.1.2-rc.1` 和 `0.1.5-rc.1`。根：`/pmp-dsh-tavern/api`。鉴权仍是本机 TCP peer、Host、Origin、Content-Type（见 loader 安全中间件）。成功响应带 `ok: true`；失败带 `ok: false` 与 `error`。
 
 两栏合同：
 

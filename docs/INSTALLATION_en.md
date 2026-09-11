@@ -1,10 +1,10 @@
 # Cross-platform installation and removal
 
-The unreleased `2.2.0` source adds `0.1.5-rc.1` compatibility; migrate existing playthroughs using the [upgrade guide](DSH_0.1.5_MIGRATION_en.md). This DSH release requires Node `^22.19.0 || >=24.0.0`, regardless of Tavern's standalone Node 20 declaration.
+Version `2.2.0` adds `0.1.5-rc.1` compatibility; migrate existing playthroughs using the [upgrade guide](DSH_0.1.5_MIGRATION_en.md). This DSH release requires Node `^22.19.0 || >=24.0.0`, regardless of Tavern's standalone Node 20 declaration.
 
 [中文](INSTALLATION.md)
 
-Status: `2.2.0` (unreleased), updated on 2026-09-10. DSH `0.1.2-rc.1` and `0.1.5-rc.1` are supported; other versions were not verified in this update and compatibility is not promised. The default root [README](../README.md) is Chinese. The English landing page is [README_en.md](../README_en.md) (no screenshots). This file is the detailed lifecycle, verification, and recovery contract.
+Status: `2.2.0` (released 2026-09-11), updated on 2026-09-10. DSH `0.1.2-rc.1` and `0.1.5-rc.1` are supported; other versions were not verified in this update and compatibility is not promised. The default root [README](../README.md) is Chinese. The English landing page is [README_en.md](../README_en.md) (no screenshots). This file is the detailed lifecycle, verification, and recovery contract.
 
 The scripts use Node.js as their common entry point and normalize paths for
 Windows, macOS, and Linux. macOS/Linux execute `dsh` directly. Windows safely
@@ -26,6 +26,12 @@ Ordinary users can install the plugin directly from GitHub into the default
 
 ```text
 dsh plugin --profile web add github:Player-MINEPIG/dsh-tavern
+```
+
+To pin this release:
+
+```text
+dsh plugin --profile web add github:Player-MINEPIG/dsh-tavern#v2.2.0
 ```
 
 ### DSH provides the official runtime peers

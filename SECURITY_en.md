@@ -20,7 +20,7 @@ Report suspected vulnerabilities privately through the GitHub repository **Secur
 - All v1/v2 browser APIs share the same security middleware. Mutating requests require same-origin and a supported media type.
 - Request bodies, resources, structures, Trace, persistent state, and play workspace files have explicit limits.
 - The play workspace uses safe relative paths, per-segment link/reparse checks, root revalidation, exclusive temp files, atomic replace, and revision/CAS.
-- Rich text is parsed as Markdown and then must pass DOMPurify. script, iframe, object, embed, form controls, style/meta/link/base, and `srcdoc` are forbidden. External links get `noopener noreferrer`.
+- Rich text is parsed as Markdown and then must pass DOMPurify. script, iframe, object, embed, form controls, user-supplied template, meta/link/base, and `srcdoc` are forbidden; event handlers and unsafe URLs are sanitized too. `<style>` is retained only inside the message’s own Shadow DOM, with an outer layout/paint containment boundary. Direct HTML sanitization and environments without isolation still remove style. Shadow DOM isolates CSS; it does not grant template JavaScript execution. External links get `noopener noreferrer`.
 - Lifecycle logs use Host `ctx.logger` only, with a field allowlist and length limits. They do not record prompts, user messages, model replies, resource bodies, body lengths, or summaries.
 - The public repository and release package must not contain real developer-machine paths, usernames, temporary download paths, private fixtures, imported resources, or secrets. Documentation paths may use only explicit generic placeholders.
 
@@ -30,7 +30,7 @@ Report suspected vulnerabilities privately through the GitHub repository **Secur
 - Presets, cards, world books, imported records, and user messages can contain prompt injection. A high-privilege Agent may call already-approved terminal, file, network, browser, or third-party plugin capabilities when induced. Use trusted content only, keep secrets out of the conversation, and retain DSH tool approval, sandboxing, and least privilege.
 - RP secure mode and its inheritance by child agents is an overlay on DSH permissions, not a VM, container, or OS sandbox. It does not constrain other local processes and does not promise to cover capabilities added by other plugins.
 - ST/user display regex uses JavaScript `RegExp` with no portable synchronous timeout. A malicious or catastrophic-backtracking rule can freeze the current page. The importer is responsible for reviewing rules.
-- To stay compatible with ST rich text, sanitized images and inline styles can still trigger remote resource requests and expose the visitor IP to the resource server. Do not enable untrusted display templates.
+- To stay compatible with ST rich text, sanitized images, inline styles, and isolated stylesheets can still trigger remote resource requests and expose the visitor IP to the resource server. Do not enable untrusted display templates.
 - DOMPurify prevents browser HTML injection. It does not make prompts safe and does not limit Agent tool permissions.
 - Loopback/Origin API protection does not stop a local malicious process. Lifecycle log location, retention, and rotation are decided by DSH/Cordis and are not a tamper-evident audit log.
 - swipe, branch, and playthroughs create real DSH sessions and can increase disk use significantly. Keep the play workspace on a non-system volume with enough space.

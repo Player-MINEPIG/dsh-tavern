@@ -86,3 +86,38 @@ test('sanitization removes executable HTML and unsafe link protocols', () => {
   assert.doesNotMatch(html, /onerror/i)
   assert.doesNotMatch(html, /javascript:/i)
 })
+
+test('details renders Markdown and fences without requiring blank lines after summary', () => {
+  const html = markdownToHtml('<details><summary>**Status**</summary>\n**Ready**\n\n- A\n- B\n</details>')
+  assert.match(html, /<summary><strong>Status<\/strong><\/summary>/)
+  assert.match(html, /<strong>Ready<\/strong>/)
+  assert.match(html, /<li>A<\/li>/)
+  const fenced = markdownToHtml('<details><summary>Status</summary>\n```\nA\nB\n```\n</details>')
+  assert.match(fenced, /<pre><code>A\nB\n<\/code><\/pre>/)
+})
+
+test('details nesting ignores closing tags in code and keeps following prose outside', () => {
+  const html = markdownToHtml('<details><summary>Outer</summary>\n```html\n</details>\n```\n<details><summary>Inner</summary>\n**Ready**\n</details>\n</details>\n\nAfter')
+  assert.equal((html.match(/<details>/g) ?? []).length, 2)
+  assert.match(html, /&lt;\/details&gt;/)
+  assert.match(html, /<strong>Ready<\/strong>/)
+  assert.match(html, /<\/details>\s*<p>After<\/p>/)
+})
+
+test('styled HTML retains its summary layout and CSS instead of gaining Markdown breaks', () => {
+  const html = markdownToHtml('<style>\n.card {display:flex}\n</style>\n<details>\n<!-- heading -->\n<summary class="card">\n<span>A</span>\n<span>B</span>\n</summary>\n<div>\n<span>Body</span>\n</div>\n</details>')
+  assert.match(html, /<style>\n.card \{display:flex\}\n<\/style>/)
+  assert.doesNotMatch(html, /<br|<p>/)
+  assert.match(html, /<summary class="card">/)
+})
+
+test('incomplete streaming details renders its body and fences preserve literal details', () => {
+  assert.match(markdownToHtml('<details><summary>Status</summary>\n**Ready**'), /<strong>Ready<\/strong>/)
+  assert.match(markdownToHtml('```html\n<details><summary>Sample</summary>\n```'), /&lt;details&gt;/)
+})
+
+test('details ignores inline code and quoted attributes containing closing tags', () => {
+  const html = markdownToHtml('<details title="a > b"><summary>Status</summary>\n`</details>`\n\n<div title="</details>">Ready</div>\n\n**Inside**\n</details>\n\nAfter')
+  assert.match(html, /<code>&lt;\/details&gt;<\/code>/)
+  assert.match(html, /<strong>Inside<\/strong><\/p>\s*<\/details>\s*<p>After/)
+})

@@ -1,8 +1,19 @@
 # Playthrough v2 implementation review
 
-The workspace is `2.2.0` (unreleased), primarily adapting DSH `0.1.5-rc.1` and adding the public coordinate API. See the [upgrade guide](DSH_0.1.5_MIGRATION_en.md) for current acceptance. The `2.1.0` acceptance and tag status below remain historical records.
+The workspace is `2.2.0` (released 2026-09-11), adapting DSH `0.1.5-rc.1`, adding the public coordinate API, and fixing rich-text rendering. See the [upgrade guide](DSH_0.1.5_MIGRATION_en.md) for current acceptance. The `2.1.0` acceptance and tag status below remain historical records.
 
 [中文](PLAY_REVIEW.md)
+
+## 2.2.0 rich-text rendering acceptance (2026-09-11)
+
+The user confirmed acceptance after installing the rendering fixes into the temporary DSH `0.1.5-rc.1` environment.
+
+- Manual acceptance covers Markdown, fenced code, and line breaks inside details, plus the corrected display-regex template's horizontal bar, CSS blinking, native expansion, and inner HTML rendering.
+- Retained boundaries: template JavaScript remains blocked. CSS is isolated per message; the corrected rule preserves characters required by inner HTML without changing the regex engine's `trimStrings` semantics. See the [usage guide](USAGE_en.md#markdown-html-and-template-styles) and [SECURITY](../SECURITY_en.md).
+- Automated verification: `npm run check` passed 541 tests, with 5 optional/external integration skips and no failures. All 22 Chrome checks passed, covering the corrected template, CSS isolation, script/event/unsafe-link filtering, streaming updates, and static HTML export.
+- Installation verification: all 191 packaged files in the temporary environment matched the candidate package byte for byte. Configuration and sessions were retained. The user's original template and conversation content were not added to public test fixtures.
+
+This closes manual acceptance for this rendering fix. Version `2.2.0` was released on 2026-09-11 with the accepted fixes below.
 
 Review baseline: `codex/v2-lingzhu-mowan-frontend`. First review was `6ede09d` (2026-08-20). Risk-close and product-implementation notes were updated through `bb10a3b` (2026-08-21).
 Original findings are kept as audit evidence. Each item's current status follows “accepted handling decision” and the implementation audit.

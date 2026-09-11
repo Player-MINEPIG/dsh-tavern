@@ -2,7 +2,7 @@
 
 [中文](DSH_0.1.5_MIGRATION.md)
 
-This page describes the unreleased `2.2.0` compatibility update. There are no new UI features, but the public coordinates API and additive fields expand the public contract, warranting a minor version; internal compatibility fixes alone would use `2.1.1`. It retains DSH `0.1.2-rc.1` and adapts `0.1.5-rc.1`, without promising other candidate versions. The newer Host requires Node `^22.19.0 || >=24.0.0`; Tavern's standalone Node `>=20` declaration does not override this requirement.
+This page describes the `2.2.0` compatibility update. There are no new UI features, but the public coordinates API and additive fields expand the public contract, warranting a minor version; internal compatibility fixes alone would use `2.1.1`. It retains DSH `0.1.2-rc.1` and adapts `0.1.5-rc.1`, without promising other candidate versions. The newer Host requires Node `^22.19.0 || >=24.0.0`; Tavern's standalone Node `>=20` declaration does not override this requirement.
 
 For the retained public coordinate query API, start with [requests, fields, and branch examples](API_en.md#session-coordinates). DSH defines the format version; Tavern infers the migration marker. The query does not migrate old references.
 
@@ -82,3 +82,7 @@ Node 22.23.1, isolated DSH_HOME, actual DSH Hosts with a local mock model:
 - The old QA range changed correctly from `8..19` to `9..16`. After restart, both the original and post-upgrade replies remained visible; forking at the old QA retained exactly that history.
 
 These checks used synthetic characters and replies. They did not migrate actual user data or validate real-model quality or KV Cache performance.
+
+### Rendering-fix user acceptance on 2026-09-11
+
+The user accepted the rendering fixes installed into the temporary DSH `0.1.5-rc.1` environment, covering Markdown inside details and the corrected HTML/CSS display template. Template JavaScript remains blocked. This confirmation does not extend to actual user-history migration or KV Cache performance. See the [acceptance record](PLAY_REVIEW_en.md#220-rich-text-rendering-acceptance-2026-09-11).

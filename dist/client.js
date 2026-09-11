@@ -8006,9 +8006,54 @@ var pn = x.lex;
 
 // packages/client/src/play/rich-text.js
 var import_react7 = require("react");
+
+// packages/client/src/play/rich-text-styles.js
+var BASE_STYLE = `
+:host{display:block;font:inherit;color:inherit}
+*,*::before,*::after{box-sizing:border-box}
+:first-child{margin-top:0}p,ul,ol,blockquote,pre,table{margin:0 0 .85em}
+ul,ol{padding-left:1.5em}
+blockquote{padding-left:12px;border-left:3px solid var(--dsw-alias-border-secondary,#666)}
+pre{max-width:100%;overflow:auto;padding:11px 12px;border-radius:9px;background:var(--dsw-alias-markdown-code-block,#181a20);white-space:pre}
+code{font-family:var(--ds-font-family-code,ui-monospace,monospace);font-size:.92em}
+:not(pre)>code{padding:.12em .35em;border-radius:5px;background:var(--dsw-alias-markdown-code-inline,#181a20)}
+table{display:block;max-width:100%;overflow:auto;border-collapse:collapse}
+th,td{padding:6px 9px;border:1px solid var(--dsw-alias-border-l2,#555)}
+img,video{max-width:100%;height:auto}
+a{color:var(--dsw-alias-state-business-primary,#8ab4ff);text-decoration:underline}
+hr{border:0;border-top:1px solid var(--dsw-alias-border-l2,#555)}
+`;
+function isolateStyledHtml(template, documentObject) {
+  if (!template.content.querySelector("style")) return template.innerHTML;
+  const boundary = documentObject.createElement("div");
+  boundary.setAttribute("data-dtv-style-boundary", "");
+  boundary.setAttribute("style", "display:block;min-width:0;contain:layout paint;isolation:isolate");
+  const host = documentObject.createElement("div");
+  const shadowTemplate = documentObject.createElement("template");
+  shadowTemplate.setAttribute("shadowrootmode", "open");
+  shadowTemplate.setAttribute("data-dtv-style-root", "");
+  const baseStyle = documentObject.createElement("style");
+  baseStyle.textContent = BASE_STYLE;
+  shadowTemplate.content.append(baseStyle, template.content);
+  host.append(shadowTemplate);
+  boundary.append(host);
+  template.content.append(boundary);
+  return template.innerHTML;
+}
+function mountStyledHtml(element) {
+  if (!element) return;
+  for (const template of element.querySelectorAll("template[data-dtv-style-root]")) {
+    const host = template.parentElement;
+    const root = host.shadowRoot ?? host.attachShadow({ mode: "open" });
+    root.replaceChildren(template.content);
+    template.remove();
+  }
+}
+
+// packages/client/src/play/rich-text.js
 var SANITIZE_OPTIONS = Object.freeze({
   USE_PROFILES: { html: true },
-  FORBID_TAGS: ["script", "iframe", "object", "embed", "form", "input", "button", "textarea", "select", "meta", "link", "base", "style"],
+  FORBID_TAGS: ["script", "iframe", "object", "embed", "form", "input", "button", "textarea", "select", "meta", "link", "base", "style", "template"],
   FORBID_ATTR: ["srcdoc"]
 });
 var markdownConverter = new Z({
@@ -8016,8 +8061,53 @@ var markdownConverter = new Z({
   breaks: true,
   gfm: true
 });
+var summaryConverter = new Z({ async: false, breaks: false, gfm: true });
 var STANDALONE_WRAPPER_TAG = /^\s*(<\/?[\p{L}][^<>]*?>)\s*$/u;
 var FENCE_MARKER = /^\s{0,3}(`{3,}|~{3,})/;
+var HTML_TAGS = new Set("a abbr address area article aside audio b base bdi bdo blockquote body br button canvas caption cite code col colgroup data datalist dd del details dfn dialog div dl dt em embed fieldset figcaption figure footer form h1 h2 h3 h4 h5 h6 head header hgroup hr html i iframe img input ins kbd label legend li link main map mark menu meta meter nav noscript object ol optgroup option output p picture pre progress q rp rt ruby s samp script search section select slot small source span strong style sub summary sup table tbody td template textarea tfoot th thead time title tr track u ul var video wbr".split(" "));
+markdownConverter.use({ extensions: [{
+  name: "tavernDetails",
+  level: "block",
+  start: (source) => source.match(/^ {0,3}<details(?=[\s>])/im)?.index,
+  tokenizer(source) {
+    const opening = source.match(/^ {0,3}<details(?=[\s>])(?:[^"'<>]|"[^"]*"|'[^']*')*>/i);
+    if (!opening) return void 0;
+    const tokens = /<!--[\s\S]*?-->|<(pre|code|script|style|textarea)\b[^>]*>[\s\S]*?<\/\1\s*>|^ {0,3}(`{3,}|~{3,})[^\n]*|(`+)[\s\S]*?\3|<\/?[a-z][a-z0-9:-]*(?:[^"'<>]|"[^"]*"|'[^']*')*>/gim;
+    tokens.lastIndex = opening[0].length;
+    let depth = 1;
+    let fence = null;
+    let end = source.length;
+    let bodyEnd = end;
+    for (let match; match = tokens.exec(source); ) {
+      if (match[2]) {
+        const marker = match[2];
+        if (!fence) fence = marker;
+        else if (marker[0] === fence[0] && marker.length >= fence.length && match[0].trim() === marker) fence = null;
+      } else if (!fence && /^<\/?details(?=[\s>])/i.test(match[0])) {
+        depth += /^<\//.test(match[0]) ? -1 : 1;
+        if (depth === 0) {
+          bodyEnd = match.index;
+          end = tokens.lastIndex;
+          break;
+        }
+      }
+    }
+    const body2 = source.slice(opening[0].length, bodyEnd).trim();
+    const summary = body2.match(/^(?:\s|<!--[\s\S]*?-->)*(<summary(?=[\s>])(?:[^"'<>]|"[^"]*"|'[^']*')*>)([\s\S]*?)<\/summary\s*>/i);
+    return {
+      type: "tavernDetails",
+      raw: source.slice(0, end),
+      opening: opening[0],
+      summary: summary ? `${summary[1]}${summaryConverter.parseInline(summary[2])}</summary>` : "",
+      body: summary ? body2.slice(summary[0].length).trim() : body2
+    };
+  },
+  renderer(token) {
+    return `${token.opening}${token.summary}
+${markdownToHtml(token.body)}</details>
+`;
+  }
+}] });
 function normalizeStQuotedFences(source) {
   let quotedFence = null;
   return source.split("\n").map((line) => {
@@ -8044,16 +8134,20 @@ function protectStandaloneWrapperTags(source) {
     const fenceMatch = line.match(FENCE_MARKER);
     if (fenceMatch) {
       const marker = fenceMatch[1];
-      if (!fence) fence = marker[0];
-      else if (marker[0] === fence && marker.length >= 3) fence = null;
+      if (!fence) fence = marker;
+      else if (marker[0] === fence[0] && marker.length >= fence.length && line.trim() === marker) fence = null;
       return line;
     }
     if (fence) return line;
     const tagMatch = line.match(STANDALONE_WRAPPER_TAG);
     if (!tagMatch) return line;
+    const tagName = tagMatch[1].match(/^<\/?([^\s/>]+)/)?.[1].toLowerCase();
+    if (HTML_TAGS.has(tagName)) return line;
     const token = `${prefix}${wrappers.length}END`;
     wrappers.push(tagMatch[1]);
-    return token;
+    return `
+${token}
+`;
   }).join("\n");
   return { prefix, text: text2, wrappers };
 }
@@ -8083,10 +8177,17 @@ function markdownToHtml(text2) {
 }
 function sanitizeRenderedHtml(html2, {
   purifier = browserPurifier(),
-  documentObject = globalThis.document
+  documentObject = globalThis.document,
+  isolateStyles = false
 } = {}) {
   if (purifier === null || typeof purifier?.sanitize !== "function") return escapeHtml(html2);
-  const clean = String(purifier.sanitize(String(html2), SANITIZE_OPTIONS));
+  const canIsolate = isolateStyles && typeof documentObject?.createElement === "function" && typeof documentObject.createElement("div").attachShadow === "function";
+  const options = canIsolate ? {
+    ...SANITIZE_OPTIONS,
+    FORCE_BODY: true,
+    FORBID_TAGS: SANITIZE_OPTIONS.FORBID_TAGS.filter((tag) => tag !== "style")
+  } : SANITIZE_OPTIONS;
+  const clean = String(purifier.sanitize(String(html2), options));
   if (documentObject == null || typeof documentObject.createElement !== "function") return clean;
   const template = documentObject.createElement("template");
   template.innerHTML = clean;
@@ -8096,15 +8197,16 @@ function sanitizeRenderedHtml(html2, {
     link.setAttribute("target", "_blank");
     link.setAttribute("rel", "noopener noreferrer");
   }
-  return template.innerHTML;
+  return canIsolate ? isolateStyledHtml(template, documentObject) : template.innerHTML;
 }
 function renderRichTextHtml(text2, options) {
-  return sanitizeRenderedHtml(markdownToHtml(text2), options);
+  return sanitizeRenderedHtml(markdownToHtml(text2), { ...options, isolateStyles: true });
 }
 function RichText({ text: text2, className }) {
   return (0, import_react7.createElement)("div", {
     className,
     "data-dtv-rich-text": "",
+    ref: (element) => mountStyledHtml(element),
     dangerouslySetInnerHTML: { __html: renderRichTextHtml(text2) }
   });
 }

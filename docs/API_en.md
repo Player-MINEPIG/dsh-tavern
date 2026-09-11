@@ -1,10 +1,10 @@
 # HTTP API
 
-Tavern `2.2.0` (unreleased), DSH `0.1.5-rc.1` delta: messages add format metadata, a read-only coordinates endpoint is available, branch accepts the coordinate format, and timeline GET/PUT refuses unmigrated references. See the [V3 migration contract](DSH_0.1.5_MIGRATION_en.md) for fields and errors. V3 Trace reads effective system/message for the prompt and request/header for config and tools.
+Tavern `2.2.0` (released 2026-09-11), DSH `0.1.5-rc.1` delta: messages add format metadata, a read-only coordinates endpoint is available, branch accepts the coordinate format, and timeline GET/PUT refuses unmigrated references. See the [V3 migration contract](DSH_0.1.5_MIGRATION_en.md) for fields and errors. V3 Trace reads effective system/message for the prompt and request/header for config and tools.
 
 [中文](API.md)
 
-Status: Tavern `2.2.0` (unreleased), updated 2026-09-10. Host checks cover DSH `0.1.2-rc.1` and `0.1.5-rc.1`. Root: `/pmp-dsh-tavern/api`. Auth is still local TCP peer, Host, Origin, and Content-Type (see the loader security middleware). Success responses include `ok: true`; failures include `ok: false` and `error`.
+Status: Tavern `2.2.0` (released 2026-09-11), updated 2026-09-10. Host checks cover DSH `0.1.2-rc.1` and `0.1.5-rc.1`. Root: `/pmp-dsh-tavern/api`. Auth is still local TCP peer, Host, Origin, and Content-Type (see the loader security middleware). Success responses include `ok: true`; failures include `ok: false` and `error`.
 
 Two contracts:
 

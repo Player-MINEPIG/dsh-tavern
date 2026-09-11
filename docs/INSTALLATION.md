@@ -1,10 +1,10 @@
 # 跨平台安装与卸载
 
-`2.2.0` 未发布源码已加入 `0.1.5-rc.1` 兼容修复；旧周目先按 [升级指南](DSH_0.1.5_MIGRATION.md) 迁移。新版 DSH 要求 Node `^22.19.0 || >=24.0.0`，不能只依据 Tavern 的 Node 20 声明。
+`2.2.0` 已加入 `0.1.5-rc.1` 兼容修复；旧周目先按 [升级指南](DSH_0.1.5_MIGRATION.md) 迁移。新版 DSH 要求 Node `^22.19.0 || >=24.0.0`，不能只依据 Tavern 的 Node 20 声明。
 
 [English](INSTALLATION_en.md)
 
-状态：对应 `2.2.0`（尚未发布），更新于 2026-09-10。支持 DSH `0.1.2-rc.1` 和 `0.1.5-rc.1`；其他版本未经本次验证、不承诺兼容。根目录默认 [README](../README.md) 为中文；英文落地页是 [README_en.md](../README_en.md)（无截图）。本文是安装生命周期、验收与恢复合同。
+状态：对应 `2.2.0`（2026-09-11 发布），更新于 2026-09-10。支持 DSH `0.1.2-rc.1` 和 `0.1.5-rc.1`；其他版本未经本次验证、不承诺兼容。根目录默认 [README](../README.md) 为中文；英文落地页是 [README_en.md](../README_en.md)（无截图）。本文是安装生命周期、验收与恢复合同。
 
 脚本以 Node.js 为统一入口，并规范化 Windows、macOS 和 Linux 路径。macOS/Linux 直接执行 `dsh`。Windows 会安全定位 npm 的 `dsh.ps1` shim，再通过系统 PowerShell 以参数数组调用，因此路径不会被拼回 shell 命令文本。请在 `dsh-tavern` 检出目录中运行脚本，并准备 Node.js 20 或更高版本，以及位于 `PATH` 上的 DSH `0.1.2-rc.1` 或 `0.1.5-rc.1`（后者需满足上面的 Node 要求）。
 
@@ -16,6 +16,12 @@
 
 ```text
 dsh plugin --profile web add github:Player-MINEPIG/dsh-tavern
+```
+
+固定安装本次正式版本：
+
+```text
+dsh plugin --profile web add github:Player-MINEPIG/dsh-tavern#v2.2.0
 ```
 
 ### 官方运行依赖由 DSH 提供

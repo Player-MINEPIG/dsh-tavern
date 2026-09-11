@@ -128,6 +128,7 @@ DSH `0.1.2-rc.1` 的 `agent/inbox/spliced` 是公开、持久的 Session event�
 以下是升级候选，不代表当前轮次已经授权修改：
 
 - 用户与 assistant 正文不直接迁移到 `MessageText` / `MarkdownText`。未覆盖消息从 DSH 权威 content 按“宏替换 → ST 显示正则（全局 → 预设 → 角色卡，各来源保持数组顺序）→ Marked 18.0.10 → DOMPurify”执行浏览器显示管线；因此自定义/XML 包裹标签不会阻断其内部 Markdown，嵌套标签和 ST 的宽松引用代码围栏语义也能保留。规则页只允许同来源拖拽，保存后全局写工作区文档，资源规则写回原生 `regex_scripts` 数组。DSH `MarkdownText` 会省略 raw HTML，不能作为 ST HTML 兼容渲染器；以后升级 Marked、清理策略或复用 DSH 低层能力，必须分别对照 ST 输出与恶意 HTML 用例，证明不会改变 Tavern 显示语义或越过 sanitizer 后再单独验收。
+- details 使用独立块解析保留内部 Markdown，原始 HTML 布局不插入 Markdown 换行。含 style 的净化结果由 `rich-text-styles.js` 包装为每条消息的 Shadow DOM，外层使用布局/绘制 containment；React ref 在插入/更新后挂载，静态导出使用相同的声明式根。模板脚本始终禁止。浏览器验证：`node scripts/verify-rich-text-browser.mjs`（Chrome/Chromium，可设置 `CHROME_PATH`）。
 - 魔丸不渲染 reasoning 或 runtime context，也不提供展开入口；公开 `DisclosureRow` / Think icon 因此不再是该视图的迁移目标。用户需要运行细节时回到 DSH 原生“对话”。操作按钮仍可逐步采用公开图标与 `Tooltip`；DSH bundle 内未公开的 `ReasoningRow`、`MessageIconActions` 不属于可依赖接口。
 - DSH 的模型消息 `role` 与界面来源不是同一维度：公开 ConversationNode 已把运行时注入表示为 `kind: "context"`，但持久 history 投影仍可能给它 `role: "user"`。v2 因此在不改变 `role` 的前提下增加 additive `origin.kind`，并保留 `producer` / `form` / `summary` 等可选来源元数据。RP 前端必须按 `origin` 投影气泡、隐藏/单独呈现上下文和计算动作能力，不能靠文本、位置或“是否最后一段输出”猜测。
 - timeline 以 `parentVariantId` 与活动 `head` 表示树状分支；显示、focus 和新 QA 对账只沿 head 的祖先路径工作。head 的 session 可以是刚 branch、尚无新 QA 的 continuation anchor，因此侧栏归类也必须把 head session 视为周目成员。旧平面 timeline 继续可读，下一次对账进入树结构。
