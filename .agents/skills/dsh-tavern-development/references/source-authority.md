@@ -1,20 +1,16 @@
 # Source authority
 
-Use distinct evidence for distinct claims:
+Use this reference when the task needs release status, development intent, or reconciliation of conflicting sources.
 
-| State | Authority |
+| Claim | Evidence |
 | --- | --- |
-| Released product | Published package or artifact, or a project-designated release corroborated by its matching release tag and documents |
+| Released product | Published artifact, or a project-designated release corroborated by its matching tag and documents |
 | Public development | Public remote `main` at an identified SHA |
-| Current implementation | The task's branch or worktree code and tests |
-| Active intent | Applicable development-plan decisions, with proposals labeled as proposals |
+| Current implementation | Task branch or worktree code and tests |
+| Active intent | Applicable development-plan decisions; label proposals as proposals |
 
-Other immutable tags are evidence snapshots, not releases unless the project explicitly designates them as such. Do not call public `main` or an arbitrary tag “released” without matching release evidence. If remote state cannot be checked, name the exact local ref and SHA and say it may be stale.
+An immutable tag is an evidence snapshot unless the project designates it as a release. If a claim requires remote state and it cannot be checked, identify the local ref and its possible staleness; ordinary local edits do not require remote verification.
 
-Read a private development plan only when it is provided as an explicit workspace root. Otherwise work from the public repository and do not guess adjacent, parent, home-directory, remembered, or remote-private paths.
+Plans describe intent; code and tests show implementation. Archived or older-version material is historical context unless a current decision adopts it. For 2.0 acceptance history, see [PLAY_REVIEW.md](../../../../docs/PLAY_REVIEW.md).
 
-Development documents define intent and constraints; branch code and tests define implemented behavior. Documents can lag. Archived, legacy, superseded, or older-version material is context unless a current decision adopts it.
-
-When sources disagree, report the exact refs, files, and behavior. Do not let stale prose override implementation facts or accidental code silently override an explicit project decision. Update documents only when the task authorizes reconciliation.
-
-Promote only finalized external contracts or concise public rationale. Never copy private-plan prose, links, repository coordinates, user data, or local paths into the public repository without explicit approval.
+When relevant sources disagree, identify the refs, files, and behavioral difference. Reconcile within the requested scope without treating stale prose as implementation fact or accidental behavior as an approved design. Private-plan access and publication boundaries follow [AGENTS.md](../../../../AGENTS.md).
