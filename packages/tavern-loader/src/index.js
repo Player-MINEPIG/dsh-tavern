@@ -323,6 +323,10 @@ export function apply(ctx, config = {}) {
     characters: characterStore,
     importContexts: () => importContexts,
     onSelectionCopied: sessionId => reconcileRpAfterSelection(sessionId, 'selection copy'),
+    // Optional: read at each create, so <storageDir>/agent-preset.json can be added,
+    // changed, or deleted without restarting the host.
+    logger: ctx.logger,
+    storageDir,
   })
   const playWorkspaceStore = new PlayWorkspaceStore(storageDir, { host: playHost })
   const playMemberships = new PlayMembershipService(playWorkspaceStore)
