@@ -1,5 +1,31 @@
 # Development changelog
 
+## Unreleased — Opt-in playthrough deletion
+
+- Add `DELETE /v2/playthroughs/:id` so a playthrough can finally be removed, not
+  only renamed, relinked, detached, or exported. The verb is opt-in through
+  `allowPlaythroughDelete` and is **off by default**, because it is the only play
+  mutation with no in-Host undo.
+- The delete parks the playthrough directory in a `.dtavern-trash/<timestamp>-<id>/`
+  backup beside the original, clears a dangling `activeTimelinePath`, drops the
+  catalog row through the existing managed-file revision/CAS, and appends a
+  body-free tombstone (`deletedPlaythroughs`, capped at 50). A directory that is
+  already gone is still removable, so a half-broken playthrough is not stuck.
+- Deletion refuses with 409 `PLAYTHROUGH_AGENT_RUNNING` while any session bound to
+  the playthrough is generating, and with 404 `PLAYTHROUGH_NOT_FOUND` for an
+  unknown id; neither path touches the catalog or the backup directory.
+- The response reports `sessionIds` and `rootSessionId`. Sessions bound to the
+  playthrough keep existing untouched: the play layer still never deletes,
+  archives, or renames DSH session data, per `docs/ARCHITECTURE.md` and
+  `docs/API.md`. A session-owning surface (for example the archive/memory plugin)
+  can collect those ids as its own explicit step. Only the playthrough's Tavern
+  selection is cleared, since its playthrough no longer exists.
+- The `⋯` playthrough menu gains a confirmed "Delete playthrough" item that
+  reports the backup path on success and turns `PLAYTHROUGH_DELETE_DISABLED` and
+  `PLAYTHROUGH_AGENT_RUNNING` into guidance instead of a raw error code.
+- Hosts that do not enable the switch are unaffected: the API answers a typed 403
+  before reading the catalog or moving anything on disk.
+
 ## 2.2.0 — 2026-09-11 — DSH 0.1.5-rc.1 compatibility and rich-text rendering
 
 - On 2026-09-11, the user accepted the rendering fixes in the temporary DSH `0.1.5-rc.1` environment. All 191 installed package files matched the candidate; configuration and sessions were retained. Automated checks: 541 pass, 5 optional/external integration skips; 22 Chrome checks pass. Template JavaScript remains blocked. See [acceptance records](PLAY_REVIEW_en.md#220-rich-text-rendering-acceptance-2026-09-11).

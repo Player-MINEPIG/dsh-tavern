@@ -3,6 +3,12 @@ import { parseCatalogJson, parseTimelineJson, validatePlayDocument } from './tim
 
 const EXTENSION_KEY = 'pmpDshTavern'
 const BRANCH_HEADS_KEY = 'branchHeads'
+/** Tombstone list of deleted playthroughs, kept inside `catalog.ext`. */
+const DELETED_KEY = 'deletedPlaythroughs'
+/** POSIX relative directory that receives backed-up playthrough trees. */
+const DEFAULT_TRASH_DIR = '.dtavern-trash'
+/** Tombstones are a breadcrumb trail, not a ledger — keep the tail only. */
+const MAX_DELETED_PLAYTHROUGHS = 50
 
 function adoptedVariant(node) {
   return node?.variants?.find(variant => variant.id === node.adoptedVariantId) ?? null
@@ -110,8 +116,27 @@ function characterIdFor(playthrough) {
   return typeof firstSegment === 'string' && firstSegment !== '' ? firstSegment : null
 }
 
-function sessionIdsInTimeline(timeline) {
+/**
+ * Every session id the timeline references, adopted or not.
+ *
+ * Exported so the loader can pre-check liveness (a running agent) before the
+ * files it would delete are gone.
+ */
+export function sessionIdsInTimeline(timeline) {
   return new Set(timeline.nodes.flatMap(node => node.variants.map(variant => variant.sessionId)))
+}
+
+/** The directory holding one playthrough (`<characterId>/playthrough-<id>`), or null. */
+function directoryOf(playthrough) {
+  if (typeof playthrough.path !== 'string' || playthrough.path === '') return null
+  const segments = playthrough.path.split('/')
+  if (segments.length < 2) return null
+  return segments.slice(0, -1).join('/')
+}
+
+/** `2026-09-14T08-30-00-000Z` — filename-safe, sortable, no colons (Windows). */
+function trashStamp(now) {
+  return now().replaceAll(':', '-').replace(/\.\d+Z$/u, 'Z')
 }
 
 function playthroughWithCharacter(playthrough, character) {
@@ -352,6 +377,122 @@ export class PlayMembershipService {
       sessionId,
       detachedSessionIds: result.detachedSessionIds,
       empty: result.timeline.nodes.length === 0,
+    }
+  }
+
+  /**
+   * Delete one playthrough for good.
+   *
+   * The directory is first **parked** in the workspace trash (a same-volume rename,
+   * so nothing is copied and nothing is lost), then the catalog entry is dropped and
+   * a tombstone is appended to `catalog.ext`, mirroring `CharacterStore.delete`:
+   * every downstream surface can report the id as *deleted* instead of silently
+   * losing a reference.
+   *
+   * DSH session logs are deliberately out of scope — the persistence seam has no
+   * deletion API, so the caller decides what to do with the bound sessions.
+   *
+   * @param playthroughId - The catalog id to remove.
+   * @param options.operation - Optional mutation operation for stage tracing.
+   * @param options.backup - `false` removes the tree outright instead of parking it.
+   * @param options.trashDir - POSIX relative trash directory (default `.dtavern-trash`).
+   * @param options.now - Clock, injectable for tests.
+   * @returns the deleted playthrough summary, its backup location, and its session ids.
+   */
+  removePlaythrough(playthroughId, { operation, backup = true, trashDir = DEFAULT_TRASH_DIR, now = () => new Date().toISOString() } = {}) {
+    const catalogDocument = this.readCatalog()
+    const index = catalogDocument.catalog.playthroughs.findIndex(item => item.id === playthroughId)
+    if (index < 0) throw httpError(404, 'playthrough not found', 'PLAYTHROUGH_NOT_FOUND')
+    const playthrough = catalogDocument.catalog.playthroughs[index]
+
+    // A half-removed playthrough must still be deletable: read what is readable, and
+    // fall back to the root session id recorded in the catalog when the timeline is gone.
+    const sessionIds = new Set()
+    try {
+      for (const id of sessionIdsInTimeline(this.readTimeline(playthrough).timeline)) sessionIds.add(id)
+    } catch (error) {
+      if (!workspaceDocumentAbsent(error)) throw error
+    }
+    const rootSessionId = playthrough.ext?.[EXTENSION_KEY]?.rootSessionId
+    if (typeof rootSessionId === 'string' && rootSessionId !== '') sessionIds.add(rootSessionId)
+
+    const directory = directoryOf(playthrough)
+    const characterId = characterIdFor(playthrough)
+    const title = typeof playthrough.title === 'string' ? playthrough.title : null
+    let backupDir = null
+    let removal = null
+    let directoryExisted = false
+    if (directory !== null) {
+      try {
+        this.workspaceStore.list(directory)
+        directoryExisted = true
+      } catch (error) {
+        if (!workspaceDocumentAbsent(error)) throw error
+      }
+    }
+
+    operation?.stage('playthrough.delete.checked', { playthroughId, directory, sessionCount: sessionIds.size, directoryExisted })
+    if (directoryExisted) {
+      if (backup) {
+        const target = trashDir + '/' + trashStamp(now) + '-' + playthroughId
+        operation?.stage('playthrough.trash.begin', { playthroughId, from: directory, to: target })
+        this.workspaceStore.move(directory, target)
+        backupDir = target
+        operation?.stage('playthrough.trash.committed', { playthroughId, to: target })
+      } else {
+        operation?.stage('playthrough.remove.begin', { playthroughId, path: directory })
+        removal = this.workspaceStore.removeTree(directory)
+        operation?.stage('playthrough.remove.committed', { playthroughId, path: directory, files: removal.removedFiles.length })
+      }
+    }
+
+    // A dangling `activeTimelinePath` would keep pointing into a directory that no
+    // longer exists, so clear it in the same mutation.
+    const binding = this.workspaceStore.get()
+    if (directory !== null && typeof binding.activeTimelinePath === 'string' && binding.activeTimelinePath.startsWith(directory + '/')) {
+      this.workspaceStore.setActiveTimelinePath(null)
+      operation?.stage('playthrough.active-cleared', { playthroughId, path: binding.activeTimelinePath })
+    }
+
+    const catalog = catalogDocument.catalog
+    const tombstone = {
+      id: playthroughId,
+      ...(title === null ? {} : { title }),
+      ...(characterId === null ? {} : { characterId }),
+      ...(typeof rootSessionId === 'string' && rootSessionId !== '' ? { rootSessionId } : {}),
+      sessionIds: [...sessionIds],
+      deletedAt: now(),
+      ...(backupDir === null ? {} : { backupDir }),
+    }
+    const ext = { ...(catalog.ext ?? {}) }
+    const known = { ...(ext[EXTENSION_KEY] ?? {}) }
+    const previous = Array.isArray(known[DELETED_KEY]) ? known[DELETED_KEY] : []
+    known[DELETED_KEY] = [...previous.filter(item => item?.id !== playthroughId), tombstone].slice(-MAX_DELETED_PLAYTHROUGHS)
+    ext[EXTENSION_KEY] = known
+    const nextCatalog = {
+      ...catalog,
+      playthroughs: catalog.playthroughs.filter(item => item.id !== playthroughId),
+      ext,
+    }
+    operation?.stage('catalog.playthrough-delete.begin', { playthroughId, path: 'catalog.json' })
+    this.workspaceStore.writeFile('catalog.json', JSON.stringify(nextCatalog), {
+      expectedRevision: catalogDocument.file.revision,
+      expectedRevisionPresent: true,
+      validate: validatePlayDocument,
+    })
+    operation?.stage('catalog.playthrough-delete.committed', { playthroughId, path: 'catalog.json' })
+
+    return {
+      ok: true,
+      playthroughId,
+      removed: true,
+      directoryExisted,
+      characterId,
+      title,
+      backupDir,
+      removedFileCount: removal === null ? 0 : removal.removedFiles.length,
+      sessionIds: [...sessionIds],
+      tombstone,
     }
   }
 }

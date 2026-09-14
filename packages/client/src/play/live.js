@@ -277,6 +277,17 @@ export function createLivePlayClient({
       return v2('POST', `/playthroughs/${encodeURIComponent(playthroughId)}/detach-session`, { sessionId })
     },
 
+    /**
+     * Deletes a playthrough. The host parks its files in `.dtavern-trash/` and
+     * leaves every DSH session untouched; a host that has not opted in answers
+     * 403 `PLAYTHROUGH_DELETE_DISABLED`, and a playthrough with a live turn
+     * answers 409 `PLAYTHROUGH_AGENT_RUNNING`.
+     */
+    removePlaythrough(playthroughId) {
+      if (typeof playthroughId !== 'string' || playthroughId === '') throw new TypeError('playthroughId is required')
+      return v2('DELETE', `/playthroughs/${encodeURIComponent(playthroughId)}`, {})
+    },
+
     postUserMessage(sessionId, text) {
       return v2('POST', `/sessions/${encodeURIComponent(sessionId)}/user-message`, { text })
     },

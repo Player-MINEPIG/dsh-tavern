@@ -40,11 +40,14 @@ Tavern `2.2.0`（2026-09-11 发布）的 DSH `0.1.5-rc.1` 兼容增量：message
 | GET | `/playthroughs/:id/focus` | 2.0 稳定合同：经 catalog 解析周目，返回 `{ playthroughId, sessionId, nodeId, variantId }`；空周目使用 `rootSessionId` | 已实现；bundled live client 已迁移 |
 | POST | `/playthroughs/:id/relink-character` | `{ characterId }`；只把指定周目及其 root/swipe/branch 后代 session 重新绑定到一张现存角色卡。显式用户选择不受自动归类规则限制 | 已实现 |
 | POST | `/playthroughs/:id/detach-session` | `{ sessionId }`；把目标 session 对应 timeline variant 及其后代从该周目移除，保留兄弟分支、DSH session/历史和空 catalog 周目。服务端校验树并以受管文件 revision/CAS 提交 | 已实现 |
+| DELETE | `/playthroughs/:id` | **可选动词，默认关闭**：把一个周目目录整体移到同目录下的 `.dtavern-trash/<时间戳>-<id>/` 备份，再从 catalog 移除该条并追加不含正文的 tombstone；返回 `{ removed, backupDir, sessionIds, rootSessionId }`。不会因为备份失败而留下半删状态。**不删除、不归档、不重命名任何 DSH session**，只清除该周目各 session 的 Tavern selection。宿主未设 `allowPlaythroughDelete: true` → 403 `PLAYTHROUGH_DELETE_DISABLED`；`:id` 不存在 → 404 `PLAYTHROUGH_NOT_FOUND`；该周目绑定的某个 session 正在生成回复 → 409 `PLAYTHROUGH_AGENT_RUNNING`，此时目录、catalog 与备份都保持原样 | 新增（默认关闭） |
 | GET | `/focus?path=` | 迁移期低层兼容：按显式 timeline path 派生 `{ sessionId }`；2.0 内置前端不再依赖 | 已实现，迁移兼容面 |
 | GET | `/focus`（无 path） | 2.0 不提供默认目标；不再把“最近写入 timeline”当作用户 focus | 已移除默认行为，400 PLAY_FOCUS_PATH_REQUIRED |
 | POST | `/focus`、`/playthroughs/:id/focus` | 不提供 | 405 |
 
 路径存在、方法不对 → `405 PLAY_METHOD_NOT_ALLOWED`（例如 `POST /chrome`、`POST /focus`、`GET /sessions`）。稳定 focus 中周目 id 不存在返回 404 PLAY_PLAYTHROUGH_NOT_FOUND；catalog 缺失返回 409 PLAY_CATALOG_UNAVAILABLE，catalog 损坏保留 400 PLAY_CATALOG_INVALID；timeline 缺失或损坏统一返回 409 PLAY_FOCUS_UNAVAILABLE。稳定入口不接受客户端 path，不读取 DSH history，也不写文件。旧 /focus?path= 仅保留迁移兼容。
+
+`DELETE /playthroughs/:id` 是唯一会移除周目的动词，因此默认关闭，且**只在周目这一层收尾**：备份目录在周目目录同级（`.dtavern-trash/`，可直接手动移回原位恢复），catalog 只丢一条并在 `ext.pmpDshTavern.deletedPlaythroughs` 留一条不含正文的墓碑作为线索。返回的 `sessionIds` / `rootSessionId` 是给**会话归属方**（例如记忆库 / archive 插件）用的：DSH session 的删除、归档或重命名不在这条路径的职责内，也不应该由本插件的 loader 发起。这样切分的原因见 `docs/ARCHITECTURE.md` 的 `play` 层边界与 `docs/API_en.md` 中 detach 的同一句约定（No DSH session is deleted, archived, or renamed）。
 
 <a id="session-coordinates"></a>
 ### 会话坐标版本查询与使用

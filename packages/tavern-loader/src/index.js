@@ -3,7 +3,7 @@ import {
   createApiHandler as createPresetApiHandler,
 } from '../../preset/src/index.js'
 import { API_ROOT, API_V1, PLUGIN_ID, PROFILE_SECTION } from '../../identity.js'
-import { ChromeStore, PlayMembershipService, PlayWorkspaceStore, createChromeEventsHandler, createPlayApiHandler, isPlayApiPath } from '../../play/src/index.js'
+import { ChromeStore, PlayMembershipService, PlayWorkspaceStore, createChromeEventsHandler, createPlayApiHandler, isPlayApiPath, sessionIdsInTimeline } from '../../play/src/index.js'
 import {
   CharacterStore,
   createCharacterAdapter,
@@ -602,12 +602,74 @@ export function apply(ctx, config = {}) {
     })
     const uiSettingsApi = createUiSettingsApiHandler(uiSettingsStore)
     const conversationSettingsApi = createConversationSettingsApiHandler(conversationSettingsStore)
+    /**
+     * Delete one playthrough. Opt-in through `allowPlaythroughDelete` (default off):
+     * removing a playthrough is destructive and, unlike the other play mutations, it
+     * has no undo inside the Host.
+     *
+     * Order matters. The running-agent check runs first so a live turn is never
+     * disturbed; only then is the tree parked in the workspace trash.
+     *
+     * DSH sessions are **not** touched, deleted, archived, or renamed here — that is
+     * the documented boundary of this layer (`docs/ARCHITECTURE.md`, `docs/API.md`:
+     * 「不要用 archive 收纳会话」). The response reports the sessions the playthrough
+     * was bound to so a session-owning component (the archive/memory surface) can
+     * collect them as its own, later, explicit step.
+     */
+    const removePlaythrough = async (playthroughId, { operation } = {}) => {
+      if (config.allowPlaythroughDelete !== true) {
+        const error = new Error('Playthrough deletion is disabled; enable allowPlaythroughDelete to use it.')
+        error.code = 'PLAYTHROUGH_DELETE_DISABLED'
+        error.status = 403
+        throw error
+      }
+      const catalogDocument = playMemberships.readCatalog()
+      const playthrough = catalogDocument.catalog.playthroughs.find(item => item.id === playthroughId)
+      if (playthrough === undefined) {
+        const error = new Error('playthrough not found')
+        error.code = 'PLAYTHROUGH_NOT_FOUND'
+        error.status = 404
+        throw error
+      }
+      const sessionIds = new Set()
+      try {
+        for (const id of sessionIdsInTimeline(playMemberships.readTimeline(playthrough).timeline)) sessionIds.add(id)
+      } catch (error) {
+        // A half-removed playthrough is still deletable; only a real read failure stops us.
+        if (error?.status !== 404) throw error
+      }
+      const rootSessionId = playthrough.ext?.pmpDshTavern?.rootSessionId
+      if (typeof rootSessionId === 'string' && rootSessionId !== '') sessionIds.add(rootSessionId)
+
+      for (const sessionId of sessionIds) {
+        const agent = ctx.get('agents')?.get?.(sessionId)
+        if (agent?.status === 'running') {
+          const error = new Error('A session of this playthrough is running; delete it after the current turn finishes.')
+          error.code = 'PLAYTHROUGH_AGENT_RUNNING'
+          error.status = 409
+          error.details = { runningSessionId: sessionId, sessionIds: [...sessionIds] }
+          throw error
+        }
+      }
+
+      const result = await playMemberships.removePlaythrough(playthroughId, { operation })
+
+      for (const sessionId of result.sessionIds) {
+        // The playthrough is gone, so its per-session selection state is meaningless.
+        // The session itself survives untouched.
+        selections.deleteSession(sessionId)
+      }
+
+      notifyChange()
+      return { ...result, rootSessionId: rootSessionId ?? null }
+    }
     const playApi = createPlayApiHandler({
       chromeStore,
       workspaceStore: playWorkspaceStore,
       host: playHost,
       logger: ctx.logger,
       membershipService: playMemberships,
+      removePlaythrough,
       resolveCharacter: characterId => characterStore.list().find(item => item.id === characterId) ?? null,
       relinkPlaythrough: (playthroughId, character, { operation }) => playMemberships.relinkPlaythrough(playthroughId, character, {
         operation,

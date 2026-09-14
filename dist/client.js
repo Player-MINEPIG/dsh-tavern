@@ -221,6 +221,11 @@ var zh_CN_default = Object.freeze({
   "play.io.renameInvalid": "\u5468\u76EE\u540D\u79F0\u4E0D\u80FD\u4E3A\u7A7A\uFF0C\u4E14\u4E0D\u80FD\u8D85\u8FC7 120 \u4E2A\u5B57\u7B26\u3002",
   "play.io.exportHtml": "\u5BFC\u51FA\u9759\u6001 HTML",
   "play.io.exportSt": "\u5BFC\u51FA SillyTavern JSONL",
+  "play.io.delete": "\u5220\u9664\u5468\u76EE",
+  "play.io.deleteConfirm": "\u5220\u9664\u5468\u76EE\u300C{title}\u300D\uFF1F\u5B83\u7684\u6587\u4EF6\u4F1A\u88AB\u79FB\u5230\u540C\u76EE\u5F55\u4E0B\u7684 .dtavern-trash/ \u5907\u4EFD\uFF08\u53EF\u624B\u52A8\u6062\u590D\uFF09\uFF0C\u5468\u76EE\u5217\u8868\u91CC\u7684\u8FD9\u4E00\u6761\u4F1A\u88AB\u79FB\u9664\uFF1B\u7ED1\u5B9A\u7684 DSH \u4F1A\u8BDD\u4E0D\u4F1A\u88AB\u5220\u9664\u6216\u5F52\u6863\u3002",
+  "play.io.deleteDone": "\u5DF2\u5220\u9664\u5468\u76EE\u300C{title}\u300D\uFF0C\u5907\u4EFD\u5728 {backupDir}\u3002",
+  "play.io.deleteDisabled": "\u5BBF\u4E3B\u672A\u5F00\u542F\u5468\u76EE\u5220\u9664\uFF0C\u9700\u8981\u5728\u914D\u7F6E\u91CC\u8BBE allowPlaythroughDelete: true\u3002",
+  "play.io.deleteRunning": "\u8BE5\u5468\u76EE\u8FD8\u6709\u4F1A\u8BDD\u6B63\u5728\u751F\u6210\u56DE\u590D\uFF0C\u7B49\u8FD9\u4E00\u8F6E\u7ED3\u675F\u540E\u518D\u5220\u9664\u3002",
   "play.io.import": "\u5BFC\u5165\u5E76\u65B0\u5F00 session",
   "play.io.importUnavailable": "\u540E\u7AEF\u5C1A\u672A\u63D0\u4F9B\u907F\u514D\u4F2A\u9020 DSH \u5386\u53F2\u6240\u9700\u7684\u4E00\u6B21\u6027 import-context reference\uFF0C\u56E0\u6B64\u6682\u4E0D\u5F00\u653E\u5BFC\u5165\u3002",
   "play.import.bind": "\u5BFC\u5165\u5916\u90E8\u8BB0\u5F55",
@@ -867,6 +872,11 @@ var en_default = Object.freeze({
   "play.io.renameInvalid": "The playthrough name must contain 1\u2013120 characters.",
   "play.io.exportHtml": "Export static HTML",
   "play.io.exportSt": "Export SillyTavern JSONL",
+  "play.io.delete": "Delete playthrough",
+  "play.io.deleteConfirm": 'Delete playthrough "{title}"? Its files move to a .dtavern-trash/ backup beside it (recoverable by hand) and its catalog row is removed; its bound DSH sessions are neither deleted nor archived.',
+  "play.io.deleteDone": 'Deleted playthrough "{title}"; backup at {backupDir}.',
+  "play.io.deleteDisabled": "This host has not enabled playthrough deletion; set allowPlaythroughDelete: true to use it.",
+  "play.io.deleteRunning": "A session of this playthrough is still replying; delete it after the current turn finishes.",
   "play.io.import": "Import into a new session",
   "play.io.importUnavailable": "Import is unavailable until the backend provides the one-shot import-context reference required to avoid fake DSH history.",
   "play.import.bind": "Import external history",
@@ -10819,7 +10829,7 @@ var h9 = createLocalizedElement(import_react12.createElement);
 var css8 = `
 .dtv-play-io{position:relative;display:inline-flex}.dtv-play-io-trigger{width:30px;height:30px;border:0;border-radius:8px;background:transparent;color:var(--dsw-alias-label-secondary);font:inherit;cursor:pointer}.dtv-play-io-trigger:hover{background:var(--dsw-alias-interactive-bg-hover)}
 .dtv-play-io-menu{position:absolute;z-index:30;left:0;bottom:calc(100% + 6px);min-width:210px;padding:6px;border:1px solid var(--dsw-alias-border-subtle);border-radius:11px;background:var(--dsw-alias-bg-layer-1,#181a20);box-shadow:0 12px 30px #0008;display:flex;flex-direction:column;gap:2px}.dtv-play-io[data-placement=sidebar] .dtv-play-io-menu{left:auto;right:0;bottom:auto;top:calc(100% + 4px);width:max-content;min-width:0;max-width:168px}.dtv-play-io[data-placement=sidebar] .dtv-play-io-item{white-space:nowrap}
-.dtv-play-io-item{min-height:34px;border:0;border-radius:8px;padding:6px 9px;background:transparent;color:var(--dsw-alias-label-primary);font:inherit;font-size:11px;text-align:left;cursor:pointer}.dtv-play-io-item:hover{background:var(--dsw-alias-interactive-bg-hover)}.dtv-play-io-item:disabled{opacity:.45;cursor:default}.dtv-play-io-error{max-width:240px;margin:3px 5px;color:var(--dsw-alias-state-error);font-size:10px;overflow-wrap:anywhere}
+.dtv-play-io-item{min-height:34px;border:0;border-radius:8px;padding:6px 9px;background:transparent;color:var(--dsw-alias-label-primary);font:inherit;font-size:11px;text-align:left;cursor:pointer}.dtv-play-io-item:hover{background:var(--dsw-alias-interactive-bg-hover)}.dtv-play-io-item:disabled{opacity:.45;cursor:default}.dtv-play-io-error{max-width:240px;margin:3px 5px;color:var(--dsw-alias-state-error);font-size:10px;overflow-wrap:anywhere}.dtv-play-io-done{max-width:240px;margin:3px 5px;color:var(--dsw-alias-label-secondary);font-size:10px;overflow-wrap:anywhere}.dtv-play-io-danger{color:var(--dsw-alias-state-error)}
 `;
 function installStyles2() {
   if (document.querySelector(`style[data-plugin-css="${PLUGIN_ID}-play-io"]`) !== null) return;
@@ -10850,6 +10860,7 @@ function PlayIoMenu({ playClient, playthrough, trigger = "+", placement = "compo
   const [open, setOpen] = (0, import_react12.useState)(false);
   const [busy, setBusy] = (0, import_react12.useState)(false);
   const [error, setError] = (0, import_react12.useState)("");
+  const [done, setDone] = (0, import_react12.useState)("");
   const displayTitle = playthroughDisplayTitle(playthrough);
   (0, import_react12.useEffect)(() => {
     if (!open) return void 0;
@@ -10886,10 +10897,32 @@ function PlayIoMenu({ playClient, playthrough, trigger = "+", placement = "compo
     setError("");
     try {
       await renamePlaythrough(playClient, playthrough, title);
-      window.dispatchEvent(new Event("pmp-dsh-tavern:refresh"));
+      window.dispatchEvent(new Event(CLIENT_REFRESH_EVENT));
       setOpen(false);
     } catch (reason) {
       setError(reason instanceof Error ? reason.message : String(reason));
+    } finally {
+      setBusy(false);
+    }
+  };
+  const remove = async () => {
+    if (busy) return;
+    if (!window.confirm(unwrapText(uiMessage("play.io.deleteConfirm", { title: displayTitle })))) return;
+    setBusy(true);
+    setError("");
+    try {
+      const result = await playClient.removePlaythrough(playthrough.id);
+      window.dispatchEvent(new Event(CLIENT_REFRESH_EVENT));
+      setDone(unwrapText(uiMessage("play.io.deleteDone", {
+        title: displayTitle,
+        backupDir: result?.backupDir ?? ""
+      })));
+      setOpen(false);
+    } catch (reason) {
+      const code = reason?.code;
+      if (code === "PLAYTHROUGH_DELETE_DISABLED") setError(unwrapText(uiMessage("play.io.deleteDisabled")));
+      else if (code === "PLAYTHROUGH_AGENT_RUNNING") setError(unwrapText(uiMessage("play.io.deleteRunning")));
+      else setError(reason instanceof Error ? reason.message : String(reason));
     } finally {
       setBusy(false);
     }
@@ -10923,7 +10956,9 @@ function PlayIoMenu({ playClient, playthrough, trigger = "+", placement = "compo
       }, uiMessage("play.io.relinkCharacter")),
       h9("button", { type: "button", className: "dtv-play-io-item", disabled: busy, onClick: () => exportAs("html") }, uiMessage("play.io.exportHtml")),
       h9("button", { type: "button", className: "dtv-play-io-item", disabled: busy, onClick: () => exportAs("st") }, uiMessage("play.io.exportSt")),
-      error === "" ? null : h9("p", { className: "dtv-play-io-error" }, rawText(error))
+      h9("button", { type: "button", className: "dtv-play-io-item dtv-play-io-danger", disabled: busy, onClick: remove }, uiMessage("play.io.delete")),
+      error === "" ? null : h9("p", { className: "dtv-play-io-error", role: "alert" }, rawText(error)),
+      done === "" ? null : h9("p", { className: "dtv-play-io-done", role: "status" }, rawText(done))
     )
   );
 }
@@ -12428,6 +12463,16 @@ function createLivePlayClient({
       if (typeof playthroughId !== "string" || playthroughId === "") throw new TypeError("playthroughId is required");
       if (typeof sessionId !== "string" || sessionId === "") throw new TypeError("sessionId is required");
       return v2("POST", `/playthroughs/${encodeURIComponent(playthroughId)}/detach-session`, { sessionId });
+    },
+    /**
+     * Deletes a playthrough. The host parks its files in `.dtavern-trash/` and
+     * leaves every DSH session untouched; a host that has not opted in answers
+     * 403 `PLAYTHROUGH_DELETE_DISABLED`, and a playthrough with a live turn
+     * answers 409 `PLAYTHROUGH_AGENT_RUNNING`.
+     */
+    removePlaythrough(playthroughId) {
+      if (typeof playthroughId !== "string" || playthroughId === "") throw new TypeError("playthroughId is required");
+      return v2("DELETE", `/playthroughs/${encodeURIComponent(playthroughId)}`, {});
     },
     postUserMessage(sessionId, text2) {
       return v2("POST", `/sessions/${encodeURIComponent(sessionId)}/user-message`, { text: text2 });

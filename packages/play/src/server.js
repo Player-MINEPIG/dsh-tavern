@@ -29,6 +29,7 @@ export function createPlayApiHandler({
   membershipService,
   resolveCharacter,
   relinkPlaythrough,
+  removePlaythrough,
 } = {}) {
   if (chromeStore === undefined) throw new TypeError('chromeStore is required')
   const chromeApi = createChromeApiHandler(chromeStore)
@@ -148,6 +149,15 @@ export function createPlayApiHandler({
         operation = startMutation(req, 'playthrough.session.detach')
         operation.stage('request.validated', { playthroughId, sessionId: body.sessionId })
         const result = await runMutation(operation, () => membershipService.detach(playthroughId, body.sessionId, { operation }))
+        return sendJson(res, 200, result)
+      }
+      const playthroughDeleteMatch = route.rest.match(/^\/playthroughs\/([^/]+)$/)
+      if (playthroughDeleteMatch !== null && method === 'DELETE') {
+        if (typeof removePlaythrough !== 'function') throw httpError(404, 'Not found', 'PLAY_NOT_FOUND')
+        const playthroughId = safeDecodeId(playthroughDeleteMatch[1], 'playthrough id')
+        operation = startMutation(req, 'playthrough.delete', playthroughId)
+        operation.stage('request.validated', { playthroughId })
+        const result = await runMutation(operation, () => removePlaythrough(playthroughId, { operation }))
         return sendJson(res, 200, result)
       }
       const importContextMatch = route.rest.match(/^\/sessions\/([^/]+)\/import-context$/)

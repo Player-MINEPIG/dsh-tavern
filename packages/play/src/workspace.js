@@ -7,17 +7,18 @@ import {
   readdirSync,
   readFileSync,
   renameSync,
+  rmdirSync,
   statSync,
   unlinkSync,
   writeSync,
 } from 'node:fs'
 import { createHash } from 'node:crypto'
-import { basename, join, resolve } from 'node:path'
+import { basename, dirname, join, resolve, sep } from 'node:path'
 import { atomicJson, readJsonFile } from './atomic-json.js'
 import { httpError, readBoundedJson, sendJson } from './http.js'
 import { parseTimelineJson } from './timeline.js'
 import { validateTimelineCoordinates } from './session-coordinates.js'
-import { assertNoLink, assertSafeRoot, isSystemDiskPath, posixPlayPath, resolvePlayPath, splitRelativeSegments } from './paths.js'
+import { assertInsideRoot, assertNoLink, assertSafeRoot, isSystemDiskPath, posixPlayPath, resolvePlayPath, splitRelativeSegments } from './paths.js'
 
 const BINDING_FILE = 'play-workspace.json'
 const MAX_BINDING_BYTES = 8 * 1024
@@ -226,6 +227,89 @@ export class PlayWorkspaceStore {
         parentRelative.push(name)
       }
       return { ok: true, path: posix }
+    })
+  }
+
+  /**
+   * Move one file or directory subtree inside the workspace root.
+   *
+   * Playthrough deletion parks a directory in the workspace trash before its
+   * catalog entry disappears. A same-volume `rename` is atomic and needs no byte
+   * copy, which matters because archive trees can exceed the file read limit. The
+   * destination parent is created on demand; an existing destination is a conflict
+   * rather than a silent merge.
+   *
+   * @param fromRelative - POSIX relative source path under the workspace root.
+   * @param toRelative - POSIX relative destination path under the workspace root.
+   * @returns `{ ok, from, to }`.
+   */
+  move(fromRelative, toRelative) {
+    const root = requireRoot(this.binding)
+    const from = posixPlayPath(fromRelative)
+    const to = posixPlayPath(toRelative)
+    if (from === to) throw httpError(400, 'move source and destination are identical', 'PLAY_PATH_INVALID')
+    return this.withTargetGuard(from, () => {
+      const rootReal = assertSafeRoot(root)
+      const sourceAbs = resolvePlayPath(root, from, { mustExist: true })
+      const targetAbs = resolvePlayPath(root, to)
+      if (existsSync(targetAbs)) {
+        throw httpError(409, 'move destination already exists', 'PLAY_PATH_CONFLICT')
+      }
+      assertInsideRoot(rootReal, targetAbs)
+      const parent = dirname(targetAbs)
+      mkdirSync(parent, { recursive: true })
+      assertNoLink(parent, 'move destination parent')
+      renameSync(sourceAbs, targetAbs)
+      return { ok: true, from, to }
+    })
+  }
+
+  /**
+   * Remove one file or directory subtree under the workspace root.
+   *
+   * The walk is explicit — `readdir` then `unlink`/`rmdir`, deepest first — so the
+   * result reports exactly which entries are gone even when a later entry fails,
+   * and a per-entry `ENOENT` is tolerated the same way `CharacterStore.delete`
+   * tolerates it. No recursive removal helper is used, so a partially removed tree
+   * is always reported instead of being silently discarded.
+   *
+   * @param relativePath - POSIX relative path under the workspace root.
+   * @returns `{ ok, path, removedFiles, removedDirectories }` (relative paths).
+   */
+  removeTree(relativePath) {
+    const root = requireRoot(this.binding)
+    const posix = posixPlayPath(relativePath)
+    return this.withTargetGuard(posix, () => {
+      const absolute = resolvePlayPath(root, posix, { mustExist: true })
+      const removedFiles = []
+      const removedDirectories = []
+      const relativeOf = value => (value === root ? '' : value.slice(root.length + 1).split(sep).join('/'))
+      const walk = dir => {
+        const entries = readdirSync(dir, { withFileTypes: true })
+        for (const entry of entries) {
+          const child = join(dir, entry.name)
+          assertNoLink(child, `path segment "${entry.name}"`)
+          if (entry.isDirectory()) continue
+          try { unlinkSync(child) } catch (error) { if (error?.code !== 'ENOENT') throw error }
+          removedFiles.push(relativeOf(child))
+        }
+        for (const entry of entries) {
+          if (!entry.isDirectory()) continue
+          const child = join(dir, entry.name)
+          walk(child)
+          rmdirSync(child)
+          removedDirectories.push(relativeOf(child))
+        }
+      }
+      if (statSync(absolute).isDirectory()) {
+        walk(absolute)
+        rmdirSync(absolute)
+        removedDirectories.push(relativeOf(absolute))
+      } else {
+        try { unlinkSync(absolute) } catch (error) { if (error?.code !== 'ENOENT') throw error }
+        removedFiles.push(relativeOf(absolute))
+      }
+      return { ok: true, path: posix, removedFiles, removedDirectories }
     })
   }
 
