@@ -4,6 +4,8 @@
 
 状态：面向 dsh-tavern `2.2.0`（2026-09-11 发布）与 DSH `0.1.2-rc.1` / `0.1.5-rc.1`。HTTP 字段以 [API.md](API.md) 为准；本页说明交付方式、模式生命周期和产品动作组合。
 
+2.3.0 候选文档增量（2026-09-17）：第 7 节补充 v1/v2/v3 分工，原有 v2 接入合同不变。
+
 ## 1. 先理解双模式兼容边界
 
 `native`（灵珠）不替换 DSH 原生会话表面；`play`（魔丸）才挂载 Tavern 的 RP 侧栏、视图和 opening dock。这种双模式本身就是兼容机制：第三方插件只要把自有 RP UI 绑定到 `play` 生命周期，离开该模式时完整 dispose 自己的 slot/UI，就不会要求用户替换 DSH 原生插件。
@@ -119,11 +121,18 @@ branch、session、目录、timeline 和 catalog 是多个原子操作，不构�
 
 v2 timeline 不提供隐藏或屏蔽 QA 的字段。需要按内容控制 RP 正文时使用显示正则；需要人工改写最终显示文本时使用 `displayOverride`。两者都只影响 RP 投影，不修改 DSH 权威历史或 AI 请求。需要回到较早节点时使用同周目回退或新周目分支，不要向 timeline 写入未声明字段；第三方扩展元数据只能放在协议允许保留的 `ext` 中。
 
-## 7. v1 资源面与 v2 RP 面
+## 7. v1 资源、v2 扮演与 v3 Trace
 
 v2 是第三方 RP 表面的稳定协议。v1 是本插件 bundled UI 的资源管理合同，包含预设、角色卡、世界书、用户、正则、selection、RP/Trace 等。第三方 DSH 插件可以在用户已安装 dsh-tavern 时选择性调用 v1，但这不等于 v2 对资源编辑器 UI/字段的长期承诺。
 
 若第三方只需要渲染和周目操作，应尽量依赖 v2 与 timeline/catalog 中已有引用。若必须编辑 Tavern 资源，明确声明对相应 v1 版本和 dsh-tavern 版本的依赖，并对缺失 API 提供降级。
+
+当前资源与配置由 v1 负责，历史装配与来源追踪由 v3 负责。候选 v3 `/sources`
+与 v1 重叠，建议移除，但当前代码仍可调用；不要将其与历史 `sections[].sources` 混淆。
+运行期观察、调整和贡献段落可使用官方 DSH `system-prompt/assemble`；历史查询使用 v3。
+完整边界和统一路由目录见 [API 范围核对](API.md#api-scope)，字段和示例见
+[v3 合同](PROMPT_API_V3.md)。v1 `/active` 会运行当前装配；仅需配置时应使用
+configuration preview 加资源读取。
 
 ## 8. 卸载、冲突与升级
 

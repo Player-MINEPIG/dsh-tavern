@@ -1,19 +1,52 @@
 # HTTP API
 
-Tavern **2.3.0 候选**新增 [提示词 v3 元 API](PROMPT_API_V3.md)。v1/v2 保留，Tavern Trace 改用 v3。API v3 与 DSH 日志格式 V3 无关。下文 2.2.0 迁移说明和 v1/v2 合同继续适用。
+[English](API_en.md) · [v3 详细合同](PROMPT_API_V3.md) · [前端接入](FRONTEND_INTEGRATION_zh-CN.md)
 
-Tavern `2.2.0`（2026-09-11 发布）的 DSH `0.1.5-rc.1` 兼容增量：messages 响应增加格式信息，新增只读 coordinates endpoint，branch 接收坐标格式版本，timeline GET/PUT 拒绝未迁移引用。具体字段与错误码见 [V3 迁移合同](DSH_0.1.5_MIGRATION.md)。Trace 的 V3 系统提示词权威来自有效 system/message，配置与工具仍来自 request/header。
+状态：Tavern **2.3.0 候选**，未发布；更新于 2026-09-17。新增 Trace 的运行时验收目标为
+DSH `0.1.5-rc.1`；已发布 2.2.0 的 v1/v2 基线也验证过 `0.1.2-rc.1`。
+根路径 `/pmp-dsh-tavern/api`。API 版本与 DSH 日志格式 V3 无关。
 
-[English](API_en.md)
+各版本路由目录统一采用 v2 的 **方法 / 路径 / 作用 / 状态** 格式。路径相对于该节声明的
+版本前缀，标识符须 URL 编码；查询参数和请求正文按各接口约定。沿用本机 TCP peer、
+Host、Origin 和媒体类型检查。成功 JSON 带 `ok:true`；失败带 `ok:false` 和 `error`。
+v1 的 error 形状和方法拒绝状态码因资源而异，文档排版统一不改变线上合同。
 
-状态：Tavern `2.2.0`（2026-09-11 发布），更新于 2026-09-10；Host 已验证 DSH `0.1.2-rc.1` 和 `0.1.5-rc.1`。根：`/pmp-dsh-tavern/api`。鉴权仍是本机 TCP peer、Host、Origin、Content-Type（见 loader 安全中间件）。成功响应带 `ok: true`；失败带 `ok: false` 与 `error`。
+已发布的 [DSH V3 迁移合同](DSH_0.1.5_MIGRATION.md) 继续适用于消息坐标、branch 输入
+和未迁移 timeline 的拒绝行为。
 
-原有 v1/v2 合同：
+<a id="api-scope"></a>
+## 版本职责与重叠核对
 
-- **v2**：给任意扮演前端的稳定面。
-- **v1**：给本插件悬浮球 / 侧栏 / 旧 Trace 审计 的 bundled UI 合同。外人可以读、可以调，但扮演表面请走 v2；v1 字段随本插件 UI 需求增减。
+核对日期：2026-09-17。本节区分当前实现与收敛建议；本次仅整理文档，没有删除路由。
 
-不要 `/swipe`、`/regenerate`、`/export`、`POST /focus`。
+| 能力 | v1 当前覆盖 | v3 当前覆盖 | 范围结论 |
+| --- | --- | --- | --- |
+| 当前资源完整字段 | `/presets/:id`、`/characters/:id`、`/users/:id`、`/world-books/:id` | `/sessions/:id/sources` 的 `documents` 聚合相同资源库文档 | 数据职责重复；完整资源读取归 v1 |
+| 当前绑定与开场选项 | 各 selection、资源 world-books 子接口、configuration preview；`/active` 含当前汇总 | `selection/worldBookSelection/greeting` | 配置职责重叠；有效开场正文与关系去重是派生结果，不是新资源 |
+| 当前字段计数、整体 revision、采样建议 | 资源字段可计数；`/active.callConfig` 含采样映射，但无相同的全量快照 revision | `fieldLengths/revision/suggestedCallConfig` | v3 的便利性增量；不能宣称 v1 响应逐字段等价 |
+| 历史绑定、资源摘要、世界书决策 | `/traces?sessionId=` | `/assemblies` 详情内的 selection/audit，及 legacy 适配 | 有意的历史审计重叠；v1 兼容保留，新 Trace 读 v3 |
+| 当时的具名段落、来源输入、顺序、实际系统消息核对 | 无；`/active` 只能按当前配置重新装配 | `/assemblies` 索引与详情 | v3 独立职责，不能用当前配置替代 |
+
+建议收敛边界：**v1 管当前资源与配置，v2 管扮演会话/工作区元操作，v3 管逐次装配记录与来源追踪（运行中及历史）。**
+当前候选 `/sources` 建议移除，不建议再复制一套 v1 资源读取合同；该建议尚未落实为代码变更。
+历史 `sections[].sources` 应保留，它是当时的来源输入关系，不是当前 `/sources` 聚合端点。
+
+历史审计重叠不表示 ID 或响应字段可以互换。v1 有自己的 header 对齐状态，v3 采集时的
+audit 摘要也不会持续镜像 v1 后续更新；保留旧消费者，新来源视图使用 v3 记录。
+
+v1 `/active` 调用 loader 装配和世界书匹配；它不保存新的历史 Trace，也不能作为无装配成本的
+配置 GET。只要当前配置时，可以先调用 `POST /session-configurations/preview`
+（`source: { mode: "current", sessionId }`），再按 ID 读取资源和独立世界书关系。
+preview 包含模板范围内的已保存 RP 字段；实时 RP/pending 状态另读 `/rp-mode`。
+这条路径不运行提示词装配，但多个 HTTP 响应不构成跨资源原子快照。
+
+DSH 历史以及 v2 `/sessions/:id/messages` 提供权威消息读取；它们不保证保留装配前原文、
+未启用字段或 Tavern 的字段来源关系，不能反推出完整资源文档或代替 v3 来源快照。
+官方 `system-prompt/assemble` 是运行期观察/调整/贡献段落的选择，不依赖 HTTP v3。
+
+核对依据：[当前 sources 服务](../packages/tavern-loader/src/prompt-trace-api.js)、
+[配置预览](../packages/session-template/src/service.js)、[v1 预设/active 路由](../packages/preset/src/server.js)、
+[历史记录器](../packages/tavern-trace/src/assembly-recorder.js)、[Trace 客户端](../packages/tavern-trace/src/client.js)。
 
 ## v2 稳定面
 
@@ -225,25 +258,119 @@ durable history。当前已实现的基础语义是：首次 assembly 必须按�
 
 前缀 `/pmp-dsh-tavern/api/v1`。旧根 `/dsh-tavern/api` 已废止。
 
-| 当你想 | 路径 |
-| --- | --- |
-| 管预设、导出 ST JSON、原生正则、独立世界书关系、看当前装配、导入/选中 | `/presets`、`/presets/:id/export`、`/presets/:id/regex-scripts`、`/presets/:id/world-books`、`/active`、`/import`、`/select` |
-| 管角色卡、侧边栏顺序、缺失卡重关联、原生正则、独立世界书关系、绑定、导出 json/png、内嵌书 | `/characters`、`/characters/order`、`/characters/relink`、`/characters/:id/regex-scripts`、`/characters/:id/world-books`、`/characters/:id/world-book`、`/character-selection` |
-| 管独立世界书和绑定 | `/world-books`、`/world-book-selection` |
-| 管用户、用户-世界书关系 | `/users`、`/user-selection` |
-| 界面语言缩放、绑卡跟随 RP | `/ui-settings` |
-| 魔丸 conversation 正文与动作按钮缩放 | `/conversation-settings` |
-| RP 开关与告警、rp:policy 正文 | `/rp-mode`、`/rp-alert`、`/rp-policy` |
-| 看 Trace | `/traces` |
-| 配置模板、按当前绑定开干净会话 | `/session-templates`、`/session-configurations/preview`、`/apply` |
+| 方法 | 路径 | 作用 | 状态 |
+| --- | --- | --- | --- |
+| GET | `/presets?sessionId=` | 预设目录及当前 selectedId | 已实现 |
+| POST | `/presets` | 创建预设；返回 preset | 已实现 |
+| GET | `/presets/:id` | 完整当前预设；返回 preset | 已实现 |
+| PUT | `/presets/:id` | 更新预设；返回 preset | 已实现 |
+| DELETE | `/presets/:id` | 删除预设并清理绑定 | 已实现 |
+| POST | `/import` | 导入 ST 预设；请求含 content JSON 字符串及可选 name | 已实现 |
+| POST | `/select` | { id, sessionId? }，选择或清空预设；省略 sessionId 作用于全局选择 | 已实现 |
+| GET | `/active?sessionId=` | 当前装配预览摘要：sessionSelection、worldBookSelection、resources、callConfig、audit；会运行装配，不是历史记录 | 已实现 |
+| GET | `/presets/:id/export` | 按当前编辑状态导出 ST JSON 附件 | 已实现 |
+| GET | `/presets/:id/regex-scripts` | 读取预设原生正则数组 | 已实现 |
+| PUT | `/presets/:id/regex-scripts` | 完整替换预设原生正则数组 | 已实现 |
+| GET | `/presets/:id/world-books` | 读取预设关联独立世界书的有序 ID | 已实现 |
+| PUT | `/presets/:id/world-books` | 完整替换预设关联独立世界书的有序 ID | 已实现 |
+| GET | `/characters/:id/regex-scripts` | 读取角色卡原生正则数组 | 已实现 |
+| PUT | `/characters/:id/regex-scripts` | 完整替换角色卡原生正则数组 | 已实现 |
+| GET | `/characters/:id/world-books` | 读取角色卡关联独立世界书的有序 ID | 已实现 |
+| PUT | `/characters/:id/world-books` | 完整替换角色卡关联独立世界书的有序 ID | 已实现 |
+| GET | `/characters` | 角色卡目录、排序状态及缺失卡摘要 | 已实现 |
+| POST | `/characters` | 创建角色卡 | 已实现 |
+| POST | `/characters/import` | 导入 JSON/PNG 角色卡 | 已实现 |
+| GET | `/characters/:id` | 完整当前角色卡；返回 character | 已实现 |
+| PATCH | `/characters/:id` | 更新角色卡字段 | 已实现 |
+| DELETE | `/characters/:id` | 删除角色卡并清理绑定，保留缺失卡摘要 | 已实现 |
+| GET | `/characters/:id/json` | 导出角色卡 JSON 附件 | 已实现 |
+| GET | `/characters/:id/png` | 导出角色卡 PNG 附件 | 已实现 |
+| PATCH | `/characters/:id/world-book` | { characterBook }，更新内嵌世界书；单数路径不表示独立书绑定 | 已实现 |
+| PUT | `/characters/order` | { mode, characterIds? }，设置排序 | 已实现 |
+| POST | `/characters/relink` | { previousCharacterId, characterId }，恢复缺失卡关联 | 已实现 |
+| GET | `/character-selection?sessionId=` | 当前绑卡与角色选项（含开场序号）、卡片摘要 | 已实现 |
+| POST | `/character-selection` | { sessionId, characterCardId, character? }，绑定或解绑 | 已实现 |
+| GET | `/world-books` | 独立世界书目录 | 已实现 |
+| POST | `/world-books` | 创建独立世界书 | 已实现 |
+| GET | `/world-books/:id` | 完整当前独立世界书；返回 worldBook | 已实现 |
+| PATCH | `/world-books/:id` | 更新独立世界书 | 已实现 |
+| DELETE | `/world-books/:id` | 删除独立世界书并清理相关绑定 | 已实现 |
+| GET | `/users` | 用户目录 | 已实现 |
+| POST | `/users` | 创建用户 | 已实现 |
+| GET | `/users/:id` | 完整当前用户；返回 user | 已实现 |
+| PATCH | `/users/:id` | 更新用户 | 已实现 |
+| DELETE | `/users/:id` | 删除用户并清理相关绑定 | 已实现 |
+| POST | `/world-books/import` | 导入世界书 JSON | 已实现 |
+| GET | `/world-books/:id/json` | 导出世界书 JSON 附件 | 已实现 |
+| GET | `/world-book-selection?sessionId=` | 会话显式世界书绑定与资源摘要 | 已实现 |
+| POST | `/world-book-selection` | 设置会话显式 worldBookIds | 已实现 |
+| GET | `/user-selection?sessionId=` | 当前用户绑定与用户文档 | 已实现 |
+| POST | `/user-selection` | 设置或清空会话用户绑定 | 已实现 |
+| GET | `/users/:id/world-books` | 读取用户关联的独立世界书 ID | 已实现 |
+| PUT | `/users/:id/world-books` | 完整替换用户的 worldBookIds | 已实现 |
+| GET | `/ui-settings` | 读取语言、缩放和绑卡跟随 RP | 已实现 |
+| PUT | `/ui-settings` | 保存语言、缩放和绑卡跟随 RP | 已实现 |
+| DELETE | `/ui-settings` | 恢复默认语言、缩放和绑卡跟随 RP | 已实现 |
+| GET | `/conversation-settings` | 读取魔丸正文与动作按钮缩放 | 已实现 |
+| PUT | `/conversation-settings` | 保存魔丸正文与动作按钮缩放 | 已实现 |
+| DELETE | `/conversation-settings` | 恢复默认魔丸正文与动作按钮缩放 | 已实现 |
+| GET | `/rp-policy` | 读取RP policy 正文 | 已实现 |
+| PUT | `/rp-policy` | 保存RP policy 正文 | 已实现 |
+| DELETE | `/rp-policy` | 恢复默认RP policy 正文 | 已实现 |
+| GET | `/rp-mode?sessionId=` | 读取 RP、pending 和 followCharacter | 已实现 |
+| PUT | `/rp-mode` | { sessionId, active }，申请切换 RP | 已实现 |
+| GET | `/rp-alert?sessionId=` | 读取尚未消费的 RP 风险提示 | 已实现 |
+| DELETE | `/rp-alert?sessionId=&id=` | 消费对应提示；id 可省略 | 已实现 |
+| GET | `/traces?sessionId=` | 旧版历史元数据审计；返回 records/storage/authority，无完整提示词正文 | 已实现；兼容保留 |
+| GET | `/session-templates` | 模板目录、当前选择、内容摘要与缺失诊断 | 已实现 |
+| POST | `/session-templates` | { name, sourceSessionId }，从当前配置创建模板 | 已实现 |
+| GET | `/session-templates/:id` | 模板详情及资源诊断 | 已实现 |
+| PATCH | `/session-templates/:id` | 更新模板 | 已实现 |
+| DELETE | `/session-templates/:id` | 删除模板 | 已实现 |
+| POST | `/session-templates/select` | { id }，选择或清空模板 | 已实现 |
+| POST | `/session-configurations/preview` | { source }，只读预览 current/template 配置；不运行提示词装配 | 已实现 |
+| POST | `/session-configurations/apply` | { targetSessionId, source }，校验后应用绑定 | 已实现 |
+
+资源与子资源的细节见下文。除明确说明外，不应假定 v1 未支持方法一律返回 v2 风格的 405。
+
+### 当前配置与资源读取示例
+
+只读绑定且不运行装配时，先预览 current 配置，再按需获取资源详情。调用方明确提供
+sessionId。v1 的 error 可能是字符串或结构化对象，不能按 v2 统一错误形状假定。
+
+```js
+const base = '/pmp-dsh-tavern/api/v1';
+async function readJson(path, options = {}) {
+  const response = await fetch(base + path, { credentials: 'same-origin', ...options });
+  const data = await response.json();
+  if (!response.ok || !data.ok) {
+    const message = typeof data.error === 'string' ? data.error : data.error?.message;
+    throw new Error(message ?? `HTTP ${response.status}`);
+  }
+  return data;
+}
+const preview = await readJson('/session-configurations/preview', {
+  method: 'POST',
+  headers: { 'Content-Type': 'application/json' },
+  body: JSON.stringify({ source: { mode: 'current', sessionId } }),
+});
+const characterId = preview.selection.characterCardId;
+const character = characterId === null ? null
+  : (await readJson(`/characters/${encodeURIComponent(characterId)}`)).character;
+```
+
+preview 返回 `{ok,selection,contents,diagnostics,available}`；`contents` 是资源引用与摘要，
+不是完整文档。`available:false` 表示存在缺失或无效资源，详情读取也可能单独失败。
+预览不会创建会话或应用绑定。预设/角色/用户关联的独立世界书要通过各自子资源读取，
+内嵌世界书就在角色文档中。这些读取不承诺跨请求快照一致性。
 
 ### 角色卡侧边栏顺序
 
 角色卡列表明确区分三种排序模式：`updated` 按 `updatedAt` 降序（同一时间再按名称、ID），`name` 按名称 A→Z（中文使用 `zh-CN` 排序），`custom` 按用户拖拽顺序。拖拽只写资源库状态，不修改角色卡原文或 `updatedAt`；切换到其他模式也不会清除已保存的自定义顺序。
 
-| 方法 | 路径 | 请求 | 成功响应 |
+| 方法 | 路径 | 作用 | 状态 |
 | --- | --- | --- | --- |
-| PUT | `/characters/order` | `{ mode, characterIds? }` | `{ ok: true, characters: [...], sorting: { mode } }` |
+| PUT | `/characters/order` | 请求：`{ mode, characterIds? }`；返回：`{ ok: true, characters: [...], sorting: { mode } }` | 已实现 |
 
 `mode` 必须是 `updated`、`name`、`custom` 之一。`custom` 不带 `characterIds` 表示切回并恢复已保存的自定义顺序；若尚无保存序列，则以当前资源顺序初始化，并把切出期间新增的卡追加到末尾。只有真正重排时才传 `characterIds`，它必须恰好包含当前存储中的全部角色卡 ID，每个 ID 只出现一次，最多 4096 项；未知、重复或遗漏均返回 400，失败时原状态不变。其它模式拒绝 `characterIds`。成功模式和自定义顺序分别保存在 `character-state.json` 的 `characterSortMode`、`characterOrder`。自定义模式中新建或导入的角色卡追加到末尾，删除角色卡同步清理其顺序项。`GET /characters` 同时返回 `sorting: { mode }`。
 
@@ -253,9 +380,9 @@ durable history。当前已实现的基础语义是：首次 assembly 必须按�
 
 重新导入角色卡后，先用唯一 SHA-256 匹配 tombstone；没有散列匹配时，仅在缺失名称和现存名称双方都唯一时使用规范化同名匹配。唯一匹配会自动重关联；多个同名候选不自动猜测，由侧边栏选择目标卡。
 
-| 方法 | 路径 | 请求 | 成功响应 |
+| 方法 | 路径 | 作用 | 状态 |
 | --- | --- | --- | --- |
-| POST | `/characters/relink` | `{ previousCharacterId, characterId }` | `{ ok: true, relinkedPlaythroughCount, relinkedSessionCount }` |
+| POST | `/characters/relink` | 请求：`{ previousCharacterId, characterId }`；返回：`{ ok: true, relinkedPlaythroughCount, relinkedSessionCount }` | 已实现 |
 
 v1 `/characters/relink` 是缺失资源恢复面：它以 catalog revision 作 CAS，把所有引用旧 ID 的周目归属改为目标卡，并在同一批 session selection 写入中更新 root、swipe、branch 后代会话。v2 `/playthroughs/:id/relink-character` 是周目生命周期面：只迁移指定周目和它的全部后代 session。内置前端会按“唯一 SHA-256，其次双方唯一同名”的自动归类规则评估目标；不匹配时显示警告，但用户仍可明确确认，后端不会用启发式规则否决显式选择。
 
@@ -265,11 +392,11 @@ v1 `/characters/relink` 是缺失资源恢复面：它以 catalog revision 作 C
 
 `/conversation-settings` 是 v1 bundled UI 合同，与 `/ui-settings` 分离。它只持久化魔丸 RP conversation 的显示偏好，不进入 profile、提示词、timeline、DSH history 或导出正文。
 
-| 方法 | 路径 | 请求 | 成功响应 |
+| 方法 | 路径 | 作用 | 状态 |
 | --- | --- | --- | --- |
-| GET | `/conversation-settings` | 无 | `{ ok: true, settings: { schemaVersion: 1, textScale, actionScale } }` |
-| PUT | `/conversation-settings` | `{ textScale, actionScale }` | 同 GET |
-| DELETE | `/conversation-settings` | 无 | 恢复两个字段为 `1` |
+| GET | `/conversation-settings` | 请求：无；返回：`{ ok: true, settings: { schemaVersion: 1, textScale, actionScale } }` | 已实现 |
+| PUT | `/conversation-settings` | 请求：`{ textScale, actionScale }`；返回：同 GET | 已实现 |
+| DELETE | `/conversation-settings` | 请求：无；返回：恢复两个字段为 `1` | 已实现 |
 
 两个 scale 均为 `0.75`–`1.5` 的有限数值，步进 `0.05`；PUT 是完整替换并拒绝未知字段。`textScale` 作用于魔丸用户/助手正文与 greeting（含空周目 opening dock），`actionScale` 只作用于 durable QA 末尾的复制、swipe、分支、回退和编辑操作行。
 
@@ -279,21 +406,21 @@ v1 `/characters/relink` 是缺失资源恢复面：它以 catalog revision 作 C
 
 导出的正文是可重新传给 `POST /import` 或导入 SillyTavern 的 Chat Completion preset JSON。Tavern 专属的 `systemPromptMode` 没有对应 ST 字段，不写入导出文件；资源携带的原生正则仍位于其原有 ST 路径。该 GET 不改变选择、session、资源或 operation log。
 
-| 方法 | 路径 | 请求 | 成功响应 |
+| 方法 | 路径 | 作用 | 状态 |
 | --- | --- | --- | --- |
-| GET | `/presets/:id/export` | 无 | ST JSON 附件；`Content-Disposition: attachment` |
+| GET | `/presets/:id/export` | 请求：无；返回：ST JSON 附件；`Content-Disposition: attachment` | 已实现 |
 
 
 ### 资源携带的原生 ST 正则
 
 预设与角色卡使用一致的子资源合同：
 
-| 方法 | 路径 | 请求 | 成功响应 |
+| 方法 | 路径 | 作用 | 状态 |
 | --- | --- | --- | --- |
-| GET | `/presets/:id/regex-scripts` | 无 | `{ ok: true, regexScripts: [...] }` |
-| PUT | `/presets/:id/regex-scripts` | `{ regexScripts: [...] }` | `{ ok: true, regexScripts: [...] }` |
-| GET | `/characters/:id/regex-scripts` | 无 | `{ ok: true, regexScripts: [...] }` |
-| PUT | `/characters/:id/regex-scripts` | `{ regexScripts: [...] }` | `{ ok: true, regexScripts: [...] }` |
+| GET | `/presets/:id/regex-scripts` | 请求：无；返回：`{ ok: true, regexScripts: [...] }` | 已实现 |
+| PUT | `/presets/:id/regex-scripts` | 请求：`{ regexScripts: [...] }`；返回：`{ ok: true, regexScripts: [...] }` | 已实现 |
+| GET | `/characters/:id/regex-scripts` | 请求：无；返回：`{ ok: true, regexScripts: [...] }` | 已实现 |
+| PUT | `/characters/:id/regex-scripts` | 请求：`{ regexScripts: [...] }`；返回：`{ ok: true, regexScripts: [...] }` | 已实现 |
 
 `PUT` 是有序数组的完整替换，不是逐字段 merge；数组顺序就是同一资源内的执行顺序。数组元素必须是对象；服务端不改写原生 ST 字段，也不丢弃规则内未知扩展字段。适配器优先写回资源已有的 `regex_scripts` 路径；没有现有数组时，预设写入 `extensions.regex_scripts`，V2/V3 角色卡写入 `data.extensions.regex_scripts`，V1 角色卡写入 `extensions.regex_scripts`。资源中的其他字段保持不变，写入仍经过对应 store 的原子保存和总文档体积限制。
 
@@ -305,12 +432,12 @@ v1 `/characters/relink` 是缺失资源恢复面：它以 catalog revision 作 C
 
 预设与角色卡可以关联零本或多本已经存在的独立世界书：
 
-| 方法 | 路径 | 请求 | 成功响应 |
+| 方法 | 路径 | 作用 | 状态 |
 | --- | --- | --- | --- |
-| GET | `/presets/:id/world-books` | 无 | `{ ok: true, binding: { presetId, worldBookIds } }` |
-| PUT | `/presets/:id/world-books` | `{ worldBookIds: [...] }` | 同 GET |
-| GET | `/characters/:id/world-books` | 无 | `{ ok: true, binding: { characterCardId, worldBookIds } }` |
-| PUT | `/characters/:id/world-books` | `{ worldBookIds: [...] }` | 同 GET |
+| GET | `/presets/:id/world-books` | 请求：无；返回：`{ ok: true, binding: { presetId, worldBookIds } }` | 已实现 |
+| PUT | `/presets/:id/world-books` | 请求：`{ worldBookIds: [...] }`；返回：同 GET | 已实现 |
+| GET | `/characters/:id/world-books` | 请求：无；返回：`{ ok: true, binding: { characterCardId, worldBookIds } }` | 已实现 |
+| PUT | `/characters/:id/world-books` | 请求：`{ worldBookIds: [...] }`；返回：同 GET | 已实现 |
 
 `PUT` 完整替换该资源的有序关系，重复 ID 稳定去重；资源或世界书不存在时拒绝写入。每个预设或角色卡最多关联 100 本。关系由 loader-owned 的 `resource-world-book-bindings.json` 原子保存，不向 ST 预设或角色卡原文写入 Tavern 私有字段。因此：
 
@@ -358,6 +485,20 @@ stage 或 terminal 调用无效且不会重复写终态。
 本节声明 utility 及上述 workspace/session/import/playthrough endpoint 接入；当前不能据此声称
 所有生命周期静默失败都已被日志覆盖。默认 Cordis logger 仍由其自身管理，插件不写
 持久日志文件、浏览器日志或 exporter。
+
+## v3 提示词装配审计
+
+前缀 `/pmp-dsh-tavern/api/v3`。当前为只读候选合同。
+
+| 方法 | 路径 | 作用 | 状态 |
+| --- | --- | --- | --- |
+| GET | `/capabilities` | 合同能力、来源映射与容量限制 | 候选已实现 |
+| GET | `/sessions/:id/sources` | 当前配置与资源的聚合快照 | 已实现；与 v1 重叠，建议移除 |
+| GET | `/sessions/:id/assemblies` | 不含段落正文的历史索引 | 候选已实现 |
+| GET | `/sessions/:id/assemblies/:recordId` | 历史段落、来源输入与请求核对详情 | 候选已实现 |
+
+字段、示例、错误码与持久化见 [v3 详细合同](PROMPT_API_V3.md)。
+`/sources` 这一行说明现存实现，不表示当前配置属于 v3 的独立职责。
 
 ## 浏览器端 Chrome 模式服务
 

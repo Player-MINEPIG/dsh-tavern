@@ -50,3 +50,16 @@ public links and 202 installed files checked. Real Web UI, synthetic requests,
 source inspection, restart and immutable historical reads exercised. See
 [acceptance and remaining manual checks](TRACE_REVIEW.md). Local environment
 coordinates, auth tokens and synthetic profile remain outside the repository.
+
+## API scope audit — 2026-09-17
+
+Documentation-only follow-up: v1/v2/v3 endpoint catalogs now use the v2 table format.
+Current v3 `/sources` overlaps v1 resource/configuration responsibilities. Its
+aggregate counts/revision and no-assembly read differ from v1 `/active`; the APIs
+are not response-equivalent. Historical v1 audit and v3 selection/audit intentionally
+overlap for compatibility. Named historical sections/provenance/request verification
+remain the independent v3 contribution. See [scope audit](API.md#api-scope).
+
+- [ ] Proposed follow-up: remove the candidate current `/sources` aggregator and
+  its capabilities/example/test/documentation fields; retain historical
+  `sections[].sources`. No endpoint removal is part of this documentation update.

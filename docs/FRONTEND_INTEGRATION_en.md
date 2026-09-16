@@ -4,6 +4,8 @@
 
 Status: dsh-tavern `2.2.0` (released 2026-09-11) and DSH `0.1.2-rc.1` / `0.1.5-rc.1`. HTTP fields follow [API_en.md](API_en.md). This page covers delivery, mode lifecycle, and product-action composition.
 
+2.3.0 candidate documentation update (2026-09-17): section 7 distinguishes v1/v2/v3 responsibilities; existing v2 integration remains unchanged.
+
 ## 1. Understand the dual-mode compatibility boundary first
 
 `native` (Lingzhu) does not replace native DSH session surfaces. `play` (Mowan) is what mounts Tavern's RP sidebar, view, and opening dock. That dual mode is itself the compatibility mechanism. A third-party plugin that binds its RP UI to the `play` lifecycle and fully disposes its own slots/UI when leaving that mode does not require the user to replace the native DSH plugin.
@@ -119,11 +121,20 @@ branch, session, directory, timeline, and catalog are separate atomic operations
 
 The v2 timeline does not provide a hide/suppress QA field. Use display regex to control RP body by content. Use `displayOverride` to rewrite final display text by hand. Both affect only the RP projection and do not change DSH authoritative history or the AI request. To return to an earlier node, use same-playthrough rollback or a new playthrough branch. Do not write undeclared fields onto the timeline. Third-party extension metadata belongs only in protocol-allowed `ext`.
 
-## 7. v1 resource plane vs v2 RP plane
+## 7. v1 resources, v2 RP and v3 Trace
 
 v2 is the stable protocol for third-party RP surfaces. v1 is this plugin's bundled-UI resource-management contract: presets, cards, world books, users, regex, selection, RP/Trace, and so on. A third-party DSH plugin may call v1 when the user has dsh-tavern installed. That is not a long-term v2 promise about resource-editor UI or fields.
 
 If you only need rendering and playthrough operations, stay on v2 and the references already in timeline/catalog. If you must edit Tavern resources, declare a dependency on the matching v1 and dsh-tavern versions, and degrade when an API is missing.
+
+Current resources and configuration are v1 responsibilities; historical prompt
+assembly and provenance are v3 responsibilities. The candidate v3 `/sources`
+aggregator overlaps v1 and is recommended for removal, but remains callable today.
+Historical `sections[].sources` must not be confused with that endpoint. Use official
+DSH `system-prompt/assemble` for runtime observation/adjustment/contribution, or v3
+for historical records. See [scope audit and route catalogs](API_en.md#api-scope)
+and [v3 fields/examples](PROMPT_API_V3_en.md). v1 `/active` runs current assembly;
+configuration-only consumers can use preview plus resource reads instead.
 
 ## 8. Uninstall, conflicts, and upgrades
 

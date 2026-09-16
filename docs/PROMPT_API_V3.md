@@ -1,9 +1,13 @@
 # 提示词装配 Trace 与 v3 元 API
 
-状态：2.3.0 候选，未发布。目标 DSH **0.1.5-rc.1**。
-[English](PROMPT_API_V3_en.md) · [验收](TRACE_REVIEW.md)
+状态：2.3.0 候选，未发布；更新于 2026-09-17。目标 DSH **0.1.5-rc.1**。
+[English](PROMPT_API_V3_en.md) · [API 总览与范围核对](API.md#api-scope) · [验收](TRACE_REVIEW.md)
 
 ## 定位和兼容
+
+**范围核对：** 当前 `/sources` 聚合了 v1 所属的当前配置，建议移除，但尚未改动代码。
+历史 `sections[].sources` 的来源关系继续保留。Tavern Trace 只调用装配索引和详情。
+详见 [逐项重叠核对](API.md#api-scope)。本文仍如实记录可调用的路由，不把建议写成已实现。
 
 v3 提供当前来源与历史装配记录，第三方自行选择组合流程。Tavern Trace
 使用同一组 HTTP 接口。第三方也可以使用 DSH 官方 `system-prompt/assemble`
@@ -15,6 +19,105 @@ v3 提供当前来源与历史装配记录，第三方自行选择组合流程�
 `pmpDshTavernPrompt` 不在本次合同中。正式发布的 v1/v2 路由继续存在；
 v1 `/traces` 仍是原来的有界元数据审计，世界书 `decisions` 字段保持兼容。
 API v3、Tavern 2.3.0、DSH 日志格式 V3 是三个独立版本号。
+
+## 最小 HTTP 接口
+
+根路径 `/pmp-dsh-tavern/api/v3`。所有接口只读，沿用现有 Host/Origin/TCP peer
+访问控制，不放宽跨域；响应 `Cache-Control: no-store`。显式 sessionId 必须 URL 编码。
+
+| 方法 | 路径 | 作用 | 状态 |
+| --- | --- | --- | --- |
+| GET | `/capabilities` | `{ok,apiVersion,contract,...}`；能力与容量限制 | 候选已实现 |
+| GET | `/sessions/:sessionId/sources` | `{ok,sources}`；当前配置与资源聚合 | 已实现；与 v1 重叠，建议移除 |
+| GET | `/sessions/:sessionId/assemblies` | `{ok,sessionId,records,storage}`；不含段落正文的历史索引 | 候选已实现 |
+| GET | `/sessions/:sessionId/assemblies/:recordId` | `{ok,record}`；单次历史快照 | 候选已实现 |
+
+`recordId` 是不透明 ID。404 表示记录不存在或已被容量策略淘汰，不能当成“该轮未注入”。
+旧 v1 记录通过 v3 以 `legacy-metadata-only` 提供；没有历史正文时不会重新装配补造。
+无效输入 400，非 GET 405，缺失资源快照 409，超大 sources 413；内部读取错误返回
+脱敏的 500 `TRACE_READ_FAILED`。历史查询不要求 Agent 在线，也不激活 Agent。
+当前 sources 经公开 Host coordinates 检查会话存在。
+
+### 请求与响应示例
+
+在已通过 Host 访问认证的同源页面，先读索引，再按返回的不透明 ID 读取详情。
+这一过程不运行装配，也不要求 Agent 活跃。
+
+```js
+const base = '/pmp-dsh-tavern/api/v3';
+async function read(path) {
+  const response = await fetch(base + path, { credentials: 'same-origin', cache: 'no-store' });
+  const data = await response.json();
+  if (!response.ok || !data.ok) throw new Error(data.error ?? `HTTP ${response.status}`);
+  return data;
+}
+const sessionPath = `/sessions/${encodeURIComponent(sessionId)}`;
+const { records } = await read(`${sessionPath}/assemblies`);
+const latest = records.at(-1);
+const record = latest
+  ? (await read(`${sessionPath}/assemblies/${encodeURIComponent(latest.id)}`)).record
+  : null;
+```
+
+空索引成功示例（HTTP 200）：
+
+```json
+{
+  "ok": true,
+  "sessionId": "example-session",
+  "records": [],
+  "storage": {
+    "kind": "bounded-assembly-snapshots",
+    "maxRecords": 256,
+    "maxRecordBytes": 2097152,
+    "maxTotalBytes": 16777216
+  }
+}
+```
+
+空索引只表示没有可返回的保留记录，不证明会话从未运行。索引与详情两次读取之间
+记录也可能被淘汰，此时详情返回 404。
+
+### 当前 sources
+
+| 字段 | 类型 | 定义及使用边界 |
+| --- | --- | --- |
+| `selection` | object | 当前绑定和角色选项；与 v1 当前配置重叠 |
+| `worldBookSelection` | object | 当前关系来源和去重顺序；由 v1 关系派生 |
+| `documents` | object | 当前完整资源文档；重复 v1 详情接口 |
+| `greeting` | object | 请求/有效序号、正文与 first-turn-reference 语义；从配置和卡片派生 |
+| `fieldLengths` | object | documents 内字符串的 JSON Pointer → 三种计数；不是 token 数 |
+| `suggestedCallConfig` | object | 预设采样映射；读取不应用 |
+| `countUnit` | string | unicode-code-points |
+| `revision` | string | 当前聚合快照哈希；不是历史请求身份，也不是 v1 写入 CAS 参数 |
+
+当前快照最多 16 MiB（含元数据），超限整体拒绝，不截断字段。读取不运行装配、
+世界书匹配、随机宏或开场消费。编辑后的归一化文档优先于 `source.raw` 导入快照。
+
+### 历史 record
+
+`sessionId/turn/step/attempt` 关联请求位置，一轮可有多个 step 和重试。
+`recordedAt` 是采集时间；索引和详情使用相同 ID。attempt 根据仍保留的记录递增；
+淘汰后不能用 attempt 代替不透明 recordId 作为持久身份。
+
+| 字段 | 类型 | 定义及使用边界 |
+| --- | --- | --- |
+| `sections / contexts` | array | 装配返回点的渲染段落，包含 name/index/text、characters/utf16Units/utf8Bytes、hash/provenance/sources；缺少正文时可不存在 |
+| `selection` | object | 当时绑定，不随当前资源修改更新；不完整/旧记录可能没有 |
+| `audit` | object | 当时 v1 兼容的资源/世界书决策摘要；与旧审计重叠 |
+| `systemMessages` | string[] | LLM 层观察到的系统消息；未观察到请求时不存在 |
+| `delivery` | object | 观察请求时的 provider/model、工具名、哈希、可用的日志版本/截点；未观察时不存在 |
+| `delivery.assemblyVerified` | boolean | 候选 system 全文唯一匹配一个完整系统消息时为 true；否则一致性未获证明 |
+| `delivery.systemMessageIndex` | integer / null | 仅在核对成功时为系统消息数组序号；不是全部聊天消息序号 |
+
+状态：`assembled`（尚未观察到请求）、`request-observed`（到达 LLM 层，**不代表远端
+模型成功响应**）、`request-unconfirmed`、`request-failed-before-observation`、
+`assembly-or-preparation-failed`、`superseded-unconfirmed`、`unloaded-unconfirmed`。
+失败记录不保存异常正文。运行期未确认的记录重启后仍保持未确认，不能凭重启推断成功。
+`contentStatus` 为 `available`、`assembly-unavailable`、`omitted-size-limit` 或旧记录状态。
+
+contexts 是装配阶段的上下文，不以 system 全文核对来宣称它们已经进入实际 user 消息。
+历史快照不会回读当前卡片重算。DSH 历史仍是权威，Trace 是可淘汰的派生审计数据。
 
 ## 装配与来源
 
@@ -35,7 +138,7 @@ Tavern 在调用装配处理链的 `next()` 前展开自己的段落，后续监
 来源含 `kind/resourceId/resourceRevision/field/text/relationship` 和三种字数。
 `field` 是装配器逻辑字段（例如 `systemPrompt/greeting`）或预设条目路径；
 并非一律指向导入 JSON 的 JSON Pointer。`text` 是当时交给装配器的归一化输入，
-可能已 trim；要读取完整原始导入字段，请使用当前 sources 的 `documents.*.source.raw`。
+可能已 trim；完整当前资源通过 v1 详情接口读取，其中 `source.raw`（如有）保留导入原文。
 世界书来源额外含 `entryId`，其资源身份来自 matcher 的明确资源元数据。
 外部段落没有 Tavern 来源时标为 `unknown`；段落同名但正文被改写也不会继承旧来源。
 
@@ -43,59 +146,6 @@ Tavern 在调用装配处理链的 `next()` 前展开自己的段落，后续监
 `offsetUtf16` 是候选 system 文本内的起点，包含段间两个换行。
 它仅在 `delivery.assemblyVerified` 为 true 时，可定位到对应实际系统消息中。
 字符数 `characters` 是 Unicode 码点；另有 UTF-16 单元与 UTF-8 字节，均不是 token 数。
-
-## 最小 HTTP 接口
-
-根路径 `/pmp-dsh-tavern/api/v3`。所有接口只读，沿用现有 Host/Origin/TCP peer
-访问控制，不放宽跨域；响应 `Cache-Control: no-store`。显式 sessionId 必须 URL 编码。
-
-| GET 路径 | 响应 |
-|---|---|
-| `/capabilities` | `{ok, apiVersion, contract, currentSources, historicalAssemblies, officialSections, sourceMapping, maxSourceBytes, storage, ...}` |
-| `/sessions/:sessionId/sources` | `{ok, sources}`：当前绑定和来源快照 |
-| `/sessions/:sessionId/assemblies` | `{ok, sessionId, records, storage}`：有界历史索引，不带正文 |
-| `/sessions/:sessionId/assemblies/:recordId` | `{ok, record}`：某次历史快照 |
-
-`recordId` 是不透明 ID。404 表示记录不存在或已被容量策略淘汰，不能当成“该轮未注入”。
-旧 v1 记录通过 v3 以 `legacy-metadata-only` 提供；没有历史正文时不会重新装配补造。
-无效输入 400，非 GET 405，缺失资源快照 409，超大 sources 413；内部读取错误返回
-脱敏的 500 `TRACE_READ_FAILED`。历史查询不要求 Agent 在线，也不激活 Agent。
-当前 sources 经公开 Host coordinates 检查会话存在。
-
-### 当前 sources
-
-- `selection`：会话绑定、角色选项、开场序号等；`worldBookSelection`：各来源绑定与去重后的顺序。
-- `documents`：当前 `preset/character/user/worldBooks`，包含保留的导入原文及未知扩展。
-- `greeting`：请求序号、有效序号、正文及 `first-turn-reference` 语义。
-- `fieldLengths`：以 documents 为根的 JSON Pointer → 三种计数。
-- `suggestedCallConfig`：预设的可映射采样建议，读取不等于应用。
-- `revision`：当前快照哈希；不能用于表示历史装配、世界书命中或模型请求身份。
-
-当前快照最多 16 MiB（含元数据），超限整体拒绝，不截断字段。读取不运行装配、
-世界书匹配、随机宏或开场消费。编辑后的归一化文档优先于 `source.raw` 导入快照。
-
-### 历史 record
-
-`sessionId/turn/step/attempt` 关联请求位置，一轮可有多个 step 和重试。
-`recordedAt` 是采集时间；索引和详情使用相同 ID。attempt 根据仍保留的记录递增；
-淘汰后不能用 attempt 代替不透明 recordId 作为持久身份。
-
-- `sections/contexts`：在 Tavern 装配处理链返回点采集的渲染结果，含来源、计数和哈希。
-- `selection`：装配时绑定；`audit`：该次 v1 兼容的资源/世界书决策摘要。
-- `systemMessages`：在 `llm/stream` 观察到的系统消息文本，不含普通聊天历史或工具正文。
-- `delivery`：请求的 provider/model、工具名称、系统消息哈希、会话日志版本和截点（可用时）。
-- `delivery.assemblyVerified`：候选 system 全文在实际请求中有且仅有一次完整系统消息匹配。
-  为 false 时只说明不能证明一致，可能是 complete 覆盖、其他插件变更、重复正文或尚未发起。
-- `delivery.systemMessageIndex`：核对成功的系统消息序号；不是所有聊天消息中的序号。
-
-状态：`assembled`（尚未观察到请求）、`request-observed`（到达 LLM 层，**不代表远端
-模型成功响应**）、`request-unconfirmed`、`request-failed-before-observation`、
-`assembly-or-preparation-failed`、`superseded-unconfirmed`、`unloaded-unconfirmed`。
-失败记录不保存异常正文。运行期未确认的记录重启后仍保持未确认，不能凭重启推断成功。
-`contentStatus` 为 `available`、`assembly-unavailable`、`omitted-size-limit` 或旧记录状态。
-
-contexts 是装配阶段的上下文，不以 system 全文核对来宣称它们已经进入实际 user 消息。
-历史快照不会回读当前卡片重算。DSH 历史仍是权威，Trace 是可淘汰的派生审计数据。
 
 ## 持久化与容量
 

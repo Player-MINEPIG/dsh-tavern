@@ -1,25 +1,70 @@
 # HTTP API
 
-Tavern **2.3.0 candidate** adds [primitive prompt API v3](PROMPT_API_V3_en.md). v1/v2 remain available; Tavern Trace now reads v3. API v3 is separate from DSH log format V3. The following 2.2.0 migration notes and v1/v2 contracts remain applicable.
+[中文](API.md) · [v3 detailed contract](PROMPT_API_V3_en.md) · [Frontend integration](FRONTEND_INTEGRATION_en.md)
 
-Tavern `2.2.0` (released 2026-09-11), DSH `0.1.5-rc.1` delta: messages add format metadata, a read-only coordinates endpoint is available, branch accepts the coordinate format, and timeline GET/PUT refuses unmigrated references. See the [V3 migration contract](DSH_0.1.5_MIGRATION_en.md) for fields and errors. V3 Trace reads effective system/message for the prompt and request/header for config and tools.
+Status: Tavern **2.3.0 candidate**, not released; updated 2026-09-17. New Trace runtime
+acceptance targets DSH `0.1.5-rc.1`; the released 2.2.0 v1/v2 baseline also tested
+`0.1.2-rc.1`. Root: `/pmp-dsh-tavern/api`. API versions and DSH log format V3 are independent.
 
-[中文](API.md)
+All endpoint catalogs use **Method / Path / Behavior / Status**, following the v2
+format. Paths are relative to the stated version prefix. URL-encode identifiers;
+query parameters and request bodies remain endpoint-specific. Existing local TCP
+peer, Host, Origin and media-type checks apply. Successful JSON responses carry
+`ok:true`; failures carry `ok:false` and `error`. v1 error shapes and method rejection
+codes vary by resource; common documentation formatting does not change wire contracts.
 
-Status: Tavern `2.2.0` (released 2026-09-11), updated 2026-09-10. Host checks cover DSH `0.1.2-rc.1` and `0.1.5-rc.1`. Root: `/pmp-dsh-tavern/api`. Auth is still local TCP peer, Host, Origin, and Content-Type (see the loader security middleware). Success responses include `ok: true`; failures include `ok: false` and `error`.
+The released [DSH V3 migration contract](DSH_0.1.5_MIGRATION_en.md) still applies to
+message coordinates, branch inputs and unmigrated timeline references.
 
-Existing v1/v2 contracts:
+<a id="api-scope"></a>
+## Version responsibilities and overlap audit
 
-- **v2**: the stable surface for any RP frontend.
-- **v1**: the bundled-UI contract for this plugin's orb, sidebar, and legacy Trace audit. Outsiders may read and call it, but RP surfaces should use v2. v1 fields change with this plugin's UI needs.
+Reviewed 2026-09-17. This section distinguishes implemented behavior from proposed
+consolidation. This update changes documentation only; no routes were removed.
 
-Do not add `/swipe`, `/regenerate`, `/export`, or `POST /focus`.
+| Capability | Existing v1 coverage | Existing v3 coverage | Scope conclusion |
+| --- | --- | --- | --- |
+| Complete current resource fields | `/presets/:id`, `/characters/:id`, `/users/:id`, `/world-books/:id` | `documents` in `/sessions/:id/sources` aggregates the same stores | Duplicate data responsibility; resource reads belong to v1 |
+| Current bindings and greeting options | Selection endpoints, resource world-books links, configuration preview; `/active` includes a current summary | `selection/worldBookSelection/greeting` | Overlapping configuration responsibility; effective greeting text and deduplicated links are derived values |
+| Current counts, aggregate revision and sampling suggestions | Resource fields can be counted; `/active.callConfig` maps sampling, but there is no identical aggregate snapshot revision | `fieldLengths/revision/suggestedCallConfig` | Convenience additions; v1 is not field-for-field response equivalent |
+| Historical bindings, resource summaries and lore decisions | `/traces?sessionId=` | Selection/audit in assembly details and legacy adaptation | Intentional historical audit overlap; retain v1 compatibility, new Trace reads v3 |
+| Historical named sections, source inputs, order and actual system-message verification | None; `/active` reruns assembly using current state | Assembly index and detail | Independent v3 responsibility; current configuration is not a substitute |
+
+Recommended boundary: **v1 owns current resources/configuration, v2 owns play
+Session/workspace primitives, v3 owns per-request assembly/provenance (live and historical).** Remove the
+candidate `/sources` aggregator instead of duplicating v1 resource reads. This is a
+recommendation, not an implemented route removal. Retain historical
+`sections[].sources`: those are past input relationships, not the current aggregator.
+
+Historical overlap does not imply identical IDs or wire fields. v1 Trace has its own
+header-alignment states; the v3 captured audit summary is not a live mirror of later
+v1 updates. Retain legacy readers while using v3 records for new provenance views.
+
+v1 `/active` runs loader assembly and lore matching. It does not create a new
+historical Trace record and is not a cheap configuration-only GET. For current
+configuration, use `POST /session-configurations/preview` with
+`source: {mode:"current",sessionId}`, then read resources and linked books by ID.
+Preview includes saved template-scoped RP fields; read runtime RP/pending state separately
+from `/rp-mode`. This path runs no prompt assembly, but multiple HTTP reads are not
+an atomic cross-resource snapshot.
+
+DSH history and v2 `/sessions/:id/messages` provide authoritative message reads.
+They do not guarantee original pre-assembly fields, disabled content or Tavern
+field provenance, and cannot reconstruct complete resources or replace v3 source
+snapshots. Official `system-prompt/assemble` offers runtime observation, adjustment
+and contribution independently of HTTP v3.
+
+Audit evidence: [current-source service](../packages/tavern-loader/src/prompt-trace-api.js),
+[configuration preview](../packages/session-template/src/service.js),
+[v1 preset/active routes](../packages/preset/src/server.js),
+[historical recorder](../packages/tavern-trace/src/assembly-recorder.js),
+[Trace client](../packages/tavern-trace/src/client.js).
 
 ## v2 stable surface
 
 Prefix: `/pmp-dsh-tavern/api/v2`.
 
-| Method | Path | Role | Status |
+| Method | Path | Behavior | Status |
 | --- | --- | --- | --- |
 | GET | `/chrome` | Returns `{ mode: "native" \| "play", revision }`. `revision` is the server-authoritative opaque version string | Implemented |
 | GET | `/chrome/events` | Tavern-owned SSE. Sends the current snapshot on connect and `chrome/change` when mode actually changes | Implemented |
@@ -215,25 +260,122 @@ The `PUT /workspace` directory must already exist (`workspaceController.create` 
 
 Prefix: `/pmp-dsh-tavern/api/v1`. The old root `/dsh-tavern/api` is retired.
 
-| When you want to | Paths |
-| --- | --- |
-| Manage presets, export ST JSON, native regex, standalone world-book relations, inspect current assembly, import/select | `/presets`, `/presets/:id/export`, `/presets/:id/regex-scripts`, `/presets/:id/world-books`, `/active`, `/import`, `/select` |
-| Manage character cards, sidebar order, missing-card relink, native regex, standalone world-book relations, bind, export json/png, embedded book | `/characters`, `/characters/order`, `/characters/relink`, `/characters/:id/regex-scripts`, `/characters/:id/world-books`, `/characters/:id/world-book`, `/character-selection` |
-| Manage standalone world books and bindings | `/world-books`, `/world-book-selection` |
-| Manage users and user–world-book relations | `/users`, `/user-selection` |
-| UI language/scale and Follow character into RP | `/ui-settings` |
-| Mowan conversation body and action-button scale | `/conversation-settings` |
-| RP switch/alerts and rp:policy text | `/rp-mode`, `/rp-alert`, `/rp-policy` |
-| Inspect Trace | `/traces` |
-| Configuration templates and open a clean session from the current binding | `/session-templates`, `/session-configurations/preview`, `/apply` |
+| Method | Path | Behavior | Status |
+| --- | --- | --- | --- |
+| GET | `/presets?sessionId=` | Preset catalog and current selectedId | Implemented |
+| POST | `/presets` | Create a preset; returns preset | Implemented |
+| GET | `/presets/:id` | Complete current preset; returns preset | Implemented |
+| PUT | `/presets/:id` | Update preset; returns preset | Implemented |
+| DELETE | `/presets/:id` | Delete preset and clean up bindings | Implemented |
+| POST | `/import` | Import an ST preset; content is a JSON string, name is optional | Implemented |
+| POST | `/select` | { id, sessionId? }; select/clear preset, omitted sessionId targets global selection | Implemented |
+| GET | `/active?sessionId=` | Current assembly preview summary: sessionSelection, worldBookSelection, resources, callConfig, audit; runs assembly, not a historical record | Implemented |
+| GET | `/presets/:id/export` | Export current edited state as an ST JSON attachment | Implemented |
+| GET | `/presets/:id/regex-scripts` | Read preset native regex array | Implemented |
+| PUT | `/presets/:id/regex-scripts` | Replace the complete preset native regex array | Implemented |
+| GET | `/presets/:id/world-books` | Read preset ordered linked standalone world-book IDs | Implemented |
+| PUT | `/presets/:id/world-books` | Replace the complete preset ordered linked standalone world-book IDs | Implemented |
+| GET | `/characters/:id/regex-scripts` | Read character native regex array | Implemented |
+| PUT | `/characters/:id/regex-scripts` | Replace the complete character native regex array | Implemented |
+| GET | `/characters/:id/world-books` | Read character ordered linked standalone world-book IDs | Implemented |
+| PUT | `/characters/:id/world-books` | Replace the complete character ordered linked standalone world-book IDs | Implemented |
+| GET | `/characters` | Character catalog, sorting and missing-card summaries | Implemented |
+| POST | `/characters` | Create a character card | Implemented |
+| POST | `/characters/import` | Import a JSON/PNG character card | Implemented |
+| GET | `/characters/:id` | Complete current character card; returns character | Implemented |
+| PATCH | `/characters/:id` | Update character fields | Implemented |
+| DELETE | `/characters/:id` | Delete card and clear bindings, retaining a missing-card summary | Implemented |
+| GET | `/characters/:id/json` | Export a character JSON attachment | Implemented |
+| GET | `/characters/:id/png` | Export a character PNG attachment | Implemented |
+| PATCH | `/characters/:id/world-book` | { characterBook }; update embedded lore, not standalone book bindings | Implemented |
+| PUT | `/characters/order` | { mode, characterIds? }; configure ordering | Implemented |
+| POST | `/characters/relink` | { previousCharacterId, characterId }; recover missing-card references | Implemented |
+| GET | `/character-selection?sessionId=` | Current character binding/options (including greeting index) and card summary | Implemented |
+| POST | `/character-selection` | { sessionId, characterCardId, character? }; bind or unbind | Implemented |
+| GET | `/world-books` | Standalone world book catalog | Implemented |
+| POST | `/world-books` | Create standalone world book | Implemented |
+| GET | `/world-books/:id` | Complete current standalone world book; returns worldBook | Implemented |
+| PATCH | `/world-books/:id` | Update standalone world book | Implemented |
+| DELETE | `/world-books/:id` | Delete standalone world book and clean up related bindings | Implemented |
+| GET | `/users` | User catalog | Implemented |
+| POST | `/users` | Create user | Implemented |
+| GET | `/users/:id` | Complete current user; returns user | Implemented |
+| PATCH | `/users/:id` | Update user | Implemented |
+| DELETE | `/users/:id` | Delete user and clean up related bindings | Implemented |
+| POST | `/world-books/import` | Import world-book JSON | Implemented |
+| GET | `/world-books/:id/json` | Export a world-book JSON attachment | Implemented |
+| GET | `/world-book-selection?sessionId=` | Explicit Session world-book bindings and resource summaries | Implemented |
+| POST | `/world-book-selection` | Set explicit Session worldBookIds | Implemented |
+| GET | `/user-selection?sessionId=` | Current user binding and user document | Implemented |
+| POST | `/user-selection` | Set or clear the Session user binding | Implemented |
+| GET | `/users/:id/world-books` | Read standalone world-book IDs linked to a user | Implemented |
+| PUT | `/users/:id/world-books` | Replace the complete user worldBookIds | Implemented |
+| GET | `/ui-settings` | Read language, scale and character-follow RP | Implemented |
+| PUT | `/ui-settings` | Save language, scale and character-follow RP | Implemented |
+| DELETE | `/ui-settings` | Reset language, scale and character-follow RP | Implemented |
+| GET | `/conversation-settings` | Read Mowan text/action scale | Implemented |
+| PUT | `/conversation-settings` | Save Mowan text/action scale | Implemented |
+| DELETE | `/conversation-settings` | Reset Mowan text/action scale | Implemented |
+| GET | `/rp-policy` | Read RP policy text | Implemented |
+| PUT | `/rp-policy` | Save RP policy text | Implemented |
+| DELETE | `/rp-policy` | Reset RP policy text | Implemented |
+| GET | `/rp-mode?sessionId=` | Read RP, pending and followCharacter | Implemented |
+| PUT | `/rp-mode` | { sessionId, active }; request an RP change | Implemented |
+| GET | `/rp-alert?sessionId=` | Read an unconsumed RP risk alert | Implemented |
+| DELETE | `/rp-alert?sessionId=&id=` | Consume the alert; id is optional | Implemented |
+| GET | `/traces?sessionId=` | Legacy historical metadata audit; returns records/storage/authority without complete prompt bodies | Implemented; retained for compatibility |
+| GET | `/session-templates` | Template catalog, selection, content summaries and missing-resource diagnostics | Implemented |
+| POST | `/session-templates` | { name, sourceSessionId }; create a template from current configuration | Implemented |
+| GET | `/session-templates/:id` | Template detail and resource diagnostics | Implemented |
+| PATCH | `/session-templates/:id` | Update template | Implemented |
+| DELETE | `/session-templates/:id` | Delete template | Implemented |
+| POST | `/session-templates/select` | { id }; select or clear a template | Implemented |
+| POST | `/session-configurations/preview` | { source }; read-only current/template configuration preview; does not run prompt assembly | Implemented |
+| POST | `/session-configurations/apply` | { targetSessionId, source }; validate and apply bindings | Implemented |
+
+Resource/subresource details follow below. Except where explicitly specified, do not assume unsupported methods return v2-style 405 errors.
+
+### Current configuration and resource reads
+
+To inspect bindings without running assembly, preview the current configuration,
+then fetch the required resource detail. The caller supplies an explicit sessionId.
+v1 errors may be strings or structured objects.
+
+```js
+const base = '/pmp-dsh-tavern/api/v1';
+async function readJson(path, options = {}) {
+  const response = await fetch(base + path, { credentials: 'same-origin', ...options });
+  const data = await response.json();
+  if (!response.ok || !data.ok) {
+    const message = typeof data.error === 'string' ? data.error : data.error?.message;
+    throw new Error(message ?? `HTTP ${response.status}`);
+  }
+  return data;
+}
+const preview = await readJson('/session-configurations/preview', {
+  method: 'POST',
+  headers: { 'Content-Type': 'application/json' },
+  body: JSON.stringify({ source: { mode: 'current', sessionId } }),
+});
+const characterId = preview.selection.characterCardId;
+const character = characterId === null ? null
+  : (await readJson(`/characters/${encodeURIComponent(characterId)}`)).character;
+```
+
+`preview` returns `{ok,selection,contents,diagnostics,available}`. `contents` contains
+resource references and summaries, not complete documents. `available:false` reports
+invalid/missing resources; a missing resource detail can still fail independently.
+This preview neither creates a Session nor applies bindings. Read preset/character/
+user linked world-books through their corresponding subresources; embedded lore is
+part of the character document. These reads do not promise a cross-request snapshot.
 
 ### Character-card sidebar order
 
 The character list has three explicit sort modes: `updated` by `updatedAt` descending (then name, ID), `name` A→Z (Chinese uses `zh-CN` collation), `custom` by user drag order. Drag writes library state only. It does not change the card source or `updatedAt`. Switching modes does not clear a saved custom order.
 
-| Method | Path | Request | Success |
+| Method | Path | Behavior | Status |
 | --- | --- | --- | --- |
-| PUT | `/characters/order` | `{ mode, characterIds? }` | `{ ok: true, characters: [...], sorting: { mode } }` |
+| PUT | `/characters/order` | Request: `{ mode, characterIds? }`; response: `{ ok: true, characters: [...], sorting: { mode } }` | Implemented |
 
 `mode` must be `updated`, `name`, or `custom`. `custom` without `characterIds` switches back and restores the saved custom order. If none is saved, the current resource order is initialized and cards added while away are appended. Send `characterIds` only for a real reorder. It must contain every stored character-card ID exactly once, at most 4096 items. Unknown, duplicate, or missing IDs return 400 and leave state unchanged. Other modes reject `characterIds`. Successful mode and custom order are stored separately in `character-state.json` as `characterSortMode` and `characterOrder`. In custom mode, newly created or imported cards append. Deleting a card also removes its order entry. `GET /characters` also returns `sorting: { mode }`.
 
@@ -243,9 +385,9 @@ Deleting a card still deletes the resource body and cover and still clears stale
 
 After re-import, unique SHA-256 is matched against the tombstone first. Without a hash match, normalized same-name matching is used only when both the missing name and the live name are unique. A unique match relinks automatically. Several same-name candidates are not guessed; the sidebar chooses the target.
 
-| Method | Path | Request | Success |
+| Method | Path | Behavior | Status |
 | --- | --- | --- | --- |
-| POST | `/characters/relink` | `{ previousCharacterId, characterId }` | `{ ok: true, relinkedPlaythroughCount, relinkedSessionCount }` |
+| POST | `/characters/relink` | Request: `{ previousCharacterId, characterId }`; response: `{ ok: true, relinkedPlaythroughCount, relinkedSessionCount }` | Implemented |
 
 v1 `/characters/relink` is the missing-resource recovery surface. It uses catalog revision as CAS, moves every playthrough that referenced the old ID onto the target card, and updates root/swipe/branch descendant sessions in one batch of session-selection writes. v2 `/playthroughs/:id/relink-character` is the playthrough-lifecycle surface: it migrates only that playthrough and all of its descendant sessions. The bundled frontend evaluates the target with “unique SHA-256, then both-sides unique same name”. A mismatch shows a warning, but the user can still confirm. The backend does not veto an explicit choice with heuristics.
 
@@ -255,11 +397,11 @@ Both relink paths refuse to overwrite a third card binding that is unrelated to 
 
 `/conversation-settings` is a v1 bundled-UI contract, separate from `/ui-settings`. It persists only Mowan RP conversation display preferences. It does not enter profile, prompts, timeline, DSH history, or export bodies.
 
-| Method | Path | Request | Success |
+| Method | Path | Behavior | Status |
 | --- | --- | --- | --- |
-| GET | `/conversation-settings` | none | `{ ok: true, settings: { schemaVersion: 1, textScale, actionScale } }` |
-| PUT | `/conversation-settings` | `{ textScale, actionScale }` | same as GET |
-| DELETE | `/conversation-settings` | none | restore both fields to `1` |
+| GET | `/conversation-settings` | Request: none; response: `{ ok: true, settings: { schemaVersion: 1, textScale, actionScale } }` | Implemented |
+| PUT | `/conversation-settings` | Request: `{ textScale, actionScale }`; response: same as GET | Implemented |
+| DELETE | `/conversation-settings` | Request: none; response: restore both fields to `1` | Implemented |
 
 Both scales are finite numbers from `0.75`–`1.5` in steps of `0.05`. PUT is a full replace and rejects unknown fields. `textScale` applies to Mowan user/assistant bodies and greeting (including the empty-playthrough opening dock). `actionScale` applies only to the copy, swipe, branch, rollback, and edit row at the end of a durable QA.
 
@@ -269,20 +411,20 @@ Both scales are finite numbers from `0.75`–`1.5` in steps of `0.05`. PUT is a 
 
 The body is Chat Completion preset JSON that can be sent back to `POST /import` or imported into SillyTavern. Tavern-only `systemPromptMode` has no ST field and is not written. Native regex carried by the resource stays on its original ST path. This GET does not change selection, session, resources, or the operation log.
 
-| Method | Path | Request | Success |
+| Method | Path | Behavior | Status |
 | --- | --- | --- | --- |
-| GET | `/presets/:id/export` | none | ST JSON attachment; `Content-Disposition: attachment` |
+| GET | `/presets/:id/export` | Request: none; response: ST JSON attachment; `Content-Disposition: attachment` | Implemented |
 
 ### Native ST regex carried by a resource
 
 Presets and character cards share the same sub-resource contract:
 
-| Method | Path | Request | Success |
+| Method | Path | Behavior | Status |
 | --- | --- | --- | --- |
-| GET | `/presets/:id/regex-scripts` | none | `{ ok: true, regexScripts: [...] }` |
-| PUT | `/presets/:id/regex-scripts` | `{ regexScripts: [...] }` | `{ ok: true, regexScripts: [...] }` |
-| GET | `/characters/:id/regex-scripts` | none | `{ ok: true, regexScripts: [...] }` |
-| PUT | `/characters/:id/regex-scripts` | `{ regexScripts: [...] }` | `{ ok: true, regexScripts: [...] }` |
+| GET | `/presets/:id/regex-scripts` | Request: none; response: `{ ok: true, regexScripts: [...] }` | Implemented |
+| PUT | `/presets/:id/regex-scripts` | Request: `{ regexScripts: [...] }`; response: `{ ok: true, regexScripts: [...] }` | Implemented |
+| GET | `/characters/:id/regex-scripts` | Request: none; response: `{ ok: true, regexScripts: [...] }` | Implemented |
+| PUT | `/characters/:id/regex-scripts` | Request: `{ regexScripts: [...] }`; response: `{ ok: true, regexScripts: [...] }` | Implemented |
 
 `PUT` is a full ordered-array replace, not a field merge. Array order is execution order inside that resource. Elements must be objects. The server does not rewrite native ST fields and does not drop unknown per-rule extensions. The adapter prefers the resource's existing `regex_scripts` path. If there is no array yet, presets write `extensions.regex_scripts`, V2/V3 cards write `data.extensions.regex_scripts`, and V1 cards write `extensions.regex_scripts`. Other resource fields stay unchanged. Writes still go through the matching store's atomic save and total-document size limit.
 
@@ -294,12 +436,12 @@ Mowan regex-page create/import/edit/delete for **preset-bound / character-bound*
 
 A preset or character card may bind zero or more existing standalone world books:
 
-| Method | Path | Request | Success |
+| Method | Path | Behavior | Status |
 | --- | --- | --- | --- |
-| GET | `/presets/:id/world-books` | none | `{ ok: true, binding: { presetId, worldBookIds } }` |
-| PUT | `/presets/:id/world-books` | `{ worldBookIds: [...] }` | same as GET |
-| GET | `/characters/:id/world-books` | none | `{ ok: true, binding: { characterCardId, worldBookIds } }` |
-| PUT | `/characters/:id/world-books` | `{ worldBookIds: [...] }` | same as GET |
+| GET | `/presets/:id/world-books` | Request: none; response: `{ ok: true, binding: { presetId, worldBookIds } }` | Implemented |
+| PUT | `/presets/:id/world-books` | Request: `{ worldBookIds: [...] }`; response: same as GET | Implemented |
+| GET | `/characters/:id/world-books` | Request: none; response: `{ ok: true, binding: { characterCardId, worldBookIds } }` | Implemented |
+| PUT | `/characters/:id/world-books` | Request: `{ worldBookIds: [...] }`; response: same as GET | Implemented |
 
 `PUT` fully replaces that resource's ordered relation. Duplicate IDs are de-duplicated stably. Missing resources or world books reject the write. Each preset or card may bind at most 100 books. Relations are atomically stored in loader-owned `resource-world-book-bindings.json`. No Tavern-private field is written into the ST preset or card original. Therefore:
 
@@ -333,6 +475,20 @@ Read-only GET does not produce operation logs. It accepts only a Cordis `ctx.log
 The payload whitelist is only `operationId`, `operation`, `stage`, `result`, `errorCode`, `status`, `durationMs`, `method`, `sessionId`, `playthroughId`, `path`. Identifiers and paths are normalized for type, length, and control characters. Prompt, QA, character card, preset, regex, resource bodies, request body, message text, and unknown fields are never emitted, including as body summaries. Missing logger, missing method, or a logger throw fail-soft. A stage or terminal call after terminal is invalid and does not rewrite the terminal.
 
 This section documents the utility and the workspace/session/import/playthrough endpoint wiring above. It does not claim that every silent lifecycle failure is now logged. The default Cordis logger is still managed by itself. The plugin writes no persistent log file, browser log, or exporter.
+
+## v3 prompt assembly audit
+
+Prefix: `/pmp-dsh-tavern/api/v3`. Read-only candidate contract.
+
+| Method | Path | Behavior | Status |
+| --- | --- | --- | --- |
+| GET | `/capabilities` | Contract capabilities, source mapping and capacity limits | Implemented in candidate |
+| GET | `/sessions/:id/sources` | Current configuration/resource aggregate | Implemented; overlaps v1, removal recommended |
+| GET | `/sessions/:id/assemblies` | Historical index without section bodies | Implemented in candidate |
+| GET | `/sessions/:id/assemblies/:recordId` | Historical sections, source inputs and request verification | Implemented in candidate |
+
+Fields, examples, errors and persistence: [v3 detailed contract](PROMPT_API_V3_en.md).
+The `/sources` row documents the current implementation, not an exclusive v3 responsibility.
 
 ## Browser chrome mode service
 
