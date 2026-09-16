@@ -4,11 +4,11 @@
 
 以 DeepSeek Harness（DSH）原生会话与执行机制为权威的酒馆兼容插件，提供前后端 API，支持自由组合酒馆能力与 DSH 原生功能。
 
-> 当前文档对应 `2.2.0`（2026-09-11 发布）。项目代码采用 [MIT License](LICENSE)。
+> 当前文档对应 `2.3.0` Trace 候选（未发布）。项目代码采用 [MIT License](LICENSE)。
 >
-> **兼容范围：** `2.2.0` 支持 DSH `0.1.2-rc.1` 和 `0.1.5-rc.1`。其他版本未经本次验证，不承诺兼容。
+> **测试环境：** DSH `0.1.5-rc.1`。旧版 `2.2.0` 也验证过 `0.1.2-rc.1`；本候选保留旧路径，新增 Trace 的运行时验收以 `0.1.5-rc.1` 为准。
 
-> **本次更新：** 以 DSH 兼容修复为主，未新增界面功能；因新增公开的坐标查询 API 和兼容字段，使用次版本号 `2.2.0`。升级到 DSH V3 的旧周目需迁移事件范围；步骤及验证边界见 [升级指南](docs/DSH_0.1.5_MIGRATION.md)。
+> **本次更新：** 按官方格式贡献可辨识的提示词段落，提供最小 v3 来源/历史接口，并在 Tavern Trace 查看每次请求。见 [API 与设计](docs/PROMPT_API_V3.md) 和 [验收与人工检查](docs/TRACE_REVIEW.md)。
 
 ## 设计理念
 
@@ -97,7 +97,7 @@ npm run plugin:install
 
 完整操作与边界见 [中文使用指南](docs/USAGE_zh-CN.md)。
 
-## v2.2.0 功能概览
+## v2.3.0 功能概览
 
 | 模块 | 主要能力 | 详细文档 |
 | --- | --- | --- |
@@ -105,7 +105,7 @@ npm run plugin:install
 | RP 前端 | 角色卡/周目侧栏、greeting、正文渲染、显示正则、swipe、分支、回退和显示层编辑 | [中文使用指南](docs/USAGE_zh-CN.md) |
 | 周目数据 | DSH 权威 session、树状 timeline、工作区 catalog、外部记录首轮只读注入、静态 HTML 与 ST JSONL 导出 | [API](docs/API.md) · [架构](docs/ARCHITECTURE.md) |
 | 安全 | RP 权限叠加、同源/loopback API、工作区路径防护、CAS、DOMPurify、无正文 operation log | [RP 安全模式](docs/RP_SECURE_MODE.md) · [安全策略](SECURITY.md) |
-| 调试 | Tavern Trace 展示本轮资源、世界书命中与 request/header 对齐信息，不记录完整正文 | [DSH 消息流](docs/DSH_MESSAGE_FLOW.md) |
+| 调试 | Tavern Trace 展示每次请求的段落、来源输入、世界书决策和实际系统正文，快照在本地有界保存 | [Trace API 与设计](docs/PROMPT_API_V3.md) |
 | 第三方开发 | v2 HTTP API、`pmpDshTavernChrome` 模式服务、DSH slots/store 与独立客户端接入 | [第三方 RP 前端接入](docs/FRONTEND_INTEGRATION_zh-CN.md) |
 
 ![切换首轮 swipe，同时恢复各自后续的用户输入与回复](docs/assets/market/07-swipe-paths.png)

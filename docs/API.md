@@ -1,15 +1,17 @@
 # HTTP API
 
+Tavern **2.3.0 候选**新增 [提示词 v3 元 API](PROMPT_API_V3.md)。v1/v2 保留，Tavern Trace 改用 v3。API v3 与 DSH 日志格式 V3 无关。下文 2.2.0 迁移说明和 v1/v2 合同继续适用。
+
 Tavern `2.2.0`（2026-09-11 发布）的 DSH `0.1.5-rc.1` 兼容增量：messages 响应增加格式信息，新增只读 coordinates endpoint，branch 接收坐标格式版本，timeline GET/PUT 拒绝未迁移引用。具体字段与错误码见 [V3 迁移合同](DSH_0.1.5_MIGRATION.md)。Trace 的 V3 系统提示词权威来自有效 system/message，配置与工具仍来自 request/header。
 
 [English](API_en.md)
 
 状态：Tavern `2.2.0`（2026-09-11 发布），更新于 2026-09-10；Host 已验证 DSH `0.1.2-rc.1` 和 `0.1.5-rc.1`。根：`/pmp-dsh-tavern/api`。鉴权仍是本机 TCP peer、Host、Origin、Content-Type（见 loader 安全中间件）。成功响应带 `ok: true`；失败带 `ok: false` 与 `error`。
 
-两栏合同：
+原有 v1/v2 合同：
 
 - **v2**：给任意扮演前端的稳定面。
-- **v1**：给本插件悬浮球 / 侧栏 / Trace 的 bundled UI 合同。外人可以读、可以调，但扮演表面请走 v2；v1 字段随本插件 UI 需求增减。
+- **v1**：给本插件悬浮球 / 侧栏 / 旧 Trace 审计 的 bundled UI 合同。外人可以读、可以调，但扮演表面请走 v2；v1 字段随本插件 UI 需求增减。
 
 不要 `/swipe`、`/regenerate`、`/export`、`POST /focus`。
 

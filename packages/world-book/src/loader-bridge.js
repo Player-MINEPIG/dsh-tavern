@@ -152,6 +152,7 @@ export function projectWorldBookForLoader(model, candidates, options = {}) {
       })
     }
     loreEntries.push({
+      resourceId,
       id: identity.id,
       uid: identity.uid,
       content: entry.content,

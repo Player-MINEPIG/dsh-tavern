@@ -1,5 +1,7 @@
 # Unified Tavern loader contract
 
+**2.3.0 Trace update:** The loader expands its logical profile into ordered official `{name,text}` sections before downstream assembly listeners run. Runtime source relationships and LLM-boundary system snapshots are exposed through [primitive API v3](PROMPT_API_V3_en.md). Existing v1 Trace remains metadata-only; v3 uses a separate bounded body store. References below to a single profile or metadata-only Trace describe the earlier implementation unless explicitly qualified.
+
 DSH V3 delta: references here to request/header.system describe V2. On `0.1.5-rc.1`, compiled systemText enters the effective surface through system/message; Trace reads it through public Session.deriveMessages(), while request/header owns config/tools. See the [migration contract](DSH_0.1.5_MIGRATION_en.md).
 
 [中文](LOADER_CONTRACT.md)
@@ -12,14 +14,14 @@ The loader is the only layer allowed to decide how current resources enter a DSH
 
 ```text
 PresetModel ─────────────┐
-CharacterCardModel ──────┼─> TavernProfileLoader ─> one Tavern profile section
+CharacterCardModel ──────┼─> TavernProfileLoader ─> ordered Tavern sections
 UserModel ────────────────┤             │
 WorldBookModel + matches ┘             │
                                        ├─> agent/request call config
 SessionSelectionStore ─────────────────┘
 ```
 
-The current root plugin registers two system sections: `pmp-dsh-tavern:profile` (order 10) and optional `rp:policy` (order 45, content only when RP is on and the text is non-empty). Preset `replace` mode keeps both sections. It will not leave only the preset and silently drop character, world-book, or RP-lock text.
+The root registers its logical profile at order 10, then expands it into `pmp-dsh-tavern:part:*` sections at the same array position. Import context retains `pmp-dsh-tavern:profile`; optional `rp:policy` remains at order 45. Preset `replace` keeps these Tavern contributions, including character/lore text and RP policy.
 
 ## Session policy
 
@@ -83,7 +85,7 @@ Templates are not rewritten silently when a resource is deleted. Dangling ids fo
 
 ## Profile safety budget
 
-`TavernProfileLoader` applies a default 512 KiB UTF-8 cap to the single `pmp-dsh-tavern:profile` section it generates. `limits.maxProfileBytes` may tighten or loosen it, but the implementation hard cap is 2 MiB. The world-book parser/store share a streaming structure guard before normalize: at most 10,000 entries per resource, depth 32, 100,000 nodes, 1 MiB per string, 1,024 characters per object key. The adapter additionally applies a 10,000-entry hard cap to standalone plus embedded books for this request. A resource that cannot fit is skipped and diagnosed. The combined budget is first-come by a deterministic composition order: session-explicit standalone books, user-bound standalone books, preset-bound standalone books, character-bound standalone books (stable ID de-duplication), then the card's embedded book. Each resource is reserved as a whole; if it cannot fit completely it is not scanned. So when earlier standalone books fill 10,000 entries, the embedded book is skipped with `WORLD_BOOK_RUNTIME_TOTAL_LIMIT`. That is an intentional safety/determinism policy, not a random omission. After those guards, the compiler considers at most the top-ranked 4,096 lore candidates and, before generating wrappers, limits raw lore bodies to twice the profile budget. A world book's own `tokenBudget` and `ignoreBudget` only decide ST-compatible candidates. They cannot change any Host hard cap.
+`TavernProfileLoader` applies a default 512 KiB UTF-8 cap to the combined Tavern profile text it generates. `limits.maxProfileBytes` may tighten or loosen it, but the implementation hard cap is 2 MiB. The world-book parser/store share a streaming structure guard before normalize: at most 10,000 entries per resource, depth 32, 100,000 nodes, 1 MiB per string, 1,024 characters per object key. The adapter additionally applies a 10,000-entry hard cap to standalone plus embedded books for this request. A resource that cannot fit is skipped and diagnosed. The combined budget is first-come by a deterministic composition order: session-explicit standalone books, user-bound standalone books, preset-bound standalone books, character-bound standalone books (stable ID de-duplication), then the card's embedded book. Each resource is reserved as a whole; if it cannot fit completely it is not scanned. So when earlier standalone books fill 10,000 entries, the embedded book is skipped with `WORLD_BOOK_RUNTIME_TOTAL_LIMIT`. That is an intentional safety/determinism policy, not a random omission. After those guards, the compiler considers at most the top-ranked 4,096 lore candidates and, before generating wrappers, limits raw lore bodies to twice the profile budget. A world book's own `tokenBudget` and `ignoreBudget` only decide ST-compatible candidates. They cannot change any Host hard cap.
 
 When a character card edits an embedded `character_book`, the shared structure guard and parser run first. Raw JSON/PNG import currently only confirms at the character-format layer that `character_book` is an object, then losslessly keeps unknown fields, and does not run the same depth/node/entry guard before disk. The 32 MiB import cap limits total input. The first time the loader consumes it, `parseCharacterBook()` still fails closed and reports `EMBEDDED_WORLD_BOOK_INVALID`, so the match-amplification path is blocked. This remains an import-time defense-in-depth gap: an ultimately unrunnable embedded book can enter the library first. Later work should add import-time structure diagnostics or a reject policy for a normalized runtime copy without breaking unknown-field retention on the current document.
 
@@ -145,7 +147,7 @@ The loader Host layer's only `PendingInputProjection` rebuilds the queue and thi
 }
 ```
 
-`conversationText` is a compatibility field derived from `activationContext.text`, not a second state. Adapters consume that value only and do not subscribe to DSH events. Pending queue, claim/cancel decisions, one-shot consume on first assembly, turn-end cleanup, and de-duplication are exclusive to the loader. Default scan is the latest 128 messages / 64 KiB characters; hard caps are 1,024 messages and 1 MiB. Queue retention has its own message/character hard caps. Trace stores only body-free metadata, not `messages` or `text`.
+`conversationText` is a compatibility field derived from `activationContext.text`, not a second state. Adapters consume that value only and do not subscribe to DSH events. Pending queue, claim/cancel decisions, one-shot consume on first assembly, turn-end cleanup, and de-duplication are exclusive to the loader. Default scan is the latest 128 messages / 64 KiB characters; hard caps are 1,024 messages and 1 MiB. Queue retention has its own message/character hard caps. Trace does not persist the ActivationContext messages/text. Its v1 audit remains metadata-only; v3 separately stores the resulting prompt/source snapshots.
 
 ## Composition semantics
 

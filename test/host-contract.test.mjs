@@ -47,9 +47,10 @@ test('selected preset enters system prompt and model call config seams', async (
 
 test('replace mode removes other system sections but preserves request capabilities', async () => {
   const directory = mkdtempSync(join(tmpdir(), 'dsh-tavern-host-replace-'))
+  const sections = []
   const listeners = new Map()
   const ctx = {
-    systemPrompt: { section: () => {} },
+    systemPrompt: { section: section => sections.push(section) },
     on: (name, listener) => listeners.set(name, listener),
     emit: () => {},
     get: () => undefined,
@@ -66,18 +67,20 @@ test('replace mode removes other system sections but preserves request capabilit
     })
     store.select(preset.id)
 
+    const context = {}
     const tools = [{ name: 'tool-a' }]
     const contexts = [{ name: 'runtime-context' }]
-    const result = await listeners.get('system-prompt/assemble')({}, {}, async () => ({
-      sections: [{ name: 'harness', text: 'host text' }],
+    const input = {
+      sections: [{ name: 'harness', text: 'host text' }, { name: PROFILE_SECTION, text: sections[0].text(context) }],
       tools,
       contexts,
       variables: { session: 'kept' },
-    }))
+    }
+    const result = await listeners.get('system-prompt/assemble')(input, context, async () => input)
 
-    assert.equal(result.sections.length, 1)
-    assert.equal(result.sections[0].name, PROFILE_SECTION)
-    assert.match(result.sections[0].text, /Only this system text/)
+    assert.equal(result.sections.length, 2)
+    assert.ok(result.sections.every(section => section.name.startsWith('pmp-dsh-tavern:part:')))
+    assert.match(result.sections.map(s => s.text).join('\n\n'), /Only this system text/)
     assert.equal(result.tools, tools)
     assert.equal(result.contexts, contexts)
     assert.deepEqual(result.variables, { session: 'kept' })
@@ -126,7 +129,7 @@ test('Host resolves profile and call config from the requesting agent session', 
   }
 })
 
-test('selected user keeps DSH agent identity and contributes one Tavern profile section', async () => {
+test('selected user keeps DSH agent identity and contributes ordered named Tavern sections', async () => {
   const directory = mkdtempSync(join(tmpdir(), 'dsh-tavern-host-user-'))
   const sections = []
   const listeners = new Map()
@@ -143,14 +146,15 @@ test('selected user keeps DSH agent identity and contributes one Tavern profile 
     const store = apply(ctx, { storageDir: directory })
     store.userStore.create({ id: 'host-user', name: 'Host Reader', description: 'Host user description.' })
     store.sessionSelections.set('user-session', { userId: 'host-user' })
-    const profileText = sections[0].text({ agent: selectedAgent })
+    const context = { agent: selectedAgent }
+    const profileText = sections[0].text(context)
     const harness = { name: 'harness', text: 'DSH agent identity remains authoritative.' }
     const tavern = { name: sections[0].name, text: profileText }
-    const assembly = await listeners.get('system-prompt/assemble')({}, { agent: selectedAgent }, async () => ({
-      sections: [harness, tavern], tools: [], contexts: [], variables: {},
-    }))
+    const input = { sections: [harness, tavern], tools: [], contexts: [], variables: {} }
+    const assembly = await listeners.get('system-prompt/assemble')(input, context, async () => input)
     assert.equal(assembly.sections.filter(section => section.name === 'harness').length, 1)
-    assert.equal(assembly.sections.filter(section => section.name === PROFILE_SECTION).length, 1)
+    assert.equal(assembly.sections.filter(section => section.name.startsWith('pmp-dsh-tavern:part:')).length, 2)
+    assert.equal(assembly.sections.slice(1).map(s => s.text).join('\n\n'), profileText)
     assert.equal(profileText.match(/Host user description\./g)?.length, 1)
   } finally {
     rmSync(directory, { recursive: true, force: true })

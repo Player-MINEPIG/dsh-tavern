@@ -1,3 +1,4 @@
+import { digest, namedParts, source } from './assembly-parts.js'
 import { renderSillyTavernMacros } from '../../tavern-format/src/index.js'
 
 function isRecord(value) {
@@ -24,22 +25,27 @@ function escapeAttribute(value) {
     .replaceAll('>', '&gt;')
 }
 
-export function compilePresetForDsh(preset, context = {}) {
-  if (!isRecord(preset) || !Array.isArray(preset.prompts)) return ''
+export function assemblePresetParts(preset, context = {}) {
+  if (!isRecord(preset) || !Array.isArray(preset.prompts)) return []
   const variables = new Map()
+  const resourceRevision = digest(preset)
   const sections = []
   for (const prompt of preset.prompts) {
     if (!isRecord(prompt) || prompt.enabled !== true || prompt.marker === true) continue
     const text = renderSillyTavernMacros(prompt.content, context, variables)
     if (text === '') continue
-    sections.push(`<st-prompt identifier="${escapeAttribute(prompt.identifier)}" role="${escapeAttribute(prompt.role)}">\n${text}\n</st-prompt>`)
+    sections.push({ sources: [source('preset', preset, `prompts/${preset.prompts.indexOf(prompt)}/content`, prompt.content, { identifier: prompt.identifier, resourceRevision })], provenance: 'section-contributors', text: `<st-prompt identifier="${escapeAttribute(prompt.identifier)}" role="${escapeAttribute(prompt.role)}">\n${text}\n</st-prompt>` })
   }
   const header = [
     '[dsh-tavern selected preset]',
     `name: ${renderSillyTavernMacros(preset.name, context, variables)}`,
     `id: ${escapeAttribute(preset.id)}`,
   ].join('\n')
-  return [header, ...sections].join('\n\n')
+  return namedParts([{ text: header, sources: [], provenance: 'generated' }, ...sections])
+}
+
+export function compilePresetForDsh(preset, context = {}) {
+  return assemblePresetParts(preset, context).map(part => part.text).join('\n\n')
 }
 
 export function projectPresetCallConfig(preset) {

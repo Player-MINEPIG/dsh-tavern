@@ -1,12 +1,14 @@
 # DSH 与 dsh-tavern（DT）消息流
 
+**2.3.0 Trace 增量：** loader 将逻辑 profile 在下游装配监听器执行前展开为有序的官方 `{name,text}` 段落；装配时来源关系及 LLM 请求层的系统正文快照通过 [v3 元 API](PROMPT_API_V3.md) 提供。旧 v1 Trace 仍仅含元数据，v3 使用独立有界正文存储。下文未特别注明的“单一 profile / Trace 不存正文”描述属于此前实现。
+
 DSH `0.1.5-rc.1` 增量：以下历史流程中“request/header 保存 system”的描述仅适用于 V2；V3 的系统提示词由 system/message 进入有效消息 surface，request/header 仅保留 config/tools 等字段。当前 Trace 已按该版本分支读取。会话坐标变化及迁移步骤见 [升级指南](DSH_0.1.5_MIGRATION.md)。
 
 [English](DSH_MESSAGE_FLOW_en.md)
 
 状态：消息流基线于 2026-08-18 按本机 `@deepseek-ai/dsh 0.1.0-rc.6` 的公开 README 与已安装源码核对；2.0 发布候选已在 2026-08-22 对 DSH `0.1.0-rc.8` 做自动回归和安装验证，但没有把后续段落冒充为一次新的完整上游源码审计。本文分别描述 DSH 原生流程、DT 自身流程、DT 对 DSH 的介入，以及安装 DT 后一次完整模型 step 的实际流程；它不是 README。
 
-`0.1.2-rc.1` 兼容增量（2026-09-05）：本文原始消息流基线保留为历史审计证据；当前 Tavern Host 不再经过已删除的 `apiProxy`，而由 Play Host adapter 显式调用 session/workspace/directory-picker controllers。history 先用 `inspect()` 固定 inclusive `throughSeq`，再用 `page()` 读完同一快照；进程内事件读取使用 `session.seq`、`snapshotEvents()` 与 `ownEvents()`，不再读取 `Session.events` 或 `header.seedLength`。这些变化没有改变下文的 durable message 所有权、prompt assembly 顺序或 Trace 不保存正文的结论。
+`0.1.2-rc.1` 兼容增量（2026-09-05）：本文原始消息流基线保留为历史审计证据；当前 Tavern Host 不再经过已删除的 `apiProxy`，而由 Play Host adapter 显式调用 session/workspace/directory-picker controllers。history 先用 `inspect()` 固定 inclusive `throughSeq`，再用 `page()` 读完同一快照；进程内事件读取使用 `session.seq`、`snapshotEvents()` 与 `ownEvents()`，不再读取 `Session.events` 或 `header.seedLength`。这些变化没有改变下文的 durable message 所有权、prompt assembly 顺序或 旧 v1 Trace 不保存正文的结论。
 
 本文中的 `DT` 是 `dsh-tavern` 的简称。SillyTavern（ST）是 DT 兼容的资源格式与部分语义来源，不是本插件或其界面的产品身份。
 
@@ -145,7 +147,7 @@ SessionSelectionStore
 2. world-book matcher 扫描公开的 `Session.deriveMessages()` 历史与 `PendingInputProjection` 提供的本步骤 claimed 输入，稳定去重后默认最多最近 64 KiB；执行普通主关键词、secondary key、概率、组与预算策略。原生 JavaScript regex 默认阻断，避免 ReDoS。
 3. 统一编译器按 preset marker 放置角色字段、用户名字/描述与命中 lore。`{{user}}` 使用当前用户名字；描述只消费一次 `personaDescription`/`{{persona}}`；`chatHistory` marker 不复制 DSH 历史；creator notes 不发送。
 4. 结果是一个不可混淆的运行时快照：`systemText`、受支持的 `callConfig`、资源摘要、诊断、世界书决策和审计指纹。
-5. Tavern Trace 只持久化该快照的最小化元数据与最终 `request/header` 的关联，不保存完整 system、消息正文、资源正文或工具 schema。
+5. 旧 v1 Trace 保留元数据和 request/header 关联；v3 单独采集具名装配段与来源输入，在 llm/stream 核对系统正文并有界保存历史，不复制普通聊天或工具正文。
 
 ## 3. DT 对 DSH flow 做了什么改动
 

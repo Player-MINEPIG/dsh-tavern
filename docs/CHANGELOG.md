@@ -1,5 +1,13 @@
 # Development changelog
 
+## 2.3.0 — Candidate, not released — Prompt assembly Trace
+
+- Expand existing preset/character/lore blocks into official named sections without changing ordinary prompt text or preset order; capture mixed-source relationships during assembly.
+- Add small, read-only v3 primitives for capabilities, current sources, historical indexes and details. No composer ownership registry; released v1/v2 remain available.
+- Capture per-turn/step/attempt snapshots, verify against the LLM-boundary system message, preserve unknown/complete-override distinctions, and retain bounded local history across restart.
+- Move Tavern Trace to v3 with lazy source/text details, request verification and live refresh. Old metadata-only records remain readable.
+- Target DSH 0.1.5-rc.1; see [contract](PROMPT_API_V3_en.md) and [acceptance](TRACE_REVIEW_en.md) for privacy changes, limits and manual checks.
+
 ## 2.2.0 — 2026-09-11 — DSH 0.1.5-rc.1 compatibility and rich-text rendering
 
 - On 2026-09-11, the user accepted the rendering fixes in the temporary DSH `0.1.5-rc.1` environment. All 191 installed package files matched the candidate; configuration and sessions were retained. Automated checks: 541 pass, 5 optional/external integration skips; 22 Chrome checks pass. Template JavaScript remains blocked. See [acceptance records](PLAY_REVIEW_en.md#220-rich-text-rendering-acceptance-2026-09-11).

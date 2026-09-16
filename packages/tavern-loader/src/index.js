@@ -1,8 +1,11 @@
+import { AssemblyStore } from '../../tavern-trace/src/assembly-store.js'
+import { AssemblyRecorder } from '../../tavern-trace/src/assembly-recorder.js'
+import { PromptSourceService, createPromptTraceApi } from './prompt-trace-api.js'
 import {
   PresetStore,
   createApiHandler as createPresetApiHandler,
 } from '../../preset/src/index.js'
-import { API_ROOT, API_V1, PLUGIN_ID, PROFILE_SECTION } from '../../identity.js'
+import { API_ROOT, API_V1, API_V3, PLUGIN_ID, PROFILE_SECTION } from '../../identity.js'
 import { ChromeStore, PlayMembershipService, PlayWorkspaceStore, createChromeEventsHandler, createPlayApiHandler, isPlayApiPath } from '../../play/src/index.js'
 import {
   CharacterStore,
@@ -346,6 +349,10 @@ export function apply(ctx, config = {}) {
     ctx.logger.warn?.('dsh-tavern: oversized legacy Tavern Trace storage exceeded the safe read limit and was reset')
   }
   const traceRecorder = new TavernTraceRecorder(traceStore)
+  const assemblyStore = new AssemblyStore(storageDir, config.traceAssemblies)
+  const assemblyRecorder = new AssemblyRecorder(assemblyStore)
+  const promptSources = new PromptSourceService({ selections, presets: store, characters: characterStore,
+    users: userStore, worldBooks: worldBookStore, userWorldBooks, resourceWorldBooks })
   runtime.registerCharacterAdapter(createCharacterAdapter(characterStore))
   runtime.registerUserAdapter(createUserAdapter(userStore))
   runtime.registerWorldBookAdapter(createWorldBookAdapter(worldBookStore, config.worldBook))
@@ -444,7 +451,9 @@ export function apply(ctx, config = {}) {
     text: (context) => {
       const snapshot = runtime.forAssembleContext(context)
       const claimMetadata = snapshot.audit?.activation ?? null
-      return [snapshot.systemText, importContexts.contextFor(context.agent?.id, claimMetadata, snapshot.macroContext, context.agent?.session)].filter(Boolean).join('\n\n')
+      snapshot.importedContext = importContexts.contextFor(context.agent?.id, claimMetadata, snapshot.macroContext, context.agent?.session)
+      snapshot.registeredProfileText = [snapshot.systemText, snapshot.importedContext].filter(Boolean).join('\n\n')
+      return snapshot.registeredProfileText
     },
   })
   ctx.systemPrompt.section({
@@ -487,13 +496,26 @@ export function apply(ctx, config = {}) {
       ...await next(),
       ...snapshot.callConfig,
     }
-    traceSafely('request capture', () => traceRecorder.begin({ ...payload, snapshot }))
+    let legacyRecord
+    traceSafely('request capture', () => { legacyRecord = traceRecorder.begin({ ...payload, snapshot }) })
+    traceSafely('assembly capture', () => assemblyRecorder.begin({ ...payload, snapshot, legacyRecord }))
     return config
   })
+
+  ctx.on('agent/error', payload => {
+    traceSafely('assembly failure', () => assemblyRecorder.failure(payload))
+  })
+
+  ctx.on('llm/stream', async function* (options, next) {
+    traceSafely('LLM request capture', () => assemblyRecorder.request(options, ctx.get('agents')?.get?.(options.sessionId)?.session))
+    yield* next()
+  })
+  ctx.effect(() => () => traceSafely('assembly shutdown', () => assemblyRecorder.dispose()))
 
   ctx.on('session/event', (session, event) => {
     pendingInput.observeSessionEvent(session, event)
     if (event?.type === 'turn/end') {
+      traceSafely('assembly terminal', () => assemblyRecorder.finish(session?.id, 'request-unconfirmed'))
       pendingInput.clearClaimed(session)
       importContexts.consumeAfterTurn(session?.id, event, session)
     }
@@ -507,31 +529,40 @@ export function apply(ctx, config = {}) {
 
   ctx.on('agent/request-error', async (payload, next) => {
     const result = await next()
+    traceSafely('assembly error', () => assemblyRecorder.finish(payload.agent?.id, 'request-failed-before-observation'))
     traceSafely('request-error alignment', () => traceRecorder.observeRequestError(payload.agent, payload.turn, payload.step))
     return result
   })
 
-  ctx.on('system-prompt/assemble', async (_payload, context, next) => {
-    const assembly = await next()
+  ctx.on('system-prompt/assemble', async (assembly, context, next) => {
     const snapshot = runtime.forAssembleContext(context)
     const contexts = snapshot.runtimeContexts.length === 0
       ? assembly.contexts
       : [...assembly.contexts, ...snapshot.runtimeContexts]
-    if (snapshot.systemPromptMode !== 'replace') return { ...assembly, contexts }
-    const profileSections = assembly.sections.filter((section) => (
-      section.name === PROFILE_SECTION || section.name === rpModeConstants.sectionName
-    ))
-    const sections = profileSections.length > 0 || snapshot.systemText === ''
-      ? profileSections
-      : [{ name: PROFILE_SECTION, text: snapshot.systemText }]
-    const rpSection = assembly.sections.find((section) => section.name === rpModeConstants.sectionName)
-    if (rpSection !== undefined && !sections.some((section) => section.name === rpModeConstants.sectionName)) {
-      sections.push(rpSection)
-    }
-    return { ...assembly, sections, contexts }
+    // Expand only our untouched contribution at its existing position. A third
+    // party that already replaced it owns that replacement.
+    const sections = assembly.sections.flatMap(section => {
+      if (section.name !== PROFILE_SECTION) return [section]
+      if (section.text !== snapshot.registeredProfileText) return [section]
+      const imported = snapshot.importedContext
+      return [...snapshot.sections.map(({ name, text }) => ({ name, text })),
+        ...(imported ? [{ name: PROFILE_SECTION, text: imported }] : [])]
+    })
+    const selected = snapshot.systemPromptMode === 'replace'
+      ? sections.filter(s => s.name === PROFILE_SECTION || s.name.startsWith(`${PLUGIN_ID}:part:`) || s.name === rpModeConstants.sectionName)
+      : sections
+    // Publish our named contributions before downstream listeners execute.
+    // Keep the official shared assembly object so later plugins can transform it.
+    assembly.sections = selected
+    assembly.contexts = contexts
+    const result = await next()
+    // Ancestor transforms and complete-section enforcement may still follow.
+    snapshot.officialAssembly = structuredClone(result)
+    return result
   })
 
   const registerHttpApi = webCtx => {
+    const promptTraceApi = createPromptTraceApi({ sources: promptSources, assemblies: assemblyStore, legacyStore: traceStore, ensureSession: id => playHost.coordinates(id) })
     const presetApi = createPresetApiHandler(
       store,
       notifyChange,
@@ -622,7 +653,9 @@ export function apply(ctx, config = {}) {
       },
     })
     const api = secureTavernApi(
-      (req, res) => isPlayApiPath(req.url)
+      (req, res) => new URL(req.url, 'http://localhost').pathname.startsWith(`${API_V3}/`)
+        ? promptTraceApi(req, res)
+        : isPlayApiPath(req.url)
         ? playApi(req, res)
         : isUiSettingsApiPath(req.url)
         ? uiSettingsApi(req, res)
@@ -683,6 +716,7 @@ export function apply(ctx, config = {}) {
     chromeStore: { value: chromeStore, enumerable: false },
     playWorkspaceStore: { value: playWorkspaceStore, enumerable: false },
     rpPolicyStore: { value: rpPolicyStore, enumerable: false },
+    assemblyStore: { value: assemblyStore, enumerable: false },
     traceStore: { value: traceStore, enumerable: false },
     traceRecorder: { value: traceRecorder, enumerable: false },
     pendingInputProjection: { value: pendingInput, enumerable: false },

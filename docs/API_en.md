@@ -1,15 +1,17 @@
 # HTTP API
 
+Tavern **2.3.0 candidate** adds [primitive prompt API v3](PROMPT_API_V3_en.md). v1/v2 remain available; Tavern Trace now reads v3. API v3 is separate from DSH log format V3. The following 2.2.0 migration notes and v1/v2 contracts remain applicable.
+
 Tavern `2.2.0` (released 2026-09-11), DSH `0.1.5-rc.1` delta: messages add format metadata, a read-only coordinates endpoint is available, branch accepts the coordinate format, and timeline GET/PUT refuses unmigrated references. See the [V3 migration contract](DSH_0.1.5_MIGRATION_en.md) for fields and errors. V3 Trace reads effective system/message for the prompt and request/header for config and tools.
 
 [中文](API.md)
 
 Status: Tavern `2.2.0` (released 2026-09-11), updated 2026-09-10. Host checks cover DSH `0.1.2-rc.1` and `0.1.5-rc.1`. Root: `/pmp-dsh-tavern/api`. Auth is still local TCP peer, Host, Origin, and Content-Type (see the loader security middleware). Success responses include `ok: true`; failures include `ok: false` and `error`.
 
-Two contracts:
+Existing v1/v2 contracts:
 
 - **v2**: the stable surface for any RP frontend.
-- **v1**: the bundled-UI contract for this plugin's orb, sidebar, and Trace. Outsiders may read and call it, but RP surfaces should use v2. v1 fields change with this plugin's UI needs.
+- **v1**: the bundled-UI contract for this plugin's orb, sidebar, and legacy Trace audit. Outsiders may read and call it, but RP surfaces should use v2. v1 fields change with this plugin's UI needs.
 
 Do not add `/swipe`, `/regenerate`, `/export`, or `POST /focus`.
 

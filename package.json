@@ -1,6 +1,6 @@
 {
   "name": "pmp-dsh-tavern",
-  "version": "2.2.0",
+  "version": "2.3.0",
   "description": "A SillyTavern compatibility plugin that keeps DSH authoritative over sessions and execution, with frontend and backend APIs for composing Tavern capabilities with native DSH features.",
   "type": "module",
   "main": "packages/tavern-loader/src/index.js",
@@ -52,7 +52,12 @@
     "docs/USAGE_zh-CN.md",
     "docs/USAGE_en.md",
     "docs/world-book",
-    "cordis.patch.yml"
+    "cordis.patch.yml",
+    "docs/PROMPT_API_V3.md",
+    "docs/PROMPT_API_V3_en.md",
+    "docs/TRACE_REVIEW.md",
+    "docs/TRACE_REVIEW_en.md",
+    "docs/examples"
   ],
   "dsh": {
     "bundle": {

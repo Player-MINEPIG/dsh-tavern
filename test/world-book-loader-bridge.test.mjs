@@ -19,7 +19,7 @@ function model(position, content = 'Lore content') {
 test('projects exact ST before/after positions to the loader adapter contract', () => {
   const before = model(0)
   const beforeResult = projectWorldBookForLoader(before, computeWorldBookCandidates(before), { resourceId: 'book-a' })
-  assert.deepEqual(beforeResult.loreEntries, [{ id: 'book-a:1', uid: 1, content: 'Lore content', position: 'before' }])
+  assert.deepEqual(beforeResult.loreEntries, [{ resourceId: 'book-a', id: 'book-a:1', uid: 1, content: 'Lore content', position: 'before' }])
   assert.deepEqual(beforeResult.resources, [{
     id: 'book-a',
     name: 'Bridge fixture',

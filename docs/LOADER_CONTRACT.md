@@ -1,5 +1,7 @@
 # Unified Tavern loader contract
 
+**2.3.0 Trace 增量：** loader 将逻辑 profile 在下游装配监听器执行前展开为有序的官方 `{name,text}` 段落；装配时来源关系及 LLM 请求层的系统正文快照通过 [v3 元 API](PROMPT_API_V3.md) 提供。旧 v1 Trace 仍仅含元数据，v3 使用独立有界正文存储。下文未特别注明的“单一 profile / Trace 不存正文”描述属于此前实现。
+
 DSH V3 增量：本文 `request/header.system` 表述指 V2。`0.1.5-rc.1` 中，编译的 systemText 经 system/message 进入有效消息 surface；Trace 从公共 Session.deriveMessages() 读取该权威，request/header 仍提供 config/tools。参见 [迁移合同](DSH_0.1.5_MIGRATION.md)。
 
 [English](LOADER_CONTRACT_en.md)
@@ -12,14 +14,14 @@ DSH V3 增量：本文 `request/header.system` 表述指 V2。`0.1.5-rc.1` 中�
 
 ```text
 PresetModel ─────────────┐
-CharacterCardModel ──────┼─> TavernProfileLoader ─> one Tavern profile section
+CharacterCardModel ──────┼─> TavernProfileLoader ─> ordered Tavern sections
 UserModel ────────────────┤             │
 WorldBookModel + matches ┘             │
                                        ├─> agent/request call config
 SessionSelectionStore ─────────────────┘
 ```
 
-当前根插件注册两个 system section：`pmp-dsh-tavern:profile`（order 10）与可选的 `rp:policy`（order 45，仅 RP 开启且文本非空时有内容）。preset 的 `replace` 模式保留这两段，不会只留下 preset、静默丢失角色、世界书或 RP 锁说明。
+根插件先以 order 10 注册逻辑 profile，再在同一位置展开成 `pmp-dsh-tavern:part:*` 段落；导入上下文保留 `pmp-dsh-tavern:profile` 名称，可选 `rp:policy` 仍为 order 45。preset 的 `replace` 保留这些 Tavern 贡献，包括角色、世界书与 RP policy。
 
 ## Session policy
 
@@ -145,7 +147,7 @@ loader Host 层的唯一 `PendingInputProjection` 从公开 `agent/inbox/spliced
 }
 ```
 
-`conversationText` 是从 `activationContext.text` 派生的兼容字段，不是第二份状态。adapter 只消费该 value，不订阅 DSH event；pending 队列、claim/cancel 判定、首次 assembly 一次性消费、turn-end 清理和去重均由 loader 独占。默认扫描最近 128 条、64 KiB 字符，硬上限分别为 1,024 条和 1 MiB；队列保留也有独立的消息数/字符数硬上限。Trace 只保存无正文 metadata，不保存 `messages` 或 `text`。
+`conversationText` 是从 `activationContext.text` 派生的兼容字段，不是第二份状态。adapter 只消费该 value，不订阅 DSH event；pending 队列、claim/cancel 判定、首次 assembly 一次性消费、turn-end 清理和去重均由 loader 独占。默认扫描最近 128 条、64 KiB 字符，硬上限分别为 1,024 条和 1 MiB；队列保留也有独立的消息数/字符数硬上限。Trace 不持久化 ActivationContext 的 `messages` 或 `text`；v1 审计保持无正文，v3 另外保存装配后的提示词/来源快照。
 
 ## Composition semantics
 
@@ -217,7 +219,7 @@ DSH 自己的 `request/header` 仍是模型实际输入的最终权威。loader 
 2. `SessionSelectionStore.userId` 是唯一会话绑定所有者；
 3. 通过 `registerUserAdapter()` 交给统一 loader，不注册 Host seam；
 4. marker、宏、fallback 和描述去重由 `compileTavernProfile()` 统一执行；
-5. 验证双 session、即时切换、重启、解绑、删除清理和最终 profile 单份输出。
+5. 验证双 session、即时切换、重启、解绑、删除清理和最终 profile 正文不重复输出。
 
 ## 当前验收
 

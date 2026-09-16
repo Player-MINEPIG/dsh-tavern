@@ -17,12 +17,16 @@ Report suspected vulnerabilities privately through the GitHub repository **Secur
 
 ## Implemented boundaries
 
-- All v1/v2 browser APIs share the same security middleware. Mutating requests require same-origin and a supported media type.
+- All v1/v2/v3 browser APIs share the same security middleware. Mutating requests require same-origin and a supported media type.
 - Request bodies, resources, structures, Trace, persistent state, and play workspace files have explicit limits.
 - The play workspace uses safe relative paths, per-segment link/reparse checks, root revalidation, exclusive temp files, atomic replace, and revision/CAS.
 - Rich text is parsed as Markdown and then must pass DOMPurify. script, iframe, object, embed, form controls, user-supplied template, meta/link/base, and `srcdoc` are forbidden; event handlers and unsafe URLs are sanitized too. `<style>` is retained only inside the message’s own Shadow DOM, with an outer layout/paint containment boundary. Direct HTML sanitization and environments without isolation still remove style. Shadow DOM isolates CSS; it does not grant template JavaScript execution. External links get `noopener noreferrer`.
 - Lifecycle logs use Host `ctx.logger` only, with a field allowlist and length limits. They do not record prompts, user messages, model replies, resource bodies, body lengths, or summaries.
 - The public repository and release package must not contain real developer-machine paths, usernames, temporary download paths, private fixtures, imported resources, or secrets. Documentation paths may use only explicit generic placeholders.
+
+## Trace v3 prompt snapshots
+
+Unlike the legacy v1 metadata audit, 2.3.0 v3 snapshots store rendered system/context sections, source inputs, and system text observed at the LLM boundary. These may include sensitive user content interpolated into prompts. The separate `tavern-assemblies.json` file is atomically written with mode 0600 and bounded to 256 records / 2 MiB each / 16 MiB total by default. No complete ordinary chat history or tool bodies are copied. Local API access grants access to these bodies; protect the data directory as you protect DSH history. Details: [contract](docs/PROMPT_API_V3_en.md).
 
 ## Known risks and operator requirements
 

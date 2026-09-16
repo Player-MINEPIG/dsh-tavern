@@ -1,6 +1,6 @@
 # Trace / API v3 implementation backlog
 
-Status: planned, 2026-09-16. Target Host: DSH `dsh-v0.1.5-rc.1`.
+Status: implemented and validated, 2026-09-16; maintainer acceptance pending. Target Host: DSH `dsh-v0.1.5-rc.1`.
 Branch: `codex/trace-api-v3`, based on main. This replaces the unpublished
 composer-oriented v3 candidate; it does not merge that candidate's ownership API.
 
@@ -23,14 +23,14 @@ composer-oriented v3 candidate; it does not merge that candidate's ownership API
 
 ## Delivery stages
 
-- [ ] 1. Document contract and inspect pinned Host interfaces; prepare 0.1.5 runtime.
-- [ ] 2. Source-aware ordered assembly and official named-section adapter.
-- [ ] 3. Bounded persistent Trace records, request correlation and minimal v3 APIs.
-- [ ] 4. Trace UI with lazy record detail, source/content inspection and live refresh.
-- [ ] 5. Unit, HTTP, regression and real 0.1.5 Host/service acceptance; build and pack.
-- [ ] 6. Bilingual API/design/migration examples and manual acceptance checklist.
-- [ ] 7. Upgrade local default DSH to 0.1.5-rc.1 and verify launcher/profile compatibility.
-- [ ] 8. Review, commit and deliver candidate branch/package; no merge/tag/release.
+- [x] 1. Document contract and inspect pinned Host interfaces; prepare 0.1.5 runtime.
+- [x] 2. Source-aware ordered assembly and official named-section adapter.
+- [x] 3. Bounded persistent Trace records, request correlation and minimal v3 APIs.
+- [x] 4. Trace UI with lazy record detail, source/content inspection and live refresh.
+- [x] 5. Unit, HTTP, regression and real 0.1.5 Host/service acceptance; build and pack.
+- [x] 6. Bilingual API/design/migration examples and manual acceptance checklist.
+- [x] 7. Upgrade local default DSH to 0.1.5-rc.1 and verify launcher/profile compatibility.
+- [x] 8. Review, commit and deliver candidate branch/package; no merge/tag/release.
 
 ## Required regression cases
 
@@ -44,5 +44,9 @@ native DSH behavior after Tavern unload.
 
 ## Evidence
 
-Pending implementation. Automated checks and manually unverified cases will be
-recorded separately. Local environment details remain outside this repository.
+Full tests: 552 pass / 0 fail / 2 optional skips; real pinned AgentLoop and official
+codecs enabled. Separate live v2 smoke: 16/16. Build, verify:2.0, package boundaries,
+public links and 202 installed files checked. Real Web UI, synthetic requests,
+source inspection, restart and immutable historical reads exercised. See
+[acceptance and remaining manual checks](TRACE_REVIEW.md). Local environment
+coordinates, auth tokens and synthetic profile remain outside the repository.

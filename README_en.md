@@ -4,11 +4,11 @@
 
 A SillyTavern compatibility plugin that keeps DeepSeek Harness (DSH) authoritative over sessions and execution, with frontend and backend APIs for composing Tavern capabilities with native DSH features.
 
-> This documentation matches `2.2.0` (released 2026-09-11). The project is licensed under the [MIT License](LICENSE).
+> This documentation describes the `2.3.0` Trace candidate (not released). [MIT License](LICENSE).
 >
-> **Compatibility:** `2.2.0` supports DSH `0.1.2-rc.1` and `0.1.5-rc.1`. Other versions were not verified in this update and compatibility is not promised.
+> **Target runtime:** DSH `0.1.5-rc.1`. The previous `2.2.0` release also tested `0.1.2-rc.1`; this candidate retains that path, but new Trace runtime acceptance targets `0.1.5-rc.1`.
 
-> **This update:** Primarily DSH compatibility fixes, with no new UI features. The public coordinate query API and additive compatibility fields warrant minor version `2.2.0`. Existing playthroughs upgraded to DSH V3 need coordinate migration; see the [upgrade guide](docs/DSH_0.1.5_MIGRATION_en.md).
+> **This update:** Named official prompt sections, small v3 source/history primitives, and per-request Tavern Trace. See [API/design](docs/PROMPT_API_V3_en.md) and [acceptance/manual checks](docs/TRACE_REVIEW_en.md).
 >
 > The default project README is the [Chinese version](README.md). This English file has no screenshots.
 
@@ -83,7 +83,7 @@ Send the first user message from the native DSH composer. It appears immediately
 
 Full operations and boundaries: [English usage guide](docs/USAGE_en.md).
 
-## v2.2.0 feature map
+## v2.3.0 feature map
 
 | Area | Main capabilities | Details |
 | --- | --- | --- |
@@ -91,7 +91,7 @@ Full operations and boundaries: [English usage guide](docs/USAGE_en.md).
 | RP frontend | Character/playthrough sidebar, greeting, body rendering, display regex, swipe, branch, rollback, display-layer edit | [Usage](docs/USAGE_en.md) |
 | Playthrough data | Authoritative DSH sessions, tree timeline, workspace catalog, first-turn read-only import injection, static HTML and ST JSONL export | [API](docs/API_en.md) · [Architecture](docs/ARCHITECTURE_en.md) |
 | Security | RP permission overlay, same-origin/loopback API, workspace path jail, CAS, DOMPurify, content-free operation log | [RP secure mode](docs/RP_SECURE_MODE_en.md) · [Security policy](SECURITY_en.md) |
-| Debugging | Tavern Trace shows this turn's resources, world-book hits, and request/header alignment; it does not store full bodies | [DSH message flow](docs/DSH_MESSAGE_FLOW_en.md) |
+| Debugging | Tavern Trace shows per-request sections, source inputs, lore decisions and actual system text; bounded snapshots persist locally | [Trace API/design](docs/PROMPT_API_V3_en.md) |
 | Third-party | v2 HTTP API, `pmpDshTavernChrome` mode service, DSH slots/store, standalone clients | [RP frontend integration](docs/FRONTEND_INTEGRATION_en.md) |
 
 See the [feature gallery](docs/assets/market/README.md#gallery) for annotated examples of message actions, swipe-linked continuations, native Agent capabilities, session-bound assets, ST-compatible resources, display regex, and native/RP views.

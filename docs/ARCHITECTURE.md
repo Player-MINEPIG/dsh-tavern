@@ -1,5 +1,7 @@
 # dsh-tavern package architecture
 
+**2.3.0 Trace 增量：** loader 将逻辑 profile 在下游装配监听器执行前展开为有序的官方 `{name,text}` 段落；装配时来源关系及 LLM 请求层的系统正文快照通过 [v3 元 API](PROMPT_API_V3.md) 提供。旧 v1 Trace 仍仅含元数据，v3 使用独立有界正文存储。下文未特别注明的“单一 profile / Trace 不存正文”描述属于此前实现。
+
 [English](ARCHITECTURE_en.md)
 
 状态：2026-09-06，DSH 兼容基线为完整版本 `0.1.2-rc.1`；安装标识为 `pmp-dsh-tavern`。HTTP 挂载 `/pmp-dsh-tavern/api`，资源走 `/v1`，扮演表面合同走 `/v2`。本文是当前架构决策与发布审查门槛，不是产品 README。
@@ -66,11 +68,11 @@ loader 在任何 Store 构造前解析统一 `storageDir`。默认 bundle 通过
 | `session-template` | “怎样复用 Tavern 配置但创建干净 DSH 会话？” | 有界模板投影/原子存储/API、缺失资源诊断和客户端事务顺序 | DSH 历史、Trace、Session 构造、最终 prompt |
 | `play` | “扮演表面的元状态存在哪、文件怎么守在根内？” | 全局 chrome、扮演工作区路径监狱、timeline/catalog 校验、`deriveFocus`、session HTTP；Host RPC 由 loader 适配 | DSH 事件改写、RP 锁、内置魔丸 DOM、`archiveSession` |
 | `tavern-loader` | “当前资源怎样影响这次 DSH 请求？” | 编译选中预设、映射支持的 call config、append/replace 策略、Host/API 挂载、独占 pending-input 投影、RP 会话叠加 | 重新解释 ST 原始字段、实现具体 UI |
-| `tavern-trace` | “这次 loader 为什么得到这个组合？” | turn/step 对齐、资源摘要、世界书接受/拒绝原因、header 摘要引用、有界存储/API/并列 view | 保存正文、替代 request/header、append 会话事件或模型消息 |
+| `tavern-trace` | “这次 loader 为什么得到这个组合？” | turn/step 对齐、资源摘要、世界书接受/拒绝原因、header 摘要引用、v3 段落/来源/系统正文快照、有界存储/API/并列 view | 替代 DSH 权威、复制完整普通聊天/工具历史、append 会话事件或模型消息 |
 
 角色卡已经在 `tavern-format` 增加 adapter/model，并在 `character` 用例层提供管理与资源入口；用户资源由独立 `user` 用例层提供严格 `{id,name,description}` 文档；世界书格式兼容位于独立纯库 `packages/world-book`。所有资源最终由同一个 `tavern-loader` 组合。角色卡和用户模块都不读取预设排序，也不决定字段插入位置。
 
-统一 loader 把 Host 注册收敛为 `pmp-dsh-tavern:profile` 与可选的 `rp:policy` 两个 section，并引入 loader-owned `SessionSelectionStore`：preset、角色、用户和世界书的文档仍由各自模块管理，但“哪个 session 使用哪些资源”以及 RP 叠加由统一策略持久化。普通 fork 与 delegated subagent 都复制父选择。RP 不是 DSH agent preset。
+统一 loader 将逻辑 profile 展开为具名 `pmp-dsh-tavern:part:*` 段落，导入上下文与可选的 `rp:policy` 独立贡献，并引入 loader-owned `SessionSelectionStore`：preset、角色、用户和世界书的文档仍由各自模块管理，但“哪个 session 使用哪些资源”以及 RP 叠加由统一策略持久化。普通 fork 与 delegated subagent 都复制父选择。RP 不是 DSH agent preset。
 
 统一 adapter、session 继承和 marker 契约见 `docs/LOADER_CONTRACT.md`；DSH 原生与插件增强消息流见 `docs/DSH_MESSAGE_FLOW.md`；世界书格式和投影细节见 `docs/world-book/DESIGN.md`。
 
@@ -86,7 +88,7 @@ DSH `0.1.2-rc.1` 的 `agent/inbox/spliced` 是公开、持久的 Session event�
 
 - `world-book` 继续只接收显式 messages/text/options，不能读取 session 或监听 event；
 - `character`、`user` 和 `world-book-library` 不复制 pending 状态，也不改变各自存储模型；
-- `tavern-trace` 只接收已编译 snapshot 和无正文来源元数据，不持久化输入；
+- `tavern-trace` 接收装配 snapshot；v1 仍仅元数据，v3 保存有界段落/来源/系统正文快照，不保存完整 ActivationContext；
 - `packages/client` 不参与捕获，避免浏览器刷新或多窗口决定运行语义；
 - loader 必须处理 cancel/replace/steer、多个 target、异常清理与下一 step 去重。
 

@@ -1,5 +1,7 @@
 # dsh-tavern package architecture
 
+**2.3.0 Trace update:** The loader expands its logical profile into ordered official `{name,text}` sections before downstream assembly listeners run. Runtime source relationships and LLM-boundary system snapshots are exposed through [primitive API v3](PROMPT_API_V3_en.md). Existing v1 Trace remains metadata-only; v3 uses a separate bounded body store. References below to a single profile or metadata-only Trace describe the earlier implementation unless explicitly qualified.
+
 [中文](ARCHITECTURE.md)
 
 Status: 2026-09-06. The full DSH compatibility baseline is `0.1.2-rc.1`; install identity is `pmp-dsh-tavern`. HTTP mounts at `/pmp-dsh-tavern/api`; resources use `/v1`; the play-surface contract uses `/v2`. This page is current architecture decisions and release-review gates, not a product README.
@@ -66,11 +68,11 @@ Before constructing any Store, the loader resolves one shared `storageDir`. The 
 | `session-template` | “How do we reuse Tavern configuration but create a clean DSH session?” | Bounded template projection / atomic store / API, missing-resource diagnostics, client transaction order | DSH history, Trace, Session construction, final prompt |
 | `play` | “Where does play-surface meta-state live, and how do files stay inside the root?” | Global chrome, play-workspace path jail, timeline/catalog validation, `deriveFocus`, session HTTP; Host RPC is adapted by the loader | Rewriting DSH events, RP lock, bundled Mowan DOM, `archiveSession` |
 | `tavern-loader` | “How do current resources affect this DSH request?” | Compile the selected preset, map supported call config, append/replace policy, Host/API mount, exclusive pending-input projection, RP session overlay | Reinterpreting raw ST fields, implementing concrete UI |
-| `tavern-trace` | “Why did this loader run produce this combination?” | Turn/step alignment, resource summaries, world-book accept/reject reasons, header-summary references, bounded store/API/sibling view | Saving bodies, replacing request/header, appending session events or model messages |
+| `tavern-trace` | “Why did this loader run produce this combination?” | Turn/step alignment, resource summaries, world-book accept/reject reasons, header-summary references, v3 section/source/system snapshots, bounded store/API/sibling view | Replacing DSH authority, copying complete ordinary chat/tool history, appending session events or model messages |
 
 Character cards already have an adapter/model in `tavern-format` and management/resource entry points in the `character` use-case layer. User resources are a separate `user` use-case layer with a strict `{id,name,description}` document. World-book format compatibility lives in the independent pure library `packages/world-book`. All resources are finally composed by the same `tavern-loader`. Neither the character nor the user module reads preset order or decides field insertion.
 
-The unified loader collapses Host registration to two sections, `pmp-dsh-tavern:profile` and optional `rp:policy`, and introduces loader-owned `SessionSelectionStore`. Preset, character, user, and world-book documents stay in their modules, but “which session uses which resources” and the RP overlay are persisted by one policy. Ordinary forks and delegated subagents both copy the parent selection. RP is not a DSH agent preset.
+The unified loader expands its profile registration into named `pmp-dsh-tavern:part:*` sections, keeps import context and optional `rp:policy` separate, and introduces loader-owned `SessionSelectionStore`. Preset, character, user, and world-book documents stay in their modules, but “which session uses which resources” and the RP overlay are persisted by one policy. Ordinary forks and delegated subagents both copy the parent selection. RP is not a DSH agent preset.
 
 Unified adapter, session inheritance, and marker contract: `LOADER_CONTRACT_en.md`. Native DSH and plugin-enhanced message flow: `DSH_MESSAGE_FLOW_en.md`. World-book format and projection: `world-book/DESIGN_en.md`.
 
@@ -86,7 +88,7 @@ This projection belongs to the Host adapter and does not sink into pure modules:
 
 - `world-book` still receives only explicit messages/text/options. It cannot read a session or listen to events.
 - `character`, `user`, and `world-book-library` do not copy pending state or change their storage models.
-- `tavern-trace` receives only a compiled snapshot and body-free source metadata. It does not persist input.
+- `tavern-trace` receives assembly snapshots. v1 remains metadata-only; v3 stores bounded section/source/system snapshots, not the complete ActivationContext.
 - `packages/client` does not participate in capture, so a browser refresh or extra window cannot decide runtime semantics.
 - The loader must handle cancel/replace/steer, multiple targets, exception cleanup, and next-step de-duplication.
 

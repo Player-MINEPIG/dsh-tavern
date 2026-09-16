@@ -1,5 +1,7 @@
 # DSH and dsh-tavern (DT) message flow
 
+**2.3.0 Trace update:** The loader expands its logical profile into ordered official `{name,text}` sections before downstream assembly listeners run. Runtime source relationships and LLM-boundary system snapshots are exposed through [primitive API v3](PROMPT_API_V3_en.md). Existing v1 Trace remains metadata-only; v3 uses a separate bounded body store. References below to a single profile or metadata-only Trace describe the earlier implementation unless explicitly qualified.
+
 DSH `0.1.5-rc.1` delta: descriptions below of system text inside request/header apply to the historical V2 flow. V3 places the prompt in the effective system/message surface; request/header retains config/tools. Current Trace selects the versioned authority. Coordinate changes and migration are covered by the [upgrade guide](DSH_0.1.5_MIGRATION_en.md).
 
 [中文](DSH_MESSAGE_FLOW.md)
@@ -123,7 +125,7 @@ DT orb / resource sidebar
 - Ordinary forks and delegated subagents both freeze the parent session's resource selection at that moment. Whether the delegated task is narrowed is decided by the parent agent's spawn prompt.
 - UI red/green dots mean “whether the current session is bound to a resource”, not whether a world book hit this turn.
 
-### 2.2 Accepted data plane: compile bound resources into one runtime snapshot
+### 2.2 Accepted data plane: assemble bound resources into one runtime snapshot
 
 ```text
 SessionSelectionStore
@@ -140,13 +142,13 @@ SessionSelectionStore
                                                 └─ audit + fingerprint
 ```
 
-Compile rules:
+Assembly rules:
 
 1. The loader resolves preset, character card, user profile, standalone world books, and the card's embedded book per session. Session-explicit world books win; world books bound to the current user are then appended and de-duplicated by ID.
 2. The world-book matcher scans public `Session.deriveMessages()` history and this step's claimed input from `PendingInputProjection`, de-duplicates stably, and defaults to at most the latest 64 KiB. It runs ordinary primary keys, secondary keys, probability, groups, and budget. Native JavaScript regex is blocked by default to avoid ReDoS.
 3. The unified compiler places character fields, user name/description, and hit lore at preset markers. `{{user}}` uses the current user name. Description is consumed once via `personaDescription`/`{{persona}}`. The `chatHistory` marker does not copy DSH history. Creator notes are not sent.
 4. The result is an unmixable runtime snapshot: `systemText`, supported `callConfig`, resource summaries, diagnostics, world-book decisions, and an audit fingerprint.
-5. Tavern Trace persists only minimized metadata from that snapshot and its association with the final `request/header`. It does not store full system text, message bodies, resource bodies, or tool schemas.
+5. The legacy v1 Trace persists metadata and request/header references. v3 separately captures named sections and source inputs at assembly, verifies system text at llm/stream, and stores bounded historical snapshots without copying ordinary chat or tool bodies.
 
 ## 3. What DT changes in the DSH flow
 

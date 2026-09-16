@@ -1,5 +1,7 @@
 # Prompt pipeline and compatibility map
 
+**2.3.0 Trace update:** The loader expands its logical profile into ordered official `{name,text}` sections before downstream assembly listeners run. Runtime source relationships and LLM-boundary system snapshots are exposed through [primitive API v3](PROMPT_API_V3_en.md). Existing v1 Trace remains metadata-only; v3 uses a separate bounded body store. References below to a single profile or metadata-only Trace describe the earlier implementation unless explicitly qualified.
+
 [中文](PROMPT_PIPELINE.md)
 
 Status: 2026-08-18. Aligned with the RP `rp:policy` section and early recognition of current input.
@@ -45,7 +47,7 @@ dsh has no ST `PromptManager`, marker collection, or arbitrary history-depth ins
 1. On import, preset, character card, and World Info/Character Book are normalized separately, and unknown fields are kept.
 2. The loader reads preset, character card, and one user resource from the current session selection. A card's embedded `character_book` automatically becomes a world-info source.
 3. The loader projects this claimed batch from public `agent/inbox/spliced`, de-duplicates it with DSH durable user/assistant history by stable message id, and combines them under a bound. The world-info matcher therefore gets this turn's activated entries on the first assembly.
-4. The loader composes static prompts, user name/description, character fields, and activated lore at preset markers into the single `pmp-dsh-tavern:profile` system section.
+4. The loader composes static prompts, user name/description, character fields, and activated lore at preset markers into ordered `pmp-dsh-tavern:part:*` system sections.
 5. DSH itself continues to project user input, history, and tool results from Session. The plugin does not copy `chatHistory`.
 6. `temperature`, `maxTokens`, `reasoningEffort`, and `stop` are mapped through `agent/request`. Other ST samplers are stored for now and not claimed as delivered.
 

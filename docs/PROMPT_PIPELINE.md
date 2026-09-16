@@ -1,5 +1,7 @@
 # Prompt pipeline and compatibility map
 
+**2.3.0 Trace 增量：** loader 将逻辑 profile 在下游装配监听器执行前展开为有序的官方 `{name,text}` 段落；装配时来源关系及 LLM 请求层的系统正文快照通过 [v3 元 API](PROMPT_API_V3.md) 提供。旧 v1 Trace 仍仅含元数据，v3 使用独立有界正文存储。下文未特别注明的“单一 profile / Trace 不存正文”描述属于此前实现。
+
 [English](PROMPT_PIPELINE_en.md)
 
 状态：2026-08-18，已对齐 RP `rp:policy` 段与当前输入提前识别实现。
@@ -45,7 +47,7 @@ dsh 没有 ST 的 `PromptManager`、marker collection 或任意历史深度插�
 1. 导入时把 preset、角色卡和 World Info/Character Book 分别归一化，并保留未知字段。
 2. loader 根据当前 session 选择读取 preset、角色卡和一个用户资源；角色卡内嵌 `character_book` 自动成为世界信息来源。
 3. loader 从公开 `agent/inbox/spliced` 投影本次 claimed batch，与 DSH durable user/assistant 历史按稳定 message id 去重并有界组合；世界信息 matcher 在首个 assembly 就据此得到本次激活条目。
-4. loader 按 preset marker 组合静态 prompt、用户名/描述、角色字段和激活 lore，形成唯一 `pmp-dsh-tavern:profile` system section。
+4. loader 按 preset marker 组合静态 prompt、用户名/描述、角色字段和激活 lore，形成有序的 `pmp-dsh-tavern:part:*` system sections。
 5. DSH 自己继续从 Session 投影用户输入、历史和工具结果；插件不复制 `chatHistory`。
 6. `temperature`、`maxTokens`、`reasoningEffort` 和 `stop` 通过 `agent/request` 映射；其他 ST sampler 目前只保存，不宣称已经下发。
 

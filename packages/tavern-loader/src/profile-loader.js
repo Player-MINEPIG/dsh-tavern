@@ -1,6 +1,7 @@
+import { assemblyBody, digest, namedParts, source } from './assembly-parts.js'
 import { createHash } from 'node:crypto'
 import { PROFILE_SECTION } from '../../identity.js'
-import { compilePresetForDsh, projectPresetCallConfig } from './profile-compiler.js'
+import { assemblePresetParts, projectPresetCallConfig } from './profile-compiler.js'
 import { composeWorldBookSelection } from './user-world-book-policy.js'
 import { renderSillyTavernMacros } from '../../tavern-format/src/index.js'
 
@@ -336,8 +337,10 @@ function compileTavernProfileUnbounded({
 } = {}) {
   // Preserve the already accepted preset-only byte shape and behavior.
   if (character === null && user === null && loreEntries.length === 0) {
+    const sections = preset === null ? [] : assemblePresetParts(preset, context)
     return {
-      systemText: preset === null ? '' : compilePresetForDsh(preset, context),
+      systemText: sections.map(part => part.text).join('\n\n'),
+      sections,
       callConfig: preset === null ? {} : projectPresetCallConfig(preset),
       systemPromptMode: preset?.systemPromptMode === 'replace' ? 'replace' : 'append',
       runtimeContexts: [],
@@ -384,14 +387,21 @@ function compileTavernProfileUnbounded({
     descriptionPlacement: 'none',
   }
   const consumed = new Set()
-  const body = []
+  const body = assemblyBody()
+  // Hash each resource once per assembly, not once per field/prompt.
+  const presetRevision = preset ? digest(preset) : null
+  const characterRevision = character ? digest(character) : null
+  const userRevision = user ? digest(user) : null
+  body.characterSource = field => source('character', character, field, fields[field], { resourceRevision: characterRevision })
+  body.userSource = () => source('user', user, 'description', userFields.description, { resourceRevision: userRevision })
 
   if (preset !== null && Array.isArray(preset.prompts)) {
     for (const prompt of preset.prompts) {
       if (!isRecord(prompt) || prompt.enabled !== true) continue
       const identifier = String(prompt.identifier ?? '')
+      body.sources = [source('preset', preset, `prompts/${preset.prompts.indexOf(prompt)}/content`, prompt.content, { identifier, resourceRevision: presetRevision })]
       if (prompt.marker === true) {
-        const marker = compileMarker(identifier, fields, userFields, beforeLore, afterLore, profileContext, consumed, userInjection)
+        const marker = compileMarker(identifier, fields, userFields, beforeLore, afterLore, profileContext, consumed, userInjection, body)
         if (marker !== '') body.push(marker)
         continue
       }
@@ -399,6 +409,8 @@ function compileTavernProfileUnbounded({
       let content = typeof prompt.content === 'string' ? prompt.content : ''
       if (identifier === 'main' && fields.systemPrompt !== '' && characterSelection?.preferCharacterSystemPrompt !== false) {
         if (prompt.st?.forbid_overrides !== true) {
+          if (!/\{\{\s*original\s*\}\}/i.test(fields.systemPrompt)) body.sources[0].relationship = 'placement-only'
+          body.sources.push(body.characterSource('systemPrompt'))
           content = applyOriginal(fields.systemPrompt, content)
           consumed.add('systemPrompt')
         } else {
@@ -407,11 +419,17 @@ function compileTavernProfileUnbounded({
       }
       if (identifier === 'jailbreak' && fields.postHistoryInstructions !== '' && characterSelection?.preferCharacterPostHistory !== false) {
         if (prompt.st?.forbid_overrides !== true) {
+          if (!/\{\{\s*original\s*\}\}/i.test(fields.postHistoryInstructions)) body.sources[0].relationship = 'placement-only'
+          body.sources.push(body.characterSource('postHistoryInstructions'))
           content = applyOriginal(fields.postHistoryInstructions, content)
           consumed.add('postHistoryInstructions')
           diagnostics.push(positionDiagnostic('CHARACTER_PHI_APPROXIMATE', 'Character post-history instructions are placed in the Tavern system profile, not strictly after chat history.'))
         }
       }
+      for (const [macro, field] of Object.entries({ description: 'description', personality: 'personality', scenario: 'scenario', mesexamples: 'messageExample' })) {
+        if (new RegExp('\\{\\{\\s*' + macro + '\\s*\\}\\}', 'i').test(content)) body.sources.push(body.characterSource(field))
+      }
+      if (/\{\{\s*persona\s*\}\}/i.test(content)) body.sources.push(body.userSource())
       const rendered = renderProfileMacros(content, profileContext, fields, userFields, consumed, userInjection, identifier)
       if (rendered !== '') body.push(promptBlock(prompt, rendered))
     }
@@ -426,6 +444,7 @@ function compileTavernProfileUnbounded({
   const systemText = [...header, ...body].filter(Boolean).join('\n\n')
   return {
     systemText,
+    sections: namedParts([...header.map(text => ({ text, sources: [], provenance: 'generated' })), ...body.parts]),
     callConfig: preset === null ? {} : projectPresetCallConfig(preset),
     systemPromptMode: preset?.systemPromptMode === 'replace' ? 'replace' : 'append',
     runtimeContexts: [],
@@ -508,7 +527,7 @@ function userBlock(text, context) {
   return rendered === '' ? '' : `<st-user-field name="persona-description">\n${rendered}\n</st-user-field>`
 }
 
-function compileMarker(identifier, fields, userFields, beforeLore, afterLore, context, consumed, userInjection) {
+function compileMarker(identifier, fields, userFields, beforeLore, afterLore, context, consumed, userInjection, body) {
   const mapping = {
     charDescription: ['description', 'description'],
     charPersonality: ['personality', 'personality'],
@@ -518,22 +537,26 @@ function compileMarker(identifier, fields, userFields, beforeLore, afterLore, co
   if (mapping[identifier] !== undefined) {
     const [field, tag] = mapping[identifier]
     consumed.add(field)
+    body.sources = [body.characterSource(field)]
     return characterBlock(tag, fields[field], context)
   }
   if (['personaDescription', 'userDescription', 'userPersona'].includes(identifier)) {
     if (consumed.has('userDescription')) return ''
     consumed.add('userDescription')
+    body.sources = [body.userSource()]
     const block = userBlock(userFields.description, context)
     if (block !== '') markUserDescription(userInjection, `preset-marker:${identifier}`)
     return block
   }
   if (identifier === 'worldInfoBefore') {
     consumed.add('worldInfoBefore')
-    return loreText(beforeLore, context)
+    appendLore(body, beforeLore, context)
+    return ''
   }
   if (identifier === 'worldInfoAfter') {
     consumed.add('worldInfoAfter')
-    return loreText(afterLore, context)
+    appendLore(body, afterLore, context)
+    return ''
   }
   // DSH owns the real durable history. The marker is deliberately consumed
   // without copying it into the system prompt.
@@ -545,6 +568,7 @@ function appendUserFallback(body, fields, consumed, context, diagnostics, userIn
   if (fields.description === '' || consumed.has('userDescription')) return
   const block = userBlock(fields.description, context)
   if (block === '') return
+  body.sources = [body.userSource()]
   body.push(block)
   consumed.add('userDescription')
   markUserDescription(userInjection, 'fallback')
@@ -568,7 +592,7 @@ function appendCharacterFallbacks(body, fields, consumed, context, diagnostics) 
   for (const [field, tag] of fallbacks) {
     if (consumed.has(field) || fields[field] === '') continue
     const block = characterBlock(tag, fields[field], context)
-    if (block !== '') body.push(block)
+    if (block !== '') { body.sources = [body.characterSource(field)]; body.push(block) }
     if (field === 'postHistoryInstructions') diagnostics.push(positionDiagnostic('CHARACTER_PHI_APPROXIMATE', 'Character post-history instructions are placed in the Tavern system profile, not strictly after chat history.'))
     if (field === 'greeting') diagnostics.push(positionDiagnostic('CHARACTER_GREETING_REFERENCE', 'The selected greeting is a style reference; it is not an assistant history message.'))
     if (field === 'depthPrompt') diagnostics.push(positionDiagnostic('CHARACTER_DEPTH_APPROXIMATE', 'The character depth prompt is preserved in the Tavern system profile; DSH does not expose arbitrary history-depth insertion.'))
@@ -583,8 +607,11 @@ function loreText(entries, context) {
 }
 
 function appendLore(body, entries, context) {
-  const text = loreText(entries, context)
-  if (text !== '') body.push(text)
+  for (const entry of entries) {
+    body.sources = [source('worldbook', null, 'content', entry.content, { resourceId: entry.resourceId ?? null, entryId: entry.id ?? entry.uid ?? null })]
+    const text = loreText([entry], context)
+    if (text !== '') body.push(text)
+  }
 }
 
 function applyOriginal(override, original) {

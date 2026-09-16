@@ -227,8 +227,8 @@ test('resource clients explicitly protect dynamic child, diagnostic, error, and 
   assert.match(worldBook, /rawText\(entry\.comment/)
   assert.match(user, /rawText\(user\.name\)/)
   assert.match(sessionTemplate, /rawText\(template\.name\)/)
-  assert.match(trace, /value\?\.name \? rawText\(value\.name\)/)
-  assert.match(trace, /rawText\(`\$\{item\.code\}: \$\{item\.message\}`\)/)
+  assert.match(trace, /rawText\(part\.text\)/)
+  assert.match(trace, /rawText\(source\.text\)/)
 })
 
 test('destructive confirmations use semantic messages and preserve runtime names verbatim', () => {
