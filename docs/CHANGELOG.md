@@ -1,6 +1,6 @@
 # Development changelog
 
-## 2.3.0 — Candidate, not released — Prompt assembly Trace
+## 2.3.0 — Prompt assembly tracing and provenance
 
 - Include readable or empty playthroughs with no available RP session in diagnostics and sidebar warnings. Reuse official session/workspace membership and archive state after mirror hydration; keep healthy empty runs unmarked and update availability without refetching timelines.
 - Add DT → Diagnostics for current RP workspace read problems in both frontend modes. Replace long sidebar errors with a dismissible summary and per-playthrough warning buttons; share reads, retain dismissal within the browser tab, and provide recovery advice, technical details, recheck and copy actions. No persistent log or new API.

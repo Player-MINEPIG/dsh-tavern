@@ -4,7 +4,7 @@ The current DSH target is `0.1.5-rc.1`. When moving existing playthroughs from t
 
 [中文](INSTALLATION.md)
 
-Status: the current source is the unreleased `2.3.0` Trace candidate; runtime acceptance targets DSH `0.1.5-rc.1`. The default root [README](../README.md) is Chinese. The English landing page is [README_en.md](../README_en.md) (no screenshots). This file is the current lifecycle, verification, and recovery contract. For another version, switch to its tag and read the installation instructions in that tag.
+This guide covers Tavern `2.3.0`; runtime acceptance targets DSH `0.1.5-rc.1`. The default root [README](../README.md) is Chinese. The English landing page is [README_en.md](../README_en.md) (no screenshots). This file is the current lifecycle, verification, and recovery contract. For another version, switch to its tag and read the installation instructions in that tag.
 
 The scripts use Node.js as their common entry point and normalize paths for
 Windows, macOS, and Linux. macOS/Linux execute `dsh` directly. Windows safely
@@ -19,20 +19,22 @@ inside that one plugin; do not try to add them to dsh separately. The format
 layer can be consumed as a JavaScript library through the root package export,
 but by itself it intentionally has no agent-loading effect.
 
-## Install the current candidate
+## Install 2.3.0
 
-To install the current candidate directly from GitHub into the default `web`
-profile, pin its candidate branch:
+Presentation review is complete. The branch will merge into `main` after content
+review; the release is not yet published. During review, install from the current
+branch into the default `web` profile:
 
 ```text
 dsh plugin --profile web add github:Player-MINEPIG/dsh-tavern#codex/trace-api-v3
 ```
 
 <a id="source-candidate"></a>
-### Install and validate the current source candidate
+<a id="source-installation"></a>
+### Install and validate from source
 
-Use a separate test profile/home. Stop its Host before installing. The candidate
-has no release tag yet; explicitly check out its branch, then install from source:
+Use a separate test profile/home. Stop its Host before installing. Version `2.3.0`
+has no release tag yet; explicitly check out the current branch, then install from source:
 
 ```sh
 git clone --branch codex/trace-api-v3 https://github.com/Player-MINEPIG/dsh-tavern.git

@@ -1,6 +1,6 @@
 # 提示词装配 Trace 与 v3 元 API
 
-合同版本：Tavern **2.3.0 候选**，目标 DSH **0.1.5-rc.1**。
+合同版本：Tavern **2.3.0**，目标 DSH **0.1.5-rc.1**。
 [English](PROMPT_API_V3_en.md) · [API 总览与范围核对](API.md#api-scope) · [验收](TRACE_REVIEW.md)
 
 ## 定位和兼容
@@ -28,7 +28,7 @@ API v3、Tavern 2.3.0 与 DSH 日志格式 V3 是三个独立版本号。
 
 当前具名段落遵循本文说明的 `pmp-dsh-tavern:part:<ordinal>:<kind>:<field>` 形式。
 ordinal 至少补齐四位，随本次实际段落顺序变化；kind/field 来自首个来源，不是所有贡献者的清单。
-名字可用于识别当前候选的 Tavern 段，但不是跨轮次、跨版本的资源身份，也不保证一段只含一个字段。
+名字可用于识别本版本的 Tavern 段，但不是跨轮次、跨版本的资源身份，也不保证一段只含一个字段。
 按字段调整段落的插件应识别目标版本/合同，检查匹配结果；零匹配或歧义时明确提示，不能静默
 贡献空段或复用上一轮缓存。来源归属以记录的 `sources[]` 为准。
 
@@ -38,7 +38,7 @@ ordinal 至少补齐四位，随本次实际段落顺序变化；kind/field 来�
 [官方观察示例](examples/official-prompt-observer.mjs)。只读 HTTP 消费方本身不能通过 v3 修改本轮装配。
 
 已发布的 v1/v2 文档路由与响应语义继续是公开合同，包括 v1 世界书决策审计；内部存储布局、
-DOM 和未文档化服务不属于 HTTP 合同。当前 v3 仍是未发布候选，应固定候选提交并检查
+DOM 和未文档化服务不属于 HTTP 合同。v3 消费方应核对所用版本的文档，并检查
 `capabilities.contract === "prompt-trace-primitives"`，不能仅凭 `apiVersion: 3` 判断与旧组合器候选兼容。
 旧候选的 composer、owner/mode、`suggestedCallConfig` 与 `/sources` 聚合不在现合同内。
 正式版本的合同以对应 tag 的文档为准；新字段、可空字段和明确的 unavailable 状态须按文档处理。

@@ -4,7 +4,7 @@
 
 ---
 
-已看到你的关闭说明。#3 针对的是已停止的 `codex/prompt-composition-api-v3` 组合器候选，这里补充复现后的处理结果。
+已看到你的关闭说明。#3 针对的是已停止的 `codex/prompt-composition-api-v3` 组合器方案，这里补充复现后的处理结果。以下插件自身的修复已纳入 **v2.3.0**；新版本以提示词装配追踪与溯源为主题，不再提供旧组合器接口。
 
 原 Q3 的 composer 失败处理、Q4 的 `suggestedCallConfig` 已随组合器方案删除而失去适用对象；不将它们记为新方案中的同名能力已修复。`registerComposer` 和 `pmpDshTavernPrompt` 服务也已移除，旧插件的硬注入依赖需要清理。
 
@@ -20,6 +20,6 @@
 | 旧组合器多余字段的 422 | 对应旧校验器已随方案删除，不宣称为新路径修复；也不把任意额外属性列为官方支持字段。 |
 | 测试依赖根与 Windows 路径 | 文档明确 codec 与 Host 依赖根可以分别设置；存储测试已使用平台绝对路径。没有原生 Windows 验收证据，暂不宣称 Windows 实机问题已完全关闭。 |
 
-**验证范围**：当前完整检查 654 项，652 通过、0 失败、2 条件跳过；真实 rc.1 Host 已验证成功正文及两类失败原因在重启后的冷读，v2 没有伪造失败消息。Chrome 也验证了 Trace、RP HTML 和工作区诊断。上述是 Tavern 自身与合成官方消费者的证据，**不是对你们实际插件按新合同完成端到端联调的声明**。
+**验证范围**：当前完整检查 654 项，652 通过、0 失败、2 条件跳过；真实 rc.1 Host 已验证成功正文及两类失败原因在重启后的冷读，v2 没有伪造失败消息。Chrome 也验证了 Trace、RP HTML 和工作区诊断，维护者已完成呈现审核。上述是 Tavern 自身与合成官方消费者的证据，**不是对你们实际插件按新合同完成端到端联调的声明**。
 
-具体证据见 [当前验收范围](https://github.com/Player-MINEPIG/dsh-tavern/blob/codex/trace-api-v3/docs/TRACE_REVIEW.md)。#3 保持关闭；已移出的 Q1 发布计划、Q2 公开接口边界，以及新候选的来源正文读取问题，在 [#7](https://github.com/Player-MINEPIG/dsh-tavern/issues/7) 单独回复。
+具体证据见 [当前验收范围](https://github.com/Player-MINEPIG/dsh-tavern/blob/codex/trace-api-v3/docs/TRACE_REVIEW.md)。#3 保持关闭；已移出的 Q1 发布计划、Q2 公开接口边界，以及 v2.3.0 的来源正文读取问题，在 [#7](https://github.com/Player-MINEPIG/dsh-tavern/issues/7) 单独回复。

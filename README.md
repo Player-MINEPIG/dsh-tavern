@@ -4,9 +4,11 @@
 
 以 DeepSeek Harness（DSH）原生会话与执行机制为权威的酒馆兼容插件，提供前后端 API，支持自由组合酒馆能力与 DSH 原生功能。
 
-> 当前源码对应 `2.3.0` Trace 候选，尚未发布；目标运行环境为 DSH `0.1.5-rc.1`。项目代码采用 [MIT License](LICENSE)。
+> 本文说明 `2.3.0`，主题是提示词装配追踪与溯源；目标运行环境为 DSH `0.1.5-rc.1`。项目代码采用 [MIT License](LICENSE)。
 >
-> Tavern Trace 通过官方格式记录可辨识的提示词段落，以 schema 4 保存有界 metadata 与官方 Session 引用，并在详情读取时验证、恢复仍可用的正文。见 [API 与设计](docs/PROMPT_API_V3.md) 和 [验收与人工检查](docs/TRACE_REVIEW.md)。
+> Tavern Trace 可查看每次请求的配置、世界书触发情况和提示词段落的内容与来源；第三方工具也可通过只读 v3 API 读取这些信息。见 [API 与设计](docs/PROMPT_API_V3.md) 和 [验收状态](docs/TRACE_REVIEW.md)。
+>
+> **暂不支持 MVU 变量系统和依赖 JavaScript 的动态 HTML。** RP 视图支持经过过滤的静态 HTML/CSS；依赖脚本的状态更新和交互不会运行。
 
 ## 设计理念
 
@@ -38,7 +40,7 @@ pmp-dsh-tavern 不是用另一套界面取代 DSH，也不会复制一份会话�
 
 ### 0. 安装
 
-本文只说明当前 `2.3.0` 候选。直接从 GitHub 安装时必须固定候选分支：
+`2.3.0` 已完成呈现审核，内容审核后再合并到 `main`，目前尚未发布。审核期间从 GitHub 安装请指定当前分支：
 
 目标 DSH `0.1.5-rc.1` 要求 Node.js `^22.19.0 || >=24.0.0`，另需可从 `PATH` 调用的 DSH 和已初始化的 profile（默认 `web`）。Tavern 独立测试兼容 Node 20，不代表目标 Host 可运行在 Node 20。
 
@@ -46,7 +48,7 @@ pmp-dsh-tavern 不是用另一套界面取代 DSH，也不会复制一份会话�
 dsh plugin --profile web add github:Player-MINEPIG/dsh-tavern#codex/trace-api-v3
 ```
 
-其他版本请切换到对应 tag，并阅读该 tag 内的安装说明。从源码开发、从旧版包内数据安全迁移，或使用项目提供的备份卸载流程时，按[源码候选安装步骤](docs/INSTALLATION.md#source-candidate)检出同一候选分支：
+其他版本请切换到对应 tag，并阅读该 tag 内的安装说明。从源码开发、从旧版包内数据安全迁移，或使用项目提供的备份卸载流程时，按[源码安装步骤](docs/INSTALLATION.md#source-installation)检出同一分支：
 
 ```sh
 git clone --branch codex/trace-api-v3 https://github.com/Player-MINEPIG/dsh-tavern.git
@@ -107,7 +109,7 @@ npm run plugin:install
 | 安全 | RP 权限叠加、同源/loopback API、工作区路径防护、CAS、DOMPurify、无正文 operation log | [RP 安全模式](docs/RP_SECURE_MODE.md) · [安全策略](SECURITY.md) |
 | 调试 | Tavern Trace 保存每次请求的段落/来源 metadata 与官方历史引用；详情按需验证并读取可恢复的段落正文，来源正文不另存 | [Trace API 与设计](docs/PROMPT_API_V3.md) |
 | 工作区诊断 | DT → 诊断集中显示当前 RP 工作区问题，支持重新检查、复制报告；侧栏摘要可关闭，异常周目保留独立警告入口 | [中文使用指南](docs/USAGE_zh-CN.md) |
-| 第三方开发 | v2 HTTP API、`pmpDshTavernChrome` 模式服务、DSH slots/store 与独立客户端接入 | [第三方 RP 前端接入](docs/FRONTEND_INTEGRATION_zh-CN.md) |
+| 第三方开发 | v1 资源管理、v2 RP 元操作、v3 提示词装配追踪与溯源；模式服务、DSH slots/store 与独立客户端接入 | [HTTP API](docs/API.md) · [第三方 RP 前端接入](docs/FRONTEND_INTEGRATION_zh-CN.md) |
 
 ![切换首轮 swipe，同时恢复各自后续的用户输入与回复](docs/assets/market/07-swipe-paths.png)
 
@@ -118,6 +120,7 @@ npm run plugin:install
 - “预设”指 SillyTavern 风格的采样参数与提示词编排，不是 DSH agent preset。
 - greeting 不进入 timeline，也不会伪造成 DSH 历史；外部记录只在首次真实请求中作为 `untrusted` 只读上下文注入。
 - 显示正则只影响魔丸前端渲染，不改写模型请求、DSH 原始消息或导出所依据的权威正文。
+- 暂不支持 MVU 变量系统与 JavaScript 动态 HTML；静态 HTML/CSS 可以展示，但脚本驱动的数值更新和按钮交互不会执行。
 - 魔丸隐藏 reasoning、工具 context 与子 agent 通知；需要查看完整运行细节时切回 DSH 原生“对话”视图。
 - 当前没有“导入一个配置文件即可替换整个魔丸”的动态前端加载器。完整替换请发布独立 DSH 插件、独立 Web 客户端或维护 fork。
 - 当前目标 DSH 的外层“新建会话”没有供 Tavern 接管点击的公开 seam。魔丸不使用私有 DOM 覆盖它；创建周目请使用角色卡右侧的 `+`。

@@ -4,9 +4,11 @@
 
 A SillyTavern compatibility plugin that keeps DeepSeek Harness (DSH) authoritative over sessions and execution, with frontend and backend APIs for composing Tavern capabilities with native DSH features.
 
-> The current source is the unreleased `2.3.0` Trace candidate and targets DSH `0.1.5-rc.1`. [MIT License](LICENSE).
+> This page describes `2.3.0`, focused on prompt assembly tracing and provenance, targeting DSH `0.1.5-rc.1`. [MIT License](LICENSE).
 >
-> Tavern Trace records identifiable prompt sections in the official format, stores bounded schema 4 metadata and official Session references, and verifies and restores bodies that remain available when detail is read. See [API/design](docs/PROMPT_API_V3_en.md) and [acceptance/manual checks](docs/TRACE_REVIEW_en.md).
+> Tavern Trace shows each request's configuration, world-book activation, and prompt section content and sources. Third-party tools can read the same information through the read-only v3 API. See [API/design](docs/PROMPT_API_V3_en.md) and [acceptance status](docs/TRACE_REVIEW_en.md).
+>
+> **MVU variables and JavaScript-driven dynamic HTML are not supported yet.** RP supports sanitized static HTML/CSS; script-driven state updates and interactions do not run.
 >
 > The default project README is the [Chinese version](README.md). This English file has no screenshots.
 
@@ -38,7 +40,7 @@ If behavior looks suspicious, stop the Agent, switch back to DSH native mode, an
 
 ### 0. Install
 
-This page describes only the current `2.3.0` candidate. A direct GitHub install must pin its candidate branch:
+Presentation review for `2.3.0` is complete. The branch will merge into `main` after content review; the release is not yet published. During review, use the current branch for GitHub installs:
 
 Target DSH `0.1.5-rc.1` requires Node.js `^22.19.0 || >=24.0.0`, with `dsh` on `PATH` and an initialized profile (default `web`). Tavern standalone tests support Node 20; that does not establish Node 20 support for the target Host.
 
@@ -46,7 +48,7 @@ Target DSH `0.1.5-rc.1` requires Node.js `^22.19.0 || >=24.0.0`, with `dsh` on `
 dsh plugin --profile web add github:Player-MINEPIG/dsh-tavern#codex/trace-api-v3
 ```
 
-For another version, switch to its tag and read the installation instructions in that tag. For source development, safe migration from legacy package-local data, or the project's backup-aware uninstall flow, follow the [source-candidate installation steps](docs/INSTALLATION_en.md#source-candidate) and check out the same candidate branch:
+For another version, switch to its tag and read the installation instructions in that tag. For source development, safe migration from legacy package-local data, or the project's backup-aware uninstall flow, follow the [source installation steps](docs/INSTALLATION_en.md#source-installation) and check out the same branch:
 
 ```sh
 git clone --branch codex/trace-api-v3 https://github.com/Player-MINEPIG/dsh-tavern.git
@@ -93,7 +95,7 @@ Full operations and boundaries: [English usage guide](docs/USAGE_en.md).
 | Security | RP permission overlay, same-origin/loopback API, workspace path jail, CAS, DOMPurify, content-free operation log | [RP secure mode](docs/RP_SECURE_MODE_en.md) · [Security policy](SECURITY_en.md) |
 | Debugging | Tavern Trace stores per-request section/provenance metadata and official-history references; details verify and read recoverable section bodies on demand, while source bodies are not stored | [Trace API/design](docs/PROMPT_API_V3_en.md) |
 | Workspace diagnostics | DT → Diagnostics shows current RP workspace problems with recheck and copy actions; the sidebar summary is dismissible and affected playthroughs retain warning buttons | [Usage](docs/USAGE_en.md) |
-| Third-party | v2 HTTP API, `pmpDshTavernChrome` mode service, DSH slots/store, standalone clients | [RP frontend integration](docs/FRONTEND_INTEGRATION_en.md) |
+| Third-party | v1 resource management, v2 RP primitives, v3 prompt assembly tracing and provenance; mode service, DSH slots/store, standalone clients | [HTTP API](docs/API_en.md) · [RP frontend integration](docs/FRONTEND_INTEGRATION_en.md) |
 
 See the [feature gallery](docs/assets/market/README.md#gallery) for annotated examples of message actions, swipe-linked continuations, native Agent capabilities, session-bound assets, ST-compatible resources, display regex, and native/RP views.
 
@@ -102,6 +104,7 @@ See the [feature gallery](docs/assets/market/README.md#gallery) for annotated ex
 - “Preset” means SillyTavern-style sampling and prompt ordering, not a DSH agent preset.
 - Greeting does not enter the timeline and is not forged as DSH history. Imported records are injected only on the first real request as `untrusted` read-only context.
 - Display regex affects Mowan rendering only. It does not rewrite the model request, DSH original messages, or the authoritative text used for export.
+- MVU variables and JavaScript-driven dynamic HTML are not supported yet. Static HTML/CSS can render, but script-driven value updates and button interactions do not run.
 - Mowan hides reasoning, tool context, and child-agent notices. Switch back to native DSH **Chat** for full runtime detail.
 - There is no dynamic frontend loader that replaces all of Mowan from one config file. Full replacement requires a separate DSH plugin, a standalone web client, or a fork.
 - The target DSH outer **New session** control has no public click-intercept seam for Tavern. Mowan does not overlay it with private DOM. Create playthroughs with the `+` on a character card.

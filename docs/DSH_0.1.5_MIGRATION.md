@@ -2,7 +2,7 @@
 
 [English](DSH_0.1.5_MIGRATION_en.md)
 
-本文说明 Tavern `2.3.0` 候选在 DSH `0.1.5-rc.1` 下的会话格式与周目引用迁移。当前目标 Host 要求 Node `^22.19.0 || >=24.0.0`，Tavern 独立测试的 Node `>=20` 声明不能替代它。实现保留 DSH `0.1.2-rc.1` 路径，但新 Trace 的运行时验收以 `0.1.5-rc.1` 为准，不承诺其他候选版本。
+本文说明 Tavern `2.3.0` 在 DSH `0.1.5-rc.1` 下的会话格式与周目引用迁移。当前目标 Host 要求 Node `^22.19.0 || >=24.0.0`，Tavern 独立测试的 Node `>=20` 声明不能替代它。实现保留 DSH `0.1.2-rc.1` 路径，但新 Trace 的运行时验收以 `0.1.5-rc.1` 为准，不承诺其他候选版本。
 
 外部前端接入保留的公开坐标查询 API 时，请先看 [请求、字段与分支示例](API.md#session-coordinates)。格式版本由 DSH 定义；迁移标记由 Tavern 推断，查询本身不会迁移旧引用。
 
@@ -91,4 +91,4 @@ DSH_TAVERN_COMPAT_ROOT=/path/to/dsh-install npm run verify:2.0
 引用会标为 `format-mismatch` 或其他明确不可用状态，不猜测新位置。旧 Trace 正文快照仍按
 兼容规则读取。迁移后的新请求会按当前格式创建新记录。
 
-当前候选的验证结果和待人工检查项见 [Trace 验收](TRACE_REVIEW.md) 与 [周目验收](PLAY_REVIEW.md)。
+当前版本的验证结果和待人工检查项见 [Trace 验收](TRACE_REVIEW.md) 与 [周目验收](PLAY_REVIEW.md)。

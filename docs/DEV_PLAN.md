@@ -1,8 +1,8 @@
 # Current development and release plan
 
-Current candidate: Tavern `2.3.0` on `codex/trace-api-v3`. The implementation targets
-DSH `0.1.5-rc.1`; it has not been merged, tagged or released. Package versions and
-current contracts describe this candidate, not a previously published release.
+Current version: Tavern `2.3.0` on `codex/trace-api-v3`, targeting DSH `0.1.5-rc.1`.
+Maintainer presentation review is complete. Documentation and announcement content await review;
+the branch will merge into `main` after that approval. No merge, tag or release has taken place.
 
 ## Product and integration boundaries
 
@@ -25,9 +25,9 @@ current contracts describe this candidate, not a previously published release.
 
 The Trace implementation, UI, metadata store, official-history reader and bilingual
 contracts are complete. The [Trace acceptance guide](TRACE_REVIEW_en.md) records the
-current automated and target-runtime results and the outstanding maintainer checks.
+current automated and target-runtime results and the remaining external checks.
 [Playthrough acceptance](PLAY_REVIEW_en.md) covers RP lifecycle and failure boundaries.
-The [Trace backlog](TRACE_BACKLOG.md) tracks remaining work for this candidate.
+The [Trace backlog](TRACE_BACKLOG.md) tracks remaining work for this version.
 
 Use Node compatible with the target Host: `^22.19.0 || >=24.0.0` for DSH 0.1.5-rc.1.
 Tavern's standalone Node `>=20` declaration does not override the Host requirement.
@@ -37,13 +37,13 @@ workspace coordinates and missing Session logs.
 
 ## Remaining release work
 
-1. Complete maintainer acceptance with representative cards/presets, the third-party
-   prompt manager and real-model cancellation/timeout/retry combinations.
-2. Resolve any findings and rerun checks proportionate to the affected behavior.
-3. Verify the exact candidate package and installation against the supported runtime;
-   update the acceptance results when implementation changes.
-4. Obtain maintainer approval before merging, tagging or publishing. Existing branch
-   pushes do not imply release approval.
+1. Complete maintainer review of the current documentation, release announcement and separate issue replies.
+2. After content approval, merge the branch into `main` as `2.3.0`. Publishing a tag or release and sending
+   issue replies still require their corresponding authorization.
+3. Keep actual third-party integration and native Windows checks explicit as remaining verification limits.
+   Real-provider timeout/retry has not been deliberately induced; synthetic failure coverage is documented.
+4. Resolve any new findings and rerun checks proportionate to affected behavior. Update acceptance evidence
+   if implementation changes; completed runtime checks do not need to be repeated for documentation alone.
 
 ## Documentation maintenance
 

@@ -2,7 +2,7 @@
 
 [English](ARCHITECTURE_en.md)
 
-当前合同面向 Tavern **2.3.0 候选**与 DSH `0.1.5-rc.1`；安装标识为
+当前合同面向 Tavern **2.3.0**与 DSH `0.1.5-rc.1`；安装标识为
 `pmp-dsh-tavern`。HTTP 挂载 `/pmp-dsh-tavern/api`，资源走 `/v1`，扮演表面合同走
 `/v2`，装配审计走 `/v3`。本文记录当前架构决策与发布审查门槛。
 
@@ -205,11 +205,11 @@ Tavern 语言与 DSH 语言独立。RP、侧栏和开场 dock 订阅完整 UI �
 
 ## 当前发布门槛
 
-当前候选的执行结果与剩余人工项目集中在 [Trace 验收](TRACE_REVIEW.md) 和
+当前版本的执行结果与剩余人工项目集中在 [Trace 验收](TRACE_REVIEW.md) 和
 [周目验收](PLAY_REVIEW.md)。发布前按变更范围完成以下检查：
 
 1. 验证 ST 格式识别、未知字段保留、归一化、资源选择、提示词顺序与宏行为。
-2. 运行相关测试；完整候选使用 `npm run check` 和 `npm run verify:2.0`，并为官方 codec / AgentLoop 测试配置目标 DSH 依赖根。条件跳过不能当作通过。
+2. 运行相关测试；完整版本验证使用 `npm run check` 和 `npm run verify:2.0`，并为官方 codec / AgentLoop 测试配置目标 DSH 依赖根。条件跳过不能当作通过。
 3. 在隔离 `DSH_HOME` 的目标 Host 上检查绑定、新会话、RP 生命周期，以及 `llm/stream`、官方持久消息和 Trace 引用的对应关系；验证重启后详情仍可冷读。
 4. 核对安装包和已安装文件，确认 bundle、公开文档和图片齐全，且不包含测试数据、私有计划、真实路径、密钥或导入 fixture。
 5. 同步中英文说明及当前验收结果，完成维护者人工验收。分支推送、合并、tag 和发布遵循维护者分别给出的授权。

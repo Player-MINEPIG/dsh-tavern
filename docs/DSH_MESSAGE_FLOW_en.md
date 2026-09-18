@@ -2,7 +2,7 @@
 
 [中文](DSH_MESSAGE_FLOW.md)
 
-This page defines the current message contract for Tavern **2.3.0 candidate** on DSH
+This page defines the current message contract for Tavern **2.3.0** on DSH
 `0.1.5-rc.1`: native DSH flow, DT flow, DT interception points, and one complete model
 step. V3 system prompts enter the effective surface through `system/message`, while
 `request/header` retains config/tools. Trace schema 4 persists metadata and official

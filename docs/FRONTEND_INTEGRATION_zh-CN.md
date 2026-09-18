@@ -2,7 +2,7 @@
 
 [English](FRONTEND_INTEGRATION_en.md)
 
-当前合同面向 Tavern **2.3.0 候选**与 DSH `0.1.5-rc.1`。HTTP 字段以
+当前合同面向 Tavern **2.3.0**与 DSH `0.1.5-rc.1`。HTTP 字段以
 [API.md](API.md) 为准；本页说明交付方式、模式生命周期、产品动作组合和 v1/v2/v3 分工。
 
 ## 1. 先理解双模式兼容边界

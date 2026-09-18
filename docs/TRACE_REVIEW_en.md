@@ -1,9 +1,10 @@
-# Trace candidate acceptance
+# Trace acceptance
 
-Current candidate: Tavern **2.3.0**, targeting DSH **0.1.5-rc.1**, on `codex/trace-api-v3`.
-Trace implementation, automated regressions, Host and Chrome checks are complete within the scope below.
-Remaining external checks are presentation review, actual third-party integration and Windows verification;
-verification limits are stated below. No merge, tag or release.
+Current version: Tavern **2.3.0**, targeting DSH **0.1.5-rc.1**, on `codex/trace-api-v3`.
+Trace implementation, automated regressions, Host and Chrome checks, and maintainer presentation review
+are complete within the scope below. Documentation and announcement content await maintainer review;
+merge into `main` follows that approval. No merge, tag or release has taken place.
+Actual third-party integration and native Windows checks still lack external verification.
 [中文](TRACE_REVIEW.md) · [API and design contract](PROMPT_API_V3_en.md) · [Playthrough acceptance](PLAY_REVIEW_en.md)
 
 ## Current delivery
@@ -46,7 +47,7 @@ Environment: Node.js 22.23.1, with the official CLI and resolved core packages p
 - A real Host with a synthetic model resolved 23 sections and 2 Tavern inputs for a preset-bearing turn.
   After removing the request fixture and restarting, the same record resolved without reassembly.
   Two sample records occupied about 34 KiB; this is not a fixed retention estimate.
-- Chrome checked the candidate on port `18977`, including switching between two real cards without
+- Chrome checked the test environment on port `18977`, including switching between two real cards without
   cross-session content. Configuration-first Trace, included/rejected lore decisions, interleaved Loader
   sections and official-body verification were inspected. Source non-storage and requested ST role labels
   are visible. Trace displays prompt text literally, without executing HTML; actual model text contains no generated identity wrappers.
@@ -75,6 +76,7 @@ Environment: Node.js 22.23.1, with the official CLI and resolved core packages p
   them without blocking valid RP sessions.
 - Installed test-environment files matched the package byte-for-byte, with consistent resolved core versions.
   An already running Host must restart after installation to load the new backend.
+- The maintainer has completed presentation review of RP rich text, Trace information hierarchy and interaction.
 
 For reproduction, point each variable to a dependency directory containing `package.json`
 that resolves its target modules. An installed CLI usually supports one shared root. Source
@@ -99,15 +101,14 @@ behavior or acceptance of the actual third-party plugin.
 
 Maintainers do not need to repeat the completed API, Host and Chrome checklist. Remaining scope:
 
-1. **Presentation review.** Decide whether RP rich text, Trace information hierarchy and interaction fit the intended experience. The completed HTML, window, theme, language and session-switching technical checks need not be repeated.
-2. **Actual third-party integration.** The plugin developer should connect their own UI/workflow through the [v3 reader](examples/trace-reader.mjs) or [official observer](examples/official-prompt-observer.mjs), checking provenance display, plugin ordering and sampling policy. Official observation/reordering/replacement/complete overrides have passed with synthetic plugins; that does not certify the actual third-party plugin.
-3. **Windows verification.** Portable path fixtures are fixed, but no Windows host was tested. Run storage-path and installation checks on Windows.
+1. **Actual third-party integration.** The plugin developer should connect their own UI/workflow through the [v3 reader](examples/trace-reader.mjs) or [official observer](examples/official-prompt-observer.mjs), checking provenance display, plugin ordering and sampling policy. Official observation/reordering/replacement/complete overrides have passed with synthetic plugins; that does not certify the actual third-party plugin.
+2. **Windows verification.** Portable path fixtures are fixed, but no Windows host was tested. Run storage-path and installation checks on Windows.
 
 When reporting a failure, include the environment, steps and expected/actual behavior, adding Session ID, turn/step/attempt and recordId when needed. Keep private prompt bodies out of public reports.
 
 ## Optional reproduction
 
-After changing the build/environment or finding a new problem, [install the candidate](INSTALLATION_en.md), restart the Host and use the commands above. These focused entry points are not another mandatory manual checklist:
+After changing the build/environment or finding a new problem, [install the corresponding version](INSTALLATION_en.md), restart the Host and use the commands above. These focused entry points are not another mandatory manual checklist:
 
 - **API and configuration:** capabilities returns 200 and old `/sessions/:id/sources` returns 404. Read current bindings through v1 `POST /session-configurations/preview`, and history through v3 index/detail. Configuration queries should not create historical records; `/active` runs assembly and cannot verify that property.
 - **Assembly and references:** compare ordering, separators and verification with official system text. Sources describe section-level input relationships, not character spans. Join lore by `resourceId + entryId`; `qualifiedEntryId` retains the complete Loader ID. Old details continue to depend on old official logs after resource edits. Moving a log aside in a disposable copy must make bodies explicitly unavailable without reconstruction.
@@ -130,5 +131,5 @@ failure cases above cover failure attribution, not end-to-end failure acceptance
 Maintainers are not asked to repeat all completed checks.
 
 One Host writes a store; multi-process writes are unsupported. Cold inspect uses logical event coordinates,
-not O(1) random access into compressed logs. Retained older DSH paths do not extend this candidate's target-runtime
-evidence. Merge and release require maintainer acceptance.
+not O(1) random access into compressed logs. Retained older DSH paths do not extend this version's target-runtime
+evidence.

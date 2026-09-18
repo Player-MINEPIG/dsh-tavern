@@ -2,7 +2,7 @@
 
 [中文](DSH_0.1.5_MIGRATION.md)
 
-This page covers Session formats and playthrough-reference migration for the Tavern `2.3.0` candidate on DSH `0.1.5-rc.1`. The target Host requires Node `^22.19.0 || >=24.0.0`; Tavern's standalone Node `>=20` declaration does not override it. The implementation retains a DSH `0.1.2-rc.1` path, but new Trace runtime acceptance targets `0.1.5-rc.1`, without promising other candidates.
+This page covers Session formats and playthrough-reference migration for Tavern `2.3.0` on DSH `0.1.5-rc.1`. The target Host requires Node `^22.19.0 || >=24.0.0`; Tavern's standalone Node `>=20` declaration does not override it. The implementation retains a DSH `0.1.2-rc.1` path, but new Trace runtime acceptance targets `0.1.5-rc.1`, without promising other candidates.
 
 For the retained public coordinate query API, start with [requests, fields, and branch examples](API_en.md#session-coordinates). DSH defines the format version; Tavern infers the migration marker. The query does not migrate old references.
 

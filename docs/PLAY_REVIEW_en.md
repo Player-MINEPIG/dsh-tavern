@@ -1,8 +1,8 @@
 # Playthrough behavior and acceptance
 
-This page describes RP playthroughs in the Tavern `2.3.0` candidate, targeting DSH
-`0.1.5-rc.1`. The candidate is not merged or released. See [Trace acceptance](TRACE_REVIEW_en.md)
-for current verification results and release gates. [中文](PLAY_REVIEW.md)
+This page describes RP playthroughs in Tavern `2.3.0`, targeting DSH `0.1.5-rc.1`.
+Presentation review is complete. See [Trace acceptance](TRACE_REVIEW_en.md) for current
+verification results, remaining checks and content-review status. [中文](PLAY_REVIEW.md)
 
 ## Current behavior
 
@@ -67,5 +67,6 @@ See [API](API_en.md), [usage](USAGE_en.md), [security](../SECURITY_en.md) and th
    remain usable and external Tavern data retained. `--no-backup` skips a removal backup;
    it does not mean delete resources.
 
-Release requires maintainer acceptance of this candidate and explicit authorization.
-Earlier-version acceptance is not a substitute; consult matching Git tags for past records.
+The workflow above supports reproduction; it need not be repeated for the completed presentation review.
+Revalidate later behavior changes in proportion to their scope. Earlier-version acceptance does not replace
+current evidence; consult matching Git tags for past records.

@@ -2,7 +2,7 @@
 
 [中文](ARCHITECTURE.md)
 
-The current contract targets Tavern **2.3.0 candidate** and DSH `0.1.5-rc.1`.
+The current contract targets Tavern **2.3.0** and DSH `0.1.5-rc.1`.
 The install identity is `pmp-dsh-tavern`. HTTP mounts at `/pmp-dsh-tavern/api`;
 resources use `/v1`, the play-surface contract uses `/v2`, and assembly audit uses `/v3`.
 This page records the current architecture and release-review gates.
@@ -206,12 +206,12 @@ Therefore the release and install unit stays the root package `pmp-dsh-tavern` (
 
 ## Current release gates
 
-Current candidate results and remaining manual checks are recorded in
+Current verification results and remaining manual checks are recorded in
 [Trace acceptance](TRACE_REVIEW_en.md) and [playthrough acceptance](PLAY_REVIEW_en.md).
 Before release, choose checks proportionate to the change:
 
 1. Verify ST recognition, unknown-field retention, normalization, resource selection, prompt order, and macro behavior.
-2. Run relevant tests. A full candidate uses `npm run check` and `npm run verify:2.0`, with the target DSH dependency root configured for official codec / AgentLoop tests. Conditional skips are not passes.
+2. Run relevant tests. Full-version verification uses `npm run check` and `npm run verify:2.0`, with the target DSH dependency root configured for official codec / AgentLoop tests. Conditional skips are not passes.
 3. In an isolated target Host `DSH_HOME`, check binding, new Sessions, RP lifecycle, and alignment between `llm/stream`, official durable messages, and Trace references. Verify cold detail reads after restart.
 4. Check package contents and installed files: include the bundle, public documents, and assets; exclude test data, private plans, workstation paths, credentials, and imported fixtures.
 5. Synchronize both languages and current acceptance results, then complete maintainer acceptance. Branch pushes, merges, tags, and releases follow the maintainer's separate authorizations.

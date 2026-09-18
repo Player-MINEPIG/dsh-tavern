@@ -2,7 +2,7 @@
 
 [中文](LOADER_CONTRACT.md)
 
-The current contract targets Tavern **2.3.0 candidate** and DSH `0.1.5-rc.1`. It covers
+The current contract targets Tavern **2.3.0** and DSH `0.1.5-rc.1`. It covers
 the RP session overlay (`selection.rp` + `rp:policy`), delegated subagents freezing their
 parent selection, named official sections, and schema 4 Trace references. DSH V3 uses
 `system/message` as the system-body authority while `request/header` retains config/tools;

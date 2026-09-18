@@ -4,24 +4,25 @@
 
 [English](INSTALLATION_en.md)
 
-状态：当前源码为 `2.3.0` Trace 候选，尚未发布；运行时验收目标是 DSH `0.1.5-rc.1`。根目录默认 [README](../README.md) 为中文；英文落地页是 [README_en.md](../README_en.md)（无截图）。本文是当前安装生命周期、验收与恢复合同。其他版本请切换到对应 tag，并阅读该 tag 内的安装说明。
+本文面向 Tavern `2.3.0`，运行时验收目标是 DSH `0.1.5-rc.1`。根目录默认 [README](../README.md) 为中文；英文落地页是 [README_en.md](../README_en.md)（无截图）。本文是当前安装生命周期、验收与恢复合同。其他版本请切换到对应 tag，并阅读该 tag 内的安装说明。
 
 脚本以 Node.js 为统一入口，并规范化 Windows、macOS 和 Linux 路径。macOS/Linux 直接执行 `dsh`。Windows 会安全定位 npm 的 `dsh.ps1` shim，再通过系统 PowerShell 以参数数组调用，因此路径不会被拼回 shell 命令文本。请在 `dsh-tavern` 检出目录中运行脚本，并准备 Node.js 20 或更高版本，以及位于 `PATH` 上的目标 DSH `0.1.5-rc.1`；启动 Host 时需满足上面的 Node 要求。
 
 只安装仓库根包。`packages/tavern-format`、`packages/preset` 和 `packages/tavern-loader` 是随同一插件发布的内部边界，不要单独把它们加进 dsh。格式层可通过根包导出作为 JavaScript 库使用，但它本身故意没有把内容发给 agent 的效果。
 
-## 安装当前候选
+## 安装 2.3.0
 
-直接从 GitHub 把当前候选装进默认 `web` profile 时，必须固定候选分支：
+呈现审核已完成，内容审核后再合并到 `main`，目前尚未发布。审核期间从 GitHub 安装到默认 `web` profile，请指定当前分支：
 
 ```text
 dsh plugin --profile web add github:Player-MINEPIG/dsh-tavern#codex/trace-api-v3
 ```
 
 <a id="source-candidate"></a>
-### 从源码安装和验收当前候选
+<a id="source-installation"></a>
+### 从源码安装和验收
 
-使用独立测试 profile/home，安装前停止该 Host。本候选尚无发布 tag；请明确检出分支再从源码安装：
+使用独立测试 profile/home，安装前停止该 Host。`2.3.0` 尚无发布 tag；请明确检出当前分支再从源码安装：
 
 ```sh
 git clone --branch codex/trace-api-v3 https://github.com/Player-MINEPIG/dsh-tavern.git

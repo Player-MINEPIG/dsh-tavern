@@ -2,7 +2,7 @@
 
 [中文](FRONTEND_INTEGRATION_zh-CN.md)
 
-The current contract targets Tavern **2.3.0 candidate** and DSH `0.1.5-rc.1`.
+The current contract targets Tavern **2.3.0** and DSH `0.1.5-rc.1`.
 HTTP fields follow [API_en.md](API_en.md). This page covers delivery, mode lifecycle,
 product-action composition, and v1/v2/v3 responsibilities.
 

@@ -1,6 +1,6 @@
 # Prompt assembly Trace and primitive API v3
 
-Contract version: Tavern **2.3.0 candidate**, targeting DSH **0.1.5-rc.1**.
+Contract version: Tavern **2.3.0**, targeting DSH **0.1.5-rc.1**.
 [中文](PROMPT_API_V3.md) · [API index and scope audit](API_en.md#api-scope) · [Acceptance](TRACE_REVIEW_en.md)
 
 ## Purpose and compatibility
@@ -31,7 +31,7 @@ source bodies is the schema 4 design, not an unfinished placeholder.
 
 Current section names follow `pmp-dsh-tavern:part:<ordinal>:<kind>:<field>` as documented here.
 The ordinal is padded to at least four digits and follows the current section order; kind/field name the
-first source, not all contributors. Names can identify Tavern sections in this candidate, but are not
+first source, not all contributors. Names can identify Tavern sections in this version, but are not
 resource identities across requests or versions and do not guarantee one field per section. A plugin
 reordering fields should identify the target version/contract and check its matches. Report zero matches
 or ambiguity rather than silently contributing empty text or reusing a previous request's cache. Use the
@@ -45,7 +45,7 @@ A read-only HTTP consumer cannot modify this request's assembly through v3 itsel
 
 Documented released v1/v2 routes and response semantics remain public contracts, including the v1
 world-book decision audit. Internal storage layouts, DOM, and undocumented services are not HTTP
-contracts. v3 is still an unpublished candidate: pin a candidate commit and check
+contracts. v3 consumers should use the documentation for their version and check
 `capabilities.contract === "prompt-trace-primitives"`. `apiVersion: 3` alone does not establish compatibility
 with the former composer candidate. Composer, owner/mode, `suggestedCallConfig`, and the `/sources`
 aggregate are outside this contract. Released contracts are documented at their matching tags;

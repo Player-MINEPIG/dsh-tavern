@@ -2,7 +2,7 @@
 
 [English](API_en.md) · [v3 详细合同](PROMPT_API_V3.md) · [前端接入](FRONTEND_INTEGRATION_zh-CN.md)
 
-合同版本：Tavern **2.3.0 候选**，目标 DSH `0.1.5-rc.1`。
+合同版本：Tavern **2.3.0**，目标 DSH `0.1.5-rc.1`。
 根路径 `/pmp-dsh-tavern/api`。API 版本与 DSH 日志格式 V3 无关。
 
 各版本路由目录统一采用 v2 的 **方法 / 路径 / 作用 / 状态** 格式。路径相对于该节声明的
@@ -507,13 +507,13 @@ stage 或 terminal 调用无效且不会重复写终态。
 
 ## v3 提示词装配审计
 
-前缀 `/pmp-dsh-tavern/api/v3`。当前为只读候选合同。
+前缀 `/pmp-dsh-tavern/api/v3`。提供只读提示词装配记录与来源追踪。
 
 | 方法 | 路径 | 作用 | 状态 |
 | --- | --- | --- | --- |
-| GET | `/capabilities` | 合同能力、来源映射与容量限制 | 候选已实现 |
-| GET | `/sessions/:id/assemblies` | 不含段落/context/系统消息正文的历史索引 | 候选已实现 |
-| GET | `/sessions/:id/assemblies/:recordId` | 冷读取官方历史并验证恢复段落/context 正文；schema 4 来源只返回 metadata/hash/counts，旧 schema 3 详情仍可能含存量 `source.text` | 候选已实现 |
+| GET | `/capabilities` | 合同能力、来源映射与容量限制 | 已实现 |
+| GET | `/sessions/:id/assemblies` | 不含段落/context/系统消息正文的历史索引 | 已实现 |
+| GET | `/sessions/:id/assemblies/:recordId` | 冷读取官方历史并验证恢复段落/context 正文；schema 4 来源只返回 metadata/hash/counts，旧 schema 3 详情仍可能含存量 `source.text` | 已实现 |
 
 字段、示例、错误码与持久化见 [v3 详细合同](PROMPT_API_V3.md)。
 `/sessions/:id/sources` 不属于 v3 合同并返回 404；当前配置及完整资源请读 v1。

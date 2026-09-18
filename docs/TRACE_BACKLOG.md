@@ -1,8 +1,8 @@
 # Trace / API v3 backlog
 
-Candidate: Tavern `2.3.0`; target Host: DSH `0.1.5-rc.1`. Trace implementation and automated,
-Host and Chrome checks are complete within the documented scope. Verification limits and
-remaining external checks are listed below. No merge, tag or release.
+Version: Tavern `2.3.0`; target Host: DSH `0.1.5-rc.1`. Implementation, automated, Host and Chrome
+checks and maintainer presentation review are complete within the documented scope. Content review
+is pending; merge into `main` follows approval. No merge, tag or release has taken place.
 
 ## Current scope
 
@@ -25,37 +25,25 @@ remaining external checks are listed below. No merge, tag or release.
 - Trace leads with the captured configuration, with separate lore and Loader disclosures.
   Source originals are marked not stored; missing referenced bodies are explained.
 
-## Delivery status
+## Current acceptance
 
-- [x] Diagnose readable timelines with no available RP session using the official hydrated session/workspace mirrors, including empty playthroughs; keep healthy empty runs unmarked and all diagnostic entry points consistent.
+Implementation and target-runtime verification are complete for the documented scope, including
+configuration-first Trace, official-history references, failure attribution, static HTML rendering,
+and workspace diagnostics. Maintainer presentation review is complete. The single current result,
+validation limits and optional reproduction steps are in [Trace acceptance](TRACE_REVIEW_en.md).
+Completed technical checks do not need to be repeated solely for content review.
 
-- [x] Add a DT diagnostics panel for current RP workspace problems, a dismissible sidebar summary and per-playthrough warning buttons. Share current reads, retain dismissal across rechecks, and provide recheck/copy actions without persistent logs or new v3 endpoints.
-- [x] Empty character nicknames fall back to the card name in every loader macro context.
-- [x] World-book sources distinguish the v1-compatible entry UID from the qualified loader ID.
-- [x] Trace details expose verified official failure information without storing error-body copies or adding RP messages.
-- [x] Storage-location tests use platform-absolute fixtures; runtime and API contracts revalidated on macOS.
+## Remaining work
 
-- [x] Official section contributions and source metadata.
-- [x] Minimal v3 routes and compatible v1 shared audit view.
-- [x] Verified official-history references, cold detail reads and old-file compatibility.
-- [x] Configuration-first UI with explicit partial/missing-body states.
-- [x] Unicode, reuse/replacement, inheritance, retries, restart, format/hash/range errors,
-  size limits, large-card storage independence and legacy audit regressions.
-- [x] DSH 0.1.5-rc.1 Host verification, build, package and bilingual contracts.
-- [x] Chrome verification of two real cards without cross-session content, configuration-first Trace, lore decisions and interleaved official sections.
-- [x] Chrome window sizes, Tavern scaling, Chinese/English, DSH themes and native/Mowan switching; settings restored afterward.
-- [x] Complete HTML fences render as separate RP Shadow DOM panels: four real-card documents and 32 synthetic Chrome checks passed, including static HTML export. Variable-update markers remain hidden; JavaScript/MVU-dependent values and buttons remain unsupported.
-- [x] An ordinary real-model reply and Stop generation recovery. The stopped request retains 31/31 readable sections without fabricated success/failure. Official durable history lacks its turn/end; cold reading supplies an in-memory interrupted closer, not a persisted user-cancellation reason.
+- [ ] Maintainer content review of documentation, the release announcement and separate issue replies.
+- [ ] Merge into `main` as `2.3.0` after content approval; tag/release publication and issue posting
+      require their own authorization.
 
-## Remaining external checks
+## Remaining external verification
 
-- [ ] Maintainer presentation review of the final RP/Trace experience, without repeating the completed technical matrix.
 - [ ] Actual third-party plugin integration through v3 or official assembly interfaces.
 - [ ] Native Windows storage-path and installation checks.
 
 Real-provider timeout/retry was not deliberately induced. Seven real-AgentLoop synthetic failure
 scenarios cover attribution and verified failure reads; they do not certify a specific provider
-or the actual third-party plugin. The remaining release decision follows the checks above.
-
-See [current evidence, remaining checks and optional reproduction](TRACE_REVIEW_en.md).
-Completed technical checks do not need to be repeated solely for manual sign-off.
+or the actual third-party plugin.

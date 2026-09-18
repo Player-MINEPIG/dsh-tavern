@@ -2,7 +2,7 @@
 
 [中文](API.md) · [v3 detailed contract](PROMPT_API_V3_en.md) · [Frontend integration](FRONTEND_INTEGRATION_en.md)
 
-Contract version: Tavern **2.3.0 candidate**, targeting DSH `0.1.5-rc.1`.
+Contract version: Tavern **2.3.0**, targeting DSH `0.1.5-rc.1`.
 Root: `/pmp-dsh-tavern/api`. API versions and DSH log format V3 are independent.
 
 All endpoint catalogs use **Method / Path / Behavior / Status**, following the v2
@@ -502,13 +502,13 @@ This section documents the utility and the workspace/session/import/playthrough 
 
 ## v3 prompt assembly audit
 
-Prefix: `/pmp-dsh-tavern/api/v3`. Read-only candidate contract.
+Prefix: `/pmp-dsh-tavern/api/v3`. Read-only prompt assembly records and provenance.
 
 | Method | Path | Behavior | Status |
 | --- | --- | --- | --- |
-| GET | `/capabilities` | Contract capabilities, source mapping and capacity limits | Implemented in candidate |
-| GET | `/sessions/:id/assemblies` | Historical index without section/context/system-message bodies | Implemented in candidate |
-| GET | `/sessions/:id/assemblies/:recordId` | Cold-read official history; verified section/context bodies; schema 4 returns source metadata/hash/counts while legacy schema 3 detail may retain stored `source.text` | Implemented in candidate |
+| GET | `/capabilities` | Contract capabilities, source mapping and capacity limits | Implemented |
+| GET | `/sessions/:id/assemblies` | Historical index without section/context/system-message bodies | Implemented |
+| GET | `/sessions/:id/assemblies/:recordId` | Cold-read official history; verified section/context bodies; schema 4 returns source metadata/hash/counts while legacy schema 3 detail may retain stored `source.text` | Implemented |
 
 Fields, examples, errors and persistence: [v3 detailed contract](PROMPT_API_V3_en.md).
 `/sessions/:id/sources` is not part of the v3 contract and returns 404. Read current configuration and complete resources through v1.
