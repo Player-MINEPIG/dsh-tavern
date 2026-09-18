@@ -90,6 +90,18 @@ The browser explains missing logs and opens the new run. Restoring old history
 still requires the original DSH_HOME or backup; no replacement history is generated.
 Coordinate migration, permission and other read errors still propagate.
 
+## Configuration-first Trace layout (2026-09-18)
+
+Records first show captured configuration, followed by collapsed world-book and
+Loader details. No v3 API expansion. Regressions cover default visibility, disclosure
+boundaries, legacy records, missing versus unused fields and both languages.
+`npm run check`: 567 tests, 565 passes, zero failures and two existing conditional skips.
+Browser checks on a real 0.1.5-rc.1 Host passed: configuration is visible by default,
+both detail groups expand independently, and section text/source inputs remain
+accessible with HTML examples rendered as text. Help identifies subsequent records
+as `agent/request` captures and explains reuse of an assembly during retry.
+`npm run verify:2.0` passed.
+
 ## Maintainer manual checks
 
 Use a test profile and resource copies. Record pass/fail for each step. For failures,

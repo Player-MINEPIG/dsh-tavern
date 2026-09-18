@@ -88,6 +88,14 @@ Session never ran. A record can be evicted between index and detail calls (404).
 steps and retries. `recordedAt` is capture time. Attempts are numbered from retained
 records; use the opaque ID for durable identity after eviction.
 
+`step` comes from DSH: continuing with tool results can enter another step within a
+turn. `attempt` counts Tavern captures of `agent/request` for the same
+session/turn/step. DSH higher-level retries emit this event again and can reuse the
+existing assembly: an increment does not imply reassembly. Tavern observes these
+events and does not initiate retries. This is neither a count of every network
+retry nor a one-to-one index of official `assistant/attempt` events. Transport
+retries that do not revisit `agent/request` do not increment it.
+
 | Field | Type | Meaning and boundary |
 | --- | --- | --- |
 | `sections / contexts` | array | Rendered sections at waterfall return: name/index/text, characters/utf16Units/utf8Bytes, hash/provenance/sources; may be absent when bodies are unavailable |
@@ -170,3 +178,19 @@ and coordination policies.
 While a panel is open and its Session is running, poll the index every 1.5 seconds;
 load detail on demand, abort closed panels, and discard stale responses after a
 Session switch. Reading never triggers assembly.
+
+## Tavern Trace default layout
+
+An expanded record first shows its captured preset, character, user, world books,
+prompt mode, request model and Tavern sampling configuration. The saved greeting
+index appears when available. Names and settings come from that snapshot, never
+current resource reads. Missing fields say “Not recorded”, not “Unused”. Sampling
+values are Tavern's contribution, not a claim about final parameters after other plugins.
+
+“World-book activation” and “Loader assembly” are collapsed by default. The first
+contains inclusion/rejection decisions, keywords and budgets. The second contains
+sections, source inputs, dynamic contexts, observed system messages, raw bindings
+and diagnostics. Legacy records retain their configuration/lore audit, with explicit
+absence of assembly bodies. First captures show turn/step; subsequent captures for
+the same step also show “Request record N”. In-page help explains these terms. The HTTP
+contract is unchanged.

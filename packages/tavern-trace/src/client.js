@@ -25,8 +25,20 @@ const css = `
 .dttrace-record{border:1px solid var(--dsw-alias-border-l1);border-radius:10px;background:var(--dsw-alias-bg-base);overflow:visible}.dttrace-record>summary{list-style:none;cursor:pointer;padding:10px 12px;display:flex;align-items:center;gap:8px;border-radius:10px}.dttrace-record[open]>summary{border-radius:10px 10px 0 0}.dttrace-record>summary::-webkit-details-marker{display:none}.dttrace-round{font-size:14px;font-weight:670}.dttrace-time{font-size:12px;color:var(--dsw-alias-label-tertiary);margin-left:auto}.dttrace-badge{border-radius:999px;padding:2px 7px;font-size:11px;background:var(--dsw-specific-tip);color:var(--dsw-alias-label-secondary)}.dttrace-badge[data-ok=true]{background:color-mix(in srgb,var(--dsw-alias-state-success,#2fa36b) 18%,transparent);color:var(--dsw-alias-state-success,#2fa36b)}
 .dttrace-content{border-top:1px solid var(--dsw-alias-border-l1);padding:11px 12px 16px;display:flex;flex-direction:column;gap:10px}.dttrace-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:7px}.dttrace-card{border:1px solid var(--dsw-alias-border-l1);border-radius:8px;padding:8px;min-width:0}.dttrace-label{font-size:11px;text-transform:uppercase;letter-spacing:.04em;color:var(--dsw-alias-label-tertiary)}.dttrace-value{font-size:13px;font-weight:620;margin-top:3px;overflow-wrap:anywhere}.dttrace-meta{font-size:12px;line-height:1.45;color:var(--dsw-alias-label-tertiary);margin-top:3px;overflow-wrap:anywhere}
 .dttrace-section{display:flex;flex-direction:column;gap:6px}.dttrace-section-title{font-size:14px;font-weight:670}.dttrace-book>summary{overflow-wrap:anywhere}.dttrace-book{border:1px solid var(--dsw-alias-border-l1);border-radius:8px;padding:8px;display:flex;flex-direction:column;gap:6px}.dttrace-decision{display:grid;grid-template-columns:76px minmax(110px,.7fr) minmax(160px,1.5fr);gap:7px;padding:6px 0;border-top:1px solid var(--dsw-alias-border-l1);font-size:12px;line-height:1.45}.dttrace-decision:first-of-type{border-top:0}.dttrace-decision-state{font-weight:650}.dttrace-decision[data-included=true] .dttrace-decision-state{color:var(--dsw-alias-state-success,#2fa36b)}.dttrace-keywords{overflow-wrap:anywhere;color:var(--dsw-alias-label-secondary)}.dttrace-list{margin:0;padding-left:18px;font-size:12px;line-height:1.55;color:var(--dsw-alias-label-secondary)}
+.dttrace-disclosure{border-top:1px solid var(--dsw-alias-border-l1);padding-top:10px;margin-top:4px}.dttrace-disclosure>summary{cursor:pointer;font-size:14px;font-weight:650}.dttrace-disclosure-body{display:flex;flex-direction:column;gap:10px;padding-top:10px}.dttrace-card .dttrace-label{text-transform:none;letter-spacing:0}
 @media(max-width:760px){.dttrace-grid{grid-template-columns:1fr}.dttrace-decision{grid-template-columns:70px 1fr}.dttrace-keywords{grid-column:1/-1}}
 `
+
+const statusLabels = Object.freeze({
+  "assembled": "trace.v3.status.assembled",
+  "request-observed": "trace.v3.status.request-observed",
+  "request-unconfirmed": "trace.v3.status.request-unconfirmed",
+  "request-failed-before-observation": "trace.v3.status.request-failed-before-observation",
+  "assembly-or-preparation-failed": "trace.v3.status.assembly-or-preparation-failed",
+  "superseded-unconfirmed": "trace.v3.status.superseded-unconfirmed",
+  "unloaded-unconfirmed": "trace.v3.status.unloaded-unconfirmed",
+  "legacy-metadata-only": "trace.v3.status.legacy-metadata-only"
+})
 
 const reasonLabels = Object.freeze({
   constant: 'trace.reason.constant',
@@ -132,20 +144,25 @@ function WorldBookAudit({ book }) {
   )
 }
 
-function AssemblyRecord({ summary, sessionId, latest }) {
-  const [record, setRecord] = useState(null)
-  const [error, setError] = useState('')
-  const [opened, setOpened] = useState(latest)
-  useEffect(() => {
-    if (!opened) return
-    const controller = new AbortController()
-    fetch(`${TRACE_API}/${encodeURIComponent(sessionId)}/assemblies/${encodeURIComponent(summary.id)}`, { signal: controller.signal, cache: 'no-store' })
-      .then(async response => { const data = await response.json(); if (!response.ok) throw new Error(data.error); return data.record })
-      .then(value => { setRecord(value); setError('') })
-      .catch(e => { if (e.name !== 'AbortError') setError(e.message) })
-    return () => controller.abort()
-  }, [opened, sessionId, summary.id, summary.status])
-  const segments = (items, kind) => (items ?? []).map((part, index) => h('details', { key: `${kind}-${index}`, className: 'dttrace-book' },
+function resourceCard(labelKey, value, id, known) {
+  return h('div', { className: 'dttrace-card', key: labelKey },
+    h('div', { className: 'dttrace-label' }, uiMessage(labelKey)),
+    h('div', { className: 'dttrace-value' }, value?.name || value?.id || id
+      ? rawText(value?.name || value?.id || id)
+      : uiMessage(known ? 'trace.unused' : 'trace.v3.notRecorded')),
+    value?.id || id ? h('div', { className: 'dttrace-meta' }, rawText(value?.id || id)) : null,
+  )
+}
+
+function summaryCard(labelKey, value) {
+  return h('div', { className: 'dttrace-card' },
+    h('div', { className: 'dttrace-label' }, uiMessage(labelKey)),
+    h('div', { className: 'dttrace-value' }, value),
+  )
+}
+
+function segments(items, kind) {
+  return (items ?? []).map((part, index) => h('details', { key: `${kind}-${index}`, className: 'dttrace-book' },
     h('summary', null, uiMessage('trace.v3.part', { index: part.index + 1, name: part.name, count: part.characters })),
     h('div', { className: 'dttrace-meta' }, rawText(`SHA-256 ${part.hash} · UTF-16 ${part.offsetUtf16 ?? '—'} · ${part.provenance}`)),
     h('pre', { style: { whiteSpace: 'pre-wrap', overflowWrap: 'anywhere', margin: 0 } }, rawText(part.text)),
@@ -155,29 +172,96 @@ function AssemblyRecord({ summary, sessionId, latest }) {
       h('pre', { style: { whiteSpace: 'pre-wrap', overflowWrap: 'anywhere' } }, rawText(source.text)),
     )),
   ))
-  return h('details', { className: 'dttrace-record', open: opened, onToggle: e => setOpened(e.currentTarget.open) },
-    h('summary', null,
-      h('span', { className: 'dttrace-round' }, uiMessage('trace.roundAttempt', { turn: summary.turn, step: summary.step, attempt: summary.attempt })),
-      h('span', { className: 'dttrace-badge' }, rawText(summary.status)),
-      h('span', { className: 'dttrace-time' }, rawText(formatTime(summary.recordedAt))),
+}
+
+// Only captured fields are displayed; never resolve old IDs against current resources.
+export function TraceRecordContent({ record }) {
+  const audit = record.audit ?? {}
+  const resources = audit.resources ?? {}
+  const selection = record.selection ?? audit.selection ?? {}
+  const books = audit.worldBooks
+  const bookResources = resources.worldBooks ?? books?.map(book => book.resource).filter(Boolean)
+  const config = audit.assembly?.callConfig
+  const mode = audit.assembly?.systemPromptMode
+  const unavailable = () => uiMessage('trace.v3.notRecorded')
+  const resourceKnown = (key, selectionKey) => Object.hasOwn(resources, key) || Object.hasOwn(selection, selectionKey)
+  return h('div', { className: 'dttrace-section' },
+    h('div', { className: 'dttrace-section-title' }, uiMessage('trace.v3.configuration')),
+    h('div', { className: 'dttrace-grid' },
+      resourceCard('trace.resource.preset', resources.preset, selection.presetId, resourceKnown('preset', 'presetId')),
+      resourceCard('trace.resource.character', resources.characterCard, selection.characterCardId, resourceKnown('characterCard', 'characterCardId')),
+      resourceCard('trace.resource.user', resources.userProfile, selection.userId ?? selection.userProfileId,
+        resourceKnown('userProfile', 'userId') || Object.hasOwn(selection, 'userProfileId')),
+      summaryCard('trace.v3.worldBooks', bookResources === undefined ? unavailable() : bookResources.length
+        ? rawText(bookResources.map(book => book.name || book.id).join(translate('common.listSeparator'))) : uiMessage('trace.unused')),
+      summaryCard('trace.v3.mode', mode === 'append' ? uiMessage('trace.v3.append') : mode === 'replace' ? uiMessage('trace.v3.replace') : unavailable()),
+      summaryCard('trace.v3.model', record.delivery?.model
+        ? rawText([record.delivery.provider, record.delivery.model].filter(Boolean).join(' / ')) : unavailable()),
     ),
-    h('div', { className: 'dttrace-content' },
-      error ? h('p', { className: 'dttrace-status', 'data-error': true }, rawText(error)) : null,
-      record ? h('div', { className: 'dttrace-section' },
+    Number.isSafeInteger(selection.character?.greetingIndex)
+      ? h('div', { className: 'dttrace-meta' }, uiMessage('trace.v3.greeting', { index: selection.character.greetingIndex })) : null,
+    h('div', { className: 'dttrace-meta' }, uiMessage('trace.v3.sampling'), ' ', config === undefined ? unavailable()
+      : Object.keys(config).length ? rawText(Object.entries(config).map(([key, value]) => `${key}: ${JSON.stringify(value)}`).join(' · ')) : uiMessage('trace.v3.noSampling')),
+    record.contentStatus && record.contentStatus !== 'available'
+      ? h('p', { className: 'dttrace-note' }, uiMessage('trace.v3.contentUnavailable'), ' ', rawText(record.contentStatus)) : null,
+    h('details', { className: 'dttrace-disclosure' },
+      h('summary', null, uiMessage('trace.v3.worldBookDetails')),
+      h('div', { className: 'dttrace-disclosure-body' },
+        audit.activation ? h('div', { className: 'dttrace-meta' }, audit.activation.pendingMessageCount > 0
+          ? uiMessage('trace.activationPending', { included: audit.activation.includedPendingMessageCount,
+            pending: audit.activation.pendingMessageCount, truncated: audit.activation.truncated ? translate('trace.truncated') : '' })
+          : uiMessage('trace.historyOnly')) : null,
+        books === undefined ? h('p', { className: 'dttrace-note' }, unavailable())
+          : books.length ? books.map((book, index) => h(WorldBookAudit, { book, key: index }))
+            : h('p', { className: 'dttrace-note' }, uiMessage('trace.noSource')),
+      ),
+    ),
+    h('details', { className: 'dttrace-disclosure' },
+      h('summary', null, uiMessage('trace.v3.loaderDetails')),
+      h('div', { className: 'dttrace-disclosure-body' },
         h('p', { className: 'dttrace-note' }, uiMessage(record.delivery?.assemblyVerified ? 'trace.v3.verified' : 'trace.v3.unverified')),
-        record.contentStatus !== 'available' ? h('p', null, rawText(record.contentStatus)) : null,
-        record.selection ? h('details', null, h('summary', null, uiMessage('trace.v3.bindings')),
-          h('pre', { style: { whiteSpace: 'pre-wrap', overflowWrap: 'anywhere' } }, rawText(JSON.stringify(record.selection, null, 2)))) : null,
-        h('div', { className: 'dttrace-section-title' }, uiMessage('trace.v3.sections')),
+        record.sections ? h('div', { className: 'dttrace-section-title' }, uiMessage('trace.v3.sections')) : null,
         ...segments(record.sections, 'system'),
-        h('div', { className: 'dttrace-section-title' }, uiMessage('trace.v3.contexts')),
+        record.contexts ? h('div', { className: 'dttrace-section-title' }, uiMessage('trace.v3.contexts')) : null,
         ...segments(record.contexts, 'context'),
+        !record.sections ? h('p', { className: 'dttrace-note' }, uiMessage('trace.v3.noAssembly')) : null,
         record.systemMessages ? h('details', null,
           h('summary', null, uiMessage('trace.v3.actual')),
           ...record.systemMessages.map((text, i) => h('pre', { key: i, style: { whiteSpace: 'pre-wrap', overflowWrap: 'anywhere' } }, rawText(text))),
         ) : null,
-        ...(record.audit?.worldBooks ?? []).map((book, i) => h(WorldBookAudit, { book, key: i })),
-      ) : h('p', null, uiMessage('trace.reading')),
+        record.selection ? h('details', null, h('summary', null, uiMessage('trace.v3.bindings')),
+          h('pre', { style: { whiteSpace: 'pre-wrap', overflowWrap: 'anywhere' } }, rawText(JSON.stringify(record.selection, null, 2)))) : null,
+        audit.diagnostics?.length ? h('details', null,
+          h('summary', null, uiMessage('trace.diagnostics', { count: audit.diagnostics.length })),
+          h('ul', { className: 'dttrace-list' }, ...audit.diagnostics.map((item, index) => h('li', { key: index }, rawText(`${item.code}: ${item.message}`)))),
+        ) : null,
+      ),
+    ),
+  )
+}
+
+function AssemblyRecord({ summary, sessionId, latest }) {
+  const [record, setRecord] = useState(null)
+  const [error, setError] = useState('')
+  const [opened, setOpened] = useState(latest)
+  useEffect(() => {
+    if (!opened) return
+    const controller = new AbortController()
+    fetch(`${TRACE_API}/${encodeURIComponent(sessionId)}/assemblies/${encodeURIComponent(summary.id)}`, { signal: controller.signal, cache: 'no-store' })
+      .then(async response => { const data = await response.json(); if (!response.ok) throw new Error(data.error); return data.record })
+      .then(value => { if (!controller.signal.aborted) { setRecord(value); setError('') } })
+      .catch(e => { if (e.name !== 'AbortError') setError(e.message) })
+    return () => controller.abort()
+  }, [opened, sessionId, summary.id, summary.status])
+  return h('details', { className: 'dttrace-record', open: opened, onToggle: e => setOpened(e.currentTarget.open) },
+    h('summary', null,
+      h('span', { className: 'dttrace-round', title: translate('trace.v3.termsText') }, uiMessage(summary.attempt > 1 ? 'trace.roundAttempt' : 'trace.round', { turn: summary.turn, step: summary.step, attempt: summary.attempt })),
+      h('span', { className: 'dttrace-badge', title: summary.status }, statusLabels[summary.status] ? uiMessage(statusLabels[summary.status]) : rawText(summary.status)),
+      h('span', { className: 'dttrace-time' }, rawText(formatTime(summary.recordedAt))),
+    ),
+    h('div', { className: 'dttrace-content' },
+      error ? h('p', { className: 'dttrace-status', 'data-error': true }, rawText(error)) : null,
+      record ? h(TraceRecordContent, { record }) : h('p', null, uiMessage('trace.reading')),
     ),
   )
 }
@@ -226,11 +310,14 @@ export function TavernTraceView({ sessionId, useSession, useChat }) {
     h('div', { className: 'dttrace-body' },
       h('div', { className: 'dttrace-scale' },
         h('p', { className: 'dttrace-note' }, uiMessage('trace.v3.intro')),
+        h('details', { className: 'dttrace-note' },
+          h('summary', null, uiMessage('trace.v3.terms')),
+          h('p', null, uiMessage('trace.v3.termsText'))),
         error ? h('div', { className: 'dttrace-status', 'data-error': true }, rawText(error)) : null,
         data === null && !error ? h('div', { className: 'dttrace-status' }, uiMessage('trace.reading')) : null,
-        data !== null ? h('div', { className: 'dttrace-status' }, storageStatus(data.storage)) : null,
         records.length === 0 && data !== null ? h('div', { className: 'dttrace-status' }, uiMessage('trace.empty')) : null,
         ...records.map((record, index) => h(AssemblyRecord, { summary: record, sessionId, latest: index === 0, key: `${sessionId}:${record.id}` })),
+        data !== null ? h('p', { className: 'dttrace-note' }, storageStatus(data.storage)) : null,
       ),
     ),
   )
