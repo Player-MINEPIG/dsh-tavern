@@ -85,7 +85,7 @@ SessionSelectionStore ─────────────────┘
 
 ## Profile safety budget
 
-`TavernProfileLoader` 对自己生成的单一 `pmp-dsh-tavern:profile` section 施加默认 512 KiB UTF-8 上限；`limits.maxProfileBytes` 可以收紧或放宽，但实现硬上限为 2 MiB。世界书 parser/store 在 normalize 之前共用流式结构守卫：每资源最多 10,000 条、深度 32、100,000 节点、单字符串 1 MiB、对象键 1,024 字符；adapter 另对本次请求的独立书与内嵌书合计施加 10,000 条硬上限，超出资源跳过并诊断。合计预算按确定性的组合顺序先到先得：session 显式独立书、用户绑定独立书、预设绑定独立书、角色卡绑定独立书（ID 稳定去重），最后角色卡内嵌书；每个资源整体预留，不能完整放入时整本不扫描。因此前面的独立书占满 10,000 条时，内嵌书会被跳过并产生 `WORLD_BOOK_RUNTIME_TOTAL_LIMIT`，这是有意的安全/确定性策略，不是随机遗漏。在这些前置守卫后，compiler 最多考虑排名最前的 4,096 个 lore 候选，并在生成 wrapper 前将原始 lore 正文限制为 profile budget 的两倍。世界书自身的 `tokenBudget` 与 `ignoreBudget` 只决定 ST 兼容候选，不能改变任何 Host 硬上限。
+`TavernProfileLoader` 对自己生成的单一 `pmp-dsh-tavern:profile` section 施加默认 512 KiB UTF-8 上限；`limits.maxProfileBytes` 可以收紧或放宽，但实现硬上限为 2 MiB。世界书 parser/store 在 normalize 之前共用流式结构守卫：每资源最多 10,000 条、深度 32、100,000 节点、单字符串 1 MiB、对象键 1,024 字符；adapter 另对本次请求的独立书与内嵌书合计施加 10,000 条硬上限，超出资源跳过并诊断。合计预算按确定性的组合顺序先到先得：session 显式独立书、用户绑定独立书、预设绑定独立书、角色卡绑定独立书（ID 稳定去重），最后角色卡内嵌书；每个资源整体预留，不能完整放入时整本不扫描。因此前面的独立书占满 10,000 条时，内嵌书会被跳过并产生 `WORLD_BOOK_RUNTIME_TOTAL_LIMIT`，这是有意的安全/确定性策略，不是随机遗漏。在这些前置守卫后，compiler 最多考虑排名最前的 4,096 个 lore 候选，并在组合 section 正文前将原始 lore 正文限制为 profile budget 的两倍。世界书自身的 `tokenBudget` 与 `ignoreBudget` 只决定 ST 兼容候选，不能改变任何 Host 硬上限。
 
 角色卡编辑内嵌 `character_book` 时会先执行共享结构守卫和 parser；原始 JSON/PNG 导入目前只在角色格式层确认 `character_book` 是 object，然后无损保留未知字段，不在落盘前执行同一深度/节点/条目守卫。32 MiB 导入上限限制总输入，loader 首次消费时仍会通过 `parseCharacterBook()` 安全失败并报告 `EMBEDDED_WORLD_BOOK_INVALID`，所以匹配放大路径已被挡住；但这仍是导入期防御纵深缺口，会允许一个最终不可运行的内嵌书先进入资源库。后续应在不破坏当前文档未知字段保留的前提下，为标准化的运行副本增加导入期结构诊断或拒绝策略。
 
@@ -153,7 +153,7 @@ loader Host 层的唯一 `PendingInputProjection` 从公开 `agent/inbox/spliced
 
 ### Preset-only compatibility
 
-没有角色、用户和激活 lore 时，loader 直接调用已验收的 `compilePresetForDsh()`。输出形状、采样参数映射和宏行为保持原样，避免统一化本身造成 preset 回归。
+没有角色、用户和激活 lore 时，loader 直接调用 `compilePresetForDsh()`。它按原顺序输出启用的非 marker prompt 正文，并保持采样参数映射和宏行为。Tavern 不再向模型可见文本添加 preset 名称、ID 或 XML 风格识别包装；preset prompt 的 identifier、请求 role 和资源来源保留在官方 section 的 source metadata 中。
 
 ### Marker ownership
 
@@ -176,10 +176,10 @@ loader Host 层的唯一 `PendingInputProjection` 从公开 `agent/inbox/spliced
 
 ### Honest degradation
 
-- greeting 只在首轮生成成为 `<st-character-field name="greeting-reference">`；首个真实 assistant 回复形成后不再注入，并且从不伪造 assistant 历史；
+- greeting 只在首轮生成作为普通 system 正文贡献；首个真实 assistant 回复形成后不再注入，并且从不伪造 assistant 历史；
 - PHI 位于 Tavern system profile，不宣称严格位于全部历史之后；
 - depth prompt 保存 role/depth 的格式职责归角色模块，loader 首期只能放入明确标注的 system fallback；
-- `user`/`assistant` preset prompt role 仍是可审阅标签，不是真实历史消息 role；
+- `user`/`assistant` preset prompt role 保留在官方 section 的 `source.role` metadata 中供审阅；实际贡献仍全部是 system section，不是真实历史消息 role；
 - system assembly 扫描持久历史与本步骤 claimed batch，因此单 step 会话的当前输入可在首个请求命中。实现不采用过晚的 `agent/pre-step`，也不读取私有 Inbox。
 - Trace 必须描述实际冻结的 assembly。不能在 `agent/pre-step` 或 `request/header` 后拿当前输入重跑 matcher，再把该结果标成已进入本轮 system；因为没有 same-step reassembly seam，claimed batch 必须经 `agent/inbox/spliced` 投影在首次 assembly 前进入 matcher。
 

@@ -2,17 +2,74 @@ import test from 'node:test'
 import assert from 'node:assert/strict'
 import { compileTavernProfile } from '../packages/tavern-loader/src/profile-loader.js'
 
-test('unified profile preserves the accepted preset-only output contract', () => {
+test('preset-only profile emits authored text without generated identification wrappers', () => {
   const preset = {
     id: 'preset-a',
     name: 'Preset A',
-    prompts: [{ identifier: 'main', role: 'system', content: 'Preset text', enabled: true, marker: false }],
+    prompts: [
+      { identifier: 'main', role: 'system', content: 'Preset text', enabled: true, marker: false },
+      { identifier: 'voice', role: 'assistant', content: 'Requested voice', enabled: true, marker: false },
+    ],
     sampling: { temperature: 0.4 },
   }
   const result = compileTavernProfile({ preset })
-  assert.match(result.systemText, /\[dsh-tavern selected preset\]/)
-  assert.match(result.systemText, /Preset text/)
+  assert.equal(result.systemText, 'Preset text\n\nRequested voice')
+  assert.doesNotMatch(result.systemText, /\[dsh-tavern selected preset\]|<st-prompt\b/)
+  assert.deepEqual(result.sections.map(part => part.sources[0].role), ['system', 'assistant'])
   assert.deepEqual(result.callConfig, { temperature: 0.4 })
+})
+
+test('mixed profile emits plain authored bodies and keeps official source metadata', () => {
+  const result = compileTavernProfile({
+    preset: {
+      id: 'mixed-preset',
+      name: 'Mixed preset',
+      prompts: [
+        { identifier: 'main', role: 'user', content: 'Preset body', enabled: true, marker: false, st: {} },
+        { identifier: 'charDescription', role: 'system', content: '', enabled: true, marker: true, st: {} },
+        { identifier: 'personaDescription', role: 'system', content: '', enabled: true, marker: true, st: {} },
+        { identifier: 'worldInfoAfter', role: 'system', content: '', enabled: true, marker: true, st: {} },
+      ],
+      sampling: {},
+    },
+    character: { id: 'mixed-character', data: { name: 'Guide', description: 'Character body' } },
+    user: { id: 'mixed-user', name: 'Reader', description: 'User body' },
+    loreEntries: [{ id: 'mixed-lore', position: 'after', content: 'Lore body' }],
+  })
+
+  assert.equal(result.systemText, 'Preset body\n\nCharacter body\n\nUser body\n\nLore body')
+  assert.doesNotMatch(result.systemText, /\[dsh-tavern profile\]|<st-(?:prompt|character-field|user-field|world-info)\b/)
+  assert.equal(result.sections[0].sources[0].role, 'user')
+  assert.deepEqual(result.sections.map(part => part.sources[0].kind), ['preset', 'character', 'user', 'worldbook'])
+})
+
+test('author-written wrapper-shaped text is preserved literally', () => {
+  const authored = '<st-prompt role="author">keep</st-prompt>\n<st-character-field>keep</st-character-field>\n<st-user-field>keep</st-user-field>\n<st-world-info>keep</st-world-info>'
+  const result = compileTavernProfile({
+    preset: {
+      id: 'literal-wrappers',
+      name: 'Literal wrappers',
+      prompts: [{ identifier: 'main', role: 'system', content: authored, enabled: true, marker: false }],
+      sampling: {},
+    },
+    character: { id: 'literal-character', data: { name: 'Guide' } },
+  })
+  assert.equal(result.systemText, authored)
+})
+
+test('selected resources without authored bodies do not create placeholder text', () => {
+  const presetOnly = compileTavernProfile({
+    preset: { id: 'empty-preset-only', name: 'Empty preset only', prompts: [], sampling: {} },
+  })
+  const result = compileTavernProfile({
+    preset: { id: 'empty-preset', name: 'Empty preset', prompts: [], sampling: {} },
+    character: { id: 'empty-character', data: { name: 'Guide' } },
+    user: { id: 'empty-user', name: 'Reader', description: '' },
+  })
+  assert.equal(presetOnly.systemText, '')
+  assert.deepEqual(presetOnly.sections, [])
+  assert.equal(result.systemText, '')
+  assert.deepEqual(result.sections, [])
 })
 
 test('unified profile accepts normalized character and lore contributions without leaking strict DSH macros', () => {
@@ -100,7 +157,7 @@ test('selected user fills name macros and persona marker exactly once', () => {
   assert.match(result.systemText, /Synthetic Guide is speaking with Synthetic Reader\./)
   assert.match(result.systemText, /Synthetic Reader studies Synthetic Guide\./)
   assert.equal(result.systemText.match(/Synthetic Reader studies Synthetic Guide\./g)?.length, 1)
-  assert.equal(result.systemText.match(/<st-user-field/g)?.length, 1)
+  assert.doesNotMatch(result.systemText, /<st-user-field\b/)
   assert.doesNotMatch(result.systemText, /\{\{/)
   assert.equal(result.diagnostics.some(item => item.code === 'USER_PERSONA_MARKER_FALLBACK'), false)
   assert.deepEqual(result.userInjection, {
@@ -144,7 +201,7 @@ test('{{persona}} is an explicit single description placement and does not dupli
     user: { id: 'macro-user', name: 'Macro User', description: 'Only once.' },
   })
   assert.equal(result.systemText.match(/Only once\./g)?.length, 1)
-  assert.equal(result.systemText.match(/<st-user-field/g)?.length ?? 0, 0)
+  assert.doesNotMatch(result.systemText, /<st-user-field\b/)
   assert.equal(result.userInjection.descriptionInsertions, 1)
   assert.equal(result.userInjection.descriptionPlacement, 'preset-macro:main')
 })
@@ -222,8 +279,8 @@ test('V1 character description and greeting enter the compiled profile', () => {
     },
   })
   assert.match(result.systemText, /V1 description text/)
-  assert.match(result.systemText, /greeting-reference/)
   assert.match(result.systemText, /V1 hello/)
+  assert.ok(result.diagnostics.some(item => item.code === 'CHARACTER_GREETING_REFERENCE'))
 })
 
 test('V2 alternate greeting index 1 uses the second greeting string', () => {
@@ -250,7 +307,7 @@ test('greeting reference can be omitted after the first turn without changing th
     },
     includeGreetingReference: false,
   })
-  assert.doesNotMatch(result.systemText, /greeting-reference/)
   assert.doesNotMatch(result.systemText, /Opening reference/)
-  assert.match(result.systemText, /character-id: opening-card/)
+  assert.equal(result.systemText, '')
+  assert.deepEqual(result.sections, [])
 })

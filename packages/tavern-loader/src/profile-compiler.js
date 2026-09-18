@@ -13,18 +13,6 @@ function positiveInteger(value) {
   return Number.isSafeInteger(value) && value > 0 ? value : undefined
 }
 
-function string(value, fallback = '') {
-  return typeof value === 'string' ? value : fallback
-}
-
-function escapeAttribute(value) {
-  return string(value)
-    .replaceAll('&', '&amp;')
-    .replaceAll('"', '&quot;')
-    .replaceAll('<', '&lt;')
-    .replaceAll('>', '&gt;')
-}
-
 export function assemblePresetParts(preset, context = {}) {
   if (!isRecord(preset) || !Array.isArray(preset.prompts)) return []
   const variables = new Map()
@@ -34,14 +22,17 @@ export function assemblePresetParts(preset, context = {}) {
     if (!isRecord(prompt) || prompt.enabled !== true || prompt.marker === true) continue
     const text = renderSillyTavernMacros(prompt.content, context, variables)
     if (text === '') continue
-    sections.push({ sources: [source('preset', preset, `prompts/${preset.prompts.indexOf(prompt)}/content`, prompt.content, { identifier: prompt.identifier, resourceRevision })], provenance: 'section-contributors', text: `<st-prompt identifier="${escapeAttribute(prompt.identifier)}" role="${escapeAttribute(prompt.role)}">\n${text}\n</st-prompt>` })
+    sections.push({
+      sources: [source('preset', preset, `prompts/${preset.prompts.indexOf(prompt)}/content`, prompt.content, {
+        identifier: prompt.identifier,
+        role: prompt.role,
+        resourceRevision,
+      })],
+      provenance: 'section-contributors',
+      text,
+    })
   }
-  const header = [
-    '[dsh-tavern selected preset]',
-    `name: ${renderSillyTavernMacros(preset.name, context, variables)}`,
-    `id: ${escapeAttribute(preset.id)}`,
-  ].join('\n')
-  return namedParts([{ text: header, sources: [], provenance: 'generated' }, ...sections])
+  return namedParts(sections)
 }
 
 export function compilePresetForDsh(preset, context = {}) {

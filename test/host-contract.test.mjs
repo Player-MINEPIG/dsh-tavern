@@ -78,7 +78,7 @@ test('replace mode removes other system sections but preserves request capabilit
     }
     const result = await listeners.get('system-prompt/assemble')(input, context, async () => input)
 
-    assert.equal(result.sections.length, 2)
+    assert.equal(result.sections.length, 1)
     assert.ok(result.sections.every(section => section.name.startsWith('pmp-dsh-tavern:part:')))
     assert.match(result.sections.map(s => s.text).join('\n\n'), /Only this system text/)
     assert.equal(result.tools, tools)
@@ -153,7 +153,7 @@ test('selected user keeps DSH agent identity and contributes ordered named Taver
     const input = { sections: [harness, tavern], tools: [], contexts: [], variables: {} }
     const assembly = await listeners.get('system-prompt/assemble')(input, context, async () => input)
     assert.equal(assembly.sections.filter(section => section.name === 'harness').length, 1)
-    assert.equal(assembly.sections.filter(section => section.name.startsWith('pmp-dsh-tavern:part:')).length, 2)
+    assert.equal(assembly.sections.filter(section => section.name.startsWith('pmp-dsh-tavern:part:')).length, 1)
     assert.equal(assembly.sections.slice(1).map(s => s.text).join('\n\n'), profileText)
     assert.equal(profileText.match(/Host user description\./g)?.length, 1)
   } finally {

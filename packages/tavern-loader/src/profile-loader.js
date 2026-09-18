@@ -399,7 +399,11 @@ function compileTavernProfileUnbounded({
     for (const prompt of preset.prompts) {
       if (!isRecord(prompt) || prompt.enabled !== true) continue
       const identifier = String(prompt.identifier ?? '')
-      body.sources = [source('preset', preset, `prompts/${preset.prompts.indexOf(prompt)}/content`, prompt.content, { identifier, resourceRevision: presetRevision })]
+      body.sources = [source('preset', preset, `prompts/${preset.prompts.indexOf(prompt)}/content`, prompt.content, {
+        identifier,
+        role: prompt.role,
+        resourceRevision: presetRevision,
+      })]
       if (prompt.marker === true) {
         const marker = compileMarker(identifier, fields, userFields, beforeLore, afterLore, profileContext, consumed, userInjection, body)
         if (marker !== '') body.push(marker)
@@ -431,7 +435,7 @@ function compileTavernProfileUnbounded({
       }
       if (/\{\{\s*persona\s*\}\}/i.test(content)) body.sources.push(body.userSource())
       const rendered = renderProfileMacros(content, profileContext, fields, userFields, consumed, userInjection, identifier)
-      if (rendered !== '') body.push(promptBlock(prompt, rendered))
+      if (rendered !== '') body.push(rendered)
     }
   }
 
@@ -440,11 +444,10 @@ function compileTavernProfileUnbounded({
   if (!consumed.has('worldInfoBefore')) appendLore(body, beforeLore, profileContext)
   if (!consumed.has('worldInfoAfter')) appendLore(body, afterLore, profileContext)
 
-  const header = profileHeader(preset, character, user, profileContext)
-  const systemText = [...header, ...body].filter(Boolean).join('\n\n')
+  const systemText = body.filter(Boolean).join('\n\n')
   return {
     systemText,
-    sections: namedParts([...header.map(text => ({ text, sources: [], provenance: 'generated' })), ...body.parts]),
+    sections: namedParts(body.parts),
     callConfig: preset === null ? {} : projectPresetCallConfig(preset),
     systemPromptMode: preset?.systemPromptMode === 'replace' ? 'replace' : 'append',
     runtimeContexts: [],
@@ -452,14 +455,6 @@ function compileTavernProfileUnbounded({
     diagnostics,
     userInjection,
   }
-}
-
-function escapeAttribute(value) {
-  return String(value ?? '')
-    .replaceAll('&', '&amp;')
-    .replaceAll('"', '&quot;')
-    .replaceAll('<', '&lt;')
-    .replaceAll('>', '&gt;')
 }
 
 function normalizedCharacterFields(data, selection) {
@@ -495,50 +490,28 @@ function stringField(value) {
   return typeof value === 'string' ? value.trim() : ''
 }
 
-function profileHeader(preset, character, user, context) {
-  const lines = ['[dsh-tavern profile]']
-  if (preset !== null) {
-    lines.push(`preset-name: ${renderSillyTavernMacros(preset.name, context)}`)
-    lines.push(`preset-id: ${escapeAttribute(preset.id)}`)
-  }
-  if (character !== null) {
-    const data = isRecord(character.data) ? character.data : character
-    lines.push(`character-name: ${renderSillyTavernMacros(data?.name ?? character.name ?? '', context)}`)
-    lines.push(`character-id: ${escapeAttribute(character.id)}`)
-  }
-  if (user !== null) {
-    lines.push(`user-name: ${renderSillyTavernMacros(user.name ?? '', { ...context, user: user.name ?? context.user })}`)
-    lines.push(`user-id: ${escapeAttribute(user.id)}`)
-  }
-  return [lines.join('\n')]
-}
-
-function promptBlock(prompt, text) {
-  return `<st-prompt identifier="${escapeAttribute(prompt.identifier)}" role="${escapeAttribute(prompt.role)}">\n${text}\n</st-prompt>`
-}
-
-function characterBlock(name, text, context) {
+function characterBlock(text, context) {
   const rendered = renderSillyTavernMacros(text, context)
-  return rendered === '' ? '' : `<st-character-field name="${name}">\n${rendered}\n</st-character-field>`
+  return rendered === '' ? '' : rendered
 }
 
 function userBlock(text, context) {
   const rendered = renderSillyTavernMacros(text, context)
-  return rendered === '' ? '' : `<st-user-field name="persona-description">\n${rendered}\n</st-user-field>`
+  return rendered === '' ? '' : rendered
 }
 
 function compileMarker(identifier, fields, userFields, beforeLore, afterLore, context, consumed, userInjection, body) {
   const mapping = {
-    charDescription: ['description', 'description'],
-    charPersonality: ['personality', 'personality'],
-    scenario: ['scenario', 'scenario'],
-    dialogueExamples: ['messageExample', 'message-example'],
+    charDescription: 'description',
+    charPersonality: 'personality',
+    scenario: 'scenario',
+    dialogueExamples: 'messageExample',
   }
   if (mapping[identifier] !== undefined) {
-    const [field, tag] = mapping[identifier]
+    const field = mapping[identifier]
     consumed.add(field)
     body.sources = [body.characterSource(field)]
-    return characterBlock(tag, fields[field], context)
+    return characterBlock(fields[field], context)
   }
   if (['personaDescription', 'userDescription', 'userPersona'].includes(identifier)) {
     if (consumed.has('userDescription')) return ''
@@ -580,18 +553,18 @@ function appendUserFallback(body, fields, consumed, context, diagnostics, userIn
 
 function appendCharacterFallbacks(body, fields, consumed, context, diagnostics) {
   const fallbacks = [
-    ['systemPrompt', 'system-prompt'],
-    ['description', 'description'],
-    ['personality', 'personality'],
-    ['scenario', 'scenario'],
-    ['messageExample', 'message-example'],
-    ['postHistoryInstructions', 'post-history-instructions'],
-    ['greeting', 'greeting-reference'],
-    ['depthPrompt', 'depth-prompt'],
+    'systemPrompt',
+    'description',
+    'personality',
+    'scenario',
+    'messageExample',
+    'postHistoryInstructions',
+    'greeting',
+    'depthPrompt',
   ]
-  for (const [field, tag] of fallbacks) {
+  for (const field of fallbacks) {
     if (consumed.has(field) || fields[field] === '') continue
-    const block = characterBlock(tag, fields[field], context)
+    const block = characterBlock(fields[field], context)
     if (block !== '') { body.sources = [body.characterSource(field)]; body.push(block) }
     if (field === 'postHistoryInstructions') diagnostics.push(positionDiagnostic('CHARACTER_PHI_APPROXIMATE', 'Character post-history instructions are placed in the Tavern system profile, not strictly after chat history.'))
     if (field === 'greeting') diagnostics.push(positionDiagnostic('CHARACTER_GREETING_REFERENCE', 'The selected greeting is a style reference; it is not an assistant history message.'))
@@ -602,7 +575,7 @@ function appendCharacterFallbacks(body, fields, consumed, context, diagnostics) 
 function loreText(entries, context) {
   return entries.map((entry) => {
     const rendered = renderSillyTavernMacros(entry.content, context)
-    return rendered === '' ? '' : `<st-world-info entry="${escapeAttribute(entry.id ?? entry.uid ?? '')}" position="${escapeAttribute(entry.position)}">\n${rendered}\n</st-world-info>`
+    return rendered === '' ? '' : rendered
   }).filter(Boolean).join('\n\n')
 }
 
@@ -638,7 +611,7 @@ export function compileTavernProfile(options = {}) {
   // result is oversized. A raw-input guard bounds transient assembly memory;
   // final output is still measured exactly below. Two profile budgets leave
   // room for macros that contract while keeping hostile multi-book input
-  // bounded before wrapper strings are allocated.
+  // bounded before section text is assembled.
   const maxLoreInputBytes = maxBytes * 2
   let inputBytes = 0
   let candidateCount = 0

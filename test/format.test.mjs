@@ -113,10 +113,10 @@ test('imports ST Chat Completion order and preserves unknown data', () => {
 test('compiles enabled non-marker prompts and removes dsh-conflicting macros', () => {
   const preset = parseSillyTavernPreset(sample(), { id: 'fixture', name: 'Fixture' })
   const text = compilePresetForDsh(preset, { user: 'Reviewer', random: () => 0 })
-  assert.match(text, /dsh-tavern selected preset/)
   assert.match(text, /Hello Reviewer/)
   assert.match(text, /warm/)
   assert.doesNotMatch(text, /do not include|marker text/)
+  assert.doesNotMatch(text, /\[dsh-tavern selected preset\]|<st-prompt\b/)
   assert.doesNotMatch(text, /\{\{[\s\S]*?\}\}/)
 })
 

@@ -65,7 +65,7 @@ dsh 没有 ST 的 `PromptManager`、marker collection 或任意历史深度插�
 
 | ST 概念 | 当前行为 | 完整度 |
 | --- | --- | --- |
-| 普通 enabled prompt 与顺序 | 按顺序编译进一个 DSH system 段 | 部分；原 role 只写入 `<st-prompt role="…">` 标签，不是真正的消息 role |
+| 普通 enabled prompt 与顺序 | 正文按顺序编译为 DSH system sections；identifier、请求 role 与来源保留在官方 source metadata | 部分；所有实际贡献仍是 system，不是真正的 `user`/`assistant` 消息 role |
 | marker | 填充角色字段、before/after lore 和 example dialogue；`chatHistory` 由 DSH 原生历史拥有 | 部分；不支持任意真实 role/depth 拓扑 |
 | 用户本轮输入 | 由 DSH 原生会话发送，插件不复制；loader `ActivationContext` 只让它在首个 assembly 前参与激活判断 | 已接入首 step 激活；没有插入到 ST `chatHistory` marker，也不写伪 durable message |
 | 会话历史 | 由 DSH 原生 durable history 重放，插件不复制 | 已接入请求，但没有 ST token-budget/marker/depth 语义 |
@@ -75,7 +75,7 @@ dsh 没有 ST 的 `PromptManager`、marker collection 或任意历史深度插�
 | 角色描述、性格、场景、首条消息 | 前三者进入 profile；首条消息仅在首轮生成作 greeting-reference | 部分；不伪造历史，也不在后续轮次重复注入 |
 | ST macro | 支持常见变量、随机与骰子；缺少完整 ST runtime context | 部分 |
 
-尤其要注意：把 ST 的 `user`/`assistant` prompt 包在 system 文本标签内只保留了审阅信息，并不等价于向模型发送真实 `user`/`assistant` 消息。这是当前兼容层最重要的边界。
+尤其要注意：ST 的 `user`/`assistant` 请求 role 只保存在模型不可见的官方 source metadata 中，并不等价于向模型发送真实 `user`/`assistant` 消息。这是当前兼容层最重要的边界。
 
 ## 5. 世界信息与角色卡的当前放置及后续 seam
 

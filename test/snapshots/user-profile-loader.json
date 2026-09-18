@@ -26,7 +26,7 @@
     },
     "worldBooks": []
   },
-  "systemText": "[dsh-tavern profile]\nuser-name: Snapshot Reader\nuser-id: snapshot-user\n\n<st-user-field name=\"persona-description\">\nSynthetic snapshot description for Snapshot Reader.\n</st-user-field>",
+  "systemText": "Synthetic snapshot description for Snapshot Reader.",
   "diagnosticCodes": [
     "USER_PERSONA_MARKER_FALLBACK"
   ]

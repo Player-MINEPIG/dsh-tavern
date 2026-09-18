@@ -65,7 +65,7 @@ No. What exists is “ST preset static prompt blocks → DSH system section” p
 
 | ST concept | Current behavior | Completeness |
 | --- | --- | --- |
-| Ordinary enabled prompts and order | Compiled in order into one DSH system section | Partial; original role is written only as `<st-prompt role="…">` tags, not a real message role |
+| Ordinary enabled prompts and order | Bodies compile in order as DSH system sections; identifier, requested role, and provenance remain in official source metadata | Partial; every actual contribution is still system, not a real `user`/`assistant` message role |
 | Markers | Fill character fields, before/after lore, and example dialogue. `chatHistory` is owned by native DSH history | Partial; arbitrary real role/depth topology is not supported |
 | This turn's user input | Sent by the native DSH session; the plugin does not copy it. Loader `ActivationContext` only lets it participate in activation before the first assembly | First-step activation is wired. It is not inserted into an ST `chatHistory` marker and does not write a fake durable message |
 | Conversation history | Replayed from native DSH durable history; the plugin does not copy it | Wired into the request, but without ST token-budget/marker/depth semantics |
@@ -75,7 +75,7 @@ No. What exists is “ST preset static prompt blocks → DSH system section” p
 | Character description, personality, scenario, first message | The first three enter the profile. First message is greeting-reference only on the first-round generation | Partial; history is not forged, and later turns do not reinject |
 | ST macros | Common variables, random, and dice; full ST runtime context is missing | Partial |
 
-Especially: wrapping ST `user`/`assistant` prompts in system-text tags only keeps review information. It is not equivalent to sending real `user`/`assistant` messages to the model. That is the most important boundary of the current compatibility layer.
+Especially: an ST `user`/`assistant` requested role is retained only in model-invisible official source metadata. It is not equivalent to sending a real `user`/`assistant` message to the model. That is the most important boundary of the current compatibility layer.
 
 ## 5. Current placement of world info and character cards, and later seams
 

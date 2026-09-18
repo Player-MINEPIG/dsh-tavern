@@ -102,7 +102,7 @@ test('unified loader injects a selected character and its triggered embedded wor
     })
 
     const prompt = sections[0].text({ agent: agent('session-a', 'Tell me about the clocktower.') })
-    assert.match(prompt, /character-id: synthetic-keeper/)
+    assert.doesNotMatch(prompt, /\[dsh-tavern profile\]|character-id:/)
     assert.match(prompt, /Keeps the integration boundary\./)
     assert.match(prompt, /The synthetic clocktower rings at dawn\./)
     assert.doesNotMatch(prompt, /Must not enter the runtime prompt/)
@@ -309,13 +309,13 @@ test('real loader isolates users by session, refreshes switches immediately, res
     store.sessionSelections.set('session-one', { userId: 'reader-one' })
     store.sessionSelections.set('session-two', { userId: 'reader-two' })
 
-    assert.match(firstHost.sections[0].text({ agent: agent('session-one') }), /user-name: Reader One[\s\S]*One description\./)
+    assert.match(firstHost.sections[0].text({ agent: agent('session-one') }), /One description\./)
     assert.doesNotMatch(firstHost.sections[0].text({ agent: agent('session-one') }), /Two description\./)
-    assert.match(firstHost.sections[0].text({ agent: agent('session-two') }), /user-name: Reader Two[\s\S]*Two description\./)
+    assert.match(firstHost.sections[0].text({ agent: agent('session-two') }), /Two description\./)
 
     store.sessionSelections.set('session-one', { userId: 'reader-two' })
     const switched = firstHost.sections[0].text({ agent: agent('session-one') })
-    assert.match(switched, /user-name: Reader Two/)
+    assert.match(switched, /Two description\./)
     assert.doesNotMatch(switched, /One description\./)
 
     const restartedHost = host()
@@ -324,7 +324,7 @@ test('real loader isolates users by session, refreshes switches immediately, res
     assert.match(restartedHost.sections[0].text({ agent: agent('session-one') }), /Two description\./)
 
     restarted.sessionSelections.set('session-one', { userId: null })
-    assert.doesNotMatch(restartedHost.sections[0].text({ agent: agent('session-one') }), /user-name:|Two description\./)
+    assert.doesNotMatch(restartedHost.sections[0].text({ agent: agent('session-one') }), /Two description\./)
     assert.match(restartedHost.sections[0].text({ agent: agent('session-two') }), /Two description\./)
 
     restarted.userStore.delete('reader-two')
