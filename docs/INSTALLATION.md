@@ -12,20 +12,20 @@
 
 ## 安装 2.3.0
 
-当前 `2.3.0` 源码尚未发布。从 GitHub 安装到默认 `web` profile，请指定此版本的分支：
+从 GitHub 安装 `2.3.0` 到默认 `web` profile，请使用固定版本标签：
 
 ```text
-dsh plugin --profile web add github:Player-MINEPIG/dsh-tavern#main
+dsh plugin --profile web add github:Player-MINEPIG/dsh-tavern#v2.3.0
 ```
 
 <a id="source-candidate"></a>
 <a id="source-installation"></a>
 ### 从源码安装和验收
 
-使用独立测试 profile/home，安装前停止该 Host。`2.3.0` 尚无发布 tag；请明确检出当前分支再从源码安装：
+使用独立测试 profile/home，安装前停止该 Host。检出 `v2.3.0` 标签后从源码安装：
 
 ```sh
-git clone --branch main https://github.com/Player-MINEPIG/dsh-tavern.git
+git clone --branch v2.3.0 https://github.com/Player-MINEPIG/dsh-tavern.git
 cd dsh-tavern
 npm ci --legacy-peer-deps
 node scripts/install.mjs --dsh-home /absolute/path/to/test-home --profile web

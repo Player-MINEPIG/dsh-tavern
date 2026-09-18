@@ -40,18 +40,18 @@ pmp-dsh-tavern 不是用另一套界面取代 DSH，也不会复制一份会话�
 
 ### 0. 安装
 
-当前 `2.3.0` 源码尚未发布。从 GitHub 安装此版本请指定分支：
+从 GitHub 安装 `2.3.0` 请使用固定版本标签：
 
 目标 DSH `0.1.5-rc.1` 要求 Node.js `^22.19.0 || >=24.0.0`，另需可从 `PATH` 调用的 DSH 和已初始化的 profile（默认 `web`）。Tavern 独立测试兼容 Node 20，不代表目标 Host 可运行在 Node 20。
 
 ```sh
-dsh plugin --profile web add github:Player-MINEPIG/dsh-tavern#main
+dsh plugin --profile web add github:Player-MINEPIG/dsh-tavern#v2.3.0
 ```
 
-其他版本请切换到对应 tag，并阅读该 tag 内的安装说明。从源码开发、从旧版包内数据安全迁移，或使用项目提供的备份卸载流程时，按[源码安装步骤](docs/INSTALLATION.md#source-installation)检出同一分支：
+其他版本请切换到对应 tag，并阅读该 tag 内的安装说明。从源码开发、从旧版包内数据安全迁移，或使用项目提供的备份卸载流程时，按[源码安装步骤](docs/INSTALLATION.md#source-installation)检出同一版本标签：
 
 ```sh
-git clone --branch main https://github.com/Player-MINEPIG/dsh-tavern.git
+git clone --branch v2.3.0 https://github.com/Player-MINEPIG/dsh-tavern.git
 cd dsh-tavern
 npm install --cache .npm-cache
 npm run plugin:install

@@ -21,22 +21,21 @@ but by itself it intentionally has no agent-loading effect.
 
 ## Install 2.3.0
 
-The current `2.3.0` source has not been released. To install it from GitHub into
-the default `web` profile, specify this version's branch:
+Install `2.3.0` from GitHub into the default `web` profile using its version tag:
 
 ```text
-dsh plugin --profile web add github:Player-MINEPIG/dsh-tavern#main
+dsh plugin --profile web add github:Player-MINEPIG/dsh-tavern#v2.3.0
 ```
 
 <a id="source-candidate"></a>
 <a id="source-installation"></a>
 ### Install and validate from source
 
-Use a separate test profile/home. Stop its Host before installing. Version `2.3.0`
-has no release tag yet; explicitly check out the current branch, then install from source:
+Use a separate test profile/home. Stop its Host before installing. Check out the
+`v2.3.0` tag, then install from source:
 
 ```sh
-git clone --branch main https://github.com/Player-MINEPIG/dsh-tavern.git
+git clone --branch v2.3.0 https://github.com/Player-MINEPIG/dsh-tavern.git
 cd dsh-tavern
 npm ci --legacy-peer-deps
 node scripts/install.mjs --dsh-home /absolute/path/to/test-home --profile web
