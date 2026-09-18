@@ -372,3 +372,24 @@ export function shouldShowUnboundNotice({ workspace, session, selection } = {}) 
   if (workspacePath === '' || sessionPath !== workspacePath) return true
   return characterIdFromSelection(selection) === null
 }
+
+export async function runAutomaticCharacterRelinks(recoveries, { attempted, isActive, relink, onError, onChanged }) {
+  let changed = false
+  try {
+    for (const recovery of recoveries) {
+      if (!isActive()) break
+      if (attempted.has(recovery.key)) continue
+      // A cancelled queue must leave unstarted recoveries available to its successor.
+      attempted.add(recovery.key)
+      try {
+        await relink(recovery.missing.id, recovery.character.id)
+        changed = true
+      } catch (reason) {
+        if (isActive()) onError(reason)
+      }
+    }
+  } finally {
+    // A successful write remains authoritative even if its view was replaced.
+    if (changed) onChanged()
+  }
+}

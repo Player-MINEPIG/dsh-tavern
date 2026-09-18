@@ -6,6 +6,7 @@ export const TAVERN_MENU_ITEMS = Object.freeze([
   { id: 'user', labelKey: 'nav.user', emptyTitleKey: 'nav.user.empty', available: true },
   { id: 'session-template', labelKey: 'nav.sessionTemplate', emptyTitleKey: 'nav.sessionTemplate.empty', available: true, binding: false, showBinding: false },
   { id: 'conversation-settings', labelKey: 'nav.conversationSettings', emptyTitleKey: 'nav.conversationSettings.empty', available: true, binding: false, showBinding: false, playOnly: true },
+  { id: 'diagnostics', labelKey: 'nav.diagnostics', emptyTitleKey: 'nav.diagnostics.empty', available: true, binding: false, showBinding: false },
   { id: 'settings', labelKey: 'nav.settings', emptyTitleKey: 'nav.settings.empty', available: true, binding: false, showBinding: false },
 ])
 

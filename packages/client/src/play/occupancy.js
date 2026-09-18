@@ -22,7 +22,7 @@ export function findConversationStore(slots) {
   return undefined
 }
 
-export function installPlaySlotOccupancy(ctx, playClient, { playthroughController, switchToNative, conversationPhase } = {}) {
+export function installPlaySlotOccupancy(ctx, playClient, { playthroughController, switchToNative, conversationPhase, diagnostics } = {}) {
   let mode = 'native'
   let declared = false
   let disposeEntry = null
@@ -71,6 +71,7 @@ export function installPlaySlotOccupancy(ctx, playClient, { playthroughControlle
       priority: PLAY_SLOT_PRIORITY,
       inject: () => ({
         playClient,
+        diagnostics,
         playthroughController,
         openSession: (sessionId, playthrough = null) => openPlaySession(sessionId, playthrough),
         getActivePlaythroughId: () => preferredPlaythroughId,

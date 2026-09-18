@@ -3,6 +3,7 @@ import {
   useEffect,
   useRef,
   useState,
+  useSyncExternalStore,
 } from 'react'
 import {
   API_V1,
@@ -19,12 +20,13 @@ import {
   createPlaythroughController,
   sourceSessionIdForCharacter,
 } from './create.js'
+import { WorkspaceDiagnosticSummary, PlaythroughDiagnosticWarning } from './diagnostics.js'
 import { PlayIoMenu } from './io-menu.js'
 import { playthroughDisplayTitle } from './title.js'
 import {
   SessionCharacterBindingCache,
   assessPlaythroughCharacterRelink,
-  loadPlaySidebarResources,
+  runAutomaticCharacterRelinks,
   requiresSystemWorkspaceConfirmation,
   loadSessionCharacterBindings,
   playthroughFocusTarget,
@@ -108,7 +110,7 @@ function characterInsertionBoundary(event) {
   return event.clientY < bounds.top + bounds.height / 2 ? index : index + 1
 }
 
-function CharacterGroup({ character, index, dragging, reorderDisabled, onPointerDown, onPointerMove, onPointerUp, onPointerCancel, collapsed, unassignedOpen, creating, createDisabled, toggle, toggleUnassigned, createPlaythrough, openPlaythrough, openSession, playClient, beginPlaythroughRelink }) {
+function CharacterGroup({ character, index, dragging, reorderDisabled, onPointerDown, onPointerMove, onPointerUp, onPointerCancel, collapsed, unassignedOpen, creating, createDisabled, toggle, toggleUnassigned, createPlaythrough, openPlaythrough, openSession, playClient, beginPlaythroughRelink, diagnostics, diagnosticIds }) {
   const count = character.playthroughs.length + character.unassigned.length
   return h('section', {
     className: 'dtv-play-section',
@@ -167,6 +169,7 @@ function CharacterGroup({ character, index, dragging, reorderDisabled, onPointer
     h('span', { className: 'dtv-play-chevron', 'aria-hidden': 'true' }, '◆'),
     h('span', { className: 'dtv-play-title' }, rawText(playthroughDisplayTitle(playthrough))),
     ),
+    diagnosticIds.has(playthrough.id) ? h(PlaythroughDiagnosticWarning, { playthrough, controller: diagnostics }) : null,
     h(PlayIoMenu, {
       playClient,
       playthrough,
@@ -201,7 +204,7 @@ function CharacterGroup({ character, index, dragging, reorderDisabled, onPointer
   )
 }
 
-function MissingCharacterGroup({ character, collapsed, toggle, beginRelink, beginPlaythroughRelink, openPlaythrough, openSession, playClient, relinkDisabled }) {
+function MissingCharacterGroup({ character, collapsed, toggle, beginRelink, beginPlaythroughRelink, openPlaythrough, openSession, playClient, relinkDisabled, diagnostics, diagnosticIds }) {
   return h('section', { className: 'dtv-play-section dtv-play-missing-card', 'data-open': !collapsed },
     h('div', { className: 'dtv-play-group-line' },
       h('button', {
@@ -239,6 +242,7 @@ function MissingCharacterGroup({ character, collapsed, toggle, beginRelink, begi
     h('span', { className: 'dtv-play-chevron', 'aria-hidden': 'true' }, '◆'),
     h('span', { className: 'dtv-play-title' }, rawText(playthroughDisplayTitle(playthrough))),
     ),
+    diagnosticIds.has(playthrough.id) ? h(PlaythroughDiagnosticWarning, { playthrough, controller: diagnostics }) : null,
     h(PlayIoMenu, {
       playClient,
       playthrough,
@@ -257,6 +261,7 @@ export function PlayWorkspaceBrowser({
   useSessions,
   useWorkspaces,
   playClient,
+  diagnostics,
   playthroughController,
   openSession,
   switchToNative,
@@ -283,7 +288,10 @@ export function PlayWorkspaceBrowser({
   }
   const [creatingCharacterId, setCreatingCharacterId] = useState(null)
   const [revision, setRevision] = useState(0)
-  const [resources, setResources] = useState(null)
+  const diagnosticSnapshot = useSyncExternalStore(diagnostics.subscribe, diagnostics.getSnapshot)
+  const resources = diagnosticSnapshot.resources
+  const setResources = diagnostics.updateResources
+  const diagnosticIds = new Set(diagnosticSnapshot.issues.map(issue => issue.playthroughId))
   const [sessionCharacters, setSessionCharacters] = useState({})
   const [status, setStatus] = useState(null)
   const [collapsedCharacters, setCollapsedCharacters] = useState(() => new Set())
@@ -312,24 +320,13 @@ export function PlayWorkspaceBrowser({
   useEffect(() => {
     const refresh = () => {
       cache.current.clear()
+      setStatus(null)
       setRevision(value => value + 1)
     }
     window.addEventListener(CLIENT_REFRESH_EVENT, refresh)
     return () => window.removeEventListener(CLIENT_REFRESH_EVENT, refresh)
   }, [])
 
-  useEffect(() => {
-    let active = true
-    setStatus(null)
-    loadPlaySidebarResources(playClient).then(next => {
-      if (active) setResources(next)
-    }).catch(reason => {
-      if (!active) return
-      setResources(null)
-      setStatus({ message: reason instanceof Error ? reason.message : String(reason) })
-    })
-    return () => { active = false }
-  }, [playClient, revision])
 
   const rpIds = resources === null ? [] : [...sessionIdsInRpWorkspace({
     workspace: resources.workspace,
@@ -390,26 +387,19 @@ export function PlayWorkspaceBrowser({
       if (candidates.length !== 1) continue
       const key = `${missing.id}\0${candidates[0].id}`
       if (automaticRelinks.current.has(key)) continue
-      automaticRelinks.current.add(key)
-      recoveries.push({ missing, character: candidates[0] })
+      recoveries.push({ missing, character: candidates[0], key })
     }
     if (recoveries.length === 0) return undefined
-    void (async () => {
-      let changed = false
-      for (const recovery of recoveries) {
-        if (!active) return
-        try {
-          await playClient.relinkCharacter(recovery.missing.id, recovery.character.id)
-          changed = true
-        } catch (reason) {
-          if (active) setStatus({ message: reason instanceof Error ? reason.message : String(reason) })
-        }
-      }
-      if (active && changed) {
+    void runAutomaticCharacterRelinks(recoveries, {
+      attempted: automaticRelinks.current,
+      isActive: () => active,
+      relink: (missingId, characterId) => playClient.relinkCharacter(missingId, characterId),
+      onError: reason => setStatus({ message: reason instanceof Error ? reason.message : String(reason) }),
+      onChanged: () => {
         cache.current.clear()
         window.dispatchEvent(new Event(CLIENT_REFRESH_EVENT))
-      }
-    })()
+      },
+    })
     return () => { active = false }
   }, [automaticRelinkKey, playClient])
 
@@ -496,7 +486,7 @@ export function PlayWorkspaceBrowser({
       window.dispatchEvent(new Event(CLIENT_REFRESH_EVENT))
     } catch (reason) {
       setStatus({ message: reason instanceof Error ? reason.message : String(reason) })
-      setRevision(value => value + 1)
+      void diagnostics.refresh()
     } finally {
       setReorderingCharacters(false)
     }
@@ -517,7 +507,7 @@ export function PlayWorkspaceBrowser({
       window.dispatchEvent(new Event(CLIENT_REFRESH_EVENT))
     } catch (reason) {
       setStatus({ message: reason instanceof Error ? reason.message : String(reason) })
-      setRevision(value => value + 1)
+      void diagnostics.refresh()
     } finally {
       setReorderingCharacters(false)
     }
@@ -566,7 +556,7 @@ export function PlayWorkspaceBrowser({
   })
 
   return h('div', { className: 'dtv-play-sidebar', style: { '--dtv-ui-scale': scale } },
-    resources === null && status === null ? h('p', { className: 'dtv-play-status' }, uiMessage('play.sidebar.loading')) : null,
+    diagnosticSnapshot.loading ? h('p', { className: 'dtv-play-status' }, uiMessage('play.sidebar.loading')) : null,
     resources?.workspace?.selected === false ? h('section', { className: 'dtv-play-section', 'data-open': true },
       h('p', { className: 'dtv-play-status' }, uiMessage('play.sidebar.workspaceMissing')),
       ...workspaceItems.map(workspace => {
@@ -585,15 +575,7 @@ export function PlayWorkspaceBrowser({
       }),
     ) : null,
     status === null ? null : h('p', { className: 'dtv-play-status', 'data-error': true }, status.key ? uiMessage(status.key) : rawText(status.message)),
-    (resources?.diagnostics.length ?? 0) === 0 ? null : h('p', { className: 'dtv-play-status', 'data-error': true }, uiMessage('play.sidebar.timelineErrors', { count: resources.diagnostics.length })),
-    resources?.diagnostics.some(item => item.code === 'PLAY_SESSION_NOT_FOUND')
-      ? h('p', { className: 'dtv-play-status', 'data-error': true }, uiMessage('play.sidebar.missingSessionHistory'))
-      : null,
-    ...(resources?.diagnostics ?? []).map(diagnostic => h('p', {
-      key: diagnostic.playthroughId,
-      className: 'dtv-play-status',
-      'data-error': true,
-    }, rawText(`${diagnostic.path}: ${diagnostic.message}`))),
+    h(WorkspaceDiagnosticSummary, { snapshot: diagnosticSnapshot, controller: diagnostics }),
     resources === null ? null : h('label', { className: 'dtv-play-sort' },
       h('span', null, uiMessage('play.sidebar.sort')),
       h('select', {
@@ -655,6 +637,8 @@ export function PlayWorkspaceBrowser({
         openPlaythrough,
         openSession,
         beginPlaythroughRelink,
+        diagnostics,
+        diagnosticIds,
       }),
     ]),
     characterDragFrom !== null && characterDropIndex === model.characters.length
@@ -682,6 +666,8 @@ export function PlayWorkspaceBrowser({
         openPlaythrough,
         openSession,
         playClient,
+        diagnostics,
+        diagnosticIds,
       })) : null,
     ),
     h('section', { className: 'dtv-play-section', 'data-open': otherOpen },

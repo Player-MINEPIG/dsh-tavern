@@ -4,6 +4,7 @@ import {
   useEffect,
   useRef,
   useState,
+  useSyncExternalStore,
 } from 'react'
 import {
   DEFAULT_UI_SETTINGS,
@@ -38,6 +39,8 @@ import { createChromeClickController } from './play/chrome.js'
 import { installPlaySlotOccupancy } from './play/occupancy.js'
 import { createLivePlayClient } from './play/live.js'
 import { sessionHasConversationHistory } from './play/chat-model.js'
+import { createWorkspaceDiagnostics } from './play/diagnostics-state.js'
+import { WorkspaceDiagnosticsPanel, diagnosticsCss } from './play/diagnostics.js'
 import { RegexPanel } from './play/regex-panel.js'
 import { projectRpWorkspaceSetting, workspaceSelectionRequest } from './play/workspace-setting.js'
 import { requiresSystemWorkspaceConfirmation } from './play/sidebar-model.js'
@@ -637,9 +640,16 @@ function WorkspaceAdmission({ setting, state, error, busy, selectWorkspace, relo
   ))
 }
 
-function TavernShell({ useSessions, useWorkspaces, createCleanSession, createConfiguredPlaythrough, playClient, playSlots, chromeService }) {
+function TavernShell({ useSessions, useWorkspaces, createCleanSession, createConfiguredPlaythrough, playClient, playSlots, chromeService, diagnostics }) {
   const [menuOpen, setMenuOpen] = useState(false)
   const [surface, setSurface] = useState(null)
+  const [diagnosticPlaythroughId, setDiagnosticPlaythroughId] = useState(null)
+  const diagnosticSnapshot = useSyncExternalStore(diagnostics.subscribe, diagnostics.getSnapshot)
+  useEffect(() => diagnostics.subscribeOpen(playthroughId => {
+    setMenuOpen(false)
+    setDiagnosticPlaythroughId(playthroughId)
+    setSurface('diagnostics')
+  }), [diagnostics])
   const [anchor, setAnchor] = useState(initialLauncherAnchor)
   const [chromeMode, setChromeMode] = useState(() => chromeService.getMode())
   const [chromeAnimation, setChromeAnimation] = useState(0)
@@ -1099,6 +1109,7 @@ function TavernShell({ useSessions, useWorkspaces, createCleanSession, createCon
   const switchChrome = () => chromeController.current?.switchMode()
 
   const open = id => {
+    if (id === 'diagnostics') setDiagnosticPlaythroughId(null)
     setMenuOpen(false)
     setSurface(id)
     window.dispatchEvent(new Event(CLIENT_REFRESH_EVENT))
@@ -1145,6 +1156,8 @@ function TavernShell({ useSessions, useWorkspaces, createCleanSession, createCon
       update: persistConversationSettings,
       reset: resetConversationSettings,
     })
+  } else if (surface === 'diagnostics') {
+    panel = h(WorkspaceDiagnosticsPanel, { controller: diagnostics, playthroughId: diagnosticPlaythroughId, showAll: () => setDiagnosticPlaythroughId(null), close })
   } else if (surface === 'settings') {
     panel = h(SettingsPanel, {
       settings: uiSettings,
@@ -1230,7 +1243,10 @@ function TavernShell({ useSessions, useWorkspaces, createCleanSession, createCon
         h('span', { className: 'dtv-item-planned' }, chromeMode === 'play' ? 'ST' : 'DSH'),
         ),
         ...TAVERN_MENU_ITEMS.filter(item => !item.playOnly || chromeMode === 'play').map(item => {
-          const status = statuses[item.id] ?? { bound: false, count: 0, titleKey: item.emptyTitleKey }
+          const isDiagnostics = item.id === 'diagnostics'
+          const status = isDiagnostics
+            ? { bound: false, count: diagnosticSnapshot.issues.length, titleKey: diagnosticSnapshot.loading ? 'diagnostics.loading' : item.emptyTitleKey }
+            : statuses[item.id] ?? { bound: false, count: 0, titleKey: item.emptyTitleKey }
           const itemLabel = unwrapText(uiMessage(item.labelKey))
           const statusTitle = status.bound ? status.title : unwrapText(uiMessage(status.titleKey ?? item.emptyTitleKey))
           const stateLabel = item.binding === false ? '' : unwrapText(uiMessage(status.bound ? 'common.bound' : 'common.unbound'))
@@ -1259,8 +1275,8 @@ function TavernShell({ useSessions, useWorkspaces, createCleanSession, createCon
             h('span', { className: 'dtv-item-label' }, uiMessage(item.labelKey)),
             h('span', { className: 'dtv-item-status' }, status.bound ? rawText(status.title) : uiMessage(status.titleKey ?? item.emptyTitleKey)),
           ),
-          status.count > 1
-            ? h('span', { className: 'dtv-item-count', 'aria-label': uiMessage('nav.bookCount', { count: status.count }) }, uiMessage('nav.bookCount', { count: status.count }))
+          status.count >= (isDiagnostics ? 1 : 2)
+            ? h('span', { className: 'dtv-item-count', 'aria-label': uiMessage(isDiagnostics ? 'diagnostics.count' : 'nav.bookCount', { count: status.count }) }, uiMessage(isDiagnostics ? 'diagnostics.count' : 'nav.bookCount', { count: status.count }))
             : item.available ? null : h('span', { className: 'dtv-item-planned' }, uiMessage('common.planned')),
           )
         }),
@@ -1273,7 +1289,7 @@ function installStyles() {
   if (document.querySelector(`style[data-plugin-css="${PLUGIN_ID}-shell"]`) !== null) return
   const style = document.createElement('style')
   style.dataset.pluginCss = `${PLUGIN_ID}-shell`
-  style.textContent = css
+  style.textContent = css + diagnosticsCss
   document.head.append(style)
 }
 
@@ -1290,6 +1306,18 @@ export function apply(ctx, { conversationPhase }) {
   installStyles()
   registerTavernTraceView(ctx)
   const playClient = createLivePlayClient()
+  let diagnosticStorage
+  try { diagnosticStorage = window.sessionStorage } catch { /* Optional dismissal preference. */ }
+  const diagnostics = createWorkspaceDiagnostics(playClient, { storage: diagnosticStorage })
+  ctx.effect(() => {
+    const refresh = () => { void diagnostics.refresh() }
+    window.addEventListener(CLIENT_REFRESH_EVENT, refresh)
+    refresh()
+    return () => {
+      window.removeEventListener(CLIENT_REFRESH_EVENT, refresh)
+      diagnostics.dispose()
+    }
+  }, 'dsh-tavern: workspace diagnostics')
   const playthroughController = createPlaythroughController(playClient)
   const chrome = createChromeModeServiceCore({
     read: () => playClient.getChrome(),
@@ -1309,6 +1337,7 @@ export function apply(ctx, { conversationPhase }) {
   }, 'dsh-tavern: chrome mode service transport')
   const playSlots = installPlaySlotOccupancy(ctx, playClient, {
     conversationPhase,
+    diagnostics,
     playthroughController,
     switchToNative: () => chrome.face.setMode('native'),
   })
@@ -1318,6 +1347,7 @@ export function apply(ctx, { conversationPhase }) {
     order: 80,
     inject: () => ({
       playClient,
+      diagnostics,
       chromeService: chrome.face,
       playSlots,
       createCleanSession: ({ workspaceId, source }) => createCleanSessionWorkflow({

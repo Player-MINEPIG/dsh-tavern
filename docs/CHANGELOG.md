@@ -2,6 +2,7 @@
 
 ## 2.3.0 — Candidate, not released — Prompt assembly Trace
 
+- Add DT → Diagnostics for current RP workspace read problems in both frontend modes. Replace long sidebar errors with a dismissible summary and per-playthrough warning buttons; share reads, retain dismissal within the browser tab, and provide recovery advice, technical details, recheck and copy actions. No persistent log or new API.
 - Render complete HTML documents inside closed unlabeled/HTML fences as sanitized static templates in RP and HTML export. Isolate each document, map standalone root styles, preserve CSS declaration bytes (including gradient variable shorthands), and keep code samples literal. Template scripts and MVU variables remain unsupported.
 - Fall back to the character name when the loader receives an empty or whitespace-only nickname, including new/imported cards and imported-context macro expansion.
 - Separate new world-book source `entryId` (in-book UID) from `qualifiedEntryId` (complete Loader identity); preserve earlier captured metadata and the v1 audit contract.

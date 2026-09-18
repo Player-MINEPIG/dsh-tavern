@@ -8,6 +8,16 @@ This guide covers the current orb interaction, frontend display-mode switch, RP 
 
 On the target DSH `0.1.5-rc.1`, exposed Session errors or the latest turn's terminal failure show: “An error occurred. Switch to the Chat view for more information.” Select DSH's Chat tab for the detailed cause. RP does not switch views automatically or duplicate provider diagnostics. The notice follows Tavern's UI language. A new request in progress hides the previous turn's failure; later success or intentional cancellation supersedes old errors. Automatic retries in progress and recoverable tool errors alone are not terminal failures.
 
+### Workspace and playthrough read problems
+
+Open **DT → Diagnostics** for problems in the current RP workspace, in either native or Mowan mode. The sidebar shows one dismissible summary. The `⚠` beside an affected playthrough opens its details, even when the playthrough itself cannot be opened.
+
+The panel shows the affected character/playthrough, cause, and recovery advice. Expand **Technical details** for the error code, file path, and any session ID in the error. **Copy diagnostics** copies the displayed list; **Copy this problem** copies one item. Reports include local paths and object IDs; review before sharing.
+
+**Recheck** reads the current workspace again. Dismissing the summary does not remove problems. Rechecks, page reloads, and native/Mowan switches in the same browser tab do not re-alert dismissed identical problems. New problems are shown, and a successful check automatically removes resolved ones. Closing the browser tab ends this dismissal preference.
+
+This panel shows current read problems, not a historical log. It does not persist prompt, conversation, or error bodies and adds no v3 API. Backend operations continue to use the DSH logger / operationId; model request failures remain available through the Conversation view described above.
+
 ## Quick Start: shortest RP path
 
 Do one full turn in this order the first time. The screenshot version is in the Chinese [README](../README.md#quick-start从角色卡到第一轮-rp-对话). The [English README](../README_en.md) has no images.

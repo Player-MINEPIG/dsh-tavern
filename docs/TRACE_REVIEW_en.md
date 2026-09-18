@@ -22,10 +22,10 @@ verification limits are stated below. No merge, tag or release.
 Environment: Node.js 22.23.1, with the official CLI and resolved core packages pinned to
 `0.1.5-rc.1`. These results apply to the current implementation.
 
-- `npm run check`: 625 tests, 623 passed, 0 failed, 2 conditional skips. Real AgentLoop and
+- `npm run check`: 645 tests, 643 passed, 0 failed, 2 conditional skips. Real AgentLoop and
   official codecs were enabled. The private-card fixture and opt-in live v2 test skipped;
   the latter was exercised separately against a real Host.
-- `npm run verify:2.0`, build and the 204-file package checks passed. Real-Host v2 smoke passed 16/16.
+- `npm run verify:2.0`, build and the 206-file package checks passed. Real-Host v2 smoke passed 16/16.
 - Regressions cover interleaved sections, macros/mixed sources, Unicode, retry/multi-step,
   restart, message reuse/replacement, inherited prefixes, format changes, truncated/missing
   history, hash/identity/range failures, unknown provenance, complete overrides, limits and corruption.
@@ -63,6 +63,13 @@ Environment: Node.js 22.23.1, with the official CLI and resolved core packages p
   Its durable official history stops at `step/end` without `turn/end`; official cold reading adds only an
   in-memory `interrupted` closer. This does not establish that a user-cancellation reason was persisted.
   v3 invents no `failure` without official failure information. History and Trace files remained unchanged.
+- DT Diagnostics shows current RP workspace read problems. Chrome checked the three real missing-log
+  cases: summary dismissal, individual/all details, technical disclosures, recheck, page-reload persistence,
+  and native/Mowan switching. The narrow viewport had no horizontal overflow. A synthetic page verified
+  English labels, workspace-wide failure, recovery, and recurrence. A native clipboard paste verified the
+  copied all-problems report's JSON structure. Twenty new state/async-relink tests cover concurrent reads,
+  dismissal, unavailable storage, and cancelled queues. There is no persistent log or new API; the three
+  old playthroughs still require their session logs from the original environment or a backup.
 - CSSPeeper inspector / FileSaver unload console warnings came from the browser extension, not Tavern.
   Three 404 responses were explicitly `PLAY_SESSION_NOT_FOUND` for missing old logs. The UI explained
   them without blocking valid RP sessions.

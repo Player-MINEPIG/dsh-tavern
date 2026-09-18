@@ -8,6 +8,7 @@ import {
   playthroughFocusTarget,
   projectPlaySidebar,
   requiresSystemWorkspaceConfirmation,
+  runAutomaticCharacterRelinks,
   shouldShowUnboundNotice,
   sessionIdsInRpWorkspace,
   sortCharactersByRecentConversation,
@@ -321,4 +322,101 @@ test('sidebar preserves missing-session diagnostics while loading other timeline
   assert.deepEqual(resources.timelines, { 'card/new/timeline.json': { nodes: [] } })
   assert.deepEqual(resources.diagnostics, [{ playthroughId: 'old', path: 'card/old/timeline.json',
     code: 'PLAY_SESSION_NOT_FOUND', message: 'old session missing' }])
+})
+
+function relinkRecovery(id) {
+  return { key: `missing-${id}\0current-${id}`, missing: { id: `missing-${id}` }, character: { id: `current-${id}` } }
+}
+
+function pendingRelink() {
+  let resolve, reject
+  const promise = new Promise((yes, no) => { resolve = yes; reject = no })
+  return { promise, resolve, reject }
+}
+
+test('cancelled automatic relink queues preserve unstarted work and announce completed writes', async () => {
+  const recoveries = [relinkRecovery('a'), relinkRecovery('b')]
+  const attempted = new Set()
+  const first = pendingRelink()
+  const calls = []
+  let active = true, changes = 0
+  const callbacks = {
+    attempted, isActive: () => active,
+    relink: async (...ids) => { calls.push(ids); if (ids[0] === 'missing-a') await first.promise },
+    onError: assert.fail, onChanged: () => { changes++ },
+  }
+  const cancelled = runAutomaticCharacterRelinks(recoveries, callbacks)
+  assert.deepEqual(calls, [['missing-a', 'current-a']])
+  assert.deepEqual([...attempted], [recoveries[0].key])
+  active = false
+  first.resolve()
+  await cancelled
+  assert.equal(changes, 1, 'a completed write must refresh shared state after the view is cancelled')
+  assert.equal(attempted.has(recoveries[1].key), false)
+
+  active = true
+  await runAutomaticCharacterRelinks(recoveries, callbacks)
+  assert.deepEqual(calls, [['missing-a', 'current-a'], ['missing-b', 'current-b']])
+  assert.equal(changes, 2)
+  assert.equal(attempted.size, 2)
+})
+
+test('automatic relink queues do not duplicate in-flight or repeated recoveries', async () => {
+  const firstRecovery = relinkRecovery('a'), secondRecovery = relinkRecovery('b')
+  const pending = pendingRelink()
+  const attempted = new Set()
+  const calls = []
+  let changes = 0
+  const callbacks = {
+    attempted, isActive: () => true,
+    relink: async (missing, current) => { calls.push([missing, current]); if (missing === 'missing-a') await pending.promise },
+    onError: assert.fail, onChanged: () => { changes++ },
+  }
+  const running = runAutomaticCharacterRelinks([firstRecovery, firstRecovery, secondRecovery], callbacks)
+  await runAutomaticCharacterRelinks([firstRecovery], callbacks)
+  assert.deepEqual(calls, [['missing-a', 'current-a']])
+  assert.equal(changes, 0)
+  pending.resolve()
+  await running
+  assert.deepEqual(calls, [['missing-a', 'current-a'], ['missing-b', 'current-b']])
+  assert.equal(changes, 1)
+})
+
+test('automatic relink failures are surfaced once while later recoveries still run', async () => {
+  const recoveries = [relinkRecovery('a'), relinkRecovery('b')]
+  const attempted = new Set(), errors = [], calls = []
+  const failure = new Error('relink refused')
+  let changes = 0
+  const callbacks = {
+    attempted, isActive: () => true,
+    relink: async missing => { calls.push(missing); if (missing === 'missing-a') throw failure },
+    onError: reason => errors.push(reason), onChanged: () => { changes++ },
+  }
+  await runAutomaticCharacterRelinks(recoveries, callbacks)
+  await runAutomaticCharacterRelinks(recoveries, callbacks)
+  assert.deepEqual(calls, ['missing-a', 'missing-b'])
+  assert.deepEqual(errors, [failure])
+  assert.equal(changes, 1)
+})
+
+test('cancelled automatic relink failures never update an inactive view or reserve the next recovery', async () => {
+  const recoveries = [relinkRecovery('a'), relinkRecovery('b')]
+  const attempted = new Set(), pending = pendingRelink()
+  let active = true
+  const running = runAutomaticCharacterRelinks(recoveries, {
+    attempted, isActive: () => active, relink: () => pending.promise,
+    onError: assert.fail, onChanged: assert.fail,
+  })
+  active = false
+  pending.reject(new Error('inactive request failed'))
+  await running
+  assert.deepEqual([...attempted], [recoveries[0].key])
+})
+
+test('an already cancelled automatic relink queue does not mark or call any recovery', async () => {
+  const attempted = new Set()
+  await runAutomaticCharacterRelinks([relinkRecovery('a')], {
+    attempted, isActive: () => false, relink: assert.fail, onError: assert.fail, onChanged: assert.fail,
+  })
+  assert.equal(attempted.size, 0)
 })

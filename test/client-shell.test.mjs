@@ -43,6 +43,7 @@ test('one Tavern launcher exposes stable resource surfaces', () => {
     'user',
     'session-template',
     'conversation-settings',
+    'diagnostics',
     'settings',
   ])
   assert.equal(surfaceTitle('world-info'), 'nav.worldBook')
@@ -379,7 +380,8 @@ test('RP sidebar separates automatic sort modes from preset-style custom draggin
   assert.match(source, /const response = await playClient\.putCharacterOrder\(mode\)/)
   assert.match(source, /value: resources\.characterSorting\?\.mode \?\? 'updated'/)
   assert.match(source, /resources\?\.characterSorting\?\.mode !== 'custom'/)
-  assert.match(source, /await playClient\.relinkCharacter\(recovery\.missing\.id, recovery\.character\.id\)/)
+  assert.match(source, /runAutomaticCharacterRelinks\(recoveries/)
+  assert.match(source, /relink: \(missingId, characterId\) => playClient\.relinkCharacter\(missingId, characterId\)/)
   assert.match(source, /await playClient\.relinkPlaythroughCharacter\(relinkRequest\.playthrough\.id, relinkTargetId\)/)
   assert.match(source, /assessPlaythroughCharacterRelink/)
 })

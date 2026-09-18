@@ -33,7 +33,7 @@ module.exports = __toCommonJS(entry_exports);
 var import_dsh_client_ui_conversation = require("@deepseek-ai/dsh-client-ui-conversation");
 
 // packages/client/src/index.js
-var import_react17 = require("react");
+var import_react18 = require("react");
 
 // packages/ui-settings/src/locale-contract.js
 var DEFAULT_UI_LOCALE = "zh-CN";
@@ -108,6 +108,31 @@ var zh_CN_default = Object.freeze({
   "nav.worldBook": "\u4E16\u754C\u4E66",
   "nav.user": "\u7528\u6237",
   "nav.sessionTemplate": "\u65B0\u4F1A\u8BDD",
+  "nav.diagnostics": "\u8BCA\u65AD",
+  "nav.diagnostics.empty": "\u5F53\u524D RP \u5DE5\u4F5C\u533A\u7684\u95EE\u9898",
+  "diagnostics.timelineSummary": "\u26A0 {count} \u4E2A\u5468\u76EE\u65E0\u6CD5\u8BFB\u53D6 \xB7 \u67E5\u770B\u8BE6\u60C5",
+  "diagnostics.workspaceSummary": "\u26A0 \u5DE5\u4F5C\u533A\u68C0\u67E5\u5931\u8D25 \xB7 \u67E5\u770B\u8BE6\u60C5",
+  "diagnostics.dismiss": "\u5173\u95ED\u95EE\u9898\u6458\u8981\uFF08\u4ECD\u53EF\u5728 DT \u2192 \u8BCA\u65AD\u4E2D\u67E5\u770B\uFF09",
+  "diagnostics.playthrough": "\u67E5\u770B\u300C{name}\u300D\u7684\u95EE\u9898",
+  "diagnostics.scope": "\u5F53\u524D RP \u5DE5\u4F5C\u533A\u7684\u95EE\u9898\u3002\u4FEE\u590D\u540E\u91CD\u65B0\u68C0\u67E5\u5373\u53EF\u66F4\u65B0\uFF1B\u5173\u95ED\u4FA7\u680F\u6458\u8981\u4E0D\u4F1A\u5220\u9664\u95EE\u9898\u3002",
+  "diagnostics.count": "{count} \u4E2A\u95EE\u9898",
+  "diagnostics.sessionMissing": "\u6B64\u5468\u76EE\u5F15\u7528\u7684 DSH \u4F1A\u8BDD\u65E5\u5FD7\u7F3A\u5931\u3002",
+  "diagnostics.fileMissing": "\u6B64\u5468\u76EE\u5F15\u7528\u7684\u6587\u4EF6\u4E0D\u5B58\u5728\u3002",
+  "diagnostics.restoreFile": "\u8BF7\u786E\u8BA4\u5DF2\u9009\u62E9\u6B63\u786E\u7684 RP \u5DE5\u4F5C\u533A\uFF0C\u6216\u4ECE\u5907\u4EFD\u6062\u590D\u8BE5\u5468\u76EE\u7684\u6587\u4EF6\uFF0C\u7136\u540E\u91CD\u65B0\u68C0\u67E5\u3002",
+  "diagnostics.workspaceFailed": "\u6682\u65F6\u65E0\u6CD5\u68C0\u67E5\u5F53\u524D RP \u5DE5\u4F5C\u533A\u3002",
+  "diagnostics.timelineFailed": "\u6682\u65F6\u65E0\u6CD5\u8BFB\u53D6\u6B64\u5468\u76EE\u3002",
+  "diagnostics.retryHint": "\u8BF7\u91CD\u65B0\u68C0\u67E5\u3002\u82E5\u4ECD\u5931\u8D25\uFF0C\u53EF\u5C55\u5F00\u6280\u672F\u8BE6\u60C5\uFF0C\u590D\u5236\u8BCA\u65AD\u4FE1\u606F\u7528\u4E8E\u6392\u67E5\u3002",
+  "diagnostics.recheck": "\u91CD\u65B0\u68C0\u67E5",
+  "diagnostics.copy": "\u590D\u5236\u8BCA\u65AD\u4FE1\u606F",
+  "diagnostics.copyOne": "\u590D\u5236\u6B64\u95EE\u9898",
+  "diagnostics.copied": "\u8BCA\u65AD\u4FE1\u606F\u5DF2\u590D\u5236\u3002\u5305\u542B\u5DE5\u4F5C\u533A\u8DEF\u5F84\u548C\u5BF9\u8C61 ID\uFF0C\u5206\u4EAB\u524D\u8BF7\u68C0\u67E5\u3002",
+  "diagnostics.copyFailed": "\u590D\u5236\u5931\u8D25\u3002\u53EF\u5C55\u5F00\u6280\u672F\u8BE6\u60C5\uFF0C\u624B\u52A8\u9009\u4E2D\u6587\u672C\u590D\u5236\u3002",
+  "diagnostics.showAll": "\u67E5\u770B\u5168\u90E8\u95EE\u9898\uFF08{count}\uFF09",
+  "diagnostics.loading": "\u6B63\u5728\u68C0\u67E5\u5DE5\u4F5C\u533A\u2026",
+  "diagnostics.noWorkspace": "\u5C1A\u672A\u9009\u62E9 RP \u5DE5\u4F5C\u533A\u3002\u53EF\u524D\u5F80 DT \u2192 \u754C\u9762\u8BBE\u7F6E\u9009\u62E9\u3002",
+  "diagnostics.noPlaythroughIssues": "\u672C\u6B21\u68C0\u67E5\u672A\u53D1\u73B0\u6B64\u5468\u76EE\u7684\u8BFB\u53D6\u95EE\u9898\u3002",
+  "diagnostics.empty": "\u672C\u6B21\u68C0\u67E5\u672A\u53D1\u73B0\u5DE5\u4F5C\u533A\u6216\u5468\u76EE\u7684\u8BFB\u53D6\u95EE\u9898\u3002",
+  "diagnostics.technical": "\u6280\u672F\u8BE6\u60C5",
   "nav.settings": "\u754C\u9762\u8BBE\u7F6E",
   "nav.preset.empty": "\u672A\u9009\u62E9\u9884\u8BBE",
   "nav.character.empty": "\u672A\u7ED1\u5B9A\u89D2\u8272",
@@ -812,6 +837,31 @@ var en_default = Object.freeze({
   "nav.worldBook": "World book",
   "nav.user": "User",
   "nav.sessionTemplate": "New session",
+  "nav.diagnostics": "Diagnostics",
+  "nav.diagnostics.empty": "Current RP workspace problems",
+  "diagnostics.timelineSummary": "\u26A0 {count} unreadable playthroughs \xB7 Details",
+  "diagnostics.workspaceSummary": "\u26A0 Workspace check failed \xB7 Details",
+  "diagnostics.dismiss": "Dismiss summary (still available in DT \u2192 Diagnostics)",
+  "diagnostics.playthrough": "View problems for {name}",
+  "diagnostics.scope": "Problems in the current RP workspace. Recheck after fixing them; dismissing the sidebar summary does not remove problems.",
+  "diagnostics.count": "{count} problems",
+  "diagnostics.sessionMissing": "DSH session logs referenced by this playthrough are missing.",
+  "diagnostics.fileMissing": "A file referenced by this playthrough is missing.",
+  "diagnostics.restoreFile": "Check that the correct RP workspace is selected, or restore the playthrough files from backup, then recheck.",
+  "diagnostics.workspaceFailed": "The current RP workspace could not be checked.",
+  "diagnostics.timelineFailed": "This playthrough could not be read.",
+  "diagnostics.retryHint": "Recheck. If the problem persists, expand the technical details and copy the diagnostic information for troubleshooting.",
+  "diagnostics.recheck": "Recheck",
+  "diagnostics.copy": "Copy diagnostics",
+  "diagnostics.copyOne": "Copy this problem",
+  "diagnostics.copied": "Diagnostics copied. They include workspace paths and object IDs; review before sharing.",
+  "diagnostics.copyFailed": "Copy failed. Expand technical details to select and copy the text manually.",
+  "diagnostics.showAll": "Show all problems ({count})",
+  "diagnostics.loading": "Checking workspace\u2026",
+  "diagnostics.noWorkspace": "No RP workspace selected. Choose one in DT \u2192 UI settings.",
+  "diagnostics.noPlaythroughIssues": "This check found no read problems for this playthrough.",
+  "diagnostics.empty": "This check found no workspace or playthrough read problems.",
+  "diagnostics.technical": "Technical details",
   "nav.settings": "UI settings",
   "nav.preset.empty": "No preset selected",
   "nav.character.empty": "No character bound",
@@ -1568,7 +1618,7 @@ function localizeChild(value) {
   if (Array.isArray(value)) return value.map(localizeChild);
   return value;
 }
-function createLocalizedElement(createElement15) {
+function createLocalizedElement(createElement16) {
   return (type, props, ...children) => {
     let localizedProps = props;
     if (props !== null && props !== void 0) {
@@ -1577,7 +1627,7 @@ function createLocalizedElement(createElement15) {
         if (isRawText(localizedProps[key])) localizedProps[key] = localizedProps[key].value;
       }
     }
-    return createElement15(type, localizedProps, ...children.map(localizeChild));
+    return createElement16(type, localizedProps, ...children.map(localizeChild));
   };
 }
 function getClientUiSettings() {
@@ -4556,6 +4606,7 @@ var TAVERN_MENU_ITEMS = Object.freeze([
   { id: "user", labelKey: "nav.user", emptyTitleKey: "nav.user.empty", available: true },
   { id: "session-template", labelKey: "nav.sessionTemplate", emptyTitleKey: "nav.sessionTemplate.empty", available: true, binding: false, showBinding: false },
   { id: "conversation-settings", labelKey: "nav.conversationSettings", emptyTitleKey: "nav.conversationSettings.empty", available: true, binding: false, showBinding: false, playOnly: true },
+  { id: "diagnostics", labelKey: "nav.diagnostics", emptyTitleKey: "nav.diagnostics.empty", available: true, binding: false, showBinding: false },
   { id: "settings", labelKey: "nav.settings", emptyTitleKey: "nav.settings.empty", available: true, binding: false, showBinding: false }
 ]);
 var TAVERN_LAUNCHER_SIZE = 44;
@@ -7293,8 +7344,8 @@ var y = class {
         s = s ? `${s}
 ${u}` : u, r = r ? `${r}
 ${c}` : c;
-        let h14 = this.lexer.state.top;
-        if (this.lexer.state.top = true, this.lexer.blockTokens(c, i, true), this.lexer.state.top = h14, n.length === 0) break;
+        let h15 = this.lexer.state.top;
+        if (this.lexer.state.top = true, this.lexer.blockTokens(c, i, true), this.lexer.state.top = h15, n.length === 0) break;
         let k = i.at(-1);
         if (k?.type === "code") break;
         if (k?.type === "blockquote") {
@@ -7326,10 +7377,10 @@ ${g}`, r = r.substring(0, r.length - T.text.length) + M.text;
         let a = false, u = "", c = "";
         if (!(t = i.exec(e)) || this.rules.block.hr.test(e)) break;
         u = t[0], e = e.substring(u.length);
-        let h14 = me(t[2].split(`
+        let h15 = me(t[2].split(`
 `, 1)[0], t[1].length), k = e.split(`
-`, 1)[0], T = !h14.trim(), g = 0;
-        if (this.options.pedantic ? (g = 2, c = h14.trimStart()) : T ? g = t[1].length + 1 : (g = h14.search(this.rules.other.nonSpaceChar), g = g > 4 ? 1 : g, c = h14.slice(g), g += t[1].length), T && this.rules.other.blankLine.test(k) && (u += k + `
+`, 1)[0], T = !h15.trim(), g = 0;
+        if (this.options.pedantic ? (g = 2, c = h15.trimStart()) : T ? g = t[1].length + 1 : (g = h15.search(this.rules.other.nonSpaceChar), g = g > 4 ? 1 : g, c = h15.slice(g), g += t[1].length), T && this.rules.other.blankLine.test(k) && (u += k + `
 `, e = e.substring(k.length + 1), a = true), !a) {
           let w = this.rules.other.nextBulletRegex(g), M = this.rules.other.hrRegex(g), ne = this.rules.other.fencesBeginRegex(g), re = this.rules.other.headingBeginRegex(g), be = this.rules.other.htmlBeginRegex(g), Re = this.rules.other.blockquoteBeginRegex(g);
           for (; e; ) {
@@ -7339,12 +7390,12 @@ ${g}`, r = r.substring(0, r.length - T.text.length) + M.text;
             if (D.search(this.rules.other.nonSpaceChar) >= g || !k.trim()) c += `
 ` + D.slice(g);
             else {
-              if (T || h14.replace(this.rules.other.tabCharGlobal, "    ").search(this.rules.other.nonSpaceChar) >= 4 || ne.test(h14) || re.test(h14) || M.test(h14)) break;
+              if (T || h15.replace(this.rules.other.tabCharGlobal, "    ").search(this.rules.other.nonSpaceChar) >= 4 || ne.test(h15) || re.test(h15) || M.test(h15)) break;
               c += `
 ` + k;
             }
             T = !k.trim(), u += N + `
-`, e = e.substring(N.length + 1), h14 = D.slice(g);
+`, e = e.substring(N.length + 1), h15 = D.slice(g);
           }
         }
         r.loose || (o ? r.loose = true : this.rules.other.doubleBlankLine.test(u) && (o = true)), r.items.push({ type: "list_item", raw: u, task: !!this.options.gfm && this.rules.other.listIsTask.test(c), loose: false, text: c, tokens: [] }), r.raw += u;
@@ -7354,21 +7405,21 @@ ${g}`, r = r.substring(0, r.length - T.text.length) + M.text;
       else return;
       r.raw = r.raw.trimEnd();
       for (let a of r.items) if (this.lexer.state.top = false, a.tokens = this.lexer.blockTokens(a.text, []), !r.loose) {
-        let u = a.tokens.filter((h14) => h14.type === "space"), c = u.length > 0 && u.some((h14) => this.rules.other.anyLine.test(h14.raw));
+        let u = a.tokens.filter((h15) => h15.type === "space"), c = u.length > 0 && u.some((h15) => this.rules.other.anyLine.test(h15.raw));
         r.loose = c;
       }
       for (let a of r.items) {
         let u = a.tokens[0];
         if (a.task && (u?.type === "text" || u?.type === "paragraph")) {
           a.text = a.text.replace(this.rules.other.listReplaceTask, ""), u.raw = u.raw.replace(this.rules.other.listReplaceTask, ""), u.text = u.text.replace(this.rules.other.listReplaceTask, "");
-          for (let h14 = this.lexer.inlineQueue.length - 1; h14 >= 0; h14--) if (this.rules.other.listIsTask.test(this.lexer.inlineQueue[h14].src)) {
-            this.lexer.inlineQueue[h14].src = this.lexer.inlineQueue[h14].src.replace(this.rules.other.listReplaceTask, "");
+          for (let h15 = this.lexer.inlineQueue.length - 1; h15 >= 0; h15--) if (this.rules.other.listIsTask.test(this.lexer.inlineQueue[h15].src)) {
+            this.lexer.inlineQueue[h15].src = this.lexer.inlineQueue[h15].src.replace(this.rules.other.listReplaceTask, "");
             break;
           }
           let c = this.rules.other.listTaskCheckbox.exec(a.raw);
           if (c) {
-            let h14 = { type: "checkbox", raw: c[0] + " ", checked: c[0] !== "[ ]" };
-            a.checked = h14.checked, r.loose ? a.tokens[0] && ["paragraph", "text"].includes(a.tokens[0].type) && "tokens" in a.tokens[0] && a.tokens[0].tokens ? (a.tokens[0].raw = h14.raw + a.tokens[0].raw, a.tokens[0].text = h14.raw + a.tokens[0].text, a.tokens[0].tokens.unshift(h14)) : a.tokens.unshift({ type: "paragraph", raw: h14.raw, text: h14.raw, tokens: [h14] }) : a.tokens.unshift(h14);
+            let h15 = { type: "checkbox", raw: c[0] + " ", checked: c[0] !== "[ ]" };
+            a.checked = h15.checked, r.loose ? a.tokens[0] && ["paragraph", "text"].includes(a.tokens[0].type) && "tokens" in a.tokens[0] && a.tokens[0].tokens ? (a.tokens[0].raw = h15.raw + a.tokens[0].raw, a.tokens[0].text = h15.raw + a.tokens[0].text, a.tokens[0].tokens.unshift(h15)) : a.tokens.unshift({ type: "paragraph", raw: h15.raw, text: h15.raw, tokens: [h15] }) : a.tokens.unshift(h15);
           }
         } else a.task && (a.task = false);
       }
@@ -7474,7 +7525,7 @@ ${g}`, r = r.substring(0, r.length - T.text.length) + M.text;
     let s = this.rules.inline.emStrongLDelim.exec(e);
     if (!s || !s[1] && !s[2] && !s[3] && !s[4] || s[4] && n.match(this.rules.other.unicodeAlphaNumeric)) return;
     if (!(s[1] || s[3] || "") || !n || this.rules.inline.punctuation.exec(n)) {
-      let i = [...s[0]].length - 1, o, p, a = i, u = 0, c = s[0][0], h14 = n === c, k = c === "*" ? this.rules.inline.emStrongRDelimAst : this.rules.inline.emStrongRDelimUnd;
+      let i = [...s[0]].length - 1, o, p, a = i, u = 0, c = s[0][0], h15 = n === c, k = c === "*" ? this.rules.inline.emStrongRDelimAst : this.rules.inline.emStrongRDelimUnd;
       for (k.lastIndex = 0, t = t.slice(-1 * e.length + i); (s = k.exec(t)) !== null; ) {
         if (o = s[1] || s[2] || s[3] || s[4] || s[5] || s[6], !o) continue;
         if (p = [...o].length, s[3] || s[4]) {
@@ -7485,7 +7536,7 @@ ${g}`, r = r.substring(0, r.length - T.text.length) + M.text;
             u += p;
             continue;
           }
-          if (h14) break;
+          if (h15) break;
         }
         if (a -= p, a > 0) continue;
         p = Math.min(p, p + a + u);
@@ -7523,8 +7574,8 @@ ${g}`, r = r.substring(0, r.length - T.text.length) + M.text;
         }
         if (a -= p, a > 0) continue;
         p = Math.min(p, p + a);
-        let c = [...s[0]][0].length, h14 = e.slice(0, i + s.index + c + p), k = h14.slice(i, -i);
-        return { type: "del", raw: h14, text: k, tokens: this.lexer.inlineTokens(k) };
+        let c = [...s[0]][0].length, h15 = e.slice(0, i + s.index + c + p), k = h15.slice(i, -i);
+        return { type: "del", raw: h15, text: k, tokens: this.lexer.inlineTokens(k) };
       }
     }
   }
@@ -7755,8 +7806,8 @@ var x = class l {
       let p = e;
       if (this.options.extensions?.startInline) {
         let a = 1 / 0, u = e.slice(1), c;
-        this.options.extensions.startInline.forEach((h14) => {
-          c = h14.call({ lexer: this }, u), typeof c == "number" && c >= 0 && (a = Math.min(a, c));
+        this.options.extensions.startInline.forEach((h15) => {
+          c = h15.call({ lexer: this }, u), typeof c == "number" && c >= 0 && (a = Math.min(a, c));
         }), a < 1 / 0 && a >= 0 && (p = e.substring(0, a + 1));
       }
       if (o = this.tokenizer.inlineText(p)) {
@@ -8198,15 +8249,15 @@ var Z = class {
           let o = i, p = n.hooks[o], a = r[o];
           S.passThroughHooks.has(i) ? r[o] = (u) => {
             if (this.defaults.async && S.passThroughHooksRespectAsync.has(i)) return (async () => {
-              let h14 = await p.call(r, u);
-              return a.call(r, h14);
+              let h15 = await p.call(r, u);
+              return a.call(r, h15);
             })();
             let c = p.call(r, u);
             return a.call(r, c);
           } : r[o] = (...u) => {
             if (this.defaults.async) return (async () => {
-              let h14 = await p.apply(r, u);
-              return h14 === false && (h14 = await a.apply(r, u)), h14;
+              let h15 = await p.apply(r, u);
+              return h15 === false && (h15 = await a.apply(r, u)), h15;
             })();
             let c = p.apply(r, u);
             return c === false && (c = a.apply(r, u)), c;
@@ -9199,6 +9250,24 @@ function shouldShowUnboundNotice({ workspace, session, selection } = {}) {
   const sessionPath = normalizedPath2(session.cwd);
   if (workspacePath === "" || sessionPath !== workspacePath) return true;
   return characterIdFromSelection(selection) === null;
+}
+async function runAutomaticCharacterRelinks(recoveries, { attempted, isActive, relink, onError, onChanged }) {
+  let changed = false;
+  try {
+    for (const recovery of recoveries) {
+      if (!isActive()) break;
+      if (attempted.has(recovery.key)) continue;
+      attempted.add(recovery.key);
+      try {
+        await relink(recovery.missing.id, recovery.character.id);
+        changed = true;
+      } catch (reason) {
+        if (isActive()) onError(reason);
+      }
+    }
+  } finally {
+    if (changed) onChanged();
+  }
 }
 
 // packages/client/src/play/import.js
@@ -10978,10 +11047,274 @@ function MowanChatView({ sessionId, useSession, useChat, playClient, playthrough
 }
 
 // packages/client/src/play/sidebar.js
-var import_react13 = require("react");
+var import_react14 = require("react");
+
+// packages/client/src/play/diagnostics.js
+var import_react12 = require("react");
+
+// packages/client/src/play/title.js
+function playthroughNumber(playthrough) {
+  const value = playthrough?.ext?.pmpDshTavern?.playthroughNumber;
+  return Number.isSafeInteger(value) && value > 0 ? value : null;
+}
+function isLegacyAutomaticTitle(title, number) {
+  return title === "\u5468\u76EE" || title === `${number}\u5468\u76EE` || title === `Playthrough ${number}`;
+}
+function hasAutomaticPlaythroughTitle(playthrough) {
+  const number = playthroughNumber(playthrough);
+  if (number === null) return false;
+  const declared = playthrough?.ext?.pmpDshTavern?.autoTitle;
+  if (declared === true) return true;
+  if (declared === false) return false;
+  return isLegacyAutomaticTitle(playthrough?.title, number);
+}
+function playthroughDisplayTitle(playthrough) {
+  const number = playthroughNumber(playthrough);
+  if (number !== null && hasAutomaticPlaythroughTitle(playthrough)) {
+    return translate("play.sidebar.defaultTitle", { number });
+  }
+  const title = playthrough?.title;
+  return typeof title === "string" && title !== "" ? title : String(playthrough?.id ?? "");
+}
+
+// packages/client/src/play/diagnostics-state.js
+var DISMISSED_KEY = `${PLUGIN_ID}:workspace-diagnostics-dismissed:v1`;
+var MAX_DISMISSED = 2e3;
+function workspaceDiagnosticScope(workspace) {
+  return JSON.stringify([workspace?.workspaceId ?? null, workspace?.rootPath ?? null]);
+}
+function currentWorkspaceIssues(resources) {
+  const scope = workspaceDiagnosticScope(resources?.workspace);
+  const playthroughs = new Map((resources?.catalog?.playthroughs ?? []).map((item) => [item.id, item]));
+  const characters = new Map((resources?.characters ?? []).map((item) => [item.id, item.name]));
+  const issues = /* @__PURE__ */ new Map();
+  for (const diagnostic of resources?.diagnostics ?? []) {
+    const playthrough = playthroughs.get(diagnostic.playthroughId);
+    const binding = playthrough?.ext?.pmpDshTavern;
+    const code = diagnostic.code || "PLAY_TIMELINE_READ_FAILED";
+    const key = JSON.stringify([scope, diagnostic.playthroughId, code]);
+    issues.set(key, {
+      ...diagnostic,
+      key,
+      scope,
+      code,
+      kind: "timeline",
+      playthrough,
+      characterName: characters.get(binding?.characterId) ?? binding?.characterName ?? ""
+    });
+  }
+  return [...issues.values()].sort((a, b2) => a.key.localeCompare(b2.key));
+}
+function createWorkspaceDiagnostics(client, {
+  load = loadPlaySidebarResources,
+  storage
+} = {}) {
+  let dismissed = /* @__PURE__ */ new Set();
+  try {
+    const saved = JSON.parse(storage?.getItem(DISMISSED_KEY) ?? "[]");
+    if (Array.isArray(saved)) dismissed = new Set(saved.filter((item) => typeof item === "string").slice(-MAX_DISMISSED));
+  } catch {
+  }
+  let snapshot = { resources: null, issues: [], loading: true, error: null, showSummary: false };
+  let generation = 0;
+  let disposed = false;
+  const listeners = /* @__PURE__ */ new Set();
+  const openListeners = /* @__PURE__ */ new Set();
+  const persistDismissed = () => {
+    dismissed = new Set([...dismissed].slice(-MAX_DISMISSED));
+    try {
+      storage?.setItem(DISMISSED_KEY, JSON.stringify([...dismissed]));
+    } catch {
+    }
+  };
+  const commit = (next) => {
+    snapshot = { ...next, showSummary: next.issues.some((issue) => !dismissed.has(issue.key)) };
+    for (const listener of listeners) listener();
+  };
+  const controller2 = {
+    getSnapshot: () => snapshot,
+    subscribe(listener) {
+      listeners.add(listener);
+      return () => listeners.delete(listener);
+    },
+    subscribeOpen(listener) {
+      openListeners.add(listener);
+      return () => openListeners.delete(listener);
+    },
+    open(playthroughId = null) {
+      if (disposed) return;
+      for (const listener of openListeners) listener(playthroughId);
+    },
+    dismiss() {
+      if (disposed) return;
+      for (const issue of snapshot.issues) dismissed.add(issue.key);
+      persistDismissed();
+      commit(snapshot);
+    },
+    updateResources(update) {
+      if (snapshot.resources === null || disposed) return;
+      commit({ ...snapshot, resources: update(snapshot.resources) });
+    },
+    async refresh() {
+      if (disposed) return;
+      const request = ++generation;
+      commit({ resources: null, issues: [], loading: true, error: null });
+      try {
+        const resources = await load(client);
+        if (disposed || request !== generation) return;
+        const issues = currentWorkspaceIssues(resources);
+        const scope = workspaceDiagnosticScope(resources.workspace);
+        const currentKeys = new Set(issues.map((issue) => issue.key));
+        for (const key of dismissed) {
+          try {
+            const [owner] = JSON.parse(key);
+            if ((owner === scope || owner === "workspace-read") && !currentKeys.has(key)) dismissed.delete(key);
+          } catch {
+            dismissed.delete(key);
+          }
+        }
+        persistDismissed();
+        commit({ resources, issues, loading: false, error: null });
+      } catch (reason) {
+        if (disposed || request !== generation) return;
+        const code = reason?.code || "PLAY_WORKSPACE_READ_FAILED";
+        const issue = {
+          key: JSON.stringify(["workspace-read", null, code]),
+          scope: "workspace-read",
+          kind: "workspace",
+          code,
+          message: reason instanceof Error ? reason.message : String(reason)
+        };
+        commit({ resources: null, issues: [issue], loading: false, error: issue });
+      }
+    },
+    dispose() {
+      disposed = true;
+      generation++;
+      listeners.clear();
+      openListeners.clear();
+    }
+  };
+  return controller2;
+}
+function workspaceDiagnosticReport(snapshot, issues = snapshot.issues) {
+  return JSON.stringify({
+    scope: "current-rp-workspace",
+    workspace: snapshot.resources?.workspace ? {
+      workspaceId: snapshot.resources.workspace.workspaceId,
+      rootPath: snapshot.resources.workspace.rootPath
+    } : null,
+    issues: issues.map((issue) => ({
+      module: "RP workspace",
+      code: issue.code,
+      message: issue.message,
+      playthroughId: issue.playthroughId ?? null,
+      path: issue.path ?? null
+    }))
+  }, null, 2);
+}
+
+// packages/client/src/play/diagnostics.js
+var h9 = createLocalizedElement(import_react12.createElement);
+var diagnosticsCss = `
+.dtv-diagnostic-summary{display:flex;align-items:center;gap:4px;margin:4px 8px;padding:5px;border:1px solid var(--dsw-alias-border-l2);border-radius:8px;font-size:11px}
+.dtv-diagnostic-summary button,.dtv-diagnostic-warning{border:0;border-radius:6px;background:transparent;color:var(--dsw-alias-label-secondary);font:inherit;cursor:pointer;padding:5px}
+.dtv-diagnostic-summary button:hover,.dtv-diagnostic-warning:hover{background:var(--dsw-alias-interactive-bg-hover)}
+.dtv-diagnostic-summary>button:first-child{flex:1;min-width:0;text-align:left;overflow-wrap:anywhere}.dtv-diagnostic-summary>button:last-child{flex:none}
+.dtv-diagnostic-warning{flex:none;min-width:28px;min-height:28px;color:var(--dsw-alias-state-warning,#ce942c)}
+.dtv-diagnostic-card{border:1px solid var(--dsw-alias-border-l2);border-radius:9px;padding:12px;display:flex;flex-direction:column;gap:10px;overflow-wrap:anywhere}
+.dtv-diagnostic-card h3{font-size:13px;margin:0}.dtv-diagnostic-card p{margin:0;font-size:12px;line-height:1.6}
+.dtv-diagnostic-card details{font-size:11px}.dtv-diagnostic-card summary{cursor:pointer;padding:5px 0}.dtv-diagnostic-card pre{white-space:pre-wrap;overflow-wrap:anywhere;font-size:11px;margin:8px 0;user-select:text}
+`;
+function WorkspaceDiagnosticSummary({ snapshot, controller: controller2 }) {
+  if (snapshot.loading || !snapshot.showSummary) return null;
+  return h9(
+    "div",
+    { className: "dtv-diagnostic-summary", role: "status" },
+    h9(
+      "button",
+      { type: "button", onClick: () => controller2.open() },
+      uiMessage(snapshot.error ? "diagnostics.workspaceSummary" : "diagnostics.timelineSummary", { count: snapshot.issues.length })
+    ),
+    h9("button", { type: "button", onClick: () => controller2.dismiss(), title: uiMessage("diagnostics.dismiss"), "aria-label": uiMessage("diagnostics.dismiss") }, "\xD7")
+  );
+}
+function PlaythroughDiagnosticWarning({ playthrough, controller: controller2 }) {
+  return h9("button", {
+    type: "button",
+    className: "dtv-diagnostic-warning",
+    title: uiMessage("diagnostics.playthrough", { name: playthroughDisplayTitle(playthrough) }),
+    "aria-label": uiMessage("diagnostics.playthrough", { name: playthroughDisplayTitle(playthrough) }),
+    onClick: () => controller2.open(playthrough.id)
+  }, "\u26A0");
+}
+function explanation(issue) {
+  if (issue.code === "PLAY_SESSION_NOT_FOUND") return ["diagnostics.sessionMissing", "play.sidebar.missingSessionHistory"];
+  if (issue.code === "PLAY_PATH_NOT_FOUND") return ["diagnostics.fileMissing", "diagnostics.restoreFile"];
+  return [issue.kind === "workspace" ? "diagnostics.workspaceFailed" : "diagnostics.timelineFailed", "diagnostics.retryHint"];
+}
+function WorkspaceDiagnosticsPanel({ controller: controller2, playthroughId = null, showAll, close }) {
+  const snapshot = (0, import_react12.useSyncExternalStore)(controller2.subscribe, controller2.getSnapshot);
+  const [copyStatus, setCopyStatus] = (0, import_react12.useState)(null);
+  const issues = playthroughId === null ? snapshot.issues : snapshot.issues.filter((issue) => issue.kind === "workspace" || issue.playthroughId === playthroughId);
+  const copy = async (selected) => {
+    try {
+      await navigator.clipboard.writeText(workspaceDiagnosticReport(snapshot, selected));
+      setCopyStatus("diagnostics.copied");
+    } catch {
+      setCopyStatus("diagnostics.copyFailed");
+    }
+  };
+  return h9(
+    "section",
+    { className: "dtv-panel dtv-diagnostics", "aria-label": uiMessage("nav.diagnostics") },
+    h9(
+      "div",
+      { className: "dtv-header" },
+      h9("span", { className: "dtv-title" }, uiMessage("nav.diagnostics")),
+      h9("button", { type: "button", className: "dtv-close", onClick: close, "aria-label": uiMessage("common.close") }, "\xD7")
+    ),
+    h9(
+      "div",
+      { className: "dtv-body" },
+      h9("p", { className: "dtv-note" }, uiMessage("diagnostics.scope")),
+      snapshot.resources?.workspace?.rootPath ? h9("p", { className: "dtv-note" }, rawText(snapshot.resources.workspace.rootPath)) : null,
+      h9(
+        "div",
+        { className: "dtv-actions" },
+        h9("button", { type: "button", className: "dtv-button", disabled: snapshot.loading, onClick: () => {
+          setCopyStatus(null);
+          void controller2.refresh();
+        } }, uiMessage("diagnostics.recheck")),
+        h9("button", { type: "button", className: "dtv-button", disabled: snapshot.loading || issues.length === 0, onClick: () => copy(issues) }, uiMessage("diagnostics.copy"))
+      ),
+      playthroughId !== null ? h9("button", { type: "button", className: "dtv-button", onClick: showAll }, uiMessage("diagnostics.showAll", { count: snapshot.issues.length })) : null,
+      copyStatus ? h9("p", { className: "dtv-status", role: "status", "data-error": copyStatus === "diagnostics.copyFailed" }, uiMessage(copyStatus)) : null,
+      snapshot.loading ? h9("p", { className: "dtv-note", role: "status" }, uiMessage("diagnostics.loading")) : issues.length === 0 ? h9("p", { className: "dtv-note", role: "status" }, uiMessage(snapshot.resources?.workspace?.selected === false ? "diagnostics.noWorkspace" : playthroughId !== null ? "diagnostics.noPlaythroughIssues" : "diagnostics.empty")) : null,
+      ...issues.map((issue) => {
+        const [cause, suggestion] = explanation(issue);
+        const title = [issue.characterName, playthroughDisplayTitle(issue.playthrough)].filter(Boolean).join(" \xB7 ");
+        return h9(
+          "article",
+          { className: "dtv-diagnostic-card", key: issue.key },
+          title ? h9("h3", null, rawText(title)) : null,
+          h9("p", null, uiMessage(cause)),
+          h9("p", { className: "dtv-note" }, uiMessage(suggestion)),
+          h9(
+            "details",
+            null,
+            h9("summary", null, uiMessage("diagnostics.technical")),
+            h9("pre", null, rawText(workspaceDiagnosticReport(snapshot, [issue])))
+          ),
+          h9("button", { type: "button", className: "dtv-button", onClick: () => copy([issue]) }, uiMessage("diagnostics.copyOne"))
+        );
+      })
+    )
+  );
+}
 
 // packages/client/src/play/io-menu.js
-var import_react12 = require("react");
+var import_react13 = require("react");
 
 // packages/client/src/play/export.js
 function rootSessionId5(playthrough, timeline) {
@@ -11197,33 +11530,8 @@ function playthroughExportDocument(snapshot, format) {
   throw new TypeError(`Unknown export format ${format}`);
 }
 
-// packages/client/src/play/title.js
-function playthroughNumber(playthrough) {
-  const value = playthrough?.ext?.pmpDshTavern?.playthroughNumber;
-  return Number.isSafeInteger(value) && value > 0 ? value : null;
-}
-function isLegacyAutomaticTitle(title, number) {
-  return title === "\u5468\u76EE" || title === `${number}\u5468\u76EE` || title === `Playthrough ${number}`;
-}
-function hasAutomaticPlaythroughTitle(playthrough) {
-  const number = playthroughNumber(playthrough);
-  if (number === null) return false;
-  const declared = playthrough?.ext?.pmpDshTavern?.autoTitle;
-  if (declared === true) return true;
-  if (declared === false) return false;
-  return isLegacyAutomaticTitle(playthrough?.title, number);
-}
-function playthroughDisplayTitle(playthrough) {
-  const number = playthroughNumber(playthrough);
-  if (number !== null && hasAutomaticPlaythroughTitle(playthrough)) {
-    return translate("play.sidebar.defaultTitle", { number });
-  }
-  const title = playthrough?.title;
-  return typeof title === "string" && title !== "" ? title : String(playthrough?.id ?? "");
-}
-
 // packages/client/src/play/io-menu.js
-var h9 = createLocalizedElement(import_react12.createElement);
+var h10 = createLocalizedElement(import_react13.createElement);
 var css8 = `
 .dtv-play-io{position:relative;display:inline-flex}.dtv-play-io-trigger{width:30px;height:30px;border:0;border-radius:8px;background:transparent;color:var(--dsw-alias-label-secondary);font:inherit;cursor:pointer}.dtv-play-io-trigger:hover{background:var(--dsw-alias-interactive-bg-hover)}
 .dtv-play-io-menu{position:absolute;z-index:30;left:0;bottom:calc(100% + 6px);min-width:210px;padding:6px;border:1px solid var(--dsw-alias-border-subtle);border-radius:11px;background:var(--dsw-alias-bg-layer-1,#181a20);box-shadow:0 12px 30px #0008;display:flex;flex-direction:column;gap:2px}.dtv-play-io[data-placement=sidebar] .dtv-play-io-menu{left:auto;right:0;bottom:auto;top:calc(100% + 4px);width:max-content;min-width:0;max-width:168px}.dtv-play-io[data-placement=sidebar] .dtv-play-io-item{white-space:nowrap}
@@ -11254,12 +11562,12 @@ function downloadDocument(playthrough, document2) {
 }
 function PlayIoMenu({ playClient, playthrough, trigger = "+", placement = "composer", onRelink }) {
   installStyles2();
-  const root = (0, import_react12.useRef)(null);
-  const [open, setOpen] = (0, import_react12.useState)(false);
-  const [busy, setBusy] = (0, import_react12.useState)(false);
-  const [error, setError] = (0, import_react12.useState)("");
+  const root = (0, import_react13.useRef)(null);
+  const [open, setOpen] = (0, import_react13.useState)(false);
+  const [busy, setBusy] = (0, import_react13.useState)(false);
+  const [error, setError] = (0, import_react13.useState)("");
   const displayTitle = playthroughDisplayTitle(playthrough);
-  (0, import_react12.useEffect)(() => {
+  (0, import_react13.useEffect)(() => {
     if (!open) return void 0;
     const close = (event) => {
       if (!root.current?.contains(event.target)) setOpen(false);
@@ -11302,10 +11610,10 @@ function PlayIoMenu({ playClient, playthrough, trigger = "+", placement = "compo
       setBusy(false);
     }
   };
-  return h9(
+  return h10(
     "div",
     { ref: root, className: "dtv-play-io", "data-placement": placement },
-    h9("button", {
+    h10("button", {
       type: "button",
       className: "dtv-play-io-trigger",
       title: uiMessage("play.io.menu"),
@@ -11316,11 +11624,11 @@ function PlayIoMenu({ playClient, playthrough, trigger = "+", placement = "compo
         setOpen((value) => !value);
       }
     }, rawText(trigger)),
-    !open ? null : h9(
+    !open ? null : h10(
       "div",
       { className: "dtv-play-io-menu" },
-      h9("button", { type: "button", className: "dtv-play-io-item", disabled: busy, onClick: rename }, uiMessage("play.io.rename")),
-      typeof onRelink !== "function" ? null : h9("button", {
+      h10("button", { type: "button", className: "dtv-play-io-item", disabled: busy, onClick: rename }, uiMessage("play.io.rename")),
+      typeof onRelink !== "function" ? null : h10("button", {
         type: "button",
         className: "dtv-play-io-item",
         disabled: busy,
@@ -11329,15 +11637,15 @@ function PlayIoMenu({ playClient, playthrough, trigger = "+", placement = "compo
           onRelink();
         }
       }, uiMessage("play.io.relinkCharacter")),
-      h9("button", { type: "button", className: "dtv-play-io-item", disabled: busy, onClick: () => exportAs("html") }, uiMessage("play.io.exportHtml")),
-      h9("button", { type: "button", className: "dtv-play-io-item", disabled: busy, onClick: () => exportAs("st") }, uiMessage("play.io.exportSt")),
-      error === "" ? null : h9("p", { className: "dtv-play-io-error" }, rawText(error))
+      h10("button", { type: "button", className: "dtv-play-io-item", disabled: busy, onClick: () => exportAs("html") }, uiMessage("play.io.exportHtml")),
+      h10("button", { type: "button", className: "dtv-play-io-item", disabled: busy, onClick: () => exportAs("st") }, uiMessage("play.io.exportSt")),
+      error === "" ? null : h10("p", { className: "dtv-play-io-error" }, rawText(error))
     )
   );
 }
 
 // packages/client/src/play/sidebar.js
-var h10 = createLocalizedElement(import_react13.createElement);
+var h11 = createLocalizedElement(import_react14.createElement);
 var css9 = `
 .dtv-play-character-drag{width:20px;min-width:20px;align-self:stretch;border:0;border-radius:7px;background:transparent;color:var(--dsw-alias-label-tertiary);cursor:grab;padding:0;font:inherit;font-size:14px;touch-action:none;user-select:none}.dtv-play-character-drag:hover{background:var(--dsw-alias-interactive-bg-hover)}.dtv-play-character-drag:active{cursor:grabbing}.dtv-play-character-drag:disabled{cursor:default;opacity:.4}
 .dtv-play-section[data-dragging=true]{height:4px;min-height:4px;margin:5px 10px;overflow:hidden;border-radius:999px;background:var(--dsw-alias-state-business-primary);box-shadow:0 0 0 1px color-mix(in srgb,var(--dsw-alias-state-business-primary) 25%,transparent)}.dtv-play-section[data-dragging=true]>*{opacity:0}
@@ -11366,11 +11674,11 @@ function installStyles3() {
 }
 function Avatar({ character }) {
   const fallback = (character.name || character.id).slice(0, 1).toUpperCase();
-  return h10(
+  return h11(
     "span",
     { className: "dtv-play-avatar", "aria-hidden": "true" },
     rawText(fallback),
-    h10("img", {
+    h11("img", {
       src: `${API_V1}/characters/${encodeURIComponent(character.id)}/png`,
       alt: "",
       onError: (event) => {
@@ -11380,18 +11688,18 @@ function Avatar({ character }) {
   );
 }
 function Rail({ model, scale, expandSidebar }) {
-  return h10(
+  return h11(
     "div",
     { className: "dtv-play-rail", style: { "--dtv-ui-scale": scale } },
-    ...model.characters.map((character) => h10("button", {
+    ...model.characters.map((character) => h11("button", {
       key: character.id,
       type: "button",
       className: "dtv-play-rail-button",
       title: rawText(character.name),
       "aria-label": rawText(character.name),
       onClick: expandSidebar
-    }, h10(Avatar, { character }))),
-    h10("button", {
+    }, h11(Avatar, { character }))),
+    h11("button", {
       type: "button",
       className: "dtv-play-rail-button",
       title: uiMessage("play.sidebar.other"),
@@ -11401,7 +11709,7 @@ function Rail({ model, scale, expandSidebar }) {
   );
 }
 function CharacterDropPlaceholder() {
-  return h10("div", { className: "dtv-play-character-drop", "aria-hidden": true }, uiMessage("preset.dropHere"));
+  return h11("div", { className: "dtv-play-character-drop", "aria-hidden": true }, uiMessage("preset.dropHere"));
 }
 function characterInsertionBoundary(event) {
   const target = document.elementFromPoint(event.clientX, event.clientY)?.closest("[data-character-index]");
@@ -11410,9 +11718,9 @@ function characterInsertionBoundary(event) {
   const bounds = target.getBoundingClientRect();
   return event.clientY < bounds.top + bounds.height / 2 ? index : index + 1;
 }
-function CharacterGroup({ character, index, dragging, reorderDisabled, onPointerDown, onPointerMove, onPointerUp, onPointerCancel, collapsed, unassignedOpen, creating, createDisabled, toggle, toggleUnassigned, createPlaythrough, openPlaythrough, openSession, playClient, beginPlaythroughRelink }) {
+function CharacterGroup({ character, index, dragging, reorderDisabled, onPointerDown, onPointerMove, onPointerUp, onPointerCancel, collapsed, unassignedOpen, creating, createDisabled, toggle, toggleUnassigned, createPlaythrough, openPlaythrough, openSession, playClient, beginPlaythroughRelink, diagnostics, diagnosticIds }) {
   const count = character.playthroughs.length + character.unassigned.length;
-  return h10(
+  return h11(
     "section",
     {
       className: "dtv-play-section",
@@ -11420,10 +11728,10 @@ function CharacterGroup({ character, index, dragging, reorderDisabled, onPointer
       "data-character-index": index,
       "data-dragging": dragging || void 0
     },
-    h10(
+    h11(
       "div",
       { className: "dtv-play-group-line" },
-      h10("button", {
+      h11("button", {
         type: "button",
         className: "dtv-play-character-drag",
         disabled: reorderDisabled,
@@ -11435,7 +11743,7 @@ function CharacterGroup({ character, index, dragging, reorderDisabled, onPointer
         onPointerUp,
         onPointerCancel
       }, "\u283F"),
-      h10(
+      h11(
         "button",
         {
           type: "button",
@@ -11443,12 +11751,12 @@ function CharacterGroup({ character, index, dragging, reorderDisabled, onPointer
           "aria-expanded": !collapsed,
           onClick: toggle
         },
-        h10("span", { className: "dtv-play-chevron", "aria-hidden": "true" }, collapsed ? "\u203A" : "\u2304"),
-        h10(Avatar, { character }),
-        h10("span", { className: "dtv-play-title" }, rawText(character.name)),
-        h10("span", { className: "dtv-play-count" }, rawText(String(count)))
+        h11("span", { className: "dtv-play-chevron", "aria-hidden": "true" }, collapsed ? "\u203A" : "\u2304"),
+        h11(Avatar, { character }),
+        h11("span", { className: "dtv-play-title" }, rawText(character.name)),
+        h11("span", { className: "dtv-play-count" }, rawText(String(count)))
       ),
-      h10("button", {
+      h11("button", {
         type: "button",
         className: "dtv-play-create",
         disabled: createDisabled,
@@ -11457,14 +11765,14 @@ function CharacterGroup({ character, index, dragging, reorderDisabled, onPointer
         onClick: () => createPlaythrough(character)
       }, creating ? "\u2026" : "+")
     ),
-    collapsed ? null : character.playthroughs.length === 0 && character.unassigned.length === 0 ? h10("p", { className: "dtv-play-empty" }, uiMessage("play.sidebar.noPlaythroughs")) : null,
-    collapsed ? null : character.playthroughs.map((playthrough) => h10(
+    collapsed ? null : character.playthroughs.length === 0 && character.unassigned.length === 0 ? h11("p", { className: "dtv-play-empty" }, uiMessage("play.sidebar.noPlaythroughs")) : null,
+    collapsed ? null : character.playthroughs.map((playthrough) => h11(
       "div",
       {
         key: playthrough.id,
         className: "dtv-play-row-line"
       },
-      h10(
+      h11(
         "button",
         {
           type: "button",
@@ -11474,10 +11782,11 @@ function CharacterGroup({ character, index, dragging, reorderDisabled, onPointer
           title: playthrough.missing ? uiMessage("play.sidebar.sessionMissing") : rawText(playthroughDisplayTitle(playthrough)),
           onClick: () => openPlaythrough(playthrough)
         },
-        h10("span", { className: "dtv-play-chevron", "aria-hidden": "true" }, "\u25C6"),
-        h10("span", { className: "dtv-play-title" }, rawText(playthroughDisplayTitle(playthrough)))
+        h11("span", { className: "dtv-play-chevron", "aria-hidden": "true" }, "\u25C6"),
+        h11("span", { className: "dtv-play-title" }, rawText(playthroughDisplayTitle(playthrough)))
       ),
-      h10(PlayIoMenu, {
+      diagnosticIds.has(playthrough.id) ? h11(PlaythroughDiagnosticWarning, { playthrough, controller: diagnostics }) : null,
+      h11(PlayIoMenu, {
         playClient,
         playthrough,
         openSession,
@@ -11486,10 +11795,10 @@ function CharacterGroup({ character, index, dragging, reorderDisabled, onPointer
         onRelink: () => beginPlaythroughRelink(playthrough, character)
       })
     )),
-    collapsed || character.unassigned.length === 0 ? null : h10(
+    collapsed || character.unassigned.length === 0 ? null : h11(
       "div",
       { className: "dtv-play-subgroup" },
-      h10(
+      h11(
         "button",
         {
           type: "button",
@@ -11497,11 +11806,11 @@ function CharacterGroup({ character, index, dragging, reorderDisabled, onPointer
           "aria-expanded": unassignedOpen,
           onClick: toggleUnassigned
         },
-        h10("span", { className: "dtv-play-chevron", "aria-hidden": "true" }, unassignedOpen ? "\u2304" : "\u203A"),
-        h10("span", { className: "dtv-play-title" }, uiMessage("play.sidebar.unassigned")),
-        h10("span", { className: "dtv-play-count" }, rawText(String(character.unassigned.length)))
+        h11("span", { className: "dtv-play-chevron", "aria-hidden": "true" }, unassignedOpen ? "\u2304" : "\u203A"),
+        h11("span", { className: "dtv-play-title" }, uiMessage("play.sidebar.unassigned")),
+        h11("span", { className: "dtv-play-count" }, rawText(String(character.unassigned.length)))
       ),
-      unassignedOpen ? character.unassigned.map((session) => h10(
+      unassignedOpen ? character.unassigned.map((session) => h11(
         "button",
         {
           key: session.id,
@@ -11510,20 +11819,20 @@ function CharacterGroup({ character, index, dragging, reorderDisabled, onPointer
           "data-active": session.active,
           onClick: () => openSession(session.id)
         },
-        h10("span", { className: "dtv-play-chevron", "aria-hidden": "true" }, "\u2022"),
-        h10("span", { className: "dtv-play-title" }, rawText(session.title))
+        h11("span", { className: "dtv-play-chevron", "aria-hidden": "true" }, "\u2022"),
+        h11("span", { className: "dtv-play-title" }, rawText(session.title))
       )) : null
     )
   );
 }
-function MissingCharacterGroup({ character, collapsed, toggle, beginRelink, beginPlaythroughRelink, openPlaythrough, openSession, playClient, relinkDisabled }) {
-  return h10(
+function MissingCharacterGroup({ character, collapsed, toggle, beginRelink, beginPlaythroughRelink, openPlaythrough, openSession, playClient, relinkDisabled, diagnostics, diagnosticIds }) {
+  return h11(
     "section",
     { className: "dtv-play-section dtv-play-missing-card", "data-open": !collapsed },
-    h10(
+    h11(
       "div",
       { className: "dtv-play-group-line" },
-      h10(
+      h11(
         "button",
         {
           type: "button",
@@ -11531,12 +11840,12 @@ function MissingCharacterGroup({ character, collapsed, toggle, beginRelink, begi
           "aria-expanded": !collapsed,
           onClick: toggle
         },
-        h10("span", { className: "dtv-play-chevron", "aria-hidden": "true" }, collapsed ? "\u203A" : "\u2304"),
-        h10("span", { className: "dtv-play-avatar", "aria-hidden": "true" }, "?"),
-        h10("span", { className: "dtv-play-title" }, rawText(character.name)),
-        h10("span", { className: "dtv-play-count" }, rawText(String(character.playthroughs.length)))
+        h11("span", { className: "dtv-play-chevron", "aria-hidden": "true" }, collapsed ? "\u203A" : "\u2304"),
+        h11("span", { className: "dtv-play-avatar", "aria-hidden": "true" }, "?"),
+        h11("span", { className: "dtv-play-title" }, rawText(character.name)),
+        h11("span", { className: "dtv-play-count" }, rawText(String(character.playthroughs.length)))
       ),
-      h10("button", {
+      h11("button", {
         type: "button",
         className: "dtv-play-relink",
         disabled: relinkDisabled,
@@ -11545,13 +11854,13 @@ function MissingCharacterGroup({ character, collapsed, toggle, beginRelink, begi
         onClick: () => beginRelink(character)
       }, "\u21BB")
     ),
-    collapsed ? null : character.playthroughs.map((playthrough) => h10(
+    collapsed ? null : character.playthroughs.map((playthrough) => h11(
       "div",
       {
         key: playthrough.id,
         className: "dtv-play-row-line"
       },
-      h10(
+      h11(
         "button",
         {
           type: "button",
@@ -11561,10 +11870,11 @@ function MissingCharacterGroup({ character, collapsed, toggle, beginRelink, begi
           title: playthrough.missing ? uiMessage("play.sidebar.sessionMissing") : rawText(playthroughDisplayTitle(playthrough)),
           onClick: () => openPlaythrough(playthrough)
         },
-        h10("span", { className: "dtv-play-chevron", "aria-hidden": "true" }, "\u25C6"),
-        h10("span", { className: "dtv-play-title" }, rawText(playthroughDisplayTitle(playthrough)))
+        h11("span", { className: "dtv-play-chevron", "aria-hidden": "true" }, "\u25C6"),
+        h11("span", { className: "dtv-play-title" }, rawText(playthroughDisplayTitle(playthrough)))
       ),
-      h10(PlayIoMenu, {
+      diagnosticIds.has(playthrough.id) ? h11(PlaythroughDiagnosticWarning, { playthrough, controller: diagnostics }) : null,
+      h11(PlayIoMenu, {
         playClient,
         playthrough,
         openSession,
@@ -11581,6 +11891,7 @@ function PlayWorkspaceBrowser({
   useSessions,
   useWorkspaces,
   playClient,
+  diagnostics,
   playthroughController,
   openSession,
   switchToNative,
@@ -11594,10 +11905,10 @@ function PlayWorkspaceBrowser({
   const currentId = useSessions((state) => state.current ?? null);
   const workspaceItems = useWorkspaces((state) => state.items);
   const archivedSessionIds = useWorkspaces((state) => state.archivedSessionIds);
-  const cache = (0, import_react13.useRef)(null);
+  const cache = (0, import_react14.useRef)(null);
   if (cache.current === null) cache.current = new SessionCharacterBindingCache();
-  const automaticRelinks = (0, import_react13.useRef)(/* @__PURE__ */ new Set());
-  const creator = (0, import_react13.useRef)(null);
+  const automaticRelinks = (0, import_react14.useRef)(/* @__PURE__ */ new Set());
+  const creator = (0, import_react14.useRef)(null);
   if (creator.current?.client !== playClient || creator.current?.provided !== playthroughController) {
     creator.current = {
       client: playClient,
@@ -11605,60 +11916,50 @@ function PlayWorkspaceBrowser({
       controller: playthroughController ?? createPlaythroughController(playClient)
     };
   }
-  const [creatingCharacterId, setCreatingCharacterId] = (0, import_react13.useState)(null);
-  const [revision, setRevision] = (0, import_react13.useState)(0);
-  const [resources, setResources] = (0, import_react13.useState)(null);
-  const [sessionCharacters, setSessionCharacters] = (0, import_react13.useState)({});
-  const [status, setStatus] = (0, import_react13.useState)(null);
-  const [collapsedCharacters, setCollapsedCharacters] = (0, import_react13.useState)(() => /* @__PURE__ */ new Set());
-  const [expandedUnassigned, setExpandedUnassigned] = (0, import_react13.useState)(() => /* @__PURE__ */ new Set());
-  const [otherOpen, setOtherOpen] = (0, import_react13.useState)(false);
-  const [ordinaryPromptOpen, setOrdinaryPromptOpen] = (0, import_react13.useState)(false);
-  const [missingOpen, setMissingOpen] = (0, import_react13.useState)(true);
-  const [collapsedMissingCharacters, setCollapsedMissingCharacters] = (0, import_react13.useState)(() => /* @__PURE__ */ new Set());
-  const [relinkRequest, setRelinkRequest] = (0, import_react13.useState)(null);
-  const [relinkTargetId, setRelinkTargetId] = (0, import_react13.useState)("");
-  const [relinkBusy, setRelinkBusy] = (0, import_react13.useState)(false);
-  const [activePlaythroughId, setActivePlaythroughId] = (0, import_react13.useState)(
+  const [creatingCharacterId, setCreatingCharacterId] = (0, import_react14.useState)(null);
+  const [revision, setRevision] = (0, import_react14.useState)(0);
+  const diagnosticSnapshot = (0, import_react14.useSyncExternalStore)(diagnostics.subscribe, diagnostics.getSnapshot);
+  const resources = diagnosticSnapshot.resources;
+  const setResources = diagnostics.updateResources;
+  const diagnosticIds = new Set(diagnosticSnapshot.issues.map((issue) => issue.playthroughId));
+  const [sessionCharacters, setSessionCharacters] = (0, import_react14.useState)({});
+  const [status, setStatus] = (0, import_react14.useState)(null);
+  const [collapsedCharacters, setCollapsedCharacters] = (0, import_react14.useState)(() => /* @__PURE__ */ new Set());
+  const [expandedUnassigned, setExpandedUnassigned] = (0, import_react14.useState)(() => /* @__PURE__ */ new Set());
+  const [otherOpen, setOtherOpen] = (0, import_react14.useState)(false);
+  const [ordinaryPromptOpen, setOrdinaryPromptOpen] = (0, import_react14.useState)(false);
+  const [missingOpen, setMissingOpen] = (0, import_react14.useState)(true);
+  const [collapsedMissingCharacters, setCollapsedMissingCharacters] = (0, import_react14.useState)(() => /* @__PURE__ */ new Set());
+  const [relinkRequest, setRelinkRequest] = (0, import_react14.useState)(null);
+  const [relinkTargetId, setRelinkTargetId] = (0, import_react14.useState)("");
+  const [relinkBusy, setRelinkBusy] = (0, import_react14.useState)(false);
+  const [activePlaythroughId, setActivePlaythroughId] = (0, import_react14.useState)(
     () => getActivePlaythroughId?.() ?? null
   );
-  const [characterDragFrom, setCharacterDragFrom] = (0, import_react13.useState)(null);
-  const [characterDropIndex, setCharacterDropIndex] = (0, import_react13.useState)(null);
-  const [reorderingCharacters, setReorderingCharacters] = (0, import_react13.useState)(false);
-  (0, import_react13.useEffect)(() => {
+  const [characterDragFrom, setCharacterDragFrom] = (0, import_react14.useState)(null);
+  const [characterDropIndex, setCharacterDropIndex] = (0, import_react14.useState)(null);
+  const [reorderingCharacters, setReorderingCharacters] = (0, import_react14.useState)(false);
+  (0, import_react14.useEffect)(() => {
     if (typeof subscribeActivePlaythroughId !== "function") return void 0;
     setActivePlaythroughId(getActivePlaythroughId?.() ?? null);
     return subscribeActivePlaythroughId(setActivePlaythroughId);
   }, [getActivePlaythroughId, subscribeActivePlaythroughId]);
-  (0, import_react13.useEffect)(() => {
+  (0, import_react14.useEffect)(() => {
     const refresh = () => {
       cache.current.clear();
+      setStatus(null);
       setRevision((value) => value + 1);
     };
     window.addEventListener(CLIENT_REFRESH_EVENT, refresh);
     return () => window.removeEventListener(CLIENT_REFRESH_EVENT, refresh);
   }, []);
-  (0, import_react13.useEffect)(() => {
-    let active = true;
-    setStatus(null);
-    loadPlaySidebarResources(playClient).then((next) => {
-      if (active) setResources(next);
-    }).catch((reason) => {
-      if (!active) return;
-      setResources(null);
-      setStatus({ message: reason instanceof Error ? reason.message : String(reason) });
-    });
-    return () => {
-      active = false;
-    };
-  }, [playClient, revision]);
   const rpIds = resources === null ? [] : [...sessionIdsInRpWorkspace({
     workspace: resources.workspace,
     workspaceItems,
     sessions
   })];
   const rpKey = rpIds.join("\0");
-  (0, import_react13.useEffect)(() => {
+  (0, import_react14.useEffect)(() => {
     let active = true;
     if (resources === null) {
       setSessionCharacters({});
@@ -11693,7 +11994,7 @@ function PlayWorkspaceBrowser({
     "|",
     ...model.missingCharacters.map((item) => `${item.id}:${item.name}:${item.sha256 ?? ""}`)
   ].join("\0");
-  (0, import_react13.useEffect)(() => {
+  (0, import_react14.useEffect)(() => {
     if (resources === null || model.missingCharacters.length === 0 || model.characters.length === 0) return void 0;
     let active = true;
     const normalizedName = (value) => String(value ?? "").trim().toLocaleLowerCase("zh-CN");
@@ -11708,26 +12009,19 @@ function PlayWorkspaceBrowser({
       if (candidates.length !== 1) continue;
       const key = `${missing.id}\0${candidates[0].id}`;
       if (automaticRelinks.current.has(key)) continue;
-      automaticRelinks.current.add(key);
-      recoveries.push({ missing, character: candidates[0] });
+      recoveries.push({ missing, character: candidates[0], key });
     }
     if (recoveries.length === 0) return void 0;
-    void (async () => {
-      let changed = false;
-      for (const recovery of recoveries) {
-        if (!active) return;
-        try {
-          await playClient.relinkCharacter(recovery.missing.id, recovery.character.id);
-          changed = true;
-        } catch (reason) {
-          if (active) setStatus({ message: reason instanceof Error ? reason.message : String(reason) });
-        }
-      }
-      if (active && changed) {
+    void runAutomaticCharacterRelinks(recoveries, {
+      attempted: automaticRelinks.current,
+      isActive: () => active,
+      relink: (missingId, characterId) => playClient.relinkCharacter(missingId, characterId),
+      onError: (reason) => setStatus({ message: reason instanceof Error ? reason.message : String(reason) }),
+      onChanged: () => {
         cache.current.clear();
         window.dispatchEvent(new Event(CLIENT_REFRESH_EVENT));
       }
-    })();
+    });
     return () => {
       active = false;
     };
@@ -11809,7 +12103,7 @@ function PlayWorkspaceBrowser({
       window.dispatchEvent(new Event(CLIENT_REFRESH_EVENT));
     } catch (reason) {
       setStatus({ message: reason instanceof Error ? reason.message : String(reason) });
-      setRevision((value) => value + 1);
+      void diagnostics.refresh();
     } finally {
       setReorderingCharacters(false);
     }
@@ -11829,7 +12123,7 @@ function PlayWorkspaceBrowser({
       window.dispatchEvent(new Event(CLIENT_REFRESH_EVENT));
     } catch (reason) {
       setStatus({ message: reason instanceof Error ? reason.message : String(reason) });
-      setRevision((value) => value + 1);
+      void diagnostics.refresh();
     } finally {
       setReorderingCharacters(false);
     }
@@ -11864,24 +12158,24 @@ function PlayWorkspaceBrowser({
       setRelinkBusy(false);
     }
   };
-  if (wide === false) return h10(Rail, { model, scale, expandSidebar });
+  if (wide === false) return h11(Rail, { model, scale, expandSidebar });
   const toggleSet = (setter, id) => setter((current3) => {
     const next = new Set(current3);
     if (next.has(id)) next.delete(id);
     else next.add(id);
     return next;
   });
-  return h10(
+  return h11(
     "div",
     { className: "dtv-play-sidebar", style: { "--dtv-ui-scale": scale } },
-    resources === null && status === null ? h10("p", { className: "dtv-play-status" }, uiMessage("play.sidebar.loading")) : null,
-    resources?.workspace?.selected === false ? h10(
+    diagnosticSnapshot.loading ? h11("p", { className: "dtv-play-status" }, uiMessage("play.sidebar.loading")) : null,
+    resources?.workspace?.selected === false ? h11(
       "section",
       { className: "dtv-play-section", "data-open": true },
-      h10("p", { className: "dtv-play-status" }, uiMessage("play.sidebar.workspaceMissing")),
+      h11("p", { className: "dtv-play-status" }, uiMessage("play.sidebar.workspaceMissing")),
       ...workspaceItems.map((workspace) => {
         const label = uiMessage("play.sidebar.selectWorkspace", { name: workspace.title });
-        return h10(
+        return h11(
           "button",
           {
             key: workspace.workspaceId,
@@ -11891,39 +12185,33 @@ function PlayWorkspaceBrowser({
             "aria-label": label,
             onClick: () => bindWorkspace(workspace)
           },
-          h10("span", { className: "dtv-play-chevron", "aria-hidden": "true" }, "\u25C7"),
-          h10("span", { className: "dtv-play-title" }, rawText(workspace.title))
+          h11("span", { className: "dtv-play-chevron", "aria-hidden": "true" }, "\u25C7"),
+          h11("span", { className: "dtv-play-title" }, rawText(workspace.title))
         );
       })
     ) : null,
-    status === null ? null : h10("p", { className: "dtv-play-status", "data-error": true }, status.key ? uiMessage(status.key) : rawText(status.message)),
-    (resources?.diagnostics.length ?? 0) === 0 ? null : h10("p", { className: "dtv-play-status", "data-error": true }, uiMessage("play.sidebar.timelineErrors", { count: resources.diagnostics.length })),
-    resources?.diagnostics.some((item) => item.code === "PLAY_SESSION_NOT_FOUND") ? h10("p", { className: "dtv-play-status", "data-error": true }, uiMessage("play.sidebar.missingSessionHistory")) : null,
-    ...(resources?.diagnostics ?? []).map((diagnostic) => h10("p", {
-      key: diagnostic.playthroughId,
-      className: "dtv-play-status",
-      "data-error": true
-    }, rawText(`${diagnostic.path}: ${diagnostic.message}`))),
-    resources === null ? null : h10(
+    status === null ? null : h11("p", { className: "dtv-play-status", "data-error": true }, status.key ? uiMessage(status.key) : rawText(status.message)),
+    h11(WorkspaceDiagnosticSummary, { snapshot: diagnosticSnapshot, controller: diagnostics }),
+    resources === null ? null : h11(
       "label",
       { className: "dtv-play-sort" },
-      h10("span", null, uiMessage("play.sidebar.sort")),
-      h10(
+      h11("span", null, uiMessage("play.sidebar.sort")),
+      h11(
         "select",
         {
           value: resources.characterSorting?.mode ?? "updated",
           disabled: reorderingCharacters,
           onChange: changeCharacterSortMode
         },
-        h10("option", { value: "updated" }, uiMessage("play.sidebar.sortUpdated")),
-        h10("option", { value: "name" }, uiMessage("play.sidebar.sortName")),
-        h10("option", { value: "custom" }, uiMessage("play.sidebar.sortCustom"))
+        h11("option", { value: "updated" }, uiMessage("play.sidebar.sortUpdated")),
+        h11("option", { value: "name" }, uiMessage("play.sidebar.sortName")),
+        h11("option", { value: "custom" }, uiMessage("play.sidebar.sortCustom"))
       )
     ),
-    resources !== null && model.characters.length === 0 ? h10("p", { className: "dtv-play-empty" }, uiMessage("play.sidebar.noCharacters")) : null,
+    resources !== null && model.characters.length === 0 ? h11("p", { className: "dtv-play-empty" }, uiMessage("play.sidebar.noCharacters")) : null,
     ...model.characters.flatMap((character, index) => [
-      characterDragFrom !== null && characterDropIndex === index ? h10(CharacterDropPlaceholder, { key: `drop-${index}` }) : null,
-      h10(CharacterGroup, {
+      characterDragFrom !== null && characterDropIndex === index ? h11(CharacterDropPlaceholder, { key: `drop-${index}` }) : null,
+      h11(CharacterGroup, {
         key: character.id,
         character,
         index,
@@ -11963,14 +12251,16 @@ function PlayWorkspaceBrowser({
         toggleUnassigned: () => toggleSet(setExpandedUnassigned, character.id),
         openPlaythrough,
         openSession,
-        beginPlaythroughRelink
+        beginPlaythroughRelink,
+        diagnostics,
+        diagnosticIds
       })
     ]),
-    characterDragFrom !== null && characterDropIndex === model.characters.length ? h10(CharacterDropPlaceholder, { key: "drop-end" }) : null,
-    model.missingCharacters.length === 0 ? null : h10(
+    characterDragFrom !== null && characterDropIndex === model.characters.length ? h11(CharacterDropPlaceholder, { key: "drop-end" }) : null,
+    model.missingCharacters.length === 0 ? null : h11(
       "section",
       { className: "dtv-play-section dtv-play-missing", "data-open": missingOpen },
-      h10(
+      h11(
         "button",
         {
           type: "button",
@@ -11978,11 +12268,11 @@ function PlayWorkspaceBrowser({
           "aria-expanded": missingOpen,
           onClick: () => setMissingOpen((value) => !value)
         },
-        h10("span", { className: "dtv-play-chevron", "aria-hidden": "true" }, missingOpen ? "\u2304" : "\u203A"),
-        h10("span", { className: "dtv-play-title" }, uiMessage("play.sidebar.missingCharacters")),
-        h10("span", { className: "dtv-play-count" }, rawText(String(model.missingCharacters.length)))
+        h11("span", { className: "dtv-play-chevron", "aria-hidden": "true" }, missingOpen ? "\u2304" : "\u203A"),
+        h11("span", { className: "dtv-play-title" }, uiMessage("play.sidebar.missingCharacters")),
+        h11("span", { className: "dtv-play-count" }, rawText(String(model.missingCharacters.length)))
       ),
-      missingOpen ? model.missingCharacters.map((character) => h10(MissingCharacterGroup, {
+      missingOpen ? model.missingCharacters.map((character) => h11(MissingCharacterGroup, {
         key: character.id,
         character,
         collapsed: collapsedMissingCharacters.has(character.id),
@@ -11992,16 +12282,18 @@ function PlayWorkspaceBrowser({
         relinkDisabled: (resources?.characters.length ?? 0) === 0 || relinkBusy,
         openPlaythrough,
         openSession,
-        playClient
+        playClient,
+        diagnostics,
+        diagnosticIds
       })) : null
     ),
-    h10(
+    h11(
       "section",
       { className: "dtv-play-section", "data-open": otherOpen },
-      h10(
+      h11(
         "div",
         { className: "dtv-play-group-line" },
-        h10(
+        h11(
           "button",
           {
             type: "button",
@@ -12009,11 +12301,11 @@ function PlayWorkspaceBrowser({
             "aria-expanded": otherOpen,
             onClick: () => setOtherOpen((value) => !value)
           },
-          h10("span", { className: "dtv-play-chevron", "aria-hidden": "true" }, otherOpen ? "\u2304" : "\u203A"),
-          h10("span", { className: "dtv-play-title" }, uiMessage("play.sidebar.other")),
-          h10("span", { className: "dtv-play-count" }, rawText(String(model.otherSessions.length)))
+          h11("span", { className: "dtv-play-chevron", "aria-hidden": "true" }, otherOpen ? "\u2304" : "\u203A"),
+          h11("span", { className: "dtv-play-title" }, uiMessage("play.sidebar.other")),
+          h11("span", { className: "dtv-play-count" }, rawText(String(model.otherSessions.length)))
         ),
-        h10("button", {
+        h11("button", {
           type: "button",
           className: "dtv-play-create",
           title: uiMessage("play.sidebar.createOrdinary"),
@@ -12021,8 +12313,8 @@ function PlayWorkspaceBrowser({
           onClick: () => setOrdinaryPromptOpen(true)
         }, "+")
       ),
-      otherOpen && model.otherSessions.length === 0 ? h10("p", { className: "dtv-play-empty" }, uiMessage("play.sidebar.otherEmpty")) : null,
-      otherOpen ? model.otherSessions.map((session) => h10(
+      otherOpen && model.otherSessions.length === 0 ? h11("p", { className: "dtv-play-empty" }, uiMessage("play.sidebar.otherEmpty")) : null,
+      otherOpen ? model.otherSessions.map((session) => h11(
         "button",
         {
           key: session.id,
@@ -12032,28 +12324,28 @@ function PlayWorkspaceBrowser({
           "data-kind": session.kind,
           onClick: () => openSession(session.id)
         },
-        h10("span", { className: "dtv-play-chevron", "aria-hidden": "true" }, "\u2022"),
-        h10("span", { className: "dtv-play-title" }, rawText(session.title))
+        h11("span", { className: "dtv-play-chevron", "aria-hidden": "true" }, "\u2022"),
+        h11("span", { className: "dtv-play-title" }, rawText(session.title))
       )) : null
     ),
-    ordinaryPromptOpen ? h10("div", {
+    ordinaryPromptOpen ? h11("div", {
       className: "dtv-play-modal-backdrop",
       role: "dialog",
       "aria-modal": "true",
       "aria-labelledby": "dtv-play-ordinary-prompt"
-    }, h10(
+    }, h11(
       "div",
       { className: "dtv-play-modal" },
-      h10("p", { id: "dtv-play-ordinary-prompt" }, uiMessage("play.sidebar.ordinaryPrompt")),
-      h10(
+      h11("p", { id: "dtv-play-ordinary-prompt" }, uiMessage("play.sidebar.ordinaryPrompt")),
+      h11(
         "div",
         { className: "dtv-play-modal-actions" },
-        h10("button", {
+        h11("button", {
           type: "button",
           className: "dtv-play-modal-button",
           onClick: () => setOrdinaryPromptOpen(false)
         }, uiMessage("play.sidebar.ordinaryClose")),
-        h10("button", {
+        h11("button", {
           type: "button",
           className: "dtv-play-modal-button",
           "data-primary": true,
@@ -12061,36 +12353,36 @@ function PlayWorkspaceBrowser({
         }, uiMessage("play.sidebar.returnNative"))
       )
     )) : null,
-    relinkRequest === null ? null : h10("div", {
+    relinkRequest === null ? null : h11("div", {
       className: "dtv-play-modal-backdrop",
       role: "dialog",
       "aria-modal": "true",
       "aria-labelledby": "dtv-play-relink-prompt"
-    }, h10(
+    }, h11(
       "div",
       { className: "dtv-play-modal" },
-      h10("p", { id: "dtv-play-relink-prompt" }, relinkRequest.kind === "playthrough" ? uiMessage("play.sidebar.relinkPlaythroughPrompt", { name: playthroughDisplayTitle(relinkRequest.playthrough) }) : uiMessage("play.sidebar.relinkPrompt", { name: relinkRequest.character.name })),
-      h10("select", {
+      h11("p", { id: "dtv-play-relink-prompt" }, relinkRequest.kind === "playthrough" ? uiMessage("play.sidebar.relinkPlaythroughPrompt", { name: playthroughDisplayTitle(relinkRequest.playthrough) }) : uiMessage("play.sidebar.relinkPrompt", { name: relinkRequest.character.name })),
+      h11("select", {
         value: relinkTargetId,
         disabled: relinkBusy,
         onChange: (event) => setRelinkTargetId(event.currentTarget.value)
-      }, ...(resources?.characters ?? []).filter((character) => relinkRequest.kind !== "playthrough" || character.id !== relinkRequest.character.id).map((character) => h10("option", { key: character.id, value: character.id }, rawText(character.name)))),
+      }, ...(resources?.characters ?? []).filter((character) => relinkRequest.kind !== "playthrough" || character.id !== relinkRequest.character.id).map((character) => h11("option", { key: character.id, value: character.id }, rawText(character.name)))),
       relinkRequest.kind !== "playthrough" || assessPlaythroughCharacterRelink({
         playthrough: relinkRequest.playthrough,
         target: resources?.characters.find((character) => character.id === relinkTargetId),
         characters: resources?.characters,
         missingCharacters: resources?.missingCharacters
-      }).automatic ? null : h10("p", { className: "dtv-play-relink-warning" }, uiMessage("play.sidebar.relinkMismatchWarning")),
-      h10(
+      }).automatic ? null : h11("p", { className: "dtv-play-relink-warning" }, uiMessage("play.sidebar.relinkMismatchWarning")),
+      h11(
         "div",
         { className: "dtv-play-modal-actions" },
-        h10("button", {
+        h11("button", {
           type: "button",
           className: "dtv-play-modal-button",
           disabled: relinkBusy,
           onClick: () => setRelinkRequest(null)
         }, uiMessage("play.sidebar.ordinaryClose")),
-        h10("button", {
+        h11("button", {
           type: "button",
           className: "dtv-play-modal-button",
           "data-primary": true,
@@ -12103,8 +12395,8 @@ function PlayWorkspaceBrowser({
 }
 
 // packages/client/src/play/notice.js
-var import_react14 = require("react");
-var h11 = createLocalizedElement(import_react14.createElement);
+var import_react15 = require("react");
+var h12 = createLocalizedElement(import_react15.createElement);
 var css10 = `
 .dtv-play-unbound-notice{box-sizing:border-box;width:100%;max-width:var(--dsh-composer-card-max-width,100%);align-self:center;margin:0;padding:7px 10px;border:1px solid color-mix(in srgb,var(--dsw-alias-state-warning,#d79921) 34%,transparent);border-radius:10px;background:color-mix(in srgb,var(--dsw-alias-state-warning,#d79921) 8%,transparent);color:var(--dsw-alias-label-secondary);font-size:11px;line-height:1.45}
 .dtv-play-opening-dock{box-sizing:border-box;width:100%;min-width:0;flex:none;display:flex;flex-direction:column;overflow:hidden;border:1px solid var(--dsw-alias-border-l2);border-radius:14px;background:var(--dsw-alias-bg-layer-2,var(--dsw-specific-block));color:var(--dsw-alias-label-primary);box-shadow:0 4px 18px color-mix(in srgb,var(--dsw-alias-label-primary) 7%,transparent)}
@@ -12128,17 +12420,17 @@ function PlaySessionDock({ session, useSessions, useConversation, conversationPh
   const conversation = useConversation((state) => state);
   const composerPhase = conversationPhase2(session, conversation);
   const summary = useSessions((state) => sessionId === null ? null : state.byId?.[sessionId] ?? null);
-  const [revision, setRevision] = (0, import_react14.useState)(0);
-  const [content, setContent] = (0, import_react14.useState)(null);
-  const [greetingBusy, setGreetingBusy] = (0, import_react14.useState)(false);
-  const [error, setError] = (0, import_react14.useState)("");
+  const [revision, setRevision] = (0, import_react15.useState)(0);
+  const [content, setContent] = (0, import_react15.useState)(null);
+  const [greetingBusy, setGreetingBusy] = (0, import_react15.useState)(false);
+  const [error, setError] = (0, import_react15.useState)("");
   const displaySettings = useConversationDisplaySettings();
-  (0, import_react14.useEffect)(() => {
+  (0, import_react15.useEffect)(() => {
     const refresh = () => setRevision((value) => value + 1);
     window.addEventListener(CLIENT_REFRESH_EVENT, refresh);
     return () => window.removeEventListener(CLIENT_REFRESH_EVENT, refresh);
   }, []);
-  (0, import_react14.useEffect)(() => {
+  (0, import_react15.useEffect)(() => {
     let active = true;
     setContent((current3) => current3?.sessionId === sessionId && current3.kind === "opening" ? current3 : null);
     setError("");
@@ -12205,7 +12497,7 @@ function PlaySessionDock({ session, useSessions, useConversation, conversationPh
   };
   if (content?.sessionId !== sessionId) return null;
   if (content.kind === "unbound") {
-    return h11("p", {
+    return h12("p", {
       className: "dtv-play-unbound-notice",
       role: "note"
     }, uiMessage("play.notice.unbound"));
@@ -12215,7 +12507,7 @@ function PlaySessionDock({ session, useSessions, useConversation, conversationPh
   const importTurns = content.importTurns ?? [];
   const options = greeting?.options ?? [];
   const position = greeting === null ? 0 : Math.max(0, options.findIndex((option) => option.index === greeting.index)) + 1;
-  const importControls = h11(ImportControls, {
+  const importControls = h12(ImportControls, {
     playClient,
     playthrough: content.playthrough,
     binding: content.importBinding,
@@ -12223,46 +12515,46 @@ function PlaySessionDock({ session, useSessions, useConversation, conversationPh
     changed: () => setRevision((value) => value + 1),
     onError: setError
   });
-  return h11(
+  return h12(
     "section",
     {
       className: "dtv-play-opening-dock",
       style: conversationDisplayStyle(displaySettings)
     },
-    greeting === null ? null : h11(
+    greeting === null ? null : h12(
       "header",
       { className: "dtv-play-opening-header" },
-      h11("span", { className: "dtv-play-opening-name" }, rawText(greeting.characterName)),
-      h11("span", { className: "dtv-play-opening-index" }, rawText(`${position} / ${options.length}`))
+      h12("span", { className: "dtv-play-opening-name" }, rawText(greeting.characterName)),
+      h12("span", { className: "dtv-play-opening-index" }, rawText(`${position} / ${options.length}`))
     ),
-    importTurns.length > 0 ? h11(
+    importTurns.length > 0 ? h12(
       "div",
       { className: "dtv-play-opening-body dtv-play-chat-list" },
-      ...importTurns.map((turn) => h11(
+      ...importTurns.map((turn) => h12(
         "div",
         { key: turn.id, className: "dtv-play-chat-row" },
-        turn.userText === "" ? null : h11(RichText, {
+        turn.userText === "" ? null : h12(RichText, {
           className: "dtv-play-chat-bubble dtv-play-chat-user dtv-play-rich",
           text: turn.userText
         }),
-        turn.assistantText === "" ? null : h11(RichText, {
+        turn.assistantText === "" ? null : h12(RichText, {
           className: "dtv-play-chat-bubble dtv-play-chat-assistant dtv-play-rich",
           text: turn.assistantText
         })
       ))
-    ) : greeting === null ? h11("div", { className: "dtv-play-opening-body dtv-play-opening-body-empty", "aria-hidden": true }) : h11(RichText, { className: "dtv-play-opening-body", text: greeting.text }),
-    error === "" ? null : h11("p", { className: "dtv-play-opening-error", role: "alert" }, rawText(error)),
-    h11(
+    ) : greeting === null ? h12("div", { className: "dtv-play-opening-body dtv-play-opening-body-empty", "aria-hidden": true }) : h12(RichText, { className: "dtv-play-opening-body", text: greeting.text }),
+    error === "" ? null : h12("p", { className: "dtv-play-opening-error", role: "alert" }, rawText(error)),
+    h12(
       "footer",
       { className: "dtv-play-opening-actions" },
-      h11("button", {
+      h12("button", {
         type: "button",
         className: "dtv-play-opening-button",
         disabled: greetingBusy || adjacentGreetingIndex(greeting, "previous") === null,
         onClick: () => changeGreeting("previous")
       }, uiMessage("play.chat.previousGreeting")),
       importControls,
-      h11("button", {
+      h12("button", {
         type: "button",
         className: "dtv-play-opening-button",
         disabled: greetingBusy || adjacentGreetingIndex(greeting, "next") === null,
@@ -12273,14 +12565,14 @@ function PlaySessionDock({ session, useSessions, useConversation, conversationPh
 }
 
 // packages/client/src/play/view-default.js
-var import_react15 = require("react");
+var import_react16 = require("react");
 function defaultViewTarget(selectedView, targetViewId) {
   return selectedView === null || selectedView === void 0 ? targetViewId : null;
 }
 function DefaultConversationViewAdapter({ useStore, actions, targetViewId, complete }) {
   const hasStore = typeof useStore === "function";
   const selectedView = hasStore ? useStore((state) => state.view) : void 0;
-  (0, import_react15.useLayoutEffect)(() => {
+  (0, import_react16.useLayoutEffect)(() => {
     const target = defaultViewTarget(selectedView, targetViewId);
     if (hasStore && target !== null && typeof actions?.setView === "function") {
       try {
@@ -12308,7 +12600,7 @@ function findConversationStore(slots) {
   }
   return void 0;
 }
-function installPlaySlotOccupancy(ctx, playClient, { playthroughController, switchToNative, conversationPhase: conversationPhase2 } = {}) {
+function installPlaySlotOccupancy(ctx, playClient, { playthroughController, switchToNative, conversationPhase: conversationPhase2, diagnostics } = {}) {
   let mode = "native";
   let declared = false;
   let disposeEntry = null;
@@ -12353,6 +12645,7 @@ function installPlaySlotOccupancy(ctx, playClient, { playthroughController, swit
       priority: PLAY_SLOT_PRIORITY,
       inject: () => ({
         playClient,
+        diagnostics,
         playthroughController,
         openSession: (sessionId, playthrough = null) => openPlaySession(sessionId, playthrough),
         getActivePlaythroughId: () => preferredPlaythroughId,
@@ -12933,8 +13226,8 @@ function createLivePlayClient({
 }
 
 // packages/client/src/play/regex-panel.js
-var import_react16 = require("react");
-var h12 = createLocalizedElement(import_react16.createElement);
+var import_react17 = require("react");
+var h13 = createLocalizedElement(import_react17.createElement);
 var EMPTY_DOCUMENT = Object.freeze({ schemaVersion: 1, rules: Object.freeze([]) });
 var SCOPE_KINDS = Object.freeze(["global", "preset", "character"]);
 function reorderRegexRulesAtBoundary(rules, fromIndex, boundary) {
@@ -12973,10 +13266,10 @@ function downloadRegexScripts(rules, kind) {
   URL.revokeObjectURL(url);
 }
 function Field5({ labelKey, children }) {
-  return h12(
+  return h13(
     "label",
     { className: "dtv-field" },
-    h12("span", { className: "dtv-label" }, uiMessage(labelKey)),
+    h13("span", { className: "dtv-label" }, uiMessage(labelKey)),
     children
   );
 }
@@ -13055,7 +13348,7 @@ function RuleEditor({
   const set = (patch) => update({ ...rule, ...patch });
   const setScope = (patch) => set({ scope: { ...rule.scope, ...patch } });
   const stateLabel = uiMessage(rule.enabled ? "common.enabled" : "common.disabled");
-  return h12(
+  return h13(
     "details",
     {
       className: "dtv-entry dtv-regex-rule",
@@ -13064,10 +13357,10 @@ function RuleEditor({
       "data-regex-index": dragIndex,
       "data-dragging": dragging || void 0
     },
-    h12(
+    h13(
       "summary",
       null,
-      h12("button", {
+      h13("button", {
         className: "dtv-regex-drag",
         type: "button",
         disabled: busy,
@@ -13083,7 +13376,7 @@ function RuleEditor({
         onPointerUp,
         onPointerCancel
       }, "\u283F"),
-      h12("input", {
+      h13("input", {
         type: "checkbox",
         checked: rule.enabled,
         disabled: busy,
@@ -13092,43 +13385,43 @@ function RuleEditor({
         onClick: (event) => event.stopPropagation(),
         onChange: (event) => set({ enabled: event.target.checked })
       }),
-      h12("span", { className: "dtv-entry-name" }, rawText(rule.name || unwrapText(uiMessage("regex.unnamed")))),
-      h12("span", { className: "dtv-entry-state" }, stateLabel)
+      h13("span", { className: "dtv-entry-name" }, rawText(rule.name || unwrapText(uiMessage("regex.unnamed")))),
+      h13("span", { className: "dtv-entry-state" }, stateLabel)
     ),
-    h12(
+    h13(
       "div",
       { className: "dtv-entry-body" },
-      h12(Field5, { labelKey: "regex.name" }, h12("input", {
+      h13(Field5, { labelKey: "regex.name" }, h13("input", {
         className: "dtv-input",
         value: rule.name,
         disabled: busy,
         onChange: (event) => set({ name: event.target.value })
       })),
-      h12(Field5, { labelKey: "regex.find" }, h12("textarea", {
+      h13(Field5, { labelKey: "regex.find" }, h13("textarea", {
         className: "dtv-textarea dtv-regex-expression",
         value: rule.find,
         disabled: busy,
         spellCheck: false,
         onChange: (event) => set({ find: event.target.value })
       })),
-      h12(Field5, { labelKey: "regex.replace" }, h12("textarea", {
+      h13(Field5, { labelKey: "regex.replace" }, h13("textarea", {
         className: "dtv-textarea dtv-regex-expression",
         value: rule.replace,
         disabled: busy,
         spellCheck: false,
         onChange: (event) => set({ replace: event.target.value })
       })),
-      h12(
+      h13(
         "div",
         { className: "dtv-entry-grid" },
-        h12(Field5, { labelKey: "regex.flags" }, h12("input", {
+        h13(Field5, { labelKey: "regex.flags" }, h13("input", {
           className: "dtv-input",
           value: rule.flags,
           disabled: busy,
           spellCheck: false,
           onChange: (event) => set({ flags: event.target.value })
         })),
-        h12(Field5, { labelKey: "regex.target" }, h12(
+        h13(Field5, { labelKey: "regex.target" }, h13(
           "select",
           {
             className: "dtv-select",
@@ -13136,15 +13429,15 @@ function RuleEditor({
             disabled: busy,
             onChange: (event) => set({ target: event.target.value })
           },
-          h12("option", { value: "assistant" }, uiMessage("regex.target.assistant")),
-          h12("option", { value: "user" }, uiMessage("regex.target.user")),
-          h12("option", { value: "both" }, uiMessage("regex.target.both"))
+          h13("option", { value: "assistant" }, uiMessage("regex.target.assistant")),
+          h13("option", { value: "user" }, uiMessage("regex.target.user")),
+          h13("option", { value: "both" }, uiMessage("regex.target.both"))
         ))
       ),
-      h12(
+      h13(
         "div",
         { className: "dtv-entry-grid" },
-        h12(Field5, { labelKey: "regex.scope" }, h12(
+        h13(Field5, { labelKey: "regex.scope" }, h13(
           "select",
           {
             className: "dtv-select",
@@ -13155,17 +13448,17 @@ function RuleEditor({
               resourceId: event.target.value === "global" ? null : rule.scope.resourceId
             })
           },
-          ...SCOPE_KINDS.map((kind) => h12("option", { key: kind, value: kind }, uiMessage(`regex.scope.${kind}`)))
+          ...SCOPE_KINDS.map((kind) => h13("option", { key: kind, value: kind }, uiMessage(`regex.scope.${kind}`)))
         )),
-        rule.scope.kind === "global" ? null : h12(Field5, { labelKey: "regex.resourceId" }, h12("input", {
+        rule.scope.kind === "global" ? null : h13(Field5, { labelKey: "regex.resourceId" }, h13("input", {
           className: "dtv-input",
           value: rule.scope.resourceId ?? "",
           disabled: true,
           onChange: (event) => setScope({ resourceId: event.target.value || null })
         }))
       ),
-      sourceOwned ? h12("p", { className: "dtv-note" }, uiMessage(rule.sourceDisplayEligible ? "regex.sourceOwnedDisplay" : "regex.sourceOwnedPromptOnly")) : null,
-      h12("div", { className: "dtv-entry-actions" }, h12("button", {
+      sourceOwned ? h13("p", { className: "dtv-note" }, uiMessage(rule.sourceDisplayEligible ? "regex.sourceOwnedDisplay" : "regex.sourceOwnedPromptOnly")) : null,
+      h13("div", { className: "dtv-entry-actions" }, h13("button", {
         className: "dtv-button dtv-danger",
         type: "button",
         disabled: busy,
@@ -13175,7 +13468,7 @@ function RuleEditor({
   );
 }
 function RegexDropPlaceholder() {
-  return h12("div", {
+  return h13("div", {
     className: "dtv-regex-drop-placeholder",
     "aria-hidden": true
   }, uiMessage("preset.dropHere"));
@@ -13209,30 +13502,30 @@ function RegexScopeSection({
   const rules = [...editableRules, ...sourceRules];
   const unbound = kind === "preset" && bindings.presetId === null ? uiMessage("regex.noPreset") : kind === "character" && bindings.characterId === null ? uiMessage("regex.noCharacter") : null;
   const actionsDisabled = busy || unbound !== null;
-  return h12(
+  return h13(
     "section",
     { className: "dtv-resource dtv-regex-section", "data-scope": kind },
-    h12(
+    h13(
       "div",
       { className: "dtv-regex-section-title" },
-      h12("div", { className: "dtv-resource-title" }, uiMessage(`regex.scope.${kind}`)),
-      h12("span", { className: "dtv-item-count" }, rawText(String(rules.length)))
+      h13("div", { className: "dtv-resource-title" }, uiMessage(`regex.scope.${kind}`)),
+      h13("span", { className: "dtv-item-count" }, rawText(String(rules.length)))
     ),
-    unbound === null ? null : h12("p", { className: "dtv-note" }, unbound),
-    h12(
+    unbound === null ? null : h13("p", { className: "dtv-note" }, unbound),
+    h13(
       "div",
       { className: "dtv-book-toolbar" },
-      h12("button", { className: "dtv-button", type: "button", disabled: actionsDisabled, onClick: importJson }, uiMessage("common.importJson")),
-      h12("button", { className: "dtv-button", type: "button", disabled: busy, onClick: () => exportJson(rules) }, uiMessage("common.exportJson")),
-      h12("button", { className: "dtv-button", type: "button", disabled: actionsDisabled, onClick: add }, uiMessage("regex.add"))
+      h13("button", { className: "dtv-button", type: "button", disabled: actionsDisabled, onClick: importJson }, uiMessage("common.importJson")),
+      h13("button", { className: "dtv-button", type: "button", disabled: busy, onClick: () => exportJson(rules) }, uiMessage("common.exportJson")),
+      h13("button", { className: "dtv-button", type: "button", disabled: actionsDisabled, onClick: add }, uiMessage("regex.add"))
     ),
-    rules.length === 0 ? h12("p", { className: "dtv-note" }, uiMessage("regex.emptyScope")) : [
+    rules.length === 0 ? h13("p", { className: "dtv-note" }, uiMessage("regex.emptyScope")) : [
       ...rules.flatMap((rule, index) => {
         const sourceIndex = index - editableRules.length;
         const sourceOwned = sourceIndex >= 0;
         return [
-          dragFrom?.kind === kind && dropIndex === index ? h12(RegexDropPlaceholder, { key: `${kind}-drop-${index}` }) : null,
-          h12(RuleEditor, {
+          dragFrom?.kind === kind && dropIndex === index ? h13(RegexDropPlaceholder, { key: `${kind}-drop-${index}` }) : null,
+          h13(RuleEditor, {
             key: `${kind}-${sourceOwned ? "source" : "editable"}-${rule.id}-${index}`,
             rule,
             busy,
@@ -13272,21 +13565,21 @@ function RegexScopeSection({
           })
         ];
       }),
-      dragFrom?.kind === kind && dropIndex === rules.length ? h12(RegexDropPlaceholder, { key: `${kind}-drop-end` }) : null
+      dragFrom?.kind === kind && dropIndex === rules.length ? h13(RegexDropPlaceholder, { key: `${kind}-drop-end` }) : null
     ]
   );
 }
 function RegexPanel({ client, activeSnapshot, close }) {
-  const [document2, setDocument] = (0, import_react16.useState)(EMPTY_DOCUMENT);
-  const [savedDocument, setSavedDocument] = (0, import_react16.useState)(EMPTY_DOCUMENT);
-  const [resourceRules, setResourceRules] = (0, import_react16.useState)({ preset: [], character: [] });
-  const [savedResourceRules, setSavedResourceRules] = (0, import_react16.useState)({ preset: [], character: [] });
-  const [busy, setBusy] = (0, import_react16.useState)(false);
-  const [status, setStatus] = (0, import_react16.useState)({ text: uiMessage("common.loading"), error: false });
-  const [dragFrom, setDragFrom] = (0, import_react16.useState)(null);
-  const [dropIndex, setDropIndex] = (0, import_react16.useState)(null);
-  const fileInput = (0, import_react16.useRef)(null);
-  const importScope = (0, import_react16.useRef)("global");
+  const [document2, setDocument] = (0, import_react17.useState)(EMPTY_DOCUMENT);
+  const [savedDocument, setSavedDocument] = (0, import_react17.useState)(EMPTY_DOCUMENT);
+  const [resourceRules, setResourceRules] = (0, import_react17.useState)({ preset: [], character: [] });
+  const [savedResourceRules, setSavedResourceRules] = (0, import_react17.useState)({ preset: [], character: [] });
+  const [busy, setBusy] = (0, import_react17.useState)(false);
+  const [status, setStatus] = (0, import_react17.useState)({ text: uiMessage("common.loading"), error: false });
+  const [dragFrom, setDragFrom] = (0, import_react17.useState)(null);
+  const [dropIndex, setDropIndex] = (0, import_react17.useState)(null);
+  const fileInput = (0, import_react17.useRef)(null);
+  const importScope = (0, import_react17.useRef)("global");
   const bindings = activeRegexBindings(activeSnapshot);
   const dirty = JSON.stringify(document2) !== JSON.stringify(savedDocument) || JSON.stringify(resourceRules) !== JSON.stringify(savedResourceRules);
   const load = async () => {
@@ -13312,7 +13605,7 @@ function RegexPanel({ client, activeSnapshot, close }) {
       setBusy(false);
     }
   };
-  (0, import_react16.useEffect)(() => {
+  (0, import_react17.useEffect)(() => {
     load();
   }, [client, bindings.presetId, bindings.characterId]);
   const persist = async (next, nextResourceRules = resourceRules, { rethrow = false } = {}) => {
@@ -13427,21 +13720,21 @@ function RegexPanel({ client, activeSnapshot, close }) {
   };
   const title = uiMessage("regex.title");
   const closeLabel = uiMessage("panel.close", { title: unwrapText(title) });
-  return h12(
+  return h13(
     "div",
     { className: "dtv-panel dtv-regex-panel" },
-    h12(
+    h13(
       "div",
       { className: "dtv-header" },
-      h12("div", { className: "dtv-title" }, title),
-      h12("button", { className: "dtv-close", type: "button", title: closeLabel, "aria-label": closeLabel, onClick: guardedClose }, "\u2715")
+      h13("div", { className: "dtv-title" }, title),
+      h13("button", { className: "dtv-close", type: "button", title: closeLabel, "aria-label": closeLabel, onClick: guardedClose }, "\u2715")
     ),
-    h12(
+    h13(
       "div",
       { className: "dtv-body" },
-      h12("p", { className: "dtv-note" }, uiMessage("regex.displayOnlyNote")),
-      h12("input", { ref: fileInput, type: "file", accept: "application/json,.json", hidden: true, onChange: importFile }),
-      ...SCOPE_KINDS.map((kind) => h12(RegexScopeSection, {
+      h13("p", { className: "dtv-note" }, uiMessage("regex.displayOnlyNote")),
+      h13("input", { ref: fileInput, type: "file", accept: "application/json,.json", hidden: true, onChange: importFile }),
+      ...SCOPE_KINDS.map((kind) => h13(RegexScopeSection, {
         key: kind,
         kind,
         bindings,
@@ -13464,12 +13757,12 @@ function RegexPanel({ client, activeSnapshot, close }) {
         setDragFrom,
         setDropIndex
       })),
-      h12("div", { className: "dtv-status", "data-error": status.error }, status.text),
-      h12(
+      h13("div", { className: "dtv-status", "data-error": status.error }, status.text),
+      h13(
         "div",
         { className: "dtv-regex-footer" },
-        h12("button", { className: "dtv-button", type: "button", disabled: busy, onClick: guardedLoad }, uiMessage("common.reload")),
-        h12("button", { className: "dtv-button dtv-primary", type: "button", disabled: busy || !dirty, onClick: () => persist(document2) }, busy ? uiMessage("common.working") : uiMessage("common.saveChanges"))
+        h13("button", { className: "dtv-button", type: "button", disabled: busy, onClick: guardedLoad }, uiMessage("common.reload")),
+        h13("button", { className: "dtv-button dtv-primary", type: "button", disabled: busy || !dirty, onClick: () => persist(document2) }, busy ? uiMessage("common.working") : uiMessage("common.saveChanges"))
       )
     )
   );
@@ -13782,7 +14075,7 @@ function startChromeModeTransport({
 }
 
 // packages/client/src/index.js
-var h13 = createLocalizedElement(import_react17.createElement);
+var h14 = createLocalizedElement(import_react18.createElement);
 var css11 = `
 .dtv-layer{position:absolute;inset:0;z-index:6;pointer-events:none;font-family:Inter,var(--dsw-font-family),sans-serif;color:var(--dsw-alias-label-primary)}
 .dtv-launcher{position:absolute;z-index:2;width:44px;height:44px;pointer-events:auto;overflow:hidden;border:0 solid transparent;border-radius:22px;background:transparent;box-shadow:none;transition:width .22s ease,height .22s ease,border-radius .22s ease,background-color .18s ease,box-shadow .18s ease;display:block}
@@ -13902,15 +14195,15 @@ async function conversationSettingsRequest(method = "GET", body2) {
 function PanelHeader({ title, titleKey, close }) {
   const titleText = titleKey ? uiMessage(titleKey) : title;
   const closeLabel = uiMessage("panel.close", { title: unwrapText(titleText) });
-  return h13(
+  return h14(
     "div",
     { className: "dtv-header" },
-    h13("div", { className: "dtv-title" }, titleText),
-    h13("button", { className: "dtv-close", type: "button", title: closeLabel, "aria-label": closeLabel, onClick: close }, "\u2715")
+    h14("div", { className: "dtv-title" }, titleText),
+    h14("button", { className: "dtv-close", type: "button", title: closeLabel, "aria-label": closeLabel, onClick: close }, "\u2715")
   );
 }
 function Field6({ label, children }) {
-  return h13("label", { className: "dtv-field" }, h13("span", { className: "dtv-label" }, label), children);
+  return h14("label", { className: "dtv-field" }, h14("span", { className: "dtv-label" }, label), children);
 }
 function SettingsPanel({
   settings,
@@ -13930,23 +14223,23 @@ function SettingsPanel({
   selectWorkspace
 }) {
   const percent = Math.round(settings.scale * 100);
-  return h13(
+  return h14(
     "div",
     { className: "dtv-panel" },
-    h13(
+    h14(
       "div",
       { className: "dtv-header" },
-      h13("div", { className: "dtv-title" }, translate("settings.title")),
-      h13("button", { className: "dtv-close", type: "button", title: translate("settings.close"), "aria-label": translate("settings.close"), onClick: close }, "\u2715")
+      h14("div", { className: "dtv-title" }, translate("settings.title")),
+      h14("button", { className: "dtv-close", type: "button", title: translate("settings.close"), "aria-label": translate("settings.close"), onClick: close }, "\u2715")
     ),
-    h13(
+    h14(
       "div",
       { className: "dtv-body" },
-      h13("div", { className: "dtv-status", "data-error": status.error || void 0, role: "status" }, rawText(status.text)),
-      h13(
+      h14("div", { className: "dtv-status", "data-error": status.error || void 0, role: "status" }, rawText(status.text)),
+      h14(
         "div",
         { className: "dtv-settings-section" },
-        h13(Field6, { label: translate("settings.language") }, h13(
+        h14(Field6, { label: translate("settings.language") }, h14(
           "select",
           {
             className: "dtv-select",
@@ -13954,29 +14247,29 @@ function SettingsPanel({
             disabled: busy,
             onChange: (event) => update({ ...settings, locale: event.target.value })
           },
-          ...UI_LOCALES.map((locale) => h13("option", { key: locale.id, value: locale.id }, rawText(locale.nativeName)))
+          ...UI_LOCALES.map((locale) => h14("option", { key: locale.id, value: locale.id }, rawText(locale.nativeName)))
         )),
-        h13(Field6, { label: translate("settings.scale") }, h13("select", {
+        h14(Field6, { label: translate("settings.scale") }, h14("select", {
           className: "dtv-select",
           value: settings.scale,
           disabled: busy,
           onChange: (event) => update({ ...settings, scale: Number(event.target.value) })
-        }, ...UI_SCALE_OPTIONS.map((scale) => h13("option", { key: scale, value: scale }, `${Math.round(scale * 100)}%`)))),
-        h13("div", { className: "dtv-setting-value" }, translate("settings.currentScale", { scale: percent })),
-        h13("p", { className: "dtv-note" }, translate("settings.scale.help")),
-        h13(
+        }, ...UI_SCALE_OPTIONS.map((scale) => h14("option", { key: scale, value: scale }, `${Math.round(scale * 100)}%`)))),
+        h14("div", { className: "dtv-setting-value" }, translate("settings.currentScale", { scale: percent })),
+        h14("p", { className: "dtv-note" }, translate("settings.scale.help")),
+        h14(
           "label",
           { className: "dtv-check" },
-          h13("input", {
+          h14("input", {
             type: "checkbox",
             checked: settings.rpFollowCharacter !== false,
             disabled: busy,
             onChange: (event) => update({ ...settings, rpFollowCharacter: event.target.checked })
           }),
-          h13("span", null, translate("settings.rpFollow"))
+          h14("span", null, translate("settings.rpFollow"))
         ),
-        h13("p", { className: "dtv-note" }, translate("settings.rpFollow.help")),
-        h13(Field6, { label: translate("settings.rpWorkspace") }, h13(
+        h14("p", { className: "dtv-note" }, translate("settings.rpFollow.help")),
+        h14(Field6, { label: translate("settings.rpWorkspace") }, h14(
           "select",
           {
             className: "dtv-select",
@@ -13984,29 +14277,29 @@ function SettingsPanel({
             disabled: busy || workspaceBusy || workspaceSetting === null,
             onChange: (event) => selectWorkspace(event.target.value)
           },
-          workspaceSetting?.current === null && workspaceSetting.available.length > 0 ? h13("option", { value: "", disabled: true }, translate("settings.rpWorkspace.unselected")) : null,
-          workspaceSetting?.current?.unavailable === true ? h13("option", { value: workspaceSetting.current.path, disabled: true }, translate("settings.rpWorkspace.unavailable", { path: workspaceSetting.current.path })) : null,
-          workspaceSetting?.available?.length > 0 ? workspaceSetting.available.map((item) => h13("option", { key: item.id, value: item.path }, rawText(item.title))) : h13("option", { value: "", disabled: true }, translate("settings.rpWorkspace.none"))
+          workspaceSetting?.current === null && workspaceSetting.available.length > 0 ? h14("option", { value: "", disabled: true }, translate("settings.rpWorkspace.unselected")) : null,
+          workspaceSetting?.current?.unavailable === true ? h14("option", { value: workspaceSetting.current.path, disabled: true }, translate("settings.rpWorkspace.unavailable", { path: workspaceSetting.current.path })) : null,
+          workspaceSetting?.available?.length > 0 ? workspaceSetting.available.map((item) => h14("option", { key: item.id, value: item.path }, rawText(item.title))) : h14("option", { value: "", disabled: true }, translate("settings.rpWorkspace.none"))
         )),
-        h13("p", { className: "dtv-note" }, translate("settings.rpWorkspace.help")),
-        h13(Field6, { label: translate("settings.rpPolicy") }, h13("textarea", {
+        h14("p", { className: "dtv-note" }, translate("settings.rpWorkspace.help")),
+        h14(Field6, { label: translate("settings.rpPolicy") }, h14("textarea", {
           className: "dtv-textarea dtv-policy",
           value: policyDraft,
           placeholder: translate("settings.rpPolicy.placeholder"),
           disabled: busy || policyBusy || policyLoaded !== true,
           onChange: (event) => onPolicyDraft(event.target.value)
         })),
-        h13("p", { className: "dtv-note" }, translate("settings.rpPolicy.help")),
-        h13(
+        h14("p", { className: "dtv-note" }, translate("settings.rpPolicy.help")),
+        h14(
           "div",
           { className: "dtv-actions" },
-          h13("button", {
+          h14("button", {
             className: "dtv-button dtv-primary",
             type: "button",
             disabled: busy || policyBusy || policyLoaded !== true,
             onClick: savePolicy
           }, translate("settings.rpPolicy.save")),
-          h13("button", {
+          h14("button", {
             className: "dtv-button",
             type: "button",
             disabled: busy || policyBusy || policyLoaded !== true,
@@ -14014,45 +14307,45 @@ function SettingsPanel({
           }, translate("settings.rpPolicy.reset"))
         )
       ),
-      h13(
+      h14(
         "div",
         { className: "dtv-settings-footer" },
-        h13("button", { className: "dtv-button", type: "button", disabled: busy, onClick: reset }, translate("settings.reset"))
+        h14("button", { className: "dtv-button", type: "button", disabled: busy, onClick: reset }, translate("settings.reset"))
       )
     )
   );
 }
 function ConversationSettingsPanel({ settings, status, busy, close, update, reset }) {
-  return h13(
+  return h14(
     "div",
     { className: "dtv-panel" },
-    h13(PanelHeader, { titleKey: "conversationSettings.title", close }),
-    h13(
+    h14(PanelHeader, { titleKey: "conversationSettings.title", close }),
+    h14(
       "div",
       { className: "dtv-body" },
-      h13("div", { className: "dtv-status", "data-error": status.error || void 0, role: "status" }, rawText(status.text)),
-      h13(
+      h14("div", { className: "dtv-status", "data-error": status.error || void 0, role: "status" }, rawText(status.text)),
+      h14(
         "div",
         { className: "dtv-settings-section" },
-        h13(Field6, { label: translate("conversationSettings.textScale") }, h13("select", {
+        h14(Field6, { label: translate("conversationSettings.textScale") }, h14("select", {
           className: "dtv-select",
           value: settings.textScale,
           disabled: busy,
           onChange: (event) => update({ ...settings, textScale: Number(event.target.value) })
-        }, ...CONVERSATION_SCALE_OPTIONS.map((scale) => h13("option", { key: scale, value: scale }, `${Math.round(scale * 100)}%`)))),
-        h13("p", { className: "dtv-note" }, translate("conversationSettings.textScale.help")),
-        h13(Field6, { label: translate("conversationSettings.actionScale") }, h13("select", {
+        }, ...CONVERSATION_SCALE_OPTIONS.map((scale) => h14("option", { key: scale, value: scale }, `${Math.round(scale * 100)}%`)))),
+        h14("p", { className: "dtv-note" }, translate("conversationSettings.textScale.help")),
+        h14(Field6, { label: translate("conversationSettings.actionScale") }, h14("select", {
           className: "dtv-select",
           value: settings.actionScale,
           disabled: busy,
           onChange: (event) => update({ ...settings, actionScale: Number(event.target.value) })
-        }, ...CONVERSATION_SCALE_OPTIONS.map((scale) => h13("option", { key: scale, value: scale }, `${Math.round(scale * 100)}%`)))),
-        h13("p", { className: "dtv-note" }, translate("conversationSettings.actionScale.help"))
+        }, ...CONVERSATION_SCALE_OPTIONS.map((scale) => h14("option", { key: scale, value: scale }, `${Math.round(scale * 100)}%`)))),
+        h14("p", { className: "dtv-note" }, translate("conversationSettings.actionScale.help"))
       ),
-      h13(
+      h14(
         "div",
         { className: "dtv-settings-footer" },
-        h13("button", { className: "dtv-button", type: "button", disabled: busy, onClick: reset }, translate("conversationSettings.reset"))
+        h14("button", { className: "dtv-button", type: "button", disabled: busy, onClick: reset }, translate("conversationSettings.reset"))
       )
     )
   );
@@ -14064,7 +14357,7 @@ var LOGIC_KEYS = Object.freeze({
   not_all: "world.logic.notAll"
 });
 function RpHighRiskDialog({ onDismiss }) {
-  return h13(
+  return h14(
     "div",
     {
       className: "dtv-modal-backdrop",
@@ -14072,16 +14365,16 @@ function RpHighRiskDialog({ onDismiss }) {
       "aria-modal": "true",
       "aria-labelledby": "dtv-rp-block-body"
     },
-    h13(
+    h14(
       "div",
       { className: "dtv-modal" },
-      h13("p", { id: "dtv-rp-block-body", className: "dtv-modal-body" }, translate("rp.block.body")),
-      h13("button", { className: "dtv-button dtv-primary", type: "button", onClick: onDismiss }, translate("rp.block.dismiss"))
+      h14("p", { id: "dtv-rp-block-body", className: "dtv-modal-body" }, translate("rp.block.body")),
+      h14("button", { className: "dtv-button dtv-primary", type: "button", onClick: onDismiss }, translate("rp.block.dismiss"))
     )
   );
 }
 function ImportFailureDialog({ message, onDismiss }) {
-  return h13(
+  return h14(
     "div",
     {
       className: "dtv-modal-backdrop",
@@ -14090,12 +14383,12 @@ function ImportFailureDialog({ message, onDismiss }) {
       "aria-labelledby": "dtv-import-failure-title",
       "aria-describedby": "dtv-import-failure-body"
     },
-    h13(
+    h14(
       "div",
       { className: "dtv-modal" },
-      h13("h2", { id: "dtv-import-failure-title", className: "dtv-modal-title" }, uiMessage("import.failureTitle")),
-      h13("p", { id: "dtv-import-failure-body", className: "dtv-modal-body" }, rawText(message)),
-      h13("button", { className: "dtv-button dtv-primary", type: "button", onClick: onDismiss }, uiMessage("common.close"))
+      h14("h2", { id: "dtv-import-failure-title", className: "dtv-modal-title" }, uiMessage("import.failureTitle")),
+      h14("p", { id: "dtv-import-failure-body", className: "dtv-modal-body" }, rawText(message)),
+      h14("button", { className: "dtv-button dtv-primary", type: "button", onClick: onDismiss }, uiMessage("common.close"))
     )
   );
 }
@@ -14111,7 +14404,7 @@ function WorkspaceAdmission({ setting, state, error, busy, selectWorkspace, relo
   else if (busy) status = uiMessage("workspaceAdmission.saving");
   else if (unavailable) status = uiMessage("workspaceAdmission.unavailable", { path: setting.current.path });
   else if (candidates.length === 0) status = uiMessage("workspaceAdmission.none");
-  return h13(
+  return h14(
     "div",
     {
       className: "dtv-workspace-admission",
@@ -14119,20 +14412,20 @@ function WorkspaceAdmission({ setting, state, error, busy, selectWorkspace, relo
       "aria-modal": "true",
       "aria-labelledby": "dtv-workspace-admission-title"
     },
-    h13(
+    h14(
       "div",
       { className: "dtv-workspace-admission-card" },
-      h13("h2", { id: "dtv-workspace-admission-title", className: "dtv-workspace-admission-title" }, uiMessage("workspaceAdmission.title")),
-      h13("p", { className: "dtv-workspace-admission-copy" }, uiMessage("workspaceAdmission.body")),
-      status === null ? null : h13("p", {
+      h14("h2", { id: "dtv-workspace-admission-title", className: "dtv-workspace-admission-title" }, uiMessage("workspaceAdmission.title")),
+      h14("p", { className: "dtv-workspace-admission-copy" }, uiMessage("workspaceAdmission.body")),
+      status === null ? null : h14("p", {
         className: "dtv-status",
         "data-error": ["error", "verify-error", "save-error"].includes(state) || unavailable,
         role: ["error", "verify-error", "save-error"].includes(state) ? "alert" : "status"
       }, status),
-      candidates.length === 0 ? null : h13(
+      candidates.length === 0 ? null : h14(
         "div",
         { className: "dtv-workspace-admission-list" },
-        ...candidates.map((item) => h13(
+        ...candidates.map((item) => h14(
           "button",
           {
             key: item.id,
@@ -14143,68 +14436,75 @@ function WorkspaceAdmission({ setting, state, error, busy, selectWorkspace, relo
             "aria-label": uiMessage("workspaceAdmission.choose", { name: item.title }),
             onClick: () => selectWorkspace(item.path)
           },
-          h13(
+          h14(
             "span",
             { className: "dtv-workspace-admission-choice-copy" },
-            h13("span", { className: "dtv-workspace-admission-choice-title" }, rawText(item.title)),
-            h13("span", { className: "dtv-workspace-admission-choice-path" }, rawText(item.path))
+            h14("span", { className: "dtv-workspace-admission-choice-title" }, rawText(item.title)),
+            h14("span", { className: "dtv-workspace-admission-choice-path" }, rawText(item.path))
           ),
-          h13("span", { "aria-hidden": "true" }, "\u2192")
+          h14("span", { "aria-hidden": "true" }, "\u2192")
         ))
       ),
-      h13(
+      h14(
         "div",
         { className: "dtv-workspace-admission-actions" },
-        h13("button", { type: "button", className: "dtv-button", disabled: busy, onClick: reload }, uiMessage("workspaceAdmission.retry")),
-        h13("button", { type: "button", className: "dtv-button dtv-primary", disabled: busy, onClick: returnToNative }, uiMessage("workspaceAdmission.native"))
+        h14("button", { type: "button", className: "dtv-button", disabled: busy, onClick: reload }, uiMessage("workspaceAdmission.retry")),
+        h14("button", { type: "button", className: "dtv-button dtv-primary", disabled: busy, onClick: returnToNative }, uiMessage("workspaceAdmission.native"))
       )
     )
   );
 }
-function TavernShell({ useSessions, useWorkspaces, createCleanSession, createConfiguredPlaythrough, playClient, playSlots, chromeService }) {
-  const [menuOpen, setMenuOpen] = (0, import_react17.useState)(false);
-  const [surface, setSurface] = (0, import_react17.useState)(null);
-  const [anchor, setAnchor] = (0, import_react17.useState)(initialLauncherAnchor);
-  const [chromeMode, setChromeMode] = (0, import_react17.useState)(() => chromeService.getMode());
-  const [chromeAnimation, setChromeAnimation] = (0, import_react17.useState)(0);
-  const [chromeError, setChromeError] = (0, import_react17.useState)("");
-  const [activeSnapshot, setActiveSnapshot] = (0, import_react17.useState)(null);
-  const [statusError, setStatusError] = (0, import_react17.useState)("");
-  const [uiSettings, setUiSettings] = (0, import_react17.useState)(getClientUiSettings);
-  const [conversationSettings, setConversationSettings] = (0, import_react17.useState)(getClientConversationSettings);
-  const [conversationSettingsStatus, setConversationSettingsStatus] = (0, import_react17.useState)({ text: translate("conversationSettings.saved"), error: false });
-  const [conversationSettingsBusy, setConversationSettingsBusy] = (0, import_react17.useState)(false);
-  const [settingsStatus, setSettingsStatus] = (0, import_react17.useState)({ text: translate("settings.saved"), error: false });
-  const [settingsBusy, setSettingsBusy] = (0, import_react17.useState)(false);
-  const [rpPolicyDraft, setRpPolicyDraft] = (0, import_react17.useState)("");
-  const [rpPolicyLoaded, setRpPolicyLoaded] = (0, import_react17.useState)(false);
-  const [rpPolicyBusy, setRpPolicyBusy] = (0, import_react17.useState)(false);
-  const [rpWorkspaceSetting, setRpWorkspaceSetting] = (0, import_react17.useState)(null);
-  const [rpWorkspaceLoadState, setRpWorkspaceLoadState] = (0, import_react17.useState)("idle");
-  const [rpWorkspaceError, setRpWorkspaceError] = (0, import_react17.useState)("");
-  const [rpWorkspaceBusy, setRpWorkspaceBusy] = (0, import_react17.useState)(false);
-  const rpWorkspaceBusyRef = (0, import_react17.useRef)(false);
-  const rpWorkspaceLoadGeneration = (0, import_react17.useRef)(0);
-  const [rpAlert, setRpAlert] = (0, import_react17.useState)(null);
-  const [importFailure, setImportFailure] = (0, import_react17.useState)(null);
-  const drag = (0, import_react17.useRef)(null);
-  const suppressClick = (0, import_react17.useRef)(false);
-  const chromeController = (0, import_react17.useRef)(null);
-  const statusGeneration = (0, import_react17.useRef)(0);
-  const rpAlertRef = (0, import_react17.useRef)(null);
-  const dismissedRpAlerts = (0, import_react17.useRef)(/* @__PURE__ */ new Set());
+function TavernShell({ useSessions, useWorkspaces, createCleanSession, createConfiguredPlaythrough, playClient, playSlots, chromeService, diagnostics }) {
+  const [menuOpen, setMenuOpen] = (0, import_react18.useState)(false);
+  const [surface, setSurface] = (0, import_react18.useState)(null);
+  const [diagnosticPlaythroughId, setDiagnosticPlaythroughId] = (0, import_react18.useState)(null);
+  const diagnosticSnapshot = (0, import_react18.useSyncExternalStore)(diagnostics.subscribe, diagnostics.getSnapshot);
+  (0, import_react18.useEffect)(() => diagnostics.subscribeOpen((playthroughId) => {
+    setMenuOpen(false);
+    setDiagnosticPlaythroughId(playthroughId);
+    setSurface("diagnostics");
+  }), [diagnostics]);
+  const [anchor, setAnchor] = (0, import_react18.useState)(initialLauncherAnchor);
+  const [chromeMode, setChromeMode] = (0, import_react18.useState)(() => chromeService.getMode());
+  const [chromeAnimation, setChromeAnimation] = (0, import_react18.useState)(0);
+  const [chromeError, setChromeError] = (0, import_react18.useState)("");
+  const [activeSnapshot, setActiveSnapshot] = (0, import_react18.useState)(null);
+  const [statusError, setStatusError] = (0, import_react18.useState)("");
+  const [uiSettings, setUiSettings] = (0, import_react18.useState)(getClientUiSettings);
+  const [conversationSettings, setConversationSettings] = (0, import_react18.useState)(getClientConversationSettings);
+  const [conversationSettingsStatus, setConversationSettingsStatus] = (0, import_react18.useState)({ text: translate("conversationSettings.saved"), error: false });
+  const [conversationSettingsBusy, setConversationSettingsBusy] = (0, import_react18.useState)(false);
+  const [settingsStatus, setSettingsStatus] = (0, import_react18.useState)({ text: translate("settings.saved"), error: false });
+  const [settingsBusy, setSettingsBusy] = (0, import_react18.useState)(false);
+  const [rpPolicyDraft, setRpPolicyDraft] = (0, import_react18.useState)("");
+  const [rpPolicyLoaded, setRpPolicyLoaded] = (0, import_react18.useState)(false);
+  const [rpPolicyBusy, setRpPolicyBusy] = (0, import_react18.useState)(false);
+  const [rpWorkspaceSetting, setRpWorkspaceSetting] = (0, import_react18.useState)(null);
+  const [rpWorkspaceLoadState, setRpWorkspaceLoadState] = (0, import_react18.useState)("idle");
+  const [rpWorkspaceError, setRpWorkspaceError] = (0, import_react18.useState)("");
+  const [rpWorkspaceBusy, setRpWorkspaceBusy] = (0, import_react18.useState)(false);
+  const rpWorkspaceBusyRef = (0, import_react18.useRef)(false);
+  const rpWorkspaceLoadGeneration = (0, import_react18.useRef)(0);
+  const [rpAlert, setRpAlert] = (0, import_react18.useState)(null);
+  const [importFailure, setImportFailure] = (0, import_react18.useState)(null);
+  const drag = (0, import_react18.useRef)(null);
+  const suppressClick = (0, import_react18.useRef)(false);
+  const chromeController = (0, import_react18.useRef)(null);
+  const statusGeneration = (0, import_react18.useRef)(0);
+  const rpAlertRef = (0, import_react18.useRef)(null);
+  const dismissedRpAlerts = (0, import_react18.useRef)(/* @__PURE__ */ new Set());
   const sessionId = useSessions((state) => state.current);
   const sessionBlank = useSessions((state) => state.current === void 0 || state.current === null ? true : state.byId?.[state.current]?.blank === true);
   const workspaceId = useWorkspaces((state) => workspaceTargetId(state, sessionId));
   const workspaceItems = useWorkspaces((state) => state.items);
-  const hasConversationHistory = (0, import_react17.useCallback)(async (targetSessionId) => {
+  const hasConversationHistory = (0, import_react18.useCallback)(async (targetSessionId) => {
     const messages = await playClient.getMessages(targetSessionId);
     return sessionHasConversationHistory(messages);
   }, [playClient]);
   const close = () => setSurface(null);
   if (rpAlert === null || dismissedRpAlerts.current.has(rpAlert.id)) rpAlertRef.current = null;
   else rpAlertRef.current = rpAlert;
-  (0, import_react17.useEffect)(() => {
+  (0, import_react18.useEffect)(() => {
     const commitChrome = (snapshot) => {
       setChromeMode(snapshot.mode);
       playSlots.setMode(snapshot.mode);
@@ -14230,7 +14530,7 @@ function TavernShell({ useSessions, useWorkspaces, createCleanSession, createCon
       unsubscribe();
     };
   }, [chromeService, playSlots]);
-  (0, import_react17.useEffect)(() => {
+  (0, import_react18.useEffect)(() => {
     let active = true;
     uiSettingsRequest().then((next) => {
       if (!active) return;
@@ -14245,7 +14545,7 @@ function TavernShell({ useSessions, useWorkspaces, createCleanSession, createCon
       active = false;
     };
   }, []);
-  (0, import_react17.useEffect)(() => {
+  (0, import_react18.useEffect)(() => {
     let active = true;
     conversationSettingsRequest().then((next) => {
       if (!active) return;
@@ -14341,7 +14641,7 @@ function TavernShell({ useSessions, useWorkspaces, createCleanSession, createCon
       setConversationSettingsBusy(false);
     }
   };
-  (0, import_react17.useEffect)(() => {
+  (0, import_react18.useEffect)(() => {
     if (surface !== "settings") return void 0;
     let active = true;
     setRpPolicyLoaded(false);
@@ -14357,7 +14657,7 @@ function TavernShell({ useSessions, useWorkspaces, createCleanSession, createCon
       active = false;
     };
   }, [surface]);
-  const refreshRpWorkspace = (0, import_react17.useCallback)(async () => {
+  const refreshRpWorkspace = (0, import_react18.useCallback)(async () => {
     const generation = ++rpWorkspaceLoadGeneration.current;
     setRpWorkspaceLoadState("loading");
     setRpWorkspaceError("");
@@ -14376,12 +14676,12 @@ function TavernShell({ useSessions, useWorkspaces, createCleanSession, createCon
     }
   }, [playClient, workspaceItems]);
   const needsRpWorkspace = chromeMode === "play" || surface === "settings";
-  (0, import_react17.useEffect)(() => {
+  (0, import_react18.useEffect)(() => {
     if (!needsRpWorkspace) return void 0;
     refreshRpWorkspace();
     return void 0;
   }, [needsRpWorkspace, refreshRpWorkspace]);
-  (0, import_react17.useEffect)(() => {
+  (0, import_react18.useEffect)(() => {
     if (surface !== "settings" || rpWorkspaceLoadState !== "error") return;
     setSettingsStatus({ text: translate("settings.loadError", { message: rpWorkspaceError }), error: true });
   }, [rpWorkspaceError, rpWorkspaceLoadState, surface]);
@@ -14453,7 +14753,7 @@ function TavernShell({ useSessions, useWorkspaces, createCleanSession, createCon
       setRpPolicyBusy(false);
     }
   };
-  const refreshStatus = (0, import_react17.useCallback)(async () => {
+  const refreshStatus = (0, import_react18.useCallback)(async () => {
     const generation = ++statusGeneration.current;
     try {
       const next = await activeView(sessionId);
@@ -14465,7 +14765,7 @@ function TavernShell({ useSessions, useWorkspaces, createCleanSession, createCon
       setStatusError(reason instanceof Error ? reason.message : String(reason));
     }
   }, [sessionId]);
-  (0, import_react17.useEffect)(() => {
+  (0, import_react18.useEffect)(() => {
     statusGeneration.current += 1;
     setActiveSnapshot(null);
     setStatusError("");
@@ -14474,12 +14774,12 @@ function TavernShell({ useSessions, useWorkspaces, createCleanSession, createCon
       statusGeneration.current += 1;
     };
   }, [refreshStatus, sessionId]);
-  (0, import_react17.useEffect)(() => {
+  (0, import_react18.useEffect)(() => {
     const onRefresh = () => refreshStatus();
     window.addEventListener(CLIENT_REFRESH_EVENT, onRefresh);
     return () => window.removeEventListener(CLIENT_REFRESH_EVENT, onRefresh);
   }, [refreshStatus]);
-  (0, import_react17.useEffect)(() => {
+  (0, import_react18.useEffect)(() => {
     const onResize = () => setAnchor((current3) => {
       const next = clampLauncherAnchor(current3, viewport(), uiSettings.scale);
       persistLauncherAnchor(next);
@@ -14488,14 +14788,14 @@ function TavernShell({ useSessions, useWorkspaces, createCleanSession, createCon
     window.addEventListener("resize", onResize);
     return () => window.removeEventListener("resize", onResize);
   }, [uiSettings.scale]);
-  (0, import_react17.useEffect)(() => {
+  (0, import_react18.useEffect)(() => {
     setAnchor((current3) => {
       const next = clampLauncherAnchor(current3, viewport(), uiSettings.scale);
       persistLauncherAnchor(next);
       return next;
     });
   }, [uiSettings.scale]);
-  (0, import_react17.useEffect)(() => {
+  (0, import_react18.useEffect)(() => {
     if (typeof sessionId !== "string" || sessionId === "") {
       dismissedRpAlerts.current = /* @__PURE__ */ new Set();
       rpAlertRef.current = null;
@@ -14531,7 +14831,7 @@ function TavernShell({ useSessions, useWorkspaces, createCleanSession, createCon
     } catch {
     }
   };
-  (0, import_react17.useEffect)(() => {
+  (0, import_react18.useEffect)(() => {
     const onImportFailure = (event) => {
       const message = typeof event?.detail?.message === "string" ? event.detail.message.trim() : "";
       if (message !== "") setImportFailure(message.slice(0, 1e3));
@@ -14539,7 +14839,7 @@ function TavernShell({ useSessions, useWorkspaces, createCleanSession, createCon
     window.addEventListener(CLIENT_IMPORT_FAILURE_EVENT, onImportFailure);
     return () => window.removeEventListener(CLIENT_IMPORT_FAILURE_EVENT, onImportFailure);
   }, []);
-  (0, import_react17.useEffect)(() => {
+  (0, import_react18.useEffect)(() => {
     const onKeyDown = (event) => {
       if (event.key !== "Escape") return;
       if (importFailure !== null) setImportFailure(null);
@@ -14600,13 +14900,14 @@ function TavernShell({ useSessions, useWorkspaces, createCleanSession, createCon
   };
   const switchChrome = () => chromeController.current?.switchMode();
   const open = (id) => {
+    if (id === "diagnostics") setDiagnosticPlaythroughId(null);
     setMenuOpen(false);
     setSurface(id);
     window.dispatchEvent(new Event(CLIENT_REFRESH_EVENT));
   };
   let panel = null;
   if (surface === "preset") {
-    panel = h13("div", { className: "dtv-panel" }, h13(PresetSidebar, {
+    panel = h14("div", { className: "dtv-panel" }, h14(PresetSidebar, {
       closePanel: close,
       openPanel: () => {
       },
@@ -14615,7 +14916,7 @@ function TavernShell({ useSessions, useWorkspaces, createCleanSession, createCon
       autoOpen: false
     }));
   } else if (surface === "character") {
-    panel = h13(CharacterPanel, {
+    panel = h14(CharacterPanel, {
       sessionId,
       sessionBlank,
       hasConversationHistory,
@@ -14623,13 +14924,13 @@ function TavernShell({ useSessions, useWorkspaces, createCleanSession, createCon
       close
     });
   } else if (surface === "regex" && chromeMode === "play") {
-    panel = h13(RegexPanel, { client: playClient, activeSnapshot, close });
+    panel = h14(RegexPanel, { client: playClient, activeSnapshot, close });
   } else if (surface === "world-info") {
-    panel = h13(WorldBookPanel, { sessionId, close });
+    panel = h14(WorldBookPanel, { sessionId, close });
   } else if (surface === "user") {
-    panel = h13(UserPanel, { sessionId, sessionBlank, close });
+    panel = h14(UserPanel, { sessionId, sessionBlank, close });
   } else if (surface === "session-template") {
-    panel = h13(SessionTemplatePanel, {
+    panel = h14(SessionTemplatePanel, {
       sessionId,
       workspaceId,
       chromeMode,
@@ -14638,7 +14939,7 @@ function TavernShell({ useSessions, useWorkspaces, createCleanSession, createCon
       close
     });
   } else if (surface === "conversation-settings" && chromeMode === "play") {
-    panel = h13(ConversationSettingsPanel, {
+    panel = h14(ConversationSettingsPanel, {
       settings: conversationSettings,
       status: conversationSettingsStatus,
       busy: conversationSettingsBusy,
@@ -14646,8 +14947,10 @@ function TavernShell({ useSessions, useWorkspaces, createCleanSession, createCon
       update: persistConversationSettings,
       reset: resetConversationSettings
     });
+  } else if (surface === "diagnostics") {
+    panel = h14(WorkspaceDiagnosticsPanel, { controller: diagnostics, playthroughId: diagnosticPlaythroughId, showAll: () => setDiagnosticPlaythroughId(null), close });
   } else if (surface === "settings") {
-    panel = h13(SettingsPanel, {
+    panel = h14(SettingsPanel, {
       settings: uiSettings,
       status: settingsStatus,
       busy: settingsBusy,
@@ -14670,13 +14973,13 @@ function TavernShell({ useSessions, useWorkspaces, createCleanSession, createCon
   const chromeSwitchLabel = chromeMode === "play" ? uiMessage("chrome.switchToNative") : uiMessage("chrome.switchToPlay");
   const chromeStatusLabel = chromeMode === "play" ? uiMessage("chrome.currentPlay") : uiMessage("chrome.currentNative");
   const workspaceAdmissionOpen = chromeMode === "play" && rpWorkspaceLoadState !== "idle" && rpWorkspaceLoadState !== "loading" && rpWorkspaceSetting?.ready !== true;
-  return h13(
+  return h14(
     "div",
     { className: "dtv-layer", lang: uiSettings.locale, "data-chrome": chromeMode, "data-surface-open": surface !== null, style: { "--dtv-ui-scale": uiSettings.scale } },
     panel,
-    importFailure === null ? null : h13(ImportFailureDialog, { message: importFailure, onDismiss: () => setImportFailure(null) }),
-    rpAlert === null ? null : h13(RpHighRiskDialog, { onDismiss: dismissRpAlert }),
-    workspaceAdmissionOpen ? h13(WorkspaceAdmission, {
+    importFailure === null ? null : h14(ImportFailureDialog, { message: importFailure, onDismiss: () => setImportFailure(null) }),
+    rpAlert === null ? null : h14(RpHighRiskDialog, { onDismiss: dismissRpAlert }),
+    workspaceAdmissionOpen ? h14(WorkspaceAdmission, {
       setting: rpWorkspaceSetting,
       state: rpWorkspaceLoadState,
       error: rpWorkspaceError,
@@ -14685,7 +14988,7 @@ function TavernShell({ useSessions, useWorkspaces, createCleanSession, createCon
       reload: refreshRpWorkspace,
       returnToNative: switchChrome
     }) : null,
-    h13(
+    h14(
       "div",
       {
         className: "dtv-launcher",
@@ -14694,7 +14997,7 @@ function TavernShell({ useSessions, useWorkspaces, createCleanSession, createCon
         "data-vertical": placement.vertical,
         style: { left: placement.left / uiSettings.scale, top: placement.top / uiSettings.scale }
       },
-      h13("div", { className: "dtv-ball-row" }, h13(
+      h14("div", { className: "dtv-ball-row" }, h14(
         "button",
         {
           className: "dtv-ball",
@@ -14709,14 +15012,14 @@ function TavernShell({ useSessions, useWorkspaces, createCleanSession, createCon
           onClick: clickLauncher,
           onContextMenu: contextSwitchLauncher
         },
-        h13("span", { key: chromeAnimation, className: "dtv-ball-face", "data-animate": chromeAnimation > 0, "aria-hidden": "true" }),
-        h13("span", { className: "dtv-ball-label" }, "DT")
+        h14("span", { key: chromeAnimation, className: "dtv-ball-face", "data-animate": chromeAnimation > 0, "aria-hidden": "true" }),
+        h14("span", { className: "dtv-ball-label" }, "DT")
       )),
-      h13(
+      h14(
         "div",
         { className: "dtv-menu", role: "menu" },
-        h13("div", { className: "dtv-menu-title", "aria-live": "polite" }, chromeError === "" && statusError === "" ? uiMessage("nav.menuTitle", { session: sessionId || translate("nav.session.none") }) : uiMessage("nav.syncFailed", { message: chromeError || statusError })),
-        h13(
+        h14("div", { className: "dtv-menu-title", "aria-live": "polite" }, chromeError === "" && statusError === "" ? uiMessage("nav.menuTitle", { session: sessionId || translate("nav.session.none") }) : uiMessage("nav.syncFailed", { message: chromeError || statusError })),
+        h14(
           "button",
           {
             className: "dtv-menu-item",
@@ -14727,23 +15030,24 @@ function TavernShell({ useSessions, useWorkspaces, createCleanSession, createCon
             "data-show-binding": false,
             onClick: switchChrome
           },
-          h13("span", { "aria-hidden": "true" }, "\u2194"),
-          h13(
+          h14("span", { "aria-hidden": "true" }, "\u2194"),
+          h14(
             "span",
             { className: "dtv-item-copy" },
-            h13("span", { className: "dtv-item-label" }, chromeSwitchLabel),
-            h13("span", { className: "dtv-item-status" }, chromeStatusLabel)
+            h14("span", { className: "dtv-item-label" }, chromeSwitchLabel),
+            h14("span", { className: "dtv-item-status" }, chromeStatusLabel)
           ),
-          h13("span", { className: "dtv-item-planned" }, chromeMode === "play" ? "ST" : "DSH")
+          h14("span", { className: "dtv-item-planned" }, chromeMode === "play" ? "ST" : "DSH")
         ),
         ...TAVERN_MENU_ITEMS.filter((item) => !item.playOnly || chromeMode === "play").map((item) => {
-          const status = statuses[item.id] ?? { bound: false, count: 0, titleKey: item.emptyTitleKey };
+          const isDiagnostics = item.id === "diagnostics";
+          const status = isDiagnostics ? { bound: false, count: diagnosticSnapshot.issues.length, titleKey: diagnosticSnapshot.loading ? "diagnostics.loading" : item.emptyTitleKey } : statuses[item.id] ?? { bound: false, count: 0, titleKey: item.emptyTitleKey };
           const itemLabel = unwrapText(uiMessage(item.labelKey));
           const statusTitle = status.bound ? status.title : unwrapText(uiMessage(status.titleKey ?? item.emptyTitleKey));
           const stateLabel = item.binding === false ? "" : unwrapText(uiMessage(status.bound ? "common.bound" : "common.unbound"));
           const titleText = stateLabel ? uiMessage("nav.itemTitleBound", { label: itemLabel, title: statusTitle, state: stateLabel }) : uiMessage("nav.itemTitle", { label: itemLabel, title: statusTitle });
           const ariaText = stateLabel ? uiMessage("nav.itemAriaBound", { label: itemLabel, title: statusTitle, state: stateLabel }) : uiMessage("nav.itemAria", { label: itemLabel, title: statusTitle });
-          return h13(
+          return h14(
             "button",
             {
               className: "dtv-menu-item",
@@ -14759,14 +15063,14 @@ function TavernShell({ useSessions, useWorkspaces, createCleanSession, createCon
               "aria-label": ariaText,
               onClick: () => open(item.id)
             },
-            item.binding === false ? h13("span", { "aria-hidden": "true" }) : h13("span", { className: "dtv-binding-dot", "aria-hidden": "true" }),
-            h13(
+            item.binding === false ? h14("span", { "aria-hidden": "true" }) : h14("span", { className: "dtv-binding-dot", "aria-hidden": "true" }),
+            h14(
               "span",
               { className: "dtv-item-copy" },
-              h13("span", { className: "dtv-item-label" }, uiMessage(item.labelKey)),
-              h13("span", { className: "dtv-item-status" }, status.bound ? rawText(status.title) : uiMessage(status.titleKey ?? item.emptyTitleKey))
+              h14("span", { className: "dtv-item-label" }, uiMessage(item.labelKey)),
+              h14("span", { className: "dtv-item-status" }, status.bound ? rawText(status.title) : uiMessage(status.titleKey ?? item.emptyTitleKey))
             ),
-            status.count > 1 ? h13("span", { className: "dtv-item-count", "aria-label": uiMessage("nav.bookCount", { count: status.count }) }, uiMessage("nav.bookCount", { count: status.count })) : item.available ? null : h13("span", { className: "dtv-item-planned" }, uiMessage("common.planned"))
+            status.count >= (isDiagnostics ? 1 : 2) ? h14("span", { className: "dtv-item-count", "aria-label": uiMessage(isDiagnostics ? "diagnostics.count" : "nav.bookCount", { count: status.count }) }, uiMessage(isDiagnostics ? "diagnostics.count" : "nav.bookCount", { count: status.count })) : item.available ? null : h14("span", { className: "dtv-item-planned" }, uiMessage("common.planned"))
           );
         })
       )
@@ -14777,7 +15081,7 @@ function installStyles5() {
   if (document.querySelector(`style[data-plugin-css="${PLUGIN_ID}-shell"]`) !== null) return;
   const style = document.createElement("style");
   style.dataset.pluginCss = `${PLUGIN_ID}-shell`;
-  style.textContent = css11;
+  style.textContent = css11 + diagnosticsCss;
   document.head.append(style);
 }
 var name = PLUGIN_ID;
@@ -14791,6 +15095,23 @@ function apply2(ctx, { conversationPhase: conversationPhase2 }) {
   installStyles5();
   registerTavernTraceView(ctx);
   const playClient = createLivePlayClient();
+  let diagnosticStorage;
+  try {
+    diagnosticStorage = window.sessionStorage;
+  } catch {
+  }
+  const diagnostics = createWorkspaceDiagnostics(playClient, { storage: diagnosticStorage });
+  ctx.effect(() => {
+    const refresh = () => {
+      void diagnostics.refresh();
+    };
+    window.addEventListener(CLIENT_REFRESH_EVENT, refresh);
+    refresh();
+    return () => {
+      window.removeEventListener(CLIENT_REFRESH_EVENT, refresh);
+      diagnostics.dispose();
+    };
+  }, "dsh-tavern: workspace diagnostics");
   const playthroughController = createPlaythroughController(playClient);
   const chrome = createChromeModeServiceCore({
     read: () => playClient.getChrome(),
@@ -14810,6 +15131,7 @@ function apply2(ctx, { conversationPhase: conversationPhase2 }) {
   }, "dsh-tavern: chrome mode service transport");
   const playSlots = installPlaySlotOccupancy(ctx, playClient, {
     conversationPhase: conversationPhase2,
+    diagnostics,
     playthroughController,
     switchToNative: () => chrome.face.setMode("native")
   });
@@ -14819,6 +15141,7 @@ function apply2(ctx, { conversationPhase: conversationPhase2 }) {
     order: 80,
     inject: () => ({
       playClient,
+      diagnostics,
       chromeService: chrome.face,
       playSlots,
       createCleanSession: ({ workspaceId, source }) => createCleanSessionWorkflow({
