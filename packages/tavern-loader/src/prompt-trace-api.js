@@ -26,8 +26,10 @@ export function createPromptTraceApi({ assemblies, legacyStore }) {
       const id = sessionId(decodeURIComponent(match[1]))
       if (!match[2]) {
         const current = assemblies.list(id)
-        const keys = new Set(current.map(r => `${r.turn}:${r.step}:${r.attempt}`))
-        const historical = legacy(id).filter(r => !keys.has(`${r.turn}:${r.step}:${r.attempt}`)).map(({ audit, ...r }) => r)
+        // Either store may reuse attempt-based IDs after eviction, even within
+        // one clock tick. Only a shared capture UUID establishes identity.
+        const keys = new Set(current.flatMap(r => typeof r.legacyCaptureId === 'string' ? [r.legacyCaptureId] : []))
+        const historical = legacy(id).filter(r => !keys.has(r.audit.captureId)).map(({ audit, ...r }) => r)
         return sendJson(res, 200, { ok: true, sessionId: id, records: [...historical, ...current].sort((a, b) => a.recordedAt - b.recordedAt), storage: assemblies.storage() })
       }
       const recordId = decodeURIComponent(match[2])

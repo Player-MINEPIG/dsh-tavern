@@ -18,7 +18,7 @@ pmp-dsh-tavern 不是用另一套界面取代 DSH，也不会复制一份会话�
 - **魔丸 / RP 模式**：按角色卡与周目重组 RP 侧栏，提供开场白、显示正则、swipe、分支、回退、导入与导出；
 - **DSH 仍是权威**：durable history、工具、权限和最终模型请求继续由 DSH 拥有；
 - **最小程度改动，最大程度兼容**：优先复用 DSH 公开机制，不替换原生前端，不依赖私有 DOM；
-- **卸载后仍可阅读原始会话**：插件只保存资源、选择、周目指针与显示元数据，不伪造或覆盖 DSH 历史。
+- **卸载后仍可阅读原始会话**：插件保存资源、选择、周目指针、显示元数据与有界的派生提示词快照，不伪造或覆盖 DSH 历史。
 
 双模式本身就是兼容方案：不进入魔丸时，用户看到的仍是普通 DSH；只有进入 RP 模式后，插件才挂载自己的 RP 表面。
 
@@ -28,7 +28,7 @@ pmp-dsh-tavern 不是用另一套界面取代 DSH，也不会复制一份会话�
 
 - **Agent 与工具风险**：预设、角色卡、世界书、外部记录和用户消息都可能包含 prompt injection。高权限 Agent 仍可能在模型诱导下调用获准的终端、文件、网络、浏览器或其他插件能力；不要在对话中提供密钥，保留 DSH 审批与沙箱，并按最小权限启用工具。
 - **RP 安全模式边界**：RP 模式会在 DSH 权限之上增加只读与高风险工具限制，子 agent 也继承该叠加，但它不是虚拟机、容器或系统沙箱，不能约束本机其他进程，也不能把恶意提示词变成可信内容。
-- **后端与 API 风险**：v1/v2 API 面向本机 loopback，Host、Origin 和 Content-Type 检查不是登录认证，本机恶意进程仍可能访问。不要把 DSH Web 或本插件 API 直接暴露到局域网或公网；反向代理必须自行增加 TLS、认证和可信 Host 配置。
+- **后端与 API 风险**：v1/v2/v3 API 面向本机 loopback，Host、Origin 和 Content-Type 检查不是登录认证，本机恶意进程仍可能访问。不要把 DSH Web 或本插件 API 直接暴露到局域网或公网；反向代理必须自行增加 TLS、认证和可信 Host 配置。
 - **前端渲染风险**：模型输出经过 Markdown 与 DOMPurify 净化，但允许的远程图片或样式仍可能发起网络请求并暴露访问者 IP。显示正则使用 JavaScript `RegExp`，灾难性回溯可能冻结页面；只导入和启用你信任的模板与正则。
 - **数据与生命周期风险**：swipe、分支和周目会创建真实 DSH session，并可能增加磁盘占用。revision/CAS、路径检查和原子写入不能替代备份，也不能把多个 API 组合变成跨文件事务。
 
@@ -40,7 +40,9 @@ pmp-dsh-tavern 不是用另一套界面取代 DSH，也不会复制一份会话�
 
 ### 0. 安装
 
-环境要求：Node.js 20 或更高版本、可从 `PATH` 调用的 DSH，以及一个已经初始化的 DSH profile（默认 `web`）。
+下列命令安装已发布/main 版本；验收尚未发布的本候选，请使用[候选安装步骤](docs/INSTALLATION.md#trace-230-candidate)。
+
+目标 DSH `0.1.5-rc.1` 要求 Node.js `^22.19.0 || >=24.0.0`，另需可从 `PATH` 调用的 DSH 和已初始化的 profile（默认 `web`）。Tavern 独立测试兼容 Node 20，不代表目标 Host 可运行在 Node 20。
 
 ```sh
 dsh plugin --profile web add github:Player-MINEPIG/dsh-tavern

@@ -1,8 +1,46 @@
 # 2.3.0 Trace candidate acceptance
 
-Implementation candidate; no manual acceptance, merge, tag, or release yet.
+Implementation candidate; manual use and reported-fix verification have taken place, but the complete checklist below is not yet signed off. No merge, tag, or release.
 Branch: `codex/trace-api-v3`, created from main. The former composer v3 branch was
 not merged. [中文](TRACE_REVIEW.md) · [API and design](PROMPT_API_V3_en.md)
+
+## Pre-release checks — 2026-09-18
+
+These are the latest results after the fixes below. Lower counts in later sections
+are historical evidence from earlier delivery stages.
+
+- Fix false index deduplication when independent v1/v3 retention reuses request
+  counters. New v1 `captureId` and v3 `legacyCaptureId` associate one capture without
+  changing v1 IDs/routes; omitted bodies retain the link. Old unlinked metadata and
+  snapshots are conservatively retained and may both appear. Regression tests cover
+  both eviction directions, equal-clock collisions and restart, without guessed identity.
+- Clear stale null-tags diagnostics after editing tags to a valid array; unrelated
+  edits preserve the compatibility diagnostic.
+- `npm run check`: 580 tests, 578 passes, zero failures, two existing skips. Real rc.1
+  AgentLoop and migration codecs enabled. Skips are the external private-card fixture
+  and opt-in live v2 test. The latter ran separately against a real Host: 16/16 passes.
+  `npm run verify:2.0`, build and 202-file package checks passed.
+  `npm audit --omit=dev`: zero known vulnerabilities; dependencies unchanged.
+- Browser checks verified configuration-first Trace, independent lore/Loader disclosures,
+  literal HTML source display, and disabled greeting arrows in a blank run with no
+  available greeting. No warn/error on the Host page. All 19 rich-text browser fixture
+  checks passed, including style isolation, native disclosure, streaming updates,
+  static export and script blocking. No template JavaScript or variable-runtime support
+  is implied.
+- Reinstalled final code on an isolated DSH 0.1.5-rc.1 Host: capabilities, removed
+  `/sources` 404, three historical bodies and both preset-bearing records are readable.
+  Old unlinked metadata remains explicit. v1 configuration preview leaves indexes and
+  details unchanged; v2 chrome/workspace reads pass.
+- Bilingual installation, usage, security and API documents match the candidate,
+  distinguish stable-tag installation and specify the target Host Node range. Retention
+  is shared across sessions; chat history cannot fully reconstruct evicted provenance.
+
+No unresolved release-blocking defect was found. Actual third-party ordering/rewrite
+integration and real-provider cancellation, timeout and retry combinations remain in
+the manual checklist below. Automated checks do not substitute for those results.
+Trace currently provides recent bounded audit data, not permanent archiving. Broader
+retention and official-log-reference storage are follow-up design discussions, not
+implemented in this candidate. No merge, tag or release.
 
 ## Delivered requirements
 

@@ -184,7 +184,12 @@ test('imports null tags as empty metadata without changing preserved source', ()
     assert.ok(card.compatibility.warnings.some(w => w.code === 'null-tags-as-empty' && w.path === 'data.tags'))
     const edited = editCharacterCard(card, { description: 'Edited description' })
     assert.deepEqual(edited.data.tags, [])
-    assert.deepEqual(editCharacterCard(card, { tags: ['new'] }).data.tags, ['new'])
+    assert.ok(edited.compatibility.warnings.some(w => w.code === 'null-tags-as-empty'))
+    for (const tags of [[], ['new']]) {
+      const corrected = editCharacterCard(card, { tags })
+      assert.deepEqual(corrected.data.tags, tags)
+      assert.ok(!corrected.compatibility.warnings.some(w => w.code === 'null-tags-as-empty'))
+    }
   }
 })
 

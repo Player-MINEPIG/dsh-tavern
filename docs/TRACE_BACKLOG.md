@@ -1,6 +1,6 @@
 # Trace / API v3 implementation backlog
 
-Status: implemented and validated, 2026-09-16; maintainer acceptance pending. Target Host: DSH `dsh-v0.1.5-rc.1`.
+Status: implemented and validated, 2026-09-18; complete maintainer checklist pending. Target Host: DSH `dsh-v0.1.5-rc.1`.
 Branch: `codex/trace-api-v3`, based on main. This replaces the unpublished
 composer-oriented v3 candidate; it does not merge that candidate's ownership API.
 
@@ -44,10 +44,12 @@ native DSH behavior after Tavern unload.
 
 ## Evidence
 
-Full tests: 552 pass / 0 fail / 2 optional skips; real pinned AgentLoop and official
+Latest pre-release full tests: 578 pass / 0 fail / 2 optional skips; real pinned AgentLoop and official
 codecs enabled. Separate live v2 smoke: 16/16. Build, verify:2.0, package boundaries,
 public links and 202 installed files checked. Real Web UI, synthetic requests,
-source inspection, restart and immutable historical reads exercised. See
+source inspection, restart and immutable historical reads exercised. Latest browser
+rich-text fixture: 19/19. Independent-store eviction and equal-clock capture identity
+regressions pass. See
 [acceptance and remaining manual checks](TRACE_REVIEW.md). Local environment
 coordinates, auth tokens and synthetic profile remain outside the repository.
 
@@ -66,3 +68,18 @@ remain the independent v3 contribution. See [scope audit](API.md#api-scope).
   capabilities and example fields. GET returns 404. Update bilingual documents and
   regression tests; retain historical `sections[].sources` and their counts.
 - [x] Document ordered manual acceptance steps and expected results.
+
+## Pre-release retention follow-up — 2026-09-18
+
+- [x] Clarify that all sessions share the byte/count budget and that eviction loses
+  provenance even though official DSH history remains intact. Existing byte settings
+  have hard ceilings; they do not provide permanent archival retention.
+- [ ] Proposed follow-up, not implemented in this candidate: configurable retention
+  policy and visible retained range; per-record storage for longer history without
+  rewriting the complete JSON document on each capture. Set defaults and migration
+  behavior explicitly before implementation.
+
+- [ ] Proposed follow-up, not implemented: resolve verified request text from official
+  versioned Session messages, retaining Tavern provenance metadata separately. Define
+  missing-history, migration and unmatched-assembly behavior; historical pre-expansion
+  source text still requires versioned snapshots if it remains part of the contract.

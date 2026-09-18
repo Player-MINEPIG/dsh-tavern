@@ -306,7 +306,8 @@ export function editCharacterCard(existing, patch, options = {}) {
   next.updatedAt = options.now ?? new Date().toISOString()
   next.compatibility = {
     ...clone(existing.compatibility ?? { warnings: [], unsupportedFeatures: [], unknownMacroNames: [] }),
-    warnings: refreshNameWarning(existing.compatibility?.warnings, next.data.name),
+    warnings: refreshNameWarning(existing.compatibility?.warnings, next.data.name)
+      .filter(item => item?.code !== 'null-tags-as-empty' || rawRoot.tags === null),
     unknownMacroNames: unknownMacros(rawRoot),
   }
   return next

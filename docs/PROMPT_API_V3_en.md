@@ -88,6 +88,13 @@ Session never ran. A record can be evicted between index and detail calls (404).
 steps and retries. `recordedAt` is capture time. Attempts are numbered from retained
 records; use the opaque ID for durable identity after eviction.
 
+New v1 audit records also carry a unique `captureId`. The optional v3 index
+`legacyCaptureId` links that same capture and survives oversized-body omission.
+The two stores can evict independently, so merging never deduplicates by
+turn/step/attempt or the old v1 ID. Older records without a unique capture link
+are conservatively retained: legacy metadata and an assembly snapshot can both
+appear rather than hiding history based on a guessed association.
+
 `step` comes from DSH: continuing with tool results can enter another step within a
 turn. `attempt` counts Tavern captures of `agent/request` for the same
 session/turn/step. DSH higher-level retries emit this event again and can reuse the
@@ -158,8 +165,12 @@ as DSH Session data. Writes are atomic with mode 0600. No credential configurati
 full ordinary chat history, tool arguments, or tool results are stored, and no Trace
 records are injected into model history.
 
-Defaults: 256 records, 2 MiB per record, 16 MiB total. Configure
+All sessions in the storage directory share the defaults: 256 records and 16 MiB
+total, with 2 MiB per record. Configure
 `traceAssemblies.maxRecordBytes` and `maxTotalBytes`; hard ceilings are 4 MiB / 32 MiB.
+The record-count limit is fixed. A turn may have multiple records, so retention
+does not guarantee a number of turns. This is recent bounded audit data, not a
+permanent archive; chat history cannot fully reconstruct evicted provenance.
 Oldest retained records are evicted first. Oversized individual records keep explicit
 `omitted-size-limit` metadata. Corrupt JSON fails visibly during loading. Runtime
 capture/write failures log body-free diagnostics without blocking model requests.

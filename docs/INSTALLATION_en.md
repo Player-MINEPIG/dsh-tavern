@@ -4,7 +4,7 @@ Version `2.2.0` adds `0.1.5-rc.1` compatibility; migrate existing playthroughs u
 
 [中文](INSTALLATION.md)
 
-Status: `2.2.0` (released 2026-09-11), updated on 2026-09-10. DSH `0.1.2-rc.1` and `0.1.5-rc.1` are supported; other versions were not verified in this update and compatibility is not promised. The default root [README](../README.md) is Chinese. The English landing page is [README_en.md](../README_en.md) (no screenshots). This file is the detailed lifecycle, verification, and recovery contract.
+Status: `2.3.0` Trace candidate (unreleased), updated on 2026-09-18. The current published version is `2.2.0`. Candidate runtime acceptance targets DSH `0.1.5-rc.1`; the previously tested `0.1.2-rc.1` path is retained, but new Trace runtime behavior is not certified there. The default root [README](../README.md) is Chinese. The English landing page is [README_en.md](../README_en.md) (no screenshots). This file is the detailed lifecycle, verification, and recovery contract.
 
 The scripts use Node.js as their common entry point and normalize paths for
 Windows, macOS, and Linux. macOS/Linux execute `dsh` directly. Windows safely
@@ -28,11 +28,28 @@ Ordinary users can install the plugin directly from GitHub into the default
 dsh plugin --profile web add github:Player-MINEPIG/dsh-tavern
 ```
 
-To pin this release:
+To pin the published stable release (not the Trace candidate):
 
 ```text
 dsh plugin --profile web add github:Player-MINEPIG/dsh-tavern#v2.2.0
 ```
+
+<a id="trace-230-candidate"></a>
+### Trace 2.3.0 candidate
+
+Use a separate test profile/home. Stop its Host before installing. The candidate
+has no release tag yet; explicitly check out its branch, then install from source:
+
+```sh
+git clone --branch codex/trace-api-v3 https://github.com/Player-MINEPIG/dsh-tavern.git
+cd dsh-tavern
+npm ci --legacy-peer-deps
+node scripts/install.mjs --dsh-home /absolute/path/to/test-home --profile web
+```
+
+Start DSH `0.1.5-rc.1` with that same `DSH_HOME`, then follow the
+[Trace acceptance steps](TRACE_REVIEW_en.md). A CLI upgrade alone does not update
+the plugin installed in a profile. Record `git rev-parse HEAD` for the tested build.
 
 ### DSH provides the official runtime peers
 
@@ -106,21 +123,22 @@ node scripts/install.mjs --dsh-home .\test-envs\review
 
 ## Release verification
 
-Before packaging or installing `2.2.0`, run the existing release verification command (its name remains `verify:2.0`):
+Before packaging or installing this candidate, run the existing release verification command (its name remains `verify:2.0`):
 
 ```text
 npm run verify:2.0
 ```
 
-The command runs five named regression groups for complete history and cursor
-guards; managed-document validation/CAS/focus/path hardening; import
-claim/lineage and privacy-safe lifecycle logs; chrome transport/slot ownership
-and workspace admission; and localization/installer boundaries. It then builds
-the tracked browser bundle and performs `npm pack --dry-run`.
+The command covers Trace v3 and the real AgentLoop, session-coordinate codecs,
+history/cursor guards, managed documents and CAS, import claim/lineage, chrome and
+slot ownership, localization, and installation boundaries. It then builds the
+tracked browser bundle and performs `npm pack --dry-run`.
 
-This command does not replace real-browser review. For multi-tab notification,
-first-run workspace choice, and disable/uninstall fallback against DSH
-`0.1.2-rc.1`, see the [acceptance record and sequence](PLAY_REVIEW_en.md).
+Set `DSH_TAVERN_COMPAT_ROOT` and `DSH_TAVERN_PROMPT_COMPAT_ROOT` to the target DSH
+installation dependency root to enable real runtime checks; without them, those
+checks explicitly skip. Run `npm run check` for the complete suite as well.
+These commands do not replace [Trace runtime/manual acceptance](TRACE_REVIEW_en.md).
+Earlier 0.1.2-rc.1 lifecycle evidence remains in [PLAY_REVIEW](PLAY_REVIEW_en.md).
 
 ## Uninstall
 
@@ -139,7 +157,8 @@ The default source is `<DSH_HOME>/pmp-dsh-tavern/`. It holds presets,
 normalized character cards, PNG cover images under
 `character-artifacts/` when a card was imported from PNG, standalone world books under
 `world-books/`, three-field user resources under
-`users/`, bounded Trace metadata in `tavern-traces.json`, and per-session
+`users/`, bounded Trace metadata in `tavern-traces.json`, bounded potentially
+sensitive prompt snapshots in `tavern-assemblies.json`, and per-session
 resource selections. Copy the whole directory when backing up; copying only
 `presets/` loses other resources, audit metadata and bindings. In particular,
 the same tree holds `state.json`, `character-state.json`,

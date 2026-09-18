@@ -151,11 +151,9 @@ footer 中央的导入按钮可从 SillyTavern JSON/JSONL 绑定外部记录；�
 
 ## 8. Tavern Trace
 
-Tavern Trace 位于 Conversation、Trajectory 同级视图，用来解释某一 turn/step 实际采用了哪些 Tavern 配置。
+Tavern Trace 位于 Conversation、Trajectory 同级视图。每次请求先显示当时的预设、角色卡、用户、世界书、提示词模式、模型和 Tavern 采样配置。下方展开“世界书触发情况”查看命中、拒绝原因和预算；展开“Loader 装配情况”查看官方段落、来源输入、上下文和观察到的系统消息。历史快照不会按当前资源重新计算。
 
-它会显示 preset、角色卡、用户和世界书摘要，世界书配置关键词、本轮匹配关键词、接受/拒绝原因、预算以及 request/header 对齐信息。当前输入提前识别的 metadata 也会与同一轮记录对齐。
-
-Trace 不保存完整 Tavern profile、用户消息、资源正文或工具 schema，也不能替代 DSH 的 `request/header`；后者仍是模型实际请求头的权威记录。Trace 使用有界插件存储，刷新或 Host 重启后可恢复近期记录。
+v3 默认将提示词正文保存在本地有界 `tavern-assemblies.json` 中（同一存储目录的所有会话共用 16 MiB / 256 条上限、单条 2 MiB），包括来源原文和可能含用户输入的上下文；备份、分享时按敏感数据处理。达到总容量或条数上限时淘汰旧快照；单条过大时只留状态。一次对话轮次可能有多条请求记录，因此不保证固定轮数，也不是永久归档。淘汰不删除 DSH 历史，但被淘汰的来源关系无法仅凭聊天历史完整恢复。旧 v1 元数据仍保存在 `tavern-traces.json`。正文缺失或超限会明确标记，不通过查询补造。观察到请求不等于模型响应成功，durable history 与请求头仍以 DSH 为权威。详见 [v3 API 与边界](PROMPT_API_V3.md)。
 
 ## 9. RP 安全模式
 
@@ -191,7 +189,8 @@ session-selections.json        per-session 选择（含 RP 状态）
 user-world-book-bindings.json  用户—世界书关系
 resource-world-book-bindings.json 预设/角色卡—世界书关系
 session-templates.json         配置模板（含 RP 投影）
-tavern-traces.json             有界 Trace 元数据
+tavern-traces.json             旧版有界 Trace 元数据
+tavern-assemblies.json         有界 v3 提示词/来源正文快照（敏感数据）
 ui-settings.json               全局语言、缩放与绑卡跟随 RP
 conversation-settings.json     魔丸正文/开场白与消息动作按钮缩放
 rp-policy.json                 可选的 rp:policy 提示词

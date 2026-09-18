@@ -6,6 +6,8 @@ import { join } from 'node:path'
 import { compileTavernProfile } from '../packages/tavern-loader/src/profile-loader.js'
 import { AssemblyStore } from '../packages/tavern-trace/src/assembly-store.js'
 import { AssemblyRecorder } from '../packages/tavern-trace/src/assembly-recorder.js'
+import { TavernTraceStore } from '../packages/tavern-trace/src/store.js'
+import { TavernTraceRecorder } from '../packages/tavern-trace/src/recorder.js'
 import { createPromptTraceApi } from '../packages/tavern-loader/src/prompt-trace-api.js'
 
 function fixture() {
@@ -149,5 +151,120 @@ test('failures and legacy metadata remain explicit; v3 errors do not disclose in
     const failure = await invoke(failingApi, `${base}/assemblies`)
     assert.equal(failure.status, 500)
     assert.ok(!JSON.stringify(failure).includes('/private/storage/path'))
+  } finally { f.cleanup() }
+})
+
+test('legacy merging keeps the earlier request when v3 eviction resets the same-step counter', async () => {
+  const f = fixture()
+  try {
+    const store = new AssemblyStore(f.directory, { maxRecordBytes: 4096, maxTotalBytes: 4096 })
+    const recorder = new AssemblyRecorder(store)
+    const legacyStore = new TavernTraceStore(f.directory)
+    const legacyRecorder = new TavernTraceRecorder(legacyStore)
+    const snapshot = { systemText: 'PROMPT', callConfig: {}, sections: [], audit: {},
+      officialAssembly: { sections: [{ name: 'test', text: 'PROMPT' }], contexts: [], variables: {} } }
+    const capture = () => {
+      const payload = { agent: { id: 'session' }, turn: 1, step: 1, snapshot }
+      const legacyRecord = legacyRecorder.begin(payload)
+      recorder.begin({ ...payload, legacyRecord })
+      return { legacyRecord, id: recorder.request(request('PROMPT')) }
+    }
+    const first = capture()
+    assert.equal(store.get('session', first.id).attempt, 1)
+    for (const id of ['pressure-1', 'pressure-2']) {
+      store.put({ schemaVersion: 3, id, sessionId: 'other', sections: [{ text: 'x'.repeat(3200) }] })
+    }
+    assert.equal(store.get('session', first.id), null)
+    assert.equal(legacyStore.list('session').length, 1)
+    const second = capture()
+    assert.equal(second.legacyRecord.attempt, 2)
+    assert.equal(store.get('session', second.id).attempt, 1)
+    const restored = new AssemblyStore(f.directory, { maxRecordBytes: 4096, maxTotalBytes: 4096 })
+    const api = createPromptTraceApi({ assemblies: restored, legacyStore })
+    const list = await invoke(api, '/pmp-dsh-tavern/api/v3/sessions/session/assemblies')
+    assert.deepEqual(new Set(list.body.records.map(row => row.id)), new Set([`legacy:${first.legacyRecord.id}`, second.id]))
+    const current = list.body.records.find(row => row.id === second.id)
+    assert.equal(current.legacyCaptureId, second.legacyRecord.captureId)
+    assert.equal('audit' in current, false)
+    assert.ok(!JSON.stringify(list.body).includes('PROMPT'))
+  } finally { f.cleanup() }
+})
+
+test('legacy merging uses captured identity for omitted records and never guesses unlinked records', async () => {
+  const f = fixture()
+  try {
+    const store = new AssemblyStore(f.directory, { maxRecordBytes: 4096, maxTotalBytes: 8192 })
+    const legacyStore = new TavernTraceStore(f.directory)
+    const legacy = { id: '1:1:1', captureId: 'fixed-test-capture', turn: 1, step: 1, attempt: 1, recordedAt: 1 }
+    legacyStore.upsert('session', legacy)
+    const base = { schemaVersion: 3, sessionId: 'session', turn: 1, step: 1, attempt: 1, recordedAt: 1 }
+    store.put({ ...base, id: 'unlinked', audit: {} })
+    let api = createPromptTraceApi({ assemblies: store, legacyStore })
+    let list = await invoke(api, '/pmp-dsh-tavern/api/v3/sessions/session/assemblies')
+    assert.deepEqual(new Set(list.body.records.map(row => row.id)), new Set(['legacy:1:1:1', 'unlinked']))
+    const omitted = store.put({ ...base, id: 'omitted', audit: legacy, sections: [{ text: 'x'.repeat(9000) }] })
+    assert.equal(omitted.contentStatus, 'omitted-size-limit')
+    assert.equal(omitted.legacyCaptureId, legacy.captureId)
+    assert.equal('audit' in omitted, false)
+    api = createPromptTraceApi({ assemblies: new AssemblyStore(f.directory), legacyStore })
+    list = await invoke(api, '/pmp-dsh-tavern/api/v3/sessions/session/assemblies')
+    assert.deepEqual(new Set(list.body.records.map(row => row.id)), new Set(['omitted', 'unlinked']))
+  } finally { f.cleanup() }
+})
+
+async function assertDistinctCaptureAfterReverseEviction(sameTimestamp) {
+  const f = fixture()
+  try {
+    let time = 0
+    const now = () => sameTimestamp ? 7 : ++time
+    let legacyStore = new TavernTraceStore(f.directory, { maxSessions: 1 })
+    let legacyRecorder = new TavernTraceRecorder(legacyStore, { now })
+    const payload = { agent: { id: 'session' }, turn: 1, step: 1, snapshot: assembled() }
+    const first = legacyRecorder.begin(payload)
+    f.recorder.begin({ ...payload, legacyRecord: first })
+    const firstId = f.recorder.request(request(payload.snapshot.systemText))
+    legacyRecorder.finalize(payload.agent, 'request-not-confirmed')
+    legacyRecorder.begin({ ...payload, agent: { id: 'zzz-other' } })
+    assert.equal(legacyStore.list('session').length, 0)
+    if (sameTimestamp) {
+      // Reopen with room for both sessions. Otherwise the one-session store's
+      // tie-breaking policy would immediately evict the new record as well.
+      legacyStore = new TavernTraceStore(f.directory, { maxSessions: 2 })
+      legacyRecorder = new TavernTraceRecorder(legacyStore, { now })
+    }
+    const second = legacyRecorder.begin(payload)
+    assert.equal(first.id, second.id)
+    assert.equal(first.recordedAt === second.recordedAt, sameTimestamp)
+    assert.notEqual(first.captureId, second.captureId)
+    assert.match(first.captureId, /^[0-9a-f-]{36}$/)
+    assert.equal(legacyStore.list('session')[0].captureId, second.captureId)
+    // The second v3 capture never reaches persistence, e.g. after a write error.
+    const api = createPromptTraceApi({ assemblies: new AssemblyStore(f.directory), legacyStore })
+    const list = await invoke(api, '/pmp-dsh-tavern/api/v3/sessions/session/assemblies')
+    assert.deepEqual(new Set(list.body.records.map(row => row.id)), new Set([firstId, `legacy:${second.id}`]))
+    const detail = await invoke(api, `/pmp-dsh-tavern/api/v3/sessions/session/assemblies/legacy%3A${encodeURIComponent(second.id)}`)
+    assert.equal(detail.body.record.audit.captureId, second.captureId)
+  } finally { f.cleanup() }
+}
+
+test('reverse eviction never merges a new legacy capture with an older v3 record using the same ID', async () => {
+  await assertDistinctCaptureAfterReverseEviction(false)
+})
+
+test('capture identity survives eviction and restart even when reused IDs have identical timestamps', async () => {
+  await assertDistinctCaptureAfterReverseEviction(true)
+})
+
+test('historical snapshots without capture UUIDs are never matched by reused ID or timestamp', async () => {
+  const f = fixture()
+  try {
+    const legacyStore = new TavernTraceStore(f.directory)
+    const legacy = { id: '1:1:1', turn: 1, step: 1, attempt: 1, recordedAt: 1 }
+    legacyStore.upsert('session', legacy)
+    f.store.put({ schemaVersion: 3, sessionId: 'session', id: 'historical-v3',
+      turn: 1, step: 1, attempt: 1, recordedAt: 1, audit: legacy })
+    const api = createPromptTraceApi({ assemblies: new AssemblyStore(f.directory), legacyStore })
+    const list = await invoke(api, '/pmp-dsh-tavern/api/v3/sessions/session/assemblies')
+    assert.deepEqual(new Set(list.body.records.map(row => row.id)), new Set(['historical-v3', 'legacy:1:1:1']))
   } finally { f.cleanup() }
 })

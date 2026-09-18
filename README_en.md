@@ -8,7 +8,7 @@ A SillyTavern compatibility plugin that keeps DeepSeek Harness (DSH) authoritati
 >
 > **Target runtime:** DSH `0.1.5-rc.1`. The previous `2.2.0` release also tested `0.1.2-rc.1`; this candidate retains that path, but new Trace runtime acceptance targets `0.1.5-rc.1`.
 
-> **This update:** Named official prompt sections, small v3 source/history primitives, and per-request Tavern Trace. See [API/design](docs/PROMPT_API_V3_en.md) and [acceptance/manual checks](docs/TRACE_REVIEW_en.md).
+> **This update:** Named official prompt sections, small v3 historical assembly primitives, and per-request Tavern Trace. See [API/design](docs/PROMPT_API_V3_en.md) and [acceptance/manual checks](docs/TRACE_REVIEW_en.md).
 >
 > The default project README is the [Chinese version](README.md). This English file has no screenshots.
 
@@ -20,7 +20,7 @@ pmp-dsh-tavern does not replace DSH with another UI, and it does not copy conver
 - **Mowan / RP mode**: regroup the RP sidebar by character card and playthrough, and provide greeting, display regex, swipe, branch, rollback, import, and export.
 - **DSH remains authoritative**: durable history, tools, permissions, and the final model request stay owned by DSH.
 - **Minimal change, maximum compatibility**: reuse public DSH seams first; do not replace the native frontend or depend on private DOM.
-- **Original sessions stay readable after uninstall**: the plugin stores resources, selections, playthrough pointers, and display metadata only. It does not forge or overwrite DSH history.
+- **Original sessions stay readable after uninstall**: the plugin stores resources, selections, playthrough pointers, display metadata, and bounded derived prompt snapshots. It does not forge or overwrite DSH history.
 
 The dual-mode design is the compatibility mechanism. Outside Mowan, the user still sees ordinary DSH. The plugin mounts its RP surface only after entering RP mode.
 
@@ -30,7 +30,7 @@ Installing this plugin lets its code run in the DSH Host and the browser page. I
 
 - **Agent and tool risk**: presets, character cards, world books, imported records, and user messages can contain prompt injection. A high-privilege Agent may still call approved terminal, file, network, browser, or other plugin capabilities when induced. Do not put secrets in the conversation. Keep DSH approval and sandboxing, and enable tools with least privilege.
 - **RP secure-mode boundary**: RP mode adds read-only and high-risk tool limits on top of DSH permissions, and child agents inherit that overlay. It is not a VM, container, or system sandbox. It cannot constrain other local processes, and it cannot turn a malicious prompt into trusted content.
-- **Backend and API risk**: v1/v2 APIs target local loopback. Host, Origin, and Content-Type checks are not login authentication. A local malicious process can still reach them. Do not expose DSH Web or this plugin API to a LAN or the public internet. A reverse proxy must add its own TLS, authentication, and trusted Host configuration.
+- **Backend and API risk**: v1/v2/v3 APIs target local loopback. Host, Origin, and Content-Type checks are not login authentication. A local malicious process can still reach them. Do not expose DSH Web or this plugin API to a LAN or the public internet. A reverse proxy must add its own TLS, authentication, and trusted Host configuration.
 - **Frontend rendering risk**: model output is parsed as Markdown and sanitized with DOMPurify, but allowed remote images or styles can still make network requests and expose the visitor IP. Display regex uses JavaScript `RegExp`; catastrophic backtracking can freeze the page. Import and enable only templates and regex you trust.
 - **Data and lifecycle risk**: swipe, branch, and playthroughs create real DSH sessions and can increase disk use. revision/CAS, path checks, and atomic writes do not replace backups and do not turn several API calls into a cross-file transaction.
 
@@ -40,7 +40,9 @@ If behavior looks suspicious, stop the Agent, switch back to DSH native mode, an
 
 ### 0. Install
 
-Requirements: Node.js 20 or newer, `dsh` on `PATH`, and an initialized DSH profile (default `web`).
+The commands below install the published/main version. To review this unreleased candidate, use the [candidate installation steps](docs/INSTALLATION_en.md#trace-230-candidate) instead.
+
+Target DSH `0.1.5-rc.1` requires Node.js `^22.19.0 || >=24.0.0`, with `dsh` on `PATH` and an initialized profile (default `web`). Tavern standalone tests support Node 20; that does not establish Node 20 support for the target Host.
 
 ```sh
 dsh plugin --profile web add github:Player-MINEPIG/dsh-tavern

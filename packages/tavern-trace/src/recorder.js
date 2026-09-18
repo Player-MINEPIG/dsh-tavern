@@ -1,4 +1,4 @@
-import { createHash } from 'node:crypto'
+import { createHash, randomUUID } from 'node:crypto'
 import { PROFILE_SECTION } from '../../identity.js'
 import { snapshotSessionEvents } from '../../session-events.js'
 
@@ -212,6 +212,7 @@ export class TavernTraceRecorder {
     const record = {
       schemaVersion: 1,
       id,
+      captureId: randomUUID(),
       sessionId,
       turn,
       step,

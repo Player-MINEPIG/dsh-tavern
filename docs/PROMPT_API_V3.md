@@ -89,6 +89,11 @@ const record = latest
 `recordedAt` 是采集时间；索引和详情使用相同 ID。attempt 根据仍保留的记录递增；
 淘汰后不能用 attempt 代替不透明 recordId 作为持久身份。
 
+新 v1 审计另有唯一 `captureId`；v3 索引通过可选的 `legacyCaptureId` 关联同一次采集，
+正文超限时也保留此关联。两套存储可独立淘汰，因此不按 turn/step/attempt 或旧 v1 id
+去重。缺少唯一采集关联的旧记录保守保留，可能同时显示旧元数据和装配快照；不会猜测
+两者属于同一次请求而隐藏历史。
+
 | 字段 | 类型 | 定义及使用边界 |
 | --- | --- | --- |
 | `sections / contexts` | array | 装配返回点的渲染段落，包含 name/index/text、characters/utf16Units/utf8Bytes、hash/provenance/sources；缺少正文时可不存在 |
@@ -143,8 +148,10 @@ v3 独立保存 `tavern-assemblies.json`，原有 `tavern-traces.json` 不迁移
 这会含敏感提示词，应和 DSH 本地会话数据同等保护；文件以 0600 原子写入。
 不保存凭据配置、完整普通聊天历史、工具参数或结果，不写入 DSH 日志。
 
-默认最多 256 条记录、单条 2 MiB、总计 16 MiB；可用 `traceAssemblies.maxRecordBytes`
-和 `maxTotalBytes` 配置，上限分别 4 MiB / 32 MiB。最早保留记录优先淘汰。
+同一存储目录内的所有会话共享默认最多 256 条记录、总计 16 MiB；单条 2 MiB。可用 `traceAssemblies.maxRecordBytes`
+和 `maxTotalBytes` 配置，上限分别 4 MiB / 32 MiB；条数上限固定。最早保留记录优先淘汰。
+一次对话轮次可有多条记录，因此不保证固定轮数。此处是近期有界审计，不是永久归档；
+快照淘汰后，不能仅从聊天历史完整恢复当时的来源关系。
 单条超限保留明确的 `omitted-size-limit` 元数据，不悄悄裁剪正文。
 损坏 JSON 在加载时明确报错；不能通过丢弃历史假装恢复成功。
 采集/写盘错误只记不含正文的诊断日志，不阻断模型请求。容量策略不删除 DSH 历史。

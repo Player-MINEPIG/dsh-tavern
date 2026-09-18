@@ -4,7 +4,7 @@
 
 ## Support
 
-The maintained security line is `2.0.x`. Fixes ship only as new patch versions. Development branches and older releases are not promised separate backports.
+The maintained published security line is `2.2.x`; `2.3.0` is currently an unreleased candidate. Fixes ship only as new patch versions. Development branches and older releases are not promised separate backports.
 
 Report suspected vulnerabilities privately through the GitHub repository **Security / Report a vulnerability**. Do not first publish a reproducible exploit, user data, or a real local path. Include the affected version, a minimal reproduction, expected impact, and log fragments with secrets removed.
 

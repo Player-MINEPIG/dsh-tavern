@@ -2,6 +2,10 @@
 
 ## 2.3.0 — Candidate, not released — Prompt assembly Trace
 
+- Fix historical index merging after independent v1/v3 eviction resets request counters. New captures carry a unique correlation ID; oversized snapshots keep it, and unlinked old records remain explicit. Existing v1 IDs and routes remain compatible.
+- Clear the null-tags compatibility warning after editing tags to a valid array; unrelated edits preserve the original diagnostic.
+- Synchronize bilingual installation, usage, security and API documentation with the Trace candidate, target Host Node requirements and shared bounded prompt-body retention.
+
 - Fix greeting navigation treating empty alternate entries as selectable openings. Skip blank alternatives without renumbering card indices, disable each direction at its boundary, and retain a recovery control for an already selected blank opening. Apply the same behavior to RP chat and the opening dock. Full suite: 573 passes, zero failures, two conditional skips.
 - Accept character-card `tags: null` as empty normalized metadata with a diagnostic, preserving source JSON and exports. Cover V1/V2/V3, dual PNG chunks, editing and malformed tag rejection. Verified an affected PNG through import, persistence/reload and lossless JSON export; full suite: 570 passes, zero failures, two conditional skips.
 - Keep the RP conversation view available after reloading a fork when unrelated old playthroughs reference missing sessions. Skip only missing-session errors during membership discovery; retain known-owner and permission/migration errors. Display regex continues to run in RP while native DSH chat retains raw messages.

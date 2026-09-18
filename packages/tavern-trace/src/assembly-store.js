@@ -5,6 +5,10 @@ import { randomUUID } from 'node:crypto'
 export const validSession = id => typeof id === 'string' && /^[A-Za-z0-9][A-Za-z0-9._:-]{0,199}$/.test(id)
 const bytes = value => Buffer.byteLength(JSON.stringify(value))
 const limit = (v, fallback, max) => Number.isSafeInteger(v) && v >= 4096 ? Math.min(v, max) : fallback
+const legacyLink = record => {
+  const id = record.audit?.captureId ?? record.legacyCaptureId
+  return typeof id === 'string' && id !== '' ? { legacyCaptureId: id } : {}
+}
 
 /** Bounded derived audit data; never modifies DSH history. Single Host writer. */
 export class AssemblyStore {
@@ -31,7 +35,7 @@ export class AssemblyStore {
     let row = structuredClone(record)
     if (bytes(row) > Math.min(this.maxRecordBytes, this.maxTotalBytes - 256)) {
       row = { schemaVersion: 3, id: row.id, sessionId: row.sessionId, turn: row.turn, step: row.step,
-        attempt: row.attempt, recordedAt: row.recordedAt, status: row.status, contentStatus: 'omitted-size-limit' }
+        attempt: row.attempt, recordedAt: row.recordedAt, status: row.status, contentStatus: 'omitted-size-limit', ...legacyLink(row) }
     }
     const rows = this.rows.filter(r => r.id !== row.id || r.sessionId !== row.sessionId)
     rows.push(row)
@@ -47,7 +51,7 @@ export class AssemblyStore {
   list(id) {
     if (!validSession(id)) throw new TypeError('Invalid session id')
     return this.rows.filter(r => r.sessionId === id).map(({ sections, contexts, systemMessages, audit, ...r }) => ({
-      ...structuredClone(r), sectionCount: sections?.length ?? 0,
+      ...structuredClone(r), ...legacyLink({ audit, legacyCaptureId: r.legacyCaptureId }), sectionCount: sections?.length ?? 0,
     }))
   }
   get(id, recordId) {
