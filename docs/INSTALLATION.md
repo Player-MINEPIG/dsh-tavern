@@ -15,7 +15,7 @@
 当前 `2.3.0` 源码尚未发布。从 GitHub 安装到默认 `web` profile，请指定此版本的分支：
 
 ```text
-dsh plugin --profile web add github:Player-MINEPIG/dsh-tavern#codex/trace-api-v3
+dsh plugin --profile web add github:Player-MINEPIG/dsh-tavern#main
 ```
 
 <a id="source-candidate"></a>
@@ -25,7 +25,7 @@ dsh plugin --profile web add github:Player-MINEPIG/dsh-tavern#codex/trace-api-v3
 使用独立测试 profile/home，安装前停止该 Host。`2.3.0` 尚无发布 tag；请明确检出当前分支再从源码安装：
 
 ```sh
-git clone --branch codex/trace-api-v3 https://github.com/Player-MINEPIG/dsh-tavern.git
+git clone --branch main https://github.com/Player-MINEPIG/dsh-tavern.git
 cd dsh-tavern
 npm ci --legacy-peer-deps
 node scripts/install.mjs --dsh-home /absolute/path/to/test-home --profile web

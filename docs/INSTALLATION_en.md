@@ -25,7 +25,7 @@ The current `2.3.0` source has not been released. To install it from GitHub into
 the default `web` profile, specify this version's branch:
 
 ```text
-dsh plugin --profile web add github:Player-MINEPIG/dsh-tavern#codex/trace-api-v3
+dsh plugin --profile web add github:Player-MINEPIG/dsh-tavern#main
 ```
 
 <a id="source-candidate"></a>
@@ -36,7 +36,7 @@ Use a separate test profile/home. Stop its Host before installing. Version `2.3.
 has no release tag yet; explicitly check out the current branch, then install from source:
 
 ```sh
-git clone --branch codex/trace-api-v3 https://github.com/Player-MINEPIG/dsh-tavern.git
+git clone --branch main https://github.com/Player-MINEPIG/dsh-tavern.git
 cd dsh-tavern
 npm ci --legacy-peer-deps
 node scripts/install.mjs --dsh-home /absolute/path/to/test-home --profile web

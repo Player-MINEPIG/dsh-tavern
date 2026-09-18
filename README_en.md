@@ -45,13 +45,13 @@ The current `2.3.0` source has not been released. To install this version from G
 Target DSH `0.1.5-rc.1` requires Node.js `^22.19.0 || >=24.0.0`, with `dsh` on `PATH` and an initialized profile (default `web`). Tavern standalone tests support Node 20; that does not establish Node 20 support for the target Host.
 
 ```sh
-dsh plugin --profile web add github:Player-MINEPIG/dsh-tavern#codex/trace-api-v3
+dsh plugin --profile web add github:Player-MINEPIG/dsh-tavern#main
 ```
 
 For another version, switch to its tag and read the installation instructions in that tag. For source development, safe migration from legacy package-local data, or the project's backup-aware uninstall flow, follow the [source installation steps](docs/INSTALLATION_en.md#source-installation) and check out the same branch:
 
 ```sh
-git clone --branch codex/trace-api-v3 https://github.com/Player-MINEPIG/dsh-tavern.git
+git clone --branch main https://github.com/Player-MINEPIG/dsh-tavern.git
 cd dsh-tavern
 npm install --cache .npm-cache
 npm run plugin:install
