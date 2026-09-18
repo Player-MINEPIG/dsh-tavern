@@ -2,6 +2,7 @@
 
 ## 2.3.0 — Candidate, not released — Prompt assembly Trace
 
+- Keep the RP conversation view available after reloading a fork when unrelated old playthroughs reference missing sessions. Skip only missing-session errors during membership discovery; retain known-owner and permission/migration errors. Display regex continues to run in RP while native DSH chat retains raw messages.
 - Restore configuration-first Trace presentation using historical v3 audit snapshots. World-book activation and Loader assembly are separately collapsed; preserve legacy configuration/lore views and distinguish unrecorded fields from unused resources. Explain turn/step/request capture, show “Request record N” only for subsequent captures, and localize request states. Clarify that DSH retries may reuse the existing assembly and Tavern only observes request events.
 
 - Fix new-playthrough creation when an older workspace references sessions absent from the current DSH home. A missing session makes that old run ineligible for empty reuse; its references remain unchanged and a new run can be created. Map the official direct `ApiSessionNotFound` error to `404 PLAY_SESSION_NOT_FOUND`, and explain missing logs in the sidebar. Other errors, including coordinate migration failures, still propagate.

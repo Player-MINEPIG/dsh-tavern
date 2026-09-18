@@ -4882,6 +4882,14 @@ function findPlaythroughForSession(sessionId, catalog2, timelines = {}) {
   }
   return null;
 }
+async function loadClassificationTimeline(client, playthrough) {
+  try {
+    return await client.getTimeline(playthrough);
+  } catch (error) {
+    if (error?.code === "PLAY_SESSION_NOT_FOUND") return null;
+    throw error;
+  }
+}
 async function loadTimelines(client, playthroughs, concurrency = 4) {
   const result = {};
   let cursor = 0;
@@ -4889,7 +4897,7 @@ async function loadTimelines(client, playthroughs, concurrency = 4) {
     while (cursor < playthroughs.length) {
       const playthrough = playthroughs[cursor];
       cursor += 1;
-      result[playthrough.path] = await client.getTimeline(playthrough);
+      result[playthrough.path] = await loadClassificationTimeline(client, playthrough);
     }
   };
   await Promise.all(Array.from(
@@ -4907,7 +4915,7 @@ async function loadCurrentPlaythrough(client, session, options = {}) {
   const sessionId = session.id ?? session.sessionId;
   const preferred = typeof options.preferredPlaythroughId === "string" ? playthroughs.find((item) => item.id === options.preferredPlaythroughId) : void 0;
   if (preferred !== void 0) {
-    const timeline = await client.getTimeline(preferred);
+    const timeline = rootSessionId(preferred) === sessionId ? await client.getTimeline(preferred) : await loadClassificationTimeline(client, preferred);
     if (rootSessionId(preferred) === sessionId || timelineHead(timeline)?.sessionId === sessionId) {
       return { workspace, playthrough: preferred, timeline };
     }

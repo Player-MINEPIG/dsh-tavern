@@ -117,6 +117,17 @@ export function findPlaythroughForSession(sessionId, catalog, timelines = {}) {
   return null
 }
 
+async function loadClassificationTimeline(client, playthrough) {
+  try {
+    return await client.getTimeline(playthrough)
+  } catch (error) {
+    // An unrelated old playthrough can reference logs absent from this Host.
+    // Sidebar diagnostics report it; it must not hide a valid fork's RP view.
+    if (error?.code === 'PLAY_SESSION_NOT_FOUND') return null
+    throw error
+  }
+}
+
 async function loadTimelines(client, playthroughs, concurrency = 4) {
   const result = {}
   let cursor = 0
@@ -124,7 +135,7 @@ async function loadTimelines(client, playthroughs, concurrency = 4) {
     while (cursor < playthroughs.length) {
       const playthrough = playthroughs[cursor]
       cursor += 1
-      result[playthrough.path] = await client.getTimeline(playthrough)
+      result[playthrough.path] = await loadClassificationTimeline(client, playthrough)
     }
   }
   await Promise.all(Array.from(
@@ -145,7 +156,9 @@ export async function loadCurrentPlaythrough(client, session, options = {}) {
     ? playthroughs.find(item => item.id === options.preferredPlaythroughId)
     : undefined
   if (preferred !== undefined) {
-    const timeline = await client.getTimeline(preferred)
+    const timeline = rootSessionId(preferred) === sessionId
+      ? await client.getTimeline(preferred)
+      : await loadClassificationTimeline(client, preferred)
     if (rootSessionId(preferred) === sessionId || timelineHead(timeline)?.sessionId === sessionId) {
       return { workspace, playthrough: preferred, timeline }
     }

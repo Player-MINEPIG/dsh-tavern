@@ -102,6 +102,18 @@ accessible with HTML examples rendered as text. Help identifies subsequent recor
 as `agent/request` captures and explains reuse of an assembly during retry.
 `npm run verify:2.0` passed.
 
+## RP view after fork reload (2026-09-18)
+
+Membership discovery now tolerates unrelated timelines with `PLAY_SESSION_NOT_FOUND`.
+Regression checks cover fork discovery without a preference, stale preferences, root
+bindings, and propagation of owner/permission/migration errors. Read-only checks in
+the real test environment resolved the active fork without a preferred playthrough.
+The complete RP projection hid variable-update blocks in two replies, retained raw
+messages, and reported no regex errors, without a variable runtime.
+`npm run check`: 569 tests, 567 passes, zero failures, two existing conditional skips.
+Manual check: reload a valid fork in a workspace containing missing old sessions;
+the RP tab should remain, with update blocks hidden there and raw text in native chat.
+
 ## Maintainer manual checks
 
 Use a test profile and resource copies. Record pass/fail for each step. For failures,

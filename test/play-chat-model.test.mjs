@@ -347,3 +347,37 @@ test('latest user sequence changes only when a newer user node arrives', () => {
     { kind: 'user', seq: 7 },
   ]), 7)
 })
+
+test('missing unrelated sessions do not hide the RP view for a valid fork after reload', async () => {
+  const missing = { id: 'missing', path: 'missing/timeline.json', ext: { pmpDshTavern: { rootSessionId: 'absent' } } }
+  const client = {
+    async getWorkspace() { return { selected: true, rootPath: '/rp' } },
+    async getCatalog() { return { playthroughs: [missing, playthrough] } },
+    async getTimeline(item) {
+      if (item === missing) throw Object.assign(new Error('missing session'), { code: 'PLAY_SESSION_NOT_FOUND', status: 404 })
+      return timeline
+    },
+  }
+  for (const preferredPlaythroughId of [undefined, 'missing']) {
+    const match = await loadCurrentPlaythrough(client, { id: 'fork', cwd: '/rp' }, { preferredPlaythroughId })
+    assert.equal(match.playthrough.id, playthrough.id)
+    assert.equal(match.timeline, timeline)
+  }
+  // A stale preference also must not block a different, directly bound root.
+  assert.equal((await loadCurrentPlaythrough(client, { id: 'root', cwd: '/rp' }, {
+    preferredPlaythroughId: 'missing',
+  })).playthrough.id, playthrough.id)
+  // A known owner's unavailable history remains an error, not a fabricated timeline.
+  await assert.rejects(loadCurrentPlaythrough(client, { id: 'absent', cwd: '/rp' }), { code: 'PLAY_SESSION_NOT_FOUND' })
+})
+
+test('RP classification still reports permission and migration failures', async () => {
+  for (const code of ['PLAY_FORBIDDEN', 'PLAY_TIMELINE_MIGRATION_REQUIRED']) {
+    const client = {
+      async getWorkspace() { return { selected: true, rootPath: '/rp' } },
+      async getCatalog() { return { playthroughs: [playthrough] } },
+      async getTimeline() { throw Object.assign(new Error(code), { code }) },
+    }
+    await assert.rejects(loadCurrentPlaythrough(client, { id: 'fork', cwd: '/rp' }), { code })
+  }
+})
