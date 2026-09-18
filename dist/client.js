@@ -5078,11 +5078,11 @@ function projectGreeting({
   const selection = selectionResponse?.selection;
   const character = characterResponse?.character;
   if (typeof selection?.characterCardId !== "string" || selection.characterCardId === "" || selection.characterCardId !== openingCharacterId || character?.id !== selection.characterCardId) return null;
-  const options = characterGreetingOptions(character);
-  if (options.length === 0) return null;
+  const allOptions = characterGreetingOptions(character);
+  if (!allOptions.some((option) => option.text.trim() !== "")) return null;
   const requested = Number(selection.character?.greetingIndex ?? 0);
-  const selected = options.find((option) => option.index === requested) ?? options[0];
-  if (selected.text === "") return null;
+  const selected = allOptions.find((option) => option.index === requested) ?? allOptions[0];
+  const options = allOptions.filter((option) => option.index === selected.index || option.text.trim() !== "");
   return {
     characterId: character.id,
     characterName: character.data?.nickname || character.data?.name || character.name || character.id,
@@ -5103,10 +5103,11 @@ function applyDisplayNameMacros(text2, {
 }
 function adjacentGreetingIndex(greeting, direction) {
   const options = greeting?.options ?? [];
-  if (options.length === 0) return null;
-  const cursor = Math.max(0, options.findIndex((option) => option.index === greeting.index));
+  if (options.length < 2 || !["previous", "next"].includes(direction)) return null;
+  const cursor = options.findIndex((option) => option.index === greeting.index);
+  if (cursor < 0) return null;
   const offset = direction === "previous" ? -1 : 1;
-  return options[(cursor + offset + options.length) % options.length].index;
+  return options[cursor + offset]?.index ?? null;
 }
 
 // packages/client/src/play/regex.js
@@ -10281,7 +10282,6 @@ function applyTurnDisplayRegex(turn, display, { userDepth, assistantDepth } = {}
   };
 }
 function Greeting({ greeting, busy, change, locked = false, footer = null }) {
-  const multiple = (greeting?.options?.length ?? 0) > 1;
   return h8(
     "div",
     { className: "dtv-play-chat-row" },
@@ -10295,7 +10295,7 @@ function Greeting({ greeting, busy, change, locked = false, footer = null }) {
       locked ? null : h8("button", {
         type: "button",
         className: "dtv-play-greeting-button",
-        disabled: busy || !multiple,
+        disabled: busy || adjacentGreetingIndex(greeting, "previous") === null,
         title: uiMessage("play.chat.previousGreeting"),
         "aria-label": uiMessage("play.chat.previousGreeting"),
         onClick: () => change("previous")
@@ -10304,7 +10304,7 @@ function Greeting({ greeting, busy, change, locked = false, footer = null }) {
       locked ? null : h8("button", {
         type: "button",
         className: "dtv-play-greeting-button",
-        disabled: busy || !multiple,
+        disabled: busy || adjacentGreetingIndex(greeting, "next") === null,
         title: uiMessage("play.chat.nextGreeting"),
         "aria-label": uiMessage("play.chat.nextGreeting"),
         onClick: () => change("next")
@@ -12006,7 +12006,6 @@ function PlaySessionDock({ session, useSessions, useConversation, conversationPh
   const greeting = content.greeting;
   const importTurns = content.importTurns ?? [];
   const options = greeting?.options ?? [];
-  const multiple = options.length > 1;
   const position = greeting === null ? 0 : Math.max(0, options.findIndex((option) => option.index === greeting.index)) + 1;
   const importControls = h11(ImportControls, {
     playClient,
@@ -12051,14 +12050,14 @@ function PlaySessionDock({ session, useSessions, useConversation, conversationPh
       h11("button", {
         type: "button",
         className: "dtv-play-opening-button",
-        disabled: greetingBusy || !multiple,
+        disabled: greetingBusy || adjacentGreetingIndex(greeting, "previous") === null,
         onClick: () => changeGreeting("previous")
       }, uiMessage("play.chat.previousGreeting")),
       importControls,
       h11("button", {
         type: "button",
         className: "dtv-play-opening-button",
-        disabled: greetingBusy || !multiple,
+        disabled: greetingBusy || adjacentGreetingIndex(greeting, "next") === null,
         onClick: () => changeGreeting("next")
       }, uiMessage("play.chat.nextGreeting"))
     )

@@ -339,11 +339,13 @@ export function projectGreeting({
     || selection.characterCardId === ''
     || selection.characterCardId !== openingCharacterId
     || character?.id !== selection.characterCardId) return null
-  const options = characterGreetingOptions(character)
-  if (options.length === 0) return null
+  const allOptions = characterGreetingOptions(character)
+  if (!allOptions.some(option => option.text.trim() !== '')) return null
   const requested = Number(selection.character?.greetingIndex ?? 0)
-  const selected = options.find(option => option.index === requested) ?? options[0]
-  if (selected.text === '') return null
+  const selected = allOptions.find(option => option.index === requested) ?? allOptions[0]
+  // Do not navigate into blank alternatives. Retain a selected blank only so
+  // existing selections can recover, without silently changing their binding.
+  const options = allOptions.filter(option => option.index === selected.index || option.text.trim() !== '')
   return {
     characterId: character.id,
     characterName: character.data?.nickname || character.data?.name || character.name || character.id,
@@ -366,8 +368,9 @@ export function applyDisplayNameMacros(text, {
 
 export function adjacentGreetingIndex(greeting, direction) {
   const options = greeting?.options ?? []
-  if (options.length === 0) return null
-  const cursor = Math.max(0, options.findIndex(option => option.index === greeting.index))
+  if (options.length < 2 || !['previous', 'next'].includes(direction)) return null
+  const cursor = options.findIndex(option => option.index === greeting.index)
+  if (cursor < 0) return null
   const offset = direction === 'previous' ? -1 : 1
-  return options[(cursor + offset + options.length) % options.length].index
+  return options[cursor + offset]?.index ?? null
 }

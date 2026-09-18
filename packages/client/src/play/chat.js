@@ -241,7 +241,6 @@ export function applyTurnDisplayRegex(turn, display, { userDepth, assistantDepth
   }
 }
 function Greeting({ greeting, busy, change, locked = false, footer = null }) {
-  const multiple = (greeting?.options?.length ?? 0) > 1
   return h('div', { className: 'dtv-play-chat-row' },
     greeting === null ? null : h('span', { className: 'dtv-play-chat-role' }, rawText(greeting.characterName)),
     greeting === null ? h('div', { className: 'dtv-play-greeting dtv-play-greeting-empty', 'aria-hidden': true }) : h('div', {
@@ -251,7 +250,7 @@ function Greeting({ greeting, busy, change, locked = false, footer = null }) {
       locked ? null : h('button', {
         type: 'button',
         className: 'dtv-play-greeting-button',
-        disabled: busy || !multiple,
+        disabled: busy || adjacentGreetingIndex(greeting, 'previous') === null,
         title: uiMessage('play.chat.previousGreeting'),
         'aria-label': uiMessage('play.chat.previousGreeting'),
         onClick: () => change('previous'),
@@ -260,7 +259,7 @@ function Greeting({ greeting, busy, change, locked = false, footer = null }) {
       locked ? null : h('button', {
         type: 'button',
         className: 'dtv-play-greeting-button',
-        disabled: busy || !multiple,
+        disabled: busy || adjacentGreetingIndex(greeting, 'next') === null,
         title: uiMessage('play.chat.nextGreeting'),
         'aria-label': uiMessage('play.chat.nextGreeting'),
         onClick: () => change('next'),

@@ -138,7 +138,6 @@ export function PlaySessionDock({ session, useSessions, useConversation, convers
   const greeting = content.greeting
   const importTurns = content.importTurns ?? []
   const options = greeting?.options ?? []
-  const multiple = options.length > 1
   const position = greeting === null ? 0 : Math.max(0, options.findIndex(option => option.index === greeting.index)) + 1
   const importControls = h(ImportControls, {
     playClient,
@@ -177,14 +176,14 @@ export function PlaySessionDock({ session, useSessions, useConversation, convers
     h('button', {
       type: 'button',
       className: 'dtv-play-opening-button',
-      disabled: greetingBusy || !multiple,
+      disabled: greetingBusy || adjacentGreetingIndex(greeting, 'previous') === null,
       onClick: () => changeGreeting('previous'),
     }, uiMessage('play.chat.previousGreeting')),
     importControls,
     h('button', {
       type: 'button',
       className: 'dtv-play-opening-button',
-      disabled: greetingBusy || !multiple,
+      disabled: greetingBusy || adjacentGreetingIndex(greeting, 'next') === null,
       onClick: () => changeGreeting('next'),
     }, uiMessage('play.chat.nextGreeting')),
   ))
