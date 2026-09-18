@@ -4,7 +4,7 @@
 
 A SillyTavern compatibility plugin that keeps DeepSeek Harness (DSH) authoritative over sessions and execution, with frontend and backend APIs for composing Tavern capabilities with native DSH features.
 
-> This page describes the unreleased `2.3.1`, adding playthrough archiving and restoration, targeting DSH `0.1.5-rc.1`. [MIT License](LICENSE).
+> This page describes `2.3.1`, adding playthrough archiving and restoration, targeting DSH `0.1.5-rc.1`. [MIT License](LICENSE).
 >
 > Tavern Trace shows each request's configuration, world-book activation, and prompt section content and sources. Third-party tools can read the same information through the read-only v3 API. See [API/design](docs/PROMPT_API_V3_en.md).
 >
@@ -40,18 +40,18 @@ If behavior looks suspicious, stop the Agent, switch back to DSH native mode, an
 
 ### 0. Install
 
-The published version is `2.3.0`; `2.3.1` is still in development. Install the stable version from GitHub using its version tag:
+Install `2.3.1` from GitHub using its version tag:
 
 Target DSH `0.1.5-rc.1` requires Node.js `^22.19.0 || >=24.0.0`, with `dsh` on `PATH` and an initialized profile (default `web`). Tavern standalone tests support Node 20; that does not establish Node 20 support for the target Host.
 
 ```sh
-dsh plugin --profile web add github:Player-MINEPIG/dsh-tavern#v2.3.0
+dsh plugin --profile web add github:Player-MINEPIG/dsh-tavern#v2.3.1
 ```
 
 For another version, switch to its tag and read the installation instructions in that tag. For source development, safe migration from legacy package-local data, or the project's backup-aware uninstall flow, follow the [source installation steps](docs/INSTALLATION_en.md#source-installation) and check out the same version tag:
 
 ```sh
-git clone --branch v2.3.0 https://github.com/Player-MINEPIG/dsh-tavern.git
+git clone --branch v2.3.1 https://github.com/Player-MINEPIG/dsh-tavern.git
 cd dsh-tavern
 npm install --cache .npm-cache
 npm run plugin:install

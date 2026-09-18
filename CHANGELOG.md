@@ -1,6 +1,6 @@
 # Development changelog
 
-## 2.3.1 — Unreleased — Playthrough archive
+## 2.3.1 — Playthrough archive
 
 - Add Archive playthrough and an archive box with view/restore actions. Keep the catalog row, title, number, timeline, DSH sessions/history, and all Tavern selections intact; persist only `ext.pmpDshTavern.archivedAt` through the existing catalog CAS path.
 - Keep archived membership out of loose-session lists, including unplayed continuation heads, while shared sessions remain visible in other active playthroughs. Exclude archived runs from everyday diagnostics and empty-run reuse; retain numbering when creating a new run.
