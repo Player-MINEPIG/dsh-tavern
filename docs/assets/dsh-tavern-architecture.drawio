@@ -1,10 +1,10 @@
-<mxfile host="Electron" modified="2026-09-07T00:00:00.000Z" agent="Codex" version="24.7.17">
+<mxfile host="Electron" modified="2026-09-18T00:00:00.000Z" agent="Codex" version="24.7.17">
   <diagram id="current-architecture" name="Current architecture">
     <mxGraphModel dx="1600" dy="1100" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1654" pageHeight="1169" math="0" shadow="0">
       <root>
         <mxCell id="0" />
         <mxCell id="1" parent="0" />
-        <mxCell id="title" value="pmp-dsh-tavern — current architecture (DSH 0.1.2-rc.1)" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;fontSize=26;fontStyle=1;fontColor=#172B4D;" vertex="1" parent="1">
+        <mxCell id="title" value="Tavern 2.3.0 candidate — current architecture (DSH 0.1.5-rc.1)" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;fontSize=26;fontStyle=1;fontColor=#172B4D;" vertex="1" parent="1">
           <mxGeometry x="40" y="25" width="1040" height="40" as="geometry" />
         </mxCell>
         <mxCell id="subtitle" value="Public DSH contracts at the boundary; Tavern policy and imported resources stay independent." style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;fontSize=13;fontColor=#5E6C84;" vertex="1" parent="1">
@@ -17,13 +17,13 @@
         <mxCell id="controllers" value="Public controllers&#xa;session · workspace · directory picker" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#DEEBFF;strokeColor=#2684FF;fontColor=#0747A6;fontStyle=1;fontSize=13;spacing=8;" vertex="1" parent="dsh-host-lane">
           <mxGeometry x="35" y="70" width="360" height="72" as="geometry" />
         </mxCell>
-        <mxCell id="host-hooks" value="Cordis Host services &amp; hooks&#xa;system prompt · request · session event · web server" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#DEEBFF;strokeColor=#2684FF;fontColor=#0747A6;fontSize=13;spacing=8;" vertex="1" parent="dsh-host-lane">
+        <mxCell id="host-hooks" value="Public Host services &amp; hooks&#xa;system-prompt/assemble · agent/request&#xa;llm/stream · session/event · HTTP" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#DEEBFF;strokeColor=#2684FF;fontColor=#0747A6;fontSize=13;spacing=8;" vertex="1" parent="dsh-host-lane">
           <mxGeometry x="35" y="172" width="360" height="78" as="geometry" />
         </mxCell>
-        <mxCell id="dsh-history" value="DSH session history&#xa;authoritative event log" style="shape=cylinder3;whiteSpace=wrap;html=1;boundedLbl=1;backgroundOutline=1;size=12;fillColor=#B3D4FF;strokeColor=#0065FF;fontColor=#0747A6;fontStyle=1;fontSize=13;" vertex="1" parent="dsh-host-lane">
+        <mxCell id="dsh-history" value="DSH Session history&#xa;authoritative events + prompt bodies" style="shape=cylinder3;whiteSpace=wrap;html=1;boundedLbl=1;backgroundOutline=1;size=12;fillColor=#B3D4FF;strokeColor=#0065FF;fontColor=#0747A6;fontStyle=1;fontSize=13;" vertex="1" parent="dsh-host-lane">
           <mxGeometry x="110" y="304" width="210" height="94" as="geometry" />
         </mxCell>
-        <mxCell id="history-note" value="inspect/page + stable throughSeq&#xa;snapshotEvents / ownEvents" style="rounded=1;whiteSpace=wrap;html=1;dashed=1;fillColor=#FFFFFF;strokeColor=#97A0AF;fontColor=#42526E;fontSize=11;" vertex="1" parent="dsh-host-lane">
+        <mxCell id="history-note" value="RP: inspect/page + stable cut&#xa;Trace: cold inspect + verified references&#xa;snapshotEvents / ownEvents" style="rounded=1;whiteSpace=wrap;html=1;dashed=1;fillColor=#FFFFFF;strokeColor=#97A0AF;fontColor=#42526E;fontSize=11;" vertex="1" parent="dsh-host-lane">
           <mxGeometry x="80" y="426" width="270" height="56" as="geometry" />
         </mxCell>
 
@@ -36,26 +36,26 @@
         <mxCell id="play-adapter" value="Play Host adapter&#xa;Tavern port ↔ DSH controllers" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#E3FCEF;strokeColor=#36B37E;fontColor=#006644;fontStyle=1;fontSize=12;spacing=8;" vertex="1" parent="tavern-host-lane">
           <mxGeometry x="35" y="178" width="250" height="72" as="geometry" />
         </mxCell>
-        <mxCell id="runtime-policy" value="Runtime policy&#xa;profile assembly · RP guard&#xa;pending input · trace" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#E3FCEF;strokeColor=#36B37E;fontColor=#006644;fontSize=12;spacing=8;" vertex="1" parent="tavern-host-lane">
+        <mxCell id="runtime-policy" value="Runtime policy&#xa;named prompt assembly · RP guard&#xa;pending input · Trace capture / read" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#E3FCEF;strokeColor=#36B37E;fontColor=#006644;fontSize=12;spacing=8;" vertex="1" parent="tavern-host-lane">
           <mxGeometry x="375" y="178" width="250" height="86" as="geometry" />
         </mxCell>
         <mxCell id="pure-core" value="Pure resource &amp; use-case packages&#xa;format adapters · preset · character · user&#xa;world book · session template · play" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFF0B3;strokeColor=#FFAB00;fontColor=#7A4E00;fontStyle=1;fontSize=13;spacing=8;" vertex="1" parent="tavern-host-lane">
           <mxGeometry x="115" y="312" width="430" height="92" as="geometry" />
         </mxCell>
-        <mxCell id="http-api" value="Tavern HTTP API&#xa;same-origin, loopback, bounded writes" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#EAE6FF;strokeColor=#6554C0;fontColor=#403294;fontSize=12;spacing=8;" vertex="1" parent="tavern-host-lane">
+        <mxCell id="http-api" value="Tavern API&#xa;v1 resources · v2 RP · v3 Trace&#xa;same-origin HTTP / SSE" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#EAE6FF;strokeColor=#6554C0;fontColor=#403294;fontSize=12;spacing=8;" vertex="1" parent="tavern-host-lane">
           <mxGeometry x="200" y="438" width="260" height="58" as="geometry" />
         </mxCell>
 
         <mxCell id="storage-lane" value="PERSISTENCE — separate ownership" style="swimlane;html=1;rounded=1;horizontal=1;startSize=38;fillColor=#FFF7E6;swimlaneFillColor=#FFFBF3;strokeColor=#FFAB00;fontColor=#7A4E00;fontStyle=1;fontSize=15;" vertex="1" parent="1">
           <mxGeometry x="1210" y="110" width="390" height="530" as="geometry" />
         </mxCell>
-        <mxCell id="tavern-storage" value="Tavern-owned data&#xa;&amp;lt;DSH_HOME&amp;gt;/pmp-dsh-tavern&#xa;resources · selections · settings · trace" style="shape=cylinder3;whiteSpace=wrap;html=1;boundedLbl=1;backgroundOutline=1;size=12;fillColor=#FFE380;strokeColor=#FF991F;fontColor=#7A4E00;fontStyle=1;fontSize=12;" vertex="1" parent="storage-lane">
+        <mxCell id="tavern-storage" value="Tavern-owned data&#xa;&amp;lt;DSH_HOME&amp;gt;/pmp-dsh-tavern&#xa;resources · bindings · settings&#xa;Trace metadata + official references" style="shape=cylinder3;whiteSpace=wrap;html=1;boundedLbl=1;backgroundOutline=1;size=12;fillColor=#FFE380;strokeColor=#FF991F;fontColor=#7A4E00;fontStyle=1;fontSize=12;" vertex="1" parent="storage-lane">
           <mxGeometry x="75" y="82" width="240" height="118" as="geometry" />
         </mxCell>
         <mxCell id="play-files" value="Play workspace files&#xa;catalog · timelines · imports&#xa;user-selected workspace root" style="shape=cylinder3;whiteSpace=wrap;html=1;boundedLbl=1;backgroundOutline=1;size=12;fillColor=#FFE380;strokeColor=#FF991F;fontColor=#7A4E00;fontSize=12;" vertex="1" parent="storage-lane">
           <mxGeometry x="75" y="258" width="240" height="110" as="geometry" />
         </mxCell>
-        <mxCell id="storage-rule" value="Uninstall removes code, not user data.&#xa;No duplicated DSH message history." style="rounded=1;whiteSpace=wrap;html=1;dashed=1;fillColor=#FFFFFF;strokeColor=#97A0AF;fontColor=#42526E;fontSize=11;" vertex="1" parent="storage-lane">
+        <mxCell id="storage-rule" value="Removal retains user data.&#xa;New Trace: no prompt body copies.&#xa;Old Trace snapshots: read-only." style="rounded=1;whiteSpace=wrap;html=1;dashed=1;fillColor=#FFFFFF;strokeColor=#97A0AF;fontColor=#42526E;fontSize=11;" vertex="1" parent="storage-lane">
           <mxGeometry x="55" y="412" width="280" height="58" as="geometry" />
         </mxCell>
 
@@ -74,7 +74,7 @@
         <mxCell id="rp-view" value="Default RP adapter (unset view only)&#xa;Conversation store → actions.setView('rp')&#xa;shared session scope; no second Chat store" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFEBE6;strokeColor=#DE350B;fontColor=#BF2600;fontSize=12;spacing=8;" vertex="1" parent="browser-lane">
           <mxGeometry x="995" y="204" width="390" height="72" as="geometry" />
         </mxCell>
-        <mxCell id="client-snapshots" value="RP / Trace: public DSH snapshots&#xa;Session: lifecycle + errors&#xa;Chat: legacy messages + latest turn/end" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#DEEBFF;strokeColor=#2684FF;fontColor=#0747A6;fontSize=12;spacing=8;" vertex="1" parent="browser-lane">
+        <mxCell id="client-snapshots" value="RP: public Chat message projection&#xa;Session: lifecycle + errors&#xa;Trace: v3 index / detail" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#DEEBFF;strokeColor=#2684FF;fontColor=#0747A6;fontSize=12;spacing=8;" vertex="1" parent="browser-lane">
           <mxGeometry x="45" y="204" width="360" height="72" as="geometry" />
         </mxCell>
         <mxCell id="client-presentation" value="Localized opening + RP error notice&#xa;conversationPhase(Session, Conversation)&#xa;Error details remain in native Chat" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#EAE6FF;strokeColor=#6554C0;fontColor=#403294;fontSize=12;spacing=8;" vertex="1" parent="browser-lane">
@@ -104,7 +104,7 @@
         <mxCell id="edge-api-pure" value="atomic operations" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeColor=#6554C0;fontColor=#403294;fontSize=11;" edge="1" parent="1" source="http-api" target="pure-core">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
-        <mxCell id="edge-storage-policy" value="bounded documents" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeColor=#FF991F;fontColor=#7A4E00;fontSize=11;" edge="1" parent="1" source="runtime-policy" target="tavern-storage">
+        <mxCell id="edge-storage-policy" value="resources + Trace" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeColor=#FF991F;fontColor=#7A4E00;fontSize=11;" edge="1" parent="1" source="runtime-policy" target="tavern-storage">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
         <mxCell id="edge-play-files" value="jailed file port" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;endArrow=block;endFill=1;strokeColor=#FF991F;fontColor=#7A4E00;fontSize=11;" edge="1" parent="1" source="play-adapter" target="play-files">
@@ -130,6 +130,10 @@
         </mxCell>
         <mxCell id="edge-root-presentation" value="public helper / settings" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;endFill=1;strokeColor=#6554C0;fontColor=#403294;fontSize=11;" edge="1" parent="1" source="client-root" target="client-presentation">
           <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <mxCell id="edge-history-trace" value="Trace: verified official history references" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=1;exitY=0.8;exitDx=0;exitDy=0;entryX=1;entryY=0.8;entryDx=0;entryDy=0;endArrow=block;endFill=1;dashed=1;strokeColor=#2684FF;fontColor=#0747A6;fontSize=11;labelBackgroundColor=#FFFFFF;" edge="1" parent="1" source="dsh-history" target="runtime-policy">
+          <mxGeometry relative="1" as="geometry"><Array as="points"><mxPoint x="480" y="489" /><mxPoint x="480" y="665" /><mxPoint x="1180" y="665" /><mxPoint x="1180" y="357" /></Array><mxPoint x="0" y="-10" as="offset" /></mxGeometry>
         </mxCell>
 
         <mxCell id="legend" value="Legend: blue = DSH-owned · green = Tavern Host · purple = browser composition · yellow = pure/data boundary · red = RP adapter" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#DFE1E6;fontColor=#42526E;fontSize=11;align=left;spacingLeft=10;" vertex="1" parent="1">

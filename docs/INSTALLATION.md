@@ -1,31 +1,25 @@
 # 跨平台安装与卸载
 
-`2.2.0` 已加入 `0.1.5-rc.1` 兼容修复；旧周目先按 [升级指南](DSH_0.1.5_MIGRATION.md) 迁移。新版 DSH 要求 Node `^22.19.0 || >=24.0.0`，不能只依据 Tavern 的 Node 20 声明。
+当前目标 DSH 为 `0.1.5-rc.1`；从较早 DSH 坐标格式迁移现有周目时，先按 [升级指南](DSH_0.1.5_MIGRATION.md) 操作。该 DSH 版本要求 Node `^22.19.0 || >=24.0.0`，不能只依据 Tavern 的 Node 20 声明。
 
 [English](INSTALLATION_en.md)
 
-状态：`2.3.0` Trace 候选（未发布），更新于 2026-09-18。当前已发布版本为 `2.2.0`。本候选运行时验收以 DSH `0.1.5-rc.1` 为准；保留先前验证过的 `0.1.2-rc.1` 路径，但不据此承诺新 Trace 在旧版的运行时行为。根目录默认 [README](../README.md) 为中文；英文落地页是 [README_en.md](../README_en.md)（无截图）。本文是安装生命周期、验收与恢复合同。
+状态：当前源码为 `2.3.0` Trace 候选，尚未发布；运行时验收目标是 DSH `0.1.5-rc.1`。根目录默认 [README](../README.md) 为中文；英文落地页是 [README_en.md](../README_en.md)（无截图）。本文是当前安装生命周期、验收与恢复合同。其他版本请切换到对应 tag，并阅读该 tag 内的安装说明。
 
-脚本以 Node.js 为统一入口，并规范化 Windows、macOS 和 Linux 路径。macOS/Linux 直接执行 `dsh`。Windows 会安全定位 npm 的 `dsh.ps1` shim，再通过系统 PowerShell 以参数数组调用，因此路径不会被拼回 shell 命令文本。请在 `dsh-tavern` 检出目录中运行脚本，并准备 Node.js 20 或更高版本，以及位于 `PATH` 上的 DSH `0.1.2-rc.1` 或 `0.1.5-rc.1`（后者需满足上面的 Node 要求）。
+脚本以 Node.js 为统一入口，并规范化 Windows、macOS 和 Linux 路径。macOS/Linux 直接执行 `dsh`。Windows 会安全定位 npm 的 `dsh.ps1` shim，再通过系统 PowerShell 以参数数组调用，因此路径不会被拼回 shell 命令文本。请在 `dsh-tavern` 检出目录中运行脚本，并准备 Node.js 20 或更高版本，以及位于 `PATH` 上的目标 DSH `0.1.5-rc.1`；启动 Host 时需满足上面的 Node 要求。
 
 只安装仓库根包。`packages/tavern-format`、`packages/preset` 和 `packages/tavern-loader` 是随同一插件发布的内部边界，不要单独把它们加进 dsh。格式层可通过根包导出作为 JavaScript 库使用，但它本身故意没有把内容发给 agent 的效果。
 
-## 安装
+## 安装当前候选
 
-普通用户可直接从 GitHub 把插件装进默认 `web` profile：
-
-```text
-dsh plugin --profile web add github:Player-MINEPIG/dsh-tavern
-```
-
-固定安装已发布稳定版（不是 Trace 候选）：
+直接从 GitHub 把当前候选装进默认 `web` profile 时，必须固定候选分支：
 
 ```text
-dsh plugin --profile web add github:Player-MINEPIG/dsh-tavern#v2.2.0
+dsh plugin --profile web add github:Player-MINEPIG/dsh-tavern#codex/trace-api-v3
 ```
 
-<a id="trace-230-candidate"></a>
-### Trace 2.3.0 候选
+<a id="source-candidate"></a>
+### 从源码安装和验收当前候选
 
 使用独立测试 profile/home，安装前停止该 Host。本候选尚无发布 tag；请明确检出分支再从源码安装：
 
@@ -39,13 +33,13 @@ node scripts/install.mjs --dsh-home /absolute/path/to/test-home --profile web
 用同一个 `DSH_HOME` 启动 DSH `0.1.5-rc.1`，再按 [Trace 验收步骤](TRACE_REVIEW.md)检查。
 只升级 CLI 不会更新 profile 中的插件。用 `git rev-parse HEAD` 记录所验收构建。
 
-### 官方运行依赖由 DSH 提供
+### DSH 提供官方运行依赖
 
-`@deepseek-ai/dsh-util-crypto` 的 `0.1.2-rc.1 || 0.1.5-rc.1` 与 `@deepseek-ai/cordis` 的 `4.0.2` 声明为仅接受已测版本的必需 `peerDependencies`，不再作为普通运行依赖安装第二份。源码开发仍通过 0.1.2 基线的 `devDependencies` 提供构建和测试环境。浏览器合同仍由 `dsh.client.inject` 声明、由 DSH 提供，没有改成随 Tavern 打包。
+`package.json` 当前把 `@deepseek-ai/dsh-util-crypto` 的 `0.1.2-rc.1 || 0.1.5-rc.1` 与 `@deepseek-ai/cordis` 的 `4.0.2` 声明为必需 `peerDependencies`，由 DSH 运行时提供，避免插件安装第二份。源码构建和测试使用 `devDependencies` 中固定的 `0.1.2-rc.1` crypto 包。浏览器合同由 `dsh.client.inject` 声明并由 DSH 提供，不随 Tavern 打包。
 
-DSH `0.1.2-rc.1` profile 默认使用 `nodeLinker: hoisted` 和 `autoInstallPeers: false`；启动时，它在 `<DSH_HOME>/profiles/node_modules` 提供自身安装所携带的包，供插件按 Node 的父目录规则解析。因此 `dsh plugin add` 或 `pnpm peers check` 可能报告这两个包缺失：该静态检查不识别 DSH 的启动期依赖提供机制。已在全新 profile 验证标准安装、Host API 及 UUID 调用正常，且两个包均解析到 DSH 安装目录。
+DSH profile 使用 `nodeLinker: hoisted` 和 `autoInstallPeers: false` 时，会在启动期通过 `<DSH_HOME>/profiles/node_modules` 提供自身安装所携带的包，供插件按 Node 的父目录规则解析。因此 `dsh plugin add` 或 `pnpm peers check` 可能报告这两个包缺失：该静态检查不识别 DSH 的启动期依赖提供机制。运行时仍必须能从 DSH 安装目录解析这两个包。
 
-若重启后仍出现 `ERR_MODULE_NOT_FOUND`，则不是可忽略的安装警告；请检查 `PATH` 中的 DSH 是否为 `0.1.2-rc.1` 或 `0.1.5-rc.1`、安装是否完整及实际模块解析路径。不要为消除警告把必需 peer 标成 optional。精确 peer 声明约束的是对应包，不是自动检查整个 DSH 版本的启动门禁。
+若重启后仍出现 `ERR_MODULE_NOT_FOUND`，则不是可忽略的安装警告；请检查 `PATH` 中的 DSH 是否为目标 `0.1.5-rc.1`、安装是否完整及实际模块解析路径。不要为消除警告把必需 peer 标成 optional。精确 peer 声明约束的是对应包，不是自动检查整个 DSH 版本的启动门禁。
 
 ### 数据与源码安装
 
@@ -84,7 +78,7 @@ node scripts/install.mjs --dsh-home .\test-envs\review
 
 ## 发布验收
 
-打包或安装本候选前，运行现有发布验证命令（保留 `verify:2.0` 名称）：
+打包或安装当前源码前，运行发布验证命令（命令名仍为 `verify:2.0`）：
 
 ```text
 npm run verify:2.0
@@ -93,7 +87,7 @@ npm run verify:2.0
 该命令覆盖 Trace v3 与真实 AgentLoop、session 坐标 codec、history/游标守卫、受管文档与 CAS、import claim/lineage、chrome/slot 所有权、本地化和安装边界，随后构建已跟踪的浏览器 bundle 并执行 `npm pack --dry-run`。
 
 将 `DSH_TAVERN_COMPAT_ROOT` 和 `DSH_TAVERN_PROMPT_COMPAT_ROOT` 指向目标 DSH 安装的依赖根目录才能启用真实运行时检查；未设置时对应测试明确跳过。另运行 `npm run check` 覆盖全套测试。
-这些命令不能替代 [Trace 运行时与人工验收](TRACE_REVIEW.md)。旧 `0.1.2-rc.1` 生命周期证据保留在 [PLAY_REVIEW](PLAY_REVIEW.md)。
+这些命令不能替代 [Trace 运行时与人工验收](TRACE_REVIEW.md)。
 
 ## 卸载
 
@@ -109,7 +103,7 @@ npm run plugin:uninstall
 
 默认源目录是 `<DSH_HOME>/pmp-dsh-tavern/`。它包含预设、归一化角色卡、从 PNG 导入时留在 `character-artifacts/` 的封面图、`world-books/` 下的独立世界书、`users/` 下的三字段用户资源、`tavern-trace-records.json` 中的 schema 4 Trace metadata/官方历史引用，以及 per-session 资源选择。升级目录还可能保留只读的旧 `tavern-traces.json` 元数据与旧 `tavern-assemblies.json` schema 3 正文快照；后者可能含敏感提示词。备份时复制整个目录；只复制 `presets/` 会丢失其他资源、审计 metadata 和绑定。同一棵树里还有 `state.json`、`character-state.json`、`user-world-book-bindings.json`、`resource-world-book-bindings.json`、`session-templates.json`、`chrome.json`、`play-workspace.json`、`import-context-bindings.json`、`ui-settings.json`（语言、外层 UI 缩放、绑卡跟随 RP）、`conversation-settings.json`（魔丸 RP 正文与消息动作缩放），以及可选的 `rp-policy.json`。
 
-`play-workspace.json` 只是指针。所选 DSH RP 工作区才拥有真正的 `catalog.json`、各周目 `timeline.json`、显示正则文档和导入上下文文件。若周目必须可恢复，请同时备份该工作区；ST JSONL 导出只保留当前选中的线性对话和已知 swipe，不能保存完整的 Tavern 分支拓扑。
+`play-workspace.json` 只是指针。所选 DSH RP 工作区才拥有真正的 `catalog.json`、各周目 `timeline.json`、显示正则文档和导入上下文文件；timeline 引用的会话正文与分支历史仍在对应 `DSH_HOME` 的官方 session 日志中。若周目必须可恢复，请同时备份 Tavern 持久目录、RP 工作区和对应 DSH 数据（包括会话日志及继承依赖）；ST JSONL 导出只保留当前选中的线性对话和已知 swipe，不能保存完整的 Tavern 分支拓扑。
 
 选择其他备份目录，或明确跳过备份：
 

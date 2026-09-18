@@ -2,7 +2,7 @@
 
 [中文](DESIGN.md)
 
-Status: adopted 2026-08-14 and implemented by the first public release candidate's shared parser/matcher/loader adapter.
+This document defines the current `WorldBookModel`, pure matcher/projector, and loader-adapter contract.
 
 ## Module boundary
 
@@ -107,9 +107,9 @@ loader.registerWorldBookAdapter(createWorldBookAdapter(worldBookStore, options))
 
 An embedded `character_book` parsed by the character-card module also becomes the same `WorldBookModel` and enters the same matcher/projector. Matching must not be reimplemented.
 
-The current loader has upgraded the pure-string compatibility input to a structured `activationContext`. That change did not enter this pure module. The management-layer adapter derives compatibility `conversationText` from `activationContext.text` and turns explicitly selected message frames into matcher `text`. `computeWorldBookCandidates()` still does not subscribe to `agent/inbox/spliced`, read Session, or save current input. Pending queue, claim/cancel semantics, body lifetime, and history de-duplication stay exclusive to `tavern-loader`.
+The loader gives the management-layer adapter a structured `activationContext`. The adapter derives compatibility `conversationText` from `activationContext.text` and turns explicitly selected message frames into matcher `text`; that responsibility does not enter this pure module. `computeWorldBookCandidates()` does not subscribe to `agent/inbox/spliced`, read Session, or save current input. Pending queue, claim/cancel semantics, body lifetime, and history de-duplication stay exclusive to `tavern-loader`.
 
-First-step activation acceptance must check matcher decision, loader snapshot, and the same-step `request/header.system` together. Recomputing a “hit” from current input after the request is not a valid implementation.
+First-step activation acceptance must check matcher decision, loader snapshot, and the same-step official `system/message` body together. Recomputing a “hit” from current input after the request is not a valid implementation.
 
 The pure projector's position bridge stays honest:
 

@@ -2,11 +2,11 @@
 
 [English](USAGE_en.md)
 
-状态：2026-08-27，对应当前悬浮球交互、前端显示模式切换、RP 工作区准入、角色卡创建/编辑、周目生命周期、外部记录开场绑定、外部持久目录、RP 安全模式与委派子 agent 继承父级 Tavern 选择。本文介绍实际操作；消息流、架构和安全契约分别见 `DSH_MESSAGE_FLOW.md`、`ARCHITECTURE.md` 与 `LOADER_CONTRACT.md`。RP 拦/不拦清单见 [RP_SECURE_MODE.md](RP_SECURE_MODE.md)。
+本文说明当前悬浮球交互、前端显示模式切换、RP 工作区准入、角色卡创建/编辑、周目生命周期、外部记录开场绑定、外部持久目录、RP 安全模式与委派子 agent 继承父级 Tavern 选择。消息流、架构和安全契约分别见 `DSH_MESSAGE_FLOW.md`、`ARCHITECTURE.md` 与 `LOADER_CONTRACT.md`。RP 拦/不拦清单见 [RP_SECURE_MODE.md](RP_SECURE_MODE.md)。
 
 ## RP 中出现错误时
 
-DSH `0.1.2-rc.1` 下，RP 会对已公开的会话错误或最新回合的最终失败显示：“出现错误，请切换到「对话」视图查看更多信息。”点击 DSH 顶部的“对话”页签查看具体原因；RP 不自动切换视图，也不重复展示提供方诊断。提示随 Tavern UI 语言变化。新请求运行期间不显示上一回合的失败，后续成功或主动取消不会持续显示旧错误；自动重试中和可恢复的工具错误本身不等同于最终失败。
+在当前目标 DSH `0.1.5-rc.1` 中，RP 会对已公开的会话错误或最新回合的最终失败显示：“出现错误，请切换到「对话」视图查看更多信息。”点击 DSH 顶部的“对话”页签查看具体原因；RP 不自动切换视图，也不重复展示提供方诊断。提示随 Tavern UI 语言变化。新请求运行期间不显示上一回合的失败，后续成功或主动取消不会持续显示旧错误；自动重试中和可恢复的工具错误本身不等同于最终失败。
 
 ## Quick Start：最短 RP 路径
 
@@ -58,7 +58,7 @@ DSH `0.1.2-rc.1` 下，RP 会对已公开的会话错误或最新回合的最终
 4. 解绑只移除 session 选择；删除会删除插件资源库中的角色卡文档和封面图，并清理失效的 session 选择。仍引用该卡的周目集中进入魔丸侧边栏“缺失角色卡”，显示删除前的名称。重新导入同一文件（SHA-256 唯一匹配）或唯一同名卡时会自动恢复周目和全部后代 session 的绑定；无法唯一判断时可点击缺失卡旁的重新关联按钮手动选择，不会仅凭重名猜测。每个周目的三点菜单也提供“重新绑定角色卡”，只迁移该周目及其分支会话；若目标不符合自动归类规则会先显示警告，但仍允许用户确认自己的选择。
 5. 魔丸侧边栏顶部可选择“更新时间”“名称 A–Z”“自定义”三种角色卡排序。“更新时间”直接复用 DSH session 摘要，按角色卡下最近一次对话活动从新到旧排列；没有会话的角色卡才按资源更新时间兜底。只有自定义模式允许拖拽；切换模式不会清空以前保存的自定义顺序。
 
-description、personality、scenario、example dialogue 等字段会按预设 marker 或稳定 fallback 进入统一 Tavern profile。greeting 目前只是明确标注的参考内容，不会伪造成已经发生的 assistant 历史消息。
+description、personality、scenario、example dialogue 等字段会按预设 marker 或稳定 fallback 进入统一 Tavern profile。greeting 的放置与来源由 Loader metadata/诊断说明，不会伪造成已经发生的 assistant 历史消息。
 
 开场白切换会跳过空白备选项，保留角色卡原始序号；首尾对应方向的按钮禁用，不循环跳转。已选中空白项的旧会话仍可通过上一条或下一条回到有效开场白。
 
@@ -112,7 +112,7 @@ description、personality、scenario、example dialogue 等字段会按预设 ma
 - 新会话不会复制 durable history、Inbox、Trace、资源正文或旧运行态；
 - 模板引用的资源已删除时会显示诊断并阻止应用。
 
-DSH `0.1.2-rc.1` 侧边栏外层的“新建会话”属于原生 sidebar shell，当前公开扩展合同不能让 Tavern 拦截或替换其点击。为避免依赖哈希类名或全局 DOM 监听，魔丸保留该按钮的原生行为，且不推荐在魔丸模式中使用。魔丸侧边栏“普通 / 非角色扮演会话”右侧的 `+` 只弹出说明，可关闭或切回 DSH 原生模式；它不会暗中创建、移动或改名 session。周目应从角色卡右侧的 `+` 创建。
+当前目标 DSH 侧边栏外层的“新建会话”属于原生 sidebar shell，公开扩展合同不能让 Tavern 拦截或替换其点击。为避免依赖哈希类名或全局 DOM 监听，魔丸保留该按钮的原生行为，且不推荐在魔丸模式中使用。魔丸侧边栏“普通 / 非角色扮演会话”右侧的 `+` 只弹出说明，可关闭或切回 DSH 原生模式；它不会暗中创建、移动或改名 session。周目应从角色卡右侧的 `+` 创建。
 
 正常 UI 只把模板应用到新建 blank session。底层配置 apply API 尚未对任意既有运行中目标提供全局事务锁，详见 `LOADER_CONTRACT.md` 的运行态风险说明。
 
@@ -132,11 +132,11 @@ turn，以及是否已有外部导入 QA；因此连续点击不会无限增加�
 footer 中央的导入按钮可从 SillyTavern JSON/JSONL 绑定外部记录；已有绑定时按钮变为
 换绑和解绑。绑定后 dock 显示最近三轮 QA，显示内容只是本地渲染预览。
 
-外部记录只允许绑定到仍为空的 root session。第一次实际发送请求时，loader 只在同一 profile snapshot 提供至少一个公开 `claimEventSeqs` 后建立持久 claim，再将内容作为转义的、标明 `untrusted` 的只读上下文交给模型；它不会成为 DSH durable history，也不会写入 `timeline.json`，所以不会伪造一轮 QA。没有 claim 的 view/assembly 不注入，也不会消费 pending；同一 claim identity 在 terminal 前可重复 assembly，`turn/end` 只会消费已 claimed 绑定并保存 event seq、turn、reason.kind 等非正文元数据。DSH provider 的 request retry 不会消费或重置 claim；Tavern swipe 通过公开 branch 复制不含正文的 lineage，子 session 需要新的 claim；中断后原 session 的新 claim 不再注入。真实 user/assistant 消息、开放 turn 或绑定已 claim 后，都不能再改绑或解绑。
+外部记录只允许绑定到仍为空的 root session。第一次实际发送请求时，loader 只在同一 profile snapshot 提供至少一个公开 `claimEventSeqs` 后建立持久 claim，再将内容作为转义的、标明 `untrusted` 的只读 system 上下文交给模型；它不会伪造 DSH user/assistant QA，也不会写入 Tavern `timeline.json`。这段 system 上下文属于实际模型请求，DSH 官方 session/request 历史可能保存其正文。没有 claim 的 view/assembly 不注入，也不会消费 pending；同一 claim identity 在 terminal 前可重复 assembly，`turn/end` 只会消费已 claimed 绑定并保存 event seq、turn、reason.kind 等非正文元数据。DSH provider 的 request retry 不会消费或重置 claim；Tavern swipe 通过公开 branch 复制不含正文的 lineage，子 session 需要新的 claim；中断后原 session 的新 claim 不再注入。真实 user/assistant 消息、开放 turn 或绑定已 claim 后，都不能再改绑或解绑。
 
 每轮回复尾部的分支按钮会从该 adopted 回复创建一个新周目。新周目继承截至该处的 DSH durable 历史，复制当前显示时间线，并自动打开可继续对话的子 session；源周目和源消息不会被改写。该操作由多个公开原子 API 组合，极端的磁盘或网络失败可能留下未加入 catalog 的子 session/文件，诊断时按后端 operation log 的各步骤处理。
 
-魔丸完全隐藏 reasoning、子 agent 报告、完成通知、工具 context 等运行细节，不提供展开按钮；需要查看时切回 DSH 原生“对话”视图。由这些上下文触发的父 agent 输出仍归入同一次 durable QA。对该 QA 执行右 swipe 时会向前找到最近一条真实用户消息并重跑整轮，而不会把 context 报告伪装成用户消息；找不到真实用户消息则显式报错。屏蔽功能已经移除。显示正则逐段处理 assistant 正文，被清空的段落不渲染；无论一次 QA 含多少段 assistant 回复、甚至全部正文都被清空，QA 末尾始终只保留一组可用动作，非可视来源数据与周目指针也继续保留。
+魔丸完全隐藏 reasoning、子 agent 报告、完成通知、工具 context 等运行细节，不提供展开按钮；需要查看时切回 DSH 原生“对话”视图。由这些上下文触发的父 agent 输出仍归入同一次 durable QA。对该 QA 执行右 swipe 时会向前找到最近一条真实用户消息并重跑整轮，而不会把 context 报告伪装成用户消息；找不到真实用户消息则显式报错。当前不提供隐藏整组 QA 的操作。显示正则逐段处理 assistant 正文，被清空的段落不渲染；无论一次 QA 含多少段 assistant 回复、甚至全部正文都被清空，QA 末尾始终只保留一组可用动作，非可视来源数据与周目指针也继续保留。
 
 真实用户触发的回复使用 ST 式左右 swipe：序号从初始回复起始终显示（初始为 `1/1`）；左箭头只采用已有上一项；右侧存在已有项时采用下一项，已经位于最后一项时同一个右箭头自动变为“再试一次”，创建并采用一个新 swipe，不另外显示星形生成按钮。点击“再试一次”后，魔丸立即保留该轮用户消息、隐藏旧回复、显示“正在思考”，并把序号从 `n/n` 乐观更新为 `n+1/n+1`，不等待分支 session 的完整回复才给反馈；失败时正文与序号一起恢复，成功后由新 session 的权威消息和 timeline 原子交接。
 
@@ -144,16 +144,15 @@ footer 中央的导入按钮可从 SillyTavern JSON/JSONL 绑定外部记录；�
 
 点击回复下方的“修改显示文字”后，编辑器直接在该回复位置展开为可拉伸的多行输入框，不调用浏览器单行 prompt。保存只更新 timeline 的 `displayOverride`，取消或按 Esc 放弃本次修改；DSH 原始 assistant 消息和后续模型上下文都不会改变。保存值是最终显示文本，之后不再执行宏替换或显示正则，但仍经过 Markdown/HTML 与 DOMPurify 安全渲染。即使保存为空也保留“恢复原回复”按钮；恢复会清除覆盖并重新从 DSH 原文按当前正则生成显示结果。
 
-周目右侧三点菜单提供“导出静态 HTML”和“导出 SillyTavern JSONL”。静态 HTML 导出当前活动路径上的 greeting、用户消息和按当前显示规则处理后的 assistant 正文，适合直接阅读或分享。SillyTavern JSONL 导出 greeting、当前活动路径及每组 QA 的 `swipes` / `swipe_id`，可导入 ST；它会保存每个活动 QA 已知的回复切换项，但 ST JSONL 不能表达完整周目树，因此不会保存未采用后续分支、跨 session lineage 或 Tavern catalog。需要保留完整可切换树时，应备份整个 RP 工作区，而不是把 JSONL 当作项目备份。
+周目右侧三点菜单提供“导出静态 HTML”和“导出 SillyTavern JSONL”。静态 HTML 导出当前活动路径上的 greeting、用户消息和按当前显示规则处理后的 assistant 正文，适合直接阅读或分享。SillyTavern JSONL 导出 greeting、当前活动路径及每组 QA 的 `swipes` / `swipe_id`，可导入 ST；它会保存每个活动 QA 已知的回复切换项，但 ST JSONL 不能表达完整周目树，因此不会保存未采用后续分支、跨 session lineage 或 Tavern catalog。需要恢复完整可切换树时，应同时备份 RP 工作区、对应 `DSH_HOME` 中的 session 日志和 Tavern 持久资源/选择；不要把 JSONL 或 RP 工作区单独当作项目备份。
 
-[周目审查记录](PLAY_REVIEW.md)。
 导入文件和绑定摘要保存在已选扮演工作区根内；服务端会校验路径、哈希和 `schemaVersion: 1`/QA 结构。import parser 不做 summary、QA 切片或 256 KiB/2,000 QA 人为上限；模型上下文超限交给 DSH/provider，通用工作区文件仍有 1 MiB 文件层上限。
 
 ## 8. Tavern Trace
 
-Tavern Trace 位于 Conversation、Trajectory 同级视图。每次请求先显示当时的预设、角色卡、用户、世界书、提示词模式、模型和 Tavern 采样配置。下方展开“世界书触发情况”查看命中、拒绝原因和预算；展开“Loader 装配情况”查看官方段落、来源 metadata、上下文和观察到的系统消息。详情会冷读取官方 DSH 历史；段落/context 正文只有验证成功才显示，来源正文不另存也不回填。当前 v1 资源只能说明当前配置，不能冒充历史原文。
+Tavern Trace 位于 Conversation、Trajectory 同级视图。每次请求先显示当时的预设、角色卡、用户、世界书、提示词模式、模型和 Tavern 采样配置。下方展开“世界书触发情况”查看命中、拒绝原因和预算；展开“Loader 装配情况”查看官方段落、来源 metadata、上下文和观察到的系统消息。schema 4 详情会冷读取官方 DSH 历史；段落/context 正文只有验证成功才显示，来源正文不另存也不回填。旧 schema 3 已保存的正文仍可显示，并标为旧快照。当前 v1 资源只能说明当前配置，不能冒充历史原文。
 
-新采集在本地有界 `tavern-trace-records.json` 中合并保存 schema 4 metadata 与官方历史引用，不保存新的 section/context/system-message/source 正文副本。同一目录所有会话默认共用 16 MiB / 256 条上限，单条 2 MiB；淘汰不删除 DSH 历史。官方历史缺失、截点被清理或身份/hash/range 验证失败时会明确 unavailable，不会按当前资源重算或使用另一份全文兜底。旧 `tavern-traces.json` 和 `tavern-assemblies.json` 只读保留；后者可能仍含升级前的敏感正文。观察到请求不等于模型响应成功，DSH durable history 仍是正文权威。详见 [v3 API 与边界](PROMPT_API_V3.md)。
+当前采集在本地有界 `tavern-trace-records.json` 中合并保存 schema 4 metadata 与官方历史引用，不保存 section/context/system-message/source 正文副本。同一目录所有会话默认共用 16 MiB / 256 条上限，单条 2 MiB；淘汰不删除 DSH 历史。官方历史缺失、截点被清理或身份/hash/range 验证失败时会明确 unavailable，不会按当前资源重算或使用另一份全文兜底。旧 `tavern-traces.json` 和 `tavern-assemblies.json` 只读保留；后者可能仍含升级前的敏感正文。观察到请求不等于模型响应成功，DSH durable history 仍是正文权威。详见 [v3 API 与边界](PROMPT_API_V3.md)。
 
 ## 9. RP 安全模式
 
@@ -189,7 +188,7 @@ session-selections.json        per-session 选择（含 RP 状态）
 user-world-book-bindings.json  用户—世界书关系
 resource-world-book-bindings.json 预设/角色卡—世界书关系
 session-templates.json         配置模板（含 RP 投影）
-tavern-trace-records.json      新 schema 4 Trace metadata 与官方历史引用
+tavern-trace-records.json      schema 4 Trace metadata 与官方历史引用
 tavern-traces.json             旧 v1 Trace 元数据（升级后只读兼容）
 tavern-assemblies.json         旧 schema 3 正文快照（升级后只读兼容，可能敏感）
 ui-settings.json               全局语言、缩放与绑卡跟随 RP
@@ -200,7 +199,7 @@ play-workspace.json            当前 RP 工作区绑定
 import-context-bindings.json   外部记录运行时 claim 状态
 ```
 
-如插件配置指定自定义 `storageDir`，以上数据改存该目录。备份时复制整个 Tavern 目录，不要只复制 `presets/`。`play-workspace.json` 只保存 RP 工作区指针；真正的 `catalog.json`、各周目 `timeline.json`、显示正则和外部导入记录位于所选 DSH 工作区内，完整备份还必须复制该工作区。
+如插件配置指定自定义 `storageDir`，以上数据改存该目录。备份时复制整个 Tavern 目录，不要只复制 `presets/`。`play-workspace.json` 只保存 RP 工作区指针；真正的 `catalog.json`、各周目 `timeline.json`、显示正则和外部导入记录位于所选 DSH 工作区内，而 timeline 引用的会话正文与分支历史仍在对应 `DSH_HOME` 的官方 session 日志中。可恢复的完整备份必须同时覆盖 Tavern 持久目录、所选 RP 工作区和对应 DSH 数据（包括会话日志及继承依赖）。
 
 从旧版包内 `data/` 首次升级时，项目安装脚本会在 remove/add 期间暂存并恢复旧数据；新 Host 在外部目录为空时原子复制过去、写入迁移标记并保留旧副本，目标已有数据时不覆盖。卸载脚本默认把持久目录快照到 `<DSH_HOME>/backups/pmp-dsh-tavern/<timestamp>/`，随后只移除软件包并保留原目录。`--no-backup` 只跳过快照，不清空内容；自定义 `storageDir` 可通过同名参数指定为快照源。
 
@@ -210,9 +209,9 @@ import-context-bindings.json   外部记录运行时 claim 状态
 
 魔丸展开菜单中的“对话设置”与“界面设置”相互独立。“正文与开场白字号”只缩放魔丸里的用户/助手消息、开场白和“正在思考”状态；“消息按钮尺寸”只缩放每轮末尾的复制、左右 swipe、分支、回退和编辑操作。两项均可在 75%–150% 间选择，保存后立即生效并在刷新后保持，恢复默认会把两者单独还原为 100%。它们不会改变 DSH 原生对话、Tavern 外层面板、输入栏、提示词、历史或导出内容。
 
-- ST `system`/`user`/`assistant` prompt role 目前作为可审阅标签进入一个 DSH system section，不是真实交错 role message。
+- ST `system`/`user`/`assistant` prompt role 只作为来源 metadata 保存，表示请求的插入位置；标签不会写入正文。Loader 会按预设顺序和 marker 展开多个具名 DSH system sections，而不会生成真实交错 role message。
 - `chatHistory` 始终由 DSH durable history 提供，插件不复制历史。
-- example dialogue、greeting、PHI 和 depth/absolute placement 采用明确标注的 system 近似或诊断降级。
+- example dialogue、greeting、PHI 和 depth/absolute placement 使用当前 marker/fallback 放置；无法精确表达的 ST 语义通过 Loader metadata/诊断报告。
 - 世界书尚未完整执行 recursive、sticky/cooldown/delay、vector、严格 depth/role 和 outlet 语义。
 - 只映射 DSH 当前明确支持的 `temperature`、`maxTokens`、`reasoningEffort` 与 `stop`；其他 ST sampler 会保留但不宣称已下发。
 - ST macro 只实现常用子集，不具备完整 SillyTavern runtime。

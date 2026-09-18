@@ -2,11 +2,11 @@
 
 [中文](USAGE_zh-CN.md)
 
-Status: 2026-08-27. Covers the current orb interaction, frontend display-mode switch, RP workspace admission, character-card create/edit, playthrough lifecycle, imported-record opening bind, external persistent storage, RP secure mode, and delegated child agents inheriting the parent's Tavern selection. This page is operational. Message flow, architecture, and security contracts are in `DSH_MESSAGE_FLOW_en.md`, `ARCHITECTURE_en.md`, and `LOADER_CONTRACT_en.md`. RP block/allow list: [RP_SECURE_MODE_en.md](RP_SECURE_MODE_en.md).
+This guide covers the current orb interaction, frontend display-mode switch, RP workspace admission, character-card create/edit, playthrough lifecycle, imported-record opening bind, external persistent storage, RP secure mode, and delegated child agents inheriting the parent's Tavern selection. Message flow, architecture, and security contracts are in `DSH_MESSAGE_FLOW_en.md`, `ARCHITECTURE_en.md`, and `LOADER_CONTRACT_en.md`. RP block/allow list: [RP_SECURE_MODE_en.md](RP_SECURE_MODE_en.md).
 
 ## When an error occurs in RP
 
-On DSH `0.1.2-rc.1`, exposed Session errors or the latest turn's terminal failure show: “An error occurred. Switch to the Chat view for more information.” Select DSH's Chat tab for the detailed cause. RP does not switch views automatically or duplicate provider diagnostics. The notice follows Tavern's UI language. A new request in progress hides the previous turn's failure; later success or intentional cancellation supersedes old errors. Automatic retries in progress and recoverable tool errors alone are not terminal failures.
+On the target DSH `0.1.5-rc.1`, exposed Session errors or the latest turn's terminal failure show: “An error occurred. Switch to the Chat view for more information.” Select DSH's Chat tab for the detailed cause. RP does not switch views automatically or duplicate provider diagnostics. The notice follows Tavern's UI language. A new request in progress hides the previous turn's failure; later success or intentional cancellation supersedes old errors. Automatic retries in progress and recoverable tool errors alone are not terminal failures.
 
 ## Quick Start: shortest RP path
 
@@ -58,7 +58,7 @@ Imports read `tags: null` as no tags and report a compatibility warning while pr
 4. Unbind only removes the session selection. Delete removes the card document and cover from the plugin library and clears stale session selections. Playthroughs that still reference the card appear under **Missing character cards** in the Mowan sidebar, using the pre-delete name. Re-importing the same file (unique SHA-256 match) or a uniquely same-named card automatically restores the playthrough and all descendant session bindings. If uniqueness cannot be decided, use **Relink** next to the missing card; the UI will not guess from a shared name. Each playthrough's ⋯ menu also has **Relink character card**, which migrates only that playthrough and its branch sessions. If the target is outside the automatic classification rule, a warning appears, but you can still confirm your choice.
 5. The Mowan sidebar top can sort cards by **Recently updated**, **Name A–Z**, or **Custom**. **Recently updated** uses DSH session summaries and orders by the newest conversation activity under that card; cards with no session fall back to resource `updatedAt`. Drag is allowed only in Custom. Switching modes does not clear a saved custom order.
 
-description, personality, scenario, example dialogue, and similar fields enter the unified Tavern profile through preset markers or a stable fallback. greeting is explicitly labeled reference content and is never forged as an assistant history message that already happened.
+description, personality, scenario, example dialogue, and similar fields enter the unified Tavern profile through preset markers or a stable fallback. Loader metadata and diagnostics describe greeting placement and provenance; greeting is never forged as an assistant history message that already happened.
 
 ### Display regex
 
@@ -110,7 +110,7 @@ Switching resources in the same session does not delete assistant replies alread
 - New sessions do not copy durable history, Inbox, Trace, resource bodies, or old runtime state.
 - Missing template resources show diagnostics and block apply.
 
-The DSH `0.1.2-rc.1` outer **New session** control belongs to the native sidebar shell. The public extension contract does not let Tavern intercept or replace its click. Mowan keeps the native button and does not recommend it in RP mode. The `+` next to **Ordinary / non-RP sessions** only shows an explanation; it can be dismissed or used to return to native DSH. It does not silently create, move, or rename sessions. Create playthroughs with the `+` on a character card.
+The target DSH outer **New session** control belongs to the native sidebar shell. The public extension contract does not let Tavern intercept or replace its click. Mowan keeps the native button and does not recommend it in RP mode. The `+` next to **Ordinary / non-RP sessions** only shows an explanation; it can be dismissed or used to return to native DSH. It does not silently create, move, or rename sessions. Create playthroughs with the `+` on a character card.
 
 The normal UI applies templates only to a newly created blank session. The underlying apply API still has no global transaction lock against an arbitrary already-running target. See the running-agent risk notes in `LOADER_CONTRACT_en.md`.
 
@@ -122,11 +122,11 @@ If a session already assigned to a playthrough is unbound in the character panel
 
 Before a top bar exists, greeting appears in the opening dock under the native composer. Left/right buttons switch alternate greetings, skipping blank alternatives while preserving original card indices. Each direction is disabled at its boundary, without wrapping. An already selected blank opening retains navigation back to a valid greeting. A card with no greeting still keeps the empty area and the same footer. The center import button binds an ST JSON/JSONL record; once bound it becomes rebind and unbind. After bind, the dock previews the last three QA turns as local render only.
 
-Imported records can bind only to a still-empty root session. On the first real request, the loader establishes a durable claim only after the same profile snapshot provides at least one public `claimEventSeqs`, then gives the model escaped, `untrusted`, read-only context. It does not become DSH durable history and is not written to `timeline.json`, so it does not forge a QA. A view/assembly without a claim does not inject or consume pending. The same claim identity may reassemble before terminal; `turn/end` only consumes an already-claimed binding and stores non-body terminal metadata (event seq, turn, `reason.kind`). A DSH provider request retry does not consume or reset the claim. Tavern swipe copies body-free lineage through the public branch; the child session needs a new claim. After interrupt, a new claim on the original session no longer injects. After a real user/assistant message, an open turn, or a claimed binding, rebind and unbind are locked.
+Imported records can bind only to a still-empty root session. On the first real request, the loader establishes a durable claim only after the same profile snapshot provides at least one public `claimEventSeqs`, then gives the model escaped, `untrusted`, read-only system context. It does not forge DSH user/assistant QA and is not written to Tavern `timeline.json`. This system context is part of the actual model request, so official DSH session/request history may retain its body. A view/assembly without a claim does not inject or consume pending. The same claim identity may reassemble before terminal; `turn/end` only consumes an already-claimed binding and stores non-body terminal metadata (event seq, turn, `reason.kind`). A DSH provider request retry does not consume or reset the claim. Tavern swipe copies body-free lineage through the public branch; the child session needs a new claim. After interrupt, a new claim on the original session no longer injects. After a real user/assistant message, an open turn, or a claimed binding, rebind and unbind are locked.
 
 The branch button at the end of a reply creates a new playthrough from that adopted reply. The new playthrough inherits DSH durable history up to that point, copies the current display timeline, and opens the child session that can continue. Source playthrough and source messages are not rewritten. The operation is a client composition of public atomic APIs. Extreme disk or network failure may leave a child session/file that never entered the catalog; diagnose from backend operation-log stages.
 
-Mowan fully hides reasoning, child-agent reports, completion notices, and tool context, with no expand control. Switch to native DSH **Chat** when you need them. Parent output triggered by that context still belongs to the same durable QA. Right-swipe on that QA walks forward to the nearest real user message and reruns the whole turn; it never sends a context report as a user message. Missing a real user message fails explicitly. Hide was removed. Display regex processes assistant body per segment; cleared segments are not rendered. Whether a QA has many assistant segments or all bodies were cleared, one action group stays at the QA end, and non-visual provenance and playthrough pointers remain.
+Mowan fully hides reasoning, child-agent reports, completion notices, and tool context, with no expand control. Switch to native DSH **Chat** when you need them. Parent output triggered by that context still belongs to the same durable QA. Right-swipe on that QA walks forward to the nearest real user message and reruns the whole turn; it never sends a context report as a user message. Missing a real user message fails explicitly. There is currently no action to hide an entire QA. Display regex processes assistant body per segment; cleared segments are not rendered. Whether a QA has many assistant segments or all bodies were cleared, one action group stays at the QA end, and non-visual provenance and playthrough pointers remain.
 
 Replies triggered by a real user use ST-style left/right swipe. The index is shown from the first reply (`1/1`). Left adopts the previous existing item. Right adopts the next existing item, or becomes **Try again** on the last item and creates and adopts a new swipe. There is no separate star generate button. After **Try again**, Mowan immediately keeps that turn's user message, hides the old reply, shows **Thinking**, and optimistically updates `n/n` to `n+1/n+1` without waiting for the full branch-session reply. Failure restores body and index together. Success hands off atomically to the new session's authoritative messages and timeline.
 
@@ -134,9 +134,8 @@ Replies triggered by a real user use ST-style left/right swipe. The index is sho
 
 **Edit display text** expands an in-place resizable multiline editor. It does not call the browser single-line prompt. Save updates only timeline `displayOverride`; Cancel or Esc discards. The original DSH assistant message and later model context do not change. The saved value is final display text: later macros and display regex are skipped, but Markdown/HTML still goes through DOMPurify. An empty save still keeps **Restore original reply**. Restore clears the override and reruns the current display pipeline from DSH source.
 
-The playthrough ⋯ menu provides **Export static HTML** and **Export SillyTavern JSONL**. Static HTML exports greeting, user messages, and assistant bodies after current display rules on the active path, for reading or sharing. SillyTavern JSONL exports greeting, the active path, and each QA's `swipes` / `swipe_id` for ST import. It keeps known swipe items for each active QA, but ST JSONL cannot express the full playthrough tree, so unused later branches, cross-session lineage, and the Tavern catalog are not saved. To keep a complete switchable tree, back up the whole RP workspace; do not treat JSONL as a project backup.
+The playthrough ⋯ menu provides **Export static HTML** and **Export SillyTavern JSONL**. Static HTML exports greeting, user messages, and assistant bodies after current display rules on the active path, for reading or sharing. SillyTavern JSONL exports greeting, the active path, and each QA's `swipes` / `swipe_id` for ST import. It keeps known swipe items for each active QA, but ST JSONL cannot express the full playthrough tree, so unused later branches, cross-session lineage, and the Tavern catalog are not saved. To restore the complete switchable tree, back up the RP workspace, the session logs in its corresponding `DSH_HOME`, and Tavern's persistent resources and selections together. Do not treat JSONL or the RP workspace alone as a project backup.
 
-[Playthrough review record](PLAY_REVIEW_en.md).
 Import files and binding summaries live under the selected play workspace root. The server checks path, hash, and `schemaVersion: 1` / QA structure. The import parser does not summarize, slice QA, or apply a 256 KiB / 2,000 QA artificial cap. Context overflow is left to DSH/provider. Generic workspace files still have a 1 MiB file-layer limit.
 
 ## 8. Tavern Trace
@@ -145,13 +144,14 @@ Tavern Trace is a sibling of Conversation and Trajectory. Each request record
 first shows its captured preset, character, user, world books, prompt mode, model,
 and Tavern sampling configuration. Expand **World-book activation** for matches,
 rejections and budgets; expand **Loader assembly** for official sections, source
-metadata, contexts, and observed system messages. Detail performs a cold read of
+metadata, contexts, and observed system messages. Schema 4 detail performs a cold read of
 official DSH history. Section/context bodies appear only after verification; source
-bodies are neither stored nor reconstructed. Current v1 resources describe current
+bodies are neither stored nor reconstructed. Existing schema 3 bodies remain viewable
+and are labeled as legacy snapshots. Current v1 resources describe current
 configuration and are never presented as historical originals.
 
-New captures combine schema 4 metadata and official-history references in bounded
-`tavern-trace-records.json`. It stores no new section, context, system-message, or
+Current captures combine schema 4 metadata and official-history references in bounded
+`tavern-trace-records.json`. It contains no section, context, system-message, or
 source-body copies. Defaults shared by all Sessions in one directory are 16 MiB,
 256 records, and 2 MiB per record. Eviction never deletes DSH history. Missing
 history, an unavailable cut, or identity/hash/range verification failure is explicit;
@@ -195,7 +195,7 @@ session-selections.json        Per-session selection (including RP state)
 user-world-book-bindings.json  User–world-book relations
 resource-world-book-bindings.json Preset/character–world-book relations
 session-templates.json         Configuration templates (including RP projection)
-tavern-trace-records.json      New schema 4 Trace metadata and official-history references
+tavern-trace-records.json      Schema 4 Trace metadata and official-history references
 tavern-traces.json             Legacy v1 Trace metadata (read-only after upgrade)
 tavern-assemblies.json         Legacy schema 3 body snapshots (read-only; may be sensitive)
 ui-settings.json               Global language, scale, and character-follow RP
@@ -206,7 +206,7 @@ play-workspace.json            Current RP workspace binding
 import-context-bindings.json   Runtime claim state for imported records
 ```
 
-If the plugin is configured with a custom `storageDir`, the same tree is stored there. Back up the whole Tavern directory; do not copy only `presets/`. `play-workspace.json` stores only the RP workspace pointer. The actual `catalog.json`, per-playthrough `timeline.json`, display regex, and imported records live in the chosen DSH workspace. A complete backup must copy that workspace too.
+If the plugin is configured with a custom `storageDir`, the same tree is stored there. Back up the whole Tavern directory; do not copy only `presets/`. `play-workspace.json` stores only the RP workspace pointer. The actual `catalog.json`, per-playthrough `timeline.json`, display regex, and imported records live in the chosen DSH workspace, while the session bodies and branch history referenced by the timeline remain in the corresponding `DSH_HOME` official session logs. A restorable complete backup must include the Tavern persistent directory, selected RP workspace, and corresponding DSH data, including session logs and inherited dependencies.
 
 On the first upgrade from legacy package-local `data/`, the project installer stages and restores that old tree across remove/add. If the external directory is empty, the new Host copies it atomically, writes a migration marker, and retains the old copy; a populated target is never overwritten. The uninstaller snapshots the persistent directory to `<DSH_HOME>/backups/pmp-dsh-tavern/<timestamp>/` by default, then removes only the package and retains the original directory. `--no-backup` skips the snapshot rather than erasing content; pass `--storage-dir` to snapshot a custom location.
 
@@ -216,9 +216,9 @@ Full install, refresh recovery, cross-platform options, and uninstall: [Installa
 
 **Conversation settings** and **UI settings** in the Mowan menu are independent. **Body and greeting size** scales only Mowan user/assistant messages, greeting, and **Thinking**. **Message button size** scales only the copy, swipe, branch, rollback, and edit actions at the end of each turn. Both range from 75%–150%, apply immediately, persist across refresh, and restore independently to 100%. They do not change native DSH chat, outer Tavern panels, the composer, prompts, history, or exports.
 
-- ST `system`/`user`/`assistant` prompt roles currently enter one DSH system section as reviewable labels, not real interleaved role messages.
+- ST `system`/`user`/`assistant` prompt roles are retained only as source metadata describing the requested insertion position; the labels are not written into prompt bodies. The loader expands the ordered preset and markers into multiple named DSH system sections, not real interleaved role messages.
 - `chatHistory` is always provided by DSH durable history. The plugin does not copy history.
-- example dialogue, greeting, PHI, and depth/absolute placement use an explicitly labeled system approximation or diagnosed fallback.
+- example dialogue, greeting, PHI, and depth/absolute placement use the current marker/fallback placement; Loader metadata and diagnostics report ST semantics that cannot be represented exactly.
 - World books do not fully execute recursive, sticky/cooldown/delay, vector, strict depth/role, or outlet semantics.
 - Only DSH-supported `temperature`, `maxTokens`, `reasoningEffort`, and `stop` are mapped. Other ST samplers are stored and not claimed as delivered.
 - ST macros implement a common subset, not a full SillyTavern runtime.

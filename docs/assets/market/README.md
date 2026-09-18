@@ -1,6 +1,6 @@
 # Market screenshots
 
-Seven submission-ready **1800 × 1200 (3:2) PNGs**, ordered in the repository's `screenshots.json`. They compose real UI captures of dsh-tavern at `7ebcfca`, using the Chinese-language 基米 character card. English headings explain the features while the UI and roleplay remain Chinese.
+Seven submission-ready **1800 × 1200 (3:2) PNGs**, ordered in the repository's `screenshots.json`. They compose real dsh-tavern UI captures using the Chinese-language 基米 character card. English headings explain the features while the UI and roleplay remain Chinese.
 
 The order leads with the player experience and a button legend, then shows swipe-linked continuations, native Agent capabilities, session resources, presets, display filtering, and original DSH records. Tavern supplies an RP compatibility framework rather than replacing the DSH Agent preset. Subagents, local workspace reading, and Agent preset composition remain available within the applicable DSH permissions and RP safety rules. The three-subagent workflow is an example, not a mandatory mode or a fixed limit.
 
@@ -18,7 +18,7 @@ The compositions use cropped, scaled screenshots with captions outside the UI. N
 
 The manifest uses seven repository-relative paths, within the [Market screenshot requirements](https://github.com/awesome-dsh-plugin/awesome-dsh-plugin/blob/main/contributing.md#screenshots--截图optional-recommended--可选推荐). Push the assets and manifest together when publishing; a local commit alone does not make them available to Market.
 
-The swipe comparison uses fresh dark-mode captures from 基米's fourth playthrough: candidates `1/2` and `2/2`. Each side is one continuous crop, retaining the same opening user message, its candidate reply, a different second user message, and that path's reply and controls. It does not reuse the earlier light-mode material or splice individual messages. The first path offers to sit outside and block the wind; the second brings a new box and a towel. Switching back restored the first path's original user input and reply without regeneration. Capture settings were 125% RP body text and 150% message controls for readability. Existing-candidate switching does not regenerate later messages. The right arrow generates only when already at the final candidate; actions are disabled while the Agent is running. Button glyphs in the legend match the UI, and display editing does not change the model's original context.
+The swipe comparison uses dark-mode captures from 基米's fourth playthrough: candidates `1/2` and `2/2`. Each side is one continuous crop, retaining the same opening user message, its candidate reply, a different second user message, and that path's reply and controls; individual messages are not spliced. The first path offers to sit outside and block the wind; the second brings a new box and a towel. Switching back restored the first path's original user input and reply without regeneration. Capture settings were 125% RP body text and 150% message controls for readability. Existing-candidate switching does not regenerate later messages. The right arrow generates only when already at the final candidate; actions are disabled while the Agent is running. Button glyphs in the legend match the UI, and display editing does not change the model's original context.
 
 ## Gallery
 

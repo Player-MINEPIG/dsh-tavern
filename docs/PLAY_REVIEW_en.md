@@ -1,94 +1,64 @@
-# Playthrough v2 implementation review
+# Playthrough behavior and acceptance
 
-The workspace is `2.2.0` (released 2026-09-11), adapting DSH `0.1.5-rc.1`, adding the public coordinate API, and fixing rich-text rendering. See the [upgrade guide](DSH_0.1.5_MIGRATION_en.md) for current acceptance. The `2.1.0` acceptance and tag status below remain historical records.
+This page describes RP playthroughs in the Tavern `2.3.0` candidate, targeting DSH
+`0.1.5-rc.1`. The candidate is not merged or released. See [Trace acceptance](TRACE_REVIEW_en.md)
+for current verification results and release gates. [中文](PLAY_REVIEW.md)
 
-[中文](PLAY_REVIEW.md)
+## Current behavior
 
-## 2.2.0 rich-text rendering acceptance (2026-09-11)
-
-The user confirmed acceptance after installing the rendering fixes into the temporary DSH `0.1.5-rc.1` environment.
-
-- Manual acceptance covers Markdown, fenced code, and line breaks inside details, plus the corrected display-regex template's horizontal bar, CSS blinking, native expansion, and inner HTML rendering.
-- Retained boundaries: template JavaScript remains blocked. CSS is isolated per message; the corrected rule preserves characters required by inner HTML without changing the regex engine's `trimStrings` semantics. See the [usage guide](USAGE_en.md#markdown-html-and-template-styles) and [SECURITY](../SECURITY_en.md).
-- Automated verification: `npm run check` passed 541 tests, with 5 optional/external integration skips and no failures. All 22 Chrome checks passed, covering the corrected template, CSS isolation, script/event/unsafe-link filtering, streaming updates, and static HTML export.
-- Installation verification: all 191 packaged files in the temporary environment matched the candidate package byte for byte. Configuration and sessions were retained. The user's original template and conversation content were not added to public test fixtures.
-
-This closes manual acceptance for this rendering fix. Version `2.2.0` was released on 2026-09-11 with the accepted fixes below.
-
-Review baseline: `codex/v2-lingzhu-mowan-frontend`. First review was `6ede09d` (2026-08-20). Risk-close and product-implementation notes were updated through `bb10a3b` (2026-08-21).
-Original findings are kept as audit evidence. Each item's current status follows “accepted handling decision” and the implementation audit.
-
-## Summary
-
-The current implementation already respects several key boundaries: `packages/play` does not import private DSH modules; Host operations are centralized in `packages/tavern-loader/src/play-host.js`; message reads use Host history/`deriveMessages()`; user input goes through `session.prompt({ mode: "queue" })`; there is no bypass write of DSH messages or forged history; timeline stores only session/event range references; path APIs check root, relative path, and symlinks; the default-view adapter has also moved out of `conversation.view` and no longer registers a second `chat`.
-
-## Later acceptance status
-
-The following is product acceptance after the review baseline. The 2.0 release scope has completed human acceptance. Later changes still need the matching items rerun:
-
-| Scope | Current status | Notes |
-| --- | --- | --- |
-| Playthrough lifecycle | Implemented; see version-specific acceptance below | Character-card sidebar creates/reuses the latest empty playthrough, locale-aware generated `Playthrough N` / `{number}周目` naming, verbatim rename, real blank DSH session, and empty timeline/catalog validation. Reuse also considers DSH messages and imported QA. |
-| Empty-session greeting dock | Implemented, accepted | Greeting is shown in the native composer dock. Left/right buttons stay on both sides. A card with no greeting keeps an empty opening and footer. |
-| Imported-record binding | Implemented, accepted | Binds to the current empty root session. Does not create a session or timeline. Supports bind, rebind, unbind; unbind restores greeting. The server repeats the empty-session lock check. |
-| Last three QA turns | Implemented, accepted | Opening dock shows the last three imported QA turns. Display preview, not DSH history. |
-| One-shot injection | Implemented, accepted | First assembly establishes a durable claim from public `claimEventSeqs`. Replay is allowed before the same terminal; after terminal a new claim no longer injects. Tavern branch/swipe copies body-free lineage. After interrupt, a new message on the original session does not reinject. |
-| Action buttons and tree playthrough branching | Implemented, accepted | displayOverride, existing-variant switch, same-row left/right swipe, new-playthrough branch, same-playthrough rollback. Hide and its timeline field were removed before the 2.0 release. Whether a body is shown is decided only by display regex and displayOverride. Right-swipe on context output reruns the nearest real user turn and does not resend context. Timeline stores each swipe continuation with parent/head. The active branch-anchor session still belongs to the original playthrough. |
-| Display-regex order | Implemented, accepted | Global, preset, and character card each support the same handle-drag, shrink-to-line, and drop-placeholder animation as preset prompts. Save writes the workspace document or native `regex_scripts` arrays. Cross-source drag is forbidden. Combined order is fixed global → preset → character. |
-| Child-agent / context-injection display | Implemented, accepted | v2 messages keep model `role` and add `origin`. Mowan fully hides reasoning/context: no user bubble and no expand. Retry of context-triggered output walks forward to a real user turn; the controller refuses to resend context. Display regex only controls bodies. If every segment is cleared, one action group remains at the durable QA end. |
-
-Table behavior completed user acceptance on DSH `0.1.0-rc.8`. All P0 hardening is in `npm run verify:2.0` grouped regression. Windows junction, in-root reparse point, and pre-rename parent-directory replacement ran on a real machine and are no longer skipped for missing symlink permission. Real DSH `0.1.0-rc.8` Host chrome/workspace authoritative read-only smoke, write interaction, workspace-admission visuals, action buttons, display regex, playthrough lifecycle, and uninstall fallback are done. Two-tab and low-level races stay constrained by deterministic automated tests and later-version regression.
-
-`2.1.0` compatibility regression targets the DSH `0.1.2-rc.1` controllers, stable history cut, Session snapshots, and client contract owners. The `0.1.0-rc.8` paragraph above remains historical evidence. Current-version acceptance covers real RP, blank-playthrough greetings, first send, streaming and completed output, Trace, both UI locales, and retention of native view choices. The user confirmed initial credential onboarding and API error notices. Market captures also verified three-subagent storytelling, display regex, and restoration of distinct later user messages and replies when switching the first swipe; all seven images passed user acceptance.
-
-Dependency-compatibility branch commit `a2e2566` installed from GitHub into a fresh isolated DSH `0.1.2-rc.1` profile. Host read-only APIs and the installed prompt bridge's UUID call passed; both required peers resolved from the DSH installation. Packed-candidate removal/reinstallation retained data and restored the APIs. The full automated check passed 528 tests with 2 existing skips; grouped release verification, build, and package dry-run passed. The sequence below remains a regression workflow for later changes, not a pending list for these completed checks.
-
-Final review and merge of `2.1.0` are complete. `main` and the `v2.1.0` tag were pushed at `d9fedf7` on 2026-09-07. No GitHub Release was created.
-
-Workspace admission is implemented: Mowan blocks RP content when the v2 workspace is unbound, a candidate is stale, or read fails. It consumes only the public DSH workspace list. A candidate must be chosen explicitly, PUT is read-back-validated, and failure can retry or return to native. No browser workspace copy is saved.
-
-Original findings stay below as evidence. Whether they are closed follows the decision table immediately after.
-
-## Accepted handling decisions (2026-08-21; status as marked per row)
-
-| Original risk | Accepted contract |
+| Area | Contract |
 | --- | --- |
-| History completeness (implemented, `10250a7`) | The 32-page cap is gone. Pagination continues until Host `hasMore: false`. Empty Host page, illegal oldest `seq`, or a repeating/non-advancing cursor → 502 `PLAY_HISTORY_CURSOR_STALLED`. The plugin does not summarize/slice. Model-context overflow is a DSH error. README distinguishes the two layers. |
-| catalog/timeline concurrency | GET/PUT schema/path checks, in-process target lock, temp-write/replace recheck, and server SHA-256 revision/CAS are implemented. Managed PUT must send `expectedRevision`. Conflicts are uniformly 409 `PLAY_FILE_REVISION_CONFLICT` and do not change the file. Extremely narrow cross-process races stay under task 03's pure-Node boundary. Bundled live-client revision cache, create-only, and limited conflict replay were finished in task 05. Task 06 finished ordinary lifecycle-caller migration. |
-| Half-complete resources | No cross-file transaction is added. Wired lifecycle mutation APIs record operationId, stage, result, error code, and duration through `ctx.logger`. Only whitelist identifiers are logged — not body, length, summary, or unknown fields. Clients recover from completed stages, read-back, and stable error codes. |
-| import-context request semantics | Claim/terminal/lineage implemented. No claim means no inject or consume. Replay is allowed before the same terminal. `turn/end` stores only body-free terminal metadata. After terminal a new claim does not inject. Tavern branch/swipe copies body-free lineage. Third-party native forks are outside interception. |
-| catalog schema | Implemented: validate before PUT write and after GET read. id/normalized path unique; id uses safe segments; path is a safe relative path ending in `/timeline.json`. Known `ext.pmpDshTavern` is validated; third-party ext is kept. |
-| focus | Task 07 implemented: the stable entry resolves a path from a validated catalog and a safe playthrough id, and returns playthroughId/sessionId/nodeId/variantId. Empty playthroughs use rootSessionId. Old `/focus?path=` stays compatible; no path returns 400. Ordinary timeline PUT no longer updates deprecated/ignored activeTimelinePath. Task 08 finished bundled live-client migration: only a URL-encoded playthrough id is sent, and the four fields plus returned id are checked. |
-| Path TOCTOU | Implemented in-process per-target guard. The path chain `lstat`s each segment and rejects symlink/junction. Directories are created layer by layer and rechecked with realpath. Temp files use exclusive `wx`. Parent directory is rechecked before write and rename. Pure Node does not claim a cross-process or kernel-level no-follow transaction. An external local process can still create an extremely narrow race. |
-| Broader logging | This round supports only Cordis `ctx.logger`. Retention, destination, and rotation are managed by the DSH/Cordis Host. This plugin does not write its own persistent log file and does not promise Host logs as durable audit. Browser logger, a persistent bounded journal, and extra exporters go to backlog and do not block this round. |
+| History and input | DSH durable history is authoritative. Host operations use Tavern's public-controller adapter. Input uses `session.prompt({ mode: "queue" })`; timelines keep Session/event-range references. |
+| Playthrough lifecycle | Create runs by character; reuse the latest run only when its Session is empty. Generated titles follow locale; custom titles stay verbatim. Runs with missing DSH logs remain visible with an error, do not block creation and are not reused as empty. |
+| Greetings | The native composer dock displays blank-run greetings. Blank alternatives are skipped without renumbering card indices. Each boundary disables its arrow; an existing blank selection can recover to a valid greeting. |
+| External records | Bind, replace or unbind records on the current empty root Session, revalidated by the server. The latest three QA pairs are display previews, not DSH history. Unbinding restores greetings. |
+| One-time context | Assembly requires public `claimEventSeqs` before injection and persistent claiming. The same claim can replay before its terminal event; a new claim after terminal does not inject again. Tavern swipe/branch carries body-free lineage. |
+| Replies and branches | Display overrides, existing variants, new swipes, branches and rollback are supported. Parent/head preserves each swipe's continuation. Retry after context-triggered output targets the last real user turn, never resubmits context as user input. |
+| Display regex | Order is global→preset→character, with reordering within each source only. Rules affect RP display, not DSH originals. Hiding variable-update blocks does not require a variable runtime; that runtime itself is unsupported. |
+| Rich text | Markdown, nested details, HTML and per-message isolated CSS are supported. Template JavaScript, dangerous events and unsafe links are filtered. Static HTML exports use the same rendering boundary. |
+| Views and errors | RP consumes the official Chat message projection and hides reasoning/context. Conversation owns phase and view selection. Native Chat retains diagnostics; RP shows a localized terminal-error notice. |
+| Workspace admission | Missing bindings, invalid candidates and read failures block RP workspace content. Candidates come from public DSH workspaces, require selection and read-back verification, and are not duplicated in browser storage. Retry or return to native mode. |
 
-## Original findings: API and lifecycle semantics
+## Consistency and security boundaries
 
-| Level | Location | Finding and impact | Suggestion |
-| --- | --- | --- | --- |
-| P1 data consistency (closed, tasks 04–06) | `workspace.js`, `live.js`, `mutations.js`, and lifecycle callers | The original implementation protected whole-document writes with only a single-client queue; cross-tab updates could be lost. Server revision/CAS and local-intent replay of built-in callers are now implemented. External side effects such as session/branch/message are not repeated during CAS replay. | Keep verifying two-tab conflicts in release regression. Third-party clients must send expectedRevision and handle 409. |
-| P1 half-complete resources (accepted boundary, tasks 11–13) | `operation-log.js` and workspace/session/import mutation endpoints | session, directory, timeline, and catalog are still several atomic operations. Failure may leave orphans. The current choice is no cross-file mega-transaction, plus content-free `ctx.logger` stages, stable error codes, and client read-back recovery per endpoint. | Do not claim atomicity. Release acceptance checks failure logs and recovery paths. Browser logs, persistent journal, and exporter are deferred. |
-| P1 history completeness (closed, `10250a7`) | `packages/play/src/sessions.js:62-79` | The original 32-page cap silently returned incomplete history while `hasMore: true`. That risk is closed by unbounded pagination and explicit cursor-stall failure. `GET /sessions/:id/messages` does not return a partial-history illusion. | Implemented: keep paging until `hasMore !== true`. Empty page, illegal oldest `seq`, or a repeating/non-advancing cursor → 502 `PLAY_HISTORY_CURSOR_STALLED`. The plugin does not summarize/slice. |
-| P1 request semantics (closed, tasks 09–10) | `import-context-runtime.js`, loader hooks, and the branch host seam | Claim identity, terminal, and Tavern branch lineage are implemented. Retry replays before terminal. A new user claim after the same terminal no longer injects. State stores only body-free metadata. | Release regression covers the six cases: normal, request failure, cancel, new message after interrupt, same-turn retry, and swipe. |
+- History pagination holds a stable official cut and continues to `hasMore: false`.
+  Empty pages, invalid oldest seq or stalled cursors return `502 PLAY_HISTORY_CURSOR_STALLED`,
+  not apparently complete partial history. DSH owns model context limits.
+- Catalog/timeline reads and writes validate schema, unique IDs/paths, safe relative paths
+  and known extensions while preserving third-party extensions. Managed PUT requires
+  `expectedRevision`; SHA-256 revision/CAS conflicts return `409 PLAY_FILE_REVISION_CONFLICT`
+  without changing files. Clients replay only pure local mutations, not Host side effects.
+- Stable focus resolves a validated playthrough ID, using rootSessionId for blank runs.
+  The explicit-path route is compatibility-only; `activeTimelinePath` is not focus authority.
+- Target locks, per-segment path checks, exclusive temporary writes and pre-rename checks
+  provide practical path protection. Pure Node does not promise cross-process/kernel
+  no-follow transactions. Multi-resource lifecycle operations are not cross-file transactions.
+- Lifecycle writes use Cordis `ctx.logger` for request-local operation IDs, stages, codes
+  and duration without bodies. Clients recover through completed stages, read-back and
+  stable errors. These logs are not a persistent audit journal.
+- Imported context is marked untrusted. Greetings, imported QA, display overrides and
+  timelines never fabricate DSH messages. Native Sessions/history remain usable after removal.
 
-## Original findings: security and schema
+See [API](API_en.md), [usage](USAGE_en.md), [security](../SECURITY_en.md) and the
+[coordinate migration guide](DSH_0.1.5_MIGRATION_en.md) for the corresponding contracts.
 
-| Level | Location | Finding and impact | Suggestion |
-| --- | --- | --- | --- |
-| P2 security (closed, task 03) | `packages/play/src/workspace.js`, `packages/play/src/paths.js` | Practical path hardening is implemented: target lock, per-segment no-follow checks, layer-by-layer create, realpath recheck, exclusive temp write, and pre-rename parent recheck. | Pure Node does not claim a cross-process or kernel-level no-follow transaction. External-process extremely narrow races and revision/CAS stay separate. |
-| P2 schema/compat (closed, task 02) | `packages/play/src/timeline.js`, `workspace.js` | catalog/timeline now validate uniformly on GET and PUT. Dangerous path, duplicate id/path, and bad known `pmpDshTavern` field values return explicit `PLAY_CATALOG_INVALID` / `PLAY_TIMELINE_INVALID`. Third-party ext is kept. Server revision/CAS finished inside the same target guard. TOCTOU path hardening is done. | Bundled live-client primitives and ordinary lifecycle-caller migration are both finished. |
-| P2 focus semantics (closed, tasks 07/08) | `sessions.js`, `live.js`, and focus callers | Stable focus no longer depends on most-recent write or lastOpenedAt. activeTimelinePath is kept only as a compatibility field and is deprecated/ignored. Ordinary timeline PUT no longer updates it. The bundled live client calls the stable entry only with a URL-encoded playthrough id and validates playthroughId/sessionId/nodeId/variantId. | Old `/focus?path=` is migration compatibility only. A custom client may still pass an explicit path. |
+## Acceptance workflow
 
-## Boundaries that later implementation must not regress
+1. **Automated checks.** `npm run verify:2.0` covers history, schema/CAS/focus, path safety,
+   claim/lineage, operation logs, services/slots, localization and packaging. Set
+   `DSH_TAVERN_COMPAT_ROOT` for official codecs; a conditional skip is not a pass.
+2. **Real Host reads.** Set `DSH_TAVERN_PLAY_LIVE=1` and `DSH_TAVERN_PLAY_LIVE_URL`, then run
+   `node --test test/play-sessions.test.mjs`. This verifies chrome/workspace reads, not writes or UI behavior.
+3. **Browser lifecycle.** Use copies to exercise workspace admission, create/reuse/rename,
+   greeting boundaries, first send, streaming/completed output, regex/rich text, swipe
+   continuations, branch/rollback, import rebinding and export. Reload a valid branch in
+   a workspace with missing logs: RP must remain available and new runs must be creatable.
+4. **Concurrency and failure.** Check focus/SSE/poll convergence and CAS conflicts across
+   two tabs; cancellation, failure/retry, import claim terminal semantics and partial-operation
+   read-back recovery. Third-party plugins require their own integration acceptance.
+5. **Removal and recovery.** Remove/reinstall only in a test profile. Native Sessions must
+   remain usable and external Tavern data retained. `--no-backup` skips a removal backup;
+   it does not mean delete resources.
 
-- Do not write greeting, imported QA, or timeline nodes as DSH `user/message` / `assistant/message`. Current import projects through a limited, escaped, `untrusted`-labeled profile context. That direction is correct.
-- Do not let the client touch private DSH session fields, bundle paths, or DOM. Keep going through v2 Host RPC, the public session projection, and the root path jail.
-- Do not dress a local controller's serial queue as a cross-client transaction. Every managed catalog/timeline caller continues to cooperate with server revision/CAS.
-- While fixing the items above, native view, native Chat, Host session history, and uninstall fallback must still work independently.
-
-## Updated acceptance order
-
-1. Automated evidence: run `npm run verify:2.0`. Full history, the six import claim/lineage cases, schema/CAS, corrupt files, focus-by-id, operation log, Windows junction/reparse/pre-rename parent replacement, and mode-service dispose are all covered by deterministic tests.
-2. Real Host/browser: first run read-only Host smoke with `DSH_TAVERN_PLAY_LIVE=1` and `DSH_TAVERN_PLAY_LIVE_URL`. Then watch chrome SSE/focus/poll convergence and CAS conflicts in two tabs. In fresh data, verify workspace admission for no candidate / one candidate / many candidates / stale candidate / failure recovery. Do one representative UI regression for normal and interrupted replies.
-3. Compatibility fallback: disable or uninstall Tavern, confirm native DSH and other plugins still work, then reinstall and confirm that external persistent data remains readable. `--no-backup` skips only the pre-removal snapshot and must not erase resources.
-4. Release gate: `npm run verify:2.0` already includes build and pack dry-run. Recheck dependency audit, public-path/secret scan, official docs, and version. For future versions, merge and create the corresponding version tag only after final review and authorization; see the completed `2.1.0` status above.
+Release requires maintainer acceptance of this candidate and explicit authorization.
+Earlier-version acceptance is not a substitute; consult matching Git tags for past records.

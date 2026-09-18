@@ -2,8 +2,7 @@
 
 [English](API_en.md) · [v3 详细合同](PROMPT_API_V3.md) · [前端接入](FRONTEND_INTEGRATION_zh-CN.md)
 
-状态：Tavern **2.3.0 候选**，未发布；更新于 2026-09-18。新增 Trace 的运行时验收目标为
-DSH `0.1.5-rc.1`；已发布 2.2.0 的 v1/v2 基线也验证过 `0.1.2-rc.1`。
+合同版本：Tavern **2.3.0 候选**，目标 DSH `0.1.5-rc.1`。
 根路径 `/pmp-dsh-tavern/api`。API 版本与 DSH 日志格式 V3 无关。
 
 各版本路由目录统一采用 v2 的 **方法 / 路径 / 作用 / 状态** 格式。路径相对于该节声明的
@@ -11,13 +10,13 @@ DSH `0.1.5-rc.1`；已发布 2.2.0 的 v1/v2 基线也验证过 `0.1.2-rc.1`。
 Host、Origin 和媒体类型检查。成功 JSON 带 `ok:true`；失败带 `ok:false` 和 `error`。
 v1 的 error 形状和方法拒绝状态码因资源而异，文档排版统一不改变线上合同。
 
-已发布的 [DSH V3 迁移合同](DSH_0.1.5_MIGRATION.md) 继续适用于消息坐标、branch 输入
-和未迁移 timeline 的拒绝行为。
+[DSH V3 坐标迁移合同](DSH_0.1.5_MIGRATION.md) 定义消息坐标、branch 输入和未迁移
+timeline 的拒绝行为。
 
 <a id="api-scope"></a>
 ## 版本职责与重叠核对
 
-核对日期：2026-09-18。当前配置聚合已从 v3 删除；以下记录实际边界。
+以下是 v1、v2 与 v3 的当前职责边界。v3 不提供当前配置聚合。
 
 | 能力 | v1 当前覆盖 | v3 当前覆盖 | 范围结论 |
 | --- | --- | --- | --- |
@@ -25,15 +24,16 @@ v1 的 error 形状和方法拒绝状态码因资源而异，文档排版统一�
 | 当前绑定与开场选项 | 各 selection、资源 world-books 子接口、configuration preview；`/active` 含当前汇总 | 仅保留历史记录内的当时绑定 | 当前配置归 v1；有效开场正文与关系去重由调用者派生 |
 | 当前字段计数、整体 revision、采样建议 | 资源字段可计数；`/active.callConfig` 含采样映射，但无相同的全量快照 revision | 不提供当前字段计数或聚合 revision；保留历史段落与来源 metadata 的计数/hash | 调用者自行组合；不能宣称 v1 响应逐字段等价 |
 | 历史绑定、资源摘要、世界书决策 | 旧 `/traces?sessionId=` 兼容读取；新 v1 审计与 v3 共享 schema 4 record | `/assemblies` 详情内的 selection/audit，及 legacy 适配 | 有意的历史审计重叠；旧路由保留，新采集只写 canonical record |
-| 当时的具名段落、来源 metadata、顺序、实际系统消息核对 | 无；`/active` 只能按当前配置重新装配 | `/assemblies` 索引与详情；详情从官方历史验证恢复正文 | v3 独立职责；`source.text` 不保存，当前配置不能冒充历史 |
+| 当时的具名段落、来源 metadata、顺序、实际系统消息核对 | 无；`/active` 只能按当前配置重新装配 | `/assemblies` 索引与详情；详情从官方历史验证恢复正文 | v3 独立职责；新记录不保存来源正文，当前配置不能冒充历史 |
 
 职责边界：**v1 管当前资源与配置，v2 管扮演会话/工作区元操作，v3 管逐次装配 metadata、官方历史引用与来源追踪。**
-当前候选 `/sources` 已删除，GET 返回 404，不提供别名或 v1 重定向。
-历史 `sections[].sources` 继续保留段落级关系与 hash/counts，但新记录的 `source.text` 为
-`not-stored`，不是当前 `/sources` 聚合端点。
+`/sessions/:id/sources` 不属于 v3 合同；GET 返回 404，不提供别名或 v1 重定向。
+历史 `sections[].sources` 继续保留段落级关系与 hash/counts，但新记录不返回 `source.text`，
+其 `textStatus` 为 `not-stored`；这不是当前 `/sources` 聚合端点。
 
-历史审计重叠不表示 ID 或响应字段可以互换。v1 有自己的 header 对齐状态，v3 采集时的
-audit 摘要也不会持续镜像 v1 后续更新；保留旧消费者，新来源视图使用 v3 记录。
+历史审计重叠不表示 ID 或响应字段可以互换。新 v1 audit 与 v3 assembly metadata 使用
+canonical schema 4 record 内的同一份 audit；legacy schema 3 详情可能早于旧 v1 metadata 的
+最终状态。旧消费者继续使用兼容视图，新来源视图使用 v3 记录。
 
 v1 `/active` 调用 loader 装配和世界书匹配；它不保存新的历史 Trace，也不能作为无装配成本的
 配置 GET。只要当前配置时，可以先调用 `POST /session-configurations/preview`
@@ -70,15 +70,15 @@ DSH 历史以及 v2 `/sessions/:id/messages` 提供权威消息读取；v3 详�
 | POST | `/sessions/:id/branch` | `{ atEventId, sessionFormatVersion? }`：日志 seq 与其格式版本；迁移检查见下文。fork 后复制公开 selection；若来源 import claim 已在更早 terminal 结束，则复制不含正文的 pending lineage；不写 timeline、不代发。复制失败显式返回 502 `PLAY_BRANCH_COPY_FAILED`；开放 turn → 409 | 已实现 |
 | POST | `/sessions/:id/user-message` | `{ text }` 作为下一条用户正文，`session.prompt` `queue` | 已实现 |
 | GET | `/sessions/:id/messages` | `deriveMessages()` + `seq` + `incompleteTurn` + 每条消息的 `origin`；顶层可附带 `sessionFormatVersion` / `migratedFromV2`。持续读取到 `hasMore: false`，不设插件页数上限；Host 游标空页、非法 seq 或不前进时返回 502 `PLAY_HISTORY_CURSOR_STALLED` | 已实现 |
-| GET | `/sessions/:id/coordinates` | 只读查询当前逻辑会话的格式版本与迁移标记；无消息正文。[字段与调用示例](#session-coordinates) | 2.2.0 新增 |
+| GET | `/sessions/:id/coordinates` | 只读查询当前逻辑会话的格式版本与迁移标记；无消息正文。[字段与调用示例](#session-coordinates) | 已实现 |
 | GET | `/sessions/:id/import-context` | 返回 `{ binding }`；未绑定为 `null`，绑定含 path/hash/state/数量摘要及（已 claim 时）不含正文的 claim identity/event seq 摘要，不返回记录正文 | 已实现 |
 | PUT | `/sessions/:id/import-context` | `{ reference: { path, expectedHash? } }`；为空 session 绑定或换绑已写入工作区的 import-context | 已实现 |
 | DELETE | `/sessions/:id/import-context` | 为空 session 解绑；幂等返回 `{ binding: null }` | 已实现 |
-| GET | `/playthroughs/:id/focus` | 2.0 稳定合同：经 catalog 解析周目，返回 `{ playthroughId, sessionId, nodeId, variantId }`；空周目使用 `rootSessionId` | 已实现；bundled live client 已迁移 |
+| GET | `/playthroughs/:id/focus` | 经 catalog 解析周目，返回 `{ playthroughId, sessionId, nodeId, variantId }`；空周目使用 `rootSessionId` | 已实现 |
 | POST | `/playthroughs/:id/relink-character` | `{ characterId }`；只把指定周目及其 root/swipe/branch 后代 session 重新绑定到一张现存角色卡。显式用户选择不受自动归类规则限制 | 已实现 |
 | POST | `/playthroughs/:id/detach-session` | `{ sessionId }`；把目标 session 对应 timeline variant 及其后代从该周目移除，保留兄弟分支、DSH session/历史和空 catalog 周目。服务端校验树并以受管文件 revision/CAS 提交 | 已实现 |
-| GET | `/focus?path=` | 迁移期低层兼容：按显式 timeline path 派生 `{ sessionId }`；2.0 内置前端不再依赖 | 已实现，迁移兼容面 |
-| GET | `/focus`（无 path） | 2.0 不提供默认目标；不再把“最近写入 timeline”当作用户 focus | 已移除默认行为，400 PLAY_FOCUS_PATH_REQUIRED |
+| GET | `/focus?path=` | 低层兼容路由：按显式 timeline path 派生 `{ sessionId }`；内置前端使用 playthrough id 路由 | 兼容面 |
+| GET | `/focus`（无 path） | 不提供默认目标；“最近写入 timeline”不是用户 focus | 400 PLAY_FOCUS_PATH_REQUIRED |
 | POST | `/focus`、`/playthroughs/:id/focus` | 不提供 | 405 |
 
 路径存在、方法不对 → `405 PLAY_METHOD_NOT_ALLOWED`（例如 `POST /chrome`、`POST /focus`、`GET /sessions`）。稳定 focus 中周目 id 不存在返回 404 PLAY_PLAYTHROUGH_NOT_FOUND；catalog 缺失返回 409 PLAY_CATALOG_UNAVAILABLE，catalog 损坏保留 400 PLAY_CATALOG_INVALID；timeline 缺失或损坏统一返回 409 PLAY_FOCUS_UNAVAILABLE。稳定入口不接受客户端 path，不读取 DSH history，也不写文件。旧 /focus?path= 仅保留迁移兼容。
@@ -86,7 +86,7 @@ DSH 历史以及 v2 `/sessions/:id/messages` 提供权威消息读取；v3 详�
 <a id="session-coordinates"></a>
 ### 会话坐标版本查询与使用
 
-从 Tavern `2.2.0` 起，公开只读接口 `GET /sessions/:id/coordinates` 用于检查**指定会话当前事件序号采用的格式版本**。不需要请求正文或查询参数；`:id` 是 DSH Session ID，客户端须 URL 编码。接口不返回消息正文、日志路径、存储 schema 或旧→新序号映射，也不执行 Tavern 数据迁移。它适合外部前端在使用已保存的事件引用前查询格式。
+公开只读接口 `GET /sessions/:id/coordinates` 用于检查**指定会话当前事件序号采用的格式版本**。不需要请求正文或查询参数；`:id` 是 DSH Session ID，客户端须 URL 编码。接口不返回消息正文、日志路径、存储 schema 或旧→新序号映射，也不执行 Tavern 数据迁移。它适合外部前端在使用已保存的事件引用前查询格式。
 
 #### 请求与字段
 
@@ -124,7 +124,7 @@ async function queryCoordinates(sessionId) {
 | `sessionFormatVersion` | integer 或 null | **DSH 上游定义**的会话格式版本，由公共 `session.inspect()` 的 `meta.version` 读取；不是 DSH 软件版本、Tavern 版本或 HTTP `/v2` 的版本。`0` 是有效版本，不能用真假值检查。`null` 表示当前 Host 未提供可用版本，不能当作 `0` 或“兼容”。 |
 | `migratedFromV2` | boolean | **Tavern 推断**的标记：在当前事件中检测到符合上游命名规则的 V2→V3 合成 system message ID 时为 `true`。V0/V1 经完整迁移链到 V3 也可为 `true`；`false` 仅表示未检测到，不能证明从未迁移，也不是迁移是否完成的权威状态。 |
 
-返回的是 Host 当前读取到的**逻辑会话格式**，不保证磁盘上原始文件也已改写成该版本。DSH `0.1.2-rc.1` 的实测值为 `0`，`0.1.5-rc.1` 当前会话为 `3`；不要从软件版本字符串猜测，也不要把 `>= 3` 当作未来格式兼容承诺。字段名由 Tavern 定义，格式含义和转换规则由 DSH 上游定义。
+返回的是 Host 当前读取到的**逻辑会话格式**，不保证磁盘上原始文件也已改写成该版本。调用者必须使用接口返回值，不能从软件版本字符串猜测，也不能把 `>= 3` 当作未来格式兼容承诺。字段名由 Tavern 定义，格式含义和转换规则由 DSH 上游定义。
 
 若本来就需要消息，直接读取 `GET /sessions/:id/messages` 的顶层 `sessionFormatVersion`、`migratedFromV2` 即可，不必再查此接口。消息响应中这两个字段可缺省，旧插件可能没有独立接口；缺失或 `null` 应视为未知。独立接口减少返回正文的需要，但实现仍会 inspect 会话，不能假定查询成本与历史长度无关。
 
@@ -225,29 +225,31 @@ session/workspace/timeline/catalog 积木组合同样的流程。当前 bundled 
 detach 删除目标 session 的所有 variant 以及以其为父节点的全部后代 variant，不重挂幸存节点；同一节点的兄弟 swipe 和其他分支保留。若 root 被移除，catalog 清除 `rootSessionId` 与旧 import-context 引用，但保留周目行、名称和编号。下次新建同角色周目时，bundled client 为该空周目创建新的 DSH root session 并以 catalog CAS 重新挂入，不创建新目录或新编号。操作不会删除、归档或改名任何 DSH session。
 
 这里的“周目事务”是前端对公开原子操作的组合，不等同于服务端跨文件事务。单个客户端的
-controller 会串行同角色创建；内置 caller 使用服务端 CAS 的有限重放保护跨标签页并发写入，但跨文件的 session/目录/timeline/catalog 组合仍不是事务。创建中途失败暂不增加跨文件事务：workspace bind、目录创建、普通文件与 catalog/timeline 写入、周目 detach，以及 session create/branch/user-message 和 import-context PUT/DELETE 都各自在单次变更请求内使用一个 `operationId` 写 `ctx.logger`；客户端依据已完成阶段、回读结果和稳定错误码恢复。不同 API 请求不共享 operationId，chrome、GET 和浏览器前端操作仍保持安静；不得把组合流程宣传为原子提交。
+controller 会串行同角色创建；内置 caller 使用服务端 CAS 的有限重放保护跨标签页并发写入，但跨文件的 session/目录/timeline/catalog 组合仍不是事务。创建中途失败不由跨文件事务包裹：workspace bind、目录创建、普通文件与 catalog/timeline 写入、周目 detach，以及 session create/branch/user-message 和 import-context PUT/DELETE 都各自在单次变更请求内使用一个 `operationId` 写 `ctx.logger`；客户端依据已完成阶段、回读结果和稳定错误码恢复。不同 API 请求不共享 operationId，chrome、GET 和浏览器前端操作仍保持安静；不得把组合流程宣传为原子提交。
 
 ### 外部记录导入上下文
 
 空周目的 opening dock 使用当前 root session 绑定外部记录，不另建 session，也不写 greeting
 或 timeline 节点。绑定、换绑和解绑分别通过 `PUT` / `DELETE /sessions/:id/import-context`
 完成；客户端在同一 footer 中显示操作，绑定后预览最近三轮 QA。绑定状态为 `pending` 时，首次
-实际请求才注入完整内容；loader 使用同一 profile snapshot 的 user/character 名称展开 greeting 与 QA 中的 Tavern 宏，再将其转义并标记为 `untrusted`、只读上下文，避免 ST 占位符进入 DSH prompt variable 解析；它不把内容写入 DSH
-durable history。当前已实现的基础语义是：首次 assembly 必须按原用户 turn/event 的公开 `claimEventSeqs` 建立持久 claim；同一 claim identity 可重复 assembly，未 claim 的 pending 不会因 view 或无关 turn/end 被消费。retry/swipe lineage 与取消/中断终态已实现：终态只保存 event seq、turn、reason.kind 等非正文元数据；同一请求在 terminal 前可重复 assembly，terminal 后新 claim 不再注入；Tavern swipe 仅通过公开 branch 接缝复制 selection/lineage，不宣称拦截所有第三方原生 fork。
+实际请求才注入完整内容；loader 使用同一 profile snapshot 的 user/character 名称展开 greeting 与 QA 中的 Tavern 宏，再将其转义并标记为 `untrusted`、只读上下文，避免 ST 占位符进入 DSH prompt variable 解析。它不伪造 user/assistant QA，也不把导入内容写入 Tavern timeline；实际请求中的 system 提示词仍由 DSH 官方历史持久化。首次 assembly 必须按原用户 turn/event 的公开 `claimEventSeqs` 建立持久 claim；同一 claim identity 可重复 assembly，未 claim 的 pending 不会因 view 或无关 turn/end 被消费。retry/swipe lineage 与取消/中断终态已实现：终态只保存 event seq、turn、reason.kind 等非正文元数据；同一请求在 terminal 前可重复 assembly，terminal 后新 claim 不再注入；Tavern swipe 仅通过公开 branch 接缝复制 selection/lineage，不宣称拦截所有第三方原生 fork。
 
 请求体为 `{ reference: { path, expectedHash? } }`。文件必须位于已绑定工作区根内，文档为
-`schemaVersion: 1` 且含 `qa` 数组。import parser 不做 256 KiB 或 QA 数量的人为上下文截断，也不做 summary/切片；模型上下文是否超限交给 DSH/provider。通用 `/workspace/files` 仍有 1 MiB 文件层读写上限。普通 SillyTavern JSON/JSONL 可由客户端解析后写入该上下文文件。2.0 不再公开 portable bundle 格式；ST JSONL 只表达当前活动线性历史，不能保存完整周目树拓扑。greeting 仍是展示投影，不伪造 assistant 历史。
+`schemaVersion: 1` 且含 `qa` 数组。import parser 不做 256 KiB 或 QA 数量的人为上下文截断，也不做 summary/切片；模型上下文是否超限交给 DSH/provider。通用 `/workspace/files` 仍有 1 MiB 文件层读写上限。普通 SillyTavern JSON/JSONL 可由客户端解析后写入该上下文文件。公开导入/导出面不定义 portable bundle；ST JSONL 只表达当前活动线性历史，不能保存完整周目树拓扑。greeting 仍是展示投影，不伪造 assistant 历史。
 
-### 2.0 发布加固（已实现并纳入分组自动回归）
+### v2 持久化、并发与审计保证
 
-- ✅ history 已实现（`10250a7`）：取消 32 页人为上限并一直分页至 `hasMore: false`；Host 空页、非法 oldest `seq` 或 cursor 重复/不前进时返回 502 `PLAY_HISTORY_CURSOR_STALLED`；插件不摘要/切片。
-- import-context claim/终态/lineage 已实现：公开 `claimEventSeqs` 驱动 pending → claimed；terminal 前同一 identity 可重放，`turn/end` 保存 event seq、turn、reason.kind 等非正文元数据并转 consumed；terminal 后新 claim 不注入。Tavern swipe 通过公开 branch 复制 selection 与不含正文的 pending lineage，旧 claim 不直接复用；第三方原生 fork 不在插件拦截范围。
-- ✅ catalog/timeline GET 返回精确 UTF-8 字节 SHA-256 `revision`，PUT 使用显式 `expectedRevision`；缺失/格式错误分别为 400，目标状态或 hash 不一致为 409，冲突不改文件。服务端合同、内置 live client 的 revision 缓存/有限重放原语，以及内置生命周期 caller 的 CAS 迁移均已实现。
-- ✅ catalog/timeline 已在 GET 读后与 PUT 写前执行同一 schema/path 校验；未知第三方 `ext` 原样保留。revision/CAS 已在同一目标 guard 中实现；路径锁、逐段 no-follow 检查、临时 `wx` 写和 rename 前复验已实现。
-- 路径逐段拒绝 symlink/junction（Node 暴露的链接类型），逐层非 recursive 创建并 realpath 复核，临时文件使用排他 `wx`，写入/rename 前复验父目录；纯 Node 仍无法抵抗外部进程制造的极窄竞态，不引入 native addon。
-- 本轮已接入后端 `ctx.logger` 的 operation log：`PUT /workspace`（bind）、`POST /workspace/dirs`、`PUT /workspace/files?path=`（普通文件及 catalog/timeline）、`POST /playthroughs/:id/detach-session`、`POST /playthroughs/:id/relink-character`，以及 session create/branch/user-message 和 import-context PUT/DELETE。每次变更请求记录同一 `operationId` 的 start、request.validated、Host/prepare/bind/copy 或 timeline/catalog 变更阶段、success 或 failure；不记录资源/聊天正文。user-message 只记录 Host prompt accepted 阶段，不记录正文、长度或摘要。GET/list、session/messages/focus/import-context、chrome 及浏览器日志、持久 journal、额外 exporter 暂缓。
+- history 一直分页至 `hasMore: false`；Host 空页、非法 oldest `seq` 或 cursor 重复/不前进时返回 502 `PLAY_HISTORY_CURSOR_STALLED`，不摘要或切片。
+- import-context 由公开 `claimEventSeqs` 驱动 pending → claimed；terminal 前同一 identity 可重放，`turn/end` 保存 event seq、turn、reason.kind 等非正文元数据并转 consumed；terminal 后新 claim 不注入。Tavern swipe 通过公开 branch 复制 selection 与不含正文的 pending lineage，旧 claim 不直接复用；第三方原生 fork 不在插件拦截范围。
+- catalog/timeline GET 返回精确 UTF-8 字节 SHA-256 `revision`，PUT 使用显式 `expectedRevision`；缺失/格式错误分别为 400，目标状态或 hash 不一致为 409，冲突不改文件。内置 live client 缓存 revision，并只对纯文档意图做有限 CAS 重放。
+- catalog/timeline 在 GET 读后与 PUT 写前执行同一 schema/path 校验；未知第三方 `ext` 原样保留。revision/CAS 位于同一目标 guard，路径锁执行逐段 no-follow 检查，临时文件使用排他 `wx`，rename 前复验父目录。
+- 路径逐段拒绝 symlink/junction（Node 暴露的链接类型），逐层非 recursive 创建并 realpath 复核。纯 Node 仍无法抵抗外部进程制造的极窄竞态，合同不引入 native addon。
+- 后端 `ctx.logger` operation log 覆盖 `PUT /workspace`、`POST /workspace/dirs`、`PUT /workspace/files?path=`、playthrough detach/relink、session create/branch/user-message 和 import-context PUT/DELETE。每次变更请求使用一个 `operationId` 记录阶段与终态，不记录资源或聊天正文。user-message 只记录 Host prompt accepted 阶段，不记录正文、长度或摘要。只读 GET/list、session/messages/focus/import-context 与 chrome 不产生日志；浏览器日志、持久 journal 和额外 exporter 不在合同内。
 
-上述加固均已实现并纳入 `npm run verify:2.0`；该命令验证 history、schema/CAS/focus/路径防护、claim/lineage、无正文 operation log、chrome service/slot、工作区准入、本地化与发布包边界。设置 `DSH_TAVERN_PLAY_LIVE=1` 与 `DSH_TAVERN_PLAY_LIVE_URL` 后还会对运行中的 DSH Host 实际读取 chrome/workspace 权威状态。该只读冒烟不能替代真实写入或浏览器双标签页通知等交互验证；后续改动需按影响范围回归。`2.1.0` 在 DSH `0.1.2-rc.1` 上已完成的验收、测试边界及具体风险与决策见 [`PLAY_REVIEW.md`](PLAY_REVIEW.md)，不应将后续回归流程理解为本版本尚未完成的验收。
+`npm run verify:2.0` 验证 history、schema/CAS/focus/路径防护、claim/lineage、无正文
+operation log、chrome service/slot、工作区准入、本地化与发布包边界。设置
+`DSH_TAVERN_PLAY_LIVE=1` 与 `DSH_TAVERN_PLAY_LIVE_URL` 后，还会从运行中的 DSH Host
+只读检查 chrome/workspace 权威状态；真实写入和浏览器双标签通知仍需对应的交互验收。
 
 `chrome` 是整个前端的蓝/红球，存在插件 data `chrome.json`，默认 `native`。非法 `mode` → 400。GET 不要求 JSON Content-Type。
 `GET /chrome/events` 是 Tavern 自有的 SSE 变更面，不是 DSH Host API。连接后立即发送 `event: chrome/change` 当前快照；成功的 `PUT /chrome` 在实际 mode 变化后广播一次同名事件，事件 data 只含 `{ mode, revision }`。SSE 使用 `text/event-stream`、禁止缓存并在连接关闭时清理订阅；非 GET → 405。旧客户端只读取 `mode` 仍兼容，无法使用 SSE 的客户端应回退 GET/focus 刷新或短轮询。直接编辑 `chrome.json`、其他进程写入以及 DSH 私有 transport 不在该事件合同内。
@@ -258,7 +260,7 @@ durable history。当前已实现的基础语义是：首次 assembly 必须按�
 
 ## v1 bundled UI 合同
 
-前缀 `/pmp-dsh-tavern/api/v1`。旧根 `/dsh-tavern/api` 已废止。
+前缀 `/pmp-dsh-tavern/api/v1`。`/dsh-tavern/api` 不属于当前合同。
 
 | 方法 | 路径 | 作用 | 状态 |
 | --- | --- | --- | --- |
@@ -496,14 +498,14 @@ stage 或 terminal 调用无效且不会重复写终态。
 | --- | --- | --- | --- |
 | GET | `/capabilities` | 合同能力、来源映射与容量限制 | 候选已实现 |
 | GET | `/sessions/:id/assemblies` | 不含段落/context/系统消息正文的历史索引 | 候选已实现 |
-| GET | `/sessions/:id/assemblies/:recordId` | 冷读取官方历史并验证恢复段落/context 正文；来源只返回 metadata/hash/counts | 候选已实现 |
+| GET | `/sessions/:id/assemblies/:recordId` | 冷读取官方历史并验证恢复段落/context 正文；schema 4 来源只返回 metadata/hash/counts，旧 schema 3 详情仍可能含存量 `source.text` | 候选已实现 |
 
 字段、示例、错误码与持久化见 [v3 详细合同](PROMPT_API_V3.md)。
-旧候选 `/sessions/:id/sources` 已删除，GET 返回 404；当前配置及完整资源请读 v1。
+`/sessions/:id/sources` 不属于 v3 合同并返回 404；当前配置及完整资源请读 v1。
 
 ## 浏览器端 Chrome 模式服务
 
-Tavern client 通过 DSH `0.1.2-rc.1` 公开 Cordis `ctx.provide` 注册稳定服务名 `pmpDshTavernChrome`。这是 Tavern v2 自有合同，不是 DSH Host API；它只提供 `native|play` 生命周期，不拥有或仲裁任何 slot、view 或第三方插件 UI。
+Tavern client 通过 DSH `0.1.5-rc.1` 公开 Cordis `ctx.provide` 注册稳定服务名 `pmpDshTavernChrome`。这是 Tavern v2 自有合同，不是 DSH Host API；它只提供 `native|play` 生命周期，不拥有或仲裁任何 slot、view 或第三方插件 UI。
 
 公开 face：
 

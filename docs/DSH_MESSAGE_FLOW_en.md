@@ -1,86 +1,99 @@
 # DSH and dsh-tavern (DT) message flow
 
-**2.3.0 Trace update:** The loader expands its logical profile into ordered official `{name,text}` sections before downstream assembly listeners run. New schema 4 Trace persists metadata and official Session references only. [Primitive API v3](PROMPT_API_V3_en.md) verifies and resolves available section/context bodies on detail reads; source bodies are not stored.
-
-DSH `0.1.5-rc.1` delta: descriptions below of system text inside request/header apply to the historical V2 flow. V3 places the prompt in the effective system/message surface; request/header retains config/tools. Current Trace selects the versioned authority. Coordinate changes and migration are covered by the [upgrade guide](DSH_0.1.5_MIGRATION_en.md).
-
 [中文](DSH_MESSAGE_FLOW.md)
 
-Status: the message-flow baseline was checked on 2026-08-18 against the public README and installed source of local `@deepseek-ai/dsh 0.1.0-rc.6`. The 2.0 release candidate ran automated regression and install verification against DSH `0.1.0-rc.8` on 2026-08-22, but later sections are not presented as a new full upstream source audit. This page describes the native DSH flow, DT's own flow, how DT inserts into DSH, and one complete model step after DT is installed. It is not a README.
+This page defines the current message contract for Tavern **2.3.0 candidate** on DSH
+`0.1.5-rc.1`: native DSH flow, DT flow, DT interception points, and one complete model
+step. V3 system prompts enter the effective surface through `system/message`, while
+`request/header` retains config/tools. Trace schema 4 persists metadata and official
+Session references only; [API v3](PROMPT_API_V3_en.md) verifies bodies on demand.
 
-DSH `0.1.2-rc.1` compatibility delta (2026-09-05): the original message-flow baseline above remains historical audit evidence. The current Tavern Host no longer uses the removed `apiProxy`; its Play Host adapter explicitly calls the session/workspace/directory-picker controllers. History pins an inclusive `throughSeq` with `inspect()` and finishes the same snapshot with `page()`. In-process event reads use `session.seq`, `snapshotEvents()`, and `ownEvents()` instead of `Session.events` or `header.seedLength`. These changes do not alter the durable-message ownership, prompt-assembly order, or body-free Trace conclusions below.
+The Tavern Host adapter calls the session/workspace/directory-picker controllers explicitly.
+History pins an inclusive `throughSeq` with `inspect()` and completes the same snapshot with
+`page()`. In-process reads use `session.seq`, `snapshotEvents()`, and `ownEvents()`.
+Coordinate and migration rules are in the [upgrade guide](DSH_0.1.5_MIGRATION_en.md).
 
 `DT` here is short for `dsh-tavern`. SillyTavern (ST) is the resource format and part of the semantics DT compatibilizes. It is not the product identity of this plugin or its UI.
 
 ## 1. Native DSH flow
 
-Without DT installed, an ordinary agent step runs in this order:
+Without DT installed, an ordinary DSH `0.1.5-rc.1` agent step follows this sequence:
 
 ```text
 User submit
   │
   ▼
 Agent Inbox (next-turn / next-step)
-  │  Insert/edit/cancel all record agent/inbox/spliced
-  │  Claiming the pending messages records another delete splice
+  │  insert/edit/cancel and claim record agent/inbox/spliced
   ▼
 systemPrompt.assemble(agent scope)
-  ├─ Collect and sort native system sections
-  ├─ Collect runtime contexts
-  ├─ Collect tools and variables
-  └─ Run the system-prompt/assemble waterfall
+  ├─ collect and sort native system sections
+  ├─ collect runtime contexts, tools, and variables
+  └─ run the system-prompt/assemble waterfall
   │
   ▼
-Render the assembly as system and runtime-context messages
+DSH writes assembly output to the effective message surface
+  ├─ system sections → official system/message
+  └─ runtime contexts → official user/message snapshot with source metadata
   │
   ▼
 agent/pre-step waterfall
-  └─ Accept, replace, or reject this step's claimed messages
+  └─ accept, replace, or reject this step's claimed messages
   │
   ▼
-Session appends the accepted user/message
+Session appends accepted user/message
   │
   ▼
-Session.deriveMessages() produces this step's history messages
+Session.deriveMessages() produces the effective message array
   │
   ▼
-agent/request waterfall produces the LLM call config
+agent/request waterfall produces LLM call config
   │
   ▼
-Record request/header (final config + system + tools)
+prepareCall() validates config; request/header records final config + tools
   │
   ▼
-llm.stream({ system, messages, tools, ...config })
+llm.stream({ messages, tools, ...config })
   │
   ├─ assistant/chunk durable events
   ├─ assistant/message enters Session history
-  └─ tool-call → tool result → maybe the next step of the same turn
+  └─ tool-call → tool result → perhaps the next step in the same turn
 ```
 
-DSH's four data channels are independent:
+The current request has four authoritative input classes:
 
 | Channel | Authoritative source | Final destination |
 | --- | --- | --- |
-| System prompt | `systemPrompt.assemble()` | LLM request `system` |
-| Conversation history | `Session.deriveMessages()` | LLM request `messages` |
-| Tools | tools from system assembly | LLM request `tools` |
-| Model parameters | `agent/request` waterfall | provider/model/temperature and other call config |
+| System and runtime context | official `system/message` / context `user/message` produced by `systemPrompt.assemble()` | LLM request `messages` |
+| Conversation history | effective message surface from `Session.deriveMessages()` | LLM request `messages` |
+| Tools | tools from system assembly | LLM request `tools` and `request/header.tools` |
+| Model parameters | `agent/request` waterfall | provider/model/temperature call config and `request/header.config` |
 
 Key facts:
 
-- Inbox `claim`s current input first, but when system assembly runs, that input has not yet been appended as a Session `user/message` and is not in the public assembly context.
-- Every Inbox insert, replace, cancel, and claim first persists a public `agent/inbox/spliced` Session event. `Session.append()` synchronously notifies `session/event` observers, then Inbox mutates the live queue. DT rebuilds a bounded pending queue from that event and obtains the claimed messages after the claim-delete event and before system assembly starts.
-- DSH calls public `agent/pre-step` only after system assembly. The hook can see claimed messages, but the assembly it receives is already frozen.
-- `Session.deriveMessages()` projects user, assistant, and tool results from the durable message surface. Turn/step boundaries and streaming chunks do not become duplicate model messages.
-- `agent/request` owns only call config. It does not generate history and cannot replace a frozen system assembly.
-- `request/header` stores the actually effective config, system, and tools. It is the authoritative record of that step's model request header.
+- Inbox `claim`s current input before system assembly, but that input is not yet an ordinary
+  Session `user/message`. Inserts, replacements, cancellation, and claim first persist public
+  `agent/inbox/spliced` events. DT rebuilds a bounded queue from those events and obtains the
+  claimed batch after the claim-delete event and before system assembly.
+- DSH calls public `agent/pre-step` after system assembly. The hook sees claimed messages but
+  cannot rewrite the frozen assembly.
+- `Session.deriveMessages()` projects system, context, user, assistant, and tool content from
+  the effective message surface. Turn/step boundaries and streaming chunks do not become
+  duplicate model messages.
+- `agent/request` owns call config only. It neither creates history nor replaces frozen system
+  assembly.
+- In V3, effective `system/message` is the system-body authority and the corresponding
+  `user/message` snapshot is context-body authority. `request/header` records final config and
+  tools; it does not store system bodies.
+- `llm/stream` receives final runtime messages/tools/config. Observing that hook can verify the
+  actual request shape but does not create a second durable history.
 
-Local check locations:
+Code check locations:
 
 - `@deepseek-ai/dsh-agent-loop/lib/index.js`: `preStep()`, `turn()`, `step()`, `buildRequest()`;
 - `@deepseek-ai/dsh-system-prompt/lib/index.js`: `SystemPrompt.assemble()`;
 - `@deepseek-ai/dsh-session/lib/index.js`: `Session.deriveMessages()`;
-- `@deepseek-ai/dsh-llm/README.zh.md`: messages, call config, and `request/header` contract.
+- `@deepseek-ai/dsh-llm/README.zh.md`: messages, call config, `request/header`, and `llm/stream`.
 
 ### 1.1 Why playthrough branching does not use message-surface replacement
 
@@ -96,11 +109,11 @@ That capability is still not a reversible ST-style history-reorg interface:
 
 Therefore DT swipe, same-playthrough rollback, and new-playthrough branch use public DSH session branch/fork to create continuation sessions instead of rewriting the original session surface. Each branch has natively explainable DSH history, tool pairing, request headers, and independent compaction. Native **Chat**, other plugins, and Host after uninstall still work as ordinary DSH sessions. Tavern timeline stores only pointers to those authoritative messages, parent variants, and the active head. It composes a playthrough tree from several sessions and does not forge or copy history bodies.
 
-If DSH later provides a public request-time history projection (frozen native history in, this-request-only `messages[]` out) or atomic multi-message surface replacement, RP mode can add an optional strict ST projection strategy without changing the original Session. Until then, DT system/context injection must not be advertised as history replacement.
+Current DSH provides neither an arbitrary request-time `messages[]` history projection nor atomic multi-message surface replacement. DT system/context injection therefore is not history replacement, and strict ST role/depth projection is outside the current capability.
 
 ## 2. DT's own flow
 
-Inside DT, resource management and runtime compile are separate first. Frontend and API are the control plane and do not send messages to the model directly. The loader is the runtime data plane.
+DT separates resource management from runtime assembly. Frontend and API are the control plane and do not send messages to the model directly. The loader is the runtime data plane.
 
 ### 2.1 Control plane: import, edit, and session binding
 
@@ -146,7 +159,7 @@ Assembly rules:
 
 1. The loader resolves preset, character card, user profile, standalone world books, and the card's embedded book per session. Session-explicit world books win; world books bound to the current user are then appended and de-duplicated by ID.
 2. The world-book matcher scans public `Session.deriveMessages()` history and this step's claimed input from `PendingInputProjection`, de-duplicates stably, and defaults to at most the latest 64 KiB. It runs ordinary primary keys, secondary keys, probability, groups, and budget. Native JavaScript regex is blocked by default to avoid ReDoS.
-3. The unified compiler places character fields, user name/description, and hit lore at preset markers. `{{user}}` uses the current user name. Description is consumed once via `personaDescription`/`{{persona}}`. The `chatHistory` marker does not copy DSH history. Creator notes are not sent.
+3. The unified assembler places character fields, user name/description, and hit lore at preset markers. `{{user}}` uses the current user name. Description is consumed once via `personaDescription`/`{{persona}}`. The `chatHistory` marker does not copy DSH history. Creator notes are not sent.
 4. The result is an unmixable runtime snapshot: `systemText`, supported `callConfig`, resource summaries, diagnostics, world-book decisions, and an audit fingerprint.
 5. New v1 audit and v3 assembly metadata share one schema 4 record. The llm/stream result persists only hashes/references; detail cold-reads official history and verifies section/context bodies. `source.text` is not stored. Old v1/schema 3 files remain read-only compatibility inputs.
 
@@ -157,111 +170,116 @@ DT does not replace the agent loop and does not keep a second conversation histo
 | DSH extension point | DT action | Effect on the final request |
 | --- | --- | --- |
 | `agent/session-start` | Establish or restore the agent's session resource selection; pin the read-only sandbox when RP is on | Decides which DT resources this session may load, and whether the RP lock is on |
-| `systemPrompt.section` | Register `pmp-dsh-tavern:profile` (order 10) and `rp:policy` (order 45) | Contribute the compiled Tavern profile and optional RP-lock text to system assembly |
-| `system-prompt/assemble` | Append DT runtime contexts; advanced replace may keep only the DT profile and `rp:policy` | Changes final `system`/context, not history or tool-execution permissions |
+| `systemPrompt.section` | Register the `pmp-dsh-tavern:profile` anchor (order 10) and `rp:policy` (order 45) | Give the waterfall this Tavern assembly and optional RP-lock text |
+| `system-prompt/assemble` | Expand the logical profile anchor into ordered `pmp-dsh-tavern:part:*` sections and append import runtime contexts independently; advanced replace keeps only those parts and `rp:policy` | Determines the official system/context messages for this step, without changing ordinary history or tool-execution permissions |
 | `agent/pre-step` | Commit a pending RP-boundary switch and pin the read-only sandbox again | Does not change messages. Changing chat-bar permissions cannot unlock RP before the next step |
 | `tools.guard` | When RP is on, reject high-risk tools and `agent.cancel` | Does not enter execution. The alert dialog is recorded on the parent session (including when a child agent violates) |
-| `agent/request` | Merge call-config fields the DSH preset explicitly supports; hand the just-finished assembly snapshot to Trace | May change temperature/maxTokens/reasoningEffort/stop and similar. Does not change messages |
-| `session/event` | Align Trace with `request/header`; if RP is on and `sandbox/mode` is seen, pin read-only again | Adds only plugin audit metadata. Chat-bar permission changes cannot unlock RP |
+| `agent/request` | Merge call-config fields the DSH preset explicitly supports; start the shared schema 4 record from assembly metadata | May change temperature/maxTokens/reasoningEffort/stop and similar. Does not change messages |
+| `llm/stream` | Verify the complete system message and establish official system/context event references | Copies no bodies; v3 detail can cold-read and verify official history |
+| `session/event` | Align older Trace formats with request events; if RP is on and `sandbox/mode` is seen, pin read-only again | Adds only plugin audit metadata. Chat-bar permission changes cannot unlock RP |
 | `agent/request-error` | Mark the matching Trace attempt as failed | Does not change model input |
 | Web server / client slots | Provide protected resource APIs, the `DT` orb, sidebar, and Tavern Trace view | Control plane and visualization. Do not enter the prompt directly |
 
-Besides request/header alignment, the existing `session/event` observer is also used exclusively by the loader for public `agent/inbox/spliced`, building a `PendingInputProjection` that does not persist bodies. That projection affects only world-book activation. It does not change final DSH messages.
+The loader handles public `agent/inbox/spliced` through `session/event`, building a `PendingInputProjection` that does not persist bodies. That projection affects only world-book activation. It does not change final DSH messages.
 
-In default append mode, native DSH system sections still exist and the DT profile joins assembly as a new section. When RP is on and `rp:policy` is non-empty, the order-45 lock text is inserted too. Advanced replace removes other sections from model-visible system text and keeps only the DT profile and `rp:policy`. Tools, runtime contexts, variables, sandbox, approval, and execution-layer safety stay managed by DSH and are not turned off. RP then rejects a further subset of tools on top of that and cannot be unlocked with the chat-bar permission chip.
+In default append mode, native DSH system sections remain and the waterfall expands DT's logical profile into ordered `pmp-dsh-tavern:part:*` sections. When RP is on and `rp:policy` is non-empty, the order-45 lock text is inserted too. Advanced replace removes other model-visible system sections and keeps only those DT parts and `rp:policy`. Import runtime context remains an independent context contribution. Tools, other runtime contexts, variables, sandbox, approval, and execution-layer safety stay managed by DSH. RP rejects a further subset of tools on top of that and cannot be unlocked with the chat-bar permission chip.
 
 DT explicitly does not:
 
 - Delete, rewrite, or copy DSH durable history. Final `messages` still come from `Session.deriveMessages()`.
 - Dress static preset blocks labeled user/assistant as real history messages.
-- Forge greeting as assistant history. Today it is only source-labeled reference content.
+- Forge greeting as assistant history. On the first round it is ordinary system text, with provenance recorded in Tavern Trace metadata.
 - Override DSH Agent identity. A user profile only supplies a Tavern user name and description.
 - Send creator notes.
 - Bypass DSH tool permissions, sandbox, or approval. RP additionally blocks some high-risk tools. List: `RP_SECURE_MODE_en.md`.
 - Write forged Trace, unknown events, or a second conversation record into Session.
 
-## 4. Complete flow after the accepted DT is installed
+## 4. Complete flow with DT installed
 
-The following merges already-saved control-plane resource selection with one real model step:
+The control plane stores resources and Session selection. One model step reads that state only through loader/Host seams:
 
 ```text
 [Before the request: DT control plane]
 User imports/edits resources in the DT UI
   → /pmp-dsh-tavern/api/v1/*
   → plugin resource library
-  → SessionSelectionStore saves the current session binding
+  → SessionSelectionStore saves the current Session binding
 
 [One model step]
 User submit
   │
   ▼
 DSH Agent Inbox
-  │ claim current input; the public delete splice lets DT hold that batch
+  │ claim current input; the public delete splice lets DT retain that batch
   ▼
 DSH systemPrompt.assemble(agent scope)
   │
-  ├─ Collect native DSH system sections / contexts / tools / variables
+  ├─ collect native DSH system sections / contexts / tools / variables
   │
-  ├─ Call DT's pmp-dsh-tavern:profile section
-  │    ├─ Read this session's resource selection
-  │    ├─ Resolve preset / character / user / world books
-  │    ├─ Matcher scans deriveMessages() + this step's de-duplicated claimed batch
-  │    ├─ Compose markers, character fields, user description, and hit lore
-  │    └─ Cache this systemText / callConfig / audit snapshot
+  ├─ call DT's pmp-dsh-tavern:profile contribution
+  │    ├─ read this Session's resource selection
+  │    ├─ resolve preset / character / user / world books
+  │    ├─ matcher scans deriveMessages() + this step's de-duplicated claimed batch
+  │    ├─ assemble character fields, user description, and hit lore at markers
+  │    └─ expand to ordered pmp-dsh-tavern:part:* sections; retain call-config/audit metadata
   │
   └─ system-prompt/assemble waterfall
-       ├─ append: keep DSH sections and add DT profile/contexts
-       └─ replace: keep only the DT profile section; capability and execution-layer limits remain
+       ├─ append: keep DSH sections and add DT sections/contexts
+       └─ replace: model-visible system sections keep only DT parts and rp:policy; capabilities and execution-layer limits remain
   │
   ▼
-DSH renders and freezes this step's system assembly
+DSH writes the frozen assembly as official system/message and context user/message snapshots
   │
   ▼
 DSH agent/pre-step
-  └─ Now publicly claims current input; accept/replace/reject messages
+  └─ accept/replace/reject claimed current input
   │
   ▼
-DSH Session appends the accepted user/message
+DSH Session appends accepted user/message
   │
   ▼
-DSH Session.deriveMessages() produces the final history messages
+DSH Session.deriveMessages() produces final effective messages
   │
   ▼
 DSH agent/request
-  ├─ DSH/other plugins produce the base call config
-  └─ DT merges supported preset parameters and lets Trace capture the assembly that actually ran
+  ├─ DSH/other plugins produce base call config
+  ├─ DT merges supported preset parameters
+  └─ Trace starts the shared schema 4 record from this assembly's metadata
   │
   ▼
 DSH prepareCall() validates and freezes model config
   │
   ▼
-DSH records request/header (final config + system + tools)
-  └─ DT aligns Trace to header seq and summary through session/event
+DSH records request/header (final config + tools)
   │
   ▼
-The LLM receives:
-  ├─ system = DSH sections +/or DT profile
-  ├─ messages = DSH durable history + this step's accepted input
-  ├─ tools = tools from DSH system assembly
-  └─ config = DSH base config + DT-supported preset parameters
+DSH llm/stream receives final messages / tools / config
+  └─ Trace verifies the complete system message and establishes references to official system/context events
   │
   ▼
 assistant stream / tool calls
   ├─ chunks and the complete assistant message are persisted by DSH
   ├─ tool results stay managed by DSH
-  └─ the next step/turn reruns the assembly above; DT does not cache a second chat history
+  └─ the next step/turn reassembles; DT does not cache a second chat history
 ```
 
-The final model request simplifies to:
+The current model request simplifies to:
 
 ```text
-request.system   = native DSH system sections (append mode) + DT-compiled Tavern profile
-request.messages = DSH Session.deriveMessages()
+request.messages = DSH effective message surface
+  ├─ native + DT official system/message
+  ├─ official runtime-context user/message snapshots
+  └─ durable user / assistant / tool messages
 request.tools    = DSH assembly tools
 request.config   = DSH/adapter config + DT-mappable preset parameters
+request/header  = durable audit event for config + tools
 ```
 
-In replace mode only the first line differs: `request.system = DT-compiled Tavern profile`. The other three authoritative channels stay the same.
+Append/replace changes only which system sections enter effective messages. Official DSH
+surfaces and waterfalls still own messages, tools, and config. New Trace records store no
+section/context/system-message/source body copies; they retain metadata, hashes, and official
+logical-event references. Detail cold-inspects official history and verifies recoverable
+section/context bodies on demand.
 
 ## 5. Current ActivationContext boundary
 
@@ -281,7 +299,7 @@ Current DT scans a bounded `ActivationContext` during system assembly:
 - Keyword only in the just-submitted current input: the first assembly of this step can hit.
 - Unbind a character card or standalone world book: the next assembly no longer reads it, but old assistant text already influenced by it remains history.
 
-Tavern Trace scan cannot merely be delayed to `agent/pre-step`, `agent/request`, or `request/header`. Those hooks can see current input, but system is already frozen. A late scan would let Trace show “hit this turn” while actual `request/header.system` lacked that lore — a false audit. DT therefore records the assembly that actually participated in the request and does not dress a later deduction up as this-turn activation.
+Tavern Trace scan cannot merely be delayed to `agent/pre-step`, `agent/request`, or `request/header`. Those hooks can see current input, but system is already frozen. A late scan would let Trace show “hit this turn” while the same-step official `system/message` actually lacked that lore — a false audit. DT therefore records the assembly that actually participated in the request and does not dress a later deduction up as this-turn activation.
 
 The public order the implementation uses:
 
@@ -293,7 +311,7 @@ agent/inbox/spliced (insert message)
   → systemPrompt.assemble
   → ActivationContext = durable history + claimed batch
   → world-book matcher
-  → this step's real Tavern profile / Trace snapshot
+  → this step's real Tavern sections / Trace metadata candidate
 ```
 
 That path is implemented and keeps these constraints:
@@ -302,20 +320,21 @@ That path is implemented and keeps these constraints:
 - Insert, replace, cancel, steer, next-step, and queued next-turn are handled exactly from the splice's `target/start/removedCount/inserted/outcome`.
 - Current-input bodies are only bounded in-memory match input. They are not written to DT resources, selection, or Tavern Trace. DSH's own durable inbox event remains the source of authority.
 - After assembly completes, cancel, exception, or agent/session end, the claimed batch is cleared. Messages that already entered history on the next step must not be spliced again.
-- Trace still records at `agent/request` the exact assembly snapshot that participated in this request. It does not rerun the matcher afterwards.
+- Trace records the participating assembly metadata at `agent/request`, then establishes body-verified official-history references at `llm/stream`. It does not rerun the matcher afterwards.
 - It does not read a private Agent Inbox, append `user/message` early, add an empty-spin model request, or dress lore as an extra user message.
 
 ## 6. How to review a real request
 
 From most trusted to least:
 
-1. DSH durable `request/header`: final system, tools, and effective call config.
-2. Matching `Session.deriveMessages()`: the final history message array.
-3. Tavern Trace: explains which DT resources and world-book decisions this turn/step used, and whether they align with header seq/summary.
-4. Loader `/pmp-dsh-tavern/api/v1/active?sessionId=...`: current selection, resources, diagnostics, and a preview that does not include claimed current input.
-5. DT sidebar: resource-edit and binding control plane, not a model-request log.
+1. Official DSH `system/message` and context `user/message`: prompt bodies that actually entered this request's effective message surface.
+2. Durable DSH `request/header`: final tools and effective call config.
+3. Matching `Session.deriveMessages()`: the final effective message array.
+4. Tavern Trace: explains the DT resources, world-book decisions, and official references for this turn/step, and verifies recoverable bodies on detail read.
+5. Loader `/pmp-dsh-tavern/api/v1/active?sessionId=...`: current selection, resources, diagnostics, and a preview that does not include claimed current input.
+6. DT sidebar: resource-edit and binding control plane, not a model-request log.
 
-Tavern Trace sits in a public `conversation.view` slot sibling to Conversation / Trajectory. It is a minimized explanation layer over the actual loader snapshot. It does not replace `request/header` and does not enter model context.
+Tavern Trace sits in a public `conversation.view` slot sibling to Conversation / Trajectory. It is a minimized explanation layer over the actual loader snapshot. It replaces neither official messages nor `request/header`, and it does not enter model context.
 
 ## 7. Why clean sessions and UI settings do not enter the message flow
 
@@ -332,4 +351,4 @@ Preview the current selection or template
 
 Templates store only resource IDs/options for preset, character/greeting switches, user, standalone world books, and the RP overlay. They do not read or copy durable messages, Tavern Trace, Inbox, claimed input, turn/step, or resource bodies. Mowan requires that projection to include a character card. DSH mode allows an ordinary session with no card. If any resource is already missing, preview and apply return diagnostics and block navigation, so a “half-applied” Tavern combination is not left behind.
 
-Language, scale, and **Follow character into RP** are likewise control-plane state. They write only global `ui-settings.json` and act on the Tavern browser root. They do not enter profile compile, the world-book matcher, `agent/request`, or `request/header`. Optional `rp:policy` text writes `rp-policy.json` and enters a system section only when RP is on.
+Language, scale, and **Follow character into RP** are likewise control-plane state. They write only global `ui-settings.json` and act on the Tavern browser root. They do not enter profile assembly, the world-book matcher, `agent/request`, or `request/header`. Optional `rp:policy` text writes `rp-policy.json` and enters a system section only when RP is on.

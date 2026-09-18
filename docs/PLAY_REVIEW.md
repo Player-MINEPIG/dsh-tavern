@@ -1,100 +1,57 @@
-# 周目 v2 实现审查记录
+# 周目功能与验收
 
-当前工作区为 `2.2.0`（2026-09-11 发布），适配 DSH `0.1.5-rc.1`、增加公开坐标 API，并修复富文本渲染；本次兼容回归记录见 [升级指南](DSH_0.1.5_MIGRATION.md)。下文 `2.1.0` 验收与 tag 状态保留为历史记录。
-
+本文描述 Tavern `2.3.0` 候选的 RP 周目行为与验收要求，目标 Host 为 DSH `0.1.5-rc.1`。
+候选尚未合并或发布；Trace 的当前验证结果和发布待办见 [Trace 验收](TRACE_REVIEW.md)。
 [English](PLAY_REVIEW_en.md)
 
-## 2.2.0 富文本渲染验收（2026-09-11）
+## 当前行为
 
-用户确认：修复安装到 DSH `0.1.5-rc.1` 临时环境后，本轮渲染验收通过。
-
-- 人工验收范围：details 内 Markdown、代码块与换行，以及修正版显示正则生成的横条、CSS 闪烁、点击展开和内部 HTML 显示。
-- 保留约束：模板 JavaScript 继续禁止执行。模板 CSS 按消息隔离；修正版规则保留内部 HTML 所需字符，未改变正则引擎的 `trimStrings` 语义。用法见[使用说明](USAGE_zh-CN.md#markdownhtml-与模板样式)，安全边界见 [SECURITY](../SECURITY.md)。
-- 自动验证：`npm run check` 为 541 通过、5 项可选/外部集成测试跳过、0 失败；22 项 Chrome 检查通过，覆盖实际修正版模板、样式隔离、脚本/事件/危险链接过滤、流式更新及静态 HTML 导出。
-- 安装验证：临时环境的 191 个打包文件与候选包逐文件一致，配置与会话保留。用户原始模板及会话内容未纳入公开测试素材。
-
-本条关闭本轮渲染修复的人工验收项。`2.2.0` 于 2026-09-11 正式发布，包含下述已验收修复。
-
-审查基线：`codex/v2-lingzhu-mowan-frontend`，最初审查为 `6ede09d`（2026-08-20）；风险关闭与产品实现记录已更新至 `bb10a3b`（2026-08-21）。
-原始发现保留作审计证据；每一项当前状态以“已接受的处理决定”和 implementation audit 为准。
-
-## 结论摘要
-
-当前实现已经遵守几项关键边界：`packages/play` 不导入 DSH 私有模块，Host 操作集中在
-`packages/tavern-loader/src/play-host.js`；消息读取使用 Host history/`deriveMessages()`，
-用户输入走 `session.prompt({ mode: "queue" })`，没有旁路写入 DSH 消息或伪造历史；
-timeline 只保存 session/event 范围引用；路径 API 有根目录、相对路径、符号链接检查；默认
-视图 adapter 也已经移出 `conversation.view`，不会再注册第二个 `chat`。
-
-## 后续验收状态
-
-以下是审查基线之后的产品验收记录。2.0 发布范围已经完成人工验收；后续变更仍需重新走对应条目：
-
-| 范围 | 当前状态 | 说明 |
-| --- | --- | --- |
-| 周目生命周期 | 已实现；各版本验收记录见下文 | 角色卡侧边栏创建/复用最近空周目、随语言变化的 `{number}周目` / `Playthrough {number}` 自动标题、原文重命名、真实 blank DSH session、空 timeline/catalog 校验。复用检查也考虑 DSH 消息和外部导入 QA。 |
-| 空会话 greeting dock | 已实现、已验收 | 在原生 composer dock 展示 greeting；左右切换按钮保持两侧，卡无 greeting 时保留空白 opening 和 footer。 |
-| 外部记录绑定 | 已实现、已验收 | 绑定到当前空 root session，不新建 session 或 timeline；支持绑定、换绑、解绑，解绑后恢复 greeting。服务端会重复空会话锁定检查。 |
-| 最近三轮 QA | 已实现、已验收 | opening dock 显示导入记录最后三轮 QA；这是显示预览，不是 DSH 历史。 |
-| 一次性注入 | 已实现、已验收 | 首次 assembly 使用公开 `claimEventSeqs` 建立持久 claim；同一终态前可重放，终态后新 claim 不再注入。Tavern branch/swipe 复制不含正文的 lineage；中断后原 session 新消息不重复注入。 |
-| 功能按钮与树状周目分支 | 已实现、已验收 | displayOverride、已有 variant 切换、同操作行左右 swipe、新周目分支与同周目回退。屏蔽能力及其 timeline 字段已在 2.0 发布前删除；正文是否显示只由显示正则和 displayOverride 决定。context 输出的右 swipe 重跑最近真实用户 turn，不重发 context。timeline 用 parent/head 保存各 swipe 后续；活动 branch anchor session 仍归入原周目。 |
-| 显示正则顺序 | 已实现、已验收 | 全局、预设、角色卡各自支持与预设 prompt 相同的指针拖拽、收缩线和落点占位动画；保存分别写工作区文档或原生 `regex_scripts` 数组。跨来源禁止拖动，组合顺序固定全局→预设→角色卡。 |
-| 子 agent / 上下文注入显示 | 已实现、已验收 | v2 消息保留模型 `role` 并增加 `origin`；魔丸完全隐藏 reasoning/context，不画用户气泡也不提供展开。context 触发输出的 retry 向前定位真实用户 turn，控制器拒绝重发 context；显示正则只控制正文，各段全被清空时仍在 durable QA 末尾保留一组动作。 |
-
-表内行为均在 DSH `0.1.0-rc.8` 完成用户验收。P0 加固已全部进入 `npm run verify:2.0` 分组回归；Windows junction、根内 reparse point 与 rename 前父目录替换在本机实际执行通过，不再因创建 symlink 权限而跳过。真实 DSH `0.1.0-rc.8` Host 的 chrome/workspace 权威只读冒烟、写入交互、工作区准入视觉、功能按钮、显示正则、周目生命周期和卸载回退均已完成；双标签页与底层竞态仍由确定性自动测试和后续版本回归共同约束。
-
-`2.1.0` 的兼容回归已迁到 DSH `0.1.2-rc.1` 的 controllers、稳定 history cut、Session snapshot 与 client contract owner。上段 `0.1.0-rc.8` 记录保留为历史证据。当前版本已完成真实 RP、空周目 greeting、首轮发送、流式与完成态输出、Trace、双语言切换和原生视图选择保留的验收；首次密钥输入及 API 错误提示已由用户确认通过。Market 素材还验证了三子 agent 叙事、显示正则，以及切换首轮 swipe 后恢复各自后续用户输入与回复，七张图片已获用户验收。
-
-依赖兼容分支 `a2e2566` 已在全新 DSH `0.1.2-rc.1` 隔离 profile 通过 GitHub 安装，Host 只读 API 和已安装 prompt bridge 的 UUID 调用通过，必需 peers 均来自 DSH 安装目录。打包候选的卸载/重装保留数据并恢复 API。完整自动检查为 528 通过、2 项既有跳过，发布分组验证、构建和打包预检通过。下方顺序保留为后续版本回归流程，不再把上述已完成项目列为待验。
-
-`2.1.0` 已完成最终审核与合并；`main` 和 `v2.1.0` tag 已于 2026-09-07 推送，指向 `d9fedf7`。未创建 GitHub Release。
-
-工作区准入已实现：魔丸在 v2 workspace 未绑定、候选失效或读取失败时阻断 RP 内容，只消费 DSH 公开 workspace 列表；候选必须显式选择，PUT 后回读验证，失败可重试或返回 native，不保存浏览器工作区副本。
-
-下面保留原始发现作为证据；其是否关闭以紧随其后的决策表为准。
-
-## 已接受的处理决定（2026-08-21；状态以各行标注为准）
-
-| 原风险 | 已接受的合同 |
+| 范围 | 合同 |
 | --- | --- |
-| 历史完整性（已实现，`10250a7`） | 已移除 32 页上限，一直分页到 Host `hasMore: false`；Host 空页、非法 oldest `seq` 或 cursor 重复/不前进时返回 502 `PLAY_HISTORY_CURSOR_STALLED`。插件不摘要/切片；模型上下文超限由 DSH 报错，README 明确区分两层。 |
-| catalog/timeline 并发 | GET/PUT schema/path 校验、进程内目标锁、临时写/替换复验和服务端 SHA-256 revision/CAS 已实现。受管 PUT 必须带 `expectedRevision`，冲突统一 409 `PLAY_FILE_REVISION_CONFLICT` 且不改文件；跨进程极窄竞态仍由任务 03 的纯 Node 边界覆盖；内置 live client 的 revision 缓存、create-only 与有限冲突重放已由任务 05 完成；任务 06 已完成普通生命周期 caller 迁移。 |
-| 半完成资源 | 不增加跨文件事务。已接入的生命周期变更 API 通过 `ctx.logger` 记录 operationId、阶段、结果、错误码和耗时；只记录白名单标识，不记录正文、长度、摘要或未知字段。客户端按完成阶段、回读与稳定错误码恢复。 |
-| import-context 请求语义 | 已实现 claim/终态/lineage：无 claim 不注入或消费；同一 terminal 前可重放；`turn/end` 只保存非正文终态元数据；terminal 后新 claim 不注入。Tavern branch/swipe 复制不含正文的 lineage，第三方原生 fork 不在拦截范围。 |
-| catalog schema | 已实现：PUT 写前和 GET 读后都校验。id/规范化 path 唯一；id 使用安全段；path 为安全相对路径且以 `/timeline.json` 结尾；校验已知 `ext.pmpDshTavern`，保留第三方 ext。 |
-| focus | 已实现任务 07：稳定入口按已校验 catalog 和安全周目 id 解析路径，返回 playthroughId/sessionId/nodeId/variantId；空周目使用 rootSessionId。旧 /focus?path= 仍兼容，无 path 返回 400；普通 timeline PUT 不再更新 deprecated/ignored 的 activeTimelinePath。任务 08 已完成 bundled live client 迁移：只传 URL 编码的 playthrough id，并校验四字段及返回 id 一致。 |
-| 路径 TOCTOU | 已实现进程内 per-target guard；路径链逐段 `lstat` 拒绝 symlink/junction，目录逐层创建并 realpath 复核，临时文件排他 `wx`，写入和 rename 前复验父目录。纯 Node 不宣称跨进程或内核级 no-follow 事务；外部本机进程仍可能制造极窄竞态。 |
-| 更广日志 | 本轮只支持 Cordis `ctx.logger`。日志保留量、输出目标与轮转由 DSH/Cordis Host 管理；本插件不自行写持久日志文件，也不把 Host 日志承诺成持久审计。浏览器 logger、持久有界 journal 和额外 exporter 进入 backlog，不阻塞本轮实现。 |
+| 历史与输入 | DSH durable history 是权威；Host 操作集中在 Tavern 的公开 controller adapter。输入经 `session.prompt({ mode: "queue" })`，timeline 只保存会话/事件范围引用。 |
+| 周目生命周期 | 按角色创建周目，满足空会话条件时复用最近空周目；自动标题随语言变化，自定义标题保留原文。缺少 DSH 日志的旧周目保留并显示错误，不阻断新建，也不作为空周目复用。 |
+| 开场白 | 空周目使用原生 composer dock 展示开场。跳过空白备选但保留卡片原序号；无下一条或上一条时对应按钮禁用，已有空白选择可恢复到有效开场。 |
+| 外部记录 | 绑定、换绑或解绑当前空 root session；服务端重复验证空会话条件。最近三轮 QA 是显示预览，不是 DSH 历史。解绑恢复开场。 |
+| 一次性上下文 | 装配必须有公开 `claimEventSeqs` 才注入并持久记录 claim；同一终态前可以重放，终态后的新 claim 不再次注入。Tavern swipe/branch 保留不含正文的 lineage。 |
+| 回复与分支 | 支持显示编辑、已有 variant 切换、新 swipe、分支和回退；parent/head 保存不同 swipe 的后续。context 触发输出的重试定位最近真实用户 turn，不把 context 重发为用户消息。 |
+| 显示正则 | 顺序为全局→预设→角色卡；各来源内部可重排，不能跨来源拖动。规则作用于 RP 显示，不改 DSH 原文。隐藏变量更新块不要求变量运行时；变量运行时本身未实现。 |
+| 富文本 | 支持 Markdown、嵌套 details、HTML 和消息内隔离 CSS；模板 JavaScript、危险事件及危险链接受过滤。静态 HTML 导出使用相同渲染边界。 |
+| 视图与错误 | RP 消费官方 Chat 的消息投影，隐藏 reasoning/context；Conversation 管理阶段和视图选择。原生 Chat 保留详细诊断，RP 显示本地化终态错误提示。 |
+| 工作区准入 | 未绑定、候选失效或读取失败时阻断 RP 工作区内容；只使用 DSH 公开工作区列表，选择后回读验证。可重试或返回 native，不保存浏览器工作区副本。 |
 
-## 原始发现：API 与生命周期语义
+## 数据一致性与安全边界
 
-| 级别 | 位置 | 发现与影响 | 建议 |
-| --- | --- | --- | --- |
-| P1 数据一致性（已关闭，任务 04–06） | `workspace.js`、`live.js`、`mutations.js` 与 lifecycle callers | 原始实现仅由单客户端队列保护整文档写，跨标签页会丢更新。现在服务端 revision/CAS 与内置 caller 的局部意图重放已实现；session/branch/message 等外部副作用不在 CAS 重放中重复。 | 继续在发布回归验证双标签页冲突；第三方客户端必须携带 expectedRevision 并处理 409。 |
-| P1 半完成资源（已接受边界，任务 11–13） | `operation-log.js` 与 workspace/session/import mutation endpoints | session、目录、timeline、catalog 仍是多个原子操作，失败可能留下孤儿资源。当前选择是不增加跨文件大事务，而以各 endpoint 的 content-free `ctx.logger` 阶段、稳定错误码和客户端回读恢复。 | 不宣称原子；发布验收检查失败日志与恢复路径。浏览器日志、持久 journal 和 exporter 暂缓。 |
-| P1 历史完整性（已关闭，`10250a7`） | `packages/play/src/sessions.js:62-79` | 原始 32 页上限会在 `hasMore: true` 时静默返回不完整历史。该风险已由无限分页和游标停滞显式失败处理关闭；`GET /sessions/:id/messages` 不返回部分历史假象。 | 已实现：持续分页至 `hasMore !== true`；空页、非法 oldest `seq` 或 cursor 重复/不前进返回 502 `PLAY_HISTORY_CURSOR_STALLED`。插件不摘要/切片。 |
-| P1 请求语义（已关闭，任务 09–10） | `import-context-runtime.js`、loader hooks 与 branch host seam | claim identity、终态和 Tavern branch lineage 已实现；retry 在 terminal 前重放，同一 terminal 后的新用户 claim 不再注入；状态只保存非正文元数据。 | 发布回归覆盖正常、请求失败、取消、中断后新消息、同回合 retry 和 swipe 六种场景。 |
+- history 在固定的官方截点持续分页到 `hasMore: false`；空页、非法 oldest seq 或游标不前进
+  返回 `502 PLAY_HISTORY_CURSOR_STALLED`，不伪装成完整历史。模型上下文限制由 DSH 处理。
+- catalog/timeline 读写都校验 schema、ID/path 唯一性、安全相对路径及已知扩展，保留第三方扩展。
+  受管 PUT 必须带 `expectedRevision`；SHA-256 revision/CAS 冲突返回
+  `409 PLAY_FILE_REVISION_CONFLICT`，不改文件。客户端仅重放纯本地修改，不重复 Host 外部副作用。
+- 稳定 focus 按经过校验的 playthrough ID 定位；空周目使用 rootSessionId。旧显式 path 路由
+  仅作兼容；`activeTimelinePath` 不承担当前焦点权威。
+- 目标锁、逐段路径检查、排他临时写与 rename 前复核提供实用路径防护；纯 Node 不承诺
+  跨进程或内核级 no-follow 事务。多个资源文件的生命周期也不是跨文件事务。
+- 生命周期写操作通过 Cordis `ctx.logger` 记录单请求 operationId、阶段、错误码和耗时，
+  不记录正文；客户端依据已完成阶段、回读及稳定错误码恢复。日志不是持久审计。
+- 导入 context 标明不可信输入；greeting、导入 QA、displayOverride 和 timeline 不伪造
+  DSH 消息。卸载 Tavern 后原生会话与官方历史仍独立可用。
 
-## 原始发现：安全与 schema
+接口细节见 [API](API.md)，渲染用法见 [使用说明](USAGE_zh-CN.md)，威胁边界见
+[安全说明](../SECURITY.md)。旧日志与范围迁移见 [迁移指南](DSH_0.1.5_MIGRATION.md)。
 
-| 级别 | 位置 | 发现与影响 | 建议 |
-| --- | --- | --- | --- |
-| P2 安全（已关闭，任务 03） | `packages/play/src/workspace.js`、`packages/play/src/paths.js` | 已实现实用路径加固：目标锁、逐段 no-follow 检查、逐层创建、realpath 复核、排他临时写和 rename 前父目录复验。 | 纯 Node 不宣称跨进程或内核级 no-follow 事务；外部进程极窄竞态和 revision/CAS 仍单独处理。 |
-| P2 schema/兼容（已关闭，任务 02） | `packages/play/src/timeline.js`、`workspace.js` | catalog/timeline 已在 GET/PUT 两侧统一校验；危险 path、重复 id/path、已知 `pmpDshTavern` 字段坏值均显式返回 `PLAY_CATALOG_INVALID` / `PLAY_TIMELINE_INVALID`，第三方 ext 保留。服务端 revision/CAS 已在同一目标 guard 内完成；TOCTOU 路径加固已完成。 | 内置 live client 原语与普通生命周期 caller 迁移均已完成。 |
-| P2 focus 语义（已关闭，任务 07/08） | `sessions.js`、`live.js` 与 focus callers | 稳定 focus 不再依赖最近写入或 lastOpenedAt；activeTimelinePath 仅为兼容字段保留并 deprecated/ignored，普通 timeline PUT 不再更新。bundled live client 只按 URL 编码的 playthrough id 调用稳定入口，并验证 playthroughId/sessionId/nodeId/variantId。 | 旧 `/focus?path=` 仅保留迁移兼容；custom client 可继续显式传 path。 |
+## 验收方法
 
-## 不应在后续实现中倒退的边界
+1. **自动检查。** `npm run verify:2.0` 覆盖 history、schema/CAS/focus、路径防护、claim/lineage、
+   operation log、服务/slot 生命周期、本地化和打包。需要官方 codec 时设置
+   `DSH_TAVERN_COMPAT_ROOT`；条件跳过不等于通过。
+2. **真实 Host 读取。** 设置 `DSH_TAVERN_PLAY_LIVE=1` 与 `DSH_TAVERN_PLAY_LIVE_URL`，
+   执行 `node --test test/play-sessions.test.mjs`。这只证明 chrome/workspace 读取，不替代写入或浏览器验收。
+3. **浏览器生命周期。** 使用测试副本验证工作区准入、新建/复用/重命名、开场边界、首轮发送、
+   流式/完成态、显示正则与富文本、swipe 后续、分支/回退、导入换绑与导出。
+   在有缺失日志的工作区刷新有效分支，确认 RP 视图仍可进入，新周目仍可创建。
+4. **并发与失败。** 双标签页检查 focus/SSE/poll 收敛和 CAS 冲突；验证取消、失败重试、
+   导入 claim 的终态语义及部分完成后的回读恢复。真实第三方插件需单独联调。
+5. **卸载与恢复。** 仅在测试 profile 卸载并重装，确认原生会话可用且 Tavern 外部数据保留。
+   `--no-backup` 只跳过卸载前备份，不是删除资源。
 
-- 不把 greeting、导入 QA 或 timeline 节点写成 DSH `user/message` / `assistant/message`；
-  当前导入通过受限、转义且标明 untrusted 的 profile context 投影，方向正确。
-- 不让 client 直接访问 DSH session 私有字段、bundle 路径或 DOM；继续通过 v2 Host RPC、
-  公开 session projection 和根目录路径监狱。
-- 不用本地 controller 的串行队列冒充跨客户端事务；所有受管 catalog/timeline caller 继续配合服务端 revision/CAS。
-- 修复上述问题时仍应保持 native view、原生 Chat、Host session 历史和卸载回退可独立工作。
-
-## 更新后的验收顺序
-
-1. 自动证据：运行 `npm run verify:2.0`。完整 history、六种 import claim/lineage、schema/CAS、损坏文件、按 id focus、operation log、Windows junction/reparse/rename 前父目录替换以及 mode service dispose 均由确定性测试验证。
-2. 真实 Host/浏览器：先以 `DSH_TAVERN_PLAY_LIVE=1` 和 `DSH_TAVERN_PLAY_LIVE_URL` 运行只读 Host 冒烟；再用双标签页观察 chrome SSE/focus/poll 收敛与 CAS 冲突，在全新数据中验证工作区准入的无候选/单候选/多候选/失效候选/失败恢复；正常与中断回复只做一轮代表性 UI 回归。
-3. 兼容回退：禁用或卸载 Tavern 后确认 DSH native 与其它插件仍可用，再重新安装并确认外部持久数据仍可读取；`--no-backup` 只跳过卸载前快照，不应清除资源。
-4. 发布门：`npm run verify:2.0` 已包含 build 与 pack dry-run；再核对依赖审计、公开路径/秘密扫描、正式文档和版本号。后续版本在最终审核通过并获得授权后，再合并并创建对应版本 tag；`2.1.0` 已完成状态见上文。
+发布需维护者完成当前候选的人工验收并明确授权。旧版本的验收结论不能替代当前候选验收；
+过去的逐阶段记录从相应 Git tag 查阅。

@@ -1,17 +1,17 @@
 # Cross-platform installation and removal
 
-Version `2.2.0` adds `0.1.5-rc.1` compatibility; migrate existing playthroughs using the [upgrade guide](DSH_0.1.5_MIGRATION_en.md). This DSH release requires Node `^22.19.0 || >=24.0.0`, regardless of Tavern's standalone Node 20 declaration.
+The current DSH target is `0.1.5-rc.1`. When moving existing playthroughs from the earlier DSH coordinate format, follow the [upgrade guide](DSH_0.1.5_MIGRATION_en.md) first. This DSH version requires Node `^22.19.0 || >=24.0.0`, regardless of Tavern's standalone Node 20 declaration.
 
 [中文](INSTALLATION.md)
 
-Status: `2.3.0` Trace candidate (unreleased), updated on 2026-09-18. The current published version is `2.2.0`. Candidate runtime acceptance targets DSH `0.1.5-rc.1`; the previously tested `0.1.2-rc.1` path is retained, but new Trace runtime behavior is not certified there. The default root [README](../README.md) is Chinese. The English landing page is [README_en.md](../README_en.md) (no screenshots). This file is the detailed lifecycle, verification, and recovery contract.
+Status: the current source is the unreleased `2.3.0` Trace candidate; runtime acceptance targets DSH `0.1.5-rc.1`. The default root [README](../README.md) is Chinese. The English landing page is [README_en.md](../README_en.md) (no screenshots). This file is the current lifecycle, verification, and recovery contract. For another version, switch to its tag and read the installation instructions in that tag.
 
 The scripts use Node.js as their common entry point and normalize paths for
 Windows, macOS, and Linux. macOS/Linux execute `dsh` directly. Windows safely
 locates npm's `dsh.ps1` shim and invokes it through the system PowerShell with
 an argument array, so paths are not reconstructed as shell command text. Run
-the scripts from the `dsh-tavern` checkout with Node.js 20 or newer and DSH
-`0.1.2-rc.1` or `0.1.5-rc.1` on `PATH` (the latter requires the newer Node range above).
+the scripts from the `dsh-tavern` checkout with Node.js 20 or newer and target DSH
+`0.1.5-rc.1` on `PATH`; starting its Host requires the Node range above.
 
 Only the repository root is installed. `packages/tavern-format`,
 `packages/preset`, and `packages/tavern-loader` are internal boundaries shipped
@@ -19,23 +19,17 @@ inside that one plugin; do not try to add them to dsh separately. The format
 layer can be consumed as a JavaScript library through the root package export,
 but by itself it intentionally has no agent-loading effect.
 
-## Install
+## Install the current candidate
 
-Ordinary users can install the plugin directly from GitHub into the default
-`web` profile:
-
-```text
-dsh plugin --profile web add github:Player-MINEPIG/dsh-tavern
-```
-
-To pin the published stable release (not the Trace candidate):
+To install the current candidate directly from GitHub into the default `web`
+profile, pin its candidate branch:
 
 ```text
-dsh plugin --profile web add github:Player-MINEPIG/dsh-tavern#v2.2.0
+dsh plugin --profile web add github:Player-MINEPIG/dsh-tavern#codex/trace-api-v3
 ```
 
-<a id="trace-230-candidate"></a>
-### Trace 2.3.0 candidate
+<a id="source-candidate"></a>
+### Install and validate the current source candidate
 
 Use a separate test profile/home. Stop its Host before installing. The candidate
 has no release tag yet; explicitly check out its branch, then install from source:
@@ -51,13 +45,13 @@ Start DSH `0.1.5-rc.1` with that same `DSH_HOME`, then follow the
 [Trace acceptance steps](TRACE_REVIEW_en.md). A CLI upgrade alone does not update
 the plugin installed in a profile. Record `git rev-parse HEAD` for the tested build.
 
-### DSH provides the official runtime peers
+### DSH provides the runtime peers
 
-`@deepseek-ai/dsh-util-crypto` at `0.1.2-rc.1 || 0.1.5-rc.1` and `@deepseek-ai/cordis` at `4.0.2` are required `peerDependencies` admitting only the tested releases, rather than ordinary dependencies installing another copy. Baseline 0.1.2 `devDependencies` support source builds and tests. Browser contracts remain declared in `dsh.client.inject` and supplied by DSH, not bundled into Tavern.
+The current `package.json` declares `@deepseek-ai/dsh-util-crypto` at `0.1.2-rc.1 || 0.1.5-rc.1` and `@deepseek-ai/cordis` at `4.0.2` as required `peerDependencies` supplied by the DSH runtime, so the plugin does not install a second copy. Source builds and tests use the `0.1.2-rc.1` crypto package pinned in `devDependencies`. Browser contracts are declared in `dsh.client.inject`, supplied by DSH, and not bundled into Tavern.
 
-DSH `0.1.2-rc.1` profiles default to `nodeLinker: hoisted` and `autoInstallPeers: false`. At startup, DSH exposes its installation packages through `<DSH_HOME>/profiles/node_modules`, where Node's parent-directory resolution finds them for external plugins. Consequently, `dsh plugin add` or `pnpm peers check` may report these two peers as missing: that static check does not recognize DSH's startup-provided packages. A fresh-profile check confirmed standard installation, Host APIs, and the UUID call, with both packages resolving to the DSH installation.
+When a DSH profile uses `nodeLinker: hoisted` and `autoInstallPeers: false`, startup exposes the installation packages through `<DSH_HOME>/profiles/node_modules`, where Node's parent-directory resolution finds them for external plugins. Consequently, `dsh plugin add` or `pnpm peers check` may report these two peers as missing: that static check does not recognize DSH's startup-provided packages. At runtime, both packages must still resolve from the DSH installation.
 
-An `ERR_MODULE_NOT_FOUND` after restart is not an ignorable install warning: check that DSH on `PATH` is `0.1.2-rc.1` or `0.1.5-rc.1`, its installation is complete, and module resolution reaches its packages. Do not mark required peers optional to hide warnings. Exact peer declarations constrain those packages; they are not a startup gate checking the entire DSH version.
+An `ERR_MODULE_NOT_FOUND` after restart is not an ignorable install warning: check that DSH on `PATH` is the target `0.1.5-rc.1`, its installation is complete, and module resolution reaches its packages. Do not mark required peers optional to hide warnings. Exact peer declarations constrain those packages; they are not a startup gate checking the entire DSH version.
 
 ### Data and source installation
 
@@ -123,7 +117,7 @@ node scripts/install.mjs --dsh-home .\test-envs\review
 
 ## Release verification
 
-Before packaging or installing this candidate, run the existing release verification command (its name remains `verify:2.0`):
+Before packaging or installing the current source, run the release verification command (its name remains `verify:2.0`):
 
 ```text
 npm run verify:2.0
@@ -138,7 +132,6 @@ Set `DSH_TAVERN_COMPAT_ROOT` and `DSH_TAVERN_PROMPT_COMPAT_ROOT` to the target D
 installation dependency root to enable real runtime checks; without them, those
 checks explicitly skip. Run `npm run check` for the complete suite as well.
 These commands do not replace [Trace runtime/manual acceptance](TRACE_REVIEW_en.md).
-Earlier 0.1.2-rc.1 lifecycle evidence remains in [PLAY_REVIEW](PLAY_REVIEW_en.md).
 
 ## Uninstall
 
@@ -172,9 +165,12 @@ message-action scale), and optional `rp-policy.json`.
 
 `play-workspace.json` is only a pointer. The selected DSH RP workspace owns the
 actual `catalog.json`, per-playthrough `timeline.json`, display regex document,
-and imported context files. Back up that workspace as well if playthroughs must
-be recoverable; an ST JSONL export preserves only the selected linear chat and
-known swipes, not the complete Tavern branch topology.
+and imported context files, while session bodies and branch history referenced
+by the timeline remain in the corresponding `DSH_HOME` official session logs.
+If playthroughs must be recoverable, back up Tavern's persistent directory, the
+RP workspace, and the corresponding DSH data, including session logs and
+inherited dependencies. An ST JSONL export preserves only the selected linear
+chat and known swipes, not the complete Tavern branch topology.
 
 Choose another backup directory or deliberately skip backup with:
 

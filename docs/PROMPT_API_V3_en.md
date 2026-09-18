@@ -1,6 +1,6 @@
 # Prompt assembly Trace and primitive API v3
 
-Status: Tavern 2.3.0 candidate, not released; updated 2026-09-18. Target: DSH **0.1.5-rc.1**.
+Contract version: Tavern **2.3.0 candidate**, targeting DSH **0.1.5-rc.1**.
 [中文](PROMPT_API_V3.md) · [API index and scope audit](API_en.md#api-scope) · [Acceptance](TRACE_REVIEW_en.md)
 
 ## Purpose and compatibility
@@ -10,7 +10,7 @@ surface. Third parties can also observe, alter, and contribute sections through 
 DSH `system-prompt/assemble`, and inspect complete requests through `llm/stream`. There is
 no composer registry, exclusive owner, remote callback, or current-resource aggregate.
 
-The unpublished `/sessions/:id/sources` candidate was removed and returns 404. Current
+`/sessions/:id/sources` is not part of the v3 contract and returns 404. Current
 resources, bindings, and configuration remain in v1. Historical `sections[].sources`
 describes section-level relationships at capture time. Released v1/v2 routes remain
 compatible. API v3, Tavern 2.3.0, and DSH log format V3 are separate version numbers.
@@ -160,8 +160,8 @@ after assembly and reference verification. `characters` counts Unicode code poin
 0600 temporary file. It stores metadata and official references only. New records contain no
 section, context, system-message, or source-text copies.
 
-On upgrade, old `tavern-traces.json` v1 metadata and old `tavern-assemblies.json` schema 3 body
-snapshots remain read-only. They are neither migrated, rewritten, nor automatically reduced to
+Compatibility readers keep `tavern-traces.json` v1 metadata and `tavern-assemblies.json` schema 3
+body snapshots read-only. They are neither migrated, rewritten, nor automatically reduced to
 the new limits. The legacy v1 view retains its existing maximum of 128 records per Session;
 actual retention for all new captures is controlled by the schema 4 store. Old v1 records
 appear as `legacy-metadata-only`; old schema 3 details can still expose bodies that file already stored.
@@ -183,7 +183,7 @@ DSH history. Protect the local data directory and API as DSH Session data.
 
 Tavern Trace first shows captured configuration/resource summaries, then lazily expands lore
 decisions and loader assembly. Verified section/context bodies are displayed when recoverable.
-Sources show metadata, hashes, and counts, never historical `source.text`. Explicit reasons are
+Schema 4 sources show metadata, hashes, and counts without `source.text`; older schema 3 records may still include source bodies labeled as legacy snapshots. Explicit reasons are
 shown when recovery fails. Current v1 resources can help diagnose current configuration, but
 the UI does not label them as historical originals.
 

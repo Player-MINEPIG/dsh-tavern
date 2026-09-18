@@ -1,6 +1,6 @@
 # 提示词装配 Trace 与 v3 元 API
 
-状态：Tavern 2.3.0 候选，未发布；更新于 2026-09-18。目标 DSH **0.1.5-rc.1**。
+合同版本：Tavern **2.3.0 候选**，目标 DSH **0.1.5-rc.1**。
 [English](PROMPT_API_V3_en.md) · [API 总览与范围核对](API.md#api-scope) · [验收](TRACE_REVIEW.md)
 
 ## 定位和兼容
@@ -9,7 +9,7 @@ v3 提供逐次装配记录与来源追踪。Tavern Trace 使用同一组 HTTP �
 DSH 官方 `system-prompt/assemble` 观察、调整和贡献段落，通过 `llm/stream` 观察完整请求。
 没有 composer 注册表、唯一 owner、远程回调或当前资源聚合接口。
 
-已删除未发布的 `/sessions/:id/sources` 候选，GET 返回 404。当前资源、绑定和配置仍通过 v1
+`/sessions/:id/sources` 不属于 v3 合同，GET 返回 404。当前资源、绑定和配置通过 v1
 读取；历史 `sections[].sources` 只描述当时的段落级来源关系。正式发布的 v1/v2 路由保持兼容。
 API v3、Tavern 2.3.0 与 DSH 日志格式 V3 是三个独立版本号。
 
@@ -143,7 +143,7 @@ characters 是 Unicode 码点数；utf16Units 与 utf8Bytes 也不是 token 数�
 `tavern-trace-records.json` 是新 canonical schema 4 存储，以 0600 临时文件原子替换。它只保存
 metadata 和官方引用，不保存新的 section/context/system-message/source 正文副本。
 
-升级时，旧 `tavern-traces.json`（v1 元数据）与旧 `tavern-assemblies.json`（schema 3 正文快照）
+兼容读取将 `tavern-traces.json`（v1 元数据）与 `tavern-assemblies.json`（schema 3 正文快照）
 只读保留，不迁移、不改写，也不会按新容量自动缩减。旧 v1 兼容视图仍保留每 session 最多
 128 条的既有列表边界；所有新采集的实际 retention 由 schema 4 store 控制。旧 v1 记录继续以
 `legacy-metadata-only` 出现在 v3；旧 schema 3 详情仍可读取其原来保存的正文。兼容读取不表示
@@ -160,7 +160,7 @@ metadata 和官方引用，不保存新的 section/context/system-message/source
 ## UI 与第三方边界
 
 Tavern Trace 先展示当次保存的配置/资源摘要，再按需展开世界书决策和 loader 装配。段落/context
-正文可验证恢复时显示；来源只显示 metadata/hash/counts，不显示历史 `source.text`。无法恢复时显示
+正文可验证恢复时显示；schema 4 来源只显示 metadata/hash/counts，不显示 `source.text`，旧 schema 3 记录仍可能包含标为旧快照的来源正文。无法恢复时显示
 具体不可用原因。当前 v1 资源可辅助排查当前配置，但 UI 不把它标为历史原文。
 
 [HTTP 只读示例](examples/trace-reader.mjs) 不 import Tavern；

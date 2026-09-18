@@ -2,13 +2,13 @@
 
 [English](DSH_0.1.5_MIGRATION_en.md)
 
-本页对应 `2.2.0`（2026-09-11 发布）的兼容更新。未新增界面功能，但新增的公开 coordinates API 与兼容字段属于公共合同扩展，因此采用次版本号；纯内部兼容修复才使用 `2.1.1`。Tavern 保留 DSH `0.1.2-rc.1` 路径，并适配 `0.1.5-rc.1`；不扩大到未经验证的中间/未来候选版本。新版 Host 的 Node 要求是 `^22.19.0 || >=24.0.0`，Tavern 独立测试的 Node `>=20` 声明不能替代它。
+本文说明 Tavern `2.3.0` 候选在 DSH `0.1.5-rc.1` 下的会话格式与周目引用迁移。当前目标 Host 要求 Node `^22.19.0 || >=24.0.0`，Tavern 独立测试的 Node `>=20` 声明不能替代它。实现保留 DSH `0.1.2-rc.1` 路径，但新 Trace 的运行时验收以 `0.1.5-rc.1` 为准，不承诺其他候选版本。
 
 外部前端接入保留的公开坐标查询 API 时，请先看 [请求、字段与分支示例](API.md#session-coordinates)。格式版本由 DSH 定义；迁移标记由 Tavern 推断，查询本身不会迁移旧引用。
 
-## 已改变的合同
+## 当前坐标与兼容合同
 
-- Trace 在 V0–V2 读取 `header.system`；V3 从公共 `Session.deriveMessages()` 的有效 system surface 读取系统提示词。只保存指纹和判定，不保存原文。`authority.systemSource` 区分 `request/header` 与 `system/message`。
+- v1 audit 的系统提示词权威为 V0–V2 的 `request/header.system` 或 V3 的有效 `system/message`，由 `authority.systemSource` 区分。新 v3 Trace 保存官方事件引用与元数据，详情通过只读 `inspect` 校验后恢复正文；见 [Trace 合同](PROMPT_API_V3.md)。
 - 新 QA/swipe 的 `variant.ext.pmpDshTavern.sessionFormatVersion` 保存产生该数值范围的 Session 格式。`GET /v2/sessions/:id/messages` 增加可选 `sessionFormatVersion`、`migratedFromV2`；`GET /v2/sessions/:id/coordinates` 返回格式与迁移标记，不返回消息正文。
 - timeline 文件 GET/PUT 会校验范围格式。版本不符，或 Session 含 V2→V3 插入标记而引用没有版本时，返回 `409 PLAY_COORDINATES_MIGRATION_REQUIRED`。不会猜测偏移、静默丢弃或自动重写旧文件。
 - `POST /v2/sessions/:id/branch` 接收可选 `sessionFormatVersion`。对迁移过的 Session 必须显式提供当前格式；验证发生在 Host fork 之前。内置客户端随读取/保存的范围传递版本。
@@ -26,7 +26,7 @@ RP 工作区的 `catalog.json` 和 `timeline.json` 保存周目结构与会话�
 
 恢复旧周目需要使用原 DSH 数据目录，或备份后恢复相关日志及其继承依赖，再处理确实需要的
 坐标迁移。不要清空 timeline 或把旧会话 ID 改成新 ID 来消除报错，否则会失去历史关联。
-2.3.0 候选允许在旧会话缺失时新建周目；旧周目保留并显示缺失提示，不会被当成空周目覆盖。
+当前实现允许在旧会话缺失时新建周目；旧周目保留并显示缺失提示，不会被当成空周目覆盖。
 其他读取错误仍需处理，不会自动忽略。
 
 ## 为什么旧范围不能直接复用
@@ -84,17 +84,11 @@ DSH_TAVERN_COMPAT_ROOT=/path/to/dsh-install npm run verify:2.0
 
 上游依据：[目标 release](https://github.com/deepseek-ai/deepseek-harness/releases/tag/dsh-v0.1.5-rc.1)、[V2→V3 规范](https://github.com/deepseek-ai/deepseek-harness/blob/dsh-v0.1.5-rc.1/packages/session/session-format-v2-to-v3/README.md)。
 
-### 2026-09-10 实际验收（未发布工作区）
+## Trace 引用与迁移边界
 
-Node 22.23.1；隔离 DSH_HOME；真实 DSH Host + 本地模拟模型：
+此工具只迁移 timeline 和 import-context 的坐标，不改写 `tavern-trace-records.json`。
+新 Trace 引用绑定采集时的 Session 格式、事件身份和摘要；官方日志格式变化后，无法验证的
+引用会标为 `format-mismatch` 或其他明确不可用状态，不猜测新位置。旧 Trace 正文快照仍按
+兼容规则读取。迁移后的新请求会按当前格式创建新记录。
 
-- 0.1.2-rc.1 与 0.1.5-rc.1：加载插件、预设注入、采样参数、完整回复、Trace 和 RP 周目通过。
-- 0.1.2 生成真实 V0 周目后，用 0.1.5 升级同一数据目录：旧 timeline 返回迁移所需的 409；官方多帧 V0/V3 原日志校验、备份、应用与重复执行通过。
-- 最终构建：swipe 新增后双向切换通过；导入 claim 消费与分支 lineage 均保存 V3 版本。`npm run check`（启用真实 codec 测试）为 538 通过、2 个已有 opt-in 测试跳过；`verify:2.0` 通过。
-- 真实旧 QA 范围 `8..19` 正确变为 `9..16`；重启后旧回复与升级后新回复均保留，从旧 QA 分出的周目只含该处历史。
-
-这些验收使用合成角色和模型回复，没有迁移用户的实际数据，也不代表真实模型质量或 KV Cache 性能已验证。
-
-### 2026-09-11 渲染修复人工验收
-
-用户已在安装修复后的 DSH `0.1.5-rc.1` 临时环境确认渲染验收通过，涵盖 details 内 Markdown 和修正版 HTML/CSS 显示模板。模板 JavaScript 继续禁止执行；本次确认不扩展为实际用户历史迁移或 KV Cache 性能验证。详见[本轮验收记录](PLAY_REVIEW.md#220-富文本渲染验收2026-09-11)。
+当前候选的验证结果和待人工检查项见 [Trace 验收](TRACE_REVIEW.md) 与 [周目验收](PLAY_REVIEW.md)。

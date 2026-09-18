@@ -1,12 +1,11 @@
 # Prompt pipeline and compatibility map
 
-**2.3.0 Trace update:** The loader expands its logical profile into ordered official `{name,text}` sections before downstream assembly listeners run. New schema 4 Trace persists metadata and official Session references only. [Primitive API v3](PROMPT_API_V3_en.md) verifies and resolves section/context bodies on demand and does not store `source.text`.
-
 [中文](PROMPT_PIPELINE.md)
 
-Status: 2026-08-18. Aligned with the RP `rp:policy` section and early recognition of current input.
-
-This page explains how Tavern resources enter a model request in SillyTavern, TauriTavern, and dsh-tavern, and what the current version does not map. DSH's own turn/step, Inbox, Session, system assembly, and request/header order are in `DSH_MESSAGE_FLOW_en.md`. This is a technical review, not a product README.
+This page explains how Tavern resources enter a model request in SillyTavern,
+TauriTavern, and Tavern **2.3.0 candidate**, and which mappings are unsupported.
+DSH turn/step, Inbox, Session, system-assembly, and request/header order are documented
+in `DSH_MESSAGE_FLOW_en.md`.
 
 ## 1. How SillyTavern assembles one Chat Completion
 
@@ -38,8 +37,6 @@ TauriTavern's Agent path adds another snapshot boundary:
 
 That means the Agent still takes an already-assembled ST message snapshot as input, not merely some preset JSON. Current `preset.mode` only records snapshot or reference information and does not rewrite the snapshot again. See the official [Agent API](https://tauritavern.github.io/en/api/agent.html).
 
-The portable TauriTavern runtime directory used during research did not contain a full source checkout. Migration notes and the manifest there only prove that character cards, chats, presets, world books, and similar data use a one-shot ST data snapshot. Conclusions about the TauriTavern implementation follow its official source repo and architecture docs.
-
 ## 3. How dsh-tavern currently compatibilizes
 
 dsh has no ST `PromptManager`, marker collection, or arbitrary history-depth insertion interface. The current implementation is an explicitly limited adapter:
@@ -65,34 +62,34 @@ No. What exists is “ST preset static prompt blocks → DSH system section” p
 
 | ST concept | Current behavior | Completeness |
 | --- | --- | --- |
-| Ordinary enabled prompts and order | Bodies compile in order as DSH system sections; identifier, requested role, and provenance remain in official source metadata | Partial; every actual contribution is still system, not a real `user`/`assistant` message role |
+| Ordinary enabled prompts and order | Bodies assemble in order as DSH system sections; official waterfall sections contain only `name`/`text`, while identifier, requested role, and provenance remain in Tavern Trace metadata | Partial; every actual contribution is still system, not a real `user`/`assistant` message role |
 | Markers | Fill character fields, before/after lore, and example dialogue. `chatHistory` is owned by native DSH history | Partial; arbitrary real role/depth topology is not supported |
 | This turn's user input | Sent by the native DSH session; the plugin does not copy it. Loader `ActivationContext` only lets it participate in activation before the first assembly | First-step activation is wired. It is not inserted into an ST `chatHistory` marker and does not write a fake durable message |
 | Conversation history | Replayed from native DSH durable history; the plugin does not copy it | Wired into the request, but without ST token-budget/marker/depth semantics |
-| Dialogue examples | Read from the card and emitted as a source-labeled approximate system block | Partial; not real user/assistant example messages |
-| Absolute/depth injection | Fields are kept; the compiler does not execute them | Not implemented |
+| Dialogue examples | Read from the card and emitted as ordinary approximate system text; provenance is recorded in Tavern Trace metadata | Partial; not real user/assistant example messages |
+| Absolute/depth injection | Fields are kept; the assembler does not execute them | Not implemented |
 | World Info before/after | Card-embedded book and per-session multi-select standalone books use the same matcher and are filled in | Basic before/after is wired; strict depth/outlet still degrades |
 | Character description, personality, scenario, first message | The first three enter the profile. First message is greeting-reference only on the first-round generation | Partial; history is not forged, and later turns do not reinject |
 | ST macros | Common variables, random, and dice; full ST runtime context is missing | Partial |
 
-Especially: an ST `user`/`assistant` requested role is retained only in model-invisible official source metadata. It is not equivalent to sending a real `user`/`assistant` message to the model. That is the most important boundary of the current compatibility layer.
+Especially: an ST `user`/`assistant` requested role is retained only in model-invisible Tavern Trace `sources[].role` metadata; the official waterfall section itself has no `source.role`. It is not equivalent to sending a real `user`/`assistant` message to the model.
 
-## 5. Current placement of world info and character cards, and later seams
+## 5. Current placement of world info and character cards, and unsupported capabilities
 
-Later work should not keep packing everything into one large string. A per-request assembly coordinator should be added:
+The loader expands the logical profile into multiple named system sections and places marker content through one per-request assembly. Current mappings are:
 
-| Future resource | Recommended mapping |
+| Resource | Current mapping |
 | --- | --- |
-| Preset static instruction | Keep using named system sections; the coordinator provides ST marker anchors |
-| Character description/personality/scenario | Currently enter the unified profile via preset markers or a stable fallback. In the future, override DSH Agent persona only when explicitly chosen |
+| Preset static instruction | Uses named system sections with ST marker anchors in the same assembly |
+| Character description/personality/scenario | Enters Tavern system text via preset markers or a stable fallback; does not override DSH Agent persona |
 | User name and description | Name resolves `{{user}}`. Description enters `personaDescription`/`{{persona}}` once; missing placement is diagnosed with a stable fallback. Does not override DSH Agent persona |
-| World-info entries | Scan durable history and this step's claimed input, and enter the profile at before/after anchors. Strict depth/outlet still needs other host capabilities |
-| Example dialogue | Currently an explicitly labeled system approximation. Later needs a real user/assistant example-message seam |
+| World-info entries | Scan durable history and this step's claimed input, and enter the profile at before/after anchors. Strict depth/outlet is unsupported |
+| Example dialogue | Ordinary approximate system text; Tavern Trace metadata/diagnostics explain provenance and placement degradation. Real user/assistant example messages are unsupported |
 | First message / alternate greeting | First-round generation as greeting-reference. After the first real reply it is no longer injected, and a seed/history message is never created |
 | User input and history | Always authoritative from native DSH durable messages. World books scan read-only and are not resent |
 | Agent system prompt | Coexists by default and precedes the preset. Advanced replace explicitly accepts the risk of losing tool prompts |
 
-Until DSH provides an arbitrary role-message/depth injection seam, related fields should stay stored as-is and be labeled “not yet executed” in the UI. Do not claim full compatibility.
+Arbitrary role-message/depth injection is unsupported. Related fields stay stored as-is and are labeled “not yet executed” in the UI. Do not claim full compatibility.
 
 ## 6. Why switching presets in the same session can still feel like the old preset
 

@@ -1,12 +1,10 @@
 # Prompt pipeline and compatibility map
 
-**2.3.0 Trace 增量：** loader 将逻辑 profile 在下游装配监听器执行前展开为有序的官方 `{name,text}` 段落。新 schema 4 Trace 只持久化 metadata 与官方 Session 引用；[v3 元 API](PROMPT_API_V3.md) 按需验证恢复段落/context 正文，不另存 `source.text`。
-
 [English](PROMPT_PIPELINE_en.md)
 
-状态：2026-08-18，已对齐 RP `rp:policy` 段与当前输入提前识别实现。
-
-本文说明 Tavern 资源在 SillyTavern、TauriTavern 和 dsh-tavern 中如何进入一次模型请求，并明确当前版本没有实现的映射。DSH 自身的 turn/step、Inbox、Session、system assembly 和 request/header 顺序另见 `docs/DSH_MESSAGE_FLOW.md`。它是技术评审文档，不是产品 README。
+本文说明 Tavern **2.3.0 候选**中，资源在 SillyTavern、TauriTavern 和 dsh-tavern
+如何进入一次模型请求，并明确未实现的映射。DSH 自身的 turn/step、Inbox、Session、
+system assembly 和 request/header 顺序另见 `DSH_MESSAGE_FLOW.md`。
 
 ## 1. SillyTavern 如何组装一次 Chat Completion
 
@@ -38,8 +36,6 @@ TauriTavern 的 Agent 路径则多了一层快照边界：
 
 这意味着 Agent 仍以 ST 已组装完成的消息快照为输入，而不是只读取某个 preset JSON。当前 `preset.mode` 只记录快照或引用信息，并不会再次改写快照。详见官方 [Agent API](https://tauritavern.github.io/en/api/agent.html)。
 
-调研时使用的 TauriTavern 便携版运行目录并不包含完整源码 checkout；其中的迁移说明和 manifest 只能证明角色卡、聊天、预设、世界书等数据采用一次性 ST 数据快照。对 TauriTavern 实现的上述结论以其官方源码仓库和官方架构文档为准。
-
 ## 3. dsh-tavern 当前如何兼容
 
 dsh 没有 ST 的 `PromptManager`、marker collection 或任意历史深度插入接口。当前实现采用一个明确受限的适配：
@@ -65,34 +61,34 @@ dsh 没有 ST 的 `PromptManager`、marker collection 或任意历史深度插�
 
 | ST 概念 | 当前行为 | 完整度 |
 | --- | --- | --- |
-| 普通 enabled prompt 与顺序 | 正文按顺序编译为 DSH system sections；identifier、请求 role 与来源保留在官方 source metadata | 部分；所有实际贡献仍是 system，不是真正的 `user`/`assistant` 消息 role |
+| 普通 enabled prompt 与顺序 | 正文按顺序装配为 DSH system sections；官方 waterfall section 只有 `name`/`text`，identifier、请求 role 与来源保留在 Tavern Trace metadata | 部分；所有实际贡献仍是 system，不是真正的 `user`/`assistant` 消息 role |
 | marker | 填充角色字段、before/after lore 和 example dialogue；`chatHistory` 由 DSH 原生历史拥有 | 部分；不支持任意真实 role/depth 拓扑 |
 | 用户本轮输入 | 由 DSH 原生会话发送，插件不复制；loader `ActivationContext` 只让它在首个 assembly 前参与激活判断 | 已接入首 step 激活；没有插入到 ST `chatHistory` marker，也不写伪 durable message |
 | 会话历史 | 由 DSH 原生 durable history 重放，插件不复制 | 已接入请求，但没有 ST token-budget/marker/depth 语义 |
-| dialogue examples | 读取角色卡字段并作为带来源标签的 system 近似块 | 部分；不是真实 user/assistant 示例消息 |
-| absolute/depth injection | 字段被保留，编译器不执行 | 未实现 |
+| dialogue examples | 读取角色卡字段并作为普通 system 近似正文；来源关系记录在 Tavern Trace metadata | 部分；不是真实 user/assistant 示例消息 |
+| absolute/depth injection | 字段被保留，装配器不执行 | 未实现 |
 | World Info before/after | 角色卡内嵌书与 per-session 多选独立书使用同一 matcher 并填入 | 已接入基础 before/after；严格 depth/outlet 仍降级 |
 | 角色描述、性格、场景、首条消息 | 前三者进入 profile；首条消息仅在首轮生成作 greeting-reference | 部分；不伪造历史，也不在后续轮次重复注入 |
 | ST macro | 支持常见变量、随机与骰子；缺少完整 ST runtime context | 部分 |
 
-尤其要注意：ST 的 `user`/`assistant` 请求 role 只保存在模型不可见的官方 source metadata 中，并不等价于向模型发送真实 `user`/`assistant` 消息。这是当前兼容层最重要的边界。
+尤其要注意：ST 的 `user`/`assistant` 请求 role 只保存在模型不可见的 Tavern Trace `sources[].role` metadata 中；官方 waterfall section 本身没有 `source.role`。这不等价于向模型发送真实 `user`/`assistant` 消息。
 
-## 5. 世界信息与角色卡的当前放置及后续 seam
+## 5. 世界信息与角色卡的当前放置及未支持能力
 
-后续不应把所有内容继续压成一个大字符串，而应新增一个 per-request assembly coordinator：
+当前 loader 已将逻辑 profile 展开为多个具名 system sections，并由同一次 per-request assembly 统一放置 marker 内容。实际映射如下：
 
-| 未来资源 | 推荐映射 |
+| 资源 | 当前映射 |
 | --- | --- |
-| 预设静态 instruction | 继续使用命名 system sections；由 coordinator 提供 ST marker anchor |
-| 角色 description/personality/scenario | 当前按 preset marker 或稳定 fallback 进入统一 profile；未来只有明确选择才覆盖 DSH Agent persona |
+| 预设静态 instruction | 使用具名 system sections，并在同一次装配中提供 ST marker anchor |
+| 角色 description/personality/scenario | 按 preset marker 或稳定 fallback 进入 Tavern system 正文；不覆盖 DSH Agent persona |
 | 用户名字与描述 | 名字解析 `{{user}}`；描述进入一次 `personaDescription`/`{{persona}}`，缺少放置点时诊断并稳定 fallback；不覆盖 DSH Agent persona |
-| 世界信息条目 | 扫描 durable history 与本步骤 claimed 输入，并按 before/after anchor 进入 profile；严格 depth/outlet 仍需要其他宿主能力 |
-| example dialogue | 当前为明确标注的 system 近似；未来需要真实 user/assistant 示例消息 seam |
+| 世界信息条目 | 扫描 durable history 与本步骤 claimed 输入，并按 before/after anchor 进入 profile；严格 depth/outlet 未支持 |
+| example dialogue | 作为普通 system 近似正文，来源与位置降级由 Tavern Trace metadata/diagnostics 说明；真实 user/assistant 示例消息未支持 |
 | first message / alternate greeting | 首轮生成作为 greeting-reference；首个真实回复形成后不再注入，且始终不创建 seed/history message |
 | 用户输入与历史 | 始终以 DSH 原生 durable messages 为权威来源；世界书只读扫描，不重复发送 |
 | Agent system prompt | 默认共存并先于 preset；高级 replace 明确由用户承担工具提示丢失风险 |
 
-在 DSH 尚未提供任意 role-message/depth 注入 seam 前，相关字段应继续原样保存并在 UI 标注“尚未执行”，不能声称完整兼容。
+任意 role-message/depth 注入当前未支持；相关字段原样保存并在 UI 标注“尚未执行”，不能声称完整兼容。
 
 ## 6. 为什么同一会话切换预设仍会受旧预设影响
 

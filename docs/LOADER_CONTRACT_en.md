@@ -1,12 +1,12 @@
 # Unified Tavern loader contract
 
-**2.3.0 Trace update:** The loader expands its logical profile into ordered official `{name,text}` sections before downstream assembly listeners run. New schema 4 Trace persists source metadata and official Session references only. On detail reads, [primitive API v3](PROMPT_API_V3_en.md) verifies and resolves available section/context bodies; `source.text` is never stored.
-
-DSH V3 delta: references here to request/header.system describe V2. On `0.1.5-rc.1`, compiled systemText enters the effective surface through system/message; Trace reads it through public Session.deriveMessages(), while request/header owns config/tools. See the [migration contract](DSH_0.1.5_MIGRATION_en.md).
-
 [中文](LOADER_CONTRACT.md)
 
-Status: 2026-08-18. Includes the RP session overlay (`selection.rp` + `rp:policy`) and delegated subagents freezing the parent selection. This is the runtime contract between resources and the loader, not a README.
+The current contract targets Tavern **2.3.0 candidate** and DSH `0.1.5-rc.1`. It covers
+the RP session overlay (`selection.rp` + `rp:policy`), delegated subagents freezing their
+parent selection, named official sections, and schema 4 Trace references. DSH V3 uses
+`system/message` as the system-body authority while `request/header` retains config/tools;
+see the [migration contract](DSH_0.1.5_MIGRATION_en.md).
 
 ## Goals and ownership
 
@@ -62,20 +62,20 @@ The durable file is `session-selections.json` under the plugin data directory:
 - Session id is only a JSON key, but it still goes through length/charset checks to avoid prototype keys and abnormal input.
 - Schema v1 is migrated in place to v2 on read. Character options keep only the three loader-known greeting/system/PHI fields. Resource ids and per-session world-book counts are bounded.
 - Default cap is 2,048 sessions (implementation hard cap 4,096) and 4 MiB of durable state. Old files over 8 MiB never enter `JSON.parse`. Writes validate on a copy and land atomically. Failure does not pollute in-memory state.
-- Selections are user intent that must not be dropped silently, so a full capacity rejects new entries instead of copying Trace's LRU. `deleteSession(id)` is a reclaim seam prepared for a future authoritative DSH session-delete event. The current Host does not expose that event.
+- Selections are user intent that must not be dropped silently, so a full capacity rejects new entries instead of copying Trace's LRU. `deleteSession(id)` is an explicit reclaim seam; the current Host has no authoritative session-delete event that can trigger it automatically.
 
-### Running-agent mutation boundary and known gaps
+### Running-agent mutation boundary
 
 The current runtime protection is “explicit session-binding write protection”, not a global transaction lock over every resource change. Preset, character-card, user, and standalone world-book selection APIs query the matching agent before writing `SessionSelectionStore`. State `running` returns HTTP 409 with `PRESET_AGENT_RUNNING`, `CHARACTER_AGENT_RUNNING`, `USER_AGENT_RUNNING`, or `WORLD_BOOK_AGENT_RUNNING`. That stops a user from switching those four selections on that session through the normal bind buttons while a turn is executing.
 
-These indirect mutation entries are not yet under the same protection. Review and later implementation must not describe current behavior as “a running Tavern configuration is fully immutable”:
+These indirect mutation entries are outside the same protection, so the current contract does not guarantee that “a running Tavern configuration is fully immutable”:
 
 - session-template/configuration apply can overwrite a target session with a complete selection. The normal UI targets a newly created blank session, but the API itself does not yet reject an already-running existing target.
 - Deleting a referenced preset, character card, user, or standalone world book calls `clearResource()` and clears one or more session selections without checking each affected agent.
-- Editing the body of a currently bound resource does not change the resource ID, but it does change what a later compile reads.
+- Editing the body of a currently bound resource does not change the resource ID, but it does change what a later assembly reads.
 - Editing a user, preset, or character card's standalone world-book relations may change the effective world-book set of one or more sessions. Today only the relation and resource caps are validated. Those sessions are not checked for running.
 
-A completed system assembly is a frozen snapshot. Resource changes do not write back into durable history and must not be dressed up as already having entered an old request. Concurrent edits around assembly still have a timing boundary. A strict mode needs a loader-owned unified mutation guard: resolve every affected session from a direct session id or reverse resource reference, atomically confirm none is running, then commit. For body-only edits, the product must also choose “reject while running” or “save succeeds but only the next turn is guaranteed”. Current targeted tests cover the reject paths of preset, character-card, and user selection hooks. World books are wired but still need a direct running-state regression. Templates and the indirect paths above need their own tests.
+A completed system assembly is a frozen snapshot. Resource changes do not write back into durable history and cannot be described as having entered an earlier request. Concurrent edits around assembly retain a timing boundary: body edits and indirect relation changes only guarantee that a later assembly reads the state visible at that time. The current running-state rejection guarantee applies only to the four explicit selection writes above.
 
 ### Clean-session/template policy
 
@@ -85,11 +85,11 @@ Templates are not rewritten silently when a resource is deleted. Dangling ids fo
 
 ## Profile safety budget
 
-`TavernProfileLoader` applies a default 512 KiB UTF-8 cap to the combined Tavern profile text it generates. `limits.maxProfileBytes` may tighten or loosen it, but the implementation hard cap is 2 MiB. The world-book parser/store share a streaming structure guard before normalize: at most 10,000 entries per resource, depth 32, 100,000 nodes, 1 MiB per string, 1,024 characters per object key. The adapter additionally applies a 10,000-entry hard cap to standalone plus embedded books for this request. A resource that cannot fit is skipped and diagnosed. The combined budget is first-come by a deterministic composition order: session-explicit standalone books, user-bound standalone books, preset-bound standalone books, character-bound standalone books (stable ID de-duplication), then the card's embedded book. Each resource is reserved as a whole; if it cannot fit completely it is not scanned. So when earlier standalone books fill 10,000 entries, the embedded book is skipped with `WORLD_BOOK_RUNTIME_TOTAL_LIMIT`. That is an intentional safety/determinism policy, not a random omission. After those guards, the compiler considers at most the top-ranked 4,096 lore candidates and limits raw lore bodies to twice the profile budget before composing section text. A world book's own `tokenBudget` and `ignoreBudget` only decide ST-compatible candidates. They cannot change any Host hard cap.
+`TavernProfileLoader` applies a default 512 KiB UTF-8 cap to the combined Tavern profile text it generates. `limits.maxProfileBytes` may tighten or loosen it, but the implementation hard cap is 2 MiB. The world-book parser/store share a streaming structure guard before normalize: at most 10,000 entries per resource, depth 32, 100,000 nodes, 1 MiB per string, 1,024 characters per object key. The adapter additionally applies a 10,000-entry hard cap to standalone plus embedded books for this request. A resource that cannot fit is skipped and diagnosed. The combined budget is first-come by a deterministic composition order: session-explicit standalone books, user-bound standalone books, preset-bound standalone books, character-bound standalone books (stable ID de-duplication), then the card's embedded book. Each resource is reserved as a whole; if it cannot fit completely it is not scanned. So when earlier standalone books fill 10,000 entries, the embedded book is skipped with `WORLD_BOOK_RUNTIME_TOTAL_LIMIT`. That is an intentional safety/determinism policy, not a random omission. After those guards, the assembler considers at most the top-ranked 4,096 lore candidates and limits raw lore bodies to twice the profile budget before composing section text. A world book's own `tokenBudget` and `ignoreBudget` only decide ST-compatible candidates. They cannot change any Host hard cap.
 
-When a character card edits an embedded `character_book`, the shared structure guard and parser run first. Raw JSON/PNG import currently only confirms at the character-format layer that `character_book` is an object, then losslessly keeps unknown fields, and does not run the same depth/node/entry guard before disk. The 32 MiB import cap limits total input. The first time the loader consumes it, `parseCharacterBook()` still fails closed and reports `EMBEDDED_WORLD_BOOK_INVALID`, so the match-amplification path is blocked. This remains an import-time defense-in-depth gap: an ultimately unrunnable embedded book can enter the library first. Later work should add import-time structure diagnostics or a reject policy for a normalized runtime copy without breaking unknown-field retention on the current document.
+When a character card edits an embedded `character_book`, the shared structure guard and parser run first. Raw JSON/PNG import only confirms at the character-format layer that `character_book` is an object, then losslessly keeps unknown fields, and does not run the same depth/node/entry guard before disk. The 32 MiB import cap limits total input. When the loader first consumes it, `parseCharacterBook()` fails closed with `EMBEDDED_WORLD_BOOK_INVALID`; an unrunnable embedded book can enter the library, but it cannot enter the match-amplification path.
 
-If all content exceeds the cap, the compiler keeps the highest-ranked lore-entry prefix that still fits in the original candidate order and reports `TAVERN_PROFILE_LORE_LIMITED`. If it is still over after removing all lore, it throws `TAVERN_PROFILE_TOO_LARGE`. Preset, character fields, or user description are not truncated in the middle.
+If all content exceeds the cap, the assembler keeps the highest-ranked lore-entry prefix that still fits in the original candidate order and reports `TAVERN_PROFILE_LORE_LIMITED`. If it is still over after removing all lore, it throws `TAVERN_PROFILE_TOO_LARGE`. Preset, character fields, or user description are not truncated in the middle.
 
 ### Resource-to-world-book relationships
 
@@ -97,7 +97,7 @@ User resources stay strictly `{ id, name, description }`. “User-bound world bo
 
 Preset and character standalone world-book relations live in `resource-world-book-bindings.json`, partitioned by owner kind `preset` / `character`. IDs are not added to the ST preset or character-card original. A card's embedded `character_book` stays in the card and exports with it. External relations are a parallel, not exclusive, source.
 
-On each compile the loader reads the current session's explicit `worldBookIds`, current user relation, current preset relation, and current character relation, de-duplicates by ID, and hands each standalone book to the shared adapter once. The card's embedded book then enters the same adapter. Audit keeps the original `sessionSelection` and `worldBookSelection` explicit/user/preset/character/effective/duplicate IDs. Each world-book resource summary's `bindingSources` keeps every hit source. The active view's `selection.worldBookIds` is the actually effective set, so the launcher can show the real combination.
+On each assembly the loader reads the current session's explicit `worldBookIds`, current user relation, current preset relation, and current character relation, de-duplicates by ID, and hands each standalone book to the shared adapter once. The card's embedded book then enters the same adapter. Audit keeps the original `sessionSelection` and `worldBookSelection` explicit/user/preset/character/effective/duplicate IDs. Each world-book resource summary's `bindingSources` keeps every hit source. The active view's `selection.worldBookIds` is the actually effective set, so the launcher can show the real combination.
 
 Unbinding or switching any one resource removes only that source and does not rewrite the others. Deleting a user, preset, or character card clears owner relations and the matching session selections. Deleting a standalone world book clears every relation and session-explicit reference, but does not modify any card's embedded book. The relation store bounds owner count, books per owner, state bytes, and safe reads, and atomically replaces after validating a copy.
 
@@ -153,11 +153,11 @@ The loader Host layer's only `PendingInputProjection` rebuilds the queue and thi
 
 ### Preset-only compatibility
 
-With no character, user, or activated lore, the loader calls `compilePresetForDsh()` directly. It emits enabled non-marker prompt bodies in their original order and preserves sampler mapping and macro behavior. Tavern no longer adds preset names, IDs, or XML-style identification wrappers to model-visible text. The preset prompt identifier, requested role, and resource provenance remain available in each official section's source metadata.
+With no character, user, or activated lore, the loader calls `compilePresetForDsh()` directly. It emits enabled non-marker prompt bodies in their original order and preserves sampler mapping and macro behavior. Tavern adds no preset names, IDs, or XML-style identification wrappers to model-visible text; identical tags authored in resource bodies remain literal. A selected resource with no body produces no placeholder header. Official waterfall sections contain only `name` and `text`; prompt identifiers, requested roles, and resource provenance are kept in Tavern Trace metadata.
 
 ### Marker ownership
 
-After a character is selected or lore is activated, the unified compiler consumes these ST markers:
+After a character is selected or lore is activated, the unified assembler consumes these ST markers:
 
 | Marker / prompt | Loader source | Behavior |
 | --- | --- | --- |
@@ -168,7 +168,7 @@ After a character is selected or lore is activated, the unified compiler consume
 | `scenario` | character scenario | Emitted once; fallback if the marker is missing |
 | `personaDescription` | user description | Emitted once. `{{persona}}` may be an explicit placement. Missing marker/macro is diagnosed with a stable fallback |
 | `worldInfoAfter` | active after lore | Emitted at that marker; fallback if the marker is missing |
-| `dialogueExamples` | character message example | Emitted as source-labeled approximate system content |
+| `dialogueExamples` | character message example | Emitted as ordinary approximate system text; provenance is recorded only in Tavern Trace metadata |
 | `chatHistory` | DSH Session | Marker is consumed but not emitted. DSH durable history is always the only authority |
 | `jailbreak` | character PHI | May override the preset; supports `{{original}}`. Position approximation is reported explicitly |
 
@@ -178,8 +178,8 @@ Each character field, user description, and lore position is consumed at most on
 
 - Greeting contributes plain system text only on the first-round generation. After the first real assistant reply it is no longer injected, and it is never forged as assistant history.
 - PHI lives in the Tavern system profile and is not claimed to sit strictly after all history.
-- Depth-prompt format duties for role/depth stay in the character module. The loader's first phase can only put them in an explicitly labeled system fallback.
-- `user`/`assistant` preset prompt roles remain reviewable in official-section `source.role` metadata. Every actual contribution is still a system section, not a real history-message role.
+- The character module preserves depth-prompt role/depth fields. The current loader can only place the body in an ordinary system fallback and reports that real depth/role semantics were not executed.
+- `user`/`assistant` preset prompt roles remain reviewable in Tavern Trace `sources[].role` metadata. Official waterfall sections themselves contain only `name` and `text`; every actual contribution is still a system section, not a real history-message role.
 - System assembly scans durable history plus this step's claimed batch, so the current input of a single-step session can hit on the first request. The implementation does not use a too-late `agent/pre-step` and does not read a private Inbox.
 - Trace must describe the actually frozen assembly. It must not rerun the matcher on current input after `agent/pre-step` or `request/header` and label that result as having entered this turn's system. Because there is no same-step reassembly seam, the claimed batch must enter the matcher via the `agent/inbox/spliced` projection before the first assembly.
 
@@ -187,25 +187,25 @@ Each character field, user description, and lore position is consumed at most on
 
 `TavernProfileLoader.compile()` returns:
 
-- `systemText`: the Tavern profile that actually enters `request/header.system`;
+- `systemText`: the Tavern profile proposed by the loader and expanded into named official system sections;
 - `callConfig`: supported fields actually proposed through `agent/request`;
 - `resources`: summaries of preset, character, user, and world book resolved this run;
 - `diagnostics`: missing resources and placement degradation;
 - `audit`: session selection, resources, activated lore IDs, and SHA-256 fingerprint.
 
-DSH's own `request/header` remains the final authority for what the model actually received. Loader audit is for UI/API to explain why this input was produced. It cannot replace the DSH header and does not add a private session event.
+For DSH V3 sessions, official `system/message` and context `user/message` are authoritative for prompt bodies, while `request/header` stores final tools and call config. V0–V2 compatibility reading establishes an older `request/header.system` reference only after an exact full-body hash match. Loader audit helps UI/API explain why this input was produced. It replaces none of those official DSH events and adds no private session event.
 
-## Integration checklist
+## Adapter integration invariants
 
-Before merging a character-card branch:
+The character-card adapter must:
 
 1. store/API/UI maintain only character documents and selection intent;
 2. migrate or bridge session selection onto `SessionSelectionStore.characterCardId/character`;
 3. provide the model through `registerCharacterAdapter()`;
-4. delete that branch's own Host system section/profile compiler;
+4. register no separate Host system section/profile assembler;
 5. verify with marker, replace, dual-session, fork, subagent, and request-header tests.
 
-Before merging a world-book branch:
+The world-book adapter must:
 
 1. keep parser/matcher as pure logic;
 2. return activated entries and diagnostics through `registerWorldBookAdapter()`;
@@ -213,7 +213,7 @@ Before merging a world-book branch:
 4. do not register a system context/section yourself;
 5. give deterministic tests for scan window, regex, recursion, and budget.
 
-Before merging a user-resource branch:
+The user-resource adapter must:
 
 1. store documents are strictly `id/name/description`; reject avatar and unknown fields;
 2. `SessionSelectionStore.userId` is the only session-binding owner;

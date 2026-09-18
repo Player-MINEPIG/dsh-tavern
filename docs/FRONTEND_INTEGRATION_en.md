@@ -2,9 +2,9 @@
 
 [中文](FRONTEND_INTEGRATION_zh-CN.md)
 
-Status: dsh-tavern `2.2.0` (released 2026-09-11) and DSH `0.1.2-rc.1` / `0.1.5-rc.1`. HTTP fields follow [API_en.md](API_en.md). This page covers delivery, mode lifecycle, and product-action composition.
-
-2.3.0 candidate documentation update (2026-09-17): section 7 distinguishes v1/v2/v3 responsibilities; existing v2 integration remains unchanged.
+The current contract targets Tavern **2.3.0 candidate** and DSH `0.1.5-rc.1`.
+HTTP fields follow [API_en.md](API_en.md). This page covers delivery, mode lifecycle,
+product-action composition, and v1/v2/v3 responsibilities.
 
 ## 1. Understand the dual-mode compatibility boundary first
 
@@ -77,7 +77,7 @@ The RP error notice subscribes to `useSession`'s `promptError/lastAgentError/ope
 
 ## 5. HTTP v2 data plane
 
-Embedded clients on DSH `0.1.2-rc.1` read lifecycle from `useSession`, `legacy.nodes/partial` from `useChat`, and interaction state from `useConversation`. Derive opening phase with the package-root `conversationPhase(session, conversation)` export. Default-view selection uses the Conversation store on `conversation.session`, not the native Chat store. Standalone HTTP clients do not use these browser hooks. Tavern UI settings events refresh presentation only; they cannot replace the Host live-message source.
+Embedded clients on DSH `0.1.5-rc.1` read lifecycle from `useSession`, `legacy.nodes/partial` from `useChat`, and interaction state from `useConversation`. Derive opening phase with the package-root `conversationPhase(session, conversation)` export. Default-view selection uses the Conversation store on `conversation.session`, not the native Chat store. Standalone HTTP clients do not use these browser hooks. Tavern UI settings events refresh presentation only; they cannot replace the Host live-message source.
 
 Root: `/pmp-dsh-tavern/api/v2`. It is for any RP frontend and provides:
 
@@ -97,7 +97,7 @@ Important constraints:
 - `/user-message` submits user text only. It does not accept a frontend-assembled full prompt.
 - Managed catalog/timeline GET returns `revision`. PUT must send `expectedRevision`. After `409 PLAY_FILE_REVISION_CONFLICT`, read the new document and replay local intent. `PLAY_COORDINATES_MIGRATION_REQUIRED` needs migration instead of repeated retries or merely changing a version marker.
 - Focus is queried by a non-empty playthrough id. The old path entry is migration compatibility only.
-- Imported records inject on the first turn through claim/lineage. They are not written as history.
+- Imported records inject on the first turn through claim/lineage. They do not forge user/assistant QA or enter the Tavern timeline; the system prompt used by a real request is still persisted in official DSH history.
 - The history API reads until Host `hasMore: false`. Whether the model context fits is decided by DSH/provider.
 - Do not put the workspace on a system disk.
 
@@ -128,8 +128,8 @@ v2 is the stable protocol for third-party RP surfaces. v1 is this plugin's bundl
 If you only need rendering and playthrough operations, stay on v2 and the references already in timeline/catalog. If you must edit Tavern resources, declare a dependency on the matching v1 and dsh-tavern versions, and degrade when an API is missing.
 
 Current resources and configuration are v1 responsibilities; historical prompt
-assembly and provenance are v3 responsibilities. The candidate v3 `/sources`
-aggregator has been removed and GET returns 404; use v1 for current configuration.
+assembly and provenance are v3 responsibilities. v3 defines no `/sources`
+aggregator and GET returns 404; use v1 for current configuration.
 Historical `sections[].sources` must not be confused with that endpoint. Use official
 DSH `system-prompt/assemble` for runtime observation/adjustment/contribution, or v3
 for historical records. See [scope audit and route catalogs](API_en.md#api-scope)

@@ -11,6 +11,10 @@ For project contracts, DSH version compatibility, or release evidence, use the t
 - Read private development plans only when explicitly provided as a workspace. Without explicit approval, do not copy private-plan content, repository coordinates, user data, or absolute local paths into the public repository.
 - Installation, uninstallation, migration, and data writes against real DSH profiles must fall within the task's authorization. Ordinary code changes do not automatically authorize these operations.
 
+## Documentation
+
+Describe the current implementation in place, with matching bilingual contracts and diagrams. Replace obsolete prose instead of appending dated corrections or completed-stage ledgers. Keep one current acceptance result and the remaining checks. Version history belongs in `docs/CHANGELOG.md`; readers can use the corresponding Git tag for older full documentation. Retain older-format details only where they explain a currently supported compatibility or migration path.
+
 ## Validation by Change Scope
 
 Local builds and tests using temporary directories and fixtures, including fixes and reruns for failures caused by the requested change, may proceed without step-by-step confirmation.

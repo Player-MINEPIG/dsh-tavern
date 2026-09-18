@@ -2,9 +2,8 @@
 
 [中文](API.md) · [v3 detailed contract](PROMPT_API_V3_en.md) · [Frontend integration](FRONTEND_INTEGRATION_en.md)
 
-Status: Tavern **2.3.0 candidate**, not released; updated 2026-09-18. New Trace runtime
-acceptance targets DSH `0.1.5-rc.1`; the released 2.2.0 v1/v2 baseline also tested
-`0.1.2-rc.1`. Root: `/pmp-dsh-tavern/api`. API versions and DSH log format V3 are independent.
+Contract version: Tavern **2.3.0 candidate**, targeting DSH `0.1.5-rc.1`.
+Root: `/pmp-dsh-tavern/api`. API versions and DSH log format V3 are independent.
 
 All endpoint catalogs use **Method / Path / Behavior / Status**, following the v2
 format. Paths are relative to the stated version prefix. URL-encode identifiers;
@@ -13,14 +12,14 @@ peer, Host, Origin and media-type checks apply. Successful JSON responses carry
 `ok:true`; failures carry `ok:false` and `error`. v1 error shapes and method rejection
 codes vary by resource; common documentation formatting does not change wire contracts.
 
-The released [DSH V3 migration contract](DSH_0.1.5_MIGRATION_en.md) still applies to
-message coordinates, branch inputs and unmigrated timeline references.
+The [DSH V3 coordinate migration contract](DSH_0.1.5_MIGRATION_en.md) governs
+message coordinates, branch inputs, and unmigrated timeline references.
 
 <a id="api-scope"></a>
 ## Version responsibilities and overlap audit
 
-Reviewed 2026-09-18. The current-resource aggregator has been removed from v3.
-The following describes the implemented boundary.
+The following defines the current responsibilities of v1, v2, and v3. v3 does not
+provide a current-resource aggregator.
 
 | Capability | Existing v1 coverage | Existing v3 coverage | Scope conclusion |
 | --- | --- | --- | --- |
@@ -32,14 +31,14 @@ The following describes the implemented boundary.
 
 Implemented boundary: **v1 owns current resources/configuration, v2 owns play
 Session/workspace primitives, and v3 owns per-request assembly metadata,
-official-history references, and provenance.** The candidate `/sources` aggregator
-has been removed: GET returns 404 with no alias or v1 redirect. Historical
+official-history references, and provenance.** `/sessions/:id/sources` is not part
+of the v3 contract: GET returns 404 with no alias or v1 redirect. Historical
 `sections[].sources` retain past input relationships as metadata, hashes, and counts;
 new records do not store `source.text`.
 
 Historical overlap does not imply identical IDs or wire fields. New v1 audit and v3 assembly
-metadata share a canonical schema 4 record, while the old v1 and schema 3 files remain
-read-only compatibility inputs. Captured audit is not a live mirror of later v1 updates.
+metadata use the same audit in one canonical schema 4 record. Legacy schema 3 detail may predate
+the final state of older v1 metadata; those files remain read-only compatibility inputs.
 
 v1 `/active` runs loader assembly and lore matching. It does not create a new
 historical Trace record and is not a cheap configuration-only GET. For current
@@ -82,15 +81,15 @@ Prefix: `/pmp-dsh-tavern/api/v2`.
 | POST | `/sessions/:id/branch` | `{ atEventId, sessionFormatVersion? }`: log seq and its format version; migration checks below. After fork, copy the public selection. If the source import claim already ended at an earlier terminal, copy body-free pending lineage. Does not write timeline or send on behalf of the user. Copy failure is explicit 502 `PLAY_BRANCH_COPY_FAILED`. Open turn → 409 | Implemented |
 | POST | `/sessions/:id/user-message` | `{ text }` as the next user body, `session.prompt` `queue` | Implemented |
 | GET | `/sessions/:id/messages` | `deriveMessages()` + `seq` + `incompleteTurn` + per-message `origin`; optional top-level `sessionFormatVersion` / `migratedFromV2`. Reads until `hasMore: false`; no plugin page cap. Empty Host cursor page, illegal seq, or a cursor that does not advance → 502 `PLAY_HISTORY_CURSOR_STALLED` | Implemented |
-| GET | `/sessions/:id/coordinates` | Read current logical Session format and migration marker without message bodies. [Fields and examples](#session-coordinates) | Added in 2.2.0 |
+| GET | `/sessions/:id/coordinates` | Read current logical Session format and migration marker without message bodies. [Fields and examples](#session-coordinates) | Implemented |
 | GET | `/sessions/:id/import-context` | Returns `{ binding }`. Unbound is `null`. A binding includes path/hash/state/count summaries and, when claimed, body-free claim identity/event-seq summaries. Record bodies are not returned | Implemented |
 | PUT | `/sessions/:id/import-context` | `{ reference: { path, expectedHash? } }`. Bind or rebind an already-written workspace import-context on an empty session | Implemented |
 | DELETE | `/sessions/:id/import-context` | Unbind an empty session. Idempotent `{ binding: null }` | Implemented |
-| GET | `/playthroughs/:id/focus` | 2.0 stable contract: resolve the playthrough via catalog and return `{ playthroughId, sessionId, nodeId, variantId }`. Empty playthroughs use `rootSessionId` | Implemented; bundled live client migrated |
+| GET | `/playthroughs/:id/focus` | Resolve the playthrough via catalog and return `{ playthroughId, sessionId, nodeId, variantId }`. Empty playthroughs use `rootSessionId` | Implemented |
 | POST | `/playthroughs/:id/relink-character` | `{ characterId }`. Rebind only that playthrough and its root/swipe/branch descendant sessions to an existing card. An explicit user choice is not limited by automatic classification | Implemented |
 | POST | `/playthroughs/:id/detach-session` | `{ sessionId }`. Remove the target session's timeline variant and descendants from that playthrough. Sibling branches, the DSH session/history, and the empty catalog playthrough remain. The server validates the tree and commits with managed-file revision/CAS | Implemented |
-| GET | `/focus?path=` | Migration-era low-level compatibility: derive `{ sessionId }` from an explicit timeline path. The 2.0 bundled frontend no longer depends on it | Implemented, migration compatibility |
-| GET | `/focus` (no path) | 2.0 provides no default target. “Most recently written timeline” is no longer user focus | Default removed; 400 `PLAY_FOCUS_PATH_REQUIRED` |
+| GET | `/focus?path=` | Low-level compatibility route: derive `{ sessionId }` from an explicit timeline path. The bundled frontend uses the playthrough-id route | Compatibility surface |
+| GET | `/focus` (no path) | No default target; “most recently written timeline” is not user focus | 400 `PLAY_FOCUS_PATH_REQUIRED` |
 | POST | `/focus`, `/playthroughs/:id/focus` | Not provided | 405 |
 
 Path exists but method is wrong → `405 PLAY_METHOD_NOT_ALLOWED` (for example `POST /chrome`, `POST /focus`, `GET /sessions`). On the stable focus path, a missing playthrough id is 404 `PLAY_PLAYTHROUGH_NOT_FOUND`; a missing catalog is 409 `PLAY_CATALOG_UNAVAILABLE`; a corrupt catalog stays 400 `PLAY_CATALOG_INVALID`; a missing or corrupt timeline is uniformly 409 `PLAY_FOCUS_UNAVAILABLE`. The stable entry does not accept a client path, does not read DSH history, and does not write files. Old `/focus?path=` remains migration compatibility only.
@@ -98,7 +97,7 @@ Path exists but method is wrong → `405 PLAY_METHOD_NOT_ALLOWED` (for example `
 <a id="session-coordinates"></a>
 ### Query and use Session coordinate versions
 
-Available from Tavern `2.2.0`, the public read-only `GET /sessions/:id/coordinates` endpoint reports **the format governing the specified Session's current event sequence numbers**. It takes no body or query parameters; URL-encode the DSH Session ID. It returns no message bodies, log paths, storage schema, or old-to-new sequence map, and does not migrate Tavern data. External frontends can query it before reusing saved event references.
+The public read-only `GET /sessions/:id/coordinates` endpoint reports **the format governing the specified Session's current event sequence numbers**. It takes no body or query parameters; URL-encode the DSH Session ID. It returns no message bodies, log paths, storage schema, or old-to-new sequence map, and does not migrate Tavern data. External frontends can query it before reusing saved event references.
 
 #### Request and fields
 
@@ -136,7 +135,7 @@ Example success (HTTP 200):
 | `sessionFormatVersion` | integer or null | The Session format version **defined by upstream DSH**, read from public `session.inspect()` metadata at `meta.version`. This is not the DSH software version, Tavern version, or HTTP `/v2` version. `0` is valid: do not use a truthiness check. `null` means the Host did not provide a usable version, not zero or compatible. |
 | `migratedFromV2` | boolean | A **Tavern inference**: `true` when current events contain a synthetic V2→V3 system-message ID matching the upstream naming rule. V0/V1 restored through that edge can also return `true`. `false` only means no marker was detected; it does not prove the Session was never migrated or authoritatively report migration completion. |
 
-The value describes the **logical Session format currently read by the Host**; it does not guarantee the original disk file has already been rewritten. Actual DSH `0.1.2-rc.1` checks returned `0`, and `0.1.5-rc.1` current Sessions returned `3`. Do not infer this from software versions or treat `>= 3` as a future-format compatibility promise. Tavern defines the API field names; DSH defines the format semantics and conversion rules.
+The value describes the **logical Session format currently read by the Host**; it does not guarantee the original disk file has already been rewritten. Clients must use the returned value rather than infer it from software versions, and must not treat `>= 3` as a future-format compatibility promise. Tavern defines the API field names; DSH defines the format semantics and conversion rules.
 
 If messages are already needed, use the top-level `sessionFormatVersion` and `migratedFromV2` from `GET /sessions/:id/messages` instead of making another request. Those message fields are optional, and older plugins may lack the standalone endpoint; missing/null means unknown. The endpoint avoids returning message bodies but still inspects the Session, so its cost is not guaranteed to be independent of history length.
 
@@ -232,24 +231,28 @@ Character unbind/rebind is the exception: `POST /v1/character-selection` checks 
 
 Detach deletes every variant of the target session and every descendant variant that has them as parent. Surviving nodes are not rehung. Sibling swipes and other branches on the same node remain. If root is removed, catalog clears `rootSessionId` and the old import-context reference but keeps the playthrough row, name, and number. The next new playthrough for that character creates a new DSH root session for the empty playthrough and reattaches it with catalog CAS. It does not create a new directory or number. No DSH session is deleted, archived, or renamed.
 
-This “playthrough transaction” is a frontend composition of public atomic operations, not a server cross-file transaction. A single client's controller serializes same-character creates. Built-in callers use limited server-CAS replay against cross-tab writes, but the session/directory/timeline/catalog combination is still not a transaction. Mid-create failure does not add a cross-file transaction: workspace bind, directory create, ordinary-file and catalog/timeline writes, playthrough detach, and session create/branch/user-message plus import-context PUT/DELETE each write `ctx.logger` with one `operationId` inside that mutation request. Clients recover from completed stages, read-back, and stable error codes. Different API requests do not share an operationId. chrome, GET, and browser frontend operations stay quiet. Do not advertise the composed flow as an atomic commit.
+This “playthrough transaction” is a frontend composition of public atomic operations, not a server cross-file transaction. A single client's controller serializes same-character creates. Built-in callers use limited server-CAS replay against cross-tab writes, but the session/directory/timeline/catalog combination is still not a transaction. A mid-create failure is not wrapped in a cross-file transaction: workspace bind, directory create, ordinary-file and catalog/timeline writes, playthrough detach, and session create/branch/user-message plus import-context PUT/DELETE each write `ctx.logger` with one `operationId` inside that mutation request. Clients recover from completed stages, read-back, and stable error codes. Different API requests do not share an operationId. chrome, GET, and browser frontend operations stay quiet. Do not advertise the composed flow as an atomic commit.
 
 ### Imported-record context
 
-An empty playthrough's opening dock binds an imported record to the current root session. It does not create another session or write greeting or timeline nodes. Bind, rebind, and unbind use `PUT` / `DELETE /sessions/:id/import-context`. The client shows the actions in the same footer and, after bind, previews the last three QA turns. While `pending`, the first real request injects the full content. The loader expands Tavern macros in greeting and QA with user/character names from the same profile snapshot, then escapes them and marks them `untrusted` read-only context so ST placeholders do not enter DSH prompt-variable parsing. It does not write the content into DSH durable history. The implemented base semantics: the first assembly must establish a durable claim from the original user turn/event's public `claimEventSeqs`. The same claim identity may reassemble. Unclaimed pending is not consumed by a view or an unrelated turn/end. retry/swipe lineage and cancel/interrupt terminals are implemented: terminal stores only event seq, turn, `reason.kind`, and similar body-free metadata. The same request may reassemble before terminal; after terminal a new claim no longer injects. Tavern swipe copies selection/lineage only through the public branch seam and does not claim to intercept every third-party native fork.
+An empty playthrough's opening dock binds an imported record to the current root session. It does not create another session or write greeting or timeline nodes. Bind, rebind, and unbind use `PUT` / `DELETE /sessions/:id/import-context`. The client shows the actions in the same footer and, after bind, previews the last three QA turns. While `pending`, the first real request injects the full content. The loader expands Tavern macros in greeting and QA with user/character names from the same profile snapshot, then escapes them and marks them `untrusted` read-only context so ST placeholders do not enter DSH prompt-variable parsing. It does not forge user/assistant QA or copy imported content into the Tavern timeline; the system prompt used by a real request is still persisted in official DSH history. The first assembly must establish a durable claim from the original user turn/event's public `claimEventSeqs`. The same claim identity may reassemble. Unclaimed pending is not consumed by a view or an unrelated turn/end. retry/swipe lineage and cancel/interrupt terminals are implemented: terminal stores only event seq, turn, `reason.kind`, and similar body-free metadata. The same request may reassemble before terminal; after terminal a new claim no longer injects. Tavern swipe copies selection/lineage only through the public branch seam and does not claim to intercept every third-party native fork.
 
-The body is `{ reference: { path, expectedHash? } }`. The file must sit inside the bound workspace root, with `schemaVersion: 1` and a `qa` array. The import parser does not apply a 256 KiB or QA-count artificial context cap, and it does not summarize or slice. Whether the model context overflows is left to DSH/provider. Generic `/workspace/files` still has a 1 MiB file-layer read/write limit. Ordinary SillyTavern JSON/JSONL can be parsed by the client and written as that context file. 2.0 no longer publishes a portable bundle format. ST JSONL expresses only the current active linear history and cannot store the full playthrough tree. Greeting remains a display projection and does not forge assistant history.
+The body is `{ reference: { path, expectedHash? } }`. The file must sit inside the bound workspace root, with `schemaVersion: 1` and a `qa` array. The import parser does not apply a 256 KiB or QA-count artificial context cap, and it does not summarize or slice. Whether the model context overflows is left to DSH/provider. Generic `/workspace/files` still has a 1 MiB file-layer read/write limit. Ordinary SillyTavern JSON/JSONL can be parsed by the client and written as that context file. The public import/export surface defines no portable bundle. ST JSONL expresses only the current active linear history and cannot store the full playthrough tree. Greeting remains a display projection and does not forge assistant history.
 
-### 2.0 release hardening (implemented and covered by grouped automated regression)
+### v2 persistence, concurrency, and audit guarantees
 
-- ✅ History implemented (`10250a7`): the 32-page artificial cap is gone; pagination continues until `hasMore: false`. Empty Host page, illegal oldest `seq`, or a repeating/non-advancing cursor → 502 `PLAY_HISTORY_CURSOR_STALLED`. The plugin does not summarize or slice.
-- Import-context claim/terminal/lineage implemented: public `claimEventSeqs` drive pending → claimed. The same identity may replay before terminal. `turn/end` stores body-free metadata (event seq, turn, `reason.kind`) and becomes consumed. After terminal a new claim does not inject. Tavern swipe copies selection and body-free pending lineage through public branch; the old claim is not reused. Third-party native forks are outside plugin interception.
-- ✅ catalog/timeline GET returns exact UTF-8-byte SHA-256 `revision`. PUT uses explicit `expectedRevision`. Missing/bad format are 400; target-state or hash mismatch is 409; conflicts do not change the file. Server contract, bundled live-client revision cache/limited replay, and CAS migration of built-in lifecycle callers are implemented.
-- ✅ catalog/timeline run the same schema/path checks after GET read and before PUT write. Unknown third-party `ext` is kept. revision/CAS share the same target guard. Path lock, per-segment no-follow checks, exclusive `wx` temp write, and pre-rename recheck are implemented.
-- Paths reject symlink/junction (link types Node exposes) per segment, create non-recursively layer by layer, recheck with realpath, use exclusive `wx` temps, and recheck the parent before write/rename. Pure Node still cannot resist an extremely narrow race from an external process. No native addon is introduced.
-- This round wired backend `ctx.logger` operation log: `PUT /workspace` (bind), `POST /workspace/dirs`, `PUT /workspace/files?path=` (ordinary files and catalog/timeline), `POST /playthroughs/:id/detach-session`, `POST /playthroughs/:id/relink-character`, plus session create/branch/user-message and import-context PUT/DELETE. Each mutation records the same `operationId` through start, request.validated, Host/prepare/bind/copy or timeline/catalog stages, and success or failure. Resource/chat bodies are not logged. user-message records only the Host prompt-accepted stage, not body, length, or summary. GET/list, session/messages/focus/import-context, chrome, browser logs, a persistent journal, and extra exporters are deferred.
+- History paginates until `hasMore: false`. An empty Host page, illegal oldest `seq`, or a repeating/non-advancing cursor returns 502 `PLAY_HISTORY_CURSOR_STALLED`. The plugin does not summarize or slice.
+- Public `claimEventSeqs` drive import-context pending → claimed. The same identity may replay before terminal. `turn/end` stores body-free metadata (event seq, turn, `reason.kind`) and becomes consumed. After terminal a new claim does not inject. Tavern swipe copies selection and body-free pending lineage through public branch; the old claim is not reused. Third-party native forks are outside plugin interception.
+- catalog/timeline GET returns exact UTF-8-byte SHA-256 `revision`; PUT uses explicit `expectedRevision`. Missing/bad format are 400; target-state or hash mismatch is 409; conflicts do not change the file. The bundled live client caches revisions and limits CAS replay to pure document intent.
+- catalog/timeline run the same schema/path checks after GET read and before PUT write. Unknown third-party `ext` is kept. revision/CAS share the same target guard. Path locking performs per-segment no-follow checks, uses exclusive `wx` temporary files, and rechecks the parent before rename.
+- Paths reject symlink/junction types exposed by Node, create directories non-recursively, and recheck with realpath. Pure Node cannot resist an extremely narrow race from an external process; the contract adds no native addon.
+- Backend `ctx.logger` operation logging covers `PUT /workspace`, `POST /workspace/dirs`, `PUT /workspace/files?path=`, playthrough detach/relink, session create/branch/user-message, and import-context PUT/DELETE. Each mutation request uses one `operationId` for stages and terminal status. Resource/chat bodies are never logged. user-message records only the Host prompt-accepted stage, not body, length, or summary. Read-only GET/list, session/messages/focus/import-context, and chrome stay quiet; browser logs, a persistent journal, and extra exporters are outside the contract.
 
-The hardening above is implemented and included in `npm run verify:2.0`. That command checks history, schema/CAS/focus/path jail, claim/lineage, content-free operation log, chrome service/slot, workspace admission, localization, and package boundaries. With `DSH_TAVERN_PLAY_LIVE=1` and `DSH_TAVERN_PLAY_LIVE_URL` it also reads chrome/workspace authority from a running DSH Host. This read-only smoke does not replace real-write or browser two-tab notification checks; future changes require regression testing proportionate to their impact. See [`PLAY_REVIEW_en.md`](PLAY_REVIEW_en.md) for completed `2.1.0` acceptance on DSH `0.1.2-rc.1`, test boundaries, risks, and decisions. The future regression workflow is not a list of outstanding acceptance for this version.
+`npm run verify:2.0` checks history, schema/CAS/focus/path jail, claim/lineage,
+content-free operation logging, chrome service/slot, workspace admission, localization, and
+package boundaries. With `DSH_TAVERN_PLAY_LIVE=1` and `DSH_TAVERN_PLAY_LIVE_URL`, it also
+reads chrome/workspace authority from a running DSH Host. This read-only smoke does not replace
+real-write or browser two-tab notification checks.
 
 `chrome` is the whole frontend's blue/red orb. It lives in plugin data `chrome.json` and defaults to `native`. Illegal `mode` → 400. GET does not require JSON Content-Type.
 `GET /chrome/events` is Tavern-owned SSE, not a DSH Host API. On connect it immediately sends `event: chrome/change` with the current snapshot. A successful `PUT /chrome` broadcasts the same event once after mode actually changes. Event data is only `{ mode, revision }`. SSE uses `text/event-stream`, disables cache, and clears subscribers on close. Non-GET → 405. Older clients that only read `mode` stay compatible. Clients that cannot use SSE should fall back to GET/focus refresh or short polling. Direct edits of `chrome.json`, other-process writes, and DSH private transport are outside this event contract.
@@ -260,7 +263,7 @@ The `PUT /workspace` directory must already exist (`workspaceController.create` 
 
 ## v1 bundled UI contract
 
-Prefix: `/pmp-dsh-tavern/api/v1`. The old root `/dsh-tavern/api` is retired.
+Prefix: `/pmp-dsh-tavern/api/v1`. `/dsh-tavern/api` is not part of the current contract.
 
 | Method | Path | Behavior | Status |
 | --- | --- | --- | --- |
@@ -486,14 +489,14 @@ Prefix: `/pmp-dsh-tavern/api/v3`. Read-only candidate contract.
 | --- | --- | --- | --- |
 | GET | `/capabilities` | Contract capabilities, source mapping and capacity limits | Implemented in candidate |
 | GET | `/sessions/:id/assemblies` | Historical index without section/context/system-message bodies | Implemented in candidate |
-| GET | `/sessions/:id/assemblies/:recordId` | Cold-read official history; verified section/context bodies plus source metadata/hash/counts | Implemented in candidate |
+| GET | `/sessions/:id/assemblies/:recordId` | Cold-read official history; verified section/context bodies; schema 4 returns source metadata/hash/counts while legacy schema 3 detail may retain stored `source.text` | Implemented in candidate |
 
 Fields, examples, errors and persistence: [v3 detailed contract](PROMPT_API_V3_en.md).
-The former `/sessions/:id/sources` endpoint returns 404. Read current configuration and complete resources through v1.
+`/sessions/:id/sources` is not part of the v3 contract and returns 404. Read current configuration and complete resources through v1.
 
 ## Browser chrome mode service
 
-The Tavern client registers the stable service name `pmpDshTavernChrome` through DSH `0.1.2-rc.1` public Cordis `ctx.provide`. This is a Tavern v2 contract, not a DSH Host API. It provides only the `native|play` lifecycle. It does not own or arbitrate any slot, view, or third-party plugin UI.
+The Tavern client registers the stable service name `pmpDshTavernChrome` through DSH `0.1.5-rc.1` public Cordis `ctx.provide`. This is a Tavern v2 contract, not a DSH Host API. It provides only the `native|play` lifecycle. It does not own or arbitrate any slot, view, or third-party plugin UI.
 
 Public face:
 

@@ -4,11 +4,9 @@
 
 A SillyTavern compatibility plugin that keeps DeepSeek Harness (DSH) authoritative over sessions and execution, with frontend and backend APIs for composing Tavern capabilities with native DSH features.
 
-> This documentation describes the `2.3.0` Trace candidate (not released). [MIT License](LICENSE).
+> The current source is the unreleased `2.3.0` Trace candidate and targets DSH `0.1.5-rc.1`. [MIT License](LICENSE).
 >
-> **Target runtime:** DSH `0.1.5-rc.1`. The previous `2.2.0` release also tested `0.1.2-rc.1`; this candidate retains that path, but new Trace runtime acceptance targets `0.1.5-rc.1`.
-
-> **This update:** Named official prompt sections, small v3 historical assembly primitives, and per-request Tavern Trace. See [API/design](docs/PROMPT_API_V3_en.md) and [acceptance/manual checks](docs/TRACE_REVIEW_en.md).
+> Tavern Trace records identifiable prompt sections in the official format, stores bounded schema 4 metadata and official Session references, and verifies and restores bodies that remain available when detail is read. See [API/design](docs/PROMPT_API_V3_en.md) and [acceptance/manual checks](docs/TRACE_REVIEW_en.md).
 >
 > The default project README is the [Chinese version](README.md). This English file has no screenshots.
 
@@ -40,18 +38,18 @@ If behavior looks suspicious, stop the Agent, switch back to DSH native mode, an
 
 ### 0. Install
 
-The commands below install the published/main version. To review this unreleased candidate, use the [candidate installation steps](docs/INSTALLATION_en.md#trace-230-candidate) instead.
+This page describes only the current `2.3.0` candidate. A direct GitHub install must pin its candidate branch:
 
 Target DSH `0.1.5-rc.1` requires Node.js `^22.19.0 || >=24.0.0`, with `dsh` on `PATH` and an initialized profile (default `web`). Tavern standalone tests support Node 20; that does not establish Node 20 support for the target Host.
 
 ```sh
-dsh plugin --profile web add github:Player-MINEPIG/dsh-tavern
+dsh plugin --profile web add github:Player-MINEPIG/dsh-tavern#codex/trace-api-v3
 ```
 
-Clone the repository only for source development, safe migration from legacy package-local data, or the project's backup-aware uninstall flow:
+For another version, switch to its tag and read the installation instructions in that tag. For source development, safe migration from legacy package-local data, or the project's backup-aware uninstall flow, follow the [source-candidate installation steps](docs/INSTALLATION_en.md#source-candidate) and check out the same candidate branch:
 
 ```sh
-git clone https://github.com/Player-MINEPIG/dsh-tavern.git
+git clone --branch codex/trace-api-v3 https://github.com/Player-MINEPIG/dsh-tavern.git
 cd dsh-tavern
 npm install --cache .npm-cache
 npm run plugin:install
@@ -85,7 +83,7 @@ Send the first user message from the native DSH composer. It appears immediately
 
 Full operations and boundaries: [English usage guide](docs/USAGE_en.md).
 
-## v2.3.0 feature map
+## Feature map
 
 | Area | Main capabilities | Details |
 | --- | --- | --- |
@@ -105,7 +103,7 @@ See the [feature gallery](docs/assets/market/README.md#gallery) for annotated ex
 - Display regex affects Mowan rendering only. It does not rewrite the model request, DSH original messages, or the authoritative text used for export.
 - Mowan hides reasoning, tool context, and child-agent notices. Switch back to native DSH **Chat** for full runtime detail.
 - There is no dynamic frontend loader that replaces all of Mowan from one config file. Full replacement requires a separate DSH plugin, a standalone web client, or a fork.
-- DSH `0.1.2-rc.1` outer **New session** has no public click-intercept seam for Tavern. Mowan does not overlay it with private DOM. Create playthroughs with the `+` on a character card.
+- The target DSH outer **New session** control has no public click-intercept seam for Tavern. Mowan does not overlay it with private DOM. Create playthroughs with the `+` on a character card.
 - This plugin targets local loopback DSH Web. Do not expose it to a LAN or the public internet.
 
 ## Documentation
@@ -113,6 +111,7 @@ See the [feature gallery](docs/assets/market/README.md#gallery) for annotated ex
 - [Usage](docs/USAGE_en.md): all user features, steps, and compatibility boundaries
 - [Installation](docs/INSTALLATION_en.md): install options, refresh recovery, backup, uninstall
 - [HTTP API](docs/API_en.md): v1 resource contract and stable v2 RP surface
+- [Trace v3 API and design](docs/PROMPT_API_V3_en.md): historical assembly indexes, official references, and on-demand body reads
 - [RP frontend integration](docs/FRONTEND_INTEGRATION_en.md): mode lifecycle, delivery, action composition
 - [Architecture](docs/ARCHITECTURE_en.md): minimal-change rule, module boundaries, public DSH seams
 - [Loader contract](docs/LOADER_CONTRACT_en.md): session selection, profile composition, runtime limits
@@ -120,6 +119,7 @@ See the [feature gallery](docs/assets/market/README.md#gallery) for annotated ex
 - [Prompt pipeline](docs/PROMPT_PIPELINE_en.md): ST format, macros, character fields, world-book coverage
 - [RP secure mode](docs/RP_SECURE_MODE_en.md): what RP blocks and what it does not
 - [World-book design](docs/world-book/DESIGN_en.md): World Info format, matching, projection contract
+- [Playthrough acceptance](docs/PLAY_REVIEW_en.md) and [Trace acceptance](docs/TRACE_REVIEW_en.md)
 - [Changelog](docs/CHANGELOG.md)
 - [Security policy](SECURITY_en.md)
 - [Chinese documentation](README.md)
@@ -132,6 +132,7 @@ You do not need to fork the whole repo to build on this framework:
 
 - Resource tools can use the public v1 API.
 - RP views or DSH client plugins can use v2, the `pmpDshTavernChrome` lifecycle, and public DSH slots/store.
+- Debugging and audit tools can read historical assemblies through v3. To observe or adjust the current assembly, use DSH's official `system-prompt/assemble`; use official `llm/stream` to observe the complete request.
 - A standalone web client can consume HTTP v2 only.
 - Fork when you need to change the loader, resource model, or bundled Mowan itself.
 

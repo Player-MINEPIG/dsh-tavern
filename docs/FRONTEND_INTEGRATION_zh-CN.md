@@ -2,9 +2,8 @@
 
 [English](FRONTEND_INTEGRATION_en.md)
 
-状态：面向 dsh-tavern `2.2.0`（2026-09-11 发布）与 DSH `0.1.2-rc.1` / `0.1.5-rc.1`。HTTP 字段以 [API.md](API.md) 为准；本页说明交付方式、模式生命周期和产品动作组合。
-
-2.3.0 候选文档增量（2026-09-17）：第 7 节补充 v1/v2/v3 分工，原有 v2 接入合同不变。
+当前合同面向 Tavern **2.3.0 候选**与 DSH `0.1.5-rc.1`。HTTP 字段以
+[API.md](API.md) 为准；本页说明交付方式、模式生命周期、产品动作组合和 v1/v2/v3 分工。
 
 ## 1. 先理解双模式兼容边界
 
@@ -77,7 +76,7 @@ RP 错误提示同时订阅 `useSession` 的 `promptError/lastAgentError/openErr
 
 ## 5. HTTP v2 数据面
 
-DSH `0.1.2-rc.1` 的嵌入式客户端需分别读取：`useSession` 的生命周期、`useChat` 的 `legacy.nodes/partial`、`useConversation` 的交互状态。开场阶段用包根导出的 `conversationPhase(session, conversation)`；默认 view 使用 `conversation.session` 的 Conversation store，不是原生 Chat store。普通 HTTP 前端不使用这些浏览器 hook。Tavern UI 设置事件只刷新产品呈现，不能代替 Host 实时消息源。
+DSH `0.1.5-rc.1` 的嵌入式客户端需分别读取：`useSession` 的生命周期、`useChat` 的 `legacy.nodes/partial`、`useConversation` 的交互状态。开场阶段用包根导出的 `conversationPhase(session, conversation)`；默认 view 使用 `conversation.session` 的 Conversation store，不是原生 Chat store。普通 HTTP 前端不使用这些浏览器 hook。Tavern UI 设置事件只刷新产品呈现，不能代替 Host 实时消息源。
 
 根路径：`/pmp-dsh-tavern/api/v2`。它面向任意 RP 前端，提供：
 
@@ -97,7 +96,7 @@ DSH `0.1.2-rc.1` 的嵌入式客户端需分别读取：`useSession` 的生命�
 - `/user-message` 只提交用户正文，不接受前端拼好的完整 prompt；
 - 受管 catalog/timeline GET 返回 revision，PUT 必须带 `expectedRevision`；`409 PLAY_FILE_REVISION_CONFLICT` 后回读新文档并重放局部意图；`PLAY_COORDINATES_MIGRATION_REQUIRED` 则需迁移，不能循环重试或仅改版本标记；
 - focus 按非空 playthrough id 查询；旧 path 入口仅作迁移兼容；
-- 导入记录通过 claim/lineage 首轮注入，不写成历史；
+- 导入记录通过 claim/lineage 首轮注入，不伪造 user/assistant QA，也不写入 Tavern timeline；实际请求的 system 提示词仍由 DSH 官方历史持久化；
 - history API 读到 Host `hasMore: false`，但模型上下文能否容纳由 DSH/provider 决定；
 - 工作区不要放系统盘。
 
@@ -127,8 +126,8 @@ v2 是第三方 RP 表面的稳定协议。v1 是本插件 bundled UI 的资源�
 
 若第三方只需要渲染和周目操作，应尽量依赖 v2 与 timeline/catalog 中已有引用。若必须编辑 Tavern 资源，明确声明对相应 v1 版本和 dsh-tavern 版本的依赖，并对缺失 API 提供降级。
 
-当前资源与配置由 v1 负责，历史装配与来源追踪由 v3 负责。候选 v3 `/sources`
-已删除，GET 返回 404；当前配置请读 v1，历史 `sections[].sources` 继续保留。
+当前资源与配置由 v1 负责，历史装配与来源追踪由 v3 负责。v3 不定义 `/sources`
+聚合端点，GET 返回 404；当前配置请读 v1，历史 `sections[].sources` 继续保留。
 运行期观察、调整和贡献段落可使用官方 DSH `system-prompt/assemble`；历史查询使用 v3。
 完整边界和统一路由目录见 [API 范围核对](API.md#api-scope)，字段和示例见
 [v3 合同](PROMPT_API_V3.md)。v1 `/active` 会运行当前装配；仅需配置时应使用

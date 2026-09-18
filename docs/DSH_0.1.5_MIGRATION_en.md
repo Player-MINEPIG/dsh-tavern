@@ -2,13 +2,13 @@
 
 [中文](DSH_0.1.5_MIGRATION.md)
 
-This page describes the `2.2.0` compatibility update. There are no new UI features, but the public coordinates API and additive fields expand the public contract, warranting a minor version; internal compatibility fixes alone would use `2.1.1`. It retains DSH `0.1.2-rc.1` and adapts `0.1.5-rc.1`, without promising other candidate versions. The newer Host requires Node `^22.19.0 || >=24.0.0`; Tavern's standalone Node `>=20` declaration does not override this requirement.
+This page covers Session formats and playthrough-reference migration for the Tavern `2.3.0` candidate on DSH `0.1.5-rc.1`. The target Host requires Node `^22.19.0 || >=24.0.0`; Tavern's standalone Node `>=20` declaration does not override it. The implementation retains a DSH `0.1.2-rc.1` path, but new Trace runtime acceptance targets `0.1.5-rc.1`, without promising other candidates.
 
 For the retained public coordinate query API, start with [requests, fields, and branch examples](API_en.md#session-coordinates). DSH defines the format version; Tavern infers the migration marker. The query does not migrate old references.
 
-## Contract changes
+## Current coordinate and compatibility contract
 
-- Trace reads `header.system` on V0–V2 and the effective system surface from public `Session.deriveMessages()` on V3. It persists fingerprints and verdicts, never prompt text. `authority.systemSource` identifies `request/header` or `system/message`.
+- v1 audit system authority is V0–V2 `request/header.system` or V3 effective `system/message`, distinguished by `authority.systemSource`. New v3 Trace stores official event references and metadata; detail reads verify bodies through cold `inspect`. See the [Trace contract](PROMPT_API_V3_en.md).
 - New QA/swipe variants store `ext.pmpDshTavern.sessionFormatVersion`. `GET /v2/sessions/:id/messages` adds optional `sessionFormatVersion` and `migratedFromV2`; `GET /v2/sessions/:id/coordinates` exposes those facts without message bodies.
 - Timeline GET/PUT validates coordinate versions. A mismatch, or unversioned references to a Session carrying V2→V3 insertion markers, returns `409 PLAY_COORDINATES_MIGRATION_REQUIRED`. No offset is guessed and no file is silently rewritten.
 - `POST /v2/sessions/:id/branch` accepts `sessionFormatVersion`, required to match the current format for migrated Sessions. The check precedes Host fork. The bundled client supplies the observed/saved version.
@@ -29,7 +29,7 @@ it can occur even with V3 timeline references and differs from
 Recover old playthroughs by using the original DSH data directory, or backing up and
 restoring the relevant logs and inheritance dependencies, then performing any needed
 coordinate migration. Do not clear timelines or replace old Session IDs to hide the
-error. The 2.3.0 candidate allows a new playthrough when an old Session is missing;
+error. The implementation allows a new playthrough when an old Session is missing;
 it preserves the old run and reports missing history instead of overwriting it as
 an empty run. Other read errors still propagate.
 
@@ -88,17 +88,13 @@ The integration test loads the real official codec and migrator from that instal
 
 Sources: [target release](https://github.com/deepseek-ai/deepseek-harness/releases/tag/dsh-v0.1.5-rc.1), [V2→V3 specification](https://github.com/deepseek-ai/deepseek-harness/blob/dsh-v0.1.5-rc.1/packages/session/session-format-v2-to-v3/README.md).
 
-### Actual acceptance on 2026-09-10 (unreleased workspace)
+## Trace reference migration boundary
 
-Node 22.23.1, isolated DSH_HOME, actual DSH Hosts with a local mock model:
+This command migrates timeline/import-context coordinates, not `tavern-trace-records.json`.
+New Trace references bind the captured Session format, event identity and hashes. If an official log
+changes format, references that cannot be verified report `format-mismatch` or another explicit
+unavailable state; they are not relocated by guessing. Older body snapshots retain their read
+compatibility. New requests after migration capture references in the current format.
 
-- Both 0.1.2-rc.1 and 0.1.5-rc.1 passed plugin loading, preset injection, sampling parameters, completed replies, Trace, and RP playthrough checks.
-- A real V0 playthrough created by 0.1.2 was opened by 0.1.5 in the same isolated data directory. The old timeline returned the expected migration 409. Validation of the real multi-frame source/successor logs, backup, apply, and rerun passed.
-- The final build passed swipe creation and switching in both directions, plus import claim consumption and fork lineage with V3 markers. `npm run check` with real-codec tests enabled: 538 passed, 2 existing opt-in tests skipped. `verify:2.0` passed.
-- The old QA range changed correctly from `8..19` to `9..16`. After restart, both the original and post-upgrade replies remained visible; forking at the old QA retained exactly that history.
-
-These checks used synthetic characters and replies. They did not migrate actual user data or validate real-model quality or KV Cache performance.
-
-### Rendering-fix user acceptance on 2026-09-11
-
-The user accepted the rendering fixes installed into the temporary DSH `0.1.5-rc.1` environment, covering Markdown inside details and the corrected HTML/CSS display template. Template JavaScript remains blocked. This confirmation does not extend to actual user-history migration or KV Cache performance. See the [acceptance record](PLAY_REVIEW_en.md#220-rich-text-rendering-acceptance-2026-09-11).
+See [Trace acceptance](TRACE_REVIEW_en.md) and [playthrough acceptance](PLAY_REVIEW_en.md) for
+current results and maintainer checks.

@@ -1,179 +1,57 @@
-# 2.3.0 Trace candidate acceptance
+# Trace candidate acceptance
 
-Implementation candidate; manual use and reported-fix verification have taken place, but the complete checklist below is not yet signed off. No merge, tag, or release.
-Branch: `codex/trace-api-v3`, created from main. The former composer v3 branch was
-not merged. [中文](TRACE_REVIEW.md) · [API and design](PROMPT_API_V3_en.md)
+Current candidate: Tavern **2.3.0**, targeting DSH **0.1.5-rc.1**, on `codex/trace-api-v3`.
+Implementation, self-verification and test-environment installation are complete. The maintainer checklist
+below is not fully signed off. No merge, tag or release.
+[中文](TRACE_REVIEW.md) · [API and design contract](PROMPT_API_V3_en.md) · [Playthrough acceptance](PLAY_REVIEW_en.md)
 
-## Official-history reference correction — 2026-09-18 (current candidate)
+## Current delivery
 
-This section supersedes the per-request body-copy design described in the historical evidence below.
+| Requirement | Implementation |
+| --- | --- |
+| Preset-ordered assembly and provenance | Official named sections retain order, macros and mixed input relationships. Generated identity wrappers stay out of model text; author-written labels remain. |
+| Minimal v3 primitives | Three read-only endpoints: capabilities, assembly index and detail. v1 owns current resources/configuration; v2 owns RP workflow primitives. |
+| Per-request history | Capture turn/step/attempt, configuration, lore decisions, provenance and official references. New v1/v3 views share a schema-4 record. |
+| No duplicate prompt bodies | New records do not store system-message, section, context or original-source bodies. Detail reads cold-inspect official history and verify identity, format, cut, event, hash and range. |
+| Explicit missing data and compatibility | Missing/mismatched history is unavailable. Old v1 metadata and schema-3 snapshots remain read-only, are not automatically removed and never provide a body fallback for new records. |
+| Clear UI and third-party composition | Trace leads with captured configuration and separate lore/Loader disclosures. Developers can choose v3 or official assembly/request interfaces. |
 
-- Removed Tavern-generated identity wrappers, resource-name headings and ID labels from model text.
-  Author text, macros, ordering and semantic import trust boundaries remain. Official section names and provenance stay metadata.
-- New schema-4 captures store metadata and verified official event references in `tavern-trace-records.json`.
-  v1/v3 share one capture; the two older Trace files remain read-only and are not automatically compacted or converted.
-- Detail reads use cold official `inspect`, validating format, Session identity, cut, event/message, hashes and ranges.
-  Missing or mismatched history is unavailable, with no reassembly or body-copy fallback. Source originals are not stored;
-  source IDs, fields, revisions, counts, hashes and requested ST roles remain metadata.
-- `npm run check`: 602 tests, 600 passed, 0 failed, 2 conditional skips, with rc.1 AgentLoop/codecs enabled.
-  Coverage includes Unicode, replacement/reuse, inherited prefixes, format changes, truncation, missing history,
-  hash/identity failures, large-card size independence, shared storage, attempt counting and legacy audit precedence.
-- Real DSH 0.1.5-rc.1 Host with a synthetic model: 23 sections and 2 Tavern inputs resolved for a preset-bearing turn.
-  After stopping, removing the request fixture and restarting, the same record resolved without reassembly.
-  Two new records occupied about 34 KiB with no system-message, section, context or original-source body copies.
-  This is a synthetic sample, not a guaranteed retention estimate.
-- `npm run verify:2.0`, build and 203-file package checks passed; real-Host v2 smoke passed 16/16.
-- Browser acceptance verified configuration first, independently collapsed lore/Loader details, official-log text,
-  explicit source-original non-storage and requested ST role metadata, with no warnings/errors.
-  Full-message validation is cached within a detail read to avoid repeated hashing per section.
+## Completed verification
 
-Real-card experience, third-party integration and real-model cancellation/timeout/retry combinations still need maintainer acceptance below.
+Environment: Node.js 22.23.1, with the official CLI and resolved core packages pinned to
+`0.1.5-rc.1`. These results apply to the current implementation; documentation cleanup does not change runtime code.
 
-## Earlier pre-release checks — 2026-09-18
+- `npm run check`: 602 tests, 600 passed, 0 failed, 2 conditional skips. Real AgentLoop and
+  official codecs were enabled. The private-card fixture and opt-in live v2 test skipped;
+  the latter was exercised separately against a real Host.
+- `npm run verify:2.0`, build and the 203-file package checks passed. Real-Host v2 smoke passed 16/16.
+- Regressions cover interleaved sections, macros/mixed sources, Unicode, retry/multi-step,
+  restart, message reuse/replacement, inherited prefixes, format changes, truncated/missing
+  history, hash/identity/range failures, unknown provenance, complete overrides, limits and corruption.
+- Storage tests verify large-card body growth does not proportionally grow Trace records,
+  shared v1/v3 metadata, first attempt 1, finalized old v1 audit precedence and unchanged old files.
+- A real Host with a synthetic model resolved 23 sections and 2 Tavern inputs for a preset-bearing turn.
+  After removing the request fixture and restarting, the same record resolved without reassembly.
+  Two sample records occupied about 34 KiB; this is not a fixed retention estimate.
+- Browser checks verified configuration first, both disclosures, official body retrieval,
+  source-original non-storage and requested ST role labels, with no warnings/errors. Section text
+  is displayed literally, not executed as HTML. Actual model text contains no generated identity wrappers.
+- Installed test-environment files matched the package byte-for-byte, with consistent resolved core versions.
+  An already running Host must restart after installation to load the new backend.
 
-These are historical results from before the reference correction, not the current body-storage contract.
-
-- Fix false index deduplication when independent v1/v3 retention reuses request
-  counters. New v1 `captureId` and v3 `legacyCaptureId` associate one capture without
-  changing v1 IDs/routes; omitted bodies retain the link. Old unlinked metadata and
-  snapshots are conservatively retained and may both appear. Regression tests cover
-  both eviction directions, equal-clock collisions and restart, without guessed identity.
-- Clear stale null-tags diagnostics after editing tags to a valid array; unrelated
-  edits preserve the compatibility diagnostic.
-- `npm run check`: 580 tests, 578 passes, zero failures, two existing skips. Real rc.1
-  AgentLoop and migration codecs enabled. Skips are the external private-card fixture
-  and opt-in live v2 test. The latter ran separately against a real Host: 16/16 passes.
-  `npm run verify:2.0`, build and 202-file package checks passed.
-  `npm audit --omit=dev`: zero known vulnerabilities; dependencies unchanged.
-- Browser checks verified configuration-first Trace, independent lore/Loader disclosures,
-  literal HTML source display, and disabled greeting arrows in a blank run with no
-  available greeting. No warn/error on the Host page. All 19 rich-text browser fixture
-  checks passed, including style isolation, native disclosure, streaming updates,
-  static export and script blocking. No template JavaScript or variable-runtime support
-  is implied.
-- Reinstalled final code on an isolated DSH 0.1.5-rc.1 Host: capabilities, removed
-  `/sources` 404, three historical bodies and both preset-bearing records are readable.
-  Old unlinked metadata remains explicit. v1 configuration preview leaves indexes and
-  details unchanged; v2 chrome/workspace reads pass.
-- Bilingual installation, usage, security and API documents match the candidate,
-  distinguish stable-tag installation and specify the target Host Node range. Retention
-  is shared across sessions; chat history cannot fully reconstruct evicted provenance.
-
-No unresolved release-blocking defect was found. Actual third-party ordering/rewrite
-integration and real-provider cancellation, timeout and retry combinations remain in
-the manual checklist below. Automated checks do not substitute for those results.
-Trace currently provides recent bounded audit data, not permanent archiving. Broader
-retention was a follow-up discussion; official-log references are now implemented as described at the top of this document. No merge, tag or release.
-
-## Delivered requirements
-
-- Ordered official named sections for existing preset/character/lore blocks, with
-  source relationships captured during assembly and unchanged ordinary prompt text.
-- Current bindings, complete documents and greeting options through v1 preview/resource
-  APIs; consumers count current fields. v3 retains historical section/input counts.
-- Per-turn/step/attempt runtime snapshots, bounded persistence, lazy historical
-  queries, and exact system-message verification at the LLM boundary.
-- Three read-only v3 endpoints, also consumed by Tavern Trace. Third parties may
-  instead use official DSH seams; composition and coordination remain theirs.
-- Explicit unknown, missing, failed, evicted and legacy metadata states.
-
-Agent-preset creation (#5) and playthrough deletion (#6) remain independent work.
-This delivery addresses provenance and history; it adds no exclusive takeover mode
-and does not change existing approximate depth/PHI semantics. Released v1/v2 remain
-available. As with v2, v3 provides primitives rather than a prescribed workflow.
-
-## Completed automated and local acceptance
-
-Environment: Node.js 22.23.1; DSH CLI and resolved affected core packages pinned to
-**0.1.5-rc.1**. A CLI rc.1 install that resolves core packages to rc.2 is not accepted
-as target-version evidence.
-
-- Full `npm test`: 554 tests, 552 passed, zero failures, two optional skips (private
-  external card fixture and opt-in live v2 HTTP smoke). Official migration codecs
-  and the real AgentLoop test were enabled.
-- Real official AgentLoop with a local synthetic LLM: official listeners see named
-  Tavern sections; normal system text verifies; third-party reordering/replacement
-  works with unknown attribution on changed text; `complete` mismatches are explicit;
-  DSH persists system/message; unloading Tavern restores native prompt assembly.
-- Unit/contracts cover interleaving and repeated original, existing macros/fallbacks/
-  lore budgets, Unicode, retries/multiple steps, persistent reload, immutable old
-  snapshots after current edits, duplicate-text ambiguity, limits/eviction/corruption,
-  failure records, legacy records, read-only routes, validation and sanitized errors.
-  Existing v1/v2 regressions pass.
-- Actual isolated Web Host with local synthetic responses: a second browser-submitted
-  turn appears automatically; official/preset sections and source text expand;
-  script markup is plain text; no browser warnings/errors on the checked flow.
-  No paid model, real private card, or user conversation is used.
-- Default local `dsh --version` reports 0.1.5-rc.1; the existing web profile help entry
-  loads; the older installation remains. This does not establish end-to-end model
-  compatibility for every third-party plugin in that profile.
-
-To reproduce, point both ROOT variables at a CLI dependency directory with
-`package.json` that resolves the pinned official modules. Verify resolved package
-versions with Node's `createRequire`, rather than trusting the CLI banner alone.
+For reproduction, point both variables to the CLI dependency directory that resolves the target modules
+and contains `package.json`:
 
 ```sh
 DSH_TAVERN_COMPAT_ROOT="$DSH_RUNTIME_ROOT" \
-DSH_TAVERN_PROMPT_COMPAT_ROOT="$DSH_RUNTIME_ROOT" npm test
+DSH_TAVERN_PROMPT_COMPAT_ROOT="$DSH_RUNTIME_ROOT" npm run check
 DSH_TAVERN_COMPAT_ROOT="$DSH_RUNTIME_ROOT" \
 DSH_TAVERN_PROMPT_COMPAT_ROOT="$DSH_RUNTIME_ROOT" npm run verify:2.0
 ```
 
-Without those variables, runtime tests explicitly skip. The browser fixture is
-restricted to the temporary isolated profile and uses official Session/Agent/LLM
-interfaces. The reproducible AgentLoop test is `test/trace-v3-host.test.mjs`.
-
-## Final package and restart evidence
-
-After removing the current `/sources` aggregate on 2026-09-18, the full suite still
-reports 554 tests, 552 passes, no failures and two skips. `npm run verify:2.0` passes,
-including build and packaging. Regressions verify the deleted endpoint returns 404,
-capabilities omit `currentSources/maxSourceBytes`, and persisted source text and
-Unicode counts survive reload.
-
-Earlier browser restart/history checks and the 16/16 live v2 HTTP smoke apply to
-the candidate before this removal. The Trace frontend is unchanged. The former
-current-source reader is no longer contractual; the HTTP example exposes only
-capabilities/index/detail.
-
-The updated isolated DSH 0.1.5-rc.1 Host verifies the new capabilities and former
-`/sources` 404. All three pre-restart records remain readable, including stored
-Tavern input text. v1 configuration preview and preset details succeed; the history
-index and selected detail remain identical across preview, with no new assembly.
-
-## Missing-session workspace regression (2026-09-18)
-
-With the added regressions, `npm run check` reports 563 tests, 561 passes, zero
-failures and the two existing conditional skips. A real 0.1.5-rc.1 Host reproduced
-the empty old run blocking creation. The fix creates a new run, preserves old
-catalog entries and timeline bytes, and reuses a valid empty run on repeated clicks.
-The browser explains missing logs and opens the new run. Restoring old history
-still requires the original DSH_HOME or backup; no replacement history is generated.
-Coordinate migration, permission and other read errors still propagate.
-
-## Configuration-first Trace layout (2026-09-18)
-
-Records first show captured configuration, followed by collapsed world-book and
-Loader details. No v3 API expansion. Regressions cover default visibility, disclosure
-boundaries, legacy records, missing versus unused fields and both languages.
-`npm run check`: 567 tests, 565 passes, zero failures and two existing conditional skips.
-Browser checks on a real 0.1.5-rc.1 Host passed: configuration is visible by default,
-both detail groups expand independently, and section text/source inputs remain
-accessible with HTML examples rendered as text. Help identifies subsequent records
-as `agent/request` captures and explains reuse of an assembly during retry.
-`npm run verify:2.0` passed.
-
-## RP view after fork reload (2026-09-18)
-
-Membership discovery now tolerates unrelated timelines with `PLAY_SESSION_NOT_FOUND`.
-Regression checks cover fork discovery without a preference, stale preferences, root
-bindings, and propagation of owner/permission/migration errors. Read-only checks in
-the real test environment resolved the active fork without a preferred playthrough.
-The complete RP projection hid variable-update blocks in two replies, retained raw
-messages, and reported no regex errors, without a variable runtime.
-`npm run check`: 569 tests, 567 passes, zero failures, two existing conditional skips.
-Manual check: reload a valid fork in a workspace containing missing old sessions;
-the RP tab should remain, with update blocks hidden there and raw text in native chat.
+Without these variables the relevant integration tests skip, which is not acceptance. The reproducible
+real AgentLoop path is `test/trace-v3-host.test.mjs`. Synthetic models/fixtures do not establish
+acceptance for real models, private cards or third-party plugins.
 
 ## Maintainer manual checks
 
@@ -242,12 +120,15 @@ for (const path of [
 }
 ```
 
-## Limits before release
+## Current limits
 
-New records store bounded metadata and official-log references; names and keywords can still be sensitive.
-Bodies require retained, verifiable official history. Old body snapshots remain readable and are not automatically removed.
-Eviction does not delete DSH history. Sources are section inputs, not per-character maps;
-contexts reference verified named sections in official context snapshots. Current resources/configuration remain in v1;
-v3 index/detail reads also work while the Agent is offline. One Host writes a store; multi-process writes are unsupported.
-Older DSH paths remain, but new Trace runtime evidence targets 0.1.5-rc.1. Merge and
-release follow maintainer acceptance.
+Trace is bounded recent-history metadata: all Sessions share defaults of 256 new records, 16 MiB total
+and 2 MiB per record. Evicted provenance cannot be fully rebuilt from official messages; eviction never
+deletes DSH history. Bodies require retained, verifiable logs. Names/keywords in metadata can still be sensitive.
+Sources identify section inputs, not character-level maps. Requested ST roles remain metadata; contributions
+are currently system sections. Arbitrary message depth, exclusive takeover and permanent archival are unsupported.
+Source originals are not duplicated; use v1 for current resources.
+
+One Host writes a store; multi-process writes are unsupported. Cold inspect uses logical event coordinates,
+not O(1) random access into compressed logs. Retained older DSH paths do not extend this candidate's target-runtime
+evidence. Merge and release require maintainer acceptance.

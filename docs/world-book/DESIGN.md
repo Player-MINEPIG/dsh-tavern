@@ -2,7 +2,7 @@
 
 [English](DESIGN_en.md)
 
-状态：2026-08-14 已采用，并由首个公开发布候选版本的共享 parser/matcher/loader adapter 实现。
+本文定义当前 `WorldBookModel`、纯 matcher/projector 与 loader adapter 合同。
 
 ## 模块边界
 
@@ -107,9 +107,9 @@ loader.registerWorldBookAdapter(createWorldBookAdapter(worldBookStore, options))
 
 角色卡模块解析出的 embedded `character_book` 也得到同一个 `WorldBookModel`，进入同一 matcher/projector，不应复制匹配实现。
 
-当前 loader 已把纯字符串兼容输入升级为结构化 `activationContext`。该变化没有进入本纯模块：管理层 adapter 从 `activationContext.text` 派生兼容的 `conversationText`，并把明确选定的 message frames 转成 matcher `text`；`computeWorldBookCandidates()` 仍不会订阅 `agent/inbox/spliced`、读取 Session 或保存当前输入。pending 队列、claim/cancel 语义、正文生命周期和 history 去重全部由 `tavern-loader` 独占。
+loader 向管理层 adapter 提供结构化 `activationContext`。adapter 从 `activationContext.text` 派生兼容的 `conversationText`，并把明确选定的 message frames 转成 matcher `text`；该职责不进入本纯模块。`computeWorldBookCandidates()` 不订阅 `agent/inbox/spliced`、读取 Session 或保存当前输入。pending 队列、claim/cancel 语义、正文生命周期和 history 去重全部由 `tavern-loader` 独占。
 
-首 step 激活的验收必须同时检查 matcher decision、loader snapshot 和同一步 `request/header.system`。只在请求后用当前输入重算一个“命中”结果不属于有效实现。
+首 step 激活的验收必须同时检查 matcher decision、loader snapshot 和同一步官方 `system/message` 正文。只在请求后用当前输入重算一个“命中”结果不属于有效实现。
 
 纯 projector 的位置桥接保持诚实：
 
