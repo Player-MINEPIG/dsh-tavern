@@ -1,17 +1,16 @@
 # Prompt assembly Trace and primitive API v3
 
-Status: Tavern 2.3.0 candidate, not released; updated 2026-09-17. Target: DSH **0.1.5-rc.1**.
+Status: Tavern 2.3.0 candidate, not released; updated 2026-09-18. Target: DSH **0.1.5-rc.1**.
 [中文](PROMPT_API_V3.md) · [API index and scope audit](API_en.md#api-scope) · [Acceptance](TRACE_REVIEW_en.md)
 
 ## Purpose and compatibility
 
-**Scope audit:** The current `/sources` endpoint aggregates current configuration
-already owned by v1. Its removal is recommended but not implemented. Keep the
-historical `sections[].sources` provenance. Tavern Trace uses only assembly index
-and detail. See the [field-level overlap audit](API_en.md#api-scope). This document
-continues to describe callable routes, not a future implementation.
+**Scope audit:** The overlapping current-resource `/sessions/:id/sources` endpoint
+has been removed; GET returns 404. Historical `sections[].sources` provenance remains.
+Tavern Trace uses only assembly index/detail. Read current configuration and complete
+resources through v1; see the [field-level overlap audit](API_en.md#api-scope).
 
-v3 provides current source snapshots and historical assembly records. Consumers own
+v3 provides per-request assembly records and provenance, live and historical. Consumers own
 composition. Tavern Trace uses these same HTTP primitives. Third parties may also
 observe, adjust, and contribute sections through official DSH
 `system-prompt/assemble`, and observe requests through `llm/stream`, without importing
@@ -19,7 +18,7 @@ Tavern. There is no composer registry, exclusive owner, required callback, or re
 callback mechanism.
 
 This contract replaces the unpublished composition-oriented v3 candidate:
-`prompt-sources` becomes `sources`; `prompt-mode`, `registerComposer`, and
+Neither `prompt-sources` nor the current-resource `sources` aggregate is provided; `prompt-mode`, `registerComposer`, and
 `pmpDshTavernPrompt` are not included. Released v1/v2 routes remain available.
 v1 `/traces` retains its bounded metadata-only audit, including world-book decisions.
 API v3, Tavern 2.3.0, and DSH log format V3 are independent version numbers.
@@ -32,17 +31,16 @@ Responses use `Cache-Control: no-store`; URL-encode explicit session and record 
 | Method | Path | Behavior | Status |
 | --- | --- | --- | --- |
 | GET | `/capabilities` | `{ok,apiVersion,contract,...}`; capabilities and capacity limits | Implemented in candidate |
-| GET | `/sessions/:sessionId/sources` | `{ok,sources}`; current configuration/resource aggregate | Implemented; overlaps v1, removal recommended |
 | GET | `/sessions/:sessionId/assemblies` | `{ok,sessionId,records,storage}`; historical index without section bodies | Implemented in candidate |
 | GET | `/sessions/:sessionId/assemblies/:recordId` | `{ok,record}`; one historical snapshot | Implemented in candidate |
 
 Record IDs are opaque. A missing/evicted record returns 404, not proof that a round
 contained no Tavern prompt. Old v1 records are exposed as `legacy-metadata-only`;
 missing historical bodies are never manufactured by rerunning assembly. Invalid
-input returns 400, non-GET 405, missing selected resources 409, and oversized sources
-413. Internal errors return a sanitized 500 `TRACE_READ_FAILED`. Historical reads
-do not require or activate an Agent. Current-source reads verify Session existence
-through public Host coordinates.
+input returns 400 and non-GET 405. Internal errors return a sanitized 500
+`TRACE_READ_FAILED`. Historical reads do not require or activate an Agent. Capabilities
+no longer include `currentSources` or `maxSourceBytes`; `storage` describes assembly
+record limits only.
 
 ### Request and response example
 
@@ -83,23 +81,6 @@ Empty index (HTTP 200):
 
 An empty index means no retained records are available; it does not prove the
 Session never ran. A record can be evicted between index and detail calls (404).
-
-### Current sources
-
-| Field | Type | Meaning and boundary |
-| --- | --- | --- |
-| `selection` | object | Current bindings and character options; overlaps v1 |
-| `worldBookSelection` | object | Current binding origins/deduplication; derived from v1 relationships |
-| `documents` | object | Complete current documents; duplicates v1 resource detail |
-| `greeting` | object | Requested/effective index, text, first-turn-reference semantics; derived from configuration/card |
-| `fieldLengths` | object | JSON Pointer to three counts for document strings; not tokens |
-| `suggestedCallConfig` | object | Mapped preset sampling; reading does not apply it |
-| `countUnit` | string | unicode-code-points |
-| `revision` | string | Current aggregate hash; not historical identity or a v1 write CAS parameter |
-
-The entire response snapshot, including metadata, is limited to 16 MiB. Oversize
-snapshots are rejected rather than truncated. Reading runs no assembly, matching,
-random macros, or greeting consumption.
 
 ### Historical records
 

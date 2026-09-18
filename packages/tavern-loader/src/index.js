@@ -1,6 +1,6 @@
 import { AssemblyStore } from '../../tavern-trace/src/assembly-store.js'
 import { AssemblyRecorder } from '../../tavern-trace/src/assembly-recorder.js'
-import { PromptSourceService, createPromptTraceApi } from './prompt-trace-api.js'
+import { createPromptTraceApi } from './prompt-trace-api.js'
 import {
   PresetStore,
   createApiHandler as createPresetApiHandler,
@@ -351,8 +351,6 @@ export function apply(ctx, config = {}) {
   const traceRecorder = new TavernTraceRecorder(traceStore)
   const assemblyStore = new AssemblyStore(storageDir, config.traceAssemblies)
   const assemblyRecorder = new AssemblyRecorder(assemblyStore)
-  const promptSources = new PromptSourceService({ selections, presets: store, characters: characterStore,
-    users: userStore, worldBooks: worldBookStore, userWorldBooks, resourceWorldBooks })
   runtime.registerCharacterAdapter(createCharacterAdapter(characterStore))
   runtime.registerUserAdapter(createUserAdapter(userStore))
   runtime.registerWorldBookAdapter(createWorldBookAdapter(worldBookStore, config.worldBook))
@@ -562,7 +560,7 @@ export function apply(ctx, config = {}) {
   })
 
   const registerHttpApi = webCtx => {
-    const promptTraceApi = createPromptTraceApi({ sources: promptSources, assemblies: assemblyStore, legacyStore: traceStore, ensureSession: id => playHost.coordinates(id) })
+    const promptTraceApi = createPromptTraceApi({ assemblies: assemblyStore, legacyStore: traceStore })
     const presetApi = createPresetApiHandler(
       store,
       notifyChange,

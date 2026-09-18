@@ -8,7 +8,7 @@
 >
 > **测试环境：** DSH `0.1.5-rc.1`。旧版 `2.2.0` 也验证过 `0.1.2-rc.1`；本候选保留旧路径，新增 Trace 的运行时验收以 `0.1.5-rc.1` 为准。
 
-> **本次更新：** 按官方格式贡献可辨识的提示词段落，提供最小 v3 来源/历史接口，并在 Tavern Trace 查看每次请求。见 [API 与设计](docs/PROMPT_API_V3.md) 和 [验收与人工检查](docs/TRACE_REVIEW.md)。
+> **本次更新：** 按官方格式贡献可辨识的提示词段落，提供最小 v3 装配追踪接口，并在 Tavern Trace 查看每次请求。见 [API 与设计](docs/PROMPT_API_V3.md) 和 [验收与人工检查](docs/TRACE_REVIEW.md)。
 
 ## 设计理念
 

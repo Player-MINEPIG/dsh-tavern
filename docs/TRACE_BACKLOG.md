@@ -11,8 +11,8 @@ composer-oriented v3 candidate; it does not merge that candidate's ownership API
   and rendered text while contributing named official system sections.
 - Keep mixed-source text within a section where splitting would add whitespace.
   Record source relationships during assembly, never infer them from final prose.
-- Provide small public primitives for current sources and historical assembly
-  records. No composer registry, owner arbitration, or prescribed workflow.
+- Keep current resources/configuration in v1; provide small v3 primitives for
+  per-request assembly records and provenance. No composer registry, owner arbitration, or prescribed workflow.
 - Third parties may use either Tavern APIs or official DSH assembly seams.
 - Capture at runtime, retain bounded immutable assembly facts for historical
   queries, correlate turn / step / attempt with the actual LLM boundary.
@@ -60,6 +60,9 @@ are not response-equivalent. Historical v1 audit and v3 selection/audit intentio
 overlap for compatibility. Named historical sections/provenance/request verification
 remain the independent v3 contribution. See [scope audit](API.md#api-scope).
 
-- [ ] Proposed follow-up: remove the candidate current `/sources` aggregator and
-  its capabilities/example/test/documentation fields; retain historical
-  `sections[].sources`. No endpoint removal is part of this documentation update.
+## API scope implementation — 2026-09-18
+
+- [x] Remove the candidate current `/sources` aggregator and its service, wiring,
+  capabilities and example fields. GET returns 404. Update bilingual documents and
+  regression tests; retain historical `sections[].sources` and their counts.
+- [x] Document ordered manual acceptance steps and expected results.

@@ -8,7 +8,6 @@ export function traceReader(base = '/pmp-dsh-tavern/api/v3', request = fetch) {
   }
   return {
     capabilities: signal => get('/capabilities', signal),
-    sources: (sessionId, signal) => get(`/sessions/${encodeURIComponent(sessionId)}/sources`, signal),
     list: (sessionId, signal) => get(`/sessions/${encodeURIComponent(sessionId)}/assemblies`, signal),
     detail: (sessionId, recordId, signal) => get(`/sessions/${encodeURIComponent(sessionId)}/assemblies/${encodeURIComponent(recordId)}`, signal),
   }

@@ -129,7 +129,7 @@ If you only need rendering and playthrough operations, stay on v2 and the refere
 
 Current resources and configuration are v1 responsibilities; historical prompt
 assembly and provenance are v3 responsibilities. The candidate v3 `/sources`
-aggregator overlaps v1 and is recommended for removal, but remains callable today.
+aggregator has been removed and GET returns 404; use v1 for current configuration.
 Historical `sections[].sources` must not be confused with that endpoint. Use official
 DSH `system-prompt/assemble` for runtime observation/adjustment/contribution, or v3
 for historical records. See [scope audit and route catalogs](API_en.md#api-scope)

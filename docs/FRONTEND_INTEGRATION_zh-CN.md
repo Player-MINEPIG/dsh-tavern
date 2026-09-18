@@ -128,7 +128,7 @@ v2 是第三方 RP 表面的稳定协议。v1 是本插件 bundled UI 的资源�
 若第三方只需要渲染和周目操作，应尽量依赖 v2 与 timeline/catalog 中已有引用。若必须编辑 Tavern 资源，明确声明对相应 v1 版本和 dsh-tavern 版本的依赖，并对缺失 API 提供降级。
 
 当前资源与配置由 v1 负责，历史装配与来源追踪由 v3 负责。候选 v3 `/sources`
-与 v1 重叠，建议移除，但当前代码仍可调用；不要将其与历史 `sections[].sources` 混淆。
+已删除，GET 返回 404；当前配置请读 v1，历史 `sections[].sources` 继续保留。
 运行期观察、调整和贡献段落可使用官方 DSH `system-prompt/assemble`；历史查询使用 v3。
 完整边界和统一路由目录见 [API 范围核对](API.md#api-scope)，字段和示例见
 [v3 合同](PROMPT_API_V3.md)。v1 `/active` 会运行当前装配；仅需配置时应使用

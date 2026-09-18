@@ -2,7 +2,7 @@
 
 [中文](API.md) · [v3 detailed contract](PROMPT_API_V3_en.md) · [Frontend integration](FRONTEND_INTEGRATION_en.md)
 
-Status: Tavern **2.3.0 candidate**, not released; updated 2026-09-17. New Trace runtime
+Status: Tavern **2.3.0 candidate**, not released; updated 2026-09-18. New Trace runtime
 acceptance targets DSH `0.1.5-rc.1`; the released 2.2.0 v1/v2 baseline also tested
 `0.1.2-rc.1`. Root: `/pmp-dsh-tavern/api`. API versions and DSH log format V3 are independent.
 
@@ -19,21 +19,21 @@ message coordinates, branch inputs and unmigrated timeline references.
 <a id="api-scope"></a>
 ## Version responsibilities and overlap audit
 
-Reviewed 2026-09-17. This section distinguishes implemented behavior from proposed
-consolidation. This update changes documentation only; no routes were removed.
+Reviewed 2026-09-18. The current-resource aggregator has been removed from v3.
+The following describes the implemented boundary.
 
 | Capability | Existing v1 coverage | Existing v3 coverage | Scope conclusion |
 | --- | --- | --- | --- |
-| Complete current resource fields | `/presets/:id`, `/characters/:id`, `/users/:id`, `/world-books/:id` | `documents` in `/sessions/:id/sources` aggregates the same stores | Duplicate data responsibility; resource reads belong to v1 |
-| Current bindings and greeting options | Selection endpoints, resource world-books links, configuration preview; `/active` includes a current summary | `selection/worldBookSelection/greeting` | Overlapping configuration responsibility; effective greeting text and deduplicated links are derived values |
-| Current counts, aggregate revision and sampling suggestions | Resource fields can be counted; `/active.callConfig` maps sampling, but there is no identical aggregate snapshot revision | `fieldLengths/revision/suggestedCallConfig` | Convenience additions; v1 is not field-for-field response equivalent |
+| Complete current resource fields | `/presets/:id`, `/characters/:id`, `/users/:id`, `/world-books/:id` | No current-resource aggregate | Resource reads belong to v1 |
+| Current bindings and greeting options | Selection endpoints, resource world-books links, configuration preview; `/active` includes a current summary | Past bindings inside historical records only | Current configuration belongs to v1; consumers derive effective greetings and deduplicated links |
+| Current counts, aggregate revision and sampling suggestions | Resource fields can be counted; `/active.callConfig` maps sampling, but there is no identical aggregate snapshot revision | No current counts or aggregate revision; historical section/input counts remain | Consumers compose these values; v1 is not field-for-field response equivalent |
 | Historical bindings, resource summaries and lore decisions | `/traces?sessionId=` | Selection/audit in assembly details and legacy adaptation | Intentional historical audit overlap; retain v1 compatibility, new Trace reads v3 |
 | Historical named sections, source inputs, order and actual system-message verification | None; `/active` reruns assembly using current state | Assembly index and detail | Independent v3 responsibility; current configuration is not a substitute |
 
-Recommended boundary: **v1 owns current resources/configuration, v2 owns play
-Session/workspace primitives, v3 owns per-request assembly/provenance (live and historical).** Remove the
-candidate `/sources` aggregator instead of duplicating v1 resource reads. This is a
-recommendation, not an implemented route removal. Retain historical
+Implemented boundary: **v1 owns current resources/configuration, v2 owns play
+Session/workspace primitives, v3 owns per-request assembly/provenance (live and historical).** The
+candidate `/sources` aggregator has been removed: GET returns 404 with no alias or
+v1 redirect. Retain historical
 `sections[].sources`: those are past input relationships, not the current aggregator.
 
 Historical overlap does not imply identical IDs or wire fields. v1 Trace has its own
@@ -54,7 +54,7 @@ field provenance, and cannot reconstruct complete resources or replace v3 source
 snapshots. Official `system-prompt/assemble` offers runtime observation, adjustment
 and contribution independently of HTTP v3.
 
-Audit evidence: [current-source service](../packages/tavern-loader/src/prompt-trace-api.js),
+Audit evidence: [Trace API handler](../packages/tavern-loader/src/prompt-trace-api.js),
 [configuration preview](../packages/session-template/src/service.js),
 [v1 preset/active routes](../packages/preset/src/server.js),
 [historical recorder](../packages/tavern-trace/src/assembly-recorder.js),
@@ -483,12 +483,11 @@ Prefix: `/pmp-dsh-tavern/api/v3`. Read-only candidate contract.
 | Method | Path | Behavior | Status |
 | --- | --- | --- | --- |
 | GET | `/capabilities` | Contract capabilities, source mapping and capacity limits | Implemented in candidate |
-| GET | `/sessions/:id/sources` | Current configuration/resource aggregate | Implemented; overlaps v1, removal recommended |
 | GET | `/sessions/:id/assemblies` | Historical index without section bodies | Implemented in candidate |
 | GET | `/sessions/:id/assemblies/:recordId` | Historical sections, source inputs and request verification | Implemented in candidate |
 
 Fields, examples, errors and persistence: [v3 detailed contract](PROMPT_API_V3_en.md).
-The `/sources` row documents the current implementation, not an exclusive v3 responsibility.
+The former `/sessions/:id/sources` endpoint returns 404. Read current configuration and complete resources through v1.
 
 ## Browser chrome mode service
 

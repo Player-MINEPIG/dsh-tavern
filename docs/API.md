@@ -2,7 +2,7 @@
 
 [English](API_en.md) · [v3 详细合同](PROMPT_API_V3.md) · [前端接入](FRONTEND_INTEGRATION_zh-CN.md)
 
-状态：Tavern **2.3.0 候选**，未发布；更新于 2026-09-17。新增 Trace 的运行时验收目标为
+状态：Tavern **2.3.0 候选**，未发布；更新于 2026-09-18。新增 Trace 的运行时验收目标为
 DSH `0.1.5-rc.1`；已发布 2.2.0 的 v1/v2 基线也验证过 `0.1.2-rc.1`。
 根路径 `/pmp-dsh-tavern/api`。API 版本与 DSH 日志格式 V3 无关。
 
@@ -17,19 +17,19 @@ v1 的 error 形状和方法拒绝状态码因资源而异，文档排版统一�
 <a id="api-scope"></a>
 ## 版本职责与重叠核对
 
-核对日期：2026-09-17。本节区分当前实现与收敛建议；本次仅整理文档，没有删除路由。
+核对日期：2026-09-18。当前配置聚合已从 v3 删除；以下记录实际边界。
 
 | 能力 | v1 当前覆盖 | v3 当前覆盖 | 范围结论 |
 | --- | --- | --- | --- |
-| 当前资源完整字段 | `/presets/:id`、`/characters/:id`、`/users/:id`、`/world-books/:id` | `/sessions/:id/sources` 的 `documents` 聚合相同资源库文档 | 数据职责重复；完整资源读取归 v1 |
-| 当前绑定与开场选项 | 各 selection、资源 world-books 子接口、configuration preview；`/active` 含当前汇总 | `selection/worldBookSelection/greeting` | 配置职责重叠；有效开场正文与关系去重是派生结果，不是新资源 |
-| 当前字段计数、整体 revision、采样建议 | 资源字段可计数；`/active.callConfig` 含采样映射，但无相同的全量快照 revision | `fieldLengths/revision/suggestedCallConfig` | v3 的便利性增量；不能宣称 v1 响应逐字段等价 |
+| 当前资源完整字段 | `/presets/:id`、`/characters/:id`、`/users/:id`、`/world-books/:id` | 不提供当前资源聚合 | 完整资源读取归 v1 |
+| 当前绑定与开场选项 | 各 selection、资源 world-books 子接口、configuration preview；`/active` 含当前汇总 | 仅保留历史记录内的当时绑定 | 当前配置归 v1；有效开场正文与关系去重由调用者派生 |
+| 当前字段计数、整体 revision、采样建议 | 资源字段可计数；`/active.callConfig` 含采样映射，但无相同的全量快照 revision | 不提供当前字段计数或聚合 revision；保留历史段落与来源的计数 | 调用者自行组合；不能宣称 v1 响应逐字段等价 |
 | 历史绑定、资源摘要、世界书决策 | `/traces?sessionId=` | `/assemblies` 详情内的 selection/audit，及 legacy 适配 | 有意的历史审计重叠；v1 兼容保留，新 Trace 读 v3 |
 | 当时的具名段落、来源输入、顺序、实际系统消息核对 | 无；`/active` 只能按当前配置重新装配 | `/assemblies` 索引与详情 | v3 独立职责，不能用当前配置替代 |
 
-建议收敛边界：**v1 管当前资源与配置，v2 管扮演会话/工作区元操作，v3 管逐次装配记录与来源追踪（运行中及历史）。**
-当前候选 `/sources` 建议移除，不建议再复制一套 v1 资源读取合同；该建议尚未落实为代码变更。
-历史 `sections[].sources` 应保留，它是当时的来源输入关系，不是当前 `/sources` 聚合端点。
+职责边界：**v1 管当前资源与配置，v2 管扮演会话/工作区元操作，v3 管逐次装配记录与来源追踪（运行中及历史）。**
+当前候选 `/sources` 已删除，GET 返回 404，不提供别名或 v1 重定向。
+历史 `sections[].sources` 继续保留，它是当时的来源输入关系，不是当前 `/sources` 聚合端点。
 
 历史审计重叠不表示 ID 或响应字段可以互换。v1 有自己的 header 对齐状态，v3 采集时的
 audit 摘要也不会持续镜像 v1 后续更新；保留旧消费者，新来源视图使用 v3 记录。
@@ -44,7 +44,7 @@ DSH 历史以及 v2 `/sessions/:id/messages` 提供权威消息读取；它们�
 未启用字段或 Tavern 的字段来源关系，不能反推出完整资源文档或代替 v3 来源快照。
 官方 `system-prompt/assemble` 是运行期观察/调整/贡献段落的选择，不依赖 HTTP v3。
 
-核对依据：[当前 sources 服务](../packages/tavern-loader/src/prompt-trace-api.js)、
+核对依据：[Trace API 路由](../packages/tavern-loader/src/prompt-trace-api.js)、
 [配置预览](../packages/session-template/src/service.js)、[v1 预设/active 路由](../packages/preset/src/server.js)、
 [历史记录器](../packages/tavern-trace/src/assembly-recorder.js)、[Trace 客户端](../packages/tavern-trace/src/client.js)。
 
@@ -493,12 +493,11 @@ stage 或 terminal 调用无效且不会重复写终态。
 | 方法 | 路径 | 作用 | 状态 |
 | --- | --- | --- | --- |
 | GET | `/capabilities` | 合同能力、来源映射与容量限制 | 候选已实现 |
-| GET | `/sessions/:id/sources` | 当前配置与资源的聚合快照 | 已实现；与 v1 重叠，建议移除 |
 | GET | `/sessions/:id/assemblies` | 不含段落正文的历史索引 | 候选已实现 |
 | GET | `/sessions/:id/assemblies/:recordId` | 历史段落、来源输入与请求核对详情 | 候选已实现 |
 
 字段、示例、错误码与持久化见 [v3 详细合同](PROMPT_API_V3.md)。
-`/sources` 这一行说明现存实现，不表示当前配置属于 v3 的独立职责。
+旧候选 `/sessions/:id/sources` 已删除，GET 返回 404；当前配置及完整资源请读 v1。
 
 ## 浏览器端 Chrome 模式服务
 

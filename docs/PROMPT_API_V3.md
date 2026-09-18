@@ -1,21 +1,21 @@
 # 提示词装配 Trace 与 v3 元 API
 
-状态：2.3.0 候选，未发布；更新于 2026-09-17。目标 DSH **0.1.5-rc.1**。
+状态：2.3.0 候选，未发布；更新于 2026-09-18。目标 DSH **0.1.5-rc.1**。
 [English](PROMPT_API_V3_en.md) · [API 总览与范围核对](API.md#api-scope) · [验收](TRACE_REVIEW.md)
 
 ## 定位和兼容
 
-**范围核对：** 当前 `/sources` 聚合了 v1 所属的当前配置，建议移除，但尚未改动代码。
+**范围核对：** 已删除与 v1 当前配置重叠的 `/sessions/:id/sources` 聚合接口，GET 返回 404。
 历史 `sections[].sources` 的来源关系继续保留。Tavern Trace 只调用装配索引和详情。
-详见 [逐项重叠核对](API.md#api-scope)。本文仍如实记录可调用的路由，不把建议写成已实现。
+当前配置与完整资源通过 v1 读取，详见 [逐项重叠核对](API.md#api-scope)。
 
-v3 提供当前来源与历史装配记录，第三方自行选择组合流程。Tavern Trace
+v3 提供逐次装配记录与来源追踪（运行中及历史），第三方自行选择组合流程。Tavern Trace
 使用同一组 HTTP 接口。第三方也可以使用 DSH 官方 `system-prompt/assemble`
 观察、调整和贡献段落，使用 `llm/stream` 观察完整请求；无需导入 Tavern 代码。
 没有 composer 注册表、唯一 owner、强制回调格式或远程回调。
 
 这份合同取代未发布的 `prompt-composition-api-v3` 候选。
-旧候选 `prompt-sources` 改为 `sources`；`prompt-mode`、`registerComposer`、
+旧候选 `prompt-sources` 和当前资源聚合 `sources` 均不提供；`prompt-mode`、`registerComposer`、
 `pmpDshTavernPrompt` 不在本次合同中。正式发布的 v1/v2 路由继续存在；
 v1 `/traces` 仍是原来的有界元数据审计，世界书 `decisions` 字段保持兼容。
 API v3、Tavern 2.3.0、DSH 日志格式 V3 是三个独立版本号。
@@ -28,15 +28,14 @@ API v3、Tavern 2.3.0、DSH 日志格式 V3 是三个独立版本号。
 | 方法 | 路径 | 作用 | 状态 |
 | --- | --- | --- | --- |
 | GET | `/capabilities` | `{ok,apiVersion,contract,...}`；能力与容量限制 | 候选已实现 |
-| GET | `/sessions/:sessionId/sources` | `{ok,sources}`；当前配置与资源聚合 | 已实现；与 v1 重叠，建议移除 |
 | GET | `/sessions/:sessionId/assemblies` | `{ok,sessionId,records,storage}`；不含段落正文的历史索引 | 候选已实现 |
 | GET | `/sessions/:sessionId/assemblies/:recordId` | `{ok,record}`；单次历史快照 | 候选已实现 |
 
 `recordId` 是不透明 ID。404 表示记录不存在或已被容量策略淘汰，不能当成“该轮未注入”。
 旧 v1 记录通过 v3 以 `legacy-metadata-only` 提供；没有历史正文时不会重新装配补造。
-无效输入 400，非 GET 405，缺失资源快照 409，超大 sources 413；内部读取错误返回
-脱敏的 500 `TRACE_READ_FAILED`。历史查询不要求 Agent 在线，也不激活 Agent。
-当前 sources 经公开 Host coordinates 检查会话存在。
+无效输入 400，非 GET 405；内部读取错误返回脱敏的 500 `TRACE_READ_FAILED`。
+历史查询不要求 Agent 在线，也不激活 Agent。capabilities 不再包含 `currentSources` 或
+`maxSourceBytes`；`storage` 仅描述装配记录的容量限制。
 
 ### 请求与响应示例
 
@@ -77,22 +76,6 @@ const record = latest
 
 空索引只表示没有可返回的保留记录，不证明会话从未运行。索引与详情两次读取之间
 记录也可能被淘汰，此时详情返回 404。
-
-### 当前 sources
-
-| 字段 | 类型 | 定义及使用边界 |
-| --- | --- | --- |
-| `selection` | object | 当前绑定和角色选项；与 v1 当前配置重叠 |
-| `worldBookSelection` | object | 当前关系来源和去重顺序；由 v1 关系派生 |
-| `documents` | object | 当前完整资源文档；重复 v1 详情接口 |
-| `greeting` | object | 请求/有效序号、正文与 first-turn-reference 语义；从配置和卡片派生 |
-| `fieldLengths` | object | documents 内字符串的 JSON Pointer → 三种计数；不是 token 数 |
-| `suggestedCallConfig` | object | 预设采样映射；读取不应用 |
-| `countUnit` | string | unicode-code-points |
-| `revision` | string | 当前聚合快照哈希；不是历史请求身份，也不是 v1 写入 CAS 参数 |
-
-当前快照最多 16 MiB（含元数据），超限整体拒绝，不截断字段。读取不运行装配、
-世界书匹配、随机宏或开场消费。编辑后的归一化文档优先于 `source.raw` 导入快照。
 
 ### 历史 record
 

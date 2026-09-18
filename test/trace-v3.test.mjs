@@ -6,7 +6,7 @@ import { join } from 'node:path'
 import { compileTavernProfile } from '../packages/tavern-loader/src/profile-loader.js'
 import { AssemblyStore } from '../packages/tavern-trace/src/assembly-store.js'
 import { AssemblyRecorder } from '../packages/tavern-trace/src/assembly-recorder.js'
-import { PromptSourceService, createPromptTraceApi } from '../packages/tavern-loader/src/prompt-trace-api.js'
+import { createPromptTraceApi } from '../packages/tavern-loader/src/prompt-trace-api.js'
 
 function fixture() {
   const directory = mkdtempSync(join(tmpdir(), 'trace-v3-'))
@@ -92,7 +92,7 @@ test('v3 exposes read-only index/detail primitives with explicit IDs and cold hi
   const f = fixture()
   try {
     start(f.recorder); const id = f.recorder.request(request(assembled().systemText))
-    const api = createPromptTraceApi({ assemblies: f.store, sources: { getSources: () => ({ revision: 'r' }) }, ensureSession: () => {} })
+    const api = createPromptTraceApi({ assemblies: f.store })
     const base = '/pmp-dsh-tavern/api/v3'
     assert.equal((await invoke(api, `${base}/capabilities`)).body.contract, 'prompt-trace-primitives')
     const list = await invoke(api, `${base}/sessions/session/assemblies`)
@@ -105,19 +105,28 @@ test('v3 exposes read-only index/detail primitives with explicit IDs and cold hi
   } finally { f.cleanup() }
 })
 
-test('current sources preserve documents and revisions without activating matching or assembly', () => {
-  let description = 'original😀'
-  const service = new PromptSourceService({
-    selections: { get: () => ({ presetId: null, characterCardId: 'c', userId: null, worldBookIds: [], character: { greetingIndex: 8 } }) },
-    characters: { get: () => ({ id: 'c', data: { description, firstMessage: 'hello', alternateGreetings: ['alt'] } }) },
-    resourceWorldBooks: { get: () => [] },
-  })
-  const first = service.getSources('session')
-  assert.equal(first.greeting.effectiveIndex, 0)
-  assert.equal(first.fieldLengths['/character/data/description'].characters, 9)
-  description = 'edited'
-  assert.notEqual(service.getSources('session').revision, first.revision)
-  assert.equal(first.documents.character.data.description, 'original😀')
+test('removed current-source endpoint stays absent while historical source inputs remain readable', async () => {
+  const f = fixture()
+  try {
+    start(f.recorder); const id = f.recorder.request(request(assembled().systemText))
+    const api = createPromptTraceApi({ assemblies: new AssemblyStore(f.directory) })
+    const base = '/pmp-dsh-tavern/api/v3'
+    for (const path of ['/sessions/session/sources', '/sessions/session/sources/extra']) {
+      const response = await invoke(api, base + path)
+      assert.equal(response.status, 404)
+      assert.equal(response.body.code, 'NOT_FOUND')
+    }
+    const capabilities = (await invoke(api, `${base}/capabilities`)).body
+    assert.equal(capabilities.historicalAssemblies, true)
+    assert.equal('currentSources' in capabilities, false)
+    assert.equal('maxSourceBytes' in capabilities, false)
+    const { record } = (await invoke(api, `${base}/sessions/session/assemblies/${id}`)).body
+    const source = record.sections.flatMap(section => section.sources).find(source => source.text === '角色😀')
+    assert.equal(source.resourceId, 'c')
+    assert.equal(source.characters, 3)
+    assert.equal(source.utf16Units, 4)
+    assert.equal(source.utf8Bytes, 10)
+  } finally { f.cleanup() }
 })
 
 test('failures and legacy metadata remain explicit; v3 errors do not disclose internal paths', async () => {
@@ -128,7 +137,7 @@ test('failures and legacy metadata remain explicit; v3 errors do not disclose in
     start(f.recorder, assembled(), 2)
     f.recorder.failure({ agent: { id: 'session' }, turn: 1, step: 2 })
     assert.equal(f.store.list('session')[1].status, 'request-failed-before-observation')
-    const api = createPromptTraceApi({ assemblies: f.store, sources: { getSources: () => { throw new Error('/private/storage/path') } }, ensureSession: () => {},
+    const api = createPromptTraceApi({ assemblies: f.store,
       legacyStore: { list: () => [{ id: 'old', turn: 0, step: 1, attempt: 1, recordedAt: 1, worldBooks: [] }] } })
     const base = '/pmp-dsh-tavern/api/v3/sessions/session'
     const list = await invoke(api, `${base}/assemblies`)
@@ -136,7 +145,8 @@ test('failures and legacy metadata remain explicit; v3 errors do not disclose in
     const legacy = await invoke(api, `${base}/assemblies/legacy%3Aold`)
     assert.deepEqual(legacy.body.record.audit.worldBooks, [])
     assert.equal(legacy.body.record.sections, undefined)
-    const failure = await invoke(api, `${base}/sources`)
+    const failingApi = createPromptTraceApi({ assemblies: { list: () => { throw new Error('/private/storage/path') } } })
+    const failure = await invoke(failingApi, `${base}/assemblies`)
     assert.equal(failure.status, 500)
     assert.ok(!JSON.stringify(failure).includes('/private/storage/path'))
   } finally { f.cleanup() }

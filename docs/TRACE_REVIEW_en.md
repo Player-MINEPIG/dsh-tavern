@@ -8,10 +8,11 @@ not merged. [中文](TRACE_REVIEW.md) · [API and design](PROMPT_API_V3_en.md)
 
 - Ordered official named sections for existing preset/character/lore blocks, with
   source relationships captured during assembly and unchanged ordinary prompt text.
-- Current bindings, raw documents, greeting selection, field lengths and revisions.
+- Current bindings, complete documents and greeting options through v1 preview/resource
+  APIs; consumers count current fields. v3 retains historical section/input counts.
 - Per-turn/step/attempt runtime snapshots, bounded persistence, lazy historical
   queries, and exact system-message verification at the LLM boundary.
-- Four read-only v3 endpoints, also consumed by Tavern Trace. Third parties may
+- Three read-only v3 endpoints, also consumed by Tavern Trace. Third parties may
   instead use official DSH seams; composition and coordination remain theirs.
 - Explicit unknown, missing, failed, evicted and legacy metadata states.
 
@@ -63,32 +64,91 @@ interfaces. The reproducible AgentLoop test is `test/trace-v3-host.test.mjs`.
 
 ## Final package and restart evidence
 
-`npm run verify:2.0` passed, including build and pack checks. All 202 installed package files matched the candidate; public links and package boundaries passed inspection. The separate live v2 HTTP smoke passed all 16 tests. After an actual Host restart, the browser reopened pre-restart records. The standalone v3 HTTP example read capabilities/sources/index/detail; editing the current synthetic preset changed its revision while the previous record stayed byte-for-byte unchanged.
+After removing the current `/sources` aggregate on 2026-09-18, the full suite still
+reports 554 tests, 552 passes, no failures and two skips. `npm run verify:2.0` passes,
+including build and packaging. Regressions verify the deleted endpoint returns 404,
+capabilities omit `currentSources/maxSourceBytes`, and persisted source text and
+Unicode counts survive reload.
+
+Earlier browser restart/history checks and the 16/16 live v2 HTTP smoke apply to
+the candidate before this removal. The Trace frontend is unchanged. The former
+current-source reader is no longer contractual; the HTTP example exposes only
+capabilities/index/detail.
+
+The updated isolated DSH 0.1.5-rc.1 Host verifies the new capabilities and former
+`/sources` 404. All three pre-restart records remain readable, including stored
+Tavern input text. v1 configuration preview and preset details succeed; the history
+index and selected detail remain identical across preview, with no new assembly.
 
 ## Maintainer manual checks
 
-1. Use a complex real preset/card/user/world-book combination for at least two turns.
-   Check marker interleaving, main/jailbreak original, first-turn greeting behavior,
-   counts, lore decisions and readability against official system text.
-2. Have the third-party developer try the HTTP reader and official observer examples.
-   Verify plugin ordering, section replacement/reordering and sampling together.
-   Official sections expose their names; use v3 for detailed mixed-input provenance.
-3. Exercise a configured remote model with multi-step tools, cancellation, timeout
-   and retries. `request-observed` proves entry to the LLM layer, not model success.
-4. Edit resources after a turn, reopen the old record, then restart and reread it.
-   Rapidly switch between Sessions and open/close Trace; check for stale responses.
-5. Check normal window widths, themes, scaling, both languages and native/play
-   switching with your actual plugin combination.
-6. Validate existing third-party plugins, model connectivity and old Sessions after
-   the CLI upgrade. Existing playthrough coordinate migration still follows the
-   [migration guide](DSH_0.1.5_MIGRATION_en.md); upgrading CLI does not automatically
-   rewrite Tavern timeline references.
+Use a test profile and resource copies. Record pass/fail for each step. For failures,
+include Session ID, turn/step/attempt, recordId, plugin ordering and expected/actual
+behavior; avoid submitting private prompt bodies.
+
+1. **Prepare the candidate.** Check out the latest `codex/trace-api-v3` commit,
+   [install](INSTALLATION_en.md) into the test profile and restart the Host. Verify
+   Tavern 2.3.0 candidate and `dsh --version` 0.1.5-rc.1. Upgrading CLI alone does
+   not install this candidate into that profile. Check native Sessions and plugin loading.
+2. **Verify API boundaries.** Run the same-origin console snippet below. Expect
+   capabilities 200 without `currentSources/maxSourceBytes`, former `/sources` 404
+   `NOT_FOUND`, and assembly index 200 (empty is valid). For current bindings use v1
+   `POST /session-configurations/preview` with
+   `{ "source": { "mode": "current", "sessionId": "your-session-id" } }`, then
+   read resource details by returned IDs. Expect no new assembly or consumed greeting.
+   Do not use `/active` to check absence of assembly: it runs assembly.
+3. **Exercise a real preset/card for two turns.** Copy a complex preset/card/user/lore
+   setup. Put distinctive text, including CJK and emoji, in preset blocks, character
+   description and a lore entry. Place a character marker between preset entries,
+   select an alternate greeting, and trigger lore on the first turn; send a second.
+   Open Tavern Trace alongside Conversation/Trajectory and expand each turn's sections
+   and inputs. Expect preset ordering, interleaved character/lore, identifiable mixed
+   `{{original}}` inputs, first-turn greeting semantics and code-point counts (not tokens).
+   Compare text and separators with official system text. Unmodified assembly should
+   verify; source inputs are not character-by-character maps.
+4. **Preserve history across edits/restart.** Save the first recordId/detail response,
+   edit the card/preset and send another turn. Expect new content only in the new
+   record, with unchanged old text/bindings/inputs. Restart and read the old record
+   before activating the Session. Switch Sessions and toggle Trace rapidly; expect
+   no stale responses or content from another Session.
+5. **Integrate the third-party plugin.** Ask its developer to use both the
+   [v3 reader](examples/trace-reader.mjs) and [official observer](examples/official-prompt-observer.mjs).
+   First observe, then reorder/replace one named section and contribute a new section
+   through official assembly. Official APIs alone should operate on sections; v3
+   adds detailed input provenance. Changed and unattributed sections should be unknown,
+   not falsely inherit old provenance. Agree on plugin ordering and sampling settings.
+   If using `complete`, expect failed assembly verification rather than a false match.
+6. **Exercise real model outcomes.** Test ordinary replies, multi-step tools,
+   cancellation, timeout and retries. Compare turn/step/attempt against official
+   trajectories; separate attempts must not overwrite each other. `request-observed`
+   proves LLM-boundary entry, not successful completion. Missing requests/bodies and
+   failures must remain explicit. Confirm actual retries/steps from the official trace.
+7. **Check daily UI and upgrade compatibility.** Test window widths, themes, zoom,
+   both languages, native/play switching, existing Sessions, plugins and model connections.
+   Follow the [migration guide](DSH_0.1.5_MIGRATION_en.md) for old timeline coordinates;
+   the CLI upgrade does not rewrite them. If testing removal, use only the test profile:
+   native Sessions/history should remain usable without Tavern.
+
+Run in an authenticated same-origin Host page (replace the ID, do not enter tokens):
+
+```js
+const sessionId = 'your-session-id';
+const base = '/pmp-dsh-tavern/api/v3';
+for (const path of [
+  '/capabilities',
+  `/sessions/${encodeURIComponent(sessionId)}/sources`,
+  `/sessions/${encodeURIComponent(sessionId)}/assemblies`,
+]) {
+  const response = await fetch(base + path, { credentials: 'same-origin', cache: 'no-store' });
+  console.log(path, response.status, await response.json());
+}
+```
 
 ## Limits before release
 
 Prompt snapshots may contain sensitive text and are bounded local data. Eviction
 does not delete DSH history. Sources are section inputs, not per-character maps;
-contexts are assembly-stage facts. Current sources and historical details are
-different contracts. One Host writes a store; multi-process writes are unsupported.
+contexts are assembly-stage facts. Current resources/configuration remain in v1;
+v3 index/detail reads also work while the Agent is offline. One Host writes a store; multi-process writes are unsupported.
 Older DSH paths remain, but new Trace runtime evidence targets 0.1.5-rc.1. Merge and
 release follow maintainer acceptance.

@@ -3,7 +3,7 @@
 ## 2.3.0 — Candidate, not released — Prompt assembly Trace
 
 - Expand existing preset/character/lore blocks into official named sections without changing ordinary prompt text or preset order; capture mixed-source relationships during assembly.
-- Add small, read-only v3 primitives for capabilities, current sources, historical indexes and details. No composer ownership registry; released v1/v2 remain available.
+- Add small, read-only v3 primitives for capabilities, historical indexes and details. Current resources/configuration remain in v1; the unpublished `/sources` aggregate and its capability fields have been removed. No composer ownership registry; released v1/v2 remain available.
 - Capture per-turn/step/attempt snapshots, verify against the LLM-boundary system message, preserve unknown/complete-override distinctions, and retain bounded local history across restart.
 - Move Tavern Trace to v3 with lazy source/text details, request verification and live refresh. Old metadata-only records remain readable.
 - Target DSH 0.1.5-rc.1; see [contract](PROMPT_API_V3_en.md) and [acceptance](TRACE_REVIEW_en.md) for privacy changes, limits and manual checks.
