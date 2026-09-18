@@ -203,16 +203,15 @@ Tavern 语言与 DSH 语言独立。RP、侧栏和开场 dock 订阅完整 UI �
 
 因此发布与安装单位固定为根包 `pmp-dsh-tavern`（产品名仍是 dsh-tavern），内部包边界用于代码复用和测试隔离。浏览器与 Host 共用 `packages/identity.js` 的 `PLUGIN_ID`、`API_ROOT`、`API_V1`、`API_V2`、`API_V3`。HTTP 挂载前缀是 `/pmp-dsh-tavern/api`；资源与配置走 `/v1`，扮演元 API 走 `/v2`，历史装配 Trace 走 `/v3`。`packages/play` 不导入 DSH；loader 以显式注入的 `sessionController`、`workspaceController` 与 `directoryPickerController` 实现 Tavern Play Host port，并挂到现有 `secureTavernApi`。`package.json` 的 `./format`、`./preset`、`./character`、`./user`、`./world-book`、`./world-book-library`、`./trace`、`./loader` exports 是程序接口，不代表可分别安装的插件。
 
-## 当前发布门槛
+## 开发验证
 
-当前版本的执行结果与剩余人工项目集中在 [Trace 验收](TRACE_REVIEW.md) 和
-[周目验收](PLAY_REVIEW.md)。发布前按变更范围完成以下检查：
+测试环境、命令与运行时检查见 [开发验证指南](TESTING.md)。按变更范围完成以下检查：
 
 1. 验证 ST 格式识别、未知字段保留、归一化、资源选择、提示词顺序与宏行为。
 2. 运行相关测试；完整版本验证使用 `npm run check` 和 `npm run verify:2.0`，并为官方 codec / AgentLoop 测试配置目标 DSH 依赖根。条件跳过不能当作通过。
 3. 在隔离 `DSH_HOME` 的目标 Host 上检查绑定、新会话、RP 生命周期，以及 `llm/stream`、官方持久消息和 Trace 引用的对应关系；验证重启后详情仍可冷读。
 4. 核对安装包和已安装文件，确认 bundle、公开文档和图片齐全，且不包含测试数据、私有计划、真实路径、密钥或导入 fixture。
-5. 同步中英文说明及当前验收结果，完成维护者人工验收。分支推送、合并、tag 和发布遵循维护者分别给出的授权。
+5. 同步中英文技术说明，将执行结果保存在本地验收记录中，并完成相应验收。分支推送、合并、tag 和发布遵循维护者分别给出的授权。
 
 ## 两组长期验收
 

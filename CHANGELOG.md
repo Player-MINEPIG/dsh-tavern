@@ -29,7 +29,7 @@
 - Add small, read-only v3 primitives for capabilities, historical indexes and details. Current resources/configuration remain in v1; the unpublished `/sources` aggregate and its capability fields have been removed. No composer ownership registry; released v1/v2 remain available.
 - Capture per-turn/step/attempt metadata, verify against the LLM-boundary system message, preserve unknown/complete-override distinctions, and retain bounded reference history across restart.
 - Move Tavern Trace to v3 with verified on-demand section/context reads, source metadata without source bodies, request verification and live refresh. Old metadata and schema 3 body records remain readable.
-- Target DSH 0.1.5-rc.1; see [contract](PROMPT_API_V3_en.md) and [acceptance](TRACE_REVIEW_en.md) for privacy changes, limits and manual checks.
+- Target DSH 0.1.5-rc.1; see [contract](docs/PROMPT_API_V3_en.md) and [verification guide](docs/TESTING_en.md) for privacy changes, limits and runtime checks.
 
 ## 2.2.0 — 2026-09-11 — DSH 0.1.5-rc.1 compatibility and rich-text rendering
 
@@ -507,7 +507,7 @@ build.
   untrusted context for the first actual request. It is not a DSH durable
   message and does not enter `timeline.json`; normal `turn/end` changes the
   binding from `pending` to `consumed`. Retry/abort semantics remain a review
-  item (see [`PLAY_REVIEW.md`](PLAY_REVIEW.md)).
+  item (see `PLAY_REVIEW.md`).
 
 Verification: production client build, 347 tests passed and 2 skipped; the
 opening greeting, three-QA preview, bind/rebind/unbind, and playthrough
@@ -515,7 +515,7 @@ lifecycle passed user acceptance on DSH 0.1.0-rc.8.
 
 ## 2026-08-20 — Review the playthrough lifecycle boundary
 
-- Added [`PLAY_REVIEW.md`](PLAY_REVIEW.md), a read-only review of the v2
+- Added `PLAY_REVIEW.md`, a read-only review of the v2
   playthrough implementation at `6ede09d`.
 - Recorded the remaining lifecycle risks: cross-client catalog/timeline lost
   updates, half-created Host sessions after downstream failure, silently
@@ -877,7 +877,7 @@ and of the current DSH session, as the first v2 play-surface route.
 - Default mode is `native`. `PUT { "mode": "play" }` is atomic and survives
   store recreation. Illegal modes and unknown fields return 400. There is no
   `POST /chrome`. Chrome does not read or write RP selection.
-- Documented in [docs/API.md](API.md) (v2 stable vs v1 bundled).
+- Documented in [docs/API.md](docs/API.md) (v2 stable vs v1 bundled).
 
 Verification: `test/play-chrome.test.mjs` plus `npm test`.
 

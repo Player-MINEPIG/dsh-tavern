@@ -32,7 +32,7 @@
     "docs/API_en.md",
     "docs/ARCHITECTURE.md",
     "docs/ARCHITECTURE_en.md",
-    "docs/CHANGELOG.md",
+    "CHANGELOG.md",
     "docs/DSH_0.1.5_MIGRATION.md",
     "docs/DSH_0.1.5_MIGRATION_en.md",
     "docs/DSH_MESSAGE_FLOW.md",
@@ -43,8 +43,6 @@
     "docs/INSTALLATION_en.md",
     "docs/LOADER_CONTRACT.md",
     "docs/LOADER_CONTRACT_en.md",
-    "docs/PLAY_REVIEW.md",
-    "docs/PLAY_REVIEW_en.md",
     "docs/PROMPT_PIPELINE.md",
     "docs/PROMPT_PIPELINE_en.md",
     "docs/RP_SECURE_MODE.md",
@@ -55,8 +53,8 @@
     "cordis.patch.yml",
     "docs/PROMPT_API_V3.md",
     "docs/PROMPT_API_V3_en.md",
-    "docs/TRACE_REVIEW.md",
-    "docs/TRACE_REVIEW_en.md",
+    "docs/TESTING.md",
+    "docs/TESTING_en.md",
     "docs/examples"
   ],
   "dsh": {

@@ -21,9 +21,8 @@ but by itself it intentionally has no agent-loading effect.
 
 ## Install 2.3.0
 
-Presentation review is complete. The branch will merge into `main` after content
-review; the release is not yet published. During review, install from the current
-branch into the default `web` profile:
+The current `2.3.0` source has not been released. To install it from GitHub into
+the default `web` profile, specify this version's branch:
 
 ```text
 dsh plugin --profile web add github:Player-MINEPIG/dsh-tavern#codex/trace-api-v3
@@ -44,7 +43,7 @@ node scripts/install.mjs --dsh-home /absolute/path/to/test-home --profile web
 ```
 
 Start DSH `0.1.5-rc.1` with that same `DSH_HOME`, then follow the
-[Trace acceptance steps](TRACE_REVIEW_en.md). A CLI upgrade alone does not update
+[developer verification guide](TESTING_en.md). A CLI upgrade alone does not update
 the plugin installed in a profile. Record `git rev-parse HEAD` for the tested build.
 
 ### DSH provides the runtime peers
@@ -133,7 +132,7 @@ tracked browser bundle and performs `npm pack --dry-run`.
 Set `DSH_TAVERN_COMPAT_ROOT` and `DSH_TAVERN_PROMPT_COMPAT_ROOT` to the target DSH
 installation dependency root to enable real runtime checks; without them, those
 checks explicitly skip. Run `npm run check` for the complete suite as well.
-These commands do not replace [Trace runtime/manual acceptance](TRACE_REVIEW_en.md).
+These commands do not replace [target Host and browser verification](TESTING_en.md).
 
 ## Uninstall
 

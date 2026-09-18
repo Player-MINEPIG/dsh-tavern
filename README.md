@@ -6,7 +6,7 @@
 
 > 本文说明 `2.3.0`，主题是提示词装配追踪与溯源；目标运行环境为 DSH `0.1.5-rc.1`。项目代码采用 [MIT License](LICENSE)。
 >
-> Tavern Trace 可查看每次请求的配置、世界书触发情况和提示词段落的内容与来源；第三方工具也可通过只读 v3 API 读取这些信息。见 [API 与设计](docs/PROMPT_API_V3.md) 和 [验收状态](docs/TRACE_REVIEW.md)。
+> Tavern Trace 可查看每次请求的配置、世界书触发情况和提示词段落的内容与来源；第三方工具也可通过只读 v3 API 读取这些信息。见 [API 与设计](docs/PROMPT_API_V3.md)。
 >
 > **暂不支持 MVU 变量系统和依赖 JavaScript 的动态 HTML。** RP 视图支持经过过滤的静态 HTML/CSS；依赖脚本的状态更新和交互不会运行。
 
@@ -40,7 +40,7 @@ pmp-dsh-tavern 不是用另一套界面取代 DSH，也不会复制一份会话�
 
 ### 0. 安装
 
-`2.3.0` 已完成呈现审核，内容审核后再合并到 `main`，目前尚未发布。审核期间从 GitHub 安装请指定当前分支：
+当前 `2.3.0` 源码尚未发布。从 GitHub 安装此版本请指定分支：
 
 目标 DSH `0.1.5-rc.1` 要求 Node.js `^22.19.0 || >=24.0.0`，另需可从 `PATH` 调用的 DSH 和已初始化的 profile（默认 `web`）。Tavern 独立测试兼容 Node 20，不代表目标 Host 可运行在 Node 20。
 
@@ -141,8 +141,8 @@ npm run plugin:install
 - [Prompt pipeline](docs/PROMPT_PIPELINE.md) · [Prompt pipeline](docs/PROMPT_PIPELINE_en.md)：ST 格式、宏、角色字段与世界书兼容范围
 - [RP 安全模式](docs/RP_SECURE_MODE.md) · [RP secure mode](docs/RP_SECURE_MODE_en.md)：RP 模式拦截与不拦截的能力
 - [世界书设计](docs/world-book/DESIGN.md) · [World-book design](docs/world-book/DESIGN_en.md)：World Info 格式、匹配与投影契约
-- [周目验收](docs/PLAY_REVIEW.md) · [Playthrough acceptance](docs/PLAY_REVIEW_en.md)；[Trace 验收](docs/TRACE_REVIEW.md) · [Trace acceptance](docs/TRACE_REVIEW_en.md)
-- [发布变更](docs/CHANGELOG.md)（英文）
+- [开发验证指南](docs/TESTING.md) · [Developer verification](docs/TESTING_en.md)：测试命令、目标 DSH 环境与运行时检查
+- [发布变更](CHANGELOG.md)（英文）
 - [安全策略](SECURITY.md) · [Security policy](SECURITY_en.md)
 
 ## 共同开发

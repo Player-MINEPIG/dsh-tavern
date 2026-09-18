@@ -96,5 +96,4 @@ changes format, references that cannot be verified report `format-mismatch` or a
 unavailable state; they are not relocated by guessing. Older body snapshots retain their read
 compatibility. New requests after migration capture references in the current format.
 
-See [Trace acceptance](TRACE_REVIEW_en.md) and [playthrough acceptance](PLAY_REVIEW_en.md) for
-current results and maintainer checks.
+See [Developer verification](TESTING_en.md) for environment setup and runtime checks after migration.

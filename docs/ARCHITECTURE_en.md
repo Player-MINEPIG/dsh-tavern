@@ -204,17 +204,16 @@ In theory `tavern-format` could grow its own package manifest and publish as an 
 
 Therefore the release and install unit stays the root package `pmp-dsh-tavern` (product name remains dsh-tavern). Internal package boundaries exist for reuse and test isolation. Browser and Host share `PLUGIN_ID`, `API_ROOT`, `API_V1`, `API_V2`, `API_V3` from `packages/identity.js`. The HTTP mount prefix is `/pmp-dsh-tavern/api`. Resources and configuration use `/v1`; play meta APIs use `/v2`; historical assembly Trace uses `/v3`. `packages/play` does not import DSH. The loader implements Tavern's Play Host port with explicitly injected `sessionController`, `workspaceController`, and `directoryPickerController`, then mounts it on the existing `secureTavernApi`. `package.json` exports `./format`, `./preset`, `./character`, `./user`, `./world-book`, `./world-book-library`, `./trace`, `./loader` are programmatic interfaces, not separately installable plugins.
 
-## Current release gates
+## Development verification
 
-Current verification results and remaining manual checks are recorded in
-[Trace acceptance](TRACE_REVIEW_en.md) and [playthrough acceptance](PLAY_REVIEW_en.md).
-Before release, choose checks proportionate to the change:
+See [Developer verification](TESTING_en.md) for environment setup, commands and runtime checks.
+Choose checks proportionate to the change:
 
 1. Verify ST recognition, unknown-field retention, normalization, resource selection, prompt order, and macro behavior.
 2. Run relevant tests. Full-version verification uses `npm run check` and `npm run verify:2.0`, with the target DSH dependency root configured for official codec / AgentLoop tests. Conditional skips are not passes.
 3. In an isolated target Host `DSH_HOME`, check binding, new Sessions, RP lifecycle, and alignment between `llm/stream`, official durable messages, and Trace references. Verify cold detail reads after restart.
 4. Check package contents and installed files: include the bundle, public documents, and assets; exclude test data, private plans, workstation paths, credentials, and imported fixtures.
-5. Synchronize both languages and current acceptance results, then complete maintainer acceptance. Branch pushes, merges, tags, and releases follow the maintainer's separate authorizations.
+5. Synchronize both languages, keep execution results in local acceptance records, and complete the applicable acceptance checks. Branch pushes, merges, tags, and releases follow the maintainer's separate authorizations.
 
 ## Two long-term acceptance tracks
 

@@ -13,7 +13,7 @@ For project contracts, DSH version compatibility, or release evidence, use the t
 
 ## Documentation
 
-Describe the current implementation in place, with matching bilingual contracts and diagrams. Replace obsolete prose instead of appending dated corrections or completed-stage ledgers. Keep one current acceptance result and the remaining checks. Version history belongs in `docs/CHANGELOG.md`; readers can use the corresponding Git tag for older full documentation. Retain older-format details only where they explain a currently supported compatibility or migration path.
+Keep `docs/` for maintained project documentation: current contracts, architecture, integration, usage, and reusable verification procedures, with matching bilingual documents and diagrams. Replace obsolete prose instead of appending dated corrections or completed-stage ledgers. Release announcements, issue reply drafts, development plans, and run-specific acceptance records belong under Git-ignored `.local/`, not in the repository or installable package. Version history belongs in root `CHANGELOG.md`; readers can use the corresponding Git tag for older full documentation. Retain older-format details only where they explain a currently supported compatibility or migration path.
 
 ## Validation by Change Scope
 

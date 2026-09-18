@@ -12,7 +12,7 @@
 
 ## 安装 2.3.0
 
-呈现审核已完成，内容审核后再合并到 `main`，目前尚未发布。审核期间从 GitHub 安装到默认 `web` profile，请指定当前分支：
+当前 `2.3.0` 源码尚未发布。从 GitHub 安装到默认 `web` profile，请指定此版本的分支：
 
 ```text
 dsh plugin --profile web add github:Player-MINEPIG/dsh-tavern#codex/trace-api-v3
@@ -31,7 +31,7 @@ npm ci --legacy-peer-deps
 node scripts/install.mjs --dsh-home /absolute/path/to/test-home --profile web
 ```
 
-用同一个 `DSH_HOME` 启动 DSH `0.1.5-rc.1`，再按 [Trace 验收步骤](TRACE_REVIEW.md)检查。
+用同一个 `DSH_HOME` 启动 DSH `0.1.5-rc.1`，再按 [开发验证指南](TESTING.md)检查。
 只升级 CLI 不会更新 profile 中的插件。用 `git rev-parse HEAD` 记录所验收构建。
 
 ### DSH 提供官方运行依赖
@@ -88,7 +88,7 @@ npm run verify:2.0
 该命令覆盖 Trace v3 与真实 AgentLoop、session 坐标 codec、history/游标守卫、受管文档与 CAS、import claim/lineage、chrome/slot 所有权、本地化和安装边界，随后构建已跟踪的浏览器 bundle 并执行 `npm pack --dry-run`。
 
 将 `DSH_TAVERN_COMPAT_ROOT` 和 `DSH_TAVERN_PROMPT_COMPAT_ROOT` 指向目标 DSH 安装的依赖根目录才能启用真实运行时检查；未设置时对应测试明确跳过。另运行 `npm run check` 覆盖全套测试。
-这些命令不能替代 [Trace 运行时与人工验收](TRACE_REVIEW.md)。
+这些命令不能替代 [目标 Host 与浏览器的运行时验证](TESTING.md)。
 
 ## 卸载
 

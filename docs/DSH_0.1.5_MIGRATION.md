@@ -91,4 +91,4 @@ DSH_TAVERN_COMPAT_ROOT=/path/to/dsh-install npm run verify:2.0
 引用会标为 `format-mismatch` 或其他明确不可用状态，不猜测新位置。旧 Trace 正文快照仍按
 兼容规则读取。迁移后的新请求会按当前格式创建新记录。
 
-当前版本的验证结果和待人工检查项见 [Trace 验收](TRACE_REVIEW.md) 与 [周目验收](PLAY_REVIEW.md)。
+迁移后的测试环境与运行时检查方法见 [开发验证指南](TESTING.md)。

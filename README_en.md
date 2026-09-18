@@ -6,7 +6,7 @@ A SillyTavern compatibility plugin that keeps DeepSeek Harness (DSH) authoritati
 
 > This page describes `2.3.0`, focused on prompt assembly tracing and provenance, targeting DSH `0.1.5-rc.1`. [MIT License](LICENSE).
 >
-> Tavern Trace shows each request's configuration, world-book activation, and prompt section content and sources. Third-party tools can read the same information through the read-only v3 API. See [API/design](docs/PROMPT_API_V3_en.md) and [acceptance status](docs/TRACE_REVIEW_en.md).
+> Tavern Trace shows each request's configuration, world-book activation, and prompt section content and sources. Third-party tools can read the same information through the read-only v3 API. See [API/design](docs/PROMPT_API_V3_en.md).
 >
 > **MVU variables and JavaScript-driven dynamic HTML are not supported yet.** RP supports sanitized static HTML/CSS; script-driven state updates and interactions do not run.
 >
@@ -40,7 +40,7 @@ If behavior looks suspicious, stop the Agent, switch back to DSH native mode, an
 
 ### 0. Install
 
-Presentation review for `2.3.0` is complete. The branch will merge into `main` after content review; the release is not yet published. During review, use the current branch for GitHub installs:
+The current `2.3.0` source has not been released. To install this version from GitHub, specify its branch:
 
 Target DSH `0.1.5-rc.1` requires Node.js `^22.19.0 || >=24.0.0`, with `dsh` on `PATH` and an initialized profile (default `web`). Tavern standalone tests support Node 20; that does not establish Node 20 support for the target Host.
 
@@ -123,8 +123,8 @@ See the [feature gallery](docs/assets/market/README.md#gallery) for annotated ex
 - [Prompt pipeline](docs/PROMPT_PIPELINE_en.md): ST format, macros, character fields, world-book coverage
 - [RP secure mode](docs/RP_SECURE_MODE_en.md): what RP blocks and what it does not
 - [World-book design](docs/world-book/DESIGN_en.md): World Info format, matching, projection contract
-- [Playthrough acceptance](docs/PLAY_REVIEW_en.md) and [Trace acceptance](docs/TRACE_REVIEW_en.md)
-- [Changelog](docs/CHANGELOG.md)
+- [Developer verification](docs/TESTING_en.md): test commands, target DSH environment and runtime checks
+- [Changelog](CHANGELOG.md)
 - [Security policy](SECURITY_en.md)
 - [Chinese documentation](README.md)
 
