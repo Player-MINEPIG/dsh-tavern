@@ -171,3 +171,26 @@ test('creates a blank V2 card with empty editable fields', () => {
   assert.deepEqual(card.data.alternateGreetings, [])
   assert.equal(card.source.raw.data.name, 'Blank')
 })
+
+test('imports null tags as empty metadata without changing preserved source', () => {
+  for (const version of [1, 2, 3]) {
+    const data = { name: 'Nullable metadata', tags: null }
+    const raw = version === 1 ? data : { spec: `chara_card_v${version}`, spec_version: `${version}.0`, data }
+    const original = structuredClone(raw)
+    const card = parseSillyTavernCharacterCard(raw)
+    assert.deepEqual(card.data.tags, [])
+    assert.deepEqual(raw, original)
+    assert.deepEqual(JSON.parse(exportCharacterCardJson(card)), original)
+    assert.ok(card.compatibility.warnings.some(w => w.code === 'null-tags-as-empty' && w.path === 'data.tags'))
+    const edited = editCharacterCard(card, { description: 'Edited description' })
+    assert.deepEqual(edited.data.tags, [])
+    assert.deepEqual(editCharacterCard(card, { tags: ['new'] }).data.tags, ['new'])
+  }
+})
+
+test('null-tag compatibility does not accept malformed nonempty tag values or greeting fields', () => {
+  for (const tags of ['one,two', 0, {}, ['valid', null], ['valid', 1]]) {
+    assert.throws(() => parseSillyTavernCharacterCard({ spec: 'chara_card_v3', data: { name: 'Invalid', tags } }), /data\.tags must be an array of strings/)
+  }
+  assert.throws(() => parseSillyTavernCharacterCard({ spec: 'chara_card_v3', data: { tags: null, alternate_greetings: null } }), /data\.alternate_greetings/)
+})

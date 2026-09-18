@@ -2,6 +2,7 @@
 
 ## 2.3.0 — Candidate, not released — Prompt assembly Trace
 
+- Accept character-card `tags: null` as empty normalized metadata with a diagnostic, preserving source JSON and exports. Cover V1/V2/V3, dual PNG chunks, editing and malformed tag rejection. Verified an affected PNG through import, persistence/reload and lossless JSON export; full suite: 570 passes, zero failures, two conditional skips.
 - Keep the RP conversation view available after reloading a fork when unrelated old playthroughs reference missing sessions. Skip only missing-session errors during membership discovery; retain known-owner and permission/migration errors. Display regex continues to run in RP while native DSH chat retains raw messages.
 - Restore configuration-first Trace presentation using historical v3 audit snapshots. World-book activation and Loader assembly are separately collapsed; preserve legacy configuration/lore views and distinguish unrecorded fields from unused resources. Explain turn/step/request capture, show “Request record N” only for subsequent captures, and localize request states. Clarify that DSH retries may reuse the existing assembly and Tavern only observes request events.
 

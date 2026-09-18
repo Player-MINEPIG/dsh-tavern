@@ -50,6 +50,7 @@ The preset panel can import SillyTavern Chat Completion preset JSON or create a 
 ## 3. Character cards
 
 The character panel supports SillyTavern V1/V2/V3 JSON and PNG files that contain `chara`/`ccv3` data.
+Imports read `tags: null` as no tags and report a compatibility warning while preserving the original field. Other invalid types and arrays containing non-string tags still fail validation.
 
 1. After import or create, you can edit name, description, personality, scenario, greeting (including alternates), example dialogue, and similar fields. Saving fields and binding to a session are two steps. The plugin stores one current card document. PNG import also keeps a cover image with card data stripped. PNG export uses a placeholder when there is no cover. There is no “export original file”.
 2. Choose a greeting and whether the card system prompt and post-history instructions take priority. If the current card is already bound, changing greeting or policy without binding again shows **not applied**.

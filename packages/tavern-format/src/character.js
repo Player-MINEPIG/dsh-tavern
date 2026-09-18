@@ -87,6 +87,9 @@ function checkFieldTypes(data, version) {
     }
   }
   for (const field of ['alternate_greetings', 'group_only_greetings', 'tags']) {
+    // Some exported cards encode absent tag metadata as null. Keep source.raw
+    // intact; the normalized view treats it as an empty list.
+    if (field === 'tags' && data[field] === null) continue
     if (data[field] !== undefined && (!Array.isArray(data[field]) || data[field].some((item) => typeof item !== 'string'))) {
       throw new TypeError(`${version.toUpperCase()} character-card field data.${field} must be an array of strings`)
     }
@@ -122,6 +125,7 @@ function unknownMacros(data) {
 
 function normalizeData(data, version, warnings, unsupportedFeatures) {
   checkFieldTypes(data, version)
+  if (data.tags === null) warnings.push(diagnostic('null-tags-as-empty', 'Null tags are read as an empty list; the original source is preserved.', 'data.tags'))
   if (text(data.name).trim() === '') warnings.push(diagnostic('missing-name', 'The character name is empty.', 'data.name'))
   if (version === 'v3' && Array.isArray(data.assets) && data.assets.length > 0) {
     unsupportedFeatures.push(diagnostic('v3-assets-pass-through', 'V3 assets are preserved but are not fetched or executed.', 'data.assets'))

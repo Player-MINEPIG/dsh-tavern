@@ -134,3 +134,12 @@ test('strips character-card chunks from a PNG cover image', () => {
   assertPngCrcs(stripped)
   assert.throws(() => extractCharacterCardPng(stripped), /does not contain/)
 })
+
+test('dual-chunk V3 PNG with null tags imports and preserves its source', () => {
+  const raw = { spec: 'chara_card_v3', spec_version: '3.0', data: { name: 'Null tags PNG', tags: null, description: 'Keep original' } }
+  const bytes = png(textChunk('chara', JSON.stringify(raw)), textChunk('ccv3', JSON.stringify(raw)))
+  const card = parseSillyTavernCharacterCard(bytes)
+  assert.equal(card.source.pngKeyword, 'ccv3')
+  assert.deepEqual(card.data.tags, [])
+  assert.deepEqual(card.source.raw, raw)
+})
