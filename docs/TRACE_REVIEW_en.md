@@ -80,6 +80,16 @@ The updated isolated DSH 0.1.5-rc.1 Host verifies the new capabilities and forme
 Tavern input text. v1 configuration preview and preset details succeed; the history
 index and selected detail remain identical across preview, with no new assembly.
 
+## Missing-session workspace regression (2026-09-18)
+
+With the added regressions, `npm run check` reports 563 tests, 561 passes, zero
+failures and the two existing conditional skips. A real 0.1.5-rc.1 Host reproduced
+the empty old run blocking creation. The fix creates a new run, preserves old
+catalog entries and timeline bytes, and reuses a valid empty run on repeated clicks.
+The browser explains missing logs and opens the new run. Restoring old history
+still requires the original DSH_HOME or backup; no replacement history is generated.
+Coordinate migration, permission and other read errors still propagate.
+
 ## Maintainer manual checks
 
 Use a test profile and resource copies. Record pass/fail for each step. For failures,

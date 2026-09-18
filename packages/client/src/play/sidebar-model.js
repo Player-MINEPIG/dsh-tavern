@@ -235,6 +235,7 @@ export async function loadPlaySidebarResources(client) {
     } catch (reason) {
       diagnostics.push({
         playthroughId: playthrough.id,
+        ...(typeof reason?.code === 'string' ? { code: reason.code } : {}),
         path: playthrough.path,
         message: reason instanceof Error ? reason.message : String(reason),
       })

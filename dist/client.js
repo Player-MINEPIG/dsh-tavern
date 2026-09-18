@@ -193,6 +193,7 @@ var zh_CN_default = Object.freeze({
   "play.notice.unbound": "\u672C\u4F1A\u8BDD\u6682\u672A\u7ED1\u5B9A\u5230\u6307\u5B9A RP \u5DE5\u4F5C\u533A\u5185\u7684\u5468\u76EE\uFF1B\u53EF\u4EE5\u6B63\u5E38\u5BF9\u8BDD\u3002\u8FDB\u5165\u89D2\u8272\u5361\u4E0B\u7684\u5468\u76EE\u540E\uFF0C\u624D\u4F1A\u542F\u7528\u5F00\u573A\u767D\u3001\u56DE\u590D\u5207\u6362\u3001\u663E\u793A\u7F16\u8F91\u4E0E\u5468\u76EE\u5BFC\u5165/\u5BFC\u51FA\u3002",
   "play.sidebar.sessionMissing": "\u8BE5\u5468\u76EE\u5728\u89D2\u8272\u626E\u6F14\u5DE5\u4F5C\u533A\u4E2D\u6CA1\u6709\u53EF\u7528\u4F1A\u8BDD\u3002",
   "play.sidebar.timelineErrors": "\u6709 {count} \u4E2A\u5468\u76EE\u7684 timeline \u65E0\u6CD5\u8BFB\u53D6\u3002",
+  "play.sidebar.missingSessionHistory": "\u5F53\u524D DSH \u73AF\u5883\u7F3A\u5C11\u65E7\u5468\u76EE\u5F15\u7528\u7684\u4F1A\u8BDD\u65E5\u5FD7\u3002RP \u5DE5\u4F5C\u533A\u53EA\u4FDD\u5B58\u5F15\u7528\uFF1B\u8BF7\u4F7F\u7528\u539F DSH \u6570\u636E\u76EE\u5F55\uFF0C\u6216\u4ECE\u5907\u4EFD\u6062\u590D\u5BF9\u5E94\u65E5\u5FD7\u3002\u65E7\u5468\u76EE\u5DF2\u4FDD\u7559\uFF0C\u4ECD\u53EF\u65B0\u5EFA\u5468\u76EE\u3002",
   "play.chat.label": "RP\u89C6\u56FE",
   "play.chat.loading": "\u6B63\u5728\u8BFB\u53D6\u672C\u5468\u76EE\u8BB0\u5F55\u2026",
   "play.chat.failure": "\u51FA\u73B0\u9519\u8BEF\uFF0C\u8BF7\u5207\u6362\u5230\u300C\u5BF9\u8BDD\u300D\u89C6\u56FE\u67E5\u770B\u66F4\u591A\u4FE1\u606F\u3002",
@@ -848,6 +849,7 @@ var en_default = Object.freeze({
   "play.notice.unbound": "This session is not attached to a playthrough in the selected RP workspace. You can keep chatting normally; enter a character playthrough to enable greetings, swipes, display edits, and playthrough import/export.",
   "play.sidebar.sessionMissing": "This playthrough has no available session in the role-play workspace.",
   "play.sidebar.timelineErrors": "{count} playthrough timelines could not be read.",
+  "play.sidebar.missingSessionHistory": "This DSH environment is missing session logs referenced by older playthroughs. The RP workspace stores references only; use the original DSH data directory or restore the corresponding logs from backup. Existing playthroughs are preserved, and you can still create new ones.",
   "play.chat.label": "RP View",
   "play.chat.loading": "Loading playthrough\u2026",
   "play.chat.failure": "An error occurred. Switch to the Chat view for more information.",
@@ -8714,6 +8716,7 @@ async function loadPlaySidebarResources(client) {
     } catch (reason) {
       diagnostics.push({
         playthroughId: playthrough.id,
+        ...typeof reason?.code === "string" ? { code: reason.code } : {},
         path: playthrough.path,
         message: reason instanceof Error ? reason.message : String(reason)
       });
@@ -9004,17 +9007,22 @@ function latestCharacterPlaythrough(catalog2, characterId) {
   return latest;
 }
 async function playthroughIsReusable(client, playthrough) {
-  const sessionId = rootSessionId4(playthrough);
-  const timeline = await client.getTimeline(playthrough);
-  if ((timeline?.nodes?.length ?? 0) > 0) return false;
-  if (sessionId === null) {
-    return playthrough?.ext?.pmpDshTavern?.importContextPath === void 0 && timeline?.ext?.pmpDshTavern?.importContextPath === void 0;
+  try {
+    const sessionId = rootSessionId4(playthrough);
+    const timeline = await client.getTimeline(playthrough);
+    if ((timeline?.nodes?.length ?? 0) > 0) return false;
+    if (sessionId === null) {
+      return playthrough?.ext?.pmpDshTavern?.importContextPath === void 0 && timeline?.ext?.pmpDshTavern?.importContextPath === void 0;
+    }
+    const imported = await loadPlaythroughImportContext(client, sessionId, playthrough, timeline);
+    if (Array.isArray(imported.document?.qa) && imported.document.qa.length > 0) return false;
+    const history = await client.getMessages(sessionId);
+    if (history?.incompleteTurn === true) return false;
+    return !(history?.messages ?? []).some((message) => message?.role === "user" || message?.role === "assistant");
+  } catch (reason) {
+    if (reason?.code === "PLAY_SESSION_NOT_FOUND") return false;
+    throw reason;
   }
-  const imported = await loadPlaythroughImportContext(client, sessionId, playthrough, timeline);
-  if (Array.isArray(imported.document?.qa) && imported.document.qa.length > 0) return false;
-  const history = await client.getMessages(sessionId);
-  if (history?.incompleteTurn === true) return false;
-  return !(history?.messages ?? []).some((message) => message?.role === "user" || message?.role === "assistant");
 }
 function nextPlaythroughNumber(catalog2, characterId) {
   let maximum = 0;
@@ -11528,6 +11536,7 @@ function PlayWorkspaceBrowser({
     ) : null,
     status === null ? null : h10("p", { className: "dtv-play-status", "data-error": true }, status.key ? uiMessage(status.key) : rawText(status.message)),
     (resources?.diagnostics.length ?? 0) === 0 ? null : h10("p", { className: "dtv-play-status", "data-error": true }, uiMessage("play.sidebar.timelineErrors", { count: resources.diagnostics.length })),
+    resources?.diagnostics.some((item) => item.code === "PLAY_SESSION_NOT_FOUND") ? h10("p", { className: "dtv-play-status", "data-error": true }, uiMessage("play.sidebar.missingSessionHistory")) : null,
     ...(resources?.diagnostics ?? []).map((diagnostic) => h10("p", {
       key: diagnostic.playthroughId,
       className: "dtv-play-status",

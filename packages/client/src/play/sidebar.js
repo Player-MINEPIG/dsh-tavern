@@ -586,6 +586,9 @@ export function PlayWorkspaceBrowser({
     ) : null,
     status === null ? null : h('p', { className: 'dtv-play-status', 'data-error': true }, status.key ? uiMessage(status.key) : rawText(status.message)),
     (resources?.diagnostics.length ?? 0) === 0 ? null : h('p', { className: 'dtv-play-status', 'data-error': true }, uiMessage('play.sidebar.timelineErrors', { count: resources.diagnostics.length })),
+    resources?.diagnostics.some(item => item.code === 'PLAY_SESSION_NOT_FOUND')
+      ? h('p', { className: 'dtv-play-status', 'data-error': true }, uiMessage('play.sidebar.missingSessionHistory'))
+      : null,
     ...(resources?.diagnostics ?? []).map(diagnostic => h('p', {
       key: diagnostic.playthroughId,
       className: 'dtv-play-status',

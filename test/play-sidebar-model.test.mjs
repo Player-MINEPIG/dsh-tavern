@@ -4,6 +4,7 @@ import {
   SessionCharacterBindingCache,
   assessPlaythroughCharacterRelink,
   loadSessionCharacterBindings,
+  loadPlaySidebarResources,
   playthroughFocusTarget,
   projectPlaySidebar,
   requiresSystemWorkspaceConfirmation,
@@ -299,4 +300,25 @@ test('ordinary-session notice follows workspace membership before stale card bin
     selection: { selection: { characterCardId: 'character-a' } },
   }), true)
   assert.equal(shouldShowUnboundNotice({ workspace, session: null, selection: null }), false)
+})
+
+
+test('sidebar preserves missing-session diagnostics while loading other timelines', async () => {
+  const catalog = { playthroughs: [
+    { id: 'old', path: 'card/old/timeline.json' },
+    { id: 'new', path: 'card/new/timeline.json' },
+  ] }
+  const resources = await loadPlaySidebarResources({
+    async getWorkspace() { return { selected: true } },
+    async getCharacters() { return { characters: [] } },
+    async getCatalog() { return catalog },
+    async getTimeline(playthrough) {
+      if (playthrough.id === 'old') throw Object.assign(new Error('old session missing'), { code: 'PLAY_SESSION_NOT_FOUND' })
+      return { nodes: [] }
+    },
+  })
+  assert.deepEqual(resources.catalog, catalog)
+  assert.deepEqual(resources.timelines, { 'card/new/timeline.json': { nodes: [] } })
+  assert.deepEqual(resources.diagnostics, [{ playthroughId: 'old', path: 'card/old/timeline.json',
+    code: 'PLAY_SESSION_NOT_FOUND', message: 'old session missing' }])
 })

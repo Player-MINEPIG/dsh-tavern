@@ -17,6 +17,22 @@ For the retained public coordinate query API, start with [requests, fields, and 
 
 The full API prefix is `/pmp-dsh-tavern/api`. Existing IDs, head, external extensions, and CAS revision semantics remain intact.
 
+## Opening an old workspace in a different DSH environment
+
+The RP workspace's `catalog.json` and `timeline.json` store playthrough structure
+and Session references. Actual message logs belong to the DSH_HOME used when the
+Sessions were created. Loading the workspace does not copy those logs into a new home.
+A `session "…" not found` error means the current Host cannot find that Session;
+it can occur even with V3 timeline references and differs from
+`PLAY_COORDINATES_MIGRATION_REQUIRED`.
+
+Recover old playthroughs by using the original DSH data directory, or backing up and
+restoring the relevant logs and inheritance dependencies, then performing any needed
+coordinate migration. Do not clear timelines or replace old Session IDs to hide the
+error. The 2.3.0 candidate allows a new playthrough when an old Session is missing;
+it preserves the old run and reports missing history instead of overwriting it as
+an empty run. Other read errors still propagate.
+
 ## Why migration is necessary
 
 DSH 0.1.2-rc.1 writes V0 logs. Its official V0→V1→V2→V3 chain collapses assistant chunks at V1→V2 and inserts system messages at V2→V3, changing sequence positions and inherited cuts. It remaps recognized references inside its own log, not Tavern's external JSON. The number of insertions varies with prompt changes. Retaining the original historical log does not make V3 writes readable by older Hosts.

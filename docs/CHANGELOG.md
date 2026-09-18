@@ -2,6 +2,8 @@
 
 ## 2.3.0 — Candidate, not released — Prompt assembly Trace
 
+- Fix new-playthrough creation when an older workspace references sessions absent from the current DSH home. A missing session makes that old run ineligible for empty reuse; its references remain unchanged and a new run can be created. Map the official direct `ApiSessionNotFound` error to `404 PLAY_SESSION_NOT_FOUND`, and explain missing logs in the sidebar. Other errors, including coordinate migration failures, still propagate.
+
 - Expand existing preset/character/lore blocks into official named sections without changing ordinary prompt text or preset order; capture mixed-source relationships during assembly.
 - Add small, read-only v3 primitives for capabilities, historical indexes and details. Current resources/configuration remain in v1; the unpublished `/sources` aggregate and its capability fields have been removed. No composer ownership registry; released v1/v2 remain available.
 - Capture per-turn/step/attempt snapshots, verify against the LLM-boundary system message, preserve unknown/complete-override distinctions, and retain bounded local history across restart.

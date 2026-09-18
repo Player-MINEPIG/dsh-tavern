@@ -8,7 +8,13 @@ export function mapHostError(error) {
   if (code === 'session/fork-unavailable' || code === 'fork-unavailable' || code === 'OPEN_TURN') {
     return httpError(409, message, 'PLAY_FORK_UNAVAILABLE')
   }
-  if (code === 'session/not-found' || code === 'session-not-found') return httpError(404, message, 'PLAY_SESSION_NOT_FOUND')
+  // Direct SessionController.inspect uses the public ApiSessionNotFound class
+  // (no code/name override in DSH 0.1.2/0.1.5); Remote calls use session/not-found.
+  // Match the nominal type, never the localized error message.
+  if (code === 'session/not-found' || code === 'session-not-found'
+    || (error instanceof Error && error.constructor?.name === 'ApiSessionNotFound')) {
+    return httpError(404, message, 'PLAY_SESSION_NOT_FOUND')
+  }
   if (code === 'workspace/not-found' || code === 'workspace-not-found') return httpError(404, message, 'PLAY_WORKSPACE_NOT_FOUND')
   if (code === 'workspace/invalid-path' || code === 'workspace-invalid-path') return httpError(400, message, 'PLAY_WORKSPACE_INVALID')
   if (code === 'session/workspace-attach-failed' || code === 'workspace-attach-failed') {

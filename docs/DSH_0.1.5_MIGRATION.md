@@ -17,6 +17,18 @@
 
 完整前缀为 `/pmp-dsh-tavern/api`。原有 schema 字段、CAS revision、timeline 节点/variant ID、head 与外部扩展保留。
 
+## 在另一套 DSH 环境打开旧工作区
+
+RP 工作区的 `catalog.json` 和 `timeline.json` 保存周目结构与会话引用，实际消息日志在
+创建会话时的 DSH_HOME 中。只加载旧工作区不会把原会话复制到新环境。
+`session "…" not found` 表示当前 Host 找不到该会话；即使 timeline 已标为 V3，也会出现此错误，
+这与 `PLAY_COORDINATES_MIGRATION_REQUIRED` 不同。
+
+恢复旧周目需要使用原 DSH 数据目录，或备份后恢复相关日志及其继承依赖，再处理确实需要的
+坐标迁移。不要清空 timeline 或把旧会话 ID 改成新 ID 来消除报错，否则会失去历史关联。
+2.3.0 候选允许在旧会话缺失时新建周目；旧周目保留并显示缺失提示，不会被当成空周目覆盖。
+其他读取错误仍需处理，不会自动忽略。
+
 ## 为什么旧范围不能直接复用
 
 DSH 0.1.2-rc.1 使用 V0 日志。官方 V0→V1→V2→V3 迁移中，V1→V2 会合并 assistant 分片，V2→V3 会插入 system message，改变 seq 和继承切点。DSH 只迁移日志内它认识的引用，不负责 Tavern 的外部 JSON。迁移次数依赖提示词变更，不能简单为所有序号加同一个常量。DSH 保留旧格式原日志，但 V3 新写入不能通过降级旧 Host 读取。

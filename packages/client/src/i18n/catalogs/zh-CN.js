@@ -117,6 +117,7 @@ export default Object.freeze({
   "play.notice.unbound": "本会话暂未绑定到指定 RP 工作区内的周目；可以正常对话。进入角色卡下的周目后，才会启用开场白、回复切换、显示编辑与周目导入/导出。",
   "play.sidebar.sessionMissing": "该周目在角色扮演工作区中没有可用会话。",
   "play.sidebar.timelineErrors": "有 {count} 个周目的 timeline 无法读取。",
+  "play.sidebar.missingSessionHistory": "当前 DSH 环境缺少旧周目引用的会话日志。RP 工作区只保存引用；请使用原 DSH 数据目录，或从备份恢复对应日志。旧周目已保留，仍可新建周目。",
   "play.chat.label": "RP视图",
   "play.chat.loading": "正在读取本周目记录…",
   "play.chat.failure": "出现错误，请切换到「对话」视图查看更多信息。",

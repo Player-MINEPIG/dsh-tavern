@@ -328,3 +328,43 @@ test('a nonempty latest playthrough does not reuse an older empty one', async ()
   assert.equal(result.playthrough.title, '3周目')
   assert.equal(client.calls.filter(call => call[0] === 'postSession').length, 1)
 })
+
+for (const failureAt of ['timeline', 'history']) {
+  test(`a missing session during ${failureAt} reuse checks does not block a new playthrough or rewrite the old one`, async () => {
+    const old = {
+      id: 'pt-old', path: 'character-a/pt-old/timeline.json', title: '2周目',
+      ext: { pmpDshTavern: { characterId: 'character-a', rootSessionId: 'missing-session', playthroughNumber: 2 }, external: { keep: true } },
+    }
+    const preserved = structuredClone(old)
+    let catalog = { playthroughs: [old] }
+    const client = fakeClient()
+    const missing = () => { throw Object.assign(new Error('session missing'), { code: 'PLAY_SESSION_NOT_FOUND', status: 404 }) }
+    const getTimeline = client.getTimeline.bind(client)
+    client.getCatalog = async () => structuredClone(catalog)
+    client.putCatalog = async next => { catalog = structuredClone(next) }
+    client.getTimeline = async playthrough => playthrough.id === old.id
+      ? failureAt === 'timeline' ? missing() : { nodes: [] }
+      : getTimeline(playthrough)
+    client.getMessages = missing
+    const result = await createCharacterPlaythrough(client, { character: { id: 'character-a' }, ...dependencies })
+    assert.equal(result.reused, false)
+    assert.equal(result.playthrough.title, '3周目')
+    assert.equal(result.sessionId, 'session-new')
+    assert.deepEqual(catalog.playthroughs[0], preserved)
+    assert.equal(catalog.playthroughs.length, 2)
+    assert.equal(client.calls.filter(call => call[0] === 'postSession').length, 1)
+    assert.ok(client.calls.filter(call => call[0] === 'putTimeline').every(call => call[1] !== old.path))
+  })
+}
+
+for (const code of ['PLAY_COORDINATES_MIGRATION_REQUIRED', 'PLAY_PATH_NOT_FOUND', 'PLAY_HOST_ERROR', 'FORBIDDEN']) {
+  test(`reuse check still rejects ${code} without creating a session`, async () => {
+    const client = fakeClient()
+    const reason = Object.assign(new Error(code), { code })
+    client.getCatalog = async () => ({ playthroughs: [{ id: 'old', path: 'character-a/old/timeline.json',
+      ext: { pmpDshTavern: { characterId: 'character-a', rootSessionId: 'old-root' } } }] })
+    client.getTimeline = async () => { throw reason }
+    await assert.rejects(createCharacterPlaythrough(client, { character: { id: 'character-a' }, ...dependencies }), error => error === reason)
+    assert.equal(client.calls.length, 0)
+  })
+}

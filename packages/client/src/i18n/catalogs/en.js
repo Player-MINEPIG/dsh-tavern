@@ -117,6 +117,7 @@ export default Object.freeze({
   "play.notice.unbound": "This session is not attached to a playthrough in the selected RP workspace. You can keep chatting normally; enter a character playthrough to enable greetings, swipes, display edits, and playthrough import/export.",
   "play.sidebar.sessionMissing": "This playthrough has no available session in the role-play workspace.",
   "play.sidebar.timelineErrors": "{count} playthrough timelines could not be read.",
+  "play.sidebar.missingSessionHistory": "This DSH environment is missing session logs referenced by older playthroughs. The RP workspace stores references only; use the original DSH data directory or restore the corresponding logs from backup. Existing playthroughs are preserved, and you can still create new ones.",
   "play.chat.label": "RP View",
   "play.chat.loading": "Loading playthrough…",
   "play.chat.failure": "An error occurred. Switch to the Chat view for more information.",

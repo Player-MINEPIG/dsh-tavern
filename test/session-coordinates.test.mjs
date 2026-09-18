@@ -2,7 +2,9 @@ import test from 'node:test'
 import assert from 'node:assert/strict'
 import { mkdtempSync, rmSync } from 'node:fs'
 import { tmpdir } from 'node:os'
-import { join } from 'node:path'
+import { join, resolve } from 'node:path'
+import { createRequire } from 'node:module'
+import { pathToFileURL } from 'node:url'
 import { sessionCoordinates, requireCoordinates, validateTimelineCoordinates } from '../packages/play/src/session-coordinates.js'
 import { migrateTimelineCoordinates, migrateImportCoordinates } from '../packages/play/src/coordinate-migration.js'
 import { TavernTraceRecorder, TavernTraceStore } from '../packages/tavern-trace/src/index.js'
@@ -108,4 +110,23 @@ test('an assembly rejection preserves an old claimed import binding at turn end'
     assert.equal(runtime.consumeAfterTurn('s', { type: 'turn/end', seq: 9, data: { turn: 1 } }, session), false)
     assert.deepEqual(runtime.state, before)
   } finally { rmSync(dir, { recursive: true, force: true }) }
+})
+
+
+test('direct Host missing-session errors are typed 404s, not generic failures', async () => {
+  class ApiSessionNotFound extends Error {}
+  const host = createPlayHost({ sessionController: { inspect: async () => { throw new ApiSessionNotFound('missing') } } })
+  await assert.rejects(host.coordinates('missing'), { code: 'PLAY_SESSION_NOT_FOUND', status: 404 })
+  await assert.rejects(host.history({ sessionId: 'missing' }), { code: 'PLAY_SESSION_NOT_FOUND', status: 404 })
+  const broken = createPlayHost({ sessionController: { inspect: async () => { throw new Error('session "missing" not found') } } })
+  await assert.rejects(broken.coordinates('missing'), { code: 'PLAY_HOST_ERROR', status: 502 })
+})
+
+const runtimeRoot = process.env.DSH_TAVERN_COMPAT_ROOT
+test('official DSH ApiSessionNotFound maps consistently through the Host port', { skip: !runtimeRoot }, async () => {
+  const require = createRequire(join(resolve(runtimeRoot), 'package.json'))
+  const { ApiSessionNotFound } = await import(pathToFileURL(require.resolve('@deepseek-ai/dsh-api-session-controller')))
+  const host = createPlayHost({ sessionController: { inspect: async () => { throw new ApiSessionNotFound('missing') } } })
+  await assert.rejects(host.coordinates('missing'), { code: 'PLAY_SESSION_NOT_FOUND', status: 404 })
+  await assert.rejects(host.history({ sessionId: 'missing' }), { code: 'PLAY_SESSION_NOT_FOUND', status: 404 })
 })

@@ -74,20 +74,27 @@ function latestCharacterPlaythrough(catalog, characterId) {
 }
 
 export async function playthroughIsReusable(client, playthrough) {
-  const sessionId = rootSessionId(playthrough)
-  const timeline = await client.getTimeline(playthrough)
-  if ((timeline?.nodes?.length ?? 0) > 0) return false
-  if (sessionId === null) {
-    return playthrough?.ext?.pmpDshTavern?.importContextPath === undefined
-      && timeline?.ext?.pmpDshTavern?.importContextPath === undefined
+  try {
+    const sessionId = rootSessionId(playthrough)
+    const timeline = await client.getTimeline(playthrough)
+    if ((timeline?.nodes?.length ?? 0) > 0) return false
+    if (sessionId === null) {
+      return playthrough?.ext?.pmpDshTavern?.importContextPath === undefined
+        && timeline?.ext?.pmpDshTavern?.importContextPath === undefined
+    }
+
+    const imported = await loadPlaythroughImportContext(client, sessionId, playthrough, timeline)
+    if (Array.isArray(imported.document?.qa) && imported.document.qa.length > 0) return false
+
+    const history = await client.getMessages(sessionId)
+    if (history?.incompleteTurn === true) return false
+    return !(history?.messages ?? []).some(message => message?.role === 'user' || message?.role === 'assistant')
+  } catch (reason) {
+    // A workspace can outlive the DSH home that owns its sessions. Preserve its
+    // references for recovery, but do not let a missing session block a new run.
+    if (reason?.code === 'PLAY_SESSION_NOT_FOUND') return false
+    throw reason
   }
-
-  const imported = await loadPlaythroughImportContext(client, sessionId, playthrough, timeline)
-  if (Array.isArray(imported.document?.qa) && imported.document.qa.length > 0) return false
-
-  const history = await client.getMessages(sessionId)
-  if (history?.incompleteTurn === true) return false
-  return !(history?.messages ?? []).some(message => message?.role === 'user' || message?.role === 'assistant')
 }
 
 export function nextPlaythroughNumber(catalog, characterId) {
