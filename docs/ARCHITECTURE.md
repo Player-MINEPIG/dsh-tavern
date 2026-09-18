@@ -14,6 +14,14 @@
 
 展示层通过 DSH `0.1.5-rc.1` 的公开 `useChat` timeline 读取最新回合的 `turn/end.reason.kind === 'error'`，并汇总 `useSession` 的 `promptError`、`lastAgentError` 和 `openError`。只显示随 Tavern 语言变化的统一提示，详细诊断保留在原生“对话”视图；不匹配提供方错误文本、不保存第二份错误历史。新提交和生成期间隐藏旧回合提示，后续回合开始、成功或主动取消不会继续显示历史失败；当前 Session 错误不被 busy 状态掩盖。浏览器崩溃和未到达这些公开入口的连接故障不属于此提示的保证范围。
 
+## 当前工作区诊断
+
+`packages/client` 组合根持有一个诊断 controller，侧栏与 **DT → 诊断** 共享工作区、catalog 和 timeline 读取结果；模式切换不会重新创建诊断状态。面板在 native/play 两种模式均可打开，提供原因、恢复建议、可展开的技术详情、重新检查及 JSON 报告复制。侧栏只显示可关闭摘要与逐周目的警告入口。
+
+诊断同时覆盖文件读取失败和“timeline 可读但没有可用会话”：后者在官方 `useSessions` / `useWorkspaces` mirrors 均为 `ready` 后，复用侧栏的工作区归属与归档过滤投影。空 timeline 也要检查 root session，不能由行号或读取成功推断正常；尚未就绪的 mirror 不证明会话缺失。官方状态变化会重新计算，已解决的问题自动消失；新一轮读取使较早的异步结果失效。
+
+这是当前问题投影，不是历史日志，也不新增 HTTP API。`sessionStorage` 只保存有界的摘要关闭身份（工作区、周目、错误码），不保存错误正文、资源或对话内容。关闭摘要不删除问题或警告按钮；同一问题在刷新和模式切换后仍保持关闭，确认解决后再出现才重新提醒。复制报告包含工作区路径、周目/会话标识及错误详情，分享前应检查这些信息。
+
 ## 决策结论
 
 `dsh-tavern` 保持为一个可安装的 DSH 插件，在同一仓库和发布包内拆成单向依赖的内部层。preset、角色卡、用户、独立世界书和 Tavern Trace 均由统一 loader/client 组合；不要求用户安装多个互相配套的 DSH 插件。
@@ -90,6 +98,7 @@ DSH `0.1.5-rc.1` 的 `agent/inbox/spliced` 是公开、持久的 Session event�
 - `character`、`user` 和 `world-book-library` 不复制 pending 状态，也不改变各自存储模型；
 - `tavern-trace` 接收装配 snapshot，但 schema 4 落盘前删除 section/context/system message/source 正文，只保留 metadata 与官方引用；详情读取时冷查 DSH 历史，不保存完整 ActivationContext；
 - Trace 引用使用官方事件视图的逻辑 seq/message/range，不是压缩日志文件字节偏移；每个详情请求执行一次 cold inspect，长会话有读取成本，不承诺随机访问或 O(1)；
+- 失败原因以独立 `failureRef` 指向官方失败事件，不复制错误正文，也不扩大提示词引用的读取截点；详情核验失败引用后才返回原因。失败引用不可用不影响仍可验证的提示词段落；
 - `packages/client` 不参与捕获，避免浏览器刷新或多窗口决定运行语义；
 - loader 必须处理 cancel/replace/steer、多个 target、异常清理与下一 step 去重。
 
@@ -112,6 +121,7 @@ DSH `0.1.5-rc.1` 的 `agent/inbox/spliced` 是公开、持久的 Session event�
 | --- | --- | --- |
 | DT 悬浮入口 | `shell.overlay` additive slot、Cordis effect 生命周期 | 球体、菜单内容和全局 chrome 状态是产品 UI；不向 `document.body` 另建失控根节点 |
 | 魔丸侧边栏 | `sidebar.workspaces` slot；owner 注入的 `useSessions` / `useWorkspaces`；`ctx.sessions.open()` | 只重组为角色卡 / 周目投影，不改写、不归档、不隐藏 Host session 数据 |
+| 工作区诊断 | `useSessions` / `useWorkspaces` 公开 mirrors；现有 v1/v2 资源及受管文件读取 | 与侧栏共享当前问题，mirrors 就绪后判断会话可用性；不复制 Host 日志、不提供新的诊断 API |
 | DSH 外层新会话 | DSH `0.1.5-rc.1` sidebar shell 自有；无供 Tavern 接管点击的公开 slot/service | Tavern 不用哈希 class、DOM capture 或源码替换接管；魔丸保留原生按钮并在文档中标为不推荐，普通区 `+` 只引导返回 native |
 | 普通会话提示 | `conversation.input.dock` 独立整行 slot、继承的 `--dsh-composer-card-max-width` | 仅显示 Tavern 的 RP 工作区分类结果；提示按 Host composer 宽度居中，不接管原生 composer、不复制固定像素或读取哈希 class |
 | 魔丸对话页 | `conversation.view` slot；`useChat` 的 `legacy.nodes/partial` 与 `timeline`；`useSession` 的生命周期和错误字段 | 周目跨 session 聚合是 Tavern 投影；不伪造 DSH 消息，不读取私有 runtime |
@@ -131,7 +141,7 @@ DSH `0.1.5-rc.1` 的 `agent/inbox/spliced` 是公开、持久的 Session event�
 以下行为属于当前实现及其公开依赖边界：
 
 - 用户与 assistant 正文不直接迁移到 `MessageText` / `MarkdownText`。未覆盖消息从 DSH 权威 content 按“宏替换 → ST 显示正则（全局 → 预设 → 角色卡，各来源保持数组顺序）→ Marked 18.0.10 → DOMPurify”执行浏览器显示管线；因此自定义/XML 包裹标签不会阻断其内部 Markdown，嵌套标签和 ST 的宽松引用代码围栏语义也能保留。规则页只允许同来源拖拽，保存后全局写工作区文档，资源规则写回原生 `regex_scripts` 数组。DSH `MarkdownText` 会省略 raw HTML，不能作为 ST HTML 兼容渲染器；以后升级 Marked、清理策略或复用 DSH 低层能力，必须分别对照 ST 输出与恶意 HTML 用例，证明不会改变 Tavern 显示语义或越过 sanitizer 后再单独验收。
-- details 使用独立块解析保留内部 Markdown，原始 HTML 布局不插入 Markdown 换行。含 style 的净化结果由 `rich-text-styles.js` 包装为每条消息的 Shadow DOM，外层使用布局/绘制 containment；React ref 在插入/更新后挂载，静态导出使用相同的声明式根。模板脚本始终禁止。浏览器验证：`node scripts/verify-rich-text-browser.mjs`（Chrome/Chromium，可设置 `CHROME_PATH`）。
+- details 使用独立块解析保留内部 Markdown，原始 HTML 布局不插入 Markdown 换行。闭合的无语言/html 围栏中，完整 HTML 文档按静态模板渲染，普通代码片段保留源码。含 style 的净化结果由 `rich-text-styles.js` 放入 Shadow DOM，完整文档逐个隔离并适配根选择器，外层使用布局/绘制 containment；React ref 在插入/更新后挂载，静态导出使用相同的声明式根。模板脚本始终禁止，变量运行时未实现。浏览器验证：`node scripts/verify-rich-text-browser.mjs`（Chrome/Chromium，可设置 `CHROME_PATH`）。
 - 魔丸不渲染 reasoning 或 runtime context，也不提供展开入口；用户需要运行细节时回到 DSH 原生“对话”。操作按钮只能依赖公开图标与 `Tooltip` 等接口；DSH bundle 内未公开的 `ReasoningRow`、`MessageIconActions` 不属于可依赖接口。
 - DSH 的模型消息 `role` 与界面来源不是同一维度：公开 ConversationNode 已把运行时注入表示为 `kind: "context"`，但持久 history 投影仍可能给它 `role: "user"`。v2 因此在不改变 `role` 的前提下增加 additive `origin.kind`，并保留 `producer` / `form` / `summary` 等可选来源元数据。RP 前端必须按 `origin` 投影气泡、隐藏/单独呈现上下文和计算动作能力，不能靠文本、位置或“是否最后一段输出”猜测。
 - timeline 以 `parentVariantId` 与活动 `head` 表示树状分支；显示、focus 和新 QA 对账只沿 head 的祖先路径工作。head 的 session 可以是刚 branch、尚无新 QA 的 continuation anchor，因此侧栏归类也必须把 head session 视为周目成员。旧平面 timeline 继续可读，下一次对账进入树结构。

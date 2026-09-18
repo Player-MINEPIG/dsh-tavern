@@ -74,6 +74,10 @@ export function apply(ctx) {
 
 RP 错误提示同时订阅 `useSession` 的 `promptError/lastAgentError/openError` 和 `useChat` 的最新 `timeline` 回合终态。后者与原生 `turn-error` 节点使用同一 `turn/end` 错误事实，且能排除没有 assistant 消息的新回合。不要扫描全部历史错误后永久挂起提示；新提交/运行期间隐藏旧回合失败，但不能掩盖当前 Session 错误。统一文案走 Tavern i18n，详细诊断留在原生对话视图。
 
+**DT → 诊断** 另行展示当前 RP 工作区问题：它与内置侧栏共享资源/文件读取，并在官方 Session、Workspace mirrors 均为 `ready` 后判断周目会话是否存在、属于当前工作区且未归档。可读的空 timeline 不代表 root session 可用；加载中的 mirror 也不代表会话丢失。问题摘要可以关闭，逐周目警告入口仍保留，解决后自动消失。控制器由客户端组合根持有，native/play 切换不重置它；`sessionStorage` 只保留有界的关闭身份，不保存问题正文或资源副本。
+
+这个诊断面板是现有接口与官方状态的客户端组合，不是新增的 v3 API 或共享日志服务。第三方可以复用同样的公开来源自行呈现问题，无需依赖 Tavern 的内部 controller。复制报告包含工作区路径、对象标识和错误详情；后端写操作的 `ctx.logger` / `operationId` 与原生回合错误仍保留各自职责。
+
 ## 5. HTTP v2 数据面
 
 DSH `0.1.5-rc.1` 的嵌入式客户端需分别读取：`useSession` 的生命周期、`useChat` 的 `legacy.nodes/partial`、`useConversation` 的交互状态。开场阶段用包根导出的 `conversationPhase(session, conversation)`；默认 view 使用 `conversation.session` 的 Conversation store，不是原生 Chat store。普通 HTTP 前端不使用这些浏览器 hook。Tavern UI 设置事件只刷新产品呈现，不能代替 Host 实时消息源。

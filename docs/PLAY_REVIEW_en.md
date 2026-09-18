@@ -17,6 +17,7 @@ for current verification results and release gates. [中文](PLAY_REVIEW.md)
 | Display regex | Order is global→preset→character, with reordering within each source only. Rules affect RP display, not DSH originals. Hiding variable-update blocks does not require a variable runtime; that runtime itself is unsupported. |
 | Rich text | Markdown, nested details, HTML and isolated CSS are supported. Complete HTML documents in closed unlabeled/html fences render as individually isolated static templates; ordinary code fragments remain literal. Template JavaScript, dangerous events and unsafe links are filtered; MVU and other variable APIs are not implemented. Static HTML exports use the same rendering boundary. |
 | Views and errors | RP consumes the official Chat message projection and hides reasoning/context. Conversation owns phase and view selection. Native Chat retains diagnostics; RP shows a localized terminal-error notice. |
+| Workspace diagnostics | DT → Diagnostics shares current reads with the sidebar and provides causes, recovery advice, recheck and report copying. Failed files and runs without an available Session both receive warnings. Session checks wait for ready official mirrors and include empty timelines. Dismissing the summary keeps issues available without repeating the same alert after refresh or mode switches; resolved issues disappear. |
 | Workspace admission | Missing bindings, invalid candidates and read failures block RP workspace content. Candidates come from public DSH workspaces, require selection and read-back verification, and are not duplicated in browser storage. Retry or return to native mode. |
 
 ## Consistency and security boundaries
@@ -36,6 +37,9 @@ for current verification results and release gates. [中文](PLAY_REVIEW.md)
 - Lifecycle writes use Cordis `ctx.logger` for request-local operation IDs, stages, codes
   and duration without bodies. Clients recover through completed stages, read-back and
   stable errors. These logs are not a persistent audit journal.
+- Workspace diagnostics project only current problems, adding no backend log or API.
+  Bounded `sessionStorage` entries store dismissed-summary identities, not error bodies
+  or resources. Copied reports contain workspace paths, playthrough/Session identifiers and error details.
 - Imported context is marked untrusted. Greetings, imported QA, display overrides and
   timelines never fabricate DSH messages. Native Sessions/history remain usable after removal.
 
@@ -53,6 +57,9 @@ See [API](API_en.md), [usage](USAGE_en.md), [security](../SECURITY_en.md) and th
    greeting boundaries, first send, streaming/completed output, regex/rich text, swipe
    continuations, branch/rollback, import rebinding and export. Reload a valid branch in
    a workspace with missing logs: RP must remain available and new runs must be creatable.
+   Check that failed reads and empty timelines without an available Session both show warnings,
+   while healthy runs do not. Dismissing the summary must keep per-run and DT diagnostics accessible
+   across rechecks, mode switches and refreshes. Verify report copying and removal of resolved issues.
 4. **Concurrency and failure.** Check focus/SSE/poll convergence and CAS conflicts across
    two tabs; cancellation, failure/retry, import claim terminal semantics and partial-operation
    read-back recovery. Third-party plugins require their own integration acceptance.

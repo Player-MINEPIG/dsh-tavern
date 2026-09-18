@@ -13,6 +13,36 @@ DSH 官方 `system-prompt/assemble` 观察、调整和贡献段落，通过 `llm
 读取；历史 `sections[].sources` 只描述当时的段落级来源关系。正式发布的 v1/v2 路由保持兼容。
 API v3、Tavern 2.3.0 与 DSH 日志格式 V3 是三个独立版本号。
 
+## 消费方读取路径与兼容边界
+
+| 需要的内容 | 读取时机与入口 | 边界 |
+| --- | --- | --- |
+| 当前卡片、预设、用户、世界书原文与绑定 | 装配前通过 v1 配置预览及资源接口读取 | 当前数据，不是某个历史轮次的快照 |
+| 本轮装配后的具名段落 | DSH `system-prompt/assemble` waterfall 中读取 `await next()` 的结果 | 可以同步处理该次结果并返回重排后的 sections；不需要从历史 v3 记录为本轮预取正文 |
+| 已记录请求的段落/context 正文 | v3 `/sessions/:id/assemblies/:recordId` | 官方历史引用验证成功后返回；不是运行期组合输入接口 |
+| 某条来源在装配前的原始字段正文 | 当前字段用 v1；历史字段没有新增归档接口 | schema 4 不返回 `source.text`，其 `textStatus` 为 `not-stored`；不能以官方段落或当前资源冒充历史原字段 |
+
+官方段落可以经过宏展开、角色覆盖或多个来源混合。因此“读取对应的官方段”得到的是该段的
+装配结果，并不等于取回某一个来源字段的原文。特别是 `{{original}}` 混合段，不能按名字或
+字符数把正文重新拆成来源字段。schema 4 选择不再保存来源正文；这不是等待完成的占位能力。
+
+当前具名段落遵循本文说明的 `pmp-dsh-tavern:part:<ordinal>:<kind>:<field>` 形式。
+ordinal 至少补齐四位，随本次实际段落顺序变化；kind/field 来自首个来源，不是所有贡献者的清单。
+名字可用于识别当前候选的 Tavern 段，但不是跨轮次、跨版本的资源身份，也不保证一段只含一个字段。
+按字段调整段落的插件应识别目标版本/合同，检查匹配结果；零匹配或歧义时明确提示，不能静默
+贡献空段或复用上一轮缓存。来源归属以记录的 `sources[]` 为准。
+
+需要调整本轮顺序时，可以使用官方 waterfall 返回当前装配结果；同步 section provider 的限制
+不意味着必须先异步读取 HTTP 历史。waterfall 的实际执行顺序及其他插件的后续修改仍会影响结果，
+本 API 不保证某个插件的段落永远排在最后。最终系统文本需要在 `llm/stream` 边界核对，参见
+[官方观察示例](examples/official-prompt-observer.mjs)。只读 HTTP 消费方本身不能通过 v3 修改本轮装配。
+
+已发布的 v1/v2 文档路由与响应语义继续是公开合同，包括 v1 世界书决策审计；内部存储布局、
+DOM 和未文档化服务不属于 HTTP 合同。当前 v3 仍是未发布候选，应固定候选提交并检查
+`capabilities.contract === "prompt-trace-primitives"`，不能仅凭 `apiVersion: 3` 判断与旧组合器候选兼容。
+旧候选的 composer、owner/mode、`suggestedCallConfig` 与 `/sources` 聚合不在现合同内。
+正式版本的合同以对应 tag 的文档为准；新字段、可空字段和明确的 unavailable 状态须按文档处理。
+
 ## 最小只读 HTTP 接口
 
 根路径 `/pmp-dsh-tavern/api/v3`。所有接口只读，沿用现有 TCP peer、Host 与 Origin 检查，

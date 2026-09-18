@@ -15,6 +15,42 @@ resources, bindings, and configuration remain in v1. Historical `sections[].sour
 describes section-level relationships at capture time. Released v1/v2 routes remain
 compatible. API v3, Tavern 2.3.0, and DSH log format V3 are separate version numbers.
 
+## Consumer read paths and compatibility boundaries
+
+| Required content | Timing and interface | Boundary |
+| --- | --- | --- |
+| Current card, preset, user, lore source fields and bindings | v1 configuration preview and resource reads before assembly | Current data, not a snapshot of an earlier request |
+| Named sections assembled for this request | The result of `await next()` in the official `system-prompt/assemble` waterfall | Inspect and return reordered sections from that result; do not prefetch historical v3 bodies as input for this request |
+| Section/context bodies from a recorded request | v3 `/sessions/:id/assemblies/:recordId` | Returned after official-history reference verification; not a runtime composition-input API |
+| A source field's original pre-assembly body | v1 for current fields; no new historical source-body archive | Schema 4 omits `source.text` and sets its `textStatus` to `not-stored`; neither assembled sections nor current resources are historical source originals |
+
+Official sections may contain expanded macros, character overrides, or several mixed inputs. Reading an
+associated official section returns its assembled result, not necessarily one original field. In particular,
+`{{original}}` mixtures cannot be split back into source fields using names or counts. Not storing original
+source bodies is the schema 4 design, not an unfinished placeholder.
+
+Current section names follow `pmp-dsh-tavern:part:<ordinal>:<kind>:<field>` as documented here.
+The ordinal is padded to at least four digits and follows the current section order; kind/field name the
+first source, not all contributors. Names can identify Tavern sections in this candidate, but are not
+resource identities across requests or versions and do not guarantee one field per section. A plugin
+reordering fields should identify the target version/contract and check its matches. Report zero matches
+or ambiguity rather than silently contributing empty text or reusing a previous request's cache. Use the
+recorded `sources[]` for provenance.
+
+Return this request's assembly through the official waterfall to adjust its order. Synchronous section
+providers do not imply that historical HTTP records must be prefetched. Waterfall execution order and
+later plugins still affect the result; this API does not guarantee that one plugin always contributes the
+last section. Check final system text at `llm/stream`; see the [official observer](examples/official-prompt-observer.mjs).
+A read-only HTTP consumer cannot modify this request's assembly through v3 itself.
+
+Documented released v1/v2 routes and response semantics remain public contracts, including the v1
+world-book decision audit. Internal storage layouts, DOM, and undocumented services are not HTTP
+contracts. v3 is still an unpublished candidate: pin a candidate commit and check
+`capabilities.contract === "prompt-trace-primitives"`. `apiVersion: 3` alone does not establish compatibility
+with the former composer candidate. Composer, owner/mode, `suggestedCallConfig`, and the `/sources`
+aggregate are outside this contract. Released contracts are documented at their matching tags;
+handle added fields, nullability, and explicit unavailable states as documented.
+
 ## Minimal read-only HTTP surface
 
 Root: `/pmp-dsh-tavern/api/v3`. Existing TCP peer, Host, and Origin checks apply. All

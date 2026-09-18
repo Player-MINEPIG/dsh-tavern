@@ -106,6 +106,7 @@ npm run plugin:install
 | 周目数据 | DSH 权威 session、树状 timeline、工作区 catalog、外部记录首轮只读注入、静态 HTML 与 ST JSONL 导出 | [API](docs/API.md) · [架构](docs/ARCHITECTURE.md) |
 | 安全 | RP 权限叠加、同源/loopback API、工作区路径防护、CAS、DOMPurify、无正文 operation log | [RP 安全模式](docs/RP_SECURE_MODE.md) · [安全策略](SECURITY.md) |
 | 调试 | Tavern Trace 保存每次请求的段落/来源 metadata 与官方历史引用；详情按需验证并读取可恢复的段落正文，来源正文不另存 | [Trace API 与设计](docs/PROMPT_API_V3.md) |
+| 工作区诊断 | DT → 诊断集中显示当前 RP 工作区问题，支持重新检查、复制报告；侧栏摘要可关闭，异常周目保留独立警告入口 | [中文使用指南](docs/USAGE_zh-CN.md) |
 | 第三方开发 | v2 HTTP API、`pmpDshTavernChrome` 模式服务、DSH slots/store 与独立客户端接入 | [第三方 RP 前端接入](docs/FRONTEND_INTEGRATION_zh-CN.md) |
 
 ![切换首轮 swipe，同时恢复各自后续的用户输入与回复](docs/assets/market/07-swipe-paths.png)

@@ -52,6 +52,9 @@ DSH 历史以及 v2 `/sessions/:id/messages` 提供权威消息读取；v3 详�
 [配置预览](../packages/session-template/src/service.js)、[v1 预设/active 路由](../packages/preset/src/server.js)、
 [历史记录器](../packages/tavern-trace/src/assembly-recorder.js)、[Trace 客户端](../packages/tavern-trace/src/client.js)。
 
+公开合同与读取时机的速查见 [v3 消费方读取路径与兼容边界](PROMPT_API_V3.md#消费方读取路径与兼容边界)。
+官方装配段的正文不等于某个来源字段的原文；当前资源、历史段落和运行期装配不能互相替代。
+
 ## v2 稳定面
 
 前缀 `/pmp-dsh-tavern/api/v2`。

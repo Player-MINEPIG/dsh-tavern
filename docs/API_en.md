@@ -64,6 +64,10 @@ Audit evidence: [Trace API handler](../packages/tavern-loader/src/prompt-trace-a
 [historical recorder](../packages/tavern-trace/src/assembly-recorder.js),
 [Trace client](../packages/tavern-trace/src/client.js).
 
+For public contracts and read timing, see [consumer read paths and compatibility boundaries](PROMPT_API_V3_en.md#consumer-read-paths-and-compatibility-boundaries).
+An assembled section is not necessarily an original source field; current resources, historical sections,
+and runtime assembly are not interchangeable.
+
 ## v2 stable surface
 
 Prefix: `/pmp-dsh-tavern/api/v2`.
