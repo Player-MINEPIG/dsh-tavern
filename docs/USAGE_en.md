@@ -150,6 +150,14 @@ The playthrough ⋯ menu provides **Export static HTML** and **Export SillyTaver
 
 Import files and binding summaries live under the selected play workspace root. The server checks path, hash, and `schemaVersion: 1` / QA structure. The import parser does not summarize, slice QA, or apply a 256 KiB / 2,000 QA artificial cap. Context overflow is left to DSH/provider. Generic workspace files still have a 1 MiB file-layer limit.
 
+### Archive and restore playthroughs
+
+Choose **Archive playthrough** in a playthrough's `⋯` menu to remove it from the everyday list. **Archived playthroughs** at the bottom of the sidebar is collapsed by default; expand it to view a run or choose **Restore playthrough** to return it to its character. Viewing does not restore it automatically. An already open conversation stays open and any reply in progress continues.
+
+Archiving preserves the name, number, branches, display edits, external-record references, and session settings. Its sessions do not reappear as loose sessions in Mowan; a session shared with another active playthrough remains visible there. New runs do not reuse archived empty playthroughs and continue the existing numbering. Archived runs do not produce everyday diagnostic warnings; restoration checks them again.
+
+This organizes Tavern playthroughs only. It does not archive native DSH sessions, delete history, or reclaim disk space. Native DSH lists still expose the sessions. Older Tavern versions can read the same data but do not hide archived playthroughs.
+
 ## 8. Tavern Trace
 
 Tavern Trace is a sibling of Conversation and Trajectory. Each request record

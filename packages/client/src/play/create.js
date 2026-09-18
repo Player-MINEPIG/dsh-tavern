@@ -1,6 +1,7 @@
 import { characterIdFromSelection } from './sidebar-model.js'
 import { loadPlaythroughImportContext } from './import.js'
 import { updateCatalog } from './mutations.js'
+import { isPlaythroughArchived } from '../../../play/src/playthrough-state.js'
 
 const SAFE_SEGMENT = /^[A-Za-z0-9][A-Za-z0-9._-]{0,199}$/
 const SAFE_SESSION_ID = /^[A-Za-z0-9][A-Za-z0-9._:-]{0,199}$/
@@ -74,6 +75,7 @@ function latestCharacterPlaythrough(catalog, characterId) {
 }
 
 export async function playthroughIsReusable(client, playthrough) {
+  if (isPlaythroughArchived(playthrough)) return false
   try {
     const sessionId = rootSessionId(playthrough)
     const timeline = await client.getTimeline(playthrough)
@@ -164,8 +166,15 @@ export async function createCharacterPlaythrough(client, {
     ? selectionFromSessionId
     : null
   const catalog = await catalogOrEmpty(client)
-  const latest = latestCharacterPlaythrough(catalog, characterId)
-  if (latest !== null && await playthroughIsReusable(client, latest)) {
+  let latest = latestCharacterPlaythrough(catalog, characterId)
+  let reusable = latest !== null && await playthroughIsReusable(client, latest)
+  if (reusable) {
+    // History/import reads can yield to another tab archiving the candidate.
+    const fresh = (await client.getCatalog()).playthroughs.find(item => item.id === latest.id && item.path === latest.path)
+    reusable = fresh !== undefined && !isPlaythroughArchived(fresh) && rootSessionId(fresh) === rootSessionId(latest)
+    if (reusable) latest = fresh
+  }
+  if (reusable) {
     const existingRoot = rootSessionId(latest)
     if (existingRoot !== null) {
       if (typeof configureSession === 'function') await configureSession(existingRoot)
@@ -181,6 +190,7 @@ export async function createCharacterPlaythrough(client, {
       const index = fresh.playthroughs.findIndex(item => item.id === latest.id && item.path === latest.path)
       if (index < 0) throw new Error('playthrough.create.missingVacancy')
       const current = fresh.playthroughs[index]
+      if (isPlaythroughArchived(current)) throw new Error('playthrough.create.archivedVacancy')
       const currentRoot = rootSessionId(current)
       if (currentRoot !== null && currentRoot !== sessionId) throw new Error('playthrough.create.identityConflict')
       attached = {

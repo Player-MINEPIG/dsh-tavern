@@ -2,7 +2,7 @@
 
 [中文](ARCHITECTURE.md)
 
-The current contract targets Tavern **2.3.0** and DSH `0.1.5-rc.1`.
+The current contract targets Tavern **2.3.1** and DSH `0.1.5-rc.1`.
 The install identity is `pmp-dsh-tavern`. HTTP mounts at `/pmp-dsh-tavern/api`;
 resources use `/v1`, the play-surface contract uses `/v2`, and assembly audit uses `/v3`.
 This page records the current architecture and release-review gates.
@@ -10,6 +10,10 @@ This page records the current architecture and release-review gates.
 ![Current architecture](assets/dsh-tavern-architecture.png)
 
 Editable source: [dsh-tavern-architecture.drawio](assets/dsh-tavern-architecture.drawio). DSH session history is the only authoritative event history in the diagram; Tavern's external directory stores only resources, selections, settings, Trace, and playthrough projections.
+
+## Playthrough archive
+
+Tavern records archive state in each catalog row's `ext.pmpDshTavern.archivedAt`, updated through the existing file revision/CAS path. It preserves playthrough/session relationships and does not move files, clear selections, or call DSH `archiveSession`. The sidebar projects archived runs into a collapsed archive box and retains their membership so sessions do not become loose entries; other active playthroughs can still show shared sessions. Restore removes only the marker. Timeline reads still establish membership; archiving does not promise smaller disk usage or a smaller full catalog. Older clients ignore archive visibility and older catalogs need no migration.
 
 ## RP error notice
 

@@ -1,5 +1,6 @@
 import { httpError } from './http.js'
 import { timelineHead } from './timeline-tree.js'
+import { isArchiveTimestamp } from './playthrough-state.js'
 
 const NODE_KEYS = new Set([
   'id',
@@ -252,6 +253,9 @@ function validateKnownPlaythroughExt(ext, label) {
     }
     if (known.autoTitle !== undefined && typeof known.autoTitle !== 'boolean') {
       catalogError(`${label}.pmpDshTavern.autoTitle must be a boolean`)
+    }
+    if (known.archivedAt !== undefined && !isArchiveTimestamp(known.archivedAt)) {
+      catalogError(`${label}.pmpDshTavern.archivedAt must be a UTC ISO timestamp with milliseconds`)
     }
     if (known.importContextPath !== undefined) {
       safeRelativePath(known.importContextPath, `${label}.pmpDshTavern.importContextPath`, 'import-context.json')

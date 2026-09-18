@@ -2,13 +2,17 @@
 
 [English](ARCHITECTURE_en.md)
 
-当前合同面向 Tavern **2.3.0**与 DSH `0.1.5-rc.1`；安装标识为
+当前合同面向 Tavern **2.3.1**与 DSH `0.1.5-rc.1`；安装标识为
 `pmp-dsh-tavern`。HTTP 挂载 `/pmp-dsh-tavern/api`，资源走 `/v1`，扮演表面合同走
 `/v2`，装配审计走 `/v3`。本文记录当前架构决策与发布审查门槛。
 
 ![当前架构](assets/dsh-tavern-architecture.png)
 
 可编辑源文件：[dsh-tavern-architecture.drawio](assets/dsh-tavern-architecture.drawio)。图中 DSH session history 是唯一权威事件历史；Tavern 的外部目录只保存资源、选择、设置、Trace 与周目投影。
+
+## 周目归档
+
+Tavern 用 catalog 条目的 `ext.pmpDshTavern.archivedAt` 表示归档，通过现有文件 revision/CAS 更新。归档不拆除周目与会话关系，也不移动文件、清除 selection 或调用 DSH 的 `archiveSession`。侧边栏将归档周目投影到默认折叠的归档箱，保留成员归属以避免会话重新成为游离项；其他活动周目仍可显示共享会话。恢复只移除标记。读取 timeline 仍用于核对成员归属，归档不承诺减少磁盘占用或完整 catalog 的大小。旧版客户端忽略归档显示约定，旧 catalog 无需迁移。
 
 ## RP 错误提示
 

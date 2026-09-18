@@ -7,6 +7,7 @@ For project contracts, DSH version compatibility, or release evidence, use the t
 ## Project Boundaries
 
 - Preserve the current architecture during ordinary maintenance: DSH durable history is authoritative, integration uses public DSH extension points, and native DSH and original sessions remain usable after Tavern is removed. When changing these decisions, explain the external behavior, compatibility, and migration costs, then implement the user-approved decision.
+- Keep public APIs as composable primitives. Before adding an endpoint, check existing Tavern APIs and public DSH extension points, identify the missing capability, and leave composition policy to callers. Use the [API scope](docs/API.md#api-scope) as the current boundary.
 - Use branches, worktrees, and commits as requested by the user or required by the active project workflow. Pushes, PRs, tags, and releases require explicit user authorization.
 - Read private development plans only when explicitly provided as a workspace. Without explicit approval, do not copy private-plan content, repository coordinates, user data, or absolute local paths into the public repository.
 - Installation, uninstallation, migration, and data writes against real DSH profiles must fall within the task's authorization. Ordinary code changes do not automatically authorize these operations.
@@ -18,6 +19,8 @@ Keep `docs/` for maintained project documentation: current contracts, architectu
 ## Validation by Change Scope
 
 Local builds and tests using temporary directories and fixtures, including fixes and reruns for failures caused by the requested change, may proceed without step-by-step confirmation.
+
+Complete affected Host, browser, and desktop checks that available tools and task-authorized environments permit before handing off manual acceptance. Reserve remaining items for maintainer judgment or unavailable environments and integrations, and state the specific gap; passing automated tests alone does not establish UI acceptance.
 
 Command definitions live in [package.json](package.json). Select according to the affected behavior:
 

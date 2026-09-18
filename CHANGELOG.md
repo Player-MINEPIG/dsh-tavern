@@ -1,5 +1,12 @@
 # Development changelog
 
+## 2.3.1 — Unreleased — Playthrough archive
+
+- Add Archive playthrough and an archive box with view/restore actions. Keep the catalog row, title, number, timeline, DSH sessions/history, and all Tavern selections intact; persist only `ext.pmpDshTavern.archivedAt` through the existing catalog CAS path.
+- Keep archived membership out of loose-session lists, including unplayed continuation heads, while shared sessions remain visible in other active playthroughs. Exclude archived runs from everyday diagnostics and empty-run reuse; retain numbering when creating a new run.
+- Restore the same playthrough identity without moving files or rebuilding bindings. Archiving does not stop generation, archive native DSH sessions, or reclaim disk space. Older clients can still read these catalogs but do not hide archived rows.
+- Thanks to @vv5v5 for identifying the missing playthrough organization workflow in [PR #6](https://github.com/Player-MINEPIG/dsh-tavern/pull/6).
+
 ## 2.3.0 — Prompt assembly tracing and provenance
 
 - Include readable or empty playthroughs with no available RP session in diagnostics and sidebar warnings. Reuse official session/workspace membership and archive state after mirror hydration; keep healthy empty runs unmarked and update availability without refetching timelines.

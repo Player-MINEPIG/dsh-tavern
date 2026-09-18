@@ -14,9 +14,10 @@ For Node support, intersect Tavern's `engines.node` with the target DSH requirem
 
 ## Integration evidence
 
-Choose checks for the affected behavior; local build and test commands are in [AGENTS.md](../../../../AGENTS.md).
+Choose checks for the affected behavior; command selection is in [AGENTS.md](../../../../AGENTS.md), and environment setup, runnable procedures, and coverage limits are in [developer verification](../../../../docs/TESTING.md).
 
 - Host reads: `DSH_TAVERN_PLAY_LIVE=1 DSH_TAVERN_PLAY_LIVE_URL=<url> node --test test/play-sessions.test.mjs`. The opt-in live smoke reads only v2 `GET /chrome` and `GET /workspace`; it does not establish writes, Remote compatibility, or browser lifecycle behavior.
+- Prompt assembly and Trace: use `DSH_TAVERN_PROMPT_COMPAT_ROOT` to resolve the target official Host modules. Check the affected assembly against the final request, historical reads after Host restart, missing references, and failure attribution as applicable. Follow [Prompt API v3](../../../../docs/PROMPT_API_V3.md) and the verification guide; real-module tests with a synthetic model do not establish Web Host, browser, provider, or third-party integration acceptance.
 - DSH services or Remote calls: exercise the affected path on a Host running the target version.
 - Client slots, stores, or lifecycle: verify affected mounting, ownership, disposal, switching, and interactions in the target runtime/browser.
 - Session-coordinate migration: see [migration guidance](../../../../docs/DSH_0.1.5_MIGRATION.md) and [integration tests](../../../../test/coordinate-migration-integration.test.mjs). `DSH_TAVERN_COMPAT_ROOT` points to the DSH dependency environment; these tests use real codecs with temporary data, not a live Host.
