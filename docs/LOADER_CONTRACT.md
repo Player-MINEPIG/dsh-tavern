@@ -1,6 +1,6 @@
 # Unified Tavern loader contract
 
-**2.3.0 Trace 增量：** loader 将逻辑 profile 在下游装配监听器执行前展开为有序的官方 `{name,text}` 段落；装配时来源关系及 LLM 请求层的系统正文快照通过 [v3 元 API](PROMPT_API_V3.md) 提供。旧 v1 Trace 仍仅含元数据，v3 使用独立有界正文存储。下文未特别注明的“单一 profile / Trace 不存正文”描述属于此前实现。
+**2.3.0 Trace 增量：** loader 将逻辑 profile 在下游装配监听器执行前展开为有序的官方 `{name,text}` 段落。新 schema 4 Trace 只持久化来源 metadata 与官方 Session 引用；[v3 元 API](PROMPT_API_V3.md) 在详情读取时验证并恢复可用段落/context 正文，`source.text` 始终不存。
 
 DSH V3 增量：本文 `request/header.system` 表述指 V2。`0.1.5-rc.1` 中，编译的 systemText 经 system/message 进入有效消息 surface；Trace 从公共 Session.deriveMessages() 读取该权威，request/header 仍提供 config/tools。参见 [迁移合同](DSH_0.1.5_MIGRATION.md)。
 
@@ -147,7 +147,7 @@ loader Host 层的唯一 `PendingInputProjection` 从公开 `agent/inbox/spliced
 }
 ```
 
-`conversationText` 是从 `activationContext.text` 派生的兼容字段，不是第二份状态。adapter 只消费该 value，不订阅 DSH event；pending 队列、claim/cancel 判定、首次 assembly 一次性消费、turn-end 清理和去重均由 loader 独占。默认扫描最近 128 条、64 KiB 字符，硬上限分别为 1,024 条和 1 MiB；队列保留也有独立的消息数/字符数硬上限。Trace 不持久化 ActivationContext 的 `messages` 或 `text`；v1 审计保持无正文，v3 另外保存装配后的提示词/来源快照。
+`conversationText` 是从 `activationContext.text` 派生的兼容字段，不是第二份状态。adapter 只消费该 value，不订阅 DSH event；pending 队列、claim/cancel 判定、首次 assembly 一次性消费、turn-end 清理和去重均由 loader 独占。默认扫描最近 128 条、64 KiB 字符，硬上限分别为 1,024 条和 1 MiB；队列保留也有独立的消息数/字符数硬上限。Trace 不持久化 ActivationContext 的 `messages` 或 `text`；schema 4 也不保存装配正文或来源正文副本，只记录可验证的官方历史引用与 metadata。
 
 ## Composition semantics
 

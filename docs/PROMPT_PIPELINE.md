@@ -1,6 +1,6 @@
 # Prompt pipeline and compatibility map
 
-**2.3.0 Trace 增量：** loader 将逻辑 profile 在下游装配监听器执行前展开为有序的官方 `{name,text}` 段落；装配时来源关系及 LLM 请求层的系统正文快照通过 [v3 元 API](PROMPT_API_V3.md) 提供。旧 v1 Trace 仍仅含元数据，v3 使用独立有界正文存储。下文未特别注明的“单一 profile / Trace 不存正文”描述属于此前实现。
+**2.3.0 Trace 增量：** loader 将逻辑 profile 在下游装配监听器执行前展开为有序的官方 `{name,text}` 段落。新 schema 4 Trace 只持久化 metadata 与官方 Session 引用；[v3 元 API](PROMPT_API_V3.md) 按需验证恢复段落/context 正文，不另存 `source.text`。
 
 [English](PROMPT_PIPELINE_en.md)
 

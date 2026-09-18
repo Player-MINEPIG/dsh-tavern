@@ -1,6 +1,6 @@
 # Unified Tavern loader contract
 
-**2.3.0 Trace update:** The loader expands its logical profile into ordered official `{name,text}` sections before downstream assembly listeners run. Runtime source relationships and LLM-boundary system snapshots are exposed through [primitive API v3](PROMPT_API_V3_en.md). Existing v1 Trace remains metadata-only; v3 uses a separate bounded body store. References below to a single profile or metadata-only Trace describe the earlier implementation unless explicitly qualified.
+**2.3.0 Trace update:** The loader expands its logical profile into ordered official `{name,text}` sections before downstream assembly listeners run. New schema 4 Trace persists source metadata and official Session references only. On detail reads, [primitive API v3](PROMPT_API_V3_en.md) verifies and resolves available section/context bodies; `source.text` is never stored.
 
 DSH V3 delta: references here to request/header.system describe V2. On `0.1.5-rc.1`, compiled systemText enters the effective surface through system/message; Trace reads it through public Session.deriveMessages(), while request/header owns config/tools. See the [migration contract](DSH_0.1.5_MIGRATION_en.md).
 
@@ -147,7 +147,7 @@ The loader Host layer's only `PendingInputProjection` rebuilds the queue and thi
 }
 ```
 
-`conversationText` is a compatibility field derived from `activationContext.text`, not a second state. Adapters consume that value only and do not subscribe to DSH events. Pending queue, claim/cancel decisions, one-shot consume on first assembly, turn-end cleanup, and de-duplication are exclusive to the loader. Default scan is the latest 128 messages / 64 KiB characters; hard caps are 1,024 messages and 1 MiB. Queue retention has its own message/character hard caps. Trace does not persist the ActivationContext messages/text. Its v1 audit remains metadata-only; v3 separately stores the resulting prompt/source snapshots.
+`conversationText` is a compatibility field derived from `activationContext.text`, not a second state. Adapters consume that value only and do not subscribe to DSH events. Pending queue, claim/cancel decisions, one-shot consume on first assembly, turn-end cleanup, and de-duplication are exclusive to the loader. Default scan is the latest 128 messages / 64 KiB characters; hard caps are 1,024 messages and 1 MiB. Queue retention has its own message/character hard caps. Trace does not persist ActivationContext messages/text. Schema 4 also stores no assembly or source-body copy; it records verifiable official-history references and metadata only.
 
 ## Composition semantics
 

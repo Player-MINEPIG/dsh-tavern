@@ -107,7 +107,7 @@ npm run plugin:uninstall
 <DSH_HOME>/backups/pmp-dsh-tavern/<timestamp>/
 ```
 
-默认源目录是 `<DSH_HOME>/pmp-dsh-tavern/`。它包含预设、归一化角色卡、从 PNG 导入时留在 `character-artifacts/` 的封面图、`world-books/` 下的独立世界书、`users/` 下的三字段用户资源、`tavern-traces.json` 中的有界 Trace 元数据、`tavern-assemblies.json` 中可能含敏感正文的有界装配快照，以及 per-session 资源选择。备份时复制整个目录；只复制 `presets/` 会丢失其他资源、审计元数据和绑定。同一棵树里还有 `state.json`、`character-state.json`、`user-world-book-bindings.json`、`resource-world-book-bindings.json`、`session-templates.json`、`chrome.json`、`play-workspace.json`、`import-context-bindings.json`、`ui-settings.json`（语言、外层 UI 缩放、绑卡跟随 RP）、`conversation-settings.json`（魔丸 RP 正文与消息动作缩放），以及可选的 `rp-policy.json`。
+默认源目录是 `<DSH_HOME>/pmp-dsh-tavern/`。它包含预设、归一化角色卡、从 PNG 导入时留在 `character-artifacts/` 的封面图、`world-books/` 下的独立世界书、`users/` 下的三字段用户资源、`tavern-trace-records.json` 中的 schema 4 Trace metadata/官方历史引用，以及 per-session 资源选择。升级目录还可能保留只读的旧 `tavern-traces.json` 元数据与旧 `tavern-assemblies.json` schema 3 正文快照；后者可能含敏感提示词。备份时复制整个目录；只复制 `presets/` 会丢失其他资源、审计 metadata 和绑定。同一棵树里还有 `state.json`、`character-state.json`、`user-world-book-bindings.json`、`resource-world-book-bindings.json`、`session-templates.json`、`chrome.json`、`play-workspace.json`、`import-context-bindings.json`、`ui-settings.json`（语言、外层 UI 缩放、绑卡跟随 RP）、`conversation-settings.json`（魔丸 RP 正文与消息动作缩放），以及可选的 `rp-policy.json`。
 
 `play-workspace.json` 只是指针。所选 DSH RP 工作区才拥有真正的 `catalog.json`、各周目 `timeline.json`、显示正则文档和导入上下文文件。若周目必须可恢复，请同时备份该工作区；ST JSONL 导出只保留当前选中的线性对话和已知 swipe，不能保存完整的 Tavern 分支拓扑。
 

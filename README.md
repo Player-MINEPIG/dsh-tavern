@@ -18,7 +18,7 @@ pmp-dsh-tavern 不是用另一套界面取代 DSH，也不会复制一份会话�
 - **魔丸 / RP 模式**：按角色卡与周目重组 RP 侧栏，提供开场白、显示正则、swipe、分支、回退、导入与导出；
 - **DSH 仍是权威**：durable history、工具、权限和最终模型请求继续由 DSH 拥有；
 - **最小程度改动，最大程度兼容**：优先复用 DSH 公开机制，不替换原生前端，不依赖私有 DOM；
-- **卸载后仍可阅读原始会话**：插件保存资源、选择、周目指针、显示元数据与有界的派生提示词快照，不伪造或覆盖 DSH 历史。
+- **卸载后仍可阅读原始会话**：插件保存资源、选择、周目指针、显示元数据与有界的 Trace metadata/官方历史引用，不伪造、覆盖或复制 DSH 历史正文。
 
 双模式本身就是兼容方案：不进入魔丸时，用户看到的仍是普通 DSH；只有进入 RP 模式后，插件才挂载自己的 RP 表面。
 
@@ -107,7 +107,7 @@ npm run plugin:install
 | RP 前端 | 角色卡/周目侧栏、greeting、正文渲染、显示正则、swipe、分支、回退和显示层编辑 | [中文使用指南](docs/USAGE_zh-CN.md) |
 | 周目数据 | DSH 权威 session、树状 timeline、工作区 catalog、外部记录首轮只读注入、静态 HTML 与 ST JSONL 导出 | [API](docs/API.md) · [架构](docs/ARCHITECTURE.md) |
 | 安全 | RP 权限叠加、同源/loopback API、工作区路径防护、CAS、DOMPurify、无正文 operation log | [RP 安全模式](docs/RP_SECURE_MODE.md) · [安全策略](SECURITY.md) |
-| 调试 | Tavern Trace 展示每次请求的段落、来源输入、世界书决策和实际系统正文，快照在本地有界保存 | [Trace API 与设计](docs/PROMPT_API_V3.md) |
+| 调试 | Tavern Trace 保存每次请求的段落/来源 metadata 与官方历史引用；详情按需验证并读取可恢复的段落正文，来源正文不另存 | [Trace API 与设计](docs/PROMPT_API_V3.md) |
 | 第三方开发 | v2 HTTP API、`pmpDshTavernChrome` 模式服务、DSH slots/store 与独立客户端接入 | [第三方 RP 前端接入](docs/FRONTEND_INTEGRATION_zh-CN.md) |
 
 ![切换首轮 swipe，同时恢复各自后续的用户输入与回复](docs/assets/market/07-swipe-paths.png)

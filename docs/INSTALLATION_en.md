@@ -157,9 +157,11 @@ The default source is `<DSH_HOME>/pmp-dsh-tavern/`. It holds presets,
 normalized character cards, PNG cover images under
 `character-artifacts/` when a card was imported from PNG, standalone world books under
 `world-books/`, three-field user resources under
-`users/`, bounded Trace metadata in `tavern-traces.json`, bounded potentially
-sensitive prompt snapshots in `tavern-assemblies.json`, and per-session
-resource selections. Copy the whole directory when backing up; copying only
+`users/`, schema 4 Trace metadata/official-history references in
+`tavern-trace-records.json`, and per-session resource selections. An upgraded
+directory may also retain read-only legacy `tavern-traces.json` metadata and
+legacy `tavern-assemblies.json` schema 3 body snapshots; the latter may contain
+sensitive prompts. Copy the whole directory when backing up; copying only
 `presets/` loses other resources, audit metadata and bindings. In particular,
 the same tree holds `state.json`, `character-state.json`,
 `user-world-book-bindings.json`, `resource-world-book-bindings.json`,

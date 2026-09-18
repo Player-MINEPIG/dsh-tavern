@@ -5,47 +5,32 @@ Status: Tavern 2.3.0 candidate, not released; updated 2026-09-18. Target: DSH **
 
 ## Purpose and compatibility
 
-**Scope audit:** The overlapping current-resource `/sessions/:id/sources` endpoint
-has been removed; GET returns 404. Historical `sections[].sources` provenance remains.
-Tavern Trace uses only assembly index/detail. Read current configuration and complete
-resources through v1; see the [field-level overlap audit](API_en.md#api-scope).
+v3 exposes per-request assembly records and provenance. Tavern Trace uses the same HTTP
+surface. Third parties can also observe, alter, and contribute sections through official
+DSH `system-prompt/assemble`, and inspect complete requests through `llm/stream`. There is
+no composer registry, exclusive owner, remote callback, or current-resource aggregate.
 
-v3 provides per-request assembly records and provenance, live and historical. Consumers own
-composition. Tavern Trace uses these same HTTP primitives. Third parties may also
-observe, adjust, and contribute sections through official DSH
-`system-prompt/assemble`, and observe requests through `llm/stream`, without importing
-Tavern. There is no composer registry, exclusive owner, required callback, or remote
-callback mechanism.
+The unpublished `/sessions/:id/sources` candidate was removed and returns 404. Current
+resources, bindings, and configuration remain in v1. Historical `sections[].sources`
+describes section-level relationships at capture time. Released v1/v2 routes remain
+compatible. API v3, Tavern 2.3.0, and DSH log format V3 are separate version numbers.
 
-This contract replaces the unpublished composition-oriented v3 candidate:
-Neither `prompt-sources` nor the current-resource `sources` aggregate is provided; `prompt-mode`, `registerComposer`, and
-`pmpDshTavernPrompt` are not included. Released v1/v2 routes remain available.
-v1 `/traces` retains its bounded metadata-only audit, including world-book decisions.
-API v3, Tavern 2.3.0, and DSH log format V3 are independent version numbers.
+## Minimal read-only HTTP surface
 
-## Read-only HTTP primitives
+Root: `/pmp-dsh-tavern/api/v3`. Existing TCP peer, Host, and Origin checks apply. All
+responses use `Cache-Control: no-store`. URL-encode explicit session and record IDs.
 
-Root: `/pmp-dsh-tavern/api/v3`. Existing TCP peer, Host, and Origin checks apply.
-Responses use `Cache-Control: no-store`; URL-encode explicit session and record IDs.
+| Method | Path | Behavior |
+| --- | --- | --- |
+| GET | `/capabilities` | `{ok,apiVersion,contract,...}` with capabilities and retention limits |
+| GET | `/sessions/:sessionId/assemblies` | `{ok,sessionId,records,storage}` index without section/context/system-message bodies |
+| GET | `/sessions/:sessionId/assemblies/:recordId` | one historical detail resolved by a cold read |
 
-| Method | Path | Behavior | Status |
-| --- | --- | --- | --- |
-| GET | `/capabilities` | `{ok,apiVersion,contract,...}`; capabilities and capacity limits | Implemented in candidate |
-| GET | `/sessions/:sessionId/assemblies` | `{ok,sessionId,records,storage}`; historical index without section bodies | Implemented in candidate |
-| GET | `/sessions/:sessionId/assemblies/:recordId` | `{ok,record}`; one historical snapshot | Implemented in candidate |
-
-Record IDs are opaque. A missing/evicted record returns 404, not proof that a round
-contained no Tavern prompt. Old v1 records are exposed as `legacy-metadata-only`;
-missing historical bodies are never manufactured by rerunning assembly. Invalid
-input returns 400 and non-GET 405. Internal errors return a sanitized 500
-`TRACE_READ_FAILED`. Historical reads do not require or activate an Agent. Capabilities
-no longer include `currentSources` or `maxSourceBytes`; `storage` describes assembly
-record limits only.
-
-### Request and response example
-
-In an authenticated same-origin Host page, read the index and fetch one opaque ID.
-This runs no assembly and does not require an active Agent.
+Record IDs are opaque. Missing or evicted records return 404; this does not prove the turn
+had no Tavern contribution. Invalid input returns 400, non-GET returns 405, and internal
+failures return sanitized 500 `TRACE_READ_FAILED`. Detail calls use read-only Session
+inspection. They do not activate an Agent or rerun assembly. Capabilities omit
+`currentSources` and `maxSourceBytes`.
 
 ```js
 const base = '/pmp-dsh-tavern/api/v3';
@@ -58,12 +43,12 @@ async function read(path) {
 const sessionPath = `/sessions/${encodeURIComponent(sessionId)}`;
 const { records } = await read(`${sessionPath}/assemblies`);
 const latest = records.at(-1);
-const record = latest
-  ? (await read(`${sessionPath}/assemblies/${encodeURIComponent(latest.id)}`)).record
+const detail = latest
+  ? await read(`${sessionPath}/assemblies/${encodeURIComponent(latest.id)}`)
   : null;
 ```
 
-Empty index (HTTP 200):
+Empty index response:
 
 ```json
 {
@@ -71,7 +56,7 @@ Empty index (HTTP 200):
   "sessionId": "example-session",
   "records": [],
   "storage": {
-    "kind": "bounded-assembly-snapshots",
+    "kind": "bounded-assembly-references",
     "maxRecords": 256,
     "maxRecordBytes": 2097152,
     "maxTotalBytes": 16777216
@@ -79,129 +64,131 @@ Empty index (HTTP 200):
 }
 ```
 
-An empty index means no retained records are available; it does not prove the
-Session never ran. A record can be evicted between index and detail calls (404).
+An empty index means no retained record is available. A record may still be evicted between
+the index and detail requests.
 
-### Historical records
+## Schema 4 records
 
-`sessionId/turn/step/attempt` identify a request position; one turn may include many
-steps and retries. `recordedAt` is capture time. Attempts are numbered from retained
-records; use the opaque ID for durable identity after eviction.
+New v1 audit and v3 assembly data share one schema 4 record in
+`tavern-trace-records.json`. `captureId` / `legacyCaptureId` links one capture without
+guessing from reusable turn/step/attempt or old v1 IDs. `sessionId/turn/step/attempt`
+describes the request position. A turn can have multiple steps and a position can have
+multiple observed requests. Attempt counts Tavern captures only; it is neither every network
+retry nor the official `assistant/attempt` sequence. Request observation does not prove a
+successful remote model response.
 
-New v1 audit records also carry a unique `captureId`. The optional v3 index
-`legacyCaptureId` links that same capture and survives oversized-body omission.
-The two stores can evict independently, so merging never deduplicates by
-turn/step/attempt or the old v1 ID. Older records without a unique capture link
-are conservatively retained: legacy metadata and an assembly snapshot can both
-appear rather than hiding history based on a guessed association.
+| Field | Meaning and boundary |
+| --- | --- |
+| `schemaVersion` | `4` for new records |
+| `sections / contexts` | persisted name/index, character/UTF-16/UTF-8 counts, hash, provenance, source metadata, and official reference; no persisted `text` |
+| `sources[]` | kind/resourceId/resourceRevision/field/identifier/role/relationship, hash and counts; `role` is the preset-requested role; `textStatus: "not-stored"`; no stored or recovered `source.text` |
+| `selection / audit` | captured binding and v1-compatible resource/lore summary; later edits do not update it |
+| `sessionRef` | Session identity, format version, creation time, and log cut used for cold-read validation |
+| `systemMessageRefs` | official event references; no persisted `systemMessages` copy |
+| `delivery` | provider/model, tool names, system hashes, log version/cut, and verification result |
+| `delivery.assemblyVerified` | true only when the candidate assembly uniquely matched one complete system message |
+| `delivery.historyVerified` | true only when `assemblyVerified` is true and an official-history reference was established for the matched system message |
+| `delivery.systemMessageIndex` | verified system-message index, not an index into all chat messages |
 
-`step` comes from DSH: continuing with tool results can enter another step within a
-turn. `attempt` counts Tavern captures of `agent/request` for the same
-session/turn/step. DSH higher-level retries emit this event again and can reuse the
-existing assembly: an increment does not imply reassembly. Tavern observes these
-events and does not initiate retries. This is neither a count of every network
-retry nor a one-to-one index of official `assistant/attempt` events. Transport
-retries that do not revisit `agent/request` do not increment it.
-
-| Field | Type | Meaning and boundary |
-| --- | --- | --- |
-| `sections / contexts` | array | Rendered sections at waterfall return: name/index/text, characters/utf16Units/utf8Bytes, hash/provenance/sources; may be absent when bodies are unavailable |
-| `selection` | object | Bindings at capture, unaffected by current edits; may be absent on incomplete/legacy records |
-| `audit` | object | Compatible captured v1 resource/lore summary; overlaps legacy audit |
-| `systemMessages` | string[] | System messages observed at the LLM boundary; absent before observation |
-| `delivery` | object | Observed provider/model, tool names, hashes and available log version/cut; absent before observation |
-| `delivery.assemblyVerified` | boolean | True only when candidate system text uniquely matches one complete system message; otherwise consistency is unproven |
-| `delivery.systemMessageIndex` | integer / null | System-message index only when verified; not an index into all chat messages |
-
-Statuses: `assembled`, `request-observed`, `request-unconfirmed`,
+New records use `bodyStorage: "official-session"` and `sourceTextStored: false`. Statuses
+include `assembled`, `request-observed`, `request-unconfirmed`,
 `request-failed-before-observation`, `assembly-or-preparation-failed`,
-`superseded-unconfirmed`, and `unloaded-unconfirmed`. Observing a request **does not
-prove a successful remote model response**. Exceptions are not persisted.
-`contentStatus` distinguishes `available`, `assembly-unavailable`,
-`omitted-size-limit`, and legacy metadata. Restart does not prove an unconfirmed
-request succeeded. Context snapshots do not claim actual user-message delivery
-based on system verification. DSH durable history remains authoritative.
+`superseded-unconfirmed`, and `unloaded-unconfirmed`. Failure bodies are not persisted.
+New records in the index normally retain persisted `contentStatus: "reference-only"`. After a
+schema 4 detail read, body recovery reports `available`, `partially-available`, or
+`reference-unavailable`. Detail reads do not replace `assembly-unavailable` or
+`omitted-size-limit`.
 
-## Assembly and provenance
+## Official-history references and on-demand recovery
 
-The loader expands preset markers, character overrides, macros, lore and fallback
-fields in their existing order. Existing blocks become official `{name,text}`
-sections named `pmp-dsh-tavern:part:<ordinal>:<kind>:<field>`. The ordinal identifies
-this output position, not a stable resource across rounds. Preset, character, and
-lore sections can interleave. Tavern expands its contribution before `next()` so
-downstream official listeners see those sections. Existing XML-like wrappers and
-`\n\n` separators remain; ordinary model text is unchanged. The remaining
-`pmp-dsh-tavern:profile` contribution holds import context. RP policy, tools, and
-DSH history retain their existing owners.
+The recorder creates references only when they can be verified against the current public
+model surface:
 
-ST `main`/`jailbreak` are preset entry identifiers. `{{original}}` may combine several
-sources inside one section; splitting must not add whitespace. Source relationships
-are captured during assembly, not reconstructed from prose. `sourceMapping:
-section-contributors` promises section-level input relationships, **not exact source
-character spans**. A preset overridden without `original` is `placement-only`;
-`input` means an input participated, possibly transformed or removed by macros.
+- log V3 system sections reference their `system/message` and a UTF-16 range;
+- older formats reference `request/header.system` only on an exact full-text match;
+- context sections reference the official system-prompt `user/message` snapshot and its named source section;
+- every reference binds event seq/type, text hash, and a fixed log cut; message references also
+  bind message ID and content hash, while section references bind a range or named source section.
 
-Sources expose `kind/resourceId/resourceRevision/field/text/relationship` and
-counts. `field` is a logical assembler field or preset entry path, not always a JSON
-Pointer into the imported document. Source `text` is the normalized input used at
-that time and may be trimmed. Use v1 resource detail for complete current documents; `source.raw`, when present,
-preserves imported fields. Current normalized edits take precedence. Lore also exposes `entryId`.
-Unknown external sections, or sections whose bodies were changed, receive
-`provenance: unknown` rather than inheriting old Tavern attribution.
+These are logical coordinates in the official DSH event view, not byte offsets into a
+compressed log file. One schema 4 detail request performs one cold inspect of the target
+Session and then validates references in the returned official event view. Long Sessions can
+still be costly to read; this contract promises neither random log access nor O(1) detail reads.
 
-Official assembly objects do not retain numeric registration order. `index` is the
-actual array position. `offsetUtf16` includes the two-newline separators within the
-candidate system text; it locates actual request content only when
-`delivery.assemblyVerified` is true. `characters` counts Unicode code points;
-`utf16Units` and `utf8Bytes` are also available. None is a token count.
+Detail inspection cold-reads official Session history and verifies Session ID, format,
+creation time, log cut, event type, message identity, hashes, ranges, and target hashes.
+Only then does it return `sections[].text` or `contexts[].text`. Temporary
+`systemMessages` appears only when a captured, non-empty `systemMessageRefs` list resolves
+completely. If any captured reference fails, `requestContentStatus` is
+`reference-unavailable`. Records without system-message references do not promise that field.
 
-## Persistence and privacy
+Source inputs in new schema 4 records have no official historical body reference, so their
+`source.text` is never returned. Source hash, counts, and `textStatus: "not-stored"` remain
+available. Old schema 3 details may still expose source bodies already stored before upgrade.
+Consumers may inspect **current** resources through v1, but must not present current bodies as
+historical source text.
 
-`tavern-assemblies.json` is a separate bounded store; existing `tavern-traces.json`
-is unchanged. Historical inspection can work without an active Agent or current
-resource files because snapshots retain sections, source inputs, and observed
-system text. These may contain sensitive prompts and need the same local protection
-as DSH Session data. Writes are atomic with mode 0600. No credential configuration,
-full ordinary chat history, tool arguments, or tool results are stored, and no Trace
-records are injected into model history.
+Missing history, an unavailable cut, identity/format/hash/range mismatch, or read failure is
+reported through `reference-unavailable`, `partially-available`, and a specific
+`referenceError`. There is no reassembly, current-resource reconstruction, or plugin-owned
+full-text fallback. `assembly-unavailable` and `omitted-size-limit` remain explicit. DSH
+durable history is the body authority; Trace is an evictable index and explanation layer.
 
-All sessions in the storage directory share the defaults: 256 records and 16 MiB
-total, with 2 MiB per record. Configure
-`traceAssemblies.maxRecordBytes` and `maxTotalBytes`; hard ceilings are 4 MiB / 32 MiB.
-The record-count limit is fixed. A turn may have multiple records, so retention
-does not guarantee a number of turns. This is recent bounded audit data, not a
-permanent archive; chat history cannot fully reconstruct evicted provenance.
-Oldest retained records are evicted first. Oversized individual records keep explicit
-`omitted-size-limit` metadata. Corrupt JSON fails visibly during loading. Runtime
-capture/write failures log body-free diagnostics without blocking model requests.
-One Host writes the store; retention never deletes DSH history.
+## Assembly and provenance semantics
 
-## Examples and composition
+The loader expands preset markers, character overrides, macros, lore, and fallbacks in order,
+then emits official `{name,text}` sections named
+`pmp-dsh-tavern:part:<ordinal>:<kind>:<field>`. The ordinal is this assembly's position, not a
+stable resource ID. Tavern adds no profile/preset name, ID, or `st-prompt` / character / user /
+world-info identification wrapper to model-visible text. Identical tags authored in resource
+content remain literal. Sections still join with two newlines.
+
+Sources are captured during assembly rather than inferred from output. `sourceMapping:
+section-contributors` promises section-level relationships, not character spans.
+`{{original}}` may combine several sources; an override without original marks the replaced
+preset source `placement-only`. A preset requested role stays in source metadata; every actual
+contribution remains a system section.
+
+Official assembly objects do not retain numeric registration order. `index` is the actual
+array position. `offsetUtf16` includes two-newline separators and locates official content only
+after assembly and reference verification. `characters` counts Unicode code points;
+`utf16Units` and `utf8Bytes` are not token counts.
+
+## Persistence, compatibility reads, and limits
+
+`tavern-trace-records.json` is the canonical schema 4 store, atomically replaced through a
+0600 temporary file. It stores metadata and official references only. New records contain no
+section, context, system-message, or source-text copies.
+
+On upgrade, old `tavern-traces.json` v1 metadata and old `tavern-assemblies.json` schema 3 body
+snapshots remain read-only. They are neither migrated, rewritten, nor automatically reduced to
+the new limits. The legacy v1 view retains its existing maximum of 128 records per Session;
+actual retention for all new captures is controlled by the schema 4 store. Old v1 records
+appear as `legacy-metadata-only`; old schema 3 details can still expose bodies that file already stored.
+Compatibility reads do not make new records copy bodies and never provide a full-text fallback
+for a new record.
+
+All Sessions in one storage directory share the defaults: 256 records, 16 MiB total, and 2 MiB
+per record. Per-record and total limits are configurable with hard ceilings of 4 MiB and 32 MiB;
+record count is fixed. Oldest records are evicted first. Metadata/reference records that cannot
+fit retain a minimal `omitted-size-limit` row rather than a deceptively partial detail. Corrupt
+JSON fails visibly. Capture/write failures emit body-free diagnostics without blocking model
+requests. Retention never deletes DSH history.
+
+The schema 4 file has no prompt bodies, but reference metadata, resource IDs, model names, and
+tool names may still be sensitive. The detail API can also return prompt bodies recovered from
+DSH history. Protect the local data directory and API as DSH Session data.
+
+## UI and third-party boundary
+
+Tavern Trace first shows captured configuration/resource summaries, then lazily expands lore
+decisions and loader assembly. Verified section/context bodies are displayed when recoverable.
+Sources show metadata, hashes, and counts, never historical `source.text`. Explicit reasons are
+shown when recovery fails. Current v1 resources can help diagnose current configuration, but
+the UI does not label them as historical originals.
 
 [HTTP reader](examples/trace-reader.mjs) imports no Tavern code.
-[Official observer](examples/official-prompt-observer.mjs) needs no v3 requests.
-Tavern's built-in assembly remains active. Consumers may explicitly replace/reorder
-`:part:` sections in the official waterfall. Import context and RP policy are separate
-contributions. Sampling is applied through `agent/request`; changing sections alone
-does not disable Tavern's sampling suggestions. Third parties own their ordering
-and coordination policies.
-
-While a panel is open and its Session is running, poll the index every 1.5 seconds;
-load detail on demand, abort closed panels, and discard stale responses after a
-Session switch. Reading never triggers assembly.
-
-## Tavern Trace default layout
-
-An expanded record first shows its captured preset, character, user, world books,
-prompt mode, request model and Tavern sampling configuration. The saved greeting
-index appears when available. Names and settings come from that snapshot, never
-current resource reads. Missing fields say “Not recorded”, not “Unused”. Sampling
-values are Tavern's contribution, not a claim about final parameters after other plugins.
-
-“World-book activation” and “Loader assembly” are collapsed by default. The first
-contains inclusion/rejection decisions, keywords and budgets. The second contains
-sections, source inputs, dynamic contexts, observed system messages, raw bindings
-and diagnostics. Legacy records retain their configuration/lore audit, with explicit
-absence of assembly bodies. First captures show turn/step; subsequent captures for
-the same step also show “Request record N”. In-page help explains these terms. The HTTP
-contract is unchanged.
+[Official observer](examples/official-prompt-observer.mjs) needs no v3 request. Index/detail
+reads never trigger assembly. Third parties may reorder or replace Tavern `:part:` sections in
+the official waterfall. Import context and RP policy remain separate contributions. Sampling
+still flows through `agent/request`; this API does not arbitrate third-party composition order.

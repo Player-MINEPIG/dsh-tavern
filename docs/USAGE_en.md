@@ -145,20 +145,21 @@ Tavern Trace is a sibling of Conversation and Trajectory. Each request record
 first shows its captured preset, character, user, world books, prompt mode, model,
 and Tavern sampling configuration. Expand **World-book activation** for matches,
 rejections and budgets; expand **Loader assembly** for official sections, source
-inputs, contexts and observed system messages. Historical snapshots do not resolve
-against current resource edits.
+metadata, contexts, and observed system messages. Detail performs a cold read of
+official DSH history. Section/context bodies appear only after verification; source
+bodies are neither stored nor reconstructed. Current v1 resources describe current
+configuration and are never presented as historical originals.
 
-V3 stores prompt bodies in a bounded local `tavern-assemblies.json` (by default,
-16 MiB / 256 records shared by all sessions in the storage directory, 2 MiB per
-record), including source text and contexts that may contain user input. Treat it
-as sensitive data when backing up or sharing. Old snapshots are evicted at the
-total-byte or record limit; oversized records keep status only. A turn can have
-multiple request records, so no fixed number of turns is guaranteed. This is not
-a permanent archive: eviction leaves DSH history intact but loses provenance that
-cannot be fully reconstructed from chat history. Old v1 metadata remains in
-`tavern-traces.json`. Missing/oversized bodies are explicit; reads do not reconstruct
-them. Request observation is not model success, and DSH remains authoritative for
-durable history and request headers. See [v3 API and limits](PROMPT_API_V3_en.md).
+New captures combine schema 4 metadata and official-history references in bounded
+`tavern-trace-records.json`. It stores no new section, context, system-message, or
+source-body copies. Defaults shared by all Sessions in one directory are 16 MiB,
+256 records, and 2 MiB per record. Eviction never deletes DSH history. Missing
+history, an unavailable cut, or identity/hash/range verification failure is explicit;
+the reader never reassembles current resources or falls back to another full-text
+copy. Old `tavern-traces.json` and `tavern-assemblies.json` remain read-only; the
+latter may still contain sensitive bodies captured before upgrade. Request
+observation is not model success, and DSH durable history remains the body authority.
+See [v3 API and limits](PROMPT_API_V3_en.md).
 
 ## 9. RP secure mode
 
@@ -194,8 +195,9 @@ session-selections.json        Per-session selection (including RP state)
 user-world-book-bindings.json  User–world-book relations
 resource-world-book-bindings.json Preset/character–world-book relations
 session-templates.json         Configuration templates (including RP projection)
-tavern-traces.json             Bounded legacy Trace metadata
-tavern-assemblies.json         Bounded v3 prompt/source body snapshots (sensitive)
+tavern-trace-records.json      New schema 4 Trace metadata and official-history references
+tavern-traces.json             Legacy v1 Trace metadata (read-only after upgrade)
+tavern-assemblies.json         Legacy schema 3 body snapshots (read-only; may be sensitive)
 ui-settings.json               Global language, scale, and character-follow RP
 conversation-settings.json     Mowan body/greeting and message-action scale
 rp-policy.json                 Optional rp:policy prompt

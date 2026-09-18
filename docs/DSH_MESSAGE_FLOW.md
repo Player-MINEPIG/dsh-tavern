@@ -1,6 +1,6 @@
 # DSH 与 dsh-tavern（DT）消息流
 
-**2.3.0 Trace 增量：** loader 将逻辑 profile 在下游装配监听器执行前展开为有序的官方 `{name,text}` 段落；装配时来源关系及 LLM 请求层的系统正文快照通过 [v3 元 API](PROMPT_API_V3.md) 提供。旧 v1 Trace 仍仅含元数据，v3 使用独立有界正文存储。下文未特别注明的“单一 profile / Trace 不存正文”描述属于此前实现。
+**2.3.0 Trace 增量：** loader 将逻辑 profile 在下游装配监听器执行前展开为有序的官方 `{name,text}` 段落。新 schema 4 Trace 只持久化 metadata 与官方 Session 引用；[v3 元 API](PROMPT_API_V3.md) 在详情读取时验证并恢复可用段落/context 正文，来源正文不另存。
 
 DSH `0.1.5-rc.1` 增量：以下历史流程中“request/header 保存 system”的描述仅适用于 V2；V3 的系统提示词由 system/message 进入有效消息 surface，request/header 仅保留 config/tools 等字段。当前 Trace 已按该版本分支读取。会话坐标变化及迁移步骤见 [升级指南](DSH_0.1.5_MIGRATION.md)。
 
@@ -147,7 +147,7 @@ SessionSelectionStore
 2. world-book matcher 扫描公开的 `Session.deriveMessages()` 历史与 `PendingInputProjection` 提供的本步骤 claimed 输入，稳定去重后默认最多最近 64 KiB；执行普通主关键词、secondary key、概率、组与预算策略。原生 JavaScript regex 默认阻断，避免 ReDoS。
 3. 统一编译器按 preset marker 放置角色字段、用户名字/描述与命中 lore。`{{user}}` 使用当前用户名字；描述只消费一次 `personaDescription`/`{{persona}}`；`chatHistory` marker 不复制 DSH 历史；creator notes 不发送。
 4. 结果是一个不可混淆的运行时快照：`systemText`、受支持的 `callConfig`、资源摘要、诊断、世界书决策和审计指纹。
-5. 旧 v1 Trace 保留元数据和 request/header 关联；v3 单独采集具名装配段与来源输入，在 llm/stream 核对系统正文并有界保存历史，不复制普通聊天或工具正文。
+5. 新 v1 审计与 v3 装配 metadata 共用 schema 4 record；llm/stream 核对结果只落 hash/引用，详情冷读官方历史并验证恢复段落/context 正文，`source.text` 不保存。旧 v1/schema 3 文件只读兼容。
 
 ## 3. DT 对 DSH flow 做了什么改动
 

@@ -24,9 +24,11 @@ Report suspected vulnerabilities privately through the GitHub repository **Secur
 - Lifecycle logs use Host `ctx.logger` only, with a field allowlist and length limits. They do not record prompts, user messages, model replies, resource bodies, body lengths, or summaries.
 - The public repository and release package must not contain real developer-machine paths, usernames, temporary download paths, private fixtures, imported resources, or secrets. Documentation paths may use only explicit generic placeholders.
 
-## Trace v3 prompt snapshots
+## Trace v3 official-history references
 
-Unlike the legacy v1 metadata audit, 2.3.0 v3 snapshots store rendered system/context sections, source inputs, and system text observed at the LLM boundary. These may include sensitive user content interpolated into prompts. The separate `tavern-assemblies.json` file is atomically written with mode 0600 and bounded to 256 records / 2 MiB each / 16 MiB total by default. No complete ordinary chat history or tool bodies are copied. Local API access grants access to these bodies; protect the data directory as you protect DSH history. Details: [contract](docs/PROMPT_API_V3_en.md).
+The 2.3.0 Trace combines new v1 audit and v3 assembly metadata in the atomically written, mode-0600 schema 4 `tavern-trace-records.json`. It stores official Session references, hashes, counts, resource/model/tool summaries, and provenance relationships. It stores no new section, context, system-message, or `source.text` body copies. Detail reads cold-inspect official DSH history and return section/context bodies only after Session identity, log cut, event, message, hash, and range verification. Source text always remains `textStatus: "not-stored"`. Unrecoverable content is explicitly unavailable; current resources and another full-text copy are never used as fallback. Defaults are 256 records / 2 MiB each / 16 MiB total.
+
+Old `tavern-traces.json` metadata and old `tavern-assemblies.json` schema 3 body snapshots remain read-only; the latter may still contain sensitive prompts captured before upgrade. Although the new record file has no prompt bodies, its reference metadata can still be sensitive, and the local detail API can return verified prompt bodies from DSH history. Protect the data directory and API as DSH Session data. Details: [contract](docs/PROMPT_API_V3_en.md).
 
 ## Known risks and operator requirements
 

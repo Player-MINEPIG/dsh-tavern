@@ -24,9 +24,11 @@
 - 生命周期日志只使用 Host `ctx.logger`，字段有白名单和长度上限；不记录提示词、用户消息、模型回复、资源正文、正文长度或摘要。
 - 正式仓库与发布包不得包含真实开发机路径、用户名、临时下载路径、私有 fixture、导入资源或密钥。文档中的路径只能使用明确的通用占位符。
 
-## Trace v3 提示词快照
+## Trace v3 官方历史引用
 
-2.3.0 的 v3 快照与旧 v1 元数据审计不同，会保存渲染后的系统/上下文段落、来源输入和 LLM 层观察到的系统正文，其中可能含插值进提示词的敏感用户内容。独立 `tavern-assemblies.json` 文件以 0600 原子写入，默认最多 256 条 / 单条 2 MiB / 总计 16 MiB。不复制完整普通聊天历史或工具正文。本地 API 访问者能够读取这些正文，应像保护 DSH 历史一样保护数据目录。详见 [合同](docs/PROMPT_API_V3.md)。
+2.3.0 的新 Trace 把 v1 审计与 v3 装配 metadata 合并进 0600 原子写入的 `tavern-trace-records.json` schema 4 文件。它只保存官方 Session 引用、hash、计数、资源/模型/工具摘要和来源关系，不保存新的 section、context、system message 或 `source.text` 正文副本。详情接口会冷读取 DSH 官方历史，并只在 session 身份、日志截点、事件、消息、hash 和 range 全部验证后返回段落/context 正文；来源正文始终为 `textStatus: "not-stored"`。无法恢复时明确返回 unavailable，不用当前资源或另一份全文兜底。默认上限为 256 条 / 单条 2 MiB / 总计 16 MiB。
+
+旧 `tavern-traces.json` 元数据与旧 `tavern-assemblies.json` schema 3 正文快照只读保留；后者可能继续包含升级前保存的敏感提示词。新记录文件虽不含提示词正文，其引用 metadata 仍可能敏感，且本地详情 API 能从 DSH 历史返回经验证的提示词正文。应像保护 DSH Session 数据一样保护数据目录和 API。详见 [合同](docs/PROMPT_API_V3.md)。
 
 ## 已知风险与操作要求
 

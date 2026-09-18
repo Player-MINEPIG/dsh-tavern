@@ -1,6 +1,6 @@
 # Prompt pipeline and compatibility map
 
-**2.3.0 Trace update:** The loader expands its logical profile into ordered official `{name,text}` sections before downstream assembly listeners run. Runtime source relationships and LLM-boundary system snapshots are exposed through [primitive API v3](PROMPT_API_V3_en.md). Existing v1 Trace remains metadata-only; v3 uses a separate bounded body store. References below to a single profile or metadata-only Trace describe the earlier implementation unless explicitly qualified.
+**2.3.0 Trace update:** The loader expands its logical profile into ordered official `{name,text}` sections before downstream assembly listeners run. New schema 4 Trace persists metadata and official Session references only. [Primitive API v3](PROMPT_API_V3_en.md) verifies and resolves section/context bodies on demand and does not store `source.text`.
 
 [中文](PROMPT_PIPELINE.md)
 

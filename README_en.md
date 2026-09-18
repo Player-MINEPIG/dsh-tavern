@@ -20,7 +20,7 @@ pmp-dsh-tavern does not replace DSH with another UI, and it does not copy conver
 - **Mowan / RP mode**: regroup the RP sidebar by character card and playthrough, and provide greeting, display regex, swipe, branch, rollback, import, and export.
 - **DSH remains authoritative**: durable history, tools, permissions, and the final model request stay owned by DSH.
 - **Minimal change, maximum compatibility**: reuse public DSH seams first; do not replace the native frontend or depend on private DOM.
-- **Original sessions stay readable after uninstall**: the plugin stores resources, selections, playthrough pointers, display metadata, and bounded derived prompt snapshots. It does not forge or overwrite DSH history.
+- **Original sessions stay readable after uninstall**: the plugin stores resources, selections, playthrough pointers, display metadata, and bounded Trace metadata/official-history references. It does not forge, overwrite, or copy DSH history bodies.
 
 The dual-mode design is the compatibility mechanism. Outside Mowan, the user still sees ordinary DSH. The plugin mounts its RP surface only after entering RP mode.
 
@@ -93,7 +93,7 @@ Full operations and boundaries: [English usage guide](docs/USAGE_en.md).
 | RP frontend | Character/playthrough sidebar, greeting, body rendering, display regex, swipe, branch, rollback, display-layer edit | [Usage](docs/USAGE_en.md) |
 | Playthrough data | Authoritative DSH sessions, tree timeline, workspace catalog, first-turn read-only import injection, static HTML and ST JSONL export | [API](docs/API_en.md) · [Architecture](docs/ARCHITECTURE_en.md) |
 | Security | RP permission overlay, same-origin/loopback API, workspace path jail, CAS, DOMPurify, content-free operation log | [RP secure mode](docs/RP_SECURE_MODE_en.md) · [Security policy](SECURITY_en.md) |
-| Debugging | Tavern Trace shows per-request sections, source inputs, lore decisions and actual system text; bounded snapshots persist locally | [Trace API/design](docs/PROMPT_API_V3_en.md) |
+| Debugging | Tavern Trace stores per-request section/provenance metadata and official-history references; details verify and read recoverable section bodies on demand, while source bodies are not stored | [Trace API/design](docs/PROMPT_API_V3_en.md) |
 | Third-party | v2 HTTP API, `pmpDshTavernChrome` mode service, DSH slots/store, standalone clients | [RP frontend integration](docs/FRONTEND_INTEGRATION_en.md) |
 
 See the [feature gallery](docs/assets/market/README.md#gallery) for annotated examples of message actions, swipe-linked continuations, native Agent capabilities, session-bound assets, ST-compatible resources, display regex, and native/RP views.

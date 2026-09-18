@@ -1,6 +1,6 @@
 # dsh-tavern package architecture
 
-**2.3.0 Trace 增量：** loader 将逻辑 profile 在下游装配监听器执行前展开为有序的官方 `{name,text}` 段落；装配时来源关系及 LLM 请求层的系统正文快照通过 [v3 元 API](PROMPT_API_V3.md) 提供。旧 v1 Trace 仍仅含元数据，v3 使用独立有界正文存储。下文未特别注明的“单一 profile / Trace 不存正文”描述属于此前实现。
+**2.3.0 Trace 增量：** loader 将逻辑 profile 在下游装配监听器执行前展开为有序的官方 `{name,text}` 段落。新 schema 4 Trace 只持久化 metadata 和官方 Session 引用；[v3 元 API](PROMPT_API_V3.md) 在详情读取时验证并恢复可用的段落/context 正文，永不另存或恢复 `source.text`。旧 v1/schema 3 文件只读兼容。
 
 [English](ARCHITECTURE_en.md)
 
@@ -68,7 +68,7 @@ loader 在任何 Store 构造前解析统一 `storageDir`。默认 bundle 通过
 | `session-template` | “怎样复用 Tavern 配置但创建干净 DSH 会话？” | 有界模板投影/原子存储/API、缺失资源诊断和客户端事务顺序 | DSH 历史、Trace、Session 构造、最终 prompt |
 | `play` | “扮演表面的元状态存在哪、文件怎么守在根内？” | 全局 chrome、扮演工作区路径监狱、timeline/catalog 校验、`deriveFocus`、session HTTP；Host RPC 由 loader 适配 | DSH 事件改写、RP 锁、内置魔丸 DOM、`archiveSession` |
 | `tavern-loader` | “当前资源怎样影响这次 DSH 请求？” | 编译选中预设、映射支持的 call config、append/replace 策略、Host/API 挂载、独占 pending-input 投影、RP 会话叠加 | 重新解释 ST 原始字段、实现具体 UI |
-| `tavern-trace` | “这次 loader 为什么得到这个组合？” | turn/step 对齐、资源摘要、世界书接受/拒绝原因、header 摘要引用、v3 段落/来源/系统正文快照、有界存储/API/并列 view | 替代 DSH 权威、复制完整普通聊天/工具历史、append 会话事件或模型消息 |
+| `tavern-trace` | “这次 loader 为什么得到这个组合？” | turn/step 对齐、资源摘要、世界书决策、段落/来源 metadata、官方历史引用、按需验证读取、有界存储/API/并列 view | 替代 DSH 权威、持久化新的提示词/来源正文副本、append 会话事件或模型消息 |
 
 角色卡已经在 `tavern-format` 增加 adapter/model，并在 `character` 用例层提供管理与资源入口；用户资源由独立 `user` 用例层提供严格 `{id,name,description}` 文档；世界书格式兼容位于独立纯库 `packages/world-book`。所有资源最终由同一个 `tavern-loader` 组合。角色卡和用户模块都不读取预设排序，也不决定字段插入位置。
 
@@ -88,7 +88,8 @@ DSH `0.1.2-rc.1` 的 `agent/inbox/spliced` 是公开、持久的 Session event�
 
 - `world-book` 继续只接收显式 messages/text/options，不能读取 session 或监听 event；
 - `character`、`user` 和 `world-book-library` 不复制 pending 状态，也不改变各自存储模型；
-- `tavern-trace` 接收装配 snapshot；v1 仍仅元数据，v3 保存有界段落/来源/系统正文快照，不保存完整 ActivationContext；
+- `tavern-trace` 接收装配 snapshot，但 schema 4 落盘前删除 section/context/system message/source 正文，只保留 metadata 与官方引用；详情读取时冷查 DSH 历史，不保存完整 ActivationContext；
+- Trace 引用使用官方事件视图的逻辑 seq/message/range，不是压缩日志文件字节偏移；每个详情请求执行一次 cold inspect，长会话有读取成本，不承诺随机访问或 O(1)；
 - `packages/client` 不参与捕获，避免浏览器刷新或多窗口决定运行语义；
 - loader 必须处理 cancel/replace/steer、多个 target、异常清理与下一 step 去重。
 

@@ -26,19 +26,20 @@ The following describes the implemented boundary.
 | --- | --- | --- | --- |
 | Complete current resource fields | `/presets/:id`, `/characters/:id`, `/users/:id`, `/world-books/:id` | No current-resource aggregate | Resource reads belong to v1 |
 | Current bindings and greeting options | Selection endpoints, resource world-books links, configuration preview; `/active` includes a current summary | Past bindings inside historical records only | Current configuration belongs to v1; consumers derive effective greetings and deduplicated links |
-| Current counts, aggregate revision and sampling suggestions | Resource fields can be counted; `/active.callConfig` maps sampling, but there is no identical aggregate snapshot revision | No current counts or aggregate revision; historical section/input counts remain | Consumers compose these values; v1 is not field-for-field response equivalent |
-| Historical bindings, resource summaries and lore decisions | `/traces?sessionId=` | Selection/audit in assembly details and legacy adaptation | Intentional historical audit overlap; retain v1 compatibility, new Trace reads v3 |
-| Historical named sections, source inputs, order and actual system-message verification | None; `/active` reruns assembly using current state | Assembly index and detail | Independent v3 responsibility; current configuration is not a substitute |
+| Current counts, aggregate revision and sampling suggestions | Resource fields can be counted; `/active.callConfig` maps sampling, but there is no identical aggregate snapshot revision | No current counts or aggregate revision; historical section/source metadata retains counts and hashes | Consumers compose these values; v1 is not field-for-field response equivalent |
+| Historical bindings, resource summaries and lore decisions | Legacy `/traces?sessionId=` compatibility reads; new v1 audit and v3 share one schema 4 record | Selection/audit in assembly details and legacy adaptation | Intentional historical audit overlap; old route retained, new captures write one canonical record |
+| Historical named sections, source metadata, order and actual system-message verification | None; `/active` reruns assembly using current state | Assembly index and detail; detail verifies and resolves bodies from official history | Independent v3 responsibility; `source.text` is not stored and current configuration cannot stand in for history |
 
 Implemented boundary: **v1 owns current resources/configuration, v2 owns play
-Session/workspace primitives, v3 owns per-request assembly/provenance (live and historical).** The
-candidate `/sources` aggregator has been removed: GET returns 404 with no alias or
-v1 redirect. Retain historical
-`sections[].sources`: those are past input relationships, not the current aggregator.
+Session/workspace primitives, and v3 owns per-request assembly metadata,
+official-history references, and provenance.** The candidate `/sources` aggregator
+has been removed: GET returns 404 with no alias or v1 redirect. Historical
+`sections[].sources` retain past input relationships as metadata, hashes, and counts;
+new records do not store `source.text`.
 
-Historical overlap does not imply identical IDs or wire fields. v1 Trace has its own
-header-alignment states; the v3 captured audit summary is not a live mirror of later
-v1 updates. Retain legacy readers while using v3 records for new provenance views.
+Historical overlap does not imply identical IDs or wire fields. New v1 audit and v3 assembly
+metadata share a canonical schema 4 record, while the old v1 and schema 3 files remain
+read-only compatibility inputs. Captured audit is not a live mirror of later v1 updates.
 
 v1 `/active` runs loader assembly and lore matching. It does not create a new
 historical Trace record and is not a cheap configuration-only GET. For current
@@ -50,9 +51,10 @@ an atomic cross-resource snapshot.
 
 DSH history and v2 `/sessions/:id/messages` provide authoritative message reads.
 They do not guarantee original pre-assembly fields, disabled content or Tavern
-field provenance, and cannot reconstruct complete resources or replace v3 source
-snapshots. Official `system-prompt/assemble` offers runtime observation, adjustment
-and contribution independently of HTTP v3.
+field provenance, and cannot reconstruct complete resources or historical source bodies.
+The v3 detail route verifies official references before returning section/context bodies;
+source text remains unavailable. Official `system-prompt/assemble` offers runtime
+observation, adjustment, and contribution independently of HTTP v3.
 
 Audit evidence: [Trace API handler](../packages/tavern-loader/src/prompt-trace-api.js),
 [configuration preview](../packages/session-template/src/service.js),
@@ -483,8 +485,8 @@ Prefix: `/pmp-dsh-tavern/api/v3`. Read-only candidate contract.
 | Method | Path | Behavior | Status |
 | --- | --- | --- | --- |
 | GET | `/capabilities` | Contract capabilities, source mapping and capacity limits | Implemented in candidate |
-| GET | `/sessions/:id/assemblies` | Historical index without section bodies | Implemented in candidate |
-| GET | `/sessions/:id/assemblies/:recordId` | Historical sections, source inputs and request verification | Implemented in candidate |
+| GET | `/sessions/:id/assemblies` | Historical index without section/context/system-message bodies | Implemented in candidate |
+| GET | `/sessions/:id/assemblies/:recordId` | Cold-read official history; verified section/context bodies plus source metadata/hash/counts | Implemented in candidate |
 
 Fields, examples, errors and persistence: [v3 detailed contract](PROMPT_API_V3_en.md).
 The former `/sessions/:id/sources` endpoint returns 404. Read current configuration and complete resources through v1.

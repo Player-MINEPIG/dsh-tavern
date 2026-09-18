@@ -2,21 +2,25 @@
 
 ## 2.3.0 — Candidate, not released — Prompt assembly Trace
 
-- Fix historical index merging after independent v1/v3 eviction resets request counters. New captures carry a unique correlation ID; oversized snapshots keep it, and unlinked old records remain explicit. Existing v1 IDs and routes remain compatible.
+- Replace separate new v1/v3 writes with one canonical schema 4 `tavern-trace-records.json` record per capture. The record keeps audit/assembly metadata and verified official Session pointers; existing v1 IDs and all three read-only v3 routes remain compatible.
+- Stop persisting new section, context, system-message, and source-text copies. Detail reads cold-inspect official DSH history, return section/context bodies only after identity/cut/event/message/hash/range verification, keep `source.textStatus: not-stored`, and report unavailable content without reassembly or a full-text fallback.
+- Retain old `tavern-traces.json` v1 metadata and `tavern-assemblies.json` schema 3 snapshots as read-only compatibility inputs. New and old records share the historical index without guessing identity from reusable turn/step/attempt values.
+- Bound the canonical reference store to 256 records, 16 MiB total, and 2 MiB per record by default. Oversized records keep explicit omission metadata; retention never deletes DSH history.
+- Verify the schema 4 path in the real Host and browser: after restart, detail inspect recovered 23 official sections, retained two source relationships without their original bodies, and exposed the same capture through v1 and v3.
 - Clear the null-tags compatibility warning after editing tags to a valid array; unrelated edits preserve the original diagnostic.
-- Synchronize bilingual installation, usage, security and API documentation with the Trace candidate, target Host Node requirements and shared bounded prompt-body retention.
+- Synchronize bilingual usage, security, architecture and API documentation with official-history reference storage and its privacy boundary.
 
 - Fix greeting navigation treating empty alternate entries as selectable openings. Skip blank alternatives without renumbering card indices, disable each direction at its boundary, and retain a recovery control for an already selected blank opening. Apply the same behavior to RP chat and the opening dock. Full suite: 573 passes, zero failures, two conditional skips.
 - Accept character-card `tags: null` as empty normalized metadata with a diagnostic, preserving source JSON and exports. Cover V1/V2/V3, dual PNG chunks, editing and malformed tag rejection. Verified an affected PNG through import, persistence/reload and lossless JSON export; full suite: 570 passes, zero failures, two conditional skips.
 - Keep the RP conversation view available after reloading a fork when unrelated old playthroughs reference missing sessions. Skip only missing-session errors during membership discovery; retain known-owner and permission/migration errors. Display regex continues to run in RP while native DSH chat retains raw messages.
-- Restore configuration-first Trace presentation using historical v3 audit snapshots. World-book activation and Loader assembly are separately collapsed; preserve legacy configuration/lore views and distinguish unrecorded fields from unused resources. Explain turn/step/request capture, show “Request record N” only for subsequent captures, and localize request states. Clarify that DSH retries may reuse the existing assembly and Tavern only observes request events.
+- Restore configuration-first Trace presentation using captured audit metadata. World-book activation and Loader assembly are separately collapsed; preserve legacy configuration/lore views and distinguish unrecorded fields from unused resources. Explain turn/step/request capture, show “Request record N” only for subsequent captures, and localize request states. Clarify that DSH retries may reuse the existing assembly and Tavern only observes request events.
 
 - Fix new-playthrough creation when an older workspace references sessions absent from the current DSH home. A missing session makes that old run ineligible for empty reuse; its references remain unchanged and a new run can be created. Map the official direct `ApiSessionNotFound` error to `404 PLAY_SESSION_NOT_FOUND`, and explain missing logs in the sidebar. Other errors, including coordinate migration failures, still propagate.
 
 - Expand existing preset/character/lore blocks into official named sections without changing ordinary prompt text or preset order; capture mixed-source relationships during assembly.
 - Add small, read-only v3 primitives for capabilities, historical indexes and details. Current resources/configuration remain in v1; the unpublished `/sources` aggregate and its capability fields have been removed. No composer ownership registry; released v1/v2 remain available.
-- Capture per-turn/step/attempt snapshots, verify against the LLM-boundary system message, preserve unknown/complete-override distinctions, and retain bounded local history across restart.
-- Move Tavern Trace to v3 with lazy source/text details, request verification and live refresh. Old metadata-only records remain readable.
+- Capture per-turn/step/attempt metadata, verify against the LLM-boundary system message, preserve unknown/complete-override distinctions, and retain bounded reference history across restart.
+- Move Tavern Trace to v3 with verified on-demand section/context reads, source metadata without source bodies, request verification and live refresh. Old metadata and schema 3 body records remain readable.
 - Target DSH 0.1.5-rc.1; see [contract](PROMPT_API_V3_en.md) and [acceptance](TRACE_REVIEW_en.md) for privacy changes, limits and manual checks.
 
 ## 2.2.0 — 2026-09-11 — DSH 0.1.5-rc.1 compatibility and rich-text rendering

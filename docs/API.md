@@ -23,13 +23,14 @@ v1 的 error 形状和方法拒绝状态码因资源而异，文档排版统一�
 | --- | --- | --- | --- |
 | 当前资源完整字段 | `/presets/:id`、`/characters/:id`、`/users/:id`、`/world-books/:id` | 不提供当前资源聚合 | 完整资源读取归 v1 |
 | 当前绑定与开场选项 | 各 selection、资源 world-books 子接口、configuration preview；`/active` 含当前汇总 | 仅保留历史记录内的当时绑定 | 当前配置归 v1；有效开场正文与关系去重由调用者派生 |
-| 当前字段计数、整体 revision、采样建议 | 资源字段可计数；`/active.callConfig` 含采样映射，但无相同的全量快照 revision | 不提供当前字段计数或聚合 revision；保留历史段落与来源的计数 | 调用者自行组合；不能宣称 v1 响应逐字段等价 |
-| 历史绑定、资源摘要、世界书决策 | `/traces?sessionId=` | `/assemblies` 详情内的 selection/audit，及 legacy 适配 | 有意的历史审计重叠；v1 兼容保留，新 Trace 读 v3 |
-| 当时的具名段落、来源输入、顺序、实际系统消息核对 | 无；`/active` 只能按当前配置重新装配 | `/assemblies` 索引与详情 | v3 独立职责，不能用当前配置替代 |
+| 当前字段计数、整体 revision、采样建议 | 资源字段可计数；`/active.callConfig` 含采样映射，但无相同的全量快照 revision | 不提供当前字段计数或聚合 revision；保留历史段落与来源 metadata 的计数/hash | 调用者自行组合；不能宣称 v1 响应逐字段等价 |
+| 历史绑定、资源摘要、世界书决策 | 旧 `/traces?sessionId=` 兼容读取；新 v1 审计与 v3 共享 schema 4 record | `/assemblies` 详情内的 selection/audit，及 legacy 适配 | 有意的历史审计重叠；旧路由保留，新采集只写 canonical record |
+| 当时的具名段落、来源 metadata、顺序、实际系统消息核对 | 无；`/active` 只能按当前配置重新装配 | `/assemblies` 索引与详情；详情从官方历史验证恢复正文 | v3 独立职责；`source.text` 不保存，当前配置不能冒充历史 |
 
-职责边界：**v1 管当前资源与配置，v2 管扮演会话/工作区元操作，v3 管逐次装配记录与来源追踪（运行中及历史）。**
+职责边界：**v1 管当前资源与配置，v2 管扮演会话/工作区元操作，v3 管逐次装配 metadata、官方历史引用与来源追踪。**
 当前候选 `/sources` 已删除，GET 返回 404，不提供别名或 v1 重定向。
-历史 `sections[].sources` 继续保留，它是当时的来源输入关系，不是当前 `/sources` 聚合端点。
+历史 `sections[].sources` 继续保留段落级关系与 hash/counts，但新记录的 `source.text` 为
+`not-stored`，不是当前 `/sources` 聚合端点。
 
 历史审计重叠不表示 ID 或响应字段可以互换。v1 有自己的 header 对齐状态，v3 采集时的
 audit 摘要也不会持续镜像 v1 后续更新；保留旧消费者，新来源视图使用 v3 记录。
@@ -40,8 +41,9 @@ v1 `/active` 调用 loader 装配和世界书匹配；它不保存新的历史 T
 preview 包含模板范围内的已保存 RP 字段；实时 RP/pending 状态另读 `/rp-mode`。
 这条路径不运行提示词装配，但多个 HTTP 响应不构成跨资源原子快照。
 
-DSH 历史以及 v2 `/sessions/:id/messages` 提供权威消息读取；它们不保证保留装配前原文、
-未启用字段或 Tavern 的字段来源关系，不能反推出完整资源文档或代替 v3 来源快照。
+DSH 历史以及 v2 `/sessions/:id/messages` 提供权威消息读取；v3 详情另外通过只读 inspect 和
+官方引用恢复经验证的段落/context 正文。它们不保证保留装配前来源原文、未启用字段或完整
+资源文档；当前 v1 资源也不能代替历史 `source.text`。
 官方 `system-prompt/assemble` 是运行期观察/调整/贡献段落的选择，不依赖 HTTP v3。
 
 核对依据：[Trace API 路由](../packages/tavern-loader/src/prompt-trace-api.js)、
@@ -493,8 +495,8 @@ stage 或 terminal 调用无效且不会重复写终态。
 | 方法 | 路径 | 作用 | 状态 |
 | --- | --- | --- | --- |
 | GET | `/capabilities` | 合同能力、来源映射与容量限制 | 候选已实现 |
-| GET | `/sessions/:id/assemblies` | 不含段落正文的历史索引 | 候选已实现 |
-| GET | `/sessions/:id/assemblies/:recordId` | 历史段落、来源输入与请求核对详情 | 候选已实现 |
+| GET | `/sessions/:id/assemblies` | 不含段落/context/系统消息正文的历史索引 | 候选已实现 |
+| GET | `/sessions/:id/assemblies/:recordId` | 冷读取官方历史并验证恢复段落/context 正文；来源只返回 metadata/hash/counts | 候选已实现 |
 
 字段、示例、错误码与持久化见 [v3 详细合同](PROMPT_API_V3.md)。
 旧候选 `/sessions/:id/sources` 已删除，GET 返回 404；当前配置及完整资源请读 v1。
