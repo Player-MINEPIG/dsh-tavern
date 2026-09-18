@@ -1,5 +1,6 @@
 import { AssemblyStore } from '../../tavern-trace/src/assembly-store.js'
 import { AssemblyRecorder } from '../../tavern-trace/src/assembly-recorder.js'
+import { createAssemblyBodyReader } from '../../tavern-trace/src/body-references.js'
 import { createPromptTraceApi } from './prompt-trace-api.js'
 import {
   PresetStore,
@@ -344,12 +345,12 @@ export function apply(ctx, config = {}) {
     maxQueuedMessages: config.pendingInput?.maxQueuedMessages,
   })
   runtime.registerActivationContextProvider(agent => pendingInput.activationContext(agent))
-  const traceStore = new TavernTraceStore(storageDir, config.trace)
+  const assemblyStore = new AssemblyStore(storageDir, config.traceAssemblies)
+  const traceStore = new TavernTraceStore(storageDir, config.trace, assemblyStore)
   if (traceStore.resetOversizedFile) {
-    ctx.logger.warn?.('dsh-tavern: oversized legacy Tavern Trace storage exceeded the safe read limit and was reset')
+    ctx.logger.warn?.('dsh-tavern: legacy Tavern Trace storage exceeded the safe read limit; the original file was retained')
   }
   const traceRecorder = new TavernTraceRecorder(traceStore)
-  const assemblyStore = new AssemblyStore(storageDir, config.traceAssemblies)
   const assemblyRecorder = new AssemblyRecorder(assemblyStore)
   runtime.registerCharacterAdapter(createCharacterAdapter(characterStore))
   runtime.registerUserAdapter(createUserAdapter(userStore))
@@ -560,7 +561,8 @@ export function apply(ctx, config = {}) {
   })
 
   const registerHttpApi = webCtx => {
-    const promptTraceApi = createPromptTraceApi({ assemblies: assemblyStore, legacyStore: traceStore })
+    const promptTraceApi = createPromptTraceApi({ assemblies: assemblyStore, legacyStore: traceStore,
+      readBodies: createAssemblyBodyReader(ctx.get('sessionController')) })
     const presetApi = createPresetApiHandler(
       store,
       notifyChange,

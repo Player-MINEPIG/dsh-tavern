@@ -62,7 +62,7 @@ test('a complete prompt or duplicate output never gets guessed source offsets', 
     const id = f.recorder.request(request('COMPLETE'))
     const row = f.store.get('session', id)
     assert.equal(row.delivery.assemblyVerified, false)
-    assert.deepEqual(row.systemMessages, ['COMPLETE'])
+    assert.equal(row.systemMessages, undefined)
     start(f.recorder)
     const options = request(assembled().systemText); options.messages.push(options.messages[0])
     const second = f.recorder.request(options)
@@ -74,7 +74,7 @@ test('oversize records retain explicit omissions; total retention survives reloa
   const f = fixture()
   try {
     const tiny = new AssemblyStore(f.directory, { maxRecordBytes: 4096, maxTotalBytes: 8192 })
-    const row = tiny.put({ id: 'a', sessionId: 'session', turn: 1, step: 1, attempt: 1, status: 'request-observed', sections: ['x'.repeat(9000)] })
+    const row = tiny.put({ schemaVersion: 4, id: 'a', sessionId: 'session', turn: 1, step: 1, attempt: 1, status: 'request-observed', metadata: 'x'.repeat(9000) })
     assert.equal(row.contentStatus, 'omitted-size-limit')
     for (let i = 0; i < 300; i++) tiny.put({ ...row, id: String(i) })
     assert.ok(Buffer.byteLength(readFileSync(tiny.path)) <= 8192)
@@ -100,14 +100,14 @@ test('v3 exposes read-only index/detail primitives with explicit IDs and cold hi
     const list = await invoke(api, `${base}/sessions/session/assemblies`)
     assert.equal(list.headers['Cache-Control'], 'no-store')
     assert.equal(list.body.records.length, 1)
-    assert.equal((await invoke(api, `${base}/sessions/session/assemblies/${id}`)).body.record.sections.length, 4)
+    assert.equal((await invoke(api, `${base}/sessions/session/assemblies/${id}`)).body.record.sections.length, 3)
     assert.equal((await invoke(api, `${base}/sessions/session/assemblies/missing`)).status, 404)
     assert.equal((await invoke(api, `${base}/sessions/%00/assemblies`)).status, 400)
     assert.equal((await invoke(api, `${base}/capabilities`, 'PUT')).status, 405)
   } finally { f.cleanup() }
 })
 
-test('removed current-source endpoint stays absent while historical source inputs remain readable', async () => {
+test('removed current-source endpoint stays absent while historical source metadata remains readable', async () => {
   const f = fixture()
   try {
     start(f.recorder); const id = f.recorder.request(request(assembled().systemText))
@@ -123,8 +123,10 @@ test('removed current-source endpoint stays absent while historical source input
     assert.equal('currentSources' in capabilities, false)
     assert.equal('maxSourceBytes' in capabilities, false)
     const { record } = (await invoke(api, `${base}/sessions/session/assemblies/${id}`)).body
-    const source = record.sections.flatMap(section => section.sources).find(source => source.text === '角色😀')
+    const source = record.sections.flatMap(section => section.sources).find(source => source.kind === 'character' && source.field === 'description')
     assert.equal(source.resourceId, 'c')
+    assert.equal(source.text, undefined)
+    assert.equal(source.textStatus, 'not-stored')
     assert.equal(source.characters, 3)
     assert.equal(source.utf16Units, 4)
     assert.equal(source.utf8Bytes, 10)
@@ -172,7 +174,7 @@ test('legacy merging keeps the earlier request when v3 eviction resets the same-
     const first = capture()
     assert.equal(store.get('session', first.id).attempt, 1)
     for (const id of ['pressure-1', 'pressure-2']) {
-      store.put({ schemaVersion: 3, id, sessionId: 'other', sections: [{ text: 'x'.repeat(3200) }] })
+      store.put({ schemaVersion: 4, id, sessionId: 'other', metadata: 'x'.repeat(3200) })
     }
     assert.equal(store.get('session', first.id), null)
     assert.equal(legacyStore.list('session').length, 1)
@@ -197,12 +199,12 @@ test('legacy merging uses captured identity for omitted records and never guesse
     const legacyStore = new TavernTraceStore(f.directory)
     const legacy = { id: '1:1:1', captureId: 'fixed-test-capture', turn: 1, step: 1, attempt: 1, recordedAt: 1 }
     legacyStore.upsert('session', legacy)
-    const base = { schemaVersion: 3, sessionId: 'session', turn: 1, step: 1, attempt: 1, recordedAt: 1 }
+    const base = { schemaVersion: 4, sessionId: 'session', turn: 1, step: 1, attempt: 1, recordedAt: 1 }
     store.put({ ...base, id: 'unlinked', audit: {} })
     let api = createPromptTraceApi({ assemblies: store, legacyStore })
     let list = await invoke(api, '/pmp-dsh-tavern/api/v3/sessions/session/assemblies')
     assert.deepEqual(new Set(list.body.records.map(row => row.id)), new Set(['legacy:1:1:1', 'unlinked']))
-    const omitted = store.put({ ...base, id: 'omitted', audit: legacy, sections: [{ text: 'x'.repeat(9000) }] })
+    const omitted = store.put({ ...base, id: 'omitted', audit: legacy, metadata: 'x'.repeat(9000) })
     assert.equal(omitted.contentStatus, 'omitted-size-limit')
     assert.equal(omitted.legacyCaptureId, legacy.captureId)
     assert.equal('audit' in omitted, false)
@@ -261,8 +263,8 @@ test('historical snapshots without capture UUIDs are never matched by reused ID 
     const legacyStore = new TavernTraceStore(f.directory)
     const legacy = { id: '1:1:1', turn: 1, step: 1, attempt: 1, recordedAt: 1 }
     legacyStore.upsert('session', legacy)
-    f.store.put({ schemaVersion: 3, sessionId: 'session', id: 'historical-v3',
-      turn: 1, step: 1, attempt: 1, recordedAt: 1, audit: legacy })
+    writeFileSync(join(f.directory, 'tavern-assemblies.json'), JSON.stringify({ schemaVersion: 3, records: [{ schemaVersion: 3, sessionId: 'session', id: 'historical-v3',
+      turn: 1, step: 1, attempt: 1, recordedAt: 1, audit: legacy }] }))
     const api = createPromptTraceApi({ assemblies: new AssemblyStore(f.directory), legacyStore })
     const list = await invoke(api, '/pmp-dsh-tavern/api/v3/sessions/session/assemblies')
     assert.deepEqual(new Set(list.body.records.map(row => row.id)), new Set(['historical-v3', 'legacy:1:1:1']))

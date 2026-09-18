@@ -5,6 +5,7 @@ import { pathToFileURL } from 'node:url'
 import { join, resolve } from 'node:path'
 import { tmpdir } from 'node:os'
 import { mkdtempSync, rmSync } from 'node:fs'
+import { createAssemblyBodyReader } from '../packages/tavern-trace/src/body-references.js'
 import * as tavern from '../packages/tavern-loader/src/index.js'
 
 const runtimeRoot = process.env.DSH_TAVERN_PROMPT_COMPAT_ROOT
@@ -41,6 +42,8 @@ test('DSH 0.1.5 real AgentLoop: official sections, LLM capture, durable system m
     store.select(preset.id)
     const handle = await root.agents.create({ sessionId: 'trace-host', agentOptions: { provider: 'synthetic', model: 'test' } })
     const { agent } = handle
+    const readBodies = createAssemblyBodyReader({ inspect: async () => ({ meta: agent.session.header, events: agent.session.snapshotEvents() }) })
+    const readRecord = async id => readBodies(store.assemblyStore.get(agent.id, id))
     const observations = []
     root.on('system-prompt/assemble', async (_input, context, next) => { const result = await next(); observations.push(result.sections.map(s => s.name)); return result })
     async function turn() {
@@ -60,7 +63,12 @@ test('DSH 0.1.5 real AgentLoop: official sections, LLM capture, durable system m
     await turn()
     const firstSummary = store.assemblyStore.list(agent.id)[0]
     assert.ok(firstSummary, 'a real loop request must produce a v3 record')
-    const first = store.assemblyStore.get(agent.id, firstSummary.id)
+    const stored = store.assemblyStore.get(agent.id, firstSummary.id)
+    assert.equal(stored.sections.some(part => 'text' in part), false)
+    assert.equal(stored.delivery.historyVerified, true)
+    const first = await readRecord(firstSummary.id)
+    assert.equal(first.contentStatus, 'available')
+    assert.ok(!first.systemMessages.join('').includes('<st-prompt'))
     assert.equal(first.status, 'request-observed')
     assert.equal(first.delivery.assemblyVerified, true)
     assert.ok(first.sections.some(s => s.name.includes(':part:') && s.text.includes('BEFORE')))
@@ -74,7 +82,7 @@ test('DSH 0.1.5 real AgentLoop: official sections, LLM capture, durable system m
       return result
     })
     await turn()
-    const transformed = store.assemblyStore.get(agent.id, store.assemblyStore.list(agent.id)[1].id)
+    const transformed = await readRecord(store.assemblyStore.list(agent.id)[1].id)
     assert.equal(transformed.delivery.assemblyVerified, true)
     const replaced = transformed.sections.find(s => s.text === 'THIRD_PARTY_REPLACEMENT')
     assert.equal(replaced.provenance, 'unknown')
@@ -83,7 +91,7 @@ test('DSH 0.1.5 real AgentLoop: official sections, LLM capture, durable system m
     removeTransform()
     const removeComplete = agent.ctx.systemPrompt.section({ name: 'third-party:complete', order: 0, complete: true, text: 'ONLY_COMPLETE' })
     await turn()
-    const second = store.assemblyStore.get(agent.id, store.assemblyStore.list(agent.id)[2].id)
+    const second = await readRecord(store.assemblyStore.list(agent.id)[2].id)
     assert.equal(second.delivery.assemblyVerified, false)
     assert.deepEqual(second.systemMessages, ['ONLY_COMPLETE'])
     removeComplete()

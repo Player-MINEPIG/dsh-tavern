@@ -4,10 +4,34 @@ Implementation candidate; manual use and reported-fix verification have taken pl
 Branch: `codex/trace-api-v3`, created from main. The former composer v3 branch was
 not merged. [中文](TRACE_REVIEW.md) · [API and design](PROMPT_API_V3_en.md)
 
-## Pre-release checks — 2026-09-18
+## Official-history reference correction — 2026-09-18 (current candidate)
 
-These are the latest results after the fixes below. Lower counts in later sections
-are historical evidence from earlier delivery stages.
+This section supersedes the per-request body-copy design described in the historical evidence below.
+
+- Removed Tavern-generated identity wrappers, resource-name headings and ID labels from model text.
+  Author text, macros, ordering and semantic import trust boundaries remain. Official section names and provenance stay metadata.
+- New schema-4 captures store metadata and verified official event references in `tavern-trace-records.json`.
+  v1/v3 share one capture; the two older Trace files remain read-only and are not automatically compacted or converted.
+- Detail reads use cold official `inspect`, validating format, Session identity, cut, event/message, hashes and ranges.
+  Missing or mismatched history is unavailable, with no reassembly or body-copy fallback. Source originals are not stored;
+  source IDs, fields, revisions, counts, hashes and requested ST roles remain metadata.
+- `npm run check`: 602 tests, 600 passed, 0 failed, 2 conditional skips, with rc.1 AgentLoop/codecs enabled.
+  Coverage includes Unicode, replacement/reuse, inherited prefixes, format changes, truncation, missing history,
+  hash/identity failures, large-card size independence, shared storage, attempt counting and legacy audit precedence.
+- Real DSH 0.1.5-rc.1 Host with a synthetic model: 23 sections and 2 Tavern inputs resolved for a preset-bearing turn.
+  After stopping, removing the request fixture and restarting, the same record resolved without reassembly.
+  Two new records occupied about 34 KiB with no system-message, section, context or original-source body copies.
+  This is a synthetic sample, not a guaranteed retention estimate.
+- `npm run verify:2.0`, build and 203-file package checks passed; real-Host v2 smoke passed 16/16.
+- Browser acceptance verified configuration first, independently collapsed lore/Loader details, official-log text,
+  explicit source-original non-storage and requested ST role metadata, with no warnings/errors.
+  Full-message validation is cached within a detail read to avoid repeated hashing per section.
+
+Real-card experience, third-party integration and real-model cancellation/timeout/retry combinations still need maintainer acceptance below.
+
+## Earlier pre-release checks — 2026-09-18
+
+These are historical results from before the reference correction, not the current body-storage contract.
 
 - Fix false index deduplication when independent v1/v3 retention reuses request
   counters. New v1 `captureId` and v3 `legacyCaptureId` associate one capture without
@@ -39,8 +63,7 @@ No unresolved release-blocking defect was found. Actual third-party ordering/rew
 integration and real-provider cancellation, timeout and retry combinations remain in
 the manual checklist below. Automated checks do not substitute for those results.
 Trace currently provides recent bounded audit data, not permanent archiving. Broader
-retention and official-log-reference storage are follow-up design discussions, not
-implemented in this candidate. No merge, tag or release.
+retention was a follow-up discussion; official-log references are now implemented as described at the top of this document. No merge, tag or release.
 
 ## Delivered requirements
 
@@ -177,11 +200,14 @@ behavior; avoid submitting private prompt bodies.
    and inputs. Expect preset ordering, interleaved character/lore, identifiable mixed
    `{{original}}` inputs, first-turn greeting semantics and code-point counts (not tokens).
    Compare text and separators with official system text. Unmodified assembly should
-   verify; source inputs are not character-by-character maps.
+   verify; source inputs are not character-by-character maps. Tavern-generated `<st-prompt>` or card-ID wrappers
+   should be absent (author-authored labels remain). Input details show identity/counts/hashes and explain that
+   original text was not stored; do not expect historical source.text for new records.
 4. **Preserve history across edits/restart.** Save the first recordId/detail response,
    edit the card/preset and send another turn. Expect new content only in the new
-   record, with unchanged old text/bindings/inputs. Restart and read the old record
-   before activating the Session. Switch Sessions and toggle Trace rapidly; expect
+   record, with unchanged old text/bindings/input metadata while official history remains available and verifiable. Restart and read the old record
+   before activating the Session. In a disposable copy, move the official log aside: bodies must become explicitly
+   unavailable while metadata remains readable; restore the log and read again. Switch Sessions and toggle Trace rapidly; expect
    no stale responses or content from another Session.
 5. **Integrate the third-party plugin.** Ask its developer to use both the
    [v3 reader](examples/trace-reader.mjs) and [official observer](examples/official-prompt-observer.mjs).
@@ -218,9 +244,10 @@ for (const path of [
 
 ## Limits before release
 
-Prompt snapshots may contain sensitive text and are bounded local data. Eviction
-does not delete DSH history. Sources are section inputs, not per-character maps;
-contexts are assembly-stage facts. Current resources/configuration remain in v1;
+New records store bounded metadata and official-log references; names and keywords can still be sensitive.
+Bodies require retained, verifiable official history. Old body snapshots remain readable and are not automatically removed.
+Eviction does not delete DSH history. Sources are section inputs, not per-character maps;
+contexts reference verified named sections in official context snapshots. Current resources/configuration remain in v1;
 v3 index/detail reads also work while the Agent is offline. One Host writes a store; multi-process writes are unsupported.
 Older DSH paths remain, but new Trace runtime evidence targets 0.1.5-rc.1. Merge and
 release follow maintainer acceptance.

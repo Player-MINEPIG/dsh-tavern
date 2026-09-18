@@ -74,6 +74,7 @@ export function createTavernTraceApiHandler(store) {
           maxRecordBytes: store.maxRecordBytes,
           maxTotalBytes: store.maxTotalBytes,
           persistedBytes: store.persistedBytes,
+          ...(store.assemblies ? { ...store.assemblies.storage(), sharedWithV3: true, persistedBytes: store.assemblies.persistedBytes } : {}),
         },
         authority: 'DSH request/header owns config and tools; V3 system/message owns the effective system prompt (V2: header.system).',
       }, store.maxTotalBytes)

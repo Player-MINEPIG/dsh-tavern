@@ -683,6 +683,30 @@ var zh_CN_default = Object.freeze({
   "trace.v3.sections": "\u7CFB\u7EDF\u63D0\u793A\u8BCD\u6BB5\u843D",
   "trace.v3.contexts": "\u52A8\u6001\u4E0A\u4E0B\u6587\uFF08\u88C5\u914D\u9636\u6BB5\uFF09",
   "trace.v3.actual": "\u5B9E\u9645\u8BF7\u6C42\u4E2D\u7684\u7CFB\u7EDF\u6D88\u606F",
+  "trace.v4.referenceOnly": "\u6B63\u6587\u5C06\u5728\u5C55\u5F00\u65F6\u4ECE DSH \u5B98\u65B9\u4F1A\u8BDD\u65E5\u5FD7\u8BFB\u53D6",
+  "trace.v4.metadataRetention": "Tavern \u4EC5\u4FDD\u5B58\u6709\u754C\u7684\u88C5\u914D\u5143\u6570\u636E\u548C\u5B98\u65B9\u65E5\u5FD7\u5F15\u7528\uFF1B\u6B63\u6587\u80FD\u5426\u663E\u793A\u53D6\u51B3\u4E8E\u5BF9\u5E94 DSH \u4F1A\u8BDD\u65E5\u5FD7\u662F\u5426\u4ECD\u5728\u5176\u4FDD\u7559\u671F\u5185\u4E14\u53EF\u9A8C\u8BC1\u3002",
+  "trace.v4.sourceNotStored": "\u6765\u6E90\u539F\u6587\u672A\u7531 Tavern \u4FDD\u5B58\uFF1B\u4EE5\u4E0B\u4EC5\u663E\u793A\u5F53\u65F6\u8BB0\u5F55\u7684\u6765\u6E90\u8EAB\u4EFD\u3001\u957F\u5EA6\u548C\u6458\u8981\u3002",
+  "trace.v4.legacySnapshot": "\u65E7\u7248\u8BB0\u5F55\u4E2D\u4FDD\u5B58\u7684\u5386\u53F2\u6B63\u6587\u5FEB\u7167\u3002",
+  "trace.v4.bodyUnavailable": "\u65E0\u6CD5\u4ECE\u5B98\u65B9\u4F1A\u8BDD\u65E5\u5FD7\u8BFB\u53D6\u6216\u9A8C\u8BC1\u6B64\u6B63\u6587\uFF1A{reason}",
+  "trace.v4.systemMessagesUnavailable": "\u65E0\u6CD5\u5B8C\u6574\u89E3\u6790\u5B9E\u9645\u8BF7\u6C42\u4E2D\u7684\u7CFB\u7EDF\u6D88\u606F\u5F15\u7528\uFF1B\u6B64\u5904\u672A\u663E\u793A\u6B63\u6587\u4E0D\u4EE3\u8868\u5F53\u65F6\u6CA1\u6709\u63D0\u793A\u8BCD\u3002",
+  "trace.v4.requestedRole": "\u8BF7\u6C42\u7684 ST \u89D2\u8272\uFF1A{role}\uFF08\u4EC5\u8868\u793A\u63D2\u5165\u4F4D\u7F6E\u8BF7\u6C42\uFF0C\u5E76\u975E\u5B9E\u9645 DSH \u6D88\u606F\u89D2\u8272\uFF09",
+  "trace.v4.sourceHash": "\u6458\u8981 {hash}",
+  "trace.v4.sourceIdentity": "\u8BB0\u5F55\u7684\u6765\u6E90\u8EAB\u4EFD\uFF1A{value}",
+  "trace.v4.storageSummary": "Tavern \u6709\u754C\u4FDD\u5B58\u88C5\u914D\u5143\u6570\u636E\u548C\u5B98\u65B9\u65E5\u5FD7\u5F15\u7528\uFF1A{limits}\u3002\u6B63\u6587\u9700\u8981\u5BF9\u5E94 DSH \u4F1A\u8BDD\u65E5\u5FD7\u4ECD\u53EF\u7528\u3002",
+  "trace.v4.status.available": "\u6B63\u6587\u5F15\u7528\u5DF2\u89E3\u6790",
+  "trace.v4.status.partial": "\u90E8\u5206\u6B63\u6587\u5F15\u7528\u4E0D\u53EF\u7528",
+  "trace.v4.status.unavailable": "\u6B63\u6587\u5F15\u7528\u4E0D\u53EF\u7528",
+  "trace.v4.status.referenceOnly": "\u4EC5\u4FDD\u5B58\u5F15\u7528",
+  "trace.v4.reason.historyUnavailable": "\u4F1A\u8BDD\u5386\u53F2\u4E0D\u53EF\u7528",
+  "trace.v4.reason.historyReadFailed": "\u8BFB\u53D6\u4F1A\u8BDD\u5386\u53F2\u5931\u8D25",
+  "trace.v4.reason.formatMismatch": "\u5B98\u65B9\u65E5\u5FD7\u683C\u5F0F\u4E0D\u5339\u914D",
+  "trace.v4.reason.sessionMismatch": "\u5F15\u7528\u7684\u4F1A\u8BDD\u4E0D\u5339\u914D",
+  "trace.v4.reason.cutUnavailable": "\u5F15\u7528\u7684\u5386\u53F2\u622A\u9762\u4E0D\u53EF\u7528",
+  "trace.v4.reason.eventUnavailable": "\u5F15\u7528\u7684\u4E8B\u4EF6\u4E0D\u53EF\u7528",
+  "trace.v4.reason.identityMismatch": "\u5F15\u7528\u8EAB\u4EFD\u4E0D\u5339\u914D",
+  "trace.v4.reason.hashMismatch": "\u6B63\u6587\u6458\u8981\u6821\u9A8C\u5931\u8D25",
+  "trace.v4.reason.rangeMismatch": "\u6B63\u6587\u8303\u56F4\u6821\u9A8C\u5931\u8D25",
+  "trace.v4.reason.unverified": "\u5F15\u7528\u65E0\u6CD5\u9A8C\u8BC1",
   "trace.intro": "\u4E0E Conversation / Trajectory \u5E76\u5217\u7684 loader \u5BA1\u8BA1\u89C6\u56FE\u3002DSH request/header \u662F tools \u4E0E config \u7684\u6743\u5A01\uFF1BV3 \u7531 system/message \u63D0\u4F9B\u751F\u6548\u7CFB\u7EDF\u63D0\u793A\u8BCD\uFF08V2 \u4F7F\u7528 header.system\uFF09\u3002",
   "trace.reading": "\u6B63\u5728\u8BFB\u53D6\u5BA1\u8BA1\u8BB0\u5F55\u2026",
   "trace.empty": "\u6B64\u4F1A\u8BDD\u8FD8\u6CA1\u6709 Tavern \u8BF7\u6C42\u5BA1\u8BA1\u8BB0\u5F55\u3002\u53D1\u9001\u4E0B\u4E00\u6761\u6D88\u606F\u540E\u518D\u67E5\u770B\u3002",
@@ -1363,6 +1387,30 @@ var en_default = Object.freeze({
   "trace.v3.sections": "System prompt sections",
   "trace.v3.contexts": "Runtime contexts (assembly stage)",
   "trace.v3.actual": "System messages in the observed request",
+  "trace.v4.referenceOnly": "Bodies are read from the official DSH session log when this record is opened",
+  "trace.v4.metadataRetention": "Tavern stores bounded assembly metadata and official-log references. Bodies remain viewable only while the matching DSH session log is retained and can be verified.",
+  "trace.v4.sourceNotStored": "Tavern did not store the original source text; only its captured identity, length, and digest are shown below.",
+  "trace.v4.legacySnapshot": "Historical body snapshot stored by the legacy record.",
+  "trace.v4.bodyUnavailable": "This body could not be read or verified from the official session log: {reason}",
+  "trace.v4.systemMessagesUnavailable": "The observed request system-message references could not all be resolved. No body shown here does not mean that no prompt was sent.",
+  "trace.v4.requestedRole": "Requested ST role: {role} (an insertion-position request, not the role of an actual DSH message)",
+  "trace.v4.sourceHash": "Digest {hash}",
+  "trace.v4.sourceIdentity": "Captured source identity: {value}",
+  "trace.v4.storageSummary": "Tavern stores bounded assembly metadata and official-log references: {limits}. Bodies require the matching DSH session log to remain available.",
+  "trace.v4.status.available": "Body references resolved",
+  "trace.v4.status.partial": "Some body references are unavailable",
+  "trace.v4.status.unavailable": "Body references unavailable",
+  "trace.v4.status.referenceOnly": "References only",
+  "trace.v4.reason.historyUnavailable": "session history is unavailable",
+  "trace.v4.reason.historyReadFailed": "session history could not be read",
+  "trace.v4.reason.formatMismatch": "the official-log format does not match",
+  "trace.v4.reason.sessionMismatch": "the referenced session does not match",
+  "trace.v4.reason.cutUnavailable": "the referenced history cut is unavailable",
+  "trace.v4.reason.eventUnavailable": "the referenced event is unavailable",
+  "trace.v4.reason.identityMismatch": "the referenced identity does not match",
+  "trace.v4.reason.hashMismatch": "the body digest did not match",
+  "trace.v4.reason.rangeMismatch": "the body range did not match",
+  "trace.v4.reason.unverified": "the reference could not be verified",
   "trace.intro": "A loader audit view alongside Conversation and Trajectory. DSH request/header owns tools and config; V3 system/message owns the effective system prompt (V2: header.system).",
   "trace.reading": "Reading audit records\u2026",
   "trace.empty": "This session has no Tavern request audit records yet. Send the next message and check again.",
@@ -3825,7 +3873,8 @@ function storageStatus(storage) {
   if (Number.isSafeInteger(storage.maxRecordsPerSession)) parts.push(translate("trace.storage.perSession", { value: storage.maxRecordsPerSession }));
   if (Number.isSafeInteger(storage.maxSessions)) parts.push(translate("trace.storage.sessions", { value: storage.maxSessions }));
   if (Number.isSafeInteger(storage.maxRecordBytes)) parts.push(translate("trace.storage.perRecord", { value: formatBytes(storage.maxRecordBytes) }));
-  return uiMessage("trace.storage.summary", { limits: parts.join(translate("common.listSeparator")) });
+  const limits = parts.join(translate("common.listSeparator"));
+  return storage.kind === "bounded-assembly-references" ? uiMessage("trace.v4.storageSummary", { limits }) : uiMessage("trace.storage.summary", { limits });
 }
 function keywords(decision) {
   const configuredPrimary = decision.primaryKeys ?? [];
@@ -3914,19 +3963,58 @@ function summaryCard(labelKey, value) {
     h5("div", { className: "dttrace-value" }, value)
   );
 }
-function segments(items, kind) {
+var referenceReasons = Object.freeze({
+  "history-unavailable": "trace.v4.reason.historyUnavailable",
+  "history-read-failed": "trace.v4.reason.historyReadFailed",
+  "format-mismatch": "trace.v4.reason.formatMismatch",
+  "session-mismatch": "trace.v4.reason.sessionMismatch",
+  "cut-unavailable": "trace.v4.reason.cutUnavailable",
+  "event-unavailable": "trace.v4.reason.eventUnavailable",
+  "identity-mismatch": "trace.v4.reason.identityMismatch",
+  "hash-mismatch": "trace.v4.reason.hashMismatch",
+  "range-mismatch": "trace.v4.reason.rangeMismatch",
+  unverified: "trace.v4.reason.unverified"
+});
+function referenceReason(code) {
+  return referenceReasons[code] ? uiMessage(referenceReasons[code]) : uiMessage("trace.v4.reason.unverified");
+}
+function bodyStatusNotice(value) {
+  const key = value === "available" ? "trace.v4.status.available" : value === "partially-available" ? "trace.v4.status.partial" : value === "reference-unavailable" ? "trace.v4.status.unavailable" : value === "reference-only" ? "trace.v4.status.referenceOnly" : null;
+  return key === null ? null : uiMessage(key);
+}
+function sourceSummary(source) {
+  return [source.kind, `(${source.relationship ?? "input"})`, source.resourceId ?? "\u2014", source.field].filter((value) => value !== void 0 && value !== null && value !== "").join(" / ");
+}
+function sourceMetadata(source) {
+  const values = [unwrapText(uiMessage("trace.v3.sourceCount", { count: source.characters }))];
+  if (source.hash) values.push(unwrapText(uiMessage("trace.v4.sourceHash", { hash: source.hash })));
+  if (source.resourceRevision) values.push(source.resourceRevision);
+  const identity = [
+    source.identifier === void 0 || source.identifier === null ? null : `identifier=${source.identifier}`,
+    source.entryId === void 0 || source.entryId === null ? null : `entry=${source.entryId}`
+  ].filter(Boolean).join(" \xB7 ");
+  if (identity) values.push(unwrapText(uiMessage("trace.v4.sourceIdentity", { value: identity })));
+  return rawText(values.join(" \xB7 "));
+}
+function segments(items, kind, legacySnapshot) {
   return (items ?? []).map((part, index) => h5(
     "details",
     { key: `${kind}-${index}`, className: "dttrace-book" },
     h5("summary", null, uiMessage("trace.v3.part", { index: part.index + 1, name: part.name, count: part.characters })),
     h5("div", { className: "dttrace-meta" }, rawText(`SHA-256 ${part.hash} \xB7 UTF-16 ${part.offsetUtf16 ?? "\u2014"} \xB7 ${part.provenance}`)),
-    h5("pre", { style: { whiteSpace: "pre-wrap", overflowWrap: "anywhere", margin: 0 } }, rawText(part.text)),
+    legacySnapshot && typeof part.text === "string" ? h5("p", { className: "dttrace-note" }, uiMessage("trace.v4.legacySnapshot")) : null,
+    typeof part.text === "string" ? h5("pre", { style: { whiteSpace: "pre-wrap", overflowWrap: "anywhere", margin: 0 } }, rawText(part.text)) : h5("p", { className: "dttrace-note" }, uiMessage("trace.v4.bodyUnavailable", {
+      reason: unwrapText(referenceReason(part.referenceError))
+    })),
     ...(part.sources ?? []).map((source, i) => h5(
       "details",
       { key: i },
-      h5("summary", null, rawText(`${source.kind} (${source.relationship ?? "input"}) / ${source.resourceId ?? "\u2014"} / ${source.field}`)),
-      h5("div", { className: "dttrace-meta" }, uiMessage("trace.v3.sourceCount", { count: source.characters }), " \xB7 ", rawText(source.resourceRevision ?? "")),
-      h5("pre", { style: { whiteSpace: "pre-wrap", overflowWrap: "anywhere" } }, rawText(source.text))
+      h5("summary", null, rawText(sourceSummary(source))),
+      h5("div", { className: "dttrace-meta" }, sourceMetadata(source)),
+      source.requestedRole !== void 0 && source.requestedRole !== null || source.role !== void 0 && source.role !== null ? h5("div", { className: "dttrace-meta" }, uiMessage("trace.v4.requestedRole", { role: source.requestedRole ?? source.role })) : null,
+      source.textStatus === "not-stored" ? h5("p", { className: "dttrace-note" }, uiMessage("trace.v4.sourceNotStored")) : null,
+      legacySnapshot && typeof source.text === "string" ? h5("p", { className: "dttrace-note" }, uiMessage("trace.v4.legacySnapshot")) : null,
+      typeof source.text === "string" ? h5("pre", { style: { whiteSpace: "pre-wrap", overflowWrap: "anywhere" } }, rawText(source.text)) : null
     ))
   ));
 }
@@ -3938,6 +4026,9 @@ function TraceRecordContent({ record }) {
   const bookResources = resources.worldBooks ?? books?.map((book) => book.resource).filter(Boolean);
   const config = audit.assembly?.callConfig;
   const mode = audit.assembly?.systemPromptMode;
+  const referenceBacked = record.schemaVersion >= 4 || record.bodyStorage === "official-session";
+  const legacySnapshot = record.schemaVersion === 3 && record.bodyStorage === void 0;
+  const contentNotice = referenceBacked ? bodyStatusNotice(record.contentStatus) : record.contentStatus && record.contentStatus !== "available" ? rawText(record.contentStatus) : null;
   const unavailable = () => uiMessage("trace.v3.notRecorded");
   const resourceKnown = (key, selectionKey) => Object.hasOwn(resources, key) || Object.hasOwn(selection, selectionKey);
   return h5(
@@ -3961,7 +4052,15 @@ function TraceRecordContent({ record }) {
     ),
     Number.isSafeInteger(selection.character?.greetingIndex) ? h5("div", { className: "dttrace-meta" }, uiMessage("trace.v3.greeting", { index: selection.character.greetingIndex })) : null,
     h5("div", { className: "dttrace-meta" }, uiMessage("trace.v3.sampling"), " ", config === void 0 ? unavailable() : Object.keys(config).length ? rawText(Object.entries(config).map(([key, value]) => `${key}: ${JSON.stringify(value)}`).join(" \xB7 ")) : uiMessage("trace.v3.noSampling")),
-    record.contentStatus && record.contentStatus !== "available" ? h5("p", { className: "dttrace-note" }, uiMessage("trace.v3.contentUnavailable"), " ", rawText(record.contentStatus)) : null,
+    contentNotice ? h5(
+      "p",
+      { className: "dttrace-note" },
+      record.contentStatus === "available" ? null : uiMessage("trace.v3.contentUnavailable"),
+      " ",
+      contentNotice,
+      referenceBacked && record.referenceError ? rawText(` \xB7 ${unwrapText(referenceReason(record.referenceError))}`) : null
+    ) : null,
+    referenceBacked ? h5("p", { className: "dttrace-note" }, uiMessage("trace.v4.metadataRetention")) : null,
     h5(
       "details",
       { className: "dttrace-disclosure" },
@@ -3986,16 +4085,18 @@ function TraceRecordContent({ record }) {
         { className: "dttrace-disclosure-body" },
         h5("p", { className: "dttrace-note" }, uiMessage(record.delivery?.assemblyVerified ? "trace.v3.verified" : "trace.v3.unverified")),
         record.sections ? h5("div", { className: "dttrace-section-title" }, uiMessage("trace.v3.sections")) : null,
-        ...segments(record.sections, "system"),
+        ...segments(record.sections, "system", legacySnapshot),
         record.contexts ? h5("div", { className: "dttrace-section-title" }, uiMessage("trace.v3.contexts")) : null,
-        ...segments(record.contexts, "context"),
+        ...segments(record.contexts, "context", legacySnapshot),
         !record.sections ? h5("p", { className: "dttrace-note" }, uiMessage("trace.v3.noAssembly")) : null,
         record.systemMessages ? h5(
           "details",
           null,
           h5("summary", null, uiMessage("trace.v3.actual")),
+          legacySnapshot ? h5("p", { className: "dttrace-note" }, uiMessage("trace.v4.legacySnapshot")) : null,
           ...record.systemMessages.map((text2, i) => h5("pre", { key: i, style: { whiteSpace: "pre-wrap", overflowWrap: "anywhere" } }, rawText(text2)))
         ) : null,
+        referenceBacked && !Array.isArray(record.systemMessages) ? h5("p", { className: "dttrace-note" }, uiMessage("trace.v4.systemMessagesUnavailable")) : null,
         record.selection ? h5(
           "details",
           null,
@@ -4041,6 +4142,7 @@ function AssemblyRecord({ summary, sessionId, latest }) {
       null,
       h5("span", { className: "dttrace-round", title: translate("trace.v3.termsText") }, uiMessage(summary.attempt > 1 ? "trace.roundAttempt" : "trace.round", { turn: summary.turn, step: summary.step, attempt: summary.attempt })),
       h5("span", { className: "dttrace-badge", title: summary.status }, statusLabels[summary.status] ? uiMessage(statusLabels[summary.status]) : rawText(summary.status)),
+      summary.contentStatus === "reference-only" ? h5("span", { className: "dttrace-badge" }, uiMessage("trace.v4.referenceOnly")) : null,
       h5("span", { className: "dttrace-time" }, rawText(formatTime(summary.recordedAt)))
     ),
     h5(

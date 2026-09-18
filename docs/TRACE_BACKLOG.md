@@ -83,3 +83,32 @@ remain the independent v3 contribution. See [scope audit](API.md#api-scope).
   versioned Session messages, retaining Tavern provenance metadata separately. Define
   missing-history, migration and unmatched-assembly behavior; historical pre-expansion
   source text still requires versioned snapshots if it remains part of the contract.
+
+## Accepted correction — official history references, 2026-09-18
+
+The maintainer approved this change before release. It supersedes the original
+per-request body snapshots and the two proposed storage follow-ups above.
+
+- [x] Remove Tavern-generated identity headers and XML wrappers from both prompt
+  assembly paths. Preserve author content, semantic import boundaries, official
+  section names, macro expansion and order. Requested ST roles remain metadata;
+  this does not implement new message-role/depth placement.
+- [x] Capture only configuration, lore decisions, provenance identifiers/counts/
+  fingerprints and verified references to official versioned Session events.
+  Do not persist source originals, rendered sections, contexts or system-message
+  copies for new captures, including failures and unmatched requests.
+- [x] Make v1 audit and v3 views share one canonical metadata record for new captures;
+  retain read compatibility for previous v1 metadata and v3 body snapshots.
+- [x] Resolve detail bodies through cold official Session inspection. Check session
+  identity, format version, captured cut, event/message identity, range and hash.
+  Missing/mismatched history yields explicit unavailable states, never a new
+  assembly, guessed relocation or text fallback. Keep three read-only v3 routes.
+- [x] Preserve configuration-first Trace with separate lore/Loader disclosures;
+  explain originals not stored and referenced bodies unavailable.
+- [x] Cover replacement/reuse, inheritance, retry, restart, missing/corrupt/changed
+  history, metadata retention, large-card size independence and legacy snapshots.
+  Validate real DSH 0.1.5-rc.1, synchronize bilingual contracts and install the
+  final candidate in the authorized test environment. Push branch only; no release.
+
+Execution evidence and the remaining maintainer checklist are recorded in
+[TRACE_REVIEW.md](TRACE_REVIEW.md). Existing running Hosts must restart to load the new backend.

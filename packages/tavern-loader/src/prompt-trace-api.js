@@ -6,7 +6,7 @@ function sessionId(id) {
   return id
 }
 
-export function createPromptTraceApi({ assemblies, legacyStore }) {
+export function createPromptTraceApi({ assemblies, legacyStore, readBodies = async record => record }) {
   const legacy = id => (legacyStore?.list(id) ?? []).map(row => ({ schemaVersion: 3,
     id: `legacy:${row.id}`, sessionId: id, turn: row.turn, step: row.step, attempt: row.attempt,
     recordedAt: row.recordedAt, status: 'legacy-metadata-only', contentStatus: 'legacy-metadata-only', audit: row,
@@ -33,7 +33,8 @@ export function createPromptTraceApi({ assemblies, legacyStore }) {
         return sendJson(res, 200, { ok: true, sessionId: id, records: [...historical, ...current].sort((a, b) => a.recordedAt - b.recordedAt), storage: assemblies.storage() })
       }
       const recordId = decodeURIComponent(match[2])
-      const record = recordId.startsWith('legacy:') ? legacy(id).find(r => r.id === recordId) : assemblies.get(id, recordId)
+      const stored = recordId.startsWith('legacy:') ? legacy(id).find(r => r.id === recordId) : assemblies.get(id, recordId)
+      const record = stored ? await readBodies(stored) : null
       return sendJson(res, record ? 200 : 404, record ? { ok: true, record } : { ok: false, code: 'ASSEMBLY_NOT_FOUND', error: 'Record missing or evicted' })
     } catch (error) {
       const status = error.status ?? (error instanceof TypeError || error instanceof URIError ? 400 : 500)

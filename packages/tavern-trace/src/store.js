@@ -201,7 +201,8 @@ function assertRecordFitsTotalBudget(sessionId, record, maximumBytes) {
  * this store never reads or writes DSH Session logs.
  */
 export class TavernTraceStore {
-  constructor(storageDir, options = {}) {
+  constructor(storageDir, options = {}, assemblies = null) {
+    this.assemblies = assemblies
     this.storageDir = resolve(storageDir)
     this.statePath = join(this.storageDir, 'tavern-traces.json')
     this.maxSessions = boundedPositiveInteger(options.maxSessions, DEFAULT_MAX_SESSIONS, HARD_MAX_SESSIONS)
@@ -214,7 +215,7 @@ export class TavernTraceStore {
     this.serializedBytes = loaded.bytes
     this.persistedBytes = loaded.persistedBytes
     this.resetOversizedFile = loaded.resetOversizedFile === true
-    if (loaded.needsRewrite) {
+    if (loaded.needsRewrite && !assemblies) {
       atomicSerialized(this.statePath, loaded.serialized)
       this.persistedBytes = loaded.bytes
     }
@@ -222,7 +223,9 @@ export class TavernTraceStore {
 
   list(sessionId) {
     const key = validateSessionId(sessionId)
-    return clone(this.state.sessions[key]?.records ?? [])
+    const records = new Map((this.state.sessions[key]?.records ?? []).map(record => [record.id, record]))
+    for (const record of this.assemblies?.listAudits(key) ?? []) records.set(record.id, record)
+    return clone([...records.values()].sort((a, b) => a.recordedAt - b.recordedAt).slice(-this.maxRecordsPerSession))
   }
 
   upsert(sessionId, record) {
@@ -238,6 +241,10 @@ export class TavernTraceStore {
       assertRecordFitsTotalBudget(key, normalized, this.maxTotalBytes)
       return normalized
     })
+    if (this.assemblies) {
+      this.assemblies.putAudits(key, normalizedRecords)
+      return clone(normalizedRecords)
+    }
     const nextState = { schemaVersion: SCHEMA_VERSION, sessions: { ...this.state.sessions } }
     for (const normalized of normalizedRecords) {
       const current = nextState.sessions[key]?.records ?? []
