@@ -23,7 +23,7 @@ function body(record, locale = 'zh-CN') {
   return tree(TraceRecordContent({ record }))
 }
 const record = {
-  contentStatus: 'available', selection: { presetId: 'p', characterCardId: 'c', userId: 'u', character: { greetingIndex: 2 } },
+  schemaVersion: 3, contentStatus: 'available', selection: { presetId: 'p', characterCardId: 'c', userId: 'u', character: { greetingIndex: 2 } },
   audit: {
     resources: { preset: { id: 'p', name: 'Historical preset' }, characterCard: { id: 'c', name: 'Historical card' },
       userProfile: { id: 'u', name: 'Historical user' }, worldBooks: [{ id: 'w', name: 'Historical lore' }] },
@@ -75,4 +75,76 @@ test('omitted records distinguish unrecorded resources from explicitly unused re
 test('configuration and collapsed detail labels also render in English', () => {
   const visible = text(body(record, 'en'), true)
   for (const label of ['Configuration for this request', 'World-book activation', 'Loader assembly', 'Tavern sampling configuration']) assert.ok(visible.includes(label), label)
+})
+
+test('reference-backed records keep configuration visible and explain partial body availability', () => {
+  const result = body({
+    ...record,
+    schemaVersion: 4,
+    bodyStorage: 'official-session',
+    sourceTextStored: false,
+    contentStatus: 'partially-available',
+    referenceError: 'event-unavailable',
+    sections: [
+      { ...record.sections[0], contentStatus: 'available', sources: [{
+        kind: 'preset', relationship: 'input', resourceId: 'p', resourceRevision: 'r1', field: 'main',
+        requestedRole: 'system', identifier: 'main', characters: 5, hash: 'source-hash', textStatus: 'not-stored',
+      }] },
+      { index: 1, name: 'character:description', characters: 12, hash: 'missing-hash', provenance: 'section-contributors',
+        contentStatus: 'reference-unavailable', referenceError: 'hash-mismatch', sources: [] },
+    ],
+    systemMessages: undefined,
+  })
+  const visible = text(result, true)
+  assert.ok(visible.includes('Historical preset'))
+  assert.ok(visible.includes('部分正文引用不可用'))
+  assert.ok(visible.includes('官方日志引用'))
+  const all = text(result)
+  assert.ok(all.includes('<script>BODY</script>'))
+  assert.ok(all.includes('正文摘要校验失败'))
+  assert.ok(all.includes('来源原文未由 Tavern 保存'))
+  assert.ok(all.includes('请求的 ST 角色：system'))
+  assert.ok(all.includes('并非实际 DSH 消息角色'))
+  assert.ok(all.includes('identifier=main'))
+  assert.ok(all.includes('source-hash'))
+  assert.ok(all.includes('引用的事件不可用'))
+  assert.ok(all.includes('未显示正文不代表当时没有提示词'))
+  assert.ok(!all.includes('undefined'))
+  assert.ok(!all.includes('INPUT'))
+})
+
+test('fully unavailable reference bodies render reasons without undefined pre blocks', () => {
+  const result = body({
+    schemaVersion: 4,
+    bodyStorage: 'official-session',
+    contentStatus: 'reference-unavailable',
+    referenceError: 'history-unavailable',
+    audit: record.audit,
+    sections: [{ index: 0, name: 'preset:main', characters: 11, hash: 'hash', provenance: 'section-contributors',
+      contentStatus: 'reference-unavailable', referenceError: 'history-unavailable', sources: [] }],
+    contexts: [],
+  })
+  const all = text(result)
+  assert.ok(all.includes('正文引用不可用'))
+  assert.ok(all.includes('会话历史不可用'))
+  assert.ok(all.includes('Historical preset'))
+  assert.ok(!all.includes('undefined'))
+  const preBodies = []
+  const visit = node => {
+    if (Array.isArray(node)) return node.forEach(visit)
+    if (!node || typeof node !== 'object') return
+    if (node.type === 'pre') preBodies.push(text(node))
+    visit(node.children)
+  }
+  visit(result)
+  assert.ok(preBodies.every(value => value !== 'undefined'))
+})
+
+test('schema-3 body copies are identified as historical snapshots', () => {
+  const result = body(record)
+  const all = text(result)
+  assert.ok(all.includes('旧版记录中保存的历史正文快照'))
+  assert.ok(all.includes('<script>BODY</script>'))
+  assert.ok(all.includes('INPUT'))
+  assert.ok(!text(result, true).includes('正文引用已解析'))
 })
