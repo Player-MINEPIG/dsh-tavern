@@ -35,6 +35,7 @@ export function PlaythroughDiagnosticWarning({ playthrough, controller }) {
 }
 
 function explanation(issue) {
+  if (issue.code === 'PLAY_NO_AVAILABLE_SESSION') return ['diagnostics.sessionUnavailable', 'diagnostics.sessionUnavailableHint']
   if (issue.code === 'PLAY_SESSION_NOT_FOUND') return ['diagnostics.sessionMissing', 'play.sidebar.missingSessionHistory']
   if (issue.code === 'PLAY_PATH_NOT_FOUND') return ['diagnostics.fileMissing', 'diagnostics.restoreFile']
   return [issue.kind === 'workspace' ? 'diagnostics.workspaceFailed' : 'diagnostics.timelineFailed', 'diagnostics.retryHint']

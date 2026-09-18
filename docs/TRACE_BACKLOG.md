@@ -27,6 +27,8 @@ remaining external checks are listed below. No merge, tag or release.
 
 ## Delivery status
 
+- [x] Diagnose readable timelines with no available RP session using the official hydrated session/workspace mirrors, including empty playthroughs; keep healthy empty runs unmarked and all diagnostic entry points consistent.
+
 - [x] Add a DT diagnostics panel for current RP workspace problems, a dismissible sidebar summary and per-playthrough warning buttons. Share current reads, retain dismissal across rechecks, and provide recheck/copy actions without persistent logs or new v3 endpoints.
 - [x] Empty character nicknames fall back to the card name in every loader macro context.
 - [x] World-book sources distinguish the v1-compatible entry UID from the qualified loader ID.

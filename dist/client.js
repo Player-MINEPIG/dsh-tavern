@@ -110,7 +110,9 @@ var zh_CN_default = Object.freeze({
   "nav.sessionTemplate": "\u65B0\u4F1A\u8BDD",
   "nav.diagnostics": "\u8BCA\u65AD",
   "nav.diagnostics.empty": "\u5F53\u524D RP \u5DE5\u4F5C\u533A\u7684\u95EE\u9898",
-  "diagnostics.timelineSummary": "\u26A0 {count} \u4E2A\u5468\u76EE\u65E0\u6CD5\u8BFB\u53D6 \xB7 \u67E5\u770B\u8BE6\u60C5",
+  "diagnostics.timelineSummary": "\u26A0 {count} \u4E2A\u5468\u76EE\u6709\u95EE\u9898 \xB7 \u67E5\u770B\u8BE6\u60C5",
+  "diagnostics.sessionUnavailable": "\u6B64\u5468\u76EE\u5728\u5F53\u524D RP \u5DE5\u4F5C\u533A\u4E2D\u6CA1\u6709\u53EF\u7528\u4F1A\u8BDD\u3002",
+  "diagnostics.sessionUnavailableHint": "\u4F1A\u8BDD\u53EF\u80FD\u5DF2\u5F52\u6863\u3001\u79FB\u5230\u5176\u4ED6\u5DE5\u4F5C\u533A\uFF0C\u6216\u5176\u65E5\u5FD7\u4E0D\u5728\u5F53\u524D DSH \u6570\u636E\u76EE\u5F55\u3002\u8BF7\u5728 DSH \u4E2D\u68C0\u67E5\u5F52\u6863\u4E0E\u5DE5\u4F5C\u533A\u5F52\u5C5E\uFF1B\u82E5\u65E5\u5FD7\u7F3A\u5931\uFF0C\u8BF7\u4F7F\u7528\u539F\u6570\u636E\u76EE\u5F55\u6216\u6062\u590D\u5907\u4EFD\u3002\u6B64\u5468\u76EE\u4FDD\u7559\uFF0C\u4ECD\u53EF\u65B0\u5EFA\u5468\u76EE\u3002",
   "diagnostics.workspaceSummary": "\u26A0 \u5DE5\u4F5C\u533A\u68C0\u67E5\u5931\u8D25 \xB7 \u67E5\u770B\u8BE6\u60C5",
   "diagnostics.dismiss": "\u5173\u95ED\u95EE\u9898\u6458\u8981\uFF08\u4ECD\u53EF\u5728 DT \u2192 \u8BCA\u65AD\u4E2D\u67E5\u770B\uFF09",
   "diagnostics.playthrough": "\u67E5\u770B\u300C{name}\u300D\u7684\u95EE\u9898",
@@ -839,7 +841,9 @@ var en_default = Object.freeze({
   "nav.sessionTemplate": "New session",
   "nav.diagnostics": "Diagnostics",
   "nav.diagnostics.empty": "Current RP workspace problems",
-  "diagnostics.timelineSummary": "\u26A0 {count} unreadable playthroughs \xB7 Details",
+  "diagnostics.timelineSummary": "\u26A0 {count} playthroughs with problems \xB7 Details",
+  "diagnostics.sessionUnavailable": "This playthrough has no available session in the current RP workspace.",
+  "diagnostics.sessionUnavailableHint": "Its sessions may be archived, moved to another workspace, or missing from the current DSH data directory. Check archives and workspace membership in DSH; if logs are missing, use the original data directory or restore a backup. The playthrough is preserved, and you can still create new ones.",
   "diagnostics.workspaceSummary": "\u26A0 Workspace check failed \xB7 Details",
   "diagnostics.dismiss": "Dismiss summary (still available in DT \u2192 Diagnostics)",
   "diagnostics.playthrough": "View problems for {name}",
@@ -11080,15 +11084,35 @@ function playthroughDisplayTitle(playthrough) {
 // packages/client/src/play/diagnostics-state.js
 var DISMISSED_KEY = `${PLUGIN_ID}:workspace-diagnostics-dismissed:v1`;
 var MAX_DISMISSED = 2e3;
+function sessionAvailabilityReady(value) {
+  return value?.sessionsPhase === "ready" && value?.workspacesPhase === "ready";
+}
 function workspaceDiagnosticScope(workspace) {
   return JSON.stringify([workspace?.workspaceId ?? null, workspace?.rootPath ?? null]);
 }
-function currentWorkspaceIssues(resources) {
+function currentWorkspaceIssues(resources, sessionAvailability = null) {
   const scope = workspaceDiagnosticScope(resources?.workspace);
   const playthroughs = new Map((resources?.catalog?.playthroughs ?? []).map((item) => [item.id, item]));
   const characters = new Map((resources?.characters ?? []).map((item) => [item.id, item.name]));
   const issues = /* @__PURE__ */ new Map();
-  for (const diagnostic of resources?.diagnostics ?? []) {
+  const diagnostics = [...resources?.diagnostics ?? []];
+  if (sessionAvailabilityReady(sessionAvailability) && resources?.workspace?.selected === true) {
+    const model = projectPlaySidebar({ ...resources, ...sessionAvailability });
+    const failedReads = new Set(diagnostics.map((item) => item.playthroughId));
+    for (const group of [...model.characters, ...model.missingCharacters]) {
+      for (const playthrough of group.playthroughs) {
+        if (!playthrough.missing || failedReads.has(playthrough.id)) continue;
+        diagnostics.push({
+          playthroughId: playthrough.id,
+          path: playthrough.path,
+          code: "PLAY_NO_AVAILABLE_SESSION",
+          message: "No unarchived session belonging to this playthrough is available in the current RP workspace.",
+          sessionId: playthrough.ext?.pmpDshTavern?.rootSessionId ?? null
+        });
+      }
+    }
+  }
+  for (const diagnostic of diagnostics) {
     const playthrough = playthroughs.get(diagnostic.playthroughId);
     const binding = playthrough?.ext?.pmpDshTavern;
     const code = diagnostic.code || "PLAY_TIMELINE_READ_FAILED";
@@ -11118,6 +11142,7 @@ function createWorkspaceDiagnostics(client, {
   let snapshot = { resources: null, issues: [], loading: true, error: null, showSummary: false };
   let generation = 0;
   let disposed = false;
+  let sessionAvailability = null;
   const listeners = /* @__PURE__ */ new Set();
   const openListeners = /* @__PURE__ */ new Set();
   const persistDismissed = () => {
@@ -11130,6 +11155,22 @@ function createWorkspaceDiagnostics(client, {
   const commit = (next) => {
     snapshot = { ...next, showSummary: next.issues.some((issue) => !dismissed.has(issue.key)) };
     for (const listener of listeners) listener();
+  };
+  const reconcile = (resources) => {
+    const issues = currentWorkspaceIssues(resources, sessionAvailability);
+    const scope = workspaceDiagnosticScope(resources.workspace);
+    const currentKeys = new Set(issues.map((issue) => issue.key));
+    for (const key of dismissed) {
+      try {
+        const [owner, , code] = JSON.parse(key);
+        if (code === "PLAY_NO_AVAILABLE_SESSION" && !sessionAvailabilityReady(sessionAvailability)) continue;
+        if ((owner === scope || owner === "workspace-read") && !currentKeys.has(key)) dismissed.delete(key);
+      } catch {
+        dismissed.delete(key);
+      }
+    }
+    persistDismissed();
+    commit({ resources, issues, loading: false, error: null });
   };
   const controller2 = {
     getSnapshot: () => snapshot,
@@ -11155,6 +11196,11 @@ function createWorkspaceDiagnostics(client, {
       if (snapshot.resources === null || disposed) return;
       commit({ ...snapshot, resources: update(snapshot.resources) });
     },
+    setSessionAvailability(next) {
+      if (disposed) return;
+      sessionAvailability = next;
+      if (!snapshot.loading && snapshot.resources !== null) reconcile(snapshot.resources);
+    },
     async refresh() {
       if (disposed) return;
       const request = ++generation;
@@ -11162,19 +11208,7 @@ function createWorkspaceDiagnostics(client, {
       try {
         const resources = await load(client);
         if (disposed || request !== generation) return;
-        const issues = currentWorkspaceIssues(resources);
-        const scope = workspaceDiagnosticScope(resources.workspace);
-        const currentKeys = new Set(issues.map((issue) => issue.key));
-        for (const key of dismissed) {
-          try {
-            const [owner] = JSON.parse(key);
-            if ((owner === scope || owner === "workspace-read") && !currentKeys.has(key)) dismissed.delete(key);
-          } catch {
-            dismissed.delete(key);
-          }
-        }
-        persistDismissed();
-        commit({ resources, issues, loading: false, error: null });
+        reconcile(resources);
       } catch (reason) {
         if (disposed || request !== generation) return;
         const code = reason?.code || "PLAY_WORKSPACE_READ_FAILED";
@@ -11209,7 +11243,8 @@ function workspaceDiagnosticReport(snapshot, issues = snapshot.issues) {
       code: issue.code,
       message: issue.message,
       playthroughId: issue.playthroughId ?? null,
-      path: issue.path ?? null
+      path: issue.path ?? null,
+      ...issue.sessionId ? { sessionId: issue.sessionId } : {}
     }))
   }, null, 2);
 }
@@ -11249,6 +11284,7 @@ function PlaythroughDiagnosticWarning({ playthrough, controller: controller2 }) 
   }, "\u26A0");
 }
 function explanation(issue) {
+  if (issue.code === "PLAY_NO_AVAILABLE_SESSION") return ["diagnostics.sessionUnavailable", "diagnostics.sessionUnavailableHint"];
   if (issue.code === "PLAY_SESSION_NOT_FOUND") return ["diagnostics.sessionMissing", "play.sidebar.missingSessionHistory"];
   if (issue.code === "PLAY_PATH_NOT_FOUND") return ["diagnostics.fileMissing", "diagnostics.restoreFile"];
   return [issue.kind === "workspace" ? "diagnostics.workspaceFailed" : "diagnostics.timelineFailed", "diagnostics.retryHint"];
@@ -14497,6 +14533,19 @@ function TavernShell({ useSessions, useWorkspaces, createCleanSession, createCon
   const sessionBlank = useSessions((state) => state.current === void 0 || state.current === null ? true : state.byId?.[state.current]?.blank === true);
   const workspaceId = useWorkspaces((state) => workspaceTargetId(state, sessionId));
   const workspaceItems = useWorkspaces((state) => state.items);
+  const diagnosticSessions = useSessions((state) => state.byId);
+  const diagnosticSessionsPhase = useSessions((state) => state.phase);
+  const diagnosticArchived = useWorkspaces((state) => state.archivedSessionIds);
+  const diagnosticWorkspacesPhase = useWorkspaces((state) => state.phase);
+  (0, import_react18.useEffect)(() => {
+    diagnostics.setSessionAvailability({
+      sessions: diagnosticSessions,
+      workspaceItems,
+      archivedSessionIds: diagnosticArchived,
+      sessionsPhase: diagnosticSessionsPhase,
+      workspacesPhase: diagnosticWorkspacesPhase
+    });
+  }, [diagnostics, diagnosticSessions, diagnosticSessionsPhase, workspaceItems, diagnosticArchived, diagnosticWorkspacesPhase]);
   const hasConversationHistory = (0, import_react18.useCallback)(async (targetSessionId) => {
     const messages = await playClient.getMessages(targetSessionId);
     return sessionHasConversationHistory(messages);

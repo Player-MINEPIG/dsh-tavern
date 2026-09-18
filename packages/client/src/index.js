@@ -683,6 +683,16 @@ function TavernShell({ useSessions, useWorkspaces, createCleanSession, createCon
   const sessionBlank = useSessions(state => state.current === undefined || state.current === null ? true : state.byId?.[state.current]?.blank === true)
   const workspaceId = useWorkspaces(state => workspaceTargetId(state, sessionId))
   const workspaceItems = useWorkspaces(state => state.items)
+  const diagnosticSessions = useSessions(state => state.byId)
+  const diagnosticSessionsPhase = useSessions(state => state.phase)
+  const diagnosticArchived = useWorkspaces(state => state.archivedSessionIds)
+  const diagnosticWorkspacesPhase = useWorkspaces(state => state.phase)
+  useEffect(() => {
+    diagnostics.setSessionAvailability({
+      sessions: diagnosticSessions, workspaceItems, archivedSessionIds: diagnosticArchived,
+      sessionsPhase: diagnosticSessionsPhase, workspacesPhase: diagnosticWorkspacesPhase,
+    })
+  }, [diagnostics, diagnosticSessions, diagnosticSessionsPhase, workspaceItems, diagnosticArchived, diagnosticWorkspacesPhase])
   const hasConversationHistory = useCallback(async targetSessionId => {
     const messages = await playClient.getMessages(targetSessionId)
     return sessionHasConversationHistory(messages)

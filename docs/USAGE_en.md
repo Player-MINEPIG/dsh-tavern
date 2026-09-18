@@ -12,6 +12,8 @@ On the target DSH `0.1.5-rc.1`, exposed Session errors or the latest turn's term
 
 Open **DT → Diagnostics** for problems in the current RP workspace, in either native or Mowan mode. The sidebar shows one dismissible summary. The `⚠` beside an affected playthrough opens its details, even when the playthrough itself cannot be opened.
 
+A readable timeline also receives a warning when none of its sessions are available in the current RP workspace, including archived, moved, or unavailable sessions. Empty playthroughs are checked too; a healthy new empty playthrough is not flagged just for having no messages. Checks wait for the DSH session and workspace lists to finish loading.
+
 The panel shows the affected character/playthrough, cause, and recovery advice. Expand **Technical details** for the error code, file path, and any session ID in the error. **Copy diagnostics** copies the displayed list; **Copy this problem** copies one item. Reports include local paths and object IDs; review before sharing.
 
 **Recheck** reads the current workspace again. Dismissing the summary does not remove problems. Rechecks, page reloads, and native/Mowan switches in the same browser tab do not re-alert dismissed identical problems. New problems are shown, and a successful check automatically removes resolved ones. Closing the browser tab ends this dismissal preference.

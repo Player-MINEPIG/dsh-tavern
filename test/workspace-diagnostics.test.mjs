@@ -39,6 +39,167 @@ function memoryStorage() {
   }
 }
 
+function emptyPlaythroughResources(ids = ['first', 'middle', 'last']) {
+  const value = resources({ diagnostics: [] })
+  value.catalog.playthroughs = ids.map(id => ({
+    id, title: id, path: `character/${id}/timeline.json`,
+    ext: { pmpDshTavern: { characterId: 'character', rootSessionId: `session-${id}` } },
+  }))
+  value.timelines = Object.fromEntries(value.catalog.playthroughs.map(item => [item.path, { nodes: [] }]))
+  return value
+}
+
+function sessionAvailability(ids = [], overrides = {}) {
+  return {
+    sessions: Object.fromEntries(ids.map(id => [id, { id, cwd: '/rp/a' }])),
+    workspaceItems: [{ workspaceId: 'workspace-a', sessionIds: ids }],
+    archivedSessionIds: [], sessionsPhase: 'ready', workspacesPhase: 'ready',
+    ...overrides,
+  }
+}
+
+test('empty timelines with unavailable root sessions have diagnostics at every catalog position', () => {
+  const current = emptyPlaythroughResources()
+  for (const missing of current.catalog.playthroughs) {
+    const availableIds = current.catalog.playthroughs
+      .filter(item => item.id !== missing.id).map(item => item.ext.pmpDshTavern.rootSessionId)
+    const issues = currentWorkspaceIssues(current, sessionAvailability(availableIds))
+    assert.deepEqual(issues.map(issue => [issue.playthroughId, issue.code, issue.sessionId]), [
+      [missing.id, 'PLAY_NO_AVAILABLE_SESSION', missing.ext.pmpDshTavern.rootSessionId],
+    ])
+  }
+  const allAvailable = current.catalog.playthroughs.map(item => item.ext.pmpDshTavern.rootSessionId)
+  assert.deepEqual(currentWorkspaceIssues(current, sessionAvailability(allAvailable)), [], 'healthy empty playthroughs remain usable')
+})
+
+test('timeline read failures and unavailable sessions produce one diagnostic per affected playthrough', () => {
+  const current = emptyPlaythroughResources(['failed-read', 'empty-missing', 'healthy'])
+  current.diagnostics = [{
+    playthroughId: 'failed-read', code: 'PLAY_SESSION_NOT_FOUND',
+    path: 'character/failed-read/timeline.json', message: 'session not found',
+  }]
+  delete current.timelines['character/failed-read/timeline.json']
+  const issues = currentWorkspaceIssues(current, sessionAvailability(['session-healthy']))
+  assert.equal(issues.length, 2)
+  assert.equal(issues.find(issue => issue.playthroughId === 'failed-read').code, 'PLAY_SESSION_NOT_FOUND')
+  assert.equal(issues.find(issue => issue.playthroughId === 'empty-missing').code, 'PLAY_NO_AVAILABLE_SESSION')
+})
+
+test('archived or moved sessions use the unavailable-session explanation instead of claiming lost history', () => {
+  const current = emptyPlaythroughResources(['archived', 'moved'])
+  const available = sessionAvailability(['session-archived'], {
+    sessions: {
+      'session-archived': { id: 'session-archived', cwd: '/rp/a' },
+      'session-moved': { id: 'session-moved', cwd: '/rp/other' },
+    },
+    archivedSessionIds: ['session-archived'],
+  })
+  const issues = currentWorkspaceIssues(current, available)
+  assert.deepEqual(issues.map(issue => issue.playthroughId).sort(), ['archived', 'moved'])
+  assert.ok(issues.every(issue => issue.code === 'PLAY_NO_AVAILABLE_SESSION'))
+  assert.deepEqual(currentWorkspaceIssues(current, sessionAvailability(['session-archived', 'session-moved'])), [])
+})
+
+test('available timeline heads and variants keep playthroughs healthy when their original roots are unavailable', () => {
+  const current = emptyPlaythroughResources(['head', 'variant'])
+  for (const id of ['head', 'variant']) {
+    current.timelines[`character/${id}/timeline.json`] = {
+      nodes: [{
+        id: 'qa', kind: 'qa', adoptedVariantId: 'v', variants: [{
+          id: 'v', sessionId: id === 'variant' ? 'available-variant' : 'old-variant', startEventId: 1, endEventId: 2,
+        }],
+      }],
+      ...(id === 'head' ? { head: { nodeId: 'qa', variantId: 'v', sessionId: 'available-head' } } : {}),
+    }
+  }
+  assert.deepEqual(currentWorkspaceIssues(current, sessionAvailability(['available-head', 'available-variant'])), [])
+})
+
+test('unhydrated session and workspace mirrors cannot diagnose an empty list as unavailable sessions', () => {
+  const current = emptyPlaythroughResources(['empty'])
+  for (const [sessionsPhase, workspacesPhase] of [
+    ['pending', 'pending'], ['ready', 'pending'], ['pending', 'ready'], [undefined, undefined],
+  ]) {
+    assert.deepEqual(currentWorkspaceIssues(current, sessionAvailability([], { sessionsPhase, workspacesPhase })), [])
+  }
+  assert.equal(currentWorkspaceIssues(current, sessionAvailability()).length, 1, 'ready mirrors can legitimately be empty')
+})
+
+test('availability follows either mirror-before-resource or resource-before-mirror arrival order', async () => {
+  for (const mirrorFirst of [false, true]) {
+    const pending = deferred()
+    const diagnostics = createWorkspaceDiagnostics({}, { load: () => pending.promise })
+    const refresh = diagnostics.refresh()
+    if (mirrorFirst) diagnostics.setSessionAvailability(sessionAvailability())
+    assert.deepEqual(diagnostics.getSnapshot().issues, [])
+    pending.resolve(emptyPlaythroughResources(['empty']))
+    await refresh
+    if (!mirrorFirst) {
+      assert.deepEqual(diagnostics.getSnapshot().issues, [])
+      diagnostics.setSessionAvailability(sessionAvailability())
+    }
+    assert.deepEqual(diagnostics.getSnapshot().issues.map(issue => issue.code), ['PLAY_NO_AVAILABLE_SESSION'])
+  }
+})
+
+test('mirror updates resolve and restore diagnostics without reloading workspace files', async () => {
+  let loads = 0
+  const diagnostics = createWorkspaceDiagnostics({}, { load: async () => {
+    loads++
+    return emptyPlaythroughResources(['empty'])
+  } })
+  diagnostics.setSessionAvailability(sessionAvailability())
+  await diagnostics.refresh()
+  diagnostics.dismiss()
+  const loaded = diagnostics.getSnapshot().resources
+  diagnostics.setSessionAvailability(sessionAvailability(['session-empty']))
+  assert.equal(diagnostics.getSnapshot().resources, loaded)
+  assert.deepEqual(diagnostics.getSnapshot().issues, [])
+  diagnostics.setSessionAvailability(sessionAvailability())
+  assert.equal(diagnostics.getSnapshot().showSummary, true, 'resolved issues alert again when they recur')
+  assert.equal(diagnostics.getSnapshot().issues.length, 1)
+  assert.equal(loads, 1)
+  diagnostics.dispose()
+  const disposed = diagnostics.getSnapshot()
+  diagnostics.setSessionAvailability(sessionAvailability(['session-empty']))
+  assert.equal(diagnostics.getSnapshot(), disposed)
+})
+
+test('pending mirrors after remount or recheck preserve dismissed availability issues', async () => {
+  const storage = memoryStorage()
+  const load = async () => emptyPlaythroughResources(['empty'])
+  const first = createWorkspaceDiagnostics({}, { load, storage })
+  first.setSessionAvailability(sessionAvailability())
+  await first.refresh()
+  first.dismiss()
+  first.dispose()
+
+  const second = createWorkspaceDiagnostics({}, { load, storage })
+  second.setSessionAvailability(sessionAvailability([], { sessionsPhase: 'pending', workspacesPhase: 'pending' }))
+  await second.refresh()
+  assert.deepEqual(second.getSnapshot().issues, [])
+  second.setSessionAvailability(sessionAvailability([], { workspacesPhase: 'pending' }))
+  await second.refresh()
+  assert.deepEqual(second.getSnapshot().issues, [])
+  second.setSessionAvailability(sessionAvailability())
+  assert.equal(second.getSnapshot().issues.length, 1)
+  assert.equal(second.getSnapshot().showSummary, false, 'pending is not evidence of resolution')
+  await second.refresh()
+  assert.equal(second.getSnapshot().showSummary, false)
+})
+
+test('availability reports include the referenced root session ID without copying card or timeline content', () => {
+  const current = emptyPlaythroughResources(['empty'])
+  current.timelines['character/empty/timeline.json'].ext = { privateContent: 'PRIVATE_CONVERSATION_CONTENT' }
+  const snapshot = { resources: current, issues: currentWorkspaceIssues(current, sessionAvailability()) }
+  const report = JSON.parse(workspaceDiagnosticReport(snapshot))
+  assert.equal(report.issues.length, 1)
+  assert.equal(report.issues[0].sessionId, 'session-empty')
+  assert.equal(report.issues[0].playthroughId, 'empty')
+  assert.equal(report.issues[0].code, 'PLAY_NO_AVAILABLE_SESSION')
+  assert.equal(JSON.stringify(report).includes('PRIVATE_'), false)
+})
+
 test('dismiss hides only the summary and repeated checks preserve the current problems', async () => {
   let next = resources()
   const diagnostics = createWorkspaceDiagnostics({}, { load: async () => next })
