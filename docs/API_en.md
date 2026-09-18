@@ -54,6 +54,9 @@ field provenance, and cannot reconstruct complete resources or historical source
 The v3 detail route verifies official references before returning section/context bodies;
 source text remains unavailable. Official `system-prompt/assemble` offers runtime
 observation, adjustment, and contribution independently of HTTP v3.
+Failures are not extra assistant messages; v2 does not add failure placeholders. v3 can read
+`failure {code,message}` through verified official failure-event references, with explicit
+unavailability on missing or invalid history. See [failure details](PROMPT_API_V3_en.md#failure-details).
 
 Audit evidence: [Trace API handler](../packages/tavern-loader/src/prompt-trace-api.js),
 [configuration preview](../packages/session-template/src/service.js),
@@ -339,6 +342,18 @@ Prefix: `/pmp-dsh-tavern/api/v1`. `/dsh-tavern/api` is not part of the current c
 | POST | `/session-configurations/apply` | { targetSessionId, source }; validate and apply bindings | Implemented |
 
 Resource/subresource details follow below. Except where explicitly specified, do not assume unsupported methods return v2-style 405 errors.
+
+### Historical world-book audit
+
+`GET /traces?sessionId=` retains `records[].worldBooks[]` as a public compatibility surface.
+Each book has `resource`, `budget`, and `decisions[]`. Decisions include entry identity/name,
+included/rejected status, reason, primary/secondary keys and matches, group, probability,
+tokenCost, and requested/applied position fields. `decisions[].entryId` is the stringified
+in-book UID; resourceId identifies the book, and entryName is its entry comment/name, which
+may be empty. The summary retains at most 16 books and 128 decisions in total. Entry IDs over
+120 UTF-16 units and resource IDs over 200 units are clipped with an ellipsis; this is not a
+complete resource inventory. See [world-book entry identity](PROMPT_API_V3_en.md#world-book-entry-identity)
+for new v3 source IDs and earlier candidate compatibility.
 
 ### Current configuration and resource reads
 

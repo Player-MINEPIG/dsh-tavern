@@ -1,5 +1,6 @@
 import { digest } from '../../prompt-metadata.js'
 import { snapshotSessionEvents } from '../../session-events.js'
+import { readFailureReference } from './failure-references.js'
 
 export const messageText = message => (message?.content ?? []).filter(block => block.type === 'text').map(block => block.text).join('')
 const contentHash = message => digest(message?.content ?? [])
@@ -113,7 +114,7 @@ export function createAssemblyBodyReader(sessionController) {
     if (record.bodyStorage !== 'official-session') return record
     let inspection
     let error
-    const ref = record.sessionRef
+    const ref = record.sessionRef ?? record.failureRef?.sessionRef
     if (!ref) error = 'unverified'
     else if (typeof sessionController?.inspect !== 'function') error = 'history-unavailable'
     else {
@@ -123,6 +124,7 @@ export function createAssemblyBodyReader(sessionController) {
           || ['SESSION_NOT_FOUND', 'PLAY_SESSION_NOT_FOUND'].includes(failure?.code) ? 'history-unavailable' : 'history-read-failed'
       }
     }
+    readFailureReference(record, inspection, error)
     if (!error) {
       const meta = inspection?.meta
       if (meta?.version !== ref.sessionFormatVersion) error = 'format-mismatch'

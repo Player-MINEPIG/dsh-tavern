@@ -89,6 +89,10 @@ successful remote model response.
 | `delivery.assemblyVerified` | true only when the candidate assembly uniquely matched one complete system message |
 | `delivery.historyVerified` | true only when `assemblyVerified` is true and an official-history reference was established for the matched system message |
 | `delivery.systemMessageIndex` | verified system-message index, not an index into all chat messages |
+| `failureRef` | Optional official failure-event reference with its own session identity/cut and event seq/type/hash; it does not widen the prompt cut |
+| `failureStatus` | `reference-only` in the index; detail reads return `available` or `reference-unavailable` after verification |
+| `failure` | Detail-only `{code,message}` after verification; each field is a string or null, never persisted |
+| `failureReferenceError` | Why a failure reference is unavailable; independently verified prompt bodies remain readable |
 
 New records use `bodyStorage: "official-session"` and `sourceTextStored: false`. Statuses
 include `assembled`, `request-observed`, `request-unconfirmed`,
@@ -98,6 +102,27 @@ New records in the index normally retain persisted `contentStatus: "reference-on
 schema 4 detail read, body recovery reports `available`, `partially-available`, or
 `reference-unavailable`. Detail reads do not replace `assembly-unavailable` or
 `omitted-size-limit`.
+
+### Failure details
+
+Failure reasons first reference `reason.failure` on the finish chunk of the current request's official `assistant/attempt`.
+When assembly, preparation, or stream middleware errors have no such reason, the reference
+uses official `turn/end.reason.error`. A detail request still performs one cold inspect,
+validating prompt and failure references separately. Error bodies are read only for the
+response, never copied into the Trace file or index. Missing, truncated, or altered history
+produces an explicit unavailable state. Earlier records without references do not acquire
+invented failure reasons.
+
+`status: "request-observed"` may coexist with failureStatus: reaching the LLM boundary does
+not establish success. A retry has its own record; a failed attempt is not attached to a
+successful retry, nor a subsequent assembly failure to the preceding successful request.
+Each record retains its most specific failure source, not a complete error cause chain or
+the final outcome of the entire turn. Absence of failure does not prove success; cancellation
+without an official error reason is not fabricated into an error.
+
+The RP frontend and v2 `/messages` continue to project messages without failure placeholders.
+Consumers that need failure details use v3. This does not change RP conversation display or
+create assistant history.
 
 ## Official-history references and on-demand recovery
 
@@ -153,6 +178,33 @@ Official assembly objects do not retain numeric registration order. `index` is t
 array position. `offsetUtf16` includes two-newline separators and locates official content only
 after assembly and reference verification. `characters` counts Unicode code points;
 `utf16Units` and `utf8Bytes` are not token counts.
+
+### World-book entry identity
+
+New `kind: "worldbook"` sources carry these fields without a body copy:
+
+| Field | Meaning |
+| --- | --- |
+| `resourceId` | World-book resource ID; embedded books use `character:<cardId>:embedded-world-book` |
+| `entryId` | Normalized in-book UID as a string; null when absent, never inferred from a qualified ID |
+| `qualifiedEntryId` | Complete Loader entry identity, normally `<resourceId>:<uid>`; null when absent |
+
+For example, a v1 audit `entryId: "7"` corresponds to a new v3 source `entryId: "7"`, with
+`qualifiedEntryId: "book-a:7"`. Join against the same record's `audit.worldBooks[].decisions[]`
+using both resourceId and entryId; different books may reuse a UID. The v1 audit keeps its
+existing count and string limits: UIDs over 120 UTF-16 units and resource IDs over 200 units
+are clipped with an ellipsis. v3 sources retain complete identities. Missing, clipped, or
+duplicate entries must not be treated as unique matches. `entryName` is a comment/name
+display summary and may be empty; it is not an identity.
+
+Earlier candidate sources lack `qualifiedEntryId`; their `entryId` may be a complete Loader
+ID. Historical records remain unchanged. Detect the field's presence rather than relying
+only on schemaVersion, and report unknown when identity cannot be established.
+Loader fields such as `activeLoreEntries` continue to use complete IDs.
+
+When expanding `{{char}}`, the Loader falls back from an empty or whitespace-only nickname
+to the card name. A nonblank explicit macro context or nickname retains priority. The same
+context is used to expand imported context text.
 
 ## Persistence, compatibility reads, and limits
 

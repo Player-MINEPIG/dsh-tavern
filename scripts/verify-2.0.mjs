@@ -3,7 +3,15 @@
 import { spawnSync } from 'node:child_process'
 
 const groups = [
-  { name: 'Trace v3 primitives and real Host acceptance', files: ['test/trace-v3.test.mjs', 'test/trace-v3-host.test.mjs'] },
+  {
+    name: 'Trace v3 primitives and real Host acceptance',
+    files: [
+      'test/trace-v3.test.mjs',
+      'test/trace-v3-host.test.mjs',
+      'test/trace-failures.test.mjs',
+      'test/trace-failures-host.test.mjs',
+    ],
+  },
   {
     name: 'DSH V3 coordinates and Trace compatibility',
     files: ['test/session-coordinates.test.mjs', 'test/coordinate-migration-integration.test.mjs', 'test/tavern-trace.test.mjs'],

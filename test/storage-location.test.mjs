@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict'
 import { mkdtempSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
-import { join } from 'node:path'
+import { join, resolve } from 'node:path'
 import test from 'node:test'
 import {
   LEGACY_MIGRATION_MARKER,
@@ -10,17 +10,19 @@ import {
 } from '../packages/tavern-loader/src/storage-location.js'
 
 test('default Tavern storage follows DSH_HOME without using the storage backend root', () => {
+  const dshHome = resolve(tmpdir(), 'storage-location-fixture', 'dsh-home')
+  const home = resolve(tmpdir(), 'storage-location-fixture', 'user-home')
   assert.equal(
-    defaultStorageDir({ environment: { DSH_HOME: '/srv/harness' }, home: '/home/tester' }),
-    join('/srv/harness', 'pmp-dsh-tavern'),
+    defaultStorageDir({ environment: { DSH_HOME: dshHome }, home }),
+    join(dshHome, 'pmp-dsh-tavern'),
   )
   assert.equal(
-    defaultStorageDir({ environment: {}, home: '/home/tester' }),
-    join('/home/tester', '.dsh', 'pmp-dsh-tavern'),
+    defaultStorageDir({ environment: {}, home }),
+    join(home, '.dsh', 'pmp-dsh-tavern'),
   )
   assert.equal(
-    defaultStorageDir({ environment: { DSH_HOME: '~/isolated' }, home: '/home/tester' }),
-    join('/home/tester', 'isolated', 'pmp-dsh-tavern'),
+    defaultStorageDir({ environment: { DSH_HOME: '~/isolated' }, home }),
+    join(home, 'isolated', 'pmp-dsh-tavern'),
   )
 })
 

@@ -19,17 +19,29 @@ below is not fully signed off. No merge, tag or release.
 ## Completed verification
 
 Environment: Node.js 22.23.1, with the official CLI and resolved core packages pinned to
-`0.1.5-rc.1`. These results apply to the current implementation; documentation cleanup does not change runtime code.
+`0.1.5-rc.1`. These results apply to the current implementation.
 
-- `npm run check`: 602 tests, 600 passed, 0 failed, 2 conditional skips. Real AgentLoop and
+- `npm run check`: 617 tests, 615 passed, 0 failed, 2 conditional skips. Real AgentLoop and
   official codecs were enabled. The private-card fixture and opt-in live v2 test skipped;
   the latter was exercised separately against a real Host.
-- `npm run verify:2.0`, build and the 203-file package checks passed. Real-Host v2 smoke passed 16/16.
+- `npm run verify:2.0`, build and the 204-file package checks passed. Real-Host v2 smoke passed 16/16.
 - Regressions cover interleaved sections, macros/mixed sources, Unicode, retry/multi-step,
   restart, message reuse/replacement, inherited prefixes, format changes, truncated/missing
   history, hash/identity/range failures, unknown provenance, complete overrides, limits and corruption.
 - Storage tests verify large-card body growth does not proportionally grow Trace records,
   shared v1/v3 metadata, first attempt 1, finalized old v1 audit precedence and unchanged old files.
+- Empty/whitespace-only nicknames on new/imported cards fall back to the card name. Lore sources
+  retain separate in-book UIDs and qualified Loader IDs; old records remain unchanged. Path tests
+  now use platform-native absolute fixtures; this run did not execute on a Windows host.
+- Seven real rc.1 AgentLoop failure cases passed: provider failure, successful retry, LLM middleware
+  failure, initial assembly failure, request preparation failure, retry preparation failure and next-step
+  assembly failure. Failures belong to the correct attempt. Index/store data contain no error-body copies;
+  details read independent official event references, report unavailable on missing/mismatched history,
+  and do not add RP messages.
+- An isolated Web Host verified normal assembly, provider failure and assembly failure through HTTP.
+  After a real stop/restart, the same bodies and failure reasons remained readable before attaching
+  the target Session/Agent. Reads neither activated the Session nor changed the Trace file;
+  v2 still contained only successfully produced assistant messages.
 - A real Host with a synthetic model resolved 23 sections and 2 Tavern inputs for a preset-bearing turn.
   After removing the request fixture and restarting, the same record resolved without reassembly.
   Two sample records occupied about 34 KiB; this is not a fixed retention estimate.
@@ -39,8 +51,12 @@ Environment: Node.js 22.23.1, with the official CLI and resolved core packages p
 - Installed test-environment files matched the package byte-for-byte, with consistent resolved core versions.
   An already running Host must restart after installation to load the new backend.
 
-For reproduction, point both variables to the CLI dependency directory that resolves the target modules
-and contains `package.json`:
+For reproduction, point each variable to a dependency directory containing `package.json`
+that resolves its target modules. An installed CLI usually supports one shared root. Source
+checkouts may need different roots: `DSH_TAVERN_COMPAT_ROOT` resolves session format/catalog/
+migration packages and the session controller; `DSH_TAVERN_PROMPT_COMPAT_ROOT` resolves Cordis,
+SystemPrompt, AgentLoop and related Host packages. Tests do not automatically search apps/cli
+or other workspace directories.
 
 ```sh
 DSH_TAVERN_COMPAT_ROOT="$DSH_RUNTIME_ROOT" \
@@ -50,7 +66,7 @@ DSH_TAVERN_PROMPT_COMPAT_ROOT="$DSH_RUNTIME_ROOT" npm run verify:2.0
 ```
 
 Without these variables the relevant integration tests skip, which is not acceptance. The reproducible
-real AgentLoop path is `test/trace-v3-host.test.mjs`. Synthetic models/fixtures do not establish
+real AgentLoop paths are `test/trace-v3-host.test.mjs` and `test/trace-failures-host.test.mjs`. Synthetic models/fixtures do not establish
 acceptance for real models, private cards or third-party plugins.
 
 ## Maintainer manual checks
@@ -81,6 +97,9 @@ behavior; avoid submitting private prompt bodies.
    verify; source inputs are not character-by-character maps. Tavern-generated `<st-prompt>` or card-ID wrappers
    should be absent (author-authored labels remain). Input details show identity/counts/hashes and explain that
    original text was not stored; do not expect historical source.text for new records.
+   Check that `{{char}}` resolves to the card name for an empty nickname. New lore sources expose
+   the in-book UID as `entryId` and the full Loader ID as `qualifiedEntryId`. Also match `resourceId`
+   when joining v1 audit data, respecting the API contract's clipping and duplicate-UID limits.
 4. **Preserve history across edits/restart.** Save the first recordId/detail response,
    edit the card/preset and send another turn. Expect new content only in the new
    record, with unchanged old text/bindings/input metadata while official history remains available and verifiable. Restart and read the old record
@@ -99,6 +118,9 @@ behavior; avoid submitting private prompt bodies.
    trajectories; separate attempts must not overwrite each other. `request-observed`
    proves LLM-boundary entry, not successful completion. Missing requests/bodies and
    failures must remain explicit. Confirm actual retries/steps from the official trace.
+   When official history contains failure information, v3 details should return
+   `failureStatus: "available"` and `failure.code/message`. A failed attempt remains readable after
+   a successful retry. RP must not add a failed assistant message; RP messages alone do not show every failure.
 7. **Check daily UI and upgrade compatibility.** Test window widths, themes, zoom,
    both languages, native/play switching, existing Sessions, plugins and model connections.
    Follow the [migration guide](DSH_0.1.5_MIGRATION_en.md) for old timeline coordinates;

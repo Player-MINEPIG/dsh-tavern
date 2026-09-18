@@ -490,6 +490,7 @@ export function apply(ctx, config = {}) {
   registerRpWriteGuard(ctx, rpMode)
 
   ctx.on('agent/request', async (payload, next) => {
+    traceSafely('request boundary', () => assemblyRecorder.nextRequest(payload.agent?.id))
     const snapshot = runtime.assembledFor(payload.agent) ?? runtime.compile({ agent: payload.agent })
     const config = {
       ...await next(),
@@ -513,6 +514,7 @@ export function apply(ctx, config = {}) {
 
   ctx.on('session/event', (session, event) => {
     pendingInput.observeSessionEvent(session, event)
+    traceSafely('failure reference', () => assemblyRecorder.observeSessionEvent(session, event))
     if (event?.type === 'turn/end') {
       traceSafely('assembly terminal', () => assemblyRecorder.finish(session?.id, 'request-unconfirmed'))
       pendingInput.clearClaimed(session)
@@ -529,6 +531,7 @@ export function apply(ctx, config = {}) {
   ctx.on('agent/request-error', async (payload, next) => {
     const result = await next()
     traceSafely('assembly error', () => assemblyRecorder.finish(payload.agent?.id, 'request-failed-before-observation'))
+    if (result?.kind === 'retry') traceSafely('retry boundary', () => assemblyRecorder.nextRequest(payload.agent?.id))
     traceSafely('request-error alignment', () => traceRecorder.observeRequestError(payload.agent, payload.turn, payload.step))
     return result
   })

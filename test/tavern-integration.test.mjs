@@ -111,9 +111,30 @@ test('unified loader injects a selected character and its triggered embedded wor
     assert.equal(active.resources.characterCard.id, 'synthetic-keeper')
     assert.equal(active.resources.worldBooks[0].kind, 'embedded-character-book')
     assert.deepEqual(active.activeLoreEntries, ['character:synthetic-keeper:embedded-world-book:1'])
+    const loreSource = active.sections.flatMap(part => part.sources).find(source => source.kind === 'worldbook')
+    assert.equal(loreSource.entryId, '1')
+    assert.equal(loreSource.qualifiedEntryId, active.activeLoreEntries[0])
+    assert.equal(loreSource.entryId, String(active.audit.worldBooks.resources[0].decisions[0].entryId))
   } finally {
     rmSync(directory, { recursive: true, force: true })
   }
+})
+
+test('new and imported cards with no nickname keep the name in runtime macro contexts', () => {
+  const directory = mkdtempSync(join(tmpdir(), 'dsh-tavern-name-fallback-'))
+  try {
+    const store = apply(host().ctx, { storageDir: directory })
+    const created = store.characterStore.create({ id: 'created', name: 'New Keeper' })
+    const imported = store.characterStore.import(syntheticCard(), { id: 'imported' })
+    for (const card of [created, imported]) {
+      assert.equal(card.data.nickname, '')
+      store.characterStore.update(card.id, { description: 'Name={{char}}' })
+      store.sessionSelections.set(card.id, { characterCardId: card.id })
+      const snapshot = store.profileLoader.compile({ agent: agent(card.id) })
+      assert.equal(snapshot.macroContext.character, card.data.name)
+      assert.ok(snapshot.systemText.includes(`Name=${card.data.name}`))
+    }
+  } finally { rmSync(directory, { recursive: true, force: true }) }
 })
 
 test('legacy character selections migrate once into the loader session policy', () => {

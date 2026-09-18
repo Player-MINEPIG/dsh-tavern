@@ -1,7 +1,7 @@
 # Trace / API v3 backlog
 
 Candidate: Tavern `2.3.0`; target Host: DSH `0.1.5-rc.1`. Implementation and automated
-acceptance are complete. Maintainer acceptance remains open; no merge, tag or release.
+verification are complete. Maintainer acceptance remains open; no merge, tag or release.
 
 ## Current scope
 
@@ -26,6 +26,11 @@ acceptance are complete. Maintainer acceptance remains open; no merge, tag or re
 
 ## Delivery status
 
+- [x] Empty character nicknames fall back to the card name in every loader macro context.
+- [x] World-book sources distinguish the v1-compatible entry UID from the qualified loader ID.
+- [x] Trace details expose verified official failure information without storing error-body copies or adding RP messages.
+- [x] Storage-location tests use platform-absolute fixtures; runtime and API contracts revalidated on macOS.
+
 - [x] Official section contributions and source metadata.
 - [x] Minimal v3 routes and compatible v1 shared audit view.
 - [x] Verified official-history references, cold detail reads and old-file compatibility.
@@ -36,6 +41,7 @@ acceptance are complete. Maintainer acceptance remains open; no merge, tag or re
 - [ ] Maintainer review of representative card/preset behavior and RP presentation.
 - [ ] Third-party developer validation using both v3 and official assembly interfaces.
 - [ ] Real-model cancellation, timeout and retry acceptance; release decision afterward.
+- [ ] Native Windows execution of the portable storage-location tests.
 
 See [the current evidence and manual checklist](TRACE_REVIEW_en.md). These are the
 remaining candidate gates, not a commitment to unrelated API or storage expansion.

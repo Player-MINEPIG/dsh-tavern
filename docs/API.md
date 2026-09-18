@@ -45,6 +45,8 @@ DSH 历史以及 v2 `/sessions/:id/messages` 提供权威消息读取；v3 详�
 官方引用恢复经验证的段落/context 正文。它们不保证保留装配前来源原文、未启用字段或完整
 资源文档；当前 v1 资源也不能代替历史 `source.text`。
 官方 `system-prompt/assemble` 是运行期观察/调整/贡献段落的选择，不依赖 HTTP v3。
+失败不是一条额外的 assistant 消息；v2 不添加失败占位。v3 可按官方失败事件引用读取
+`failure {code,message}`，缺失和验证失败时明确标记不可用，详见 [失败详情](PROMPT_API_V3.md#失败详情)。
 
 核对依据：[Trace API 路由](../packages/tavern-loader/src/prompt-trace-api.js)、
 [配置预览](../packages/session-template/src/service.js)、[v1 预设/active 路由](../packages/preset/src/server.js)、
@@ -336,6 +338,16 @@ operation log、chrome service/slot、工作区准入、本地化与发布包边
 | POST | `/session-configurations/apply` | { targetSessionId, source }，校验后应用绑定 | 已实现 |
 
 资源与子资源的细节见下文。除明确说明外，不应假定 v1 未支持方法一律返回 v2 风格的 405。
+
+### 世界书历史审计
+
+`GET /traces?sessionId=` 的 `records[].worldBooks[]` 是保留兼容的公开面，每本书含
+`resource`、`budget` 和 `decisions[]`。决策包含条目身份/名称、included/rejected、原因、
+主次关键词及匹配结果、分组、概率、tokenCost 和请求/实际位置等审计字段。
+`decisions[].entryId` 是字符串化的书内 UID；`resourceId` 标识所属书，`entryName`
+取自条目的 comment/name，允许为空。该摘要最多保留 16 本书、合计 128 条决策；entryId
+超过 120 个 UTF-16 单位、resourceId 超过 200 个单位会带省略号截断，不是完整资源清单。
+新 v3 来源的对应身份及旧候选兼容规则见 [世界书条目标识](PROMPT_API_V3.md#世界书条目标识)。
 
 ### 当前配置与资源读取示例
 

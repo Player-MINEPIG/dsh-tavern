@@ -2,6 +2,11 @@
 
 ## 2.3.0 — Candidate, not released — Prompt assembly Trace
 
+- Fall back to the character name when the loader receives an empty or whitespace-only nickname, including new/imported cards and imported-context macro expansion.
+- Separate new world-book source `entryId` (in-book UID) from `qualifiedEntryId` (complete Loader identity); preserve earlier captured metadata and the v1 audit contract.
+- Expose verified failure code/message in v3 details through official event references, without copying error bodies or adding RP messages. Keep retry failures separate from successful attempts and subsequent assembly failures separate from preceding successful requests.
+- Use platform-absolute storage test fixtures and document separate codec/Host dependency roots for source-checkout verification.
+
 - Replace separate new v1/v3 writes with one canonical schema 4 `tavern-trace-records.json` record per capture. The record keeps audit/assembly metadata and verified official Session pointers; existing v1 IDs and all three read-only v3 routes remain compatible.
 - Stop persisting new section, context, system-message, and source-text copies. Detail reads cold-inspect official DSH history, return section/context bodies only after identity/cut/event/message/hash/range verification, keep `source.textStatus: not-stored`, and report unavailable content without reassembly or a full-text fallback.
 - Retain old `tavern-traces.json` v1 metadata and `tavern-assemblies.json` schema 3 snapshots as read-only compatibility inputs. New and old records share the historical index without guessing identity from reusable turn/step/attempt values.

@@ -83,6 +83,10 @@ const detail = latest
 | `delivery.assemblyVerified` | 候选装配全文唯一匹配一个完整系统消息时才为 true |
 | `delivery.historyVerified` | `assemblyVerified` 为 true，且匹配的系统消息建立了可读取的官方历史引用时才为 true |
 | `delivery.systemMessageIndex` | 核对成功时的系统消息序号，不是全部聊天消息序号 |
+| `failureRef` | 可选的官方失败事件引用，包含独立 session 身份/读取截点、事件 seq/type/hash；不扩大提示词引用的截点 |
+| `failureStatus` | 有引用时索引为 `reference-only`；详情核验后为 `available` 或 `reference-unavailable` |
+| `failure` | 仅详情核验成功时返回 `{code,message}`，字段为字符串或 null；不持久化 |
+| `failureReferenceError` | 失败引用不可用的原因；不影响仍可验证的提示词正文 |
 
 新记录的 `bodyStorage` 为 `official-session`，`sourceTextStored` 为 false。状态包括
 `assembled`、`request-observed`、`request-unconfirmed`、
@@ -91,6 +95,21 @@ const detail = latest
 索引中的新记录通常保留落盘状态 `contentStatus: "reference-only"`；schema 4 详情读取后，
 正文恢复状态变为 `available`、`partially-available` 或 `reference-unavailable`。
 `assembly-unavailable` 与 `omitted-size-limit` 不会被详情读取覆盖。
+
+### 失败详情
+
+失败原因优先引用本次请求的官方 `assistant/attempt` 中 finish chunk 的 `reason.failure`；装配、准备或流中间件
+异常没有该原因时，引用官方 `turn/end.reason.error`。一次详情调用仍只做一次 cold inspect，
+分别验证提示词和失败事件。错误正文仅在响应时读取，不放入 Trace 文件或索引；官方日志缺失、
+截断或被修改时，返回明确的失败引用不可用状态。较早没有引用的记录不补造错误原因。
+
+`status: "request-observed"` 与 `failureStatus` 可以同时出现：请求到达 LLM 层之后仍可能失败。
+重试是另一条记录，失败尝试的原因不转移到成功尝试；下一步装配失败也不归到上一条成功请求。
+每条记录保留最具体的一处失败来源，不提供完整错误因果链，也不把某次失败解释成整个 turn
+最终失败。`failure` 缺失不证明成功，取消等没有官方 error 原因的事件也不会被伪造成错误。
+
+RP 前端和 v2 `/messages` 继续只投影消息，不添加失败占位。需要失败详情的调用方读取 v3；
+该能力不会改变 RP 对话显示，也不会写入 assistant 历史。
 
 ## 官方历史引用与按需恢复
 
@@ -137,6 +156,30 @@ system section。
 官方装配对象不保留注册时的数字 order；记录的 `index` 是实际数组位置。`offsetUtf16` 包含段间
 两个换行，只有 `delivery.assemblyVerified` 为 true 且引用验证成功时才能定位官方系统消息。
 characters 是 Unicode 码点数；utf16Units 与 utf8Bytes 也不是 token 数。
+
+### 世界书条目标识
+
+新采集的 `kind: "worldbook"` 来源使用下列字段，正文仍不另存：
+
+| 字段 | 含义 |
+| --- | --- |
+| `resourceId` | 世界书资源 ID；内嵌书为 `character:<cardId>:embedded-world-book` |
+| `entryId` | 归一化后的书内 UID，统一为字符串；缺失时为 null，不从完整 ID 猜测 |
+| `qualifiedEntryId` | Loader 的完整条目标识，通常为 `<resourceId>:<uid>`；缺失时为 null |
+
+例如 v1 审计 `entryId: "7"` 对应新 v3 来源的 `entryId: "7"`，其 `qualifiedEntryId`
+为 `book-a:7`。在同一次记录的 `audit.worldBooks[].decisions[]` 中，按
+`resourceId + entryId` 关联；不能只用 UID，因为不同世界书可以使用同一个 UID。
+v1 审计受既有数量和字符串长度上限约束：UID 超过 120 个 UTF-16 单位、资源 ID 超过 200
+个单位会带省略号截断；v3 来源保留完整标识。缺项、截断或重复 UID 时不得假定唯一匹配。
+`entryName` 是条目 comment/name 的显示摘要，允许为空，不能用作身份。
+
+较早候选的历史来源没有 `qualifiedEntryId`，其 `entryId` 可能是完整 Loader ID；这些记录
+只读保留，不改写。以字段是否存在区分，不仅按 schemaVersion 判断；无法确认时显示未知。
+`activeLoreEntries` 等 Loader 字段继续使用完整 ID。
+
+Loader 展开 `{{char}}` 时，空或全空白 nickname 回退到角色 name；有效的显式宏上下文
+和非空 nickname 仍优先。此规则也用于导入上下文的宏展开。
 
 ## 持久化、兼容读取与容量
 

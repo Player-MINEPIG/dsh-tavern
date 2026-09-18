@@ -37,6 +37,27 @@ test('interleaved official sections preserve original text and mixed sources wit
   assert.equal(new Set(snapshot.sections.map(s => s.name)).size, snapshot.sections.length)
 })
 
+test('new world-book identity survives capture and reload without rewriting earlier source metadata', () => {
+  const f = fixture()
+  try {
+    const oldSource = { kind: 'worldbook', resourceId: 'book', entryId: 'book:7', field: 'content' }
+    f.store.put({ schemaVersion: 4, id: 'earlier-candidate', sessionId: 'session', recordedAt: 0,
+      sections: [{ name: 'earlier', sources: [oldSource] }] })
+    const snapshot = compileTavernProfile({ loreEntries: [{ uid: 7, id: 'book:7', resourceId: 'book', content: 'LORE' }] })
+    snapshot.officialAssembly = { sections: snapshot.sections, contexts: [], variables: {} }
+    start(f.recorder, snapshot)
+    const id = f.recorder.request(request(snapshot.systemText))
+    const reloaded = new AssemblyStore(f.directory)
+    const source = reloaded.get('session', id).sections[0].sources[0]
+    assert.equal(source.entryId, '7')
+    assert.equal(source.qualifiedEntryId, 'book:7')
+    assert.equal(source.text, undefined)
+    const earlier = reloaded.get('session', 'earlier-candidate').sections[0].sources[0]
+    assert.equal(earlier.entryId, 'book:7')
+    assert.equal(Object.hasOwn(earlier, 'qualifiedEntryId'), false)
+  } finally { f.cleanup() }
+})
+
 test('same-step retry and subsequent step keep immutable runtime snapshots after restart', () => {
   const f = fixture()
   try {

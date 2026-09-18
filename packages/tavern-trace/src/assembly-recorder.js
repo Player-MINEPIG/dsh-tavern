@@ -1,6 +1,7 @@
 import { randomUUID } from 'node:crypto'
 import { digest, counts } from '../../prompt-metadata.js'
 import { captureBodyReferences, messageText } from './body-references.js'
+import { captureFailureReference } from './failure-references.js'
 
 // Equivalent simple references only. Unsupported/malformed input is not guessed;
 // the official renderer still owns acceptance, and llm/stream verifies delivery.
@@ -20,7 +21,20 @@ function sectionSnapshot(section, variables, known, index) {
 }
 
 export class AssemblyRecorder {
-  constructor(store) { this.store = store; this.pending = new Map() }
+  constructor(store) { this.store = store; this.pending = new Map(); this.active = new Map() }
+  track(record) {
+    this.active.delete(record.sessionId)
+    this.active.set(record.sessionId, { id: record.id, turn: record.turn, step: record.step })
+    while (this.active.size > 128) {
+      const id = this.active.keys().next().value
+      this.finish(id, 'superseded-unconfirmed')
+      this.active.delete(id)
+    }
+  }
+  nextRequest(sessionId) {
+    this.finish(sessionId, 'superseded-unconfirmed')
+    this.active.delete(sessionId)
+  }
   begin({ agent, turn, step, snapshot, legacyRecord }) {
     const id = agent?.id
     if (!id || !Number.isSafeInteger(turn) || !Number.isSafeInteger(step)) return
@@ -46,6 +60,7 @@ export class AssemblyRecorder {
     this.pending.set(id, record)
     while (this.pending.size > 128) this.finish(this.pending.keys().next().value, 'superseded-unconfirmed')
     this.store.put(record)
+    this.track(record)
   }
   request(options, session) {
     const record = this.pending.get(options.sessionId)
@@ -71,10 +86,35 @@ export class AssemblyRecorder {
     const id = agent?.id
     if (!id || !Number.isSafeInteger(turn) || !Number.isSafeInteger(step)) return
     if (this.pending.has(id)) return this.finish(id, 'request-failed-before-observation')
-    if (this.store.list(id).some(r => r.turn === turn && r.step === step)) return
-    this.store.put({ schemaVersion: 4, id: randomUUID(), sessionId: id, turn, step, attempt: 1,
+    const active = this.active.get(id)
+    if (active?.turn === turn && active?.step === step) return
+    const attempt = Math.max(0, ...this.store.list(id).filter(r => r.turn === turn && r.step === step).map(r => r.attempt)) + 1
+    const record = this.store.put({ schemaVersion: 4, id: randomUUID(), sessionId: id, turn, step, attempt,
       bodyStorage: 'official-session', sourceTextStored: false,
       recordedAt: Date.now(), status: 'assembly-or-preparation-failed', contentStatus: 'assembly-unavailable', entersModelHistory: false })
+    this.track(record)
+  }
+  observeSessionEvent(session, event) {
+    if (!['assistant/attempt', 'assistant/message', 'turn/end'].includes(event?.type)) return
+    const active = this.active.get(session?.id)
+    if (!active || active.turn !== event.data?.turn
+      || (event.type !== 'turn/end' && active.step !== event.data?.step)) return
+    if (event.type === 'assistant/message') {
+      this.finish(session.id, 'request-unconfirmed')
+      this.active.delete(session.id)
+      return
+    }
+    const record = this.store.get(session.id, active.id)
+    if (record && !record.failureRef) {
+      const failureRef = captureFailureReference(session, event)
+      if (failureRef) {
+        const patch = { failureRef, failureStatus: 'reference-only' }
+        const pending = this.pending.get(session.id)
+        if (pending?.id === record.id) Object.assign(pending, patch)
+        this.store.put({ ...record, ...patch })
+      }
+    }
+    if (event.type === 'turn/end') this.active.delete(session.id)
   }
   finish(sessionId, status) {
     const record = this.pending.get(sessionId)
@@ -82,5 +122,5 @@ export class AssemblyRecorder {
     this.pending.delete(sessionId)
     this.store.put({ ...record, status })
   }
-  dispose() { for (const id of this.pending.keys()) this.finish(id, 'unloaded-unconfirmed') }
+  dispose() { for (const id of this.pending.keys()) this.finish(id, 'unloaded-unconfirmed'); this.active.clear() }
 }

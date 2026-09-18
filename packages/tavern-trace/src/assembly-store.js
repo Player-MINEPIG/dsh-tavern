@@ -24,6 +24,9 @@ function metadataOnly(record) {
     row.bodyStorage = 'official-session'
     row.sourceTextStored = false
     delete row.systemMessages
+    delete row.failure
+    delete row.failureReferenceError
+    if (row.failureRef) row.failureStatus = 'reference-only'
     for (const part of [...row.sections ?? [], ...row.contexts ?? []]) {
       delete part.text
       for (const source of part.sources ?? []) { delete source.text; source.textStatus = 'not-stored' }

@@ -37,6 +37,12 @@ function clone(value) {
   return structuredClone(value)
 }
 
+function characterMacroName(character, override) {
+  const data = isRecord(character?.data) ? character.data : character
+  return [override, data?.nickname, data?.name, character?.name]
+    .find(value => typeof value === 'string' && value.trim() !== '') ?? 'Assistant'
+}
+
 function safeGet(store, id, kind, diagnostics) {
   if (store === null || id === null) return null
   try {
@@ -219,16 +225,9 @@ export class TavernProfileLoader {
     diagnostics.push(...worldBookResult.diagnostics)
 
     const baseContext = isRecord(options.context) ? options.context : {}
-    const characterData = isRecord(characterResult.character?.data)
-      ? characterResult.character.data
-      : characterResult.character
     const macroContext = {
       user: userResult.user?.name ?? baseContext.user ?? 'User',
-      character: baseContext.character
-        ?? characterData?.nickname
-        ?? characterData?.name
-        ?? characterResult.character?.name
-        ?? 'Assistant',
+      character: characterMacroName(characterResult.character, baseContext.character),
     }
     const compiled = compileTavernProfile({
       preset,
@@ -360,11 +359,7 @@ function compileTavernProfileUnbounded({
   const profileContext = {
     ...context,
     user: user?.name ?? context.user ?? 'User',
-    character: context.character
-      ?? characterData?.nickname
-      ?? characterData?.name
-      ?? character?.name
-      ?? 'Assistant',
+    character: characterMacroName(character, context.character),
   }
 
   const diagnostics = []
@@ -581,7 +576,11 @@ function loreText(entries, context) {
 
 function appendLore(body, entries, context) {
   for (const entry of entries) {
-    body.sources = [source('worldbook', null, 'content', entry.content, { resourceId: entry.resourceId ?? null, entryId: entry.id ?? entry.uid ?? null })]
+    body.sources = [source('worldbook', null, 'content', entry.content, {
+      resourceId: entry.resourceId ?? null,
+      entryId: entry.uid == null ? null : String(entry.uid),
+      qualifiedEntryId: entry.id == null ? null : String(entry.id),
+    })]
     const text = loreText([entry], context)
     if (text !== '') body.push(text)
   }

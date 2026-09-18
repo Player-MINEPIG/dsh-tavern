@@ -2,6 +2,39 @@ import test from 'node:test'
 import assert from 'node:assert/strict'
 import { compileTavernProfile } from '../packages/tavern-loader/src/profile-loader.js'
 
+test('character macros fall back through empty nicknames without overriding explicit names', () => {
+  for (const [nickname, override, expected] of [
+    [undefined, undefined, 'Lyra'], ['', undefined, 'Lyra'], [' \t', undefined, 'Lyra'],
+    ['Keeper', undefined, 'Keeper'], ['Keeper', 'Narrator', 'Narrator'],
+    ['', '', 'Lyra'],
+  ]) {
+    const result = compileTavernProfile({
+      character: { id: 'card', data: { name: 'Lyra', nickname, description: 'Character={{char}}' } },
+      loreEntries: [{ id: 'entry', content: 'Lore={{char}}' }],
+      context: { character: override },
+    })
+    assert.equal(result.systemText, `Character=${expected}\n\nLore=${expected}`)
+  }
+})
+
+test('world-book sources separate the in-book UID from the qualified loader identity', () => {
+  const longUid = 'x'.repeat(140)
+  for (const resourceId of ['book-a', 'character:card-a:embedded-world-book']) {
+    for (const uid of [0, 7, 'named-uid', longUid]) {
+      const qualifiedEntryId = `${resourceId}:${uid}`
+      const result = compileTavernProfile({ loreEntries: [{ id: qualifiedEntryId, uid, resourceId, content: 'Lore body' }] })
+      const origin = result.sections[0].sources[0]
+      assert.equal(origin.entryId, String(uid))
+      assert.equal(origin.qualifiedEntryId, qualifiedEntryId)
+      assert.equal(origin.resourceId, resourceId)
+      assert.deepEqual(result.activeLoreEntries, [qualifiedEntryId])
+    }
+  }
+  const unknown = compileTavernProfile({ loreEntries: [{ id: 'opaque:adapter:id', content: 'Body' }] })
+  assert.equal(unknown.sections[0].sources[0].entryId, null)
+  assert.equal(unknown.sections[0].sources[0].qualifiedEntryId, 'opaque:adapter:id')
+})
+
 test('preset-only profile emits authored text without generated identification wrappers', () => {
   const preset = {
     id: 'preset-a',
