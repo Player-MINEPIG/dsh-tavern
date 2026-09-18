@@ -68,9 +68,9 @@ description、personality、scenario、example dialogue 等字段会按预设 ma
 
 ### Markdown、HTML 与模板样式
 
-`<details><summary>标题</summary>` 内的 Markdown 会继续解析，不要求在 summary 后额外补空行。支持嵌套折叠、列表、强调和代码围栏；围栏内部仍按代码原样显示，不会把代码内容当成 HTML。正常的原始 HTML 容器保持 HTML 语义。
+`<details><summary>标题</summary>` 内的 Markdown 会继续解析，不要求在 summary 后额外补空行。支持嵌套折叠、列表、强调和代码围栏。已闭合的无语言或 `html` 围栏中，如果内容是完整 `<html>…</html>` 文档，或完整 `<head>…</head><body>…</body>`，会按静态 HTML 模板显示；可带 HTML 注释及文档声明。普通 HTML 片段、其他语言、缩进代码、未闭合围栏仍显示源码。需要展示完整文档的源码时使用 `text` 围栏。正常的原始 HTML 容器保持 HTML 语义。
 
-模板可用 `<style>`、Flex/Grid 和 CSS `@keyframes` 实现横条、闪烁及过渡，用原生 `<details>` 实现展开。带样式表的消息独立隔离样式，继承当前字体、颜色和 CSS 变量，不会用模板选择器修改其他消息或 DSH 页面。模板内容受消息边界裁剪；面向整页的 `html`/`body` 选择器应改为模板自己的根 class。模板 JS、事件属性和 iframe 仍不执行/不开放，依赖脚本分行、按钮逻辑或读取父页面主题的模板需要改为无需脚本的版本。静态 HTML 导出保留同样的隔离样式，需要支持声明式 Shadow DOM 的现代浏览器。
+模板可用 `<style>`、Flex/Grid 和 CSS `@keyframes` 实现横条、闪烁及过渡，用原生 `<details>` 实现展开。带样式表的消息独立隔离样式，继承当前字体、颜色和 CSS 变量，不会用模板选择器修改其他消息或 DSH 页面。识别出的完整文档分别隔离，独立的 `:root`、`html`、`body` 样式规则（包括媒体规则内的规则）映射到模板根，保留主题变量和基础字体颜色；复合选择器以及原始 HTML 片段中的文档根选择器仍应改用模板自己的根 class。模板内容受消息边界裁剪。模板 JS、事件属性和 iframe 仍不执行/不开放，依赖脚本生成内容、按钮逻辑或 MVU 等变量 API 的部分不会自动恢复，需要无需脚本的静态内容。静态 HTML 导出保留同样的隔离样式，需要支持声明式 Shadow DOM 的现代浏览器。
 
 显示正则的 `trimStrings` 会从每个捕获结果中删除列出的所有字面字符串。若要保留内部 HTML，不要把 `<`、`>`、空格或反引号列入其中；只删除确实需要移除的包装标记，例如 `<!-- begin_of_Subtext_think -->`、`<!-- end_of_Subtext_think -->`。渲染器不会猜测并恢复已经被规则删除的标签。修改已导入的规则或替换该规则后点击“保存修改”，避免让新旧规则同时重复处理同一内容；原始 DSH 消息不变，重新显示时应用新规则。
 

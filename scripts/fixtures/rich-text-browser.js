@@ -1,5 +1,6 @@
 import { RichText, renderRichTextHtml, sanitizeRenderedHtml } from '../../packages/client/src/play/rich-text.js'
 import { normalizeRegexRule, applyDisplayRegex } from '../../packages/client/src/play/regex.js'
+import { staticHtmlExport } from '../../packages/client/src/play/export.js'
 
 const results = []
 function check(name, condition) {
@@ -100,6 +101,59 @@ $1
   await loaded
   const exported = frame.contentDocument.querySelector('[data-dtv-style-boundary] > div').shadowRoot
   check('static export activates CSS without template JS', exported?.querySelector('.body strong')?.textContent === 'Ready' && frame.contentWindow.getComputedStyle(exported.querySelector('summary')).display === 'flex')
+
+  const documentBody = `<head><style>
+:root { --panel-ink: rgb(17, 93, 137); }
+body { color: var(--panel-ink); }
+.panel { display: flex; gap: 8px; }
+.panel strong { background: linear-gradient(90deg,var(--panel-ink),white); background-size: 200% 100%; background-clip: text; -webkit-text-fill-color: transparent; }
+.panel::after { content: "body :root"; }
+@media (min-width: 1px) { html { --grouped: grouped; } }
+.outside { color: rgb(255, 0, 0) !important; }
+</style><script>window.__documentExecuted=true</script></head>
+<body><div class="panel"><strong>Static document</strong><span>Ready</span></div>
+<img onerror="window.__documentExecuted=true"><iframe srcdoc="unsafe"></iframe>
+<template shadowrootmode="open"><script>unsafe()</script></template></body>`
+  const fencedDocument = `\`\`\`html\n${documentBody}\n\`\`\``
+  const docCard = mount(`Before\n\n${fencedDocument}\n\nAfter`)
+  const docRoot = docCard.querySelector('[data-dtv-html-document] [data-dtv-style-boundary] > div')?.shadowRoot
+  check('fenced head/body document becomes static HTML', docRoot?.querySelector('.panel strong')?.textContent === 'Static document' && !docCard.querySelector('pre code'))
+  check('document root variables and body color survive isolation', getComputedStyle(docRoot.querySelector('.panel')).color === 'rgb(17, 93, 137)')
+  check('gradient text retains var shorthand with longhand overrides', getComputedStyle(docRoot.querySelector('.panel strong')).backgroundImage.includes('linear-gradient'))
+  check('document root rules inside grouping rules survive', getComputedStyle(docRoot.querySelector('.panel')).getPropertyValue('--grouped').trim() === 'grouped')
+  check('CSS content strings are not rewritten', getComputedStyle(docRoot.querySelector('.panel'), '::after').content === '"body :root"')
+  check('document CSS layout works without leaking into surrounding prose', getComputedStyle(docRoot.querySelector('.panel')).display === 'flex' && getComputedStyle(outside).color === before && docCard.querySelector('p').textContent === 'Before')
+  check('fenced HTML still strips executable content', !docRoot.querySelector('script,iframe,template,[onerror]') && !window.__documentExecuted)
+  const importedStyles = renderRichTextHtml('```html\n<head><style>@import url("./theme.css"); :root { --ink: blue; }</style></head><body><p>Theme</p></body>\n```')
+  check('document CSS imports survive root-rule adaptation', importedStyles.includes('@import url("./theme.css")') && importedStyles.includes(':host'))
+
+  const secondDocument = fencedDocument.replace('17, 93, 137', '137, 17, 93')
+  const multiple = mount(`<style>p{font-weight:700}</style>\n\n${fencedDocument}\n\n${secondDocument}`)
+  const multipleRoot = root(multiple)
+  const docRoots = [...multipleRoot.querySelectorAll('[data-dtv-html-document] [data-dtv-style-boundary] > div')].map(host => host.shadowRoot)
+  check('two documents inside a styled message mount independently', docRoots.length === 2 && docRoots.every(Boolean)
+    && getComputedStyle(docRoots[0].querySelector('.panel')).color === 'rgb(17, 93, 137)'
+    && getComputedStyle(docRoots[1].querySelector('.panel')).color === 'rgb(137, 17, 93)')
+
+  const literal = mount('```html\n<div>Code sample</div>\n```')
+  check('HTML fragments remain literal code samples', literal.querySelector('pre code')?.textContent === '<div>Code sample</div>\n' && !literal.querySelector('[data-dtv-html-document]'))
+  const streaming = mount(`\`\`\`html\n${documentBody}`)
+  check('unfinished document fence remains literal', !!streaming.querySelector('pre code') && !root(streaming))
+  update(streaming, fencedDocument)
+  check('closing a streamed document fence mounts static HTML', !!streaming.querySelector('[data-dtv-html-document] [data-dtv-style-boundary] > div')?.shadowRoot?.querySelector('.panel'))
+
+  const documentFrame = document.createElement('iframe')
+  documentFrame.srcdoc = staticHtmlExport({
+    playthrough: { id: 'static-fixture', title: 'Document fixture' },
+    displayTurns: [{ userText: 'Test', assistantText: fencedDocument }],
+  })
+  const documentLoaded = new Promise(resolve => { documentFrame.onload = resolve })
+  document.body.append(documentFrame)
+  await documentLoaded
+  const exportRoot = documentFrame.contentDocument.querySelector('[data-dtv-html-document] [data-dtv-style-boundary] > div')?.shadowRoot
+  check('actual static export shares document rendering and root styles', exportRoot?.querySelector('.panel strong')?.textContent === 'Static document'
+    && documentFrame.contentWindow.getComputedStyle(exportRoot.querySelector('.panel')).color === 'rgb(17, 93, 137)'
+    && !documentFrame.contentWindow.__documentExecuted)
 }
 
 run().catch(error => results.push({ name: error.stack, pass: false })).finally(() => {

@@ -1,7 +1,8 @@
 # Trace / API v3 backlog
 
-Candidate: Tavern `2.3.0`; target Host: DSH `0.1.5-rc.1`. Implementation and automated
-verification are complete. Maintainer acceptance remains open; no merge, tag or release.
+Candidate: Tavern `2.3.0`; target Host: DSH `0.1.5-rc.1`. Trace implementation and automated,
+Host and Chrome checks are complete within the documented scope. Verification limits and
+remaining external checks are listed below. No merge, tag or release.
 
 ## Current scope
 
@@ -37,11 +38,21 @@ verification are complete. Maintainer acceptance remains open; no merge, tag or 
 - [x] Configuration-first UI with explicit partial/missing-body states.
 - [x] Unicode, reuse/replacement, inheritance, retries, restart, format/hash/range errors,
   size limits, large-card storage independence and legacy audit regressions.
-- [x] DSH 0.1.5-rc.1 Host/browser acceptance, build, package and bilingual contracts.
-- [ ] Maintainer review of representative card/preset behavior and RP presentation.
-- [ ] Third-party developer validation using both v3 and official assembly interfaces.
-- [ ] Real-model cancellation, timeout and retry acceptance; release decision afterward.
-- [ ] Native Windows execution of the portable storage-location tests.
+- [x] DSH 0.1.5-rc.1 Host verification, build, package and bilingual contracts.
+- [x] Chrome verification of two real cards without cross-session content, configuration-first Trace, lore decisions and interleaved official sections.
+- [x] Chrome window sizes, Tavern scaling, Chinese/English, DSH themes and native/Mowan switching; settings restored afterward.
+- [x] Complete HTML fences render as separate RP Shadow DOM panels: four real-card documents and 32 synthetic Chrome checks passed, including static HTML export. Variable-update markers remain hidden; JavaScript/MVU-dependent values and buttons remain unsupported.
+- [x] An ordinary real-model reply and Stop generation recovery. The stopped request retains 31/31 readable sections without fabricated success/failure. Official durable history lacks its turn/end; cold reading supplies an in-memory interrupted closer, not a persisted user-cancellation reason.
 
-See [the current evidence and manual checklist](TRACE_REVIEW_en.md). These are the
-remaining candidate gates, not a commitment to unrelated API or storage expansion.
+## Remaining external checks
+
+- [ ] Maintainer presentation review of the final RP/Trace experience, without repeating the completed technical matrix.
+- [ ] Actual third-party plugin integration through v3 or official assembly interfaces.
+- [ ] Native Windows storage-path and installation checks.
+
+Real-provider timeout/retry was not deliberately induced. Seven real-AgentLoop synthetic failure
+scenarios cover attribution and verified failure reads; they do not certify a specific provider
+or the actual third-party plugin. The remaining release decision follows the checks above.
+
+See [current evidence, remaining checks and optional reproduction](TRACE_REVIEW_en.md).
+Completed technical checks do not need to be repeated solely for manual sign-off.

@@ -15,7 +15,7 @@
 | 一次性上下文 | 装配必须有公开 `claimEventSeqs` 才注入并持久记录 claim；同一终态前可以重放，终态后的新 claim 不再次注入。Tavern swipe/branch 保留不含正文的 lineage。 |
 | 回复与分支 | 支持显示编辑、已有 variant 切换、新 swipe、分支和回退；parent/head 保存不同 swipe 的后续。context 触发输出的重试定位最近真实用户 turn，不把 context 重发为用户消息。 |
 | 显示正则 | 顺序为全局→预设→角色卡；各来源内部可重排，不能跨来源拖动。规则作用于 RP 显示，不改 DSH 原文。隐藏变量更新块不要求变量运行时；变量运行时本身未实现。 |
-| 富文本 | 支持 Markdown、嵌套 details、HTML 和消息内隔离 CSS；模板 JavaScript、危险事件及危险链接受过滤。静态 HTML 导出使用相同渲染边界。 |
+| 富文本 | 支持 Markdown、嵌套 details、HTML 和隔离 CSS；闭合的无语言/html 围栏中的完整 HTML 文档按静态模板显示并单独隔离，普通代码片段保留源码。模板 JavaScript、危险事件及危险链接受过滤；MVU 等变量 API 未实现。静态 HTML 导出使用相同渲染边界。 |
 | 视图与错误 | RP 消费官方 Chat 的消息投影，隐藏 reasoning/context；Conversation 管理阶段和视图选择。原生 Chat 保留详细诊断，RP 显示本地化终态错误提示。 |
 | 工作区准入 | 未绑定、候选失效或读取失败时阻断 RP 工作区内容；只使用 DSH 公开工作区列表，选择后回读验证。可重试或返回 native，不保存浏览器工作区副本。 |
 

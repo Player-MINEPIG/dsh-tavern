@@ -1,7 +1,7 @@
 # Trace 候选验收
 
 当前候选为 Tavern **2.3.0**，目标 DSH **0.1.5-rc.1**，分支为 `codex/trace-api-v3`。
-实现、自行验证与测试环境安装已完成；下方维护者人工清单尚未逐项确认。尚未合并、打 tag 或发布。
+Trace 实现、自动回归、Host 与 Chrome 验证已完成，具体范围和验证限制见下文。剩余外部验收已缩减为呈现审核、实际第三方联调及 Windows 验证。尚未合并、打 tag 或发布。
 [English](TRACE_REVIEW_en.md) · [API 与设计合同](PROMPT_API_V3.md) · [周目验收](PLAY_REVIEW.md)
 
 ## 当前交付
@@ -20,7 +20,7 @@
 验证环境为 Node.js 22.23.1，官方 CLI 与实际解析的核心依赖均固定到 `0.1.5-rc.1`。
 以下为当前代码的验证结果。
 
-- `npm run check`：617 项、615 通过、0 失败、2 个条件跳过。已启用真实 AgentLoop 和
+- `npm run check`：625 项、623 通过、0 失败、2 个条件跳过。已启用真实 AgentLoop 和
   官方 codec；跳过项为外部私有卡片 fixture 和 opt-in live v2 测试，后者另在真实 Host 执行。
 - `npm run verify:2.0`、构建与 204 文件打包检查通过；真实 Host 的 v2 smoke 16/16 通过。
 - 自动回归覆盖交错段落、宏/混合来源、Unicode、重试与多步、重启、官方消息复用/替换、继承前缀、
@@ -37,8 +37,21 @@
   v2 仍只包含成功产生的助手消息。
 - 真实 Host + 合成模型验证带预设轮次的 23 个段落和 2 条 Tavern 来源；移除请求 fixture 并重启后，
   未重新装配也可回读同一记录。两条样本记录合计约 34 KiB，仅为样本，不是固定容量估算。
-- 浏览器确认配置优先、两组折叠详情、官方正文回读、来源原文未另存及请求 ST role 说明，
-  无 warn/error。段落正文按文本展示，不能执行 HTML。实际模型消息中没有自动生成的身份包装。
+- Chrome 在端口 `18977` 的候选环境中验证了两张真实卡片之间的切换，无串会话；Trace 配置优先、
+  世界书命中/拒绝、Loader 交错段落与官方正文核对均已检查。来源原文未另存及请求 ST role 说明可见。
+  Trace 的段落原文按文本展示，不执行 HTML；实际模型消息中没有自动生成的身份包装。
+- Chrome 已检查 `1024×768` 和 `1280×900` 窗口、Tavern 125% 缩放、中英文、DSH 亮/暗/系统主题，
+  以及原生/魔丸切换；完成后恢复中文、100% 缩放和系统主题。
+- RP 完整 HTML 围栏的源码显示问题已修复并在 Chrome 核验：真实卡片的 4 个完整文档分别渲染为
+  独立 Shadow DOM 面板，静态标题、主题颜色和背景可见，变量更新标记仍不在 RP 显示。
+  另有 32 项合成 Chrome 检查通过，覆盖完整文档围栏、根 CSS 变量、渐变简写及 CSS import 的字节保留、
+  文档间样式隔离、脚本过滤、流式闭合与实际 `staticHtmlExport`。这不代表依赖 JavaScript/MVU 的动态数值和按钮已实现。
+- 已使用测试环境配置的真实模型完成普通回复。执行停止生成后，输入栏恢复发送控件；只读核查确认
+  该请求的 31/31 段仍可通过官方引用读取，Tavern 未伪造成功或错误。该轮官方持久化日志停在
+  `step/end`，缺少 `turn/end`；官方冷读仅在内存补出 `interrupted`。这不能证明用户取消原因已完整落盘，
+  无官方失败信息时 v3 不补造 `failure`。核查前后日志和 Trace 文件不变。
+- 控制台出现的 CSSPeeper inspector / FileSaver unload 警告来自浏览器扩展，不归因于 Tavern。
+  三个 404 均明确为旧日志缺失的 `PLAY_SESSION_NOT_FOUND`；界面显示对应提示，未阻断有效 RP 会话。
 - 测试环境的安装文件与候选包逐字节匹配；实际解析的核心包版本一致。更新已安装的运行中 Host
   后，需要重启才会加载新后端。
 
@@ -56,69 +69,26 @@ DSH_TAVERN_PROMPT_COMPAT_ROOT="$DSH_RUNTIME_ROOT" npm run verify:2.0
 ```
 
 未设置变量时相应集成测试会跳过，不能把跳过当成验收通过。仓库内可复现的真实 AgentLoop
-路径见 `test/trace-v3-host.test.mjs` 和 `test/trace-failures-host.test.mjs`；合成模型和夹具不证明
-真实模型、真实卡片或对方插件已经验收。
+路径见 `test/trace-v3-host.test.mjs` 和 `test/trace-failures-host.test.mjs`。上面的真实模型和卡片验证
+是独立的浏览器证据；合成故障通过不证明真实提供方的超时/重试或实际第三方插件已经验收。
 
-## 待维护者人工验收
+## 剩余外部验收
 
-请使用测试 profile 和测试资源副本，按以下顺序执行。每项记录通过/失败；若失败，附上
-会话 ID、turn/step/attempt、recordId、插件顺序及预期/实际结果，避免提交私密提示词正文。
+已完成的 API、Host 和 Chrome 项目不再要求维护者逐项重做。剩余范围为：
 
-1. **准备候选环境。** 检出 `codex/trace-api-v3` 的最新提交，按
-   [安装文档](INSTALLATION.md)安装到测试 profile 并重启 Host；确认 Tavern 为 2.3.0
-   候选、`dsh --version` 为 `0.1.5-rc.1`。CLI 已升级不代表测试 profile 已装入最新候选。
-   先确认原生会话能正常打开，第三方插件正常加载。
-2. **检查 API 边界。** 在已认证的 Host 同源页面打开开发者工具，调用下面的只读检查。
-   预期 capabilities 为 200 且没有 `currentSources/maxSourceBytes`；旧 `/sources` 为
-   404 `NOT_FOUND`；装配索引为 200（无新请求时允许空数组）。需要当前绑定时调用 v1
-   `POST /session-configurations/preview`，正文为
-   `{ "source": { "mode": "current", "sessionId": "实际会话ID" } }`，再按返回 ID
-   读取资源详情。预期不会新增装配记录，不消费开场；不要用 `/active` 验证“不运行装配”。
-3. **真实预设和卡片，至少两轮。** 复制常用复杂预设、卡片、用户和世界书；在预设前后段、
-   角色描述和世界书条目放入不同的易识别文字，并包含中文与 emoji。将角色 marker 放在
-   两个预设条目之间，选一个备选开场；发送触发世界书关键词的首轮，再发送第二轮。
-   打开与 Conversation、Trajectory 同级的 Tavern Trace，逐轮展开段落和来源。
-   预期顺序服从预设，角色/世界书可交错；main/jailbreak 的 `{{original}}` 混合输入可识别；
-   开场符合首轮语义；字数按码点而非 token。对照官方系统提示词，核对正文和段间换行。
-   不应再出现 Tavern 自动生成的 `<st-prompt>` 或卡片 ID 包装（作者自己写入的标签保留）。
-   来源展开应显示身份、摘要和字数，并提示原文未另存；不要期待历史 source.text。
-   未被其他插件改写时应显示核对成功；不要把段落输入关系当作逐字符映射。
-   使用空昵称卡片确认 `{{char}}` 展开为卡片名；新世界书来源的 `entryId` 为书内 UID，
-   `qualifiedEntryId` 为完整 Loader ID。与 v1 审计关联时同时核对 `resourceId`，并遵守 API
-   文档中的裁剪和重复 UID 限制。
-4. **历史不受当前编辑影响。** 保存第一轮 recordId 和详情响应，修改卡片或预设再发一轮。
-   预期新轮使用新内容，官方日志保留且可验证时，旧 recordId 仍返回原正文、原绑定及原来源元数据；重启 Host，尚未激活
-   该会话时再次查询，旧详情仍相同。在测试副本中移走日志后，正文应明确不可用、元数据仍可读；恢复日志后可重新读取。快速切换两个会话、开关 Trace，预期无串会话或过期响应覆盖。
-5. **与对方插件联调。** 请开发者分别使用 [v3 reader](examples/trace-reader.mjs) 和
-   [官方 observer](examples/official-prompt-observer.mjs)。先只观察，再用官方装配接口
-   重排/替换一个具名段落、贡献一个新段落。预期只用官方接口也能操作段落；v3 能查看
-   详细来源。改写的原段落和无 Tavern 元数据的新段落标为 unknown，不继承错误来源。
-   共同确认加载顺序和采样设置；如使用 `complete` 覆盖，Trace 应明确显示装配核对不通过。
-6. **真实模型与失败过程。** 使用已配置模型测试普通回复、多步工具、取消、超时及重试。
-   对照官方轨迹核对 turn/step/attempt，预期各次请求独立记录，不覆盖上一条；
-   `request-observed` 只表示到达 LLM 层，不能当作模型成功；未观察请求、失败或缺失正文
-   均应显示相应状态，不拼造正文。多步和重试是否发生以官方轨迹为准。
-   当官方日志包含失败信息时，v3 详情应返回 `failureStatus: "available"` 与 `failure.code/message`；
-   重试成功后仍能读到失败尝试的原因。RP 对话不增加失败助手消息，不能靠 RP 消息判断是否发生过失败。
-7. **日常界面与升级回归。** 检查常用窗口宽度、亮暗主题、缩放、中英文、魔丸/native
-   切换，以及现有会话、插件和模型连接。旧周目的坐标迁移按
-   [迁移指南](DSH_0.1.5_MIGRATION.md)执行，CLI 升级不会自动改写 Tavern timeline。
-   如验证卸载，请只在测试 profile 操作：移除 Tavern 后原生会话和历史仍应可用。
+1. **维护者的呈现审核。** 判断当前 RP 富文本、Trace 信息层次和交互是否符合使用习惯；无需重新执行上述 HTML、窗口、主题、语言和会话切换技术检查。
+2. **实际第三方插件联调。** 由插件开发者使用 [v3 reader](examples/trace-reader.mjs) 或 [官方 observer](examples/official-prompt-observer.mjs) 接入自己的界面与流程，确认来源展示、加载顺序和采样策略。官方接口的观察、重排、改写与 complete 覆盖已用合成插件验证；这不能代替对方真实插件的验收。
+3. **Windows 环境验证。** 平台路径夹具已经修正，但本次没有 Windows 主机证据，需要在 Windows 运行存储路径及安装相关检查。
 
-同源页面控制台检查（替换会话 ID，不填写访问令牌）：
+反馈问题时提供测试环境、操作步骤、预期/实际结果，必要时附会话 ID、turn/step/attempt 和 recordId；公开报告避免包含私密提示词正文。
 
-```js
-const sessionId = '实际会话ID';
-const base = '/pmp-dsh-tavern/api/v3';
-for (const path of [
-  '/capabilities',
-  `/sessions/${encodeURIComponent(sessionId)}/sources`,
-  `/sessions/${encodeURIComponent(sessionId)}/assemblies`,
-]) {
-  const response = await fetch(base + path, { credentials: 'same-origin', cache: 'no-store' });
-  console.log(path, response.status, await response.json());
-}
-```
+## 可选复验
+
+更换构建、环境或发现新问题时，可按 [安装文档](INSTALLATION.md)安装候选并重启 Host，再使用上面的命令复验。以下是定向排查入口，不是新增人工必做清单：
+
+- **接口和配置：** capabilities 应为 200，旧 `/sessions/:id/sources` 为 404；当前绑定用 v1 `POST /session-configurations/preview`，历史记录用 v3 索引/详情。当前配置查询不应产生新的历史记录；`/active` 会运行装配，不能用于验证这一点。
+- **装配和引用：** 对照官方系统正文检查顺序、换行和核对状态；来源是段落级输入关系，不是逐字符映射。世界书关联使用 `resourceId + entryId`，`qualifiedEntryId` 保存完整 Loader ID。修改当前资源后，旧详情仍依赖旧官方日志；在测试副本移走日志应明确不可用，不能补造。
+- **失败和迁移：** 官方日志含失败原因时，v3 详情通过引用返回 `failureStatus` 和 `failure`，RP 不增加失败助手消息。旧周目坐标按 [迁移指南](DSH_0.1.5_MIGRATION.md)处理；卸载回退只在测试 profile 验证。
 
 ## 当前限制
 
@@ -127,6 +97,12 @@ Trace 是有界的近期追踪：所有会话共享默认 256 条、总计 16 Mi
 正文能否显示依赖官方日志保留且校验通过；元数据中的名称、关键词等仍可能敏感。
 来源是段落输入关系，不是逐字符 source map。请求的 ST role 是元数据，当前贡献仍为 system sections；
 不支持任意消息深度、独占接管或永久归档。来源原文不另存；当前资源通过 v1 查询。
+
+RP HTML 面板支持经过过滤的静态 HTML/CSS；脚本不执行，依赖 JavaScript/MVU 的动态数值和按钮尚未实现。
+Trace 中的提示词原文仍按文本展示，不执行 HTML。
+
+真实提供方的超时和重试尚未人为诱发；目前相关失败归属由上述 7 类真实 AgentLoop 合成故障覆盖。
+这不是同一提供方端到端故障验收，也不要求维护者重复已完成的全部检查。
 
 一个 Host 写一个存储目录，不承诺多进程并发写入。冷 inspect 使用逻辑事件坐标，不提供压缩日志的
 O(1) 随机读取。保留的较旧 DSH 路径不扩大本次目标运行时的验证范围。合并和发布等待维护者验收。

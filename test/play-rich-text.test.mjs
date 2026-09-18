@@ -5,6 +5,7 @@ import {
   renderRichTextHtml,
   sanitizeRenderedHtml,
 } from '../packages/client/src/play/rich-text.js'
+import { adaptDocumentCss } from '../packages/client/src/play/rich-text-styles.js'
 
 test('Tavern rich text parses GFM while preserving raw HTML for the sanitizer', () => {
   const html = markdownToHtml('**Bold**\n\n<div class="status">Ready</div>')
@@ -120,4 +121,91 @@ test('details ignores inline code and quoted attributes containing closing tags'
   const html = markdownToHtml('<details title="a > b"><summary>Status</summary>\n`</details>`\n\n<div title="</details>">Ready</div>\n\n**Inside**\n</details>\n\nAfter')
   assert.match(html, /<code>&lt;\/details&gt;<\/code>/)
   assert.match(html, /<strong>Inside<\/strong><\/p>\s*<\/details>\s*<p>After/)
+})
+
+const staticDocument = '<head>\n<style>.panel { display: flex }</style>\n</head>\n<body>\n<div class="panel">Ready</div>\n</body>'
+
+test('closed unlabeled and html fences render complete static HTML documents', () => {
+  for (const fence of ['```', '```html', '~~~ HTML']) {
+    const marker = fence.startsWith('~') ? '~~~' : '```'
+    const html = markdownToHtml(`${fence}\n${staticDocument}\n${marker}`)
+    assert.match(html, /<style>\.panel \{ display: flex \}<\/style>/)
+    assert.match(html, /<div class="panel">Ready<\/div>/)
+    assert.doesNotMatch(html, /<pre>|&lt;head|<br/)
+  }
+  const wrapped = markdownToHtml('```html\n<!-- template -->\n<!DOCTYPE html>\n<html lang="en">' + staticDocument + '</html>\n```')
+  assert.match(wrapped, /<html lang="en">/)
+  assert.doesNotMatch(wrapped, /<pre>/)
+  assert.doesNotMatch(markdownToHtml(`\`\`\`html\n<!doctype html>\n${staticDocument}\n\`\`\``), /<pre>/)
+})
+
+test('multiple fenced documents preserve surrounding Markdown and literal inner text', () => {
+  const html = markdownToHtml(`Before **one**\n\n\`\`\`\n${staticDocument}\n\`\`\`\n\nBetween\n\n\`\`\`html\n${staticDocument.replace('Ready', '**literal**')}\n\`\`\`\n\nAfter`)
+  assert.match(html, /<p>Before <strong>one<\/strong><\/p>/)
+  assert.match(html, /<p>Between<\/p>/)
+  assert.match(html, /<p>After<\/p>/)
+  assert.equal((html.match(/<body>/g) ?? []).length, 2)
+  assert.match(html, /<div class="panel">\*\*literal\*\*<\/div>/)
+})
+
+test('ordinary snippets, explicit code languages, and indented code stay literal', () => {
+  for (const source of [
+    '```html\n<div>Example</div>\n```',
+    `\`\`\`text\n${staticDocument}\n\`\`\``,
+    `\`\`\`js\n${staticDocument}\n\`\`\``,
+    `\`\`\`markdown\n\`\`\`html\n${staticDocument}\n\`\`\`\n\`\`\``,
+    staticDocument.split('\n').map(line => `    ${line}`).join('\n'),
+  ]) {
+    const html = markdownToHtml(source)
+    assert.match(html, /<pre><code/)
+    assert.doesNotMatch(html, /<style>|<div>Example/)
+  }
+})
+
+test('unclosed or mismatched fences wait for completion before rendering HTML', () => {
+  for (const closing of ['', '\n``', '\n~~~']) {
+    const html = markdownToHtml(`\`\`\`html\n${staticDocument}${closing}`)
+    assert.match(html, /<pre><code/)
+    assert.doesNotMatch(html, /<style>/)
+  }
+  const incomplete = markdownToHtml('```html\n<head></head><body><div>Ready</div>\n```')
+  assert.match(incomplete, /&lt;body&gt;/)
+})
+
+test('document recognition does not consume outer teaching fences or shorter nested markers', () => {
+  const teaching = markdownToHtml(`\`\`\`\`\n\`\`\`html\n${staticDocument}\n\`\`\`\n\`\`\`\``)
+  assert.match(teaching, /<pre><code>```html/)
+  assert.doesNotMatch(teaching, /<style>/)
+  const streaming = markdownToHtml(`\`\`\`\`html\n${staticDocument}\n\`\`\``)
+  assert.match(streaming, /<pre><code/)
+  assert.doesNotMatch(streaming, /<style>/)
+})
+
+test('recognized document fences still pass through the same sanitizer', () => {
+  let received
+  const purifier = { sanitize(html, options) { received = { html, options }; return '<p>purified</p>' } }
+  const unsafe = '<html><body><script>unsafe()</script><iframe srcdoc="unsafe"></iframe><p onclick="unsafe()">Ready</p></body></html>'
+  assert.equal(renderRichTextHtml(`\`\`\`html\n${unsafe}\n\`\`\``, { purifier, documentObject: null }), '<p>purified</p>')
+  assert.match(received.html, /<script>unsafe\(\)<\/script>/)
+  assert.ok(received.options.FORBID_TAGS.includes('script'))
+  assert.ok(received.options.FORBID_TAGS.includes('iframe'))
+})
+
+test('large malformed document shapes do not prevent rendering subsequent messages', () => {
+  const unfinishedHead = '<head>' + '</head><body>x'.repeat(16000)
+  assert.match(markdownToHtml(`\`\`\`html\n${unfinishedHead}\n\`\`\``), /<pre><code/)
+  const unfinishedComments = '<html><body>' + '<!--'.repeat(64000) + '</body></html>'
+  assert.match(markdownToHtml(`\`\`\`html\n${unfinishedComments}\n\`\`\``), /data-dtv-html-document/)
+  assert.match(markdownToHtml('**Next message**'), /<strong>Next message<\/strong>/)
+})
+
+test('document root CSS adaptation preserves declaration bytes and non-root selectors', () => {
+  const css = '@import url("./theme.css");\n:root { --ink: red; }\nbody { color: var(--ink); }\n@media (min-width: 1px) { html { --ready: yes; } }\n.panel { background: linear-gradient(90deg,var(--ink),white); background-size: 200% 100%; content: ";body{ :root"; --custom: { body { keep: yes } }; }\n[data-label="body"] { color: red; }\nhtml body { color: blue; }'
+  const expected = '@import url("./theme.css");:host{ --ink: red; }:host{ color: var(--ink); }\n@media (min-width: 1px) {:host{ --ready: yes; } }\n.panel { background: linear-gradient(90deg,var(--ink),white); background-size: 200% 100%; content: ";body{ :root"; --custom: { body { keep: yes } }; }\n[data-label="body"] { color: red; }\nhtml body { color: blue; }'
+  assert.equal(adaptDocumentCss(css), expected)
+  assert.equal(adaptDocumentCss('/* :root { example } */ body /* root */ {color:red}'), ':host{color:red}')
+  const literal = '.panel {content:"escaped \\";body{"}\n/* unfinished :root { '
+  assert.equal(adaptDocumentCss(literal), literal)
+  const quotedComments = '[data-x="' + '/*x'.repeat(64000) + '"] {color:red}'
+  assert.equal(adaptDocumentCss(quotedComments), quotedComments)
 })

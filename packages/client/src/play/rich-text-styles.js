@@ -37,6 +37,79 @@ export function isolateStyledHtml(template, documentObject) {
   return template.innerHTML
 }
 
+// Whole documents lose html/head/body during fragment sanitization. Rewrite
+// only standalone root selectors, leaving declarations/imports byte-for-byte.
+// CSSOM serialization can lose var() shorthands with later longhand overrides.
+// This scanner skips strings, comments, escapes and declaration blocks; it is
+// not a CSS sanitizer. The existing shadow/paint boundary provides isolation.
+function skipCssTrivia(css, offset, end) {
+  while (offset < end) {
+    if (/\s/.test(css[offset])) offset++
+    else if (css.startsWith('/*', offset)) {
+      const close = css.indexOf('*/', offset + 2)
+      if (close < 0 || close >= end) break
+      offset = close + 2
+    } else break
+  }
+  return offset
+}
+
+export function adaptDocumentCss(css) {
+  const parts = []
+  const frames = [{ rules: true, start: 0 }]
+  let copied = 0
+  let parentheses = 0
+  let brackets = 0
+  for (let i = 0; i < css.length; i++) {
+    const char = css[i]
+    if (char === '\\') { i++; continue }
+    if (char === '/' && css[i + 1] === '*') {
+      const end = css.indexOf('*/', i + 2)
+      if (end < 0) break
+      i = end + 1
+      continue
+    }
+    if (char === '"' || char === "'") {
+      const quote = char
+      while (++i < css.length) {
+        if (css[i] === '\\') i++
+        else if (css[i] === quote) break
+      }
+      continue
+    }
+    if (char === '(') parentheses++
+    else if (char === ')') parentheses = Math.max(0, parentheses - 1)
+    else if (char === '[') brackets++
+    else if (char === ']') brackets = Math.max(0, brackets - 1)
+    if (parentheses || brackets) continue
+    const frame = frames.at(-1)
+    if (char === '{') {
+      const start = frame.rules ? skipCssTrivia(css, frame.start, i) : i
+      const prefix = css.slice(start, Math.min(start + 20, i))
+      const root = prefix.match(/^(?:html|body|:root)\b/i)?.[0]
+      if (root && skipCssTrivia(css, start + root.length, i) === i) {
+        parts.push(css.slice(copied, frame.start), ':host')
+        copied = i
+      }
+      frames.push({ rules: /^@(media|supports|container|layer|scope|document|starting-style)\b/i.test(prefix), start: i + 1 })
+    } else if (char === '}') {
+      if (frames.length > 1) frames.pop()
+      frames.at(-1).start = i + 1
+    } else if (char === ';') frame.start = i + 1
+  }
+  parts.push(css.slice(copied))
+  return parts.join('')
+}
+
+export function isolateHtmlDocuments(template, documentObject) {
+  for (const document of template.content.querySelectorAll('[data-dtv-html-document]')) {
+    const content = documentObject.createElement('template')
+    while (document.firstChild) content.content.append(document.firstChild)
+    for (const style of content.content.querySelectorAll('style')) style.textContent = adaptDocumentCss(style.textContent)
+    document.innerHTML = isolateStyledHtml(content, documentObject)
+  }
+}
+
 // innerHTML does not activate declarative shadow roots. React's ref runs after
 // insertion/update; static HTML exports use the same markup natively, without JS.
 export function mountStyledHtml(element) {
@@ -46,5 +119,6 @@ export function mountStyledHtml(element) {
     const root = host.shadowRoot ?? host.attachShadow({ mode: 'open' })
     root.replaceChildren(template.content)
     template.remove()
+    mountStyledHtml(root)
   }
 }

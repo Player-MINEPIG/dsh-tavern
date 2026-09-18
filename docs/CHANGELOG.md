@@ -2,6 +2,7 @@
 
 ## 2.3.0 — Candidate, not released — Prompt assembly Trace
 
+- Render complete HTML documents inside closed unlabeled/HTML fences as sanitized static templates in RP and HTML export. Isolate each document, map standalone root styles, preserve CSS declaration bytes (including gradient variable shorthands), and keep code samples literal. Template scripts and MVU variables remain unsupported.
 - Fall back to the character name when the loader receives an empty or whitespace-only nickname, including new/imported cards and imported-context macro expansion.
 - Separate new world-book source `entryId` (in-book UID) from `qualifiedEntryId` (complete Loader identity); preserve earlier captured metadata and the v1 audit contract.
 - Expose verified failure code/message in v3 details through official event references, without copying error bodies or adding RP messages. Keep retry failures separate from successful attempts and subsequent assembly failures separate from preceding successful requests.

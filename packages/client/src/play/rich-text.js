@@ -1,7 +1,7 @@
 import DOMPurifyFactory from 'dompurify'
 import { Marked } from 'marked'
 import { createElement } from 'react'
-import { isolateStyledHtml, mountStyledHtml } from './rich-text-styles.js'
+import { isolateHtmlDocuments, isolateStyledHtml, mountStyledHtml } from './rich-text-styles.js'
 
 const SANITIZE_OPTIONS = Object.freeze({
   USE_PROFILES: { html: true },
@@ -19,6 +19,48 @@ const summaryConverter = new Marked({ async: false, breaks: false, gfm: true })
 const STANDALONE_WRAPPER_TAG = /^\s*(<\/?[\p{L}][^<>]*?>)\s*$/u
 const FENCE_MARKER = /^\s{0,3}(`{3,}|~{3,})/
 const HTML_TAGS = new Set('a abbr address area article aside audio b base bdi bdo blockquote body br button canvas caption cite code col colgroup data datalist dd del details dfn dialog div dl dt em embed fieldset figcaption figure footer form h1 h2 h3 h4 h5 h6 head header hgroup hr html i iframe img input ins kbd label legend li link main map mark menu meta meter nav noscript object ol optgroup option output p picture pre progress q rp rt ruby s samp script search section select slot small source span strong style sub summary sup table tbody td template textarea tfoot th thead time title tr track u ul var video wbr'.split(' '))
+
+function withoutHtmlComments(html) {
+  const parts = []
+  let offset = 0
+  for (;;) {
+    const start = html.indexOf('<!--', offset)
+    if (start < 0) break
+    const end = html.indexOf('-->', start + 4)
+    if (end < 0) break
+    parts.push(html.slice(offset, start))
+    offset = end + 3
+  }
+  parts.push(html.slice(offset))
+  return parts.join('')
+}
+
+// ST display templates may wrap a whole HTML document in a Markdown fence.
+// Only closed document-shaped blocks opt in; snippets and streaming code retain
+// Markdown semantics. This is format recognition, not a security boundary:
+// renderRichTextHtml still purifies the result before isolating its styles.
+function fencedHtmlDocument(token) {
+  if (token.lang && token.lang.trim().toLowerCase() !== 'html') return null
+  const lines = token.raw.trimEnd().split('\n')
+  const opening = lines[0].match(/^ {0,3}(`{3,}|~{3,})[\t ]*(?:html)?[\t ]*$/i)
+  const closing = lines.at(-1).match(/^ {0,3}(`{3,}|~{3,})[\t ]*$/)
+  if (lines.length < 3 || !opening || !closing || opening[1][0] !== closing[1][0]
+    || closing[1].length < opening[1].length) return null
+
+  const html = token.text.trim()
+  const shape = withoutHtmlComments(html).trim().replace(/^<!doctype\s+html[^>]*>\s*/i, '')
+  const document = /^<html(?:\s[^<>]*|)>/i.test(shape) && /<\/html\s*>$/i.test(shape)
+  const headAndBody = /^<head(?:\s[^<>]*|)>/i.test(shape) && /<\/body\s*>$/i.test(shape)
+    && /<\/head\s*>\s*<body(?:\s[^<>]*|)>/i.test(shape)
+  return document || headAndBody ? html : null
+}
+
+markdownConverter.use({ renderer: {
+  code(token) {
+    const html = fencedHtmlDocument(token)
+    return html === null ? false : `<div data-dtv-html-document="">${html}</div>\n`
+  },
+} })
 
 // A details body is Markdown even when authors omit CommonMark's blank lines.
 // Keep raw HTML cards intact, and ignore apparent closing tags in code/comments.
@@ -171,7 +213,11 @@ export function sanitizeRenderedHtml(html, {
     link.setAttribute('target', '_blank')
     link.setAttribute('rel', 'noopener noreferrer')
   }
-  return canIsolate ? isolateStyledHtml(template, documentObject) : template.innerHTML
+  if (canIsolate) {
+    isolateHtmlDocuments(template, documentObject)
+    return isolateStyledHtml(template, documentObject)
+  }
+  return template.innerHTML
 }
 
 export function renderRichTextHtml(text, options) {
