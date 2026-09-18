@@ -1,4 +1,5 @@
 import { playthroughCharacterId } from './schema.js'
+import { isPlaythroughArchived } from '../../../play/src/playthrough-state.js'
 
 export const SIDEBAR_LOAD_CONCURRENCY = 4
 
@@ -118,6 +119,9 @@ function playthroughMembers(playthrough, timeline) {
   if (rootId !== null) ids.add(rootId)
   if (typeof timeline?.head?.sessionId === 'string' && timeline.head.sessionId !== '') {
     ids.add(timeline.head.sessionId)
+  }
+  for (const head of timeline?.ext?.pmpDshTavern?.branchHeads ?? []) {
+    if (typeof head?.sessionId === 'string' && head.sessionId !== '') ids.add(head.sessionId)
   }
   for (const node of timeline?.nodes ?? []) {
     for (const variant of node?.variants ?? []) {
@@ -297,6 +301,7 @@ export function projectPlaySidebar({
   }
 
   const claimedRpSessions = new Set()
+  const archivedPlaythroughs = []
   for (const playthrough of catalog.playthroughs ?? []) {
     const rootId = rootSessionId(playthrough)
     const characterId = playthroughCharacterId(playthrough)
@@ -305,6 +310,17 @@ export function projectPlaySidebar({
     const allMembers = playthroughMembers(playthrough, timelineFor(timelines, playthrough))
     const members = [...allMembers].filter(id => rpSessionIds.has(id) && !archived.has(id))
     for (const id of members) claimedRpSessions.add(id)
+    if (isPlaythroughArchived(playthrough)) {
+      archivedPlaythroughs.push({
+        ...playthrough,
+        characterName: characters.find(item => item.id === characterId)?.name
+          ?? historicalCharacterName(playthrough, sessions, characterId),
+        rootSessionId: rootId !== null && members.includes(rootId) ? rootId : null,
+        sessionIds: members,
+        missing: members.length === 0,
+      })
+      continue
+    }
     const characterGroup = ensureCharacter(characterId, historicalCharacterName(playthrough, sessions, characterId))
     if (characterGroup.missing === true && characterGroup.sha256 === undefined && typeof characterReference.characterSha256 === 'string') {
       characterGroup.sha256 = characterReference.characterSha256
@@ -354,6 +370,7 @@ export function projectPlaySidebar({
       : projectedCharacters,
     missingCharacters: [...missingCharacterById.values()],
     otherSessions,
+    archivedPlaythroughs,
   }
 }
 

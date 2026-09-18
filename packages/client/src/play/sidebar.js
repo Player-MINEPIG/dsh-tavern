@@ -22,6 +22,7 @@ import {
 } from './create.js'
 import { WorkspaceDiagnosticSummary, PlaythroughDiagnosticWarning } from './diagnostics.js'
 import { PlayIoMenu } from './io-menu.js'
+import { setPlaythroughArchived } from './archive.js'
 import { playthroughDisplayTitle } from './title.js'
 import {
   SessionCharacterBindingCache,
@@ -39,6 +40,7 @@ import { useClientUiSettings } from '../i18n/use-ui-settings.js'
 const h = createLocalizedElement(createElement)
 
 const css = `
+.dtv-play-restore{flex:none;border:0;border-radius:7px;padding:6px 9px;background:transparent;color:var(--dsw-alias-state-business-primary);font:inherit;font-size:11px;cursor:pointer}.dtv-play-restore:hover{background:var(--dsw-alias-interactive-bg-hover)}.dtv-play-restore:disabled{opacity:.5;cursor:default}
 .dtv-play-character-drag{width:20px;min-width:20px;align-self:stretch;border:0;border-radius:7px;background:transparent;color:var(--dsw-alias-label-tertiary);cursor:grab;padding:0;font:inherit;font-size:14px;touch-action:none;user-select:none}.dtv-play-character-drag:hover{background:var(--dsw-alias-interactive-bg-hover)}.dtv-play-character-drag:active{cursor:grabbing}.dtv-play-character-drag:disabled{cursor:default;opacity:.4}
 .dtv-play-section[data-dragging=true]{height:4px;min-height:4px;margin:5px 10px;overflow:hidden;border-radius:999px;background:var(--dsw-alias-state-business-primary);box-shadow:0 0 0 1px color-mix(in srgb,var(--dsw-alias-state-business-primary) 25%,transparent)}.dtv-play-section[data-dragging=true]>*{opacity:0}
 .dtv-play-character-drop{box-sizing:border-box;height:38px;flex:none;border:2px dashed var(--dsw-alias-state-business-primary);border-radius:8px;background:color-mix(in srgb,var(--dsw-alias-state-business-primary) 7%,transparent);display:flex;align-items:center;justify-content:center;color:var(--dsw-alias-state-business-primary);font-size:10px;font-weight:600;pointer-events:none}
@@ -299,6 +301,8 @@ export function PlayWorkspaceBrowser({
   const [otherOpen, setOtherOpen] = useState(false)
   const [ordinaryPromptOpen, setOrdinaryPromptOpen] = useState(false)
   const [missingOpen, setMissingOpen] = useState(true)
+  const [archiveOpen, setArchiveOpen] = useState(false)
+  const [restoringId, setRestoringId] = useState(null)
   const [collapsedMissingCharacters, setCollapsedMissingCharacters] = useState(() => new Set())
   const [relinkRequest, setRelinkRequest] = useState(null)
   const [relinkTargetId, setRelinkTargetId] = useState('')
@@ -355,8 +359,9 @@ export function PlayWorkspaceBrowser({
     missingCharacters: resources?.missingCharacters,
     catalog: resources?.catalog,
     timelines: resources?.timelines,
-    sessions,
-    sessionIds,
+    // Until membership is known, do not flash archived members as loose sessions.
+    sessions: resources === null ? {} : sessions,
+    sessionIds: resources === null ? [] : sessionIds,
     archivedSessionIds,
     currentId,
     activePlaythroughId,
@@ -445,6 +450,20 @@ export function PlayWorkspaceBrowser({
       openSession(target, playthrough)
     } catch (reason) {
       setStatus({ message: reason instanceof Error ? reason.message : String(reason) })
+    }
+  }
+
+  const restorePlaythrough = async playthrough => {
+    if (restoringId !== null) return
+    setRestoringId(playthrough.id)
+    setStatus(null)
+    try {
+      await setPlaythroughArchived(playClient, playthrough, false)
+      window.dispatchEvent(new Event(CLIENT_REFRESH_EVENT))
+    } catch (reason) {
+      setStatus({ message: reason instanceof Error ? reason.message : String(reason) })
+    } finally {
+      setRestoringId(null)
     }
   }
 
@@ -701,6 +720,33 @@ export function PlayWorkspaceBrowser({
       },
       h('span', { className: 'dtv-play-chevron', 'aria-hidden': 'true' }, '•'),
       h('span', { className: 'dtv-play-title' }, rawText(session.title)),
+      )) : null,
+    ),
+    h('section', { className: 'dtv-play-section', 'data-open': archiveOpen },
+      h('button', {
+        type: 'button', className: 'dtv-play-group', 'aria-expanded': archiveOpen,
+        onClick: () => setArchiveOpen(value => !value),
+      },
+      h('span', { className: 'dtv-play-chevron', 'aria-hidden': 'true' }, archiveOpen ? '⌄' : '›'),
+      h('span', { className: 'dtv-play-title' }, uiMessage('play.sidebar.archive')),
+      h('span', { className: 'dtv-play-count' }, rawText(String(model.archivedPlaythroughs.length))),
+      ),
+      archiveOpen ? h('p', { className: 'dtv-play-empty' }, uiMessage('play.sidebar.archiveHint')) : null,
+      archiveOpen && model.archivedPlaythroughs.length === 0
+        ? h('p', { className: 'dtv-play-empty' }, uiMessage('play.sidebar.archiveEmpty')) : null,
+      archiveOpen ? model.archivedPlaythroughs.map(playthrough => h('div', {
+        key: playthrough.id, className: 'dtv-play-row-line',
+      },
+      h('button', {
+        type: 'button', className: 'dtv-play-row', disabled: playthrough.missing,
+        onClick: () => openPlaythrough(playthrough),
+        title: rawText(`${playthrough.characterName} · ${playthroughDisplayTitle(playthrough)}`),
+      }, h('span', { className: 'dtv-play-title' }, rawText(`${playthrough.characterName} · ${playthroughDisplayTitle(playthrough)}`))),
+      h('button', {
+        type: 'button', className: 'dtv-play-restore', disabled: restoringId !== null,
+        'aria-label': uiMessage('play.sidebar.restoreNamed', { title: playthroughDisplayTitle(playthrough) }),
+        onClick: () => restorePlaythrough(playthrough),
+      }, uiMessage('play.io.restore')),
       )) : null,
     ),
     ordinaryPromptOpen ? h('div', {

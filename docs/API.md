@@ -88,6 +88,12 @@ DSH 历史以及 v2 `/sessions/:id/messages` 提供权威消息读取；v3 详�
 
 路径存在、方法不对 → `405 PLAY_METHOD_NOT_ALLOWED`（例如 `POST /chrome`、`POST /focus`、`GET /sessions`）。稳定 focus 中周目 id 不存在返回 404 PLAY_PLAYTHROUGH_NOT_FOUND；catalog 缺失返回 409 PLAY_CATALOG_UNAVAILABLE，catalog 损坏保留 400 PLAY_CATALOG_INVALID；timeline 缺失或损坏统一返回 409 PLAY_FOCUS_UNAVAILABLE。稳定入口不接受客户端 path，不读取 DSH history，也不写文件。旧 /focus?path= 仅保留迁移兼容。
 
+### 周目归档状态
+
+周目 `ext.pmpDshTavern.archivedAt` 为可选 UTC ISO 时间字符串，格式为 `YYYY-MM-DDTHH:mm:ss.sssZ`；缺失表示未归档。服务端和 bundled client 均校验该字段。归档与恢复复用 `PUT /workspace/files?path=catalog.json` 及现有 revision/CAS：归档为指定条目增加字段，恢复移除字段，其他条目、扩展字段、名称、编号、路径和会话引用保持不变。内置客户端在冲突时重新读取并重放本地意图；重复归档保留原归档时间。没有新增归档或删除路由。
+
+归档是列表可见性状态，不是解绑、会话生命周期或磁盘清理操作。timeline 和 selection 不变；focus、历史读取及当前回合继续可用。侧边栏保持归档成员的归属，包括 root、variant、head 和保存的 branch head；这些成员不会变成游离会话，也不会压制其他未归档周目的共享成员。归档箱可查看或恢复，日常诊断排除归档周目，新建周目跳过已归档空周目的复用但仍计入编号。缺失该字段的旧 catalog 保持原行为；旧版客户端会忽略该显示约定。
+
 <a id="session-coordinates"></a>
 ### 会话坐标版本查询与使用
 

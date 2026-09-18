@@ -18,6 +18,8 @@ import {
 
 import { renamePlaythrough } from './create.js'
 import { playthroughDisplayTitle } from './title.js'
+import { isPlaythroughArchived } from '../../../play/src/playthrough-state.js'
+import { setPlaythroughArchived } from './archive.js'
 const h = createLocalizedElement(createElement)
 
 const css = `
@@ -59,6 +61,7 @@ export function PlayIoMenu({ playClient, playthrough, trigger = '+', placement =
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
   const displayTitle = playthroughDisplayTitle(playthrough)
+  const archived = isPlaythroughArchived(playthrough)
 
   useEffect(() => {
     if (!open) return undefined
@@ -105,6 +108,20 @@ export function PlayIoMenu({ playClient, playthrough, trigger = '+', placement =
       setBusy(false)
     }
   }
+  const toggleArchive = async () => {
+    if (busy) return
+    setBusy(true)
+    setError('')
+    try {
+      await setPlaythroughArchived(playClient, playthrough, !archived)
+      window.dispatchEvent(new Event('pmp-dsh-tavern:refresh'))
+      setOpen(false)
+    } catch (reason) {
+      setError(reason instanceof Error ? reason.message : String(reason))
+    } finally {
+      setBusy(false)
+    }
+  }
   return h('div', { ref: root, className: 'dtv-play-io', 'data-placement': placement },
     h('button', {
       type: 'button',
@@ -124,6 +141,7 @@ export function PlayIoMenu({ playClient, playthrough, trigger = '+', placement =
       }, uiMessage('play.io.relinkCharacter')),
       h('button', { type: 'button', className: 'dtv-play-io-item', disabled: busy, onClick: () => exportAs('html') }, uiMessage('play.io.exportHtml')),
       h('button', { type: 'button', className: 'dtv-play-io-item', disabled: busy, onClick: () => exportAs('st') }, uiMessage('play.io.exportSt')),
+      h('button', { type: 'button', className: 'dtv-play-io-item', disabled: busy, onClick: toggleArchive }, uiMessage(archived ? 'play.io.restore' : 'play.io.archive')),
       error === '' ? null : h('p', { className: 'dtv-play-io-error' }, rawText(error)),
     ),
   )

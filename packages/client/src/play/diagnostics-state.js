@@ -1,4 +1,5 @@
 import { PLUGIN_ID } from '../../../identity.js'
+import { isPlaythroughArchived } from '../../../play/src/playthrough-state.js'
 import { loadPlaySidebarResources, projectPlaySidebar } from './sidebar-model.js'
 
 const DISMISSED_KEY = `${PLUGIN_ID}:workspace-diagnostics-dismissed:v1`
@@ -37,6 +38,7 @@ export function currentWorkspaceIssues(resources, sessionAvailability = null) {
   }
   for (const diagnostic of diagnostics) {
     const playthrough = playthroughs.get(diagnostic.playthroughId)
+    if (isPlaythroughArchived(playthrough)) continue
     const binding = playthrough?.ext?.pmpDshTavern
     const code = diagnostic.code || 'PLAY_TIMELINE_READ_FAILED'
     const key = JSON.stringify([scope, diagnostic.playthroughId, code])

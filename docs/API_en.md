@@ -101,6 +101,12 @@ Prefix: `/pmp-dsh-tavern/api/v2`.
 
 Path exists but method is wrong → `405 PLAY_METHOD_NOT_ALLOWED` (for example `POST /chrome`, `POST /focus`, `GET /sessions`). On the stable focus path, a missing playthrough id is 404 `PLAY_PLAYTHROUGH_NOT_FOUND`; a missing catalog is 409 `PLAY_CATALOG_UNAVAILABLE`; a corrupt catalog stays 400 `PLAY_CATALOG_INVALID`; a missing or corrupt timeline is uniformly 409 `PLAY_FOCUS_UNAVAILABLE`. The stable entry does not accept a client path, does not read DSH history, and does not write files. Old `/focus?path=` remains migration compatibility only.
 
+### Playthrough archive state
+
+The optional playthrough field `ext.pmpDshTavern.archivedAt` is a UTC ISO timestamp in `YYYY-MM-DDTHH:mm:ss.sssZ` format; absence means active. Both the server and bundled client validate it. Archive and restore use the existing `PUT /workspace/files?path=catalog.json` revision/CAS contract: add or remove this field on the selected row while preserving other rows, extensions, names, numbers, paths, and session references. The bundled client rereads and replays local intent after conflicts; repeated archive retains the original timestamp. No archive or delete route is added.
+
+Archive is list visibility, not detachment, session lifecycle, or disk cleanup. Timelines and selections remain unchanged; focus, history reads, and current turns remain usable. Sidebar ownership includes archived root, variant, head, and saved branch-head sessions so they do not become loose sessions; shared members remain visible in other active playthroughs. The archive box supports viewing and restoring. Everyday diagnostics exclude archived runs. Creation does not reuse an archived empty run but still counts its number. Older catalogs without the field behave as before; older clients ignore this visibility convention.
+
 <a id="session-coordinates"></a>
 ### Query and use Session coordinate versions
 

@@ -1,3 +1,5 @@
+import { isArchiveTimestamp } from '../../../play/src/playthrough-state.js'
+
 const CHROME_MODES = new Set(['native', 'play'])
 const MESSAGE_ROLES = new Set(['user', 'assistant', 'system'])
 const MESSAGE_ORIGIN_KINDS = new Set(['user', 'context', 'steering', 'assistant', 'system'])
@@ -147,6 +149,10 @@ export function normalizeCatalog(value, label = 'catalog') {
     const itemLabel = `${label}.playthroughs[${index}]`
     if (!isRecord(item)) fail(itemLabel, 'must be an object')
     const ext = extRecord(item.ext, `${itemLabel}.ext`)
+    const archivedAt = ext?.pmpDshTavern?.archivedAt
+    if (archivedAt !== undefined && !isArchiveTimestamp(archivedAt)) {
+      fail(`${itemLabel}.ext.pmpDshTavern.archivedAt`, 'must be a UTC ISO timestamp with milliseconds')
+    }
     return {
       id: stringId(item.id, `${itemLabel}.id`),
       path: stringId(item.path, `${itemLabel}.path`),

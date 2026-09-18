@@ -62,6 +62,40 @@ const dependencies = {
   randomUUID: () => '11111111-2222-4333-8444-555555555555',
 }
 
+test('archived empty runs retain their identity and numbering when a new run is created', async () => {
+  const client = fakeClient()
+  const archived = {
+    id: 'previous', path: 'character-a/previous/timeline.json', title: 'My empty run',
+    ext: { pmpDshTavern: { characterId: 'character-a', rootSessionId: 'old-root', playthroughNumber: 7, archivedAt: '2026-09-19T00:00:00.000Z' } },
+  }
+  await client.putCatalog({ playthroughs: [archived] })
+  await client.putTimeline(archived, { nodes: [] })
+  client.calls.length = 0
+  const result = await createCharacterPlaythrough(client, { character: { id: 'character-a', name: 'Alice' }, ...dependencies })
+  assert.equal(result.reused, false)
+  assert.equal(result.playthrough.ext.pmpDshTavern.playthroughNumber, 8)
+  assert.deepEqual((await client.getCatalog()).playthroughs[0], archived)
+  assert.equal(client.calls.some(call => call[0] === 'getTimeline' && call[1] === archived.path), false)
+})
+
+test('an empty run archived by another tab during history inspection is not reused', async () => {
+  const client = fakeClient()
+  const candidate = {
+    id: 'previous', path: 'character-a/previous/timeline.json',
+    ext: { pmpDshTavern: { characterId: 'character-a', rootSessionId: 'old-root', playthroughNumber: 1 } },
+  }
+  await client.putCatalog({ playthroughs: [candidate] })
+  await client.putTimeline(candidate, { nodes: [] })
+  client.getMessages = async () => {
+    candidate.ext.pmpDshTavern.archivedAt = '2026-09-19T00:00:00.000Z'
+    await client.putCatalog({ playthroughs: [candidate] })
+    return { messages: [], incompleteTurn: false }
+  }
+  const result = await createCharacterPlaythrough(client, { character: { id: 'character-a', name: 'Alice' }, ...dependencies })
+  assert.equal(result.reused, false)
+  assert.equal(result.playthrough.ext.pmpDshTavern.playthroughNumber, 2)
+})
+
 test('new card playthrough binds the card and persists an empty verified timeline without a greeting message', async () => {
   const client = fakeClient()
   const result = await createCharacterPlaythrough(client, {

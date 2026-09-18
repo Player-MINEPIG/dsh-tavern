@@ -243,7 +243,13 @@ var zh_CN_default = Object.freeze({
   "play.chat.hideNode": "\u4ECE\u9B54\u4E38\u663E\u793A\u4E2D\u9690\u85CF\u672C\u7EC4\u95EE\u7B54",
   "play.chat.hideConfirm": "\u8981\u4ECE\u9B54\u4E38\u663E\u793A\u4E2D\u9690\u85CF\u672C\u7EC4\u95EE\u7B54\u5417\uFF1F\u539F\u59CB DSH \u6D88\u606F\u4E0D\u4F1A\u88AB\u5220\u9664\u3002",
   "play.chat.restoreNode": "\u6062\u590D\u663E\u793A\u672C\u7EC4\u95EE\u7B54",
-  "play.io.menu": "\u5468\u76EE\u5BFC\u5165 / \u5BFC\u51FA",
+  "play.io.menu": "\u5468\u76EE\u64CD\u4F5C",
+  "play.io.archive": "\u5F52\u6863\u5468\u76EE",
+  "play.io.restore": "\u6062\u590D\u5468\u76EE",
+  "play.sidebar.archive": "\u5F52\u6863\u7BB1",
+  "play.sidebar.archiveHint": "\u5DF2\u5F52\u6863\u5468\u76EE\u4FDD\u7559\u5168\u90E8\u8BB0\u5F55\u548C\u7ED1\u5B9A\uFF0C\u53EF\u968F\u65F6\u67E5\u770B\u6216\u6062\u590D\u3002",
+  "play.sidebar.archiveEmpty": "\u6682\u65E0\u5DF2\u5F52\u6863\u5468\u76EE\u3002",
+  "play.sidebar.restoreNamed": "\u6062\u590D\u5468\u76EE\u300C{title}\u300D",
   "play.io.rename": "\u91CD\u547D\u540D\u5468\u76EE",
   "play.io.relinkCharacter": "\u91CD\u65B0\u7ED1\u5B9A\u89D2\u8272\u5361",
   "play.io.renamePrompt": "\u8F93\u5165\u65B0\u7684\u5468\u76EE\u540D\u79F0\uFF1A",
@@ -974,7 +980,13 @@ var en_default = Object.freeze({
   "play.chat.hideNode": "Hide this QA from Mowan display",
   "play.chat.hideConfirm": "Hide this QA from Mowan display? The original DSH messages will not be deleted.",
   "play.chat.restoreNode": "Restore this QA to Mowan display",
-  "play.io.menu": "Playthrough import / export",
+  "play.io.menu": "Playthrough actions",
+  "play.io.archive": "Archive playthrough",
+  "play.io.restore": "Restore playthrough",
+  "play.sidebar.archive": "Archived playthroughs",
+  "play.sidebar.archiveHint": "Archived playthroughs retain their history and bindings. View or restore them at any time.",
+  "play.sidebar.archiveEmpty": "No archived playthroughs.",
+  "play.sidebar.restoreNamed": 'Restore playthrough "{title}"',
   "play.io.rename": "Rename playthrough",
   "play.io.relinkCharacter": "Relink character card",
   "play.io.renamePrompt": "Enter a new playthrough name:",
@@ -8696,6 +8708,14 @@ async function readCatalogOrEmpty(client) {
   }
 }
 
+// packages/play/src/playthrough-state.js
+function isPlaythroughArchived(playthrough) {
+  return typeof playthrough?.ext?.pmpDshTavern?.archivedAt === "string";
+}
+function isArchiveTimestamp(value) {
+  return typeof value === "string" && /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/.test(value) && Number.isFinite(Date.parse(value)) && new Date(value).toISOString() === value;
+}
+
 // packages/client/src/play/schema.js
 var CHROME_MODES = /* @__PURE__ */ new Set(["native", "play"]);
 var MESSAGE_ROLES = /* @__PURE__ */ new Set(["user", "assistant", "system"]);
@@ -8830,6 +8850,10 @@ function normalizeCatalog(value, label = "catalog") {
     const itemLabel = `${label}.playthroughs[${index}]`;
     if (!isRecord4(item)) fail(itemLabel, "must be an object");
     const ext2 = extRecord(item.ext, `${itemLabel}.ext`);
+    const archivedAt = ext2?.pmpDshTavern?.archivedAt;
+    if (archivedAt !== void 0 && !isArchiveTimestamp(archivedAt)) {
+      fail(`${itemLabel}.ext.pmpDshTavern.archivedAt`, "must be a UTC ISO timestamp with milliseconds");
+    }
     return {
       id: stringId(item.id, `${itemLabel}.id`),
       path: stringId(item.path, `${itemLabel}.path`),
@@ -9029,6 +9053,9 @@ function playthroughMembers(playthrough, timeline) {
   if (typeof timeline?.head?.sessionId === "string" && timeline.head.sessionId !== "") {
     ids.add(timeline.head.sessionId);
   }
+  for (const head of timeline?.ext?.pmpDshTavern?.branchHeads ?? []) {
+    if (typeof head?.sessionId === "string" && head.sessionId !== "") ids.add(head.sessionId);
+  }
   for (const node of timeline?.nodes ?? []) {
     for (const variant of node?.variants ?? []) {
       if (typeof variant?.sessionId === "string" && variant.sessionId !== "") ids.add(variant.sessionId);
@@ -9194,6 +9221,7 @@ function projectPlaySidebar({
     ensureCharacter(character.id, typeof character.name === "string" && character.name !== "" ? character.name : character.id);
   }
   const claimedRpSessions = /* @__PURE__ */ new Set();
+  const archivedPlaythroughs = [];
   for (const playthrough of catalog2.playthroughs ?? []) {
     const rootId = rootSessionId2(playthrough);
     const characterId = playthroughCharacterId(playthrough);
@@ -9202,6 +9230,16 @@ function projectPlaySidebar({
     const allMembers = playthroughMembers(playthrough, timelineFor(timelines, playthrough));
     const members = [...allMembers].filter((id) => rpSessionIds.has(id) && !archived.has(id));
     for (const id of members) claimedRpSessions.add(id);
+    if (isPlaythroughArchived(playthrough)) {
+      archivedPlaythroughs.push({
+        ...playthrough,
+        characterName: characters.find((item) => item.id === characterId)?.name ?? historicalCharacterName(playthrough, sessions, characterId),
+        rootSessionId: rootId !== null && members.includes(rootId) ? rootId : null,
+        sessionIds: members,
+        missing: members.length === 0
+      });
+      continue;
+    }
     const characterGroup = ensureCharacter(characterId, historicalCharacterName(playthrough, sessions, characterId));
     if (characterGroup.missing === true && characterGroup.sha256 === void 0 && typeof characterReference.characterSha256 === "string") {
       characterGroup.sha256 = characterReference.characterSha256;
@@ -9240,7 +9278,8 @@ function projectPlaySidebar({
     playSessionIds: [...claimedRpSessions],
     characters: characterSorting?.mode === "updated" ? sortCharactersByRecentConversation(projectedCharacters, sessions) : projectedCharacters,
     missingCharacters: [...missingCharacterById.values()],
-    otherSessions
+    otherSessions,
+    archivedPlaythroughs
   };
 }
 function playthroughFocusTarget({ focus, playthrough, rpSessionIds = [] } = {}) {
@@ -9443,6 +9482,7 @@ function latestCharacterPlaythrough(catalog2, characterId) {
   return latest;
 }
 async function playthroughIsReusable(client, playthrough) {
+  if (isPlaythroughArchived(playthrough)) return false;
   try {
     const sessionId = rootSessionId4(playthrough);
     const timeline = await client.getTimeline(playthrough);
@@ -9522,8 +9562,14 @@ async function createCharacterPlaythrough(client, {
   const path = `${directory}/timeline.json`;
   const sourceId = typeof selectionFromSessionId === "string" && selectionFromSessionId !== "" ? selectionFromSessionId : null;
   const catalog2 = await catalogOrEmpty(client);
-  const latest = latestCharacterPlaythrough(catalog2, characterId);
-  if (latest !== null && await playthroughIsReusable(client, latest)) {
+  let latest = latestCharacterPlaythrough(catalog2, characterId);
+  let reusable = latest !== null && await playthroughIsReusable(client, latest);
+  if (reusable) {
+    const fresh = (await client.getCatalog()).playthroughs.find((item) => item.id === latest.id && item.path === latest.path);
+    reusable = fresh !== void 0 && !isPlaythroughArchived(fresh) && rootSessionId4(fresh) === rootSessionId4(latest);
+    if (reusable) latest = fresh;
+  }
+  if (reusable) {
     const existingRoot = rootSessionId4(latest);
     if (existingRoot !== null) {
       if (typeof configureSession === "function") await configureSession(existingRoot);
@@ -9539,6 +9585,7 @@ async function createCharacterPlaythrough(client, {
       const index = fresh.playthroughs.findIndex((item) => item.id === latest.id && item.path === latest.path);
       if (index < 0) throw new Error("playthrough.create.missingVacancy");
       const current3 = fresh.playthroughs[index];
+      if (isPlaythroughArchived(current3)) throw new Error("playthrough.create.archivedVacancy");
       const currentRoot = rootSessionId4(current3);
       if (currentRoot !== null && currentRoot !== sessionId2) throw new Error("playthrough.create.identityConflict");
       attached = {
@@ -11114,6 +11161,7 @@ function currentWorkspaceIssues(resources, sessionAvailability = null) {
   }
   for (const diagnostic of diagnostics) {
     const playthrough = playthroughs.get(diagnostic.playthroughId);
+    if (isPlaythroughArchived(playthrough)) continue;
     const binding = playthrough?.ext?.pmpDshTavern;
     const code = diagnostic.code || "PLAY_TIMELINE_READ_FAILED";
     const key = JSON.stringify([scope, diagnostic.playthroughId, code]);
@@ -11566,6 +11614,31 @@ function playthroughExportDocument(snapshot, format) {
   throw new TypeError(`Unknown export format ${format}`);
 }
 
+// packages/client/src/play/archive.js
+async function setPlaythroughArchived(client, playthrough, archived, { now = () => /* @__PURE__ */ new Date() } = {}) {
+  if (typeof archived !== "boolean") throw new TypeError("archived must be a boolean");
+  const archivedAt = archived ? now().toISOString() : null;
+  const catalog2 = await updateCatalog(client, (current3) => {
+    const index = current3.playthroughs.findIndex((item) => item.id === playthrough.id && item.path === playthrough.path);
+    if (index < 0) throw new Error("play.archive.missing");
+    const fresh = current3.playthroughs[index];
+    if (isPlaythroughArchived(fresh) === archived) return current3;
+    const known = { ...fresh.ext?.pmpDshTavern };
+    if (archived) known.archivedAt = archivedAt;
+    else delete known.archivedAt;
+    const ext = { ...fresh.ext };
+    if (Object.keys(known).length === 0) delete ext.pmpDshTavern;
+    else ext.pmpDshTavern = known;
+    const updated = { ...fresh };
+    if (Object.keys(ext).length === 0) delete updated.ext;
+    else updated.ext = ext;
+    const playthroughs = [...current3.playthroughs];
+    playthroughs[index] = updated;
+    return { ...current3, playthroughs };
+  });
+  return catalog2.playthroughs.find((item) => item.id === playthrough.id);
+}
+
 // packages/client/src/play/io-menu.js
 var h10 = createLocalizedElement(import_react13.createElement);
 var css8 = `
@@ -11603,6 +11676,7 @@ function PlayIoMenu({ playClient, playthrough, trigger = "+", placement = "compo
   const [busy, setBusy] = (0, import_react13.useState)(false);
   const [error, setError] = (0, import_react13.useState)("");
   const displayTitle = playthroughDisplayTitle(playthrough);
+  const archived = isPlaythroughArchived(playthrough);
   (0, import_react13.useEffect)(() => {
     if (!open) return void 0;
     const close = (event) => {
@@ -11646,6 +11720,20 @@ function PlayIoMenu({ playClient, playthrough, trigger = "+", placement = "compo
       setBusy(false);
     }
   };
+  const toggleArchive = async () => {
+    if (busy) return;
+    setBusy(true);
+    setError("");
+    try {
+      await setPlaythroughArchived(playClient, playthrough, !archived);
+      window.dispatchEvent(new Event("pmp-dsh-tavern:refresh"));
+      setOpen(false);
+    } catch (reason) {
+      setError(reason instanceof Error ? reason.message : String(reason));
+    } finally {
+      setBusy(false);
+    }
+  };
   return h10(
     "div",
     { ref: root, className: "dtv-play-io", "data-placement": placement },
@@ -11675,6 +11763,7 @@ function PlayIoMenu({ playClient, playthrough, trigger = "+", placement = "compo
       }, uiMessage("play.io.relinkCharacter")),
       h10("button", { type: "button", className: "dtv-play-io-item", disabled: busy, onClick: () => exportAs("html") }, uiMessage("play.io.exportHtml")),
       h10("button", { type: "button", className: "dtv-play-io-item", disabled: busy, onClick: () => exportAs("st") }, uiMessage("play.io.exportSt")),
+      h10("button", { type: "button", className: "dtv-play-io-item", disabled: busy, onClick: toggleArchive }, uiMessage(archived ? "play.io.restore" : "play.io.archive")),
       error === "" ? null : h10("p", { className: "dtv-play-io-error" }, rawText(error))
     )
   );
@@ -11683,6 +11772,7 @@ function PlayIoMenu({ playClient, playthrough, trigger = "+", placement = "compo
 // packages/client/src/play/sidebar.js
 var h11 = createLocalizedElement(import_react14.createElement);
 var css9 = `
+.dtv-play-restore{flex:none;border:0;border-radius:7px;padding:6px 9px;background:transparent;color:var(--dsw-alias-state-business-primary);font:inherit;font-size:11px;cursor:pointer}.dtv-play-restore:hover{background:var(--dsw-alias-interactive-bg-hover)}.dtv-play-restore:disabled{opacity:.5;cursor:default}
 .dtv-play-character-drag{width:20px;min-width:20px;align-self:stretch;border:0;border-radius:7px;background:transparent;color:var(--dsw-alias-label-tertiary);cursor:grab;padding:0;font:inherit;font-size:14px;touch-action:none;user-select:none}.dtv-play-character-drag:hover{background:var(--dsw-alias-interactive-bg-hover)}.dtv-play-character-drag:active{cursor:grabbing}.dtv-play-character-drag:disabled{cursor:default;opacity:.4}
 .dtv-play-section[data-dragging=true]{height:4px;min-height:4px;margin:5px 10px;overflow:hidden;border-radius:999px;background:var(--dsw-alias-state-business-primary);box-shadow:0 0 0 1px color-mix(in srgb,var(--dsw-alias-state-business-primary) 25%,transparent)}.dtv-play-section[data-dragging=true]>*{opacity:0}
 .dtv-play-character-drop{box-sizing:border-box;height:38px;flex:none;border:2px dashed var(--dsw-alias-state-business-primary);border-radius:8px;background:color-mix(in srgb,var(--dsw-alias-state-business-primary) 7%,transparent);display:flex;align-items:center;justify-content:center;color:var(--dsw-alias-state-business-primary);font-size:10px;font-weight:600;pointer-events:none}
@@ -11965,6 +12055,8 @@ function PlayWorkspaceBrowser({
   const [otherOpen, setOtherOpen] = (0, import_react14.useState)(false);
   const [ordinaryPromptOpen, setOrdinaryPromptOpen] = (0, import_react14.useState)(false);
   const [missingOpen, setMissingOpen] = (0, import_react14.useState)(true);
+  const [archiveOpen, setArchiveOpen] = (0, import_react14.useState)(false);
+  const [restoringId, setRestoringId] = (0, import_react14.useState)(null);
   const [collapsedMissingCharacters, setCollapsedMissingCharacters] = (0, import_react14.useState)(() => /* @__PURE__ */ new Set());
   const [relinkRequest, setRelinkRequest] = (0, import_react14.useState)(null);
   const [relinkTargetId, setRelinkTargetId] = (0, import_react14.useState)("");
@@ -12018,8 +12110,9 @@ function PlayWorkspaceBrowser({
     missingCharacters: resources?.missingCharacters,
     catalog: resources?.catalog,
     timelines: resources?.timelines,
-    sessions,
-    sessionIds,
+    // Until membership is known, do not flash archived members as loose sessions.
+    sessions: resources === null ? {} : sessions,
+    sessionIds: resources === null ? [] : sessionIds,
     archivedSessionIds,
     currentId,
     activePlaythroughId,
@@ -12101,6 +12194,19 @@ function PlayWorkspaceBrowser({
       openSession(target, playthrough);
     } catch (reason) {
       setStatus({ message: reason instanceof Error ? reason.message : String(reason) });
+    }
+  };
+  const restorePlaythrough = async (playthrough) => {
+    if (restoringId !== null) return;
+    setRestoringId(playthrough.id);
+    setStatus(null);
+    try {
+      await setPlaythroughArchived(playClient, playthrough, false);
+      window.dispatchEvent(new Event(CLIENT_REFRESH_EVENT));
+    } catch (reason) {
+      setStatus({ message: reason instanceof Error ? reason.message : String(reason) });
+    } finally {
+      setRestoringId(null);
     }
   };
   const returnToNative = async () => {
@@ -12362,6 +12468,45 @@ function PlayWorkspaceBrowser({
         },
         h11("span", { className: "dtv-play-chevron", "aria-hidden": "true" }, "\u2022"),
         h11("span", { className: "dtv-play-title" }, rawText(session.title))
+      )) : null
+    ),
+    h11(
+      "section",
+      { className: "dtv-play-section", "data-open": archiveOpen },
+      h11(
+        "button",
+        {
+          type: "button",
+          className: "dtv-play-group",
+          "aria-expanded": archiveOpen,
+          onClick: () => setArchiveOpen((value) => !value)
+        },
+        h11("span", { className: "dtv-play-chevron", "aria-hidden": "true" }, archiveOpen ? "\u2304" : "\u203A"),
+        h11("span", { className: "dtv-play-title" }, uiMessage("play.sidebar.archive")),
+        h11("span", { className: "dtv-play-count" }, rawText(String(model.archivedPlaythroughs.length)))
+      ),
+      archiveOpen ? h11("p", { className: "dtv-play-empty" }, uiMessage("play.sidebar.archiveHint")) : null,
+      archiveOpen && model.archivedPlaythroughs.length === 0 ? h11("p", { className: "dtv-play-empty" }, uiMessage("play.sidebar.archiveEmpty")) : null,
+      archiveOpen ? model.archivedPlaythroughs.map((playthrough) => h11(
+        "div",
+        {
+          key: playthrough.id,
+          className: "dtv-play-row-line"
+        },
+        h11("button", {
+          type: "button",
+          className: "dtv-play-row",
+          disabled: playthrough.missing,
+          onClick: () => openPlaythrough(playthrough),
+          title: rawText(`${playthrough.characterName} \xB7 ${playthroughDisplayTitle(playthrough)}`)
+        }, h11("span", { className: "dtv-play-title" }, rawText(`${playthrough.characterName} \xB7 ${playthroughDisplayTitle(playthrough)}`))),
+        h11("button", {
+          type: "button",
+          className: "dtv-play-restore",
+          disabled: restoringId !== null,
+          "aria-label": uiMessage("play.sidebar.restoreNamed", { title: playthroughDisplayTitle(playthrough) }),
+          onClick: () => restorePlaythrough(playthrough)
+        }, uiMessage("play.io.restore"))
       )) : null
     ),
     ordinaryPromptOpen ? h11("div", {
