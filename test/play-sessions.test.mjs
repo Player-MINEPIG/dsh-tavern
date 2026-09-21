@@ -366,6 +366,7 @@ test('createPlayHost maps DSH controllers to the Tavern Host port', async () => 
     sessionController: {
       async create(request) { recorded.push(['create', request]); return { sessionId: 's-new' } },
       async rename(request) { recorded.push(['rename', request]); return { title: request.title, seq: 0 } },
+      async resolveAgent() { throw new Error('unreachable after failed fork') },
       async fork(request) {
         recorded.push(['fork', request])
         const error = new Error('open turn')

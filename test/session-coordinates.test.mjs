@@ -60,7 +60,11 @@ test('import claims, terminal and parent lineage coordinates migrate with their 
 
 test('Host refuses an old client fork before invoking the controller', async () => {
   let calls = 0
-  const host = createPlayHost({ sessionController: { inspect: async () => migrated, fork: async () => { calls++; return { sessionId: 'child' } } } })
+  const host = createPlayHost({ sessionController: {
+    inspect: async () => migrated,
+    fork: async () => { calls++; return { sessionId: 'child' } },
+    resolveAgent: async () => ({ agent: { id: 'child', status: 'idle', inbox: { nextTurn: [], nextStep: [], clear() {} } } }),
+  } })
   await assert.rejects(host.forkSession({ sessionId: 's', atSeq: 4 }), { code: 'PLAY_COORDINATES_MIGRATION_REQUIRED' })
   assert.equal(calls, 0)
   await host.forkSession({ sessionId: 's', atSeq: 6, sessionFormatVersion: 3 })
