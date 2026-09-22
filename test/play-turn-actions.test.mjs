@@ -52,9 +52,9 @@ test('forking a playthrough refreshes shared sidebar classification before navig
   assert.match(source, /forkPlaythrough\(playthrough, turn\.id\)[\s\S]*dispatchEvent\(new Event\(CLIENT_REFRESH_EVENT\)\)[\s\S]*openSession\(result\.sessionId, result\.playthrough\)/)
 })
 
-test('a generated swipe refreshes sidebar classification after opening its session', () => {
+test('a generated swipe opens its session from admission rather than completion', () => {
   const source = readFileSync(new URL('../packages/client/src/play/turn-actions.js', import.meta.url), 'utf8')
-  assert.match(source, /createReplySwipe\(playthrough, turn\.id\)[\s\S]*openSession\(result\.sessionId, playthrough\)[\s\S]*dispatchEvent\(new Event\(CLIENT_REFRESH_EVENT\)\)/)
+  assert.match(source, /createReplySwipe\(playthrough, turn\.id, \{[\s\S]*onStarted: result =>[\s\S]*openSession\(result\.sessionId, playthrough\)/)
 })
 
 test('same-playthrough rollback shares the message action row and navigates its branch session', () => {

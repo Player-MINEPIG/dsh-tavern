@@ -109,9 +109,12 @@ export function PlayTurnActions({
     onError('')
     onSwipePending?.(turn.id, true)
     try {
-      const result = await controller(playClient).createReplySwipe(playthrough, turn.id)
-      queueSwipeTransition(result.sessionId, 'next', result.nodeId ?? turn.id)
-      openSession(result.sessionId, playthrough)
+      await controller(playClient).createReplySwipe(playthrough, turn.id, {
+        onStarted: result => {
+          queueSwipeTransition(result.sessionId, 'next', result.nodeId ?? turn.id)
+          openSession(result.sessionId, playthrough)
+        },
+      })
       window.dispatchEvent(new Event(CLIENT_REFRESH_EVENT))
       onChanged()
     } catch (reason) {

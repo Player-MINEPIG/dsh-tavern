@@ -183,6 +183,7 @@ export default Object.freeze({
   "play.chat.runningDisabled": "Unavailable while the agent is running",
   "play.chat.copy": "Copy displayed reply",
   "play.chat.copyUnavailable": "Clipboard access is unavailable.",
+  "play.chat.returnToSavedReply": "Return to saved reply",
   "play.chat.previousReply": "Previous saved reply",
   "play.chat.nextReply": "Next saved reply",
   "play.chat.noOtherReply": "No other saved reply",

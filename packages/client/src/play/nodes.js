@@ -1,3 +1,4 @@
+import { beginPendingSwipe, finishPendingSwipe, pendingSwipeTimeline } from './pending-swipe.js'
 import { updateTimeline } from './mutations.js'
 import {
   branchPlaythroughAtNode,
@@ -114,7 +115,7 @@ export function createPlayNodeController(client, {
         return { timeline: next, sessionId: focus.sessionId }
       })
     },
-    createReplySwipe(playthrough, nodeId) {
+    createReplySwipe(playthrough, nodeId, { onStarted } = {}) {
       return schedule(async () => {
         const timeline = await client.getTimeline(playthrough)
         const entries = activeTimelineEntries(timeline)
@@ -154,47 +155,64 @@ export function createPlayNodeController(client, {
         if (typeof newSessionId !== 'string' || newSessionId === '') {
           throw new TypeError('Branch response has no sessionId')
         }
-        await client.postUserMessage(newSessionId, user.text)
-
-        let pair = null
-        for (let attempt = 0; attempt < maxPolls; attempt += 1) {
-          pair = completedPairAfter(await client.getMessages(newSessionId), forkEventId)
-          if (pair !== null) break
-          if (attempt + 1 < maxPolls) await delay(pollInterval)
-        }
-        if (pair === null) throw new Error('Timed out waiting for the swipe reply')
-
-        const variantId = idFactory(pair.user.seq, pair.assistant.seq, newSessionId)
-        const variant = {
-          id: variantId,
-          sessionId: newSessionId,
-          startEventId: pair.user.seq,
-          endEventId: pair.assistant.seq,
-          ...(Number.isSafeInteger(pair.sessionFormatVersion) ? {
-            ext: { pmpDshTavern: { sessionFormatVersion: pair.sessionFormatVersion } },
-          } : {}),
-        }
-        const next = await updateTimeline(client, playthrough, timeline => {
-          const current = nodeById(timeline, sourceNode.id)
-          const existing = current.node.variants.find(item => item.id === variantId)
-          if (existing !== undefined) {
-            return timelineWithHead(
-              replaceNode(timeline, current.index, { ...current.node, adoptedVariantId: variantId }),
-              { sessionId: existing.sessionId, nodeId: current.node.id, variantId },
-            )
-          }
-          return timelineWithHead(
-            replaceNode(timeline, current.index, {
-              ...current.node,
-              adoptedVariantId: variantId,
-              variants: [...current.node.variants, variant],
-            }),
-            { sessionId: newSessionId, nodeId: current.node.id, variantId },
-          )
+        const pending = beginPendingSwipe(client, {
+          playthrough, sessionId: newSessionId, sourceSessionId: adopted.sessionId, nodeId: sourceNode.id,
+          timeline: pendingSwipeTimeline(timeline, entries, sourceIndex, newSessionId),
         })
-        const focus = await client.getFocus(playthrough)
-        if (focus.sessionId !== newSessionId) throw new Error('Saved swipe does not match derived focus')
-        return { timeline: next, sessionId: newSessionId, nodeId: sourceNode.id, variantId }
+        try {
+          onStarted?.({ sessionId: newSessionId, nodeId: sourceNode.id })
+          await client.postUserMessage(newSessionId, user.text)
+
+          let pair = null
+          let sawOpenTurn = false
+          for (let attempt = 0; attempt < maxPolls; attempt += 1) {
+            const messages = await client.getMessages(newSessionId)
+            pair = completedPairAfter(messages, forkEventId)
+            if (sawOpenTurn && messages.incompleteTurn === false && pair === null) {
+              throw new Error('Swipe stopped without a saved assistant reply')
+            }
+            sawOpenTurn ||= messages.incompleteTurn === true
+            if (pair !== null) break
+            if (attempt + 1 < maxPolls) await delay(pollInterval)
+          }
+          if (pair === null) throw new Error('Timed out waiting for the swipe reply')
+
+          const variantId = idFactory(pair.user.seq, pair.assistant.seq, newSessionId)
+          const variant = {
+            id: variantId,
+            sessionId: newSessionId,
+            startEventId: pair.user.seq,
+            endEventId: pair.assistant.seq,
+            ...(Number.isSafeInteger(pair.sessionFormatVersion) ? {
+              ext: { pmpDshTavern: { sessionFormatVersion: pair.sessionFormatVersion } },
+            } : {}),
+          }
+          const next = await updateTimeline(client, playthrough, timeline => {
+            const current = nodeById(timeline, sourceNode.id)
+            const existing = current.node.variants.find(item => item.id === variantId)
+            if (existing !== undefined) {
+              return timelineWithHead(
+                replaceNode(timeline, current.index, { ...current.node, adoptedVariantId: variantId }),
+                { sessionId: existing.sessionId, nodeId: current.node.id, variantId },
+              )
+            }
+            return timelineWithHead(
+              replaceNode(timeline, current.index, {
+                ...current.node,
+                adoptedVariantId: variantId,
+                variants: [...current.node.variants, variant],
+              }),
+              { sessionId: newSessionId, nodeId: current.node.id, variantId },
+            )
+          })
+          const focus = await client.getFocus(playthrough)
+          if (focus.sessionId !== newSessionId) throw new Error('Saved swipe does not match derived focus')
+          finishPendingSwipe(client, pending)
+          return { timeline: next, sessionId: newSessionId, nodeId: sourceNode.id, variantId }
+        } catch (error) {
+          finishPendingSwipe(client, pending, error)
+          throw error
+        }
       })
     },
 

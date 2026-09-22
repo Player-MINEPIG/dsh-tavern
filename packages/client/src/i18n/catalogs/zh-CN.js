@@ -183,6 +183,7 @@ export default Object.freeze({
   "play.chat.runningDisabled": "Agent 运行中不可操作",
   "play.chat.copy": "复制当前显示回复",
   "play.chat.copyUnavailable": "当前环境无法访问剪贴板。",
+  "play.chat.returnToSavedReply": "返回已有回复",
   "play.chat.previousReply": "上一条已有回复",
   "play.chat.nextReply": "下一条已有回复",
   "play.chat.noOtherReply": "没有其他已有回复",

@@ -1,3 +1,4 @@
+import { pendingSwipeForSession } from './pending-swipe.js'
 import { characterGreetingOptions } from '../../../character/src/client-state.js'
 import {
   activeTimelineEntries,
@@ -152,6 +153,9 @@ export async function loadCurrentPlaythrough(client, session, options = {}) {
   const catalog = await client.getCatalog()
   const playthroughs = catalog.playthroughs ?? []
   const sessionId = session.id ?? session.sessionId
+  const pending = pendingSwipeForSession(client, sessionId)
+  const pendingOwner = pending && playthroughs.find(item => item.id === pending.playthrough.id && item.path === pending.playthrough.path)
+  if (pendingOwner) return { workspace, playthrough: pendingOwner, timeline: pending.timeline }
   const preferred = typeof options.preferredPlaythroughId === 'string'
     ? playthroughs.find(item => item.id === options.preferredPlaythroughId)
     : undefined

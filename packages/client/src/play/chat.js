@@ -1,3 +1,4 @@
+import { finishPendingSwipe, pendingSwipeForSession } from './pending-swipe.js'
 import {
   createElement,
   useEffect,
@@ -105,7 +106,8 @@ function turnReconciler(client) {
 }
 
 export async function loadChatState(client, sessionId, playthrough) {
-  const reconciled = await turnReconciler(client)(sessionId, playthrough)
+  const pending = pendingSwipeForSession(client, sessionId)
+  const reconciled = pending === null ? await turnReconciler(client)(sessionId, playthrough) : { timeline: pending.timeline }
   const timeline = reconciled.timeline ?? await client.getTimeline(playthrough)
   const messagesBySession = await loadMessages(client, adoptedSessionIds(timeline, sessionId))
   const selectionResponse = await client.getCharacterSelection(sessionId)
@@ -202,6 +204,7 @@ export async function loadChatState(client, sessionId, playthrough) {
     && !(rootMessages?.messages ?? []).some(message => message?.role === 'user' || message?.role === 'assistant')
     && importedContext.binding?.state !== 'consumed'
   return {
+    pendingSwipeError: pending?.error ?? null,
     timeline,
     turns,
     importBinding: importedContext.binding,
@@ -728,7 +731,18 @@ export function MowanChatView({ sessionId, useSession, useChat, playClient, play
     showHostFailure ? h('p', {
       className: 'dtv-play-chat-status dtv-play-chat-failure', 'data-error': true, role: 'alert',
     }, uiMessage('play.chat.failure')) : null,
-    error === '' ? null : h('p', { className: 'dtv-play-chat-status', 'data-error': true }, rawText(error)),
+    error === '' && !state?.pendingSwipeError ? null : h('div', null,
+      h('p', { className: 'dtv-play-chat-status', 'data-error': true }, rawText(error || state.pendingSwipeError)),
+      !state?.pendingSwipeError ? null : h('button', {
+        type: 'button', className: 'dtv-play-import-button',
+        onClick: () => {
+          const pending = pendingSwipeForSession(playClient, sessionId)
+          if (pending === null) return
+          finishPendingSwipe(playClient, pending)
+          openSession(pending.sourceSessionId, playthrough)
+        },
+      }, uiMessage('play.chat.returnToSavedReply')),
+    ),
     state === null && error === '' ? h('p', { className: 'dtv-play-chat-status' }, uiMessage('play.chat.loading')) : null,
     loadedState === null ? null : h('div', { className: 'dtv-play-chat-stage' },
       transitionBoundary === null ? frame(loadedState, 'idle') : h(TargetedSwipeTransition, {

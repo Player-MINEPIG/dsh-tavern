@@ -1,3 +1,4 @@
+import { pendingSwipe, pendingSwipes } from './pending-swipe.js'
 import { mainSessionId } from '../session-selection.js'
 import {
   createElement,
@@ -353,6 +354,7 @@ export function PlayWorkspaceBrowser({
   }, [playClient, resources, rpKey, revision])
 
   const model = projectPlaySidebar({
+    pendingSwipes: pendingSwipes(playClient),
     workspace: resources?.workspace,
     workspaceItems,
     characters: resources?.characters,
@@ -442,6 +444,11 @@ export function PlayWorkspaceBrowser({
   const openPlaythrough = async playthrough => {
     setStatus(null)
     try {
+      const pending = pendingSwipe(playClient, playthrough)
+      if (pending !== null) {
+        openSession(pending.sessionId, playthrough)
+        return
+      }
       const focus = await playClient.getFocus(playthrough)
       const target = playthroughFocusTarget({ focus, playthrough, rpSessionIds: rpIds })
       if (target === null) {

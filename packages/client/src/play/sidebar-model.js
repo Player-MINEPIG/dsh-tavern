@@ -262,6 +262,7 @@ export function projectPlaySidebar({
   currentId = null,
   activePlaythroughId = null,
   sessionCharacters = {},
+  pendingSwipes = [],
 } = {}) {
   const archived = new Set(archivedSessionIds)
   const rpSessionIds = sessionIdsInRpWorkspace({ workspace, workspaceItems, sessions })
@@ -308,6 +309,9 @@ export function projectPlaySidebar({
     if (characterId === null) continue
     const characterReference = playthrough.ext?.pmpDshTavern ?? {}
     const allMembers = playthroughMembers(playthrough, timelineFor(timelines, playthrough))
+    for (const pending of pendingSwipes) {
+      if (pending.playthrough.id === playthrough.id && pending.playthrough.path === playthrough.path) allMembers.add(pending.sessionId)
+    }
     const members = [...allMembers].filter(id => rpSessionIds.has(id) && !archived.has(id))
     for (const id of members) claimedRpSessions.add(id)
     if (isPlaythroughArchived(playthrough)) {

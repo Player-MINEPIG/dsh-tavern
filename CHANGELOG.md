@@ -7,6 +7,7 @@
 - Add user and template JSON import/export, independent template creation and structured editing. Imports create new identities without changing selections; template references remain explicit and missing resources are diagnosed. Protect unsaved template edits across shell navigation.
 - Verify old Session coordinates against official V4 migration output, including inserted interruption events and child catalogs. Upgrade timeline, import and Trace references with pre-upgrade backups; no old-Host compatibility or rollback tool.
 - Align the user resource toolbar with other assets: Import, Export, Create in one row with consistent buttons and an unavailable export state.
+- Open newly created swipe sessions before generation finishes; keep pending playthrough navigation and RP streaming attached to that session so the native composer can stop it.
 - Keep unchanged RP message rendering cached during streaming, preventing repeated Markdown parsing and HTML sanitization from delaying launcher interactions.
 - Keep conversation view labels, including RP View, on one line in narrow headers.
 - Restore the close button to the top-right of Tavern sidebars by removing obsolete header spacing.

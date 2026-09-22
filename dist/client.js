@@ -14,9 +14,9 @@ var __export = (target, all) => {
 };
 var __copyProps = (to, from, except, desc) => {
   if (from && typeof from === "object" || typeof from === "function") {
-    for (let key of __getOwnPropNames(from))
-      if (!__hasOwnProp.call(to, key) && key !== except)
-        __defProp(to, key, { get: () => from[key], enumerable: !(desc = __getOwnPropDesc(from, key)) || desc.enumerable });
+    for (let key2 of __getOwnPropNames(from))
+      if (!__hasOwnProp.call(to, key2) && key2 !== except)
+        __defProp(to, key2, { get: () => from[key2], enumerable: !(desc = __getOwnPropDesc(from, key2)) || desc.enumerable });
   }
   return to;
 };
@@ -258,6 +258,7 @@ var zh_CN_default = Object.freeze({
   "play.chat.runningDisabled": "Agent \u8FD0\u884C\u4E2D\u4E0D\u53EF\u64CD\u4F5C",
   "play.chat.copy": "\u590D\u5236\u5F53\u524D\u663E\u793A\u56DE\u590D",
   "play.chat.copyUnavailable": "\u5F53\u524D\u73AF\u5883\u65E0\u6CD5\u8BBF\u95EE\u526A\u8D34\u677F\u3002",
+  "play.chat.returnToSavedReply": "\u8FD4\u56DE\u5DF2\u6709\u56DE\u590D",
   "play.chat.previousReply": "\u4E0A\u4E00\u6761\u5DF2\u6709\u56DE\u590D",
   "play.chat.nextReply": "\u4E0B\u4E00\u6761\u5DF2\u6709\u56DE\u590D",
   "play.chat.noOtherReply": "\u6CA1\u6709\u5176\u4ED6\u5DF2\u6709\u56DE\u590D",
@@ -1026,6 +1027,7 @@ var en_default = Object.freeze({
   "play.chat.runningDisabled": "Unavailable while the agent is running",
   "play.chat.copy": "Copy displayed reply",
   "play.chat.copyUnavailable": "Clipboard access is unavailable.",
+  "play.chat.returnToSavedReply": "Return to saved reply",
   "play.chat.previousReply": "Previous saved reply",
   "play.chat.nextReply": "Next saved reply",
   "play.chat.noOtherReply": "No other saved reply",
@@ -1633,9 +1635,9 @@ function assertCatalogParity(catalog2, locale, expectedKeys = catalogKeys(catalo
   if (JSON.stringify(actual) !== JSON.stringify(expectedKeys)) {
     throw new TypeError(`UI message catalog ${locale} does not have the same keys as ${DEFAULT_UI_LOCALE}`);
   }
-  for (const key of actual) {
-    if (typeof catalog2[key] !== "string") {
-      throw new TypeError(`UI message catalog ${locale} key ${JSON.stringify(key)} must be a string`);
+  for (const key2 of actual) {
+    if (typeof catalog2[key2] !== "string") {
+      throw new TypeError(`UI message catalog ${locale} key ${JSON.stringify(key2)} must be a string`);
     }
   }
   return true;
@@ -1649,19 +1651,19 @@ function assertCompleteMessageCatalogs(source) {
 }
 assertCompleteMessageCatalogs(PRODUCTION_CATALOGS);
 function fill(template, values) {
-  return template.replace(/\{([A-Za-z0-9_]+)\}/g, (_match, key) => String(values?.[key] ?? ""));
+  return template.replace(/\{([A-Za-z0-9_]+)\}/g, (_match, key2) => String(values?.[key2] ?? ""));
 }
-function templateFor(key, locale) {
+function templateFor(key2, locale) {
   const currentCatalog = catalogs[locale];
   const defaultCatalog = catalogs[DEFAULT_UI_LOCALE];
-  if (typeof currentCatalog?.[key] === "string") return currentCatalog[key];
-  if (typeof defaultCatalog?.[key] === "string") return defaultCatalog[key];
+  if (typeof currentCatalog?.[key2] === "string") return currentCatalog[key2];
+  if (typeof defaultCatalog?.[key2] === "string") return defaultCatalog[key2];
   if (typeof defaultCatalog?.["common.unavailable"] === "string") return defaultCatalog["common.unavailable"];
   if (typeof currentCatalog?.["common.unavailable"] === "string") return currentCatalog["common.unavailable"];
   return "";
 }
-function translate(key, values = {}) {
-  return fill(templateFor(key, current.locale), values);
+function translate(key2, values = {}) {
+  return fill(templateFor(key2, current.locale), values);
 }
 function rawText(value) {
   return Object.freeze({
@@ -1672,16 +1674,16 @@ function rawText(value) {
     }
   });
 }
-function uiMessage(key, values = {}) {
-  return rawText(translate(key, values));
+function uiMessage(key2, values = {}) {
+  return rawText(translate(key2, values));
 }
 function statusText(status) {
   if (status?.error && !status.key) return rawText(status.text);
   return uiMessage(status?.key ?? "common.unavailable", status?.values);
 }
-function uiError(key, values = {}) {
-  const error = new Error(translate(key, values));
-  error.uiKey = key;
+function uiError(key2, values = {}) {
+  const error = new Error(translate(key2, values));
+  error.uiKey = key2;
   error.uiValues = values;
   return error;
 }
@@ -1701,8 +1703,8 @@ function createLocalizedElement(createElement17) {
     let localizedProps = props;
     if (props !== null && props !== void 0) {
       localizedProps = { ...props };
-      for (const key of ["title", "aria-label", "placeholder", "alt"]) {
-        if (isRawText(localizedProps[key])) localizedProps[key] = localizedProps[key].value;
+      for (const key2 of ["title", "aria-label", "placeholder", "alt"]) {
+        if (isRawText(localizedProps[key2])) localizedProps[key2] = localizedProps[key2].value;
       }
     }
     return createElement17(type, localizedProps, ...children.map(localizeChild));
@@ -2018,8 +2020,8 @@ function PresetSidebar({ closePanel, openPanel, sessionId, sessionBlank, autoOpe
     ...current3,
     sampling: { ...current3.sampling, ...patch }
   }));
-  const patchSt = (key, value) => patchSampling({
-    st: { ...draft.sampling.st, [key]: value }
+  const patchSt = (key2, value) => patchSampling({
+    st: { ...draft.sampling.st, [key2]: value }
   });
   const patchPrompt = (index, patch) => setDraft((current3) => ({
     ...current3,
@@ -2130,11 +2132,11 @@ function PresetSidebar({ closePanel, openPanel, sessionId, sessionBlank, autoOpe
           h("option", { value: "xhigh" }, uiMessage("preset.effort.xhigh"))
         )),
         h("button", { className: "dtt-button", type: "button", onClick: () => setAdvanced((value) => !value) }, advanced ? uiMessage("preset.advancedHide") : uiMessage("preset.advancedShow")),
-        advanced ? h("div", { className: "dtt-grid" }, ...ST_NUMBER_FIELDS.map(([key, messageKey]) => h(NumberField, {
-          key,
+        advanced ? h("div", { className: "dtt-grid" }, ...ST_NUMBER_FIELDS.map(([key2, messageKey]) => h(NumberField, {
+          key: key2,
           label: uiMessage(messageKey),
-          value: draft.sampling.st?.[key],
-          onChange: (value) => patchSt(key, value)
+          value: draft.sampling.st?.[key2],
+          onChange: (value) => patchSt(key2, value)
         }))) : null,
         advanced ? h("p", { className: "dtt-note" }, uiMessage("preset.advancedNote")) : null,
         advanced ? h(Field, { label: uiMessage("preset.systemPrompt") }, h(
@@ -2993,7 +2995,7 @@ function EmbeddedEntryEditor({ entry, index, update, remove, dragKind, dragging,
         h3(Field3, { label: uiMessage("world.entry.position") }, h3("select", { className: "dwb-select", value: position, onChange: (event) => {
           const value = Number(event.target.value);
           patch({ position: value === 0 ? "before_char" : value === 1 ? "after_char" : entry.position, extensions: { ...entry.extensions ?? {}, position: value } });
-        } }, ...POSITIONS.map(([_value, key], value) => h3("option", { key: value, value }, uiMessage(key))))),
+        } }, ...POSITIONS.map(([_value, key2], value) => h3("option", { key: value, value }, uiMessage(key2))))),
         h3(Field3, { label: uiMessage("world.entry.order") }, h3("input", { className: "dwb-input", type: "number", value: entry.insertion_order ?? 100, onChange: (event) => patch({ insertion_order: Number(event.target.value) }) })),
         h3(Field3, { label: uiMessage("world.entry.probability") }, h3("input", { className: "dwb-input", type: "number", min: 0, max: 100, value: entry.probability ?? entry.extensions?.probability ?? 100, onChange: (event) => patch({ probability: Number(event.target.value), extensions: { ...entry.extensions ?? {}, probability: Number(event.target.value), useProbability: true } }) }))
       ),
@@ -3141,7 +3143,7 @@ function EntryEditor({ entry, index, update, remove, dragKind, dragging, dragHan
       h3(
         "div",
         { className: "dwb-grid" },
-        h3(Field3, { label: uiMessage("world.entry.position") }, h3("select", { className: "dwb-select", value: entry.position, onChange: (event) => patch({ position: event.target.value }) }, ...POSITIONS.map(([value, key]) => h3("option", { key: value, value }, uiMessage(key))))),
+        h3(Field3, { label: uiMessage("world.entry.position") }, h3("select", { className: "dwb-select", value: entry.position, onChange: (event) => patch({ position: event.target.value }) }, ...POSITIONS.map(([value, key2]) => h3("option", { key: value, value }, uiMessage(key2))))),
         h3(Field3, { label: uiMessage("world.entry.order") }, h3("input", { className: "dwb-input", type: "number", value: entry.insertionOrder ?? 100, onChange: (event) => patch({ insertionOrder: Number(event.target.value) }) })),
         h3(Field3, { label: uiMessage("world.entry.probability") }, h3("input", { className: "dwb-input", type: "number", min: 0, max: 100, value: entry.probability ?? 100, onChange: (event) => patch({ probability: Number(event.target.value), useProbability: true }) }))
       ),
@@ -4135,8 +4137,8 @@ function referenceReason(code) {
   return referenceReasons[code] ? uiMessage(referenceReasons[code]) : uiMessage("trace.v4.reason.unverified");
 }
 function bodyStatusNotice(value) {
-  const key = value === "available" ? "trace.v4.status.available" : value === "partially-available" ? "trace.v4.status.partial" : value === "reference-unavailable" ? "trace.v4.status.unavailable" : value === "reference-only" ? "trace.v4.status.referenceOnly" : null;
-  return key === null ? null : uiMessage(key);
+  const key2 = value === "available" ? "trace.v4.status.available" : value === "partially-available" ? "trace.v4.status.partial" : value === "reference-unavailable" ? "trace.v4.status.unavailable" : value === "reference-only" ? "trace.v4.status.referenceOnly" : null;
+  return key2 === null ? null : uiMessage(key2);
 }
 function sourceSummary(source) {
   return [source.kind, `(${source.relationship ?? "input"})`, source.resourceId ?? "\u2014", source.field].filter((value) => value !== void 0 && value !== null && value !== "").join(" / ");
@@ -4186,7 +4188,7 @@ function TraceRecordContent({ record }) {
   const legacySnapshot = record.schemaVersion === 3 && record.bodyStorage === void 0;
   const contentNotice = referenceBacked ? bodyStatusNotice(record.contentStatus) : record.contentStatus && record.contentStatus !== "available" ? rawText(record.contentStatus) : null;
   const unavailable = () => uiMessage("trace.v3.notRecorded");
-  const resourceKnown = (key, selectionKey) => Object.hasOwn(resources, key) || Object.hasOwn(selection, selectionKey);
+  const resourceKnown = (key2, selectionKey) => Object.hasOwn(resources, key2) || Object.hasOwn(selection, selectionKey);
   return h5(
     "div",
     { className: "dttrace-section" },
@@ -4207,7 +4209,7 @@ function TraceRecordContent({ record }) {
       summaryCard("trace.v3.model", record.delivery?.model ? rawText([record.delivery.provider, record.delivery.model].filter(Boolean).join(" / ")) : unavailable())
     ),
     Number.isSafeInteger(selection.character?.greetingIndex) ? h5("div", { className: "dttrace-meta" }, uiMessage("trace.v3.greeting", { index: selection.character.greetingIndex })) : null,
-    h5("div", { className: "dttrace-meta" }, uiMessage("trace.v3.sampling"), " ", config === void 0 ? unavailable() : Object.keys(config).length ? rawText(Object.entries(config).map(([key, value]) => `${key}: ${JSON.stringify(value)}`).join(" \xB7 ")) : uiMessage("trace.v3.noSampling")),
+    h5("div", { className: "dttrace-meta" }, uiMessage("trace.v3.sampling"), " ", config === void 0 ? unavailable() : Object.keys(config).length ? rawText(Object.entries(config).map(([key2, value]) => `${key2}: ${JSON.stringify(value)}`).join(" \xB7 ")) : uiMessage("trace.v3.noSampling")),
     record.parameters ? h5(
       "details",
       { className: "dttrace-disclosure" },
@@ -4215,11 +4217,11 @@ function TraceRecordContent({ record }) {
       h5(
         "div",
         { className: "dttrace-disclosure-body" },
-        ...["requested", "effective", "fallbacks"].map((key) => h5(
+        ...["requested", "effective", "fallbacks"].map((key2) => h5(
           "div",
-          { key },
-          h5("strong", null, uiMessage(`trace.parameters.${key}`)),
-          h5("pre", null, rawText(JSON.stringify(record.parameters[key], null, 2)))
+          { key: key2 },
+          h5("strong", null, uiMessage(`trace.parameters.${key2}`)),
+          h5("pre", null, rawText(JSON.stringify(record.parameters[key2], null, 2)))
         ))
       )
     ) : null,
@@ -4474,18 +4476,18 @@ function TemplatePreview({ template }) {
 }
 function TemplateEditor({ selection, onChange, catalogs: catalogs2, disabled }) {
   const patch = (value) => onChange((current3) => ({ ...current3, ...value }));
-  const nested = (key, value) => patch({ [key]: { ...selection[key], ...value } });
+  const nested = (key2, value) => patch({ [key2]: { ...selection[key2], ...value } });
   const field = (label, control) => h6("label", { className: "dtv-field" }, h6("span", { className: "dtv-label" }, uiMessage(label)), control);
-  const resourceSelect = (key, label, items) => field(label, h6(
+  const resourceSelect = (key2, label, items) => field(label, h6(
     "select",
     {
       className: "dtv-select",
       disabled,
-      value: selection[key] ?? "",
-      onChange: (event) => patch({ [key]: event.target.value || null })
+      value: selection[key2] ?? "",
+      onChange: (event) => patch({ [key2]: event.target.value || null })
     },
     h6("option", { value: "" }, uiMessage("common.none")),
-    selection[key] && !items.some((item) => item.id === selection[key]) ? h6("option", { value: selection[key] }, uiMessage("template.missingReference", { id: selection[key] })) : null,
+    selection[key2] && !items.some((item) => item.id === selection[key2]) ? h6("option", { value: selection[key2] }, uiMessage("template.missingReference", { id: selection[key2] })) : null,
     ...items.map((item) => h6("option", { key: item.id, value: item.id }, rawText(item.name)))
   ));
   const toggle = (label, checked, change) => h6(
@@ -4498,7 +4500,7 @@ function TemplateEditor({ selection, onChange, catalogs: catalogs2, disabled }) 
     disabled,
     value: value ?? "",
     onChange: (event) => change(event.target.value || null)
-  }, ...choices.map(([id, key]) => h6("option", { key: id, value: id }, uiMessage(key)))));
+  }, ...choices.map(([id, key2]) => h6("option", { key: id, value: id }, uiMessage(key2)))));
   const availableBooks = catalogs2.worldBooks;
   const orderedBooks = selection.worldBookIds.map((id) => availableBooks.find((book) => book.id === id) ?? { id, name: null });
   return h6(
@@ -4886,17 +4888,17 @@ function firstArray(...values) {
 }
 function resourceTitle(resource, fallback = "") {
   if (!isRecord2(resource)) return fallback;
-  for (const key of ["name", "title", "displayName", "label"]) {
-    if (typeof resource[key] === "string" && resource[key].trim() !== "") return resource[key].trim();
+  for (const key2 of ["name", "title", "displayName", "label"]) {
+    if (typeof resource[key2] === "string" && resource[key2].trim() !== "") return resource[key2].trim();
   }
   return fallback;
 }
 function catalog(snapshot, ...keys) {
   for (const container of [snapshot?.catalog, snapshot?.catalogs]) {
     if (!isRecord2(container)) continue;
-    for (const key of keys) {
-      if (Array.isArray(container[key])) return container[key];
-      if (Array.isArray(container[key]?.items)) return container[key].items;
+    for (const key2 of keys) {
+      if (Array.isArray(container[key2])) return container[key2];
+      if (Array.isArray(container[key2]?.items)) return container[key2].items;
     }
   }
   return [];
@@ -5072,6 +5074,46 @@ function mainSessionBlank(snapshot) {
 }
 function retainedSessions(snapshot) {
   return Object.values(snapshot?.byId ?? {}).filter((session) => Object.values(session.retainedBy ?? {}).some((count) => count > 0));
+}
+
+// packages/client/src/play/pending-swipe.js
+var clients = /* @__PURE__ */ new WeakMap();
+var key = (playthrough) => JSON.stringify([playthrough?.id ?? null, playthrough?.path ?? null]);
+function notify() {
+  if (typeof window !== "undefined") window.dispatchEvent(new Event(CLIENT_REFRESH_EVENT));
+}
+function pendingSwipes(client) {
+  return [...clients.get(client)?.values() ?? []];
+}
+function pendingSwipe(client, playthrough) {
+  return clients.get(client)?.get(key(playthrough)) ?? null;
+}
+function pendingSwipeForSession(client, sessionId) {
+  return pendingSwipes(client).find((item) => item.sessionId === sessionId) ?? null;
+}
+function beginPendingSwipe(client, value) {
+  let entries2 = clients.get(client);
+  if (!entries2) clients.set(client, entries2 = /* @__PURE__ */ new Map());
+  const pending2 = { ...value, error: null };
+  entries2.set(key(value.playthrough), pending2);
+  notify();
+  return pending2;
+}
+function finishPendingSwipe(client, pending2, error = null) {
+  const entries2 = clients.get(client);
+  if (entries2?.get(key(pending2.playthrough)) !== pending2) return;
+  if (error === null) entries2.delete(key(pending2.playthrough));
+  else pending2.error = error instanceof Error ? error.message : String(error);
+  notify();
+}
+function pendingSwipeTimeline(timeline, entries2, sourceIndex, sessionId) {
+  const prefix = entries2.slice(0, sourceIndex);
+  const parent = prefix.at(-1);
+  return {
+    ...timeline,
+    nodes: prefix.map(({ node, variant }) => ({ ...node, adoptedVariantId: variant.id })),
+    head: parent ? { sessionId, nodeId: parent.node.id, variantId: parent.variant.id } : null
+  };
 }
 
 // packages/client/src/play/chat.js
@@ -5348,6 +5390,9 @@ async function loadCurrentPlaythrough(client, session, options = {}) {
   const catalog2 = await client.getCatalog();
   const playthroughs = catalog2.playthroughs ?? [];
   const sessionId = session.id ?? session.sessionId;
+  const pending2 = pendingSwipeForSession(client, sessionId);
+  const pendingOwner = pending2 && playthroughs.find((item) => item.id === pending2.playthrough.id && item.path === pending2.playthrough.path);
+  if (pendingOwner) return { workspace, playthrough: pendingOwner, timeline: pending2.timeline };
   const preferred = typeof options.preferredPlaythroughId === "string" ? playthroughs.find((item) => item.id === options.preferredPlaythroughId) : void 0;
   if (preferred !== void 0) {
     const timeline = rootSessionId(preferred) === sessionId ? await client.getTimeline(preferred) : await loadClassificationTimeline(client, preferred);
@@ -5671,8 +5716,8 @@ function resourceRegexInventory(value, scope) {
   }));
 }
 function writeNativeField(target, aliases, canonical, value) {
-  const existing = aliases.filter((key) => Object.hasOwn(target, key));
-  for (const key of existing.length === 0 ? [canonical] : existing) target[key] = structuredClone(value);
+  const existing = aliases.filter((key2) => Object.hasOwn(target, key2));
+  for (const key2 of existing.length === 0 ? [canonical] : existing) target[key2] = structuredClone(value);
 }
 function nativePlacementFor(rule) {
   const placement = Array.isArray(rule.placement) ? rule.placement : [];
@@ -6129,11 +6174,11 @@ var _createHooksMap = function _createHooksMap2() {
     uponSanitizeShadowNode: []
   };
 };
-var _resolveSetOption = function _resolveSetOption2(cfg, key, fallback, options) {
-  return objectHasOwnProperty(cfg, key) && arrayIsArray(cfg[key]) ? addToSet(options.base ? clone(options.base) : {}, cfg[key], options.transform) : fallback;
+var _resolveSetOption = function _resolveSetOption2(cfg, key2, fallback, options) {
+  return objectHasOwnProperty(cfg, key2) && arrayIsArray(cfg[key2]) ? addToSet(options.base ? clone(options.base) : {}, cfg[key2], options.transform) : fallback;
 };
-var _resolveObjectOption = function _resolveObjectOption2(cfg, key, makeFallback) {
-  const value = objectHasOwnProperty(cfg, key) ? cfg[key] : void 0;
+var _resolveObjectOption = function _resolveObjectOption2(cfg, key2, makeFallback) {
+  const value = objectHasOwnProperty(cfg, key2) ? cfg[key2] : void 0;
   return value && typeof value === "object" ? clone(value) : makeFallback();
 };
 function createDOMPurify() {
@@ -9448,7 +9493,8 @@ function projectPlaySidebar({
   archivedSessionIds = [],
   currentId = null,
   activePlaythroughId = null,
-  sessionCharacters = {}
+  sessionCharacters = {},
+  pendingSwipes: pendingSwipes2 = []
 } = {}) {
   const archived = new Set(archivedSessionIds);
   const rpSessionIds = sessionIdsInRpWorkspace({ workspace, workspaceItems, sessions });
@@ -9494,6 +9540,9 @@ function projectPlaySidebar({
     if (characterId === null) continue;
     const characterReference = playthrough.ext?.pmpDshTavern ?? {};
     const allMembers = playthroughMembers(playthrough, timelineFor(timelines, playthrough));
+    for (const pending2 of pendingSwipes2) {
+      if (pending2.playthrough.id === playthrough.id && pending2.playthrough.path === playthrough.path) allMembers.add(pending2.sessionId);
+    }
     const members = [...allMembers].filter((id) => rpSessionIds.has(id) && !archived.has(id));
     for (const id of members) claimedRpSessions.add(id);
     if (isPlaythroughArchived(playthrough)) {
@@ -10156,7 +10205,7 @@ function createPlayNodeController(client, {
         return { timeline: next, sessionId: focus.sessionId };
       });
     },
-    createReplySwipe(playthrough, nodeId) {
+    createReplySwipe(playthrough, nodeId, { onStarted } = {}) {
       return schedule(async () => {
         const timeline = await client.getTimeline(playthrough);
         const entries2 = activeTimelineEntries(timeline);
@@ -10190,45 +10239,65 @@ function createPlayNodeController(client, {
         if (typeof newSessionId !== "string" || newSessionId === "") {
           throw new TypeError("Branch response has no sessionId");
         }
-        await client.postUserMessage(newSessionId, user.text);
-        let pair = null;
-        for (let attempt = 0; attempt < maxPolls; attempt += 1) {
-          pair = completedPairAfter(await client.getMessages(newSessionId), forkEventId);
-          if (pair !== null) break;
-          if (attempt + 1 < maxPolls) await delay(pollInterval);
-        }
-        if (pair === null) throw new Error("Timed out waiting for the swipe reply");
-        const variantId = idFactory(pair.user.seq, pair.assistant.seq, newSessionId);
-        const variant = {
-          id: variantId,
+        const pending3 = beginPendingSwipe(client, {
+          playthrough,
           sessionId: newSessionId,
-          startEventId: pair.user.seq,
-          endEventId: pair.assistant.seq,
-          ...Number.isSafeInteger(pair.sessionFormatVersion) ? {
-            ext: { pmpDshTavern: { sessionFormatVersion: pair.sessionFormatVersion } }
-          } : {}
-        };
-        const next = await updateTimeline(client, playthrough, (timeline2) => {
-          const current3 = nodeById2(timeline2, sourceNode.id);
-          const existing = current3.node.variants.find((item) => item.id === variantId);
-          if (existing !== void 0) {
-            return timelineWithHead(
-              replaceNode(timeline2, current3.index, { ...current3.node, adoptedVariantId: variantId }),
-              { sessionId: existing.sessionId, nodeId: current3.node.id, variantId }
-            );
-          }
-          return timelineWithHead(
-            replaceNode(timeline2, current3.index, {
-              ...current3.node,
-              adoptedVariantId: variantId,
-              variants: [...current3.node.variants, variant]
-            }),
-            { sessionId: newSessionId, nodeId: current3.node.id, variantId }
-          );
+          sourceSessionId: adopted.sessionId,
+          nodeId: sourceNode.id,
+          timeline: pendingSwipeTimeline(timeline, entries2, sourceIndex, newSessionId)
         });
-        const focus = await client.getFocus(playthrough);
-        if (focus.sessionId !== newSessionId) throw new Error("Saved swipe does not match derived focus");
-        return { timeline: next, sessionId: newSessionId, nodeId: sourceNode.id, variantId };
+        try {
+          onStarted?.({ sessionId: newSessionId, nodeId: sourceNode.id });
+          await client.postUserMessage(newSessionId, user.text);
+          let pair = null;
+          let sawOpenTurn = false;
+          for (let attempt = 0; attempt < maxPolls; attempt += 1) {
+            const messages = await client.getMessages(newSessionId);
+            pair = completedPairAfter(messages, forkEventId);
+            if (sawOpenTurn && messages.incompleteTurn === false && pair === null) {
+              throw new Error("Swipe stopped without a saved assistant reply");
+            }
+            sawOpenTurn ||= messages.incompleteTurn === true;
+            if (pair !== null) break;
+            if (attempt + 1 < maxPolls) await delay(pollInterval);
+          }
+          if (pair === null) throw new Error("Timed out waiting for the swipe reply");
+          const variantId = idFactory(pair.user.seq, pair.assistant.seq, newSessionId);
+          const variant = {
+            id: variantId,
+            sessionId: newSessionId,
+            startEventId: pair.user.seq,
+            endEventId: pair.assistant.seq,
+            ...Number.isSafeInteger(pair.sessionFormatVersion) ? {
+              ext: { pmpDshTavern: { sessionFormatVersion: pair.sessionFormatVersion } }
+            } : {}
+          };
+          const next = await updateTimeline(client, playthrough, (timeline2) => {
+            const current3 = nodeById2(timeline2, sourceNode.id);
+            const existing = current3.node.variants.find((item) => item.id === variantId);
+            if (existing !== void 0) {
+              return timelineWithHead(
+                replaceNode(timeline2, current3.index, { ...current3.node, adoptedVariantId: variantId }),
+                { sessionId: existing.sessionId, nodeId: current3.node.id, variantId }
+              );
+            }
+            return timelineWithHead(
+              replaceNode(timeline2, current3.index, {
+                ...current3.node,
+                adoptedVariantId: variantId,
+                variants: [...current3.node.variants, variant]
+              }),
+              { sessionId: newSessionId, nodeId: current3.node.id, variantId }
+            );
+          });
+          const focus = await client.getFocus(playthrough);
+          if (focus.sessionId !== newSessionId) throw new Error("Saved swipe does not match derived focus");
+          finishPendingSwipe(client, pending3);
+          return { timeline: next, sessionId: newSessionId, nodeId: sourceNode.id, variantId };
+        } catch (error) {
+          finishPendingSwipe(client, pending3, error);
+          throw error;
+        }
       });
     },
     forkPlaythrough(playthrough, nodeId) {
@@ -10376,9 +10445,12 @@ function PlayTurnActions({
     onError("");
     onSwipePending?.(turn.id, true);
     try {
-      const result = await controller(playClient).createReplySwipe(playthrough, turn.id);
-      queueSwipeTransition(result.sessionId, "next", result.nodeId ?? turn.id);
-      openSession(result.sessionId, playthrough);
+      await controller(playClient).createReplySwipe(playthrough, turn.id, {
+        onStarted: (result) => {
+          queueSwipeTransition(result.sessionId, "next", result.nodeId ?? turn.id);
+          openSession(result.sessionId, playthrough);
+        }
+      });
       window.dispatchEvent(new Event(CLIENT_REFRESH_EVENT));
       onChanged();
     } catch (reason) {
@@ -10759,7 +10831,8 @@ function turnReconciler(client) {
   return reconcile;
 }
 async function loadChatState(client, sessionId, playthrough) {
-  const reconciled = await turnReconciler(client)(sessionId, playthrough);
+  const pending2 = pendingSwipeForSession(client, sessionId);
+  const reconciled = pending2 === null ? await turnReconciler(client)(sessionId, playthrough) : { timeline: pending2.timeline };
   const timeline = reconciled.timeline ?? await client.getTimeline(playthrough);
   const messagesBySession = await loadMessages(client, adoptedSessionIds(timeline, sessionId));
   const selectionResponse = await client.getCharacterSelection(sessionId);
@@ -10847,6 +10920,7 @@ async function loadChatState(client, sessionId, playthrough) {
   const rootMessages = messagesBySession[sessionId];
   const importMutable = (timeline?.nodes?.length ?? 0) === 0 && rootMessages?.incompleteTurn !== true && !(rootMessages?.messages ?? []).some((message) => message?.role === "user" || message?.role === "assistant") && importedContext.binding?.state !== "consumed";
   return {
+    pendingSwipeError: pending2?.error ?? null,
     timeline,
     turns,
     importBinding: importedContext.binding,
@@ -11029,9 +11103,9 @@ function rememberChatSnapshot(client, playthrough, snapshot) {
     cache = /* @__PURE__ */ new Map();
     chatSnapshots.set(client, cache);
   }
-  const key = playthroughCacheKey(playthrough, snapshot.sessionId);
-  cache.delete(key);
-  cache.set(key, snapshot);
+  const key2 = playthroughCacheKey(playthrough, snapshot.sessionId);
+  cache.delete(key2);
+  cache.set(key2, snapshot);
   while (cache.size > MAX_CACHED_PLAYTHROUGHS) {
     cache.delete(cache.keys().next().value);
   }
@@ -11052,7 +11126,7 @@ function ChatFrame({
   phase = "idle",
   direction = null,
   transitionEnded,
-  pendingSwipe,
+  pendingSwipe: pendingSwipe2,
   onSwipePending
 }) {
   const state = snapshot.value;
@@ -11112,7 +11186,7 @@ function ChatFrame({
       onChanged: changed,
       onError,
       onSwipePending,
-      swipePending: pendingSwipe?.nodeId === turn.id
+      swipePending: pendingSwipe2?.nodeId === turn.id
     })),
     state.importBinding === null ? null : importControls,
     ...liveTurns.map((turn) => h8(Turn, { key: turn.id, turn })),
@@ -11219,7 +11293,7 @@ function MowanChatView({ sessionId, useSession, useChat, playClient, playthrough
   const stateIsCurrent = loadedState?.sessionId === sessionId;
   const [error, setError] = (0, import_react11.useState)("");
   const [greetingBusy, setGreetingBusy] = (0, import_react11.useState)(false);
-  const [pendingSwipe, setPendingSwipe] = (0, import_react11.useState)(null);
+  const [pendingSwipe2, setPendingSwipe] = (0, import_react11.useState)(null);
   const bottomAnchor = (0, import_react11.useRef)(null);
   const initialScrollSession = (0, import_react11.useRef)(null);
   const userSeqSession = (0, import_react11.useRef)(null);
@@ -11336,7 +11410,7 @@ function MowanChatView({ sessionId, useSession, useChat, playClient, playthrough
     changeGreeting,
     changed,
     onError: setError,
-    pendingSwipe,
+    pendingSwipe: pendingSwipe2,
     onSwipePending: swipePending,
     phase,
     direction: transition?.direction ?? null,
@@ -11351,7 +11425,21 @@ function MowanChatView({ sessionId, useSession, useChat, playClient, playthrough
       "data-error": true,
       role: "alert"
     }, uiMessage("play.chat.failure")) : null,
-    error === "" ? null : h8("p", { className: "dtv-play-chat-status", "data-error": true }, rawText(error)),
+    error === "" && !state?.pendingSwipeError ? null : h8(
+      "div",
+      null,
+      h8("p", { className: "dtv-play-chat-status", "data-error": true }, rawText(error || state.pendingSwipeError)),
+      !state?.pendingSwipeError ? null : h8("button", {
+        type: "button",
+        className: "dtv-play-import-button",
+        onClick: () => {
+          const pending2 = pendingSwipeForSession(playClient, sessionId);
+          if (pending2 === null) return;
+          finishPendingSwipe(playClient, pending2);
+          openSession(pending2.sourceSessionId, playthrough);
+        }
+      }, uiMessage("play.chat.returnToSavedReply"))
+    ),
     state === null && error === "" ? h8("p", { className: "dtv-play-chat-status" }, uiMessage("play.chat.loading")) : null,
     loadedState === null ? null : h8(
       "div",
@@ -11440,10 +11528,10 @@ function currentWorkspaceIssues(resources, sessionAvailability = null) {
     if (isPlaythroughArchived(playthrough)) continue;
     const binding = playthrough?.ext?.pmpDshTavern;
     const code = diagnostic.code || "PLAY_TIMELINE_READ_FAILED";
-    const key = JSON.stringify([scope, diagnostic.playthroughId, code]);
-    issues.set(key, {
+    const key2 = JSON.stringify([scope, diagnostic.playthroughId, code]);
+    issues.set(key2, {
       ...diagnostic,
-      key,
+      key: key2,
       scope,
       code,
       kind: "timeline",
@@ -11484,13 +11572,13 @@ function createWorkspaceDiagnostics(client, {
     const issues = currentWorkspaceIssues(resources, sessionAvailability);
     const scope = workspaceDiagnosticScope(resources.workspace);
     const currentKeys = new Set(issues.map((issue) => issue.key));
-    for (const key of dismissed) {
+    for (const key2 of dismissed) {
       try {
-        const [owner, , code] = JSON.parse(key);
+        const [owner, , code] = JSON.parse(key2);
         if (code === "PLAY_NO_AVAILABLE_SESSION" && !sessionAvailabilityReady(sessionAvailability)) continue;
-        if ((owner === scope || owner === "workspace-read") && !currentKeys.has(key)) dismissed.delete(key);
+        if ((owner === scope || owner === "workspace-read") && !currentKeys.has(key2)) dismissed.delete(key2);
       } catch {
-        dismissed.delete(key);
+        dismissed.delete(key2);
       }
     }
     persistDismissed();
@@ -12379,6 +12467,7 @@ function PlayWorkspaceBrowser({
     };
   }, [playClient, resources, rpKey, revision]);
   const model = projectPlaySidebar({
+    pendingSwipes: pendingSwipes(playClient),
     workspace: resources?.workspace,
     workspaceItems,
     characters: resources?.characters,
@@ -12412,9 +12501,9 @@ function PlayWorkspaceBrowser({
         candidates = sameMissing.length === 1 ? model.characters.filter((character) => normalizedName(character.name) === name2) : [];
       }
       if (candidates.length !== 1) continue;
-      const key = `${missing.id}\0${candidates[0].id}`;
-      if (automaticRelinks.current.has(key)) continue;
-      recoveries.push({ missing, character: candidates[0], key });
+      const key2 = `${missing.id}\0${candidates[0].id}`;
+      if (automaticRelinks.current.has(key2)) continue;
+      recoveries.push({ missing, character: candidates[0], key: key2 });
     }
     if (recoveries.length === 0) return void 0;
     void runAutomaticCharacterRelinks(recoveries, {
@@ -12461,6 +12550,11 @@ function PlayWorkspaceBrowser({
   const openPlaythrough = async (playthrough) => {
     setStatus(null);
     try {
+      const pending2 = pendingSwipe(playClient, playthrough);
+      if (pending2 !== null) {
+        openSession(pending2.sessionId, playthrough);
+        return;
+      }
       const focus = await playClient.getFocus(playthrough);
       const target = playthroughFocusTarget({ focus, playthrough, rpSessionIds: rpIds });
       if (target === null) {
@@ -13179,9 +13273,9 @@ function installPlaySlotOccupancy(ctx, playClient, { playthroughController, swit
     disposeDefaultViewEntry = null;
     dispose?.();
   };
-  const rememberDefaultViewAttempt = (key) => {
-    completedDefaultViewAttempts.delete(key);
-    completedDefaultViewAttempts.add(key);
+  const rememberDefaultViewAttempt = (key2) => {
+    completedDefaultViewAttempts.delete(key2);
+    completedDefaultViewAttempts.add(key2);
     if (completedDefaultViewAttempts.size <= PLAY_DEFAULT_VIEW_ATTEMPT_LIMIT) return;
     completedDefaultViewAttempts.delete(completedDefaultViewAttempts.values().next().value);
   };
@@ -14330,7 +14424,7 @@ function createChromeModeServiceCore({
   let pendingWrites = 0;
   const listeners = /* @__PURE__ */ new Set();
   const effects = /* @__PURE__ */ new Set();
-  const notify = () => {
+  const notify2 = () => {
     for (const listener of [...listeners]) safely(() => listener(snapshot));
   };
   const stopEffect = (effect) => {
@@ -14366,7 +14460,7 @@ function createChromeModeServiceCore({
       for (const effect of effects) stopEffect(effect);
       for (const effect of effects) startEffect(effect);
     }
-    notify();
+    notify2();
     return snapshot;
   };
   const enqueue = (action) => {
