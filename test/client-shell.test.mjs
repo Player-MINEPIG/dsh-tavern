@@ -190,7 +190,7 @@ test('only the client composition root owns the Tavern shell overlay', () => {
   assert.match(root, /setActiveSnapshot\(null\)[\s\S]*refreshStatus\(\)/)
   assert.match(root, /event\.key !== 'Escape'/)
   assert.match(root, /'data-surface-open': surface !== null/)
-  assert.match(root, /setSurface\(id\)[\s\S]*CLIENT_REFRESH_EVENT/)
+  assert.match(root, /requestSurface\(id\)[\s\S]*CLIENT_REFRESH_EVENT/)
   assert.doesNotMatch(root, /surface === null \? h\('div', \{\s*className: 'dtv-launcher'/)
   assert.doesNotMatch(preset, /slots\.inject|dsh-tavern-preset-launcher/)
   assert.doesNotMatch(character, /slots\.inject|dsh-tavern-character-overlay/)
@@ -311,7 +311,7 @@ test('session-template primary actions use the shared blue business token', () =
   const source = readFileSync(new URL('../packages/session-template/src/client.js', import.meta.url), 'utf8')
   assert.match(root, /\.dtv-primary\{background:var\(--dsw-alias-state-business-primary,#2677d9\)/)
   assert.doesNotMatch(root, /\.dtv-primary\{background:var\(--dsw-alias-button-primary-fill/)
-  assert.equal(source.match(/className: 'dtv-button dtv-primary'/g)?.length, 3)
+  assert.equal(source.match(/className: 'dtv-button dtv-primary'/g)?.length, 4)
 })
 
 test('user session binding uses the same primary action styling as other binding panels', () => {

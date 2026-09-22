@@ -642,16 +642,38 @@ function WorkspaceAdmission({ setting, state, error, busy, selectWorkspace, relo
   ))
 }
 
+// One guard belongs to the mounted resource panel. Shell navigation owns the
+// confirmation so Escape, launcher changes and the panel close share one path.
+export function createSurfaceNavigation(commit) {
+  let guard = null
+  return {
+    register(beforeLeave) {
+      guard = beforeLeave
+      return () => { if (guard === beforeLeave) guard = null }
+    },
+    request(next, current) {
+      if (next === current) return true
+      if (guard !== null && guard() === false) return false
+      commit(next)
+      return true
+    },
+  }
+}
+
 function TavernShell({ useSessions, useWorkspaces, createCleanSession, createConfiguredPlaythrough, playClient, playSlots, chromeService, diagnostics }) {
   const [menuOpen, setMenuOpen] = useState(false)
   const [surface, setSurface] = useState(null)
+  const surfaceNavigation = useRef(null)
+  if (surfaceNavigation.current === null) surfaceNavigation.current = createSurfaceNavigation(setSurface)
+  const requestSurface = useCallback(next => surfaceNavigation.current.request(next, surface), [surface])
+  const registerBeforeLeave = surfaceNavigation.current.register
   const [diagnosticPlaythroughId, setDiagnosticPlaythroughId] = useState(null)
   const diagnosticSnapshot = useSyncExternalStore(diagnostics.subscribe, diagnostics.getSnapshot)
   useEffect(() => diagnostics.subscribeOpen(playthroughId => {
+    if (!requestSurface('diagnostics')) return
     setMenuOpen(false)
     setDiagnosticPlaythroughId(playthroughId)
-    setSurface('diagnostics')
-  }), [diagnostics])
+  }), [diagnostics, requestSurface])
   const [anchor, setAnchor] = useState(initialLauncherAnchor)
   const [chromeMode, setChromeMode] = useState(() => chromeService.getMode())
   const [chromeAnimation, setChromeAnimation] = useState(0)
@@ -699,7 +721,7 @@ function TavernShell({ useSessions, useWorkspaces, createCleanSession, createCon
     const messages = await playClient.getMessages(targetSessionId)
     return sessionHasConversationHistory(messages)
   }, [playClient])
-  const close = () => setSurface(null)
+  const close = () => requestSurface(null)
   if (rpAlert === null || dismissedRpAlerts.current.has(rpAlert.id)) rpAlertRef.current = null
   else rpAlertRef.current = rpAlert
 
@@ -1060,11 +1082,11 @@ function TavernShell({ useSessions, useWorkspaces, createCleanSession, createCon
       if (importFailure !== null) setImportFailure(null)
       else if (rpAlert !== null) dismissRpAlert()
       else if (menuOpen) setMenuOpen(false)
-      else if (surface !== null) setSurface(null)
+      else if (surface !== null) requestSurface(null)
     }
     window.addEventListener('keydown', onKeyDown)
     return () => window.removeEventListener('keydown', onKeyDown)
-  }, [importFailure, menuOpen, rpAlert, surface])
+  }, [importFailure, menuOpen, rpAlert, surface, requestSurface])
 
   const startDrag = event => {
     if (event.button !== 0) return
@@ -1121,9 +1143,9 @@ function TavernShell({ useSessions, useWorkspaces, createCleanSession, createCon
   const switchChrome = () => chromeController.current?.switchMode()
 
   const open = id => {
+    if (!requestSurface(id)) return
     if (id === 'diagnostics') setDiagnosticPlaythroughId(null)
     setMenuOpen(false)
-    setSurface(id)
     window.dispatchEvent(new Event(CLIENT_REFRESH_EVENT))
   }
 
@@ -1157,6 +1179,7 @@ function TavernShell({ useSessions, useWorkspaces, createCleanSession, createCon
       chromeMode,
       createCleanSession,
       createConfiguredPlaythrough,
+      registerBeforeLeave,
       close,
     })
   } else if (surface === 'conversation-settings' && chromeMode === 'play') {

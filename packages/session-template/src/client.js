@@ -118,7 +118,7 @@ function TemplateEditor({ selection, onChange, catalogs, disabled }) {
   )
 }
 
-export function SessionTemplatePanel({ sessionId, workspaceId, chromeMode = 'native', createCleanSession, createConfiguredPlaythrough, close }) {
+export function SessionTemplatePanel({ sessionId, workspaceId, chromeMode = 'native', createCleanSession, createConfiguredPlaythrough, registerBeforeLeave, close }) {
   const [templates, setTemplates] = useState([])
   const [selectedId, setSelectedId] = useState(null)
   const [name, setName] = useState(() => translate('template.defaultName'))
@@ -132,8 +132,11 @@ export function SessionTemplatePanel({ sessionId, workspaceId, chromeMode = 'nat
   const selected = templates.find(item => item.id === selectedId) ?? null
   const dirty = selected !== null && (name !== selected.name || JSON.stringify(selection) !== JSON.stringify(selected.selection))
   dirtyRef.current = dirty
-  const discard = () => !dirtyRef.current || window.confirm(unwrapText(uiMessage('template.confirmDiscard')))
-  const requestClose = () => { if (discard()) close() }
+  const discard = useCallback(() => !dirtyRef.current || window.confirm(unwrapText(uiMessage('template.confirmDiscard'))), [])
+  useEffect(() => registerBeforeLeave?.(discard), [discard, registerBeforeLeave])
+  const requestClose = () => {
+    if (typeof registerBeforeLeave === 'function' || discard()) close()
+  }
 
   const refresh = useCallback(async (force = false) => {
     const [data, presets, characters, users, books] = await Promise.all([
