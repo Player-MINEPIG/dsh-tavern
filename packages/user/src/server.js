@@ -2,7 +2,8 @@ import { Buffer } from 'node:buffer'
 import { API_V1, escapeRegExp } from '../../identity.js'
 
 const MAX_BODY_BYTES = 256 * 1024
-const USER_ID_ROUTE = new RegExp(`^${escapeRegExp(API_V1)}/users/([^/]+)(?:/(world-books))?$`)
+const MAX_IMPORT_BYTES = 1024 * 1024
+const USER_ID_ROUTE = new RegExp(`^${escapeRegExp(API_V1)}/users/([^/]+)(?:/(world-books|export))?$`)
 
 function sendJson(res, status, payload) {
   const body = JSON.stringify(payload)
@@ -28,7 +29,7 @@ function apiError(error) {
   }
 }
 
-function readJson(req) {
+function readJson(req, limit = MAX_BODY_BYTES) {
   return new Promise((resolve, reject) => {
     let length = 0
     const chunks = []
@@ -36,9 +37,9 @@ function readJson(req) {
     req.on('data', chunk => {
       if (settled) return
       length += chunk.length
-      if (length > MAX_BODY_BYTES) {
+      if (length > limit) {
         settled = true
-        const error = new Error(`User request exceeds the ${MAX_BODY_BYTES} byte limit`)
+        const error = new Error(`User request exceeds the ${limit} byte limit`)
         error.code = 'USER_BODY_TOO_LARGE'
         error.status = 413
         reject(error)
@@ -115,6 +116,16 @@ export function createUserApiHandler(store, options = {}) {
         onChange({ kind: 'user-created', userId: user.id })
         return sendJson(res, 201, { ok: true, user })
       }
+      if (method === 'POST' && path === `${API_V1}/users/import`) {
+        const user = store.import(await readJson(req, MAX_IMPORT_BYTES))
+        onChange({ kind: 'user-imported', userId: user.id })
+        return sendJson(res, 201, { ok: true, user })
+      }
+      if (matched !== null && matched.resource === 'export' && method === 'GET') {
+        const document = store.export(matched.id)
+        res.setHeader('Content-Disposition', `attachment; filename="user.json"; filename*=UTF-8''${encodeURIComponent(document.data.name)}.user.json`)
+        return sendJson(res, 200, document)
+      }
       if (matched !== null && matched.resource === 'world-books' && method === 'GET') {
         return sendJson(res, 200, { ok: true, ...worldBookBindingPayload(matched.id, worldBookBindingPolicy) })
       }
@@ -159,4 +170,4 @@ export function createUserApiHandler(store, options = {}) {
   }
 }
 
-export const userApiConstants = Object.freeze({ maxBodyBytes: MAX_BODY_BYTES })
+export const userApiConstants = Object.freeze({ maxBodyBytes: MAX_BODY_BYTES, maxImportBytes: MAX_IMPORT_BYTES })

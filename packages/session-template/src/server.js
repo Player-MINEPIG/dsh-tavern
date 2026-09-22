@@ -1,4 +1,5 @@
 import { Buffer } from 'node:buffer'
+import { validateTemplateSelection } from './model.js'
 import { API_V1, escapeRegExp } from '../../identity.js'
 
 const API_PREFIX = `${API_V1}/session-templates`
@@ -6,6 +7,7 @@ const TEMPLATE_ID_ROUTE = new RegExp(`^${escapeRegExp(API_PREFIX)}/([^/]+)$`)
 const CONFIG_PREVIEW_PATH = `${API_V1}/session-configurations/preview`
 const CONFIG_APPLY_PATH = `${API_V1}/session-configurations/apply`
 const MAX_BODY_BYTES = 64 * 1024
+const MAX_IMPORT_BYTES = 256 * 1024
 
 function sendJson(res, status, payload) {
   const body = JSON.stringify(payload)
@@ -15,7 +17,7 @@ function sendJson(res, status, payload) {
   res.end(body)
 }
 
-function readJson(req) {
+function readJson(req, limit = MAX_BODY_BYTES) {
   return new Promise((resolve, reject) => {
     let length = 0
     const chunks = []
@@ -23,9 +25,9 @@ function readJson(req) {
     req.on('data', chunk => {
       if (settled) return
       length += chunk.length
-      if (length > MAX_BODY_BYTES) {
+      if (length > limit) {
         settled = true
-        const error = new Error(`Session-template request exceeds the ${MAX_BODY_BYTES} byte limit`)
+        const error = new Error(`Session-template request exceeds the ${limit} byte limit`)
         error.code = 'SESSION_TEMPLATE_BODY_TOO_LARGE'
         error.status = 413
         reject(error)
@@ -98,9 +100,25 @@ export function createSessionTemplateApiHandler(store, configurations, options =
       }
       if (method === 'POST' && path === API_PREFIX) {
         const body = await readJson(req)
-        const template = configurations.createTemplate(body.name, requireSessionId(body.sourceSessionId, 'sourceSessionId'))
+        if (body === null || typeof body !== 'object' || Array.isArray(body)) throw new TypeError('Template request must be an object')
+        if (Object.keys(body).some(key => !['name', 'selection', 'sourceSessionId'].includes(key))) throw new TypeError('Unsupported template request field')
+        if (Object.hasOwn(body, 'selection') && Object.hasOwn(body, 'sourceSessionId')) throw new TypeError('Choose selection or sourceSessionId')
+        const template = Object.hasOwn(body, 'sourceSessionId')
+          ? configurations.createTemplate(body.name, requireSessionId(body.sourceSessionId, 'sourceSessionId'))
+          : store.create({ name: body.name, selection: validateTemplateSelection(Object.hasOwn(body, 'selection') ? body.selection : {}) })
         onChange({ kind: 'session-template-created', templateId: template.id })
         return sendJson(res, 201, { ok: true, template })
+      }
+      if (method === 'POST' && path === `${API_PREFIX}/import`) {
+        const template = store.import(await readJson(req, MAX_IMPORT_BYTES))
+        onChange({ kind: 'session-template-imported', templateId: template.id })
+        return sendJson(res, 201, { ok: true, template, contents: configurations.contents(template.selection), diagnostics: configurations.diagnostics(template.selection) })
+      }
+      const exportMatch = new RegExp(`^${escapeRegExp(API_PREFIX)}/([^/]+)/export$`).exec(path)
+      if (method === 'GET' && exportMatch !== null) {
+        const document = store.export(decodeURIComponent(exportMatch[1]))
+        res.setHeader('Content-Disposition', `attachment; filename="session-template.json"; filename*=UTF-8''${encodeURIComponent(document.data.name)}.session-template.json`)
+        return sendJson(res, 200, document)
       }
       if (method === 'POST' && path === `${API_PREFIX}/select`) {
         const body = await readJson(req)
@@ -163,4 +181,5 @@ export function isSessionTemplateApiPath(url) {
 export const sessionTemplateApiConstants = Object.freeze({
   apiPrefix: API_PREFIX,
   maxBodyBytes: MAX_BODY_BYTES,
+  maxImportBytes: MAX_IMPORT_BYTES,
 })

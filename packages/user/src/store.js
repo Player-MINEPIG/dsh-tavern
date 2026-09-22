@@ -1,3 +1,4 @@
+import { readResourceTransfer, resourceTransfer } from '../../tavern-format/src/resource-transfer.js'
 import { randomUUID } from 'node:crypto'
 import {
   mkdirSync,
@@ -132,6 +133,17 @@ export class UserStore {
     }
     atomicJson(this.userPath(document.id), document)
     return clone(document)
+  }
+
+  import(value) {
+    const data = readResourceTransfer(value, 'user')
+    assertOnlyFields(data, new Set(['name', 'description']))
+    return this.create(data)
+  }
+
+  export(id) {
+    const { name, description } = this.get(id)
+    return resourceTransfer('user', { name, description })
   }
 
   update(id, patch) {

@@ -5,6 +5,7 @@ import {
   useRef,
   useState,
 } from 'react'
+import { announceImportFailure } from '../../client/src/import-failure.js'
 import { sameOrderedIds, userPanelDirty, userResourceDirty } from './client-state.js'
 import {
   createLocalizedElement,
@@ -59,6 +60,7 @@ export function UserPanel({ sessionId, sessionBlank, close }) {
   const [selectedUserId, setSelectedUserId] = useState(null)
   const [busy, setBusy] = useState(false)
   const [status, setStatus] = useState({ error: false, key: 'common.loading' })
+  const fileRef = useRef(null)
   const generation = useRef(0)
   const draftId = useRef(null)
   const dirtyRef = useRef(false)
@@ -152,6 +154,23 @@ export function UserPanel({ sessionId, sessionBlank, close }) {
     }, 'user.status.created')
   }, [dirty, refresh, run])
 
+  const importFile = useCallback(file => {
+    if (dirty && !window.confirm(unwrapText(uiMessage('user.confirmDiscardForCreate')))) return
+    run(async () => {
+      try {
+        if (file.size > 1024 * 1024) throw uiError('resource.error.fileTooLarge')
+        const data = await api('/users/import', { method: 'POST', body: await file.text() })
+        dirtyRef.current = false
+        draftId.current = data.user.id
+        await refresh(data.user.id)
+        notifyRefresh()
+      } catch (error) {
+        announceImportFailure(error)
+        throw error
+      }
+    }, 'user.status.imported')
+  }, [dirty, refresh, run])
+
   const save = useCallback(() => run(async () => {
     if (draft === null) return
     const data = await api(`/users/${encodeURIComponent(draft.id)}`, {
@@ -230,6 +249,14 @@ export function UserPanel({ sessionId, sessionBlank, close }) {
     h('div', { className: 'dtu-body' },
       h('div', { className: 'dtu-toolbar' },
         h('button', { className: 'dtu-button', type: 'button', disabled: busy, onClick: create }, uiMessage('user.create')),
+        h('button', { className: 'dtu-button', type: 'button', disabled: busy, onClick: () => fileRef.current?.click() }, uiMessage('common.importJson')),
+        draft === null ? null : h('a', { className: 'dtu-button', href: `${API_ROOT}/users/${encodeURIComponent(draft.id)}/export`, download: '' }, uiMessage('common.exportJson')),
+        h('input', { ref: fileRef, hidden: true, type: 'file', accept: '.json,application/json', onChange: event => {
+          const file = event.target.files?.[0]
+          event.target.value = ''
+          if (file !== undefined) importFile(file)
+        } }),
+        h('p', { className: 'dtu-note' }, uiMessage('user.transferNote')),
       ),
       h(Field, { label: uiMessage('user.browse') }, h('div', { className: 'dtu-browse' },
         h('select', {

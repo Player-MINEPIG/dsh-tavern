@@ -118,6 +118,11 @@ function normalizePrompts(rawPrompts, selectedOrder) {
   return ordered
 }
 
+function normalizedReasoningEffort(value) {
+  return typeof value === 'string' && value.trim() !== '' && value.length <= 100 && !/[\u0000-\u001f\u007f]/.test(value)
+    ? value : undefined
+}
+
 function normalizedSampling(raw) {
   const st = {}
   for (const key of SAMPLING_KEYS) {
@@ -128,9 +133,7 @@ function normalizedSampling(raw) {
   return {
     temperature: finite(raw.temperature),
     maxTokens: positiveInteger(raw.openai_max_tokens ?? raw.max_tokens),
-    reasoningEffort: ['low', 'medium', 'high', 'xhigh'].includes(raw.reasoning_effort)
-      ? raw.reasoning_effort
-      : undefined,
+    reasoningEffort: normalizedReasoningEffort(raw.reasoning_effort),
     stop: Array.isArray(raw.stop)
       ? raw.stop.filter((item) => typeof item === 'string' && item !== '').slice(0, 16)
       : undefined,
@@ -231,9 +234,9 @@ export function editPreset(existing, patch, options = {}) {
   const maxTokens = samplingPatch.maxTokens === null || samplingPatch.maxTokens === ''
     ? undefined
     : positiveInteger(Number(samplingPatch.maxTokens))
-  const reasoningEffort = ['low', 'medium', 'high', 'xhigh'].includes(samplingPatch.reasoningEffort)
-    ? samplingPatch.reasoningEffort
-    : undefined
+  const reasoningEffort = Object.hasOwn(samplingPatch, 'reasoningEffort')
+    ? normalizedReasoningEffort(samplingPatch.reasoningEffort)
+    : existing.sampling.reasoningEffort
   const stop = Array.isArray(samplingPatch.stop)
     ? samplingPatch.stop.filter((item) => typeof item === 'string' && item !== '').slice(0, 16)
     : existing.sampling.stop
@@ -350,9 +353,7 @@ export function exportSillyTavernPreset(preset, options = {}) {
   setExportedValue(raw, 'temperature', finite(sampling.temperature))
   setExportedValue(raw, 'openai_max_tokens', positiveInteger(sampling.maxTokens))
   delete raw.max_tokens
-  setExportedValue(raw, 'reasoning_effort', ['low', 'medium', 'high', 'xhigh'].includes(sampling.reasoningEffort)
-    ? sampling.reasoningEffort
-    : undefined)
+  setExportedValue(raw, 'reasoning_effort', normalizedReasoningEffort(sampling.reasoningEffort))
   setExportedValue(raw, 'stop', Array.isArray(sampling.stop)
     ? sampling.stop.filter(item => typeof item === 'string' && item !== '').slice(0, 16)
     : undefined)

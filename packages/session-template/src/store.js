@@ -8,7 +8,8 @@ import {
   writeFileSync,
 } from 'node:fs'
 import { join, resolve } from 'node:path'
-import { normalizeTemplateSelection } from './model.js'
+import { normalizeTemplateSelection, validateTemplateSelection } from './model.js'
+import { readResourceTransfer, resourceTransfer } from '../../tavern-format/src/resource-transfer.js'
 
 const SCHEMA_VERSION = 1
 const TEMPLATE_ID_PATTERN = /^[A-Za-z0-9][A-Za-z0-9._:-]{0,199}$/
@@ -173,7 +174,7 @@ export class SessionTemplateStore {
     return clone(result)
   }
 
-  create(input = {}) {
+  create(input = {}, { select = true } = {}) {
     if (this.state.templates.length >= this.maxTemplates) {
       throw new SessionTemplateLimitError(
         'SESSION_TEMPLATE_LIMIT_REACHED',
@@ -196,9 +197,21 @@ export class SessionTemplateStore {
     }
     return this.commit(next => {
       next.templates.push(template)
-      next.selectedId = id
+      if (select) next.selectedId = id
       return template
     })
+  }
+
+  import(value) {
+    const data = readResourceTransfer(value, 'session-template')
+    if (Object.keys(data).some(key => !['name', 'selection'].includes(key))) throw new TypeError('Unsupported session-template data field')
+    const selection = validateTemplateSelection(data.selection)
+    return this.create({ name: data.name, selection }, { select: false })
+  }
+
+  export(id) {
+    const { name, selection } = this.get(id)
+    return resourceTransfer('session-template', { name, selection })
   }
 
   update(id, patch = {}) {

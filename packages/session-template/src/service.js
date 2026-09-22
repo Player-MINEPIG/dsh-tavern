@@ -1,4 +1,4 @@
-import { normalizeTemplateSelection } from './model.js'
+import { normalizeTemplateSelection, validateTemplateSelection } from './model.js'
 
 function diagnostic(code, field, resourceId, message) {
   return { code, field, resourceId, message }
@@ -139,7 +139,11 @@ export class SessionConfigurationService {
   }
 
   updateTemplate(id, patch = {}) {
+    if (patch === null || typeof patch !== 'object' || Array.isArray(patch)) throw new TypeError('Template patch must be an object')
+    if (Object.keys(patch).some(key => !['name', 'selection', 'sourceSessionId'].includes(key))) throw new TypeError('Unsupported template patch field')
+    if (Object.hasOwn(patch, 'selection') && Object.hasOwn(patch, 'sourceSessionId')) throw new TypeError('Choose selection or sourceSessionId')
     const next = {}
+    if (Object.hasOwn(patch, 'selection')) next.selection = validateTemplateSelection(patch.selection)
     if (Object.hasOwn(patch, 'name')) next.name = patch.name
     if (Object.hasOwn(patch, 'sourceSessionId')) {
       if (typeof patch.sourceSessionId !== 'string' || patch.sourceSessionId === '') throw new TypeError('sourceSessionId must be a non-empty string')

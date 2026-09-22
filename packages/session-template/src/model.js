@@ -51,6 +51,38 @@ export function normalizeTemplateSelection(value = {}) {
   }
 }
 
+/** Strict validation for new editable/imported documents; old stored projections remain tolerant. */
+export function validateTemplateSelection(value) {
+  const record = (input, fields, label) => {
+    if (input === null || typeof input !== 'object' || Array.isArray(input)) throw new TypeError(`${label} must be an object`)
+    const extra = Object.keys(input).find(key => !fields.includes(key))
+    if (extra !== undefined) throw new TypeError(`Unsupported ${label} field "${extra}"`)
+  }
+  record(value, ['presetId', 'characterCardId', 'userId', 'worldBookIds', 'character', 'rp'], 'selection')
+  for (const key of ['presetId', 'characterCardId', 'userId']) {
+    if (value[key] !== undefined && value[key] !== null && stringOrNull(value[key]) === null) throw new TypeError(`Invalid ${key}`)
+  }
+  if (value.worldBookIds !== undefined && (!Array.isArray(value.worldBookIds)
+    || value.worldBookIds.length > MAX_WORLD_BOOKS || value.worldBookIds.some(id => stringOrNull(id) === null)
+    || new Set(value.worldBookIds).size !== value.worldBookIds.length)) throw new TypeError('Invalid worldBookIds')
+  if (value.character !== undefined) {
+    record(value.character, ['greetingIndex', 'preferCharacterSystemPrompt', 'preferCharacterPostHistory'], 'character')
+    if (value.character.greetingIndex !== undefined && (!Number.isSafeInteger(value.character.greetingIndex) || value.character.greetingIndex < 0)) throw new TypeError('Invalid greetingIndex')
+    for (const key of ['preferCharacterSystemPrompt', 'preferCharacterPostHistory']) {
+      if (value.character[key] !== undefined && typeof value.character[key] !== 'boolean') throw new TypeError(`Invalid ${key}`)
+    }
+  }
+  if (value.rp !== undefined) {
+    record(value.rp, ['active', 'source', 'followSuppressed', 'sandboxBefore'], 'rp')
+    for (const key of ['active', 'followSuppressed']) {
+      if (value.rp[key] !== undefined && typeof value.rp[key] !== 'boolean') throw new TypeError(`Invalid ${key}`)
+    }
+    if (value.rp.source !== undefined && value.rp.source !== null && !RP_SOURCES.has(value.rp.source)) throw new TypeError('Invalid RP source')
+    if (value.rp.sandboxBefore !== undefined && value.rp.sandboxBefore !== null && !SANDBOX_MODES.has(value.rp.sandboxBefore)) throw new TypeError('Invalid RP sandboxBefore')
+  }
+  return normalizeTemplateSelection(value)
+}
+
 export const sessionTemplateModelConstants = Object.freeze({
   maxResourceIdCharacters: MAX_RESOURCE_ID_CHARACTERS,
   maxWorldBooks: MAX_WORLD_BOOKS,
