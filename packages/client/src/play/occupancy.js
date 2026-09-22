@@ -272,7 +272,10 @@ export function installPlaySlotOccupancy(ctx, playClient, { playthroughControlle
       }).catch(() => {
         if (pendingChats.get(session.id) !== request || request.generation !== chatGeneration) return
         pendingChats.delete(session.id)
-        chatBindings.delete(session.id)
+        // A failed read does not establish that an existing RP binding ended.
+        // Keep the matching binding so a transient error cannot persist Chat
+        // as this Session's selected view. A successful null match still clears it.
+        if (chatBindings.get(session.id)?.signature !== signature) chatBindings.delete(session.id)
         syncChatEntries()
         notifyBindings()
       })

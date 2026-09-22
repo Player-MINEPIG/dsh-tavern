@@ -117,3 +117,45 @@ test('chat render cache cannot seed another retained session without an explicit
   consumeSwipeTransition('b')
   assert.equal(cachedChatSnapshot(client, playthrough, 'b'), b)
 })
+
+
+test('transient refresh failure preserves an established session binding and its RP view', async t => {
+  const { CLIENT_REFRESH_EVENT } = await import('../packages/identity.js')
+  const previousWindow = globalThis.window
+  globalThis.window = new EventTarget()
+  t.after(() => {
+    if (previousWindow === undefined) delete globalThis.window
+    else globalThis.window = previousWindow
+  })
+  let failA = false
+  const f = fixture({ byId: { a: row('a', { mainView: 1 }), b: row('b', { referenceCandidates: 1 }) } }, {
+    getTimeline: async playthrough => {
+      if (playthrough.id === 'pt-a' && failA) throw new Error('Temporary timeline read failure')
+      return { nodes: [] }
+    },
+  })
+  t.after(() => f.dispose())
+  f.occupancy.setMode('play')
+  await settle()
+  const view = f.active(PLAY_VIEW_ID)
+  const a = view.options.inject('a')
+  const adapter = f.active(PLAY_DEFAULT_VIEW_ADAPTER_ID).options.inject('a')
+  const initial = a.getBinding()
+  adapter.complete(initial)
+  failA = true
+  window.dispatchEvent(new Event(CLIENT_REFRESH_EVENT))
+  await settle()
+  assert.equal(a.getBinding(), initial)
+  assert.equal(view.active, true)
+  assert.equal(sessionViewTarget('rp', 'rp', a.getBinding(), adapter.shouldDefault), null)
+  failA = false
+  window.dispatchEvent(new Event(CLIENT_REFRESH_EVENT))
+  await settle()
+  assert.equal(a.getBinding().playthrough.id, 'pt-a')
+  assert.equal(sessionViewTarget('rp', 'rp', a.getBinding(), adapter.shouldDefault), null)
+  // A successful reclassification outside the RP workspace still clears it.
+  f.update({ a: { ...row('a', { mainView: 1 }), cwd: '/native' }, b: row('b', { referenceCandidates: 1 }) })
+  await settle()
+  assert.equal(a.getBinding(), null)
+  assert.equal(sessionViewTarget('rp', 'rp', a.getBinding(), adapter.shouldDefault), 'chat')
+})
