@@ -12,7 +12,7 @@
 - Keep unchanged RP message rendering cached during streaming, preventing repeated Markdown parsing and HTML sanitization from delaying launcher interactions.
 - Keep conversation view labels, including RP View, on one line in narrow headers.
 - Restore the close button to the top-right of Tavern sidebars by removing obsolete header spacing.
-- Validate reuse of resource panels and HTTP clients for a separate frontend without implementing a complete page. Update bilingual contracts and dependency diagrams.
+- Update bilingual contracts and dependency diagrams for DSH 0.1.7-alpha.1.
 
 ## 2.3.2 — Branch pending-input fix
 

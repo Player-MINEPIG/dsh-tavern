@@ -22,18 +22,6 @@ The mode service publishes only `native|play`. It does not arbitrate slots. Seve
 
 There is **no** support for replacing all of Mowan by importing one config file, and there is no frontend provider registry, dynamic bundle loader, or “install remote frontend code” API. A config file can describe data and options. It cannot safely express arbitrary React components, slot ownership, or lifecycle. For a custom WebUI, publish a separate DSH plugin or standalone client. Do not treat an unimplemented one-click replace as a current capability.
 
-### Independent frontend feasibility
-
-Source inspection supports a separate RP frontend without changing Tavern's Host HTTP contracts. An embedded DSH plugin can reuse the mode service, public slots, and the official Session/Chat/Conversation subscriptions while composing Tavern v2 operations. A standalone client can create sessions, submit user text, read durable messages, branch, query focus, and update managed timeline/catalog files through v2. Resource editors and configuration preview/application additionally require the matching v1 contract; historical prompt inspection uses v3.
-
-The reusable [standalone boundary test](../test/standalone-client-boundary.test.mjs) bundles the preset, character, user, world-book, and template client modules plus the HTTP client/configuration workflows with React using esbuild. It checks every input/output import, excludes DSH entry/bootstrap modules, `@deepseek-ai` packages, unresolved externals and `window.__ModuleLoader__`, then initializes the bundle without DSH/browser globals and exercises injected mock HTTP calls. This establishes source-level module reuse, not DOM rendering or live Host acceptance.
-
-These panels are not a separately published standalone component SDK: package `./client` exports the DSH loader bundle, and the test deliberately imports repository source modules. A consumer must supply a React/browser host, resource styles and theme variables (the template panel also uses shared Tavern shell CSS), same-origin HTTP access, and session/context props. The resource panels use their existing relative v1 requests; `createLivePlayClient` separately accepts `fetchImpl` and API roots. Character actions need history/detach callbacks; template creation needs configuration and navigation callbacks. Resolving the current session and its blank state, owning navigation, and managing live session subscriptions remain the consuming frontend's responsibilities.
-
-This establishes the available integration pieces, not a complete replacement for the DSH WebUI. The [v2 route implementation](../packages/play/src/server.js) provides chrome-mode SSE, but no token-message stream, stop-generation, approval, or interactive-question route. A standalone client that needs these controls must separately integrate and validate the target DSH public transport; `uiWorkspace` and the injected React hooks do not exist in an ordinary HTTP client. The upstream session-controller package publishes client and Remote entry points, but their existence alone does not establish a standalone connection, authentication, reconnect, or interaction implementation. Durable message polling is sufficient only for a client whose requirements accept that presentation model.
-
-Tavern does not provide a standalone frontend implementation. A complete replacement needs its own interaction design, transport/lifetime implementation, and browser acceptance. Native DSH remains the available complete session UI.
-
 ## 3. Browser mode service
 
 The stable service name is `pmpDshTavernChrome`. This is a Tavern v2 client contract, not a DSH Host API.

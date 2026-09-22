@@ -64,14 +64,13 @@ For targeted checks:
 node --test test/coordinate-migration-integration.test.mjs test/session-coordinates.test.mjs
 node --test test/trace-v3-host.test.mjs test/trace-failures-host.test.mjs test/preset-fallback-host.test.mjs
 node --test test/dsh017-host-migration.test.mjs test/dsh017-client-sessions.test.mjs test/resource-capabilities.test.mjs
-node --test test/standalone-client-boundary.test.mjs
 ```
 
 The official-module checks in these tests skip when their variables are absent; an invalid configured root fails. They use temporary data and real DSH modules. AgentLoop tests use a synthetic model adapter, do not contact a real provider, and do not validate Web Remote, browsers, or actual third-party plugins.
 
 Separately, `DSH_TAVERN_ACCEPTANCE_FIXTURE` enables a [specific external preset fixture check](../test/acceptance-fixture.test.mjs), not a general acceptance test for arbitrary character cards. It skips when the variable is absent or the file does not exist; contents that do not meet its assertions fail. Some path checks may also skip when the platform disallows symlink/junction creation. Read the reasons reported by the runner; skipped checks are not passes.
 
-For this compatibility boundary, additionally check all five resources through create/import/export/edit on an isolated Host; unsaved template protection on Escape and panel switching; independently retained sessions switching RP, native Chat and Trace; and recovery after temporary binding-read failures. Sampling tests exercise explicit parameter rejection, prior output, abort and authentication failure, checking bounded retries and Trace requested/effective/fallbacks. Migration covers V3 interruption insertion and child catalogs, earlier format chains, backup conflicts and reruns. The standalone boundary test establishes resource bundling and initialization without DSH bootstrap, not a complete independent conversation UI.
+For this compatibility boundary, additionally check all five resources through create/import/export/edit on an isolated Host; unsaved template protection on Escape and panel switching; independently retained sessions switching RP, native Chat and Trace; and recovery after temporary binding-read failures. Sampling tests exercise explicit parameter rejection, prior output, abort and authentication failure, checking bounded retries and Trace requested/effective/fallbacks. Migration covers V3 interruption insertion and child catalogs, earlier format chains, backup conflicts and reruns.
 
 ## Host and browser checks
 
