@@ -69,7 +69,30 @@ export function createPlayHost({
         const coordinates = await this.coordinates(sessionId)
         requireCoordinates(sessionFormatVersion, coordinates)
         importContexts?.()?.ensureCoordinates?.(sessionId, coordinates)
+        if (typeof sessionController?.resolveAgent !== 'function') throw missing('session.resolveAgent')
         const value = await callController('session.fork', sessionController, 'fork', { sessionId, atSeq })
+        try {
+          const resolved = await callController('session.resolveAgent', sessionController, 'resolveAgent', value.sessionId)
+          if (resolved?.error !== undefined) throw resolved.error
+          const agent = resolved?.agent
+          const inbox = agent?.inbox
+          if (agent?.id !== value.sessionId || agent.status !== 'idle'
+            || !Array.isArray(inbox?.nextTurn) || !Array.isArray(inbox?.nextStep)
+            || typeof inbox.clear !== 'function') {
+            throw new Error('Forked session has no idle, readable inbox')
+          }
+          // DSH may seed between-turn inbox splices past the requested reply.
+          // Use its public durable cancellation command, preserving inherited seqs
+          // and the source session. No caller input has been sent to this child yet.
+          if (inbox.nextTurn.length > 0 || inbox.nextStep.length > 0) inbox.clear()
+          if (agent.status !== 'idle' || inbox.nextTurn.length > 0 || inbox.nextStep.length > 0) {
+            throw new Error('Forked session still has pending input')
+          }
+        } catch (error) {
+          const failure = httpError(502, 'Fork succeeded but pending input could not be cleared', 'PLAY_BRANCH_INPUT_RESET_FAILED')
+          failure.cause = error
+          throw failure
+        }
         return { sessionId: value.sessionId }
       } catch (error) {
         throw mapHostError(error)

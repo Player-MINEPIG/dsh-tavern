@@ -4,7 +4,7 @@ The current DSH target is `0.1.5-rc.1`. When moving existing playthroughs from t
 
 [中文](INSTALLATION.md)
 
-This guide covers Tavern `2.3.1`; runtime acceptance targets DSH `0.1.5-rc.1`. The default root [README](../README.md) is Chinese. The English landing page is [README_en.md](../README_en.md) (no screenshots). This file is the current lifecycle, verification, and recovery contract. For another version, switch to its tag and read the installation instructions in that tag.
+This guide covers Tavern `2.3.2`; runtime acceptance still targets DSH `0.1.5-rc.1`, and compatibility with newer DSH releases is unverified. This branch pending-input fix requires no Tavern data migration. The default root [README](../README.md) is Chinese. The English landing page is [README_en.md](../README_en.md) (no screenshots). This file is the current lifecycle, verification, and recovery contract. For another version, switch to its tag and read the installation instructions in that tag.
 
 The scripts use Node.js as their common entry point and normalize paths for
 Windows, macOS, and Linux. macOS/Linux execute `dsh` directly. Windows safely
@@ -19,12 +19,12 @@ inside that one plugin; do not try to add them to dsh separately. The format
 layer can be consumed as a JavaScript library through the root package export,
 but by itself it intentionally has no agent-loading effect.
 
-## Install 2.3.1
+## Install 2.3.2
 
-Install `2.3.1` from GitHub into the default `web` profile using its version tag:
+Install `2.3.2` from GitHub into the default `web` profile using its version tag:
 
 ```text
-dsh plugin --profile web add github:Player-MINEPIG/dsh-tavern#v2.3.1
+dsh plugin --profile web add github:Player-MINEPIG/dsh-tavern#v2.3.2
 ```
 
 <a id="source-candidate"></a>
@@ -32,14 +32,16 @@ dsh plugin --profile web add github:Player-MINEPIG/dsh-tavern#v2.3.1
 ### Install and validate from source
 
 Use a separate test profile/home. Stop its Host before installing. Check out the
-`v2.3.1` tag, then install from source:
+`v2.3.2` tag, then install from source:
 
 ```sh
-git clone --branch v2.3.1 https://github.com/Player-MINEPIG/dsh-tavern.git
+git clone --branch v2.3.2 https://github.com/Player-MINEPIG/dsh-tavern.git
 cd dsh-tavern
 npm ci --legacy-peer-deps
 node scripts/install.mjs --dsh-home /absolute/path/to/test-home --profile web
 ```
+
+See the [patch release documentation checklist](TESTING_en.md#patch-release-documents).
 
 Start DSH `0.1.5-rc.1` with that same `DSH_HOME`, then follow the
 [developer verification guide](TESTING_en.md). A CLI upgrade alone does not update

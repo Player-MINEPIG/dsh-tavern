@@ -72,7 +72,7 @@ DSH 历史以及 v2 `/sessions/:id/messages` 提供权威消息读取；v3 详�
 | PUT | `/workspace/files?path=` | 普通文件仍使用 `{ content }`；`catalog.json` / `timeline.json` 必须显式带 `expectedRevision`：`null` 仅创建缺失目标，64 位小写 SHA-256 仅在当前字节 hash 相等时替换。校验、CAS、临时写和 rename 在同一目标 guard 内 | 已实现 |
 | GET | `/workspace/files?list=` | 列一层前缀 | 已实现 |
 | POST | `/sessions` | 新开扮演 session。有角色卡时标题=角色名+时间；无角色卡时走 DSH `session.create` 默认标题，不 409。仅当 body 带 `selectionFromSessionId` 才复制 Tavern 绑定。插入扮演工作区。**不写 timeline** | 已实现 |
-| POST | `/sessions/:id/branch` | `{ atEventId, sessionFormatVersion? }`：日志 seq 与其格式版本；迁移检查见下文。fork 后复制公开 selection；若来源 import claim 已在更早 terminal 结束，则复制不含正文的 pending lineage；不写 timeline、不代发。复制失败显式返回 502 `PLAY_BRANCH_COPY_FAILED`；开放 turn → 409 | 已实现 |
+| POST | `/sessions/:id/branch` | `{ atEventId, sessionFormatVersion? }`：日志 seq 与其格式版本；迁移检查见下文。fork 后通过公开 `sessionController.resolveAgent()` / `agent.inbox.clear()` 清空子会话的 queued/steering 输入，再复制公开 selection；若来源 import claim 已在更早 terminal 结束，则复制不含正文的 pending lineage；不写 timeline、不代发。队列清理或校验失败返回 502 `PLAY_BRANCH_INPUT_RESET_FAILED`，不继续复制上下文；复制失败显式返回 502 `PLAY_BRANCH_COPY_FAILED`；开放 turn → 409 | 已实现 |
 | POST | `/sessions/:id/user-message` | `{ text }` 作为下一条用户正文，`session.prompt` `queue` | 已实现 |
 | GET | `/sessions/:id/messages` | `deriveMessages()` + `seq` + `incompleteTurn` + 每条消息的 `origin`；顶层可附带 `sessionFormatVersion` / `migratedFromV2`。持续读取到 `hasMore: false`，不设插件页数上限；Host 游标空页、非法 seq 或不前进时返回 502 `PLAY_HISTORY_CURSOR_STALLED` | 已实现 |
 | GET | `/sessions/:id/coordinates` | 只读查询当前逻辑会话的格式版本与迁移标记；无消息正文。[字段与调用示例](#session-coordinates) | 已实现 |

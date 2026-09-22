@@ -2,7 +2,7 @@
 
 [中文](ARCHITECTURE.md)
 
-The current contract targets Tavern **2.3.1** and DSH `0.1.5-rc.1`.
+The current contract targets this repository's source (version in [package.json](../package.json)) and DSH `0.1.5-rc.1`.
 The install identity is `pmp-dsh-tavern`. HTTP mounts at `/pmp-dsh-tavern/api`;
 resources use `/v1`, the play-surface contract uses `/v2`, and assembly audit uses `/v3`.
 This page records the current architecture and release-review gates.
