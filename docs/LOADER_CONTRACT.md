@@ -2,10 +2,10 @@
 
 [English](LOADER_CONTRACT_en.md)
 
-当前合同面向 Tavern **2.3.0**与 DSH `0.1.5-rc.1`，覆盖 RP 会话叠加
+当前合同面向 Tavern **2.3.0**与 DSH `0.1.7-alpha.1`，覆盖 RP 会话叠加
 （`selection.rp` + `rp:policy`）、delegated subagent 的父选择快照、具名官方 sections 与
-schema 4 Trace 引用。DSH V3 以 `system/message` 作为系统正文权威，`request/header`
-保留 config/tools；坐标规则见 [迁移合同](DSH_0.1.5_MIGRATION.md)。
+schema 4 Trace 引用。DSH V4 以 `system/message` 作为系统正文权威，`request/header`
+保留 config/tools；坐标规则见 [迁移合同](DSH_0.1.7_MIGRATION.md)。
 
 ## 目标与所有权
 
@@ -23,6 +23,8 @@ SessionSelectionStore ─────────────────┘
 根插件先以 order 10 注册逻辑 profile，再在同一位置展开成 `pmp-dsh-tavern:part:*` 段落；导入上下文保留 `pmp-dsh-tavern:profile` 名称，可选 `rp:policy` 仍为 order 45。preset 的 `replace` 保留这些 Tavern 贡献，包括角色、世界书与 RP policy。
 
 ## Session policy
+
+当前只支持 DSH 0.1.7-alpha.1 运行时。Host 等待串行 `agent/created` listener：先冻结或恢复资源选择，从公开 own events 重建 pending input，再初始化 RP 及只读沙箱，之后才允许 Agent 处理请求。初始化失败向注册过程传播，不降为 warning；fork、resume 与委派 agent 使用同一初始化边界。
 
 持久文件为插件 data 目录下的 `session-selections.json`：
 
@@ -182,17 +184,23 @@ loader Host 层的唯一 `PendingInputProjection` 从公开 `agent/inbox/spliced
 - system assembly 扫描持久历史与本步骤 claimed batch，因此单 step 会话的当前输入可在首个请求命中。实现不采用过晚的 `agent/pre-step`，也不读取私有 Inbox。
 - Trace 必须描述实际冻结的 assembly。不能在 `agent/pre-step` 或 `request/header` 后拿当前输入重跑 matcher，再把该结果标成已进入本轮 system；因为没有 same-step reassembly seam，claimed batch 必须经 `agent/inbox/spliced` 投影在首次 assembly 前进入 matcher。
 
+## preset 参数准入与降级
+
+preset 采样字段按作者设置保存。Host 在 `agent/request` 合并受支持的 preset 覆盖，并使用公开 `llm.resolveCallConfig` 预检。不支持的 preset reasoning effort 会被省略，交给 adapter 默认，不猜测其他 effort 名称。
+
+明确的 invalid/unsupported 参数拒绝后，`agent/request-error` 仅在尚无输出且未取消时请求原生 DSH 重试。只省略 `temperature`、`maxTokens`、`reasoningEffort`、`stop` 中生效的 preset 覆盖，每字段至多一次，运行期至多四次重试。其他插件的参数及无关的认证、额度、网络错误不进入此降级。不会修改已准备请求，也不重复调用其 middleware continuation。Trace 记录请求/生效参数映射与每次省略；生效值取自 DSH 默认处理后的实际 `llm/stream` 边界。
+
 ## Audit boundary
 
 `TavernProfileLoader.compile()` 返回：
 
 - `systemText`：loader 提议并展开为具名官方 system sections 的 Tavern profile；
-- `callConfig`：真正经 `agent/request` 提议的支持字段；
+- `callConfig`：装配时提议的 preset 字段；最终请求可经参数准入/降级调整，以官方 header 和 Trace effective 值为准；
 - `resources`：本次解析到的 preset、character、user 与 world-book 摘要；
 - `diagnostics`：缺资源及位置降级；
 - `audit`：session selection、资源、激活 lore ID 和 SHA-256 fingerprint。
 
-在 DSH V3 会话中，官方 `system/message` 与 context `user/message` 是提示词正文权威，`request/header` 只保存最终 tools 与 call config；V0–V2 兼容读取仅在 `request/header.system` 与全文 hash 精确匹配时建立旧引用。loader audit 用于 UI/API 解释“为何得到这个输入”，不能替代这些 DSH 官方事件，也不新增私有 session event。
+在 DSH V4 会话中，官方 `system/message` 与 context `user/message` 是提示词正文权威，`request/header` 只保存最终 tools 与 call config；V4 producer source 中，system message 使用 `system-prompt`，context 使用带 `form: "snapshot"` 的 `runtime-context`。历史读取器保留对旧引用和已发布 plugin source wrapper 的识别，这不代表支持旧 Host。显式离线升级对两代日志验证 V3 正文/错误引用；V3 之前的 `request-header-system` Trace 引用拒绝升级到 V4，详见迁移合同。loader audit 用于 UI/API 解释“为何得到这个输入”，不能替代这些 DSH 官方事件，也不新增私有 session event。
 
 ## Adapter integration invariants
 

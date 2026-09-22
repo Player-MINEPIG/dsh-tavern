@@ -2,11 +2,11 @@
 
 [中文](LOADER_CONTRACT.md)
 
-The current contract targets Tavern **2.3.0** and DSH `0.1.5-rc.1`. It covers
+The current contract targets Tavern **2.3.0** and DSH `0.1.7-alpha.1`. It covers
 the RP session overlay (`selection.rp` + `rp:policy`), delegated subagents freezing their
-parent selection, named official sections, and schema 4 Trace references. DSH V3 uses
+parent selection, named official sections, and schema 4 Trace references. DSH V4 uses
 `system/message` as the system-body authority while `request/header` retains config/tools;
-see the [migration contract](DSH_0.1.5_MIGRATION_en.md).
+see the [migration contract](DSH_0.1.7_MIGRATION_en.md).
 
 ## Goals and ownership
 
@@ -24,6 +24,8 @@ SessionSelectionStore ─────────────────┘
 The root registers its logical profile at order 10, then expands it into `pmp-dsh-tavern:part:*` sections at the same array position. Import context retains `pmp-dsh-tavern:profile`; optional `rp:policy` remains at order 45. Preset `replace` keeps these Tavern contributions, including character/lore text and RP policy.
 
 ## Session policy
+
+The supported runtime is DSH 0.1.7-alpha.1 only. The awaited serial `agent/created` listener freezes or restores selection, reconstructs pending input from public own events, then initializes RP and its read-only sandbox before the Agent is exposed for requests. Initialization failure propagates to registration; it is not downgraded to a warning. Forks, resumes, and delegated agents use the same initialization boundary.
 
 The durable file is `session-selections.json` under the plugin data directory:
 
@@ -183,17 +185,23 @@ Each character field, user description, and lore position is consumed at most on
 - System assembly scans durable history plus this step's claimed batch, so the current input of a single-step session can hit on the first request. The implementation does not use a too-late `agent/pre-step` and does not read a private Inbox.
 - Trace must describe the actually frozen assembly. It must not rerun the matcher on current input after `agent/pre-step` or `request/header` and label that result as having entered this turn's system. Because there is no same-step reassembly seam, the claimed batch must enter the matcher via the `agent/inbox/spliced` projection before the first assembly.
 
+## Preset parameter admission and fallback
+
+Preset sampling remains stored as authored. At `agent/request`, the Host merges supported preset overrides and uses public `llm.resolveCallConfig` for preflight. Unsupported preset reasoning effort is omitted so the adapter can supply its default; no alternative effort name is guessed.
+
+After an explicit invalid/unsupported parameter rejection, `agent/request-error` may request a native DSH retry only before any output and while not aborted. It omits only an active preset override among `temperature`, `maxTokens`, `reasoningEffort`, and `stop`, each at most once, with at most four runtime retries. Other plugins' parameters and unrelated authentication, quota, or network errors are not fallback candidates. The prepared request is not mutated and its middleware continuation is not replayed. Trace records requested/effective parameter maps and each omission; effective values come from the actual `llm/stream` boundary after DSH defaults.
+
 ## Audit boundary
 
 `TavernProfileLoader.compile()` returns:
 
 - `systemText`: the Tavern profile proposed by the loader and expanded into named official system sections;
-- `callConfig`: supported fields actually proposed through `agent/request`;
+- `callConfig`: preset fields proposed by assembly; admission/fallback may adjust the final request, whose authority is the official header and observed Trace effective values;
 - `resources`: summaries of preset, character, user, and world book resolved this run;
 - `diagnostics`: missing resources and placement degradation;
 - `audit`: session selection, resources, activated lore IDs, and SHA-256 fingerprint.
 
-For DSH V3 sessions, official `system/message` and context `user/message` are authoritative for prompt bodies, while `request/header` stores final tools and call config. V0–V2 compatibility reading establishes an older `request/header.system` reference only after an exact full-body hash match. Loader audit helps UI/API explain why this input was produced. It replaces none of those official DSH events and adds no private session event.
+For DSH V4 sessions, official `system/message` and context `user/message` are authoritative for prompt bodies, while `request/header` stores final tools and call config. V4 producer sources use `system-prompt` for system messages and `runtime-context` with `form: "snapshot"` for context messages. Retained historical readers understand older references and the released plugin source wrapper; that does not enable an older Host. The explicit offline upgrade verifies V3 body/error references against both generations. Pre-V3 `request-header-system` Trace references refuse V4 upgrade; see the migration contract. Loader audit helps UI/API explain why this input was produced. It replaces none of those official DSH events and adds no private session event.
 
 ## Adapter integration invariants
 

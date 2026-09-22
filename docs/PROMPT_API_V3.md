@@ -1,6 +1,6 @@
 # 提示词装配 Trace 与 v3 元 API
 
-合同版本：Tavern **2.3.0**，目标 DSH **0.1.5-rc.1**。
+合同版本：Tavern **2.3.0**，目标 DSH **0.1.7-alpha.1**。
 [English](PROMPT_API_V3_en.md) · [API 总览与范围核对](API.md#api-scope) · [开发验证](TESTING.md)
 
 ## 定位和兼容
@@ -11,7 +11,7 @@ DSH 官方 `system-prompt/assemble` 观察、调整和贡献段落，通过 `llm
 
 `/sessions/:id/sources` 不属于 v3 合同，GET 返回 404。当前资源、绑定和配置通过 v1
 读取；历史 `sections[].sources` 只描述当时的段落级来源关系。正式发布的 v1/v2 路由保持兼容。
-API v3、Tavern 2.3.0 与 DSH 日志格式 V3 是三个独立版本号。
+API v3、Tavern 2.3.0 与 DSH 日志格式 V4 是三个独立版本号。
 
 ## 消费方读取路径与兼容边界
 
@@ -109,6 +109,7 @@ const detail = latest
 | `selection / audit` | 当次绑定与 v1 兼容的资源、世界书决策摘要；不随当前资源修改更新 |
 | `sessionRef` | session 身份、格式版本、创建时间与读取截点，用于约束冷读取 |
 | `systemMessageRefs` | LLM 层系统消息的官方事件引用；不持久化 `systemMessages` 副本 |
+| `parameters` | 可选 `{requested,effective,fallbacks,attempt}` preset 参数准入 metadata；旧记录可缺省 |
 | `delivery` | provider/model、工具名、系统 hash、日志版本/截点与核对结果 |
 | `delivery.assemblyVerified` | 候选装配全文唯一匹配一个完整系统消息时才为 true |
 | `delivery.historyVerified` | `assemblyVerified` 为 true，且匹配的系统消息建立了可读取的官方历史引用时才为 true |
@@ -125,6 +126,12 @@ const detail = latest
 索引中的新记录通常保留落盘状态 `contentStatus: "reference-only"`；schema 4 详情读取后，
 正文恢复状态变为 `available`、`partially-available` 或 `reference-unavailable`。
 `assembly-unavailable` 与 `omitted-size-limit` 不会被详情读取覆盖。
+
+### preset 参数诊断
+
+`parameters.requested` 记录为请求提议的 preset 覆盖，`parameters.effective` 记录 DSH/adapter 默认处理后在实际 `llm/stream` 边界观察到的值；到达该边界前失败的请求不能证明已经生效交付。`parameters.attempt` 为参数策略尝试编号，与 Trace attempt 及官方 stream 身份分别解释。
+
+`parameters.fallbacks` 的每项包含 `parameter`、`stage`（`preflight` 或 `provider`）、`reason: "parameter-rejected"`、`code` 以及可选 `status`。它们是有界 metadata，不是 provider 响应正文。不支持的 preset reasoning effort 在预检时省略并交给 adapter 默认。符合条件的明确 provider 参数拒绝可在输出前省略生效 preset 覆盖，每字段至多一次、运行期至多四次重试。取消、任何已输出内容及无关错误不触发 Tavern 重试。原 preset 不变；旧记录缺少诊断时不从当前配置补造。
 
 ### 失败详情
 
@@ -145,9 +152,9 @@ RP 前端和 v2 `/messages` 继续只投影消息，不添加失败占位。需�
 
 采集器只在当前公共模型 surface 上建立可验证引用：
 
-- DSH 日志 V3 的 system section 指向对应 `system/message`，并记录 UTF-16 range；
-- 旧格式仅在 `request/header.system` 与实际系统正文完全一致时建立引用；
-- context section 指向 DSH system-prompt 生成的官方 `user/message` snapshot 及其具名 source section；
+- DSH 日志 V4 的 system section 指向对应 `system/message`，并记录 UTF-16 range；
+- 保留的旧格式引用可能指向 `request/header.system`；当前支持的 Host 新请求使用 V4；
+- context section 指向带 `source.kind: "runtime-context"`、`form: "snapshot"` 的官方 `user/message` snapshot 及其具名 source section；历史 V3 plugin wrapper 仍可识别；
 - 每条引用绑定 event seq/type、正文 hash 与固定 log cut；message 型引用还绑定 message ID
   和内容 hash，段落引用再绑定 range 或具名 source section。
 
@@ -169,6 +176,12 @@ Session 缺失、截点被清理、身份/格式/hash/range 不匹配或读取�
 `reference-unavailable`、`partially-available` 及具体 `referenceError` 表示；不会重跑装配、
 读取当前卡片补造、或退回插件保存的另一份全文。`assembly-unavailable` 与
 `omitted-size-limit` 也保持显式。DSH durable history 是正文权威，Trace 只是可淘汰的索引和解释层。
+
+## 历史引用的单向升级
+
+[离线升级](DSH_0.1.7_MIGRATION.md) 先验证官方 source/target 迁移，再改写正文/失败事件坐标、log cut、delivery 版本与 audit 坐标。V3→V4 引用必须在两代日志中解析出相同正文/错误内容；同时校验 Session 身份、hash 与记录内部格式标记的一致性。替换任何插件文件之前保留 `.pre-v4-coordinates` 备份，重复运行跳过已完成的 V4 记录。
+
+V3 之前的 `request-header-system` 正文引用明确不在此升级能力内，会在插件发布前拒绝。读取器不猜测替代 system-message 引用，不在 GET 中改写，也不从当前资源重建历史正文。因此 Host 升级后，未转换引用可能继续明确不可用。schema 3 已存快照正文仍是历史副本，不是重新恢复出的证据。不提供回滚工具。
 
 ## 装配与来源语义
 
@@ -217,7 +230,7 @@ Loader 展开 `{{char}}` 时，空或全空白 nickname 回退到角色 name；�
 metadata 和官方引用，不保存新的 section/context/system-message/source 正文副本。
 
 兼容读取将 `tavern-traces.json`（v1 元数据）与 `tavern-assemblies.json`（schema 3 正文快照）
-只读保留，不迁移、不改写，也不会按新容量自动缩减。旧 v1 兼容视图仍保留每 session 最多
+在普通 Host 使用中只读保留，不按新容量自动缩减。显式离线坐标升级可在保留升级前备份后改写其中已验证的 audit 坐标，已有快照正文不变。旧 v1 兼容视图仍保留每 session 最多
 128 条的既有列表边界；所有新采集的实际 retention 由 schema 4 store 控制。旧 v1 记录继续以
 `legacy-metadata-only` 出现在 v3；旧 schema 3 详情仍可读取其原来保存的正文。兼容读取不表示
 新记录继续复制正文，也不会用旧全文为新记录兜底。

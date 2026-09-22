@@ -1,6 +1,6 @@
 # Prompt assembly Trace and primitive API v3
 
-Contract version: Tavern **2.3.0**, targeting DSH **0.1.5-rc.1**.
+Contract version: Tavern **2.3.0**, targeting DSH **0.1.7-alpha.1**.
 [中文](PROMPT_API_V3.md) · [API index and scope audit](API_en.md#api-scope) · [Verification](TESTING_en.md)
 
 ## Purpose and compatibility
@@ -13,7 +13,7 @@ no composer registry, exclusive owner, remote callback, or current-resource aggr
 `/sessions/:id/sources` is not part of the v3 contract and returns 404. Current
 resources, bindings, and configuration remain in v1. Historical `sections[].sources`
 describes section-level relationships at capture time. Released v1/v2 routes remain
-compatible. API v3, Tavern 2.3.0, and DSH log format V3 are separate version numbers.
+compatible. API v3, Tavern 2.3.0, and DSH log format V4 are separate version numbers.
 
 ## Consumer read paths and compatibility boundaries
 
@@ -121,6 +121,7 @@ successful remote model response.
 | `selection / audit` | captured binding and v1-compatible resource/lore summary; later edits do not update it |
 | `sessionRef` | Session identity, format version, creation time, and log cut used for cold-read validation |
 | `systemMessageRefs` | official event references; no persisted `systemMessages` copy |
+| `parameters` | Optional `{requested,effective,fallbacks,attempt}` metadata for preset parameter admission; older records may omit it |
 | `delivery` | provider/model, tool names, system hashes, log version/cut, and verification result |
 | `delivery.assemblyVerified` | true only when the candidate assembly uniquely matched one complete system message |
 | `delivery.historyVerified` | true only when `assemblyVerified` is true and an official-history reference was established for the matched system message |
@@ -138,6 +139,12 @@ New records in the index normally retain persisted `contentStatus: "reference-on
 schema 4 detail read, body recovery reports `available`, `partially-available`, or
 `reference-unavailable`. Detail reads do not replace `assembly-unavailable` or
 `omitted-size-limit`.
+
+### Preset parameter diagnostics
+
+`parameters.requested` records the preset overrides proposed for the request. `parameters.effective` records values observed at the actual `llm/stream` boundary after DSH/adapter defaults; a request that fails before that boundary does not prove effective delivery. `parameters.attempt` identifies the parameter-policy attempt, separately from the Trace attempt and official stream identity.
+
+Each `parameters.fallbacks` entry contains `parameter`, `stage` (`preflight` or `provider`), `reason: "parameter-rejected"`, `code`, and optional `status`. These are bounded metadata, not provider response bodies. Unsupported preset reasoning effort is omitted during preflight for the adapter default. Eligible explicit provider parameter rejection before output may omit an active preset override once per field, at most four runtime retries. Cancellation, any output, and unrelated errors do not trigger Tavern retry. The stored preset is unchanged; missing diagnostics on older records are not reconstructed from current configuration.
 
 ### Failure details
 
@@ -165,9 +172,9 @@ create assistant history.
 The recorder creates references only when they can be verified against the current public
 model surface:
 
-- log V3 system sections reference their `system/message` and a UTF-16 range;
-- older formats reference `request/header.system` only on an exact full-text match;
-- context sections reference the official system-prompt `user/message` snapshot and its named source section;
+- log V4 system sections reference their `system/message` and a UTF-16 range;
+- retained older-format references may identify `request/header.system`; new supported Host requests use V4;
+- context sections reference the official `user/message` snapshot with `source.kind: "runtime-context"`, `form: "snapshot"`, and its named source section; historical V3 plugin wrappers remain recognizable;
 - every reference binds event seq/type, text hash, and a fixed log cut; message references also
   bind message ID and content hash, while section references bind a range or named source section.
 
@@ -194,6 +201,12 @@ reported through `reference-unavailable`, `partially-available`, and a specific
 `referenceError`. There is no reassembly, current-resource reconstruction, or plugin-owned
 full-text fallback. `assembly-unavailable` and `omitted-size-limit` remain explicit. DSH
 durable history is the body authority; Trace is an evictable index and explanation layer.
+
+## One-way historical reference upgrade
+
+The [offline upgrade](DSH_0.1.7_MIGRATION_en.md) verifies the official source/target migration before changing body/failure event coordinates, log cuts, delivery versions, and audit coordinates. V3→V4 references must resolve with the same body/error content on both sides. The tool also checks Session identity, hashes, and consistent record format markers. It retains `.pre-v4-coordinates` backups before replacing any plugin file and skips completed V4 records on rerun.
+
+Pre-V3 `request-header-system` body references are explicitly unsupported by this upgrade and cause refusal before plugin publication. The reader does not guess a replacement system-message reference, rewrite on GET, or reconstruct historical text from current resources. Unconverted references may therefore remain explicitly unavailable after Host upgrade. Legacy snapshot bodies already stored in schema 3 remain historical copies, not newly reconstructed evidence. No rollback tool is provided.
 
 ## Assembly and provenance semantics
 
@@ -249,8 +262,8 @@ context is used to expand imported context text.
 section, context, system-message, or source-text copies.
 
 Compatibility readers keep `tavern-traces.json` v1 metadata and `tavern-assemblies.json` schema 3
-body snapshots read-only. They are neither migrated, rewritten, nor automatically reduced to
-the new limits. The legacy v1 view retains its existing maximum of 128 records per Session;
+body snapshots read-only during normal Host use; they are not automatically reduced to
+the new limits. The explicit offline coordinate upgrade may rewrite their verified audit coordinates after retaining pre-upgrade backups; existing snapshot bodies remain unchanged. The legacy v1 view retains its existing maximum of 128 records per Session;
 actual retention for all new captures is controlled by the schema 4 store. Old v1 records
 appear as `legacy-metadata-only`; old schema 3 details can still expose bodies that file already stored.
 Compatibility reads do not make new records copy bodies and never provide a full-text fallback
