@@ -25,8 +25,19 @@ export function rejectedPresetParameters(failure, supplied) {
   if (!PARAMETER_CODES.has(code) && status !== 400 && status !== 422) return []
   const message = typeof failure?.message === 'string' ? failure.message.slice(0, 8192) : ''
   if (code === 'UNSUPPORTED_REASONING_EFFORT') return supplied.reasoningEffort === undefined ? [] : ['reasoningEffort']
-  if (!REJECTION.test(message)) return []
-  return PRESET_PARAMETER_FIELDS.filter(key => supplied[key] !== undefined && ALIASES[key].test(message))
+  if (!REJECTION.test(message) || /(?:invalid|unknown|undefined) (?:tool|function|message|content)|tool (?:call|name)|message content|function [\"']/i.test(message)) return []
+  return PRESET_PARAMETER_FIELDS.filter(key => {
+    if (supplied[key] === undefined) return false
+    const match = ALIASES[key].exec(message)
+    if (!match) return false
+    const before = message.slice(Math.max(0, match.index - 60), match.index)
+    const after = message.slice(match.index + match[0].length, match.index + match[0].length + 120)
+    // Require a direct parameter subject or an explicit parameter/argument label.
+    // A rejected tool/message that merely quotes the field is not recoverable.
+    return /^[\"'`\s:=-]*(?:(?:is|are|was)\s+)?(?:not supported|unsupported|does not support|not allowed|not permitted|invalid|out of range|must be|must not|cannot|only)/i.test(after)
+      || /(?:unsupported|invalid|unknown|unrecognized|not supported)\s+(?:parameter|argument|field|option|value)\s*[:=]?\s*[\"'`]?$/i.test(before)
+      || /(?:parameter|argument|field|option)\s*[\"'`]?$/i.test(before) && REJECTION.test(after)
+  })
 }
 
 /** Recovery state is request-series-local and never changes persistent presets. */
@@ -44,16 +55,20 @@ export class PresetParameterFallback {
     }
     state.outputStarted = false
     state.attempts++
+    state.observedEffective = undefined
     const config = { ...base, ...requested }
     for (const key of state.omitted) delete config[key]
     // Public validation runs before DSH binds and logs its one-shot prepared
     // call. Returning the proposal preserves DSH's adapter-default provenance.
-    if (typeof llm?.resolveCallConfig === 'function') {
+    if (Object.keys(requested).length > 0 && typeof llm?.resolveCallConfig === 'function') {
       for (;;) {
         signal?.throwIfAborted()
         try { await llm.resolveCallConfig(config, signal); break }
         catch (error) {
           if (signal?.aborted) throw error
+          // DSH explicitly permits routes implemented by public llm/stream
+          // middleware without a registered adapter; preserve that path.
+          if (error?.code === 'NO_ADAPTER') break
           const fields = rejectedPresetParameters(error, config).filter(key => Object.hasOwn(requested, key) && !state.omitted.has(key))
           if (fields.length === 0) throw error
           this.omit(state, fields, 'preflight', error)
@@ -97,8 +112,9 @@ export class PresetParameterFallback {
   snapshot(agent, actual) {
     const state = this.states.get(agent)
     if (!state) return null
+    if (actual) state.observedEffective = presetParameters(actual)
     return { requested: structuredClone(state.requested),
-      effective: presetParameters(actual ?? state.effective),
+      effective: presetParameters(actual ?? state.observedEffective ?? state.effective),
       fallbacks: structuredClone(state.fallbacks), attempt: state.attempts }
   }
 

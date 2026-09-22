@@ -275,6 +275,12 @@ export function TraceRecordContent({ record }) {
       ? h('div', { className: 'dttrace-meta' }, uiMessage('trace.v3.greeting', { index: selection.character.greetingIndex })) : null,
     h('div', { className: 'dttrace-meta' }, uiMessage('trace.v3.sampling'), ' ', config === undefined ? unavailable()
       : Object.keys(config).length ? rawText(Object.entries(config).map(([key, value]) => `${key}: ${JSON.stringify(value)}`).join(' · ')) : uiMessage('trace.v3.noSampling')),
+    record.parameters ? h('details', { className: 'dttrace-disclosure' },
+      h('summary', null, uiMessage('trace.parameters.title')),
+      h('div', { className: 'dttrace-disclosure-body' },
+        ...['requested', 'effective', 'fallbacks'].map(key => h('div', { key },
+          h('strong', null, uiMessage(`trace.parameters.${key}`)),
+          h('pre', null, rawText(JSON.stringify(record.parameters[key], null, 2))))))) : null,
     contentNotice
       ? h('p', { className: 'dttrace-note' }, record.contentStatus === 'available' ? null : uiMessage('trace.v3.contentUnavailable'), ' ', contentNotice,
         referenceBacked && record.referenceError ? rawText(` · ${unwrapText(referenceReason(record.referenceError))}`) : null) : null,

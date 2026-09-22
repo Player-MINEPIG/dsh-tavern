@@ -13,8 +13,8 @@ const groups = [
     ],
   },
   {
-    name: 'DSH V3 coordinates and Trace compatibility',
-    files: ['test/session-coordinates.test.mjs', 'test/coordinate-migration-integration.test.mjs', 'test/tavern-trace.test.mjs'],
+    name: 'DSH V4 coordinates and Trace compatibility',
+    files: ['test/dsh017-host-migration.test.mjs', 'test/dsh017-client-sessions.test.mjs', 'test/dsh017-client-surface-navigation.test.mjs', 'test/preset-parameter-fallback.test.mjs', 'test/preset-fallback-host.test.mjs', 'test/resource-capabilities.test.mjs', 'test/session-coordinates.test.mjs', 'test/coordinate-migration-integration.test.mjs', 'test/tavern-trace.test.mjs'],
   },
   {
     name: 'P0 complete history and cursor guards',

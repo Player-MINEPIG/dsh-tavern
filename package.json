@@ -1,6 +1,6 @@
 {
   "name": "pmp-dsh-tavern",
-  "version": "2.3.2",
+  "version": "2.4.0",
   "description": "A SillyTavern compatibility plugin that keeps DSH authoritative over sessions and execution, with frontend and backend APIs for composing Tavern capabilities with native DSH features.",
   "type": "module",
   "main": "packages/tavern-loader/src/index.js",
@@ -33,8 +33,8 @@
     "docs/ARCHITECTURE.md",
     "docs/ARCHITECTURE_en.md",
     "CHANGELOG.md",
-    "docs/DSH_0.1.5_MIGRATION.md",
-    "docs/DSH_0.1.5_MIGRATION_en.md",
+    "docs/DSH_0.1.7_MIGRATION.md",
+    "docs/DSH_0.1.7_MIGRATION_en.md",
     "docs/DSH_MESSAGE_FLOW.md",
     "docs/DSH_MESSAGE_FLOW_en.md",
     "docs/FRONTEND_INTEGRATION_zh-CN.md",
@@ -89,14 +89,14 @@
     "node": ">=20"
   },
   "devDependencies": {
-    "@deepseek-ai/cordis": "4.0.2",
-    "@deepseek-ai/dsh-util-crypto": "0.1.2-rc.1",
+    "@deepseek-ai/cordis": "4.0.3",
+    "@deepseek-ai/dsh-util-crypto": "0.1.7-alpha.1",
     "esbuild": "^0.28.2",
     "react": "18.3.1"
   },
   "peerDependencies": {
-    "@deepseek-ai/cordis": "4.0.2",
-    "@deepseek-ai/dsh-util-crypto": "0.1.2-rc.1 || 0.1.5-rc.1"
+    "@deepseek-ai/cordis": "4.0.3",
+    "@deepseek-ai/dsh-util-crypto": "0.1.7-alpha.1"
   },
   "license": "MIT",
   "dependencies": {

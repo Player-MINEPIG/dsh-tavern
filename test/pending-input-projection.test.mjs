@@ -164,7 +164,7 @@ test('a single first agent step matches claimed input before profile assembly an
       entries: { one: { uid: 1, key: ['clocktower'], content: 'EARLY_LORE', order: 100, position: 0 } },
     }), { id: 'early-book' })
     store.sessionSelections.set(agent.id, { worldBookIds: ['early-book'] })
-    listeners.get('agent/session-start')({ agent })
+    listeners.get('agent/created')({ agent })
 
     const insertion = append(value, 'agent/inbox/spliced', {
       target: 'next-turn', start: 0, inserted: [message('current-input', 'visit the clocktower')],

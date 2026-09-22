@@ -62,6 +62,14 @@ export class AssemblyRecorder {
     this.store.put(record)
     this.track(record)
   }
+  parameters(sessionId, parameters) {
+    if (!parameters) return
+    const pending = this.pending.get(sessionId)
+    const record = pending ?? this.store.get(sessionId, this.active.get(sessionId)?.id)
+    if (!record) return
+    record.parameters = structuredClone(parameters)
+    this.store.put(record)
+  }
   request(options, session) {
     const record = this.pending.get(options.sessionId)
     if (!record) return null

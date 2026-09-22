@@ -75,3 +75,9 @@ test('unknown preflight errors propagate without consuming provider retries', as
   const recovery = new PresetParameterFallback(), agent = {}, failure = new Error('network unavailable')
   await assert.rejects(recovery.prepare(payload(agent), route, { temperature: 0.2 }, { resolveCallConfig() { throw failure } }), error => error === failure)
 })
+
+ test('unrelated tool and message failures mentioning parameter names never trigger fallback', () => {
+  for (const message of ["Invalid tool call: function 'stop' is not defined", "Invalid tool name: 'max tokens'", "Invalid message content: temperature is not supported"]) {
+    assert.deepEqual(rejectedPresetParameters({ code: 'INVALID_REQUEST', status: 400, message }, { stop: ['END'], maxTokens: 300, temperature: 0.4 }), [])
+  }
+})

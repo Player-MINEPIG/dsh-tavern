@@ -19,6 +19,7 @@ import {
   createUserAdapter,
   createUserApiHandler,
 } from '../../user/src/index.js'
+import { PresetParameterFallback } from './preset-parameter-fallback.js'
 import { PresetRuntime } from './preset-runtime.js'
 import { TavernProfileLoader } from './profile-loader.js'
 import { SessionSelectionStore } from './session-policy.js'
@@ -271,6 +272,7 @@ export function createResourceWorldBookBindingPolicy(
 }
 
 export function apply(ctx, config = {}) {
+  const parameterFallback = new PresetParameterFallback()
   const { path: storageDir } = prepareStorageDir({
     storageDir: config.storageDir,
     logger: ctx.logger,
@@ -490,21 +492,23 @@ export function apply(ctx, config = {}) {
   ctx.on('agent/request', async (payload, next) => {
     traceSafely('request boundary', () => assemblyRecorder.nextRequest(payload.agent?.id))
     const snapshot = runtime.assembledFor(payload.agent) ?? runtime.compile({ agent: payload.agent })
-    const config = {
-      ...await next(),
-      ...snapshot.callConfig,
-    }
+    const config = await parameterFallback.prepare(payload, await next(), snapshot.callConfig, ctx.get('llm'))
     let legacyRecord
     traceSafely('request capture', () => { legacyRecord = traceRecorder.begin({ ...payload, snapshot }) })
     traceSafely('assembly capture', () => assemblyRecorder.begin({ ...payload, snapshot, legacyRecord }))
+    traceSafely('parameter capture', () => assemblyRecorder.parameters(payload.agent?.id, parameterFallback.snapshot(payload.agent)))
     return config
   })
+
+  ctx.on('agent/assistant-stream', ({ agent, frame }) => parameterFallback.observeFrame(agent, frame))
 
   ctx.on('agent/error', payload => {
     traceSafely('assembly failure', () => assemblyRecorder.failure(payload))
   })
 
   ctx.on('llm/stream', async function* (options, next) {
+    const agent = ctx.get('agents')?.get?.(options.sessionId)
+    if (agent) traceSafely('effective parameters', () => assemblyRecorder.parameters(options.sessionId, parameterFallback.snapshot(agent, options)))
     traceSafely('LLM request capture', () => assemblyRecorder.request(options, ctx.get('agents')?.get?.(options.sessionId)?.session))
     yield* next()
   })
@@ -527,7 +531,9 @@ export function apply(ctx, config = {}) {
   })
 
   ctx.on('agent/request-error', async (payload, next) => {
-    const result = await next()
+    const recovered = parameterFallback.recover(payload)
+    if (recovered) traceSafely('parameter fallback', () => assemblyRecorder.parameters(payload.agent?.id, parameterFallback.snapshot(payload.agent)))
+    const result = recovered ? { kind: 'retry' } : await next()
     traceSafely('assembly error', () => assemblyRecorder.finish(payload.agent?.id, 'request-failed-before-observation'))
     if (result?.kind === 'retry') traceSafely('retry boundary', () => assemblyRecorder.nextRequest(payload.agent?.id))
     traceSafely('request-error alignment', () => traceRecorder.observeRequestError(payload.agent, payload.turn, payload.step))
