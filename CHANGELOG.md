@@ -6,6 +6,7 @@
 - Fall back from unsupported preset reasoning effort to the provider default. Withdraw explicitly rejected preset request parameters before output with bounded retries; preserve saved presets and record requested/effective parameters and fallback reasons in Trace.
 - Add user and template JSON import/export, independent template creation and structured editing. Imports create new identities without changing selections; template references remain explicit and missing resources are diagnosed. Protect unsaved template edits across shell navigation.
 - Verify old Session coordinates against official V4 migration output, including inserted interruption events and child catalogs. Upgrade timeline, import and Trace references with pre-upgrade backups; no old-Host compatibility or rollback tool.
+- Restore the close button to the top-right of Tavern sidebars by removing obsolete header spacing.
 - Validate reuse of resource panels and HTTP clients for a separate frontend without implementing a complete page. Update bilingual contracts and dependency diagrams.
 
 ## 2.3.2 — Branch pending-input fix
