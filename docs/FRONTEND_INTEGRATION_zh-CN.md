@@ -2,7 +2,7 @@
 
 [English](FRONTEND_INTEGRATION_en.md)
 
-当前合同面向 Tavern **2.3.0**与 DSH `0.1.5-rc.1`。HTTP 字段以
+当前客户端接入面向 DSH `0.1.7-alpha.1`。HTTP 字段以
 [API.md](API.md) 为准；本页说明交付方式、模式生命周期、产品动作组合和 v1/v2/v3 分工。
 
 ## 1. 先理解双模式兼容边界
@@ -17,9 +17,17 @@
 | --- | --- | --- | --- |
 | fork dsh-tavern | 是 | 深度修改内置魔丸、资源面板或 loader | 维护自己的完整插件包和上游合并 |
 | 独立 DSH 客户端插件 | 否 | 在同一 WebUI 中提供新 RP view、侧栏或 dock | 与 dsh-tavern 分开安装；依赖公开 mode service、DSH slots/store 和 HTTP v2 |
-| 独立 Web 客户端 | 否 | 自己拥有整个浏览器 UI | 只消费 HTTP v2；不能使用 DSH Cordis service、slots 或 `sessions.open` |
+| 独立 Web 客户端 | 否 | 自己拥有整个浏览器 UI | 消费 Tavern HTTP 合同；没有注入的 DSH Cordis service、slots 或 `uiWorkspace.openSession` |
 
 当前**不支持**导入一个配置文件就替换整个魔丸，也没有 frontend provider registry、动态 bundle loader 或“安装远程前端代码”接口。配置文件只能描述数据和选项，不能安全地表达任意 React 组件、slot 所有权与生命周期。需要自定义 WebUI 时，请发布独立 DSH 插件或独立客户端；不要把未实现的一键替换当作现有能力。
+
+### 独立前端的可行性
+
+源码核对表明，可以在保持 Tavern Host HTTP 合同不变的前提下实现独立 RP 前端。嵌入式 DSH 插件可以复用 mode service、公开 slots 和官方 Session/Chat/Conversation 订阅，再组合 Tavern v2 操作。独立 HTTP 客户端可通过 v2 创建会话、提交用户正文、读取持久消息、分支、查询 focus，以及更新受管 timeline/catalog 文件。资源编辑器和配置预览/应用还需依赖相应 v1 合同；历史提示词查询使用 v3。
+
+这说明现有接入构件可用，不代表已经能完整替代 DSH WebUI。[v2 路由实现](../packages/play/src/server.js)提供 chrome 模式 SSE，但没有 token 消息流、停止生成、审批或交互提问路由。独立客户端若需要这些控制，必须另行接入并验证目标 DSH 的公开 transport；普通 HTTP 客户端没有 `uiWorkspace` 或注入式 React hooks。上游 session-controller 包发布了 client 和 Remote 入口，但仅凭这些入口存在，不能推定独立连接、认证、重连或交互流程已经实现。只有产品能接受持久消息轮询的呈现方式时，轮询才足够。
+
+Tavern 不提供独立前端实现。完整替换需要自己的交互设计、transport/生命周期实现和浏览器验收；DSH 原生界面继续提供完整的会话 UI。
 
 ## 3. 浏览器端模式服务
 
@@ -58,9 +66,9 @@ export function apply(ctx) {
 
 - `sidebar.workspaces`：角色卡/周目投影；
 - `conversation.view`：独立 `rp` view，不注销原生 `chat`；
-- `conversation.input.dock`：空周目 greeting/import dock 与一次性默认 view adapter；
-- `ctx.sessions.list`：当前 session 的公开 snapshot/subscription；
-- `ctx.sessions.open(sessionId)`：完成持久写入和 focus 校验后的导航。
+- `conversation.input.dock`：按 session 隔离的空周目 greeting/import dock 与默认 view adapter；
+- `ctx.sessions.list`：目录 snapshot 与本地 `retainedBy` 计数；主会话是 `retainedBy.mainView > 0` 的记录，不再有 `current` 字段；
+- `ctx.uiWorkspace.openSession(sessionId)`：完成持久写入和 focus 校验后的导航；除声明包依赖外，还需注入 `uiWorkspace` service。`ctx.sessions.open` 已移除。
 
 第三方插件可以使用相同种类的公开 seam，但必须：
 
@@ -72,6 +80,18 @@ export function apply(ctx) {
 
 `pmpDshTavernChrome` 不保证你的 slot 一定胜出。slot 竞争、order、priority 和 owner props 仍由 DSH 的公开 slot 合同决定。
 
+### 同时保留多个会话
+
+Session 目录不是当前选中会话的 store。DSH 可以同时保留主会话和其他消费者使用的会话；出现在目录中本身不会保留客户端会话。只有根作用域的 launcher/侧栏选择才使用原生工作区浏览器相同的 `retainedBy.mainView` 投影。没有匹配记录就表示没有主会话，即使其他会话仍被保留。
+
+`conversation.view`、`conversation.session` 和 `conversation.input.dock` 都属于 session scope。它们的 `inject(sessionId, ...)` 回调与标准 `sessionId`/`useSession` props 指向当前渲染的会话，可能不同于主会话。异步分类、周目偏好、加载/错误状态、消息缓存和默认 view 完成记录都应按该身份隔离；释放、替换、退出模式或 dispose 后拒绝迟到结果。只有明确的 swipe 导航才可把发起会话的缓存画面作为过渡来源。
+
+Conversation view roster 仍是全局的。注册 RP tab 不代表每个渲染中的会话都属于 RP。必须按 session 解析绑定，并为确认不属于 RP 的会话保留原生 Chat；分类尚未完成或读取失败时，不能永久覆盖已有 view 偏好。`conversation.session` 的 Conversation store handle 会按 session 独立解析。只有 view 尚未选择时才设置默认值，保留用户明确选择的 Chat、Trace 或其他视图。注销 Tavern 自己的 entry 不会删除原生 entry 或持久历史。
+
+插件若需在现有渲染作用域之外使用会话，可通过公开的 `sessions.retain(target, { source, signal })` 引用或 `sessions.using(...)` 管理生命周期。引用拥有对应的客户端 generation；使用 binding 前等待 `ready`，完成或 dispose 时释放。`sessions.binding(id)` 只查询已经保留的 generation，不负责导航或取得生命周期所有权。不要为了导航额外保留 main-view 引用。
+
+这些合同已按 DSH `0.1.7-alpha.1` 源码核对：`@deepseek-ai/dsh-api-session-controller/client`（`ISessions`、`SessionReference`、`SessionListState`）、`@deepseek-ai/dsh-client-ui-workspace/client`（`openSession` 与原生工作区树选择）及 `@deepseek-ai/dsh-client-ui-slots` / `@deepseek-ai/dsh-client-ui-conversation/client`（session scope、inject 位置参数与 Conversation store）。Tavern 对应实现见[会话选择](../packages/client/src/session-selection.js)、[slot 占用](../packages/client/src/play/occupancy.js)和[默认 view](../packages/client/src/play/view-default.js)。
+
 RP 错误提示同时订阅 `useSession` 的 `promptError/lastAgentError/openError` 和 `useChat` 的最新 `timeline` 回合终态。后者与原生 `turn-error` 节点使用同一 `turn/end` 错误事实，且能排除没有 assistant 消息的新回合。不要扫描全部历史错误后永久挂起提示；新提交/运行期间隐藏旧回合失败，但不能掩盖当前 Session 错误。统一文案走 Tavern i18n，详细诊断留在原生对话视图。
 
 **DT → 诊断** 另行展示当前 RP 工作区问题：它与内置侧栏共享资源/文件读取，并在官方 Session、Workspace mirrors 均为 `ready` 后判断周目会话是否存在、属于当前工作区且未归档。可读的空 timeline 不代表 root session 可用；加载中的 mirror 也不代表会话丢失。问题摘要可以关闭，逐周目警告入口仍保留，解决后自动消失。控制器由客户端组合根持有，native/play 切换不重置它；`sessionStorage` 只保留有界的关闭身份，不保存问题正文或资源副本。
@@ -80,7 +100,7 @@ RP 错误提示同时订阅 `useSession` 的 `promptError/lastAgentError/openErr
 
 ## 5. HTTP v2 数据面
 
-DSH `0.1.5-rc.1` 的嵌入式客户端需分别读取：`useSession` 的生命周期、`useChat` 的 `legacy.nodes/partial`、`useConversation` 的交互状态。开场阶段用包根导出的 `conversationPhase(session, conversation)`；默认 view 使用 `conversation.session` 的 Conversation store，不是原生 Chat store。普通 HTTP 前端不使用这些浏览器 hook。Tavern UI 设置事件只刷新产品呈现，不能代替 Host 实时消息源。
+DSH `0.1.7-alpha.1` 的嵌入式客户端需分别读取：`useSession` 的生命周期、`useChat` 的 `legacy.nodes/partial`、`useConversation` 的交互状态。开场阶段用包根导出的 `conversationPhase(session, conversation)`；默认 view 使用 `conversation.session` 的 Conversation store，不是原生 Chat store。普通 HTTP 前端不使用这些浏览器 hook。Tavern UI 设置事件只刷新产品呈现，不能代替 Host 实时消息源。
 
 根路径：`/pmp-dsh-tavern/api/v2`。它面向任意 RP 前端，提供：
 
@@ -113,7 +133,7 @@ v2 不为每个按钮增加专用 endpoint。推荐组合：
 | 产品动作 | 组合 |
 | --- | --- |
 | 显示层改字 | CAS 修改 `displayOverride`；DSH 原文不变 |
-| 左右切已有回复 | CAS 修改 `adoptedVariantId` → GET focus → `sessions.open` |
+| 左右切已有回复 | CAS 修改 `adoptedVariantId` → GET focus → `uiWorkspace.openSession`（嵌入式）或客户端自己的导航（独立前端） |
 | 回复 swipe | 由当前输出向前找最近真实 user/steering → branch 到用户前 → user-message 原文 → 等 durable pair → CAS 添加/采用 variant 并移动 tree head → focus；不得重发 context |
 | 修改并重新生成 | 与 swipe 相同，只把新分支的 user-message 换成编辑后的文字；内置魔丸不提供此按钮 |
 | 周目分支 | branch 到 adopted assistant 末尾 → 验证子 session durable 区间 → 创建目录/timeline 副本 → 把副本末 adopted 指针重定向到子 session → catalog CAS → focus |
@@ -154,7 +174,8 @@ configuration preview 加资源读取。
 5. timeline 写入使用 revision/CAS；冲突不会静默覆盖别的标签页修改。
 6. 所有显示正则和 `displayOverride` 都不改变 AI 请求或 DSH 原文。
 7. 卸载第三方插件后内置魔丸恢复；卸载 dsh-tavern 后 DSH native 仍可查看会话。
-8. 包内没有本机路径、密钥、私有 fixture 或用户导入内容。
+8. 同时保留两个会话时，主会话切换不改变另一会话的绑定、缓存画面或明确 view 选择；未完成读取和释放/dispose 不会让表面重新出现。
+9. 包内没有本机路径、密钥、私有 fixture 或用户导入内容。
 
 ## 10. 参与共同开发
 

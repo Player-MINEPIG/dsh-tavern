@@ -2,7 +2,7 @@
 
 [中文](FRONTEND_INTEGRATION_zh-CN.md)
 
-The current contract targets Tavern **2.3.0** and DSH `0.1.5-rc.1`.
+The current client integration targets DSH `0.1.7-alpha.1`.
 HTTP fields follow [API_en.md](API_en.md). This page covers delivery, mode lifecycle,
 product-action composition, and v1/v2/v3 responsibilities.
 
@@ -18,9 +18,17 @@ The mode service publishes only `native|play`. It does not arbitrate slots. Seve
 | --- | --- | --- | --- |
 | Fork dsh-tavern | Yes | Deep changes to bundled Mowan, resource panels, or the loader | Maintain your own full plugin package and upstream merges |
 | Separate DSH client plugin | No | New RP view, sidebar, or dock in the same WebUI | Installed separately from dsh-tavern; depends on the public mode service, DSH slots/store, and HTTP v2 |
-| Standalone web client | No | You own the entire browser UI | Consume HTTP v2 only; no DSH Cordis service, slots, or `sessions.open` |
+| Standalone web client | No | You own the entire browser UI | Consume Tavern HTTP contracts; no injected DSH Cordis service, slots, or `uiWorkspace.openSession` |
 
 There is **no** support for replacing all of Mowan by importing one config file, and there is no frontend provider registry, dynamic bundle loader, or “install remote frontend code” API. A config file can describe data and options. It cannot safely express arbitrary React components, slot ownership, or lifecycle. For a custom WebUI, publish a separate DSH plugin or standalone client. Do not treat an unimplemented one-click replace as a current capability.
+
+### Independent frontend feasibility
+
+Source inspection supports a separate RP frontend without changing Tavern's Host HTTP contracts. An embedded DSH plugin can reuse the mode service, public slots, and the official Session/Chat/Conversation subscriptions while composing Tavern v2 operations. A standalone client can create sessions, submit user text, read durable messages, branch, query focus, and update managed timeline/catalog files through v2. Resource editors and configuration preview/application additionally require the matching v1 contract; historical prompt inspection uses v3.
+
+This establishes the available integration pieces, not a complete replacement for the DSH WebUI. The [v2 route implementation](../packages/play/src/server.js) provides chrome-mode SSE, but no token-message stream, stop-generation, approval, or interactive-question route. A standalone client that needs these controls must separately integrate and validate the target DSH public transport; `uiWorkspace` and the injected React hooks do not exist in an ordinary HTTP client. The upstream session-controller package publishes client and Remote entry points, but their existence alone does not establish a standalone connection, authentication, reconnect, or interaction implementation. Durable message polling is sufficient only for a client whose requirements accept that presentation model.
+
+Tavern does not provide a standalone frontend implementation. A complete replacement needs its own interaction design, transport/lifetime implementation, and browser acceptance. Native DSH remains the available complete session UI.
 
 ## 3. Browser mode service
 
@@ -59,9 +67,9 @@ Bundled Mowan uses these public DSH seams:
 
 - `sidebar.workspaces`: character-card / playthrough projection;
 - `conversation.view`: independent `rp` view; do not unregister native `chat`;
-- `conversation.input.dock`: empty-playthrough greeting/import dock and one-shot default-view adapter;
-- `ctx.sessions.list`: public snapshot/subscription for the current session;
-- `ctx.sessions.open(sessionId)`: navigation after durable writes and focus checks.
+- `conversation.input.dock`: session-scoped empty-playthrough greeting/import dock and default-view adapter;
+- `ctx.sessions.list`: catalog snapshots and local `retainedBy` counts; the main conversation is the row with `retainedBy.mainView > 0`; there is no `current` field;
+- `ctx.uiWorkspace.openSession(sessionId)`: navigation after durable writes and focus checks; inject the `uiWorkspace` service as well as its package dependency. `ctx.sessions.open` no longer exists.
 
 Third-party plugins may use the same kinds of public seams, but must:
 
@@ -73,6 +81,18 @@ Third-party plugins may use the same kinds of public seams, but must:
 
 `pmpDshTavernChrome` does not guarantee your slot wins. Slot contention, order, priority, and owner props stay under the DSH public slot contract.
 
+### Multiple retained conversations
+
+The session catalog is not a selected-session store. DSH can retain a main conversation and other consumers simultaneously; catalog membership does not retain a client session. Match the native workspace browser's `retainedBy.mainView` projection only for root-scoped launcher/sidebar selection. No matching row means no main conversation, even when other sessions remain retained.
+
+`conversation.view`, `conversation.session`, and `conversation.input.dock` have session scope. Their `inject(sessionId, ...)` callback and standard `sessionId`/`useSession` props address the rendered session, which may differ from the main conversation. Keep asynchronous classification, playthrough preference, loading/error state, cached messages, and default-view completion keyed by that identity. Reject late results after release, replacement, mode exit, or disposal. Only explicit swipe navigation may use the initiating session's cached frame as a transition source.
+
+The Conversation view roster remains global. Registering an RP tab does not establish that every rendered session is an RP session. Resolve its binding per session and keep native Chat available for confirmed non-RP sessions; pending or failed classification must not permanently overwrite an existing view preference. The Conversation store handle from `conversation.session` resolves independently per session. Set a default only while its view is unset; preserve explicit Chat, Trace, or other choices. Unregistering Tavern's entries leaves native entries and durable history intact.
+
+A plugin that needs a session outside an existing rendered scope can use the public `sessions.retain(target, { source, signal })` reference or `sessions.using(...)` lifetime. A reference owns its exact client generation; await `ready` before using the binding and release it on completion/disposal. `sessions.binding(id)` is only a lookup of an already retained generation, not navigation or lifetime acquisition. Do not keep a main-view reference alive merely to perform navigation.
+
+Source checks for this contract use DSH `0.1.7-alpha.1`: `@deepseek-ai/dsh-api-session-controller/client` (`ISessions`, `SessionReference`, `SessionListState`), `@deepseek-ai/dsh-client-ui-workspace/client` (`openSession` and native workspace-tree selection), and `@deepseek-ai/dsh-client-ui-slots` / `@deepseek-ai/dsh-client-ui-conversation/client` (session scope, positional inject parameters, and Conversation store). Tavern's implementation is in [session selection](../packages/client/src/session-selection.js), [slot occupancy](../packages/client/src/play/occupancy.js), and [default view](../packages/client/src/play/view-default.js).
+
 The RP error notice subscribes to `useSession`'s `promptError/lastAgentError/openError` and the latest turn boundary in `useChat`'s `timeline`. The latter uses the same `turn/end` error fact as native `turn-error` nodes while recognizing newer turns without assistant messages. Do not leave a permanent notice based on any historical error. Hide old terminal failures during submission/generation without masking current Session errors. Localize the generic copy through Tavern i18n and leave diagnostics in native Chat.
 
 **DT → Diagnostics** separately presents current RP workspace problems. It shares resource/file reads with the built-in sidebar and checks for existing, unarchived playthrough Sessions in the current workspace only after both official Session and Workspace mirrors reach `ready`. A readable empty timeline does not prove root-Session availability; a loading mirror does not prove loss. The summary is dismissible while per-playthrough warning buttons remain, and resolved issues disappear. The client composition root owns the controller across native/play switches; bounded `sessionStorage` entries retain only dismissal identities, not issue bodies or resource copies.
@@ -81,7 +101,7 @@ This panel composes existing interfaces and official state in the client; it add
 
 ## 5. HTTP v2 data plane
 
-Embedded clients on DSH `0.1.5-rc.1` read lifecycle from `useSession`, `legacy.nodes/partial` from `useChat`, and interaction state from `useConversation`. Derive opening phase with the package-root `conversationPhase(session, conversation)` export. Default-view selection uses the Conversation store on `conversation.session`, not the native Chat store. Standalone HTTP clients do not use these browser hooks. Tavern UI settings events refresh presentation only; they cannot replace the Host live-message source.
+Embedded clients on DSH `0.1.7-alpha.1` read lifecycle from `useSession`, `legacy.nodes/partial` from `useChat`, and interaction state from `useConversation`. Derive opening phase with the package-root `conversationPhase(session, conversation)` export. Default-view selection uses the Conversation store on `conversation.session`, not the native Chat store. Standalone HTTP clients do not use these browser hooks. Tavern UI settings events refresh presentation only; they cannot replace the Host live-message source.
 
 Root: `/pmp-dsh-tavern/api/v2`. It is for any RP frontend and provides:
 
@@ -114,7 +134,7 @@ v2 does not add a dedicated endpoint per button. Recommended compositions:
 | Product action | Composition |
 | --- | --- |
 | Edit display text | CAS-update `displayOverride`; DSH source stays unchanged |
-| Switch an existing reply left/right | CAS-update `adoptedVariantId` → GET focus → `sessions.open` |
+| Switch an existing reply left/right | CAS-update `adoptedVariantId` → GET focus → `uiWorkspace.openSession` (embedded) or the client’s own navigation (standalone) |
 | Reply swipe | From the current output, walk to the nearest real user/steering → branch before the user → user-message original text → wait for the durable pair → CAS add/adopt variant and move tree head → focus; never resend context |
 | Edit and regenerate | Same as swipe, but send the edited text as the new branch user-message; bundled Mowan has no button for this |
 | Playthrough branch | branch at the adopted assistant end → verify the child session durable range → create directory/timeline copy → redirect the copy's last adopted pointer to the child session → catalog CAS → focus |
@@ -157,7 +177,8 @@ configuration-only consumers can use preview plus resource reads instead.
 5. Timeline writes use revision/CAS. Conflicts do not silently overwrite another tab.
 6. Display regex and `displayOverride` never change the AI request or DSH source.
 7. Uninstalling the third-party plugin restores bundled Mowan. Uninstalling dsh-tavern still lets DSH native view sessions.
-8. The package contains no local paths, secrets, private fixtures, or user imports.
+8. With two retained conversations, switching the main selection does not change the other session’s binding, cached frame, or explicit view choice; pending reads and release/disposal cannot resurrect a surface.
+9. The package contains no local paths, secrets, private fixtures, or user imports.
 
 ## 10. Contributing
 
