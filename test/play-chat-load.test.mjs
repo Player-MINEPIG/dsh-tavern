@@ -165,7 +165,7 @@ test('RP chat retains the prior snapshot without current-session live data until
   assert.match(chatSource, /const liveSourceTurns = !current \? \[\] : projectLiveTurns/)
   assert.match(chatSource, /transitionBoundary === null \? frame\(loadedState, 'idle'\) : h\(TargetedSwipeTransition/)
   assert.match(chatSource, /hideUser: index === 0/)
-  assert.match(chatSource, /useState\(\(\) => cachedChatSnapshot\(playClient, playthrough\)\)/)
+  assert.match(chatSource, /useState\(\(\) => cachedChatSnapshot\(playClient, playthrough, sessionId\)\)/)
 })
 
 test('swipe transition boundary targets one reply and leaves its prefix static', () => {

@@ -61,6 +61,8 @@ import {
   PLUGIN_ID,
 } from '../../identity.js'
 
+import { mainSessionId, mainSessionBlank } from './session-selection.js'
+
 const h = createLocalizedElement(createElement)
 
 const css = `
@@ -679,8 +681,8 @@ function TavernShell({ useSessions, useWorkspaces, createCleanSession, createCon
   const statusGeneration = useRef(0)
   const rpAlertRef = useRef(null)
   const dismissedRpAlerts = useRef(new Set())
-  const sessionId = useSessions(state => state.current)
-  const sessionBlank = useSessions(state => state.current === undefined || state.current === null ? true : state.byId?.[state.current]?.blank === true)
+  const sessionId = useSessions(mainSessionId)
+  const sessionBlank = useSessions(mainSessionBlank)
   const workspaceId = useWorkspaces(state => workspaceTargetId(state, sessionId))
   const workspaceItems = useWorkspaces(state => state.items)
   const diagnosticSessions = useSessions(state => state.byId)
@@ -1304,7 +1306,7 @@ function installStyles() {
 }
 
 export const name = PLUGIN_ID
-export const inject = ['slots', 'layout', 'sessions', 'workspaces']
+export const inject = ['slots', 'layout', 'sessions', 'workspaces', 'uiWorkspace']
 export { PanelHeader }
 
 export function apply(ctx, { conversationPhase }) {
@@ -1369,7 +1371,7 @@ export function apply(ctx, { conversationPhase }) {
           targetSessionId,
           source: selectedSource,
         }),
-        openSession: id => ctx.sessions.open(id),
+        openSession: id => ctx.uiWorkspace.openSession(id),
         refresh: () => window.dispatchEvent(new Event(CLIENT_REFRESH_EVENT)),
       }),
       createConfiguredPlaythrough: ({ source }) => createConfiguredPlaythroughWorkflow({
@@ -1380,7 +1382,7 @@ export function apply(ctx, { conversationPhase }) {
           source: selectedSource,
         }),
         playthroughController,
-        openSession: id => ctx.sessions.open(id),
+        openSession: id => ctx.uiWorkspace.openSession(id),
         refresh: () => window.dispatchEvent(new Event(CLIENT_REFRESH_EVENT)),
       }),
     }),

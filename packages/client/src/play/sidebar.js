@@ -1,3 +1,4 @@
+import { mainSessionId } from '../session-selection.js'
 import {
   createElement,
   useEffect,
@@ -274,7 +275,7 @@ export function PlayWorkspaceBrowser({
   const { scale } = useClientUiSettings()
   const sessionIds = useSessions(state => state.ids)
   const sessions = useSessions(state => state.byId)
-  const currentId = useSessions(state => state.current ?? null)
+  const currentId = useSessions(mainSessionId)
   const workspaceItems = useWorkspaces(state => state.items)
   const archivedSessionIds = useWorkspaces(state => state.archivedSessionIds)
   const cache = useRef(null)

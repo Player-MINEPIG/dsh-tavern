@@ -17,3 +17,16 @@ export function consumeSwipeTransition(sessionId) {
   pending.delete(sessionId)
   return intent
 }
+
+// The navigation owner knows which rendered Session initiated the swipe.
+// Record that explicit source so another retained surface cannot seed it.
+export function setSwipeTransitionSource(sessionId, sourceSessionId) {
+  const intent = pending.get(sessionId)
+  if (intent !== undefined && typeof sourceSessionId === 'string' && sourceSessionId !== '') {
+    pending.set(sessionId, { ...intent, sourceSessionId })
+  }
+}
+
+export function peekSwipeTransition(sessionId) {
+  return pending.get(sessionId) ?? null
+}

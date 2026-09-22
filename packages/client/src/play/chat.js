@@ -39,7 +39,7 @@ import {
 } from './import.js'
 import { announceImportFailure } from '../import-failure.js'
 import { activeTimelineEntries } from '../../../play/src/timeline-tree.js'
-import { consumeSwipeTransition } from './swipe-transition.js'
+import { consumeSwipeTransition, peekSwipeTransition } from './swipe-transition.js'
 import { conversationDisplayStyle, useConversationDisplaySettings } from './display-settings.js'
 import { useClientUiSettings } from '../i18n/use-ui-settings.js'
 import { latestTurnFailed, sessionFailed, submissionInProgress } from './chat-failure.js'
@@ -380,21 +380,22 @@ export function ImportControls({
   )
 }
 
-function playthroughCacheKey(playthrough) {
-  return typeof playthrough?.path === 'string' ? playthrough.path : ''
+function playthroughCacheKey(playthrough, sessionId) {
+  return JSON.stringify([playthrough?.path ?? '', sessionId])
 }
 
-function cachedChatSnapshot(client, playthrough) {
-  return chatSnapshots.get(client)?.get(playthroughCacheKey(playthrough)) ?? null
+export function cachedChatSnapshot(client, playthrough, sessionId) {
+  const source = peekSwipeTransition(sessionId)?.sourceSessionId ?? sessionId
+  return chatSnapshots.get(client)?.get(playthroughCacheKey(playthrough, source)) ?? null
 }
 
-function rememberChatSnapshot(client, playthrough, snapshot) {
+export function rememberChatSnapshot(client, playthrough, snapshot) {
   let cache = chatSnapshots.get(client)
   if (cache === undefined) {
     cache = new Map()
     chatSnapshots.set(client, cache)
   }
-  const key = playthroughCacheKey(playthrough)
+  const key = playthroughCacheKey(playthrough, snapshot.sessionId)
   cache.delete(key)
   cache.set(key, snapshot)
   while (cache.size > MAX_CACHED_PLAYTHROUGHS) {
@@ -582,7 +583,7 @@ export function MowanChatView({ sessionId, useSession, useChat, playClient, play
   const submitting = useSession(submissionInProgress)
   const turnFailed = useChat(latestTurnFailed)
   const showHostFailure = hostFailed || (!submitting && turnFailed)
-  const [loadedState, setLoadedState] = useState(() => cachedChatSnapshot(playClient, playthrough))
+  const [loadedState, setLoadedState] = useState(() => cachedChatSnapshot(playClient, playthrough, sessionId))
   const loadedStateRef = useRef(loadedState)
   const transitionIntent = useRef({ sessionId: null, intent: null })
   const [transition, setTransition] = useState(null)

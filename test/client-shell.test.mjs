@@ -202,7 +202,7 @@ test('only the client composition root owns the Tavern shell overlay', () => {
   assert.match(root, /SessionTemplatePanel/)
   assert.match(root, /ctx\.uiWorkspace\.connectWorkspace/)
   assert.doesNotMatch(root, /ctx\.workspaces\.connectWorkspace/)
-  assert.match(root, /ctx\.sessions\.open/)
+  assert.match(root, /ctx\.uiWorkspace\.openSession/)
   assert.match(root, /session-configurations\/preview/)
   assert.match(root, /session-configurations\/apply/)
   assert.match(root, /surface === 'settings'/)

@@ -11,6 +11,12 @@ import {
   installPlaySlotOccupancy,
 } from '../packages/client/src/play/occupancy.js'
 
+function retainedSnapshot({ current, ...snapshot }) {
+  return { ...snapshot, byId: Object.fromEntries(Object.entries(snapshot.byId).map(([id, row]) => [id, {
+    ...row, retainedBy: id === current ? { mainView: 1 } : {},
+  }])) }
+}
+
 function nextTurn() {
   return new Promise(resolve => setImmediate(resolve))
 }
@@ -22,7 +28,7 @@ test('locale refresh updates the view roster without repeating the default-view 
   const registrations = [], cleanups = []
   const playthrough = { id: 'pt', path: 'pt/timeline.json', ext: { pmpDshTavern: { rootSessionId: 's' } } }
   const ctx = {
-    sessions: { list: { getSnapshot: () => ({ current: 's', byId: { s: { id: 's', cwd: '/rp' } } }) } },
+    sessions: { list: { getSnapshot: () => retainedSnapshot({ current: 's', byId: { s: { id: 's', cwd: '/rp' } } }) } },
     slots: {
       entries: () => [{ store: {} }],
       inject(_name, callback) { cleanups.push(callback()) },
@@ -43,7 +49,8 @@ test('locale refresh updates the view roster without repeating the default-view 
     occupancy.setMode('play')
     await nextTurn()
     const original = registrations.find(e => e.options.id === PLAY_VIEW_ID)
-    registrations.find(e => e.options.id === PLAY_DEFAULT_VIEW_ADAPTER_ID).options.inject().complete()
+    const adapter = registrations.find(e => e.options.id === PLAY_DEFAULT_VIEW_ADAPTER_ID).options.inject('s')
+    adapter.complete(adapter.getBinding())
     setClientUiSettings({ locale: 'en', scale: 1 }, { announce: false })
     window.dispatchEvent(new Event(CLIENT_UI_SETTINGS_EVENT))
     assert.equal(original.active, false)
@@ -99,7 +106,7 @@ test('Mowan adds the default RP view only while the current session belongs to a
     sessions: {
       open() {},
       list: {
-        getSnapshot() { return snapshot },
+        getSnapshot() { return retainedSnapshot(snapshot) },
         subscribe(callback) {
           notifySessions = callback
           return () => { notifySessions = () => {} }
@@ -133,14 +140,14 @@ test('Mowan adds the default RP view only while the current session belongs to a
   assert.notEqual(firstChat.options.id, 'chat')
   assert.equal(firstChat.options.order, PLAY_VIEW_ORDER)
   assert.equal(firstChat.options.priority, PLAY_SLOT_PRIORITY)
-  assert.equal(firstChat.options.inject().playthrough, playthrough)
+  assert.equal(firstChat.options.inject('root').getBinding().playthrough, playthrough)
   const firstAdapter = registrations.find(item => item.options.id === PLAY_DEFAULT_VIEW_ADAPTER_ID)
   assert.ok(firstAdapter)
   assert.equal(firstAdapter.active, true)
   assert.equal(firstAdapter.options.name, 'conversation.input.dock')
   assert.equal(firstAdapter.options.priority, PLAY_SLOT_PRIORITY)
   assert.equal(firstAdapter.options.store, nativeChatStore)
-  assert.equal(firstAdapter.options.inject().targetViewId, PLAY_VIEW_ID)
+  assert.equal(firstAdapter.options.inject('root').targetViewId, PLAY_VIEW_ID)
   assert.equal(registrations.some(item => item.options.name === 'conversation.view' && item.options.id === 'chat'), false)
 
   snapshot = {
@@ -155,8 +162,10 @@ test('Mowan adds the default RP view only while the current session belongs to a
   assert.equal(firstChat.active, true)
   assert.equal(registrations.filter(item => item.options.name === 'conversation.view').length, 1)
 
-  firstAdapter.options.inject().complete()
-  assert.equal(firstAdapter.active, false)
+  const adapter = firstAdapter.options.inject('root')
+  adapter.complete(adapter.getBinding())
+  assert.equal(firstAdapter.active, true)
+  assert.equal(adapter.shouldDefault(adapter.getBinding()), false)
   notifySessions()
   await nextTurn()
   assert.equal(registrations.filter(item => item.options.name === 'conversation.view').length, 1)
@@ -228,10 +237,10 @@ test('sidebar navigation keeps the selected playthrough when fork histories shar
     },
   }
   const ctx = {
+    uiWorkspace: { openSession(sessionId) { snapshot = { ...snapshot, current: sessionId } } },
     sessions: {
-      open(sessionId) { snapshot = { ...snapshot, current: sessionId } },
       list: {
-        getSnapshot() { return snapshot },
+        getSnapshot() { return retainedSnapshot(snapshot) },
         subscribe() { return () => {} },
       },
     },
@@ -252,7 +261,7 @@ test('sidebar navigation keeps the selected playthrough when fork histories shar
   sidebar.inject().openSession('shared', selected)
   await nextTurn()
   const chat = registrations.find(item => item.name === 'conversation.view')
-  assert.equal(chat.inject().playthrough.id, 'selected')
+  assert.equal(chat.inject('shared').getBinding().playthrough.id, 'selected')
 })
 
 test('Chat classification failures preserve the official view', async () => {
@@ -261,7 +270,7 @@ test('Chat classification failures preserve the official view', async () => {
     sessions: {
       open() {},
       list: {
-        getSnapshot() { return { current: 'root', byId: { root: { id: 'root', cwd: '/rp' } } } },
+        getSnapshot() { return retainedSnapshot({ current: 'root', byId: { root: { id: 'root', cwd: '/rp' } } }) },
         subscribe() { return () => {} },
       },
     },
