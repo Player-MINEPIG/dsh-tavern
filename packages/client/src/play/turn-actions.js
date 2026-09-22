@@ -10,6 +10,7 @@ import {
   uiMessage,
 } from '../i18n.js'
 import { createPlayNodeController } from './nodes.js'
+import { pendingSwipe } from './pending-swipe.js'
 import { queueSwipeTransition } from './swipe-transition.js'
 
 const h = createLocalizedElement(createElement)
@@ -64,6 +65,7 @@ export function PlayTurnActions({
   playClient,
   openSession,
   running,
+  readOnly = false,
   onChanged,
   onError,
   onSwipePending,
@@ -72,7 +74,11 @@ export function PlayTurnActions({
   installStyles()
   const [busy, setBusy] = useState(false)
   const [editor, setEditor] = useState(null)
-  const disabled = running || busy
+  const [generating, setGenerating] = useState(false)
+  const pending = pendingSwipe(playClient, playthrough)
+  const pathLocked = running || generating || (pending !== null && pending.error === null)
+  const displayDisabled = readOnly || busy
+  const disabled = pathLocked || displayDisabled
   const position = Math.max(0, turn.variants.findIndex(item => item.id === turn.variant.id))
   const displayedPosition = pendingVariant ? turn.variants.length : position
   const displayedVariantCount = pendingVariant ? turn.variants.length + 1 : turn.variants.length
@@ -81,8 +87,8 @@ export function PlayTurnActions({
   const hasNextVariant = position + 1 < turn.variants.length
   useEffect(() => setEditor(null), [turn.id, turn.variant.id])
 
-  const mutate = async operation => {
-    if (disabled) return
+  const mutate = async (operation, displayOnly = false) => {
+    if (displayOnly ? displayDisabled : disabled) return
     setBusy(true)
     onError('')
     try {
@@ -105,7 +111,7 @@ export function PlayTurnActions({
 
   const generate = async () => {
     if (disabled) return
-    setBusy(true)
+    setGenerating(true)
     onError('')
     onSwipePending?.(turn.id, true)
     try {
@@ -121,7 +127,7 @@ export function PlayTurnActions({
       onSwipePending?.(turn.id, false)
       onError(reason instanceof Error ? reason.message : String(reason))
     } finally {
-      setBusy(false)
+      setGenerating(false)
     }
   }
 
@@ -143,31 +149,31 @@ export function PlayTurnActions({
         mutate(async () => {
           await controller(playClient).setDisplayOverride(playthrough, turn.id, value)
           setEditor(null)
-        })
+        }, true)
       },
     },
     h('textarea', {
       value: editor,
       autoFocus: true,
-      disabled,
+      disabled: displayDisabled,
       'aria-label': uiMessage('play.chat.editDisplayPrompt'),
       onChange: event => setEditor(event.target.value),
       onKeyDown: event => {
-        if (event.key === 'Escape' && !disabled) setEditor(null)
+        if (event.key === 'Escape' && !displayDisabled) setEditor(null)
       },
     }),
     h('div', { className: 'dtv-play-display-editor-actions' },
       h('button', {
         type: 'button',
         className: 'dtv-play-display-editor-button',
-        disabled,
+        disabled: displayDisabled,
         onClick: () => setEditor(null),
       }, uiMessage('common.cancel')),
       h('button', {
         type: 'submit',
         className: 'dtv-play-display-editor-button',
         'data-primary': true,
-        disabled,
+        disabled: displayDisabled,
       }, uiMessage('common.save')),
     ))
   }
@@ -178,7 +184,7 @@ export function PlayTurnActions({
       icon: '‹',
       label: uiMessage('play.chat.previousReply'),
       disabled: disabled || !hasPreviousVariant,
-      disabledLabel: !hasPreviousVariant ? uiMessage('play.chat.noOtherReply') : undefined,
+      disabledLabel: !pathLocked && !hasPreviousVariant ? uiMessage('play.chat.noOtherReply') : undefined,
       onClick: () => adopt(position - 1),
     }),
     !capabilities.variants ? null : h('span', { className: 'dtv-play-turn-position' }, `${displayedPosition + 1}/${displayedVariantCount}`),
@@ -210,14 +216,14 @@ export function PlayTurnActions({
     h(Action, {
       icon: '✎',
       label: uiMessage('play.chat.editDisplay'),
-      disabled,
+      disabled: displayDisabled,
       onClick: () => setEditor(turn.assistantText),
     }),
     turn.displayOverridden ? h(Action, {
       icon: '↺',
       label: uiMessage('play.chat.restoreOriginal'),
-      disabled,
-      onClick: () => mutate(() => controller(playClient).setDisplayOverride(playthrough, turn.id, null)),
+      disabled: displayDisabled,
+      onClick: () => mutate(() => controller(playClient).setDisplayOverride(playthrough, turn.id, null), true),
     }) : null,
   )
 }

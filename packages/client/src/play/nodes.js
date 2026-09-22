@@ -66,19 +66,27 @@ export function createPlayNodeController(client, {
   idFactory = defaultId,
 } = {}) {
   if (client == null) throw new TypeError('playClient.required')
-  let pending = Promise.resolve()
-
-  const schedule = operation => {
-    const task = pending.then(operation)
-    pending = task.catch(() => {})
+  // Long-running branch operations are isolated per playthrough. Metadata writes
+  // use a separate short queue, so they can finish while a swipe is streaming.
+  const operations = new Map()
+  const writes = new Map()
+  const key = playthrough => JSON.stringify([playthrough?.id ?? null, playthrough?.path ?? null])
+  const enqueue = (queue, playthrough, operation) => {
+    const id = key(playthrough)
+    const task = (queue.get(id) ?? Promise.resolve()).then(operation)
+    const settled = task.catch(() => {}).finally(() => {
+      if (queue.get(id) === settled) queue.delete(id)
+    })
+    queue.set(id, settled)
     return task
   }
+  const schedule = (playthrough, operation) => enqueue(operations, playthrough, operation)
+  const writeTimeline = (playthrough, transform) => enqueue(writes, playthrough,
+    () => updateTimeline(client, playthrough, transform))
 
-  const update = (playthrough, nodeId, transform) => schedule(async () => {
-    return updateTimeline(client, playthrough, timeline => {
-      const { index, node } = nodeById(timeline, nodeId)
-      return replaceNode(timeline, index, transform(node))
-    })
+  const update = (playthrough, nodeId, transform) => writeTimeline(playthrough, timeline => {
+    const { index, node } = nodeById(timeline, nodeId)
+    return replaceNode(timeline, index, transform(node))
   })
 
   return {
@@ -91,8 +99,8 @@ export function createPlayNodeController(client, {
 
     adoptVariant(playthrough, nodeId, variantId) {
       if (typeof variantId !== 'string' || variantId === '') throw new TypeError('variantId is required')
-      return schedule(async () => {
-        const next = await updateTimeline(client, playthrough, timeline => {
+      return schedule(playthrough, async () => {
+        const next = await writeTimeline(playthrough, timeline => {
           const { index, node } = nodeById(timeline, nodeId)
           const variant = node.variants.find(item => item.id === variantId)
           if (variant === undefined) throw new TypeError(`Unknown variant ${variantId}`)
@@ -116,7 +124,7 @@ export function createPlayNodeController(client, {
       })
     },
     createReplySwipe(playthrough, nodeId, { onStarted } = {}) {
-      return schedule(async () => {
+      return schedule(playthrough, async () => {
         const timeline = await client.getTimeline(playthrough)
         const entries = activeTimelineEntries(timeline)
         const requestedIndex = entries.findIndex(entry => entry.node.id === nodeId)
@@ -187,7 +195,7 @@ export function createPlayNodeController(client, {
               ext: { pmpDshTavern: { sessionFormatVersion: pair.sessionFormatVersion } },
             } : {}),
           }
-          const next = await updateTimeline(client, playthrough, timeline => {
+          const next = await writeTimeline(playthrough, timeline => {
             const current = nodeById(timeline, sourceNode.id)
             const existing = current.node.variants.find(item => item.id === variantId)
             if (existing !== undefined) {
@@ -217,13 +225,13 @@ export function createPlayNodeController(client, {
     },
 
     forkPlaythrough(playthrough, nodeId) {
-      return schedule(() => forkPlaythroughAtNode(client, { playthrough, nodeId }))
+      return schedule(playthrough, () => forkPlaythroughAtNode(client, { playthrough, nodeId }))
     },
 
     rollbackPlaythrough(playthrough, nodeId) {
-      return schedule(async () => {
+      return schedule(playthrough, async () => {
         const branch = await branchPlaythroughAtNode(client, { playthrough, nodeId })
-        const next = await updateTimeline(client, playthrough, timeline => {
+        const next = await writeTimeline(playthrough, timeline => {
           const current = nodeById(timeline, nodeId)
           const variant = current.node.variants.find(item => item.id === branch.adopted.id)
           if (variant === undefined) throw new Error('Rollback target changed before commit')

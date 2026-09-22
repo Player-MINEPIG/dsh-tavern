@@ -180,7 +180,7 @@ export default Object.freeze({
   "play.chat.thinking": "Thinking…",
   "play.chat.previousGreeting": "Previous greeting",
   "play.chat.nextGreeting": "Next greeting",
-  "play.chat.runningDisabled": "Unavailable while the agent is running",
+  "play.chat.runningDisabled": "This playthrough is generating. Stop generation first.",
   "play.chat.copy": "Copy displayed reply",
   "play.chat.copyUnavailable": "Clipboard access is unavailable.",
   "play.chat.returnToSavedReply": "Return to saved reply",

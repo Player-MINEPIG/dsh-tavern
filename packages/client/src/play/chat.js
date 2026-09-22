@@ -107,7 +107,16 @@ function turnReconciler(client) {
 
 export async function loadChatState(client, sessionId, playthrough) {
   const pending = pendingSwipeForSession(client, sessionId)
-  const reconciled = pending === null ? await turnReconciler(client)(sessionId, playthrough) : { timeline: pending.timeline }
+  const reconciled = pending === null ? await turnReconciler(client)(sessionId, playthrough) : {
+    timeline: {
+      ...pending.timeline,
+      // Keep the preview's branch, but read display edits from durable metadata.
+      nodes: await client.getTimeline(playthrough).then(current => pending.timeline.nodes.map(node => ({
+        ...node,
+        displayOverride: current.nodes.find(item => item.id === node.id)?.displayOverride ?? null,
+      }))),
+    },
+  }
   const timeline = reconciled.timeline ?? await client.getTimeline(playthrough)
   const messagesBySession = await loadMessages(client, adoptedSessionIds(timeline, sessionId))
   const selectionResponse = await client.getCharacterSelection(sessionId)
@@ -481,7 +490,8 @@ function ChatFrame({
       playthrough,
       playClient,
       openSession,
-      running: running || !interactive,
+      running: running || pendingSwipe !== null,
+      readOnly: !interactive,
       onChanged: changed,
       onError,
       onSwipePending,

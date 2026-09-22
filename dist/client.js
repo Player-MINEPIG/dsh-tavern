@@ -255,7 +255,7 @@ var zh_CN_default = Object.freeze({
   "play.chat.thinking": "\u6B63\u5728\u601D\u8003\u2026",
   "play.chat.previousGreeting": "\u4E0A\u4E00\u6761\u5F00\u573A\u767D",
   "play.chat.nextGreeting": "\u4E0B\u4E00\u6761\u5F00\u573A\u767D",
-  "play.chat.runningDisabled": "Agent \u8FD0\u884C\u4E2D\u4E0D\u53EF\u64CD\u4F5C",
+  "play.chat.runningDisabled": "\u6B64\u5468\u76EE\u6B63\u5728\u751F\u6210\uFF0C\u8BF7\u5148\u505C\u6B62",
   "play.chat.copy": "\u590D\u5236\u5F53\u524D\u663E\u793A\u56DE\u590D",
   "play.chat.copyUnavailable": "\u5F53\u524D\u73AF\u5883\u65E0\u6CD5\u8BBF\u95EE\u526A\u8D34\u677F\u3002",
   "play.chat.returnToSavedReply": "\u8FD4\u56DE\u5DF2\u6709\u56DE\u590D",
@@ -1024,7 +1024,7 @@ var en_default = Object.freeze({
   "play.chat.thinking": "Thinking\u2026",
   "play.chat.previousGreeting": "Previous greeting",
   "play.chat.nextGreeting": "Next greeting",
-  "play.chat.runningDisabled": "Unavailable while the agent is running",
+  "play.chat.runningDisabled": "This playthrough is generating. Stop generation first.",
   "play.chat.copy": "Copy displayed reply",
   "play.chat.copyUnavailable": "Clipboard access is unavailable.",
   "play.chat.returnToSavedReply": "Return to saved reply",
@@ -10161,18 +10161,28 @@ function createPlayNodeController(client, {
   idFactory = defaultId
 } = {}) {
   if (client == null) throw new TypeError("playClient.required");
-  let pending2 = Promise.resolve();
-  const schedule = (operation) => {
-    const task = pending2.then(operation);
-    pending2 = task.catch(() => {
+  const operations = /* @__PURE__ */ new Map();
+  const writes = /* @__PURE__ */ new Map();
+  const key2 = (playthrough) => JSON.stringify([playthrough?.id ?? null, playthrough?.path ?? null]);
+  const enqueue = (queue, playthrough, operation) => {
+    const id = key2(playthrough);
+    const task = (queue.get(id) ?? Promise.resolve()).then(operation);
+    const settled = task.catch(() => {
+    }).finally(() => {
+      if (queue.get(id) === settled) queue.delete(id);
     });
+    queue.set(id, settled);
     return task;
   };
-  const update = (playthrough, nodeId, transform) => schedule(async () => {
-    return updateTimeline(client, playthrough, (timeline) => {
-      const { index, node } = nodeById2(timeline, nodeId);
-      return replaceNode(timeline, index, transform(node));
-    });
+  const schedule = (playthrough, operation) => enqueue(operations, playthrough, operation);
+  const writeTimeline = (playthrough, transform) => enqueue(
+    writes,
+    playthrough,
+    () => updateTimeline(client, playthrough, transform)
+  );
+  const update = (playthrough, nodeId, transform) => writeTimeline(playthrough, (timeline) => {
+    const { index, node } = nodeById2(timeline, nodeId);
+    return replaceNode(timeline, index, transform(node));
   });
   return {
     setDisplayOverride(playthrough, nodeId, value) {
@@ -10183,8 +10193,8 @@ function createPlayNodeController(client, {
     },
     adoptVariant(playthrough, nodeId, variantId) {
       if (typeof variantId !== "string" || variantId === "") throw new TypeError("variantId is required");
-      return schedule(async () => {
-        const next = await updateTimeline(client, playthrough, (timeline) => {
+      return schedule(playthrough, async () => {
+        const next = await writeTimeline(playthrough, (timeline) => {
           const { index, node } = nodeById2(timeline, nodeId);
           const variant = node.variants.find((item) => item.id === variantId);
           if (variant === void 0) throw new TypeError(`Unknown variant ${variantId}`);
@@ -10206,7 +10216,7 @@ function createPlayNodeController(client, {
       });
     },
     createReplySwipe(playthrough, nodeId, { onStarted } = {}) {
-      return schedule(async () => {
+      return schedule(playthrough, async () => {
         const timeline = await client.getTimeline(playthrough);
         const entries2 = activeTimelineEntries(timeline);
         const requestedIndex = entries2.findIndex((entry) => entry.node.id === nodeId);
@@ -10239,7 +10249,7 @@ function createPlayNodeController(client, {
         if (typeof newSessionId !== "string" || newSessionId === "") {
           throw new TypeError("Branch response has no sessionId");
         }
-        const pending3 = beginPendingSwipe(client, {
+        const pending2 = beginPendingSwipe(client, {
           playthrough,
           sessionId: newSessionId,
           sourceSessionId: adopted.sessionId,
@@ -10272,7 +10282,7 @@ function createPlayNodeController(client, {
               ext: { pmpDshTavern: { sessionFormatVersion: pair.sessionFormatVersion } }
             } : {}
           };
-          const next = await updateTimeline(client, playthrough, (timeline2) => {
+          const next = await writeTimeline(playthrough, (timeline2) => {
             const current3 = nodeById2(timeline2, sourceNode.id);
             const existing = current3.node.variants.find((item) => item.id === variantId);
             if (existing !== void 0) {
@@ -10292,21 +10302,21 @@ function createPlayNodeController(client, {
           });
           const focus = await client.getFocus(playthrough);
           if (focus.sessionId !== newSessionId) throw new Error("Saved swipe does not match derived focus");
-          finishPendingSwipe(client, pending3);
+          finishPendingSwipe(client, pending2);
           return { timeline: next, sessionId: newSessionId, nodeId: sourceNode.id, variantId };
         } catch (error) {
-          finishPendingSwipe(client, pending3, error);
+          finishPendingSwipe(client, pending2, error);
           throw error;
         }
       });
     },
     forkPlaythrough(playthrough, nodeId) {
-      return schedule(() => forkPlaythroughAtNode(client, { playthrough, nodeId }));
+      return schedule(playthrough, () => forkPlaythroughAtNode(client, { playthrough, nodeId }));
     },
     rollbackPlaythrough(playthrough, nodeId) {
-      return schedule(async () => {
+      return schedule(playthrough, async () => {
         const branch = await branchPlaythroughAtNode(client, { playthrough, nodeId });
-        const next = await updateTimeline(client, playthrough, (timeline) => {
+        const next = await writeTimeline(playthrough, (timeline) => {
           const current3 = nodeById2(timeline, nodeId);
           const variant = current3.node.variants.find((item) => item.id === branch.adopted.id);
           if (variant === void 0) throw new Error("Rollback target changed before commit");
@@ -10403,6 +10413,7 @@ function PlayTurnActions({
   playClient,
   openSession,
   running,
+  readOnly = false,
   onChanged,
   onError,
   onSwipePending,
@@ -10411,7 +10422,11 @@ function PlayTurnActions({
   installStyles();
   const [busy, setBusy] = (0, import_react8.useState)(false);
   const [editor, setEditor] = (0, import_react8.useState)(null);
-  const disabled = running || busy;
+  const [generating, setGenerating] = (0, import_react8.useState)(false);
+  const pending2 = pendingSwipe(playClient, playthrough);
+  const pathLocked = running || generating || pending2 !== null && pending2.error === null;
+  const displayDisabled = readOnly || busy;
+  const disabled = pathLocked || displayDisabled;
   const position = Math.max(0, turn.variants.findIndex((item) => item.id === turn.variant.id));
   const displayedPosition = pendingVariant ? turn.variants.length : position;
   const displayedVariantCount = pendingVariant ? turn.variants.length + 1 : turn.variants.length;
@@ -10419,8 +10434,8 @@ function PlayTurnActions({
   const hasPreviousVariant = position > 0;
   const hasNextVariant = position + 1 < turn.variants.length;
   (0, import_react8.useEffect)(() => setEditor(null), [turn.id, turn.variant.id]);
-  const mutate = async (operation) => {
-    if (disabled) return;
+  const mutate = async (operation, displayOnly = false) => {
+    if (displayOnly ? displayDisabled : disabled) return;
     setBusy(true);
     onError("");
     try {
@@ -10441,7 +10456,7 @@ function PlayTurnActions({
   });
   const generate = async () => {
     if (disabled) return;
-    setBusy(true);
+    setGenerating(true);
     onError("");
     onSwipePending?.(turn.id, true);
     try {
@@ -10457,7 +10472,7 @@ function PlayTurnActions({
       onSwipePending?.(turn.id, false);
       onError(reason instanceof Error ? reason.message : String(reason));
     } finally {
-      setBusy(false);
+      setGenerating(false);
     }
   };
   const copy = async () => {
@@ -10479,17 +10494,17 @@ function PlayTurnActions({
           mutate(async () => {
             await controller(playClient).setDisplayOverride(playthrough, turn.id, value);
             setEditor(null);
-          });
+          }, true);
         }
       },
       h7("textarea", {
         value: editor,
         autoFocus: true,
-        disabled,
+        disabled: displayDisabled,
         "aria-label": uiMessage("play.chat.editDisplayPrompt"),
         onChange: (event) => setEditor(event.target.value),
         onKeyDown: (event) => {
-          if (event.key === "Escape" && !disabled) setEditor(null);
+          if (event.key === "Escape" && !displayDisabled) setEditor(null);
         }
       }),
       h7(
@@ -10498,14 +10513,14 @@ function PlayTurnActions({
         h7("button", {
           type: "button",
           className: "dtv-play-display-editor-button",
-          disabled,
+          disabled: displayDisabled,
           onClick: () => setEditor(null)
         }, uiMessage("common.cancel")),
         h7("button", {
           type: "submit",
           className: "dtv-play-display-editor-button",
           "data-primary": true,
-          disabled
+          disabled: displayDisabled
         }, uiMessage("common.save"))
       )
     );
@@ -10518,7 +10533,7 @@ function PlayTurnActions({
       icon: "\u2039",
       label: uiMessage("play.chat.previousReply"),
       disabled: disabled || !hasPreviousVariant,
-      disabledLabel: !hasPreviousVariant ? uiMessage("play.chat.noOtherReply") : void 0,
+      disabledLabel: !pathLocked && !hasPreviousVariant ? uiMessage("play.chat.noOtherReply") : void 0,
       onClick: () => adopt(position - 1)
     }),
     !capabilities.variants ? null : h7("span", { className: "dtv-play-turn-position" }, `${displayedPosition + 1}/${displayedVariantCount}`),
@@ -10550,14 +10565,14 @@ function PlayTurnActions({
     h7(Action, {
       icon: "\u270E",
       label: uiMessage("play.chat.editDisplay"),
-      disabled,
+      disabled: displayDisabled,
       onClick: () => setEditor(turn.assistantText)
     }),
     turn.displayOverridden ? h7(Action, {
       icon: "\u21BA",
       label: uiMessage("play.chat.restoreOriginal"),
-      disabled,
-      onClick: () => mutate(() => controller(playClient).setDisplayOverride(playthrough, turn.id, null))
+      disabled: displayDisabled,
+      onClick: () => mutate(() => controller(playClient).setDisplayOverride(playthrough, turn.id, null), true)
     }) : null
   );
 }
@@ -10832,7 +10847,16 @@ function turnReconciler(client) {
 }
 async function loadChatState(client, sessionId, playthrough) {
   const pending2 = pendingSwipeForSession(client, sessionId);
-  const reconciled = pending2 === null ? await turnReconciler(client)(sessionId, playthrough) : { timeline: pending2.timeline };
+  const reconciled = pending2 === null ? await turnReconciler(client)(sessionId, playthrough) : {
+    timeline: {
+      ...pending2.timeline,
+      // Keep the preview's branch, but read display edits from durable metadata.
+      nodes: await client.getTimeline(playthrough).then((current3) => pending2.timeline.nodes.map((node) => ({
+        ...node,
+        displayOverride: current3.nodes.find((item) => item.id === node.id)?.displayOverride ?? null
+      })))
+    }
+  };
   const timeline = reconciled.timeline ?? await client.getTimeline(playthrough);
   const messagesBySession = await loadMessages(client, adoptedSessionIds(timeline, sessionId));
   const selectionResponse = await client.getCharacterSelection(sessionId);
@@ -11182,7 +11206,8 @@ function ChatFrame({
       playthrough,
       playClient,
       openSession,
-      running: running || !interactive,
+      running: running || pendingSwipe2 !== null,
+      readOnly: !interactive,
       onChanged: changed,
       onError,
       onSwipePending,

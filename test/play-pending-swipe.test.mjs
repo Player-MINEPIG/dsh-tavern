@@ -88,3 +88,32 @@ test('canceling before an assistant is saved ends polling and preserves existing
   assert.deepEqual(f.timeline, f.saved)
   assert.match(pendingSwipe(f.client, f.playthrough).error, /stopped/)
 })
+
+test('display edits and another playthrough finish while a swipe waits, and survive its commit', async () => {
+  const f = fixture()
+  const other = { id: 'other', path: 'other/timeline.json' }
+  let otherTimeline = structuredClone(f.saved)
+  const get = f.client.getTimeline, put = f.client.putTimeline, focus = f.client.getFocus
+  f.client.getTimeline = p => p.id === other.id ? structuredClone(otherTimeline) : get(p)
+  f.client.putTimeline = (p, value) => p.id === other.id ? (otherTimeline = structuredClone(value)) : put(p, value)
+  f.client.getFocus = p => p.id === other.id ? otherTimeline.head : focus(p)
+  const task = f.controller.createReplySwipe(f.playthrough, 'qa-2')
+  await tick()
+  let edited = false, adopted = false
+  const edit = f.controller.setDisplayOverride(f.playthrough, 'qa-1', 'Edited during stream').then(() => { edited = true })
+  const adopt = f.controller.adoptVariant(other, 'qa-1', 'v-1').then(() => { adopted = true })
+  await tick()
+  try {
+    assert.equal(edited, true, 'display save must not wait for model completion')
+    assert.equal(adopted, true, 'another playthrough must not wait for this model')
+    assert.equal((await loadChatState(f.client, 'new', f.playthrough)).turns[0].assistantText, 'Edited during stream')
+    await f.controller.setDisplayOverride(f.playthrough, 'qa-1', null)
+    assert.equal((await loadChatState(f.client, 'new', f.playthrough)).turns[0].assistantText, 'A1')
+    await f.controller.setDisplayOverride(f.playthrough, 'qa-1', 'Retained edit')
+  } finally {
+    f.settle()
+    await Promise.all([task, edit, adopt])
+  }
+  assert.equal(f.timeline.nodes[0].displayOverride, 'Retained edit')
+  assert.equal(f.timeline.nodes[1].variants.length, 2)
+})

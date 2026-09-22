@@ -180,7 +180,7 @@ export default Object.freeze({
   "play.chat.thinking": "正在思考…",
   "play.chat.previousGreeting": "上一条开场白",
   "play.chat.nextGreeting": "下一条开场白",
-  "play.chat.runningDisabled": "Agent 运行中不可操作",
+  "play.chat.runningDisabled": "此周目正在生成，请先停止",
   "play.chat.copy": "复制当前显示回复",
   "play.chat.copyUnavailable": "当前环境无法访问剪贴板。",
   "play.chat.returnToSavedReply": "返回已有回复",
