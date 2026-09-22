@@ -10,7 +10,7 @@ import * as tavern from '../packages/tavern-loader/src/index.js'
 
 const runtimeRoot = process.env.DSH_TAVERN_PROMPT_COMPAT_ROOT
 
-test('DSH 0.1.5 real AgentLoop: official sections, LLM capture, durable system message, complete override, unload', { skip: !runtimeRoot, timeout: 20000 }, async () => {
+test('DSH 0.1.7 real AgentLoop: official sections, LLM capture, durable system message, complete override, unload', { skip: !runtimeRoot, timeout: 20000 }, async () => {
   const require = createRequire(join(resolve(runtimeRoot), 'package.json'))
   const load = name => import(pathToFileURL(require.resolve(name)).href)
   const { Context } = await load('@deepseek-ai/cordis')
@@ -42,6 +42,9 @@ test('DSH 0.1.5 real AgentLoop: official sections, LLM capture, durable system m
     store.select(preset.id)
     const handle = await root.agents.create({ sessionId: 'trace-host', agentOptions: { provider: 'synthetic', model: 'test' } })
     const { agent } = handle
+    assert.equal(agent.session.header.version, 4)
+    assert.equal(store.sessionSelections.has(agent.id), true)
+    assert.equal(store.pendingInputProjection.sessions.has(agent.session), true)
     const readBodies = createAssemblyBodyReader({ inspect: async () => ({ meta: agent.session.header, events: agent.session.snapshotEvents() }) })
     const readRecord = async id => readBodies(store.assemblyStore.get(agent.id, id))
     const observations = []
@@ -62,10 +65,11 @@ test('DSH 0.1.5 real AgentLoop: official sections, LLM capture, durable system m
     }
     await turn()
     const firstSummary = store.assemblyStore.list(agent.id)[0]
-    assert.ok(firstSummary, 'a real loop request must produce a v3 record')
+    assert.ok(firstSummary, 'a real loop request must produce a reference-backed record')
     const stored = store.assemblyStore.get(agent.id, firstSummary.id)
     assert.equal(stored.sections.some(part => 'text' in part), false)
     assert.equal(stored.delivery.historyVerified, true)
+    assert.equal(stored.sessionRef.sessionFormatVersion, 4)
     const first = await readRecord(firstSummary.id)
     assert.equal(first.contentStatus, 'available')
     assert.ok(!first.systemMessages.join('').includes('<st-prompt'))

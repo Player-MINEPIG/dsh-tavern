@@ -464,14 +464,12 @@ export function apply(ctx, config = {}) {
     },
   })
 
-  ctx.on('agent/session-start', ({ agent }) => {
+  ctx.on('agent/created', ({ agent }) => {
     selections.ensureAgent(agent)
     pendingInput.ensureSession(agent?.session)
-    try {
-      rpMode.onSessionStart(agent)
-    } catch (error) {
-      ctx.logger.warn?.(`dsh-tavern: RP mode session start failed: ${error instanceof Error ? error.message : String(error)}`)
-    }
+    // DSH awaits this serial lifecycle before exposing the Agent. A failed
+    // policy initialization must fail registration, not permit an unguarded turn.
+    rpMode.onSessionStart(agent)
   })
 
   ctx.on('agent/pre-step', async (payload, next) => {

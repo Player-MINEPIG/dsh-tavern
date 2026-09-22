@@ -16,9 +16,9 @@ export function requireCoordinates(version, current) {
   }
   if (current?.sessionFormatVersion == null) return
   if ((version !== undefined && version !== current.sessionFormatVersion)
-    || (version === undefined && current.migratedFromV2)) {
+    || (version === undefined && (current.migratedFromV2 || current.sessionFormatVersion >= 4))) {
     throw httpError(409,
-      'Session event references need migration. Back up the playthrough and run scripts/migrate-session-coordinates.mjs with the retained source and V3 logs.',
+      'Session event references need migration. Back up the playthrough and run scripts/migrate-session-coordinates.mjs with the retained source and V4 logs.',
       'PLAY_COORDINATES_MIGRATION_REQUIRED')
   }
 }

@@ -17,7 +17,7 @@ const timeline = () => ({ nodes: [{ id: 'qa', kind: 'qa', adoptedVariantId: 'v',
   { id: 'v', sessionId: 's', startEventId: 2, endEventId: 4 },
   { id: 'swipe', sessionId: 'child', startEventId: 4, endEventId: 6 },
 ] }], head: { sessionId: 's', nodeId: 'qa', variantId: 'v' }, ext: { thirdParty: 'preserved' } })
-const maps = new Map([['s', [0, 1, 3, 5, 6, 7, 8]], ['child', [0, 1, 3, 5, 6, 7, 8]]])
+const maps = new Map(['s', 'child'].map(id => [id, Object.assign([0, 1, 3, 5, 6, 7, 8], { sourceVersion: 2, targetVersion: 3 })]))
 
 test('migrated, unversioned coordinates refuse; native V3 and explicit matching versions work', async () => {
   const current = sessionCoordinates(migrated)

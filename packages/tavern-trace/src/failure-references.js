@@ -17,7 +17,7 @@ function failureFromEvent(event) {
 export function captureFailureReference(session, event) {
   if (!session || !Number.isSafeInteger(event?.seq) || event.seq < 0
     || !Number.isSafeInteger(session.seq) || event.seq >= session.seq
-    || ![0, 1, 2, 3].includes(session.header?.version) || session.header?.createdAt === undefined
+    || ![0, 1, 2, 3, 4].includes(session.header?.version) || session.header?.createdAt === undefined
     || !failureFromEvent(event)) return null
   return { eventSeq: event.seq, eventType: event.type, eventHash: digest(event.data),
     sessionRef: { sessionId: session.id, sessionFormatVersion: session.header.version,
@@ -34,7 +34,7 @@ export function readFailureReference(record, inspection, readError) {
   let error = readError
   if (!error && (!ref || meta?.id !== record.sessionId || ref.sessionId !== record.sessionId
     || meta.createdAt !== ref.sessionCreatedAt)) error = 'session-mismatch'
-  if (!error && (meta.version !== ref.sessionFormatVersion || ![0, 1, 2, 3].includes(meta.version))) error = 'format-mismatch'
+  if (!error && (meta.version !== ref.sessionFormatVersion || ![0, 1, 2, 3, 4].includes(meta.version))) error = 'format-mismatch'
   if (!error && (!Number.isSafeInteger(ref.logCutSeq) || ref.logCutSeq < 0
     || (events.at(-1)?.seq ?? -1) < ref.logCutSeq)) error = 'cut-unavailable'
   const event = events.find(event => event.seq === reference.eventSeq)

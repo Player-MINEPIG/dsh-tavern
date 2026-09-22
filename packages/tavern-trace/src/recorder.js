@@ -211,6 +211,7 @@ export class TavernTraceRecorder {
     const resources = snapshot?.resources ?? audit.resources ?? {}
     const record = {
       schemaVersion: 1,
+      sessionFormatVersion: agent?.session?.header?.version ?? null,
       id,
       captureId: randomUUID(),
       sessionId,

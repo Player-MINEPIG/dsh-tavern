@@ -4,23 +4,25 @@ import { variantFormatVersion, withVariantFormat } from './session-coordinates.j
 function coordinate(maps, sessionId, seq) {
   const value = maps.get(sessionId)?.[seq]
   if (!Number.isSafeInteger(seq) || seq < 0 || !Number.isSafeInteger(value)) {
-    throw new Error(`No verified historical→V3 coordinate for ${sessionId} event ${seq}`)
+    throw new Error(`No verified historical→current coordinate for ${sessionId} event ${seq}`)
   }
   return value
 }
 
 export function migrateTimelineCoordinates(value, maps) {
   const timeline = normalizeTimeline(structuredClone(value))
+  const currentVersion = maps.values().next().value?.targetVersion ?? 4
   for (const node of timeline.nodes) {
     node.variants = node.variants.map(variant => {
       const version = variantFormatVersion(variant)
-      if (version === 3) return variant
+      const targetVersion = maps.get(variant.sessionId)?.targetVersion ?? currentVersion
+      if (version === targetVersion) return variant
       if (!maps.has(variant.sessionId)) throw new Error(`Missing Session mapping for ${variant.sessionId}`)
       if (version !== undefined && version !== (maps.get(variant.sessionId).sourceVersion ?? 2)) throw new Error(`Unsupported coordinate format ${version}`)
       return withVariantFormat({ ...variant,
         startEventId: coordinate(maps, variant.sessionId, variant.startEventId),
         endEventId: coordinate(maps, variant.sessionId, variant.endEventId),
-      }, 3)
+      }, targetVersion)
     })
   }
   return timeline
@@ -33,12 +35,14 @@ function identity(maps, sessionId, value) {
 
 export function migrateImportCoordinates(value, maps) {
   const result = structuredClone(value)
+  const currentVersion = maps.values().next().value?.targetVersion ?? 4
   if (result.schemaVersion !== 1 || typeof result.sessions !== 'object' || result.sessions === null) throw new Error('Invalid import bindings')
   for (const [sessionId, binding] of Object.entries(result.sessions)) {
-    if (!maps.has(sessionId) && maps.has(binding.lineage?.sourceSessionId) && binding.sessionFormatVersion !== 3) {
+    if (!maps.has(sessionId) && maps.has(binding.lineage?.sourceSessionId) && binding.sessionFormatVersion !== (maps.get(binding.lineage?.sourceSessionId)?.targetVersion ?? currentVersion)) {
       throw new Error(`Missing Session mapping for import lineage owner ${sessionId}`)
     }
-    if (binding.sessionFormatVersion === 3 || !maps.has(sessionId)) continue
+    const targetVersion = maps.get(sessionId)?.targetVersion ?? currentVersion
+    if (binding.sessionFormatVersion === targetVersion || !maps.has(sessionId)) continue
     if (binding.sessionFormatVersion !== undefined && binding.sessionFormatVersion !== (maps.get(sessionId).sourceVersion ?? 2)) throw new Error('Unsupported import coordinate format')
     if (binding.claim) {
       const oldIdentity = 'event-seqs:' + binding.claim.eventSeqs.join(',')
@@ -54,7 +58,7 @@ export function migrateImportCoordinates(value, maps) {
       lineage.forkEventSeq = coordinate(maps, source, lineage.forkEventSeq)
       if (lineage.sourceClaimIdentity !== undefined) lineage.sourceClaimIdentity = identity(maps, source, lineage.sourceClaimIdentity)
     }
-    binding.sessionFormatVersion = 3
+    binding.sessionFormatVersion = targetVersion
   }
   return result
 }

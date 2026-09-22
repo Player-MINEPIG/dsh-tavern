@@ -4,8 +4,9 @@ import { readFailureReference } from './failure-references.js'
 
 export const messageText = message => (message?.content ?? []).filter(block => block.type === 'text').map(block => block.text).join('')
 const contentHash = message => digest(message?.content ?? [])
-const systemContext = message => message?.source?.kind === 'plugin'
-  && message.source.plugin === '@deepseek-ai/dsh-system-prompt' && message.source.form === 'snapshot'
+const systemContext = message => message?.source?.form === 'snapshot'
+  && (message.source.kind === 'runtime-context' || (message.source.kind === 'plugin'
+    && message.source.plugin === '@deepseek-ai/dsh-system-prompt'))
 const eventMessage = event => event?.type === 'system/message' ? event.data?.message
   : event?.type === 'user/message' ? event.data : null
 
@@ -20,7 +21,7 @@ function messageReference(event, kind) {
 export function captureBodyReferences(session, options, sections, contexts, verifiedSystemIndex) {
   const version = session?.header?.version ?? 0
   if (!session || !Number.isSafeInteger(session.seq) || session.seq < 1
-    || ![0, 1, 2, 3].includes(version) || session.header?.createdAt === undefined) return {}
+    || ![0, 1, 2, 3, 4].includes(version) || session.header?.createdAt === undefined) return {}
   const sessionRef = { sessionId: session.id, sessionFormatVersion: version,
     sessionCreatedAt: session.header.createdAt, logCutSeq: session.seq - 1 }
   const events = snapshotSessionEvents(session)

@@ -74,6 +74,7 @@ test('real AgentLoop failure references preserve attempt identity and cold-read 
         handle.agent.followup(llm.createUserMessage({ content: [{ type: 'text', text: 'hello' }], source: { kind: 'user' } }))
         await handle.agent.whenIdle()
         const inspection = { meta: handle.agent.session.header, events: handle.agent.session.snapshotEvents() }
+        assert.equal(inspection.meta.version, 4)
         const end = inspection.events.findLast(e => e.type === 'turn/end')
         assert.equal(end.data.reason.kind, scenario === 'provider-retry-success' ? 'completed' : 'error')
         const restored = new AssemblyStore(directory)
