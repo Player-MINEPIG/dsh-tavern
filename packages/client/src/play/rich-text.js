@@ -1,6 +1,6 @@
 import DOMPurifyFactory from 'dompurify'
 import { Marked } from 'marked'
-import { createElement } from 'react'
+import { createElement, memo } from 'react'
 import { isolateHtmlDocuments, isolateStyledHtml, mountStyledHtml } from './rich-text-styles.js'
 
 const SANITIZE_OPTIONS = Object.freeze({
@@ -224,11 +224,13 @@ export function renderRichTextHtml(text, options) {
   return sanitizeRenderedHtml(markdownToHtml(text), { ...options, isolateStyles: true })
 }
 
-export function RichText({ text, className }) {
+// Stream updates rerender the conversation; unchanged messages must not repeat
+// Markdown parsing, sanitization, or shadow-template traversal on every chunk.
+export const RichText = memo(function RichText({ text, className }) {
   return createElement('div', {
     className,
     'data-dtv-rich-text': '',
     ref: element => mountStyledHtml(element),
     dangerouslySetInnerHTML: { __html: renderRichTextHtml(text) },
   })
-}
+})

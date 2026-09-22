@@ -8938,14 +8938,14 @@ function sanitizeRenderedHtml(html2, {
 function renderRichTextHtml(text2, options) {
   return sanitizeRenderedHtml(markdownToHtml(text2), { ...options, isolateStyles: true });
 }
-function RichText({ text: text2, className }) {
+var RichText = (0, import_react7.memo)(function RichText2({ text: text2, className }) {
   return (0, import_react7.createElement)("div", {
     className,
     "data-dtv-rich-text": "",
     ref: (element) => mountStyledHtml(element),
     dangerouslySetInnerHTML: { __html: renderRichTextHtml(text2) }
   });
-}
+});
 
 // packages/client/src/play/turn-actions.js
 var import_react8 = require("react");

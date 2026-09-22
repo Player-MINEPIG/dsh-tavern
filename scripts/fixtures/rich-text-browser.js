@@ -1,3 +1,8 @@
+import { createElement } from 'react'
+import { createRoot } from 'react-dom/client'
+import { flushSync } from 'react-dom'
+import DOMPurify from 'dompurify'
+import { mountStyledHtml } from '../../packages/client/src/play/rich-text-styles.js'
 import { RichText, renderRichTextHtml, sanitizeRenderedHtml } from '../../packages/client/src/play/rich-text.js'
 import { normalizeRegexRule, applyDisplayRegex } from '../../packages/client/src/play/regex.js'
 import { staticHtmlExport } from '../../packages/client/src/play/export.js'
@@ -14,15 +19,51 @@ function mount(text) {
   return element
 }
 function update(element, text) {
-  const { props, ref } = RichText({ text })
-  element.innerHTML = props.dangerouslySetInnerHTML.__html
-  ref(element)
+  element.innerHTML = renderRichTextHtml(text)
+  mountStyledHtml(element)
 }
 function root(element) {
   return element.querySelector('[data-dtv-style-boundary] > div')?.shadowRoot
 }
 
 async function run() {
+  // Exercise real React updates, not just the standalone HTML helper: streaming
+  // one answer must not parse/sanitize every unchanged historical message.
+  const reactHost = document.createElement('section')
+  document.body.append(reactHost)
+  const reactRoot = createRoot(reactHost)
+  const stableText = '<style>.bar{display:flex}</style><details><summary class="bar">History</summary>Saved body</details>'
+  const liveText = text => `<style>.body{color:inherit}</style><div class="body">${text}</div>`
+  let sanitizations = 0
+  const originalSanitize = DOMPurify.sanitize
+  DOMPurify.sanitize = (...args) => { sanitizations++; return originalSanitize(...args) }
+  const renderMessages = (text, className = 'live') => flushSync(() => reactRoot.render(createElement('div', null,
+    createElement(RichText, { key: 'history', text: stableText, className: 'history' }),
+    createElement(RichText, { key: 'live', text, className }),
+  )))
+  try {
+    renderMessages(liveText('Start'))
+    const savedMessage = reactHost.querySelector('.history')
+    const savedRoot = root(savedMessage)
+    const savedDetails = savedRoot.querySelector('details')
+    savedDetails.open = true
+    const initialCount = sanitizations
+    for (let i = 0; i < 20; i++) renderMessages(liveText(`Chunk ${i}`))
+    check('streaming sanitizes only the changed message', sanitizations - initialCount === 20)
+    check('streaming preserves history DOM and expanded details', root(savedMessage) === savedRoot && savedDetails.open && savedDetails.isConnected)
+    check('streaming mounts updated shadow contents', root(reactHost.querySelector('.live')).querySelector('.body').textContent === 'Chunk 19')
+    const beforeUnchanged = sanitizations
+    renderMessages(liveText('Chunk 19'))
+    check('unchanged parent update skips rich-text sanitization', sanitizations === beforeUnchanged)
+    renderMessages(liveText('Chunk 19'), 'live resized')
+    check('rich-text class changes still apply', reactHost.querySelector('.live').classList.contains('resized'))
+    renderMessages('**Final answer**')
+    check('final plain answer replaces streaming styled content', !root(reactHost.querySelector('.live')) && reactHost.querySelector('.live strong')?.textContent === 'Final answer')
+  } finally {
+    DOMPurify.sanitize = originalSanitize
+    flushSync(() => reactRoot.unmount())
+    reactHost.remove()
+  }
   if (globalThis.__regexFixture) {
     const rules = globalThis.__regexFixture.map(rule => normalizeRegexRule(rule))
     const output = applyDisplayRegex('<thinking>\n<!-- begin_of_Subtext_think -->\n<div class="fixture-body"><strong>Ready</strong></div>\n<!-- end_of_Subtext_think -->\n</thinking>\n\nAfter', rules, {}, 'assistant').text
