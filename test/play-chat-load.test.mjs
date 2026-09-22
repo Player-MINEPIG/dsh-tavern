@@ -112,11 +112,11 @@ test('empty imported playthrough exposes authoritative binding, latest QA and mu
   assert.equal(state.turns.at(-1).assistantText, 'Old A2')
 })
 
-test('consumed import binding is never mutable even before timeline reconciliation', async () => {
+for (const bindingState of ['claimed', 'consumed']) test(`${bindingState} import binding is never mutable even before timeline reconciliation`, async () => {
   const client = {
     async getMessages() { return { incompleteTurn: false, messages: [] } },
     async getTimeline() { return { nodes: [] } },
-    async getImportContextBinding() { return { path: 'character-a/pt/import-context.json', state: 'consumed' } },
+    async getImportContextBinding() { return { path: 'character-a/pt/import-context.json', state: bindingState } },
     async getFile() { return { content: JSON.stringify({ schemaVersion: 1, greeting: null, qa: [] }) } },
     async getCharacterSelection() { return { selection: null } },
   }
@@ -136,6 +136,8 @@ test('unbound import action always uses the greeting container footer, including
 
 test('greeting selection locks only after the real playthrough starts', () => {
   assert.equal(greetingSelectionLocked(), false)
+  assert.equal(greetingSelectionLocked({ preparationMutable: false }), true)
+  assert.equal(greetingSelectionLocked({ preparationMutable: true, turns: [] }), false)
   assert.equal(greetingSelectionLocked({ turns: [{ imported: true }] }), false)
   assert.equal(greetingSelectionLocked({ turns: [{ imported: false }] }), true)
   assert.equal(greetingSelectionLocked({ latestUserSeq: 1 }), true)
@@ -195,4 +197,22 @@ test('swipe controls always expose position and project an immediate thinking st
   assert.match(chatSource, /const assistantTexts = swipePending \? \[\]/)
   assert.match(chatSource, /swipePending \|\| turn\.running === true/)
   assert.match(chatSource, /pendingSwipe\?\.nodeId === turn\.id/)
+})
+
+test('metadata-only initialized sessions keep both opening actions available without writing history', async () => {
+  let writes = 0
+  const client = {
+    async getMessages() { return { sessionFormatVersion: 4, incompleteTurn: false, messages: [] } },
+    async getTimeline() { return { nodes: [] } },
+    async putTimeline() { writes += 1 },
+    async getCharacterSelection() { return { selection: { characterCardId: 'card', character: { greetingIndex: 0 } } } },
+    async getCharacter() { return { character: { id: 'card', data: { firstMessage: 'Opening', alternateGreetings: [''] } } } },
+  }
+  const state = await loadChatState(client, 'initialized', {
+    path: 'timeline.json', ext: { pmpDshTavern: { characterId: 'card', rootSessionId: 'initialized' } },
+  })
+  assert.equal(state.importMutable, true)
+  assert.equal(greetingSelectionLocked({ preparationMutable: state.importMutable, turns: state.turns }), false)
+  assert.equal(state.greeting.options.length, 1)
+  assert.equal(writes, 0)
 })

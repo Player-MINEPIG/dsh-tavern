@@ -1,4 +1,9 @@
 export default Object.freeze({
+  "play.chat.preparing": "This playthrough has not started. Prepare the opening or import a record, then send a message to begin.",
+  "play.chat.noGreetings": "This character card has no non-empty greeting.",
+  "play.chat.singleGreeting": "This character card has only 1 non-empty greeting; there is nothing to switch.",
+  "play.chat.greetingCount": "This character card has {count} non-empty greetings. Use the arrows to choose.",
+
   "resource.error.fileTooLarge": "This file exceeds the resource import size limit.",
   "user.status.imported": "User imported as a new resource.",
   "user.transferNote": "JSON exports the saved name and description. Imports create a new user without session or world-book bindings.",

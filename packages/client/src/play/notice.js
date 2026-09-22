@@ -11,6 +11,7 @@ import {
 } from '../i18n.js'
 import {
   ImportControls,
+  OpeningPreparation,
   installPlayChatStyles,
   loadChatState,
 } from './chat.js'
@@ -112,7 +113,7 @@ export function PlaySessionDock({ session, useSessions, useConversation, convers
   }, [composerPhase, playClient, revision, sessionBlank, sessionId, summary])
 
   const changeGreeting = async direction => {
-    if (content?.kind !== 'opening' || greetingBusy || sessionId === null) return
+    if (content?.kind !== 'opening' || content.importMutable !== true || greetingBusy || sessionId === null) return
     const next = adjacentGreetingIndex(content.greeting, direction)
     if (next === null) return
     setGreetingBusy(true)
@@ -151,6 +152,7 @@ export function PlaySessionDock({ session, useSessions, useConversation, convers
     className: 'dtv-play-opening-dock',
     style: conversationDisplayStyle(displaySettings),
   },
+  content.importMutable ? h(OpeningPreparation, { greeting, importBound: content.importBinding !== null }) : null,
   greeting === null ? null : h('header', { className: 'dtv-play-opening-header' },
     h('span', { className: 'dtv-play-opening-name' }, rawText(greeting.characterName)),
     h('span', { className: 'dtv-play-opening-index' }, rawText(`${position} / ${options.length}`)),
@@ -176,14 +178,14 @@ export function PlaySessionDock({ session, useSessions, useConversation, convers
     h('button', {
       type: 'button',
       className: 'dtv-play-opening-button',
-      disabled: greetingBusy || adjacentGreetingIndex(greeting, 'previous') === null,
+      disabled: content.importMutable !== true || greetingBusy || adjacentGreetingIndex(greeting, 'previous') === null,
       onClick: () => changeGreeting('previous'),
     }, uiMessage('play.chat.previousGreeting')),
     importControls,
     h('button', {
       type: 'button',
       className: 'dtv-play-opening-button',
-      disabled: greetingBusy || adjacentGreetingIndex(greeting, 'next') === null,
+      disabled: content.importMutable !== true || greetingBusy || adjacentGreetingIndex(greeting, 'next') === null,
       onClick: () => changeGreeting('next'),
     }, uiMessage('play.chat.nextGreeting')),
   ))

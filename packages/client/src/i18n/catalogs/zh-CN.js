@@ -1,4 +1,9 @@
 export default Object.freeze({
+  "play.chat.preparing": "周目尚未开始。可准备开场或导入外部记录，发送消息后开始对话。",
+  "play.chat.noGreetings": "此角色卡没有有效开场白。",
+  "play.chat.singleGreeting": "此角色卡仅有 1 条有效开场白，无需切换。",
+  "play.chat.greetingCount": "此角色卡有 {count} 条有效开场白，可用左右按钮选择。",
+
   "resource.error.fileTooLarge": "文件超过此类资源的导入大小限制。",
   "user.status.imported": "已导入为新用户资源。",
   "user.transferNote": "JSON 导出已保存的名称和描述。导入会新建用户，不包含会话或世界书绑定。",
