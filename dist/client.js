@@ -75,10 +75,6 @@ var identityConstants = Object.freeze({
 
 // packages/client/src/i18n/catalogs/zh-CN.js
 var zh_CN_default = Object.freeze({
-  "play.chat.preparing": "\u5468\u76EE\u5C1A\u672A\u5F00\u59CB\u3002\u53EF\u51C6\u5907\u5F00\u573A\u6216\u5BFC\u5165\u5916\u90E8\u8BB0\u5F55\uFF0C\u53D1\u9001\u6D88\u606F\u540E\u5F00\u59CB\u5BF9\u8BDD\u3002",
-  "play.chat.noGreetings": "\u6B64\u89D2\u8272\u5361\u6CA1\u6709\u6709\u6548\u5F00\u573A\u767D\u3002",
-  "play.chat.singleGreeting": "\u6B64\u89D2\u8272\u5361\u4EC5\u6709 1 \u6761\u6709\u6548\u5F00\u573A\u767D\uFF0C\u65E0\u9700\u5207\u6362\u3002",
-  "play.chat.greetingCount": "\u6B64\u89D2\u8272\u5361\u6709 {count} \u6761\u6709\u6548\u5F00\u573A\u767D\uFF0C\u53EF\u7528\u5DE6\u53F3\u6309\u94AE\u9009\u62E9\u3002",
   "resource.error.fileTooLarge": "\u6587\u4EF6\u8D85\u8FC7\u6B64\u7C7B\u8D44\u6E90\u7684\u5BFC\u5165\u5927\u5C0F\u9650\u5236\u3002",
   "user.status.imported": "\u5DF2\u5BFC\u5165\u4E3A\u65B0\u7528\u6237\u8D44\u6E90\u3002",
   "user.transferNote": "JSON \u5BFC\u51FA\u5DF2\u4FDD\u5B58\u7684\u540D\u79F0\u548C\u63CF\u8FF0\u3002\u5BFC\u5165\u4F1A\u65B0\u5EFA\u7528\u6237\uFF0C\u4E0D\u5305\u542B\u4F1A\u8BDD\u6216\u4E16\u754C\u4E66\u7ED1\u5B9A\u3002",
@@ -847,10 +843,6 @@ var zh_CN_default = Object.freeze({
 
 // packages/client/src/i18n/catalogs/en.js
 var en_default = Object.freeze({
-  "play.chat.preparing": "This playthrough has not started. Prepare the opening or import a record, then send a message to begin.",
-  "play.chat.noGreetings": "This character card has no non-empty greeting.",
-  "play.chat.singleGreeting": "This character card has only 1 non-empty greeting; there is nothing to switch.",
-  "play.chat.greetingCount": "This character card has {count} non-empty greetings. Use the arrows to choose.",
   "resource.error.fileTooLarge": "This file exceeds the resource import size limit.",
   "user.status.imported": "User imported as a new resource.",
   "user.transferNote": "JSON exports the saved name and description. Imports create a new user without session or world-book bindings.",
@@ -10723,7 +10715,7 @@ var css7 = `
 .dtv-play-chat-list{display:flex;flex-direction:column;gap:22px}.dtv-play-chat-row{display:flex;flex-direction:column;gap:8px}.dtv-play-chat-role{font-size:11px;font-weight:700;color:var(--dsw-alias-label-tertiary)}
 .dtv-play-chat-bubble{max-width:88%;box-sizing:border-box;border-radius:14px;padding:12px 14px;overflow-wrap:anywhere;font-size:calc(14px * var(--dtv-rp-text-scale,1));line-height:1.65}.dtv-play-chat-user{align-self:flex-end;background:var(--dsw-alias-interactive-bg-selected,var(--dsw-specific-tip))}.dtv-play-chat-assistant{align-self:flex-start;background:var(--dsw-alias-bg-layer-2,var(--dsw-specific-block))}
 .dtv-play-greeting{position:relative;align-self:flex-start;max-width:88%;display:grid;grid-template-columns:30px minmax(0,1fr) 30px;align-items:center;gap:6px}.dtv-play-greeting[data-locked=true]{grid-template-columns:minmax(0,1fr)}.dtv-play-greeting-text{border-radius:14px;padding:13px 15px;background:var(--dsw-alias-bg-layer-2,var(--dsw-specific-block));overflow-wrap:anywhere;font-size:calc(14px * var(--dtv-rp-text-scale,1));line-height:1.65}
-.dtv-play-preparation{padding:8px 12px;color:var(--dsw-alias-label-tertiary);font-size:12px;line-height:1.5}.dtv-play-preparation p{margin:0}.dtv-play-greeting-empty{min-height:34px;visibility:hidden}
+.dtv-play-greeting-empty{min-height:34px;visibility:hidden}
 .dtv-play-greeting-button{width:30px;height:34px;border:0;border-radius:9px;background:transparent;color:var(--dsw-alias-label-secondary);cursor:pointer}.dtv-play-greeting-button:hover{background:var(--dsw-alias-interactive-bg-hover)}.dtv-play-greeting-button:disabled{opacity:.4;cursor:default}
 .dtv-play-import-controls{align-self:center;display:flex;flex-wrap:wrap;align-items:center;justify-content:center;gap:8px;margin:0 0 2px}.dtv-play-import-bound{width:100%;margin:0;text-align:center;color:var(--dsw-alias-label-tertiary);font-size:11px}.dtv-play-import-button{min-height:30px;padding:5px 11px;border:1px solid var(--dsw-alias-border-subtle);border-radius:9px;background:var(--dsw-alias-bg-layer-2,var(--dsw-specific-block));color:var(--dsw-alias-label-primary);font:inherit;font-size:11px;cursor:pointer}.dtv-play-import-button:hover{background:var(--dsw-alias-interactive-bg-hover)}.dtv-play-import-button:disabled{opacity:.45;cursor:default}.dtv-play-import-last{margin:0;color:var(--dsw-alias-label-tertiary);font-size:11px;font-weight:700}
 .dtv-play-chat-status{margin:16px 0;padding:12px 14px;border-radius:12px;background:var(--dsw-alias-bg-layer-2,var(--dsw-specific-block));color:var(--dsw-alias-label-tertiary);font-size:12px;line-height:1.55}.dtv-play-chat-status[data-error=true]{color:var(--dsw-alias-state-error)}
@@ -10853,7 +10845,7 @@ async function loadChatState(client, sessionId, playthrough) {
     };
   }
   const rootMessages = messagesBySession[sessionId];
-  const importMutable = (timeline?.nodes?.length ?? 0) === 0 && rootMessages?.incompleteTurn !== true && !(rootMessages?.messages ?? []).some((message) => message?.role === "user" || message?.role === "assistant") && !["claimed", "consumed"].includes(importedContext.binding?.state);
+  const importMutable = (timeline?.nodes?.length ?? 0) === 0 && rootMessages?.incompleteTurn !== true && !(rootMessages?.messages ?? []).some((message) => message?.role === "user" || message?.role === "assistant") && importedContext.binding?.state !== "consumed";
   return {
     timeline,
     turns,
@@ -10930,17 +10922,8 @@ function turnHasDurableQaActions(turn) {
 function turnHasVisibleRpContent(turn) {
   return turnHasDurableQaActions(turn) || turn?.importLast === true || typeof turn?.userText === "string" && turn.userText !== "" || Array.isArray(turn?.assistantTexts) && turn.assistantTexts.length > 0 || typeof turn?.assistantText === "string" && turn.assistantText !== "" || turn?.displayOverridden === true || turn?.running === true;
 }
-function greetingSelectionLocked({ turns = [], latestUserSeq = -1, running = false, preparationMutable = true } = {}) {
-  return !preparationMutable || running || latestUserSeq >= 0 || turns.some((turn) => turn?.imported !== true);
-}
-function OpeningPreparation({ greeting, importBound = false }) {
-  const count = (greeting?.options ?? []).filter((option) => option.text.trim() !== "").length;
-  return h8(
-    "div",
-    { className: "dtv-play-preparation", role: "status" },
-    h8("p", null, uiMessage("play.chat.preparing")),
-    importBound ? null : h8("p", null, uiMessage(count === 0 ? "play.chat.noGreetings" : count === 1 ? "play.chat.singleGreeting" : "play.chat.greetingCount", { count }))
-  );
+function greetingSelectionLocked({ turns = [], latestUserSeq = -1, running = false } = {}) {
+  return running || latestUserSeq >= 0 || turns.some((turn) => turn?.imported !== true);
 }
 function Turn({ turn, hideUser = false, swipePending = false, ...actionProps }) {
   if (!turnHasVisibleRpContent(turn)) return null;
@@ -11099,8 +11082,7 @@ function ChatFrame({
     changed,
     onError
   });
-  const greetingLocked = greetingSelectionLocked({
-    preparationMutable: !importLocked,
+  const greetingLocked = !interactive || greetingSelectionLocked({
     turns: state.turns,
     latestUserSeq: latestUserNodeSeq(liveNodes),
     running
@@ -11113,7 +11095,6 @@ function ChatFrame({
   }, h8(
     "div",
     { className: "dtv-play-chat-list" },
-    greetingLocked ? null : h8(OpeningPreparation, { greeting: state.greeting, importBound: state.importBinding !== null }),
     state.greeting === null && state.importBinding !== null ? null : h8(Greeting, {
       greeting: state.greeting,
       busy: greetingBusy,
@@ -11315,7 +11296,6 @@ function MowanChatView({ sessionId, useSession, useChat, playClient, playthrough
   }, [playClient, playthrough, revision, sessionId, sessionRevision]);
   const changeGreeting = async (direction) => {
     const greetingLocked = greetingSelectionLocked({
-      preparationMutable: state?.importMutable === true,
       turns: state?.turns ?? [],
       latestUserSeq,
       running
@@ -12958,7 +12938,7 @@ function PlaySessionDock({ session, useSessions, useConversation, conversationPh
     };
   }, [composerPhase, playClient, revision, sessionBlank, sessionId, summary]);
   const changeGreeting = async (direction) => {
-    if (content?.kind !== "opening" || content.importMutable !== true || greetingBusy || sessionId === null) return;
+    if (content?.kind !== "opening" || greetingBusy || sessionId === null) return;
     const next = adjacentGreetingIndex(content.greeting, direction);
     if (next === null) return;
     setGreetingBusy(true);
@@ -12998,7 +12978,6 @@ function PlaySessionDock({ session, useSessions, useConversation, conversationPh
       className: "dtv-play-opening-dock",
       style: conversationDisplayStyle(displaySettings)
     },
-    content.importMutable ? h12(OpeningPreparation, { greeting, importBound: content.importBinding !== null }) : null,
     greeting === null ? null : h12(
       "header",
       { className: "dtv-play-opening-header" },
@@ -13028,14 +13007,14 @@ function PlaySessionDock({ session, useSessions, useConversation, conversationPh
       h12("button", {
         type: "button",
         className: "dtv-play-opening-button",
-        disabled: content.importMutable !== true || greetingBusy || adjacentGreetingIndex(greeting, "previous") === null,
+        disabled: greetingBusy || adjacentGreetingIndex(greeting, "previous") === null,
         onClick: () => changeGreeting("previous")
       }, uiMessage("play.chat.previousGreeting")),
       importControls,
       h12("button", {
         type: "button",
         className: "dtv-play-opening-button",
-        disabled: content.importMutable !== true || greetingBusy || adjacentGreetingIndex(greeting, "next") === null,
+        disabled: greetingBusy || adjacentGreetingIndex(greeting, "next") === null,
         onClick: () => changeGreeting("next")
       }, uiMessage("play.chat.nextGreeting"))
     )

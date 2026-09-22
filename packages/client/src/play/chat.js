@@ -56,7 +56,7 @@ const css = `
 .dtv-play-chat-list{display:flex;flex-direction:column;gap:22px}.dtv-play-chat-row{display:flex;flex-direction:column;gap:8px}.dtv-play-chat-role{font-size:11px;font-weight:700;color:var(--dsw-alias-label-tertiary)}
 .dtv-play-chat-bubble{max-width:88%;box-sizing:border-box;border-radius:14px;padding:12px 14px;overflow-wrap:anywhere;font-size:calc(14px * var(--dtv-rp-text-scale,1));line-height:1.65}.dtv-play-chat-user{align-self:flex-end;background:var(--dsw-alias-interactive-bg-selected,var(--dsw-specific-tip))}.dtv-play-chat-assistant{align-self:flex-start;background:var(--dsw-alias-bg-layer-2,var(--dsw-specific-block))}
 .dtv-play-greeting{position:relative;align-self:flex-start;max-width:88%;display:grid;grid-template-columns:30px minmax(0,1fr) 30px;align-items:center;gap:6px}.dtv-play-greeting[data-locked=true]{grid-template-columns:minmax(0,1fr)}.dtv-play-greeting-text{border-radius:14px;padding:13px 15px;background:var(--dsw-alias-bg-layer-2,var(--dsw-specific-block));overflow-wrap:anywhere;font-size:calc(14px * var(--dtv-rp-text-scale,1));line-height:1.65}
-.dtv-play-preparation{padding:8px 12px;color:var(--dsw-alias-label-tertiary);font-size:12px;line-height:1.5}.dtv-play-preparation p{margin:0}.dtv-play-greeting-empty{min-height:34px;visibility:hidden}
+.dtv-play-greeting-empty{min-height:34px;visibility:hidden}
 .dtv-play-greeting-button{width:30px;height:34px;border:0;border-radius:9px;background:transparent;color:var(--dsw-alias-label-secondary);cursor:pointer}.dtv-play-greeting-button:hover{background:var(--dsw-alias-interactive-bg-hover)}.dtv-play-greeting-button:disabled{opacity:.4;cursor:default}
 .dtv-play-import-controls{align-self:center;display:flex;flex-wrap:wrap;align-items:center;justify-content:center;gap:8px;margin:0 0 2px}.dtv-play-import-bound{width:100%;margin:0;text-align:center;color:var(--dsw-alias-label-tertiary);font-size:11px}.dtv-play-import-button{min-height:30px;padding:5px 11px;border:1px solid var(--dsw-alias-border-subtle);border-radius:9px;background:var(--dsw-alias-bg-layer-2,var(--dsw-specific-block));color:var(--dsw-alias-label-primary);font:inherit;font-size:11px;cursor:pointer}.dtv-play-import-button:hover{background:var(--dsw-alias-interactive-bg-hover)}.dtv-play-import-button:disabled{opacity:.45;cursor:default}.dtv-play-import-last{margin:0;color:var(--dsw-alias-label-tertiary);font-size:11px;font-weight:700}
 .dtv-play-chat-status{margin:16px 0;padding:12px 14px;border-radius:12px;background:var(--dsw-alias-bg-layer-2,var(--dsw-specific-block));color:var(--dsw-alias-label-tertiary);font-size:12px;line-height:1.55}.dtv-play-chat-status[data-error=true]{color:var(--dsw-alias-state-error)}
@@ -200,7 +200,7 @@ export async function loadChatState(client, sessionId, playthrough) {
   const importMutable = (timeline?.nodes?.length ?? 0) === 0
     && rootMessages?.incompleteTurn !== true
     && !(rootMessages?.messages ?? []).some(message => message?.role === 'user' || message?.role === 'assistant')
-    && !['claimed', 'consumed'].includes(importedContext.binding?.state)
+    && importedContext.binding?.state !== 'consumed'
   return {
     timeline,
     turns,
@@ -286,21 +286,10 @@ export function turnHasVisibleRpContent(turn) {
     || turn?.running === true
 }
 
-export function greetingSelectionLocked({ turns = [], latestUserSeq = -1, running = false, preparationMutable = true } = {}) {
-  return !preparationMutable || running
+export function greetingSelectionLocked({ turns = [], latestUserSeq = -1, running = false } = {}) {
+  return running
     || latestUserSeq >= 0
     || turns.some(turn => turn?.imported !== true)
-}
-
-// Preparation follows durable conversation/import evidence, not the native shell's
-// retained display phase. Empty alternate greetings do not count as choices.
-export function OpeningPreparation({ greeting, importBound = false }) {
-  const count = (greeting?.options ?? []).filter(option => option.text.trim() !== '').length
-  return h('div', { className: 'dtv-play-preparation', role: 'status' },
-    h('p', null, uiMessage('play.chat.preparing')),
-    importBound ? null : h('p', null, uiMessage(count === 0 ? 'play.chat.noGreetings'
-      : count === 1 ? 'play.chat.singleGreeting' : 'play.chat.greetingCount', { count })),
-  )
 }
 
 function Turn({ turn, hideUser = false, swipePending = false, ...actionProps }) {
@@ -464,8 +453,7 @@ function ChatFrame({
     changed,
     onError,
   })
-  const greetingLocked = greetingSelectionLocked({
-    preparationMutable: !importLocked,
+  const greetingLocked = !interactive || greetingSelectionLocked({
     turns: state.turns,
     latestUserSeq: latestUserNodeSeq(liveNodes),
     running,
@@ -477,7 +465,6 @@ function ChatFrame({
     'data-direction': direction,
     onAnimationEnd: transitionEnded,
   }, h('div', { className: 'dtv-play-chat-list' },
-    greetingLocked ? null : h(OpeningPreparation, { greeting: state.greeting, importBound: state.importBinding !== null }),
     state.greeting === null && state.importBinding !== null ? null : h(Greeting, {
       greeting: state.greeting,
       busy: greetingBusy,
@@ -688,7 +675,6 @@ export function MowanChatView({ sessionId, useSession, useChat, playClient, play
 
   const changeGreeting = async direction => {
     const greetingLocked = greetingSelectionLocked({
-      preparationMutable: state?.importMutable === true,
       turns: state?.turns ?? [],
       latestUserSeq,
       running,
