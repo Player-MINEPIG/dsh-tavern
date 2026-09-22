@@ -43,13 +43,15 @@ After install and DSH Web restart, the page shows an orb always labeled `DT`: na
 - The menu stays mounted. Content fades in after the 220ms expand so the first-row switch button does not flash. After any sidebar opens, the orb remains so you can switch modules.
 - A glowing green dot next to a resource means the current session has that resource enabled; red means it is not. A world-book green dot means an effective binding exists, not that keywords hit this turn.
 - The title shows currently enabled content. The in-panel “browse/edit target” can differ from the session binding. Trust the binding state and **Not applied** hints.
-- If a preset, character card, world book, display regex, or imported record fails completely, the UI shows an **Import failed** dialog in addition to the existing inline error. If the resource imported successfully and only has compatibility diagnostics or warnings, only the panel diagnostics stay; no failure dialog.
+- If a preset, character card, user, world book, session template, display regex, or imported record fails completely, the UI shows an **Import failed** dialog in addition to the existing inline error. If the resource imported successfully and only has compatibility diagnostics or warnings, only the panel diagnostics stay; no failure dialog.
 - **UI settings** can switch Simplified Chinese/English, scale Tavern UI from 75%–150%, and choose a default RP workspace from existing DSH workspaces. It also toggles **Follow character into RP** and edits optional `rp:policy` text. The default RP workspace is authoritative via `GET/PUT /v2/workspace` and is not copied into UI settings. Changes affect only the default location of new playthroughs and RP/ordinary session classification. They do not move existing sessions, directories, catalog, or timeline. Language/scale/follow are global; the RP switch itself is per-session. Lock list: [RP secure mode](RP_SECURE_MODE_en.md).
 - The first time you enter Mowan without an RP workspace, a workspace picker appears instead of an empty RP UI. The page lists only existing DSH workspaces. A single candidate is still not auto-selected. After you click a candidate, wait for write and read-back. If the previous binding is stale or read/write fails, use **Check again** or **Return to DSH mode**. System-disk candidates still require a second confirmation.
 
 ## 2. Presets
 
-The preset panel can import SillyTavern Chat Completion preset JSON or create a blank preset.
+The preset panel can import SillyTavern Chat Completion preset JSON or create a blank preset. After saving edits, use **Export JSON** to download the current resource.
+
+Reasoning effort offers inherit, off, low, medium, high, extra high, and maximum (`max`). Other valid provider effort IDs from imported files are preserved and displayed in the selector; editing unrelated fields does not clear them. Choosing inherit clears Tavern's explicit override. Available values still depend on the target model/provider; preserving a value does not mean every model supports it.
 
 1. Choosing a preset from the list only opens it for browse/edit. It does not automatically affect the current session.
 2. You can edit the name, append/replace system strategy, DSH-supported sampling parameters, and prompt-block enablement, role, content, and order.
@@ -104,10 +106,11 @@ Composition order is session explicit → user-bound → preset-bound → charac
 
 A user resource is strictly name and description. It has no avatar and does not override DSH Agent identity.
 
-1. Create or select a user and fill the name the model should use and the user description.
-2. The name can be used as `{{user}}`. The description is placed once via the `personaDescription` marker, `{{persona}}`, or a stable fallback.
-3. A user can bind zero or more standalone world books. User body and world-book relations are two separate saves. The panel shows unsaved changes.
-4. Save, then bind/update to the current session. Unbinding a user removes the user description and that world-book source. It does not delete world books the session selected explicitly.
+1. Use **New user**, select an existing user, or **Import JSON** from a Tavern user file. Fill the name the model should use and the user description. Creating and editing do not require a session binding.
+2. **Export JSON** downloads the saved name and description. Import creates a new user without replacing same-name resources, binding a session, or carrying user–world-book relations. Select and save those relations separately after import.
+3. The name can be used as `{{user}}`. The description is placed once via the `personaDescription` marker, `{{persona}}`, or a stable fallback.
+4. A user can bind zero or more standalone world books. User body and world-book relations are two separate saves. The panel shows unsaved changes.
+5. Save, then bind/update to the current session. Unbinding a user removes the user description and that world-book source. It does not delete world books the session selected explicitly.
 
 User–world-book relations are global. Changing them affects later requests on every session bound to that user. They do not rewrite a frozen `request/header` or existing history.
 
@@ -118,7 +121,9 @@ Switching resources in the same session does not delete assistant replies alread
 - In DSH mode, **New chat with current settings** copies the current preset, character/greeting options, user, standalone world books, and RP state onto a real blank DSH session.
 - In Mowan, the same entry and **From selected template** read the configured character card, create or reuse that character's empty playthrough, then apply the complete selection to its root session. A configuration with no character card cannot create a playthrough; switch back to DSH mode for an ordinary session.
 - Templates store the same bounded selection projection and can be previewed before create.
-- Updating a template reads only the current session's actual settings. Finish and save configuration in the DT resource panels first.
+- **Create blank template** works without a current session. Select a template, edit its name, preset, character card, user, ordered world books, opening number, character-prompt preferences, and saved RP settings, then **Save changes**. This does not alter current session bindings.
+- **Create from current settings** and **Update from current settings** still capture the current session's actual configuration. Save and apply resource-panel changes before using these actions.
+- **Export JSON** downloads the saved template name, settings, and resource ID references without bundling those resources. Import creates a new template and preserves the previous default-template selection. Explicitly select the imported template and review its references and diagnostics; IDs are not automatically remapped by name between libraries.
 - New sessions do not copy durable history, Inbox, Trace, resource bodies, or old runtime state.
 - Missing template resources show diagnostics and block apply.
 

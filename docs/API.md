@@ -7,7 +7,7 @@
 
 各版本路由目录统一采用 v2 的 **方法 / 路径 / 作用 / 状态** 格式。路径相对于该节声明的
 版本前缀，标识符须 URL 编码；查询参数和请求正文按各接口约定。沿用本机 TCP peer、
-Host、Origin 和媒体类型检查。成功 JSON 带 `ok:true`；失败带 `ok:false` 和 `error`。
+Host、Origin 和媒体类型检查。除导出附件原文外，成功 JSON 带 `ok:true`；失败带 `ok:false` 和 `error`。
 v1 的 error 形状和方法拒绝状态码因资源而异，文档排版统一不改变线上合同。
 
 [DSH V3 坐标迁移合同](DSH_0.1.5_MIGRATION.md) 定义消息坐标、branch 输入和未迁移
@@ -312,6 +312,8 @@ operation log、chrome service/slot、工作区准入、本地化与发布包边
 | DELETE | `/world-books/:id` | 删除独立世界书并清理相关绑定 | 已实现 |
 | GET | `/users` | 用户目录 | 已实现 |
 | POST | `/users` | 创建用户 | 已实现 |
+| POST | `/users/import` | 导入 Tavern 用户 JSON，分配新 ID，不绑定会话 | 已实现 |
+| GET | `/users/:id/export` | 导出已保存的名称和描述为 Tavern JSON 附件 | 已实现 |
 | GET | `/users/:id` | 完整当前用户；返回 user | 已实现 |
 | PATCH | `/users/:id` | 更新用户 | 已实现 |
 | DELETE | `/users/:id` | 删除用户并清理相关绑定 | 已实现 |
@@ -338,15 +340,73 @@ operation log、chrome service/slot、工作区准入、本地化与发布包边
 | DELETE | `/rp-alert?sessionId=&id=` | 消费对应提示；id 可省略 | 已实现 |
 | GET | `/traces?sessionId=` | 旧版历史元数据审计；返回 records/storage/authority，无完整提示词正文 | 已实现；兼容保留 |
 | GET | `/session-templates` | 模板目录、当前选择、内容摘要与缺失诊断 | 已实现 |
-| POST | `/session-templates` | { name, sourceSessionId }，从当前配置创建模板 | 已实现 |
+| POST | `/session-templates` | `{ name, sourceSessionId }` 获取会话配置，或 `{ name, selection? }` 显式创建；省略 selection 创建空白模板 | 已实现 |
+| POST | `/session-templates/import` | 导入 Tavern 模板 JSON，分配新 ID，保留当前模板选择 | 已实现 |
+| GET | `/session-templates/:id/export` | 导出已保存的模板设置和资源引用为 Tavern JSON 附件 | 已实现 |
 | GET | `/session-templates/:id` | 模板详情及资源诊断 | 已实现 |
-| PATCH | `/session-templates/:id` | 更新模板 | 已实现 |
+| PATCH | `/session-templates/:id` | 更新 name、显式 selection，或通过 sourceSessionId 获取会话配置 | 已实现 |
 | DELETE | `/session-templates/:id` | 删除模板 | 已实现 |
 | POST | `/session-templates/select` | { id }，选择或清空模板 | 已实现 |
 | POST | `/session-configurations/preview` | { source }，只读预览 current/template 配置；不运行提示词装配 | 已实现 |
 | POST | `/session-configurations/apply` | { targetSessionId, source }，校验后应用绑定 | 已实现 |
 
 资源与子资源的细节见下文。除明确说明外，不应假定 v1 未支持方法一律返回 v2 风格的 405。
+
+### 用户与模板的可移植 JSON
+
+这两类资源沿用 v1 当前资源边界，不新增配置聚合或资源打包接口。预设继续使用
+SillyTavern preset JSON，角色卡继续使用 JSON/PNG，独立世界书继续使用世界书 JSON。
+用户和会话模板使用版本化 Tavern JSON；请求正文直接发送该文档，媒体类型为
+`application/json`，不是 `{ content: "..." }` 包装：
+
+```json
+{
+  "format": "pmp-dsh-tavern",
+  "version": 1,
+  "resourceType": "user",
+  "data": { "name": "Reader", "description": "A curious traveler." }
+}
+```
+
+模板使用同样的 envelope，`resourceType` 为 `"session-template"`，`data` 为
+`{ "name": "Example", "selection": { "presetId": null, "characterCardId": null,
+"userId": null, "worldBookIds": [], "character": {}, "rp": { "active": false,
+"source": null, "followSuppressed": false, "sandboxBefore": null } } }`。
+
+- 每次导入创建新 ID，不接受导入数据中的 `id`，不覆盖同名资源，不自动绑定会话。
+  模板导入也不改变当前选中的默认模板；普通模板创建仍会选中新模板。
+- 用户只导出已保存的名称与描述，不包含用户—世界书关系或会话绑定。模板只导出名称和
+  selection，包括有序资源 ID、角色选项与已保存 RP 字段；不包含资源正文、历史、Trace、
+  Inbox 或旧运行态。分别通过现有资源/关系 API 搬运其他内容，不按名称自动重映射 ID。
+- 导出返回 JSON 附件原文（不包在 `ok:true` 内）。用户导入返回 HTTP 201
+  `{ ok:true, user }`；模板导入返回 HTTP 201 `{ ok:true, template, contents, diagnostics }`。
+  模板引用缺失资源时允许保存/导入，诊断会标记缺失，配置 apply 仍会拒绝应用。
+- 未支持的版本、类型、字段或无效字段值返回 400；过大正文返回 413。用户导入上限
+  1 MiB，名称最多 200 字符，描述最多 100,000 字符；用户其他 JSON 写入上限仍为
+  256 KiB。模板导入上限 256 KiB，其他模板 JSON 写入上限仍为 64 KiB；更大的导入
+  上限允许合法文本在 JSON 转义后往返。模板数量限制为 409，存储字节限制为 413。
+
+### 显式模板编辑与采样覆盖
+
+`POST /session-templates` 不必依赖当前会话：`{ "name": "Blank" }` 创建空白模板；
+传入 `selection` 则保存显式配置。`PATCH /session-templates/:id` 可以更新名称、selection
+或从 `sourceSessionId` 获取配置；同一请求中的 `selection` 与 `sourceSessionId` 互斥。
+显式 selection 替换整个模板配置，省略的 selection 字段使用空白默认值，不与旧配置合并。
+创建/编辑模板不改变既有会话绑定。更新仅名称时保持 selection。
+
+selection 的字段为 `presetId`、`characterCardId`、`userId`（null 或非空、最多 200 字符的 ID），
+`worldBookIds`（有序、不重复，最多 100 个 ID），`character` 与 `rp`。`character` 可含
+非负安全整数 `greetingIndex`，以及布尔值 `preferCharacterSystemPrompt`、
+`preferCharacterPostHistory`。`rp` 可含布尔值 `active`、`followSuppressed`，
+`source` 为 null / `command` / `character-follow`，`sandboxBefore` 为 null /
+`read-only` / `workspace-write` / `danger-full-access`。模板名称最多 120 字符且不超过
+480 UTF-8 字节。显式编辑和导入拒绝无效字段，而不是静默丢弃；资源可用性另由现有诊断检查。
+
+预设 `sampling.reasoningEffort` 支持 `off`、`low`、`medium`、`high`、`xhigh`、`max`。
+导入/保存/导出还会保留最多 100 字符、非空白且不含控制字符的其他 provider effort ID；
+编辑器可显示并保留该值，不会仅因不在菜单常用值中而清除。更新时省略此字段保留原值，
+显式传入 null（UI 的继承选项）清除 Tavern 覆盖。资源保存成功不表示目标 provider 支持
+该 effort；实际请求以目标模型/provider 的能力与默认值为准。
 
 ### 世界书历史审计
 

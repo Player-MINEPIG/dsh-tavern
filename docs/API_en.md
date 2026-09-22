@@ -8,8 +8,8 @@ Root: `/pmp-dsh-tavern/api`. API versions and DSH log format V3 are independent.
 All endpoint catalogs use **Method / Path / Behavior / Status**, following the v2
 format. Paths are relative to the stated version prefix. URL-encode identifiers;
 query parameters and request bodies remain endpoint-specific. Existing local TCP
-peer, Host, Origin and media-type checks apply. Successful JSON responses carry
-`ok:true`; failures carry `ok:false` and `error`. v1 error shapes and method rejection
+peer, Host, Origin and media-type checks apply. Except for raw export attachments, successful JSON
+responses carry `ok:true`; failures carry `ok:false` and `error`. v1 error shapes and method rejection
 codes vary by resource; common documentation formatting does not change wire contracts.
 
 The [DSH V3 coordinate migration contract](DSH_0.1.5_MIGRATION_en.md) governs
@@ -317,6 +317,8 @@ Prefix: `/pmp-dsh-tavern/api/v1`. `/dsh-tavern/api` is not part of the current c
 | DELETE | `/world-books/:id` | Delete standalone world book and clean up related bindings | Implemented |
 | GET | `/users` | User catalog | Implemented |
 | POST | `/users` | Create user | Implemented |
+| POST | `/users/import` | Import Tavern user JSON with a new ID and no session binding | Implemented |
+| GET | `/users/:id/export` | Export the saved name and description as a Tavern JSON attachment | Implemented |
 | GET | `/users/:id` | Complete current user; returns user | Implemented |
 | PATCH | `/users/:id` | Update user | Implemented |
 | DELETE | `/users/:id` | Delete user and clean up related bindings | Implemented |
@@ -343,15 +345,80 @@ Prefix: `/pmp-dsh-tavern/api/v1`. `/dsh-tavern/api` is not part of the current c
 | DELETE | `/rp-alert?sessionId=&id=` | Consume the alert; id is optional | Implemented |
 | GET | `/traces?sessionId=` | Legacy historical metadata audit; returns records/storage/authority without complete prompt bodies | Implemented; retained for compatibility |
 | GET | `/session-templates` | Template catalog, selection, content summaries and missing-resource diagnostics | Implemented |
-| POST | `/session-templates` | { name, sourceSessionId }; create a template from current configuration | Implemented |
+| POST | `/session-templates` | `{ name, sourceSessionId }` captures session settings, or `{ name, selection? }` creates explicitly; omitted selection creates a blank template | Implemented |
+| POST | `/session-templates/import` | Import Tavern template JSON with a new ID, preserving the selected template | Implemented |
+| GET | `/session-templates/:id/export` | Export saved template settings and resource references as a Tavern JSON attachment | Implemented |
 | GET | `/session-templates/:id` | Template detail and resource diagnostics | Implemented |
-| PATCH | `/session-templates/:id` | Update template | Implemented |
+| PATCH | `/session-templates/:id` | Update name, explicit selection, or capture session settings using sourceSessionId | Implemented |
 | DELETE | `/session-templates/:id` | Delete template | Implemented |
 | POST | `/session-templates/select` | { id }; select or clear a template | Implemented |
 | POST | `/session-configurations/preview` | { source }; read-only current/template configuration preview; does not run prompt assembly | Implemented |
 | POST | `/session-configurations/apply` | { targetSessionId, source }; validate and apply bindings | Implemented |
 
 Resource/subresource details follow below. Except where explicitly specified, do not assume unsupported methods return v2-style 405 errors.
+
+### Portable user and template JSON
+
+These resources stay within v1's current-resource boundary; no configuration aggregate or resource-bundle
+API is added. Presets continue using SillyTavern preset JSON, character cards use JSON/PNG, and standalone
+world books use world-book JSON. Users and session templates use versioned Tavern JSON. Send the document
+directly as the `application/json` request body, without a `{ content: "..." }` wrapper:
+
+```json
+{
+  "format": "pmp-dsh-tavern",
+  "version": 1,
+  "resourceType": "user",
+  "data": { "name": "Reader", "description": "A curious traveler." }
+}
+```
+
+Templates use the same envelope with `resourceType: "session-template"` and
+`data: { "name": "Example", "selection": { "presetId": null, "characterCardId": null,
+"userId": null, "worldBookIds": [], "character": {}, "rp": { "active": false,
+"source": null, "followSuppressed": false, "sandboxBefore": null } } }`.
+
+- Each import allocates a new ID. Imported data cannot specify `id`, replace a same-name resource, or
+  automatically bind a session. Template import also preserves the selected default template; ordinary
+  template creation still selects the newly created template.
+- User exports contain only the saved name and description, excluding user–world-book relations and
+  session bindings. Template exports contain name and selection, including ordered resource IDs,
+  character options, and saved RP fields. They exclude resource bodies, history, Trace, Inbox, and old
+  runtime state. Transfer other content through existing resource/relation APIs; IDs are not remapped by name.
+- Export returns a JSON attachment directly, without an `ok:true` wrapper. User import returns HTTP 201
+  `{ ok:true, user }`; template import returns HTTP 201 `{ ok:true, template, contents, diagnostics }`.
+  Saving/importing a template with missing resources is allowed; diagnostics identify the missing
+  references, and configuration apply still rejects them.
+- Unsupported versions, types, fields, or invalid values return 400; oversized bodies return 413.
+  User import is limited to 1 MiB, names to 200 characters, and descriptions to 100,000 characters;
+  other user JSON writes retain their 256 KiB body limit. Template import is limited to 256 KiB;
+  other template JSON writes retain their 64 KiB limit. Larger import limits allow valid escaped JSON
+  text to roundtrip. Template count limits return 409; storage-byte limits return 413.
+
+### Explicit template editing and sampling overrides
+
+`POST /session-templates` does not require a current session: `{ "name": "Blank" }` creates a blank
+template; supplying `selection` saves explicit settings. `PATCH /session-templates/:id` can update the
+name, replace selection, or capture configuration from `sourceSessionId`. `selection` and
+`sourceSessionId` are mutually exclusive. Explicit selection replaces the entire template configuration;
+omitted selection fields use blank defaults rather than merging with the previous configuration.
+Creating/editing a template does not change existing session bindings. Name-only updates preserve selection.
+
+Selection fields are `presetId`, `characterCardId`, `userId` (null or a nonempty ID of at most 200 characters),
+`worldBookIds` (ordered, unique, at most 100 IDs), `character`, and `rp`. `character` may contain a nonnegative
+safe-integer `greetingIndex`, and boolean `preferCharacterSystemPrompt` / `preferCharacterPostHistory`.
+`rp` may contain boolean `active` / `followSuppressed`, `source` of null / `command` / `character-follow`,
+and `sandboxBefore` of null / `read-only` / `workspace-write` / `danger-full-access`. Template names are
+limited to 120 characters and 480 UTF-8 bytes. Explicit edits and imports reject invalid fields instead
+of silently dropping them; existing diagnostics check resource availability separately.
+
+Preset `sampling.reasoningEffort` supports `off`, `low`, `medium`, `high`, `xhigh`, and `max`.
+Import/save/export also preserve other provider effort IDs that contain at most 100 characters,
+are not whitespace-only, and contain no control characters. The editor displays and preserves such
+values even when they are absent from its common choices. Omitting the field during update preserves
+its saved value; explicit null (the UI's inherit option) clears the Tavern override. Successful resource
+storage does not establish provider support; the actual request follows the target model/provider's
+capabilities and defaults.
 
 ### Historical world-book audit
 
