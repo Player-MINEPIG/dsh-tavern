@@ -1,0 +1,367 @@
+{
+  "schema_version": 1,
+  "diagram_type": "architecture",
+  "meta": {
+    "title": "Tavern 2.4.0 × DSH 0.1.7",
+    "locale": "en",
+    "quality_profile": "showcase",
+    "viewBox": [
+      1190,
+      560
+    ],
+    "repository": {
+      "url": "https://github.com/Player-MINEPIG/dsh-tavern",
+      "revision": "c47dbddb5f4793590f269223802731d51fcba131",
+      "link_mode": "local-only"
+    }
+  },
+  "components": [
+    {
+      "id": "native-ui",
+      "type": "frontend",
+      "label": "DSH native UI · HIGH",
+      "sublabel": "retainedBy.mainView · scoped stores",
+      "tag": "High · fields and lifecycle",
+      "pos": [
+        60,
+        35
+      ],
+      "size": [
+        230,
+        82
+      ],
+      "sources": [
+        {
+          "path": "packages/client/src/session-selection.js"
+        },
+        {
+          "path": "packages/client/src/play/occupancy.js"
+        },
+        {
+          "path": "packages/client/src/play/chat.js"
+        }
+      ]
+    },
+    {
+      "id": "host-shell",
+      "type": "backend",
+      "label": "DSH plugin / Web Host · HIGH",
+      "sublabel": "Cordis 4.0.3 · webServer",
+      "tag": "High · loading and routes",
+      "pos": [
+        480,
+        35
+      ],
+      "size": [
+        230,
+        82
+      ],
+      "sources": [
+        {
+          "path": "package.json"
+        },
+        {
+          "path": "cordis.patch.yml"
+        },
+        {
+          "path": "packages/tavern-loader/src/index.js"
+        }
+      ]
+    },
+    {
+      "id": "durable-history",
+      "type": "database",
+      "label": "DSH durable history · HIGH",
+      "sublabel": "V4 · seq · inspect / page",
+      "tag": "High · events and coordinates",
+      "pos": [
+        900,
+        35
+      ],
+      "size": [
+        230,
+        82
+      ],
+      "sources": [
+        {
+          "path": "packages/session-events.js"
+        },
+        {
+          "path": "packages/tavern-trace/src/body-references.js"
+        },
+        {
+          "path": "packages/play/src/session-coordinates.js"
+        }
+      ]
+    },
+    {
+      "id": "tavern-client",
+      "type": "frontend",
+      "label": "Tavern browser root · HIGH",
+      "sublabel": "openSession · RP / Trace scope",
+      "tag": "High · native UI adapter",
+      "pos": [
+        60,
+        160
+      ],
+      "size": [
+        230,
+        82
+      ],
+      "sources": [
+        {
+          "path": "packages/client/src/index.js"
+        },
+        {
+          "path": "packages/tavern-trace/src/client.js"
+        },
+        {
+          "path": "packages/client/src/play/view-default.js"
+        }
+      ]
+    },
+    {
+      "id": "tavern-loader",
+      "type": "backend",
+      "label": "Tavern Host adapter · HIGH",
+      "sublabel": "agent/created · assembly · Host port",
+      "tag": "High · main compatibility seam",
+      "pos": [
+        480,
+        160
+      ],
+      "size": [
+        230,
+        82
+      ],
+      "sources": [
+        {
+          "path": "packages/tavern-loader/src/index.js"
+        },
+        {
+          "path": "packages/tavern-loader/src/pending-input-projection.js"
+        },
+        {
+          "path": "packages/tavern-loader/src/play-host.js"
+        }
+      ]
+    },
+    {
+      "id": "dsh-execution",
+      "type": "backend",
+      "label": "DSH Agent / controllers · HIGH",
+      "sublabel": "prepareCall · sessionController",
+      "tag": "High · ordering and call contracts",
+      "pos": [
+        900,
+        160
+      ],
+      "size": [
+        230,
+        82
+      ],
+      "sources": [
+        {
+          "path": "packages/tavern-loader/src/index.js"
+        },
+        {
+          "path": "packages/tavern-loader/src/play-host.js"
+        },
+        {
+          "path": "packages/tavern-loader/src/session-policy.js"
+        }
+      ]
+    },
+    {
+      "id": "play-projection",
+      "type": "database",
+      "label": "Play / Trace · MED–HIGH",
+      "sublabel": "V4 references · per-session cache",
+      "tag": "Medium to high · data semantics",
+      "pos": [
+        60,
+        285
+      ],
+      "size": [
+        230,
+        82
+      ],
+      "sources": [
+        {
+          "path": "packages/play/src/timeline.js"
+        },
+        {
+          "path": "packages/tavern-trace/src/assembly-recorder.js"
+        },
+        {
+          "path": "packages/tavern-trace/src/body-references.js"
+        }
+      ]
+    },
+    {
+      "id": "resource-usecases",
+      "type": "backend",
+      "label": "Resources / config · LOW",
+      "sublabel": "preset · character · user · templates",
+      "tag": "Low direct · integrated by loader",
+      "pos": [
+        480,
+        285
+      ],
+      "size": [
+        230,
+        82
+      ],
+      "sources": [
+        {
+          "path": "packages/preset/src/index.js"
+        },
+        {
+          "path": "packages/session-template/src/index.js"
+        },
+        {
+          "path": "packages/tavern-loader/src/profile-loader.js"
+        }
+      ]
+    },
+    {
+      "id": "rp-guard",
+      "type": "security",
+      "label": "DSH tools / sandbox · HIGH",
+      "sublabel": "tools.guard · sandbox · commands",
+      "tag": "High · RP safety contract",
+      "pos": [
+        900,
+        285
+      ],
+      "size": [
+        230,
+        82
+      ],
+      "sources": [
+        {
+          "path": "packages/tavern-loader/src/rp-mode.js"
+        },
+        {
+          "path": "packages/tavern-loader/src/rp-secure-path.js"
+        }
+      ]
+    },
+    {
+      "id": "pure-domain",
+      "type": "backend",
+      "label": "Pure domain · NO DIRECT",
+      "sublabel": "tavern-format · world-book",
+      "tag": "No direct DSH runtime dependency",
+      "pos": [
+        480,
+        410
+      ],
+      "size": [
+        230,
+        82
+      ],
+      "sources": [
+        {
+          "path": "packages/tavern-format/src/index.js"
+        },
+        {
+          "path": "packages/world-book/src/index.js"
+        }
+      ]
+    }
+  ],
+  "connections": [
+    {
+      "id": "client-api",
+      "from": "tavern-client",
+      "to": "tavern-loader",
+      "label": "HTTP v1 / v2 / v3",
+      "variant": "emphasis"
+    },
+    {
+      "id": "loader-runtime",
+      "from": "tavern-loader",
+      "to": "dsh-execution",
+      "label": "hooks / controllers",
+      "variant": "emphasis"
+    },
+    {
+      "id": "client-ui",
+      "from": "tavern-client",
+      "to": "native-ui",
+      "label": "slot / store reuse"
+    },
+    {
+      "id": "loader-host",
+      "from": "tavern-loader",
+      "to": "host-shell",
+      "label": "inject / HTTP mount"
+    },
+    {
+      "id": "execution-history",
+      "from": "dsh-execution",
+      "to": "durable-history",
+      "label": "events / history"
+    },
+    {
+      "id": "client-projection",
+      "from": "tavern-client",
+      "to": "play-projection",
+      "label": "read via API",
+      "labelAt": [
+        175,
+        256
+      ]
+    },
+    {
+      "id": "loader-resources",
+      "from": "tavern-loader",
+      "to": "resource-usecases",
+      "label": "resource snapshots",
+      "labelAt": [
+        595,
+        256
+      ]
+    },
+    {
+      "id": "resources-pure",
+      "from": "resource-usecases",
+      "to": "pure-domain",
+      "label": "parse / match",
+      "labelAt": [
+        595,
+        381
+      ]
+    },
+    {
+      "id": "loader-guard",
+      "from": "tavern-loader",
+      "to": "rp-guard",
+      "label": "register guards"
+    }
+  ],
+  "cards": [
+    {
+      "dot": "rose",
+      "title": "Check events and history first",
+      "items": [
+        "V4 upgrade follows official codecs; retained backups protect timeline, import and Trace references."
+      ]
+    },
+    {
+      "dot": "amber",
+      "title": "Then check native UI contracts",
+      "items": [
+        "Global slots retain per-session owners; RP defaults and caches must remain scoped."
+      ]
+    },
+    {
+      "dot": "emerald",
+      "title": "Low direct coupling has limits",
+      "items": [
+        "Pure libraries stand alone; playthroughs and Trace still depend on DSH history semantics."
+      ]
+    }
+  ]
+}

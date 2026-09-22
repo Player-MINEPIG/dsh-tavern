@@ -2,7 +2,9 @@
 
 [English](ARCHITECTURE_en.md)
 
-当前合同面向本仓库源码（版本见 [package.json](../package.json)）与 DSH `0.1.5-rc.1`；安装标识为
+DSH 破坏性更新评估：[原生依赖架构图与分级矩阵](assets/dsh-dependencies/README.md)（含交互 HTML、仓库相对源码链接和升级检查入口）。
+
+当前合同面向本仓库源码（版本见 [package.json](../package.json)）与 DSH `0.1.7-alpha.1`；安装标识为
 `pmp-dsh-tavern`。HTTP 挂载 `/pmp-dsh-tavern/api`，资源走 `/v1`，扮演表面合同走
 `/v2`，装配审计走 `/v3`。本文记录当前架构决策与发布审查门槛。
 
@@ -10,13 +12,19 @@
 
 可编辑源文件：[dsh-tavern-architecture.drawio](assets/dsh-tavern-architecture.drawio)。图中 DSH session history 是唯一权威事件历史；Tavern 的外部目录只保存资源、选择、设置、Trace 与周目投影。
 
+## 目标 Host 与持久数据边界
+
+本 checkout 的 Tavern 2.4.0 合同面向 DSH 0.1.7-alpha.1、Cordis 4.0.3 与 `dsh-util-crypto` 0.1.7-alpha.1，不支持旧 Host 运行时。串行 `agent/created` listener 在首次使用前初始化选择、公开 pending-input 投影与 RP；初始化失败向外传播。
+
+DSH V4 拥有 system/user/assistant/tool 历史与 producer source，包括 `runtime-context` snapshot 和原生 tool-role result。准备顺序为装配 → pre-step → request/config 准备 → 接纳消息写入 → request header 与冻结消息 → stream。Trace 捕获官方正文/错误引用及生效参数，不建立第二份历史。[单向坐标升级](DSH_0.1.7_MIGRATION.md) 使用已验证的官方迁移阶段，保留全部升级前插件备份，不改写 DSH 日志。V3 之前的 header-body Trace 引用明确拒绝转换，不提供回滚工具。
+
 ## 周目归档
 
 Tavern 用 catalog 条目的 `ext.pmpDshTavern.archivedAt` 表示归档，通过现有文件 revision/CAS 更新。归档不拆除周目与会话关系，也不移动文件、清除 selection 或调用 DSH 的 `archiveSession`。侧边栏将归档周目投影到默认折叠的归档箱，保留成员归属以避免会话重新成为游离项；其他活动周目仍可显示共享会话。恢复只移除标记。读取 timeline 仍用于核对成员归属，归档不承诺减少磁盘占用或完整 catalog 的大小。旧版客户端忽略归档显示约定，旧 catalog 无需迁移。
 
 ## RP 错误提示
 
-展示层通过 DSH `0.1.5-rc.1` 的公开 `useChat` timeline 读取最新回合的 `turn/end.reason.kind === 'error'`，并汇总 `useSession` 的 `promptError`、`lastAgentError` 和 `openError`。只显示随 Tavern 语言变化的统一提示，详细诊断保留在原生“对话”视图；不匹配提供方错误文本、不保存第二份错误历史。新提交和生成期间隐藏旧回合提示，后续回合开始、成功或主动取消不会继续显示历史失败；当前 Session 错误不被 busy 状态掩盖。浏览器崩溃和未到达这些公开入口的连接故障不属于此提示的保证范围。
+展示层通过 DSH `0.1.7-alpha.1` 的公开 `useChat` timeline 读取最新回合的 `turn/end.reason.kind === 'error'`，并汇总 `useSession` 的 `promptError`、`lastAgentError` 和 `openError`。只显示随 Tavern 语言变化的统一提示，详细诊断保留在原生“对话”视图；不匹配提供方错误文本、不保存第二份错误历史。新提交和生成期间隐藏旧回合提示，后续回合开始、成功或主动取消不会继续显示历史失败；当前 Session 错误不被 busy 状态掩盖。浏览器崩溃和未到达这些公开入口的连接故障不属于此提示的保证范围。
 
 ## 当前工作区诊断
 
@@ -90,11 +98,11 @@ loader 在任何 Store 构造前解析统一 `storageDir`。默认 bundle 通过
 
 DSH 原生“新会话”按钮当前默认继承上一个聚焦会话的 preset 等 Tavern 选择/设定；这是 Host 基线。架构和验收不得继续把原生新会话假定为空白配置。
 
-干净会话与配置模板由 `packages/session-template` 保存纯选择投影，loader 注入真实资源库和 `SessionSelectionStore`。DSH 模式下，浏览器组合根只通过公开 `uiWorkspace.connectWorkspace()` 与 `sessions.open()` 创建/导航普通 blank session。魔丸模式下，同一控制面先 preview 配置并取得角色 id，再复用共享周目控制器与现有 v2 原子操作创建/复用该角色周目，最后通过 v1 apply 原子写入完整 selection；不增加“配置周目”专用后端动词。两条路径都不 fork 或伪造历史。完整事务边界见 `docs/LOADER_CONTRACT.md`。
+干净会话与配置模板由 `packages/session-template` 保存纯选择投影，loader 注入真实资源库和 `SessionSelectionStore`。DSH 模式下，浏览器组合根只通过公开 `uiWorkspace.connectWorkspace()` 与 `uiWorkspace.openSession()` 创建/导航普通 blank session。魔丸模式下，同一控制面先 preview 配置并取得角色 id，再复用共享周目控制器与现有 v2 原子操作创建/复用该角色周目，最后通过 v1 apply 原子写入完整 selection；不增加“配置周目”专用后端动词。两条路径都不 fork 或伪造历史。完整事务边界见 `docs/LOADER_CONTRACT.md`。
 
 ## Loader-owned ActivationContext
 
-DSH `0.1.5-rc.1` 的 `agent/inbox/spliced` 是公开、持久的 Session event；插入、替换、取消和 claim 都先 append 该事件并同步通知 `session/event`，随后实时 Inbox 才改变。loader 在这个边界维护唯一 `PendingInputProjection`，通过 `Session.ownEvents()` 排除 fork 继承前缀，把 durable history 与本次 claimed batch 去重后组合为临时 `ActivationContext`，供 world-book matcher 只读消费。其他当前日志读取集中使用 `session.seq` 与 `snapshotEvents()`，不再访问已删除的 `Session.events`。
+DSH `0.1.7-alpha.1` 的 `agent/inbox/spliced` 是公开、持久的 Session event；插入、替换、取消和 claim 都先 append 该事件并同步通知 `session/event`，随后实时 Inbox 才改变。loader 在这个边界维护唯一 `PendingInputProjection`，通过 `Session.ownEvents()` 排除 fork 继承前缀，把 durable history 与本次 claimed batch 去重后组合为临时 `ActivationContext`，供 world-book matcher 只读消费。其他当前日志读取集中使用 `session.seq` 与 `snapshotEvents()`，不再访问已删除的 `Session.events`。
 
 这个投影属于 Host adapter，不下沉到纯模块：
 
@@ -124,16 +132,16 @@ DSH `0.1.5-rc.1` 的 `agent/inbox/spliced` 是公开、持久的 Session event�
 | Tavern 能力 | 复用的 DSH 公开机制 | 自定义部分及边界 |
 | --- | --- | --- |
 | DT 悬浮入口 | `shell.overlay` additive slot、Cordis effect 生命周期 | 球体、菜单内容和全局 chrome 状态是产品 UI；不向 `document.body` 另建失控根节点 |
-| 魔丸侧边栏 | `sidebar.workspaces` slot；owner 注入的 `useSessions` / `useWorkspaces`；`ctx.sessions.open()` | 只重组为角色卡 / 周目投影，不改写、不归档、不隐藏 Host session 数据 |
+| 魔丸侧边栏 | `sidebar.workspaces` slot；owner 注入的 `useSessions` / `useWorkspaces`；`ctx.uiWorkspace.openSession()` | 只重组为角色卡 / 周目投影，不改写、不归档、不隐藏 Host session 数据 |
 | 工作区诊断 | `useSessions` / `useWorkspaces` 公开 mirrors；现有 v1/v2 资源及受管文件读取 | 与侧栏共享当前问题，mirrors 就绪后判断会话可用性；不复制 Host 日志、不提供新的诊断 API |
-| DSH 外层新会话 | DSH `0.1.5-rc.1` sidebar shell 自有；无供 Tavern 接管点击的公开 slot/service | Tavern 不用哈希 class、DOM capture 或源码替换接管；魔丸保留原生按钮并在文档中标为不推荐，普通区 `+` 只引导返回 native |
+| DSH 外层新会话 | DSH `0.1.7-alpha.1` sidebar shell 自有；无供 Tavern 接管点击的公开 slot/service | Tavern 不用哈希 class、DOM capture 或源码替换接管；魔丸保留原生按钮并在文档中标为不推荐，普通区 `+` 只引导返回 native |
 | 普通会话提示 | `conversation.input.dock` 独立整行 slot、继承的 `--dsh-composer-card-max-width` | 仅显示 Tavern 的 RP 工作区分类结果；提示按 Host composer 宽度居中，不接管原生 composer、不复制固定像素或读取哈希 class |
 | 魔丸对话页 | `conversation.view` slot；`useChat` 的 `legacy.nodes/partial` 与 `timeline`；`useSession` 的生命周期和错误字段 | 周目跨 session 聚合是 Tavern 投影；不伪造 DSH 消息，不读取私有 runtime |
-| 魔丸默认视图 | `slots.entries("conversation.session")` 暴露的 Conversation store 句柄、session 级 `conversation.input.dock` 及其 `actions.setView()` | 新周目尚未选定视图时复用同一 store，处理后立即注销；不向视图环注册第二个 `chat`，保留手动选择 |
+| 魔丸默认视图 | `slots.entries("conversation.session")` 暴露的 Conversation store 句柄、session 级 `conversation.input.dock` 及其 `actions.setView()` | 按 session/周目 binding 复用同一 store 并持续处理其他 scope；只为未选定视图设置默认，不注册第二个 `chat`，保留手动选择 |
 | 实时发送和流式显示 | DSH `useChat` 的公开 `legacy` 消息投影 | `/v2/messages` 只做持久消息范围对账；Session 不再提供 `nodes/partial`，Chat 顶层 `nodes` 不是数组 |
 | 空白周目开场 | 公开 `conversationPhase(session, conversation)` 与 `useConversation` | 不读取已删除的 Session `composerPhase`，不开第二套阶段状态机 |
 | 对话滚动 | Conversation 的 `[data-conversation-scroll]` scrollport、sticky composer 几何和注入的 `chatScroll.save(null)` | 只选择何时调用原生“到底部”语义；不计算固定 composer 高度，不维护第二个滚动容器 |
-| 干净新会话 / 配置模板 | DSH 模式复用 `uiWorkspace.connectWorkspace()`；魔丸模式复用周目 v2 session-controller 组合；两者都用 `sessions.open()` 导航 | Tavern 只在目标 session 上原子复制 selection；魔丸额外把配置角色作为周目归属并回读验证，不构造消息、不 fork 历史 |
+| 干净新会话 / 配置模板 | DSH 模式复用 `uiWorkspace.connectWorkspace()`；魔丸模式复用周目 v2 session-controller 组合；两者都用 `uiWorkspace.openSession()` 导航 | Tavern 只在目标 session 上原子复制 selection；魔丸额外把配置角色作为周目归属并回读验证，不构造消息、不 fork 历史 |
 | 周目 session 操作 | Host `sessions.create/rename/fork/prompt/history`、`workspace.insertSessionBefore`；Host 侧 `Session.deriveMessages()` | v2 把这些原子操作组成第三方前端可用的周目事务，同时保持 DSH session 为权威历史 |
 | RP 安全模式 | 官方 `sandbox/mode` Session event、`tools.guard`、Session/agent 生命周期 hook | Tavern 只保存 RP 是否启用及跟随来源；不发明第二种沙箱状态 |
 | prompt 与审计 | `systemPrompt.section`、`system-prompt/assemble`、`agent/request`、`llm/stream`、官方 Session events / inspect | loader 输出具名段落；Trace 保存有界来源 metadata 与官方历史引用，详情冷读并验证正文 |
@@ -186,7 +194,11 @@ DSH 当前没有角色卡、周目、greeting、跨 session adopted variant、ST
 
 每次升级 DSH 版本先做只读差异审计：核对插件清单的 inject、公开包根导出、slot owner props、store 字段、Host RPC 和 README 合同；然后运行 native/play 双模式及卸载回退验收。若公开 seam 消失，优先让对应增强失败关闭并保留原生表面，再讨论协议调整；禁止临时改为 DOM 查询、内部 bundle 符号或私有 runtime。新增前端功能的设计记录必须明确写出“复用的原生机制 / 自定义原因 / 官方升级观察点”。
 
-DSH `0.1.5-rc.1` 将三类状态分开：Session 管生命周期，Chat 管实时消息，Conversation 管视图与交互阶段。默认 RP adapter 从 `conversation.session` 的公开注册项取得 Conversation store 句柄，按 store handle × session scope 复用同一实例；不从原生 `chat` 取 `actions.setView()`，也不新建 store。adapter 挂在无可见内容的 `conversation.input.dock`，只处理未选择的 `view`，随后注销；已明确选择的原生“对话”或 Trace 不被覆盖。找不到公开句柄时不安装增强。浏览器专属的 `conversationPhase` 从 `entry.js` 注入组合根，普通模块仍可由 Node 单元测试导入。升级回归必须覆盖首轮默认 RP、空白开场、partial 增量、Trace、单个原生 `chat` 和退出模式时的释放。
+DSH `0.1.7-alpha.1` 区分三个 owner：Session 管生命周期，Chat 管实时消息，Conversation 管视图和交互阶段。主视图当前 Session 从 `useSessions` 中 `retainedBy.mainView > 0` 的条目选择，导航使用公开 `uiWorkspace.openSession()`，不依赖已移除的 `sessions.current/open` 合同；mirror 继续提供生命周期与工作区归属。
+
+RP/Trace slot 注册是全局的，复用的 `conversation.session` store 和注入 binding 则逐 Session 作用域解析。RP default adapter 保持挂载，按 session 身份/工作区/周目 binding 记录默认选择，只修改未选择的 view。其他保留 Session 若无 RP binding，会从 RP 返回原生 Chat；明确选择的 Chat/Trace 不被覆盖。缺失公开 store 句柄时不安装增强。暂时的 binding 读取失败保留已确认的匹配关系，不误判为无绑定。
+
+RP snapshot cache 按 client 有界保存，key 包含周目路径与 Session ID；swipe 过渡可显式借用来源 Session 的快照，直到目标就绪。其他保留 Session 不能仅因属于同一周目而共用缓存。浏览器 `conversationPhase` 仍由 `entry.js` 注入。回归覆盖首发默认 RP、空白开场、partial、Trace、多 retained owner、scope 切换与模式退出释放。
 
 Tavern 语言与 DSH 语言独立。RP、侧栏和开场 dock 订阅完整 UI 设置，而不是只订阅缩放值。语言变化还会刷新 Tavern 自己的 RP 页签注册项，因为 DSH 将 label 缓存在视图列表中；Conversation store 与已完成的默认视图选择保持不变。生成周目名随 locale 显示，用户自定标题及角色正文不翻译；不以 locale 事件替代 DSH 的 Session/Chat 订阅。
 
