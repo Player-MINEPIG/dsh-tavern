@@ -373,6 +373,11 @@ directly as the `application/json` request body, without a `{ content: "..." }` 
 }
 ```
 
+The user envelope is incompatible with SillyTavern's whole-list persona backup (`personas`,
+`persona_descriptions`, and `default_persona`). `POST /users/import` does not accept that ST backup
+format, and the output of `GET /users/:id/export` cannot be passed directly to ST Restore. See
+[User resource formats](USAGE_en.md#5-users).
+
 Templates use the same envelope with `resourceType: "session-template"` and
 `data: { "name": "Example", "selection": { "presetId": null, "characterCardId": null,
 "userId": null, "worldBookIds": [], "character": {}, "rp": { "active": false,

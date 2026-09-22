@@ -368,6 +368,11 @@ SillyTavern preset JSON，角色卡继续使用 JSON/PNG，独立世界书继续
 }
 ```
 
+用户 envelope 与 SillyTavern 的整个人设列表备份（`personas`、`persona_descriptions`、
+`default_persona`）不兼容。`POST /users/import` 不接受该 ST 备份格式，
+`GET /users/:id/export` 的输出也不能直接用于 ST 的 Restore。参见
+[用户资源格式说明](USAGE_zh-CN.md#5-用户)。
+
 模板使用同样的 envelope，`resourceType` 为 `"session-template"`，`data` 为
 `{ "name": "Example", "selection": { "presetId": null, "characterCardId": null,
 "userId": null, "worldBookIds": [], "character": {}, "rp": { "active": false,

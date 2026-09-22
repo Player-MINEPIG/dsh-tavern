@@ -108,6 +108,8 @@ description、personality、scenario、example dialogue 等字段会按预设 ma
 
 用户资源严格只有名字和描述，不包含头像，也不会覆盖 DSH Agent 身份。
 
+**与 SillyTavern 的格式区别：** 本面板导入、导出的是单个用户的 Tavern JSON，不能直接与 ST 人设备份文件互相导入。ST 人设管理提供的是整个人设列表的 Backup / Restore（备份／恢复），包含名称、描述、相关配置和默认人设；不包含头像图片或聊天绑定。恢复时合并数据并跳过已有内部标识。官方说明该备份包含内部关联，并非为分享单个人设而设计。详见 [ST 人设文档](https://docs.sillytavern.app/usage/core-concepts/personas/#pro-tips)。
+
 1. 点击“新建用户”、选择已有用户，或通过“导入 JSON”导入 Tavern 用户文件；填写希望模型如何称呼你的名字和用户描述。无需先绑定当前会话即可创建和编辑。
 2. “导出 JSON”下载已保存的名称和描述。导入会创建新用户，不覆盖同名资源，不自动绑定会话，也不携带用户—世界书关系；导入后请自行选择并保存需要的世界书关系。
 3. 名字可用于 `{{user}}`；描述由 `personaDescription` marker、`{{persona}}` 或稳定 fallback 放置一次，避免重复发送。

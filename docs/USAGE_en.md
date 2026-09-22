@@ -106,6 +106,8 @@ Composition order is session explicit → user-bound → preset-bound → charac
 
 A user resource is strictly name and description. It has no avatar and does not override DSH Agent identity.
 
+**SillyTavern format compatibility:** This panel imports and exports one user in Tavern JSON; these files and ST persona backups cannot be imported into each other directly. ST Persona Management provides Backup / Restore for the entire persona list, including names, descriptions, related settings, and the default persona, but excluding avatar images and chat bindings. Restore merges data and skips existing internal identifiers. The official documentation states that these backups contain internal links and are not designed for sharing individual personas. See the [ST persona documentation](https://docs.sillytavern.app/usage/core-concepts/personas/#pro-tips).
+
 1. Use **New user**, select an existing user, or **Import JSON** from a Tavern user file. Fill the name the model should use and the user description. Creating and editing do not require a session binding.
 2. **Export JSON** downloads the saved name and description. Import creates a new user without replacing same-name resources, binding a session, or carrying user–world-book relations. Select and save those relations separately after import.
 3. The name can be used as `{{user}}`. The description is placed once via the `personaDescription` marker, `{{persona}}`, or a stable fallback.
