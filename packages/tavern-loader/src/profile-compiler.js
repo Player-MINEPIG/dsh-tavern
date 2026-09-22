@@ -44,7 +44,7 @@ export function projectPresetCallConfig(preset) {
   return {
     ...(finite(sampling.temperature) === undefined ? {} : { temperature: sampling.temperature }),
     ...(positiveInteger(sampling.maxTokens) === undefined ? {} : { maxTokens: sampling.maxTokens }),
-    ...(['low', 'medium', 'high', 'xhigh'].includes(sampling.reasoningEffort)
+    ...(typeof sampling.reasoningEffort === 'string' && sampling.reasoningEffort.trim() !== '' && sampling.reasoningEffort.length <= 100
       ? { reasoningEffort: sampling.reasoningEffort }
       : {}),
     ...(Array.isArray(sampling.stop) && sampling.stop.length > 0 ? { stop: [...sampling.stop] } : {}),
