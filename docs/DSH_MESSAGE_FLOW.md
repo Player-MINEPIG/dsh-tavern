@@ -2,7 +2,7 @@
 
 [English](DSH_MESSAGE_FLOW_en.md)
 
-本文描述 Tavern **2.3.0**在 DSH `0.1.7-alpha.1` 上的当前消息合同：DSH
+本文描述 Tavern **2.4.0**在 DSH `0.1.7-alpha.1` 上的当前消息合同：DSH
 原生流程、DT 自身流程、DT 的介入点，以及一次完整模型 step。V4 的系统提示词以
 `system/message` 进入有效消息 surface，`request/header` 保留 config/tools；Trace schema 4
 只持久化 metadata 与官方 Session 引用，并由 [v3 API](PROMPT_API_V3.md) 按需验证正文。
@@ -334,7 +334,7 @@ Tavern Trace 位于 Conversation / Trajectory 同级的公开 `conversation.view
     魔丸模式：按预检中的角色复用共享周目控制器，创建或复用权威空周目
   → loader 原子写入完整 Tavern selection
   → 魔丸模式回读校验 session 角色与周目角色一致
-  → DSH sessions.open() 导航
+  → DSH uiWorkspace.openSession() 导航
 ```
 
 模板只保存 preset、角色/greeting 开关、用户、独立世界书和 RP 叠加的资源 ID/选项；不会读取或复制 durable messages、Tavern Trace、Inbox、claimed input、turn/step 或资源正文。魔丸模式要求该投影含角色卡，DSH 模式则允许无角色卡的普通会话。若任一资源已缺失，预检和应用都会返回诊断并阻止导航，因此不会留下“只应用了一半”的 Tavern 组合。

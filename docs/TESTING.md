@@ -6,7 +6,7 @@
 
 ## 环境与命令
 
-Tavern 的独立测试要求 Node.js `>=20`；目标 DSH `0.1.5-rc.1` 要求 Node.js `^22.19.0 || >=24.0.0`。运行真实 DSH 模块或 Host 时必须满足后者，并核实实际解析的核心包版本。CI 的独立测试矩阵不代表所有 DSH 运行时均受支持。
+Tavern 的独立测试要求 Node.js `>=20`；目标 DSH `0.1.7-alpha.1` 要求 Node.js `^22.19.0 || >=24.0.0`。运行真实 DSH 模块或 Host 时必须满足后者，并核实实际解析的核心包版本。CI 的独立测试矩阵不代表所有 DSH 运行时均受支持。
 
 在仓库根目录安装依赖后运行以下命令，定义以 [package.json](../package.json) 为准。
 
@@ -62,12 +62,16 @@ npm run verify:2.0
 
 ```sh
 node --test test/coordinate-migration-integration.test.mjs test/session-coordinates.test.mjs
-node --test test/trace-v3-host.test.mjs test/trace-failures-host.test.mjs
+node --test test/trace-v3-host.test.mjs test/trace-failures-host.test.mjs test/preset-fallback-host.test.mjs
+node --test test/dsh017-host-migration.test.mjs test/dsh017-client-sessions.test.mjs test/resource-capabilities.test.mjs
+node --test test/standalone-client-boundary.test.mjs
 ```
 
 未设置对应变量时，这些测试中的官方模块检查会跳过；设置了错误的解析根则会失败。它们使用临时数据和真实 DSH 模块，AgentLoop 测试使用合成模型适配器，不连接真实提供方，也不验证 Web Remote、浏览器或真实第三方插件。
 
 另外，`DSH_TAVERN_ACCEPTANCE_FIXTURE` 只启用 [特定外部预设夹具检查](../test/acceptance-fixture.test.mjs)，不是任意角色卡的通用验收入口。变量未设置或文件不存在时会跳过；文件内容不符合断言则会失败。平台不允许创建 symlink/junction 时，相关路径检查也可能跳过。阅读测试输出中的跳过原因，不将跳过记为通过。
+
+针对当前兼容边界，还需在隔离 Host 中检查：五类资源各自的创建、导入、导出、编辑；模板未保存时 Esc/切换面板保护；同一时刻保留多个会话，分别切换 RP、原生和 Trace；临时读失败恢复后保持有效绑定。采样测试使用显式参数拒绝、已输出内容、取消、鉴权错误，核对有限重试及 Trace 的 requested/effective/fallbacks。迁移应覆盖 V3 中断插入和 child catalog、旧格式链、备份冲突与重复执行。独立前端边界测试只证明资源组件可脱离 DSH bootstrap 打包和初始化，不代表完整独立会话 UI 已实现。
 
 ## Host 与浏览器检查
 
@@ -89,6 +93,6 @@ node --test test/play-sessions.test.mjs
 - **Trace：** 对照官方请求核查当次配置、世界书决策、Loader 段落顺序、正文及来源。重启后再读取旧记录；在测试副本中移除官方日志时，正文应明确不可用。失败记录的来源仍是官方事件，RP 不因此新增失败助手消息。接口合同见 [Prompt API v3](PROMPT_API_V3.md)。
 - **富文本与诊断：** 检查静态 HTML/CSS 的样式隔离、显示正则和脚本过滤；MVU 与 JavaScript 动态 HTML 不属于已实现能力。检查故障入口、摘要关闭、重新检查及问题恢复的状态一致性。Trace 正文应按文本展示。
 
-涉及写入并发、卸载或坐标迁移时，在测试副本中验证冲突及恢复路径；参阅 [API](API.md) 和 [迁移指南](DSH_0.1.5_MIGRATION.md)。真实提供方的超时/重试、真实第三方联调及平台差异须分别验证，不能从合成故障或其他平台的结果推断。
+涉及写入并发、卸载或坐标迁移时，在测试副本中验证冲突及恢复路径；参阅 [API](API.md) 和 [迁移指南](DSH_0.1.7_MIGRATION.md)。真实提供方的超时/重试、真实第三方联调及平台差异须分别验证，不能从合成故障或其他平台的结果推断。
 
 记录证据时注明源码版本、Node/DSH 版本、启用的检查、跳过项及可复现步骤，并区分自动测试、真实 Host、浏览器和外部联调覆盖。诊断报告与 Trace 元数据也可能包含私密标识和内容，公开问题报告前应检查并删去敏感信息。

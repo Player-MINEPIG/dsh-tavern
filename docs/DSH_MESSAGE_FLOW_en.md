@@ -2,7 +2,7 @@
 
 [中文](DSH_MESSAGE_FLOW.md)
 
-This page defines the current message contract for Tavern **2.3.0** on DSH
+This page defines the current message contract for Tavern **2.4.0** on DSH
 `0.1.7-alpha.1`: native DSH flow, DT flow, DT interception points, and one complete model
 step. V4 system prompts enter the effective surface through `system/message`, while
 `request/header` retains config/tools. Trace schema 4 persists metadata and official
@@ -340,7 +340,7 @@ Preview the current selection or template
     Mowan: reuse the shared playthrough controller for the previewed character, create or reuse the authoritative empty playthrough
   → loader writes the complete Tavern selection atomically
   → Mowan read-back-validates that the session character matches the playthrough character
-  → DSH sessions.open() navigates
+  → DSH uiWorkspace.openSession() navigates
 ```
 
 Templates store only resource IDs/options for preset, character/greeting switches, user, standalone world books, and the RP overlay. They do not read or copy durable messages, Tavern Trace, Inbox, claimed input, turn/step, or resource bodies. Mowan requires that projection to include a character card. DSH mode allows an ordinary session with no card. If any resource is already missing, preview and apply return diagnostics and block navigation, so a “half-applied” Tavern combination is not left behind.

@@ -2,8 +2,8 @@
 
 [中文](API.md) · [v3 detailed contract](PROMPT_API_V3_en.md) · [Frontend integration](FRONTEND_INTEGRATION_en.md)
 
-Contract version: Tavern **2.3.0**, targeting DSH `0.1.5-rc.1`.
-Root: `/pmp-dsh-tavern/api`. API versions and DSH log format V3 are independent.
+Contract version: Tavern **2.4.0**, targeting DSH `0.1.7-alpha.1`.
+Root: `/pmp-dsh-tavern/api`. API versions and DSH log format V4 are independent.
 
 All endpoint catalogs use **Method / Path / Behavior / Status**, following the v2
 format. Paths are relative to the stated version prefix. URL-encode identifiers;
@@ -12,7 +12,7 @@ peer, Host, Origin and media-type checks apply. Except for raw export attachment
 responses carry `ok:true`; failures carry `ok:false` and `error`. v1 error shapes and method rejection
 codes vary by resource; common documentation formatting does not change wire contracts.
 
-The [DSH V3 coordinate migration contract](DSH_0.1.5_MIGRATION_en.md) governs
+The [DSH V4 coordinate migration contract](DSH_0.1.7_MIGRATION_en.md) governs
 message coordinates, branch inputs, and unmigrated timeline references.
 
 <a id="api-scope"></a>
@@ -137,7 +137,7 @@ Example success (HTTP 200):
 ```json
 {
   "ok": true,
-  "sessionFormatVersion": 3,
+  "sessionFormatVersion": 4,
   "migratedFromV2": true
 }
 ```
@@ -154,7 +154,7 @@ If messages are already needed, use the top-level `sessionFormatVersion` and `mi
 
 #### Save, compare, and branch
 
-1. When creating a QA range from messages, save the version from **that same response** in `variant.ext.pmpDshTavern.sessionFormatVersion`. For example: `startEventId: 9`, `endEventId: 16`, version `3`. Never query a version after an upgrade and use it to relabel old integers with unknown provenance.
+1. When creating a QA range from messages, save the version from **that same response** in `variant.ext.pmpDshTavern.sessionFormatVersion`. For example: `startEventId: 9`, `endEventId: 16`, version `4`. Never query a version after an upgrade and use it to relabel old integers with unknown provenance.
 2. Before reusing a saved range, query its variant's `sessionId` and compare versions for **equality**. A mismatch, unknown version, or unversioned reference with a migration marker requires verification/recovery before reuse. Absence of a marker does not establish that an old unversioned range is valid.
 3. Send the saved range's version when branching. This conservative external-client example accepts only explicitly versioned, matching references; legacy unversioned data needs provenance verification first.
 
@@ -206,12 +206,12 @@ Example v2 error: `code` is **top-level** and `error` is a string:
 ```json
 {
   "ok": false,
-  "error": "Session event references need migration. Back up the playthrough and run scripts/migrate-session-coordinates.mjs with the retained source and V3 logs.",
+  "error": "Session event references need migration. Back up the playthrough and run scripts/migrate-session-coordinates.mjs with the retained source and V4 logs.",
   "code": "PLAY_COORDINATES_MIGRATION_REQUIRED"
 }
 ```
 
-Preserve references and backups. Follow the [offline migration guide](DSH_0.1.5_MIGRATION_en.md) to validate source/target logs, preview and apply the mapping, then reread the timeline and messages. The current tool is verified only for V0/V1/V2→V3. Unknown future formats need new adaptation and tests; this query does not supply conversion rules automatically.
+Preserve references and backups. Follow the [offline migration guide](DSH_0.1.7_MIGRATION_en.md) to validate source/target logs, preview and apply the mapping, then reread the timeline and messages. The current tool verifies V0/V1/V2/V3→V4 with child-log evidence and Trace references. Unknown future formats need new adaptation and tests; this query does not supply conversion rules automatically.
 
 ### Message origin and display semantics
 
@@ -588,7 +588,7 @@ Fields, examples, errors and persistence: [v3 detailed contract](PROMPT_API_V3_e
 
 ## Browser chrome mode service
 
-The Tavern client registers the stable service name `pmpDshTavernChrome` through DSH `0.1.5-rc.1` public Cordis `ctx.provide`. This is a Tavern v2 contract, not a DSH Host API. It provides only the `native|play` lifecycle. It does not own or arbitrate any slot, view, or third-party plugin UI.
+The Tavern client registers the stable service name `pmpDshTavernChrome` through DSH `0.1.7-alpha.1` public Cordis `ctx.provide`. This is a Tavern v2 contract, not a DSH Host API. It provides only the `native|play` lifecycle. It does not own or arbitrate any slot, view, or third-party plugin UI.
 
 Public face:
 

@@ -6,7 +6,7 @@ This guide explains how to verify the current implementation; it does not record
 
 ## Environment and commands
 
-Standalone Tavern tests require Node.js `>=20`; the target DSH `0.1.5-rc.1` requires Node.js `^22.19.0 || >=24.0.0`. Use the latter requirement when running real DSH modules or a Host, and verify the versions of the core packages actually resolved. The standalone CI matrix does not establish support for every DSH runtime.
+Standalone Tavern tests require Node.js `>=20`; the target DSH `0.1.7-alpha.1` requires Node.js `^22.19.0 || >=24.0.0`. Use the latter requirement when running real DSH modules or a Host, and verify the versions of the core packages actually resolved. The standalone CI matrix does not establish support for every DSH runtime.
 
 After installing dependencies, run these commands from the repository root. [package.json](../package.json) is the command definition source.
 
@@ -62,12 +62,16 @@ For targeted checks:
 
 ```sh
 node --test test/coordinate-migration-integration.test.mjs test/session-coordinates.test.mjs
-node --test test/trace-v3-host.test.mjs test/trace-failures-host.test.mjs
+node --test test/trace-v3-host.test.mjs test/trace-failures-host.test.mjs test/preset-fallback-host.test.mjs
+node --test test/dsh017-host-migration.test.mjs test/dsh017-client-sessions.test.mjs test/resource-capabilities.test.mjs
+node --test test/standalone-client-boundary.test.mjs
 ```
 
 The official-module checks in these tests skip when their variables are absent; an invalid configured root fails. They use temporary data and real DSH modules. AgentLoop tests use a synthetic model adapter, do not contact a real provider, and do not validate Web Remote, browsers, or actual third-party plugins.
 
 Separately, `DSH_TAVERN_ACCEPTANCE_FIXTURE` enables a [specific external preset fixture check](../test/acceptance-fixture.test.mjs), not a general acceptance test for arbitrary character cards. It skips when the variable is absent or the file does not exist; contents that do not meet its assertions fail. Some path checks may also skip when the platform disallows symlink/junction creation. Read the reasons reported by the runner; skipped checks are not passes.
+
+For this compatibility boundary, additionally check all five resources through create/import/export/edit on an isolated Host; unsaved template protection on Escape and panel switching; independently retained sessions switching RP, native Chat and Trace; and recovery after temporary binding-read failures. Sampling tests exercise explicit parameter rejection, prior output, abort and authentication failure, checking bounded retries and Trace requested/effective/fallbacks. Migration covers V3 interruption insertion and child catalogs, earlier format chains, backup conflicts and reruns. The standalone boundary test establishes resource bundling and initialization without DSH bootstrap, not a complete independent conversation UI.
 
 ## Host and browser checks
 
@@ -89,6 +93,6 @@ Select interaction checks for the affected behavior:
 - **Trace:** Compare the recorded configuration, world-book decisions, Loader section order, text, and sources with the official request. Read old records again after a restart; removing official logs from a test copy must make their text explicitly unavailable. Failure records still derive from official events and must not add failed assistant messages to RP. See the [Prompt API v3 contract](PROMPT_API_V3_en.md).
 - **Rich text and diagnostics:** Check static HTML/CSS isolation, display regexes, and script filtering. MVU and JavaScript-driven dynamic HTML are not implemented capabilities. Check consistency across problem entry points, summary dismissal, rechecking, and recovery. Trace text must remain plain text.
 
-For concurrent writes, uninstall, or coordinate migration, validate conflict and recovery paths on test copies; see [API](API_en.md) and the [migration guide](DSH_0.1.5_MIGRATION_en.md). Real-provider timeouts/retries, actual third-party integration, and platform differences need separate evidence; synthetic failures or another platform's results do not establish them.
+For concurrent writes, uninstall, or coordinate migration, validate conflict and recovery paths on test copies; see [API](API_en.md) and the [migration guide](DSH_0.1.7_MIGRATION_en.md). Real-provider timeouts/retries, actual third-party integration, and platform differences need separate evidence; synthetic failures or another platform's results do not establish them.
 
 Record the source revision, Node/DSH versions, enabled checks, skipped checks, and reproduction steps. Distinguish automated tests, real Host, browser, and external integration coverage. Diagnostic reports and Trace metadata can contain private identifiers and content; review and remove sensitive details before publishing a problem report.

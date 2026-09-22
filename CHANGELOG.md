@@ -1,5 +1,13 @@
 # Development changelog
 
+## 2.4.0 — DSH 0.1.7 compatibility and resource editing
+
+- Target DSH `0.1.7-alpha.1` only, with Cordis 4.0.3 and matching official crypto peer. Use awaited `agent/created`, workspace-owned navigation, and per-session RP bindings, default views and render caches. Preserve valid bindings through temporary read failures.
+- Fall back from unsupported preset reasoning effort to the provider default. Withdraw explicitly rejected preset request parameters before output with bounded retries; preserve saved presets and record requested/effective parameters and fallback reasons in Trace.
+- Add user and template JSON import/export, independent template creation and structured editing. Imports create new identities without changing selections; template references remain explicit and missing resources are diagnosed. Protect unsaved template edits across shell navigation.
+- Verify old Session coordinates against official V4 migration output, including inserted interruption events and child catalogs. Upgrade timeline, import and Trace references with pre-upgrade backups; no old-Host compatibility or rollback tool.
+- Validate reuse of resource panels and HTTP clients for a separate frontend without implementing a complete page. Update bilingual contracts and dependency diagrams.
+
 ## 2.3.2 — Branch pending-input fix
 
 - Fix [#10](https://github.com/Player-MINEPIG/dsh-tavern/issues/10): newly created Tavern branches cancel inherited queued/steering input before accepting a new message. This covers rollback, new-playthrough forks, and non-first-turn swipes, preventing invisible stale input or duplicate user messages from reaching the model.

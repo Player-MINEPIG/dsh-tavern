@@ -1,31 +1,31 @@
 # 跨平台安装与卸载
 
-当前目标 DSH 为 `0.1.5-rc.1`；从较早 DSH 坐标格式迁移现有周目时，先按 [升级指南](DSH_0.1.5_MIGRATION.md) 操作。该 DSH 版本要求 Node `^22.19.0 || >=24.0.0`，不能只依据 Tavern 的 Node 20 声明。
+当前目标 DSH 为 `0.1.7-alpha.1`；从较早 DSH 坐标格式迁移现有周目时，先按 [升级指南](DSH_0.1.7_MIGRATION.md) 操作。该 DSH 版本要求 Node `^22.19.0 || >=24.0.0`，不能只依据 Tavern 的 Node 20 声明。
 
 [English](INSTALLATION_en.md)
 
-本文面向 Tavern `2.3.2`，运行时验收目标仍为 DSH `0.1.5-rc.1`；新版 DSH 兼容性尚未验证。本次分支待处理输入修复无需 Tavern 数据迁移。根目录默认 [README](../README.md) 为中文；英文落地页是 [README_en.md](../README_en.md)（无截图）。本文是当前安装生命周期、验收与恢复合同。其他版本请切换到对应 tag，并阅读该 tag 内的安装说明。
+本文面向 Tavern `2.4.0`，仅支持 DSH `0.1.7-alpha.1`。旧 Host 不受支持；旧数据需按升级指南升级外部历史引用，保留升级前备份，不提供回退工具。根目录默认 [README](../README.md) 为中文；英文落地页是 [README_en.md](../README_en.md)（无截图）。本文是当前安装生命周期、验收与恢复合同。其他版本请切换到对应 tag，并阅读该 tag 内的安装说明。
 
-脚本以 Node.js 为统一入口，并规范化 Windows、macOS 和 Linux 路径。macOS/Linux 直接执行 `dsh`。Windows 会安全定位 npm 的 `dsh.ps1` shim，再通过系统 PowerShell 以参数数组调用，因此路径不会被拼回 shell 命令文本。请在 `dsh-tavern` 检出目录中运行脚本，并准备 Node.js 20 或更高版本，以及位于 `PATH` 上的目标 DSH `0.1.5-rc.1`；启动 Host 时需满足上面的 Node 要求。
+脚本以 Node.js 为统一入口，并规范化 Windows、macOS 和 Linux 路径。macOS/Linux 直接执行 `dsh`。Windows 会安全定位 npm 的 `dsh.ps1` shim，再通过系统 PowerShell 以参数数组调用，因此路径不会被拼回 shell 命令文本。请在 `dsh-tavern` 检出目录中运行脚本，并准备 Node.js 20 或更高版本，以及位于 `PATH` 上的目标 DSH `0.1.7-alpha.1`；启动 Host 时需满足上面的 Node 要求。
 
 只安装仓库根包。`packages/tavern-format`、`packages/preset` 和 `packages/tavern-loader` 是随同一插件发布的内部边界，不要单独把它们加进 dsh。格式层可通过根包导出作为 JavaScript 库使用，但它本身故意没有把内容发给 agent 的效果。
 
-## 安装 2.3.2
+## 安装 2.4.0
 
-从 GitHub 安装 `2.3.2` 到默认 `web` profile，请使用固定版本标签：
+从 GitHub 安装 `2.4.0` 到默认 `web` profile，请使用固定版本标签：
 
 ```text
-dsh plugin --profile web add github:Player-MINEPIG/dsh-tavern#v2.3.2
+dsh plugin --profile web add github:Player-MINEPIG/dsh-tavern#v2.4.0
 ```
 
 <a id="source-candidate"></a>
 <a id="source-installation"></a>
 ### 从源码安装和验收
 
-使用独立测试 profile/home，安装前停止该 Host。检出 `v2.3.2` 标签后从源码安装：
+使用独立测试 profile/home，安装前停止该 Host。检出 `v2.4.0` 标签后从源码安装：
 
 ```sh
-git clone --branch v2.3.2 https://github.com/Player-MINEPIG/dsh-tavern.git
+git clone --branch v2.4.0 https://github.com/Player-MINEPIG/dsh-tavern.git
 cd dsh-tavern
 npm ci --legacy-peer-deps
 node scripts/install.mjs --dsh-home /absolute/path/to/test-home --profile web
@@ -33,16 +33,16 @@ node scripts/install.mjs --dsh-home /absolute/path/to/test-home --profile web
 
 补丁发布的文档同步清单见 [开发验证指南](TESTING.md#patch-release-documents)。
 
-用同一个 `DSH_HOME` 启动 DSH `0.1.5-rc.1`，再按 [开发验证指南](TESTING.md)检查。
+用同一个 `DSH_HOME` 启动 DSH `0.1.7-alpha.1`，再按 [开发验证指南](TESTING.md)检查。
 只升级 CLI 不会更新 profile 中的插件。用 `git rev-parse HEAD` 记录所验收构建。
 
 ### DSH 提供官方运行依赖
 
-`package.json` 当前把 `@deepseek-ai/dsh-util-crypto` 的 `0.1.2-rc.1 || 0.1.5-rc.1` 与 `@deepseek-ai/cordis` 的 `4.0.2` 声明为必需 `peerDependencies`，由 DSH 运行时提供，避免插件安装第二份。源码构建和测试使用 `devDependencies` 中固定的 `0.1.2-rc.1` crypto 包。浏览器合同由 `dsh.client.inject` 声明并由 DSH 提供，不随 Tavern 打包。
+`package.json` 当前把 `@deepseek-ai/dsh-util-crypto` 的 `0.1.7-alpha.1` 与 `@deepseek-ai/cordis` 的 `4.0.3` 声明为必需 `peerDependencies`，由 DSH 运行时提供，避免插件安装第二份。源码构建和测试使用 `devDependencies` 中固定的 `0.1.7-alpha.1` crypto 包。浏览器合同由 `dsh.client.inject` 声明并由 DSH 提供，不随 Tavern 打包。
 
 DSH profile 使用 `nodeLinker: hoisted` 和 `autoInstallPeers: false` 时，会在启动期通过 `<DSH_HOME>/profiles/node_modules` 提供自身安装所携带的包，供插件按 Node 的父目录规则解析。因此 `dsh plugin add` 或 `pnpm peers check` 可能报告这两个包缺失：该静态检查不识别 DSH 的启动期依赖提供机制。运行时仍必须能从 DSH 安装目录解析这两个包。
 
-若重启后仍出现 `ERR_MODULE_NOT_FOUND`，则不是可忽略的安装警告；请检查 `PATH` 中的 DSH 是否为目标 `0.1.5-rc.1`、安装是否完整及实际模块解析路径。不要为消除警告把必需 peer 标成 optional。精确 peer 声明约束的是对应包，不是自动检查整个 DSH 版本的启动门禁。
+若重启后仍出现 `ERR_MODULE_NOT_FOUND`，则不是可忽略的安装警告；请检查 `PATH` 中的 DSH 是否为目标 `0.1.7-alpha.1`、安装是否完整及实际模块解析路径。不要为消除警告把必需 peer 标成 optional。精确 peer 声明约束的是对应包，不是自动检查整个 DSH 版本的启动门禁。
 
 ### 数据与源码安装
 

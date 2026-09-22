@@ -2,15 +2,15 @@
 
 [English](API_en.md) · [v3 详细合同](PROMPT_API_V3.md) · [前端接入](FRONTEND_INTEGRATION_zh-CN.md)
 
-合同版本：Tavern **2.3.0**，目标 DSH `0.1.5-rc.1`。
-根路径 `/pmp-dsh-tavern/api`。API 版本与 DSH 日志格式 V3 无关。
+合同版本：Tavern **2.4.0**，目标 DSH `0.1.7-alpha.1`。
+根路径 `/pmp-dsh-tavern/api`。API 版本与 DSH 日志格式 V4 无关。
 
 各版本路由目录统一采用 v2 的 **方法 / 路径 / 作用 / 状态** 格式。路径相对于该节声明的
 版本前缀，标识符须 URL 编码；查询参数和请求正文按各接口约定。沿用本机 TCP peer、
 Host、Origin 和媒体类型检查。除导出附件原文外，成功 JSON 带 `ok:true`；失败带 `ok:false` 和 `error`。
 v1 的 error 形状和方法拒绝状态码因资源而异，文档排版统一不改变线上合同。
 
-[DSH V3 坐标迁移合同](DSH_0.1.5_MIGRATION.md) 定义消息坐标、branch 输入和未迁移
+[DSH V4 坐标迁移合同](DSH_0.1.7_MIGRATION.md) 定义消息坐标、branch 输入和未迁移
 timeline 的拒绝行为。
 
 <a id="api-scope"></a>
@@ -124,7 +124,7 @@ async function queryCoordinates(sessionId) {
 ```json
 {
   "ok": true,
-  "sessionFormatVersion": 3,
+  "sessionFormatVersion": 4,
   "migratedFromV2": true
 }
 ```
@@ -141,8 +141,8 @@ async function queryCoordinates(sessionId) {
 
 #### 保存、比较和分支
 
-1. 从消息响应获取新的 QA 范围时，把**同一响应**的 `sessionFormatVersion` 与范围一起保存到 `variant.ext.pmpDshTavern.sessionFormatVersion`。例如 `startEventId: 9`、`endEventId: 16`、版本 `3`。不要在升级后查询一次版本，再用它补标来源不明的旧整数。
-2. 复用已存范围前，按该 variant 的 `sessionId` 查询当前版本，并与所保存的版本做**相等比较**。版本不同、未知，或无版本且发现迁移标记时，应停止使用旧范围并进入恢复/迁移流程。即使没有标记，也不能据此确认来源不明的旧范围有效。
+1. 从消息响应获取新的 QA 范围时，把**同一响应**的 `sessionFormatVersion` 与范围一起保存到 `variant.ext.pmpDshTavern.sessionFormatVersion`。例如 `startEventId: 9`、`endEventId: 16`、版本 `4`。不要在升级后查询一次版本，再用它补标来源不明的旧整数。
+2. 复用已存范围前，按该 variant 的 `sessionId` 查询当前版本，并与所保存的版本做**相等比较**。版本不同、未知，或当前 V4 会话收到无版本引用时，应停止使用旧范围并进入恢复/迁移流程。即使没有标记，也不能据此确认来源不明的旧范围有效。
 3. 验证后，分支请求发送所保存范围的版本。下面是一个保守的外部前端示例：只接受已标记且版本相符的引用；未标记旧数据需要先核对来源。
 
 ```js
@@ -193,12 +193,12 @@ v2 错误示例；`code` 在**响应顶层**，`error` 是字符串：
 ```json
 {
   "ok": false,
-  "error": "Session event references need migration. Back up the playthrough and run scripts/migrate-session-coordinates.mjs with the retained source and V3 logs.",
+  "error": "Session event references need migration. Back up the playthrough and run scripts/migrate-session-coordinates.mjs with the retained source and V4 logs.",
   "code": "PLAY_COORDINATES_MIGRATION_REQUIRED"
 }
 ```
 
-恢复时保留原引用与备份，按 [离线迁移指南](DSH_0.1.5_MIGRATION.md) 验证 source/target 日志、预览并应用映射，然后重新读取 timeline 和消息。当前迁移工具只验证了 V0/V1/V2→V3；未知未来格式需要新的适配与测试，查询接口不会自动提供转换规则。
+恢复时保留原引用与备份，按 [离线迁移指南](DSH_0.1.7_MIGRATION.md) 验证 source/target 日志、预览并应用映射，然后重新读取 timeline 和消息。当前迁移工具验证 V0/V1/V2/V3→V4（含子会话证据及 Trace 引用）；未知未来格式需要新的适配与测试，查询接口不会自动提供转换规则。
 
 ### 消息来源与显示语义
 
@@ -586,7 +586,7 @@ stage 或 terminal 调用无效且不会重复写终态。
 
 ## 浏览器端 Chrome 模式服务
 
-Tavern client 通过 DSH `0.1.5-rc.1` 公开 Cordis `ctx.provide` 注册稳定服务名 `pmpDshTavernChrome`。这是 Tavern v2 自有合同，不是 DSH Host API；它只提供 `native|play` 生命周期，不拥有或仲裁任何 slot、view 或第三方插件 UI。
+Tavern client 通过 DSH `0.1.7-alpha.1` 公开 Cordis `ctx.provide` 注册稳定服务名 `pmpDshTavernChrome`。这是 Tavern v2 自有合同，不是 DSH Host API；它只提供 `native|play` 生命周期，不拥有或仲裁任何 slot、view 或第三方插件 UI。
 
 公开 face：
 

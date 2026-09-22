@@ -2,7 +2,7 @@
 
 [English](LOADER_CONTRACT_en.md)
 
-当前合同面向 Tavern **2.3.0**与 DSH `0.1.7-alpha.1`，覆盖 RP 会话叠加
+当前合同面向 Tavern **2.4.0**与 DSH `0.1.7-alpha.1`，覆盖 RP 会话叠加
 （`selection.rp` + `rp:policy`）、delegated subagent 的父选择快照、具名官方 sections 与
 schema 4 Trace 引用。DSH V4 以 `system/message` 作为系统正文权威，`request/header`
 保留 config/tools；坐标规则见 [迁移合同](DSH_0.1.7_MIGRATION.md)。
@@ -80,7 +80,7 @@ SessionSelectionStore ─────────────────┘
 
 ### Clean-session/template policy
 
-“维持当前设置新开对话”与配置模板只复制上述 selection 投影，不调用普通 fork，也不读取或写入 Session events。DSH 模式通过公开 `workspaces.connectWorkspace(workspaceId)` 得到真实 blank session id。魔丸模式先由同一 preview 取得配置角色，再调用共享周目创建控制器：现有 v2 session/目录/timeline/catalog 原子 API 创建或复用该角色的权威空周目，v1 apply 随后以一次 `SessionSelectionStore.set(targetId, completeSelection)` 提交完整配置，并再次校验 root session 的角色绑定与周目角色一致。两种模式都只在成功后调用公开 `sessions.open(targetId)`；没有角色卡的配置只能创建普通 DSH 会话，不能创建周目。
+“维持当前设置新开对话”与配置模板只复制上述 selection 投影，不调用普通 fork，也不读取或写入 Session events。DSH 模式通过公开 `uiWorkspace.connectWorkspace(workspaceId)` 得到真实 blank session id。魔丸模式先由同一 preview 取得配置角色，再调用共享周目创建控制器：现有 v2 session/目录/timeline/catalog 原子 API 创建或复用该角色的权威空周目，v1 apply 随后以一次 `SessionSelectionStore.set(targetId, completeSelection)` 提交完整配置，并再次校验 root session 的角色绑定与周目角色一致。两种模式都只在成功后调用公开 `uiWorkspace.openSession(targetId)`；没有角色卡的配置只能创建普通 DSH 会话，不能创建周目。
 
 模板删除资源时不被静默改写：preset、角色/greeting、用户或独立世界书的悬空 id 由 preview/apply 返回结构化诊断并阻止创建。DSH 创建失败发生在 selection 写入之前；原子写失败不发布内存状态且不导航。模板不得包含 durable history、Trace、Inbox、turn/step、运行态或资源正文。RP 状态随 selection 投影一起复制。
 

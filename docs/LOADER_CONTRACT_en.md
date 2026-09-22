@@ -2,7 +2,7 @@
 
 [中文](LOADER_CONTRACT.md)
 
-The current contract targets Tavern **2.3.0** and DSH `0.1.7-alpha.1`. It covers
+The current contract targets Tavern **2.4.0** and DSH `0.1.7-alpha.1`. It covers
 the RP session overlay (`selection.rp` + `rp:policy`), delegated subagents freezing their
 parent selection, named official sections, and schema 4 Trace references. DSH V4 uses
 `system/message` as the system-body authority while `request/header` retains config/tools;
@@ -81,7 +81,7 @@ A completed system assembly is a frozen snapshot. Resource changes do not write 
 
 ### Clean-session/template policy
 
-**New chat with current settings** and configuration templates copy only the selection projection above. They do not call an ordinary fork and do not read or write Session events. DSH mode obtains a real blank session id through public `workspaces.connectWorkspace(workspaceId)`. Mowan first obtains the configured character from the same preview, then calls the shared playthrough-create controller: existing v2 session/directory/timeline/catalog atomic APIs create or reuse that character's authoritative empty playthrough; v1 apply then commits the complete configuration with one `SessionSelectionStore.set(targetId, completeSelection)` and rechecks that the root session's character binding matches the playthrough character. Both modes call public `sessions.open(targetId)` only after success. A configuration with no character card can create only an ordinary DSH session, not a playthrough.
+**New chat with current settings** and configuration templates copy only the selection projection above. They do not call an ordinary fork and do not read or write Session events. DSH mode obtains a real blank session id through public `uiWorkspace.connectWorkspace(workspaceId)`. Mowan first obtains the configured character from the same preview, then calls the shared playthrough-create controller: existing v2 session/directory/timeline/catalog atomic APIs create or reuse that character's authoritative empty playthrough; v1 apply then commits the complete configuration with one `SessionSelectionStore.set(targetId, completeSelection)` and rechecks that the root session's character binding matches the playthrough character. Both modes call public `uiWorkspace.openSession(targetId)` only after success. A configuration with no character card can create only an ordinary DSH session, not a playthrough.
 
 Templates are not rewritten silently when a resource is deleted. Dangling ids for preset, character/greeting, user, or standalone world book are returned as structured diagnostics from preview/apply and block create. A DSH create failure happens before the selection write. An atomic write failure does not publish in-memory state and does not navigate. Templates must not contain durable history, Trace, Inbox, turn/step, runtime state, or resource bodies. RP state is copied with the selection projection.
 

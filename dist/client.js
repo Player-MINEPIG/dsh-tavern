@@ -33,7 +33,7 @@ module.exports = __toCommonJS(entry_exports);
 var import_dsh_client_ui_conversation = require("@deepseek-ai/dsh-client-ui-conversation");
 
 // packages/client/src/index.js
-var import_react18 = require("react");
+var import_react19 = require("react");
 
 // packages/ui-settings/src/locale-contract.js
 var DEFAULT_UI_LOCALE = "zh-CN";
@@ -75,6 +75,33 @@ var identityConstants = Object.freeze({
 
 // packages/client/src/i18n/catalogs/zh-CN.js
 var zh_CN_default = Object.freeze({
+  "resource.error.fileTooLarge": "\u6587\u4EF6\u8D85\u8FC7\u6B64\u7C7B\u8D44\u6E90\u7684\u5BFC\u5165\u5927\u5C0F\u9650\u5236\u3002",
+  "user.status.imported": "\u5DF2\u5BFC\u5165\u4E3A\u65B0\u7528\u6237\u8D44\u6E90\u3002",
+  "user.transferNote": "JSON \u5BFC\u51FA\u5DF2\u4FDD\u5B58\u7684\u540D\u79F0\u548C\u63CF\u8FF0\u3002\u5BFC\u5165\u4F1A\u65B0\u5EFA\u7528\u6237\uFF0C\u4E0D\u5305\u542B\u4F1A\u8BDD\u6216\u4E16\u754C\u4E66\u7ED1\u5B9A\u3002",
+  "template.confirmDiscard": "\u653E\u5F03\u672A\u4FDD\u5B58\u7684\u6A21\u677F\u4FEE\u6539\uFF1F",
+  "template.createBlank": "\u65B0\u5EFA\u7A7A\u767D\u6A21\u677F",
+  "template.status.imported": "\u6A21\u677F\u5DF2\u5BFC\u5165\u3002\u8BF7\u4ECE\u5217\u8868\u4E2D\u9009\u62E9\u5E76\u68C0\u67E5\u5176\u5F15\u7528\u3002",
+  "template.status.saved": "\u6A21\u677F\u4FEE\u6539\u5DF2\u4FDD\u5B58\u3002",
+  "template.transferNote": "JSON \u5BFC\u51FA\u5DF2\u4FDD\u5B58\u7684\u8BBE\u7F6E\u4E0E\u8D44\u6E90\u5F15\u7528\u3002\u5BFC\u5165\u4F1A\u65B0\u5EFA\u6A21\u677F\u4F46\u4E0D\u4F1A\u81EA\u52A8\u9009\u7528\uFF1B\u5F15\u7528\u7684\u8D44\u6E90\u9700\u8981\u5DF2\u5B58\u5728\u3002",
+  "template.unsaved": "\u6A21\u677F\u6709\u672A\u4FDD\u5B58\u7684\u4FEE\u6539\u3002\u5F00\u59CB\u6216\u5BFC\u51FA\u524D\u8BF7\u5148\u4FDD\u5B58\u3002",
+  "template.missingReference": "\u7F3A\u5931\uFF1A{id}",
+  "template.edit.greeting": "\u5F00\u573A\u5E8F\u53F7\uFF081 \u4E3A\u4E3B\u5F00\u573A\uFF09",
+  "template.edit.systemPrompt": "\u4F18\u5148\u4F7F\u7528\u89D2\u8272\u7CFB\u7EDF\u63D0\u793A\u8BCD",
+  "template.edit.postHistory": "\u4F18\u5148\u4F7F\u7528\u89D2\u8272\u5386\u53F2\u540E\u6307\u4EE4",
+  "template.addBook": "\u6DFB\u52A0\u4E16\u754C\u4E66\uFF08\u6309\u987A\u5E8F\uFF09",
+  "template.moveBookUp": "\u4E0A\u79FB {name}",
+  "template.removeBook": "\u79FB\u9664 {name}",
+  "template.edit.rpActive": "\u542F\u7528 RP \u6A21\u5F0F",
+  "template.edit.followSuppressed": "\u6291\u5236\u89D2\u8272\u81EA\u52A8\u5F00\u542F RP \u6A21\u5F0F",
+  "template.edit.rpSource": "RP \u542F\u7528\u6765\u6E90",
+  "template.edit.sandboxBefore": "\u9000\u51FA RP \u6A21\u5F0F\u65F6\u6062\u590D\u7684\u6C99\u7BB1",
+  "template.rp.command": "\u663E\u5F0F RP \u547D\u4EE4",
+  "template.rp.characterFollow": "\u8DDF\u968F\u89D2\u8272",
+  "template.sandbox.readOnly": "\u53EA\u8BFB",
+  "template.sandbox.workspaceWrite": "\u5DE5\u4F5C\u533A\u5199\u5165",
+  "template.sandbox.fullAccess": "\u5B8C\u5168\u8BBF\u95EE",
+  "preset.effort.off": "\u5173\u95ED",
+  "preset.effort.max": "\u6700\u9AD8",
   "common.unavailable": "\u754C\u9762\u6587\u672C\u6682\u4E0D\u53EF\u7528",
   "common.loading": "\u52A0\u8F7D\u4E2D\u2026",
   "common.none": "\u65E0",
@@ -646,7 +673,7 @@ var zh_CN_default = Object.freeze({
   "template.title": "\u65B0\u4F1A\u8BDD\u4E0E\u914D\u7F6E\u6A21\u677F",
   "template.startCurrent": "\u7EF4\u6301\u5F53\u524D Tavern \u8BBE\u7F6E\u65B0\u5F00\u5BF9\u8BDD",
   "template.startCurrentPlaythrough": "\u4F7F\u7528\u5F53\u524D Tavern \u8BBE\u7F6E\u65B0\u5EFA\u5468\u76EE",
-  "template.inheritNote": "\u53EA\u7EE7\u627F preset\u3001\u89D2\u8272\u5361\u4E0E greeting/\u5F00\u5173\u3001\u7528\u6237\u548C\u72EC\u7ACB\u4E16\u754C\u4E66\u9009\u62E9\u3002DSH \u5386\u53F2\u3001Tavern Trace\u3001Inbox\u3001\u8FD0\u884C\u4E2D turn/step \u548C\u5176\u4ED6\u8FD0\u884C\u6001\u4E0D\u4F1A\u590D\u5236\u3002",
+  "template.inheritNote": "\u7EE7\u627F\u9884\u8BBE\u3001\u89D2\u8272\u5361\u4E0E\u5F00\u573A\u9009\u9879\u3001\u7528\u6237\u3001\u6709\u5E8F\u4E16\u754C\u4E66\u9009\u62E9\u548C\u5DF2\u4FDD\u5B58\u7684 RP \u8BBE\u7F6E\u3002DSH \u5386\u53F2\u3001Tavern Trace\u3001Inbox\u3001\u8FD0\u884C\u4E2D turn/step \u548C\u5176\u4ED6\u8FD0\u884C\u6001\u4E0D\u4F1A\u590D\u5236\u3002",
   "template.noWorkspace": "\u6CA1\u6709\u53EF\u7528\u7684 DSH \u76EE\u6807\u5DE5\u4F5C\u533A\u3002\u8BF7\u5148\u5728 DSH \u4FA7\u680F\u4E2D\u52A0\u5165\u6216\u6253\u5F00\u5DE5\u4F5C\u533A\u3002",
   "template.listTitle": "\u914D\u7F6E\u6A21\u677F\uFF08{count}\uFF09",
   "template.selected": "\u5DF2\u9009\u62E9\u6A21\u677F",
@@ -667,7 +694,7 @@ var zh_CN_default = Object.freeze({
   "template.preview.systemPrompt": "\u5361\u5185 system_prompt\uFF1A{value}",
   "template.preview.postHistory": "post_history_instructions\uFF1A{value}",
   "template.defaultName": "\u65B0\u914D\u7F6E\u6A21\u677F",
-  "template.currentSettingsReminder": "\u6A21\u677F\u53EA\u80FD\u7528\u5F53\u524D\u4F1A\u8BDD\u7684 Tavern \u8BBE\u7F6E\u521B\u5EFA\u6216\u66F4\u65B0\u3002\u8BF7\u5728\u60AC\u6D6E\u7403\u7684\u9884\u8BBE\u3001\u89D2\u8272\u5361\u3001\u4E16\u754C\u4E66\u548C\u7528\u6237\u9762\u677F\u4E2D\u67E5\u770B\u6216\u4FEE\u6539\u5F53\u524D\u914D\u7F6E\uFF0C\u518D\u56DE\u5230\u8FD9\u91CC\u4FDD\u5B58\u3002",
+  "template.currentSettingsReminder": "\u53EF\u5728\u4E0B\u65B9\u76F4\u63A5\u7F16\u8F91\u5DF2\u4FDD\u5B58\u7684\u6A21\u677F\uFF0C\u6216\u4ECE\u5F53\u524D\u4F1A\u8BDD\u83B7\u53D6 Tavern \u914D\u7F6E\u3002\u4FDD\u5B58\u6A21\u677F\u4E0D\u4F1A\u5C06\u5176\u5E94\u7528\u5230\u5F53\u524D\u4F1A\u8BDD\u3002",
   "template.confirmDelete": "\u5220\u9664\u914D\u7F6E\u6A21\u677F\u201C{name}\u201D\uFF1F\u8FD9\u4E0D\u4F1A\u5220\u9664\u4EFB\u4F55 DSH \u4F1A\u8BDD\u3002",
   "template.status.selected": "\u6A21\u677F\u9009\u62E9\u5DF2\u66F4\u65B0",
   "template.status.created": "\u5DF2\u521B\u5EFA\u6A21\u677F\uFF1A{name}",
@@ -682,6 +709,10 @@ var zh_CN_default = Object.freeze({
   "template.error.needSourceSession": "\u8BF7\u5148\u6253\u5F00\u4E00\u4E2A\u6765\u6E90\u4F1A\u8BDD",
   "template.error.needWorkspace": "\u5F53\u524D\u4F1A\u8BDD\u4E0D\u5C5E\u4E8E DSH \u5DE5\u4F5C\u533A\uFF1B\u8BF7\u5148\u628A\u4F1A\u8BDD\u52A0\u5165\u5DE5\u4F5C\u533A",
   "template.error.needCharacter": "\u9B54\u4E38\u6A21\u5F0F\u4E0B\u65B0\u5EFA\u5468\u76EE\u9700\u8981\u914D\u7F6E\u4E2D\u7ED1\u5B9A\u89D2\u8272\u5361",
+  "trace.parameters.title": "\u8BF7\u6C42\u53C2\u6570\u4E0E\u9ED8\u8BA4\u503C\u56DE\u9000",
+  "trace.parameters.requested": "\u9884\u8BBE\u8BF7\u6C42\u53C2\u6570",
+  "trace.parameters.effective": "\u5B9E\u9645\u8BF7\u6C42\u53C2\u6570",
+  "trace.parameters.fallbacks": "\u56DE\u9000\u8BB0\u5F55",
   "trace.title": "Tavern Trace",
   "trace.v3.configuration": "\u672C\u6B21\u914D\u7F6E",
   "trace.v3.notRecorded": "\u672A\u8BB0\u5F55",
@@ -698,7 +729,7 @@ var zh_CN_default = Object.freeze({
   "trace.v3.loaderDetails": "Loader \u88C5\u914D\u60C5\u51B5",
   "trace.v3.noAssembly": "\u672A\u4FDD\u5B58\u88C5\u914D\u6B63\u6587\uFF0C\u65E0\u6CD5\u8FD8\u539F\u5F53\u65F6\u7684\u6BB5\u843D\u3002",
   "trace.v3.terms": "\u8F6E\u6B21\u3001\u6B65\u9AA4\u548C\u8BF7\u6C42\u8BB0\u5F55\u662F\u4EC0\u4E48\u610F\u601D\uFF1F",
-  "trace.v3.termsText": "\u8F6E\u6B21\u662F\u4E00\u6B21\u5BF9\u8BDD\u5904\u7406\uFF1B\u6B65\u9AA4\u662F DSH \u5728\u8BE5\u8F6E\u4E2D\u7684\u6A21\u578B\u8C03\u7528\u9636\u6BB5\uFF0C\u4F8B\u5982\u8C03\u7528\u5DE5\u5177\u540E\u7EE7\u7EED\u56DE\u7B54\u4F1A\u8FDB\u5165\u4E0B\u4E00\u6B65\u3002\u8BF7\u6C42\u8BB0\u5F55\u662F Tavern \u5728\u540C\u4E00\u8F6E\u3001\u540C\u4E00\u6B65\u9AA4\u4E2D\u76D1\u542C agent/request \u7684\u91C7\u96C6\u5E8F\u53F7\u3002DSH \u4E0A\u5C42\u91CD\u8BD5\u4F1A\u518D\u6B21\u89E6\u53D1\u6B64\u4E8B\u4EF6\uFF0C\u5E76\u53EF\u590D\u7528\u5DF2\u6709\u88C5\u914D\u7ED3\u679C\uFF1BTavern \u4E0D\u4E3B\u52A8\u91CD\u8BD5\u3002\u4E0D\u7EDF\u8BA1\u6240\u6709\u5E95\u5C42\u7F51\u7EDC\u91CD\u8BD5\uFF0C\u4E5F\u4E0D\u4EE3\u8868\u54CD\u5E94\u6210\u529F\u3002",
+  "trace.v3.termsText": "\u8F6E\u6B21\u662F\u4E00\u6B21\u5BF9\u8BDD\u5904\u7406\uFF1B\u6B65\u9AA4\u662F DSH \u5728\u8BE5\u8F6E\u4E2D\u7684\u6A21\u578B\u8C03\u7528\u9636\u6BB5\uFF0C\u4F8B\u5982\u8C03\u7528\u5DE5\u5177\u540E\u7EE7\u7EED\u56DE\u7B54\u4F1A\u8FDB\u5165\u4E0B\u4E00\u6B65\u3002\u8BF7\u6C42\u8BB0\u5F55\u662F Tavern \u5728\u540C\u4E00\u8F6E\u3001\u540C\u4E00\u6B65\u9AA4\u4E2D\u76D1\u542C agent/request \u7684\u91C7\u96C6\u5E8F\u53F7\u3002DSH \u4E0A\u5C42\u91CD\u8BD5\u4F1A\u518D\u6B21\u89E6\u53D1\u6B64\u4E8B\u4EF6\uFF0C\u5E76\u53EF\u590D\u7528\u5DF2\u6709\u88C5\u914D\u7ED3\u679C\uFF1BTavern \u53EA\u4F1A\u9488\u5BF9\u660E\u786E\u7684\u9884\u8BBE\u53C2\u6570\u62D2\u7EDD\uFF0C\u5728\u8F93\u51FA\u524D\u8BF7\u6C42\u6709\u9650\u91CD\u8BD5\u3002\u4E0D\u7EDF\u8BA1\u6240\u6709\u5E95\u5C42\u7F51\u7EDC\u91CD\u8BD5\uFF0C\u4E5F\u4E0D\u4EE3\u8868\u54CD\u5E94\u6210\u529F\u3002",
   "trace.v3.status.assembled": "\u5DF2\u88C5\u914D\uFF0C\u5F85\u89C2\u5BDF\u8BF7\u6C42",
   "trace.v3.status.request-observed": "\u5DF2\u89C2\u5BDF\u5230\u8BF7\u6C42",
   "trace.v3.status.request-unconfirmed": "\u8BF7\u6C42\u672A\u786E\u8BA4",
@@ -812,6 +843,33 @@ var zh_CN_default = Object.freeze({
 
 // packages/client/src/i18n/catalogs/en.js
 var en_default = Object.freeze({
+  "resource.error.fileTooLarge": "This file exceeds the resource import size limit.",
+  "user.status.imported": "User imported as a new resource.",
+  "user.transferNote": "JSON exports the saved name and description. Imports create a new user without session or world-book bindings.",
+  "template.confirmDiscard": "Discard unsaved template changes?",
+  "template.createBlank": "Create blank template",
+  "template.status.imported": "Template imported. Select it from the list to review its references.",
+  "template.status.saved": "Template changes saved.",
+  "template.transferNote": "JSON exports saved settings and resource references. Import creates a new template without selecting it; referenced resources must already exist.",
+  "template.unsaved": "Unsaved template changes. Save before starting or exporting.",
+  "template.missingReference": "Missing: {id}",
+  "template.edit.greeting": "Opening number (1 = main opening)",
+  "template.edit.systemPrompt": "Prefer character system prompt",
+  "template.edit.postHistory": "Prefer character post-history instructions",
+  "template.addBook": "Add world book (ordered)",
+  "template.moveBookUp": "Move {name} up",
+  "template.removeBook": "Remove {name}",
+  "template.edit.rpActive": "RP mode enabled",
+  "template.edit.followSuppressed": "Suppress automatic character RP mode",
+  "template.edit.rpSource": "RP activation source",
+  "template.edit.sandboxBefore": "Sandbox restored when leaving RP mode",
+  "template.rp.command": "Explicit RP command",
+  "template.rp.characterFollow": "Follow character",
+  "template.sandbox.readOnly": "Read only",
+  "template.sandbox.workspaceWrite": "Workspace write",
+  "template.sandbox.fullAccess": "Full access",
+  "preset.effort.off": "Off",
+  "preset.effort.max": "Maximum",
   "common.unavailable": "Interface text unavailable",
   "common.loading": "Loading\u2026",
   "common.none": "None",
@@ -1383,7 +1441,7 @@ var en_default = Object.freeze({
   "template.title": "New session and configuration templates",
   "template.startCurrent": "Start a new conversation with the current Tavern settings",
   "template.startCurrentPlaythrough": "Start a playthrough with the current Tavern settings",
-  "template.inheritNote": "Carries only the preset, character and greeting/options, user, and standalone world-book selections. DSH history, Tavern Trace, Inbox, active turns/steps, and other runtime state are not copied.",
+  "template.inheritNote": "Carries the preset, character and opening options, user, ordered world-book selections, and saved RP settings. DSH history, Tavern Trace, Inbox, active turns/steps, and other runtime state are not copied.",
   "template.noWorkspace": "No DSH target workspace is available. Add or open a workspace in the DSH sidebar first.",
   "template.listTitle": "Configuration templates ({count})",
   "template.selected": "Selected template",
@@ -1404,7 +1462,7 @@ var en_default = Object.freeze({
   "template.preview.systemPrompt": "Character system_prompt: {value}",
   "template.preview.postHistory": "post_history_instructions: {value}",
   "template.defaultName": "New configuration template",
-  "template.currentSettingsReminder": "Templates can only be created or updated from the current session\u2019s Tavern settings. Review or change the current configuration in the launcher\u2019s Preset, Character, World book, and User panels, then return here to save it.",
+  "template.currentSettingsReminder": "Edit the saved template below, or capture the current session\u2019s Tavern settings. Saving a template does not apply it to the current session.",
   "template.confirmDelete": "Delete configuration template \u201C{name}\u201D? This will not delete any DSH session.",
   "template.status.selected": "Template selection updated",
   "template.status.created": "Template created: {name}",
@@ -1419,6 +1477,10 @@ var en_default = Object.freeze({
   "template.error.needSourceSession": "Open a source session first",
   "template.error.needWorkspace": "The current session is not in a DSH workspace; add it to a workspace first",
   "template.error.needCharacter": "Starting a playthrough in Mowan mode requires a bound character card",
+  "trace.parameters.title": "Request parameters and fallback",
+  "trace.parameters.requested": "Preset overrides",
+  "trace.parameters.effective": "Effective request parameters",
+  "trace.parameters.fallbacks": "Fallback decisions",
   "trace.title": "Tavern Trace",
   "trace.v3.configuration": "Configuration for this request",
   "trace.v3.notRecorded": "Not recorded",
@@ -1435,7 +1497,7 @@ var en_default = Object.freeze({
   "trace.v3.loaderDetails": "Loader assembly",
   "trace.v3.noAssembly": "No assembly body was retained; past sections cannot be reconstructed.",
   "trace.v3.terms": "What are turns, steps and request records?",
-  "trace.v3.termsText": "A turn is one conversation cycle. A step is a DSH model-call stage within that turn; continuing after tools can start another step. Request record numbers count Tavern captures of agent/request for the same turn and step. DSH higher-level retries emit it again and can reuse the existing assembly; Tavern does not initiate retries. This does not count every network retry or prove a successful response.",
+  "trace.v3.termsText": "A turn is one conversation cycle. A step is a DSH model-call stage within that turn; continuing after tools can start another step. Request record numbers count Tavern captures of agent/request for the same turn and step. DSH higher-level retries emit it again and can reuse the existing assembly; Tavern requests bounded retries only for explicit preset-parameter rejections before output. This does not count every network retry or prove a successful response.",
   "trace.v3.status.assembled": "Assembled; awaiting request",
   "trace.v3.status.request-observed": "Request observed",
   "trace.v3.status.request-unconfirmed": "Request unconfirmed",
@@ -1634,7 +1696,7 @@ function localizeChild(value) {
   if (Array.isArray(value)) return value.map(localizeChild);
   return value;
 }
-function createLocalizedElement(createElement16) {
+function createLocalizedElement(createElement17) {
   return (type, props, ...children) => {
     let localizedProps = props;
     if (props !== null && props !== void 0) {
@@ -1643,7 +1705,7 @@ function createLocalizedElement(createElement16) {
         if (isRawText(localizedProps[key])) localizedProps[key] = localizedProps[key].value;
       }
     }
-    return createElement16(type, localizedProps, ...children.map(localizeChild));
+    return createElement17(type, localizedProps, ...children.map(localizeChild));
   };
 }
 function getClientUiSettings() {
@@ -2056,9 +2118,12 @@ function PresetSidebar({ closePanel, openPanel, sessionId, sessionBlank, autoOpe
           {
             className: "dtt-select",
             value: draft.sampling.reasoningEffort ?? "",
-            onChange: (event) => patchSampling({ reasoningEffort: event.target.value || void 0 })
+            onChange: (event) => patchSampling({ reasoningEffort: event.target.value || null })
           },
           h("option", { value: "" }, uiMessage("preset.modelDefault")),
+          draft.sampling.reasoningEffort && !["off", "low", "medium", "high", "xhigh", "max"].includes(draft.sampling.reasoningEffort) ? h("option", { value: draft.sampling.reasoningEffort }, rawText(draft.sampling.reasoningEffort)) : null,
+          h("option", { value: "off" }, uiMessage("preset.effort.off")),
+          h("option", { value: "max" }, uiMessage("preset.effort.max")),
           h("option", { value: "low" }, uiMessage("preset.effort.low")),
           h("option", { value: "medium" }, uiMessage("preset.effort.medium")),
           h("option", { value: "high" }, uiMessage("preset.effort.high")),
@@ -3653,6 +3718,7 @@ function UserPanel({ sessionId, sessionBlank, close }) {
   const [selectedUserId, setSelectedUserId] = (0, import_react4.useState)(null);
   const [busy, setBusy] = (0, import_react4.useState)(false);
   const [status, setStatus] = (0, import_react4.useState)({ error: false, key: "common.loading" });
+  const fileRef = (0, import_react4.useRef)(null);
   const generation = (0, import_react4.useRef)(0);
   const draftId = (0, import_react4.useRef)(null);
   const dirtyRef = (0, import_react4.useRef)(false);
@@ -3734,6 +3800,22 @@ function UserPanel({ sessionId, sessionBlank, close }) {
       notifyRefresh();
     }, "user.status.created");
   }, [dirty, refresh, run]);
+  const importFile = (0, import_react4.useCallback)((file) => {
+    if (dirty && !window.confirm(unwrapText(uiMessage("user.confirmDiscardForCreate")))) return;
+    run(async () => {
+      try {
+        if (file.size > 1024 * 1024) throw uiError("resource.error.fileTooLarge");
+        const data = await api4("/users/import", { method: "POST", body: await file.text() });
+        dirtyRef.current = false;
+        draftId.current = data.user.id;
+        await refresh(data.user.id);
+        notifyRefresh();
+      } catch (error) {
+        announceImportFailure(error);
+        throw error;
+      }
+    }, "user.status.imported");
+  }, [dirty, refresh, run]);
   const save = (0, import_react4.useCallback)(() => run(async () => {
     if (draft === null) return;
     const data = await api4(`/users/${encodeURIComponent(draft.id)}`, {
@@ -3809,7 +3891,15 @@ function UserPanel({ sessionId, sessionBlank, close }) {
       h4(
         "div",
         { className: "dtu-toolbar" },
-        h4("button", { className: "dtu-button", type: "button", disabled: busy, onClick: create2 }, uiMessage("user.create"))
+        h4("button", { className: "dtu-button", type: "button", disabled: busy, onClick: create2 }, uiMessage("user.create")),
+        h4("button", { className: "dtu-button", type: "button", disabled: busy, onClick: () => fileRef.current?.click() }, uiMessage("common.importJson")),
+        draft === null ? null : h4("a", { className: "dtu-button", href: `${API_V1}/users/${encodeURIComponent(draft.id)}/export`, download: "" }, uiMessage("common.exportJson")),
+        h4("input", { ref: fileRef, hidden: true, type: "file", accept: ".json,application/json", onChange: (event) => {
+          const file = event.target.files?.[0];
+          event.target.value = "";
+          if (file !== void 0) importFile(file);
+        } }),
+        h4("p", { className: "dtu-note" }, uiMessage("user.transferNote"))
       ),
       h4(Field4, { label: uiMessage("user.browse") }, h4(
         "div",
@@ -4118,6 +4208,21 @@ function TraceRecordContent({ record }) {
     ),
     Number.isSafeInteger(selection.character?.greetingIndex) ? h5("div", { className: "dttrace-meta" }, uiMessage("trace.v3.greeting", { index: selection.character.greetingIndex })) : null,
     h5("div", { className: "dttrace-meta" }, uiMessage("trace.v3.sampling"), " ", config === void 0 ? unavailable() : Object.keys(config).length ? rawText(Object.entries(config).map(([key, value]) => `${key}: ${JSON.stringify(value)}`).join(" \xB7 ")) : uiMessage("trace.v3.noSampling")),
+    record.parameters ? h5(
+      "details",
+      { className: "dttrace-disclosure" },
+      h5("summary", null, uiMessage("trace.parameters.title")),
+      h5(
+        "div",
+        { className: "dttrace-disclosure-body" },
+        ...["requested", "effective", "fallbacks"].map((key) => h5(
+          "div",
+          { key },
+          h5("strong", null, uiMessage(`trace.parameters.${key}`)),
+          h5("pre", null, rawText(JSON.stringify(record.parameters[key], null, 2)))
+        ))
+      )
+    ) : null,
     contentNotice ? h5(
       "p",
       { className: "dttrace-note" },
@@ -4367,19 +4472,109 @@ function TemplatePreview({ template }) {
     )
   );
 }
-function SessionTemplatePanel({ sessionId, workspaceId, chromeMode = "native", createCleanSession, createConfiguredPlaythrough, close }) {
+function TemplateEditor({ selection, onChange, catalogs: catalogs2, disabled }) {
+  const patch = (value) => onChange((current3) => ({ ...current3, ...value }));
+  const nested = (key, value) => patch({ [key]: { ...selection[key], ...value } });
+  const field = (label, control) => h6("label", { className: "dtv-field" }, h6("span", { className: "dtv-label" }, uiMessage(label)), control);
+  const resourceSelect = (key, label, items) => field(label, h6(
+    "select",
+    {
+      className: "dtv-select",
+      disabled,
+      value: selection[key] ?? "",
+      onChange: (event) => patch({ [key]: event.target.value || null })
+    },
+    h6("option", { value: "" }, uiMessage("common.none")),
+    selection[key] && !items.some((item) => item.id === selection[key]) ? h6("option", { value: selection[key] }, uiMessage("template.missingReference", { id: selection[key] })) : null,
+    ...items.map((item) => h6("option", { key: item.id, value: item.id }, rawText(item.name)))
+  ));
+  const toggle = (label, checked, change) => h6(
+    "label",
+    { className: "dtv-field" },
+    h6("span", null, h6("input", { type: "checkbox", disabled, checked, onChange: (event) => change(event.target.checked) }), uiMessage(label))
+  );
+  const enumSelect = (label, value, choices, change) => field(label, h6("select", {
+    className: "dtv-select",
+    disabled,
+    value: value ?? "",
+    onChange: (event) => change(event.target.value || null)
+  }, ...choices.map(([id, key]) => h6("option", { key: id, value: id }, uiMessage(key)))));
+  const availableBooks = catalogs2.worldBooks;
+  const orderedBooks = selection.worldBookIds.map((id) => availableBooks.find((book) => book.id === id) ?? { id, name: null });
+  return h6(
+    "div",
+    { className: "dtv-resource" },
+    resourceSelect("presetId", "nav.preset", catalogs2.presets),
+    resourceSelect("characterCardId", "nav.character", catalogs2.characters),
+    resourceSelect("userId", "nav.user", catalogs2.users),
+    field("template.edit.greeting", h6("input", {
+      className: "dtv-input",
+      type: "number",
+      min: 1,
+      step: 1,
+      disabled,
+      value: Number(selection.character.greetingIndex ?? 0) + 1,
+      onChange: (event) => {
+        const value = Number(event.target.value);
+        if (Number.isSafeInteger(value) && value >= 1) nested("character", { greetingIndex: value - 1 });
+      }
+    })),
+    toggle("template.edit.systemPrompt", selection.character.preferCharacterSystemPrompt !== false, (value) => nested("character", { preferCharacterSystemPrompt: value })),
+    toggle("template.edit.postHistory", selection.character.preferCharacterPostHistory !== false, (value) => nested("character", { preferCharacterPostHistory: value })),
+    h6("div", { className: "dtv-label" }, uiMessage("template.preview.worldBooks")),
+    ...orderedBooks.map((book, index) => h6(
+      "div",
+      { className: "dtv-preview-row", key: book.id },
+      h6("span", null, book.name === null ? uiMessage("template.missingReference", { id: book.id }) : rawText(book.name)),
+      h6("button", { type: "button", className: "dtv-button", disabled: disabled || index === 0, "aria-label": uiMessage("template.moveBookUp", { name: book.name ?? book.id }), onClick: () => {
+        const ids = [...selection.worldBookIds];
+        [ids[index - 1], ids[index]] = [ids[index], ids[index - 1]];
+        patch({ worldBookIds: ids });
+      } }, "\u2191"),
+      h6("button", { type: "button", className: "dtv-button", disabled, "aria-label": uiMessage("template.removeBook", { name: book.name ?? book.id }), onClick: () => patch({ worldBookIds: selection.worldBookIds.filter((id) => id !== book.id) }) }, uiMessage("common.delete"))
+    )),
+    field("template.addBook", h6("select", { className: "dtv-select", disabled: disabled || selection.worldBookIds.length >= 100, value: "", onChange: (event) => {
+      if (event.target.value) patch({ worldBookIds: [...selection.worldBookIds, event.target.value] });
+    } }, h6("option", { value: "" }, uiMessage("common.none")), ...availableBooks.filter((book) => !selection.worldBookIds.includes(book.id)).map((book) => h6("option", { key: book.id, value: book.id }, rawText(book.name))))),
+    toggle("template.edit.rpActive", selection.rp.active, (value) => nested("rp", { active: value })),
+    toggle("template.edit.followSuppressed", selection.rp.followSuppressed, (value) => nested("rp", { followSuppressed: value })),
+    enumSelect("template.edit.rpSource", selection.rp.source, [["", "common.none"], ["command", "template.rp.command"], ["character-follow", "template.rp.characterFollow"]], (value) => nested("rp", { source: value })),
+    enumSelect("template.edit.sandboxBefore", selection.rp.sandboxBefore, [["", "common.none"], ["read-only", "template.sandbox.readOnly"], ["workspace-write", "template.sandbox.workspaceWrite"], ["danger-full-access", "template.sandbox.fullAccess"]], (value) => nested("rp", { sandboxBefore: value }))
+  );
+}
+function SessionTemplatePanel({ sessionId, workspaceId, chromeMode = "native", createCleanSession, createConfiguredPlaythrough, registerBeforeLeave, close }) {
   const [templates, setTemplates] = (0, import_react6.useState)([]);
   const [selectedId, setSelectedId] = (0, import_react6.useState)(null);
   const [name2, setName] = (0, import_react6.useState)(() => translate("template.defaultName"));
   const [busy, setBusy] = (0, import_react6.useState)(false);
+  const [selection, setSelection] = (0, import_react6.useState)(null);
+  const [catalogs2, setCatalogs] = (0, import_react6.useState)({ presets: [], characters: [], users: [], worldBooks: [] });
+  const fileRef = (0, import_react6.useRef)(null);
+  const dirtyRef = (0, import_react6.useRef)(false);
   const [status, setStatus] = (0, import_react6.useState)({ error: false, key: "template.ready" });
   const selected = templates.find((item) => item.id === selectedId) ?? null;
-  const refresh = (0, import_react6.useCallback)(async () => {
-    const data = await api5("/session-templates");
+  const dirty = selected !== null && (name2 !== selected.name || JSON.stringify(selection) !== JSON.stringify(selected.selection));
+  dirtyRef.current = dirty;
+  const discard = (0, import_react6.useCallback)(() => !dirtyRef.current || window.confirm(unwrapText(uiMessage("template.confirmDiscard"))), []);
+  (0, import_react6.useEffect)(() => registerBeforeLeave?.(discard), [discard, registerBeforeLeave]);
+  const requestClose = () => {
+    if (typeof registerBeforeLeave === "function" || discard()) close();
+  };
+  const refresh = (0, import_react6.useCallback)(async (force = false) => {
+    const [data, presets, characters, users, books] = await Promise.all([
+      api5("/session-templates"),
+      api5("/presets"),
+      api5("/characters"),
+      api5("/users"),
+      api5("/world-books")
+    ]);
+    if (!force && dirtyRef.current) return;
+    setCatalogs({ presets: presets.presets, characters: characters.characters, users: users.users, worldBooks: books.worldBooks });
     setTemplates(data.templates);
     setSelectedId(data.selectedId);
     const active = data.templates.find((item) => item.id === data.selectedId);
     if (active !== void 0) setName(active.name);
+    setSelection(active?.selection ?? null);
   }, []);
   (0, import_react6.useEffect)(() => {
     refresh().catch((reason) => setStatus({
@@ -4388,12 +4583,15 @@ function SessionTemplatePanel({ sessionId, workspaceId, chromeMode = "native", c
       values: reason.uiValues,
       text: reason instanceof Error ? reason.message : String(reason)
     }));
-    const onRefresh = () => refresh().catch((reason) => setStatus({
-      error: true,
-      key: reason.uiKey,
-      values: reason.uiValues,
-      text: reason instanceof Error ? reason.message : String(reason)
-    }));
+    const onRefresh = () => {
+      if (dirtyRef.current) return;
+      refresh().catch((reason) => setStatus({
+        error: true,
+        key: reason.uiKey,
+        values: reason.uiValues,
+        text: reason instanceof Error ? reason.message : String(reason)
+      }));
+    };
     window.addEventListener(CLIENT_REFRESH_EVENT, onRefresh);
     return () => window.removeEventListener(CLIENT_REFRESH_EVENT, onRefresh);
   }, [refresh]);
@@ -4403,7 +4601,8 @@ function SessionTemplatePanel({ sessionId, workspaceId, chromeMode = "native", c
       const result = await operation();
       const next = typeof success === "function" ? success(result) : success;
       setStatus(typeof next === "string" ? { error: false, key: next } : { error: false, ...next });
-      await refresh();
+      dirtyRef.current = false;
+      await refresh(true);
       window.dispatchEvent(new Event(CLIENT_REFRESH_EVENT));
       return result;
     } catch (reason) {
@@ -4419,48 +4618,85 @@ function SessionTemplatePanel({ sessionId, workspaceId, chromeMode = "native", c
       setBusy(false);
     }
   }, [refresh]);
-  const select = (event) => run(async () => {
-    const id = event.target.value || null;
-    const data = await api5("/session-templates/select", {
-      method: "POST",
-      body: JSON.stringify({ id })
-    });
-    setSelectedId(data.selectedId);
-    if (data.template !== null) setName(data.template.name);
-  }, "template.status.selected");
-  const create2 = () => run(async () => {
-    if (!sessionId) throw uiError("template.error.needSessionToSave");
-    return api5("/session-templates", {
-      method: "POST",
-      body: JSON.stringify({ name: name2, sourceSessionId: sessionId })
-    });
-  }, (result) => ({ key: "template.status.created", values: { name: result.template.name } }));
-  const rename = () => run(async () => {
-    if (selectedId === null) throw uiError("template.error.needTemplate");
-    return api5(`/session-templates/${encodeURIComponent(selectedId)}`, {
-      method: "PATCH",
-      body: JSON.stringify({ name: name2 })
-    });
-  }, (result) => ({ key: "template.status.renamed", values: { name: result.template.name } }));
-  const update = () => run(async () => {
-    if (!sessionId || selectedId === null) throw uiError("template.error.needSessionAndTemplate");
-    return api5(`/session-templates/${encodeURIComponent(selectedId)}`, {
-      method: "PATCH",
-      body: JSON.stringify({ name: name2, sourceSessionId: sessionId })
-    });
-  }, (result) => ({ key: "template.status.updated", values: { name: result.template.name } }));
+  (0, import_react6.useEffect)(() => {
+    if (!dirty) return void 0;
+    const warn = (event) => {
+      event.preventDefault();
+      event.returnValue = "";
+    };
+    window.addEventListener("beforeunload", warn);
+    return () => window.removeEventListener("beforeunload", warn);
+  }, [dirty]);
+  const select = (event) => {
+    if (!discard()) return;
+    return run(async () => {
+      const id = event.target.value || null;
+      const data = await api5("/session-templates/select", {
+        method: "POST",
+        body: JSON.stringify({ id })
+      });
+      setSelectedId(data.selectedId);
+      if (data.template !== null) setName(data.template.name);
+    }, "template.status.selected");
+  };
+  const createBlank = () => {
+    if (!discard()) return;
+    return run(
+      () => api5("/session-templates", { method: "POST", body: JSON.stringify({ name: name2 }) }),
+      (result) => ({ key: "template.status.created", values: { name: result.template.name } })
+    );
+  };
+  const importFile = (file) => {
+    if (!discard()) return;
+    return run(async () => {
+      try {
+        if (file.size > 256 * 1024) throw uiError("resource.error.fileTooLarge");
+        return await api5("/session-templates/import", { method: "POST", body: await file.text() });
+      } catch (error) {
+        announceImportFailure(error);
+        throw error;
+      }
+    }, "template.status.imported");
+  };
+  const saveSelection = () => run(() => api5(`/session-templates/${encodeURIComponent(selectedId)}`, {
+    method: "PATCH",
+    body: JSON.stringify({ name: name2, selection })
+  }), "template.status.saved");
+  const create2 = () => {
+    if (!discard()) return;
+    return run(async () => {
+      if (!sessionId) throw uiError("template.error.needSessionToSave");
+      return api5("/session-templates", {
+        method: "POST",
+        body: JSON.stringify({ name: name2, sourceSessionId: sessionId })
+      });
+    }, (result) => ({ key: "template.status.created", values: { name: result.template.name } }));
+  };
+  const update = () => {
+    if (!discard()) return;
+    return run(async () => {
+      if (!sessionId || selectedId === null) throw uiError("template.error.needSessionAndTemplate");
+      return api5(`/session-templates/${encodeURIComponent(selectedId)}`, {
+        method: "PATCH",
+        body: JSON.stringify({ name: name2, sourceSessionId: sessionId })
+      });
+    }, (result) => ({ key: "template.status.updated", values: { name: result.template.name } }));
+  };
   const remove = () => {
     if (selectedId === null || !window.confirm(unwrapText(uiMessage("template.confirmDelete", { name: selected?.name ?? selectedId })))) return;
     run(() => api5(`/session-templates/${encodeURIComponent(selectedId)}`, { method: "DELETE", body: JSON.stringify({}) }), "template.status.deleted");
   };
-  const start = (mode) => run(async () => {
-    if (mode === "current" && !sessionId) throw uiError("template.error.needSourceSession");
-    const source = mode === "current" ? { mode: "current", sessionId } : { mode: "template", templateId: selectedId };
-    if (mode === "template" && selectedId === null) throw uiError("template.error.needTemplate");
-    if (chromeMode === "play") return createConfiguredPlaythrough({ source });
-    if (workspaceId === null) throw uiError("template.error.needWorkspace");
-    return createCleanSession({ workspaceId, source });
-  }, (id) => ({ key: chromeMode === "play" ? "template.status.playthroughStarted" : "template.status.switched", values: { id } }));
+  const start = (mode) => {
+    if (!discard()) return;
+    return run(async () => {
+      if (mode === "current" && !sessionId) throw uiError("template.error.needSourceSession");
+      const source = mode === "current" ? { mode: "current", sessionId } : { mode: "template", templateId: selectedId };
+      if (mode === "template" && selectedId === null) throw uiError("template.error.needTemplate");
+      if (chromeMode === "play") return createConfiguredPlaythrough({ source });
+      if (workspaceId === null) throw uiError("template.error.needWorkspace");
+      return createCleanSession({ workspaceId, source });
+    }, (id) => ({ key: chromeMode === "play" ? "template.status.playthroughStarted" : "template.status.switched", values: { id } }));
+  };
   const diagnostics = Array.isArray(selected?.diagnostics) ? selected.diagnostics : [];
   const closeLabel = uiMessage("panel.close", { title: unwrapText(uiMessage("template.title")) });
   return h6(
@@ -4470,7 +4706,7 @@ function SessionTemplatePanel({ sessionId, workspaceId, chromeMode = "native", c
       "div",
       { className: "dtv-header" },
       h6("div", { className: "dtv-title" }, uiMessage("template.title")),
-      h6("button", { className: "dtv-close", type: "button", title: closeLabel, "aria-label": closeLabel, onClick: close }, "\u2715")
+      h6("button", { className: "dtv-close", type: "button", title: closeLabel, "aria-label": closeLabel, onClick: requestClose }, "\u2715")
     ),
     h6(
       "div",
@@ -4478,6 +4714,14 @@ function SessionTemplatePanel({ sessionId, workspaceId, chromeMode = "native", c
       h6(
         "div",
         { className: "dtv-template-toolbar" },
+        h6("button", { className: "dtv-button", type: "button", disabled: busy, onClick: createBlank }, uiMessage("template.createBlank")),
+        h6("button", { className: "dtv-button", type: "button", disabled: busy, onClick: () => fileRef.current?.click() }, uiMessage("common.importJson")),
+        selectedId === null ? null : h6("a", { className: "dtv-button", href: `${API_V1}/session-templates/${encodeURIComponent(selectedId)}/export`, download: "" }, uiMessage("common.exportJson")),
+        h6("input", { ref: fileRef, hidden: true, type: "file", accept: ".json,application/json", onChange: (event) => {
+          const file = event.target.files?.[0];
+          event.target.value = "";
+          if (file !== void 0) importFile(file);
+        } }),
         h6("button", { className: "dtv-button", type: "button", disabled: busy || !sessionId, onClick: create2 }, uiMessage("template.createFromCurrent")),
         h6("button", {
           className: "dtv-button dtv-primary",
@@ -4498,6 +4742,8 @@ function SessionTemplatePanel({ sessionId, workspaceId, chromeMode = "native", c
         )
       ),
       h6("p", { className: "dtv-note" }, uiMessage("template.inheritNote")),
+      h6("p", { className: "dtv-note" }, uiMessage("template.transferNote")),
+      dirty ? h6("div", { className: "dtv-status", role: "status" }, uiMessage("template.unsaved")) : null,
       chromeMode !== "play" && workspaceId === null ? h6("div", { className: "dtv-status", "data-error": true }, uiMessage("template.noWorkspace")) : null,
       h6("div", { className: "dtv-status", "data-error": status.error || void 0, role: "status" }, statusText(status)),
       h6("p", { className: "dtv-note" }, uiMessage("template.blankSessionNote")),
@@ -4513,10 +4759,12 @@ function SessionTemplatePanel({ sessionId, workspaceId, chromeMode = "native", c
             "div",
             { className: "dtv-template-name" },
             h6("input", { className: "dtv-input", value: name2, maxLength: 120, disabled: busy, onChange: (event) => setName(event.target.value) }),
-            h6("button", { className: "dtv-button", type: "button", disabled: busy || selectedId === null, onClick: rename }, uiMessage("template.saveNameOnly"))
+            h6("button", { className: "dtv-button", type: "button", disabled: busy || selectedId === null || !dirty, onClick: saveSelection }, uiMessage("common.saveChanges"))
           )
         ),
         h6("p", { className: "dtv-note" }, uiMessage("template.currentSettingsReminder")),
+        selected === null || selection === null ? null : h6(TemplateEditor, { selection, onChange: setSelection, catalogs: catalogs2, disabled: busy }),
+        selected === null ? null : h6("button", { className: "dtv-button dtv-primary", type: "button", disabled: busy || !dirty, onClick: saveSelection }, uiMessage("common.saveChanges")),
         selected === null ? null : h6(TemplatePreview, { template: selected }),
         diagnostics.length === 0 ? null : h6(
           "div",
@@ -4806,6 +5054,24 @@ function createChromeClickController({
       disposed = true;
     }
   };
+}
+
+// packages/client/src/play/occupancy.js
+var import_react17 = require("react");
+
+// packages/client/src/session-selection.js
+function mainSession(snapshot) {
+  return Object.values(snapshot?.byId ?? {}).find((session) => (session.retainedBy?.mainView ?? 0) > 0) ?? null;
+}
+function mainSessionId(snapshot) {
+  return mainSession(snapshot)?.id ?? null;
+}
+function mainSessionBlank(snapshot) {
+  const session = mainSession(snapshot);
+  return session === null || session.blank === true;
+}
+function retainedSessions(snapshot) {
+  return Object.values(snapshot?.byId ?? {}).filter((session) => Object.values(session.retainedBy ?? {}).some((count) => count > 0));
 }
 
 // packages/client/src/play/chat.js
@@ -10011,6 +10277,15 @@ function consumeSwipeTransition(sessionId) {
   pending.delete(sessionId);
   return intent;
 }
+function setSwipeTransitionSource(sessionId, sourceSessionId) {
+  const intent = pending.get(sessionId);
+  if (intent !== void 0 && typeof sourceSessionId === "string" && sourceSessionId !== "") {
+    pending.set(sessionId, { ...intent, sourceSessionId });
+  }
+}
+function peekSwipeTransition(sessionId) {
+  return pending.get(sessionId) ?? null;
+}
 
 // packages/client/src/play/turn-actions.js
 var h7 = createLocalizedElement(import_react8.createElement);
@@ -10741,11 +11016,12 @@ function ImportControls({
     })
   );
 }
-function playthroughCacheKey(playthrough) {
-  return typeof playthrough?.path === "string" ? playthrough.path : "";
+function playthroughCacheKey(playthrough, sessionId) {
+  return JSON.stringify([playthrough?.path ?? "", sessionId]);
 }
-function cachedChatSnapshot(client, playthrough) {
-  return chatSnapshots.get(client)?.get(playthroughCacheKey(playthrough)) ?? null;
+function cachedChatSnapshot(client, playthrough, sessionId) {
+  const source = peekSwipeTransition(sessionId)?.sourceSessionId ?? sessionId;
+  return chatSnapshots.get(client)?.get(playthroughCacheKey(playthrough, source)) ?? null;
 }
 function rememberChatSnapshot(client, playthrough, snapshot) {
   let cache = chatSnapshots.get(client);
@@ -10753,7 +11029,7 @@ function rememberChatSnapshot(client, playthrough, snapshot) {
     cache = /* @__PURE__ */ new Map();
     chatSnapshots.set(client, cache);
   }
-  const key = playthroughCacheKey(playthrough);
+  const key = playthroughCacheKey(playthrough, snapshot.sessionId);
   cache.delete(key);
   cache.set(key, snapshot);
   while (cache.size > MAX_CACHED_PLAYTHROUGHS) {
@@ -10935,7 +11211,7 @@ function MowanChatView({ sessionId, useSession, useChat, playClient, playthrough
   const submitting = useSession(submissionInProgress);
   const turnFailed = useChat(latestTurnFailed);
   const showHostFailure = hostFailed || !submitting && turnFailed;
-  const [loadedState, setLoadedState] = (0, import_react11.useState)(() => cachedChatSnapshot(playClient, playthrough));
+  const [loadedState, setLoadedState] = (0, import_react11.useState)(() => cachedChatSnapshot(playClient, playthrough, sessionId));
   const loadedStateRef = (0, import_react11.useRef)(loadedState);
   const transitionIntent = (0, import_react11.useRef)({ sessionId: null, intent: null });
   const [transition, setTransition] = (0, import_react11.useState)(null);
@@ -12028,7 +12304,7 @@ function PlayWorkspaceBrowser({
   const { scale } = useClientUiSettings();
   const sessionIds = useSessions((state) => state.ids);
   const sessions = useSessions((state) => state.byId);
-  const currentId = useSessions((state) => state.current ?? null);
+  const currentId = useSessions(mainSessionId);
   const workspaceItems = useWorkspaces((state) => state.items);
   const archivedSessionIds = useWorkspaces((state) => state.archivedSessionIds);
   const cache = (0, import_react14.useRef)(null);
@@ -12750,19 +13026,25 @@ var import_react16 = require("react");
 function defaultViewTarget(selectedView, targetViewId) {
   return selectedView === null || selectedView === void 0 ? targetViewId : null;
 }
-function DefaultConversationViewAdapter({ useStore, actions, targetViewId, complete }) {
+function sessionViewTarget(selectedView, targetViewId, binding, shouldDefault) {
+  if (binding === void 0) return null;
+  if (binding === null) return selectedView === targetViewId ? "chat" : null;
+  return shouldDefault(binding) ? defaultViewTarget(selectedView, targetViewId) : null;
+}
+function DefaultConversationViewAdapter({ useStore, actions, targetViewId, complete, shouldDefault, getBinding, subscribeBindings }) {
+  const binding = (0, import_react16.useSyncExternalStore)(subscribeBindings, getBinding, getBinding);
   const hasStore = typeof useStore === "function";
   const selectedView = hasStore ? useStore((state) => state.view) : void 0;
   (0, import_react16.useLayoutEffect)(() => {
-    const target = defaultViewTarget(selectedView, targetViewId);
+    const target = sessionViewTarget(selectedView, targetViewId, binding, shouldDefault);
     if (hasStore && target !== null && typeof actions?.setView === "function") {
       try {
         actions.setView(target);
       } catch {
       }
     }
-    queueMicrotask(complete);
-  }, [actions, complete, hasStore, selectedView, targetViewId]);
+    if (binding != null) complete(binding);
+  }, [actions, binding, complete, hasStore, selectedView, shouldDefault, targetViewId]);
   return null;
 }
 
@@ -12793,12 +13075,13 @@ function installPlaySlotOccupancy(ctx, playClient, { playthroughController, swit
   let chatGeneration = 0;
   let disposeChatEntry = null;
   let disposeDefaultViewEntry = null;
-  let defaultViewEntryKey = null;
   let disposeSessionSubscription = null;
   let refreshChatListener = null;
   let refreshLocaleListener = null;
-  let chatBinding = null;
-  let pendingChatSignature = null;
+  const chatBindings = /* @__PURE__ */ new Map();
+  const pendingChats = /* @__PURE__ */ new Map();
+  const preferredPlaythroughs = /* @__PURE__ */ new Map();
+  const bindingListeners = /* @__PURE__ */ new Set();
   let preferredPlaythroughId = null;
   const playthroughSelectionListeners = /* @__PURE__ */ new Set();
   const completedDefaultViewAttempts = /* @__PURE__ */ new Set();
@@ -12894,7 +13177,6 @@ function installPlaySlotOccupancy(ctx, playClient, { playthroughController, swit
   const dropDefaultViewEntry = () => {
     const dispose = disposeDefaultViewEntry;
     disposeDefaultViewEntry = null;
-    defaultViewEntryKey = null;
     dispose?.();
   };
   const rememberDefaultViewAttempt = (key) => {
@@ -12903,110 +13185,119 @@ function installPlaySlotOccupancy(ctx, playClient, { playthroughController, swit
     if (completedDefaultViewAttempts.size <= PLAY_DEFAULT_VIEW_ATTEMPT_LIMIT) return;
     completedDefaultViewAttempts.delete(completedDefaultViewAttempts.values().next().value);
   };
+  const notifyBindings = () => {
+    for (const listener of [...bindingListeners]) listener();
+  };
+  const bindingProps = (sessionId) => ({
+    getBinding: () => chatBindings.get(sessionId) ?? (pendingChats.has(sessionId) ? void 0 : null),
+    subscribeBindings: (listener) => {
+      bindingListeners.add(listener);
+      return () => bindingListeners.delete(listener);
+    }
+  });
   const dropChatEntry = () => {
     dropDefaultViewEntry();
     dropConversationEntry();
-    chatBinding = null;
-  };
-  const currentSession = () => {
-    const snapshot = ctx.sessions?.list?.getSnapshot?.();
-    const sessionId = snapshot?.current;
-    if (typeof sessionId !== "string" || sessionId === "") return null;
-    const session = snapshot.byId?.[sessionId];
-    return session == null ? null : { ...session, id: session.id ?? sessionId };
+    chatBindings.clear();
+    notifyBindings();
   };
   const sessionSignature = (session) => `${session.id}\0${String(session.cwd ?? "")}`;
+  const defaultViewKey = (binding) => `${binding.signature}\0${binding.playthrough.path}`;
   const openPlaySession = (sessionId, playthrough = null) => {
+    if (playthrough?.id) preferredPlaythroughs.set(sessionId, playthrough.id);
     selectPlaythrough(playthrough?.id);
-    const result = ctx.sessions.open(sessionId);
+    const result = ctx.uiWorkspace.openSession(sessionId);
     queueMicrotask(() => reconcileChat(true));
     return result;
   };
   const syncChatEntries = () => {
-    if (chatBinding === null) return;
-    if (!chatDeclared) {
+    if (!chatDeclared || mode !== "play" || chatBindings.size === 0 && pendingChats.size === 0) {
       dropDefaultViewEntry();
       dropConversationEntry();
-    } else if (disposeChatEntry === null) {
+      return;
+    }
+    if (chatBindings.size === 0) return;
+    if (disposeChatEntry === null) {
       disposeChatEntry = ctx.slots.register({
         name: "conversation.view",
         id: PLAY_VIEW_ID,
         order: PLAY_VIEW_ORDER,
         priority: PLAY_SLOT_PRIORITY,
         label: () => translate("play.chat.label"),
-        inject: () => ({
+        store: findConversationStore(ctx.slots),
+        inject: (sessionId) => ({
+          ...bindingProps(sessionId),
           playClient,
-          playthrough: chatBinding.playthrough,
-          openSession: (sessionId, playthrough = chatBinding.playthrough) => openPlaySession(sessionId, playthrough)
+          openSession: (targetId, playthrough = chatBindings.get(sessionId)?.playthrough) => {
+            setSwipeTransitionSource(targetId, sessionId);
+            return openPlaySession(targetId, playthrough);
+          }
         })
-      }, MowanChatView);
+      }, ScopedPlayChatView);
     }
-    const defaultViewKey = `${chatBinding.signature}\0${chatBinding.playthrough.path}`;
-    if (chatDeclared && disposeDefaultViewEntry === null && !completedDefaultViewAttempts.has(defaultViewKey)) {
+    if (disposeDefaultViewEntry === null) {
       const conversationStore = findConversationStore(ctx.slots);
       if (conversationStore !== void 0) {
-        const complete = () => {
-          rememberDefaultViewAttempt(defaultViewKey);
-          if (defaultViewEntryKey === defaultViewKey) dropDefaultViewEntry();
-        };
-        defaultViewEntryKey = defaultViewKey;
         disposeDefaultViewEntry = ctx.slots.register({
           name: "conversation.input.dock",
           id: PLAY_DEFAULT_VIEW_ADAPTER_ID,
           order: -1e3,
           priority: PLAY_SLOT_PRIORITY,
           store: conversationStore,
-          inject: () => ({
+          inject: (sessionId) => ({
+            ...bindingProps(sessionId),
             targetViewId: PLAY_VIEW_ID,
-            complete
+            shouldDefault: (binding) => !completedDefaultViewAttempts.has(defaultViewKey(binding)),
+            complete: (binding) => rememberDefaultViewAttempt(defaultViewKey(binding))
           })
         }, DefaultConversationViewAdapter);
       }
     }
   };
   const reconcileChat = (force = false) => {
-    if (force !== true) force = false;
-    const session = currentSession();
-    if (!chatDeclared || mode !== "play" || session === null) {
+    if (!chatDeclared || mode !== "play") {
       chatGeneration += 1;
-      pendingChatSignature = null;
+      pendingChats.clear();
       dropChatEntry();
       return;
     }
-    const signature = sessionSignature(session);
-    if (!force && chatBinding?.signature === signature) {
-      syncChatEntries();
-      return;
+    const snapshot = ctx.sessions?.list?.getSnapshot?.();
+    const sessions = retainedSessions(snapshot);
+    const retained = new Set(sessions.map((session) => session.id));
+    for (const id of chatBindings.keys()) if (!retained.has(id)) chatBindings.delete(id);
+    for (const id of pendingChats.keys()) if (!retained.has(id)) pendingChats.delete(id);
+    for (const id of preferredPlaythroughs.keys()) if (!retained.has(id)) preferredPlaythroughs.delete(id);
+    const mainId = mainSessionId(snapshot);
+    selectPlaythrough(chatBindings.get(mainId)?.playthrough.id ?? preferredPlaythroughs.get(mainId) ?? null);
+    for (const session of sessions) {
+      const signature = sessionSignature(session);
+      if (force !== true && (chatBindings.get(session.id)?.signature === signature || pendingChats.get(session.id)?.signature === signature)) continue;
+      const request = { signature, generation: chatGeneration };
+      pendingChats.set(session.id, request);
+      loadCurrentPlaythrough(playClient, session, {
+        preferredPlaythroughId: preferredPlaythroughs.get(session.id) ?? chatBindings.get(session.id)?.playthrough.id ?? null
+      }).then((match) => {
+        if (pendingChats.get(session.id) !== request || request.generation !== chatGeneration) return;
+        pendingChats.delete(session.id);
+        if (match === null) chatBindings.delete(session.id);
+        else chatBindings.set(session.id, { signature, sessionId: session.id, playthrough: match.playthrough });
+        if (mainSessionId(ctx.sessions?.list?.getSnapshot?.()) === session.id) selectPlaythrough(match?.playthrough.id);
+        syncChatEntries();
+        notifyBindings();
+      }).catch(() => {
+        if (pendingChats.get(session.id) !== request || request.generation !== chatGeneration) return;
+        pendingChats.delete(session.id);
+        if (chatBindings.get(session.id)?.signature !== signature) chatBindings.delete(session.id);
+        syncChatEntries();
+        notifyBindings();
+      });
     }
-    if (!force && pendingChatSignature === signature) return;
-    chatGeneration += 1;
-    const generation = chatGeneration;
-    pendingChatSignature = signature;
-    const sessionId = session.id;
-    const preferred = preferredPlaythroughId ?? chatBinding?.playthrough?.id ?? null;
-    loadCurrentPlaythrough(playClient, session, {
-      preferredPlaythroughId: preferred
-    }).then((match) => {
-      if (generation === chatGeneration) pendingChatSignature = null;
-      const latest = currentSession();
-      if (generation !== chatGeneration || mode !== "play" || !chatDeclared || latest === null || sessionSignature(latest) !== signature) return;
-      if (match === null) {
-        selectPlaythrough(null);
-        dropChatEntry();
-        return;
-      }
-      const samePlaythrough = chatBinding?.playthrough?.path === match.playthrough.path;
-      if (!samePlaythrough) dropChatEntry();
-      selectPlaythrough(match.playthrough.id);
-      chatBinding = { signature, sessionId, playthrough: match.playthrough };
-      syncChatEntries();
-    }).catch(() => {
-      if (generation === chatGeneration) pendingChatSignature = null;
-    });
+    syncChatEntries();
+    notifyBindings();
   };
   const stopChatObserver = () => {
     chatGeneration += 1;
-    pendingChatSignature = null;
+    pendingChats.clear();
     dropChatEntry();
     const dispose = disposeSessionSubscription;
     disposeSessionSubscription = null;
@@ -13079,6 +13370,17 @@ function installPlaySlotOccupancy(ctx, playClient, { playthroughController, swit
       reconcileChat(true);
     }
   };
+}
+function ScopedPlayChatView({ getBinding, subscribeBindings, useStore, actions, ...props }) {
+  const binding = (0, import_react17.useSyncExternalStore)(subscribeBindings, getBinding, getBinding);
+  const selectedView = typeof useStore === "function" ? useStore((state) => state.view) : null;
+  (0, import_react17.useLayoutEffect)(() => {
+    if (binding === null && selectedView === PLAY_VIEW_ID) actions?.setView?.("chat");
+  }, [actions, binding, selectedView]);
+  return binding == null ? null : (0, import_react17.createElement)(MowanChatView, {
+    ...props,
+    playthrough: binding.playthrough
+  });
 }
 
 // packages/client/src/play/live.js
@@ -13407,8 +13709,8 @@ function createLivePlayClient({
 }
 
 // packages/client/src/play/regex-panel.js
-var import_react17 = require("react");
-var h13 = createLocalizedElement(import_react17.createElement);
+var import_react18 = require("react");
+var h13 = createLocalizedElement(import_react18.createElement);
 var EMPTY_DOCUMENT = Object.freeze({ schemaVersion: 1, rules: Object.freeze([]) });
 var SCOPE_KINDS = Object.freeze(["global", "preset", "character"]);
 function reorderRegexRulesAtBoundary(rules, fromIndex, boundary) {
@@ -13751,16 +14053,16 @@ function RegexScopeSection({
   );
 }
 function RegexPanel({ client, activeSnapshot, close }) {
-  const [document2, setDocument] = (0, import_react17.useState)(EMPTY_DOCUMENT);
-  const [savedDocument, setSavedDocument] = (0, import_react17.useState)(EMPTY_DOCUMENT);
-  const [resourceRules, setResourceRules] = (0, import_react17.useState)({ preset: [], character: [] });
-  const [savedResourceRules, setSavedResourceRules] = (0, import_react17.useState)({ preset: [], character: [] });
-  const [busy, setBusy] = (0, import_react17.useState)(false);
-  const [status, setStatus] = (0, import_react17.useState)({ text: uiMessage("common.loading"), error: false });
-  const [dragFrom, setDragFrom] = (0, import_react17.useState)(null);
-  const [dropIndex, setDropIndex] = (0, import_react17.useState)(null);
-  const fileInput = (0, import_react17.useRef)(null);
-  const importScope = (0, import_react17.useRef)("global");
+  const [document2, setDocument] = (0, import_react18.useState)(EMPTY_DOCUMENT);
+  const [savedDocument, setSavedDocument] = (0, import_react18.useState)(EMPTY_DOCUMENT);
+  const [resourceRules, setResourceRules] = (0, import_react18.useState)({ preset: [], character: [] });
+  const [savedResourceRules, setSavedResourceRules] = (0, import_react18.useState)({ preset: [], character: [] });
+  const [busy, setBusy] = (0, import_react18.useState)(false);
+  const [status, setStatus] = (0, import_react18.useState)({ text: uiMessage("common.loading"), error: false });
+  const [dragFrom, setDragFrom] = (0, import_react18.useState)(null);
+  const [dropIndex, setDropIndex] = (0, import_react18.useState)(null);
+  const fileInput = (0, import_react18.useRef)(null);
+  const importScope = (0, import_react18.useRef)("global");
   const bindings = activeRegexBindings(activeSnapshot);
   const dirty = JSON.stringify(document2) !== JSON.stringify(savedDocument) || JSON.stringify(resourceRules) !== JSON.stringify(savedResourceRules);
   const load = async () => {
@@ -13786,7 +14088,7 @@ function RegexPanel({ client, activeSnapshot, close }) {
       setBusy(false);
     }
   };
-  (0, import_react17.useEffect)(() => {
+  (0, import_react18.useEffect)(() => {
     load();
   }, [client, bindings.presetId, bindings.characterId]);
   const persist = async (next, nextResourceRules = resourceRules, { rethrow = false } = {}) => {
@@ -14256,7 +14558,7 @@ function startChromeModeTransport({
 }
 
 // packages/client/src/index.js
-var h14 = createLocalizedElement(import_react18.createElement);
+var h14 = createLocalizedElement(import_react19.createElement);
 var css11 = `
 .dtv-layer{position:absolute;inset:0;z-index:6;pointer-events:none;font-family:Inter,var(--dsw-font-family),sans-serif;color:var(--dsw-alias-label-primary)}
 .dtv-launcher{position:absolute;z-index:2;width:44px;height:44px;pointer-events:auto;overflow:hidden;border:0 solid transparent;border-radius:22px;background:transparent;box-shadow:none;transition:width .22s ease,height .22s ease,border-radius .22s ease,background-color .18s ease,box-shadow .18s ease;display:block}
@@ -14271,6 +14573,7 @@ var css11 = `
 .dtv-menu-item{min-height:43px;border:0;border-radius:9px;padding:5px 8px;background:transparent;color:var(--dsw-alias-label-primary);text-align:left;font:inherit;cursor:pointer;display:grid;grid-template-columns:10px minmax(0,1fr) auto;gap:8px;align-items:center}.dtv-menu-item:hover{background:var(--dsw-alias-interactive-bg-hover)}.dtv-menu-item[data-active=true]{background:var(--dsw-alias-interactive-bg-selected,var(--dsw-specific-tip))}.dtv-binding-dot{width:8px;height:8px;border-radius:50%;background:#d33239;box-shadow:0 0 0 1px rgba(98,0,4,.38)}.dtv-menu-item[data-bound=true] .dtv-binding-dot{background:#44d17a;box-shadow:0 0 5px #31c66b,0 0 10px rgba(49,198,107,.75)}.dtv-item-copy{min-width:0;display:flex;flex-direction:column;gap:1px}.dtv-item-label{font-size:11px;font-weight:700;line-height:1.2}.dtv-item-status{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:10px;line-height:1.25;color:var(--dsw-alias-label-tertiary)}.dtv-item-count{border-radius:10px;padding:2px 6px;background:var(--dsw-specific-tip);font-size:9px;color:var(--dsw-alias-label-secondary)}.dtv-item-planned{font-size:9px;color:var(--dsw-alias-label-tertiary)}
 .dtv-menu-item[data-show-binding=false] .dtv-binding-dot{visibility:hidden}
 .dtv-panel{position:absolute;z-index:1;top:0;right:0;bottom:0;width:min(440px,calc(100vw - 56px));pointer-events:auto;border-left:1px solid var(--dsw-alias-border-l2);box-shadow:var(--ds-shadow-3,-8px 0 28px rgba(0,0,0,.18));background:var(--dsw-alias-bg-base);display:flex;flex-direction:column}
+.dtv-layer[data-surface-open=true] :is(.dtv-header,.dtt-header,.dcc-header,.dwb-header,.dtu-header){padding-right:72px}
 .dtv-header{height:52px;box-sizing:border-box;display:flex;align-items:center;gap:8px;padding:0 14px;border-bottom:1px solid var(--dsw-alias-border-l2);flex:none}.dtv-title{font-size:14px;font-weight:650;flex:1}.dtv-close{border:0;background:transparent;color:var(--dsw-alias-label-tertiary);cursor:pointer;border-radius:7px;padding:6px 8px}.dtv-close:hover{background:var(--dsw-alias-interactive-bg-hover)}
 .dtv-body{min-height:0;overflow:auto;padding:12px;display:flex;flex-direction:column;gap:12px}.dtv-note{font-size:11px;line-height:1.5;color:var(--dsw-alias-label-tertiary);margin:0;overflow-wrap:anywhere}.dtv-status{font-size:11px;line-height:1.45;border-radius:7px;padding:8px 10px;background:var(--dsw-specific-tip);overflow-wrap:anywhere}.dtv-status[data-error=true]{color:var(--dsw-alias-state-error)}
 .dtv-actions{display:grid;grid-template-columns:1fr 1fr;gap:8px}.dtv-button{min-height:34px;border:1px solid var(--dsw-alias-border-l2);border-radius:8px;background:var(--dsw-alias-button-secondary-fill,var(--dsw-alias-bg-base));color:var(--dsw-alias-label-primary);cursor:pointer;padding:7px 10px;font-size:12px}.dtv-button:hover:not(:disabled){background:var(--dsw-alias-interactive-bg-hover)}.dtv-button:disabled{opacity:.5;cursor:default}
@@ -14635,54 +14938,75 @@ function WorkspaceAdmission({ setting, state, error, busy, selectWorkspace, relo
     )
   );
 }
+function createSurfaceNavigation(commit) {
+  let guard = null;
+  return {
+    register(beforeLeave) {
+      guard = beforeLeave;
+      return () => {
+        if (guard === beforeLeave) guard = null;
+      };
+    },
+    request(next, current3) {
+      if (next === current3) return true;
+      if (guard !== null && guard() === false) return false;
+      commit(next);
+      return true;
+    }
+  };
+}
 function TavernShell({ useSessions, useWorkspaces, createCleanSession, createConfiguredPlaythrough, playClient, playSlots, chromeService, diagnostics }) {
-  const [menuOpen, setMenuOpen] = (0, import_react18.useState)(false);
-  const [surface, setSurface] = (0, import_react18.useState)(null);
-  const [diagnosticPlaythroughId, setDiagnosticPlaythroughId] = (0, import_react18.useState)(null);
-  const diagnosticSnapshot = (0, import_react18.useSyncExternalStore)(diagnostics.subscribe, diagnostics.getSnapshot);
-  (0, import_react18.useEffect)(() => diagnostics.subscribeOpen((playthroughId) => {
+  const [menuOpen, setMenuOpen] = (0, import_react19.useState)(false);
+  const [surface, setSurface] = (0, import_react19.useState)(null);
+  const surfaceNavigation = (0, import_react19.useRef)(null);
+  if (surfaceNavigation.current === null) surfaceNavigation.current = createSurfaceNavigation(setSurface);
+  const requestSurface = (0, import_react19.useCallback)((next) => surfaceNavigation.current.request(next, surface), [surface]);
+  const registerBeforeLeave = surfaceNavigation.current.register;
+  const [diagnosticPlaythroughId, setDiagnosticPlaythroughId] = (0, import_react19.useState)(null);
+  const diagnosticSnapshot = (0, import_react19.useSyncExternalStore)(diagnostics.subscribe, diagnostics.getSnapshot);
+  (0, import_react19.useEffect)(() => diagnostics.subscribeOpen((playthroughId) => {
+    if (!requestSurface("diagnostics")) return;
     setMenuOpen(false);
     setDiagnosticPlaythroughId(playthroughId);
-    setSurface("diagnostics");
-  }), [diagnostics]);
-  const [anchor, setAnchor] = (0, import_react18.useState)(initialLauncherAnchor);
-  const [chromeMode, setChromeMode] = (0, import_react18.useState)(() => chromeService.getMode());
-  const [chromeAnimation, setChromeAnimation] = (0, import_react18.useState)(0);
-  const [chromeError, setChromeError] = (0, import_react18.useState)("");
-  const [activeSnapshot, setActiveSnapshot] = (0, import_react18.useState)(null);
-  const [statusError, setStatusError] = (0, import_react18.useState)("");
-  const [uiSettings, setUiSettings] = (0, import_react18.useState)(getClientUiSettings);
-  const [conversationSettings, setConversationSettings] = (0, import_react18.useState)(getClientConversationSettings);
-  const [conversationSettingsStatus, setConversationSettingsStatus] = (0, import_react18.useState)({ text: translate("conversationSettings.saved"), error: false });
-  const [conversationSettingsBusy, setConversationSettingsBusy] = (0, import_react18.useState)(false);
-  const [settingsStatus, setSettingsStatus] = (0, import_react18.useState)({ text: translate("settings.saved"), error: false });
-  const [settingsBusy, setSettingsBusy] = (0, import_react18.useState)(false);
-  const [rpPolicyDraft, setRpPolicyDraft] = (0, import_react18.useState)("");
-  const [rpPolicyLoaded, setRpPolicyLoaded] = (0, import_react18.useState)(false);
-  const [rpPolicyBusy, setRpPolicyBusy] = (0, import_react18.useState)(false);
-  const [rpWorkspaceSetting, setRpWorkspaceSetting] = (0, import_react18.useState)(null);
-  const [rpWorkspaceLoadState, setRpWorkspaceLoadState] = (0, import_react18.useState)("idle");
-  const [rpWorkspaceError, setRpWorkspaceError] = (0, import_react18.useState)("");
-  const [rpWorkspaceBusy, setRpWorkspaceBusy] = (0, import_react18.useState)(false);
-  const rpWorkspaceBusyRef = (0, import_react18.useRef)(false);
-  const rpWorkspaceLoadGeneration = (0, import_react18.useRef)(0);
-  const [rpAlert, setRpAlert] = (0, import_react18.useState)(null);
-  const [importFailure, setImportFailure] = (0, import_react18.useState)(null);
-  const drag = (0, import_react18.useRef)(null);
-  const suppressClick = (0, import_react18.useRef)(false);
-  const chromeController = (0, import_react18.useRef)(null);
-  const statusGeneration = (0, import_react18.useRef)(0);
-  const rpAlertRef = (0, import_react18.useRef)(null);
-  const dismissedRpAlerts = (0, import_react18.useRef)(/* @__PURE__ */ new Set());
-  const sessionId = useSessions((state) => state.current);
-  const sessionBlank = useSessions((state) => state.current === void 0 || state.current === null ? true : state.byId?.[state.current]?.blank === true);
+  }), [diagnostics, requestSurface]);
+  const [anchor, setAnchor] = (0, import_react19.useState)(initialLauncherAnchor);
+  const [chromeMode, setChromeMode] = (0, import_react19.useState)(() => chromeService.getMode());
+  const [chromeAnimation, setChromeAnimation] = (0, import_react19.useState)(0);
+  const [chromeError, setChromeError] = (0, import_react19.useState)("");
+  const [activeSnapshot, setActiveSnapshot] = (0, import_react19.useState)(null);
+  const [statusError, setStatusError] = (0, import_react19.useState)("");
+  const [uiSettings, setUiSettings] = (0, import_react19.useState)(getClientUiSettings);
+  const [conversationSettings, setConversationSettings] = (0, import_react19.useState)(getClientConversationSettings);
+  const [conversationSettingsStatus, setConversationSettingsStatus] = (0, import_react19.useState)({ text: translate("conversationSettings.saved"), error: false });
+  const [conversationSettingsBusy, setConversationSettingsBusy] = (0, import_react19.useState)(false);
+  const [settingsStatus, setSettingsStatus] = (0, import_react19.useState)({ text: translate("settings.saved"), error: false });
+  const [settingsBusy, setSettingsBusy] = (0, import_react19.useState)(false);
+  const [rpPolicyDraft, setRpPolicyDraft] = (0, import_react19.useState)("");
+  const [rpPolicyLoaded, setRpPolicyLoaded] = (0, import_react19.useState)(false);
+  const [rpPolicyBusy, setRpPolicyBusy] = (0, import_react19.useState)(false);
+  const [rpWorkspaceSetting, setRpWorkspaceSetting] = (0, import_react19.useState)(null);
+  const [rpWorkspaceLoadState, setRpWorkspaceLoadState] = (0, import_react19.useState)("idle");
+  const [rpWorkspaceError, setRpWorkspaceError] = (0, import_react19.useState)("");
+  const [rpWorkspaceBusy, setRpWorkspaceBusy] = (0, import_react19.useState)(false);
+  const rpWorkspaceBusyRef = (0, import_react19.useRef)(false);
+  const rpWorkspaceLoadGeneration = (0, import_react19.useRef)(0);
+  const [rpAlert, setRpAlert] = (0, import_react19.useState)(null);
+  const [importFailure, setImportFailure] = (0, import_react19.useState)(null);
+  const drag = (0, import_react19.useRef)(null);
+  const suppressClick = (0, import_react19.useRef)(false);
+  const chromeController = (0, import_react19.useRef)(null);
+  const statusGeneration = (0, import_react19.useRef)(0);
+  const rpAlertRef = (0, import_react19.useRef)(null);
+  const dismissedRpAlerts = (0, import_react19.useRef)(/* @__PURE__ */ new Set());
+  const sessionId = useSessions(mainSessionId);
+  const sessionBlank = useSessions(mainSessionBlank);
   const workspaceId = useWorkspaces((state) => workspaceTargetId(state, sessionId));
   const workspaceItems = useWorkspaces((state) => state.items);
   const diagnosticSessions = useSessions((state) => state.byId);
   const diagnosticSessionsPhase = useSessions((state) => state.phase);
   const diagnosticArchived = useWorkspaces((state) => state.archivedSessionIds);
   const diagnosticWorkspacesPhase = useWorkspaces((state) => state.phase);
-  (0, import_react18.useEffect)(() => {
+  (0, import_react19.useEffect)(() => {
     diagnostics.setSessionAvailability({
       sessions: diagnosticSessions,
       workspaceItems,
@@ -14691,14 +15015,14 @@ function TavernShell({ useSessions, useWorkspaces, createCleanSession, createCon
       workspacesPhase: diagnosticWorkspacesPhase
     });
   }, [diagnostics, diagnosticSessions, diagnosticSessionsPhase, workspaceItems, diagnosticArchived, diagnosticWorkspacesPhase]);
-  const hasConversationHistory = (0, import_react18.useCallback)(async (targetSessionId) => {
+  const hasConversationHistory = (0, import_react19.useCallback)(async (targetSessionId) => {
     const messages = await playClient.getMessages(targetSessionId);
     return sessionHasConversationHistory(messages);
   }, [playClient]);
-  const close = () => setSurface(null);
+  const close = () => requestSurface(null);
   if (rpAlert === null || dismissedRpAlerts.current.has(rpAlert.id)) rpAlertRef.current = null;
   else rpAlertRef.current = rpAlert;
-  (0, import_react18.useEffect)(() => {
+  (0, import_react19.useEffect)(() => {
     const commitChrome = (snapshot) => {
       setChromeMode(snapshot.mode);
       playSlots.setMode(snapshot.mode);
@@ -14724,7 +15048,7 @@ function TavernShell({ useSessions, useWorkspaces, createCleanSession, createCon
       unsubscribe();
     };
   }, [chromeService, playSlots]);
-  (0, import_react18.useEffect)(() => {
+  (0, import_react19.useEffect)(() => {
     let active = true;
     uiSettingsRequest().then((next) => {
       if (!active) return;
@@ -14739,7 +15063,7 @@ function TavernShell({ useSessions, useWorkspaces, createCleanSession, createCon
       active = false;
     };
   }, []);
-  (0, import_react18.useEffect)(() => {
+  (0, import_react19.useEffect)(() => {
     let active = true;
     conversationSettingsRequest().then((next) => {
       if (!active) return;
@@ -14835,7 +15159,7 @@ function TavernShell({ useSessions, useWorkspaces, createCleanSession, createCon
       setConversationSettingsBusy(false);
     }
   };
-  (0, import_react18.useEffect)(() => {
+  (0, import_react19.useEffect)(() => {
     if (surface !== "settings") return void 0;
     let active = true;
     setRpPolicyLoaded(false);
@@ -14851,7 +15175,7 @@ function TavernShell({ useSessions, useWorkspaces, createCleanSession, createCon
       active = false;
     };
   }, [surface]);
-  const refreshRpWorkspace = (0, import_react18.useCallback)(async () => {
+  const refreshRpWorkspace = (0, import_react19.useCallback)(async () => {
     const generation = ++rpWorkspaceLoadGeneration.current;
     setRpWorkspaceLoadState("loading");
     setRpWorkspaceError("");
@@ -14870,12 +15194,12 @@ function TavernShell({ useSessions, useWorkspaces, createCleanSession, createCon
     }
   }, [playClient, workspaceItems]);
   const needsRpWorkspace = chromeMode === "play" || surface === "settings";
-  (0, import_react18.useEffect)(() => {
+  (0, import_react19.useEffect)(() => {
     if (!needsRpWorkspace) return void 0;
     refreshRpWorkspace();
     return void 0;
   }, [needsRpWorkspace, refreshRpWorkspace]);
-  (0, import_react18.useEffect)(() => {
+  (0, import_react19.useEffect)(() => {
     if (surface !== "settings" || rpWorkspaceLoadState !== "error") return;
     setSettingsStatus({ text: translate("settings.loadError", { message: rpWorkspaceError }), error: true });
   }, [rpWorkspaceError, rpWorkspaceLoadState, surface]);
@@ -14947,7 +15271,7 @@ function TavernShell({ useSessions, useWorkspaces, createCleanSession, createCon
       setRpPolicyBusy(false);
     }
   };
-  const refreshStatus = (0, import_react18.useCallback)(async () => {
+  const refreshStatus = (0, import_react19.useCallback)(async () => {
     const generation = ++statusGeneration.current;
     try {
       const next = await activeView(sessionId);
@@ -14959,7 +15283,7 @@ function TavernShell({ useSessions, useWorkspaces, createCleanSession, createCon
       setStatusError(reason instanceof Error ? reason.message : String(reason));
     }
   }, [sessionId]);
-  (0, import_react18.useEffect)(() => {
+  (0, import_react19.useEffect)(() => {
     statusGeneration.current += 1;
     setActiveSnapshot(null);
     setStatusError("");
@@ -14968,12 +15292,12 @@ function TavernShell({ useSessions, useWorkspaces, createCleanSession, createCon
       statusGeneration.current += 1;
     };
   }, [refreshStatus, sessionId]);
-  (0, import_react18.useEffect)(() => {
+  (0, import_react19.useEffect)(() => {
     const onRefresh = () => refreshStatus();
     window.addEventListener(CLIENT_REFRESH_EVENT, onRefresh);
     return () => window.removeEventListener(CLIENT_REFRESH_EVENT, onRefresh);
   }, [refreshStatus]);
-  (0, import_react18.useEffect)(() => {
+  (0, import_react19.useEffect)(() => {
     const onResize = () => setAnchor((current3) => {
       const next = clampLauncherAnchor(current3, viewport(), uiSettings.scale);
       persistLauncherAnchor(next);
@@ -14982,14 +15306,14 @@ function TavernShell({ useSessions, useWorkspaces, createCleanSession, createCon
     window.addEventListener("resize", onResize);
     return () => window.removeEventListener("resize", onResize);
   }, [uiSettings.scale]);
-  (0, import_react18.useEffect)(() => {
+  (0, import_react19.useEffect)(() => {
     setAnchor((current3) => {
       const next = clampLauncherAnchor(current3, viewport(), uiSettings.scale);
       persistLauncherAnchor(next);
       return next;
     });
   }, [uiSettings.scale]);
-  (0, import_react18.useEffect)(() => {
+  (0, import_react19.useEffect)(() => {
     if (typeof sessionId !== "string" || sessionId === "") {
       dismissedRpAlerts.current = /* @__PURE__ */ new Set();
       rpAlertRef.current = null;
@@ -15025,7 +15349,7 @@ function TavernShell({ useSessions, useWorkspaces, createCleanSession, createCon
     } catch {
     }
   };
-  (0, import_react18.useEffect)(() => {
+  (0, import_react19.useEffect)(() => {
     const onImportFailure = (event) => {
       const message = typeof event?.detail?.message === "string" ? event.detail.message.trim() : "";
       if (message !== "") setImportFailure(message.slice(0, 1e3));
@@ -15033,17 +15357,17 @@ function TavernShell({ useSessions, useWorkspaces, createCleanSession, createCon
     window.addEventListener(CLIENT_IMPORT_FAILURE_EVENT, onImportFailure);
     return () => window.removeEventListener(CLIENT_IMPORT_FAILURE_EVENT, onImportFailure);
   }, []);
-  (0, import_react18.useEffect)(() => {
+  (0, import_react19.useEffect)(() => {
     const onKeyDown = (event) => {
       if (event.key !== "Escape") return;
       if (importFailure !== null) setImportFailure(null);
       else if (rpAlert !== null) dismissRpAlert();
       else if (menuOpen) setMenuOpen(false);
-      else if (surface !== null) setSurface(null);
+      else if (surface !== null) requestSurface(null);
     };
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
-  }, [importFailure, menuOpen, rpAlert, surface]);
+  }, [importFailure, menuOpen, rpAlert, surface, requestSurface]);
   const startDrag = (event) => {
     if (event.button !== 0) return;
     event.currentTarget.setPointerCapture?.(event.pointerId);
@@ -15094,9 +15418,9 @@ function TavernShell({ useSessions, useWorkspaces, createCleanSession, createCon
   };
   const switchChrome = () => chromeController.current?.switchMode();
   const open = (id) => {
+    if (!requestSurface(id)) return;
     if (id === "diagnostics") setDiagnosticPlaythroughId(null);
     setMenuOpen(false);
-    setSurface(id);
     window.dispatchEvent(new Event(CLIENT_REFRESH_EVENT));
   };
   let panel = null;
@@ -15130,6 +15454,7 @@ function TavernShell({ useSessions, useWorkspaces, createCleanSession, createCon
       chromeMode,
       createCleanSession,
       createConfiguredPlaythrough,
+      registerBeforeLeave,
       close
     });
   } else if (surface === "conversation-settings" && chromeMode === "play") {
@@ -15279,7 +15604,7 @@ function installStyles5() {
   document.head.append(style);
 }
 var name = PLUGIN_ID;
-var inject = ["slots", "layout", "sessions", "workspaces"];
+var inject = ["slots", "layout", "sessions", "workspaces", "uiWorkspace"];
 function apply2(ctx, { conversationPhase: conversationPhase2 }) {
   installPresetStyles();
   installCharacterStyles();
@@ -15347,7 +15672,7 @@ function apply2(ctx, { conversationPhase: conversationPhase2 }) {
           targetSessionId,
           source: selectedSource
         }),
-        openSession: (id) => ctx.sessions.open(id),
+        openSession: (id) => ctx.uiWorkspace.openSession(id),
         refresh: () => window.dispatchEvent(new Event(CLIENT_REFRESH_EVENT))
       }),
       createConfiguredPlaythrough: ({ source }) => createConfiguredPlaythroughWorkflow({
@@ -15358,7 +15683,7 @@ function apply2(ctx, { conversationPhase: conversationPhase2 }) {
           source: selectedSource
         }),
         playthroughController,
-        openSession: (id) => ctx.sessions.open(id),
+        openSession: (id) => ctx.uiWorkspace.openSession(id),
         refresh: () => window.dispatchEvent(new Event(CLIENT_REFRESH_EVENT))
       })
     })

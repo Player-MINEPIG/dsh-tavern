@@ -6,7 +6,7 @@ This guide covers the current orb interaction, frontend display-mode switch, RP 
 
 ## When an error occurs in RP
 
-On the target DSH `0.1.5-rc.1`, exposed Session errors or the latest turn's terminal failure show: “An error occurred. Switch to the Chat view for more information.” Select DSH's Chat tab for the detailed cause. RP does not switch views automatically or duplicate provider diagnostics. The notice follows Tavern's UI language. A new request in progress hides the previous turn's failure; later success or intentional cancellation supersedes old errors. Automatic retries in progress and recoverable tool errors alone are not terminal failures.
+On the target DSH `0.1.7-alpha.1`, exposed Session errors or the latest turn's terminal failure show: “An error occurred. Switch to the Chat view for more information.” Select DSH's Chat tab for the detailed cause. RP does not switch views automatically or duplicate provider diagnostics. The notice follows Tavern's UI language. A new request in progress hides the previous turn's failure; later success or intentional cancellation supersedes old errors. Automatic retries in progress and recoverable tool errors alone are not terminal failures.
 
 ### Workspace and playthrough read problems
 
