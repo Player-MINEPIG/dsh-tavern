@@ -2,7 +2,7 @@
 
 [中文](API.md) · [v3 detailed contract](PROMPT_API_V3_en.md) · [Frontend integration](FRONTEND_INTEGRATION_en.md)
 
-Contract version: Tavern **2.4.0**, targeting DSH `0.1.7-alpha.1`.
+Contract version: Tavern **2.4.0**, supporting only DSH `0.1.7-alpha.1`.
 Root: `/pmp-dsh-tavern/api`. API versions and DSH log format V4 are independent.
 
 All endpoint catalogs use **Method / Path / Behavior / Status**, following the v2
@@ -14,6 +14,26 @@ codes vary by resource; common documentation formatting does not change wire con
 
 The [DSH V4 coordinate migration contract](DSH_0.1.7_MIGRATION_en.md) governs
 message coordinates, branch inputs, and unmigrated timeline references.
+
+## Impact on third-party consumers in 2.4.0
+
+Compared with `v2.3.2`, the API root, v1/v2/v3 prefixes and existing routes remain.
+This does not mean that every accepted input, historical reference or Host integration behavior is unchanged.
+Only DSH `0.1.7-alpha.1` is supported; other versions are outside the supported range.
+
+| Integration | Impact and consumer requirements |
+| --- | --- |
+| Ordinary resource and binding operations | Existing valid requests keep their routes. User/template import/export and explicit template creation are additive and need not be adopted by existing clients |
+| Template creation and updates | Existing `{ name, sourceSessionId }` creation remains. POST/PATCH now reject unknown top-level fields: do not send back a full response containing IDs or timestamps. `selection` and `sourceSessionId` are mutually exclusive; explicit `selection` replaces the whole configuration rather than merging a partial patch |
+| Historical messages, timelines and branches | Current `sessionFormatVersion` is 4. Read, store and submit coordinates with their source format version. Missing or mismatched V4 reference versions return `409 PLAY_COORDINATES_MIGRATION_REQUIRED`. Do not merely relabel old integers or assume a constant offset |
+| Third-party stored references | The Tavern upgrade tool only processes the files listed in the migration guide; it does not scan third-party databases or caches. Invalidate old caches and reread upgraded data; external references that must be retained need separate migration backed by official log evidence |
+| Preset parameters | `reasoningEffort` can contain additional or provider-specific values; do not hard-code the old enum. Omitting it in PATCH preserves the stored value; null clears the override. Explicitly unsupported Tavern sampling overrides may fall back, so stored preset values do not establish actual request parameters |
+| Trace consumers | v3 can add optional `parameters` (requested/effective/fallbacks/attempt); v1 audit can add `sessionFormatVersion`. Older records may omit them. Tolerate additional fields, use actual parameter diagnostics and handle unavailable historical body/failure references after migration |
+| Third-party frontends embedded in DSH | Tavern's `pmpDshTavernChrome` contract remains. Plugins calling DSH directly must replace `sessions.open` with `uiWorkspace.openSession`, inject that service, and adapt session directory and per-session lifecycle handling. Pure Tavern HTTP consumers are unaffected by those UI service signature changes |
+
+See the endpoint contracts below, [coordinate migration](DSH_0.1.7_MIGRATION_en.md),
+[parameter diagnostics](PROMPT_API_V3_en.md#preset-parameter-diagnostics) and
+[frontend integration](FRONTEND_INTEGRATION_en.md).
 
 <a id="api-scope"></a>
 ## Version responsibilities and overlap audit

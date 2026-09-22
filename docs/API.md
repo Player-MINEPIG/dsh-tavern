@@ -2,7 +2,7 @@
 
 [English](API_en.md) · [v3 详细合同](PROMPT_API_V3.md) · [前端接入](FRONTEND_INTEGRATION_zh-CN.md)
 
-合同版本：Tavern **2.4.0**，目标 DSH `0.1.7-alpha.1`。
+合同版本：Tavern **2.4.0**，仅支持 DSH `0.1.7-alpha.1`。
 根路径 `/pmp-dsh-tavern/api`。API 版本与 DSH 日志格式 V4 无关。
 
 各版本路由目录统一采用 v2 的 **方法 / 路径 / 作用 / 状态** 格式。路径相对于该节声明的
@@ -12,6 +12,24 @@ v1 的 error 形状和方法拒绝状态码因资源而异，文档排版统一�
 
 [DSH V4 坐标迁移合同](DSH_0.1.7_MIGRATION.md) 定义消息坐标、branch 输入和未迁移
 timeline 的拒绝行为。
+
+## 2.4.0 对第三方调用方的影响
+
+与 `v2.3.2` 相比，API 根路径、v1/v2/v3 版本前缀和既有路由保持；这不代表所有输入、
+历史引用或宿主接入行为完全不变。运行环境仅支持 DSH `0.1.7-alpha.1`，其他版本不在支持范围内。
+
+| 调用方式 | 影响与调用方要求 |
+| --- | --- |
+| 常规资源与绑定读写 | 既有合法请求继续使用原路由；用户/模板导入导出及显式模板创建是新增能力，不要求旧客户端主动使用 |
+| 模板创建与更新 | 原 `{ name, sourceSessionId }` 创建方式保留；POST/PATCH 现在拒绝未知顶层字段，不能直接回传含 `id`、时间戳等字段的完整响应。`selection` 与 `sourceSessionId` 互斥；显式 `selection` 替换整个配置，不作局部合并 |
+| 历史消息、timeline 与 branch | 当前 `sessionFormatVersion` 为 4；读取、保存和提交坐标时携带同一来源的版本。V4 缺少或不匹配的版本返回 `409 PLAY_COORDINATES_MIGRATION_REQUIRED`。旧整数坐标不能只改版本号，也不能假定统一偏移 |
+| 第三方保存的历史引用 | Tavern 升级工具只处理升级指南列出的文件，不扫描第三方数据库或缓存。调用方需失效旧缓存、重新读取已升级数据；必须保留的外部引用需按官方日志证据另行迁移 |
+| 预设参数 | `reasoningEffort` 可能包含新增或 provider 自定义值，不能硬编码旧枚举；PATCH 省略此字段保留原值，传 null 清除覆盖。明确不支持的 Tavern 采样覆盖可能回退，保存的预设值不保证就是实际请求值 |
+| Trace 消费 | v3 可新增可选 `parameters`（requested/effective/fallbacks/attempt），v1 审计可新增 `sessionFormatVersion`；旧记录可能缺省。消费者应容忍新增字段，使用实际参数诊断并处理迁移后历史正文/失败引用不可用状态 |
+| 嵌入 DSH 的第三方前端 | Tavern `pmpDshTavernChrome` 服务合同保持；直接使用 DSH 的插件需将 `sessions.open` 改为 `uiWorkspace.openSession` 并注入对应服务，适配会话目录与按 session 隔离的生命周期。纯 Tavern HTTP 调用不受这些 UI 服务签名变化影响 |
+
+详见本页各接口、[历史坐标升级](DSH_0.1.7_MIGRATION.md)、
+[参数诊断](PROMPT_API_V3.md#preset-参数诊断)与[前端接入](FRONTEND_INTEGRATION_zh-CN.md)。
 
 <a id="api-scope"></a>
 ## 版本职责与重叠核对

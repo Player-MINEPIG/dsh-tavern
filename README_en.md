@@ -4,7 +4,7 @@
 
 A SillyTavern compatibility plugin that keeps DeepSeek Harness (DSH) authoritative over sessions and execution, with frontend and backend APIs for composing Tavern capabilities with native DSH features.
 
-> This page describes `2.4.0`: DSH `0.1.7-alpha.1` compatibility, preset parameter fallback, and create/import/export/edit for all five resource types. Older Hosts are unsupported; use the [one-way upgrade guide](docs/DSH_0.1.7_MIGRATION_en.md) and retain backups. See the [changelog](CHANGELOG.md). [MIT License](LICENSE).
+> This page describes `2.4.0`: support for DSH `0.1.7-alpha.1` only, preset parameter fallback, and create/import/export/edit for all five resource types. Older Hosts are unsupported; use the [one-way upgrade guide](docs/DSH_0.1.7_MIGRATION_en.md) and retain backups. See the [changelog](CHANGELOG.md). [MIT License](LICENSE).
 >
 > Tavern Trace shows each request's configuration, world-book activation, and prompt section content and sources. Third-party tools can read the same information through the read-only v3 API. See [API/design](docs/PROMPT_API_V3_en.md).
 >

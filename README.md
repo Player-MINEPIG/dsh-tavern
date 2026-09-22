@@ -4,7 +4,7 @@
 
 以 DeepSeek Harness（DSH）原生会话与执行机制为权威的酒馆兼容插件，提供前后端 API，支持自由组合酒馆能力与 DSH 原生功能。
 
-> 本文说明 `2.4.0`，适配 DSH `0.1.7-alpha.1`，提供预设参数回退与五类资源的创建、导入、导出、编辑。不支持旧版 Host；旧数据按 [升级指南](docs/DSH_0.1.7_MIGRATION.md) 单向迁移并保留备份。见 [变更记录](CHANGELOG.md)。项目代码采用 [MIT License](LICENSE)。
+> 本文说明 `2.4.0`，仅支持 DSH `0.1.7-alpha.1`，提供预设参数回退与五类资源的创建、导入、导出、编辑。不支持旧版 Host；旧数据按 [升级指南](docs/DSH_0.1.7_MIGRATION.md) 单向迁移并保留备份。见 [变更记录](CHANGELOG.md)。项目代码采用 [MIT License](LICENSE)。
 >
 > Tavern Trace 可查看每次请求的配置、世界书触发情况和提示词段落的内容与来源；第三方工具也可通过只读 v3 API 读取这些信息。见 [API 与设计](docs/PROMPT_API_V3.md)。
 >
