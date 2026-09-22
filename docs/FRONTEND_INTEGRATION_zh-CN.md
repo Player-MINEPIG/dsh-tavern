@@ -25,6 +25,10 @@
 
 源码核对表明，可以在保持 Tavern Host HTTP 合同不变的前提下实现独立 RP 前端。嵌入式 DSH 插件可以复用 mode service、公开 slots 和官方 Session/Chat/Conversation 订阅，再组合 Tavern v2 操作。独立 HTTP 客户端可通过 v2 创建会话、提交用户正文、读取持久消息、分支、查询 focus，以及更新受管 timeline/catalog 文件。资源编辑器和配置预览/应用还需依赖相应 v1 合同；历史提示词查询使用 v3。
 
+可重复运行的[独立客户端边界测试](../test/standalone-client-boundary.test.mjs)用 esbuild 将预设、角色、用户、世界书、模板客户端模块，以及 HTTP client/配置流程与 React 一起打包。测试逐项检查输入/输出 import，排除 DSH entry/bootstrap、`@deepseek-ai` 包、未解析的 external 和 `window.__ModuleLoader__`，再在没有 DSH/浏览器全局对象的环境中初始化 bundle，并执行注入的模拟 HTTP 调用。这证明源码模块可复用，不代表 DOM 渲染或真实 Host 已通过验收。
+
+这些面板不是单独发布的独立组件 SDK：包的 `./client` 导出 DSH loader bundle，测试有意直接引用仓库源码模块。消费者仍需提供 React/浏览器宿主、资源样式与主题变量（模板面板还使用 Tavern shell 的共享 CSS）、同源 HTTP 访问以及 session/context props。资源面板继续使用现有相对 v1 请求；`createLivePlayClient` 另行支持注入 `fetchImpl` 和 API roots。角色动作需要历史/解绑回调，模板创建需要配置与导航回调。解析当前会话及其 blank 状态、拥有导航和管理实时会话订阅，仍是消费前端的职责。
+
 这说明现有接入构件可用，不代表已经能完整替代 DSH WebUI。[v2 路由实现](../packages/play/src/server.js)提供 chrome 模式 SSE，但没有 token 消息流、停止生成、审批或交互提问路由。独立客户端若需要这些控制，必须另行接入并验证目标 DSH 的公开 transport；普通 HTTP 客户端没有 `uiWorkspace` 或注入式 React hooks。上游 session-controller 包发布了 client 和 Remote 入口，但仅凭这些入口存在，不能推定独立连接、认证、重连或交互流程已经实现。只有产品能接受持久消息轮询的呈现方式时，轮询才足够。
 
 Tavern 不提供独立前端实现。完整替换需要自己的交互设计、transport/生命周期实现和浏览器验收；DSH 原生界面继续提供完整的会话 UI。
