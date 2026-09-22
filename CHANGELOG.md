@@ -1,5 +1,11 @@
 # Development changelog
 
+## 2.3.2 — Unreleased — Branch pending-input fix
+
+- Fix [#10](https://github.com/Player-MINEPIG/dsh-tavern/issues/10): newly created Tavern branches cancel inherited queued/steering input before accepting a new message. This covers rollback, new-playthrough forks, and non-first-turn swipes, preventing invisible stale input or duplicate user messages from reaching the model.
+- Use public DSH inbox cancellation and verify the child is idle with empty queues. Cleanup failures return `PLAY_BRANCH_INPUT_RESET_FAILED` before context copying or timeline updates. Source queues and inherited history remain intact; native DSH fork behavior is unchanged.
+- Keep DSH `0.1.5-rc.1` as the runtime target. This patch requires no Tavern data migration and does not establish compatibility with newer DSH releases. Synchronize bilingual API, usage, installation, and verification documentation.
+
 ## 2.3.1 — Playthrough archive
 
 - Add Archive playthrough and an archive box with view/restore actions. Keep the catalog row, title, number, timeline, DSH sessions/history, and all Tavern selections intact; persist only `ext.pmpDshTavern.archivedAt` through the existing catalog CAS path.

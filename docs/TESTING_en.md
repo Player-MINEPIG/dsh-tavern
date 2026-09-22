@@ -21,6 +21,25 @@ After installing dependencies, run these commands from the repository root. [pac
 
 `npm test` discovers tests through the Node test runner; `check` builds before running them. `verify:2.0` retains its historical command name: it runs the [listed test groups](../scripts/verify-2.0.mjs), then builds and runs `npm pack --dry-run`. It is not the full test suite and does not start a Web Host or browser.
 
+<a id="patch-release-documents"></a>
+## Patch release documentation
+
+Use a patch version for compatible bug fixes; documentation corrections alone do not require a version bump. A fix PR can merge before the version is updated once release scope is settled. For a public release, align the package version, Git tag, GitHub Release, and pinned installation examples. Never move or overwrite a published tag.
+
+| File or release item | When to update |
+| --- | --- |
+| Root `package.json` and `package-lock.json` | Synchronize versions during release preparation; no bump for documentation-only changes |
+| Root [CHANGELOG.md](../CHANGELOG.md) | Record the fix, user impact, and compatibility limits; mark it unreleased until publication, then record the released version and date |
+| Chinese and English README and INSTALLATION | Synchronize source/release status; at publication, switch install and source-checkout examples to the new tag and state the target DSH and migration requirements |
+| Chinese and English API and USAGE | Update changed interface behavior, error codes, or user-visible results; internal fixes with an unchanged contract need no edits |
+| Chinese and English TESTING | Add reusable regression scenarios or verification methods when needed |
+| Architecture, migration, security documents and diagrams | Update only when the corresponding design, data format, or security boundary changes; a patch bump alone requires no rewrite |
+| Git tag and GitHub Release | At publication, create the matching tag and concise release notes covering the fix, target DSH, upgrade steps, and known limits |
+
+Keep run-specific logs, screenshots, test counts, and release-note drafts in Git-ignored `.local/`; summarize relevant evidence in the PR. Keep reusable procedures in `docs/`, without accumulating per-release acceptance records. Update corresponding Chinese and English files in the same change.
+
+Run `npm run verify:2.0` and inspect package contents before release; validate affected APIs, Host behavior, and UI as described here. Later documentation or version-metadata changes can reuse runtime evidence for the same implementation and target DSH, identifying the tested commit, without repeating unrelated interactions. New DSH compatibility requires fresh verification; old Host results do not establish support.
+
 ## Enable integration tests with official modules
 
 Both variables point to directories from which Node can resolve the target DSH dependencies. Tests use `package.json` under each directory as the resolution base. These paths are neither `DSH_HOME` nor an RP workspace.

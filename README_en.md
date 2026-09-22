@@ -4,7 +4,7 @@
 
 A SillyTavern compatibility plugin that keeps DeepSeek Harness (DSH) authoritative over sessions and execution, with frontend and backend APIs for composing Tavern capabilities with native DSH features.
 
-> This page describes `2.3.1`, adding playthrough archiving and restoration, targeting DSH `0.1.5-rc.1`. [MIT License](LICENSE).
+> The current source prepares `2.3.2`, fixing inherited pending input in rollback, branches, and non-first-turn swipes. The runtime target remains DSH `0.1.5-rc.1`; compatibility with newer DSH releases is unverified. See the [changelog](CHANGELOG.md). [MIT License](LICENSE).
 >
 > Tavern Trace shows each request's configuration, world-book activation, and prompt section content and sources. Third-party tools can read the same information through the read-only v3 API. See [API/design](docs/PROMPT_API_V3_en.md).
 >
@@ -40,7 +40,7 @@ If behavior looks suspicious, stop the Agent, switch back to DSH native mode, an
 
 ### 0. Install
 
-Install `2.3.1` from GitHub using its version tag:
+The current published version is `2.3.1`, which does not include this fix; `2.3.2` is still in preparation. Install the published version from GitHub using its tag:
 
 Target DSH `0.1.5-rc.1` requires Node.js `^22.19.0 || >=24.0.0`, with `dsh` on `PATH` and an initialized profile (default `web`). Tavern standalone tests support Node 20; that does not establish Node 20 support for the target Host.
 

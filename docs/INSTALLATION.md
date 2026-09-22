@@ -4,7 +4,7 @@
 
 [English](INSTALLATION_en.md)
 
-本文面向 Tavern `2.3.1`，运行时验收目标是 DSH `0.1.5-rc.1`。根目录默认 [README](../README.md) 为中文；英文落地页是 [README_en.md](../README_en.md)（无截图）。本文是当前安装生命周期、验收与恢复合同。其他版本请切换到对应 tag，并阅读该 tag 内的安装说明。
+当前源码准备发布 Tavern `2.3.2`，运行时验收目标仍为 DSH `0.1.5-rc.1`；新版 DSH 兼容性尚未验证。本次分支待处理输入修复无需 Tavern 数据迁移。根目录默认 [README](../README.md) 为中文；英文落地页是 [README_en.md](../README_en.md)（无截图）。本文是当前安装生命周期、验收与恢复合同。其他版本请切换到对应 tag，并阅读该 tag 内的安装说明。
 
 脚本以 Node.js 为统一入口，并规范化 Windows、macOS 和 Linux 路径。macOS/Linux 直接执行 `dsh`。Windows 会安全定位 npm 的 `dsh.ps1` shim，再通过系统 PowerShell 以参数数组调用，因此路径不会被拼回 shell 命令文本。请在 `dsh-tavern` 检出目录中运行脚本，并准备 Node.js 20 或更高版本，以及位于 `PATH` 上的目标 DSH `0.1.5-rc.1`；启动 Host 时需满足上面的 Node 要求。
 
@@ -12,7 +12,7 @@
 
 ## 安装 2.3.1
 
-从 GitHub 安装 `2.3.1` 到默认 `web` profile，请使用固定版本标签：
+`2.3.1` 是当前已发布版本，尚不包含 `2.3.2` 的分支待处理输入修复。以下命令安装已发布版本到默认 `web` profile：
 
 ```text
 dsh plugin --profile web add github:Player-MINEPIG/dsh-tavern#v2.3.1
@@ -30,6 +30,8 @@ cd dsh-tavern
 npm ci --legacy-peer-deps
 node scripts/install.mjs --dsh-home /absolute/path/to/test-home --profile web
 ```
+
+验收准备中的 `2.3.2` 时，使用对应 PR 的源码提交替代上述标签检出，再执行依赖安装及安装脚本；不要使用尚未发布的 `v2.3.2` 标签。补丁发布时的同步清单见 [开发验证指南](TESTING.md#patch-release-documents)。
 
 用同一个 `DSH_HOME` 启动 DSH `0.1.5-rc.1`，再按 [开发验证指南](TESTING.md)检查。
 只升级 CLI 不会更新 profile 中的插件。用 `git rev-parse HEAD` 记录所验收构建。

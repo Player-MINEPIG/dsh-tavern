@@ -2,7 +2,7 @@
 
 [English](ARCHITECTURE_en.md)
 
-当前合同面向 Tavern **2.3.1**与 DSH `0.1.5-rc.1`；安装标识为
+当前合同面向本仓库源码（版本见 [package.json](../package.json)）与 DSH `0.1.5-rc.1`；安装标识为
 `pmp-dsh-tavern`。HTTP 挂载 `/pmp-dsh-tavern/api`，资源走 `/v1`，扮演表面合同走
 `/v2`，装配审计走 `/v3`。本文记录当前架构决策与发布审查门槛。
 
