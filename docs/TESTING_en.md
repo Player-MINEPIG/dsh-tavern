@@ -24,13 +24,13 @@ After installing dependencies, run these commands from the repository root. [pac
 <a id="patch-release-documents"></a>
 ## Patch release documentation
 
-Use a patch version for compatible bug fixes; documentation corrections alone do not require a version bump. A fix PR can merge before the version is updated once release scope is settled. For a public release, align the package version, Git tag, GitHub Release, and pinned installation examples. Never move or overwrite a published tag.
+Use a patch version for compatible bug fixes; documentation corrections alone do not require a version bump. Release preparation must deliver a candidate with final versions, changelog, bilingual documentation, and installation examples, ready to publish immediately after review. Do not leave preparation status, unreleased labels, or old-version installation placeholders in candidate documentation; record pending review/publication in the handoff and `.local/`. Revise or roll back the candidate if review finds issues. Align the package version, Git tag, GitHub Release, and pinned installation examples. Never move or overwrite a published tag. Each push requires explicit authorization covering those changes; tags and releases also require authorization.
 
 | File or release item | When to update |
 | --- | --- |
 | Root `package.json` and `package-lock.json` | Synchronize versions during release preparation; no bump for documentation-only changes |
-| Root [CHANGELOG.md](../CHANGELOG.md) | Record the fix, user impact, and compatibility limits; mark it unreleased until publication, then record the released version and date |
-| Chinese and English README and INSTALLATION | Synchronize source/release status; at publication, switch install and source-checkout examples to the new tag and state the target DSH and migration requirements |
+| Root [CHANGELOG.md](../CHANGELOG.md) | Record the final version, fix, user impact, and compatibility limits in the candidate; do not invent a publication date |
+| Chinese and English README and INSTALLATION | Synchronize the final version in the candidate, switch install and source-checkout examples to the intended tag, and state the target DSH and migration requirements |
 | Chinese and English API and USAGE | Update changed interface behavior, error codes, or user-visible results; internal fixes with an unchanged contract need no edits |
 | Chinese and English TESTING | Add reusable regression scenarios or verification methods when needed |
 | Architecture, migration, security documents and diagrams | Update only when the corresponding design, data format, or security boundary changes; a patch bump alone requires no rewrite |

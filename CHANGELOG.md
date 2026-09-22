@@ -1,6 +1,6 @@
 # Development changelog
 
-## 2.3.2 — Unreleased — Branch pending-input fix
+## 2.3.2 — Branch pending-input fix
 
 - Fix [#10](https://github.com/Player-MINEPIG/dsh-tavern/issues/10): newly created Tavern branches cancel inherited queued/steering input before accepting a new message. This covers rollback, new-playthrough forks, and non-first-turn swipes, preventing invisible stale input or duplicate user messages from reaching the model.
 - Use public DSH inbox cancellation and verify the child is idle with empty queues. Cleanup failures return `PLAY_BRANCH_INPUT_RESET_FAILED` before context copying or timeline updates. Source queues and inherited history remain intact; native DSH fork behavior is unchanged.

@@ -8,13 +8,15 @@ For project contracts, DSH version compatibility, or release evidence, use the t
 
 - Preserve the current architecture during ordinary maintenance: DSH durable history is authoritative, integration uses public DSH extension points, and native DSH and original sessions remain usable after Tavern is removed. When changing these decisions, explain the external behavior, compatibility, and migration costs, then implement the user-approved decision.
 - Keep public APIs as composable primitives. Before adding an endpoint, check existing Tavern APIs and public DSH extension points, identify the missing capability, and leave composition policy to callers. Use the [API scope](docs/API.md#api-scope) as the current boundary.
-- Use branches, worktrees, and commits as requested by the user or required by the active project workflow. Pushes, PRs, tags, and releases require explicit user authorization.
+- Use branches, worktrees, and commits as requested by the user or required by the active project workflow. Obtain explicit user authorization before each push, covering the specific changes being pushed; an earlier push or PR request does not authorize later pushes. Finish local changes and validation before requesting authorization. PR creation, tags, and releases also require explicit user authorization.
 - Read private development plans only when explicitly provided as a workspace. Without explicit approval, do not copy private-plan content, repository coordinates, user data, or absolute local paths into the public repository.
 - Installation, uninstallation, migration, and data writes against real DSH profiles must fall within the task's authorization. Ordinary code changes do not automatically authorize these operations.
 
 ## Documentation
 
 Keep `docs/` for maintained project documentation: current contracts, architecture, integration, usage, and reusable verification procedures, with matching bilingual documents and diagrams. Replace obsolete prose instead of appending dated corrections or completed-stage ledgers. Release announcements, issue reply drafts, development plans, and run-specific acceptance records belong under Git-ignored `.local/`, not in the repository or installable package. Version history belongs in root `CHANGELOG.md`; readers can use the corresponding Git tag for older full documentation. Retain older-format details only where they explain a currently supported compatibility or migration path.
+
+When asked to prepare a release, deliver a fully validated candidate that can be published immediately after review without another content-editing pass. Set the final version, changelog, bilingual documentation, and installation/tag examples to the intended release. Do not leave “preparing for release,” “unreleased,” or old-version installation placeholders in that candidate. Keep pending approval/publication status in the handoff and Git-ignored `.local/`, without claiming publication has occurred. If review finds issues, revise or roll back the candidate before publication; release preparation itself does not authorize a push, tag, or release.
 
 ## Validation by Change Scope
 
