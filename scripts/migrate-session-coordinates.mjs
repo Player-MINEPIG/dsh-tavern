@@ -18,7 +18,7 @@ Manifest: { "dshRoot": "/path/to/dsh-install", "workspace": "/path/to/rp",
   "sessions": [{ "source": "/path/session.v3.jsonl.zstd", "target": "/path/session.v4.jsonl.zstd", "children": [] }],
   "timelines": ["character/playthrough/timeline.json"] }
 
-Use the DSH 0.1.7-alpha.1 installation. Each source/target pair must belong to the
+Use a DSH 0.1.7-alpha.1 or 0.1.7-alpha.2 installation. Each source/target pair must belong to the
 same Session. Sources may use format V0, V1, V2, or V3. Unversioned references in each listed file must use the source log format.
 Include every Session owning coordinates, including import lineage parents.
 Raw JSONL and .zstd are supported. Original plugin files are backed up next to
@@ -32,7 +32,10 @@ export async function buildCoordinateMap(sourcePath, targetPath, dshRoot, childr
   const require = createRequire(join(resolve(dshRoot), 'package.json'))
   const load = name => import(pathToFileURL(require.resolve(name)).href)
   const manifest = require('@deepseek-ai/dsh-session-format-v3-to-v4/package.json')
-  if (manifest.version !== '0.1.7-alpha.1') throw new Error('Migration requires DSH format library 0.1.7-alpha.1')
+  // Explicitly verified codec releases; later prereleases may change migration semantics.
+  if (!['0.1.7-alpha.1', '0.1.7-alpha.2'].includes(manifest.version)) {
+    throw new Error(`Migration requires DSH format library 0.1.7-alpha.1 or 0.1.7-alpha.2; found ${manifest.version}`)
+  }
   const { releasedV2SessionFormatCodec, releasedV3SessionFormatCodec, sessionFormatV2ToV3 } = await load('@deepseek-ai/dsh-session-format-v2-to-v3')
   const { releasedV0SessionFormatCodec, releasedV1SessionFormatCodec, sessionFormatV0ToV1 } = await load('@deepseek-ai/dsh-session-format-v0-to-v1')
   const { sessionFormatV1ToV2 } = await load('@deepseek-ai/dsh-session-format-v1-to-v2')

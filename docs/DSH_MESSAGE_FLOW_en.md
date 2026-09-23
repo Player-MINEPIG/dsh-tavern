@@ -2,8 +2,8 @@
 
 [中文](DSH_MESSAGE_FLOW.md)
 
-This page defines the current message contract for Tavern **2.4.0** on DSH
-`0.1.7-alpha.1`: native DSH flow, DT flow, DT interception points, and one complete model
+This page defines the current message contract for Tavern **2.4.1** on DSH
+`0.1.7-alpha.2`: native DSH flow, DT flow, DT interception points, and one complete model
 step. V4 system prompts enter the effective surface through `system/message`, while
 `request/header` retains config/tools. Trace schema 4 persists metadata and official
 Session references only; [API v3](PROMPT_API_V3_en.md) verifies bodies on demand.
@@ -17,7 +17,7 @@ Coordinate and migration rules are in the [upgrade guide](DSH_0.1.7_MIGRATION_en
 
 ## 1. Native DSH flow
 
-Without DT installed, an ordinary DSH `0.1.7-alpha.1` agent step follows this sequence:
+Without DT installed, an ordinary DSH `0.1.7-alpha.2` agent step follows this sequence:
 
 ```text
 User submit

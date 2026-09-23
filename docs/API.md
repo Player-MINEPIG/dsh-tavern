@@ -2,7 +2,7 @@
 
 [English](API_en.md) · [v3 详细合同](PROMPT_API_V3.md) · [前端接入](FRONTEND_INTEGRATION_zh-CN.md)
 
-合同版本：Tavern **2.4.0**，仅支持 DSH `0.1.7-alpha.1`。
+合同版本：Tavern **2.4.1**，仅支持 DSH `0.1.7-alpha.2`。
 根路径 `/pmp-dsh-tavern/api`。API 版本与 DSH 日志格式 V4 无关。
 
 各版本路由目录统一采用 v2 的 **方法 / 路径 / 作用 / 状态** 格式。路径相对于该节声明的
@@ -15,8 +15,10 @@ timeline 的拒绝行为。
 
 ## 2.4.0 对第三方调用方的影响
 
+2.4.1 仅将支持目标更新为 DSH `0.1.7-alpha.2`，没有新增 HTTP 路由、字段或改变成功响应结构。以下为 2.4 系列相对旧版的接入变化。
+
 与 `v2.3.2` 相比，API 根路径、v1/v2/v3 版本前缀和既有路由保持；这不代表所有输入、
-历史引用或宿主接入行为完全不变。运行环境仅支持 DSH `0.1.7-alpha.1`，其他版本不在支持范围内。
+历史引用或宿主接入行为完全不变。运行环境仅支持 DSH `0.1.7-alpha.2`，其他版本不在支持范围内。
 
 | 调用方式 | 影响与调用方要求 |
 | --- | --- |
@@ -609,7 +611,7 @@ stage 或 terminal 调用无效且不会重复写终态。
 
 ## 浏览器端 Chrome 模式服务
 
-Tavern client 通过 DSH `0.1.7-alpha.1` 公开 Cordis `ctx.provide` 注册稳定服务名 `pmpDshTavernChrome`。这是 Tavern v2 自有合同，不是 DSH Host API；它只提供 `native|play` 生命周期，不拥有或仲裁任何 slot、view 或第三方插件 UI。
+Tavern client 通过 DSH `0.1.7-alpha.2` 公开 Cordis `ctx.provide` 注册稳定服务名 `pmpDshTavernChrome`。这是 Tavern v2 自有合同，不是 DSH Host API；它只提供 `native|play` 生命周期，不拥有或仲裁任何 slot、view 或第三方插件 UI。
 
 公开 face：
 

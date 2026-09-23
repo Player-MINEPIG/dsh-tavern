@@ -4,7 +4,7 @@
 
 For DSH breaking-update reviews, see the [native dependency diagram and coupling matrix](assets/dsh-dependencies/README_en.md), with interactive HTML, repository-relative source links, and upgrade check entry points.
 
-The current contract targets this repository's source (version in [package.json](../package.json)) and DSH `0.1.7-alpha.1`.
+The current contract targets this repository's source (version in [package.json](../package.json)) and DSH `0.1.7-alpha.2`.
 The install identity is `pmp-dsh-tavern`. HTTP mounts at `/pmp-dsh-tavern/api`;
 resources use `/v1`, the play-surface contract uses `/v2`, and assembly audit uses `/v3`.
 This page records the current architecture and release-review gates.
@@ -15,7 +15,7 @@ Editable source: [dsh-tavern-architecture.drawio](assets/dsh-tavern-architecture
 
 ## Target Host and durable-data boundary
 
-This checkout's Tavern 2.4.0 contract targets DSH 0.1.7-alpha.1, Cordis 4.0.3, and `dsh-util-crypto` 0.1.7-alpha.1. Older Host runtimes are unsupported. The serial `agent/created` listener initializes selection, public pending-input projection, and RP before first use; initialization failure propagates.
+This checkout's Tavern 2.4.1 contract targets DSH 0.1.7-alpha.2, Cordis 4.0.4, and `dsh-util-crypto` 0.1.7-alpha.2. Older Host runtimes are unsupported. The serial `agent/created` listener initializes selection, public pending-input projection, and RP before first use; initialization failure propagates.
 
 DSH V4 owns system/user/assistant/tool history and producer sources, including `runtime-context` snapshots and native tool-role results. Preparation order is assembly → pre-step → request/config preparation → accepted message commits → request header and frozen messages → stream. Trace captures official body/error references and effective parameters; it is not another history store. The [one-way coordinate upgrade](DSH_0.1.7_MIGRATION_en.md) follows verified official migration stages, retains all pre-upgrade plugin backups, and never rewrites DSH logs. Pre-V3 header-body Trace references explicitly refuse conversion; no rollback tool is provided.
 
@@ -25,7 +25,7 @@ Tavern records archive state in each catalog row's `ext.pmpDshTavern.archivedAt`
 
 ## RP error notice
 
-The presentation layer reads the latest turn's `turn/end.reason.kind === 'error'` through the public DSH `0.1.7-alpha.1` `useChat` timeline and combines it with `useSession`'s `promptError`, `lastAgentError`, and `openError`. One Tavern-localized notice directs users to native Chat for detailed diagnostics; no provider-message matching or duplicate error history is introduced. New submissions and active generation hide the previous terminal notice; a later open, successful or cancelled turn supersedes old failures. Current Session errors remain visible even while busy. Browser crashes and connection failures that never reach these public outlets are outside this notice's guarantees.
+The presentation layer reads the latest turn's `turn/end.reason.kind === 'error'` through the public DSH `0.1.7-alpha.2` `useChat` timeline and combines it with `useSession`'s `promptError`, `lastAgentError`, and `openError`. One Tavern-localized notice directs users to native Chat for detailed diagnostics; no provider-message matching or duplicate error history is introduced. New submissions and active generation hide the previous terminal notice; a later open, successful or cancelled turn supersedes old failures. Current Session errors remain visible even while busy. Browser crashes and connection failures that never reach these public outlets are outside this notice's guarantees.
 
 ## Current workspace diagnostics
 
@@ -103,7 +103,7 @@ Clean sessions and configuration templates are stored by `packages/session-templ
 
 ## Loader-owned ActivationContext
 
-DSH `0.1.7-alpha.1` `agent/inbox/spliced` is a public, durable Session event. Insert, replace, cancel, and claim first append that event and synchronously notify `session/event`; only then does the live Inbox change. At this boundary the loader maintains the only `PendingInputProjection`; it uses `Session.ownEvents()` to exclude a fork's inherited prefix, then combines durable history with this step's claimed batch (after de-duplication) into a temporary `ActivationContext` for the world-book matcher to consume read-only. Other current-log reads are centralized on `session.seq` and `snapshotEvents()` and no longer access the removed `Session.events`.
+DSH `0.1.7-alpha.2` `agent/inbox/spliced` is a public, durable Session event. Insert, replace, cancel, and claim first append that event and synchronously notify `session/event`; only then does the live Inbox change. At this boundary the loader maintains the only `PendingInputProjection`; it uses `Session.ownEvents()` to exclude a fork's inherited prefix, then combines durable history with this step's claimed batch (after de-duplication) into a temporary `ActivationContext` for the world-book matcher to consume read-only. Other current-log reads are centralized on `session.seq` and `snapshotEvents()` and no longer access the removed `Session.events`.
 
 This projection belongs to the Host adapter and does not sink into pure modules:
 
@@ -135,7 +135,7 @@ The frontend long-term rule is “minimal change, maximum compatibility”: firs
 | DT orb entry | Additive `shell.overlay` slot, Cordis effect lifecycle | Orb, menu contents, and global chrome state are product UI. Do not create an uncontrolled root on `document.body` |
 | Mowan sidebar | `sidebar.workspaces` slot; owner-injected `useSessions` / `useWorkspaces`; `ctx.uiWorkspace.openSession()` | Reproject as character/playthrough only. Do not rewrite, archive, or hide Host session data |
 | Workspace diagnostics | Public `useSessions` / `useWorkspaces` mirrors; existing v1/v2 resource and managed-file reads | Share current problems with the sidebar and assess Session availability after mirrors are ready. Do not copy Host logs or add a diagnostics API |
-| DSH outer New session | Owned by the DSH `0.1.7-alpha.1` sidebar shell; no public slot/service for Tavern to take over its click | Tavern does not take it over with hashed classes, DOM capture, or source replacement. Mowan keeps the native button and documents it as not recommended. Ordinary-area `+` only guides back to native |
+| DSH outer New session | Owned by the DSH `0.1.7-alpha.2` sidebar shell; no public slot/service for Tavern to take over its click | Tavern does not take it over with hashed classes, DOM capture, or source replacement. Mowan keeps the native button and documents it as not recommended. Ordinary-area `+` only guides back to native |
 | Ordinary-session hint | Independent full-row `conversation.input.dock` slot, inherited `--dsh-composer-card-max-width` | Shows only Tavern's RP-workspace classification. The hint is centered to Host composer width. It does not take over the native composer, copy fixed pixels, or read hashed classes |
 | Mowan conversation page | `conversation.view`; `useChat` with `legacy.nodes/partial` and `timeline`; `useSession` lifecycle and error fields | Cross-session aggregation is a Tavern projection. Do not forge DSH messages or read private runtime |
 | Mowan default view | Conversation store handle from `slots.entries("conversation.session")`, session-scoped `conversation.input.dock` and `actions.setView()` | Reuse the same store for each session/playthrough binding; retain the adapter for other scoped owners. Do not register a second `chat` or override explicit choices |
@@ -195,7 +195,7 @@ Plugin-owned resource changes continue to use a bounded Tavern refresh event. Se
 
 On every DSH version upgrade, first do a read-only diff audit: plugin-manifest inject, public package root exports, slot owner props, store fields, Host RPC, and README contracts. Then run native/play dual-mode and uninstall-fallback acceptance. If a public seam disappears, fail the matching enhancement closed and keep the native surface first, then discuss a protocol change. Do not temporarily switch to DOM queries, internal bundle symbols, or private runtime. Design notes for new frontend features must explicitly write “reused native mechanism / reason for custom work / official upgrade observation point”.
 
-DSH `0.1.7-alpha.1` separates three owners: Session owns lifecycle, Chat owns live messages, and Conversation owns views and interaction phase. The active main-view Session is selected from `useSessions` entries with `retainedBy.mainView > 0`; navigation uses public `uiWorkspace.openSession()`, not the removed `sessions.current/open` contract. Mirrors still supply lifecycle and workspace membership.
+DSH `0.1.7-alpha.2` separates three owners: Session owns lifecycle, Chat owns live messages, and Conversation owns views and interaction phase. The active main-view Session is selected from `useSessions` entries with `retainedBy.mainView > 0`; navigation uses public `uiWorkspace.openSession()`, not the removed `sessions.current/open` contract. Mirrors still supply lifecycle and workspace membership.
 
 RP/Trace slot registration is global, while the reused `conversation.session` store and injected bindings are scoped to each Session. The RP default adapter stays mounted and makes one default decision per session identity/workspace/playthrough binding, changing only an unset view. An unrelated retained Session with no RP binding returns from RP to native Chat; explicit Chat/Trace choices stay intact. Missing public store handles disable this enhancement. Transient binding-read failure preserves an established matching binding instead of treating it as absent.
 

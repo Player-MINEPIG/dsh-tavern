@@ -4,7 +4,7 @@
 
 A SillyTavern compatibility plugin that keeps DeepSeek Harness (DSH) authoritative over sessions and execution, with frontend and backend APIs for composing Tavern capabilities with native DSH features.
 
-> This page describes `2.4.0`: support for DSH `0.1.7-alpha.1` only, preset parameter fallback, and create/import/export/edit for all five resource types. Older Hosts are unsupported; use the [one-way upgrade guide](docs/DSH_0.1.7_MIGRATION_en.md) and retain backups. See the [changelog](CHANGELOG.md). [MIT License](LICENSE).
+> This page describes `2.4.1`: support for DSH `0.1.7-alpha.2` only, preset parameter fallback, and create/import/export/edit for all five resource types. Older Hosts are unsupported; use the [one-way upgrade guide](docs/DSH_0.1.7_MIGRATION_en.md) and retain backups. See the [changelog](CHANGELOG.md). [MIT License](LICENSE).
 >
 > Tavern Trace shows each request's configuration, world-book activation, and prompt section content and sources. Third-party tools can read the same information through the read-only v3 API. See [API/design](docs/PROMPT_API_V3_en.md).
 >
@@ -40,18 +40,18 @@ If behavior looks suspicious, stop the Agent, switch back to DSH native mode, an
 
 ### 0. Install
 
-Install `2.4.0` from GitHub using its version tag:
+Install `2.4.1` from GitHub using its version tag:
 
-Target DSH `0.1.7-alpha.1` requires Node.js `^22.19.0 || >=24.0.0`, with `dsh` on `PATH` and an initialized profile (default `web`). Tavern standalone tests support Node 20; that does not establish Node 20 support for the target Host.
+Target DSH `0.1.7-alpha.2` requires Node.js `^22.19.0 || >=24.0.0`, with `dsh` on `PATH` and an initialized profile (default `web`). Tavern standalone tests support Node 20; that does not establish Node 20 support for the target Host.
 
 ```sh
-dsh plugin --profile web add github:Player-MINEPIG/dsh-tavern#v2.4.0
+dsh plugin --profile web add github:Player-MINEPIG/dsh-tavern#v2.4.1
 ```
 
 For another version, switch to its tag and read the installation instructions in that tag. For source development, safe migration from legacy package-local data, or the project's backup-aware uninstall flow, follow the [source installation steps](docs/INSTALLATION_en.md#source-installation) and check out the same version tag:
 
 ```sh
-git clone --branch v2.4.0 https://github.com/Player-MINEPIG/dsh-tavern.git
+git clone --branch v2.4.1 https://github.com/Player-MINEPIG/dsh-tavern.git
 cd dsh-tavern
 npm install --cache .npm-cache
 npm run plugin:install

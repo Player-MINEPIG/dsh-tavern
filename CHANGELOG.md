@@ -1,5 +1,11 @@
 # Development changelog
 
+## 2.4.1 — DSH 0.1.7-alpha.2 compatibility
+
+- Target DSH `0.1.7-alpha.2` with Cordis `4.0.4` and the matching crypto peer; align source dependencies and the lockfile with that runtime.
+- Allow the offline history-reference migration tool to use either verified `0.1.7-alpha.1` or `0.1.7-alpha.2` format libraries, while rejecting unverified releases. Existing V4 logs and V4 Tavern references need no additional conversion when upgrading from alpha.1.
+- Keep Host, frontend and public API behavior unchanged; update bilingual compatibility and installation documentation for the new target.
+
 ## 2.4.0 — DSH 0.1.7 compatibility and resource editing
 
 - Target DSH `0.1.7-alpha.1` only, with Cordis 4.0.3 and matching official crypto peer. Use awaited `agent/created`, workspace-owned navigation, and per-session RP bindings, default views and render caches. Preserve valid bindings through temporary read failures.

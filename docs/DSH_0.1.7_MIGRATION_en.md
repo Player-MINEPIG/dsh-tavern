@@ -1,10 +1,12 @@
-# DSH 0.1.7-alpha.1 compatibility and historical coordinate upgrade
+# DSH 0.1.7-alpha.2 compatibility and historical coordinate upgrade
 
 [中文](DSH_0.1.7_MIGRATION.md)
 
-The supported Host is DSH **0.1.7-alpha.1**, whose current Session writer is V4. Earlier DSH runtimes are not supported. Reading and upgrading historical formats is a data compatibility path, not an older-runtime promise. Use Node `^22.19.0 || >=24.0.0`, as required by the target Host.
+The supported Host is DSH **0.1.7-alpha.2**, whose current Session writer is V4. Earlier DSH runtimes are not supported. Reading and upgrading historical formats is a data compatibility path, not an older-runtime promise. Use Node `^22.19.0 || >=24.0.0`, as required by the target Host.
 
-DSH durable history remains authoritative. Tavern uses public lifecycle, Session, and controller interfaces; removing Tavern leaves native DSH and the original Sessions usable. The upgrade is one-way. Retained predecessors and backups protect the original data; there is no Tavern rollback tool, and an older Host cannot read V4 writes.
+DSH durable history remains authoritative. Tavern uses public lifecycle, Session, and controller interfaces; removing Tavern leaves native DSH and the original Sessions usable. The upgrade is one-way. Retained predecessors and backups protect the original data; there is no Tavern rollback tool, and a Host without V4 support cannot read V4 writes.
+
+When upgrading from alpha.1 to alpha.2, V4 data whose Tavern references are already marked V4 needs no additional conversion. The offline tool accepts the verified alpha.1 and alpha.2 format libraries and rejects other versions; this does not expand current Host runtime support.
 
 ## Current coordinates and Trace
 
@@ -48,7 +50,7 @@ Prepare this manifest using absolute log and root paths; `timelines` contains pa
 }
 ```
 
-`dshRoot` must resolve the official format/catalog packages from **0.1.7-alpha.1**, including `@deepseek-ai/dsh-session-format-v3-to-v4`; it is not DSH_HOME. Sources may be V0, V1, V2, or V3. Targets must be V4. Plain JSONL and appended multi-frame `.zstd` files are supported; the header determines the format, not the filename.
+`dshRoot` must resolve the official format/catalog packages from **0.1.7-alpha.1 or 0.1.7-alpha.2**, including `@deepseek-ai/dsh-session-format-v3-to-v4`; it is not DSH_HOME. Sources may be V0, V1, V2, or V3. Targets must be V4. Plain JSONL and appended multi-frame `.zstd` files are supported; the header determines the format, not the filename.
 
 Every pair requires `children`: the complete available list of retained direct-subagent-child log paths, or explicit `[]` when none are available. The command derives child facts through official readers, checks direct parent membership and unique child identities, and refuses conflicting evidence. It does not infer missing descriptors or child identities from tool arguments. Supply the retained child generation appropriate to the verified successor; changed descriptors can make a successor mismatch.
 
@@ -87,4 +89,4 @@ DSH_TAVERN_PROMPT_COMPAT_ROOT=/path/to/dsh-install node --test test/trace-v3-hos
 
 These checks use official modules with temporary histories and synthetic model responses. They cover historical format chains, interrupted-turn insertion, child evidence, cold Trace body/error reads, refusal, retained bytes, and reruns. They do not establish browser, desktop, real-provider, or user-profile acceptance; use the [verification guide](TESTING_en.md) for those environments.
 
-Upstream authority: [immutable target release](https://github.com/deepseek-ai/deepseek-harness/releases/tag/dsh-v0.1.7-alpha.1), [V3→V4 specification](https://github.com/deepseek-ai/deepseek-harness/blob/dsh-v0.1.7-alpha.1/packages/session/session-format-v3-to-v4/README.md), and [Session format catalog](https://github.com/deepseek-ai/deepseek-harness/blob/dsh-v0.1.7-alpha.1/packages/session/session-format-catalog/README.md).
+Upstream authority: [immutable target release](https://github.com/deepseek-ai/deepseek-harness/releases/tag/dsh-v0.1.7-alpha.2), [V3→V4 specification](https://github.com/deepseek-ai/deepseek-harness/blob/dsh-v0.1.7-alpha.2/packages/session/session-format-v3-to-v4/README.md), and [Session format catalog](https://github.com/deepseek-ai/deepseek-harness/blob/dsh-v0.1.7-alpha.2/packages/session/session-format-catalog/README.md).

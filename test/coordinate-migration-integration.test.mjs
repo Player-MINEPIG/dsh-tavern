@@ -7,7 +7,18 @@ import { join, resolve } from 'node:path'
 import { tmpdir } from 'node:os'
 import { mkdtempSync, mkdirSync, readFileSync, writeFileSync, rmSync, symlinkSync } from 'node:fs'
 import * as zlib from 'node:zlib'
-import { migrateManifest } from '../scripts/migrate-session-coordinates.mjs'
+import { buildCoordinateMap, migrateManifest } from '../scripts/migrate-session-coordinates.mjs'
+
+test('migration refuses unverified format releases before reading or writing session data', async () => {
+  const directory = mkdtempSync(join(tmpdir(), 'tavern-unverified-codecs-'))
+  try {
+    const packageDir = join(directory, 'node_modules', '@deepseek-ai', 'dsh-session-format-v3-to-v4')
+    mkdirSync(packageDir, { recursive: true })
+    writeFileSync(join(packageDir, 'package.json'), JSON.stringify({ version: '0.1.7-alpha.3' }))
+    await assert.rejects(buildCoordinateMap('unread-source', 'unread-target', directory, []),
+      /Migration requires DSH format library 0\.1\.7-alpha\.1 or 0\.1\.7-alpha\.2; found 0\.1\.7-alpha\.3/)
+  } finally { rmSync(directory, { recursive: true, force: true }) }
+})
 
 const dshRoot = process.env.DSH_TAVERN_COMPAT_ROOT
 test('real 0.1.7 codecs validate offline migration, backups, compressed logs, and reruns', { skip: !dshRoot }, async () => {

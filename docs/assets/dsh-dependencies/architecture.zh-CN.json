@@ -2,7 +2,7 @@
   "schema_version": 1,
   "diagram_type": "architecture",
   "meta": {
-    "title": "Tavern 2.4.0 × DSH 0.1.7",
+    "title": "Tavern 2.4.1 × DSH 0.1.7",
     "locale": "zh-CN",
     "quality_profile": "showcase",
     "viewBox": [
@@ -46,7 +46,7 @@
       "id": "host-shell",
       "type": "backend",
       "label": "DSH 插件与 Web Host · 高",
-      "sublabel": "Cordis 4.0.3 · webServer",
+      "sublabel": "Cordis 4.0.4 · webServer",
       "tag": "高 · 加载与挂载",
       "pos": [
         480,
