@@ -2,7 +2,7 @@
 
 [English](LOADER_CONTRACT_en.md)
 
-当前合同面向 Tavern **2.4.1**与 DSH `0.1.7-alpha.2`，覆盖 RP 会话叠加
+当前合同面向 Tavern **2.4.2**与 DSH `0.1.7-rc.1`，覆盖 RP 会话叠加
 （`selection.rp` + `rp:policy`）、delegated subagent 的父选择快照、具名官方 sections 与
 schema 4 Trace 引用。DSH V4 以 `system/message` 作为系统正文权威，`request/header`
 保留 config/tools；坐标规则见 [迁移合同](DSH_0.1.7_MIGRATION.md)。
@@ -24,7 +24,7 @@ SessionSelectionStore ─────────────────┘
 
 ## Session policy
 
-当前只支持 DSH 0.1.7-alpha.2 运行时。Host 等待串行 `agent/created` listener：先冻结或恢复资源选择，从公开 own events 重建 pending input，再初始化 RP 及只读沙箱，之后才允许 Agent 处理请求。初始化失败向注册过程传播，不降为 warning；fork、resume 与委派 agent 使用同一初始化边界。
+当前只支持 DSH 0.1.7-rc.1 运行时。Host 等待串行 `agent/created` listener：先冻结或恢复资源选择，从公开 own events 重建 pending input，再初始化 RP 及只读沙箱，之后才允许 Agent 处理请求。初始化失败向注册过程传播，不降为 warning；fork、resume 与委派 agent 使用同一初始化边界。
 
 持久文件为插件 data 目录下的 `session-selections.json`：
 

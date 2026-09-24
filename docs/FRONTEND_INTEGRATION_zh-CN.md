@@ -2,7 +2,7 @@
 
 [English](FRONTEND_INTEGRATION_en.md)
 
-当前客户端接入面向 DSH `0.1.7-alpha.2`。HTTP 字段以
+当前客户端接入面向 DSH `0.1.7-rc.1`。HTTP 字段以
 [API.md](API.md) 为准；本页说明交付方式、模式生命周期、产品动作组合和 v1/v2/v3 分工。
 
 ## 1. 先理解双模式兼容边界
@@ -82,7 +82,7 @@ Conversation view roster 仍是全局的。注册 RP tab 不代表每个渲染�
 
 插件若需在现有渲染作用域之外使用会话，可通过公开的 `sessions.retain(target, { source, signal })` 引用或 `sessions.using(...)` 管理生命周期。引用拥有对应的客户端 generation；使用 binding 前等待 `ready`，完成或 dispose 时释放。`sessions.binding(id)` 只查询已经保留的 generation，不负责导航或取得生命周期所有权。不要为了导航额外保留 main-view 引用。
 
-这些合同已按 DSH `0.1.7-alpha.2` 源码核对：`@deepseek-ai/dsh-api-session-controller/client`（`ISessions`、`SessionReference`、`SessionListState`）、`@deepseek-ai/dsh-client-ui-workspace/client`（`openSession` 与原生工作区树选择）及 `@deepseek-ai/dsh-client-ui-slots` / `@deepseek-ai/dsh-client-ui-conversation/client`（session scope、inject 位置参数与 Conversation store）。Tavern 对应实现见[会话选择](../packages/client/src/session-selection.js)、[slot 占用](../packages/client/src/play/occupancy.js)和[默认 view](../packages/client/src/play/view-default.js)。
+这些合同已按 DSH `0.1.7-rc.1` 源码核对：`@deepseek-ai/dsh-api-session-controller/client`（`ISessions`、`SessionReference`、`SessionListState`）、`@deepseek-ai/dsh-client-ui-workspace/client`（`openSession` 与原生工作区树选择）及 `@deepseek-ai/dsh-client-ui-slots` / `@deepseek-ai/dsh-client-ui-conversation/client`（session scope、inject 位置参数与 Conversation store）。Tavern 对应实现见[会话选择](../packages/client/src/session-selection.js)、[slot 占用](../packages/client/src/play/occupancy.js)和[默认 view](../packages/client/src/play/view-default.js)。
 
 RP 错误提示同时订阅 `useSession` 的 `promptError/lastAgentError/openError` 和 `useChat` 的最新 `timeline` 回合终态。后者与原生 `turn-error` 节点使用同一 `turn/end` 错误事实，且能排除没有 assistant 消息的新回合。不要扫描全部历史错误后永久挂起提示；新提交/运行期间隐藏旧回合失败，但不能掩盖当前 Session 错误。统一文案走 Tavern i18n，详细诊断留在原生对话视图。
 
@@ -92,7 +92,7 @@ RP 错误提示同时订阅 `useSession` 的 `promptError/lastAgentError/openErr
 
 ## 5. HTTP v2 数据面
 
-DSH `0.1.7-alpha.2` 的嵌入式客户端需分别读取：`useSession` 的生命周期、`useChat` 的 `legacy.nodes/partial`、`useConversation` 的交互状态。开场阶段用包根导出的 `conversationPhase(session, conversation)`；默认 view 使用 `conversation.session` 的 Conversation store，不是原生 Chat store。普通 HTTP 前端不使用这些浏览器 hook。Tavern UI 设置事件只刷新产品呈现，不能代替 Host 实时消息源。
+DSH `0.1.7-rc.1` 的嵌入式客户端需分别读取：`useSession` 的生命周期、`useChat` 的 `legacy.nodes/partial`、`useConversation` 的交互状态。开场阶段用包根导出的 `conversationPhase(session, conversation)`；默认 view 使用 `conversation.session` 的 Conversation store，不是原生 Chat store。普通 HTTP 前端不使用这些浏览器 hook。Tavern UI 设置事件只刷新产品呈现，不能代替 Host 实时消息源。
 
 根路径：`/pmp-dsh-tavern/api/v2`。它面向任意 RP 前端，提供：
 

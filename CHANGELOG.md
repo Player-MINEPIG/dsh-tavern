@@ -1,5 +1,12 @@
 # Development changelog
 
+## 2.4.2 — DSH 0.1.7-rc.1 compatibility
+
+- Target DSH `0.1.7-rc.1` only; update the crypto peer and lockfile so the plugin passes the new installation and startup compatibility checks without a version exemption. Cordis remains `4.0.4`.
+- Accept the verified rc.1 official format libraries for offline historical-reference migration, retaining alpha.1/alpha.2 support and rejecting unverified releases. Existing V4 logs and V4 Tavern references need no additional conversion.
+- Fix RP history validation after tool calls: accept official tool and developer messages without rendering them as user input or creating extra QA turns. Public HTTP response shapes remain unchanged.
+- Align bilingual compatibility, installation and verification documentation.
+
 ## 2.4.1 — DSH 0.1.7-alpha.2 compatibility
 
 - Target DSH `0.1.7-alpha.2` with Cordis `4.0.4` and the matching crypto peer; align source dependencies and the lockfile with that runtime.

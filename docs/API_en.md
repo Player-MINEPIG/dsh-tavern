@@ -2,7 +2,7 @@
 
 [中文](API.md) · [v3 detailed contract](PROMPT_API_V3_en.md) · [Frontend integration](FRONTEND_INTEGRATION_en.md)
 
-Contract version: Tavern **2.4.1**, supporting only DSH `0.1.7-alpha.2`.
+Contract version: Tavern **2.4.2**, supporting only DSH `0.1.7-rc.1`.
 Root: `/pmp-dsh-tavern/api`. API versions and DSH log format V4 are independent.
 
 All endpoint catalogs use **Method / Path / Behavior / Status**, following the v2
@@ -17,11 +17,11 @@ message coordinates, branch inputs, and unmigrated timeline references.
 
 ## Impact on third-party consumers in 2.4.0
 
-2.4.1 updates the supported target to DSH `0.1.7-alpha.2` without adding HTTP routes or fields or changing successful response shapes. The following describes the 2.4 series changes from earlier releases.
+2.4.2 updates the supported target to DSH `0.1.7-rc.1` without adding HTTP routes or fields or changing successful response shapes. The following describes the 2.4 series changes from earlier releases.
 
 Compared with `v2.3.2`, the API root, v1/v2/v3 prefixes and existing routes remain.
 This does not mean that every accepted input, historical reference or Host integration behavior is unchanged.
-Only DSH `0.1.7-alpha.2` is supported; other versions are outside the supported range.
+Only DSH `0.1.7-rc.1` is supported; other versions are outside the supported range.
 
 | Integration | Impact and consumer requirements |
 | --- | --- |
@@ -239,8 +239,9 @@ Preserve references and backups. Follow the [offline migration guide](DSH_0.1.7_
 
 Each message from `GET /sessions/:id/messages` keeps two independent classifications:
 
-- `role` is the model-facing message role, currently mainly `user`, `assistant`, `system`. DSH runtime context injection may still be `role: "user"` on the model side.
+- `role` is the model-facing message role, including `user`, `assistant`, `system`, `developer`, and `tool`. DSH runtime context injection may still be `role: "user"` on the model side.
 - `origin.kind` is frontend origin/display semantics: `user`, `context`, `steering`, `assistant`, `system`. Third-party frontends must use it to distinguish real user input from context injection and must not draw a user bubble from `role` alone. Whether to hide or present context separately is a frontend choice.
+- `tool` and `developer` messages retain their official roles and remain readable as context. Bundled RP does not display them as user bubbles or create separate QA turns. 2.4.2 fixes client rejection of these existing responses without adding HTTP response fields.
 - `origin.kind: "context"` may include `producer`, `form`, `summary`. Those are bounded optional display metadata. The body stays in `text` / `content` and is not copied into `origin`.
 - New fields are additive for older clients. Existing meanings of `role`, `seq`, `text`, `content`, and `incompleteTurn` do not change. When an older server has no `origin`, the client can only fall back conservatively on `role` and cannot reliably detect context injection.
 
@@ -615,7 +616,7 @@ Fields, examples, errors and persistence: [v3 detailed contract](PROMPT_API_V3_e
 
 ## Browser chrome mode service
 
-The Tavern client registers the stable service name `pmpDshTavernChrome` through DSH `0.1.7-alpha.2` public Cordis `ctx.provide`. This is a Tavern v2 contract, not a DSH Host API. It provides only the `native|play` lifecycle. It does not own or arbitrate any slot, view, or third-party plugin UI.
+The Tavern client registers the stable service name `pmpDshTavernChrome` through DSH `0.1.7-rc.1` public Cordis `ctx.provide`. This is a Tavern v2 contract, not a DSH Host API. It provides only the `native|play` lifecycle. It does not own or arbitrate any slot, view, or third-party plugin UI.
 
 Public face:
 

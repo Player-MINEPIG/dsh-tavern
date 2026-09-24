@@ -2,7 +2,7 @@
 
 [中文](FRONTEND_INTEGRATION_zh-CN.md)
 
-The current client integration targets DSH `0.1.7-alpha.2`.
+The current client integration targets DSH `0.1.7-rc.1`.
 HTTP fields follow [API_en.md](API_en.md). This page covers delivery, mode lifecycle,
 product-action composition, and v1/v2/v3 responsibilities.
 
@@ -83,7 +83,7 @@ The Conversation view roster remains global. Registering an RP tab does not esta
 
 A plugin that needs a session outside an existing rendered scope can use the public `sessions.retain(target, { source, signal })` reference or `sessions.using(...)` lifetime. A reference owns its exact client generation; await `ready` before using the binding and release it on completion/disposal. `sessions.binding(id)` is only a lookup of an already retained generation, not navigation or lifetime acquisition. Do not keep a main-view reference alive merely to perform navigation.
 
-Source checks for this contract use DSH `0.1.7-alpha.2`: `@deepseek-ai/dsh-api-session-controller/client` (`ISessions`, `SessionReference`, `SessionListState`), `@deepseek-ai/dsh-client-ui-workspace/client` (`openSession` and native workspace-tree selection), and `@deepseek-ai/dsh-client-ui-slots` / `@deepseek-ai/dsh-client-ui-conversation/client` (session scope, positional inject parameters, and Conversation store). Tavern's implementation is in [session selection](../packages/client/src/session-selection.js), [slot occupancy](../packages/client/src/play/occupancy.js), and [default view](../packages/client/src/play/view-default.js).
+Source checks for this contract use DSH `0.1.7-rc.1`: `@deepseek-ai/dsh-api-session-controller/client` (`ISessions`, `SessionReference`, `SessionListState`), `@deepseek-ai/dsh-client-ui-workspace/client` (`openSession` and native workspace-tree selection), and `@deepseek-ai/dsh-client-ui-slots` / `@deepseek-ai/dsh-client-ui-conversation/client` (session scope, positional inject parameters, and Conversation store). Tavern's implementation is in [session selection](../packages/client/src/session-selection.js), [slot occupancy](../packages/client/src/play/occupancy.js), and [default view](../packages/client/src/play/view-default.js).
 
 The RP error notice subscribes to `useSession`'s `promptError/lastAgentError/openError` and the latest turn boundary in `useChat`'s `timeline`. The latter uses the same `turn/end` error fact as native `turn-error` nodes while recognizing newer turns without assistant messages. Do not leave a permanent notice based on any historical error. Hide old terminal failures during submission/generation without masking current Session errors. Localize the generic copy through Tavern i18n and leave diagnostics in native Chat.
 
@@ -93,7 +93,7 @@ This panel composes existing interfaces and official state in the client; it add
 
 ## 5. HTTP v2 data plane
 
-Embedded clients on DSH `0.1.7-alpha.2` read lifecycle from `useSession`, `legacy.nodes/partial` from `useChat`, and interaction state from `useConversation`. Derive opening phase with the package-root `conversationPhase(session, conversation)` export. Default-view selection uses the Conversation store on `conversation.session`, not the native Chat store. Standalone HTTP clients do not use these browser hooks. Tavern UI settings events refresh presentation only; they cannot replace the Host live-message source.
+Embedded clients on DSH `0.1.7-rc.1` read lifecycle from `useSession`, `legacy.nodes/partial` from `useChat`, and interaction state from `useConversation`. Derive opening phase with the package-root `conversationPhase(session, conversation)` export. Default-view selection uses the Conversation store on `conversation.session`, not the native Chat store. Standalone HTTP clients do not use these browser hooks. Tavern UI settings events refresh presentation only; they cannot replace the Host live-message source.
 
 Root: `/pmp-dsh-tavern/api/v2`. It is for any RP frontend and provides:
 

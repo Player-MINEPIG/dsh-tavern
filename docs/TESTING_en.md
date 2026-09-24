@@ -6,7 +6,7 @@ This guide explains how to verify the current implementation; it does not record
 
 ## Environment and commands
 
-Standalone Tavern tests require Node.js `>=20`; the target DSH `0.1.7-alpha.2` requires Node.js `^22.19.0 || >=24.0.0`. Use the latter requirement when running real DSH modules or a Host, and verify the versions of the core packages actually resolved. The standalone CI matrix does not establish support for every DSH runtime.
+Standalone Tavern tests require Node.js `>=20`; the target DSH `0.1.7-rc.1` requires Node.js `^22.19.0 || >=24.0.0`. Use the latter requirement when running real DSH modules or a Host, and verify the versions of the core packages actually resolved. The standalone CI matrix does not establish support for every DSH runtime.
 
 After installing dependencies, run these commands from the repository root. [package.json](../package.json) is the command definition source.
 
@@ -47,7 +47,7 @@ Both variables point to directories from which Node can resolve the target DSH d
 | Variable | Required modules and coverage |
 | --- | --- |
 | `DSH_TAVERN_COMPAT_ROOT` | Session format/catalog, migration packages, and session controller; real codecs, migration of temporary logs, and official error mapping |
-| `DSH_TAVERN_PROMPT_COMPAT_ROOT` | Cordis, SystemPrompt, Session, AgentLoop, LLM, and other Host modules; official assembly, request observation, event references, and failure attribution |
+| `DSH_TAVERN_PROMPT_COMPAT_ROOT` | Cordis, AppBoot, SystemPrompt, Session, AgentLoop, LLM, and other Host modules; official plugin version admission, assembly, request observation, event references, and failure attribution |
 
 An installed DSH distribution can usually use one root for both. A source checkout may resolve these dependencies from different directories; tests do not search `apps/cli` or other workspaces automatically. This POSIX shell example uses placeholder dependency paths. In PowerShell, set the same variables using `$env:VARIABLE_NAME`.
 
@@ -62,7 +62,7 @@ For targeted checks:
 
 ```sh
 node --test test/coordinate-migration-integration.test.mjs test/session-coordinates.test.mjs
-node --test test/trace-v3-host.test.mjs test/trace-failures-host.test.mjs test/preset-fallback-host.test.mjs
+node --test test/trace-v3-host.test.mjs test/trace-failures-host.test.mjs test/preset-fallback-host.test.mjs test/plugin-runtime-compatibility.test.mjs
 node --test test/dsh017-host-migration.test.mjs test/dsh017-client-sessions.test.mjs test/resource-capabilities.test.mjs
 ```
 
@@ -86,7 +86,7 @@ node --test test/play-sessions.test.mjs
 
 Select interaction checks for the affected behavior:
 
-- **alpha.2 upgrade:** Run offline migration tests separately with the alpha.1 and alpha.2 format libraries, including rejection of unverified releases. On an alpha.2 Host, check long-history pagination, pending submissions, first/later swipe streaming and cancellation. Restart the test Host with the page and input draft retained, then confirm replies still arrive after reconnection.
+- **rc.1 upgrade:** Run offline migration tests separately with alpha.1, alpha.2 and rc.1 format libraries, including rejection of unverified releases. Verify rc.1 plugin installation and startup admission without a version exemption. Check long-history pagination, pending submissions, first/later swipe streaming and cancellation, plus RP/native switching and final-reply deduplication during tool preparation, execution and completion. Restart the test Host with the page and input draft retained, then confirm replies still arrive after reconnection.
 - **RP and UI lifecycle:** Switch between native/RP modes, workspaces, and characters without leaking messages between sessions. Check greeting boundaries, control recovery from streaming to terminal states, and affected swipe/branch flows. Missing old logs should surface a problem without blocking healthy or new playthroughs.
 - **History actions during generation:** During ordinary generation and a later-turn swipe, verify variant switching, swipe, fork, and rollback are disabled on all historical replies with a reason. Copy, display save and restore remain usable; edits appear immediately in pending RP context and survive terminal commit. Another playthrough remains usable; completion, failure and interruption restore path actions.
 - **Pending swipe and cancellation:** Use a slow synthetic stream for both first-turn and later-turn swipes. Immediately after session creation, verify that RP and native Chat target the same new session and clicking the playthrough again returns there. Check that preceding context is not duplicated, new text streams in, and the native stop button works. Cancel before the first chunk and after some chunks, checking the error return action or adoption of actual persisted coordinates without losing existing variants.

@@ -2,7 +2,7 @@
 
 [中文](LOADER_CONTRACT.md)
 
-The current contract targets Tavern **2.4.1** and DSH `0.1.7-alpha.2`. It covers
+The current contract targets Tavern **2.4.2** and DSH `0.1.7-rc.1`. It covers
 the RP session overlay (`selection.rp` + `rp:policy`), delegated subagents freezing their
 parent selection, named official sections, and schema 4 Trace references. DSH V4 uses
 `system/message` as the system-body authority while `request/header` retains config/tools;
@@ -25,7 +25,7 @@ The root registers its logical profile at order 10, then expands it into `pmp-ds
 
 ## Session policy
 
-The supported runtime is DSH 0.1.7-alpha.2 only. The awaited serial `agent/created` listener freezes or restores selection, reconstructs pending input from public own events, then initializes RP and its read-only sandbox before the Agent is exposed for requests. Initialization failure propagates to registration; it is not downgraded to a warning. Forks, resumes, and delegated agents use the same initialization boundary.
+The supported runtime is DSH 0.1.7-rc.1 only. The awaited serial `agent/created` listener freezes or restores selection, reconstructs pending input from public own events, then initializes RP and its read-only sandbox before the Agent is exposed for requests. Initialization failure propagates to registration; it is not downgraded to a warning. Forks, resumes, and delegated agents use the same initialization boundary.
 
 The durable file is `session-selections.json` under the plugin data directory:
 

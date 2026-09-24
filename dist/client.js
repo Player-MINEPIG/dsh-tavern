@@ -9029,7 +9029,7 @@ function isArchiveTimestamp(value) {
 
 // packages/client/src/play/schema.js
 var CHROME_MODES = /* @__PURE__ */ new Set(["native", "play"]);
-var MESSAGE_ROLES = /* @__PURE__ */ new Set(["user", "assistant", "system"]);
+var MESSAGE_ROLES = /* @__PURE__ */ new Set(["user", "assistant", "system", "developer", "tool"]);
 var MESSAGE_ORIGIN_KINDS = /* @__PURE__ */ new Set(["user", "context", "steering", "assistant", "system"]);
 function isRecord4(value) {
   return value !== null && typeof value === "object" && !Array.isArray(value);
@@ -9204,7 +9204,7 @@ function normalizeSessionMessages(value, label = "messages") {
     if (!MESSAGE_ROLES.has(item.role)) fail(itemLabel, "role is invalid");
     if (!Array.isArray(item.content)) fail(itemLabel, "content must be an array");
     if (item.seq !== null && (!Number.isSafeInteger(item.seq) || item.seq < 0)) fail(itemLabel, "seq must be a non-negative integer or null");
-    const fallbackKind = item.role === "assistant" ? "assistant" : item.role === "system" ? "system" : "user";
+    const fallbackKind = item.role === "tool" || item.role === "developer" ? "context" : item.role;
     const origin = item.origin === void 0 ? { kind: fallbackKind } : (() => {
       if (!isRecord4(item.origin) || !MESSAGE_ORIGIN_KINDS.has(item.origin.kind)) fail(`${itemLabel}.origin`, "kind is invalid");
       if (item.origin.kind !== "context") return { kind: item.origin.kind };

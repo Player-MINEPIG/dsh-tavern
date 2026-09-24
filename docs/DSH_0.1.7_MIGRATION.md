@@ -1,12 +1,12 @@
-# DSH 0.1.7-alpha.2 兼容与历史坐标升级
+# DSH 0.1.7-rc.1 兼容与历史坐标升级
 
 [English](DSH_0.1.7_MIGRATION_en.md)
 
-当前支持的 Host 为 DSH **0.1.7-alpha.2**，其 Session 当前写入格式为 V4。不支持旧 DSH 运行时。历史格式读取与升级属于数据兼容路径，不代表承诺旧运行时可用。Node 使用目标 Host 要求的 `^22.19.0 || >=24.0.0`。
+当前支持的 Host 为 DSH **0.1.7-rc.1**，其 Session 当前写入格式为 V4。不支持旧 DSH 运行时。历史格式读取与升级属于数据兼容路径，不代表承诺旧运行时可用。Node 使用目标 Host 要求的 `^22.19.0 || >=24.0.0`。
 
 DSH durable history 保持权威。Tavern 使用公开生命周期、Session 与 controller 接口，卸载后原生 DSH 与原会话仍可使用。升级为单向；保留旧日志和备份用于保护原始数据，不提供 Tavern 回滚工具，不支持 V4 的旧 Host 无法读取 V4 新写入。
 
-从 alpha.1 升级至 alpha.2 时，已使用 V4 且 Tavern 引用已标记 V4 的数据不需要再次转换。离线迁移工具保留对 alpha.1、alpha.2 官方格式库的支持，不接受其他未验证版本；这不扩大当前 Host 运行支持范围。
+从 alpha.1／alpha.2 升级至 rc.1 时，已使用 V4 且 Tavern 引用已标记 V4 的数据不需要再次转换。离线迁移工具保留对 alpha.1、alpha.2、rc.1 官方格式库的支持，不接受其他未验证版本；这不扩大当前 Host 运行支持范围。
 
 ## 当前坐标与 Trace
 
@@ -50,7 +50,7 @@ DSH 负责迁移日志内其拥有的引用，不负责 Tavern 外部 JSON。Tav
 }
 ```
 
-`dshRoot` 必须能解析 **0.1.7-alpha.1 或 0.1.7-alpha.2** 的官方 format/catalog 包，包括 `@deepseek-ai/dsh-session-format-v3-to-v4`；它不是 DSH_HOME。source 可为 V0、V1、V2 或 V3，target 必须为 V4。支持普通 JSONL 与多追加帧 `.zstd` 文件；格式由头部而非文件名确定。
+`dshRoot` 必须能解析 **0.1.7-alpha.1、0.1.7-alpha.2 或 0.1.7-rc.1** 的官方 format/catalog 包，包括 `@deepseek-ai/dsh-session-format-v3-to-v4`；它不是 DSH_HOME。source 可为 V0、V1、V2 或 V3，target 必须为 V4。支持普通 JSONL 与多追加帧 `.zstd` 文件；格式由头部而非文件名确定。
 
 每对日志必须提供 `children`：完整的可用、已保留直接 subagent 子会话日志路径列表；没有可用子日志时显式填 `[]`。命令通过官方读取器提取子会话事实，检查直接父会话归属与子身份唯一性，并拒绝冲突证据。不会从工具参数推断缺失 descriptor 或子身份。应提供与已验证后继相符的保留子日志代；descriptor 后续变化可能使后继不匹配。
 
@@ -89,4 +89,4 @@ DSH_TAVERN_PROMPT_COMPAT_ROOT=/path/to/dsh-install node --test test/trace-v3-hos
 
 这些检查使用官方模块、临时历史与合成模型响应，覆盖历史格式链、interrupted turn 插入、子会话证据、Trace 正文/错误冷读、拒绝、原字节保留与重复执行。它们不等于浏览器、桌面、真实 provider 或用户 profile 验收；对应环境见[开发验证指南](TESTING.md)。
 
-上游依据：[固定目标 release](https://github.com/deepseek-ai/deepseek-harness/releases/tag/dsh-v0.1.7-alpha.2)、[V3→V4 规范](https://github.com/deepseek-ai/deepseek-harness/blob/dsh-v0.1.7-alpha.2/packages/session/session-format-v3-to-v4/README.md)、[Session format catalog](https://github.com/deepseek-ai/deepseek-harness/blob/dsh-v0.1.7-alpha.2/packages/session/session-format-catalog/README.md)。
+上游依据：[固定目标 release](https://github.com/deepseek-ai/deepseek-harness/releases/tag/dsh-v0.1.7-rc.1)、[V3→V4 规范](https://github.com/deepseek-ai/deepseek-harness/blob/dsh-v0.1.7-rc.1/packages/session/session-format-v3-to-v4/README.md)、[Session format catalog](https://github.com/deepseek-ai/deepseek-harness/blob/dsh-v0.1.7-rc.1/packages/session/session-format-catalog/README.md)。

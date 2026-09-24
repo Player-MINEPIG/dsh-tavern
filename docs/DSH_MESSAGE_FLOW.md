@@ -2,7 +2,7 @@
 
 [English](DSH_MESSAGE_FLOW_en.md)
 
-本文描述 Tavern **2.4.1**在 DSH `0.1.7-alpha.2` 上的当前消息合同：DSH
+本文描述 Tavern **2.4.2**在 DSH `0.1.7-rc.1` 上的当前消息合同：DSH
 原生流程、DT 自身流程、DT 的介入点，以及一次完整模型 step。V4 的系统提示词以
 `system/message` 进入有效消息 surface，`request/header` 保留 config/tools；Trace schema 4
 只持久化 metadata 与官方 Session 引用，并由 [v3 API](PROMPT_API_V3.md) 按需验证正文。
@@ -16,7 +16,7 @@ Tavern Host adapter 显式调用 session/workspace/directory-picker controllers�
 
 ## 1. DSH 原生 flow
 
-未安装 DT 时，DSH `0.1.7-alpha.2` 的普通 agent step 按以下顺序工作：
+未安装 DT 时，DSH `0.1.7-rc.1` 的普通 agent step 按以下顺序工作：
 
 ```text
 用户提交

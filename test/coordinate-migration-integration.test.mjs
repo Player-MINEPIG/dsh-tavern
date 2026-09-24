@@ -14,9 +14,9 @@ test('migration refuses unverified format releases before reading or writing ses
   try {
     const packageDir = join(directory, 'node_modules', '@deepseek-ai', 'dsh-session-format-v3-to-v4')
     mkdirSync(packageDir, { recursive: true })
-    writeFileSync(join(packageDir, 'package.json'), JSON.stringify({ version: '0.1.7-alpha.3' }))
+    writeFileSync(join(packageDir, 'package.json'), JSON.stringify({ version: '0.1.7-rc.2' }))
     await assert.rejects(buildCoordinateMap('unread-source', 'unread-target', directory, []),
-      /Migration requires DSH format library 0\.1\.7-alpha\.1 or 0\.1\.7-alpha\.2; found 0\.1\.7-alpha\.3/)
+      /Migration requires DSH format library 0\.1\.7-alpha\.1, 0\.1\.7-alpha\.2 or 0\.1\.7-rc\.1; found 0\.1\.7-rc\.2/)
   } finally { rmSync(directory, { recursive: true, force: true }) }
 })
 

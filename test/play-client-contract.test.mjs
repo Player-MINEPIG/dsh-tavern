@@ -2,6 +2,9 @@ import test from 'node:test'
 import assert from 'node:assert/strict'
 import { API_V1, API_V2 } from '../packages/identity.js'
 import { createLivePlayClient } from '../packages/client/src/play/live.js'
+import { projectMessages } from '../packages/play/src/sessions.js'
+import { appendCompletedTurns } from '../packages/client/src/play/turns.js'
+import { projectTimelineVariant } from '../packages/client/src/play/chat-model.js'
 import {
   normalizeCatalog,
   normalizeFocus,
@@ -25,6 +28,33 @@ const timeline = {
     }],
   }],
 }
+
+test('official tool and developer messages survive the Host/client boundary without creating RP turns', () => {
+  const rows = [
+    { id: 'user', role: 'user', content: [{ type: 'text', text: 'Question' }], source: { kind: 'user' } },
+    { id: 'developer', role: 'developer', content: [{ type: 'text', text: 'Private context' }], source: { kind: 'plugin' } },
+    { id: 'call', role: 'assistant', content: [{ type: 'tool-call', id: 'call-1', name: 'probe', arguments: '{}' }] },
+    { id: 'result', role: 'tool', content: [{ type: 'text', text: 'Tool result' }], source: { kind: 'tool' } },
+    { id: 'reply', role: 'assistant', content: [{ type: 'text', text: 'Final answer' }] },
+  ]
+  const events = rows.map((message, seq) => ({ seq, data: { message } }))
+  const state = normalizeSessionMessages({ messages: projectMessages(rows, events), incompleteTurn: false })
+  assert.equal(state.messages[1].origin.kind, 'context')
+  assert.equal(state.messages[3].origin.kind, 'context')
+  const reconciled = appendCompletedTurns({ nodes: [] }, state, 's-tool')
+  assert.equal(reconciled.added.length, 1)
+  const node = reconciled.added[0], variant = node.variants[0]
+  assert.equal(variant.startEventId, 0)
+  assert.equal(variant.endEventId, 4)
+  const view = projectTimelineVariant(node, variant, { 's-tool': state })
+  assert.equal(view.userText, 'Question')
+  assert.equal(view.assistantText, 'Final answer')
+  for (const role of ['tool', 'developer']) {
+    const legacy = normalizeSessionMessages({ messages: [{ id: role, role, content: [], seq: null }], incompleteTurn: false })
+    assert.equal(legacy.messages[0].origin.kind, 'context')
+  }
+  assert.throws(() => normalizeSessionMessages({ messages: [{ id: 'bad', role: 'unknown', content: [], seq: 0 }], incompleteTurn: false }), /role is invalid/)
+})
 
 const catalog = {
   playthroughs: [{

@@ -1,6 +1,6 @@
 {
   "name": "pmp-dsh-tavern",
-  "version": "2.4.1",
+  "version": "2.4.2",
   "description": "A SillyTavern compatibility plugin that keeps DSH authoritative over sessions and execution, with frontend and backend APIs for composing Tavern capabilities with native DSH features.",
   "type": "module",
   "main": "packages/tavern-loader/src/index.js",
@@ -90,14 +90,14 @@
   },
   "devDependencies": {
     "@deepseek-ai/cordis": "4.0.4",
-    "@deepseek-ai/dsh-util-crypto": "0.1.7-alpha.2",
+    "@deepseek-ai/dsh-util-crypto": "0.1.7-rc.1",
     "esbuild": "^0.28.2",
     "react": "18.3.1",
     "react-dom": "18.3.1"
   },
   "peerDependencies": {
     "@deepseek-ai/cordis": "4.0.4",
-    "@deepseek-ai/dsh-util-crypto": "0.1.7-alpha.2"
+    "@deepseek-ai/dsh-util-crypto": "0.1.7-rc.1"
   },
   "license": "MIT",
   "dependencies": {

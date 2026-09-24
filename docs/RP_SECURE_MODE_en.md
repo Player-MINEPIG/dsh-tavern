@@ -2,7 +2,7 @@
 
 [中文](RP_SECURE_MODE.md)
 
-This page describes the current source's RP tool-interception boundary on target DSH `0.1.7-alpha.2`.
+This page describes the current source's RP tool-interception boundary on target DSH `0.1.7-rc.1`.
 
 RP is a session overlay, not a DSH agent preset. When it is on, this plugin intercepts high-risk tool calls before dispatch, pins a read-only file sandbox, and cancels the current turn. Changing the chat-bar permission chip cannot lift these limits. Turn it off with the RP switch on the character card, or with `/rp off`. Whether binding a character card enters RP automatically is controlled by **Follow character into RP** in UI settings; it is on by default.
 

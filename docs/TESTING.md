@@ -6,7 +6,7 @@
 
 ## 环境与命令
 
-Tavern 的独立测试要求 Node.js `>=20`；目标 DSH `0.1.7-alpha.2` 要求 Node.js `^22.19.0 || >=24.0.0`。运行真实 DSH 模块或 Host 时必须满足后者，并核实实际解析的核心包版本。CI 的独立测试矩阵不代表所有 DSH 运行时均受支持。
+Tavern 的独立测试要求 Node.js `>=20`；目标 DSH `0.1.7-rc.1` 要求 Node.js `^22.19.0 || >=24.0.0`。运行真实 DSH 模块或 Host 时必须满足后者，并核实实际解析的核心包版本。CI 的独立测试矩阵不代表所有 DSH 运行时均受支持。
 
 在仓库根目录安装依赖后运行以下命令，定义以 [package.json](../package.json) 为准。
 
@@ -47,7 +47,7 @@ Tavern 的独立测试要求 Node.js `>=20`；目标 DSH `0.1.7-alpha.2` 要求 
 | 变量 | 所需模块与检查范围 |
 | --- | --- |
 | `DSH_TAVERN_COMPAT_ROOT` | session format/catalog、迁移包及 session controller；验证真实 codec、临时日志迁移与官方错误映射 |
-| `DSH_TAVERN_PROMPT_COMPAT_ROOT` | Cordis、SystemPrompt、Session、AgentLoop、LLM 等 Host 模块；验证官方装配、请求观察、事件引用和失败归属 |
+| `DSH_TAVERN_PROMPT_COMPAT_ROOT` | Cordis、AppBoot、SystemPrompt、Session、AgentLoop、LLM 等 Host 模块；验证官方插件版本准入、装配、请求观察、事件引用和失败归属 |
 
 安装版 DSH 通常可以使用同一个根。源码检出中，两组依赖可能位于不同目录；测试不会自动搜索 `apps/cli` 或其他工作区。以下为 POSIX shell 示例，将占位路径替换为实际依赖目录；PowerShell 使用 `$env:变量名` 设置同名变量。
 
@@ -62,7 +62,7 @@ npm run verify:2.0
 
 ```sh
 node --test test/coordinate-migration-integration.test.mjs test/session-coordinates.test.mjs
-node --test test/trace-v3-host.test.mjs test/trace-failures-host.test.mjs test/preset-fallback-host.test.mjs
+node --test test/trace-v3-host.test.mjs test/trace-failures-host.test.mjs test/preset-fallback-host.test.mjs test/plugin-runtime-compatibility.test.mjs
 node --test test/dsh017-host-migration.test.mjs test/dsh017-client-sessions.test.mjs test/resource-capabilities.test.mjs
 ```
 
@@ -86,7 +86,7 @@ node --test test/play-sessions.test.mjs
 
 按受影响的行为选择交互检查：
 
-- **alpha.2 升级：** 用 alpha.1、alpha.2 官方格式库分别运行离线迁移测试，确认未验证版本被拒绝；在 alpha.2 Host 上检查长历史分页、待发送状态、首轮／后续 swipe 流式与中断。保留页面和输入草稿重启测试 Host，确认恢复连接后仍能接收回复。
+- **rc.1 升级：** 用 alpha.1、alpha.2、rc.1 官方格式库分别运行离线迁移测试，确认未验证版本被拒绝。在 rc.1 上检查插件安装与启动的版本校验，无需授予版本例外。检查长历史分页、待发送状态、首轮／后续 swipe 流式与中断，以及工具准备、执行、结束期间 RP／原生切换和终态回复去重。保留页面和输入草稿重启测试 Host，确认恢复连接后仍能接收回复。
 - **RP 与界面生命周期：** 在原生/RP 模式、工作区和角色间切换，确认消息不串会话；检查开场边界、流式到终态的控件恢复，以及改动涉及的 swipe/分支流程。缺失旧日志应显示问题，不能阻断健康周目或新建周目。
 - **生成期间的历史操作：** 普通生成与非首轮 swipe 期间，检查所有历史回复的变体切换、swipe、分支和回退禁用及提示；复制、显示文本保存与恢复仍可用，修改即时出现在等待中的 RP 上下文，终态提交不覆盖修改。切换到另一周目应可操作；完成、失败及中断后路径按钮恢复。
 - **Swipe 等待与中断：** 用合成慢流分别覆盖首轮和非首轮 swipe；创建新 session 后立刻检查 RP/原生“对话”指向同一会话，再次点击周目仍应回到该会话。验证此前上下文不重复、新回复逐段出现、原生停止按钮可用；分别在首个片段前和输出片段后中断，检查错误返回入口或真实持久变体收敛，原有变体不丢失。

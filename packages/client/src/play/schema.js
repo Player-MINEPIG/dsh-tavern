@@ -1,7 +1,7 @@
 import { isArchiveTimestamp } from '../../../play/src/playthrough-state.js'
 
 const CHROME_MODES = new Set(['native', 'play'])
-const MESSAGE_ROLES = new Set(['user', 'assistant', 'system'])
+const MESSAGE_ROLES = new Set(['user', 'assistant', 'system', 'developer', 'tool'])
 const MESSAGE_ORIGIN_KINDS = new Set(['user', 'context', 'steering', 'assistant', 'system'])
 
 function isRecord(value) {
@@ -195,7 +195,7 @@ export function normalizeSessionMessages(value, label = 'messages') {
     if (!MESSAGE_ROLES.has(item.role)) fail(itemLabel, 'role is invalid')
     if (!Array.isArray(item.content)) fail(itemLabel, 'content must be an array')
     if (item.seq !== null && (!Number.isSafeInteger(item.seq) || item.seq < 0)) fail(itemLabel, 'seq must be a non-negative integer or null')
-    const fallbackKind = item.role === 'assistant' ? 'assistant' : item.role === 'system' ? 'system' : 'user'
+    const fallbackKind = item.role === 'tool' || item.role === 'developer' ? 'context' : item.role
     const origin = item.origin === undefined
       ? { kind: fallbackKind }
       : (() => {
