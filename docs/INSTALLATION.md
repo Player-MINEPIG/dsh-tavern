@@ -44,7 +44,7 @@ node scripts/install.mjs --dsh-home /absolute/path/to/test-home --profile web
 
 DSH profile 使用 `nodeLinker: hoisted` 和 `autoInstallPeers: false`；启动时由 DSH 的 profile 包解析层提供安装目录中的官方依赖。因此 `dsh plugin add` 或 `pnpm peers check` 可能报告这两个包缺失：该静态检查不识别 DSH 的运行时解析机制。不要依赖 `<DSH_HOME>/profiles/node_modules` 链接是否存在，也不要用未启动 DSH 的独立 Node 进程作为唯一判断依据；应核实 Host 实际解析的版本并检查插件能否启动。
 
-若重启后仍出现 `ERR_MODULE_NOT_FOUND`，则不是可忽略的安装警告；请检查 `PATH` 中的 DSH 是否为目标 `0.1.7-rc.1`、安装是否完整及实际模块解析路径。不要为消除警告把必需 peer 标成 optional。精确 peer 声明约束的是对应包，不是自动检查整个 DSH 版本的启动门禁。
+若重启后仍出现 `ERR_MODULE_NOT_FOUND`，则不是可忽略的安装警告；请检查 `PATH` 中的 DSH 是否为目标 `0.1.7-rc.1`、安装是否完整及实际模块解析路径。不要为消除警告把必需 peer 标成 optional。rc.1 的安装与启动检查依据插件声明的 DSH peer 版本；通过该检查不等于所有 Host 行为均已验证，仍需核对目标版本和运行时验收结果。
 
 ### 数据与源码安装
 

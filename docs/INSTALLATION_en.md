@@ -55,7 +55,7 @@ The current `package.json` declares `@deepseek-ai/dsh-util-crypto` at `0.1.7-rc.
 
 DSH profiles use `nodeLinker: hoisted` and `autoInstallPeers: false`; DSH's profile package resolver supplies official dependencies from its installation at startup. Consequently, `dsh plugin add` or `pnpm peers check` may report these peers as missing because the static check does not recognize runtime resolution. Do not rely on a `<DSH_HOME>/profiles/node_modules` link being present, or on a standalone Node process outside DSH as the sole check; verify the Host's resolved versions and plugin startup.
 
-An `ERR_MODULE_NOT_FOUND` after restart is not an ignorable install warning: check that DSH on `PATH` is the target `0.1.7-rc.1`, its installation is complete, and module resolution reaches its packages. Do not mark required peers optional to hide warnings. Exact peer declarations constrain those packages; they are not a startup gate checking the entire DSH version.
+An `ERR_MODULE_NOT_FOUND` after restart is not an ignorable install warning: check that DSH on `PATH` is the target `0.1.7-rc.1`, its installation is complete, and module resolution reaches its packages. Do not mark required peers optional to hide warnings. rc.1 installation and startup checks use the plugin’s declared DSH peer versions. Passing admission does not establish compatibility with every Host behavior; also check the target version and runtime acceptance results.
 
 ### Data and source installation
 

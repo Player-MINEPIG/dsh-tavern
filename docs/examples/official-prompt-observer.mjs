@@ -11,7 +11,7 @@ export function apply(ctx) {
     return assembly
   })
   ctx.on('llm/stream', async function* (options, next) {
-    // 0.1.5 AgentLoop system text is in system-role options.messages.
+    // DSH 0.1.7-rc.1 AgentLoop system text is in system-role options.messages.
     // One-shot callers can also use options.system. Requests are immutable.
     // This is an observation at the LLM boundary, not provider success proof.
     yield* next()

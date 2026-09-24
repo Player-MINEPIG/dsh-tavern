@@ -15,7 +15,8 @@ codes vary by resource; common documentation formatting does not change wire con
 The [DSH V4 coordinate migration contract](DSH_0.1.7_MIGRATION_en.md) governs
 message coordinates, branch inputs, and unmigrated timeline references.
 
-## Impact on third-party consumers in 2.4.0
+<a id="impact-on-third-party-consumers-in-240"></a>
+## Impact on third-party consumers in the current version
 
 2.4.2 updates the supported target to DSH `0.1.7-rc.1` without adding HTTP routes or fields or changing successful response shapes. The following describes the 2.4 series changes from earlier releases.
 

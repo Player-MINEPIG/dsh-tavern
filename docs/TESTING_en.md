@@ -33,8 +33,10 @@ Use a patch version for compatible bug fixes; documentation corrections alone do
 | Chinese and English README and INSTALLATION | Synchronize the final version in the candidate, switch install and source-checkout examples to the intended tag, and state the target DSH and migration requirements |
 | Chinese and English API and USAGE | Update changed interface behavior, error codes, or user-visible results; internal fixes with an unchanged contract need no edits |
 | Chinese and English TESTING | Add reusable regression scenarios or verification methods when needed |
-| Architecture, migration, security documents and diagrams | Update only when the corresponding design, data format, or security boundary changes; a patch bump alone requires no rewrite |
+| Architecture, migration, security documents and diagrams | Check target versions, migration allowlists, the maintained security line and diagram source revisions; rewrite behavior descriptions only when the design, data format or security boundary changes |
 | Git tag and GitHub Release | At publication, create the matching tag and concise release notes covering the fix, target DSH, upgrade steps, and known limits |
+
+Before publication, check both READMEs’ versions and update summaries, install commands, the SECURITY maintenance line, migration allowlists, API impact notes, and the versions/source revisions in diagram sources and generated pages. Older version numbers should occur only in change history or supported migration guidance. After pushing, read both READMEs from GitHub’s default branch and target tag and confirm they match the accepted commit before publishing the Release.
 
 Keep run-specific logs, screenshots, test counts, and release-note drafts in Git-ignored `.local/`; summarize relevant evidence in the PR. Keep reusable procedures in `docs/`, without accumulating per-release acceptance records. Update corresponding Chinese and English files in the same change.
 
