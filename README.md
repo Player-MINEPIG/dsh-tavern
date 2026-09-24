@@ -4,7 +4,7 @@
 
 以 DeepSeek Harness（DSH）原生会话与执行机制为权威的酒馆兼容插件，提供前后端 API，支持自由组合酒馆能力与 DSH 原生功能。
 
-> 本文说明 Tavern **2.4.2**，仅支持 DSH **0.1.7-rc.1**。本次更新适配 rc.1 的安装与启动兼容性检查，并修复工具调用后 RP 对话校验失败的问题；HTTP API 路由与响应结构保持不变。见 [变更记录](CHANGELOG.md)。项目代码采用 [MIT License](LICENSE)。
+> 本文说明 Tavern **2.4.3**，仅支持 DSH **0.1.7-rc.1**。本版包含 rc.1 安装与启动兼容适配、工具调用后的 RP 对话校验修复，并补齐对应文档；HTTP API 路由与响应结构保持不变。见 [变更记录](CHANGELOG.md)。项目代码采用 [MIT License](LICENSE)。
 >
 > 请同步升级 Host 和插件并保留备份。从 alpha.1／alpha.2 升级时，已完成 V4 迁移的会话与 Tavern 引用无需再次转换；更早格式按 [升级指南](docs/DSH_0.1.7_MIGRATION.md) 单向迁移。不支持旧版 Host。
 >
@@ -42,18 +42,18 @@ pmp-dsh-tavern 不是用另一套界面取代 DSH，也不会复制一份会话�
 
 ### 0. 安装
 
-从 GitHub 安装 `2.4.2` 请使用固定版本标签：
+从 GitHub 安装 `2.4.3` 请使用固定版本标签：
 
 目标 DSH `0.1.7-rc.1` 要求 Node.js `^22.19.0 || >=24.0.0`，另需可从 `PATH` 调用的 DSH 和已初始化的 profile（默认 `web`）。Tavern 独立测试兼容 Node 20，不代表目标 Host 可运行在 Node 20。
 
 ```sh
-dsh plugin --profile web add github:Player-MINEPIG/dsh-tavern#v2.4.2
+dsh plugin --profile web add github:Player-MINEPIG/dsh-tavern#v2.4.3
 ```
 
 其他版本请切换到对应 tag，并阅读该 tag 内的安装说明。从源码开发、从旧版包内数据安全迁移，或使用项目提供的备份卸载流程时，按[源码安装步骤](docs/INSTALLATION.md#source-installation)检出同一版本标签：
 
 ```sh
-git clone --branch v2.4.2 https://github.com/Player-MINEPIG/dsh-tavern.git
+git clone --branch v2.4.3 https://github.com/Player-MINEPIG/dsh-tavern.git
 cd dsh-tavern
 npm install --cache .npm-cache
 npm run plugin:install

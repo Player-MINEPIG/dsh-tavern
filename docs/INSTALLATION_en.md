@@ -4,7 +4,7 @@ The current DSH target is `0.1.7-rc.1`. When moving existing playthroughs from t
 
 [中文](INSTALLATION.md)
 
-This guide covers Tavern `2.4.2`; only DSH `0.1.7-rc.1` is supported. Upgrade old external history references with the migration guide and retain pre-upgrade backups; no rollback tool is provided. The default root [README](../README.md) is Chinese. The English landing page is [README_en.md](../README_en.md) (no screenshots). This file is the current lifecycle, verification, and recovery contract. For another version, switch to its tag and read the installation instructions in that tag.
+This guide covers Tavern `2.4.3`; only DSH `0.1.7-rc.1` is supported. Upgrade old external history references with the migration guide and retain pre-upgrade backups; no rollback tool is provided. The default root [README](../README.md) is Chinese. The English landing page is [README_en.md](../README_en.md) (no screenshots). This file is the current lifecycle, verification, and recovery contract. For another version, switch to its tag and read the installation instructions in that tag.
 
 The scripts use Node.js as their common entry point and normalize paths for
 Windows, macOS, and Linux. macOS/Linux execute `dsh` directly. Windows safely
@@ -19,14 +19,14 @@ inside that one plugin; do not try to add them to dsh separately. The format
 layer can be consumed as a JavaScript library through the root package export,
 but by itself it intentionally has no agent-loading effect.
 
-## Install 2.4.2
+## Install 2.4.3
 
-DSH rc.1 checks declared DSH peer versions at installation and startup. Tavern 2.4.2 matches rc.1 without a version exemption. If compatibility is refused, check the Host and plugin versions rather than using an exemption in place of an upgrade.
+DSH rc.1 checks declared DSH peer versions at installation and startup. Tavern 2.4.3 matches rc.1 without a version exemption. If compatibility is refused, check the Host and plugin versions rather than using an exemption in place of an upgrade.
 
-Install `2.4.2` from GitHub into the default `web` profile using its version tag:
+Install `2.4.3` from GitHub into the default `web` profile using its version tag:
 
 ```text
-dsh plugin --profile web add github:Player-MINEPIG/dsh-tavern#v2.4.2
+dsh plugin --profile web add github:Player-MINEPIG/dsh-tavern#v2.4.3
 ```
 
 <a id="source-candidate"></a>
@@ -34,10 +34,10 @@ dsh plugin --profile web add github:Player-MINEPIG/dsh-tavern#v2.4.2
 ### Install and validate from source
 
 Use a separate test profile/home. Stop its Host before installing. Check out the
-`v2.4.2` tag, then install from source:
+`v2.4.3` tag, then install from source:
 
 ```sh
-git clone --branch v2.4.2 https://github.com/Player-MINEPIG/dsh-tavern.git
+git clone --branch v2.4.3 https://github.com/Player-MINEPIG/dsh-tavern.git
 cd dsh-tavern
 npm ci --legacy-peer-deps
 node scripts/install.mjs --dsh-home /absolute/path/to/test-home --profile web

@@ -1,6 +1,6 @@
 # Prompt assembly Trace and primitive API v3
 
-Contract version: Tavern **2.4.2**, targeting DSH **0.1.7-rc.1**.
+Contract version: Tavern **2.4.3**, targeting DSH **0.1.7-rc.1**.
 [中文](PROMPT_API_V3.md) · [API index and scope audit](API_en.md#api-scope) · [Verification](TESTING_en.md)
 
 ## Purpose and compatibility
@@ -13,7 +13,7 @@ no composer registry, exclusive owner, remote callback, or current-resource aggr
 `/sessions/:id/sources` is not part of the v3 contract and returns 404. Current
 resources, bindings, and configuration remain in v1. Historical `sections[].sources`
 describes section-level relationships at capture time. Released v1/v2 routes remain
-compatible. API v3, Tavern 2.4.2, and DSH log format V4 are separate version numbers.
+compatible. API v3, Tavern 2.4.3, and DSH log format V4 are separate version numbers.
 
 ## Consumer read paths and compatibility boundaries
 

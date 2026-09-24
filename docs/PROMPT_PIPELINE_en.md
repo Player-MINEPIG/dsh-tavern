@@ -3,7 +3,7 @@
 [中文](PROMPT_PIPELINE.md)
 
 This page explains how Tavern resources enter a model request in SillyTavern,
-TauriTavern, and Tavern **2.4.2**, and which mappings are unsupported.
+TauriTavern, and Tavern **2.4.3**, and which mappings are unsupported.
 DSH turn/step, Inbox, Session, system-assembly, and request/header order are documented
 in `DSH_MESSAGE_FLOW_en.md`.
 

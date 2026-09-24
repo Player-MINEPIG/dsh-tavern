@@ -2,7 +2,7 @@
 
 [English](PROMPT_PIPELINE_en.md)
 
-本文说明 Tavern **2.4.2**中，资源在 SillyTavern、TauriTavern 和 dsh-tavern
+本文说明 Tavern **2.4.3**中，资源在 SillyTavern、TauriTavern 和 dsh-tavern
 如何进入一次模型请求，并明确未实现的映射。DSH 自身的 turn/step、Inbox、Session、
 system assembly 和 request/header 顺序另见 `DSH_MESSAGE_FLOW.md`。
 

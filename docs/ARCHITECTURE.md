@@ -14,7 +14,7 @@ DSH 破坏性更新评估：[原生依赖架构图与分级矩阵](assets/dsh-de
 
 ## 目标 Host 与持久数据边界
 
-本 checkout 的 Tavern 2.4.2 合同面向 DSH 0.1.7-rc.1、Cordis 4.0.4 与 `dsh-util-crypto` 0.1.7-rc.1，不支持旧 Host 运行时。串行 `agent/created` listener 在首次使用前初始化选择、公开 pending-input 投影与 RP；初始化失败向外传播。
+本 checkout 的 Tavern 2.4.3 合同面向 DSH 0.1.7-rc.1、Cordis 4.0.4 与 `dsh-util-crypto` 0.1.7-rc.1，不支持旧 Host 运行时。串行 `agent/created` listener 在首次使用前初始化选择、公开 pending-input 投影与 RP；初始化失败向外传播。
 
 DSH V4 拥有 system/user/assistant/tool 历史与 producer source，包括 `runtime-context` snapshot 和原生 tool-role result。准备顺序为装配 → pre-step → request/config 准备 → 接纳消息写入 → request header 与冻结消息 → stream。Trace 捕获官方正文/错误引用及生效参数，不建立第二份历史。[单向坐标升级](DSH_0.1.7_MIGRATION.md) 使用已验证的官方迁移阶段，保留全部升级前插件备份，不改写 DSH 日志。V3 之前的 header-body Trace 引用明确拒绝转换，不提供回滚工具。
 

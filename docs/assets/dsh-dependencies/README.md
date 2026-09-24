@@ -2,7 +2,7 @@
 
 [English](README_en.md) · [交互架构图](architecture.zh-CN.html) · [可编辑 JSON](architecture.zh-CN.json) · [总体架构](../../ARCHITECTURE.md)
 
-本图描述 Tavern **2.4.2** checkout 对 DSH **0.1.7-rc.1**、Cordis **4.0.4** 与 `dsh-util-crypto` **0.1.7-rc.1** 的消费端合同，是依赖及语义耦合地图，不代表发布状态或完整运行时验收。图中 SRC 保留已验证的本地源码标签并禁用网络链接；矩阵中的 Tavern 源码使用仓库相对链接。官方依据固定为[目标 tag](https://github.com/deepseek-ai/deepseek-harness/tree/dsh-v0.1.7-rc.1)，尤其是 [Agent loop](https://github.com/deepseek-ai/deepseek-harness/blob/dsh-v0.1.7-rc.1/packages/core/agent-loop/src/agent.ts) 与 [V3→V4 迁移规范](https://github.com/deepseek-ai/deepseek-harness/blob/dsh-v0.1.7-rc.1/packages/session/session-format-v3-to-v4/README.md)。不把尚未发布的 Tavern commit 包装成可用 GitHub 链接。
+本图描述 Tavern **2.4.3** checkout 对 DSH **0.1.7-rc.1**、Cordis **4.0.4** 与 `dsh-util-crypto` **0.1.7-rc.1** 的消费端合同，是依赖及语义耦合地图，不代表发布状态或完整运行时验收。图中 SRC 保留已验证的本地源码标签并禁用网络链接；矩阵中的 Tavern 源码使用仓库相对链接。官方依据固定为[目标 tag](https://github.com/deepseek-ai/deepseek-harness/tree/dsh-v0.1.7-rc.1)，尤其是 [Agent loop](https://github.com/deepseek-ai/deepseek-harness/blob/dsh-v0.1.7-rc.1/packages/core/agent-loop/src/agent.ts) 与 [V3→V4 迁移规范](https://github.com/deepseek-ai/deepseek-harness/blob/dsh-v0.1.7-rc.1/packages/session/session-format-v3-to-v4/README.md)。不把尚未发布的 Tavern commit 包装成可用 GitHub 链接。
 
 将 HTML 下载后用浏览器打开，可查看源码来源、搜索节点、切换明暗主题和导出。GitHub 文件页不直接运行交互 HTML。图与中英文源文件集中在此目录；现有 `docs/assets` 打包规则会包含它们。
 

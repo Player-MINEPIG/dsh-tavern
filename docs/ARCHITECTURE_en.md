@@ -15,7 +15,7 @@ Editable source: [dsh-tavern-architecture.drawio](assets/dsh-tavern-architecture
 
 ## Target Host and durable-data boundary
 
-This checkout's Tavern 2.4.2 contract targets DSH 0.1.7-rc.1, Cordis 4.0.4, and `dsh-util-crypto` 0.1.7-rc.1. Older Host runtimes are unsupported. The serial `agent/created` listener initializes selection, public pending-input projection, and RP before first use; initialization failure propagates.
+This checkout's Tavern 2.4.3 contract targets DSH 0.1.7-rc.1, Cordis 4.0.4, and `dsh-util-crypto` 0.1.7-rc.1. Older Host runtimes are unsupported. The serial `agent/created` listener initializes selection, public pending-input projection, and RP before first use; initialization failure propagates.
 
 DSH V4 owns system/user/assistant/tool history and producer sources, including `runtime-context` snapshots and native tool-role results. Preparation order is assembly → pre-step → request/config preparation → accepted message commits → request header and frozen messages → stream. Trace captures official body/error references and effective parameters; it is not another history store. The [one-way coordinate upgrade](DSH_0.1.7_MIGRATION_en.md) follows verified official migration stages, retains all pre-upgrade plugin backups, and never rewrites DSH logs. Pre-V3 header-body Trace references explicitly refuse conversion; no rollback tool is provided.
 

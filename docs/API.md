@@ -2,7 +2,7 @@
 
 [English](API_en.md) · [v3 详细合同](PROMPT_API_V3.md) · [前端接入](FRONTEND_INTEGRATION_zh-CN.md)
 
-合同版本：Tavern **2.4.2**，仅支持 DSH `0.1.7-rc.1`。
+合同版本：Tavern **2.4.3**，仅支持 DSH `0.1.7-rc.1`。
 根路径 `/pmp-dsh-tavern/api`。API 版本与 DSH 日志格式 V4 无关。
 
 各版本路由目录统一采用 v2 的 **方法 / 路径 / 作用 / 状态** 格式。路径相对于该节声明的
@@ -16,7 +16,7 @@ timeline 的拒绝行为。
 <a id="240-对第三方调用方的影响"></a>
 ## 当前版本对第三方调用方的影响
 
-2.4.2 将支持目标更新为 DSH `0.1.7-rc.1`，没有新增 HTTP 路由、字段或改变成功响应结构。以下为 2.4 系列相对旧版的接入变化。
+2.4.3 将支持目标更新为 DSH `0.1.7-rc.1`，没有新增 HTTP 路由、字段或改变成功响应结构。以下为 2.4 系列相对旧版的接入变化。
 
 与 `v2.3.2` 相比，API 根路径、v1/v2/v3 版本前缀和既有路由保持；这不代表所有输入、
 历史引用或宿主接入行为完全不变。运行环境仅支持 DSH `0.1.7-rc.1`，其他版本不在支持范围内。
@@ -227,7 +227,7 @@ v2 错误示例；`code` 在**响应顶层**，`error` 是字符串：
 
 - `role` 是送给模型的消息角色，包括 `user`、`assistant`、`system`、`developer`、`tool`；DSH 的运行时上下文注入在模型侧仍可能是 `role: "user"`。
 - `origin.kind` 是前端来源/显示语义，取值为 `user`、`context`、`steering`、`assistant`、`system`。第三方前端必须用它区分真实用户输入与上下文注入，不得仅凭 `role` 画用户气泡；具体选择隐藏还是单独呈现由前端决定。
-- `tool` 与 `developer` 消息保留官方角色，作为上下文参与读取；内置 RP 不将其显示为用户气泡或单独创建 QA。2.4.2 修正了客户端对此类既有响应的拒绝，未新增 HTTP 响应字段。
+- `tool` 与 `developer` 消息保留官方角色，作为上下文参与读取；内置 RP 不将其显示为用户气泡或单独创建 QA。2.4.3 修正了客户端对此类既有响应的拒绝，未新增 HTTP 响应字段。
 - `origin.kind: "context"` 可附带 `producer`、`form`、`summary`。三者是有界的可选显示元数据；消息正文仍在原有 `text` / `content` 字段，不复制进 `origin`。
 - 为兼容旧客户端，新增字段是 additive；`role`、`seq`、`text`、`content` 与 `incompleteTurn` 的既有含义不变。旧服务端没有 `origin` 时，客户端只能按 `role` 做保守回退，无法可靠识别上下文注入。
 

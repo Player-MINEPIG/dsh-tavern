@@ -1,5 +1,11 @@
 # Development changelog
 
+## 2.4.3 — Documentation correction for DSH 0.1.7-rc.1
+
+- Include the rc.1 compatibility and RP tool-history fix from 2.4.2, with unchanged runtime code and public APIs. The 2.4.2 Release was withdrawn after documentation review; its original tag is preserved.
+- Correct bilingual README update summaries, the security maintenance line, migration codec lists, plugin admission guidance, API impact headings, observer example comments, and diagram source references.
+- Synchronize installation examples and current documentation to 2.4.3; extend release documentation checks to verify the default-branch and tagged READMEs before publication.
+
 ## 2.4.2 — DSH 0.1.7-rc.1 compatibility
 
 - Target DSH `0.1.7-rc.1` only; update the crypto peer and lockfile so the plugin passes the new installation and startup compatibility checks without a version exemption. Cordis remains `4.0.4`.

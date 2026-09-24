@@ -4,30 +4,30 @@
 
 [English](INSTALLATION_en.md)
 
-本文面向 Tavern `2.4.2`，仅支持 DSH `0.1.7-rc.1`。旧 Host 不受支持；旧数据需按升级指南升级外部历史引用，保留升级前备份，不提供回退工具。根目录默认 [README](../README.md) 为中文；英文落地页是 [README_en.md](../README_en.md)（无截图）。本文是当前安装生命周期、验收与恢复合同。其他版本请切换到对应 tag，并阅读该 tag 内的安装说明。
+本文面向 Tavern `2.4.3`，仅支持 DSH `0.1.7-rc.1`。旧 Host 不受支持；旧数据需按升级指南升级外部历史引用，保留升级前备份，不提供回退工具。根目录默认 [README](../README.md) 为中文；英文落地页是 [README_en.md](../README_en.md)（无截图）。本文是当前安装生命周期、验收与恢复合同。其他版本请切换到对应 tag，并阅读该 tag 内的安装说明。
 
 脚本以 Node.js 为统一入口，并规范化 Windows、macOS 和 Linux 路径。macOS/Linux 直接执行 `dsh`。Windows 会安全定位 npm 的 `dsh.ps1` shim，再通过系统 PowerShell 以参数数组调用，因此路径不会被拼回 shell 命令文本。请在 `dsh-tavern` 检出目录中运行脚本，并准备 Node.js 20 或更高版本，以及位于 `PATH` 上的目标 DSH `0.1.7-rc.1`；启动 Host 时需满足上面的 Node 要求。
 
 只安装仓库根包。`packages/tavern-format`、`packages/preset` 和 `packages/tavern-loader` 是随同一插件发布的内部边界，不要单独把它们加进 dsh。格式层可通过根包导出作为 JavaScript 库使用，但它本身故意没有把内容发给 agent 的效果。
 
-## 安装 2.4.2
+## 安装 2.4.3
 
-DSH rc.1 会在安装和启动时检查插件声明的 DSH peer 版本；Tavern 2.4.2 的声明与 rc.1 匹配，无需授予版本例外。若提示版本不兼容，请核对 Host 和插件版本，不要用例外代替升级。
+DSH rc.1 会在安装和启动时检查插件声明的 DSH peer 版本；Tavern 2.4.3 的声明与 rc.1 匹配，无需授予版本例外。若提示版本不兼容，请核对 Host 和插件版本，不要用例外代替升级。
 
-从 GitHub 安装 `2.4.2` 到默认 `web` profile，请使用固定版本标签：
+从 GitHub 安装 `2.4.3` 到默认 `web` profile，请使用固定版本标签：
 
 ```text
-dsh plugin --profile web add github:Player-MINEPIG/dsh-tavern#v2.4.2
+dsh plugin --profile web add github:Player-MINEPIG/dsh-tavern#v2.4.3
 ```
 
 <a id="source-candidate"></a>
 <a id="source-installation"></a>
 ### 从源码安装和验收
 
-使用独立测试 profile/home，安装前停止该 Host。检出 `v2.4.2` 标签后从源码安装：
+使用独立测试 profile/home，安装前停止该 Host。检出 `v2.4.3` 标签后从源码安装：
 
 ```sh
-git clone --branch v2.4.2 https://github.com/Player-MINEPIG/dsh-tavern.git
+git clone --branch v2.4.3 https://github.com/Player-MINEPIG/dsh-tavern.git
 cd dsh-tavern
 npm ci --legacy-peer-deps
 node scripts/install.mjs --dsh-home /absolute/path/to/test-home --profile web
