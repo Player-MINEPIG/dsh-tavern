@@ -101,3 +101,9 @@ node --test test/play-sessions.test.mjs
 涉及写入并发、卸载或坐标迁移时，在测试副本中验证冲突及恢复路径；参阅 [API](API.md) 和 [迁移指南](DSH_0.1.7_MIGRATION.md)。真实提供方的超时/重试、真实第三方联调及平台差异须分别验证，不能从合成故障或其他平台的结果推断。
 
 记录证据时注明源码版本、Node/DSH 版本、启用的检查、跳过项及可复现步骤，并区分自动测试、真实 Host、浏览器和外部联调覆盖。诊断报告与 Trace 元数据也可能包含私密标识和内容，公开问题报告前应检查并删去敏感信息。
+
+## 持久操作日志回归
+
+`node --test test/operation-journal.test.mjs test/operation-log-client.test.mjs` 使用临时目录验证字段白名单、轮转容量、游标失效、并发写入、第二写者拒绝、进程退出后的恢复、损坏尾行、符号链接拒绝和日志故障隔离。`node scripts/verify-operation-logs-browser.mjs` 在 headless Chrome 的真实 React 中验证按需读取、文本展示、分页、当前页导出、旧 Host 404、异步响应隔离与降级提示；可用 `CHROME_PATH` 指定浏览器。它不替代完整 Host 页面交互验收。
+
+在临时目标 Host 中先读取 `GET /pmp-dsh-tavern/api/v2/operation-logs`，执行成功与失败的 workspace/session 变更，核对响应 operationId 与日志终态、错误码一致，查询和导出不产生日志，且无测试正文或路径泄漏。正常停止并重启 Host，核对旧记录可查、runId 更换、plugin.stop 保留。再在现有诊断面板中查看、筛选、翻页和导出；关闭面板、切换或改变筛选时，旧请求不得覆盖新视图。检查存储降级不能阻断业务，旧 Host 不支持日志时当前问题诊断仍可用。

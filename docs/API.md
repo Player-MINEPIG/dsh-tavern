@@ -82,6 +82,7 @@ DSH 历史以及 v2 `/sessions/:id/messages` 提供权威消息读取；v3 详�
 
 | 方法 | 路径 | 作用 | 状态 |
 | --- | --- | --- | --- |
+| GET | `/operation-logs` | 有界操作日志的筛选、分页和单页 JSONL 导出；见下文持久日志合同 | 已实现 |
 | GET | `/chrome` | 返回 `{ mode: "native" \| "play", revision }`；`revision` 是服务端权威不透明版本串 | 已实现 |
 | GET | `/chrome/events` | Tavern 自有 SSE；连接后发送当前快照，mode 实际变化时发送 `chrome/change` | 已实现 |
 | PUT | `/chrome` | 写入全局 chrome。不改 RP 锁、不改 DSH 当前 session；成功响应附带新的 `revision`（同 mode 不产生变更） | 已实现 |
@@ -277,7 +278,7 @@ controller 会串行同角色创建；内置 caller 使用服务端 CAS 的有�
 - catalog/timeline GET 返回精确 UTF-8 字节 SHA-256 `revision`，PUT 使用显式 `expectedRevision`；缺失/格式错误分别为 400，目标状态或 hash 不一致为 409，冲突不改文件。内置 live client 缓存 revision，并只对纯文档意图做有限 CAS 重放。
 - catalog/timeline 在 GET 读后与 PUT 写前执行同一 schema/path 校验；未知第三方 `ext` 原样保留。revision/CAS 位于同一目标 guard，路径锁执行逐段 no-follow 检查，临时文件使用排他 `wx`，rename 前复验父目录。
 - 路径逐段拒绝 symlink/junction（Node 暴露的链接类型），逐层非 recursive 创建并 realpath 复核。纯 Node 仍无法抵抗外部进程制造的极窄竞态，合同不引入 native addon。
-- 后端 `ctx.logger` operation log 覆盖 `PUT /workspace`、`POST /workspace/dirs`、`PUT /workspace/files?path=`、playthrough detach/relink、session create/branch/user-message 和 import-context PUT/DELETE。每次变更请求使用一个 `operationId` 记录阶段与终态，不记录资源或聊天正文。user-message 只记录 Host prompt accepted 阶段，不记录正文、长度或摘要。只读 GET/list、session/messages/focus/import-context 与 chrome 不产生日志；浏览器日志、持久 journal 和额外 exporter 不在合同内。
+- 后端 `ctx.logger` operation log 覆盖 `PUT /workspace`、`POST /workspace/dirs`、`PUT /workspace/files?path=`、playthrough detach/relink、session create/branch/user-message 和 import-context PUT/DELETE。每次变更请求使用一个 `operationId` 记录阶段与终态，不记录资源或聊天正文。user-message 只记录 Host prompt accepted 阶段，不记录正文、长度或摘要。只读 GET/list、session/messages/focus/import-context 与 chrome 不产生日志；持久 journal 的查询和导出见下文；浏览器日志上报不在合同内。
 
 `npm run verify:2.0` 验证 history、schema/CAS/focus/路径防护、claim/lineage、无正文
 operation log、chrome service/slot、工作区准入、本地化与发布包边界。设置
@@ -580,8 +581,8 @@ mutation 接入。当前已接入以下写操作：
 - `PUT /sessions/:id/import-context` 和 `DELETE /sessions/:id/import-context`；
 - `POST /playthroughs/:id/detach-session` 和 `POST /playthroughs/:id/relink-character`。
 
-只读的 GET 不产 operation 日志。它只接受 Cordis `ctx.logger`（或其 callable
-logger service），以 `dsh-tavern.operation ` 前缀输出单行日志；前缀后的部分是稳定
+只读的 GET 不产 operation 日志。它接受 Cordis `ctx.logger`（或其 callable
+logger service）及可选 journal，以 `dsh-tavern.operation ` 前缀输出单行日志；前缀后的部分是稳定
 JSON。一次 operation 在 context 创建时保存 operation 名和开始时刻，并可记录
 `start`、多个 `stage`、一次 `success` 或一次 `failure`。成功和失败终态包含
 `result` 与非负 `durationMs`；失败只记录稳定 `error.code`（缺失时为
@@ -594,9 +595,24 @@ preset、正则、资源正文、请求 body、message text 及未知字段均�
 正文摘要。logger 缺失、方法缺失或 logger 自身抛错时 fail-soft。terminal 之后的
 stage 或 terminal 调用无效且不会重复写终态。
 
-本节声明 utility 及上述 workspace/session/import/playthrough endpoint 接入；当前不能据此声称
-所有生命周期静默失败都已被日志覆盖。默认 Cordis logger 仍由其自身管理，插件不写
-持久日志文件、浏览器日志或 exporter。
+### 持久 operation 日志与前端合同
+
+现有 v1 资源、v2 工作区和 v3 Trace API 均不能查询操作生命周期，因此增加一个只读原语：`GET /pmp-dsh-tavern/api/v2/operation-logs`。它沿用 Tavern API 的 Host 安全边界，不提供写入、浏览器日志上报、清空或修复接口。调用方自行组合筛选与分页。
+
+- 查询参数：`operationId`、`sessionId`、`playthroughId` 精确匹配；`level=info|warn`；`limit=1..1000`（默认 200）；`before=<record id>` 读取更早记录；`format=json|jsonl`（默认 JSON）。空值、重复或未知参数返回 400 `LOG_QUERY_INVALID`。
+- JSON 返回 `{ok:true,schemaVersion:1,records,nextCursor,storage,limits}`，按写入顺序倒序。继续沿用同一筛选条件和 `nextCursor` 分页；游标已轮转或不可用时返回 409 `LOG_CURSOR_EXPIRED`，刷新查询即可。分页不是跨请求快照。
+- `storage` 包含 `available`、`code`、本次实例丢弃数 `dropped`、本次查询跳过的损坏记录数 `skippedRecords`。`LOG_DISABLED`、`LOG_WRITER_BUSY`、`LOG_STORAGE_UNAVAILABLE`、`LOG_LOCK_RECOVERY_REQUIRED`、`LOG_CLOSED` 表示降级；200 与空 `records` 本身不代表日志健康。可读的旧记录仍可返回。磁盘错误后该实例停止写入，修复后重启 Host。
+- `format=jsonl` 下载同一页，首行为 `{type:"metadata",...}`（保留状态、容量与下一页游标），后续每行一条记录，响应使用 `no-store`。它不是全量历史导出；需要更多记录时逐页请求。导出不包含 Trace 或当前问题报告。
+- 每条记录在 operation 白名单基础上增加 `schemaVersion:1`、`id`、进程内本次插件实例的 `runId`、UTC `timestamp`、`level`。`id` 为 `<runId>:<sequence>`，不依赖系统时钟排序。**持久化及导出排除 `path`**，并在读取时再次应用白名单。标识最多 128 字符；operation/stage/result/errorCode 最多 96；method 最多 32；单条最多 4096 字节。旧 `ctx.logger` 行格式保持兼容。
+- 已接入的 v2 变更请求在响应头返回 `X-Tavern-Operation-Id`，失败 JSON 另含 `operationId`；关联的是一次请求，不是跨请求事务。业务 `code` 与失败记录 `errorCode` 对应（无稳定 code 时 `UNKNOWN_ERROR`）。路由拒绝、安全检查拒绝或尚未开始 operation 的请求可以没有该 ID。`createLivePlayClient` 将 ID 保留在抛出的 `error.operationId`，提供 `getOperationLogs(filters)`；旧 Host 返回 404，前端应隐藏/禁用日志能力而保留原有问题诊断。
+
+插件默认在 Tavern 存储目录的 `operation-logs/` 写入最多 4 个 JSONL 文件，每个最多 1 MiB，达到上限淘汰最旧文件；不是按天归档，不保证最短留存期。固定文件界限约束磁盘与查询读入量，无无限写入队列。新目录／文件使用 0700／0600（以平台支持为准）。`operationLogs: { enabled: false }` 关闭本存储及查询中的历史读取，保留 Cordis logger；禁用不删除现有文件。该目录不参与迁移、会话回放或恢复决策，可在 Host 停止后删除。
+
+同一 Host 的并发请求通过同步、有界文件写入串行化。一个存储目录只允许一个 journal 写者；第二个实例只读旧日志并报告 `LOG_WRITER_BUSY`。正常卸载释放 owner，进程死亡后下次启动检查 PID 并回收 owner，去掉未完成的末行。启动 guard 遗留、PID 被复用或无法确认所有者死亡时保持关闭；停止所有使用该目录的 Host、确认无写者后才可移除 `.guard`／`.owner` 并重启。该机制面向本机文件系统，不支持多机共享写入。写入没有 fsync 事务保证；崩溃、轮转中断或容量淘汰可缺失记录，不能把缺失终态解读为业务失败或成功。
+
+覆盖上述变更操作，以及 `plugin.start`／`plugin.stop`、`agent.initialize`、`agent.execution` 失败和原来吞掉的 RP／Trace 诊断失败。启动有 start/ready，正常停止记 disposed；异常中止不会补造终态。不截获全部 Cordis 输出，也不承诺覆盖所有插件或所有 v1 资源写入。日志或 logger 故障不改变业务结果；错误 message、stack、cause、正文、正文长度与摘要不进入 journal。
+
+内置诊断面板按需查询最近一页、按 operationId 筛选、查看更早页及导出当前页。浏览器不采集 console、网络正文、输入或点击流水，不写 localStorage 日志，也没有后台轮询。当前工作区问题反映当前读取状态；operation journal 解释后端步骤；Prompt Trace 解释模型装配及官方引用。三者互不替代，日志不能成为 DSH 历史、资源或未来 MVU 状态的权威存储。导出虽不含正文，仍有会话等私密标识，分享前需检查。
 
 ## v3 提示词装配审计
 

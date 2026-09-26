@@ -21,7 +21,7 @@
 - 请求体、资源、结构、Trace、持久状态和扮演工作区文件均有明确上限。
 - 扮演工作区使用安全相对路径、逐段链接/reparse 检查、根目录复核、排他临时文件、原子替换和 revision/CAS。
 - 富文本按 Markdown 解析后必须经过 DOMPurify；禁止 script、iframe、object、embed、表单控件、用户提供的 template、meta/link/base 与 `srcdoc`，事件处理属性及危险 URL 也会被净化。`<style>` 仅在消息自己的 Shadow DOM 中保留，外层布局/绘制 containment 限制其覆盖范围；直接 HTML 净化或不支持隔离的环境仍移除 style。Shadow DOM 只隔离样式，不授予模板 JS 执行权限。外部链接补充 `noopener noreferrer`。
-- 生命周期日志只使用 Host `ctx.logger`，字段有白名单和长度上限；不记录提示词、用户消息、模型回复、资源正文、正文长度或摘要。
+- 生命周期日志输出到 Host `ctx.logger` 及 Tavern 的有界 `operation-logs/` journal（最多 4 MiB，可通过 `operationLogs.enabled=false` 禁用持久层）。字段使用白名单和长度上限；持久层还排除路径，不记录提示词、用户消息、模型回复、资源正文、正文长度、摘要或异常 message/stack/cause。查询和分页导出继承 Tavern API 安全边界；无浏览器日志上报。会话与操作标识仍可能敏感，公开前须检查。
 - 正式仓库与发布包不得包含真实开发机路径、用户名、临时下载路径、私有 fixture、导入资源或密钥。文档中的路径只能使用明确的通用占位符。
 
 ## Trace 官方历史引用

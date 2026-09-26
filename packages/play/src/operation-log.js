@@ -93,11 +93,12 @@ function resolveLogger(logger) {
 }
 
 function safeLog(logger, level, payload) {
-  const target = resolveLogger(logger)
-  const method = target?.[level]
-  if (typeof method !== 'function') return
   try {
-    method.call(target, `${PREFIX}${JSON.stringify(payload)}`)
+    const target = resolveLogger(logger)
+    const method = target?.[level]
+    if (typeof method !== 'function') return
+    const pending = method.call(target, `${PREFIX}${JSON.stringify(payload)}`)
+    pending?.catch?.(() => {})
   } catch {
     // Logging must never change the operation result.
   }
@@ -112,6 +113,7 @@ function safeLog(logger, level, payload) {
 export function createOperationContext({
   ctx,
   logger = ctx?.logger,
+  journal,
   operation,
   meta,
   idFactory = randomUUID,
@@ -141,6 +143,7 @@ export function createOperationContext({
       },
     )
     safeLog(logger, level, payload)
+    try { journal?.append(level, payload) } catch { /* Diagnostics never gate mutations. */ }
     return true
   }
 

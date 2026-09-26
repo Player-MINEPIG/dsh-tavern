@@ -1,4 +1,4 @@
-import { createElement, useState, useSyncExternalStore } from 'react'
+import { createElement, useEffect, useRef, useState, useSyncExternalStore } from 'react'
 import { createLocalizedElement, rawText, uiMessage } from '../i18n.js'
 import { playthroughDisplayTitle } from './title.js'
 import { workspaceDiagnosticReport } from './diagnostics-state.js'
@@ -41,7 +41,7 @@ function explanation(issue) {
   return [issue.kind === 'workspace' ? 'diagnostics.workspaceFailed' : 'diagnostics.timelineFailed', 'diagnostics.retryHint']
 }
 
-export function WorkspaceDiagnosticsPanel({ controller, playthroughId = null, showAll, close }) {
+export function WorkspaceDiagnosticsPanel({ client, controller, playthroughId = null, showAll, close }) {
   const snapshot = useSyncExternalStore(controller.subscribe, controller.getSnapshot)
   const [copyStatus, setCopyStatus] = useState(null)
   const issues = playthroughId === null ? snapshot.issues : snapshot.issues.filter(issue => issue.kind === 'workspace' || issue.playthroughId === playthroughId)
@@ -57,6 +57,7 @@ export function WorkspaceDiagnosticsPanel({ controller, playthroughId = null, sh
       h('button', { type: 'button', className: 'dtv-close', onClick: close, 'aria-label': uiMessage('common.close') }, '×'),
     ),
     h('div', { className: 'dtv-body' },
+      h(OperationLogsPanel, { client }),
       h('p', { className: 'dtv-note' }, uiMessage('diagnostics.scope')),
       snapshot.resources?.workspace?.rootPath ? h('p', { className: 'dtv-note' }, rawText(snapshot.resources.workspace.rootPath)) : null,
       h('div', { className: 'dtv-actions' },
@@ -82,5 +83,60 @@ export function WorkspaceDiagnosticsPanel({ controller, playthroughId = null, sh
         )
       }),
     ),
+  )
+}
+
+// Explicit reads only: no browser telemetry, background polling, or local log copy.
+export function OperationLogsPanel({ client }) {
+  const [operationId, setOperationId] = useState('')
+  const [page, setPage] = useState(null)
+  const [status, setStatus] = useState(null)
+  const [busy, setBusy] = useState(false)
+  const generation = useRef(0)
+  useEffect(() => {
+    setPage(null); setStatus(null); setBusy(false)
+    return () => { generation.current++ }
+  }, [client])
+  const load = async before => {
+    const current = ++generation.current
+    setBusy(true)
+    setStatus(null)
+    try {
+      if (!client?.getOperationLogs) { setStatus('diagnostics.logsUnavailable'); return }
+      const value = await client.getOperationLogs({ operationId: operationId.trim(), before, limit: 100 })
+      if (current === generation.current) setPage(value)
+    } catch (error) {
+      if (current === generation.current) {
+        setPage(null)
+        setStatus(error?.status === 404 ? 'diagnostics.logsUnavailable' : error?.code === 'LOG_CURSOR_EXPIRED' ? 'diagnostics.logsExpired' : 'diagnostics.logsFailed')
+      }
+    } finally { if (current === generation.current) setBusy(false) }
+  }
+  const download = () => {
+    if (!page) return
+    const { records, ...metadata } = page
+    const content = [JSON.stringify({ type: 'metadata', ...metadata }), ...records.map(row => JSON.stringify(row))].join('\n') + '\n'
+    const url = URL.createObjectURL(new Blob([content], { type: 'application/x-ndjson' }))
+    const anchor = document.createElement('a')
+    anchor.href = url
+    anchor.download = 'tavern-operation-logs.jsonl'
+    anchor.click()
+    setTimeout(() => URL.revokeObjectURL(url), 1000)
+  }
+  return h('details', { className: 'dtv-diagnostic-card' },
+    h('summary', null, uiMessage('diagnostics.logsTitle')),
+    h('p', null, uiMessage('diagnostics.logsScope')),
+    h('label', null, uiMessage('diagnostics.logsFilter'), h('input', {
+      value: operationId, maxLength: 128, placeholder: 'operationId',
+      onChange: event => { generation.current++; setBusy(false); setPage(null); setStatus(null); setOperationId(event.target.value) },
+    })),
+    h('div', { className: 'dtv-actions' },
+      h('button', { type: 'button', className: 'dtv-button', disabled: busy, onClick: () => load() }, uiMessage('diagnostics.logsLoad')),
+      h('button', { type: 'button', className: 'dtv-button', disabled: busy || !page?.nextCursor, onClick: () => load(page.nextCursor) }, uiMessage('diagnostics.logsOlder')),
+      h('button', { type: 'button', className: 'dtv-button', disabled: busy || !page, onClick: download }, uiMessage('diagnostics.logsExport')),
+    ),
+    status ? h('p', { role: 'status' }, uiMessage(status)) : null,
+    page ? h('p', { role: 'status' }, uiMessage(page.storage.available && !page.storage.dropped && !page.storage.skippedRecords ? 'diagnostics.logsReady' : 'diagnostics.logsDegraded', { count: page.records.length })) : null,
+    page ? h('pre', null, rawText(JSON.stringify(page, null, 2))) : null,
   )
 }

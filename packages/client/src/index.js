@@ -1193,7 +1193,7 @@ function TavernShell({ useSessions, useWorkspaces, createCleanSession, createCon
       reset: resetConversationSettings,
     })
   } else if (surface === 'diagnostics') {
-    panel = h(WorkspaceDiagnosticsPanel, { controller: diagnostics, playthroughId: diagnosticPlaythroughId, showAll: () => setDiagnosticPlaythroughId(null), close })
+    panel = h(WorkspaceDiagnosticsPanel, { client: playClient, controller: diagnostics, playthroughId: diagnosticPlaythroughId, showAll: () => setDiagnosticPlaythroughId(null), close })
   } else if (surface === 'settings') {
     panel = h(SettingsPanel, {
       settings: uiSettings,

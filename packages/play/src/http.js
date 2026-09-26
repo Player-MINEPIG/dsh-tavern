@@ -13,13 +13,14 @@ export function httpError(status, message, code) {
   return error
 }
 
-export function sendPlayError(res, error) {
+export function sendPlayError(res, error, operationId) {
   const status = error?.status
     ?? (error instanceof TypeError || error instanceof SyntaxError ? 400 : 500)
   const payload = {
     ok: false,
     error: error instanceof Error ? error.message : String(error),
   }
+  if (operationId) payload.operationId = operationId
   if (typeof error?.code === 'string' && error.code !== '') payload.code = error.code
   return sendJson(res, status, payload)
 }

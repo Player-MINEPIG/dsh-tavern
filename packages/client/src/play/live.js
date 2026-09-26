@@ -28,6 +28,7 @@ function createRequester(fetchImpl, root) {
     if (!response.ok || data?.ok === false) {
       const error = new Error(errorMessage(data, response.status))
       error.status = response.status
+      error.operationId = data?.operationId ?? response.headers?.get?.('X-Tavern-Operation-Id') ?? undefined
       error.code = data?.code ?? data?.error?.code
       error.diagnostics = data?.diagnostics ?? data?.error?.diagnostics ?? []
       error.details = data?.details ?? data?.error?.details
@@ -149,6 +150,12 @@ export function createLivePlayClient({
     apiRoot,
     chromeEventsUrl: `${apiRoot}/chrome/events`,
     v1Root,
+
+    async getOperationLogs(filters = {}) {
+      if (filters.format && filters.format !== 'json') throw new TypeError('getOperationLogs returns JSON pages; use the HTTP endpoint for JSONL.')
+      const query = new URLSearchParams(Object.entries(filters).filter(([, value]) => value !== undefined && value !== ''))
+      return v2('GET', `/operation-logs?${query}`)
+    },
 
     async getChrome() {
       return normalizeChrome(await v2('GET', '/chrome'))

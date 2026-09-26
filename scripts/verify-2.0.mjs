@@ -38,6 +38,8 @@ const groups = [
       'test/pending-input-projection.test.mjs',
       'test/play-import-context-session.test.mjs',
       'test/play-operation-log.test.mjs',
+      'test/operation-journal.test.mjs',
+      'test/operation-log-client.test.mjs',
       'test/play-file-mutation-log.test.mjs',
       'test/play-session-import-log.test.mjs',
       'test/play-swipe-controller.test.mjs',

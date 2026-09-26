@@ -120,3 +120,14 @@ test('missing or throwing loggers and injectable logger service are fail-soft', 
   assert.equal(calls.length, 1)
   assert.equal(calls[0][0], 'dsh-tavern')
 })
+
+test('journal exceptions and rejected async logger methods cannot break mutations', async () => {
+  const operation = createOperationContext({
+    operation: 'test.failure-isolation',
+    logger: { info: async () => { throw new Error('logger unavailable') } },
+    journal: { append() { throw new Error('disk unavailable') } },
+  })
+  assert.equal(operation.start(), true)
+  assert.equal(operation.success(), true)
+  await new Promise(resolve => setImmediate(resolve))
+})

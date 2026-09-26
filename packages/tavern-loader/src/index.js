@@ -1,3 +1,5 @@
+import { OperationJournal } from '../../play/src/operation-journal.js'
+import { createOperationContext } from '../../play/src/operation-log.js'
 import { AssemblyStore } from '../../tavern-trace/src/assembly-store.js'
 import { AssemblyRecorder } from '../../tavern-trace/src/assembly-recorder.js'
 import { createAssemblyBodyReader } from '../../tavern-trace/src/body-references.js'
@@ -277,6 +279,15 @@ export function apply(ctx, config = {}) {
     storageDir: config.storageDir,
     logger: ctx.logger,
   })
+  const operationJournal = new OperationJournal(storageDir, { enabled: config.operationLogs?.enabled !== false })
+  const operationContext = (operation, meta) => createOperationContext({ logger: ctx.logger, journal: operationJournal, operation, meta })
+  const startup = operationContext('plugin.start')
+  startup.start()
+  ctx.effect(() => () => {
+    operationContext('plugin.stop').success('disposed')
+    operationJournal.close()
+  })
+  const recordFailure = (operation, error, meta) => operationContext(operation, meta).failure(error)
   const store = new PresetStore(storageDir)
   const characterStore = new CharacterStore(storageDir)
   const worldBookStore = new WorldBookStore(storageDir)
@@ -315,7 +326,7 @@ export function apply(ctx, config = {}) {
     try {
       rpMode.onSessionStart(agent)
     } catch (error) {
-      ctx.logger.warn?.(`dsh-tavern: RP mode ${operation} failed: ${error instanceof Error ? error.message : String(error)}`)
+      recordFailure(`rp.${operation.replaceAll(' ', '-')}`, error, { sessionId })
     }
   }
   let importContexts = null
@@ -350,7 +361,7 @@ export function apply(ctx, config = {}) {
   const assemblyStore = new AssemblyStore(storageDir, config.traceAssemblies)
   const traceStore = new TavernTraceStore(storageDir, config.trace, assemblyStore)
   if (traceStore.resetOversizedFile) {
-    ctx.logger.warn?.('dsh-tavern: legacy Tavern Trace storage exceeded the safe read limit; the original file was retained')
+    recordFailure('trace.legacy.read', { code: 'TRACE_STORAGE_OVERSIZED' })
   }
   const traceRecorder = new TavernTraceRecorder(traceStore)
   const assemblyRecorder = new AssemblyRecorder(assemblyStore)
@@ -362,7 +373,7 @@ export function apply(ctx, config = {}) {
     try {
       return callback()
     } catch (error) {
-      ctx.logger.warn?.(`dsh-tavern: Tavern Trace ${operation} failed: ${error instanceof Error ? error.message : String(error)}`)
+      recordFailure(`trace.${operation.replaceAll(' ', '-')}`, error)
       return undefined
     }
   }
@@ -467,11 +478,16 @@ export function apply(ctx, config = {}) {
   })
 
   ctx.on('agent/created', ({ agent }) => {
-    selections.ensureAgent(agent)
-    pendingInput.ensureSession(agent?.session)
-    // DSH awaits this serial lifecycle before exposing the Agent. A failed
-    // policy initialization must fail registration, not permit an unguarded turn.
-    rpMode.onSessionStart(agent)
+    const operation = operationContext('agent.initialize', { sessionId: agent?.id })
+    operation.start()
+    try {
+      selections.ensureAgent(agent)
+      pendingInput.ensureSession(agent?.session)
+      // DSH awaits this serial lifecycle before exposing the Agent. A failed
+      // policy initialization must fail registration, not permit an unguarded turn.
+      rpMode.onSessionStart(agent)
+      operation.success('initialized')
+    } catch (error) { operation.failure(error); throw error }
   })
 
   ctx.on('agent/pre-step', async (payload, next) => {
@@ -481,7 +497,7 @@ export function apply(ctx, config = {}) {
       rpMode.onBoundary(payload.agent)
       rpMode.enforceReadOnly(payload.agent?.session)
     } catch (error) {
-      ctx.logger.warn?.(`dsh-tavern: RP mode pre-step commit failed: ${error instanceof Error ? error.message : String(error)}`)
+      recordFailure('rp.pre-step', error, { sessionId: payload.agent?.id })
     }
     return decision
   })
@@ -503,6 +519,7 @@ export function apply(ctx, config = {}) {
   ctx.on('agent/assistant-stream', ({ agent, frame }) => parameterFallback.observeFrame(agent, frame))
 
   ctx.on('agent/error', payload => {
+    recordFailure('agent.execution', payload.error, { sessionId: payload.agent?.id })
     traceSafely('assembly failure', () => assemblyRecorder.failure(payload))
   })
 
@@ -524,7 +541,7 @@ export function apply(ctx, config = {}) {
     }
     if (event?.type === 'sandbox/mode') {
       try { rpMode.enforceReadOnly(session) } catch (error) {
-        ctx.logger.warn?.(`dsh-tavern: RP sandbox pin failed: ${error instanceof Error ? error.message : String(error)}`)
+        recordFailure('rp.sandbox.pin', error, { sessionId: session?.id })
       }
     }
     traceSafely('header alignment', () => traceRecorder.observeSessionEvent(session, event))
@@ -643,6 +660,7 @@ export function apply(ctx, config = {}) {
     const playApi = createPlayApiHandler({
       chromeStore,
       workspaceStore: playWorkspaceStore,
+      operationJournal,
       host: playHost,
       logger: ctx.logger,
       membershipService: playMemberships,
@@ -707,8 +725,9 @@ export function apply(ctx, config = {}) {
     if (webServer !== undefined) registerHttpApi({ webServer })
   }
 
-  ctx.logger.info(`dsh-tavern: Tavern profile loader ready (${storageDir})`)
+  startup.success('ready')
   Object.defineProperties(store, {
+    operationJournal: { value: operationJournal, enumerable: false },
     profileLoader: { value: runtime, enumerable: false },
     sessionSelections: { value: selections, enumerable: false },
     characterStore: { value: characterStore, enumerable: false },

@@ -5,6 +5,7 @@ import { createSessionApiHandler } from './sessions.js'
 import { validatePlayDocument } from './timeline.js'
 import { createWorkspaceApiHandler } from './workspace.js'
 import { createOperationContext } from './operation-log.js'
+import { serveOperationLogs } from './operation-journal.js'
 
 export function isPlayApiPath(url) {
   return parsePlayUrl(url, API_V2) !== null
@@ -26,6 +27,7 @@ export function createPlayApiHandler({
   now,
   logger,
   operationOptions,
+  operationJournal,
   membershipService,
   resolveCharacter,
   relinkPlaythrough,
@@ -42,15 +44,17 @@ export function createPlayApiHandler({
 
   const operationDefaults = {
     ...(operationOptions ?? {}),
+    ...(operationJournal ? { journal: operationJournal } : {}),
     ...(logger === undefined ? {} : { logger }),
   }
 
-  function startMutation(req, operation, path) {
+  function startMutation(req, res, operation, path) {
     const context = createOperationContext({
       ...operationDefaults,
       operation,
       meta: { method: String(req.method ?? 'GET').toUpperCase(), ...(path === undefined ? {} : { path }) },
     })
+    res.setHeader('X-Tavern-Operation-Id', context.operationId)
     context.start({ method: String(req.method ?? 'GET').toUpperCase(), ...(path === undefined ? {} : { path }) })
     return context
   }
@@ -72,6 +76,7 @@ export function createPlayApiHandler({
       const route = parsePlayUrl(req.url, API_V2)
       if (route === null) throw httpError(404, 'Not found', 'PLAY_NOT_FOUND')
       const method = String(req.method ?? 'GET').toUpperCase()
+      if (route.rest === '/operation-logs') return serveOperationLogs(operationJournal, req, res, route.searchParams)
       if (route.rest === '/chrome') {
         if (method !== 'GET' && method !== 'PUT') throw httpError(405, 'method not allowed', 'PLAY_METHOD_NOT_ALLOWED')
         return await chromeApi(req, res, { method })
@@ -83,19 +88,19 @@ export function createPlayApiHandler({
         if (method !== 'GET' && method !== 'PUT') throw httpError(405, 'method not allowed', 'PLAY_METHOD_NOT_ALLOWED')
         if (workspaceApi === null) throw httpError(404, 'Not found', 'PLAY_NOT_FOUND')
         if (method === 'GET') return await workspaceApi.getWorkspace(req, res)
-        operation = startMutation(req, 'workspace.bind', 'workspace')
+        operation = startMutation(req, res, 'workspace.bind', 'workspace')
         return await runMutation(operation, () => workspaceApi.putWorkspace(req, res, { operation }))
       }
       if (route.rest === '/workspace/dirs') {
         if (method !== 'POST') throw httpError(405, 'method not allowed', 'PLAY_METHOD_NOT_ALLOWED')
         if (workspaceApi === null) throw httpError(404, 'Not found', 'PLAY_NOT_FOUND')
-        operation = startMutation(req, 'workspace.dir.create')
+        operation = startMutation(req, res, 'workspace.dir.create')
         return await runMutation(operation, () => workspaceApi.postDirs(req, res, { operation }))
       }
       if (route.rest === '/workspace/files') {
         if (workspaceApi === null) throw httpError(404, 'Not found', 'PLAY_NOT_FOUND')
         if (method === 'PUT') {
-          operation = startMutation(req, 'workspace.file.write', safePath(route.searchParams.get('path')))
+          operation = startMutation(req, res, 'workspace.file.write', safePath(route.searchParams.get('path')))
           return await runMutation(operation, () => workspaceApi.files(req, res, {
             method,
             searchParams: route.searchParams,
@@ -121,6 +126,7 @@ export function createPlayApiHandler({
         if (typeof resolveCharacter !== 'function' || typeof relinkPlaythrough !== 'function') {
           throw httpError(404, 'Not found', 'PLAY_NOT_FOUND')
         }
+        operation = startMutation(req, res, 'playthrough.character.relink')
         const playthroughId = safeDecodeId(relinkCharacterMatch[1], 'playthrough id')
         const body = await readBoundedJson(req, 16 * 1024)
         if (typeof body.characterId !== 'string' || body.characterId.trim() === '') {
@@ -131,7 +137,6 @@ export function createPlayApiHandler({
         if (character === null || character === undefined) {
           throw httpError(404, 'character not found', 'CHARACTER_NOT_FOUND')
         }
-        operation = startMutation(req, 'playthrough.character.relink')
         operation.stage('request.validated', { playthroughId, characterId })
         const result = await runMutation(operation, () => relinkPlaythrough(playthroughId, character, { operation }))
         return sendJson(res, 200, result)
@@ -140,12 +145,12 @@ export function createPlayApiHandler({
       if (detachSessionMatch !== null) {
         if (method !== 'POST') throw httpError(405, 'method not allowed', 'PLAY_METHOD_NOT_ALLOWED')
         if (membershipService === undefined) throw httpError(404, 'Not found', 'PLAY_NOT_FOUND')
+        operation = startMutation(req, res, 'playthrough.session.detach')
         const playthroughId = safeDecodeId(detachSessionMatch[1], 'playthrough id')
         const body = await readBoundedJson(req, 16 * 1024)
         if (typeof body.sessionId !== 'string' || body.sessionId.trim() === '') {
           throw httpError(400, 'sessionId must be a non-empty string', 'PLAY_SESSION_ID_INVALID')
         }
-        operation = startMutation(req, 'playthrough.session.detach')
         operation.stage('request.validated', { playthroughId, sessionId: body.sessionId })
         const result = await runMutation(operation, () => membershipService.detach(playthroughId, body.sessionId, { operation }))
         return sendJson(res, 200, result)
@@ -155,7 +160,7 @@ export function createPlayApiHandler({
         if (!['GET', 'PUT', 'DELETE'].includes(method)) throw httpError(405, 'method not allowed', 'PLAY_METHOD_NOT_ALLOWED')
         if (sessionApi === null) throw httpError(404, 'Not found', 'PLAY_NOT_FOUND')
         if (method === 'GET') return await sessionApi.importContext(req, res, importContextMatch[1], method)
-        operation = startMutation(req, method === 'PUT' ? 'session.import-context.bind' : 'session.import-context.unbind')
+        operation = startMutation(req, res, method === 'PUT' ? 'session.import-context.bind' : 'session.import-context.unbind')
         return await runMutation(operation, () => sessionApi.importContext(req, res, importContextMatch[1], method, operation))
       }
       for (const [pattern, action, required] of SESSION_ROUTES) {
@@ -165,7 +170,7 @@ export function createPlayApiHandler({
         if (sessionApi === null) throw httpError(404, 'Not found', 'PLAY_NOT_FOUND')
         if (action === 'messages' || action === 'coordinates') return await sessionApi[action](req, res, match[1])
         const operationName = action === 'create' ? 'session.create' : action === 'branch' ? 'session.branch' : 'session.user-message'
-        operation = startMutation(req, operationName)
+        operation = startMutation(req, res, operationName)
         return await runMutation(operation, () => action === 'create'
           ? sessionApi[action](req, res, operation)
           : sessionApi[action](req, res, match[1], operation))
@@ -173,7 +178,7 @@ export function createPlayApiHandler({
       throw httpError(404, 'Not found', 'PLAY_NOT_FOUND')
     } catch (error) {
       operation?.failure(error, { status: errorStatus(error) })
-      return sendPlayError(res, error)
+      return sendPlayError(res, error, operation?.operationId)
     }
   }
 }

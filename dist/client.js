@@ -143,6 +143,17 @@ var zh_CN_default = Object.freeze({
   "diagnostics.workspaceSummary": "\u26A0 \u5DE5\u4F5C\u533A\u68C0\u67E5\u5931\u8D25 \xB7 \u67E5\u770B\u8BE6\u60C5",
   "diagnostics.dismiss": "\u5173\u95ED\u95EE\u9898\u6458\u8981\uFF08\u4ECD\u53EF\u5728 DT \u2192 \u8BCA\u65AD\u4E2D\u67E5\u770B\uFF09",
   "diagnostics.playthrough": "\u67E5\u770B\u300C{name}\u300D\u7684\u95EE\u9898",
+  "diagnostics.logsTitle": "\u64CD\u4F5C\u65E5\u5FD7",
+  "diagnostics.logsScope": "\u4EC5\u8BB0\u5F55\u540E\u7AEF\u64CD\u4F5C\u5143\u6570\u636E\uFF0C\u4E0E\u5F53\u524D\u95EE\u9898\u548C Prompt Trace \u5206\u5F00\u3002\u65E5\u5FD7\u4F1A\u8F6E\u8F6C\uFF0C\u4E0D\u662F\u4E1A\u52A1\u5386\u53F2\uFF1B\u5BFC\u51FA\u4EC5\u5305\u542B\u5F53\u524D\u9875\uFF0C\u53EF\u80FD\u5305\u542B\u79C1\u5BC6\u6807\u8BC6\uFF0C\u5206\u4EAB\u524D\u8BF7\u68C0\u67E5\u3002",
+  "diagnostics.logsFilter": "\u6309 operationId \u7B5B\u9009\uFF08\u53EF\u7559\u7A7A\uFF09",
+  "diagnostics.logsLoad": "\u67E5\u8BE2\uFF0F\u5237\u65B0",
+  "diagnostics.logsOlder": "\u66F4\u65E9\u4E00\u9875",
+  "diagnostics.logsExport": "\u5BFC\u51FA\u5F53\u524D\u9875",
+  "diagnostics.logsUnavailable": "\u6B64 Host \u6216\u5BA2\u6237\u7AEF\u5C1A\u4E0D\u63D0\u4F9B\u64CD\u4F5C\u65E5\u5FD7\u3002",
+  "diagnostics.logsFailed": "\u65E5\u5FD7\u8BFB\u53D6\u5931\u8D25\uFF0C\u8BF7\u7A0D\u540E\u91CD\u8BD5\u3002",
+  "diagnostics.logsExpired": "\u6B64\u9875\u5DF2\u88AB\u8F6E\u8F6C\u79FB\u9664\uFF0C\u8BF7\u5237\u65B0\u67E5\u8BE2\u3002",
+  "diagnostics.logsReady": "\u5F53\u524D\u9875 {count} \u6761\u8BB0\u5F55\u3002",
+  "diagnostics.logsDegraded": "\u65E5\u5FD7\u4E0D\u5B8C\u6574\u6216\u5B58\u50A8\u964D\u7EA7\uFF1B\u5F53\u524D\u9875 {count} \u6761\u8BB0\u5F55\u3002\u8BE6\u89C1 storage \u72B6\u6001\u3002",
   "diagnostics.scope": "\u5F53\u524D RP \u5DE5\u4F5C\u533A\u7684\u95EE\u9898\u3002\u4FEE\u590D\u540E\u91CD\u65B0\u68C0\u67E5\u5373\u53EF\u66F4\u65B0\uFF1B\u5173\u95ED\u4FA7\u680F\u6458\u8981\u4E0D\u4F1A\u5220\u9664\u95EE\u9898\u3002",
   "diagnostics.count": "{count} \u4E2A\u95EE\u9898",
   "diagnostics.sessionMissing": "\u6B64\u5468\u76EE\u5F15\u7528\u7684 DSH \u4F1A\u8BDD\u65E5\u5FD7\u7F3A\u5931\u3002",
@@ -912,6 +923,17 @@ var en_default = Object.freeze({
   "diagnostics.workspaceSummary": "\u26A0 Workspace check failed \xB7 Details",
   "diagnostics.dismiss": "Dismiss summary (still available in DT \u2192 Diagnostics)",
   "diagnostics.playthrough": "View problems for {name}",
+  "diagnostics.logsTitle": "Operation logs",
+  "diagnostics.logsScope": "Backend operation metadata, separate from current problems and Prompt Trace. Logs rotate and are not business history. Export includes only the current page and may contain private identifiers; review before sharing.",
+  "diagnostics.logsFilter": "Filter by operationId (optional)",
+  "diagnostics.logsLoad": "Load / refresh",
+  "diagnostics.logsOlder": "Older page",
+  "diagnostics.logsExport": "Export this page",
+  "diagnostics.logsUnavailable": "This Host or client does not provide operation logs.",
+  "diagnostics.logsFailed": "Could not read logs. Try again.",
+  "diagnostics.logsExpired": "This page has expired through rotation. Refresh the query.",
+  "diagnostics.logsReady": "{count} records on this page.",
+  "diagnostics.logsDegraded": "Logs are incomplete or storage is degraded; this page has {count} records. See storage status.",
   "diagnostics.scope": "Problems in the current RP workspace. Recheck after fixing them; dismissing the sidebar summary does not remove problems.",
   "diagnostics.count": "{count} problems",
   "diagnostics.sessionMissing": "DSH session logs referenced by this playthrough are missing.",
@@ -11726,7 +11748,7 @@ function explanation(issue) {
   if (issue.code === "PLAY_PATH_NOT_FOUND") return ["diagnostics.fileMissing", "diagnostics.restoreFile"];
   return [issue.kind === "workspace" ? "diagnostics.workspaceFailed" : "diagnostics.timelineFailed", "diagnostics.retryHint"];
 }
-function WorkspaceDiagnosticsPanel({ controller: controller2, playthroughId = null, showAll, close }) {
+function WorkspaceDiagnosticsPanel({ client, controller: controller2, playthroughId = null, showAll, close }) {
   const snapshot = (0, import_react12.useSyncExternalStore)(controller2.subscribe, controller2.getSnapshot);
   const [copyStatus, setCopyStatus] = (0, import_react12.useState)(null);
   const issues = playthroughId === null ? snapshot.issues : snapshot.issues.filter((issue) => issue.kind === "workspace" || issue.playthroughId === playthroughId);
@@ -11750,6 +11772,7 @@ function WorkspaceDiagnosticsPanel({ controller: controller2, playthroughId = nu
     h9(
       "div",
       { className: "dtv-body" },
+      h9(OperationLogsPanel, { client }),
       h9("p", { className: "dtv-note" }, uiMessage("diagnostics.scope")),
       snapshot.resources?.workspace?.rootPath ? h9("p", { className: "dtv-note" }, rawText(snapshot.resources.workspace.rootPath)) : null,
       h9(
@@ -11783,6 +11806,80 @@ function WorkspaceDiagnosticsPanel({ controller: controller2, playthroughId = nu
         );
       })
     )
+  );
+}
+function OperationLogsPanel({ client }) {
+  const [operationId, setOperationId] = (0, import_react12.useState)("");
+  const [page, setPage] = (0, import_react12.useState)(null);
+  const [status, setStatus] = (0, import_react12.useState)(null);
+  const [busy, setBusy] = (0, import_react12.useState)(false);
+  const generation = (0, import_react12.useRef)(0);
+  (0, import_react12.useEffect)(() => {
+    setPage(null);
+    setStatus(null);
+    setBusy(false);
+    return () => {
+      generation.current++;
+    };
+  }, [client]);
+  const load = async (before) => {
+    const current3 = ++generation.current;
+    setBusy(true);
+    setStatus(null);
+    try {
+      if (!client?.getOperationLogs) {
+        setStatus("diagnostics.logsUnavailable");
+        return;
+      }
+      const value = await client.getOperationLogs({ operationId: operationId.trim(), before, limit: 100 });
+      if (current3 === generation.current) setPage(value);
+    } catch (error) {
+      if (current3 === generation.current) {
+        setPage(null);
+        setStatus(error?.status === 404 ? "diagnostics.logsUnavailable" : error?.code === "LOG_CURSOR_EXPIRED" ? "diagnostics.logsExpired" : "diagnostics.logsFailed");
+      }
+    } finally {
+      if (current3 === generation.current) setBusy(false);
+    }
+  };
+  const download = () => {
+    if (!page) return;
+    const { records, ...metadata } = page;
+    const content = [JSON.stringify({ type: "metadata", ...metadata }), ...records.map((row) => JSON.stringify(row))].join("\n") + "\n";
+    const url = URL.createObjectURL(new Blob([content], { type: "application/x-ndjson" }));
+    const anchor = document.createElement("a");
+    anchor.href = url;
+    anchor.download = "tavern-operation-logs.jsonl";
+    anchor.click();
+    setTimeout(() => URL.revokeObjectURL(url), 1e3);
+  };
+  return h9(
+    "details",
+    { className: "dtv-diagnostic-card" },
+    h9("summary", null, uiMessage("diagnostics.logsTitle")),
+    h9("p", null, uiMessage("diagnostics.logsScope")),
+    h9("label", null, uiMessage("diagnostics.logsFilter"), h9("input", {
+      value: operationId,
+      maxLength: 128,
+      placeholder: "operationId",
+      onChange: (event) => {
+        generation.current++;
+        setBusy(false);
+        setPage(null);
+        setStatus(null);
+        setOperationId(event.target.value);
+      }
+    })),
+    h9(
+      "div",
+      { className: "dtv-actions" },
+      h9("button", { type: "button", className: "dtv-button", disabled: busy, onClick: () => load() }, uiMessage("diagnostics.logsLoad")),
+      h9("button", { type: "button", className: "dtv-button", disabled: busy || !page?.nextCursor, onClick: () => load(page.nextCursor) }, uiMessage("diagnostics.logsOlder")),
+      h9("button", { type: "button", className: "dtv-button", disabled: busy || !page, onClick: download }, uiMessage("diagnostics.logsExport"))
+    ),
+    status ? h9("p", { role: "status" }, uiMessage(status)) : null,
+    page ? h9("p", { role: "status" }, uiMessage(page.storage.available && !page.storage.dropped && !page.storage.skippedRecords ? "diagnostics.logsReady" : "diagnostics.logsDegraded", { count: page.records.length })) : null,
+    page ? h9("pre", null, rawText(JSON.stringify(page, null, 2))) : null
   );
 }
 
@@ -13520,6 +13617,7 @@ function createRequester(fetchImpl, root) {
     if (!response.ok || data?.ok === false) {
       const error = new Error(errorMessage4(data, response.status));
       error.status = response.status;
+      error.operationId = data?.operationId ?? response.headers?.get?.("X-Tavern-Operation-Id") ?? void 0;
       error.code = data?.code ?? data?.error?.code;
       error.diagnostics = data?.diagnostics ?? data?.error?.diagnostics ?? [];
       error.details = data?.details ?? data?.error?.details;
@@ -13625,6 +13723,11 @@ function createLivePlayClient({
     apiRoot,
     chromeEventsUrl: `${apiRoot}/chrome/events`,
     v1Root,
+    async getOperationLogs(filters = {}) {
+      if (filters.format && filters.format !== "json") throw new TypeError("getOperationLogs returns JSON pages; use the HTTP endpoint for JSONL.");
+      const query = new URLSearchParams(Object.entries(filters).filter(([, value]) => value !== void 0 && value !== ""));
+      return v2("GET", `/operation-logs?${query}`);
+    },
     async getChrome() {
       return normalizeChrome(await v2("GET", "/chrome"));
     },
@@ -15586,7 +15689,7 @@ function TavernShell({ useSessions, useWorkspaces, createCleanSession, createCon
       reset: resetConversationSettings
     });
   } else if (surface === "diagnostics") {
-    panel = h14(WorkspaceDiagnosticsPanel, { controller: diagnostics, playthroughId: diagnosticPlaythroughId, showAll: () => setDiagnosticPlaythroughId(null), close });
+    panel = h14(WorkspaceDiagnosticsPanel, { client: playClient, controller: diagnostics, playthroughId: diagnosticPlaythroughId, showAll: () => setDiagnosticPlaythroughId(null), close });
   } else if (surface === "settings") {
     panel = h14(SettingsPanel, {
       settings: uiSettings,

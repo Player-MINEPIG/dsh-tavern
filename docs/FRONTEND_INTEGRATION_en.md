@@ -160,6 +160,8 @@ configuration-only consumers can use preview plus resource reads instead.
 - DSH upgrade: first check manifest inject, public package root exports, slot owner props, store fields, and Host RPC. Then verify native/play, rapid switching, and uninstall fallback.
 - If a public seam disappears: turn the corresponding enhancement off, keep native UI, then discuss an adapter. Do not temporarily switch to a private API.
 
+Optional log access uses `GET /pmp-dsh-tavern/api/v2/operation-logs`, with operationId, sessionId or playthroughId filters and paginated export. A failed mutation's `operationId` / `X-Tavern-Operation-Id` correlates backend stages. Inspect `storage` for degraded logs; missing records do not establish business outcomes. An older Host returning 404 must retain current-problem diagnostics and normal operations. See the [log API](API_en.md#persistent-operation-logs-and-frontend-contract) for parameters, limits and errors. Frontends need not upload console output or bodies, and must not recover DSH history or MVU state from these logs.
+
 ## 9. Pre-release self-test
 
 1. In `native`, no third-party RP slot/UI remains and native Chat works.
