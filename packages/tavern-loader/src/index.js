@@ -1,3 +1,4 @@
+import { randomUUID } from 'node:crypto'
 import { AssemblyStore } from '../../tavern-trace/src/assembly-store.js'
 import { AssemblyRecorder } from '../../tavern-trace/src/assembly-recorder.js'
 import { createAssemblyBodyReader } from '../../tavern-trace/src/body-references.js'
@@ -562,6 +563,8 @@ export function apply(ctx, config = {}) {
       return {
         ...decision,
         messages: [...messages, {
+          // 宿主不会替 pre-step 决策消息补 id；缺 id 的消息落盘过不了 V4 校验，resume 直接拒载（2026-09-29 踩过）。
+          id: randomUUID(),
           role: 'user',
           content: [{ type: 'text', text: '[本轮激活的世界书条目 —— 世界事实，供描写参考]\n\n' + text + '[/本轮激活的世界书条目]' }],
           source: { kind: 'plugin:pmp-dsh-tavern', form: 'runtime-lore' },
