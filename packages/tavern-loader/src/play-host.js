@@ -46,11 +46,12 @@ export function createPlayHost({
       return callController('directoryPicker.createDirectory', directoryPickerController, 'createDirectory', path, name)
     },
 
-    async createSession({ workspaceId, cwd, title }) {
+    async createSession({ workspaceId, cwd, title }, { operation } = {}) {
       const payload = workspaceId ? { workspaceId } : { cwd }
       const value = await callController('session.create', sessionController, 'create', payload)
       const sessionId = value?.sessionId
       if (typeof sessionId !== 'string' || sessionId === '') throw missing('session.create')
+      operation?.checkpoint('session.created', { sessionId })
       if (typeof title === 'string' && title !== '' && typeof sessionController?.rename === 'function') {
         try {
           await sessionController.rename({ sessionId, title })
@@ -64,13 +65,15 @@ export function createPlayHost({
       return { sessionId }
     },
 
-    async forkSession({ sessionId, atSeq, sessionFormatVersion }) {
+    async forkSession({ sessionId, atSeq, sessionFormatVersion }, { operation } = {}) {
       try {
         const coordinates = await this.coordinates(sessionId)
         requireCoordinates(sessionFormatVersion, coordinates)
         importContexts?.()?.ensureCoordinates?.(sessionId, coordinates)
         if (typeof sessionController?.resolveAgent !== 'function') throw missing('session.resolveAgent')
         const value = await callController('session.fork', sessionController, 'fork', { sessionId, atSeq })
+        if (typeof value?.sessionId !== 'string' || value.sessionId === '') throw missing('session.fork')
+        operation?.checkpoint('session.created', { sessionId: value.sessionId })
         try {
           const resolved = await callController('session.resolveAgent', sessionController, 'resolveAgent', value.sessionId)
           if (resolved?.error !== undefined) throw resolved.error

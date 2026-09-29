@@ -12,6 +12,10 @@ DSH 破坏性更新评估：[原生依赖架构图与分级矩阵](assets/dsh-de
 
 可编辑源文件：[dsh-tavern-architecture.drawio](assets/dsh-tavern-architecture.drawio)。图中 DSH session history 是唯一权威事件历史；Tavern 的外部目录只保存资源、选择、设置、Trace 与周目投影。
 
+## 操作诊断与兼容边界
+
+操作 journal 是 Tavern 自有的有界诊断存储，与当前问题投影、Prompt Trace 和 DSH 权威历史各自独立。API 路由声明拥有操作名和固定路径模板，统一边界负责开始／终态；业务与既有 `play-host.js` 适配器只报告少量已确认检查点。journal 不依赖 DSH 服务、事件或历史格式，不新增 DSH 监听器。DSH 升级优先只改已有兼容层；只有业务语义改变才调整事件合同。查询与 UI 依赖 [操作日志合同](OPERATION_LOGS.md)，不依赖内部函数阶段名。
+
 ## 目标 Host 与持久数据边界
 
 本 checkout 的 Tavern 2.4.3 合同面向 DSH 0.1.7-rc.1、Cordis 4.0.4 与 `dsh-util-crypto` 0.1.7-rc.1，不支持旧 Host 运行时。串行 `agent/created` listener 在首次使用前初始化选择、公开 pending-input 投影与 RP；初始化失败向外传播。
@@ -186,7 +190,7 @@ DSH 当前没有角色卡、周目、greeting、跨 session adopted variant、ST
 - 内置 live client 管理 revision 回读/缓存、`null` create-only 和有限 CAS 重放。重放只重新执行纯文档 mutator；外部 session/branch/user-message/目录等副作用不重复。仅有 get/put 的自定义 client 只获一次兼容 fallback，不获并发重放保证。
 - 稳定 focus 由 playthrough id 派生；显式 path 路由只作为兼容入口。目标锁执行逐段路径检查、realpath 复核、排他临时文件与 rename 前复验；纯 Node 不承诺跨进程或内核级 no-follow 事务。
 - Tavern branch/swipe 复制不含正文的 import lineage；同一终态前的 provider retry 可复用 claim，终态后的新 claim 不注入。第三方原生 fork 不在 Tavern 的拦截范围。
-- 上述能力不构成跨文件周目事务。workspace bind、目录创建、文件写入、playthrough detach/relink、session create/branch/user-message 和 import-context PUT/DELETE 各自在单次请求内使用一个 `operationId` 写无正文 `ctx.logger` 阶段记录。不同 API 请求不共享 operationId；只读 GET、focus 与 chrome 不产生日志；浏览器日志和持久 journal 不在合同内。客户端根据已完成阶段、回读结果与稳定错误码恢复。
+- 上述能力不构成跨文件周目事务。受监控变更由统一 API 边界记录关联 ID 与终态，少量检查点记录已确认的创建／写入结果；查询日志不产生日志。日志不能驱动自动恢复，需结合状态回读和错误码。完整覆盖、事件版本与容量见 [操作日志合同](OPERATION_LOGS.md)。
 
 插件自有资源变化继续使用有界的 Tavern refresh event；Session / Workspace / live Chat 变化必须订阅 DSH store，不能用该自定义事件替代 Host 状态管理。
 

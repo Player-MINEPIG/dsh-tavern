@@ -13,6 +13,10 @@ This page records the current architecture and release-review gates.
 
 Editable source: [dsh-tavern-architecture.drawio](assets/dsh-tavern-architecture.drawio). DSH session history is the only authoritative event history in the diagram; Tavern's external directory stores only resources, selections, settings, Trace, and playthrough projections.
 
+## Operation diagnostics and compatibility
+
+The operation journal is bounded Tavern-owned diagnostic storage, separate from current-problem projection, Prompt Trace and DSH authoritative history. Route declarations own operation names and fixed path templates; a shared boundary records starts/terminals. Business code and the existing play-host.js adapter report a few confirmed checkpoints. The journal depends on no DSH service, event or history format and adds no DSH listener. A DSH upgrade should normally change the existing compatibility layer; changed business semantics require an event contract change. Queries and UI consume the [operation log contract](OPERATION_LOGS_en.md), not internal function stages.
+
 ## Target Host and durable-data boundary
 
 This checkout's Tavern 2.4.3 contract targets DSH 0.1.7-rc.1, Cordis 4.0.4, and `dsh-util-crypto` 0.1.7-rc.1. Older Host runtimes are unsupported. The serial `agent/created` listener initializes selection, public pending-input projection, and RP before first use; initialization failure propagates.
@@ -187,7 +191,7 @@ Current implementation boundaries:
 - The bundled live client manages revision read-back/cache, `null` create-only, and bounded CAS replay. Replay reruns pure document mutators only, never Session/branch/user-message/directory side effects. Custom clients exposing only get/put receive one compatibility fallback with no concurrent-replay guarantee.
 - Stable focus is derived by playthrough id; explicit-path routes are compatibility entries. Target locks perform per-segment path checks, realpath verification, exclusive temporary writes, and revalidation before rename. Pure Node does not promise cross-process or kernel-level no-follow transactions.
 - Tavern branch/swipe copies body-free import lineage. Provider retries before the same terminal may reuse the claim; new claims after terminal do not inject. Third-party native forks are outside Tavern interception.
-- These operations do not form a cross-file playthrough transaction. Workspace bind, directory creation, file writes, playthrough detach/relink, Session create/branch/user-message, and import-context PUT/DELETE each log body-free stages through `ctx.logger` with one `operationId` within that request. Separate API calls do not share operation IDs. Read-only GET/focus/chrome produce no operation log; browser logging and a durable journal are outside this contract. Clients recover using completed stages, read-back, and stable error codes.
+- These operations do not form a cross-file transaction. The shared API boundary records correlation and terminals for monitored mutations; a few checkpoints record confirmed creations/writes. Reading logs emits no logs. Recovery requires state read-back and error codes, not automatic log replay. See the [operation log contract](OPERATION_LOGS_en.md) for coverage, event versions and capacity.
 
 Plugin-owned resource changes continue to use a bounded Tavern refresh event. Session / Workspace / live Chat changes must subscribe to DSH stores. That custom event must not replace Host state management.
 

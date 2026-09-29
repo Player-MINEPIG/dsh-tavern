@@ -367,19 +367,14 @@ export function createWorkspaceApiHandler(store, { validateFile, coordinates } =
     },
     async putWorkspace(req, res, { operation } = {}) {
       const body = await readBoundedJson(req, MAX_BINDING_BYTES)
-      operation?.stage('request.validated')
-      operation?.stage('mutation.begin', { path: 'workspace' })
       const result = await store.bindRoot(body?.path)
-      operation?.stage('mutation.committed', { path: 'workspace' })
+      operation?.checkpoint('workspace.bound')
       return sendJson(res, 200, result)
     },
     async postDirs(req, res, { operation } = {}) {
       const body = await readBoundedJson(req, MAX_BINDING_BYTES)
-      const path = safeOperationPath(body?.path)
-      operation?.stage('request.validated', path === undefined ? {} : { path })
-      operation?.stage('mutation.begin', path === undefined ? {} : { path })
       const result = await store.createDir(body?.path)
-      operation?.stage('mutation.committed', { path: result.path })
+      operation?.checkpoint('workspace.directory.created')
       return sendJson(res, 200, result)
     },
     async files(req, res, { method, searchParams, operation } = {}) {
@@ -395,22 +390,13 @@ export function createWorkspaceApiHandler(store, { validateFile, coordinates } =
         const body = await readBoundedJson(req, MAX_FILE_BYTES + 1024)
         const normalizedPath = safeOperationPath(path)
         await checkCoordinates(normalizedPath, body?.content)
-        operation?.stage('request.validated', normalizedPath === undefined ? {} : { path: normalizedPath })
-        operation?.stage('mutation.begin', normalizedPath === undefined ? {} : { path: normalizedPath })
         const managed = isManagedDocument(posixPlayPath(path))
-        const validate = typeof validateFile !== 'function'
-          ? validateFile
-          : (filePath, content) => {
-              const result = validateFile(filePath, content)
-              operation?.stage('payload.validated', { path: filePath })
-              return result
-            }
         const result = store.writeFile(path, body?.content, {
-          validate,
+          validate: validateFile,
           expectedRevision: body?.expectedRevision,
           expectedRevisionPresent: managed && Object.hasOwn(body ?? {}, 'expectedRevision'),
         })
-        operation?.stage('mutation.committed', { path: result.path })
+        operation?.checkpoint('workspace.file.written')
         return sendJson(res, 200, result)
       }
       throw httpError(405, 'method not allowed', 'PLAY_METHOD_NOT_ALLOWED')

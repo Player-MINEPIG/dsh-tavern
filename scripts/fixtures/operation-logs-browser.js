@@ -10,7 +10,7 @@ async function run() {
   setClientUiSettings({ locale: 'en' })
   const host = document.createElement('section'); document.body.append(host)
   const root = createRoot(host)
-  const page = { ok: true, schemaVersion: 1, records: [{ id: 'a', operationId: 'op', stage: '<script>FAIL</script>' }], nextCursor: 'cursor', storage: { available: true }, limits: {} }
+  const page = { ok: true, schemaVersion: 1, records: [{ id: 'a', operationId: 'op', stage: '<script>FAIL</script>' }, { id: 'b', eventVersion: 1, event: 'operation.completed', result: 'accepted', route: '/sessions/:id/user-message' }], nextCursor: 'cursor', storage: { available: true }, limits: {} }
   const calls = []
   const client = { async getOperationLogs(options) { calls.push(options); return page } }
   const mount = client => flushSync(() => root.render(createElement(OperationLogsPanel, { client })))
@@ -19,6 +19,7 @@ async function run() {
   check('panel makes no automatic requests', calls.length === 0)
   await click('Load / refresh')
   check('explicit load renders metadata as text', calls.length === 1 && host.textContent.includes('<script>FAIL</script>') && !host.querySelector('script'))
+  check('legacy and versioned events render together', host.textContent.includes('operation.completed') && host.textContent.includes('accepted'))
   await click('Older page')
   check('older page uses returned cursor', calls[1].before === 'cursor')
   let blob
@@ -28,7 +29,7 @@ async function run() {
   HTMLAnchorElement.prototype.click = function () { check('download filename is stable', this.download === 'tavern-operation-logs.jsonl') }
   await click('Export this page')
   const lines = (await blob.text()).trim().split('\n').map(JSON.parse)
-  check('export contains metadata and exactly the displayed page', lines[0].type === 'metadata' && lines[0].nextCursor === 'cursor' && lines[1].id === 'a' && lines.length === 2)
+  check('export contains metadata and exactly the displayed page', lines[0].type === 'metadata' && lines[0].nextCursor === 'cursor' && lines[1].id === 'a' && lines[2].eventVersion === 1 && lines.length === 3)
   URL.createObjectURL = originalCreate; HTMLAnchorElement.prototype.click = originalClick
   mount({ getOperationLogs: async () => { throw Object.assign(new Error('old Host'), { status: 404 }) } }); await tick()
   await click('Load / refresh')

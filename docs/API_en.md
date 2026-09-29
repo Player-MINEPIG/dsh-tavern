@@ -18,7 +18,7 @@ message coordinates, branch inputs, and unmigrated timeline references.
 <a id="impact-on-third-party-consumers-in-240"></a>
 ## Impact on third-party consumers in the current version
 
-2.4.3 updates the supported target to DSH `0.1.7-rc.1` without adding HTTP routes or fields or changing successful response shapes. The following describes the 2.4 series changes from earlier releases.
+The current source builds on the 2.4.3 compatibility baseline for DSH `0.1.7-rc.1`, with optional operation log reads and correlation fields; older Hosts may lack this capability. The following describes the 2.4 series changes from earlier releases.
 
 Compared with `v2.3.2`, the API root, v1/v2/v3 prefixes and existing routes remain.
 This does not mean that every accepted input, historical reference or Host integration behavior is unchanged.
@@ -91,7 +91,10 @@ For public contracts and read timing, see [consumer read paths and compatibility
 An assembled section is not necessarily an original source field; current resources, historical sections,
 and runtime assembly are not interchangeable.
 
-## v2 stable surface
+<a id="v2-stable-surface"></a>
+## v2 Tavern-owned interfaces
+
+Tavern ownership means Tavern maintains interface semantics, not that DSH integration is version-independent. See the [operation log contract](OPERATION_LOGS_en.md) for stable surfaces, upgrade impact and event versions.
 
 Prefix: `/pmp-dsh-tavern/api/v2`.
 
@@ -590,35 +593,11 @@ This is still a client composition of existing atomic APIs, not a mega-transacti
 
 ### Backend operation-log utility
 
-`packages/play/src/operation-log.js` exports `createOperationContext` and `operationLogConstants` for workspace/catalog/timeline, session/import, and playthrough mutations. Currently wired write operations:
-
-- `PUT /workspace` (bind), `POST /workspace/dirs`, `PUT /workspace/files?path=`;
-- `POST /sessions`, `POST /sessions/:id/branch`, `POST /sessions/:id/user-message`;
-- `PUT /sessions/:id/import-context` and `DELETE /sessions/:id/import-context`;
-- `POST /playthroughs/:id/detach-session` and `POST /playthroughs/:id/relink-character`.
-
-Read-only GET does not produce operation logs. It accepts a Cordis `ctx.logger` (or its callable logger service) and an optional journal and writes one line prefixed `dsh-tavern.operation `. The rest of the line is stable JSON. An operation stores its name and start time when the context is created, and may record `start`, several `stage`s, and one `success` or one `failure`. Success and failure terminals include `result` and non-negative `durationMs`. Failure records only a stable `error.code` (`UNKNOWN_ERROR` if missing) and optional HTTP status, at `warn`.
-
-The payload whitelist is only `operationId`, `operation`, `stage`, `result`, `errorCode`, `status`, `durationMs`, `method`, `sessionId`, `playthroughId`, `path`. Identifiers and paths are normalized for type, length, and control characters. Prompt, QA, character card, preset, regex, resource bodies, request body, message text, and unknown fields are never emitted, including as body summaries. Missing logger, missing method, or a logger throw fail-soft. A stage or terminal call after terminal is invalid and does not rewrite the terminal.
+Production code uses the Tavern-owned event contract; low-level `createOperationContext` remains available for existing callers. Stage names no longer define public event semantics. See the [operation log contract](OPERATION_LOGS_en.md).
 
 ### Persistent operation logs and frontend contract
 
-Existing v1 resources, v2 workspace primitives and v3 Trace cannot query operation lifecycles. One read-only primitive fills that gap: `GET /pmp-dsh-tavern/api/v2/operation-logs`. It inherits the Tavern API Host security boundary. There is no write, browser-upload, clear or repair endpoint; callers compose filtering and pagination.
-
-- Query parameters: exact `operationId`, `sessionId`, `playthroughId`; `level=info|warn`; `limit=1..1000` (default 200); `before=<record id>` for older entries; `format=json|jsonl` (default JSON). Empty, duplicate or unknown parameters return 400 `LOG_QUERY_INVALID`.
-- JSON returns `{ok:true,schemaVersion:1,records,nextCursor,storage,limits}`, newest writes first. Keep the same filters with `nextCursor`; an unavailable/rotated cursor returns 409 `LOG_CURSOR_EXPIRED`, requiring refresh. Pagination is not a snapshot across requests.
-- `storage` includes `available`, `code`, this instance's `dropped` count and the query's corrupt `skippedRecords` count. `LOG_DISABLED`, `LOG_WRITER_BUSY`, `LOG_STORAGE_UNAVAILABLE`, `LOG_LOCK_RECOVERY_REQUIRED` and `LOG_CLOSED` mean degraded storage; HTTP 200 or empty `records` alone does not establish health. Readable old records may still be returned. A disk failure stops writes for this instance; fix the storage and restart the Host.
-- `format=jsonl` downloads the same page, with a first `{type:"metadata",...}` line preserving status, limits and the next cursor, followed by one record per line. Responses use `no-store`. This is not a complete-history export; request additional pages as needed. It includes neither Trace nor the current problem report.
-- Records add `schemaVersion:1`, `id`, this plugin instance's `runId`, UTC `timestamp` and `level` to the operation whitelist. `id` is `<runId>:<sequence>`; ordering does not depend on wall clock time. **Persistence and export exclude `path`**, with the whitelist applied again on reads. Identifiers have a 128-character limit; operation/stage/result/errorCode 96; method 32; each record is at most 4096 bytes. Existing `ctx.logger` line format stays compatible.
-- Instrumented v2 mutation responses include `X-Tavern-Operation-Id`; failed JSON additionally includes `operationId`. This correlates one request, not a cross-request transaction. Business `code` matches failure `errorCode` (`UNKNOWN_ERROR` without a stable code). Routing/security rejection or requests before an operation starts may lack this ID. `createLivePlayClient` preserves it as `error.operationId` and provides `getOperationLogs(filters)`. Older Hosts return 404; frontends should disable/hide log access while retaining current problem diagnostics.
-
-By default the plugin stores at most four JSONL files in `operation-logs/` under Tavern storage, at most 1 MiB each, removing the oldest file at capacity. There is no daily archive or minimum retention period. Fixed file limits bound disk and query input; there is no unbounded write queue. New directories/files use 0700/0600 where supported. `operationLogs: { enabled: false }` disables this store and reading its history through queries, while retaining Cordis logging; it does not delete existing files. The directory is not used for migration, session replay or recovery decisions and may be deleted with the Host stopped.
-
-Concurrent requests in one Host are serialized by synchronous bounded file writes. Only one journal writer may own a storage directory; a second instance can read old logs but reports `LOG_WRITER_BUSY`. Normal disposal releases ownership. After process death, startup checks the owner PID, reclaims a dead owner and discards an incomplete final line. An orphan startup guard, reused PID or unconfirmed owner death fails closed: stop all Hosts using the directory, confirm no writer remains, then remove `.guard`/`.owner` and restart. This is for local filesystems, not multi-machine shared writes. There is no fsync transaction guarantee; crashes, interrupted rotation or capacity eviction may lose records. Missing terminal records prove neither business success nor failure.
-
-Coverage includes the mutation operations above, `plugin.start`/`plugin.stop`, `agent.initialize`, `agent.execution` failures and previously swallowed RP/Trace diagnostic failures. Startup records start/ready and normal stop records disposed; interrupted work never gets a fabricated terminal. It does not intercept all Cordis output or cover every plugin or v1 resource write. Journal/logger failures do not change business outcomes. Error message, stack, cause, bodies, body lengths and summaries never enter the journal.
-
-The bundled diagnostics panel explicitly loads a recent page, filters by operationId, shows older pages and exports the displayed page. Browsers collect no console, network body, input or click history; there is no localStorage log or background polling. Current workspace problems describe current reads; the operation journal explains backend steps; Prompt Trace explains model assembly and official references. None replaces another. Logs cannot become authoritative DSH history, resource data or future MVU state. Exports exclude bodies but retain private identifiers and need review before sharing.
+`GET /pmp-dsh-tavern/api/v2/operation-logs` provides filters, pagination and single-page JSONL export. Query fields, record format, stable events, capacity and upgrade rules are maintained in the [operation log contract](OPERATION_LOGS_en.md).
 
 ## v3 prompt assembly audit
 

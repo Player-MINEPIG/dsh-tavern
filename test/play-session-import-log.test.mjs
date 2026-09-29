@@ -52,7 +52,7 @@ function fixture({ ids = [], overrides = {} } = {}) {
 
 function payloads(records) { return records.map(([, line]) => JSON.parse(line.slice(operationLogConstants.prefix.length))) }
 function opRecords(fixture, operationId) { return payloads(fixture.records).filter(item => item.operationId === operationId) }
-function assertOneTerminal(entries) { assert.equal(entries.filter(item => ['success', 'failure'].includes(item.stage)).length, 1) }
+function assertOneTerminal(entries) { assert.ok(entries.every(item => item.eventVersion === 1)); assert.equal(entries.filter(item => ['success', 'failure'].includes(item.stage)).length, 1) }
 function flush() { return new Promise(resolve => setImmediate(resolve)) }
 
 test('session create logs staged import/selection work without content or hash', async () => {
@@ -62,12 +62,9 @@ test('session create logs staged import/selection work without content or hash',
     assert.equal(result.status, 201)
     await flush()
     const entries = opRecords(f, 'create')
-    assert.ok(entries.some(item => item.stage === 'request.validated' && item.sessionId === 'source'))
-    assert.ok(entries.some(item => item.stage === 'import.prepare.begin' && item.path === 'card/run/import-context.json'))
-    assert.ok(entries.some(item => item.stage === 'host.session.create.begin'))
-    assert.ok(entries.some(item => item.stage === 'host.session.created' && item.sessionId === 'new-session'))
-    assert.ok(entries.some(item => item.stage === 'import.bind.committed' && item.sessionId === 'new-session'))
-    assert.ok(entries.some(item => item.stage === 'selection.copy.committed' && item.sessionId === 'new-session'))
+    assert.ok(entries.some(item => item.event === 'session.created' && item.sessionId === 'new-session'))
+    assert.ok(entries.some(item => item.event === 'session.import-context.bound' && item.sessionId === 'new-session'))
+    assert.ok(entries.some(item => item.event === 'session.selection.copied' && item.sessionId === 'new-session'))
     assert.equal(entries.at(-1).stage, 'success')
     assertOneTerminal(entries)
     assert.doesNotMatch(f.records.map(([, line]) => line).join('\n'), /secret-hash|secret-expected|expectedHash|qaCount/)
@@ -81,6 +78,8 @@ test('session create bind failure retains HTTP failure and one terminal', async 
     const result = await invoke(f.handler, { method: 'POST', url: API_V2 + '/sessions', body: { importContextRef: { path: 'card/run/import-context.json' } } })
     assert.equal(result.status, 503)
     await flush()
+    assert.equal(opRecords(f, 'create-fail').at(-1).sessionId, 'new-session')
+    assert.equal(opRecords(f, 'create-fail').at(-1).event, 'operation.failed')
     assert.equal(opRecords(f, 'create-fail').at(-1).errorCode, 'HOST_IMPORT_BIND_FAILED')
     assertOneTerminal(opRecords(f, 'create-fail'))
   } finally { f.cleanup() }
@@ -93,10 +92,9 @@ test('branch logs source and child phases, and copy failure preserves stable cod
     assert.equal(result.status, 201)
     await flush()
     const entries = opRecords(f, 'branch')
-    assert.ok(entries.some(item => item.stage === 'request.validated' && item.sessionId === 'source'))
-    assert.ok(entries.some(item => item.stage === 'host.forked' && item.sessionId === 'child-session'))
-    assert.ok(entries.some(item => item.stage === 'selection.copy.committed' && item.sessionId === 'child-session'))
-    assert.ok(entries.some(item => item.stage === 'import.lineage.copy.committed' && item.sessionId === 'child-session'))
+    assert.ok(entries.some(item => item.event === 'session.created' && item.sessionId === 'child-session'))
+    assert.ok(entries.some(item => item.event === 'session.selection.copied' && item.sessionId === 'child-session'))
+    assert.ok(entries.some(item => item.event === 'session.import-lineage.copied' && item.sessionId === 'child-session'))
     assert.equal(entries.at(-1).stage, 'success')
     assertOneTerminal(entries)
   } finally { f.cleanup() }
@@ -107,6 +105,7 @@ test('branch logs source and child phases, and copy failure preserves stable cod
     assert.equal(failedResult.body.code, 'PLAY_BRANCH_COPY_FAILED')
     await flush()
     const failedEntries = opRecords(failed, 'branch-fail')
+    assert.equal(failedEntries.at(-1).sessionId, 'child-session')
     assert.equal(failedEntries.at(-1).errorCode, 'PLAY_BRANCH_COPY_FAILED')
     assertOneTerminal(failedEntries)
     assert.doesNotMatch(failed.records.map(([, line]) => line).join('\n'), /private selection detail|cause|stack/)
@@ -121,8 +120,6 @@ test('user-message logs host acceptance but never logs text', async () => {
     assert.equal(result.status, 502)
     await flush()
     const entries = opRecords(f, 'message')
-    assert.ok(entries.some(item => item.stage === 'request.validated' && item.sessionId === 's'))
-    assert.ok(entries.some(item => item.stage === 'host.prompt.begin' && item.sessionId === 's'))
     assert.equal(entries.at(-1).errorCode, 'HOST_PROMPT_FAILED')
     assertOneTerminal(entries)
     assert.doesNotMatch(f.records.map(([, line]) => line).join('\n'), /VERY-SECRET-PROMPT|prompt detail|body|content|text/)
@@ -137,15 +134,12 @@ test('import PUT/DELETE log mutations while GET stays quiet and lock failure is 
     assert.equal((await invoke(f.handler, { method: 'PUT', url: API_V2 + '/sessions/s/import-context', body: { reference: { path: 'card/run/import-context.json' } } })).status, 200)
     await flush()
     let entries = opRecords(f, 'put')
-    assert.ok(entries.some(item => item.stage === 'authority.checked'))
-    assert.ok(entries.some(item => item.stage === 'history.lock.checked'))
-    assert.ok(entries.some(item => item.stage === 'prepare.begin' && item.path === 'card/run/import-context.json'))
-    assert.ok(entries.some(item => item.stage === 'bind.committed' && item.sessionId === 's'))
+    assert.ok(entries.some(item => item.event === 'session.import-context.bound' && item.sessionId === 's'))
     assertOneTerminal(entries)
     assert.equal((await invoke(f.handler, { method: 'DELETE', url: API_V2 + '/sessions/s/import-context' })).status, 200)
     await flush()
     entries = opRecords(f, 'delete')
-    assert.ok(entries.some(item => item.stage === 'unbind.committed' && item.sessionId === 's'))
+    assert.ok(entries.some(item => item.event === 'session.import-context.unbound' && item.sessionId === 's'))
     assertOneTerminal(entries)
   } finally { f.cleanup() }
   const locked = fixture({ ids: ['locked'], overrides: { async history() { return { events: [{ type: 'user/message', seq: 1, data: { role: 'user' } }], hasMore: false, throughSeq: 1 } }, async deriveMessages() { return [{ role: 'user' }] } } })
@@ -177,9 +171,10 @@ test('user-message success logs acceptance, terminal, and a distinct id per muta
     assert.deepEqual(result.body, { ok: true, accepted: true })
     await flush()
     const entries = opRecords(f, 'message-ok')
-    for (const stage of ['request.validated', 'host.prompt.begin', 'host.prompt.accepted']) {
-      assert.ok(entries.some(item => item.stage === stage && item.sessionId === 's'))
-    }
+    assert.deepEqual(entries.map(item => item.event), ['operation.started', 'operation.completed'])
+    assert.equal(entries.at(-1).result, 'accepted')
+    assert.equal(entries.at(-1).sessionId, 's')
+    assert.equal(entries.at(-1).route, '/sessions/:id/user-message')
     assert.equal(entries.at(-1).stage, 'success')
     assertOneTerminal(entries)
     assert.doesNotMatch(f.records.map(([, line]) => line).join('\n'), /VERY-SECRET-SUCCESS-PROMPT|prompt detail|body|content|text/)

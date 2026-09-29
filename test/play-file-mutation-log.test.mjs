@@ -56,9 +56,12 @@ test('workspace mutations emit safe staged operations while reads stay quiet', a
       const entries = all.filter(item => item.operationId === id)
       assert.equal(entries.at(-1).stage, 'success')
       assert.ok(entries.some(item => item.stage === 'start'))
-      assert.ok(entries.some(item => item.stage === 'request.validated'))
-      assert.ok(entries.some(item => item.stage === 'mutation.begin'))
-      assert.ok(entries.some(item => item.stage === 'mutation.committed'))
+      const event = { bind: 'workspace.bound', dir: 'workspace.directory.created', file: 'workspace.file.written' }[id]
+      assert.deepEqual(entries.map(item => item.event), ['operation.started', event, 'operation.completed'])
+      assert.ok(entries.every(item => item.eventVersion === 1 && item.route.startsWith('/workspace')))
+      assert.equal(entries.at(-1).status, 200)
+      assert.equal(entries.at(-1).result, 'completed')
+      assert.ok(entries.every(item => !Object.hasOwn(item, 'path')))
     }
     const joined = f.calls.map(([, line]) => line).join('\n')
     assert.doesNotMatch(joined, /SECRET-BODY|expectedRevision|hash|stack|cause/)

@@ -157,7 +157,7 @@ configuration preview 加资源读取。
 - DSH 升级：先核对 manifest inject、公开包根导出、slot owner props、store 字段和 Host RPC；再验证 native/play、快速切换和卸载回退。
 - 公开 seam 消失时：关闭对应增强并保留原生 UI，再讨论 adapter；不要临时改用私有 API。
 
-可选日志能力使用 `GET /pmp-dsh-tavern/api/v2/operation-logs`，按 operationId、sessionId 或 playthroughId 查询并分页导出。失败变更响应中的 `operationId`／`X-Tavern-Operation-Id` 可关联后端阶段；读取 `storage` 判断日志是否降级，不将缺失记录当作业务结果。旧 Host 返回 404 时保留当前问题诊断及正常业务。完整参数、容量与错误约定见 [日志 API](API.md#持久-operation-日志与前端合同)。前端无需上传 console 或正文，也不能用此日志恢复 DSH 历史或 MVU 状态。
+可选日志能力使用 `GET /pmp-dsh-tavern/api/v2/operation-logs`，按 operationId、sessionId 或 playthroughId 查询并分页导出。失败变更响应中的 `operationId`／`X-Tavern-Operation-Id` 可关联后端阶段；读取 `storage` 判断日志是否降级，不将缺失记录当作业务结果。旧 Host 返回 404 时保留当前问题诊断及正常业务。完整参数、容量与错误约定见 [日志 API](OPERATION_LOGS.md)。前端无需上传 console 或正文，也不能用此日志恢复 DSH 历史或 MVU 状态。
 
 ## 9. 发布前自测
 

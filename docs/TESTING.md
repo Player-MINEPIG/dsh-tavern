@@ -104,6 +104,8 @@ node --test test/play-sessions.test.mjs
 
 ## 持久操作日志回归
 
-`node --test test/operation-journal.test.mjs test/operation-log-client.test.mjs` 使用临时目录验证字段白名单、轮转容量、游标失效、并发写入、第二写者拒绝、进程退出后的恢复、损坏尾行、符号链接拒绝和日志故障隔离。`node scripts/verify-operation-logs-browser.mjs` 在 headless Chrome 的真实 React 中验证按需读取、文本展示、分页、当前页导出、旧 Host 404、异步响应隔离与降级提示；可用 `CHROME_PATH` 指定浏览器。它不替代完整 Host 页面交互验收。
+`node --test test/operation-contract.test.mjs test/operation-journal.test.mjs test/operation-log-client.test.mjs` 使用临时目录验证字段白名单、轮转容量、游标失效、并发写入、第二写者拒绝、进程退出后的恢复、损坏尾行、符号链接拒绝和日志故障隔离。`node scripts/verify-operation-logs-browser.mjs` 在 headless Chrome 的真实 React 中验证按需读取、文本展示、分页、当前页导出、旧 Host 404、异步响应隔离与降级提示；可用 `CHROME_PATH` 指定浏览器。它不替代完整 Host 页面交互验收。
 
 在临时目标 Host 中先读取 `GET /pmp-dsh-tavern/api/v2/operation-logs`，执行成功与失败的 workspace/session 变更，核对响应 operationId 与日志终态、错误码一致，查询和导出不产生日志，且无测试正文或路径泄漏。正常停止并重启 Host，核对旧记录可查、runId 更换、plugin.stop 保留。再在现有诊断面板中查看、筛选、翻页和导出；关闭面板、切换或改变筛选时，旧请求不得覆盖新视图。检查存储降级不能阻断业务，旧 Host 不支持日志时当前问题诊断仍可用。
+
+事件语义与升级规则见 [操作日志合同](OPERATION_LOGS.md)。合同测试还验证全部已声明变更的统一失败关联、Host 创建后后续失败的资源 ID、分支队列清理失败、创建检查点去重和旧／新事件重启混读。受监控 API 完成只表示处理函数返回；user-message 为 accepted，不证明模型完成或响应已送达客户端。

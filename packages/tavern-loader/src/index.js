@@ -1,5 +1,5 @@
 import { OperationJournal } from '../../play/src/operation-journal.js'
-import { createOperationContext } from '../../play/src/operation-log.js'
+import { createContractOperation, recordDiagnosticFailure } from '../../play/src/operation-contract.js'
 import { AssemblyStore } from '../../tavern-trace/src/assembly-store.js'
 import { AssemblyRecorder } from '../../tavern-trace/src/assembly-recorder.js'
 import { createAssemblyBodyReader } from '../../tavern-trace/src/body-references.js'
@@ -280,14 +280,14 @@ export function apply(ctx, config = {}) {
     logger: ctx.logger,
   })
   const operationJournal = new OperationJournal(storageDir, { enabled: config.operationLogs?.enabled !== false })
-  const operationContext = (operation, meta) => createOperationContext({ logger: ctx.logger, journal: operationJournal, operation, meta })
+  const operationContext = (operation, meta) => createContractOperation({ logger: ctx.logger, journal: operationJournal, operation, meta })
   const startup = operationContext('plugin.start')
   startup.start()
   ctx.effect(() => () => {
     operationContext('plugin.stop').success('disposed')
     operationJournal.close()
   })
-  const recordFailure = (operation, error, meta) => operationContext(operation, meta).failure(error)
+  const recordFailure = (operation, error, meta) => recordDiagnosticFailure({ logger: ctx.logger, journal: operationJournal, operation, meta }, error)
   const store = new PresetStore(storageDir)
   const characterStore = new CharacterStore(storageDir)
   const worldBookStore = new WorldBookStore(storageDir)
@@ -319,14 +319,14 @@ export function apply(ctx, config = {}) {
     policyStore: rpPolicyStore,
     section: rpPolicyStore.defaultSection,
   })
-  const reconcileRpAfterSelection = (sessionId, operation) => {
+  const reconcileRpAfterSelection = (sessionId) => {
     const liveAgent = ctx.get('agents')?.get?.(sessionId)
     const session = liveAgent === undefined ? ctx.get('sessions')?.get?.(sessionId) : undefined
     const agent = liveAgent ?? (session === undefined ? { id: sessionId } : { id: sessionId, session })
     try {
       rpMode.onSessionStart(agent)
     } catch (error) {
-      recordFailure(`rp.${operation.replaceAll(' ', '-')}`, error, { sessionId })
+      recordFailure('rp.policy', error, { sessionId })
     }
   }
   let importContexts = null
@@ -339,7 +339,7 @@ export function apply(ctx, config = {}) {
     selections,
     characters: characterStore,
     importContexts: () => importContexts,
-    onSelectionCopied: sessionId => reconcileRpAfterSelection(sessionId, 'selection copy'),
+    onSelectionCopied: sessionId => reconcileRpAfterSelection(sessionId),
   })
   const playWorkspaceStore = new PlayWorkspaceStore(storageDir, { host: playHost })
   const playMemberships = new PlayMembershipService(playWorkspaceStore)
@@ -361,7 +361,7 @@ export function apply(ctx, config = {}) {
   const assemblyStore = new AssemblyStore(storageDir, config.traceAssemblies)
   const traceStore = new TavernTraceStore(storageDir, config.trace, assemblyStore)
   if (traceStore.resetOversizedFile) {
-    recordFailure('trace.legacy.read', { code: 'TRACE_STORAGE_OVERSIZED' })
+    recordFailure('trace.record', { code: 'TRACE_STORAGE_OVERSIZED' })
   }
   const traceRecorder = new TavernTraceRecorder(traceStore)
   const assemblyRecorder = new AssemblyRecorder(assemblyStore)
@@ -369,11 +369,11 @@ export function apply(ctx, config = {}) {
   runtime.registerUserAdapter(createUserAdapter(userStore))
   runtime.registerWorldBookAdapter(createWorldBookAdapter(worldBookStore, config.worldBook))
   const notifyChange = () => ctx.emit('system-prompt/change')
-  const traceSafely = (operation, callback) => {
+  const traceSafely = (callback) => {
     try {
       return callback()
     } catch (error) {
-      recordFailure(`trace.${operation.replaceAll(' ', '-')}`, error)
+      recordFailure('trace.record', error)
       return undefined
     }
   }
@@ -478,16 +478,11 @@ export function apply(ctx, config = {}) {
   })
 
   ctx.on('agent/created', ({ agent }) => {
-    const operation = operationContext('agent.initialize', { sessionId: agent?.id })
-    operation.start()
-    try {
-      selections.ensureAgent(agent)
-      pendingInput.ensureSession(agent?.session)
-      // DSH awaits this serial lifecycle before exposing the Agent. A failed
-      // policy initialization must fail registration, not permit an unguarded turn.
-      rpMode.onSessionStart(agent)
-      operation.success('initialized')
-    } catch (error) { operation.failure(error); throw error }
+    selections.ensureAgent(agent)
+    pendingInput.ensureSession(agent?.session)
+    // DSH awaits this serial lifecycle before exposing the Agent. A failed
+    // policy initialization must fail registration, not permit an unguarded turn.
+    rpMode.onSessionStart(agent)
   })
 
   ctx.on('agent/pre-step', async (payload, next) => {
@@ -497,7 +492,7 @@ export function apply(ctx, config = {}) {
       rpMode.onBoundary(payload.agent)
       rpMode.enforceReadOnly(payload.agent?.session)
     } catch (error) {
-      recordFailure('rp.pre-step', error, { sessionId: payload.agent?.id })
+      recordFailure('rp.policy', error, { sessionId: payload.agent?.id })
     }
     return decision
   })
@@ -506,54 +501,53 @@ export function apply(ctx, config = {}) {
   registerRpWriteGuard(ctx, rpMode)
 
   ctx.on('agent/request', async (payload, next) => {
-    traceSafely('request boundary', () => assemblyRecorder.nextRequest(payload.agent?.id))
+    traceSafely(() => assemblyRecorder.nextRequest(payload.agent?.id))
     const snapshot = runtime.assembledFor(payload.agent) ?? runtime.compile({ agent: payload.agent })
     const config = await parameterFallback.prepare(payload, await next(), snapshot.callConfig, ctx.get('llm'))
     let legacyRecord
-    traceSafely('request capture', () => { legacyRecord = traceRecorder.begin({ ...payload, snapshot }) })
-    traceSafely('assembly capture', () => assemblyRecorder.begin({ ...payload, snapshot, legacyRecord }))
-    traceSafely('parameter capture', () => assemblyRecorder.parameters(payload.agent?.id, parameterFallback.snapshot(payload.agent)))
+    traceSafely(() => { legacyRecord = traceRecorder.begin({ ...payload, snapshot }) })
+    traceSafely(() => assemblyRecorder.begin({ ...payload, snapshot, legacyRecord }))
+    traceSafely(() => assemblyRecorder.parameters(payload.agent?.id, parameterFallback.snapshot(payload.agent)))
     return config
   })
 
   ctx.on('agent/assistant-stream', ({ agent, frame }) => parameterFallback.observeFrame(agent, frame))
 
   ctx.on('agent/error', payload => {
-    recordFailure('agent.execution', payload.error, { sessionId: payload.agent?.id })
-    traceSafely('assembly failure', () => assemblyRecorder.failure(payload))
+    traceSafely(() => assemblyRecorder.failure(payload))
   })
 
   ctx.on('llm/stream', async function* (options, next) {
     const agent = ctx.get('agents')?.get?.(options.sessionId)
-    if (agent) traceSafely('effective parameters', () => assemblyRecorder.parameters(options.sessionId, parameterFallback.snapshot(agent, options)))
-    traceSafely('LLM request capture', () => assemblyRecorder.request(options, ctx.get('agents')?.get?.(options.sessionId)?.session))
+    if (agent) traceSafely(() => assemblyRecorder.parameters(options.sessionId, parameterFallback.snapshot(agent, options)))
+    traceSafely(() => assemblyRecorder.request(options, ctx.get('agents')?.get?.(options.sessionId)?.session))
     yield* next()
   })
-  ctx.effect(() => () => traceSafely('assembly shutdown', () => assemblyRecorder.dispose()))
+  ctx.effect(() => () => traceSafely(() => assemblyRecorder.dispose()))
 
   ctx.on('session/event', (session, event) => {
     pendingInput.observeSessionEvent(session, event)
-    traceSafely('failure reference', () => assemblyRecorder.observeSessionEvent(session, event))
+    traceSafely(() => assemblyRecorder.observeSessionEvent(session, event))
     if (event?.type === 'turn/end') {
-      traceSafely('assembly terminal', () => assemblyRecorder.finish(session?.id, 'request-unconfirmed'))
+      traceSafely(() => assemblyRecorder.finish(session?.id, 'request-unconfirmed'))
       pendingInput.clearClaimed(session)
       importContexts.consumeAfterTurn(session?.id, event, session)
     }
     if (event?.type === 'sandbox/mode') {
       try { rpMode.enforceReadOnly(session) } catch (error) {
-        recordFailure('rp.sandbox.pin', error, { sessionId: session?.id })
+        recordFailure('rp.policy', error, { sessionId: session?.id })
       }
     }
-    traceSafely('header alignment', () => traceRecorder.observeSessionEvent(session, event))
+    traceSafely(() => traceRecorder.observeSessionEvent(session, event))
   })
 
   ctx.on('agent/request-error', async (payload, next) => {
     const recovered = parameterFallback.recover(payload)
-    if (recovered) traceSafely('parameter fallback', () => assemblyRecorder.parameters(payload.agent?.id, parameterFallback.snapshot(payload.agent)))
+    if (recovered) traceSafely(() => assemblyRecorder.parameters(payload.agent?.id, parameterFallback.snapshot(payload.agent)))
     const result = recovered ? { kind: 'retry' } : await next()
-    traceSafely('assembly error', () => assemblyRecorder.finish(payload.agent?.id, 'request-failed-before-observation'))
-    if (result?.kind === 'retry') traceSafely('retry boundary', () => assemblyRecorder.nextRequest(payload.agent?.id))
-    traceSafely('request-error alignment', () => traceRecorder.observeRequestError(payload.agent, payload.turn, payload.step))
+    traceSafely(() => assemblyRecorder.finish(payload.agent?.id, 'request-failed-before-observation'))
+    if (result?.kind === 'retry') traceSafely(() => assemblyRecorder.nextRequest(payload.agent?.id))
+    traceSafely(() => traceRecorder.observeRequestError(payload.agent, payload.turn, payload.step))
     return result
   })
 
@@ -651,7 +645,7 @@ export function apply(ctx, config = {}) {
       onChange: change => {
         if (change.kind === 'session-configuration-applied') {
           notifyChange()
-          reconcileRpAfterSelection(change.sessionId, 'configuration apply')
+          reconcileRpAfterSelection(change.sessionId)
         }
       },
     })

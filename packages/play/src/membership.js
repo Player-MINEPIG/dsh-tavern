@@ -266,17 +266,12 @@ export class PlayMembershipService {
         matchedIds.has(item.id) ? playthroughWithCharacter(item, character) : item
       )),
     }
-    operation?.stage('catalog.character-relink.begin', {
-      previousCharacterIds: [...previousCharacterIds],
-      characterId: character.id,
-      playthroughIds: [...matchedIds],
-      playthroughCount: matches.length,
-    })
     const written = this.workspaceStore.writeFile('catalog.json', JSON.stringify(nextCatalog), {
       expectedRevision: catalogDocument.file.revision,
       expectedRevisionPresent: true,
       validate: validatePlayDocument,
     })
+    operation?.checkpoint('playthrough.catalog.updated')
     try {
       const patch = { characterCardId: character.id, character: { greetingIndex: 0 } }
       if (sessionIds.size > 0) {
@@ -292,17 +287,12 @@ export class PlayMembershipService {
           expectedRevisionPresent: true,
           validate: validatePlayDocument,
         })
+        operation?.checkpoint('playthrough.catalog.restored')
       } catch (rollbackError) {
         error.rollbackError = rollbackError
       }
       throw error
     }
-    operation?.stage('catalog.character-relink.committed', {
-      previousCharacterIds: [...previousCharacterIds],
-      characterId: character.id,
-      playthroughIds: [...matchedIds],
-      sessionCount: sessionIds.size,
-    })
     return { relinkedPlaythroughCount: matches.length, relinkedSessionCount: sessionIds.size }
   }
 
@@ -319,15 +309,13 @@ export class PlayMembershipService {
       return { ok: true, detached: false, playthroughId, sessionId, detachedSessionIds: [], empty: timelineDocument.timeline.nodes.length === 0 }
     }
 
-    operation?.stage('membership.checked', { playthroughId, sessionId })
     if (result.changed) {
-      operation?.stage('timeline.detach.begin', { playthroughId, sessionId, path: playthrough.path })
       this.workspaceStore.writeFile(playthrough.path, JSON.stringify(result.timeline), {
         expectedRevision: timelineDocument.file.revision,
         expectedRevisionPresent: true,
         validate: validatePlayDocument,
       })
-      operation?.stage('timeline.detach.committed', { playthroughId, sessionId, path: playthrough.path })
+      operation?.checkpoint('playthrough.timeline.updated', { playthroughId, sessionId })
     }
 
     if (rootDetached) {
@@ -336,13 +324,12 @@ export class PlayMembershipService {
         ...catalogDocument.catalog,
         playthroughs: catalogDocument.catalog.playthroughs.map((item, itemIndex) => itemIndex === index ? nextPlaythrough : item),
       }
-      operation?.stage('catalog.detach.begin', { playthroughId, sessionId, path: 'catalog.json' })
       this.workspaceStore.writeFile('catalog.json', JSON.stringify(nextCatalog), {
         expectedRevision: catalogDocument.file.revision,
         expectedRevisionPresent: true,
         validate: validatePlayDocument,
       })
-      operation?.stage('catalog.detach.committed', { playthroughId, sessionId, path: 'catalog.json' })
+      operation?.checkpoint('playthrough.catalog.updated', { playthroughId, sessionId })
     }
 
     return {

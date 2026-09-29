@@ -10,6 +10,9 @@ const MAX_IDENTIFIER = 128
 const MAX_PATH = 512
 
 const FIELD_ORDER = Object.freeze([
+  'eventVersion',
+  'event',
+  'route',
   'operationId',
   'operation',
   'stage',
@@ -61,6 +64,9 @@ function nowValue(clock) {
 function pickFields(source, { operationId, operation, stage, result, errorCode, status, durationMs } = {}) {
   const input = source !== null && typeof source === 'object' && !Array.isArray(source) ? source : {}
   const payload = {
+    eventVersion: Number.isSafeInteger(input.eventVersion) && input.eventVersion > 0 ? input.eventVersion : undefined,
+    event: normalizeText(input.event, MAX_STAGE),
+    route: normalizeText(input.route, 128),
     operationId,
     operation,
     stage,
@@ -163,6 +169,7 @@ export function createOperationContext({
       const emitted = emit('info', 'success', fields, {
         result: normalizeResult(result, 'ok'),
         durationMs: duration(),
+        status: normalizeStatus(fields?.status),
       })
       terminal = true
       return emitted

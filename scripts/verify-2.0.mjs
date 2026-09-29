@@ -39,6 +39,7 @@ const groups = [
       'test/play-import-context-session.test.mjs',
       'test/play-operation-log.test.mjs',
       'test/operation-journal.test.mjs',
+      'test/operation-contract.test.mjs',
       'test/operation-log-client.test.mjs',
       'test/play-file-mutation-log.test.mjs',
       'test/play-session-import-log.test.mjs',

@@ -4,199 +4,125 @@ import { httpError, parsePlayUrl, readBoundedJson, sendJson, sendPlayError } fro
 import { createSessionApiHandler } from './sessions.js'
 import { validatePlayDocument } from './timeline.js'
 import { createWorkspaceApiHandler } from './workspace.js'
-import { createOperationContext } from './operation-log.js'
-import { serveOperationLogs } from './operation-journal.js'
+import { createContractOperation } from './operation-contract.js'
+import { serveOperationLogs } from './operation-log-api.js'
 
 export function isPlayApiPath(url) {
   return parsePlayUrl(url, API_V2) !== null
 }
 
-const SESSION_ROUTES = [
-  [/^\/sessions\/([^/]+)\/branch$/, 'branch', 'POST'],
-  [/^\/sessions\/([^/]+)\/user-message$/, 'userMessage', 'POST'],
-  [/^\/sessions\/([^/]+)\/messages$/, 'messages', 'GET'],
-  [/^\/sessions\/([^/]+)\/coordinates$/, 'coordinates', 'GET'],
-  [/^\/sessions$/, 'create', 'POST'],
-]
-
 export function createPlayApiHandler({
-  chromeStore,
-  workspaceStore,
-  host,
-  validateFile = validatePlayDocument,
-  now,
-  logger,
-  operationOptions,
-  operationJournal,
-  membershipService,
-  resolveCharacter,
-  relinkPlaythrough,
+  chromeStore, workspaceStore, host, validateFile = validatePlayDocument, now,
+  logger, operationOptions, operationJournal, membershipService, resolveCharacter, relinkPlaythrough,
 } = {}) {
   if (chromeStore === undefined) throw new TypeError('chromeStore is required')
   const chromeApi = createChromeApiHandler(chromeStore)
   const chromeEventsApi = createChromeEventsHandler(chromeStore)
-  const workspaceApi = workspaceStore === undefined
-    ? null
+  const workspaceApi = workspaceStore === undefined ? null
     : createWorkspaceApiHandler(workspaceStore, { validateFile, coordinates: host?.coordinates?.bind(host) })
   const sessionApi = host !== undefined && workspaceStore !== undefined
-    ? createSessionApiHandler({ host, workspaceStore, now })
-    : null
-
+    ? createSessionApiHandler({ host, workspaceStore, now }) : null
   const operationDefaults = {
     ...(operationOptions ?? {}),
     ...(operationJournal ? { journal: operationJournal } : {}),
     ...(logger === undefined ? {} : { logger }),
   }
 
-  function startMutation(req, res, operation, path) {
-    const context = createOperationContext({
-      ...operationDefaults,
-      operation,
-      meta: { method: String(req.method ?? 'GET').toUpperCase(), ...(path === undefined ? {} : { path }) },
-    })
-    res.setHeader('X-Tavern-Operation-Id', context.operationId)
-    context.start({ method: String(req.method ?? 'GET').toUpperCase(), ...(path === undefined ? {} : { path }) })
-    return context
+  // Method, route template, availability and operation semantics have one owner.
+  // Reads and chrome explicitly omit operation metadata and remain quiet.
+  const routes = []
+  function route(path, available, methods) {
+    const pattern = new RegExp(`^${path.replace(':id', '([^/]+)')}$`)
+    routes.push({ path, pattern, available, methods })
   }
-
-  async function runMutation(operation, action) {
-    try {
-      const result = await action()
-      operation.success('committed')
-      return result
-    } catch (error) {
-      operation.failure(error, { status: errorStatus(error) })
-      throw error
-    }
+  const quiet = action => ({ action })
+  const mutation = (operation, action, result = 'completed') => ({ operation, action, result })
+  route('/operation-logs', true, { GET: quiet(({ req, res, searchParams }) => serveOperationLogs(operationJournal, req, res, searchParams)) })
+  route('/chrome', true, Object.fromEntries(['GET', 'PUT'].map(method => [method, quiet(({ req, res }) => chromeApi(req, res, { method }))])))
+  route('/chrome/events', true, { GET: quiet(({ req, res }) => chromeEventsApi(req, res, { method: 'GET' })) })
+  route('/workspace', workspaceApi !== null, {
+    GET: quiet(({ req, res }) => workspaceApi.getWorkspace(req, res)),
+    PUT: mutation('workspace.bind', ({ req, res, operation }) => workspaceApi.putWorkspace(req, res, { operation })),
+  })
+  route('/workspace/dirs', workspaceApi !== null, {
+    POST: mutation('workspace.dir.create', ({ req, res, operation }) => workspaceApi.postDirs(req, res, { operation })),
+  })
+  route('/workspace/files', workspaceApi !== null, {
+    GET: quiet(({ req, res, searchParams }) => workspaceApi.files(req, res, { method: 'GET', searchParams })),
+    PUT: mutation('workspace.file.write', ({ req, res, searchParams, operation }) => workspaceApi.files(req, res, { method: 'PUT', searchParams, operation })),
+  })
+  route('/focus', sessionApi !== null, { GET: quiet(({ req, res, searchParams }) => sessionApi.focus(req, res, searchParams)) })
+  route('/playthroughs/:id/focus', sessionApi !== null, { GET: quiet(({ req, res, id }) => sessionApi.playthroughFocus(req, res, id)) })
+  route('/playthroughs/:id/relink-character', typeof resolveCharacter === 'function' && typeof relinkPlaythrough === 'function', {
+    POST: mutation('playthrough.character.relink', async ({ req, res, id, operation }) => {
+      const playthroughId = safeDecodeId(id, 'playthrough id')
+      operation.identify({ playthroughId })
+      const body = await readBoundedJson(req, 16 * 1024)
+      if (typeof body.characterId !== 'string' || body.characterId.trim() === '') {
+        throw httpError(400, 'characterId must be a non-empty string', 'PLAY_CHARACTER_ID_INVALID')
+      }
+      const character = await resolveCharacter(body.characterId.trim())
+      if (character == null) throw httpError(404, 'character not found', 'CHARACTER_NOT_FOUND')
+      return sendJson(res, 200, await relinkPlaythrough(playthroughId, character, { operation }))
+    }),
+  })
+  route('/playthroughs/:id/detach-session', membershipService !== undefined, {
+    POST: mutation('playthrough.session.detach', async ({ req, res, id, operation }) => {
+      const playthroughId = safeDecodeId(id, 'playthrough id')
+      operation.identify({ playthroughId })
+      const body = await readBoundedJson(req, 16 * 1024)
+      if (typeof body.sessionId !== 'string' || body.sessionId.trim() === '') {
+        throw httpError(400, 'sessionId must be a non-empty string', 'PLAY_SESSION_ID_INVALID')
+      }
+      operation.identify({ sessionId: body.sessionId })
+      return sendJson(res, 200, await membershipService.detach(playthroughId, body.sessionId, { operation }))
+    }),
+  })
+  route('/sessions/:id/import-context', sessionApi !== null, Object.fromEntries(['GET', 'PUT', 'DELETE'].map(method => [method, {
+    ...(method === 'GET' ? {} : { operation: method === 'PUT' ? 'session.import-context.bind' : 'session.import-context.unbind', result: 'completed' }),
+    action: ({ req, res, id, operation }) => sessionApi.importContext(req, res, id, method, operation),
+  }])))
+  route('/sessions', sessionApi !== null, { POST: mutation('session.create', ({ req, res, operation }) => sessionApi.create(req, res, operation)) })
+  for (const [suffix, action, method, operation] of [
+    ['branch', 'branch', 'POST', 'session.branch'],
+    ['user-message', 'userMessage', 'POST', 'session.user-message'],
+    ['messages', 'messages', 'GET'], ['coordinates', 'coordinates', 'GET'],
+  ]) {
+    route(`/sessions/:id/${suffix}`, sessionApi !== null, { [method]: {
+      operation, result: action === 'userMessage' ? 'accepted' : 'completed',
+      action: ({ req, res, id, operation }) => sessionApi[action](req, res, id, operation),
+    } })
   }
 
   return async (req, res) => {
-    let operation = null
+    let operation
     try {
-      const route = parsePlayUrl(req.url, API_V2)
-      if (route === null) throw httpError(404, 'Not found', 'PLAY_NOT_FOUND')
+      const parsed = parsePlayUrl(req.url, API_V2)
+      if (parsed === null) throw httpError(404, 'Not found', 'PLAY_NOT_FOUND')
+      const entry = routes.find(entry => entry.pattern.test(parsed.rest))
+      if (!entry) throw httpError(404, 'Not found', 'PLAY_NOT_FOUND')
       const method = String(req.method ?? 'GET').toUpperCase()
-      if (route.rest === '/operation-logs') return serveOperationLogs(operationJournal, req, res, route.searchParams)
-      if (route.rest === '/chrome') {
-        if (method !== 'GET' && method !== 'PUT') throw httpError(405, 'method not allowed', 'PLAY_METHOD_NOT_ALLOWED')
-        return await chromeApi(req, res, { method })
+      const descriptor = Object.hasOwn(entry.methods, method) ? entry.methods[method] : undefined
+      if (!descriptor) throw httpError(405, 'method not allowed', 'PLAY_METHOD_NOT_ALLOWED')
+      if (!entry.available) throw httpError(404, 'Not found', 'PLAY_NOT_FOUND')
+      const id = parsed.rest.match(entry.pattern)[1]
+      if (descriptor.operation) {
+        operation = createContractOperation({ ...operationDefaults, operation: descriptor.operation, meta: { method, route: entry.path } })
+        res.setHeader('X-Tavern-Operation-Id', operation.operationId)
+        operation.start()
       }
-      if (route.rest === '/chrome/events') {
-        return await chromeEventsApi(req, res, { method })
-      }
-      if (route.rest === '/workspace') {
-        if (method !== 'GET' && method !== 'PUT') throw httpError(405, 'method not allowed', 'PLAY_METHOD_NOT_ALLOWED')
-        if (workspaceApi === null) throw httpError(404, 'Not found', 'PLAY_NOT_FOUND')
-        if (method === 'GET') return await workspaceApi.getWorkspace(req, res)
-        operation = startMutation(req, res, 'workspace.bind', 'workspace')
-        return await runMutation(operation, () => workspaceApi.putWorkspace(req, res, { operation }))
-      }
-      if (route.rest === '/workspace/dirs') {
-        if (method !== 'POST') throw httpError(405, 'method not allowed', 'PLAY_METHOD_NOT_ALLOWED')
-        if (workspaceApi === null) throw httpError(404, 'Not found', 'PLAY_NOT_FOUND')
-        operation = startMutation(req, res, 'workspace.dir.create')
-        return await runMutation(operation, () => workspaceApi.postDirs(req, res, { operation }))
-      }
-      if (route.rest === '/workspace/files') {
-        if (workspaceApi === null) throw httpError(404, 'Not found', 'PLAY_NOT_FOUND')
-        if (method === 'PUT') {
-          operation = startMutation(req, res, 'workspace.file.write', safePath(route.searchParams.get('path')))
-          return await runMutation(operation, () => workspaceApi.files(req, res, {
-            method,
-            searchParams: route.searchParams,
-            operation,
-          }))
-        }
-        return await workspaceApi.files(req, res, { method, searchParams: route.searchParams })
-      }
-      if (route.rest === '/focus') {
-        if (method !== 'GET') throw httpError(405, 'method not allowed', 'PLAY_METHOD_NOT_ALLOWED')
-        if (sessionApi === null) throw httpError(404, 'Not found', 'PLAY_NOT_FOUND')
-        return await sessionApi.focus(req, res, route.searchParams)
-      }
-      const playthroughFocusMatch = route.rest.match(/^\/playthroughs\/([^/]+)\/focus$/)
-      if (playthroughFocusMatch !== null) {
-        if (method !== 'GET') throw httpError(405, 'method not allowed', 'PLAY_METHOD_NOT_ALLOWED')
-        if (sessionApi === null) throw httpError(404, 'Not found', 'PLAY_NOT_FOUND')
-        return await sessionApi.playthroughFocus(req, res, playthroughFocusMatch[1])
-      }
-      const relinkCharacterMatch = route.rest.match(/^\/playthroughs\/([^/]+)\/relink-character$/)
-      if (relinkCharacterMatch !== null) {
-        if (method !== 'POST') throw httpError(405, 'method not allowed', 'PLAY_METHOD_NOT_ALLOWED')
-        if (typeof resolveCharacter !== 'function' || typeof relinkPlaythrough !== 'function') {
-          throw httpError(404, 'Not found', 'PLAY_NOT_FOUND')
-        }
-        operation = startMutation(req, res, 'playthrough.character.relink')
-        const playthroughId = safeDecodeId(relinkCharacterMatch[1], 'playthrough id')
-        const body = await readBoundedJson(req, 16 * 1024)
-        if (typeof body.characterId !== 'string' || body.characterId.trim() === '') {
-          throw httpError(400, 'characterId must be a non-empty string', 'PLAY_CHARACTER_ID_INVALID')
-        }
-        const characterId = body.characterId.trim()
-        const character = await resolveCharacter(characterId)
-        if (character === null || character === undefined) {
-          throw httpError(404, 'character not found', 'CHARACTER_NOT_FOUND')
-        }
-        operation.stage('request.validated', { playthroughId, characterId })
-        const result = await runMutation(operation, () => relinkPlaythrough(playthroughId, character, { operation }))
-        return sendJson(res, 200, result)
-      }
-      const detachSessionMatch = route.rest.match(/^\/playthroughs\/([^/]+)\/detach-session$/)
-      if (detachSessionMatch !== null) {
-        if (method !== 'POST') throw httpError(405, 'method not allowed', 'PLAY_METHOD_NOT_ALLOWED')
-        if (membershipService === undefined) throw httpError(404, 'Not found', 'PLAY_NOT_FOUND')
-        operation = startMutation(req, res, 'playthrough.session.detach')
-        const playthroughId = safeDecodeId(detachSessionMatch[1], 'playthrough id')
-        const body = await readBoundedJson(req, 16 * 1024)
-        if (typeof body.sessionId !== 'string' || body.sessionId.trim() === '') {
-          throw httpError(400, 'sessionId must be a non-empty string', 'PLAY_SESSION_ID_INVALID')
-        }
-        operation.stage('request.validated', { playthroughId, sessionId: body.sessionId })
-        const result = await runMutation(operation, () => membershipService.detach(playthroughId, body.sessionId, { operation }))
-        return sendJson(res, 200, result)
-      }
-      const importContextMatch = route.rest.match(/^\/sessions\/([^/]+)\/import-context$/)
-      if (importContextMatch !== null) {
-        if (!['GET', 'PUT', 'DELETE'].includes(method)) throw httpError(405, 'method not allowed', 'PLAY_METHOD_NOT_ALLOWED')
-        if (sessionApi === null) throw httpError(404, 'Not found', 'PLAY_NOT_FOUND')
-        if (method === 'GET') return await sessionApi.importContext(req, res, importContextMatch[1], method)
-        operation = startMutation(req, res, method === 'PUT' ? 'session.import-context.bind' : 'session.import-context.unbind')
-        return await runMutation(operation, () => sessionApi.importContext(req, res, importContextMatch[1], method, operation))
-      }
-      for (const [pattern, action, required] of SESSION_ROUTES) {
-        const match = route.rest.match(pattern)
-        if (match === null) continue
-        if (method !== required) throw httpError(405, 'method not allowed', 'PLAY_METHOD_NOT_ALLOWED')
-        if (sessionApi === null) throw httpError(404, 'Not found', 'PLAY_NOT_FOUND')
-        if (action === 'messages' || action === 'coordinates') return await sessionApi[action](req, res, match[1])
-        const operationName = action === 'create' ? 'session.create' : action === 'branch' ? 'session.branch' : 'session.user-message'
-        operation = startMutation(req, res, operationName)
-        return await runMutation(operation, () => action === 'create'
-          ? sessionApi[action](req, res, operation)
-          : sessionApi[action](req, res, match[1], operation))
-      }
-      throw httpError(404, 'Not found', 'PLAY_NOT_FOUND')
+      const result = await descriptor.action({ req, res, id, operation, searchParams: parsed.searchParams })
+      operation?.success(descriptor.result, { status: res.statusCode })
+      return result
     } catch (error) {
-      operation?.failure(error, { status: errorStatus(error) })
+      operation?.failure(error, { status: error?.status ?? (error instanceof TypeError || error instanceof SyntaxError ? 400 : 500) })
       return sendPlayError(res, error, operation?.operationId)
     }
   }
 }
 
-function errorStatus(error) {
-  return error?.status
-    ?? (error instanceof TypeError || error instanceof SyntaxError ? 400 : 500)
-}
-
-function safePath(value) {
-  if (typeof value !== 'string' || value === '') return undefined
-  return value.replace(/[\u0000-\u001f\u007f]/g, '\ufffd').slice(0, 512)
-}
-
 function safeDecodeId(value, label) {
-  try {
-    return decodeURIComponent(value)
-  } catch {
+  try { return decodeURIComponent(value) } catch {
     throw httpError(400, `${label} is not valid URL encoding`, 'PLAY_ID_INVALID')
   }
 }

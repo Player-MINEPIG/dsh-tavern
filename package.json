@@ -28,6 +28,8 @@
     "dist",
     "scripts",
     "docs/assets",
+    "docs/OPERATION_LOGS.md",
+    "docs/OPERATION_LOGS_en.md",
     "docs/API.md",
     "docs/API_en.md",
     "docs/ARCHITECTURE.md",
