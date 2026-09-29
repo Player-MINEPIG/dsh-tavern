@@ -540,6 +540,36 @@ export function apply(ctx, config = {}) {
     return result
   })
 
+  // ★ vv5v5 fork（2026-09-28，缓存优化）：触发制世界书条目（绿灯）→ 对话尾部。
+  //   通道与 phi-message 相同（pre-step 追加 user 消息，source.kind=plugin ⇒ 面板按来源过滤）；
+  //   历史零改动 ⇒ system 稳定前缀（persona+蓝灯）不被每轮变化的触发集打断（缓存命中率 13%→90%+）。
+  //   常驻条目（constant/蓝灯）仍在 system —— 它们是稳定前缀的一部分，搬走没有收益。
+  ctx.on('agent/pre-step', async (payload, next) => {
+    const decision = await (typeof next === 'function' ? next() : Promise.resolve({ kind: 'enter', messages: payload?.messages ?? [] }))
+    try {
+      if (decision === null || typeof decision !== 'object' || decision.kind !== 'enter') return decision
+      const agent = payload?.agent
+      if (agent === undefined || agent === null) return decision
+      const snapshot = runtime.assembledFor(agent) ?? runtime.compile({ agent })
+      const entries = snapshot.runtimeLore ?? []
+      if (entries.length === 0) return decision
+      const text = entries.map((entry) => {
+        const rendered = typeof entry.content === 'string' ? entry.content : ''
+        return rendered === '' ? null : '〔世界书 · ' + String(entry.resourceId ?? '?') + '〕' + rendered
+      }).filter(Boolean).join('\n\n')
+      if (text === '') return decision
+      const messages = Array.isArray(decision.messages) ? decision.messages : []
+      return {
+        ...decision,
+        messages: [...messages, {
+          role: 'user',
+          content: [{ type: 'text', text: '[本轮激活的世界书条目 —— 世界事实，供描写参考]\n\n' + text + '[/本轮激活的世界书条目]' }],
+          source: { kind: 'plugin:pmp-dsh-tavern', form: 'runtime-lore' },
+        }],
+      }
+    } catch { return decision }
+  })
+
   ctx.on('system-prompt/assemble', async (assembly, context, next) => {
     const snapshot = runtime.forAssembleContext(context)
     const contexts = snapshot.runtimeContexts.length === 0
@@ -554,6 +584,9 @@ export function apply(ctx, config = {}) {
       return [...snapshot.sections.map(({ name, text }) => ({ name, text })),
         ...(imported ? [{ name: PROFILE_SECTION, text: imported }] : [])]
     })
+    // ★ vv5v5 fork（2026-09-28，缓存优化）：触发制世界书条目（绿灯）不进 system body（profile-loader
+    //   已跳过拼装），存进本次快照 —— pre-step 钩子把它渲染成对话尾部的 user 消息。
+    snapshot.runtimeLore = snapshot.runtimeLoreEntries ?? []
     const selected = snapshot.systemPromptMode === 'replace'
       ? sections.filter(s => s.name === PROFILE_SECTION || s.name.startsWith(`${PLUGIN_ID}:part:`) || s.name === rpModeConstants.sectionName)
       : sections

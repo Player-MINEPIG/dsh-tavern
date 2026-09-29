@@ -157,6 +157,9 @@ export function projectWorldBookForLoader(model, candidates, options = {}) {
       uid: identity.uid,
       content: entry.content,
       position: projected.position,
+      // ★ vv5v5 fork（2026-09-28，缓存优化）：透传 constant 标志 —— 外部交付层（pre-step 尾部
+      //   追加）需要区分「常驻条目（留在 system，稳定前缀）」与「触发条目（每轮变，搬去尾部）」。
+      constant: entry.constant === true,
     })
     decisions.push(auditDecision(candidate, resourceId, 'included', candidate.reason, projected))
   }

@@ -343,6 +343,8 @@ function compileTavernProfileUnbounded({
       callConfig: preset === null ? {} : projectPresetCallConfig(preset),
       systemPromptMode: preset?.systemPromptMode === 'replace' ? 'replace' : 'append',
       runtimeContexts: [],
+      // ★ vv5v5 fork：触发制世界书条目（绿灯）—— 由尾部交付层取用，⛔ 不进 system body。
+      runtimeLoreEntries: [],
       activeLoreEntries: [],
       diagnostics: [],
       userInjection: {
@@ -368,6 +370,8 @@ function compileTavernProfileUnbounded({
     .map((entry) => ({
       ...entry,
       position: entry.position === 'before' || entry.position === 'before-character' ? 'before' : 'after',
+      // ★ vv5v5 fork（2026-09-28）：保留 constant —— 常驻条目留 system；触发条目进尾部交付。
+      constant: entry.constant === true,
     }))
   const beforeLore = normalizedLore.filter((entry) => entry.position === 'before')
   const afterLore = normalizedLore.filter((entry) => entry.position === 'after')
@@ -446,6 +450,14 @@ function compileTavernProfileUnbounded({
     callConfig: preset === null ? {} : projectPresetCallConfig(preset),
     systemPromptMode: preset?.systemPromptMode === 'replace' ? 'replace' : 'append',
     runtimeContexts: [],
+    // ★ vv5v5 fork：绿灯（非 constant）条目 → 尾部交付；蓝灯（constant）照旧进 body。
+    runtimeLoreEntries: (() => {
+      const picked = []
+      const take = (entries) => { for (const entry of entries) if (entry.constant !== true) picked.push(entry) }
+      take(beforeLore)
+      take(afterLore)
+      return picked
+    })(),
     activeLoreEntries: normalizedLore.map((entry) => entry?.id ?? entry?.uid).filter((id) => id !== undefined),
     diagnostics,
     userInjection,
@@ -576,6 +588,9 @@ function loreText(entries, context) {
 
 function appendLore(body, entries, context) {
   for (const entry of entries) {
+    // ★ vv5v5 fork（2026-09-28）：触发条目（非 constant）不进 system body —— 尾部交付层
+    //   （tavern-loader/index.js 的 pre-step）会取 runtimeLoreEntries 渲染到对话尾部。
+    if (entry.constant !== true) continue
     body.sources = [source('worldbook', null, 'content', entry.content, {
       resourceId: entry.resourceId ?? null,
       entryId: entry.uid == null ? null : String(entry.uid),
