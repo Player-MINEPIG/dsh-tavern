@@ -105,9 +105,9 @@
   },
   "license": "MIT",
   "dependencies": {
-    "dompurify": "3.4.14",
-    "marked": "18.0.10",
     "@jitl/quickjs-singlefile-browser-release-sync": "0.31.0",
+    "dompurify": "3.4.16",
+    "marked": "18.0.10",
     "quickjs-emscripten-core": "0.31.0"
   }
 }
