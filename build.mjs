@@ -15,7 +15,11 @@ await build({
 })
 
 const body = readFileSync('dist/client.cjs', 'utf8')
-const wrapped = `window.__ModuleLoader__.load({
+const interpreterLicense = readFileSync('packages/presentation/THIRD_PARTY_NOTICES.txt', 'utf8')
+const wrapped = `/*! Bundled QuickJS notices:
+${interpreterLicense}
+*/
+window.__ModuleLoader__.load({
 \tid: ${JSON.stringify(id)},
 \tfactory: (require) => {
 \t\tvar module = { exports: {} };

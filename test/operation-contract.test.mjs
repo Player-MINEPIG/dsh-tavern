@@ -152,3 +152,33 @@ test('relink records catalog compensation only when the compensating write succe
     assert.equal(records.at(-1).playthroughId, 'p')
   }
 })
+
+for (const method of ['create', 'fork']) {
+  test(`DSH ${method} attachment failure preserves only the confirmed new identity`, async () => {
+    for (const [code, details, created] of [
+      ['session/workspace-attach-failed', { sessionId: 'new-session', workspaceId: 'PRIVATE_WORKSPACE' }, true],
+      ['session/workspace-attach-failed', {}, false],
+      ['session/workspace-attach-failed', { sessionId: 123 }, false],
+      ['session/workspace-attach-failed', { sessionId: '' }, false],
+      ['gateway/internal', { sessionId: 'unconfirmed' }, false],
+    ]) {
+      let resolved = false, inserted = false
+      const host = createPlayHost({ sessionController: {
+        inspect: async () => ({ meta: { version: 4 } }),
+        [method]: async () => { throw Object.assign(new Error('PRIVATE_BODY'), { code, details }) },
+        resolveAgent: async () => { resolved = true },
+      }, workspaceController: { insertSessionBefore: async () => { inserted = true } } })
+      const { handler, records } = fixture(host)
+      const res = await invoke(handler, 'POST', method === 'create' ? '/sessions' : '/sessions/source/branch',
+        { atEventId: 3, sessionFormatVersion: 4 })
+      assert.equal(res.statusCode, code === 'gateway/internal' ? 502 : 409)
+      assert.deepEqual(records.map(row => row.event), ['operation.started', ...(created ? ['session.created'] : []), 'operation.failed'])
+      assert.equal(records.at(-1).sessionId, created ? 'new-session' : method === 'fork' ? 'source' : undefined)
+      assert.equal(records.at(-1).operationId, res.body.operationId)
+      assert.equal(records.at(-1).errorCode, res.body.code)
+      assert.equal(res.body.createdSessionId, undefined)
+      assert.equal(resolved || inserted, false)
+      assert.doesNotMatch(JSON.stringify(records), /PRIVATE_BODY|PRIVATE_WORKSPACE|unconfirmed/)
+    }
+  })
+}

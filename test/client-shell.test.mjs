@@ -196,7 +196,7 @@ test('only the client composition root owns the Tavern shell overlay', () => {
   assert.doesNotMatch(character, /slots\.inject|dsh-tavern-character-overlay/)
   assert.match(root, /RegexPanel/)
   assert.match(root, /filter\(item => !item\.playOnly \|\| chromeMode === 'play'\)/)
-  assert.doesNotMatch(user, /slots\.inject|avatar|image\/|<img/)
+  assert.doesNotMatch(user, /slots\.inject/)
   assert.match(root, /WorldBookPanel/)
   assert.match(root, /UserPanel/)
   assert.match(root, /SessionTemplatePanel/)

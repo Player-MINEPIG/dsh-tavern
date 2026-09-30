@@ -1,3 +1,4 @@
+import { tavernFetch as fetch } from '../../client/src/api-fetch.js'
 import {
   createElement,
   useCallback,
@@ -83,8 +84,8 @@ function TemplateEditor({ selection, onChange, catalogs, disabled }) {
   selection[key] && !items.some(item => item.id === selection[key])
     ? h('option', { value: selection[key] }, uiMessage('template.missingReference', { id: selection[key] })) : null,
   ...items.map(item => h('option', { key: item.id, value: item.id }, rawText(item.name)))))
-  const toggle = (label, checked, change) => h('label', { className: 'dtv-field' },
-    h('span', null, h('input', { type: 'checkbox', disabled, checked, onChange: event => change(event.target.checked) }), uiMessage(label)))
+  const toggle = (label, checked, change) => h('label', { className: 'dtv-check dtv-template-toggle' },
+    h('input', { type: 'checkbox', disabled, checked, onChange: event => change(event.target.checked) }), uiMessage(label))
   const enumSelect = (label, value, choices, change) => field(label, h('select', {
     className: 'dtv-select', disabled, value: value ?? '', onChange: event => change(event.target.value || null),
   }, ...choices.map(([id, key]) => h('option', { key: id, value: id }, uiMessage(key)))))

@@ -17,7 +17,7 @@ const h = createLocalizedElement(createElement)
 const controllers = new WeakMap()
 
 const css = `
-.dtv-play-turn-actions{display:flex;align-items:center;gap:calc(2px * var(--dtv-rp-action-scale,1));min-height:calc(28px * var(--dtv-rp-action-scale,1))}.dtv-play-turn-action{width:calc(28px * var(--dtv-rp-action-scale,1));height:calc(28px * var(--dtv-rp-action-scale,1));border:0;border-radius:calc(8px * var(--dtv-rp-action-scale,1));background:transparent;color:var(--dsw-alias-label-tertiary);font:inherit;font-size:calc(14px * var(--dtv-rp-action-scale,1));cursor:pointer;display:grid;place-items:center}.dtv-play-turn-action:hover{background:var(--dsw-alias-interactive-bg-hover);color:var(--dsw-alias-label-primary)}.dtv-play-turn-action:disabled{cursor:default;opacity:.38}.dtv-play-turn-position{padding:0 calc(5px * var(--dtv-rp-action-scale,1));color:var(--dsw-alias-label-tertiary);font-size:calc(10px * var(--dtv-rp-action-scale,1))}
+.dtv-play-turn-actions{display:flex;flex-wrap:wrap;align-items:center;gap:calc(2px * var(--dtv-rp-action-scale,1));min-height:calc(28px * var(--dtv-rp-action-scale,1))}.dtv-play-turn-action{flex-shrink:0;width:calc(28px * var(--dtv-rp-action-scale,1));height:calc(28px * var(--dtv-rp-action-scale,1));border:0;border-radius:calc(8px * var(--dtv-rp-action-scale,1));background:transparent;color:var(--dsw-alias-label-tertiary);font:inherit;font-size:calc(14px * var(--dtv-rp-action-scale,1));cursor:pointer;display:grid;place-items:center}.dtv-play-turn-action:hover{background:var(--dsw-alias-interactive-bg-hover);color:var(--dsw-alias-label-primary)}.dtv-play-turn-action:disabled{cursor:default;opacity:.38}.dtv-play-turn-position{padding:0 calc(5px * var(--dtv-rp-action-scale,1));color:var(--dsw-alias-label-tertiary);font-size:calc(10px * var(--dtv-rp-action-scale,1))}
 .dtv-play-display-editor{display:flex;flex-direction:column;align-self:stretch;gap:8px}.dtv-play-display-editor textarea{box-sizing:border-box;width:100%;min-height:180px;max-height:55vh;resize:vertical;padding:12px 14px;border:1px solid var(--dsw-alias-border-l2);border-radius:12px;background:var(--dsw-alias-bg-base);color:var(--dsw-alias-label-primary);font:inherit;font-size:14px;line-height:1.65}.dtv-play-display-editor textarea:focus{outline:2px solid color-mix(in srgb,var(--dsw-alias-state-business-primary,#2677d9) 35%,transparent);border-color:var(--dsw-alias-state-business-primary,#2677d9)}.dtv-play-display-editor-actions{display:flex;justify-content:flex-end;gap:8px}.dtv-play-display-editor-button{min-width:76px;min-height:34px;padding:7px 12px;border:1px solid var(--dsw-alias-border-l2);border-radius:8px;background:var(--dsw-alias-button-secondary-fill,var(--dsw-alias-bg-base));color:var(--dsw-alias-label-primary);font:inherit;cursor:pointer}.dtv-play-display-editor-button[data-primary=true]{border-color:transparent;background:var(--dsw-alias-state-business-primary,#2677d9);color:var(--dsw-alias-button-primary-label,#fff)}.dtv-play-display-editor-button:disabled{cursor:default;opacity:.45}
 `
 
@@ -47,6 +47,19 @@ function Action({ icon, label, disabled = false, disabledLabel, onClick }) {
     'aria-label': label,
     onClick,
   }, icon)
+}
+
+export function PlayTurnActionsPreview({ scale = 1 }) {
+  installStyles()
+  return h('div', { className: 'dtv-play-turn-actions', role: 'group', 'aria-label': uiMessage('appearance.actionPreview'), style: { '--dtv-rp-action-scale': scale } },
+    h(Action, { icon: '⧉', label: uiMessage('play.chat.copy') }),
+    h(Action, { icon: '‹', label: uiMessage('play.chat.previousReply') }),
+    h('span', { className: 'dtv-play-turn-position' }, '1/2'),
+    h(Action, { icon: '›', label: uiMessage('play.chat.nextReply') }),
+    h(Action, { icon: '⑂', label: uiMessage('play.chat.forkPlaythrough') }),
+    h(Action, { icon: '↩', label: uiMessage('play.chat.rollbackPlaythrough') }),
+    h(Action, { icon: '✎', label: uiMessage('play.chat.editDisplay') }),
+  )
 }
 
 export function turnActionCapabilities(turn) {

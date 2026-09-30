@@ -17,7 +17,10 @@ hr{border:0;border-top:1px solid var(--dsw-alias-border-l2,#555)}
 `
 
 export function isolateStyledHtml(template, documentObject) {
-  if (!template.content.querySelector('style')) return template.innerHTML
+  // Inline fixed/absolute positioning can cover the app even without a style
+  // element. It needs the same outer paint boundary as stylesheet-based cards.
+  if (![...template.content.querySelectorAll('style, [style]')]
+    .some(element => !element.closest('[data-dtv-style-boundary]'))) return template.innerHTML
 
   // The outer paint/layout boundary is outside the shadow tree: even a template
   // rule targeting :host or a fixed-position child cannot cover the Host UI.

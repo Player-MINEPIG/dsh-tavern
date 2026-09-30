@@ -1,4 +1,5 @@
 import { isIP } from 'node:net'
+import { randomBytes, timingSafeEqual } from 'node:crypto'
 import { API_ROOT, API_V1 } from './identity.js'
 
 const LOOPBACK_HOSTS = new Set(['127.0.0.1', 'localhost', '::1'])
@@ -91,6 +92,14 @@ export function secureTavernApi(handler, options = {}) {
   const allowedHosts = normalizeAllowedHosts(options.allowedHosts)
   const allowRemoteClients = options.allowRemoteClients === true
   const characterImportRoot = options.characterImportApiRoot ?? API_V1
+  // A per-handler, memory-only CSRF capability. Desktop's authenticated proxy
+  // strips Origin; possession is required there instead of trusting a marker.
+  const requestToken = randomBytes(32).toString('hex')
+  const validToken = req => {
+    const value = header(req, 'x-tavern-request-token')
+    return typeof value === 'string' && /^[a-f0-9]{64}$/.test(value)
+      && timingSafeEqual(Buffer.from(value), Buffer.from(requestToken))
+  }
 
   return async (req, res) => {
     res.setHeader('Cache-Control', 'no-store')
@@ -117,8 +126,21 @@ export function secureTavernApi(handler, options = {}) {
     }
 
     const method = String(req.method ?? 'GET').toUpperCase()
+    const origin = header(req, 'origin')
+    const crossSite = header(req, 'sec-fetch-site') === 'cross-site'
+    if (new URL(req.url ?? '/', 'http://localhost').pathname === `${API_ROOT}/request-token`) {
+      // Custom header forces a CORS preflight on foreign pages; we never grant
+      // CORS. Null/foreign Origin is denied even when the caller has a token.
+      if (method !== 'GET') return sendError(res, 405, 'TAVERN_API_METHOD', 'GET required.')
+      if (crossSite || (origin !== undefined && !sameOrigin(req))
+        || header(req, 'x-tavern-client') !== 'embedded') {
+        return sendError(res, 403, 'TAVERN_API_ORIGIN_FORBIDDEN', 'Same-origin embedded client required.')
+      }
+      res.setHeader('Content-Type', 'application/json; charset=utf-8')
+      return res.end(JSON.stringify({ ok: true, token: requestToken }))
+    }
     if (isMutation(method)) {
-      if (header(req, 'sec-fetch-site') === 'cross-site' || !sameOrigin(req)) {
+      if (crossSite || !(sameOrigin(req) || (origin === undefined && validToken(req)))) {
         return sendError(res, 403, 'TAVERN_API_ORIGIN_FORBIDDEN', 'Mutation requests must come from the same DSH Web origin.')
       }
       const mediaType = requestMediaType(req)

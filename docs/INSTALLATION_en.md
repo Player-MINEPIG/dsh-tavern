@@ -1,61 +1,41 @@
 # Cross-platform installation and removal
 
-The current DSH target is `0.1.7-rc.1`. When moving existing playthroughs from the earlier DSH coordinate format, follow the [upgrade guide](DSH_0.1.7_MIGRATION_en.md) first. This DSH version requires Node `^22.19.0 || >=24.0.0`, regardless of Tavern's standalone Node 20 declaration.
-
 [中文](INSTALLATION.md)
 
-This guide covers Tavern `2.4.3`; only DSH `0.1.7-rc.1` is supported. Upgrade old external history references with the migration guide and retain pre-upgrade backups; no rollback tool is provided. The default root [README](../README.md) is Chinese. The English landing page is [README_en.md](../README_en.md) (no screenshots). This file is the current lifecycle, verification, and recovery contract. For another version, switch to its tag and read the installation instructions in that tag.
+Tavern **2.5.0** supports DSH **0.2.0-rc.2**, requiring Node `^22.19.0 || >=24.0.0`. Frontend and backend ship in one plugin embedded in DSH Web/Desktop. No additional standalone Web UI is provided. For earlier versions, use the corresponding tag's documentation.
 
-The scripts use Node.js as their common entry point and normalize paths for
-Windows, macOS, and Linux. macOS/Linux execute `dsh` directly. Windows safely
-locates npm's `dsh.ps1` shim and invokes it through the system PowerShell with
-an argument array, so paths are not reconstructed as shell command text. Run
-the scripts from the `dsh-tavern` checkout with Node.js 20 or newer and target DSH
-`0.1.7-rc.1` on `PATH`; starting its Host requires the Node range above.
+Retain backups and follow the [coordinate migration guide](DSH_0.1.7_MIGRATION_en.md) for older external references. Already migrated V4 references need no further conversion; no rollback tool is provided. Put the target DSH on `PATH` and initialize the intended profile before installation.
 
-Only the repository root is installed. `packages/tavern-format`,
-`packages/preset`, and `packages/tavern-loader` are internal boundaries shipped
-inside that one plugin; do not try to add them to dsh separately. The format
-layer can be consumed as a JavaScript library through the root package export,
-but by itself it intentionally has no agent-loading effect.
+## Install 2.5.0
 
-## Install 2.4.3
+Stop the target Host, then install the fixed version:
 
-DSH rc.1 checks declared DSH peer versions at installation and startup. Tavern 2.4.3 matches rc.1 without a version exemption. If compatibility is refused, check the Host and plugin versions rather than using an exemption in place of an upgrade.
-
-Install `2.4.3` from GitHub into the default `web` profile using its version tag:
-
-```text
-dsh plugin --profile web add github:Player-MINEPIG/dsh-tavern#v2.4.3
+```sh
+dsh plugin --profile web add github:Player-MINEPIG/dsh-tavern#v2.5.0
 ```
 
 <a id="source-candidate"></a>
 <a id="source-installation"></a>
 ### Install and validate from source
 
-Use a separate test profile/home. Stop its Host before installing. Check out the
-`v2.4.3` tag, then install from source:
+Use an isolated test profile/home initialized with the target DSH:
 
 ```sh
-git clone --branch v2.4.3 https://github.com/Player-MINEPIG/dsh-tavern.git
+git clone --branch v2.5.0 https://github.com/Player-MINEPIG/dsh-tavern.git
 cd dsh-tavern
 npm ci --legacy-peer-deps
 node scripts/install.mjs --dsh-home /absolute/path/to/test-home --profile web
 ```
 
-See the [patch release documentation checklist](TESTING_en.md#patch-release-documents).
-
-Start DSH `0.1.7-rc.1` with that same `DSH_HOME`, then follow the
-[developer verification guide](TESTING_en.md). A CLI upgrade alone does not update
-the plugin installed in a profile. Record `git rev-parse HEAD` for the tested build.
+Start DSH with that same `DSH_HOME`, then follow [developer verification](TESTING_en.md). A CLI upgrade alone does not update the plugin in a profile. Record the tested source revision. The scripts normalize macOS/Linux/Windows paths; Windows uses the npm PowerShell shim with an argument array. Install only the repository root, not its internal packages. Installation/startup peer admission requires no compatibility exemption.
 
 ### DSH provides the runtime peers
 
-The current `package.json` declares `@deepseek-ai/dsh-util-crypto` at `0.1.7-rc.1` and `@deepseek-ai/cordis` at `4.0.4` as required `peerDependencies` supplied by the DSH runtime, so the plugin does not install a second copy. Source builds and tests use the `0.1.7-rc.1` crypto package pinned in `devDependencies`. Browser contracts are declared in `dsh.client.inject`, supplied by DSH, and not bundled into Tavern.
+The current `package.json` declares `@deepseek-ai/dsh-util-crypto` at `0.2.0-rc.2` and `@deepseek-ai/cordis` at `4.0.4` as required `peerDependencies` supplied by the DSH runtime, so the plugin does not install a second copy. Source builds and tests use the `0.2.0-rc.2` crypto package pinned in `devDependencies`. Browser contracts are declared in `dsh.client.inject`, supplied by DSH, and not bundled into Tavern.
 
 DSH profiles use `nodeLinker: hoisted` and `autoInstallPeers: false`; DSH's profile package resolver supplies official dependencies from its installation at startup. Consequently, `dsh plugin add` or `pnpm peers check` may report these peers as missing because the static check does not recognize runtime resolution. Do not rely on a `<DSH_HOME>/profiles/node_modules` link being present, or on a standalone Node process outside DSH as the sole check; verify the Host's resolved versions and plugin startup.
 
-An `ERR_MODULE_NOT_FOUND` after restart is not an ignorable install warning: check that DSH on `PATH` is the target `0.1.7-rc.1`, its installation is complete, and module resolution reaches its packages. Do not mark required peers optional to hide warnings. rc.1 installation and startup checks use the plugin’s declared DSH peer versions. Passing admission does not establish compatibility with every Host behavior; also check the target version and runtime acceptance results.
+An `ERR_MODULE_NOT_FOUND` after restart is not an ignorable install warning: check that DSH on `PATH` is the target `0.2.0-rc.2`, its installation is complete, and module resolution reaches its packages. Do not mark required peers optional to hide warnings. DSH installation and startup checks use the plugin’s declared DSH peer versions. Passing admission does not establish compatibility with every Host behavior; also check the target version and runtime acceptance results.
 
 ### Data and source installation
 

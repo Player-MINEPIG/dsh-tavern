@@ -19,5 +19,7 @@ test('official plugin admission accepts the target without an exemption and reje
   const denied = evaluatePluginCompatibility(previous)
   assert.equal(denied.exempted, false)
   assert.deepEqual(denied.peers, { '@deepseek-ai/dsh-util-crypto': '0.1.7-alpha.2' })
-  assert.equal(evaluatePluginCompatibility(manifest, {}, '0.1.7-rc.2').exempted, false)
+  for (const unverified of ['0.1.7-rc.1', '0.1.7-rc.2', '0.2.0-rc.1', '0.2.0-rc.3']) {
+    assert.equal(evaluatePluginCompatibility(manifest, {}, unverified).exempted, false)
+  }
 })

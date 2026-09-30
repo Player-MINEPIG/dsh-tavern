@@ -18,7 +18,12 @@ export function mapHostError(error) {
   if (code === 'workspace/not-found' || code === 'workspace-not-found') return httpError(404, message, 'PLAY_WORKSPACE_NOT_FOUND')
   if (code === 'workspace/invalid-path' || code === 'workspace-invalid-path') return httpError(400, message, 'PLAY_WORKSPACE_INVALID')
   if (code === 'session/workspace-attach-failed' || code === 'workspace-attach-failed') {
-    return httpError(409, message, 'PLAY_WORKSPACE_ATTACH_FAILED')
+    const mapped = httpError(409, message, 'PLAY_WORKSPACE_ATTACH_FAILED')
+    // DSH confirms creation before workspace attachment; retain only that
+    // identity for the operation contract, never the raw Remote details.
+    const sessionId = error?.details?.sessionId
+    if (typeof sessionId === 'string' && sessionId !== '') mapped.createdSessionId = sessionId
+    return mapped
   }
   if (code === 'gateway/bad-request') return httpError(400, message, 'PLAY_HOST_BAD_REQUEST')
   if (typeof error?.status === 'number') return error

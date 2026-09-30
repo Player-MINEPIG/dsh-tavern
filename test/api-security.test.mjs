@@ -155,3 +155,27 @@ test('standalone world-book imports remain same-origin JSON-only mutations', asy
   })
   assert.equal(binary.status, 415)
 })
+
+test('desktop origin-less writes require a scoped token and never bypass explicit foreign origins', async () => {
+  const handler = secureTavernApi(successHandler)
+  const headers = { host: 'localhost:53101', 'x-tavern-client': 'embedded' }
+  const issue = extra => invoke(handler, { url: '/pmp-dsh-tavern/api/request-token', headers: { ...headers, ...extra } })
+  assert.equal((await issue({ origin: 'null' })).status, 403)
+  assert.equal((await issue({ origin: 'https://evil.test' })).status, 403)
+  assert.equal((await issue({ 'sec-fetch-site': 'cross-site' })).status, 403)
+  assert.equal((await issue({ 'x-tavern-client': '' })).status, 403)
+  const { body, headers: responseHeaders } = await issue({})
+  assert.match(body.token, /^[a-f0-9]{64}$/)
+  assert.equal(responseHeaders['access-control-allow-origin'], undefined)
+  const mutation = extra => invoke(handler, { method: 'PUT', headers: {
+    host: 'localhost:53101', 'content-type': 'application/json', 'x-tavern-request-token': body.token, ...extra,
+  } })
+  assert.equal((await mutation({})).status, 204)
+  for (const extra of [{ origin: 'null' }, { origin: 'dsh-app://app' }, { origin: 'https://evil.test' },
+    { 'sec-fetch-site': 'cross-site' }, { 'x-tavern-request-token': 'a'.repeat(64) }, { 'x-tavern-request-token': '你'.repeat(64) }]) {
+    assert.equal((await mutation(extra)).status, 403)
+  }
+  assert.equal((await invoke(secureTavernApi(successHandler), { method: 'PUT', headers: {
+    host: 'localhost:53101', 'content-type': 'application/json', 'x-tavern-request-token': body.token,
+  } })).status, 403, 'a restarted Host invalidates the old capability')
+})

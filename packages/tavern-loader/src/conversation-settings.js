@@ -1,3 +1,4 @@
+import { normalizeBubbleStyle } from '../../presentation/bubble-style.js'
 import {
   mkdirSync,
   readFileSync,
@@ -10,7 +11,7 @@ import { join, resolve } from 'node:path'
 import { API_V1 } from '../../identity.js'
 
 const SETTINGS_FILE = 'conversation-settings.json'
-const MAX_SETTINGS_BYTES = 512
+const MAX_SETTINGS_BYTES = 16 * 1024
 const MIN_SCALE = 0.75
 const MAX_SCALE = 1.5
 const SCALE_STEP = 0.05
@@ -35,10 +36,13 @@ function normalizeScale(value, field) {
 
 export function normalizeConversationSettings(value) {
   if (!isRecord(value)) throw new TypeError('Conversation settings must be an object')
-  const allowed = new Set(['textScale', 'actionScale'])
+  const allowed = new Set(['textScale', 'actionScale', 'bubbleStyle', 'interactiveCards'])
   const unexpected = Object.keys(value).find(key => !allowed.has(key))
   if (unexpected !== undefined) throw new TypeError(`Unsupported conversation setting "${unexpected}"`)
+  if (value.interactiveCards !== undefined && typeof value.interactiveCards !== 'boolean') throw new TypeError('interactiveCards must be boolean')
   return {
+    ...(value.bubbleStyle === undefined ? {} : { bubbleStyle: normalizeBubbleStyle(value.bubbleStyle) }),
+    ...(value.interactiveCards === undefined ? {} : { interactiveCards: value.interactiveCards }),
     schemaVersion: 1,
     textScale: normalizeScale(value.textScale, 'textScale'),
     actionScale: normalizeScale(value.actionScale, 'actionScale'),
@@ -56,6 +60,8 @@ function readSettings(path) {
     return normalizeConversationSettings({
       textScale: parsed?.textScale,
       actionScale: parsed?.actionScale,
+      ...(parsed?.bubbleStyle === undefined ? {} : { bubbleStyle: parsed.bubbleStyle }),
+      ...(parsed?.interactiveCards === undefined ? {} : { interactiveCards: parsed.interactiveCards }),
     })
   } catch (error) {
     if (error?.code === 'ENOENT' || error instanceof SyntaxError || error instanceof TypeError) return defaults()
@@ -84,7 +90,7 @@ export class ConversationSettingsStore {
     this.settings = readSettings(this.path)
   }
 
-  get() { return { ...this.settings } }
+  get() { return structuredClone(this.settings) }
 
   set(value) {
     const normalized = normalizeConversationSettings(value)
@@ -122,7 +128,7 @@ function readBoundedJson(req) {
     req.on('data', chunk => {
       bytes += chunk.length
       if (bytes > MAX_SETTINGS_BYTES) {
-        const error = new Error('Conversation settings request exceeds 512 bytes')
+        const error = new Error('Conversation settings request exceeds 16 KiB')
         error.status = 413
         fail(error)
         req.destroy()

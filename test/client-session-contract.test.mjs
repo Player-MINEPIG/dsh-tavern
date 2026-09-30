@@ -1,6 +1,7 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import React from 'react'
+import { renderToStaticMarkup } from 'react-dom/server'
 import { MowanChatView } from '../packages/client/src/play/chat.js'
 import { TavernTraceView } from '../packages/tavern-trace/src/client.js'
 import { PlaySessionDock } from '../packages/client/src/play/notice.js'
@@ -37,28 +38,28 @@ test('RP displays one localized Host alert, clears on progress, and isolates ses
     running: false, blank: false, promptError: null, lastAgentError: null, openError: null,
     awaitingFirstTurn: false, pendingSubmissions: [],
   }
-  const render = (session, chat = failedChat, sessionId = 'failed') => renderSelectors(MowanChatView, {
+  const render = (session, chat = failedChat, sessionId = 'failed') => renderToStaticMarkup(renderSelectors(MowanChatView, {
     sessionId, playClient: {}, playthrough: null,
     useSession: select => select(session), useChat: select => select(chat),
-  }).props.children[0]
+  }).props.children[0])
   try {
     setClientUiSettings({ locale: 'zh-CN' }, { announce: false })
     const chinese = render(normal)
-    assert.equal(chinese.props.role, 'alert')
-    assert.equal(chinese.props.children, '出现错误，请切换到「对话」视图查看更多信息。')
-    assert.equal(JSON.stringify(chinese).includes('PRIVATE PROVIDER DETAIL'), false)
+    assert.match(chinese, /role="alert"/)
+    assert.match(chinese, /会话操作失败/)
+    assert.match(chinese, /PRIVATE PROVIDER DETAIL/)
     setClientUiSettings({ locale: 'en' }, { announce: false })
-    assert.equal(render(normal).props.children, 'An error occurred. Switch to the Chat view for more information.')
+    assert.match(render(normal), /Session operation failed/)
     for (const busy of [{ running: true }, { pendingSubmissions: [{}] }, { awaitingFirstTurn: true }]) {
-      assert.equal(render({ ...normal, ...busy }), null)
+      assert.equal(render({ ...normal, ...busy }), '')
     }
     // A send/stop/open error must remain visible even if the lifecycle still says busy.
     for (const error of [{ promptError: { op: 'send' } }, { promptError: { op: 'stop' } }, { openError: {} }, { lastAgentError: '' }]) {
-      assert.equal(render({ ...normal, running: true, ...error }).props.role, 'alert')
+      assert.match(render({ ...normal, running: true, ...error }), /role="alert"/)
     }
     const emptyChat = { ...failedChat, timeline: { turnOrder: [], turns: new Map() } }
-    assert.equal(render(normal, emptyChat, 'other-session'), null)
-    assert.equal(render(normal).props.role, 'alert') // returning to the failed session still explains its state
+    assert.equal(render(normal, emptyChat, 'other-session'), '')
+    assert.match(render(normal), /role="alert"/) // returning to the failed session still explains its state
   } finally {
     setClientUiSettings(previousSettings, { announce: false })
   }

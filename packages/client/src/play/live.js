@@ -1,3 +1,4 @@
+import { tavernFetch } from '../api-fetch.js'
 import { API_V1, API_V2 } from '../../../identity.js'
 import {
   normalizeCatalog,
@@ -57,7 +58,7 @@ function pathQuery(path) {
 }
 
 export function createLivePlayClient({
-  fetchImpl = globalThis.fetch,
+  fetchImpl = tavernFetch,
   apiRoot = API_V2,
   v1Root = API_V1,
 } = {}) {
@@ -368,6 +369,10 @@ export function createLivePlayClient({
 
     putPresetRegexScripts(id, regexScripts) {
       return v1('PUT', `/presets/${encodeURIComponent(id)}/regex-scripts`, { regexScripts })
+    },
+
+    getUserSelection(sessionId) {
+      return v1('GET', `/user-selection?sessionId=${encodeURIComponent(sessionId)}`)
     },
 
     getActive(sessionId) {

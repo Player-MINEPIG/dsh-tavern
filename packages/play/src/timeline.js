@@ -1,3 +1,4 @@
+import { validateAppearance } from '../../presentation/avatar.js'
 import { httpError } from './http.js'
 import { timelineHead } from './timeline-tree.js'
 import { isArchiveTimestamp } from './playthrough-state.js'
@@ -265,6 +266,9 @@ function validateKnownPlaythroughExt(ext, label) {
 }
 
 function validateKnownTimelineExt(ext, label) {
+  if (ext?.pmpDshTavern?.appearance !== undefined) {
+    try { validateAppearance(ext.pmpDshTavern.appearance) } catch (error) { throw httpError(400, error.message, 'PLAY_APPEARANCE_INVALID') }
+  }
   if (ext === undefined) return undefined
   if (!isRecord(ext)) throw httpError(400, `${label} must be an object`, 'PLAY_TIMELINE_INVALID')
   const known = ext.pmpDshTavern

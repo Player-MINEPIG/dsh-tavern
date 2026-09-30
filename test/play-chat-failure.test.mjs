@@ -1,7 +1,7 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import {
-  latestTurnFailed,
+  latestTurnFailed, latestTurnFailureDetail, sessionFailureDetail,
   sessionFailed,
   submissionInProgress,
 } from '../packages/client/src/play/chat-failure.js'
@@ -51,4 +51,16 @@ test('a new submission hides the old terminal failure during admission and gener
     { running: true }, { awaitingFirstTurn: true }, { pendingSubmissions: [{}] },
   ]) assert.equal(submissionInProgress(state), true)
   assert.equal(submissionInProgress({ running: false, awaitingFirstTurn: false, pendingSubmissions: [] }), false)
+})
+
+test('failure details expose public errors directly and clear with their sources', () => {
+  assert.equal(sessionFailureDetail({}), null)
+  assert.equal(sessionFailureDetail({ promptError: { op: 'send', error: { code: 'BUSY', message: 'Write handle occupied' } } }), 'BUSY: Write handle occupied')
+  assert.equal(sessionFailureDetail({ openError: { code: 'NOT_FOUND', message: 'Missing session' } }), 'NOT_FOUND: Missing session')
+  assert.equal(sessionFailureDetail({ lastAgentError: 'Write handle occupied' }), 'Write handle occupied')
+  assert.equal(sessionFailureDetail({ lastAgentError: 'same', openError: { message: 'same' } }), 'same')
+  assert.equal(sessionFailureDetail({ promptError: { error: {} } }), '')
+  assert.equal(latestTurnFailureDetail(chat({ kind: 'error', error: { code: 'timeout', message: 'Provider timed out' } })), 'timeout: Provider timed out')
+  assert.equal(latestTurnFailureDetail(chat({ kind: 'error', error: {} })), '')
+  assert.equal(latestTurnFailureDetail(chat({ kind: 'error', error: {} }, { kind: 'completed' })), null)
 })

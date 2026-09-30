@@ -10,7 +10,7 @@ import * as tavern from '../packages/tavern-loader/src/index.js'
 
 const runtimeRoot = process.env.DSH_TAVERN_PROMPT_COMPAT_ROOT
 
-test('DSH 0.1.7 real AgentLoop: official sections, LLM capture, durable system message, complete override, unload', { skip: !runtimeRoot, timeout: 20000 }, async () => {
+test('DSH real AgentLoop: official sections, LLM capture, durable system message, complete override, unload', { skip: !runtimeRoot, timeout: 20000 }, async () => {
   const require = createRequire(join(resolve(runtimeRoot), 'package.json'))
   const load = name => import(pathToFileURL(require.resolve(name)).href)
   const { Context } = await load('@deepseek-ai/cordis')

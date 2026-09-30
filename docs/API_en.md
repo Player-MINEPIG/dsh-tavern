@@ -2,7 +2,7 @@
 
 [中文](API.md) · [v3 detailed contract](PROMPT_API_V3_en.md) · [Frontend integration](FRONTEND_INTEGRATION_en.md)
 
-Contract version: Tavern **2.4.3**, supporting only DSH `0.1.7-rc.1`.
+Contract: Tavern 2.5.0, supporting only DSH `0.2.0-rc.2`.
 Root: `/pmp-dsh-tavern/api`. API versions and DSH log format V4 are independent.
 
 All endpoint catalogs use **Method / Path / Behavior / Status**, following the v2
@@ -18,11 +18,11 @@ message coordinates, branch inputs, and unmigrated timeline references.
 <a id="impact-on-third-party-consumers-in-240"></a>
 ## Impact on third-party consumers in the current version
 
-The current source builds on the 2.4.3 compatibility baseline for DSH `0.1.7-rc.1`, with optional operation log reads and correlation fields; older Hosts may lack this capability. The following describes the 2.4 series changes from earlier releases.
+Version 2.5.0 targets DSH `0.2.0-rc.2` and adds persistent operation-log queries and correlation, an origin-stripping desktop request token, optional user avatars and presentation settings. It also retains the following contracts introduced in the 2.4 series.
 
 Compared with `v2.3.2`, the API root, v1/v2/v3 prefixes and existing routes remain.
 This does not mean that every accepted input, historical reference or Host integration behavior is unchanged.
-Only DSH `0.1.7-rc.1` is supported; other versions are outside the supported range.
+Only DSH `0.2.0-rc.2` is supported; other versions are outside the supported range.
 
 | Integration | Impact and consumer requirements |
 | --- | --- |
@@ -90,6 +90,10 @@ Audit evidence: [Trace API handler](../packages/tavern-loader/src/prompt-trace-a
 For public contracts and read timing, see [consumer read paths and compatibility boundaries](PROMPT_API_V3_en.md#consumer-read-paths-and-compatibility-boundaries).
 An assembled section is not necessarily an original source field; current resources, historical sections,
 and runtime assembly are not interchangeable.
+
+## Desktop request token
+
+`GET /pmp-dsh-tavern/api/request-token` requires `X-Tavern-Client: embedded` and returns `{ok:true,token}` with a process-local 64-character hex token and no-store caching. It uses the same TCP/Host checks, rejects foreign/null Origin and cross-site requests, and enables no CORS. The official `dsh-app://app` proxy strips Origin, so mutation requests from the embedded desktop client send `X-Tavern-Request-Token`. Only absent-Origin mutations may use this token; explicit foreign/null Origin remains forbidden. HTTP browser mutations keep same-origin validation. A Host restart invalidates tokens; the bundled client retries once after an origin rejection. This is CSRF protection, not authentication.
 
 <a id="v2-stable-surface"></a>
 ## v2 Tavern-owned interfaces
@@ -246,7 +250,7 @@ Each message from `GET /sessions/:id/messages` keeps two independent classificat
 
 - `role` is the model-facing message role, including `user`, `assistant`, `system`, `developer`, and `tool`. DSH runtime context injection may still be `role: "user"` on the model side.
 - `origin.kind` is frontend origin/display semantics: `user`, `context`, `steering`, `assistant`, `system`. Third-party frontends must use it to distinguish real user input from context injection and must not draw a user bubble from `role` alone. Whether to hide or present context separately is a frontend choice.
-- `tool` and `developer` messages retain their official roles and remain readable as context. Bundled RP does not display them as user bubbles or create separate QA turns. 2.4.3 fixes client rejection of these existing responses without adding HTTP response fields.
+- `tool` and `developer` messages retain their official roles and remain readable as context. Bundled RP does not display them as user bubbles or create separate QA turns. The client accepts these existing roles without additional HTTP response fields.
 - `origin.kind: "context"` may include `producer`, `form`, `summary`. Those are bounded optional display metadata. The body stays in `text` / `content` and is not copied into `origin`.
 - New fields are additive for older clients. Existing meanings of `role`, `seq`, `text`, `content`, and `incompleteTurn` do not change. When an older server has no `origin`, the client can only fall back conservatively on `role` and cannot reliably detect context injection.
 
@@ -346,7 +350,7 @@ Prefix: `/pmp-dsh-tavern/api/v1`. `/dsh-tavern/api` is not part of the current c
 | GET | `/users` | User catalog | Implemented |
 | POST | `/users` | Create user | Implemented |
 | POST | `/users/import` | Import Tavern user JSON with a new ID and no session binding | Implemented |
-| GET | `/users/:id/export` | Export the saved name and description as a Tavern JSON attachment | Implemented |
+| GET | `/users/:id/export` | Export the saved name, description and optional avatar as a Tavern JSON attachment | Implemented |
 | GET | `/users/:id` | Complete current user; returns user | Implemented |
 | PATCH | `/users/:id` | Update user | Implemented |
 | DELETE | `/users/:id` | Delete user and clean up related bindings | Implemented |
@@ -414,7 +418,7 @@ Templates use the same envelope with `resourceType: "session-template"` and
 - Each import allocates a new ID. Imported data cannot specify `id`, replace a same-name resource, or
   automatically bind a session. Template import also preserves the selected default template; ordinary
   template creation still selects the newly created template.
-- User exports contain only the saved name and description, excluding user–world-book relations and
+- User exports contain only the saved name, description and optional avatar, excluding user–world-book relations and
   session bindings. Template exports contain name and selection, including ordered resource IDs,
   character options, and saved RP fields. They exclude resource bodies, history, Trace, Inbox, and old
   runtime state. Transfer other content through existing resource/relation APIs; IDs are not remapped by name.
@@ -529,9 +533,11 @@ Both relink paths refuse to overwrite a third card binding that is unrelated to 
 
 | Method | Path | Behavior | Status |
 | --- | --- | --- | --- |
-| GET | `/conversation-settings` | Request: none; response: `{ ok: true, settings: { schemaVersion: 1, textScale, actionScale } }` | Implemented |
-| PUT | `/conversation-settings` | Request: `{ textScale, actionScale }`; response: same as GET | Implemented |
+| GET | `/conversation-settings` | Request: none; response: `{ ok: true, settings: { schemaVersion: 1, textScale, actionScale, bubbleStyle?, interactiveCards? } }` | Implemented |
+| PUT | `/conversation-settings` | Request: `{ textScale, actionScale, bubbleStyle?, interactiveCards? }`; response: same as GET | Implemented |
 | DELETE | `/conversation-settings` | Request: none; response: restore both fields to `1` | Implemented |
+
+Optional `bubbleStyle` and boolean `interactiveCards` follow the [presentation protocol](CONVERSATION_PRESENTATION_en.md); body limit is 16 KiB. Omission or DELETE restores their defaults. User create/PATCH/import/export supports optional raster-data-URI `avatar` up to 128 KiB; null clears it, omission on PATCH preserves it. Timeline `ext.pmpDshTavern.appearance` follows the same document, rejects invalid metadata with `PLAY_APPEARANCE_INVALID`, and uses existing revision/CAS writes.
 
 Both scales are finite numbers from `0.75`–`1.5` in steps of `0.05`. PUT is a full replace and rejects unknown fields. `textScale` applies to Mowan user/assistant bodies and greeting (including the empty-playthrough opening dock). `actionScale` applies only to the copy, swipe, branch, rollback, and edit row at the end of a durable QA.
 
@@ -614,7 +620,7 @@ Fields, examples, errors and persistence: [v3 detailed contract](PROMPT_API_V3_e
 
 ## Browser chrome mode service
 
-The Tavern client registers the stable service name `pmpDshTavernChrome` through DSH `0.1.7-rc.1` public Cordis `ctx.provide`. This is a Tavern v2 contract, not a DSH Host API. It provides only the `native|play` lifecycle. It does not own or arbitrate any slot, view, or third-party plugin UI.
+The Tavern client registers the stable service name `pmpDshTavernChrome` through DSH `0.2.0-rc.2` public Cordis `ctx.provide`. This is a Tavern v2 contract, not a DSH Host API. It provides only the `native|play` lifecycle. It does not own or arbitrate any slot, view, or third-party plugin UI.
 
 Public face:
 

@@ -29,14 +29,14 @@ test('user CRUD persists only id, name, and description', () => {
   }
 })
 
-test('user resource rejects avatar fields, unsafe ids, and invalid text', () => {
+test('user resource rejects unsafe avatar data, unsafe ids, and invalid text', () => {
   const { directory, store } = temporaryStore()
   try {
-    assert.throws(() => store.create({ id: 'bad', name: 'Bad', description: '', avatar: 'not-allowed' }), /Unsupported user field/)
+    assert.throws(() => store.create({ id: 'bad', name: 'Bad', description: '', avatar: 'not-allowed' }), /Avatar must/)
     assert.throws(() => store.create({ id: '../escape', name: 'Bad', description: '' }), /Invalid user id/)
     assert.throws(() => store.create({ id: 'bad-name', name: 'line\nbreak', description: '' }), /control characters/)
     const user = store.create({ id: 'safe', name: 'Safe', description: '' })
-    assert.throws(() => store.update(user.id, { avatar: 'not-allowed' }), /Unsupported user field/)
+    assert.throws(() => store.update(user.id, { avatar: 'not-allowed' }), /Avatar must/)
   } finally {
     rmSync(directory, { recursive: true, force: true })
   }

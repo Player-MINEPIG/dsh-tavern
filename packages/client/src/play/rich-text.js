@@ -1,3 +1,4 @@
+import { restrictStaticResources } from './static-resources.js'
 import DOMPurifyFactory from 'dompurify'
 import { Marked } from 'marked'
 import { createElement, memo } from 'react'
@@ -207,6 +208,12 @@ export function sanitizeRenderedHtml(html, {
   if (documentObject == null || typeof documentObject.createElement !== 'function') return clean
   const template = documentObject.createElement('template')
   template.innerHTML = clean
+  // Boundary markers are ours, never a promise made by imported content.
+  for (const element of template.content.querySelectorAll('[data-dtv-style-boundary], [data-dtv-style-root]')) {
+    element.removeAttribute('data-dtv-style-boundary')
+    element.removeAttribute('data-dtv-style-root')
+  }
+  restrictStaticResources(template.content)
   for (const link of template.content.querySelectorAll('a[href]')) {
     const href = link.getAttribute('href') ?? ''
     if (href.startsWith('#')) continue

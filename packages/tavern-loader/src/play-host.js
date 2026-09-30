@@ -18,6 +18,17 @@ async function callController(name, controller, method, ...args) {
   }
 }
 
+async function callSessionCreation(controller, method, request, operation) {
+  try {
+    return await callController(`session.${method}`, controller, method, request)
+  } catch (error) {
+    if (error.code === 'PLAY_WORKSPACE_ATTACH_FAILED' && error.createdSessionId) {
+      operation?.checkpoint('session.created', { sessionId: error.createdSessionId })
+    }
+    throw error
+  }
+}
+
 export function createPlayHost({
   sessionController,
   workspaceController,
@@ -48,7 +59,7 @@ export function createPlayHost({
 
     async createSession({ workspaceId, cwd, title }, { operation } = {}) {
       const payload = workspaceId ? { workspaceId } : { cwd }
-      const value = await callController('session.create', sessionController, 'create', payload)
+      const value = await callSessionCreation(sessionController, 'create', payload, operation)
       const sessionId = value?.sessionId
       if (typeof sessionId !== 'string' || sessionId === '') throw missing('session.create')
       operation?.checkpoint('session.created', { sessionId })
@@ -71,7 +82,7 @@ export function createPlayHost({
         requireCoordinates(sessionFormatVersion, coordinates)
         importContexts?.()?.ensureCoordinates?.(sessionId, coordinates)
         if (typeof sessionController?.resolveAgent !== 'function') throw missing('session.resolveAgent')
-        const value = await callController('session.fork', sessionController, 'fork', { sessionId, atSeq })
+        const value = await callSessionCreation(sessionController, 'fork', { sessionId, atSeq }, operation)
         if (typeof value?.sessionId !== 'string' || value.sessionId === '') throw missing('session.fork')
         operation?.checkpoint('session.created', { sessionId: value.sessionId })
         try {

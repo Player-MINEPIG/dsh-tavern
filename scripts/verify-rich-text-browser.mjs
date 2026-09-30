@@ -13,7 +13,7 @@ if (!browser) throw new Error('Set CHROME_PATH to a Chrome/Chromium executable t
 const dir = mkdtempSync(join(tmpdir(), 'tavern-rich-text-'))
 try {
   await build({
-    entryPoints: [fileURLToPath(new URL('./fixtures/rich-text-browser.js', import.meta.url))],
+    entryPoints: [fileURLToPath(new URL(process.env.TAVERN_BROWSER_FIXTURE ?? './fixtures/rich-text-browser.js', import.meta.url))],
     bundle: true, platform: 'browser', format: 'iife', outfile: join(dir, 'fixture.js'),
     banner: process.env.TAVERN_REGEX_FIXTURE ? {
       js: `globalThis.__regexFixture=${JSON.stringify(JSON.parse(readFileSync(process.env.TAVERN_REGEX_FIXTURE, 'utf8')))};`,
@@ -23,7 +23,7 @@ try {
   const output = await new Promise((resolve, reject) => {
     const child = spawn(browser, [
       '--headless', '--disable-gpu', '--no-first-run', '--disable-extensions', '--disable-background-networking',
-      `--user-data-dir=${join(dir, 'profile')}`, '--dump-dom', '--virtual-time-budget=3000',
+      `--user-data-dir=${join(dir, 'profile')}`, '--dump-dom', '--virtual-time-budget=10000',
       `file://${join(dir, 'index.html')}`,
     ], { stdio: ['ignore', 'pipe', 'pipe'] })
     let output = ''

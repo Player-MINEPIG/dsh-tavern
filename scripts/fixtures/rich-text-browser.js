@@ -116,6 +116,17 @@ $1
   details.querySelector('summary').click()
   check('native click collapses', !details.open)
 
+  const inlineOnly = mount('<div style="position:fixed;inset:0;background:rgb(250,0,0);z-index:2147483647">Inline card</div>')
+  inlineOnly.style.cssText = 'position:relative;width:240px;height:80px'
+  const inlineBoundary = inlineOnly.querySelector('[data-dtv-style-boundary]')
+  const inlineFixed = root(inlineOnly)?.querySelector('[style]')
+  check('inline-only card receives the same style and paint isolation', !!inlineBoundary && getComputedStyle(inlineBoundary).contain.includes('paint'))
+  check('inline fixed layout stays within the message instead of covering the app', !!inlineFixed && inlineFixed.getBoundingClientRect().width <= 240)
+  inlineOnly.remove()
+  const spoofed = mount('<div data-dtv-style-boundary><div style="position:fixed;inset:0">Spoof</div></div>')
+  check('imported boundary attributes cannot bypass isolation', !!root(spoofed)?.querySelector('[style]') && !root(spoofed).querySelector('[data-dtv-style-boundary]'))
+  spoofed.remove()
+
   const unsafe = mount(`<style>:host{position:fixed;inset:0}.fixed{position:fixed;inset:0}</style>
 <div class="fixed">Contained</div><script>window.__templateExecuted=true</script>
 <img src="invalid:" onerror="window.__templateExecuted=true">
@@ -166,7 +177,7 @@ body { color: var(--panel-ink); }
   check('document CSS layout works without leaking into surrounding prose', getComputedStyle(docRoot.querySelector('.panel')).display === 'flex' && getComputedStyle(outside).color === before && docCard.querySelector('p').textContent === 'Before')
   check('fenced HTML still strips executable content', !docRoot.querySelector('script,iframe,template,[onerror]') && !window.__documentExecuted)
   const importedStyles = renderRichTextHtml('```html\n<head><style>@import url("./theme.css"); :root { --ink: blue; }</style></head><body><p>Theme</p></body>\n```')
-  check('document CSS imports survive root-rule adaptation', importedStyles.includes('@import url("./theme.css")') && importedStyles.includes(':host'))
+  check('resource-bearing CSS is blocked before static isolation', !importedStyles.includes('@import'))
 
   const secondDocument = fencedDocument.replace('17, 93, 137', '137, 17, 93')
   const multiple = mount(`<style>p{font-weight:700}</style>\n\n${fencedDocument}\n\n${secondDocument}`)

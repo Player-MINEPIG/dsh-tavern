@@ -4,7 +4,7 @@
 
 DSH 破坏性更新评估：[原生依赖架构图与分级矩阵](assets/dsh-dependencies/README.md)（含交互 HTML、仓库相对源码链接和升级检查入口）。
 
-当前合同面向本仓库源码（版本见 [package.json](../package.json)）与 DSH `0.1.7-rc.1`；安装标识为
+当前合同面向本仓库源码（版本见 [package.json](../package.json)）与 DSH `0.2.0-rc.2`；安装标识为
 `pmp-dsh-tavern`。HTTP 挂载 `/pmp-dsh-tavern/api`，资源走 `/v1`，扮演表面合同走
 `/v2`，装配审计走 `/v3`。本文记录当前架构决策与发布审查门槛。
 
@@ -18,7 +18,7 @@ DSH 破坏性更新评估：[原生依赖架构图与分级矩阵](assets/dsh-de
 
 ## 目标 Host 与持久数据边界
 
-本 checkout 的 Tavern 2.4.3 合同面向 DSH 0.1.7-rc.1、Cordis 4.0.4 与 `dsh-util-crypto` 0.1.7-rc.1，不支持旧 Host 运行时。串行 `agent/created` listener 在首次使用前初始化选择、公开 pending-input 投影与 RP；初始化失败向外传播。
+2.5.0 合同面向 DSH 0.2.0-rc.2、Cordis 4.0.4 与 `dsh-util-crypto` 0.2.0-rc.2，不支持旧 Host 运行时。串行 `agent/created` listener 在首次使用前初始化选择、公开 pending-input 投影与 RP；初始化失败向外传播。
 
 DSH V4 拥有 system/user/assistant/tool 历史与 producer source，包括 `runtime-context` snapshot 和原生 tool-role result。准备顺序为装配 → pre-step → request/config 准备 → 接纳消息写入 → request header 与冻结消息 → stream。Trace 捕获官方正文/错误引用及生效参数，不建立第二份历史。[单向坐标升级](DSH_0.1.7_MIGRATION.md) 使用已验证的官方迁移阶段，保留全部升级前插件备份，不改写 DSH 日志。V3 之前的 header-body Trace 引用明确拒绝转换，不提供回滚工具。
 
@@ -28,7 +28,7 @@ Tavern 用 catalog 条目的 `ext.pmpDshTavern.archivedAt` 表示归档，通过
 
 ## RP 错误提示
 
-展示层通过 DSH `0.1.7-rc.1` 的公开 `useChat` timeline 读取最新回合的 `turn/end.reason.kind === 'error'`，并汇总 `useSession` 的 `promptError`、`lastAgentError` 和 `openError`。只显示随 Tavern 语言变化的统一提示，详细诊断保留在原生“对话”视图；不匹配提供方错误文本、不保存第二份错误历史。新提交和生成期间隐藏旧回合提示，后续回合开始、成功或主动取消不会继续显示历史失败；当前 Session 错误不被 busy 状态掩盖。浏览器崩溃和未到达这些公开入口的连接故障不属于此提示的保证范围。
+展示层通过 DSH `0.2.0-rc.2` 的公开 `useChat` timeline 读取最新回合的 `turn/end.reason.kind === 'error'`，并汇总 `useSession` 的 `promptError`、`lastAgentError` 和 `openError`。显示随 Tavern 语言变化的提示及公开错误中的 code/message（包括会话写锁错误），原生“对话”视图保留进一步诊断；不匹配提供方错误文本、不保存第二份错误历史。新提交和生成期间隐藏旧回合提示，后续回合开始、成功或主动取消不会继续显示历史失败；当前 Session 错误不被 busy 状态掩盖。浏览器崩溃和未到达这些公开入口的连接故障不属于此提示的保证范围。
 
 ## 当前工作区诊断
 
@@ -37,6 +37,10 @@ Tavern 用 catalog 条目的 `ext.pmpDshTavern.archivedAt` 表示归档，通过
 诊断同时覆盖文件读取失败和“timeline 可读但没有可用会话”：后者在官方 `useSessions` / `useWorkspaces` mirrors 均为 `ready` 后，复用侧栏的工作区归属与归档过滤投影。空 timeline 也要检查 root session，不能由行号或读取成功推断正常；尚未就绪的 mirror 不证明会话缺失。官方状态变化会重新计算，已解决的问题自动消失；新一轮读取使较早的异步结果失效。
 
 这是当前问题投影，不是历史日志，也不新增 HTTP API。`sessionStorage` 只保存有界的摘要关闭身份（工作区、周目、错误码），不保存错误正文、资源或对话内容。关闭摘要不删除问题或警告按钮；同一问题在刷新和模式切换后仍保持关闭，确认解决后再出现才重新提醒。复制报告包含工作区路径、周目/会话标识及错误详情，分享前应检查这些信息。
+
+## 前端产品范围
+
+2.5.0 继续使用 DSH Web/Desktop 的公开扩展承载第一方 RP 前端，不另做独立 Web UI。导航、输入框和会话生命周期仍由 DSH 管理；Tavern 维护资源面板、RP 展示和诊断。第三方仍可通过现有可组合 API 开发自己的客户端。此决策不改变权威历史、原生会话或卸载行为，无需数据迁移。
 
 ## 决策结论
 
@@ -86,7 +90,7 @@ loader 在任何 Store 构造前解析统一 `storageDir`。默认 bundle 通过
 | `tavern-format` | “这个 ST 文件表达了什么？” | preset 识别、顺序和启用状态归一化、原字段保留、编辑模型、macro 解释 | session 选择、DSH system 段、模型调用参数、HTTP、磁盘 |
 | `preset` | “用户如何管理预设？” | 原子文件存储、导入/创建/修改/删除/选择、API、侧边栏源代码 | 决定提示词如何进入 agent |
 | `character` | “用户如何管理角色资源？” | JSON/PNG 导入、创建/编辑、当前文档 JSON/PNG 导出、per-session binding、API、UI、loader/world-book 资源快照 | prompt 放置、assistant 历史、世界书激活 |
-| `user` | “用户如何管理自己的 Tavern 身份描述？” | 严格三字段文档、CRUD 持久化、API、UI、loader adapter | 头像、DSH Agent 身份、prompt 放置、Host seam |
+| `user` | “用户如何管理自己的 Tavern 身份描述？” | 身份与可选头像文档、CRUD 持久化、API、UI、loader adapter | DSH Agent 身份、prompt 放置、Host seam |
 | `world-book` | “哪些 lore entries 候选应被激活？” | ST/角色内嵌格式、归一化、纯匹配/排序/预算与 loader 投影 | session 选择、DSH 注入、角色卡存储 |
 | `world-book-library` | “用户如何管理独立世界书资源？” | 原子 JSON 存储、CRUD/导出 API、编辑 UI、供 loader 读取的 document | session 选择所有权、matcher 复制、Host seam、角色卡内嵌书修改 |
 | `session-template` | “怎样复用 Tavern 配置但创建干净 DSH 会话？” | 有界模板投影/原子存储/API、缺失资源诊断和客户端事务顺序 | DSH 历史、Trace、Session 构造、最终 prompt |
@@ -94,7 +98,7 @@ loader 在任何 Store 构造前解析统一 `storageDir`。默认 bundle 通过
 | `tavern-loader` | “当前资源怎样影响这次 DSH 请求？” | 装配选中预设、映射支持的 call config、append/replace 策略、Host/API 挂载、独占 pending-input 投影、RP 会话叠加 | 重新解释 ST 原始字段、实现具体 UI |
 | `tavern-trace` | “这次 loader 为什么得到这个组合？” | turn/step 对齐、资源摘要、世界书决策、段落/来源 metadata、官方历史引用、按需验证读取、有界存储/API/并列 view | 替代 DSH 权威、持久化新的提示词/来源正文副本、append 会话事件或模型消息 |
 
-角色卡已经在 `tavern-format` 增加 adapter/model，并在 `character` 用例层提供管理与资源入口；用户资源由独立 `user` 用例层提供严格 `{id,name,description}` 文档；世界书格式兼容位于独立纯库 `packages/world-book`。所有资源最终由同一个 `tavern-loader` 组合。角色卡和用户模块都不读取预设排序，也不决定字段插入位置。
+角色卡已经在 `tavern-format` 增加 adapter/model，并在 `character` 用例层提供管理与资源入口；用户资源由独立 `user` 用例层提供严格 `{id,name,description,avatar?}` 文档；世界书格式兼容位于独立纯库 `packages/world-book`。所有资源最终由同一个 `tavern-loader` 组合。角色卡和用户模块都不读取预设排序，也不决定字段插入位置。
 
 统一 loader 将逻辑 profile 展开为具名 `pmp-dsh-tavern:part:*` 段落，导入上下文与可选的 `rp:policy` 独立贡献，并引入 loader-owned `SessionSelectionStore`：preset、角色、用户和世界书的文档仍由各自模块管理，但“哪个 session 使用哪些资源”以及 RP 叠加由统一策略持久化。普通 fork 与 delegated subagent 都复制父选择。RP 不是 DSH agent preset。
 
@@ -106,7 +110,7 @@ DSH 原生“新会话”按钮当前默认继承上一个聚焦会话的 preset
 
 ## Loader-owned ActivationContext
 
-DSH `0.1.7-rc.1` 的 `agent/inbox/spliced` 是公开、持久的 Session event；插入、替换、取消和 claim 都先 append 该事件并同步通知 `session/event`，随后实时 Inbox 才改变。loader 在这个边界维护唯一 `PendingInputProjection`，通过 `Session.ownEvents()` 排除 fork 继承前缀，把 durable history 与本次 claimed batch 去重后组合为临时 `ActivationContext`，供 world-book matcher 只读消费。其他当前日志读取集中使用 `session.seq` 与 `snapshotEvents()`，不再访问已删除的 `Session.events`。
+DSH `0.2.0-rc.2` 的 `agent/inbox/spliced` 是公开、持久的 Session event；插入、替换、取消和 claim 都先 append 该事件并同步通知 `session/event`，随后实时 Inbox 才改变。loader 在这个边界维护唯一 `PendingInputProjection`，通过 `Session.ownEvents()` 排除 fork 继承前缀，把 durable history 与本次 claimed batch 去重后组合为临时 `ActivationContext`，供 world-book matcher 只读消费。其他当前日志读取集中使用 `session.seq` 与 `snapshotEvents()`，不再访问已删除的 `Session.events`。
 
 这个投影属于 Host adapter，不下沉到纯模块：
 
@@ -122,7 +126,7 @@ DSH `0.1.7-rc.1` 的 `agent/inbox/spliced` 是公开、持久的 Session event�
 
 ## 控制面扩展
 
-- 用户与独立世界书的关联已由统一 loader policy 的独立原子文件持有；`UserModel` 仍只有 `id/name/description`，`world-book-library` 文档也不反向保存用户 id。用户 UI 可以编辑关系，但最终以 session 显式来源优先、用户来源随后稳定去重，且只有 loader 的共享 adapter 运行 matcher。
+- 用户与独立世界书的关联已由统一 loader policy 的独立原子文件持有；`UserModel` 包含 `id/name/description` 与可选 `avatar`，`world-book-library` 文档也不反向保存用户 id。用户 UI 可以编辑关系，但最终以 session 显式来源优先、用户来源随后稳定去重，且只有 loader 的共享 adapter 运行 matcher。
 - UI 缩放、语言与绑卡跟随 RP 已由 `packages/client` 的单一设置入口、共享 locale contract 和逐语言语义 catalog 实现。业务组件只引用语义 key，动态资源值通过显式 raw boundary 插值；运行时不再扫描或替换中文原文。loader 根 API 只持久化有界的全局显示文档（含 `rpFollowCharacter`），资源 JSON、profile 装配和 session selection 不读取显示语言/缩放。可选的 `rp:policy` 正文是另一份有界文件 `rp-policy.json`。
 - Conversation 显示偏好不混入上述外层 UI 文档。loader 通过独立的 `conversation-settings.json` 和 v1 `/conversation-settings` 保存 `textScale/actionScale`；客户端用独立事件只通知魔丸 chat 与空周目 opening dock。正文缩放通过局部 CSS custom property 进入 RP 文本，按钮缩放只进入 durable QA 动作行，因此不会级联改变 DSH native、输入栏、Tavern 面板、提示词或导出内容。
 - 这两项都必须复用现有单插件 API、安全边界、刷新事件和原子持久化模式，不能通过新增第二个可安装插件实现。
@@ -138,7 +142,7 @@ DSH `0.1.7-rc.1` 的 `agent/inbox/spliced` 是公开、持久的 Session event�
 | DT 悬浮入口 | `shell.overlay` additive slot、Cordis effect 生命周期 | 球体、菜单内容和全局 chrome 状态是产品 UI；不向 `document.body` 另建失控根节点 |
 | 魔丸侧边栏 | `sidebar.workspaces` slot；owner 注入的 `useSessions` / `useWorkspaces`；`ctx.uiWorkspace.openSession()` | 只重组为角色卡 / 周目投影，不改写、不归档、不隐藏 Host session 数据 |
 | 工作区诊断 | `useSessions` / `useWorkspaces` 公开 mirrors；现有 v1/v2 资源及受管文件读取 | 与侧栏共享当前问题，mirrors 就绪后判断会话可用性；不复制 Host 日志、不提供新的诊断 API |
-| DSH 外层新会话 | DSH `0.1.7-rc.1` sidebar shell 自有；无供 Tavern 接管点击的公开 slot/service | Tavern 不用哈希 class、DOM capture 或源码替换接管；魔丸保留原生按钮并在文档中标为不推荐，普通区 `+` 只引导返回 native |
+| DSH 外层新会话 | DSH `0.2.0-rc.2` sidebar shell 自有；无供 Tavern 接管点击的公开 slot/service | Tavern 不用哈希 class、DOM capture 或源码替换接管；魔丸保留原生按钮并在文档中标为不推荐，普通区 `+` 只引导返回 native |
 | 普通会话提示 | `conversation.input.dock` 独立整行 slot、继承的 `--dsh-composer-card-max-width` | 仅显示 Tavern 的 RP 工作区分类结果；提示按 Host composer 宽度居中，不接管原生 composer、不复制固定像素或读取哈希 class |
 | 魔丸对话页 | `conversation.view` slot；`useChat` 的 `legacy.nodes/partial` 与 `timeline`；`useSession` 的生命周期和错误字段 | 周目跨 session 聚合是 Tavern 投影；不伪造 DSH 消息，不读取私有 runtime |
 | 魔丸默认视图 | `slots.entries("conversation.session")` 暴露的 Conversation store 句柄、session 级 `conversation.input.dock` 及其 `actions.setView()` | 按 session/周目 binding 复用同一 store 并持续处理其他 scope；只为未选定视图设置默认，不注册第二个 `chat`，保留手动选择 |
@@ -157,7 +161,7 @@ DSH `0.1.7-rc.1` 的 `agent/inbox/spliced` 是公开、持久的 Session event�
 以下行为属于当前实现及其公开依赖边界：
 
 - 用户与 assistant 正文不直接迁移到 `MessageText` / `MarkdownText`。未覆盖消息从 DSH 权威 content 按“宏替换 → ST 显示正则（全局 → 预设 → 角色卡，各来源保持数组顺序）→ Marked 18.0.10 → DOMPurify”执行浏览器显示管线；因此自定义/XML 包裹标签不会阻断其内部 Markdown，嵌套标签和 ST 的宽松引用代码围栏语义也能保留。规则页只允许同来源拖拽，保存后全局写工作区文档，资源规则写回原生 `regex_scripts` 数组。DSH `MarkdownText` 会省略 raw HTML，不能作为 ST HTML 兼容渲染器；以后升级 Marked、清理策略或复用 DSH 低层能力，必须分别对照 ST 输出与恶意 HTML 用例，证明不会改变 Tavern 显示语义或越过 sanitizer 后再单独验收。
-- details 使用独立块解析保留内部 Markdown，原始 HTML 布局不插入 Markdown 换行。闭合的无语言/html 围栏中，完整 HTML 文档按静态模板渲染，普通代码片段保留源码。含 style 的净化结果由 `rich-text-styles.js` 放入 Shadow DOM，完整文档逐个隔离并适配根选择器，外层使用布局/绘制 containment；React ref 在插入/更新后挂载，静态导出使用相同的声明式根。模板脚本始终禁止，变量运行时未实现。浏览器验证：`node scripts/verify-rich-text-browser.mjs`（Chrome/Chromium，可设置 `CHROME_PATH`）。
+- details 使用独立块解析保留内部 Markdown，原始 HTML 布局不插入 Markdown 换行。闭合的无语言/html 围栏中，完整 HTML 文档按静态模板渲染，普通代码片段保留源码。含 style 的净化结果由 `rich-text-styles.js` 放入 Shadow DOM，完整文档逐个隔离并适配根选择器，外层使用布局/绘制 containment；React ref 在插入/更新后挂载，静态导出使用相同的声明式根。静态模板不执行 JS；可选交互卡片使用独立限额解释器、禁脚本 iframe 与有界 DOM 桥，见[显示架构](CONVERSATION_PRESENTATION.md)。浏览器验证：`node scripts/verify-rich-text-browser.mjs`（Chrome/Chromium，可设置 `CHROME_PATH`）。
 - 魔丸不渲染 reasoning 或 runtime context，也不提供展开入口；用户需要运行细节时回到 DSH 原生“对话”。操作按钮只能依赖公开图标与 `Tooltip` 等接口；DSH bundle 内未公开的 `ReasoningRow`、`MessageIconActions` 不属于可依赖接口。
 - DSH 的模型消息 `role` 与界面来源不是同一维度：公开 ConversationNode 已把运行时注入表示为 `kind: "context"`，但持久 history 投影仍可能给它 `role: "user"`。v2 因此在不改变 `role` 的前提下增加 additive `origin.kind`，并保留 `producer` / `form` / `summary` 等可选来源元数据。RP 前端必须按 `origin` 投影气泡、隐藏/单独呈现上下文和计算动作能力，不能靠文本、位置或“是否最后一段输出”猜测。
 - timeline 以 `parentVariantId` 与活动 `head` 表示树状分支；显示、focus 和新 QA 对账只沿 head 的祖先路径工作。head 的 session 可以是刚 branch、尚无新 QA 的 continuation anchor，因此侧栏归类也必须把 head session 视为周目成员。旧平面 timeline 继续可读，下一次对账进入树结构。
@@ -198,7 +202,7 @@ DSH 当前没有角色卡、周目、greeting、跨 session adopted variant、ST
 
 每次升级 DSH 版本先做只读差异审计：核对插件清单的 inject、公开包根导出、slot owner props、store 字段、Host RPC 和 README 合同；然后运行 native/play 双模式及卸载回退验收。若公开 seam 消失，优先让对应增强失败关闭并保留原生表面，再讨论协议调整；禁止临时改为 DOM 查询、内部 bundle 符号或私有 runtime。新增前端功能的设计记录必须明确写出“复用的原生机制 / 自定义原因 / 官方升级观察点”。
 
-DSH `0.1.7-rc.1` 区分三个 owner：Session 管生命周期，Chat 管实时消息，Conversation 管视图和交互阶段。主视图当前 Session 从 `useSessions` 中 `retainedBy.mainView > 0` 的条目选择，导航使用公开 `uiWorkspace.openSession()`，不依赖已移除的 `sessions.current/open` 合同；mirror 继续提供生命周期与工作区归属。
+DSH `0.2.0-rc.2` 区分三个 owner：Session 管生命周期，Chat 管实时消息，Conversation 管视图和交互阶段。主视图当前 Session 从 `useSessions` 中 `retainedBy.mainView > 0` 的条目选择，导航使用公开 `uiWorkspace.openSession()`，不依赖已移除的 `sessions.current/open` 合同；mirror 继续提供生命周期与工作区归属。
 
 RP/Trace slot 注册是全局的，复用的 `conversation.session` store 和注入 binding 则逐 Session 作用域解析。RP default adapter 保持挂载，按 session 身份/工作区/周目 binding 记录默认选择，只修改未选择的 view。其他保留 Session 若无 RP binding，会从 RP 返回原生 Chat；明确选择的 Chat/Trace 不被覆盖。缺失公开 store 句柄时不安装增强。暂时的 binding 读取失败保留已确认的匹配关系，不误判为无绑定。
 

@@ -1,4 +1,15 @@
-# Development changelog
+# Changelog
+
+## 2.5.0 — DSH 0.2.0-rc.2, embedded presentation and persistent logs
+
+- Adapt existing functionality to DSH `0.2.0-rc.2`, including crypto peers, verified migration codecs and the official desktop Origin-stripping proxy. Add a process-local request token while retaining browser same-origin and TCP/Host checks.
+- Add user avatars and message/playthrough avatar overrides, plus a validated, previewable and portable bubble-style v1 format. Overrides use existing timeline revision/CAS writes and do not mutate source resources or DSH history.
+- Add opt-in restricted interactive HTML cards with quota-limited QuickJS, a script-disabled iframe, bounded DOM operations and explicit outside-card message confirmation. This does not provide full Tavern Helper or MVU compatibility. Block automatic external resources in static rich text.
+- Show concrete DSH session/turn errors directly in RP, with guidance for competing write handles. Isolate inline-only message styles as well as stylesheet-based cards.
+- Document the supported interfaces, isolation model and compatibility limits in both languages, with regression fixtures and isolated Host/browser/desktop-protocol verification procedures.
+- Add bounded persistent operation logs, diagnostic queries, filtering and paginated export. Version Tavern-owned operation semantics, preserve correlation and confirmed creation identities after partial failures, and retain old records across Host restarts.
+- Keep one first-party frontend embedded in DSH Web and Desktop; do not build an additional standalone Web UI. Existing composable APIs remain available to third-party clients.
+- Identify future work separately from 2.5.0: prompt post-processing, MVU compatibility, Tavern preset script compatibility, and alternative prompt injection strategies such as the runtime lore tail-delivery proposal in [PR #14](https://github.com/Player-MINEPIG/dsh-tavern/pull/14). These are not included in this release.
 
 ## 2.4.3 — Documentation correction for DSH 0.1.7-rc.1
 

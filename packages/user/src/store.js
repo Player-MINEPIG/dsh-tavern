@@ -1,3 +1,4 @@
+import { normalizeAvatar } from '../../presentation/avatar.js'
 import { readResourceTransfer, resourceTransfer } from '../../tavern-format/src/resource-transfer.js'
 import { randomUUID } from 'node:crypto'
 import {
@@ -51,11 +52,12 @@ function assertOnlyFields(value, allowed) {
 }
 
 function normalizeDocument(value) {
-  assertOnlyFields(value, new Set(['id', 'name', 'description']))
+  assertOnlyFields(value, new Set(['id', 'name', 'description', 'avatar']))
   return {
     id: validateId(value.id),
     name: name(value.name),
     description: description(value.description),
+    ...(value.avatar == null ? {} : { avatar: normalizeAvatar(value.avatar) }),
   }
 }
 
@@ -117,11 +119,12 @@ export class UserStore {
   }
 
   create(input) {
-    assertOnlyFields(input, new Set(['id', 'name', 'description']))
+    assertOnlyFields(input, new Set(['id', 'name', 'description', 'avatar']))
     const document = normalizeDocument({
       id: input.id ?? `user-${randomUUID()}`,
       name: input.name,
       description: input.description ?? '',
+      avatar: input.avatar,
     })
     try {
       this.get(document.id)
@@ -137,22 +140,23 @@ export class UserStore {
 
   import(value) {
     const data = readResourceTransfer(value, 'user')
-    assertOnlyFields(data, new Set(['name', 'description']))
+    assertOnlyFields(data, new Set(['name', 'description', 'avatar']))
     return this.create(data)
   }
 
   export(id) {
-    const { name, description } = this.get(id)
-    return resourceTransfer('user', { name, description })
+    const { name, description, avatar } = this.get(id)
+    return resourceTransfer('user', { name, description, ...(avatar ? { avatar } : {}) })
   }
 
   update(id, patch) {
-    assertOnlyFields(patch, new Set(['name', 'description']))
+    assertOnlyFields(patch, new Set(['name', 'description', 'avatar']))
     const current = this.get(id)
     const document = normalizeDocument({
       id: current.id,
       name: patch.name ?? current.name,
       description: patch.description ?? current.description,
+      avatar: Object.hasOwn(patch, 'avatar') ? normalizeAvatar(patch.avatar) : current.avatar,
     })
     atomicJson(this.userPath(id), document)
     return clone(document)

@@ -1,3 +1,5 @@
+import { AvatarInput } from '../../client/src/avatar-input.js'
+import { tavernFetch as fetch } from '../../client/src/api-fetch.js'
 import {
   createElement,
   useCallback,
@@ -175,7 +177,7 @@ export function UserPanel({ sessionId, sessionBlank, close }) {
     if (draft === null) return
     const data = await api(`/users/${encodeURIComponent(draft.id)}`, {
       method: 'PATCH',
-      body: JSON.stringify({ name: draft.name, description: draft.description }),
+      body: JSON.stringify({ name: draft.name, description: draft.description, avatar: draft.avatar ?? null }),
     })
     draftId.current = data.user.id
     setDraft(data.user)
@@ -282,6 +284,7 @@ export function UserPanel({ sessionId, sessionBlank, close }) {
         ? h('p', { className: 'dtu-note' }, users === null ? uiMessage('user.loading') : uiMessage('user.emptyHint'))
         : h('div', { className: 'dtu-editor' },
           h(Field, { label: uiMessage('user.name', { macro: '{{user}}' }) }, h('input', { className: 'dtu-input', value: draft.name, maxLength: 200, onChange: event => setDraft(current => ({ ...current, name: event.target.value })) })),
+          h(AvatarInput, { key: draft.id, disabled: busy, value: draft.avatar, onChange: avatar => setDraft(current => ({ ...current, avatar })) }),
           h(Field, { label: uiMessage('user.description') }, h('textarea', { className: 'dtu-textarea', value: draft.description, maxLength: 100000, onChange: event => setDraft(current => ({ ...current, description: event.target.value })) })),
           h('h2', { className: 'dtu-section-title' }, uiMessage('user.worldBooksTitle')),
           h('p', { className: 'dtu-note' }, uiMessage('user.worldBooksHint')),

@@ -4,9 +4,20 @@
 
 本文说明如何验证当前实现，不记录某次发布的验收结果。先按改动范围选择检查，再为受影响的 DSH 接口补充集成证据。
 
+<a id="backend-compatibility"></a>
+## 2.5.0 兼容范围
+
+Tavern 2.5.0 目标为官方 [DSH 0.2.0-rc.2](https://github.com/deepseek-ai/deepseek-harness/releases/tag/dsh-v0.2.0-rc.2)（`639ed015397290b3745d163aafe02ffee4aa3f84`）。必需运行时 peer 为 Cordis `4.0.4` 与 DSH crypto `0.2.0-rc.2`，准入无需版本例外。其他预发布运行时不自动受支持。
+
+后端范围包括插件准入、公开 Session/Workspace controller、提示词装配与参数回退、V4 历史与旧引用迁移、Trace 及[操作日志合同](OPERATION_LOGS.md)。已有 V4 引用不需再次转换；迁移格式库白名单与运行时支持范围分开，见[迁移说明](DSH_0.1.7_MIGRATION.md)。
+
+设置下文两个 compatibility-root 变量运行官方模块测试，包括 `test/plugin-runtime-compatibility.test.mjs`。在独立临时 DSH_HOME 安装并启动目标 Web Host，检查创建、输入接受、完整历史与 Trace 读取，以及带 queued/steering 原会话输入的历史分支。子会话队列必须为空，分支操作不改变原会话，子会话下一次模型请求不得含旧队列输入。DSH 正常关闭会以持久 canceled splice 取消剩余输入，不应将原生关闭行为误判为 Tavern 分支改写。在真实创建／分支后注入工作区挂接失败，验证 HTTP 409、恰好一个携带新身份的创建检查点与关联终态失败。重启 Host 后检查冷读历史／Trace、journal 记录保留和 runId 更新。源码、运行时及合成提供方证据放在 `.local/`。
+
+前端、后端与操作日志需一并验证：运行显示、富文本与日志面板浏览器夹具，再在整合后的目标 Web／桌面 Host 检查 RP／原生切换、头像与气泡设置、重启后的请求令牌刷新、错误关联与日志查询导出。面板夹具不能独自证明完整 Host UI 验收；真实提供方与第三方覆盖另行记录。
+
 ## 环境与命令
 
-Tavern 的独立测试要求 Node.js `>=20`；目标 DSH `0.1.7-rc.1` 要求 Node.js `^22.19.0 || >=24.0.0`。运行真实 DSH 模块或 Host 时必须满足后者，并核实实际解析的核心包版本。CI 的独立测试矩阵不代表所有 DSH 运行时均受支持。
+Tavern 的独立测试要求 Node.js `>=20`；目标 DSH `0.2.0-rc.2` 要求 Node.js `^22.19.0 || >=24.0.0`。运行真实 DSH 模块或 Host 时必须满足后者，并核实实际解析的核心包版本。CI 的独立测试矩阵不代表所有 DSH 运行时均受支持。
 
 在仓库根目录安装依赖后运行以下命令，定义以 [package.json](../package.json) 为准。
 
@@ -109,3 +120,9 @@ node --test test/play-sessions.test.mjs
 在临时目标 Host 中先读取 `GET /pmp-dsh-tavern/api/v2/operation-logs`，执行成功与失败的 workspace/session 变更，核对响应 operationId 与日志终态、错误码一致，查询和导出不产生日志，且无测试正文或路径泄漏。正常停止并重启 Host，核对旧记录可查、runId 更换、plugin.stop 保留。再在现有诊断面板中查看、筛选、翻页和导出；关闭面板、切换或改变筛选时，旧请求不得覆盖新视图。检查存储降级不能阻断业务，旧 Host 不支持日志时当前问题诊断仍可用。
 
 事件语义与升级规则见 [操作日志合同](OPERATION_LOGS.md)。合同测试还验证全部已声明变更的统一失败关联、Host 创建后后续失败的资源 ID、分支队列清理失败、创建检查点去重和旧／新事件重启混读。受监控 API 完成只表示处理函数返回；user-message 为 accepted，不证明模型完成或响应已送达客户端。
+
+## 显示功能回归
+
+执行 `node --test test/presentation.test.mjs test/api-fetch.test.mjs test/api-security.test.mjs` 与现有完整检查。有 Chrome 时分别执行 `node scripts/verify-rich-text-browser.mjs` 和 `TAVERN_BROWSER_FIXTURE=./fixtures/presentation-browser.js node scripts/verify-rich-text-browser.mjs`。后者检查真实 DOM 更新、建议消息显式确认、未变化卡片状态、生命周期销毁、流式禁止执行、配额、父页面/网络接口拒绝、净化、头像和气泡。
+
+在隔离的目标 Host 上传并保存用户头像，确认根会话绑定的默认头像，修改单条及本周目全部头像，刷新并对照其他周目和源资源。预览/应用/导入/导出样式并拒绝非法版本。用[计数器示例](examples/interactive-counter.html)检查脚本开关，然后验证原生/RP 切换、流式、分支及桌面写入。官方桌面发行包需单独验收：使用其未改动转发模块的 Electron 验证壳只能建立协议行为证据，不能代表整款应用验收。使用合成资源与模型响应得到可复现结果，真实提供方和角色卡另行验收。运行记录放在被忽略的 `.local/`。

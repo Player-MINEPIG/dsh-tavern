@@ -6,7 +6,7 @@ This guide covers the current orb interaction, frontend display-mode switch, RP 
 
 ## When an error occurs in RP
 
-On the target DSH `0.1.7-rc.1`, exposed Session errors or the latest turn's terminal failure show: “An error occurred. Switch to the Chat view for more information.” Select DSH's Chat tab for the detailed cause. RP does not switch views automatically or duplicate provider diagnostics. The notice follows Tavern's UI language. A new request in progress hides the previous turn's failure; later success or intentional cancellation supersedes old errors. Automatic retries in progress and recoverable tool errors alone are not terminal failures.
+On the target DSH `0.2.0-rc.2`, exposed Session errors or the latest turn's terminal failure show: “An error occurred. Switch to the Chat view for more information.” Select DSH's Chat tab for the detailed cause. RP does not switch views automatically or duplicate provider diagnostics. The notice follows Tavern's UI language. A new request in progress hides the previous turn's failure; later success or intentional cancellation supersedes old errors. Automatic retries in progress and recoverable tool errors alone are not terminal failures.
 
 ### Workspace and playthrough read problems
 
@@ -82,7 +82,7 @@ The display-regex page lists rules from global, current preset, and current char
 
 Markdown inside `<details><summary>Title</summary>` is parsed without requiring extra blank lines after summary. Nested details, lists, emphasis, and fenced code are supported. A closed unlabeled or `html` fence containing a complete `<html>…</html>` document or `<head>…</head><body>…</body>` pair renders as a static HTML template, with HTML comments and a document declaration allowed. Ordinary HTML fragments, other languages, indented code, and unclosed fences remain literal code. Use a `text` fence to display a complete document's source. Ordinary raw HTML containers retain HTML semantics.
 
-Templates can use `<style>`, Flex/Grid, and CSS `@keyframes` for horizontal bars, blinking, and transitions, with native `<details>` for expansion. Stylesheets are isolated per message and inherit the current font, color, and CSS variables; template selectors cannot style other messages or DSH chrome. Recognized complete documents are isolated separately. Standalone `:root`, `html`, and `body` style rules, including rules inside media groups, map to the template root to retain theme variables and base typography. Compound selectors and document-root selectors in ordinary raw HTML fragments should still use a template root class. Content is clipped to its message boundary. Template JavaScript, event handlers, and iframes remain blocked. Script-generated content, button logic, and MVU or other variable APIs do not automatically work; provide static content for those parts. Static HTML exports retain the same isolated styles and require a modern browser with declarative Shadow DOM support.
+Templates can use `<style>`, Flex/Grid, and CSS `@keyframes` for horizontal bars, blinking, and transitions, with native `<details>` for expansion. Stylesheets are isolated per message and inherit the current font, color, and CSS variables; template selectors cannot style other messages or DSH chrome. Recognized complete documents are isolated separately. Standalone `:root`, `html`, and `body` style rules, including rules inside media groups, map to the template root to retain theme variables and base typography. Compound selectors and document-root selectors in ordinary raw HTML fragments should still use a template root class. Content is clipped to its message boundary. Static templates block JavaScript, event handlers and iframes. Optional [restricted interactive cards](CONVERSATION_PRESENTATION_en.md) support a documented subset of DOM operations, not MVU or arbitrary browser libraries. Automatic external resources are blocked. Static HTML exports retain the same isolated styles and require a modern browser with declarative Shadow DOM support.
 
 Display regex `trimStrings` removes every occurrence of each listed literal string from captures. To preserve inner HTML, do not include `<`, `>`, spaces, or backticks. Remove only intended wrapper markers, such as `<!-- begin_of_Subtext_think -->` and `<!-- end_of_Subtext_think -->`. The renderer cannot reconstruct tags already deleted by a rule. Edit or replace the imported rule and **Save changes**; avoid running old and new copies on the same content. Original DSH messages stay unchanged; redisplaying them applies the updated rules.
 
@@ -104,12 +104,12 @@ Composition order is session explicit → user-bound → preset-bound → charac
 
 ## 5. Users
 
-A user resource is strictly name and description. It has no avatar and does not override DSH Agent identity.
+A user resource contains name, description and an optional avatar. It does not override DSH Agent identity. Upload the default image here; click an avatar inside a conversation to edit only that message or playthrough. Bubble styles and optional restricted card scripts are in conversation settings. See [presentation guide](CONVERSATION_PRESENTATION_en.md).
 
 **SillyTavern format compatibility:** This panel imports and exports one user in Tavern JSON; these files and ST persona backups cannot be imported into each other directly. ST Persona Management provides Backup / Restore for the entire persona list, including names, descriptions, related settings, and the default persona, but excluding avatar images and chat bindings. Restore merges data and skips existing internal identifiers. The official documentation states that these backups contain internal links and are not designed for sharing individual personas. See the [ST persona documentation](https://docs.sillytavern.app/usage/core-concepts/personas/#pro-tips).
 
 1. Use **New user**, select an existing user, or **Import JSON** from a Tavern user file. Fill the name the model should use and the user description. Creating and editing do not require a session binding.
-2. **Export JSON** downloads the saved name and description. Import creates a new user without replacing same-name resources, binding a session, or carrying user–world-book relations. Select and save those relations separately after import.
+2. **Export JSON** downloads the saved name, description and optional avatar. Import creates a new user without replacing same-name resources, binding a session, or carrying user–world-book relations. Select and save those relations separately after import.
 3. The name can be used as `{{user}}`. The description is placed once via the `personaDescription` marker, `{{persona}}`, or a stable fallback.
 4. A user can bind zero or more standalone world books. User body and world-book relations are two separate saves. The panel shows unsaved changes.
 5. Save, then bind/update to the current session. Unbinding a user removes the user description and that world-book source. It does not delete world books the session selected explicitly.
@@ -223,7 +223,7 @@ characters/                    Current character-card documents
 character-artifacts/           Cover images left by PNG import (no card data)
 character-state.json           Character sort, missing-card tombstones, and related UI state
 world-books/                   Standalone world books
-users/                         User names and descriptions
+users/                         User names, descriptions and optional avatars
 session-selections.json        Per-session selection (including RP state)
 user-world-book-bindings.json  User–world-book relations
 resource-world-book-bindings.json Preset/character–world-book relations

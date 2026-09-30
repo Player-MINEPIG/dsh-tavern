@@ -10,6 +10,7 @@ export function userResourceDirty(draft, saved) {
   return draft.id !== saved.id
     || draft.name !== saved.name
     || draft.description !== saved.description
+    || (draft.avatar ?? null) !== (saved.avatar ?? null)
 }
 
 export function userPanelDirty(draft, saved, worldBookIds, appliedWorldBookIds) {

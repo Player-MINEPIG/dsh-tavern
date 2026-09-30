@@ -1,0 +1,21 @@
+<!doctype html>
+<html><head><style>
+body { font-family: system-ui; background: #faf5ea; color: #43372b; }
+.card { padding: 20px; border: 1px solid #d9c9b0; border-radius: 14px; }
+button { padding: 9px 16px; border-radius: 8px; border: 1px solid #a39179; background: #fffaf0; color: #43372b; }
+</style></head><body>
+<div class="card"><h2>旅人的行囊 · Traveler's pack</h2>
+<p>金币 / Gold: <strong id="gold-count">0</strong></p>
+<button id="collect-gold">+1</button>
+<button id="suggest-choice">建议购买一杯热茶 / Suggest tea</button>
+<p id="card-status"></p></div>
+<script>
+let gold = 0;
+document.getElementById('collect-gold').addEventListener('click', () => {
+  document.getElementById('gold-count').textContent = String(++gold);
+});
+document.getElementById('suggest-choice').addEventListener('click', () => {
+  TavernUI.proposeMessage('我用一枚金币买一杯热茶。');
+  document.getElementById('card-status').textContent = '请在卡片外确认 / Confirm outside this card.';
+});
+</script></body></html>

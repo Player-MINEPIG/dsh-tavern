@@ -1,6 +1,6 @@
 {
   "name": "pmp-dsh-tavern",
-  "version": "2.4.3",
+  "version": "2.5.0",
   "description": "A SillyTavern compatibility plugin that keeps DSH authoritative over sessions and execution, with frontend and backend APIs for composing Tavern capabilities with native DSH features.",
   "type": "module",
   "main": "packages/tavern-loader/src/index.js",
@@ -57,7 +57,9 @@
     "docs/PROMPT_API_V3_en.md",
     "docs/TESTING.md",
     "docs/TESTING_en.md",
-    "docs/examples"
+    "docs/examples",
+    "docs/CONVERSATION_PRESENTATION.md",
+    "docs/CONVERSATION_PRESENTATION_en.md"
   ],
   "dsh": {
     "bundle": {
@@ -92,18 +94,20 @@
   },
   "devDependencies": {
     "@deepseek-ai/cordis": "4.0.4",
-    "@deepseek-ai/dsh-util-crypto": "0.1.7-rc.1",
+    "@deepseek-ai/dsh-util-crypto": "0.2.0-rc.2",
     "esbuild": "^0.28.2",
     "react": "18.3.1",
     "react-dom": "18.3.1"
   },
   "peerDependencies": {
     "@deepseek-ai/cordis": "4.0.4",
-    "@deepseek-ai/dsh-util-crypto": "0.1.7-rc.1"
+    "@deepseek-ai/dsh-util-crypto": "0.2.0-rc.2"
   },
   "license": "MIT",
   "dependencies": {
     "dompurify": "3.4.14",
-    "marked": "18.0.10"
+    "marked": "18.0.10",
+    "@jitl/quickjs-singlefile-browser-release-sync": "0.31.0",
+    "quickjs-emscripten-core": "0.31.0"
   }
 }

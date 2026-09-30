@@ -4,7 +4,7 @@
 
 ## Stable surfaces and ownership
 
-Tavern owns this contract. It describes operations and confirmed outcomes, without exposing DSH execution steps. Public DSH extension points are versioned too: the supported target remains DSH `0.1.7-rc.1`; this is not a promise of compatibility with future DSH versions.
+Tavern owns this contract. It describes operations and confirmed outcomes, without exposing DSH execution steps. Public DSH extension points are versioned too: the backend target is DSH `0.2.0-rc.2`; this is not a promise of compatibility with future DSH versions.
 
 | Layer | Contract / owner | Expected effect of a DSH upgrade |
 | --- | --- | --- |
@@ -17,6 +17,8 @@ Tavern owns this contract. It describes operations and confirmed outcomes, witho
 Flow: route declaration → shared operation boundary → business code / existing Host adapter checkpoints → content-free events → Cordis logger and bounded journal → query API / diagnostics panel. The journal imports no HTTP, loader or DSH module; HTTP validation is separate from storage.
 
 An HTTP failure alone cannot establish whether earlier writes succeeded. A model failure after request acceptance also does not change the HTTP terminal. Use operationId to find the request and confirmed outcomes, then reread current state. Generation, assembly, provider and tool failures still use DSH diagnostics and Prompt Trace. Logs are evidence, not recovery commands.
+
+The Host adapter also recognizes the official `session/workspace-attach-failed` error: DSH may have created or forked a Session before attachment fails. Only its non-empty `details.sessionId` is normalized as a confirmed creation checkpoint; arbitrary error details never enter the journal. The request still fails with HTTP 409 `PLAY_WORKSPACE_ATTACH_FAILED`. Missing identity or unrelated errors must not fabricate a creation event.
 
 ## Event semantics version 1
 

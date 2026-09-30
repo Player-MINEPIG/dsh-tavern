@@ -16,12 +16,12 @@ test('migration refuses unverified format releases before reading or writing ses
     mkdirSync(packageDir, { recursive: true })
     writeFileSync(join(packageDir, 'package.json'), JSON.stringify({ version: '0.1.7-rc.2' }))
     await assert.rejects(buildCoordinateMap('unread-source', 'unread-target', directory, []),
-      /Migration requires DSH format library 0\.1\.7-alpha\.1, 0\.1\.7-alpha\.2 or 0\.1\.7-rc\.1; found 0\.1\.7-rc\.2/)
+      /Migration requires DSH format library 0\.1\.7-alpha\.1, 0\.1\.7-alpha\.2, 0\.1\.7-rc\.1 or 0\.2\.0-rc\.2; found 0\.1\.7-rc\.2/)
   } finally { rmSync(directory, { recursive: true, force: true }) }
 })
 
 const dshRoot = process.env.DSH_TAVERN_COMPAT_ROOT
-test('real 0.1.7 codecs validate offline migration, backups, compressed logs, and reruns', { skip: !dshRoot }, async () => {
+test('real DSH codecs validate offline migration, backups, compressed logs, and reruns', { skip: !dshRoot }, async () => {
   const require = createRequire(join(resolve(dshRoot), 'package.json'))
   const load = name => import(pathToFileURL(require.resolve(name)).href)
   const { sessionFormatV2ToV3, releasedV2SessionFormatCodec: v2, releasedV3SessionFormatCodec: v3 } = await load('@deepseek-ai/dsh-session-format-v2-to-v3')

@@ -4,9 +4,20 @@
 
 This guide explains how to verify the current implementation; it does not record acceptance results for a particular release. Select checks by change scope, then add integration evidence for the affected DSH interfaces.
 
+<a id="backend-compatibility"></a>
+## 2.5.0 compatibility
+
+Tavern 2.5.0 targets official [DSH 0.2.0-rc.2](https://github.com/deepseek-ai/deepseek-harness/releases/tag/dsh-v0.2.0-rc.2) (`639ed015397290b3745d163aafe02ffee4aa3f84`). Required runtime peers are Cordis `4.0.4` and DSH crypto `0.2.0-rc.2`; admission requires no version exemption. Other runtime prereleases are not implicitly supported.
+
+Backend scope covers plugin admission, public Session/Workspace controllers, prompt assembly and parameter fallback, V4 history and historical reference migration, Trace, and the [operation log contract](OPERATION_LOGS_en.md). Existing V4 references need no new conversion. The migration codec allowlist is separate from runtime support; see [migration](DSH_0.1.7_MIGRATION_en.md).
+
+Use both compatibility-root variables below for real official-module tests, including `test/plugin-runtime-compatibility.test.mjs`. In a separate temporary DSH_HOME, install and start the target Web Host, then verify create, prompt acknowledgement, complete history and Trace reads, and a historical fork with queued/steering source input. The child queues must be empty, the source unchanged by branching, and old input absent from the child's next model request. Normal DSH shutdown cancels remaining inbox items with durable canceled splices; do not treat this native shutdown behavior as a Tavern branch mutation. Inject a workspace attachment failure after real create/fork to verify HTTP 409, one creation checkpoint with the new identity, and a correlated terminal failure. Restart the Host to check cold history/Trace reads, persistent journal records and a changed runId. Record source, runtime and synthetic-provider evidence under `.local/`.
+
+Frontend, backend and operation logs must be verified together. Run the presentation, rich-text and log-panel browser fixtures, then check the integrated target Web/Desktop Host: RP/native switching, avatars and bubble settings, request-token refresh after restart, correlated errors and log queries/export. Panel fixtures alone do not establish complete Host UI acceptance; record real-provider and third-party coverage separately.
+
 ## Environment and commands
 
-Standalone Tavern tests require Node.js `>=20`; the target DSH `0.1.7-rc.1` requires Node.js `^22.19.0 || >=24.0.0`. Use the latter requirement when running real DSH modules or a Host, and verify the versions of the core packages actually resolved. The standalone CI matrix does not establish support for every DSH runtime.
+Standalone Tavern tests require Node.js `>=20`; the target DSH `0.2.0-rc.2` requires Node.js `^22.19.0 || >=24.0.0`. Use the latter requirement when running real DSH modules or a Host, and verify the versions of the core packages actually resolved. The standalone CI matrix does not establish support for every DSH runtime.
 
 After installing dependencies, run these commands from the repository root. [package.json](../package.json) is the command definition source.
 
@@ -109,3 +120,9 @@ Record the source revision, Node/DSH versions, enabled checks, skipped checks, a
 In a temporary target Host, read `GET /pmp-dsh-tavern/api/v2/operation-logs`, perform successful and failing workspace/session mutations, and compare response operationId with terminal records and error codes. Queries/exports must not log themselves or expose fixture bodies or paths. Stop and restart the Host normally; verify retained records, changed runId and plugin.stop. Use the existing diagnostics panel to view, filter, page and export. Closing, switching or changing filters must prevent old requests from replacing the new view. Degraded log storage must not block business operations; an older Host without logs must retain current-problem diagnostics.
 
 See the [operation log contract](OPERATION_LOGS_en.md) for event semantics and upgrade rules. Contract tests also cover correlated failures for all declared mutations, resource IDs after Host creation followed by failure, branch inbox cleanup failure, creation checkpoint deduplication and mixed legacy/current records after restart. API completion only means handler return; user-message is accepted, not proof of generation completion or client receipt.
+
+## Presentation regression
+
+Run `node --test test/presentation.test.mjs test/api-fetch.test.mjs test/api-security.test.mjs` and the existing full check. With Chrome available, run both `node scripts/verify-rich-text-browser.mjs` and `TAVERN_BROWSER_FIXTURE=./fixtures/presentation-browser.js node scripts/verify-rich-text-browser.mjs`. The latter exercises live DOM updates, explicit proposal confirmation, unchanged-card state, lifecycle disposal, streaming suppression, quotas, blocked parent/network interfaces, sanitization, avatars and bubble styles.
+
+In an isolated target Host, upload/save a user avatar, verify the root-bound default, change a single message and the whole playthrough, reload and compare another playthrough and source resource. Preview/apply/import/export a style and reject an invalid version. Use the [counter example](examples/interactive-counter.html) with scripts off/on, then check native/RP navigation, streaming, branches and desktop mutations. Test the official desktop distribution separately: an Electron harness using its unchanged forwarding module establishes protocol behavior, not complete application acceptance. Use synthetic resources/provider responses for repeatable tests; real-provider and real-card acceptance remains separate. Keep run-specific evidence under ignored `.local/`.

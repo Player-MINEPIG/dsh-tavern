@@ -2,7 +2,7 @@
 
 [English](API_en.md) · [v3 详细合同](PROMPT_API_V3.md) · [前端接入](FRONTEND_INTEGRATION_zh-CN.md)
 
-合同版本：Tavern **2.4.3**，仅支持 DSH `0.1.7-rc.1`。
+合同版本：Tavern 2.5.0，仅支持 DSH `0.2.0-rc.2`。
 根路径 `/pmp-dsh-tavern/api`。API 版本与 DSH 日志格式 V4 无关。
 
 各版本路由目录统一采用 v2 的 **方法 / 路径 / 作用 / 状态** 格式。路径相对于该节声明的
@@ -16,10 +16,10 @@ timeline 的拒绝行为。
 <a id="240-对第三方调用方的影响"></a>
 ## 当前版本对第三方调用方的影响
 
-当前源码以 2.4.3 的 DSH `0.1.7-rc.1` 兼容基线为基础，另提供可选操作日志读取与请求关联字段；旧 Host 可能没有该能力。以下为 2.4 系列相对旧版的接入变化。
+2.5.0 面向 DSH `0.2.0-rc.2`，增加持久操作日志查询与请求关联、适配桌面 Origin 转发的请求令牌、可选用户头像与显示设置。同时保留以下自 2.4 系列引入的接入合同。
 
 与 `v2.3.2` 相比，API 根路径、v1/v2/v3 版本前缀和既有路由保持；这不代表所有输入、
-历史引用或宿主接入行为完全不变。运行环境仅支持 DSH `0.1.7-rc.1`，其他版本不在支持范围内。
+历史引用或宿主接入行为完全不变。运行环境仅支持 DSH `0.2.0-rc.2`，其他版本不在支持范围内。
 
 | 调用方式 | 影响与调用方要求 |
 | --- | --- |
@@ -75,6 +75,10 @@ DSH 历史以及 v2 `/sessions/:id/messages` 提供权威消息读取；v3 详�
 
 公开合同与读取时机的速查见 [v3 消费方读取路径与兼容边界](PROMPT_API_V3.md#消费方读取路径与兼容边界)。
 官方装配段的正文不等于某个来源字段的原文；当前资源、历史段落和运行期装配不能互相替代。
+
+## 桌面请求令牌
+
+`GET /pmp-dsh-tavern/api/request-token` 要求 `X-Tavern-Client: embedded`，返回 `{ok:true,token}`，令牌是进程内的 64 位十六进制字符串，响应禁止缓存。沿用 TCP/Host 检查，拒绝异源/null Origin 与 cross-site 请求，不启用 CORS。官方 `dsh-app://app` 代理移除 Origin，因此嵌入桌面客户端在变更请求中携带 `X-Tavern-Request-Token`。仅缺省 Origin 可使用此令牌；显式异源/null Origin 仍被拒绝。HTTP 浏览器变更继续要求同源。Host 重启使令牌失效，内置客户端在 Origin 拒绝后重试一次。这是 CSRF 防护，不是鉴权。
 
 <a id="v2-稳定面"></a>
 ## v2 Tavern 自有接口
@@ -231,7 +235,7 @@ v2 错误示例；`code` 在**响应顶层**，`error` 是字符串：
 
 - `role` 是送给模型的消息角色，包括 `user`、`assistant`、`system`、`developer`、`tool`；DSH 的运行时上下文注入在模型侧仍可能是 `role: "user"`。
 - `origin.kind` 是前端来源/显示语义，取值为 `user`、`context`、`steering`、`assistant`、`system`。第三方前端必须用它区分真实用户输入与上下文注入，不得仅凭 `role` 画用户气泡；具体选择隐藏还是单独呈现由前端决定。
-- `tool` 与 `developer` 消息保留官方角色，作为上下文参与读取；内置 RP 不将其显示为用户气泡或单独创建 QA。2.4.3 修正了客户端对此类既有响应的拒绝，未新增 HTTP 响应字段。
+- `tool` 与 `developer` 消息保留官方角色，作为上下文参与读取；内置 RP 不将其显示为用户气泡或单独创建 QA。客户端接受这些既有角色，未为此新增 HTTP 响应字段。
 - `origin.kind: "context"` 可附带 `producer`、`form`、`summary`。三者是有界的可选显示元数据；消息正文仍在原有 `text` / `content` 字段，不复制进 `origin`。
 - 为兼容旧客户端，新增字段是 additive；`role`、`seq`、`text`、`content` 与 `incompleteTurn` 的既有含义不变。旧服务端没有 `origin` 时，客户端只能按 `role` 做保守回退，无法可靠识别上下文注入。
 
@@ -339,7 +343,7 @@ operation log、chrome service/slot、工作区准入、本地化与发布包边
 | GET | `/users` | 用户目录 | 已实现 |
 | POST | `/users` | 创建用户 | 已实现 |
 | POST | `/users/import` | 导入 Tavern 用户 JSON，分配新 ID，不绑定会话 | 已实现 |
-| GET | `/users/:id/export` | 导出已保存的名称和描述为 Tavern JSON 附件 | 已实现 |
+| GET | `/users/:id/export` | 导出已保存的名称、描述与可选头像为 Tavern JSON 附件 | 已实现 |
 | GET | `/users/:id` | 完整当前用户；返回 user | 已实现 |
 | PATCH | `/users/:id` | 更新用户 | 已实现 |
 | DELETE | `/users/:id` | 删除用户并清理相关绑定 | 已实现 |
@@ -510,9 +514,11 @@ v1 `/characters/relink` 是缺失资源恢复面：它以 catalog revision 作 C
 
 | 方法 | 路径 | 作用 | 状态 |
 | --- | --- | --- | --- |
-| GET | `/conversation-settings` | 请求：无；返回：`{ ok: true, settings: { schemaVersion: 1, textScale, actionScale } }` | 已实现 |
-| PUT | `/conversation-settings` | 请求：`{ textScale, actionScale }`；返回：同 GET | 已实现 |
+| GET | `/conversation-settings` | 请求：无；返回：`{ ok: true, settings: { schemaVersion: 1, textScale, actionScale, bubbleStyle?, interactiveCards? } }` | 已实现 |
+| PUT | `/conversation-settings` | 请求：`{ textScale, actionScale, bubbleStyle?, interactiveCards? }`；返回：同 GET | 已实现 |
 | DELETE | `/conversation-settings` | 请求：无；返回：恢复两个字段为 `1` | 已实现 |
+
+可选 `bubbleStyle` 与布尔值 `interactiveCards` 遵循[显示协议](CONVERSATION_PRESENTATION.md)，请求体上限 16 KiB；省略或 DELETE 恢复默认。用户创建/PATCH/导入/导出支持可选栅格 data URI `avatar`，上限 128 KiB；null 清除，PATCH 省略则保留。timeline 的 `ext.pmpDshTavern.appearance` 遵循同一文档，通过现有 revision/CAS 写入，非法元数据返回 `PLAY_APPEARANCE_INVALID`。
 
 两个 scale 均为 `0.75`–`1.5` 的有限数值，步进 `0.05`；PUT 是完整替换并拒绝未知字段。`textScale` 作用于魔丸用户/助手正文与 greeting（含空周目 opening dock），`actionScale` 只作用于 durable QA 末尾的复制、swipe、分支、回退和编辑操作行。
 
@@ -596,7 +602,7 @@ loader 的独立书合成顺序固定为：会话显式绑定、用户关系、�
 
 ## 浏览器端 Chrome 模式服务
 
-Tavern client 通过 DSH `0.1.7-rc.1` 公开 Cordis `ctx.provide` 注册稳定服务名 `pmpDshTavernChrome`。这是 Tavern v2 自有合同，不是 DSH Host API；它只提供 `native|play` 生命周期，不拥有或仲裁任何 slot、view 或第三方插件 UI。
+Tavern client 通过 DSH `0.2.0-rc.2` 公开 Cordis `ctx.provide` 注册稳定服务名 `pmpDshTavernChrome`。这是 Tavern v2 自有合同，不是 DSH Host API；它只提供 `native|play` 生命周期，不拥有或仲裁任何 slot、view 或第三方插件 UI。
 
 公开 face：
 

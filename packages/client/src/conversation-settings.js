@@ -1,3 +1,4 @@
+import { normalizeBubbleStyle } from '../../presentation/bubble-style.js'
 import { CLIENT_CONVERSATION_SETTINGS_EVENT } from '../../identity.js'
 
 export const DEFAULT_CONVERSATION_SETTINGS = Object.freeze({ textScale: 1, actionScale: 1 })
@@ -13,11 +14,13 @@ function boundedScale(value, fallback) {
 }
 
 export function getClientConversationSettings() {
-  return { ...current }
+  return structuredClone(current)
 }
 
 export function setClientConversationSettings(value, { announce = true } = {}) {
   current = {
+    ...(value?.bubbleStyle ? { bubbleStyle: normalizeBubbleStyle(value.bubbleStyle) } : {}),
+    ...(value?.interactiveCards === undefined ? {} : { interactiveCards: value.interactiveCards === true }),
     textScale: boundedScale(value?.textScale, DEFAULT_CONVERSATION_SETTINGS.textScale),
     actionScale: boundedScale(value?.actionScale, DEFAULT_CONVERSATION_SETTINGS.actionScale),
   }

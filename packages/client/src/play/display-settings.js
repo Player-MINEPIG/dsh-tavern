@@ -6,6 +6,7 @@ export function useConversationDisplaySettings() {
   const [settings, setSettings] = useState(getClientConversationSettings)
   useEffect(() => {
     const onSettings = event => setSettings({
+      ...event.detail,
       textScale: event.detail?.textScale ?? 1,
       actionScale: event.detail?.actionScale ?? 1,
     })
@@ -17,7 +18,7 @@ export function useConversationDisplaySettings() {
 
 export function conversationDisplayStyle(settings) {
   return {
-    '--dtv-rp-text-scale': settings.textScale,
+    '--dtv-rp-text-scale': settings.bubbleStyle?.fontSize === undefined ? settings.textScale : settings.bubbleStyle.fontSize / 14,
     '--dtv-rp-action-scale': settings.actionScale,
   }
 }

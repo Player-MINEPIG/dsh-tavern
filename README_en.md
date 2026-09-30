@@ -4,15 +4,17 @@
 
 A SillyTavern compatibility plugin that keeps DeepSeek Harness (DSH) authoritative over sessions and execution, with frontend and backend APIs for composing Tavern capabilities with native DSH features.
 
-> This page describes Tavern **2.4.3**, supporting only DSH **0.1.7-rc.1**. This release includes rc.1 installation/startup compatibility and the RP conversation validation fix after tool calls, with corrected documentation. HTTP API routes and response shapes are unchanged. See the [changelog](CHANGELOG.md). [MIT License](LICENSE).
+> Tavern **2.5.0** targets DSH **0.2.0-rc.2**, with updated embedded presentation and persistent operation logs. [Changelog](CHANGELOG.md) · [MIT License](LICENSE).
 >
 > Upgrade both Host and plugin and retain backups. When upgrading from alpha.1/alpha.2, sessions and Tavern references already migrated to V4 need no further conversion. For earlier formats, follow the [one-way upgrade guide](docs/DSH_0.1.7_MIGRATION_en.md). Older Hosts are unsupported.
 >
 > Tavern Trace shows each request's configuration, world-book activation, and prompt section content and sources. Third-party tools can read the same information through the read-only v3 API. See [API/design](docs/PROMPT_API_V3_en.md).
 >
-> **MVU variables and JavaScript-driven dynamic HTML are not supported yet.** RP supports sanitized static HTML/CSS; script-driven state updates and interactions do not run.
+> RP supports avatars, configurable bubbles and optional restricted interactive cards. Scripts default off; MVU and full Tavern Helper compatibility are not provided. See [presentation capabilities](docs/CONVERSATION_PRESENTATION_en.md).
 >
 > The default project README is the [Chinese version](README.md). This English file has no screenshots.
+
+This project maintains the frontend embedded in DSH Web and Desktop and will not build an additional standalone Web UI. Native navigation, composition input and session lifecycle remain owned by DSH; Tavern supplies RP presentation through public extensions. Third-party clients can still compose the HTTP APIs. This decision changes product scope and requires no data migration.
 
 ## Design
 
@@ -33,7 +35,7 @@ Installing this plugin lets its code run in the DSH Host and the browser page. I
 - **Agent and tool risk**: presets, character cards, world books, imported records, and user messages can contain prompt injection. A high-privilege Agent may still call approved terminal, file, network, browser, or other plugin capabilities when induced. Do not put secrets in the conversation. Keep DSH approval and sandboxing, and enable tools with least privilege.
 - **RP secure-mode boundary**: RP mode adds read-only and high-risk tool limits on top of DSH permissions, and child agents inherit that overlay. It is not a VM, container, or system sandbox. It cannot constrain other local processes, and it cannot turn a malicious prompt into trusted content.
 - **Backend and API risk**: v1/v2/v3 APIs target local loopback. Host, Origin, and Content-Type checks are not login authentication. A local malicious process can still reach them. Do not expose DSH Web or this plugin API to a LAN or the public internet. A reverse proxy must add its own TLS, authentication, and trusted Host configuration.
-- **Frontend rendering risk**: model output is parsed as Markdown and sanitized with DOMPurify, but allowed remote images or styles can still make network requests and expose the visitor IP. Display regex uses JavaScript `RegExp`; catastrophic backtracking can freeze the page. Import and enable only templates and regex you trust.
+- **Frontend rendering risk**: model output is sanitized and automatic remote resources are blocked. Optional card scripts use a quota-limited interpreter and a narrow DOM bridge; expensive CSS/layout still poses denial-of-service risks. Display regex uses JavaScript `RegExp`; catastrophic backtracking can freeze the page. Import and enable only templates and regex you trust.
 - **Data and lifecycle risk**: swipe, branch, and playthroughs create real DSH sessions and can increase disk use. revision/CAS, path checks, and atomic writes do not replace backups and do not turn several API calls into a cross-file transaction.
 
 If behavior looks suspicious, stop the Agent, switch back to DSH native mode, and inspect the original session and tool records. Full threat model, implemented boundaries, and vulnerability reporting: [Security policy](SECURITY_en.md). RP interception list: [RP secure mode](docs/RP_SECURE_MODE_en.md).
@@ -42,21 +44,10 @@ If behavior looks suspicious, stop the Agent, switch back to DSH native mode, an
 
 ### 0. Install
 
-Install `2.4.3` from GitHub using its version tag:
-
-Target DSH `0.1.7-rc.1` requires Node.js `^22.19.0 || >=24.0.0`, with `dsh` on `PATH` and an initialized profile (default `web`). Tavern standalone tests support Node 20; that does not establish Node 20 support for the target Host.
+Use DSH `0.2.0-rc.2`, Node `^22.19.0 || >=24.0.0`, and an initialized profile. Stop its Host before installing. Use the fixed release tag:
 
 ```sh
-dsh plugin --profile web add github:Player-MINEPIG/dsh-tavern#v2.4.3
-```
-
-For another version, switch to its tag and read the installation instructions in that tag. For source development, safe migration from legacy package-local data, or the project's backup-aware uninstall flow, follow the [source installation steps](docs/INSTALLATION_en.md#source-installation) and check out the same version tag:
-
-```sh
-git clone --branch v2.4.3 https://github.com/Player-MINEPIG/dsh-tavern.git
-cd dsh-tavern
-npm install --cache .npm-cache
-npm run plugin:install
+dsh plugin --profile web add github:Player-MINEPIG/dsh-tavern#v2.5.0
 ```
 
 Restart DSH Web after install. Tavern stores character cards, presets, world books, settings, and bindings under `<DSH_HOME>/pmp-dsh-tavern/` by default. Plain `dsh plugin remove` retains that directory but does not create a pre-removal snapshot; clone the repository and use its uninstaller when a snapshot is required. On the first upgrade from a version that still stores data inside the package, stop the target `dsh web` and use the project installer so pnpm cannot replace the old package before its data is preserved. The new Host copies that data to the external directory on first start and retains the old copy. Other profiles, a separate `DSH_HOME`, manual install, backup, and uninstall: [Installation](docs/INSTALLATION_en.md).
@@ -106,7 +97,7 @@ See the [feature gallery](docs/assets/market/README.md#gallery) for annotated ex
 - “Preset” means SillyTavern-style sampling and prompt ordering, not a DSH agent preset.
 - Greeting does not enter the timeline and is not forged as DSH history. Imported records are injected only on the first real request as `untrusted` read-only context.
 - Display regex affects Mowan rendering only. It does not rewrite the model request, DSH original messages, or the authoritative text used for export.
-- MVU variables and JavaScript-driven dynamic HTML are not supported yet. Static HTML/CSS can render, but script-driven value updates and button interactions do not run.
+- MVU and full Tavern Helper APIs remain unsupported; optional interactive cards implement the [restricted interface](docs/CONVERSATION_PRESENTATION_en.md).
 - Mowan hides reasoning, tool context, and child-agent notices. Switch back to native DSH **Chat** for full runtime detail.
 - There is no dynamic frontend loader that replaces all of Mowan from one config file. Full replacement requires a separate DSH plugin, a standalone web client, or a fork.
 - The target DSH outer **New session** control has no public click-intercept seam for Tavern. Mowan does not overlay it with private DOM. Create playthroughs with the `+` on a character card.
@@ -151,3 +142,14 @@ Give third-party UI its own slot ids, clean up only its own surfaces, and dispos
 - [NemoPresetExt](https://github.com/NemoVonNirgend/NemoPresetExt)
 
 Copyright © 2026 Zhu Bohan.
+
+## Future directions
+
+The following are future work, not capabilities delivered by 2.5.0, and have no committed release date:
+
+- Prompt post-processing.
+- MVU compatibility.
+- Tavern preset script compatibility; the restricted card interpreter is not a preset script runtime.
+- Alternative prompt injection strategies, including the cache-friendly runtime lore tail-delivery direction discussed in [PR #14](https://github.com/Player-MINEPIG/dsh-tavern/pull/14). Its behavior and cache benefits still require design and verification; the proposal is not merged into 2.5.0.
+
+Existing character post-history-instructions fields and display regex support keep their current contracts. They do not imply a general post-processing or script compatibility pipeline.

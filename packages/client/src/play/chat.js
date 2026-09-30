@@ -1,3 +1,4 @@
+import { ConversationPresentation, MessageBubble, messageAvatarKey, characterAvatarUrl } from './presentation.js'
 import { finishPendingSwipe, pendingSwipeForSession } from './pending-swipe.js'
 import {
   createElement,
@@ -30,8 +31,8 @@ import {
   getRegexDocument,
   resourceRegexRules,
 } from './regex.js'
-import { RichText } from './rich-text.js'
 import { PlayTurnActions } from './turn-actions.js'
+import { MessageRow } from './message-layout.js'
 import { createTurnReconciler } from './turns.js'
 import {
   bindPlaythroughImport,
@@ -43,7 +44,7 @@ import { activeTimelineEntries } from '../../../play/src/timeline-tree.js'
 import { consumeSwipeTransition, peekSwipeTransition } from './swipe-transition.js'
 import { conversationDisplayStyle, useConversationDisplaySettings } from './display-settings.js'
 import { useClientUiSettings } from '../i18n/use-ui-settings.js'
-import { latestTurnFailed, sessionFailed, submissionInProgress } from './chat-failure.js'
+import { latestTurnFailureDetail, sessionFailureDetail, submissionInProgress } from './chat-failure.js'
 
 const h = createLocalizedElement(createElement)
 const turnReconcilers = new WeakMap()
@@ -51,12 +52,15 @@ const chatSnapshots = new WeakMap()
 const MAX_CACHED_PLAYTHROUGHS = 32
 
 const css = `
-.dtv-play-chat{height:100%;min-height:0;box-sizing:border-box;overflow-x:hidden;overflow-y:auto;padding:22px max(18px,calc((100% - 780px)/2)) 36px;color:var(--dsw-alias-label-primary)}
+.dtv-play-chat{height:100%;min-height:0;box-sizing:border-box;overflow-x:hidden;overflow-y:auto;padding:22px max(12px,calc((100% - var(--dsh-composer-card-max-width,780px) - 104px)/2)) 36px;color:var(--dsw-alias-label-primary)}
+/* Scope the public composer clearance token to the Session showing Tavern.
+   Reserve 42px avatars + 10px gaps outside the composer on narrower columns. */
+:has(> [data-slot="conversation.session"] .dtv-play-chat) [data-slot="conversation.composer.bar"]{--dsh-composer-side-clearance:64px}
 .dtv-play-chat-stage{display:grid;min-width:0}.dtv-play-chat-frame{grid-area:1/1;min-width:0;will-change:transform,opacity}.dtv-play-chat-frame[data-phase=outgoing]{pointer-events:none}.dtv-play-chat-frame[data-phase=incoming][data-direction=next]{animation:dtv-play-swipe-in-next 180ms ease-out both}.dtv-play-chat-frame[data-phase=outgoing][data-direction=next]{animation:dtv-play-swipe-out-next 180ms ease-out both}.dtv-play-chat-frame[data-phase=incoming][data-direction=previous]{animation:dtv-play-swipe-in-previous 180ms ease-out both}.dtv-play-chat-frame[data-phase=outgoing][data-direction=previous]{animation:dtv-play-swipe-out-previous 180ms ease-out both}@keyframes dtv-play-swipe-in-next{from{transform:translateX(42px);opacity:.2}to{transform:translateX(0);opacity:1}}@keyframes dtv-play-swipe-out-next{from{transform:translateX(0);opacity:1}to{transform:translateX(-42px);opacity:0}}@keyframes dtv-play-swipe-in-previous{from{transform:translateX(-42px);opacity:.2}to{transform:translateX(0);opacity:1}}@keyframes dtv-play-swipe-out-previous{from{transform:translateX(0);opacity:1}to{transform:translateX(42px);opacity:0}}@media (prefers-reduced-motion:reduce){.dtv-play-chat-frame[data-phase]{animation-duration:1ms!important}}
 .dtv-play-chat-target{display:flex;min-width:0;flex-direction:column;gap:8px}.dtv-play-chat-suffix{display:grid;min-width:0}.dtv-play-chat-suffix-list{display:flex;min-width:0;flex-direction:column;gap:22px}
 .dtv-play-chat-list{display:flex;flex-direction:column;gap:22px}.dtv-play-chat-row{display:flex;flex-direction:column;gap:8px}.dtv-play-chat-role{font-size:11px;font-weight:700;color:var(--dsw-alias-label-tertiary)}
 .dtv-play-chat-bubble{max-width:88%;box-sizing:border-box;border-radius:14px;padding:12px 14px;overflow-wrap:anywhere;font-size:calc(14px * var(--dtv-rp-text-scale,1));line-height:1.65}.dtv-play-chat-user{align-self:flex-end;background:var(--dsw-alias-interactive-bg-selected,var(--dsw-specific-tip))}.dtv-play-chat-assistant{align-self:flex-start;background:var(--dsw-alias-bg-layer-2,var(--dsw-specific-block))}
-.dtv-play-greeting{position:relative;align-self:flex-start;max-width:88%;display:grid;grid-template-columns:30px minmax(0,1fr) 30px;align-items:center;gap:6px}.dtv-play-greeting[data-locked=true]{grid-template-columns:minmax(0,1fr)}.dtv-play-greeting-text{border-radius:14px;padding:13px 15px;background:var(--dsw-alias-bg-layer-2,var(--dsw-specific-block));overflow-wrap:anywhere;font-size:calc(14px * var(--dtv-rp-text-scale,1));line-height:1.65}
+.dtv-play-greeting{width:100%;min-width:0;display:grid;gap:8px}.dtv-play-greeting-navigation{display:flex;align-items:center;gap:6px}
 .dtv-play-greeting-empty{min-height:34px;visibility:hidden}
 .dtv-play-greeting-button{width:30px;height:34px;border:0;border-radius:9px;background:transparent;color:var(--dsw-alias-label-secondary);cursor:pointer}.dtv-play-greeting-button:hover{background:var(--dsw-alias-interactive-bg-hover)}.dtv-play-greeting-button:disabled{opacity:.4;cursor:default}
 .dtv-play-import-controls{align-self:center;display:flex;flex-wrap:wrap;align-items:center;justify-content:center;gap:8px;margin:0 0 2px}.dtv-play-import-bound{width:100%;margin:0;text-align:center;color:var(--dsw-alias-label-tertiary);font-size:11px}.dtv-play-import-button{min-height:30px;padding:5px 11px;border:1px solid var(--dsw-alias-border-subtle);border-radius:9px;background:var(--dsw-alias-bg-layer-2,var(--dsw-specific-block));color:var(--dsw-alias-label-primary);font:inherit;font-size:11px;cursor:pointer}.dtv-play-import-button:hover{background:var(--dsw-alias-interactive-bg-hover)}.dtv-play-import-button:disabled{opacity:.45;cursor:default}.dtv-play-import-last{margin:0;color:var(--dsw-alias-label-tertiary);font-size:11px;font-weight:700}
@@ -152,10 +156,12 @@ export async function loadChatState(client, sessionId, playthrough) {
       resourceId: bindings.characterId,
     }),
   ]
+  const userSelection = typeof client.getUserSelection === 'function'
+    ? await client.getUserSelection(playthrough?.ext?.pmpDshTavern?.rootSessionId ?? sessionId) : null
   const character = characterResponse?.character
   const characterData = character?.data ?? character
   const macros = {
-    user: active?.resources?.user?.name || 'User',
+    user: userSelection?.user?.name || active?.resources?.user?.name || 'User',
     character: characterData?.nickname || characterData?.name || character?.name || 'Assistant',
   }
   const regexDiagnostics = []
@@ -213,6 +219,7 @@ export async function loadChatState(client, sessionId, playthrough) {
     && !(rootMessages?.messages ?? []).some(message => message?.role === 'user' || message?.role === 'assistant')
     && importedContext.binding?.state !== 'consumed'
   return {
+    avatars: { user: userSelection?.user?.avatar ?? null, assistant: characterAvatarUrl(characterId) },
     pendingSwipeError: pending?.error ?? null,
     timeline,
     turns,
@@ -252,14 +259,15 @@ export function applyTurnDisplayRegex(turn, display, { userDepth, assistantDepth
     ...assistant,
   }
 }
-function Greeting({ greeting, busy, change, locked = false, footer = null }) {
+export function Greeting({ greeting, busy, change, locked = false, footer = null }) {
   return h('div', { className: 'dtv-play-chat-row' },
-    greeting === null ? null : h('span', { className: 'dtv-play-chat-role' }, rawText(greeting.characterName)),
     greeting === null ? h('div', { className: 'dtv-play-greeting dtv-play-greeting-empty', 'aria-hidden': true }) : h('div', {
       className: 'dtv-play-greeting',
       'data-locked': locked,
     },
-      locked ? null : h('button', {
+      h(MessageBubble, { messageKey: `greeting:${greeting.index ?? 0}`, text: greeting.text }),
+      locked ? null : h(MessageRow, null, h('div', { className: 'dtv-play-greeting-navigation' },
+      h('button', {
         type: 'button',
         className: 'dtv-play-greeting-button',
         disabled: busy || adjacentGreetingIndex(greeting, 'previous') === null,
@@ -267,17 +275,16 @@ function Greeting({ greeting, busy, change, locked = false, footer = null }) {
         'aria-label': uiMessage('play.chat.previousGreeting'),
         onClick: () => change('previous'),
       }, '‹'),
-      h(RichText, { className: 'dtv-play-greeting-text dtv-play-rich', text: greeting.text }),
-      locked ? null : h('button', {
+      h('button', {
         type: 'button',
         className: 'dtv-play-greeting-button',
         disabled: busy || adjacentGreetingIndex(greeting, 'next') === null,
         title: uiMessage('play.chat.nextGreeting'),
         'aria-label': uiMessage('play.chat.nextGreeting'),
         onClick: () => change('next'),
-      }, '›'),
+      }, '›'))),
     ),
-    footer,
+    footer === null ? null : h(MessageRow, null, footer),
   )
 }
 
@@ -312,21 +319,24 @@ function Turn({ turn, hideUser = false, swipePending = false, ...actionProps }) 
     : turn.assistantText === '' ? [] : [turn.assistantText]
   return h('div', { className: 'dtv-play-chat-row' },
     turn.importLast === true ? h('p', { className: 'dtv-play-import-last' }, uiMessage('play.import.lastQa')) : null,
-    hideUser || turn.userText === '' ? null : h(RichText, { className: 'dtv-play-chat-bubble dtv-play-chat-user dtv-play-rich', text: turn.userText }),
-    ...assistantTexts.map((text, index) => h(RichText, {
+    hideUser || turn.userText === '' ? null : h(MessageBubble, { role: 'user', messageKey: messageAvatarKey(turn, 'user'), editable: durableQa || turn.imported === true, text: turn.userText }),
+    ...assistantTexts.map((text, index) => h(MessageBubble, {
       key: `assistant-${index}`,
+      messageKey: messageAvatarKey(turn, 'assistant', index),
+      editable: durableQa || turn.imported === true,
+      streaming: turn.running === true || turn.transient === true,
       className: 'dtv-play-chat-bubble dtv-play-chat-assistant dtv-play-rich',
       text,
     })),
     (swipePending || turn.running === true) && assistantTexts.length === 0
-      ? h('p', { className: 'dtv-play-chat-running' }, uiMessage('play.chat.thinking'))
+      ? h(MessageRow, null, h('p', { className: 'dtv-play-chat-running' }, uiMessage('play.chat.thinking')))
       : null,
-    durableQa ? h(PlayTurnActions, {
+    durableQa ? h(MessageRow, null, h(PlayTurnActions, {
       turn,
       ...actionProps,
       running: actionProps.running === true || swipePending,
       pendingVariant: swipePending,
-    }) : null,
+    })) : null,
   )
 }
 
@@ -471,7 +481,7 @@ function ChatFrame({
     running,
   })
 
-  return h('div', {
+  return h(ConversationPresentation, { state, playthrough, playClient, sessionId: currentSessionId, disabled: !interactive, busy: running, changed }, h('div', {
     className: 'dtv-play-chat-frame',
     'data-phase': phase,
     'data-direction': direction,
@@ -505,7 +515,7 @@ function ChatFrame({
     liveTurns.length === 0 && running && current
       ? h('p', { className: 'dtv-play-chat-running' }, uiMessage('play.chat.thinking'))
       : null,
-  ))
+  )))
 }
 
 export function swipeTransitionBoundary(transition) {
@@ -555,7 +565,7 @@ function TargetedSwipeTransition({
   ))
   const target = incomingState.turns[incomingIndex]
 
-  return h('div', { className: 'dtv-play-chat-list' },
+  return h(ConversationPresentation, { state: incomingState, playthrough, playClient, sessionId: transition.to.sessionId, disabled: true, changed }, h('div', { className: 'dtv-play-chat-list' },
     incomingState.greeting === null && incomingState.importBinding !== null ? null : h(Greeting, {
       greeting: incomingState.greeting,
       busy: greetingBusy,
@@ -568,7 +578,8 @@ function TargetedSwipeTransition({
       ...actionProps,
     })),
     h('div', { className: 'dtv-play-chat-target' },
-      target.userText === '' ? null : h(RichText, {
+      target.userText === '' ? null : h(MessageBubble, {
+        role: 'user', messageKey: messageAvatarKey(target, 'user'),
         className: 'dtv-play-chat-bubble dtv-play-chat-user dtv-play-rich',
         text: target.userText,
       }),
@@ -577,7 +588,16 @@ function TargetedSwipeTransition({
         renderSuffix(incomingState.turns, incomingIndex, 'incoming'),
       ),
     ),
-  )
+  ))
+}
+
+export function ChatFailureNotice({ detail }) {
+  return detail !== null ? h('div', {
+      className: 'dtv-play-chat-status dtv-play-chat-failure', 'data-error': true, role: 'alert',
+    }, h('strong', null, uiMessage('play.chat.failure')),
+    h('div', { style: { whiteSpace: 'pre-wrap', overflowWrap: 'anywhere' } }, detail ? rawText(detail) : uiMessage('play.chat.failureUnknown')),
+    detail.includes('already owned by an active write handle')
+      ? h('p', null, uiMessage('play.chat.failureOwned')) : null) : null
 }
 
 export function MowanChatView({ sessionId, useSession, useChat, playClient, playthrough, openSession, chatScroll }) {
@@ -592,10 +612,10 @@ export function MowanChatView({ sessionId, useSession, useChat, playClient, play
   const latestUserSeq = latestUserNodeSeq(liveNodes)
   const [revision, setRevision] = useState(0)
   const running = useSession(state => state.running === true)
-  const hostFailed = useSession(sessionFailed)
+  const hostFailure = useSession(sessionFailureDetail)
   const submitting = useSession(submissionInProgress)
-  const turnFailed = useChat(latestTurnFailed)
-  const showHostFailure = hostFailed || (!submitting && turnFailed)
+  const turnFailure = useChat(latestTurnFailureDetail)
+  const failureDetail = hostFailure ?? (submitting ? null : turnFailure)
   const [loadedState, setLoadedState] = useState(() => cachedChatSnapshot(playClient, playthrough, sessionId))
   const loadedStateRef = useRef(loadedState)
   const transitionIntent = useRef({ sessionId: null, intent: null })
@@ -738,9 +758,7 @@ export function MowanChatView({ sessionId, useSession, useChat, playClient, play
   const transitionBoundary = swipeTransitionBoundary(transition)
 
   return h('div', { className: 'dtv-play-chat', style: conversationDisplayStyle(displaySettings) },
-    showHostFailure ? h('p', {
-      className: 'dtv-play-chat-status dtv-play-chat-failure', 'data-error': true, role: 'alert',
-    }, uiMessage('play.chat.failure')) : null,
+    h(ChatFailureNotice, { detail: failureDetail }),
     error === '' && !state?.pendingSwipeError ? null : h('div', null,
       h('p', { className: 'dtv-play-chat-status', 'data-error': true }, rawText(error || state.pendingSwipeError)),
       !state?.pendingSwipeError ? null : h('button', {

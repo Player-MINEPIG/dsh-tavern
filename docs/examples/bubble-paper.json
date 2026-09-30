@@ -1,0 +1,20 @@
+{
+  "format": "tavern-bubble",
+  "version": 1,
+  "name": "Paper / 书页",
+  "radius": 4,
+  "padding": 20,
+  "borderWidth": 1,
+  "font": "serif",
+  "user": {
+    "background": "#f4ecd9",
+    "text": "#483923",
+    "border": "#d5c6a9"
+  },
+  "assistant": {
+    "background": "#fffaf0",
+    "text": "#40392d",
+    "border": "#ded3bd"
+  },
+  "fontSize": 16
+}

@@ -140,7 +140,6 @@ test('greeting selection locks only after the real playthrough starts', () => {
   assert.equal(greetingSelectionLocked({ turns: [{ imported: false }] }), true)
   assert.equal(greetingSelectionLocked({ latestUserSeq: 1 }), true)
   assert.equal(greetingSelectionLocked({ running: true }), true)
-  assert.match(chatSource, /locked \? null : h\('button'/)
   assert.match(chatSource, /greetingBusy \|\| greetingLocked/)
 })
 

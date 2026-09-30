@@ -4,13 +4,15 @@
 
 以 DeepSeek Harness（DSH）原生会话与执行机制为权威的酒馆兼容插件，提供前后端 API，支持自由组合酒馆能力与 DSH 原生功能。
 
-> 本文说明 Tavern **2.4.3**，仅支持 DSH **0.1.7-rc.1**。本版包含 rc.1 安装与启动兼容适配、工具调用后的 RP 对话校验修复，并补齐对应文档；HTTP API 路由与响应结构保持不变。见 [变更记录](CHANGELOG.md)。项目代码采用 [MIT License](LICENSE)。
+> Tavern **2.5.0** 适配 DSH **0.2.0-rc.2**，更新嵌入式前端与持久操作日志。[变更记录](CHANGELOG.md) · [MIT License](LICENSE)。
 >
 > 请同步升级 Host 和插件并保留备份。从 alpha.1／alpha.2 升级时，已完成 V4 迁移的会话与 Tavern 引用无需再次转换；更早格式按 [升级指南](docs/DSH_0.1.7_MIGRATION.md) 单向迁移。不支持旧版 Host。
 >
 > Tavern Trace 可查看每次请求的配置、世界书触发情况和提示词段落的内容与来源；第三方工具也可通过只读 v3 API 读取这些信息。见 [API 与设计](docs/PROMPT_API_V3.md)。
 >
-> **暂不支持 MVU 变量系统和依赖 JavaScript 的动态 HTML。** RP 视图支持经过过滤的静态 HTML/CSS；依赖脚本的状态更新和交互不会运行。
+> RP 支持头像、可配置气泡与可选的受限交互卡片。脚本默认关闭，不支持 MVU 或完整酒馆助手兼容。见[显示能力与边界](docs/CONVERSATION_PRESENTATION.md)。
+
+本项目只维护嵌入 DSH Web 与桌面端的前端，不额外开发独立 Web UI。导航、输入框与会话生命周期继续由 DSH 拥有，Tavern 通过公开扩展点提供 RP 展示；第三方仍可组合 HTTP API 开发客户端。这项决策调整产品范围，不引入数据迁移。
 
 ## 设计理念
 
@@ -31,7 +33,7 @@ pmp-dsh-tavern 不是用另一套界面取代 DSH，也不会复制一份会话�
 - **Agent 与工具风险**：预设、角色卡、世界书、外部记录和用户消息都可能包含 prompt injection。高权限 Agent 仍可能在模型诱导下调用获准的终端、文件、网络、浏览器或其他插件能力；不要在对话中提供密钥，保留 DSH 审批与沙箱，并按最小权限启用工具。
 - **RP 安全模式边界**：RP 模式会在 DSH 权限之上增加只读与高风险工具限制，子 agent 也继承该叠加，但它不是虚拟机、容器或系统沙箱，不能约束本机其他进程，也不能把恶意提示词变成可信内容。
 - **后端与 API 风险**：v1/v2/v3 API 面向本机 loopback，Host、Origin 和 Content-Type 检查不是登录认证，本机恶意进程仍可能访问。不要把 DSH Web 或本插件 API 直接暴露到局域网或公网；反向代理必须自行增加 TLS、认证和可信 Host 配置。
-- **前端渲染风险**：模型输出经过 Markdown 与 DOMPurify 净化，但允许的远程图片或样式仍可能发起网络请求并暴露访问者 IP。显示正则使用 JavaScript `RegExp`，灾难性回溯可能冻结页面；只导入和启用你信任的模板与正则。
+- **前端渲染风险**：模型输出经过净化并禁止自动远程资源。可选卡片脚本使用有配额的解释器与受限 DOM 桥；昂贵的 CSS 和布局仍可能导致拒绝服务。显示正则使用 JavaScript `RegExp`，灾难性回溯可能冻结页面；只导入和启用你信任的模板与正则。
 - **数据与生命周期风险**：swipe、分支和周目会创建真实 DSH session，并可能增加磁盘占用。revision/CAS、路径检查和原子写入不能替代备份，也不能把多个 API 组合变成跨文件事务。
 
 遇到可疑行为时，停止 Agent、切回 DSH 原生模式并检查原始会话与工具记录。完整威胁模型、已实现边界和漏洞报告方式见 [安全策略](SECURITY.md)；RP 模式具体拦截范围见 [RP 安全模式](docs/RP_SECURE_MODE.md)。
@@ -42,21 +44,10 @@ pmp-dsh-tavern 不是用另一套界面取代 DSH，也不会复制一份会话�
 
 ### 0. 安装
 
-从 GitHub 安装 `2.4.3` 请使用固定版本标签：
-
-目标 DSH `0.1.7-rc.1` 要求 Node.js `^22.19.0 || >=24.0.0`，另需可从 `PATH` 调用的 DSH 和已初始化的 profile（默认 `web`）。Tavern 独立测试兼容 Node 20，不代表目标 Host 可运行在 Node 20。
+请使用 DSH `0.2.0-rc.2`、Node `^22.19.0 || >=24.0.0` 与已初始化的 profile，安装前停止目标 Host。使用固定版本标签：
 
 ```sh
-dsh plugin --profile web add github:Player-MINEPIG/dsh-tavern#v2.4.3
-```
-
-其他版本请切换到对应 tag，并阅读该 tag 内的安装说明。从源码开发、从旧版包内数据安全迁移，或使用项目提供的备份卸载流程时，按[源码安装步骤](docs/INSTALLATION.md#source-installation)检出同一版本标签：
-
-```sh
-git clone --branch v2.4.3 https://github.com/Player-MINEPIG/dsh-tavern.git
-cd dsh-tavern
-npm install --cache .npm-cache
-npm run plugin:install
+dsh plugin --profile web add github:Player-MINEPIG/dsh-tavern#v2.5.0
 ```
 
 安装完成后重启 DSH Web。Tavern 默认把角色卡、预设、世界书、设置与绑定保存在 `<DSH_HOME>/pmp-dsh-tavern/`，普通 `dsh plugin remove` 不会删除该目录，但也不会创建卸载前快照；需要快照时请检出仓库并使用项目卸载脚本。从仍把数据放在插件包内的旧版本首次升级时，先停止目标 `dsh web` 并使用项目安装脚本，以便在 pnpm 替换旧包前保住数据；新 Host 首次启动会复制到外部目录并保留旧副本。其他 profile、独立 `DSH_HOME`、手动安装、备份与卸载方法见 [安装与卸载](docs/INSTALLATION.md)。
@@ -122,7 +113,7 @@ npm run plugin:install
 - “预设”指 SillyTavern 风格的采样参数与提示词编排，不是 DSH agent preset。
 - greeting 不进入 timeline，也不会伪造成 DSH 历史；外部记录只在首次真实请求中作为 `untrusted` 只读上下文注入。
 - 显示正则只影响魔丸前端渲染，不改写模型请求、DSH 原始消息或导出所依据的权威正文。
-- 暂不支持 MVU 变量系统与 JavaScript 动态 HTML；静态 HTML/CSS 可以展示，但脚本驱动的数值更新和按钮交互不会执行。
+- 不支持 MVU 与完整酒馆助手 API；可选交互卡片实现[受限接口](docs/CONVERSATION_PRESENTATION.md)。
 - 魔丸隐藏 reasoning、工具 context 与子 agent 通知；需要查看完整运行细节时切回 DSH 原生“对话”视图。
 - 当前没有“导入一个配置文件即可替换整个魔丸”的动态前端加载器。完整替换请发布独立 DSH 插件、独立 Web 客户端或维护 fork。
 - 当前目标 DSH 的外层“新建会话”没有供 Tavern 接管点击的公开 seam。魔丸不使用私有 DOM 覆盖它；创建周目请使用角色卡右侧的 `+`。
@@ -170,3 +161,14 @@ npm run plugin:install
 - [NemoPresetExt](https://github.com/NemoVonNirgend/NemoPresetExt)
 
 Copyright © 2026 Zhu Bohan.
+
+## 未来方向
+
+以下是后续更新方向，不是 2.5.0 已交付能力，也未承诺发布时间：
+
+- 后处理提示词。
+- MVU 适配。
+- 酒馆 preset 脚本适配；受限交互卡解释器不等同于预设脚本运行时。
+- 不同提示词注入方式，包括 [PR #14](https://github.com/Player-MINEPIG/dsh-tavern/pull/14) 讨论的、面向前缀缓存的运行时世界书尾部注入方向。具体语义与缓存收益仍需设计和验证，该提案未并入 2.5.0。
+
+已有角色卡 post-history instructions 字段与显示正则保持当前合同，不代表已实现通用后处理或脚本兼容管线。

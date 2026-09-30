@@ -4,7 +4,7 @@
 
 ## 稳定面与所有权
 
-本合同由 Tavern 维护。它定义“做了什么操作、哪些结果已经确认”，不暴露 DSH 内部执行步骤。公开 DSH 扩展点也有版本边界：当前兼容目标仍是 DSH `0.1.7-rc.1`，不能据此承诺未来 DSH 无需适配。
+本合同由 Tavern 维护。它定义“做了什么操作、哪些结果已经确认”，不暴露 DSH 内部执行步骤。公开 DSH 扩展点也有版本边界：当前后端兼容目标是 DSH `0.2.0-rc.2`，不能据此承诺未来 DSH 无需适配。
 
 | 层 | 稳定合同 / 所有者 | DSH 升级时的预期影响 |
 | --- | --- | --- |
@@ -17,6 +17,8 @@
 实现流向：路由声明 → 统一 operation 边界 → 业务调用／已有 Host 适配器提供检查点 → 无正文事件 → Cordis logger 与有界 journal → 查询 API／诊断面板。journal 不导入 HTTP、loader 或 DSH 模块；HTTP 参数校验独立于文件存储。
 
 这不是“所有错误只看 HTTP”方案。HTTP 失败可能发生在部分写入之后；请求接受之后的模型失败也不会倒改 HTTP 终态。先用 operationId 找请求与已确认结果，再回读当前状态；生成、装配、provider 或工具执行的问题继续看 DSH 原生诊断和 Prompt Trace。日志只是证据，不是恢复指令。
+
+Host 适配器也识别官方 `session/workspace-attach-failed` 错误：DSH 可能已经创建或分支出 Session，之后挂接工作区失败。仅将非空的 `details.sessionId` 归一化为已确认的创建检查点，任意错误详情不进入 journal。请求仍以 HTTP 409 `PLAY_WORKSPACE_ATTACH_FAILED` 失败；缺少身份或无关错误不得虚构创建事件。
 
 ## 事件语义版本 1
 
