@@ -2,7 +2,7 @@
   "schema_version": 1,
   "diagram_type": "architecture",
   "meta": {
-    "title": "Tavern 2.5.0 × DSH 0.2.0-rc.2",
+    "title": "Tavern 2.5.1 × DSH 0.2.0-rc.2",
     "locale": "en",
     "quality_profile": "showcase",
     "viewBox": [
@@ -11,7 +11,7 @@
     ],
     "repository": {
       "url": "https://github.com/Player-MINEPIG/dsh-tavern",
-      "revision": "v2.5.0",
+      "revision": "v2.5.1",
       "link_mode": "local-only"
     }
   },

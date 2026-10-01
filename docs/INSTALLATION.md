@@ -2,16 +2,18 @@
 
 [English](INSTALLATION_en.md)
 
-Tavern **2.5.0** 支持 DSH **0.2.0-rc.2**，要求 Node `^22.19.0 || >=24.0.0`。前后端以同一个插件嵌入 DSH Web／桌面端，不提供额外独立 Web UI。较早版本请阅读对应 tag 的文档。
+Tavern **2.5.1** 支持 DSH **0.2.0-rc.2**，要求 Node `^22.19.0 || >=24.0.0`。前后端以同一个插件嵌入 DSH Web／桌面端，不提供额外独立 Web UI。较早版本请阅读对应 tag 的文档。
 
 保留备份；旧外部引用按[坐标迁移指南](DSH_0.1.7_MIGRATION.md)处理，已完成迁移的 V4 引用无需再次转换，不提供回退工具。安装前将目标 DSH 放在 `PATH` 并初始化所需 profile。
 
-## 安装 2.5.0
+## 安装 2.5.1
+
+从 Tavern 2.5.0 升级只需更新插件并重启 Host，继续使用 DSH `0.2.0-rc.2`；无需迁移会话、timeline、Trace 或设置。数学公式默认启用，不需要另装 KaTeX、字体或渲染插件；显示和离线 HTML 导出需要支持 MathML 的现代浏览器。旧版浏览器可能只显示公式符号而无法正确排版。语法与 HTML 混用边界见[使用说明](USAGE_zh-CN.md#markdownhtml-与模板样式)。
 
 停止目标 Host 后，使用固定版本标签安装：
 
 ```sh
-dsh plugin --profile web add github:Player-MINEPIG/dsh-tavern#v2.5.0
+dsh plugin --profile web add github:Player-MINEPIG/dsh-tavern#v2.5.1
 ```
 
 <a id="source-candidate"></a>
@@ -21,7 +23,7 @@ dsh plugin --profile web add github:Player-MINEPIG/dsh-tavern#v2.5.0
 使用目标 DSH 初始化的独立测试 profile/home：
 
 ```sh
-git clone --branch v2.5.0 https://github.com/Player-MINEPIG/dsh-tavern.git
+git clone --branch v2.5.1 https://github.com/Player-MINEPIG/dsh-tavern.git
 cd dsh-tavern
 npm ci --legacy-peer-deps
 node scripts/install.mjs --dsh-home /absolute/path/to/test-home --profile web

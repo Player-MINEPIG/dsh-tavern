@@ -3,10 +3,13 @@ import DOMPurifyFactory from 'dompurify'
 import { Marked } from 'marked'
 import { createElement, memo } from 'react'
 import { isolateHtmlDocuments, isolateStyledHtml, mountStyledHtml } from './rich-text-styles.js'
+import { mathExtension } from './math.js'
 
 const SANITIZE_OPTIONS = Object.freeze({
-  USE_PROFILES: { html: true },
-  FORBID_TAGS: ['script', 'iframe', 'object', 'embed', 'form', 'input', 'button', 'textarea', 'select', 'meta', 'link', 'base', 'style', 'template'],
+  USE_PROFILES: { html: true, mathMl: true },
+  // TeX source is inert text in MathML annotation; annotation-xml remains banned.
+  ADD_TAGS: ['annotation'],
+  FORBID_TAGS: ['script', 'iframe', 'object', 'embed', 'form', 'input', 'button', 'textarea', 'select', 'meta', 'link', 'base', 'style', 'template', 'annotation-xml'],
   FORBID_ATTR: ['srcdoc'],
 })
 
@@ -16,6 +19,8 @@ const markdownConverter = new Marked({
   gfm: true,
 })
 const summaryConverter = new Marked({ async: false, breaks: false, gfm: true })
+markdownConverter.use(mathExtension())
+summaryConverter.use(mathExtension())
 
 const STANDALONE_WRAPPER_TAG = /^\s*(<\/?[\p{L}][^<>]*?>)\s*$/u
 const FENCE_MARKER = /^\s{0,3}(`{3,}|~{3,})/

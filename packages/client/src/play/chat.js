@@ -45,6 +45,7 @@ import { consumeSwipeTransition, peekSwipeTransition } from './swipe-transition.
 import { conversationDisplayStyle, useConversationDisplaySettings } from './display-settings.js'
 import { useClientUiSettings } from '../i18n/use-ui-settings.js'
 import { latestTurnFailureDetail, sessionFailureDetail, submissionInProgress } from './chat-failure.js'
+import { mathStyles } from './math-styles.js'
 
 const h = createLocalizedElement(createElement)
 const turnReconcilers = new WeakMap()
@@ -52,6 +53,7 @@ const chatSnapshots = new WeakMap()
 const MAX_CACHED_PLAYTHROUGHS = 32
 
 const css = `
+${mathStyles('[data-dtv-rich-text]')}
 .dtv-play-chat{height:100%;min-height:0;box-sizing:border-box;overflow-x:hidden;overflow-y:auto;padding:22px max(12px,calc((100% - var(--dsh-composer-card-max-width,780px) - 104px)/2)) 36px;color:var(--dsw-alias-label-primary)}
 /* Scope the public composer clearance token to the Session showing Tavern.
    Reserve 42px avatars + 10px gaps outside the composer on narrower columns. */

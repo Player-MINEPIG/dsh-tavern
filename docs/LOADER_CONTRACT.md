@@ -2,7 +2,7 @@
 
 [English](LOADER_CONTRACT_en.md)
 
-当前合同面向 Tavern **2.5.0** 与 DSH `0.2.0-rc.2`，覆盖 RP 会话叠加
+当前合同面向 Tavern **2.5.1** 与 DSH `0.2.0-rc.2`，覆盖 RP 会话叠加
 （`selection.rp` + `rp:policy`）、delegated subagent 的父选择快照、具名官方 sections 与
 schema 4 Trace 引用。DSH V4 以 `system/message` 作为系统正文权威，`request/header`
 保留 config/tools；坐标规则见 [迁移合同](DSH_0.1.7_MIGRATION.md)。

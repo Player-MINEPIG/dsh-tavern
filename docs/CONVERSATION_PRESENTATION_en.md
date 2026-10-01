@@ -1,10 +1,18 @@
-# Avatars, message bubbles and restricted interactive cards
+# Math, avatars, message bubbles and restricted interactive cards
 
 [中文](CONVERSATION_PRESENTATION.md) · [Usage](USAGE_en.md) · [API](API_en.md) · [Security](../SECURITY_en.md)
 
-The 2.5.0 contract targets DSH `0.2.0-rc.2`. Public UI services and slots embed Tavern in the Web/desktop document. No separate browser is needed. DSH history remains authoritative; these features store presentation metadata only.
+The 2.5.1 contract targets DSH `0.2.0-rc.2`. Public UI services and slots embed Tavern in the Web/desktop document. No separate browser is needed. DSH history remains authoritative; these features store presentation metadata only.
 
 RP displays concrete DSH session/turn errors in place. An active-write-handle error can mean another web or desktop instance holds that session in the shared data directory; finish its work and close that instance before reopening the session. Static message stylesheets and inline styles both use Shadow DOM and an outer paint boundary, preventing fixed-position content from covering the Host UI.
+
+## Math
+
+RP messages, greetings, display edits and static HTML exports share Markdown → KaTeX MathML → DOMPurify. Math is enabled by default without a conversation-settings field or dedicated toggle; DSH source messages, prompts and JSONL remain unchanged. Use `$…$` / `\(…\)` inline and `$$…$$` / `\[…\]` for display math, with multiline delimiters on separate lines. Fractions, roots, integrals, matrices and aligned equations use KaTeX syntax and native browser MathML, without remote fonts or scripts.
+
+Delimiters are recognized in Markdown text. Code, HTML attributes/comments, raw HTML blocks, complete document templates and interactive-card interiors keep their existing semantics. Inline HTML text and Markdown in `<details>` bodies/summaries can contain math. Common prices remain literal, while literal `$x$` requires escaping or code. Markdown emphasis does not consume TeX `*` / `_`; formula styles are scoped to Tavern, and ordinary math does not introduce a shadow root for the whole message. Wide display equations scroll horizontally; streams render closed expressions and unchanged history retains its DOM.
+
+Each formula is limited to 4096 characters, 200 macro expansions and a maximum user-specified size of 10 em. Macros are not shared between formulas; invalid or unsupported TeX falls back to source. KaTeX uses `trust: false` to disable external-resource and HTML extension commands within formulas that require explicit authorization. This setting does not affect ordinary Markdown links, images or existing HTML rendering. Formula output is still sanitized: MathML and text `annotation` are allowed, while `annotation-xml` is forbidden. This is not a full LaTeX document runtime, browser layout still has a resource cost, and a modern MathML-capable browser is required. See [usage](USAGE_en.md#markdown-html-and-template-styles) for escaping and composition rules.
 
 ## Avatars
 

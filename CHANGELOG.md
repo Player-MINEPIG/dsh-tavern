@@ -1,5 +1,14 @@
 # Changelog
 
+## 2.5.1 — LaTeX math rendering
+
+- Render inline `$…$` / `\(…\)` and display `$$…$$` / `\[…\]` math in RP messages, greetings and static HTML exports. Fractions, roots, integrals, matrices and aligned equations use bundled KaTeX with native MathML; no external scripts, stylesheets or fonts are needed.
+- Preserve common currency, escaped delimiters, code and HTML attributes. Compose formulas with Markdown emphasis, lists, links, tables and details; raw HTML blocks, complete HTML templates and interactive-card interiors keep their existing semantics. Math is enabled by default, with escaping or code for literal notation instead of a separate toggle.
+- Keep TeX operators out of Markdown emphasis parsing and scope formula layout to Tavern content without moving ordinary messages into styled shadow roots. Wide display equations scroll within the message, streamed formulas render when closed, and unchanged historical messages retain their DOM.
+- Sanitize MathML, disable external-resource and HTML extension commands within formulas that require explicit authorization, bound formula length and macro expansion, and isolate macro definitions per formula. Invalid or unsupported TeX falls back to source. Pin KaTeX `0.16.47` to preserve the standalone Node.js 20 dependency baseline and include its MIT license in the browser bundle.
+- Continue targeting DSH `0.2.0-rc.2`. No HTTP API, persistent schema, original message, prompt or JSONL format changes; upgrading from 2.5.0 requires no data migration. Native MathML requires a modern browser; this is not a full LaTeX document compiler.
+- Update bilingual usage, installation, rendering/security contracts and reusable regression procedures, including Markdown/HTML combinations, browser layout, streaming and offline export checks.
+
 ## 2.5.0 — DSH 0.2.0-rc.2, embedded presentation and persistent logs
 
 - Adapt existing functionality to DSH `0.2.0-rc.2`, including crypto peers, verified migration codecs and the official desktop Origin-stripping proxy. Add a process-local request token while retaining browser same-origin and TCP/Host checks.

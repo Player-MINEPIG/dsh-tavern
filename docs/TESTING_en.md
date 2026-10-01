@@ -5,9 +5,9 @@
 This guide explains how to verify the current implementation; it does not record acceptance results for a particular release. Select checks by change scope, then add integration evidence for the affected DSH interfaces.
 
 <a id="backend-compatibility"></a>
-## 2.5.0 compatibility
+## 2.5.1 compatibility
 
-Tavern 2.5.0 targets official [DSH 0.2.0-rc.2](https://github.com/deepseek-ai/deepseek-harness/releases/tag/dsh-v0.2.0-rc.2) (`639ed015397290b3745d163aafe02ffee4aa3f84`). Required runtime peers are Cordis `4.0.4` and DSH crypto `0.2.0-rc.2`; admission requires no version exemption. Other runtime prereleases are not implicitly supported.
+Tavern 2.5.1 targets official [DSH 0.2.0-rc.2](https://github.com/deepseek-ai/deepseek-harness/releases/tag/dsh-v0.2.0-rc.2) (`639ed015397290b3745d163aafe02ffee4aa3f84`). Required runtime peers are Cordis `4.0.4` and DSH crypto `0.2.0-rc.2`; admission requires no version exemption. Other runtime prereleases are not implicitly supported.
 
 Backend scope covers plugin admission, public Session/Workspace controllers, prompt assembly and parameter fallback, V4 history and historical reference migration, Trace, and the [operation log contract](OPERATION_LOGS_en.md). Existing V4 references need no new conversion. The migration codec allowlist is separate from runtime support; see [migration](DSH_0.1.7_MIGRATION_en.md).
 
@@ -122,6 +122,8 @@ In a temporary target Host, read `GET /pmp-dsh-tavern/api/v2/operation-logs`, pe
 See the [operation log contract](OPERATION_LOGS_en.md) for event semantics and upgrade rules. Contract tests also cover correlated failures for all declared mutations, resource IDs after Host creation followed by failure, branch inbox cleanup failure, creation checkpoint deduplication and mixed legacy/current records after restart. API completion only means handler return; user-message is accepted, not proof of generation completion or client receipt.
 
 ## Presentation regression
+
+For math, run `node --test test/play-math.test.mjs test/play-rich-text.test.mjs test/play-export.test.mjs` and `TAVERN_BROWSER_FIXTURE=./fixtures/math-browser.js node scripts/verify-rich-text-browser.mjs`. Cover all four delimiters, native MathML fraction/matrix layout, currency and escapes, emphasis/tables/details, literal HTML attributes and code, style isolation, wide-equation scrolling, streamed completion and stable history DOM, error fallback, macro isolation, malicious TeX/MathML sanitization and offline HTML export. This fixture uses the actual message component but does not replace full DSH Host acceptance. Check RP messages, greetings, display edits and native switching in the target Web/Desktop Host; verify MathML support separately for older browsers.
 
 Run `node --test test/presentation.test.mjs test/api-fetch.test.mjs test/api-security.test.mjs` and the existing full check. With Chrome available, run both `node scripts/verify-rich-text-browser.mjs` and `TAVERN_BROWSER_FIXTURE=./fixtures/presentation-browser.js node scripts/verify-rich-text-browser.mjs`. The latter exercises live DOM updates, explicit proposal confirmation, unchanged-card state, lifecycle disposal, streaming suppression, quotas, blocked parent/network interfaces, sanitization, avatars and bubble styles.
 
