@@ -4,13 +4,13 @@
 
 以 DeepSeek Harness（DSH）原生会话与执行机制为权威的酒馆兼容插件，提供前后端 API，支持自由组合酒馆能力与 DSH 原生功能。
 
-> Tavern **2.5.0** 适配 DSH **0.2.0-rc.2**，更新嵌入式前端与持久操作日志。[变更记录](CHANGELOG.md) · [MIT License](LICENSE)。
+> Tavern **2.5.1** 适配 DSH **0.2.0-rc.2**，新增 RP 正文、开场白与静态 HTML 导出的 LaTeX 数学公式渲染。[变更记录](CHANGELOG.md) · [MIT License](LICENSE)。
 >
-> 请同步升级 Host 和插件并保留备份。从 alpha.1／alpha.2 升级时，已完成 V4 迁移的会话与 Tavern 引用无需再次转换；更早格式按 [升级指南](docs/DSH_0.1.7_MIGRATION.md) 单向迁移。不支持旧版 Host。
+> 从 Tavern 2.5.0 升级无需数据迁移，DSH 目标版本不变；更新前保留备份并停止目标 Host。从旧 DSH 升级时，已完成 V4 迁移的会话与 Tavern 引用无需再次转换；更早格式按 [升级指南](docs/DSH_0.1.7_MIGRATION.md) 单向迁移。不支持旧版 Host。
 >
 > Tavern Trace 可查看每次请求的配置、世界书触发情况和提示词段落的内容与来源；第三方工具也可通过只读 v3 API 读取这些信息。见 [API 与设计](docs/PROMPT_API_V3.md)。
 >
-> RP 支持头像、可配置气泡与可选的受限交互卡片。脚本默认关闭，不支持 MVU 或完整酒馆助手兼容。见[显示能力与边界](docs/CONVERSATION_PRESENTATION.md)。
+> 公式默认启用，支持 `$…$`、`$$…$$`、`\(...\)`、`\[...\]`，使用现代浏览器的 MathML，无需额外按钮或远程字体。字面分隔符请转义或放入代码；完整 HTML 模板和交互卡片内不自动解析公式。RP 还支持头像、可配置气泡与可选受限交互卡片；卡片脚本默认关闭，不支持 MVU 或完整酒馆助手兼容。见[显示能力与边界](docs/CONVERSATION_PRESENTATION.md)。
 
 本项目只维护嵌入 DSH Web 与桌面端的前端，不额外开发独立 Web UI。导航、输入框与会话生命周期继续由 DSH 拥有，Tavern 通过公开扩展点提供 RP 展示；第三方仍可组合 HTTP API 开发客户端。这项决策调整产品范围，不引入数据迁移。
 
@@ -47,7 +47,7 @@ pmp-dsh-tavern 不是用另一套界面取代 DSH，也不会复制一份会话�
 请使用 DSH `0.2.0-rc.2`、Node `^22.19.0 || >=24.0.0` 与已初始化的 profile，安装前停止目标 Host。使用固定版本标签：
 
 ```sh
-dsh plugin --profile web add github:Player-MINEPIG/dsh-tavern#v2.5.0
+dsh plugin --profile web add github:Player-MINEPIG/dsh-tavern#v2.5.1
 ```
 
 安装完成后重启 DSH Web。Tavern 默认把角色卡、预设、世界书、设置与绑定保存在 `<DSH_HOME>/pmp-dsh-tavern/`，普通 `dsh plugin remove` 不会删除该目录，但也不会创建卸载前快照；需要快照时请检出仓库并使用项目卸载脚本。从仍把数据放在插件包内的旧版本首次升级时，先停止目标 `dsh web` 并使用项目安装脚本，以便在 pnpm 替换旧包前保住数据；新 Host 首次启动会复制到外部目录并保留旧副本。其他 profile、独立 `DSH_HOME`、手动安装、备份与卸载方法见 [安装与卸载](docs/INSTALLATION.md)。
@@ -97,7 +97,7 @@ dsh plugin --profile web add github:Player-MINEPIG/dsh-tavern#v2.5.0
 | 模块 | 主要能力 | 详细文档 |
 | --- | --- | --- |
 | 资源 | ST 预设、V1/V2/V3 JSON/PNG 角色卡、独立/内嵌世界书、用户资料、资源绑定与导出 | [中文使用指南](docs/USAGE_zh-CN.md) |
-| RP 前端 | 角色卡/周目侧栏、greeting、正文渲染、显示正则、swipe、分支、回退和显示层编辑 | [中文使用指南](docs/USAGE_zh-CN.md) |
+| RP 前端 | 角色卡/周目侧栏、greeting、Markdown/HTML/LaTeX 渲染、显示正则、swipe、分支、回退和显示层编辑 | [中文使用指南](docs/USAGE_zh-CN.md) |
 | 周目数据 | DSH 权威 session、树状 timeline、工作区 catalog、外部记录首轮只读注入、静态 HTML 与 ST JSONL 导出 | [API](docs/API.md) · [架构](docs/ARCHITECTURE.md) |
 | 安全 | RP 权限叠加、同源/loopback API、工作区路径防护、CAS、DOMPurify、无正文 operation log | [RP 安全模式](docs/RP_SECURE_MODE.md) · [安全策略](SECURITY.md) |
 | 调试 | Tavern Trace 保存每次请求的段落/来源 metadata 与官方历史引用；详情按需验证并读取可恢复的段落正文，来源正文不另存 | [Trace API 与设计](docs/PROMPT_API_V3.md) |
@@ -164,11 +164,11 @@ Copyright © 2026 Zhu Bohan.
 
 ## 未来方向
 
-以下是后续更新方向，不是 2.5.0 已交付能力，也未承诺发布时间：
+以下是后续更新方向，不是 2.5.1 已交付能力，也未承诺发布时间：
 
 - 后处理提示词。
 - MVU 适配。
 - 酒馆 preset 脚本适配；受限交互卡解释器不等同于预设脚本运行时。
-- 不同提示词注入方式，包括 [PR #14](https://github.com/Player-MINEPIG/dsh-tavern/pull/14) 讨论的、面向前缀缓存的运行时世界书尾部注入方向。具体语义与缓存收益仍需设计和验证，该提案未并入 2.5.0。
+- 不同提示词注入方式，包括 [PR #14](https://github.com/Player-MINEPIG/dsh-tavern/pull/14) 讨论的、面向前缀缓存的运行时世界书尾部注入方向。具体语义与缓存收益仍需设计和验证，该提案未并入 2.5.1。
 
 已有角色卡 post-history instructions 字段与显示正则保持当前合同，不代表已实现通用后处理或脚本兼容管线。

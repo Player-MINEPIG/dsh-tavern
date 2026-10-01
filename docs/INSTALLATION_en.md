@@ -2,16 +2,18 @@
 
 [中文](INSTALLATION.md)
 
-Tavern **2.5.0** supports DSH **0.2.0-rc.2**, requiring Node `^22.19.0 || >=24.0.0`. Frontend and backend ship in one plugin embedded in DSH Web/Desktop. No additional standalone Web UI is provided. For earlier versions, use the corresponding tag's documentation.
+Tavern **2.5.1** supports DSH **0.2.0-rc.2**, requiring Node `^22.19.0 || >=24.0.0`. Frontend and backend ship in one plugin embedded in DSH Web/Desktop. No additional standalone Web UI is provided. For earlier versions, use the corresponding tag's documentation.
 
 Retain backups and follow the [coordinate migration guide](DSH_0.1.7_MIGRATION_en.md) for older external references. Already migrated V4 references need no further conversion; no rollback tool is provided. Put the target DSH on `PATH` and initialize the intended profile before installation.
 
-## Install 2.5.0
+## Install 2.5.1
+
+From Tavern 2.5.0, update the plugin and restart the Host while retaining DSH `0.2.0-rc.2`; sessions, timelines, Trace and settings need no migration. Math is enabled by default and needs no separate KaTeX, font or renderer installation. Display and offline HTML exports require a modern browser with MathML support; older browsers may show symbols without correct typesetting. See [usage](USAGE_en.md#markdown-html-and-template-styles) for syntax and HTML composition boundaries.
 
 Stop the target Host, then install the fixed version:
 
 ```sh
-dsh plugin --profile web add github:Player-MINEPIG/dsh-tavern#v2.5.0
+dsh plugin --profile web add github:Player-MINEPIG/dsh-tavern#v2.5.1
 ```
 
 <a id="source-candidate"></a>
@@ -21,7 +23,7 @@ dsh plugin --profile web add github:Player-MINEPIG/dsh-tavern#v2.5.0
 Use an isolated test profile/home initialized with the target DSH:
 
 ```sh
-git clone --branch v2.5.0 https://github.com/Player-MINEPIG/dsh-tavern.git
+git clone --branch v2.5.1 https://github.com/Player-MINEPIG/dsh-tavern.git
 cd dsh-tavern
 npm ci --legacy-peer-deps
 node scripts/install.mjs --dsh-home /absolute/path/to/test-home --profile web

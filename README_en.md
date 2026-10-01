@@ -4,13 +4,13 @@
 
 A SillyTavern compatibility plugin that keeps DeepSeek Harness (DSH) authoritative over sessions and execution, with frontend and backend APIs for composing Tavern capabilities with native DSH features.
 
-> Tavern **2.5.0** targets DSH **0.2.0-rc.2**, with updated embedded presentation and persistent operation logs. [Changelog](CHANGELOG.md) · [MIT License](LICENSE).
+> Tavern **2.5.1** targets DSH **0.2.0-rc.2** and adds LaTeX math rendering to RP messages, greetings and static HTML exports. [Changelog](CHANGELOG.md) · [MIT License](LICENSE).
 >
-> Upgrade both Host and plugin and retain backups. When upgrading from alpha.1/alpha.2, sessions and Tavern references already migrated to V4 need no further conversion. For earlier formats, follow the [one-way upgrade guide](docs/DSH_0.1.7_MIGRATION_en.md). Older Hosts are unsupported.
+> Upgrading from Tavern 2.5.0 requires no data migration and keeps the same DSH target. Retain backups and stop the target Host before updating. When upgrading an older DSH, sessions and Tavern references already migrated to V4 need no further conversion. For earlier formats, follow the [one-way upgrade guide](docs/DSH_0.1.7_MIGRATION_en.md). Older Hosts are unsupported.
 >
 > Tavern Trace shows each request's configuration, world-book activation, and prompt section content and sources. Third-party tools can read the same information through the read-only v3 API. See [API/design](docs/PROMPT_API_V3_en.md).
 >
-> RP supports avatars, configurable bubbles and optional restricted interactive cards. Scripts default off; MVU and full Tavern Helper compatibility are not provided. See [presentation capabilities](docs/CONVERSATION_PRESENTATION_en.md).
+> Math is enabled by default with `$…$`, `$$…$$`, `\(...\)` and `\[...\]`, using modern browsers' MathML without an extra toggle or remote fonts. Escape literal delimiters or use code; complete HTML templates and interactive-card interiors do not auto-parse math. RP also supports avatars, configurable bubbles and optional restricted interactive cards. Card scripts default off; MVU and full Tavern Helper compatibility are not provided. See [presentation capabilities](docs/CONVERSATION_PRESENTATION_en.md).
 >
 > The default project README is the [Chinese version](README.md). This English file has no screenshots.
 
@@ -47,7 +47,7 @@ If behavior looks suspicious, stop the Agent, switch back to DSH native mode, an
 Use DSH `0.2.0-rc.2`, Node `^22.19.0 || >=24.0.0`, and an initialized profile. Stop its Host before installing. Use the fixed release tag:
 
 ```sh
-dsh plugin --profile web add github:Player-MINEPIG/dsh-tavern#v2.5.0
+dsh plugin --profile web add github:Player-MINEPIG/dsh-tavern#v2.5.1
 ```
 
 Restart DSH Web after install. Tavern stores character cards, presets, world books, settings, and bindings under `<DSH_HOME>/pmp-dsh-tavern/` by default. Plain `dsh plugin remove` retains that directory but does not create a pre-removal snapshot; clone the repository and use its uninstaller when a snapshot is required. On the first upgrade from a version that still stores data inside the package, stop the target `dsh web` and use the project installer so pnpm cannot replace the old package before its data is preserved. The new Host copies that data to the external directory on first start and retains the old copy. Other profiles, a separate `DSH_HOME`, manual install, backup, and uninstall: [Installation](docs/INSTALLATION_en.md).
@@ -83,7 +83,7 @@ Full operations and boundaries: [English usage guide](docs/USAGE_en.md).
 | Area | Main capabilities | Details |
 | --- | --- | --- |
 | Resources | ST presets, V1/V2/V3 JSON/PNG cards, standalone/embedded world books, user profiles, bindings, export | [Usage](docs/USAGE_en.md) |
-| RP frontend | Character/playthrough sidebar, greeting, body rendering, display regex, swipe, branch, rollback, display-layer edit | [Usage](docs/USAGE_en.md) |
+| RP frontend | Character/playthrough sidebar, greeting, Markdown/HTML/LaTeX rendering, display regex, swipe, branch, rollback, display-layer edit | [Usage](docs/USAGE_en.md) |
 | Playthrough data | Authoritative DSH sessions, tree timeline, workspace catalog, first-turn read-only import injection, static HTML and ST JSONL export | [API](docs/API_en.md) · [Architecture](docs/ARCHITECTURE_en.md) |
 | Security | RP permission overlay, same-origin/loopback API, workspace path jail, CAS, DOMPurify, content-free operation log | [RP secure mode](docs/RP_SECURE_MODE_en.md) · [Security policy](SECURITY_en.md) |
 | Debugging | Tavern Trace stores per-request section/provenance metadata and official-history references; details verify and read recoverable section bodies on demand, while source bodies are not stored | [Trace API/design](docs/PROMPT_API_V3_en.md) |
@@ -145,11 +145,11 @@ Copyright © 2026 Zhu Bohan.
 
 ## Future directions
 
-The following are future work, not capabilities delivered by 2.5.0, and have no committed release date:
+The following are future work, not capabilities delivered by 2.5.1, and have no committed release date:
 
 - Prompt post-processing.
 - MVU compatibility.
 - Tavern preset script compatibility; the restricted card interpreter is not a preset script runtime.
-- Alternative prompt injection strategies, including the cache-friendly runtime lore tail-delivery direction discussed in [PR #14](https://github.com/Player-MINEPIG/dsh-tavern/pull/14). Its behavior and cache benefits still require design and verification; the proposal is not merged into 2.5.0.
+- Alternative prompt injection strategies, including the cache-friendly runtime lore tail-delivery direction discussed in [PR #14](https://github.com/Player-MINEPIG/dsh-tavern/pull/14). Its behavior and cache benefits still require design and verification; the proposal is not merged into 2.5.1.
 
 Existing character post-history-instructions fields and display regex support keep their current contracts. They do not imply a general post-processing or script compatibility pipeline.

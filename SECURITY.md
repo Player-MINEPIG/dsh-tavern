@@ -19,6 +19,7 @@
 
 - 全部 v1/v2/v3 浏览器 API 经过同一安全中间件；变更请求要求同源（官方桌面缺省 Origin 时使用进程令牌）与受支持媒体类型。
 - 请求体、资源、结构、Trace、持久状态和扮演工作区文件均有明确上限。
+- LaTeX 在本地用 KaTeX 转为 MathML，再经 DOMPurify 净化；`trust: false` 禁用公式中需要显式授权的外部资源和 HTML 扩展命令（如 `\includegraphics`、`\href`、`\htmlStyle`），拒绝 `annotation-xml`，宏定义不跨公式共享。限制公式长度、宏展开与用户指定尺寸，错误回退为转义源码；这些上限不能消除浏览器布局或依赖漏洞的风险。公式不加载远程字体或脚本，也不执行 LaTeX 文件/系统命令。
 - 扮演工作区使用安全相对路径、逐段链接/reparse 检查、根目录复核、排他临时文件、原子替换和 revision/CAS。
 - 静态富文本经过 DOMPurify 与 Shadow DOM/绘制隔离；禁止自动外部资源，栅格图片限有界 data URI，外部链接需点击且带 `noopener noreferrer`。可选交互卡片在禁脚本 iframe 呈现净化 HTML，在有配额的 QuickJS 中执行 JS，仅开放卡片局部 JSON DOM 桥和卡片外的消息确认。见[边界与限制](docs/CONVERSATION_PRESENTATION.md)。
 - 生命周期日志输出到 Host `ctx.logger` 及 Tavern 的有界 `operation-logs/` journal（最多 4 MiB，可通过 `operationLogs.enabled=false` 禁用持久层）。字段使用白名单和长度上限；持久层还排除路径，不记录提示词、用户消息、模型回复、资源正文、正文长度、摘要或异常 message/stack/cause。查询和分页导出继承 Tavern API 安全边界；无浏览器日志上报。会话与操作标识仍可能敏感，公开前须检查。

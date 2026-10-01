@@ -1,6 +1,9 @@
 // This boundary isolates CSS, not JavaScript. All content must be purified first;
 // user-supplied scripts, event handlers and templates never reach this function.
+import { mathStyles } from './math-styles.js'
+
 const BASE_STYLE = `
+${mathStyles(':host')}
 :host{display:block;font:inherit;color:inherit}
 *,*::before,*::after{box-sizing:border-box}
 :first-child{margin-top:0}p,ul,ol,blockquote,pre,table{margin:0 0 .85em}

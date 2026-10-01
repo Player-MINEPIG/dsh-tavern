@@ -5,9 +5,9 @@
 本文说明如何验证当前实现，不记录某次发布的验收结果。先按改动范围选择检查，再为受影响的 DSH 接口补充集成证据。
 
 <a id="backend-compatibility"></a>
-## 2.5.0 兼容范围
+## 2.5.1 兼容范围
 
-Tavern 2.5.0 目标为官方 [DSH 0.2.0-rc.2](https://github.com/deepseek-ai/deepseek-harness/releases/tag/dsh-v0.2.0-rc.2)（`639ed015397290b3745d163aafe02ffee4aa3f84`）。必需运行时 peer 为 Cordis `4.0.4` 与 DSH crypto `0.2.0-rc.2`，准入无需版本例外。其他预发布运行时不自动受支持。
+Tavern 2.5.1 目标为官方 [DSH 0.2.0-rc.2](https://github.com/deepseek-ai/deepseek-harness/releases/tag/dsh-v0.2.0-rc.2)（`639ed015397290b3745d163aafe02ffee4aa3f84`）。必需运行时 peer 为 Cordis `4.0.4` 与 DSH crypto `0.2.0-rc.2`，准入无需版本例外。其他预发布运行时不自动受支持。
 
 后端范围包括插件准入、公开 Session/Workspace controller、提示词装配与参数回退、V4 历史与旧引用迁移、Trace 及[操作日志合同](OPERATION_LOGS.md)。已有 V4 引用不需再次转换；迁移格式库白名单与运行时支持范围分开，见[迁移说明](DSH_0.1.7_MIGRATION.md)。
 
@@ -122,6 +122,8 @@ node --test test/play-sessions.test.mjs
 事件语义与升级规则见 [操作日志合同](OPERATION_LOGS.md)。合同测试还验证全部已声明变更的统一失败关联、Host 创建后后续失败的资源 ID、分支队列清理失败、创建检查点去重和旧／新事件重启混读。受监控 API 完成只表示处理函数返回；user-message 为 accepted，不证明模型完成或响应已送达客户端。
 
 ## 显示功能回归
+
+公式回归运行 `node --test test/play-math.test.mjs test/play-rich-text.test.mjs test/play-export.test.mjs`，以及 `TAVERN_BROWSER_FIXTURE=./fixtures/math-browser.js node scripts/verify-rich-text-browser.mjs`。检查四种分隔符、原生 MathML 分数/矩阵布局、金额与转义、强调/表格/折叠混用、HTML 属性和代码保留、样式隔离、宽公式滚动、流式闭合与历史 DOM 保留、错误回退、宏隔离、恶意 TeX/MathML 清洗和离线 HTML 导出。此夹具使用实际消息组件但不替代完整 DSH Host 验收；在目标 Web/桌面 Host 继续核对 RP 正文、开场白、显示编辑与原生切换，旧浏览器的 MathML 支持另行验证。
 
 执行 `node --test test/presentation.test.mjs test/api-fetch.test.mjs test/api-security.test.mjs` 与现有完整检查。有 Chrome 时分别执行 `node scripts/verify-rich-text-browser.mjs` 和 `TAVERN_BROWSER_FIXTURE=./fixtures/presentation-browser.js node scripts/verify-rich-text-browser.mjs`。后者检查真实 DOM 更新、建议消息显式确认、未变化卡片状态、生命周期销毁、流式禁止执行、配额、父页面/网络接口拒绝、净化、头像和气泡。
 

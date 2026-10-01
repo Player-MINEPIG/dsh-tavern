@@ -16,8 +16,11 @@ await build({
 
 const body = readFileSync('dist/client.cjs', 'utf8')
 const interpreterLicense = readFileSync('packages/presentation/THIRD_PARTY_NOTICES.txt', 'utf8')
+const mathLicense = readFileSync('node_modules/katex/LICENSE', 'utf8')
 const wrapped = `/*! Bundled QuickJS notices:
 ${interpreterLicense}
+\nBundled KaTeX license:
+${mathLicense}
 */
 window.__ModuleLoader__.load({
 \tid: ${JSON.stringify(id)},

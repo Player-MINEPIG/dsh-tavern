@@ -2,7 +2,7 @@
 
 [中文](API.md) · [v3 detailed contract](PROMPT_API_V3_en.md) · [Frontend integration](FRONTEND_INTEGRATION_en.md)
 
-Contract: Tavern 2.5.0, supporting only DSH `0.2.0-rc.2`.
+Contract: Tavern 2.5.1, supporting only DSH `0.2.0-rc.2`.
 Root: `/pmp-dsh-tavern/api`. API versions and DSH log format V4 are independent.
 
 All endpoint catalogs use **Method / Path / Behavior / Status**, following the v2
@@ -18,7 +18,7 @@ message coordinates, branch inputs, and unmigrated timeline references.
 <a id="impact-on-third-party-consumers-in-240"></a>
 ## Impact on third-party consumers in the current version
 
-Version 2.5.0 targets DSH `0.2.0-rc.2` and adds persistent operation-log queries and correlation, an origin-stripping desktop request token, optional user avatars and presentation settings. It also retains the following contracts introduced in the 2.4 series.
+Version 2.5.1 targets DSH `0.2.0-rc.2` and only adds math presentation to the bundled RP view and static HTML exports. Compared with 2.5.0, it adds no routes, fields, setting toggles or persistent formats. HTTP message responses retain source text; third-party clients choose their own rendering. Persistent operation logs, the desktop request token, avatars and presentation settings retain their 2.5.0 contracts, together with the following contracts introduced in the 2.4 series.
 
 Compared with `v2.3.2`, the API root, v1/v2/v3 prefixes and existing routes remain.
 This does not mean that every accepted input, historical reference or Host integration behavior is unchanged.

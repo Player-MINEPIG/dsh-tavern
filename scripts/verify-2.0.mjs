@@ -5,7 +5,7 @@ import { spawnSync } from 'node:child_process'
 const groups = [
   {
     name: 'Presentation and desktop request security',
-    files: ['test/presentation.test.mjs', 'test/api-fetch.test.mjs', 'test/api-security.test.mjs', 'test/user-store.test.mjs'],
+    files: ['test/presentation.test.mjs', 'test/play-math.test.mjs', 'test/play-rich-text.test.mjs', 'test/play-export.test.mjs', 'test/api-fetch.test.mjs', 'test/api-security.test.mjs', 'test/user-store.test.mjs'],
   },
   {
     name: 'Trace v3 primitives and real Host acceptance',
