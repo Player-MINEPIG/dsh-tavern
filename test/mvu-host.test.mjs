@@ -83,12 +83,20 @@ test('real Host empty greeting binding writes state used by the first model requ
   const { mkdirSync } = await import('node:fs')
   const { validatePlayDocument } = await import('../packages/play/src/timeline.js')
   const ctx = new Context(), directory = mkdtempSync(join(tmpdir(), 'mvu-initial-host-')), requests = [], facts = []
-  let store, handle
+  let store
   try {
-    ctx.provide('sessionController', {}); ctx.provide('directoryPickerController', {})
+    ctx.provide('directoryPickerController', {})
     ctx.provide('workspaceController', { create: async () => ({ workspace: { workspaceId: 'synthetic-workspace' } }) })
     await ctx.plugin(SystemPrompt, { personaPrefix: 'HOST' })
     for (const name of ['session', 'agent', 'session-projection', 'llm', 'tools', 'agent-loop']) await ctx.plugin((await load(`@deepseek-ai/dsh-${name}`)).default, name === 'agent-loop' ? { agents: [] } : {})
+    // Use the official controller and permission-preset creation path, not agents.create alone.
+    ctx.provide('typert', { lookups: { configure: () => () => {} }, contexts: { configureHost: () => () => {} } })
+    ctx.provide('agentDefaultModel', { currentSelection: () => ({ provider: 'initial-test', model: 'test' }), saveSelection: async () => {} })
+    ctx.provide('fileUploads', { registerAgentResolver: () => () => {} })
+    ctx.provide('shell', { sandboxMode: 'workspace-write' }); ctx.provide('approval', { config: { policy: 'ask' } })
+    new (await load('@deepseek-ai/dsh-session-query')).SessionQueryEngine(ctx)
+    new (await load('@deepseek-ai/dsh-api-session-controller')).SessionController(ctx, { nativeOpen: false })
+    await ctx.plugin((await load('@deepseek-ai/dsh-permission-presets')).default, { defaultPreset: 'workspace-write' })
     class Adapter extends llm.LlmAdapter {
       async *stream(request) {
         requests.push(request)
@@ -101,17 +109,26 @@ test('real Host empty greeting binding writes state used by the first model requ
     }
     ctx.llm.registerAdapter(['initial-test'], new Adapter())
     await ctx.plugin({ name: tavern.name, inject: tavern.inject, apply(context) { store = tavern.apply(context, { storageDir: directory, mvu: { resources: [
-      { id: 'mvu:opening', characterId: 'opening-card', sessionIds: ['opening-session'], initial: { stat_data: { hp: 10 } } },
+      { id: 'mvu:opening', characterId: 'opening-card', sessionIds: ['*'], initial: { stat_data: { hp: 10 } } },
     ] } }) } })
     store.characterStore.create({ id: 'opening-card', name: 'Synthetic opening' })
-    store.sessionSelections.set('opening-session', { characterCardId: 'opening-card' })
+    const created = await ctx.sessionController.create({ cwd: directory })
+    const agent = ctx.agents.get(created.sessionId)
+    assert.ok(agent)
+    store.sessionSelections.set(agent.id, { characterCardId: 'opening-card' })
+    store.rpMode.followCharacterChange(agent.id, { previousId: null, nextId: 'opening-card' })
     const workspace = join(directory, 'play'); mkdirSync(workspace)
     await store.playWorkspaceStore.bindRoot(workspace)
     const write = (path, value) => store.playWorkspaceStore.writeFile(path, JSON.stringify(value), { expectedRevision: null, expectedRevisionPresent: true, validate: validatePlayDocument })
     write('opening/timeline.json', { nodes: [] })
-    write('catalog.json', { playthroughs: [{ id: 'opening', path: 'opening/timeline.json', ext: { pmpDshTavern: { rootSessionId: 'opening-session', characterId: 'opening-card' } } }] })
-    handle = await ctx.agents.create({ sessionId: 'opening-session', agentOptions: { provider: 'initial-test', model: 'test' } })
-    const { agent } = handle, service = ctx.get('tavernMvu')
+    write('catalog.json', { playthroughs: [{ id: 'opening', path: 'opening/timeline.json', ext: { pmpDshTavern: { rootSessionId: agent.id, characterId: 'opening-card' } } }] })
+    const service = ctx.get('tavernMvu')
+    assert.deepEqual(agent.session.snapshotEvents().map(event => ({ type: event.type, data: event.data })), [
+      { type: 'permission/preset', data: { preset: 'workspace-write' } },
+      { type: 'sandbox/mode', data: { mode: 'workspace-write' } },
+      { type: 'approval/policy', data: { policy: 'ask' } },
+      { type: 'sandbox/mode', data: { mode: 'read-only' } },
+    ])
     await service.flush()
     const scope = { mode: 'initial', playthroughId: 'opening', sessionId: agent.id, characterId: 'opening-card', sessionFormatVersion: agent.session.header.version }
     const source = JSON.stringify({ version: 1, scope, runs: [], modules: {}, html: '<div>Synthetic opening</div>' })
@@ -137,5 +154,5 @@ test('real Host empty greeting binding writes state used by the first model requ
     assert.equal((await service.read({ id: 'mvu:opening', scope: { sessionId: agent.id } })).content.stat_data.hp, 6)
     await assert.rejects(service.createCardBinding({ scope, sourceIdentity, grantId }), { code: 'MVU_READ_ONLY' })
     await assert.rejects(service.cardWrite({ capability: binding.capability, operation: 'patch', value: [], expectedRevision: 2, operationId: 'late', cause: 'script' }), { code: 'MVU_READ_ONLY' })
-  } finally { await handle?.dispose(); await ctx.fiber.dispose(); rmSync(directory, { recursive: true, force: true }) }
+  } finally { await ctx.fiber.dispose(); rmSync(directory, { recursive: true, force: true }) }
 })

@@ -9,8 +9,10 @@ export const MVU_SOURCE = 'tavern.mvu/state'
 /** Install with public Cordis/DSH seams. No Helper runtime or manager dependency. */
 export function installMvu(ctx, { storageDir, resources = [], sources, memberships, refresh, isActive, getSelection, getSelectionToken, onError = () => {} } = {}) {
   const sessionEpochs = new Map()
-  // DSH creates this metadata before the first turn; every other event closes the initial window.
-  const emptyHistory = events => Array.isArray(events) && events.every(event => event.type === 'sandbox/mode')
+  // DSH permission presets pin these exact configuration facts before publishing a new session.
+  // No prefix/category match: messages, turns, inbox activity and unknown events close this window.
+  const initialMetadata = new Set(['permission/preset', 'sandbox/mode', 'approval/policy'])
+  const emptyHistory = events => Array.isArray(events) && events.every(event => initialMetadata.has(event.type))
   const digest = value => createHash('sha256').update(JSON.stringify(value)).digest('hex')
   const inspect = async id => { const live = ctx.get('sessions')?.get?.(id); return live ? { header: live.header, events: live.snapshotEvents() } : ctx.get('sessionController')?.inspect?.(id) }
   const service = new MvuService({ storageDir, resources, inspect, refresh, isActive, authorizeCardWrite: async request => {

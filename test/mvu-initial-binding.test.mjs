@@ -167,3 +167,23 @@ test('initial scope crosses the JSON HTTP and shared client binding without expo
   f.start()
   await assert.rejects(binding.write({ operation: 'patch', value: [], expectedRevision: 1, operationId: 'http-stale', cause: 'script' }), { code: 'MVU_READ_ONLY' })
 })
+
+
+test('official new-session permission metadata permits initial scope; all activity and unknown events still refuse it', async t => {
+  // Neutral replay of the sequence emitted by official SessionController creation plus Tavern RP mode.
+  const metadata = [
+    { seq: 0, type: 'permission/preset', data: { preset: 'workspace-write' } },
+    { seq: 1, type: 'sandbox/mode', data: { mode: 'workspace-write' } },
+    { seq: 2, type: 'approval/policy', data: { policy: 'ask' } },
+    { seq: 3, type: 'sandbox/mode', data: { mode: 'read-only' } },
+  ]
+  const f = fixture(t); f.allow(); f.session.snapshotEvents = () => metadata
+  assert.equal((await f.service.snapshot(f.scope)).variables.stat_data.hp, 10)
+  const { capability } = await f.bind()
+  assert.equal((await f.service.cardWrite(request(capability, 0))).variables.stat_data.hp, 7)
+  for (const type of ['turn/start', 'turn/end', 'user/message', 'assistant/message', 'agent/inbox/spliced', 'request/header', 'permission/other', 'approval/request']) {
+    f.session.snapshotEvents = () => [...metadata, { seq: 4, type, data: {} }]
+    await assert.rejects(f.service.snapshot(f.scope), { code: 'MVU_READ_ONLY' }, type)
+    await assert.rejects(f.service.cardWrite(request(capability, 1, type)), { code: 'MVU_READ_ONLY' }, type)
+  }
+})
