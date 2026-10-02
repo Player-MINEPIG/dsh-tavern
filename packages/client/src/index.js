@@ -1154,7 +1154,7 @@ function TavernShell({ useSessions, useWorkspaces, createCleanSession, createCon
     if (!requestSurface(id)) return
     if (id === 'diagnostics') setDiagnosticPlaythroughId(null)
     setMenuOpen(false)
-    window.dispatchEvent(new Event(CLIENT_REFRESH_EVENT))
+    // Navigation does not mutate resources; each editor loads on mount.
   }
 
   let panel = null

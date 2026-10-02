@@ -33761,7 +33761,6 @@ function TavernShell({ useSessions, useWorkspaces, createCleanSession, createCon
     if (!requestSurface(id)) return;
     if (id === "diagnostics") setDiagnosticPlaythroughId(null);
     setMenuOpen(false);
-    window.dispatchEvent(new Event(CLIENT_REFRESH_EVENT));
   };
   let panel = null;
   if (surface === "preset") {
