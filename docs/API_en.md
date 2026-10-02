@@ -331,7 +331,7 @@ Prefix: `/pmp-dsh-tavern/api/v1`. `/dsh-tavern/api` is not part of the current c
 | PUT | `/characters/:id/world-books` | Replace the complete character ordered linked standalone world-book IDs | Implemented |
 | GET | `/characters` | Character catalog, sorting and missing-card summaries | Implemented |
 | POST | `/characters` | Create a character card | Implemented |
-| POST | `/characters/import` | Import a JSON/PNG character card | Implemented |
+| POST | `/characters/import` | Import a JSON/PNG character card; 32 MiB file limit, 16 MiB decoded limit per PNG card metadata chunk (also applies to export) | Implemented |
 | GET | `/characters/:id` | Complete current character card; returns character | Implemented |
 | PATCH | `/characters/:id` | Update character fields | Implemented |
 | DELETE | `/characters/:id` | Delete card and clear bindings, retaining a missing-card summary | Implemented |

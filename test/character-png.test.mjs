@@ -143,3 +143,32 @@ test('dual-chunk V3 PNG with null tags imports and preserves its source', () => 
   assert.deepEqual(card.data.tags, [])
   assert.deepEqual(card.source.raw, raw)
 })
+
+
+test('large dual-chunk cards round-trip UTF-8 metadata above the former 2 MiB limit', () => {
+  const raw = { spec: 'chara_card_v3', spec_version: '3.0', data: {
+    name: 'Large synthetic card', description: '世界🌍'.repeat(630_000),
+  } }
+  const json = JSON.stringify(raw)
+  assert.ok(Buffer.byteLength(json) > 6 * 1024 * 1024)
+  const embedded = embedCharacterCardPng(png(), json, { keywords: ['chara', 'ccv3'] })
+  const extracted = extractCharacterCardPng(embedded)
+  assert.equal(extracted.keyword, 'ccv3')
+  assert.equal(extracted.jsonText, json)
+  assertPngCrcs(embedded)
+})
+
+test('PNG metadata limit counts decoded bytes for both import and export', () => {
+  const json = JSON.stringify({ name: '边界🌍' })
+  const limit = Buffer.byteLength(json)
+  const embedded = embedCharacterCardPng(png(), json, { maxMetadataBytes: limit })
+  assert.equal(extractCharacterCardPng(embedded, { maxMetadataBytes: limit }).jsonText, json)
+  assert.throws(() => extractCharacterCardPng(embedded, { maxMetadataBytes: limit - 1 }), /metadata exceeds/)
+  assert.throws(() => embedCharacterCardPng(png(), json, { maxMetadataBytes: limit - 1 }), /metadata exceeds/)
+})
+
+test('default PNG metadata bound still rejects oversized chunks', () => {
+  const json = 'x'.repeat(16 * 1024 * 1024 + 1)
+  assert.throws(() => embedCharacterCardPng(png(), json), /metadata exceeds/)
+  assert.throws(() => extractCharacterCardPng(png(textChunk('chara', json))), /metadata exceeds/)
+})

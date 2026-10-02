@@ -1,7 +1,7 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import { Readable } from 'node:stream'
-import { mkdtempSync, rmSync } from 'node:fs'
+import { mkdtempSync, rmSync, readFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import {
@@ -10,6 +10,8 @@ import {
   characterStoreConstants,
   createCharacterApiHandler,
 } from '../packages/character/src/index.js'
+
+import { embedCharacterCardPng, extractCharacterCardPng } from '../packages/tavern-format/src/index.js'
 
 function invoke(handler, { method = 'GET', url, body } = {}) {
   return new Promise((resolve, reject) => {
@@ -380,6 +382,39 @@ test('character regex-scripts API reads and replaces native ST rules without rew
     })
     assert.equal(invalid.status, 400)
     assert.deepEqual(store.get('character-regex').source.raw.data.extensions.regex_scripts, regexScripts)
+  } finally {
+    rmSync(directory, { recursive: true, force: true })
+  }
+})
+
+
+test('large PNG import survives list, cold read, edit, JSON/PNG export and reimport', async () => {
+  const directory = mkdtempSync(join(tmpdir(), 'dsh-tavern-large-card-'))
+  const raw = { spec: 'chara_card_v3', spec_version: '3.0', data: {
+    name: 'Large synthetic', description: '世界🌍'.repeat(630_000), tags: null,
+  } }
+  const cover = readFileSync(new URL('../packages/tavern-format/assets/character-placeholder.png', import.meta.url))
+  const source = Buffer.from(embedCharacterCardPng(cover, JSON.stringify(raw), { keywords: ['chara', 'ccv3'] }))
+  try {
+    const handler = createCharacterApiHandler(new CharacterStore(directory))
+    const imported = await invoke(handler, { method: 'POST', url: '/pmp-dsh-tavern/api/v1/characters/import?filename=large.png', body: source })
+    assert.equal(imported.status, 201)
+    const id = imported.json.character.id
+    const restarted = createCharacterApiHandler(new CharacterStore(directory))
+    const listed = await invoke(restarted, { url: '/pmp-dsh-tavern/api/v1/characters' })
+    assert.equal(listed.json.characters[0].id, id)
+    const detail = await invoke(restarted, { url: `/pmp-dsh-tavern/api/v1/characters/${id}` })
+    assert.deepEqual(detail.json.character.source.raw, raw)
+    const edited = await invoke(restarted, { method: 'PATCH', url: `/pmp-dsh-tavern/api/v1/characters/${id}`, body: { name: 'Edited large card' } })
+    assert.equal(edited.status, 200)
+    raw.data.name = 'Edited large card'
+    const json = await invoke(restarted, { url: `/pmp-dsh-tavern/api/v1/characters/${id}/json` })
+    assert.deepEqual(JSON.parse(json.bytes.toString()), raw)
+    const png = await invoke(restarted, { url: `/pmp-dsh-tavern/api/v1/characters/${id}/png` })
+    assert.equal(png.status, 200)
+    assert.deepEqual(JSON.parse(extractCharacterCardPng(png.bytes).jsonText), raw)
+    const reimport = await invoke(restarted, { method: 'POST', url: '/pmp-dsh-tavern/api/v1/characters/import?filename=roundtrip.png', body: png.bytes })
+    assert.equal(reimport.status, 201)
   } finally {
     rmSync(directory, { recursive: true, force: true })
   }

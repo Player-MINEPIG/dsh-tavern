@@ -324,7 +324,7 @@ operation log、chrome service/slot、工作区准入、本地化与发布包边
 | PUT | `/characters/:id/world-books` | 完整替换角色卡关联独立世界书的有序 ID | 已实现 |
 | GET | `/characters` | 角色卡目录、排序状态及缺失卡摘要 | 已实现 |
 | POST | `/characters` | 创建角色卡 | 已实现 |
-| POST | `/characters/import` | 导入 JSON/PNG 角色卡 | 已实现 |
+| POST | `/characters/import` | 导入 JSON/PNG 角色卡；文件上限 32 MiB，PNG 每个角色数据块解码后上限 16 MiB（导出相同） | 已实现 |
 | GET | `/characters/:id` | 完整当前角色卡；返回 character | 已实现 |
 | PATCH | `/characters/:id` | 更新角色卡字段 | 已实现 |
 | DELETE | `/characters/:id` | 删除角色卡并清理绑定，保留缺失卡摘要 | 已实现 |
