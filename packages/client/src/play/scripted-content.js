@@ -1,3 +1,4 @@
+import { createVirtualCardRuntime } from './card-worker-client.js'
 import DOMPurify from 'dompurify'
 import { createElement as h, memo, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { RichText } from './rich-text.js'
@@ -7,7 +8,7 @@ import { discoverDependencies, externalUrl, loadWrapper, MAX_RENDER_SOURCE } fro
 import { renderingTrust } from './rendering-trust.js'
 
 const TAGS = 'div span p br hr section article header footer main aside h1 h2 h3 h4 h5 h6 ul ol li dl dt dd b strong i em small pre code blockquote table thead tbody tr th td details summary button label input textarea select option output progress meter img style'.split(' ')
-const ATTRS = 'id class title style type value min max step checked disabled placeholder name rows cols open width height alt src for selected data-action'.split(' ')
+const ATTRS = 'id class title style type value min max step checked disabled placeholder name rows cols open width height alt src for selected data-action data-dtv-node'.split(' ')
 export const CARD_CSP = "default-src 'none'; script-src 'none'; style-src 'unsafe-inline'; img-src data:; font-src 'none'; connect-src 'none'; media-src 'none'; frame-src 'none'; object-src 'none'; base-uri 'none'; form-action 'none'"
 export function cleanCardHtml(html) {
   const template = document.createElement('template')
@@ -49,15 +50,15 @@ export function cardDocument(source) {
 }
 
 export function prepareCardDocument(source, owners = [], helpers = [], trust = renderingTrust) {
-  const modules = Object.create(null), runs = [], seen = new Set()
-  let total = source.length
+  const modules = Object.create(null), runs = [], seen = new Set(), reviewed = new Set()
+  let total = source.length, virtual = false
   const read = (url, ownerHint) => {
     if (!url) throw Error('Blocked dependency URL')
     const owner = ownerHint ?? owners.find(owner => trust.inspect(owner,url)?.approved)
     if (!owner) throw Error('Rendering dependency requires content review: ' + url)
     const content = trust.read(owner,url)
     if (!seen.has(url)) { seen.add(url); total += content.length }
-    if (seen.size > 24 || total > 512 * 1024) throw Error('Rendering dependency graph exceeds limit')
+    if (seen.size > 24 || total > 24 * 1024 * 1024) throw Error('Rendering dependency graph exceeds limit')
     return {content,owner}
   }
   const collect = (content, base, owner, depth = 0) => {
@@ -67,8 +68,10 @@ export function prepareCardDocument(source, owners = [], helpers = [], trust = r
       const next = read(dependency.url,owner)
       if (Object.hasOwn(modules,dependency.url)) {
         if(modules[dependency.url]!==next.content)throw Error('Module content conflict across source owners')
-        continue
       }
+      const reviewKey=JSON.stringify([next.owner,dependency.url])
+      if(reviewed.has(reviewKey))continue
+      reviewed.add(reviewKey)
       modules[dependency.url] = next.content
       collect(next.content,dependency.url,next.owner,depth + 1)
     }
@@ -76,33 +79,37 @@ export function prepareCardDocument(source, owners = [], helpers = [], trust = r
   const wrapper = loadWrapper(source)
   let base, owner
   if (wrapper) {
+    virtual = true
     const result = read(wrapper.url); source = result.content; owner = result.owner; base = wrapper.url
     if (loadWrapper(source)) throw Error('Nested remote HTML wrappers are unsupported')
   }
-  if (source.length > MAX_RENDER_SOURCE) throw Error('Card exceeds 128K characters')
+  if (source.length > 1024*1024) throw Error('Card HTML exceeds 1 MiB')
   const template = document.createElement('template'); template.innerHTML = source
   for (const helper of helpers.filter(item => item.enabled)) {
     // The helper's exact source must still match what the user reviewed.
+    virtual = true
     const content = trust.read(helper.owner,helper.key)
     if (content !== helper.content) throw Error('Helper changed; review again')
     total += content.length
-    if(total > 512 * 1024)throw Error('Rendering dependency graph exceeds limit')
+    if(total > 24 * 1024 * 1024)throw Error('Rendering dependency graph exceeds limit')
     collect(content,undefined,helper.owner)
     runs.push({code:content,module:true,name:'helper-' + runs.length + '.js'})
   }
   for (const script of template.content.querySelectorAll('script')) {
     const type = script.getAttribute('type') ?? ''
-    if (type && !['module','text/javascript','application/javascript'].includes(type)) throw Error('Unsupported script type')
+    if (type && !['module','text/javascript','application/javascript','text/babel','text/jsx'].includes(type)) throw Error('Unsupported script type')
     let code = script.textContent, name = base ? base + '#inline-' + runs.length : 'card-' + runs.length + '.js', scriptOwner = owner
     if (script.hasAttribute('src')) {
+      virtual=true
       name = externalUrl(script.getAttribute('src'),base)
       const result = read(name,owner); code = result.content; scriptOwner = result.owner
     }
     collect(code,externalUrl(name) ?? base,scriptOwner)
-    runs.push({code,name,module:type === 'module'}); script.remove()
+    if(['text/babel','text/jsx'].includes(type))virtual=true
+    runs.push({code,name,type,module:type === 'module'}); script.remove()
   }
   const data = cardDocument(template.innerHTML)
-  return {...data,runs,modules}
+  return {...data,runs,modules,virtual}
 }
 
 export function createDomBridge(doc, context, onProposal, onError, helperBinding) {
@@ -169,6 +176,7 @@ const InteractiveCard = memo(function InteractiveCard({ source, enabled, scopeKe
   const frame = useRef(null), cleanup = useRef(()=>{}), generation=useRef(0)
   const [trustRevision,setTrustRevision]=useState(renderingTrust.revision)
   useEffect(()=>renderingTrust.subscribe(()=>{generation.current++;cleanup.current();setTrustRevision(renderingTrust.revision())}),[])
+  const [audit,setAudit]=useState(null)
   const [error,setError]=useState(''), [proposal,setProposal]=useState(''), [sending,setSending]=useState(false)
   const data = useMemo(() => {
     if (source.length > 128 * 1024) return { html: '', scripts: [], unsupported: ['Card exceeds 128K characters'] }
@@ -176,7 +184,7 @@ const InteractiveCard = memo(function InteractiveCard({ source, enabled, scopeKe
     try { return prepareCardDocument(source,owners,helpers) } catch(error) { return {...cardDocument(source),unsupported:[error.message]} }
   }, [source,enabled,trustRevision,JSON.stringify(owners),JSON.stringify(helpers)])
   const srcDoc = `<!doctype html><html><head><meta http-equiv="Content-Security-Policy" content="${CARD_CSP}"><style>body{margin:12px;font:14px system-ui;color:#243042;background:#fff}*{box-sizing:border-box}img{max-width:100%}button,input,select,textarea{font:inherit}button{cursor:pointer}</style></head><body>${data.html}</body></html>`
-  useLayoutEffect(()=>{setProposal('');setError('');return()=>{generation.current++;cleanup.current()}},[source,enabled,scopeKey,trustRevision,data])
+  useLayoutEffect(()=>{setProposal('');setError('');setAudit(null);return()=>{generation.current++;cleanup.current()}},[source,enabled,scopeKey,trustRevision,data])
   async function load() {
     const current=++generation.current; cleanup.current(); setError(''); setProposal('')
     const doc=frame.current?.contentDocument
@@ -184,15 +192,43 @@ const InteractiveCard = memo(function InteractiveCard({ source, enabled, scopeKe
     const resize=()=>{ if(frame.current) frame.current.style.height=`${Math.max(100,Math.min(800,doc.body.scrollHeight+24))}px` }
     const observer=new ResizeObserver(resize);observer.observe(doc.body);resize()
     const controller=new AbortController()
-    let dom, binding
+    let dom, binding, virtualRuntime, stopVariables, removeEvents=()=>{}
     let cleaned=false
-    cleanup.current=()=>{if(cleaned)return;cleaned=true;controller.abort();observer.disconnect();dom?.destroy();binding?.dispose()}
+    cleanup.current=()=>{if(cleaned)return;cleaned=true;controller.abort();observer.disconnect();dom?.destroy();virtualRuntime?.dispose();stopVariables?.();removeEvents();binding?.dispose()}
     if (!enabled || data.unsupported.length) return
     if (doc.body.querySelectorAll('*').length > 2048) { setError('Card DOM limit exceeded'); return }
     try {
       if(createBinding) {
         try { binding=await createBinding(controller.signal) } catch(error) { if(controller.signal.aborted)return /* Missing MVU is reported only if the card requests variables. */ }
         if(current!==generation.current){binding?.dispose();return}
+      }
+      if(data.virtual) {
+        const activeBinding=binding??helperBinding
+        const events=['click','input','change','keydown','keyup','pointerdown','pointerup']
+        const handler=event=>{
+          const target=event.target.closest?.('[data-dtv-node]');if(!target)return
+          const value={type:event.type,target:Number(target.dataset.dtvNode)}
+          if(['input','textarea','select'].includes(target.localName)){value.value=String(target.value).slice(0,64000);value.checked=target.checked===true}
+          for(const key of ['key','code','keyCode','charCode','button','buttons','clientX','clientY','ctrlKey','altKey','shiftKey','metaKey'])if(event[key]!==undefined)value[key]=event[key]
+          virtualRuntime?.dispatch(value)
+        }
+        for(const type of events)doc.body.addEventListener(type,handler)
+        removeEvents=()=>{for(const type of events)doc.body.removeEventListener(type,handler)}
+        virtualRuntime=createVirtualCardRuntime({html:data.html,runs:data.runs,modules:data.modules,context,variables:activeBinding?.getSnapshot()},{
+          onAudit:value=>{if(current===generation.current)setAudit(value)},
+          onProposal:value=>{if(current===generation.current)setProposal(value)},
+          onError:error=>{if(current===generation.current){setError(error.message);cleanup.current()}},
+          onView:view=>{
+            if(current!==generation.current)return
+            const focused=doc.activeElement,id=focused?.dataset?.dtvNode,selection=[focused?.selectionStart,focused?.selectionEnd],scroll=[doc.documentElement.scrollLeft,doc.documentElement.scrollTop]
+            const safe=cleanCardHtml(view.html+'<style>'+view.styles.replace(/<\/style/gi,'< /style')+'</style>')
+            if(doc.body.innerHTML!==safe)doc.body.innerHTML=safe
+            if(id){const restored=doc.body.querySelector('[data-dtv-node="'+id+'"]');restored?.focus();if(typeof selection[0]==='number')try{restored.setSelectionRange(...selection)}catch{}}
+            doc.documentElement.scrollLeft=scroll[0];doc.documentElement.scrollTop=scroll[1];resize()
+          },
+        })
+        if(activeBinding)stopVariables=activeBinding.subscribe(value=>virtualRuntime?.notifyVariables(value))
+        return
       }
       dom=createDomBridge(doc,context,setProposal,e=>{setError(e.message);cleanup.current()},binding??helperBinding)
       const runtime=await createCardRuntime(dom.bridge, { modules:data.modules })
@@ -207,6 +243,7 @@ const InteractiveCard = memo(function InteractiveCard({ source, enabled, scopeKe
     !enabled && data.scripts.length ? h('small',null,translate('appearance.scriptsOff')):null,
     data.unsupported.length ? h('p',{role:'alert'},data.unsupported.map(reason => reason.startsWith('appearance.') ? translate(reason) : reason).join(' ') + ' ' + translate('appearance.cardStaticFallback')):null,
     error ? h('p',{role:'alert'},error):null,
+    audit ? h('details',{className:'dtv-card-audit'},h('summary',null,translate('appearance.runtimeEvidence')),h('pre',{style:{whiteSpace:'pre-wrap',overflowWrap:'anywhere'}},JSON.stringify(audit,null,2))):null,
     proposal ? h('div',{className:'dtv-card-proposal',style:{border:'1px solid currentColor',padding:10,marginTop:8}},
       h('strong',null,translate('appearance.proposed')),h('p',null,proposal),
       h('button',{type:'button',disabled:!onSend||sending,onClick:async()=>{setSending(true);try{await onSend(proposal);setProposal('')}catch(e){setError(e.message)}finally{setSending(false)}}},translate('appearance.sendProposal')),

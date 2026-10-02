@@ -94,15 +94,15 @@ flowchart LR
 | `TavernUI.version`, `getContext()` | v1；角色与挂载时复制的 userName/characterName，复制的 JSON，不含 session ID 或凭据 |
 | `TavernUI.proposeMessage(text)` | 最多 4000 字符，生成可见建议；不能自行发送 |
 
-外部 `<script src>` 和 ES 模块必须按下述流程逐项审阅；未授权依赖与内联 on* 会停用整卡脚本。完整 jQuery/Vue/React、助手写变量/世界书/聊天/生成接口、父页面和系统接口不兼容。未提供的 API 报错并销毁运行时，不静默成功。静态 HTML 导出不运行卡片脚本，也不导出内存中的交互状态。
+外部 `<script src>` 和 ES 模块必须按下述流程逐项审阅；未授权依赖与内联 on* 会停用整卡脚本。外部来源、Helper 和 JSX 使用专用 Worker 内的 QuickJS 与 linkedom。固定官方 jQuery 3.6.0、React 18.3.1、Vue 3.5.13 夹具覆盖插入 DOM、点击和状态更新；这不代表完整浏览器兼容。同步布局、computedStyle、CSSOM、canvas、父页面与系统接口仍不可用；本渲染器尚不提供助手写变量/世界书/聊天/生成接口。未提供的 API 报错并销毁运行时，不静默成功。静态 HTML 导出不运行卡片脚本，也不导出内存中的交互状态。
 
-每卡源码最多 128K UTF-16 字符单元、解释器 8 MiB/256 KiB 栈；每次执行 60 ms 与 500 次中断检查双重上限、1000 bridge 操作、100 Promise jobs；DOM 最多 2048 handles，最多 256 listeners；高度 100–800 px。超限显示错误。浏览器布局/图片解码、WASM 引擎缺陷和复杂 CSS 的拒绝服务不由解释器配额完全覆盖，不能承诺绝对安全；显示正则仍有既有 RegExp 回溯风险。
+上表描述小型内嵌 facade；其每卡源码最多 128K UTF-16 字符单元、解释器 8 MiB/256 KiB 栈；每次执行 60 ms 与 500 次中断检查双重上限、1000 bridge 操作、100 Promise jobs；DOM 最多 2048 handles，最多 256 listeners；高度 100–800 px。超限显示错误。浏览器布局/图片解码、WASM 引擎缺陷和复杂 CSS 的拒绝服务不由解释器配额完全覆盖，不能承诺绝对安全；显示正则仍有既有 RegExp 回溯风险。
 
 自动检查见 [TESTING](TESTING.md)。安装到真实 profile 前，仍应对目标官方桌面发行包、实际角色卡与模型完成维护者验收。
 
 ## 解释器依赖
 
-`quickjs-emscripten-core` 与 `@jitl/quickjs-singlefile-browser-release-sync` 固定为 `0.31.0`。浏览器变体把 WASM 嵌入客户端包（整体未压缩约 1.6 MiB），不使用 CDN 或外部脚本加载器。包装库与引擎的 MIT 声明保留在生成包和[源码声明](../packages/presentation/THIRD_PARTY_NOTICES.txt)中。解释器模块延迟共享初始化，每张卡片单独创建 runtime。升级依赖需重新验证配额与隔离测试。[上游发布说明](https://github.com/justjake/quickjs-emscripten/releases/tag/v0.31.0)。
+`quickjs-emscripten-core` 与 `@jitl/quickjs-singlefile-browser-release-sync` 固定为 `0.31.0`。浏览器变体把 WASM 嵌入客户端包（嵌入生成客户端包），不使用 CDN 或外部脚本加载器。包装库与引擎的 MIT 声明保留在生成包和[源码声明](../packages/presentation/THIRD_PARTY_NOTICES.txt)中。小型内嵌解释器延迟初始化；外部卡各自使用可终止 Worker 和独立 runtime。Worker 内置 linkedom 0.18.12，并用独立 QuickJS context 运行固定 @babel/standalone 7.26.10，只允许 React preset，不接受卡片编译插件。依赖发现使用 Acorn 8.15.0 与 acorn-jsx 5.3.2。额外声明见[虚拟 DOM 声明](../packages/presentation/VIRTUAL_DOM_NOTICES.txt)。升级依赖需重新验证配额与隔离测试。[上游发布说明](https://github.com/justjake/quickjs-emscripten/releases/tag/v0.31.0)。
 
 样式页顶部为“导入 JSON、导出 JSON、创建样式”。正文字号纳入样式预览，通过滑块或数字输入调节，以可选整数字段 `fontSize` 保存（8–48 px），点击“应用并保存”生效。没有此字段的旧 v1 文件仍可导入，并继承旧的文字缩放；编辑器应用时转换为像素字号。不支持的脚本提示按原因本地化并去重，区分外部文件、模块、其他 script 类型与内联事件属性；脚本总开关不会代替逐来源授权。
 
@@ -111,9 +111,9 @@ flowchart LR
 
 **DT → 对话设置**包含对话外观、正则替换、外部代码三个页签。切页签保留外观和正则草稿；通过关闭、Esc 或菜单离开时有未保存检查。切换绑定资源时，旧正则草稿保留但停止保存，需先导出或放弃并重新加载。原独立正则菜单合并至此。
 
-清单识别角色卡/预设的 `extensions.tavern_helper` 对象 `{scripts,variables}` 及旧式键值对数组；支持直接脚本和 `type/value`、嵌套 scripts/children 格式。仅读取 scripts，变量语义由 MVU 模块负责。清单同时读取开场白、备选开场白，以及全局、预设和角色正则替换中的 script src、ES import/export/import() 及 `.load()` 字面量，保留来源资源与字段路径。静态发现不是完整 JavaScript 分析；计算生成的依赖仍由运行时加载器拒绝。
+清单识别角色卡/预设的 `extensions.tavern_helper` 对象 `{scripts,variables}` 及旧式键值对数组；支持直接脚本和 `type/value`、嵌套 scripts/children 格式。仅读取 scripts，变量语义由 MVU 模块负责。清单同时读取开场白、备选开场白，以及全局、预设和角色正则替换中的 script src、ES import/export/import() 及 `.load()` 字面量，保留来源资源与字段路径。JavaScript 依赖使用 AST 分析，支持多行 import/export 和字面量动态 import，注释和普通字符串不产生依赖。计算型动态 import 与语法错误会明确阻断依赖图。
 
-1. 默认不抓取任何远程代码，不增加 Host 代理。可信设置页可逐 URL 点击下载，使用浏览器 CORS、无凭据、禁止重定向及 no-referrer，流式限制 128 KiB，15 秒超时；取消/切换会中止读取，下载只准备审核、不执行。CORS 失败可导入本地源码。外部依赖仅接受无凭据、无非默认端口的 HTTPS 公共形式地址；HTTP、本机地址、IP 字面量和相对无基准地址明确阻断。本地缓存不发起 DNS 或网络请求。这是 URL 形式检查；浏览器获取不能核验 DNS 实际解析是否为私有地址，不能视为 public-only 网络保证。
+1. 默认不抓取任何远程代码，不增加 Host 代理。可信设置页可逐 URL 点击下载，使用浏览器 CORS、无凭据、禁止重定向及 no-referrer，流式限制 8 MiB，15 秒超时；取消/切换会中止读取，下载只准备审核、不执行。CORS 失败可导入本地源码。外部依赖仅接受无凭据、无非默认端口的 HTTPS 公共形式地址；HTTP、本机地址、IP 字面量和相对无基准地址明确阻断。本地缓存不发起 DNS 或网络请求。这是 URL 形式检查；浏览器获取不能核验 DNS 实际解析是否为私有地址，不能视为 public-only 网络保证。
 2. 下载或通过文件选择器导入该 URL 对应的源码，或准备审核 Helper 内嵌源码。显示完整内容与 SHA-256；导入本身不授予执行权限。
 3. 点击“已核对内容，允许受限执行”。授权绑定资源身份、精确 URL/字段及内容摘要；替换源码立即撤销旧授权。摘要用于固定所审阅字节，不证明代码来自网络声明的作者。
 4. 嵌套依赖逐项导入并审阅。受限 `$('body').load('https://…')` / `jQuery` 包装由渲染器读取已审阅 HTML，不执行网络请求；HTML 内相对脚本/模块以原 URL 解析。包装不接受请求参数、回调、选择器后缀或嵌套 `.load` 包装。其他网络用法不兼容。
@@ -128,7 +128,11 @@ flowchart LR
   F[撤销 / 切换 / 卸载] --> G[取消绑定并销毁运行时]
 ```
 
-每个来源最多 128K 字符；缓存最多 64 个来源；每卡依赖图最多 24 个 URL、512K 字符、8 层模块依赖。卡片不能访问缓存管理接口。Helper 脚本在对应卡片运行时中、HTML 脚本之前执行；不提供独立后台 Helper 任务，也不声称支持外部 MVU bundle、Babel 或完整浏览器框架。
+审核资源最多 8 MiB；缓存最多 64 项/64 MiB；每卡依赖图最多 24 个 URL、24M UTF-16 字符单元和 8 层。每个 owner 都必须审核完整传递闭包；同 URL 不同审核内容会拒绝。输入 HTML 仍限 128K 字符，解析后的远程 HTML 限 1 MiB。卡片不能操作缓存。Helper 在本卡 HTML 脚本之前运行，不提供独立后台任务，也不声称任意 MVU bundle 已兼容。
+
+外部 Worker 最多并发 4 卡，每卡解释器堆 192 MiB、栈 1 MiB（总解释器上限 768 MiB，不含浏览器/Worker 开销）。冷启动外部看门狗为 15 秒，初始单次执行 2 秒，后续入口 120 ms，响应外部看门狗 1.5 秒。每入口最多 200 Promise jobs、10,000 桥接调用；每卡最多 128 定时器、8,192 DOM 节点、1 MiB 输出，每秒最多 256 输出消息和 128 输入事件。定时器范围 16–60,000 ms；动画回调用定时器实现，不等价原生布局时钟。展示 iframe 无脚本权限且 CSP 禁止网络；第三方代码只得到解释器内虚拟 DOM，不获得原生 Worker/浏览器句柄。
+
+click/input/change/key/pointer 事件复制为虚拟事件，输出净化后展示；快照恢复焦点、选区和滚动位置，不等价完整 DOM diff 或同步布局桥。缺失 API 明确失败，不伪造零值尺寸。卡片外运行证据显示源码 hash、固定编译器版本、JSX 输入/输出 hash、冷启动耗时与采样堆快照；这些不是进程峰值内存测量。
 
 | 扩展接口 | 明确支持的子集 |
 | --- | --- |

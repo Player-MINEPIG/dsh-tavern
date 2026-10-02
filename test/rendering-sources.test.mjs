@@ -23,8 +23,8 @@ test('body wrappers, unknown languages and interrupted fences are distinguished'
  assert.equal(splitCards('```\n'+source)[0].html,undefined)
 })
 test('dependency discovery retains blocked references without fetching and resolves relative modules',()=>{
- const result=discoverDependencies(`<script src="https://example.com/a.js"></script>\nimport x from './b.js';\nimport('http://localhost:5500/a.js');\n$('body').load('https://example.com/card.html')`,'https://example.com/root.js')
- assert.equal(result.length,4);assert.equal(result[1].url,'https://example.com/b.js');assert.equal(result[2].blocked,true)
+ const result=discoverDependencies(`<script src="https://example.com/a.js"></script><script>\nimport x from './b.js';\nimport('http://localhost:5500/a.js');\n$('body').load('https://example.com/card.html')</script>`,'https://example.com/root.js')
+ assert.equal(result.length,4);assert.ok(result.some(item=>item.url==='https://example.com/b.js'));assert.ok(result.some(item=>item.raw==='http://localhost:5500/a.js'&&item.blocked))
  for(const url of ['file:///tmp/a','http://example.com/x','https://user:pass@example.com/x','https://127.0.0.1/x','https://[::1]/x','https://x.local/x','https://example.com:8443/x','https://localhost./','https://foo.local./','https://svc.internal./','https://LOCALHOST./'])assert.equal(externalUrl(url),null)
 })
 test('trust is scoped, digest-bound, revocable, bounded and cancels pending hashing',async()=>{
@@ -38,7 +38,7 @@ test('trust is scoped, digest-bound, revocable, bounded and cancels pending hash
  await trust.stage('character:one','https://example.com/a.js','2');assert.throws(()=>trust.read('character:one','https://example.com/a.js'),/review/)
  trust.revoke('character:one','https://example.com/a.js');assert.equal(trust.inspect('character:one','https://example.com/a.js'),null)
  const pending=trust.stage('owner','inline','3');trust.clear();await assert.rejects(pending,/cancelled/)
- await assert.rejects(()=>trust.stage('owner','inline','x'.repeat(128*1024+1)),/limit/)
+ await assert.rejects(()=>trust.stage('owner','inline','x'.repeat(8*1024*1024+1)),/limit/)
  stop();const previous=changes;trust.clear();assert.equal(changes,previous)
 })
 test('reviewed module map is the only module loading authority',async()=>{
@@ -64,7 +64,7 @@ test('explicit downloads omit credentials and refuse redirects, blocked URLs, ov
  assert.equal(await downloadRenderingSource('https://example.com/code.js',{fetch:request}),'export const value=1')
  assert.equal(options.credentials,'omit');assert.equal(options.redirect,'error');assert.equal(options.mode,'cors');assert.equal(options.referrerPolicy,'no-referrer')
  await assert.rejects(()=>downloadRenderingSource('http://localhost/x',{fetch:request}),/Blocked/);assert.equal(calls,1)
- await assert.rejects(()=>downloadRenderingSource('https://example.com/big.js',{fetch:async()=>new Response('x'.repeat(128*1024+1))}),/128 KiB/)
+ await assert.rejects(()=>downloadRenderingSource('https://example.com/big.js',{fetch:async()=>new Response('x'.repeat(8*1024*1024+1))}),/8 MiB/)
  const controller=new AbortController();controller.abort();await assert.rejects(()=>downloadRenderingSource('https://example.com/x',{fetch:request,signal:controller.signal}),/abort/i);assert.equal(calls,1)
  await assert.rejects(()=>downloadRenderingSource('https://example.com/x',{fetch:async()=>({ok:true,redirected:true})}),/failed/)
 })
@@ -85,6 +85,32 @@ test('module graph checks every source owner before sharing identical dependenci
  assert.throws(()=>prepare('',helpers.map(x=>x.owner),helpers,trust),/conflict/)
  await approve(helpers[1].owner,url,'export const value="A"')
  assert.equal(prepare('',helpers.map(x=>x.owner),helpers,trust).runs.length,2)
+ const child='https://example.com/child.js'
+ for(const helper of helpers)await approve(helper.owner,url,`export {value} from '${child}'`)
+ await approve(helpers[0].owner,child,'export const value=1')
+ assert.throws(()=>prepare('',helpers.map(x=>x.owner),helpers,trust),/review/)
+ await approve(helpers[1].owner,child,'export const value=1')
+ assert.equal(prepare('',helpers.map(x=>x.owner),helpers,trust).modules[child],'export const value=1')
  trust.revoke(helpers[1].owner,url)
  assert.throws(()=>prepare('',helpers.map(x=>x.owner),helpers,trust),/review/)
 })
+
+ test('AST dependency discovery handles multiline declarations and ignores inert strings/comments',()=>{
+ const source=`// import 'https://example.com/comment.js';
+ const text="import('https://example.com/string.js')";
+ import {
+ value
+ } from './actual.js';
+ export {value as other}
+ from './reexport.js';
+ import('./dynamic.js');`
+ assert.deepEqual(discoverDependencies(source,'https://example.com/main.js').map(x=>x.url).sort(),['https://example.com/actual.js','https://example.com/dynamic.js','https://example.com/reexport.js'])
+ assert.match(discoverDependencies('import(base + name)')[0].raw,/Computed dynamic/)
+ assert.equal(discoverDependencies('import(base + name)')[0].blocked,true)
+ assert.equal(discoverDependencies('function broken(')[0].blocked,true)
+ })
+
+ test('dependency inventory includes HTML fences after ordinary greeting text',()=>{
+ const content='Welcome.\n\n```html\n<body><script src="https://example.com/status.js"></script></body>\n```'
+ assert.equal(renderingInventory({data:{first_mes:content}},{kind:'character',resourceId:'fixture'})[0].dependencies[0].url,'https://example.com/status.js')
+ })

@@ -1,5 +1,8 @@
+import { Parser } from 'acorn'
+import jsx from 'acorn-jsx'
+const SourceParser=Parser.extend(jsx())
 // Discovery is inert: it does not fetch, evaluate, or confer trust on source text.
-export const MAX_RENDER_SOURCE = 128 * 1024
+export const MAX_RENDER_SOURCE = 8 * 1024 * 1024
 export function externalUrl(value, base) {
   try {
     const url = new URL(value, base)
@@ -17,10 +20,32 @@ export function discoverDependencies(source, base) {
     const url = externalUrl(raw, base)
     if (!found.some(item => item.kind === kind && item.raw === raw)) found.push({kind,raw,url,blocked:!url})
   }
-  for (const match of String(source).matchAll(/<script\b[^>]*\bsrc\s*=\s*(['"])(.*?)\1/gi)) add('script', match[2])
-  for (const match of String(source).matchAll(/\b(?:import|export)\s+(?:[^;\n]*?\s+from\s*)?(['"])(.*?)\1/g)) add('module', match[2])
-  for (const match of String(source).matchAll(/\bimport\s*\(\s*(['"])(.*?)\1\s*\)/g)) add('module', match[2])
-  for (const match of String(source).matchAll(/\bload\s*\(\s*(['"])(.*?)\1/g)) add('html', match[2])
+  const text=String(source), chunks=[]
+  if (/^\s*</.test(text)||/(?:^|\n)```(?:html)?[\t ]*\n\s*</i.test(text)) {
+    for(const match of text.matchAll(/<script\b([^>]*)>([\s\S]*?)<\/script\s*>/gi)) {
+      const src=match[1].match(/\bsrc\s*=\s*(['"])(.*?)\1/i)
+      if(src)add('script',src[2]);else chunks.push(match[2])
+    }
+  } else chunks.push(text)
+  for(const code of chunks) {
+    let tree
+    try { tree=SourceParser.parse(code,{ecmaVersion:'latest',sourceType:'module'}) }
+    catch { try { tree=SourceParser.parse(code,{ecmaVersion:'latest',sourceType:'script'}) } catch { found.push({kind:'module',raw:'Unparseable JavaScript dependency graph',url:null,blocked:true});continue } }
+    const pending=[tree]
+    while(pending.length) {
+      const node=pending.pop()
+      if(['ImportDeclaration','ExportNamedDeclaration','ExportAllDeclaration'].includes(node.type)&&node.source)add('module',node.source.value)
+      if(node.type==='ImportExpression') {
+        if(node.source.type==='Literal'&&typeof node.source.value==='string')add('module',node.source.value)
+        else found.push({kind:'module',raw:'Computed dynamic import requires a fixed reviewed URL',url:null,blocked:true})
+      }
+      if(node.type==='CallExpression'&&node.callee.type==='MemberExpression'&&!node.callee.computed&&node.callee.property.name==='load'&&node.arguments[0]?.type==='Literal'&&typeof node.arguments[0].value==='string')add('html',node.arguments[0].value)
+      for(const value of Object.values(node)) {
+        if(Array.isArray(value)){for(const item of value)if(item&&typeof item.type==='string')pending.push(item)}
+        else if(value&&typeof value.type==='string')pending.push(value)
+      }
+    }
+  }
   return found
 }
 export function loadWrapper(source) {

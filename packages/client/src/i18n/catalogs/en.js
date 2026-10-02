@@ -74,6 +74,7 @@ export default Object.freeze({
   "appearance.close": "Close",
   "appearance.card": "Restricted interactive card",
   "appearance.scriptsOff": "Scripts are disabled or the message is still streaming. Showing static content.",
+  "appearance.runtimeEvidence": "Runtime source and compilation evidence",
   "appearance.proposed": "The card suggests sending this message",
   "appearance.sendProposal": "Send to this playthrough",
 

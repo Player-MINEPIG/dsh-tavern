@@ -74,6 +74,7 @@ export default Object.freeze({
   "appearance.close": "关闭",
   "appearance.card": "受限交互卡",
   "appearance.scriptsOff": "脚本尚未启用，或消息仍在生成。当前显示静态内容。",
+  "appearance.runtimeEvidence": "运行源码与编译证据",
   "appearance.proposed": "交互卡建议发送以下消息",
   "appearance.sendProposal": "确认发送到当前周目",
 

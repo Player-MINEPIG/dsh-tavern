@@ -1,3 +1,4 @@
+import { cardWorkerDefines } from './scripts/build-card-worker.mjs'
 import { build } from 'esbuild'
 import { readFileSync, rmSync, writeFileSync } from 'node:fs'
 
@@ -5,6 +6,7 @@ const id = 'pmp-dsh-tavern'
 
 await build({
   entryPoints: ['packages/client/src/entry.js'],
+  define: await cardWorkerDefines(),
   bundle: true,
   format: 'cjs',
   platform: 'browser',
@@ -16,9 +18,12 @@ await build({
 
 const body = readFileSync('dist/client.cjs', 'utf8')
 const interpreterLicense = readFileSync('packages/presentation/THIRD_PARTY_NOTICES.txt', 'utf8')
+const virtualDomLicense = readFileSync('packages/presentation/VIRTUAL_DOM_NOTICES.txt', 'utf8')
 const mathLicense = readFileSync('node_modules/katex/LICENSE', 'utf8')
 const wrapped = `/*! Bundled QuickJS notices:
 ${interpreterLicense}
+\nBundled virtual DOM, parser and compiler licenses:
+${virtualDomLicense}
 \nBundled KaTeX license:
 ${mathLicense}
 */

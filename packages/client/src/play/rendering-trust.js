@@ -15,6 +15,8 @@ export function createRenderingTrust() {
       if (source.startsWith('https:') && externalUrl(source) !== source) throw Error('Unsupported dependency URL')
       const key = keyFor(owner,source), ticket = {}, epoch = generation
       if (!records.has(key) && records.size >= 64) throw Error('Rendering source count exceeds limit')
+      const bytes=new TextEncoder().encode(content).byteLength
+      if(bytes>MAX_RENDER_SOURCE||[...records.entries()].reduce((sum,[id,value])=>sum+(id===key?0:new TextEncoder().encode(value.content).byteLength),bytes)>64*1024*1024)throw Error('Rendering cache exceeds limit')
       records.set(key,{ticket,owner,source,content,approved:false,digest:null}); emit()
       const digest = [...new Uint8Array(await crypto.subtle.digest('SHA-256',new TextEncoder().encode(content)))].map(byte=>byte.toString(16).padStart(2,'0')).join('')
       if (generation !== epoch || records.get(key)?.ticket !== ticket) throw Error('Rendering review was cancelled')

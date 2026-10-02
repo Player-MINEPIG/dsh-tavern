@@ -1,3 +1,4 @@
+import { cardWorkerDefines } from './build-card-worker.mjs'
 import { build } from 'esbuild'
 import { spawn } from 'node:child_process'
 import { mkdtempSync, writeFileSync, readFileSync, rmSync, existsSync } from 'node:fs'
@@ -13,6 +14,7 @@ if (!browser) throw new Error('Set CHROME_PATH to a Chrome/Chromium executable t
 const dir = mkdtempSync(join(tmpdir(), 'tavern-rich-text-'))
 try {
   await build({
+    define: await cardWorkerDefines(),
     entryPoints: [fileURLToPath(new URL(process.env.TAVERN_BROWSER_FIXTURE ?? './fixtures/rich-text-browser.js', import.meta.url))],
     bundle: true, platform: 'browser', format: 'iife', outfile: join(dir, 'fixture.js'),
     banner: process.env.TAVERN_REGEX_FIXTURE ? {

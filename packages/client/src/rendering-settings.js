@@ -53,7 +53,7 @@ export function RenderingSettings({client,activeSnapshot}) {
     h('input',{type:'file',hidden:true,ref:input,accept:'.js,.mjs,.html,.txt',onChange:event=>{
       const file=event.target.files?.[0], target=selected, ticket=generation.current;event.target.value=''
       if(!file||!target)return
-      run(async()=>{if(file.size>128*1024)throw Error('Source exceeds 128 KiB');const content=await file.text();if(ticket!==generation.current)return;await renderingTrust.stage(target.owner,target.key,content)})
+      run(async()=>{if(file.size>8*1024*1024)throw Error('Source exceeds 8 MiB');const content=await file.text();if(ticket!==generation.current)return;await renderingTrust.stage(target.owner,target.key,content)})
     }}),
     !entries.length?h('p',null,translate('rendering.empty')):null,
     ...entries.map(entry=>{
