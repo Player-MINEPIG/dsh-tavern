@@ -1287,7 +1287,7 @@ function TavernShell({ useSessions, useWorkspaces, createCleanSession, createCon
           const ariaText = stateLabel
             ? uiMessage('nav.itemAriaBound', { label: itemLabel, title: statusTitle, state: stateLabel })
             : uiMessage('nav.itemAria', { label: itemLabel, title: statusTitle })
-          return h('div', { key: item.id }, h('button', {
+          return h('button', {
             className: 'dtv-menu-item',
             type: 'button',
             role: 'menuitem',
@@ -1309,16 +1309,7 @@ function TavernShell({ useSessions, useWorkspaces, createCleanSession, createCon
           status.count >= (isDiagnostics ? 1 : 2)
             ? h('span', { className: 'dtv-item-count', 'aria-label': uiMessage(isDiagnostics ? 'diagnostics.count' : 'nav.bookCount', { count: status.count }) }, uiMessage(isDiagnostics ? 'diagnostics.count' : 'nav.bookCount', { count: status.count }))
             : item.available ? null : h('span', { className: 'dtv-item-planned' }, uiMessage('common.planned')),
-          ), item.id === 'assembly' && h('select', { className: 'dtv-select', style: { width: '100%', marginBottom: 4 }, 'aria-label': translate('nav.assembly'), value: assemblyState.selection?.id ?? '', disabled: !sessionId,
-            onChange: async event => {
-              const id = event.target.value || null
-              if (!requestSurface(null)) return
-              try {
-                const res = await fetch(`${API_ROOT}/assembly-presets/selection`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ sessionId, id }) })
-                const data = await res.json(); if (!res.ok) throw new Error(data.error)
-                window.dispatchEvent(new CustomEvent(CLIENT_REFRESH_EVENT))
-              } catch (error) { setStatusError(error.message) }
-            } }, h('option', { value: '' }, uiMessage('nav.assembly.empty')), ...assemblyState.presets.map(p => h('option', { key: p.id, value: p.id }, p.name))))
+          )
         }),
       ),
     ),

@@ -3468,13 +3468,6 @@ var BUILTINS = Object.freeze([
   { id: "builtin-cache", ...normalizePreset({ format: FORMAT, version: 1, name: "\u7F13\u5B58\u53CB\u597D / Cache friendly", rules: [DEFAULT_RULES[0], DEFAULT_RULES[1], DEFAULT_RULES[2], DEFAULT_RULES[3], DEFAULT_RULES[5], DEFAULT_RULES[6], DEFAULT_RULES[4], DEFAULT_RULES[7]] }) },
   { id: "builtin-snapshots", ...normalizePreset({ format: FORMAT, version: 1, name: "\u8FFD\u52A0\u5FEB\u7167 / Append snapshots", rules: [DEFAULT_RULES[0], DEFAULT_RULES[1], DEFAULT_RULES[2], DEFAULT_RULES[3], DEFAULT_RULES[5], DEFAULT_RULES[6], { ...DEFAULT_RULES[4], lifetime: "snapshot" }, DEFAULT_RULES[7]] }) }
 ]);
-function moveRule(rules, id, targetId) {
-  const from = rules.findIndex((r) => r.id === id), to = rules.findIndex((r) => r.id === targetId);
-  if (from < 0 || to < 0 || from === to) return rules;
-  const copy = [...rules], [item] = copy.splice(from, 1);
-  copy.splice(to, 0, item);
-  return copy;
-}
 
 // packages/preset/src/client-state.js
 function reorder(items, from, to) {
@@ -3609,9 +3602,9 @@ var assemblyCss = `
 .dtv-assembly-screen{position:absolute;inset:0;z-index:1;pointer-events:auto;display:flex;flex-direction:column;box-sizing:border-box;background:var(--dsw-alias-bg-base,#fff);color:var(--dsw-alias-label-primary,#24252b);border:1px solid var(--dsw-alias-border-l1,#e8e8ec);border-radius:18px;box-shadow:0 18px 65px #0003;font:14px/1.55 system-ui;overflow:hidden}.dtv-assembly-screen *{box-sizing:border-box}
 .dta-head{display:flex;justify-content:space-between;align-items:start;padding:20px 28px;border-bottom:1px solid var(--dsw-alias-border-l1,#eee)}.dta-head{width:100%;max-width:calc(var(--dsh-composer-card-max-width,780px) + 56px);margin:auto}.dta-head h2{margin:0;font-size:22px}.dta-head p{margin:5px 0 0;opacity:.7}.dta-body{overflow:auto;padding:22px 28px 50px;flex:1}.dta-content{max-width:var(--dsh-composer-card-max-width,780px);margin:auto}.dta-toolbar{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px;align-items:center}
 .dtv-assembly-screen button,.dtv-assembly-screen select,.dtv-assembly-screen input:not([type=checkbox]),.dtv-assembly-screen textarea{font:inherit;color:inherit;background:var(--dsw-alias-button-secondary-fill,var(--dsw-alias-bg-base));border:1px solid var(--dsw-alias-border-l1,#dedfe5);border-radius:9px;padding:8px 12px;min-width:0}.dtv-assembly-screen button{cursor:pointer}.dtv-assembly-screen button:disabled{opacity:.45;cursor:default}.dtv-assembly-screen :focus-visible{outline:2px solid #4386dc;outline-offset:2px}.dtv-assembly-screen .primary{background:#347cd2;color:white;border-color:#347cd2}.dta-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin:16px 0}.dta-grid label{display:flex;flex-direction:column;gap:5px}.dta-notice{padding:12px 15px;border-radius:10px;background:var(--dsw-alias-bg-layer-2,var(--dsw-alias-bg-base));margin:12px 0;overflow-wrap:anywhere}.dta-notice[data-error=true]{color:#be4747}.dta-tabs{display:flex;gap:8px;flex-wrap:wrap;margin:24px 0 14px}.dta-tabs button[aria-pressed=true]{border-color:#4386dc;color:#4386dc}
-.dta-row{border:1px solid var(--dsw-alias-border-l1,#e9e9ed);border-left:5px solid var(--assembly-color);border-radius:14px;margin:10px 0;background:var(--dsw-alias-bg-base,#fff);overflow:hidden}.dta-row[data-dragover=true]{outline:2px solid #4386dc}.dta-summary{display:flex;align-items:center;gap:14px;padding:15px 17px;min-height:69px}.dta-summary input{width:20px;height:20px;accent-color:#2484ed}.dta-handle{cursor:grab;color:var(--dsw-alias-label-tertiary,#858993);font-size:22px;line-height:1}.dta-name{flex:1;font-size:17px;min-width:0;overflow-wrap:anywhere;cursor:pointer}.dta-badge{font-size:12px;color:var(--dsw-alias-label-tertiary,#858993);text-transform:uppercase}.dta-detail{padding:4px 20px 20px;border-top:1px solid var(--dsw-alias-border-l1,#eee)}.dta-properties{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px;margin:16px 0}.dta-detail textarea{width:100%;min-height:130px;resize:vertical}.dtv-assembly-screen pre{white-space:pre-wrap;overflow-wrap:anywhere;font:13px/1.6 ui-monospace,monospace;max-height:360px;overflow:auto}.dta-child{margin:10px 0;padding:10px 14px;border-left:3px solid #ae73cf;background:var(--dsw-alias-bg-layer-2,var(--dsw-alias-bg-base));border-radius:6px}.dtv-assembly-screen small{display:block;opacity:.7;overflow-wrap:anywhere}
+.dta-row{border:1px solid var(--dsw-alias-border-l1,#e9e9ed);border-left:5px solid var(--assembly-color);border-radius:14px;margin:10px 0;background:var(--dsw-alias-bg-base,#fff);overflow:hidden}.dta-row[data-dragover=true]{outline:2px solid #4386dc}.dta-summary{display:flex;align-items:center;gap:14px;padding:15px 17px;min-height:69px}.dta-summary input{width:20px;height:20px;accent-color:#2484ed}.dta-handle{cursor:grab;color:var(--dsw-alias-label-tertiary,#858993);font-size:22px;line-height:1}.dta-name{flex:1;font-size:17px;min-width:0;overflow-wrap:anywhere;cursor:pointer}.dta-summary-meta{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;flex:0 0 318px;margin:0;font-size:12px;line-height:1.5}.dta-summary-meta dt{color:var(--dsw-alias-label-tertiary,#858993);font-size:11px}.dta-summary-meta dd{margin:3px 0 0;color:var(--dsw-alias-label-secondary);overflow-wrap:anywhere}.dta-detail{padding:4px 20px 20px;border-top:1px solid var(--dsw-alias-border-l1,#eee)}.dta-properties{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px;margin:16px 0}.dta-detail textarea{width:100%;min-height:130px;resize:vertical}.dtv-assembly-screen pre{white-space:pre-wrap;overflow-wrap:anywhere;font:13px/1.6 ui-monospace,monospace;max-height:360px;overflow:auto}.dta-child{margin:10px 0;padding:10px 14px;border-left:3px solid #ae73cf;background:var(--dsw-alias-bg-layer-2,var(--dsw-alias-bg-base));border-radius:6px}.dtv-assembly-screen small{display:block;opacity:.7;overflow-wrap:anywhere}
 .dta-row[data-dragging=true]{height:4px;min-height:4px;margin:5px 10px;border:0;border-radius:999px;background:var(--dsw-alias-state-business-primary);box-shadow:0 0 0 1px color-mix(in srgb,var(--dsw-alias-state-business-primary) 25%,transparent)}.dta-row[data-dragging=true]>*{opacity:0}.dta-drop-placeholder{min-height:42px;border:2px dashed var(--dsw-alias-state-business-primary);border-radius:8px;background:color-mix(in srgb,var(--dsw-alias-state-business-primary) 7%,transparent);display:flex;align-items:center;justify-content:center;color:var(--dsw-alias-state-business-primary);pointer-events:none}.dtv-assembly-screen .dta-handle{touch-action:none;user-select:none;background:transparent;border:0;padding:2px}.dta-origin{font-size:11px;color:var(--dsw-alias-label-secondary);margin-top:2px}.dta-legend{display:flex;gap:12px;flex-wrap:wrap;margin:12px 0}.dta-legend span{border-left:4px solid var(--assembly-color);padding-left:6px;font-size:12px}
-@media(max-width:700px){.dtv-assembly-screen{inset:5px;border-radius:12px}.dta-head,.dta-body{padding:15px}.dta-head{padding-right:64px}.dta-grid,.dta-properties{grid-template-columns:1fr}.dta-summary{gap:8px;padding:12px 10px}.dta-name{font-size:15px}.dta-badge{max-width:95px;text-align:right}}
+@media(max-width:700px){.dtv-assembly-screen{inset:5px;border-radius:12px}.dta-head,.dta-body{padding:15px}.dta-head{padding-right:64px}.dta-grid,.dta-properties{grid-template-columns:1fr}.dta-summary{gap:8px;padding:12px 10px}.dta-name{font-size:15px}.dta-summary-meta{display:none}}
 `;
 function AssemblyPanel(props) {
   return (0, import_react.createElement)(AssemblyPanelContent, { ...props, key: props.sessionId ?? "no-session" });
@@ -3688,7 +3681,6 @@ function AssemblyPanelContent({ sessionId, close: close2, registerBeforeLeave, c
     setPreview(null);
   };
   const editRule = (id, patch) => edit({ rules: draft.rules.map((r) => r.id === id ? { ...r, ...patch } : r) });
-  const reorder2 = (id, target) => edit({ rules: moveRule(draft.rules, id, target) });
   const toggle = (id) => setExpanded((old) => ({ ...old, [id]: !old[id] }));
   async function save(asCopy = false) {
     const creates = asCopy || draft.builtin || !draft.id;
@@ -3824,6 +3816,12 @@ function AssemblyPanelContent({ sessionId, close: close2, registerBeforeLeave, c
     }, movable ? "\u283F" : "\u{1F512}");
   }
   const placeholder = (index) => dragFrom !== null && dropIndex === index ? (0, import_react.createElement)("div", { key: `drop-${index}`, className: "dta-drop-placeholder" }, t("dropHere"), displayRows[dragFrom]?.name || t(displayRows[dragFrom]?.kind)) : null;
+  const ruleStability = (rule) => ["history", "input", "worldbook"].includes(rule.kind) ? "conversation" : rule.kind === "native-system" ? "assembly" : "asset";
+  const summaryMetadata = (stability, lifetime, role2) => (0, import_react.createElement)(
+    "dl",
+    { className: "dta-summary-meta" },
+    ...[["stability", stability], ["lifetime", lifetime], ["role", role2]].map(([label, value]) => (0, import_react.createElement)("div", { key: label }, (0, import_react.createElement)("dt", null, t(label)), (0, import_react.createElement)("dd", null, t(value))))
+  );
   function ruleRow(rule, index) {
     return (0, import_react.createElement)(
       "article",
@@ -3839,14 +3837,12 @@ function AssemblyPanelContent({ sessionId, close: close2, registerBeforeLeave, c
             toggle(rule.id);
           }
         } }, rule.name || t(rule.kind), (0, import_react.createElement)("small", { className: "dta-origin" }, originName(plugins[rule.kind]))),
-        (0, import_react.createElement)("span", { className: "dta-badge" }, rule.role === "preserve" ? t("preserve") : t(rule.role)),
-        (0, import_react.createElement)("button", { title: t("up"), "aria-label": t("up"), disabled: index === 0, onClick: () => reorder2(rule.id, draft.rules[index - 1].id) }, "\u2191"),
-        (0, import_react.createElement)("button", { title: t("down"), "aria-label": t("down"), disabled: index === draft.rules.length - 1, onClick: () => reorder2(rule.id, draft.rules[index + 1].id) }, "\u2193")
+        summaryMetadata(ruleStability(rule), rule.lifetime, rule.role)
       ),
       expanded[rule.id] && (0, import_react.createElement)(
         "div",
         { className: "dta-detail" },
-        (0, import_react.createElement)("div", { className: "dta-properties" }, (0, import_react.createElement)("div", null, t("source"), (0, import_react.createElement)("small", null, originName(plugins[rule.kind])), (0, import_react.createElement)("small", null, sourceInfo(rule.kind))), (0, import_react.createElement)("div", null, t("stability"), (0, import_react.createElement)("small", null, t(["history", "input", "worldbook"].includes(rule.kind) ? "conversation" : rule.kind === "native-system" ? "assembly" : "asset"))), (0, import_react.createElement)("label", null, t("lifetime"), select(rule.lifetime, ["request", "snapshot"], (v2) => editRule(rule.id, { lifetime: v2 }), isNative(rule.kind) || rule.kind === "preset"))),
+        (0, import_react.createElement)("div", { className: "dta-properties" }, (0, import_react.createElement)("div", null, t("source"), (0, import_react.createElement)("small", null, originName(plugins[rule.kind])), (0, import_react.createElement)("small", null, sourceInfo(rule.kind))), (0, import_react.createElement)("div", null, t("stability"), (0, import_react.createElement)("small", null, t(ruleStability(rule)))), (0, import_react.createElement)("label", null, t("lifetime"), select(rule.lifetime, ["request", "snapshot"], (v2) => editRule(rule.id, { lifetime: v2 }), isNative(rule.kind) || rule.kind === "preset"))),
         (0, import_react.createElement)("div", { className: "dta-grid" }, (0, import_react.createElement)("label", null, t("role"), select(rule.role, ["preserve", "system", "user", "assistant"], (v2) => editRule(rule.id, { role: v2 }), isNative(rule.kind))), !isNative(rule.kind) && (0, import_react.createElement)("label", null, t("depth"), (0, import_react.createElement)("input", { type: "number", min: 0, max: 1e4, value: rule.depth ?? "", onChange: (e) => editRule(rule.id, { depth: e.target.value === "" ? null : Number(e.target.value) }) }))),
         rule.kind === "phi" && (0, import_react.createElement)("div", null, (0, import_react.createElement)("p", null, t("phiHelp")), (0, import_react.createElement)("label", null, t("additional-phi"), (0, import_react.createElement)("textarea", { value: rule.text, onChange: (e) => editRule(rule.id, { text: e.target.value }) }))),
         rule.kind === "custom" && (0, import_react.createElement)("div", null, (0, import_react.createElement)("label", null, t("name"), (0, import_react.createElement)("input", { value: rule.name ?? "", onChange: (e) => editRule(rule.id, { name: e.target.value }) })), (0, import_react.createElement)("label", null, t("text"), (0, import_react.createElement)("textarea", { value: rule.text, onChange: (e) => editRule(rule.id, { text: e.target.value }) })), button("remove", () => edit({ rules: draft.rules.filter((r) => r.id !== rule.id) }))),
@@ -3862,7 +3858,7 @@ function AssemblyPanelContent({ sessionId, close: close2, registerBeforeLeave, c
       { key: node.id, className: "dta-row", "data-assembly-index": index, "data-dragging": dragFrom === index, style: { "--assembly-color": sourceColor(node.source.plugin) } },
       (0, import_react.createElement)("div", { className: "dta-summary" }, dragHandle(node, index, movable), (0, import_react.createElement)("span", { className: "dta-name", role: "button", tabIndex: 0, onClick: () => toggle(node.id), onKeyDown: (e) => {
         if (e.key === "Enter") toggle(node.id);
-      }, "aria-expanded": !!expanded[node.id], title: node.name }, nodeName(node), (0, import_react.createElement)("small", { className: "dta-origin" }, originName(node.source.plugin))), (0, import_react.createElement)("span", { className: "dta-badge" }, t(node.role))),
+      }, "aria-expanded": !!expanded[node.id], title: node.name }, nodeName(node), (0, import_react.createElement)("small", { className: "dta-origin" }, originName(node.source.plugin))), summaryMetadata(node.stability, node.lifetime, node.role)),
       expanded[node.id] && (0, import_react.createElement)("div", { className: "dta-detail" }, (0, import_react.createElement)("div", { className: "dta-properties" }, (0, import_react.createElement)("div", null, t("source"), (0, import_react.createElement)("small", null, `${node.source.plugin} / ${node.source.resourceId ?? ""} / ${node.source.field}`), (0, import_react.createElement)("small", null, sourceInfo(node.module))), (0, import_react.createElement)("div", null, t("stability"), (0, import_react.createElement)("small", null, t(node.stability))), (0, import_react.createElement)("div", null, t("lifetime"), (0, import_react.createElement)("small", null, t(node.lifetime)), (0, import_react.createElement)("small", null, t("recorded")))), node.locked && (0, import_react.createElement)("small", null, `${t("locked")}: ${node.lockReason}`), ...(node.children ?? []).map((child) => (0, import_react.createElement)("div", { key: child.id, className: "dta-child", style: { borderLeftColor: sourceColor(child.source?.plugin) } }, `\u{1F512} ${nodeName(child)}`, (0, import_react.createElement)("small", null, child.lockReason), (0, import_react.createElement)("small", null, [originName(child.source?.plugin), child.source?.resourceId, child.source?.field, child.source?.sourceKind].filter(Boolean).join(" / ")), (0, import_react.createElement)("pre", null, child.text))), (0, import_react.createElement)("pre", null, node.text))
     );
   }
@@ -32411,7 +32407,7 @@ function RegexPanel({ client, activeSnapshot, close: close2 }) {
     ...current3,
     [kind]: current3[kind].filter((_rule, ruleIndex) => ruleIndex !== index)
   }));
-  const moveRule2 = (kind, fromIndex, boundary) => {
+  const moveRule = (kind, fromIndex, boundary) => {
     if (kind === "global") {
       setDocument((current3) => ({
         ...current3,
@@ -32489,7 +32485,7 @@ function RegexPanel({ client, activeSnapshot, close: close2 }) {
         remove: removeRule,
         updateSource: (index, next) => updateSourceRule(kind, index, next),
         removeSource: (index) => removeSourceRule(kind, index),
-        move: (fromIndex, toIndex) => moveRule2(kind, fromIndex, toIndex),
+        move: (fromIndex, toIndex) => moveRule(kind, fromIndex, toIndex),
         dragFrom,
         dropIndex,
         setDragFrom,
@@ -33818,7 +33814,7 @@ function TavernShell({ useSessions, useWorkspaces, createCleanSession, createCon
           const stateLabel = item.binding === false ? "" : unwrapText(uiMessage(status.bound ? "common.bound" : "common.unbound"));
           const titleText = stateLabel ? uiMessage("nav.itemTitleBound", { label: itemLabel, title: statusTitle, state: stateLabel }) : uiMessage("nav.itemTitle", { label: itemLabel, title: statusTitle });
           const ariaText = stateLabel ? uiMessage("nav.itemAriaBound", { label: itemLabel, title: statusTitle, state: stateLabel }) : uiMessage("nav.itemAria", { label: itemLabel, title: statusTitle });
-          return h20("div", { key: item.id }, h20(
+          return h20(
             "button",
             {
               className: "dtv-menu-item",
@@ -33842,25 +33838,7 @@ function TavernShell({ useSessions, useWorkspaces, createCleanSession, createCon
               h20("span", { className: "dtv-item-status" }, status.bound ? rawText(status.title) : uiMessage(status.titleKey ?? item.emptyTitleKey))
             ),
             status.count >= (isDiagnostics ? 1 : 2) ? h20("span", { className: "dtv-item-count", "aria-label": uiMessage(isDiagnostics ? "diagnostics.count" : "nav.bookCount", { count: status.count }) }, uiMessage(isDiagnostics ? "diagnostics.count" : "nav.bookCount", { count: status.count })) : item.available ? null : h20("span", { className: "dtv-item-planned" }, uiMessage("common.planned"))
-          ), item.id === "assembly" && h20("select", {
-            className: "dtv-select",
-            style: { width: "100%", marginBottom: 4 },
-            "aria-label": translate("nav.assembly"),
-            value: assemblyState.selection?.id ?? "",
-            disabled: !sessionId,
-            onChange: async (event) => {
-              const id = event.target.value || null;
-              if (!requestSurface(null)) return;
-              try {
-                const res = await tavernFetch(`${API_V1}/assembly-presets/selection`, { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ sessionId, id }) });
-                const data = await res.json();
-                if (!res.ok) throw new Error(data.error);
-                window.dispatchEvent(new CustomEvent(CLIENT_REFRESH_EVENT));
-              } catch (error) {
-                setStatusError(error.message);
-              }
-            }
-          }, h20("option", { value: "" }, uiMessage("nav.assembly.empty")), ...assemblyState.presets.map((p) => h20("option", { key: p.id, value: p.id }, p.name))));
+          );
         })
       )
     )
