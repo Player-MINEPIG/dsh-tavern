@@ -20,7 +20,7 @@ function fixture(t, { managed = false, resources } = {}) {
   services.set('tavernRenderingAuthority', { resolve: async () => ({ valid, write: true, scope }), isCurrent: () => valid })
   const resource = { id: 'mvu:initial', characterId: 'c', sessionIds: ['s', 'other'], managementMode: managed ? 'managed' : 'native', initial: { stat_data: { hp: 10 } }, schemaSource: 'const Schema=z.object({hp:z.number().min(0)});' }
   const options = { storageDir, resources: resources ?? [resource], sources: { register: () => () => {} },
-    memberships: { readCatalog: () => ({ catalog: { playthroughs: [playthrough] } }), readTimeline: () => ({ timeline }) },
+    memberships: { captureLease: () => () => true, readCatalog: () => ({ catalog: { playthroughs: [playthrough] } }), readTimeline: () => ({ timeline }) },
     getSelection: id => selections.get(id), getSelectionToken: id => selections.selectionRevision(id), isActive: (r, id) => r.characterId === selections.get(id).characterCardId }
   const service = installMvu(ctx, options); t.after(() => service.dispose())
   const facts = []; service.observe(f => facts.push(f))
