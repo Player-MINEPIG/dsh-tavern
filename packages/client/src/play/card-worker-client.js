@@ -10,15 +10,15 @@ function validateInput(data) {
  count(JSON.stringify({context:data.context??{},variables:data.variables??null}),256*1024)
  return {...data,runs,modules,html}
 }
-export function createVirtualCardRuntime(input,{onView,onProposal,onError,onAudit=()=>{},onWrite=async()=>{throw Error('Variable writes are disabled')}}) {
+export function createVirtualCardRuntime(input,{onView,onProposal,onError,onAudit=()=>{},onMeasure=()=>{throw Error('Card layout surface unavailable')},onWrite=async()=>{throw Error('Variable writes are disabled')}}) {
  const data=validateInput(input)
  if(typeof TAVERN_CARD_WORKER_SOURCE!=='string')throw Error('Card worker unavailable in this build')
  if(active>=4)throw Error('Four external card runtimes are active. Pause an older card, then retry this card.')
  const nonce=crypto.randomUUID(),url=URL.createObjectURL(new Blob([TAVERN_CARD_WORKER_SOURCE],{type:'text/javascript'}))
  let worker;try{worker=new Worker(url)}finally{URL.revokeObjectURL(url)}active++
- let disposed=false,startupTimer,busyTimer,lastWriteId=0
+ let disposed=false,startupTimer,busyTimer,lastWriteId=0,lastMeasureId=0,measurement=null
  const tasks=new Map(),pending=new Map()
- const stop=()=>{if(disposed)return;disposed=true;clearTimeout(startupTimer);clearTimeout(busyTimer);for(const item of pending.values()){clearTimeout(item.timer);item.controller.abort()}pending.clear();worker.terminate();tasks.clear();active--}
+ const stop=()=>{if(disposed)return;disposed=true;clearTimeout(startupTimer);clearTimeout(busyTimer);for(const item of pending.values()){clearTimeout(item.timer);item.controller.abort()}pending.clear();if(measurement){clearTimeout(measurement.timer);measurement.controller.abort();measurement=null}worker.terminate();tasks.clear();active--}
  const fail=(message,operationId)=>{if(disposed)return;stop();onError(Object.assign(Error(message),operationId?{operationId,outcome:'unknown'}:{}))}
  const replyWrite=(requestId,value,operationId)=>{if(disposed)return;try{if(JSON.stringify(value).length>128*1024)throw Error();worker.postMessage({kind:'writeResult',nonce,requestId,value})}catch{fail('Write result could not be delivered; inspect the operation receipt before retrying',operationId)}}
  worker.onerror=()=>fail('Card worker failed')
@@ -30,6 +30,18 @@ export function createVirtualCardRuntime(input,{onView,onProposal,onError,onAudi
   if(message.kind==='idle'){clearTimeout(busyTimer);busyTimer=null;return}
   if(message.kind==='error'){fail(String(message.value).slice(0,300));return}
   if(message.kind==='proposal'){if(typeof message.value==='string'&&message.value.length<=4000)onProposal(message.value);else fail('Invalid card proposal');return}
+  if(message.kind==='measure'){
+   const value=message.value
+   if(measurement||!value||!Number.isSafeInteger(value.requestId)||value.requestId<=lastMeasureId||!Number.isSafeInteger(value.id)||value.id<0||typeof value.view?.html!=='string'||typeof value.view?.styles!=='string'||JSON.stringify(value).length>1024*1024){fail('Invalid layout measurement');return}
+   lastMeasureId=value.requestId
+   const controller=new AbortController(),ticket={controller,timer:setTimeout(()=>fail('Card layout deadline exceeded'),1000)};measurement=ticket
+   Promise.resolve().then(()=>{if(disposed||measurement!==ticket)return;return onMeasure(value,{signal:controller.signal})}).then(result=>{
+    if(disposed||measurement!==ticket)return
+    measurement=null;clearTimeout(ticket.timer)
+    try{if(JSON.stringify(result).length>128*1024)throw Error('Card geometry output exceeds limit');worker.postMessage({kind:'measurement',nonce,requestId:value.requestId,value:result})}catch{fail('Card geometry could not be transferred')}
+   },error=>{if(disposed||measurement!==ticket)return;measurement=null;clearTimeout(ticket.timer);try{worker.postMessage({kind:'measurement',nonce,requestId:value.requestId,error:String(error.message).slice(0,200)})}catch{fail('Card measurement failed')}})
+   return
+  }
   if(message.kind==='write'){
    const value=message.value
    if(!value||!Number.isSafeInteger(value.requestId)||value.requestId<=lastWriteId||pending.size>=32||!['patch','replace'].includes(value.operation)||!Number.isSafeInteger(value.observedRevision)||value.observedRevision<0||JSON.stringify(value).length>128*1024){fail('Invalid or duplicate variable write request');return}

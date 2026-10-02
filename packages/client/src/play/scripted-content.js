@@ -126,7 +126,7 @@ export function prepareCardDocument(source, owners = [], helpers = [], trust = r
     }
     expanded+=code.length;if(expanded>24*1024*1024||runs.length>=128)throw Error('Expanded card input exceeds limit')
     collect(code,externalUrl(name) ?? base,scriptOwner)
-    if(['text/babel','text/jsx'].includes(type)||/\b(?:Mvu|eventOn|waitGlobalInitialized)\b/.test(code))virtual=true
+    if(['text/babel','text/jsx'].includes(type)||/\b(?:Mvu|eventOn|waitGlobalInitialized|getBoundingClientRect|getComputedStyle|scrollHeight|scrollWidth|offsetHeight|offsetWidth|clientHeight|clientWidth)\b/.test(code))virtual=true
     runs.push({code,name,type,module:type === 'module'}); script.remove()
   }
   const data = cardDocument(template.innerHTML)
@@ -246,6 +246,14 @@ const InteractiveCard = memo(function InteractiveCard({ source, enabled, scopeKe
         for(const type of events)doc.body.addEventListener(type,handler)
         removeEvents=()=>{for(const type of events)doc.body.removeEventListener(type,handler)}
         if(writeScope&&createBinding)writeRequest=renderingWriteRequests.register({scope:writeScope,owners,runs:data.runs,modules:data.modules,html:data.html,adapters:data.adapters,schemaDeclarations:data.schemaDeclarations,onRevoke:revokeWrites})
+        const displayView=view=>{
+            if(current!==generation.current)return
+            const focused=doc.activeElement,id=focused?.dataset?.dtvNode,selection=[focused?.selectionStart,focused?.selectionEnd],scroll=[doc.documentElement.scrollLeft,doc.documentElement.scrollTop]
+            const safe=cleanCardHtml(view.html+'<style>'+view.styles.replace(/<\/style/gi,'< /style')+'</style>')
+            if(doc.body.innerHTML!==safe)doc.body.innerHTML=safe
+            if(id){const restored=doc.body.querySelector('[data-dtv-node="'+id+'"]');restored?.focus();if(typeof selection[0]==='number')try{restored.setSelectionRange(...selection)}catch{}}
+            doc.documentElement.scrollLeft=scroll[0];doc.documentElement.scrollTop=scroll[1];resize()
+        }
         virtualRuntime=createVirtualCardRuntime({html:data.html,runs:data.runs,modules:data.modules,context,variables:activeBinding?.getSnapshot()},{
           onWrite:async({operation,value,options,cause,observedRevision,operationId,signal})=>{
             try{
@@ -267,13 +275,18 @@ const InteractiveCard = memo(function InteractiveCard({ source, enabled, scopeKe
           onAudit:value=>{if(current===generation.current)setAudit({...value,adapters:data.adapters,schemaEvidence})},
           onProposal:value=>{if(current===generation.current)setProposal(value)},
           onError:error=>{if(current===generation.current){setError(error.message+(error.operationId?' · operationId: '+error.operationId:''));cleanup.current()}},
-          onView:view=>{
-            if(current!==generation.current)return
-            const focused=doc.activeElement,id=focused?.dataset?.dtvNode,selection=[focused?.selectionStart,focused?.selectionEnd],scroll=[doc.documentElement.scrollLeft,doc.documentElement.scrollTop]
-            const safe=cleanCardHtml(view.html+'<style>'+view.styles.replace(/<\/style/gi,'< /style')+'</style>')
-            if(doc.body.innerHTML!==safe)doc.body.innerHTML=safe
-            if(id){const restored=doc.body.querySelector('[data-dtv-node="'+id+'"]');restored?.focus();if(typeof selection[0]==='number')try{restored.setSelectionRange(...selection)}catch{}}
-            doc.documentElement.scrollLeft=scroll[0];doc.documentElement.scrollTop=scroll[1];resize()
+          onView:displayView,
+          onMeasure:(request,{signal})=>{
+            signal.throwIfAborted();if(cleaned||current!==generation.current||!frame.current?.isConnected||frame.current.contentDocument!==doc)throw Error('Card measurement generation expired')
+            displayView(request.view)
+            const node=request.id===0?doc.documentElement:request.id===request.view.bodyId?doc.body:doc.body.querySelector('[data-dtv-node="'+request.id+'"]')
+            if(!node)throw Error('Layout target is not in this card')
+            const rectangle=node.getBoundingClientRect(),style=doc.defaultView.getComputedStyle(node,request.pseudo||null),computed=Object.create(null)
+            if(style.length>1024)throw Error('Computed style exceeds property limit')
+            for(const property of style){const value=style.getPropertyValue(property);computed[property]=value;computed[property.replace(/-([a-z])/g,(_,letter)=>letter.toUpperCase())]=value}
+            const result={rect:Object.fromEntries(['x','y','width','height','top','right','bottom','left'].map(key=>[key,rectangle[key]])),computed}
+            for(const key of ['scrollHeight','scrollWidth','offsetHeight','offsetWidth','clientHeight','clientWidth','offsetTop','offsetLeft'])result[key]=node[key]
+            signal.throwIfAborted();return result
           },
         })
         if(activeBinding)stopVariables=activeBinding.subscribe(value=>virtualRuntime?.notifyVariables(value))
