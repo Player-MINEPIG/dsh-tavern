@@ -188,3 +188,28 @@ test('public sources run for tool continuations, steering, child requests and se
     await child.dispose(); await handle.dispose()
   } finally { await ctx.fiber.dispose(); rmSync(directory, { recursive: true, force: true }) }
 })
+
+test('official DeepSeek serializer receives a nonempty custom-only user request', { skip: !runtimeRoot, timeout: 10000 }, async () => {
+  const require = createRequire(join(resolve(runtimeRoot), 'package.json'))
+  const { DeepSeekAdapter } = await import(pathToFileURL(require.resolve('@deepseek-ai/dsh-llm-deepseek')).href)
+  const { assembleRequest, BUILTINS } = await import('../packages/request-assembler/index.js')
+  let wire
+  const adapter = new DeepSeekAdapter({
+    options: () => ({ baseURL: 'https://unused.invalid', models: [{ id: 'fixture' }], defaults: { thinking: 'disabled' }, maxTokens: 32, streamIdleTimeoutMs: 5000, filePolicy: {} }),
+    resolveAuth: async () => ({ headers: {} }), resolveUserId: () => 'fixture',
+    prepareExtensions: async ({ body }) => { wire = body; throw new Error('Stop before network: serialization verification only') },
+  })
+  const rules = [...BUILTINS[0].rules.map(r => ({ ...r, enabled: false })), { id: 'only', kind: 'custom', text: 'Reply OK' }]
+  async function capture(preset) {
+    wire = undefined
+    const request = assembleRequest({ preset })
+    await assert.rejects(async () => { for await (const _ of adapter.stream({ provider: 'fixture', model: 'fixture', messages: request.messages })) {} }, { code: 'REQUEST_EXTENSION' })
+    assert.ok(wire, 'official serializer reached before any network I/O')
+    return wire
+  }
+  const fixed = await capture({ ...BUILTINS[0], rules })
+  assert.deepEqual(fixed.messages, [{ role: 'user', content: [{ type: 'text', text: 'Reply OK' }] }])
+  const legacy = await capture({ ...BUILTINS[0], rules: rules.map(r => r.kind === 'custom' ? { ...r, role: 'preserve' } : r) })
+  assert.equal(legacy.system, 'Reply OK')
+  assert.deepEqual(legacy.messages, [])
+})

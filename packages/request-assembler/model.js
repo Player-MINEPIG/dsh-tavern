@@ -19,7 +19,7 @@ export function normalizePreset(value) {
     if (!rule || !/^[a-zA-Z0-9_-]{1,80}$/.test(rule.id) || ids.has(rule.id)) throw new TypeError('Rule ids must be unique')
     if (typeof rule.kind !== 'string' || !/^[a-zA-Z0-9][a-zA-Z0-9_.:/-]{0,159}$/.test(rule.kind)) throw new TypeError('Invalid or duplicate module')
     ids.add(rule.id); kinds.add(rule.kind)
-    const role = rule.role ?? 'preserve', lifetime = rule.lifetime ?? 'request'
+    const role = rule.kind === 'custom' ? (rule.role === 'preserve' ? 'system' : rule.role ?? 'user') : rule.role ?? 'preserve', lifetime = rule.lifetime ?? 'request'
     if (!['preserve', 'system', 'user', 'assistant'].includes(role)) throw new TypeError('Invalid role')
     if (!['request', 'snapshot'].includes(lifetime)) throw new TypeError('Invalid lifetime')
     if (rule.depth !== undefined && rule.depth !== null && (!Number.isInteger(rule.depth) || rule.depth < 0 || rule.depth > 10000)) throw new TypeError('Invalid insertion depth')

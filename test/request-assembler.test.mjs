@@ -162,3 +162,29 @@ test('mode defaults and explicit strategy overrides persist independently', () =
     assert.equal(new AssemblyPresetStore(root, { mode: () => mode }).selection('session').id, 'builtin-snapshots')
   } finally { rmSync(root, { recursive: true, force: true }) }
 })
+
+test('custom-only requests use an explicit role without restoring disabled native input', () => {
+  const preset = { ...BUILTINS[0], rules: [...BUILTINS[0].rules.map(r => ({ ...r, enabled: false })), { id: 'only', kind: 'custom', enabled: true, text: 'Reply OK' }] }
+  const normalized = normalizePreset(preset)
+  assert.equal(normalized.rules.at(-1).role, 'user')
+  const result = assembleRequest({ preset, nativeMessages: native, inputIds: ['u2'] })
+  assert.deepEqual(texts(result), ['Reply OK'])
+  assert.equal(result.messages[0].role, 'user')
+  assert.ok(!result.diagnostics.some(d => d.code.startsWith('ASSEMBLY_')))
+  const legacy = { ...preset, rules: preset.rules.map(r => r.kind === 'custom' ? { ...r, role: 'preserve' } : r) }
+  assert.equal(normalizePreset(legacy).rules.at(-1).role, 'system')
+  const old = assembleRequest({ preset: legacy, nativeMessages: native })
+  assert.equal(old.messages[0].role, 'system')
+  assert.ok(old.diagnostics.some(d => d.code === 'ASSEMBLY_SYSTEM_ONLY'))
+  const empty = assembleRequest({ preset: { ...preset, rules: preset.rules.map(r => ({ ...r, text: '' })) } })
+  assert.equal(empty.messages.length, 0)
+  assert.ok(empty.diagnostics.some(d => d.code === 'ASSEMBLY_EMPTY'))
+})
+
+test('retained depth snapshots keep depth metadata in subsequent previews', () => {
+  const preset = { ...BUILTINS[1], rules: [...BUILTINS[1].rules, { id: 'depth-note', kind: 'custom', text: 'Note', lifetime: 'snapshot', role: 'user', depth: 1 }] }
+  const first = assembleRequest({ preset, nativeMessages: native })
+  const second = assembleRequest({ preset, nativeMessages: [...native, m('a2', 'assistant')], snapshots: first.snapshots })
+  assert.equal(first.nodes.find(n => n.ruleId === 'depth-note').depth, 1)
+  assert.equal(second.nodes.find(n => n.ruleId === 'depth-note').depth, 1)
+})

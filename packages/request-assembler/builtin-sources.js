@@ -66,7 +66,7 @@ export function registerBuiltinSources(registry) {
     return { blocks, diagnostics }
   } })
   register({ id: 'phi', name: '后置指令（PHI）', dependencies: ['character'], resolve: (_, rule) => ({ blocks: [ref('phi', 'character', ['phi'], { honorEnabled: false, useOwnerRule: true, lock: false, owner: 'phi' }), text('additional-phi', rule.text, { source: { field: rule.id } })] }) })
-  register({ id: 'custom', name: '自定义内容', multiple: true, dependencies: ['character', 'persona'], resolve: (_, rule) => ({ blocks: [text(rule.name || 'custom', rule.text, { source: { field: rule.id } })] }) })
+  register({ id: 'custom', name: '自定义内容', roles: ['user', 'system', 'assistant'], multiple: true, dependencies: ['character', 'persona'], resolve: (_, rule) => ({ blocks: [text(rule.name || 'custom', rule.text, { source: { field: rule.id } })] }) })
   return () => dispose.reverse().forEach(fn => fn())
 }
 export function createDefaultRegistry() { const registry = new RequestSourceRegistry(); registerBuiltinSources(registry); return registry }

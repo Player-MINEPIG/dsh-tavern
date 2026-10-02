@@ -40,7 +40,7 @@ flowchart TD
   D --> H[Trace reference and actual request view]
 ```
 
-Request-only rules reevaluate each time. Snapshot rules append when an individual rule node changes and reuse prior snapshots at their original anchors. Every custom rule and world-book entry has a separate identity; depth rules obey the same retention semantics. Disabling a module or switching to request-only excludes its old snapshots from future requests, while preserving records. If history compaction removes an anchor, the corresponding snapshot is omitted with a diagnostic.
+Rebuild-each-request rules (wire value `request`) reevaluate each time. Retained-snapshot rules (wire value `snapshot`) append when an individual rule node changes and reuse prior snapshots at their original anchors. Every custom rule and world-book entry has a separate identity; depth rules obey the same retention semantics. Disabling a module or switching to request-only excludes its old snapshots from future requests, while preserving records. If history compaction removes an anchor, the corresponding snapshot is omitted with a diagnostic.
 
 Every result is stored as a log-only `request/assembly` DSH event. It does not enter `deriveMessages()`; recording evidence and contributing future context are distinct. Tavern Trace stores only the event reference and hash, resolving bodies from DSH on demand. Random macros are frozen in that event. Complete request snapshots increase log size with request history; extra assembled bodies remain bounded by `maxProfileBytes`.
 
@@ -144,3 +144,11 @@ npm run verify:2.0
 ```
 
 Host checks cover three requests, freezing, durable snapshots, Trace resolution and native continuation after unload. Full UI, real-provider and legacy-data acceptance use isolated copies; credentials, bodies, screenshots and run evidence stay under `.local/`.
+
+### Custom content, read-only previews and roles
+
+The settings page is centered within the conversation column, leaving the surrounding interface accessible. Opening a sidebar or navigating to another panel closes it, after confirmation when edits are unsaved. Only generic rules are draggable; configuration and actual-request previews are read-only and show history depth, or list placement when none is specified. ST markers are labeled preset placeholders for inserting character, world-book or history content.
+
+Users can author custom text and supported macros in the frontend without a plugin. Dynamic MVU or memory retrieval needs a plugin-registered resolver; manually entered text cannot impersonate another plugin's provenance. Registered third-party sources receive rule name and text; their resolver determines how those fields are used.
+
+Custom text uses an explicit `user/system/assistant` role and defaults to `user`. Legacy custom `preserve` normalizes to its previous effective role, `system`, without silently changing meaning. Custom-only requests should include a nonempty user message: DeepSeek moves pure system content into its separate `system` field, leaving wire `messages` empty. Preview reports this condition; completely empty assembly fails locally. Disabling native history and current input neither deletes durable native messages nor silently restores them to requests.

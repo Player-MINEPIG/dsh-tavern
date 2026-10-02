@@ -3450,7 +3450,7 @@ function normalizePreset(value) {
     if (typeof rule.kind !== "string" || !/^[a-zA-Z0-9][a-zA-Z0-9_.:/-]{0,159}$/.test(rule.kind)) throw new TypeError("Invalid or duplicate module");
     ids.add(rule.id);
     kinds.add(rule.kind);
-    const role2 = rule.role ?? "preserve", lifetime = rule.lifetime ?? "request";
+    const role2 = rule.kind === "custom" ? rule.role === "preserve" ? "system" : rule.role ?? "user" : rule.role ?? "preserve", lifetime = rule.lifetime ?? "request";
     if (!["preserve", "system", "user", "assistant"].includes(role2)) throw new TypeError("Invalid role");
     if (!["request", "snapshot"].includes(lifetime)) throw new TypeError("Invalid lifetime");
     if (rule.depth !== void 0 && rule.depth !== null && (!Number.isInteger(rule.depth) || rule.depth < 0 || rule.depth > 1e4)) throw new TypeError("Invalid insertion depth");
@@ -3495,6 +3495,8 @@ var labels = {
   dialogueExamples: ["\u5BF9\u8BDD\u793A\u4F8B", "Dialogue examples"],
   personaDescription: ["\u7528\u6237\u8BBE\u5B9A", "User persona"],
   retry: ["\u91CD\u8BD5", "Retry"],
+  cancel: ["\u53D6\u6D88", "Cancel"],
+  confirm: ["\u786E\u8BA4", "Confirm"],
   disable: ["\u5173\u95ED\u7B56\u7565\uFF0C\u4F7F\u7528 DSH \u9ED8\u8BA4", "Disable; use DSH default"],
   phiHelp: ["\u89D2\u8272\u5361\u7684\u300C\u540E\u7F6E\u6307\u4EE4\u300D\u548C\u9884\u8BBE\u7684\u300CPost-History Instructions / jailbreak\u300D\u5728\u5404\u81EA\u7F16\u8F91\u5668\u4E2D\u4FEE\u6539\u3002\u4E0B\u9762\u53EF\u8FFD\u52A0\u6B64\u7B56\u7565\u4E13\u7528\u7684 PHI\u3002", "Edit character post-history instructions or preset Post-History Instructions / jailbreak in their editors. Add strategy-specific PHI below."],
   "additional-phi": ["\u7B56\u7565\u8FFD\u52A0\u7684\u540E\u7F6E\u6307\u4EE4", "Additional strategy instructions"],
@@ -3513,8 +3515,10 @@ var labels = {
   actual: ["\u67E5\u770B\u6700\u8FD1\u5B9E\u9645\u8BF7\u6C42", "View latest actual request"],
   noActual: ["\u6682\u65E0\u65B0\u7248\u88C5\u914D\u8BF7\u6C42\u8BB0\u5F55", "No request assembly record yet"],
   actualNotice: ["\u4EE5\u4E0B\u662F\u8F68\u8FF9\u4FDD\u5B58\u7684\u5B9E\u9645\u8BF7\u6C42\uFF0C\u4FEE\u6539\u5F53\u524D\u9884\u8BBE\u4E0D\u4F1A\u6539\u53D8\u5B83\u3002", "This is the recorded request. Editing the preset does not change it."],
-  addSource: ["\u6DFB\u52A0\u5185\u5BB9\u6765\u6E90", "Add content source"],
-  chooseSource: ["\u9009\u62E9\u5DF2\u6CE8\u518C\u6765\u6E90\u2026", "Choose a registered source\u2026"],
+  addSource: ["\u6DFB\u52A0\u6765\u81EA\u4E8E", "Add custom content from"],
+  chooseSource: ["\u9009\u62E9\u6765\u6E90\u2026", "Choose source\u2026"],
+  customSuffix: ["\u7684\u81EA\u5B9A\u4E49\u5185\u5BB9", ""],
+  sourceHelp: ["\u53EF\u5728\u8FD9\u91CC\u586B\u5199\u81EA\u5B9A\u4E49\u6587\u672C\u548C\u5B8F\u3002\u81EA\u52A8\u8BFB\u53D6 MVU\u3001\u8BB0\u5FC6\u7B49\u52A8\u6001\u6570\u636E\u7684\u6765\u6E90\uFF0C\u9700\u8981\u76F8\u5E94\u63D2\u4EF6\u901A\u8FC7\u6765\u6E90 API \u6CE8\u518C\uFF1B\u9009\u62E9\u6765\u6E90\u4E0D\u4F1A\u6539\u53D8\u5176\u6240\u5C5E\u63D2\u4EF6\u3002", "Write custom text and macros here. Sources that retrieve MVU or memory data must be registered by their plugin through the source API; selection does not change source ownership."],
   missingSource: ["\u6765\u6E90\u63D2\u4EF6\u672A\u5B89\u88C5\u6216\u672A\u6CE8\u518C\uFF1B\u672C\u6B21\u8BF7\u6C42\u8DF3\u8FC7\u6B64\u6A21\u5757\u3002", "Source unavailable; this module is omitted from the request."],
   title: ["\u63D0\u793A\u8BCD\u88C5\u914D\u7B56\u7565", "Prompt assembly strategy"],
   intro: ["\u5B89\u6392\u5185\u5BB9\u5982\u4F55\u8FDB\u5165\u6BCF\u6B21\u6A21\u578B\u8BF7\u6C42\u3002\u9884\u89C8\u5F53\u524D\u8D44\u4EA7\u3001\u5B8F\u5F15\u7528\u548C\u5B9E\u9645\u987A\u5E8F\u3002", "Arrange each model request. Preview assets, macro references and message order."],
@@ -3533,12 +3537,14 @@ var labels = {
   preview: ["\u6839\u636E\u5F53\u524D\u914D\u7F6E\u9884\u89C8", "Preview current configuration"],
   rules: ["\u901A\u7528\u89C4\u5219", "Rules"],
   expanded: ["\u5C55\u5F00\u9884\u89C8", "Expanded preview"],
-  add: ["\u6DFB\u52A0\u81EA\u5B9A\u4E49\u5185\u5BB9", "Add custom content"],
+  add: ["\u6DFB\u52A0", "Add"],
   source: ["\u6765\u6E90", "Source"],
   stability: ["\u7A33\u5B9A\u6027", "Stability"],
   lifetime: ["\u4FDD\u7559\u65B9\u5F0F", "Retention"],
-  request: ["\u4EC5\u672C\u6B21\u8BF7\u6C42", "This request only"],
-  snapshot: ["\u8FFD\u52A0\u5FEB\u7167\u5E76\u4FDD\u7559", "Append and retain snapshots"],
+  request: ["\u6BCF\u6B21\u91CD\u65B0\u88C5\u914D", "Rebuild each request"],
+  snapshot: ["\u7D2F\u79EF\u5FEB\u7167\u4F9B\u540E\u7EED\u8BF7\u6C42\u4F7F\u7528", "Retain snapshots for later requests"],
+  retained: ["\u5DF2\u4FDD\u5B58\u7684\u5FEB\u7167", "Saved snapshot"],
+  nativeRetention: ["\u7531 DSH \u4FDD\u5B58\u4E0E\u63D0\u4F9B", "Saved and supplied by DSH"],
   native: ["\u539F\u751F\u5386\u53F2", "Native history"],
   preserve: ["\u4FDD\u7559\u539F\u59CB\u89D2\u8272", "Preserve original role"],
   depth: ["\u5386\u53F2\u6DF1\u5EA6\uFF08\u7559\u7A7A\u4F7F\u7528\u5217\u8868\u4F4D\u7F6E\uFF09", "History depth (blank uses list position)"],
@@ -3558,7 +3564,12 @@ var labels = {
   text: ["\u5185\u5BB9", "Content"],
   role: ["\u6D88\u606F\u89D2\u8272", "Message role"],
   placement: ["\u653E\u7F6E\u7B56\u7565", "Placement"],
-  st: ["\u9075\u5FAA ST marker \u4E0E\u6DF1\u5EA6", "ST markers and depth"],
+  st: ["\u9075\u5FAA\u9884\u8BBE\u5360\u4F4D\u9879\u4E0E\u6DF1\u5EA6", "Preset placeholders and depth"],
+  stHelp: ["\u9884\u8BBE\u5360\u4F4D\u9879\uFF08ST marker\uFF09\u662F\u9884\u8BBE\u4E2D\u7684\u63D2\u69FD\uFF0C\u4F8B\u5982\u89D2\u8272\u63CF\u8FF0\u3001\u4E16\u754C\u4E66\u3001\u804A\u5929\u5386\u53F2\u3002\u88C5\u914D\u65F6\u5728\u8FD9\u4E9B\u4F4D\u7F6E\u653E\u5165\u76F8\u5E94\u5185\u5BB9\uFF1B\u5B83\u672C\u8EAB\u4E0D\u662F\u63D0\u793A\u8BCD\u6B63\u6587\u3002", "ST markers are preset placeholders, such as character description, world books and chat history. Assembly inserts the corresponding content there; the placeholder itself is not prompt text."],
+  previewDepth: ["\u5386\u53F2\u6DF1\u5EA6", "History depth"],
+  listPosition: ["\u6309\u5217\u8868\u4F4D\u7F6E", "List position"],
+  emptyRequest: ["\u88C5\u914D\u7ED3\u679C\u4E3A\u7A7A\u3002\u8BF7\u542F\u7528\u6216\u586B\u5199\u81F3\u5C11\u4E00\u6761\u5185\u5BB9\u3002", "The assembled request is empty. Enable or fill at least one item."],
+  systemOnly: ["\u5F53\u524D\u53EA\u6709\u7CFB\u7EDF\u6307\u4EE4\u3002DeepSeek \u7B49\u63A5\u53E3\u8FD8\u8981\u6C42\u975E\u7A7A\u7684\u5BF9\u8BDD\u6D88\u606F\uFF1B\u4EC5\u4F7F\u7528\u81EA\u5B9A\u4E49\u5185\u5BB9\u65F6\uFF0C\u8BF7\u5C06\u81F3\u5C11\u4E00\u6761\u7684\u89D2\u8272\u8BBE\u4E3A\u300C\u7528\u6237\u300D\u3002", "Only system instructions remain. APIs such as DeepSeek also require a nonempty conversation message. When using only custom content, set at least one item to User."],
   modules: ["\u6309\u6A21\u5757\u5217\u8868\u987A\u5E8F", "Module order"],
   removed: ["\u5378\u8F7D\u540E\u4E0D\u518D\u751F\u6210\uFF1B\u5DF2\u8BB0\u5F55\u6B63\u6587\u4ECD\u53EF\u8BFB", "Plugin required to generate; recorded content remains readable"],
   nativeSource: ["DSH \u539F\u751F\u63D0\u4F9B\uFF0C\u4E0D\u4F9D\u8D56 Tavern", "Provided by DSH, independent of Tavern"],
@@ -3571,7 +3582,7 @@ var labels = {
   diagnostics: ["\u88C5\u914D\u8BCA\u65AD", "Assembly diagnostics"],
   tools: ["\u5DE5\u5177\u5B9A\u4E49\u4F7F\u7528\u72EC\u7ACB\u8BF7\u6C42\u5B57\u6BB5\uFF0C\u4E0D\u53C2\u4E0E\u6D88\u606F\u62D6\u62FD\u3002", "Tool definitions are a separate request field, not draggable messages."],
   result: ["\u8BF7\u6C42\u6D88\u606F", "Request messages"],
-  audit: ["\u8BB0\u5F55\u8F68\u8FF9\u4E0D\u4EE3\u8868\u8FDB\u5165\u540E\u7EED\u4E0A\u4E0B\u6587", "Trace retention does not imply future model context"],
+  audit: ["\u6BCF\u6B21\u91CD\u65B0\u88C5\u914D\uFF1A\u8F68\u8FF9\u4FDD\u7559\u5B9E\u9645\u8BF7\u6C42\uFF0C\u4F46\u4E0B\u6B21\u91CD\u65B0\u6C42\u503C\uFF0C\u4E0D\u7D2F\u79EF\u65E7\u526F\u672C\u3002\u7D2F\u79EF\u5FEB\u7167\uFF1A\u5185\u5BB9\u53D8\u5316\u65F6\u4FDD\u7559\u65B0\u526F\u672C\uFF0C\u5E76\u5E26\u5165\u540E\u7EED\u8BF7\u6C42\u3002\u539F\u751F\u7528\u6237\u6D88\u606F\u3001\u56DE\u590D\u548C\u5DE5\u5177\u7ED3\u679C\u4ECD\u7531 DSH \u4FDD\u5B58\uFF0C\u662F\u5426\u53D1\u9001\u7531\u539F\u751F\u5386\u53F2\u4E0E\u672C\u6B65\u8F93\u5165\u63A7\u5236\u3002", "Rebuild each request: the trace records the actual request, while later requests evaluate fresh content without accumulating copies. Retain snapshots: changed content adds a copy reused by later requests. DSH still saves native user messages, replies and tool results; history and current-input rules control whether they are sent."],
   "native-system": ["\u5B98\u65B9\u57FA\u7840\u6307\u4EE4", "Native instructions"],
   preset: ["\u9884\u8BBE\u6B63\u6587", "Preset content"],
   character: ["\u89D2\u8272\u8BBE\u5B9A", "Character"],
@@ -3597,22 +3608,63 @@ async function request(path2 = "", method = "GET", body2) {
   return data;
 }
 var assemblyCss = `
-.dtv-assembly-screen{position:absolute;inset:0;z-index:1;pointer-events:auto;display:flex;flex-direction:column;box-sizing:border-box;background:var(--dsw-alias-bg-base,#fff);color:var(--dsw-alias-label-primary,#24252b);border:1px solid var(--dsw-alias-border-l1,#e8e8ec);border-radius:18px;box-shadow:0 18px 65px #0003;font:14px/1.55 system-ui;overflow:hidden}.dtv-assembly-screen *{box-sizing:border-box}
+.dtv-assembly-screen{position:absolute;top:16px;bottom:16px;left:var(--dta-center-x,50%);transform:translateX(-50%);width:min(var(--dsh-composer-card-max-width,780px),calc(var(--dta-center-width,100%) - 32px));z-index:1;pointer-events:auto;display:flex;flex-direction:column;box-sizing:border-box;container-type:inline-size;background:var(--dsw-alias-bg-base,#fff);color:var(--dsw-alias-label-primary,#24252b);border:1px solid var(--dsw-alias-border-l1,#e8e8ec);border-radius:18px;box-shadow:0 18px 65px #0003;font:14px/1.55 system-ui;overflow:hidden}.dtv-assembly-screen *{box-sizing:border-box}
+.dta-confirm-shade{position:absolute;inset:0;z-index:4;background:#0006;display:grid;place-items:center;padding:20px}.dta-confirm{background:var(--dsw-alias-bg-base,#fff);border:1px solid var(--dsw-alias-border-l1,#ddd);border-radius:14px;padding:24px;max-width:100%;width:360px;box-shadow:0 10px 40px #0004}.dta-confirm p{margin:0 0 20px}.dta-confirm .dta-toolbar{justify-content:flex-end;margin:0}
 .dta-head{display:flex;justify-content:space-between;align-items:start;padding:20px 28px;border-bottom:1px solid var(--dsw-alias-border-l1,#eee)}.dta-head{width:100%;max-width:calc(var(--dsh-composer-card-max-width,780px) + 56px);margin:auto}.dta-head h2{margin:0;font-size:22px}.dta-head p{margin:5px 0 0;opacity:.7}.dta-body{overflow:auto;padding:22px 28px 50px;flex:1}.dta-content{max-width:var(--dsh-composer-card-max-width,780px);margin:auto}.dta-toolbar{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px;align-items:center}
-.dtv-assembly-screen button,.dtv-assembly-screen select,.dtv-assembly-screen input:not([type=checkbox]),.dtv-assembly-screen textarea{font:inherit;color:inherit;background:var(--dsw-alias-button-secondary-fill,var(--dsw-alias-bg-base));border:1px solid var(--dsw-alias-border-l1,#dedfe5);border-radius:9px;padding:8px 12px;min-width:0}.dtv-assembly-screen button{cursor:pointer}.dtv-assembly-screen button:disabled{opacity:.45;cursor:default}.dtv-assembly-screen :focus-visible{outline:2px solid #4386dc;outline-offset:2px}.dtv-assembly-screen .primary{background:#347cd2;color:white;border-color:#347cd2}.dta-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin:16px 0}.dta-grid label{display:flex;flex-direction:column;gap:5px}.dta-notice{padding:12px 15px;border-radius:10px;background:var(--dsw-alias-bg-layer-2,var(--dsw-alias-bg-base));margin:12px 0;overflow-wrap:anywhere}.dta-notice[data-error=true]{color:#be4747}.dta-tabs{display:flex;gap:8px;flex-wrap:wrap;margin:24px 0 14px}.dta-tabs button[aria-pressed=true]{border-color:#4386dc;color:#4386dc}
-.dta-row{border:1px solid var(--dsw-alias-border-l1,#e9e9ed);border-left:5px solid var(--assembly-color);border-radius:14px;margin:10px 0;background:var(--dsw-alias-bg-base,#fff);overflow:hidden}.dta-row[data-dragover=true]{outline:2px solid #4386dc}.dta-summary{display:flex;align-items:center;gap:14px;padding:15px 17px;min-height:69px}.dta-summary input{width:20px;height:20px;accent-color:#2484ed}.dta-handle{cursor:grab;color:var(--dsw-alias-label-tertiary,#858993);font-size:22px;line-height:1}.dta-name{flex:1;font-size:17px;min-width:0;overflow-wrap:anywhere;cursor:pointer}.dta-summary-meta{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;flex:0 0 318px;margin:0;font-size:12px;line-height:1.5}.dta-summary-meta dt{color:var(--dsw-alias-label-tertiary,#858993);font-size:11px}.dta-summary-meta dd{margin:3px 0 0;color:var(--dsw-alias-label-secondary);overflow-wrap:anywhere}.dta-detail{padding:4px 20px 20px;border-top:1px solid var(--dsw-alias-border-l1,#eee)}.dta-properties{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px;margin:16px 0}.dta-detail textarea{width:100%;min-height:130px;resize:vertical}.dtv-assembly-screen pre{white-space:pre-wrap;overflow-wrap:anywhere;font:13px/1.6 ui-monospace,monospace;max-height:360px;overflow:auto}.dta-child{margin:10px 0;padding:10px 14px;border-left:3px solid #ae73cf;background:var(--dsw-alias-bg-layer-2,var(--dsw-alias-bg-base));border-radius:6px}.dtv-assembly-screen small{display:block;opacity:.7;overflow-wrap:anywhere}
+.dtv-assembly-screen button,.dtv-assembly-screen select,.dtv-assembly-screen input:not([type=checkbox]),.dtv-assembly-screen textarea{font:inherit;color:inherit;background:var(--dsw-alias-button-secondary-fill,var(--dsw-alias-bg-base));border:1px solid var(--dsw-alias-border-l1,#dedfe5);border-radius:9px;padding:8px 12px;min-width:0}.dtv-assembly-screen select,.dtv-assembly-screen input:not([type=checkbox]){height:40px;line-height:22px;width:100%}.dtv-assembly-screen .dta-toolbar select{width:auto;max-width:100%}.dtv-assembly-screen button{cursor:pointer}.dtv-assembly-screen button:disabled{opacity:.45;cursor:default}.dtv-assembly-screen :focus-visible{outline:2px solid #4386dc;outline-offset:2px}.dtv-assembly-screen .primary{background:#347cd2;color:white;border-color:#347cd2}.dta-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin:16px 0}.dta-grid label{display:flex;flex-direction:column;gap:5px}.dta-notice{padding:12px 15px;border-radius:10px;background:var(--dsw-alias-bg-layer-2,var(--dsw-alias-bg-base));margin:12px 0;overflow-wrap:anywhere}.dta-notice[data-error=true]{color:#be4747}.dta-tabs{display:flex;gap:8px;flex-wrap:wrap;margin:24px 0 14px}.dta-tabs button[aria-pressed=true]{border-color:#4386dc;color:#4386dc}
+.dta-row{border:1px solid var(--dsw-alias-border-l1,#e9e9ed);border-left:5px solid var(--assembly-color);border-radius:14px;margin:10px 0;background:var(--dsw-alias-bg-base,#fff);overflow:hidden}.dta-row[data-dragover=true]{outline:2px solid #4386dc}.dta-summary{display:flex;align-items:center;gap:14px;padding:15px 17px;min-height:69px}.dta-summary input{width:20px;height:20px;accent-color:#2484ed}.dta-handle{cursor:grab;color:var(--dsw-alias-label-tertiary,#858993);font-size:22px;line-height:1}.dta-name{flex:1;font-size:17px;min-width:0;overflow-wrap:anywhere;cursor:pointer}.dta-summary-meta{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;flex:0 0 318px;margin:0;font-size:12px;line-height:1.5}.dta-summary-meta dt{color:var(--dsw-alias-label-tertiary,#858993);font-size:11px}.dta-summary-meta dd{margin:3px 0 0;color:var(--dsw-alias-label-secondary);overflow-wrap:anywhere}.dta-detail{padding:4px 20px 20px;border-top:1px solid var(--dsw-alias-border-l1,#eee)}.dta-properties>*,.dta-summary-meta>div{min-width:0}.dta-properties>*+*,.dta-summary-meta>div+div{border-left:1px solid var(--dsw-alias-state-business-primary,#4d6bfe);padding-left:14px}.dta-properties label,.dta-fields label{display:flex;flex-direction:column;gap:8px}.dta-fields{display:flex;flex-direction:column;gap:16px;margin:16px 0}.dta-fields .dta-field-name{max-width:320px}.dta-preview-depth{margin:12px 0}.dta-properties{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px;margin:16px 0}.dta-detail textarea{width:100%;min-height:130px;resize:vertical}.dtv-assembly-screen pre{white-space:pre-wrap;overflow-wrap:anywhere;font:13px/1.6 ui-monospace,monospace;max-height:360px;overflow:auto}.dta-child{margin:10px 0;padding:10px 14px;border-left:3px solid #ae73cf;background:var(--dsw-alias-bg-layer-2,var(--dsw-alias-bg-base));border-radius:6px}.dtv-assembly-screen small{display:block;opacity:.7;overflow-wrap:anywhere}
 .dta-row[data-dragging=true]{height:4px;min-height:4px;margin:5px 10px;border:0;border-radius:999px;background:var(--dsw-alias-state-business-primary);box-shadow:0 0 0 1px color-mix(in srgb,var(--dsw-alias-state-business-primary) 25%,transparent)}.dta-row[data-dragging=true]>*{opacity:0}.dta-drop-placeholder{min-height:42px;border:2px dashed var(--dsw-alias-state-business-primary);border-radius:8px;background:color-mix(in srgb,var(--dsw-alias-state-business-primary) 7%,transparent);display:flex;align-items:center;justify-content:center;color:var(--dsw-alias-state-business-primary);pointer-events:none}.dtv-assembly-screen .dta-handle{touch-action:none;user-select:none;background:transparent;border:0;padding:2px}.dta-origin{font-size:11px;color:var(--dsw-alias-label-secondary);margin-top:2px}.dta-legend{display:flex;gap:12px;flex-wrap:wrap;margin:12px 0}.dta-legend span{border-left:4px solid var(--assembly-color);padding-left:6px;font-size:12px}
-@media(max-width:700px){.dtv-assembly-screen{inset:5px;border-radius:12px}.dta-head,.dta-body{padding:15px}.dta-head{padding-right:64px}.dta-grid,.dta-properties{grid-template-columns:1fr}.dta-summary{gap:8px;padding:12px 10px}.dta-name{font-size:15px}.dta-summary-meta{display:none}}
+@container(max-width:600px){.dta-summary-meta{display:none}.dta-grid,.dta-properties{grid-template-columns:1fr}.dta-properties>*+*{border-left:0;border-top:1px solid var(--dsw-alias-state-business-primary,#4d6bfe);padding:12px 0 0}.dta-head,.dta-body{padding:15px}.dta-summary{gap:8px;padding:12px 10px}.dta-fields .dta-field-name{max-width:100%}}
+@media(max-width:700px){.dtv-assembly-screen{top:8px;bottom:8px;width:calc(var(--dta-center-width,100%) - 16px);border-radius:12px}.dta-head,.dta-body{padding:15px}.dta-head{padding-right:64px}.dta-grid,.dta-properties{grid-template-columns:1fr}.dta-summary{gap:8px;padding:12px 10px}.dta-name{font-size:15px}.dta-summary-meta{display:none}.dta-properties>*+*{border-left:0;border-top:1px solid var(--dsw-alias-state-business-primary,#4d6bfe);padding:12px 0 0}}
 `;
 function AssemblyPanel(props) {
   return (0, import_react.createElement)(AssemblyPanelContent, { ...props, key: props.sessionId ?? "no-session" });
 }
 function AssemblyPanelContent({ sessionId, close: close2, registerBeforeLeave, chromeMode }) {
   const locale = getClientUiSettings().locale === "zh-CN" ? 0 : 1, t = (key2) => labels[key2]?.[locale] ?? key2;
-  const [sources, setSources] = (0, import_react.useState)([]);
+  const [confirmation, setConfirmation] = (0, import_react.useState)(null);
+  const confirmationResolve = (0, import_react.useRef)(null);
+  const confirm = (message) => new Promise((resolve) => {
+    confirmationResolve.current?.(false);
+    confirmationResolve.current = resolve;
+    setConfirmation(message);
+  });
+  const answerConfirmation = (answer) => {
+    const resolve = confirmationResolve.current;
+    confirmationResolve.current = null;
+    setConfirmation(null);
+    resolve?.(answer);
+  };
+  (0, import_react.useEffect)(() => () => confirmationResolve.current?.(false), []);
+  (0, import_react.useEffect)(() => {
+    if (confirmation) dialog.current?.querySelector(".dta-confirm button")?.focus();
+  }, [confirmation]);
+  const [sources, setSources] = (0, import_react.useState)([]), [addKind, setAddKind] = (0, import_react.useState)("custom");
   const [items, setItems] = (0, import_react.useState)([]), [draft, setDraft] = (0, import_react.useState)(null), [selection, setSelection] = (0, import_react.useState)(null), [capable, setCapable] = (0, import_react.useState)(false);
   const [status, setStatus] = (0, import_react.useState)(""), [error, setError] = (0, import_react.useState)(false), [busy, setBusy] = (0, import_react.useState)(false), [tab, setTab] = (0, import_react.useState)("rules"), [preview, setPreview] = (0, import_react.useState)(null), [dirty, setDirty] = (0, import_react.useState)(false), [expanded, setExpanded] = (0, import_react.useState)({});
   const file = (0, import_react.useRef)(), dialog = (0, import_react.useRef)(), generation = (0, import_react.useRef)(0), mounted = (0, import_react.useRef)(true);
+  (0, import_react.useLayoutEffect)(() => {
+    const panel = dialog.current;
+    let frame = panel?.parentElement;
+    while (frame && getComputedStyle(frame).display !== "grid") frame = frame.parentElement;
+    if (!frame) return;
+    const measure = () => {
+      const columns = getComputedStyle(frame).gridTemplateColumns.split(" ").map(parseFloat);
+      if (columns.length !== 3 || columns.some((n) => !Number.isFinite(n))) return;
+      panel.style.setProperty("--dta-center-x", `${columns[0] + columns[1] / 2}px`);
+      panel.style.setProperty("--dta-center-width", `${columns[1]}px`);
+    };
+    measure();
+    const resize = new ResizeObserver(measure);
+    resize.observe(frame);
+    for (const child of frame.children) resize.observe(child);
+    const changes = new MutationObserver(measure);
+    changes.observe(frame, { attributes: true, attributeFilter: ["style", "data-sidebar-collapsed", "data-rightbar-collapsed"] });
+    return () => {
+      resize.disconnect();
+      changes.disconnect();
+    };
+  }, []);
   const [reload, setReload] = (0, import_react.useState)(0), [dragFrom, setDragFrom] = (0, import_react.useState)(null), [dropIndex, setDropIndex] = (0, import_react.useState)(null);
   const api6 = async (...args) => {
     const result = await request(...args);
@@ -3673,7 +3725,7 @@ function AssemblyPanelContent({ sessionId, close: close2, registerBeforeLeave, c
       active = false;
     };
   }, [chromeMode, sessionId]);
-  const discard = () => !busy && (!dirty || window.confirm(t("discard")));
+  const discard = () => !busy && (!dirty || confirm(t("discard")));
   (0, import_react.useEffect)(() => registerBeforeLeave?.(discard), [dirty, busy, registerBeforeLeave]);
   const edit = (patch) => {
     if (busy) return;
@@ -3733,8 +3785,8 @@ function AssemblyPanelContent({ sessionId, close: close2, registerBeforeLeave, c
     }
     setStatus(t("noActual"));
   }
-  const safeClose = () => {
-    if (registerBeforeLeave || discard()) close2();
+  const safeClose = async () => {
+    if (registerBeforeLeave || await discard()) close2();
   };
   (0, import_react.useEffect)(() => {
     const previous = document.activeElement;
@@ -3765,7 +3817,6 @@ function AssemblyPanelContent({ sessionId, close: close2, registerBeforeLeave, c
     return () => window.removeEventListener("keydown", handler);
   }, [dirty, busy, registerBeforeLeave]);
   const displayRows = tab === "rules" ? draft?.rules ?? [] : preview?.nodes ?? [];
-  const rowOwner = (row) => row.ruleId ?? draft.rules.find((r) => r.kind === row.module)?.id ?? row.id;
   function dragHandle(row, index, movable = true) {
     const reset = () => {
       setDragFrom(null);
@@ -3802,19 +3853,8 @@ function AssemblyPanelContent({ sessionId, close: close2, registerBeforeLeave, c
         e.currentTarget.releasePointerCapture(e.pointerId);
         const at2 = boundary(e) ?? dropIndex ?? index + 1;
         reset();
-        let rules;
-        if (tab === "rules") rules = reorderAtBoundary(draft.rules, index, at2);
-        else {
-          const from = draft.rules.findIndex((r) => r.id === rowOwner(row)), target = displayRows[at2];
-          const to = target ? draft.rules.findIndex((r) => r.id === rowOwner(target)) : draft.rules.length;
-          if (from < 0 || to < 0 || target?.locked) return;
-          rules = reorderAtBoundary(draft.rules, from, to);
-        }
+        const rules = reorderAtBoundary(draft.rules, index, at2);
         edit({ rules });
-        if (tab !== "rules") run(async () => {
-          const data = await api6("/preview", "POST", { sessionId, preset: { ...draft, rules } });
-          setPreview(data.preview);
-        });
       },
       onPointerCancel: reset
     }, movable ? "\u283F" : "\u{1F512}");
@@ -3824,7 +3864,7 @@ function AssemblyPanelContent({ sessionId, close: close2, registerBeforeLeave, c
   const summaryMetadata = (stability, lifetime, role2) => (0, import_react.createElement)(
     "dl",
     { className: "dta-summary-meta" },
-    ...[["stability", stability], ["lifetime", lifetime], ["role", role2]].map(([label, value]) => (0, import_react.createElement)("div", { key: label }, (0, import_react.createElement)("dt", null, t(label)), (0, import_react.createElement)("dd", null, t(value))))
+    ...[["stability", stability], ["lifetime", lifetime], ["role", role2]].map(([label, value]) => (0, import_react.createElement)("div", { key: label }, (0, import_react.createElement)("dt", null, t(label)), (0, import_react.createElement)("dd", null, t(label === "stability" && value === "snapshot" ? "retained" : value))))
   );
   function ruleRow(rule, index) {
     return (0, import_react.createElement)(
@@ -3841,37 +3881,45 @@ function AssemblyPanelContent({ sessionId, close: close2, registerBeforeLeave, c
             toggle(rule.id);
           }
         } }, rule.name || sourceName(rule.kind), (0, import_react.createElement)("small", { className: "dta-origin" }, originName(sourcePlugin(rule.kind)))),
-        summaryMetadata(ruleStability(rule), rule.lifetime, rule.role)
+        summaryMetadata(ruleStability(rule), ["native-system", "history", "input"].includes(rule.kind) ? "nativeRetention" : rule.lifetime, rule.role)
       ),
       expanded[rule.id] && (0, import_react.createElement)(
         "div",
         { className: "dta-detail" },
-        (0, import_react.createElement)("div", { className: "dta-properties" }, (0, import_react.createElement)("div", null, t("source"), (0, import_react.createElement)("small", null, originName(sourcePlugin(rule.kind))), (0, import_react.createElement)("small", null, sourceInfo(rule.kind))), (0, import_react.createElement)("div", null, t("stability"), (0, import_react.createElement)("small", null, t(ruleStability(rule)))), (0, import_react.createElement)("label", null, t("lifetime"), select(rule.lifetime, sourceDescriptor(rule.kind)?.lifetimes ?? ["request", "snapshot"], (v2) => editRule(rule.id, { lifetime: v2 }), sourceDescriptor(rule.kind)?.lifetimes.length === 1))),
+        (0, import_react.createElement)("div", { className: "dta-properties" }, (0, import_react.createElement)("div", null, t("source"), (0, import_react.createElement)("small", null, originName(sourcePlugin(rule.kind))), (0, import_react.createElement)("small", null, sourceInfo(rule.kind))), (0, import_react.createElement)("div", null, t("stability"), (0, import_react.createElement)("small", null, t(ruleStability(rule)))), (0, import_react.createElement)("label", null, t("lifetime"), ["native-system", "history", "input"].includes(rule.kind) ? (0, import_react.createElement)("small", null, t("nativeRetention")) : select(rule.lifetime, sourceDescriptor(rule.kind)?.lifetimes ?? ["request", "snapshot"], (v2) => editRule(rule.id, { lifetime: v2 }), sourceDescriptor(rule.kind)?.lifetimes.length === 1))),
         (0, import_react.createElement)("div", { className: "dta-grid" }, (0, import_react.createElement)("label", null, t("role"), select(rule.role, sourceDescriptor(rule.kind)?.roles ?? ["preserve", "system", "user", "assistant"], (v2) => editRule(rule.id, { role: v2 }), sourceDescriptor(rule.kind)?.roles.length === 1)), sourceDescriptor(rule.kind)?.depth !== false && (0, import_react.createElement)("label", null, t("depth"), (0, import_react.createElement)("input", { type: "number", min: 0, max: 1e4, value: rule.depth ?? "", onChange: (e) => editRule(rule.id, { depth: e.target.value === "" ? null : Number(e.target.value) }) }))),
-        rule.kind === "phi" && (0, import_react.createElement)("div", null, (0, import_react.createElement)("p", null, t("phiHelp")), (0, import_react.createElement)("label", null, t("additional-phi"), (0, import_react.createElement)("textarea", { value: rule.text, onChange: (e) => editRule(rule.id, { text: e.target.value }) }))),
-        rule.kind === "custom" && (0, import_react.createElement)("div", null, (0, import_react.createElement)("label", null, t("name"), (0, import_react.createElement)("input", { value: rule.name ?? "", onChange: (e) => editRule(rule.id, { name: e.target.value }) })), (0, import_react.createElement)("label", null, t("text"), (0, import_react.createElement)("textarea", { value: rule.text, onChange: (e) => editRule(rule.id, { text: e.target.value }) })), button("remove", () => edit({ rules: draft.rules.filter((r) => r.id !== rule.id) }))),
+        rule.kind === "phi" && (0, import_react.createElement)("div", { className: "dta-fields" }, (0, import_react.createElement)("p", null, t("phiHelp")), (0, import_react.createElement)("label", null, t("additional-phi"), (0, import_react.createElement)("textarea", { value: rule.text, onChange: (e) => editRule(rule.id, { text: e.target.value }) }))),
+        (rule.kind === "custom" || !["native-system", "history", "input", "preset", "character", "persona", "worldbook", "phi"].includes(rule.kind)) && (0, import_react.createElement)("div", { className: "dta-fields" }, (0, import_react.createElement)("label", { className: "dta-field-name" }, t("name"), (0, import_react.createElement)("input", { value: rule.name ?? "", onChange: (e) => editRule(rule.id, { name: e.target.value }) })), (0, import_react.createElement)("label", null, t("text"), (0, import_react.createElement)("textarea", { value: rule.text, onChange: (e) => editRule(rule.id, { text: e.target.value }) })), button("remove", () => edit({ rules: draft.rules.filter((r) => r.id !== rule.id) }))),
         !sourceDescriptor(rule.kind) && (0, import_react.createElement)("small", { role: "status" }, t("missingSource")),
-        !["native-system", "history", "input", "preset", "character", "persona", "worldbook", "phi", "custom"].includes(rule.kind) && button("remove", () => edit({ rules: draft.rules.filter((r) => r.id !== rule.id) })),
         (0, import_react.createElement)("small", null, t("audit"))
       )
     );
   }
   function nodeRow(node, index) {
-    const owner = node.ruleId ?? draft.rules.find((r) => r.kind === node.module)?.id;
-    const movable = !busy && !node.locked && !preview?.actual && Boolean(owner);
     return (0, import_react.createElement)(
       "article",
-      { key: node.id, className: "dta-row", "data-assembly-index": index, "data-dragging": dragFrom === index, style: { "--assembly-color": sourceColor(node.source.plugin) } },
-      (0, import_react.createElement)("div", { className: "dta-summary" }, dragHandle(node, index, movable), (0, import_react.createElement)("span", { className: "dta-name", role: "button", tabIndex: 0, onClick: () => toggle(node.id), onKeyDown: (e) => {
+      { key: node.id, className: "dta-row", style: { "--assembly-color": sourceColor(node.source.plugin) } },
+      (0, import_react.createElement)("div", { className: "dta-summary" }, (0, import_react.createElement)("span", { className: "dta-name", role: "button", tabIndex: 0, onClick: () => toggle(node.id), onKeyDown: (e) => {
         if (e.key === "Enter") toggle(node.id);
-      }, "aria-expanded": !!expanded[node.id], title: node.name }, nodeName(node), (0, import_react.createElement)("small", { className: "dta-origin" }, originName(node.source.plugin))), summaryMetadata(node.stability, node.lifetime, node.role)),
-      expanded[node.id] && (0, import_react.createElement)("div", { className: "dta-detail" }, (0, import_react.createElement)("div", { className: "dta-properties" }, (0, import_react.createElement)("div", null, t("source"), (0, import_react.createElement)("small", null, `${node.source.plugin} / ${node.source.resourceId ?? ""} / ${node.source.field}`), (0, import_react.createElement)("small", null, sourceInfo(node.module))), (0, import_react.createElement)("div", null, t("stability"), (0, import_react.createElement)("small", null, t(node.stability))), (0, import_react.createElement)("div", null, t("lifetime"), (0, import_react.createElement)("small", null, t(node.lifetime)), (0, import_react.createElement)("small", null, t("recorded")))), node.locked && (0, import_react.createElement)("small", null, `${t("locked")}: ${node.lockReason}`), ...(node.children ?? []).map((child) => (0, import_react.createElement)("div", { key: child.id, className: "dta-child", style: { borderLeftColor: sourceColor(child.source?.plugin) } }, `\u{1F512} ${nodeName(child)}`, (0, import_react.createElement)("small", null, child.lockReason), (0, import_react.createElement)("small", null, [originName(child.source?.plugin), child.source?.resourceId, child.source?.field, child.source?.sourceKind].filter(Boolean).join(" / ")), (0, import_react.createElement)("pre", null, child.text))), (0, import_react.createElement)("pre", null, node.text))
+      }, "aria-expanded": !!expanded[node.id], title: node.name }, nodeName(node), (0, import_react.createElement)("small", { className: "dta-origin" }, `${originName(node.source.plugin)} \xB7 ${t("previewDepth")}: ${node.depth == null ? t("listPosition") : node.depth}`)), summaryMetadata(node.stability, node.lifetime === "native" ? "nativeRetention" : node.lifetime, node.role)),
+      expanded[node.id] && (0, import_react.createElement)("div", { className: "dta-detail" }, (0, import_react.createElement)("div", { className: "dta-properties" }, (0, import_react.createElement)("div", null, t("source"), (0, import_react.createElement)("small", null, `${node.source.plugin} / ${node.source.resourceId ?? ""} / ${node.source.field}`), (0, import_react.createElement)("small", null, sourceInfo(node.module))), (0, import_react.createElement)("div", null, t("stability"), (0, import_react.createElement)("small", null, t(node.stability))), (0, import_react.createElement)("div", null, t("lifetime"), (0, import_react.createElement)("small", null, t(node.lifetime)), (0, import_react.createElement)("small", null, t("recorded")))), (0, import_react.createElement)("div", { className: "dta-preview-depth" }, `${t("previewDepth")}: ${node.depth == null ? t("listPosition") : node.depth}`), node.locked && (0, import_react.createElement)("small", null, `${t("locked")}: ${node.lockReason}`), ...(node.children ?? []).map((child) => (0, import_react.createElement)("div", { key: child.id, className: "dta-child", style: { borderLeftColor: sourceColor(child.source?.plugin) } }, `\u{1F512} ${nodeName(child)}`, (0, import_react.createElement)("small", null, child.lockReason), (0, import_react.createElement)("small", null, [originName(child.source?.plugin), child.source?.resourceId, child.source?.field, child.source?.sourceKind].filter(Boolean).join(" / ")), (0, import_react.createElement)("pre", null, child.text))), (0, import_react.createElement)("pre", null, node.text))
     );
   }
   return (0, import_react.createElement)(
     "section",
     { ref: dialog, className: "dtv-assembly-screen", role: "dialog", "aria-modal": false, "aria-label": t("title") },
     (0, import_react.createElement)("style", null, assemblyCss),
+    confirmation && (0, import_react.createElement)("div", { className: "dta-confirm-shade" }, (0, import_react.createElement)("div", { className: "dta-confirm", role: "alertdialog", "aria-modal": true, "aria-label": confirmation, onKeyDown: (e) => {
+      if (e.key === "Escape") {
+        e.stopPropagation();
+        answerConfirmation(false);
+      } else if (e.key === "Tab") {
+        e.preventDefault();
+        const buttons = [...e.currentTarget.querySelectorAll("button")];
+        const at2 = buttons.indexOf(document.activeElement);
+        buttons[(at2 + (e.shiftKey ? -1 : 1) + buttons.length) % buttons.length]?.focus();
+      }
+    } }, (0, import_react.createElement)("p", null, confirmation), (0, import_react.createElement)("div", { className: "dta-toolbar" }, (0, import_react.createElement)("button", { type: "button", onClick: () => answerConfirmation(false) }, t("cancel")), (0, import_react.createElement)("button", { type: "button", className: "primary", onClick: () => answerConfirmation(true) }, t("confirm"))))),
     (0, import_react.createElement)("header", { className: "dta-head" }, (0, import_react.createElement)("div", null, (0, import_react.createElement)("h2", null, t("title")), (0, import_react.createElement)("p", null, t("intro"))), (0, import_react.createElement)("button", { onClick: safeClose, "aria-label": t("close") }, "\xD7")),
     (0, import_react.createElement)("div", { className: "dta-body" }, (0, import_react.createElement)(
       "fieldset",
@@ -3881,15 +3929,15 @@ function AssemblyPanelContent({ sessionId, close: close2, registerBeforeLeave, c
         e.target.value = "";
         if (f2) run(async () => {
           if (f2.size > 2 * 1024 * 1024) throw new Error("2 MiB limit");
-          if (!discard()) return;
+          if (!await discard()) return;
           const data = await api6("", "POST", JSON.parse(await f2.text()));
           setDraft(data.preset);
           setItems((i2) => [...i2, data.preset]);
           setDirty(false);
           setPreview(null);
         });
-      } }), button("import", () => file.current.click()), button("export", download, !draft), button("create", () => {
-        if (discard()) {
+      } }), button("import", () => file.current.click()), button("export", download, !draft), button("create", async () => {
+        if (await discard()) {
           setDraft({ ...structuredClone(BUILTINS[1]), id: void 0, name: t("title") });
           setDirty(true);
           setPreview(null);
@@ -3899,15 +3947,16 @@ function AssemblyPanelContent({ sessionId, close: close2, registerBeforeLeave, c
       !draft ? (0, import_react.createElement)("div", null, !error && (0, import_react.createElement)("p", null, t("loading")), error && button("retry", () => setReload((n) => n + 1))) : (0, import_react.createElement)(
         "div",
         null,
-        (0, import_react.createElement)("div", { className: "dta-grid" }, (0, import_react.createElement)("label", null, t("select"), (0, import_react.createElement)("select", { value: draft.id ?? "", disabled: busy, onChange: (e) => {
-          if (discard()) {
-            setDraft(items.find((p) => p.id === e.target.value));
+        (0, import_react.createElement)("div", { className: "dta-grid" }, (0, import_react.createElement)("label", null, t("select"), (0, import_react.createElement)("select", { value: draft.id ?? "", disabled: busy, onChange: async (e) => {
+          const id = e.target.value;
+          if (await discard()) {
+            setDraft(items.find((p) => p.id === id));
             setDirty(false);
             setPreview(null);
           }
         } }, !draft.id && (0, import_react.createElement)("option", { value: "" }, draft.name), ...items.map((p) => (0, import_react.createElement)("option", { key: p.id, value: p.id }, p.name)))), (0, import_react.createElement)("label", null, t("name"), (0, import_react.createElement)("input", { value: draft.name, disabled: draft.builtin, onChange: (e) => edit({ name: e.target.value }) }))),
         (0, import_react.createElement)("div", { className: "dta-toolbar" }, button("save", () => run(() => save())), button("copy", () => run(() => save(true))), button("remove", () => run(async () => {
-          if (!window.confirm(t("confirmDelete"))) return;
+          if (!await confirm(t("confirmDelete"))) return;
           await api6(`/${draft.id}`, "DELETE");
           setItems((i2) => i2.filter((p) => p.id !== draft.id));
           setDraft(items[0]);
@@ -3921,8 +3970,8 @@ function AssemblyPanelContent({ sessionId, close: close2, registerBeforeLeave, c
           setSelection(data.selection);
           setStatus(t("appliedStatus"));
           window.dispatchEvent(new CustomEvent(CLIENT_REFRESH_EVENT));
-        }), !sessionId || !capable, "primary"), button("reset", () => {
-          if (!discard()) return;
+        }), !sessionId || !capable, "primary"), button("reset", async () => {
+          if (!await discard()) return;
           run(async () => {
             const data = await api6("/selection", "PUT", { sessionId, id: "builtin-st" });
             setSelection(data.selection);
@@ -3941,15 +3990,21 @@ function AssemblyPanelContent({ sessionId, close: close2, registerBeforeLeave, c
         (0, import_react.createElement)("small", null, t("defaultHint")),
         !sessionId && (0, import_react.createElement)("small", null, t("noSession")),
         (0, import_react.createElement)("div", { className: "dta-tabs" }, (0, import_react.createElement)("button", { "aria-pressed": tab === "rules", onClick: () => setTab("rules") }, t("rules")), button("preview", () => run(async () => {
+          setDragFrom(null);
+          setDropIndex(null);
           const data = await api6("/preview", "POST", { sessionId, preset: draft });
           setPreview(data.preview);
           setTab("expanded");
         })), button("actual", () => run(actualRequest), !sessionId)),
         (0, import_react.createElement)("div", { className: "dta-legend" }, ...[...new Set(sources.map((s) => s.pluginId))].map((plugin) => (0, import_react.createElement)("span", { key: plugin, style: { "--assembly-color": sourceColor(plugin) } }, originName(plugin)))),
-        tab === "rules" ? (0, import_react.createElement)("div", null, (0, import_react.createElement)("label", { className: "dta-toolbar" }, t("placement"), select(draft.placement, ["modules", "st"], (placement) => edit({ placement }))), ...draft.rules.flatMap((row, i2) => [placeholder(i2), ruleRow(row, i2)]), placeholder(draft.rules.length), (0, import_react.createElement)("label", { className: "dta-toolbar" }, t("addSource"), (0, import_react.createElement)("select", { value: "", onChange: (e) => {
-          const source = sourceDescriptor(e.target.value);
-          if (source) edit({ rules: [...draft.rules, { id: `source-${crypto.randomUUID()}`, kind: source.id, enabled: true, role: source.roles[0], lifetime: source.lifetimes[0], depth: null, text: "", name: "" }] });
-        } }, (0, import_react.createElement)("option", { value: "" }, t("chooseSource")), ...sources.filter((s) => s.multiple || !draft.rules.some((r) => r.kind === s.id)).map((s) => (0, import_react.createElement)("option", { key: s.id, value: s.id }, `${sourceName(s.id)} \xB7 ${originName(s.pluginId)}`)))), button("add", () => edit({ rules: [...draft.rules, { id: `custom-${Date.now()}`, kind: "custom", enabled: true, role: "system", lifetime: "request", depth: null, text: "", name: "" }] }))) : (0, import_react.createElement)("div", null, (0, import_react.createElement)("div", { className: "dta-notice" }, t(preview?.actual ? "actualNotice" : "previewScope")), !preview ? (0, import_react.createElement)("p", null, t("empty")) : (0, import_react.createElement)("div", null, ...preview.nodes.flatMap((node, i2) => [placeholder(i2), nodeRow(node, i2)]), placeholder(preview.nodes.length), (0, import_react.createElement)("details", null, (0, import_react.createElement)("summary", null, `${t("result")} (${preview.messages.length})`), ...preview.messages.map((m2, i2) => (0, import_react.createElement)("div", { key: `${m2.id}:${i2}`, className: "dta-child" }, `${i2 + 1} \xB7 ${m2.role}`, (0, import_react.createElement)("pre", null, (m2.content ?? []).map((b2) => b2.type === "text" ? b2.text : `[${b2.type}]`).join("\n"))))), preview.diagnostics.length > 0 && (0, import_react.createElement)("details", null, (0, import_react.createElement)("summary", null, t("diagnostics")), (0, import_react.createElement)("pre", null, JSON.stringify(preview.diagnostics, null, 2))))),
+        tab === "rules" ? (0, import_react.createElement)("div", null, (0, import_react.createElement)("label", { className: "dta-toolbar" }, t("placement"), select(draft.placement, ["modules", "st"], (placement) => edit({ placement }))), draft.placement === "st" && (0, import_react.createElement)("small", null, t("stHelp")), ...draft.rules.flatMap((row, i2) => [placeholder(i2), ruleRow(row, i2)]), placeholder(draft.rules.length), (0, import_react.createElement)("div", { className: "dta-toolbar" }, (0, import_react.createElement)("label", { htmlFor: "dta-add-source" }, t("addSource")), (0, import_react.createElement)("select", { id: "dta-add-source", value: addKind, onChange: (e) => setAddKind(e.target.value) }, ...sources.filter((s) => s.multiple || !draft.rules.some((r) => r.kind === s.id)).map((s) => (0, import_react.createElement)("option", { key: s.id, value: s.id }, `${originName(s.pluginId)} \xB7 ${sourceName(s.id)}`))), (0, import_react.createElement)("span", null, t("customSuffix")), button("add", () => {
+          const source = sourceDescriptor(addKind);
+          if (!source || !source.multiple && draft.rules.some((r) => r.kind === source.id)) return;
+          const id = `source-${crypto.randomUUID()}`;
+          edit({ rules: [...draft.rules, { id, kind: source.id, enabled: true, role: source.id === "custom" ? "user" : source.roles[0], lifetime: source.lifetimes[0], depth: null, text: "", name: "" }] });
+          setExpanded((old) => ({ ...old, [id]: true }));
+          if (!source.multiple) setAddKind("custom");
+        }, !sourceDescriptor(addKind))), (0, import_react.createElement)("small", null, t("sourceHelp"))) : (0, import_react.createElement)("div", null, (0, import_react.createElement)("div", { className: "dta-notice" }, t(preview?.actual ? "actualNotice" : "previewScope")), !preview ? (0, import_react.createElement)("p", null, t("empty")) : (0, import_react.createElement)("div", null, ...preview.diagnostics.filter((d2) => ["ASSEMBLY_EMPTY", "ASSEMBLY_SYSTEM_ONLY"].includes(d2.code)).map((d2) => (0, import_react.createElement)("div", { key: d2.code, className: "dta-notice", role: "alert" }, t(d2.code === "ASSEMBLY_EMPTY" ? "emptyRequest" : "systemOnly"))), ...preview.nodes.map(nodeRow), (0, import_react.createElement)("details", null, (0, import_react.createElement)("summary", null, `${t("result")} (${preview.messages.length})`), ...preview.messages.map((m2, i2) => (0, import_react.createElement)("div", { key: `${m2.id}:${i2}`, className: "dta-child" }, `${i2 + 1} \xB7 ${m2.role}`, (0, import_react.createElement)("pre", null, (m2.content ?? []).map((b2) => b2.type === "text" ? b2.text : `[${b2.type}]`).join("\n"))))), preview.diagnostics.length > 0 && (0, import_react.createElement)("details", null, (0, import_react.createElement)("summary", null, t("diagnostics")), (0, import_react.createElement)("pre", null, JSON.stringify(preview.diagnostics, null, 2))))),
         (0, import_react.createElement)("small", { style: { marginTop: 20 } }, t("tools"))
       )
     ))
@@ -33185,29 +33240,54 @@ function WorkspaceAdmission({ setting, state, error, busy, selectWorkspace, relo
   );
 }
 function createSurfaceNavigation(commit) {
-  let guard = null;
+  let guard = null, generation = 0;
   return {
     register(beforeLeave) {
       guard = beforeLeave;
+      generation++;
       return () => {
-        if (guard === beforeLeave) guard = null;
+        if (guard === beforeLeave) {
+          guard = null;
+          generation++;
+        }
       };
     },
     request(next, current3) {
+      const ticket = ++generation;
       if (next === current3) return true;
-      if (guard !== null && guard() === false) return false;
+      const result = guard?.();
+      if (result?.then) {
+        Promise.resolve(result).then((allowed) => {
+          if (allowed !== false && ticket === generation) commit(next);
+        }).catch(() => {
+        });
+        return false;
+      }
+      if (result === false) return false;
       commit(next);
       return true;
     }
   };
 }
-function TavernShell({ useSessions, useWorkspaces, createCleanSession, createConfiguredPlaythrough, playClient, playSlots, chromeService, diagnostics }) {
+function TavernShell({ useStore, usePanelInfo, useSessions, useWorkspaces, createCleanSession, createConfiguredPlaythrough, playClient, playSlots, chromeService, diagnostics }) {
   const [menuOpen, setMenuOpen] = (0, import_react25.useState)(false);
   const [surface, setSurface] = (0, import_react25.useState)(null);
   const surfaceNavigation = (0, import_react25.useRef)(null);
-  if (surfaceNavigation.current === null) surfaceNavigation.current = createSurfaceNavigation(setSurface);
+  if (surfaceNavigation.current === null) surfaceNavigation.current = createSurfaceNavigation((next) => {
+    setSurface(next);
+    setMenuOpen(false);
+  });
   const requestSurface = (0, import_react25.useCallback)((next) => surfaceNavigation.current.request(next, surface), [surface]);
   const registerBeforeLeave = surfaceNavigation.current.register;
+  const layoutInfo = useStore?.((state) => state.layoutInfo);
+  const activePanelId = usePanelInfo?.((state) => state.activePanelId);
+  const navigation = { sidebarOpen: layoutInfo ? layoutInfo.viewportWidth < 1024 ? layoutInfo.narrowExpanded : layoutInfo.sidebar > 0 : false, rightbarOpen: layoutInfo?.rightbarShown === true, activePanelId };
+  const previousNavigation = (0, import_react25.useRef)(navigation);
+  (0, import_react25.useEffect)(() => {
+    const previous = previousNavigation.current;
+    previousNavigation.current = navigation;
+    if (surface === "assembly" && (!previous.sidebarOpen && navigation.sidebarOpen || !previous.rightbarOpen && navigation.rightbarOpen || previous.activePanelId !== activePanelId)) requestSurface(null);
+  }, [navigation.sidebarOpen, navigation.rightbarOpen, activePanelId, surface, requestSurface]);
   const [diagnosticPlaythroughId, setDiagnosticPlaythroughId] = (0, import_react25.useState)(null);
   const diagnosticSnapshot = (0, import_react25.useSyncExternalStore)(diagnostics.subscribe, diagnostics.getSnapshot);
   (0, import_react25.useEffect)(() => diagnostics.subscribeOpen((playthroughId) => {
@@ -33915,6 +33995,7 @@ function apply3(ctx, { conversationPhase: conversationPhase2 }) {
     name: "shell.overlay",
     id: `${PLUGIN_ID}-launcher`,
     order: 80,
+    store: ctx.slots.entries("root").find((entry) => entry.store)?.store,
     inject: () => ({
       playClient,
       diagnostics,

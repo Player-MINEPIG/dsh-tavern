@@ -65,3 +65,10 @@ test('preview rebuilds current native instructions and never duplicates historic
   assert.deepEqual(result.messages.map(m => m.content[0].text), ['CURRENT CORE', 'CHARACTER', 'hello'])
   assert.equal(events[0].content[0].text, 'OLD CHARACTER')
 })
+
+test('empty runtime assembly fails locally with an actionable error', async () => {
+  const preset = { ...BUILTINS[0], rules: BUILTINS[0].rules.map(r => ({ ...r, enabled: false })) }
+  const runtime = new RequestAssembler({ ctx: { get: () => ({ requestAssemblyVersion: 1 }) }, store: { selection: () => preset }, resources: { assembledFor: () => ({ assemblyInput: {} }) } })
+  const payload = { agent: { id: 'empty', session: { snapshotEvents: () => [] } } }
+  await assert.rejects(runtime.execute(payload, async () => ({ messages: [] })), { code: 'ASSEMBLY_EMPTY' })
+})

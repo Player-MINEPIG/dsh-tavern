@@ -635,28 +635,45 @@ function WorkspaceAdmission({ setting, state, error, busy, selectWorkspace, relo
 // One guard belongs to the mounted resource panel. Shell navigation owns the
 // confirmation so Escape, launcher changes and the panel close share one path.
 export function createSurfaceNavigation(commit) {
-  let guard = null
+  let guard = null, generation = 0
   return {
     register(beforeLeave) {
       guard = beforeLeave
-      return () => { if (guard === beforeLeave) guard = null }
+      generation++
+      return () => { if (guard === beforeLeave) { guard = null; generation++ } }
     },
     request(next, current) {
+      const ticket = ++generation
       if (next === current) return true
-      if (guard !== null && guard() === false) return false
+      const result = guard?.()
+      if (result?.then) {
+        Promise.resolve(result).then(allowed => { if (allowed !== false && ticket === generation) commit(next) }).catch(() => {})
+        return false
+      }
+      if (result === false) return false
       commit(next)
       return true
     },
   }
 }
 
-function TavernShell({ useSessions, useWorkspaces, createCleanSession, createConfiguredPlaythrough, playClient, playSlots, chromeService, diagnostics }) {
+function TavernShell({ useStore, usePanelInfo, useSessions, useWorkspaces, createCleanSession, createConfiguredPlaythrough, playClient, playSlots, chromeService, diagnostics }) {
   const [menuOpen, setMenuOpen] = useState(false)
   const [surface, setSurface] = useState(null)
   const surfaceNavigation = useRef(null)
-  if (surfaceNavigation.current === null) surfaceNavigation.current = createSurfaceNavigation(setSurface)
+  if (surfaceNavigation.current === null) surfaceNavigation.current = createSurfaceNavigation(next => { setSurface(next); setMenuOpen(false) })
   const requestSurface = useCallback(next => surfaceNavigation.current.request(next, surface), [surface])
   const registerBeforeLeave = surfaceNavigation.current.register
+  const layoutInfo = useStore?.(state => state.layoutInfo)
+  const activePanelId = usePanelInfo?.(state => state.activePanelId)
+  const navigation = { sidebarOpen: layoutInfo ? (layoutInfo.viewportWidth < 1024 ? layoutInfo.narrowExpanded : layoutInfo.sidebar > 0) : false, rightbarOpen: layoutInfo?.rightbarShown === true, activePanelId }
+  const previousNavigation = useRef(navigation)
+  useEffect(() => {
+    const previous = previousNavigation.current
+    previousNavigation.current = navigation
+    if (surface === 'assembly' && ((!previous.sidebarOpen && navigation.sidebarOpen) || (!previous.rightbarOpen && navigation.rightbarOpen) || previous.activePanelId !== activePanelId)) requestSurface(null)
+  }, [navigation.sidebarOpen, navigation.rightbarOpen, activePanelId, surface, requestSurface])
+
   const [diagnosticPlaythroughId, setDiagnosticPlaythroughId] = useState(null)
   const diagnosticSnapshot = useSyncExternalStore(diagnostics.subscribe, diagnostics.getSnapshot)
   useEffect(() => diagnostics.subscribeOpen(playthroughId => {
@@ -1376,6 +1393,7 @@ export function apply(ctx, { conversationPhase }) {
     name: 'shell.overlay',
     id: `${PLUGIN_ID}-launcher`,
     order: 80,
+    store: ctx.slots.entries('root').find(entry => entry.store)?.store,
     inject: () => ({
       playClient,
       diagnostics,

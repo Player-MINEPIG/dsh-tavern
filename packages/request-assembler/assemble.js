@@ -172,7 +172,7 @@ function assembleResolved({ preset: suppliedPreset, previous = null, snapshots =
       handledSnapshots.add(node.id)
       const payload = node.messages, contentHash = node.hash
       const last = nextSnapshots.findLast(s => s.id === node.id)
-      if (last?.hash !== contentHash) nextSnapshots.push({ id: node.id, ruleId: rule.id, name: node.name, source: node.source, hash: contentHash, messages: payload.map(m => ({ ...m, id: randomUUID() })), afterId: messages.at(-1)?.id ?? null, nativeAfterId: messages.findLast(m => nativeMessages.some(n => n.id === m.id))?.id ?? null, module: node.module })
+      if (last?.hash !== contentHash) nextSnapshots.push({ id: node.id, ruleId: rule.id, name: node.name, source: node.source, depth: node.depth, hash: contentHash, messages: payload.map(m => ({ ...m, id: randomUUID() })), afterId: messages.at(-1)?.id ?? null, nativeAfterId: messages.findLast(m => nativeMessages.some(n => n.id === m.id))?.id ?? null, module: node.module })
       continue
     }
     expanded.push({ ...node, start: messages.length, count: node.messages.length }); messages.push(...node.messages)
@@ -198,7 +198,7 @@ function assembleResolved({ preset: suppliedPreset, previous = null, snapshots =
     anchors.set(anchor, offset + snapshot.messages.length)
     expanded.push({ id: `${snapshot.id}:retained:${snapshot.messages[0].id}`, ruleId: snapshot.ruleId, module: snapshot.module, name: snapshot.name, source: snapshot.source,
       messages: snapshot.messages, text: snapshot.messages.map(textOf).join('\n\n'), role: snapshot.messages[0]?.role, stability: 'snapshot', lifetime: 'snapshot', recorded: true,
-      locked: true, lockReason: 'retained-snapshot', hash: snapshot.hash, children: [] })
+      locked: true, lockReason: 'retained-snapshot', depth: snapshot.depth ?? null, hash: snapshot.hash, children: [] })
   }
   const seenNative = messages.filter(m => nativeMessages.some(n => n.id === m.id)).map(m => m.id)
   const required = [...requiredNative]
@@ -213,6 +213,8 @@ function assembleResolved({ preset: suppliedPreset, previous = null, snapshots =
     }
   }
   if (openCalls.size) throw new Error('Native tool transaction is incomplete')
+  if (!messages.length) diagnostics.push({ code: 'ASSEMBLY_EMPTY' })
+  else if (messages.every(m => m.role === 'system')) diagnostics.push({ code: 'ASSEMBLY_SYSTEM_ONLY' })
   const extraBytes = Buffer.byteLength(JSON.stringify(messages.filter(m => !required.includes(m.id))))
   if (extraBytes > maxBytes) throw Object.assign(new Error(`Assembled content exceeds ${maxBytes} bytes`), { status: 413 })
   // Duplicate immutable snapshots can refer to the same content; ids must still be unique per request.

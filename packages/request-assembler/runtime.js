@@ -33,6 +33,7 @@ export class RequestAssembler {
     const previous = lastMetadata?.owner === 'pmp-dsh-tavern' ? lastMetadata.assembly : null
     const assets = { ...snapshot.assemblyInput, diagnostics: snapshot.diagnostics, officialSections: snapshot.officialAssembly?.sections ?? [] }
     const assembly = await assembleRequestAsync({ registry: this.registry, sessionId: payload.agent.id, turn: payload.turn, step: payload.step, signal: payload.signal, preset, assets, nativeMessages: base.messages, inputIds, previous, snapshots: previous?.snapshots ?? [], maxBytes: this.resources.maxProfileBytes })
+    if (!assembly.messages.length) throw Object.assign(new Error('提示词装配结果为空：请启用或填写至少一条内容。The assembled request is empty; enable or fill at least one item.'), { code: 'ASSEMBLY_EMPTY' })
     const { messages, ...metadata } = assembly
     return { messages, metadata: { owner: 'pmp-dsh-tavern', assembly: metadata, upstream: base.metadata ?? null } }
   }
