@@ -23427,7 +23427,14 @@ globalThis.__view=()=>{
 };
 // Synchronous-looking getters suspend only this interpreter. The host measures
 // the current sanitized view in this card's script-disabled iframe.
-const __geometry=(node,pseudo)=>{const view=JSON.parse(__view());const id=node===document.documentElement?0:Number(node.getAttribute('data-dtv-node'));if(!Number.isSafeInteger(id)||id<0)throw Error('Layout target is outside the rendered card');const result=JSON.parse(__layout(JSON.stringify({id,view,pseudo})));if(result.error)throw Error(result.error);return result};
+const __geometry=(node,pseudo)=>{
+ const view=JSON.parse(__view());let id=0;
+ if(node!==document.documentElement){
+  const marker=node?.getAttribute?.('data-dtv-node');id=__ids.get(node);
+  if(!marker||!Number.isSafeInteger(id)||id<=0||marker!==String(id)||__nodes.get(id)!==node||(node!==document.body&&!document.body.contains(node)))throw Error('Layout target is outside the rendered card');
+ }
+ const result=JSON.parse(__layout(JSON.stringify({id,view,pseudo})));if(result.error)throw Error(result.error);return result;
+};
 Element.prototype.getBoundingClientRect=function(){return __geometry(this).rect};
 for(const key of ['scrollHeight','scrollWidth','offsetHeight','offsetWidth','clientHeight','clientWidth','offsetTop','offsetLeft'])Object.defineProperty(Element.prototype,key,{get(){return __geometry(this)[key]},configurable:true});
 globalThis.getComputedStyle=(node,pseudo)=>{const data=__geometry(node,pseudo).computed;return Object.freeze({...data,getPropertyValue:name=>data[String(name)]??'',getPropertyPriority:()=>''})};
@@ -42355,13 +42362,37 @@ var InteractiveCard = (0, import_react17.memo)(function InteractiveCard2({ sourc
           for (const type of events) doc.body.removeEventListener(type, handler);
         };
         if (writeScope && createBinding) writeRequest = renderingWriteRequests.register({ scope: writeScope, owners, runs: data2.runs, modules: data2.modules, html: data2.html, adapters: data2.adapters, schemaDeclarations: data2.schemaDeclarations, onRevoke: revokeWrites });
-        const displayView = (view) => {
-          if (current4 !== generation.current) return;
+        let acceptedView;
+        const displayView = (view, targetId) => {
+          if (cleaned || current4 !== generation.current) throw Error("Card view generation expired");
+          if (!view || Array.isArray(view) || typeof view.html !== "string" || typeof view.styles !== "string" || !Number.isSafeInteger(view.bodyId) || view.bodyId <= 0 || JSON.stringify(view).length > 1024 * 1024) throw Error("Invalid card view");
+          if (acceptedView?.html === view.html && acceptedView.styles === view.styles && acceptedView.bodyId === view.bodyId) {
+            if (targetId !== void 0 && !acceptedView.nodes.has(targetId)) throw Error("Layout target is not in this card");
+            return acceptedView.nodes;
+          }
+          const template = doc.createElement("template");
+          template.innerHTML = cleanCardHtml(view.html);
+          const nodes = /* @__PURE__ */ new Map([[0, doc.documentElement], [view.bodyId, doc.body]]);
+          const walker = doc.createTreeWalker(template.content, 4294967295);
+          let count = 1, node;
+          while (node = walker.nextNode()) {
+            if (++count > 8192) throw Error("Card DOM limit exceeded");
+            if (node.nodeType !== 1) continue;
+            const marker = node.getAttribute("data-dtv-node");
+            if (marker === null) continue;
+            const id2 = Number(marker);
+            if (!Number.isSafeInteger(id2) || id2 <= 0 || String(id2) !== marker || nodes.has(id2)) throw Error("Invalid card node identity");
+            nodes.set(id2, node);
+          }
+          if (targetId !== void 0 && !nodes.has(targetId)) throw Error("Layout target is not in this card");
+          const style = doc.createElement("style");
+          style.textContent = view.styles;
           const focused = doc.activeElement, id = focused?.dataset?.dtvNode, selection = [focused?.selectionStart, focused?.selectionEnd], scroll = [doc.documentElement.scrollLeft, doc.documentElement.scrollTop];
-          const safe = cleanCardHtml(view.html + "<style>" + view.styles.replace(/<\/style/gi, "< /style") + "</style>");
-          if (doc.body.innerHTML !== safe) doc.body.innerHTML = safe;
+          doc.body.replaceChildren(template.content, style);
+          doc.body.setAttribute("data-dtv-node", String(view.bodyId));
+          acceptedView = { html: view.html, styles: view.styles, bodyId: view.bodyId, nodes };
           if (id) {
-            const restored = doc.body.querySelector('[data-dtv-node="' + id + '"]');
+            const restored = nodes.get(Number(id));
             restored?.focus();
             if (typeof selection[0] === "number") try {
               restored.setSelectionRange(...selection);
@@ -42371,6 +42402,7 @@ var InteractiveCard = (0, import_react17.memo)(function InteractiveCard2({ sourc
           doc.documentElement.scrollLeft = scroll[0];
           doc.documentElement.scrollTop = scroll[1];
           resize();
+          return nodes;
         };
         virtualRuntime = createVirtualCardRuntime({ html: data2.html, runs: data2.runs, modules: data2.modules, context, variables: activeBinding?.getSnapshot() }, {
           onWrite: async ({ operation, value, options, cause, observedRevision, operationId, signal }) => {
@@ -42427,9 +42459,9 @@ var InteractiveCard = (0, import_react17.memo)(function InteractiveCard2({ sourc
           onMeasure: (request2, { signal }) => {
             signal.throwIfAborted();
             if (cleaned || current4 !== generation.current || !frame.current?.isConnected || frame.current.contentDocument !== doc) throw Error("Card measurement generation expired");
-            displayView(request2.view);
-            const node = request2.id === 0 ? doc.documentElement : request2.id === request2.view.bodyId ? doc.body : doc.body.querySelector('[data-dtv-node="' + request2.id + '"]');
-            if (!node) throw Error("Layout target is not in this card");
+            if (!Number.isSafeInteger(request2.id) || request2.id < 0 || !["", null, void 0, "::before", "::after"].includes(request2.pseudo)) throw Error("Invalid card measurement");
+            const nodes = displayView(request2.view, request2.id), node = nodes.get(request2.id);
+            if (!node || node.ownerDocument !== doc || !node.isConnected || request2.id !== 0 && (node.getAttribute("data-dtv-node") !== String(request2.id) || node !== doc.body && !doc.body.contains(node))) throw Error("Layout target is not in this card");
             const rectangle = node.getBoundingClientRect(), style = doc.defaultView.getComputedStyle(node, request2.pseudo || null), computed = /* @__PURE__ */ Object.create(null);
             if (style.length > 1024) throw Error("Computed style exceeds property limit");
             for (const property of style) {
