@@ -64,8 +64,11 @@ export function prepareCardDocument(source, owners = [], helpers = [], trust = r
     if (depth > 8) throw Error('Rendering dependency depth exceeds limit')
     for (const dependency of discoverDependencies(content,base).filter(item => item.kind === 'module')) {
       if (!dependency.url) throw Error('Blocked or unresolved module: ' + dependency.raw)
-      if (Object.hasOwn(modules,dependency.url)) continue
       const next = read(dependency.url,owner)
+      if (Object.hasOwn(modules,dependency.url)) {
+        if(modules[dependency.url]!==next.content)throw Error('Module content conflict across source owners')
+        continue
+      }
       modules[dependency.url] = next.content
       collect(next.content,dependency.url,next.owner,depth + 1)
     }

@@ -25,7 +25,7 @@ test('body wrappers, unknown languages and interrupted fences are distinguished'
 test('dependency discovery retains blocked references without fetching and resolves relative modules',()=>{
  const result=discoverDependencies(`<script src="https://example.com/a.js"></script>\nimport x from './b.js';\nimport('http://localhost:5500/a.js');\n$('body').load('https://example.com/card.html')`,'https://example.com/root.js')
  assert.equal(result.length,4);assert.equal(result[1].url,'https://example.com/b.js');assert.equal(result[2].blocked,true)
- for(const url of ['file:///tmp/a','http://example.com/x','https://user:pass@example.com/x','https://127.0.0.1/x','https://[::1]/x','https://x.local/x','https://example.com:8443/x'])assert.equal(externalUrl(url),null)
+ for(const url of ['file:///tmp/a','http://example.com/x','https://user:pass@example.com/x','https://127.0.0.1/x','https://[::1]/x','https://x.local/x','https://example.com:8443/x','https://localhost./','https://foo.local./','https://svc.internal./','https://LOCALHOST./'])assert.equal(externalUrl(url),null)
 })
 test('trust is scoped, digest-bound, revocable, bounded and cancels pending hashing',async()=>{
  const trust=createRenderingTrust();let changes=0;const stop=trust.subscribe(()=>changes++)
@@ -67,4 +67,24 @@ test('explicit downloads omit credentials and refuse redirects, blocked URLs, ov
  await assert.rejects(()=>downloadRenderingSource('https://example.com/big.js',{fetch:async()=>new Response('x'.repeat(128*1024+1))}),/128 KiB/)
  const controller=new AbortController();controller.abort();await assert.rejects(()=>downloadRenderingSource('https://example.com/x',{fetch:request,signal:controller.signal}),/abort/i);assert.equal(calls,1)
  await assert.rejects(()=>downloadRenderingSource('https://example.com/x',{fetch:async()=>({ok:true,redirected:true})}),/failed/)
+})
+
+test('module graph checks every source owner before sharing identical dependencies',async()=>{
+ const {readFile}=await import('node:fs/promises')
+ const source=await readFile(new URL('../packages/client/src/play/scripted-content.js',import.meta.url),'utf8')
+ const body=source.slice(source.indexOf('export function prepareCardDocument('),source.indexOf('\nexport function createDomBridge(')).replace('export function','function')
+ const inertDocument={createElement(){return {innerHTML:'',content:{querySelectorAll(){return []}}}}}
+ const prepare=new Function('discoverDependencies','externalUrl','loadWrapper','MAX_RENDER_SOURCE','document','cardDocument',body+';return prepareCardDocument')(discoverDependencies,externalUrl,loadWrapper,128*1024,inertDocument,()=>({html:'',scripts:[],unsupported:[]}))
+ const trust=createRenderingTrust(),url='https://example.com/shared.js'
+ const helpers=['character:A','preset:B'].map(owner=>({owner,key:owner+':helper',content:`import {value} from '${url}';`,enabled:true}))
+ const approve=async(owner,key,content)=>trust.approve(owner,key,await trust.stage(owner,key,content))
+ for(const helper of helpers)await approve(helper.owner,helper.key,helper.content)
+ await approve(helpers[0].owner,url,'export const value="A"')
+ assert.throws(()=>prepare('',helpers.map(x=>x.owner),helpers,trust),/review/)
+ await approve(helpers[1].owner,url,'export const value="B"')
+ assert.throws(()=>prepare('',helpers.map(x=>x.owner),helpers,trust),/conflict/)
+ await approve(helpers[1].owner,url,'export const value="A"')
+ assert.equal(prepare('',helpers.map(x=>x.owner),helpers,trust).runs.length,2)
+ trust.revoke(helpers[1].owner,url)
+ assert.throws(()=>prepare('',helpers.map(x=>x.owner),helpers,trust),/review/)
 })

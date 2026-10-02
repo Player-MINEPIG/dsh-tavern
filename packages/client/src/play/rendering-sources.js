@@ -3,7 +3,8 @@ export const MAX_RENDER_SOURCE = 128 * 1024
 export function externalUrl(value, base) {
   try {
     const url = new URL(value, base)
-    const host = url.hostname.toLowerCase()
+    const host = url.hostname.toLowerCase().replace(/\.+$/, '')
+    url.hostname=host
     if (url.protocol !== 'https:' || url.username || url.password || url.port || !host.includes('.') ||
       /^[\d.]+$/.test(host) || host.includes(':') || /(?:^|\.)(?:localhost|local|internal|test|invalid)$/.test(host)) return null
     url.hash = ''
