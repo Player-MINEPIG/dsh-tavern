@@ -641,3 +641,14 @@ A required-dependency plugin may declare `inject: ['pmpDshTavernChrome']` and re
 Internal transport uses `GET /v2/chrome/events`. When EventSource is missing, the connection fails, or it drops, it falls back to the initial GET, window-focus read-back, and 1-second polling. Polling stops after SSE recovers. BroadcastChannel is not in the contract. Service unload stops transport and clears every `when` effect. Several third-party plugins register independently and each cleans only its own slots/UI.
 
 Full notes on third-party DSH plugins, standalone web clients, surface ownership, atomic action composition, and uninstall fallback: [FRONTEND_INTEGRATION_en.md](FRONTEND_INTEGRATION_en.md). There is no one-click config-file Mowan replacement, frontend provider registry, or dynamic bundle loader.
+
+## Rendering write authorization primitives
+
+Source/write permission is separate from MVU storage and manager policy. Existing APIs do not grant card code a capability, so these endpoints provide an exact execution-bundle lease, not a generic script fetch or variable-write proxy.
+
+| Method | Path (v1) | Purpose | Status |
+| --- | --- | --- | --- |
+| POST | `/rendering-write-grants` | Trusted settings submit `{source,sourceIdentity,reviewed:true,write:true}`. Source is the complete bundle as JSON text; identity is `{version:1,sha256,scope}`. Host recomputes SHA-256 and returns `{ok:true,grantId,sourceIdentity,expiresAt}` | 200; invalid input/identity 400; oversized request 413 |
+| DELETE | `/rendering-write-grants/:grantId` | Permanently revoke the lease; repeated revocation is idempotent | 200 |
+
+Both mutations retain local peer, Host, Origin/desktop-token and JSON media-type checks. Host service `tavernRenderingAuthority.resolve({grantId,sourceIdentity})` returns null or `{valid:true,write:true,scope}`; synchronous `isCurrent(request)` supports MVU's final transaction check. Grants are limited to 64 entries and 30 minutes, revoked on loader disposal and never persisted. They do not replace MVU current-head, CAS, idempotence or manager checks.

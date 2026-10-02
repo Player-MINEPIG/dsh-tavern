@@ -1,5 +1,6 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
+import { createHash } from 'node:crypto'
 import { createRequire } from 'node:module'
 import { pathToFileURL } from 'node:url'
 import { join, resolve } from 'node:path'
@@ -8,7 +9,7 @@ import { mkdtempSync, rmSync } from 'node:fs'
 import * as tavern from '../packages/tavern-loader/src/index.js'
 import { MvuService } from '../packages/mvu-adapter/src/index.js'
 
-const runtimeRoot = process.env.DSH_TAVERN_PROMPT_COMPAT_ROOT
+const runtimeRoot = process.env.DSH_TAVERN_ASSEMBLY_CORE_ROOT ?? process.env.DSH_TAVERN_PROMPT_COMPAT_ROOT
 test('real DSH AgentLoop final replies, fork seed, restart snapshots and native unload', { skip: !runtimeRoot, timeout: 20000 }, async () => {
   const require = createRequire(join(resolve(runtimeRoot), 'package.json'))
   const load = name => import(pathToFileURL(require.resolve(name)).href)
@@ -113,12 +114,13 @@ test('real Host empty greeting binding writes state used by the first model requ
     const { agent } = handle, service = ctx.get('tavernMvu')
     await service.flush()
     const scope = { mode: 'initial', playthroughId: 'opening', sessionId: agent.id, characterId: 'opening-card', sessionFormatVersion: agent.session.header.version }
-    const sourceIdentity = { version: 1, sha256: 'a'.repeat(64), scope }
-    ctx.provide('tavernRenderingAuthority', { resolve: async ({ grantId }) => grantId === 'synthetic' ? { valid: true, write: true, scope } : null, isCurrent: () => true })
+    const source = JSON.stringify({ version: 1, scope, runs: [], modules: {}, html: '<div>Synthetic opening</div>' })
+    const sourceIdentity = { version: 1, sha256: createHash('sha256').update(source).digest('hex'), scope }
+    const { grantId } = ctx.get('tavernRenderingAuthority').grant({ source, sourceIdentity, reviewed: true, write: true })
     service.registerUsage(request => request.on === 'card_variable_update' ? { enabled: true, configRevision: 1, checkCurrent: () => true } : undefined)
     service.observe(fact => facts.push(fact))
     assert.equal((await service.snapshot(scope)).variables.stat_data.hp, 10)
-    const binding = await service.createCardBinding({ scope, sourceIdentity, grantId: 'synthetic' })
+    const binding = await service.createCardBinding({ scope, sourceIdentity, grantId })
     await service.cardWrite({ capability: binding.capability, operation: 'replace', value: { stat_data: { hp: 7 } }, expectedRevision: 0, operationId: 'opening-config', cause: 'user-interaction' })
     const preset = store.assemblyPresets.save({ ...store.assemblyPresets.get('builtin-cache'), rules: [...store.assemblyPresets.get('builtin-cache').rules, { id: 'mvu', kind: 'tavern.mvu/state', role: 'system', lifetime: 'request' }] })
     store.assemblyPresets.apply(agent.id, preset.id)
@@ -133,7 +135,7 @@ test('real Host empty greeting binding writes state used by the first model requ
     assert.ok(requests[0].messages.some(m => m.content.some(b => b.text?.startsWith('{"hp":7}'))))
     assert.ok(facts.some(f => f.phase === 'applied' && f.detail === 'dsh-request-observed' && f.revision === 1))
     assert.equal((await service.read({ id: 'mvu:opening', scope: { sessionId: agent.id } })).content.stat_data.hp, 6)
-    await assert.rejects(service.createCardBinding({ scope, sourceIdentity, grantId: 'synthetic' }), { code: 'MVU_READ_ONLY' })
+    await assert.rejects(service.createCardBinding({ scope, sourceIdentity, grantId }), { code: 'MVU_READ_ONLY' })
     await assert.rejects(service.cardWrite({ capability: binding.capability, operation: 'patch', value: [], expectedRevision: 2, operationId: 'late', cause: 'script' }), { code: 'MVU_READ_ONLY' })
   } finally { await handle?.dispose(); await ctx.fiber.dispose(); rmSync(directory, { recursive: true, force: true }) }
 })

@@ -1,3 +1,4 @@
+import {createRenderingAuthority,createRenderingAuthorityHandler,isRenderingAuthorityPath} from '../../rendering-authority/index.js'
 import { OperationJournal } from '../../play/src/operation-journal.js'
 import { createCharacterDiscovery } from '../../mvu-adapter/src/discovery.js'
 import { installMvu } from '../../mvu-adapter/src/host.js'
@@ -370,6 +371,10 @@ export function apply(ctx, config = {}) {
   store.assemblyPresets = assemblyPresets
   store.requestAssembler = requestAssembler
   ctx.provide(ASSEMBLY_SERVICE, requestAssembler.registry)
+  const renderingAuthority=createRenderingAuthority()
+  ctx.provide('tavernRenderingAuthority',renderingAuthority)
+  ctx.effect(()=>()=>renderingAuthority.dispose(),'dsh-tavern: rendering write authority')
+  const renderingAuthorityApi=createRenderingAuthorityHandler(renderingAuthority,{getConnection:()=>ctx.get('connection')})
   const mvuResources = (config.mvu?.resources ?? []).map(resource => resource.characterId && resource.initial === undefined
     ? mvuResourceFromCharacter(characterStore.get(resource.characterId), resource) : resource)
   let mvu
@@ -705,7 +710,9 @@ export function apply(ctx, config = {}) {
       },
     })
     const api = secureTavernApi(
-      (req, res) => isMvuApiPath(req.url)
+      (req, res) => isRenderingAuthorityPath(req.url)
+        ? renderingAuthorityApi(req, res)
+        : isMvuApiPath(req.url)
         ? mvuApi(req, res)
         : isAssemblyApiPath(req.url)
         ? assemblyApi(req, res)
