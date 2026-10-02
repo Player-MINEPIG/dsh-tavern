@@ -1,9 +1,11 @@
-import { assembleRequest } from './assemble.js'
+import { assembleRequestAsync } from './assemble.js'
+import { createDefaultRegistry } from './builtin-sources.js'
 import { normalizePreset } from './model.js'
 import { createHash } from 'node:crypto'
 
 export class RequestAssembler {
-  constructor({ ctx, store, resources }) { this.ctx = ctx; this.store = store; this.resources = resources }
+  constructor({ ctx, store, resources, registry = createDefaultRegistry() }) { this.ctx = ctx; this.store = store; this.resources = resources; this.registry = registry }
+  sources() { return this.registry.list() }
   available() { return this.ctx.get('agentLoop')?.requestAssemblyVersion === 1 }
   requireAvailable() {
     if (!this.available()) throw Object.assign(new Error('This layout requires DSH request assembly protocol 1. Install the prepared core before applying it.'), { status: 409, code: 'REQUEST_ASSEMBLY_CORE_REQUIRED' })
@@ -30,11 +32,11 @@ export class RequestAssembler {
     const lastMetadata = events.findLast(e => e.type === 'request/assembly')?.data.metadata
     const previous = lastMetadata?.owner === 'pmp-dsh-tavern' ? lastMetadata.assembly : null
     const assets = { ...snapshot.assemblyInput, diagnostics: snapshot.diagnostics, officialSections: snapshot.officialAssembly?.sections ?? [] }
-    const assembly = assembleRequest({ preset, assets, nativeMessages: base.messages, inputIds, previous, snapshots: previous?.snapshots ?? [], maxBytes: this.resources.maxProfileBytes })
+    const assembly = await assembleRequestAsync({ registry: this.registry, sessionId: payload.agent.id, turn: payload.turn, step: payload.step, signal: payload.signal, preset, assets, nativeMessages: base.messages, inputIds, previous, snapshots: previous?.snapshots ?? [], maxBytes: this.resources.maxProfileBytes })
     const { messages, ...metadata } = assembly
-    return { messages, metadata: { owner: 'pmp-dsh-tavern', assembly: metadata } }
+    return { messages, metadata: { owner: 'pmp-dsh-tavern', assembly: metadata, upstream: base.metadata ?? null } }
   }
-  async preview({ preset, agent, sessionId }) {
+  async preview({ preset, agent, sessionId, signal }) {
     const snapshot = this.resources.compile({ agent, sessionId, resolveOnly: true })
     // Historical system messages may still contain the old loader's assets.
     // Preview current core assembly independently, without committing any event.
@@ -51,7 +53,7 @@ export class RequestAssembler {
       })).filter(Boolean).join('\n\n')
       if (text) nativeMessages.unshift({ id: 'preview-native-system', role: 'system', content: [{ type: 'text', text }], source: { kind: 'system-prompt' } })
     } else diagnostics.push({ code: 'NATIVE_SYSTEM_PREVIEW_UNAVAILABLE' })
-    const assembly = assembleRequest({ preset, assets: { ...snapshot.assemblyInput, diagnostics, officialSections }, nativeMessages, preview: true, maxBytes: this.resources.maxProfileBytes })
+    const assembly = await assembleRequestAsync({ registry: this.registry, sessionId: sessionId ?? agent?.id ?? '', signal, preset, assets: { ...snapshot.assemblyInput, diagnostics, officialSections }, nativeMessages, preview: true, maxBytes: this.resources.maxProfileBytes })
     return { ...assembly, capability: this.available(), scope: 'current-resources-and-durable-history', pendingInputsIncluded: false }
   }
 }

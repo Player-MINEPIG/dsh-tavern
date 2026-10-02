@@ -71,6 +71,7 @@ import {
 import { prepareStorageDir } from './storage-location.js'
 import { AssemblyPresetStore } from '../../request-assembler/store.js'
 import { RequestAssembler } from '../../request-assembler/runtime.js'
+import { ASSEMBLY_SERVICE } from '../../request-assembler/registry.js'
 import { createAssemblyApi, isAssemblyApiPath } from '../../request-assembler/server.js'
 
 export const name = PLUGIN_ID
@@ -364,6 +365,7 @@ export function apply(ctx, config = {}) {
   const requestAssembler = new RequestAssembler({ ctx, store: assemblyPresets, resources: runtime })
   store.assemblyPresets = assemblyPresets
   store.requestAssembler = requestAssembler
+  ctx.provide(ASSEMBLY_SERVICE, requestAssembler.registry)
   runtime.requestAssemblyEnabled = sessionId => {
     if (!requestAssembler.available() && !requestAssembler.selected(sessionId)) return false
     if (requestAssembler.selected(sessionId)) requestAssembler.requireAvailable()
@@ -597,7 +599,7 @@ export function apply(ctx, config = {}) {
 
   const registerHttpApi = webCtx => {
     const assemblyApi = createAssemblyApi({ store: assemblyPresets, runtime: requestAssembler, agents: () => ctx.get('agents'), sessions: () => ctx.get('sessions'), inspect: id => ctx.get('sessionController').inspect(id), notify: notifyChange })
-    const promptTraceApi = createPromptTraceApi({ assemblies: assemblyStore, legacyStore: traceStore,
+    const promptTraceApi = createPromptTraceApi({ assemblies: assemblyStore, legacyStore: traceStore, requestAssembler,
       readBodies: createAssemblyBodyReader(ctx.get('sessionController')) })
     const presetApi = createPresetApiHandler(
       store,

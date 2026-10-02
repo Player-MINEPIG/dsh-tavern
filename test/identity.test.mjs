@@ -98,6 +98,7 @@ test('Host registers the unversioned API root so v1 and v2 share one prefix', ()
     on: () => {},
     emit: () => {},
     get: name => name === 'webServer' ? { register: route => { routes.push(route); return () => {} } } : undefined,
+    provide(name, value) { this[name] = value },
     effect: install => install(),
     logger: { info: () => {} },
   }

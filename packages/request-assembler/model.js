@@ -17,15 +17,12 @@ export function normalizePreset(value) {
   const ids = new Set(), kinds = new Set()
   const rules = value.rules.map(rule => {
     if (!rule || !/^[a-zA-Z0-9_-]{1,80}$/.test(rule.id) || ids.has(rule.id)) throw new TypeError('Rule ids must be unique')
-    if (!MODULES.includes(rule.kind) || (rule.kind !== 'custom' && kinds.has(rule.kind))) throw new TypeError('Invalid or duplicate module')
+    if (typeof rule.kind !== 'string' || !/^[a-zA-Z0-9][a-zA-Z0-9_.:/-]{0,159}$/.test(rule.kind)) throw new TypeError('Invalid or duplicate module')
     ids.add(rule.id); kinds.add(rule.kind)
     const role = rule.role ?? 'preserve', lifetime = rule.lifetime ?? 'request'
     if (!['preserve', 'system', 'user', 'assistant'].includes(role)) throw new TypeError('Invalid role')
     if (!['request', 'snapshot'].includes(lifetime)) throw new TypeError('Invalid lifetime')
-    if (['native-system', 'history', 'input'].includes(rule.kind) && (role !== 'preserve' || lifetime !== 'request')) throw new TypeError('Native modules retain their roles and request lifetime')
-    if (rule.kind === 'preset' && lifetime !== 'request') throw new TypeError('Preset placement markers require request lifetime')
     if (rule.depth !== undefined && rule.depth !== null && (!Number.isInteger(rule.depth) || rule.depth < 0 || rule.depth > 10000)) throw new TypeError('Invalid insertion depth')
-    if (['native-system', 'history', 'input'].includes(rule.kind) && rule.depth != null) throw new TypeError('Native module positions are controlled by the list or references')
     if (typeof (rule.text ?? '') !== 'string' || (rule.text ?? '').length > 524288) throw new TypeError('Custom text exceeds limit')
     return { id: rule.id, kind: rule.kind, enabled: rule.enabled !== false, role, lifetime, depth: rule.depth ?? null, text: rule.text ?? '', name: typeof rule.name === 'string' ? rule.name.slice(0, 200) : '' }
   })

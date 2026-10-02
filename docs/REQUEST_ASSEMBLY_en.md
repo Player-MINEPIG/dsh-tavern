@@ -79,6 +79,61 @@ Prefix: `/pmp-dsh-tavern/api/v1/assembly-presets`. Existing Host authentication,
 
 Export serializes preset JSON directly. Format is `dsh-tavern-request-assembly`, version 1; each rule has `id/kind/enabled/role/lifetime/depth/text/name`. Executable scripts are not accepted. `assembly-presets.json` atomically stores presets and applied snapshots, limited to 8 MiB. Actual request bodies use `requestAssembly` on existing v3 assembly details rather than another history API.
 
+
+## Unified content source API (protocol 1)
+
+The Host service `tavernRequestSources` exposes `version`, `register(definition)` and `list()`. Import the SDK and TypeScript declarations from `pmp-dsh-tavern/request-assembler`. Native instructions, history, step input, presets, characters, personas, world books, PHI and custom text all use the same registration API. The engine does not dispatch special assembly paths by those source names. Existing rule `kind` values remain source IDs; external sources should use their own namespace, such as `example.memory/recalled`.
+
+Registration makes a source selectable; it does not enable it or change a strategy. The settings source picker uses this registry for names, plugin colors, stability and supported roles, retention and depth. Missing sources remain importable and editable; their output and retained snapshots are omitted with `ASSEMBLY_SOURCE_UNAVAILABLE`. Resolver errors or invalid output fail the request rather than send partial content. Disabled sources without active dependents are not evaluated.
+
+```js
+import { ASSEMBLY_SERVICE } from 'pmp-dsh-tavern/request-assembler'
+export const inject = [ASSEMBLY_SERVICE, 'myMemoryStore']
+export function apply(ctx) {
+  const sources = ctx.get(ASSEMBLY_SERVICE)
+  if (!sources || sources.version !== 1) throw new Error('Unsupported source protocol')
+  ctx.effect(() => sources.register({
+    id: 'example.memory/recalled', pluginId: 'example.memory',
+    name: 'Retrieved memory', stability: 'conversation',
+    async resolve(context) {
+      // Read-only in both preview and execution. The plugin owns this store.
+      const rows = await ctx.get('myMemoryStore').search({
+        sessionId: context.sessionId, messages: context.nativeMessages,
+        inputIds: context.inputIds, signal: context.signal,
+      })
+      return { blocks: rows.map(row => ({
+        type: 'text', id: row.id, name: row.title, text: row.text,
+        role: 'system', source: { resourceId: row.id, field: 'text' },
+      })) }
+    },
+  }))
+}
+```
+
+`myMemoryStore` is an example consumer-owned service, not supplied by Tavern. `ctx.effect` unregisters on unload; an in-flight request uses its captured registrations. Plugin identity is declared provenance, not a security sandbox or authenticated signature.
+
+`resolve(context, rule)` may be synchronous or asynchronous. It must remain read-only and honor/forward `signal`. The context is detached, deeply frozen data: `sessionId`, `turn`, `step`, `preview`, `preset`, `assets`, `nativeMessages` and `inputIds`. No mutable Agent or session is exposed. Preview turn/step are null and unsent input is absent. `assets` contains current Tavern resources (preset, character, user, characterSelection, loreEntries, officialSections and diagnostics), not historical source originals. Macro context contains only public strings. MVU changes, memory writes and branch-state management belong to plugin handling of durable native events, never resolver or preview evaluation.
+
+Descriptor fields: required `id/pluginId/name`; `version` defaults to 1 and `stability` to conversation. `dependencies` declares sources needed for resolution/references; cycles fail. `multiple` defaults to false; `roles` defaults to preserve/system/user/assistant; `lifetimes` defaults to request/snapshot; `depth` defaults to true. Native adapters declare preserve/request without depth; the preset adapter declares request-only retention through the same public fields. Wire validation permits absent sources, while assembly validates registered source capabilities.
+
+Return `{blocks, macros?, diagnostics?}`. Each source is limited to 8 MiB and 10,000 blocks; final additional request content remains bounded by `maxProfileBytes`. Block IDs must be stable and unique within one source rule.
+
+| Block type | Fields and behavior |
+| --- | --- |
+| `text` | Required id/text; optional name, role, stability, source.resourceId/field; uses shared macros, role, depth and retention handling |
+| `native` | id/messageIds reference this request's native messages without rewriting tool transactions; native adapters use this type |
+| `reference` | id/sourceId, optional blockIds or group filter; occupies and locks the reference position without duplicate fallback; declare the target in dependencies |
+
+`macros` maps names to this source's text block IDs, e.g. `{recalled:'memory'}`. `{{recalled}}` exposes a provenance child and suppresses the fallback block. Duplicate macro names fail. `referenceOnly:true` hides a block except when referenced. References honor target enablement and settings by default; `honorEnabled:false` permits explicit asset references, `useOwnerRule:true` uses the referring rule and `lock:false` leaves it unlocked. `claims:[{sourceId,blockId}]` declares an already included/overridden field; `targetSourceId` routes text to an enabled module's position. ST overrides, PHI and markers use these same primitives. Cross-source references/macros are resolved before placement; final tool topology is checked centrally.
+
+Preview and execution use the same registry and engine; dynamic sources are Host code, not HTTP callbacks. The existing `GET /assembly-presets?sessionId=…` response adds `sources` and `sourceProtocolVersion`. v3 capabilities reports `composerRegistry`, `sourceProtocolVersion`, `requestAssembly` and `arbitraryMessageDepth`; the latter two require the core extension. Recorded metadata includes source descriptors and upstream assembly metadata; historical reads do not rerun sources.
+
+### Trigger scope and loader migration
+
+Assembly runs whenever the Agent builds a request: initial sends, tool continuations, input added during generation, requests awakened by subagent settlement notices, and child Agent requests on the same Host. Child sessions inherit the applied strategy through parentSession. Retries may resolve again; a resolver must not assume once-per-turn execution. Already frozen requests remain unchanged. Auxiliary direct `llm.stream` calls, such as title generation, bypass the Agent hook. Remote/out-of-process children require the extension and plugin on their own Host to use the strategy.
+
+Resource CRUD, selection and `/active` remain compatible; `/active` is an asset/configuration summary, not a final request. On the new path the loader resolves assets, world-book activation and parameter mappings; all body content enters through registered sources. `compileTavernProfile`/`compilePresetForDsh` remain compatibility helpers, not dynamic source APIs. The legacy loader fallback on an unextended core does not support the new strategy system. Third parties should use the service above, not internal properties such as `store.requestAssembler`.
+
 ## Verification
 
 ```sh

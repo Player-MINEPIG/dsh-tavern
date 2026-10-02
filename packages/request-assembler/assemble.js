@@ -4,17 +4,12 @@ import { normalizePreset } from './model.js'
 
 const hash = value => createHash('sha256').update(JSON.stringify(value)).digest('hex')
 export const textOf = message => (message.content ?? []).filter(b => b.type === 'text').map(b => b.text).join('\n')
-const fieldMacros = { description: 'description', personality: 'personality', scenario: 'scenario', mesexamples: 'examples', persona: 'persona', charDescription: 'description', charPersonality: 'personality' }
-const markerFields = { charDescription: 'description', charPersonality: 'personality', scenario: 'scenario', dialogueExamples: 'examples', personaDescription: 'persona', userDescription: 'persona', userPersona: 'persona' }
+import { createDefaultRegistry } from './builtin-sources.js'
 function message(role, text, id) {
   const hex = hash(id)
   const uuid = `${hex.slice(0, 8)}-${hex.slice(8, 12)}-5${hex.slice(13, 16)}-a${hex.slice(17, 20)}-${hex.slice(20, 32)}`
   return { id: uuid, role, content: [{ type: 'text', text }], source: role === 'assistant' ? { kind: 'model', provider: 'tavern', model: 'assembly' } : { kind: role === 'system' ? 'system-prompt' : 'tavern-assembly' } }
 }
-function source(kind, id, field) {
-  return { plugin: kind === 'native' ? 'DSH' : 'pmp-dsh-tavern', module: kind, resourceId: id ?? null, field, generationRequiresPlugin: kind !== 'native', recordedContentSurvivesRemoval: true }
-}
-
 /** Preserve native order and complete tool transactions when inserting depth prompts. */
 export function insertionIndex(messages, depth) {
   let index = Math.max(0, messages.length - depth)
@@ -33,139 +28,117 @@ export function insertionIndex(messages, depth) {
   return index
 }
 
-/** Pure request assembly. Persistence and provider serialization remain core-owned. */
-export function assembleRequest({ preset: suppliedPreset, assets = {}, nativeMessages = [], inputIds = [], previous = null, snapshots = [], maxBytes = 2 * 1024 * 1024, preview = false }) {
-  const preset = normalizePreset(suppliedPreset)
-  const data = assets.character?.data ?? {}, selection = assets.characterSelection ?? {}, user = assets.user
-  const fields = {
-    description: data.description ?? '', personality: data.personality ?? '', scenario: data.scenario ?? '',
-    examples: data.messageExample ?? data.mes_example ?? '', persona: user?.description ?? '',
-    system: selection.preferCharacterSystemPrompt === false ? '' : data.systemPrompt ?? data.system_prompt ?? '',
-    phi: selection.preferCharacterPostHistory === false ? '' : data.postHistoryInstructions ?? data.post_history_instructions ?? '',
-  }
-  const context = { ...assets.context, user: user?.name ?? assets.context?.user ?? 'User', character: data.nickname || data.name || assets.character?.name || 'Assistant',
-    lastUserMessage: textOf(nativeMessages.findLast(m => m.role === 'user' && (m.source?.kind === 'user' || !m.source)) ?? {}),
-    lastAssistantMessage: textOf(nativeMessages.findLast(m => m.role === 'assistant') ?? {}),
-    ...(preview ? { random: () => 0.5 } : {}),
-  }
-  const consumed = new Map(), diagnostics = structuredClone(assets.diagnostics ?? []).filter(d => !(preset.placement === 'st' && d.code === 'WORLD_BOOK_POSITION_APPROXIMATED' && d.originalPosition === 'at_depth')), variables = new Map()
-  const rules = preset.rules.filter(r => r.enabled)
+function requestContext(options) {
+  const { preset, assets = {}, nativeMessages = [], inputIds = [], preview = false, signal, sessionId = '', turn = null, step = null } = options
+  // Legacy loader context also carries live Agent/scope services. Only macro data crosses the source API.
+  const macroData = Object.fromEntries(['user', 'character', 'lastUserMessage', 'lastAssistantMessage'].flatMap(key => typeof assets.context?.[key] === 'string' ? [[key, assets.context[key]]] : []))
+  return { preset: normalizePreset(preset), assets: { ...assets, context: macroData }, nativeMessages, inputIds, preview, signal, sessionId, turn, step }
+}
+/** Synchronous helper for synchronous sources; the Host uses the async counterpart. */
+export function assembleRequest(options) {
+  const registry = options.registry ?? createDefaultRegistry(), context = requestContext(options)
+  const resolution = registry.resolveSync(context)
+  return assembleResolved(options, resolution.context, resolution)
+}
+export async function assembleRequestAsync(options) {
+  const registry = options.registry ?? createDefaultRegistry(), context = requestContext(options)
+  const resolution = await registry.resolve(context)
+  return assembleResolved(options, resolution.context, resolution)
+}
+function assembleResolved({ preset: suppliedPreset, previous = null, snapshots = [], maxBytes = 2 * 1024 * 1024 }, request, resolution) {
+  const { preset, assets, nativeMessages, inputIds, preview } = request
+  const rules = preset.rules.filter(r => r.enabled), entries = resolution.resolved
+  const byRule = new Map(entries.map(e => [e.rule.id, e])), bySource = new Map(entries.map(e => [e.descriptor.id, e]))
   const enabled = kind => rules.some(r => r.kind === kind)
-  const nodes = [], deferred = [], usedNative = new Set(), claimed = new Set(inputIds)
-  const nativeSystem = nativeMessages.filter(m => m.role === 'system')
-  const history = nativeMessages.filter(m => m.role !== 'system' && !claimed.has(m.id))
-  const input = nativeMessages.filter(m => claimed.has(m.id) && m.role !== 'system')
-  const lore = assets.loreEntries ?? []
-  const lookupRule = kind => rules.find(r => r.kind === kind)
-  const claimField = (key, owner) => consumed.set(key, owner)
-  function render(text, owner, children = []) {
-    const expanded = String(text ?? '').replace(/\{\{\s*([^{}]+?)\s*\}\}/g, (whole, name) => {
-      const key = fieldMacros[name]
-      if (!key) return whole
-      claimField(key, owner)
-      children.push({ id: `${owner}:${key}:${children.length}`, name: key, locked: true, lockReason: `macro:${name}`, source: source(key === 'persona' ? 'user' : 'character', key === 'persona' ? user?.id : assets.character?.id, key), text: fields[key], stability: 'asset', lifetime: 'request' })
-      return fields[key]
-    })
-    const unsupported = [...expanded.matchAll(/\{\{\s*([^{}]+?)\s*\}\}/g)].map(m => m[1]).filter(m => !/^(user|char|lastusermessage|lastcharmessage|trim|random::|roll |setvar::|getvar::|\/\/)/i.test(m))
-    for (const macro of unsupported) diagnostics.push({ code: 'UNSUPPORTED_MACRO', macro, owner })
-    return renderSillyTavernMacros(expanded, context, variables)
+  const diagnostics = structuredClone(assets.diagnostics ?? []).filter(d => !(preset.placement === 'st' && d.code === 'WORLD_BOOK_POSITION_APPROXIMATED' && d.originalPosition === 'at_depth'))
+  diagnostics.push(...resolution.diagnostics, ...entries.flatMap(e => e.diagnostics ?? []))
+  const data = assets.character?.data ?? {}, context = { ...assets.context, user: assets.user?.name ?? assets.context?.user ?? 'User', character: data.nickname || data.name || assets.character?.name || 'Assistant',
+    lastUserMessage: textOf(nativeMessages.findLast(m => m.role === 'user' && (m.source?.kind === 'user' || !m.source)) ?? {}), lastAssistantMessage: textOf(nativeMessages.findLast(m => m.role === 'assistant') ?? {}), ...(preview ? { random: () => 0.5 } : {}) }
+  const variables = new Map(), macros = new Map(), claims = new Map(), nodes = [], deferred = [], nativeById = new Map(nativeMessages.map(m => [m.id, m])), requiredNative = new Set()
+  const key = (entry, block) => `${entry.rule.id}:${block.id}`
+  const origin = (entry, block) => ({ plugin: entry.descriptor.pluginId, module: entry.descriptor.id, sourceId: entry.descriptor.id, version: entry.descriptor.version, resourceId: block.source?.resourceId ?? null, field: block.source?.field ?? block.id,
+    generationRequiresPlugin: entry.descriptor.generationRequiresPlugin, recordedContentSurvivesRemoval: true })
+  for (const entry of entries) for (const [name, blockId] of Object.entries(entry.macros ?? {})) {
+    const block = entry.blocks.find(b => b.id === blockId && b.type === 'text')
+    if (!block || macros.has(name)) throw new TypeError(`Invalid or duplicate source macro: ${name}`)
+    macros.set(name, { entry, block })
   }
-  function add(rule, suffix, raw, src, { role = 'system', depth = rule.depth, locked = false, lockReason = null, children = [], stability = 'asset' } = {}) {
-    const id = `${rule.id}:${suffix}`
-    const text = render(raw, id, children)
-    if (!text) return
-    const actualRole = rule.role === 'preserve' ? role : rule.role
-    const contentHash = hash({ text, role: actualRole })
-    // Deterministic per-content ids let unchanged injected messages retain identity.
-    const msg = message(actualRole, text, `tavern-${hash({ id, contentHash }).slice(0, 32)}`)
-    const node = { id, ruleId: rule.id, module: rule.kind, name: assets.preset?.prompts?.find(p => `preset:${p.identifier}` === suffix)?.name || (src.module === 'world-book' ? lore.find(e => String(e.uid ?? e.id) === src.field)?.comment : null) || suffix, role: actualRole, text, messages: [msg], source: src, stability: /\{\{\s*(random::|roll |getvar::)/i.test(raw) ? 'evaluation' : /last(user|char)message/i.test(raw) ? 'conversation' : stability,
-      lifetime: rule.lifetime, recorded: true, locked, lockReason, children, hash: contentHash, depth,
-      changed: previous?.nodes?.find(n => n.id === id)?.hash !== contentHash }
-    if (depth !== null && depth !== undefined) deferred.push(node)
-    else nodes.push(node)
-  }
-  function addNative(kind, owner, locked = false) {
-    if (!enabled(kind) || usedNative.has(kind)) return
-    usedNative.add(kind)
-    const messages = kind === 'native-system' ? nativeSystem : kind === 'history' ? history : input
-    if (!messages.length) return
-    const children = kind === 'native-system' ? (assets.officialSections ?? []).map((section, index) => ({ id: `official:${index}`, name: section.name, text: section.text, locked: true, lockReason: 'native-system-section', source: { plugin: section.plugin ?? section.source?.plugin ?? (section.name === 'rp:policy' || section.name?.startsWith('pmp-dsh-tavern:') ? 'pmp-dsh-tavern' : null), providedBy: 'DSH', section: section.name, generationRequiresPlugin: null, recordedContentSurvivesRemoval: true } }))
-      : messages.map(m => ({ id: m.id, name: m.role, text: textOf(m), locked: true, lockReason: 'native-message', source: { plugin: m.source?.plugin ?? 'DSH', sourceKind: m.source?.kind ?? 'unknown', generationRequiresPlugin: Boolean(m.source?.plugin), recordedContentSurvivesRemoval: true } }))
-    nodes.push({ id: `${owner}:${kind}`, module: kind, name: kind, role: 'preserve', messages, text: messages.map(textOf).join('\n\n'), source: source('native', null, kind), stability: kind === 'native-system' ? 'assembly' : 'conversation', lifetime: 'native', recorded: true, locked, lockReason: locked ? 'preset:chatHistory' : null, children, hash: hash(messages), changed: previous?.nodes?.find(n => n.module === kind)?.hash !== hash(messages) })
-  }
-  function addField(rule, key, owner, locked = false) {
-    if (consumed.has(key)) return
-    claimField(key, owner)
-    add(rule, owner, fields[key], source(key === 'persona' ? 'user' : 'character', key === 'persona' ? user?.id : assets.character?.id, key), { locked, lockReason: locked ? `marker:${owner}` : null })
-  }
-  function addLore(rule, position, owner, locked = false) {
-    const key = `lore:${position}`
-    if (consumed.has(key)) return
-    claimField(key, owner)
-    for (const entry of lore.filter(e => (e.position ?? 'after') === position)) {
-      const atDepth = preset.placement === 'st' && entry.requestedPosition === 'at_depth'
-      add(rule, `worldbook:${entry.id ?? entry.uid}`, entry.content, source('world-book', entry.resourceId, String(entry.uid ?? entry.id)), { stability: entry.constant ? 'asset' : 'conversation', locked, lockReason: locked ? `marker:${owner}` : null, depth: atDepth ? entry.depth ?? 0 : rule.depth, role: entry.role ?? 'system' })
+  const roots = rules.flatMap(rule => (byRule.get(rule.id)?.blocks ?? []).filter(b => !b.referenceOnly).map(block => ({ entry: byRule.get(rule.id), block })))
+  // Claims are determined before list placement. A reference has the same effect
+  // whether its fallback source is before or after it in the user's strategy.
+  for (const { entry, block } of roots) {
+    const owner = key(entry, block)
+    for (const claim of block.claims ?? []) {
+      const target = bySource.get(claim.sourceId), item = target?.blocks.find(b => b.id === claim.blockId)
+      if (item && !claims.has(key(target, item))) claims.set(key(target, item), owner)
+    }
+    if (block.type === 'text') for (const match of block.text.matchAll(/\{\{\s*([^{}]+?)\s*\}\}/g)) {
+      const target = macros.get(match[1]); if (target && !claims.has(key(target.entry, target.block))) claims.set(key(target.entry, target.block), owner)
     }
   }
-  // Process preset references before fallbacks, irrespective of the fallback's visual position.
-  const presetRule = lookupRule('preset')
-  const presetNodes = []
-  if (presetRule) {
-    for (const prompt of assets.preset?.prompts ?? []) {
-      if (!prompt.enabled) continue
-      const identifier = prompt.identifier, owner = `preset:${identifier}`
-      if (prompt.marker) {
-        if (preset.placement !== 'st') continue
-        if (markerFields[identifier]) addField(presetRule, markerFields[identifier], owner, true)
-        else if (identifier === 'chatHistory') { addNative('history', owner, true); addNative('input', owner, true) }
-        else if (identifier === 'worldInfoBefore' || identifier === 'worldInfoAfter') { if (enabled('worldbook')) addLore(lookupRule('worldbook'), identifier === 'worldInfoBefore' ? 'before' : 'after', owner, true) }
-        else diagnostics.push({ code: 'UNSUPPORTED_MARKER', owner })
-        continue
-      }
-      let raw = prompt.content ?? ''
-      if (identifier === 'main' && fields.system && !prompt.st?.forbid_overrides) { raw = fields.system.replace(/\{\{\s*original\s*\}\}/gi, raw); claimField('system', owner) }
-      if (identifier === 'jailbreak' && fields.phi && !prompt.st?.forbid_overrides) { raw = fields.phi.replace(/\{\{\s*original\s*\}\}/gi, raw); claimField('phi', owner) }
-      const references = [...raw.matchAll(/\{\{\s*(chatHistory|history|input|worldInfoBefore|worldInfoAfter|worldInfo)\s*\}\}/g)]
-      if (references.length) {
-        let offset = 0
-        for (const ref of references) {
-          add(presetRule, `${owner}:text:${offset}`, raw.slice(offset, ref.index), source('preset', assets.preset?.id, identifier), { role: prompt.role ?? 'system' })
-          if (['chatHistory', 'history'].includes(ref[1])) { addNative('history', owner, true); if (ref[1] === 'chatHistory') addNative('input', owner, true) }
-          else if (ref[1] === 'input') addNative('input', owner, true)
-          else if (enabled('worldbook')) {
-            if (ref[1] !== 'worldInfoAfter') addLore(lookupRule('worldbook'), 'before', owner, true)
-            if (ref[1] !== 'worldInfoBefore') addLore(lookupRule('worldbook'), 'after', owner, true)
-          }
-          offset = ref.index + ref[0].length
-        }
-        add(presetRule, `${owner}:text:${offset}`, raw.slice(offset), source('preset', assets.preset?.id, identifier), { role: prompt.role ?? 'system' })
-        continue
-      }
-      if (preset.placement !== 'st' && identifier === 'jailbreak' && enabled('phi')) {
-        add(lookupRule('phi'), owner, raw, source('preset', assets.preset?.id, identifier), { role: prompt.role ?? 'system' })
-        presetNodes.push(...nodes.splice(0)); continue
-      }
-      add(presetRule, owner, raw, source('preset', assets.preset?.id, identifier), { role: prompt.role ?? 'system', depth: preset.placement === 'st' && prompt.injectionPosition === 1 ? prompt.injectionDepth ?? 0 : presetRule.depth })
+  const missingReferences = new Set()
+  function targets(block) {
+    const entry = bySource.get(block.sourceId)
+    if (!entry) { if (!missingReferences.has(block.sourceId)) { missingReferences.add(block.sourceId); diagnostics.push({ code: 'ASSEMBLY_REFERENCE_UNAVAILABLE', sourceId: block.sourceId }) }; return [] }
+    if (block.honorEnabled !== false && !enabled(block.sourceId)) return []
+    return entry.blocks.filter(b => (!block.blockIds || block.blockIds.includes(b.id)) && (!block.group || b.group === block.group) && (block.blockIds || !b.referenceOnly)).map(b => ({ entry, block: b }))
+  }
+  function claimReferences(entry, block, path = new Set()) {
+    if (block.type !== 'reference') return
+    const owner = key(entry, block)
+    if (path.has(owner)) throw new TypeError('Cyclic source block reference')
+    const next = new Set([...path, owner])
+    for (const target of targets(block)) {
+      const id = key(target.entry, target.block)
+      if (!claims.has(id)) { claims.set(id, owner); claimReferences(target.entry, target.block, next) }
+      else if (next.has(id)) throw new TypeError('Cyclic source block reference')
     }
   }
-  const prebuilt = [...presetNodes, ...nodes.splice(0)]
-  for (const rule of rules) {
-    if (['native-system', 'history', 'input'].includes(rule.kind)) addNative(rule.kind, rule.id)
-    else if (rule.kind === 'preset') nodes.push(...prebuilt.filter(n => n.module !== 'phi'))
-    else if (rule.kind === 'persona') addField(rule, 'persona', 'persona')
-    else if (rule.kind === 'character') {
-      for (const key of ['system', 'description', 'personality', 'scenario', 'examples']) addField(rule, key, key)
-      if (assets.includeGreetingReference) {
-        const index = selection.greetingIndex ?? 0
-        const greeting = index > 0 ? (data.alternateGreetings ?? data.alternate_greetings ?? [])[index - 1] : data.firstMessage ?? data.first_mes
-        add(rule, 'greeting', greeting, source('character', assets.character?.id, 'greeting'), { role: 'assistant' })
+  for (const { entry, block } of roots) claimReferences(entry, block)
+  const emitted = new Set(), plans = new Map(rules.map(r => [r.id, []]))
+  function emit(entry, block, effectiveRule = entry.rule, reference = null, path = new Set()) {
+    const identity = key(entry, block), owner = reference?.owner
+    if ((claims.has(identity) && claims.get(identity) !== owner) || emitted.has(identity)) return
+    if (path.has(identity)) throw new TypeError('Cyclic source block reference')
+    const next = new Set([...path, identity])
+    emitted.add(identity)
+    if (block.type === 'reference') {
+      for (const target of targets(block)) {
+        const targetRule = block.useOwnerRule ? effectiveRule : target.entry.rule
+        emit(target.entry, target.block, targetRule, { owner: identity, placementRule: reference?.placementRule ?? effectiveRule.id, locked: block.lock !== false, reason: `reference:${block.owner ?? block.id}` }, next)
       }
-      const dp = data.extensions?.depth_prompt
-      if (dp?.prompt) add(rule, 'depth_prompt', dp.prompt, source('character', assets.character?.id, 'depth_prompt'), { depth: preset.placement === 'st' ? dp.depth ?? 4 : rule.depth, role: dp.role ?? 'system' })
-    } else if (rule.kind === 'worldbook') { addLore(rule, 'before', 'worldbook'); addLore(rule, 'after', 'worldbook') }
-    else if (rule.kind === 'phi') { nodes.push(...prebuilt.filter(n => n.module === 'phi')); addField(rule, 'phi', 'phi'); add(rule, 'additional-phi', rule.text, source('custom', suppliedPreset.id, rule.id)) }
-    else if (rule.kind === 'custom') add(rule, rule.name || 'custom', rule.text, source('custom', suppliedPreset.id, rule.id), { role: 'system' })
+      return
+    }
+    const targetRule = block.targetSourceId ? rules.find(r => r.kind === block.targetSourceId) ?? effectiveRule : effectiveRule
+    let messages, rendered, children = structuredClone(block.children ?? []), role, lifetime, contentHash
+    if (block.type === 'native') {
+      messages = block.messageIds.map(id => { const msg = nativeById.get(id); if (!msg) throw new TypeError(`Unknown native message: ${id}`); requiredNative.add(id); return msg })
+      if (!messages.length) return
+      rendered = messages.map(textOf).join('\n\n'); role = 'preserve'; lifetime = 'native'; contentHash = hash(messages)
+    } else {
+      const expanded = block.text.replace(/\{\{\s*([^{}]+?)\s*\}\}/g, (whole, name) => {
+        const target = macros.get(name)
+        if (!target) return whole
+        children.push({ id: `${identity}:${name}:${children.length}`, name: target.block.id, locked: true, lockReason: `macro:${name}`, source: origin(target.entry, target.block), text: target.block.text, stability: target.entry.descriptor.stability, lifetime: 'request' })
+        return target.block.text
+      })
+      for (const m of expanded.matchAll(/\{\{\s*([^{}]+?)\s*\}\}/g)) if (!/^(user|char|lastusermessage|lastcharmessage|trim|random::|roll |setvar::|getvar::|\/\/)/i.test(m[1])) diagnostics.push({ code: 'UNSUPPORTED_MACRO', macro: m[1], owner: identity })
+      rendered = renderSillyTavernMacros(expanded, context, variables)
+      if (!rendered) return
+      role = targetRule.role === 'preserve' ? block.role ?? 'system' : targetRule.role
+      lifetime = targetRule.lifetime; contentHash = hash({ text: rendered, role })
+      messages = [message(role, rendered, `tavern-${hash({ id: identity, contentHash }).slice(0, 32)}`)]
+    }
+    const depth = block.depth ?? targetRule.depth
+    const node = { id: identity, ruleId: targetRule.id, module: targetRule.kind, name: block.name || block.id, role, text: rendered, messages, source: origin(entry, block),
+      stability: /\{\{\s*(random::|roll |getvar::)/i.test(block.text ?? '') ? 'evaluation' : /last(user|char)message/i.test(block.text ?? '') ? 'conversation' : block.stability ?? entry.descriptor.stability,
+      lifetime, recorded: true, locked: reference?.locked ?? false, lockReason: reference?.locked ? reference.reason : null, children, hash: contentHash, depth, changed: previous?.nodes?.find(n => n.id === identity)?.hash !== contentHash }
+    if (depth != null) deferred.push(node)
+    else (plans.get(block.targetSourceId ? targetRule.id : reference?.placementRule ?? targetRule.id) ?? []).push(node)
   }
+  // Evaluate in list order; explicit claims already exclude fallback duplicates.
+  for (const { entry, block } of roots) emit(entry, block)
+  for (const rule of rules) nodes.push(...plans.get(rule.id))
   // Resolve placement before lifetime so depth rules and list rules share retention.
   for (const node of deferred) {
     const flat = nodes.flatMap(n => n.messages)
@@ -190,7 +163,7 @@ export function assembleRequest({ preset: suppliedPreset, assets = {}, nativeMes
   }
   // Native markers are nested in the preset output, not dropped from the request.
   let messages = [], expanded = []
-  const snapshotRules = rules.filter(r => r.lifetime === 'snapshot')
+  const snapshotRules = rules.filter(r => r.lifetime === 'snapshot' && byRule.has(r.id))
   const nextSnapshots = snapshots.filter(s => snapshotRules.some(r => r.id === s.ruleId))
   const handledSnapshots = new Set()
   for (const node of nodes) {
@@ -228,7 +201,7 @@ export function assembleRequest({ preset: suppliedPreset, assets = {}, nativeMes
       locked: true, lockReason: 'retained-snapshot', hash: snapshot.hash, children: [] })
   }
   const seenNative = messages.filter(m => nativeMessages.some(n => n.id === m.id)).map(m => m.id)
-  const required = nativeMessages.filter(m => enabled(m.role === 'system' ? 'native-system' : claimed.has(m.id) ? 'input' : 'history')).map(m => m.id)
+  const required = [...requiredNative]
   if (required.length !== seenNative.length || new Set(seenNative).size !== required.length) throw new Error('Assembly must include each enabled native message exactly once')
   const openCalls = new Set()
   for (const msg of messages) {
@@ -247,6 +220,6 @@ export function assembleRequest({ preset: suppliedPreset, assets = {}, nativeMes
   messages = messages.map(m => { if (!ids.has(m.id)) { ids.add(m.id); return m }; return { ...m, id: randomUUID() } })
   expanded = expanded.map(node => ({ ...node, start: messages.findIndex(m => m.id === (node.messages?.[0]?.id)), count: node.messages?.length ?? node.count })).sort((a, b) => a.start - b.start)
   return { messages, nodes: expanded.map(({ messages: omitted, ...node }) => node), snapshots: nextSnapshots,
-    diagnostics, extraBytes, preset: { id: suppliedPreset.id ?? null, name: preset.name, revision: hash(preset) },
+    diagnostics, sources: entries.map(e => e.descriptor), extraBytes, preset: { id: suppliedPreset.id ?? null, name: preset.name, revision: hash(preset) },
     preview, toolsSeparate: true, evaluatedAt: 'request-assembly', compatibility: preset.placement === 'st' ? 'ST ordering, roles, supported macros and depths; not full ST runtime parity' : null }
 }

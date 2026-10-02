@@ -25,6 +25,13 @@ test('assembly API keeps edits distinct from apply, rejects running/unsupported 
       const res = { setHeader() {}, end(text) { result = { status: this.statusCode, ...JSON.parse(text) } } }
       await handler(req, res); return result
     }
+    const catalog = await call('')
+    assert.equal(catalog.sourceProtocolVersion, 1); assert.equal(catalog.capability, false)
+    assert.equal(catalog.sources.length, 9)
+    assert.equal(catalog.sources.find(s => s.id === 'native-system').pluginId, 'DSH')
+    const unregister = runtime.registry.register({ id: 'example.memory', pluginId: 'example.memory', name: 'Memory', resolve: () => ({ blocks: [] }) })
+    assert.ok((await call('')).sources.some(s => s.id === 'example.memory'))
+    unregister()
     const created = await call('', 'POST', BUILTINS[1]); assert.equal(created.status, 201)
     const id = created.preset.id
     assert.equal(store.selection('session'), null)

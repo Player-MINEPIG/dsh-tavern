@@ -17,7 +17,8 @@
     "./session-template": "./packages/session-template/src/index.js",
     "./client": "./dist/client.js",
     "./identity": "./packages/identity.js",
-    "./package.json": "./package.json"
+    "./package.json": "./package.json",
+    "./request-assembler": "./packages/request-assembler/index.js"
   },
   "files": [
     "screenshots.json",

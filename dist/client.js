@@ -3447,16 +3447,13 @@ function normalizePreset(value) {
   const ids = /* @__PURE__ */ new Set(), kinds = /* @__PURE__ */ new Set();
   const rules = value.rules.map((rule) => {
     if (!rule || !/^[a-zA-Z0-9_-]{1,80}$/.test(rule.id) || ids.has(rule.id)) throw new TypeError("Rule ids must be unique");
-    if (!MODULES.includes(rule.kind) || rule.kind !== "custom" && kinds.has(rule.kind)) throw new TypeError("Invalid or duplicate module");
+    if (typeof rule.kind !== "string" || !/^[a-zA-Z0-9][a-zA-Z0-9_.:/-]{0,159}$/.test(rule.kind)) throw new TypeError("Invalid or duplicate module");
     ids.add(rule.id);
     kinds.add(rule.kind);
     const role2 = rule.role ?? "preserve", lifetime = rule.lifetime ?? "request";
     if (!["preserve", "system", "user", "assistant"].includes(role2)) throw new TypeError("Invalid role");
     if (!["request", "snapshot"].includes(lifetime)) throw new TypeError("Invalid lifetime");
-    if (["native-system", "history", "input"].includes(rule.kind) && (role2 !== "preserve" || lifetime !== "request")) throw new TypeError("Native modules retain their roles and request lifetime");
-    if (rule.kind === "preset" && lifetime !== "request") throw new TypeError("Preset placement markers require request lifetime");
     if (rule.depth !== void 0 && rule.depth !== null && (!Number.isInteger(rule.depth) || rule.depth < 0 || rule.depth > 1e4)) throw new TypeError("Invalid insertion depth");
-    if (["native-system", "history", "input"].includes(rule.kind) && rule.depth != null) throw new TypeError("Native module positions are controlled by the list or references");
     if (typeof (rule.text ?? "") !== "string" || (rule.text ?? "").length > 524288) throw new TypeError("Custom text exceeds limit");
     return { id: rule.id, kind: rule.kind, enabled: rule.enabled !== false, role: role2, lifetime, depth: rule.depth ?? null, text: rule.text ?? "", name: typeof rule.name === "string" ? rule.name.slice(0, 200) : "" };
   });
@@ -3516,6 +3513,9 @@ var labels = {
   actual: ["\u67E5\u770B\u6700\u8FD1\u5B9E\u9645\u8BF7\u6C42", "View latest actual request"],
   noActual: ["\u6682\u65E0\u65B0\u7248\u88C5\u914D\u8BF7\u6C42\u8BB0\u5F55", "No request assembly record yet"],
   actualNotice: ["\u4EE5\u4E0B\u662F\u8F68\u8FF9\u4FDD\u5B58\u7684\u5B9E\u9645\u8BF7\u6C42\uFF0C\u4FEE\u6539\u5F53\u524D\u9884\u8BBE\u4E0D\u4F1A\u6539\u53D8\u5B83\u3002", "This is the recorded request. Editing the preset does not change it."],
+  addSource: ["\u6DFB\u52A0\u5185\u5BB9\u6765\u6E90", "Add content source"],
+  chooseSource: ["\u9009\u62E9\u5DF2\u6CE8\u518C\u6765\u6E90\u2026", "Choose a registered source\u2026"],
+  missingSource: ["\u6765\u6E90\u63D2\u4EF6\u672A\u5B89\u88C5\u6216\u672A\u6CE8\u518C\uFF1B\u672C\u6B21\u8BF7\u6C42\u8DF3\u8FC7\u6B64\u6A21\u5757\u3002", "Source unavailable; this module is omitted from the request."],
   title: ["\u63D0\u793A\u8BCD\u88C5\u914D\u7B56\u7565", "Prompt assembly strategy"],
   intro: ["\u5B89\u6392\u5185\u5BB9\u5982\u4F55\u8FDB\u5165\u6BCF\u6B21\u6A21\u578B\u8BF7\u6C42\u3002\u9884\u89C8\u5F53\u524D\u8D44\u4EA7\u3001\u5B8F\u5F15\u7528\u548C\u5B9E\u9645\u987A\u5E8F\u3002", "Arrange each model request. Preview assets, macro references and message order."],
   import: ["\u5BFC\u5165", "Import"],
@@ -3582,7 +3582,6 @@ var labels = {
   phi: ["PHI \xB7 \u540E\u7F6E\u6307\u4EE4", "Post-history instructions"],
   custom: ["\u81EA\u5B9A\u4E49\u5185\u5BB9", "Custom content"]
 };
-var plugins = { "native-system": "DSH", history: "DSH", input: "DSH", preset: "pmp-dsh-tavern", character: "pmp-dsh-tavern", persona: "pmp-dsh-tavern", worldbook: "pmp-dsh-tavern", phi: "pmp-dsh-tavern", custom: "pmp-dsh-tavern" };
 function sourceColor(plugin) {
   if (!plugin) return "#999999";
   if (plugin === "DSH") return "#8192ad";
@@ -3591,7 +3590,6 @@ function sourceColor(plugin) {
   for (const c of plugin ?? "unknown") hash = hash * 31 + c.charCodeAt(0) | 0;
   return `hsl(${Math.abs(hash) % 360} 60% 62%)`;
 }
-var isNative = (kind) => ["native-system", "history", "input"].includes(kind);
 async function request(path2 = "", method = "GET", body2) {
   const res = await tavernFetch(`${API_V1}/assembly-presets${path2}`, { method, headers: { "Content-Type": "application/json" }, ...body2 === void 0 ? {} : { body: JSON.stringify(body2) } });
   const data = await res.json();
@@ -3611,6 +3609,7 @@ function AssemblyPanel(props) {
 }
 function AssemblyPanelContent({ sessionId, close: close2, registerBeforeLeave, chromeMode }) {
   const locale = getClientUiSettings().locale === "zh-CN" ? 0 : 1, t = (key2) => labels[key2]?.[locale] ?? key2;
+  const [sources, setSources] = (0, import_react.useState)([]);
   const [items, setItems] = (0, import_react.useState)([]), [draft, setDraft] = (0, import_react.useState)(null), [selection, setSelection] = (0, import_react.useState)(null), [capable, setCapable] = (0, import_react.useState)(false);
   const [status, setStatus] = (0, import_react.useState)(""), [error, setError] = (0, import_react.useState)(false), [busy, setBusy] = (0, import_react.useState)(false), [tab, setTab] = (0, import_react.useState)("rules"), [preview, setPreview] = (0, import_react.useState)(null), [dirty, setDirty] = (0, import_react.useState)(false), [expanded, setExpanded] = (0, import_react.useState)({});
   const file = (0, import_react.useRef)(), dialog = (0, import_react.useRef)(), generation = (0, import_react.useRef)(0), mounted = (0, import_react.useRef)(true);
@@ -3643,6 +3642,7 @@ function AssemblyPanelContent({ sessionId, close: close2, registerBeforeLeave, c
       setItems(data.presets);
       setSelection(data.selection);
       setCapable(data.capability);
+      setSources(data.sources ?? []);
       setDraft(data.presets.find((p) => p.id === data.selection?.id) ?? data.presets[0]);
       setPreview(null);
       setDirty(false);
@@ -3658,6 +3658,7 @@ function AssemblyPanelContent({ sessionId, close: close2, registerBeforeLeave, c
       const data = await api6(`?sessionId=${encodeURIComponent(sessionId ?? "")}`);
       setSelection(data.selection);
       setCapable(data.capability);
+      setSources(data.sources ?? []);
     });
     window.addEventListener(CLIENT_REFRESH_EVENT, refresh);
     return () => window.removeEventListener(CLIENT_REFRESH_EVENT, refresh);
@@ -3709,7 +3710,10 @@ function AssemblyPanelContent({ sessionId, close: close2, registerBeforeLeave, c
     return node.name;
   };
   const originName = (plugin) => plugin === "DSH" ? "DSH" : plugin === "pmp-dsh-tavern" || plugin?.startsWith("pmp-dsh-tavern/") ? "DSH Tavern" : plugin ?? (locale === 0 ? "\u6765\u6E90\u672A\u77E5" : "Unknown source");
-  const sourceInfo = (kind) => t(isNative(kind) ? "nativeSource" : "removed");
+  const sourceDescriptor = (kind) => sources.find((s) => s.id === kind);
+  const sourcePlugin = (kind) => sourceDescriptor(kind)?.pluginId ?? null;
+  const sourceName = (kind) => labels[kind] ? t(kind) : sourceDescriptor(kind)?.name ?? kind;
+  const sourceInfo = (kind) => sourceDescriptor(kind)?.generationRequiresPlugin === false ? t("nativeSource") : t("removed");
   async function actualRequest() {
     const response = await tavernFetch(`${API_V3}/sessions/${encodeURIComponent(sessionId)}/assemblies`);
     if (!response.ok) throw new Error(`HTTP ${response.status}`);
@@ -3816,7 +3820,7 @@ function AssemblyPanelContent({ sessionId, close: close2, registerBeforeLeave, c
     }, movable ? "\u283F" : "\u{1F512}");
   }
   const placeholder = (index) => dragFrom !== null && dropIndex === index ? (0, import_react.createElement)("div", { key: `drop-${index}`, className: "dta-drop-placeholder" }, t("dropHere"), displayRows[dragFrom]?.name || t(displayRows[dragFrom]?.kind)) : null;
-  const ruleStability = (rule) => ["history", "input", "worldbook"].includes(rule.kind) ? "conversation" : rule.kind === "native-system" ? "assembly" : "asset";
+  const ruleStability = (rule) => sourceDescriptor(rule.kind)?.stability ?? "conversation";
   const summaryMetadata = (stability, lifetime, role2) => (0, import_react.createElement)(
     "dl",
     { className: "dta-summary-meta" },
@@ -3825,27 +3829,29 @@ function AssemblyPanelContent({ sessionId, close: close2, registerBeforeLeave, c
   function ruleRow(rule, index) {
     return (0, import_react.createElement)(
       "article",
-      { key: rule.id, className: "dta-row", "data-assembly-index": index, "data-dragging": dragFrom === index, style: { "--assembly-color": sourceColor(plugins[rule.kind]) } },
+      { key: rule.id, className: "dta-row", "data-assembly-index": index, "data-dragging": dragFrom === index, style: { "--assembly-color": sourceColor(sourcePlugin(rule.kind)) } },
       (0, import_react.createElement)(
         "div",
         { className: "dta-summary" },
         dragHandle(rule, index),
-        (0, import_react.createElement)("input", { type: "checkbox", checked: rule.enabled, disabled: busy, "aria-label": t(rule.kind), onChange: (e) => editRule(rule.id, { enabled: e.target.checked }) }),
+        (0, import_react.createElement)("input", { type: "checkbox", checked: rule.enabled, disabled: busy, "aria-label": sourceName(rule.kind), onChange: (e) => editRule(rule.id, { enabled: e.target.checked }) }),
         (0, import_react.createElement)("span", { className: "dta-name", role: "button", tabIndex: 0, "aria-expanded": !!expanded[rule.id], onClick: () => toggle(rule.id), onKeyDown: (e) => {
           if (["Enter", " "].includes(e.key)) {
             e.preventDefault();
             toggle(rule.id);
           }
-        } }, rule.name || t(rule.kind), (0, import_react.createElement)("small", { className: "dta-origin" }, originName(plugins[rule.kind]))),
+        } }, rule.name || sourceName(rule.kind), (0, import_react.createElement)("small", { className: "dta-origin" }, originName(sourcePlugin(rule.kind)))),
         summaryMetadata(ruleStability(rule), rule.lifetime, rule.role)
       ),
       expanded[rule.id] && (0, import_react.createElement)(
         "div",
         { className: "dta-detail" },
-        (0, import_react.createElement)("div", { className: "dta-properties" }, (0, import_react.createElement)("div", null, t("source"), (0, import_react.createElement)("small", null, originName(plugins[rule.kind])), (0, import_react.createElement)("small", null, sourceInfo(rule.kind))), (0, import_react.createElement)("div", null, t("stability"), (0, import_react.createElement)("small", null, t(ruleStability(rule)))), (0, import_react.createElement)("label", null, t("lifetime"), select(rule.lifetime, ["request", "snapshot"], (v2) => editRule(rule.id, { lifetime: v2 }), isNative(rule.kind) || rule.kind === "preset"))),
-        (0, import_react.createElement)("div", { className: "dta-grid" }, (0, import_react.createElement)("label", null, t("role"), select(rule.role, ["preserve", "system", "user", "assistant"], (v2) => editRule(rule.id, { role: v2 }), isNative(rule.kind))), !isNative(rule.kind) && (0, import_react.createElement)("label", null, t("depth"), (0, import_react.createElement)("input", { type: "number", min: 0, max: 1e4, value: rule.depth ?? "", onChange: (e) => editRule(rule.id, { depth: e.target.value === "" ? null : Number(e.target.value) }) }))),
+        (0, import_react.createElement)("div", { className: "dta-properties" }, (0, import_react.createElement)("div", null, t("source"), (0, import_react.createElement)("small", null, originName(sourcePlugin(rule.kind))), (0, import_react.createElement)("small", null, sourceInfo(rule.kind))), (0, import_react.createElement)("div", null, t("stability"), (0, import_react.createElement)("small", null, t(ruleStability(rule)))), (0, import_react.createElement)("label", null, t("lifetime"), select(rule.lifetime, sourceDescriptor(rule.kind)?.lifetimes ?? ["request", "snapshot"], (v2) => editRule(rule.id, { lifetime: v2 }), sourceDescriptor(rule.kind)?.lifetimes.length === 1))),
+        (0, import_react.createElement)("div", { className: "dta-grid" }, (0, import_react.createElement)("label", null, t("role"), select(rule.role, sourceDescriptor(rule.kind)?.roles ?? ["preserve", "system", "user", "assistant"], (v2) => editRule(rule.id, { role: v2 }), sourceDescriptor(rule.kind)?.roles.length === 1)), sourceDescriptor(rule.kind)?.depth !== false && (0, import_react.createElement)("label", null, t("depth"), (0, import_react.createElement)("input", { type: "number", min: 0, max: 1e4, value: rule.depth ?? "", onChange: (e) => editRule(rule.id, { depth: e.target.value === "" ? null : Number(e.target.value) }) }))),
         rule.kind === "phi" && (0, import_react.createElement)("div", null, (0, import_react.createElement)("p", null, t("phiHelp")), (0, import_react.createElement)("label", null, t("additional-phi"), (0, import_react.createElement)("textarea", { value: rule.text, onChange: (e) => editRule(rule.id, { text: e.target.value }) }))),
         rule.kind === "custom" && (0, import_react.createElement)("div", null, (0, import_react.createElement)("label", null, t("name"), (0, import_react.createElement)("input", { value: rule.name ?? "", onChange: (e) => editRule(rule.id, { name: e.target.value }) })), (0, import_react.createElement)("label", null, t("text"), (0, import_react.createElement)("textarea", { value: rule.text, onChange: (e) => editRule(rule.id, { text: e.target.value }) })), button("remove", () => edit({ rules: draft.rules.filter((r) => r.id !== rule.id) }))),
+        !sourceDescriptor(rule.kind) && (0, import_react.createElement)("small", { role: "status" }, t("missingSource")),
+        !["native-system", "history", "input", "preset", "character", "persona", "worldbook", "phi", "custom"].includes(rule.kind) && button("remove", () => edit({ rules: draft.rules.filter((r) => r.id !== rule.id) })),
         (0, import_react.createElement)("small", null, t("audit"))
       )
     );
@@ -3939,8 +3945,11 @@ function AssemblyPanelContent({ sessionId, close: close2, registerBeforeLeave, c
           setPreview(data.preview);
           setTab("expanded");
         })), button("actual", () => run(actualRequest), !sessionId)),
-        (0, import_react.createElement)("div", { className: "dta-legend" }, ...[...new Set(Object.values(plugins))].map((plugin) => (0, import_react.createElement)("span", { key: plugin, style: { "--assembly-color": sourceColor(plugin) } }, originName(plugin)))),
-        tab === "rules" ? (0, import_react.createElement)("div", null, (0, import_react.createElement)("label", { className: "dta-toolbar" }, t("placement"), select(draft.placement, ["modules", "st"], (placement) => edit({ placement }))), ...draft.rules.flatMap((row, i2) => [placeholder(i2), ruleRow(row, i2)]), placeholder(draft.rules.length), button("add", () => edit({ rules: [...draft.rules, { id: `custom-${Date.now()}`, kind: "custom", enabled: true, role: "system", lifetime: "request", depth: null, text: "", name: "" }] }))) : (0, import_react.createElement)("div", null, (0, import_react.createElement)("div", { className: "dta-notice" }, t(preview?.actual ? "actualNotice" : "previewScope")), !preview ? (0, import_react.createElement)("p", null, t("empty")) : (0, import_react.createElement)("div", null, ...preview.nodes.flatMap((node, i2) => [placeholder(i2), nodeRow(node, i2)]), placeholder(preview.nodes.length), (0, import_react.createElement)("details", null, (0, import_react.createElement)("summary", null, `${t("result")} (${preview.messages.length})`), ...preview.messages.map((m2, i2) => (0, import_react.createElement)("div", { key: `${m2.id}:${i2}`, className: "dta-child" }, `${i2 + 1} \xB7 ${m2.role}`, (0, import_react.createElement)("pre", null, (m2.content ?? []).map((b2) => b2.type === "text" ? b2.text : `[${b2.type}]`).join("\n"))))), preview.diagnostics.length > 0 && (0, import_react.createElement)("details", null, (0, import_react.createElement)("summary", null, t("diagnostics")), (0, import_react.createElement)("pre", null, JSON.stringify(preview.diagnostics, null, 2))))),
+        (0, import_react.createElement)("div", { className: "dta-legend" }, ...[...new Set(sources.map((s) => s.pluginId))].map((plugin) => (0, import_react.createElement)("span", { key: plugin, style: { "--assembly-color": sourceColor(plugin) } }, originName(plugin)))),
+        tab === "rules" ? (0, import_react.createElement)("div", null, (0, import_react.createElement)("label", { className: "dta-toolbar" }, t("placement"), select(draft.placement, ["modules", "st"], (placement) => edit({ placement }))), ...draft.rules.flatMap((row, i2) => [placeholder(i2), ruleRow(row, i2)]), placeholder(draft.rules.length), (0, import_react.createElement)("label", { className: "dta-toolbar" }, t("addSource"), (0, import_react.createElement)("select", { value: "", onChange: (e) => {
+          const source = sourceDescriptor(e.target.value);
+          if (source) edit({ rules: [...draft.rules, { id: `source-${crypto.randomUUID()}`, kind: source.id, enabled: true, role: source.roles[0], lifetime: source.lifetimes[0], depth: null, text: "", name: "" }] });
+        } }, (0, import_react.createElement)("option", { value: "" }, t("chooseSource")), ...sources.filter((s) => s.multiple || !draft.rules.some((r) => r.kind === s.id)).map((s) => (0, import_react.createElement)("option", { key: s.id, value: s.id }, `${sourceName(s.id)} \xB7 ${originName(s.pluginId)}`)))), button("add", () => edit({ rules: [...draft.rules, { id: `custom-${Date.now()}`, kind: "custom", enabled: true, role: "system", lifetime: "request", depth: null, text: "", name: "" }] }))) : (0, import_react.createElement)("div", null, (0, import_react.createElement)("div", { className: "dta-notice" }, t(preview?.actual ? "actualNotice" : "previewScope")), !preview ? (0, import_react.createElement)("p", null, t("empty")) : (0, import_react.createElement)("div", null, ...preview.nodes.flatMap((node, i2) => [placeholder(i2), nodeRow(node, i2)]), placeholder(preview.nodes.length), (0, import_react.createElement)("details", null, (0, import_react.createElement)("summary", null, `${t("result")} (${preview.messages.length})`), ...preview.messages.map((m2, i2) => (0, import_react.createElement)("div", { key: `${m2.id}:${i2}`, className: "dta-child" }, `${i2 + 1} \xB7 ${m2.role}`, (0, import_react.createElement)("pre", null, (m2.content ?? []).map((b2) => b2.type === "text" ? b2.text : `[${b2.type}]`).join("\n"))))), preview.diagnostics.length > 0 && (0, import_react.createElement)("details", null, (0, import_react.createElement)("summary", null, t("diagnostics")), (0, import_react.createElement)("pre", null, JSON.stringify(preview.diagnostics, null, 2))))),
         (0, import_react.createElement)("small", { style: { marginTop: 20 } }, t("tools"))
       )
     ))

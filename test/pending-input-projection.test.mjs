@@ -152,6 +152,7 @@ test('a single first agent step matches claimed input before profile assembly an
     on: (name, listener) => listeners.set(name, listener),
     emit: () => {},
     get: () => undefined,
+    provide(name, value) { this[name] = value },
     effect: () => {},
     logger: { info: () => {}, warn: () => {} },
   }

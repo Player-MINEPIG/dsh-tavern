@@ -79,6 +79,65 @@ node scripts/install.mjs --dsh-home /path/to/test-home --profile web --skip-buil
 
 导出直接序列化预设 JSON；预设格式 `dsh-tavern-request-assembly`、version 1，每条 rule 有 `id/kind/enabled/role/lifetime/depth/text/name`。不接受任意可执行脚本。`assembly-presets.json` 原子持久化，包含用户预设和应用快照，上限 8 MiB。实际请求复用 v3 assemblies detail 的 `requestAssembly`，没有第二套历史查询接口。
 
+
+## 统一内容来源 API（协议 1）
+
+Host 服务 `tavernRequestSources` 提供 `version`、`register(definition)` 和 `list()`。包入口为 `pmp-dsh-tavern/request-assembler`，附带 TypeScript 声明。原生指令、历史、本步输入、预设、角色、用户、世界书、PHI、自定义文本全部通过相同的 `register` 注册；引擎不按这些来源名称分发特殊装配路径。旧规则的 `kind` 保留为来源 ID，外部来源使用自己的命名空间，例如 `example.memory/recalled`。
+
+插件注册只是声明可选来源，不会自动修改用户策略或启用内容。设置页的「添加内容来源」读取同一目录；名称、颜色、稳定性、角色、保留方式和深度限制均来自注册描述。缺失插件的规则可以导入和保存，显示缺失状态；实际请求跳过其内容及旧保留快照，并记录 `ASSEMBLY_SOURCE_UNAVAILABLE`。插件返回错误或非法内容会使本次装配失败，不发送半成品。无关、未启用且未被依赖的来源不会解析。
+
+```js
+import { ASSEMBLY_SERVICE } from 'pmp-dsh-tavern/request-assembler'
+export const inject = [ASSEMBLY_SERVICE, 'myMemoryStore']
+export function apply(ctx) {
+  const sources = ctx.get(ASSEMBLY_SERVICE)
+  if (!sources || sources.version !== 1) throw new Error('Unsupported source protocol')
+  ctx.effect(() => sources.register({
+    id: 'example.memory/recalled',
+    pluginId: 'example.memory',
+    name: '检索记忆',
+    stability: 'conversation',
+    async resolve(context) {
+      // 插件拥有存储；装配阶段只读。预览也调用这里，不得触发记忆写入。
+      const rows = await ctx.get('myMemoryStore').search({
+        sessionId: context.sessionId,
+        messages: context.nativeMessages,
+        inputIds: context.inputIds,
+        signal: context.signal,
+      })
+      return { blocks: rows.map(row => ({
+        type: 'text', id: row.id, name: row.title, text: row.text,
+        role: 'system', source: { resourceId: row.id, field: 'text' },
+      })) }
+    },
+  }))
+}
+```
+
+示例中的 `myMemoryStore` 是接入方自己的服务，不由 Tavern 提供。`ctx.effect` 负责随插件卸载注销；已开始的请求固定使用当时的注册集合。插件 ID 是提供方声明的来源身份，不是安全隔离或签名认证。
+
+`resolve(context, rule)` 可以同步或异步，必须只读，并响应/传递 `signal`。上下文为分离且深冻结的数据：`sessionId`、`turn`、`step`、`preview`、`preset`、`assets`、`nativeMessages`、`inputIds`；不暴露可写 Agent/会话对象。预览的 turn/step 为 null，不含未发送输入。`assets` 是当前 Tavern 资产快照（preset、character、user、characterSelection、loreEntries、officialSections 及诊断）；它不是历史来源原文查询接口。宏上下文只包含公开字符串值。来源可自行读取自己的状态，但 MVU 更新、记忆写入和分支状态维护应跟随原生持久事件，不能在解析或预览中提交。
+
+描述字段：`id/pluginId/name` 必填；`version` 默认 1，`stability` 默认 conversation；`dependencies` 声明解析与引用所需来源，循环依赖拒绝；`multiple` 默认 false；`roles` 默认 preserve/system/user/assistant，`lifetimes` 默认 request/snapshot，`depth` 默认 true。原生来源使用 preserve/request 且禁用深度，预设来源只允许 request；这些限制也通过公开描述声明。规则结构校验与来源能力校验分开：可以保存缺失来源，但装配时必须满足已注册来源的能力。
+
+返回 `{blocks, macros?, diagnostics?}`。单个来源输出上限 8 MiB、10,000 个内容块，最终额外输入仍受 `maxProfileBytes` 限制。块 ID 在本来源的一条规则内必须稳定且唯一：
+
+| 块类型 | 字段与用途 |
+| --- | --- |
+| `text` | `id/text` 必填；可附 name、role、stability、source.resourceId/field；正文使用统一宏展开、角色、深度和保留流程 |
+| `native` | `id/messageIds` 引用本次原生消息，不复制或重写工具事务；原生来源也使用此类型 |
+| `reference` | `id/sourceId`，可用 blockIds 或 group 筛选；占据引用位置并锁定，避免目标回退块重复；被引用来源须在 dependencies 中声明 |
+
+`macros` 将宏名映射到本来源的 text 块 ID（如 `{recalled:'memory'}`）；使用 `{{recalled}}` 会生成来源子项并抑制原位置的回退块。重复宏名拒绝。块的 `referenceOnly:true` 表示只供引用，不独立输出。reference 默认遵守目标启用状态、保留目标规则；`honorEnabled:false` 允许显式资产引用，`useOwnerRule:true` 使用引用方规则，`lock:false` 可声明无需锁定。`claims:[{sourceId,blockId}]` 表示正文已包含/覆盖某个字段，`targetSourceId` 将正文送到已启用的目标模块位置；ST 的角色覆盖、PHI 与 marker 也使用这些公共原语。跨来源引用与宏会在列表放置之前确定，工具拓扑在最终输出统一校验。
+
+预览与实际请求都调用同一个来源注册表及装配引擎，不依赖 HTTP 回调执行动态插件。当前规则与来源目录通过既有 `GET /assembly-presets?sessionId=…` 返回（新增 `sources` 和 `sourceProtocolVersion`）；v3 capabilities 分别报告 `composerRegistry`、`sourceProtocolVersion`、`requestAssembly` 与 `arbitraryMessageDepth`，后两项取决于核心扩展。实际请求元数据保留来源描述和上游装配 metadata，历史查看不重新解析插件。
+
+### 触发范围与旧 loader 迁移
+
+钩子在 Agent 每次构建请求时执行：初次发送、工具后续步骤、运行中追加输入、子代理完成通知唤醒后的请求，以及同一宿主内子 Agent 的请求。子会话按 parentSession 继承应用快照。重试也可能再次装配；解析器不可假定每轮只运行一次。已冻结的请求不会被中途修改。直接调用 `llm.stream` 的标题等辅助任务不经过 Agent 钩子；其他进程/远端 provider 运行的子代理，只有其宿主同样安装扩展和插件才受此策略控制。
+
+保留原来的资源 CRUD、selection 和 `/active` 作为兼容接口；`/active` 仍是资产/配置摘要，不代表最终请求。旧 loader 在新版路径只做资产解析、世界书激活及参数适配，正文通过注册来源进入统一装配。旧的 `compileTavernProfile`/`compilePresetForDsh` 导出保留作兼容工具；它们不是动态来源接入口，未安装核心扩展时的旧 loader 回退不具备新版策略能力。第三方应使用上述来源 API，不依赖 `store.requestAssembler` 等内部对象。
+
 ## 验证
 
 ```sh

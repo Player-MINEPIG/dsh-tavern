@@ -79,6 +79,7 @@ test('root Tavern API dispatcher exposes user routes through the single secured 
     on: () => {},
     emit: () => {},
     get: name => name === 'webServer' ? { register: value => { route = value; return () => {} } } : undefined,
+    provide(name, value) { this[name] = value },
     effect: install => install(),
     logger: { info: () => {} },
   }
