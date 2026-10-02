@@ -221,10 +221,11 @@ test('official persisted empty session resumes through resolveAgent, while resum
     assert.deepEqual(resumed.session.snapshotEvents().map(event => ({ type: event.type, data: event.data })).at(-1), { type: 'session/end-seed', data: {} })
     assert.equal(resumed.session.header.isSeeded, false)
     assert.equal(resumed.session.snapshotEvents().length, 5)
-    const sourceIdentity = { version: 1, sha256: 'b'.repeat(64), scope }
-    second.ctx.provide('tavernRenderingAuthority', { resolve: async () => ({ valid: true, write: true, scope }), isCurrent: () => true })
+    const source = JSON.stringify({ version: 1, scope, runs: [], modules: {}, html: '<div>Synthetic resume</div>' })
+    const sourceIdentity = { version: 1, sha256: createHash('sha256').update(source).digest('hex'), scope }
+    const { grantId } = second.ctx.get('tavernRenderingAuthority').grant({ source, sourceIdentity, reviewed: true, write: true })
     second.service.registerUsage(() => ({ enabled: true, checkCurrent: () => true }))
-    const binding = await second.service.createCardBinding({ scope, sourceIdentity, grantId: 'synthetic' })
+    const binding = await second.service.createCardBinding({ scope, sourceIdentity, grantId })
     const request = { capability: binding.capability, operation: 'replace', value: { stat_data: { hp: 7 } }, expectedRevision: 0, operationId: 'resumed-opening', cause: 'user-interaction' }
     assert.equal((await second.service.cardWrite(request)).revision, 1)
     let timer
