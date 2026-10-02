@@ -303,3 +303,12 @@ export function applyDisplayRegex(text, rules, bindings, target = 'assistant', c
   }
   return { text: output, diagnostics }
 }
+
+export function applyGreetingDisplayRegex(text, rules, bindings, context = {}) {
+  const source = String(text ?? '')
+  if (source.trim() === '') return { text: source, diagnostics: [] }
+  const result = applyDisplayRegex(source, rules, bindings, 'assistant', context)
+  // Greetings can use display templates without following the model's output
+  // protocol. Preserve the opening if an output filter removes it entirely.
+  return { ...result, text: result.text.trim() === '' ? source : result.text }
+}

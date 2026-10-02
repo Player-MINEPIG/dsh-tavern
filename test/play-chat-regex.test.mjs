@@ -82,7 +82,7 @@ test('Chat automatically composes bound preset and character source regex', asyn
   assert.equal(messages.messages[1].text, 'Alice answers')
 })
 
-test('Chat does not apply assistant output regex to card greeting metadata', async () => {
+test('Chat preserves card greeting when assistant output filters remove it entirely', async () => {
   const client = {
     async getMessages() { return { incompleteTurn: false, messages: [] } },
     async getTimeline() { return { nodes: [] } },

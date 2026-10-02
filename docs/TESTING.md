@@ -123,6 +123,8 @@ node --test test/play-sessions.test.mjs
 
 ## 显示功能回归
 
+开场白显示正则运行 `node --test test/play-greeting-render.test.mjs test/play-chat-regex.test.mjs test/play-export.test.mjs` 和 `TAVERN_BROWSER_FIXTURE=./fixtures/greeting-browser.js node scripts/verify-rich-text-browser.mjs`。检查变量折叠、状态面板、全局／预设／角色规则顺序与过滤、深度、备选切换、空结果回退、原文不变，以及 HTML 显示与 JSONL 原文导出的区别。浏览器夹具覆盖 RP 消息组件及 opening dock 使用的富文本组件，完整 Host 中仍需核对原生／RP 切换与真实卡片。
+
 公式回归运行 `node --test test/play-math.test.mjs test/play-rich-text.test.mjs test/play-export.test.mjs`，以及 `TAVERN_BROWSER_FIXTURE=./fixtures/math-browser.js node scripts/verify-rich-text-browser.mjs`。检查四种分隔符、原生 MathML 分数/矩阵布局、金额与转义、强调/表格/折叠混用、HTML 属性和代码保留、样式隔离、宽公式滚动、流式闭合与历史 DOM 保留、错误回退、宏隔离、恶意 TeX/MathML 清洗和离线 HTML 导出。此夹具使用实际消息组件但不替代完整 DSH Host 验收；在目标 Web/桌面 Host 继续核对 RP 正文、开场白、显示编辑与原生切换，旧浏览器的 MathML 支持另行验证。
 
 执行 `node --test test/presentation.test.mjs test/api-fetch.test.mjs test/api-security.test.mjs` 与现有完整检查。有 Chrome 时分别执行 `node scripts/verify-rich-text-browser.mjs` 和 `TAVERN_BROWSER_FIXTURE=./fixtures/presentation-browser.js node scripts/verify-rich-text-browser.mjs`。后者检查真实 DOM 更新、建议消息显式确认、未变化卡片状态、生命周期销毁、流式禁止执行、配额、父页面/网络接口拒绝、净化、头像和气泡。

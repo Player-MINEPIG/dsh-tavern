@@ -28109,6 +28109,12 @@ function applyDisplayRegex(text3, rules, bindings, target = "assistant", context
   }
   return { text: output, diagnostics };
 }
+function applyGreetingDisplayRegex(text3, rules, bindings, context = {}) {
+  const source = String(text3 ?? "");
+  if (source.trim() === "") return { text: source, diagnostics: [] };
+  const result = applyDisplayRegex(source, rules, bindings, "assistant", context);
+  return { ...result, text: result.text.trim() === "" ? source : result.text };
+}
 
 // packages/client/src/play/turns.js
 function recordedEndSeq2(timeline, sessionId) {
@@ -28447,6 +28453,16 @@ async function loadChatState(client, sessionId, playthrough) {
   }
   const rootMessages = messagesBySession[sessionId];
   const importMutable = (timeline?.nodes?.length ?? 0) === 0 && rootMessages?.incompleteTurn !== true && !(rootMessages?.messages ?? []).some((message) => message?.role === "user" || message?.role === "assistant") && importedContext.binding?.state !== "consumed";
+  const displayGreeting = importedTurns.length > 0 || greeting === null ? null : {
+    ...greeting,
+    ...applyGreetingDisplayRegex(
+      applyDisplayNameMacros(greeting.text, macros2),
+      rules,
+      bindings,
+      { depth }
+    )
+  };
+  regexDiagnostics.push(...displayGreeting?.diagnostics ?? []);
   return {
     avatars: { user: userSelection?.user?.avatar ?? null, assistant: characterAvatarUrl(characterId) },
     pendingSwipeError: pending2?.error ?? null,
@@ -28455,14 +28471,7 @@ async function loadChatState(client, sessionId, playthrough) {
     importBinding: importedContext.binding,
     importContext: importedContext.document,
     importMutable,
-    greeting: importedTurns.length > 0 ? null : greeting === null ? null : {
-      ...greeting,
-      // A greeting is card metadata shown before the first durable turn, not an
-      // assistant message. Output-only display regex (for example "keep only
-      // <正文>") must not erase it merely because the card did not wrap its
-      // greeting in the model-output protocol.
-      text: applyDisplayNameMacros(greeting.text, macros2)
-    },
+    greeting: displayGreeting,
     regexDiagnostics,
     display: { rules, bindings, macros: macros2 }
   };
@@ -29523,9 +29532,14 @@ async function loadPlaythroughExport(client, playthrough) {
     greeting,
     greetingSwipes,
     greetingSwipeId,
-    // Greeting is card metadata, not model output. Keep static export aligned
-    // with the RP view: expand names, but do not run output-only regex rules.
-    displayGreeting: greeting === null ? null : applyDisplayNameMacros(greeting, greetingMacros),
+    displayGreeting: greeting === null ? null : applyGreetingDisplayRegex(
+      applyDisplayNameMacros(greeting, greetingMacros),
+      rules,
+      bindings,
+      { depth: turns.reduce((depth, turn) => depth + Number(turn.userText !== "") + Number(turn.displayOverridden === true || (turn.assistantCandidates ?? [turn.assistantText]).some((text3) => text3 !== "")), 0) }
+    ).text,
+    // JSONL must retain greeting sources, with names expanded, so importing it
+    // does not apply display templates a second time.
     displayGreetingSwipes: greetingSwipes.map((text3) => applyDisplayNameMacros(text3, greetingMacros)),
     exportedAt: (/* @__PURE__ */ new Date()).toISOString()
   };
