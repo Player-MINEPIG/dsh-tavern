@@ -94,7 +94,7 @@ flowchart LR
 | `TavernUI.version`, `getContext()` | v1；角色与挂载时复制的 userName/characterName，复制的 JSON，不含 session ID 或凭据 |
 | `TavernUI.proposeMessage(text)` | 最多 4000 字符，生成可见建议；不能自行发送 |
 
-外部 `<script src>` 和 ES 模块必须按下述流程逐项审阅；未授权依赖与内联 on* 会停用整卡脚本。外部来源、Helper 和 JSX 使用专用 Worker 内的 QuickJS 与 linkedom。固定官方 jQuery 3.6.0、React 18.3.1、Vue 3.5.13 夹具覆盖插入 DOM、点击和状态更新；这不代表完整浏览器兼容。同步布局、computedStyle、CSSOM、canvas、父页面与系统接口仍不可用；本渲染器不提供世界书/聊天/生成接口；写变量走下述单独授权的 MVU 桥。未提供的 API 报错并销毁运行时，不静默成功。静态 HTML 导出不运行卡片脚本，也不导出内存中的交互状态。
+外部 `<script src>` 和 ES 模块必须按下述流程逐项审阅；未授权依赖与内联 on* 会停用整卡脚本。外部来源、Helper 和 JSX 使用专用 Worker 内的 QuickJS 与 linkedom。固定官方 jQuery 3.6.0、React 18.3.1、Vue 3.5.13 夹具覆盖插入 DOM、点击和状态更新；这不代表完整浏览器兼容。提供下述卡片内限定布局读值；可变 CSSOM、canvas、父页面与系统接口仍不可用；本渲染器不提供世界书/聊天/生成接口；写变量走下述单独授权的 MVU 桥。未提供的 API 报错并销毁运行时，不静默成功。静态 HTML 导出不运行卡片脚本，也不导出内存中的交互状态。
 
 上表描述小型内嵌 facade；其每卡源码最多 128K UTF-16 字符单元、解释器 8 MiB/256 KiB 栈；每次执行 60 ms 与 500 次中断检查双重上限、1000 bridge 操作、100 Promise jobs；DOM 最多 2048 handles，最多 256 listeners；高度 100–800 px。超限显示错误。浏览器布局/图片解码、WASM 引擎缺陷和复杂 CSS 的拒绝服务不由解释器配额完全覆盖，不能承诺绝对安全；显示正则仍有既有 RegExp 回溯风险。
 
@@ -132,7 +132,7 @@ flowchart LR
 
 外部 Worker 最多并发 4 卡，每卡解释器堆 192 MiB、栈 1 MiB（总解释器上限 768 MiB，不含浏览器/Worker 开销）。冷启动外部看门狗为 15 秒，初始单次执行 2 秒，后续入口 120 ms，响应外部看门狗 1.5 秒。每入口最多 200 Promise jobs、10,000 桥接调用；每卡最多 128 定时器、8,192 DOM 节点、1 MiB 输出，每秒最多 256 输出消息和 128 输入事件。定时器范围 16–60,000 ms；动画回调用定时器实现，不等价原生布局时钟。展示 iframe 无脚本权限且 CSP 禁止网络；第三方代码只得到解释器内虚拟 DOM，不获得原生 Worker/浏览器句柄。
 
-click/input/change/key/pointer 事件复制为虚拟事件，输出净化后展示；快照恢复焦点、选区和滚动位置，不等价完整 DOM diff 或同步布局桥。缺失 API 明确失败，不伪造零值尺寸。卡片外运行证据显示源码 hash、固定编译器版本、JSX 输入/输出 hash、冷启动耗时与采样堆快照；这些不是进程峰值内存测量。
+click/input/change/key/pointer 事件复制为虚拟事件，输出净化后展示；快照恢复焦点、选区和滚动位置，不等价完整 DOM diff。缺失 API 明确失败，不伪造零值尺寸。卡片外运行证据显示源码 hash、固定编译器版本、JSX 输入/输出 hash、冷启动耗时与采样堆快照；这些不是进程峰值内存测量。
 
 | 扩展接口 | 明确支持的子集 |
 | --- | --- |
@@ -157,3 +157,12 @@ click/input/change/key/pointer 事件复制为虚拟事件，输出净化后展�
 内置 MVU 适配另行选择，默认关闭。仅 `mvu-builtins.js` 中的精确 URL 与 SHA-256 字节身份在内容审核后提供选项。界面和运行审计明确标注不执行原 bundle，保留原身份及限定作用域的 facade 版本。支持副作用 import 与普通 script 初始化；不冒充具名导出、动态注册或任意运行时 Zod 对象。完整 schema Helper 仅在可用权威快照的 `variables.mvu_schema` 满足 `mvuSchema:1`、`interpreterVersion:1` 且完整 source 精确一致时跳过 VM 执行。显示的 `source-registered` 是快照派生的本地确认，不是注册 API；快照不可用、未知版本及原文不同均明确失败。
 
 传输前及 Worker 内再次限制展开后的初始化：最多 128 个 runs、24 个模块及 24 MiB UTF-8 总量，重复代码仍计费，context/variables 限 256 KiB。早期 timer 的 idle 不取消启动截止。四个运行实例用满时，可用卡片外的暂停和启动/重启按钮释放旧实例。原生待决写入最多 32 项并要求单调 ID；一次可信输入 task 最多归属一次写入。写入等待截止为 30 秒，结果不确定或回传失败会终止运行时并显示 operationId 供回执核查，不自动生成新 ID 重试。本地撤销立即停止写入；服务端撤销失败即使卡片卸载仍保留可见重试项。
+
+
+## 卡片内布局读值
+
+外部 Worker 使用固定 QuickJS Asyncify 0.31.0，让 `getBoundingClientRect()`、scrollHeight/scrollWidth、offsetHeight/offsetWidth/offsetTop/offsetLeft、clientHeight/clientWidth 及 `getComputedStyle()` 在脚本看来同步返回真实布局。每次读取先提交当前虚拟 DOM 的净化快照，再仅测量该卡的无脚本 iframe；不读取 Host 页面、其他卡或任意外部窗口。computed style 是本次读值的快照，支持普通属性与 `getPropertyValue`，不承诺浏览器的 live CSSOM。卡内未渲染的节点不能冒充有布局的节点。父页面、canvas、网络、模型工具及系统权限不会因此开放。
+
+事件、计时器、变量通知和 Promise jobs 串行进入解释器；一次任务最多 16 次布局请求，单次测量 1 秒截止，沿用整体执行/启动截止。请求绑定 Worker nonce、单调 ID 和当前 iframe 代次；切换、撤销、卸载或超时会取消旧测量并终止 Worker，迟到响应不恢复旧任务。布局结果只返回有界 JSON；不伪造零值尺寸，不把 Promise 改成同步执行。截止是任务看门狗，不能抢占浏览器主线程内已经开始的同步布局；DOM/源码大小限制仍是必要边界。
+
+`quickjs-async-jobs.js` 是固定版本的内部 API 兼容层。0.31.0 的公开同步作业入口不适用于挂起的 Asyncify job；兼容层使用明确异步 C 包装，等待作业返回后才释放输出指针和值句柄。构建检查 core/variant 版本一致且均为 0.31.0，运行时检查所需符号；未知版本或缺失符号关闭该能力，不回退至同步 wrapper。升级 QuickJS 必须重新验证此处内部 API 耦合、嵌套 Promise、异常、取消、截止和恰一次释放。

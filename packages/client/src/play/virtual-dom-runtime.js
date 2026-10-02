@@ -40,8 +40,14 @@ globalThis.__view=()=>{
  const alive=new Set();
  for(const node of nodes){if(!__ids.has(node))__ids.set(node,++__nodeId);const id=__ids.get(node);alive.add(id);__nodes.set(id,node);node.setAttribute('data-dtv-node',String(id))}
  for(const id of __nodes.keys())if(!alive.has(id))__nodes.delete(id);
- return JSON.stringify({html:document.body.innerHTML,styles:[...document.head.querySelectorAll('style')].map(node=>node.textContent).join('\\n')});
+ return JSON.stringify({bodyId:__ids.get(document.body),html:document.body.innerHTML,styles:[...document.head.querySelectorAll('style')].map(node=>node.textContent).join('\\n')});
 };
+// Synchronous-looking getters suspend only this interpreter. The host measures
+// the current sanitized view in this card's script-disabled iframe.
+const __geometry=(node,pseudo)=>{const view=JSON.parse(__view());const id=node===document.documentElement?0:Number(node.getAttribute('data-dtv-node'));if(!Number.isSafeInteger(id)||id<0)throw Error('Layout target is outside the rendered card');const result=JSON.parse(__layout(JSON.stringify({id,view,pseudo})));if(result.error)throw Error(result.error);return result};
+Element.prototype.getBoundingClientRect=function(){return __geometry(this).rect};
+for(const key of ['scrollHeight','scrollWidth','offsetHeight','offsetWidth','clientHeight','clientWidth','offsetTop','offsetLeft'])Object.defineProperty(Element.prototype,key,{get(){return __geometry(this)[key]},configurable:true});
+globalThis.getComputedStyle=(node,pseudo)=>{const data=__geometry(node,pseudo).computed;return Object.freeze({...data,getPropertyValue:name=>data[String(name)]??'',getPropertyPriority:()=>''})};
 globalThis.__domEvent=data=>{
  const node=__nodes.get(data.target);if(!node)return;
  if(data.value!==undefined)node.value=data.value;if(data.checked!==undefined)node.checked=data.checked;
