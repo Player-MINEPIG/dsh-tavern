@@ -187,3 +187,27 @@ test('official new-session permission metadata permits initial scope; all activi
     await assert.rejects(f.service.cardWrite(request(capability, 1, type)), { code: 'MVU_READ_ONLY' }, type)
   }
 })
+
+test('empty restore markers permit initial scope but never inherited, malformed or active history', async t => {
+  const f = fixture(t); f.allow()
+  const marker = { seq: 0, type: 'session/end-seed', data: {} }
+  f.session.header.isSeeded = false
+  f.session.snapshotEvents = () => [marker]
+  assert.equal((await f.service.snapshot(f.scope)).variables.stat_data.hp, 10)
+  const { capability } = await f.bind()
+  assert.equal((await f.service.cardWrite(request(capability, 0))).revision, 1)
+  for (const data of [{ inherited: true }, { inherited: false }, { unknown: true }, null, [], '']) {
+    f.session.snapshotEvents = () => [{ ...marker, data }]
+    await assert.rejects(f.service.snapshot(f.scope), { code: 'MVU_READ_ONLY' })
+    await assert.rejects(f.service.cardWrite(request(capability, 1, 'invalid-marker')), { code: 'MVU_READ_ONLY' })
+  }
+  f.session.snapshotEvents = () => [marker]
+  f.session.header.isSeeded = true
+  await assert.rejects(f.service.snapshot(f.scope), { code: 'MVU_READ_ONLY' })
+  f.session.header.isSeeded = false
+  for (const type of ['turn/start', 'turn/end', 'user/message', 'assistant/message', 'agent/inbox/spliced', 'request/header', 'session/other']) {
+    f.session.snapshotEvents = () => [{ seq: 0, type, data: {} }, { ...marker, seq: 1 }]
+    await assert.rejects(f.service.snapshot(f.scope), { code: 'MVU_READ_ONLY' }, type)
+    await assert.rejects(f.service.cardWrite(request(capability, 1, type)), { code: 'MVU_READ_ONLY' }, type)
+  }
+})

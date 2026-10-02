@@ -12,7 +12,10 @@ export function installMvu(ctx, { storageDir, resources = [], sources, membershi
   // DSH permission presets pin these exact configuration facts before publishing a new session.
   // No prefix/category match: messages, turns, inbox activity and unknown events close this window.
   const initialMetadata = new Set(['permission/preset', 'sandbox/mode', 'approval/policy'])
-  const emptyHistory = events => Array.isArray(events) && events.every(event => initialMetadata.has(event.type))
+  // Official Session restore appends this empty marker; inherited seed markers are not empty history.
+  const emptyHistory = events => Array.isArray(events) && events.every(event => initialMetadata.has(event.type)
+    || (event.type === 'session/end-seed' && event.data !== null && typeof event.data === 'object'
+      && !Array.isArray(event.data) && Object.keys(event.data).length === 0))
   const digest = value => createHash('sha256').update(JSON.stringify(value)).digest('hex')
   const inspect = async id => { const live = ctx.get('sessions')?.get?.(id); return live ? { header: live.header, events: live.snapshotEvents() } : ctx.get('sessionController')?.inspect?.(id) }
   const service = new MvuService({ storageDir, resources, inspect, refresh, isActive, authorizeCardWrite: async request => {
@@ -31,9 +34,7 @@ export function installMvu(ctx, { storageDir, resources = [], sources, membershi
         if (timeline.nodes.length || timelineHead(timeline)) fail('MVU_READ_ONLY', 'Initial timeline is not empty')
         return digest({ playthrough, timeline })
       }
-      const memberKey = membership(), memberLease = memberships.captureLease?.(scope.playthroughId)
-      if (typeof memberLease !== 'function' || memberLease() !== true) fail('MVU_READ_ONLY', 'Membership mutation lease required')
-      const selectionToken = getSelectionToken(scope.sessionId)
+      membership() // Check access before loading; acquire the lease after the official resume lifecycle.
       let live = ctx.get('sessions')?.get?.(scope.sessionId)
       if (getSelection(scope.sessionId)?.characterCardId !== scope.characterId) fail('MVU_READ_ONLY', 'Initial character is not selected')
       if (!live) {
@@ -41,9 +42,14 @@ export function installMvu(ctx, { storageDir, resources = [], sources, membershi
         live = ctx.get('sessions')?.get?.(scope.sessionId)
       }
       if (!live?.snapshotEvents) fail('MVU_READ_ONLY', 'Initial binding requires a live controlled session')
+      // Resume may normalize persisted RP selection. Bind only its completed, revalidated state.
+      const memberKey = membership(), memberLease = memberships.captureLease?.(scope.playthroughId)
+      if (typeof memberLease !== 'function' || memberLease() !== true) fail('MVU_READ_ONLY', 'Membership mutation lease required')
+      const selectionToken = getSelectionToken(scope.sessionId)
+      if (getSelection(scope.sessionId)?.characterCardId !== scope.characterId) fail('MVU_READ_ONLY', 'Initial character is not selected')
       const epoch = sessionEpochs.get(scope.sessionId) ?? 0
       const inspected = { header: live.header, events: live.snapshotEvents() }, header = inspected.header
-      if (!header || !Number.isSafeInteger(header.version) || header.parentSession || !emptyHistory(inspected.events)
+      if (!header || !Number.isSafeInteger(header.version) || header.parentSession || header.isSeeded === true || !emptyHistory(inspected.events)
         || (scope.sessionFormatVersion != null && scope.sessionFormatVersion !== header.version)) fail('MVU_READ_ONLY', 'Initial session must have empty durable history')
       const headerKey = digest(header)
       const checkCurrent = () => {
