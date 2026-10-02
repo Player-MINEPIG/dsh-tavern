@@ -16,9 +16,15 @@ export function createAsyncJobDrain(runtime,{version,isCurrent=()=>true}={}) {
   let output,raw,handle,transferred=false
   try{
    output=runtime.memory.newMutablePointerArray(1)
-   raw=await execute(runtime.rt.value,1,output.value.ptr)
+   const outputPointer=output.value.ptr
+   if(!Number.isSafeInteger(outputPointer)||outputPointer<=0||outputPointer%4!==0)invalid()
+   raw=await execute(runtime.rt.value,1,outputPointer)
    if(!Number.isSafeInteger(raw)||raw<0)invalid()
-   const contextPointer=output.value.typedArray[0]
+   // Memory may grow while C is suspended. The allocation's cached typedArray
+   // then refers to a detached buffer; acquire the module's current view here.
+   const heap=runtime.module.HEAP32
+   if(!(heap instanceof Int32Array)||outputPointer>heap.byteLength-4)invalid()
+   const contextPointer=heap[outputPointer/4]>>>0
    let executed=0
    if(contextPointer!==0){
     const context=runtime.contextMap.get(contextPointer)
