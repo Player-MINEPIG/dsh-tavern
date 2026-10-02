@@ -18,7 +18,8 @@
     "./client": "./dist/client.js",
     "./identity": "./packages/identity.js",
     "./package.json": "./package.json",
-    "./request-assembler": "./packages/request-assembler/index.js"
+    "./request-assembler": "./packages/request-assembler/index.js",
+    "./mvu": "./packages/mvu-adapter/src/index.js"
   },
   "files": [
     "screenshots.json",
@@ -62,7 +63,9 @@
     "docs/CONVERSATION_PRESENTATION.md",
     "docs/CONVERSATION_PRESENTATION_en.md",
     "docs/REQUEST_ASSEMBLY.md",
-    "docs/REQUEST_ASSEMBLY_en.md"
+    "docs/REQUEST_ASSEMBLY_en.md",
+    "docs/MVU.md",
+    "docs/MVU_en.md"
   ],
   "dsh": {
     "bundle": {
@@ -109,9 +112,12 @@
   "license": "MIT",
   "dependencies": {
     "@jitl/quickjs-singlefile-browser-release-sync": "0.31.0",
+    "acorn": "8.15.0",
     "dompurify": "3.4.16",
+    "json5": "2.2.3",
     "katex": "0.16.47",
     "marked": "18.0.10",
-    "quickjs-emscripten-core": "0.31.0"
+    "quickjs-emscripten-core": "0.31.0",
+    "yaml": "2.9.1"
   }
 }

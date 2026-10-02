@@ -2,6 +2,8 @@
 
 [English](API_en.md) · [v3 详细合同](PROMPT_API_V3.md) · [前端接入](FRONTEND_INTEGRATION_zh-CN.md)
 
+[MVU 状态来源](MVU.md)
+
 候选源码的装配来源协议：Host 服务 `tavernRequestSources` 统一注册内置和外部来源，既有装配策略目录同时返回来源能力；接入方式与旧 loader 边界见[统一来源 API](REQUEST_ASSEMBLY.md#统一内容来源-api协议-1)。这部分尚不属于已发布 v2.5.1。
 
 装配规则的 CRUD、应用、预览、实际请求引用与所需核心扩展见[请求装配器](REQUEST_ASSEMBLY.md)。

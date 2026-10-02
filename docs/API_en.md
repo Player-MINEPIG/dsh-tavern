@@ -2,6 +2,8 @@
 
 [中文](API.md) · [v3 detailed contract](PROMPT_API_V3_en.md) · [Frontend integration](FRONTEND_INTEGRATION_en.md)
 
+[MVU state source](MVU_en.md)
+
 Candidate-source assembly protocol: the Host service `tavernRequestSources` registers built-in and external sources uniformly; the existing strategy catalog also returns source capabilities. See the [unified source API](REQUEST_ASSEMBLY_en.md#unified-content-source-api-protocol-1) for integration and legacy-loader boundaries. This is not part of published v2.5.1.
 
 Request layout CRUD, application, preview, recorded request references and the required core extension are documented in [Request assembly](REQUEST_ASSEMBLY_en.md).

@@ -1,4 +1,8 @@
 import { OperationJournal } from '../../play/src/operation-journal.js'
+import { createCharacterDiscovery } from '../../mvu-adapter/src/discovery.js'
+import { installMvu } from '../../mvu-adapter/src/host.js'
+import { createMvuApi, isMvuApiPath } from '../../mvu-adapter/src/http.js'
+import { mvuResourceFromCharacter } from '../../mvu-adapter/src/character.js'
 import { createContractOperation, recordDiagnosticFailure } from '../../play/src/operation-contract.js'
 import { AssemblyStore } from '../../tavern-trace/src/assembly-store.js'
 import { AssemblyRecorder } from '../../tavern-trace/src/assembly-recorder.js'
@@ -366,6 +370,13 @@ export function apply(ctx, config = {}) {
   store.assemblyPresets = assemblyPresets
   store.requestAssembler = requestAssembler
   ctx.provide(ASSEMBLY_SERVICE, requestAssembler.registry)
+  const mvuResources = (config.mvu?.resources ?? []).map(resource => resource.characterId && resource.initial === undefined
+    ? mvuResourceFromCharacter(characterStore.get(resource.characterId), resource) : resource)
+  let mvu
+  const refreshMvu = createCharacterDiscovery({ characters: characterStore, selections, service: () => mvu })
+  mvu = installMvu(ctx, { storageDir, resources: mvuResources, sources: requestAssembler.registry, refresh: refreshMvu,
+    isActive: (resource, sessionId) => selections.get(sessionId).characterCardId === resource.characterId,
+    memberships: playMemberships, onError: error => recordFailure('mvu.update', error) })
   runtime.requestAssemblyEnabled = sessionId => {
     if (!requestAssembler.available() && !requestAssembler.selected(sessionId)) return false
     if (requestAssembler.selected(sessionId)) requestAssembler.requireAvailable()
@@ -598,6 +609,7 @@ export function apply(ctx, config = {}) {
   })
 
   const registerHttpApi = webCtx => {
+    const mvuApi = createMvuApi(mvu)
     const assemblyApi = createAssemblyApi({ store: assemblyPresets, runtime: requestAssembler, agents: () => ctx.get('agents'), sessions: () => ctx.get('sessions'), inspect: id => ctx.get('sessionController').inspect(id), notify: notifyChange })
     const promptTraceApi = createPromptTraceApi({ assemblies: assemblyStore, legacyStore: traceStore, requestAssembler,
       readBodies: createAssemblyBodyReader(ctx.get('sessionController')) })
@@ -692,7 +704,9 @@ export function apply(ctx, config = {}) {
       },
     })
     const api = secureTavernApi(
-      (req, res) => isAssemblyApiPath(req.url)
+      (req, res) => isMvuApiPath(req.url)
+        ? mvuApi(req, res)
+        : isAssemblyApiPath(req.url)
         ? assemblyApi(req, res)
         : new URL(req.url, 'http://localhost').pathname.startsWith(`${API_V3}/`)
         ? promptTraceApi(req, res)

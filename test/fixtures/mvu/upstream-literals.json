@@ -1,0 +1,9 @@
+{
+  "source": "https://github.com/MagicalAstrogy/MagVarUpdate/blob/183d8ade3b9a3369e824a55cb13b4ddf91aada50/tests/helpers/extract_set_commands_suite.ts",
+  "license": "MIT; see LICENSE",
+  "cases": [
+    { "input": "_.set('name', 'John', 'Jane');//更新名字", "initial": {"name":"John"}, "expected": {"name":"Jane"} },
+    { "input": "_.set('时间', \"09:15\");//设置时间", "initial": {"时间":"08:00"}, "expected": {"时间":"09:15"} },
+    { "input": "_.set('data', {arr: [1, 2, {nested: \"value)}\"}]}, {arr: [3, 4]});//更新数据", "initial": {"data":{"arr":[1,2,{"nested":"value)}"}]}}, "expected":{"data":{"arr":[3,4]}} }
+  ]
+}

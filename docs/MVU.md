@@ -1,0 +1,104 @@
+# MVU 状态来源
+
+[English](MVU_en.md) · [HTTP API](API.md) · [请求装配](REQUEST_ASSEMBLY.md)
+
+MVU 变量是角色状态，和长期记忆资源类型分开。`tavernMvu`（协议 1）拥有状态、历史、版本、CAS 和幂等记录；可选管理器通过公开服务管理来源。Tavern 不依赖管理器，也不把状态复制到管理器数据库。
+
+## 配置与资源身份
+
+管理器读取资源或 Host 准备所选角色会话时，会发现已导入卡中的 InitVar/schema。稳定 ID 由存储角色 ID 派生，默认 managed 且未启用；只有实际选择该卡的会话获访问范围。选择/取消/重选持久记录激活事件边界，不能把旧角色回复重新应用到新角色。发现不授予 wildcard 权限，不执行脚本。初始化失败显示 sourceError 并阻止执行。重复选择和源卡编辑不重置已创建资源的初始化/schema。
+
+也可由 Loader 的 `mvu.resources` 显式声明资源，例如：
+
+```js
+{
+  mvu: {
+    resources: [{
+      id: 'mvu:campaign',
+      sessionIds: ['session-a', 'session-b'],
+      initial: { stat_data: { hp: 100 } },
+      managementMode: 'native'
+    }]
+  }
+}
+```
+
+`sessionIds:['*']` 允许此来源服务中的所有会话。`initial` 也可为 YAML 字符串。配置 `characterId` 且省略 `initial` 时，读取已导入角色卡的 `[initvar]` 条目和声明式 schema；不会下载或执行卡片脚本。多个初始化对象按条目顺序合并，多个不同 schema 必须显式解决冲突。解析失败不覆盖已有持久状态。配置变更不是重置命令。
+
+同一 ID 的当前内容及 CAS revision 在授权会话间共享；scope 限制访问和选择历史，不创建隐含副本。独立演化须 `copy` 到新 ID。复制保留当前内容、来源信息与 session 访问范围，发现资源的副本保持 managed；显式配置的普通资源副本为 native。多个资源匹配同一气泡时，当前只读气泡接口返回 `MVU_AMBIGUOUS`，不擅自选一份。
+
+发现不等于启用。来源许可和宿主权限不能由卡片脚本自行提升。
+
+## Host 服务
+
+通过 `ctx.get('tavernMvu')` 或可选 `ctx.inject(['tavernMvu'], ...)` 获取服务。包导出 `pmp-dsh-tavern/mvu` 包含服务、安装函数、数据解析器及纯更新函数。
+
+| 方法 | 合同 |
+| --- | --- |
+| `list({scope,signal})` | 返回作用域可读记录；本机管理读取使用 `{authority:'local'}`（兼容空对象） |
+| `read({id,scope,signal})` | 不存在为 null；当前记录包含 `id,name,type,authority,scope,content,revision,currentRevision,historical,versionKey,managementMode` |
+| `update({id,content,expectedRevision,operationId,scope,signal})` | 当前内容 CAS 编辑；同 operationId、同请求幂等，异参拒绝；来源 schema 不可被移除或替换，候选只转换一次 |
+| `copy({id,newId,scope,signal})` | 显式新资源，拒绝已有 ID |
+| `history({id,scope,signal})` | 返回该会话来源版本及成功/失败证据 |
+| `setManagementMode({id,mode,expectedRevision,operationId,scope,signal})` | 持久切换 `native` / `managed`，CAS 与幂等；配置初始 managed 也持久保存 |
+| `registerUsage(handler)` | 注册可信使用决策，返回 disposer；handler 收到 `{on,id,scope,event,variables,managementMode}` |
+| `observe(listener)` | 注册提交与请求事实监听，返回 disposer；监听器不能参与状态写事务 |
+| `discover({definition,sessionId?})` | 可信 Host 发现接口；稳定卡身份、默认托管及显式会话访问 |
+| `validateConfig(config)` | 检查 `type:'mvu-state'`、store/retrieve 触发及支持的策略链 |
+
+`scope.authority` 仅允许 local；其他来源应使用自己的服务。会话读取要求配置授权。历史读取传 `messageId` 或 `endEventId`；联合坐标必须一致。历史记录的 `revision` 是该快照版本，`currentRevision` 是当前实体版本。历史 scope 不可编辑；调用者必须显式回到当前 scope 再读、再以 CAS 编辑。
+
+已托管资源缺少管理器决策时拒绝执行，不回退 native。handler 可返回 undefined（没有管理配置），或 `{enabled,configRevision?,strategy?,reason?}`。卸载 handler 时取消尚未提交的处理。支持链为：
+
+- store：`assistant_message_committed`，`parse_mvu_update → validate_update → apply_update`。
+- retrieve：`before_model_request`，`read_content → render_state_and_update_instructions → provide_to_model`。
+
+策略可以是上述名字数组或 `{operation}` 数组；未支持的参数明确拒绝。来源不实现管理器名单/rule DSL，由管理器决策。store event 含原生消息坐标、`text`、`containsMvuUpdate`；retrieve event 含 `preview,turn,step`。
+
+事实格式为 `{id,eventId,phase,sessionId?,turn?,turnKind?,requestId?,revision?,detail?}`，phase 为 started/triggered/applied/skipped/failed/completed。`state-committed` 的 applied 仅在持久状态实际改变后发出。`dsh-request-observed` 的 applied 要求真实 `request/assembly` 内容与 DSH `llm/stream` 请求一致；它不表示网络发送成功。预览和解析器返回不构成 applied。
+
+## Durable 历史与请求
+
+只有完成的 `turn/end` 中最后一条非中断、非工具调用 assistant 消息参与更新。消息身份含 session、日志格式、创建时间（如有）、message ID/seq、turn/step 和结束事件。多层 fork 使用可信继承边界；继承内容不重放。恢复时核对持久来源，缺失或变动会阻止读取/注入，直至来源历史恢复一致。
+
+命令在私有副本上逐条处理。普通 schema/缺失路径拒绝记录诊断后继续；解释器预算、非法语法或持久化错误是致命失败，不提交前面的候选变化。成功候选最后一次原子保存；失败可保存未变状态的诊断收据。重复已处理消息不再次应用。
+
+装配来源 ID 为 `tavern.mvu/state`。调用者必须在装配策略中显式选择它，使用 `role:'system', lifetime:'request'`。没有选择时不注入。来源输出 stat_data 和更新指令，诊断绑定资源 revision、配置 revision 和策略版本。DSH 原生消息始终权威；卸载不会改写会话。
+
+## 气泡只读桥
+
+`GET /pmp-dsh-tavern/api/v1/mvu/snapshot?scope=<JSON>` 使用现有 Tavern 请求认证。scope 为 Host 绑定的 `{playthroughId,sessionId,nodeId,variantId,endEventId,sessionFormatVersion?}`，必须与持久 timeline 和原生消息相符。浏览器不能传自选 messageId。读快照的 revision 保留历史语义，currentRevision 提供当前 CAS 版本。
+
+客户端 `createMvuCardBinding({client,scope,signal?,pollMs?})` 异步返回 `{getSnapshot(),subscribe(listener),dispose()}`。快照为 `{version:1,status,scope,revision,variables,resourceId?}`；variables 是完整变量对象，包含 stat_data/schema。订阅采用有界轮询；scope 不可变，abort 可取消初次读取，销毁后读取拒绝。渲染模块负责脚本回调和生命周期。无可信 durable scope 的开场、导入、流式气泡不绑定变量。
+
+## 受授权的卡片写入
+
+代码审核与变量写授权分别表达。完整执行 bundle 的 sourceIdentity 为 `{version:1,sha256,scope}`。可信设置界面审核 bundle 并单独授予写权限后，可选 `tavernRenderingAuthority.resolve({grantId,sourceIdentity})` 返回 `{valid:true,write:true,scope}`。该服务还须提供同步 `isCurrent`，供事务最终提交边界检查 TTL、撤销及同一服务实例；缺失任何能力都拒绝写。
+
+`POST /pmp-dsh-tavern/api/v1/mvu/card-binding` 接受 `{scope,grantId,sourceIdentity}`，只为当前 timeline 头和当前资源创建短期 opaque capability。`POST .../card-write` 接受 `{capability,operation:'patch'|'replace',value,expectedRevision,operationId,cause}`；`POST .../card-binding/revoke` 撤销 capability。scope 不由写请求再次选择。历史/生成中的消息、过期授权、变更的源身份、冲突版本都拒绝。
+
+Host `createCardBinding/cardWrite/revokeCardBinding` 为对应事务原语。绑定客户端增加 `writeGrant:{grantId,sourceIdentity}` 与异步 `write(...)`，getSnapshot 仅暴露 writable，不向脚本暴露 grant/capability。Host 从 currentRevision 取得 CAS 版本并生成 operationId；取消、卸载或重审终止尚未提交的候选。
+
+store 使用独立 `card_variable_update`，策略链为 `validate_card_update → apply_card_update`。默认没有写权限；manager enabled 只批准管理策略，不能替代源授权。事件含 operation/operationId/expectedRevision/sourceIdentity/cause，cause 区分 `user-interaction`、`interval`、`script`。有效绑定的权限/策略拒绝发 skipped；真实提交才发 applied，并携 configRevision。无法归属有效资源的坏 capability/参数仅产生带 code 的 HTTP 错误，不能伪造资源触发事实。
+
+renderer 的可信 dispatcher 从原生 isTrusted 事件/计时器任务生成 cause，VM 只能提供 op/value。服务端信任已认证 Host UI 的该证据，不能独立证明浏览器中发生了人类点击。代码审批不是点击授权，脚本不能自报 cause。
+
+实际观察到的兼容形状为 `getMvuData(options)` 读取完整变量、`updateVariablesWith(JSONPatchArray)` 和 `await replaceMvuData(variables,options)`。回调 updater 形状未验证，不承诺兼容。VARIABLE_UPDATE_ENDED 仅保证本绑定提交后触发无参回调再读取，不宣称上游完整 payload/事件语义。跨消息/latest/chat/character fallback 不能被偷偷解释为当前授权范围。
+
+## 兼容边界与验证
+
+核心参考固定为 [MagVarUpdate 183d8ade](https://github.com/MagicalAstrogy/MagVarUpdate/tree/183d8ade3b9a3369e824a55cb13b4ddf91aada50)（MIT）；少量原始文字解析 fixture 附带许可。mvu_zod 仅作语义参考，没有复制其执行代码或 Helper 的 PolyForm Noncommercial 代码。声明解释器使用 Acorn AST，不 eval、Function、import 或获取远程模块。
+
+| 能力 | 实现与边界 |
+| --- | --- |
+| 初始化 | 有界 YAML/JSON5、拒绝 tag/alias、顺序合并；仅显式配置的卡源 |
+| 命令 | set/add/insert/assign/remove/unset/delete；JSONPatch replace/delta/insert/add/remove/move；安全 dot/bracket/JSON pointer 路径 |
+| 原生元数据 | extensible/recursiveExtensible/required、对象/数组模板、arrayMeta、扩展标记；按值/索引删除；严格/兼容 VWD 设置 |
+| schema 声明 | object/array/record/enum/literal/union、number/string/boolean/any/unknown、coerce、default/prefault/optional/nullable、min/max/int、strict/passthrough、transform |
+| 纯表达式 | 算术、比较、条件、对象 spread、常量/局部变量、输入字段赋值、clamp、有限 Math 函数；静态节点白名单与执行预算 |
+| 隔离 | 私有能力标记；schema 以声明源和 interpreterVersion 保存，每次隔离构建；数组 length 写入、对象隐式数字/属性转换、动态原型路径拒绝 |
+| 尚未等价实现 | 完整 mathjs（矩阵/单位等）、Date 构造及日期加法、上游路径修正、全部容错解析、旧 display_data/delta_data 文本格式、除上述实际调用形状外的 Helper 写 API/可变事件 hook、MVU 额外模型调用 |
+
+支持所列声明不等于任意 Zod JavaScript 兼容，方法组合也须经过测试；对象型 coerce 明确拒绝。当前 display_data 为结果值副本，delta_data 为内部变化记录。不能将这些字段宣称为旧 UI 的完整格式兼容。默认指令只要求 literal JSONPatch，复杂生成策略须有独立公开扩展合同。
+
+`test/mvu-*.test.mjs` 覆盖合成卡结构、固定上游文字 fixture、CAS、fork、历史、故障恢复、预算反例、管理卸载和桥接取消。真实 Host 测试通过 `DSH_TAVERN_PROMPT_COMPAT_ROOT` 指向具备请求装配扩展的 DSH runtime，运行 `node --test test/mvu-host.test.mjs`；它使用临时目录及合成 provider，不操作真实 profile。完整卡片、渲染依赖与管理器最终联测需要另行验证，不能用解释器 fixture 代替。
