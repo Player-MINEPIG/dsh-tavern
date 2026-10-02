@@ -342,7 +342,7 @@ export function apply(ctx, config = {}) {
     selections,
     characters: characterStore,
     importContexts: () => importContexts,
-    onSelectionCopied: sessionId => reconcileRpAfterSelection(sessionId),
+    onSelectionCopied: (sessionId, from) => { assemblyPresets.copySelection(from, sessionId); reconcileRpAfterSelection(sessionId) },
   })
   const playWorkspaceStore = new PlayWorkspaceStore(storageDir, { host: playHost })
   const playMemberships = new PlayMembershipService(playWorkspaceStore)
@@ -360,13 +360,13 @@ export function apply(ctx, config = {}) {
     maxQueuedCharacters: config.pendingInput?.maxQueuedCharacters,
     maxQueuedMessages: config.pendingInput?.maxQueuedMessages,
   })
-  const assemblyPresets = new AssemblyPresetStore(storageDir)
+  const assemblyPresets = new AssemblyPresetStore(storageDir, { mode: () => chromeStore.get().mode })
   const requestAssembler = new RequestAssembler({ ctx, store: assemblyPresets, resources: runtime })
   store.assemblyPresets = assemblyPresets
   store.requestAssembler = requestAssembler
   runtime.requestAssemblyEnabled = sessionId => {
-    if (!requestAssembler.selected(sessionId)) return false
-    requestAssembler.requireAvailable()
+    if (!requestAssembler.available() && !requestAssembler.selected(sessionId)) return false
+    if (requestAssembler.selected(sessionId)) requestAssembler.requireAvailable()
     return true
   }
   ctx.on('agent/assemble-request', (payload, next) => requestAssembler.execute(payload, next))

@@ -193,7 +193,7 @@ export function createPlayHost({
     copySelection(fromSessionId, toSessionId) {
       if (selections === undefined) return
       selections.set(toSessionId, selections.get(fromSessionId))
-      onSelectionCopied?.(toSessionId)
+      onSelectionCopied?.(toSessionId, fromSessionId)
     },
   }
 }

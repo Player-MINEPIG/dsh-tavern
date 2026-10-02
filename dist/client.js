@@ -1644,8 +1644,8 @@ function isSupportedUiLocale(value) {
 
 // packages/client/src/i18n/catalogs/zh-CN.js
 var zh_CN_default = Object.freeze({
-  "nav.assembly": "\u63D0\u793A\u8BCD\u88C5\u914D",
-  "nav.assembly.empty": "\u6392\u5217\u89C4\u5219\u4E0E\u8BF7\u6C42\u9884\u89C8",
+  "nav.assembly": "\u63D0\u793A\u8BCD\u88C5\u914D\u7B56\u7565",
+  "nav.assembly.empty": "\u5173\u95ED \xB7 DSH \u9ED8\u8BA4\u7B56\u7565",
   "appearance.createStyle": "\u521B\u5EFA\u6837\u5F0F",
   "appearance.newStyle": "\u65B0\u6837\u5F0F",
   "appearance.fontSize": "\u6B63\u6587\u5B57\u53F7",
@@ -2479,8 +2479,8 @@ var zh_CN_default = Object.freeze({
 
 // packages/client/src/i18n/catalogs/en.js
 var en_default = Object.freeze({
-  "nav.assembly": "Prompt assembly",
-  "nav.assembly.empty": "Arrangement and request preview",
+  "nav.assembly": "Prompt assembly strategy",
+  "nav.assembly.empty": "Off \xB7 DSH default strategy",
   "appearance.createStyle": "Create style",
   "appearance.newStyle": "New style",
   "appearance.fontSize": "Body font size",
@@ -3453,7 +3453,7 @@ function normalizePreset(value) {
     const role2 = rule.role ?? "preserve", lifetime = rule.lifetime ?? "request";
     if (!["preserve", "system", "user", "assistant"].includes(role2)) throw new TypeError("Invalid role");
     if (!["request", "snapshot"].includes(lifetime)) throw new TypeError("Invalid lifetime");
-    if (["native-system", "history", "input"].includes(rule.kind) && (role2 !== "preserve" || lifetime !== "request" || rule.enabled === false)) throw new TypeError("Native modules retain their roles and must remain enabled");
+    if (["native-system", "history", "input"].includes(rule.kind) && (role2 !== "preserve" || lifetime !== "request")) throw new TypeError("Native modules retain their roles and request lifetime");
     if (rule.kind === "preset" && lifetime !== "request") throw new TypeError("Preset placement markers require request lifetime");
     if (rule.depth !== void 0 && rule.depth !== null && (!Number.isInteger(rule.depth) || rule.depth < 0 || rule.depth > 1e4)) throw new TypeError("Invalid insertion depth");
     if (["native-system", "history", "input"].includes(rule.kind) && rule.depth != null) throw new TypeError("Native module positions are controlled by the list or references");
@@ -3476,13 +3476,54 @@ function moveRule(rules, id, targetId) {
   return copy;
 }
 
+// packages/preset/src/client-state.js
+function reorder(items, from, to) {
+  if (!Array.isArray(items)) throw new TypeError("items must be an array");
+  if (!Number.isSafeInteger(from) || !Number.isSafeInteger(to)) return items;
+  if (from === to || from < 0 || to < 0 || from >= items.length || to >= items.length) return items;
+  const result = [...items];
+  const [moved] = result.splice(from, 1);
+  result.splice(to, 0, moved);
+  return result;
+}
+function reorderAtBoundary(items, from, boundary) {
+  if (!Number.isSafeInteger(boundary) || boundary < 0 || boundary > items.length) return items;
+  const destination = boundary > from ? boundary - 1 : boundary;
+  return reorder(items, from, destination);
+}
+
 // packages/request-assembler/client.js
 var labels = {
+  "harness:identity": ["DSH \u8EAB\u4EFD\u6307\u4EE4", "DSH identity"],
+  "deployment:persona-prefix": ["\u90E8\u7F72\u524D\u7F6E\u6307\u4EE4", "Deployment prefix"],
+  "deployment:persona-suffix": ["\u90E8\u7F72\u540E\u7F6E\u6307\u4EE4", "Deployment suffix"],
+  "rp:policy": ["Tavern \u89D2\u8272\u626E\u6F14\u89C4\u5219", "Tavern roleplay policy"],
+  main: ["\u4E3B\u63D0\u793A\u8BCD", "Main prompt"],
+  jailbreak: ["\u540E\u7F6E\u6307\u4EE4", "Post-history instructions"],
+  charDescription: ["\u89D2\u8272\u63CF\u8FF0", "Character description"],
+  charPersonality: ["\u89D2\u8272\u6027\u683C", "Character personality"],
+  dialogueExamples: ["\u5BF9\u8BDD\u793A\u4F8B", "Dialogue examples"],
+  personaDescription: ["\u7528\u6237\u8BBE\u5B9A", "User persona"],
   retry: ["\u91CD\u8BD5", "Retry"],
+  disable: ["\u5173\u95ED\u7B56\u7565\uFF0C\u4F7F\u7528 DSH \u9ED8\u8BA4", "Disable; use DSH default"],
+  phiHelp: ["\u89D2\u8272\u5361\u7684\u300C\u540E\u7F6E\u6307\u4EE4\u300D\u548C\u9884\u8BBE\u7684\u300CPost-History Instructions / jailbreak\u300D\u5728\u5404\u81EA\u7F16\u8F91\u5668\u4E2D\u4FEE\u6539\u3002\u4E0B\u9762\u53EF\u8FFD\u52A0\u6B64\u7B56\u7565\u4E13\u7528\u7684 PHI\u3002", "Edit character post-history instructions or preset Post-History Instructions / jailbreak in their editors. Add strategy-specific PHI below."],
+  "additional-phi": ["\u7B56\u7565\u8FFD\u52A0\u7684\u540E\u7F6E\u6307\u4EE4", "Additional strategy instructions"],
+  description: ["\u89D2\u8272\u63CF\u8FF0", "Character description"],
+  personality: ["\u89D2\u8272\u6027\u683C", "Character personality"],
+  scenario: ["\u573A\u666F", "Scenario"],
+  examples: ["\u5BF9\u8BDD\u793A\u4F8B", "Dialogue examples"],
+  system: ["\u7CFB\u7EDF\u6307\u4EE4", "System instructions"],
+  user: ["\u7528\u6237", "User"],
+  assistant: ["\u52A9\u624B", "Assistant"],
+  tool: ["\u5DE5\u5177\u7ED3\u679C", "Tool result"],
+  greeting: ["\u5F00\u573A\u767D\u53C2\u8003", "Greeting reference"],
+  depth_prompt: ["\u89D2\u8272\u6DF1\u5EA6\u63D0\u793A", "Character depth prompt"],
+  defaultHint: ["\u9ED8\u8BA4\uFF1AST \u517C\u5BB9\u3002\u5185\u7F6E\u7B56\u7565\u4E0D\u80FD\u6539\u540D\u6216\u5220\u9664\uFF1B\u4FEE\u6539\u89C4\u5219\u540E\u4FDD\u5B58\u4E3A\u526F\u672C\u3002", "Default: ST compatible. Built-ins cannot be renamed or deleted; save rule changes as a copy."],
+  dropHere: ["\u677E\u5F00\u4EE5\u79FB\u52A8\uFF1A", "Drop to move: "],
   actual: ["\u67E5\u770B\u6700\u8FD1\u5B9E\u9645\u8BF7\u6C42", "View latest actual request"],
   noActual: ["\u6682\u65E0\u65B0\u7248\u88C5\u914D\u8BF7\u6C42\u8BB0\u5F55", "No request assembly record yet"],
   actualNotice: ["\u4EE5\u4E0B\u662F\u8F68\u8FF9\u4FDD\u5B58\u7684\u5B9E\u9645\u8BF7\u6C42\uFF0C\u4FEE\u6539\u5F53\u524D\u9884\u8BBE\u4E0D\u4F1A\u6539\u53D8\u5B83\u3002", "This is the recorded request. Editing the preset does not change it."],
-  title: ["\u63D0\u793A\u8BCD\u88C5\u914D", "Prompt assembly"],
+  title: ["\u63D0\u793A\u8BCD\u88C5\u914D\u7B56\u7565", "Prompt assembly strategy"],
   intro: ["\u5B89\u6392\u5185\u5BB9\u5982\u4F55\u8FDB\u5165\u6BCF\u6B21\u6A21\u578B\u8BF7\u6C42\u3002\u9884\u89C8\u5F53\u524D\u8D44\u4EA7\u3001\u5B8F\u5F15\u7528\u548C\u5B9E\u9645\u987A\u5E8F\u3002", "Arrange each model request. Preview assets, macro references and message order."],
   import: ["\u5BFC\u5165", "Import"],
   export: ["\u5BFC\u51FA", "Export"],
@@ -3490,12 +3531,12 @@ var labels = {
   copy: ["\u53E6\u5B58\u4E3A", "Save as"],
   save: ["\u4FDD\u5B58\u89C4\u5219", "Save rules"],
   remove: ["\u5220\u9664", "Delete"],
-  select: ["\u9009\u62E9\u88C5\u914D\u9884\u8BBE", "Assembly preset"],
+  select: ["\u9009\u62E9\u88C5\u914D\u7B56\u7565", "Assembly strategy"],
   name: ["\u540D\u79F0", "Name"],
   apply: ["\u5E94\u7528\u5230\u5F53\u524D\u4F1A\u8BDD", "Apply to this session"],
   applied: ["\u5F53\u524D\u5E94\u7528", "Applied"],
-  legacy: ["\u5F53\u524D Tavern \u884C\u4E3A", "Current Tavern behavior"],
-  reset: ["\u6062\u590D\u9ED8\u8BA4\u88C5\u914D", "Restore default assembly"],
+  legacy: ["DSH \u9ED8\u8BA4\u7B56\u7565", "DSH default strategy"],
+  reset: ["\u5E94\u7528\u9ED8\u8BA4\u88C5\u914D\u7B56\u7565", "Apply default strategy"],
   preview: ["\u6839\u636E\u5F53\u524D\u914D\u7F6E\u9884\u89C8", "Preview current configuration"],
   rules: ["\u901A\u7528\u89C4\u5219", "Rules"],
   expanded: ["\u5C55\u5F00\u9884\u89C8", "Expanded preview"],
@@ -3533,7 +3574,7 @@ var labels = {
   empty: ["\u8BF7\u751F\u6210\u9884\u89C8", "Generate a preview"],
   dirty: ["\u6709\u672A\u4FDD\u5B58\u4FEE\u6539", "Unsaved changes"],
   discard: ["\u653E\u5F03\u5C1A\u672A\u4FDD\u5B58\u7684\u4FEE\u6539\uFF1F", "Discard unsaved changes?"],
-  confirmDelete: ["\u5220\u9664\u8FD9\u4EFD\u88C5\u914D\u9884\u8BBE\uFF1F", "Delete this preset?"],
+  confirmDelete: ["\u5220\u9664\u8FD9\u4EFD\u88C5\u914D\u7B56\u7565\uFF1F", "Delete this preset?"],
   diagnostics: ["\u88C5\u914D\u8BCA\u65AD", "Assembly diagnostics"],
   tools: ["\u5DE5\u5177\u5B9A\u4E49\u4F7F\u7528\u72EC\u7ACB\u8BF7\u6C42\u5B57\u6BB5\uFF0C\u4E0D\u53C2\u4E0E\u6D88\u606F\u62D6\u62FD\u3002", "Tool definitions are a separate request field, not draggable messages."],
   result: ["\u8BF7\u6C42\u6D88\u606F", "Request messages"],
@@ -3548,7 +3589,15 @@ var labels = {
   phi: ["PHI \xB7 \u540E\u7F6E\u6307\u4EE4", "Post-history instructions"],
   custom: ["\u81EA\u5B9A\u4E49\u5185\u5BB9", "Custom content"]
 };
-var colors = { "native-system": "#75849b", history: "#75849b", input: "#75849b", preset: "#5484d6", character: "#ae73cf", persona: "#c99249", worldbook: "#4b9f86", phi: "#ca7784", custom: "#7b79c6" };
+var plugins = { "native-system": "DSH", history: "DSH", input: "DSH", preset: "pmp-dsh-tavern", character: "pmp-dsh-tavern", persona: "pmp-dsh-tavern", worldbook: "pmp-dsh-tavern", phi: "pmp-dsh-tavern", custom: "pmp-dsh-tavern" };
+function sourceColor(plugin) {
+  if (!plugin) return "#999999";
+  if (plugin === "DSH") return "#8192ad";
+  if (plugin === "pmp-dsh-tavern" || plugin?.startsWith("pmp-dsh-tavern/")) return "#6495ed";
+  let hash = 0;
+  for (const c of plugin ?? "unknown") hash = hash * 31 + c.charCodeAt(0) | 0;
+  return `hsl(${Math.abs(hash) % 360} 60% 62%)`;
+}
 var isNative = (kind) => ["native-system", "history", "input"].includes(kind);
 async function request(path2 = "", method = "GET", body2) {
   const res = await tavernFetch(`${API_V1}/assembly-presets${path2}`, { method, headers: { "Content-Type": "application/json" }, ...body2 === void 0 ? {} : { body: JSON.stringify(body2) } });
@@ -3557,21 +3606,22 @@ async function request(path2 = "", method = "GET", body2) {
   return data;
 }
 var assemblyCss = `
-.dtv-assembly-screen{position:fixed;inset:16px;z-index:10010;pointer-events:auto;display:flex;flex-direction:column;box-sizing:border-box;background:var(--dsw-alias-bg-base,#fff);color:var(--dsw-alias-text-primary,#24252b);border:1px solid var(--dsw-alias-border-l1,#e8e8ec);border-radius:18px;box-shadow:0 18px 65px #0003;font:14px/1.55 system-ui;overflow:hidden}.dtv-assembly-screen *{box-sizing:border-box}
-.dta-head{display:flex;justify-content:space-between;align-items:start;padding:20px 28px;border-bottom:1px solid var(--dsw-alias-border-l1,#eee)}.dta-head h2{margin:0;font-size:22px}.dta-head p{margin:5px 0 0;opacity:.7}.dta-body{overflow:auto;padding:22px 28px 50px;flex:1}.dta-content{max-width:1200px;margin:auto}.dta-toolbar{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px;align-items:center}
-.dtv-assembly-screen button,.dtv-assembly-screen select,.dtv-assembly-screen input:not([type=checkbox]),.dtv-assembly-screen textarea{font:inherit;color:inherit;background:var(--dsw-alias-bg-l1,#fafafa);border:1px solid var(--dsw-alias-border-l1,#dedfe5);border-radius:9px;padding:8px 12px;min-width:0}.dtv-assembly-screen button{cursor:pointer}.dtv-assembly-screen button:disabled{opacity:.45;cursor:default}.dtv-assembly-screen :focus-visible{outline:2px solid #4386dc;outline-offset:2px}.dtv-assembly-screen .primary{background:#347cd2;color:white;border-color:#347cd2}.dta-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin:16px 0}.dta-grid label{display:flex;flex-direction:column;gap:5px}.dta-notice{padding:12px 15px;border-radius:10px;background:var(--dsw-alias-bg-l1,#f4f6fa);margin:12px 0;overflow-wrap:anywhere}.dta-notice[data-error=true]{color:#be4747}.dta-tabs{display:flex;gap:8px;margin:24px 0 14px}.dta-tabs button[aria-pressed=true]{border-color:#4386dc;color:#4386dc}
-.dta-row{border:1px solid var(--dsw-alias-border-l1,#e9e9ed);border-left:5px solid var(--assembly-color);border-radius:14px;margin:10px 0;background:var(--dsw-alias-bg-base,#fff);overflow:hidden}.dta-row[data-dragover=true]{outline:2px solid #4386dc}.dta-summary{display:flex;align-items:center;gap:14px;padding:15px 17px;min-height:69px}.dta-summary input{width:20px;height:20px;accent-color:#2484ed}.dta-handle{cursor:grab;color:#858993;font-size:22px;line-height:1}.dta-name{flex:1;font-size:17px;min-width:0;overflow-wrap:anywhere;cursor:pointer}.dta-badge{font-size:12px;color:#858993;text-transform:uppercase}.dta-detail{padding:4px 20px 20px;border-top:1px solid var(--dsw-alias-border-l1,#eee)}.dta-properties{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px;margin:16px 0}.dta-detail textarea{width:100%;min-height:130px;resize:vertical}.dtv-assembly-screen pre{white-space:pre-wrap;overflow-wrap:anywhere;font:13px/1.6 ui-monospace,monospace;max-height:360px;overflow:auto}.dta-child{margin:10px 0;padding:10px 14px;border-left:3px solid #ae73cf;background:var(--dsw-alias-bg-l1,#f7f7fa);border-radius:6px}.dtv-assembly-screen small{display:block;opacity:.7;overflow-wrap:anywhere}
-@media(max-width:700px){.dtv-assembly-screen{inset:5px;border-radius:12px}.dta-head,.dta-body{padding:15px}.dta-grid,.dta-properties{grid-template-columns:1fr}.dta-summary{gap:8px;padding:12px 10px}.dta-name{font-size:15px}.dta-badge{max-width:95px;text-align:right}}
+.dtv-assembly-screen{position:absolute;inset:0;z-index:1;pointer-events:auto;display:flex;flex-direction:column;box-sizing:border-box;background:var(--dsw-alias-bg-base,#fff);color:var(--dsw-alias-label-primary,#24252b);border:1px solid var(--dsw-alias-border-l1,#e8e8ec);border-radius:18px;box-shadow:0 18px 65px #0003;font:14px/1.55 system-ui;overflow:hidden}.dtv-assembly-screen *{box-sizing:border-box}
+.dta-head{display:flex;justify-content:space-between;align-items:start;padding:20px 28px;border-bottom:1px solid var(--dsw-alias-border-l1,#eee)}.dta-head{width:100%;max-width:calc(var(--dsh-composer-card-max-width,780px) + 56px);margin:auto}.dta-head h2{margin:0;font-size:22px}.dta-head p{margin:5px 0 0;opacity:.7}.dta-body{overflow:auto;padding:22px 28px 50px;flex:1}.dta-content{max-width:var(--dsh-composer-card-max-width,780px);margin:auto}.dta-toolbar{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px;align-items:center}
+.dtv-assembly-screen button,.dtv-assembly-screen select,.dtv-assembly-screen input:not([type=checkbox]),.dtv-assembly-screen textarea{font:inherit;color:inherit;background:var(--dsw-alias-button-secondary-fill,var(--dsw-alias-bg-base));border:1px solid var(--dsw-alias-border-l1,#dedfe5);border-radius:9px;padding:8px 12px;min-width:0}.dtv-assembly-screen button{cursor:pointer}.dtv-assembly-screen button:disabled{opacity:.45;cursor:default}.dtv-assembly-screen :focus-visible{outline:2px solid #4386dc;outline-offset:2px}.dtv-assembly-screen .primary{background:#347cd2;color:white;border-color:#347cd2}.dta-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin:16px 0}.dta-grid label{display:flex;flex-direction:column;gap:5px}.dta-notice{padding:12px 15px;border-radius:10px;background:var(--dsw-alias-bg-layer-2,var(--dsw-alias-bg-base));margin:12px 0;overflow-wrap:anywhere}.dta-notice[data-error=true]{color:#be4747}.dta-tabs{display:flex;gap:8px;flex-wrap:wrap;margin:24px 0 14px}.dta-tabs button[aria-pressed=true]{border-color:#4386dc;color:#4386dc}
+.dta-row{border:1px solid var(--dsw-alias-border-l1,#e9e9ed);border-left:5px solid var(--assembly-color);border-radius:14px;margin:10px 0;background:var(--dsw-alias-bg-base,#fff);overflow:hidden}.dta-row[data-dragover=true]{outline:2px solid #4386dc}.dta-summary{display:flex;align-items:center;gap:14px;padding:15px 17px;min-height:69px}.dta-summary input{width:20px;height:20px;accent-color:#2484ed}.dta-handle{cursor:grab;color:var(--dsw-alias-label-tertiary,#858993);font-size:22px;line-height:1}.dta-name{flex:1;font-size:17px;min-width:0;overflow-wrap:anywhere;cursor:pointer}.dta-badge{font-size:12px;color:var(--dsw-alias-label-tertiary,#858993);text-transform:uppercase}.dta-detail{padding:4px 20px 20px;border-top:1px solid var(--dsw-alias-border-l1,#eee)}.dta-properties{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px;margin:16px 0}.dta-detail textarea{width:100%;min-height:130px;resize:vertical}.dtv-assembly-screen pre{white-space:pre-wrap;overflow-wrap:anywhere;font:13px/1.6 ui-monospace,monospace;max-height:360px;overflow:auto}.dta-child{margin:10px 0;padding:10px 14px;border-left:3px solid #ae73cf;background:var(--dsw-alias-bg-layer-2,var(--dsw-alias-bg-base));border-radius:6px}.dtv-assembly-screen small{display:block;opacity:.7;overflow-wrap:anywhere}
+.dta-row[data-dragging=true]{height:4px;min-height:4px;margin:5px 10px;border:0;border-radius:999px;background:var(--dsw-alias-state-business-primary);box-shadow:0 0 0 1px color-mix(in srgb,var(--dsw-alias-state-business-primary) 25%,transparent)}.dta-row[data-dragging=true]>*{opacity:0}.dta-drop-placeholder{min-height:42px;border:2px dashed var(--dsw-alias-state-business-primary);border-radius:8px;background:color-mix(in srgb,var(--dsw-alias-state-business-primary) 7%,transparent);display:flex;align-items:center;justify-content:center;color:var(--dsw-alias-state-business-primary);pointer-events:none}.dtv-assembly-screen .dta-handle{touch-action:none;user-select:none;background:transparent;border:0;padding:2px}.dta-origin{font-size:11px;color:var(--dsw-alias-label-secondary);margin-top:2px}.dta-legend{display:flex;gap:12px;flex-wrap:wrap;margin:12px 0}.dta-legend span{border-left:4px solid var(--assembly-color);padding-left:6px;font-size:12px}
+@media(max-width:700px){.dtv-assembly-screen{inset:5px;border-radius:12px}.dta-head,.dta-body{padding:15px}.dta-head{padding-right:64px}.dta-grid,.dta-properties{grid-template-columns:1fr}.dta-summary{gap:8px;padding:12px 10px}.dta-name{font-size:15px}.dta-badge{max-width:95px;text-align:right}}
 `;
 function AssemblyPanel(props) {
   return (0, import_react.createElement)(AssemblyPanelContent, { ...props, key: props.sessionId ?? "no-session" });
 }
-function AssemblyPanelContent({ sessionId, close: close2, registerBeforeLeave }) {
+function AssemblyPanelContent({ sessionId, close: close2, registerBeforeLeave, chromeMode }) {
   const locale = getClientUiSettings().locale === "zh-CN" ? 0 : 1, t = (key2) => labels[key2]?.[locale] ?? key2;
   const [items, setItems] = (0, import_react.useState)([]), [draft, setDraft] = (0, import_react.useState)(null), [selection, setSelection] = (0, import_react.useState)(null), [capable, setCapable] = (0, import_react.useState)(false);
   const [status, setStatus] = (0, import_react.useState)(""), [error, setError] = (0, import_react.useState)(false), [busy, setBusy] = (0, import_react.useState)(false), [tab, setTab] = (0, import_react.useState)("rules"), [preview, setPreview] = (0, import_react.useState)(null), [dirty, setDirty] = (0, import_react.useState)(false), [expanded, setExpanded] = (0, import_react.useState)({});
-  const file = (0, import_react.useRef)(), dialog = (0, import_react.useRef)(), drag = (0, import_react.useRef)(null), generation = (0, import_react.useRef)(0), mounted = (0, import_react.useRef)(true);
-  const [reload, setReload] = (0, import_react.useState)(0);
+  const file = (0, import_react.useRef)(), dialog = (0, import_react.useRef)(), generation = (0, import_react.useRef)(0), mounted = (0, import_react.useRef)(true);
+  const [reload, setReload] = (0, import_react.useState)(0), [dragFrom, setDragFrom] = (0, import_react.useState)(null), [dropIndex, setDropIndex] = (0, import_react.useState)(null);
   const api6 = async (...args) => {
     const result = await request(...args);
     if (!mounted.current) throw new DOMException("Panel closed", "AbortError");
@@ -3610,6 +3660,25 @@ function AssemblyPanelContent({ sessionId, close: close2, registerBeforeLeave })
       generation.current++;
     };
   }, [sessionId, reload]);
+  (0, import_react.useEffect)(() => {
+    const refresh = () => run(async () => {
+      const data = await api6(`?sessionId=${encodeURIComponent(sessionId ?? "")}`);
+      setSelection(data.selection);
+      setCapable(data.capability);
+    });
+    window.addEventListener(CLIENT_REFRESH_EVENT, refresh);
+    return () => window.removeEventListener(CLIENT_REFRESH_EVENT, refresh);
+  }, [sessionId, chromeMode]);
+  (0, import_react.useEffect)(() => {
+    let active = true;
+    request(`?sessionId=${encodeURIComponent(sessionId ?? "")}`).then((data) => {
+      if (active) setSelection(data.selection);
+    }).catch(() => {
+    });
+    return () => {
+      active = false;
+    };
+  }, [chromeMode, sessionId]);
   const discard = () => !busy && (!dirty || window.confirm(t("discard")));
   (0, import_react.useEffect)(() => registerBeforeLeave?.(discard), [dirty, busy, registerBeforeLeave]);
   const edit = (patch) => {
@@ -3640,6 +3709,14 @@ function AssemblyPanelContent({ sessionId, close: close2, registerBeforeLeave })
   }
   const button = (label, onClick, disabled = false, cls) => (0, import_react.createElement)("button", { type: "button", onClick, disabled: busy || disabled, className: cls }, t(label));
   const select = (value, values, onChange, disabled = false) => (0, import_react.createElement)("select", { value, disabled, onChange: (e) => onChange(e.target.value) }, ...values.map((v2) => (0, import_react.createElement)("option", { key: v2, value: v2 }, t(v2))));
+  const nodeName = (node) => {
+    if (labels[node.name]) return t(node.name);
+    const standard = { "Main Prompt": "main", "Post-History Instructions": "jailbreak", "Character Description": "charDescription", "Character Personality": "charPersonality", "Persona Description": "personaDescription", "Chat History": "history", "World Info (before)": "worldbook", "World Info (after)": "worldbook" };
+    if (standard[node.name]) return t(standard[node.name]);
+    if (node.name?.startsWith("preset:") || node.name?.startsWith("worldbook:")) return labels[node.source?.field] ? t(node.source.field) : `${t(node.name.startsWith("preset:") ? "preset" : "worldbook")} \xB7 ${Math.max(0, preview?.nodes?.indexOf(node) ?? -1) + 1}`;
+    return node.name;
+  };
+  const originName = (plugin) => plugin === "DSH" ? "DSH" : plugin === "pmp-dsh-tavern" || plugin?.startsWith("pmp-dsh-tavern/") ? "DSH Tavern" : plugin ?? (locale === 0 ? "\u6765\u6E90\u672A\u77E5" : "Unknown source");
   const sourceInfo = (kind) => t(isNative(kind) ? "nativeSource" : "removed");
   async function actualRequest() {
     const response = await tavernFetch(`${API_V3}/sessions/${encodeURIComponent(sessionId)}/assemblies`);
@@ -3650,9 +3727,11 @@ function AssemblyPanelContent({ sessionId, close: close2, registerBeforeLeave })
       if (!res.ok) continue;
       const record = (await res.json()).record?.requestAssembly;
       if (!mounted.current) return;
-      if (record?.metadata?.assembly) {
-        setPreview({ ...record.metadata.assembly, messages: record.messages, actual: true });
+      if (record?.messages) {
+        const result = record.metadata?.assembly ?? { diagnostics: [], nodes: record.messages.map((m2, index) => ({ id: m2.id ?? `actual-${index}`, module: m2.role === "system" ? "native-system" : "history", name: m2.role === "system" ? "native-system" : m2.role, role: m2.role, source: { plugin: m2.source?.plugin ?? "DSH", field: m2.source?.kind }, stability: "snapshot", lifetime: "native", locked: true, text: (m2.content ?? []).map((b2) => b2.type === "text" ? b2.text : `[${b2.type}]`).join("\n") })) };
+        setPreview({ ...result, messages: record.messages, actual: true });
         setTab("expanded");
+        setStatus(record.metadata?.assembly ? "" : t("legacy"));
         return;
       }
     }
@@ -3664,22 +3743,7 @@ function AssemblyPanelContent({ sessionId, close: close2, registerBeforeLeave })
   (0, import_react.useEffect)(() => {
     const previous = document.activeElement;
     dialog.current?.querySelector("button")?.focus();
-    const trap = (e) => {
-      if (e.key !== "Tab") return;
-      const items2 = [...dialog.current.querySelectorAll('button:not(:disabled),input:not(:disabled),select:not(:disabled),textarea:not(:disabled),[tabindex="0"]')].filter((el) => el.getClientRects().length);
-      if (!items2.length) return;
-      if (e.shiftKey && document.activeElement === items2[0]) {
-        e.preventDefault();
-        items2.at(-1).focus();
-      } else if (!e.shiftKey && document.activeElement === items2.at(-1)) {
-        e.preventDefault();
-        items2[0].focus();
-      }
-    };
-    const element = dialog.current;
-    element.addEventListener("keydown", trap);
     return () => {
-      element.removeEventListener("keydown", trap);
       previous?.focus?.();
     };
   }, []);
@@ -3704,90 +3768,107 @@ function AssemblyPanelContent({ sessionId, close: close2, registerBeforeLeave })
     window.addEventListener("keydown", handler);
     return () => window.removeEventListener("keydown", handler);
   }, [dirty, busy, registerBeforeLeave]);
+  const displayRows = tab === "rules" ? draft?.rules ?? [] : preview?.nodes ?? [];
+  const rowOwner = (row) => row.ruleId ?? draft.rules.find((r) => r.kind === row.module)?.id ?? row.id;
+  function dragHandle(row, index, movable = true) {
+    const reset = () => {
+      setDragFrom(null);
+      setDropIndex(null);
+    };
+    const boundary = (event) => {
+      const target = document.elementFromPoint(event.clientX, event.clientY)?.closest("[data-assembly-index]");
+      if (!target) return null;
+      const rect = target.getBoundingClientRect(), at2 = Number(target.dataset.assemblyIndex);
+      return event.clientY < rect.top + rect.height / 2 ? at2 : at2 + 1;
+    };
+    return (0, import_react.createElement)("button", {
+      type: "button",
+      className: "dta-handle",
+      disabled: busy || !movable,
+      "aria-label": `${t("placement")}: ${row.name || t(row.kind)}`,
+      "aria-pressed": dragFrom === index,
+      onPointerDown: (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        e.currentTarget.setPointerCapture(e.pointerId);
+        setDragFrom(index);
+        setDropIndex(index + 1);
+      },
+      onPointerMove: (e) => {
+        if (e.currentTarget.hasPointerCapture(e.pointerId)) {
+          const next = boundary(e);
+          if (next !== null) setDropIndex(next);
+        }
+      },
+      onPointerUp: (e) => {
+        e.preventDefault();
+        if (!e.currentTarget.hasPointerCapture(e.pointerId)) return;
+        e.currentTarget.releasePointerCapture(e.pointerId);
+        const at2 = boundary(e) ?? dropIndex ?? index + 1;
+        reset();
+        let rules;
+        if (tab === "rules") rules = reorderAtBoundary(draft.rules, index, at2);
+        else {
+          const from = draft.rules.findIndex((r) => r.id === rowOwner(row)), target = displayRows[at2];
+          const to = target ? draft.rules.findIndex((r) => r.id === rowOwner(target)) : draft.rules.length;
+          if (from < 0 || to < 0 || target?.locked) return;
+          rules = reorderAtBoundary(draft.rules, from, to);
+        }
+        edit({ rules });
+        if (tab !== "rules") run(async () => {
+          const data = await api6("/preview", "POST", { sessionId, preset: { ...draft, rules } });
+          setPreview(data.preview);
+        });
+      },
+      onPointerCancel: reset
+    }, movable ? "\u283F" : "\u{1F512}");
+  }
+  const placeholder = (index) => dragFrom !== null && dropIndex === index ? (0, import_react.createElement)("div", { key: `drop-${index}`, className: "dta-drop-placeholder" }, t("dropHere"), displayRows[dragFrom]?.name || t(displayRows[dragFrom]?.kind)) : null;
   function ruleRow(rule, index) {
     return (0, import_react.createElement)(
       "article",
-      { key: rule.id, className: "dta-row", style: { "--assembly-color": colors[rule.kind] }, onDragOver: (e) => {
-        e.preventDefault();
-        e.currentTarget.dataset.dragover = "true";
-      }, onDragLeave: (e) => {
-        delete e.currentTarget.dataset.dragover;
-      }, onDrop: (e) => {
-        e.preventDefault();
-        delete e.currentTarget.dataset.dragover;
-        if (drag.current) reorder2(drag.current, rule.id);
-        drag.current = null;
-      } },
+      { key: rule.id, className: "dta-row", "data-assembly-index": index, "data-dragging": dragFrom === index, style: { "--assembly-color": sourceColor(plugins[rule.kind]) } },
       (0, import_react.createElement)(
         "div",
         { className: "dta-summary" },
-        (0, import_react.createElement)("span", { draggable: !busy, className: "dta-handle", onDragStart: (e) => {
-          drag.current = rule.id;
-          e.dataTransfer.setData("text/plain", rule.id);
-        }, onDragEnd: () => {
-          drag.current = null;
-        }, "aria-hidden": true }, "\u283F"),
-        (0, import_react.createElement)("input", { type: "checkbox", checked: rule.enabled, disabled: isNative(rule.kind), "aria-label": t(rule.kind), onChange: (e) => editRule(rule.id, { enabled: e.target.checked }) }),
+        dragHandle(rule, index),
+        (0, import_react.createElement)("input", { type: "checkbox", checked: rule.enabled, disabled: busy, "aria-label": t(rule.kind), onChange: (e) => editRule(rule.id, { enabled: e.target.checked }) }),
         (0, import_react.createElement)("span", { className: "dta-name", role: "button", tabIndex: 0, "aria-expanded": !!expanded[rule.id], onClick: () => toggle(rule.id), onKeyDown: (e) => {
           if (["Enter", " "].includes(e.key)) {
             e.preventDefault();
             toggle(rule.id);
           }
-        } }, rule.name || t(rule.kind)),
-        (0, import_react.createElement)("span", { className: "dta-badge" }, rule.role === "preserve" ? "AUTO" : rule.role),
+        } }, rule.name || t(rule.kind), (0, import_react.createElement)("small", { className: "dta-origin" }, originName(plugins[rule.kind]))),
+        (0, import_react.createElement)("span", { className: "dta-badge" }, rule.role === "preserve" ? t("preserve") : t(rule.role)),
         (0, import_react.createElement)("button", { title: t("up"), "aria-label": t("up"), disabled: index === 0, onClick: () => reorder2(rule.id, draft.rules[index - 1].id) }, "\u2191"),
         (0, import_react.createElement)("button", { title: t("down"), "aria-label": t("down"), disabled: index === draft.rules.length - 1, onClick: () => reorder2(rule.id, draft.rules[index + 1].id) }, "\u2193")
       ),
       expanded[rule.id] && (0, import_react.createElement)(
         "div",
         { className: "dta-detail" },
-        (0, import_react.createElement)("div", { className: "dta-properties" }, (0, import_react.createElement)("div", null, t("source"), (0, import_react.createElement)("small", null, rule.kind), (0, import_react.createElement)("small", null, sourceInfo(rule.kind))), (0, import_react.createElement)("div", null, t("stability"), (0, import_react.createElement)("small", null, t(["history", "input", "worldbook"].includes(rule.kind) ? "conversation" : rule.kind === "native-system" ? "assembly" : "asset"))), (0, import_react.createElement)("label", null, t("lifetime"), select(rule.lifetime, ["request", "snapshot"], (v2) => editRule(rule.id, { lifetime: v2 }), isNative(rule.kind) || rule.kind === "preset"))),
+        (0, import_react.createElement)("div", { className: "dta-properties" }, (0, import_react.createElement)("div", null, t("source"), (0, import_react.createElement)("small", null, originName(plugins[rule.kind])), (0, import_react.createElement)("small", null, sourceInfo(rule.kind))), (0, import_react.createElement)("div", null, t("stability"), (0, import_react.createElement)("small", null, t(["history", "input", "worldbook"].includes(rule.kind) ? "conversation" : rule.kind === "native-system" ? "assembly" : "asset"))), (0, import_react.createElement)("label", null, t("lifetime"), select(rule.lifetime, ["request", "snapshot"], (v2) => editRule(rule.id, { lifetime: v2 }), isNative(rule.kind) || rule.kind === "preset"))),
         (0, import_react.createElement)("div", { className: "dta-grid" }, (0, import_react.createElement)("label", null, t("role"), select(rule.role, ["preserve", "system", "user", "assistant"], (v2) => editRule(rule.id, { role: v2 }), isNative(rule.kind))), !isNative(rule.kind) && (0, import_react.createElement)("label", null, t("depth"), (0, import_react.createElement)("input", { type: "number", min: 0, max: 1e4, value: rule.depth ?? "", onChange: (e) => editRule(rule.id, { depth: e.target.value === "" ? null : Number(e.target.value) }) }))),
+        rule.kind === "phi" && (0, import_react.createElement)("div", null, (0, import_react.createElement)("p", null, t("phiHelp")), (0, import_react.createElement)("label", null, t("additional-phi"), (0, import_react.createElement)("textarea", { value: rule.text, onChange: (e) => editRule(rule.id, { text: e.target.value }) }))),
         rule.kind === "custom" && (0, import_react.createElement)("div", null, (0, import_react.createElement)("label", null, t("name"), (0, import_react.createElement)("input", { value: rule.name ?? "", onChange: (e) => editRule(rule.id, { name: e.target.value }) })), (0, import_react.createElement)("label", null, t("text"), (0, import_react.createElement)("textarea", { value: rule.text, onChange: (e) => editRule(rule.id, { text: e.target.value }) })), button("remove", () => edit({ rules: draft.rules.filter((r) => r.id !== rule.id) }))),
         (0, import_react.createElement)("small", null, t("audit"))
       )
     );
   }
-  function nodeRow(node) {
+  function nodeRow(node, index) {
     const owner = node.ruleId ?? draft.rules.find((r) => r.kind === node.module)?.id;
     const movable = !busy && !node.locked && !preview?.actual && Boolean(owner);
     return (0, import_react.createElement)(
       "article",
-      {
-        key: node.id,
-        className: "dta-row",
-        style: { "--assembly-color": colors[node.module] ?? "#888" },
-        draggable: movable,
-        onDragStart: (e) => {
-          if (movable) {
-            drag.current = owner;
-            e.dataTransfer.setData("text/plain", owner);
-          }
-        },
-        onDragOver: (e) => {
-          if (movable) e.preventDefault();
-        },
-        onDrop: (e) => {
-          e.preventDefault();
-          if (!movable || !drag.current) return;
-          const next = { ...draft, rules: moveRule(draft.rules, drag.current, owner) };
-          drag.current = null;
-          edit(next);
-          run(async () => {
-            const data = await api6("/preview", "POST", { sessionId, preset: next });
-            setPreview(data.preview);
-          });
-        }
-      },
-      (0, import_react.createElement)("div", { className: "dta-summary", role: "button", tabIndex: 0, onClick: () => toggle(node.id), onKeyDown: (e) => {
+      { key: node.id, className: "dta-row", "data-assembly-index": index, "data-dragging": dragFrom === index, style: { "--assembly-color": sourceColor(node.source.plugin) } },
+      (0, import_react.createElement)("div", { className: "dta-summary" }, dragHandle(node, index, movable), (0, import_react.createElement)("span", { className: "dta-name", role: "button", tabIndex: 0, onClick: () => toggle(node.id), onKeyDown: (e) => {
         if (e.key === "Enter") toggle(node.id);
-      }, "aria-expanded": !!expanded[node.id] }, (0, import_react.createElement)("span", { title: node.lockReason ?? "" }, node.locked ? "\u{1F512}" : "\u25C7"), (0, import_react.createElement)("span", { className: "dta-name" }, node.name), (0, import_react.createElement)("span", { className: "dta-badge" }, node.role)),
-      expanded[node.id] && (0, import_react.createElement)("div", { className: "dta-detail" }, (0, import_react.createElement)("div", { className: "dta-properties" }, (0, import_react.createElement)("div", null, t("source"), (0, import_react.createElement)("small", null, `${node.source.plugin} / ${node.source.resourceId ?? ""} / ${node.source.field}`), (0, import_react.createElement)("small", null, sourceInfo(node.module))), (0, import_react.createElement)("div", null, t("stability"), (0, import_react.createElement)("small", null, t(node.stability))), (0, import_react.createElement)("div", null, t("lifetime"), (0, import_react.createElement)("small", null, t(node.lifetime)), (0, import_react.createElement)("small", null, t("recorded")))), node.locked && (0, import_react.createElement)("small", null, `${t("locked")}: ${node.lockReason}`), ...(node.children ?? []).map((child) => (0, import_react.createElement)("div", { key: child.id, className: "dta-child" }, `\u{1F512} ${child.name}`, (0, import_react.createElement)("small", null, child.lockReason), (0, import_react.createElement)("small", null, [child.source?.plugin, child.source?.resourceId, child.source?.field, child.source?.sourceKind].filter(Boolean).join(" / ")), (0, import_react.createElement)("pre", null, child.text))), (0, import_react.createElement)("pre", null, node.text))
+      }, "aria-expanded": !!expanded[node.id], title: node.name }, nodeName(node), (0, import_react.createElement)("small", { className: "dta-origin" }, originName(node.source.plugin))), (0, import_react.createElement)("span", { className: "dta-badge" }, t(node.role))),
+      expanded[node.id] && (0, import_react.createElement)("div", { className: "dta-detail" }, (0, import_react.createElement)("div", { className: "dta-properties" }, (0, import_react.createElement)("div", null, t("source"), (0, import_react.createElement)("small", null, `${node.source.plugin} / ${node.source.resourceId ?? ""} / ${node.source.field}`), (0, import_react.createElement)("small", null, sourceInfo(node.module))), (0, import_react.createElement)("div", null, t("stability"), (0, import_react.createElement)("small", null, t(node.stability))), (0, import_react.createElement)("div", null, t("lifetime"), (0, import_react.createElement)("small", null, t(node.lifetime)), (0, import_react.createElement)("small", null, t("recorded")))), node.locked && (0, import_react.createElement)("small", null, `${t("locked")}: ${node.lockReason}`), ...(node.children ?? []).map((child) => (0, import_react.createElement)("div", { key: child.id, className: "dta-child", style: { borderLeftColor: sourceColor(child.source?.plugin) } }, `\u{1F512} ${nodeName(child)}`, (0, import_react.createElement)("small", null, child.lockReason), (0, import_react.createElement)("small", null, [originName(child.source?.plugin), child.source?.resourceId, child.source?.field, child.source?.sourceKind].filter(Boolean).join(" / ")), (0, import_react.createElement)("pre", null, child.text))), (0, import_react.createElement)("pre", null, node.text))
     );
   }
   return (0, import_react.createElement)(
     "section",
-    { ref: dialog, className: "dtv-assembly-screen", role: "dialog", "aria-modal": true, "aria-label": t("title") },
+    { ref: dialog, className: "dtv-assembly-screen", role: "dialog", "aria-modal": false, "aria-label": t("title") },
     (0, import_react.createElement)("style", null, assemblyCss),
     (0, import_react.createElement)("header", { className: "dta-head" }, (0, import_react.createElement)("div", null, (0, import_react.createElement)("h2", null, t("title")), (0, import_react.createElement)("p", null, t("intro"))), (0, import_react.createElement)("button", { onClick: safeClose, "aria-label": t("close") }, "\xD7")),
     (0, import_react.createElement)("div", { className: "dta-body" }, (0, import_react.createElement)(
@@ -3822,7 +3903,7 @@ function AssemblyPanelContent({ sessionId, close: close2, registerBeforeLeave })
             setDirty(false);
             setPreview(null);
           }
-        } }, !draft.id && (0, import_react.createElement)("option", { value: "" }, draft.name), ...items.map((p) => (0, import_react.createElement)("option", { key: p.id, value: p.id }, p.name)))), (0, import_react.createElement)("label", null, t("name"), (0, import_react.createElement)("input", { value: draft.name, onChange: (e) => edit({ name: e.target.value }) }))),
+        } }, !draft.id && (0, import_react.createElement)("option", { value: "" }, draft.name), ...items.map((p) => (0, import_react.createElement)("option", { key: p.id, value: p.id }, p.name)))), (0, import_react.createElement)("label", null, t("name"), (0, import_react.createElement)("input", { value: draft.name, disabled: draft.builtin, onChange: (e) => edit({ name: e.target.value }) }))),
         (0, import_react.createElement)("div", { className: "dta-toolbar" }, button("save", () => run(() => save())), button("copy", () => run(() => save(true))), button("remove", () => run(async () => {
           if (!window.confirm(t("confirmDelete"))) return;
           await api6(`/${draft.id}`, "DELETE");
@@ -3838,20 +3919,32 @@ function AssemblyPanelContent({ sessionId, close: close2, registerBeforeLeave })
           setSelection(data.selection);
           setStatus(t("appliedStatus"));
           window.dispatchEvent(new CustomEvent(CLIENT_REFRESH_EVENT));
-        }), !sessionId || !capable, "primary"), button("reset", () => run(async () => {
+        }), !sessionId || !capable, "primary"), button("reset", () => {
+          if (!discard()) return;
+          run(async () => {
+            const data = await api6("/selection", "PUT", { sessionId, id: "builtin-st" });
+            setSelection(data.selection);
+            setDraft(items.find((p) => p.id === "builtin-st"));
+            setDirty(false);
+            setPreview(null);
+            setTab("rules");
+            setStatus(t("appliedStatus"));
+            window.dispatchEvent(new CustomEvent(CLIENT_REFRESH_EVENT));
+          });
+        }, !sessionId || !capable), button("disable", () => run(async () => {
           const data = await api6("/selection", "PUT", { sessionId, id: null });
           setSelection(data.selection);
-          setStatus(t("appliedStatus"));
           window.dispatchEvent(new CustomEvent(CLIENT_REFRESH_EVENT));
-        }), !sessionId || !selection), button("preview", () => run(async () => {
+        }), !sessionId || !selection)),
+        (0, import_react.createElement)("small", null, t("defaultHint")),
+        !sessionId && (0, import_react.createElement)("small", null, t("noSession")),
+        (0, import_react.createElement)("div", { className: "dta-tabs" }, (0, import_react.createElement)("button", { "aria-pressed": tab === "rules", onClick: () => setTab("rules") }, t("rules")), button("preview", () => run(async () => {
           const data = await api6("/preview", "POST", { sessionId, preset: draft });
           setPreview(data.preview);
           setTab("expanded");
-        }))),
-        button("actual", () => run(actualRequest), !sessionId),
-        !sessionId && (0, import_react.createElement)("small", null, t("noSession")),
-        (0, import_react.createElement)("div", { className: "dta-tabs" }, ...["rules", "expanded"].map((key2) => (0, import_react.createElement)("button", { key: key2, "aria-pressed": tab === key2, onClick: () => setTab(key2) }, t(key2)))),
-        tab === "rules" ? (0, import_react.createElement)("div", null, (0, import_react.createElement)("label", { className: "dta-toolbar" }, t("placement"), select(draft.placement, ["modules", "st"], (placement) => edit({ placement }))), ...draft.rules.map(ruleRow), button("add", () => edit({ rules: [...draft.rules, { id: `custom-${Date.now()}`, kind: "custom", enabled: true, role: "system", lifetime: "request", depth: null, text: "", name: "" }] }))) : (0, import_react.createElement)("div", null, (0, import_react.createElement)("div", { className: "dta-notice" }, t(preview?.actual ? "actualNotice" : "previewScope")), !preview ? (0, import_react.createElement)("p", null, t("empty")) : (0, import_react.createElement)("div", null, ...preview.nodes.map(nodeRow), (0, import_react.createElement)("details", null, (0, import_react.createElement)("summary", null, `${t("result")} (${preview.messages.length})`), ...preview.messages.map((m2, i2) => (0, import_react.createElement)("div", { key: `${m2.id}:${i2}`, className: "dta-child" }, `${i2 + 1} \xB7 ${m2.role}`, (0, import_react.createElement)("pre", null, (m2.content ?? []).map((b2) => b2.type === "text" ? b2.text : `[${b2.type}]`).join("\n"))))), preview.diagnostics.length > 0 && (0, import_react.createElement)("details", null, (0, import_react.createElement)("summary", null, t("diagnostics")), (0, import_react.createElement)("pre", null, JSON.stringify(preview.diagnostics, null, 2))))),
+        })), button("actual", () => run(actualRequest), !sessionId)),
+        (0, import_react.createElement)("div", { className: "dta-legend" }, ...[...new Set(Object.values(plugins))].map((plugin) => (0, import_react.createElement)("span", { key: plugin, style: { "--assembly-color": sourceColor(plugin) } }, originName(plugin)))),
+        tab === "rules" ? (0, import_react.createElement)("div", null, (0, import_react.createElement)("label", { className: "dta-toolbar" }, t("placement"), select(draft.placement, ["modules", "st"], (placement) => edit({ placement }))), ...draft.rules.flatMap((row, i2) => [placeholder(i2), ruleRow(row, i2)]), placeholder(draft.rules.length), button("add", () => edit({ rules: [...draft.rules, { id: `custom-${Date.now()}`, kind: "custom", enabled: true, role: "system", lifetime: "request", depth: null, text: "", name: "" }] }))) : (0, import_react.createElement)("div", null, (0, import_react.createElement)("div", { className: "dta-notice" }, t(preview?.actual ? "actualNotice" : "previewScope")), !preview ? (0, import_react.createElement)("p", null, t("empty")) : (0, import_react.createElement)("div", null, ...preview.nodes.flatMap((node, i2) => [placeholder(i2), nodeRow(node, i2)]), placeholder(preview.nodes.length), (0, import_react.createElement)("details", null, (0, import_react.createElement)("summary", null, `${t("result")} (${preview.messages.length})`), ...preview.messages.map((m2, i2) => (0, import_react.createElement)("div", { key: `${m2.id}:${i2}`, className: "dta-child" }, `${i2 + 1} \xB7 ${m2.role}`, (0, import_react.createElement)("pre", null, (m2.content ?? []).map((b2) => b2.type === "text" ? b2.text : `[${b2.type}]`).join("\n"))))), preview.diagnostics.length > 0 && (0, import_react.createElement)("details", null, (0, import_react.createElement)("summary", null, t("diagnostics")), (0, import_react.createElement)("pre", null, JSON.stringify(preview.diagnostics, null, 2))))),
         (0, import_react.createElement)("small", { style: { marginTop: 20 } }, t("tools"))
       )
     ))
@@ -5845,22 +5938,6 @@ var import_react25 = require("react");
 
 // packages/preset/src/client.js
 var import_react5 = require("react");
-
-// packages/preset/src/client-state.js
-function reorder(items, from, to) {
-  if (!Array.isArray(items)) throw new TypeError("items must be an array");
-  if (!Number.isSafeInteger(from) || !Number.isSafeInteger(to)) return items;
-  if (from === to || from < 0 || to < 0 || from >= items.length || to >= items.length) return items;
-  const result = [...items];
-  const [moved] = result.splice(from, 1);
-  result.splice(to, 0, moved);
-  return result;
-}
-function reorderAtBoundary(items, from, boundary) {
-  if (!Number.isSafeInteger(boundary) || boundary < 0 || boundary > items.length) return items;
-  const destination = boundary > from ? boundary - 1 : boundary;
-  return reorder(items, from, destination);
-}
 
 // packages/client/src/import-failure.js
 function importFailureMessage(reason) {
@@ -9099,7 +9176,7 @@ async function createConfiguredPlaythroughWorkflow({
 
 // packages/client/src/state.js
 var TAVERN_MENU_ITEMS = Object.freeze([
-  { id: "assembly", labelKey: "nav.assembly", emptyTitleKey: "nav.assembly.empty", available: true, binding: false, showBinding: false },
+  { id: "assembly", labelKey: "nav.assembly", emptyTitleKey: "nav.assembly.empty", available: true },
   { id: "preset", labelKey: "nav.preset", emptyTitleKey: "nav.preset.empty", available: true },
   { id: "character", labelKey: "nav.character", emptyTitleKey: "nav.character.empty", available: true },
   { id: "world-info", labelKey: "nav.worldBook", emptyTitleKey: "nav.worldBook.empty", available: true },
@@ -32747,7 +32824,7 @@ var css11 = `
 @property --dtv-orb-a{syntax:"<color>";inherits:true;initial-value:#f7fbff}@property --dtv-orb-b{syntax:"<color>";inherits:true;initial-value:#18569d}@property --dtv-orb-ring{syntax:"<color>";inherits:true;initial-value:#174e8a}
 .dtv-ball{--dtv-orb-a:#f7fbff;--dtv-orb-b:#18569d;--dtv-orb-ring:#174e8a;pointer-events:auto;touch-action:none;user-select:none;position:relative;isolation:isolate;overflow:hidden;width:44px;height:44px;flex:none;border:2px solid #fff;border-radius:50%;background:transparent;box-shadow:0 0 0 2px var(--dtv-orb-ring),0 6px 20px rgba(0,0,0,.34),inset 0 0 0 1px rgba(255,255,255,.28);color:#fff;font-size:13px;letter-spacing:-.5px;font-weight:850;text-shadow:0 1px 2px #000;cursor:grab;transition:filter .15s ease,transform .18s ease,box-shadow .18s ease,--dtv-orb-a .32s ease,--dtv-orb-b .32s ease,--dtv-orb-ring .32s ease}.dtv-ball-face{position:absolute;inset:0;border-radius:inherit;background:conic-gradient(from 225deg,var(--dtv-orb-a) 0 50%,var(--dtv-orb-b) 50% 100%);z-index:-1}.dtv-ball-face[data-animate=true]{animation:dtv-orb-switch .48s cubic-bezier(.3,.7,.2,1)}.dtv-ball-label{position:relative;z-index:1}.dtv-ball:hover{filter:brightness(1.1);box-shadow:0 0 0 2px #2675c9,0 8px 24px rgba(0,0,0,.4),inset 0 0 0 1px rgba(255,255,255,.35)}.dtv-layer[data-chrome=play] .dtv-ball{--dtv-orb-a:#090909;--dtv-orb-b:#b31319;--dtv-orb-ring:#a50f16}.dtv-layer[data-chrome=play] .dtv-ball:hover{box-shadow:0 0 0 2px #d5222b,0 8px 24px rgba(0,0,0,.4),inset 0 0 0 1px rgba(255,255,255,.35)}.dtv-ball:active{cursor:grabbing}.dtv-launcher[data-open=true] .dtv-ball{transform:scale(.82) rotate(-8deg)}
 @keyframes dtv-orb-switch{to{transform:rotate(1turn)}}@media (prefers-reduced-motion:reduce){.dtv-ball{transition:filter .15s ease,transform .18s ease,box-shadow .18s ease}.dtv-ball-face[data-animate=true]{animation:none}}
-.dtv-menu{position:absolute;left:8px;right:8px;top:52px;bottom:8px;padding:1px;display:flex;flex-direction:column;gap:4px;opacity:0;visibility:hidden;pointer-events:none;transform:translateY(-6px);transition:opacity .12s ease,transform .18s ease,visibility 0s linear .18s}.dtv-launcher[data-open=true] .dtv-menu{opacity:1;visibility:visible;pointer-events:auto;transform:none;transition-delay:.22s,.16s,.22s}.dtv-launcher[data-vertical=up] .dtv-menu{top:8px;bottom:52px;transform:translateY(6px)}.dtv-launcher[data-open=true][data-vertical=up] .dtv-menu{transform:none}
+.dtv-menu .dtv-menu-item{width:100%}.dtv-menu{position:absolute;left:8px;right:8px;top:52px;bottom:8px;padding:1px;display:flex;flex-direction:column;gap:4px;opacity:0;visibility:hidden;pointer-events:none;transform:translateY(-6px);transition:opacity .12s ease,transform .18s ease,visibility 0s linear .18s}.dtv-launcher[data-open=true] .dtv-menu{opacity:1;visibility:visible;pointer-events:auto;transform:none;transition-delay:.22s,.16s,.22s}.dtv-launcher[data-vertical=up] .dtv-menu{top:8px;bottom:52px;transform:translateY(6px)}.dtv-launcher[data-open=true][data-vertical=up] .dtv-menu{transform:none}
 .dtv-menu-title{flex:none;padding:5px 8px 7px;font-size:11px;line-height:1.35;font-weight:650;color:var(--dsw-alias-label-tertiary);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .dtv-menu-item{min-height:43px;border:0;border-radius:9px;padding:5px 8px;background:transparent;color:var(--dsw-alias-label-primary);text-align:left;font:inherit;cursor:pointer;display:grid;grid-template-columns:10px minmax(0,1fr) auto;gap:8px;align-items:center}.dtv-menu-item:hover{background:var(--dsw-alias-interactive-bg-hover)}.dtv-menu-item[data-active=true]{background:var(--dsw-alias-interactive-bg-selected,var(--dsw-specific-tip))}.dtv-binding-dot{width:8px;height:8px;border-radius:50%;background:#d33239;box-shadow:0 0 0 1px rgba(98,0,4,.38)}.dtv-menu-item[data-bound=true] .dtv-binding-dot{background:#44d17a;box-shadow:0 0 5px #31c66b,0 0 10px rgba(49,198,107,.75)}.dtv-item-copy{min-width:0;display:flex;flex-direction:column;gap:1px}.dtv-item-label{font-size:11px;font-weight:700;line-height:1.2}.dtv-item-status{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:10px;line-height:1.25;color:var(--dsw-alias-label-tertiary)}.dtv-item-count{border-radius:10px;padding:2px 6px;background:var(--dsw-specific-tip);font-size:9px;color:var(--dsw-alias-label-secondary)}.dtv-item-planned{font-size:9px;color:var(--dsw-alias-label-tertiary)}
 .dtv-menu-item[data-show-binding=false] .dtv-binding-dot{visibility:hidden}
@@ -33138,6 +33215,7 @@ function TavernShell({ useSessions, useWorkspaces, createCleanSession, createCon
   const [chromeAnimation, setChromeAnimation] = (0, import_react25.useState)(0);
   const [chromeError, setChromeError] = (0, import_react25.useState)("");
   const [activeSnapshot, setActiveSnapshot] = (0, import_react25.useState)(null);
+  const [assemblyState, setAssemblyState] = (0, import_react25.useState)({ presets: [], selection: null });
   const [statusError, setStatusError] = (0, import_react25.useState)("");
   const [uiSettings, setUiSettings] = (0, import_react25.useState)(getClientUiSettings);
   const [conversationSettings, setConversationSettings] = (0, import_react25.useState)(getClientConversationSettings);
@@ -33438,15 +33516,19 @@ function TavernShell({ useSessions, useWorkspaces, createCleanSession, createCon
   const refreshStatus = (0, import_react25.useCallback)(async () => {
     const generation = ++statusGeneration.current;
     try {
-      const next = await activeView(sessionId);
+      const [next, assembly] = await Promise.all([activeView(sessionId), tavernFetch(`${API_V1}/assembly-presets?sessionId=${encodeURIComponent(sessionId ?? "")}`).then(async (res) => {
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        return res.json();
+      })]);
       if (generation !== statusGeneration.current) return;
       setActiveSnapshot(next);
+      setAssemblyState(assembly);
       setStatusError("");
     } catch (reason) {
       if (generation !== statusGeneration.current) return;
       setStatusError(reason instanceof Error ? reason.message : String(reason));
     }
-  }, [sessionId]);
+  }, [sessionId, chromeMode]);
   (0, import_react25.useEffect)(() => {
     statusGeneration.current += 1;
     setActiveSnapshot(null);
@@ -33575,12 +33657,15 @@ function TavernShell({ useSessions, useWorkspaces, createCleanSession, createCon
   });
   const contextSwitchLauncher = (event) => {
     event.preventDefault();
+    if (!requestSurface(null)) return;
     const switching = chromeController.current?.switchMode({ suppressed: consumeSuppressedClick() });
     Promise.resolve(switching).then((changed) => {
       if (changed) setChromeAnimation((value) => value + 1);
     });
   };
-  const switchChrome = () => chromeController.current?.switchMode();
+  const switchChrome = () => {
+    if (requestSurface(null)) return chromeController.current?.switchMode();
+  };
   const open2 = (id) => {
     if (!requestSurface(id)) return;
     if (id === "diagnostics") setDiagnosticPlaythroughId(null);
@@ -33589,7 +33674,7 @@ function TavernShell({ useSessions, useWorkspaces, createCleanSession, createCon
   };
   let panel = null;
   if (surface === "assembly") {
-    panel = h20(AssemblyPanel, { sessionId, close: close2, registerBeforeLeave });
+    panel = h20(AssemblyPanel, { sessionId, close: close2, registerBeforeLeave, chromeMode });
   } else if (surface === "preset") {
     panel = h20("div", { className: "dtv-panel" }, h20(PresetSidebar, {
       closePanel: close2,
@@ -33655,6 +33740,7 @@ function TavernShell({ useSessions, useWorkspaces, createCleanSession, createCon
   }
   const placement = launcherPlacement(anchor, viewport(), menuOpen, uiSettings.scale);
   const statuses = launcherResourceStatuses(activeSnapshot);
+  statuses.assembly = { bound: Boolean(assemblyState.selection), title: assemblyState.selection?.name, titleKey: "nav.assembly.empty", count: assemblyState.selection ? 1 : 0 };
   const chromeSwitchLabel = chromeMode === "play" ? uiMessage("chrome.switchToNative") : uiMessage("chrome.switchToPlay");
   const chromeStatusLabel = chromeMode === "play" ? uiMessage("chrome.currentPlay") : uiMessage("chrome.currentNative");
   const workspaceAdmissionOpen = chromeMode === "play" && rpWorkspaceLoadState !== "idle" && rpWorkspaceLoadState !== "loading" && rpWorkspaceSetting?.ready !== true;
@@ -33732,7 +33818,7 @@ function TavernShell({ useSessions, useWorkspaces, createCleanSession, createCon
           const stateLabel = item.binding === false ? "" : unwrapText(uiMessage(status.bound ? "common.bound" : "common.unbound"));
           const titleText = stateLabel ? uiMessage("nav.itemTitleBound", { label: itemLabel, title: statusTitle, state: stateLabel }) : uiMessage("nav.itemTitle", { label: itemLabel, title: statusTitle });
           const ariaText = stateLabel ? uiMessage("nav.itemAriaBound", { label: itemLabel, title: statusTitle, state: stateLabel }) : uiMessage("nav.itemAria", { label: itemLabel, title: statusTitle });
-          return h20(
+          return h20("div", { key: item.id }, h20(
             "button",
             {
               className: "dtv-menu-item",
@@ -33756,7 +33842,25 @@ function TavernShell({ useSessions, useWorkspaces, createCleanSession, createCon
               h20("span", { className: "dtv-item-status" }, status.bound ? rawText(status.title) : uiMessage(status.titleKey ?? item.emptyTitleKey))
             ),
             status.count >= (isDiagnostics ? 1 : 2) ? h20("span", { className: "dtv-item-count", "aria-label": uiMessage(isDiagnostics ? "diagnostics.count" : "nav.bookCount", { count: status.count }) }, uiMessage(isDiagnostics ? "diagnostics.count" : "nav.bookCount", { count: status.count })) : item.available ? null : h20("span", { className: "dtv-item-planned" }, uiMessage("common.planned"))
-          );
+          ), item.id === "assembly" && h20("select", {
+            className: "dtv-select",
+            style: { width: "100%", marginBottom: 4 },
+            "aria-label": translate("nav.assembly"),
+            value: assemblyState.selection?.id ?? "",
+            disabled: !sessionId,
+            onChange: async (event) => {
+              const id = event.target.value || null;
+              if (!requestSurface(null)) return;
+              try {
+                const res = await tavernFetch(`${API_V1}/assembly-presets/selection`, { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ sessionId, id }) });
+                const data = await res.json();
+                if (!res.ok) throw new Error(data.error);
+                window.dispatchEvent(new CustomEvent(CLIENT_REFRESH_EVENT));
+              } catch (error) {
+                setStatusError(error.message);
+              }
+            }
+          }, h20("option", { value: "" }, uiMessage("nav.assembly.empty")), ...assemblyState.presets.map((p) => h20("option", { key: p.id, value: p.id }, p.name))));
         })
       )
     )

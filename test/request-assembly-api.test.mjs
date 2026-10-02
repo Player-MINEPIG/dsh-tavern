@@ -48,3 +48,13 @@ test('assembly API keeps edits distinct from apply, rejects running/unsupported 
     assert.equal((await call(`/${id}`, 'DELETE')).status, 200)
   } finally { rmSync(root, { recursive: true, force: true }) }
 })
+
+test('preview rebuilds current native instructions and never duplicates historical loader text', async () => {
+  const events = [{ id: 'old', role: 'system', content: [{ type: 'text', text: 'OLD CHARACTER' }] }, { id: 'user', role: 'user', content: [{ type: 'text', text: 'hello' }] }]
+  let previewContext
+  const runtime = new RequestAssembler({ ctx: { get: key => key === 'systemPrompt' ? { async assemble(context) { previewContext = context; return { sections: [{ name: 'core', text: 'CURRENT {{name}}' }], variables: { name: 'CORE' } } } } : { requestAssemblyVersion: 1 } }, store: {}, resources: { compile: () => ({ assemblyInput: { character: { data: { description: 'CHARACTER' } } } }) } })
+  const result = await runtime.preview({ preset: BUILTINS[0], agent: { session: { deriveMessages: () => events } } })
+  assert.equal(previewContext.tavernAssemblyPreview, true)
+  assert.deepEqual(result.messages.map(m => m.content[0].text), ['CURRENT CORE', 'CHARACTER', 'hello'])
+  assert.equal(events[0].content[0].text, 'OLD CHARACTER')
+})

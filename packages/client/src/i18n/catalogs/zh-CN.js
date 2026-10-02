@@ -1,6 +1,6 @@
 export default Object.freeze({
-  'nav.assembly': '提示词装配',
-  'nav.assembly.empty': '排列规则与请求预览',
+  'nav.assembly': '提示词装配策略',
+  'nav.assembly.empty': '关闭 · DSH 默认策略',
   "appearance.createStyle": "创建样式",
   "appearance.newStyle": "新样式",
   "appearance.fontSize": "正文字号",

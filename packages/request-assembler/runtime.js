@@ -8,7 +8,10 @@ export class RequestAssembler {
   requireAvailable() {
     if (!this.available()) throw Object.assign(new Error('This layout requires DSH request assembly protocol 1. Install the prepared core before applying it.'), { status: 409, code: 'REQUEST_ASSEMBLY_CORE_REQUIRED' })
   }
-  selected(id) { return this.store.selection(id) }
+  selected(id) {
+    if (!this.available() && this.store.hasSelection && !this.store.hasSelection(id)) return null
+    return this.store.selection(id)
+  }
   startsSeries(agent) {
     const selected = this.selected(agent.id)
     const last = agent.session.snapshotEvents().findLast(e => e.type === 'request/assembly')?.data.metadata
@@ -31,10 +34,24 @@ export class RequestAssembler {
     const { messages, ...metadata } = assembly
     return { messages, metadata: { owner: 'pmp-dsh-tavern', assembly: metadata } }
   }
-  preview({ preset, agent, sessionId }) {
+  async preview({ preset, agent, sessionId }) {
     const snapshot = this.resources.compile({ agent, sessionId, resolveOnly: true })
-    const nativeMessages = agent?.session?.deriveMessages?.() ?? []
-    const assembly = assembleRequest({ preset, assets: { ...snapshot.assemblyInput, diagnostics: snapshot.diagnostics }, nativeMessages, preview: true, maxBytes: this.resources.maxProfileBytes })
+    // Historical system messages may still contain the old loader's assets.
+    // Preview current core assembly independently, without committing any event.
+    let nativeMessages = (agent?.session?.deriveMessages?.() ?? []).filter(m => m.role !== 'system')
+    const diagnostics = [...(snapshot.diagnostics ?? [])]
+    let officialSections = []
+    const systemPrompt = this.ctx.get('systemPrompt')
+    if (systemPrompt?.assemble) {
+      const current = await systemPrompt.assemble({ agent, scope: agent, tavernAssemblyPreview: true })
+      officialSections = current.sections
+      const text = current.sections.map(section => section.interpolate === false ? section.text : section.text.replace(/\{\{([^{}]*)\}\}/g, (_, key) => {
+        if (!/^[a-z][a-z0-9_]*$/.test(key) || typeof current.variables?.[key] !== 'string') throw new Error('Unresolved native preview variable')
+        return current.variables[key]
+      })).filter(Boolean).join('\n\n')
+      if (text) nativeMessages.unshift({ id: 'preview-native-system', role: 'system', content: [{ type: 'text', text }], source: { kind: 'system-prompt' } })
+    } else diagnostics.push({ code: 'NATIVE_SYSTEM_PREVIEW_UNAVAILABLE' })
+    const assembly = assembleRequest({ preset, assets: { ...snapshot.assemblyInput, diagnostics, officialSections }, nativeMessages, preview: true, maxBytes: this.resources.maxProfileBytes })
     return { ...assembly, capability: this.available(), scope: 'current-resources-and-durable-history', pendingInputsIncluded: false }
   }
 }

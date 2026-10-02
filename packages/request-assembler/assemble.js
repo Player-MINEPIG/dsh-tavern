@@ -12,7 +12,7 @@ function message(role, text, id) {
   return { id: uuid, role, content: [{ type: 'text', text }], source: role === 'assistant' ? { kind: 'model', provider: 'tavern', model: 'assembly' } : { kind: role === 'system' ? 'system-prompt' : 'tavern-assembly' } }
 }
 function source(kind, id, field) {
-  return { plugin: kind === 'native' ? 'DSH' : `pmp-dsh-tavern/${kind}`, resourceId: id ?? null, field, generationRequiresPlugin: kind !== 'native', recordedContentSurvivesRemoval: true }
+  return { plugin: kind === 'native' ? 'DSH' : 'pmp-dsh-tavern', module: kind, resourceId: id ?? null, field, generationRequiresPlugin: kind !== 'native', recordedContentSurvivesRemoval: true }
 }
 
 /** Preserve native order and complete tool transactions when inserting depth prompts. */
@@ -78,17 +78,18 @@ export function assembleRequest({ preset: suppliedPreset, assets = {}, nativeMes
     const contentHash = hash({ text, role: actualRole })
     // Deterministic per-content ids let unchanged injected messages retain identity.
     const msg = message(actualRole, text, `tavern-${hash({ id, contentHash }).slice(0, 32)}`)
-    const node = { id, ruleId: rule.id, module: rule.kind, name: suffix, role: actualRole, text, messages: [msg], source: src, stability: /\{\{\s*(random::|roll |getvar::)/i.test(raw) ? 'evaluation' : /last(user|char)message/i.test(raw) ? 'conversation' : stability,
+    const node = { id, ruleId: rule.id, module: rule.kind, name: assets.preset?.prompts?.find(p => `preset:${p.identifier}` === suffix)?.name || (src.module === 'world-book' ? lore.find(e => String(e.uid ?? e.id) === src.field)?.comment : null) || suffix, role: actualRole, text, messages: [msg], source: src, stability: /\{\{\s*(random::|roll |getvar::)/i.test(raw) ? 'evaluation' : /last(user|char)message/i.test(raw) ? 'conversation' : stability,
       lifetime: rule.lifetime, recorded: true, locked, lockReason, children, hash: contentHash, depth,
       changed: previous?.nodes?.find(n => n.id === id)?.hash !== contentHash }
     if (depth !== null && depth !== undefined) deferred.push(node)
     else nodes.push(node)
   }
   function addNative(kind, owner, locked = false) {
-    if (usedNative.has(kind)) return
+    if (!enabled(kind) || usedNative.has(kind)) return
     usedNative.add(kind)
     const messages = kind === 'native-system' ? nativeSystem : kind === 'history' ? history : input
-    const children = kind === 'native-system' ? (assets.officialSections ?? []).map((section, index) => ({ id: `official:${index}`, name: section.name, text: section.text, locked: true, lockReason: 'native-system-section', source: { plugin: 'DSH', section: section.name, generationRequiresPlugin: null, recordedContentSurvivesRemoval: true } }))
+    if (!messages.length) return
+    const children = kind === 'native-system' ? (assets.officialSections ?? []).map((section, index) => ({ id: `official:${index}`, name: section.name, text: section.text, locked: true, lockReason: 'native-system-section', source: { plugin: section.plugin ?? section.source?.plugin ?? (section.name === 'rp:policy' || section.name?.startsWith('pmp-dsh-tavern:') ? 'pmp-dsh-tavern' : null), providedBy: 'DSH', section: section.name, generationRequiresPlugin: null, recordedContentSurvivesRemoval: true } }))
       : messages.map(m => ({ id: m.id, name: m.role, text: textOf(m), locked: true, lockReason: 'native-message', source: { plugin: m.source?.plugin ?? 'DSH', sourceKind: m.source?.kind ?? 'unknown', generationRequiresPlugin: Boolean(m.source?.plugin), recordedContentSurvivesRemoval: true } }))
     nodes.push({ id: `${owner}:${kind}`, module: kind, name: kind, role: 'preserve', messages, text: messages.map(textOf).join('\n\n'), source: source('native', null, kind), stability: kind === 'native-system' ? 'assembly' : 'conversation', lifetime: 'native', recorded: true, locked, lockReason: locked ? 'preset:chatHistory' : null, children, hash: hash(messages), changed: previous?.nodes?.find(n => n.module === kind)?.hash !== hash(messages) })
   }
@@ -162,7 +163,7 @@ export function assembleRequest({ preset: suppliedPreset, assets = {}, nativeMes
       const dp = data.extensions?.depth_prompt
       if (dp?.prompt) add(rule, 'depth_prompt', dp.prompt, source('character', assets.character?.id, 'depth_prompt'), { depth: preset.placement === 'st' ? dp.depth ?? 4 : rule.depth, role: dp.role ?? 'system' })
     } else if (rule.kind === 'worldbook') { addLore(rule, 'before', 'worldbook'); addLore(rule, 'after', 'worldbook') }
-    else if (rule.kind === 'phi') { nodes.push(...prebuilt.filter(n => n.module === 'phi')); addField(rule, 'phi', 'phi') }
+    else if (rule.kind === 'phi') { nodes.push(...prebuilt.filter(n => n.module === 'phi')); addField(rule, 'phi', 'phi'); add(rule, 'additional-phi', rule.text, source('custom', suppliedPreset.id, rule.id)) }
     else if (rule.kind === 'custom') add(rule, rule.name || 'custom', rule.text, source('custom', suppliedPreset.id, rule.id), { role: 'system' })
   }
   // Resolve placement before lifetime so depth rules and list rules share retention.
@@ -227,8 +228,8 @@ export function assembleRequest({ preset: suppliedPreset, assets = {}, nativeMes
       locked: true, lockReason: 'retained-snapshot', hash: snapshot.hash, children: [] })
   }
   const seenNative = messages.filter(m => nativeMessages.some(n => n.id === m.id)).map(m => m.id)
-  const required = nativeMessages.map(m => m.id)
-  if (required.length !== seenNative.length || new Set(seenNative).size !== required.length) throw new Error('Assembly must include each native message exactly once')
+  const required = nativeMessages.filter(m => enabled(m.role === 'system' ? 'native-system' : claimed.has(m.id) ? 'input' : 'history')).map(m => m.id)
+  if (required.length !== seenNative.length || new Set(seenNative).size !== required.length) throw new Error('Assembly must include each enabled native message exactly once')
   const openCalls = new Set()
   for (const msg of messages) {
     if (openCalls.size && msg.role !== 'tool') throw new Error('Assembly cannot split a tool call and its results')

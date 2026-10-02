@@ -22,7 +22,7 @@ export function normalizePreset(value) {
     const role = rule.role ?? 'preserve', lifetime = rule.lifetime ?? 'request'
     if (!['preserve', 'system', 'user', 'assistant'].includes(role)) throw new TypeError('Invalid role')
     if (!['request', 'snapshot'].includes(lifetime)) throw new TypeError('Invalid lifetime')
-    if (['native-system', 'history', 'input'].includes(rule.kind) && (role !== 'preserve' || lifetime !== 'request' || rule.enabled === false)) throw new TypeError('Native modules retain their roles and must remain enabled')
+    if (['native-system', 'history', 'input'].includes(rule.kind) && (role !== 'preserve' || lifetime !== 'request')) throw new TypeError('Native modules retain their roles and request lifetime')
     if (rule.kind === 'preset' && lifetime !== 'request') throw new TypeError('Preset placement markers require request lifetime')
     if (rule.depth !== undefined && rule.depth !== null && (!Number.isInteger(rule.depth) || rule.depth < 0 || rule.depth > 10000)) throw new TypeError('Invalid insertion depth')
     if (['native-system', 'history', 'input'].includes(rule.kind) && rule.depth != null) throw new TypeError('Native module positions are controlled by the list or references')

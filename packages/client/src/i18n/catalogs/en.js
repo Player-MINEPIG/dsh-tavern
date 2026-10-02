@@ -1,6 +1,6 @@
 export default Object.freeze({
-  'nav.assembly': 'Prompt assembly',
-  'nav.assembly.empty': 'Arrangement and request preview',
+  'nav.assembly': 'Prompt assembly strategy',
+  'nav.assembly.empty': 'Off · DSH default strategy',
   "appearance.createStyle": "Create style",
   "appearance.newStyle": "New style",
   "appearance.fontSize": "Body font size",

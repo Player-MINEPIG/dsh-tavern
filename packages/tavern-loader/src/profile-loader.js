@@ -300,9 +300,9 @@ export class TavernProfileLoader {
     if (!isRecord(context)) return this.compile()
     const cached = this.contextCache.get(context)
     if (cached !== undefined) return cached
-    const snapshot = this.compile({ agent: context.agent, context })
+    const snapshot = this.compile({ agent: context.agent, context, resolveOnly: context.tavernAssemblyPreview === true })
     this.contextCache.set(context, snapshot)
-    if (isRecord(context.agent)) this.assembledByAgent.set(context.agent, snapshot)
+    if (isRecord(context.agent) && !context.tavernAssemblyPreview) this.assembledByAgent.set(context.agent, snapshot)
     return snapshot
   }
 

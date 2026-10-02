@@ -1,5 +1,5 @@
 export const TAVERN_MENU_ITEMS = Object.freeze([
-  { id: 'assembly', labelKey: 'nav.assembly', emptyTitleKey: 'nav.assembly.empty', available: true, binding: false, showBinding: false },
+  { id: 'assembly', labelKey: 'nav.assembly', emptyTitleKey: 'nav.assembly.empty', available: true },
   { id: 'preset', labelKey: 'nav.preset', emptyTitleKey: 'nav.preset.empty', available: true },
   { id: 'character', labelKey: 'nav.character', emptyTitleKey: 'nav.character.empty', available: true },
   { id: 'world-info', labelKey: 'nav.worldBook', emptyTitleKey: 'nav.worldBook.empty', available: true },

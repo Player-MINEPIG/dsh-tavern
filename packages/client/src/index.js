@@ -78,7 +78,7 @@ const css = `
 @property --dtv-orb-a{syntax:"<color>";inherits:true;initial-value:#f7fbff}@property --dtv-orb-b{syntax:"<color>";inherits:true;initial-value:#18569d}@property --dtv-orb-ring{syntax:"<color>";inherits:true;initial-value:#174e8a}
 .dtv-ball{--dtv-orb-a:#f7fbff;--dtv-orb-b:#18569d;--dtv-orb-ring:#174e8a;pointer-events:auto;touch-action:none;user-select:none;position:relative;isolation:isolate;overflow:hidden;width:44px;height:44px;flex:none;border:2px solid #fff;border-radius:50%;background:transparent;box-shadow:0 0 0 2px var(--dtv-orb-ring),0 6px 20px rgba(0,0,0,.34),inset 0 0 0 1px rgba(255,255,255,.28);color:#fff;font-size:13px;letter-spacing:-.5px;font-weight:850;text-shadow:0 1px 2px #000;cursor:grab;transition:filter .15s ease,transform .18s ease,box-shadow .18s ease,--dtv-orb-a .32s ease,--dtv-orb-b .32s ease,--dtv-orb-ring .32s ease}.dtv-ball-face{position:absolute;inset:0;border-radius:inherit;background:conic-gradient(from 225deg,var(--dtv-orb-a) 0 50%,var(--dtv-orb-b) 50% 100%);z-index:-1}.dtv-ball-face[data-animate=true]{animation:dtv-orb-switch .48s cubic-bezier(.3,.7,.2,1)}.dtv-ball-label{position:relative;z-index:1}.dtv-ball:hover{filter:brightness(1.1);box-shadow:0 0 0 2px #2675c9,0 8px 24px rgba(0,0,0,.4),inset 0 0 0 1px rgba(255,255,255,.35)}.dtv-layer[data-chrome=play] .dtv-ball{--dtv-orb-a:#090909;--dtv-orb-b:#b31319;--dtv-orb-ring:#a50f16}.dtv-layer[data-chrome=play] .dtv-ball:hover{box-shadow:0 0 0 2px #d5222b,0 8px 24px rgba(0,0,0,.4),inset 0 0 0 1px rgba(255,255,255,.35)}.dtv-ball:active{cursor:grabbing}.dtv-launcher[data-open=true] .dtv-ball{transform:scale(.82) rotate(-8deg)}
 @keyframes dtv-orb-switch{to{transform:rotate(1turn)}}@media (prefers-reduced-motion:reduce){.dtv-ball{transition:filter .15s ease,transform .18s ease,box-shadow .18s ease}.dtv-ball-face[data-animate=true]{animation:none}}
-.dtv-menu{position:absolute;left:8px;right:8px;top:52px;bottom:8px;padding:1px;display:flex;flex-direction:column;gap:4px;opacity:0;visibility:hidden;pointer-events:none;transform:translateY(-6px);transition:opacity .12s ease,transform .18s ease,visibility 0s linear .18s}.dtv-launcher[data-open=true] .dtv-menu{opacity:1;visibility:visible;pointer-events:auto;transform:none;transition-delay:.22s,.16s,.22s}.dtv-launcher[data-vertical=up] .dtv-menu{top:8px;bottom:52px;transform:translateY(6px)}.dtv-launcher[data-open=true][data-vertical=up] .dtv-menu{transform:none}
+.dtv-menu .dtv-menu-item{width:100%}.dtv-menu{position:absolute;left:8px;right:8px;top:52px;bottom:8px;padding:1px;display:flex;flex-direction:column;gap:4px;opacity:0;visibility:hidden;pointer-events:none;transform:translateY(-6px);transition:opacity .12s ease,transform .18s ease,visibility 0s linear .18s}.dtv-launcher[data-open=true] .dtv-menu{opacity:1;visibility:visible;pointer-events:auto;transform:none;transition-delay:.22s,.16s,.22s}.dtv-launcher[data-vertical=up] .dtv-menu{top:8px;bottom:52px;transform:translateY(6px)}.dtv-launcher[data-open=true][data-vertical=up] .dtv-menu{transform:none}
 .dtv-menu-title{flex:none;padding:5px 8px 7px;font-size:11px;line-height:1.35;font-weight:650;color:var(--dsw-alias-label-tertiary);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .dtv-menu-item{min-height:43px;border:0;border-radius:9px;padding:5px 8px;background:transparent;color:var(--dsw-alias-label-primary);text-align:left;font:inherit;cursor:pointer;display:grid;grid-template-columns:10px minmax(0,1fr) auto;gap:8px;align-items:center}.dtv-menu-item:hover{background:var(--dsw-alias-interactive-bg-hover)}.dtv-menu-item[data-active=true]{background:var(--dsw-alias-interactive-bg-selected,var(--dsw-specific-tip))}.dtv-binding-dot{width:8px;height:8px;border-radius:50%;background:#d33239;box-shadow:0 0 0 1px rgba(98,0,4,.38)}.dtv-menu-item[data-bound=true] .dtv-binding-dot{background:#44d17a;box-shadow:0 0 5px #31c66b,0 0 10px rgba(49,198,107,.75)}.dtv-item-copy{min-width:0;display:flex;flex-direction:column;gap:1px}.dtv-item-label{font-size:11px;font-weight:700;line-height:1.2}.dtv-item-status{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:10px;line-height:1.25;color:var(--dsw-alias-label-tertiary)}.dtv-item-count{border-radius:10px;padding:2px 6px;background:var(--dsw-specific-tip);font-size:9px;color:var(--dsw-alias-label-secondary)}.dtv-item-planned{font-size:9px;color:var(--dsw-alias-label-tertiary)}
 .dtv-menu-item[data-show-binding=false] .dtv-binding-dot{visibility:hidden}
@@ -669,6 +669,7 @@ function TavernShell({ useSessions, useWorkspaces, createCleanSession, createCon
   const [chromeAnimation, setChromeAnimation] = useState(0)
   const [chromeError, setChromeError] = useState('')
   const [activeSnapshot, setActiveSnapshot] = useState(null)
+  const [assemblyState, setAssemblyState] = useState({ presets: [], selection: null })
   const [statusError, setStatusError] = useState('')
   const [uiSettings, setUiSettings] = useState(getClientUiSettings)
   const [conversationSettings, setConversationSettings] = useState(getClientConversationSettings)
@@ -975,15 +976,16 @@ function TavernShell({ useSessions, useWorkspaces, createCleanSession, createCon
   const refreshStatus = useCallback(async () => {
     const generation = ++statusGeneration.current
     try {
-      const next = await activeView(sessionId)
+      const [next, assembly] = await Promise.all([activeView(sessionId), fetch(`${API_ROOT}/assembly-presets?sessionId=${encodeURIComponent(sessionId ?? '')}`).then(async res => { if (!res.ok) throw new Error(`HTTP ${res.status}`); return res.json() })])
       if (generation !== statusGeneration.current) return
       setActiveSnapshot(next)
+      setAssemblyState(assembly)
       setStatusError('')
     } catch (reason) {
       if (generation !== statusGeneration.current) return
       setStatusError(reason instanceof Error ? reason.message : String(reason))
     }
-  }, [sessionId])
+  }, [sessionId, chromeMode])
 
   useEffect(() => {
     statusGeneration.current += 1
@@ -1125,12 +1127,13 @@ function TavernShell({ useSessions, useWorkspaces, createCleanSession, createCon
   })
   const contextSwitchLauncher = event => {
     event.preventDefault()
+    if (!requestSurface(null)) return
     const switching = chromeController.current?.switchMode({ suppressed: consumeSuppressedClick() })
     Promise.resolve(switching).then(changed => {
       if (changed) setChromeAnimation(value => value + 1)
     })
   }
-  const switchChrome = () => chromeController.current?.switchMode()
+  const switchChrome = () => { if (requestSurface(null)) return chromeController.current?.switchMode() }
 
   const open = id => {
     if (!requestSurface(id)) return
@@ -1141,7 +1144,7 @@ function TavernShell({ useSessions, useWorkspaces, createCleanSession, createCon
 
   let panel = null
   if (surface === 'assembly') {
-    panel = h(AssemblyPanel, { sessionId, close, registerBeforeLeave })
+    panel = h(AssemblyPanel, { sessionId, close, registerBeforeLeave, chromeMode })
   } else if (surface === 'preset') {
     panel = h('div', { className: 'dtv-panel' }, h(PresetSidebar, {
       closePanel: close,
@@ -1207,6 +1210,7 @@ function TavernShell({ useSessions, useWorkspaces, createCleanSession, createCon
 
   const placement = launcherPlacement(anchor, viewport(), menuOpen, uiSettings.scale)
   const statuses = launcherResourceStatuses(activeSnapshot)
+  statuses.assembly = { bound: Boolean(assemblyState.selection), title: assemblyState.selection?.name, titleKey: 'nav.assembly.empty', count: assemblyState.selection ? 1 : 0 }
   const chromeSwitchLabel = chromeMode === 'play'
     ? uiMessage('chrome.switchToNative')
     : uiMessage('chrome.switchToPlay')
@@ -1283,7 +1287,7 @@ function TavernShell({ useSessions, useWorkspaces, createCleanSession, createCon
           const ariaText = stateLabel
             ? uiMessage('nav.itemAriaBound', { label: itemLabel, title: statusTitle, state: stateLabel })
             : uiMessage('nav.itemAria', { label: itemLabel, title: statusTitle })
-          return h('button', {
+          return h('div', { key: item.id }, h('button', {
             className: 'dtv-menu-item',
             type: 'button',
             role: 'menuitem',
@@ -1305,7 +1309,16 @@ function TavernShell({ useSessions, useWorkspaces, createCleanSession, createCon
           status.count >= (isDiagnostics ? 1 : 2)
             ? h('span', { className: 'dtv-item-count', 'aria-label': uiMessage(isDiagnostics ? 'diagnostics.count' : 'nav.bookCount', { count: status.count }) }, uiMessage(isDiagnostics ? 'diagnostics.count' : 'nav.bookCount', { count: status.count }))
             : item.available ? null : h('span', { className: 'dtv-item-planned' }, uiMessage('common.planned')),
-          )
+          ), item.id === 'assembly' && h('select', { className: 'dtv-select', style: { width: '100%', marginBottom: 4 }, 'aria-label': translate('nav.assembly'), value: assemblyState.selection?.id ?? '', disabled: !sessionId,
+            onChange: async event => {
+              const id = event.target.value || null
+              if (!requestSurface(null)) return
+              try {
+                const res = await fetch(`${API_ROOT}/assembly-presets/selection`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ sessionId, id }) })
+                const data = await res.json(); if (!res.ok) throw new Error(data.error)
+                window.dispatchEvent(new CustomEvent(CLIENT_REFRESH_EVENT))
+              } catch (error) { setStatusError(error.message) }
+            } }, h('option', { value: '' }, uiMessage('nav.assembly.empty')), ...assemblyState.presets.map(p => h('option', { key: p.id, value: p.id }, p.name))))
         }),
       ),
     ),

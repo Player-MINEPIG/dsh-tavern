@@ -1,16 +1,16 @@
-# Request assembly
+# Prompt assembly strategies
 
 [中文](REQUEST_ASSEMBLY.md)
 
-The assembler arranges native DSH inputs and Tavern resources after native messages are prepared and before the request is frozen. DSH continues to own providers, tool execution, Inbox, branches and native history. Applying an assembly preset is explicit; existing sessions without one retain the original loader behavior.
+The assembler arranges native DSH inputs and Tavern resources after native messages are prepared and before the request is frozen. DSH continues to own providers, tool execution, Inbox, branches and native history. Strategies are stored per session and frontend mode: play defaults to ST compatible; native defaults to disabled. Existing explicit choices are retained. Disabling uses native DSH assembly without injecting Tavern bodies through the old loader. Stock hosts without the core extension retain the legacy loader in native mode.
 
 ## Page and presets
 
-The launcher's **Prompt assembly** item opens a full settings page: import/export/create, selection, save, apply, preview, then rules. Browsing and saving do not change a session. Apply stores an independent rules snapshot; later preset edits need another apply. Running sessions reject selection changes. Child sessions inherit the parent's applied snapshot.
+The launcher's **Prompt assembly strategy** item opens a full settings page: import/export/create, selection, save, apply, preview, then rules. Browsing and saving do not change a session. Apply stores an independent rules snapshot; later preset edits need another apply. Running sessions reject selection changes. Child sessions inherit the parent's applied snapshot.
 
-Rules cover native instructions, preset content, character, persona, world books, history, current input, PHI and custom content. Drag whole modules or use the up/down controls. Native modules cannot be disabled or assigned different roles. Expanded preview shows resolved assets, locked references and message order. **View latest actual request** reads the recorded snapshot without reevaluating macros.
+Rules cover native instructions, preset content, character, persona, world books, history, current input, PHI and custom content. Drag whole modules or use the up/down controls. Native modules can be disabled independently while retaining their roles. Disabling excludes content from future requests without deleting durable history. Disable all three and add custom content for fresh input on every request; tool transactions must remain complete. Expanded preview shows resolved assets, locked references and message order. **View latest actual request** reads the recorded snapshot without reevaluating macros.
 
-Source stripes identify categories. Expanded items expose resource identity, stability, retention, plugin dependency and removal behavior. Native messages retain their original source. A native section name is not necessarily its contributing plugin's identity; missing ownership information is not guessed.
+Source stripes identify plugins (DSH, DSH Tavern, and other explicitly identified plugins); resources from the same plugin share a color. Expanded items expose resource identity, stability, retention, plugin dependency and removal behavior. Native messages retain their original source. A native section name is not necessarily its contributing plugin's identity; missing ownership information is not guessed.
 
 | Built-in | Behavior and tradeoff |
 | --- | --- |
@@ -21,6 +21,10 @@ Source stripes identify categories. Expanded items expose resource identity, sta
 ST compatibility does not run all of SillyTavern. Supported references include character/persona/world-info/history markers, character fields, `user`, `char`, recent messages and the existing variable/random macros. Content references `chatHistory/history/input/worldInfoBefore/worldInfoAfter/worldInfo` can claim native modules. Unsupported macros/markers, world-book outlets and approximate positions produce diagnostics. Dialogue examples remain text; full ST example-message parsing, token trimming and third-party script macros are not emulated.
 
 Depth zero means request end; positive depths count backward through native non-system messages. Tool calls and results remain indivisible: insertion inside a transaction moves after it and records the adjustment. Moving history/input moves complete modules, preserving internal order. Invalid tool topology prevents sending.
+
+ST compatible is the protected default: built-ins cannot be renamed or deleted. Saving modified built-in rules creates a copy. **Apply default strategy** applies and selects ST compatible, with a reminder before discarding unsaved changes. The launcher shows the active strategy and binding indicator, plus selection and disable controls. Preview and actual-request controls sit beside Rules.
+
+PHI comes from character post-history instructions, preset Post-History Instructions / jailbreak, and optional additional text in the strategy PHI module. Edit asset fields in their respective editors; additional text belongs to the strategy. Preview uses authored names and translated known fields, retaining raw identifiers in details.
 
 ## Lifecycle and evidence
 
@@ -40,9 +44,9 @@ Request-only rules reevaluate each time. Snapshot rules append when an individua
 
 Every result is stored as a log-only `request/assembly` DSH event. It does not enter `deriveMessages()`; recording evidence and contributing future context are distinct. Tavern Trace stores only the event reference and hash, resolving bodies from DSH on demand. Random macros are frozen in that event. Complete request snapshots increase log size with request history; extra assembled bodies remain bounded by `maxProfileBytes`.
 
-After removing Tavern, native user messages, replies and tool results remain usable. Request-only content and retained Tavern snapshots stop being injected, but recorded bodies remain in the log. The event's `ignorable:true` permits the stock core to retain it without projecting it. Removing only the core extension while retaining an applied layout fails explicitly; restore default assembly first.
+After removing Tavern, native user messages, replies and tool results remain usable. Request-only content and retained Tavern snapshots stop being injected, but recorded bodies remain in the log. The event's `ignorable:true` permits the stock core to retain it without projecting it. Removing only the core extension while retaining an applied layout fails explicitly; disable the strategy first.
 
-Preview uses current assets and readable durable history, excluding unsent input. Native instructions come from the existing projection and may be empty before the first request. World-book matches can differ from the next real input. Frozen actual requests remain authoritative.
+Preview uses current assets and readable durable history, excluding unsent input. Native instructions are freshly assembled by the core instead of reusing historical system messages containing old loader bodies. World-book matches can differ from the next real input. Frozen actual requests remain authoritative.
 
 ## Core extension and installation boundary
 
@@ -70,7 +74,7 @@ Prefix: `/pmp-dsh-tavern/api/v1/assembly-presets`. Existing Host authentication,
 | `GET /?sessionId=…` | Built-ins, user presets, applied snapshot and core capability |
 | `POST /` | Import or create an independent preset |
 | `GET/PUT/DELETE /:id` | Read/edit/delete; built-ins are immutable and applied presets cannot be deleted |
-| `PUT /selection` | `{sessionId,id}`; `id:null` restores the default loader |
+| `PUT /selection` | `{sessionId,id}`; `id:null` disables the strategy for this mode (native assembly on extended core); `id:"builtin-st"` applies the default ST strategy |
 | `POST /preview` | `{sessionId,preset}` or `{sessionId,presetId}`; no apply or Agent run |
 
 Export serializes preset JSON directly. Format is `dsh-tavern-request-assembly`, version 1; each rule has `id/kind/enabled/role/lifetime/depth/text/name`. Executable scripts are not accepted. `assembly-presets.json` atomically stores presets and applied snapshots, limited to 8 MiB. Actual request bodies use `requestAssembly` on existing v3 assembly details rather than another history API.

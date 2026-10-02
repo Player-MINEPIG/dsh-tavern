@@ -125,3 +125,40 @@ test('applied presets are immutable snapshots and survive resource edits and res
     assert.equal(restarted.selection('default-child'), null)
   } finally { rmSync(root, { recursive: true, force: true }) }
 })
+
+test('native modules can be omitted independently, including inside ST markers and macros', () => {
+  for (const marker of [true, false]) {
+    const preset = structuredClone(BUILTINS[0])
+    for (const r of preset.rules) if (['native-system', 'history', 'input'].includes(r.kind)) r.enabled = false
+    preset.rules.push({ id: 'fresh', kind: 'custom', text: 'ONLY FRESH' })
+    const result = assembleRequest({ preset, nativeMessages: native, inputIds: ['u2'], assets: { preset: { prompts: [{ identifier: 'chatHistory', enabled: true, marker, content: '{{history}}{{input}}' }] } } })
+    assert.deepEqual(texts(result), ['ONLY FRESH'])
+    assert.deepEqual(native.map(textOf), ['s', 'u1', 'a1', 'u2'])
+  }
+  const preset = structuredClone(BUILTINS[0]); preset.rules.find(r => r.kind === 'history').enabled = false
+  assert.deepEqual(texts(assembleRequest({ preset, nativeMessages: native, inputIds: ['u2'] })), ['s', 'u2'])
+})
+test('PHI additions and authored preview names survive assembly', () => {
+  const preset = structuredClone(BUILTINS[0]); preset.rules.find(r => r.kind === 'phi').text = 'EXTRA PHI'
+  const result = assembleRequest({ preset, assets: { ...assets, preset: { prompts: [{ enabled: true, identifier: 'opaque-uuid', name: 'Writing guide', content: 'TEXT' }] } } })
+  assert.equal(result.nodes.find(n => n.source.field === 'opaque-uuid').name, 'Writing guide')
+  assert.equal(texts(result).at(-1), 'EXTRA PHI')
+})
+test('mode defaults and explicit strategy overrides persist independently', () => {
+  const root = mkdtempSync(join(tmpdir(), 'assembly-modes-'))
+  let mode = 'play'
+  try {
+    const store = new AssemblyPresetStore(root, { mode: () => mode })
+    assert.equal(store.selection('session').id, 'builtin-st')
+    store.apply('session', 'builtin-cache'); mode = 'native'
+    assert.equal(store.selection('session'), null)
+    store.apply('session', 'builtin-snapshots'); mode = 'play'
+    assert.equal(store.selection('session').id, 'builtin-cache')
+    store.apply('session', null)
+    assert.equal(new AssemblyPresetStore(root, { mode: () => mode }).selection('session'), null)
+    store.copySelection('session', 'swipe-child')
+    assert.equal(store.selection('swipe-child'), null)
+    mode = 'native'
+    assert.equal(new AssemblyPresetStore(root, { mode: () => mode }).selection('session').id, 'builtin-snapshots')
+  } finally { rmSync(root, { recursive: true, force: true }) }
+})

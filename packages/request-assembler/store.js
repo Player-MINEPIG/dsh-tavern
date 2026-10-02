@@ -4,7 +4,8 @@ import { randomUUID } from 'node:crypto'
 import { BUILTINS, normalizePreset } from './model.js'
 
 export class AssemblyPresetStore {
-  constructor(root) {
+  constructor(root, { mode = () => null } = {}) {
+    this.mode = mode
     mkdirSync(root, { recursive: true }); this.path = join(root, 'assembly-presets.json')
     this.state = { version: 1, presets: {}, selections: {} }
     try {
@@ -18,7 +19,7 @@ export class AssemblyPresetStore {
         clean.presets[id] = { ...normalizePreset(preset), id }
       }
       for (const [id, preset] of Object.entries(state.selections)) {
-        if (!validSession(id) || (preset !== null && typeof preset?.id !== 'string')) throw new Error('Invalid stored selection')
+        if (!validSession(id.replace(/^(play|native):/, '')) || (preset !== null && typeof preset?.id !== 'string')) throw new Error('Invalid stored selection')
         clean.selections[id] = preset === null ? null : { ...normalizePreset(preset), id: preset.id }
       }
       this.state = clean
@@ -50,19 +51,38 @@ export class AssemblyPresetStore {
     if (Object.values(this.state.selections).some(s => s?.id === id)) throw Object.assign(new Error('Preset is applied to a session'), { status: 409 })
     const next = structuredClone(this.state); delete next.presets[id]; this.persist(next)
   }
-  selection(sessionId) { return validSession(sessionId) ? structuredClone(this.state.selections[sessionId] ?? null) : null }
+  selectionKey(sessionId, mode = this.mode()) { return mode ? `${mode}:${sessionId}` : sessionId }
+  hasSelection(sessionId) {
+    return Object.hasOwn(this.state.selections, this.selectionKey(sessionId)) || (this.mode() === 'play' && Object.hasOwn(this.state.selections, sessionId))
+  }
+  selection(sessionId, mode = this.mode()) {
+    if (!validSession(sessionId)) return null
+    const key = this.selectionKey(sessionId, mode)
+    if (Object.hasOwn(this.state.selections, key)) return structuredClone(this.state.selections[key])
+    if (mode === 'play') {
+      // Existing explicit selections, including disabled, remain meaningful.
+      if (Object.hasOwn(this.state.selections, sessionId)) return structuredClone(this.state.selections[sessionId])
+      return this.get('builtin-st')
+    }
+    return null
+  }
   apply(sessionId, id) {
     if (!validSession(sessionId)) throw new TypeError('Invalid session id')
     const next = structuredClone(this.state)
-    if (id === null) next.selections[sessionId] = null
-    else next.selections[sessionId] = this.get(id)
+    if (id === null) next.selections[this.selectionKey(sessionId)] = null
+    else next.selections[this.selectionKey(sessionId)] = this.get(id)
     this.persist(next); return this.selection(sessionId)
   }
   copySelection(from, to) {
     if (!validSession(to)) throw new TypeError('Invalid session id')
-    const selected = this.selection(from)
-    if (Object.hasOwn(this.state.selections, to)) return
-    const next = structuredClone(this.state); next.selections[to] = selected; this.persist(next)
+    const next = structuredClone(this.state)
+    let changed = false
+    for (const mode of this.mode() ? ['play', 'native'] : [null]) {
+      const key = this.selectionKey(to, mode)
+      if (Object.hasOwn(next.selections, key)) continue
+      next.selections[key] = this.selection(from, mode); changed = true
+    }
+    if (changed) this.persist(next)
   }
 }
 const validSession = id => typeof id === 'string' && /^[A-Za-z0-9][A-Za-z0-9._:-]{0,199}$/.test(id) && !['__proto__', 'constructor', 'prototype'].includes(id)

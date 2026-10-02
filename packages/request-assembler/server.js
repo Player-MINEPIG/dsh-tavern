@@ -12,7 +12,7 @@ export function createAssemblyApi({ store, runtime, agents, sessions, inspect, n
     try {
       const url = new URL(req.url, 'http://localhost'), part = decodeURIComponent(url.pathname.slice(ROOT.length + 1)), method = req.method
       const sessionId = url.searchParams.get('sessionId') ?? ''
-      if (!part && method === 'GET') return send(res, 200, { ok: true, presets: store.list(), selection: store.selection(sessionId), capability: runtime.available() })
+      if (!part && method === 'GET') return send(res, 200, { ok: true, presets: store.list(), selection: runtime.selected(sessionId), capability: runtime.available() })
       if (part === 'preview' && method === 'POST') {
         const body = await read(req), id = body.sessionId ?? sessionId
         const live = agents()?.get?.(id)
@@ -22,7 +22,7 @@ export function createAssemblyApi({ store, runtime, agents, sessions, inspect, n
           session = sessions().get(id) ?? sessions().prepare(id, { seed: record.events, meta: record.meta, inheritedEventCount: record.inheritedEventCount, eventState: 'detached' })
         }
         const agent = live ?? (session ? { id, session } : undefined)
-        return send(res, 200, { ok: true, preview: runtime.preview({ preset: body.preset ?? store.get(body.presetId), agent, sessionId: id }) })
+        return send(res, 200, { ok: true, preview: await runtime.preview({ preset: body.preset ?? store.get(body.presetId), agent, sessionId: id }) })
       }
       if (part === 'selection' && method === 'PUT') {
         const body = await read(req), agent = agents()?.get?.(body.sessionId)
