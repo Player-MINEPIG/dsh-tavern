@@ -87,3 +87,15 @@ export function renderingInventory(resource, {kind,resourceId}) {
   })
   return scripts.map(script => ({...script,dependencies:discoverDependencies(script.content)}))
 }
+
+export function isSideEffectModuleReference(code,url,base) {
+ const tree=SourceParser.parse(code,{ecmaVersion:'latest',sourceType:'module'})
+ let matched=false
+ const pending=[tree]
+ while(pending.length){const node=pending.pop()
+  if(['ImportDeclaration','ExportNamedDeclaration','ExportAllDeclaration'].includes(node.type)&&node.source&&externalUrl(node.source.value,base)===url){if(node.type!=='ImportDeclaration'||node.specifiers.length)return false;matched=true}
+  if(node.type==='ImportExpression'&&node.source.type==='Literal'&&externalUrl(node.source.value,base)===url)return false
+  for(const value of Object.values(node)){if(Array.isArray(value)){for(const item of value)if(item?.type)pending.push(item)}else if(value?.type)pending.push(value)}
+ }
+ return matched
+}

@@ -35,10 +35,14 @@ export function createRenderingAuthority({now=Date.now,ttlMs=30*60*1000}={}) {
  })
 }
 export function isRenderingAuthorityPath(url){const path=new URL(url??'/','http://localhost').pathname;return path===PATH||path.startsWith(PATH+'/')}
-export function createRenderingAuthorityHandler(authority) {
+export function createRenderingAuthorityHandler(authority,{getConnection=()=>null}={}) {
  const send=(res,status,value)=>{res.statusCode=status;res.setHeader('Content-Type','application/json; charset=utf-8');res.end(JSON.stringify(value))}
  return async(req,res)=>{
   try{
+   const connection=getConnection()
+   if(typeof connection?.admit!=='function')return send(res,503,{ok:false,error:'DSH admission unavailable'})
+   const admission=connection.admit(req)
+   if(!admission||'rejection' in admission)return send(res,admission?.rejection===403?403:401,{ok:false,error:'DSH admission required'})
    const path=new URL(req.url,'http://localhost').pathname
    if(req.method==='DELETE'&&path.startsWith(PATH+'/')){authority.revoke(decodeURIComponent(path.slice(PATH.length+1)));return send(res,200,{ok:true})}
    if(req.method!=='POST'||path!==PATH)return send(res,405,{ok:false,error:'Method not allowed'})

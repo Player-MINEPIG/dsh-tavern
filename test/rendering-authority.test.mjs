@@ -44,7 +44,7 @@ test('grant HTTP mutations retain the existing local Origin security boundary',a
  const {Readable}=await import('node:stream')
  const {secureTavernApi}=await import('../packages/tavern-loader/src/api-security.js')
  const {createRenderingAuthorityHandler}=await import('../packages/rendering-authority/index.js')
- const authority=createRenderingAuthority(),handler=secureTavernApi(createRenderingAuthorityHandler(authority))
+ const authority=createRenderingAuthority(),handler=secureTavernApi(createRenderingAuthorityHandler(authority,{getConnection:()=>({admit:()=>({peer:{}})})}))
  const invoke=(method,url,origin,body)=>new Promise((resolve,reject)=>{
   const req=Readable.from(body?[Buffer.from(JSON.stringify(body))]:[])
   Object.assign(req,{method,url,headers:{host:'127.0.0.1:8080',origin,'content-type':'application/json'},socket:{remoteAddress:'127.0.0.1'}})
@@ -57,4 +57,31 @@ test('grant HTTP mutations retain the existing local Origin security boundary',a
  const grant=response.body;assert.equal(authority.isCurrent(grant),true);assert.equal('source'in grant,false)
  const removed=await invoke('DELETE',url+'/'+grant.grantId,origin);assert.equal(removed.status,200);assert.equal(authority.isCurrent(grant),false)
  authority.dispose()
+})
+
+test('grant admission fails closed before consuming a request body or mutating grants',async()=>{
+ const {createRenderingAuthorityHandler}=await import('../packages/rendering-authority/index.js')
+ for(const [connection,status] of [[null,503],[{admit:()=>({rejection:401})},401],[{admit:()=>({rejection:403})},403]]){
+  const authority=createRenderingAuthority();let read=false,mutated=false
+  const handler=createRenderingAuthorityHandler({grant(){mutated=true},revoke(){mutated=true}},{getConnection:()=>connection})
+  for(const method of ['POST','DELETE']){
+   const req={method,url:'/pmp-dsh-tavern/api/v1/rendering-write-grants/x',async *[Symbol.asyncIterator](){read=true;yield Buffer.from('{}')}}
+   const res={setHeader(){},end(){}};await handler(req,res);assert.equal(res.statusCode,status)
+  }
+  assert.equal(read,false);assert.equal(mutated,false);authority.dispose()
+ }
+})
+
+test('failed server revocation remains visible after card disposal and retries the same grant',async()=>{
+ let fail=true;const deletes=[]
+ const authority=createRenderingAuthority(),registry=createRenderingWriteRequests({request:async(url,options)=>{
+  if(options.method==='DELETE'){deletes.push(url);if(fail)return new Response('{}',{status:503});authority.revoke(url.split('/').at(-1));return Response.json({ok:true})}
+  return Response.json(authority.grant(JSON.parse(options.body)))
+ }})
+ const item=registry.register(bundle)
+ while(!registry.list()[0]?.sourceIdentity)await new Promise(r=>setTimeout(r,1))
+ const id=registry.list()[0].id;registry.review(id);await registry.authorize(id);const grant=item.getGrant();item.dispose()
+ await new Promise(r=>setTimeout(r,0));assert.equal(item.getGrant(),null);assert.equal(registry.list().length,0);assert.equal(authority.isCurrent(grant),true)
+ const pending=registry.listRevocations();assert.equal(pending.length,1);assert.match(pending[0].error,/503/);assert.equal('grant' in pending[0],false)
+ fail=false;await registry.retryRevocation(pending[0].id);assert.equal(authority.isCurrent(grant),false);assert.equal(registry.listRevocations().length,0);assert.equal(deletes[0],deletes[1]);authority.dispose()
 })

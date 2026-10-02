@@ -1,3 +1,4 @@
+import {mvuBuiltin} from './play/mvu-builtins.js'
 import {renderingWriteRequests} from './play/rendering-write-requests.js'
 import { downloadRenderingSource } from './play/rendering-download.js'
 import { createElement as h, useEffect, useRef, useState } from 'react'
@@ -76,6 +77,8 @@ export function RenderingSettings({client,activeSnapshot}) {
         downloadKey===entry.key?h('button',{type:'button',className:'dtv-button',onClick:()=>downloading.current?.abort()},translate('rendering.cancel')):null,
         entry.blocked?null:h('button',{type:'button',className:'dtv-button',onClick:()=>entry.kind==='helper'?run(()=>renderingTrust.stage(entry.owner,entry.key,entry.content)):(setSelected(entry),input.current.click())},translate(entry.kind==='helper'?'rendering.reviewInline':'rendering.import')),
         review?h('div',null,
+          approved&&mvuBuiltin(entry.url,review.digest)?h('label',null,
+            h('input',{type:'checkbox',checked:review.builtin===true,onChange:event=>run(()=>renderingTrust.setBuiltin(entry.owner,entry.key,event.target.checked))}),translate('rendering.builtinMvu')):null,
           h('p',null,'SHA-256: ',review.digest??translate('common.loading')),
           h('textarea',{readOnly:true,value:review.content,rows:8,'aria-label':translate('rendering.source'),style:{width:'100%',boxSizing:'border-box'}}),
           h('button',{type:'button',className:'dtv-button',disabled:!review.digest||approved||changed||entry.blocked||!entry.enabled,onClick:()=>run(()=>renderingTrust.approve(entry.owner,entry.key,review.digest))},translate('rendering.approve')),
@@ -83,6 +86,9 @@ export function RenderingSettings({client,activeSnapshot}) {
     }),
     h('h3',null,translate('rendering.writeTitle')),
     h('p',null,translate('rendering.writeBoundary')),
+    ...renderingWriteRequests.listRevocations().map(item=>h('div',{key:item.id,role:'alert'},
+      h('p',null,translate('rendering.revokePending'),item.error?' · '+item.error:''),
+      h('button',{type:'button',disabled:item.pending,onClick:()=>run(()=>renderingWriteRequests.retryRevocation(item.id))},translate('rendering.retryRevoke')))),
     ...renderingWriteRequests.list().map(entry=>h('details',{key:entry.id,className:'dtv-write-review'},
       h('summary',null,entry.sourceIdentity?.scope?.nodeId??entry.id,' · ',translate(entry.granted?'rendering.writeGranted':'rendering.writeOff')),
       h('p',null,'SHA-256: ',entry.sourceIdentity?.sha256??translate('common.loading')),

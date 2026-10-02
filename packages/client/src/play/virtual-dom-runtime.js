@@ -30,6 +30,7 @@ globalThis.__writeResult=(id,result)=>{const pending=__writes.get(id);if(!pendin
 globalThis.Mvu=Object.freeze({getMvuData:__getVariables,updateVariablesWith:ops=>{if(!Array.isArray(ops))return Promise.reject(Error('JSONPatch array required'));return __write('patch',ops)},replaceMvuData:(data,options)=>__write('replace',data,options),events:Object.freeze({VARIABLE_UPDATE_ENDED:'VARIABLE_UPDATE_ENDED'})});
 globalThis.TavernHelper=Object.freeze({...TavernHelper,Mvu});
 globalThis.eventOn=(event,fn)=>{if(event!=='VARIABLE_UPDATE_ENDED'||typeof fn!=='function'||__mvuCallbacks.size>=64)throw Error('Unsupported bound MVU event');__mvuCallbacks.add(fn);return()=>__mvuCallbacks.delete(fn)};
+globalThis.__initializeBuiltinMvu=version=>{if(version!==1)throw Error('Unsupported built-in MVU facade version');return Mvu};
 globalThis.waitGlobalInitialized=name=>name==='Mvu'?Promise.resolve():Promise.reject(Error('Unsupported global initialization'));
 globalThis.__notifyVariables=snapshot=>{for(const fn of __subscribers.values())fn(JSON.parse(JSON.stringify(snapshot)));if(snapshot.status==='available'&&snapshot.revision>__mvuRevision){__mvuRevision=snapshot.revision;for(const fn of __mvuCallbacks)fn()}}
 ;

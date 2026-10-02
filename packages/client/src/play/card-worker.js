@@ -2,8 +2,20 @@ import { newQuickJSWASMModuleFromVariant } from 'quickjs-emscripten-core'
 import variant from '@jitl/quickjs-singlefile-browser-release-sync'
 import { VIRTUAL_DOM_BOOTSTRAP } from './virtual-dom-runtime.js'
 
+function validateInput(data) {
+ const runs=data.runs??[],modules=data.modules??{},html=data.html??''
+ if(!Array.isArray(runs)||runs.length>128||!modules||typeof modules!=='object'||Array.isArray(modules)||Object.keys(modules).length>24)throw Error('Card input count exceeds limit')
+ let size=0
+ const count=(value,limit)=>{if(typeof value!=='string'||value.length>limit)throw Error('Card input exceeds limit');size+=new TextEncoder().encode(value).byteLength;if(size>24*1024*1024)throw Error('Card expanded input exceeds 24 MiB')}
+ count(html,1024*1024)
+ for(const run of runs){if(!run||typeof run!=='object')throw Error('Invalid card run');count(run.code,8*1024*1024);if(run.name!==undefined)count(run.name,2048)}
+ for(const[name,code]of Object.entries(modules)){count(name,2048);count(code,8*1024*1024)}
+ count(JSON.stringify({context:data.context??{},variables:data.variables??null}),256*1024)
+ return {...data,runs,modules,html}
+}
+
 let compiler, vm, runtime, nonce, destroyed=false, deadline=0, operations=0, current, context, lastView='', ready=false
-const timers=new Map(),pendingMessages=[]
+const timers=new Map(),pendingMessages=[],pendingWrites=new Set();let lastWriteId=0
 let activeCause='script',activeTask=null
 let messages=0, messageEpoch=0
 const reply=(kind,value)=>{const now=performance.now();if(now-messageEpoch>1000){messages=0;messageEpoch=now}if(++messages>256){dispose();throw Error('Card message rate limit exceeded')}self.postMessage({nonce,kind,value})}
@@ -27,7 +39,8 @@ function snapshot(){
  if(value!==lastView){lastView=value;reply('view',value)}
 }
 function enter(callback,cause='script',taskId=null){if(destroyed)return;activeCause=cause;activeTask=taskId;reply('busy');try{callback();snapshot();reply('idle')}catch(error){fail(error)}finally{activeCause='script';activeTask=null}}
-async function init(data){
+async function init(input){
+ const data=validateInput(input)
  const started=performance.now();nonce=data.nonce;context=data.context;current=data.variables
  const hash=async text=>[...new Uint8Array(await crypto.subtle.digest('SHA-256',new TextEncoder().encode(text)))].map(x=>x.toString(16).padStart(2,'0')).join('')
  const audit={compiler:'@babel/standalone@7.26.10 (react preset only)',sources:[],compiled:[]}
@@ -55,8 +68,11 @@ async function init(data){
     result=current.variables
    }else if(op==='variableWrite'){
     const [requestId,operation,value,options]=args
-    if(!Number.isSafeInteger(requestId)||!['patch','replace'].includes(operation))throw Error('Invalid variable write request')
-    reply('write',{requestId,operation,value,options,cause:activeCause,taskId:activeTask})
+    if(!Number.isSafeInteger(requestId)||requestId<=lastWriteId||pendingWrites.size>=32||!['patch','replace'].includes(operation))throw Error('Invalid variable write request')
+    const observedRevision=current?.currentRevision??current?.revision
+    if(!Number.isSafeInteger(observedRevision)||observedRevision<0)throw Error('Variable snapshot unavailable')
+    lastWriteId=requestId;pendingWrites.add(requestId)
+    reply('write',{requestId,operation,value,options,observedRevision,cause:activeCause,taskId:activeTask})
    }else if(op==='propose'){
     if(typeof args[0]!=='string'||args[0].length>4000)throw Error('Proposal exceeds limit')
     reply('proposal',args[0])
@@ -102,7 +118,7 @@ self.onmessage=event=>{
  if(data.kind==='dispose'){dispose();return}
  if(!ready){if(['writeResult','variables'].includes(data.kind)){if(pendingMessages.length>=64){fail(Error('Card startup message limit exceeded'));return}pendingMessages.push(data)}return}
  if(data.kind==='event')enter(()=>evaluate(`__domEvent(${JSON.stringify(data.value)})`),'script',data.taskId)
- else if(data.kind==='writeResult')enter(()=>evaluate(`__writeResult(${JSON.stringify(data.requestId)},${JSON.stringify(data.value)})`))
- else if(data.kind==='variables'){current=data.value;enter(()=>evaluate(`__notifyVariables(${JSON.stringify(current)})`))}
+ else if(data.kind==='writeResult'){if(!pendingWrites.delete(data.requestId))return;enter(()=>evaluate(`__writeResult(${JSON.stringify(data.requestId)},${JSON.stringify(data.value)})`))}
+ else if(data.kind==='variables'){if(current?.status==='available'&&data.value?.status==='available'&&(data.value.currentRevision??data.value.revision)<(current.currentRevision??current.revision))return;current=data.value;enter(()=>evaluate(`__notifyVariables(${JSON.stringify(current)})`))}
  else if(data.kind==='dispose')dispose()
 }

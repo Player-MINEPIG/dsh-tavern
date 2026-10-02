@@ -1,3 +1,5 @@
+import {createMvuCardBinding} from './mvu-bridge.js'
+import {initialCardScope} from './mvu-scope.js'
 import {
   createElement,
   useEffect,
@@ -65,7 +67,7 @@ export function PlaySessionDock({ session, useSessions, useConversation, convers
 
   useEffect(() => {
     let active = true
-    setContent(current => current?.sessionId === sessionId && current.kind === 'opening' ? current : null)
+    setContent(null)
     setError('')
     if (sessionId === null || summary === null) return () => { active = false }
     Promise.all([
@@ -91,6 +93,7 @@ export function PlaySessionDock({ session, useSessions, useConversation, convers
           if (!active) return
           setContent({
             kind: 'opening',
+            initialScope:initialCardScope({playthrough:binding.playthrough,sessionId,characterId:state.display?.bindings?.characterId,timeline:binding.timeline,turns:state.turns}),
             greeting: state.greeting,
             display: state.display,
             importBinding: state.importBinding,
@@ -174,8 +177,10 @@ export function PlaySessionDock({ session, useSessions, useConversation, convers
       ? h('div', { className: 'dtv-play-opening-body dtv-play-opening-body-empty', 'aria-hidden': true })
       : h('div',{className:'dtv-play-opening-body'},h(MessageContent,{
         text:greeting.text,
+        writeScope:content.initialScope,
+        createBinding:content.initialScope?(signal,writeGrant)=>createMvuCardBinding({client:playClient,scope:content.initialScope,signal,writeGrant}):undefined,
         enabled:displaySettings.interactiveCards===true,
-        scopeKey:JSON.stringify([sessionId,content.playthrough.id,'greeting',greeting.index]),
+        scopeKey:JSON.stringify([sessionId,content.playthrough.id,'greeting',greeting.index,content.initialScope]),
         owners:['global:global',...Object.entries(content.display?.bindings??{}).filter(([,id])=>typeof id==='string'&&id).map(([kind,id])=>`${kind==='characterId'?'character':'preset'}:${id}`)],
         helpers:(content.display?.renderingSources??[]).filter(item=>item.kind==='helper'),
         context:{version:1,role:'assistant',userName:content.display?.macros?.user??'User',characterName:content.display?.macros?.character??'Assistant'},

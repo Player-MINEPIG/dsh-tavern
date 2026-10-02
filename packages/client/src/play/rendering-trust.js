@@ -1,3 +1,4 @@
+import {mvuBuiltin} from './mvu-builtins.js'
 import { externalUrl, MAX_RENDER_SOURCE } from './rendering-sources.js'
 
 // Ephemeral, outside-card authority. Never restore approvals from card data,
@@ -28,6 +29,11 @@ export function createRenderingTrust() {
       const value = records.get(keyFor(owner,source))
       if (!value?.digest || digest !== value.digest) throw Error('Rendering content changed; review again')
       records.set(keyFor(owner,source),{...value,approved:true}); emit()
+    },
+    setBuiltin(owner,source,enabled) {
+      const key=keyFor(owner,source),record=records.get(key)
+      if(!record?.approved||!mvuBuiltin(source,record.digest))throw Error('Built-in adapter requires reviewed exact supported bytes')
+      records.set(key,{...record,builtin:enabled===true});emit()
     },
     revoke(owner,source) { records.delete(keyFor(owner,source)); emit() },
     read(owner,source) {

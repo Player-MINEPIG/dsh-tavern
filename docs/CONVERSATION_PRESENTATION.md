@@ -141,7 +141,7 @@ click/input/change/key/pointer 事件复制为虚拟事件，输出净化后展�
 | `getAllVariables()` | 同一绑定消息快照，不合并全局/chat 变量 |
 | `TavernUI.onVariables(callback)` | 返回取消订阅函数；已提交快照 `{version,scope,revision,variables,status}`，最多 64 个订阅；不是原版可变的 before-update 事件 |
 
-变量绑定由可信历史消息的 playthrough/session/node/variant/endEventId（以及已有格式版本）确定，服务再次验证；脚本不能用 options 改变作用域。开场白、导入与流式内容没有可核实的历史坐标时不绑定变量。MVU 不可用时读取明确报错；不回退到当前焦点会话。只读轮询与变量提交语义由 MVU bridge 提供，写操作需要单独的 Host capability，不继承模型工具权限。发送消息仍需卡片外确认，与模型工具授权完全分离。
+变量绑定由可信历史消息的 playthrough/session/node/variant/endEventId（以及已有格式版本）确定，服务再次验证；脚本不能用 options 改变作用域。空开场白可用明确的 `{mode:'initial',playthroughId,sessionId,characterId}` 作用域，仅绑定已解析的根会话及所选角色；来源再次验证空持久历史，首个 turn 开始后永久关闭该初始作用域。离开、切角色/会话、重挂载均销毁旧绑定与授权。没有可核实坐标的导入与流式内容不绑定变量。MVU 不可用时读取明确报错；不回退到当前焦点会话。只读轮询与变量提交语义由 MVU bridge 提供，写操作需要单独的 Host capability，不继承模型工具权限。发送消息仍需卡片外确认，与模型工具授权完全分离。
 
 ## 单独授权的变量写入
 
@@ -149,6 +149,11 @@ click/input/change/key/pointer 事件复制为虚拟事件，输出净化后展�
 
 渲染器支持已核实的 `Mvu.getMvuData(options?)` 整对象读取、`Mvu.updateVariablesWith(JSONPatchArray)` 和 `await Mvu.replaceMvuData(wholeVariables, options?)`，不声称支持回调重载。options 只可指向本绑定消息；global/chat/character、latest 或数字别名不会把历史气泡暗中改指当前焦点。`eventOn(Mvu.events.VARIABLE_UPDATE_ENDED, callback)` 在本绑定有更新的已提交 revision 后无参回调，不声称原版事件 payload 或可变 before-update 语义。
 
-写授权有效仍不足以提交：MVU 服务再次验证当前可写资源/头、scope、CAS 版本、幂等 operationId、authority 租约和 manager 策略。缺少接入、历史作用域和策略拒绝均明确失败。operationId 由渲染宿主生成，CAS 来自可信绑定；VM 仅提交 operation/value 和受限 options。撤销取消可写绑定并恢复只读观察。提交事件为 `card_variable_update`，不伪造 assistant-message 事件。
+写授权有效仍不足以提交：MVU 服务再次验证当前可写资源/头、scope、CAS 版本、幂等 operationId、authority 租约和 manager 策略。缺少接入、历史作用域和策略拒绝均明确失败。operationId 由渲染宿主生成，CAS 保留已交给 Worker 的快照版本，不改用懒建写绑定的更新版本；VM 仅提交 operation/value 和受限 options。撤销取消可写绑定并恢复只读观察。提交事件为 `card_variable_update`，不伪造 assistant-message 事件。
 
-主线程识别浏览器 `isTrusted` 输入，原生 Worker 仅在处理该事件期间携带私有 taskId，VM 不接触它。原生定时器单独标记 interval，程序生成点击与初始执行为 script，卡不能选择 cause。Host 服务依赖现有可信 UI dispatcher 提供浏览器事件证据，不能独立或密码学证明人类点击；沿用本机 Origin/媒体类型/桌面 token 边界，它不是针对可信本地进程的身份认证。grantId 和 MVU capability 从不进入解释器。
+主线程识别浏览器 `isTrusted` 输入，原生 Worker 仅在处理该事件期间携带私有 taskId，VM 不接触它。原生定时器单独标记 interval，程序生成点击与初始执行为 script，卡不能选择 cause。Host 服务依赖现有可信 UI dispatcher 提供浏览器事件证据，不能独立或密码学证明人类点击；grant 创建及撤销在读请求体前额外要求 DSH connection admission，并保留本机 Origin/媒体类型/桌面 token 防护；缺少 admission 时关闭写入口。已 admission 的 dispatcher 是受信边界，不等于密码学人类点击证明。grantId 和 MVU capability 从不进入解释器。
+
+
+内置 MVU 适配另行选择，默认关闭。仅 `mvu-builtins.js` 中的精确 URL 与 SHA-256 字节身份在内容审核后提供选项。界面和运行审计明确标注不执行原 bundle，保留原身份及限定作用域的 facade 版本。支持副作用 import 与普通 script 初始化；不冒充具名导出、动态注册或任意运行时 Zod 对象。完整 schema Helper 仅在可用权威快照的 `variables.mvu_schema` 满足 `mvuSchema:1`、`interpreterVersion:1` 且完整 source 精确一致时跳过 VM 执行。显示的 `source-registered` 是快照派生的本地确认，不是注册 API；快照不可用、未知版本及原文不同均明确失败。
+
+传输前及 Worker 内再次限制展开后的初始化：最多 128 个 runs、24 个模块及 24 MiB UTF-8 总量，重复代码仍计费，context/variables 限 256 KiB。早期 timer 的 idle 不取消启动截止。四个运行实例用满时，可用卡片外的暂停和启动/重启按钮释放旧实例。原生待决写入最多 32 项并要求单调 ID；一次可信输入 task 最多归属一次写入。写入等待截止为 30 秒，结果不确定或回传失败会终止运行时并显示 operationId 供回执核查，不自动生成新 ID 重试。本地撤销立即停止写入；服务端撤销失败即使卡片卸载仍保留可见重试项。

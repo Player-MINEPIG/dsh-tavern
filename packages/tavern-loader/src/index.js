@@ -370,7 +370,7 @@ export function apply(ctx, config = {}) {
   const renderingAuthority=createRenderingAuthority()
   ctx.provide('tavernRenderingAuthority',renderingAuthority)
   ctx.effect(()=>()=>renderingAuthority.dispose(),'dsh-tavern: rendering write authority')
-  const renderingAuthorityApi=createRenderingAuthorityHandler(renderingAuthority)
+  const renderingAuthorityApi=createRenderingAuthorityHandler(renderingAuthority,{getConnection:()=>ctx.get('connection')})
   runtime.requestAssemblyEnabled = sessionId => {
     if (!requestAssembler.available() && !requestAssembler.selected(sessionId)) return false
     if (requestAssembler.selected(sessionId)) requestAssembler.requireAvailable()

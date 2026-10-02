@@ -28,7 +28,7 @@ test('duplicate guest timer IDs cannot orphan native timers at disposal',async()
  let host,id=0;const pending=new Map(),events=[]
  const vm={dispose(){},setProp(){},newFunction(name,fn){host=fn;return{dispose(){}}},getString:x=>x,newString:x=>x,evalCode:code=>({value:{code,dispose(){}}}),dump:handle=>handle.code==='__view()'?'{}':null}
  const runtime={setMemoryLimit(){},setMaxStackSize(){},setInterruptHandler(){},setModuleLoader(){},newContext:()=>vm,executePendingJobs:()=>({}),hasPendingJob:()=>false,computeMemoryUsage:()=>({dispose(){}}),dispose(){}}
- const context=vmModule.createContext({newQuickJSWASMModuleFromVariant:async()=>({newRuntime:()=>runtime}),variant:{},VIRTUAL_DOM_BOOTSTRAP:'',TAVERN_VIRTUAL_DOM_SOURCE:'',performance:{now:()=>0},self:{postMessage:x=>events.push(x)},setTimeout:fn=>{pending.set(++id,fn);return id},clearTimeout:id=>pending.delete(id),URL})
+ const context=vmModule.createContext({newQuickJSWASMModuleFromVariant:async()=>({newRuntime:()=>runtime}),variant:{},VIRTUAL_DOM_BOOTSTRAP:'',TAVERN_VIRTUAL_DOM_SOURCE:'',performance:{now:()=>0},self:{postMessage:x=>events.push(x)},setTimeout:fn=>{pending.set(++id,fn);return id},clearTimeout:id=>pending.delete(id),URL,TextEncoder})
  vmModule.runInContext(source,context);context.self.onmessage({data:{kind:'init',nonce:'fixture',html:'',runs:[]}})
  for(let i=0;i<5;i++)await Promise.resolve()
  assert.ok(events.some(x=>x.kind==='ready'))

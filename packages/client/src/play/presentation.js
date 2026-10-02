@@ -1,3 +1,4 @@
+import {initialCardScope} from './mvu-scope.js'
 import { createMvuCardBinding } from './mvu-bridge.js'
 import { createElement as h, createContext, useContext, useState, useEffect } from 'react'
 import { API_V1 } from '../../../identity.js'
@@ -16,10 +17,10 @@ export function ConversationPresentation({ state, playthrough, playClient, sessi
 export function messageAvatarKey(turn, role, index = 0) {
   return role === 'user' ? `${turn.id}:user` : `${turn.id}:${turn.variant?.id ?? 'live'}:assistant:${index}`
 }
-export function MessageBubble({ text, role = 'assistant', messageKey, editable = true, streaming = false, variableScope }) {
+export function MessageBubble({ text, role = 'assistant', messageKey, editable = true, streaming = false, variableScope, initialBinding = false }) {
   const context = useContext(Presentation)
   const settings = useConversationDisplaySettings()
-  const boundScope = variableScope && context?.playthrough?.id ? {...variableScope,playthroughId:context.playthrough.id} : null
+  const boundScope = variableScope && context?.playthrough?.id ? {...variableScope,playthroughId:context.playthrough.id} : initialBinding&&!context?.disabled&&!context?.busy?initialCardScope({playthrough:context?.playthrough,sessionId:context?.sessionId,characterId:context?.state?.display?.bindings?.characterId,timeline:context?.state?.timeline,turns:context?.state?.turns}):null
   const [editing, setEditing] = useState(false)
   const [avatar, setAvatar] = useState(null)
   const [failedImage, setFailedImage] = useState(null)

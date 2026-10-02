@@ -3,15 +3,27 @@ import {tavernFetch} from '../api-fetch.js'
 
 // Only trusted React UI and bridge code hold these objects. Never expose to a VM.
 export function createRenderingWriteRequests({request=tavernFetch}={}) {
- const entries=new Map(),listeners=new Set()
+ const entries=new Map(),listeners=new Set(),revocations=new Map()
  const emit=()=>{for(const listener of listeners)listener()}
- const revokeRemote=grant=>request(`${API_V1}/rendering-write-grants/${encodeURIComponent(grant.grantId)}`,{method:'DELETE',headers:{'Content-Type':'application/json'}}).catch(()=>{})
+ async function revokeRemote(grant) {
+  let item=revocations.get(grant.grantId)
+  if(item?.pending)return
+  if(!item){item={id:crypto.randomUUID(),grant,pending:false,error:null};revocations.set(grant.grantId,item)}
+  item.pending=true;item.error=null;emit()
+  try{
+   const response=await request(`${API_V1}/rendering-write-grants/${encodeURIComponent(grant.grantId)}`,{method:'DELETE',headers:{'Content-Type':'application/json'},signal:AbortSignal.timeout(10000)})
+   if(!response.ok)throw Error('Server revocation failed (HTTP '+response.status+')')
+   revocations.delete(grant.grantId)
+  }catch(error){item.error=String(error.message)}finally{item.pending=false;emit()}
+ }
  function revoke(entry){entry.generation++;clearTimeout(entry.expiryTimer);entry.controller?.abort();entry.controller=null;if(entry.grant)revokeRemote(entry.grant);entry.grant=null;entry.reviewed=false;entry.onRevoke?.();emit()}
  return Object.freeze({
   subscribe(fn){listeners.add(fn);return()=>listeners.delete(fn)},
   list(){return [...entries.values()].map(({id,source,sourceIdentity,reviewed,grant,error})=>({id,source,sourceIdentity,reviewed,granted:!!grant,error}))},
-  register({scope,owners,runs,modules,html,onRevoke}) {
-   const id=crypto.randomUUID(),source=JSON.stringify({version:1,scope,owners,runs,modules,html})
+  listRevocations(){return [...revocations.values()].map(({id,pending,error})=>({id,pending,error}))},
+  retryRevocation(id){const item=[...revocations.values()].find(item=>item.id===id);return item?revokeRemote(item.grant):Promise.resolve()},
+  register({scope,owners,runs,modules,html,adapters=[],schemaDeclarations=[],onRevoke}) {
+   const id=crypto.randomUUID(),source=JSON.stringify({version:1,scope,owners,runs,modules,html,adapters,schemaDeclarations})
    const entry={id,source,scope,sourceIdentity:null,reviewed:false,grant:null,generation:0,onRevoke};entries.set(id,entry);emit()
    crypto.subtle.digest('SHA-256',new TextEncoder().encode(source)).then(bytes=>{
     if(!entries.has(id))return
@@ -28,7 +40,7 @@ export function createRenderingWriteRequests({request=tavernFetch}={}) {
     const response=await request(`${API_V1}/rendering-write-grants`,{method:'POST',headers:{'Content-Type':'application/json'},signal:controller.signal,body:JSON.stringify({source:entry.source,sourceIdentity:entry.sourceIdentity,reviewed:true,write:true})})
     const grant=await response.json();if(!response.ok)throw Error(grant.error??'Write authorization failed')
     if(ticket!==entry.generation||!entries.has(id)){if(grant.grantId)revokeRemote(grant);return}
-    if(!Number.isSafeInteger(grant.expiresAt)||grant.expiresAt<=Date.now()||typeof grant.grantId!=='string'||grant.sourceIdentity?.version!==1||grant.sourceIdentity?.sha256!==entry.sourceIdentity.sha256||JSON.stringify(Object.entries(grant.sourceIdentity?.scope??{}).sort())!==JSON.stringify(Object.entries(entry.scope).sort()))throw Error('Invalid write grant response')
+    if(!Number.isSafeInteger(grant.expiresAt)||grant.expiresAt<=Date.now()||typeof grant.grantId!=='string'||grant.sourceIdentity?.version!==1||grant.sourceIdentity?.sha256!==entry.sourceIdentity.sha256||JSON.stringify(Object.entries(grant.sourceIdentity?.scope??{}).sort())!==JSON.stringify(Object.entries(entry.scope).sort())){if(typeof grant.grantId==='string')void revokeRemote(grant);throw Error('Invalid write grant response')}
     entry.grant={grantId:grant.grantId,sourceIdentity:entry.sourceIdentity};entry.expiryTimer=setTimeout(()=>revoke(entry),Math.min(30*60*1000,grant.expiresAt-Date.now()));emit()
    }catch(error){if(ticket===entry.generation){entry.error=error.message;emit();throw error}}finally{if(entry.controller===controller)entry.controller=null}
   },
