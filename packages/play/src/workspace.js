@@ -5,6 +5,7 @@ import {
   mkdirSync,
   openSync,
   readdirSync,
+  realpathSync,
   readFileSync,
   renameSync,
   statSync,
@@ -132,6 +133,8 @@ export class PlayWorkspaceStore {
     this.host = host ?? {}
     this.now = now
     this.targetGuards = new Set()
+    this.bindingEpoch = Symbol()
+    this.fileEpochs = new Map()
     this.beforeRename = beforeRename
     mkdirSync(this.storageDir, { recursive: true })
     this.binding = readBinding(this.path)
@@ -143,8 +146,21 @@ export class PlayWorkspaceStore {
 
   persist(next) {
     atomicJson(this.path, next, MAX_BINDING_BYTES)
+    if (this.binding.rootPath !== next.rootPath || this.binding.workspaceId !== next.workspaceId) this.bindingEpoch = Symbol()
     this.binding = next
     return this.get()
+  }
+
+  /** Process-local lease over public writes and workspace identity; hashes alone permit ABA. */
+  captureReadLease(relativePaths) {
+    if (!Array.isArray(relativePaths) || relativePaths.length === 0) throw new TypeError('File paths required')
+    const epoch = this.bindingEpoch
+    const root = requireRoot(this.binding)
+    const files = relativePaths.map(path => {
+      const key = realpathSync.native(resolvePlayPath(root, posixPlayPath(path), { mustExist: true }))
+      return [key, this.fileEpochs.get(key)]
+    })
+    return () => this.bindingEpoch === epoch && files.every(([path, token]) => this.fileEpochs.get(path) === token)
   }
 
   view() {
@@ -339,7 +355,12 @@ export class PlayWorkspaceStore {
             revisionConflict()
           }
         }
+        const previousLeaseKey = currentTarget === null ? null : realpathSync.native(absolute)
         renameSync(temporary, absolute)
+        const token = Symbol()
+        if (previousLeaseKey !== null) this.fileEpochs.set(previousLeaseKey, token)
+        // Atomic rename may change the stored casing on case-insensitive volumes.
+        this.fileEpochs.set(realpathSync.native(absolute), token)
       } catch (error) {
         if (descriptor !== null) { try { closeSync(descriptor) } catch {} }
         try { unlinkSync(temporary) } catch {}

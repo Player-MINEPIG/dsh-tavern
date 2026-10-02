@@ -29,7 +29,8 @@ export function installMvu(ctx, { storageDir, resources = [], sources, membershi
         if (timeline.nodes.length || timelineHead(timeline)) fail('MVU_READ_ONLY', 'Initial timeline is not empty')
         return digest({ playthrough, timeline })
       }
-      const memberKey = membership()
+      const memberKey = membership(), memberLease = memberships.captureLease?.(scope.playthroughId)
+      if (typeof memberLease !== 'function' || memberLease() !== true) fail('MVU_READ_ONLY', 'Membership mutation lease required')
       const selectionToken = getSelectionToken(scope.sessionId)
       let live = ctx.get('sessions')?.get?.(scope.sessionId)
       if (getSelection(scope.sessionId)?.characterCardId !== scope.characterId) fail('MVU_READ_ONLY', 'Initial character is not selected')
@@ -47,7 +48,7 @@ export function installMvu(ctx, { storageDir, resources = [], sources, membershi
         try {
           const current = ctx.get('sessions')?.get?.(scope.sessionId)
           return (sessionEpochs.get(scope.sessionId) ?? 0) === epoch && current === live && emptyHistory(current.snapshotEvents()) && digest(current.header) === headerKey
-            && getSelectionToken(scope.sessionId) === selectionToken && getSelection(scope.sessionId)?.characterCardId === scope.characterId && membership() === memberKey
+            && memberLease() === true && getSelectionToken(scope.sessionId) === selectionToken && getSelection(scope.sessionId)?.characterCardId === scope.characterId && membership() === memberKey
         } catch { return false }
       }
       if (!checkCurrent()) fail('MVU_READ_ONLY', 'Initial scope changed during inspection')
