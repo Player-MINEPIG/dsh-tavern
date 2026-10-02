@@ -154,3 +154,94 @@ test('real Host empty greeting binding writes state used by the first model requ
     await assert.rejects(service.cardWrite({ capability: binding.capability, operation: 'patch', value: [], expectedRevision: 2, operationId: 'late', cause: 'script' }), { code: 'MVU_READ_ONLY' })
   } finally { await ctx.fiber.dispose(); rmSync(directory, { recursive: true, force: true }) }
 })
+
+test('official persisted empty session resumes through resolveAgent, while resumed conversation stays closed', { skip: !runtimeRoot, timeout: 30000 }, async () => {
+  const require = createRequire(join(resolve(runtimeRoot), 'package.json'))
+  const load = name => import(pathToFileURL(require.resolve(name)).href)
+  const { Context } = await load('@deepseek-ai/cordis'), { SystemPrompt } = await load('@deepseek-ai/dsh-system-prompt')
+  const llm = await load('@deepseek-ai/dsh-llm')
+  const { mkdirSync } = await import('node:fs')
+  const { validatePlayDocument } = await import('../packages/play/src/timeline.js')
+  const directory = mkdtempSync(join(tmpdir(), 'mvu-resume-host-')), workspace = join(directory, 'play')
+  const contexts = []; mkdirSync(workspace)
+  async function boot() {
+    const ctx = new Context(); contexts.push(ctx)
+    ctx.provide('directoryPickerController', {})
+    ctx.provide('workspaceController', { create: async () => ({ workspace: { workspaceId: 'synthetic-workspace' } }) })
+    await ctx.plugin(SystemPrompt, { personaPrefix: 'HOST' })
+    await ctx.plugin((await load('@deepseek-ai/dsh-session-persistence-jsonl')).default, { root: join(directory, 'sessions') })
+    for (const name of ['session', 'agent', 'session-projection', 'llm', 'tools', 'agent-loop']) await ctx.plugin((await load(`@deepseek-ai/dsh-${name}`)).default, name === 'agent-loop' ? { agents: [] } : {})
+    ctx.provide('typert', { lookups: { configure: () => () => {} }, contexts: { configureHost: () => () => {} } })
+    ctx.provide('agentDefaultModel', { currentSelection: () => ({ provider: 'resume-test', model: 'test' }), saveSelection: async () => {} })
+    ctx.provide('fileUploads', { registerAgentResolver: () => () => {} })
+    ctx.provide('shell', { sandboxMode: 'workspace-write' }); ctx.provide('approval', { config: { policy: 'ask' } })
+    new (await load('@deepseek-ai/dsh-session-query')).SessionQueryEngine(ctx)
+    new (await load('@deepseek-ai/dsh-api-session-controller')).SessionController(ctx, { nativeOpen: false })
+    await ctx.plugin((await load('@deepseek-ai/dsh-permission-presets')).default, { defaultPreset: 'workspace-write' })
+    class Adapter extends llm.LlmAdapter {
+      async *stream() {
+        yield { type: 'block-start', index: 0, blockType: 'text' }
+        yield { type: 'text-delta', index: 0, text: 'Synthetic reply.' }
+        yield { type: 'block-end', index: 0, block: { type: 'text', text: 'Synthetic reply.' } }
+        yield { type: 'finish', reason: { kind: 'stop' } }
+      }
+    }
+    ctx.llm.registerAdapter(['resume-test'], new Adapter())
+    let store
+    await ctx.plugin({ name: tavern.name, inject: tavern.inject, apply(context) { store = tavern.apply(context, { storageDir: join(directory, 'tavern'), mvu: { resources: [
+      { id: 'mvu:resume', characterId: 'resume-card', sessionIds: ['*'], initial: { stat_data: { hp: 10 } } },
+    ] } }) } })
+    await store.playWorkspaceStore.bindRoot(workspace)
+    return { ctx, store, service: ctx.get('tavernMvu') }
+  }
+  try {
+    const first = await boot()
+    first.store.characterStore.create({ id: 'resume-card', name: 'Synthetic resume' })
+    const { sessionId } = await first.ctx.sessionController.create({ cwd: directory })
+    const original = first.ctx.agents.get(sessionId)
+    first.store.sessionSelections.set(sessionId, { characterCardId: 'resume-card' })
+    first.store.rpMode.followCharacterChange(sessionId, { previousId: null, nextId: 'resume-card' })
+    const write = (path, value) => first.store.playWorkspaceStore.writeFile(path, JSON.stringify(value), { expectedRevision: null, expectedRevisionPresent: true, validate: validatePlayDocument })
+    write('opening/timeline.json', { nodes: [] })
+    write('catalog.json', { playthroughs: [{ id: 'opening', path: 'opening/timeline.json', ext: { pmpDshTavern: { rootSessionId: sessionId, characterId: 'resume-card' } } }] })
+    const scope = { mode: 'initial', playthroughId: 'opening', sessionId, characterId: 'resume-card', sessionFormatVersion: 4 }
+    assert.deepEqual(original.session.snapshotEvents().map(event => event.type), ['permission/preset', 'sandbox/mode', 'approval/policy', 'sandbox/mode'])
+    assert.equal((await first.service.snapshot(scope)).variables.stat_data.hp, 10)
+    await first.ctx.sessions.flush(original.session)
+    await first.ctx.fiber.dispose()
+
+    const second = await boot()
+    assert.equal(second.ctx.sessions.get(sessionId), undefined)
+    // snapshot must use the public resolveAgent cold path, including the official JSONL backend.
+    assert.equal((await second.service.snapshot(scope)).variables.stat_data.hp, 10)
+    const resumed = second.ctx.agents.get(sessionId)
+    assert.notEqual(resumed.session, original.session)
+    assert.deepEqual(resumed.session.snapshotEvents().map(event => ({ type: event.type, data: event.data })).at(-1), { type: 'session/end-seed', data: {} })
+    assert.equal(resumed.session.header.isSeeded, false)
+    assert.equal(resumed.session.snapshotEvents().length, 5)
+    const sourceIdentity = { version: 1, sha256: 'b'.repeat(64), scope }
+    second.ctx.provide('tavernRenderingAuthority', { resolve: async () => ({ valid: true, write: true, scope }), isCurrent: () => true })
+    second.service.registerUsage(() => ({ enabled: true, checkCurrent: () => true }))
+    const binding = await second.service.createCardBinding({ scope, sourceIdentity, grantId: 'synthetic' })
+    const request = { capability: binding.capability, operation: 'replace', value: { stat_data: { hp: 7 } }, expectedRevision: 0, operationId: 'resumed-opening', cause: 'user-interaction' }
+    assert.equal((await second.service.cardWrite(request)).revision, 1)
+    let timer
+    const completed = new Promise((resolve, reject) => {
+      const stop = second.ctx.on('session/event', (session, event) => { if (session.id === sessionId && event.type === 'turn/end') { stop(); clearTimeout(timer); resolve(event) } })
+      timer = setTimeout(() => { stop(); reject(new Error('timeout')) }, 5000)
+    })
+    resumed.followup(llm.createUserMessage({ content: [{ type: 'text', text: 'Begin.' }], source: { kind: 'user' } }))
+    assert.equal((await completed).data.reason.kind, 'completed')
+    await second.service.flush()
+    await assert.rejects(second.service.cardWrite({ ...request, operationId: 'after-turn', expectedRevision: 1 }), { code: 'MVU_READ_ONLY' })
+    await second.ctx.sessions.flush(resumed.session)
+    await second.ctx.fiber.dispose()
+
+    const third = await boot()
+    await assert.rejects(third.service.snapshot(scope), { code: 'MVU_READ_ONLY' })
+    const events = third.ctx.sessions.get(sessionId).snapshotEvents()
+    assert.equal(events.at(-1).type, 'session/end-seed')
+    assert.ok(events.some(event => event.type === 'turn/start'))
+    assert.ok(events.some(event => event.type === 'assistant/message'))
+  } finally { for (const ctx of contexts.reverse()) await ctx.fiber.dispose(); rmSync(directory, { recursive: true, force: true }) }
+})
