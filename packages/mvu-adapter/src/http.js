@@ -3,7 +3,7 @@ import { sendJson, readBoundedJson } from '../../play/src/http.js'
 
 const paths = ['snapshot', 'card-binding', 'card-write', 'card-binding/revoke']
 export const isMvuApiPath = url => paths.some(path => requestPathname(url) === `${API_V1}/mvu/${path}`)
-const scopeKeys = ['playthroughId', 'sessionId', 'nodeId', 'variantId', 'endEventId', 'sessionFormatVersion']
+const scopeKeys = ['mode', 'characterId', 'playthroughId', 'sessionId', 'nodeId', 'variantId', 'endEventId', 'sessionFormatVersion']
 function validateScope(scope) {
   if (!scope || typeof scope !== 'object' || Array.isArray(scope) || Object.keys(scope).some(key => !scopeKeys.includes(key))) throw Object.assign(new Error('Invalid MVU scope'), { code: 'MVU_SCOPE' })
   return scope

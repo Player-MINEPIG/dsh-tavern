@@ -61,7 +61,7 @@ Request source `tavern.mvu/state` must be explicitly selected in an assembly pre
 
 `GET /pmp-dsh-tavern/api/v1/mvu/snapshot?scope=<JSON>` uses existing Tavern authentication. Host binds `{playthroughId,sessionId,nodeId,variantId,endEventId,sessionFormatVersion?}` against durable timeline and native message evidence. Browser input cannot select arbitrary messageId. Snapshot revision stays historical; currentRevision is the current entity CAS revision.
 
-`createMvuCardBinding({client,scope,signal?,pollMs?})` asynchronously returns `{getSnapshot(),subscribe(listener),dispose()}`. Snapshot is `{version:1,status,scope,revision,variables,resourceId?}`. Variables are the whole object including stat_data/schema. Scope is immutable; polling is bounded, abort cancels initial reads, and disposed bindings reject reads. Rendering owns script callbacks and lifecycle. Greeting/import/streaming bubbles without trusted durable coordinates do not bind variables.
+`createMvuCardBinding({client,scope,signal?,pollMs?})` asynchronously returns `{getSnapshot(),subscribe(listener),dispose()}`. Snapshot is `{version:1,status,scope,revision,variables,resourceId?}`. Variables are the whole object including stat_data/schema. Scope is immutable; polling is bounded, abort cancels initial reads, and disposed bindings reject reads. Rendering owns script callbacks and lifecycle. Ordinary greeting/import/streaming bubbles cannot impersonate durable coordinates. The current empty-session greeting may use only the separate initial mode below.
 
 ## Authorized card writes
 
@@ -71,11 +71,27 @@ Code review and variable-write permission are separate. Complete execution-bundl
 
 Host primitives are createCardBinding/cardWrite/revokeCardBinding. Client binding accepts `writeGrant:{grantId,sourceIdentity}` and exposes async write; getSnapshot exposes only a writable boolean. Grants/capabilities never enter card code. Host derives CAS from currentRevision and generates operationId. Abort, unload or review changes cancel pending candidates.
 
+Both native and managed card writes require an explicit usage-policy approval; a write grant alone is insufficient. Every deciding usage handler must also return a private trusted Host synchronous `checkCurrent:()=>boolean` lease capturing configuration/reload generations and provider lifetime. After the final await and immediately before persistence, all leases must return exactly true. Missing, asynchronous or stale leases deny the transaction. Functions are never persisted or exposed to scripts. Reload must invalidate leases when it starts; reporting configRevision alone is insufficient.
+
 The separate store event `card_variable_update` uses `validate_card_update → apply_card_update`. Writes default to denied; manager enabled is policy approval only, never a substitute for the source grant. Event includes operation/operationId/expectedRevision/sourceIdentity/cause. Causes are user-interaction, interval and script. Valid-binding permission/policy rejection emits skipped; only actual commit emits applied with configRevision. Invalid capabilities/parameters without a valid resource association return a coded HTTP error rather than fabricating a resource usage event.
 
 The trusted renderer dispatcher derives cause from native isTrusted events/timer tasks; the VM supplies only op/value. The server trusts that authenticated Host UI evidence and cannot independently prove a human clicked in the browser. Code approval does not authorize impersonating a click.
 
 Observed API shapes are `getMvuData(options)` returning whole variables, `updateVariablesWith(JSONPatchArray)` and `await replaceMvuData(variables,options)`. Callback updater signatures remain unverified. VARIABLE_UPDATE_ENDED only promises a no-argument callback after a commit in this binding, followed by a fresh read; it does not claim full upstream payload/event compatibility. Cross-message/latest/chat/character fallbacks cannot silently resolve to the current authorized scope.
+
+## Current empty-session greeting binding
+
+The same snapshot/card-binding/card-write APIs accept the separate scope `{mode:'initial',playthroughId,sessionId,characterId,sessionFormatVersion?}`. It cannot contain nodeId/variantId/endEventId. A session-only management API is not a card capability. Host verifies root-session membership, character selection, empty timeline and one accessible active character resource. The same resource ID remains one current entity shared across authorized sessions; greeting configuration does not implicitly copy it.
+
+Initial binding requires a controlled live DSH session. If unloaded, Host restores only the specified session through public `sessionController.resolveAgent(sessionId)`; inability to restore denies access. Empty conversation history permits DSH startup `sandbox/mode` metadata only; other events and parent/inherited history are rejected. A synchronous lease captures the session instance/header, event generation, membership and that session's selection generation. Starting the first turn or switching the character away and back invalidates old capabilities. Unrelated session selection changes do not invalidate them. Renderer must abort/dispose bindings when leaving or switching sessions/characters, then create a fresh binding on return; old bubbles must never follow current focus.
+
+Initial writes retain the independent grant, policy lease, CAS, idempotency and schema checks. Ledger entries use `source.initial:true` for opening configuration rather than inventing assistant messages. The first completed reply inherits the committed current state. Initial mode reads current content and stops reading/writing after the first turn; source management APIs retain the persisted initial records.
+
+## Schema confirmation for explicit built-in adapters
+
+A trusted rendering adapter may read available snapshot `variables.mvu_schema:{mvuSchema:1,interpreterVersion:1,source}` and compare source exactly with the entire original declaration script selected for substitution. A match means the backend interpreter already handles that declaration. The entire declaration is not executed again in the VM, including initialization and transforms. Missing descriptors, unknown versions and changed sources are rejected. An empty registerMvuSchema function cannot stand in for successful registration. This contract does not provide runtime Zod-object registration or schema hot migration.
+
+The rendering adapter independently verifies remote-module identities/hashes, its default-off substitution setting and visible diagnostics. A descriptor's interpreter version is not an upstream bundle byte identity or evidence that the original bundle ran.
 
 ## Compatibility and verification
 

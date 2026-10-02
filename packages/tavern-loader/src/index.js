@@ -376,6 +376,7 @@ export function apply(ctx, config = {}) {
   const refreshMvu = createCharacterDiscovery({ characters: characterStore, selections, service: () => mvu })
   mvu = installMvu(ctx, { storageDir, resources: mvuResources, sources: requestAssembler.registry, refresh: refreshMvu,
     isActive: (resource, sessionId) => selections.get(sessionId).characterCardId === resource.characterId,
+    getSelection: sessionId => selections.get(sessionId), getSelectionToken: sessionId => selections.selectionRevision(sessionId),
     memberships: playMemberships, onError: error => recordFailure('mvu.update', error) })
   runtime.requestAssemblyEnabled = sessionId => {
     if (!requestAssembler.available() && !requestAssembler.selected(sessionId)) return false

@@ -69,7 +69,7 @@ MVU 变量是角色状态，和长期记忆资源类型分开。`tavernMvu`（�
 
 `GET /pmp-dsh-tavern/api/v1/mvu/snapshot?scope=<JSON>` 使用现有 Tavern 请求认证。scope 为 Host 绑定的 `{playthroughId,sessionId,nodeId,variantId,endEventId,sessionFormatVersion?}`，必须与持久 timeline 和原生消息相符。浏览器不能传自选 messageId。读快照的 revision 保留历史语义，currentRevision 提供当前 CAS 版本。
 
-客户端 `createMvuCardBinding({client,scope,signal?,pollMs?})` 异步返回 `{getSnapshot(),subscribe(listener),dispose()}`。快照为 `{version:1,status,scope,revision,variables,resourceId?}`；variables 是完整变量对象，包含 stat_data/schema。订阅采用有界轮询；scope 不可变，abort 可取消初次读取，销毁后读取拒绝。渲染模块负责脚本回调和生命周期。无可信 durable scope 的开场、导入、流式气泡不绑定变量。
+客户端 `createMvuCardBinding({client,scope,signal?,pollMs?})` 异步返回 `{getSnapshot(),subscribe(listener),dispose()}`。快照为 `{version:1,status,scope,revision,variables,resourceId?}`；variables 是完整变量对象，包含 stat_data/schema。订阅采用有界轮询；scope 不可变，abort 可取消初次读取，销毁后读取拒绝。渲染模块负责脚本回调和生命周期。普通开场、导入、流式气泡不能冒充 durable scope；当前空会话开场仅可使用下述独立 initial 模式。
 
 ## 受授权的卡片写入
 
@@ -79,11 +79,27 @@ MVU 变量是角色状态，和长期记忆资源类型分开。`tavernMvu`（�
 
 Host `createCardBinding/cardWrite/revokeCardBinding` 为对应事务原语。绑定客户端增加 `writeGrant:{grantId,sourceIdentity}` 与异步 `write(...)`，getSnapshot 仅暴露 writable，不向脚本暴露 grant/capability。Host 从 currentRevision 取得 CAS 版本并生成 operationId；取消、卸载或重审终止尚未提交的候选。
 
+native 和 managed 的卡写均要求显式使用策略允许；仅持有 write grant 不够。允许的 usage handler 还须返回可信 Host 私有同步 `checkCurrent:()=>boolean`，捕获配置版本、reload 代次和 provider 生命周期。所有决策的租约在最后一次 await 后、原子保存前必须严格返回 true；缺失、Promise、失效均拒绝。函数不保存到账本，也不传给脚本。配置 reload 开始即使旧租约失效，不能仅报告 configRevision。
+
 store 使用独立 `card_variable_update`，策略链为 `validate_card_update → apply_card_update`。默认没有写权限；manager enabled 只批准管理策略，不能替代源授权。事件含 operation/operationId/expectedRevision/sourceIdentity/cause，cause 区分 `user-interaction`、`interval`、`script`。有效绑定的权限/策略拒绝发 skipped；真实提交才发 applied，并携 configRevision。无法归属有效资源的坏 capability/参数仅产生带 code 的 HTTP 错误，不能伪造资源触发事实。
 
 renderer 的可信 dispatcher 从原生 isTrusted 事件/计时器任务生成 cause，VM 只能提供 op/value。服务端信任已认证 Host UI 的该证据，不能独立证明浏览器中发生了人类点击。代码审批不是点击授权，脚本不能自报 cause。
 
 实际观察到的兼容形状为 `getMvuData(options)` 读取完整变量、`updateVariablesWith(JSONPatchArray)` 和 `await replaceMvuData(variables,options)`。回调 updater 形状未验证，不承诺兼容。VARIABLE_UPDATE_ENDED 仅保证本绑定提交后触发无参回调再读取，不宣称上游完整 payload/事件语义。跨消息/latest/chat/character fallback 不能被偷偷解释为当前授权范围。
+
+## 当前空会话的开场绑定
+
+同一 snapshot/card-binding/card-write API 接受独立 scope `{mode:'initial',playthroughId,sessionId,characterId,sessionFormatVersion?}`。不得同时带 nodeId/variantId/endEventId，也不能将普通 session-only 管理接口当作卡片能力。Host 检查根会话 membership、角色选择、空 timeline，以及唯一可访问且活动的角色资源；同一资源 ID 仍是跨已授权会话共享的当前实体，不因开场产生隐式副本。
+
+初始绑定必须持有受控 live DSH session；尚未加载时只通过公开 `sessionController.resolveAgent(sessionId)` 恢复指定会话，无法恢复则拒绝。空对话历史允许 DSH 创建时的 `sandbox/mode` 元数据，其他事件、父会话/继承历史均拒绝。同步租约绑定 session 对象、header、事件代次、membership 和本会话的选择代次。首轮开始或角色切走再切回后旧能力失效；其他会话修改选择不会撤销此能力。渲染宿主在离开、切 session、切角色时必须 abort/dispose 旧 binding，重新进入须创建新绑定，不能把旧气泡转向当前 focus。
+
+initial 写入仍经过独立 grant、使用策略租约、CAS、幂等与 schema 校验。账本使用 `source.initial:true` 标记用户开局配置，不伪造 assistant message；首个正式回复继承已提交当前值。initial 模式是当前内容视图，首轮后该模式不可再读取或写入，持久初始记录仍可由来源管理接口查看。
+
+## 显式内置适配器的 schema 确认
+
+可信渲染 adapter 可读取 available snapshot 的 `variables.mvu_schema:{mvuSchema:1,interpreterVersion:1,source}`，严格比较 source 与准备替代的完整原始声明脚本。匹配表示后端解释器已处理该声明，整段声明不再在 VM 执行，不重复初始化或 transform。缺描述符、版本未知、源码不同均拒绝；不能用空的 registerMvuSchema 函数伪装成功。此合同不提供动态 Zod 对象注册或 schema 热迁移。
+
+远程模块标识/hash、默认关闭的替代模式和界面诊断由渲染 adapter 独立核验。后端 descriptor 的解释器版本不能当作上游 bundle 字节身份，也不证明原 bundle 运行过。
 
 ## 兼容边界与验证
 
@@ -91,7 +107,7 @@ renderer 的可信 dispatcher 从原生 isTrusted 事件/计时器任务生成 c
 
 | 能力 | 实现与边界 |
 | --- | --- |
-| 初始化 | 有界 YAML/JSON5、拒绝 tag/alias、顺序合并；仅显式配置的卡源 |
+| 初始化 | 有界 YAML/JSON5、拒绝 tag/alias、顺序合并；支持显式配置与卡源自动发现，发现不等于启用 |
 | 命令 | set/add/insert/assign/remove/unset/delete；JSONPatch replace/delta/insert/add/remove/move；安全 dot/bracket/JSON pointer 路径 |
 | 原生元数据 | extensible/recursiveExtensible/required、对象/数组模板、arrayMeta、扩展标记；按值/索引删除；严格/兼容 VWD 设置 |
 | schema 声明 | object/array/record/enum/literal/union、number/string/boolean/any/unknown、coerce、default/prefault/optional/nullable、min/max/int、strict/passthrough、transform |

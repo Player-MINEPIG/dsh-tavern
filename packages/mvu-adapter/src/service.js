@@ -118,6 +118,7 @@ export class MvuService {
     if (resource.sourceError || (resource.discovered && this.isActive && !this.isActive(resource, scope.sessionId))) return { enabled: false, configRevision: null }
     const managementMode = this.#record(resource.id).managementMode ?? resource.managementMode ?? 'native'
     let enabled = true, decided = false, configRevision = null
+    const leases = []
     const usageEpoch = this.#usageEpoch
     for (const registration of [...this.#usage]) {
       let answer
@@ -126,12 +127,13 @@ export class MvuService {
       if (usageEpoch !== this.#usageEpoch) fail('MVU_USAGE_CANCELLED', 'Usage provider changed')
       if (answer === undefined) continue
       decided = true
+      leases.push(answer?.checkCurrent)
       if (!answer || typeof answer.enabled !== 'boolean') fail('MVU_USAGE', 'Invalid usage decision')
       validateStrategy(on, answer.strategy)
       enabled &&= answer.enabled
       configRevision = answer.configRevision ?? configRevision
     }
-    return { enabled: enabled && (managementMode !== 'managed' || decided), configRevision, usageEpoch }
+    return { enabled: enabled && ((managementMode !== 'managed' && on !== 'card_variable_update') || decided), configRevision, usageEpoch, checkCurrent: () => leases.length > 0 && leases.every(check => typeof check === 'function' && check() === true) }
   }
   #serial(fn) {
     const task = this.#queue.then(() => { if (this.#disposed) fail('MVU_DISPOSED', 'Service disposed'); return fn() })
@@ -151,7 +153,7 @@ export class MvuService {
     if (this.#disposed) fail('MVU_DISPOSED', 'Service disposed')
     const record = this.#record(resource.id)
     if (this.inspect) {
-      for (const sessionId of new Set(record.versions.filter(v => !v.source.manual).map(v => v.source.sessionId))) {
+      for (const sessionId of new Set(record.versions.filter(v => !v.source.manual || v.source.initial).map(v => v.source.sessionId))) {
         const history = await this.inspect(sessionId)
         if (!history) fail('MVU_HISTORY_UNAVAILABLE', 'Source session is unavailable')
         this.#verifyHistory(record, sessionId, history)
@@ -186,7 +188,12 @@ export class MvuService {
   #verifyHistory(record, sessionId, session) {
     const header = session.header ?? session.meta
     for (const version of record.versions.filter(v => v.source.sessionId === sessionId && (!v.source.manual || v.source.card))) {
-      const source = version.source, message = session.events.find(e => e.seq === source.messageSeq), end = session.events.find(e => e.seq === source.endSeq)
+      const source = version.source
+      if (source.initial) {
+        if (header?.version !== source.sessionFormatVersion || (source.sessionCreatedAt !== undefined && header?.createdAt !== source.sessionCreatedAt)) fail('MVU_HISTORY_UNAVAILABLE', 'Initial session identity changed')
+        continue
+      }
+      const message = session.events.find(e => e.seq === source.messageSeq), end = session.events.find(e => e.seq === source.endSeq)
       if (header?.version !== source.sessionFormatVersion || (source.sessionCreatedAt !== undefined && header?.createdAt !== source.sessionCreatedAt)
         || message?.type !== 'assistant/message' || message.data?.message?.id !== source.messageId || hash(textOf(message.data?.message)) !== (version.sourceFingerprint ?? version.fingerprint)
         || end?.type !== 'turn/end' || end.data?.turn !== source.turn || end.data?.reason?.kind !== 'completed') fail('MVU_HISTORY_UNAVAILABLE', 'Recorded source no longer matches durable history')
@@ -337,16 +344,37 @@ export class MvuService {
     const checkGrant = await this.#cardGrant(binding, signal)
     const evidence = await this.resolveScope?.(scope)
     if (!evidence?.writableHead) fail('MVU_READ_ONLY', 'Historical or running messages are read-only')
-    const rows = (await this.list({ scope, signal })).filter(row => { const resource = this.resources.find(r => r.id === row.id); const version = this.#record(row.id).versions.find(v => v.key === row.versionKey); return version?.source.messageSeq === scope.endEventId && version?.source.messageId === evidence.messageId && (version?.sourceFingerprint ?? version?.fingerprint) === evidence.fingerprint && (!resource.discovered || !this.isActive || this.isActive(resource, scope.sessionId)) })
-    if (rows.length !== 1 || !rows[0].versionKey || rows[0].versionKey !== this.#record(rows[0].id).currentKey) fail('MVU_READ_ONLY', 'Binding is not the current resource version')
+    const initial = scope.mode === 'initial'
+    const rows = (await this.list({ scope, signal })).filter(row => {
+      const resource = this.resources.find(r => r.id === row.id)
+      if (!this.#cardResourceActive(resource, scope)) return false
+      if (initial) return true
+      const version = this.#record(row.id).versions.find(v => v.key === row.versionKey)
+      return version?.source.messageSeq === scope.endEventId && version?.source.messageId === evidence.messageId && (version?.sourceFingerprint ?? version?.fingerprint) === evidence.fingerprint
+    })
+    if (rows.length !== 1 || (!initial && (!rows[0].versionKey || rows[0].versionKey !== this.#record(rows[0].id).currentKey))) fail('MVU_READ_ONLY', 'Binding is not the current resource version')
+    if (initial && (evidence.mode !== 'initial' || typeof evidence.checkCurrent !== 'function' || evidence.checkCurrent() !== true)) fail('MVU_READ_ONLY', 'Initial scope is no longer current')
     for (const [key, value] of this.#cardBindings) if (value.expiresAt < Date.now()) this.#cardBindings.delete(key)
     if (this.#cardBindings.size >= 512) fail('MVU_LIMIT', 'Too many live card bindings')
     const snapshot = await this.snapshot(scope)
     signal?.throwIfAborted()
     if (checkGrant() !== true) fail('MVU_WRITE_DENIED', 'Write grant was revoked during binding')
+    if (initial && evidence.checkCurrent() !== true) fail('MVU_READ_ONLY', 'Initial scope changed during binding')
     const capability = randomUUID()
-    this.#cardBindings.set(capability, { ...binding, resourceId: rows[0].id, expiresAt: Date.now() + 30 * 60 * 1000 })
+    this.#cardBindings.set(capability, { ...binding, resourceId: rows[0].id, ...(initial ? { scopeLease: evidence.checkCurrent, initialSource: json(evidence.initialSource) } : {}), expiresAt: Date.now() + 30 * 60 * 1000 })
     return { capability, snapshot }
+  }
+  #cardResourceActive(resource, scope) {
+    return resource && !resource.sourceError && (!resource.discovered || !this.isActive || this.isActive(resource, scope.sessionId))
+      && (scope.mode !== 'initial' || (resource.characterId === scope.characterId && this.isActive?.(resource, scope.sessionId) === true))
+  }
+  #initialBindingCurrent(binding, evidence) {
+    if (binding.scope.mode !== 'initial') return true
+    const active = this.resources.filter(resource => {
+      try { return this.#configured(resource.id, binding.scope) && this.#cardResourceActive(resource, binding.scope) } catch { return false }
+    })
+    return evidence?.mode === 'initial' && evidence.writableHead && binding.scopeLease?.() === true && evidence.checkCurrent?.() === true
+      && hash(evidence.initialSource) === hash(binding.initialSource) && active.length === 1 && active[0].id === binding.resourceId
   }
   revokeCardBinding(capability) { this.#cardBindings.delete(capability) }
   /** Transport belongs to the authenticated Host dispatcher, never to card code. */
@@ -361,22 +389,22 @@ export class MvuService {
       try {
         await this.#cardGrant(binding, signal)
         const evidence = await this.resolveScope?.(scope)
-        if (!evidence?.writableHead) fail('MVU_READ_ONLY', 'Card no longer owns the active message')
+        if (!evidence?.writableHead || !this.#initialBindingCurrent(binding, evidence)) fail('MVU_READ_ONLY', 'Card no longer owns the active scope')
         const record = this.#record(id), input = json(value), fingerprint = hash({ operation, value: input, expectedRevision, operationId, cause, scope, sourceIdentity: binding.sourceIdentity })
         const prior = record.versions.find(v => v.operationId === operationId)
         if (prior) {
           if (prior.fingerprint !== fingerprint) fail('MVU_IDEMPOTENCY_CONFLICT', 'Operation id reused')
-          this.#emit({ ...fact, phase: 'completed', revision: prior.revision, detail: 'idempotent-replay' })
+          this.#emit({ ...fact, phase: 'completed', revision: prior.revision, configRevision: prior.configRevision ?? null, detail: 'idempotent-replay' })
           return json(prior.result)
         }
         if (record.revision !== expectedRevision) fail('REVISION_CONFLICT', 'MVU revision changed')
         const current = record.versions.find(v => v.key === record.currentKey)
-        if (!current || current.source.sessionId !== scope.sessionId || current.source.messageSeq !== scope.endEventId || current.source.messageId !== evidence.messageId || (current.sourceFingerprint ?? current.fingerprint) !== evidence.fingerprint) fail('MVU_READ_ONLY', 'Resource changed outside this message binding')
+        if (scope.mode !== 'initial' && (!current || current.source.sessionId !== scope.sessionId || current.source.messageSeq !== scope.endEventId || current.source.messageId !== evidence.messageId || (current.sourceFingerprint ?? current.fingerprint) !== evidence.fingerprint)) fail('MVU_READ_ONLY', 'Resource changed outside this message binding')
         const baseline = this.#current(resource)
         const event = { operationId, expectedRevision, cause, operation, sourceIdentity: binding.sourceIdentity, containsMvuUpdate: true }
         const decision = await this.#decision('card_variable_update', resource, { ...scope, authority: 'local' }, event, baseline)
         if (!decision.enabled) fail('MVU_USAGE_DENIED', 'Usage policy denied card update')
-        this.#emit({ ...fact, phase: 'triggered' })
+        this.#emit({ ...fact, phase: 'triggered', configRevision: decision.configRevision })
         let variables
         if (operation === 'patch') {
           if (!Array.isArray(input)) fail('MVU_PARSE', 'Card patch must be an array')
@@ -388,13 +416,14 @@ export class MvuService {
         }
         const checkGrant = await this.#cardGrant(binding, signal)
         const finalEvidence = await this.resolveScope?.(scope)
-        if (!finalEvidence?.writableHead || finalEvidence.messageId !== evidence.messageId || finalEvidence.fingerprint !== evidence.fingerprint) fail('MVU_READ_ONLY', 'Active message changed during update')
+        if (!this.#initialBindingCurrent(binding, finalEvidence) || !finalEvidence?.writableHead || finalEvidence.messageId !== evidence.messageId || finalEvidence.fingerprint !== evidence.fingerprint) fail('MVU_READ_ONLY', 'Active message changed during update')
         signal?.throwIfAborted()
         if (checkGrant() !== true) fail('MVU_WRITE_DENIED', 'Source write grant was revoked')
-        if (!this.#cardBindings.has(capability) || decision.usageEpoch !== this.#usageEpoch) fail('MVU_USAGE_CANCELLED', 'Card binding or usage provider changed')
+        if (!this.#cardBindings.has(capability) || decision.usageEpoch !== this.#usageEpoch || decision.checkCurrent() !== true) fail('MVU_USAGE_CANCELLED', 'Card binding or usage provider changed')
         const revision = record.revision + 1, key = hash({ id, operationId })
+        const source = scope.mode === 'initial' ? { ...binding.initialSource, manual: true, card: true, initial: true } : { ...current.source, manual: true, card: true }
         const result = { version: 1, scope: json(scope), revision, currentRevision: revision, status: 'available', variables, resourceId: id }
-        this.#save(id, { ...record, revision, currentKey: key, versions: [...record.versions, { key, source: { ...current.source, manual: true, card: true }, fingerprint, sourceFingerprint: evidence.fingerprint, variables, revision, operationId, result, parentKey: record.currentKey, configRevision: decision.configRevision }] })
+        this.#save(id, { ...record, revision, currentKey: key, versions: [...record.versions, { key, source, fingerprint, ...(scope.mode === 'initial' ? {} : { sourceFingerprint: evidence.fingerprint }), variables, revision, operationId, result, parentKey: record.currentKey, configRevision: decision.configRevision }] })
         if (hash(baseline.stat_data) !== hash(variables.stat_data)) this.#emit({ ...fact, phase: 'applied', revision, configRevision: decision.configRevision, detail: 'state-committed' })
         this.#emit({ ...fact, phase: 'completed', revision, configRevision: decision.configRevision, detail: 'state-committed' })
         return json(result)
@@ -409,6 +438,12 @@ export class MvuService {
     let evidence = this.resolveScope ? await this.resolveScope(scope) : null
     if (!evidence && scope.endEventId != null) { const source = this.#sessions.get(scope.sessionId) ?? await this.inspect?.(scope.sessionId); const event = source?.events?.find(e => e.seq === scope.endEventId && e.type === 'assistant/message'); if (event) evidence = { messageId: event.data.message.id, fingerprint: hash(textOf(event.data.message)) } }
     let rows = await this.list({ scope })
+    if (scope.mode === 'initial') {
+      if (evidence?.mode !== 'initial' || evidence.checkCurrent?.() !== true) fail('MVU_READ_ONLY', 'Initial scope is no longer current')
+      rows = rows.filter(row => this.#cardResourceActive(this.resources.find(r => r.id === row.id), scope))
+      if (rows.length !== 1) fail('MVU_AMBIGUOUS', 'Initial scope requires one active resource')
+      evidence = null
+    }
     if (rows.length > 1 && evidence) rows = rows.filter(row => { const version = this.#record(row.id).versions.find(v => v.key === row.versionKey); return version?.source.messageSeq === scope.endEventId && version?.source.messageId === evidence.messageId && (version?.sourceFingerprint ?? version?.fingerprint) === evidence.fingerprint })
     else if (rows.length > 1 && scope.endEventId != null) rows = rows.filter(row => row.versionKey)
     if (rows.length > 1) fail('MVU_AMBIGUOUS', 'Multiple MVU resources match; choose a resourceId')
