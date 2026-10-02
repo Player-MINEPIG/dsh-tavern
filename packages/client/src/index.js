@@ -1,3 +1,5 @@
+import { renderingTrust } from './play/rendering-trust.js'
+import { ConversationSettingsPanel } from './conversation-panel.js'
 import { presentationCss } from './presentation-styles.js'
 import { AssemblyPanel } from '../../request-assembler/client.js'
 import { BubbleEditor } from './bubble-editor.js'
@@ -308,19 +310,6 @@ function SettingsPanel({
   )
 }
 
-function ConversationSettingsPanel({ settings, status, busy, close, update, reset }) {
-  return h('div', { className: 'dtv-panel dtv-conversation-settings' },
-    h(PanelHeader, { titleKey: 'conversationSettings.title', close }),
-    h('div', { className: 'dtv-body' },
-      h('div', { className: 'dtv-settings-section' },
-      h(BubbleEditor, { settings, update, busy, status }),
-      ),
-      h('div', { className: 'dtv-settings-footer' },
-        h('button', { className: 'dtv-button', type: 'button', disabled: busy, onClick: reset }, translate('conversationSettings.reset')),
-      ),
-    ),
-  )
-}
 
 function keyLines(value) {
   return Array.isArray(value) ? value.join('\n') : ''
@@ -1175,7 +1164,7 @@ function TavernShell({ useSessions, useWorkspaces, createCleanSession, createCon
       close,
     })
   } else if (surface === 'regex' && chromeMode === 'play') {
-    panel = h(RegexPanel, { client: playClient, activeSnapshot, close })
+    panel = h(ConversationSettingsPanel, { settings: conversationSettings, status: conversationSettingsStatus, busy: conversationSettingsBusy, update: persistConversationSettings, reset: resetConversationSettings, client: playClient, activeSnapshot, registerBeforeLeave, initialTab: 'regex', close })
   } else if (surface === 'world-info') {
     panel = h(WorldBookPanel, { sessionId, close })
   } else if (surface === 'user') {
@@ -1192,6 +1181,7 @@ function TavernShell({ useSessions, useWorkspaces, createCleanSession, createCon
     })
   } else if (surface === 'conversation-settings' && chromeMode === 'play') {
     panel = h(ConversationSettingsPanel, {
+      client: playClient, activeSnapshot, registerBeforeLeave,
       settings: conversationSettings,
       status: conversationSettingsStatus,
       busy: conversationSettingsBusy,
@@ -1343,6 +1333,7 @@ export const inject = ['slots', 'layout', 'sessions', 'workspaces', 'uiWorkspace
 export { PanelHeader }
 
 export function apply(ctx, { conversationPhase }) {
+  ctx.effect(() => () => renderingTrust.clear(), 'dsh-tavern: rendering approvals')
   installPresetStyles()
   installCharacterStyles()
   installWorldBookStyles()

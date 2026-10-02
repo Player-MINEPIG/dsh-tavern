@@ -130,3 +130,5 @@ node --test test/play-sessions.test.mjs
 执行 `node --test test/presentation.test.mjs test/api-fetch.test.mjs test/api-security.test.mjs` 与现有完整检查。有 Chrome 时分别执行 `node scripts/verify-rich-text-browser.mjs` 和 `TAVERN_BROWSER_FIXTURE=./fixtures/presentation-browser.js node scripts/verify-rich-text-browser.mjs`。后者检查真实 DOM 更新、建议消息显式确认、未变化卡片状态、生命周期销毁、流式禁止执行、配额、父页面/网络接口拒绝、净化、头像和气泡。
 
 在隔离的目标 Host 上传并保存用户头像，确认根会话绑定的默认头像，修改单条及本周目全部头像，刷新并对照其他周目和源资源。预览/应用/导入/导出样式并拒绝非法版本。用[计数器示例](examples/interactive-counter.html)检查脚本开关，然后验证原生/RP 切换、流式、分支及桌面写入。官方桌面发行包需单独验收：使用其未改动转发模块的 Electron 验证壳只能建立协议行为证据，不能代表整款应用验收。使用合成资源与模型响应得到可复现结果，真实提供方和角色卡另行验收。运行记录放在被忽略的 `.local/`。
+
+外部渲染与统一设置使用 `node --test test/rendering-sources.test.mjs` 和 `TAVERN_BROWSER_FIXTURE=./fixtures/rendering-browser.js node scripts/verify-rich-text-browser.mjs`。合成源码覆盖两种 Helper 格式、无语言 body 围栏、逐内容授权、相对模块、嵌套依赖阻断、撤销/禁用、重复渲染、切换中取消、只读变量作用域与统一设置草稿保护。没有下载或执行未知代码；实际第三方框架兼容性不由这些夹具建立。完整 Host 中继续核对来源绑定与原生/RP切换。

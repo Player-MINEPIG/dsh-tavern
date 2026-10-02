@@ -62,8 +62,8 @@ flowchart LR
 ## 三种边界与方案选择
 
 1. **静态内容**：Markdown → DOMPurify；样式在 Shadow DOM 与绘制边界内隔离。外部自动资源不开放：图片只接受有界 PNG/JPEG/WebP data URI，移除 srcset、poster 等；含 URL、image/image-set/src 函数、`@import` 或转义的 CSS 块/内联样式整体丢弃。正常布局、颜色、渐变、变量、媒体查询和动画可用。外链需用户主动点击，带 `noopener noreferrer`。
-2. **脚本环境**：只识别已闭合 `html` 代码围栏或完整 `<html>…</html>` 中的控件/脚本。静态 DOM 在 `sandbox="allow-same-origin"`、无 `allow-scripts` 的 iframe 内呈现，CSP 禁止连接、外部图片、脚本、子 frame、表单提交等。卡片 JS 在独立 QuickJS WASM 中运行，不在 iframe 或父页面执行。iframe/Shadow DOM 本身不承担完整权限保证。
-3. **能力接口**：唯一的 JSON bridge 白名单提供卡片内部 DOM 与只读姓名上下文，以及“建议消息”。没有通用 RPC、Host API、凭据、文件、网络、父页面、模块加载或 native eval 入口。建议只在卡片外显示，必须经用户点击 Tavern 按钮才调用已有 `user-message` API。
+2. **脚本环境**：识别已闭合 `html` 围栏、无语言但以 `<body>`/`<html>` 开头的围栏，以及完整 `<html>…</html>`/`<body>…</body>` 中的控件或脚本。静态 DOM 在 `sandbox="allow-same-origin"`、无 `allow-scripts` 的 iframe 内呈现，CSP 禁止连接、外部图片、脚本、子 frame、表单提交等。卡片 JS 在独立 QuickJS WASM 中运行，不在 iframe 或父页面执行。iframe/Shadow DOM 本身不承担完整权限保证。
+3. **能力接口**：唯一的 JSON bridge 白名单提供卡片内部 DOM 与只读姓名上下文，以及“建议消息”。没有通用 RPC、Host API、凭据、文件、网络、父页面或 native eval 入口；模块仅从逐项审核的本地内容映射解析。建议只在卡片外显示，必须经用户点击 Tavern 按钮才调用已有 `user-message` API。
 
 [DSH sandbox 固定版文档](https://github.com/deepseek-ai/deepseek-harness/blob/dsh-v0.2.0-rc.2/packages/sandbox/sandbox/README.md) 隔离的是子进程与文件访问，不能复用为消息 JS 的浏览器隔离。[官方桌面转发](https://github.com/deepseek-ai/deepseek-harness/blob/dsh-v0.2.0-rc.2/apps/desktop/src/web-document.ts) 会剥离 Origin；[桌面请求令牌](API.md#桌面请求令牌) 解决此差异，没有关闭 webSecurity。
 
@@ -94,7 +94,7 @@ flowchart LR
 | `TavernUI.version`, `getContext()` | v1；角色与挂载时复制的 userName/characterName，复制的 JSON，不含 session ID 或凭据 |
 | `TavernUI.proposeMessage(text)` | 最多 4000 字符，生成可见建议；不能自行发送 |
 
-外部 `<script src>`、模块、内联 on*、jQuery/Vue/React、酒馆助手变量/世界书/聊天/生成接口、MVU、父页面和系统接口不兼容。外部脚本/模块/on* 会报告并停用该卡片全部脚本；未提供的运行时 API 会报错并销毁运行时，不静默成功。静态 HTML 导出不运行卡片脚本，也不导出内存中的交互状态。
+外部 `<script src>` 和 ES 模块必须按下述流程逐项审阅；未授权依赖与内联 on* 会停用整卡脚本。完整 jQuery/Vue/React、助手写变量/世界书/聊天/生成接口、父页面和系统接口不兼容。未提供的 API 报错并销毁运行时，不静默成功。静态 HTML 导出不运行卡片脚本，也不导出内存中的交互状态。
 
 每卡源码最多 128K UTF-16 字符单元、解释器 8 MiB/256 KiB 栈；每次执行 60 ms 与 500 次中断检查双重上限、1000 bridge 操作、100 Promise jobs；DOM 最多 2048 handles，最多 256 listeners；高度 100–800 px。超限显示错误。浏览器布局/图片解码、WASM 引擎缺陷和复杂 CSS 的拒绝服务不由解释器配额完全覆盖，不能承诺绝对安全；显示正则仍有既有 RegExp 回溯风险。
 
@@ -104,4 +104,37 @@ flowchart LR
 
 `quickjs-emscripten-core` 与 `@jitl/quickjs-singlefile-browser-release-sync` 固定为 `0.31.0`。浏览器变体把 WASM 嵌入客户端包（整体未压缩约 1.6 MiB），不使用 CDN 或外部脚本加载器。包装库与引擎的 MIT 声明保留在生成包和[源码声明](../packages/presentation/THIRD_PARTY_NOTICES.txt)中。解释器模块延迟共享初始化，每张卡片单独创建 runtime。升级依赖需重新验证配额与隔离测试。[上游发布说明](https://github.com/justjake/quickjs-emscripten/releases/tag/v0.31.0)。
 
-样式页顶部为“导入 JSON、导出 JSON、创建样式”。正文字号纳入样式预览，通过滑块或数字输入调节，以可选整数字段 `fontSize` 保存（8–48 px），点击“应用并保存”生效。没有此字段的旧 v1 文件仍可导入，并继承旧的文字缩放；编辑器应用时转换为像素字号。不支持的脚本提示按原因本地化并去重，区分外部文件、模块、其他 script 类型与内联事件属性；开启开关不会开放这些能力。
+样式页顶部为“导入 JSON、导出 JSON、创建样式”。正文字号纳入样式预览，通过滑块或数字输入调节，以可选整数字段 `fontSize` 保存（8–48 px），点击“应用并保存”生效。没有此字段的旧 v1 文件仍可导入，并继承旧的文字缩放；编辑器应用时转换为像素字号。不支持的脚本提示按原因本地化并去重，区分外部文件、模块、其他 script 类型与内联事件属性；脚本总开关不会代替逐来源授权。
+
+
+## 统一设置与外部源码审核
+
+**DT → 对话设置**包含对话外观、正则替换、外部代码三个页签。切页签保留外观和正则草稿；通过关闭、Esc 或菜单离开时有未保存检查。切换绑定资源时，旧正则草稿保留但停止保存，需先导出或放弃并重新加载。原独立正则菜单合并至此。
+
+清单识别角色卡/预设的 `extensions.tavern_helper` 对象 `{scripts,variables}` 及旧式键值对数组；支持直接脚本和 `type/value`、嵌套 scripts/children 格式。仅读取 scripts，变量语义由 MVU 模块负责。清单同时读取开场白、备选开场白，以及全局、预设和角色正则替换中的 script src、ES import/export/import() 及 `.load()` 字面量，保留来源资源与字段路径。静态发现不是完整 JavaScript 分析；计算生成的依赖仍由运行时加载器拒绝。
+
+1. 默认不抓取任何远程代码，不增加 Host 代理。可信设置页可逐 URL 点击下载，使用浏览器 CORS、无凭据、禁止重定向及 no-referrer，流式限制 128 KiB，15 秒超时；取消/切换会中止读取，下载只准备审核、不执行。CORS 失败可导入本地源码。外部依赖仅接受无凭据、无非默认端口的 HTTPS 公共形式地址；HTTP、本机地址、IP 字面量和相对无基准地址明确阻断。本地缓存不发起 DNS 或网络请求。
+2. 下载或通过文件选择器导入该 URL 对应的源码，或准备审核 Helper 内嵌源码。显示完整内容与 SHA-256；导入本身不授予执行权限。
+3. 点击“已核对内容，允许受限执行”。授权绑定资源身份、精确 URL/字段及内容摘要；替换源码立即撤销旧授权。摘要用于固定所审阅字节，不证明代码来自网络声明的作者。
+4. 嵌套依赖逐项导入并审阅。受限 `$('body').load('https://…')` / `jQuery` 包装由渲染器读取已审阅 HTML，不执行网络请求；HTML 内相对脚本/模块以原 URL 解析。包装不接受请求参数、回调、选择器后缀或嵌套 `.load` 包装。其他网络用法不兼容。
+5. 撤销、替换、全局禁用、会话/variant 切换及卸载会取消旧绑定、销毁解释器和订阅。授权与缓存只在当前页面内存保留，刷新或插件卸载后清空，不从卡片、工作区文件或 localStorage 恢复。未授权时显示静态内容与原因；清单“内容已授权”不等于脚本执行成功，运行错误显示在卡片外。
+
+```mermaid
+flowchart LR
+  A[卡片 / 预设 / 正则来源] --> B[只读发现依赖]
+  B --> C[用户导入并核对内容与摘要]
+  C -->|逐资源授权| D[页面内审阅缓存]
+  D --> E[受限 QuickJS 与禁脚本 iframe]
+  F[撤销 / 切换 / 卸载] --> G[取消绑定并销毁运行时]
+```
+
+每个来源最多 128K 字符；缓存最多 64 个来源；每卡依赖图最多 24 个 URL、512K 字符、8 层模块依赖。卡片不能访问缓存管理接口。Helper 脚本在对应卡片运行时中、HTML 脚本之前执行；不提供独立后台 Helper 任务，也不声称支持外部 MVU bundle、Babel 或完整浏览器框架。
+
+| 扩展接口 | 明确支持的子集 |
+| --- | --- |
+| `$` / `jQuery` | 选择卡片内元素、ready 回调、text/html/val/on；独立实现，无 AJAX、插件或原生 DOM 句柄 |
+| `TavernUI.getVariables(options?)` / `getVariables` | 无参数或 `{type:'message'}`；返回整个 variables 对象，含 stat_data/schema/display_data/delta_data，额外字段由 MVU 决定；只读 JSON 副本 |
+| `getAllVariables()` | 同一绑定消息快照，不合并全局/chat 变量 |
+| `TavernUI.onVariables(callback)` | 返回取消订阅函数；已提交快照 `{version,scope,revision,variables,status}`，最多 64 个订阅；不是原版可变的 before-update 事件 |
+
+变量绑定由可信历史消息的 playthrough/session/node/variant/endEventId（以及已有格式版本）确定，服务再次验证；脚本不能用 options 改变作用域。开场白、导入与流式内容没有可核实的历史坐标时不绑定变量。MVU 不可用时读取明确报错；不回退到当前焦点会话。只读轮询与变量提交语义由 MVU bridge 提供，卡片没有写入操作。发送消息仍需卡片外确认，与模型工具授权完全分离。

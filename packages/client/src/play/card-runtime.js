@@ -43,19 +43,45 @@ globalThis.TavernUI = Object.freeze({
   version:1,
   getContext:()=>call('context'),
   proposeMessage:text=>call('propose',[String(text)]),
+  getVariables:options=>call('variables',[options??null]),
+  onVariables:callback=>{if(typeof callback!=='function')throw new TypeError('Callback required');const id=++nextCallback;callbacks.set(id,callback);call('variablesSubscribe',[id]);return()=>{callbacks.delete(id);call('variablesUnsubscribe',[id])}},
 });
+// Clean-room Helper subset. The host supplies a scoped JSON snapshot only.
+globalThis.getAllVariables=()=>call('variables');
+globalThis.getVariables=options=>call('variables',[options??null]);
+globalThis.TavernHelper=Object.freeze({getVariables:globalThis.getVariables,getAllVariables:globalThis.getAllVariables});
+// Small DOM convenience subset; deliberately no AJAX or browser object escape.
+globalThis.$=globalThis.jQuery=function(selector){
+  if(typeof selector==='function'){selector();return}
+  const nodes=selector==='body'?[document.body]:typeof selector==='string'?document.querySelectorAll(selector):[selector];
+  return {
+    length:nodes.length,
+    text(value){if(value===undefined)return nodes[0]?.textContent;nodes.forEach(n=>n.textContent=value);return this},
+    html(value){if(value===undefined)return nodes[0]?.innerHTML;nodes.forEach(n=>n.innerHTML=value);return this},
+    val(value){if(value===undefined)return nodes[0]?.value;nodes.forEach(n=>n.value=value);return this},
+    on(event,callback){nodes.forEach(n=>n.addEventListener(event,callback));return this},
+    ready(callback){callback();return this},
+  };
+};
+globalThis.__variables=(id,snapshot)=>{const fn=callbacks.get(id);if(fn)fn(snapshot)};
 globalThis.__dispatch=(id,target)=>{const fn=callbacks.get(id);if(fn)fn({target:element(target),currentTarget:element(target),preventDefault(){},stopPropagation(){}})};
 `
 
 // No native DOM/window/fetch/require handles cross this boundary. The one host
 // function accepts and returns bounded JSON. Every interpreter entry is metered.
-export async function createCardRuntime(bridge, { memoryLimit = 8 * 1024 * 1024, timeLimit = 60 } = {}) {
+export async function createCardRuntime(bridge, { memoryLimit = 8 * 1024 * 1024, timeLimit = 60, modules = {} } = {}) {
   const QuickJS = await getModule()
   const runtime = QuickJS.newRuntime()
   runtime.setMemoryLimit(memoryLimit)
   runtime.setMaxStackSize(256 * 1024)
   let deadline = 0, operations = 0, interrupts = 0, disposed = false
   runtime.setInterruptHandler(() => ++interrupts > 500 || performance.now() > deadline)
+  runtime.setModuleLoader(name => {
+    if (!Object.hasOwn(modules,name)) return {error:new Error('Unreviewed module')}
+    return modules[name]
+  }, (base,name) => {
+    try { return new URL(name,base).href } catch { return name }
+  })
   const vm = runtime.newContext()
   const native = vm.newFunction('__bridge', arg => {
     if (++operations > 1000 || performance.now() > deadline) throw new Error('Card operation budget exceeded')
@@ -68,11 +94,11 @@ export async function createCardRuntime(bridge, { memoryLimit = 8 * 1024 * 1024,
     return vm.newString(output)
   })
   vm.setProp(vm.global, '__bridge', native); native.dispose()
-  const evaluate = code => {
+  const evaluate = (code, {module = false, name = 'tavern-card.js'} = {}) => {
     if (disposed) throw new Error('Card is disposed')
     if (code.length > 128 * 1024) throw new Error('Card script too large')
     deadline = performance.now() + timeLimit; operations = 0; interrupts = 0
-    const result = vm.evalCode(code, 'tavern-card.js')
+    const result = vm.evalCode(code, name, {type:module ? 'module' : 'global'})
     if (result.error) { result.error.dispose(); throw new Error('Card script failed, used an unsupported API, or exceeded its execution limit') }
     result.value.dispose()
     const jobs = runtime.executePendingJobs(100)
@@ -81,5 +107,5 @@ export async function createCardRuntime(bridge, { memoryLimit = 8 * 1024 * 1024,
   }
   const dispose = () => { if (!disposed) { disposed = true; vm.dispose(); runtime.dispose() } }
   try { evaluate(BOOTSTRAP) } catch (error) { dispose(); throw error }
-  return { evaluate, dispatch: (id, target) => evaluate(`__dispatch(${JSON.stringify(id)},${JSON.stringify(target)})`), dispose }
+  return { evaluate, notifyVariables:(id,snapshot)=>evaluate(`__variables(${JSON.stringify(id)},${JSON.stringify(snapshot)})`), dispatch: (id, target) => evaluate(`__dispatch(${JSON.stringify(id)},${JSON.stringify(target)})`), dispose }
 }

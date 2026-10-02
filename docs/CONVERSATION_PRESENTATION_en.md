@@ -61,8 +61,8 @@ Name: 1–80 characters. Colors: six-digit `#RRGGBB`. Integer pixels: radius 0�
 ## Three boundaries and implementation choice
 
 1. **Static content:** Markdown passes DOMPurify, with Shadow DOM and paint containment for styles. Automatic external resources are disabled: images require bounded raster data URIs; srcset/poster and similar attributes are removed. CSS blocks/inline styles containing resource functions (url/image/image-set/src), `@import`, or escapes are dropped entirely. Layout, colors, gradients, variables, media queries and animations work. External links require an explicit user click and use `noopener noreferrer`.
-2. **Script execution:** only closed `html` fences or complete `<html>…</html>` documents containing scripts/controls are recognized. Static DOM is presented in an iframe with `sandbox="allow-same-origin"` and no `allow-scripts`. CSP denies connections, external images, scripts, child frames and form submissions. Card JS runs in a separate QuickJS WASM interpreter, never in the iframe or parent browser realm. Neither iframe nor Shadow DOM alone is the full security boundary.
-3. **Capabilities:** a bounded JSON bridge permits card-local DOM operations, copied display names, and message proposals. There is no generic RPC, Host API, credential, filesystem, network, parent-page, module-loading or native eval handle. Only an explicit click on the Tavern button outside the card sends a proposal through the existing user-message API.
+2. **Script execution:** closed `html` fences, unlabelled fences beginning with `<body>`/`<html>`, and complete `<html>…</html>`/`<body>…</body>` documents containing controls/scripts are recognized. Static DOM is presented in an iframe with `sandbox="allow-same-origin"` and no `allow-scripts`. CSP denies connections, external images, scripts, child frames and form submissions. Card JS runs in a separate QuickJS WASM interpreter, never in the iframe or parent browser realm. Neither iframe nor Shadow DOM alone is the full security boundary.
+3. **Capabilities:** a bounded JSON bridge permits card-local DOM operations, copied display names, and message proposals. There is no generic RPC, Host API, credential, filesystem, network, parent-page or native eval handle. Modules resolve only from individually reviewed local content maps. Only an explicit click on the Tavern button outside the card sends a proposal through the existing user-message API.
 
 The [versioned DSH sandbox](https://github.com/deepseek-ai/deepseek-harness/blob/dsh-v0.2.0-rc.2/packages/sandbox/sandbox/README.md) isolates subprocesses/files, not browser message JavaScript. The [official desktop forwarder](https://github.com/deepseek-ai/deepseek-harness/blob/dsh-v0.2.0-rc.2/apps/desktop/src/web-document.ts) strips Origin; the [request token](API_en.md#desktop-request-token) handles this difference without disabling webSecurity.
 
@@ -93,7 +93,7 @@ Scripts default off; enable them in conversation settings. Start with the [count
 | `TavernUI.version`, `getContext()` | v1; role and userName/characterName captured at mount, copied JSON without session IDs or credentials |
 | `TavernUI.proposeMessage(text)` | Up to 4000 characters; visible proposal, never automatic sending |
 
-External script sources, modules, inline on* handlers, jQuery/Vue/React, Tavern Helper variable/world-book/chat/generation APIs, MVU, parent-page and system APIs are unsupported. External scripts/modules/on* attributes report errors and disable all scripts in that card. Missing runtime APIs fail visibly and dispose the runtime; no silent success. Static HTML export does not execute scripts or export in-memory card state.
+External script sources and ES modules require the individual review described below. Unapproved dependencies and inline on* handlers disable all scripts in the card. Full jQuery/Vue/React, Helper variable writes/world-book/chat/generation APIs, parent-page and system APIs are unsupported. Missing runtime APIs fail visibly and dispose the runtime; no silent success. Static HTML export does not execute scripts or export in-memory card state.
 
 Limits per card: 128K UTF-16 code units of source, 8 MiB interpreter heap, 256 KiB stack; each entry has a 60 ms deadline and 500-interrupt ceiling, 1000 bridge operations and 100 Promise jobs. At most 2048 DOM handles and 256 listeners, with height clamped to 100–800 px. Limits produce visible errors. Browser layout/image decoding, WASM engine defects and expensive CSS denial of service are not completely covered by interpreter quotas; this is not an absolute security guarantee. Existing display RegExp backtracking risks remain.
 
@@ -103,4 +103,37 @@ See [TESTING](TESTING_en.md). Maintainer acceptance of the actual official deskt
 
 `quickjs-emscripten-core` and `@jitl/quickjs-singlefile-browser-release-sync` are pinned to `0.31.0`. The browser variant embeds WASM in the client bundle (about 1.6 MiB unminified overall), with no CDN or external script loader. MIT notices for the wrapper and engine are included in the generated bundle and [source notices](../packages/presentation/THIRD_PARTY_NOTICES.txt). Interpreter initialization is lazy and shared; each card receives a separate runtime. Dependency upgrades require the quota and isolation regression tests. [Upstream release](https://github.com/justjake/quickjs-emscripten/releases/tag/v0.31.0).
 
-The style toolbar has Import JSON, Export JSON and Create style at the top. Body font size is part of the previewed style (`fontSize`, optional integer 8–48 px), controlled by a slider or numeric input and saved with Apply. Older v1 files without the field remain accepted and inherit the legacy text scale; the editor converts it to pixels when applying. Unsupported-script notices are localized and deduplicated by cause (external files, modules, other script types or inline event attributes). Enabling scripts does not enable those capabilities.
+The style toolbar has Import JSON, Export JSON and Create style at the top. Body font size is part of the previewed style (`fontSize`, optional integer 8–48 px), controlled by a slider or numeric input and saved with Apply. Older v1 files without the field remain accepted and inherit the legacy text scale; the editor converts it to pixels when applying. Unsupported-script notices are localized and deduplicated by cause (external files, modules, other script types or inline event attributes). The master script toggle does not replace per-source approval.
+
+
+## Unified settings and external source review
+
+**DT → Conversation settings** contains Appearance, Regex replacements and External code tabs. Tab switches preserve style and regex drafts; closing, Escape and menu navigation check unsaved changes. A binding change retains the old regex draft but disables saving; export it or discard it and reload. The separate regex menu is consolidated here.
+
+Discovery accepts character/preset `extensions.tavern_helper` as `{scripts,variables}` or legacy key-value pair arrays, including direct scripts, type/value entries and nested scripts/children. It reads scripts only; MVU owns variable semantics. Greetings, alternate greetings and global/preset/character regex replacements contribute script src, ES import/export/import() and literal `.load()` dependencies, with resource/field provenance. Discovery is not a complete JavaScript parser; computed dependencies are still rejected by the runtime loader.
+
+1. No remote code is downloaded automatically and no Host proxy is added. The trusted settings page can download an explicit URL using browser CORS, omitted credentials, rejected redirects and no-referrer, with a 128 KiB streaming limit and 15-second timeout. Cancel/switch aborts reading. Download only stages review and never executes content; CORS failures retain local-file import. External references require HTTPS public-form addresses without credentials or non-default ports. HTTP, local names, IP literals and relative references without a base are blocked. The local cache makes no DNS or network requests.
+2. Download or import a source file for the URL, or stage inline Helper text. Review its complete contents and SHA-256. Import alone never authorizes execution.
+3. Click **Content reviewed: allow restricted execution**. Approval binds resource identity, exact URL/field and content digest. Replacing content revokes approval. The hash pins the reviewed bytes; it does not authenticate the author claimed by the URL.
+4. Import/review nested dependencies individually. A narrow `$('body').load('https://…')` or jQuery wrapper reads reviewed HTML without a request. Relative scripts/modules resolve against its original URL. Request parameters, callbacks, selector suffixes and nested load wrappers are unsupported, as are other network APIs.
+5. Revocation, replacement, disabling, session/variant switches and disposal cancel bindings and destroy runtimes/subscriptions. Cache and approvals live only in page memory and clear on reload/plugin disposal; they are never restored from cards, workspace files or localStorage. Blocked cards show static content and a reason. “Content approved” is not an execution success claim; errors appear outside the card.
+
+```mermaid
+flowchart LR
+  A[Character / preset / regex sources] --> B[Inert dependency discovery]
+  B --> C[User imports and reviews contents and digest]
+  C -->|Per-resource approval| D[Page-memory reviewed cache]
+  D --> E[Restricted QuickJS and script-disabled iframe]
+  F[Revoke / switch / unload] --> G[Cancel bindings and dispose runtime]
+```
+
+Each source is limited to 128K characters; cache to 64 sources; each card graph to 24 URLs, 512K characters and eight module levels. Cards cannot access cache management. Helper scripts run before HTML scripts inside each corresponding card runtime; there is no standalone background Helper task or claim of compatibility with external MVU bundles, Babel or complete browser frameworks.
+
+| Extension interface | Supported subset |
+| --- | --- |
+| `$` / `jQuery` | Card-local selection, ready callbacks, text/html/val/on; independent implementation, no AJAX, plugins or native DOM handles |
+| `TavernUI.getVariables(options?)` / `getVariables` | No options or `{type:'message'}`; returns the entire variables object including stat_data/schema/display_data/delta_data and MVU-defined fields, as a read-only JSON copy |
+| `getAllVariables()` | The same bound message snapshot, without invented global/chat merging |
+| `TavernUI.onVariables(callback)` | Returns an unsubscribe function; committed `{version,scope,revision,variables,status}` snapshots, at most 64 subscriptions; not an upstream mutable before-update event |
+
+Trusted historical playthrough/session/node/variant/endEventId coordinates (plus existing format version) bind variables and are revalidated by the service. Script options cannot select another scope. Greetings, imports and streaming messages without verifiable historical coordinates receive no binding. Unavailable MVU reads fail explicitly and never fall back to the focused session. MVU owns read-only polling and commit semantics; cards receive no write operation. Sending proposals still requires confirmation outside the card, independently of model tool permissions.

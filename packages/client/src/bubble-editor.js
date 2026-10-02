@@ -3,7 +3,7 @@ import { BUBBLE_STYLES, normalizeBubbleStyle } from '../../presentation/bubble-s
 import { translate } from './i18n.js'
 import { PlayTurnActionsPreview } from './play/turn-actions.js'
 import { MessageRow, messageAvatarStyle, messageBubbleStyle } from './play/message-layout.js'
-export function BubbleEditor({ settings, update, busy, status }) {
+export function BubbleEditor({ settings, update, busy, status, onDirty }) {
   const selected = settings.bubbleStyle ?? BUBBLE_STYLES[0]
   const fileRef = useRef(null)
   const withSize = style => ({ ...style, fontSize: style.fontSize ?? Math.round(14 * settings.textScale) })
@@ -13,6 +13,7 @@ export function BubbleEditor({ settings, update, busy, status }) {
   const [actionScale, setActionScale] = useState(settings.actionScale)
   useEffect(() => setActionScale(settings.actionScale), [settings.actionScale])
   const [error, setError] = useState('')
+  useEffect(()=>{onDirty?.(draft !== selectedJson || actionScale !== settings.actionScale)},[draft,selectedJson,actionScale,settings.actionScale,onDirty])
   let preview, parsed
   try { parsed = JSON.parse(draft); preview = normalizeBubbleStyle(withSize(parsed)) } catch {}
   const choose = value => { setDraft(JSON.stringify(value, null, 2)); setError('') }

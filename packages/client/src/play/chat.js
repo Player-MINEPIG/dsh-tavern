@@ -1,3 +1,4 @@
+import { renderingInventory } from './rendering-sources.js'
 import { ConversationPresentation, MessageBubble, messageAvatarKey, characterAvatarUrl } from './presentation.js'
 import { finishPendingSwipe, pendingSwipeForSession } from './pending-swipe.js'
 import {
@@ -238,7 +239,7 @@ export async function loadChatState(client, sessionId, playthrough) {
     importMutable,
     greeting: displayGreeting,
     regexDiagnostics,
-    display: { rules, bindings, macros },
+    display: { rules, bindings, macros, renderingSources: [...renderingInventory(characterResponse?.character ?? characterResponse,{kind:'character',resourceId:bindings.characterId}),...renderingInventory(presetResponse?.preset ?? presetResponse,{kind:'preset',resourceId:bindings.presetId})] },
   }
 }
 
@@ -314,6 +315,13 @@ export function greetingSelectionLocked({ turns = [], latestUserSeq = -1, runnin
     || turns.some(turn => turn?.imported !== true)
 }
 
+export function messageVariableScope(turn) {
+  const variant = turn?.variant
+  if (turn?.imported || turn?.transient || turn?.running || !variant || typeof turn.id !== 'string' || typeof variant.id !== 'string' || typeof variant.sessionId !== 'string' || !Number.isSafeInteger(variant.endEventId)) return undefined
+  const version = variant.ext?.pmpDshTavern?.sessionFormatVersion
+  return {sessionId:variant.sessionId,nodeId:turn.id,variantId:variant.id,endEventId:variant.endEventId,...(Number.isSafeInteger(version)?{sessionFormatVersion:version}:{})}
+}
+
 function Turn({ turn, hideUser = false, swipePending = false, ...actionProps }) {
   if (!turnHasVisibleRpContent(turn)) return null
   const durableQa = turnHasDurableQaActions(turn)
@@ -322,9 +330,10 @@ function Turn({ turn, hideUser = false, swipePending = false, ...actionProps }) 
     : turn.assistantText === '' ? [] : [turn.assistantText]
   return h('div', { className: 'dtv-play-chat-row' },
     turn.importLast === true ? h('p', { className: 'dtv-play-import-last' }, uiMessage('play.import.lastQa')) : null,
-    hideUser || turn.userText === '' ? null : h(MessageBubble, { role: 'user', messageKey: messageAvatarKey(turn, 'user'), editable: durableQa || turn.imported === true, text: turn.userText }),
+    hideUser || turn.userText === '' ? null : h(MessageBubble, { role: 'user', variableScope: messageVariableScope(turn), messageKey: messageAvatarKey(turn, 'user'), editable: durableQa || turn.imported === true, text: turn.userText }),
     ...assistantTexts.map((text, index) => h(MessageBubble, {
       key: `assistant-${index}`,
+      variableScope: messageVariableScope(turn),
       messageKey: messageAvatarKey(turn, 'assistant', index),
       editable: durableQa || turn.imported === true,
       streaming: turn.running === true || turn.transient === true,
@@ -582,7 +591,7 @@ function TargetedSwipeTransition({
     })),
     h('div', { className: 'dtv-play-chat-target' },
       target.userText === '' ? null : h(MessageBubble, {
-        role: 'user', messageKey: messageAvatarKey(target, 'user'),
+        role: 'user', variableScope: messageVariableScope(target), messageKey: messageAvatarKey(target, 'user'),
         className: 'dtv-play-chat-bubble dtv-play-chat-user dtv-play-rich',
         text: target.userText,
       }),
