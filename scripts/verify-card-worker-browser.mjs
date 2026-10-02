@@ -24,7 +24,14 @@ try{
  const send=(method,params={})=>new Promise((resolve,reject)=>{setTimeout(()=>reject(Error('Browser protocol timeout')),15000).unref();pending.set(++id,{resolve,reject});ws.send(JSON.stringify({id,method,params}))})
  await send('Page.navigate',{url:'file://'+join(dir,'index.html')})
  let results
- for(let i=0;i<600;i++){const response=await send('Runtime.evaluate',{expression:'document.querySelector("#results")?.textContent',returnByValue:true});if(response.result?.value){results=JSON.parse(response.result.value);break}await pause(100)}
+ const clicked=new Set()
+ for(let i=0;i<600;i++){
+  const response=await send('Runtime.evaluate',{expression:'({report:document.querySelector("#results")?.textContent,click:globalThis.__trustedClick})',returnByValue:true})
+  const state=response.result?.value
+  if(state?.report){results=JSON.parse(state.report);break}
+  if(state?.click&&!clicked.has(state.click.id)){clicked.add(state.click.id);const {x,y}=state.click;await send('Input.dispatchMouseEvent',{type:'mousePressed',x,y,button:'left',clickCount:1});await send('Input.dispatchMouseEvent',{type:'mouseReleased',x,y,button:'left',clickCount:1})}
+  await pause(100)
+ }
  if(!results)throw Error('Browser fixture timed out')
  for(const result of results)console.log(`${result.pass?'PASS':'FAIL'} ${result.name}${result.detail?' '+JSON.stringify(result.detail):''}`)
  if(results.some(result=>!result.pass))process.exitCode=1

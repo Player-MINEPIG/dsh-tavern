@@ -1,3 +1,4 @@
+import {createRenderingAuthority,createRenderingAuthorityHandler,isRenderingAuthorityPath} from '../../rendering-authority/index.js'
 import { OperationJournal } from '../../play/src/operation-journal.js'
 import { createContractOperation, recordDiagnosticFailure } from '../../play/src/operation-contract.js'
 import { AssemblyStore } from '../../tavern-trace/src/assembly-store.js'
@@ -366,6 +367,10 @@ export function apply(ctx, config = {}) {
   store.assemblyPresets = assemblyPresets
   store.requestAssembler = requestAssembler
   ctx.provide(ASSEMBLY_SERVICE, requestAssembler.registry)
+  const renderingAuthority=createRenderingAuthority()
+  ctx.provide('tavernRenderingAuthority',renderingAuthority)
+  ctx.effect(()=>()=>renderingAuthority.dispose(),'dsh-tavern: rendering write authority')
+  const renderingAuthorityApi=createRenderingAuthorityHandler(renderingAuthority)
   runtime.requestAssemblyEnabled = sessionId => {
     if (!requestAssembler.available() && !requestAssembler.selected(sessionId)) return false
     if (requestAssembler.selected(sessionId)) requestAssembler.requireAvailable()
@@ -692,7 +697,9 @@ export function apply(ctx, config = {}) {
       },
     })
     const api = secureTavernApi(
-      (req, res) => isAssemblyApiPath(req.url)
+      (req, res) => isRenderingAuthorityPath(req.url)
+        ? renderingAuthorityApi(req,res)
+        : isAssemblyApiPath(req.url)
         ? assemblyApi(req, res)
         : new URL(req.url, 'http://localhost').pathname.startsWith(`${API_V3}/`)
         ? promptTraceApi(req, res)

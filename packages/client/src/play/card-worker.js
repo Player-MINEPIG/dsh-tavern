@@ -3,7 +3,8 @@ import variant from '@jitl/quickjs-singlefile-browser-release-sync'
 import { VIRTUAL_DOM_BOOTSTRAP } from './virtual-dom-runtime.js'
 
 let compiler, vm, runtime, nonce, destroyed=false, deadline=0, operations=0, current, context, lastView='', ready=false
-const timers=new Map()
+const timers=new Map(),pendingMessages=[]
+let activeCause='script',activeTask=null
 let messages=0, messageEpoch=0
 const reply=(kind,value)=>{const now=performance.now();if(now-messageEpoch>1000){messages=0;messageEpoch=now}if(++messages>256){dispose();throw Error('Card message rate limit exceeded')}self.postMessage({nonce,kind,value})}
 function dispose(){if(destroyed)return;destroyed=true;for(const timer of timers.values())clearTimeout(timer);timers.clear();compiler?.dispose();compiler=null;vm?.dispose();runtime?.dispose();vm=runtime=null}
@@ -25,7 +26,7 @@ function snapshot(){
  if(typeof value!=='string'||value.length>1024*1024)throw Error('Card output exceeds 1 MiB')
  if(value!==lastView){lastView=value;reply('view',value)}
 }
-function enter(callback){if(destroyed)return;reply('busy');try{callback();snapshot();reply('idle')}catch(error){fail(error)}}
+function enter(callback,cause='script',taskId=null){if(destroyed)return;activeCause=cause;activeTask=taskId;reply('busy');try{callback();snapshot();reply('idle')}catch(error){fail(error)}finally{activeCause='script';activeTask=null}}
 async function init(data){
  const started=performance.now();nonce=data.nonce;context=data.context;current=data.variables
  const hash=async text=>[...new Uint8Array(await crypto.subtle.digest('SHA-256',new TextEncoder().encode(text)))].map(x=>x.toString(16).padStart(2,'0')).join('')
@@ -52,6 +53,10 @@ async function init(data){
     if(!current||current.status!=='available')throw Error('Variable snapshot unavailable')
     if(options!==null&&options!==undefined&&(typeof options!=='object'||Array.isArray(options)||Object.keys(options).some(key=>!['type','message_id'].includes(key))||(options.type!==undefined&&options.type!=='message')||(options.message_id!==undefined&&options.message_id!==current.scope?.messageId)))throw Error('Variable scope is bound to this card')
     result=current.variables
+   }else if(op==='variableWrite'){
+    const [requestId,operation,value,options]=args
+    if(!Number.isSafeInteger(requestId)||!['patch','replace'].includes(operation))throw Error('Invalid variable write request')
+    reply('write',{requestId,operation,value,options,cause:activeCause,taskId:activeTask})
    }else if(op==='propose'){
     if(typeof args[0]!=='string'||args[0].length>4000)throw Error('Proposal exceeds limit')
     reply('proposal',args[0])
@@ -59,7 +64,7 @@ async function init(data){
     const [id,delay,interval]=args
     if(!Number.isSafeInteger(id)||id<1||timers.has(id)||timers.size>=128)throw Error('Card timer limit exceeded')
     const ms=Math.max(16,Math.min(60000,Number(delay)||0))
-    timers.set(id,setTimeout(()=>{timers.delete(id);enter(()=>evaluate(`__tick(${id},${interval===true})`))},ms))
+    timers.set(id,setTimeout(()=>{timers.delete(id);enter(()=>evaluate(`__tick(${id},${interval===true})`),interval===true?'interval':'script')},ms))
    }else if(op==='clearTimer'){clearTimeout(timers.get(args[0]));timers.delete(args[0])}
    else throw Error('Unsupported card capability')
    output=JSON.stringify({value:result})
@@ -69,6 +74,7 @@ async function init(data){
  });vm.setProp(vm.global,'__host',native);native.dispose()
  evaluate(TAVERN_VIRTUAL_DOM_SOURCE,'virtual-dom.js',false,true)
  evaluate(VIRTUAL_DOM_BOOTSTRAP,'card-bootstrap.js',false,true)
+ evaluate(`__setMvuRevision(${Number.isSafeInteger(data.variables?.revision)?data.variables.revision:-1})`,'initial-revision.js',false,true)
  evaluate(`document.body.innerHTML=${JSON.stringify(data.html)}`,'card-html.js',false,true)
  for(const script of data.runs){
   if(script.type==='text/babel'||script.type==='text/jsx'){
@@ -86,14 +92,17 @@ async function init(data){
   }else evaluate(script.code,script.name,script.module,true)
  }
  compiler?.dispose();compiler=null
- evaluate('__ready()','ready.js',false,true);ready=true;snapshot();const memory=runtime.computeMemoryUsage();audit.memory=vm.dump(memory);memory.dispose();audit.coldStartMs=performance.now()-started;reply('audit',audit);reply('ready')
+ evaluate('__ready()','ready.js',false,true);ready=true;snapshot();const memory=runtime.computeMemoryUsage();audit.memory=vm.dump(memory);memory.dispose();audit.coldStartMs=performance.now()-started;reply('audit',audit);reply('ready');for(const message of pendingMessages.splice(0))self.onmessage({data:message})
 }
 self.onmessage=event=>{
  const data=event.data
  if(!data||typeof data!=='object')return
  if(data.kind==='init'){if(nonce)return;init(data).catch(fail);return}
- if(data.nonce!==nonce||destroyed||!ready)return
- if(data.kind==='event')enter(()=>evaluate(`__domEvent(${JSON.stringify(data.value)})`))
+ if(data.nonce!==nonce||destroyed)return
+ if(data.kind==='dispose'){dispose();return}
+ if(!ready){if(['writeResult','variables'].includes(data.kind)){if(pendingMessages.length>=64){fail(Error('Card startup message limit exceeded'));return}pendingMessages.push(data)}return}
+ if(data.kind==='event')enter(()=>evaluate(`__domEvent(${JSON.stringify(data.value)})`),'script',data.taskId)
+ else if(data.kind==='writeResult')enter(()=>evaluate(`__writeResult(${JSON.stringify(data.requestId)},${JSON.stringify(data.value)})`))
  else if(data.kind==='variables'){current=data.value;enter(()=>evaluate(`__notifyVariables(${JSON.stringify(current)})`))}
  else if(data.kind==='dispose')dispose()
 }

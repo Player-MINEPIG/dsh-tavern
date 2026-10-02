@@ -1,3 +1,4 @@
+import {renderingWriteRequests} from './play/rendering-write-requests.js'
 import { renderingTrust } from './play/rendering-trust.js'
 import { ConversationSettingsPanel } from './conversation-panel.js'
 import { presentationCss } from './presentation-styles.js'
@@ -1333,7 +1334,7 @@ export const inject = ['slots', 'layout', 'sessions', 'workspaces', 'uiWorkspace
 export { PanelHeader }
 
 export function apply(ctx, { conversationPhase }) {
-  ctx.effect(() => () => renderingTrust.clear(), 'dsh-tavern: rendering approvals')
+  ctx.effect(() => () => {renderingTrust.clear();renderingWriteRequests.clear()}, 'dsh-tavern: rendering approvals')
   installPresetStyles()
   installCharacterStyles()
   installWorldBookStyles()

@@ -134,3 +134,5 @@ node --test test/play-sessions.test.mjs
 外部渲染与统一设置使用 `node --test test/rendering-sources.test.mjs` 和 `TAVERN_WORKER_FIXTURE=scripts/fixtures/rendering-browser.js node scripts/verify-card-worker-browser.mjs`。合成源码覆盖两种 Helper 格式、无语言 body 围栏、逐内容授权、相对模块、嵌套依赖阻断、撤销/禁用、重复渲染、切换中取消、只读变量作用域与统一设置草稿保护。没有下载或执行未知代码；实际第三方框架兼容性不由这些夹具建立。完整 Host 中继续核对来源绑定与原生/RP切换。
 
 Worker 框架验证使用 `node scripts/verify-card-worker-browser.mjs`，`TAVERN_FRAMEWORK_VENDOR_DIR` 指向本地固定官方库（文件名及必需 SHA-256 见验证器）；测试不下载依赖。隔离临时浏览器通过真实时间 CDP 等待，覆盖 React+JSX/Vue/jQuery 事件、状态、撤销、scope 重挂、传递依赖逐 owner 授权和预算。同一验证器设置 `TAVERN_WORKER_FIXTURE=scripts/fixtures/rendering-browser.js` 可跑统一设置回归。`node --test test/card-worker-lifecycle.test.mjs` 验证构造/传输/定时器失败清理。夹具不代表任意私有卡已兼容，也不建立进程峰值内存上限。
+
+变量写桥使用 `TAVERN_WORKER_FIXTURE=scripts/fixtures/card-write-browser.js node scripts/verify-card-worker-browser.mjs`。该夹具通过 CDP 实际鼠标输入验证 isTrusted cause，并以合成事务验证默认拒绝、完整代码审核/独立授权、patch/replace、CAS、事件、伪造 scope、撤销/卸载和 interval。`test/rendering-authority.test.mjs` 验证 Host 摘要/作用域/期限/撤销及安全路由；真实 MVU source+manager 持久提交链仍需在整合环境验收。

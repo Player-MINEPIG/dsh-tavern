@@ -94,7 +94,7 @@ flowchart LR
 | `TavernUI.version`, `getContext()` | v1；角色与挂载时复制的 userName/characterName，复制的 JSON，不含 session ID 或凭据 |
 | `TavernUI.proposeMessage(text)` | 最多 4000 字符，生成可见建议；不能自行发送 |
 
-外部 `<script src>` 和 ES 模块必须按下述流程逐项审阅；未授权依赖与内联 on* 会停用整卡脚本。外部来源、Helper 和 JSX 使用专用 Worker 内的 QuickJS 与 linkedom。固定官方 jQuery 3.6.0、React 18.3.1、Vue 3.5.13 夹具覆盖插入 DOM、点击和状态更新；这不代表完整浏览器兼容。同步布局、computedStyle、CSSOM、canvas、父页面与系统接口仍不可用；本渲染器尚不提供助手写变量/世界书/聊天/生成接口。未提供的 API 报错并销毁运行时，不静默成功。静态 HTML 导出不运行卡片脚本，也不导出内存中的交互状态。
+外部 `<script src>` 和 ES 模块必须按下述流程逐项审阅；未授权依赖与内联 on* 会停用整卡脚本。外部来源、Helper 和 JSX 使用专用 Worker 内的 QuickJS 与 linkedom。固定官方 jQuery 3.6.0、React 18.3.1、Vue 3.5.13 夹具覆盖插入 DOM、点击和状态更新；这不代表完整浏览器兼容。同步布局、computedStyle、CSSOM、canvas、父页面与系统接口仍不可用；本渲染器不提供世界书/聊天/生成接口；写变量走下述单独授权的 MVU 桥。未提供的 API 报错并销毁运行时，不静默成功。静态 HTML 导出不运行卡片脚本，也不导出内存中的交互状态。
 
 上表描述小型内嵌 facade；其每卡源码最多 128K UTF-16 字符单元、解释器 8 MiB/256 KiB 栈；每次执行 60 ms 与 500 次中断检查双重上限、1000 bridge 操作、100 Promise jobs；DOM 最多 2048 handles，最多 256 listeners；高度 100–800 px。超限显示错误。浏览器布局/图片解码、WASM 引擎缺陷和复杂 CSS 的拒绝服务不由解释器配额完全覆盖，不能承诺绝对安全；显示正则仍有既有 RegExp 回溯风险。
 
@@ -141,4 +141,14 @@ click/input/change/key/pointer 事件复制为虚拟事件，输出净化后展�
 | `getAllVariables()` | 同一绑定消息快照，不合并全局/chat 变量 |
 | `TavernUI.onVariables(callback)` | 返回取消订阅函数；已提交快照 `{version,scope,revision,variables,status}`，最多 64 个订阅；不是原版可变的 before-update 事件 |
 
-变量绑定由可信历史消息的 playthrough/session/node/variant/endEventId（以及已有格式版本）确定，服务再次验证；脚本不能用 options 改变作用域。开场白、导入与流式内容没有可核实的历史坐标时不绑定变量。MVU 不可用时读取明确报错；不回退到当前焦点会话。只读轮询与变量提交语义由 MVU bridge 提供，卡片没有写入操作。发送消息仍需卡片外确认，与模型工具授权完全分离。
+变量绑定由可信历史消息的 playthrough/session/node/variant/endEventId（以及已有格式版本）确定，服务再次验证；脚本不能用 options 改变作用域。开场白、导入与流式内容没有可核实的历史坐标时不绑定变量。MVU 不可用时读取明确报错；不回退到当前焦点会话。只读轮询与变量提交语义由 MVU bridge 提供，写操作需要单独的 Host capability，不继承模型工具权限。发送消息仍需卡片外确认，与模型工具授权完全分离。
+
+## 单独授权的变量写入
+
+外部代码设置页显示每个已挂载卡片的完整执行包（HTML、脚本、模块、来源 owner 和固定作用域）。先核对全部源码与 SHA-256，再单独允许此绑定写变量；两步默认关闭。Host 重算执行包摘要，签发仅内存保留、30 分钟有效的授权；改变代码/源码审核/作用域、撤销或卸载都会删除权限，不写入卡文件。Host 只保存身份、作用域和期限，不保存上传的代码。
+
+渲染器支持已核实的 `Mvu.getMvuData(options?)` 整对象读取、`Mvu.updateVariablesWith(JSONPatchArray)` 和 `await Mvu.replaceMvuData(wholeVariables, options?)`，不声称支持回调重载。options 只可指向本绑定消息；global/chat/character、latest 或数字别名不会把历史气泡暗中改指当前焦点。`eventOn(Mvu.events.VARIABLE_UPDATE_ENDED, callback)` 在本绑定有更新的已提交 revision 后无参回调，不声称原版事件 payload 或可变 before-update 语义。
+
+写授权有效仍不足以提交：MVU 服务再次验证当前可写资源/头、scope、CAS 版本、幂等 operationId、authority 租约和 manager 策略。缺少接入、历史作用域和策略拒绝均明确失败。operationId 由渲染宿主生成，CAS 来自可信绑定；VM 仅提交 operation/value 和受限 options。撤销取消可写绑定并恢复只读观察。提交事件为 `card_variable_update`，不伪造 assistant-message 事件。
+
+主线程识别浏览器 `isTrusted` 输入，原生 Worker 仅在处理该事件期间携带私有 taskId，VM 不接触它。原生定时器单独标记 interval，程序生成点击与初始执行为 script，卡不能选择 cause。Host 服务依赖现有可信 UI dispatcher 提供浏览器事件证据，不能独立或密码学证明人类点击；沿用本机 Origin/媒体类型/桌面 token 边界，它不是针对可信本地进程的身份认证。grantId 和 MVU capability 从不进入解释器。

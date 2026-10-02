@@ -1,3 +1,4 @@
+import {renderingWriteRequests} from './rendering-write-requests.js'
 import { createVirtualCardRuntime } from './card-worker-client.js'
 import DOMPurify from 'dompurify'
 import { createElement as h, memo, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
@@ -105,7 +106,7 @@ export function prepareCardDocument(source, owners = [], helpers = [], trust = r
       const result = read(name,owner); code = result.content; scriptOwner = result.owner
     }
     collect(code,externalUrl(name) ?? base,scriptOwner)
-    if(['text/babel','text/jsx'].includes(type))virtual=true
+    if(['text/babel','text/jsx'].includes(type)||/\b(?:Mvu|eventOn|waitGlobalInitialized)\b/.test(code))virtual=true
     runs.push({code,name,type,module:type === 'module'}); script.remove()
   }
   const data = cardDocument(template.innerHTML)
@@ -172,7 +173,7 @@ export function createDomBridge(doc, context, onProposal, onError, helperBinding
   return { bridge, attach: value => { runtime=value; if (destroyed) value.dispose() }, destroy }
 }
 
-const InteractiveCard = memo(function InteractiveCard({ source, enabled, scopeKey, context, onSend, owners = [], helpers = [], helperBinding, createBinding }) {
+const InteractiveCard = memo(function InteractiveCard({ source, enabled, scopeKey, context, onSend, owners = [], helpers = [], helperBinding, createBinding, writeScope }) {
   const frame = useRef(null), cleanup = useRef(()=>{}), generation=useRef(0)
   const [trustRevision,setTrustRevision]=useState(renderingTrust.revision)
   useEffect(()=>renderingTrust.subscribe(()=>{generation.current++;cleanup.current();setTrustRevision(renderingTrust.revision())}),[])
@@ -192,9 +193,18 @@ const InteractiveCard = memo(function InteractiveCard({ source, enabled, scopeKe
     const resize=()=>{ if(frame.current) frame.current.style.height=`${Math.max(100,Math.min(800,doc.body.scrollHeight+24))}px` }
     const observer=new ResizeObserver(resize);observer.observe(doc.body);resize()
     const controller=new AbortController()
-    let dom, binding, virtualRuntime, stopVariables, removeEvents=()=>{}
+    let dom, binding, virtualRuntime, stopVariables, removeEvents=()=>{},writeRequest,writeBinding,writeLoading,writeController,writeEpoch=0
+    const revokeWrites=()=>{
+      const ticket=++writeEpoch,hadWriteBinding=!!writeBinding
+      writeController?.abort();writeController=null;writeBinding?.dispose();writeBinding=null;writeLoading=null
+      if(hadWriteBinding){stopVariables?.();stopVariables=null}
+      if(hadWriteBinding&&!cleaned&&createBinding)createBinding(controller.signal).then(next=>{
+        if(cleaned||ticket!==writeEpoch){next.dispose();return}
+        binding=next;virtualRuntime?.notifyVariables(next.getSnapshot());stopVariables=next.subscribe(value=>virtualRuntime?.notifyVariables(value))
+      }).catch(()=>{})
+    }
     let cleaned=false
-    cleanup.current=()=>{if(cleaned)return;cleaned=true;controller.abort();observer.disconnect();dom?.destroy();virtualRuntime?.dispose();stopVariables?.();removeEvents();binding?.dispose()}
+    cleanup.current=()=>{if(cleaned)return;cleaned=true;controller.abort();observer.disconnect();dom?.destroy();virtualRuntime?.dispose();stopVariables?.();removeEvents();binding?.dispose();writeRequest?.dispose();revokeWrites()}
     if (!enabled || data.unsupported.length) return
     if (doc.body.querySelectorAll('*').length > 2048) { setError('Card DOM limit exceeded'); return }
     try {
@@ -210,11 +220,27 @@ const InteractiveCard = memo(function InteractiveCard({ source, enabled, scopeKe
           const value={type:event.type,target:Number(target.dataset.dtvNode)}
           if(['input','textarea','select'].includes(target.localName)){value.value=String(target.value).slice(0,64000);value.checked=target.checked===true}
           for(const key of ['key','code','keyCode','charCode','button','buttons','clientX','clientY','ctrlKey','altKey','shiftKey','metaKey'])if(event[key]!==undefined)value[key]=event[key]
-          virtualRuntime?.dispatch(value)
+          virtualRuntime?.dispatch(value,{trusted:event.isTrusted===true})
         }
         for(const type of events)doc.body.addEventListener(type,handler)
         removeEvents=()=>{for(const type of events)doc.body.removeEventListener(type,handler)}
+        if(writeScope&&createBinding)writeRequest=renderingWriteRequests.register({scope:writeScope,owners,runs:data.runs,modules:data.modules,html:data.html,onRevoke:revokeWrites})
         virtualRuntime=createVirtualCardRuntime({html:data.html,runs:data.runs,modules:data.modules,context,variables:activeBinding?.getSnapshot()},{
+          onWrite:async({operation,value,options,cause})=>{
+            try{
+              const grant=writeRequest?.getGrant()
+              if(!grant)throw Object.assign(Error('Variable writes require separate authorization in conversation settings'),{code:'MVU_WRITE_DENIED'})
+              if(!writeBinding){
+                if(!writeLoading){const pendingController=new AbortController();writeController=pendingController;writeLoading=createBinding(pendingController.signal,grant).then(next=>{if(pendingController.signal.aborted||cleaned){next.dispose();throw Error('Variable write binding cancelled')}stopVariables?.();binding?.dispose();binding=next;writeBinding=next;stopVariables=next.subscribe(snapshot=>virtualRuntime?.notifyVariables(snapshot));return next}).finally(()=>{if(writeController===pendingController)writeLoading=null})}
+                await writeLoading
+              }
+              const snapshot=writeBinding.getSnapshot()
+              if(options!==null&&options!==undefined&&(typeof options!=='object'||Array.isArray(options)||Object.keys(options).some(key=>!['type','message_id'].includes(key))||(options.type!==undefined&&options.type!=='message')||(options.message_id!==undefined&&options.message_id!==snapshot.scope?.messageId)))throw Error('Variable scope is bound to this card')
+              const result=await writeBinding.write({operation,value,expectedRevision:snapshot.currentRevision??snapshot.revision,operationId:crypto.randomUUID(),cause,signal:writeController.signal})
+              if(cleaned||current!==generation.current)throw Error('Variable write cancelled')
+              setError('');return result
+            }catch(error){if(!cleaned&&current===generation.current)setError(error.message);throw error}
+          },
           onAudit:value=>{if(current===generation.current)setAudit(value)},
           onProposal:value=>{if(current===generation.current)setProposal(value)},
           onError:error=>{if(current===generation.current){setError(error.message);cleanup.current()}},

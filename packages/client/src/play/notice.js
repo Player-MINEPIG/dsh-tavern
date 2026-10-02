@@ -19,6 +19,7 @@ import {
   loadCurrentPlaythrough,
 } from './chat-model.js'
 import { RichText } from './rich-text.js'
+import {MessageContent} from './scripted-content.js'
 import { shouldShowUnboundNotice } from './sidebar-model.js'
 import { conversationDisplayStyle, useConversationDisplaySettings } from './display-settings.js'
 import { useClientUiSettings } from '../i18n/use-ui-settings.js'
@@ -91,6 +92,7 @@ export function PlaySessionDock({ session, useSessions, useConversation, convers
           setContent({
             kind: 'opening',
             greeting: state.greeting,
+            display: state.display,
             importBinding: state.importBinding,
             importMutable: state.importMutable,
             importTurns: state.turns
@@ -170,7 +172,15 @@ export function PlaySessionDock({ session, useSessions, useConversation, convers
     )
     : greeting === null
       ? h('div', { className: 'dtv-play-opening-body dtv-play-opening-body-empty', 'aria-hidden': true })
-      : h(RichText, { className: 'dtv-play-opening-body', text: greeting.text }),
+      : h('div',{className:'dtv-play-opening-body'},h(MessageContent,{
+        text:greeting.text,
+        enabled:displaySettings.interactiveCards===true,
+        scopeKey:JSON.stringify([sessionId,content.playthrough.id,'greeting',greeting.index]),
+        owners:['global:global',...Object.entries(content.display?.bindings??{}).filter(([,id])=>typeof id==='string'&&id).map(([kind,id])=>`${kind==='characterId'?'character':'preset'}:${id}`)],
+        helpers:(content.display?.renderingSources??[]).filter(item=>item.kind==='helper'),
+        context:{version:1,role:'assistant',userName:content.display?.macros?.user??'User',characterName:content.display?.macros?.character??'Assistant'},
+        onSend:async text=>{await playClient.postUserMessage(sessionId,text);setRevision(value=>value+1)},
+      })),
   error === '' ? null : h('p', { className: 'dtv-play-opening-error', role: 'alert' }, rawText(error)),
   h('footer', { className: 'dtv-play-opening-actions' },
     h('button', {

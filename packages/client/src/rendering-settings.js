@@ -1,3 +1,4 @@
+import {renderingWriteRequests} from './play/rendering-write-requests.js'
 import { downloadRenderingSource } from './play/rendering-download.js'
 import { createElement as h, useEffect, useRef, useState } from 'react'
 import { translate } from './i18n.js'
@@ -12,6 +13,8 @@ export function RenderingSettings({client,activeSnapshot}) {
   const [revision,setRevision]=useState(renderingTrust.revision), [selected,setSelected]=useState(null)
   const generation=useRef(0), input=useRef(null), downloading=useRef(null)
   const [downloadKey,setDownloadKey]=useState(null)
+  const [,setWriteRevision]=useState(0)
+  useEffect(()=>renderingWriteRequests.subscribe(()=>setWriteRevision(v=>v+1)),[])
   const bindings=activeRegexBindings(activeSnapshot)
   useEffect(()=>renderingTrust.subscribe(()=>setRevision(renderingTrust.revision())),[])
   useEffect(()=>{const refresh=()=>setVersion(v=>v+1);window.addEventListener(CLIENT_REFRESH_EVENT,refresh);return()=>window.removeEventListener(CLIENT_REFRESH_EVENT,refresh)},[])
@@ -78,5 +81,15 @@ export function RenderingSettings({client,activeSnapshot}) {
           h('button',{type:'button',className:'dtv-button',disabled:!review.digest||approved||changed||entry.blocked||!entry.enabled,onClick:()=>run(()=>renderingTrust.approve(entry.owner,entry.key,review.digest))},translate('rendering.approve')),
           h('button',{type:'button',className:'dtv-button',onClick:()=>{if(downloadKey===entry.key)downloading.current?.abort();renderingTrust.revoke(entry.owner,entry.key)}},translate('rendering.revoke'))):null)
     }),
+    h('h3',null,translate('rendering.writeTitle')),
+    h('p',null,translate('rendering.writeBoundary')),
+    ...renderingWriteRequests.list().map(entry=>h('details',{key:entry.id,className:'dtv-write-review'},
+      h('summary',null,entry.sourceIdentity?.scope?.nodeId??entry.id,' · ',translate(entry.granted?'rendering.writeGranted':'rendering.writeOff')),
+      h('p',null,'SHA-256: ',entry.sourceIdentity?.sha256??translate('common.loading')),
+      h('textarea',{readOnly:true,value:entry.source,rows:12,'aria-label':translate('rendering.source'),style:{width:'100%'}}),
+      h('button',{type:'button',disabled:!entry.sourceIdentity||entry.reviewed,onClick:()=>run(()=>renderingWriteRequests.review(entry.id))},translate('rendering.reviewBundle')),
+      h('button',{type:'button',disabled:!entry.reviewed||entry.granted,onClick:()=>run(()=>renderingWriteRequests.authorize(entry.id))},translate('rendering.allowWrites')),
+      h('button',{type:'button',onClick:()=>renderingWriteRequests.revoke(entry.id)},translate('rendering.revokeWrites')),
+      entry.error?h('p',{role:'alert'},entry.error):null)),
     error?h('p',{role:'alert'},error):null)
 }

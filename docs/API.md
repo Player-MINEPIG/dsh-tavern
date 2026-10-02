@@ -621,3 +621,14 @@ Tavern client 通过 DSH `0.2.0-rc.2` 公开 Cordis `ctx.provide` 注册稳定�
 内部 transport 使用 `GET /v2/chrome/events`；不支持 EventSource、连接失败或断线时降级为初始 GET、window focus 回读和1秒轮询，SSE恢复后停止轮询。BroadcastChannel 不属于合同。服务卸载会停止transport并清理所有 `when` effect；多个第三方插件的注册互相独立，各自只清理自己拥有的slot/UI。
 
 第三方 DSH 插件、独立 Web 客户端、surface 所有权、原子动作组合与卸载降级的完整说明见 [FRONTEND_INTEGRATION_zh-CN.md](FRONTEND_INTEGRATION_zh-CN.md)。当前没有配置文件一键替换魔丸、frontend provider registry 或动态 bundle loader。
+
+## 渲染写授权原语
+
+源码/写入授权独立于 MVU 的变量存储与 manager 策略；当前 API 未有授予卡代码能力的接口，因此增加精确执行包租约，不提供脚本通用 fetch 或变量写代理。
+
+| 方法 | 路径（v1） | 作用 | 状态 |
+| --- | --- | --- | --- |
+| POST | `/rendering-write-grants` | 可信设置页提交 `{source,sourceIdentity,reviewed:true,write:true}`；source 是完整执行包 JSON 文本，identity 为 `{version:1,sha256,scope}`。Host 重算 SHA-256；返回 `{ok:true,grantId,sourceIdentity,expiresAt}` | 200；格式/身份不符 400；超限 413 |
+| DELETE | `/rendering-write-grants/:grantId` | 永久撤销此租约；重复撤销幂等 | 200 |
+
+两条写路由沿用本机 peer、Host、Origin/桌面 token 与 JSON 媒体类型检查。Host 服务 `tavernRenderingAuthority.resolve({grantId,sourceIdentity})` 返回 null 或 `{valid:true,write:true,scope}`；同步 `isCurrent(request)` 用于 MVU 最终事务提交前检查。授权最多 64 项、30 分钟有效，loader 卸载全部撤销，不落盘；审批不会替代 MVU 的当前头/CAS/幂等/manager 验证。
