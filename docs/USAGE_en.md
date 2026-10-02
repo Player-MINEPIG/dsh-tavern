@@ -74,6 +74,8 @@ Imports read `tags: null` as no tags and report a compatibility warning while pr
 
 description, personality, scenario, example dialogue, and similar fields enter the unified Tavern profile through preset markers or a stable fallback. Loader metadata and diagnostics describe greeting placement and provenance; greeting is never forged as an assistant history message that already happened.
 
+Greetings expand name macros, then apply assistant display rules in global → current preset → current character order, including variable folds and static status panels. Depth counts the user/assistant messages after the greeting. If the rules clear it entirely, the name-expanded source remains visible so a model-output protocol filter cannot erase the opening. RP, the native opening dock, and static HTML exports share this behavior; JSONL keeps name-expanded greeting sources and alternates without baking in display templates. Rendering does not write DSH history or provide an MVU/Tavern Helper variable runtime.
+
 ### Display regex
 
 The display-regex page lists rules from global, current preset, and current character card. Drag the handle left of a rule title to reorder within the same source. The interaction matches preset prompt sorting: the dragged item shrinks to a line and the drop target shows a dashed placeholder. After **Save changes**, global order is written to the workspace regex document; preset/card order is written back to each native `regex_scripts` array. Sources cannot be dragged across each other. Combined order is always global → preset → character. Rules run top to bottom, so interdependent rules such as conditional clears and tag extraction must stay in the intended order.

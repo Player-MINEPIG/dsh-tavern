@@ -28,6 +28,7 @@ import {
 } from './chat-model.js'
 import {
   applyDisplayRegex,
+  applyGreetingDisplayRegex,
   getRegexDocument,
   resourceRegexRules,
 } from './regex.js'
@@ -220,6 +221,13 @@ export async function loadChatState(client, sessionId, playthrough) {
     && rootMessages?.incompleteTurn !== true
     && !(rootMessages?.messages ?? []).some(message => message?.role === 'user' || message?.role === 'assistant')
     && importedContext.binding?.state !== 'consumed'
+  const displayGreeting = importedTurns.length > 0 || greeting === null ? null : {
+    ...greeting,
+    ...applyGreetingDisplayRegex(
+      applyDisplayNameMacros(greeting.text, macros), rules, bindings, { depth },
+    ),
+  }
+  regexDiagnostics.push(...(displayGreeting?.diagnostics ?? []))
   return {
     avatars: { user: userSelection?.user?.avatar ?? null, assistant: characterAvatarUrl(characterId) },
     pendingSwipeError: pending?.error ?? null,
@@ -228,14 +236,7 @@ export async function loadChatState(client, sessionId, playthrough) {
     importBinding: importedContext.binding,
     importContext: importedContext.document,
     importMutable,
-    greeting: importedTurns.length > 0 ? null : greeting === null ? null : {
-      ...greeting,
-      // A greeting is card metadata shown before the first durable turn, not an
-      // assistant message. Output-only display regex (for example "keep only
-      // <正文>") must not erase it merely because the card did not wrap its
-      // greeting in the model-output protocol.
-      text: applyDisplayNameMacros(greeting.text, macros),
-    },
+    greeting: displayGreeting,
     regexDiagnostics,
     display: { rules, bindings, macros },
   }

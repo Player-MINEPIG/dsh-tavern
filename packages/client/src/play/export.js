@@ -7,6 +7,7 @@ import {
 } from './chat-model.js'
 import {
   applyDisplayRegex,
+  applyGreetingDisplayRegex,
   getRegexDocument,
   resourceRegexRules,
 } from './regex.js'
@@ -174,9 +175,13 @@ export async function loadPlaythroughExport(client, playthrough) {
     greeting,
     greetingSwipes,
     greetingSwipeId,
-    // Greeting is card metadata, not model output. Keep static export aligned
-    // with the RP view: expand names, but do not run output-only regex rules.
-    displayGreeting: greeting === null ? null : applyDisplayNameMacros(greeting, greetingMacros),
+    displayGreeting: greeting === null ? null : applyGreetingDisplayRegex(
+      applyDisplayNameMacros(greeting, greetingMacros), rules, bindings,
+      { depth: turns.reduce((depth, turn) => depth + Number(turn.userText !== '')
+        + Number(turn.displayOverridden === true || (turn.assistantCandidates ?? [turn.assistantText]).some(text => text !== '')), 0) },
+    ).text,
+    // JSONL must retain greeting sources, with names expanded, so importing it
+    // does not apply display templates a second time.
     displayGreetingSwipes: greetingSwipes.map(text => applyDisplayNameMacros(text, greetingMacros)),
     exportedAt: new Date().toISOString(),
   }
