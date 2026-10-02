@@ -246,13 +246,37 @@ const InteractiveCard = memo(function InteractiveCard({ source, enabled, scopeKe
         for(const type of events)doc.body.addEventListener(type,handler)
         removeEvents=()=>{for(const type of events)doc.body.removeEventListener(type,handler)}
         if(writeScope&&createBinding)writeRequest=renderingWriteRequests.register({scope:writeScope,owners,runs:data.runs,modules:data.modules,html:data.html,adapters:data.adapters,schemaDeclarations:data.schemaDeclarations,onRevoke:revokeWrites})
-        const displayView=view=>{
-            if(current!==generation.current)return
+        let acceptedView
+        const displayView=(view,targetId)=>{
+            if(cleaned||current!==generation.current)throw Error('Card view generation expired')
+            if(!view||Array.isArray(view)||typeof view.html!=='string'||typeof view.styles!=='string'||!Number.isSafeInteger(view.bodyId)||view.bodyId<=0||JSON.stringify(view).length>1024*1024)throw Error('Invalid card view')
+            if(acceptedView?.html===view.html&&acceptedView.styles===view.styles&&acceptedView.bodyId===view.bodyId){
+              if(targetId!==undefined&&!acceptedView.nodes.has(targetId))throw Error('Layout target is not in this card')
+              return acceptedView.nodes
+            }
+            // Parse inertly under the byte limit. The trusted receiver counts the
+            // sanitized structure before adopting anything into the layout DOM.
+            const template=doc.createElement('template');template.innerHTML=cleanCardHtml(view.html)
+            const nodes=new Map([[0,doc.documentElement],[view.bodyId,doc.body]])
+            const walker=doc.createTreeWalker(template.content,0xffffffff);let count=1,node
+            while((node=walker.nextNode())){
+              if(++count>8192)throw Error('Card DOM limit exceeded')
+              if(node.nodeType!==1)continue
+              const marker=node.getAttribute('data-dtv-node')
+              if(marker===null)continue
+              const id=Number(marker)
+              if(!Number.isSafeInteger(id)||id<=0||String(id)!==marker||nodes.has(id))throw Error('Invalid card node identity')
+              nodes.set(id,node)
+            }
+            if(targetId!==undefined&&!nodes.has(targetId))throw Error('Layout target is not in this card')
+            const style=doc.createElement('style');style.textContent=view.styles
             const focused=doc.activeElement,id=focused?.dataset?.dtvNode,selection=[focused?.selectionStart,focused?.selectionEnd],scroll=[doc.documentElement.scrollLeft,doc.documentElement.scrollTop]
-            const safe=cleanCardHtml(view.html+'<style>'+view.styles.replace(/<\/style/gi,'< /style')+'</style>')
-            if(doc.body.innerHTML!==safe)doc.body.innerHTML=safe
-            if(id){const restored=doc.body.querySelector('[data-dtv-node="'+id+'"]');restored?.focus();if(typeof selection[0]==='number')try{restored.setSelectionRange(...selection)}catch{}}
+            doc.body.replaceChildren(template.content,style)
+            doc.body.setAttribute('data-dtv-node',String(view.bodyId))
+            acceptedView={html:view.html,styles:view.styles,bodyId:view.bodyId,nodes}
+            if(id){const restored=nodes.get(Number(id));restored?.focus();if(typeof selection[0]==='number')try{restored.setSelectionRange(...selection)}catch{}}
             doc.documentElement.scrollLeft=scroll[0];doc.documentElement.scrollTop=scroll[1];resize()
+            return nodes
         }
         virtualRuntime=createVirtualCardRuntime({html:data.html,runs:data.runs,modules:data.modules,context,variables:activeBinding?.getSnapshot()},{
           onWrite:async({operation,value,options,cause,observedRevision,operationId,signal})=>{
@@ -278,9 +302,9 @@ const InteractiveCard = memo(function InteractiveCard({ source, enabled, scopeKe
           onView:displayView,
           onMeasure:(request,{signal})=>{
             signal.throwIfAborted();if(cleaned||current!==generation.current||!frame.current?.isConnected||frame.current.contentDocument!==doc)throw Error('Card measurement generation expired')
-            displayView(request.view)
-            const node=request.id===0?doc.documentElement:request.id===request.view.bodyId?doc.body:doc.body.querySelector('[data-dtv-node="'+request.id+'"]')
-            if(!node)throw Error('Layout target is not in this card')
+            if(!Number.isSafeInteger(request.id)||request.id<0||!['',null,undefined,'::before','::after'].includes(request.pseudo))throw Error('Invalid card measurement')
+            const nodes=displayView(request.view,request.id),node=nodes.get(request.id)
+            if(!node||node.ownerDocument!==doc||!node.isConnected||(request.id!==0&&(node.getAttribute('data-dtv-node')!==String(request.id)||(node!==doc.body&&!doc.body.contains(node)))))throw Error('Layout target is not in this card')
             const rectangle=node.getBoundingClientRect(),style=doc.defaultView.getComputedStyle(node,request.pseudo||null),computed=Object.create(null)
             if(style.length>1024)throw Error('Computed style exceeds property limit')
             for(const property of style){const value=style.getPropertyValue(property);computed[property]=value;computed[property.replace(/-([a-z])/g,(_,letter)=>letter.toUpperCase())]=value}

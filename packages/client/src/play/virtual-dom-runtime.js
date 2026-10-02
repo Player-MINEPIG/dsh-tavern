@@ -44,7 +44,14 @@ globalThis.__view=()=>{
 };
 // Synchronous-looking getters suspend only this interpreter. The host measures
 // the current sanitized view in this card's script-disabled iframe.
-const __geometry=(node,pseudo)=>{const view=JSON.parse(__view());const id=node===document.documentElement?0:Number(node.getAttribute('data-dtv-node'));if(!Number.isSafeInteger(id)||id<0)throw Error('Layout target is outside the rendered card');const result=JSON.parse(__layout(JSON.stringify({id,view,pseudo})));if(result.error)throw Error(result.error);return result};
+const __geometry=(node,pseudo)=>{
+ const view=JSON.parse(__view());let id=0;
+ if(node!==document.documentElement){
+  const marker=node?.getAttribute?.('data-dtv-node');id=__ids.get(node);
+  if(!marker||!Number.isSafeInteger(id)||id<=0||marker!==String(id)||__nodes.get(id)!==node||(node!==document.body&&!document.body.contains(node)))throw Error('Layout target is outside the rendered card');
+ }
+ const result=JSON.parse(__layout(JSON.stringify({id,view,pseudo})));if(result.error)throw Error(result.error);return result;
+};
 Element.prototype.getBoundingClientRect=function(){return __geometry(this).rect};
 for(const key of ['scrollHeight','scrollWidth','offsetHeight','offsetWidth','clientHeight','clientWidth','offsetTop','offsetLeft'])Object.defineProperty(Element.prototype,key,{get(){return __geometry(this)[key]},configurable:true});
 globalThis.getComputedStyle=(node,pseudo)=>{const data=__geometry(node,pseudo).computed;return Object.freeze({...data,getPropertyValue:name=>data[String(name)]??'',getPropertyPriority:()=>''})};
