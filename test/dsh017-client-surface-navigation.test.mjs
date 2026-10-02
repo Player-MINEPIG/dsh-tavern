@@ -65,7 +65,7 @@ test('late cleanup from the old panel cannot remove a newer guard', () => {
 test('shell routes Escape, launcher switches and diagnostic requests through guarded navigation', () => {
   const source = readFileSync(new URL('../packages/client/src/index.js', import.meta.url), 'utf8')
   assert.match(source, /else if \(surface !== null\) requestSurface\(null\)/)
-  assert.match(source, /const open = id => \{\s*if \(!requestSurface\(id\)\) return/)
+  assert.match(source, /const open = id => \{\s*if \(id === \'assembly\'\) \{[^\n]*return \}\s*if \(!requestSurface\(id\)\) return/)
   assert.match(source, /subscribeOpen\(playthroughId => \{\s*if \(!requestSurface\('diagnostics'\)\) return/)
   assert.match(source, /SessionTemplatePanel, \{[\s\S]*registerBeforeLeave,[\s\S]*close,/)
 })

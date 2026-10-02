@@ -657,22 +657,18 @@ export function createSurfaceNavigation(commit) {
   }
 }
 
-function TavernShell({ useStore, usePanelInfo, useSessions, useWorkspaces, createCleanSession, createConfiguredPlaythrough, playClient, playSlots, chromeService, diagnostics }) {
+function TavernShell({ useSessions, useWorkspaces, createCleanSession, createConfiguredPlaythrough, playClient, playSlots, chromeService, diagnostics }) {
   const [menuOpen, setMenuOpen] = useState(false)
   const [surface, setSurface] = useState(null)
   const surfaceNavigation = useRef(null)
   if (surfaceNavigation.current === null) surfaceNavigation.current = createSurfaceNavigation(next => { setSurface(next); setMenuOpen(false) })
   const requestSurface = useCallback(next => surfaceNavigation.current.request(next, surface), [surface])
   const registerBeforeLeave = surfaceNavigation.current.register
-  const layoutInfo = useStore?.(state => state.layoutInfo)
-  const activePanelId = usePanelInfo?.(state => state.activePanelId)
-  const navigation = { sidebarOpen: layoutInfo ? (layoutInfo.viewportWidth < 1024 ? layoutInfo.narrowExpanded : layoutInfo.sidebar > 0) : false, rightbarOpen: layoutInfo?.rightbarShown === true, activePanelId }
-  const previousNavigation = useRef(navigation)
-  useEffect(() => {
-    const previous = previousNavigation.current
-    previousNavigation.current = navigation
-    if (surface === 'assembly' && ((!previous.sidebarOpen && navigation.sidebarOpen) || (!previous.rightbarOpen && navigation.rightbarOpen) || previous.activePanelId !== activePanelId)) requestSurface(null)
-  }, [navigation.sidebarOpen, navigation.rightbarOpen, activePanelId, surface, requestSurface])
+  const [assemblyOpen, setAssemblyOpen] = useState(false)
+  const assemblyNavigation = useRef(null)
+  if (assemblyNavigation.current === null) assemblyNavigation.current = createSurfaceNavigation(setAssemblyOpen)
+  const requestAssembly = useCallback(next => assemblyNavigation.current.request(next, assemblyOpen), [assemblyOpen])
+  const registerAssemblyBeforeLeave = assemblyNavigation.current.register
 
   const [diagnosticPlaythroughId, setDiagnosticPlaythroughId] = useState(null)
   const diagnosticSnapshot = useSyncExternalStore(diagnostics.subscribe, diagnostics.getSnapshot)
@@ -1092,10 +1088,11 @@ function TavernShell({ useStore, usePanelInfo, useSessions, useWorkspaces, creat
       else if (rpAlert !== null) dismissRpAlert()
       else if (menuOpen) setMenuOpen(false)
       else if (surface !== null) requestSurface(null)
+      else if (assemblyOpen) requestAssembly(false)
     }
     window.addEventListener('keydown', onKeyDown)
     return () => window.removeEventListener('keydown', onKeyDown)
-  }, [importFailure, menuOpen, rpAlert, surface, requestSurface])
+  }, [importFailure, menuOpen, rpAlert, surface, requestSurface, assemblyOpen, requestAssembly])
 
   const startDrag = event => {
     if (event.button !== 0) return
@@ -1153,6 +1150,7 @@ function TavernShell({ useStore, usePanelInfo, useSessions, useWorkspaces, creat
   const switchChrome = () => { if (requestSurface(null)) return chromeController.current?.switchMode() }
 
   const open = id => {
+    if (id === 'assembly') { requestAssembly(true); setMenuOpen(false); return }
     if (!requestSurface(id)) return
     if (id === 'diagnostics') setDiagnosticPlaythroughId(null)
     setMenuOpen(false)
@@ -1160,9 +1158,7 @@ function TavernShell({ useStore, usePanelInfo, useSessions, useWorkspaces, creat
   }
 
   let panel = null
-  if (surface === 'assembly') {
-    panel = h(AssemblyPanel, { sessionId, close, registerBeforeLeave, chromeMode })
-  } else if (surface === 'preset') {
+  if (surface === 'preset') {
     panel = h('div', { className: 'dtv-panel' }, h(PresetSidebar, {
       closePanel: close,
       openPanel: () => {},
@@ -1237,7 +1233,8 @@ function TavernShell({ useStore, usePanelInfo, useSessions, useWorkspaces, creat
     && rpWorkspaceLoadState !== 'loading'
     && rpWorkspaceSetting?.ready !== true
 
-  return h('div', { className: 'dtv-layer', lang: uiSettings.locale, 'data-chrome': chromeMode, 'data-surface-open': surface !== null, style: { '--dtv-ui-scale': uiSettings.scale } },
+  return h('div', { className: 'dtv-layer', lang: uiSettings.locale, 'data-chrome': chromeMode, 'data-surface-open': surface !== null || assemblyOpen, style: { '--dtv-ui-scale': uiSettings.scale } },
+    assemblyOpen && h(AssemblyPanel, { sessionId, close: () => requestAssembly(false), registerBeforeLeave: registerAssemblyBeforeLeave, chromeMode }),
     panel,
     importFailure === null ? null : h(ImportFailureDialog, { message: importFailure, onDismiss: () => setImportFailure(null) }),
     rpAlert === null ? null : h(RpHighRiskDialog, { onDismiss: dismissRpAlert }),
@@ -1311,10 +1308,10 @@ function TavernShell({ useStore, usePanelInfo, useSessions, useWorkspaces, creat
             key: item.id,
             title: titleText,
             'data-available': item.available,
-            'data-active': surface === item.id,
+            'data-active': item.id === 'assembly' ? assemblyOpen : surface === item.id,
             'data-bound': item.binding === false ? undefined : status.bound,
             'data-show-binding': item.binding !== false && item.showBinding !== false,
-            'aria-current': surface === item.id ? 'page' : undefined,
+            'aria-current': (item.id === 'assembly' ? assemblyOpen : surface === item.id) ? 'page' : undefined,
             'aria-label': ariaText,
             onClick: () => open(item.id),
           },
@@ -1393,7 +1390,6 @@ export function apply(ctx, { conversationPhase }) {
     name: 'shell.overlay',
     id: `${PLUGIN_ID}-launcher`,
     order: 80,
-    store: ctx.slots.entries('root').find(entry => entry.store)?.store,
     inject: () => ({
       playClient,
       diagnostics,

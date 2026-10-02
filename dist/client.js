@@ -3564,8 +3564,8 @@ var labels = {
   text: ["\u5185\u5BB9", "Content"],
   role: ["\u6D88\u606F\u89D2\u8272", "Message role"],
   placement: ["\u653E\u7F6E\u7B56\u7565", "Placement"],
-  st: ["\u9075\u5FAA\u9884\u8BBE\u5360\u4F4D\u9879\u4E0E\u6DF1\u5EA6", "Preset placeholders and depth"],
-  stHelp: ["\u9884\u8BBE\u5360\u4F4D\u9879\uFF08ST marker\uFF09\u662F\u9884\u8BBE\u4E2D\u7684\u63D2\u69FD\uFF0C\u4F8B\u5982\u89D2\u8272\u63CF\u8FF0\u3001\u4E16\u754C\u4E66\u3001\u804A\u5929\u5386\u53F2\u3002\u88C5\u914D\u65F6\u5728\u8FD9\u4E9B\u4F4D\u7F6E\u653E\u5165\u76F8\u5E94\u5185\u5BB9\uFF1B\u5B83\u672C\u8EAB\u4E0D\u662F\u63D0\u793A\u8BCD\u6B63\u6587\u3002", "ST markers are preset placeholders, such as character description, world books and chat history. Assembly inserts the corresponding content there; the placeholder itself is not prompt text."],
+  st: ["\u9075\u5FAA\u9884\u8BBE\u63D2\u69FD\u4E0E\u6DF1\u5EA6", "Preset slots and depth"],
+  stHelp: ["\u9884\u8BBE\u63D2\u69FD\uFF08ST marker\uFF09\u662F\u9884\u8BBE\u5217\u8868\u4E2D\u7684\u72EC\u7ACB\u6761\u76EE\uFF0C\u4F8B\u5982\u89D2\u8272\u63CF\u8FF0\u3001\u4E16\u754C\u4E66\u3001\u804A\u5929\u5386\u53F2\u3002\u5B8F\u5219\u5199\u5728\u6B63\u6587\u5185\uFF0C\u5982 {{description}}\u3002\u4E24\u8005\u90FD\u53EF\u5F15\u7528\u5185\u5BB9\uFF0C\u4F46\u63D2\u69FD\u51B3\u5B9A\u5217\u8868\u4F4D\u7F6E\uFF0C\u5B8F\u5728\u6B63\u6587\u4F4D\u7F6E\u5C55\u5F00\u3002", "ST markers are standalone preset slots, such as character description, world books and chat history. Macros such as {{description}} expand inside text. Both reference content, but slots occupy list positions while macros expand at their authored text position."],
   previewDepth: ["\u5386\u53F2\u6DF1\u5EA6", "History depth"],
   listPosition: ["\u6309\u5217\u8868\u4F4D\u7F6E", "List position"],
   emptyRequest: ["\u88C5\u914D\u7ED3\u679C\u4E3A\u7A7A\u3002\u8BF7\u542F\u7528\u6216\u586B\u5199\u81F3\u5C11\u4E00\u6761\u5185\u5BB9\u3002", "The assembled request is empty. Enable or fill at least one item."],
@@ -3608,14 +3608,14 @@ async function request(path2 = "", method = "GET", body2) {
   return data;
 }
 var assemblyCss = `
-.dtv-assembly-screen{position:absolute;top:16px;bottom:16px;left:var(--dta-center-x,50%);transform:translateX(-50%);width:min(var(--dsh-composer-card-max-width,780px),calc(var(--dta-center-width,100%) - 32px));z-index:1;pointer-events:auto;display:flex;flex-direction:column;box-sizing:border-box;container-type:inline-size;background:var(--dsw-alias-bg-base,#fff);color:var(--dsw-alias-label-primary,#24252b);border:1px solid var(--dsw-alias-border-l1,#e8e8ec);border-radius:18px;box-shadow:0 18px 65px #0003;font:14px/1.55 system-ui;overflow:hidden}.dtv-assembly-screen *{box-sizing:border-box}
+.dtv-assembly-screen{position:absolute;top:var(--dta-content-top,84px);bottom:8px;left:var(--dta-content-left,8px);width:calc(var(--dta-center-width,100%) - 16px);z-index:1;pointer-events:auto;display:flex;flex-direction:column;box-sizing:border-box;container-type:inline-size;background:var(--dsw-alias-bg-base,#fff);color:var(--dsw-alias-label-primary,#24252b);border:1px solid var(--dsw-alias-border-l1,#e8e8ec);border-radius:18px;box-shadow:0 18px 65px #0003;font:14px/1.55 system-ui;overflow:hidden}.dtv-assembly-screen *{box-sizing:border-box}
 .dta-confirm-shade{position:absolute;inset:0;z-index:4;background:#0006;display:grid;place-items:center;padding:20px}.dta-confirm{background:var(--dsw-alias-bg-base,#fff);border:1px solid var(--dsw-alias-border-l1,#ddd);border-radius:14px;padding:24px;max-width:100%;width:360px;box-shadow:0 10px 40px #0004}.dta-confirm p{margin:0 0 20px}.dta-confirm .dta-toolbar{justify-content:flex-end;margin:0}
 .dta-head{display:flex;justify-content:space-between;align-items:start;padding:20px 28px;border-bottom:1px solid var(--dsw-alias-border-l1,#eee)}.dta-head{width:100%;max-width:calc(var(--dsh-composer-card-max-width,780px) + 56px);margin:auto}.dta-head h2{margin:0;font-size:22px}.dta-head p{margin:5px 0 0;opacity:.7}.dta-body{overflow:auto;padding:22px 28px 50px;flex:1}.dta-content{max-width:var(--dsh-composer-card-max-width,780px);margin:auto}.dta-toolbar{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px;align-items:center}
 .dtv-assembly-screen button,.dtv-assembly-screen select,.dtv-assembly-screen input:not([type=checkbox]),.dtv-assembly-screen textarea{font:inherit;color:inherit;background:var(--dsw-alias-button-secondary-fill,var(--dsw-alias-bg-base));border:1px solid var(--dsw-alias-border-l1,#dedfe5);border-radius:9px;padding:8px 12px;min-width:0}.dtv-assembly-screen select,.dtv-assembly-screen input:not([type=checkbox]){height:40px;line-height:22px;width:100%}.dtv-assembly-screen .dta-toolbar select{width:auto;max-width:100%}.dtv-assembly-screen button{cursor:pointer}.dtv-assembly-screen button:disabled{opacity:.45;cursor:default}.dtv-assembly-screen :focus-visible{outline:2px solid #4386dc;outline-offset:2px}.dtv-assembly-screen .primary{background:#347cd2;color:white;border-color:#347cd2}.dta-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin:16px 0}.dta-grid label{display:flex;flex-direction:column;gap:5px}.dta-notice{padding:12px 15px;border-radius:10px;background:var(--dsw-alias-bg-layer-2,var(--dsw-alias-bg-base));margin:12px 0;overflow-wrap:anywhere}.dta-notice[data-error=true]{color:#be4747}.dta-tabs{display:flex;gap:8px;flex-wrap:wrap;margin:24px 0 14px}.dta-tabs button[aria-pressed=true]{border-color:#4386dc;color:#4386dc}
 .dta-row{border:1px solid var(--dsw-alias-border-l1,#e9e9ed);border-left:5px solid var(--assembly-color);border-radius:14px;margin:10px 0;background:var(--dsw-alias-bg-base,#fff);overflow:hidden}.dta-row[data-dragover=true]{outline:2px solid #4386dc}.dta-summary{display:flex;align-items:center;gap:14px;padding:15px 17px;min-height:69px}.dta-summary input{width:20px;height:20px;accent-color:#2484ed}.dta-handle{cursor:grab;color:var(--dsw-alias-label-tertiary,#858993);font-size:22px;line-height:1}.dta-name{flex:1;font-size:17px;min-width:0;overflow-wrap:anywhere;cursor:pointer}.dta-summary-meta{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;flex:0 0 318px;margin:0;font-size:12px;line-height:1.5}.dta-summary-meta dt{color:var(--dsw-alias-label-tertiary,#858993);font-size:11px}.dta-summary-meta dd{margin:3px 0 0;color:var(--dsw-alias-label-secondary);overflow-wrap:anywhere}.dta-detail{padding:4px 20px 20px;border-top:1px solid var(--dsw-alias-border-l1,#eee)}.dta-properties>*,.dta-summary-meta>div{min-width:0}.dta-properties>*+*,.dta-summary-meta>div+div{border-left:1px solid var(--dsw-alias-state-business-primary,#4d6bfe);padding-left:14px}.dta-properties label,.dta-fields label{display:flex;flex-direction:column;gap:8px}.dta-fields{display:flex;flex-direction:column;gap:16px;margin:16px 0}.dta-fields .dta-field-name{max-width:320px}.dta-preview-depth{margin:12px 0}.dta-properties{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px;margin:16px 0}.dta-detail textarea{width:100%;min-height:130px;resize:vertical}.dtv-assembly-screen pre{white-space:pre-wrap;overflow-wrap:anywhere;font:13px/1.6 ui-monospace,monospace;max-height:360px;overflow:auto}.dta-child{margin:10px 0;padding:10px 14px;border-left:3px solid #ae73cf;background:var(--dsw-alias-bg-layer-2,var(--dsw-alias-bg-base));border-radius:6px}.dtv-assembly-screen small{display:block;opacity:.7;overflow-wrap:anywhere}
 .dta-row[data-dragging=true]{height:4px;min-height:4px;margin:5px 10px;border:0;border-radius:999px;background:var(--dsw-alias-state-business-primary);box-shadow:0 0 0 1px color-mix(in srgb,var(--dsw-alias-state-business-primary) 25%,transparent)}.dta-row[data-dragging=true]>*{opacity:0}.dta-drop-placeholder{min-height:42px;border:2px dashed var(--dsw-alias-state-business-primary);border-radius:8px;background:color-mix(in srgb,var(--dsw-alias-state-business-primary) 7%,transparent);display:flex;align-items:center;justify-content:center;color:var(--dsw-alias-state-business-primary);pointer-events:none}.dtv-assembly-screen .dta-handle{touch-action:none;user-select:none;background:transparent;border:0;padding:2px}.dta-origin{font-size:11px;color:var(--dsw-alias-label-secondary);margin-top:2px}.dta-legend{display:flex;gap:12px;flex-wrap:wrap;margin:12px 0}.dta-legend span{border-left:4px solid var(--assembly-color);padding-left:6px;font-size:12px}
 @container(max-width:600px){.dta-summary-meta{display:none}.dta-grid,.dta-properties{grid-template-columns:1fr}.dta-properties>*+*{border-left:0;border-top:1px solid var(--dsw-alias-state-business-primary,#4d6bfe);padding:12px 0 0}.dta-head,.dta-body{padding:15px}.dta-summary{gap:8px;padding:12px 10px}.dta-fields .dta-field-name{max-width:100%}}
-@media(max-width:700px){.dtv-assembly-screen{top:8px;bottom:8px;width:calc(var(--dta-center-width,100%) - 16px);border-radius:12px}.dta-head,.dta-body{padding:15px}.dta-head{padding-right:64px}.dta-grid,.dta-properties{grid-template-columns:1fr}.dta-summary{gap:8px;padding:12px 10px}.dta-name{font-size:15px}.dta-summary-meta{display:none}.dta-properties>*+*{border-left:0;border-top:1px solid var(--dsw-alias-state-business-primary,#4d6bfe);padding:12px 0 0}}
+@media(max-width:700px){.dtv-assembly-screen{border-radius:12px}.dta-head,.dta-body{padding:15px}.dta-head{padding-right:64px}.dta-grid,.dta-properties{grid-template-columns:1fr}.dta-summary{gap:8px;padding:12px 10px}.dta-name{font-size:15px}.dta-summary-meta{display:none}.dta-properties>*+*{border-left:0;border-top:1px solid var(--dsw-alias-state-business-primary,#4d6bfe);padding:12px 0 0}}
 `;
 function AssemblyPanel(props) {
   return (0, import_react.createElement)(AssemblyPanelContent, { ...props, key: props.sessionId ?? "no-session" });
@@ -3651,13 +3651,17 @@ function AssemblyPanelContent({ sessionId, close: close2, registerBeforeLeave, c
     const measure = () => {
       const columns = getComputedStyle(frame).gridTemplateColumns.split(" ").map(parseFloat);
       if (columns.length !== 3 || columns.some((n) => !Number.isFinite(n))) return;
-      panel.style.setProperty("--dta-center-x", `${columns[0] + columns[1] / 2}px`);
+      panel.style.setProperty("--dta-content-left", `${columns[0] + 8}px`);
+      const header = [...frame.querySelectorAll("header")].find((el) => !panel.contains(el) && el.querySelector("[role=tablist]"));
+      const top = header ? header.getBoundingClientRect().bottom - frame.getBoundingClientRect().top : 76;
+      panel.style.setProperty("--dta-content-top", `${top + 8}px`);
       panel.style.setProperty("--dta-center-width", `${columns[1]}px`);
     };
     measure();
     const resize = new ResizeObserver(measure);
     resize.observe(frame);
     for (const child of frame.children) resize.observe(child);
+    for (const header of frame.querySelectorAll("header")) if (!panel.contains(header)) resize.observe(header);
     const changes = new MutationObserver(measure);
     changes.observe(frame, { attributes: true, attributeFilter: ["style", "data-sidebar-collapsed", "data-rightbar-collapsed"] });
     return () => {
@@ -33269,7 +33273,7 @@ function createSurfaceNavigation(commit) {
     }
   };
 }
-function TavernShell({ useStore, usePanelInfo, useSessions, useWorkspaces, createCleanSession, createConfiguredPlaythrough, playClient, playSlots, chromeService, diagnostics }) {
+function TavernShell({ useSessions, useWorkspaces, createCleanSession, createConfiguredPlaythrough, playClient, playSlots, chromeService, diagnostics }) {
   const [menuOpen, setMenuOpen] = (0, import_react25.useState)(false);
   const [surface, setSurface] = (0, import_react25.useState)(null);
   const surfaceNavigation = (0, import_react25.useRef)(null);
@@ -33279,15 +33283,11 @@ function TavernShell({ useStore, usePanelInfo, useSessions, useWorkspaces, creat
   });
   const requestSurface = (0, import_react25.useCallback)((next) => surfaceNavigation.current.request(next, surface), [surface]);
   const registerBeforeLeave = surfaceNavigation.current.register;
-  const layoutInfo = useStore?.((state) => state.layoutInfo);
-  const activePanelId = usePanelInfo?.((state) => state.activePanelId);
-  const navigation = { sidebarOpen: layoutInfo ? layoutInfo.viewportWidth < 1024 ? layoutInfo.narrowExpanded : layoutInfo.sidebar > 0 : false, rightbarOpen: layoutInfo?.rightbarShown === true, activePanelId };
-  const previousNavigation = (0, import_react25.useRef)(navigation);
-  (0, import_react25.useEffect)(() => {
-    const previous = previousNavigation.current;
-    previousNavigation.current = navigation;
-    if (surface === "assembly" && (!previous.sidebarOpen && navigation.sidebarOpen || !previous.rightbarOpen && navigation.rightbarOpen || previous.activePanelId !== activePanelId)) requestSurface(null);
-  }, [navigation.sidebarOpen, navigation.rightbarOpen, activePanelId, surface, requestSurface]);
+  const [assemblyOpen, setAssemblyOpen] = (0, import_react25.useState)(false);
+  const assemblyNavigation = (0, import_react25.useRef)(null);
+  if (assemblyNavigation.current === null) assemblyNavigation.current = createSurfaceNavigation(setAssemblyOpen);
+  const requestAssembly = (0, import_react25.useCallback)((next) => assemblyNavigation.current.request(next, assemblyOpen), [assemblyOpen]);
+  const registerAssemblyBeforeLeave = assemblyNavigation.current.register;
   const [diagnosticPlaythroughId, setDiagnosticPlaythroughId] = (0, import_react25.useState)(null);
   const diagnosticSnapshot = (0, import_react25.useSyncExternalStore)(diagnostics.subscribe, diagnostics.getSnapshot);
   (0, import_react25.useEffect)(() => diagnostics.subscribeOpen((playthroughId) => {
@@ -33695,10 +33695,11 @@ function TavernShell({ useStore, usePanelInfo, useSessions, useWorkspaces, creat
       else if (rpAlert !== null) dismissRpAlert();
       else if (menuOpen) setMenuOpen(false);
       else if (surface !== null) requestSurface(null);
+      else if (assemblyOpen) requestAssembly(false);
     };
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
-  }, [importFailure, menuOpen, rpAlert, surface, requestSurface]);
+  }, [importFailure, menuOpen, rpAlert, surface, requestSurface, assemblyOpen, requestAssembly]);
   const startDrag = (event) => {
     if (event.button !== 0) return;
     event.currentTarget.setPointerCapture?.(event.pointerId);
@@ -33752,15 +33753,18 @@ function TavernShell({ useStore, usePanelInfo, useSessions, useWorkspaces, creat
     if (requestSurface(null)) return chromeController.current?.switchMode();
   };
   const open2 = (id) => {
+    if (id === "assembly") {
+      requestAssembly(true);
+      setMenuOpen(false);
+      return;
+    }
     if (!requestSurface(id)) return;
     if (id === "diagnostics") setDiagnosticPlaythroughId(null);
     setMenuOpen(false);
     window.dispatchEvent(new Event(CLIENT_REFRESH_EVENT));
   };
   let panel = null;
-  if (surface === "assembly") {
-    panel = h20(AssemblyPanel, { sessionId, close: close2, registerBeforeLeave, chromeMode });
-  } else if (surface === "preset") {
+  if (surface === "preset") {
     panel = h20("div", { className: "dtv-panel" }, h20(PresetSidebar, {
       closePanel: close2,
       openPanel: () => {
@@ -33831,7 +33835,8 @@ function TavernShell({ useStore, usePanelInfo, useSessions, useWorkspaces, creat
   const workspaceAdmissionOpen = chromeMode === "play" && rpWorkspaceLoadState !== "idle" && rpWorkspaceLoadState !== "loading" && rpWorkspaceSetting?.ready !== true;
   return h20(
     "div",
-    { className: "dtv-layer", lang: uiSettings.locale, "data-chrome": chromeMode, "data-surface-open": surface !== null, style: { "--dtv-ui-scale": uiSettings.scale } },
+    { className: "dtv-layer", lang: uiSettings.locale, "data-chrome": chromeMode, "data-surface-open": surface !== null || assemblyOpen, style: { "--dtv-ui-scale": uiSettings.scale } },
+    assemblyOpen && h20(AssemblyPanel, { sessionId, close: () => requestAssembly(false), registerBeforeLeave: registerAssemblyBeforeLeave, chromeMode }),
     panel,
     importFailure === null ? null : h20(ImportFailureDialog, { message: importFailure, onDismiss: () => setImportFailure(null) }),
     rpAlert === null ? null : h20(RpHighRiskDialog, { onDismiss: dismissRpAlert }),
@@ -33912,10 +33917,10 @@ function TavernShell({ useStore, usePanelInfo, useSessions, useWorkspaces, creat
               key: item.id,
               title: titleText,
               "data-available": item.available,
-              "data-active": surface === item.id,
+              "data-active": item.id === "assembly" ? assemblyOpen : surface === item.id,
               "data-bound": item.binding === false ? void 0 : status.bound,
               "data-show-binding": item.binding !== false && item.showBinding !== false,
-              "aria-current": surface === item.id ? "page" : void 0,
+              "aria-current": (item.id === "assembly" ? assemblyOpen : surface === item.id) ? "page" : void 0,
               "aria-label": ariaText,
               onClick: () => open2(item.id)
             },
@@ -33995,7 +34000,6 @@ function apply3(ctx, { conversationPhase: conversationPhase2 }) {
     name: "shell.overlay",
     id: `${PLUGIN_ID}-launcher`,
     order: 80,
-    store: ctx.slots.entries("root").find((entry) => entry.store)?.store,
     inject: () => ({
       playClient,
       diagnostics,

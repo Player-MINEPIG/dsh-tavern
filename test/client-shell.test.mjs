@@ -186,7 +186,7 @@ test('only the client composition root owns the Tavern shell overlay', () => {
   assert.match(root, /playClient,/)
   assert.match(root, /playClient\.getMessages\(targetSessionId\)/)
   assert.match(root, /CharacterPanel, \{[\s\S]*sessionId,[\s\S]*sessionBlank,[\s\S]*hasConversationHistory,[\s\S]*detachPlaythroughSession:/)
-  assert.match(root, /'data-active': surface === item\.id/)
+  assert.match(root, /'data-active': item\.id === 'assembly' \? assemblyOpen : surface === item\.id/)
   assert.match(root, /'data-bound': item\.binding === false \? undefined : status\.bound/)
   assert.match(root, /setActiveSnapshot\(null\)[\s\S]*refreshStatus\(\)/)
   assert.match(root, /event\.key !== 'Escape'/)

@@ -42,6 +42,16 @@ flowchart TD
 
 Rebuild-each-request rules (wire value `request`) reevaluate each time. Retained-snapshot rules (wire value `snapshot`) append when an individual rule node changes and reuse prior snapshots at their original anchors. Every custom rule and world-book entry has a separate identity; depth rules obey the same retention semantics. Disabling a module or switching to request-only excludes its old snapshots from future requests, while preserving records. If history compaction removes an anchor, the corresponding snapshot is omitted with a diagnostic.
 
+For example, one memory entry changes from “Location: inn” to “Location: dock”:
+
+| Request | Rebuild each request | Retain snapshots |
+| --- | --- | --- |
+| 1 | Inn | Inn |
+| 2, content changes | Dock | Inn, dock |
+| 3, unchanged | Dock | Inn, dock (no new copy) |
+
+Snapshots preserve original text; they do not rewrite older versions into the past tense. A memory source should include timestamps or current/historical status so the model does not mistake an old location for the current one.
+
 Every result is stored as a log-only `request/assembly` DSH event. It does not enter `deriveMessages()`; recording evidence and contributing future context are distinct. Tavern Trace stores only the event reference and hash, resolving bodies from DSH on demand. Random macros are frozen in that event. Complete request snapshots increase log size with request history; extra assembled bodies remain bounded by `maxProfileBytes`.
 
 After removing Tavern, native user messages, replies and tool results remain usable. Request-only content and retained Tavern snapshots stop being injected, but recorded bodies remain in the log. The event's `ignorable:true` permits the stock core to retain it without projecting it. Removing only the core extension while retaining an applied layout fails explicitly; disable the strategy first.
@@ -147,7 +157,7 @@ Host checks cover three requests, freezing, durable snapshots, Trace resolution 
 
 ### Custom content, read-only previews and roles
 
-The settings page is centered within the conversation column, leaving the surrounding interface accessible. Opening a sidebar or navigating to another panel closes it, after confirmation when edits are unsaved. Only generic rules are draggable; configuration and actual-request previews are read-only and show history depth, or list placement when none is specified. ST markers are labeled preset placeholders for inserting character, world-book or history content.
+The strategy page occupies the conversation body below the session header and tabs. It stays mounted independently of resource/settings sidebars, which appear above it; users can edit both without discarding either draft. Closing the strategy itself asks for confirmation if it has unsaved changes. Only generic rules are draggable; configuration and actual-request previews are read-only and show history depth, or list placement when none is specified. ST markers are labeled preset slots: standalone ordered items that insert character, world-book or history content. They differ from text macros such as `{{description}}`, which expand inside an authored message.
 
 Users can author custom text and supported macros in the frontend without a plugin. Dynamic MVU or memory retrieval needs a plugin-registered resolver; manually entered text cannot impersonate another plugin's provenance. Registered third-party sources receive rule name and text; their resolver determines how those fields are used.
 
