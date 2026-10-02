@@ -21,7 +21,10 @@ function sectionSnapshot(section, variables, known, index) {
 }
 
 export class AssemblyRecorder {
-  constructor(store) { this.store = store; this.pending = new Map(); this.active = new Map() }
+  constructor(store, { requiresRequestAssembly = () => false } = {}) {
+    this.store = store; this.requiresRequestAssembly = requiresRequestAssembly
+    this.pending = new Map(); this.active = new Map()
+  }
   track(record) {
     this.active.delete(record.sessionId)
     this.active.set(record.sessionId, { id: record.id, turn: record.turn, step: record.step })
@@ -73,6 +76,12 @@ export class AssemblyRecorder {
   request(options, session) {
     const record = this.pending.get(options.sessionId)
     if (!record) return null
+    const requestEvent = session?.snapshotEvents?.().findLast(event => event.type === 'request/assembly')
+    // Title generation and other side calls may share the session id. They must
+    // not consume the pending AgentLoop capture or replace its frozen evidence.
+    const currentAssembly = requestEvent?.data.turn === record.turn && requestEvent.data.step === record.step
+    if (this.requiresRequestAssembly() && !currentAssembly) return null
+    if (currentAssembly && digest(requestEvent.data.messages) !== digest(options.messages)) return null
     const systems = typeof options.system === 'string' ? [options.system]
       : (options.messages ?? []).filter(m => m.role === 'system').map(messageText)
     const indices = systems.flatMap((text, index) => digest(text) === record.assemblyHash ? [index] : [])
@@ -84,6 +93,9 @@ export class AssemblyRecorder {
       assemblyVerified: verified, systemMessageIndex: verified ? indices[0] : null,
       provider: options.provider, model: options.model, toolNames: (options.tools ?? []).map(t => t.name) }
     Object.assign(record, captureBodyReferences(session, options, record.sections, record.contexts, verified ? indices[0] : null))
+    if (requestEvent && digest(requestEvent.data.messages) === digest(options.messages)) {
+      record.requestAssemblyRef = { seq: requestEvent.seq, hash: digest(requestEvent.data), version: 1 }
+    }
     record.delivery.historyVerified = verified && Boolean(record.systemMessageRefs?.[indices[0]])
     record.status = 'request-observed'
     this.store.put(record)

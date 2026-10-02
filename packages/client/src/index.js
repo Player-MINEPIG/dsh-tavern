@@ -1,4 +1,5 @@
 import { presentationCss } from './presentation-styles.js'
+import { AssemblyPanel } from '../../request-assembler/client.js'
 import { BubbleEditor } from './bubble-editor.js'
 import { tavernFetch as fetch } from './api-fetch.js'
 import {
@@ -72,7 +73,7 @@ const css = `
 .dtv-layer{position:absolute;inset:0;z-index:6;pointer-events:none;font-family:Inter,var(--dsw-font-family),sans-serif;color:var(--dsw-alias-label-primary)}
 .dtv-launcher{position:absolute;z-index:2;width:44px;height:44px;pointer-events:auto;overflow:hidden;border:0 solid transparent;border-radius:22px;background:transparent;box-shadow:none;transition:width .22s ease,height .22s ease,border-radius .22s ease,background-color .18s ease,box-shadow .18s ease;display:block}
 .dtv-launcher[data-open=true] .dtv-menu{overflow-y:auto}
-.dtv-launcher[data-open=true]{width:300px;height:376px;border-width:1px;border-color:var(--dsw-alias-border-l2);border-radius:18px;background:var(--dsw-alias-bg-base);box-shadow:var(--ds-shadow-3,0 12px 34px rgba(0,0,0,.24))}
+.dtv-launcher[data-open=true]{width:300px;height:416px;max-height:calc((100vh - 16px)/var(--dtv-ui-scale,1));border-width:1px;border-color:var(--dsw-alias-border-l2);border-radius:18px;background:var(--dsw-alias-bg-base);box-shadow:var(--ds-shadow-3,0 12px 34px rgba(0,0,0,.24))}
 .dtv-ball-row{position:absolute;top:0;left:0;right:0;height:52px;display:flex;align-items:flex-start;pointer-events:none}.dtv-launcher[data-side=left] .dtv-ball-row{justify-content:flex-end}.dtv-launcher[data-vertical=up] .dtv-ball-row{top:auto;bottom:0;align-items:flex-end}
 @property --dtv-orb-a{syntax:"<color>";inherits:true;initial-value:#f7fbff}@property --dtv-orb-b{syntax:"<color>";inherits:true;initial-value:#18569d}@property --dtv-orb-ring{syntax:"<color>";inherits:true;initial-value:#174e8a}
 .dtv-ball{--dtv-orb-a:#f7fbff;--dtv-orb-b:#18569d;--dtv-orb-ring:#174e8a;pointer-events:auto;touch-action:none;user-select:none;position:relative;isolation:isolate;overflow:hidden;width:44px;height:44px;flex:none;border:2px solid #fff;border-radius:50%;background:transparent;box-shadow:0 0 0 2px var(--dtv-orb-ring),0 6px 20px rgba(0,0,0,.34),inset 0 0 0 1px rgba(255,255,255,.28);color:#fff;font-size:13px;letter-spacing:-.5px;font-weight:850;text-shadow:0 1px 2px #000;cursor:grab;transition:filter .15s ease,transform .18s ease,box-shadow .18s ease,--dtv-orb-a .32s ease,--dtv-orb-b .32s ease,--dtv-orb-ring .32s ease}.dtv-ball-face{position:absolute;inset:0;border-radius:inherit;background:conic-gradient(from 225deg,var(--dtv-orb-a) 0 50%,var(--dtv-orb-b) 50% 100%);z-index:-1}.dtv-ball-face[data-animate=true]{animation:dtv-orb-switch .48s cubic-bezier(.3,.7,.2,1)}.dtv-ball-label{position:relative;z-index:1}.dtv-ball:hover{filter:brightness(1.1);box-shadow:0 0 0 2px #2675c9,0 8px 24px rgba(0,0,0,.4),inset 0 0 0 1px rgba(255,255,255,.35)}.dtv-layer[data-chrome=play] .dtv-ball{--dtv-orb-a:#090909;--dtv-orb-b:#b31319;--dtv-orb-ring:#a50f16}.dtv-layer[data-chrome=play] .dtv-ball:hover{box-shadow:0 0 0 2px #d5222b,0 8px 24px rgba(0,0,0,.4),inset 0 0 0 1px rgba(255,255,255,.35)}.dtv-ball:active{cursor:grabbing}.dtv-launcher[data-open=true] .dtv-ball{transform:scale(.82) rotate(-8deg)}
@@ -1139,7 +1140,9 @@ function TavernShell({ useSessions, useWorkspaces, createCleanSession, createCon
   }
 
   let panel = null
-  if (surface === 'preset') {
+  if (surface === 'assembly') {
+    panel = h(AssemblyPanel, { sessionId, close, registerBeforeLeave })
+  } else if (surface === 'preset') {
     panel = h('div', { className: 'dtv-panel' }, h(PresetSidebar, {
       closePanel: close,
       openPanel: () => {},

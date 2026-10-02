@@ -1,4 +1,6 @@
 export default Object.freeze({
+  'nav.assembly': 'Prompt assembly',
+  'nav.assembly.empty': 'Arrangement and request preview',
   "appearance.createStyle": "Create style",
   "appearance.newStyle": "New style",
   "appearance.fontSize": "Body font size",

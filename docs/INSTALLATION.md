@@ -2,6 +2,10 @@
 
 [English](INSTALLATION_en.md)
 
+下文 `v2.5.1` 命令用于已发布稳定版。测试尚未发布的请求装配器时，使用提供的本地 `codex/prompt-assembler` 候选源码，并按[候选构建与核心扩展步骤](REQUEST_ASSEMBLY.md#核心扩展和安装边界)安装。
+
+装配规则的 CRUD、应用、预览、实际请求引用与所需核心扩展见[请求装配器](REQUEST_ASSEMBLY.md)。
+
 Tavern **2.5.1** 支持 DSH **0.2.0-rc.2**，要求 Node `^22.19.0 || >=24.0.0`。前后端以同一个插件嵌入 DSH Web／桌面端，不提供额外独立 Web UI。较早版本请阅读对应 tag 的文档。
 
 保留备份；旧外部引用按[坐标迁移指南](DSH_0.1.7_MIGRATION.md)处理，已完成迁移的 V4 引用无需再次转换，不提供回退工具。安装前将目标 DSH 放在 `PATH` 并初始化所需 profile。

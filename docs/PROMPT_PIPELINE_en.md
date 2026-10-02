@@ -2,6 +2,8 @@
 
 [中文](PROMPT_PIPELINE.md)
 
+The optional [request assembler](REQUEST_ASSEMBLY_en.md) takes ownership of message placement when a layout is applied. The original loader described below remains the compatibility path for sessions without an applied layout. Both paths retain DSH authority over durable history and provider serialization.
+
 This page explains how Tavern resources enter a model request in SillyTavern,
 TauriTavern, and Tavern 2.5.1, and which mappings are unsupported.
 DSH turn/step, Inbox, Session, system-assembly, and request/header order are documented

@@ -2,6 +2,10 @@
 
 [中文](INSTALLATION.md)
 
+The commands using `v2.5.1` below install the stable release. To test the unpublished request assembler, use the supplied local `codex/prompt-assembler` candidate checkout and the [candidate build and core-extension procedure](REQUEST_ASSEMBLY_en.md#core-extension-and-installation-boundary).
+
+Request layout CRUD, application, preview, recorded request references and the required core extension are documented in [Request assembly](REQUEST_ASSEMBLY_en.md).
+
 Tavern **2.5.1** supports DSH **0.2.0-rc.2**, requiring Node `^22.19.0 || >=24.0.0`. Frontend and backend ship in one plugin embedded in DSH Web/Desktop. No additional standalone Web UI is provided. For earlier versions, use the corresponding tag's documentation.
 
 Retain backups and follow the [coordinate migration guide](DSH_0.1.7_MIGRATION_en.md) for older external references. Already migrated V4 references need no further conversion; no rollback tool is provided. Put the target DSH on `PATH` and initialize the intended profile before installation.

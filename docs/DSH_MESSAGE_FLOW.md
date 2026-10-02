@@ -2,6 +2,8 @@
 
 [English](DSH_MESSAGE_FLOW_en.md)
 
+可选的[请求装配器](REQUEST_ASSEMBLY.md)在应用装配预设后接管消息排列。下文原有 loader 路径继续用于未应用装配预设的会话；两条路径都保留 DSH 对持久历史和 Provider 序列化的所有权。
+
 本文描述 Tavern 2.5.1 在 DSH `0.2.0-rc.2` 上的当前消息合同：DSH
 原生流程、DT 自身流程、DT 的介入点，以及一次完整模型 step。V4 的系统提示词以
 `system/message` 进入有效消息 surface，`request/header` 保留 config/tools；Trace schema 4

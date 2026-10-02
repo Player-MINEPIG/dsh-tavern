@@ -69,6 +69,9 @@ import {
   rpModeConstants,
 } from './rp-mode.js'
 import { prepareStorageDir } from './storage-location.js'
+import { AssemblyPresetStore } from '../../request-assembler/store.js'
+import { RequestAssembler } from '../../request-assembler/runtime.js'
+import { createAssemblyApi, isAssemblyApiPath } from '../../request-assembler/server.js'
 
 export const name = PLUGIN_ID
 export const inject = [
@@ -357,6 +360,16 @@ export function apply(ctx, config = {}) {
     maxQueuedCharacters: config.pendingInput?.maxQueuedCharacters,
     maxQueuedMessages: config.pendingInput?.maxQueuedMessages,
   })
+  const assemblyPresets = new AssemblyPresetStore(storageDir)
+  const requestAssembler = new RequestAssembler({ ctx, store: assemblyPresets, resources: runtime })
+  store.assemblyPresets = assemblyPresets
+  store.requestAssembler = requestAssembler
+  runtime.requestAssemblyEnabled = sessionId => {
+    if (!requestAssembler.selected(sessionId)) return false
+    requestAssembler.requireAvailable()
+    return true
+  }
+  ctx.on('agent/assemble-request', (payload, next) => requestAssembler.execute(payload, next))
   runtime.registerActivationContextProvider(agent => pendingInput.activationContext(agent))
   const assemblyStore = new AssemblyStore(storageDir, config.traceAssemblies)
   const traceStore = new TavernTraceStore(storageDir, config.trace, assemblyStore)
@@ -364,7 +377,7 @@ export function apply(ctx, config = {}) {
     recordFailure('trace.record', { code: 'TRACE_STORAGE_OVERSIZED' })
   }
   const traceRecorder = new TavernTraceRecorder(traceStore)
-  const assemblyRecorder = new AssemblyRecorder(assemblyStore)
+  const assemblyRecorder = new AssemblyRecorder(assemblyStore, { requiresRequestAssembly: () => requestAssembler.available() })
   runtime.registerCharacterAdapter(createCharacterAdapter(characterStore))
   runtime.registerUserAdapter(createUserAdapter(userStore))
   runtime.registerWorldBookAdapter(createWorldBookAdapter(worldBookStore, config.worldBook))
@@ -478,6 +491,8 @@ export function apply(ctx, config = {}) {
   })
 
   ctx.on('agent/created', ({ agent }) => {
+    const parentId = agent?.session?.header?.parentSession
+    if (parentId) assemblyPresets.copySelection(parentId, agent.id)
     selections.ensureAgent(agent)
     pendingInput.ensureSession(agent?.session)
     // DSH awaits this serial lifecycle before exposing the Agent. A failed
@@ -494,7 +509,9 @@ export function apply(ctx, config = {}) {
     } catch (error) {
       recordFailure('rp.policy', error, { sessionId: payload.agent?.id })
     }
-    return decision
+    return requestAssembler.available() && requestAssembler.startsSeries(payload.agent)
+      ? { ...decision, startsRequestSeries: true }
+      : decision
   })
 
   registerRpCommands(ctx, rpMode)
@@ -579,6 +596,7 @@ export function apply(ctx, config = {}) {
   })
 
   const registerHttpApi = webCtx => {
+    const assemblyApi = createAssemblyApi({ store: assemblyPresets, runtime: requestAssembler, agents: () => ctx.get('agents'), sessions: () => ctx.get('sessions'), inspect: id => ctx.get('sessionController').inspect(id), notify: notifyChange })
     const promptTraceApi = createPromptTraceApi({ assemblies: assemblyStore, legacyStore: traceStore,
       readBodies: createAssemblyBodyReader(ctx.get('sessionController')) })
     const presetApi = createPresetApiHandler(
@@ -672,7 +690,9 @@ export function apply(ctx, config = {}) {
       },
     })
     const api = secureTavernApi(
-      (req, res) => new URL(req.url, 'http://localhost').pathname.startsWith(`${API_V3}/`)
+      (req, res) => isAssemblyApiPath(req.url)
+        ? assemblyApi(req, res)
+        : new URL(req.url, 'http://localhost').pathname.startsWith(`${API_V3}/`)
         ? promptTraceApi(req, res)
         : isPlayApiPath(req.url)
         ? playApi(req, res)

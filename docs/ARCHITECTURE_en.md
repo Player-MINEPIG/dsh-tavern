@@ -2,6 +2,8 @@
 
 [中文](ARCHITECTURE.md)
 
+The optional [request assembler](REQUEST_ASSEMBLY_en.md) takes ownership of message placement when a layout is applied. The original loader described below remains the compatibility path for sessions without an applied layout. Both paths retain DSH authority over durable history and provider serialization.
+
 For DSH breaking-update reviews, see the [native dependency diagram and coupling matrix](assets/dsh-dependencies/README_en.md), with interactive HTML, repository-relative source links, and upgrade check entry points.
 
 The current contract targets this repository's source (version in [package.json](../package.json)) and DSH `0.2.0-rc.2`.

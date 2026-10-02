@@ -36,6 +36,7 @@ test('client manifest injects every DSH 0.1.2 contract owner it consumes', () =>
 
 test('one Tavern launcher exposes stable resource surfaces', () => {
   assert.deepEqual(TAVERN_MENU_ITEMS.map(item => item.id), [
+    'assembly',
     'preset',
     'character',
     'world-info',
@@ -59,7 +60,7 @@ test('floating launcher clamps its drag anchor and expands toward available spac
     side: 'left',
     vertical: 'up',
     left: 492,
-    top: 216,
+    top: 176,
     anchor: { x: 748, y: 548 },
   })
   assert.deepEqual(clampLauncherAnchor({ x: 748, y: 548 }, { width: 800, height: 600 }, 1.5), { x: 726, y: 526 })
@@ -67,7 +68,7 @@ test('floating launcher clamps its drag anchor and expands toward available spac
     side: 'left',
     vertical: 'up',
     left: 342,
-    top: 28,
+    top: 8,
     anchor: { x: 726, y: 526 },
   })
 })

@@ -229,7 +229,7 @@ export class TavernProfileLoader {
       user: userResult.user?.name ?? baseContext.user ?? 'User',
       character: characterMacroName(characterResult.character, baseContext.character),
     }
-    const compiled = compileTavernProfile({
+    const assemblyInput = {
       preset,
       character: characterResult.character,
       user: userResult.user,
@@ -240,7 +240,10 @@ export class TavernProfileLoader {
       loreEntries: Array.isArray(worldBookResult.loreEntries) ? worldBookResult.loreEntries : [],
       context: { ...baseContext, ...macroContext },
       maxProfileBytes: this.maxProfileBytes,
-    })
+    }
+    const compiled = options.resolveOnly || this.requestAssemblyEnabled?.(shared.sessionId)
+      ? { systemText: '', sections: [], runtimeContexts: [], activeLoreEntries: assemblyInput.loreEntries.map(e => e.id), diagnostics: [], callConfig: preset ? projectPresetCallConfig(preset) : {}, systemPromptMode: 'append' }
+      : compileTavernProfile(assemblyInput)
     diagnostics.push(...compiled.diagnostics)
 
     const resources = {
@@ -285,6 +288,7 @@ export class TavernProfileLoader {
 
     return {
       ...compiled,
+      assemblyInput,
       macroContext,
       diagnostics,
       resources,

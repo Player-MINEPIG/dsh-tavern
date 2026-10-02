@@ -3,6 +3,8 @@
 合同版本：Tavern **2.5.1**，目标 DSH **0.2.0-rc.2**。
 [English](PROMPT_API_V3_en.md) · [API 总览与范围核对](API.md#api-scope) · [开发验证](TESTING.md)
 
+装配规则的 CRUD、应用、预览、实际请求引用与所需核心扩展见[请求装配器](REQUEST_ASSEMBLY.md)。
+
 ## 定位和兼容
 
 v3 提供逐次装配记录与来源追踪。Tavern Trace 使用同一组 HTTP 接口；第三方也可以通过

@@ -135,6 +135,13 @@ export function createAssemblyBodyReader(sessionController) {
         || (inspection.events?.at(-1)?.seq ?? -1) < ref.logCutSeq) error = 'cut-unavailable'
     }
     const events = new Map((inspection?.events ?? []).map(event => [event.seq, event]))
+    if (record.requestAssemblyRef) {
+      const event = events.get(record.requestAssemblyRef.seq)
+      if (!error && event?.type === 'request/assembly' && digest(event.data) === record.requestAssemblyRef.hash) {
+        record.requestAssembly = structuredClone(event.data)
+        record.requestContentStatus = 'available'
+      } else record.requestContentStatus = 'reference-unavailable'
+    }
     const cache = new Map()
     let available = 0
     let missing = 0
@@ -148,7 +155,7 @@ export function createAssemblyBodyReader(sessionController) {
     if (record.systemMessageRefs?.length) {
       const systems = record.systemMessageRefs.map(reference => error ? { error } : readReference(reference, ref, events, cache))
       if (systems.every(result => !result.error)) record.systemMessages = systems.map(result => result.text)
-      else record.requestContentStatus = 'reference-unavailable'
+      else if (!record.requestAssembly) record.requestContentStatus = 'reference-unavailable'
     }
     if (error) record.referenceError = error
     if (record.contentStatus !== 'assembly-unavailable' && record.contentStatus !== 'omitted-size-limit') {

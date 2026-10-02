@@ -2,6 +2,8 @@
 
 [中文](API.md) · [v3 detailed contract](PROMPT_API_V3_en.md) · [Frontend integration](FRONTEND_INTEGRATION_en.md)
 
+Request layout CRUD, application, preview, recorded request references and the required core extension are documented in [Request assembly](REQUEST_ASSEMBLY_en.md).
+
 Contract: Tavern 2.5.1, supporting only DSH `0.2.0-rc.2`.
 Root: `/pmp-dsh-tavern/api`. API versions and DSH log format V4 are independent.
 

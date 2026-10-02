@@ -3,6 +3,8 @@
 Contract version: Tavern **2.5.1**, targeting DSH **0.2.0-rc.2**.
 [中文](PROMPT_API_V3.md) · [API index and scope audit](API_en.md#api-scope) · [Verification](TESTING_en.md)
 
+Request layout CRUD, application, preview, recorded request references and the required core extension are documented in [Request assembly](REQUEST_ASSEMBLY_en.md).
+
 ## Purpose and compatibility
 
 v3 exposes per-request assembly records and provenance. Tavern Trace uses the same HTTP

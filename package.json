@@ -59,7 +59,9 @@
     "docs/TESTING_en.md",
     "docs/examples",
     "docs/CONVERSATION_PRESENTATION.md",
-    "docs/CONVERSATION_PRESENTATION_en.md"
+    "docs/CONVERSATION_PRESENTATION_en.md",
+    "docs/REQUEST_ASSEMBLY.md",
+    "docs/REQUEST_ASSEMBLY_en.md"
   ],
   "dsh": {
     "bundle": {

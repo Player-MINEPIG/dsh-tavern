@@ -2,6 +2,8 @@
 
 [English](API_en.md) · [v3 详细合同](PROMPT_API_V3.md) · [前端接入](FRONTEND_INTEGRATION_zh-CN.md)
 
+装配规则的 CRUD、应用、预览、实际请求引用与所需核心扩展见[请求装配器](REQUEST_ASSEMBLY.md)。
+
 合同版本：Tavern 2.5.1，仅支持 DSH `0.2.0-rc.2`。
 根路径 `/pmp-dsh-tavern/api`。API 版本与 DSH 日志格式 V4 无关。
 

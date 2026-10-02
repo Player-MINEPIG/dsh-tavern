@@ -2,6 +2,8 @@
 
 [English](ARCHITECTURE_en.md)
 
+可选的[请求装配器](REQUEST_ASSEMBLY.md)在应用装配预设后接管消息排列。下文原有 loader 路径继续用于未应用装配预设的会话；两条路径都保留 DSH 对持久历史和 Provider 序列化的所有权。
+
 DSH 破坏性更新评估：[原生依赖架构图与分级矩阵](assets/dsh-dependencies/README.md)（含交互 HTML、仓库相对源码链接和升级检查入口）。
 
 当前合同面向本仓库源码（版本见 [package.json](../package.json)）与 DSH `0.2.0-rc.2`；安装标识为

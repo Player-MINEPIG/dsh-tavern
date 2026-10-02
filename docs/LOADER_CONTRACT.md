@@ -2,6 +2,8 @@
 
 [English](LOADER_CONTRACT_en.md)
 
+可选的[请求装配器](REQUEST_ASSEMBLY.md)在应用装配预设后接管消息排列。下文原有 loader 路径继续用于未应用装配预设的会话；两条路径都保留 DSH 对持久历史和 Provider 序列化的所有权。
+
 当前合同面向 Tavern **2.5.1** 与 DSH `0.2.0-rc.2`，覆盖 RP 会话叠加
 （`selection.rp` + `rp:policy`）、delegated subagent 的父选择快照、具名官方 sections 与
 schema 4 Trace 引用。DSH V4 以 `system/message` 作为系统正文权威，`request/header`
@@ -9,7 +11,7 @@ schema 4 Trace 引用。DSH V4 以 `system/message` 作为系统正文权威，`
 
 ## 目标与所有权
 
-加载器是唯一允许决定“当前资源怎样进入一次 DSH 请求”的层。格式模块只解释文件，用例模块只管理资源；它们不得自行注册 `systemPrompt`、修改 Agent、复制会话历史或写模型请求。
+根插件统一拥有资源解析与请求策略：默认路径由 loader 装配 sections，应用装配预设后由 request-assembler 排列消息。格式模块只解释文件，用例模块只管理资源；它们不得自行注册 `systemPrompt`、修改 Agent、复制会话历史或写模型请求。
 
 ```text
 PresetModel ─────────────┐

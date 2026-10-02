@@ -2,6 +2,8 @@
 
 [中文](LOADER_CONTRACT.md)
 
+The optional [request assembler](REQUEST_ASSEMBLY_en.md) takes ownership of message placement when a layout is applied. The original loader described below remains the compatibility path for sessions without an applied layout. Both paths retain DSH authority over durable history and provider serialization.
+
 The current contract targets Tavern **2.5.1** and DSH `0.2.0-rc.2`. It covers
 the RP session overlay (`selection.rp` + `rp:policy`), delegated subagents freezing their
 parent selection, named official sections, and schema 4 Trace references. DSH V4 uses

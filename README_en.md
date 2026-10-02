@@ -1,5 +1,7 @@
 # pmp-dsh-tavern
 
+[Candidate branch feature (not in the v2.5.1 tag): prompt assembly settings.](docs/REQUEST_ASSEMBLY_en.md)
+
 [中文](README.md)
 
 A SillyTavern compatibility plugin that keeps DeepSeek Harness (DSH) authoritative over sessions and execution, with frontend and backend APIs for composing Tavern capabilities with native DSH features.

@@ -2,6 +2,8 @@
 
 [中文](DSH_MESSAGE_FLOW.md)
 
+The optional [request assembler](REQUEST_ASSEMBLY_en.md) takes ownership of message placement when a layout is applied. The original loader described below remains the compatibility path for sessions without an applied layout. Both paths retain DSH authority over durable history and provider serialization.
+
 This page defines the current message contract for Tavern 2.5.1 on DSH
 `0.2.0-rc.2`: native DSH flow, DT flow, DT interception points, and one complete model
 step. V4 system prompts enter the effective surface through `system/message`, while

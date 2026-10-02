@@ -1,5 +1,7 @@
 # pmp-dsh-tavern
 
+[候选分支功能（不包含在 v2.5.1 tag）：提示词装配设置。](docs/REQUEST_ASSEMBLY.md)
+
 [English](README_en.md)
 
 以 DeepSeek Harness（DSH）原生会话与执行机制为权威的酒馆兼容插件，提供前后端 API，支持自由组合酒馆能力与 DSH 原生功能。
