@@ -33,10 +33,8 @@ async function probe({delay=0,kind='storage'}={}) {
 test('ordinary storage and short computation complete in the packaged Worker',async()=>{
  assert.deepEqual(await probe(),{done:true})
 })
-test('delayed storage distinguishes a wall deadline from guest exceptions',async()=>{
- const result=await probe({delay:250})
- assert.match(result.error,/CARD_EXECUTION_TIME; phase=event/)
- assert.ok(Number(result.error.match(/bridgeWaitMs=(\d+)/)[1])>=200)
+test('valid delayed storage preserves the entry computation budget',async()=>{
+ assert.deepEqual(await probe({delay:250}),{done:true})
 })
 test('guest exception details never enter the diagnostic',async()=>{
  const result=await probe({kind:'js'})
