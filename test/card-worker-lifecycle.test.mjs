@@ -16,7 +16,7 @@ test('worker construction and initial transfer failures synchronously release al
 })
 
 test('interval callback rearming retains its interval marker',()=>{
- const scheduled=[],sandbox=vmModule.createContext({__TavernDOM:{Element:class{},parseHTML:()=>({window:{},document:{}})},__host:raw=>{const data=JSON.parse(raw);if(data.op==='timer')scheduled.push(data.args);return JSON.stringify({value:null})}})
+ const scheduled=[],sandbox=vmModule.createContext({__TavernDOM:{Element:class{},parseHTML:()=>({window:{},document:{createElement(){}}})},__host:raw=>{const data=JSON.parse(raw);if(data.op==='timer')scheduled.push(data.args);return JSON.stringify({value:null})}})
  vmModule.runInContext(VIRTUAL_DOM_BOOTSTRAP,sandbox)
  vmModule.runInContext('globalThis.count=0;setInterval(()=>count++,20)',sandbox)
  for(let i=0;i<4;i++){const [id,,interval]=scheduled.shift();assert.equal(interval,true);vmModule.runInContext(`__tick(${id},true)`,sandbox)}

@@ -90,6 +90,7 @@ export default Object.freeze({
   "appearance.close": "Close",
   "appearance.card": "Restricted interactive card",
   "appearance.imageUnavailable": "Image unavailable",
+  "appearance.photoUnavailable": "Photo could not be selected or processed. Choose one static PNG, JPEG or WebP under 8 MiB and 8 megapixels, using the card's upload button.",
   "appearance.imageStatus": "Images: {visible} visible · {loaded} ready · {loading} loading · {failed} unavailable",
   "appearance.scriptsOff": "Scripts are disabled or the message is still streaming. Showing static content.",
   "rendering.writeTitle": "Variable write permissions",

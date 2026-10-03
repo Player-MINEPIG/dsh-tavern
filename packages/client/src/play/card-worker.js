@@ -24,6 +24,7 @@ let openingPending=null,lastOpeningId=0
 let activeCause='script',activeTask=null,layoutCalls=0,layoutId=0,layoutPending=null,queue=Promise.resolve(),queued=0
 const startupTasks=[]
 let nextViewport,viewportQueued=false
+let photoPickId=0,lastPhotoTask=null
 let messages=0, messageEpoch=0
 let storagePending=null,storageRevision=0
 const reply=(kind,value)=>{const now=performance.now();if(now-messageEpoch>1000){messages=0;messageEpoch=now}if(++messages>256){dispose();throw Error('Card message rate limit exceeded')}self.postMessage({nonce,kind,value})}
@@ -90,6 +91,10 @@ async function init(input){
     if(!Number.isSafeInteger(observedRevision)||observedRevision<0)throw Error('Variable snapshot unavailable')
     lastWriteId=requestId;pendingWrites.add(requestId)
     reply('write',{requestId,operation,value,options,observedRevision,cause:activeCause,taskId:activeTask})
+   }else if(op==='photoPick'){
+    const [id,view]=args
+    if(!activeTask||activeTask===lastPhotoTask||!Number.isSafeInteger(id)||id<=0||typeof view?.html!=='string'||typeof view?.styles!=='string')throw Error('Photo selection requires a new user click')
+    lastPhotoTask=activeTask;reply('photoPick',{requestId:++photoPickId,id,view,taskId:activeTask})
    }else if(op==='propose'){
     if(typeof args[0]!=='string'||args[0].length>4000)throw Error('Proposal exceeds limit')
     reply('proposal',args[0])

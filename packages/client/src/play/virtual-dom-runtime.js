@@ -1,4 +1,5 @@
 import { CARD_CONVENIENCE } from './card-convenience.js'
+import { CARD_PHOTO_RUNTIME } from './card-photo-runtime.js'
 // This source runs inside the interpreter, not in the worker's native realm.
 export const VIRTUAL_DOM_BOOTSTRAP = `
 const __DOM=__TavernDOM;
@@ -21,6 +22,7 @@ globalThis.setInterval=(fn,delay=0,...args)=>{if(typeof fn!=='function')throw Er
 globalThis.clearInterval=globalThis.clearTimeout;
 globalThis.requestAnimationFrame=fn=>setTimeout(()=>fn(performance.now()),16);globalThis.cancelAnimationFrame=clearTimeout;
 globalThis.__tick=(id,interval)=>{const fn=__timers.get(id);if(!interval)__timers.delete(id);if(fn)fn()};
+${CARD_PHOTO_RUNTIME}
 ${CARD_CONVENIENCE}
 const __subscribers=new Map();let __subscriberId=0;
 const __getVariables=options=>__call('variables',[options??null]);
@@ -61,6 +63,7 @@ for(const key of ['scrollHeight','scrollWidth','offsetHeight','offsetWidth','cli
 globalThis.getComputedStyle=(node,pseudo)=>{const data=__geometry(node,pseudo).computed;return Object.freeze({...data,getPropertyValue:name=>data[String(name)]??'',getPropertyPriority:()=>''})};
 globalThis.__domEvent=data=>{
  const node=__nodes.get(data.target);if(!node)return;
+ if(data.type==='change'&&data.photo!==undefined)__acceptPhoto(node,data.photo);
  if(data.value!==undefined)node.value=data.value;if(data.checked!==undefined)node.checked=data.checked;
  const event=new __DOM.Event(data.type,{bubbles:true,cancelable:true});
  for(const name of ['key','code','keyCode','charCode','button','buttons','clientX','clientY','ctrlKey','altKey','shiftKey','metaKey'])if(data[name]!==undefined)event[name]=data[name];

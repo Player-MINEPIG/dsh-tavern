@@ -1,5 +1,6 @@
 import {cardViewport,cardRootPresentation,usesCardViewport} from './card-viewport.js'
 import { imageSource, stageImages, observeImages, imageCss, IMAGE_SOURCE_ATTRIBUTE } from './card-images.js'
+import { selectedPhoto } from './card-photo.js'
 import {mvuBuiltin,confirmMvuSchemas} from './mvu-builtins.js'
 import {renderingWriteRequests} from './rendering-write-requests.js'
 import { createVirtualCardRuntime } from './card-worker-client.js'
@@ -16,7 +17,7 @@ import {projectCardControlState} from './card-control-state.js'
 import { renderingTrust } from './rendering-trust.js'
 
 const TAGS = 'template suot div span p br hr section article header footer main aside h1 h2 h3 h4 h5 h6 ul ol li dl dt dd b strong i em small pre code blockquote table thead tbody tr th td details summary button label input textarea select option output progress meter img style svg g path circle ellipse rect line polyline polygon defs linearGradient radialGradient stop clipPath title desc'.split(' ')
-const ATTRS = 'id class title style type value min max step checked disabled placeholder name rows cols open width height alt src for selected data-action data-dtv-node data-dtv-image-source viewBox preserveAspectRatio d x y x1 y1 x2 y2 cx cy r rx ry points fill fill-rule fill-opacity stroke stroke-width stroke-linecap stroke-linejoin stroke-opacity transform opacity offset stop-color stop-opacity gradientUnits gradientTransform clip-path'.split(' ')
+const ATTRS = 'id class title style type value min max step checked disabled placeholder name rows cols open hidden accept width height alt src for selected data-action data-opening-choice data-opening-perk data-dtv-node data-dtv-image-source viewBox preserveAspectRatio d x y x1 y1 x2 y2 cx cy r rx ry points fill fill-rule fill-opacity stroke stroke-width stroke-linecap stroke-linejoin stroke-opacity transform opacity offset stop-color stop-opacity gradientUnits gradientTransform clip-path'.split(' ')
 export const CARD_CSP = "default-src 'none'; script-src 'none'; style-src 'unsafe-inline'; img-src data:; font-src 'none'; connect-src 'none'; media-src 'none'; frame-src 'none'; object-src 'none'; base-uri 'none'; form-action 'none'"
 export function cleanCardHtml(html, { inertImages = false } = {}) {
   const template = document.createElement('template')
@@ -24,7 +25,10 @@ export function cleanCardHtml(html, { inertImages = false } = {}) {
   // SUOT is a data marker only inside inert template content. Templates keep
   // their sanitized data for the virtual DOM; their scripts never become runs.
   for (const marker of template.content.querySelectorAll('suot')) marker.replaceWith(...marker.childNodes)
-  for (const input of template.content.querySelectorAll('input')) if (!['text','number','range','checkbox','radio','color','button'].includes(input.type)) input.setAttribute('type','text')
+  for (const input of template.content.querySelectorAll('input')) {
+    if (!['text','number','range','checkbox','radio','color','button','file'].includes(input.type)) input.setAttribute('type','text')
+    if(input.type==='file'){input.setAttribute('accept','image/png,image/jpeg,image/webp');input.removeAttribute('value');input.removeAttribute('multiple');input.removeAttribute('webkitdirectory')}
+  }
   for (const image of template.content.querySelectorAll('img')) {
     const source = imageSource(image.getAttribute('src') ?? image.getAttribute(IMAGE_SOURCE_ATTRIBUTE))
     image.removeAttribute('src'); image.removeAttribute(IMAGE_SOURCE_ATTRIBUTE)
@@ -226,15 +230,16 @@ const InteractiveCard = memo(function InteractiveCard({ source, enabled, scopeKe
   useEffect(()=>renderingTrust.subscribe(()=>{generation.current++;cleanup.current();setTrustRevision(renderingTrust.revision())}),[])
   const [audit,setAudit]=useState(null),[paused,setPaused]=useState(false),[restart,setRestart]=useState(0),[viewportLayout,setViewportLayout]=useState(false)
   const [media,setMedia]=useState(null)
+  const [photoError,setPhotoError]=useState('')
   const [error,setError]=useState(''), [proposal,setProposal]=useState(''), [sending,setSending]=useState(false)
   const [openingProposal,setOpeningProposal]=useState(null),[openingProgress,setOpeningProgress]=useState('')
   const openingBridge=useRef(null)
   const data = useMemo(() => {
     if (source.length > 128 * 1024) return { html: '', scripts: [], unsupported: ['Card exceeds 128K characters'] }
-    try { return enabled?prepareCardDocument(source,owners,helpers):cardDocument(source) } catch(error) { try{return {...cardDocument(source),unsupported:[error.message]}}catch{return {html:'',scripts:[],unsupported:[error.message]}} }
+    try { if(!enabled)return cardDocument(source);const prepared=prepareCardDocument(source,owners,helpers);if(/<input\b[^>]*type=["']?file\b/i.test(prepared.html))prepared.virtual=true;return prepared } catch(error) { try{return {...cardDocument(source),unsupported:[error.message]}}catch{return {html:'',scripts:[],unsupported:[error.message]}} }
   }, [source,enabled,trustRevision,JSON.stringify(owners),JSON.stringify(helpers)])
   const srcDoc = `<!doctype html><html><head><meta http-equiv="Content-Security-Policy" content="${CARD_CSP}"><style>body{margin:12px;font:14px system-ui;color:#243042;background:#fff}*{box-sizing:border-box}img{max-width:100%}button,input,select,textarea{font:inherit}button{cursor:pointer}</style></head><body>${cleanCardHtml(data.html,{inertImages:true})}</body></html>`
-  useLayoutEffect(()=>{setProposal('');setError('');setAudit(null);setMedia(null);setOpeningProposal(null);setOpeningProgress('');return()=>{generation.current++;cleanup.current()}},[source,enabled,scopeKey,trustRevision,data,paused,restart,JSON.stringify(openingBinding)])
+  useLayoutEffect(()=>{setProposal('');setError('');setAudit(null);setMedia(null);setPhotoError('');setOpeningProposal(null);setOpeningProgress('');return()=>{generation.current++;cleanup.current()}},[source,enabled,scopeKey,trustRevision,data,paused,restart,JSON.stringify(openingBinding)])
   async function load() {
     const current=++generation.current; cleanup.current(); setError(''); setProposal('')
     const doc=frame.current?.contentDocument
@@ -262,6 +267,7 @@ const InteractiveCard = memo(function InteractiveCard({ source, enabled, scopeKe
       })
     }
     const observer=new ResizeObserver(resize);observer.observe(doc.body);observer.observe(ownFrame);resize()
+    let photoController,photoEpoch=0
     const revokeWrites=()=>{
       const ticket=++writeEpoch,hadWriteBinding=!!writeBinding
       writeController?.abort();writeController=null;writeBinding?.dispose();writeBinding=null;writeLoading=null
@@ -272,7 +278,7 @@ const InteractiveCard = memo(function InteractiveCard({ source, enabled, scopeKe
       }).catch(()=>{})
     }
     let cleaned=false
-    cleanup.current=()=>{if(cleaned)return;cleaned=true;controller.abort();openingBridge.current?.dispose();openingBridge.current=null;observer.disconnect();images?.dispose();cancelAnimationFrame(viewportFrame);viewportFrame=0;dom?.destroy();virtualRuntime?.dispose();cardStorage?.dispose();stopVariables?.();removeEvents();binding?.dispose();writeRequest?.dispose();revokeWrites()}
+    cleanup.current=()=>{if(cleaned)return;cleaned=true;controller.abort();photoEpoch++;photoController?.abort();openingBridge.current?.dispose();openingBridge.current=null;observer.disconnect();images?.dispose();cancelAnimationFrame(viewportFrame);viewportFrame=0;dom?.destroy();virtualRuntime?.dispose();cardStorage?.dispose();stopVariables?.();removeEvents();binding?.dispose();writeRequest?.dispose();revokeWrites()}
     if (!paused) images=observeImages(doc.body,{frame:frame.current,unavailable:translate('appearance.imageUnavailable'),onStatus:value=>{if(!cleaned&&current===generation.current)setMedia(value)}})
     if (!enabled || paused || data.unsupported.length) return
     if (doc.body.querySelectorAll('*').length > 2048) { setError('Card DOM limit exceeded'); return }
@@ -290,6 +296,19 @@ const InteractiveCard = memo(function InteractiveCard({ source, enabled, scopeKe
         const handler=event=>{
           const target=event.target.closest?.('[data-dtv-node]');if(!target)return
           const value={type:event.type,target:Number(target.dataset.dtvNode)}
+          if(target.localName==='input'&&target.type==='file'){
+            // The native File and its original metadata stay in this closure.
+            // Synthetic events cannot transfer bytes or grant composer actions.
+            if(event.type!=='change'||event.isTrusted!==true)return
+            const file=target.files?.[0];target.value='';if(!file)return
+            const ticket=++photoEpoch;photoController?.abort();photoController=new AbortController();const signal=photoController.signal
+            setPhotoError('')
+            selectedPhoto(file,signal).then(photo=>{
+              if(cleaned||ticket!==photoEpoch||current!==generation.current||!target.isConnected||target.ownerDocument!==doc)return
+              virtualRuntime?.dispatch({...value,photo},{trusted:false})
+            },()=>{if(!signal.aborted&&!cleaned&&ticket===photoEpoch&&current===generation.current)setPhotoError(translate('appearance.photoUnavailable'))})
+            return
+          }
           if(['input','textarea','select'].includes(target.localName)){value.value=String(target.value).slice(0,64000);value.checked=target.checked===true}
           for(const key of ['key','code','keyCode','charCode','button','buttons','clientX','clientY','ctrlKey','altKey','shiftKey','metaKey'])if(event[key]!==undefined)value[key]=event[key]
           virtualRuntime?.dispatch(value,{trusted:event.isTrusted===true})
@@ -358,6 +377,14 @@ const InteractiveCard = memo(function InteractiveCard({ source, enabled, scopeKe
           onProposal:value=>{if(current===generation.current)setProposal(value)},
           onError:error=>{if(current===generation.current){setError(error.message+(error.operationId?' · operationId: '+error.operationId:''));cleanup.current()}},
           onView:displayView,
+          onPhotoPick:request=>{
+            try{
+              const nodes=displayView(request.view,request.id),node=nodes.get(request.id)
+              if(!node||node.ownerDocument!==doc||!node.isConnected||node.localName!=='input'||node.type!=='file'||!doc.body.contains(node))throw Error('Invalid photo input')
+              if(!doc.defaultView.navigator.userActivation?.isActive)throw Error('Photo selection needs a current user click')
+              node.click()
+            }catch{if(!cleaned&&current===generation.current)setPhotoError(translate('appearance.photoUnavailable'))}
+          },
           onMeasure:(request,{signal})=>{
             signal.throwIfAborted();if(cleaned||current!==generation.current||!frame.current?.isConnected||frame.current.contentDocument!==doc)throw Error('Card measurement generation expired')
             if(!Number.isSafeInteger(request.id)||request.id<0||!['',null,undefined,'::before','::after'].includes(request.pseudo))throw Error('Invalid card measurement')
@@ -390,6 +417,7 @@ const InteractiveCard = memo(function InteractiveCard({ source, enabled, scopeKe
     !enabled && data.scripts.length ? h('small',null,translate('appearance.scriptsOff')):null,
     data.unsupported.length ? h('p',{role:'alert'},data.unsupported.map(reason => reason.startsWith('appearance.') ? translate(reason) : reason).join(' ') + ' ' + translate('appearance.cardStaticFallback')):null,
     error ? h('p',{role:'alert'},error):null,
+    photoError ? h('p',{className:'dtv-card-photo-error',role:'alert'},photoError):null,
     media?.total ? h('small',{className:'dtv-card-media',role:'status'},translate('appearance.imageStatus',{visible:media.visible,loaded:media.loaded,loading:media.loading+media.queued,failed:media.failed})):null,
     audit ? h('details',{className:'dtv-card-audit'},h('summary',null,translate('appearance.runtimeEvidence')),h('pre',{style:{whiteSpace:'pre-wrap',overflowWrap:'anywhere'}},JSON.stringify(audit,null,2))):null,
     openingProgress?h('p',{role:'status'},translate('appearance.openingProgress')):null,

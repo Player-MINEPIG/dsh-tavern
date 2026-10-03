@@ -87,12 +87,18 @@ flowchart LR
 
 媒体不计入代码的 script/import/`.loadHTML` 依赖图或下载进度。可信父页根据实际视口、折叠、隐藏、iframe 和页面可见性获取图片；图片状态单独显示可见、已显示、加载中与不可用数量。关闭、暂停、变体/会话切换及卸载会释放 DOM 图片并取消无人使用的队列/请求，旧代次结果不能覆盖新界面。同一 URL 去重；页面内存缓存采用 LRU，不写 Host、资源文件、浏览器持久存储或图片 URL 日志。
 
-支持静态 PNG/JPEG/WebP/GIF，以及同类有界 data URI；拒绝 SVG、APNG/动画 WebP/多帧 GIF、音视频、字体与文件输入上传。远程来源必须为无凭据、无非默认端口的绝对 HTTPS 命名 URL；拒绝 IP、本机/私网形式的主机名、相对 URL及其他协议。URL 形式检查不核验 DNS 结果，不能保证阻止 DNS 重绑定。浏览器 CORS、`credentials: omit`、`referrerPolicy: no-referrer`、`redirect: error`、`cache: no-store` 保持生效；不支持需要登录、重定向或缺少 CORS 的图片服务。图片服务器仍可看到客户端 IP 和 URL，URL 中的查询参数也会发送给该服务器。
+支持静态 PNG/JPEG/WebP/GIF，以及同类有界 data URI；拒绝 SVG、APNG/动画 WebP/多帧 GIF、音视频、字体与通用文件/canvas 访问。远程来源必须为无凭据、无非默认端口的绝对 HTTPS 命名 URL；拒绝 IP、本机/私网形式的主机名、相对 URL及其他协议。URL 形式检查不核验 DNS 结果，不能保证阻止 DNS 重绑定。浏览器 CORS、`credentials: omit`、`referrerPolicy: no-referrer`、`redirect: error`、`cache: no-store` 保持生效；不支持需要登录、重定向或缺少 CORS 的图片服务。图片服务器仍可看到客户端 IP 和 URL，URL 中的查询参数也会发送给该服务器。
 
 页面共享最多 4 个并发请求、32 个可见图片租约、64 个缓存项与 32 MiB（数据字符串和解码像素合计）；单图最多 2 MiB、4194304 像素、边长 8192 与 15 秒。先校验流式字节与文件头/尺寸，再解码、复核并重编码为 PNG；超限/格式/网络错误显示占位，等待全局额度的可见图片会在额度释放后重试。尚无尺寸声明的 img 使用 160×90 占位布局。浏览器临时解码、布局及引擎漏洞不由这些预算完全约束。
 
 卡片可以通过受限 DOM 表达要显示的图片，不能调用通用 fetch 或读取 HTTP 响应。iframe 仍仅允许 `img-src data:`、`connect-src 'none'`，QuickJS/Worker 没有任意网络、Host 或凭据权限；只有可信宿主把校验后的栅格注入实际视图。CSS 图片 URL 转为惰性占位，只有在实际背景中使用才获取；未使用的自定义变量不会下载。惰性 `template` 可保留净化后的 SUOT 数据标记，标记在模板外会被展开为内容；模板脚本和事件属性不执行。
 
+
+### 选择一张照片
+
+开启卡片脚本后，净化后的 `input[type=file]` 可接收用户主动选择的一张静态 PNG/JPEG/WebP。卡片按钮只有在新的可信点击与浏览器用户激活期内才能打开该输入；合成点击/变更不获权限。可信父页只读取选定 File，解码前检查 8 MiB、8388608 像素与单边 8192，去除原始元数据并输出最长边不超过 640、data URI 不超过 65536 字符的 JPEG。解码串行执行，最多排队四项；新选择、暂停、源码变化或卸载使旧结果失效，格式/额度错误单独显示照片提示。
+
+VM 只收到合成的 `selected-photo.jpg` 描述与有界 JPEG。窄 FileReader/Image/canvas 门面支持读取此次选择、自然尺寸，以及既有 `drawImage(image,0,0,width,height)` → `toDataURL('image/jpeg',0.82)` 流程，返回宿主已处理的 JPEG；没有通用 canvas、真实 File、路径、原文件名、任意图片获取或 Host 入口。照片变更不携带输入框发送权限。持久化仍遵守调用者已有预算及独立授权，选图不扩大存储额度或自动授予写入。输入保持单文件及栅格 accept 白名单；`hidden` 和明确的 `data-opening-choice`/`data-opening-perk` 属性可通过净化。
 
 ## 支持接口与限制
 

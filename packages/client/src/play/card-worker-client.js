@@ -11,7 +11,7 @@ function validateInput(data) {
  if(data.cardStorage){count(JSON.stringify(data.cardStorage),128*1024+1024);if(!/^[a-f0-9]{64}$/.test(data.cardStorage.scope)||!Array.isArray(data.cardStorage.entries))throw Error('Invalid card storage scope')}
  return {...data,runs,modules,html}
 }
-export function createVirtualCardRuntime(input,{onView,onProposal,onError,onAudit=()=>{},onMeasure=()=>{throw Error('Card layout surface unavailable')},onStorage=()=>{throw Error('Card storage unavailable')},onOpening=async()=>{throw Error('Opening world books are unavailable')},onWrite=async()=>{throw Error('Variable writes are disabled')}}) {
+export function createVirtualCardRuntime(input,{onView,onProposal,onError,onAudit=()=>{},onPhotoPick=()=>{throw Error('Photo selection unavailable')},onMeasure=()=>{throw Error('Card layout surface unavailable')},onStorage=()=>{throw Error('Card storage unavailable')},onOpening=async()=>{throw Error('Opening world books are unavailable')},onWrite=async()=>{throw Error('Variable writes are disabled')}}) {
  const data=validateInput(input)
  if(typeof TAVERN_CARD_WORKER_SOURCE!=='string')throw Error('Card worker unavailable in this build')
  if(active>=4)throw Error('Four external card runtimes are active. Pause an older card, then retry this card.')
@@ -19,6 +19,7 @@ export function createVirtualCardRuntime(input,{onView,onProposal,onError,onAudi
  let worker;try{worker=new Worker(url)}finally{URL.revokeObjectURL(url)}active++
  let disposed=false,startupTimer,busyTimer,lastWriteId=0,lastMeasureId=0,lastStorageId=0,measurement=null,lastOpeningId=0,opening=null
  const tasks=new Map(),pending=new Map()
+ let lastPhotoPickId=0
  const stop=()=>{if(disposed)return;disposed=true;clearTimeout(startupTimer);clearTimeout(busyTimer);if(opening){clearTimeout(opening.timer);opening.controller.abort();opening=null}for(const item of pending.values()){clearTimeout(item.timer);item.controller.abort()}pending.clear();if(measurement){clearTimeout(measurement.timer);measurement.controller.abort();measurement=null}worker.terminate();tasks.clear();active--}
  const fail=(message,operationId)=>{if(disposed)return;stop();onError(Object.assign(Error(message),operationId?{operationId,outcome:'unknown'}:{}))}
  const replyWrite=(requestId,value,operationId)=>{if(disposed)return;try{if(JSON.stringify(value).length>128*1024)throw Error();worker.postMessage({kind:'writeResult',nonce,requestId,value})}catch{fail('Write result could not be delivered; inspect the operation receipt before retrying',operationId)}}
@@ -48,6 +49,15 @@ export function createVirtualCardRuntime(input,{onView,onProposal,onError,onAudi
    const controller=new AbortController(),ticket={controller,timer:setTimeout(()=>fail('Opening confirmation expired; select the identity again'),300000)};opening=ticket
    Promise.resolve().then(()=>{if(disposed||opening!==ticket)return;if(task?.trusted!==true||task.type!=='click'||performance.now()-task.at>=1500)throw Error('Opening selection requires a user click in this card');return onOpening(value.openingId,{signal:controller.signal})}).then(result=>finish({value:result}),error=>finish({error:String(error.message).slice(0,300)}))
    function finish(result){if(disposed||opening!==ticket)return;opening=null;clearTimeout(ticket.timer);try{if(JSON.stringify(result).length>128*1024)throw Error();worker.postMessage({kind:'identityOpeningResult',nonce,requestId:value.requestId,value:result})}catch{fail('Opening result could not be delivered')}}
+   return
+  }
+  if(message.kind==='photoPick'){
+   const value=message.value,task=tasks.get(value?.taskId)
+   if(!value||!Number.isSafeInteger(value.requestId)||value.requestId<=lastPhotoPickId||!Number.isSafeInteger(value.id)||value.id<=0||JSON.stringify(value).length>128*1024){fail('Invalid photo selection request');return}
+   lastPhotoPickId=value.requestId
+   if(task?.trusted!==true||task.type!=='click'||task.photoPicked||performance.now()-task.at>=1500)return
+   task.photoPicked=true
+   try{onPhotoPick(value)}catch(error){onError(error)}
    return
   }
   if(message.kind==='measure'){

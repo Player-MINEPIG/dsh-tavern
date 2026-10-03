@@ -47,16 +47,16 @@ export function imageCss(css) {
   })
   return blocked || /url\s*\(/i.test(clean.replace(/url\s*\(\s*"data:image\/png;base64,[A-Za-z0-9+/]+=*#dtv=[A-Za-z0-9_-]+"\s*\)/gi,'')) ? '' : clean
 }
-function size(width, height, mime) {
-  if (!width || !height || width > IMAGE_LIMITS.edge || height > IMAGE_LIMITS.edge || width * height > IMAGE_LIMITS.pixels) throw Error('IMAGE_PIXELS')
+function size(width, height, mime, limits = IMAGE_LIMITS) {
+  if (!width || !height || width > limits.edge || height > limits.edge || width * height > limits.pixels) throw Error('IMAGE_PIXELS')
   return { width, height, mime }
 }
-export function rasterHeader(bytes) {
-  if (!(bytes instanceof Uint8Array) || bytes.length > IMAGE_LIMITS.imageBytes) throw Error('IMAGE_BYTES')
+export function rasterHeader(bytes, limits = IMAGE_LIMITS) {
+  if (!(bytes instanceof Uint8Array) || bytes.length > limits.imageBytes) throw Error('IMAGE_BYTES')
   const view = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength)
   const ascii = (at, length) => String.fromCharCode(...bytes.subarray(at, at + length))
   if (bytes.length >= 33 && ascii(0,8) === '\x89PNG\r\n\x1a\n' && ascii(12,4) === 'IHDR' && view.getUint32(8) === 13) {
-    const result = size(view.getUint32(16), view.getUint32(20), 'image/png')
+    const result = size(view.getUint32(16), view.getUint32(20), 'image/png', limits)
     for (let at = 8; at + 12 <= bytes.length;) {
       const length = view.getUint32(at), type = ascii(at + 4,4)
       if (length > bytes.length - at - 12) throw Error('IMAGE_FORMAT')
@@ -72,18 +72,18 @@ export function rasterHeader(bytes) {
       const length = view.getUint32(at + 4,true), type = ascii(at,4), data = at + 8
       if (length > bytes.length - data) throw Error('IMAGE_FORMAT')
       if (type === 'ANIM' || type === 'ANMF' || (type === 'VP8X' && bytes[data] & 2)) throw Error('IMAGE_ANIMATION')
-      if (type === 'VP8X' && length >= 10) result = size(1 + bytes[data+4] + (bytes[data+5]<<8) + (bytes[data+6]<<16), 1 + bytes[data+7] + (bytes[data+8]<<8) + (bytes[data+9]<<16), 'image/webp')
-      if (type === 'VP8 ' && length >= 10 && ascii(data+3,3) === '\x9d\x01\x2a') {const next=size(view.getUint16(data+6,true)&0x3fff,view.getUint16(data+8,true)&0x3fff,'image/webp');if(result&&(result.width!==next.width||result.height!==next.height))throw Error('IMAGE_FORMAT');result=next}
+      if (type === 'VP8X' && length >= 10) result = size(1 + bytes[data+4] + (bytes[data+5]<<8) + (bytes[data+6]<<16), 1 + bytes[data+7] + (bytes[data+8]<<8) + (bytes[data+9]<<16), 'image/webp', limits)
+      if (type === 'VP8 ' && length >= 10 && ascii(data+3,3) === '\x9d\x01\x2a') {const next=size(view.getUint16(data+6,true)&0x3fff,view.getUint16(data+8,true)&0x3fff,'image/webp', limits);if(result&&(result.width!==next.width||result.height!==next.height))throw Error('IMAGE_FORMAT');result=next}
       if (type === 'VP8L' && length >= 5 && bytes[data] === 0x2f) {
         const bits = view.getUint32(data+1,true)
-        const next=size((bits&0x3fff)+1,((bits>>>14)&0x3fff)+1,'image/webp');if(result&&(result.width!==next.width||result.height!==next.height))throw Error('IMAGE_FORMAT');result=next
+        const next=size((bits&0x3fff)+1,((bits>>>14)&0x3fff)+1,'image/webp', limits);if(result&&(result.width!==next.width||result.height!==next.height))throw Error('IMAGE_FORMAT');result=next
       }
       at = data + length + (length & 1)
     }
     if (result) return result
   }
   if (bytes.length >= 13 && ['GIF87a','GIF89a'].includes(ascii(0,6))) {
-    const result = size(view.getUint16(6,true),view.getUint16(8,true),'image/gif')
+    const result = size(view.getUint16(6,true),view.getUint16(8,true),'image/gif', limits)
     let at = 13 + ((bytes[10]&128) ? 3 * (1 << ((bytes[10]&7)+1)) : 0), frames = 0
     const blocks = () => { while (at < bytes.length) { const length = bytes[at++]; if (!length) return; at += length; if (at > bytes.length) throw Error('IMAGE_FORMAT') } throw Error('IMAGE_FORMAT') }
     while (at < bytes.length) {
@@ -93,7 +93,7 @@ export function rasterHeader(bytes) {
       else if (type === 0x2c) {
         if (++frames > 1) throw Error('IMAGE_ANIMATION')
         if (at + 9 > bytes.length) throw Error('IMAGE_FORMAT')
-        size(view.getUint16(at+4,true),view.getUint16(at+6,true),'image/gif')
+        size(view.getUint16(at+4,true),view.getUint16(at+6,true),'image/gif', limits)
         const flags = bytes[at+8]; at += 9 + ((flags&128) ? 3 * (1 << ((flags&7)+1)) : 0)
         at++; blocks()
       } else throw Error('IMAGE_FORMAT')
@@ -110,7 +110,7 @@ export function rasterHeader(bytes) {
       if (at + 2 > bytes.length) throw Error('IMAGE_FORMAT')
       const length = view.getUint16(at)
       if (length < 2 || at + length > bytes.length) throw Error('IMAGE_FORMAT')
-      if ([0xc0,0xc1,0xc2].includes(marker) && length >= 8) {const next=size(view.getUint16(at+5),view.getUint16(at+3),'image/jpeg');if(result&&(result.width!==next.width||result.height!==next.height))throw Error('IMAGE_FORMAT');result=next}
+      if ([0xc0,0xc1,0xc2].includes(marker) && length >= 8) {const next=size(view.getUint16(at+5),view.getUint16(at+3),'image/jpeg', limits);if(result&&(result.width!==next.width||result.height!==next.height))throw Error('IMAGE_FORMAT');result=next}
       at += length
     }
     if (result) return result
