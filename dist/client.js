@@ -44042,9 +44042,10 @@ function TargetedSwipeTransition({
   ));
 }
 function ChatFailureNotice({ detail, noticeKey = "" }) {
-  const [dismissed, setDismissed] = (0, import_react20.useState)(null);
-  const identity = JSON.stringify([noticeKey, detail]);
-  const collapsed = dismissed === identity;
+  const [notice, setNotice] = (0, import_react20.useState)(() => ({ detail, noticeKey, collapsed: false }));
+  const current4 = notice.detail === detail && notice.noticeKey === noticeKey;
+  if (!current4) setNotice({ detail, noticeKey, collapsed: false });
+  const collapsed = current4 && notice.collapsed;
   return detail !== null ? h17(
     "div",
     {
@@ -44060,7 +44061,7 @@ function ChatFailureNotice({ detail, noticeKey = "" }) {
         type: "button",
         className: "dtv-play-chat-failure-toggle",
         "aria-expanded": !collapsed,
-        onClick: () => setDismissed(collapsed ? null : identity)
+        onClick: () => setNotice({ detail, noticeKey, collapsed: !collapsed })
       }, uiMessage(collapsed ? "play.chat.failureShow" : "play.chat.failureDismiss"))
     ),
     collapsed ? null : h17("div", { style: { whiteSpace: "pre-wrap", overflowWrap: "anywhere" } }, detail ? rawText(detail) : uiMessage("play.chat.failureUnknown")),
@@ -44079,6 +44080,7 @@ function MowanChatView({ sessionId, useSession, useChat, playClient, playthrough
   const [revision, setRevision] = (0, import_react20.useState)(0);
   const running = useSession((state2) => state2.running === true);
   const hostFailure = useSession(sessionFailureDetail);
+  const hostFailureOccurrence = useSession((state2) => state2.promptError ?? state2.openError ?? state2.lastAgentError ?? null);
   const submitting = useSession(submissionInProgress);
   const turnFailure = useChat(latestTurnFailureDetail);
   const failureTurn = useChat((state2) => state2.timeline.turnOrder.at(-1) ?? null);
@@ -44218,7 +44220,7 @@ function MowanChatView({ sessionId, useSession, useChat, playClient, playthrough
   return h17(
     "div",
     { className: "dtv-play-chat", style: conversationDisplayStyle(displaySettings) },
-    h17(ChatFailureNotice, { key: sessionId, detail: failureDetail, noticeKey: failureTurn }),
+    h17(ChatFailureNotice, { key: sessionId, detail: failureDetail, noticeKey: hostFailure !== null ? hostFailureOccurrence : failureTurn }),
     error === "" && !state?.pendingSwipeError ? null : h17(
       "div",
       null,

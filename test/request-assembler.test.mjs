@@ -207,3 +207,15 @@ test('retained depth snapshots keep depth metadata in subsequent previews', () =
   assert.equal(first.nodes.find(n => n.ruleId === 'depth-note').depth, 1)
   assert.equal(second.nodes.find(n => n.ruleId === 'depth-note').depth, 1)
 })
+
+test('explicit character depth remains authoritative and late greetings are diagnosed', () => {
+  const input = defaultAssemblyFailureInput(), preset = structuredClone(BUILTINS[0])
+  preset.rules.find(r => r.kind === 'character').depth = 0
+  const before = structuredClone({ input, preset })
+  const result = assembleRequest({ ...input, preset })
+  const greeting = result.nodes.find(n => n.source?.field === 'greeting')
+  assert.equal(greeting.depth, 0)
+  assert.ok(result.messages.findIndex(m => textOf(m) === 'GREETING') > result.messages.findIndex(m => m.id === 'input'))
+  assert.ok(result.diagnostics.some(d => d.code === 'GREETING_AFTER_INPUT'))
+  assert.deepEqual({ input, preset }, before)
+})

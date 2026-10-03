@@ -79,6 +79,17 @@ try{
  flushSync(()=>container.querySelector('.dtv-play-chat-failure-toggle').click())
  flushSync(()=>root.render(React.createElement(ChatFailureNotice,{detail:failure,noticeKey:'next-turn'})))
  check('the same error in a new turn is expanded again',container.querySelector('[role=alert]')?.textContent.includes(failure))
+ for(const intermediate of [null,'Different error']){
+   flushSync(()=>root.render(React.createElement(ChatFailureNotice,{detail:failure})))
+   flushSync(()=>container.querySelector('.dtv-play-chat-failure-toggle').click())
+   flushSync(()=>root.render(React.createElement(ChatFailureNotice,{detail:intermediate})))
+   flushSync(()=>root.render(React.createElement(ChatFailureNotice,{detail:failure})))
+   check(`the same error expands after ${intermediate===null?'clearing':'another failure'}`,container.querySelector('[role=alert]')?.textContent.includes(failure))
+ }
+ flushSync(()=>root.render(React.createElement(ChatFailureNotice,{detail:failure,noticeKey:{op:'send'}})))
+ flushSync(()=>container.querySelector('.dtv-play-chat-failure-toggle').click())
+ flushSync(()=>root.render(React.createElement(ChatFailureNotice,{detail:failure,noticeKey:{op:'send'}})))
+ check('a new Host operation object expands identical error details',container.querySelector('[role=alert]')?.textContent.includes(failure))
  flushSync(()=>root.render(React.createElement(ChatFailureNotice,{detail:'<img src=x onerror=alert(1)>'})))
  check('Host error details are rendered as text, never HTML',container.textContent.includes('<img')&&!container.querySelector('img'))
  flushSync(()=>root.render(React.createElement(ChatFailureNotice,{detail:''})))

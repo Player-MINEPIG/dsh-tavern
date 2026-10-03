@@ -605,15 +605,18 @@ function TargetedSwipeTransition({
 }
 
 export function ChatFailureNotice({ detail, noticeKey = '' }) {
-  const [dismissed, setDismissed] = useState(null)
-  const identity = JSON.stringify([noticeKey, detail])
-  const collapsed = dismissed === identity
+  const [notice, setNotice] = useState(() => ({ detail, noticeKey, collapsed: false }))
+  const current = notice.detail === detail && notice.noticeKey === noticeKey
+  // Track the current occurrence, including a cleared error. An older closed
+  // notice must not collapse a later error with identical text.
+  if (!current) setNotice({ detail, noticeKey, collapsed: false })
+  const collapsed = current && notice.collapsed
   return detail !== null ? h('div', {
       className: 'dtv-play-chat-status dtv-play-chat-failure', 'data-error': true, role: collapsed ? 'status' : 'alert',
     }, h('div', { className: 'dtv-play-chat-failure-heading' },
       h('strong', null, uiMessage('play.chat.failure')),
       h('button', { type: 'button', className: 'dtv-play-chat-failure-toggle', 'aria-expanded': !collapsed,
-        onClick: () => setDismissed(collapsed ? null : identity),
+        onClick: () => setNotice({ detail, noticeKey, collapsed: !collapsed }),
       }, uiMessage(collapsed ? 'play.chat.failureShow' : 'play.chat.failureDismiss'))),
     collapsed ? null : h('div', { style: { whiteSpace: 'pre-wrap', overflowWrap: 'anywhere' } }, detail ? rawText(detail) : uiMessage('play.chat.failureUnknown')),
     !collapsed && detail.includes('already owned by an active write handle')
@@ -633,6 +636,7 @@ export function MowanChatView({ sessionId, useSession, useChat, playClient, play
   const [revision, setRevision] = useState(0)
   const running = useSession(state => state.running === true)
   const hostFailure = useSession(sessionFailureDetail)
+  const hostFailureOccurrence = useSession(state => state.promptError ?? state.openError ?? state.lastAgentError ?? null)
   const submitting = useSession(submissionInProgress)
   const turnFailure = useChat(latestTurnFailureDetail)
   const failureTurn = useChat(state => state.timeline.turnOrder.at(-1) ?? null)
@@ -779,7 +783,7 @@ export function MowanChatView({ sessionId, useSession, useChat, playClient, play
   const transitionBoundary = swipeTransitionBoundary(transition)
 
   return h('div', { className: 'dtv-play-chat', style: conversationDisplayStyle(displaySettings) },
-    h(ChatFailureNotice, { key: sessionId, detail: failureDetail, noticeKey: failureTurn }),
+    h(ChatFailureNotice, { key: sessionId, detail: failureDetail, noticeKey: hostFailure !== null ? hostFailureOccurrence : failureTurn }),
     error === '' && !state?.pendingSwipeError ? null : h('div', null,
       h('p', { className: 'dtv-play-chat-status', 'data-error': true }, rawText(error || state.pendingSwipeError)),
       !state?.pendingSwipeError ? null : h('button', {
