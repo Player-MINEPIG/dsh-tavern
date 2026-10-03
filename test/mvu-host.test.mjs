@@ -10,6 +10,41 @@ import * as tavern from '../packages/tavern-loader/src/index.js'
 import { MvuService } from '../packages/mvu-adapter/src/index.js'
 
 const runtimeRoot = process.env.DSH_TAVERN_ASSEMBLY_CORE_ROOT ?? process.env.DSH_TAVERN_PROMPT_COMPAT_ROOT
+
+function assertMvuRequestContribution(request, session, resourceId, expectedState) {
+  const recorded = session.snapshotEvents().findLast(event => event.type === 'request/assembly')
+  assert.equal(recorded.data.metadata.owner, 'pmp-dsh-tavern')
+  assert.deepEqual(recorded.data.messages, request.messages)
+  const assembly = recorded.data.metadata.assembly
+  const matches = assembly.nodes.filter(node => node.source?.sourceId === 'tavern.mvu/state' && node.source.resourceId === resourceId)
+  assert.equal(matches.length, 1)
+  const node = matches[0]
+  const expectedText = `${JSON.stringify(expectedState)}\nReturn variable changes as <JSONPatch>[{"op":"replace","path":"/field","value":0}]</JSONPatch>. Use delta for numeric changes. Output literal values only.`
+  assert.equal(node.text, expectedText)
+  assert.equal(node.inputMessageIds.length, 1)
+  const [inputId] = node.inputMessageIds
+  const snapshots = assembly.systemProjection.messages.filter(snapshot => snapshot.contributorIds.includes(inputId))
+  assert.equal(snapshots.length, 1)
+  const [snapshot] = snapshots
+  assert.equal(snapshot.inputIds.filter(id => id === inputId).length, 1)
+  assert.equal(snapshot.contributorIds.filter(id => id === inputId).length, 1)
+  assert.deepEqual(node.requestMessageIds, [snapshot.messageId])
+  assert.equal(node.start, snapshot.index)
+  assert.equal(node.count, 1)
+  assert.equal(request.messages.filter(message => message.id === snapshot.messageId).length, 1)
+  const carrier = request.messages[snapshot.index]
+  assert.equal(carrier.id, snapshot.messageId)
+  assert.equal(carrier.role, 'system')
+  // Reconstruct the complete carrier from ordered logical contributors, rather
+  // than accepting an MVU substring in an unrelated or duplicated message.
+  const contributors = snapshot.contributorIds.map(id => {
+    const owners = assembly.nodes.filter(candidate => candidate.inputMessageIds.includes(id))
+    assert.equal(owners.length, 1)
+    return owners[0].text
+  })
+  assert.deepEqual(carrier.content, [{ type: 'text', text: contributors.filter(Boolean).join('\n\n') }])
+  assert.equal(carrier.content[0].text.split(expectedText).length - 1, 1)
+}
 test('real DSH AgentLoop final replies, fork seed, restart snapshots and native unload', { skip: !runtimeRoot, timeout: 20000 }, async () => {
   const require = createRequire(join(resolve(runtimeRoot), 'package.json'))
   const load = name => import(pathToFileURL(require.resolve(name)).href)
@@ -24,6 +59,8 @@ test('real DSH AgentLoop final replies, fork seed, restart snapshots and native 
     for (const name of ['session', 'agent', 'session-projection', 'llm', 'tools', 'agent-loop']) await ctx.plugin((await load(`@deepseek-ai/dsh-${name}`)).default, name === 'agent-loop' ? { agents: [] } : {})
     let broken = false
     class Adapter extends llm.LlmAdapter {
+      // This fixture selects a trailing MVU system source, which requires a capable route.
+      async resolveModel(provider, id) { return { provider, id, name: id, systemPromptUpdate: 'in-history' } }
       async *stream(request) {
         requests.push(request)
         const text = "_.add('hp', -5);"
@@ -54,7 +91,7 @@ test('real DSH AgentLoop final replies, fork seed, restart snapshots and native 
     const firstEnd = await turn(); assert.deepEqual(failures, []); assert.equal(firstEnd.data.reason.kind, 'completed', JSON.stringify(firstEnd.data.reason))
     const first = await service.read({ id: 'mvu:host', scope: { sessionId: agent.id } })
     assert.equal(first.content.stat_data.hp, 95)
-    assert.ok(requests[0].messages.some(m => m.content.some(b => b.text?.startsWith('{"hp":100}'))))
+    assertMvuRequestContribution(requests[0], agent.session, 'mvu:host', { hp: 100 })
     assert.ok(facts.some(f => f.phase === 'applied' && f.detail === 'dsh-request-observed' && f.revision === 0), JSON.stringify(agent.session.snapshotEvents().findLast(e => e.type === 'request/assembly')))
     assert.ok(facts.some(f => f.phase === 'applied' && f.detail === 'state-committed' && f.revision === 1))
     const boundary = agent.session.snapshotEvents().findLast(e => e.type === 'assistant/message').seq
@@ -98,6 +135,8 @@ test('real Host empty greeting binding writes state used by the first model requ
     new (await load('@deepseek-ai/dsh-api-session-controller')).SessionController(ctx, { nativeOpen: false })
     await ctx.plugin((await load('@deepseek-ai/dsh-permission-presets')).default, { defaultPreset: 'workspace-write' })
     class Adapter extends llm.LlmAdapter {
+      // This fixture selects a trailing MVU system source, which requires a capable route.
+      async resolveModel(provider, id) { return { provider, id, name: id, systemPromptUpdate: 'in-history' } }
       async *stream(request) {
         requests.push(request)
         const text = "_.add('hp', -1);"
@@ -149,7 +188,7 @@ test('real Host empty greeting binding writes state used by the first model requ
     agent.followup(llm.createUserMessage({ content: [{ type: 'text', text: 'Begin the synthetic scene.' }], source: { kind: 'user' } }))
     assert.equal((await completed).data.reason.kind, 'completed')
     await service.flush()
-    assert.ok(requests[0].messages.some(m => m.content.some(b => b.text?.startsWith('{"hp":7}'))))
+    assertMvuRequestContribution(requests[0], agent.session, 'mvu:opening', { hp: 7 })
     assert.ok(facts.some(f => f.phase === 'applied' && f.detail === 'dsh-request-observed' && f.revision === 1))
     assert.equal((await service.read({ id: 'mvu:opening', scope: { sessionId: agent.id } })).content.stat_data.hp, 6)
     await assert.rejects(service.createCardBinding({ scope, sourceIdentity, grantId }), { code: 'MVU_READ_ONLY' })
