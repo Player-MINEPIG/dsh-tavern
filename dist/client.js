@@ -49254,6 +49254,8 @@ var canonical = (value) => JSON.stringify(value, (_2, item) => plain2(item) ? Ob
 var equal = (a, b2) => canonical(a) === canonical(b2);
 var envelopeKeys = ["stat_data", "schema", "mvu_schema", "initialized_lorebooks", "display_data", "delta_data"];
 var identityKeys = ["\u6A21\u677FID", "\u96BE\u5EA6", "\u59D3\u540D", "\u5E74\u9F84", "\u73ED\u7EA7", "\u4E2A\u4EBA\u4FE1\u606F", "\u7167\u7247", "\u6765\u6E90", "\u5DF2\u9009\u62E9", "\u4E92\u65A5\u5F00\u573A", "\u4E92\u65A5\u5F00\u573AID", "\u4E92\u65A5\u5F00\u573A\u89E6\u53D1\u7801", "\u5F00\u573A\u9009\u9879", "\u5F00\u573A\u9009\u9879\u8BF4\u660E"];
+var selectionKeys = ["\u6A21\u677FID", "\u96BE\u5EA6", "\u6765\u6E90", "\u5DF2\u9009\u62E9", "\u4E92\u65A5\u5F00\u573A", "\u4E92\u65A5\u5F00\u573AID", "\u4E92\u65A5\u5F00\u573A\u89E6\u53D1\u7801", "\u5F00\u573A\u9009\u9879", "\u5F00\u573A\u9009\u9879\u8BF4\u660E"];
+var selectionOf = (identity) => Object.fromEntries(selectionKeys.filter((key2) => Object.hasOwn(identity, key2)).map((key2) => [key2, identity[key2]]));
 var difficulties = { easy: "\u7B80\u5355", normal: "\u666E\u901A", hard: "\u56F0\u96BE", extreme: "\u6781\u96BE", outsider: "\u4F60\u662F\u5B66\u751F\uFF1F", custom: "\u81EA\u5B9A\u4E49" };
 var identityOf = (value) => value?.stat_data?.["\u7CFB\u7EDF"]?.["_user\u8EAB\u4EFD"];
 function prepareIdentityAction(packet, snapshot, model) {
@@ -49282,8 +49284,11 @@ function prepareIdentityAction(packet, snapshot, model) {
     effective.stat_data = applyMvuSchema(effective.stat_data, baseline.mvu_schema);
     effective.display_data = json(effective.stat_data);
   }
-  const normalized = bounded(effective), message = model.message(identityOf(normalized));
-  return freeze3({ value: bounded(raw), normalized, message, identity: json(identityOf(normalized)), perkIds: packet.perkIds, openingId: packet.openingId, expectedRevision: snapshot.currentRevision, scope: json(snapshot.scope), resourceId: snapshot.resourceId });
+  const normalized = bounded(effective), normalizedIdentity = identityOf(normalized);
+  if (!plain2(normalizedIdentity) || Object.keys(normalizedIdentity).some((key2) => !identityKeys.includes(key2)) || !equal(selectionOf(identity), selectionOf(normalizedIdentity)) || perks.some((item) => normalized.stat_data?.["\u7CFB\u7EDF"]?.[item.key] !== item.value)) throw Error("Identity schema changed selection controls");
+  for (const key2 of ["\u59D3\u540D", "\u5E74\u9F84", "\u73ED\u7EA7", "\u4E2A\u4EBA\u4FE1\u606F", "\u7167\u7247"]) if (typeof normalizedIdentity[key2] !== "string" || normalizedIdentity[key2].length > (key2 === "\u7167\u7247" ? 65536 : 8192)) throw Error("Invalid normalized identity field");
+  const message = model.message(normalizedIdentity);
+  return freeze3({ value: bounded(raw), normalized, message, identity: json(normalizedIdentity), perkIds: packet.perkIds, openingId: packet.openingId, expectedRevision: snapshot.currentRevision, scope: json(snapshot.scope), resourceId: snapshot.resourceId });
 }
 function identityActionReview(value) {
   const visit3 = (item, key2) => {
@@ -49499,8 +49504,10 @@ var import_react18 = require("react");
 function IdentityActionProposal({ proposal, bridge, onError }) {
   if (!proposal) return null;
   const action = (method, event) => {
-    if (event.isTrusted !== true) return;
-    const at4 = performance.now();
+    const native = event?.nativeEvent, timestamp3 = native?.timeStamp, now = performance.now(), origin = performance.timeOrigin;
+    if (event?.isTrusted !== true || native?.isTrusted !== true || !Number.isFinite(timestamp3)) return;
+    const at4 = Number.isFinite(origin) && timestamp3 >= origin ? timestamp3 - origin : timestamp3;
+    if (at4 < 0 || at4 > now || now - at4 >= 1500) return;
     bridge?.[method](proposal.proposalId, { trusted: true, at: at4 }).catch((error) => onError(error.message));
   };
   return (0, import_react18.createElement)(

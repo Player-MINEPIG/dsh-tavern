@@ -10,6 +10,8 @@ const canonical=value=>JSON.stringify(value,(_,item)=>plain(item)?Object.fromEnt
 const equal=(a,b)=>canonical(a)===canonical(b)
 const envelopeKeys=['stat_data','schema','mvu_schema','initialized_lorebooks','display_data','delta_data']
 const identityKeys=['模板ID','难度','姓名','年龄','班级','个人信息','照片','来源','已选择','互斥开场','互斥开场ID','互斥开场触发码','开场选项','开场选项说明']
+const selectionKeys=['模板ID','难度','来源','已选择','互斥开场','互斥开场ID','互斥开场触发码','开场选项','开场选项说明']
+const selectionOf=identity=>Object.fromEntries(selectionKeys.filter(key=>Object.hasOwn(identity,key)).map(key=>[key,identity[key]]))
 const difficulties={easy:'简单',normal:'普通',hard:'困难',extreme:'极难',outsider:'你是学生？',custom:'自定义'}
 const identityOf=value=>value?.stat_data?.['系统']?.['_user身份']
 export function prepareIdentityAction(packet,snapshot,model) {
@@ -31,8 +33,11 @@ export function prepareIdentityAction(packet,snapshot,model) {
  if(!equal(raw,expected)||model.message(identity)!==packet.prompt)throw Error('Identity candidate differs from the fixed transformation')
  const effective=normalizeVariables(raw)
  if(baseline.mvu_schema){effective.stat_data=applyMvuSchema(effective.stat_data,baseline.mvu_schema);effective.display_data=json(effective.stat_data)}
- const normalized=bounded(effective),message=model.message(identityOf(normalized))
- return freeze({value:bounded(raw),normalized,message,identity:json(identityOf(normalized)),perkIds:packet.perkIds,openingId:packet.openingId,expectedRevision:snapshot.currentRevision,scope:json(snapshot.scope),resourceId:snapshot.resourceId})
+ const normalized=bounded(effective),normalizedIdentity=identityOf(normalized)
+ if(!plain(normalizedIdentity)||Object.keys(normalizedIdentity).some(key=>!identityKeys.includes(key))||!equal(selectionOf(identity),selectionOf(normalizedIdentity))||perks.some(item=>normalized.stat_data?.['系统']?.[item.key]!==item.value))throw Error('Identity schema changed selection controls')
+ for(const key of ['姓名','年龄','班级','个人信息','照片'])if(typeof normalizedIdentity[key]!=='string'||normalizedIdentity[key].length>(key==='照片'?65536:8192))throw Error('Invalid normalized identity field')
+ const message=model.message(normalizedIdentity)
+ return freeze({value:bounded(raw),normalized,message,identity:json(normalizedIdentity),perkIds:packet.perkIds,openingId:packet.openingId,expectedRevision:snapshot.currentRevision,scope:json(snapshot.scope),resourceId:snapshot.resourceId})
 }
 export function identityActionReview(value) {
  const visit=(item,key)=>{
