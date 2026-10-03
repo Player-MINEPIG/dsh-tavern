@@ -28,18 +28,28 @@ export function openingDataStore(indexedDB=globalThis.indexedDB) {
   return {get:()=>transact(false),put:value=>transact(true,value),remove:()=>transact(true,undefined,true)}
 }
 export function createOpeningSourceCache({store=openingDataStore(),budget=renderingCacheBudget,download=downloadRenderingSource}={}) {
-  let content,initialError,queue=Promise.resolve()
+  let content,initialError,initialization,reportedColdError=false,queue=Promise.resolve()
   const validate=value=>{if(typeof value!=='string'||value.length>sourceDescriptor.byteLength||new TextEncoder().encode(value).byteLength!==sourceDescriptor.byteLength||sourceSha256(value)!==sourceDescriptor.sha256)throw Error('Fixed opening data source changed; download the reviewed snapshot again');return value}
   // Charge an existing physical snapshot on cold start, before selection or any
   // execution. An empty store releases the conservative initial reservation.
-  const ready=(async()=>{budget.reserve('opening-inert',sourceDescriptor.byteLength);const saved=await store.get();if(saved===undefined||saved===null){budget.reserve('opening-inert',0);return}try{content=validate(saved)}catch(error){await store.remove();budget.reserve('opening-inert',0);throw error}})().catch(error=>{initialError=error})
-  budget.trackInitialization('existing-opening-inert',ready)
+  const initialize=()=>{
+    const tracked=(async()=>{budget.reserve('opening-inert',sourceDescriptor.byteLength);const saved=await store.get();if(saved===undefined||saved===null){budget.reserve('opening-inert',0);content=undefined;return}try{content=validate(saved)}catch(error){await store.remove();budget.reserve('opening-inert',0);content=undefined;throw error}})().then(()=>{initialError=null},error=>{initialError=error;throw error})
+    budget.trackInitialization('existing-opening-inert',tracked)
+    initialization=tracked
+    // The producer rejects for the shared barrier. This UI-facing promise
+    // records the error without an unhandled rejection during module import.
+    return tracked.catch(()=>{})
+  }
+  const ready=initialize()
   return Object.freeze({
     ready,
     async get({signal,onProgress=()=>{}}={}) {
       await ready;signal?.throwIfAborted()
       const operation=queue.then(async()=>{
-        signal?.throwIfAborted();if(initialError){const error=initialError;initialError=null;throw error}
+        signal?.throwIfAborted();if(initialError&&!reportedColdError){reportedColdError=true;throw initialError}
+        if(initialError){await initialize();signal?.throwIfAborted();if(initialError)throw initialError}
+        await initialization;signal?.throwIfAborted()
+        await budget.ready();signal?.throwIfAborted()
         if(content!==undefined){onProgress('cached');return {...sourceDescriptor,content}}
         budget.reserve('opening-inert',sourceDescriptor.byteLength);onProgress('downloading')
         try{const deadline=AbortSignal.timeout(15000),value=validate(await download(sourceDescriptor.url,{signal:signal?AbortSignal.any([signal,deadline]):deadline}));signal?.throwIfAborted();await store.put(value);content=value;signal?.throwIfAborted();onProgress('verified');return {...sourceDescriptor,content}}

@@ -39,6 +39,15 @@ test('inert cache charges cold data before selection, rejects drift and cannot e
  const denied=createOpeningSourceCache({budget:small,store:{get(){throw Error('must not read')}},download(){throw Error('must not download')}})
  await denied.ready;await assert.rejects(denied.get(),/shared byte budget/);assert.equal(small.snapshot().total,0)
 })
+test('inert cold read errors remain charged and rejected until an explicit complete readonly retry',async()=>{
+ const tracked=[],base=createRenderingCacheBudget(),budget={...base,trackInitialization:(key,promise)=>{tracked.push({key,promise});base.trackInitialization(key,promise)}},descriptor=OPENING_SOURCES[0]
+ let unreadable=true,reads=0,downloads=0
+ const cache=createOpeningSourceCache({budget,store:{async get(){reads++;if(unreadable)throw Error('cache read failed');return null}},download:async()=>{downloads++;throw Error('fixed download stopped')}})
+ await cache.ready;await assert.rejects(tracked[0].promise,/cache read failed/);assert.equal(tracked[0].key,'existing-opening-inert');assert.equal(base.snapshot().total,descriptor.byteLength)
+ await assert.rejects(cache.get(),/cache read failed/);assert.equal(reads,1);assert.equal(downloads,0)
+ await assert.rejects(cache.get(),/cache read failed/);assert.equal(reads,2);assert.equal(base.snapshot().total,descriptor.byteLength);assert.equal(downloads,0);await assert.rejects(tracked[1].promise,/cache read failed/)
+ unreadable=false;await assert.rejects(cache.get(),/fixed download stopped/);await tracked[2].promise;assert.equal(reads,3);assert.equal(downloads,1);assert.equal(base.snapshot().total,0)
+})
 test('parent opening callbacks require a fresh trusted click and discard replies after disposal',async()=>{
  const rawSource=readFileSync(new URL('../packages/client/src/play/card-worker-client.js',import.meta.url),'utf8')
  const limits=rawSource.includes('DEPENDENCY_LIMITS')?(await import(new URL('../packages/client/src/play/rendering-limits.js',import.meta.url))).DEPENDENCY_LIMITS:undefined

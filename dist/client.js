@@ -44863,29 +44863,40 @@ function openingDataStore(indexedDB = globalThis.indexedDB) {
   return { get: () => transact(false), put: (value) => transact(true, value), remove: () => transact(true, void 0, true) };
 }
 function createOpeningSourceCache({ store = openingDataStore(), budget = renderingCacheBudget, download = downloadRenderingSource } = {}) {
-  let content, initialError, queue = Promise.resolve();
+  let content, initialError, initialization, reportedColdError = false, queue = Promise.resolve();
   const validate = (value) => {
     if (typeof value !== "string" || value.length > sourceDescriptor.byteLength || new TextEncoder().encode(value).byteLength !== sourceDescriptor.byteLength || sourceSha256(value) !== sourceDescriptor.sha256) throw Error("Fixed opening data source changed; download the reviewed snapshot again");
     return value;
   };
-  const ready = (async () => {
-    budget.reserve("opening-inert", sourceDescriptor.byteLength);
-    const saved = await store.get();
-    if (saved === void 0 || saved === null) {
-      budget.reserve("opening-inert", 0);
-      return;
-    }
-    try {
-      content = validate(saved);
-    } catch (error) {
-      await store.remove();
-      budget.reserve("opening-inert", 0);
+  const initialize = () => {
+    const tracked = (async () => {
+      budget.reserve("opening-inert", sourceDescriptor.byteLength);
+      const saved = await store.get();
+      if (saved === void 0 || saved === null) {
+        budget.reserve("opening-inert", 0);
+        content = void 0;
+        return;
+      }
+      try {
+        content = validate(saved);
+      } catch (error) {
+        await store.remove();
+        budget.reserve("opening-inert", 0);
+        content = void 0;
+        throw error;
+      }
+    })().then(() => {
+      initialError = null;
+    }, (error) => {
+      initialError = error;
       throw error;
-    }
-  })().catch((error) => {
-    initialError = error;
-  });
-  budget.trackInitialization("existing-opening-inert", ready);
+    });
+    budget.trackInitialization("existing-opening-inert", tracked);
+    initialization = tracked;
+    return tracked.catch(() => {
+    });
+  };
+  const ready = initialize();
   return Object.freeze({
     ready,
     async get({ signal, onProgress = () => {
@@ -44894,11 +44905,19 @@ function createOpeningSourceCache({ store = openingDataStore(), budget = renderi
       signal?.throwIfAborted();
       const operation = queue.then(async () => {
         signal?.throwIfAborted();
-        if (initialError) {
-          const error = initialError;
-          initialError = null;
-          throw error;
+        if (initialError && !reportedColdError) {
+          reportedColdError = true;
+          throw initialError;
         }
+        if (initialError) {
+          await initialize();
+          signal?.throwIfAborted();
+          if (initialError) throw initialError;
+        }
+        await initialization;
+        signal?.throwIfAborted();
+        await budget.ready();
+        signal?.throwIfAborted();
         if (content !== void 0) {
           onProgress("cached");
           return { ...sourceDescriptor, content };
