@@ -3,9 +3,9 @@
 import { externalUrl } from './rendering-sources.js'
 
 export const IMAGE_SOURCE_ATTRIBUTE = 'data-dtv-image-source'
-export const IMAGE_LIMITS = Object.freeze({ concurrent: 4, visible: 32, entries: 64, bytes: 32 * 1024 * 1024, imageBytes: 3 * 1024 * 1024, pixels: 4 * 1024 * 1024, edge: 8192, elements: 8192, timeout: 15000 })
+export const IMAGE_LIMITS = Object.freeze({ concurrent: 4, visible: 32, entries: 64, bytes: 32 * 1024 * 1024, imageBytes: 3 * 1024 * 1024, cssChars: 1024 * 1024, pixels: 4 * 1024 * 1024, edge: 8192, elements: 8192, timeout: 15000 })
 // Public diagnostics never contain a source URL or the browser error message.
-const failureCode=error=>/^IMAGE_(?:BYTES|PIXELS|FORMAT|ANIMATION|SOURCE|NETWORK|CACHE|TIMEOUT)$/.test(error?.message)?error.message:'IMAGE_NETWORK'
+const failureCode=error=>/^IMAGE_(?:BYTES|PIXELS|FORMAT|ANIMATION|SOURCE|NETWORK|CACHE|TIMEOUT|CSS)$/.test(error?.message)?error.message:'IMAGE_NETWORK'
 const MIME = new Set(['image/png', 'image/jpeg', 'image/webp', 'image/gif'])
 export function imageSource(value) {
   if (typeof value !== 'string' || value.length > 3 * 1024 * 1024) return null
@@ -136,10 +136,11 @@ async function rasterize(bytes, mime, signal) {
       const canvas = document.createElement('canvas'); canvas.width = width; canvas.height = height
       canvas.getContext('2d').drawImage(bitmap,0,0,width,height)
       const data = canvas.toDataURL('image/png')
-      if(data.length<=IMAGE_LIMITS.imageBytes*4/3+64) {
+      if(data.length+16<=IMAGE_LIMITS.cssChars && data.length<=IMAGE_LIMITS.imageBytes*4/3+64) {
         signal.throwIfAborted()
         // The source can compress much better than the browser's PNG encoder.
-        // Bound injected bytes too: shrink while preserving aspect/alpha,
+        // Browsers silently ignore oversized custom-property values. Bound
+        // injected CSS text too: shrink while preserving aspect/alpha,
         // rather than raising the cache or retaining an oversized data URI.
         return { data, bytes: data.length * 2 + width * height * 4, width, height }
       }
@@ -285,6 +286,11 @@ export function observeImages(root, {frame, pool = sharedPool(), onStatus = ()=>
       }
     }
   }
+  function setBackgroundProperty(element,property,value,priority='') {
+    if(value.length>IMAGE_LIMITS.cssChars)throw Error('IMAGE_CSS')
+    element.style.setProperty(property,value,priority)
+    if(element.style.getPropertyValue(property)!==value)throw Error('IMAGE_CSS')
+  }
   function displayBackground(element) {
     const loaded=new Map()
     for(const [property,key] of backgrounds.get(element)??[]) {
@@ -296,7 +302,7 @@ export function observeImages(root, {frame, pool = sharedPool(), onStatus = ()=>
     // well, otherwise a parent's --cover keeps its inert fallback on children.
     for(const [property,binding] of backgroundBindings.get(element)??[]) {
       const value=binding.value.replace(/url\(\s*"[^"]*#dtv=([A-Za-z0-9_-]+)"\s*\)/g,(token,code)=>loaded.has(code)?`url("${loaded.get(code)}")`:token)
-      if(value!==binding.value){element.style.setProperty(property,value);binding.applied=value}
+      if(value!==binding.value){setBackgroundProperty(element,property,value,binding.priority);binding.applied=value}
       else if(element.style.getPropertyValue(property)===binding.applied){if(binding.original)element.style.setProperty(property,binding.original,binding.priority);else element.style.removeProperty(property);binding.applied=null}
     }
   }
@@ -305,6 +311,23 @@ export function observeImages(root, {frame, pool = sharedPool(), onStatus = ()=>
     if(record.property){record.image.style.removeProperty(record.property);displayBackground(record.image)}else record.image.removeAttribute('src')
     record.image.setAttribute('data-dtv-image-state','idle')
     record.image.removeAttribute('data-dtv-image-error')
+  }
+  function failed(record,error) {
+    const group=record.property?[...backgrounds.get(record.image).values()].map(key=>records.get(key)).filter(Boolean):[record]
+    if(record.property)restoreBindings(record.image)
+    for(const item of group) {
+      item.ticket++;item.lease?.release();item.lease=null;item.data=null;item.state='failed'
+      if(item.property)item.image.style.removeProperty(item.property);else item.image.removeAttribute('src')
+      item.image.setAttribute('data-dtv-image-state','failed');item.image.setAttribute('data-dtv-image-error',failureCode(error));item.image.setAttribute('title',unavailable)
+    }
+    schedule()
+  }
+  function applyBackground(record) {
+    try {
+      setBackgroundProperty(record.image,record.property,`url("${record.data}")`)
+      displayBackground(record.image)
+      if(!record.surfaces.some(pseudo=>doc.defaultView.getComputedStyle(record.image,pseudo||null).backgroundImage.includes(record.data)))throw Error('IMAGE_CSS')
+    } catch(error) {failed(record,error)}
   }
   function tick() {
     scheduled = false; if (disposed) return
@@ -320,10 +343,11 @@ export function observeImages(root, {frame, pool = sharedPool(), onStatus = ()=>
         record.lease = pool.acquire(record.source,state=>{record.state=state;record.image.setAttribute('data-dtv-image-state',state);schedule()})
         record.lease.promise.then(value=>{
           if (disposed || record.ticket !== ticket || !record.image.isConnected || (!record.property&&record.image.getAttribute(IMAGE_SOURCE_ATTRIBUTE)!==record.source)) return
-          record.state = 'loaded'; record.data=value.data; if(record.property){record.image.style.setProperty(record.property,`url("${value.data}")`);displayBackground(record.image)}else record.image.src = value.data; record.image.setAttribute('data-dtv-image-state','loaded');record.image.removeAttribute('data-dtv-image-error'); schedule()
+          record.state = 'loaded'; record.data=value.data; if(record.property)applyBackground(record);else record.image.src = value.data
+          if(record.state==='loaded'){record.image.setAttribute('data-dtv-image-state','loaded');record.image.removeAttribute('data-dtv-image-error')}schedule()
         }).catch(error=>{
           if (disposed || record.ticket !== ticket) return
-          record.state = 'failed'; record.image.setAttribute('data-dtv-image-state','failed'); record.image.setAttribute('data-dtv-image-error',failureCode(error));record.image.setAttribute('title',unavailable); schedule()
+          failed(record,error)
         })
       } catch(error) {record.state=/IMAGE_(?:VISIBLE_LIMIT|CACHE)/.test(error.message)?'deferred':'failed';record.image.setAttribute('data-dtv-image-state',record.state);if(record.state==='failed'){record.image.setAttribute('data-dtv-image-error',failureCode(error));record.image.setAttribute('title',unavailable)}}
     }
@@ -382,7 +406,7 @@ export function observeImages(root, {frame, pool = sharedPool(), onStatus = ()=>
           if(!record){record={image:element,property,source,ticket:0,state:'idle',intersects:false,visible:false,surfaces:[]};records.set(key,record);observer.observe(element)}
           let used=surfaces.get(key);if(!used){used=[];surfaces.set(key,used)}used.push(pseudo)
           record.surfaces=used
-          if(record.state==='loaded'){element.style.setProperty(property,`url("${record.data}")`);displayBackground(element)}
+          if(record.state==='loaded')applyBackground(record)
         }
       }
     }

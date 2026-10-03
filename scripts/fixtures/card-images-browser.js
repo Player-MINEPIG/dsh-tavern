@@ -3,16 +3,24 @@ import {createRoot} from 'react-dom/client'
 import {flushSync} from 'react-dom'
 import {MessageContent,cleanCardHtml,CARD_CSP} from '../../packages/client/src/play/scripted-content.js'
 import {RichText,sanitizeRenderedHtml} from '../../packages/client/src/play/rich-text.js'
-import {imageCss,observeImages,createImagePool} from '../../packages/client/src/play/card-images.js'
+import {imageCss,observeImages,createImagePool,IMAGE_LIMITS} from '../../packages/client/src/play/card-images.js'
 
 ;(async()=>{
 const results=[], check=(name,pass)=>{results.push({name,pass:Boolean(pass)});if(!pass)console.error(name)}
+window.__checkMediaPixels=check
 const pause=ms=>new Promise(resolve=>setTimeout(resolve,ms))
 async function until(test){for(let n=0;n<150;n++){if(test())return;await pause(20)}throw Error('Media condition timed out')}
 const fixtureUrl=n=>`https://images.example.com/${n}.png`
 const canvas=document.createElement('canvas');canvas.width=120;canvas.height=80
 const ctx=canvas.getContext('2d');ctx.fillStyle='#df6128';ctx.fillRect(0,0,120,80);ctx.fillStyle='#fff';ctx.font='18px sans-serif';ctx.fillText('IMAGE',25,45)
 const bytes=Uint8Array.from(atob(canvas.toDataURL('image/png').split(',')[1]),c=>c.charCodeAt(0))
+// A valid, bounded PNG whose data URI exceeded the browser's CSS variable
+// limit before output resizing. Repeat pixels by row so its source stays <3MiB.
+const largeCanvas=document.createElement('canvas');largeCanvas.width=1000;largeCanvas.height=1370
+const largeContext=largeCanvas.getContext('2d'),largePixels=largeContext.createImageData(1000,1370);let seed=17
+for(let y=0;y<1370;y+=2)for(let x=0;x<1000;x++){seed=(Math.imul(seed,1664525)+1013904223)>>>0;for(let dy=0;dy<2;dy++){const at=((y+dy)*1000+x)*4;largePixels.data[at]=seed&255;largePixels.data[at+1]=(seed>>>8)&255;largePixels.data[at+2]=(seed>>>16)&255;largePixels.data[at+3]=255}}
+largeContext.putImageData(largePixels,0,0)
+const largeBytes=Uint8Array.from(atob(largeCanvas.toDataURL('image/png').split(',')[1]),c=>c.charCodeAt(0))
 const requests=[];let active=0,maximum=0,aborted=0
 const nativeFetch=globalThis.fetch
 // Only self-authored fixture URLs are replaced. No real card JS or remote
@@ -28,7 +36,7 @@ globalThis.fetch=(url,options={})=>{
   setTimeout(()=>{
    if(String(url).includes('fail'))end(reject,Error('fixture error'))
    else if(String(url).includes('svg'))end(resolve,new Response('<svg/>',{headers:{'content-type':'image/svg+xml'}}))
-   else end(resolve,new Response(bytes,{headers:{'content-type':'image/png'}}))
+   else end(resolve,new Response(String(url).includes('large-css')?largeBytes:bytes,{headers:{'content-type':'image/png'}}))
   },25)
  })
 }
@@ -50,6 +58,16 @@ try{
  // An identical hidden pseudo must not suppress a legitimate ordinary background.
  tile.className='pseudo';tile.style.cssText=imageCss(`background:url("${fixtureUrl('pseudo-0')}");--picture:url("${fixtureUrl('pseudo-0')}")`);await until(()=>pseudoPool.stats().leases===1);check('visible host background remains eligible beside an identical hidden pseudo',requests.length===1)
  pseudoMedia.dispose();pseudoPool.dispose();pseudoRoot.remove();requests.length=0
+ const largeRoot=document.createElement('section');largeRoot.style.cssText=imageCss(`--identity-cover-image:url("${fixtureUrl('large-css')}")`)
+ const largeStyle=document.createElement('style');largeStyle.textContent='.large-covers{display:grid;grid-template-columns:repeat(2,140px);gap:12px}.large-covers[hidden]{display:none}.large-cover{width:140px;height:180px;background:linear-gradient(90deg,rgba(36,14,11,.5),transparent 18%),linear-gradient(180deg,rgba(255,245,211,.12),rgba(74,18,15,.1)),var(--identity-cover-image),linear-gradient(160deg,#6f231e,#2e1510);background-size:cover;background-position:center}'
+ largeRoot.className='large-covers';largeRoot.append(largeStyle);for(let n=0;n<6;n++){const cover=document.createElement('div');cover.className='large-cover';largeRoot.append(cover)}document.body.append(largeRoot)
+ const largePool=createImagePool(),largeMedia=observeImages(largeRoot,{pool:largePool});await until(()=>[...largeRoot.querySelectorAll('.large-cover')].every(el=>el.getAttribute('data-dtv-image-state')==='loaded'||el.getAttribute('data-dtv-image-state')==='failed'))
+ const largeCovers=[...largeRoot.querySelectorAll('.large-cover')]
+ check('large PNG inherited aliases contain actual decoded background pixels on all six covers',largeBytes.length<IMAGE_LIMITS.imageBytes&&largeCovers.every(el=>el.getAttribute('data-dtv-image-state')==='loaded'&&!getComputedStyle(el).backgroundImage.includes('#dtv=')&&el.style.getPropertyValue('--identity-cover-image').length>100000&&el.style.getPropertyValue('--identity-cover-image').length<=IMAGE_LIMITS.cssChars)&&requests.filter(request=>request.url===fixtureUrl('large-css')).length===1)
+ largeMedia.refresh();await pause(60);check('large background aliases survive refresh',largeCovers.every(el=>!getComputedStyle(el).backgroundImage.includes('#dtv=')))
+ window.__largeMediaReady=true;if(window.__holdLargeMediaFixture)await window.__holdLargeMediaFixture()
+ largeRoot.hidden=true;await pause(80);check('hiding the large covers clears aliases and releases all visible leases',largePool.stats().leases===0&&largeCovers.every(el=>![...el.style].some(key=>key.startsWith('--dtv-img-'))&&!el.style.getPropertyValue('--identity-cover-image')))
+ largeMedia.dispose();largePool.dispose();largeRoot.remove();requests.length=0
  const urls=Array.from({length:6000},(_,n)=>fixtureUrl(n)), source=`<details id="gallery"><summary>6000 images</summary>${urls.map(url=>`<img src="${url}">`).join('')}</details>`
  const inert=sanitizeRenderedHtml(source,{liveImages:true});check('import/sanitization of 6000 URLs is inert',requests.length===0&&!inert.includes(' src="https:'))
  render(React.createElement(RichText,{text:source}));await pause(180)
@@ -66,7 +84,7 @@ try{
   // The rich-text style boundary may have more than one host; traverse it.
  function deepAll(root,selector){let found=[...root.querySelectorAll(selector)];for(const el of root.querySelectorAll('*'))if(el.shadowRoot)found.push(...deepAll(el.shadowRoot,selector));return found}
  await until(()=>deepAll(container,'.cover').some(el=>getComputedStyle(el).backgroundImage.includes('data:image/png;base64')&&!getComputedStyle(el).backgroundImage.includes('#dtv=')))
- check('six visible CSS covers share one network request and actual decoded raster',requests.filter(request=>request.url===cover).length===1&&deepAll(container,'.cover').every(el=>getComputedStyle(el).backgroundImage.includes('data:image/png;base64')))
+ check('six visible CSS covers share one network request and actual decoded raster',requests.filter(request=>request.url===cover).length===1&&deepAll(container,'.cover').every(el=>getComputedStyle(el).backgroundImage.includes('data:image/png;base64')&&!getComputedStyle(el).backgroundImage.includes('#dtv=')))
  check('media fetch omits credentials/referrer, denies redirects and requires CORS',requests.every(({options})=>options.credentials==='omit'&&options.referrerPolicy==='no-referrer'&&options.redirect==='error'&&options.mode==='cors'&&options.cache==='no-store'))
  window.__mediaSnapshot=()=>({requests:requests.length,maximum,aborted,covers:deepAll(container,'.cover').length})
  window.__mediaReady=true
