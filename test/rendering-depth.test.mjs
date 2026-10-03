@@ -58,14 +58,18 @@ test('review P2: all convergent entry/declaration permutations agree across acqu
  }
 })
 
-test('owner graph depth survives entry disablement without executing the disabled entry',async()=>{
+test('only selected owner roots lend shortest depth; enabling a shortcut makes the convergent graph ready',async()=>{
  const owner='character:synthetic-depth',{files}=convergent(9,[]),store=memory(),trust=createRenderingTrust()
  const helpers=[{owner,key:'chain',enabled:true,content:`import '${url('a0.js')}';`},{owner,key:'shortcut',enabled:false,content:`import '${url('shared.js')}';throw Error('Disabled entry');`}]
  const manager=createRenderingDependencies({store,trust,download:async key=>files.get(key)})
  await manager.sync(helpers);await manager.acquire(owner)
+ assert.equal(manager.inspect(owner).status,'failed')
+ assert.equal(manager.inspect(owner).items.find(item=>item.url===url('shared.js')).depth,9)
+ helpers[1]={...helpers[1],enabled:true,content:`import '${url('shared.js')}';`}
+ await manager.sync(helpers);await manager.acquire(owner)
  assert.equal(manager.inspect(owner).status,'ready')
  const output=prepare('',[owner],helpers,trust)
- assert.equal(output.runs.length,1);assert.doesNotMatch(output.runs[0].code,/Disabled entry/)
+ assert.equal(output.runs.length,2);assert.doesNotMatch(output.runs.map(item=>item.code).join(''),/Disabled entry/)
  assert.equal(Object.keys(output.modules).length,10)
 })
 
@@ -90,6 +94,16 @@ test('a genuine depth-nine dependency remains rejected in acquisition and every 
   const legacy=createRenderingTrust();await legacy.install(owner,[...files].map(([url,content])=>({url,content})))
   assert.throws(()=>prepare(source,[owner],helpers,legacy),/depth exceeds/,kind)
  }
+})
+
+test('saved disablement drops old owner-depth hints before an asynchronous inventory refresh',async()=>{
+ const owner='character:synthetic-depth',{files}=convergent(9,[]),trust=createRenderingTrust()
+ const helpers=[{owner,key:'chain',enabled:true,content:`import '${url('a0.js')}';`},{owner,key:'shortcut',preferenceKey:'helper:id:shortcut',enabled:true,content:`import '${url('shared.js')}';`}]
+ const manager=createRenderingDependencies({store:memory(),trust,download:async key=>files.get(key)})
+ await manager.sync(helpers);await manager.acquire(owner);assert.doesNotThrow(()=>prepare('',[owner],helpers,trust))
+ trust.setEnablement({entries:[{owner,key:'helper:id:shortcut',enabled:false}]})
+ assert.equal(trust.inspect(owner,url('shared.js')).depth,undefined)
+ assert.throws(()=>prepare('',[owner],helpers,trust),/depth exceeds/)
 })
 
 test('shortcuts and equal code from another owner cannot lend depth or bypass content conflicts',async()=>{

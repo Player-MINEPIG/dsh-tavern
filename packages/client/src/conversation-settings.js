@@ -1,4 +1,5 @@
 import { normalizeScriptEnablement } from '../../presentation/script-enablement.js'
+import { normalizeRenderingAdapters } from '../../presentation/rendering-adapters.js'
 import { renderingTrust } from './play/rendering-trust.js'
 import { normalizeBubbleStyle } from '../../presentation/bubble-style.js'
 import { CLIENT_CONVERSATION_SETTINGS_EVENT } from '../../identity.js'
@@ -22,6 +23,7 @@ export function getClientConversationSettings() {
 export function normalizeClientConversationSettings(value) {
   return {
     ...(value?.scriptEnablement === undefined ? {} : { scriptEnablement: normalizeScriptEnablement(value.scriptEnablement) }),
+    ...(value?.renderingAdapters === undefined ? {} : { renderingAdapters: normalizeRenderingAdapters(value.renderingAdapters) }),
     ...(value?.bubbleStyle ? { bubbleStyle: normalizeBubbleStyle(value.bubbleStyle) } : {}),
     ...(value?.interactiveCards === undefined ? {} : { interactiveCards: value.interactiveCards === true }),
     textScale: boundedScale(value?.textScale, DEFAULT_CONVERSATION_SETTINGS.textScale),
@@ -32,6 +34,7 @@ export function normalizeClientConversationSettings(value) {
 export function setClientConversationSettings(value, { announce = true } = {}) {
   current = normalizeClientConversationSettings(value)
   renderingTrust.setEnablement(current.scriptEnablement)
+  renderingTrust.setAdapterIntents(current.renderingAdapters)
   if (announce && typeof window !== 'undefined') {
     window.dispatchEvent(new CustomEvent(CLIENT_CONVERSATION_SETTINGS_EVENT, {
       detail: getClientConversationSettings(),

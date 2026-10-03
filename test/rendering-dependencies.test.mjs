@@ -156,14 +156,14 @@ test('parallel owners cannot cancel or inherit one another, and redownload repla
  await manager.uninstall('character:A');assert.match(trust.read('preset:B',url),/1$/)
 })
 
-test('import asks once with actual roots including disabled declarations; decline never fetches',async()=>{
+test('import asks once with selected roots; decline never fetches',async()=>{
  const {offerRenderingDependencies}=await import('../packages/client/src/play/rendering-dependencies.js')
  for(const accepted of [false,true]){
   let prompts=0,calls=0
   const dependencies=createRenderingDependencies({store:memory(),trust:createRenderingTrust(),download:async()=>{calls++;return ''}})
   const resource={data:{extensions:{tavern_helper:{scripts:[{enabled:false,content:`import '${url}'`},{content:`import '${url}'`}]}}}}
   await offerRenderingDependencies(resource,'character','A',{dependencies,message:roots=>'Download graph:\n'+roots,confirm:text=>{prompts++;assert.match(text,/https:\/\/example.com\/root.js/);assert.equal(text.split(url).length,2);return accepted}})
-  for(let i=0;i<20&&dependencies.inspect('character:A').status==='downloading';i++)await new Promise(resolve=>setTimeout(resolve,1))
+  if(accepted)for(let i=0;i<30&&dependencies.inspect('character:A').status!=='ready';i++)await new Promise(resolve=>setTimeout(resolve,1))
   assert.equal(prompts,1);assert.equal(calls,accepted?1:0)
  }
 })

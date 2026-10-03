@@ -1,4 +1,5 @@
 import { normalizeScriptEnablement } from '../../presentation/script-enablement.js'
+import { normalizeRenderingAdapters } from '../../presentation/rendering-adapters.js'
 import { normalizeBubbleStyle } from '../../presentation/bubble-style.js'
 import {
   mkdirSync,
@@ -37,12 +38,13 @@ function normalizeScale(value, field) {
 
 export function normalizeConversationSettings(value) {
   if (!isRecord(value)) throw new TypeError('Conversation settings must be an object')
-  const allowed = new Set(['textScale', 'actionScale', 'bubbleStyle', 'interactiveCards', 'scriptEnablement'])
+  const allowed = new Set(['textScale', 'actionScale', 'bubbleStyle', 'interactiveCards', 'scriptEnablement', 'renderingAdapters'])
   const unexpected = Object.keys(value).find(key => !allowed.has(key))
   if (unexpected !== undefined) throw new TypeError(`Unsupported conversation setting "${unexpected}"`)
   if (value.interactiveCards !== undefined && typeof value.interactiveCards !== 'boolean') throw new TypeError('interactiveCards must be boolean')
   return {
     ...(value.scriptEnablement === undefined ? {} : { scriptEnablement: normalizeScriptEnablement(value.scriptEnablement) }),
+    ...(value.renderingAdapters === undefined ? {} : { renderingAdapters: normalizeRenderingAdapters(value.renderingAdapters) }),
     ...(value.bubbleStyle === undefined ? {} : { bubbleStyle: normalizeBubbleStyle(value.bubbleStyle) }),
     ...(value.interactiveCards === undefined ? {} : { interactiveCards: value.interactiveCards }),
     schemaVersion: 1,
@@ -63,6 +65,7 @@ function readSettings(path) {
       textScale: parsed?.textScale,
       actionScale: parsed?.actionScale,
       ...(parsed?.scriptEnablement === undefined ? {} : { scriptEnablement: parsed.scriptEnablement }),
+      ...(parsed?.renderingAdapters === undefined ? {} : { renderingAdapters: parsed.renderingAdapters }),
       ...(parsed?.bubbleStyle === undefined ? {} : { bubbleStyle: parsed.bubbleStyle }),
       ...(parsed?.interactiveCards === undefined ? {} : { interactiveCards: parsed.interactiveCards }),
     })

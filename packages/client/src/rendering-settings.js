@@ -1,6 +1,7 @@
 import { renderingSettingsStyles } from './rendering-settings-styles.js'
 import { updateScriptEnablement } from '../../presentation/script-enablement.js'
-import {mvuBuiltin} from './play/mvu-builtins.js'
+import { updateRenderingAdapter } from '../../presentation/rendering-adapters.js'
+import {builtinCandidate} from './play/rendering-selection.js'
 import {renderingWriteRequests} from './play/rendering-write-requests.js'
 import { renderingDependencies, dependencyProgress } from './play/rendering-dependencies.js'
 import { createElement as h, useEffect, useRef, useState } from 'react'
@@ -41,10 +42,14 @@ export function RenderingSettings({client,activeSnapshot,settings={},update,busy
     }).catch(error=>{if(ticket===generation.current)setError(error.message)})
     return()=>{generation.current++}
   },[client,bindings.characterId,bindings.presetId,version])
+  useEffect(()=>{
+    if(sources.length)void renderingDependencies.sync(sources).catch(error=>setError(error.message))
+  },[sources,settings.scriptEnablement,settings.renderingAdapters])
   const run=async callback=>{try{setError('');await callback()}catch(error){setError(error.message)}}
   const help = (label, text) => h(HostTooltip??'span',HostTooltip?{label:text,portal:true,maxWidth:320,side:'bottom',openOnClick:true}:{title:text},h('button',{type:'button',className:'dtv-script-info','aria-label':label},'ⓘ'))
   const sourceView = content => h('textarea',{className:'dtv-script-source',readOnly:true,value:content,spellCheck:false,wrap:'off','aria-label':translate('rendering.source')})
   const changeEnabled = (entry, enabled) => run(()=>update?.({...settings,scriptEnablement:updateScriptEnablement(settings.scriptEnablement,entry.owner,entry.preferenceKey??entry.key,enabled)}))
+  const changeAdapter = (owner,source,mode) => run(()=>update?.({...settings,renderingAdapters:updateRenderingAdapter(settings.renderingAdapters,owner,source,mode==='auto'?undefined:mode)}))
   const helpers=sources.filter(source=>source.kind==='helper')
   const owners=[...new Set(sources.filter(source=>source.dependencies.length).map(source=>source.owner))]
   const renderHelper = entry => {
@@ -73,18 +78,23 @@ export function RenderingSettings({client,activeSnapshot,settings={},update,busy
       state==='downloading'?h('progress',{'aria-label':translate('rendering.graph.downloading'),value:progress.ready+progress.failed,max:Math.max(1,progress.discovered)}):null,
       graph?.error?h('p',{role:'alert',className:'dtv-script-meta'},graph.error):null,
       progress.omitted?h('p',{role:'alert',className:'dtv-script-meta'},translate('rendering.graph.omitted',{count:progress.omitted+(progress.capped?'+':'')})):null,
+      h('p',{className:'dtv-script-meta'},translate('rendering.selectionScope')),
       h('div',{className:'dtv-script-actions'},
         h('button',{type:'button',className:'dtv-button',disabled:working,onClick:()=>run(()=>renderingDependencies.acquire(owner))},translate(state==='waiting'?'rendering.acquire':state==='changed'?'rendering.acquireUpdate':'rendering.redownload')),
         h('button',{type:'button',className:'dtv-button',disabled:state==='loading',onClick:()=>run(()=>renderingDependencies.uninstall(owner))},translate(state==='downloading'?'rendering.cancel':'rendering.uninstall'))),
-      h('div',{className:'dtv-dependency-items'},...items.map(item=>{
-        const record=renderingTrust.inspect(owner,item.url),enabled=renderingTrust.isEnabled(owner,item.url)
+      h('div',{className:'dtv-dependency-items'},...[...items,...(graph?.excluded??[])].map(item=>{
+        const enabled=renderingTrust.isEnabled(owner,item.url),selected=item.status!=='disabled',candidate=builtinCandidate(item.url)
+        const cached=graph?.retained?.find(record=>record.url===item.url),content=item.content??cached?.content
         const displayUrl=item.url?new URL(item.url).hostname+new URL(item.url).pathname:item.key
-        return h('details',{key:item.key,className:'dtv-entry'},
-          h('summary',null,h('input',{type:'checkbox',checked:enabled,disabled:!item.url||busy||!update,'aria-label':translate('rendering.enableEntry',{name:item.key}),onClick:event=>event.stopPropagation(),onChange:event=>changeEnabled({owner,key:item.url},event.target.checked)}),h('span',{className:'dtv-entry-name'},displayUrl),h('span',{className:'dtv-entry-state'},translate(enabled?'rendering.graph.'+item.status:'rendering.disabled'))),
+        return h('details',{key:item.key,className:'dtv-entry','data-selected':selected},
+          h('summary',null,h('input',{type:'checkbox',checked:enabled,disabled:!item.url||busy||!update,'aria-label':translate('rendering.enableEntry',{name:item.key}),onClick:event=>event.stopPropagation(),onChange:event=>changeEnabled({owner,key:item.url},event.target.checked)}),h('span',{className:'dtv-entry-name'},displayUrl),h('span',{className:'dtv-entry-state'},translate(!selected?'rendering.excluded':item.builtin?'rendering.builtinProvided':enabled?'rendering.graph.'+item.status:'rendering.disabled'))),
           h('div',{className:'dtv-entry-body'},h('p',{className:'dtv-script-meta'},item.key),item.error?h('p',{role:'alert',className:'dtv-script-meta'},item.error):null,
-            item.content!==undefined?sourceView(item.content):null,
-            record&&mvuBuiltin(item.url,record.digest)?h('label',{className:'dtv-check'},h('input',{type:'checkbox',checked:record.builtin===true,onChange:event=>run(()=>renderingTrust.setBuiltin(owner,item.url,event.target.checked))}),translate('rendering.builtinMvu')):null))
-      })))
+            item.origins?.length?h('p',{className:'dtv-script-meta'},translate('rendering.origins'),item.origins.join(' · ')):null,
+            candidate?h('label',{className:'dtv-script-control'},translate('rendering.adapterMode'),h('select',{className:'dtv-select',disabled:busy||!update,'aria-label':translate('rendering.adapterMode')+' '+item.key,value:renderingTrust.adapterIntent(owner,item.url)??'auto',onChange:event=>changeAdapter(owner,item.url,event.target.value)},h('option',{value:'auto'},translate('rendering.adapterAuto')),h('option',{value:'builtin'},translate('rendering.adapterBuiltin')),h('option',{value:'original'},translate('rendering.adapterOriginal')))):null,
+            item.builtin?help(translate('rendering.adapterHelp'),translate('rendering.builtinMvu')):null,
+            content!==undefined?sourceView(content):null))
+      })),
+      graph?.retained?.length?h('details',{className:'dtv-script-group dtv-retained-dependencies'},h('summary',null,translate('rendering.retained',{count:graph.retained.length})),h('p',{className:'dtv-script-meta'},translate('rendering.retainedHelp')),...graph.retained.map(item=>h('details',{key:item.url,className:'dtv-entry'},h('summary',null,h('span',{className:'dtv-entry-name'},item.url)),h('div',{className:'dtv-entry-body'},sourceView(item.content))))):null)
   }
   return h('section',{className:'dtv-rendering-settings','data-revision':revision+'-'+dependencyRevision},
     h('style',null,renderingSettingsStyles),h('h3',null,translate('rendering.title')),
