@@ -2,7 +2,7 @@
 // write approval. Guest code receives no reservation handle.
 export function createRenderingCacheBudget(limit=64*1024*1024) {
   if(!Number.isSafeInteger(limit)||limit<1)throw Error('Invalid rendering cache budget')
-  const reservations=new Map()
+  const reservations=new Map(),initializations=new Map()
   return Object.freeze({
     reserve(key,bytes){
       if(typeof key!=='string'||!key||key.length>200||!Number.isSafeInteger(bytes)||bytes<0)throw Error('Invalid rendering cache reservation')
@@ -12,6 +12,12 @@ export function createRenderingCacheBudget(limit=64*1024*1024) {
       return total
     },
     snapshot(){return Object.freeze({limit,total:[...reservations.values()].reduce((sum,size)=>sum+size,0),entries:Object.freeze([...reservations].map(row=>Object.freeze(row)))})},
+    trackInitialization(key,promise){
+      if(typeof key!=='string'||!key||key.length>200||initializations.has(key)||initializations.size>=16||!promise||typeof promise.then!=='function')throw Error('Invalid cache initialization')
+      const pending=Promise.resolve(promise).then(()=>{},()=>{}).finally(()=>{if(initializations.get(key)===pending)initializations.delete(key)})
+      initializations.set(key,pending)
+    },
+    async ready(){while(initializations.size)await Promise.all([...initializations.values()])},
   })
 }
 export const renderingCacheBudget=createRenderingCacheBudget()

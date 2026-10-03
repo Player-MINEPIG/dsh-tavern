@@ -15,3 +15,13 @@ test('code, inactive archives and inert data share an atomic replaceable byte bu
  assert.equal(createRenderingCacheBudget(100).snapshot().total,0)
  for(const value of [-1,1.5,Infinity,NaN])assert.throws(()=>budget.reserve('code',value),/Invalid/)
 })
+test('cold-cache accounting waits for registered initialization without retaining empty reservations',async()=>{
+ const budget=createRenderingCacheBudget(100);let finish,settled=false
+ budget.reserve('opening-inert',20)
+ budget.trackInitialization('existing-opening-inert',new Promise(resolve=>{finish=()=>{budget.reserve('opening-inert',0);resolve()}}))
+ const ready=budget.ready().then(()=>{settled=true;budget.reserve('executable',95)})
+ await Promise.resolve();assert.equal(settled,false)
+ finish();await ready;assert.equal(budget.snapshot().total,95)
+ budget.trackInitialization('failed-cold-read',Promise.reject(Error('fixture unavailable')))
+ await budget.ready();assert.equal(budget.snapshot().total,95)
+})
