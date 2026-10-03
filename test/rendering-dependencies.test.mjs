@@ -1,6 +1,6 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
-import {createRenderingDependencies} from '../packages/client/src/play/rendering-dependencies.js'
+import {createRenderingDependencies,DEPENDENCY_LIMITS,dependencyProgress} from '../packages/client/src/play/rendering-dependencies.js'
 import {createRenderingTrust} from '../packages/client/src/play/rendering-trust.js'
 const url='https://example.com/root.js',child='https://example.com/child.js'
 const source=(owner='character:A',content=`import '${url}'`)=>({owner,key:owner+':helper',content,enabled:true})
@@ -10,6 +10,103 @@ const memory=()=>{
  return {get:async key=>read(key),readCurrent:async(key,snapshot,accept)=>{const saved=read(key);return saved.generation===snapshot.generation&&saved.pending===snapshot.pending?accept(saved)!==false:false},begin:async key=>advance(key,true),remove:async key=>advance(key,false),publish:async(key,generation,graph)=>{const current=read(key);if(current.generation!==generation||!current.pending)return false;map.set(key,{generation,graph:structuredClone(graph),pending:false});return true}}
 }
 const deferred=()=>{let resolve;const promise=new Promise(r=>{resolve=r});return {promise,resolve}}
+
+test('waiting, loading, uninstall and source replacement retain unique static root counts without fetching',async()=>{
+ const store=memory(),calls=[]
+ const manager=createRenderingDependencies({store,trust:createRenderingTrust(),download:async url=>{calls.push(url);return ''}})
+ const code=`import '${url}#one'; import '${url}#two'; export * from '${child}'; import('${child}');`
+ const hydration=manager.sync([source('character:A',code),source('character:A',code)])
+ assert.equal(dependencyProgress(manager.inspect('character:A')).discovered,2)
+ await hydration;assert.equal(manager.inspect('character:A').status,'waiting');assert.equal(calls.length,0)
+ assert.deepEqual(dependencyProgress(manager.inspect('character:A')),{ready:0,failed:0,discovered:2,omitted:0,complete:false,capped:false})
+ await manager.acquire('character:A');await manager.uninstall('character:A')
+ assert.equal(dependencyProgress(manager.inspect('character:A')).discovered,2);assert.equal(dependencyProgress(manager.inspect('character:A')).ready,0)
+ const restored=createRenderingDependencies({store,trust:createRenderingTrust()});await restored.sync([source('character:A',code)])
+ assert.equal(dependencyProgress(restored.inspect('character:A')).discovered,2)
+ await manager.sync([source('character:A',`import '${child}?v=1'; import '${child}?v=2'`)])
+ assert.equal(dependencyProgress(manager.inspect('character:A')).discovered,2,'meaningful query identities remain distinct')
+})
+
+test('more than 24 relative modules converge with fanout, shared URLs and cycles, then restore and redownload',async()=>{
+ const owner='character:A',files=89,store=memory(),calls=[],trust=createRenderingTrust()
+ let revision=1
+ const manager=createRenderingDependencies({store,trust,download:async key=>{
+  calls.push(key)
+  if(key===url)return Array.from({length:files},(_,i)=>`export * from './part-${i}.js';`).join('\n')
+  return `import './root.js'; import './part-0.js'; export const version=${revision};`
+ }})
+ await manager.sync([source()]);await manager.acquire(owner)
+ const graph=manager.inspect(owner);assert.equal(graph.status,'ready');assert.equal(graph.complete,true);assert.equal(graph.discovered,files+1)
+ assert.equal(calls.length,files+1);assert.equal(new Set(calls).size,calls.length)
+ const restored=createRenderingDependencies({store,trust:createRenderingTrust(),download:()=>{throw Error('No restore fetch')}})
+ await restored.sync([source()]);assert.equal(restored.inspect(owner).complete,true);assert.equal(restored.inspect(owner).items.length,files+1)
+ revision=2;await manager.acquire(owner);assert.match(trust.read(owner,'https://example.com/part-5.js'),/version=2/)
+ assert.equal(DEPENDENCY_LIMITS.count,128)
+})
+
+test('a genuine file-budget overflow preserves discovered/omitted counts and cannot report complete x/x',async()=>{
+ const calls=[],store=memory(),limits={...DEPENDENCY_LIMITS,count:3}
+ const manager=createRenderingDependencies({store,limits,trust:createRenderingTrust(),download:async key=>{calls.push(key);return key===url?Array.from({length:5},(_,i)=>`import './${i}.js';`).join('\n'):''}})
+ await manager.sync([source()]);await manager.acquire('character:A')
+ const progress=dependencyProgress(manager.inspect('character:A'))
+ assert.deepEqual(progress,{ready:3,failed:0,discovered:6,omitted:3,complete:false,capped:false});assert.equal(calls.length,3)
+ assert.match(manager.inspect('character:A').error,/6 discovered; graph incomplete/)
+ const restored=createRenderingDependencies({store,limits,trust:createRenderingTrust()});await restored.sync([source()])
+ assert.deepEqual(dependencyProgress(restored.inspect('character:A')),progress)
+})
+
+test('discovery metadata is bounded and labels larger known graphs as lower bounds',async()=>{
+ const references=Array.from({length:4100},(_,i)=>`import './${i}.js';`).join('\n')
+ const manager=createRenderingDependencies({store:memory(),trust:createRenderingTrust(),limits:{...DEPENDENCY_LIMITS,count:1},download:async()=>references})
+ await manager.sync([source()]);await manager.acquire('character:A')
+ assert.deepEqual(dependencyProgress(manager.inspect('character:A')),{ready:1,failed:0,discovered:4096,omitted:4095,complete:false,capped:true})
+})
+
+test('over-limit persisted progress cannot falsely claim a complete graph',async()=>{
+ const store=memory(),manager=createRenderingDependencies({store,trust:createRenderingTrust(),download:async()=>''})
+ await manager.sync([source()]);await manager.acquire('character:A')
+ const saved=await store.get('character:A'),generation=await store.begin('character:A')
+ await store.publish('character:A',generation,{...saved.graph,discovered:2,omitted:1,complete:true})
+ const trust=createRenderingTrust(),restored=createRenderingDependencies({store,trust});await restored.sync([source()])
+ assert.equal(restored.inspect('character:A').status,'failed');assert.match(restored.inspect('character:A').error,/Invalid dependency cache progress/)
+ assert.throws(()=>trust.read('character:A',url),/not downloaded/)
+})
+
+test('unresolved diagnostics do not consume the unique file download budget',async()=>{
+ const calls=[],manager=createRenderingDependencies({store:memory(),trust:createRenderingTrust(),limits:{...DEPENDENCY_LIMITS,count:2},download:async key=>{calls.push(key);return ''}})
+ await manager.sync([source('character:A',`import(variable); import(variable); import '${url}'; import '${child}';`)])
+ await manager.acquire('character:A')
+ assert.equal(calls.length,2);assert.equal(manager.inspect('character:A').omitted,0)
+ assert.deepEqual(dependencyProgress(manager.inspect('character:A')),{ready:2,failed:1,discovered:3,omitted:0,complete:false,capped:false})
+})
+
+test('the depth budget accepts root zero through eight and never fetches depth nine',async()=>{
+ for(const overflow of [false,true]){
+  const calls=[],manager=createRenderingDependencies({store:memory(),trust:createRenderingTrust(),download:async key=>{
+   const depth=Number(new URL(key).pathname.match(/depth-(\d+)/)[1]);calls.push(depth)
+   return depth<8||overflow?`import './depth-${depth+1}.js';`:''
+  }})
+  await manager.sync([source('character:A',"import 'https://example.com/depth-0.js';")]);await manager.acquire('character:A')
+  assert.deepEqual(calls,[0,1,2,3,4,5,6,7,8])
+  assert.equal(manager.inspect('character:A').status,overflow?'failed':'ready')
+  if(overflow)assert.match(manager.inspect('character:A').items.at(-1).error,/depth exceeds/)
+ }
+})
+
+test('network and computed imports leave final totals unknown; legacy truncated caches are lower bounds',async()=>{
+ for(const content of ["import('./missing.js')",'import(variable)']){
+  const manager=createRenderingDependencies({store:memory(),trust:createRenderingTrust(),download:async key=>{if(key!==url)throw Error('network');return content}})
+  await manager.sync([source()]);await manager.acquire('character:A');assert.equal(dependencyProgress(manager.inspect('character:A')).complete,false)
+ }
+ const store=memory(),manager=createRenderingDependencies({store,trust:createRenderingTrust(),download:async()=>''})
+ await manager.sync([source()]);await manager.acquire('character:A')
+ const saved=await store.get('character:A'),generation=await store.begin('character:A')
+ const legacy={...saved.graph,status:'failed',error:'Dependency graph exceeds 24 files'}
+ for(const key of ['discovered','discoveryCapped','omitted','complete'])delete legacy[key]
+ await store.publish('character:A',generation,legacy)
+ const restored=createRenderingDependencies({store,trust:createRenderingTrust()});await restored.sync([source()])
+ assert.deepEqual(dependencyProgress(restored.inspect('character:A')),{ready:1,failed:0,discovered:2,omitted:1,complete:false,capped:true})
+})
 
 test('one acquisition converges cyclic graph, deduplicates shared children and restores without network',async()=>{
  const store=memory(),trust=createRenderingTrust(),calls=[]

@@ -29,6 +29,15 @@ try{
  render('two');await ready();trust.removeOwner(owner);await ready()
  check('external cache uninstall preserves inline enablement',trust.isEnabled(owner,preferenceKey,false)&&doc()?.getElementById('count')?.textContent==='ready')
  check('another owner never inherits the entry choice',!trust.isEnabled('character:other',preferenceKey,false))
+ const base='https://fixture.example/large/',modules=Array.from({length:89},(_,i)=>({url:base+'leaf-'+i+'.js',content:'export const value='+i+';'}))
+ const imports=modules.map((item,i)=>`import {value as v${i}} from '${item.url}';`).join('\n')
+ const rootModule={url:base+'root.js',content:imports+'\ndocument.getElementById("count").textContent=String('+modules.map((_,i)=>'v'+i).join('+')+');'}
+ await trust.install(owner,[rootModule,...modules])
+ render('large',[{...helper,enabled:true,preferenceKey:'helper:large',content:`import '${rootModule.url}';`}])
+ for(let i=0;i<200&&doc()?.getElementById('count')?.textContent!=='3916';i++)await pause(20)
+ check('90 authored modules pass preparation, transfer and the real Worker input budget',doc()?.getElementById('count')?.textContent==='3916')
+ trust.removeOwner(owner);await pause(100)
+ check('uninstall removes a large graph and remount cannot execute its old modules',doc()?.getElementById('count')?.textContent!=='3916')
  root.unmount();trust.clear();trust.setEnablement();check('unmount disposes the card',!host.children.length)
  let resolveOld
  const events=[],status=[]

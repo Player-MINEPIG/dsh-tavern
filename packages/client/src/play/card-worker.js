@@ -1,3 +1,4 @@
+import {DEPENDENCY_LIMITS} from './rendering-limits.js'
 import {createAsyncJobDrain} from './quickjs-async-jobs.js'
 import { newQuickJSAsyncWASMModuleFromVariant } from 'quickjs-emscripten-core'
 import variant from '@jitl/quickjs-singlefile-browser-release-asyncify'
@@ -7,9 +8,9 @@ import {IDENTITY_OPENING_RUNTIME} from './identity-opening-runtime.js'
 
 function validateInput(data) {
  const runs=data.runs??[],modules=data.modules??{},html=data.html??''
- if(!Array.isArray(runs)||runs.length>128||!modules||typeof modules!=='object'||Array.isArray(modules)||Object.keys(modules).length>24)throw Error('Card input count exceeds limit')
+ if(!Array.isArray(runs)||runs.length>128||!modules||typeof modules!=='object'||Array.isArray(modules)||Object.keys(modules).length>DEPENDENCY_LIMITS.count)throw Error('Card input count exceeds limit')
  let size=0
- const count=(value,limit)=>{if(typeof value!=='string'||value.length>limit)throw Error('Card input exceeds limit');size+=new TextEncoder().encode(value).byteLength;if(size>24*1024*1024)throw Error('Card expanded input exceeds 24 MiB')}
+ const count=(value,limit)=>{if(typeof value!=='string'||value.length>limit)throw Error('Card input exceeds limit');size+=new TextEncoder().encode(value).byteLength;if(size>DEPENDENCY_LIMITS.bytes)throw Error('Card expanded input exceeds 24 MiB')}
  count(html,1024*1024)
  for(const run of runs){if(!run||typeof run!=='object')throw Error('Invalid card run');count(run.code,8*1024*1024);if(run.name!==undefined)count(run.name,2048)}
  for(const[name,code]of Object.entries(modules)){count(name,2048);count(code,8*1024*1024)}

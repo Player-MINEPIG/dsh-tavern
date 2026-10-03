@@ -1,3 +1,4 @@
+import {DEPENDENCY_LIMITS, RENDERING_CACHE_LIMITS} from './rendering-limits.js'
 import {mvuBuiltin} from './mvu-builtins.js'
 import { externalUrl, MAX_RENDER_SOURCE } from './rendering-sources.js'
 
@@ -25,9 +26,9 @@ export function createRenderingTrust() {
       if (typeof owner !== 'string' || owner.length > 300 || typeof source !== 'string' || source.length > 2048 || typeof content !== 'string' || content.length > MAX_RENDER_SOURCE) throw Error('Rendering source exceeds limit')
       if (source.startsWith('https:') && externalUrl(source) !== source) throw Error('Unsupported dependency URL')
       const key = keyFor(owner,source), ticket = {}, epoch = generation
-      if (!records.has(key) && records.size >= 64) throw Error('Rendering source count exceeds limit')
+      if (!records.has(key) && records.size >= RENDERING_CACHE_LIMITS.count) throw Error('Rendering source count exceeds limit')
       const bytes=new TextEncoder().encode(content).byteLength
-      if(bytes>MAX_RENDER_SOURCE||[...records.entries()].reduce((sum,[id,value])=>sum+(id===key?0:new TextEncoder().encode(value.content).byteLength),bytes)>64*1024*1024)throw Error('Rendering cache exceeds limit')
+      if(bytes>MAX_RENDER_SOURCE||[...records.entries()].reduce((sum,[id,value])=>sum+(id===key?0:new TextEncoder().encode(value.content).byteLength),bytes)>RENDERING_CACHE_LIMITS.bytes)throw Error('Rendering cache exceeds limit')
       records.set(key,{ticket,owner,source,content,approved:false,digest:null}); emit()
       const digest = [...new Uint8Array(await crypto.subtle.digest('SHA-256',new TextEncoder().encode(content)))].map(byte=>byte.toString(16).padStart(2,'0')).join('')
       if (generation !== epoch || records.get(key)?.ticket !== ticket) throw Error('Rendering review was cancelled')
@@ -36,6 +37,7 @@ export function createRenderingTrust() {
     },
     removeOwner(owner) { installs.set(owner,{}); for(const [key,value] of records)if(value.owner===owner)records.delete(key);emit() },
     async prepare(owner, items) {
+      if(!Array.isArray(items)||items.length>DEPENDENCY_LIMITS.count||items.reduce((sum,item)=>sum+new TextEncoder().encode(item.content??'').byteLength,0)>DEPENDENCY_LIMITS.bytes)throw Error('Rendering dependency graph exceeds limit')
       const epoch=generation,ticket={};installs.set(owner,ticket)
       const next=await Promise.all(items.map(async item=>{
         if(externalUrl(item.url)!==item.url||typeof item.content!=='string'||new TextEncoder().encode(item.content).byteLength>MAX_RENDER_SOURCE)throw Error('Invalid cached dependency')
@@ -45,7 +47,7 @@ export function createRenderingTrust() {
       return () => {
         if(epoch!==generation||installs.get(owner)!==ticket)throw Error('Dependency installation cancelled')
         const retained=[...records.values()].filter(item=>item.owner!==owner)
-        if(retained.length+next.length>64||[...retained,...next].reduce((sum,item)=>sum+new TextEncoder().encode(item.content).byteLength,0)>64*1024*1024)throw Error('Rendering cache exceeds limit')
+        if(retained.length+next.length>RENDERING_CACHE_LIMITS.count||[...retained,...next].reduce((sum,item)=>sum+new TextEncoder().encode(item.content).byteLength,0)>RENDERING_CACHE_LIMITS.bytes)throw Error('Rendering cache exceeds limit')
         for(const [key,value] of records)if(value.owner===owner)records.delete(key)
         for(const item of next)records.set(keyFor(owner,item.source),item)
         emit()

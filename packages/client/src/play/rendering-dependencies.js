@@ -2,9 +2,44 @@ import {discoverDependencies, renderingInventory} from './rendering-sources.js'
 import {downloadRenderingSource} from './rendering-download.js'
 import {renderingTrust} from './rendering-trust.js'
 
-export const DEPENDENCY_LIMITS = {count:24, depth:8, bytes:24*1024*1024}
+import {DEPENDENCY_LIMITS, MAX_DEPENDENCY_IDENTITIES} from './rendering-limits.js'
+export {DEPENDENCY_LIMITS} from './rendering-limits.js'
 const digest = async value => [...new Uint8Array(await crypto.subtle.digest('SHA-256',new TextEncoder().encode(value)))].map(v=>v.toString(16).padStart(2,'0')).join('')
 const envelope=value=>value?.fingerprint?{generation:0,graph:value}:value??{generation:0}
+
+function discovery(limits) {
+  const identities=new Set(),items=[]
+  let capped=false,files=0
+  return {
+    items,
+    add(dependencies,depth) {
+      for(const dependency of dependencies){
+        const key=dependency.url??dependency.raw
+        if(identities.has(key))continue
+        if(identities.size>=MAX_DEPENDENCY_IDENTITIES){capped=true;continue}
+        identities.add(key)
+        // Unresolved references are diagnostics, not downloaded files.
+        if(dependency.url){if(files>=limits.count)continue;files++}
+        const error=dependency.blocked?'Blocked or unresolved dependency':depth>limits.depth?'Dependency depth exceeds limit':null
+        items.push({key,url:dependency.url,depth,status:error?'failed':'queued',error})
+      }
+    },
+    metadata:()=>({discovered:identities.size,discoveryCapped:capped,omitted:identities.size-items.length}),
+  }
+}
+function directGraph(sources,limits) {
+  const graph=discovery(limits)
+  for(const source of sources)graph.add(discoverDependencies(source.content),0)
+  return {items:graph.items,...graph.metadata(),complete:false}
+}
+
+// A denominator is exact only once every reachable static source was explored.
+export function dependencyProgress(graph) {
+  const items=graph?.items??[]
+  return {ready:items.filter(item=>item.status==='ready').length,failed:items.filter(item=>item.status==='failed').length,
+    discovered:graph?.discovered??items.length,omitted:graph?.omitted??0,
+    complete:graph?.complete===true,capped:graph?.discoveryCapped===true}
+}
 
 // Publication and tombstones use the SAME IndexedDB read/write transaction.
 // BroadcastChannel is only a wake-up signal, never the ordering authority.
@@ -65,14 +100,23 @@ export function createRenderingDependencies({trust=renderingTrust,store=dependen
       // Revalidate after async hashing, and commit only inside the current read.
       for(let attempt=0;attempt<8&&current(state);attempt++){
         const graph=saved.graph,usable=!saved.pending&&graph?.fingerprint===state.fingerprint
-        if(usable&&(!Array.isArray(graph.items)||graph.items.length>limits.count||graph.items.reduce((sum,item)=>sum+new TextEncoder().encode(item.content??'').byteLength,0)>limits.bytes))throw Error('Invalid dependency cache size')
+        if(usable&&(!Array.isArray(graph.items)||graph.items.length>MAX_DEPENDENCY_IDENTITIES||graph.items.filter(item=>item.url).length>limits.count||graph.items.reduce((sum,item)=>sum+new TextEncoder().encode(item.content??'').byteLength,0)>limits.bytes))throw Error('Invalid dependency cache size')
+        if(usable&&graph.discovered!==undefined&&(!Number.isSafeInteger(graph.discovered)||graph.discovered<graph.items.length||graph.discovered>MAX_DEPENDENCY_IDENTITIES||graph.omitted!==graph.discovered-graph.items.length||typeof graph.discoveryCapped!=='boolean'||typeof graph.complete!=='boolean'||graph.complete!==(graph.status==='ready')||graph.complete&&(graph.omitted||graph.discoveryCapped||graph.items.some(item=>item.status!=='ready'))))throw Error('Invalid dependency cache progress')
         const commit=usable?await trust.prepare(state.owner,graph.items.filter(item=>item.status==='ready')):null
         if(!current(state))return
         const accepted=await store.readCurrent(state.owner,saved,()=>{
           if(!current(state))return false
           commit?.()
           state.cacheGeneration=saved.generation
-          state.items=usable?graph.items:[];state.error=usable?(graph.error??null):null
+          const counts=usable?{
+            // Older failed count-budget caches omitted at least one known file.
+            discovered:graph.discovered??(graph.items.length+(/exceeds \d+ files/.test(graph.error??'')?1:0)),
+            discoveryCapped:graph.discoveryCapped??/exceeds \d+ files/.test(graph.error??''),
+            omitted:graph.omitted??(/exceeds \d+ files/.test(graph.error??'')?1:0),
+            complete:graph.complete??(graph.status==='ready'&&graph.items.every(item=>item.status==='ready')),
+            items:graph.items,
+          }:directGraph(state.sources,limits)
+          Object.assign(state,counts);state.error=usable?(graph.error??null):null
           state.status=saved.pending?'remote':usable?graph.status:graph?'changed':'waiting'
           return true
         })
@@ -117,7 +161,7 @@ export function createRenderingDependencies({trust=renderingTrust,store=dependen
       const previous=states.get(owner)
       if(previous?.signature===signature)return previous.ready
       previous?.controller?.abort();trust.removeOwner(owner)
-      const state={owner,signature,sources,status:'loading',items:[],fingerprint:null,error:null,cacheGeneration:0}
+      const state={owner,signature,sources,status:'loading',...directGraph(sources,limits),fingerprint:null,error:null,cacheGeneration:0}
       states.set(owner,state);emit()
       state.ready=(async()=>{
         try{
@@ -135,7 +179,9 @@ export function createRenderingDependencies({trust=renderingTrust,store=dependen
     await original.ready
     if(!current(original))throw Error('Dependency resource changed')
     original.controller?.abort()
-    const state={...original,items:[],status:'downloading',error:null,starting:true,controller:new AbortController()}
+    const pending=discovery(limits)
+    for(const source of original.sources)pending.add(discoverDependencies(source.content),0)
+    const state={...original,items:pending.items,...pending.metadata(),complete:false,status:'downloading',error:null,starting:true,controller:new AbortController()}
     states.set(owner,state);trust.removeOwner(owner);emit()
     try{
       state.cacheGeneration=await store.begin(owner)
@@ -143,16 +189,11 @@ export function createRenderingDependencies({trust=renderingTrust,store=dependen
       if(!current(state))return
       if(state.refreshPending){state.refreshPending=false;void refresh(owner)}
       broadcast(owner)
-      const enqueue=(dependencies,depth)=>{
-        for(const dependency of dependencies){
-          const key=dependency.url??dependency.raw
-          if(state.items.some(item=>item.key===key))continue
-          if(state.items.length>=limits.count){state.error='Dependency graph exceeds '+limits.count+' files';break}
-          const error=dependency.blocked?'Blocked or unresolved dependency':depth>limits.depth?'Dependency depth exceeds limit':null
-          state.items.push({key,url:dependency.url,depth,status:error?'failed':'queued',error})
-        }
+      const enqueue=(dependencies=[],depth=0)=>{
+        pending.add(dependencies,depth);Object.assign(state,pending.metadata())
+        if(state.omitted||state.discoveryCapped)state.error=(state.discoveryCapped?'Dependency discovery exceeds '+MAX_DEPENDENCY_IDENTITIES+' identities':'Dependency graph exceeds '+limits.count+' files')+'; '+state.discovered+(state.discoveryCapped?'+':'')+' discovered; graph incomplete'
       }
-      for(const source of state.sources)enqueue(discoverDependencies(source.content),0)
+      enqueue()
       let bytes=0
       for(let i=0;i<state.items.length;i++){
         if(!current(state)||state.controller.signal.aborted)return
@@ -177,7 +218,8 @@ export function createRenderingDependencies({trust=renderingTrust,store=dependen
       }
       if(!current(state)||state.controller.signal.aborted)return
       state.status=state.error||state.items.some(item=>item.status==='failed')?'failed':'ready'
-      const published=await store.publish(owner,state.cacheGeneration,{fingerprint:state.fingerprint,status:state.status,items:state.items,error:state.error})
+      state.complete=state.status==='ready'
+      const published=await store.publish(owner,state.cacheGeneration,{fingerprint:state.fingerprint,status:state.status,items:state.items,error:state.error,discovered:state.discovered,discoveryCapped:state.discoveryCapped,omitted:state.omitted,complete:state.complete})
       if(!current(state))return
       state.controller=null
       if(!published){await refresh(owner);return}
@@ -188,7 +230,7 @@ export function createRenderingDependencies({trust=renderingTrust,store=dependen
   async function uninstall(owner) {
     const previous=states.get(owner)
     previous?.controller?.abort()
-    const state=previous?{...previous,status:'waiting',items:[],error:null,starting:true,controller:null}:null
+    const state=previous?{...previous,...directGraph(previous.sources,limits),status:'waiting',error:null,starting:true,controller:null}:null
     if(state)states.set(owner,state)
     trust.removeOwner(owner);emit()
     try{

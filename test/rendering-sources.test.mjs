@@ -1,3 +1,4 @@
+import {DEPENDENCY_LIMITS} from '../packages/client/src/play/rendering-limits.js'
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import {helperScripts,renderingInventory,discoverDependencies,externalUrl,loadWrapper} from '../packages/client/src/play/rendering-sources.js'
@@ -21,6 +22,12 @@ test('body wrappers, unknown languages and interrupted fences are distinguished'
  assert.equal(splitCards(source)[0].html,source)
  assert.equal(splitCards('```js\n'+source+'\n```')[0].html,undefined)
  assert.equal(splitCards('```\n'+source)[0].html,undefined)
+})
+test('media tags, CSS and a six-thousand URL catalog are not code dependencies',()=>{
+ const images=Array.from({length:6000},(_,i)=>'https://example.com/images/'+i+'.webp')
+ const html='<body><img src="https://example.com/a.png" srcset="https://example.com/b.png 2x"><style>@import "https://example.com/style.css"; p{background:url(https://example.com/c.png)}</style><video src="https://example.com/a.mp4"></video><script>const images='+JSON.stringify(images)+';</script></body>'
+ assert.deepEqual(discoverDependencies(html),[])
+ assert.equal(renderingInventory({data:{first_mes:html}},{kind:'character',resourceId:'media-fixture'})[0].dependencies.length,0)
 })
 test('dependency discovery retains blocked references without fetching and resolves relative modules',()=>{
  const result=discoverDependencies(`<script src="https://example.com/a.js"></script><script>\nimport x from './b.js';\nimport('http://localhost:5500/a.js');\n$('body').load('https://example.com/card.html')</script>`,'https://example.com/root.js')
@@ -74,7 +81,7 @@ test('module graph checks every source owner before sharing identical dependenci
  const source=await readFile(new URL('../packages/client/src/play/scripted-content.js',import.meta.url),'utf8')
  const body=source.slice(source.indexOf('export function prepareCardDocument('),source.indexOf('\nexport function createDomBridge(')).replace('export function','function')
  const inertDocument={createElement(){return {innerHTML:'',content:{querySelectorAll(){return []}}}}}
- const prepare=new Function('discoverDependencies','externalUrl','loadWrapper','MAX_RENDER_SOURCE','document','cardDocument',body+';return prepareCardDocument')(discoverDependencies,externalUrl,loadWrapper,128*1024,inertDocument,()=>({html:'',scripts:[],unsupported:[]}))
+ const prepare=new Function('DEPENDENCY_LIMITS','discoverDependencies','externalUrl','loadWrapper','MAX_RENDER_SOURCE','document','cardDocument',body+';return prepareCardDocument')(DEPENDENCY_LIMITS,discoverDependencies,externalUrl,loadWrapper,128*1024,inertDocument,()=>({html:'',scripts:[],unsupported:[]}))
  const trust=createRenderingTrust(),url='https://example.com/shared.js'
  const helpers=['character:A','preset:B'].map(owner=>({owner,key:owner+':helper',content:`import {value} from '${url}';`,enabled:true}))
  const approve=async(owner,key,content)=>trust.approve(owner,key,await trust.stage(owner,key,content))
@@ -93,6 +100,21 @@ test('module graph checks every source owner before sharing identical dependenci
  assert.equal(prepare('',helpers.map(x=>x.owner),helpers,trust).modules[child],'export const value=1')
  trust.revoke(helpers[1].owner,url)
  assert.throws(()=>prepare('',helpers.map(x=>x.owner),helpers,trust),/not downloaded/)
+})
+
+test('runtime and acquisition count the first inline dependency at depth zero',async()=>{
+ const {readFile}=await import('node:fs/promises')
+ const text=await readFile(new URL('../packages/client/src/play/scripted-content.js',import.meta.url),'utf8')
+ const body=text.slice(text.indexOf('export function prepareCardDocument('),text.indexOf('\nexport function createDomBridge(')).replace('export function','function')
+ const document={createElement:()=>({innerHTML:'',content:{querySelectorAll:()=>[]}})}
+ const prepare=new Function('DEPENDENCY_LIMITS','discoverDependencies','externalUrl','loadWrapper','MAX_RENDER_SOURCE','document','cardDocument',body+';return prepareCardDocument')(DEPENDENCY_LIMITS,discoverDependencies,externalUrl,loadWrapper,128*1024,document,()=>({html:'',scripts:[],unsupported:[]}))
+ const owner='character:depth-fixture',trust=createRenderingTrust(),url=n=>'https://example.com/depth-'+n+'.js'
+ const items=Array.from({length:9},(_,i)=>({url:url(i),content:i===8?'export const done=1;':`import './depth-${i+1}.js';`}))
+ await trust.install(owner,items)
+ const helpers=[{owner,key:'inline',enabled:true,content:`import '${url(0)}';`}]
+ assert.equal(Object.keys(prepare('',[owner],helpers,trust).modules).length,9)
+ await trust.install(owner,[...items.slice(0,-1),{url:url(8),content:"import './depth-9.js';"},{url:url(9),content:''}])
+ assert.throws(()=>prepare('',[owner],helpers,trust),/depth exceeds/)
 })
 
  test('AST dependency discovery handles multiline declarations and ignores inert strings/comments',()=>{
@@ -120,7 +142,7 @@ test('S2: disabled global URL does not shadow reviewed enabled character; explic
  const source=await readFile(new URL('../packages/client/src/play/scripted-content.js',import.meta.url),'utf8')
  const body=source.slice(source.indexOf('export function prepareCardDocument('),source.indexOf('\nexport function createDomBridge(')).replace('export function','function')
  const inertDocument={createElement(){return {innerHTML:'',content:{querySelectorAll(){return []}}}}}
- const prepare=new Function('discoverDependencies','externalUrl','loadWrapper','MAX_RENDER_SOURCE','document','cardDocument',body+';return prepareCardDocument')(discoverDependencies,externalUrl,loadWrapper,128*1024,inertDocument,()=>({html:'',scripts:[],unsupported:[]}))
+ const prepare=new Function('DEPENDENCY_LIMITS','discoverDependencies','externalUrl','loadWrapper','MAX_RENDER_SOURCE','document','cardDocument',body+';return prepareCardDocument')(DEPENDENCY_LIMITS,discoverDependencies,externalUrl,loadWrapper,128*1024,inertDocument,()=>({html:'',scripts:[],unsupported:[]}))
  const trust=createRenderingTrust(),url='https://example.com/shared.html',owners=['global:workspace:synthetic','character:synthetic']
  for(const owner of owners)trust.approve(owner,url,await trust.stage(owner,url,'<body>synthetic</body>'))
  trust.setEnablement({schemaVersion:1,entries:[{owner:owners[0],key:url,enabled:false}]})

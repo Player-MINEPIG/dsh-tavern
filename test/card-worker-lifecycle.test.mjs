@@ -1,3 +1,4 @@
+import {DEPENDENCY_LIMITS} from '../packages/client/src/play/rendering-limits.js'
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import {readFileSync} from 'node:fs'
@@ -5,11 +6,11 @@ import vmModule from 'node:vm'
 import {VIRTUAL_DOM_BOOTSTRAP} from '../packages/client/src/play/virtual-dom-runtime.js'
 
 test('worker construction and initial transfer failures synchronously release all resources',()=>{
- const source=readFileSync(new URL('../packages/client/src/play/card-worker-client.js',import.meta.url),'utf8').replace('export function','function')
+ const source=readFileSync(new URL('../packages/client/src/play/card-worker-client.js',import.meta.url),'utf8').replace(/^import.*\n/gm,'').replace('export function','function')
  for(const constructorFails of [true,false]) {
   let created=0,revoked=0,terminated=0;const timers=new Map()
   class Worker {constructor(){if(constructorFails)throw Error('construction failed')}postMessage(){throw Error('clone failed')}terminate(){terminated++}}
-  const api=new Function('TAVERN_CARD_WORKER_SOURCE','Worker','URL','Blob','crypto','setTimeout','clearTimeout',source+';return createVirtualCardRuntime')('',Worker,{createObjectURL(){created++;return 'blob:fixture'},revokeObjectURL(){revoked++}},class {},{randomUUID:()=> 'fixture'},(fn)=>{const key={};timers.set(key,fn);return key},id=>timers.delete(id))
+  const api=new Function('DEPENDENCY_LIMITS','TAVERN_CARD_WORKER_SOURCE','Worker','URL','Blob','crypto','setTimeout','clearTimeout',source+';return createVirtualCardRuntime')(DEPENDENCY_LIMITS,'',Worker,{createObjectURL(){created++;return 'blob:fixture'},revokeObjectURL(){revoked++}},class {},{randomUUID:()=> 'fixture'},(fn)=>{const key={};timers.set(key,fn);return key},id=>timers.delete(id))
   for(let i=0;i<9;i++)assert.throws(()=>api({},{onError(){}}),constructorFails?/construction failed/:/clone failed/)
   assert.equal(created,9);assert.equal(revoked,9);assert.equal(terminated,constructorFails?0:9);assert.equal(timers.size,0)
  }
@@ -28,7 +29,7 @@ test('duplicate guest timer IDs cannot orphan native timers at disposal',async()
  let host,id=0;const pending=new Map(),events=[]
  const vm={dispose(){},setProp(){},newFunction(name,fn){host=fn;return{dispose(){}}},newAsyncifiedFunction(){return{dispose(){}}},typeof:handle=>handle.code==='__view()'?'string':'undefined',getString:x=>typeof x==='string'?x:'{}',newString:x=>x,evalCodeAsync:code=>({value:{code,dispose(){}}}),dump:handle=>handle.code==='__view()'?'{}':null}
  const runtime={setMemoryLimit(){},setMaxStackSize(){},setInterruptHandler(){},setModuleLoader(){},newContext:()=>vm,executePendingJobs:()=>({}),hasPendingJob:()=>false,computeMemoryUsage:()=>({dispose(){}}),dispose(){}}
- const context=vmModule.createContext({createAsyncJobDrain:()=>async()=>0,TAVERN_QUICKJS_VERSION:'0.31.0',newQuickJSAsyncWASMModuleFromVariant:async()=>({newRuntime:()=>runtime}),variant:{},VIRTUAL_DOM_BOOTSTRAP:'',TAVERN_VIRTUAL_DOM_SOURCE:'',performance:{now:()=>0},self:{postMessage:x=>events.push(x),close(){}},setTimeout:fn=>{pending.set(++id,fn);return id},clearTimeout:id=>pending.delete(id),URL,TextEncoder})
+ const context=vmModule.createContext({DEPENDENCY_LIMITS,createAsyncJobDrain:()=>async()=>0,TAVERN_QUICKJS_VERSION:'0.31.0',newQuickJSAsyncWASMModuleFromVariant:async()=>({newRuntime:()=>runtime}),variant:{},VIRTUAL_DOM_BOOTSTRAP:'',TAVERN_VIRTUAL_DOM_SOURCE:'',performance:{now:()=>0},self:{postMessage:x=>events.push(x),close(){}},setTimeout:fn=>{pending.set(++id,fn);return id},clearTimeout:id=>pending.delete(id),URL,TextEncoder})
  vmModule.runInContext(source,context);context.self.onmessage({data:{kind:'init',nonce:'fixture',html:'',runs:[]}})
  for(let i=0;i<50;i++)await Promise.resolve()
  assert.ok(events.some(x=>x.kind==='ready'))
@@ -38,10 +39,10 @@ test('duplicate guest timer IDs cannot orphan native timers at disposal',async()
 })
 
 test('layout replies stay within their nonce/generation and disposal prevents deferred measurement',async()=>{
- const source=readFileSync(new URL('../packages/client/src/play/card-worker-client.js',import.meta.url),'utf8').replace('export function','function')
+ const source=readFileSync(new URL('../packages/client/src/play/card-worker-client.js',import.meta.url),'utf8').replace(/^import.*\n/gm,'').replace('export function','function')
  let worker,called=0,terminated=0;const timers=new Map(),posts=[],errors=[]
  class Worker{constructor(){worker=this}postMessage(value){posts.push(value)}terminate(){terminated++}}
- const create=new Function('TAVERN_CARD_WORKER_SOURCE','Worker','URL','Blob','crypto','setTimeout','clearTimeout',source+';return createVirtualCardRuntime')('',Worker,{createObjectURL:()=>'',revokeObjectURL(){}},class{},{randomUUID:()=> 'nonce'},(fn,ms)=>{const key={};timers.set(key,{fn,ms});return key},key=>timers.delete(key))
+ const create=new Function('DEPENDENCY_LIMITS','TAVERN_CARD_WORKER_SOURCE','Worker','URL','Blob','crypto','setTimeout','clearTimeout',source+';return createVirtualCardRuntime')(DEPENDENCY_LIMITS,'',Worker,{createObjectURL:()=>'',revokeObjectURL(){}},class{},{randomUUID:()=> 'nonce'},(fn,ms)=>{const key={};timers.set(key,{fn,ms});return key},key=>timers.delete(key))
  const runtime=create({},{onMeasure(){called++;return{}},onError:error=>errors.push(error.message)})
  const value={requestId:1,id:1,view:{html:'',styles:''}}
  worker.onmessage({data:{nonce:'other',kind:'measure',value}})
@@ -50,10 +51,10 @@ test('layout replies stay within their nonce/generation and disposal prevents de
  await Promise.resolve();await Promise.resolve();assert.equal(called,0);assert.equal(terminated,1);assert.equal(posts.length,1);assert.equal(timers.size,0)
 })
 test('layout timeout aborts its Host callback and releases the Worker without a late reply',async()=>{
- const source=readFileSync(new URL('../packages/client/src/play/card-worker-client.js',import.meta.url),'utf8').replace('export function','function')
+ const source=readFileSync(new URL('../packages/client/src/play/card-worker-client.js',import.meta.url),'utf8').replace(/^import.*\n/gm,'').replace('export function','function')
  let worker,signal,resolve,terminated=0;const timers=[],posts=[],errors=[]
  class Worker{constructor(){worker=this}postMessage(value){posts.push(value)}terminate(){terminated++}}
- const create=new Function('TAVERN_CARD_WORKER_SOURCE','Worker','URL','Blob','crypto','setTimeout','clearTimeout',source+';return createVirtualCardRuntime')('',Worker,{createObjectURL:()=>'',revokeObjectURL(){}},class{},{randomUUID:()=> 'nonce'},(fn,ms)=>{const value={fn,ms};timers.push(value);return value},()=>{})
+ const create=new Function('DEPENDENCY_LIMITS','TAVERN_CARD_WORKER_SOURCE','Worker','URL','Blob','crypto','setTimeout','clearTimeout',source+';return createVirtualCardRuntime')(DEPENDENCY_LIMITS,'',Worker,{createObjectURL:()=>'',revokeObjectURL(){}},class{},{randomUUID:()=> 'nonce'},(fn,ms)=>{const value={fn,ms};timers.push(value);return value},()=>{})
  const runtime=create({},{onMeasure:(_,options)=>{signal=options.signal;return new Promise(done=>{resolve=done})},onError:error=>errors.push(error.message)})
  worker.onmessage({data:{nonce:'nonce',kind:'measure',value:{requestId:1,id:1,view:{html:'',styles:''}}}})
  await Promise.resolve();timers.find(item=>item.ms===1000).fn();assert.equal(signal.aborted,true);assert.equal(terminated,1)

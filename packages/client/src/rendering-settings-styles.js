@@ -20,5 +20,6 @@ export const renderingSettingsStyles = `
 .dtv-rendering-settings .dtv-script-control{display:flex;gap:8px;align-items:center;font-size:12px}
 .dtv-rendering-settings .dtv-script-operations{border-top:1px solid var(--dsw-alias-border-l1);padding-top:12px}
 .dtv-rendering-settings .dtv-dependency-items{max-height:360px;overflow:auto;min-width:0;display:flex;flex-direction:column;gap:6px}
+.dtv-rendering-settings .dtv-dependency-items>.dtv-entry{flex-shrink:0}
 .dtv-rendering-settings .dtv-dependency-graph{border:1px solid var(--dsw-alias-border-l2);border-radius:8px;padding:10px}
 `

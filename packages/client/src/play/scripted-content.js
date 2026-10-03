@@ -1,6 +1,7 @@
 import {cardViewport,cardRootPresentation,usesCardViewport} from './card-viewport.js'
 import { imageSource, stageImages, observeImages, imageCss, IMAGE_SOURCE_ATTRIBUTE } from './card-images.js'
 import { selectedPhoto } from './card-photo.js'
+import {DEPENDENCY_LIMITS} from './rendering-limits.js'
 import {mvuBuiltin,confirmMvuSchemas} from './mvu-builtins.js'
 import {renderingWriteRequests} from './rendering-write-requests.js'
 import { createVirtualCardRuntime } from './card-worker-client.js'
@@ -86,11 +87,13 @@ export function prepareCardDocument(source, owners = [], helpers = [], trust = r
     if (!owner) throw Error('Rendering dependency is not downloaded: ' + url)
     const content = trust.read(owner,url)
     if (!seen.has(url)) { seen.add(url); total += content.length }
-    if (seen.size > 24 || total > 24 * 1024 * 1024) throw Error('Rendering dependency graph exceeds limit')
+    if (seen.size > DEPENDENCY_LIMITS.count || total > DEPENDENCY_LIMITS.bytes) throw Error('Rendering dependency graph exceeds limit')
     const record=trust.inspect(owner,url);return {content,owner,builtin:record?.builtin?mvuBuiltin(url,record.digest):null}
   }
-  const collect = (content, base, owner, depth = 0) => {
-    if (depth > 8) throw Error('Rendering dependency depth exceeds limit')
+  // Original inline source is outside the acquired graph; its first URL is
+  // depth zero, matching acquisition. Downloaded HTML/scripts start inside it.
+  const collect = (content, base, owner, depth = -1) => {
+    if (depth > DEPENDENCY_LIMITS.depth) throw Error('Rendering dependency depth exceeds limit')
     const analysisKey=JSON.stringify([owner,base]);let keys=analyzed.get(content);if(keys?.has(analysisKey))return;if(!keys){keys=new Set();analyzed.set(content,keys)}keys.add(analysisKey)
     for (const dependency of discoverDependencies(content,base).filter(item => item.kind === 'module')) {
       if (!dependency.url) throw Error('Blocked or unresolved module: ' + dependency.raw)
@@ -134,8 +137,8 @@ export function prepareCardDocument(source, owners = [], helpers = [], trust = r
     virtual = true
     const content = helper.content
     total += content.length
-    if(total > 24 * 1024 * 1024)throw Error('Rendering dependency graph exceeds limit')
-    expanded+=content.length;if(expanded>24*1024*1024||runs.length>=128)throw Error('Expanded card input exceeds limit')
+    if(total > DEPENDENCY_LIMITS.bytes)throw Error('Rendering dependency graph exceeds limit')
+    expanded+=content.length;if(expanded>DEPENDENCY_LIMITS.bytes||runs.length>=128)throw Error('Expanded card input exceeds limit')
     const schemaDependencies=discoverDependencies(content).filter(item=>item.kind==='module').map(item=>({item,record:trust.inspect(helper.owner,item.url)})).filter(({item,record})=>record?.builtin&&mvuBuiltin(item.url,record.digest)?.kind==='backend-schema')
     if(schemaDependencies.length){
       for(const {item,record} of schemaDependencies){trust.read(helper.owner,item.url);adapters.push({...mvuBuiltin(item.url,record.digest),owner:helper.owner,replacement:'Complete schema declaration handled by the backend interpreter'})}
@@ -155,8 +158,8 @@ export function prepareCardDocument(source, owners = [], helpers = [], trust = r
       const result = read(name,owner); code = result.content; scriptOwner = result.owner
       if(result.builtin){if(result.builtin.kind!=='mvu-facade')throw Error('Schema adapter requires a complete Helper declaration');adapters.push({...result.builtin,owner:scriptOwner,replacement:'Tavern scoped MVU facade; original script is not executed'});code='globalThis.__initializeBuiltinMvu(1);'}
     }
-    expanded+=code.length;if(expanded>24*1024*1024||runs.length>=128)throw Error('Expanded card input exceeds limit')
-    collect(code,externalUrl(name) ?? base,scriptOwner)
+    expanded+=code.length;if(expanded>DEPENDENCY_LIMITS.bytes||runs.length>=128)throw Error('Expanded card input exceeds limit')
+    collect(code,externalUrl(name) ?? base,scriptOwner,script.hasAttribute('src')?(base?1:0):base?0:-1)
     if(['text/babel','text/jsx'].includes(type)||/\b(?:Mvu|eventOn|waitGlobalInitialized|errorCatched|innerWidth|innerHeight|documentElement|getBoundingClientRect|getComputedStyle|scrollHeight|scrollWidth|offsetHeight|offsetWidth|clientHeight|clientWidth)\b/.test(code)||/\b_\s*\.\s*(?:get|isEmpty)\b|\.\s*(?:css|show|hide|addClass|removeClass|empty)\s*\(/.test(code))virtual=true
     runs.push({code,name,type,module:type === 'module'}); script.remove()
   }

@@ -2,7 +2,7 @@ import { renderingSettingsStyles } from './rendering-settings-styles.js'
 import { updateScriptEnablement } from '../../presentation/script-enablement.js'
 import {mvuBuiltin} from './play/mvu-builtins.js'
 import {renderingWriteRequests} from './play/rendering-write-requests.js'
-import { renderingDependencies } from './play/rendering-dependencies.js'
+import { renderingDependencies, dependencyProgress } from './play/rendering-dependencies.js'
 import { createElement as h, useEffect, useRef, useState } from 'react'
 import { translate } from './i18n.js'
 import { CLIENT_REFRESH_EVENT } from '../../identity.js'
@@ -62,11 +62,17 @@ export function RenderingSettings({client,activeSnapshot,settings={},update,busy
   const renderGraph = owner => {
     const graph=renderingDependencies.inspect(owner),state=graph?.status??'loading',items=graph?.items??[]
     const working=state==='downloading'||state==='loading'
+    const progress=dependencyProgress(graph),count=progress.discovered+(progress.capped?'+':'')
+    const label=!graph?translate('rendering.graph.unknown'):progress.complete?progress.ready+' / '+count+' · '+translate('rendering.graph.complete'):
+      ['waiting','changed','loading','remote'].includes(state)?'0 / '+count+' · '+translate('rendering.graph.roots'):
+      translate('rendering.graph.discovered',{ready:progress.ready,count})+' · '+translate(state==='downloading'?'rendering.graph.discovering':'rendering.graph.incomplete')
     return h('section',{key:owner,className:'dtv-script-group dtv-dependency-graph'},
       h('p',{className:'dtv-script-meta'},owner),
-      h('p',{role:'status'},translate('rendering.graph.'+state),' · ',items.filter(item=>item.status==='ready').length,' / ',items.length),
-      state==='downloading'?h('progress',{'aria-label':translate('rendering.graph.downloading'),value:items.filter(item=>['ready','failed'].includes(item.status)).length,max:Math.max(1,items.length)}):null,
+      h('p',{role:'status'},translate('rendering.graph.'+state),' · ',label),
+      progress.failed?h('p',{className:'dtv-script-meta'},translate('rendering.graph.issues',{count:progress.failed})):null,
+      state==='downloading'?h('progress',{'aria-label':translate('rendering.graph.downloading'),value:progress.ready+progress.failed,max:Math.max(1,progress.discovered)}):null,
       graph?.error?h('p',{role:'alert',className:'dtv-script-meta'},graph.error):null,
+      progress.omitted?h('p',{role:'alert',className:'dtv-script-meta'},translate('rendering.graph.omitted',{count:progress.omitted+(progress.capped?'+':'')})):null,
       h('div',{className:'dtv-script-actions'},
         h('button',{type:'button',className:'dtv-button',disabled:working,onClick:()=>run(()=>renderingDependencies.acquire(owner))},translate(state==='waiting'?'rendering.acquire':state==='changed'?'rendering.acquireUpdate':'rendering.redownload')),
         h('button',{type:'button',className:'dtv-button',disabled:state==='loading',onClick:()=>run(()=>renderingDependencies.uninstall(owner))},translate(state==='downloading'?'rendering.cancel':'rendering.uninstall'))),
