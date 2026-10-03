@@ -352,6 +352,8 @@ export default Object.freeze({
   "play.chat.label": "RP View",
   "play.chat.loading": "Loading playthrough…",
   "play.chat.failure": "Session operation failed",
+  "play.chat.failureDismiss": "Close details",
+  "play.chat.failureShow": "Show details",
   "play.chat.failureUnknown": "DSH did not provide error details.",
   "play.chat.failureOwned": "DSH reports that an active write handle already owns this session, so this operation could not run. If another DSH web or desktop instance is using the same data directory, finish its work and close that instance, then reopen this session.",
   "play.chat.empty": "No turns yet. Start the conversation below.",

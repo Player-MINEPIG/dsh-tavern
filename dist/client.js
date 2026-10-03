@@ -14979,6 +14979,8 @@ var zh_CN_default = Object.freeze({
   "play.chat.label": "RP\u89C6\u56FE",
   "play.chat.loading": "\u6B63\u5728\u8BFB\u53D6\u672C\u5468\u76EE\u8BB0\u5F55\u2026",
   "play.chat.failure": "\u4F1A\u8BDD\u64CD\u4F5C\u5931\u8D25",
+  "play.chat.failureDismiss": "\u5173\u95ED\u8BE6\u60C5",
+  "play.chat.failureShow": "\u67E5\u770B\u8BE6\u60C5",
   "play.chat.failureUnknown": "DSH \u672A\u63D0\u4F9B\u5177\u4F53\u9519\u8BEF\u4FE1\u606F\u3002",
   "play.chat.failureOwned": "DSH \u68C0\u6D4B\u5230\u8BE5\u4F1A\u8BDD\u5DF2\u88AB\u6D3B\u52A8\u5199\u5165\u53E5\u67C4\u5360\u7528\uFF0C\u672C\u6B21\u64CD\u4F5C\u672A\u80FD\u6267\u884C\u3002\u82E5\u53E6\u4E00\u4E2A DSH \u7F51\u9875\u7AEF\u6216\u684C\u9762\u7AEF\u6B63\u5728\u4F7F\u7528\u540C\u4E00\u6570\u636E\u76EE\u5F55\uFF0C\u8BF7\u5148\u7ED3\u675F\u5176\u64CD\u4F5C\u5E76\u5173\u95ED\u8BE5\u5B9E\u4F8B\uFF0C\u518D\u91CD\u65B0\u6253\u5F00\u672C\u4F1A\u8BDD\u3002",
   "play.chat.empty": "\u672C\u5468\u76EE\u5C1A\u65E0\u5BF9\u8BDD\uFF0C\u8BF7\u5728\u4E0B\u65B9\u5F00\u59CB\u3002",
@@ -15923,6 +15925,8 @@ var en_default = Object.freeze({
   "play.chat.label": "RP View",
   "play.chat.loading": "Loading playthrough\u2026",
   "play.chat.failure": "Session operation failed",
+  "play.chat.failureDismiss": "Close details",
+  "play.chat.failureShow": "Show details",
   "play.chat.failureUnknown": "DSH did not provide error details.",
   "play.chat.failureOwned": "DSH reports that an active write handle already owns this session, so this operation could not run. If another DSH web or desktop instance is using the same data directory, finish its work and close that instance, then reopen this session.",
   "play.chat.empty": "No turns yet. Start the conversation below.",
@@ -43879,6 +43883,7 @@ ${mathStyles("[data-dtv-rich-text]")}
 .dtv-play-import-controls{align-self:center;display:flex;flex-wrap:wrap;align-items:center;justify-content:center;gap:8px;margin:0 0 2px}.dtv-play-import-bound{width:100%;margin:0;text-align:center;color:var(--dsw-alias-label-tertiary);font-size:11px}.dtv-play-import-button{min-height:30px;padding:5px 11px;border:1px solid var(--dsw-alias-border-subtle);border-radius:9px;background:var(--dsw-alias-bg-layer-2,var(--dsw-specific-block));color:var(--dsw-alias-label-primary);font:inherit;font-size:11px;cursor:pointer}.dtv-play-import-button:hover{background:var(--dsw-alias-interactive-bg-hover)}.dtv-play-import-button:disabled{opacity:.45;cursor:default}.dtv-play-import-last{margin:0;color:var(--dsw-alias-label-tertiary);font-size:11px;font-weight:700}
 .dtv-play-chat-status{margin:16px 0;padding:12px 14px;border-radius:12px;background:var(--dsw-alias-bg-layer-2,var(--dsw-specific-block));color:var(--dsw-alias-label-tertiary);font-size:12px;line-height:1.55}.dtv-play-chat-status[data-error=true]{color:var(--dsw-alias-state-error)}
 .dtv-play-chat-failure{position:sticky;top:0;z-index:1;border:1px solid currentColor}
+.dtv-play-chat-failure-heading{display:flex;align-items:center;justify-content:space-between;gap:12px}.dtv-play-chat-failure-toggle{flex-shrink:0;border:0;border-radius:6px;padding:4px 8px;background:transparent;color:inherit;font:inherit;cursor:pointer}.dtv-play-chat-failure-toggle:hover{background:var(--dsw-alias-interactive-bg-hover)}
 .dtv-play-chat-running{align-self:flex-start;margin:0;color:var(--dsw-alias-label-tertiary);font-size:calc(12px * var(--dtv-rp-text-scale,1));line-height:1.5}
 .dtv-play-rich>:first-child{margin-top:0}.dtv-play-rich>:last-child{margin-bottom:0}.dtv-play-rich p,.dtv-play-rich ul,.dtv-play-rich ol,.dtv-play-rich blockquote,.dtv-play-rich pre,.dtv-play-rich table{margin:0 0 .85em}.dtv-play-rich ul,.dtv-play-rich ol{padding-left:1.5em}.dtv-play-rich blockquote{padding-left:12px;border-left:3px solid var(--dsw-alias-border-secondary,var(--dsw-specific-divider));color:var(--dsw-alias-label-secondary)}.dtv-play-rich pre{max-width:100%;overflow:auto;padding:11px 12px;border-radius:9px;background:var(--dsw-alias-markdown-code-block,var(--dsw-alias-bg-base));white-space:pre}.dtv-play-rich code{font-family:var(--ds-font-family-code,ui-monospace,monospace);font-size:.92em}.dtv-play-rich :not(pre)>code{padding:.12em .35em;border-radius:5px;background:var(--dsw-alias-markdown-code-inline,var(--dsw-alias-bg-base))}.dtv-play-rich table{display:block;max-width:100%;overflow:auto;border-collapse:collapse}.dtv-play-rich th,.dtv-play-rich td{padding:6px 9px;border:1px solid var(--dsw-alias-border-l2)}.dtv-play-rich img,.dtv-play-rich video{max-width:100%;height:auto}.dtv-play-rich a{color:var(--dsw-alias-state-business-primary);text-decoration:underline}.dtv-play-rich hr{border:0;border-top:1px solid var(--dsw-alias-border-l2)}
 `;
@@ -44389,17 +44394,31 @@ function TargetedSwipeTransition({
     )
   ));
 }
-function ChatFailureNotice({ detail }) {
+function ChatFailureNotice({ detail, noticeKey = "" }) {
+  const [notice, setNotice] = (0, import_react20.useState)(() => ({ detail, noticeKey, collapsed: false }));
+  const current4 = notice.detail === detail && notice.noticeKey === noticeKey;
+  if (!current4) setNotice({ detail, noticeKey, collapsed: false });
+  const collapsed = current4 && notice.collapsed;
   return detail !== null ? h17(
     "div",
     {
       className: "dtv-play-chat-status dtv-play-chat-failure",
       "data-error": true,
-      role: "alert"
+      role: collapsed ? "status" : "alert"
     },
-    h17("strong", null, uiMessage("play.chat.failure")),
-    h17("div", { style: { whiteSpace: "pre-wrap", overflowWrap: "anywhere" } }, detail ? rawText(detail) : uiMessage("play.chat.failureUnknown")),
-    detail.includes("already owned by an active write handle") ? h17("p", null, uiMessage("play.chat.failureOwned")) : null
+    h17(
+      "div",
+      { className: "dtv-play-chat-failure-heading" },
+      h17("strong", null, uiMessage("play.chat.failure")),
+      h17("button", {
+        type: "button",
+        className: "dtv-play-chat-failure-toggle",
+        "aria-expanded": !collapsed,
+        onClick: () => setNotice({ detail, noticeKey, collapsed: !collapsed })
+      }, uiMessage(collapsed ? "play.chat.failureShow" : "play.chat.failureDismiss"))
+    ),
+    collapsed ? null : h17("div", { style: { whiteSpace: "pre-wrap", overflowWrap: "anywhere" } }, detail ? rawText(detail) : uiMessage("play.chat.failureUnknown")),
+    !collapsed && detail.includes("already owned by an active write handle") ? h17("p", null, uiMessage("play.chat.failureOwned")) : null
   ) : null;
 }
 function MowanChatView({ sessionId, useSession, useChat, playClient, playthrough, openSession, chatScroll }) {
@@ -44414,8 +44433,10 @@ function MowanChatView({ sessionId, useSession, useChat, playClient, playthrough
   const [revision, setRevision] = (0, import_react20.useState)(0);
   const running = useSession((state2) => state2.running === true);
   const hostFailure = useSession(sessionFailureDetail);
+  const hostFailureOccurrence = useSession((state2) => state2.promptError ?? state2.openError ?? state2.lastAgentError ?? null);
   const submitting = useSession(submissionInProgress);
   const turnFailure = useChat(latestTurnFailureDetail);
+  const failureTurn = useChat((state2) => state2.timeline.turnOrder.at(-1) ?? null);
   const failureDetail = hostFailure ?? (submitting ? null : turnFailure);
   const [loadedState, setLoadedState] = (0, import_react20.useState)(() => cachedChatSnapshot(playClient, playthrough, sessionId));
   const loadedStateRef = (0, import_react20.useRef)(loadedState);
@@ -44555,7 +44576,7 @@ function MowanChatView({ sessionId, useSession, useChat, playClient, playthrough
   return h17(
     "div",
     { className: "dtv-play-chat", style: conversationDisplayStyle(displaySettings) },
-    h17(ChatFailureNotice, { detail: failureDetail }),
+    h17(ChatFailureNotice, { key: sessionId, detail: failureDetail, noticeKey: hostFailure !== null ? hostFailureOccurrence : failureTurn }),
     error === "" && !state?.pendingSwipeError ? null : h17(
       "div",
       null,

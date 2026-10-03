@@ -6,10 +6,29 @@ import { join } from 'node:path'
 import { assembleRequest, textOf } from '../packages/request-assembler/assemble.js'
 import { BUILTINS, normalizePreset, moveRule } from '../packages/request-assembler/model.js'
 import { AssemblyPresetStore } from '../packages/request-assembler/store.js'
+import { defaultAssemblyFailureInput } from './fixtures/default-assembly-failure.mjs'
 const m = (id, role = 'user', text = id) => ({ id, role, source: { kind: role === 'user' ? 'user' : 'model' }, content: [{ type: 'text', text }] })
 const native = [m('s', 'system'), m('u1'), m('a1', 'assistant'), m('u2')]
 const assets = { character: { id: 'card', data: { description: 'CHAR', post_history_instructions: 'PHI' } }, preset: { id: 'preset', prompts: [{ identifier: 'main', enabled: true, role: 'system', content: 'MAIN' }] }, loreEntries: [{ id: 'w1', content: 'LORE', position: 'after', resourceId: 'book' }] }
 const texts = result => result.messages.map(textOf)
+
+test('first-turn greeting precedes marker-owned input and retains trailing depth lore', () => {
+  const input = defaultAssemblyFailureInput()
+  const original = structuredClone(input.nativeMessages)
+  const result = assembleRequest({ preset: BUILTINS[0], ...input })
+  assert.deepEqual(texts(result), ['official', 'MAIN', 'BEFORE_0', 'BEFORE_1', 'BEFORE_2', 'BEFORE_3',
+    'LORE_BEFORE_0', 'LORE_BEFORE_1', 'LORE_BEFORE_2', 'BEFORE_INPUT', 'GREETING', 'input', 'context',
+    ...Array.from({ length: 15 }, (_, i) => `AFTER_${i}`), 'LORE_DEPTH_0', 'LORE_DEPTH_1', 'LORE_DEPTH_2'])
+  assert.equal(result.messages[10].role, 'assistant')
+  assert.ok(result.messages.slice(-3).every(m => m.role === 'system'))
+  assert.deepEqual(input.nativeMessages, original)
+  assert.equal(result.nodes.find(n => n.id === 'character:greeting').start, 10)
+  for (const preset of BUILTINS) {
+    const assembled = assembleRequest({ preset, ...input })
+    assert.ok(texts(assembled).indexOf('GREETING') < texts(assembled).indexOf('input'))
+    assert.equal(texts(assembled).filter(t => t === 'GREETING').length, 1)
+  }
+})
 
 test('cache layout wraps intact native history with current lore and PHI, without duplicating history', () => {
   const result = assembleRequest({ preset: BUILTINS[1], nativeMessages: native, inputIds: ['u2'], assets })
@@ -187,4 +206,19 @@ test('retained depth snapshots keep depth metadata in subsequent previews', () =
   const second = assembleRequest({ preset, nativeMessages: [...native, m('a2', 'assistant')], snapshots: first.snapshots })
   assert.equal(first.nodes.find(n => n.ruleId === 'depth-note').depth, 1)
   assert.equal(second.nodes.find(n => n.ruleId === 'depth-note').depth, 1)
+})
+
+test('explicit character depth remains authoritative and late greetings are diagnosed', () => {
+  const input = defaultAssemblyFailureInput(), preset = structuredClone(BUILTINS[0])
+  preset.rules.find(r => r.kind === 'character').depth = 0
+  const before = structuredClone({ input, preset })
+  const result = assembleRequest({ ...input, preset })
+  const greeting = result.nodes.find(n => n.source?.field === 'greeting')
+  assert.equal(greeting.depth, 0)
+  assert.ok(result.messages.findIndex(m => textOf(m) === 'GREETING') > result.messages.findIndex(m => m.id === 'input'))
+  assert.ok(result.diagnostics.some(d => d.code === 'GREETING_AFTER_INPUT'))
+  assert.deepEqual({ input, preset }, before)
+  preset.rules.find(r => r.kind === 'character').role = 'user'
+  const userGreeting = assembleRequest({ ...input, preset })
+  assert.ok(!userGreeting.diagnostics.some(d => d.code === 'GREETING_AFTER_INPUT'))
 })

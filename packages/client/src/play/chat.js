@@ -71,6 +71,7 @@ ${mathStyles('[data-dtv-rich-text]')}
 .dtv-play-import-controls{align-self:center;display:flex;flex-wrap:wrap;align-items:center;justify-content:center;gap:8px;margin:0 0 2px}.dtv-play-import-bound{width:100%;margin:0;text-align:center;color:var(--dsw-alias-label-tertiary);font-size:11px}.dtv-play-import-button{min-height:30px;padding:5px 11px;border:1px solid var(--dsw-alias-border-subtle);border-radius:9px;background:var(--dsw-alias-bg-layer-2,var(--dsw-specific-block));color:var(--dsw-alias-label-primary);font:inherit;font-size:11px;cursor:pointer}.dtv-play-import-button:hover{background:var(--dsw-alias-interactive-bg-hover)}.dtv-play-import-button:disabled{opacity:.45;cursor:default}.dtv-play-import-last{margin:0;color:var(--dsw-alias-label-tertiary);font-size:11px;font-weight:700}
 .dtv-play-chat-status{margin:16px 0;padding:12px 14px;border-radius:12px;background:var(--dsw-alias-bg-layer-2,var(--dsw-specific-block));color:var(--dsw-alias-label-tertiary);font-size:12px;line-height:1.55}.dtv-play-chat-status[data-error=true]{color:var(--dsw-alias-state-error)}
 .dtv-play-chat-failure{position:sticky;top:0;z-index:1;border:1px solid currentColor}
+.dtv-play-chat-failure-heading{display:flex;align-items:center;justify-content:space-between;gap:12px}.dtv-play-chat-failure-toggle{flex-shrink:0;border:0;border-radius:6px;padding:4px 8px;background:transparent;color:inherit;font:inherit;cursor:pointer}.dtv-play-chat-failure-toggle:hover{background:var(--dsw-alias-interactive-bg-hover)}
 .dtv-play-chat-running{align-self:flex-start;margin:0;color:var(--dsw-alias-label-tertiary);font-size:calc(12px * var(--dtv-rp-text-scale,1));line-height:1.5}
 .dtv-play-rich>:first-child{margin-top:0}.dtv-play-rich>:last-child{margin-bottom:0}.dtv-play-rich p,.dtv-play-rich ul,.dtv-play-rich ol,.dtv-play-rich blockquote,.dtv-play-rich pre,.dtv-play-rich table{margin:0 0 .85em}.dtv-play-rich ul,.dtv-play-rich ol{padding-left:1.5em}.dtv-play-rich blockquote{padding-left:12px;border-left:3px solid var(--dsw-alias-border-secondary,var(--dsw-specific-divider));color:var(--dsw-alias-label-secondary)}.dtv-play-rich pre{max-width:100%;overflow:auto;padding:11px 12px;border-radius:9px;background:var(--dsw-alias-markdown-code-block,var(--dsw-alias-bg-base));white-space:pre}.dtv-play-rich code{font-family:var(--ds-font-family-code,ui-monospace,monospace);font-size:.92em}.dtv-play-rich :not(pre)>code{padding:.12em .35em;border-radius:5px;background:var(--dsw-alias-markdown-code-inline,var(--dsw-alias-bg-base))}.dtv-play-rich table{display:block;max-width:100%;overflow:auto;border-collapse:collapse}.dtv-play-rich th,.dtv-play-rich td{padding:6px 9px;border:1px solid var(--dsw-alias-border-l2)}.dtv-play-rich img,.dtv-play-rich video{max-width:100%;height:auto}.dtv-play-rich a{color:var(--dsw-alias-state-business-primary);text-decoration:underline}.dtv-play-rich hr{border:0;border-top:1px solid var(--dsw-alias-border-l2)}
 `
@@ -605,12 +606,22 @@ function TargetedSwipeTransition({
   ))
 }
 
-export function ChatFailureNotice({ detail }) {
+export function ChatFailureNotice({ detail, noticeKey = '' }) {
+  const [notice, setNotice] = useState(() => ({ detail, noticeKey, collapsed: false }))
+  const current = notice.detail === detail && notice.noticeKey === noticeKey
+  // Track the current occurrence, including a cleared error. An older closed
+  // notice must not collapse a later error with identical text.
+  if (!current) setNotice({ detail, noticeKey, collapsed: false })
+  const collapsed = current && notice.collapsed
   return detail !== null ? h('div', {
-      className: 'dtv-play-chat-status dtv-play-chat-failure', 'data-error': true, role: 'alert',
-    }, h('strong', null, uiMessage('play.chat.failure')),
-    h('div', { style: { whiteSpace: 'pre-wrap', overflowWrap: 'anywhere' } }, detail ? rawText(detail) : uiMessage('play.chat.failureUnknown')),
-    detail.includes('already owned by an active write handle')
+      className: 'dtv-play-chat-status dtv-play-chat-failure', 'data-error': true, role: collapsed ? 'status' : 'alert',
+    }, h('div', { className: 'dtv-play-chat-failure-heading' },
+      h('strong', null, uiMessage('play.chat.failure')),
+      h('button', { type: 'button', className: 'dtv-play-chat-failure-toggle', 'aria-expanded': !collapsed,
+        onClick: () => setNotice({ detail, noticeKey, collapsed: !collapsed }),
+      }, uiMessage(collapsed ? 'play.chat.failureShow' : 'play.chat.failureDismiss'))),
+    collapsed ? null : h('div', { style: { whiteSpace: 'pre-wrap', overflowWrap: 'anywhere' } }, detail ? rawText(detail) : uiMessage('play.chat.failureUnknown')),
+    !collapsed && detail.includes('already owned by an active write handle')
       ? h('p', null, uiMessage('play.chat.failureOwned')) : null) : null
 }
 
@@ -627,8 +638,10 @@ export function MowanChatView({ sessionId, useSession, useChat, playClient, play
   const [revision, setRevision] = useState(0)
   const running = useSession(state => state.running === true)
   const hostFailure = useSession(sessionFailureDetail)
+  const hostFailureOccurrence = useSession(state => state.promptError ?? state.openError ?? state.lastAgentError ?? null)
   const submitting = useSession(submissionInProgress)
   const turnFailure = useChat(latestTurnFailureDetail)
+  const failureTurn = useChat(state => state.timeline.turnOrder.at(-1) ?? null)
   const failureDetail = hostFailure ?? (submitting ? null : turnFailure)
   const [loadedState, setLoadedState] = useState(() => cachedChatSnapshot(playClient, playthrough, sessionId))
   const loadedStateRef = useRef(loadedState)
@@ -775,7 +788,7 @@ export function MowanChatView({ sessionId, useSession, useChat, playClient, play
   const transitionBoundary = swipeTransitionBoundary(transition)
 
   return h('div', { className: 'dtv-play-chat', style: conversationDisplayStyle(displaySettings) },
-    h(ChatFailureNotice, { detail: failureDetail }),
+    h(ChatFailureNotice, { key: sessionId, detail: failureDetail, noticeKey: hostFailure !== null ? hostFailureOccurrence : failureTurn }),
     error === '' && !state?.pendingSwipeError ? null : h('div', null,
       h('p', { className: 'dtv-play-chat-status', 'data-error': true }, rawText(error || state.pendingSwipeError)),
       !state?.pendingSwipeError ? null : h('button', {

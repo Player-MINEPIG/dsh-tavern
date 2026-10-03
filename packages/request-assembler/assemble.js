@@ -203,6 +203,17 @@ function assembleResolved({ preset: suppliedPreset, previous = null, snapshots =
   const seenNative = messages.filter(m => nativeMessages.some(n => n.id === m.id)).map(m => m.id)
   const required = [...requiredNative]
   if (required.length !== seenNative.length || new Set(seenNative).size !== required.length) throw new Error('Assembly must include each enabled native message exactly once')
+  const nativeSystemIds = nativeMessages.filter(m => m.role === 'system' && requiredNative.has(m.id)).map(m => m.id)
+  if (nativeSystemIds.length) {
+    const expected = nativeMessages.filter(m => requiredNative.has(m.id)).map(m => m.id)
+    // A layout may move complete native modules, but cannot reverse the
+    // history boundaries of an effective native system update.
+    for (const systemId of nativeSystemIds) {
+      const before = new Set(expected.slice(0, expected.indexOf(systemId)).filter(id => !nativeSystemIds.includes(id)))
+      const actual = new Set(seenNative.slice(0, seenNative.indexOf(systemId)).filter(id => !nativeSystemIds.includes(id)))
+      if (before.size !== actual.size || [...before].some(id => !actual.has(id))) throw Object.assign(new Error('This layout moves native messages across a system update boundary'), { code: 'ASSEMBLY_NATIVE_SYSTEM_ORDER', status: 409 })
+    }
+  }
   const openCalls = new Set()
   for (const msg of messages) {
     if (openCalls.size && msg.role !== 'tool') throw new Error('Assembly cannot split a tool call and its results')
@@ -220,7 +231,13 @@ function assembleResolved({ preset: suppliedPreset, previous = null, snapshots =
   // Duplicate immutable snapshots can refer to the same content; ids must still be unique per request.
   const ids = new Set()
   messages = messages.map(m => { if (!ids.has(m.id)) { ids.add(m.id); return m }; return { ...m, id: randomUUID() } })
-  expanded = expanded.map(node => ({ ...node, start: messages.findIndex(m => m.id === (node.messages?.[0]?.id)), count: node.messages?.length ?? node.count })).sort((a, b) => a.start - b.start)
+  expanded = expanded.map(node => ({ ...node, start: messages.findIndex(m => m.id === (node.messages?.[0]?.id)), count: node.messages?.length ?? node.count,
+    requestMessageIds: (node.messages ?? []).map(m => m.id),
+  })).sort((a, b) => a.start - b.start)
+  const firstInput = messages.findIndex(m => inputIds.includes(m.id))
+  for (const node of expanded) if (node.module === 'character' && node.source?.field === 'greeting' && node.role === 'assistant' && firstInput >= 0 && node.start > firstInput) {
+    diagnostics.push({ code: 'GREETING_AFTER_INPUT', id: node.id, message: 'The configured greeting depth places an assistant reference after current input; following system updates may be unsupported by the selected model.' })
+  }
   return { messages, nodes: expanded.map(({ messages: omitted, ...node }) => node), snapshots: nextSnapshots,
     diagnostics, sources: entries.map(e => e.descriptor), extraBytes, preset: { id: suppliedPreset.id ?? null, name: preset.name, revision: hash(preset) },
     preview, toolsSeparate: true, evaluatedAt: 'request-assembly', compatibility: preset.placement === 'st' ? 'ST ordering, roles, supported macros and depths; not full ST runtime parity' : null }

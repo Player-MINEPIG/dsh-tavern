@@ -352,6 +352,8 @@ export default Object.freeze({
   "play.chat.label": "RP视图",
   "play.chat.loading": "正在读取本周目记录…",
   "play.chat.failure": "会话操作失败",
+  "play.chat.failureDismiss": "关闭详情",
+  "play.chat.failureShow": "查看详情",
   "play.chat.failureUnknown": "DSH 未提供具体错误信息。",
   "play.chat.failureOwned": "DSH 检测到该会话已被活动写入句柄占用，本次操作未能执行。若另一个 DSH 网页端或桌面端正在使用同一数据目录，请先结束其操作并关闭该实例，再重新打开本会话。",
   "play.chat.empty": "本周目尚无对话，请在下方开始。",
