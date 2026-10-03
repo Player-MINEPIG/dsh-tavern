@@ -80,7 +80,7 @@ export function cardDocument(source) {
 export function prepareCardDocument(source, owners = [], helpers = [], trust = renderingTrust) {
   const modules = Object.create(null), runs = [], seen = new Set(), reviewed = new Set(), adapters = [], schemaDeclarations = []
   let total = source.length, expanded = source.length, virtual = false
-  const analyzed=new Map()
+  const analyzed=new Map(),pending=[]
   const read = (url, ownerHint) => {
     if (!url) throw Error('Blocked dependency URL')
     const owner = ownerHint ?? owners.find(owner => trust.isEnabled(owner,url) && trust.inspect(owner,url)?.approved)
@@ -88,13 +88,20 @@ export function prepareCardDocument(source, owners = [], helpers = [], trust = r
     const content = trust.read(owner,url)
     if (!seen.has(url)) { seen.add(url); total += content.length }
     if (seen.size > DEPENDENCY_LIMITS.count || total > DEPENDENCY_LIMITS.bytes) throw Error('Rendering dependency graph exceeds limit')
-    const record=trust.inspect(owner,url);return {content,owner,builtin:record?.builtin?mvuBuiltin(url,record.digest):null}
+    const record=trust.inspect(owner,url)
+    if(record?.depth!==undefined&&(!Number.isSafeInteger(record.depth)||record.depth<0||record.depth>DEPENDENCY_LIMITS.depth))throw Error('Invalid rendering dependency depth')
+    return {content,owner,depth:record?.depth,builtin:record?.builtin?mvuBuiltin(url,record.digest):null}
   }
   // Original inline source is outside the acquired graph; its first URL is
   // depth zero, matching acquisition. Downloaded HTML/scripts start inside it.
-  const collect = (content, base, owner, depth = -1) => {
+  const collect = (content, base, owner, depth = -1) => pending.push({content,base,owner,depth})
+  const collectModules = () => { while(pending.length) {
+    // Seed every entry before walking edges. Minimum URL depth, not DFS path
+    // length, matches acquisition even when references converge or cycle.
+    pending.sort((a,b)=>a.depth-b.depth)
+    const {content,base,owner,depth}=pending.shift()
+    const analysisKey=JSON.stringify([owner,base]);let keys=analyzed.get(content);if(keys?.has(analysisKey))continue;if(!keys){keys=new Set();analyzed.set(content,keys)}keys.add(analysisKey)
     if (depth > DEPENDENCY_LIMITS.depth) throw Error('Rendering dependency depth exceeds limit')
-    const analysisKey=JSON.stringify([owner,base]);let keys=analyzed.get(content);if(keys?.has(analysisKey))return;if(!keys){keys=new Set();analyzed.set(content,keys)}keys.add(analysisKey)
     for (const dependency of discoverDependencies(content,base).filter(item => item.kind === 'module')) {
       if (!dependency.url) throw Error('Blocked or unresolved module: ' + dependency.raw)
       const next = read(dependency.url,owner)
@@ -113,15 +120,15 @@ export function prepareCardDocument(source, owners = [], helpers = [], trust = r
       if(reviewed.has(reviewKey))continue
       reviewed.add(reviewKey)
       modules[dependency.url] = next.content
-      collect(next.content,dependency.url,next.owner,depth + 1)
+      collect(next.content,dependency.url,next.owner,Math.min(depth + 1,next.depth??Infinity))
     }
-  }
+  } }
   const wrapper = loadWrapper(source)
   let identitySource
-  let base, owner
+  let base, owner,baseDepth
   if (wrapper) {
     virtual = true
-    const result = read(wrapper.url); source = result.content; owner = result.owner; base = wrapper.url
+    const result = read(wrapper.url); source = result.content; owner = result.owner; base = wrapper.url;baseDepth=result.depth??0
     if (loadWrapper(source)) throw Error('Nested remote HTML wrappers are unsupported')
     if(wrapper.kind==='identity-html-loader'){
       identitySource=source
@@ -151,18 +158,19 @@ export function prepareCardDocument(source, owners = [], helpers = [], trust = r
   for (const script of template.content.querySelectorAll('script')) {
     const type = script.getAttribute('type') ?? ''
     if (type && !['module','text/javascript','application/javascript','text/babel','text/jsx'].includes(type)) throw Error('Unsupported script type')
-    let code = script.textContent, name = base ? base + '#inline-' + runs.length : 'card-' + runs.length + '.js', scriptOwner = owner
+    let code = script.textContent, name = base ? base + '#inline-' + runs.length : 'card-' + runs.length + '.js', scriptOwner = owner,scriptDepth=base?baseDepth:-1
     if (script.hasAttribute('src')) {
       virtual=true
       name = externalUrl(script.getAttribute('src'),base)
-      const result = read(name,owner); code = result.content; scriptOwner = result.owner
+      const result = read(name,owner); code = result.content; scriptOwner = result.owner;scriptDepth=result.depth??(base?baseDepth+1:0)
       if(result.builtin){if(result.builtin.kind!=='mvu-facade')throw Error('Schema adapter requires a complete Helper declaration');adapters.push({...result.builtin,owner:scriptOwner,replacement:'Tavern scoped MVU facade; original script is not executed'});code='globalThis.__initializeBuiltinMvu(1);'}
     }
     expanded+=code.length;if(expanded>DEPENDENCY_LIMITS.bytes||runs.length>=128)throw Error('Expanded card input exceeds limit')
-    collect(code,externalUrl(name) ?? base,scriptOwner,script.hasAttribute('src')?(base?1:0):base?0:-1)
+    collect(code,externalUrl(name) ?? base,scriptOwner,scriptDepth)
     if(['text/babel','text/jsx'].includes(type)||/\b(?:Mvu|eventOn|waitGlobalInitialized|errorCatched|innerWidth|innerHeight|documentElement|getBoundingClientRect|getComputedStyle|scrollHeight|scrollWidth|offsetHeight|offsetWidth|clientHeight|clientWidth)\b/.test(code)||/\b_\s*\.\s*(?:get|isEmpty)\b|\.\s*(?:css|show|hide|addClass|removeClass|empty)\s*\(/.test(code))virtual=true
     runs.push({code,name,type,module:type === 'module'}); script.remove()
   }
+  collectModules()
   const data = cardDocument(template.innerHTML)
   return {...data,root,runs,modules,virtual,adapters,schemaDeclarations,cardStorage:wrapper?.kind==='identity-html-loader',identitySource}
 }

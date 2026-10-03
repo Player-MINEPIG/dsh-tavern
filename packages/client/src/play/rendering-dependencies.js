@@ -33,6 +33,29 @@ function directGraph(sources,limits) {
   return {items:graph.items,...graph.metadata(),complete:false}
 }
 
+function cachedDepths(sources,graph,limits) {
+  const items=graph.items.filter(item=>item.status==='ready'),byUrl=new Map(items.map(item=>[item.url,item])),depths=new Map(),queue=[]
+  if(byUrl.size!==items.length)throw Error('Invalid dependency cache identities')
+  const add=(dependencies,depth)=>{
+    for(const dependency of dependencies){
+      if(graph.status==='ready'&&(!dependency.url||!byUrl.has(dependency.url)))throw Error('Incomplete dependency cache')
+      if(!byUrl.has(dependency.url)||depths.has(dependency.url))continue
+      depths.set(dependency.url,depth);queue.push(dependency.url)
+    }
+  }
+  for(const source of sources)add(discoverDependencies(source.content),0)
+  for(let i=0;i<queue.length;i++){
+    const url=queue[i],depth=depths.get(url)
+    if(depth>limits.depth)throw Error('Invalid dependency cache depth')
+    add(discoverDependencies(byUrl.get(url).content,url),depth+1)
+  }
+  return items.map(item=>{
+    const depth=depths.get(item.url)
+    if(depth===undefined||item.depth!==undefined&&item.depth!==depth)throw Error('Invalid dependency cache depth')
+    return {...item,depth}
+  })
+}
+
 // A denominator is exact only once every reachable static source was explored.
 export function dependencyProgress(graph) {
   const items=graph?.items??[]
@@ -101,8 +124,11 @@ export function createRenderingDependencies({trust=renderingTrust,store=dependen
       for(let attempt=0;attempt<8&&current(state);attempt++){
         const graph=saved.graph,usable=!saved.pending&&graph?.fingerprint===state.fingerprint
         if(usable&&(!Array.isArray(graph.items)||graph.items.length>MAX_DEPENDENCY_IDENTITIES||graph.items.filter(item=>item.url).length>limits.count||graph.items.reduce((sum,item)=>sum+new TextEncoder().encode(item.content??'').byteLength,0)>limits.bytes))throw Error('Invalid dependency cache size')
+        if(usable&&graph.items.some(item=>item.status==='ready'&&item.depth!==undefined&&(!Number.isSafeInteger(item.depth)||item.depth<0||item.depth>limits.depth)))throw Error('Invalid dependency cache depth')
         if(usable&&graph.discovered!==undefined&&(!Number.isSafeInteger(graph.discovered)||graph.discovered<graph.items.length||graph.discovered>MAX_DEPENDENCY_IDENTITIES||graph.omitted!==graph.discovered-graph.items.length||typeof graph.discoveryCapped!=='boolean'||typeof graph.complete!=='boolean'||graph.complete!==(graph.status==='ready')||graph.complete&&(graph.omitted||graph.discoveryCapped||graph.items.some(item=>item.status!=='ready'))))throw Error('Invalid dependency cache progress')
-        const commit=usable?await trust.prepare(state.owner,graph.items.filter(item=>item.status==='ready')):null
+        // Derive minimum paths from this snapshot's declarations and exact
+        // cached bytes before hashing; never trust a lowered depth hint alone.
+        const commit=usable?await trust.prepare(state.owner,cachedDepths(state.sources,graph,limits)):null
         if(!current(state))return
         const accepted=await store.readCurrent(state.owner,saved,()=>{
           if(!current(state))return false

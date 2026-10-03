@@ -40,9 +40,9 @@ export function createRenderingTrust() {
       if(!Array.isArray(items)||items.length>DEPENDENCY_LIMITS.count||items.reduce((sum,item)=>sum+new TextEncoder().encode(item.content??'').byteLength,0)>DEPENDENCY_LIMITS.bytes)throw Error('Rendering dependency graph exceeds limit')
       const epoch=generation,ticket={};installs.set(owner,ticket)
       const next=await Promise.all(items.map(async item=>{
-        if(externalUrl(item.url)!==item.url||typeof item.content!=='string'||new TextEncoder().encode(item.content).byteLength>MAX_RENDER_SOURCE)throw Error('Invalid cached dependency')
+        if(externalUrl(item.url)!==item.url||typeof item.content!=='string'||new TextEncoder().encode(item.content).byteLength>MAX_RENDER_SOURCE||item.depth!==undefined&&(!Number.isSafeInteger(item.depth)||item.depth<0||item.depth>DEPENDENCY_LIMITS.depth))throw Error('Invalid cached dependency')
         const digest=[...new Uint8Array(await crypto.subtle.digest('SHA-256',new TextEncoder().encode(item.content)))].map(byte=>byte.toString(16).padStart(2,'0')).join('')
-        return {owner,source:item.url,content:item.content,digest,approved:true}
+        return {owner,source:item.url,content:item.content,depth:item.depth,digest,approved:true}
       }))
       return () => {
         if(epoch!==generation||installs.get(owner)!==ticket)throw Error('Dependency installation cancelled')

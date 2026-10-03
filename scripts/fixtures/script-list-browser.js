@@ -38,6 +38,17 @@ try{
  check('90 authored modules pass preparation, transfer and the real Worker input budget',doc()?.getElementById('count')?.textContent==='3916')
  trust.removeOwner(owner);await pause(100)
  check('uninstall removes a large graph and remount cannot execute its old modules',doc()?.getElementById('count')?.textContent!=='3916')
+ const shared='https://fixture.example/depth/shared.js',chain=Array.from({length:9},(_,i)=>({url:'https://fixture.example/depth/a'+i+'.js',content:`import '${i===8?shared:'https://fixture.example/depth/a'+(i+1)+'.js'}';`}))
+ await trust.install(owner,[{url:shared,content:'export const label="converged";'},...chain])
+ for(const first of [true,false]){
+  const imports=[`import {label} from '${shared}';`,`import '${chain[0].url}';`]
+  if(!first)imports.reverse()
+  render('convergent-'+first,[{...helper,enabled:true,preferenceKey:'helper:convergent',content:imports.join('\n')+'document.getElementById("count").textContent=label;'}])
+  for(let i=0;i<200&&doc()?.getElementById('count')?.textContent!=='converged';i++)await pause(20)
+  check('convergent shortest depth executes in real Worker with shortcut '+(first?'first':'last'),doc()?.getElementById('count')?.textContent==='converged')
+ }
+ render('over-depth',[{...helper,enabled:true,preferenceKey:'helper:over-depth',content:`import '${chain[0].url}';`}]);await pause(100)
+ check('a genuine depth-nine module stays static with a visible error',doc()?.getElementById('count')?.textContent==='static'&&host.textContent.includes('dependency depth exceeds'))
  root.unmount();trust.clear();trust.setEnablement();check('unmount disposes the card',!host.children.length)
  let resolveOld
  const events=[],status=[]
