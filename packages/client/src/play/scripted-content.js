@@ -57,7 +57,7 @@ export function prepareCardDocument(source, owners = [], helpers = [], trust = r
   const analyzed=new Map()
   const read = (url, ownerHint) => {
     if (!url) throw Error('Blocked dependency URL')
-    const owner = ownerHint ?? owners.find(owner => trust.inspect(owner,url)?.approved)
+    const owner = ownerHint ?? owners.find(owner => trust.isEnabled(owner,url) && trust.inspect(owner,url)?.approved)
     if (!owner) throw Error('Rendering dependency requires content review: ' + url)
     const content = trust.read(owner,url)
     if (!seen.has(url)) { seen.add(url); total += content.length }
@@ -97,7 +97,7 @@ export function prepareCardDocument(source, owners = [], helpers = [], trust = r
   }
   if (source.length > 1024*1024) throw Error('Card HTML exceeds 1 MiB')
   const template = document.createElement('template'); template.innerHTML = source
-  for (const helper of helpers.filter(item => trust.isEnabled(item.owner,item.preferenceKey??item.key,item.enabled))) {
+  for (const helper of helpers.filter(item => item.enablementAmbiguous ? item.enabled : trust.isEnabled(item.owner,item.preferenceKey??item.key,item.enabled))) {
     // The helper's exact source must still match what the user reviewed.
     virtual = true
     const content = trust.read(helper.owner,helper.key)

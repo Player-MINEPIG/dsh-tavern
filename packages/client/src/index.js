@@ -54,10 +54,9 @@ import { requiresSystemWorkspaceConfirmation } from './play/sidebar-model.js'
 import { createChromeModeServiceCore } from './play/chrome-service.js'
 import { startChromeModeTransport } from './play/chrome-transport.js'
 import {
-  DEFAULT_CONVERSATION_SETTINGS,
   getClientConversationSettings,
   setClientConversationSettings,
-  normalizeClientConversationSettings,
+  createConversationSettingsPersistence,
 } from './conversation-settings.js'
 import { createPlaythroughController } from './play/create.js'
 import {
@@ -678,7 +677,17 @@ function TavernShell({ useSessions, useWorkspaces, createCleanSession, createCon
   const [uiSettings, setUiSettings] = useState(getClientUiSettings)
   const [conversationSettings, setConversationSettings] = useState(getClientConversationSettings)
   const [conversationSettingsStatus, setConversationSettingsStatus] = useState({ text: translate('conversationSettings.saved'), error: false })
-  const [conversationSettingsBusy, setConversationSettingsBusy] = useState(false)
+  const [conversationSettingsBusy, setConversationSettingsBusy] = useState(true)
+  const conversationPersistence = useRef(null)
+  if (!conversationPersistence.current) conversationPersistence.current = createConversationSettingsPersistence({
+    request: conversationSettingsRequest,
+    apply: next => setConversationSettings(setClientConversationSettings(next)),
+    busy: setConversationSettingsBusy,
+    status: (key, reason) => setConversationSettingsStatus({
+      text: translate(`conversationSettings.${key}`, { message: reason instanceof Error ? reason.message : String(reason ?? '') }),
+      error: key === 'saveError' || key === 'loadError',
+    }),
+  })
   const [settingsStatus, setSettingsStatus] = useState({ text: translate('settings.saved'), error: false })
   const [settingsBusy, setSettingsBusy] = useState(false)
   const [rpPolicyDraft, setRpPolicyDraft] = useState('')
@@ -761,20 +770,9 @@ function TavernShell({ useSessions, useWorkspaces, createCleanSession, createCon
   }, [])
 
   useEffect(() => {
-    let active = true
-    conversationSettingsRequest().then(next => {
-      if (!active) return
-      const normalized = setClientConversationSettings(next)
-      setConversationSettings(normalized)
-      setConversationSettingsStatus({ text: translate('conversationSettings.saved'), error: false })
-    }).catch(reason => {
-      if (!active) return
-      setConversationSettingsStatus({
-        text: translate('conversationSettings.loadError', { message: reason instanceof Error ? reason.message : String(reason) }),
-        error: true,
-      })
-    })
-    return () => { active = false }
+    const persistence = conversationPersistence.current
+    persistence.load()
+    return () => persistence.dispose()
   }, [])
 
   const persistSettings = async next => {
@@ -815,48 +813,8 @@ function TavernShell({ useSessions, useWorkspaces, createCleanSession, createCon
     }
   }
 
-  const persistConversationSettings = async next => {
-    const previous = conversationSettings
-    const normalized = normalizeClientConversationSettings(next)
-    setConversationSettingsBusy(true)
-    setConversationSettingsStatus({ text: translate('conversationSettings.saving'), error: false })
-    try {
-      const saved = setClientConversationSettings(await conversationSettingsRequest('PUT', normalized))
-      setConversationSettings(saved)
-      setConversationSettingsStatus({ text: translate('conversationSettings.saved'), error: false })
-    } catch (reason) {
-      setClientConversationSettings(previous)
-      setConversationSettings(previous)
-      setConversationSettingsStatus({
-        text: translate('conversationSettings.saveError', { message: reason instanceof Error ? reason.message : String(reason) }),
-        error: true,
-      })
-    } finally {
-      setConversationSettingsBusy(false)
-    }
-  }
-
-  const resetConversationSettings = async () => {
-    const previous = conversationSettings
-    const defaults = setClientConversationSettings(DEFAULT_CONVERSATION_SETTINGS)
-    setConversationSettings(defaults)
-    setConversationSettingsBusy(true)
-    setConversationSettingsStatus({ text: translate('conversationSettings.saving'), error: false })
-    try {
-      const saved = setClientConversationSettings(await conversationSettingsRequest('DELETE'))
-      setConversationSettings(saved)
-      setConversationSettingsStatus({ text: translate('conversationSettings.saved'), error: false })
-    } catch (reason) {
-      setClientConversationSettings(previous)
-      setConversationSettings(previous)
-      setConversationSettingsStatus({
-        text: translate('conversationSettings.saveError', { message: reason instanceof Error ? reason.message : String(reason) }),
-        error: true,
-      })
-    } finally {
-      setConversationSettingsBusy(false)
-    }
-  }
+  const persistConversationSettings = next => conversationPersistence.current.save(next)
+  const resetConversationSettings = () => conversationPersistence.current.reset()
 
   useEffect(() => {
     if (surface !== 'settings') return undefined
