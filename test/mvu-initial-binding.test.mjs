@@ -91,7 +91,7 @@ test('native grant-only and missing or asynchronous policy leases never permit c
 })
 
 test('final scope await cannot retain an old policy, initial scope, grant or live capability', async t => {
-  for (const action of ['policy', 'turn', 'model', 'character', 'membership', 'grant', 'capability', 'abort']) {
+  for (const action of ['policy', 'turn', 'model', 'title', 'character', 'membership', 'grant', 'capability', 'abort']) {
     const f = fixture(t); f.allow(); const { capability } = await f.bind(), controller = new AbortController()
     const resolve = f.service.resolveScope; let count = 0
     f.service.resolveScope = async scope => {
@@ -100,6 +100,7 @@ test('final scope await cannot retain an old policy, initial scope, grant or liv
         if (action === 'policy') f.reload()
         if (action === 'turn') f.start()
         if (action === 'model') f.append('model/selection', { provider: 'synthetic', model: 'test' })
+        if (action === 'title') f.append('session/title', { title: 'Opening', messageSeqs: [], source: { kind: 'user' } })
         if (action === 'character') { f.select('other'); f.select('c') }
         if (action === 'membership') f.playthrough.ext.pmpDshTavern.rootSessionId = 'other'
         if (action === 'grant') f.revoke()
@@ -239,6 +240,46 @@ test('model selection permits fresh initial bindings but revokes prior leases an
       { seq: 0, type: 'model/selection', data: { provider: 'synthetic', model: 'test' } },
       { seq: 1, type, data: {} },
       { seq: 2, type: 'model/selection', data: { provider: 'synthetic', model: 'test' } },
+    ]
+    await assert.rejects(f.service.snapshot(f.scope), { code: 'MVU_READ_ONLY' }, type)
+    await assert.rejects(f.bind(), { code: 'MVU_READ_ONLY' }, type)
+  }
+})
+
+test('explicit user titles allow fresh initial bindings without reviving old capabilities', async t => {
+  const f = fixture(t); f.allow()
+  const title = value => ({ title: value, messageSeqs: [], source: { kind: 'user' } })
+  const original = await f.bind()
+  f.append('session/title', title('Opening'))
+  assert.equal((await f.service.snapshot(f.scope)).status, 'available')
+  await assert.rejects(f.service.cardWrite(request(original.capability, 0, 'before-title')), { code: 'MVU_READ_ONLY' })
+  const renamed = await f.bind()
+  f.append('session/title', title('Other')); f.append('session/title', title('Opening'))
+  await assert.rejects(f.service.cardWrite(request(renamed.capability, 0, 'title-restored')), { code: 'MVU_READ_ONLY' })
+  const fresh = await f.bind()
+  assert.equal((await f.service.cardWrite(request(fresh.capability, 0, 'after-title'))).revision, 1)
+  f.start(); f.append('session/title', title('After turn'))
+  await assert.rejects(f.service.snapshot(f.scope), { code: 'MVU_READ_ONLY' })
+  await assert.rejects(f.bind(), { code: 'MVU_READ_ONLY' })
+  await assert.rejects(f.service.cardWrite(request(fresh.capability, 1, 'after-turn-title')), { code: 'MVU_READ_ONLY' })
+})
+
+test('title metadata rejects automatic sources, message references, malformed and unknown fields or activity', async t => {
+  const f = fixture(t)
+  const valid = { title: 'Opening', messageSeqs: [], source: { kind: 'user' } }
+  const invalid = [null, [], '', {}, { title: 'Opening' }, { ...valid, title: '' }, { ...valid, title: '  ' },
+    { ...valid, title: 1 }, { ...valid, messageSeqs: [0] }, { ...valid, messageSeqs: null }, { ...valid, messageSeqs: {} },
+    { ...valid, source: null }, { ...valid, source: [] }, { ...valid, source: {} },
+    { ...valid, source: { kind: 'fallback' } }, { ...valid, source: { kind: 'provider', provider: 'p', model: 'm' } },
+    { ...valid, source: { kind: 'user', extra: true } }, { ...valid, unknown: true }]
+  for (const data of invalid) {
+    f.session.snapshotEvents = () => [{ seq: 0, type: 'session/title', data }]
+    await assert.rejects(f.service.snapshot(f.scope), { code: 'MVU_READ_ONLY' }, JSON.stringify(data))
+    await assert.rejects(f.bind(), { code: 'MVU_READ_ONLY' }, JSON.stringify(data))
+  }
+  for (const type of ['turn/start', 'turn/end', 'user/message', 'assistant/message', 'agent/inbox/spliced', 'request/header', 'session/title-llm-request', 'session/title-other']) {
+    f.session.snapshotEvents = () => [
+      { seq: 0, type: 'session/title', data: valid }, { seq: 1, type, data: {} }, { seq: 2, type: 'session/title', data: valid },
     ]
     await assert.rejects(f.service.snapshot(f.scope), { code: 'MVU_READ_ONLY' }, type)
     await assert.rejects(f.bind(), { code: 'MVU_READ_ONLY' }, type)

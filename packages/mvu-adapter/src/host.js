@@ -21,9 +21,18 @@ export function installMvu(ctx, { storageDir, resources = [], sources, membershi
     && Object.hasOwn(data, 'model') && typeof data.model === 'string' && data.model.length > 0
     && Object.keys(data).every(key => ['provider', 'model', 'reasoningEffort'].includes(key))
     && (!Object.hasOwn(data, 'reasoningEffort') || (typeof data.reasoningEffort === 'string' && data.reasoningEffort.length > 0))
+  // SessionController.rename is log-only. Automatic titles and message references
+  // are activity, so accept only the complete explicit-user rename payload.
+  const userTitleMetadata = data => data !== null && typeof data === 'object' && !Array.isArray(data)
+    && Object.keys(data).length === 3 && ['title', 'messageSeqs', 'source'].every(key => Object.hasOwn(data, key))
+    && typeof data.title === 'string' && data.title.trim().length > 0
+    && Array.isArray(data.messageSeqs) && data.messageSeqs.length === 0
+    && data.source !== null && typeof data.source === 'object' && !Array.isArray(data.source)
+    && Object.keys(data.source).length === 1 && Object.hasOwn(data.source, 'kind') && data.source.kind === 'user'
   // Official Session restore appends this empty marker; inherited seed markers are not empty history.
   const emptyHistory = events => Array.isArray(events) && events.every(event => initialMetadata.has(event.type)
     || (event.type === 'model/selection' && modelSelectionMetadata(event.data))
+    || (event.type === 'session/title' && userTitleMetadata(event.data))
     || (event.type === 'session/end-seed' && event.data !== null && typeof event.data === 'object'
       && !Array.isArray(event.data) && Object.keys(event.data).length === 0))
   const digest = value => createHash('sha256').update(JSON.stringify(value)).digest('hex')
