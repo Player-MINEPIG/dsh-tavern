@@ -61,7 +61,8 @@ Bundled Mowan uses these public DSH seams:
 
 - `sidebar.workspaces`: character-card / playthrough projection;
 - `conversation.view`: independent `rp` view; do not unregister native `chat`;
-- `conversation.input.dock`: session-scoped empty-playthrough greeting/import dock and default-view adapter;
+- `conversation.input.dock`: session-scoped greeting/import dock and default-view adapter;
+- `main.conversation` and the `conversation.content` Factory: a dedicated body for a confirmed empty RP main Session with matching character, reusing the official composer;
 - `ctx.sessions.list`: catalog snapshots and local `retainedBy` counts; the main conversation is the row with `retainedBy.mainView > 0`; there is no `current` field;
 - `ctx.uiWorkspace.openSession(sessionId)`: navigation after durable writes and focus checks; inject the `uiWorkspace` service as well as its package dependency. `ctx.sessions.open` no longer exists.
 
@@ -74,6 +75,8 @@ Third-party plugins may use the same kinds of public seams, but must:
 5. Not take ownership through DOM queries, private bundle symbols, or mutating another plugin's registry.
 
 `pmpDshTavernChrome` does not guarantee your slot wins. Slot contention, order, priority, and owner props stay under the DSH public slot contract.
+
+The empty RP main Session shadows `main.conversation` at priority `-100` only while its catalog row is `blank === true` and both the playthrough root and current character selection match. Its entry declares its own strict-session child, without copying or redeclaring native entry children. A local `views` component of the public `conversation.content` Factory presents the greeting; the official Factory retains the composer, draft, model/permission controls, queue and interaction takeovers. The same Session's previous greeting dock is hidden during this layout. RP/Chat buttons change only the public Conversation view; Chat presents the official Hero. The first turn making the real Session nonblank, another main Session, a character mismatch, play-mode exit or uninstall releases the owned entries. This does not write `Session.blank`, history or the initial MVU authorization window. A failed character-classification read releases this layout while preserving an existing view preference.
 
 ### Multiple retained conversations
 
