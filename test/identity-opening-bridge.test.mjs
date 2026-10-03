@@ -40,10 +40,12 @@ test('inert cache charges cold data before selection, rejects drift and cannot e
  await denied.ready;await assert.rejects(denied.get(),/shared byte budget/);assert.equal(small.snapshot().total,0)
 })
 test('parent opening callbacks require a fresh trusted click and discard replies after disposal',async()=>{
- const source=readFileSync(new URL('../packages/client/src/play/card-worker-client.js',import.meta.url),'utf8').replace('export function','function')
+ const rawSource=readFileSync(new URL('../packages/client/src/play/card-worker-client.js',import.meta.url),'utf8')
+ const limits=rawSource.includes('DEPENDENCY_LIMITS')?(await import(new URL('../packages/client/src/play/rendering-limits.js',import.meta.url))).DEPENDENCY_LIMITS:undefined
+ const source=rawSource.replace(/^import.*\n/gm,'').replace('export function','function')
  let worker,called=0,done,serial=0;const posts=[],timers=new Map()
  class Worker{constructor(){worker=this}postMessage(value){posts.push(value)}terminate(){}}
- const create=new Function('TAVERN_CARD_WORKER_SOURCE','Worker','URL','Blob','crypto','setTimeout','clearTimeout',source+';return createVirtualCardRuntime')('',Worker,{createObjectURL:()=>'',revokeObjectURL(){}},class{},{randomUUID:()=>String(++serial)},(fn,ms)=>{const key={fn,ms};timers.set(key,key);return key},key=>timers.delete(key))
+ const create=new Function('DEPENDENCY_LIMITS','TAVERN_CARD_WORKER_SOURCE','Worker','URL','Blob','crypto','setTimeout','clearTimeout',source+';return createVirtualCardRuntime')(limits,'',Worker,{createObjectURL:()=>'',revokeObjectURL(){}},class{},{randomUUID:()=>String(++serial)},(fn,ms)=>{const key={fn,ms};timers.set(key,key);return key},key=>timers.delete(key))
  const runtime=create({identityOpening:true},{onOpening(){called++;return new Promise(resolve=>done=resolve)},onError(){}}),nonce=posts[0].nonce
  runtime.dispatch({type:'click',target:1},{trusted:false});const untrusted=posts.at(-1).taskId
  worker.onmessage({data:{nonce,kind:'identityOpening',value:{requestId:1,openingId:'default',taskId:untrusted}}})
