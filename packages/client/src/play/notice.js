@@ -1,4 +1,5 @@
 import {createMvuCardBinding} from './mvu-bridge.js'
+import {openingSourceIdentity} from './identity-opening-bridge.js'
 import {initialCardScope,greetingCardScope} from './mvu-scope.js'
 import {
   createElement,
@@ -178,6 +179,7 @@ export function PlaySessionDock({ session, useSessions, useConversation, convers
       ? h('div', { className: 'dtv-play-opening-body dtv-play-opening-body-empty', 'aria-hidden': true })
       : h('div',{className:'dtv-play-opening-body'},h(MessageContent,{
         text:greeting.text,
+        openingBinding:openingSourceIdentity({sessionId,greeting}),
         writeScope:content.initialScope,
         createBinding:content.greetingScope?(signal,writeGrant)=>createMvuCardBinding({client:playClient,scope:writeGrant?content.initialScope:content.greetingScope,signal,writeGrant}):undefined,
         enabled:displaySettings.interactiveCards===true,

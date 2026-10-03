@@ -105,6 +105,11 @@ export default Object.freeze({
   "appearance.runtimeEvidence": "Runtime source and compilation evidence",
   "appearance.proposed": "The card suggests sending this message",
   "appearance.sendProposal": "Send to this playthrough",
+  "appearance.openingProgress": "Preparing world-book data for this opening…",
+  "appearance.openingProposal": "Confirm opening world-book entries",
+  "appearance.openingScope": "These entries apply only to this playthrough. Confirm to continue choosing the identity.",
+  "appearance.openingEntries": "Review {count} complete entries",
+  "appearance.openingConfirm": "Add entries to this playthrough",
 
   "resource.error.fileTooLarge": "This file exceeds the resource import size limit.",
   "user.status.imported": "User imported as a new resource.",

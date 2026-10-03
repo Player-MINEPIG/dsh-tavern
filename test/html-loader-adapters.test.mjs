@@ -42,9 +42,10 @@ test('identity snapshot adapter proposes only and binds latest MVU reads to its 
  assert.equal(sandbox.window.Mvu.getMvuData({type:'message',message_id:'latest'}),null)
  assert.throws(()=>sandbox.window.Mvu.getMvuData({type:'message',message_id:'other'}),/bound/)
  assert.equal(sandbox.window.getContext().userName,'Fixture')
- const html='<script>function untouched(){}\n  function finishIdentitySelection(prompt) { unknownParentAction(prompt); }\n  $("#identitySelect").addEventListener("click",()=>{});</script>'
+ const html='<script>function untouched(){}\n  async function insertOpeningWorldbooks(identity) { unknownWorldbookWrite(identity); }\n  function selectedCard() {}\n  function finishIdentitySelection(prompt) { unknownParentAction(prompt); }\n  $("#identitySelect").addEventListener("click",()=>{});</script>'
  const result=adaptIdentityHtml(html,{kind:'identity-html-loader',htmlSha256:sourceSha256(html)})
  assert.ok(result.includes('__identityPropose(prompt)'));assert.ok(!result.includes('unknownParentAction'))
+ assert.ok(result.includes('__identityOpening('));assert.ok(!result.includes('unknownWorldbookWrite'))
  assert.throws(()=>adaptIdentityHtml(html+'changed',{kind:'identity-html-loader',htmlSha256:sourceSha256(html)}),/source changed/)
 })
 test('drafts persist by exact source and session, while disposed generations cannot write',()=>{

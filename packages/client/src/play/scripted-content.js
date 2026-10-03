@@ -9,6 +9,7 @@ import { translate } from '../i18n.js'
 import { discoverDependencies, isSideEffectModuleReference, externalUrl, loadWrapper, MAX_RENDER_SOURCE } from './rendering-sources.js'
 import {adaptIdentityHtml,identityLoaderBootstrap} from './html-loader-adapters.js'
 import {createCardScopedStorage} from './card-scoped-storage.js'
+import {createIdentityOpeningBridge} from './identity-opening-bridge.js'
 import { renderingTrust } from './rendering-trust.js'
 
 const TAGS = 'div span p br hr section article header footer main aside h1 h2 h3 h4 h5 h6 ul ol li dl dt dd b strong i em small pre code blockquote table thead tbody tr th td details summary button label input textarea select option output progress meter img style svg g path circle ellipse rect line polyline polygon defs linearGradient radialGradient stop clipPath title desc'.split(' ')
@@ -91,12 +92,14 @@ export function prepareCardDocument(source, owners = [], helpers = [], trust = r
     }
   }
   const wrapper = loadWrapper(source)
+  let identitySource
   let base, owner
   if (wrapper) {
     virtual = true
     const result = read(wrapper.url); source = result.content; owner = result.owner; base = wrapper.url
     if (loadWrapper(source)) throw Error('Nested remote HTML wrappers are unsupported')
     if(wrapper.kind==='identity-html-loader'){
+      identitySource=source
       source=adaptIdentityHtml(source,wrapper)
       runs.push({code:identityLoaderBootstrap(wrapper),name:'identity-loader-adapter-v1.js'});adapters.push({...wrapper,replacement:'Scoped HTML, storage and explicit proposal adapter; original wrapper is not executed'})
     }
@@ -135,7 +138,7 @@ export function prepareCardDocument(source, owners = [], helpers = [], trust = r
     runs.push({code,name,type,module:type === 'module'}); script.remove()
   }
   const data = cardDocument(template.innerHTML)
-  return {...data,runs,modules,virtual,adapters,schemaDeclarations,cardStorage:wrapper?.kind==='identity-html-loader'}
+  return {...data,runs,modules,virtual,adapters,schemaDeclarations,cardStorage:wrapper?.kind==='identity-html-loader',identitySource}
 }
 
 export function createDomBridge(doc, context, onProposal, onError, helperBinding) {
@@ -198,19 +201,21 @@ export function createDomBridge(doc, context, onProposal, onError, helperBinding
   return { bridge, attach: value => { runtime=value; if (destroyed) value.dispose() }, destroy }
 }
 
-const InteractiveCard = memo(function InteractiveCard({ source, enabled, scopeKey, context, onSend, owners = [], helpers = [], helperBinding, createBinding, writeScope }) {
+const InteractiveCard = memo(function InteractiveCard({ source, enabled, scopeKey, context, onSend, owners = [], helpers = [], helperBinding, createBinding, writeScope, openingBinding }) {
   const frame = useRef(null), cleanup = useRef(()=>{}), generation=useRef(0)
   const [trustRevision,setTrustRevision]=useState(renderingTrust.revision)
   useEffect(()=>renderingTrust.subscribe(()=>{generation.current++;cleanup.current();setTrustRevision(renderingTrust.revision())}),[])
   const [audit,setAudit]=useState(null),[paused,setPaused]=useState(false),[restart,setRestart]=useState(0)
   const [error,setError]=useState(''), [proposal,setProposal]=useState(''), [sending,setSending]=useState(false)
+  const [openingProposal,setOpeningProposal]=useState(null),[openingProgress,setOpeningProgress]=useState('')
+  const openingBridge=useRef(null)
   const data = useMemo(() => {
     if (source.length > 128 * 1024) return { html: '', scripts: [], unsupported: ['Card exceeds 128K characters'] }
     if (!enabled) return cardDocument(source)
     try { return prepareCardDocument(source,owners,helpers) } catch(error) { return {...cardDocument(source),unsupported:[error.message]} }
   }, [source,enabled,trustRevision,JSON.stringify(owners),JSON.stringify(helpers)])
   const srcDoc = `<!doctype html><html><head><meta http-equiv="Content-Security-Policy" content="${CARD_CSP}"><style>body{margin:12px;font:14px system-ui;color:#243042;background:#fff}*{box-sizing:border-box}img{max-width:100%}button,input,select,textarea{font:inherit}button{cursor:pointer}</style></head><body>${data.html}</body></html>`
-  useLayoutEffect(()=>{setProposal('');setError('');setAudit(null);return()=>{generation.current++;cleanup.current()}},[source,enabled,scopeKey,trustRevision,data,paused,restart])
+  useLayoutEffect(()=>{setProposal('');setError('');setAudit(null);setOpeningProposal(null);setOpeningProgress('');return()=>{generation.current++;cleanup.current()}},[source,enabled,scopeKey,trustRevision,data,paused,restart,JSON.stringify(openingBinding)])
   async function load() {
     const current=++generation.current; cleanup.current(); setError(''); setProposal('')
     const doc=frame.current?.contentDocument
@@ -229,7 +234,7 @@ const InteractiveCard = memo(function InteractiveCard({ source, enabled, scopeKe
       }).catch(()=>{})
     }
     let cleaned=false
-    cleanup.current=()=>{if(cleaned)return;cleaned=true;controller.abort();observer.disconnect();dom?.destroy();virtualRuntime?.dispose();cardStorage?.dispose();stopVariables?.();removeEvents();binding?.dispose();writeRequest?.dispose();revokeWrites()}
+    cleanup.current=()=>{if(cleaned)return;cleaned=true;controller.abort();openingBridge.current?.dispose();openingBridge.current=null;observer.disconnect();dom?.destroy();virtualRuntime?.dispose();cardStorage?.dispose();stopVariables?.();removeEvents();binding?.dispose();writeRequest?.dispose();revokeWrites()}
     if (!enabled || paused || data.unsupported.length) return
     if (doc.body.querySelectorAll('*').length > 2048) { setError('Card DOM limit exceeded'); return }
     try {
@@ -239,6 +244,7 @@ const InteractiveCard = memo(function InteractiveCard({ source, enabled, scopeKe
       }
       if(data.virtual) {
         if(data.cardStorage)cardStorage=createCardScopedStorage({storage:window.localStorage,owners,scopeKey,sourceIdentity:source})
+        if(data.identitySource&&openingBinding)openingBridge.current=createIdentityOpeningBridge({sourceIdentity:openingBinding,identitySource:data.identitySource,signal:controller.signal,onProposal:value=>{if(!cleaned&&current===generation.current)setOpeningProposal(value)},onProgress:value=>{if(!cleaned&&current===generation.current)setOpeningProgress(value)}})
         const activeBinding=binding??helperBinding
         const schemaEvidence=confirmMvuSchemas(data.schemaDeclarations??[],activeBinding?.getSnapshot())
         const events=['click','input','change','keydown','keyup','pointerdown','pointerup']
@@ -284,7 +290,8 @@ const InteractiveCard = memo(function InteractiveCard({ source, enabled, scopeKe
             doc.documentElement.scrollLeft=scroll[0];doc.documentElement.scrollTop=scroll[1];resize()
             return nodes
         }
-        virtualRuntime=createVirtualCardRuntime({html:data.html,runs:data.runs,modules:data.modules,context,variables:activeBinding?.getSnapshot(),cardStorage:cardStorage?.initial},{
+        virtualRuntime=createVirtualCardRuntime({html:data.html,runs:data.runs,modules:data.modules,context,variables:activeBinding?.getSnapshot(),cardStorage:cardStorage?.initial,identityOpening:!!openingBridge.current},{
+          onOpening:(openingId,{signal})=>{signal.throwIfAborted();if(cleaned||current!==generation.current||!openingBridge.current)throw Error('Opening card generation expired');return openingBridge.current.request(openingId)},
           onStorage:request=>{if(cleaned||current!==generation.current)throw Error('Card storage generation expired');return cardStorage.request(request)},
           onWrite:async({operation,value,options,cause,observedRevision,operationId,signal})=>{
             try{
@@ -332,7 +339,7 @@ const InteractiveCard = memo(function InteractiveCard({ source, enabled, scopeKe
     }catch(error){if(current===generation.current){cleanup.current();setError(error.message)}}
   }
   return h('section',{className:'dtv-interactive-card'},
-    h('iframe',{key:JSON.stringify([scopeKey,enabled,trustRevision,owners,helpers,paused,restart]),ref:frame,title:translate('appearance.card'),sandbox:'allow-same-origin',referrerPolicy:'no-referrer',srcDoc,onLoad:load,style:{width:'100%',minWidth:220,height:160,maxHeight:800,border:'1px solid #b9c2cf',borderRadius:8,background:'#fff'}}),
+    h('iframe',{key:JSON.stringify([scopeKey,enabled,trustRevision,owners,helpers,paused,restart,openingBinding]),ref:frame,title:translate('appearance.card'),sandbox:'allow-same-origin',referrerPolicy:'no-referrer',srcDoc,onLoad:load,style:{width:'100%',minWidth:220,height:160,maxHeight:800,border:'1px solid #b9c2cf',borderRadius:8,background:'#fff'}}),
     enabled?h('div',null,
       h('button',{type:'button',disabled:paused,onClick:()=>{generation.current++;cleanup.current();setPaused(true)}},translate('appearance.pauseCard')),
       h('button',{type:'button',onClick:()=>{generation.current++;cleanup.current();setPaused(false);setRestart(value=>value+1)}},translate('appearance.restartCard'))):null,
@@ -340,6 +347,14 @@ const InteractiveCard = memo(function InteractiveCard({ source, enabled, scopeKe
     data.unsupported.length ? h('p',{role:'alert'},data.unsupported.map(reason => reason.startsWith('appearance.') ? translate(reason) : reason).join(' ') + ' ' + translate('appearance.cardStaticFallback')):null,
     error ? h('p',{role:'alert'},error):null,
     audit ? h('details',{className:'dtv-card-audit'},h('summary',null,translate('appearance.runtimeEvidence')),h('pre',{style:{whiteSpace:'pre-wrap',overflowWrap:'anywhere'}},JSON.stringify(audit,null,2))):null,
+    openingProgress?h('p',{role:'status'},translate('appearance.openingProgress')):null,
+    openingProposal?h('section',{className:'dtv-card-opening-proposal',style:{border:'1px solid currentColor',padding:10,marginTop:8}},
+      h('strong',null,translate('appearance.openingProposal')),
+      h('p',null,translate('appearance.openingScope')),
+      h('details',null,h('summary',null,translate('appearance.openingEntries',{count:openingProposal.entryCount})),...openingProposal.entries.map((entry,index)=>h('article',{key:index},h('strong',null,entry.name),h('pre',{style:{whiteSpace:'pre-wrap',overflowWrap:'anywhere'}},entry.content)))),
+      openingProposal.error?h('p',{role:'alert'},openingProposal.error):null,
+      h('button',{type:'button',disabled:openingProposal.busy,onClick:event=>{if(event.isTrusted!==true)return;openingBridge.current?.confirm(openingProposal.proposalId,{trusted:true}).catch(error=>setError(error.message))}},translate('appearance.openingConfirm')),
+      h('button',{type:'button',disabled:openingProposal.busy,onClick:()=>openingBridge.current?.cancel()},translate('appearance.close'))):null,
     proposal ? h('div',{className:'dtv-card-proposal',style:{border:'1px solid currentColor',padding:10,marginTop:8}},
       h('strong',null,translate('appearance.proposed')),h('p',null,proposal),
       h('button',{type:'button',disabled:!onSend||sending,onClick:async()=>{setSending(true);try{await onSend(proposal);setProposal('')}catch(e){setError(e.message)}finally{setSending(false)}}},translate('appearance.sendProposal')),

@@ -67,11 +67,17 @@ export function adaptIdentityHtml(html,wrapper) {
   const marker='  function finishIdentitySelection(prompt) {'
   const start=html.indexOf(marker),end=html.indexOf('\n  $("#identitySelect").addEventListener(',start)
   if(start<0||end<0)throw Error('Identity proposal adapter structure changed')
-  return html.slice(0,start)+`  function finishIdentitySelection(prompt) {
+  const proposed=html.slice(0,start)+`  function finishIdentitySelection(prompt) {
     __identityPropose(prompt);
     setStatus("身份已写入，请在卡片下方确认开场提案。");
     saving = false;
     document.getElementById("identitySelect").disabled = false;
   }
 `+html.slice(end)
+  const openingStart=proposed.indexOf('  async function insertOpeningWorldbooks(identity) {'),openingEnd=proposed.indexOf('\n  function selectedCard() {',openingStart)
+  if(openingStart<0||openingEnd<0)throw Error('Identity opening adapter structure changed')
+  return proposed.slice(0,openingStart)+`  async function insertOpeningWorldbooks(identity) {
+    return __identityOpening(String(identity?.["互斥开场ID"] || "default"));
+  }
+`+proposed.slice(openingEnd)
 }

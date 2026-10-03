@@ -11,15 +11,15 @@ function validateInput(data) {
  if(data.cardStorage){count(JSON.stringify(data.cardStorage),128*1024+1024);if(!/^[a-f0-9]{64}$/.test(data.cardStorage.scope)||!Array.isArray(data.cardStorage.entries))throw Error('Invalid card storage scope')}
  return {...data,runs,modules,html}
 }
-export function createVirtualCardRuntime(input,{onView,onProposal,onError,onAudit=()=>{},onMeasure=()=>{throw Error('Card layout surface unavailable')},onStorage=()=>{throw Error('Card storage unavailable')},onWrite=async()=>{throw Error('Variable writes are disabled')}}) {
+export function createVirtualCardRuntime(input,{onView,onProposal,onError,onAudit=()=>{},onMeasure=()=>{throw Error('Card layout surface unavailable')},onStorage=()=>{throw Error('Card storage unavailable')},onOpening=async()=>{throw Error('Opening world books are unavailable')},onWrite=async()=>{throw Error('Variable writes are disabled')}}) {
  const data=validateInput(input)
  if(typeof TAVERN_CARD_WORKER_SOURCE!=='string')throw Error('Card worker unavailable in this build')
  if(active>=4)throw Error('Four external card runtimes are active. Pause an older card, then retry this card.')
  const nonce=crypto.randomUUID(),url=URL.createObjectURL(new Blob([TAVERN_CARD_WORKER_SOURCE],{type:'text/javascript'}))
  let worker;try{worker=new Worker(url)}finally{URL.revokeObjectURL(url)}active++
- let disposed=false,startupTimer,busyTimer,lastWriteId=0,lastMeasureId=0,lastStorageId=0,measurement=null
+ let disposed=false,startupTimer,busyTimer,lastWriteId=0,lastMeasureId=0,lastStorageId=0,measurement=null,lastOpeningId=0,opening=null
  const tasks=new Map(),pending=new Map()
- const stop=()=>{if(disposed)return;disposed=true;clearTimeout(startupTimer);clearTimeout(busyTimer);for(const item of pending.values()){clearTimeout(item.timer);item.controller.abort()}pending.clear();if(measurement){clearTimeout(measurement.timer);measurement.controller.abort();measurement=null}worker.terminate();tasks.clear();active--}
+ const stop=()=>{if(disposed)return;disposed=true;clearTimeout(startupTimer);clearTimeout(busyTimer);if(opening){clearTimeout(opening.timer);opening.controller.abort();opening=null}for(const item of pending.values()){clearTimeout(item.timer);item.controller.abort()}pending.clear();if(measurement){clearTimeout(measurement.timer);measurement.controller.abort();measurement=null}worker.terminate();tasks.clear();active--}
  const fail=(message,operationId)=>{if(disposed)return;stop();onError(Object.assign(Error(message),operationId?{operationId,outcome:'unknown'}:{}))}
  const replyWrite=(requestId,value,operationId)=>{if(disposed)return;try{if(JSON.stringify(value).length>128*1024)throw Error();worker.postMessage({kind:'writeResult',nonce,requestId,value})}catch{fail('Write result could not be delivered; inspect the operation receipt before retrying',operationId)}}
  worker.onerror=()=>fail('Card worker failed')
@@ -40,6 +40,16 @@ export function createVirtualCardRuntime(input,{onView,onProposal,onError,onAudi
    return
   }
   if(message.kind==='proposal'){if(typeof message.value==='string'&&message.value.length<=4000)onProposal(message.value);else fail('Invalid card proposal');return}
+  if(message.kind==='identityOpening'){
+   const value=message.value
+   if(data.identityOpening!==true||opening||!value||!Number.isSafeInteger(value.requestId)||value.requestId<=lastOpeningId||!['default','police_done','hospital_done','alisa_party','pool'].includes(value.openingId)||JSON.stringify(value).length>1024){fail('Invalid opening selection request');return}
+   lastOpeningId=value.requestId
+   const task=tasks.get(value.taskId)
+   const controller=new AbortController(),ticket={controller,timer:setTimeout(()=>fail('Opening confirmation expired; select the identity again'),300000)};opening=ticket
+   Promise.resolve().then(()=>{if(disposed||opening!==ticket)return;if(task?.trusted!==true||task.type!=='click'||performance.now()-task.at>=1500)throw Error('Opening selection requires a user click in this card');return onOpening(value.openingId,{signal:controller.signal})}).then(result=>finish({value:result}),error=>finish({error:String(error.message).slice(0,300)}))
+   function finish(result){if(disposed||opening!==ticket)return;opening=null;clearTimeout(ticket.timer);try{if(JSON.stringify(result).length>128*1024)throw Error();worker.postMessage({kind:'identityOpeningResult',nonce,requestId:value.requestId,value:result})}catch{fail('Opening result could not be delivered')}}
+   return
+  }
   if(message.kind==='measure'){
    const value=message.value
    if(measurement||!value||!Number.isSafeInteger(value.requestId)||value.requestId<=lastMeasureId||!Number.isSafeInteger(value.id)||value.id<0||typeof value.view?.html!=='string'||typeof value.view?.styles!=='string'||JSON.stringify(value).length>1024*1024){fail('Invalid layout measurement');return}
@@ -78,5 +88,5 @@ export function createVirtualCardRuntime(input,{onView,onProposal,onError,onAudi
  try{worker.postMessage({...data,kind:'init',nonce})}catch(error){stop();throw error}
  let events=0,epoch=performance.now()
  const send=(kind,value,metadata={})=>{if(disposed)return;const now=performance.now();if(now-epoch>1000){epoch=now;events=0}if(++events>128){fail('Card input rate limit exceeded');return}try{worker.postMessage({kind,nonce,value,...metadata})}catch{fail('Card input could not be transferred')}}
- return {dispose:stop,dispatch:(value,{trusted=false}={})=>{for(const[id,task]of tasks)if(performance.now()-task.at>1500)tasks.delete(id);if(tasks.size>=128){fail('Card event task limit exceeded');return}const taskId=crypto.randomUUID();tasks.set(taskId,{trusted,at:performance.now()});send('event',value,{taskId})},notifyVariables:value=>send('variables',value)}
+ return {dispose:stop,dispatch:(value,{trusted=false}={})=>{for(const[id,task]of tasks)if(performance.now()-task.at>1500)tasks.delete(id);if(tasks.size>=128){fail('Card event task limit exceeded');return}const taskId=crypto.randomUUID();tasks.set(taskId,{trusted,type:value?.type,at:performance.now()});send('event',value,{taskId})},notifyVariables:value=>send('variables',value)}
 }

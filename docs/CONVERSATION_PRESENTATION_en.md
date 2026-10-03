@@ -24,6 +24,10 @@ Message avatars sit beyond the composer's outer edges: character on the left, us
 
 Click a conversation avatar to upload a replacement for one message or every user/character avatar in this playthrough:
 
+The fixed identity-page adapter accepts only the registered wrapper and HTML digests. Generic fixed IIFE loaders also check lexical selector bindings: local `$` or `jQuery` bindings cannot impersonate the global loader. The original wrapper does not run, and the final opening becomes a message proposal for confirmation outside the card. The adapter's `getCurrentChatId()` is an opaque card-draft namespace; `getCurrentMessageId()` is the bound variable message ID or null. Neither is a general ST/DSH session identity. Drafts are isolated by source, owner and card scope: at most 32 keys, 64 KiB UTF-8 per value and 128 KiB serialized JSON, with a raw-size check before parsing stored data.
+
+Only an opening selection that needs additional world-book entries fetches one registered inert text snapshot through the trusted page. It uses a separate IndexedDB namespace, exact URL/digest, an 8 MiB download bound and a 15-second deadline, and never enters a module graph or executes. Cold restoration rechecks its digest and charges the shared code/data byte budget. Proposal preparation uses the trusted current character, zero-based greeting index and original text digest before macro/regex expansion, independently of the draft ID. The Host statically verifies complete registry entries; a separate button outside the card confirms a CAS commit with a stable operation ID. Identity selection continues only after a real receipt. Empty selections verify their binding and skip writing. Cancellation, switching and disposal revoke pending requests; downloading grants neither world-book nor MVU writes.
+
 ```mermaid
 flowchart LR
   A[Message override] -->|absent| B[Playthrough role override]

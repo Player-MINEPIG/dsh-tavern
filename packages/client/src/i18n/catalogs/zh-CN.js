@@ -105,6 +105,11 @@ export default Object.freeze({
   "appearance.runtimeEvidence": "运行源码与编译证据",
   "appearance.proposed": "交互卡建议发送以下消息",
   "appearance.sendProposal": "确认发送到当前周目",
+  "appearance.openingProgress": "正在准备此开场的世界书数据…",
+  "appearance.openingProposal": "确认补入开场世界书",
+  "appearance.openingScope": "这些条目只补入当前周目。确认后继续完成身份选择。",
+  "appearance.openingEntries": "查看 {count} 个完整条目",
+  "appearance.openingConfirm": "确认补入当前周目",
 
   "resource.error.fileTooLarge": "文件超过此类资源的导入大小限制。",
   "user.status.imported": "已导入为新用户资源。",

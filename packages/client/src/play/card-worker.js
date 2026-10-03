@@ -3,6 +3,7 @@ import { newQuickJSAsyncWASMModuleFromVariant } from 'quickjs-emscripten-core'
 import variant from '@jitl/quickjs-singlefile-browser-release-asyncify'
 import { VIRTUAL_DOM_BOOTSTRAP } from './virtual-dom-runtime.js'
 import {CARD_STORAGE_RUNTIME,validateCardStorage,cardStorageBytes,CARD_STORAGE_VALUE_LIMIT} from './card-scoped-storage.js'
+import {IDENTITY_OPENING_RUNTIME} from './identity-opening-runtime.js'
 
 function validateInput(data) {
  const runs=data.runs??[],modules=data.modules??{},html=data.html??''
@@ -19,6 +20,7 @@ function validateInput(data) {
 
 let compiler, vm, runtime, drainJob, nonce, destroyed=false, deadline=0, operations=0, current, context, lastView='', ready=false
 const timers=new Map(),pendingMessages=[],pendingWrites=new Set();let lastWriteId=0
+let openingPending=null,lastOpeningId=0
 let activeCause='script',activeTask=null,layoutCalls=0,layoutId=0,layoutPending=null,queue=Promise.resolve(),queued=0
 const startupTasks=[]
 let messages=0, messageEpoch=0
@@ -89,6 +91,11 @@ async function init(input){
    }else if(op==='propose'){
     if(typeof args[0]!=='string'||args[0].length>4000)throw Error('Proposal exceeds limit')
     reply('proposal',args[0])
+   }else if(op==='identityOpening'){
+    const [requestId,openingId]=args
+    if(data.identityOpening!==true||openingPending!==null||!Number.isSafeInteger(requestId)||requestId<=lastOpeningId||!['default','police_done','hospital_done','alisa_party','pool'].includes(openingId))throw Error('Invalid opening selection request')
+    lastOpeningId=requestId;openingPending=requestId
+    reply('identityOpening',{requestId,openingId,taskId:activeTask})
    }else if(op==='timer'){
     const [id,delay,interval]=args
     if(!Number.isSafeInteger(id)||id<1||timers.has(id)||timers.size>=128)throw Error('Card timer limit exceeded')
@@ -124,6 +131,7 @@ async function init(input){
  await evaluate(TAVERN_VIRTUAL_DOM_SOURCE,'virtual-dom.js',false,true)
  await evaluate(VIRTUAL_DOM_BOOTSTRAP,'card-bootstrap.js',false,true)
  if(data.cardStorage)await evaluate(CARD_STORAGE_RUNTIME,'card-storage.js',false,true)
+ if(data.identityOpening===true)await evaluate(IDENTITY_OPENING_RUNTIME,'identity-opening.js',false,true)
  await evaluate(`__setMvuRevision(${Number.isSafeInteger(data.variables?.revision)?data.variables.revision:-1})`,'initial-revision.js',false,true)
  await evaluate(`document.body.innerHTML=${JSON.stringify(data.html)}`,'card-html.js',false,true)
  for(const script of data.runs){
@@ -152,9 +160,10 @@ self.onmessage=event=>{
  if(data.kind==='cardStorageResult'){if(!storagePending||data.requestId!==storagePending.requestId)return;const pending=storagePending;storagePending=null;clearTimeout(pending.timer);pending.resolve(data.value);return}
  if(data.kind==='measurement'){if(!layoutPending||data.requestId!==layoutPending.requestId)return;const pending=layoutPending;layoutPending=null;clearTimeout(pending.timer);if(data.error)pending.reject(Error(String(data.error).slice(0,200)));else pending.resolve(data.value);return}
  if(data.kind==='dispose'){dispose();return}
- if(!ready){if(['writeResult','variables'].includes(data.kind)){if(pendingMessages.length>=64){fail(Error('Card startup message limit exceeded'));return}pendingMessages.push(data)}return}
+ if(!ready){if(['writeResult','variables','identityOpeningResult'].includes(data.kind)){if(pendingMessages.length>=64){fail(Error('Card startup message limit exceeded'));return}pendingMessages.push(data)}return}
  if(data.kind==='event')enter(()=>evaluate(`__domEvent(${JSON.stringify(data.value)})`),'script',data.taskId)
  else if(data.kind==='writeResult'){if(!pendingWrites.delete(data.requestId))return;enter(()=>evaluate(`__writeResult(${JSON.stringify(data.requestId)},${JSON.stringify(data.value)})`))}
+ else if(data.kind==='identityOpeningResult'){if(openingPending!==data.requestId)return;openingPending=null;enter(()=>evaluate(`__identityOpeningResult(${JSON.stringify(data.requestId)},${JSON.stringify(data.value)})`))}
  else if(data.kind==='variables')enter(()=>{if(current?.status==='available'&&data.value?.status==='available'&&(data.value.currentRevision??data.value.revision)<(current.currentRevision??current.revision))return;current=data.value;return evaluate(`__notifyVariables(${JSON.stringify(current)})`)})
  else if(data.kind==='dispose')dispose()
 }
