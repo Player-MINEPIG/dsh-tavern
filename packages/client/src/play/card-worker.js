@@ -5,6 +5,7 @@ import variant from '@jitl/quickjs-singlefile-browser-release-asyncify'
 import { VIRTUAL_DOM_BOOTSTRAP } from './virtual-dom-runtime.js'
 import {CARD_STORAGE_RUNTIME,validateCardStorage,cardStorageBytes,CARD_STORAGE_VALUE_LIMIT} from './card-scoped-storage.js'
 import {IDENTITY_OPENING_RUNTIME} from './identity-opening-runtime.js'
+import {cardExecutionDiagnostic} from './card-execution-diagnostic.js'
 
 function validateInput(data) {
  const runs=data.runs??[],modules=data.modules??{},html=data.html??''
@@ -29,15 +30,17 @@ let photoPickId=0,lastPhotoTask=null
 let messages=0, messageEpoch=0
 let storagePending=null,storageRevision=0
 let controlSequence=0,receivedControlSequence=0
+let executionInterrupted=false,executionTiming={waitMs:0}
 const reply=(kind,value,metadata={})=>{const now=performance.now();if(now-messageEpoch>1000){messages=0;messageEpoch=now}if(++messages>256){dispose();throw Error('Card message rate limit exceeded')}self.postMessage({nonce,kind,value,...metadata})}
 function dispose(){if(destroyed)return;destroyed=true;for(const timer of timers.values())clearTimeout(timer);timers.clear();if(layoutPending)clearTimeout(layoutPending.timer);if(storagePending){clearTimeout(storagePending.timer);storagePending.reject(Error('Card storage generation expired'));storagePending=null}startupTasks.length=0;self.close()}
 function fail(error){try{self.postMessage({nonce,kind:'error',value:String(error?.message??error).slice(0,300)})}finally{dispose()}}
 async function evaluate(code,name='card.js',module=false,initial=false){
  if(destroyed)throw Error('Card disposed')
  if(typeof code!=='string'||code.length>8*1024*1024)throw Error('Card source exceeds 8 MiB')
- deadline=performance.now()+(initial?2000:120);operations=0
+ const started=performance.now(),timing={waitMs:0};executionTiming=timing;executionInterrupted=false
+ deadline=started+(initial?2000:120);operations=0
  const result=await vm.evalCodeAsync(code,name,{type:module?'module':'global'})
- if(result.error){result.error.dispose();throw Error('Card execution failed: '+String(name).slice(0,160))}
+ if(result.error){result.error.dispose();const diagnostic=cardExecutionDiagnostic({interrupted:executionInterrupted,phase:initial?'initial':code.startsWith('__domEvent(')?'event':code==='__view()'?'snapshot':'execution',elapsedMs:performance.now()-started,bridgeWaitMs:timing.waitMs});throw Error('Card execution failed: '+String(name).slice(0,160)+' ['+diagnostic.code+'; phase='+diagnostic.phase+'; elapsedMs='+diagnostic.elapsedMs+'; bridgeWaitMs='+diagnostic.bridgeWaitMs+']')}
  const value=vm.typeof(result.value)==='string'?vm.getString(result.value):undefined;result.value.dispose()
  let jobs=0;while(runtime.hasPendingJob()){if(++jobs>200)throw Error('Card pending job limit exceeded');await drainJob()}
  return value
@@ -64,7 +67,7 @@ async function init(input){
  const QuickJS=await newQuickJSAsyncWASMModuleFromVariant(variant)
  if(destroyed)return
  runtime=QuickJS.newRuntime();runtime.setMemoryLimit(192*1024*1024);runtime.setMaxStackSize(1024*1024)
- runtime.setInterruptHandler(()=>performance.now()>deadline)
+ runtime.setInterruptHandler(()=>{const expired=performance.now()>deadline;if(expired)executionInterrupted=true;return expired})
  const modules=data.modules??{}
  runtime.setModuleLoader(name=>Object.hasOwn(modules,name)?modules[name]:{error:Error('Unreviewed module')},(base,name)=>{try{return new URL(name,base).href}catch{return name}})
  vm=runtime.newContext();drainJob=createAsyncJobDrain(runtime,{version:TAVERN_QUICKJS_VERSION,isCurrent:()=>!destroyed})
@@ -123,7 +126,9 @@ async function init(input){
   const value=JSON.parse(raw)
   if(!['set','remove','clear'].includes(value.operation)||value.operation!=='clear'&&(typeof value.key!=='string'||!value.key||value.key.length>512)||value.operation==='set'&&(typeof value.value!=='string'||value.value.length>CARD_STORAGE_VALUE_LIMIT||cardStorageBytes(value.value)>CARD_STORAGE_VALUE_LIMIT))throw Error('Invalid card storage request')
   const requestId=++storageRevision
-  const result=await new Promise((resolve,reject)=>{const timer=setTimeout(()=>{storagePending=null;reject(Error('Card storage response deadline exceeded'))},1000);storagePending={requestId,resolve,reject,timer};reply('cardStorage',{...value,revision:requestId})})
+  const waitingAt=performance.now(),timing=executionTiming
+  let result
+  try{result=await new Promise((resolve,reject)=>{const timer=setTimeout(()=>{storagePending=null;reject(Error('Card storage response deadline exceeded'))},1000);storagePending={requestId,resolve,reject,timer};reply('cardStorage',{...value,revision:requestId})})}finally{timing.waitMs+=performance.now()-waitingAt}
   if(destroyed)throw Error('Card storage generation expired')
   return vm.newString(JSON.stringify(result))
  });vm.setProp(vm.global,'__cardStorage',storage);storage.dispose()
