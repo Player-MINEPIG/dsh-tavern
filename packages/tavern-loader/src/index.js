@@ -80,6 +80,7 @@ import { createDefaultRegistry } from '../../request-assembler/builtin-sources.j
 import { createMemorySources, installMemorySources } from '../../memory-sources/index.js'
 import { OpeningWorldBookService, OPENING_WORLD_BOOK_SERVICE, createOpeningWorldBookHandler, isOpeningWorldBookPath } from '../../opening-worldbook/index.js'
 import { ASSEMBLY_SERVICE } from '../../request-assembler/registry.js'
+import { createScopeCatalog, installScopeCatalog } from '../../scope-catalog/index.js'
 import { createAssemblyApi, isAssemblyApiPath } from '../../request-assembler/server.js'
 
 export const name = PLUGIN_ID
@@ -323,6 +324,9 @@ export function apply(ctx, config = {}) {
     getSession: id => ctx.get('sessions')?.get?.(id), onChange: () => ctx.emit('system-prompt/change') })
   ctx.provide(OPENING_WORLD_BOOK_SERVICE, openingWorldBooks)
   ctx.effect(() => () => openingWorldBooks.dispose())
+  installScopeCatalog(ctx, createScopeCatalog({ sources: { characterId: characterStore, presetId: store, userId: userStore },
+    getSelection: id => selections.get(id), getSelectionRevision: id => `${selections.selectionRevision(id)}:${store.selectionEpoch}`,
+    getSession: id => ctx.get('sessions')?.get?.(id) ?? null }))
   const rpMode = new RpModeController({
     selections,
     uiSettings: uiSettingsStore,

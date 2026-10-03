@@ -23,7 +23,8 @@
     "./prompt-template": "./packages/prompt-template/index.js",
     "./memory-sources": "./packages/memory-sources/index.js",
     "./opening-worldbook": "./packages/opening-worldbook/index.js",
-    "./opening-worldbook/manifest": "./packages/opening-worldbook/manifest.js"
+    "./opening-worldbook/manifest": "./packages/opening-worldbook/manifest.js",
+    "./scope-catalog": "./packages/scope-catalog/index.js"
   },
   "files": [
     "screenshots.json",

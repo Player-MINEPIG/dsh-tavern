@@ -92,6 +92,18 @@ Host 可选服务 `tavernOpeningWorldBooks` 提供 `prepare` 与 `commit`，类�
 
 回执为 `{ok:true,inserted,existing,updated,targetWorldbook,method:'session-local',receiptId,resourceId,revision}`，空选择另有 `skipped:true` 与 `resourceId:null`。书仅写入插件的会话专属存储，原卡、全局书和全局绑定保持原值。资源 ID 为 `world-book:session-opening-<digest>`，在 `tavernMemorySources` 世界书 adapter 下仅对该 session scope 可读/列出。当前选择匹配时由原生世界书激活链处理关键词、启用、概率、预算和位置；转为 managed 后需要原有当前 manager retrieve 策略，缺 manager/deny 拒绝装配，不因写入回执自动授权 prompt 使用。回执证明本地提交，不证明模型发送或 provider 接收。
 
+## 可选 Host scope 目录
+
+loader 提供 `tavernScopeCatalog`（`protocolVersion:1`、`authority:'local'`），公开模块为 `pmp-dsh-tavern/scope-catalog`。消费者可通过可选 `ctx.inject` 使用它；缺少服务或版本不符时明确报告不可用，不调用完整资源列表替代目录。此服务只公开当前资源身份，不运行提示词装配，也不授权提示词使用或资源写入。
+
+`searchScopes({field,query?,cursor?,limit?,scope?:{sessionId?},signal?})` 返回 `{items:[{id,name}],nextCursor:string|null}`。field 固定为 `characterId`、`presetId`、`userId`；limit 是 1–50（默认 50），query 最多 200 字符，按 ID/名称包含匹配。全局搜索不传 sessionId。结果按真实 ID 排序；cursor 由来源签发，绑定字段、规范化查询、会话界域、来源目录代次和可见性版本。修改查询或来源后从首页重新读。每页重验来源可见性和生命周期，不暴露正文、头像或文件路径。
+
+三个资源库维护只含 ID、名称与文件指纹的 metadata index。初始化或重启时仅重建新增/变更资源的索引；后续 source-owned 创建、修改和删除同步索引。分页与 scope 解析只读索引和文件 metadata，不调用资源 `list/get` 或读取正文。外部直接改文件导致索引过期时返回 `SCOPE_CATALOG_STALE`，重载来源后重建；索引不可用不使原生资源库失效。
+
+`resolveScopeContext({sessionId,signal?})` 返回 `{scope:{sessionId,characterId,presetId,userId},revision,checkCurrent}`。characterId 映射当前 `selection.characterCardId`；presetId 是 ST prompt preset；userId 是 Tavern RP persona。缺失或不可见资源返回 null，不伪造身份。session 必须在官方 `sessions` 服务中存在。`checkCurrent` 是 Host-only 同步租约，绑定 session 实例、选择代次、目录与来源可见性；卸载或任一改变使租约失效。条件使用方必须在最终使用前复验，不能用浏览器提交的 ID 代替这些事实。
+
+权限范围沿用本地可信 Host 与本机 HTTP 防护，以及来源自身可见性。它不新增 principal ACL，也不把 manager 名单或目录读取解释为提示词使用许可。可选目录消费者的 HTTP 路由仍需实施其已有本机防护。
+
 ## 桌面请求令牌
 
 `GET /pmp-dsh-tavern/api/request-token` 要求 `X-Tavern-Client: embedded`，返回 `{ok:true,token}`，令牌是进程内的 64 位十六进制字符串，响应禁止缓存。沿用 TCP/Host 检查，拒绝异源/null Origin 与 cross-site 请求，不启用 CORS。官方 `dsh-app://app` 代理移除 Origin，因此嵌入桌面客户端在变更请求中携带 `X-Tavern-Request-Token`。仅缺省 Origin 可使用此令牌；显式异源/null Origin 仍被拒绝。HTTP 浏览器变更继续要求同源。Host 重启使令牌失效，内置客户端在 Origin 拒绝后重试一次。这是 CSRF 防护，不是鉴权。

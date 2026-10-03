@@ -9,6 +9,7 @@ import {
   writeFileSync,
 } from 'node:fs'
 import { dirname, join, resolve } from 'node:path'
+import { ScopeMetadataIndex } from '../../scope-catalog/metadata-index.js'
 import { fileURLToPath } from 'node:url'
 import {
   createBlankCharacterCard,
@@ -242,7 +243,10 @@ export class CharacterStore {
     mkdirSync(this.charactersDir, { recursive: true })
     mkdirSync(this.artifactsDir, { recursive: true })
     this.state = normalizeState(readJson(this.statePath, stateShape({})))
+    this.scopeIndex = new ScopeMetadataIndex({ directory: this.charactersDir, path: join(this.storageDir, 'character-scope-index.json'), readMetadata: path => summary(validateDocument(readJson(path))) })
   }
+
+  scopeMetadata() { return this.scopeIndex.snapshot() }
 
   characterPath(id) {
     return join(this.charactersDir, `${validateId(id)}.json`)
@@ -393,6 +397,7 @@ export class CharacterStore {
       try { unlinkSync(coverPath) } catch {}
       throw error
     }
+    this.scopeIndex.changed(character)
     return character
   }
 
@@ -409,6 +414,7 @@ export class CharacterStore {
       this.state.characterOrder.push(character.id)
       this.saveState()
     }
+    this.scopeIndex.changed(character)
     return character
   }
 
@@ -451,6 +457,7 @@ export class CharacterStore {
       throw error
     }
     atomicJson(this.characterPath(id), character)
+    this.scopeIndex.changed(character)
     return character
   }
 
@@ -493,6 +500,7 @@ export class CharacterStore {
     const character = this.get(id)
     const deletedSummary = summary(character)
     try { unlinkSync(this.characterPath(id)) } catch (error) { if (error?.code !== 'ENOENT') throw error }
+    this.scopeIndex.changed(null, id)
     try { unlinkSync(this.artifactPath(id)) } catch (error) { if (error?.code !== 'ENOENT') throw error }
     let changed = false
     const missingIndex = this.state.missingCharacters.findIndex(item => item.id === id)
