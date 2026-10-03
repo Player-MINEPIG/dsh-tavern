@@ -6,8 +6,9 @@ import { operationLabel, operationResult, operationObjects, operationPageJsonl, 
 
 const h = createLocalizedElement(createElement)
 
+// The Host overlay can scroll with its frame; keep diagnostics within the viewport at every UI scale.
 export const diagnosticsCss = `
-.dtv-panel.dtv-diagnostics{z-index:3}
+.dtv-panel.dtv-diagnostics{position:fixed;z-index:3;box-sizing:border-box;width:min(440px,calc((100vw - 56px)/var(--dtv-ui-scale,1)))}
 .dtv-diagnostic-summary{display:flex;align-items:center;gap:4px;margin:4px 8px;padding:5px;border:1px solid var(--dsw-alias-border-l2);border-radius:8px;font-size:11px}
 .dtv-diagnostic-summary button,.dtv-diagnostic-warning{border:0;border-radius:6px;background:transparent;color:var(--dsw-alias-label-secondary);font:inherit;cursor:pointer;padding:5px}
 .dtv-diagnostic-summary button:hover,.dtv-diagnostic-warning:hover{background:var(--dsw-alias-interactive-bg-hover)}
