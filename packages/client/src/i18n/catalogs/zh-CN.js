@@ -1,4 +1,5 @@
 export default Object.freeze({
+  "rendering.graph.remote": "下载尚未完成，可重新下载接管",
   "rendering.graph.failed": "获取失败",
   "rendering.graph.ready": "已下载",
   "rendering.graph.queued": "等待下载",

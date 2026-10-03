@@ -4,7 +4,11 @@ import {createRenderingDependencies} from '../packages/client/src/play/rendering
 import {createRenderingTrust} from '../packages/client/src/play/rendering-trust.js'
 const url='https://example.com/root.js',child='https://example.com/child.js'
 const source=(owner='character:A',content=`import '${url}'`)=>({owner,key:owner+':helper',content,enabled:true})
-const memory=()=>{const map=new Map();return {get:async key=>structuredClone(map.get(key)),put:async(key,value)=>{map.set(key,structuredClone(value))},delete:async key=>{map.delete(key)}}}
+const memory=()=>{
+ const map=new Map(),read=key=>structuredClone(map.get(key)??{generation:0})
+ const advance=(key,pending)=>{const generation=read(key).generation+1;map.set(key,{generation,pending});return generation}
+ return {get:async key=>read(key),begin:async key=>advance(key,true),remove:async key=>advance(key,false),publish:async(key,generation,graph)=>{const current=read(key);if(current.generation!==generation||!current.pending)return false;map.set(key,{generation,graph:structuredClone(graph),pending:false});return true}}
+}
 const deferred=()=>{let resolve;const promise=new Promise(r=>{resolve=r});return {promise,resolve}}
 
 test('one acquisition converges cyclic graph, deduplicates shared children and restores without network',async()=>{
@@ -32,7 +36,7 @@ test('uninstall and source replacement suppress late downloads, persist no obsol
   await manager.sync([source()]);const pending=manager.acquire('character:A');await entered.promise
   if(action==='uninstall')await manager.uninstall('character:A');else await manager.sync([source('character:A',`import '${child}'`)])
   wait.resolve('export const obsolete=1');await pending
-  assert.throws(()=>trust.read('character:A',url),/not downloaded/);assert.equal(await store.get('character:A'),undefined)
+  assert.throws(()=>trust.read('character:A',url),/not downloaded/);assert.equal((await store.get('character:A')).graph,undefined)
  }
 })
 
@@ -92,6 +96,41 @@ test('redownload removes old persisted graph before network and refresh cannot r
  const manager=createRenderingDependencies({store,trust,download:async()=>{if(slow){entered.resolve();return wait.promise};return 'export const v=1'}})
  await manager.sync([source()]);await manager.acquire('character:A');slow=true
  const pending=manager.acquire('character:A');await entered.promise
- const restored=createRenderingDependencies({store,trust:createRenderingTrust()});await restored.sync([source()]);assert.equal(restored.inspect('character:A').status,'waiting')
+ const restored=createRenderingDependencies({store,trust:createRenderingTrust()});await restored.sync([source()]);assert.equal(restored.inspect('character:A').status,'remote')
  wait.resolve('export const v=2');await pending;assert.match(trust.read('character:A',url),/2$/)
+})
+
+function queuedBus(){
+ const channels=[],queued=[]
+ return {queued,channelFactory(){const channel={postMessage(data){for(const other of channels)if(other!==channel)queued.push({to:other,data:structuredClone(data)})},close(){}};channels.push(channel);return channel},deliver(){for(const {to,data} of queued.splice(0))to.onmessage?.({data})}}
+}
+
+test('review R1: simultaneous acquisitions with queued notifications elect a storage winner and settle both tabs',async()=>{
+ const store=memory(),bus=queuedBus(),aDone=deferred(),bDone=deferred(),aEntered=deferred(),bEntered=deferred()
+ const trustA=createRenderingTrust(),trustB=createRenderingTrust()
+ const a=createRenderingDependencies({store,trust:trustA,channelFactory:()=>bus.channelFactory(),download:async()=>{aEntered.resolve();return aDone.promise}})
+ const b=createRenderingDependencies({store,trust:trustB,channelFactory:()=>bus.channelFactory(),download:async()=>{bEntered.resolve();return bDone.promise}})
+ await a.sync([source()]);await b.sync([source()]);const ap=a.acquire('character:A'),bp=b.acquire('character:A')
+ await Promise.all([aEntered.promise,bEntered.promise]);assert.equal(bus.queued.length,2)
+ bus.deliver();aDone.resolve('export const winner=1');bDone.resolve('export const winner=2');await Promise.all([ap,bp])
+ for(let i=0;i<4;i++){bus.deliver();await new Promise(resolve=>setTimeout(resolve,1))}
+ assert.deepEqual([a.inspect('character:A').status,b.inspect('character:A').status],['ready','ready'])
+ assert.equal(trustA.read('character:A',url),'export const winner=2');assert.equal(trustB.read('character:A',url),'export const winner=2');assert.equal(bus.queued.length,0)
+ a.dispose();b.dispose()
+})
+
+test('review R2: completed uninstall rejects older publication even with all uninstall messages held',async()=>{
+ const store=memory(),bus=queuedBus(),done=deferred(),entered=deferred(),trustA=createRenderingTrust(),trustB=createRenderingTrust()
+ const a=createRenderingDependencies({store,trust:trustA,channelFactory:()=>bus.channelFactory(),download:async()=>{entered.resolve();return done.promise}})
+ const b=createRenderingDependencies({store,trust:trustB,channelFactory:()=>bus.channelFactory(),download:()=>{throw Error('must not download')}})
+ await a.sync([source()]);await b.sync([source()]);const ap=a.acquire('character:A');await entered.promise
+ bus.deliver();await new Promise(resolve=>setTimeout(resolve,1));await b.uninstall('character:A')
+ assert.equal((await store.get('character:A')).graph,undefined)
+ done.resolve('export const obsolete=1');await ap
+ assert.equal((await store.get('character:A')).graph,undefined,'a completed uninstall cannot be undone before notification delivery')
+ for(let i=0;i<4;i++){bus.deliver();await new Promise(resolve=>setTimeout(resolve,1))}
+ const third=createRenderingDependencies({store,trust:createRenderingTrust(),channelFactory:()=>null});await third.sync([source()])
+ assert.deepEqual([a.inspect('character:A').status,b.inspect('character:A').status,third.inspect('character:A').status],['waiting','waiting','waiting'])
+ assert.throws(()=>trustA.read('character:A',url),/not downloaded/);assert.throws(()=>trustB.read('character:A',url),/not downloaded/)
+ a.dispose();b.dispose();third.dispose()
 })

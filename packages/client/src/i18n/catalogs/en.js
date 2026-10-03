@@ -1,4 +1,5 @@
 export default Object.freeze({
+  "rendering.graph.remote": "Unfinished download; download again to take over",
   "rendering.graph.failed": "Download failed",
   "rendering.graph.ready": "Downloaded",
   "rendering.graph.queued": "Queued",
