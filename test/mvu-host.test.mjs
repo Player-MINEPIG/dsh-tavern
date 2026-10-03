@@ -136,6 +136,7 @@ test('real Host empty greeting binding writes state used by the first model requ
     await ctx.plugin((await load('@deepseek-ai/dsh-permission-presets')).default, { defaultPreset: 'workspace-write' })
     class Adapter extends llm.LlmAdapter {
       // This fixture selects a trailing MVU system source, which requires a capable route.
+      async listModels(provider) { return [{ provider, id: 'test', name: 'Synthetic test' }] }
       async resolveModel(provider, id) { return { provider, id, name: id, systemPromptUpdate: 'in-history' } }
       async *stream(request) {
         requests.push(request)
@@ -168,6 +169,9 @@ test('real Host empty greeting binding writes state used by the first model requ
       { type: 'approval/policy', data: { policy: 'ask' } },
       { type: 'sandbox/mode', data: { mode: 'read-only' } },
     ])
+    await ctx.sessionController.selectModel({ sessionId: agent.id, provider: 'initial-test', model: 'test' })
+    assert.deepEqual(agent.session.snapshotEvents().at(-1).data, { provider: 'initial-test', model: 'test' })
+    assert.equal(agent.session.snapshotEvents().at(-1).type, 'model/selection')
     await service.flush()
     const scope = { mode: 'initial', playthroughId: 'opening', sessionId: agent.id, characterId: 'opening-card', sessionFormatVersion: agent.session.header.version }
     const source = JSON.stringify({ version: 1, scope, runs: [], modules: {}, html: '<div>Synthetic opening</div>' })
@@ -220,6 +224,8 @@ test('official persisted empty session resumes through resolveAgent, while resum
     new (await load('@deepseek-ai/dsh-api-session-controller')).SessionController(ctx, { nativeOpen: false })
     await ctx.plugin((await load('@deepseek-ai/dsh-permission-presets')).default, { defaultPreset: 'workspace-write' })
     class Adapter extends llm.LlmAdapter {
+      async listModels(provider) { return [{ provider, id: 'test', name: 'Synthetic resume' }] }
+      async resolveModel(provider, id) { return { provider, id, name: id } }
       async *stream() {
         yield { type: 'block-start', index: 0, blockType: 'text' }
         yield { type: 'text-delta', index: 0, text: 'Synthetic reply.' }
@@ -247,6 +253,8 @@ test('official persisted empty session resumes through resolveAgent, while resum
     write('catalog.json', { playthroughs: [{ id: 'opening', path: 'opening/timeline.json', ext: { pmpDshTavern: { rootSessionId: sessionId, characterId: 'resume-card' } } }] })
     const scope = { mode: 'initial', playthroughId: 'opening', sessionId, characterId: 'resume-card', sessionFormatVersion: 4 }
     assert.deepEqual(original.session.snapshotEvents().map(event => event.type), ['permission/preset', 'sandbox/mode', 'approval/policy', 'sandbox/mode'])
+    await first.ctx.sessionController.selectModel({ sessionId, provider: 'resume-test', model: 'test' })
+    assert.equal(original.session.snapshotEvents().at(-1).type, 'model/selection')
     assert.equal((await first.service.snapshot(scope)).variables.stat_data.hp, 10)
     await first.ctx.sessions.flush(original.session)
     await first.ctx.fiber.dispose()
@@ -259,11 +267,15 @@ test('official persisted empty session resumes through resolveAgent, while resum
     assert.notEqual(resumed.session, original.session)
     assert.deepEqual(resumed.session.snapshotEvents().map(event => ({ type: event.type, data: event.data })).at(-1), { type: 'session/end-seed', data: {} })
     assert.equal(resumed.session.header.isSeeded, false)
-    assert.equal(resumed.session.snapshotEvents().length, 5)
+    assert.equal(resumed.session.snapshotEvents().length, 6)
+    assert.deepEqual(resumed.session.snapshotEvents().find(event => event.type === 'model/selection').data, { provider: 'resume-test', model: 'test' })
     const source = JSON.stringify({ version: 1, scope, runs: [], modules: {}, html: '<div>Synthetic resume</div>' })
     const sourceIdentity = { version: 1, sha256: createHash('sha256').update(source).digest('hex'), scope }
     const { grantId } = second.ctx.get('tavernRenderingAuthority').grant({ source, sourceIdentity, reviewed: true, write: true })
     second.service.registerUsage(() => ({ enabled: true, checkCurrent: () => true }))
+    const oldBinding = await second.service.createCardBinding({ scope, sourceIdentity, grantId })
+    await second.ctx.sessionController.selectModel({ sessionId, provider: 'resume-test', model: 'test' })
+    await assert.rejects(second.service.cardWrite({ capability: oldBinding.capability, operation: 'replace', value: { stat_data: { hp: 7 } }, expectedRevision: 0, operationId: 'stale-selection', cause: 'user-interaction' }), { code: 'MVU_READ_ONLY' })
     const binding = await second.service.createCardBinding({ scope, sourceIdentity, grantId })
     const request = { capability: binding.capability, operation: 'replace', value: { stat_data: { hp: 7 } }, expectedRevision: 0, operationId: 'resumed-opening', cause: 'user-interaction' }
     assert.equal((await second.service.cardWrite(request)).revision, 1)

@@ -28,6 +28,7 @@ function fixture(t, { managed = false, resources } = {}) {
     allow: () => service.registerUsage(request => { const captured = policy; assert.equal(request.on, 'card_variable_update'); return { enabled: captured.enabled, configRevision: captured.revision, checkCurrent: () => policy === captured } }),
     reload: () => { policy = { enabled: false, revision: 2 } }, revoke: () => { valid = false },
     select: id => { selections.set('s', { characterCardId: id }) },
+    append: (type, data) => { const event = { type, data, seq: events.length }; events = [...events, event]; handlers.get('session/event')(session, event) },
     start: () => { const event = { type: 'turn/start', seq: 0, data: { turn: 1 } }; events = [event]; handlers.get('session/event')(session, event) },
     bind: () => service.createCardBinding({ scope, sourceIdentity, grantId: 'grant' }) }
 }
@@ -90,7 +91,7 @@ test('native grant-only and missing or asynchronous policy leases never permit c
 })
 
 test('final scope await cannot retain an old policy, initial scope, grant or live capability', async t => {
-  for (const action of ['policy', 'turn', 'character', 'membership', 'grant', 'capability', 'abort']) {
+  for (const action of ['policy', 'turn', 'model', 'character', 'membership', 'grant', 'capability', 'abort']) {
     const f = fixture(t); f.allow(); const { capability } = await f.bind(), controller = new AbortController()
     const resolve = f.service.resolveScope; let count = 0
     f.service.resolveScope = async scope => {
@@ -98,6 +99,7 @@ test('final scope await cannot retain an old policy, initial scope, grant or liv
       if (++count === 2) {
         if (action === 'policy') f.reload()
         if (action === 'turn') f.start()
+        if (action === 'model') f.append('model/selection', { provider: 'synthetic', model: 'test' })
         if (action === 'character') { f.select('other'); f.select('c') }
         if (action === 'membership') f.playthrough.ext.pmpDshTavern.rootSessionId = 'other'
         if (action === 'grant') f.revoke()
@@ -209,6 +211,37 @@ test('empty restore markers permit initial scope but never inherited, malformed 
     f.session.snapshotEvents = () => [{ seq: 0, type, data: {} }, { ...marker, seq: 1 }]
     await assert.rejects(f.service.snapshot(f.scope), { code: 'MVU_READ_ONLY' }, type)
     await assert.rejects(f.service.cardWrite(request(capability, 1, type)), { code: 'MVU_READ_ONLY' }, type)
+  }
+})
+
+test('model selection permits fresh initial bindings but revokes prior leases and rejects malformed payloads', async t => {
+  const f = fixture(t); f.allow()
+  const old = await f.bind()
+  f.append('model/selection', { provider: 'synthetic', model: 'test' })
+  assert.equal((await f.service.snapshot(f.scope)).status, 'available')
+  await assert.rejects(f.service.cardWrite(request(old.capability, 0)), { code: 'MVU_READ_ONLY' })
+  const fresh = await f.bind()
+  assert.equal((await f.service.cardWrite(request(fresh.capability, 0))).revision, 1)
+  f.append('model/selection', { provider: 'synthetic', model: 'test', reasoningEffort: 'adapter-owned' })
+  await assert.rejects(f.service.cardWrite(request(fresh.capability, 1, 'old-selection')), { code: 'MVU_READ_ONLY' })
+  assert.ok((await f.bind()).capability)
+  for (const data of [null, [], '', {}, { provider: 'p' }, { model: 'm' }, { provider: '', model: 'm' },
+    { provider: 'p', model: 1 }, { provider: 'p', model: '' }, { provider: 1, model: 'm' },
+    { provider: 'p', model: 'm', reasoningEffort: '' }, { provider: 'p', model: 'm', reasoningEffort: null },
+    { provider: 'p', model: 'm', reasoningEffort: 1 }, { provider: 'p', model: 'm', reasoningEffort: undefined },
+    { provider: 'p', model: 'm', content: [] }, { provider: 'p', model: 'm', unknown: true }]) {
+    f.session.snapshotEvents = () => [{ seq: 0, type: 'model/selection', data }]
+    await assert.rejects(f.service.snapshot(f.scope), { code: 'MVU_READ_ONLY' })
+    await assert.rejects(f.bind(), { code: 'MVU_READ_ONLY' })
+  }
+  for (const type of ['turn/start', 'turn/end', 'user/message', 'assistant/message', 'agent/inbox/spliced', 'request/header', 'model/other']) {
+    f.session.snapshotEvents = () => [
+      { seq: 0, type: 'model/selection', data: { provider: 'synthetic', model: 'test' } },
+      { seq: 1, type, data: {} },
+      { seq: 2, type: 'model/selection', data: { provider: 'synthetic', model: 'test' } },
+    ]
+    await assert.rejects(f.service.snapshot(f.scope), { code: 'MVU_READ_ONLY' }, type)
+    await assert.rejects(f.bind(), { code: 'MVU_READ_ONLY' }, type)
   }
 })
 
