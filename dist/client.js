@@ -14992,7 +14992,7 @@ var MAX_DEPENDENCY_IDENTITIES = 4096;
 // packages/client/src/play/rendering-cache-budget.js
 function createRenderingCacheBudget(limit = 64 * 1024 * 1024) {
   if (!Number.isSafeInteger(limit) || limit < 1) throw Error("Invalid rendering cache budget");
-  const reservations = /* @__PURE__ */ new Map(), initializations = /* @__PURE__ */ new Map();
+  const reservations = /* @__PURE__ */ new Map(), initializations = /* @__PURE__ */ new Map(), failures = /* @__PURE__ */ new Map();
   return Object.freeze({
     reserve(key2, bytes) {
       if (typeof key2 !== "string" || !key2 || key2.length > 200 || !Number.isSafeInteger(bytes) || bytes < 0) throw Error("Invalid rendering cache reservation");
@@ -15006,9 +15006,11 @@ function createRenderingCacheBudget(limit = 64 * 1024 * 1024) {
       return Object.freeze({ limit, total: [...reservations.values()].reduce((sum, size2) => sum + size2, 0), entries: Object.freeze([...reservations].map((row) => Object.freeze(row))) });
     },
     trackInitialization(key2, promise) {
-      if (typeof key2 !== "string" || !key2 || key2.length > 200 || initializations.has(key2) || initializations.size >= 16 || !promise || typeof promise.then !== "function") throw Error("Invalid cache initialization");
+      if (typeof key2 !== "string" || !key2 || key2.length > 200 || initializations.has(key2) || (/* @__PURE__ */ new Set([...initializations.keys(), ...failures.keys()])).size >= 16 && !failures.has(key2) || !promise || typeof promise.then !== "function") throw Error("Invalid cache initialization");
       const pending2 = Promise.resolve(promise).then(() => {
-      }, () => {
+        failures.delete(key2);
+      }, (error) => {
+        failures.set(key2, error instanceof Error ? error : Error(String(error)));
       }).finally(() => {
         if (initializations.get(key2) === pending2) initializations.delete(key2);
       });
@@ -15016,6 +15018,7 @@ function createRenderingCacheBudget(limit = 64 * 1024 * 1024) {
     },
     async ready() {
       while (initializations.size) await Promise.all([...initializations.values()]);
+      if (failures.size) throw failures.values().next().value;
     }
   });
 }
@@ -15026,6 +15029,8 @@ function createRenderingTrust({ builtin: builtin2 = mvuBuiltin, candidates = MVU
   const installs = /* @__PURE__ */ new Map(), records = /* @__PURE__ */ new Map(), intentions = /* @__PURE__ */ new Map(), adapters = /* @__PURE__ */ new Map(), listeners = /* @__PURE__ */ new Set();
   let revision = 0, generation = 0;
   let inactiveBytes = () => 0;
+  let cacheReady = async () => {
+  };
   const emit = () => {
     revision++;
     for (const listener of listeners) listener();
@@ -15043,13 +15048,16 @@ function createRenderingTrust({ builtin: builtin2 = mvuBuiltin, candidates = MVU
   };
   return {
     cacheBudget: budget,
-    accountInactive(callback) {
-      const previous = inactiveBytes;
+    accountInactive(callback, ready) {
+      const previous = inactiveBytes, previousReady = cacheReady;
       inactiveBytes = callback ?? (() => 0);
+      cacheReady = ready ?? (async () => {
+      });
       try {
         reserveRecords([...records.values()]);
       } catch (error) {
         inactiveBytes = previous;
+        cacheReady = previousReady;
         throw error;
       }
     },
@@ -15103,6 +15111,7 @@ function createRenderingTrust({ builtin: builtin2 = mvuBuiltin, candidates = MVU
       if (source.startsWith("https:") && externalUrl(source) !== source) throw Error("Unsupported dependency URL");
       const key2 = keyFor(owner, source), ticket = {}, epoch = generation;
       const ownerTicket = installs.get(owner);
+      await cacheReady();
       await budget.ready();
       if (generation !== epoch || installs.get(owner) !== ownerTicket) throw Error("Rendering review was cancelled");
       if (!records.has(key2) && records.size >= RENDERING_CACHE_LIMITS.count) throw Error("Rendering source count exceeds limit");
@@ -15128,6 +15137,7 @@ function createRenderingTrust({ builtin: builtin2 = mvuBuiltin, candidates = MVU
       if (!Array.isArray(items) || items.length > DEPENDENCY_LIMITS.count || items.reduce((sum, item) => sum + new TextEncoder().encode(item.content ?? "").byteLength, 0) > DEPENDENCY_LIMITS.bytes) throw Error("Rendering dependency graph exceeds limit");
       const epoch = generation, ticket = {};
       installs.set(owner, ticket);
+      await cacheReady();
       await budget.ready();
       if (epoch !== generation || installs.get(owner) !== ticket) throw Error("Dependency installation cancelled");
       const next = await Promise.all(items.map(async (item) => {
@@ -15354,7 +15364,7 @@ function dependencyStore(indexedDB = globalThis.indexedDB) {
 }
 function createRenderingDependencies({ trust = renderingTrust, store = dependencyStore(), download = downloadRenderingSource, limits = DEPENDENCY_LIMITS, timeout = 15e3, channelFactory = () => typeof window !== "undefined" && typeof BroadcastChannel !== "undefined" ? new BroadcastChannel("dtv-rendering-dependencies") : null } = {}) {
   const states = /* @__PURE__ */ new Map(), listeners = /* @__PURE__ */ new Set(), cachedOwners = /* @__PURE__ */ new Map(), cacheGenerations = /* @__PURE__ */ new Map();
-  let channel, disposed = false;
+  let channel, disposed = false, accounted = false, initializing = null;
   const account = (records) => {
     let bytes = 0;
     for (const [owner, items] of cachedOwners) for (const item of items) {
@@ -15362,7 +15372,7 @@ function createRenderingDependencies({ trust = renderingTrust, store = dependenc
     }
     return bytes;
   };
-  trust.accountInactive?.(account);
+  trust.accountInactive?.(account, ensureCacheAccounted);
   const cacheItems = (graph) => {
     if (!graph) return [];
     if (!Array.isArray(graph.items) || graph.items.length > MAX_DEPENDENCY_IDENTITIES || graph.retained !== void 0 && (!Array.isArray(graph.retained) || graph.retained.length > RENDERING_CACHE_LIMITS.count)) throw Error("Invalid dependency cache size");
@@ -15388,12 +15398,39 @@ function createRenderingDependencies({ trust = renderingTrust, store = dependenc
       throw error;
     }
   };
-  const initialCache = store.list ? store.list().then(async (saved) => {
+  async function ensureCacheAccounted() {
     await trust.cacheBudget?.ready();
-    if (disposed) return;
-    for (const entry of saved) remember(entry.owner, entry.graph, entry.generation);
-  }) : Promise.resolve();
-  initialCache.catch(() => {
+    if (disposed) throw Error("Dependency cache manager disposed");
+    if (accounted) return;
+    if (!initializing) initializing = (async () => {
+      const saved = store.list ? await store.list() : [];
+      await trust.cacheBudget?.ready();
+      if (disposed) throw Error("Dependency cache manager disposed");
+      const nextOwners = new Map(cachedOwners), nextGenerations = new Map(cacheGenerations);
+      for (const entry of saved) {
+        if ((entry.generation ?? 0) < (nextGenerations.get(entry.owner) ?? 0)) continue;
+        nextOwners.set(entry.owner, cacheItems(entry.graph));
+        nextGenerations.set(entry.owner, entry.generation ?? 0);
+      }
+      const previous = new Map(cachedOwners);
+      cachedOwners.clear();
+      for (const [owner, items] of nextOwners) cachedOwners.set(owner, items);
+      try {
+        trust.reaccount?.();
+      } catch (error) {
+        cachedOwners.clear();
+        for (const [owner, items] of previous) cachedOwners.set(owner, items);
+        throw error;
+      }
+      cacheGenerations.clear();
+      for (const [owner, generation] of nextGenerations) cacheGenerations.set(owner, generation);
+      accounted = true;
+    })().finally(() => {
+      initializing = null;
+    });
+    return initializing;
+  }
+  void ensureCacheAccounted().catch(() => {
   });
   const emit = () => {
     for (const listener of listeners) listener();
@@ -15506,7 +15543,7 @@ function createRenderingDependencies({ trust = renderingTrust, store = dependenc
     await Promise.all([...groups].map(async ([owner, sources2]) => {
       const signature = JSON.stringify([sources2.map((source) => [source.key, source.content, source.enabled !== false, source.preferenceKey ?? null, source.enablementAmbiguous === true, source.kind ?? null]).sort((a, b2) => a[0].localeCompare(b2[0])), trust.selection?.(owner) ?? {}]);
       const previous = states.get(owner);
-      if (previous?.signature === signature) return previous.ready;
+      if (previous?.signature === signature && previous.status !== "failed") return previous.ready;
       previous?.controller?.abort();
       trust.removeOwner(owner);
       const state = { owner, signature, sources: sources2, status: "loading", ...directGraph(sources2, limits, trust), retained: [], cacheItems: previous?.cacheItems ?? [], fingerprint: null, error: null, cacheGeneration: 0 };
@@ -15514,7 +15551,7 @@ function createRenderingDependencies({ trust = renderingTrust, store = dependenc
       emit();
       state.ready = (async () => {
         try {
-          await initialCache;
+          await ensureCacheAccounted();
           state.fingerprint = await digest(signature);
           if (!current4(state)) return;
           await restore(state, await store.get(owner));
@@ -15530,6 +15567,7 @@ function createRenderingDependencies({ trust = renderingTrust, store = dependenc
     }));
   }
   async function acquire2(owner) {
+    await ensureCacheAccounted();
     const previous = states.get(owner);
     if (previous) await sync(previous.sources, [owner]);
     const original = states.get(owner);
@@ -15646,6 +15684,7 @@ function createRenderingDependencies({ trust = renderingTrust, store = dependenc
     emit();
     try {
       const generation = await store.remove(owner);
+      accounted = false;
       remember(owner, null, generation);
       if (state && current4(state)) {
         state.cacheGeneration = generation;
