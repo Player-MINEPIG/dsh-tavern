@@ -1,3 +1,5 @@
+import { conversationSettingsCss } from './conversation-settings-styles.js'
+
 // Scoped to Tavern's editor controls; message CSS and DSH chrome are untouched.
 // A long editor must scroll inside its viewport panel, without focus/scrollIntoView
 // scrolling the Host overlay slot's zero-sized wrapper or its layout ancestor.
@@ -21,4 +23,5 @@ export const presentationCss = `
 .dtv-bubble-editor .dtv-check{display:flex;align-items:center;gap:6px;font-size:12px}
 .dtv-size-control{display:grid;grid-template-columns:minmax(0,1fr) 72px auto;gap:10px;align-items:center}
 .dtv-card-proposal{font:13px/1.5 system-ui;border-radius:8px}.dtv-card-proposal button+button{margin-left:8px}
+${conversationSettingsCss}
 `
