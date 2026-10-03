@@ -6,7 +6,7 @@ const id = 'pmp-dsh-tavern'
 
 await build({
   entryPoints: ['packages/client/src/entry.js'],
-  define: await cardWorkerDefines(),
+  define: {...await cardWorkerDefines(),TAVERN_PHOTO_DIAGNOSTIC:JSON.stringify(process.argv.includes('--photo-diagnostic'))},
   bundle: true,
   format: 'cjs',
   platform: 'browser',

@@ -49864,7 +49864,8 @@ function createDomBridge(doc, context, onProposal, onError, helperBinding) {
 }
 var InteractiveCard = (0, import_react19.memo)(function InteractiveCard2({ source, enabled, scopeKey, context, onSend, owners = [], helpers = [], helperBinding, createBinding, writeScope, openingBinding }) {
   const frame = (0, import_react19.useRef)(null), cleanup = (0, import_react19.useRef)(() => {
-  }), generation = (0, import_react19.useRef)(0);
+  }), generation = (0, import_react19.useRef)(0), sourceFrameRevision = (0, import_react19.useRef)(0);
+  const sourceFrameKey = (0, import_react19.useMemo)(() => ++sourceFrameRevision.current, [source]);
   const [trustRevision, setTrustRevision] = (0, import_react19.useState)(renderingTrust.revision);
   (0, import_react19.useEffect)(() => renderingTrust.subscribe(() => {
     generation.current++;
@@ -49924,6 +49925,11 @@ var InteractiveCard = (0, import_react19.memo)(function InteractiveCard2({ sourc
       return;
     }
     const ownFrame = frame.current;
+    let photoDiagnostic;
+    if (false) try {
+      photoDiagnostic = createPhotoPickerDiagnostic(doc, ownFrame.parentElement);
+    } catch {
+    }
     const initialRoot = cardRootPresentation(data3.root);
     const projectRoot = (root) => {
       for (const [key2, node] of [["html", doc.documentElement], ["body", doc.body]]) {
@@ -49998,6 +50004,7 @@ var InteractiveCard = (0, import_react19.memo)(function InteractiveCard2({ sourc
       controller2.abort();
       photoEpoch++;
       photoController?.abort();
+      photoDiagnostic?.dispose();
       identityBridge.current?.dispose();
       identityBridge.current = null;
       openingBridge.current?.dispose();
@@ -50133,10 +50140,12 @@ var InteractiveCard = (0, import_react19.memo)(function InteractiveCard2({ sourc
           if (!view || Array.isArray(view) || typeof view.html !== "string" || typeof view.styles !== "string" || !Number.isSafeInteger(view.bodyId) || view.bodyId <= 0 || JSON.stringify(view).length > 1024 * 1024) throw Error("Invalid card view");
           const controlsKey = JSON.stringify(view.controls ?? []);
           const root = cardRootPresentation(view.root), rootKey = JSON.stringify(root);
+          const diagnosticView = photoDiagnostic ? { htmlChars: view.html.length, styleChars: view.styles.length, htmlChanged: acceptedView?.html !== view.html, stylesChanged: acceptedView?.styles !== view.styles, bodyChanged: acceptedView?.bodyId !== view.bodyId, rootChanged: acceptedView?.rootKey !== rootKey } : null;
           if (acceptedView?.html === view.html && acceptedView.styles === view.styles && acceptedView.bodyId === view.bodyId && acceptedView.rootKey === rootKey) {
             if (targetId !== void 0 && !acceptedView.nodes.has(targetId)) throw Error("Layout target is not in this card");
             projectCardControlState(view.controls, acceptedView.nodes, { connected: true, apply: controlsCurrent });
             if (controlsCurrent) acceptedView.controlsKey = controlsKey;
+            photoDiagnostic?.view({ ...diagnosticView, reused: true });
             return acceptedView.nodes;
           }
           const template = doc.createElement("template");
@@ -50162,10 +50171,12 @@ var InteractiveCard = (0, import_react19.memo)(function InteractiveCard2({ sourc
           images?.refresh();
           viewportMode = usesCardViewport(view.html, view.styles, root);
           applyViewportMode();
+          photoDiagnostic?.beforeReplace(diagnosticView);
           doc.body.replaceChildren(template.content, style);
           doc.body.setAttribute("data-dtv-node", String(view.bodyId));
           images?.refresh();
           acceptedView = { html: view.html, styles: view.styles, bodyId: view.bodyId, rootKey, controlsKey, nodes };
+          photoDiagnostic?.view({ ...diagnosticView, reused: false });
           if (id) {
             const restored = nodes.get(Number(id));
             restored?.focus();
@@ -50239,8 +50250,11 @@ var InteractiveCard = (0, import_react19.memo)(function InteractiveCard2({ sourc
               const nodes = displayView(request2.view, request2.id), node = nodes.get(request2.id);
               if (!node || node.ownerDocument !== doc || !node.isConnected || node.localName !== "input" || node.type !== "file" || !doc.body.contains(node)) throw Error("Invalid photo input");
               if (!doc.defaultView.navigator.userActivation?.isActive) throw Error("Photo selection needs a current user click");
+              photoDiagnostic?.pick(node);
               node.click();
+              photoDiagnostic?.clickReturned();
             } catch {
+              photoDiagnostic?.rejected();
               if (!cleaned && current4 === generation.current) setPhotoError(translate("appearance.photoUnavailable"));
             }
           },
@@ -50288,7 +50302,7 @@ var InteractiveCard = (0, import_react19.memo)(function InteractiveCard2({ sourc
   return (0, import_react19.createElement)(
     "section",
     { className: "dtv-interactive-card", "data-dtv-viewport": String(viewportLayout) },
-    (0, import_react19.createElement)("iframe", { key: JSON.stringify([scopeKey, enabled, trustRevision, owners, helpers, paused, restart, openingBinding]), ref: frame, title: translate("appearance.card"), sandbox: "allow-same-origin", referrerPolicy: "no-referrer", srcDoc, onLoad: load, style: { width: "100%", boxSizing: "border-box", minWidth: 220, height: 160, maxHeight: 800, border: "1px solid #b9c2cf", borderRadius: 8, background: "#fff" } }),
+    (0, import_react19.createElement)("iframe", { key: JSON.stringify([sourceFrameKey, scopeKey, enabled, trustRevision, owners, helpers, paused, restart, openingBinding]), ref: frame, title: translate("appearance.card"), sandbox: "allow-same-origin", referrerPolicy: "no-referrer", srcDoc, onLoad: load, style: { width: "100%", boxSizing: "border-box", minWidth: 220, height: 160, maxHeight: 800, border: "1px solid #b9c2cf", borderRadius: 8, background: "#fff" } }),
     enabled ? (0, import_react19.createElement)(
       "div",
       { className: "dtv-card-runtime-controls" },

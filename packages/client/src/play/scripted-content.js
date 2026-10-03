@@ -1,6 +1,7 @@
 import {cardViewport,cardRootPresentation,usesCardViewport} from './card-viewport.js'
 import { imageSource, stageImages, observeImages, imageCss, IMAGE_SOURCE_ATTRIBUTE } from './card-images.js'
 import { selectedPhoto } from './card-photo.js'
+import {createPhotoPickerDiagnostic} from './card-photo-diagnostic.js'
 import {DEPENDENCY_LIMITS} from './rendering-limits.js'
 import {mvuBuiltin,confirmMvuSchemas} from './mvu-builtins.js'
 import {renderingWriteRequests} from './rendering-write-requests.js'
@@ -239,7 +240,8 @@ export function createDomBridge(doc, context, onProposal, onError, helperBinding
 }
 
 const InteractiveCard = memo(function InteractiveCard({ source, enabled, scopeKey, context, onSend, owners = [], helpers = [], helperBinding, createBinding, writeScope, openingBinding }) {
-  const frame = useRef(null), cleanup = useRef(()=>{}), generation=useRef(0)
+  const frame = useRef(null), cleanup = useRef(()=>{}), generation=useRef(0),sourceFrameRevision=useRef(0)
+  const sourceFrameKey=useMemo(()=>++sourceFrameRevision.current,[source])
   const [trustRevision,setTrustRevision]=useState(renderingTrust.revision)
   useEffect(()=>renderingTrust.subscribe(()=>{generation.current++;cleanup.current();setTrustRevision(renderingTrust.revision())}),[])
   const [audit,setAudit]=useState(null),[paused,setPaused]=useState(false),[restart,setRestart]=useState(0),[viewportLayout,setViewportLayout]=useState(false)
@@ -261,6 +263,8 @@ const InteractiveCard = memo(function InteractiveCard({ source, enabled, scopeKe
     const doc=frame.current?.contentDocument
     if (!doc) { setError('Card document unavailable'); return }
     const ownFrame=frame.current
+    let photoDiagnostic
+    if(typeof TAVERN_PHOTO_DIAGNOSTIC!=='undefined'&&TAVERN_PHOTO_DIAGNOSTIC)try{photoDiagnostic=createPhotoPickerDiagnostic(doc,ownFrame.parentElement)}catch{}
     const initialRoot=cardRootPresentation(data.root)
     const projectRoot=root=>{for(const [key,node] of [['html',doc.documentElement],['body',doc.body]]){node.setAttribute('class',root[key].className);node.setAttribute('style',imageCss(root[key].style))}}
     projectRoot(initialRoot)
@@ -295,7 +299,7 @@ const InteractiveCard = memo(function InteractiveCard({ source, enabled, scopeKe
       }).catch(()=>{})
     }
     let cleaned=false
-    cleanup.current=()=>{if(cleaned)return;cleaned=true;controller.abort();photoEpoch++;photoController?.abort();identityBridge.current?.dispose();identityBridge.current=null;openingBridge.current?.dispose();openingBridge.current=null;observer.disconnect();images?.dispose();cancelAnimationFrame(viewportFrame);viewportFrame=0;dom?.destroy();virtualRuntime?.dispose();cardStorage?.dispose();stopVariables?.();removeEvents();binding?.dispose();writeRequest?.dispose();revokeWrites()}
+    cleanup.current=()=>{if(cleaned)return;cleaned=true;controller.abort();photoEpoch++;photoController?.abort();photoDiagnostic?.dispose();identityBridge.current?.dispose();identityBridge.current=null;openingBridge.current?.dispose();openingBridge.current=null;observer.disconnect();images?.dispose();cancelAnimationFrame(viewportFrame);viewportFrame=0;dom?.destroy();virtualRuntime?.dispose();cardStorage?.dispose();stopVariables?.();removeEvents();binding?.dispose();writeRequest?.dispose();revokeWrites()}
     if (!paused) images=observeImages(doc.body,{frame:frame.current,unavailable:translate('appearance.imageUnavailable'),onStatus:value=>{if(!cleaned&&current===generation.current)setMedia(value)}})
     if (!enabled || paused || data.unsupported.length) return
     if (doc.body.querySelectorAll('*').length > 2048) { setError('Card DOM limit exceeded'); return }
@@ -365,10 +369,12 @@ const InteractiveCard = memo(function InteractiveCard({ source, enabled, scopeKe
             if(!view||Array.isArray(view)||typeof view.html!=='string'||typeof view.styles!=='string'||!Number.isSafeInteger(view.bodyId)||view.bodyId<=0||JSON.stringify(view).length>1024*1024)throw Error('Invalid card view')
             const controlsKey=JSON.stringify(view.controls??[])
             const root=cardRootPresentation(view.root),rootKey=JSON.stringify(root)
+            const diagnosticView=photoDiagnostic?{htmlChars:view.html.length,styleChars:view.styles.length,htmlChanged:acceptedView?.html!==view.html,stylesChanged:acceptedView?.styles!==view.styles,bodyChanged:acceptedView?.bodyId!==view.bodyId,rootChanged:acceptedView?.rootKey!==rootKey}:null
             if(acceptedView?.html===view.html&&acceptedView.styles===view.styles&&acceptedView.bodyId===view.bodyId&&acceptedView.rootKey===rootKey){
               if(targetId!==undefined&&!acceptedView.nodes.has(targetId))throw Error('Layout target is not in this card')
               projectCardControlState(view.controls,acceptedView.nodes,{connected:true,apply:controlsCurrent})
               if(controlsCurrent)acceptedView.controlsKey=controlsKey
+              photoDiagnostic?.view({...diagnosticView,reused:true})
               return acceptedView.nodes
             }
             // Parse inertly under the byte limit. The trusted receiver counts the
@@ -390,10 +396,12 @@ const InteractiveCard = memo(function InteractiveCard({ source, enabled, scopeKe
             const style=doc.createElement('style');style.textContent=imageCss(view.styles)
             const focused=doc.activeElement,id=focused?.dataset?.dtvNode,selection=[focused?.selectionStart,focused?.selectionEnd],scroll=[doc.documentElement.scrollLeft,doc.documentElement.scrollTop]
             projectRoot(root);images?.refresh();viewportMode=usesCardViewport(view.html,view.styles,root);applyViewportMode()
+            photoDiagnostic?.beforeReplace(diagnosticView)
             doc.body.replaceChildren(template.content,style)
             doc.body.setAttribute('data-dtv-node',String(view.bodyId))
             images?.refresh()
             acceptedView={html:view.html,styles:view.styles,bodyId:view.bodyId,rootKey,controlsKey,nodes}
+            photoDiagnostic?.view({...diagnosticView,reused:false})
             if(id){const restored=nodes.get(Number(id));restored?.focus();if(typeof selection[0]==='number')try{restored.setSelectionRange(...selection)}catch{}}
             doc.documentElement.scrollLeft=scroll[0];doc.documentElement.scrollTop=scroll[1];resize()
             return nodes
@@ -432,8 +440,10 @@ const InteractiveCard = memo(function InteractiveCard({ source, enabled, scopeKe
               const nodes=displayView(request.view,request.id),node=nodes.get(request.id)
               if(!node||node.ownerDocument!==doc||!node.isConnected||node.localName!=='input'||node.type!=='file'||!doc.body.contains(node))throw Error('Invalid photo input')
               if(!doc.defaultView.navigator.userActivation?.isActive)throw Error('Photo selection needs a current user click')
+              photoDiagnostic?.pick(node)
               node.click()
-            }catch{if(!cleaned&&current===generation.current)setPhotoError(translate('appearance.photoUnavailable'))}
+              photoDiagnostic?.clickReturned()
+            }catch{photoDiagnostic?.rejected();if(!cleaned&&current===generation.current)setPhotoError(translate('appearance.photoUnavailable'))}
           },
           onMeasure:(request,{signal,controlsCurrent})=>{
             signal.throwIfAborted();if(cleaned||current!==generation.current||!frame.current?.isConnected||frame.current.contentDocument!==doc)throw Error('Card measurement generation expired')
@@ -459,8 +469,10 @@ const InteractiveCard = memo(function InteractiveCard({ source, enabled, scopeKe
       resize()
     }catch(error){if(current===generation.current){cleanup.current();setError(error.message)}}
   }
+  // Extracting scripts can leave srcDoc identical after a source edit. Give
+  // that source its own iframe so onLoad recreates the disposed runtime.
   return h('section',{className:'dtv-interactive-card','data-dtv-viewport':String(viewportLayout)},
-    h('iframe',{key:JSON.stringify([scopeKey,enabled,trustRevision,owners,helpers,paused,restart,openingBinding]),ref:frame,title:translate('appearance.card'),sandbox:'allow-same-origin',referrerPolicy:'no-referrer',srcDoc,onLoad:load,style:{width:'100%',boxSizing:'border-box',minWidth:220,height:160,maxHeight:800,border:'1px solid #b9c2cf',borderRadius:8,background:'#fff'}}),
+    h('iframe',{key:JSON.stringify([sourceFrameKey,scopeKey,enabled,trustRevision,owners,helpers,paused,restart,openingBinding]),ref:frame,title:translate('appearance.card'),sandbox:'allow-same-origin',referrerPolicy:'no-referrer',srcDoc,onLoad:load,style:{width:'100%',boxSizing:'border-box',minWidth:220,height:160,maxHeight:800,border:'1px solid #b9c2cf',borderRadius:8,background:'#fff'}}),
     enabled?h('div',{className:'dtv-card-runtime-controls'},
       h('button',{type:'button',disabled:paused,onClick:()=>{generation.current++;cleanup.current();setPaused(true)}},translate('appearance.pauseCard')),
       h('button',{type:'button',onClick:()=>{generation.current++;cleanup.current();setPaused(false);setRestart(value=>value+1)}},translate('appearance.restartCard'))):null,
