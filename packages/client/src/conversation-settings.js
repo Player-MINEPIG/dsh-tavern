@@ -1,3 +1,5 @@
+import { normalizeScriptEnablement } from '../../presentation/script-enablement.js'
+import { renderingTrust } from './play/rendering-trust.js'
 import { normalizeBubbleStyle } from '../../presentation/bubble-style.js'
 import { CLIENT_CONVERSATION_SETTINGS_EVENT } from '../../identity.js'
 
@@ -17,13 +19,19 @@ export function getClientConversationSettings() {
   return structuredClone(current)
 }
 
-export function setClientConversationSettings(value, { announce = true } = {}) {
-  current = {
+export function normalizeClientConversationSettings(value) {
+  return {
+    ...(value?.scriptEnablement === undefined ? {} : { scriptEnablement: normalizeScriptEnablement(value.scriptEnablement) }),
     ...(value?.bubbleStyle ? { bubbleStyle: normalizeBubbleStyle(value.bubbleStyle) } : {}),
     ...(value?.interactiveCards === undefined ? {} : { interactiveCards: value.interactiveCards === true }),
     textScale: boundedScale(value?.textScale, DEFAULT_CONVERSATION_SETTINGS.textScale),
     actionScale: boundedScale(value?.actionScale, DEFAULT_CONVERSATION_SETTINGS.actionScale),
   }
+}
+
+export function setClientConversationSettings(value, { announce = true } = {}) {
+  current = normalizeClientConversationSettings(value)
+  renderingTrust.setEnablement(current.scriptEnablement)
   if (announce && typeof window !== 'undefined') {
     window.dispatchEvent(new CustomEvent(CLIENT_CONVERSATION_SETTINGS_EVENT, {
       detail: getClientConversationSettings(),

@@ -97,7 +97,7 @@ export function prepareCardDocument(source, owners = [], helpers = [], trust = r
   }
   if (source.length > 1024*1024) throw Error('Card HTML exceeds 1 MiB')
   const template = document.createElement('template'); template.innerHTML = source
-  for (const helper of helpers.filter(item => item.enabled)) {
+  for (const helper of helpers.filter(item => trust.isEnabled(item.owner,item.preferenceKey??item.key,item.enabled))) {
     // The helper's exact source must still match what the user reviewed.
     virtual = true
     const content = trust.read(helper.owner,helper.key)

@@ -1,3 +1,4 @@
+import { normalizeScriptEnablement } from '../../presentation/script-enablement.js'
 import { normalizeBubbleStyle } from '../../presentation/bubble-style.js'
 import {
   mkdirSync,
@@ -11,7 +12,7 @@ import { join, resolve } from 'node:path'
 import { API_V1 } from '../../identity.js'
 
 const SETTINGS_FILE = 'conversation-settings.json'
-const MAX_SETTINGS_BYTES = 16 * 1024
+const MAX_SETTINGS_BYTES = 384 * 1024
 const MIN_SCALE = 0.75
 const MAX_SCALE = 1.5
 const SCALE_STEP = 0.05
@@ -36,11 +37,12 @@ function normalizeScale(value, field) {
 
 export function normalizeConversationSettings(value) {
   if (!isRecord(value)) throw new TypeError('Conversation settings must be an object')
-  const allowed = new Set(['textScale', 'actionScale', 'bubbleStyle', 'interactiveCards'])
+  const allowed = new Set(['textScale', 'actionScale', 'bubbleStyle', 'interactiveCards', 'scriptEnablement'])
   const unexpected = Object.keys(value).find(key => !allowed.has(key))
   if (unexpected !== undefined) throw new TypeError(`Unsupported conversation setting "${unexpected}"`)
   if (value.interactiveCards !== undefined && typeof value.interactiveCards !== 'boolean') throw new TypeError('interactiveCards must be boolean')
   return {
+    ...(value.scriptEnablement === undefined ? {} : { scriptEnablement: normalizeScriptEnablement(value.scriptEnablement) }),
     ...(value.bubbleStyle === undefined ? {} : { bubbleStyle: normalizeBubbleStyle(value.bubbleStyle) }),
     ...(value.interactiveCards === undefined ? {} : { interactiveCards: value.interactiveCards }),
     schemaVersion: 1,
@@ -60,6 +62,7 @@ function readSettings(path) {
     return normalizeConversationSettings({
       textScale: parsed?.textScale,
       actionScale: parsed?.actionScale,
+      ...(parsed?.scriptEnablement === undefined ? {} : { scriptEnablement: parsed.scriptEnablement }),
       ...(parsed?.bubbleStyle === undefined ? {} : { bubbleStyle: parsed.bubbleStyle }),
       ...(parsed?.interactiveCards === undefined ? {} : { interactiveCards: parsed.interactiveCards }),
     })

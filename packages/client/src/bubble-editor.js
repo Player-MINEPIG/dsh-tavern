@@ -61,7 +61,5 @@ export function BubbleEditor({ settings, update, busy, status, onDirty }) {
     ) : h('p', { role: 'alert' }, translate('appearance.invalidStyle')),
     h('button', { type: 'button', className: 'dtv-button dtv-primary', disabled: busy || !preview, onClick: () => update({ ...settings, textScale: 1, actionScale, bubbleStyle: preview }) }, translate('appearance.apply')),
     error ? h('p', { role: 'alert' }, error) : null,
-    h('label', { className: 'dtv-check', style: { marginTop: 18 } }, h('input', { type: 'checkbox', checked: settings.interactiveCards === true, disabled: busy, onChange: event => update({ ...settings, interactiveCards: event.target.checked }) }), translate('appearance.scripts')),
-    h('p', null, translate('appearance.scriptHint')),
   )
 }

@@ -539,11 +539,13 @@ Both relink paths refuse to overwrite a third card binding that is unrelated to 
 
 | Method | Path | Behavior | Status |
 | --- | --- | --- | --- |
-| GET | `/conversation-settings` | Request: none; response: `{ ok: true, settings: { schemaVersion: 1, textScale, actionScale, bubbleStyle?, interactiveCards? } }` | Implemented |
-| PUT | `/conversation-settings` | Request: `{ textScale, actionScale, bubbleStyle?, interactiveCards? }`; response: same as GET | Implemented |
+| GET | `/conversation-settings` | Request: none; response: `{ ok: true, settings: { schemaVersion: 1, textScale, actionScale, bubbleStyle?, interactiveCards?, scriptEnablement? } }` | Implemented |
+| PUT | `/conversation-settings` | Request: `{ textScale, actionScale, bubbleStyle?, interactiveCards?, scriptEnablement? }`; response: same as GET | Implemented |
 | DELETE | `/conversation-settings` | Request: none; response: restore both fields to `1` | Implemented |
 
-Optional `bubbleStyle` and boolean `interactiveCards` follow the [presentation protocol](CONVERSATION_PRESENTATION_en.md); body limit is 16 KiB. Omission or DELETE restores their defaults. User create/PATCH/import/export supports optional raster-data-URI `avatar` up to 128 KiB; null clears it, omission on PATCH preserves it. Timeline `ext.pmpDshTavern.appearance` follows the same document, rejects invalid metadata with `PLAY_APPEARANCE_INVALID`, and uses existing revision/CAS writes.
+`scriptEnablement` stores ordinary local choices as `{ schemaVersion: 1, entries: [{ owner, key, enabled }] }` (up to 128 entries). Owners are character/preset resource IDs or the SHA-256 identity of the canonical RP workspace for global dependencies. Helpers prefer a unique original ID; otherwise a source SHA-256 identifies unique content, with a position suffix only for duplicates. Changed unidentified source or moved duplicate entries inherit source defaults. New resource IDs and source-card exports do not carry local choices. Omission or DELETE clears overrides; the appearance reset action preserves script choices and the master switch. These preferences never persist content approvals or write grants. Content changes still require a new review, and writes remain independently authorized.
+
+Optional `bubbleStyle` and boolean `interactiveCards` follow the [presentation protocol](CONVERSATION_PRESENTATION_en.md); body limit is 384 KiB. Omission or DELETE restores their defaults. User create/PATCH/import/export supports optional raster-data-URI `avatar` up to 128 KiB; null clears it, omission on PATCH preserves it. Timeline `ext.pmpDshTavern.appearance` follows the same document, rejects invalid metadata with `PLAY_APPEARANCE_INVALID`, and uses existing revision/CAS writes.
 
 Both scales are finite numbers from `0.75`–`1.5` in steps of `0.05`. PUT is a full replace and rejects unknown fields. `textScale` applies to Mowan user/assistant bodies and greeting (including the empty-playthrough opening dock). `actionScale` applies only to the copy, swipe, branch, rollback, and edit row at the end of a durable QA.
 

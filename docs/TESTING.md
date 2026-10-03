@@ -136,3 +136,5 @@ node --test test/play-sessions.test.mjs
 Worker 框架验证使用 `node scripts/verify-card-worker-browser.mjs`，`TAVERN_FRAMEWORK_VENDOR_DIR` 指向本地固定官方库（文件名及必需 SHA-256 见验证器）；测试不下载依赖。隔离临时浏览器通过真实时间 CDP 等待，覆盖 React+JSX/Vue/jQuery 事件、状态、撤销、scope 重挂、传递依赖逐 owner 授权和预算。同一验证器设置 `TAVERN_WORKER_FIXTURE=scripts/fixtures/rendering-browser.js` 可跑统一设置回归。`node --test test/card-worker-lifecycle.test.mjs` 验证构造/传输/定时器失败清理。夹具不代表任意私有卡已兼容，也不建立进程峰值内存上限。
 
 变量写桥使用 `TAVERN_WORKER_FIXTURE=scripts/fixtures/card-write-browser.js node scripts/verify-card-worker-browser.mjs`。该夹具通过 CDP 实际鼠标输入验证 isTrusted cause，并以合成事务验证默认拒绝、完整代码审核/独立授权、patch/replace、CAS、事件、伪造 scope、撤销/卸载和 interval。`test/rendering-authority.test.mjs` 验证 Host 摘要/作用域/期限/撤销及安全路由；真实 MVU source+manager 持久提交链仍需在整合环境验收。
+
+脚本列表启用选择使用 `node --test test/script-enablement.test.mjs` 检查原卡默认、稳定身份、持久化、恢复默认、工作区隔离和惰性规范化。`node scripts/verify-script-list-browser.mjs` 在独立 Chrome 配置中只运行自写合成源码，验证启用与审核分离、禁用销毁、撤销、源码变化和作用域重挂。在隔离 Host 中另验完整源码有界滚动、窄屏布局、保存失败、刷新、外观重置保留脚本选择，以及 Host 提示的键盘/触屏行为。
