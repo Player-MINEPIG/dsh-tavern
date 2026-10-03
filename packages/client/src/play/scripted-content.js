@@ -7,6 +7,8 @@ import { RichText } from './rich-text.js'
 import { createCardRuntime } from './card-runtime.js'
 import { translate } from '../i18n.js'
 import { discoverDependencies, isSideEffectModuleReference, externalUrl, loadWrapper, MAX_RENDER_SOURCE } from './rendering-sources.js'
+import {adaptIdentityHtml,identityLoaderBootstrap} from './html-loader-adapters.js'
+import {createCardScopedStorage} from './card-scoped-storage.js'
 import { renderingTrust } from './rendering-trust.js'
 
 const TAGS = 'div span p br hr section article header footer main aside h1 h2 h3 h4 h5 h6 ul ol li dl dt dd b strong i em small pre code blockquote table thead tbody tr th td details summary button label input textarea select option output progress meter img style svg g path circle ellipse rect line polyline polygon defs linearGradient radialGradient stop clipPath title desc'.split(' ')
@@ -94,6 +96,10 @@ export function prepareCardDocument(source, owners = [], helpers = [], trust = r
     virtual = true
     const result = read(wrapper.url); source = result.content; owner = result.owner; base = wrapper.url
     if (loadWrapper(source)) throw Error('Nested remote HTML wrappers are unsupported')
+    if(wrapper.kind==='identity-html-loader'){
+      source=adaptIdentityHtml(source,wrapper)
+      runs.push({code:identityLoaderBootstrap(wrapper),name:'identity-loader-adapter-v1.js'});adapters.push({...wrapper,replacement:'Scoped HTML, storage and explicit proposal adapter; original wrapper is not executed'})
+    }
   }
   if (source.length > 1024*1024) throw Error('Card HTML exceeds 1 MiB')
   const template = document.createElement('template'); template.innerHTML = source
@@ -129,7 +135,7 @@ export function prepareCardDocument(source, owners = [], helpers = [], trust = r
     runs.push({code,name,type,module:type === 'module'}); script.remove()
   }
   const data = cardDocument(template.innerHTML)
-  return {...data,runs,modules,virtual,adapters,schemaDeclarations}
+  return {...data,runs,modules,virtual,adapters,schemaDeclarations,cardStorage:wrapper?.kind==='identity-html-loader'}
 }
 
 export function createDomBridge(doc, context, onProposal, onError, helperBinding) {
@@ -212,7 +218,7 @@ const InteractiveCard = memo(function InteractiveCard({ source, enabled, scopeKe
     const resize=()=>{ if(frame.current) frame.current.style.height=`${Math.max(100,Math.min(800,doc.body.scrollHeight+24))}px` }
     const observer=new ResizeObserver(resize);observer.observe(doc.body);resize()
     const controller=new AbortController()
-    let dom, binding, virtualRuntime, stopVariables, removeEvents=()=>{},writeRequest,writeBinding,writeLoading,writeController,writeEpoch=0
+    let dom, binding, virtualRuntime, stopVariables, removeEvents=()=>{},writeRequest,writeBinding,writeLoading,writeController,writeEpoch=0,cardStorage
     const revokeWrites=()=>{
       const ticket=++writeEpoch,hadWriteBinding=!!writeBinding
       writeController?.abort();writeController=null;writeBinding?.dispose();writeBinding=null;writeLoading=null
@@ -223,7 +229,7 @@ const InteractiveCard = memo(function InteractiveCard({ source, enabled, scopeKe
       }).catch(()=>{})
     }
     let cleaned=false
-    cleanup.current=()=>{if(cleaned)return;cleaned=true;controller.abort();observer.disconnect();dom?.destroy();virtualRuntime?.dispose();stopVariables?.();removeEvents();binding?.dispose();writeRequest?.dispose();revokeWrites()}
+    cleanup.current=()=>{if(cleaned)return;cleaned=true;controller.abort();observer.disconnect();dom?.destroy();virtualRuntime?.dispose();cardStorage?.dispose();stopVariables?.();removeEvents();binding?.dispose();writeRequest?.dispose();revokeWrites()}
     if (!enabled || paused || data.unsupported.length) return
     if (doc.body.querySelectorAll('*').length > 2048) { setError('Card DOM limit exceeded'); return }
     try {
@@ -232,6 +238,7 @@ const InteractiveCard = memo(function InteractiveCard({ source, enabled, scopeKe
         if(current!==generation.current){binding?.dispose();return}
       }
       if(data.virtual) {
+        if(data.cardStorage)cardStorage=createCardScopedStorage({storage:window.localStorage,owners,scopeKey,sourceIdentity:source})
         const activeBinding=binding??helperBinding
         const schemaEvidence=confirmMvuSchemas(data.schemaDeclarations??[],activeBinding?.getSnapshot())
         const events=['click','input','change','keydown','keyup','pointerdown','pointerup']
@@ -277,7 +284,8 @@ const InteractiveCard = memo(function InteractiveCard({ source, enabled, scopeKe
             doc.documentElement.scrollLeft=scroll[0];doc.documentElement.scrollTop=scroll[1];resize()
             return nodes
         }
-        virtualRuntime=createVirtualCardRuntime({html:data.html,runs:data.runs,modules:data.modules,context,variables:activeBinding?.getSnapshot()},{
+        virtualRuntime=createVirtualCardRuntime({html:data.html,runs:data.runs,modules:data.modules,context,variables:activeBinding?.getSnapshot(),cardStorage:cardStorage?.initial},{
+          onStorage:request=>{if(cleaned||current!==generation.current)throw Error('Card storage generation expired');return cardStorage.request(request)},
           onWrite:async({operation,value,options,cause,observedRevision,operationId,signal})=>{
             try{
               signal?.throwIfAborted()

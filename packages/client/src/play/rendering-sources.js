@@ -1,5 +1,6 @@
 import { Parser } from 'acorn'
 import jsx from 'acorn-jsx'
+import {inspectHtmlLoader} from './html-loader-adapters.js'
 const SourceParser=Parser.extend(jsx())
 // Discovery is inert: it does not fetch, evaluate, or confer trust on source text.
 export const MAX_RENDER_SOURCE = 8 * 1024 * 1024
@@ -20,6 +21,8 @@ export function discoverDependencies(source, base) {
     const url = externalUrl(raw, base)
     if (!found.some(item => item.kind === kind && item.raw === raw)) found.push({kind,raw,url,blocked:!url})
   }
+  try { const wrapper=inspectHtmlLoader(source);if(wrapper){add('html',wrapper.raw);return found} }
+  catch(error){return [{kind:'html',raw:error.message,url:null,blocked:true}]}
   const text=String(source), chunks=[]
   if (/^\s*</.test(text)||/(?:^|\n)```(?:html)?[\t ]*\n\s*</i.test(text)) {
     for(const match of text.matchAll(/<script\b([^>]*)>([\s\S]*?)<\/script\s*>/gi)) {
@@ -49,6 +52,8 @@ export function discoverDependencies(source, base) {
   return found
 }
 export function loadWrapper(source) {
+  const adapter=inspectHtmlLoader(source)
+  if(adapter)return {...adapter,url:externalUrl(adapter.raw)}
   // Deliberately narrow: no callback, selector suffix, request body or expressions.
   const body = String(source).trim().replace(/^```(?:html)?\s*\n([\s\S]*?)\n```\s*$/i, '$1').trim()
   const match = body.match(/^<body\s*>\s*<script\s*>\s*(?:\$|jQuery)\(\s*(['"])body\1\s*\)\.load\(\s*(['"])([^'"\n]+)\2\s*\)\s*;?\s*<\/script>\s*<\/body>$/i)

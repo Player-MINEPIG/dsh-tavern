@@ -8,15 +8,16 @@ function validateInput(data) {
  for(const run of runs){if(!run||typeof run!=='object')throw Error('Invalid card run');count(run.code,8*1024*1024);if(run.name!==undefined)count(run.name,2048)}
  for(const[name,code]of Object.entries(modules)){count(name,2048);count(code,8*1024*1024)}
  count(JSON.stringify({context:data.context??{},variables:data.variables??null}),256*1024)
+ if(data.cardStorage){count(JSON.stringify(data.cardStorage),128*1024+1024);if(!/^[a-f0-9]{64}$/.test(data.cardStorage.scope)||!Array.isArray(data.cardStorage.entries))throw Error('Invalid card storage scope')}
  return {...data,runs,modules,html}
 }
-export function createVirtualCardRuntime(input,{onView,onProposal,onError,onAudit=()=>{},onMeasure=()=>{throw Error('Card layout surface unavailable')},onWrite=async()=>{throw Error('Variable writes are disabled')}}) {
+export function createVirtualCardRuntime(input,{onView,onProposal,onError,onAudit=()=>{},onMeasure=()=>{throw Error('Card layout surface unavailable')},onStorage=()=>{throw Error('Card storage unavailable')},onWrite=async()=>{throw Error('Variable writes are disabled')}}) {
  const data=validateInput(input)
  if(typeof TAVERN_CARD_WORKER_SOURCE!=='string')throw Error('Card worker unavailable in this build')
  if(active>=4)throw Error('Four external card runtimes are active. Pause an older card, then retry this card.')
  const nonce=crypto.randomUUID(),url=URL.createObjectURL(new Blob([TAVERN_CARD_WORKER_SOURCE],{type:'text/javascript'}))
  let worker;try{worker=new Worker(url)}finally{URL.revokeObjectURL(url)}active++
- let disposed=false,startupTimer,busyTimer,lastWriteId=0,lastMeasureId=0,measurement=null
+ let disposed=false,startupTimer,busyTimer,lastWriteId=0,lastMeasureId=0,lastStorageId=0,measurement=null
  const tasks=new Map(),pending=new Map()
  const stop=()=>{if(disposed)return;disposed=true;clearTimeout(startupTimer);clearTimeout(busyTimer);for(const item of pending.values()){clearTimeout(item.timer);item.controller.abort()}pending.clear();if(measurement){clearTimeout(measurement.timer);measurement.controller.abort();measurement=null}worker.terminate();tasks.clear();active--}
  const fail=(message,operationId)=>{if(disposed)return;stop();onError(Object.assign(Error(message),operationId?{operationId,outcome:'unknown'}:{}))}
@@ -29,6 +30,15 @@ export function createVirtualCardRuntime(input,{onView,onProposal,onError,onAudi
   if(message.kind==='ready'){clearTimeout(startupTimer);startupTimer=null;return}
   if(message.kind==='idle'){clearTimeout(busyTimer);busyTimer=null;return}
   if(message.kind==='error'){fail(String(message.value).slice(0,300));return}
+  if(message.kind==='cardStorage'){
+   const value=message.value
+   if(!data.cardStorage||!value||!Number.isSafeInteger(value.revision)||value.revision!==lastStorageId+1||JSON.stringify(value).length>128*1024){fail('Invalid card storage request');return}
+   lastStorageId=value.revision
+   let result;try{result={value:onStorage(value)}}catch(error){result={error:String(error.message).slice(0,200)}}
+   if(disposed)return
+   try{worker.postMessage({kind:'cardStorageResult',nonce,requestId:value.revision,value:result})}catch{fail('Card storage result could not be delivered')}
+   return
+  }
   if(message.kind==='proposal'){if(typeof message.value==='string'&&message.value.length<=4000)onProposal(message.value);else fail('Invalid card proposal');return}
   if(message.kind==='measure'){
    const value=message.value

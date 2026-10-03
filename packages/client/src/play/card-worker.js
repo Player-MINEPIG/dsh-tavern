@@ -2,6 +2,7 @@ import {createAsyncJobDrain} from './quickjs-async-jobs.js'
 import { newQuickJSAsyncWASMModuleFromVariant } from 'quickjs-emscripten-core'
 import variant from '@jitl/quickjs-singlefile-browser-release-asyncify'
 import { VIRTUAL_DOM_BOOTSTRAP } from './virtual-dom-runtime.js'
+import {CARD_STORAGE_RUNTIME,validateCardStorage} from './card-scoped-storage.js'
 
 function validateInput(data) {
  const runs=data.runs??[],modules=data.modules??{},html=data.html??''
@@ -12,6 +13,7 @@ function validateInput(data) {
  for(const run of runs){if(!run||typeof run!=='object')throw Error('Invalid card run');count(run.code,8*1024*1024);if(run.name!==undefined)count(run.name,2048)}
  for(const[name,code]of Object.entries(modules)){count(name,2048);count(code,8*1024*1024)}
  count(JSON.stringify({context:data.context??{},variables:data.variables??null}),256*1024)
+ if(data.cardStorage){validateCardStorage(data.cardStorage.entries);count(JSON.stringify(data.cardStorage),128*1024+1024);if(!/^[a-f0-9]{64}$/.test(data.cardStorage.scope))throw Error('Invalid card storage scope')}
  return {...data,runs,modules,html}
 }
 
@@ -20,8 +22,9 @@ const timers=new Map(),pendingMessages=[],pendingWrites=new Set();let lastWriteI
 let activeCause='script',activeTask=null,layoutCalls=0,layoutId=0,layoutPending=null,queue=Promise.resolve(),queued=0
 const startupTasks=[]
 let messages=0, messageEpoch=0
+let storagePending=null,storageRevision=0
 const reply=(kind,value)=>{const now=performance.now();if(now-messageEpoch>1000){messages=0;messageEpoch=now}if(++messages>256){dispose();throw Error('Card message rate limit exceeded')}self.postMessage({nonce,kind,value})}
-function dispose(){if(destroyed)return;destroyed=true;for(const timer of timers.values())clearTimeout(timer);timers.clear();if(layoutPending)clearTimeout(layoutPending.timer);startupTasks.length=0;self.close()}
+function dispose(){if(destroyed)return;destroyed=true;for(const timer of timers.values())clearTimeout(timer);timers.clear();if(layoutPending)clearTimeout(layoutPending.timer);if(storagePending){clearTimeout(storagePending.timer);storagePending.reject(Error('Card storage generation expired'));storagePending=null}startupTasks.length=0;self.close()}
 function fail(error){try{self.postMessage({nonce,kind:'error',value:String(error?.message??error).slice(0,300)})}finally{dispose()}}
 async function evaluate(code,name='card.js',module=false,initial=false){
  if(destroyed)throw Error('Card disposed')
@@ -68,6 +71,9 @@ async function init(input){
    let result=null
    if(op==='reportError'){if(typeof args[0]!=='string'||args[0].length>200)throw Error('Invalid card error');fail(Error(args[0]))}
    else if(op==='context')result=context
+   else if(op==='boundScope'){if(!current||current.status!=='available')throw Error('Variable snapshot unavailable');result={mode:current.scope?.mode??'message',messageId:current.scope?.messageId??null}}
+   else if(op==='cardStorageScope'){if(!data.cardStorage)throw Error('Card storage unavailable');result=data.cardStorage.scope}
+   else if(op==='cardStorageSnapshot'){if(!data.cardStorage)throw Error('Card storage unavailable');result=data.cardStorage.entries}
    else if(op==='variables'){
     const options=args[0]
     if(!current||current.status!=='available')throw Error('Variable snapshot unavailable')
@@ -95,6 +101,16 @@ async function init(input){
   if(output.length>128*1024)throw Error('Card bridge output exceeds limit')
   return vm.newString(output)
  });vm.setProp(vm.global,'__host',native);native.dispose()
+ const storage=vm.newAsyncifiedFunction('__cardStorage',async handle=>{
+  if(!data.cardStorage||storagePending||performance.now()>deadline)throw Error('Card storage unavailable')
+  const raw=vm.getString(handle);if(raw.length>128*1024)throw Error('Card storage input exceeds limit')
+  const value=JSON.parse(raw)
+  if(!['set','remove','clear'].includes(value.operation)||value.operation!=='clear'&&(typeof value.key!=='string'||!value.key||value.key.length>512)||value.operation==='set'&&(typeof value.value!=='string'||value.value.length>64*1024))throw Error('Invalid card storage request')
+  const requestId=++storageRevision
+  const result=await new Promise((resolve,reject)=>{const timer=setTimeout(()=>{storagePending=null;reject(Error('Card storage response deadline exceeded'))},1000);storagePending={requestId,resolve,reject,timer};reply('cardStorage',{...value,revision:requestId})})
+  if(destroyed)throw Error('Card storage generation expired')
+  return vm.newString(JSON.stringify(result))
+ });vm.setProp(vm.global,'__cardStorage',storage);storage.dispose()
  const layout=vm.newAsyncifiedFunction('__layout',async handle=>{
   if(++layoutCalls>16||layoutPending||performance.now()>deadline)throw Error('Card layout budget exceeded')
   const raw=vm.getString(handle);if(raw.length>1024*1024)throw Error('Card layout input exceeds limit')
@@ -107,6 +123,7 @@ async function init(input){
  });vm.setProp(vm.global,'__layout',layout);layout.dispose()
  await evaluate(TAVERN_VIRTUAL_DOM_SOURCE,'virtual-dom.js',false,true)
  await evaluate(VIRTUAL_DOM_BOOTSTRAP,'card-bootstrap.js',false,true)
+ if(data.cardStorage)await evaluate(CARD_STORAGE_RUNTIME,'card-storage.js',false,true)
  await evaluate(`__setMvuRevision(${Number.isSafeInteger(data.variables?.revision)?data.variables.revision:-1})`,'initial-revision.js',false,true)
  await evaluate(`document.body.innerHTML=${JSON.stringify(data.html)}`,'card-html.js',false,true)
  for(const script of data.runs){
@@ -132,6 +149,7 @@ self.onmessage=event=>{
  if(!data||typeof data!=='object')return
  if(data.kind==='init'){if(nonce)return;init(data).catch(fail);return}
  if(data.nonce!==nonce||destroyed)return
+ if(data.kind==='cardStorageResult'){if(!storagePending||data.requestId!==storagePending.requestId)return;const pending=storagePending;storagePending=null;clearTimeout(pending.timer);pending.resolve(data.value);return}
  if(data.kind==='measurement'){if(!layoutPending||data.requestId!==layoutPending.requestId)return;const pending=layoutPending;layoutPending=null;clearTimeout(pending.timer);if(data.error)pending.reject(Error(String(data.error).slice(0,200)));else pending.resolve(data.value);return}
  if(data.kind==='dispose'){dispose();return}
  if(!ready){if(['writeResult','variables'].includes(data.kind)){if(pendingMessages.length>=64){fail(Error('Card startup message limit exceeded'));return}pendingMessages.push(data)}return}
