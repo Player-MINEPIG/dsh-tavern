@@ -19069,8 +19069,25 @@ function RenderingSettings({ client, activeSnapshot }) {
 }
 
 // packages/client/src/conversation-panel.js
-function ConversationSettingsPanel({ settings, status, busy, close: close2, update, reset: reset2, client, activeSnapshot, registerBeforeLeave, initialTab = "appearance" }) {
+var TABS = ["appearance", "regex", "external"];
+function ConversationSettingsPanel({ settings, status, busy, close: close2, update, client, activeSnapshot, registerBeforeLeave, initialTab = "appearance" }) {
   const [tab, setTab] = (0, import_react6.useState)(initialTab), dirty = (0, import_react6.useRef)({ appearance: false, regex: false });
+  const tabId = (0, import_react6.useId)(), tabRefs = (0, import_react6.useRef)({});
+  function navigateTab(event, value) {
+    const index = TABS.indexOf(value);
+    const next = event.key === "ArrowRight" ? TABS[(index + 1) % TABS.length] : event.key === "ArrowLeft" ? TABS[(index + TABS.length - 1) % TABS.length] : event.key === "Home" ? TABS[0] : event.key === "End" ? TABS[TABS.length - 1] : null;
+    if (!next) return;
+    event.preventDefault();
+    setTab(next);
+    tabRefs.current[next]?.focus();
+  }
+  const panelProps = (value) => ({
+    hidden: tab !== value,
+    role: "tabpanel",
+    tabIndex: 0,
+    id: `${tabId}-panel-${value}`,
+    "aria-labelledby": `${tabId}-tab-${value}`
+  });
   (0, import_react6.useEffect)(() => {
     const warn = (event) => {
       if (Object.values(dirty.current).some(Boolean)) {
@@ -19089,19 +19106,48 @@ function ConversationSettingsPanel({ settings, status, busy, close: close2, upda
     (0, import_react6.createElement)(
       "div",
       { className: "dtv-body" },
-      (0, import_react6.createElement)("div", { role: "tablist", "aria-label": translate("conversationSettings.title"), style: { display: "flex", gap: 8, flexWrap: "wrap" } }, ...["appearance", "regex", "external"].map((value) => (0, import_react6.createElement)("button", { key: value, type: "button", role: "tab", "aria-selected": tab === value, className: "dtv-button", onClick: () => setTab(value) }, translate("rendering.tab." + value)))),
-      (0, import_react6.createElement)("div", { hidden: tab !== "appearance", role: "tabpanel" }, (0, import_react6.createElement)(BubbleEditor, { settings, update, busy, status, onDirty: (value) => {
+      (0, import_react6.createElement)(
+        "div",
+        { className: "dtv-settings-tabs", role: "tablist", "aria-label": translate("conversationSettings.title") },
+        ...TABS.map((value) => (0, import_react6.createElement)("button", {
+          key: value,
+          type: "button",
+          role: "tab",
+          className: "dtv-button",
+          id: `${tabId}-tab-${value}`,
+          "aria-controls": `${tabId}-panel-${value}`,
+          "aria-selected": tab === value,
+          tabIndex: tab === value ? 0 : -1,
+          ref: (node) => {
+            tabRefs.current[value] = node;
+          },
+          onClick: () => setTab(value),
+          onKeyDown: (event) => navigateTab(event, value)
+        }, translate("rendering.tab." + value)))
+      ),
+      (0, import_react6.createElement)("div", panelProps("appearance"), (0, import_react6.createElement)(BubbleEditor, { settings, update, busy, status, onDirty: (value) => {
         dirty.current.appearance = value;
       } }), (0, import_react6.createElement)("button", { type: "button", className: "dtv-button", disabled: busy, onClick: () => {
-        if (!dirty.current.appearance || window.confirm(translate("rendering.unsaved"))) reset2();
+        if (!dirty.current.appearance || window.confirm(translate("rendering.unsaved"))) update({ ...settings, bubbleStyle: void 0, textScale: 1, actionScale: 1 });
       } }, translate("conversationSettings.reset"))),
-      (0, import_react6.createElement)("div", { hidden: tab !== "regex", role: "tabpanel" }, (0, import_react6.createElement)(RegexPanel, { client, activeSnapshot, close: close2, embedded: true, onDirty: (value) => {
+      (0, import_react6.createElement)("div", panelProps("regex"), (0, import_react6.createElement)(RegexPanel, { client, activeSnapshot, close: close2, embedded: true, onDirty: (value) => {
         dirty.current.regex = value;
       } })),
-      (0, import_react6.createElement)("div", { hidden: tab !== "external", role: "tabpanel" }, (0, import_react6.createElement)(RenderingSettings, { client, activeSnapshot }))
+      (0, import_react6.createElement)("div", panelProps("external"), (0, import_react6.createElement)(RenderingSettings, { client, activeSnapshot, settings, update, busy, status }))
     )
   );
 }
+
+// packages/client/src/conversation-settings-styles.js
+var conversationSettingsCss = `
+.dtv-conversation-settings{--dtv-settings-control-height:36px;--dtv-settings-control-radius:8px;--dtv-settings-control-padding:8px 10px;--dtv-settings-control-font-size:12px}
+.dtv-conversation-settings :is(.dtv-button,.dtv-input,.dtv-select,.dtv-bubble-editor select,.dtv-bubble-editor input:not([type=checkbox]):not([type=range]):not([type=color]):not([type=file])){box-sizing:border-box;min-width:0;min-height:var(--dtv-settings-control-height);padding:var(--dtv-settings-control-padding);border-width:1px;border-style:solid;border-radius:var(--dtv-settings-control-radius);font-family:inherit;font-size:var(--dtv-settings-control-font-size);line-height:1.4}
+.dtv-conversation-settings :is(.dtv-input,.dtv-select,.dtv-bubble-editor select,.dtv-bubble-editor input:not([type=checkbox]):not([type=range]):not([type=color]):not([type=file])){height:var(--dtv-settings-control-height);border-color:var(--dsw-alias-border-l2,#d8dee8);background:var(--dsw-alias-bg-base,#fff);color:var(--dsw-alias-label-primary,#253047)}
+.dtv-conversation-settings :is(.dtv-button,.dtv-input,.dtv-select,.dtv-bubble-editor select,.dtv-bubble-editor input,.dtv-bubble-editor textarea):focus-visible{outline:2px solid var(--dsw-alias-state-business-primary,#2677d9);outline-offset:2px}
+.dtv-settings-tabs{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;flex:none;padding-bottom:12px;border-bottom:1px solid var(--dsw-alias-border-l2,#d8dee8)}
+.dtv-settings-tabs .dtv-button{width:100%;white-space:normal;overflow-wrap:anywhere}
+.dtv-settings-tabs .dtv-button[aria-selected=true]{border-color:var(--dsw-alias-state-business-primary,#2677d9);background:color-mix(in srgb,var(--dsw-alias-state-business-primary,#2677d9) 10%,var(--dsw-alias-bg-base,#fff));color:var(--dsw-alias-state-business-primary,#2677d9);box-shadow:inset 0 0 0 1px var(--dsw-alias-state-business-primary,#2677d9);font-weight:650}
+`;
 
 // packages/client/src/presentation-styles.js
 var presentationCss = `
@@ -19124,6 +19170,7 @@ var presentationCss = `
 .dtv-bubble-editor .dtv-check{display:flex;align-items:center;gap:6px;font-size:12px}
 .dtv-size-control{display:grid;grid-template-columns:minmax(0,1fr) 72px auto;gap:10px;align-items:center}
 .dtv-card-proposal{font:13px/1.5 system-ui;border-radius:8px}.dtv-card-proposal button+button{margin-left:8px}
+${conversationSettingsCss}
 `;
 
 // packages/request-assembler/client.js
