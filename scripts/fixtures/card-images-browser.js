@@ -3,7 +3,7 @@ import {createRoot} from 'react-dom/client'
 import {flushSync} from 'react-dom'
 import {MessageContent,cleanCardHtml,CARD_CSP} from '../../packages/client/src/play/scripted-content.js'
 import {RichText,sanitizeRenderedHtml} from '../../packages/client/src/play/rich-text.js'
-import {imageCss} from '../../packages/client/src/play/card-images.js'
+import {imageCss,observeImages,createImagePool} from '../../packages/client/src/play/card-images.js'
 
 ;(async()=>{
 const results=[], check=(name,pass)=>{results.push({name,pass:Boolean(pass)});if(!pass)console.error(name)}
@@ -35,6 +35,20 @@ globalThis.fetch=(url,options={})=>{
 const container=document.createElement('div');container.id='media-fixture';document.body.append(container);const root=createRoot(container)
 const render=element=>flushSync(()=>root.render(element))
 try{
+ const pseudoRoot=document.createElement('section');document.body.append(pseudoRoot)
+ const pseudoStyle=document.createElement('style');pseudoStyle.textContent=imageCss('.pseudo{width:120px;height:80px;display:block}.pseudo::before{display:none;content:"";width:120px;height:80px;background:var(--picture)}.pseudo.show::before{display:block}.pseudo.no-content::before{content:none}.pseudo.invisible::before{visibility:hidden}.pseudo.transparent::before{opacity:0}.pseudo.offset::before{position:relative;left:5000px}')
+ pseudoRoot.append(pseudoStyle)
+ for(let n=0;n<6000;n++){const tile=document.createElement('div');tile.className='pseudo';tile.style.cssText=imageCss(`--picture:url("${fixtureUrl('pseudo-'+n)}")`);pseudoRoot.append(tile)}
+ const pseudoPool=createImagePool(),pseudoMedia=observeImages(pseudoRoot,{pool:pseudoPool});await pause(180)
+ check('6000 hidden pseudo-element image URLs request zero leases/network',requests.length===0&&pseudoPool.stats().leases===0)
+ const tile=pseudoRoot.querySelector('.pseudo');tile.className='pseudo show';await until(()=>tile.getAttribute('data-dtv-image-state')==='loaded')
+ check('hidden-to-visible generated pseudo loads its actual viewport pixels',requests.length===1&&pseudoPool.stats().leases===1&&!getComputedStyle(tile,'::before').backgroundImage.includes('#dtv='))
+ for(const state of ['no-content','invisible','transparent','offset']){tile.className='pseudo show '+state;await pause(60);check(`pseudo ${state} does not retain a visible lease`,pseudoPool.stats().leases===0)}
+ tile.className='pseudo';await pause(60);check('visible-to-hidden pseudo releases its image data',pseudoPool.stats().leases===0&&![...tile.style].some(property=>property.startsWith('--dtv-img-')))
+ tile.className='pseudo show';await until(()=>pseudoPool.stats().leases===1);await pause(50);check('showing a pseudo again uses bounded cached pixels',requests.length===1)
+ // An identical hidden pseudo must not suppress a legitimate ordinary background.
+ tile.className='pseudo';tile.style.cssText=imageCss(`background:url("${fixtureUrl('pseudo-0')}");--picture:url("${fixtureUrl('pseudo-0')}")`);await until(()=>pseudoPool.stats().leases===1);check('visible host background remains eligible beside an identical hidden pseudo',requests.length===1)
+ pseudoMedia.dispose();pseudoPool.dispose();pseudoRoot.remove();requests.length=0
  const urls=Array.from({length:6000},(_,n)=>fixtureUrl(n)), source=`<details id="gallery"><summary>6000 images</summary>${urls.map(url=>`<img src="${url}">`).join('')}</details>`
  const inert=sanitizeRenderedHtml(source,{liveImages:true});check('import/sanitization of 6000 URLs is inert',requests.length===0&&!inert.includes(' src="https:'))
  render(React.createElement(RichText,{text:source}));await pause(180)

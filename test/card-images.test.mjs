@@ -68,3 +68,15 @@ test('trusted fetch rejects redirects, MIME mismatch and oversized headers/strea
     assert.equal(reads,2)
   }finally{globalThis.fetch=original}
 })
+test('a bounded source whose browser PNG expands is resized before injection, with output pixels charged and decoder closed',async()=>{
+  const previous={bitmap:globalThis.createImageBitmap,document:globalThis.document},draws=[];let closed=0
+  const png=Uint8Array.from(Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+/l9sAAAAASUVORK5CYII=','base64'))
+  new DataView(png.buffer).setUint32(16,1000);new DataView(png.buffer).setUint32(20,1370)
+  globalThis.createImageBitmap=async()=>({width:1000,height:1370,close(){closed++}})
+  globalThis.document={createElement(){return{width:0,height:0,getContext(){return{drawImage:(_image,_x,_y,width,height)=>draws.push([width,height])}},toDataURL(){return this.width>700?'data:image/png;base64,'+'A'.repeat(IMAGE_LIMITS.imageBytes*4/3+68):'data:image/png;base64,AAAA'}}}}
+  try{
+    const result=await fetchImage('data:image/png;base64,'+Buffer.from(png).toString('base64'),new AbortController().signal)
+    assert.deepEqual(draws,[[1000,1370],[800,1096],[640,876]]);assert.equal(result.width,640);assert.equal(result.height,876)
+    assert.equal(result.bytes,result.data.length*2+640*876*4);assert.ok(result.data.length<=IMAGE_LIMITS.imageBytes*4/3+64);assert.equal(closed,1)
+  }finally{if(previous.bitmap===undefined)delete globalThis.createImageBitmap;else globalThis.createImageBitmap=previous.bitmap;if(previous.document===undefined)delete globalThis.document;else globalThis.document=previous.document}
+})
