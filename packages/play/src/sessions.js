@@ -181,6 +181,12 @@ export function createSessionApiHandler({ host, workspaceStore, now = () => new 
       const sourceId = body?.selectionFromSessionId === undefined || body.selectionFromSessionId === null
         ? null
         : requireSessionId(body.selectionFromSessionId)
+      const stateSource = body?.stateSource
+      if (stateSource !== undefined && (!stateSource || typeof stateSource !== 'object' || Array.isArray(stateSource)
+        || Object.keys(stateSource).some(k => !['sessionId', 'beforeReplyEventId'].includes(k))
+        || requireSessionId(stateSource.sessionId) !== sourceId || !Number.isSafeInteger(stateSource.beforeReplyEventId) || stateSource.beforeReplyEventId < 0)) {
+        throw httpError(400, 'stateSource requires the selected source session and its reply coordinate', 'PLAY_STATE_SOURCE_INVALID')
+      }
       const preparedImport = body?.importContextRef === undefined
         ? null
         : await host.prepareImportContext(body.importContextRef)
@@ -194,6 +200,7 @@ export function createSessionApiHandler({ host, workspaceStore, now = () => new 
         workspaceId: binding.workspaceId,
         cwd: binding.rootPath,
         title,
+        ...(stateSource === undefined ? {} : { stateSource }),
       }, { operation })
       const sessionId = requireSessionId(created?.sessionId)
       operation?.checkpoint('session.created', { sessionId })
@@ -215,7 +222,14 @@ export function createSessionApiHandler({ host, workspaceStore, now = () => new 
       if (!Number.isSafeInteger(body?.atEventId) || body.atEventId < 0) {
         throw httpError(400, 'atEventId must be a non-negative event seq', 'PLAY_EVENT_INVALID')
       }
+      const stateSource = body?.stateSource
+      if (stateSource !== undefined && (!stateSource || typeof stateSource !== 'object' || Array.isArray(stateSource)
+        || Object.keys(stateSource).some(k => !['sessionId', 'beforeReplyEventId'].includes(k))
+        || requireSessionId(stateSource.sessionId) !== sessionId || !Number.isSafeInteger(stateSource.beforeReplyEventId) || stateSource.beforeReplyEventId <= body.atEventId)) {
+        throw httpError(400, 'stateSource requires the branch source and its later target reply', 'PLAY_STATE_SOURCE_INVALID')
+      }
       const created = await host.forkSession({ sessionId, atSeq: body.atEventId,
+        ...(stateSource === undefined ? {} : { stateSource }),
         ...(body.sessionFormatVersion === undefined ? {} : { sessionFormatVersion: body.sessionFormatVersion }),
       }, { operation })
       const childSessionId = requireSessionId(created?.sessionId)

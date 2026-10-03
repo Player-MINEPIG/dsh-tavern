@@ -22,7 +22,7 @@ async function fixture(t,{managed=true}={}){
  const session={id:'s',header:{id:'s',version:4},snapshotEvents:()=>[]},services=new Map([['sessions',new Map([['s',session]])]])
  const ctx={get:name=>services.get(name),provide:(name,value)=>services.set(name,value),on(){},effect:fn=>fn()}
  const memberships=new PlayMembershipService(store)
- const service=installMvu(ctx,{storageDir,resources:[{id:'mvu:state',characterId:'c',sessionIds:['s'],managementMode:managed?'managed':'native',initial:{stat_data:{hp:7}}}],sources:{register:()=>()=>{}},memberships,getSelection:id=>selections.get(id),getSelectionToken:id=>selections.selectionRevision(id),isActive:(r,id)=>r.characterId===selections.get(id).characterCardId})
+ const service=installMvu(ctx,{storageDir,resources:[{sharing: 'shared', id:'mvu:state',characterId:'c',sessionIds:['s'],managementMode:managed?'managed':'native',initial:{stat_data:{hp:7}}}],sources:{register:()=>()=>{}},memberships,getSelection:id=>selections.get(id),getSelectionToken:id=>selections.selectionRevision(id),isActive:(r,id)=>r.characterId===selections.get(id).characterCardId})
  t.after(()=>service.dispose())
  let policy={revision:4,enabled:true};const requests=[],facts=[];service.observe(f=>facts.push(f))
  const allow=()=>service.registerUsage(request=>{requests.push(request);const current=policy;return{enabled:current.enabled,configRevision:current.revision,strategy,checkCurrent:()=>current===policy}})

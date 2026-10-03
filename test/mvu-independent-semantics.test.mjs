@@ -23,7 +23,7 @@ async function check(name, run) {
 }
 async function fixture(run, sessionIds = ['A', 'B']) {
   const storageDir = mkdtempSync(join(tmpdir(), 'mvu-review-regression-'))
-  const service = new MvuService({ storageDir, resources: [{ id: 'mvu:shared', sessionIds, initial: state(100) }] })
+  const service = new MvuService({ storageDir, resources: [{ sharing: 'shared', id: 'mvu:shared', sessionIds, initial: state(100) }] })
   try { await run(service) } finally { service.dispose(); rmSync(storageDir, { recursive: true, force: true }) }
 }
 const read = (service, scope) => service.read({ id: 'mvu:shared', scope })

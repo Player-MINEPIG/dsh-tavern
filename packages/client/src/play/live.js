@@ -289,19 +289,21 @@ export function createLivePlayClient({
       return v2('POST', `/sessions/${encodeURIComponent(sessionId)}/user-message`, { text })
     },
 
-    postBranch(sessionId, atEventId, sessionFormatVersion = coordinateVersions.get(sessionId)) {
+    postBranch(sessionId, atEventId, sessionFormatVersion = coordinateVersions.get(sessionId), stateSource) {
       if (!Number.isSafeInteger(atEventId) || atEventId < 0) {
         throw new TypeError('atEventId must be a non-negative integer')
       }
       return v2('POST', `/sessions/${encodeURIComponent(sessionId)}/branch`, { atEventId,
+        ...(stateSource === undefined ? {} : { stateSource }),
         ...(sessionFormatVersion === undefined ? {} : { sessionFormatVersion }),
       })
     },
 
-    postSession(selectionFromSessionId, importContextRef) {
+    postSession(selectionFromSessionId, importContextRef, stateSource) {
       const body = {
         ...(typeof selectionFromSessionId === 'string' && selectionFromSessionId !== '' ? { selectionFromSessionId } : {}),
         ...(importContextRef === undefined ? {} : { importContextRef }),
+        ...(stateSource === undefined ? {} : { stateSource }),
       }
       return v2('POST', '/sessions', body)
     },

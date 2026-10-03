@@ -30,7 +30,7 @@ async function fixture(t) {
   const session = { id: 's', header: { id: 's', version: 4, createdAt: 'stable' }, snapshotEvents: () => [] }
   const services = new Map([['sessions', new Map([['s', session]])], ['tavernRenderingAuthority', { resolve: async () => ({ valid: true, write: true, scope }), isCurrent: () => true }]])
   const ctx = { get: name => services.get(name), provide: (name, value) => services.set(name, value), on() {}, effect: fn => fn() }
-  const service = installMvu(ctx, { storageDir, resources: [{ id: 'mvu:initial', characterId: 'c', sessionIds: ['s'], initial: { stat_data: { hp: 10 } } }],
+  const service = installMvu(ctx, { storageDir, resources: [{ sharing: 'shared', id: 'mvu:initial', characterId: 'c', sessionIds: ['s'], initial: { stat_data: { hp: 10 } } }],
     sources: { register: () => () => {} }, memberships, getSelection: id => selections.get(id), getSelectionToken: id => selections.selectionRevision(id),
     isActive: (resource, id) => resource.characterId === selections.get(id).characterCardId })
   t.after(() => service.dispose())

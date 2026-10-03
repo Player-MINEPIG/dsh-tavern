@@ -58,7 +58,8 @@ test('reply swipe branches, resends the real user text, waits, then atomically a
           { role: 'assistant', seq: 7, text: 'New answer' },
         ] }
     },
-    async postBranch(sessionId, atEventId) {
+    async postBranch(sessionId, atEventId, format, stateSource) {
+      assert.deepEqual(stateSource, { sessionId: 'session-old', beforeReplyEventId: 6 })
       calls.push(`branch:${sessionId}:${atEventId}`)
       return { sessionId: 'session-new' }
     },

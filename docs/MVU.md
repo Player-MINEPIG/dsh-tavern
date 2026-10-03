@@ -6,7 +6,9 @@ MVU 变量是角色状态，和长期记忆资源类型分开。`tavernMvu`（�
 
 ## 配置与资源身份
 
-管理器读取资源或 Host 准备所选角色会话时，会发现已导入卡中的 InitVar/schema。稳定 ID 由存储角色 ID 派生，默认 managed 且未启用；只有实际选择该卡的会话获访问范围。选择/取消/重选持久记录激活事件边界，不能把旧角色回复重新应用到新角色。发现不授予 wildcard 权限，不执行脚本。初始化失败显示 sourceError 并阻止执行。重复选择和源卡编辑不重置已创建资源的初始化/schema。
+Host 发现已导入卡中的 InitVar/schema 时，将卡片登记为初始模板。`characterMvuId(characterId)` 是模板 ID，不是可编辑的状态资源。实际选择该卡后，来源按模板与可信 DSH session 的 `id + createdAt` 分配独立 `mvu:instance-*` ID；记录包含 `templateId` 与 `instance` 身份。新 branch 和 reply swipe 创建不同 session，也就拥有不同状态 ID、current、CAS revision 与幂等记录。模板不作为 manager 的 current 资源展示。
+
+发现实例默认 managed 且未启用；只有实际选择该卡的会话获访问范围。选择/取消/重选持久记录激活事件边界，不能把旧角色回复重新应用到新角色。切回同一角色恢复该会话原实例；重新选卡和源卡编辑不重置初始化/schema。发现不授予 wildcard 权限，不执行脚本。初始化失败显示 sourceError 并阻止执行。缺失或变化的 durable session 身份拒绝分配与读取。
 
 也可由 Loader 的 `mvu.resources` 显式声明资源，例如：
 
@@ -23,9 +25,13 @@ MVU 变量是角色状态，和长期记忆资源类型分开。`tavernMvu`（�
 }
 ```
 
-`sessionIds:['*']` 允许此来源服务中的所有会话。`initial` 也可为 YAML 字符串。配置 `characterId` 且省略 `initial` 时，读取已导入角色卡的 `[initvar]` 条目和声明式 schema；不会下载或执行卡片脚本。多个初始化对象按条目顺序合并，多个不同 schema 必须显式解决冲突。解析失败不覆盖已有持久状态。配置变更不是重置命令。
+显式配置默认也是模板；`sessionIds:['*']` 允许各会话创建自己的实例。`initial` 也可为 YAML 字符串。配置 `characterId` 且省略 `initial` 时，读取已导入角色卡的 `[initvar]` 条目和声明式 schema；不会下载或执行卡片脚本。多个初始化对象按条目顺序合并，多个不同 schema 必须显式解决冲突。解析失败不覆盖已有持久状态。配置变更不是重置命令。
 
-同一 ID 的当前内容及 CAS revision 在授权会话间共享；scope 限制访问和选择历史，不创建隐含副本。独立演化须 `copy` 到新 ID。复制保留当前内容、来源信息与 session 访问范围，发现资源的副本保持 managed；显式配置的普通资源副本为 native。多个资源匹配同一气泡时，当前只读气泡接口返回 `MVU_AMBIGUOUS`，不擅自选一份。
+同一状态 ID 始终只有一份 current；scope 不把不同分支内容藏在同一 ID 下。确需跨会话共享的人工逻辑实体必须显式声明 `sharing:'shared'`，其配置 ID 直接作为状态 ID。`copy` 创建新的人工资源，保留访问范围但不作为 branch/swipe 继承操作。多个资源匹配同一气泡时，快照返回 `MVU_AMBIGUOUS`。
+
+正常 fork 在调用官方创建操作前冻结具体来源实例、versionKey、revision 与内容 hash，之后原子安装子实例。子实例继承当时完整 variables/schema 和可验证的只读历史，不重放祖先更新或 schema transform。reply swipe 继承被重生成回复的持久请求前 checkpoint，包含当时开场配置；后续父状态变化不改变种子。首轮 swipe 使用新空会话；后续 swipe 分别绑定历史截断坐标 `prefixEndEventId` 和被替换回复坐标 `atEventId`，保留官方历史前缀，以目标 checkpoint 作为 current，排除之后的编辑。普通 fork 仍继承截断坐标的状态。新实例不继承 manager 策略、grant、capability 或 operationId。来源已托管时子实例保持 managed，包含后来切到托管的显式配置来源；子策略缺失不能自动启用 native 执行。Host 首请求等待初始化及 checkpoint 完成；缺失 seed 或 checkpoint 拒绝继续。
+
+新状态写入 `mvu-instances.json`。旧 `mvu-state.json` 保留原字节，只作为带 `MVU_MIGRATION_REQUIRED` 的只读资源，不能更新、复制、提供给模型或作为继承来源。旧共享账本可能已串写，不按 session 自动拆分。绑定旧状态的会话需显式处理；新会话可独立从模板开始。
 
 发现不等于启用。来源许可和宿主权限不能由卡片脚本自行提升。
 
@@ -36,15 +42,20 @@ MVU 变量是角色状态，和长期记忆资源类型分开。`tavernMvu`（�
 | 方法 | 合同 |
 | --- | --- |
 | `list({scope,signal})` | 返回作用域可读记录；本机管理读取使用 `{authority:'local'}`（兼容空对象） |
-| `read({id,scope,signal})` | 不存在为 null；当前记录包含 `id,name,type,authority,scope,content,revision,currentRevision,historical,versionKey,managementMode` |
+| `read({id,scope,signal})` | 不存在为 null；当前记录包含 `id,name,type,authority,scope,content,revision,currentRevision,historical,versionKey,managementMode`；实例还含 `templateId,instance,inheritedFrom?`，旧记录含 `legacy,sourceError,capabilities` |
 | `update({id,content,expectedRevision,operationId,scope,signal})` | 当前内容 CAS 编辑；同 operationId、同请求幂等，异参拒绝；来源 schema 不可被移除或替换，候选只转换一次 |
 | `copy({id,newId,scope,signal})` | 显式新资源，拒绝已有 ID |
 | `history({id,scope,signal})` | 返回该会话来源版本及成功/失败证据 |
 | `setManagementMode({id,mode,expectedRevision,operationId,scope,signal})` | 持久切换 `native` / `managed`，CAS 与幂等；配置初始 managed 也持久保存 |
 | `registerUsage(handler)` | 注册可信使用决策，返回 disposer；handler 收到 `{on,id,scope,event,variables,managementMode}` |
 | `observe(listener)` | 注册提交与请求事实监听，返回 disposer；监听器不能参与状态写事务 |
-| `discover({definition,sessionId?})` | 可信 Host 发现接口；稳定卡身份、默认托管及显式会话访问 |
+| `discover({definition,sessionId?})` | 可信 Host 发现接口；稳定模板身份、默认托管及显式会话访问 |
 | `validateConfig(config)` | 检查 `type:'mvu-state'`、store/retrieve 触发及支持的策略链 |
+| `captureSessionSeed({sessionId,kind,atEventId,prefixEndEventId?,targetSessionId?,signal?})` | 可信创建路径冻结来源，返回 opaque ticket 或无状态时 null；kind 为 fork / reply-swipe，首轮 swipe 必须预先指定目标 session ID，后续 swipe 必须给出 prefixEndEventId |
+| `installSessionSeed({ticket,sessionId,signal?})` | 官方创建返回后校验子身份/父来源/继承消息，原子安装；同 ticket 同目标幂等，冲突拒绝 |
+| `checkpoint(session,turnStartEvent)` | Host 在 durable turn/start 冻结一次请求前基线；后续 step 不覆盖 |
+
+独立构造 `MvuService` 的可信 Host 必须为实例写入和 seed 操作提供 `captureSessionLease(sessionId)`，返回可同步调用的有效性闭包。官方安装函数通过公开 `resolveAgent` 恢复指定冷会话，再绑定会话服务、live 对象、header、事件代次与摘要；缺少租约拒绝写入/继承。Host 工作屏障在事务入队前等待，最后一次 await 后同步复核租约和 signal，再原子提交。未完成的首轮目标 receipt 持久阻止自动初始化；没有 receipt 的 fork 不能从当前父状态补猜种子。
 
 `scope.authority` 仅允许 local；其他来源应使用自己的服务。会话读取要求配置授权。历史读取传 `messageId` 或 `endEventId`；联合坐标必须一致。历史记录的 `revision` 是该快照版本，`currentRevision` 是当前实体版本。历史 scope 不可编辑；调用者必须显式回到当前 scope 再读、再以 CAS 编辑。
 
@@ -97,7 +108,7 @@ renderer 的可信 dispatcher 从原生 isTrusted 事件/计时器任务生成 c
 
 ## 当前空会话的开场绑定
 
-同一 snapshot/card-binding/card-write API 接受独立 scope `{mode:'initial',playthroughId,sessionId,characterId,sessionFormatVersion?}`。不得同时带 nodeId/variantId/endEventId，也不能将普通 session-only 管理接口当作卡片能力。Host 检查根会话 membership、角色选择、空 timeline，以及唯一可访问且活动的角色资源；同一资源 ID 仍是跨已授权会话共享的当前实体，不因开场产生隐式副本。
+同一 snapshot/card-binding/card-write API 接受独立 scope `{mode:'initial',playthroughId,sessionId,characterId,sessionFormatVersion?}`。不得同时带 nodeId/variantId/endEventId，也不能将普通 session-only 管理接口当作卡片能力。Host 检查根会话 membership、角色选择、空 timeline，以及唯一可访问且活动的角色资源；开场配置只更新绑定会话的状态实例，同一卡模板的其他实例保持独立。
 
 初始绑定必须持有受控 live DSH session；尚未加载时只通过公开 `sessionController.resolveAgent(sessionId)` 恢复指定会话，无法恢复则拒绝。恢复生命周期完成后重新核对角色选择和 membership，再为新绑定取得租约；恢复前的旧能力不会复活。空对话历史仅允许官方 DSH 初始化使用的 `permission/preset`、`sandbox/mode`、`approval/policy` 三种确切配置元数据、官方选模型产生的 `model/selection`（data 仅含非空字符串 `provider`、`model` 及可选非空字符串 `reasoningEffort`），以及官方恢复产生的 `session/end-seed` 且 data 严格为空对象的标记；不按事件前缀放行，`isSeeded:true` 或带 inherited/其他字段的标记仍拒绝。turn、user/assistant message、inbox、未知事件及父会话/继承历史均拒绝。同步租约绑定 session 对象、header、事件代次、membership 和本会话的选择代次。`PlayMembershipService.captureLease(playthroughId)` 使用 `PlayWorkspaceStore.captureReadLease(paths)` 捕获 catalog 与对应 timeline 的进程内写入代次及 workspace 身份。公开写入成功即更新不可复用令牌，即便内容 hash 恢复原值，旧绑定也不会复活；workspace 身份切换后恢复同一路径同样失效。该文件级租约会在任何 catalog 写入后要求新绑定；无关文件写入和失败 CAS 不撤销。进程重启不保留 capability，租约也不作为持久内容版本。选模型事件仍推进事件代次，旧能力失效后须重新绑定；首轮开始或角色切走再切回后旧能力失效；其他会话修改选择不会撤销此能力。渲染宿主在离开、切 session、切角色时必须 abort/dispose 旧 binding，重新进入须创建新绑定，不能把旧气泡转向当前 focus。
 
@@ -129,6 +140,8 @@ initial 写入仍经过独立 grant、使用策略租约、CAS、幂等与 schem
 `superRefine` 在验证后的冻结 JSON 副本上运行，仅允许 `ctx.addIssue({code:'custom',path?,message?})`；任何 issue 拒绝候选，不提交状态。`Object.prototype.hasOwnProperty.call(data,key)` 是显式 own-property 检查原语，不开放 Object 或原型。声明可用 `for (const item of array)` 遍历最多 1000 个数组项，和函数/约束共享计算预算；其余循环、this、arguments、异步/生成器、rest/解构参数、外部能力仍拒绝。这些是受限的 [Zod 语义适配](https://zod.dev/api#superrefine)，不会执行原声明脚本。
 
 字符串 `regex` 仅接受无 flags、`^...$` 全锚定的有限模式：字面字符、`\d`、字符范围、分组内选择、`?` 和 `{m,n}`（最大 64 次）。模式最多 256 字符、16 层分组及 2048 个自动机状态；建图、声明图冻结和匹配均消耗共享计算预算，不能通过循环复制模式绕过总量限制。匹配使用状态集合，不调用原生 RegExp 匹配。无界重复、通配点、回溯引用、环视均拒绝。解释器函数、schema、参数绑定和 AST 保持不透明，不能作为 JSON 内容读写。原始完整声明仍保存在 schema 描述符中；兼容扩展不重置已有资源、不更换 ID、不自动启用 managed 策略。
+
+`node --test test/mvu-state-instances.test.mjs` 验证独立身份、fork/swipe checkpoint、只读旧账本、重启、取消和提交竞态。以 `DSH_TAVERN_ASSEMBLY_CORE_ROOT` 指向具备请求装配扩展的官方 runtime，运行 `node --test test/mvu-instance-host.test.mjs`，可验证公开 SessionController 的创建/fork、真实 AgentLoop 请求与失败轮次重生成；它只使用临时数据和合成 provider。
 
 `test/mvu-*.test.mjs` 覆盖合成卡结构、固定上游文字 fixture、CAS、fork、历史、故障恢复、预算反例、管理卸载和桥接取消。真实 Host 测试通过 `DSH_TAVERN_PROMPT_COMPAT_ROOT` 指向具备请求装配扩展的 DSH runtime，运行 `node --test test/mvu-host.test.mjs`；它使用临时目录及合成 provider，不操作真实 profile。完整卡片、渲染依赖与管理器最终联测需要另行验证，不能用解释器 fixture 代替。
 

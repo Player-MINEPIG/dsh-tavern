@@ -18,7 +18,7 @@ function fixture(t, { managed = false, resources } = {}) {
   const ctx = { get: name => services.get(name), provide: (name, service) => services.set(name, service),
     on: (name, handler) => { handlers.set(name, handler) }, effect: fn => fn() }
   services.set('tavernRenderingAuthority', { resolve: async () => ({ valid, write: true, scope }), isCurrent: () => valid })
-  const resource = { id: 'mvu:initial', characterId: 'c', sessionIds: ['s', 'other'], managementMode: managed ? 'managed' : 'native', initial: { stat_data: { hp: 10 } }, schemaSource: 'const Schema=z.object({hp:z.number().min(0)});' }
+  const resource = { sharing: 'shared', id: 'mvu:initial', characterId: 'c', sessionIds: ['s', 'other'], managementMode: managed ? 'managed' : 'native', initial: { stat_data: { hp: 10 } }, schemaSource: 'const Schema=z.object({hp:z.number().min(0)});' }
   const options = { storageDir, resources: resources ?? [resource], sources: { register: () => () => {} },
     memberships: { captureLease: () => () => true, readCatalog: () => ({ catalog: { playthroughs: [playthrough] } }), readTimeline: () => ({ timeline }) },
     getSelection: id => selections.get(id), getSelectionToken: id => selections.selectionRevision(id), isActive: (r, id) => r.characterId === selections.get(id).characterCardId }

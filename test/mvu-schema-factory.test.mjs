@@ -117,11 +117,11 @@ test('functions retain the isolation boundary for dead code, captures and protot
 })
 test('invalid refined edits leave durable state and revision unchanged', async t => {
   const storageDir = mkdtempSync(join(tmpdir(), 'mvu-factory-edit-')); t.after(() => rmSync(storageDir, { recursive: true, force: true }))
-  const service = new MvuService({ storageDir, resources: [{ id: 'mvu:factory', sessionIds: ['s'], initial: { stat_data: {} }, schemaSource: factory }] })
+  const service = new MvuService({ storageDir, resources: [{ sharing: 'shared', id: 'mvu:factory', sessionIds: ['s'], initial: { stat_data: {} }, schemaSource: factory }] })
   t.after(() => service.dispose())
   const before = await service.read({ id: 'mvu:factory', scope: { sessionId: 's' } })
   await service.update({ id: before.id, content: before.content, expectedRevision: before.revision, operationId: 'materialize', scope: { sessionId: 's' } })
-  const current = await service.read({ id: before.id, scope: { sessionId: 's' } }), path = join(storageDir, 'mvu-state.json'), bytes = readFileSync(path)
+  const current = await service.read({ id: before.id, scope: { sessionId: 's' } }), path = join(storageDir, 'mvu-instances.json'), bytes = readFileSync(path)
   const content = structuredClone(current.content); content.stat_data.item.extra = 9
   await assert.rejects(service.update({ id: before.id, content, expectedRevision: current.revision, operationId: 'invalid', scope: { sessionId: 's' } }), { code: 'MVU_SCHEMA' })
   assert.deepEqual(readFileSync(path), bytes)
@@ -133,18 +133,18 @@ test('failed schema discovery repairs the same resource without changing managem
   let service
   const card = { data: { character_book: { entries: [{ comment: '[initvar]', content: '{}' }] }, extensions: { tavern_helper: { scripts: [{ content: factory }] } } } }
   const refresh = createCharacterDiscovery({ characters: { list: () => [{ id: 'synthetic-factory-card', name: 'Factory fixture' }], get: () => card }, selections: { get: sessionId => ({ characterCardId: sessionId === 's' ? 'synthetic-factory-card' : null }) }, service: () => service })
-  const options = { storageDir, refresh, inspect: async () => ({ header: { id: 's', version: 4 }, events }) }
+  const options = { storageDir, refresh, inspect: async () => ({ header: { id: 's', version: 4, createdAt: 1 }, events }) }
   service = new MvuService(options)
   await service.discover({ definition: { id, characterId: 'synthetic-factory-card', discovered: true, managementMode: 'managed', sessionIds: ['s'], sourceError: 'MVU_SCHEMA_CODE', initial: { stat_data: {} } } })
   await refresh('s')
-  const record = await service.read({ id, scope: { sessionId: 's' } })
-  assert.equal(record.id, id); assert.equal(record.sourceError, undefined); assert.equal(record.managementMode, 'managed')
+  const [record] = await service.list({ scope: { sessionId: 's' } })
+  assert.equal(record.templateId, id); const instanceId = record.id; assert.equal(record.sourceError, undefined); assert.equal(record.managementMode, 'managed')
   assert.equal(record.content.mvu_schema.source, factory)
   assert.deepEqual(record.content.stat_data, { item: { mode: 'basic', score: 3 }, time: '08:15' })
   assert.equal(service.resources[0].activationSeqs.s, 1)
   assert.equal((await service.resolveRequest({ sessionId: 's' })).blocks.length, 0)
-  await assert.rejects(service.read({ id, scope: { sessionId: 'other' } }), { code: 'SCOPE_MISMATCH' })
+  await assert.rejects(service.read({ id: instanceId, scope: { sessionId: 'other' } }), { code: 'SCOPE_MISMATCH' })
   service.dispose(); service = new MvuService(options)
   t.after(() => service.dispose())
-  assert.equal((await service.read({ id, scope: { sessionId: 's' } })).id, id)
+  assert.equal((await service.read({ id: instanceId, scope: { sessionId: 's' } })).id, instanceId)
 })

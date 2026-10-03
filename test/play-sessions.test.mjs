@@ -603,3 +603,19 @@ test('playthrough focus preserves null focus for empty timelines and maps file f
     rmSync(fixture.playRoot, { recursive: true, force: true })
   }
 })
+
+test('session creation and branch accept only fixed source coordinates for explicit reply swipes', async () => {
+  const f = await boundHandler()
+  try {
+    const stateSource = { sessionId: 'session-root', beforeReplyEventId: 7 }
+    const root = await invoke(f.handler, { method: 'POST', url: `${API_V2}/sessions`, body: { selectionFromSessionId: 'session-root', stateSource } })
+    assert.equal(root.status, 201); assert.deepEqual(f.host.calls.find(c => c[0] === 'createSession')[1].stateSource, stateSource)
+    const later = await invoke(f.handler, { method: 'POST', url: `${API_V2}/sessions/session-root/branch`, body: { atEventId: 3, stateSource } })
+    assert.equal(later.status, 201); assert.deepEqual(f.host.calls.find(c => c[0] === 'forkSession')[1], { sessionId: 'session-root', atSeq: 3, stateSource })
+    for (const wrong of [{ ...stateSource, sessionId: 'other' }, { ...stateSource, beforeReplyEventId: 3 }, { ...stateSource, variables: { hp: 999 } }]) {
+      const result = await invoke(f.handler, { method: 'POST', url: `${API_V2}/sessions/session-root/branch`, body: { atEventId: 3, stateSource: wrong } })
+      assert.equal(result.status, 400); assert.equal(result.body.code, 'PLAY_STATE_SOURCE_INVALID')
+    }
+    assert.equal(f.host.calls.filter(c => c[0] === 'forkSession').length, 1)
+  } finally { rmSync(f.pluginDir, { recursive: true, force: true }); rmSync(f.playRoot, { recursive: true, force: true }) }
+})

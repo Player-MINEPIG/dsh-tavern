@@ -29,7 +29,7 @@ const events = (id, delta = -5) => [
 const session = (id = 'root', ev = events('root-msg'), parentSession, inheritedEventCount = 0) => ({ id, header: { id, version: 4, createdAt: 100, ...(parentSession ? { parentSession } : {}) }, inheritedEventCount, snapshotEvents: () => ev, events: ev })
 async function fixture(run, extra = {}) {
   const storageDir = mkdtempSync(join(tmpdir(), 'mvu-service-followup-'))
-  const options = { storageDir, resources: [{ id: 'mvu:shared', sessionIds: ['root', 'child', 'grandchild'], initial: state(100) }], ...extra }
+  const options = { storageDir, resources: [{ sharing: 'shared', id: 'mvu:shared', sessionIds: ['root', 'child', 'grandchild'], initial: state(100) }], ...extra }
   const service = new MvuService(options)
   try { await run(service, options) } finally { service.dispose(); rmSync(storageDir, { recursive: true, force: true }) }
 }
@@ -45,7 +45,7 @@ await check('usage removal followed by rejection must not consume the durable ev
   service.registerUsage(() => ({ enabled: true }))
   await service.ingest(session())
   observation.afterRetry = { revision: (await read(service)).revision, hp: (await read(service)).content.stat_data.hp }
-  observation.persisted = existsSync(join(options.storageDir, 'mvu-state.json'))
+  observation.persisted = existsSync(join(options.storageDir, 'mvu-instances.json'))
   assert.equal(observation.afterCancel, 0)
   assert.equal(observation.afterRetry.hp, 95)
 }))
@@ -66,7 +66,7 @@ await check('request cancellation after awaited usage produces no output or stat
   const pending = service.resolveRequest({ sessionId: 'root', preview: true, turn: null, step: null, signal: controller.signal })
   const rejection = assert.rejects(pending, { name: 'AbortError' })
   await entered.promise; controller.abort(); decision.resolve({ enabled: true }); await rejection
-  observation.persisted = existsSync(join(options.storageDir, 'mvu-state.json'))
+  observation.persisted = existsSync(join(options.storageDir, 'mvu-instances.json'))
   assert.equal(observation.persisted, false)
 }))
 
@@ -129,7 +129,7 @@ await check('Host snapshot rejects forged coordinates and resolves an inherited 
     readCatalog: () => ({ catalog: { playthroughs: [{ id: 'play' }] } }),
     readTimeline: () => ({ timeline: { nodes: [{ id: 'node', variants: [{ id: 'variant', sessionId: 'child', endEventId: 1, ext: { pmpDshTavern: { sessionFormatVersion: 4 } } }] }] } }),
   }
-  const service = installMvu(ctx, { storageDir, memberships, resources: [{ id: 'mvu:shared', sessionIds: ['root', 'child'], initial: state(100) }] })
+  const service = installMvu(ctx, { storageDir, memberships, resources: [{ sharing: 'shared', id: 'mvu:shared', sessionIds: ['root', 'child'], initial: state(100) }] })
   try {
     await service.ingest(rootSession); await service.ingest(child)
     await service.update({ id: 'mvu:shared', scope, content: state(70), expectedRevision: 1, operationId: 'advance-current' })

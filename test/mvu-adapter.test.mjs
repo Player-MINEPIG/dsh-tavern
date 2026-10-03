@@ -20,7 +20,7 @@ function session(id = 's', turns = ["_.add('hp', -5);"], reasons = [], parentSes
 function fixture(t) {
   const directory = mkdtempSync(join(tmpdir(), 'mvu-test-'))
   t.after(() => rmSync(directory, { recursive: true, force: true }))
-  const options = { storageDir: directory, resources: [{ id: 'mvu:test', sessionIds: ['*'], initial }] }
+  const options = { storageDir: directory, resources: [{ sharing: 'shared', id: 'mvu:test', sessionIds: ['*'], initial }] }
   return { options, service: new MvuService(options) }
 }
 

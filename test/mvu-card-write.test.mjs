@@ -12,7 +12,7 @@ async function fixture(t) {
   const text = "_.add('hp',-1);", fingerprint = createHash('sha256').update(JSON.stringify(text)).digest('hex')
   let granted = false, active = true
   const sourceIdentity = { version: 1, sha256: 'a'.repeat(64), scope }
-  const service = new MvuService({ storageDir, resources: [{ id: 'mvu:card', sessionIds: ['s'], initial: { stat_data: { hp: 10 } }, schemaSource: 'const Schema=z.object({hp:z.number().min(0)});' }],
+  const service = new MvuService({ storageDir, resources: [{ sharing: 'shared', id: 'mvu:card', sessionIds: ['s'], initial: { stat_data: { hp: 10 } }, schemaSource: 'const Schema=z.object({hp:z.number().min(0)});' }],
     resolveScope: async input => { assert.deepEqual(input, scope); return { writableHead: active, messageId: 'reply', fingerprint } },
     authorizeCardWrite: async ({ grantId, sourceIdentity: identity }) => granted && grantId === 'grant' && JSON.stringify(identity) === JSON.stringify(sourceIdentity) ? { valid: true, write: true, scope, checkCurrent: () => granted } : null })
   const events = [{ seq: 0, type: 'turn/start', data: { turn: 1 } }, { seq: 1, type: 'assistant/message', data: { turn: 1, message: { id: 'reply', content: [{ type: 'text', text }] } } }, { seq: 2, type: 'turn/end', data: { turn: 1, reason: { kind: 'completed' } } }]

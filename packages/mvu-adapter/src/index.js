@@ -6,3 +6,4 @@ export { compileMvuSchema, applyMvuSchema } from './schema.js'
 export { mvuResourceFromCharacter } from './character.js'
 
 export { createCharacterDiscovery, characterMvuId } from './discovery.js'
+export { stateInstanceId } from './instances.js'

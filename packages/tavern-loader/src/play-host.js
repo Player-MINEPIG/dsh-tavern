@@ -39,6 +39,7 @@ export function createPlayHost({
   characters,
   importContexts,
   onSelectionCopied,
+  stateSeeds,
 } = {}) {
   return {
     async coordinates(sessionId) {
@@ -57,12 +58,19 @@ export function createPlayHost({
       return callController('directoryPicker.createDirectory', directoryPickerController, 'createDirectory', path, name)
     },
 
-    async createSession({ workspaceId, cwd, title }, { operation } = {}) {
+    async createSession({ workspaceId, cwd, title, stateSource }, { operation } = {}) {
       const payload = workspaceId ? { workspaceId } : { cwd }
+      const source = stateSeeds?.()
+      // Public DSH create accepts an explicit id. Persist the target intent before creating it.
+      const targetId = stateSource ? `session-${randomUUID()}` : null
+      const ticket = stateSource ? await source?.captureSessionSeed({ kind: 'reply-swipe', sessionId: stateSource.sessionId, atEventId: stateSource.beforeReplyEventId, targetSessionId: targetId }) : null
+      if (targetId) payload.sessionId = targetId
       const value = await callSessionCreation(sessionController, 'create', payload, operation)
       const sessionId = value?.sessionId
       if (typeof sessionId !== 'string' || sessionId === '') throw missing('session.create')
       operation?.checkpoint('session.created', { sessionId })
+      if (targetId && sessionId !== targetId) throw httpError(502, 'Host creation returned a different state target', 'PLAY_STATE_TARGET_MISMATCH')
+      if (ticket) await source.installSessionSeed({ ticket, sessionId })
       if (typeof title === 'string' && title !== '' && typeof sessionController?.rename === 'function') {
         try {
           await sessionController.rename({ sessionId, title })
@@ -76,15 +84,19 @@ export function createPlayHost({
       return { sessionId }
     },
 
-    async forkSession({ sessionId, atSeq, sessionFormatVersion }, { operation } = {}) {
+    async forkSession({ sessionId, atSeq, sessionFormatVersion, stateSource }, { operation } = {}) {
       try {
         const coordinates = await this.coordinates(sessionId)
         requireCoordinates(sessionFormatVersion, coordinates)
         importContexts?.()?.ensureCoordinates?.(sessionId, coordinates)
+        const source = stateSeeds?.(), ticket = await source?.captureSessionSeed(stateSource
+          ? { kind: 'reply-swipe', sessionId, atEventId: stateSource.beforeReplyEventId, prefixEndEventId: atSeq }
+          : { kind: 'fork', sessionId, atEventId: atSeq })
         if (typeof sessionController?.resolveAgent !== 'function') throw missing('session.resolveAgent')
         const value = await callSessionCreation(sessionController, 'fork', { sessionId, atSeq }, operation)
         if (typeof value?.sessionId !== 'string' || value.sessionId === '') throw missing('session.fork')
         operation?.checkpoint('session.created', { sessionId: value.sessionId })
+        if (ticket) await source.installSessionSeed({ ticket, sessionId: value.sessionId })
         try {
           const resolved = await callController('session.resolveAgent', sessionController, 'resolveAgent', value.sessionId)
           if (resolved?.error !== undefined) throw resolved.error
@@ -190,10 +202,10 @@ export function createPlayHost({
       }
     },
 
-    copySelection(fromSessionId, toSessionId) {
+    async copySelection(fromSessionId, toSessionId) {
       if (selections === undefined) return
       selections.set(toSessionId, selections.get(fromSessionId))
-      onSelectionCopied?.(toSessionId, fromSessionId)
+      await onSelectionCopied?.(toSessionId, fromSessionId)
     },
   }
 }

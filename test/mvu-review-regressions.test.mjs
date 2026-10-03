@@ -8,7 +8,7 @@ import { createMvuApi } from '../packages/mvu-adapter/src/http.js'
 
 function fixture(t) {
   const storageDir = mkdtempSync(join(tmpdir(), 'mvu-review-')); t.after(() => rmSync(storageDir, { recursive: true, force: true }))
-  const options = { storageDir, resources: [{ id: 'mvu:test', sessionIds: ['*'], initial: { stat_data: { hp: 100 } } }] }
+  const options = { storageDir, resources: [{ sharing: 'shared', id: 'mvu:test', sessionIds: ['*'], initial: { stat_data: { hp: 100 } } }] }
   const session = { id: 's', header: { id: 's', version: 4, createdAt: 100 }, events: [
     { seq: 0, type: 'turn/start', data: { turn: 1 } },
     { seq: 1, type: 'assistant/message', data: { turn: 1, message: { id: 'reply', content: [{ type: 'text', text: "_.add('hp', -5);" }] } } },

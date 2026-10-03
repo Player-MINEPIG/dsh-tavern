@@ -9,7 +9,7 @@ export function createCharacterDiscovery({ characters, selections, service }) {
     const selected = sessionId ? selections.get(sessionId)?.characterCardId : null
     for (const summary of characters.list()) {
       const id = characterMvuId(summary.id)
-      const existing = service().resources.find(r => r.id === id)
+      const existing = service().templates.find(r => r.id === id)
       // Initialization belongs to resource creation, never to each turn or selection.
       if (existing && !existing.sourceError) {
         continue

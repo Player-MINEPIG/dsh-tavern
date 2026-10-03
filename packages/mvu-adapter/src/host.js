@@ -1,3 +1,4 @@
+import { symbols } from '@deepseek-ai/cordis'
 import { timelineHead } from '../../play/src/timeline-tree.js'
 import { MvuService } from './service.js'
 import { fail } from './value.js'
@@ -9,6 +10,7 @@ export const MVU_SOURCE = 'tavern.mvu/state'
 /** Install with public Cordis/DSH seams. No Helper runtime or manager dependency. */
 export function installMvu(ctx, { storageDir, resources = [], sources, memberships, refresh, isActive, getSelection, getSelectionToken, onError = () => {} } = {}) {
   const sessionEpochs = new Map()
+  let hostQueue = Promise.resolve()
   // DSH permission presets pin these exact configuration facts before publishing a new session.
   // No prefix/category match: messages, turns, inbox activity and unknown events close this window.
   const initialMetadata = new Set(['permission/preset', 'sandbox/mode', 'approval/policy'])
@@ -26,6 +28,20 @@ export function installMvu(ctx, { storageDir, resources = [], sources, membershi
       && !Array.isArray(event.data) && Object.keys(event.data).length === 0))
   const digest = value => createHash('sha256').update(JSON.stringify(value)).digest('hex')
   const inspect = async id => { const live = ctx.get('sessions')?.get?.(id); return live ? { header: live.header, events: live.snapshotEvents() } : ctx.get('sessionController')?.inspect?.(id) }
+  const captureSessionLease = async sessionId => {
+    let sessions = ctx.get('sessions'), live = sessions?.get?.(sessionId)
+    if (!live) {
+      await ctx.get('sessionController')?.resolveAgent?.(sessionId)
+      sessions = ctx.get('sessions'); live = sessions?.get?.(sessionId)
+    }
+    if (!live?.snapshotEvents) return null
+    // Public resume can publish fresh discovery/ingest work after the caller's entry barrier.
+    await hostQueue
+    const sessionsIdentity = sessions[symbols.original] ?? sessions
+    const epoch = sessionEpochs.get(sessionId) ?? 0, header = digest(live.header), events = digest(live.snapshotEvents())
+    return () => ctx.get(MVU_SERVICE) === service && (ctx.get('sessions')?.[symbols.original] ?? ctx.get('sessions')) === sessionsIdentity && ctx.get('sessions')?.get?.(sessionId) === live
+      && (sessionEpochs.get(sessionId) ?? 0) === epoch && digest(live.header) === header && digest(live.snapshotEvents()) === events
+  }
   const capturePromptScope = (scope, resource) => {
     if (!memberships || !getSelection || !getSelectionToken) return null
     const contextLease = memberships.captureContextLease?.()
@@ -40,7 +56,7 @@ export function installMvu(ctx, { storageDir, resources = [], sources, membershi
     return () => ctx.get(MVU_SERVICE) === service && getSelectionToken(scope.sessionId) === selection
       && getSelection(scope.sessionId)?.characterCardId === selected && contextLease() === true
   }
-  const service = new MvuService({ storageDir, resources, inspect, refresh, isActive, capturePromptScope, authorizeCardWrite: async request => {
+  const service = new MvuService({ storageDir, resources, inspect, refresh, isActive, capturePromptScope, captureSessionLease, waitForHost: () => hostQueue, authorizeCardWrite: async request => {
     const authority = ctx.get('tavernRenderingAuthority')
     const grant = await authority?.resolve(request)
     return grant && ctx.get('tavernRenderingAuthority') === authority ? { ...grant, checkCurrent: () => ctx.get('tavernRenderingAuthority') === authority && authority.isCurrent?.(request) === true } : null
@@ -128,16 +144,42 @@ export function installMvu(ctx, { storageDir, resources = [], sources, membershi
     return { writableHead, messageId: event.data.message.id, fingerprint: createHash('sha256').update(JSON.stringify(text)).digest('hex') }
   } })
   ctx.provide(MVU_SERVICE, service)
-  const schedule = async session => {
+  const schedule = async (session, deferredSeed = false) => {
     if (!session?.snapshotEvents) return
     await refresh?.(session.id)
     const parent = session.header?.parentSession && ctx.get('sessions')?.get?.(session.header.parentSession)
     if (parent?.snapshotEvents) service.ingest(parent).catch(onError)
-    await service.ingest(session)
+    try { await service.ingest(session) }
+    catch (error) { if (!deferredSeed || !['MVU_SEED_PENDING', 'MVU_SEED_REQUIRED'].includes(error.code)) throw error }
   }
-  ctx.on('session/event', (session, event) => { sessionEpochs.set(session.id, (sessionEpochs.get(session.id) ?? 0) + 1); if (event.type === 'turn/end') service.trackHostWork(schedule(session)).catch(onError) })
-  ctx.on('agent/created', ({ agent }) => service.trackHostWork(schedule(agent?.session)).catch(onError))
-  ctx.on('agent/pre-step', async (payload, next) => { await refresh?.(payload.agent?.id); await service.flush(); return next() })
+  // Publish event ordering before refresh can yield. A later turn's checkpoint
+  // must wait for the previous turn's state commit, including source discovery.
+  const publish = work => {
+    hostQueue = work.catch(() => {})
+    service.trackHostWork(work).catch(onError)
+    return work.catch(onError)
+  }
+  const enqueue = task => publish(hostQueue.then(task))
+  const freezeSession = session => {
+    if (!session?.snapshotEvents) return session
+    const events = JSON.parse(JSON.stringify(session.snapshotEvents())), header = JSON.parse(JSON.stringify(session.header))
+    return { id: session.id, header, inheritedEventCount: session.inheritedEventCount, snapshotEvents: () => events }
+  }
+  for (const event of ['session/created', 'session/disposed']) ctx.on(event, session => sessionEpochs.set(session.id, (sessionEpochs.get(session.id) ?? 0) + 1))
+  ctx.on('session/event', (session, event) => {
+    sessionEpochs.set(session.id, (sessionEpochs.get(session.id) ?? 0) + 1)
+    if (event.type === 'turn/start') publish(service.checkpoint(session, event))
+    if (event.type === 'turn/end') { const snapshot = freezeSession(session); enqueue(() => schedule(snapshot)) }
+  })
+  ctx.on('agent/created', ({ agent }) => { const snapshot = freezeSession(agent?.session); return enqueue(() => schedule(snapshot, true)) })
+  ctx.on('agent/pre-step', async (payload, next) => {
+    await hostQueue
+    await refresh?.(payload.agent?.id)
+    const session = payload.agent?.session, start = session?.snapshotEvents?.().findLast(e => e.type === 'turn/start')
+    if (start) await service.checkpoint(session, start)
+    await service.flush()
+    return next()
+  })
   ctx.on('llm/stream', async function* (options, next) {
     service.observeRequest(options, ctx.get('sessions')?.get?.(options.sessionId))
     yield* next()

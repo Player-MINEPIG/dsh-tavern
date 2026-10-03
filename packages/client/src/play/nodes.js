@@ -49,14 +49,14 @@ function completedPairAfter(messageState, eventId) {
   return assistant === undefined ? null : { user, assistant, sessionFormatVersion: messageState.sessionFormatVersion }
 }
 
-async function createRootSwipeSession(client, sourceSessionId) {
+async function createRootSwipeSession(client, sourceSessionId, beforeReplyEventId) {
   const binding = typeof client.getImportContextBinding === 'function'
     ? await client.getImportContextBinding(sourceSessionId)
     : null
   const importContextRef = typeof binding?.path === 'string' && binding.path !== ''
     ? { path: binding.path }
     : undefined
-  return client.postSession(sourceSessionId, importContextRef)
+  return client.postSession(sourceSessionId, importContextRef, { sessionId: sourceSessionId, beforeReplyEventId })
 }
 
 export function createPlayNodeController(client, {
@@ -157,8 +157,8 @@ export function createPlayNodeController(client, {
         const parent = sourceIndex > 0 ? entries[sourceIndex - 1] : null
         const forkEventId = parent?.variant.endEventId ?? -1
         const branch = parent === null
-          ? await createRootSwipeSession(client, adopted.sessionId)
-          : await client.postBranch(adopted.sessionId, forkEventId)
+          ? await createRootSwipeSession(client, adopted.sessionId, adopted.endEventId)
+          : await client.postBranch(adopted.sessionId, forkEventId, undefined, { sessionId: adopted.sessionId, beforeReplyEventId: adopted.endEventId })
         const newSessionId = branch?.sessionId
         if (typeof newSessionId !== 'string' || newSessionId === '') {
           throw new TypeError('Branch response has no sessionId')

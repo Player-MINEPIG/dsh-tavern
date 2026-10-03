@@ -52,7 +52,7 @@ test('real DSH AgentLoop final replies, fork seed, restart snapshots and native 
   const llm = await load('@deepseek-ai/dsh-llm')
   const ctx = new Context(), directory = mkdtempSync(join(tmpdir(), 'mvu-host-')), failures = [], requests = [], facts = []
   let store
-  const resources = [{ id: 'mvu:host', sessionIds: ['*'], initial: { stat_data: { hp: 100 } } }]
+  const resources = [{ sharing: 'shared', id: 'mvu:host', sessionIds: ['*'], initial: { stat_data: { hp: 100 } } }]
   try {
     for (const name of ['sessionController', 'workspaceController', 'directoryPickerController']) ctx.provide(name, {})
     await ctx.plugin(SystemPrompt, { personaPrefix: 'HOST' })
@@ -149,7 +149,7 @@ test('real Host empty greeting binding writes state used by the first model requ
     }
     ctx.llm.registerAdapter(['initial-test'], new Adapter())
     await ctx.plugin({ name: tavern.name, inject: tavern.inject, apply(context) { store = tavern.apply(context, { storageDir: directory, mvu: { resources: [
-      { id: 'mvu:opening', characterId: 'opening-card', sessionIds: ['*'], initial: { stat_data: { hp: 10 } } },
+      { sharing: 'shared', id: 'mvu:opening', characterId: 'opening-card', sessionIds: ['*'], initial: { stat_data: { hp: 10 } } },
     ] } }) } })
     store.characterStore.create({ id: 'opening-card', name: 'Synthetic opening' })
     const created = await ctx.sessionController.create({ cwd: directory })
@@ -236,7 +236,7 @@ test('official persisted empty session resumes through resolveAgent, while resum
     ctx.llm.registerAdapter(['resume-test'], new Adapter())
     let store
     await ctx.plugin({ name: tavern.name, inject: tavern.inject, apply(context) { store = tavern.apply(context, { storageDir: join(directory, 'tavern'), mvu: { resources: [
-      { id: 'mvu:resume', characterId: 'resume-card', sessionIds: ['*'], initial: { stat_data: { hp: 10 } } },
+      { sharing: 'shared', id: 'mvu:resume', characterId: 'resume-card', sessionIds: ['*'], initial: { stat_data: { hp: 10 } } },
     ] } }) } })
     await store.playWorkspaceStore.bindRoot(workspace)
     return { ctx, store, service: ctx.get('tavernMvu') }

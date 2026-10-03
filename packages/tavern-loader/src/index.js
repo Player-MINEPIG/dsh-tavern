@@ -356,6 +356,7 @@ export function apply(ctx, config = {}) {
     selections,
     characters: characterStore,
     importContexts: () => importContexts,
+    stateSeeds: () => ctx.get('tavernMvu'),
     onSelectionCopied: (sessionId, from) => { assemblyPresets.copySelection(from, sessionId); reconcileRpAfterSelection(sessionId) },
   })
   const playWorkspaceStore = new PlayWorkspaceStore(storageDir, { host: playHost })
