@@ -91,6 +91,19 @@ test('scope leases reject selection ABA, metadata changes, session replacement a
   await assert.rejects(f.catalog.searchScopes({ field: 'userId' }), { code: 'SCOPE_CATALOG_UNAVAILABLE' })
 })
 
+test('lease facts and result are deeply immutable; caller clones cannot change covered facts', async t => {
+  const f = fixture(t), lease = await f.catalog.resolveScopeContext({ sessionId: 's' })
+  assert(Object.isFrozen(lease)); assert(Object.isFrozen(lease.scope))
+  for (const key of ['sessionId', 'characterId', 'presetId', 'userId']) assert.throws(() => { lease.scope[key] = 'forged' }, TypeError)
+  assert.throws(() => { lease.scope = { sessionId: 'forged' } }, TypeError)
+  assert.throws(() => { lease.revision = 'forged' }, TypeError)
+  assert.throws(() => { lease.checkCurrent = () => true }, TypeError)
+  const copy = structuredClone(lease.scope); copy.characterId = 'forged'; copy.sessionId = 'another'
+  assert.equal(lease.scope.characterId, f.card.id); assert.equal(lease.scope.sessionId, 's'); assert.equal(lease.checkCurrent(), true)
+  f.selections.set('s', { characterCardId: null })
+  assert.equal(lease.checkCurrent(), false)
+})
+
 test('index survives restart, follows source mutations and fails closed on external edits', async t => {
   const f = fixture(t)
   assert.deepEqual(new UserStore(f.dir).scopeMetadata().items, [{ id: 'persona', name: 'RP Persona' }])

@@ -3,10 +3,14 @@ export const SCOPE_CATALOG_SERVICE = 'tavernScopeCatalog'
 const fields = ['characterId', 'presetId', 'userId']
 const fail = (code, message) => { throw Object.assign(new Error(message), { code }) }
 const hash = value => createHash('sha256').update(JSON.stringify(value)).digest('hex')
+const immutable = value => {
+  if (value && typeof value === 'object') { for (const child of Object.values(value)) immutable(child); Object.freeze(value) }
+  return value
+}
 function scope(value = {}) {
   if (!value || typeof value !== 'object' || Array.isArray(value) || Object.keys(value).some(key => key !== 'sessionId')) fail('SCOPE_CATALOG_INVALID', 'Only an optional sessionId is accepted')
   if (value.sessionId !== undefined && (typeof value.sessionId !== 'string' || !value.sessionId || value.sessionId.length > 200)) fail('SCOPE_CATALOG_INVALID', 'Invalid sessionId')
-  return value.sessionId === undefined ? {} : { sessionId: value.sessionId }
+  return immutable(value.sessionId === undefined ? {} : { sessionId: value.sessionId })
 }
 /** Host-only current facts. The caller never supplies character/persona/preset identity claims. */
 export function createScopeCatalog({ sources, getSelection, getSelectionRevision, getSession,
@@ -66,7 +70,9 @@ export function createScopeCatalog({ sources, getSelection, getSelectionRevision
       }
       signal?.throwIfAborted()
       if (!checkCurrent()) fail('SCOPE_CATALOG_CHANGED', 'Scope changed during resolution')
-      return { scope: resultScope, revision, checkCurrent }
+      // The facts covered by this lease must retain their original identity.
+      // Consumers can clone facts for UI work; such a clone is not this lease.
+      return immutable({ scope: resultScope, revision, checkCurrent })
     },
     dispose() { disposed = true },
   }
