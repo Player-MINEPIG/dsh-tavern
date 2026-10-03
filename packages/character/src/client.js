@@ -1,3 +1,4 @@
+import {offerRenderingDependencies} from '../../client/src/play/rendering-dependencies.js'
 import { tavernFetch as fetch } from '../../client/src/api-fetch.js'
 import {
   createElement,
@@ -210,6 +211,8 @@ export function CharacterPanel({ sessionId, sessionBlank, hasConversationHistory
       throw error
     }
     await refresh(data.character.id)
+    const importedResource=await api(`/characters/${encodeURIComponent(data.character.id)}`)
+    await offerRenderingDependencies(importedResource.character,'character',data.character.id,{message:sources=>translate('rendering.importDependencies',{sources})})
     announceTavernRefresh()
     if (fileRef.current !== null) fileRef.current.value = ''
   }, 'character.status.imported'), [refresh, run])

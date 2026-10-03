@@ -1,3 +1,4 @@
+import {offerRenderingDependencies} from '../../client/src/play/rendering-dependencies.js'
 import { tavernFetch as fetch } from '../../client/src/api-fetch.js'
 import {
   createElement,
@@ -274,6 +275,8 @@ export function PresetSidebar({ closePanel, openPanel, sessionId, sessionBlank, 
       throw error
     }
     await refresh(imported.preset.id)
+    const importedResource=await api(`/presets/${encodeURIComponent(imported.preset.id)}`)
+    await offerRenderingDependencies(importedResource.preset,'preset',imported.preset.id,{message:sources=>translate('rendering.importDependencies',{sources})})
     announceTavernRefresh()
     if (fileRef.current !== null) fileRef.current.value = ''
   }, 'preset.status.imported'), [refresh, run])

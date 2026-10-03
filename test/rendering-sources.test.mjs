@@ -30,12 +30,12 @@ test('dependency discovery retains blocked references without fetching and resol
 test('trust is scoped, digest-bound, revocable, bounded and cancels pending hashing',async()=>{
  const trust=createRenderingTrust();let changes=0;const stop=trust.subscribe(()=>changes++)
  const digest=await trust.stage('character:one','https://example.com/a.js','1')
- assert.throws(()=>trust.read('character:one','https://example.com/a.js'),/review/)
+ assert.throws(()=>trust.read('character:one','https://example.com/a.js'),/not downloaded/)
  assert.throws(()=>trust.approve('character:one','https://example.com/a.js','bad'),/changed/)
  trust.approve('character:one','https://example.com/a.js',digest)
  assert.equal(trust.read('character:one','https://example.com/a.js'),'1')
- assert.throws(()=>trust.read('character:two','https://example.com/a.js'),/review/)
- await trust.stage('character:one','https://example.com/a.js','2');assert.throws(()=>trust.read('character:one','https://example.com/a.js'),/review/)
+ assert.throws(()=>trust.read('character:two','https://example.com/a.js'),/not downloaded/)
+ await trust.stage('character:one','https://example.com/a.js','2');assert.throws(()=>trust.read('character:one','https://example.com/a.js'),/not downloaded/)
  trust.revoke('character:one','https://example.com/a.js');assert.equal(trust.inspect('character:one','https://example.com/a.js'),null)
  const pending=trust.stage('owner','inline','3');trust.clear();await assert.rejects(pending,/cancelled/)
  await assert.rejects(()=>trust.stage('owner','inline','x'.repeat(8*1024*1024+1)),/limit/)
@@ -80,7 +80,7 @@ test('module graph checks every source owner before sharing identical dependenci
  const approve=async(owner,key,content)=>trust.approve(owner,key,await trust.stage(owner,key,content))
  for(const helper of helpers)await approve(helper.owner,helper.key,helper.content)
  await approve(helpers[0].owner,url,'export const value="A"')
- assert.throws(()=>prepare('',helpers.map(x=>x.owner),helpers,trust),/review/)
+ assert.throws(()=>prepare('',helpers.map(x=>x.owner),helpers,trust),/not downloaded/)
  await approve(helpers[1].owner,url,'export const value="B"')
  assert.throws(()=>prepare('',helpers.map(x=>x.owner),helpers,trust),/conflict/)
  await approve(helpers[1].owner,url,'export const value="A"')
@@ -88,11 +88,11 @@ test('module graph checks every source owner before sharing identical dependenci
  const child='https://example.com/child.js'
  for(const helper of helpers)await approve(helper.owner,url,`export {value} from '${child}'`)
  await approve(helpers[0].owner,child,'export const value=1')
- assert.throws(()=>prepare('',helpers.map(x=>x.owner),helpers,trust),/review/)
+ assert.throws(()=>prepare('',helpers.map(x=>x.owner),helpers,trust),/not downloaded/)
  await approve(helpers[1].owner,child,'export const value=1')
  assert.equal(prepare('',helpers.map(x=>x.owner),helpers,trust).modules[child],'export const value=1')
  trust.revoke(helpers[1].owner,url)
- assert.throws(()=>prepare('',helpers.map(x=>x.owner),helpers,trust),/review/)
+ assert.throws(()=>prepare('',helpers.map(x=>x.owner),helpers,trust),/not downloaded/)
 })
 
  test('AST dependency discovery handles multiline declarations and ignores inert strings/comments',()=>{

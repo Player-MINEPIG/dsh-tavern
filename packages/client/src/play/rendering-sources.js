@@ -37,7 +37,7 @@ export function discoverDependencies(source, base) {
       if(['ImportDeclaration','ExportNamedDeclaration','ExportAllDeclaration'].includes(node.type)&&node.source)add('module',node.source.value)
       if(node.type==='ImportExpression') {
         if(node.source.type==='Literal'&&typeof node.source.value==='string')add('module',node.source.value)
-        else found.push({kind:'module',raw:'Computed dynamic import requires a fixed reviewed URL',url:null,blocked:true})
+        else found.push({kind:'module',raw:'Computed dynamic import requires a fixed URL',url:null,blocked:true})
       }
       if(node.type==='CallExpression'&&node.callee.type==='MemberExpression'&&!node.callee.computed&&node.callee.property.name==='load'&&node.arguments[0]?.type==='Literal'&&typeof node.arguments[0].value==='string')add('html',node.arguments[0].value)
       for(const value of Object.values(node)) {
@@ -116,14 +116,14 @@ export async function identifyRenderingSources(sources) {
     if (source.kind !== 'helper') return source
     const uniqueId = source.id && sources.filter(item=>item.owner===source.owner && item.id===source.id).length === 1
     const duplicates = sources.map((item,i)=>({item,i})).filter(({item,i})=>item.owner===source.owner && digests[i]===digests[index])
-    if(uniqueId)return {...source,preferenceKey:`helper:id:${source.id}`}
-    if(duplicates.length===1)return {...source,preferenceKey:`helper:sha256:${digests[index]}`}
+    if(uniqueId)return {...source,contentDigest:digests[index],preferenceKey:`helper:id:${source.id}`}
+    if(duplicates.length===1)return {...source,contentDigest:digests[index],preferenceKey:`helper:sha256:${digests[index]}`}
     // Names disambiguate otherwise identical content without using array position.
     if(names[index] && duplicates.filter(({i})=>names[i]===names[index]).length===1) {
-      return {...source,preferenceKey:`helper:sha256:${digests[index]}:name:${names[index]}`}
+      return {...source,contentDigest:digests[index],preferenceKey:`helper:sha256:${digests[index]}:name:${names[index]}`}
     }
     // Indistinguishable entries have no safe per-entry persistent identity.
-    return {...source,preferenceKey:null,enablementAmbiguous:true}
+    return {...source,contentDigest:digests[index],preferenceKey:null,enablementAmbiguous:true}
   })
 }
 

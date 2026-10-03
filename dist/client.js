@@ -8178,6 +8178,8 @@ var renderingSettingsStyles = `
 .dtv-rendering-settings .dtv-script-help summary{cursor:pointer}.dtv-rendering-settings .dtv-script-help p{margin-top:8px}
 .dtv-rendering-settings .dtv-script-control{display:flex;gap:8px;align-items:center;font-size:12px}
 .dtv-rendering-settings .dtv-script-operations{border-top:1px solid var(--dsw-alias-border-l1);padding-top:12px}
+.dtv-rendering-settings .dtv-dependency-items{max-height:360px;overflow:auto;min-width:0;display:flex;flex-direction:column;gap:6px}
+.dtv-rendering-settings .dtv-dependency-graph{border:1px solid var(--dsw-alias-border-l2);border-radius:8px;padding:10px}
 `;
 
 // packages/presentation/script-enablement.js
@@ -8205,8 +8207,8 @@ var MVU_BUILTINS = Object.freeze([
   ...["testingcf", "cdn"].map((host) => Object.freeze({ url: `https://${host}.jsdelivr.net/gh/MagicalAstrogy/MagVarUpdate/artifact/bundle.js`, sha256: bundleHash, kind: "mvu-facade", version: 1 })),
   Object.freeze({ url: "https://testingcf.jsdelivr.net/gh/StageDog/tavern_resource/dist/util/mvu_zod.js", sha256: "78c40f52d81022d9d769a923a49e673b8babb562656051a7d0410b6b19f45184", kind: "backend-schema", version: 1 })
 ]);
-function mvuBuiltin(url, digest) {
-  return MVU_BUILTINS.find((item) => item.url === url && item.sha256 === digest) ?? null;
+function mvuBuiltin(url, digest2) {
+  return MVU_BUILTINS.find((item) => item.url === url && item.sha256 === digest2) ?? null;
 }
 function confirmMvuSchemas(declarations, snapshot) {
   return declarations.map((item) => {
@@ -14062,7 +14064,7 @@ function discoverDependencies(source, base) {
       if (["ImportDeclaration", "ExportNamedDeclaration", "ExportAllDeclaration"].includes(node.type) && node.source) add("module", node.source.value);
       if (node.type === "ImportExpression") {
         if (node.source.type === "Literal" && typeof node.source.value === "string") add("module", node.source.value);
-        else found.push({ kind: "module", raw: "Computed dynamic import requires a fixed reviewed URL", url: null, blocked: true });
+        else found.push({ kind: "module", raw: "Computed dynamic import requires a fixed URL", url: null, blocked: true });
       }
       if (node.type === "CallExpression" && node.callee.type === "MemberExpression" && !node.callee.computed && node.callee.property.name === "load" && node.arguments[0]?.type === "Literal" && typeof node.arguments[0].value === "string") add("html", node.arguments[0].value);
       for (const value of Object.values(node)) {
@@ -14146,36 +14148,13 @@ async function identifyRenderingSources(sources) {
     if (source.kind !== "helper") return source;
     const uniqueId = source.id && sources.filter((item) => item.owner === source.owner && item.id === source.id).length === 1;
     const duplicates = sources.map((item, i3) => ({ item, i: i3 })).filter(({ item, i: i3 }) => item.owner === source.owner && digests[i3] === digests[index]);
-    if (uniqueId) return { ...source, preferenceKey: `helper:id:${source.id}` };
-    if (duplicates.length === 1) return { ...source, preferenceKey: `helper:sha256:${digests[index]}` };
+    if (uniqueId) return { ...source, contentDigest: digests[index], preferenceKey: `helper:id:${source.id}` };
+    if (duplicates.length === 1) return { ...source, contentDigest: digests[index], preferenceKey: `helper:sha256:${digests[index]}` };
     if (names[index] && duplicates.filter(({ i: i3 }) => names[i3] === names[index]).length === 1) {
-      return { ...source, preferenceKey: `helper:sha256:${digests[index]}:name:${names[index]}` };
+      return { ...source, contentDigest: digests[index], preferenceKey: `helper:sha256:${digests[index]}:name:${names[index]}` };
     }
-    return { ...source, preferenceKey: null, enablementAmbiguous: true };
+    return { ...source, contentDigest: digests[index], preferenceKey: null, enablementAmbiguous: true };
   });
-}
-function renderingEntries(sources, trust) {
-  const entries2 = [];
-  function add(entry, depth = 0) {
-    const existing = entries2.find((item) => item.owner === entry.owner && item.key === entry.key);
-    if (existing) {
-      existing.origins = [.../* @__PURE__ */ new Set([...existing.origins ?? [], ...entry.origins ?? []])];
-      if (existing.enabled || !entry.enabled) return;
-      existing.enabled = true;
-      entry = existing;
-    } else {
-      if (entries2.length >= 128) return;
-      entries2.push(entry);
-    }
-    const staged = trust.inspect(entry.owner, entry.key);
-    if (staged && depth < 8) for (const dependency of discoverDependencies(staged.content, entry.url)) add({ ...dependency, owner: entry.owner, key: dependency.url ?? dependency.raw, name: dependency.raw, kind: dependency.kind, enabled: entry.enabled && (entry.enablementAmbiguous || trust.isEnabled(entry.owner, entry.preferenceKey ?? entry.key, true)), origins: [...entry.origins ?? [], entry.key] }, depth + 1);
-  }
-  for (const original of sources) {
-    const source = { ...original, enabled: original.enablementAmbiguous ? original.enabled : trust.isEnabled(original.owner, original.preferenceKey ?? original.key, original.enabled) };
-    if (source.kind === "helper") add(source);
-    for (const dependency of source.dependencies) add({ ...dependency, owner: source.owner, key: dependency.url ?? dependency.raw, name: dependency.raw, kind: dependency.kind, enabled: source.enabled, origins: [source.path] });
-  }
-  return entries2;
 }
 async function readRenderingWorkspace(client, read) {
   const owner = await globalRenderingOwner(client);
@@ -14189,7 +14168,7 @@ async function downloadRenderingSource(source, { signal, fetch: request2 = globa
   if (!url || url !== source) throw Error("Blocked dependency URL");
   signal?.throwIfAborted();
   const response = await request2(url, { signal, mode: "cors", credentials: "omit", redirect: "error", referrerPolicy: "no-referrer", cache: "no-store" });
-  if (!response.ok || response.type === "opaque" || response.redirected) throw Error("Source download failed; import a reviewed local file instead");
+  if (!response.ok || response.type === "opaque" || response.redirected) throw Error("Source download failed (HTTP " + response.status + "); check network access and CORS");
   const length = Number(response.headers.get("content-length"));
   if (Number.isFinite(length) && length > MAX_RENDER_SOURCE) throw Error("Source exceeds 8 MiB");
   if (!response.body) throw Error("Source response has no readable body");
@@ -14221,6 +14200,420 @@ async function downloadRenderingSource(source, { signal, fetch: request2 = globa
   return new TextDecoder("utf-8", { fatal: true }).decode(bytes);
 }
 
+// packages/client/src/play/rendering-trust.js
+function createRenderingTrust() {
+  const installs = /* @__PURE__ */ new Map(), records = /* @__PURE__ */ new Map(), intentions = /* @__PURE__ */ new Map(), listeners = /* @__PURE__ */ new Set();
+  let revision = 0, generation = 0;
+  const emit = () => {
+    revision++;
+    for (const listener of listeners) listener();
+  };
+  const keyFor = (owner, source) => JSON.stringify([owner, source]);
+  return {
+    revision: () => revision,
+    subscribe(listener) {
+      listeners.add(listener);
+      return () => listeners.delete(listener);
+    },
+    isEnabled(owner, source, fallback = true) {
+      return intentions.get(keyFor(owner, source)) ?? fallback;
+    },
+    setEnablement(value) {
+      const next = value?.entries ?? [];
+      if (JSON.stringify([...intentions]) === JSON.stringify(next.map((item) => [keyFor(item.owner, item.key), item.enabled]))) return;
+      intentions.clear();
+      for (const item of next) intentions.set(keyFor(item.owner, item.key), item.enabled);
+      emit();
+    },
+    async stage(owner, source, content) {
+      if (typeof owner !== "string" || owner.length > 300 || typeof source !== "string" || source.length > 2048 || typeof content !== "string" || content.length > MAX_RENDER_SOURCE) throw Error("Rendering source exceeds limit");
+      if (source.startsWith("https:") && externalUrl(source) !== source) throw Error("Unsupported dependency URL");
+      const key2 = keyFor(owner, source), ticket = {}, epoch = generation;
+      if (!records.has(key2) && records.size >= 64) throw Error("Rendering source count exceeds limit");
+      const bytes = new TextEncoder().encode(content).byteLength;
+      if (bytes > MAX_RENDER_SOURCE || [...records.entries()].reduce((sum, [id, value]) => sum + (id === key2 ? 0 : new TextEncoder().encode(value.content).byteLength), bytes) > 64 * 1024 * 1024) throw Error("Rendering cache exceeds limit");
+      records.set(key2, { ticket, owner, source, content, approved: false, digest: null });
+      emit();
+      const digest2 = [...new Uint8Array(await crypto.subtle.digest("SHA-256", new TextEncoder().encode(content)))].map((byte) => byte.toString(16).padStart(2, "0")).join("");
+      if (generation !== epoch || records.get(key2)?.ticket !== ticket) throw Error("Rendering review was cancelled");
+      records.set(key2, { owner, source, content, digest: digest2, approved: false });
+      emit();
+      return digest2;
+    },
+    removeOwner(owner) {
+      installs.set(owner, {});
+      for (const [key2, value] of records) if (value.owner === owner) records.delete(key2);
+      emit();
+    },
+    async prepare(owner, items) {
+      const epoch = generation, ticket = {};
+      installs.set(owner, ticket);
+      const next = await Promise.all(items.map(async (item) => {
+        if (externalUrl(item.url) !== item.url || typeof item.content !== "string" || new TextEncoder().encode(item.content).byteLength > MAX_RENDER_SOURCE) throw Error("Invalid cached dependency");
+        const digest2 = [...new Uint8Array(await crypto.subtle.digest("SHA-256", new TextEncoder().encode(item.content)))].map((byte) => byte.toString(16).padStart(2, "0")).join("");
+        return { owner, source: item.url, content: item.content, digest: digest2, approved: true };
+      }));
+      return () => {
+        if (epoch !== generation || installs.get(owner) !== ticket) throw Error("Dependency installation cancelled");
+        const retained = [...records.values()].filter((item) => item.owner !== owner);
+        if (retained.length + next.length > 64 || [...retained, ...next].reduce((sum, item) => sum + new TextEncoder().encode(item.content).byteLength, 0) > 64 * 1024 * 1024) throw Error("Rendering cache exceeds limit");
+        for (const [key2, value] of records) if (value.owner === owner) records.delete(key2);
+        for (const item of next) records.set(keyFor(owner, item.source), item);
+        emit();
+      };
+    },
+    async install(owner, items) {
+      const commit = await this.prepare(owner, items);
+      commit();
+    },
+    inspect(owner, source) {
+      const value = records.get(keyFor(owner, source));
+      return value ? { ...value, ticket: void 0 } : null;
+    },
+    approve(owner, source, digest2) {
+      const value = records.get(keyFor(owner, source));
+      if (!value?.digest || digest2 !== value.digest) throw Error("Rendering content changed; review again");
+      records.set(keyFor(owner, source), { ...value, approved: true });
+      emit();
+    },
+    setBuiltin(owner, source, enabled) {
+      const key2 = keyFor(owner, source), record = records.get(key2);
+      if (!record?.approved || !mvuBuiltin(source, record.digest)) throw Error("Built-in adapter requires downloaded exact supported bytes");
+      records.set(key2, { ...record, builtin: enabled === true });
+      emit();
+    },
+    revoke(owner, source) {
+      records.delete(keyFor(owner, source));
+      emit();
+    },
+    read(owner, source) {
+      const value = records.get(keyFor(owner, source));
+      if (source.startsWith("https:") && intentions.get(keyFor(owner, source)) === false) throw Error("Rendering source is disabled");
+      if (!value?.approved) throw Error("Rendering dependency is not downloaded; open External code to download dependencies");
+      return value.content;
+    },
+    clear() {
+      generation++;
+      records.clear();
+      emit();
+    }
+  };
+}
+var renderingTrust = createRenderingTrust();
+
+// packages/client/src/play/rendering-dependencies.js
+var DEPENDENCY_LIMITS = { count: 24, depth: 8, bytes: 24 * 1024 * 1024 };
+var digest = async (value) => [...new Uint8Array(await crypto.subtle.digest("SHA-256", new TextEncoder().encode(value)))].map((v2) => v2.toString(16).padStart(2, "0")).join("");
+var envelope = (value) => value?.fingerprint ? { generation: 0, graph: value } : value ?? { generation: 0 };
+function dependencyStore(indexedDB = globalThis.indexedDB) {
+  let database;
+  async function operation(owner, change, read) {
+    if (!indexedDB) throw Error("Persistent dependency cache is unavailable");
+    database ??= new Promise((resolve, reject) => {
+      const request2 = indexedDB.open("dtv-rendering-dependencies", 1);
+      request2.onupgradeneeded = () => request2.result.createObjectStore("graphs");
+      request2.onsuccess = () => resolve(request2.result);
+      request2.onerror = () => reject(request2.error);
+    });
+    const db = await database;
+    return new Promise((resolve, reject) => {
+      const transaction = db.transaction("graphs", change ? "readwrite" : "readonly"), store = transaction.objectStore("graphs"), request2 = store.get(owner);
+      let result, callbackError;
+      request2.onsuccess = () => {
+        try {
+          const saved = envelope(request2.result);
+          if (!change) {
+            result = read ? read(saved) : saved;
+            return;
+          }
+          const next = change(saved);
+          result = next.result;
+          if (next.record) store.put(next.record, owner);
+        } catch (error) {
+          callbackError = error;
+          transaction.abort();
+        }
+      };
+      transaction.oncomplete = () => resolve(result);
+      transaction.onerror = () => reject(callbackError ?? transaction.error);
+      transaction.onabort = () => reject(callbackError ?? transaction.error ?? Error("Dependency cache transaction aborted"));
+    });
+  }
+  const advance2 = (owner, pending2) => operation(owner, (saved) => {
+    const generation = saved.generation + 1;
+    return { record: { generation, pending: pending2 }, result: generation };
+  });
+  return {
+    get: (owner) => operation(owner),
+    // Acceptance runs synchronously while this readonly transaction excludes
+    // a concurrent generation change. Hashing/preparation must happen first.
+    readCurrent: (owner, snapshot, accept) => operation(owner, null, (saved) => saved.generation === snapshot.generation && saved.pending === snapshot.pending ? accept(saved) !== false : false),
+    begin: (owner) => advance2(owner, true),
+    remove: (owner) => advance2(owner, false),
+    publish: (owner, generation, graph) => operation(owner, (saved) => saved.generation === generation && saved.pending ? { record: { generation, graph, pending: false }, result: true } : { result: false })
+  };
+}
+function createRenderingDependencies({ trust = renderingTrust, store = dependencyStore(), download = downloadRenderingSource, limits = DEPENDENCY_LIMITS, timeout = 15e3, channelFactory = () => typeof window !== "undefined" && typeof BroadcastChannel !== "undefined" ? new BroadcastChannel("dtv-rendering-dependencies") : null } = {}) {
+  const states = /* @__PURE__ */ new Map(), listeners = /* @__PURE__ */ new Set();
+  let channel;
+  const emit = () => {
+    for (const listener of listeners) listener();
+  };
+  const current4 = (state) => states.get(state.owner) === state;
+  const snapshot = (state) => state ? { ...state, sources: void 0, controller: void 0, ready: void 0, items: state.items.map((item) => ({ ...item })) } : null;
+  const broadcast = (owner) => channel?.postMessage({ owner });
+  async function restore(state, saved) {
+    if (!current4(state)) return;
+    state.restoring = true;
+    try {
+      for (let attempt = 0; attempt < 8 && current4(state); attempt++) {
+        const graph = saved.graph, usable = !saved.pending && graph?.fingerprint === state.fingerprint;
+        if (usable && (!Array.isArray(graph.items) || graph.items.length > limits.count || graph.items.reduce((sum, item) => sum + new TextEncoder().encode(item.content ?? "").byteLength, 0) > limits.bytes)) throw Error("Invalid dependency cache size");
+        const commit = usable ? await trust.prepare(state.owner, graph.items.filter((item) => item.status === "ready")) : null;
+        if (!current4(state)) return;
+        const accepted = await store.readCurrent(state.owner, saved, () => {
+          if (!current4(state)) return false;
+          commit?.();
+          state.cacheGeneration = saved.generation;
+          state.items = usable ? graph.items : [];
+          state.error = usable ? graph.error ?? null : null;
+          state.status = saved.pending ? "remote" : usable ? graph.status : graph ? "changed" : "waiting";
+          return true;
+        });
+        if (!current4(state)) return;
+        if (accepted) {
+          emit();
+          return;
+        }
+        saved = await store.get(state.owner);
+      }
+      if (current4(state)) throw Error("Dependency cache keeps changing; retry download");
+    } catch (error) {
+      if (current4(state)) trust.removeOwner(state.owner);
+      throw error;
+    } finally {
+      state.restoring = false;
+      if (current4(state) && state.refreshPending) {
+        state.refreshPending = false;
+        await refresh(state.owner);
+      }
+    }
+  }
+  async function refresh(owner) {
+    const previous = states.get(owner);
+    if (!previous) return;
+    if (previous.status === "loading" || previous.restoring || previous.starting) {
+      previous.refreshPending = true;
+      return;
+    }
+    try {
+      const saved = await store.get(owner);
+      if (!current4(previous) || saved.generation < (previous.cacheGeneration ?? 0)) return;
+      if (previous.controller && saved.generation === (previous.cacheGeneration ?? 0)) return;
+      previous.controller?.abort();
+      trust.removeOwner(owner);
+      const state = { ...previous, controller: null };
+      states.set(owner, state);
+      state.ready = restore(state, saved).catch((error) => {
+        if (current4(state)) {
+          state.status = "failed";
+          state.error = error.message;
+          emit();
+        }
+      });
+      await state.ready;
+    } catch (error) {
+      if (current4(previous)) {
+        previous.status = "failed";
+        previous.error = error.message;
+        emit();
+      }
+    }
+  }
+  const connect = () => {
+    if (channel) return;
+    channel = channelFactory();
+    if (channel) channel.onmessage = ({ data: data2 }) => {
+      if (data2 && typeof data2.owner === "string") void refresh(data2.owner);
+    };
+  };
+  async function sync(sources, owners = []) {
+    connect();
+    const groups = new Map(owners.filter(Boolean).map((owner) => [owner, []]));
+    for (const source of sources) {
+      if (!groups.has(source.owner)) groups.set(source.owner, []);
+      groups.get(source.owner).push(source);
+    }
+    await Promise.all([...groups].map(async ([owner, sources2]) => {
+      const signature = JSON.stringify(sources2.map(({ key: key2, content }) => [key2, content]).sort((a, b2) => a[0].localeCompare(b2[0])));
+      const previous = states.get(owner);
+      if (previous?.signature === signature) return previous.ready;
+      previous?.controller?.abort();
+      trust.removeOwner(owner);
+      const state = { owner, signature, sources: sources2, status: "loading", items: [], fingerprint: null, error: null, cacheGeneration: 0 };
+      states.set(owner, state);
+      emit();
+      state.ready = (async () => {
+        try {
+          state.fingerprint = await digest(signature);
+          if (!current4(state)) return;
+          await restore(state, await store.get(owner));
+        } catch (error) {
+          if (current4(state)) {
+            state.status = "failed";
+            state.error = error.message;
+            emit();
+          }
+        }
+      })();
+      return state.ready;
+    }));
+  }
+  async function acquire(owner) {
+    const original = states.get(owner);
+    if (!original) throw Error("Dependency resource is unavailable");
+    await original.ready;
+    if (!current4(original)) throw Error("Dependency resource changed");
+    original.controller?.abort();
+    const state = { ...original, items: [], status: "downloading", error: null, starting: true, controller: new AbortController() };
+    states.set(owner, state);
+    trust.removeOwner(owner);
+    emit();
+    try {
+      state.cacheGeneration = await store.begin(owner);
+      state.starting = false;
+      if (!current4(state)) return;
+      if (state.refreshPending) {
+        state.refreshPending = false;
+        void refresh(owner);
+      }
+      broadcast(owner);
+      const enqueue = (dependencies, depth) => {
+        for (const dependency of dependencies) {
+          const key2 = dependency.url ?? dependency.raw;
+          if (state.items.some((item) => item.key === key2)) continue;
+          if (state.items.length >= limits.count) {
+            state.error = "Dependency graph exceeds " + limits.count + " files";
+            break;
+          }
+          const error = dependency.blocked ? "Blocked or unresolved dependency" : depth > limits.depth ? "Dependency depth exceeds limit" : null;
+          state.items.push({ key: key2, url: dependency.url, depth, status: error ? "failed" : "queued", error });
+        }
+      };
+      for (const source of state.sources) enqueue(discoverDependencies(source.content), 0);
+      let bytes = 0;
+      for (let i3 = 0; i3 < state.items.length; i3++) {
+        if (!current4(state) || state.controller.signal.aborted) return;
+        const item = state.items[i3];
+        if (item.status === "failed") continue;
+        item.status = "downloading";
+        emit();
+        const controller2 = new AbortController(), abort = () => controller2.abort();
+        state.controller.signal.addEventListener("abort", abort, { once: true });
+        const timer = setTimeout(abort, timeout);
+        try {
+          const content = await download(item.url, { signal: controller2.signal });
+          controller2.signal.throwIfAborted();
+          if (!current4(state)) return;
+          bytes += new TextEncoder().encode(content).byteLength;
+          if (bytes > limits.bytes) throw Error("Dependency graph exceeds byte limit");
+          item.content = content;
+          item.status = "ready";
+          enqueue(discoverDependencies(content, item.url), item.depth + 1);
+        } catch (error) {
+          item.status = "failed";
+          item.error = controller2.signal.aborted ? "Download cancelled or timed out" : error.message;
+        } finally {
+          clearTimeout(timer);
+          state.controller.signal.removeEventListener("abort", abort);
+        }
+        emit();
+        if (bytes > limits.bytes) {
+          for (const pending2 of state.items.filter((item2) => item2.status === "queued")) {
+            pending2.status = "failed";
+            pending2.error = "Dependency graph exceeds byte limit";
+          }
+          ;
+          break;
+        }
+      }
+      if (!current4(state) || state.controller.signal.aborted) return;
+      state.status = state.error || state.items.some((item) => item.status === "failed") ? "failed" : "ready";
+      const published = await store.publish(owner, state.cacheGeneration, { fingerprint: state.fingerprint, status: state.status, items: state.items, error: state.error });
+      if (!current4(state)) return;
+      state.controller = null;
+      if (!published) {
+        await refresh(owner);
+        return;
+      }
+      await restore(state, await store.get(owner));
+      if (current4(state)) {
+        emit();
+        broadcast(owner);
+      }
+    } catch (error) {
+      if (current4(state)) {
+        state.starting = false;
+        state.controller = null;
+        state.status = "failed";
+        state.error = error.message;
+        emit();
+        broadcast(owner);
+      }
+    }
+  }
+  async function uninstall(owner) {
+    const previous = states.get(owner);
+    previous?.controller?.abort();
+    const state = previous ? { ...previous, status: "waiting", items: [], error: null, starting: true, controller: null } : null;
+    if (state) states.set(owner, state);
+    trust.removeOwner(owner);
+    emit();
+    try {
+      const generation = await store.remove(owner);
+      if (state && current4(state)) {
+        state.cacheGeneration = generation;
+        state.starting = false;
+        if (state.refreshPending) {
+          state.refreshPending = false;
+          await refresh(owner);
+        }
+      }
+      broadcast(owner);
+    } catch (error) {
+      if (state && current4(state)) {
+        state.starting = false;
+        state.status = "failed";
+        state.error = error.message;
+        emit();
+      }
+      ;
+      throw error;
+    }
+  }
+  return { sync, acquire, uninstall, inspect: (owner) => snapshot(states.get(owner)), subscribe(listener) {
+    listeners.add(listener);
+    return () => listeners.delete(listener);
+  }, dispose() {
+    for (const state of states.values()) state.controller?.abort();
+    states.clear();
+    channel?.close();
+    channel = null;
+    trust.clear();
+    emit();
+  } };
+}
+var renderingDependencies = createRenderingDependencies();
+async function offerRenderingDependencies(resource, kind, resourceId, { confirm = (message2) => globalThis.confirm(message2), message, dependencies = renderingDependencies } = {}) {
+  const sources = renderingInventory(resource, { kind, resourceId });
+  if (!sources.some((source) => source.dependencies.length)) return;
+  await dependencies.sync(sources);
+  const roots = [...new Set(sources.flatMap((source) => source.dependencies.map((item) => item.url ?? item.raw)))];
+  const sourceList = roots.map((url) => "\u2022 " + url).join("\n");
+  if (await confirm(typeof message === "function" ? message(sourceList) : message.replace("{sources}", sourceList))) void dependencies.acquire(`${kind}:${resourceId}`).catch(() => {
+  });
+}
+
 // packages/client/src/rendering-settings.js
 var import_react2 = require("react");
 
@@ -14237,41 +14630,40 @@ function isSupportedUiLocale(value) {
 
 // packages/client/src/i18n/catalogs/zh-CN.js
 var zh_CN_default = Object.freeze({
+  "rendering.graph.remote": "\u4E0B\u8F7D\u5C1A\u672A\u5B8C\u6210\uFF0C\u53EF\u91CD\u65B0\u4E0B\u8F7D\u63A5\u7BA1",
+  "rendering.graph.failed": "\u83B7\u53D6\u5931\u8D25",
+  "rendering.graph.ready": "\u5DF2\u4E0B\u8F7D",
+  "rendering.graph.queued": "\u7B49\u5F85\u4E0B\u8F7D",
+  "rendering.graph.downloading": "\u6B63\u5728\u83B7\u53D6\u4F9D\u8D56",
+  "rendering.graph.changed": "\u8D44\u6E90\u6765\u6E90\u5DF2\u53D8\u5316\uFF0C\u9700\u8981\u66F4\u65B0\u4F9D\u8D56",
+  "rendering.graph.waiting": "\u5C1A\u672A\u4E0B\u8F7D",
+  "rendering.graph.loading": "\u6B63\u5728\u8BFB\u53D6\u7F13\u5B58",
+  "rendering.uninstall": "\u5378\u8F7D\u4F9D\u8D56",
+  "rendering.redownload": "\u91CD\u65B0\u4E0B\u8F7D",
+  "rendering.acquireUpdate": "\u4E0B\u8F7D\u66F4\u65B0\u540E\u7684\u4F9D\u8D56",
+  "rendering.acquire": "\u4E0B\u8F7D\u8D44\u6E90\u4F9D\u8D56",
+  "rendering.importDependencies": "\u5BFC\u5165\u7684\u8D44\u6E90\u58F0\u660E\u4E86\u5916\u90E8\u4EE3\u7801\u4F9D\u8D56\u3002\u662F\u5426\u4E0B\u8F7D\u8FD9\u4E9B\u6765\u6E90\u53CA\u5176\u9012\u5F52\u4F9D\u8D56\uFF1F\u4E0B\u8F7D\u4F1A\u4FDD\u5B58\u5728\u6B64\u6D4F\u89C8\u5668\u4E2D\uFF0C\u542F\u7528\u5361\u7247\u811A\u672C\u540E\u5728\u9694\u79BB\u73AF\u5883\u8FD0\u884C\uFF1B\u4E0D\u4F1A\u6388\u4E88 Host \u6216\u53D8\u91CF\u5199\u6743\u9650\u3002\u53EF\u7A0D\u540E\u5728\u201C\u5916\u90E8\u4EE3\u7801\u201D\u7BA1\u7406\u3002\n\n\u672C\u6B21\u76F4\u63A5\u58F0\u660E\u7684\u6765\u6E90\uFF1A\n{sources}",
+  "rendering.enabled": "\u5DF2\u542F\u7528",
   "rendering.cardScripts": "\u5F53\u524D\u5361\u811A\u672C",
   "rendering.dependencies": "\u5916\u90E8\u4F9D\u8D56",
   "rendering.operations": "\u76F8\u5173\u64CD\u4F5C",
   "rendering.none": "\u6682\u65E0\u6761\u76EE",
   "rendering.master": "\u5141\u8BB8\u8FD0\u884C\u5361\u7247\u811A\u672C",
   "rendering.masterOff": "\u5DF2\u6682\u505C\u3002\u4FDD\u7559\u9759\u6001\u5185\u5BB9\u548C\u6761\u76EE\u542F\u7528\u9009\u62E9\u3002",
-  "rendering.masterOn": "\u8FD0\u884C\u5DF2\u542F\u7528\u6761\u76EE\uFF1BHelper \u4E0E\u5916\u90E8\u4F9D\u8D56\u4ECD\u9700\u9010\u9879\u5BA1\u6838\uFF0C\u53D8\u91CF\u5199\u5165\u53E6\u884C\u6388\u6743\u3002",
+  "rendering.masterOn": "\u8FD0\u884C\u5DF2\u542F\u7528\u7684\u811A\u672C\uFF1B\u5916\u90E8\u4F9D\u8D56\u4E0B\u8F7D\u540E\u53EF\u7528\uFF0C\u53D8\u91CF\u5199\u5165\u53E6\u884C\u6388\u6743\u3002",
   "rendering.enableEntry": "\u542F\u7528 {name}",
   "rendering.disabled": "\u5DF2\u7981\u7528",
-  "rendering.needsReview": "\u5F85\u5BA1\u6838",
   "rendering.resetEntry": "\u6062\u590D\u6765\u6E90\u9ED8\u8BA4",
-  "rendering.importToRead": "\u5BFC\u5165\u6216\u4E0B\u8F7D\u540E\u53EF\u67E5\u770B\u5B8C\u6574\u6E90\u7801\uFF0C\u4E0D\u4F1A\u81EA\u52A8\u8FD0\u884C\u3002",
-  "rendering.changed": "\u6E90\u7801\u5DF2\u53D8\u5316\uFF0C\u8BF7\u91CD\u65B0\u51C6\u5907\u5BA1\u6838\u3002",
-  "rendering.sourceDetails": "\u6E90\u7801\u8BE6\u60C5",
-  "rendering.safetyDetails": "\u542F\u7528\u3001\u5BA1\u6838\u4E0E\u6743\u9650\u8BF4\u660E",
-  "rendering.enablementHelp": "\u52FE\u9009\u53EA\u4FDD\u5B58\u672C\u5730\u542F\u7528\u610F\u56FE\uFF0C\u4E0D\u4FEE\u6539\u539F\u5361\u3001\u4E0D\u6388\u4E88\u4EE3\u7801\u4FE1\u4EFB\u6216\u5199\u6743\u9650\u3002\u4F18\u5148\u6309\u539F\u6761\u76EE ID \u8BC6\u522B\uFF1B\u65E0 ID \u65F6\u6309\u6E90\u7801\u6458\u8981\u53CA\u552F\u4E00\u540D\u79F0\u8BC6\u522B\uFF0C\u4FEE\u6539\u4EE3\u7801\u6216\u7528\u4E8E\u8BC6\u522B\u7684\u540D\u79F0\u540E\u6062\u590D\u6765\u6E90\u9ED8\u8BA4\uFF1B\u65E0\u6CD5\u533A\u5206\u7684\u91CD\u590D\u6761\u76EE\u4FDD\u6301\u6765\u6E90\u9ED8\u8BA4\u3002\u590D\u5236\u6210\u65B0\u8D44\u6E90\u4E0D\u7EE7\u627F\u9009\u62E9\uFF0C\u5BFC\u51FA\u539F\u5361\u4E0D\u643A\u5E26\u672C\u5730\u9009\u62E9\u3002",
+  "rendering.safetyDetails": "\u811A\u672C\u4E0E\u4F9D\u8D56\u8BF4\u660E",
+  "rendering.enablementHelp": "\u6309\u539F\u5361\u9ED8\u8BA4\u542F\u7528\uFF0C\u52FE\u9009\u4FDD\u5B58\u672C\u5730\u9009\u62E9\u3002\u542F\u7528\u7684\u5185\u5D4C\u811A\u672C\u5728\u603B\u5F00\u5173\u5F00\u542F\u65F6\u8FD0\u884C\uFF1B\u52FE\u9009\u4E0D\u6388\u4E88\u53D8\u91CF\u5199\u6743\u9650\u3002\u590D\u5236\u4E3A\u65B0\u8D44\u6E90\u4E0D\u7EE7\u627F\u9009\u62E9\u3002\u65E0\u6CD5\u533A\u5206\u7684\u91CD\u590D\u6761\u76EE\u4FDD\u6301\u6765\u6E90\u9ED8\u8BA4\u3002",
   "rendering.ambiguousIdentity": "\u8FD9\u4E9B\u91CD\u590D\u6761\u76EE\u6CA1\u6709\u552F\u4E00 ID \u6216\u540D\u79F0\uFF0C\u6682\u6309\u6765\u6E90\u9ED8\u8BA4\u72B6\u6001\u4F7F\u7528\uFF1B\u8BF7\u4E3A\u539F\u5361\u6761\u76EE\u6DFB\u52A0\u4E0D\u540C ID \u540E\u518D\u4FDD\u5B58\u5404\u81EA\u9009\u62E9\u3002",
   "rendering.cancel": "\u53D6\u6D88\u4E0B\u8F7D",
-  "rendering.download": "\u4E0B\u8F7D\u6E90\u7801\u4EE5\u4F9B\u5BA1\u6838\uFF08\u4E0D\u6267\u884C\uFF09",
   "rendering.bindingChanged": "\u7ED1\u5B9A\u8D44\u6E90\u5DF2\u5207\u6362\uFF1B\u65E7\u8349\u7A3F\u4FDD\u7559\u4F46\u4E0D\u53EF\u4FDD\u5B58\u3002\u5BFC\u51FA\u9700\u8981\u4FDD\u7559\u7684\u8349\u7A3F\uFF0C\u7136\u540E\u91CD\u65B0\u52A0\u8F7D\u5F53\u524D\u8D44\u6E90\u3002",
   "rendering.title": "\u5916\u90E8\u4EE3\u7801\u4E0E Helper",
-  "rendering.boundary": "\u4E0D\u4F1A\u81EA\u52A8\u4E0B\u8F7D\u4F9D\u8D56\u3002\u53EF\u9010 URL \u4E0B\u8F7D\u6E90\u7801\uFF08\u65E0\u51ED\u636E\u3001\u7981\u6B62\u91CD\u5B9A\u5411\uFF0C\u9700 CORS\uFF09\uFF0C\u6216\u5BFC\u5165\u672C\u5730\u6587\u4EF6\uFF1B\u6838\u5BF9\u6765\u6E90\u548C\u5B8C\u6574\u5185\u5BB9\u540E\u5355\u72EC\u6388\u6743\u3002\u811A\u672C\u4F7F\u7528\u53D7\u9650 DOM \u4E0E\u53EA\u8BFB Helper \u5B50\u96C6\uFF0C\u5B8C\u6574\u6D4F\u89C8\u5668\u6846\u67B6\u3001\u7F51\u7EDC\u548C Host \u5DE5\u5177\u4E0D\u517C\u5BB9\u3002",
-  "rendering.lifetime": "\u6388\u6743\u4EC5\u4FDD\u7559\u5728\u672C\u6B21\u9875\u9762\u5185\uFF0C\u5237\u65B0\u6216\u63D2\u4EF6\u5378\u8F7D\u540E\u5931\u6548\u3002\u5BFC\u5165\u3001\u66FF\u6362\u3001\u64A4\u9500\u4F1A\u91CD\u5EFA\u5361\u7247\u8FD0\u884C\u65F6\u3002\u6765\u6E90\u7981\u7528\u3001\u4F9D\u8D56\u672A\u6388\u6743\u6216\u4E0D\u517C\u5BB9\u65F6\u4FDD\u7559\u9759\u6001\u5185\u5BB9\u5E76\u663E\u793A\u539F\u56E0\u3002",
-  "rendering.revokeAll": "\u64A4\u9500\u5168\u90E8\u6388\u6743\u4E0E\u7F13\u5B58",
-  "rendering.empty": "\u5F53\u524D\u7ED1\u5B9A\u6765\u6E90\u672A\u53D1\u73B0 Helper \u6216\u5916\u90E8\u4EE3\u7801\u4F9D\u8D56\u3002",
-  "rendering.blocked": "\u7981\u6B62\u7684\u5730\u5740",
-  "rendering.approved": "\u5185\u5BB9\u5DF2\u6388\u6743",
-  "rendering.staged": "\u7B49\u5F85\u5185\u5BB9\u5BA1\u6838",
-  "rendering.waiting": "\u5F85\u5BFC\u5165",
+  "rendering.boundary": "\u4E00\u6B21\u4E0B\u8F7D\u540C\u610F\u8986\u76D6\u672C\u8D44\u6E90\u58F0\u660E\u7684\u9012\u5F52\u4F9D\u8D56\u56FE\uFF0C\u6700\u591A24\u4E2A\u6587\u4EF6\u30018\u5C42\u300124 MiB\u3002\u4EC5\u4E0B\u8F7DHTTPS\u9759\u6001\u4EE3\u7801\uFF08\u65E0\u51ED\u636E\u3001\u7981\u6B62\u91CD\u5B9A\u5411\uFF0C\u9700CORS\uFF09\uFF0C\u4E0D\u4F1A\u7ED9\u5361\u7247\u5F00\u653E\u7F51\u7EDC\u6216Host\u5DE5\u5177\u3002\u6765\u6E90\u66F4\u65B0\u540E\u9700\u4E0B\u8F7D\u65B0\u7248\u3002\u5C55\u5F00\u6761\u76EE\u53EF\u6D4F\u89C8\u5B8C\u6574\u4EE3\u7801\u3002",
+  "rendering.lifetime": "\u4F9D\u8D56\u4FDD\u5B58\u5728\u6B64\u6D4F\u89C8\u5668\u4E0EHost\u5730\u5740\u7684\u4E13\u7528\u7F13\u5B58\u4E2D\uFF0C\u5237\u65B0\u53EF\u6062\u590D\u3002\u91CD\u65B0\u4E0B\u8F7D\u3001\u8D44\u6E90\u53D8\u5316\u6216\u5378\u8F7D\u4F1A\u91CD\u5EFA\u8FD0\u884C\u65F6\uFF1B\u5378\u8F7D\u540C\u65F6\u53D6\u6D88\u4E0B\u8F7D\u5E76\u5220\u9664\u7F13\u5B58\u3002\u7F3A\u5931\u3001\u5931\u8D25\u6216\u4E0D\u517C\u5BB9\u7684\u4F9D\u8D56\u4FDD\u7559\u9759\u6001\u754C\u9762\u5E76\u663E\u793A\u539F\u56E0\u3002\u53D8\u91CF\u5199\u5165\u6743\u9650\u4ECD\u72EC\u7ACB\u3002",
   "rendering.sourceDisabled": "\u6765\u6E90\u5DF2\u7981\u7528\uFF1B\u4E0D\u4F1A\u8FD0\u884C\u3002",
-  "rendering.reviewInline": "\u51C6\u5907\u5BA1\u6838\u5185\u5D4C\u6E90\u7801",
-  "rendering.import": "\u5BFC\u5165\u6B64 URL \u7684\u6E90\u7801\u6587\u4EF6",
   "rendering.source": "\u5B8C\u6574\u6E90\u4EE3\u7801",
-  "rendering.approve": "\u5DF2\u6838\u5BF9\u5185\u5BB9\uFF0C\u5141\u8BB8\u53D7\u9650\u6267\u884C",
-  "rendering.revoke": "\u64A4\u9500\u5E76\u6E05\u9664",
   "rendering.unsaved": "\u5B58\u5728\u672A\u4FDD\u5B58\u4FEE\u6539\u6216\u4FDD\u5B58\u4ECD\u5728\u8FDB\u884C\u3002\u786E\u5B9A\u79BB\u5F00\u5E76\u653E\u5F03\u8349\u7A3F\uFF1F",
   "rendering.tab.appearance": "\u5BF9\u8BDD\u5916\u89C2",
   "rendering.tab.regex": "\u6B63\u5219\u66FF\u6362",
@@ -14282,8 +14674,8 @@ var zh_CN_default = Object.freeze({
   "appearance.newStyle": "\u65B0\u6837\u5F0F",
   "appearance.fontSize": "\u6B63\u6587\u5B57\u53F7",
   "appearance.fontSizeSlider": "\u6B63\u6587\u5B57\u53F7\u6ED1\u5757",
-  "appearance.unsupportedExternal": "\u5916\u90E8\u6E90\u7801\u672A\u542F\u7528\u3002\u8BF7\u5728\u201C\u5916\u90E8\u4EE3\u7801\u201D\u4E2D\u5BFC\u5165\u5E76\u5BA1\u6838\uFF0C\u518D\u5F00\u542F\u811A\u672C\u3002",
-  "appearance.unsupportedModule": "\u6A21\u5757\u672A\u542F\u7528\uFF1B\u5176\u4F9D\u8D56\u9700\u9010\u9879\u5BA1\u6838\u5185\u5BB9\u3002",
+  "appearance.unsupportedExternal": "\u5916\u90E8\u4F9D\u8D56\u5C1A\u672A\u4E0B\u8F7D\uFF0C\u8BF7\u5728\u201C\u5916\u90E8\u4EE3\u7801\u201D\u4E2D\u4E0B\u8F7D\u8D44\u6E90\u4F9D\u8D56\u3002",
+  "appearance.unsupportedModule": "\u6A21\u5757\u4F9D\u8D56\u5C1A\u4E0D\u53EF\u7528\uFF0C\u8BF7\u5728\u201C\u5916\u90E8\u4EE3\u7801\u201D\u67E5\u770B\u83B7\u53D6\u72B6\u6001\u3002",
   "appearance.unsupportedType": "\u6B64\u5361\u7247\u5305\u542B\u4E0D\u652F\u6301\u7684 script \u7C7B\u578B\u3002",
   "appearance.unsupportedEvents": "\u6B64\u5361\u7247\u4F7F\u7528\u5185\u8054\u4E8B\u4EF6\u5C5E\u6027\uFF08\u5982 onclick\uFF09\uFF0C\u9700\u6539\u4E3A addEventListener\u3002",
   "appearance.cardStaticFallback": "\u5DF2\u4FDD\u7559\u9759\u6001\u754C\u9762\uFF0C\u672A\u8FD0\u884C\u6B64\u5361\u7247\u7684\u811A\u672C\uFF1B\u5F00\u542F\u5F00\u5173\u4E0D\u4F1A\u89E3\u9664\u8FD9\u4E9B\u9650\u5236\u3002",
@@ -15182,41 +15574,40 @@ var zh_CN_default = Object.freeze({
 
 // packages/client/src/i18n/catalogs/en.js
 var en_default = Object.freeze({
+  "rendering.graph.remote": "Unfinished download; download again to take over",
+  "rendering.graph.failed": "Download failed",
+  "rendering.graph.ready": "Downloaded",
+  "rendering.graph.queued": "Queued",
+  "rendering.graph.downloading": "Downloading dependencies",
+  "rendering.graph.changed": "Resource sources changed; update dependencies",
+  "rendering.graph.waiting": "Not downloaded",
+  "rendering.graph.loading": "Reading cache",
+  "rendering.uninstall": "Uninstall dependencies",
+  "rendering.redownload": "Download again",
+  "rendering.acquireUpdate": "Download updated dependencies",
+  "rendering.acquire": "Download resource dependencies",
+  "rendering.importDependencies": "This resource declares external code. Download these sources and their transitive dependencies? They are cached in this browser and run in isolation when card scripts are enabled. This does not grant Host access or variable writes. You can manage them later under External code.\n\nDirectly declared sources:\n{sources}",
+  "rendering.enabled": "Enabled",
   "rendering.cardScripts": "Card scripts",
   "rendering.dependencies": "External dependencies",
   "rendering.operations": "Related actions",
   "rendering.none": "No entries",
   "rendering.master": "Allow card scripts to run",
   "rendering.masterOff": "Paused. Static content and entry choices are preserved.",
-  "rendering.masterOn": "Enabled entries may run; Helper and external dependencies still need review, and variable writes need separate permission.",
+  "rendering.masterOn": "Run enabled scripts. External dependencies become available after download; variable writes need separate permission.",
   "rendering.enableEntry": "Enable {name}",
   "rendering.disabled": "Disabled",
-  "rendering.needsReview": "Review required",
   "rendering.resetEntry": "Restore source default",
-  "rendering.importToRead": "Import or download to read the complete source. This does not run it.",
-  "rendering.changed": "Source changed. Stage the current source for review again.",
-  "rendering.sourceDetails": "Source details",
-  "rendering.safetyDetails": "Enablement, review and permissions",
-  "rendering.enablementHelp": "Checkboxes save local enablement choices, without editing the source card or granting code trust or write permissions. Original entry IDs are preferred; otherwise source digests and unique names identify entries. Unidentified code or name changes restore source defaults. Indistinguishable duplicates retain source defaults until unique IDs are added. Copies with new resource IDs and card exports do not carry these choices.",
+  "rendering.safetyDetails": "Scripts and dependencies",
+  "rendering.enablementHelp": "Entries use the card defaults. Checkboxes save local choices; enabled inline scripts run when the master switch is on. This does not grant variable writes. New resource copies do not inherit choices. Indistinguishable duplicates retain their source defaults.",
   "rendering.ambiguousIdentity": "These duplicate entries have no unique ID or name. Their source defaults are preserved; add distinct IDs to the source card to save separate choices.",
   "rendering.cancel": "Cancel download",
-  "rendering.download": "Download source for review (no execution)",
   "rendering.bindingChanged": "The bound resource changed. The old draft is retained and cannot be saved. Export any draft you need, then reload the current resource.",
   "rendering.title": "External code and Helper",
-  "rendering.boundary": "Dependencies are never downloaded automatically. Download a specific URL without credentials or redirects (CORS required), or import a local file; review its origin and complete contents before separate approval. Scripts use a restricted DOM and read-only Helper subset, without full browser frameworks, networking or Host tools.",
-  "rendering.lifetime": "Approvals last only for this page and expire on reload or plugin disposal. Import, replacement and revocation rebuild card runtimes. Disabled sources, unapproved dependencies and unsupported APIs retain static content and show the reason.",
-  "rendering.revokeAll": "Revoke all approvals and cached sources",
-  "rendering.empty": "No Helper or external code dependencies found in the current bindings.",
-  "rendering.blocked": "Blocked address",
-  "rendering.approved": "Content approved",
-  "rendering.staged": "Awaiting content review",
-  "rendering.waiting": "Source not imported",
+  "rendering.boundary": "One download consent covers the resource\u2019s declared transitive graph: at most 24 files, 8 levels and 24 MiB. Only static HTTPS code is downloaded, without credentials or redirects (CORS required). Cards gain no networking or Host tools. Changed sources require an update. Expand entries to browse complete code.",
+  "rendering.lifetime": "Dependencies are cached for this browser and Host origin and restored on refresh. Downloading again, source changes and uninstalling rebuild runtimes. Uninstall cancels downloads and deletes the cache. Missing, failed or incompatible dependencies retain static content with an explanation. Variable writes remain separately authorized.",
   "rendering.sourceDisabled": "Source disabled; it will not run.",
-  "rendering.reviewInline": "Stage inline source for review",
-  "rendering.import": "Import source file for this URL",
   "rendering.source": "Complete source code",
-  "rendering.approve": "Content reviewed: allow restricted execution",
-  "rendering.revoke": "Revoke and clear",
   "rendering.unsaved": "There are unsaved changes or a save is in progress. Leave and discard drafts?",
   "rendering.tab.appearance": "Conversation appearance",
   "rendering.tab.regex": "Regex replacements",
@@ -15227,8 +15618,8 @@ var en_default = Object.freeze({
   "appearance.newStyle": "New style",
   "appearance.fontSize": "Body font size",
   "appearance.fontSizeSlider": "Body font size slider",
-  "appearance.unsupportedExternal": "External source is inactive. Import and review it in External code before enabling scripts.",
-  "appearance.unsupportedModule": "Module is inactive. Its dependencies require separate content review.",
+  "appearance.unsupportedExternal": "External dependencies are missing. Download resource dependencies under External code.",
+  "appearance.unsupportedModule": "Module dependencies are unavailable. Check their download status under External code.",
   "appearance.unsupportedType": "This card contains an unsupported script type.",
   "appearance.unsupportedEvents": "This card uses inline event attributes (such as onclick); use addEventListener instead.",
   "appearance.cardStaticFallback": "The static view is retained and this card\u2019s scripts are not running. Enabling the switch does not remove these limits.",
@@ -17098,81 +17489,6 @@ function RegexPanel({ client, activeSnapshot, close: close2, embedded = false, o
   );
 }
 
-// packages/client/src/play/rendering-trust.js
-function createRenderingTrust() {
-  const records = /* @__PURE__ */ new Map(), intentions = /* @__PURE__ */ new Map(), listeners = /* @__PURE__ */ new Set();
-  let revision = 0, generation = 0;
-  const emit = () => {
-    revision++;
-    for (const listener of listeners) listener();
-  };
-  const keyFor = (owner, source) => JSON.stringify([owner, source]);
-  return {
-    revision: () => revision,
-    subscribe(listener) {
-      listeners.add(listener);
-      return () => listeners.delete(listener);
-    },
-    isEnabled(owner, source, fallback = true) {
-      return intentions.get(keyFor(owner, source)) ?? fallback;
-    },
-    setEnablement(value) {
-      const next = value?.entries ?? [];
-      if (JSON.stringify([...intentions]) === JSON.stringify(next.map((item) => [keyFor(item.owner, item.key), item.enabled]))) return;
-      intentions.clear();
-      for (const item of next) intentions.set(keyFor(item.owner, item.key), item.enabled);
-      emit();
-    },
-    async stage(owner, source, content) {
-      if (typeof owner !== "string" || owner.length > 300 || typeof source !== "string" || source.length > 2048 || typeof content !== "string" || content.length > MAX_RENDER_SOURCE) throw Error("Rendering source exceeds limit");
-      if (source.startsWith("https:") && externalUrl(source) !== source) throw Error("Unsupported dependency URL");
-      const key2 = keyFor(owner, source), ticket = {}, epoch = generation;
-      if (!records.has(key2) && records.size >= 64) throw Error("Rendering source count exceeds limit");
-      const bytes = new TextEncoder().encode(content).byteLength;
-      if (bytes > MAX_RENDER_SOURCE || [...records.entries()].reduce((sum, [id, value]) => sum + (id === key2 ? 0 : new TextEncoder().encode(value.content).byteLength), bytes) > 64 * 1024 * 1024) throw Error("Rendering cache exceeds limit");
-      records.set(key2, { ticket, owner, source, content, approved: false, digest: null });
-      emit();
-      const digest = [...new Uint8Array(await crypto.subtle.digest("SHA-256", new TextEncoder().encode(content)))].map((byte) => byte.toString(16).padStart(2, "0")).join("");
-      if (generation !== epoch || records.get(key2)?.ticket !== ticket) throw Error("Rendering review was cancelled");
-      records.set(key2, { owner, source, content, digest, approved: false });
-      emit();
-      return digest;
-    },
-    inspect(owner, source) {
-      const value = records.get(keyFor(owner, source));
-      return value ? { ...value, ticket: void 0 } : null;
-    },
-    approve(owner, source, digest) {
-      const value = records.get(keyFor(owner, source));
-      if (!value?.digest || digest !== value.digest) throw Error("Rendering content changed; review again");
-      records.set(keyFor(owner, source), { ...value, approved: true });
-      emit();
-    },
-    setBuiltin(owner, source, enabled) {
-      const key2 = keyFor(owner, source), record = records.get(key2);
-      if (!record?.approved || !mvuBuiltin(source, record.digest)) throw Error("Built-in adapter requires reviewed exact supported bytes");
-      records.set(key2, { ...record, builtin: enabled === true });
-      emit();
-    },
-    revoke(owner, source) {
-      records.delete(keyFor(owner, source));
-      emit();
-    },
-    read(owner, source) {
-      const value = records.get(keyFor(owner, source));
-      if (source.startsWith("https:") && intentions.get(keyFor(owner, source)) === false) throw Error("Rendering source is disabled");
-      if (!value?.approved) throw Error("Rendering dependency requires content review");
-      return value.content;
-    },
-    clear() {
-      generation++;
-      records.clear();
-      emit();
-    }
-  };
-}
-var renderingTrust = createRenderingTrust();
-
 // packages/client/src/rendering-settings.js
 var HostTooltip;
 function configureRenderingTooltip(Tooltip2) {
@@ -17180,12 +17496,12 @@ function configureRenderingTooltip(Tooltip2) {
 }
 function RenderingSettings({ client, activeSnapshot, settings = {}, update, busy = false, status }) {
   const [sources, setSources] = (0, import_react2.useState)([]), [error, setError] = (0, import_react2.useState)(""), [version3, setVersion] = (0, import_react2.useState)(0);
-  const [revision, setRevision] = (0, import_react2.useState)(renderingTrust.revision), [selected, setSelected] = (0, import_react2.useState)(null);
-  const generation = (0, import_react2.useRef)(0), input = (0, import_react2.useRef)(null), downloading = (0, import_react2.useRef)(null);
-  const [downloadKey, setDownloadKey] = (0, import_react2.useState)(null);
+  const [revision, setRevision] = (0, import_react2.useState)(renderingTrust.revision), [dependencyRevision, setDependencyRevision] = (0, import_react2.useState)(0);
+  const generation = (0, import_react2.useRef)(0);
   const [, setWriteRevision] = (0, import_react2.useState)(0);
   (0, import_react2.useEffect)(() => renderingWriteRequests.subscribe(() => setWriteRevision((v2) => v2 + 1)), []);
   const bindings = activeRegexBindings(activeSnapshot);
+  (0, import_react2.useEffect)(() => renderingDependencies.subscribe(() => setDependencyRevision((value) => value + 1)), []);
   (0, import_react2.useEffect)(() => renderingTrust.subscribe(() => setRevision(renderingTrust.revision())), []);
   (0, import_react2.useEffect)(() => {
     const refresh = () => setVersion((v2) => v2 + 1);
@@ -17194,11 +17510,8 @@ function RenderingSettings({ client, activeSnapshot, settings = {}, update, busy
   }, []);
   (0, import_react2.useEffect)(() => {
     const ticket = ++generation.current;
-    downloading.current?.abort();
-    setDownloadKey(null);
     setSources([]);
     setError("");
-    setSelected(null);
     Promise.all([
       bindings.characterId ? client.getCharacter(bindings.characterId) : null,
       bindings.presetId ? client.getPreset(bindings.presetId) : null,
@@ -17213,16 +17526,17 @@ function RenderingSettings({ client, activeSnapshot, settings = {}, update, busy
         ...renderingInventory(preset?.preset ?? preset, { kind: "preset", resourceId: bindings.presetId }),
         ...globalOwner ? renderingInventory({ regex_scripts: regex.rules.filter((rule) => rule.scope.kind === "global") }, { kind: "global", resourceId: globalOwner.slice(7) }) : []
       ]);
-      if (ticket === generation.current) setSources(inventory);
+      if (ticket === generation.current) {
+        setSources(inventory);
+        await renderingDependencies.sync(inventory, [bindings.characterId && "character:" + bindings.characterId, bindings.presetId && "preset:" + bindings.presetId, globalOwner]);
+      }
     }).catch((error2) => {
       if (ticket === generation.current) setError(error2.message);
     });
     return () => {
       generation.current++;
-      downloading.current?.abort();
     };
   }, [client, bindings.characterId, bindings.presetId, version3]);
-  const entries2 = renderingEntries(sources, renderingTrust);
   const run = async (callback) => {
     try {
       setError("");
@@ -17234,121 +17548,81 @@ function RenderingSettings({ client, activeSnapshot, settings = {}, update, busy
   const help = (label, text3) => (0, import_react2.createElement)(HostTooltip ?? "span", HostTooltip ? { label: text3, portal: true, maxWidth: 320, side: "bottom", openOnClick: true } : { title: text3 }, (0, import_react2.createElement)("button", { type: "button", className: "dtv-script-info", "aria-label": label }, "\u24D8"));
   const sourceView = (content) => (0, import_react2.createElement)("textarea", { className: "dtv-script-source", readOnly: true, value: content, spellCheck: false, wrap: "off", "aria-label": translate("rendering.source") });
   const changeEnabled = (entry, enabled) => run(() => update?.({ ...settings, scriptEnablement: updateScriptEnablement(settings.scriptEnablement, entry.owner, entry.preferenceKey ?? entry.key, enabled) }));
-  const renderEntry = (entry) => {
-    const review = renderingTrust.inspect(entry.owner, entry.key);
-    const changed = entry.kind === "helper" && review?.content !== entry.content;
-    const approved = review?.approved && !changed;
+  const helpers = sources.filter((source) => source.kind === "helper");
+  const owners = [...new Set(sources.filter((source) => source.dependencies.length).map((source) => source.owner))];
+  const renderHelper = (entry) => {
     const enabled = entry.enablementAmbiguous ? entry.enabled : renderingTrust.isEnabled(entry.owner, entry.preferenceKey ?? entry.key, entry.enabled);
     const overridden = !entry.enablementAmbiguous && (settings.scriptEnablement?.entries ?? []).some((item) => item.owner === entry.owner && item.key === (entry.preferenceKey ?? entry.key));
-    const displayName = entry.kind === "helper" || !entry.url ? entry.name : new URL(entry.url).hostname + " /\u2026/" + entry.url.split("/").at(-1).slice(-32);
-    const state = entry.blocked ? "rendering.blocked" : !enabled ? "rendering.disabled" : approved ? "rendering.approved" : review && !changed ? "rendering.staged" : entry.kind === "helper" ? "rendering.needsReview" : "rendering.waiting";
     return (0, import_react2.createElement)(
       "details",
-      { key: JSON.stringify([entry.owner, entry.key]), className: "dtv-entry dtv-script-entry", "data-enabled": enabled },
+      { key: entry.key, className: "dtv-entry dtv-script-entry", "data-enabled": enabled },
       (0, import_react2.createElement)(
         "summary",
         null,
-        (0, import_react2.createElement)("input", { type: "checkbox", checked: enabled, disabled: busy || !update || entry.blocked || entry.enablementAmbiguous, title: entry.enablementAmbiguous ? translate("rendering.ambiguousIdentity") : void 0, "aria-label": translate("rendering.enableEntry", { name: entry.name }), onClick: (event) => event.stopPropagation(), onChange: (event) => changeEnabled(entry, event.target.checked) }),
-        (0, import_react2.createElement)("span", { className: "dtv-entry-name", title: entry.name }, displayName),
-        (0, import_react2.createElement)("span", { className: "dtv-entry-state" }, translate(state))
+        (0, import_react2.createElement)("input", { type: "checkbox", checked: enabled, disabled: busy || !update || entry.enablementAmbiguous, "aria-label": translate("rendering.enableEntry", { name: entry.name }), onClick: (event) => event.stopPropagation(), onChange: (event) => changeEnabled(entry, event.target.checked) }),
+        (0, import_react2.createElement)("span", { className: "dtv-entry-name" }, entry.name),
+        (0, import_react2.createElement)("span", { className: "dtv-entry-state" }, translate(enabled ? "rendering.enabled" : "rendering.disabled"))
       ),
       (0, import_react2.createElement)(
         "div",
         { className: "dtv-entry-body" },
         entry.enablementAmbiguous ? (0, import_react2.createElement)("p", { className: "dtv-script-meta" }, translate("rendering.ambiguousIdentity")) : null,
-        (0, import_react2.createElement)("p", { className: "dtv-script-meta" }, entry.owner, " \xB7 ", (entry.origins ?? [entry.path]).filter(Boolean).join(" \u2192 ")),
-        entry.kind === "helper" ? sourceView(entry.content) : (0, import_react2.createElement)("p", { className: "dtv-script-meta" }, entry.key),
-        entry.kind !== "helper" && review ? sourceView(review.content) : null,
-        entry.kind !== "helper" && !review ? (0, import_react2.createElement)("p", { className: "dtv-script-meta" }, translate("rendering.importToRead")) : null,
-        (0, import_react2.createElement)(
-          "div",
-          { className: "dtv-script-actions" },
-          entry.blocked || entry.kind === "helper" ? null : (0, import_react2.createElement)("button", { type: "button", className: "dtv-button", disabled: downloadKey === entry.key, onClick: () => run(async () => {
-            downloading.current?.abort();
-            const controller2 = new AbortController();
-            downloading.current = controller2;
-            setDownloadKey(entry.key);
-            const ticket = generation.current;
-            const timer = setTimeout(() => controller2.abort(), 15e3);
-            try {
-              const content = await downloadRenderingSource(entry.url, { signal: controller2.signal });
-              if (ticket === generation.current && !controller2.signal.aborted) await renderingTrust.stage(entry.owner, entry.key, content);
-            } finally {
-              clearTimeout(timer);
-              if (downloading.current === controller2) {
-                downloading.current = null;
-                setDownloadKey(null);
-              }
-            }
-          }) }, translate("rendering.download")),
-          downloadKey === entry.key ? (0, import_react2.createElement)("button", { type: "button", className: "dtv-button", onClick: () => downloading.current?.abort() }, translate("rendering.cancel")) : null,
-          entry.blocked ? null : (0, import_react2.createElement)("button", { type: "button", className: "dtv-button", onClick: () => entry.kind === "helper" ? run(() => renderingTrust.stage(entry.owner, entry.key, entry.content)) : (setSelected(entry), input.current.click()) }, translate(entry.kind === "helper" ? "rendering.reviewInline" : "rendering.import")),
-          overridden ? (0, import_react2.createElement)("button", { type: "button", className: "dtv-button", disabled: busy, onClick: () => changeEnabled(entry, void 0) }, translate("rendering.resetEntry")) : null
-        ),
-        review ? (0, import_react2.createElement)(
-          "div",
-          { className: "dtv-script-group" },
-          changed ? (0, import_react2.createElement)("p", { className: "dtv-script-meta" }, translate("rendering.changed")) : null,
-          approved && mvuBuiltin(entry.url, review.digest) ? (0, import_react2.createElement)(
-            "label",
-            { className: "dtv-check" },
-            (0, import_react2.createElement)("input", { type: "checkbox", checked: review.builtin === true, onChange: (event) => run(() => renderingTrust.setBuiltin(entry.owner, entry.key, event.target.checked)) }),
-            translate("rendering.builtinMvu")
-          ) : null,
-          (0, import_react2.createElement)("div", { className: "dtv-script-actions" }, help(translate("rendering.sourceDetails"), "SHA-256: " + (review.digest ?? translate("common.loading")))),
+        (0, import_react2.createElement)("p", { className: "dtv-script-meta" }, entry.owner, " \xB7 ", entry.path),
+        sourceView(entry.content),
+        overridden ? (0, import_react2.createElement)("button", { type: "button", className: "dtv-button", disabled: busy, onClick: () => changeEnabled(entry, void 0) }, translate("rendering.resetEntry")) : null
+      )
+    );
+  };
+  const renderGraph = (owner) => {
+    const graph = renderingDependencies.inspect(owner), state = graph?.status ?? "loading", items = graph?.items ?? [];
+    const working = state === "downloading" || state === "loading";
+    return (0, import_react2.createElement)(
+      "section",
+      { key: owner, className: "dtv-script-group dtv-dependency-graph" },
+      (0, import_react2.createElement)("p", { className: "dtv-script-meta" }, owner),
+      (0, import_react2.createElement)("p", { role: "status" }, translate("rendering.graph." + state), " \xB7 ", items.filter((item) => item.status === "ready").length, " / ", items.length),
+      state === "downloading" ? (0, import_react2.createElement)("progress", { "aria-label": translate("rendering.graph.downloading"), value: items.filter((item) => ["ready", "failed"].includes(item.status)).length, max: Math.max(1, items.length) }) : null,
+      graph?.error ? (0, import_react2.createElement)("p", { role: "alert", className: "dtv-script-meta" }, graph.error) : null,
+      (0, import_react2.createElement)(
+        "div",
+        { className: "dtv-script-actions" },
+        (0, import_react2.createElement)("button", { type: "button", className: "dtv-button", disabled: working, onClick: () => run(() => renderingDependencies.acquire(owner)) }, translate(state === "waiting" ? "rendering.acquire" : state === "changed" ? "rendering.acquireUpdate" : "rendering.redownload")),
+        (0, import_react2.createElement)("button", { type: "button", className: "dtv-button", disabled: state === "loading", onClick: () => run(() => renderingDependencies.uninstall(owner)) }, translate(state === "downloading" ? "rendering.cancel" : "rendering.uninstall"))
+      ),
+      (0, import_react2.createElement)("div", { className: "dtv-dependency-items" }, ...items.map((item) => {
+        const record = renderingTrust.inspect(owner, item.url), enabled = renderingTrust.isEnabled(owner, item.url);
+        const displayUrl = item.url ? new URL(item.url).hostname + new URL(item.url).pathname : item.key;
+        return (0, import_react2.createElement)(
+          "details",
+          { key: item.key, className: "dtv-entry" },
+          (0, import_react2.createElement)("summary", null, (0, import_react2.createElement)("input", { type: "checkbox", checked: enabled, disabled: !item.url || busy || !update, "aria-label": translate("rendering.enableEntry", { name: item.key }), onClick: (event) => event.stopPropagation(), onChange: (event) => changeEnabled({ owner, key: item.url }, event.target.checked) }), (0, import_react2.createElement)("span", { className: "dtv-entry-name" }, displayUrl), (0, import_react2.createElement)("span", { className: "dtv-entry-state" }, translate(enabled ? "rendering.graph." + item.status : "rendering.disabled"))),
           (0, import_react2.createElement)(
             "div",
-            { className: "dtv-script-actions" },
-            (0, import_react2.createElement)("button", { type: "button", className: "dtv-button", disabled: !review.digest || approved || changed || entry.blocked || !enabled, onClick: () => run(() => renderingTrust.approve(entry.owner, entry.key, review.digest)) }, translate("rendering.approve")),
-            (0, import_react2.createElement)("button", { type: "button", className: "dtv-button", onClick: () => {
-              if (downloadKey === entry.key) downloading.current?.abort();
-              renderingTrust.revoke(entry.owner, entry.key);
-            } }, translate("rendering.revoke"))
+            { className: "dtv-entry-body" },
+            (0, import_react2.createElement)("p", { className: "dtv-script-meta" }, item.key),
+            item.error ? (0, import_react2.createElement)("p", { role: "alert", className: "dtv-script-meta" }, item.error) : null,
+            item.content !== void 0 ? sourceView(item.content) : null,
+            record && mvuBuiltin(item.url, record.digest) ? (0, import_react2.createElement)("label", { className: "dtv-check" }, (0, import_react2.createElement)("input", { type: "checkbox", checked: record.builtin === true, onChange: (event) => run(() => renderingTrust.setBuiltin(owner, item.url, event.target.checked)) }), translate("rendering.builtinMvu")) : null
           )
-        ) : null
-      )
+        );
+      }))
     );
   };
   return (0, import_react2.createElement)(
     "section",
-    { className: "dtv-rendering-settings", "data-revision": revision },
+    { className: "dtv-rendering-settings", "data-revision": revision + "-" + dependencyRevision },
     (0, import_react2.createElement)("style", null, renderingSettingsStyles),
     (0, import_react2.createElement)("h3", null, translate("rendering.title")),
     (0, import_react2.createElement)("label", { className: "dtv-script-control" }, (0, import_react2.createElement)("input", { type: "checkbox", checked: settings.interactiveCards === true, disabled: busy || !update, onChange: (event) => update({ ...settings, interactiveCards: event.target.checked }) }), translate("rendering.master")),
     (0, import_react2.createElement)("p", { className: "dtv-script-meta" }, translate(settings.interactiveCards === true ? "rendering.masterOn" : "rendering.masterOff")),
     status?.text ? (0, import_react2.createElement)("p", { className: "dtv-script-meta", role: status.error ? "alert" : "status" }, status.text) : null,
-    (0, import_react2.createElement)("input", { type: "file", hidden: true, ref: input, accept: ".js,.mjs,.html,.txt", onChange: (event) => {
-      const file = event.target.files?.[0], target = selected, ticket = generation.current;
-      event.target.value = "";
-      if (!file || !target) return;
-      run(async () => {
-        if (file.size > 8 * 1024 * 1024) throw Error("Source exceeds 8 MiB");
-        const content = await file.text();
-        if (ticket !== generation.current) return;
-        await renderingTrust.stage(target.owner, target.key, content);
-      });
-    } }),
-    ...["helper", "dependency"].map((group) => (0, import_react2.createElement)(
-      "section",
-      { key: group, className: "dtv-script-group", "aria-label": translate(group === "helper" ? "rendering.cardScripts" : "rendering.dependencies") },
-      (0, import_react2.createElement)("div", { className: "dtv-script-actions" }, (0, import_react2.createElement)("h4", null, translate(group === "helper" ? "rendering.cardScripts" : "rendering.dependencies")), help(translate("rendering.safetyDetails"), translate(group === "helper" ? "rendering.enablementHelp" : "rendering.boundary"))),
-      ...entries2.filter((entry) => entry.kind === "helper" === (group === "helper")).map(renderEntry),
-      !entries2.some((entry) => entry.kind === "helper" === (group === "helper")) ? (0, import_react2.createElement)("p", { className: "dtv-script-meta" }, translate("rendering.none")) : null
-    )),
+    (0, import_react2.createElement)("section", { className: "dtv-script-group" }, (0, import_react2.createElement)("div", { className: "dtv-script-actions" }, (0, import_react2.createElement)("h4", null, translate("rendering.cardScripts")), help(translate("rendering.safetyDetails"), translate("rendering.enablementHelp"))), ...helpers.map(renderHelper), !helpers.length ? (0, import_react2.createElement)("p", { className: "dtv-script-meta" }, translate("rendering.none")) : null),
+    (0, import_react2.createElement)("section", { className: "dtv-script-group" }, (0, import_react2.createElement)("div", { className: "dtv-script-actions" }, (0, import_react2.createElement)("h4", null, translate("rendering.dependencies")), help(translate("rendering.safetyDetails"), translate("rendering.boundary"))), ...owners.map(renderGraph), !owners.length ? (0, import_react2.createElement)("p", { className: "dtv-script-meta" }, translate("rendering.none")) : null),
     (0, import_react2.createElement)(
       "section",
       { className: "dtv-script-group dtv-script-operations" },
       (0, import_react2.createElement)("div", { className: "dtv-script-actions" }, (0, import_react2.createElement)("h4", null, translate("rendering.operations")), help(translate("rendering.safetyDetails"), translate("rendering.lifetime"))),
-      (0, import_react2.createElement)("div", { className: "dtv-script-actions" }, (0, import_react2.createElement)("button", { type: "button", className: "dtv-button", onClick: () => {
-        downloading.current?.abort();
-        renderingTrust.clear();
-      } }, translate("rendering.revokeAll"))),
-      ...renderingWriteRequests.listRevocations().map((item) => (0, import_react2.createElement)(
-        "div",
-        { key: item.id, role: "alert" },
-        (0, import_react2.createElement)("p", null, translate("rendering.revokePending"), item.error ? " \xB7 " + item.error : ""),
-        (0, import_react2.createElement)("button", { type: "button", disabled: item.pending, onClick: () => run(() => renderingWriteRequests.retryRevocation(item.id)) }, translate("rendering.retryRevoke"))
-      )),
+      ...renderingWriteRequests.listRevocations().map((item) => (0, import_react2.createElement)("div", { key: item.id, role: "alert" }, (0, import_react2.createElement)("p", null, translate("rendering.revokePending"), item.error ? " \xB7 " + item.error : ""), (0, import_react2.createElement)("button", { type: "button", disabled: item.pending, onClick: () => run(() => renderingWriteRequests.retryRevocation(item.id)) }, translate("rendering.retryRevoke")))),
       (0, import_react2.createElement)(
         "details",
         { className: "dtv-script-group dtv-write-permissions" },
@@ -20291,6 +20565,8 @@ function PresetSidebar({ closePanel, openPanel, sessionId, sessionBlank, autoOpe
       throw error;
     }
     await refresh(imported.preset.id);
+    const importedResource = await api(`/presets/${encodeURIComponent(imported.preset.id)}`);
+    await offerRenderingDependencies(importedResource.preset, "preset", imported.preset.id, { message: (sources) => translate("rendering.importDependencies", { sources }) });
     announceTavernRefresh();
     if (fileRef.current !== null) fileRef.current.value = "";
   }, "preset.status.imported"), [refresh, run]);
@@ -20764,6 +21040,8 @@ function CharacterPanel({ sessionId, sessionBlank, hasConversationHistory, detac
       throw error;
     }
     await refresh(data2.character.id);
+    const importedResource = await api2(`/characters/${encodeURIComponent(data2.character.id)}`);
+    await offerRenderingDependencies(importedResource.character, "character", data2.character.id, { message: (sources) => translate("rendering.importDependencies", { sources }) });
     announceTavernRefresh2();
     if (fileRef.current !== null) fileRef.current.value = "";
   }, "character.status.imported"), [refresh, run]);
@@ -42456,7 +42734,7 @@ function prepareCardDocument(source, owners = [], helpers = [], trust = renderin
   const read = (url, ownerHint) => {
     if (!url) throw Error("Blocked dependency URL");
     const owner2 = ownerHint ?? owners.find((owner3) => trust.isEnabled(owner3, url) && trust.inspect(owner3, url)?.approved);
-    if (!owner2) throw Error("Rendering dependency requires content review: " + url);
+    if (!owner2) throw Error("Rendering dependency is not downloaded: " + url);
     const content = trust.read(owner2, url);
     if (!seen.has(url)) {
       seen.add(url);
@@ -42512,8 +42790,7 @@ function prepareCardDocument(source, owners = [], helpers = [], trust = renderin
   template.innerHTML = source;
   for (const helper of helpers.filter((item) => item.enablementAmbiguous ? item.enabled : trust.isEnabled(item.owner, item.preferenceKey ?? item.key, item.enabled))) {
     virtual = true;
-    const content = trust.read(helper.owner, helper.key);
-    if (content !== helper.content) throw Error("Helper changed; review again");
+    const content = helper.content;
     total += content.length;
     if (total > 24 * 1024 * 1024) throw Error("Rendering dependency graph exceeds limit");
     expanded += content.length;
@@ -42524,7 +42801,7 @@ function prepareCardDocument(source, owners = [], helpers = [], trust = renderin
         trust.read(helper.owner, item.url);
         adapters.push({ ...mvuBuiltin(item.url, record.digest), owner: helper.owner, replacement: "Complete schema declaration handled by the backend interpreter" });
       }
-      schemaDeclarations.push({ source: content, owner: helper.owner, key: helper.key, sha256: trust.inspect(helper.owner, helper.key)?.digest });
+      schemaDeclarations.push({ source: content, owner: helper.owner, key: helper.key, sha256: helper.contentDigest ?? trust.inspect(helper.owner, helper.key)?.digest });
       continue;
     }
     collect(content, void 0, helper.owner);
@@ -43749,6 +44026,7 @@ async function loadChatState(client, sessionId, playthrough) {
     )
   };
   regexDiagnostics.push(...displayGreeting?.diagnostics ?? []);
+  const renderingSources = await identifyRenderingSources([...renderingInventory(characterResponse?.character ?? characterResponse, { kind: "character", resourceId: bindings.characterId }), ...renderingInventory(presetResponse?.preset ?? presetResponse, { kind: "preset", resourceId: bindings.presetId })]);
   return {
     avatars: { user: userSelection?.user?.avatar ?? null, assistant: characterAvatarUrl(characterId) },
     pendingSwipeError: pending2?.error ?? null,
@@ -43759,7 +44037,7 @@ async function loadChatState(client, sessionId, playthrough) {
     importMutable,
     greeting: displayGreeting,
     regexDiagnostics,
-    display: { rules, bindings, macros: macros2, globalRenderingOwner: globalOwner, renderingSources: await identifyRenderingSources([...renderingInventory(characterResponse?.character ?? characterResponse, { kind: "character", resourceId: bindings.characterId }), ...renderingInventory(presetResponse?.preset ?? presetResponse, { kind: "preset", resourceId: bindings.presetId })]) }
+    display: { rules, bindings, macros: macros2, globalRenderingOwner: globalOwner, renderingSources }
   };
 }
 function applyTurnDisplayRegex(turn, display, { userDepth, assistantDepth } = {}) {
@@ -44197,7 +44475,10 @@ function MowanChatView({ sessionId, useSession, useChat, playClient, playthrough
       setTransition(null);
     }
     setError("");
-    loadChatState(playClient, sessionId, playthrough).then((next) => {
+    loadChatState(playClient, sessionId, playthrough).then(async (next) => {
+      if (!active2) return;
+      const { renderingSources, globalRenderingOwner: globalOwner, rules, bindings } = next.display;
+      await renderingDependencies.sync([...renderingSources, ...globalOwner ? renderingInventory({ regex_scripts: rules.filter((rule) => rule.scope.kind === "global") }, { kind: "global", resourceId: globalOwner.slice(7) }) : []], [bindings.characterId && "character:" + bindings.characterId, bindings.presetId && "preset:" + bindings.presetId, globalOwner]);
       if (!active2) return;
       const incoming = { sessionId, value: next };
       const previous = loadedStateRef.current;
@@ -48230,7 +48511,7 @@ var name = PLUGIN_ID;
 var inject = ["slots", "layout", "sessions", "workspaces", "uiWorkspace"];
 function apply3(ctx, { conversationPhase: conversationPhase2 }) {
   ctx.effect(() => () => {
-    renderingTrust.clear();
+    renderingDependencies.dispose();
     renderingWriteRequests.clear();
   }, "dsh-tavern: rendering approvals");
   installPresetStyles();

@@ -1,10 +1,10 @@
 import {mvuBuiltin} from './mvu-builtins.js'
 import { externalUrl, MAX_RENDER_SOURCE } from './rendering-sources.js'
 
-// Ephemeral, outside-card authority. Never restore approvals from card data,
-// workspace files or localStorage; a reload requires a fresh review.
+// Outside-card executable cache. Only the resource acquisition lifecycle installs
+// downloaded graphs. Script enablement and variable-write grants stay separate.
 export function createRenderingTrust() {
-  const records = new Map(), intentions = new Map(), listeners = new Set()
+  const installs = new Map(), records = new Map(), intentions = new Map(), listeners = new Set()
   let revision = 0, generation = 0
   const emit = () => { revision++; for (const listener of listeners) listener() }
   const keyFor = (owner, source) => JSON.stringify([owner,source])
@@ -34,6 +34,24 @@ export function createRenderingTrust() {
       records.set(key,{owner,source,content,digest,approved:false}); emit()
       return digest
     },
+    removeOwner(owner) { installs.set(owner,{}); for(const [key,value] of records)if(value.owner===owner)records.delete(key);emit() },
+    async prepare(owner, items) {
+      const epoch=generation,ticket={};installs.set(owner,ticket)
+      const next=await Promise.all(items.map(async item=>{
+        if(externalUrl(item.url)!==item.url||typeof item.content!=='string'||new TextEncoder().encode(item.content).byteLength>MAX_RENDER_SOURCE)throw Error('Invalid cached dependency')
+        const digest=[...new Uint8Array(await crypto.subtle.digest('SHA-256',new TextEncoder().encode(item.content)))].map(byte=>byte.toString(16).padStart(2,'0')).join('')
+        return {owner,source:item.url,content:item.content,digest,approved:true}
+      }))
+      return () => {
+        if(epoch!==generation||installs.get(owner)!==ticket)throw Error('Dependency installation cancelled')
+        const retained=[...records.values()].filter(item=>item.owner!==owner)
+        if(retained.length+next.length>64||[...retained,...next].reduce((sum,item)=>sum+new TextEncoder().encode(item.content).byteLength,0)>64*1024*1024)throw Error('Rendering cache exceeds limit')
+        for(const [key,value] of records)if(value.owner===owner)records.delete(key)
+        for(const item of next)records.set(keyFor(owner,item.source),item)
+        emit()
+      }
+    },
+    async install(owner,items) { const commit=await this.prepare(owner,items);commit() },
     inspect(owner,source) { const value=records.get(keyFor(owner,source)); return value ? {...value,ticket:undefined} : null },
     approve(owner,source,digest) {
       const value = records.get(keyFor(owner,source))
@@ -42,14 +60,14 @@ export function createRenderingTrust() {
     },
     setBuiltin(owner,source,enabled) {
       const key=keyFor(owner,source),record=records.get(key)
-      if(!record?.approved||!mvuBuiltin(source,record.digest))throw Error('Built-in adapter requires reviewed exact supported bytes')
+      if(!record?.approved||!mvuBuiltin(source,record.digest))throw Error('Built-in adapter requires downloaded exact supported bytes')
       records.set(key,{...record,builtin:enabled===true});emit()
     },
     revoke(owner,source) { records.delete(keyFor(owner,source)); emit() },
     read(owner,source) {
       const value=records.get(keyFor(owner,source))
       if (source.startsWith('https:') && intentions.get(keyFor(owner,source)) === false) throw Error('Rendering source is disabled')
-      if (!value?.approved) throw Error('Rendering dependency requires content review')
+      if (!value?.approved) throw Error('Rendering dependency is not downloaded; open External code to download dependencies')
       return value.content
     },
     clear() { generation++; records.clear(); emit() },
