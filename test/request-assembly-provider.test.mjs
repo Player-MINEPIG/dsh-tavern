@@ -11,6 +11,23 @@ import { projectSystemSnapshots as project } from '../packages/request-assembler
 const projectSystemSnapshots = (assembly, native) => project(assembly, native, undefined, { systemPromptUpdate: 'in-history' })
 
 const root = process.env.DSH_TAVERN_ASSEMBLY_CORE_ROOT
+test('official DeepSeek wire preserves a first visible native system after conversation', { skip: !root }, async () => {
+  const message = (id, role) => ({ id, role, content: [{ type: 'text', text: id }], source: role === 'assistant'
+    ? { kind: 'model', provider: 'offline', model: 'offline' } : { kind: role === 'system' ? 'system-prompt' : 'user' } })
+  const native = [message('U1', 'user'), message('A1', 'assistant'), message('U2', 'user'), message('O2', 'system')]
+  const logical = assembleRequest({ preset: BUILTINS[0], nativeMessages: native, inputIds: ['U2'] })
+  const projected = projectSystemSnapshots(logical, native)
+  assert.deepEqual(projected.messages, native)
+  assert.throws(() => project(logical, native), error => error.code === 'ASSEMBLY_SYSTEM_UPDATES_UNSUPPORTED')
+  await withDeepSeekWire(root, async ({ send }) => {
+    const originalBody = await send(native), body = await send(projected.messages)
+    assert.equal(body.system, undefined)
+    assert.deepEqual(body.messages.map(m => m.role), ['user', 'assistant', 'user', 'system'])
+    assert.equal(body.messages.at(-1).content[0].text, 'O2')
+    assert.deepEqual(body.messages, originalBody.messages)
+  })
+})
+
 test('official DeepSeek serializer rejects the reported greeting order and accepts the corrected request offline', { skip: !root }, async () => {
   const input = defaultAssemblyFailureInput()
   const assembled = assembleRequest({ ...input, preset: BUILTINS[0] })

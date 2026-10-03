@@ -60,6 +60,40 @@ test('native updates keep their history anchors and base priority through the de
   const reordered = { ...BUILTINS[0], rules: moveRule(BUILTINS[0].rules, 'input', 'history') }
   assert.throws(() => assembleRequest({ preset: reordered, nativeMessages: native, inputIds: ['NEXT'], assets }), error => error.code === 'ASSEMBLY_NATIVE_SYSTEM_ORDER')
 })
+test('the first visible native system retains its original conversation boundary', () => {
+  const prefix = [m('ONE', 'user'), m('ANSWER', 'assistant'), m('TWO', 'user')]
+  for (const preset of BUILTINS) {
+    for (const suffix of [[], [m('THREE', 'user')]]) {
+      const native = [...prefix, m('LATE_BASE'), ...suffix], before = structuredClone(native)
+      const result = projectSystemSnapshots(assembleRequest({ preset, nativeMessages: native, inputIds: [suffix.length ? 'THREE' : 'TWO'] }), native)
+      assert.deepEqual(result.messages, native)
+      assert.deepEqual(native, before)
+      assert.equal(result.systemProjection.messages[0].index, prefix.length)
+    }
+  }
+  const reordered = { ...BUILTINS[0], rules: moveRule(BUILTINS[0].rules, 'input', 'history') }
+  assert.throws(() => assembleRequest({ preset: reordered, nativeMessages: [...prefix, m('LATE_BASE'), m('THREE', 'user')], inputIds: ['THREE'] }), error => error.code === 'ASSEMBLY_NATIVE_SYSTEM_ORDER')
+  const misplacedBase = { ...BUILTINS[0], rules: moveRule(BUILTINS[0].rules, 'native-system', 'input') }
+  assert.throws(() => assembleRequest({ preset: misplacedBase, nativeMessages: [m('BASE'), ...prefix], inputIds: ['TWO'] }), error => error.code === 'ASSEMBLY_NATIVE_SYSTEM_ORDER')
+})
+test('source nodes retain original input IDs when sharing and repeating system carriers', () => {
+  const native = [m('OLD'), m('CURRENT'), m('INPUT', 'user')]
+  const logical = assembly([native[0], native[1], m('MAIN'), m('SECOND'), native[2], m('LORE')])
+  const result = projectSystemSnapshots(logical, native)
+  assert.deepEqual(result.nodes.map(node => node.inputMessageIds), logical.messages.map(message => [message.id]))
+  const [leading, later] = result.systemProjection.messages
+  const byInput = new Map(result.nodes.flatMap(node => node.inputMessageIds.map(id => [id, node])))
+  for (const snapshot of [leading, later]) for (const id of snapshot.inputIds) {
+    assert.ok(byInput.get(id).requestMessageIds.includes(snapshot.messageId))
+  }
+  for (const id of later.contributorIds) assert.ok(byInput.has(id))
+  assert.deepEqual(byInput.get('MAIN').requestMessageIds, byInput.get('SECOND').requestMessageIds)
+  assert.notDeepEqual(byInput.get('MAIN').inputMessageIds, byInput.get('SECOND').inputMessageIds)
+  assert.deepEqual(leading.replacedNativeIds, ['OLD'])
+  assert.ok(!leading.contributorIds.includes('OLD'))
+  assert.deepEqual(byInput.get('OLD').requestMessageIds, [leading.messageId])
+  assert.ok(later.contributorIds.includes('MAIN') && !later.inputIds.includes('MAIN'))
+})
 test('retained source snapshots keep originals and tombstones without accumulating prior carriers', () => {
   const firstNative = [m('BASE'), m('ONE', 'user')]
   const assets = { loreEntries: [{ id: 'lore', content: 'LORE_OLD' }] }

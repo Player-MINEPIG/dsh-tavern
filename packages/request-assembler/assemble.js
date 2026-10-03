@@ -204,11 +204,11 @@ function assembleResolved({ preset: suppliedPreset, previous = null, snapshots =
   const required = [...requiredNative]
   if (required.length !== seenNative.length || new Set(seenNative).size !== required.length) throw new Error('Assembly must include each enabled native message exactly once')
   const nativeSystemIds = nativeMessages.filter(m => m.role === 'system' && requiredNative.has(m.id)).map(m => m.id)
-  if (nativeSystemIds.length > 1) {
+  if (nativeSystemIds.length) {
     const expected = nativeMessages.filter(m => requiredNative.has(m.id)).map(m => m.id)
     // A layout may move complete native modules, but cannot reverse the
     // history boundaries of an effective native system update.
-    for (const systemId of nativeSystemIds.slice(1)) {
+    for (const systemId of nativeSystemIds) {
       const before = new Set(expected.slice(0, expected.indexOf(systemId)).filter(id => !nativeSystemIds.includes(id)))
       const actual = new Set(seenNative.slice(0, seenNative.indexOf(systemId)).filter(id => !nativeSystemIds.includes(id)))
       if (before.size !== actual.size || [...before].some(id => !actual.has(id))) throw Object.assign(new Error('This layout moves native messages across a system update boundary'), { code: 'ASSEMBLY_NATIVE_SYSTEM_ORDER', status: 409 })

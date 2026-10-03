@@ -16,12 +16,16 @@ const native = (id, name) => ({ id, pluginId: 'DSH', name, roles: ['preserve'], 
   if (id !== 'native-system') return { blocks: [{ type: 'native', id, messageIds: messages.map(m => m.id), children }] }
   const enabled = kind => context.preset.rules.some(rule => rule.kind === kind && rule.enabled)
   const included = m => m.role !== 'system' && enabled(claimed.has(m.id) ? 'input' : 'history')
-  return { blocks: messages.map((message, index) => ({ type: 'native', id: index === 0 ? id : `${id}:${message.id}`, messageIds: [message.id],
-    // Later complete native snapshots keep their conversation boundary instead
-    // of all moving ahead of history with the initial instruction module.
-    ...(index > 0 ? { depth: context.nativeMessages.slice(context.nativeMessages.indexOf(message) + 1).filter(included).length } : {}),
-    children: index === messages.length - 1 ? children : [],
-  })) }
+  return { blocks: messages.map((message, index) => {
+    const nativeIndex = context.nativeMessages.indexOf(message)
+    // An empty native head may have been filtered out: even the first visible
+    // system is an update when conversation messages precede it.
+    const followsConversation = context.nativeMessages.slice(0, nativeIndex).some(included)
+    return { type: 'native', id: index === 0 ? id : `${id}:${message.id}`, messageIds: [message.id],
+      ...(followsConversation ? { depth: context.nativeMessages.slice(nativeIndex + 1).filter(included).length } : {}),
+      children: index === messages.length - 1 ? children : [],
+    }
+  }) }
 } })
 /** No privileged registration path: these descriptors also serve the public UI catalog. */
 export function registerBuiltinSources(registry) {

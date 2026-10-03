@@ -78,7 +78,69 @@ test('default assembly reaches the official DeepSeek wire through AgentLoop and 
         const record = await read(store.assemblyStore.get(agent.id, summary.id))
         assert.deepEqual(record.requestAssembly.messages, requests[i])
         assert.equal(record.requestContentStatus, 'available')
+        const metadata = record.requestAssembly.metadata.assembly
+        const owners = new Map(metadata.nodes.flatMap(node => node.inputMessageIds.map(id => [id, node])))
+        for (const snapshot of metadata.systemProjection.messages) {
+          for (const id of snapshot.inputIds) assert.ok(owners.get(id).requestMessageIds.includes(snapshot.messageId))
+          for (const id of snapshot.contributorIds) assert.ok(owners.has(id))
+        }
       }
+      section(); await handle.dispose()
+    })
+  } finally { await ctx.fiber.dispose(); rmSync(directory, { recursive: true, force: true }) }
+})
+
+test('an empty native head followed by a visible update retains its boundary through AgentLoop and Trace', { skip: !runtimeRoot, timeout: 30000 }, async () => {
+  const require = createRequire(join(resolve(runtimeRoot), 'package.json'))
+  const load = name => import(pathToFileURL(require.resolve(name)).href)
+  const { Context } = await load('@deepseek-ai/cordis'), { SystemPrompt } = await load('@deepseek-ai/dsh-system-prompt')
+  const llm = await load('@deepseek-ai/dsh-llm'), sessions = await load('@deepseek-ai/dsh-session')
+  const ctx = new Context(), directory = mkdtempSync(join(tmpdir(), 'assembly-empty-head-')), requests = [], nativeRequests = [], errors = []
+  let store, official = ''
+  try {
+    for (const name of ['sessionController', 'workspaceController', 'directoryPickerController']) ctx.provide(name, {})
+    await ctx.plugin(SystemPrompt)
+    for (const name of ['session', 'agent', 'session-projection', 'llm', 'tools', 'agent-loop']) await ctx.plugin((await load(`@deepseek-ai/dsh-${name}`)).default, name === 'agent-loop' ? { agents: [] } : {})
+    await ctx.plugin((await load('@deepseek-ai/dsh-invariants')).default, {})
+    await ctx.plugin(await load('@deepseek-ai/dsh-agent-loop/invariant'))
+    ctx.on('agent/error', e => errors.push(e.error))
+    ctx.on('agent/assemble-request', (payload, next) => { nativeRequests.push(structuredClone(payload.messages)); return next() })
+    ctx.on('llm/stream', (request, next) => {
+      if (llm.isAgentLoopRequest(request)) {
+        assert.ok(Object.isFrozen(request) && Object.isFrozen(request.messages))
+        requests.push(structuredClone(request.messages))
+      }
+      return next()
+    })
+    await ctx.plugin({ name: tavern.name, inject: tavern.inject, apply(context) { store = tavern.apply(context, { storageDir: directory }) } })
+    await withDeepSeekWire(runtimeRoot, async ({ adapter, bodies }) => {
+      ctx.llm.registerAdapter(['offline'], adapter)
+      const handle = await ctx.agents.create({ sessionId: 'empty-head-history', agentOptions: { provider: 'offline', model: 'offline' } }), agent = handle.agent
+      store.assemblyPresets.apply(agent.id, 'builtin-st')
+      const section = agent.ctx.systemPrompt.section({ name: 'offline:late-system', order: 0, complete: true, text: () => official })
+      for (const value of ['', 'LATE_BASE']) {
+        official = value
+        agent.followup(llm.createUserMessage({ content: [{ type: 'text', text: value ? 'TWO' : 'ONE' }], source: { kind: 'user' } })); await agent.whenIdle()
+        assert.deepEqual(errors, [])
+      }
+      assert.deepEqual(nativeRequests.map(messages => messages.map(m => m.role)), [['user'], ['user', 'assistant', 'system', 'user']])
+      assert.deepEqual(requests, nativeRequests)
+      assert.equal(bodies[1].system, undefined)
+      assert.deepEqual(bodies[1].messages.map(m => m.role), ['user', 'assistant', 'user', 'system'])
+      assert.equal(bodies[1].messages.at(-1).content[0].text, 'LATE_BASE')
+      const events = agent.session.snapshotEvents()
+      assert.equal(events.find(e => e.type === 'system/message').data.message.content.length, 0)
+      const restored = sessions.Session.fromRestore(agent.id, structuredClone(events), agent.session.header, sessions.SessionLogOffset(0), 'detached')
+      const read = createAssemblyBodyReader({ inspect: async () => ({ meta: restored.header, events: restored.snapshotEvents() }) })
+      const latest = store.assemblyStore.list(agent.id).at(-1)
+      const record = await read(store.assemblyStore.get(agent.id, latest.id))
+      assert.equal(record.requestContentStatus, 'available')
+      assert.deepEqual(record.requestAssembly.messages, requests[1])
+      const mapping = record.requestAssembly.metadata.assembly
+      assert.equal(mapping.systemProjection.messages[0].index, 2)
+      const node = mapping.nodes.find(n => n.module === 'native-system')
+      assert.deepEqual(node.inputMessageIds, [nativeRequests[1][2].id])
+      assert.deepEqual(node.requestMessageIds, [requests[1][2].id])
       section(); await handle.dispose()
     })
   } finally { await ctx.fiber.dispose(); rmSync(directory, { recursive: true, force: true }) }

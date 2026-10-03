@@ -52,7 +52,7 @@ export function projectSystemSnapshots(assembly, nativeMessages, maxBytes = 2 * 
     nodes: assembly.nodes.map(node => {
       const inputIds = node.requestMessageIds ?? assembly.messages.slice(node.start, node.start + node.count).map(m => m.id)
       const positions = [...new Set(inputIds.map(id => indices.get(id)))].filter(index => index !== undefined)
-      return { ...node, start: positions[0] ?? -1, count: positions.length, requestMessageIds: positions.map(index => messages[index].id) }
+      return { ...node, inputMessageIds: [...inputIds], start: positions[0] ?? -1, count: positions.length, requestMessageIds: positions.map(index => messages[index].id) }
     }),
     systemProjection: { version: 1, semantics: 'complete-snapshots', capability: preview ? 'unverified' : systemPromptUpdate ?? 'leading-only', messages: projections },
   }
