@@ -36,14 +36,15 @@ const container=document.createElement('div');container.id='media-fixture';docum
 const render=element=>flushSync(()=>root.render(element))
 try{
  const pseudoRoot=document.createElement('section');document.body.append(pseudoRoot)
- const pseudoStyle=document.createElement('style');pseudoStyle.textContent=imageCss('.pseudo{width:120px;height:80px;display:block}.pseudo::before{display:none;content:"";width:120px;height:80px;background:var(--picture)}.pseudo.show::before{display:block}.pseudo.no-content::before{content:none}.pseudo.invisible::before{visibility:hidden}.pseudo.transparent::before{opacity:0}.pseudo.offset::before{position:relative;left:5000px}')
+ const pseudoStyle=document.createElement('style');pseudoStyle.textContent=imageCss('.pseudo{width:120px;height:80px;display:block}.pseudo::before{display:none;content:"";width:120px;height:80px;background:var(--picture)}.pseudo.show::before{display:block}.pseudo.no-content::before{content:none}.pseudo.invisible::before{visibility:hidden}.pseudo.transparent::before{opacity:0}.pseudo.offset::before{position:relative;left:5000px}.pseudo.translated::before{translate:5000px 0}.pseudo.zero-size::before{max-height:0}.pseudo.pushed::before{display:none}.pseudo.pushed::after{display:block;content:"";width:120px;height:80px;background:var(--picture)}')
  pseudoRoot.append(pseudoStyle)
  for(let n=0;n<6000;n++){const tile=document.createElement('div');tile.className='pseudo';tile.style.cssText=imageCss(`--picture:url("${fixtureUrl('pseudo-'+n)}")`);pseudoRoot.append(tile)}
  const pseudoPool=createImagePool(),pseudoMedia=observeImages(pseudoRoot,{pool:pseudoPool});await pause(180)
  check('6000 hidden pseudo-element image URLs request zero leases/network',requests.length===0&&pseudoPool.stats().leases===0)
  const tile=pseudoRoot.querySelector('.pseudo');tile.className='pseudo show';await until(()=>tile.getAttribute('data-dtv-image-state')==='loaded')
  check('hidden-to-visible generated pseudo loads its actual viewport pixels',requests.length===1&&pseudoPool.stats().leases===1&&!getComputedStyle(tile,'::before').backgroundImage.includes('#dtv='))
- for(const state of ['no-content','invisible','transparent','offset']){tile.className='pseudo show '+state;await pause(60);check(`pseudo ${state} does not retain a visible lease`,pseudoPool.stats().leases===0)}
+ for(const state of ['no-content','invisible','transparent','offset','translated','zero-size']){tile.className='pseudo show '+state;await pause(60);check(`pseudo ${state} does not retain a visible lease`,pseudoPool.stats().leases===0)}
+ const child=document.createElement('div');child.style.height='2000px';tile.append(child);tile.className='pseudo pushed';await pause(60);check('normal-flow after pushed outside the viewport cannot acquire a host lease',pseudoPool.stats().leases===0);child.remove()
  tile.className='pseudo';await pause(60);check('visible-to-hidden pseudo releases its image data',pseudoPool.stats().leases===0&&![...tile.style].some(property=>property.startsWith('--dtv-img-')))
  tile.className='pseudo show';await until(()=>pseudoPool.stats().leases===1);await pause(50);check('showing a pseudo again uses bounded cached pixels',requests.length===1)
  // An identical hidden pseudo must not suppress a legitimate ordinary background.

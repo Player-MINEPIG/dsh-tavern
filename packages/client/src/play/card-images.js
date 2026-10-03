@@ -247,17 +247,23 @@ export function observeImages(root, {frame, pool = sharedPool(), onStatus = ()=>
   const elements=scope=>[...(scope===doc.body?[doc.documentElement]:[]),...(scope.nodeType===1?[scope]:[]),...scope.querySelectorAll('*')]
   function painted(element,pseudo,style=doc.defaultView.getComputedStyle(element,pseudo||null),geometry=false) {
     if(!pseudo)return true
-    if(!['block','inline-block','flex','grid','flow-root'].includes(style.display)||style.visibility!=='visible'||Number(style.opacity)===0||!style.content||['none','normal'].includes(style.content))return false
+    if(!['block','flex','grid','flow-root'].includes(style.display)||style.visibility!=='visible'||Number(style.opacity)===0||!style.content||['none','normal'].includes(style.content))return false
+    // Generated normal-flow boxes can be pushed outside an explicitly sized
+    // host by its contents or another pseudo. We have no CSSOM box to measure.
+    const host=doc.defaultView.getComputedStyle(element),other=doc.defaultView.getComputedStyle(element,pseudo==='::before'?'::after':'::before')
+    if(element.childNodes?.length||!['block','inline-block','flow-root'].includes(host.display)||other.display!=='none'&&other.content&&!['none','normal'].includes(other.content))return false
+    for(const property of ['paddingTop','paddingRight','paddingBottom','paddingLeft','borderTopWidth','borderRightWidth','borderBottomWidth','borderLeftWidth'])if(host[property]!=='0px')return false
     // CSSOM exposes no pseudo-element bounding box. Fail closed for geometry
     // we cannot establish: require an untransformed, contained generated box
     // on a fully visible host, rather than treating the host's IO as its box.
-    if(!['static','relative'].includes(style.position)||style.transform!=='none')return false
+    if(!['static','relative'].includes(style.position)||['transform','translate','rotate','scale'].some(key=>style[key]!=='none'))return false
+    if(style.minWidth!=='0px'||style.minHeight!=='0px'||style.maxWidth!=='none'||style.maxHeight!=='none')return false
     const pixels=value=>/^\d+(?:\.\d+)?px$/.test(value)?parseFloat(value):NaN
     const width=pixels(style.width),height=pixels(style.height),rect=element.getBoundingClientRect()
     if(!(width>0&&height>0&&width<=rect.width&&height<=rect.height))return false
     for(const property of ['top','right','bottom','left'])if(!['auto','0px'].includes(style[property]))return false
     for(const property of ['marginTop','marginRight','marginBottom','marginLeft','paddingTop','paddingRight','paddingBottom','paddingLeft','borderTopWidth','borderRightWidth','borderBottomWidth','borderLeftWidth'])if(style[property]!=='0px')return false
-    for(let node=element;node;node=node.parentElement??node.getRootNode()?.host)if(doc.defaultView.getComputedStyle(node).transform!=='none')return false
+    for(let node=element;node;node=node.parentElement??node.getRootNode()?.host)if(['transform','translate','rotate','scale'].some(key=>doc.defaultView.getComputedStyle(node)[key]!=='none'))return false
     if(!geometry)return true
     const inside=(box,w,h)=>box.left>=0&&box.top>=0&&box.right<=w&&box.bottom<=h
     if(!inside(rect,doc.documentElement.clientWidth,doc.documentElement.clientHeight))return false

@@ -5,7 +5,7 @@ import {observeImages,imageCss} from '../packages/client/src/play/card-images.js
 test('6000 DOM pseudo URLs stay inert until generated visible paint; hiding releases leases and visible host reuse remains valid',async()=>{
  const saved=Object.fromEntries(['document','window','IntersectionObserver','MutationObserver','requestAnimationFrame'].map(key=>[key,globalThis[key]]))
  const noop=()=>{},frames=[],targets=new Set(),acquired=[],live=new Set();let intersection
- const base={display:'block',visibility:'visible',opacity:'1',backgroundImage:'none',transform:'none',position:'static',content:'none',width:'120px',height:'80px',top:'auto',right:'auto',bottom:'auto',left:'auto',getPropertyValue:()=>'',*[Symbol.iterator](){}}
+ const base={display:'block',visibility:'visible',opacity:'1',backgroundImage:'none',transform:'none',translate:'none',rotate:'none',scale:'none',position:'static',content:'none',width:'120px',height:'80px',minWidth:'0px',minHeight:'0px',maxWidth:'none',maxHeight:'none',top:'auto',right:'auto',bottom:'auto',left:'auto',getPropertyValue:()=>'',*[Symbol.iterator](){}}
  for(const property of ['marginTop','marginRight','marginBottom','marginLeft','paddingTop','paddingRight','paddingBottom','paddingLeft','borderTopWidth','borderRightWidth','borderBottomWidth','borderLeftWidth'])base[property]='0px'
  const doc={hidden:false,documentElement:{clientWidth:1000,clientHeight:1000},addEventListener:noop,removeEventListener:noop}
  const hosts=Array.from({length:6000},(_,n)=>{
@@ -25,6 +25,7 @@ test('6000 DOM pseudo URLs stay inert until generated visible paint; hiding rele
   controller=observeImages(root,{pool});await flush();assert.equal(acquired.length,0);assert.equal(live.size,0)
   hosts[0].pseudo='block';controller.refresh();await flush();assert.deepEqual(acquired,[hosts[0].source]);assert.equal(live.size,1)
   hosts[0].pseudo='none';controller.refresh();await flush();assert.equal(live.size,0)
+  hosts[0].pseudo='block';hosts[0].childNodes=[{}];controller.refresh();await flush();assert.equal(live.size,0,'unknown generated-box position from host content must fail closed');hosts[0].childNodes=[];hosts[0].pseudo='none'
   hosts[0].normal=true;controller.refresh();await flush();assert.equal(live.size,1);assert.equal(acquired.at(-1),hosts[0].source)
  }finally{controller?.dispose();for(const[key,value]of Object.entries(saved))if(value===undefined)delete globalThis[key];else globalThis[key]=value}
  assert.equal(live.size,0)
