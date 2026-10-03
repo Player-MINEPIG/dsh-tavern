@@ -126,3 +126,12 @@ initial 写入仍经过独立 grant、使用策略租约、CAS、幂等与 schem
 支持所列声明不等于任意 Zod JavaScript 兼容，方法组合也须经过测试；对象型 coerce 明确拒绝。当前 display_data 为结果值副本，delta_data 为内部变化记录。不能将这些字段宣称为旧 UI 的完整格式兼容。默认指令只要求 literal JSONPatch，复杂生成策略须有独立公开扩展合同。
 
 `test/mvu-*.test.mjs` 覆盖合成卡结构、固定上游文字 fixture、CAS、fork、历史、故障恢复、预算反例、管理卸载和桥接取消。真实 Host 测试通过 `DSH_TAVERN_PROMPT_COMPAT_ROOT` 指向具备请求装配扩展的 DSH runtime，运行 `node --test test/mvu-host.test.mjs`；它使用临时目录及合成 provider，不操作真实 profile。完整卡片、渲染依赖与管理器最终联测需要另行验证，不能用解释器 fixture 代替。
+
+
+## Prompt Template 依赖读取
+
+可信 Host 可调用 `tavernMvu.resolvePromptDependency({id,scope:{authority:'local',sessionId},event:{preview,turn?,step?,usage:'prompt-template-dependency',consumer:{adapterId:'tavern.prompt-templates',id}},signal?})`。consumer.id 必须是实际选定模板 ID；VM 不能自行选择来源、scope 或 consumer。类型定义见 `packages/mvu-adapter/src/prompt-dependency.d.ts`。
+
+来源缺失、不可用或策略拒绝时返回 `null`，允许时返回 `{id,adapterId:'tavern.mvu',content,revision,configRevision,checkCurrent}`；无效 scope、取消与配置错误抛出异常。content 是包含 stat_data 的完整变量对象副本，不是历史快照。读取经过 MVU 自己的 `before_model_request` 策略和固定 read/render/provide 链；managed 来源必须获得明确许可；对这个依赖接口，每个已注册策略 handler（包括原生来源上的 handler）都必须返回带同步租约的允许决策，`undefined` 弃权会拒绝释放内容。没有策略 handler 的 native 来源保持原生许可，旧 `resolveRequest` 语义不变。管理接口 `read` 成功不等于允许模型检索。
+
+仅供 Host 保存的同步 `checkCurrent()` 会在来源 revision、角色选择、catalog/timeline 成员关系 ABA、manager reload/卸载、取消或来源卸载后拒绝旧结果。Host 必须能够核实会话选择和成员关系，无法核实时拒绝。`PlayMembershipService.captureContextLease()` 使用 `PlayWorkspaceStore.captureMutationLease()` 核实全部公开文件写入、目录创建及工作区身份变更，包含缺失 catalog、未绑定工作区和成员关系 ABA；因此无需为原生会话创建 catalog。该保守租约也会因无关文件写入失效，调用方需重新读取。调用方应在模板实际读取变量时才调用，将租约留在 VM 外，并在最终装配处无间隔 await 地再次检查。取得依赖不会产生 applied 事实或声称已提供给模型；此接口不增加 HTTP 路由或写权限。

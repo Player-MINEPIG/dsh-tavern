@@ -18,7 +18,21 @@ export function installMvu(ctx, { storageDir, resources = [], sources, membershi
       && !Array.isArray(event.data) && Object.keys(event.data).length === 0))
   const digest = value => createHash('sha256').update(JSON.stringify(value)).digest('hex')
   const inspect = async id => { const live = ctx.get('sessions')?.get?.(id); return live ? { header: live.header, events: live.snapshotEvents() } : ctx.get('sessionController')?.inspect?.(id) }
-  const service = new MvuService({ storageDir, resources, inspect, refresh, isActive, authorizeCardWrite: async request => {
+  const capturePromptScope = (scope, resource) => {
+    if (!memberships || !getSelection || !getSelectionToken) return null
+    const contextLease = memberships.captureContextLease?.()
+    if (typeof contextLease !== 'function' || contextLease() !== true) return null
+    const selection = getSelectionToken(scope.sessionId), selected = getSelection(scope.sessionId)?.characterCardId
+    if (resource.characterId && selected !== resource.characterId) return null
+    const catalog = memberships.readCatalog({ allowMissing: true })?.catalog
+    const members = (catalog?.playthroughs ?? []).filter(play => play.ext?.pmpDshTavern?.rootSessionId === scope.sessionId
+      || memberships.readTimeline(play).timeline.nodes.some(node => node.variants.some(variant => variant.sessionId === scope.sessionId)))
+    if (members.length > 1 || (resource.characterId && members.some(play => play.ext?.pmpDshTavern?.characterId !== resource.characterId))) return null
+    // The context lease also covers other timelines, absent catalogs and workspace ABA.
+    return () => ctx.get(MVU_SERVICE) === service && getSelectionToken(scope.sessionId) === selection
+      && getSelection(scope.sessionId)?.characterCardId === selected && contextLease() === true
+  }
+  const service = new MvuService({ storageDir, resources, inspect, refresh, isActive, capturePromptScope, authorizeCardWrite: async request => {
     const authority = ctx.get('tavernRenderingAuthority')
     const grant = await authority?.resolve(request)
     return grant && ctx.get('tavernRenderingAuthority') === authority ? { ...grant, checkCurrent: () => ctx.get('tavernRenderingAuthority') === authority && authority.isCurrent?.(request) === true } : null

@@ -165,6 +165,12 @@ export class PlayMembershipService {
     return { file, timeline: parseTimelineJson(file.content) }
   }
 
+  /** Covers membership uniqueness and absence across all current/future catalog entries. */
+  captureContextLease() {
+    const store = this.workspaceStore, check = store.captureMutationLease()
+    return () => this.workspaceStore === store && check()
+  }
+
   /** A restored catalog/timeline requires a new lease even when its bytes are identical. */
   captureLease(playthroughId) {
     const playthrough = this.readCatalog().catalog.playthroughs.find(item => item.id === playthroughId)

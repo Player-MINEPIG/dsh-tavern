@@ -134,6 +134,7 @@ export class PlayWorkspaceStore {
     this.now = now
     this.targetGuards = new Set()
     this.bindingEpoch = Symbol()
+    this.mutationEpoch = Symbol()
     this.fileEpochs = new Map()
     this.beforeRename = beforeRename
     mkdirSync(this.storageDir, { recursive: true })
@@ -146,9 +147,15 @@ export class PlayWorkspaceStore {
 
   persist(next) {
     atomicJson(this.path, next, MAX_BINDING_BYTES)
-    if (this.binding.rootPath !== next.rootPath || this.binding.workspaceId !== next.workspaceId) this.bindingEpoch = Symbol()
+    if (this.binding.rootPath !== next.rootPath || this.binding.workspaceId !== next.workspaceId) { this.bindingEpoch = Symbol(); this.mutationEpoch = Symbol() }
     this.binding = next
     return this.get()
+  }
+
+  /** Conservative context lease, including absent files/unbound workspaces and public write ABA. */
+  captureMutationLease() {
+    const epoch = this.mutationEpoch
+    return () => this.mutationEpoch === epoch
   }
 
   /** Process-local lease over public writes and workspace identity; hashes alone permit ABA. */
@@ -229,7 +236,7 @@ export class PlayWorkspaceStore {
         const childAbs = join(current, name)
         let stat = assertNoLink(childAbs, 'path segment "' + name + '"')
         if (stat === null) {
-          try { mkdirSync(childAbs) } catch (error) {
+          try { mkdirSync(childAbs); this.mutationEpoch = Symbol() } catch (error) {
             if (error?.code !== 'EEXIST') throw error
           }
           stat = assertNoLink(childAbs, 'path segment "' + name + '"')
@@ -310,7 +317,7 @@ export class PlayWorkspaceStore {
         const child = join(parent, name)
         let stat = assertNoLink(child, 'path segment "' + name + '"')
         if (stat === null) {
-          try { mkdirSync(child) } catch (error) {
+          try { mkdirSync(child); this.mutationEpoch = Symbol() } catch (error) {
             if (error?.code !== 'EEXIST') throw error
           }
           stat = assertNoLink(child, 'path segment "' + name + '"')
@@ -357,6 +364,7 @@ export class PlayWorkspaceStore {
         }
         const previousLeaseKey = currentTarget === null ? null : realpathSync.native(absolute)
         renameSync(temporary, absolute)
+        this.mutationEpoch = Symbol()
         const token = Symbol()
         if (previousLeaseKey !== null) this.fileEpochs.set(previousLeaseKey, token)
         // Atomic rename may change the stored casing on case-insensitive volumes.

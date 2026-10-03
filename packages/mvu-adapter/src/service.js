@@ -44,8 +44,8 @@ function prepareResource(resource) {
 export class MvuService {
   protocolVersion = 1
   #state; #path; #listeners = new Set(); #usage = new Set(); #usageEpoch = 0; #queue = Promise.resolve(); #disposed = false; #fatal; #sessions = new Map(); #hostWork = new Set(); #cardBindings = new Map()
-  constructor({ storageDir, resources = [], inspect, resolveScope, refresh, isActive, authorizeCardWrite } = {}) {
-    this.inspect = inspect; this.resolveScope = resolveScope; this.refresh = refresh; this.isActive = isActive; this.authorizeCardWrite = authorizeCardWrite
+  constructor({ storageDir, resources = [], inspect, resolveScope, refresh, isActive, authorizeCardWrite, capturePromptScope } = {}) {
+    this.inspect = inspect; this.resolveScope = resolveScope; this.refresh = refresh; this.isActive = isActive; this.authorizeCardWrite = authorizeCardWrite; this.capturePromptScope = capturePromptScope
     this.#path = join(storageDir, 'mvu-state.json')
     this.#state = existsSync(this.#path) ? readJsonFile(this.#path, MAX_STORE) : { version: 1, resources: {} }
     if (this.#state?.version !== 1 || !this.#state.resources) fail('MVU_VERSION', 'Unsupported MVU storage version')
@@ -117,7 +117,7 @@ export class MvuService {
   async #decision(on, resource, scope, event, variables) {
     if (resource.sourceError || (resource.discovered && this.isActive && !this.isActive(resource, scope.sessionId))) return { enabled: false, configRevision: null }
     const managementMode = this.#record(resource.id).managementMode ?? resource.managementMode ?? 'native'
-    let enabled = true, decided = false, configRevision = null
+    let enabled = true, decided = false, abstained = false, configRevision = null
     const leases = []
     const usageEpoch = this.#usageEpoch
     for (const registration of [...this.#usage]) {
@@ -125,7 +125,7 @@ export class MvuService {
       try { answer = await registration.handler(json({ on, id: resource.id, scope, event, variables, managementMode })) }
       catch (error) { if (usageEpoch !== this.#usageEpoch) fail('MVU_USAGE_CANCELLED', 'Usage provider changed'); throw error }
       if (usageEpoch !== this.#usageEpoch) fail('MVU_USAGE_CANCELLED', 'Usage provider changed')
-      if (answer === undefined) continue
+      if (answer === undefined) { abstained = true; continue }
       decided = true
       leases.push(answer?.checkCurrent)
       if (!answer || typeof answer.enabled !== 'boolean') fail('MVU_USAGE', 'Invalid usage decision')
@@ -133,7 +133,7 @@ export class MvuService {
       enabled &&= answer.enabled
       configRevision = answer.configRevision ?? configRevision
     }
-    return { enabled: enabled && ((managementMode !== 'managed' && on !== 'card_variable_update') || decided), configRevision, usageEpoch, checkCurrent: () => leases.length > 0 && leases.every(check => typeof check === 'function' && check() === true) }
+    return { enabled: enabled && ((managementMode !== 'managed' && on !== 'card_variable_update') || decided), configRevision, usageEpoch, decided, abstained, checkCurrent: () => leases.length > 0 && leases.every(check => typeof check === 'function' && check() === true) }
   }
   #serial(fn) {
     const task = this.#queue.then(() => { if (this.#disposed) fail('MVU_DISPOSED', 'Service disposed'); return fn() })
@@ -456,6 +456,49 @@ export class MvuService {
       row.revision = version.revision ?? version.result?.revision ?? 0
     }
     return { version: 1, scope: json(scope), revision: row?.revision ?? 0, currentRevision: row?.currentRevision ?? 0, status: row ? 'available' : 'unavailable', variables: row?.content ?? {}, ...(row ? { resourceId: row.id } : {}) }
+  }
+  /** Trusted Host only. This grants a checked dependency read, not proof of model delivery.
+   * @param {import('./prompt-dependency.js').MvuPromptDependencyRequest} request
+   * @returns {Promise<import('./prompt-dependency.js').MvuPromptDependencyResult|null>}
+   */
+  async resolvePromptDependency({ id, scope, event, signal } = {}) {
+    if (!scope || scope.authority !== 'local' || typeof scope.sessionId !== 'string' || !scope.sessionId
+      || Object.keys(scope).some(key => !['authority', 'sessionId'].includes(key))) fail('MVU_SCOPE', 'A current local session scope is required')
+    if (!event || event.usage !== 'prompt-template-dependency' || typeof event.preview !== 'boolean'
+      || event.consumer?.adapterId !== 'tavern.prompt-templates' || typeof event.consumer?.id !== 'string' || !/^prompt-template:[A-Za-z0-9_.-]{1,100}$/.test(event.consumer?.id ?? '')
+      || Object.keys(event).some(key => !['preview', 'turn', 'step', 'usage', 'consumer'].includes(key))
+      || Object.keys(event.consumer).some(key => !['adapterId', 'id'].includes(key))
+      || ['turn', 'step'].some(key => event[key] != null && (!Number.isSafeInteger(event[key]) || event[key] < 0))) fail('MVU_SCOPE', 'Trusted template dependency context is required')
+    // Detach caller-owned input before any await. Neither a template nor a later caller mutation selects scope.
+    scope = json(scope); event = json(event)
+    signal?.throwIfAborted()
+    if (this.#disposed) fail('MVU_DISPOSED', 'Service disposed')
+    await this.refresh?.(scope.sessionId)
+    signal?.throwIfAborted()
+    if (this.#disposed) fail('MVU_DISPOSED', 'Service disposed')
+    const resource = this.#configured(id, scope)
+    if (!resource || resource.sourceError || (resource.characterId && this.isActive?.(resource, scope.sessionId) !== true)) return null
+    const scopeLease = this.capturePromptScope?.(scope, resource)
+    if (typeof scopeLease !== 'function' || scopeLease() !== true) return null
+    const definition = hash(resource), revision = this.#record(id).revision, usageEpoch = this.#usageEpoch
+    const sourceCurrent = () => {
+      try {
+        return !this.#disposed && !signal?.aborted && this.#usageEpoch === usageEpoch && scopeLease() === true
+          && this.#configured(id, scope) === resource && hash(resource) === definition && this.#record(id).revision === revision
+          && (!resource.characterId || this.isActive?.(resource, scope.sessionId) === true)
+      } catch { return false }
+    }
+    const row = await this.#snapshot(resource, scope)
+    signal?.throwIfAborted()
+    if (!sourceCurrent() || row.revision !== revision) return null
+    const decision = await this.#decision('before_model_request', resource, scope, event, row.content)
+    signal?.throwIfAborted()
+    const checkCurrent = () => {
+      try { return sourceCurrent() && decision.enabled === true && !decision.abstained && (!decision.decided || decision.checkCurrent?.() === true) }
+      catch { return false }
+    }
+    if (!checkCurrent()) return null
+    return { id: resource.id, adapterId: 'tavern.mvu', content: json(row.content), revision, configRevision: decision.configRevision, checkCurrent }
   }
   async resolveRequest(context) {
     const scope = { sessionId: context.sessionId, authority: 'local' }, blocks = [], diagnostics = []
