@@ -174,3 +174,6 @@ The strategy page occupies the conversation body below the session header and ta
 Users can author custom text and supported macros in the frontend without a plugin. Dynamic MVU or memory retrieval needs a plugin-registered resolver; manually entered text cannot impersonate another plugin's provenance. Registered third-party sources receive rule name and text; their resolver determines how those fields are used.
 
 Custom text uses an explicit `user/system/assistant` role and defaults to `user`. Legacy custom `preserve` normalizes to its previous effective role, `system`, without silently changing meaning. Custom-only requests should include a nonempty user message: DeepSeek moves pure system content into its separate `system` field, leaving wire `messages` empty. Preview reports this condition; completely empty assembly fails locally. Disabling native history and current input neither deletes durable native messages nor silently restores them to requests.
+
+
+[Prompt templates and managed sources](PROMPT_TEMPLATE_en.md)

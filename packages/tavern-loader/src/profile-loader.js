@@ -217,6 +217,7 @@ export class TavernProfileLoader {
         ...shared,
         selection: effectiveSelection,
         worldBookSelection,
+        requestAssembly: options.resolveOnly || Boolean(this.requestAssemblyEnabled?.(shared.sessionId)),
         character: characterResult.character,
         user: userResult.user,
       }),
@@ -237,6 +238,8 @@ export class TavernProfileLoader {
       includeGreetingReference: options.agent === undefined
         ? true
         : greetingReferenceAppliesToAgent(options.agent),
+      worldBookIds: [...worldBookSelection.effectiveIds],
+      worldBookRevisions: Object.fromEntries((worldBookResult.resources ?? []).filter(r => r.revision).map(r => [r.id, r.revision])),
       loreEntries: Array.isArray(worldBookResult.loreEntries) ? worldBookResult.loreEntries : [],
       context: { ...baseContext, ...macroContext },
       maxProfileBytes: this.maxProfileBytes,
