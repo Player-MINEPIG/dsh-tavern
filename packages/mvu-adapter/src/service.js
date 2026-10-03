@@ -339,6 +339,7 @@ export class MvuService {
     return grant.checkCurrent
   }
   async createCardBinding({ scope, grantId, sourceIdentity, signal } = {}) {
+    if (scope?.mode === 'greeting') fail('MVU_READ_ONLY', 'Greeting snapshots cannot grant writes')
     if (typeof grantId !== 'string' || !grantId || !scope || !sourceIdentity || hash(sourceIdentity.scope) !== hash(scope) || sourceIdentity.version !== 1 || !/^[a-f0-9]{64}$/.test(sourceIdentity.sha256)) fail('MVU_SCOPE', 'Execution identity must bind the exact scope')
     const binding = { scope: json(scope), grantId, sourceIdentity: json(sourceIdentity) }
     const checkGrant = await this.#cardGrant(binding, signal)
@@ -366,7 +367,7 @@ export class MvuService {
   }
   #cardResourceActive(resource, scope) {
     return resource && !resource.sourceError && (!resource.discovered || !this.isActive || this.isActive(resource, scope.sessionId))
-      && (scope.mode !== 'initial' || (resource.characterId === scope.characterId && this.isActive?.(resource, scope.sessionId) === true))
+      && (!['initial', 'greeting'].includes(scope.mode) || (resource.characterId === scope.characterId && this.isActive?.(resource, scope.sessionId) === true))
   }
   #initialBindingCurrent(binding, evidence) {
     if (binding.scope.mode !== 'initial') return true
@@ -438,10 +439,10 @@ export class MvuService {
     let evidence = this.resolveScope ? await this.resolveScope(scope) : null
     if (!evidence && scope.endEventId != null) { const source = this.#sessions.get(scope.sessionId) ?? await this.inspect?.(scope.sessionId); const event = source?.events?.find(e => e.seq === scope.endEventId && e.type === 'assistant/message'); if (event) evidence = { messageId: event.data.message.id, fingerprint: hash(textOf(event.data.message)) } }
     let rows = await this.list({ scope })
-    if (scope.mode === 'initial') {
-      if (evidence?.mode !== 'initial' || evidence.checkCurrent?.() !== true) fail('MVU_READ_ONLY', 'Initial scope is no longer current')
+    if (scope.mode === 'initial' || scope.mode === 'greeting') {
+      if (evidence?.mode !== scope.mode || evidence.checkCurrent?.() !== true) fail('MVU_READ_ONLY', 'Current card scope is no longer current')
       rows = rows.filter(row => this.#cardResourceActive(this.resources.find(r => r.id === row.id), scope))
-      if (rows.length !== 1) fail('MVU_AMBIGUOUS', 'Initial scope requires one active resource')
+      if (rows.length !== 1) fail('MVU_AMBIGUOUS', 'Current card scope requires one active resource')
       evidence = null
     }
     if (rows.length > 1 && evidence) rows = rows.filter(row => { const version = this.#record(row.id).versions.find(v => v.key === row.versionKey); return version?.source.messageSeq === scope.endEventId && version?.source.messageId === evidence.messageId && (version?.sourceFingerprint ?? version?.fingerprint) === evidence.fingerprint })

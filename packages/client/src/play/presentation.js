@@ -1,4 +1,4 @@
-import {initialCardScope} from './mvu-scope.js'
+import {initialCardScope,greetingCardScope} from './mvu-scope.js'
 import { createMvuCardBinding } from './mvu-bridge.js'
 import { createElement as h, createContext, useContext, useState, useEffect } from 'react'
 import { API_V1 } from '../../../identity.js'
@@ -17,10 +17,13 @@ export function ConversationPresentation({ state, playthrough, playClient, sessi
 export function messageAvatarKey(turn, role, index = 0) {
   return role === 'user' ? `${turn.id}:user` : `${turn.id}:${turn.variant?.id ?? 'live'}:assistant:${index}`
 }
-export function MessageBubble({ text, role = 'assistant', messageKey, editable = true, streaming = false, variableScope, initialBinding = false }) {
+export function MessageBubble({ text, role = 'assistant', messageKey, editable = true, streaming = false, variableScope, initialBinding = false, greetingBinding = false }) {
   const context = useContext(Presentation)
   const settings = useConversationDisplaySettings()
-  const boundScope = variableScope && context?.playthrough?.id ? {...variableScope,playthroughId:context.playthrough.id} : initialBinding&&!context?.disabled&&!context?.busy?initialCardScope({playthrough:context?.playthrough,sessionId:context?.sessionId,characterId:context?.state?.display?.bindings?.characterId,timeline:context?.state?.timeline,turns:context?.state?.turns}):null
+  const coordinate = {playthrough:context?.playthrough,sessionId:context?.sessionId,characterId:context?.state?.display?.bindings?.characterId,timeline:context?.state?.timeline,turns:context?.state?.turns}
+  const messageScope = variableScope && context?.playthrough?.id ? {...variableScope,playthroughId:context.playthrough.id} : null
+  const boundScope = messageScope ?? ((greetingBinding||initialBinding)&&!context?.disabled ? greetingCardScope(coordinate) : null)
+  const writeScope = messageScope ?? (initialBinding&&!context?.disabled&&!context?.busy ? initialCardScope(coordinate) : null)
   const [editing, setEditing] = useState(false)
   const [avatar, setAvatar] = useState(null)
   const [failedImage, setFailedImage] = useState(null)
@@ -47,7 +50,7 @@ export function MessageBubble({ text, role = 'assistant', messageKey, editable =
     },
     h('div', { className: `dtv-play-chat-bubble dtv-play-chat-${role}`, style: messageBubbleStyle(settings.bubbleStyle, role) },
       h('div', { style: { textAlign: role === 'user' ? 'right' : 'left', font: '600 11px system-ui', opacity: 0.65, marginBottom: 6 } }, name),
-      h(MessageContent, { text, writeScope:boundScope, createBinding: boundScope ? (signal,writeGrant) => createMvuCardBinding({client:context.playClient,scope:boundScope,signal,writeGrant}) : undefined, owners: [context?.state?.display?.globalRenderingOwner,...Object.entries(context?.state?.display?.bindings??{}).filter(([,id])=>typeof id==='string'&&id).map(([kind,id])=>`${kind==='characterId'?'character':'preset'}:${id}`)].filter(Boolean), helpers: (context?.state?.display?.renderingSources ?? []).filter(item=>item.kind==='helper'), enabled: settings.interactiveCards === true && !context?.disabled && !streaming, scopeKey: JSON.stringify([context?.playthrough?.id,context?.sessionId,messageKey,boundScope]), context: { version: 1, role, userName: context?.state?.display?.macros?.user ?? 'User', characterName: context?.state?.display?.macros?.character ?? 'Assistant' }, onSend: disabled || context?.busy ? undefined : async text => { await context.playClient.postUserMessage(context.sessionId, text); context.changed?.() } }),
+      h(MessageContent, { text, writeScope, createBinding: boundScope ? (signal,writeGrant) => createMvuCardBinding({client:context.playClient,scope:writeGrant?writeScope:boundScope,signal,writeGrant}) : undefined, owners: [context?.state?.display?.globalRenderingOwner,...Object.entries(context?.state?.display?.bindings??{}).filter(([,id])=>typeof id==='string'&&id).map(([kind,id])=>`${kind==='characterId'?'character':'preset'}:${id}`)].filter(Boolean), helpers: (context?.state?.display?.renderingSources ?? []).filter(item=>item.kind==='helper'), enabled: settings.interactiveCards === true && !context?.disabled && !streaming, scopeKey: JSON.stringify([context?.playthrough?.id,context?.sessionId,messageKey,boundScope,writeScope]), context: { version: 1, role, userName: context?.state?.display?.macros?.user ?? 'User', characterName: context?.state?.display?.macros?.character ?? 'Assistant' }, onSend: disabled || context?.busy ? undefined : async text => { await context.playClient.postUserMessage(context.sessionId, text); context.changed?.() } }),
     ),
     editing ? h('dialog', { className: 'dtv-avatar-dialog', ref: element => { if (element && !element.open) element.showModal() }, onCancel: event => { event.preventDefault(); if (!busy) setEditing(false) }, role: 'dialog', 'aria-modal': true, 'aria-label': translate('appearance.editAvatar'), style: { position: 'fixed', inset: 0, width: '100vw', height: '100vh', maxWidth: 'none', maxHeight: 'none', margin: 0, border: 0, boxSizing: 'border-box', zIndex: 2147483500, background: '#0008', display: 'grid', placeItems: 'center' }, onKeyDown: event => { if (event.key === 'Escape' && !busy) setEditing(false) } },
       h('div', { style: { width: 'min(420px,90vw)', maxHeight: '85vh', overflow: 'auto', padding: 22, borderRadius: 16, background: 'var(--dsw-alias-bg-base,#fff)', color: 'var(--dsw-alias-label-primary,#222)', display: 'grid', gap: 12 } },

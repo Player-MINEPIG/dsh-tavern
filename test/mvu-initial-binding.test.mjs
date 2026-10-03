@@ -211,3 +211,30 @@ test('empty restore markers permit initial scope but never inherited, malformed 
     await assert.rejects(f.service.cardWrite(request(capability, 1, type)), { code: 'MVU_READ_ONLY' }, type)
   }
 })
+
+test('greeting is an explicit current read view after a turn and never a write capability', async t => {
+  const f = fixture(t); f.allow()
+  const scope = { ...f.scope, mode: 'greeting' }
+  assert.equal((await f.service.snapshot(scope)).variables.stat_data.hp, 10)
+  const initial = await f.bind()
+  await f.service.cardWrite(request(initial.capability, 0))
+  f.start()
+  assert.equal((await f.service.snapshot(scope)).variables.stat_data.hp, 7)
+  await assert.rejects(f.service.snapshot(f.scope), { code: 'MVU_READ_ONLY' })
+  await assert.rejects(f.service.createCardBinding({ scope, grantId: 'grant', sourceIdentity: { ...f.sourceIdentity, scope } }), { code: 'MVU_READ_ONLY' })
+  await assert.rejects(f.service.cardWrite(request(initial.capability, 1, 'after-turn')), { code: 'MVU_READ_ONLY' })
+  await assert.rejects(f.service.snapshot({ ...scope, nodeId: 'forged' }), { code: 'MVU_SCOPE' })
+  f.select('other'); await assert.rejects(f.service.snapshot(scope), { code: 'MVU_READ_ONLY' }); f.select('c')
+  f.playthrough.ext.pmpDshTavern.rootSessionId = 'other'
+  await assert.rejects(f.service.snapshot(scope), { code: 'MVU_READ_ONLY' })
+})
+
+test('greeting reads a stored session without starting an Agent and rechecks access after async listing', async t => {
+  const f = fixture(t), scope = { ...f.scope, mode: 'greeting' }
+  f.ctx.get('sessions').delete('s')
+  f.ctx.provide('sessionController', { inspect: async () => ({ meta: f.session.header, events: [] }), resolveAgent: () => { throw Error('Reading a greeting must not start an Agent') } })
+  assert.equal((await f.service.snapshot(scope)).status, 'available')
+  const list = f.service.list.bind(f.service)
+  f.service.list = async input => { const rows = await list(input); f.select('other'); return rows }
+  await assert.rejects(f.service.snapshot(scope), { code: 'MVU_READ_ONLY' })
+})

@@ -269,7 +269,7 @@ export function Greeting({ greeting, busy, change, locked = false, footer = null
       className: 'dtv-play-greeting',
       'data-locked': locked,
     },
-      h(MessageBubble, { initialBinding: !locked, messageKey: `greeting:${greeting.index ?? 0}`, text: greeting.text }),
+      h(MessageBubble, { greetingBinding: true, initialBinding: !locked, messageKey: `greeting:${greeting.index ?? 0}`, text: greeting.text }),
       locked ? null : h(MessageRow, null, h('div', { className: 'dtv-play-greeting-navigation' },
       h('button', {
         type: 'button',

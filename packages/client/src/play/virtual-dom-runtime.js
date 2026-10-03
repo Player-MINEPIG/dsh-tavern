@@ -1,3 +1,4 @@
+import { CARD_CONVENIENCE } from './card-convenience.js'
 // This source runs inside the interpreter, not in the worker's native realm.
 export const VIRTUAL_DOM_BOOTSTRAP = `
 const __DOM=__TavernDOM;
@@ -17,8 +18,7 @@ globalThis.setInterval=(fn,delay=0,...args)=>{if(typeof fn!=='function')throw Er
 globalThis.clearInterval=globalThis.clearTimeout;
 globalThis.requestAnimationFrame=fn=>setTimeout(()=>fn(performance.now()),16);globalThis.cancelAnimationFrame=clearTimeout;
 globalThis.__tick=(id,interval)=>{const fn=__timers.get(id);if(!interval)__timers.delete(id);if(fn)fn()};
-// Small clean-room convenience facade; a reviewed jQuery can replace it.
-globalThis.$=globalThis.jQuery=value=>{if(typeof value==='function'){value();return}const nodes=typeof value==='string'?[...document.querySelectorAll(value)]:[value];const api={text:value=>{if(value===undefined)return nodes[0]?.textContent;for(const node of nodes)node.textContent=String(value);return api},html:value=>{if(value===undefined)return nodes[0]?.innerHTML;for(const node of nodes)node.innerHTML=String(value);return api},on:(type,fn)=>{for(const node of nodes)node.addEventListener(type,fn);return api},val:value=>{if(value===undefined)return nodes[0]?.value;for(const node of nodes)node.value=value;return api}};return api};
+${CARD_CONVENIENCE}
 const __subscribers=new Map();let __subscriberId=0;
 const __getVariables=options=>__call('variables',[options??null]);
 globalThis.getVariables=__getVariables;globalThis.getAllVariables=()=>__getVariables();
