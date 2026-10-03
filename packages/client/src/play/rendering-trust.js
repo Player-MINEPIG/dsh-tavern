@@ -4,13 +4,23 @@ import { externalUrl, MAX_RENDER_SOURCE } from './rendering-sources.js'
 // Ephemeral, outside-card authority. Never restore approvals from card data,
 // workspace files or localStorage; a reload requires a fresh review.
 export function createRenderingTrust() {
-  const records = new Map(), listeners = new Set()
+  const records = new Map(), intentions = new Map(), listeners = new Set()
   let revision = 0, generation = 0
   const emit = () => { revision++; for (const listener of listeners) listener() }
   const keyFor = (owner, source) => JSON.stringify([owner,source])
   return {
     revision: () => revision,
     subscribe(listener) { listeners.add(listener); return () => listeners.delete(listener) },
+    isEnabled(owner, source, fallback = true) {
+      return intentions.get(keyFor(owner,source)) ?? fallback
+    },
+    setEnablement(value) {
+      const next = value?.entries ?? []
+      if (JSON.stringify([...intentions]) === JSON.stringify(next.map(item=>[keyFor(item.owner,item.key),item.enabled]))) return
+      intentions.clear()
+      for (const item of next) intentions.set(keyFor(item.owner,item.key),item.enabled)
+      emit()
+    },
     async stage(owner, source, content) {
       if (typeof owner !== 'string' || owner.length > 300 || typeof source !== 'string' || source.length > 2048 || typeof content !== 'string' || content.length > MAX_RENDER_SOURCE) throw Error('Rendering source exceeds limit')
       if (source.startsWith('https:') && externalUrl(source) !== source) throw Error('Unsupported dependency URL')
@@ -38,6 +48,7 @@ export function createRenderingTrust() {
     revoke(owner,source) { records.delete(keyFor(owner,source)); emit() },
     read(owner,source) {
       const value=records.get(keyFor(owner,source))
+      if (source.startsWith('https:') && intentions.get(keyFor(owner,source)) === false) throw Error('Rendering source is disabled')
       if (!value?.approved) throw Error('Rendering dependency requires content review')
       return value.content
     },

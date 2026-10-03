@@ -64,8 +64,8 @@ export function helperScripts(resource) {
     items.slice(0,128).forEach((entry,index) => {
       const value = entry?.value && typeof entry.value === 'object' ? entry.value : entry
       if (!value || typeof value !== 'object') return
-      const path = `${prefix}[${index}]`, enabled = parentEnabled && value.enabled !== false && entry.enabled !== false
-      if (typeof value.content === 'string') result.push({path,name:String(value.name ?? value.id ?? path).slice(0,160),content:value.content,enabled})
+      const path = `${prefix}[${index}]`, enabled = parentEnabled && value.enabled !== false && value.disabled !== true && entry.enabled !== false && entry.disabled !== true
+      if (typeof value.content === 'string') result.push({path,id:typeof (value.id??entry.id) === 'string' ? (value.id??entry.id) : null,name:String(value.name ?? value.id ?? path).slice(0,160),content:value.content,enabled})
       visit(value.scripts ?? value.children, path, depth + 1, enabled)
     })
   }
@@ -98,4 +98,53 @@ export function isSideEffectModuleReference(code,url,base) {
   for(const value of Object.values(node)){if(Array.isArray(value)){for(const item of value)if(item?.type)pending.push(item)}else if(value?.type)pending.push(value)}
  }
  return matched
+}
+
+// Identity is independent of trust: these digests only locate saved enablement.
+async function sourceDigest(content) {
+  return [...new Uint8Array(await crypto.subtle.digest('SHA-256',new TextEncoder().encode(content)))].map(byte=>byte.toString(16).padStart(2,'0')).join('')
+}
+export async function globalRenderingOwner(client) {
+  if (typeof client.getWorkspace !== 'function') return null
+  const workspace = await client.getWorkspace()
+  return workspace?.selected && workspace.rootPath ? `global:workspace:${await sourceDigest(workspace.rootPath)}` : null
+}
+export async function identifyRenderingSources(sources) {
+  const digests = await Promise.all(sources.map(source=>source.kind==='helper' ? sourceDigest(source.content) : null))
+  return sources.map((source,index) => {
+    if (source.kind !== 'helper') return source
+    const uniqueId = source.id && sources.filter(item=>item.owner===source.owner && item.id===source.id).length === 1
+    const duplicateContent = sources.some((item,i)=>i!==index && item.owner===source.owner && digests[i]===digests[index])
+    return {...source,preferenceKey:uniqueId ? `helper:id:${source.id}` : `helper:sha256:${digests[index]}${duplicateContent?':'+source.path:''}`}
+  })
+}
+
+export function renderingEntries(sources, trust) {
+  const entries=[]
+  function add(entry,depth=0){
+    const existing=entries.find(item=>item.owner===entry.owner&&item.key===entry.key)
+    if(existing){
+      existing.origins=[...new Set([...(existing.origins??[]),...(entry.origins??[])])]
+      if(existing.enabled||!entry.enabled)return
+      existing.enabled=true;entry=existing
+    }else{
+      if(entries.length>=128)return
+      entries.push(entry)
+    }
+    const staged=trust.inspect(entry.owner,entry.key)
+    if(staged&&depth<8)for(const dependency of discoverDependencies(staged.content,entry.url))add({...dependency,owner:entry.owner,key:dependency.url??dependency.raw,name:dependency.raw,kind:dependency.kind,enabled:entry.enabled&&trust.isEnabled(entry.owner,entry.preferenceKey??entry.key,true),origins:[...(entry.origins??[]),entry.key]},depth+1)
+  }
+  for(const original of sources){
+    const source={...original,enabled:trust.isEnabled(original.owner,original.preferenceKey??original.key,original.enabled)}
+    if(source.kind==='helper')add(source)
+    for(const dependency of source.dependencies)add({...dependency,owner:source.owner,key:dependency.url??dependency.raw,name:dependency.raw,kind:dependency.kind,enabled:source.enabled,origins:[source.path]})
+  }
+  return entries
+}
+
+export async function readRenderingWorkspace(client, read) {
+  const owner=await globalRenderingOwner(client)
+  const resource=await read()
+  // A workspace switch between reads must not attach old code to the new owner.
+  return {owner:owner===await globalRenderingOwner(client)?owner:null,resource}
 }

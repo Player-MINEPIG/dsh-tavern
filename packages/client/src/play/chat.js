@@ -1,4 +1,4 @@
-import { renderingInventory } from './rendering-sources.js'
+import { readRenderingWorkspace, identifyRenderingSources, renderingInventory } from './rendering-sources.js'
 import { ConversationPresentation, MessageBubble, messageAvatarKey, characterAvatarUrl } from './presentation.js'
 import { finishPendingSwipe, pendingSwipeForSession } from './pending-swipe.js'
 import {
@@ -132,10 +132,10 @@ export async function loadChatState(client, sessionId, playthrough) {
   const characterResponse = typeof characterId === 'string' && characterId !== ''
     ? await client.getCharacter(characterId)
     : null
-  const [regexDocument, active] = await Promise.all([
+  const [{resource:regexDocument,owner:globalOwner}, active] = await Promise.all([
     typeof client.getFile === 'function'
-      ? getRegexDocument(client)
-      : { schemaVersion: 1, rules: [] },
+      ? readRenderingWorkspace(client,()=>getRegexDocument(client))
+      : { resource:{schemaVersion: 1, rules: []},owner:null },
     typeof client.getActive === 'function'
       ? client.getActive(sessionId)
       : null,
@@ -239,7 +239,7 @@ export async function loadChatState(client, sessionId, playthrough) {
     importMutable,
     greeting: displayGreeting,
     regexDiagnostics,
-    display: { rules, bindings, macros, renderingSources: [...renderingInventory(characterResponse?.character ?? characterResponse,{kind:'character',resourceId:bindings.characterId}),...renderingInventory(presetResponse?.preset ?? presetResponse,{kind:'preset',resourceId:bindings.presetId})] },
+    display: { rules, bindings, macros, globalRenderingOwner: globalOwner, renderingSources: await identifyRenderingSources([...renderingInventory(characterResponse?.character ?? characterResponse,{kind:'character',resourceId:bindings.characterId}),...renderingInventory(presetResponse?.preset ?? presetResponse,{kind:'preset',resourceId:bindings.presetId})]) },
   }
 }
 

@@ -181,7 +181,7 @@ export function PlaySessionDock({ session, useSessions, useConversation, convers
         createBinding:content.initialScope?(signal,writeGrant)=>createMvuCardBinding({client:playClient,scope:content.initialScope,signal,writeGrant}):undefined,
         enabled:displaySettings.interactiveCards===true,
         scopeKey:JSON.stringify([sessionId,content.playthrough.id,'greeting',greeting.index,content.initialScope]),
-        owners:['global:global',...Object.entries(content.display?.bindings??{}).filter(([,id])=>typeof id==='string'&&id).map(([kind,id])=>`${kind==='characterId'?'character':'preset'}:${id}`)],
+        owners:[content.display?.globalRenderingOwner,...Object.entries(content.display?.bindings??{}).filter(([,id])=>typeof id==='string'&&id).map(([kind,id])=>`${kind==='characterId'?'character':'preset'}:${id}`)].filter(Boolean),
         helpers:(content.display?.renderingSources??[]).filter(item=>item.kind==='helper'),
         context:{version:1,role:'assistant',userName:content.display?.macros?.user??'User',characterName:content.display?.macros?.character??'Assistant'},
         onSend:async text=>{await playClient.postUserMessage(sessionId,text);setRevision(value=>value+1)},

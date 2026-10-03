@@ -520,11 +520,13 @@ v1 `/characters/relink` 是缺失资源恢复面：它以 catalog revision 作 C
 
 | 方法 | 路径 | 作用 | 状态 |
 | --- | --- | --- | --- |
-| GET | `/conversation-settings` | 请求：无；返回：`{ ok: true, settings: { schemaVersion: 1, textScale, actionScale, bubbleStyle?, interactiveCards? } }` | 已实现 |
-| PUT | `/conversation-settings` | 请求：`{ textScale, actionScale, bubbleStyle?, interactiveCards? }`；返回：同 GET | 已实现 |
+| GET | `/conversation-settings` | 请求：无；返回：`{ ok: true, settings: { schemaVersion: 1, textScale, actionScale, bubbleStyle?, interactiveCards?, scriptEnablement? } }` | 已实现 |
+| PUT | `/conversation-settings` | 请求：`{ textScale, actionScale, bubbleStyle?, interactiveCards?, scriptEnablement? }`；返回：同 GET | 已实现 |
 | DELETE | `/conversation-settings` | 请求：无；返回：恢复两个字段为 `1` | 已实现 |
 
-可选 `bubbleStyle` 与布尔值 `interactiveCards` 遵循[显示协议](CONVERSATION_PRESENTATION.md)，请求体上限 16 KiB；省略或 DELETE 恢复默认。用户创建/PATCH/导入/导出支持可选栅格 data URI `avatar`，上限 128 KiB；null 清除，PATCH 省略则保留。timeline 的 `ext.pmpDshTavern.appearance` 遵循同一文档，通过现有 revision/CAS 写入，非法元数据返回 `PLAY_APPEARANCE_INVALID`。
+`scriptEnablement` 保存普通本地选择，格式为 `{ schemaVersion: 1, entries: [{ owner, key, enabled }] }`，最多 128 条。owner 使用角色/预设资源 ID；全局依赖使用规范 RP 工作区的 SHA-256 身份。Helper 优先使用原条目唯一 ID，否则按源码 SHA-256 标识唯一内容，重复源码才追加位置。无 ID 源码变化或重复条目移位后继承来源默认。新资源 ID 与原卡导出不携带本地选择。省略或 DELETE 清除覆盖；外观页的恢复默认操作保留脚本选择及总开关。此设置不持久化内容授权或写许可；源码变化仍须重新审核，变量写入独立授权。
+
+可选 `bubbleStyle` 与布尔值 `interactiveCards` 遵循[显示协议](CONVERSATION_PRESENTATION.md)，请求体上限 384 KiB；省略或 DELETE 恢复默认。用户创建/PATCH/导入/导出支持可选栅格 data URI `avatar`，上限 128 KiB；null 清除，PATCH 省略则保留。timeline 的 `ext.pmpDshTavern.appearance` 遵循同一文档，通过现有 revision/CAS 写入，非法元数据返回 `PLAY_APPEARANCE_INVALID`。
 
 两个 scale 均为 `0.75`–`1.5` 的有限数值，步进 `0.05`；PUT 是完整替换并拒绝未知字段。`textScale` 作用于魔丸用户/助手正文与 greeting（含空周目 opening dock），`actionScale` 只作用于 durable QA 末尾的复制、swipe、分支、回退和编辑操作行。
 

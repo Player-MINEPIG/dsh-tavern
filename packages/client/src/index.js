@@ -57,6 +57,7 @@ import {
   DEFAULT_CONVERSATION_SETTINGS,
   getClientConversationSettings,
   setClientConversationSettings,
+  normalizeClientConversationSettings,
 } from './conversation-settings.js'
 import { createPlaythroughController } from './play/create.js'
 import {
@@ -816,8 +817,7 @@ function TavernShell({ useSessions, useWorkspaces, createCleanSession, createCon
 
   const persistConversationSettings = async next => {
     const previous = conversationSettings
-    const normalized = setClientConversationSettings(next)
-    setConversationSettings(normalized)
+    const normalized = normalizeClientConversationSettings(next)
     setConversationSettingsBusy(true)
     setConversationSettingsStatus({ text: translate('conversationSettings.saving'), error: false })
     try {
