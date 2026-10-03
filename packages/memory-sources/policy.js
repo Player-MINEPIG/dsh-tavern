@@ -51,8 +51,9 @@ export class SourcePolicy {
   emit(fact) { if (!this.#disposed) for (const listener of this.#listeners) { try { listener(structuredClone(fact)) } catch {} } }
   registerUsage(listener) {
     if (typeof listener !== 'function' || this.#disposed) fail('SOURCE_UNAVAILABLE', 'Source is unavailable')
-    this.#usage.add(listener); this.#epoch++
-    return () => { if (this.#usage.delete(listener)) this.#epoch++ }
+    const registration = { listener }
+    this.#usage.add(registration); this.#epoch++
+    return () => { if (this.#usage.delete(registration)) this.#epoch++ }
   }
   setMode({ id, mode, expectedRevision, operationId, signal, scope }, content) {
     signal?.throwIfAborted(); localScope(scope)
@@ -71,7 +72,7 @@ export class SourcePolicy {
     const dependency = context.dependencyEvent?.usage === 'prompt-template-dependency'
     if (mode !== 'managed' && !dependency) return { enabled: true, configRevision: null, checkCurrent: current }
     const leases = [], revisions = []
-    for (const handler of [...this.#usage]) {
+    for (const { listener: handler } of [...this.#usage]) {
       const response = await handler({ id: row.id, on: 'before_model_request', managementMode: mode,
         scope: { authority: 'local', sessionId: context.sessionId }, event: { ...(context.dependencyEvent ?? {}), preview: context.preview === true, turn: context.turn ?? null, step: context.step ?? null } })
       context.signal?.throwIfAborted()

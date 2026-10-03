@@ -5,29 +5,77 @@ let modulePromise
 const error = (code, message) => Object.assign(new Error(message), { code })
 /** Independent EJS-style compiler. Compiled JavaScript is evaluated only in QuickJS. */
 export function compileTemplate(content) {
+  return compile(content)
+}
+function compile(content, checkBudget = () => {}) {
   if (typeof content !== 'string' || content.length > 131072) throw new TypeError('Template must be at most 128 Ki characters')
-  let code = '', offset = 0
-  const tags = /<%([=#_%\-]?)([\s\S]*?)([-_]?%>)/g
-  const literal = value => { if (value) code += `print(${JSON.stringify(value)});\n` }
-  for (const match of content.matchAll(tags)) {
-    let preceding = content.slice(offset, match.index)
-    if (match[1] === '_') preceding = preceding.replace(/[ \t]*$/, '')
-    literal(preceding)
-    const [whole, kind, body, end] = match
+  const code = []
+  let offset = 0
+  const literal = value => { if (value) code.push(`print(${JSON.stringify(value)});\n`) }
+  while (offset < content.length) {
+    checkBudget()
+    const start = content.indexOf('<%', offset)
+    if (start < 0) { literal(content.slice(offset)); break }
+    const modifier = content[start + 2], kind = modifier && '=#_%-'.includes(modifier) ? modifier : ''
+    const bodyStart = start + 2 + kind.length, close = content.indexOf('%>', bodyStart)
+    if (close < 0) throw new TypeError('Unclosed template tag')
+    const end = close > bodyStart && '-_'.includes(content[close - 1]) ? content[close - 1] : ''
+    let precedingEnd = start
+    if (kind === '_') while (precedingEnd > offset && ' \t'.includes(content[precedingEnd - 1])) precedingEnd--
+    literal(content.slice(offset, precedingEnd))
+    const body = content.slice(bodyStart, close - end.length)
     if (kind === '%') literal('<%' + body + '%>')
-    else if (kind === '=' || kind === '-') code += `print(${kind === '=' ? '__escape' : ''}(( ${body} )));\n`
-    else if (kind !== '#') code += `${body}\n`
-    offset = match.index + whole.length
-    if (end === '-%>') offset += content.slice(offset).match(/^\r?\n/)?.[0].length ?? 0
-    if (end === '_%>') offset += content.slice(offset).match(/^\s*/)?.[0].length ?? 0
+    else if (kind === '=' || kind === '-') code.push(`print(${kind === '=' ? '__escape' : ''}(( ${body} )));\n`)
+    else if (kind !== '#') code.push(`${body}\n`)
+    offset = close + 2
+    if (end === '-') {
+      if (content.startsWith('\r\n', offset)) offset += 2
+      else if (content[offset] === '\n') offset++
+    }
+    if (end === '_') while (offset < content.length && /\s/.test(content[offset])) offset++
   }
-  const tail = content.slice(offset)
-  if (tail.includes('<%')) throw new TypeError('Unclosed template tag')
-  literal(tail)
-  return code
+  checkBudget()
+  return code.join('')
+}
+
+// Serialized into the VM; tokens preserve quoted boundaries without evaluating code.
+function variablePathKeys(path) {
+  const keys = []
+  let i = 0
+  const invalid = () => { throw new TypeError('Invalid variable path') }
+  const bare = () => {
+    const start = i
+    while (i < path.length && !'.[]'.includes(path[i])) i++
+    if (start === i) invalid()
+    keys.push(path.slice(start, i))
+  }
+  if (path[0] !== '[') bare()
+  while (i < path.length) {
+    if (path[i] === '.') { i++; bare(); continue }
+    if (path[i++] !== '[') invalid()
+    const quote = path[i]
+    let key = ''
+    if (quote === '"' || quote === "'") {
+      i++
+      while (i < path.length && path[i] !== quote) {
+        if (path[i] === '\\' && ++i === path.length) invalid()
+        key += path[i++]
+      }
+      if (path[i++] !== quote) invalid()
+    } else {
+      const start = i
+      while (i < path.length && path[i] >= '0' && path[i] <= '9') i++
+      if (start === i) invalid()
+      key = path.slice(start, i)
+    }
+    if (path[i++] !== ']') invalid()
+    keys.push(key)
+  }
+  return keys
 }
 
 const bootstrap = `
+const __pathKeys = ${variablePathKeys.toString()};
 const __frozen = value => { if(value && typeof value === 'object') {Object.freeze(value);for(const item of Object.values(value))__frozen(item)};return value };
 const __lookup = (kind,args=[]) => __frozen(JSON.parse(__dependency(JSON.stringify({kind,args}))));
 const __vars = () => __lookup('variables');
@@ -41,7 +89,7 @@ const __escape = value => String(value ?? '').replace(/[&<>"']/g,c=>({'&':'&amp;
 const __path = (object,path) => {
   if(path === null || path === undefined || path === '')return object;
   if(typeof path !== 'string')throw new TypeError('Variable path must be a string');
-  const keys=path.replace(/\\[(?:"([^"\\]]+)"|'([^'\\]]+)'|(\\d+))\\]/g,(_,a,b,c)=>'.'+(a??b??c)).split('.');
+  const keys=__pathKeys(path);
   for(const key of keys){if(['__proto__','prototype','constructor'].includes(key))throw new Error('Unsafe variable path');if(!object || !Object.hasOwn(object,key))return undefined;object=object[key]};return object;
 };
 function getvar(key,options={}) {
@@ -90,11 +138,16 @@ function snapshotLookup(snapshot, { kind, args }) {
  */
 export async function renderTemplate(content, snapshot = {}, { signal, timeLimit = 75, memoryLimit = 16 * 1024 * 1024, maxOutput = 524288, resolveDependency } = {}) {
   signal?.throwIfAborted()
-  const compiled = compileTemplate(content)
+  const compileStarted = performance.now()
+  const compiled = compile(content, () => {
+    signal?.throwIfAborted()
+    if (performance.now() - compileStarted >= timeLimit) throw error('TEMPLATE_EXECUTION_LIMIT', 'Template compilation budget exceeded')
+  })
+  let spent = performance.now() - compileStarted
   const lookup = resolveDependency ?? (request => snapshotLookup(snapshot, request))
   const module = await (modulePromise ??= newQuickJSWASMModuleFromVariant(variant))
   const cache = new Map()
-  let inputBytes = 0, spent = 0, operations = 0
+  let inputBytes = 0, operations = 0
   for (let pass = 0; pass <= 32; pass++) {
     signal?.throwIfAborted()
     if (spent >= timeLimit) throw error('TEMPLATE_EXECUTION_LIMIT', 'Template execution budget exceeded')
