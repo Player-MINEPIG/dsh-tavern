@@ -14,7 +14,7 @@ import { discoverDependencies, isSideEffectModuleReference, externalUrl, loadWra
 import {adaptIdentityHtml,identityLoaderBootstrap} from './html-loader-adapters.js'
 import {createCardScopedStorage} from './card-scoped-storage.js'
 import {createIdentityOpeningBridge} from './identity-opening-bridge.js'
-import {projectCardControlState} from './card-control-state.js'
+import {projectCardControlState,cardControlEventChecked} from './card-control-state.js'
 import { renderingTrust } from './rendering-trust.js'
 
 const TAGS = 'template suot div span p br hr section article header footer main aside h1 h2 h3 h4 h5 h6 ul ol li dl dt dd b strong i em small pre code blockquote table thead tbody tr th td details summary button label input textarea select option output progress meter img style svg g path circle ellipse rect line polyline polygon defs linearGradient radialGradient stop clipPath title desc'.split(' ')
@@ -304,6 +304,7 @@ const InteractiveCard = memo(function InteractiveCard({ source, enabled, scopeKe
         const activeBinding=binding??helperBinding
         const schemaEvidence=confirmMvuSchemas(data.schemaDeclarations??[],activeBinding?.getSnapshot())
         const events=['click','input','change','keydown','keyup','pointerdown','pointerup']
+        const controlPhases=new WeakMap()
         const handler=event=>{
           const target=event.target.closest?.('[data-dtv-node]');if(!target)return
           const value={type:event.type,target:Number(target.dataset.dtvNode)}
@@ -320,21 +321,24 @@ const InteractiveCard = memo(function InteractiveCard({ source, enabled, scopeKe
             },()=>{if(!signal.aborted&&!cleaned&&ticket===photoEpoch&&current===generation.current)setPhotoError(translate('appearance.photoUnavailable'))})
             return
           }
-          if(['input','textarea','select'].includes(target.localName)){value.value=String(target.value).slice(0,64000);value.checked=target.checked===true}
+          const control=target.localName==='input'&&['radio','checkbox'].includes(target.type)
+          if(['input','textarea','select'].includes(target.localName)){value.value=String(target.value).slice(0,64000);const checked=control?cardControlEventChecked(event.type,target,controlPhases):target.checked===true;if(checked!==undefined)value.checked=checked}
           for(const key of ['key','code','keyCode','charCode','button','buttons','clientX','clientY','ctrlKey','altKey','shiftKey','metaKey'])if(event[key]!==undefined)value[key]=event[key]
-          virtualRuntime?.dispatch(value,{trusted:event.isTrusted===true})
+          virtualRuntime?.dispatch(value,{trusted:event.isTrusted===true,control})
         }
         for(const type of events)doc.body.addEventListener(type,handler)
         removeEvents=()=>{for(const type of events)doc.body.removeEventListener(type,handler)}
         if(writeScope&&createBinding)writeRequest=renderingWriteRequests.register({scope:writeScope,owners,runs:data.runs,modules:data.modules,html:data.html,adapters:data.adapters,schemaDeclarations:data.schemaDeclarations,onRevoke:revokeWrites})
         let acceptedView
-        const displayView=(view,targetId)=>{
+        const displayView=(view,targetId,controlsCurrent=true)=>{
             if(cleaned||current!==generation.current)throw Error('Card view generation expired')
             if(!view||Array.isArray(view)||typeof view.html!=='string'||typeof view.styles!=='string'||!Number.isSafeInteger(view.bodyId)||view.bodyId<=0||JSON.stringify(view).length>1024*1024)throw Error('Invalid card view')
             const controlsKey=JSON.stringify(view.controls??[])
             const root=cardRootPresentation(view.root),rootKey=JSON.stringify(root)
-            if(acceptedView?.html===view.html&&acceptedView.styles===view.styles&&acceptedView.bodyId===view.bodyId&&acceptedView.rootKey===rootKey&&acceptedView.controlsKey===controlsKey){
+            if(acceptedView?.html===view.html&&acceptedView.styles===view.styles&&acceptedView.bodyId===view.bodyId&&acceptedView.rootKey===rootKey){
               if(targetId!==undefined&&!acceptedView.nodes.has(targetId))throw Error('Layout target is not in this card')
+              projectCardControlState(view.controls,acceptedView.nodes,{connected:true,apply:controlsCurrent})
+              if(controlsCurrent)acceptedView.controlsKey=controlsKey
               return acceptedView.nodes
             }
             // Parse inertly under the byte limit. The trusted receiver counts the
@@ -352,7 +356,7 @@ const InteractiveCard = memo(function InteractiveCard({ source, enabled, scopeKe
               nodes.set(id,node)
             }
             if(targetId!==undefined&&!nodes.has(targetId))throw Error('Layout target is not in this card')
-            projectCardControlState(view.controls,nodes)
+            projectCardControlState(view.controls,nodes,{preserve:controlsCurrent?undefined:acceptedView?.nodes})
             const style=doc.createElement('style');style.textContent=imageCss(view.styles)
             const focused=doc.activeElement,id=focused?.dataset?.dtvNode,selection=[focused?.selectionStart,focused?.selectionEnd],scroll=[doc.documentElement.scrollLeft,doc.documentElement.scrollTop]
             projectRoot(root);images?.refresh();viewportMode=usesCardViewport(view.html,view.styles,root);applyViewportMode()
@@ -396,10 +400,10 @@ const InteractiveCard = memo(function InteractiveCard({ source, enabled, scopeKe
               node.click()
             }catch{if(!cleaned&&current===generation.current)setPhotoError(translate('appearance.photoUnavailable'))}
           },
-          onMeasure:(request,{signal})=>{
+          onMeasure:(request,{signal,controlsCurrent})=>{
             signal.throwIfAborted();if(cleaned||current!==generation.current||!frame.current?.isConnected||frame.current.contentDocument!==doc)throw Error('Card measurement generation expired')
             if(!Number.isSafeInteger(request.id)||request.id<0||!['',null,undefined,'::before','::after'].includes(request.pseudo))throw Error('Invalid card measurement')
-            const nodes=displayView(request.view,request.id),node=nodes.get(request.id)
+            const nodes=displayView(request.view,request.id,controlsCurrent),node=nodes.get(request.id)
             if(!node||node.ownerDocument!==doc||!node.isConnected||(request.id!==0&&(node.getAttribute('data-dtv-node')!==String(request.id)||(node!==doc.body&&!doc.body.contains(node)))))throw Error('Layout target is not in this card')
             const rectangle=node.getBoundingClientRect(),style=doc.defaultView.getComputedStyle(node,request.pseudo||null),computed=Object.create(null)
             if(style.length>1024)throw Error('Computed style exceeds property limit')

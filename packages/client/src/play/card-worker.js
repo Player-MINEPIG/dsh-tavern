@@ -28,7 +28,8 @@ let nextViewport,viewportQueued=false
 let photoPickId=0,lastPhotoTask=null
 let messages=0, messageEpoch=0
 let storagePending=null,storageRevision=0
-const reply=(kind,value)=>{const now=performance.now();if(now-messageEpoch>1000){messages=0;messageEpoch=now}if(++messages>256){dispose();throw Error('Card message rate limit exceeded')}self.postMessage({nonce,kind,value})}
+let controlSequence=0,receivedControlSequence=0
+const reply=(kind,value,metadata={})=>{const now=performance.now();if(now-messageEpoch>1000){messages=0;messageEpoch=now}if(++messages>256){dispose();throw Error('Card message rate limit exceeded')}self.postMessage({nonce,kind,value,...metadata})}
 function dispose(){if(destroyed)return;destroyed=true;for(const timer of timers.values())clearTimeout(timer);timers.clear();if(layoutPending)clearTimeout(layoutPending.timer);if(storagePending){clearTimeout(storagePending.timer);storagePending.reject(Error('Card storage generation expired'));storagePending=null}startupTasks.length=0;self.close()}
 function fail(error){try{self.postMessage({nonce,kind:'error',value:String(error?.message??error).slice(0,300)})}finally{dispose()}}
 async function evaluate(code,name='card.js',module=false,initial=false){
@@ -41,16 +42,16 @@ async function evaluate(code,name='card.js',module=false,initial=false){
  let jobs=0;while(runtime.hasPendingJob()){if(++jobs>200)throw Error('Card pending job limit exceeded');await drainJob()}
  return value
 }
-async function snapshot(){
+async function snapshot(forceControls=false){
  const value=await evaluate('__view()')
  if(typeof value!=='string'||value.length>1024*1024)throw Error('Card output exceeds 1 MiB')
- if(value!==lastView){lastView=value;reply('view',value)}
+ if(forceControls||value!==lastView){lastView=value;reply('view',value,{controlSequence})}
 }
-function enter(callback,cause='script',taskId=null){
+function enter(callback,cause='script',taskId=null,correction=0){
  if(destroyed)return
- if(!ready){if(startupTasks.length>=64)return fail(Error('Card startup task limit exceeded'));startupTasks.push([callback,cause,taskId]);return}
+ if(!ready){if(startupTasks.length>=64)return fail(Error('Card startup task limit exceeded'));startupTasks.push([callback,cause,taskId,correction]);return}
  if(++queued>128)return fail(Error('Card task queue limit exceeded'))
- queue=queue.then(async()=>{if(destroyed)return;activeCause=cause;activeTask=taskId;layoutCalls=0;reply('busy');try{await callback();await snapshot();reply('idle')}catch(error){fail(error)}finally{activeCause='script';activeTask=null;queued--}})
+ queue=queue.then(async()=>{if(destroyed)return;activeCause=cause;activeTask=taskId;layoutCalls=0;if(correction)controlSequence=correction;reply('busy');try{await callback();await snapshot(correction>0);reply('idle')}catch(error){fail(error)}finally{activeCause='script';activeTask=null;queued--}})
 }
 
 async function init(input){
@@ -132,7 +133,7 @@ async function init(input){
   const value=JSON.parse(raw)
   if(!Number.isSafeInteger(value.id)||value.id<0||typeof value.view?.html!=='string'||typeof value.view?.styles!=='string'||!['',null,undefined,'::before','::after'].includes(value.pseudo))throw Error('Invalid card measurement')
   const requestId=++layoutId
-  const result=await new Promise((resolve,reject)=>{const timer=setTimeout(()=>{layoutPending=null;reject(Error('Card layout response deadline exceeded'))},1000);layoutPending={requestId,resolve,reject,timer};reply('measure',{...value,requestId})})
+  const result=await new Promise((resolve,reject)=>{const timer=setTimeout(()=>{layoutPending=null;reject(Error('Card layout response deadline exceeded'))},1000);layoutPending={requestId,resolve,reject,timer};reply('measure',{...value,requestId},{controlSequence})})
   if(destroyed)throw Error('Card disposed')
   return vm.newString(JSON.stringify(result))
  });vm.setProp(vm.global,'__layout',layout);layout.dispose()
@@ -175,7 +176,12 @@ self.onmessage=event=>{
  if(data.kind==='dispose'){dispose();return}
  if(!ready){if(['writeResult','variables','viewport','identityOpeningResult'].includes(data.kind)){if(data.kind==='viewport'){const index=pendingMessages.findIndex(message=>message.kind==='viewport');if(index>=0)pendingMessages.splice(index,1)}if(pendingMessages.length>=64){fail(Error('Card startup message limit exceeded'));return}pendingMessages.push(data)}return}
  if(data.kind==='viewport'){if(!data.value||!Number.isSafeInteger(data.value.width)||!Number.isSafeInteger(data.value.height)||data.value.width<1||data.value.height<1||data.value.width>16384||data.value.height>16384)return fail(Error('Invalid card viewport'));nextViewport={width:data.value.width,height:data.value.height};if(!viewportQueued){viewportQueued=true;enter(()=>{viewport=nextViewport;nextViewport=null;viewportQueued=false;return evaluate('__viewportChanged()')})}}
- else if(data.kind==='event')enter(()=>evaluate(`__domEvent(${JSON.stringify(data.value)})`),'script',data.taskId)
+ else if(data.kind==='event'){
+  const correction=data.controlSequence??0
+  if(!Number.isSafeInteger(correction)||correction<0||correction>0&&correction<=receivedControlSequence){fail(Error('Invalid card control sequence'));return}
+  if(correction)receivedControlSequence=correction
+  enter(()=>evaluate(`__domEvent(${JSON.stringify(data.value)})`),'script',data.taskId,correction)
+ }
  else if(data.kind==='writeResult'){if(!pendingWrites.delete(data.requestId))return;enter(()=>evaluate(`__writeResult(${JSON.stringify(data.requestId)},${JSON.stringify(data.value)})`))}
  else if(data.kind==='identityOpeningResult'){if(openingPending!==data.requestId)return;openingPending=null;enter(()=>evaluate(`__identityOpeningResult(${JSON.stringify(data.requestId)},${JSON.stringify(data.value)})`))}
  else if(data.kind==='variables')enter(()=>{if(current?.status==='available'&&data.value?.status==='available'&&(data.value.currentRevision??data.value.revision)<(current.currentRevision??current.revision))return;current=data.value;return evaluate(`__notifyVariables(${JSON.stringify(current)})`)})

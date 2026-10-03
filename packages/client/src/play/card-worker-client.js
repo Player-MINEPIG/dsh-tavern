@@ -21,6 +21,7 @@ export function createVirtualCardRuntime(input,{onView,onProposal,onError,onAudi
  let disposed=false,startupTimer,busyTimer,lastWriteId=0,lastMeasureId=0,lastStorageId=0,measurement=null,lastOpeningId=0,opening=null
  const tasks=new Map(),pending=new Map()
  let lastPhotoPickId=0
+ let controlSequence=0,lastViewSequence=-1,lastViewString
  const stop=()=>{if(disposed)return;disposed=true;clearTimeout(startupTimer);clearTimeout(busyTimer);if(opening){clearTimeout(opening.timer);opening.controller.abort();opening=null}for(const item of pending.values()){clearTimeout(item.timer);item.controller.abort()}pending.clear();if(measurement){clearTimeout(measurement.timer);measurement.controller.abort();measurement=null}worker.terminate();tasks.clear();active--}
  const fail=(message,operationId)=>{if(disposed)return;stop();onError(Object.assign(Error(message),operationId?{operationId,outcome:'unknown'}:{}))}
  const replyWrite=(requestId,value,operationId)=>{if(disposed)return;try{if(JSON.stringify(value).length>128*1024)throw Error();worker.postMessage({kind:'writeResult',nonce,requestId,value})}catch{fail('Write result could not be delivered; inspect the operation receipt before retrying',operationId)}}
@@ -63,10 +64,11 @@ export function createVirtualCardRuntime(input,{onView,onProposal,onError,onAudi
   }
   if(message.kind==='measure'){
    const value=message.value
+   if(!Number.isSafeInteger(message.controlSequence??0)||(message.controlSequence??0)<0||(message.controlSequence??0)>controlSequence){fail('Invalid card control sequence');return}
    if(measurement||!value||!Number.isSafeInteger(value.requestId)||value.requestId<=lastMeasureId||!Number.isSafeInteger(value.id)||value.id<0||typeof value.view?.html!=='string'||typeof value.view?.styles!=='string'||JSON.stringify(value).length>1024*1024){fail('Invalid layout measurement');return}
    lastMeasureId=value.requestId
    const controller=new AbortController(),ticket={controller,timer:setTimeout(()=>fail('Card layout deadline exceeded'),1000)};measurement=ticket
-   Promise.resolve().then(()=>{if(disposed||measurement!==ticket)return;return onMeasure(value,{signal:controller.signal})}).then(result=>{
+   Promise.resolve().then(()=>{if(disposed||measurement!==ticket)return;return onMeasure(value,{signal:controller.signal,controlsCurrent:(message.controlSequence??0)===controlSequence})}).then(result=>{
     if(disposed||measurement!==ticket)return
     measurement=null;clearTimeout(ticket.timer)
     try{if(JSON.stringify(result).length>128*1024)throw Error('Card geometry output exceeds limit');worker.postMessage({kind:'measurement',nonce,requestId:value.requestId,value:result})}catch{fail('Card geometry could not be transferred')}
@@ -92,6 +94,10 @@ export function createVirtualCardRuntime(input,{onView,onProposal,onError,onAudi
   if(message.kind==='audit'){onAudit(message.value);return}
   if(message.kind==='view'){
    if(typeof message.value!=='string'||message.value.length>1024*1024){fail('Card output exceeds 1 MiB');return}
+   if(!Number.isSafeInteger(message.controlSequence??0)||(message.controlSequence??0)<0||(message.controlSequence??0)>controlSequence){fail('Invalid card control sequence');return}
+   if((message.controlSequence??0)!==controlSequence)return
+   if(lastViewSequence===controlSequence&&lastViewString===message.value)return
+   lastViewSequence=controlSequence;lastViewString=message.value
    try{const view=JSON.parse(message.value);if(typeof view.html!=='string'||typeof view.styles!=='string')throw Error();onView(view)}catch{fail('Invalid card view')}
   }
  }
@@ -99,5 +105,5 @@ export function createVirtualCardRuntime(input,{onView,onProposal,onError,onAudi
  try{worker.postMessage({...data,kind:'init',nonce})}catch(error){stop();throw error}
  let events=0,epoch=performance.now()
  const send=(kind,value,metadata={})=>{if(disposed)return;const now=performance.now();if(now-epoch>1000){epoch=now;events=0}if(++events>128){fail('Card input rate limit exceeded');return}try{worker.postMessage({kind,nonce,value,...metadata})}catch{fail('Card input could not be transferred')}}
- return {dispose:stop,resize:value=>{if(!value||!Number.isSafeInteger(value.width)||!Number.isSafeInteger(value.height)||value.width<1||value.height<1||value.width>16384||value.height>16384){fail('Invalid card viewport');return}send('viewport',{width:value.width,height:value.height})},dispatch:(value,{trusted=false}={})=>{for(const[id,task]of tasks)if(performance.now()-task.at>1500)tasks.delete(id);if(tasks.size>=128){fail('Card event task limit exceeded');return}const taskId=crypto.randomUUID();tasks.set(taskId,{trusted,type:value?.type,at:performance.now()});send('event',value,{taskId})},notifyVariables:value=>send('variables',value)}
+ return {dispose:stop,resize:value=>{if(!value||!Number.isSafeInteger(value.width)||!Number.isSafeInteger(value.height)||value.width<1||value.height<1||value.width>16384||value.height>16384){fail('Invalid card viewport');return}send('viewport',{width:value.width,height:value.height})},dispatch:(value,{trusted=false,control=false}={})=>{for(const[id,task]of tasks)if(performance.now()-task.at>1500)tasks.delete(id);if(tasks.size>=128){fail('Card event task limit exceeded');return}if(control&&controlSequence>=Number.MAX_SAFE_INTEGER){fail('Card control sequence limit exceeded');return}const taskId=crypto.randomUUID();tasks.set(taskId,{trusted,type:value?.type,at:performance.now()});send('event',value,{taskId,controlSequence:control?++controlSequence:0})},notifyVariables:value=>send('variables',value)}
 }
