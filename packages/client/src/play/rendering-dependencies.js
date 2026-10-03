@@ -10,7 +10,7 @@ const envelope=value=>value?.fingerprint?{generation:0,graph:value}:value??{gene
 // BroadcastChannel is only a wake-up signal, never the ordering authority.
 export function dependencyStore(indexedDB = globalThis.indexedDB) {
   let database
-  async function operation(owner, change) {
+  async function operation(owner, change, read) {
     if (!indexedDB) throw Error('Persistent dependency cache is unavailable')
     database ??= new Promise((resolve,reject)=>{
       const request=indexedDB.open('dtv-rendering-dependencies',1)
@@ -21,16 +21,18 @@ export function dependencyStore(indexedDB = globalThis.indexedDB) {
     const db=await database
     return new Promise((resolve,reject)=>{
       const transaction=db.transaction('graphs',change?'readwrite':'readonly'),store=transaction.objectStore('graphs'),request=store.get(owner)
-      let result
+      let result,callbackError
       request.onsuccess=()=>{
-        const saved=envelope(request.result)
-        if(!change){result=saved;return}
-        const next=change(saved);result=next.result
-        if(next.record)store.put(next.record,owner)
+        try{
+          const saved=envelope(request.result)
+          if(!change){result=read?read(saved):saved;return}
+          const next=change(saved);result=next.result
+          if(next.record)store.put(next.record,owner)
+        }catch(error){callbackError=error;transaction.abort()}
       }
       transaction.oncomplete=()=>resolve(result)
-      transaction.onerror=()=>reject(transaction.error)
-      transaction.onabort=()=>reject(transaction.error??Error('Dependency cache transaction aborted'))
+      transaction.onerror=()=>reject(callbackError??transaction.error)
+      transaction.onabort=()=>reject(callbackError??transaction.error??Error('Dependency cache transaction aborted'))
     })
   }
   const advance=(owner,pending)=>operation(owner,saved=>{
@@ -39,6 +41,9 @@ export function dependencyStore(indexedDB = globalThis.indexedDB) {
   })
   return {
     get:owner=>operation(owner),
+    // Acceptance runs synchronously while this readonly transaction excludes
+    // a concurrent generation change. Hashing/preparation must happen first.
+    readCurrent:(owner,snapshot,accept)=>operation(owner,null,saved=>saved.generation===snapshot.generation&&saved.pending===snapshot.pending?accept(saved)!==false:false),
     begin:owner=>advance(owner,true),
     remove:owner=>advance(owner,false),
     publish:(owner,generation,graph)=>operation(owner,saved=>saved.generation===generation&&saved.pending?{record:{generation,graph,pending:false},result:true}:{result:false}),
@@ -54,23 +59,41 @@ export function createRenderingDependencies({trust=renderingTrust,store=dependen
   const broadcast=owner=>channel?.postMessage({owner})
   async function restore(state, saved) {
     if(!current(state))return
-    const graph=saved.graph
-    state.cacheGeneration=saved.generation
-    state.items=[];state.error=null
-    if(saved.pending)state.status='remote'
-    else if(graph?.fingerprint===state.fingerprint){
-      if(!Array.isArray(graph.items)||graph.items.length>limits.count||graph.items.reduce((sum,item)=>sum+new TextEncoder().encode(item.content??'').byteLength,0)>limits.bytes)throw Error('Invalid dependency cache size')
-      state.items=graph.items;state.status=graph.status
-      await trust.install(state.owner,state.items.filter(item=>item.status==='ready'))
-    }else state.status=graph?'changed':'waiting'
-    if(current(state))emit()
+    state.restoring=true
+    try{
+      // A captured get result may arrive after a peer's completed uninstall.
+      // Revalidate after async hashing, and commit only inside the current read.
+      for(let attempt=0;attempt<8&&current(state);attempt++){
+        const graph=saved.graph,usable=!saved.pending&&graph?.fingerprint===state.fingerprint
+        if(usable&&(!Array.isArray(graph.items)||graph.items.length>limits.count||graph.items.reduce((sum,item)=>sum+new TextEncoder().encode(item.content??'').byteLength,0)>limits.bytes))throw Error('Invalid dependency cache size')
+        const commit=usable?await trust.prepare(state.owner,graph.items.filter(item=>item.status==='ready')):null
+        if(!current(state))return
+        const accepted=await store.readCurrent(state.owner,saved,()=>{
+          if(!current(state))return false
+          commit?.()
+          state.cacheGeneration=saved.generation
+          state.items=usable?graph.items:[];state.error=usable?(graph.error??null):null
+          state.status=saved.pending?'remote':usable?graph.status:graph?'changed':'waiting'
+          return true
+        })
+        if(!current(state))return
+        if(accepted){emit();return}
+        saved=await store.get(state.owner)
+      }
+      if(current(state))throw Error('Dependency cache keeps changing; retry download')
+    }catch(error){if(current(state))trust.removeOwner(state.owner);throw error}
+    finally{
+      state.restoring=false
+      if(current(state)&&state.refreshPending){state.refreshPending=false;await refresh(state.owner)}
+    }
   }
   async function refresh(owner) {
     const previous=states.get(owner)
-    if(!previous||previous.status==='loading')return
+    if(!previous)return
+    if(previous.status==='loading'||previous.restoring||previous.starting){previous.refreshPending=true;return}
     try{
       const saved=await store.get(owner)
-      if(!current(previous)||previous.starting||saved.generation<(previous.cacheGeneration??0))return
+      if(!current(previous)||saved.generation<(previous.cacheGeneration??0))return
       // A peer's older wake-up must never cancel the winning local acquisition.
       if(previous.controller&&saved.generation===(previous.cacheGeneration??0))return
       previous.controller?.abort();trust.removeOwner(owner)
@@ -118,6 +141,7 @@ export function createRenderingDependencies({trust=renderingTrust,store=dependen
       state.cacheGeneration=await store.begin(owner)
       state.starting=false
       if(!current(state))return
+      if(state.refreshPending){state.refreshPending=false;void refresh(owner)}
       broadcast(owner)
       const enqueue=(dependencies,depth)=>{
         for(const dependency of dependencies){
@@ -153,11 +177,11 @@ export function createRenderingDependencies({trust=renderingTrust,store=dependen
       }
       if(!current(state)||state.controller.signal.aborted)return
       state.status=state.error||state.items.some(item=>item.status==='failed')?'failed':'ready'
-      const published=await store.publish(owner,state.cacheGeneration,{fingerprint:state.fingerprint,status:state.status,items:state.items})
+      const published=await store.publish(owner,state.cacheGeneration,{fingerprint:state.fingerprint,status:state.status,items:state.items,error:state.error})
       if(!current(state))return
       state.controller=null
       if(!published){await refresh(owner);return}
-      await trust.install(owner,state.items.filter(item=>item.status==='ready'))
+      await restore(state,await store.get(owner))
       if(current(state)){emit();broadcast(owner)}
     }catch(error){if(current(state)){state.starting=false;state.controller=null;state.status='failed';state.error=error.message;emit();broadcast(owner)}}
   }
@@ -169,7 +193,7 @@ export function createRenderingDependencies({trust=renderingTrust,store=dependen
     trust.removeOwner(owner);emit()
     try{
       const generation=await store.remove(owner)
-      if(state&&current(state)){state.cacheGeneration=generation;state.starting=false}
+      if(state&&current(state)){state.cacheGeneration=generation;state.starting=false;if(state.refreshPending){state.refreshPending=false;await refresh(owner)}}
       broadcast(owner)
     }catch(error){if(state&&current(state)){state.starting=false;state.status='failed';state.error=error.message;emit()};throw error}
   }

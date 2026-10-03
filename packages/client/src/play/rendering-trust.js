@@ -35,20 +35,23 @@ export function createRenderingTrust() {
       return digest
     },
     removeOwner(owner) { installs.set(owner,{}); for(const [key,value] of records)if(value.owner===owner)records.delete(key);emit() },
-    async install(owner, items) {
+    async prepare(owner, items) {
       const epoch=generation,ticket={};installs.set(owner,ticket)
       const next=await Promise.all(items.map(async item=>{
         if(externalUrl(item.url)!==item.url||typeof item.content!=='string'||new TextEncoder().encode(item.content).byteLength>MAX_RENDER_SOURCE)throw Error('Invalid cached dependency')
         const digest=[...new Uint8Array(await crypto.subtle.digest('SHA-256',new TextEncoder().encode(item.content)))].map(byte=>byte.toString(16).padStart(2,'0')).join('')
         return {owner,source:item.url,content:item.content,digest,approved:true}
       }))
-      if(epoch!==generation||installs.get(owner)!==ticket)throw Error('Dependency installation cancelled')
-      const retained=[...records.values()].filter(item=>item.owner!==owner)
-      if(retained.length+next.length>64||[...retained,...next].reduce((sum,item)=>sum+new TextEncoder().encode(item.content).byteLength,0)>64*1024*1024)throw Error('Rendering cache exceeds limit')
-      for(const [key,value] of records)if(value.owner===owner)records.delete(key)
-      for(const item of next)records.set(keyFor(owner,item.source),item)
-      emit()
+      return () => {
+        if(epoch!==generation||installs.get(owner)!==ticket)throw Error('Dependency installation cancelled')
+        const retained=[...records.values()].filter(item=>item.owner!==owner)
+        if(retained.length+next.length>64||[...retained,...next].reduce((sum,item)=>sum+new TextEncoder().encode(item.content).byteLength,0)>64*1024*1024)throw Error('Rendering cache exceeds limit')
+        for(const [key,value] of records)if(value.owner===owner)records.delete(key)
+        for(const item of next)records.set(keyFor(owner,item.source),item)
+        emit()
+      }
     },
+    async install(owner,items) { const commit=await this.prepare(owner,items);commit() },
     inspect(owner,source) { const value=records.get(keyFor(owner,source)); return value ? {...value,ticket:undefined} : null },
     approve(owner,source,digest) {
       const value = records.get(keyFor(owner,source))

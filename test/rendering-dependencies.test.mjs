@@ -7,7 +7,7 @@ const source=(owner='character:A',content=`import '${url}'`)=>({owner,key:owner+
 const memory=()=>{
  const map=new Map(),read=key=>structuredClone(map.get(key)??{generation:0})
  const advance=(key,pending)=>{const generation=read(key).generation+1;map.set(key,{generation,pending});return generation}
- return {get:async key=>read(key),begin:async key=>advance(key,true),remove:async key=>advance(key,false),publish:async(key,generation,graph)=>{const current=read(key);if(current.generation!==generation||!current.pending)return false;map.set(key,{generation,graph:structuredClone(graph),pending:false});return true}}
+ return {get:async key=>read(key),readCurrent:async(key,snapshot,accept)=>{const saved=read(key);return saved.generation===snapshot.generation&&saved.pending===snapshot.pending?accept(saved)!==false:false},begin:async key=>advance(key,true),remove:async key=>advance(key,false),publish:async(key,generation,graph)=>{const current=read(key);if(current.generation!==generation||!current.pending)return false;map.set(key,{generation,graph:structuredClone(graph),pending:false});return true}}
 }
 const deferred=()=>{let resolve;const promise=new Promise(r=>{resolve=r});return {promise,resolve}}
 
@@ -133,4 +133,47 @@ test('review R2: completed uninstall rejects older publication even with all uni
  assert.deepEqual([a.inspect('character:A').status,b.inspect('character:A').status,third.inspect('character:A').status],['waiting','waiting','waiting'])
  assert.throws(()=>trustA.read('character:A',url),/not downloaded/);assert.throws(()=>trustB.read('character:A',url),/not downloaded/)
  a.dispose();b.dispose();third.dispose()
+})
+
+test('review R3: captured hydration snapshot cannot restore after uninstall, with delivered or absent notifications',async()=>{
+ for(const notify of [true,false]){
+  const store=memory(),bus=queuedBus(),trustA=createRenderingTrust(),trustB=createRenderingTrust(),captured=deferred(),release=deferred()
+  const channelFactory=()=>notify?bus.channelFactory():null
+  const a=createRenderingDependencies({store,trust:trustA,channelFactory,download:async()=> 'export const syntheticOnly=1'})
+  await a.sync([source()]);await a.acquire('character:A')
+  let delayed=true,obsoleteInstalls=0
+  trustB.subscribe(()=>{if(trustB.inspect('character:A',url)?.approved)obsoleteInstalls++})
+  const delayedStore={...store,get:async key=>{const snapshot=await store.get(key);if(delayed){delayed=false;captured.resolve();await release.promise};return snapshot}}
+  const b=createRenderingDependencies({store:delayedStore,trust:trustB,channelFactory,download:()=>{throw Error('No download allowed')}})
+  const pending=b.sync([source()]);await captured.promise;assert.equal(b.inspect('character:A').status,'loading')
+  await a.uninstall('character:A');assert.equal((await store.get('character:A')).generation,2);assert.equal((await store.get('character:A')).graph,undefined)
+  bus.deliver();assert.equal(bus.queued.length,0);release.resolve();await pending
+  assert.equal(b.inspect('character:A').status,'waiting');assert.equal(b.inspect('character:A').cacheGeneration,2)
+  assert.throws(()=>trustB.read('character:A',url),/not downloaded/);assert.equal(obsoleteInstalls,0,'no transient obsolete executable cache publication')
+  a.dispose();b.dispose()
+ }
+})
+
+test('hydration checks storage generation after asynchronous source preparation without any notifications',async()=>{
+ const store=memory(),a=createRenderingDependencies({store,trust:createRenderingTrust(),channelFactory:()=>null,download:async()=> 'export const syntheticOnly=1'})
+ await a.sync([source()]);await a.acquire('character:A')
+ const captured=deferred(),release=deferred(),trust=createRenderingTrust();let obsoleteInstalls=0
+ trust.subscribe(()=>{if(trust.inspect('character:A',url)?.approved)obsoleteInstalls++})
+ const delayedTrust={...trust,prepare:async(...args)=>{const commit=await trust.prepare(...args);captured.resolve();await release.promise;return commit}}
+ const b=createRenderingDependencies({store,trust:delayedTrust,channelFactory:()=>null})
+ const pending=b.sync([source()]);await captured.promise;await a.uninstall('character:A');release.resolve();await pending
+ assert.equal(b.inspect('character:A').status,'waiting');assert.equal(b.inspect('character:A').cacheGeneration,2)
+ assert.equal(obsoleteInstalls,0);assert.throws(()=>trust.read('character:A',url),/not downloaded/)
+ a.dispose();b.dispose()
+})
+
+test('delayed pending snapshot observes publication in the same generation without notifications',async()=>{
+ const store=memory(),entered=deferred(),download=deferred(),captured=deferred(),release=deferred()
+ const a=createRenderingDependencies({store,trust:createRenderingTrust(),channelFactory:()=>null,download:async()=>{entered.resolve();return download.promise}})
+ await a.sync([source()]);const acquisition=a.acquire('character:A');await entered.promise
+ let delayed=true;const trust=createRenderingTrust()
+ const b=createRenderingDependencies({store:{...store,get:async key=>{const snapshot=await store.get(key);if(delayed){delayed=false;captured.resolve();await release.promise};return snapshot}},trust,channelFactory:()=>null})
+ const hydration=b.sync([source()]);await captured.promise;download.resolve('export const current=1');await acquisition;release.resolve();await hydration
+ assert.equal(b.inspect('character:A').status,'ready');assert.equal(b.inspect('character:A').cacheGeneration,1);assert.equal(trust.read('character:A',url),'export const current=1')
+ a.dispose();b.dispose()
 })
