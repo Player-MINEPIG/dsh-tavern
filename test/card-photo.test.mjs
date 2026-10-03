@@ -6,6 +6,7 @@ import {readFileSync} from 'node:fs'
 import {VIRTUAL_DOM_BOOTSTRAP} from '../packages/client/src/play/virtual-dom-runtime.js'
 import {selectedPhoto,PHOTO_LIMITS} from '../packages/client/src/play/card-photo.js'
 import {rasterHeader} from '../packages/client/src/play/card-images.js'
+import {DEPENDENCY_LIMITS} from '../packages/client/src/play/rendering-limits.js'
 
 test('VM photo compatibility handles only the current selected JPEG and never native canvas/network/file objects',()=>{
  const timers=[],calls=[],context=vm.createContext({__TavernDOM:DOM,__host:raw=>{const value=JSON.parse(raw);calls.push(value);if(value.op==='timer')timers.push(value.args);return JSON.stringify({value:null})}})
@@ -22,10 +23,10 @@ test('VM photo compatibility handles only the current selected JPEG and never na
  assert.ok(!calls.some(call=>/fetch|file|canvas|path/.test(call.op)))
 })
 test('photo requests need a fresh trusted click task; file change and synthetic clicks cannot acquire a picker',()=>{
- const source=readFileSync(new URL('../packages/client/src/play/card-worker-client.js',import.meta.url),'utf8').replace('export function','function')
+ const source=readFileSync(new URL('../packages/client/src/play/card-worker-client.js',import.meta.url),'utf8').replace(/^import[^\n]*\n/gm,'').replace('export function','function')
  let worker,id=0,called=0;const posts=[],errors=[]
  class Worker{constructor(){worker=this}postMessage(value){posts.push(value)}terminate(){}}
- const create=new Function('TAVERN_CARD_WORKER_SOURCE','Worker','URL','Blob','crypto','setTimeout','clearTimeout',source+';return createVirtualCardRuntime')('',Worker,{createObjectURL:()=>'',revokeObjectURL(){}},class{},{randomUUID:()=>String(++id)},()=>0,()=>{})
+ const create=new Function('DEPENDENCY_LIMITS','TAVERN_CARD_WORKER_SOURCE','Worker','URL','Blob','crypto','setTimeout','clearTimeout',source+';return createVirtualCardRuntime')(DEPENDENCY_LIMITS,'',Worker,{createObjectURL:()=>'',revokeObjectURL(){}},class{},{randomUUID:()=>String(++id)},()=>0,()=>{})
  const runtime=create({},{onPhotoPick:()=>called++,onError:error=>errors.push(error.message)})
  let requestId=0
  const request=()=>worker.onmessage({data:{nonce:posts[0].nonce,kind:'photoPick',value:{requestId:++requestId,id:1,view:{html:'',styles:''},taskId:posts.at(-1).taskId}}})
