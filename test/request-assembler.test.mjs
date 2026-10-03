@@ -218,4 +218,7 @@ test('explicit character depth remains authoritative and late greetings are diag
   assert.ok(result.messages.findIndex(m => textOf(m) === 'GREETING') > result.messages.findIndex(m => m.id === 'input'))
   assert.ok(result.diagnostics.some(d => d.code === 'GREETING_AFTER_INPUT'))
   assert.deepEqual({ input, preset }, before)
+  preset.rules.find(r => r.kind === 'character').role = 'user'
+  const userGreeting = assembleRequest({ ...input, preset })
+  assert.ok(!userGreeting.diagnostics.some(d => d.code === 'GREETING_AFTER_INPUT'))
 })

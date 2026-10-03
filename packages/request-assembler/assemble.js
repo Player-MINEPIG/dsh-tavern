@@ -235,7 +235,7 @@ function assembleResolved({ preset: suppliedPreset, previous = null, snapshots =
     requestMessageIds: (node.messages ?? []).map(m => m.id),
   })).sort((a, b) => a.start - b.start)
   const firstInput = messages.findIndex(m => inputIds.includes(m.id))
-  for (const node of expanded) if (node.module === 'character' && node.source?.field === 'greeting' && firstInput >= 0 && node.start > firstInput) {
+  for (const node of expanded) if (node.module === 'character' && node.source?.field === 'greeting' && node.role === 'assistant' && firstInput >= 0 && node.start > firstInput) {
     diagnostics.push({ code: 'GREETING_AFTER_INPUT', id: node.id, message: 'The configured greeting depth places an assistant reference after current input; following system updates may be unsupported by the selected model.' })
   }
   return { messages, nodes: expanded.map(({ messages: omitted, ...node }) => node), snapshots: nextSnapshots,
