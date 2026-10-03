@@ -19,10 +19,13 @@ const native = (id, name) => ({ id, pluginId: 'DSH', name, roles: ['preserve'], 
 export function registerBuiltinSources(registry) {
   const dispose = [], register = source => dispose.push(registry.register({ pluginId: 'pmp-dsh-tavern', stability: 'asset', ...source }))
   for (const [id, name] of [['native-system', '官方基础指令'], ['history', '原生历史'], ['input', '本步输入']]) register(native(id, name))
-  register({ id: 'character', name: '角色卡', resolve({ assets, preset }) {
+  register({ id: 'character', name: '角色卡', resolve({ assets, preset, nativeMessages }) {
     const fields = characterFields(assets), data = assets.character?.data ?? {}, selection = assets.characterSelection ?? {}
     const blocks = Object.entries(fields).map(([id, value]) => text(id, value, { referenceOnly: id === 'phi', source: { resourceId: assets.character?.id, field: id } }))
-    if (assets.includeGreetingReference) { const i = selection.greetingIndex ?? 0; blocks.push(text('greeting', i > 0 ? (data.alternateGreetings ?? data.alternate_greetings ?? [])[i - 1] : data.firstMessage ?? data.first_mes, { role: 'assistant', source: { resourceId: assets.character?.id, field: 'greeting' } })) }
+    // The opening assistant reference precedes the conversation even when a
+    // preset's chatHistory marker has already claimed history/current input.
+    // Use the existing depth placement so it cannot split a tool transaction.
+    if (assets.includeGreetingReference) { const i = selection.greetingIndex ?? 0; blocks.push(text('greeting', i > 0 ? (data.alternateGreetings ?? data.alternate_greetings ?? [])[i - 1] : data.firstMessage ?? data.first_mes, { role: 'assistant', depth: Math.max(1, nativeMessages.filter(m => m.role !== 'system').length), source: { resourceId: assets.character?.id, field: 'greeting' } })) }
     const dp = data.extensions?.depth_prompt
     if (dp?.prompt) blocks.push(text('depth_prompt', dp.prompt, { role: dp.role ?? 'system', ...(preset.placement === 'st' ? { depth: dp.depth ?? 4 } : {}), source: { resourceId: assets.character?.id, field: 'depth_prompt' } }))
     return { blocks, macros: { description: 'description', personality: 'personality', scenario: 'scenario', mesexamples: 'examples', charDescription: 'description', charPersonality: 'personality' } }
