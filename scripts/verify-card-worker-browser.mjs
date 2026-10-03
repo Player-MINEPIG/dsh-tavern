@@ -24,11 +24,12 @@ try{
  const send=(method,params={})=>new Promise((resolve,reject)=>{setTimeout(()=>reject(Error('Browser protocol timeout')),15000).unref();pending.set(++id,{resolve,reject});ws.send(JSON.stringify({id,method,params}))})
  await send('Page.navigate',{url:'file://'+join(dir,'index.html')})
  let results
- const clicked=new Set()
+ const clicked=new Set(),resized=new Set()
  for(let i=0;i<600;i++){
-  const response=await send('Runtime.evaluate',{expression:'({report:document.querySelector("#results")?.textContent,click:globalThis.__trustedClick})',returnByValue:true})
+  const response=await send('Runtime.evaluate',{expression:'({report:document.querySelector("#results")?.textContent,click:globalThis.__trustedClick,viewport:globalThis.__browserViewport})',returnByValue:true})
   const state=response.result?.value
   if(state?.report){results=JSON.parse(state.report);break}
+  if(state?.viewport&&!resized.has(state.viewport.id)){resized.add(state.viewport.id);await send('Emulation.setDeviceMetricsOverride',{width:state.viewport.width,height:state.viewport.height,deviceScaleFactor:1,mobile:false})}
   if(state?.click&&!clicked.has(state.click.id)){clicked.add(state.click.id);const {x,y}=state.click;await send('Input.dispatchMouseEvent',{type:'mousePressed',x,y,button:'left',clickCount:1});await send('Input.dispatchMouseEvent',{type:'mouseReleased',x,y,button:'left',clickCount:1})}
   await pause(100)
  }

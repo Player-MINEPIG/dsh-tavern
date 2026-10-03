@@ -1,3 +1,4 @@
+import {cardViewport,cardRootPresentation,usesCardViewport} from './card-viewport.js'
 import {mvuBuiltin,confirmMvuSchemas} from './mvu-builtins.js'
 import {renderingWriteRequests} from './rendering-write-requests.js'
 import { createVirtualCardRuntime } from './card-worker-client.js'
@@ -36,6 +37,11 @@ export function splitCards(text) {
   if (offset < source.length || !parts.length) parts.push({ text: source.slice(offset) })
   return parts
 }
+function sourceRootPresentation(source) {
+  const root=DOMPurify.sanitize(source,{WHOLE_DOCUMENT:true,RETURN_DOM:true,ALLOWED_TAGS:['html','head','body'],ALLOWED_ATTR:['class','style'],ALLOW_DATA_ATTR:false})
+  const attributes=node=>({className:node?.getAttribute('class')??'',style:node?.getAttribute('style')??''})
+  return cardRootPresentation({html:attributes(root),body:attributes(root.querySelector('body'))})
+}
 export function cardDocument(source) {
   // Parse inertly; scripts never enter the real browser's execution environment.
   const template = document.createElement('template'); template.innerHTML = source
@@ -52,7 +58,7 @@ export function cardDocument(source) {
     for (const attr of [...node.attributes]) if (/^on/i.test(attr.name)) { unsupported.push('appearance.unsupportedEvents'); node.removeAttribute(attr.name) }
   }
   const html = cleanCardHtml(template.innerHTML)
-  return { html, scripts, unsupported: [...new Set(unsupported)] }
+  return { html, scripts, root:sourceRootPresentation(source), unsupported: [...new Set(unsupported)] }
 }
 
 export function prepareCardDocument(source, owners = [], helpers = [], trust = renderingTrust) {
@@ -106,6 +112,7 @@ export function prepareCardDocument(source, owners = [], helpers = [], trust = r
     }
   }
   if (source.length > 1024*1024) throw Error('Card HTML exceeds 1 MiB')
+  const root=cardDocument(source).root
   const template = document.createElement('template'); template.innerHTML = source
   for (const helper of helpers.filter(item => item.enablementAmbiguous ? item.enabled : trust.isEnabled(item.owner,item.preferenceKey??item.key,item.enabled))) {
     // Inline scripts follow the card master switch and their saved enablement.
@@ -135,11 +142,11 @@ export function prepareCardDocument(source, owners = [], helpers = [], trust = r
     }
     expanded+=code.length;if(expanded>24*1024*1024||runs.length>=128)throw Error('Expanded card input exceeds limit')
     collect(code,externalUrl(name) ?? base,scriptOwner)
-    if(['text/babel','text/jsx'].includes(type)||/\b(?:Mvu|eventOn|waitGlobalInitialized|errorCatched|getBoundingClientRect|getComputedStyle|scrollHeight|scrollWidth|offsetHeight|offsetWidth|clientHeight|clientWidth)\b/.test(code)||/\b_\s*\.\s*(?:get|isEmpty)\b|\.\s*(?:css|show|hide|addClass|removeClass|empty)\s*\(/.test(code))virtual=true
+    if(['text/babel','text/jsx'].includes(type)||/\b(?:Mvu|eventOn|waitGlobalInitialized|errorCatched|innerWidth|innerHeight|documentElement|getBoundingClientRect|getComputedStyle|scrollHeight|scrollWidth|offsetHeight|offsetWidth|clientHeight|clientWidth)\b/.test(code)||/\b_\s*\.\s*(?:get|isEmpty)\b|\.\s*(?:css|show|hide|addClass|removeClass|empty)\s*\(/.test(code))virtual=true
     runs.push({code,name,type,module:type === 'module'}); script.remove()
   }
   const data = cardDocument(template.innerHTML)
-  return {...data,runs,modules,virtual,adapters,schemaDeclarations,cardStorage:wrapper?.kind==='identity-html-loader',identitySource}
+  return {...data,root,runs,modules,virtual,adapters,schemaDeclarations,cardStorage:wrapper?.kind==='identity-html-loader',identitySource}
 }
 
 export function createDomBridge(doc, context, onProposal, onError, helperBinding) {
@@ -212,8 +219,7 @@ const InteractiveCard = memo(function InteractiveCard({ source, enabled, scopeKe
   const openingBridge=useRef(null)
   const data = useMemo(() => {
     if (source.length > 128 * 1024) return { html: '', scripts: [], unsupported: ['Card exceeds 128K characters'] }
-    if (!enabled) return cardDocument(source)
-    try { return prepareCardDocument(source,owners,helpers) } catch(error) { return {...cardDocument(source),unsupported:[error.message]} }
+    try { return enabled?prepareCardDocument(source,owners,helpers):cardDocument(source) } catch(error) { try{return {...cardDocument(source),unsupported:[error.message]}}catch{return {html:'',scripts:[],unsupported:[error.message]}} }
   }, [source,enabled,trustRevision,JSON.stringify(owners),JSON.stringify(helpers)])
   const srcDoc = `<!doctype html><html><head><meta http-equiv="Content-Security-Policy" content="${CARD_CSP}"><style>body{margin:12px;font:14px system-ui;color:#243042;background:#fff}*{box-sizing:border-box}img{max-width:100%}button,input,select,textarea{font:inherit}button{cursor:pointer}</style></head><body>${data.html}</body></html>`
   useLayoutEffect(()=>{setProposal('');setError('');setAudit(null);setOpeningProposal(null);setOpeningProgress('');return()=>{generation.current++;cleanup.current()}},[source,enabled,scopeKey,trustRevision,data,paused,restart,JSON.stringify(openingBinding)])
@@ -221,10 +227,25 @@ const InteractiveCard = memo(function InteractiveCard({ source, enabled, scopeKe
     const current=++generation.current; cleanup.current(); setError(''); setProposal('')
     const doc=frame.current?.contentDocument
     if (!doc) { setError('Card document unavailable'); return }
-    const resize=()=>{ if(frame.current) frame.current.style.height=`${Math.max(100,Math.min(800,doc.body.scrollHeight+24))}px` }
-    const observer=new ResizeObserver(resize);observer.observe(doc.body);resize()
+    const ownFrame=frame.current
+    const initialRoot=cardRootPresentation(data.root)
+    const projectRoot=root=>{for(const [key,node] of [['html',doc.documentElement],['body',doc.body]]){node.setAttribute('class',root[key].className);node.setAttribute('style',root[key].style)}}
+    projectRoot(initialRoot)
+    let viewportMode=usesCardViewport(data.html,'',initialRoot),viewportFrame=0,lastViewport
     const controller=new AbortController()
     let dom, binding, virtualRuntime, stopVariables, removeEvents=()=>{},writeRequest,writeBinding,writeLoading,writeController,writeEpoch=0,cardStorage
+    const readViewport=()=>cardViewport({width:ownFrame.clientWidth,height:ownFrame.clientHeight})
+    const resize=()=>{
+      if(current!==generation.current||frame.current!==ownFrame||!ownFrame.isConnected)return
+      ownFrame.style.height=viewportMode?'clamp(362px,75dvh,800px)':`${Math.max(100,Math.min(800,doc.body.scrollHeight+24))}px`
+      if(!viewportFrame)viewportFrame=requestAnimationFrame(()=>{
+        viewportFrame=0
+        if(current!==generation.current||frame.current!==ownFrame||!ownFrame.isConnected||controller.signal.aborted)return
+        if(ownFrame.clientWidth<1||ownFrame.clientHeight<1)return
+        try{const value=readViewport();if(value.width!==lastViewport?.width||value.height!==lastViewport?.height){lastViewport=value;virtualRuntime?.resize(value)}}catch(error){setError(error.message);cleanup.current()}
+      })
+    }
+    const observer=new ResizeObserver(resize);observer.observe(doc.body);observer.observe(ownFrame);resize()
     const revokeWrites=()=>{
       const ticket=++writeEpoch,hadWriteBinding=!!writeBinding
       writeController?.abort();writeController=null;writeBinding?.dispose();writeBinding=null;writeLoading=null
@@ -235,7 +256,7 @@ const InteractiveCard = memo(function InteractiveCard({ source, enabled, scopeKe
       }).catch(()=>{})
     }
     let cleaned=false
-    cleanup.current=()=>{if(cleaned)return;cleaned=true;controller.abort();openingBridge.current?.dispose();openingBridge.current=null;observer.disconnect();dom?.destroy();virtualRuntime?.dispose();cardStorage?.dispose();stopVariables?.();removeEvents();binding?.dispose();writeRequest?.dispose();revokeWrites()}
+    cleanup.current=()=>{if(cleaned)return;cleaned=true;controller.abort();openingBridge.current?.dispose();openingBridge.current=null;observer.disconnect();cancelAnimationFrame(viewportFrame);viewportFrame=0;dom?.destroy();virtualRuntime?.dispose();cardStorage?.dispose();stopVariables?.();removeEvents();binding?.dispose();writeRequest?.dispose();revokeWrites()}
     if (!enabled || paused || data.unsupported.length) return
     if (doc.body.querySelectorAll('*').length > 2048) { setError('Card DOM limit exceeded'); return }
     try {
@@ -264,7 +285,8 @@ const InteractiveCard = memo(function InteractiveCard({ source, enabled, scopeKe
             if(cleaned||current!==generation.current)throw Error('Card view generation expired')
             if(!view||Array.isArray(view)||typeof view.html!=='string'||typeof view.styles!=='string'||!Number.isSafeInteger(view.bodyId)||view.bodyId<=0||JSON.stringify(view).length>1024*1024)throw Error('Invalid card view')
             const controlsKey=JSON.stringify(view.controls??[])
-            if(acceptedView?.html===view.html&&acceptedView.styles===view.styles&&acceptedView.bodyId===view.bodyId&&acceptedView.controlsKey===controlsKey){
+            const root=cardRootPresentation(view.root),rootKey=JSON.stringify(root)
+            if(acceptedView?.html===view.html&&acceptedView.styles===view.styles&&acceptedView.bodyId===view.bodyId&&acceptedView.rootKey===rootKey&&acceptedView.controlsKey===controlsKey){
               if(targetId!==undefined&&!acceptedView.nodes.has(targetId))throw Error('Layout target is not in this card')
               return acceptedView.nodes
             }
@@ -286,14 +308,15 @@ const InteractiveCard = memo(function InteractiveCard({ source, enabled, scopeKe
             projectCardControlState(view.controls,nodes)
             const style=doc.createElement('style');style.textContent=view.styles
             const focused=doc.activeElement,id=focused?.dataset?.dtvNode,selection=[focused?.selectionStart,focused?.selectionEnd],scroll=[doc.documentElement.scrollLeft,doc.documentElement.scrollTop]
+            projectRoot(root);viewportMode=usesCardViewport(view.html,view.styles,root)
             doc.body.replaceChildren(template.content,style)
             doc.body.setAttribute('data-dtv-node',String(view.bodyId))
-            acceptedView={html:view.html,styles:view.styles,bodyId:view.bodyId,controlsKey,nodes}
+            acceptedView={html:view.html,styles:view.styles,bodyId:view.bodyId,rootKey,controlsKey,nodes}
             if(id){const restored=nodes.get(Number(id));restored?.focus();if(typeof selection[0]==='number')try{restored.setSelectionRange(...selection)}catch{}}
             doc.documentElement.scrollLeft=scroll[0];doc.documentElement.scrollTop=scroll[1];resize()
             return nodes
         }
-        virtualRuntime=createVirtualCardRuntime({html:data.html,runs:data.runs,modules:data.modules,context,variables:activeBinding?.getSnapshot(),cardStorage:cardStorage?.initial,identityOpening:!!openingBridge.current},{
+        virtualRuntime=createVirtualCardRuntime({html:data.html,root:initialRoot,viewport:readViewport(),runs:data.runs,modules:data.modules,context,variables:activeBinding?.getSnapshot(),cardStorage:cardStorage?.initial,identityOpening:!!openingBridge.current},{
           onOpening:(openingId,{signal})=>{signal.throwIfAborted();if(cleaned||current!==generation.current||!openingBridge.current)throw Error('Opening card generation expired');return openingBridge.current.request(openingId)},
           onStorage:request=>{if(cleaned||current!==generation.current)throw Error('Card storage generation expired');return cardStorage.request(request)},
           onWrite:async({operation,value,options,cause,observedRevision,operationId,signal})=>{
@@ -342,7 +365,7 @@ const InteractiveCard = memo(function InteractiveCard({ source, enabled, scopeKe
     }catch(error){if(current===generation.current){cleanup.current();setError(error.message)}}
   }
   return h('section',{className:'dtv-interactive-card'},
-    h('iframe',{key:JSON.stringify([scopeKey,enabled,trustRevision,owners,helpers,paused,restart,openingBinding]),ref:frame,title:translate('appearance.card'),sandbox:'allow-same-origin',referrerPolicy:'no-referrer',srcDoc,onLoad:load,style:{width:'100%',minWidth:220,height:160,maxHeight:800,border:'1px solid #b9c2cf',borderRadius:8,background:'#fff'}}),
+    h('iframe',{key:JSON.stringify([scopeKey,enabled,trustRevision,owners,helpers,paused,restart,openingBinding]),ref:frame,title:translate('appearance.card'),sandbox:'allow-same-origin',referrerPolicy:'no-referrer',srcDoc,onLoad:load,style:{width:'100%',boxSizing:'border-box',minWidth:220,height:160,maxHeight:800,border:'1px solid #b9c2cf',borderRadius:8,background:'#fff'}}),
     enabled?h('div',null,
       h('button',{type:'button',disabled:paused,onClick:()=>{generation.current++;cleanup.current();setPaused(true)}},translate('appearance.pauseCard')),
       h('button',{type:'button',onClick:()=>{generation.current++;cleanup.current();setPaused(false);setRestart(value=>value+1)}},translate('appearance.restartCard'))):null,

@@ -7,7 +7,7 @@ function validateInput(data) {
  count(html,1024*1024)
  for(const run of runs){if(!run||typeof run!=='object')throw Error('Invalid card run');count(run.code,8*1024*1024);if(run.name!==undefined)count(run.name,2048)}
  for(const[name,code]of Object.entries(modules)){count(name,2048);count(code,8*1024*1024)}
- count(JSON.stringify({context:data.context??{},variables:data.variables??null}),256*1024)
+ count(JSON.stringify({context:data.context??{},variables:data.variables??null,root:data.root??null,viewport:data.viewport??null}),256*1024)
  if(data.cardStorage){count(JSON.stringify(data.cardStorage),128*1024+1024);if(!/^[a-f0-9]{64}$/.test(data.cardStorage.scope)||!Array.isArray(data.cardStorage.entries))throw Error('Invalid card storage scope')}
  return {...data,runs,modules,html}
 }
@@ -88,5 +88,5 @@ export function createVirtualCardRuntime(input,{onView,onProposal,onError,onAudi
  try{worker.postMessage({...data,kind:'init',nonce})}catch(error){stop();throw error}
  let events=0,epoch=performance.now()
  const send=(kind,value,metadata={})=>{if(disposed)return;const now=performance.now();if(now-epoch>1000){epoch=now;events=0}if(++events>128){fail('Card input rate limit exceeded');return}try{worker.postMessage({kind,nonce,value,...metadata})}catch{fail('Card input could not be transferred')}}
- return {dispose:stop,dispatch:(value,{trusted=false}={})=>{for(const[id,task]of tasks)if(performance.now()-task.at>1500)tasks.delete(id);if(tasks.size>=128){fail('Card event task limit exceeded');return}const taskId=crypto.randomUUID();tasks.set(taskId,{trusted,type:value?.type,at:performance.now()});send('event',value,{taskId})},notifyVariables:value=>send('variables',value)}
+ return {dispose:stop,resize:value=>{if(!value||!Number.isSafeInteger(value.width)||!Number.isSafeInteger(value.height)||value.width<1||value.height<1||value.width>16384||value.height>16384){fail('Invalid card viewport');return}send('viewport',{width:value.width,height:value.height})},dispatch:(value,{trusted=false}={})=>{for(const[id,task]of tasks)if(performance.now()-task.at>1500)tasks.delete(id);if(tasks.size>=128){fail('Card event task limit exceeded');return}const taskId=crypto.randomUUID();tasks.set(taskId,{trusted,type:value?.type,at:performance.now()});send('event',value,{taskId})},notifyVariables:value=>send('variables',value)}
 }

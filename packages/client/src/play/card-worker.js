@@ -13,16 +13,17 @@ function validateInput(data) {
  count(html,1024*1024)
  for(const run of runs){if(!run||typeof run!=='object')throw Error('Invalid card run');count(run.code,8*1024*1024);if(run.name!==undefined)count(run.name,2048)}
  for(const[name,code]of Object.entries(modules)){count(name,2048);count(code,8*1024*1024)}
- count(JSON.stringify({context:data.context??{},variables:data.variables??null}),256*1024)
+ count(JSON.stringify({context:data.context??{},variables:data.variables??null,root:data.root??null,viewport:data.viewport??null}),256*1024)
  if(data.cardStorage){validateCardStorage(data.cardStorage.entries);count(JSON.stringify(data.cardStorage),128*1024+1024);if(!/^[a-f0-9]{64}$/.test(data.cardStorage.scope))throw Error('Invalid card storage scope')}
  return {...data,runs,modules,html}
 }
 
-let compiler, vm, runtime, drainJob, nonce, destroyed=false, deadline=0, operations=0, current, context, lastView='', ready=false
+let compiler, vm, runtime, drainJob, nonce, destroyed=false, deadline=0, operations=0, current, context, viewport, lastView='', ready=false
 const timers=new Map(),pendingMessages=[],pendingWrites=new Set();let lastWriteId=0
 let openingPending=null,lastOpeningId=0
 let activeCause='script',activeTask=null,layoutCalls=0,layoutId=0,layoutPending=null,queue=Promise.resolve(),queued=0
 const startupTasks=[]
+let nextViewport,viewportQueued=false
 let messages=0, messageEpoch=0
 let storagePending=null,storageRevision=0
 const reply=(kind,value)=>{const now=performance.now();if(now-messageEpoch>1000){messages=0;messageEpoch=now}if(++messages>256){dispose();throw Error('Card message rate limit exceeded')}self.postMessage({nonce,kind,value})}
@@ -52,7 +53,7 @@ function enter(callback,cause='script',taskId=null){
 
 async function init(input){
  const data=validateInput(input)
- const started=performance.now();nonce=data.nonce;context=data.context;current=data.variables
+ const started=performance.now();nonce=data.nonce;context=data.context;current=data.variables;viewport=data.viewport
  const hash=async text=>[...new Uint8Array(await crypto.subtle.digest('SHA-256',new TextEncoder().encode(text)))].map(x=>x.toString(16).padStart(2,'0')).join('')
  const audit={compiler:'@babel/standalone@7.26.10 (react preset only)',sources:[],compiled:[]}
  for(const script of data.runs)audit.sources.push({name:script.name,sha256:await hash(script.code)})
@@ -76,6 +77,7 @@ async function init(input){
    else if(op==='boundScope'){if(!current||current.status!=='available')throw Error('Variable snapshot unavailable');result={mode:current.scope?.mode??'message',messageId:current.scope?.messageId??null}}
    else if(op==='cardStorageScope'){if(!data.cardStorage)throw Error('Card storage unavailable');result=data.cardStorage.scope}
    else if(op==='cardStorageSnapshot'){if(!data.cardStorage)throw Error('Card storage unavailable');result=data.cardStorage.entries}
+   else if(op==='viewport'){if(!viewport||!Number.isSafeInteger(viewport.width)||!Number.isSafeInteger(viewport.height)||viewport.width<1||viewport.height<1||viewport.width>16384||viewport.height>16384)throw Error('Card viewport unavailable');result={width:viewport.width,height:viewport.height}}
    else if(op==='variables'){
     const options=args[0]
     if(!current||current.status!=='available')throw Error('Variable snapshot unavailable')
@@ -134,6 +136,11 @@ async function init(input){
  if(data.identityOpening===true)await evaluate(IDENTITY_OPENING_RUNTIME,'identity-opening.js',false,true)
  await evaluate(`__setMvuRevision(${Number.isSafeInteger(data.variables?.revision)?data.variables.revision:-1})`,'initial-revision.js',false,true)
  await evaluate(`document.body.innerHTML=${JSON.stringify(data.html)}`,'card-html.js',false,true)
+ for(const key of ['html','body']){
+  const root=data.root?.[key]??{},className=root.className??'',style=root.style??''
+  if(typeof className!=='string'||className.length>4096||typeof style!=='string'||style.length>16384)throw Error('Invalid card root presentation')
+  await evaluate(`document.${key==='html'?'documentElement':'body'}.setAttribute('class',${JSON.stringify(className)});document.${key==='html'?'documentElement':'body'}.setAttribute('style',${JSON.stringify(style)});`,'card-root.js',false,true)
+ }
  for(const script of data.runs){
   if(script.type==='text/babel'||script.type==='text/jsx'){
    if(!compiler){
@@ -160,8 +167,9 @@ self.onmessage=event=>{
  if(data.kind==='cardStorageResult'){if(!storagePending||data.requestId!==storagePending.requestId)return;const pending=storagePending;storagePending=null;clearTimeout(pending.timer);pending.resolve(data.value);return}
  if(data.kind==='measurement'){if(!layoutPending||data.requestId!==layoutPending.requestId)return;const pending=layoutPending;layoutPending=null;clearTimeout(pending.timer);if(data.error)pending.reject(Error(String(data.error).slice(0,200)));else pending.resolve(data.value);return}
  if(data.kind==='dispose'){dispose();return}
- if(!ready){if(['writeResult','variables','identityOpeningResult'].includes(data.kind)){if(pendingMessages.length>=64){fail(Error('Card startup message limit exceeded'));return}pendingMessages.push(data)}return}
- if(data.kind==='event')enter(()=>evaluate(`__domEvent(${JSON.stringify(data.value)})`),'script',data.taskId)
+ if(!ready){if(['writeResult','variables','viewport','identityOpeningResult'].includes(data.kind)){if(data.kind==='viewport'){const index=pendingMessages.findIndex(message=>message.kind==='viewport');if(index>=0)pendingMessages.splice(index,1)}if(pendingMessages.length>=64){fail(Error('Card startup message limit exceeded'));return}pendingMessages.push(data)}return}
+ if(data.kind==='viewport'){if(!data.value||!Number.isSafeInteger(data.value.width)||!Number.isSafeInteger(data.value.height)||data.value.width<1||data.value.height<1||data.value.width>16384||data.value.height>16384)return fail(Error('Invalid card viewport'));nextViewport={width:data.value.width,height:data.value.height};if(!viewportQueued){viewportQueued=true;enter(()=>{viewport=nextViewport;nextViewport=null;viewportQueued=false;return evaluate('__viewportChanged()')})}}
+ else if(data.kind==='event')enter(()=>evaluate(`__domEvent(${JSON.stringify(data.value)})`),'script',data.taskId)
  else if(data.kind==='writeResult'){if(!pendingWrites.delete(data.requestId))return;enter(()=>evaluate(`__writeResult(${JSON.stringify(data.requestId)},${JSON.stringify(data.value)})`))}
  else if(data.kind==='identityOpeningResult'){if(openingPending!==data.requestId)return;openingPending=null;enter(()=>evaluate(`__identityOpeningResult(${JSON.stringify(data.requestId)},${JSON.stringify(data.value)})`))}
  else if(data.kind==='variables')enter(()=>{if(current?.status==='available'&&data.value?.status==='available'&&(data.value.currentRevision??data.value.revision)<(current.currentRevision??current.revision))return;current=data.value;return evaluate(`__notifyVariables(${JSON.stringify(current)})`)})

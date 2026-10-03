@@ -9,6 +9,9 @@ document.implementation={createHTMLDocument:()=>__DOM.parseHTML('<html><head></h
 globalThis.navigator=Object.freeze({userAgent:'Tavern isolated virtual DOM'});
 globalThis.location=Object.freeze({href:'https://card.invalid/'});
 globalThis.performance=Object.freeze({now:()=>Date.now()});
+for(const target of [globalThis,window])for(const [name,key] of [['innerWidth','width'],['innerHeight','height']])if(!Object.getOwnPropertyDescriptor(target,name))Object.defineProperty(target,name,{get(){return __call('viewport')[key]},configurable:false});
+globalThis.__viewportChanged=()=>window.dispatchEvent(new __DOM.Event('resize'));
+
 globalThis.console=Object.freeze({log(){},warn(){},error(){},info(){},debug(){}});
 function __call(op,args=[]){const value=JSON.parse(__host(JSON.stringify({op,args})));if(value.error)throw Error(value.error);return value.value}
 const __timers=new Map();let __timerId=0;
@@ -41,7 +44,7 @@ globalThis.__view=()=>{
  for(const node of nodes){if(!__ids.has(node))__ids.set(node,++__nodeId);const id=__ids.get(node);alive.add(id);__nodes.set(id,node);node.setAttribute('data-dtv-node',String(id))}
  for(const id of __nodes.keys())if(!alive.has(id))__nodes.delete(id);
  const controls=nodes.filter(node=>node.localName==='input'&&['radio','checkbox'].includes(node.type)).map(node=>({id:__ids.get(node),checked:node.checked===undefined?node.hasAttribute('checked'):node.checked===true}));if(controls.length>512)throw Error('Card control state limit exceeded');
- return JSON.stringify({bodyId:__ids.get(document.body),controls,html:document.body.innerHTML,styles:[...document.head.querySelectorAll('style')].map(node=>node.textContent).join('\\n')});
+ return JSON.stringify({bodyId:__ids.get(document.body),controls,root:{html:{className:document.documentElement.className,style:document.documentElement.getAttribute('style')??''},body:{className:document.body.className,style:document.body.getAttribute('style')??''}},html:document.body.innerHTML,styles:[...document.head.querySelectorAll('style')].map(node=>node.textContent).join('\\n')});
 };
 // Synchronous-looking getters suspend only this interpreter. The host measures
 // the current sanitized view in this card's script-disabled iframe.
