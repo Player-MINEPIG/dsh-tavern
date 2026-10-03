@@ -14537,7 +14537,8 @@ const __identityScopeOptions=options=>{
   if(options.message_id!=='latest'&&options.message_id!==scope.messageId)throw Error('Identity variables are bound to this card');
   return scope.messageId===null?null:{type:'message',message_id:scope.messageId};
 };
-window.Mvu=Object.freeze({...Mvu,getMvuData:options=>Mvu.getMvuData(__identityScopeOptions(options)),replaceMvuData:(data,options)=>Mvu.replaceMvuData(data,__identityScopeOptions(options))});
+const __identityOriginalMvu=Mvu;
+window.Mvu=Object.freeze({...__identityOriginalMvu,getMvuData:options=>__identityOriginalMvu.getMvuData(__identityScopeOptions(options)),replaceMvuData:(data,options)=>__identityOriginalMvu.replaceMvuData(data,__identityScopeOptions(options))});
 globalThis.__ST_HYPNOOS_CHAT_STORAGE_SCOPE__=()=>getCurrentChatId();
 globalThis.__ST_HYPNOOS_IDENTITY_TRANSIENT_SCOPE__=getCurrentChatId();
 for(const key of ['getContext','getCurrentMessageId','getCurrentChatId','__ST_HYPNOOS_ASSET_BASE__','__ST_HYPNOOS_IDENTITY_FRONTEND_URL__','__ST_HYPNOOS_CHAT_STORAGE_SCOPE__','__ST_HYPNOOS_IDENTITY_TRANSIENT_SCOPE__'])window[key]=globalThis[key];

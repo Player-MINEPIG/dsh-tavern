@@ -1,7 +1,9 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import {createHash} from 'node:crypto'
-import {runInNewContext} from 'node:vm'
+import {runInNewContext,createContext,runInContext} from 'node:vm'
+import {build} from 'esbuild'
+import {VIRTUAL_DOM_BOOTSTRAP} from '../packages/client/src/play/virtual-dom-runtime.js'
 import {sourceSha256} from '../packages/client/src/play/source-sha256.js'
 import {inspectHtmlLoader,IDENTITY_HTML_LOADER,identityLoaderBootstrap,adaptIdentityHtml} from '../packages/client/src/play/html-loader-adapters.js'
 import {loadWrapper,discoverDependencies} from '../packages/client/src/play/rendering-sources.js'
@@ -47,6 +49,17 @@ test('identity snapshot adapter proposes only and binds latest MVU reads to its 
  assert.ok(result.includes('__identityPropose(prompt)'));assert.ok(!result.includes('unknownParentAction'))
  assert.ok(result.includes('__identityOpening('));assert.ok(!result.includes('unknownWorldbookWrite'))
  assert.throws(()=>adaptIdentityHtml(html+'changed',{kind:'identity-html-loader',htmlSha256:sourceSha256(html)}),/source changed/)
+})
+test('identity MVU wrapper retains the original facade through the real virtual window global proxy',async()=>{
+ const calls=[],sandbox=createContext({__host:raw=>{const {op,args}=JSON.parse(raw);if(op==='boundScope')return JSON.stringify({value:{mode:'initial',messageId:null}});if(op==='cardStorageScope')return JSON.stringify({value:'fixture'});if(op==='variables'){calls.push({op,args});return JSON.stringify({value:{stat_data:{fixture:true}}})}if(op==='variableWrite'){calls.push({op,args});return JSON.stringify({value:null})}return JSON.stringify({value:null})}})
+ const bundled=await build({entryPoints:[new URL('../packages/client/src/play/virtual-dom-entry.js',import.meta.url).pathname],bundle:true,write:false,format:'iife',platform:'browser'})
+ runInContext(bundled.outputFiles[0].text,sandbox);runInContext(VIRTUAL_DOM_BOOTSTRAP,sandbox);runInContext(identityLoaderBootstrap(IDENTITY_HTML_LOADER),sandbox)
+ assert.equal(runInContext('Mvu===window.Mvu',sandbox),true)
+ assert.deepEqual(JSON.parse(runInContext("JSON.stringify(Mvu.getMvuData({type:'message',message_id:'latest'}))",sandbox)),{stat_data:{fixture:true}})
+ const write=runInContext("Mvu.replaceMvuData({stat_data:{fixture:false}},{type:'message',message_id:'latest'})",sandbox)
+ assert.equal(calls.length,2);assert.equal(calls[0].op,'variables');assert.equal(calls[0].args[0],null);assert.equal(calls[1].op,'variableWrite');assert.equal(calls[1].args[3],null)
+ runInContext(`__writeResult(${calls[1].args[0]},{variables:{fixture:'ack'}})`,sandbox);assert.deepEqual(JSON.parse(JSON.stringify(await write)),{fixture:'ack'})
+ assert.throws(()=>runInContext("Mvu.getMvuData({type:'message',message_id:'foreign'})",sandbox),/bound/);assert.throws(()=>runInContext("Mvu.replaceMvuData({},{type:'global'})",sandbox),/bound/);assert.equal(calls.length,2)
 })
 test('drafts persist by exact source and session, while disposed generations cannot write',()=>{
  const values=new Map(),storage={getItem:key=>values.get(key)??null,setItem:(key,value)=>values.set(key,value)}
