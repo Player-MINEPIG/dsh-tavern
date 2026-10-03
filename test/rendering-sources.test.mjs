@@ -114,3 +114,21 @@ test('module graph checks every source owner before sharing identical dependenci
  const content='Welcome.\n\n```html\n<body><script src="https://example.com/status.js"></script></body>\n```'
  assert.equal(renderingInventory({data:{first_mes:content}},{kind:'character',resourceId:'fixture'})[0].dependencies[0].url,'https://example.com/status.js')
  })
+
+test('S2: disabled global URL does not shadow reviewed enabled character; explicit origins cannot borrow',async()=>{
+ const {readFile}=await import('node:fs/promises')
+ const source=await readFile(new URL('../packages/client/src/play/scripted-content.js',import.meta.url),'utf8')
+ const body=source.slice(source.indexOf('export function prepareCardDocument('),source.indexOf('\nexport function createDomBridge(')).replace('export function','function')
+ const inertDocument={createElement(){return {innerHTML:'',content:{querySelectorAll(){return []}}}}}
+ const prepare=new Function('discoverDependencies','externalUrl','loadWrapper','MAX_RENDER_SOURCE','document','cardDocument',body+';return prepareCardDocument')(discoverDependencies,externalUrl,loadWrapper,128*1024,inertDocument,()=>({html:'',scripts:[],unsupported:[]}))
+ const trust=createRenderingTrust(),url='https://example.com/shared.html',owners=['global:workspace:synthetic','character:synthetic']
+ for(const owner of owners)trust.approve(owner,url,await trust.stage(owner,url,'<body>synthetic</body>'))
+ trust.setEnablement({schemaVersion:1,entries:[{owner:owners[0],key:url,enabled:false}]})
+ const wrapper=`<body><script>$('body').load('${url}')</script></body>`
+ assert.doesNotThrow(()=>prepare(wrapper,owners,[],trust))
+ const dependency='https://example.com/value.js',helper={owner:owners[0],key:'helper',enabled:true,content:`import '${dependency}';`}
+ trust.approve(helper.owner,helper.key,await trust.stage(helper.owner,helper.key,helper.content))
+ for(const owner of owners)trust.approve(owner,dependency,await trust.stage(owner,dependency,'export const value=1'))
+ trust.setEnablement({schemaVersion:1,entries:[{owner:owners[0],key:dependency,enabled:false}]})
+ assert.throws(()=>prepare('',owners,[helper],trust),/disabled/,'explicit global import cannot borrow character review')
+})

@@ -50,15 +50,16 @@ export function RenderingSettings({client,activeSnapshot,settings={},update,busy
     const review=renderingTrust.inspect(entry.owner,entry.key)
     const changed=entry.kind==='helper'&&review?.content!==entry.content
     const approved=review?.approved&&!changed
-    const enabled=renderingTrust.isEnabled(entry.owner,entry.preferenceKey??entry.key,entry.enabled)
-    const overridden=(settings.scriptEnablement?.entries??[]).some(item=>item.owner===entry.owner&&item.key===(entry.preferenceKey??entry.key))
+    const enabled=entry.enablementAmbiguous?entry.enabled:renderingTrust.isEnabled(entry.owner,entry.preferenceKey??entry.key,entry.enabled)
+    const overridden=!entry.enablementAmbiguous&&(settings.scriptEnablement?.entries??[]).some(item=>item.owner===entry.owner&&item.key===(entry.preferenceKey??entry.key))
     const displayName=entry.kind==='helper'||!entry.url?entry.name:new URL(entry.url).hostname+' /…/'+entry.url.split('/').at(-1).slice(-32)
     const state=entry.blocked?'rendering.blocked':!enabled?'rendering.disabled':approved?'rendering.approved':review&&!changed?'rendering.staged':entry.kind==='helper'?'rendering.needsReview':'rendering.waiting'
     return h('details',{key:JSON.stringify([entry.owner,entry.key]),className:'dtv-entry dtv-script-entry','data-enabled':enabled},
       h('summary',null,
-        h('input',{type:'checkbox',checked:enabled,disabled:busy||!update||entry.blocked,'aria-label':translate('rendering.enableEntry',{name:entry.name}),onClick:event=>event.stopPropagation(),onChange:event=>changeEnabled(entry,event.target.checked)}),
+        h('input',{type:'checkbox',checked:enabled,disabled:busy||!update||entry.blocked||entry.enablementAmbiguous,title:entry.enablementAmbiguous?translate('rendering.ambiguousIdentity'):undefined,'aria-label':translate('rendering.enableEntry',{name:entry.name}),onClick:event=>event.stopPropagation(),onChange:event=>changeEnabled(entry,event.target.checked)}),
         h('span',{className:'dtv-entry-name',title:entry.name},displayName),h('span',{className:'dtv-entry-state'},translate(state))),
       h('div',{className:'dtv-entry-body'},
+        entry.enablementAmbiguous?h('p',{className:'dtv-script-meta'},translate('rendering.ambiguousIdentity')):null,
         h('p',{className:'dtv-script-meta'},entry.owner,' · ',(entry.origins??[entry.path]).filter(Boolean).join(' → ')),
         entry.kind==='helper'?sourceView(entry.content):h('p',{className:'dtv-script-meta'},entry.key),
         entry.kind!=='helper'&&review?sourceView(review.content):null,

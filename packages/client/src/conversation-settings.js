@@ -39,3 +39,31 @@ export function setClientConversationSettings(value, { announce = true } = {}) {
   }
   return getClientConversationSettings()
 }
+
+// One authority for initial reads and subsequent writes. Only the latest live
+// request may publish settings or status; persisted changes are never optimistic.
+export function createConversationSettingsPersistence({request,apply,status,busy}) {
+  let generation=0, active=true
+  async function run(method, value) {
+    const ticket=++generation, writing=method!=='GET'
+    const current=()=>active&&ticket===generation
+    busy(true)
+    if(writing)status('saving')
+    try {
+      const body=method==='PUT'?normalizeClientConversationSettings(value):undefined
+      const result=await request(method,body)
+      if(!current())return
+      apply(result);status('saved')
+    }catch(error){
+      if(current())status(writing?'saveError':'loadError',error)
+    }finally{
+      if(current())busy(false)
+    }
+  }
+  return {
+    load(){active=true;return run('GET')},
+    save(value){return run('PUT',value)},
+    reset(){return run('DELETE')},
+    dispose(){active=false;generation++},
+  }
+}

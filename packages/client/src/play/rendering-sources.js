@@ -65,7 +65,7 @@ export function helperScripts(resource) {
       const value = entry?.value && typeof entry.value === 'object' ? entry.value : entry
       if (!value || typeof value !== 'object') return
       const path = `${prefix}[${index}]`, enabled = parentEnabled && value.enabled !== false && value.disabled !== true && entry.enabled !== false && entry.disabled !== true
-      if (typeof value.content === 'string') result.push({path,id:typeof (value.id??entry.id) === 'string' ? (value.id??entry.id) : null,name:String(value.name ?? value.id ?? path).slice(0,160),content:value.content,enabled})
+      if (typeof value.content === 'string') result.push({path,identityName:typeof value.name==='string'?value.name:null,id:typeof (value.id??entry.id) === 'string' ? (value.id??entry.id) : null,name:String(value.name ?? value.id ?? path).slice(0,160),content:value.content,enabled})
       visit(value.scripts ?? value.children, path, depth + 1, enabled)
     })
   }
@@ -111,11 +111,19 @@ export async function globalRenderingOwner(client) {
 }
 export async function identifyRenderingSources(sources) {
   const digests = await Promise.all(sources.map(source=>source.kind==='helper' ? sourceDigest(source.content) : null))
+  const names = await Promise.all(sources.map(source=>source.identityName ? sourceDigest(source.identityName) : null))
   return sources.map((source,index) => {
     if (source.kind !== 'helper') return source
     const uniqueId = source.id && sources.filter(item=>item.owner===source.owner && item.id===source.id).length === 1
-    const duplicateContent = sources.some((item,i)=>i!==index && item.owner===source.owner && digests[i]===digests[index])
-    return {...source,preferenceKey:uniqueId ? `helper:id:${source.id}` : `helper:sha256:${digests[index]}${duplicateContent?':'+source.path:''}`}
+    const duplicates = sources.map((item,i)=>({item,i})).filter(({item,i})=>item.owner===source.owner && digests[i]===digests[index])
+    if(uniqueId)return {...source,preferenceKey:`helper:id:${source.id}`}
+    if(duplicates.length===1)return {...source,preferenceKey:`helper:sha256:${digests[index]}`}
+    // Names disambiguate otherwise identical content without using array position.
+    if(names[index] && duplicates.filter(({i})=>names[i]===names[index]).length===1) {
+      return {...source,preferenceKey:`helper:sha256:${digests[index]}:name:${names[index]}`}
+    }
+    // Indistinguishable entries have no safe per-entry persistent identity.
+    return {...source,preferenceKey:null,enablementAmbiguous:true}
   })
 }
 
@@ -132,10 +140,10 @@ export function renderingEntries(sources, trust) {
       entries.push(entry)
     }
     const staged=trust.inspect(entry.owner,entry.key)
-    if(staged&&depth<8)for(const dependency of discoverDependencies(staged.content,entry.url))add({...dependency,owner:entry.owner,key:dependency.url??dependency.raw,name:dependency.raw,kind:dependency.kind,enabled:entry.enabled&&trust.isEnabled(entry.owner,entry.preferenceKey??entry.key,true),origins:[...(entry.origins??[]),entry.key]},depth+1)
+    if(staged&&depth<8)for(const dependency of discoverDependencies(staged.content,entry.url))add({...dependency,owner:entry.owner,key:dependency.url??dependency.raw,name:dependency.raw,kind:dependency.kind,enabled:entry.enabled&&(entry.enablementAmbiguous||trust.isEnabled(entry.owner,entry.preferenceKey??entry.key,true)),origins:[...(entry.origins??[]),entry.key]},depth+1)
   }
   for(const original of sources){
-    const source={...original,enabled:trust.isEnabled(original.owner,original.preferenceKey??original.key,original.enabled)}
+    const source={...original,enabled:original.enablementAmbiguous?original.enabled:trust.isEnabled(original.owner,original.preferenceKey??original.key,original.enabled)}
     if(source.kind==='helper')add(source)
     for(const dependency of source.dependencies)add({...dependency,owner:source.owner,key:dependency.url??dependency.raw,name:dependency.raw,kind:dependency.kind,enabled:source.enabled,origins:[source.path]})
   }
