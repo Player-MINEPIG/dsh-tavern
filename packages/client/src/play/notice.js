@@ -1,5 +1,5 @@
 import {createMvuCardBinding} from './mvu-bridge.js'
-import {initialCardScope} from './mvu-scope.js'
+import {initialCardScope,greetingCardScope} from './mvu-scope.js'
 import {
   createElement,
   useEffect,
@@ -93,6 +93,7 @@ export function PlaySessionDock({ session, useSessions, useConversation, convers
           if (!active) return
           setContent({
             kind: 'opening',
+            greetingScope:greetingCardScope({playthrough:binding.playthrough,sessionId,characterId:state.display?.bindings?.characterId}),
             initialScope:initialCardScope({playthrough:binding.playthrough,sessionId,characterId:state.display?.bindings?.characterId,timeline:binding.timeline,turns:state.turns}),
             greeting: state.greeting,
             display: state.display,
@@ -178,9 +179,9 @@ export function PlaySessionDock({ session, useSessions, useConversation, convers
       : h('div',{className:'dtv-play-opening-body'},h(MessageContent,{
         text:greeting.text,
         writeScope:content.initialScope,
-        createBinding:content.initialScope?(signal,writeGrant)=>createMvuCardBinding({client:playClient,scope:content.initialScope,signal,writeGrant}):undefined,
+        createBinding:content.greetingScope?(signal,writeGrant)=>createMvuCardBinding({client:playClient,scope:writeGrant?content.initialScope:content.greetingScope,signal,writeGrant}):undefined,
         enabled:displaySettings.interactiveCards===true,
-        scopeKey:JSON.stringify([sessionId,content.playthrough.id,'greeting',greeting.index,content.initialScope]),
+        scopeKey:JSON.stringify([sessionId,content.playthrough.id,'greeting',greeting.index,content.greetingScope,content.initialScope]),
         owners:[content.display?.globalRenderingOwner,...Object.entries(content.display?.bindings??{}).filter(([,id])=>typeof id==='string'&&id).map(([kind,id])=>`${kind==='characterId'?'character':'preset'}:${id}`)].filter(Boolean),
         helpers:(content.display?.renderingSources??[]).filter(item=>item.kind==='helper'),
         context:{version:1,role:'assistant',userName:content.display?.macros?.user??'User',characterName:content.display?.macros?.character??'Assistant'},

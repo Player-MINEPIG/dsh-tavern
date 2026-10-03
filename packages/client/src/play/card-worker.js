@@ -66,7 +66,8 @@ async function init(input){
   try{
    const {op,args=[]}=JSON.parse(input)
    let result=null
-   if(op==='context')result=context
+   if(op==='reportError'){if(typeof args[0]!=='string'||args[0].length>200)throw Error('Invalid card error');fail(Error(args[0]))}
+   else if(op==='context')result=context
    else if(op==='variables'){
     const options=args[0]
     if(!current||current.status!=='available')throw Error('Variable snapshot unavailable')

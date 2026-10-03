@@ -61,7 +61,7 @@ Request source `tavern.mvu/state` must be explicitly selected in an assembly pre
 
 `GET /pmp-dsh-tavern/api/v1/mvu/snapshot?scope=<JSON>` uses existing Tavern authentication. Host binds `{playthroughId,sessionId,nodeId,variantId,endEventId,sessionFormatVersion?}` against durable timeline and native message evidence. Browser input cannot select arbitrary messageId. Snapshot revision stays historical; currentRevision is the current entity CAS revision.
 
-`createMvuCardBinding({client,scope,signal?,pollMs?})` asynchronously returns `{getSnapshot(),subscribe(listener),dispose()}`. Snapshot is `{version:1,status,scope,revision,variables,resourceId?}`. Variables are the whole object including stat_data/schema. Scope is immutable; polling is bounded, abort cancels initial reads, and disposed bindings reject reads. Rendering owns script callbacks and lifecycle. Ordinary greeting/import/streaming bubbles cannot impersonate durable coordinates. The current empty-session greeting may use only the separate initial mode below.
+`createMvuCardBinding({client,scope,signal?,pollMs?})` asynchronously returns `{getSnapshot(),subscribe(listener),dispose()}`. Snapshot is `{version:1,status,scope,revision,variables,resourceId?}`. Variables are the whole object including stat_data/schema. Scope is immutable; polling is bounded, abort cancels initial reads, and disposed bindings reject reads. Rendering owns script callbacks and lifecycle. Ordinary greeting/import/streaming bubbles cannot impersonate durable coordinates. A selected character greeting uses the read-only greeting mode below; empty-session writes use the separate initial mode.
 
 ## Authorized card writes
 
@@ -78,6 +78,14 @@ The separate store event `card_variable_update` uses `validate_card_update → a
 The trusted renderer dispatcher derives cause from native isTrusted events/timer tasks; the VM supplies only op/value. The server trusts that authenticated Host UI evidence and cannot independently prove a human clicked in the browser. Code approval does not authorize impersonating a click.
 
 Observed API shapes are `getMvuData(options)` returning whole variables, `updateVariablesWith(JSONPatchArray)` and `await replaceMvuData(variables,options)`. Callback updater signatures remain unverified. VARIABLE_UPDATE_ENDED only promises a no-argument callback after a commit in this binding, followed by a fresh read; it does not claim full upstream payload/event compatibility. Cross-message/latest/chat/character fallbacks cannot silently resolve to the current authorized scope.
+
+## Current read-only greeting variables
+
+The same snapshot API accepts `{mode:'greeting',playthroughId,sessionId,characterId,sessionFormatVersion?}` to read the selected character resource's current value. Host verifies root-session membership, character selection, session identity and one active resource. It does not resume an Agent, replay events or reset state. This view remains readable after a user starts a turn, including before any assistant message completes. It is not a historical message snapshot, does not follow another session's focus, and cannot create a write capability. Imported or missing local sessions cannot fabricate a binding.
+
+Greeting rendering separates the read-only greeting scope from the empty-session initial write scope. Changing character or playthrough cancels old reads and subscriptions. Missing variables and initialization failures surface as errors rather than fabricated default state.
+
+The isolated interpreter supplies a finite clean-room display subset: `_.get` (own-property dot/simple bracket paths), `_.isEmpty` (JSON values), `errorCatched(fn)` (reports synchronous and asynchronous exceptions to the rendering error surface), and `$` methods length/ready/text/html/on/val/css/show/hide/addClass/removeClass/empty. These support bounded data display, not full Lodash, jQuery or Helper compatibility. They add no Host, network or write authority.
 
 ## Current empty-session greeting binding
 

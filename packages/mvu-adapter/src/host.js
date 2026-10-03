@@ -24,6 +24,29 @@ export function installMvu(ctx, { storageDir, resources = [], sources, membershi
     return grant && ctx.get('tavernRenderingAuthority') === authority ? { ...grant, checkCurrent: () => ctx.get('tavernRenderingAuthority') === authority && authority.isCurrent?.(request) === true } : null
   }, async resolveScope(scope) {
     if (!scope || typeof scope.sessionId !== 'string') fail('MVU_SCOPE', 'Session scope required')
+    if (scope.mode === 'greeting') {
+      if (typeof scope.playthroughId !== 'string' || !scope.playthroughId || typeof scope.characterId !== 'string' || !scope.characterId || ['nodeId', 'variantId', 'endEventId', 'messageId'].some(key => key in scope)
+        || !getSelection || !getSelectionToken) fail('MVU_SCOPE', 'Explicit greeting scope required')
+      const member = () => {
+        const item = memberships?.readCatalog({ allowMissing: true })?.catalog.playthroughs.find(p => p.id === scope.playthroughId)
+        if (!item || item.ext?.pmpDshTavern?.rootSessionId !== scope.sessionId || item.ext?.pmpDshTavern?.characterId !== scope.characterId) fail('MVU_READ_ONLY', 'Greeting membership changed')
+        return digest(item)
+      }
+      member()
+      if (getSelection(scope.sessionId)?.characterCardId !== scope.characterId) fail('MVU_READ_ONLY', 'Greeting character is not selected')
+      // This is a current read view, not a historical message or a write capability.
+      // Inspect without resuming an Agent just to display a greeting.
+      const observed = await inspect(scope.sessionId), header = observed?.header ?? observed?.meta
+      if (!header || header.id !== scope.sessionId || !Number.isSafeInteger(header.version)
+        || (scope.sessionFormatVersion != null && scope.sessionFormatVersion !== header.version)) fail('MVU_READ_ONLY', 'Greeting session unavailable')
+      const key = member(), lease = memberships.captureLease?.(scope.playthroughId), selection = getSelectionToken(scope.sessionId)
+      const checkCurrent = () => {
+        try { return lease?.() === true && member() === key && getSelectionToken(scope.sessionId) === selection && getSelection(scope.sessionId)?.characterCardId === scope.characterId }
+        catch { return false }
+      }
+      if (!checkCurrent()) fail('MVU_READ_ONLY', 'Greeting scope changed')
+      return { mode: 'greeting', writableHead: false, checkCurrent }
+    }
     if (scope.mode === 'initial') {
       if (typeof scope.playthroughId !== 'string' || !scope.playthroughId || typeof scope.characterId !== 'string' || !scope.characterId
         || ['nodeId', 'variantId', 'endEventId', 'messageId'].some(key => key in scope) || !getSelection || !getSelectionToken) fail('MVU_SCOPE', 'Explicit initial scope required')

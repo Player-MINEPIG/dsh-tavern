@@ -2,7 +2,7 @@ import test from 'node:test'
 import assert from 'node:assert/strict'
 import {MVU_BUILTINS,mvuBuiltin,confirmMvuSchemas} from '../packages/client/src/play/mvu-builtins.js'
 import {isSideEffectModuleReference} from '../packages/client/src/play/rendering-sources.js'
-import {initialCardScope} from '../packages/client/src/play/mvu-scope.js'
+import {initialCardScope,greetingCardScope} from '../packages/client/src/play/mvu-scope.js'
 test('builtin replacements require exact bytes and side-effect imports, never URL suffixes or runtime exports',()=>{
  const entry=MVU_BUILTINS[0]
  assert.equal(mvuBuiltin(entry.url,entry.sha256),entry)
@@ -21,4 +21,11 @@ test('initial coordinates require the resolved root and selected character with 
  const input={playthrough:{id:'p',ext:{pmpDshTavern:{rootSessionId:'s',characterId:'c'}}},sessionId:'s',characterId:'c',timeline:{nodes:[]},turns:[]}
  assert.deepEqual(initialCardScope(input),{mode:'initial',playthroughId:'p',sessionId:'s',characterId:'c'})
  for(const patch of [{sessionId:'other'},{characterId:'other'},{timeline:null},{timeline:{nodes:[{}]}},{turns:[{}]}])assert.equal(initialCardScope({...input,...patch}),null)
+})
+
+test('greeting current read scope survives turns without granting an initial write scope',()=>{
+ const input={playthrough:{id:'p',ext:{pmpDshTavern:{rootSessionId:'s',characterId:'c'}}},sessionId:'s',characterId:'c',timeline:{nodes:[{}]},turns:[{}]}
+ assert.deepEqual(greetingCardScope(input),{mode:'greeting',playthroughId:'p',sessionId:'s',characterId:'c'})
+ assert.equal(initialCardScope(input),null)
+ for(const patch of [{sessionId:'other'},{characterId:'other'},{playthrough:null}])assert.equal(greetingCardScope({...input,...patch}),null)
 })

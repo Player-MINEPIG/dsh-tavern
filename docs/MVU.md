@@ -69,7 +69,7 @@ MVU 变量是角色状态，和长期记忆资源类型分开。`tavernMvu`（�
 
 `GET /pmp-dsh-tavern/api/v1/mvu/snapshot?scope=<JSON>` 使用现有 Tavern 请求认证。scope 为 Host 绑定的 `{playthroughId,sessionId,nodeId,variantId,endEventId,sessionFormatVersion?}`，必须与持久 timeline 和原生消息相符。浏览器不能传自选 messageId。读快照的 revision 保留历史语义，currentRevision 提供当前 CAS 版本。
 
-客户端 `createMvuCardBinding({client,scope,signal?,pollMs?})` 异步返回 `{getSnapshot(),subscribe(listener),dispose()}`。快照为 `{version:1,status,scope,revision,variables,resourceId?}`；variables 是完整变量对象，包含 stat_data/schema。订阅采用有界轮询；scope 不可变，abort 可取消初次读取，销毁后读取拒绝。渲染模块负责脚本回调和生命周期。普通开场、导入、流式气泡不能冒充 durable scope；当前空会话开场仅可使用下述独立 initial 模式。
+客户端 `createMvuCardBinding({client,scope,signal?,pollMs?})` 异步返回 `{getSnapshot(),subscribe(listener),dispose()}`。快照为 `{version:1,status,scope,revision,variables,resourceId?}`；variables 是完整变量对象，包含 stat_data/schema。订阅采用有界轮询；scope 不可变，abort 可取消初次读取，销毁后读取拒绝。渲染模块负责脚本回调和生命周期。普通开场、导入、流式气泡不能冒充 durable scope；当前角色开场使用下述只读 greeting 模式；空会话写入另用 initial 模式。
 
 ## 受授权的卡片写入
 
@@ -86,6 +86,14 @@ store 使用独立 `card_variable_update`，策略链为 `validate_card_update �
 renderer 的可信 dispatcher 从原生 isTrusted 事件/计时器任务生成 cause，VM 只能提供 op/value。服务端信任已认证 Host UI 的该证据，不能独立证明浏览器中发生了人类点击。代码审批不是点击授权，脚本不能自报 cause。
 
 实际观察到的兼容形状为 `getMvuData(options)` 读取完整变量、`updateVariablesWith(JSONPatchArray)` 和 `await replaceMvuData(variables,options)`。回调 updater 形状未验证，不承诺兼容。VARIABLE_UPDATE_ENDED 仅保证本绑定提交后触发无参回调再读取，不宣称上游完整 payload/事件语义。跨消息/latest/chat/character fallback 不能被偷偷解释为当前授权范围。
+
+## 开场的当前只读变量
+
+同一 snapshot API 接受 `{mode:'greeting',playthroughId,sessionId,characterId,sessionFormatVersion?}`，只读取选定角色资源的当前值。Host 核对根会话 membership、角色选择、会话身份与唯一活动资源；不恢复 Agent，不回放事件，不重置状态。该绑定可在用户已经发起回合后继续读取，即使还没有已完成的 assistant 消息。它不是历史消息快照，不跟随其他会话的 focus，也不能创建写 capability。导入或缺失本地会话不能借此伪造绑定。
+
+开场渲染将只读 greeting scope 与空会话 initial 写 scope 分开；角色或周目切换会取消旧读取及订阅。缺失变量和初始化错误应显示错误，而非补造默认状态。
+
+隔离解释器提供有限的 clean-room 显示辅助方法：`_.get`（自身属性的点/简单括号路径）、`_.isEmpty`（JSON 值）、`errorCatched(fn)`（将同步及异步异常交给渲染错误界面），以及 `$` 的 length/ready/text/html/on/val/css/show/hide/addClass/removeClass/empty。它们用于有界的数据显示，不代表完整 Lodash、jQuery 或 Helper 兼容；没有新增 Host、网络或写入权限。
 
 ## 当前空会话的开场绑定
 
