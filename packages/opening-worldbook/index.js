@@ -116,7 +116,10 @@ export class OpeningWorldBookService {
     const next = clone(this.state), doc = document(sourceIdentity, entries, previous?.document, new Date(this.now()).toISOString())
     next.records[id] = { revision, entries, sourceIdentity: clone(sourceIdentity), document: doc, receipts: [...(previous?.receipts ?? []), { operationId, fingerprint, receipt }].slice(-128) }
     signal?.throwIfAborted(); if (!proposal.checkCurrent() || !bindingCurrent()) openingFail('OPENING_PROPOSAL_STALE', 'Opening source lease changed before commit', 409)
-    this.fileHash = sha256(atomic(this.path, next)); this.state = next; this.#generation++; this.#proposals.delete(proposalId); this.onChange()
+    const persisted = atomic(this.path, next)
+    // Match the durable JSON representation, just as global WorldBookStore.get
+    // does. Format parser optional fields may be undefined before persistence.
+    this.fileHash = sha256(persisted); this.state = JSON.parse(persisted); this.#generation++; this.#proposals.delete(proposalId); this.onChange()
     return clone(receipt)
   }
   selectedIds(sessionId, selection = this.getSelection(sessionId)) {

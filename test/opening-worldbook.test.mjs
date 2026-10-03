@@ -36,6 +36,8 @@ test('separate world-book confirmation, CAS and durable idempotent receipt prese
   assert.throws(() => f.commit(concurrent, { operationId: 'other' }), { code: 'OPENING_PROPOSAL_STALE' })
   assert.throws(() => f.commit(p, { expectedRevision: 99 }), { code: 'OPENING_OPERATION_CONFLICT' })
   assert.equal(f.service.get(receipt.resourceId.slice(11), 's').book.entries[0].content, 'Authored complete content')
+  const row = f.service.get(receipt.resourceId.slice(11), 's')
+  assert.deepEqual(row, JSON.parse(JSON.stringify(row)), 'public source rows must use their finite durable JSON representation')
   assert.equal(f.changes(), 1); assert.deepEqual(globals.list(), []); assert.equal(readFileSync(f.characters.characterPath(f.card.id), 'utf8'), original)
   const restarted = new OpeningWorldBookService(f.options); assert.deepEqual(restarted.commit({ proposalId: p.proposalId, expectedRevision: 0, operationId: 'op', sourceIdentity: f.sourceIdentity, reviewed: true, write: true }), receipt); restarted.dispose()
 })
