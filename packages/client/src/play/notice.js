@@ -24,6 +24,7 @@ import {
 } from './chat-model.js'
 import { RichText } from './rich-text.js'
 import {MessageContent} from './scripted-content.js'
+import {useRestoredRenderingDisplay} from './rendering-display.js'
 import { shouldShowUnboundNotice } from './sidebar-model.js'
 import { conversationDisplayStyle, useConversationDisplaySettings } from './display-settings.js'
 import { useClientUiSettings } from '../i18n/use-ui-settings.js'
@@ -61,6 +62,7 @@ export function PlaySessionDock({ session, useSessions, useConversation, convers
   const [greetingBusy, setGreetingBusy] = useState(false)
   const [error, setError] = useState('')
   const displaySettings = useConversationDisplaySettings()
+  useRestoredRenderingDisplay(content?.sessionId===sessionId&&content?.kind==='opening'&&sessionBlank&&composerPhase==='blank'?content.display:null,displaySettings,setError)
 
   useEffect(() => {
     const refresh = () => setRevision(value => value + 1)

@@ -1,4 +1,4 @@
-import {renderingDependencies} from './rendering-dependencies.js'
+import {restoreRenderingDisplay,useRestoredRenderingDisplay} from './rendering-display.js'
 import { readRenderingWorkspace, identifyRenderingSources, renderingInventory } from './rendering-sources.js'
 import { ConversationPresentation, MessageBubble, messageAvatarKey, characterAvatarUrl } from './presentation.js'
 import { finishPendingSwipe, pendingSwipeForSession } from './pending-swipe.js'
@@ -650,6 +650,7 @@ export function MowanChatView({ sessionId, useSession, useChat, playClient, play
   const state = loadedState?.value ?? null
   const stateIsCurrent = loadedState?.sessionId === sessionId
   const [error, setError] = useState('')
+  useRestoredRenderingDisplay(stateIsCurrent?state?.display:null,displaySettings,setError)
   const [greetingBusy, setGreetingBusy] = useState(false)
   const [pendingSwipe, setPendingSwipe] = useState(null)
   const bottomAnchor = useRef(null)
@@ -709,8 +710,7 @@ export function MowanChatView({ sessionId, useSession, useChat, playClient, play
     setError('')
     loadChatState(playClient, sessionId, playthrough).then(async next => {
       if (!active) return
-      const {renderingSources,globalRenderingOwner:globalOwner,rules,bindings}=next.display
-      await renderingDependencies.sync([...renderingSources,...(globalOwner?renderingInventory({regex_scripts:rules.filter(rule=>rule.scope.kind==='global')},{kind:'global',resourceId:globalOwner.slice(7)}):[])],[bindings.characterId&&'character:'+bindings.characterId,bindings.presetId&&'preset:'+bindings.presetId,globalOwner])
+      await restoreRenderingDisplay(next.display)
       if (!active) return
       const incoming = { sessionId, value: next }
       const previous = loadedStateRef.current
