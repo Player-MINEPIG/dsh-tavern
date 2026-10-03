@@ -8154,7 +8154,67 @@ __export(entry_exports, {
   name: () => name
 });
 module.exports = __toCommonJS(entry_exports);
-var import_dsh_client_ui_conversation = require("@deepseek-ai/dsh-client-ui-conversation");
+var import_dsh_client_ui_primitives = require("@deepseek-ai/dsh-client-ui-primitives");
+
+// packages/client/src/rendering-settings-styles.js
+var renderingSettingsStyles = `
+.dtv-rendering-settings{min-width:0;display:flex;flex-direction:column;gap:12px}
+.dtv-rendering-settings .dtv-script-info{border:0;background:transparent;color:var(--dsw-alias-label-tertiary);padding:4px;font:inherit;cursor:pointer;flex:none}.dtv-rendering-settings .dtv-script-info:focus-visible{outline:2px solid var(--dsw-alias-state-business-primary,#2677d9);border-radius:4px}
+.dtv-rendering-settings h3,.dtv-rendering-settings h4,.dtv-rendering-settings p{margin:0}
+.dtv-rendering-settings h3{font-size:14px}.dtv-rendering-settings h4{font-size:12px}
+.dtv-rendering-settings .dtv-script-group{display:flex;flex-direction:column;gap:8px;min-width:0}
+.dtv-rendering-settings .dtv-script-meta{color:var(--dsw-alias-label-tertiary);font-size:11px;line-height:1.5;overflow-wrap:anywhere}
+.dtv-rendering-settings .dtv-entry>summary{padding:10px;gap:8px;min-width:0}
+.dtv-rendering-settings .dtv-entry>summary::after{content:'\u25B8';flex:none;color:var(--dsw-alias-label-tertiary)}
+.dtv-rendering-settings .dtv-entry[open]>summary::after{content:'\u25BE'}
+.dtv-rendering-settings .dtv-entry-name{flex:1;white-space:normal;overflow-wrap:anywhere}
+.dtv-rendering-settings .dtv-entry-state{max-width:42%;text-align:right;white-space:normal;overflow-wrap:anywhere}
+.dtv-rendering-settings input[type=checkbox]{flex:none;margin:0;accent-color:var(--dsw-alias-state-business-primary,#2677d9)}
+.dtv-rendering-settings .dtv-entry-body{padding:10px;min-width:0;gap:10px}
+.dtv-rendering-settings .dtv-script-actions{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.dtv-rendering-settings .dtv-script-actions button{max-width:100%;white-space:normal}
+.dtv-rendering-settings .dtv-script-source{width:100%;box-sizing:border-box;height:240px;min-height:160px;max-height:320px;resize:vertical;overflow:auto;white-space:pre;font:11px/1.6 ui-monospace,SFMono-Regular,monospace;padding:10px;border:1px solid var(--dsw-alias-border-l2);border-radius:6px;background:var(--dsw-alias-bg-base);color:var(--dsw-alias-label-primary)}
+.dtv-rendering-settings .dtv-script-help{font-size:11px;line-height:1.6;color:var(--dsw-alias-label-tertiary)}
+.dtv-rendering-settings .dtv-script-help summary{cursor:pointer}.dtv-rendering-settings .dtv-script-help p{margin-top:8px}
+.dtv-rendering-settings .dtv-script-control{display:flex;gap:8px;align-items:center;font-size:12px}
+.dtv-rendering-settings .dtv-script-operations{border-top:1px solid var(--dsw-alias-border-l1);padding-top:12px}
+`;
+
+// packages/presentation/script-enablement.js
+function normalizeScriptEnablement(value) {
+  if (!value || value.schemaVersion !== 1 || !Array.isArray(value.entries) || value.entries.length > 128 || Object.keys(value).some((key2) => !["schemaVersion", "entries"].includes(key2))) throw new TypeError("Invalid scriptEnablement");
+  const seen = /* @__PURE__ */ new Set();
+  const entries2 = value.entries.map((item) => {
+    if (!item || Object.keys(item).some((key2) => !["owner", "key", "enabled"].includes(key2)) || typeof item.owner !== "string" || !/^(character|preset|global):.+/.test(item.owner) || item.owner.length > 300 || typeof item.key !== "string" || !item.key || item.key.length > 2048 || typeof item.enabled !== "boolean") throw new TypeError("Invalid script enablement entry");
+    const identity = JSON.stringify([item.owner, item.key]);
+    if (seen.has(identity)) throw new TypeError("Duplicate script enablement entry");
+    seen.add(identity);
+    return { owner: item.owner, key: item.key, enabled: item.enabled };
+  });
+  return { schemaVersion: 1, entries: entries2 };
+}
+function updateScriptEnablement(value, owner, key2, enabled) {
+  const entries2 = (value?.entries ?? []).filter((item) => item.owner !== owner || item.key !== key2);
+  if (typeof enabled === "boolean") entries2.push({ owner, key: key2, enabled });
+  return normalizeScriptEnablement({ schemaVersion: 1, entries: entries2 });
+}
+
+// packages/client/src/play/mvu-builtins.js
+var bundleHash = "378e7c2bca24619a97717dd6eb963e5fef43461a8bd16a9591b9c8b06e08010c";
+var MVU_BUILTINS = Object.freeze([
+  ...["testingcf", "cdn"].map((host) => Object.freeze({ url: `https://${host}.jsdelivr.net/gh/MagicalAstrogy/MagVarUpdate/artifact/bundle.js`, sha256: bundleHash, kind: "mvu-facade", version: 1 })),
+  Object.freeze({ url: "https://testingcf.jsdelivr.net/gh/StageDog/tavern_resource/dist/util/mvu_zod.js", sha256: "78c40f52d81022d9d769a923a49e673b8babb562656051a7d0410b6b19f45184", kind: "backend-schema", version: 1 })
+]);
+function mvuBuiltin(url, digest) {
+  return MVU_BUILTINS.find((item) => item.url === url && item.sha256 === digest) ?? null;
+}
+function confirmMvuSchemas(declarations, snapshot) {
+  return declarations.map((item) => {
+    const descriptor = snapshot?.variables?.mvu_schema;
+    if (snapshot?.status !== "available" || descriptor?.mvuSchema !== 1 || descriptor?.interpreterVersion !== 1 || descriptor?.source !== item.source) throw Error("Built-in MVU schema requires an available backend snapshot with the exact complete schema source and supported interpreter version");
+    return { ...item, status: "source-registered", resourceId: snapshot.resourceId, revision: snapshot.revision, interpreterVersion: 1, confirmation: "Derived locally from the authoritative snapshot; original schema script was not executed in the card" };
+  });
+}
 
 // packages/identity.js
 var PLUGIN_ID = "pmp-dsh-tavern";
@@ -8344,23 +8404,6 @@ function createRenderingWriteRequests({ request: request2 = tavernFetch } = {}) 
   });
 }
 var renderingWriteRequests = createRenderingWriteRequests();
-
-// packages/client/src/play/mvu-builtins.js
-var bundleHash = "378e7c2bca24619a97717dd6eb963e5fef43461a8bd16a9591b9c8b06e08010c";
-var MVU_BUILTINS = Object.freeze([
-  ...["testingcf", "cdn"].map((host) => Object.freeze({ url: `https://${host}.jsdelivr.net/gh/MagicalAstrogy/MagVarUpdate/artifact/bundle.js`, sha256: bundleHash, kind: "mvu-facade", version: 1 })),
-  Object.freeze({ url: "https://testingcf.jsdelivr.net/gh/StageDog/tavern_resource/dist/util/mvu_zod.js", sha256: "78c40f52d81022d9d769a923a49e673b8babb562656051a7d0410b6b19f45184", kind: "backend-schema", version: 1 })
-]);
-function mvuBuiltin(url, digest) {
-  return MVU_BUILTINS.find((item) => item.url === url && item.sha256 === digest) ?? null;
-}
-function confirmMvuSchemas(declarations, snapshot) {
-  return declarations.map((item) => {
-    const descriptor = snapshot?.variables?.mvu_schema;
-    if (snapshot?.status !== "available" || descriptor?.mvuSchema !== 1 || descriptor?.interpreterVersion !== 1 || descriptor?.source !== item.source) throw Error("Built-in MVU schema requires an available backend snapshot with the exact complete schema source and supported interpreter version");
-    return { ...item, status: "source-registered", resourceId: snapshot.resourceId, revision: snapshot.revision, interpreterVersion: 1, confirmation: "Derived locally from the authoritative snapshot; original schema script was not executed in the card" };
-  });
-}
 
 // node_modules/acorn/dist/acorn.mjs
 var astralIdentifierCodes = [509, 0, 227, 0, 150, 4, 294, 9, 1368, 2, 2, 1, 6, 3, 41, 2, 5, 0, 166, 1, 574, 3, 9, 9, 7, 9, 32, 4, 318, 1, 80, 3, 71, 10, 50, 3, 123, 2, 54, 14, 32, 10, 3, 1, 11, 3, 46, 10, 8, 0, 46, 9, 7, 2, 37, 13, 2, 9, 6, 1, 45, 0, 13, 2, 49, 13, 9, 3, 2, 11, 83, 11, 7, 0, 3, 0, 158, 11, 6, 9, 7, 3, 56, 1, 2, 6, 3, 1, 3, 2, 10, 0, 11, 1, 3, 6, 4, 4, 68, 8, 2, 0, 3, 0, 2, 3, 2, 4, 2, 0, 15, 1, 83, 17, 10, 9, 5, 0, 82, 19, 13, 9, 214, 6, 3, 8, 28, 1, 83, 16, 16, 9, 82, 12, 9, 9, 7, 19, 58, 14, 5, 9, 243, 14, 166, 9, 71, 5, 2, 1, 3, 3, 2, 0, 2, 1, 13, 9, 120, 6, 3, 6, 4, 0, 29, 9, 41, 6, 2, 3, 9, 0, 10, 10, 47, 15, 343, 9, 54, 7, 2, 7, 17, 9, 57, 21, 2, 13, 123, 5, 4, 0, 2, 1, 2, 6, 2, 0, 9, 9, 49, 4, 2, 1, 2, 4, 9, 9, 330, 3, 10, 1, 2, 0, 49, 6, 4, 4, 14, 10, 5350, 0, 7, 14, 11465, 27, 2343, 9, 87, 9, 39, 4, 60, 6, 26, 9, 535, 9, 470, 0, 2, 54, 8, 3, 82, 0, 12, 1, 19628, 1, 4178, 9, 519, 45, 3, 22, 543, 4, 4, 5, 9, 7, 3, 6, 31, 3, 149, 2, 1418, 49, 513, 54, 5, 49, 9, 0, 15, 0, 23, 4, 2, 14, 1361, 6, 2, 16, 3, 6, 2, 1, 2, 4, 101, 0, 161, 6, 10, 9, 357, 0, 62, 13, 499, 13, 245, 1, 2, 9, 726, 6, 110, 6, 6, 9, 4759, 9, 787719, 239];
@@ -14046,8 +14089,8 @@ function helperScripts(resource) {
     items.slice(0, 128).forEach((entry, index) => {
       const value = entry?.value && typeof entry.value === "object" ? entry.value : entry;
       if (!value || typeof value !== "object") return;
-      const path2 = `${prefix}[${index}]`, enabled = parentEnabled && value.enabled !== false && entry.enabled !== false;
-      if (typeof value.content === "string") result.push({ path: path2, name: String(value.name ?? value.id ?? path2).slice(0, 160), content: value.content, enabled });
+      const path2 = `${prefix}[${index}]`, enabled = parentEnabled && value.enabled !== false && value.disabled !== true && entry.enabled !== false && entry.disabled !== true;
+      if (typeof value.content === "string") result.push({ path: path2, id: typeof (value.id ?? entry.id) === "string" ? value.id ?? entry.id : null, name: String(value.name ?? value.id ?? path2).slice(0, 160), content: value.content, enabled });
       visit(value.scripts ?? value.children, path2, depth + 1, enabled);
     });
   }
@@ -14088,73 +14131,92 @@ function isSideEffectModuleReference(code, url, base) {
   }
   return matched;
 }
-
-// packages/client/src/play/rendering-trust.js
-function createRenderingTrust() {
-  const records = /* @__PURE__ */ new Map(), listeners = /* @__PURE__ */ new Set();
-  let revision = 0, generation = 0;
-  const emit = () => {
-    revision++;
-    for (const listener of listeners) listener();
-  };
-  const keyFor = (owner, source) => JSON.stringify([owner, source]);
-  return {
-    revision: () => revision,
-    subscribe(listener) {
-      listeners.add(listener);
-      return () => listeners.delete(listener);
-    },
-    async stage(owner, source, content) {
-      if (typeof owner !== "string" || owner.length > 300 || typeof source !== "string" || source.length > 2048 || typeof content !== "string" || content.length > MAX_RENDER_SOURCE) throw Error("Rendering source exceeds limit");
-      if (source.startsWith("https:") && externalUrl(source) !== source) throw Error("Unsupported dependency URL");
-      const key2 = keyFor(owner, source), ticket = {}, epoch = generation;
-      if (!records.has(key2) && records.size >= 64) throw Error("Rendering source count exceeds limit");
-      const bytes = new TextEncoder().encode(content).byteLength;
-      if (bytes > MAX_RENDER_SOURCE || [...records.entries()].reduce((sum, [id, value]) => sum + (id === key2 ? 0 : new TextEncoder().encode(value.content).byteLength), bytes) > 64 * 1024 * 1024) throw Error("Rendering cache exceeds limit");
-      records.set(key2, { ticket, owner, source, content, approved: false, digest: null });
-      emit();
-      const digest = [...new Uint8Array(await crypto.subtle.digest("SHA-256", new TextEncoder().encode(content)))].map((byte) => byte.toString(16).padStart(2, "0")).join("");
-      if (generation !== epoch || records.get(key2)?.ticket !== ticket) throw Error("Rendering review was cancelled");
-      records.set(key2, { owner, source, content, digest, approved: false });
-      emit();
-      return digest;
-    },
-    inspect(owner, source) {
-      const value = records.get(keyFor(owner, source));
-      return value ? { ...value, ticket: void 0 } : null;
-    },
-    approve(owner, source, digest) {
-      const value = records.get(keyFor(owner, source));
-      if (!value?.digest || digest !== value.digest) throw Error("Rendering content changed; review again");
-      records.set(keyFor(owner, source), { ...value, approved: true });
-      emit();
-    },
-    setBuiltin(owner, source, enabled) {
-      const key2 = keyFor(owner, source), record = records.get(key2);
-      if (!record?.approved || !mvuBuiltin(source, record.digest)) throw Error("Built-in adapter requires reviewed exact supported bytes");
-      records.set(key2, { ...record, builtin: enabled === true });
-      emit();
-    },
-    revoke(owner, source) {
-      records.delete(keyFor(owner, source));
-      emit();
-    },
-    read(owner, source) {
-      const value = records.get(keyFor(owner, source));
-      if (!value?.approved) throw Error("Rendering dependency requires content review");
-      return value.content;
-    },
-    clear() {
-      generation++;
-      records.clear();
-      emit();
-    }
-  };
+async function sourceDigest(content) {
+  return [...new Uint8Array(await crypto.subtle.digest("SHA-256", new TextEncoder().encode(content)))].map((byte) => byte.toString(16).padStart(2, "0")).join("");
 }
-var renderingTrust = createRenderingTrust();
+async function globalRenderingOwner(client) {
+  if (typeof client.getWorkspace !== "function") return null;
+  const workspace = await client.getWorkspace();
+  return workspace?.selected && workspace.rootPath ? `global:workspace:${await sourceDigest(workspace.rootPath)}` : null;
+}
+async function identifyRenderingSources(sources) {
+  const digests = await Promise.all(sources.map((source) => source.kind === "helper" ? sourceDigest(source.content) : null));
+  return sources.map((source, index) => {
+    if (source.kind !== "helper") return source;
+    const uniqueId = source.id && sources.filter((item) => item.owner === source.owner && item.id === source.id).length === 1;
+    const duplicateContent = sources.some((item, i3) => i3 !== index && item.owner === source.owner && digests[i3] === digests[index]);
+    return { ...source, preferenceKey: uniqueId ? `helper:id:${source.id}` : `helper:sha256:${digests[index]}${duplicateContent ? ":" + source.path : ""}` };
+  });
+}
+function renderingEntries(sources, trust) {
+  const entries2 = [];
+  function add(entry, depth = 0) {
+    const existing = entries2.find((item) => item.owner === entry.owner && item.key === entry.key);
+    if (existing) {
+      existing.origins = [.../* @__PURE__ */ new Set([...existing.origins ?? [], ...entry.origins ?? []])];
+      if (existing.enabled || !entry.enabled) return;
+      existing.enabled = true;
+      entry = existing;
+    } else {
+      if (entries2.length >= 128) return;
+      entries2.push(entry);
+    }
+    const staged = trust.inspect(entry.owner, entry.key);
+    if (staged && depth < 8) for (const dependency of discoverDependencies(staged.content, entry.url)) add({ ...dependency, owner: entry.owner, key: dependency.url ?? dependency.raw, name: dependency.raw, kind: dependency.kind, enabled: entry.enabled && trust.isEnabled(entry.owner, entry.preferenceKey ?? entry.key, true), origins: [...entry.origins ?? [], entry.key] }, depth + 1);
+  }
+  for (const original of sources) {
+    const source = { ...original, enabled: trust.isEnabled(original.owner, original.preferenceKey ?? original.key, original.enabled) };
+    if (source.kind === "helper") add(source);
+    for (const dependency of source.dependencies) add({ ...dependency, owner: source.owner, key: dependency.url ?? dependency.raw, name: dependency.raw, kind: dependency.kind, enabled: source.enabled, origins: [source.path] });
+  }
+  return entries2;
+}
+async function readRenderingWorkspace(client, read) {
+  const owner = await globalRenderingOwner(client);
+  const resource = await read();
+  return { owner: owner === await globalRenderingOwner(client) ? owner : null, resource };
+}
 
-// packages/client/src/conversation-panel.js
-var import_react6 = require("react");
+// packages/client/src/play/rendering-download.js
+async function downloadRenderingSource(source, { signal, fetch: request2 = globalThis.fetch } = {}) {
+  const url = externalUrl(source);
+  if (!url || url !== source) throw Error("Blocked dependency URL");
+  signal?.throwIfAborted();
+  const response = await request2(url, { signal, mode: "cors", credentials: "omit", redirect: "error", referrerPolicy: "no-referrer", cache: "no-store" });
+  if (!response.ok || response.type === "opaque" || response.redirected) throw Error("Source download failed; import a reviewed local file instead");
+  const length = Number(response.headers.get("content-length"));
+  if (Number.isFinite(length) && length > MAX_RENDER_SOURCE) throw Error("Source exceeds 8 MiB");
+  if (!response.body) throw Error("Source response has no readable body");
+  const reader = response.body.getReader(), chunks = [];
+  let size = 0;
+  try {
+    while (true) {
+      signal?.throwIfAborted();
+      const { value, done } = await reader.read();
+      if (done) break;
+      size += value.byteLength;
+      if (size > MAX_RENDER_SOURCE) throw Error("Source exceeds 8 MiB");
+      chunks.push(value);
+    }
+  } catch (error) {
+    await reader.cancel().catch(() => {
+    });
+    throw error;
+  } finally {
+    reader.releaseLock();
+  }
+  signal?.throwIfAborted();
+  const bytes = new Uint8Array(size);
+  let offset2 = 0;
+  for (const chunk of chunks) {
+    bytes.set(chunk, offset2);
+    offset2 += chunk.byteLength;
+  }
+  return new TextDecoder("utf-8", { fatal: true }).decode(bytes);
+}
+
+// packages/client/src/rendering-settings.js
+var import_react2 = require("react");
 
 // packages/ui-settings/src/locale-contract.js
 var DEFAULT_UI_LOCALE = "zh-CN";
@@ -14169,6 +14231,22 @@ function isSupportedUiLocale(value) {
 
 // packages/client/src/i18n/catalogs/zh-CN.js
 var zh_CN_default = Object.freeze({
+  "rendering.cardScripts": "\u5F53\u524D\u5361\u811A\u672C",
+  "rendering.dependencies": "\u5916\u90E8\u4F9D\u8D56",
+  "rendering.operations": "\u76F8\u5173\u64CD\u4F5C",
+  "rendering.none": "\u6682\u65E0\u6761\u76EE",
+  "rendering.master": "\u5141\u8BB8\u8FD0\u884C\u5361\u7247\u811A\u672C",
+  "rendering.masterOff": "\u5DF2\u6682\u505C\u3002\u4FDD\u7559\u9759\u6001\u5185\u5BB9\u548C\u6761\u76EE\u542F\u7528\u9009\u62E9\u3002",
+  "rendering.masterOn": "\u8FD0\u884C\u5DF2\u542F\u7528\u6761\u76EE\uFF1BHelper \u4E0E\u5916\u90E8\u4F9D\u8D56\u4ECD\u9700\u9010\u9879\u5BA1\u6838\uFF0C\u53D8\u91CF\u5199\u5165\u53E6\u884C\u6388\u6743\u3002",
+  "rendering.enableEntry": "\u542F\u7528 {name}",
+  "rendering.disabled": "\u5DF2\u7981\u7528",
+  "rendering.needsReview": "\u5F85\u5BA1\u6838",
+  "rendering.resetEntry": "\u6062\u590D\u6765\u6E90\u9ED8\u8BA4",
+  "rendering.importToRead": "\u5BFC\u5165\u6216\u4E0B\u8F7D\u540E\u53EF\u67E5\u770B\u5B8C\u6574\u6E90\u7801\uFF0C\u4E0D\u4F1A\u81EA\u52A8\u8FD0\u884C\u3002",
+  "rendering.changed": "\u6E90\u7801\u5DF2\u53D8\u5316\uFF0C\u8BF7\u91CD\u65B0\u51C6\u5907\u5BA1\u6838\u3002",
+  "rendering.sourceDetails": "\u6E90\u7801\u8BE6\u60C5",
+  "rendering.safetyDetails": "\u542F\u7528\u3001\u5BA1\u6838\u4E0E\u6743\u9650\u8BF4\u660E",
+  "rendering.enablementHelp": "\u52FE\u9009\u53EA\u4FDD\u5B58\u672C\u5730\u542F\u7528\u610F\u56FE\uFF0C\u4E0D\u4FEE\u6539\u539F\u5361\u3001\u4E0D\u6388\u4E88\u4EE3\u7801\u4FE1\u4EFB\u6216\u5199\u6743\u9650\u3002\u4F18\u5148\u6309\u539F\u6761\u76EE ID \u8BC6\u522B\uFF1B\u65E0 ID \u65F6\u6309\u6E90\u7801\u6458\u8981\u8BC6\u522B\uFF0C\u4FEE\u6539\u4EE3\u7801\u540E\u6062\u590D\u6765\u6E90\u9ED8\u8BA4\uFF1B\u91CD\u590D\u6E90\u7801\u6761\u76EE\u7684\u4F4D\u7F6E\u53D8\u5316\u4E5F\u6062\u590D\u9ED8\u8BA4\u3002\u590D\u5236\u6210\u65B0\u8D44\u6E90\u4E0D\u7EE7\u627F\u9009\u62E9\uFF0C\u5BFC\u51FA\u539F\u5361\u4E0D\u643A\u5E26\u672C\u5730\u9009\u62E9\u3002",
   "rendering.cancel": "\u53D6\u6D88\u4E0B\u8F7D",
   "rendering.download": "\u4E0B\u8F7D\u6E90\u7801\u4EE5\u4F9B\u5BA1\u6838\uFF08\u4E0D\u6267\u884C\uFF09",
   "rendering.bindingChanged": "\u7ED1\u5B9A\u8D44\u6E90\u5DF2\u5207\u6362\uFF1B\u65E7\u8349\u7A3F\u4FDD\u7559\u4F46\u4E0D\u53EF\u4FDD\u5B58\u3002\u5BFC\u51FA\u9700\u8981\u4FDD\u7559\u7684\u8349\u7A3F\uFF0C\u7136\u540E\u91CD\u65B0\u52A0\u8F7D\u5F53\u524D\u8D44\u6E90\u3002",
@@ -14180,7 +14258,7 @@ var zh_CN_default = Object.freeze({
   "rendering.blocked": "\u7981\u6B62\u7684\u5730\u5740",
   "rendering.approved": "\u5185\u5BB9\u5DF2\u6388\u6743",
   "rendering.staged": "\u7B49\u5F85\u5185\u5BB9\u5BA1\u6838",
-  "rendering.waiting": "\u5C1A\u672A\u5BFC\u5165\u6216\u6E90\u7801\u5DF2\u53D8\u5316",
+  "rendering.waiting": "\u5F85\u5BFC\u5165",
   "rendering.sourceDisabled": "\u6765\u6E90\u5DF2\u7981\u7528\uFF1B\u4E0D\u4F1A\u8FD0\u884C\u3002",
   "rendering.reviewInline": "\u51C6\u5907\u5BA1\u6838\u5185\u5D4C\u6E90\u7801",
   "rendering.import": "\u5BFC\u5165\u6B64 URL \u7684\u6E90\u7801\u6587\u4EF6",
@@ -15090,6 +15168,22 @@ var zh_CN_default = Object.freeze({
 
 // packages/client/src/i18n/catalogs/en.js
 var en_default = Object.freeze({
+  "rendering.cardScripts": "Card scripts",
+  "rendering.dependencies": "External dependencies",
+  "rendering.operations": "Related actions",
+  "rendering.none": "No entries",
+  "rendering.master": "Allow card scripts to run",
+  "rendering.masterOff": "Paused. Static content and entry choices are preserved.",
+  "rendering.masterOn": "Enabled entries may run; Helper and external dependencies still need review, and variable writes need separate permission.",
+  "rendering.enableEntry": "Enable {name}",
+  "rendering.disabled": "Disabled",
+  "rendering.needsReview": "Review required",
+  "rendering.resetEntry": "Restore source default",
+  "rendering.importToRead": "Import or download to read the complete source. This does not run it.",
+  "rendering.changed": "Source changed. Stage the current source for review again.",
+  "rendering.sourceDetails": "Source details",
+  "rendering.safetyDetails": "Enablement, review and permissions",
+  "rendering.enablementHelp": "Checkboxes save local enablement choices, without editing the source card or granting code trust or write permissions. Original entry IDs are preferred; otherwise source digests identify entries. Code changes reset unidentified entries to source defaults; moving duplicate sources also resets them. Copies with new resource IDs and card exports do not carry these choices.",
   "rendering.cancel": "Cancel download",
   "rendering.download": "Download source for review (no execution)",
   "rendering.bindingChanged": "The bound resource changed. The old draft is retained and cannot be saved. Export any draft you need, then reload the current resource.",
@@ -15101,7 +15195,7 @@ var en_default = Object.freeze({
   "rendering.blocked": "Blocked address",
   "rendering.approved": "Content approved",
   "rendering.staged": "Awaiting content review",
-  "rendering.waiting": "Not imported or source changed",
+  "rendering.waiting": "Source not imported",
   "rendering.sourceDisabled": "Source disabled; it will not run.",
   "rendering.reviewInline": "Stage inline source for review",
   "rendering.import": "Import source file for this URL",
@@ -16124,8 +16218,1148 @@ function setClientUiSettings(value, { announce = true } = {}) {
   return getClientUiSettings();
 }
 
+// packages/client/src/play/regex-panel.js
+var import_react = require("react");
+
+// packages/client/src/play/regex.js
+var REGEX_PATH = "ui/regex.json";
+function isRecord2(value) {
+  return value !== null && typeof value === "object" && !Array.isArray(value);
+}
+function stringValue(...values) {
+  return values.find((value) => typeof value === "string") ?? "";
+}
+function importedEnabled(value) {
+  if (typeof value.enabled === "boolean") return value.enabled;
+  if (typeof value.disabled === "boolean") return !value.disabled;
+  return true;
+}
+function finiteDepth(value) {
+  if (value === null || value === void 0 || value === "") return null;
+  const number2 = Number(value);
+  return Number.isFinite(number2) ? number2 : null;
+}
+function stringList(value) {
+  return Array.isArray(value) ? value.filter((item) => typeof item === "string") : [];
+}
+function nativePlacement(value) {
+  const placement = Array.isArray(value.placement) ? [...value.placement] : typeof value.placement === "number" ? [value.placement] : [];
+  let markdownOnly = value.markdownOnly === true || value.markdown_only === true;
+  let promptOnly = value.promptOnly === true || value.prompt_only === true;
+  if (placement.includes(0)) {
+    placement.splice(0, placement.length, ...placement.length === 1 ? [1, 2, 3, 5, 6] : placement.filter((item) => item !== 0));
+    markdownOnly = true;
+    promptOnly = true;
+  }
+  if (placement.includes(4)) {
+    placement.splice(0, placement.length, ...placement.length === 1 ? [3] : placement.filter((item) => item !== 4));
+  }
+  return { placement, markdownOnly, promptOnly };
+}
+function normalizeScope(value, fallback = { kind: "global", resourceId: null }) {
+  const source = isRecord2(value) ? value : fallback;
+  const kind = ["global", "preset", "character"].includes(source.kind) ? source.kind : fallback.kind;
+  const resourceId = kind === "global" ? null : stringValue(source.resourceId, fallback.resourceId);
+  return { kind, resourceId: resourceId || null };
+}
+function normalizeTarget(value) {
+  return ["user", "assistant", "both"].includes(value) ? value : "assistant";
+}
+function importedTarget(value) {
+  if (typeof value.target === "string") return normalizeTarget(value.target);
+  if (typeof value.placement === "string") return normalizeTarget(value.placement);
+  const { placement } = nativePlacement(value);
+  if (placement.length === 0) return "assistant";
+  const user = placement.some((item) => item === 1 || item === "user" || item === "user_input");
+  const assistant = placement.some((item) => item === 2 || item === "assistant" || item === "ai_output");
+  if (user && assistant) return "both";
+  if (user) return "user";
+  return "assistant";
+}
+function displayImportCandidate(value) {
+  if (!isRecord2(value)) return false;
+  const native = nativePlacement(value);
+  if (native.promptOnly && !native.markdownOnly) return false;
+  if (native.placement.length === 0) return true;
+  return native.placement.some((item) => item === 1 || item === 2 || item === "user" || item === "assistant" || item === "user_input" || item === "ai_output");
+}
+function regexCandidates(value) {
+  if (Array.isArray(value)) return value;
+  if (isRecord2(value) && [value.find, value.findRegex, value.find_regex, value.regex].some((item) => typeof item === "string")) {
+    return [value];
+  }
+  const candidates = [
+    value?.rules,
+    value?.regex_scripts,
+    value?.extensions?.regex_scripts,
+    value?.data?.extensions?.regex_scripts,
+    value?.source?.raw?.regex_scripts,
+    value?.source?.raw?.extensions?.regex_scripts,
+    value?.source?.raw?.data?.extensions?.regex_scripts
+  ];
+  return candidates.find(Array.isArray) ?? null;
+}
+function generatedId() {
+  return `regex-${globalThis.crypto?.randomUUID?.() ?? `${Date.now()}-${Math.random()}`}`;
+}
+function normalizeRegexRule(value, { scope } = {}) {
+  if (!isRecord2(value)) throw new TypeError("regex rule must be an object");
+  const source = stringValue(value.find, value.findRegex, value.find_regex, value.regex);
+  const native = nativePlacement(value);
+  return {
+    id: stringValue(value.id) || generatedId(),
+    name: stringValue(value.name, value.script_name, value.scriptName) || "Regex",
+    enabled: importedEnabled(value),
+    find: source,
+    replace: stringValue(value.replace, value.replaceString, value.replace_string, value.replacement),
+    flags: stringValue(value.flags),
+    target: importedTarget(value),
+    scope: normalizeScope(value.scope, scope),
+    placement: native.placement,
+    trimStrings: stringList(value.trimStrings ?? value.trim_strings),
+    markdownOnly: native.markdownOnly || value.markdown_only === true,
+    promptOnly: native.promptOnly || value.prompt_only === true,
+    runOnEdit: value.runOnEdit === true || value.run_on_edit === true,
+    substituteRegex: [0, 1, 2].includes(Number(value.substituteRegex ?? value.substitute_regex)) ? Number(value.substituteRegex ?? value.substitute_regex) : 0,
+    minDepth: finiteDepth(value.minDepth ?? value.min_depth),
+    maxDepth: finiteDepth(value.maxDepth ?? value.max_depth),
+    ext: isRecord2(value.ext) ? structuredClone(value.ext) : {}
+  };
+}
+function normalizeRegexDocument(value) {
+  if (!isRecord2(value)) throw new TypeError("regex document must be an object");
+  const rules = Array.isArray(value.rules) ? value.rules : [];
+  return { schemaVersion: 1, rules: rules.map((rule) => normalizeRegexRule(rule)) };
+}
+function importRegexDocument(value, { scope = { kind: "global", resourceId: null } } = {}) {
+  const candidates = regexCandidates(value);
+  if (candidates === null) throw new TypeError("No regex rules were found");
+  return candidates.filter(displayImportCandidate).map((rule) => normalizeRegexRule(rule, { scope }));
+}
+function resourceRegexInventory(value, scope) {
+  const candidates = regexCandidates(value);
+  if (candidates === null) return [];
+  return candidates.map((rule, sourceIndex) => ({
+    ...normalizeRegexRule(rule, { scope }),
+    sourceDisplayEligible: displayImportCandidate(rule),
+    sourceIndex,
+    sourceRaw: structuredClone(rule)
+  }));
+}
+function writeNativeField(target, aliases, canonical, value) {
+  const existing = aliases.filter((key2) => Object.hasOwn(target, key2));
+  for (const key2 of existing.length === 0 ? [canonical] : existing) target[key2] = structuredClone(value);
+}
+function nativePlacementFor(rule) {
+  const placement = Array.isArray(rule.placement) ? rule.placement : [];
+  const retained = placement.filter((item) => ![1, 2, "user", "assistant", "user_input", "ai_output"].includes(item));
+  if (rule.target === "user" || rule.target === "both") retained.push(1);
+  if (rule.target === "assistant" || rule.target === "both") retained.push(2);
+  return retained;
+}
+function findWithFlags(source, flags) {
+  if (!source.startsWith("/") || flags === "") return source;
+  const closing = source.lastIndexOf("/");
+  if (closing <= 0 || !/^[dgimsuvy]*$/.test(flags)) return source;
+  return `${source.slice(0, closing + 1)}${flags}`;
+}
+function nativeRegexScript(rule) {
+  const source = isRecord2(rule?.sourceRaw) ? structuredClone(rule.sourceRaw) : {};
+  const original = isRecord2(rule?.sourceRaw) ? normalizeRegexRule(rule.sourceRaw, { scope: rule.scope }) : null;
+  if (original === null) source.id = rule.id;
+  if (original === null || rule.name !== original.name) {
+    writeNativeField(source, ["scriptName", "script_name", "name"], "scriptName", rule.name);
+  }
+  if (original === null || rule.find !== original.find || rule.flags !== original.flags) {
+    writeNativeField(source, ["findRegex", "find_regex", "find", "regex"], "findRegex", findWithFlags(rule.find, rule.flags));
+  }
+  if (original === null || rule.replace !== original.replace) {
+    writeNativeField(source, ["replaceString", "replace_string", "replace", "replacement"], "replaceString", rule.replace);
+  }
+  if (original === null || rule.enabled !== original.enabled) {
+    writeNativeField(source, ["disabled"], "disabled", !rule.enabled);
+    if (Object.hasOwn(source, "enabled")) source.enabled = rule.enabled;
+  }
+  if (original === null || rule.target !== original.target) {
+    writeNativeField(source, ["placement"], "placement", nativePlacementFor(rule));
+  }
+  if (original === null) {
+    source.trimStrings = structuredClone(rule.trimStrings);
+    source.markdownOnly = rule.markdownOnly;
+    source.promptOnly = rule.promptOnly;
+    source.runOnEdit = rule.runOnEdit;
+    source.substituteRegex = rule.substituteRegex;
+    source.minDepth = rule.minDepth;
+    source.maxDepth = rule.maxDepth;
+  }
+  return source;
+}
+function exportNativeRegexScripts(rules) {
+  if (!Array.isArray(rules)) throw new TypeError("regex rules must be an array");
+  return rules.map(nativeRegexScript);
+}
+function resourceRegexRules(value, scope) {
+  try {
+    return importRegexDocument(value, { scope });
+  } catch (error) {
+    if (error instanceof TypeError && error.message === "No regex rules were found") return [];
+    throw error;
+  }
+}
+async function getRegexDocument(client) {
+  try {
+    const file = await client.getFile(REGEX_PATH);
+    return normalizeRegexDocument(JSON.parse(file.content));
+  } catch (error) {
+    if (error?.status === 404 || error?.code === "PLAY_FILE_NOT_FOUND") {
+      return { schemaVersion: 1, rules: [] };
+    }
+    throw error;
+  }
+}
+async function putRegexDocument(client, document2) {
+  const normalized = normalizeRegexDocument(document2);
+  await client.createDirs("ui");
+  await client.putFile(REGEX_PATH, JSON.stringify(normalized, null, 2));
+  return normalized;
+}
+function expression(rule, context) {
+  const source = rule.substituteRegex !== 0 && typeof context?.substituteRegex === "function" ? context.substituteRegex(rule.find, { escaped: rule.substituteRegex === 2 }) : rule.find;
+  if (source.startsWith("/")) {
+    const closing = source.lastIndexOf("/");
+    if (closing > 0) {
+      const pattern = source.slice(1, closing);
+      const flags = rule.flags || source.slice(closing + 1);
+      return new RegExp(pattern, flags);
+    }
+  }
+  return new RegExp(source, rule.flags || "g");
+}
+function applies(rule, bindings, target, context) {
+  if (!rule.enabled || rule.target !== "both" && rule.target !== target) return false;
+  if (typeof context?.depth === "number") {
+    if (rule.minDepth !== null && rule.minDepth >= -1 && context.depth < rule.minDepth) return false;
+    if (rule.maxDepth !== null && rule.maxDepth >= 0 && context.depth > rule.maxDepth) return false;
+  }
+  if (rule.scope.kind === "global") return true;
+  if (rule.scope.kind === "preset") return rule.scope.resourceId === bindings?.presetId;
+  return rule.scope.resourceId === bindings?.characterId;
+}
+function replacement(rule, context) {
+  return function replaceMatch(match, ...args) {
+    const groups = isRecord2(args.at(-1)) ? args.at(-1) : null;
+    let value = rule.replace.replace(/\{\{match\}\}/gi, "$0");
+    value = value.replaceAll(/\$(\d+)|\$<([^>]+)>/g, (_token, number2, groupName) => {
+      const captureIndex = Number(number2);
+      const captured = groupName === void 0 ? captureIndex === 0 ? match : args[captureIndex - 1] : groups?.[groupName];
+      if (!captured) return "";
+      return rule.trimStrings.reduce(
+        (result, trim) => result.replaceAll(trim, ""),
+        String(captured)
+      );
+    });
+    return typeof context?.substituteReplacement === "function" ? context.substituteReplacement(value) : value;
+  };
+}
+function applyDisplayRegex(text3, rules, bindings, target = "assistant", context = {}) {
+  let output = String(text3 ?? "");
+  const diagnostics = [];
+  for (const rule of rules ?? []) {
+    if (!applies(rule, bindings, target, context)) continue;
+    try {
+      output = output.replace(expression(rule, context), replacement(rule, context));
+    } catch (error) {
+      diagnostics.push({ ruleId: rule.id, message: error instanceof Error ? error.message : String(error) });
+    }
+  }
+  return { text: output, diagnostics };
+}
+function applyGreetingDisplayRegex(text3, rules, bindings, context = {}) {
+  const source = String(text3 ?? "");
+  if (source.trim() === "") return { text: source, diagnostics: [] };
+  const result = applyDisplayRegex(source, rules, bindings, "assistant", context);
+  return { ...result, text: result.text.trim() === "" ? source : result.text };
+}
+
+// packages/preset/src/client-state.js
+function reorder(items, from, to) {
+  if (!Array.isArray(items)) throw new TypeError("items must be an array");
+  if (!Number.isSafeInteger(from) || !Number.isSafeInteger(to)) return items;
+  if (from === to || from < 0 || to < 0 || from >= items.length || to >= items.length) return items;
+  const result = [...items];
+  const [moved] = result.splice(from, 1);
+  result.splice(to, 0, moved);
+  return result;
+}
+function reorderAtBoundary(items, from, boundary) {
+  if (!Number.isSafeInteger(boundary) || boundary < 0 || boundary > items.length) return items;
+  const destination = boundary > from ? boundary - 1 : boundary;
+  return reorder(items, from, destination);
+}
+
+// packages/client/src/import-failure.js
+function importFailureMessage(reason) {
+  if (typeof reason?.message === "string" && reason.message.trim() !== "") return reason.message.trim().slice(0, 1e3);
+  const value = String(reason ?? "").trim();
+  return value === "" ? "Unknown import error" : value.slice(0, 1e3);
+}
+function announceImportFailure(reason, target = globalThis.window) {
+  const message = importFailureMessage(reason);
+  target?.dispatchEvent?.(new CustomEvent(CLIENT_IMPORT_FAILURE_EVENT, {
+    detail: { message }
+  }));
+  return message;
+}
+
+// packages/client/src/play/regex-panel.js
+var h = createLocalizedElement(import_react.createElement);
+var EMPTY_DOCUMENT = Object.freeze({ schemaVersion: 1, rules: Object.freeze([]) });
+var SCOPE_KINDS = Object.freeze(["global", "preset", "character"]);
+function reorderRegexRulesAtBoundary(rules, fromIndex, boundary) {
+  return reorderAtBoundary(rules, fromIndex, boundary);
+}
+function reorderRegexScopeAtBoundary(rules, kind, fromIndex, boundary) {
+  const indexes = rules.map((rule, index) => rule?.scope?.kind === kind ? index : -1).filter((index) => index >= 0);
+  const reordered = reorderRegexRulesAtBoundary(indexes.map((index) => rules[index]), fromIndex, boundary);
+  if (reordered === indexes) return rules;
+  const next = [...rules];
+  indexes.forEach((index, orderedIndex) => {
+    next[index] = reordered[orderedIndex];
+  });
+  return next;
+}
+function activeRegexBindings(snapshot) {
+  return {
+    presetId: typeof snapshot?.selection?.presetId === "string" ? snapshot.selection.presetId : null,
+    characterId: typeof snapshot?.selection?.characterCardId === "string" ? snapshot.selection.characterCardId : typeof snapshot?.selection?.characterId === "string" ? snapshot.selection.characterId : null
+  };
+}
+function scopeFor(kind, bindings) {
+  return {
+    kind,
+    resourceId: kind === "global" ? null : kind === "preset" ? bindings.presetId : bindings.characterId
+  };
+}
+function downloadRegexScripts(rules, kind) {
+  const scripts = exportNativeRegexScripts(rules);
+  const blob = new Blob([JSON.stringify(scripts, null, 2)], { type: "application/json" });
+  const url = URL.createObjectURL(blob);
+  const anchor = window.document.createElement("a");
+  anchor.href = url;
+  anchor.download = `regex-${kind}.json`;
+  anchor.click();
+  URL.revokeObjectURL(url);
+}
+function Field({ labelKey, children }) {
+  return h(
+    "label",
+    { className: "dtv-field" },
+    h("span", { className: "dtv-label" }, uiMessage(labelKey)),
+    children
+  );
+}
+async function activeResourceRegexRules(client, bindings) {
+  const [presetResponse, characterResponse] = await Promise.all([
+    typeof bindings.presetId === "string" && typeof client.getPresetRegexScripts === "function" ? client.getPresetRegexScripts(bindings.presetId) : typeof bindings.presetId === "string" && typeof client.getPreset === "function" ? client.getPreset(bindings.presetId) : null,
+    typeof bindings.characterId === "string" && typeof client.getCharacterRegexScripts === "function" ? client.getCharacterRegexScripts(bindings.characterId) : typeof bindings.characterId === "string" && typeof client.getCharacter === "function" ? client.getCharacter(bindings.characterId) : null
+  ]);
+  return {
+    preset: resourceRegexInventory(presetResponse?.regexScripts ?? presetResponse?.preset ?? presetResponse, {
+      kind: "preset",
+      resourceId: bindings.presetId
+    }),
+    character: resourceRegexInventory(characterResponse?.regexScripts ?? characterResponse?.character ?? characterResponse, {
+      kind: "character",
+      resourceId: bindings.characterId
+    })
+  };
+}
+async function putActiveResourceRegexRules(client, kind, resourceId, rules) {
+  if (typeof resourceId !== "string") throw new TypeError(`${kind} regex resource is not bound`);
+  const method = kind === "preset" ? client.putPresetRegexScripts : client.putCharacterRegexScripts;
+  if (typeof method !== "function") throw new TypeError(`${kind} regex resource API is unavailable`);
+  const response = await method.call(client, resourceId, rules.map(nativeRegexScript));
+  return resourceRegexInventory(response?.regexScripts ?? [], { kind, resourceId });
+}
+function resourceEditableRule(rule) {
+  return {
+    ...rule,
+    sourceDisplayEligible: true
+  };
+}
+function stageLegacyScopedRegexRules(document2, resourceRules, bindings) {
+  const nextDocument = {
+    ...document2,
+    rules: [...document2.rules]
+  };
+  const nextResourceRules = {
+    preset: [...resourceRules.preset],
+    character: [...resourceRules.character]
+  };
+  let migrated = 0;
+  for (const [kind, resourceId] of [
+    ["preset", bindings.presetId],
+    ["character", bindings.characterId]
+  ]) {
+    if (typeof resourceId !== "string") continue;
+    const local = nextDocument.rules.filter((rule) => rule.scope.kind === kind && rule.scope.resourceId === resourceId);
+    if (local.length === 0) continue;
+    const existingIds = new Set(nextResourceRules[kind].map((rule) => rule.id));
+    for (const rule of local) {
+      if (!existingIds.has(rule.id)) {
+        nextResourceRules[kind].push(resourceEditableRule(rule));
+        existingIds.add(rule.id);
+      }
+    }
+    nextDocument.rules = nextDocument.rules.filter((rule) => !(rule.scope.kind === kind && rule.scope.resourceId === resourceId));
+    migrated += local.length;
+  }
+  return { document: nextDocument, resourceRules: nextResourceRules, migrated };
+}
+function RuleEditor({
+  rule,
+  busy,
+  update,
+  remove,
+  sourceOwned = false,
+  dragKind,
+  dragIndex,
+  dragging,
+  onPointerDown,
+  onPointerMove,
+  onPointerUp,
+  onPointerCancel
+}) {
+  const set = (patch) => update({ ...rule, ...patch });
+  const setScope = (patch) => set({ scope: { ...rule.scope, ...patch } });
+  const stateLabel = uiMessage(rule.enabled ? "common.enabled" : "common.disabled");
+  return h(
+    "details",
+    {
+      className: "dtv-entry dtv-regex-rule",
+      "data-enabled": rule.enabled,
+      "data-regex-kind": dragKind,
+      "data-regex-index": dragIndex,
+      "data-dragging": dragging || void 0
+    },
+    h(
+      "summary",
+      null,
+      h("button", {
+        className: "dtv-regex-drag",
+        type: "button",
+        disabled: busy,
+        title: uiMessage("regex.dragToReorder"),
+        "aria-label": uiMessage("regex.dragToReorder"),
+        "aria-pressed": dragging,
+        onClick: (event) => {
+          event.preventDefault();
+          event.stopPropagation();
+        },
+        onPointerDown,
+        onPointerMove,
+        onPointerUp,
+        onPointerCancel
+      }, "\u283F"),
+      h("input", {
+        type: "checkbox",
+        checked: rule.enabled,
+        disabled: busy,
+        title: stateLabel,
+        "aria-label": stateLabel,
+        onClick: (event) => event.stopPropagation(),
+        onChange: (event) => set({ enabled: event.target.checked })
+      }),
+      h("span", { className: "dtv-entry-name" }, rawText(rule.name || unwrapText(uiMessage("regex.unnamed")))),
+      h("span", { className: "dtv-entry-state" }, stateLabel)
+    ),
+    h(
+      "div",
+      { className: "dtv-entry-body" },
+      h(Field, { labelKey: "regex.name" }, h("input", {
+        className: "dtv-input",
+        value: rule.name,
+        disabled: busy,
+        onChange: (event) => set({ name: event.target.value })
+      })),
+      h(Field, { labelKey: "regex.find" }, h("textarea", {
+        className: "dtv-textarea dtv-regex-expression",
+        value: rule.find,
+        disabled: busy,
+        spellCheck: false,
+        onChange: (event) => set({ find: event.target.value })
+      })),
+      h(Field, { labelKey: "regex.replace" }, h("textarea", {
+        className: "dtv-textarea dtv-regex-expression",
+        value: rule.replace,
+        disabled: busy,
+        spellCheck: false,
+        onChange: (event) => set({ replace: event.target.value })
+      })),
+      h(
+        "div",
+        { className: "dtv-entry-grid" },
+        h(Field, { labelKey: "regex.flags" }, h("input", {
+          className: "dtv-input",
+          value: rule.flags,
+          disabled: busy,
+          spellCheck: false,
+          onChange: (event) => set({ flags: event.target.value })
+        })),
+        h(Field, { labelKey: "regex.target" }, h(
+          "select",
+          {
+            className: "dtv-select",
+            value: rule.target,
+            disabled: busy,
+            onChange: (event) => set({ target: event.target.value })
+          },
+          h("option", { value: "assistant" }, uiMessage("regex.target.assistant")),
+          h("option", { value: "user" }, uiMessage("regex.target.user")),
+          h("option", { value: "both" }, uiMessage("regex.target.both"))
+        ))
+      ),
+      h(
+        "div",
+        { className: "dtv-entry-grid" },
+        h(Field, { labelKey: "regex.scope" }, h(
+          "select",
+          {
+            className: "dtv-select",
+            value: rule.scope.kind,
+            disabled: true,
+            onChange: (event) => setScope({
+              kind: event.target.value,
+              resourceId: event.target.value === "global" ? null : rule.scope.resourceId
+            })
+          },
+          ...SCOPE_KINDS.map((kind) => h("option", { key: kind, value: kind }, uiMessage(`regex.scope.${kind}`)))
+        )),
+        rule.scope.kind === "global" ? null : h(Field, { labelKey: "regex.resourceId" }, h("input", {
+          className: "dtv-input",
+          value: rule.scope.resourceId ?? "",
+          disabled: true,
+          onChange: (event) => setScope({ resourceId: event.target.value || null })
+        }))
+      ),
+      sourceOwned ? h("p", { className: "dtv-note" }, uiMessage(rule.sourceDisplayEligible ? "regex.sourceOwnedDisplay" : "regex.sourceOwnedPromptOnly")) : null,
+      h("div", { className: "dtv-entry-actions" }, h("button", {
+        className: "dtv-button dtv-danger",
+        type: "button",
+        disabled: busy,
+        onClick: remove
+      }, uiMessage("common.delete")))
+    )
+  );
+}
+function RegexDropPlaceholder() {
+  return h("div", {
+    className: "dtv-regex-drop-placeholder",
+    "aria-hidden": true
+  }, uiMessage("preset.dropHere"));
+}
+function regexInsertionBoundary(event, kind) {
+  const target = document.elementFromPoint(event.clientX, event.clientY)?.closest("[data-regex-index]");
+  if (target === null || target.dataset.regexKind !== kind) return null;
+  const index = Number(target.dataset.regexIndex);
+  const bounds = target.getBoundingClientRect();
+  return event.clientY < bounds.top + bounds.height / 2 ? index : index + 1;
+}
+function RegexScopeSection({
+  kind,
+  bindings,
+  editableRules,
+  sourceRules,
+  busy,
+  add,
+  importJson,
+  exportJson,
+  update,
+  remove,
+  updateSource,
+  removeSource,
+  move,
+  dragFrom,
+  dropIndex,
+  setDragFrom,
+  setDropIndex
+}) {
+  const rules = [...editableRules, ...sourceRules];
+  const unbound = kind === "preset" && bindings.presetId === null ? uiMessage("regex.noPreset") : kind === "character" && bindings.characterId === null ? uiMessage("regex.noCharacter") : null;
+  const actionsDisabled = busy || unbound !== null;
+  return h(
+    "section",
+    { className: "dtv-resource dtv-regex-section", "data-scope": kind },
+    h(
+      "div",
+      { className: "dtv-regex-section-title" },
+      h("div", { className: "dtv-resource-title" }, uiMessage(`regex.scope.${kind}`)),
+      h("span", { className: "dtv-item-count" }, rawText(String(rules.length)))
+    ),
+    unbound === null ? null : h("p", { className: "dtv-note" }, unbound),
+    h(
+      "div",
+      { className: "dtv-book-toolbar" },
+      h("button", { className: "dtv-button", type: "button", disabled: actionsDisabled, onClick: importJson }, uiMessage("common.importJson")),
+      h("button", { className: "dtv-button", type: "button", disabled: busy, onClick: () => exportJson(rules) }, uiMessage("common.exportJson")),
+      h("button", { className: "dtv-button", type: "button", disabled: actionsDisabled, onClick: add }, uiMessage("regex.add"))
+    ),
+    rules.length === 0 ? h("p", { className: "dtv-note" }, uiMessage("regex.emptyScope")) : [
+      ...rules.flatMap((rule, index) => {
+        const sourceIndex = index - editableRules.length;
+        const sourceOwned = sourceIndex >= 0;
+        return [
+          dragFrom?.kind === kind && dropIndex === index ? h(RegexDropPlaceholder, { key: `${kind}-drop-${index}` }) : null,
+          h(RuleEditor, {
+            key: `${kind}-${sourceOwned ? "source" : "editable"}-${rule.id}-${index}`,
+            rule,
+            busy,
+            sourceOwned,
+            dragKind: kind,
+            dragIndex: index,
+            dragging: dragFrom?.kind === kind && dragFrom.index === index,
+            update: sourceOwned ? (next) => updateSource(sourceIndex, next) : update,
+            remove: sourceOwned ? () => removeSource(sourceIndex) : () => remove(rule.id),
+            onPointerDown: (event) => {
+              if (busy) return;
+              event.preventDefault();
+              event.stopPropagation();
+              event.currentTarget.setPointerCapture(event.pointerId);
+              setDragFrom({ kind, index });
+              setDropIndex(index + 1);
+            },
+            onPointerMove: (event) => {
+              if (!event.currentTarget.hasPointerCapture(event.pointerId)) return;
+              const boundary = regexInsertionBoundary(event, kind);
+              if (boundary !== null) setDropIndex(boundary);
+            },
+            onPointerUp: (event) => {
+              event.preventDefault();
+              const boundary = regexInsertionBoundary(event, kind) ?? dropIndex ?? index + 1;
+              if (event.currentTarget.hasPointerCapture(event.pointerId)) {
+                event.currentTarget.releasePointerCapture(event.pointerId);
+              }
+              move(index, boundary);
+              setDragFrom(null);
+              setDropIndex(null);
+            },
+            onPointerCancel: () => {
+              setDragFrom(null);
+              setDropIndex(null);
+            }
+          })
+        ];
+      }),
+      dragFrom?.kind === kind && dropIndex === rules.length ? h(RegexDropPlaceholder, { key: `${kind}-drop-end` }) : null
+    ]
+  );
+}
+function RegexPanel({ client, activeSnapshot, close: close2, embedded = false, onDirty }) {
+  const [document2, setDocument] = (0, import_react.useState)(EMPTY_DOCUMENT);
+  const [savedDocument, setSavedDocument] = (0, import_react.useState)(EMPTY_DOCUMENT);
+  const [resourceRules, setResourceRules] = (0, import_react.useState)({ preset: [], character: [] });
+  const [savedResourceRules, setSavedResourceRules] = (0, import_react.useState)({ preset: [], character: [] });
+  const [busy, setBusy] = (0, import_react.useState)(false);
+  const [status, setStatus] = (0, import_react.useState)({ text: uiMessage("common.loading"), error: false });
+  const [dragFrom, setDragFrom] = (0, import_react.useState)(null);
+  const [dropIndex, setDropIndex] = (0, import_react.useState)(null);
+  const fileInput = (0, import_react.useRef)(null);
+  const importScope = (0, import_react.useRef)("global");
+  const activeBindings = activeRegexBindings(activeSnapshot);
+  const [bindings, setBindings] = (0, import_react.useState)(activeBindings);
+  const loadGeneration = (0, import_react.useRef)(0);
+  const activeKey = JSON.stringify(activeBindings);
+  const activeKeyRef = (0, import_react.useRef)(activeKey);
+  activeKeyRef.current = activeKey;
+  const bindingsChanged = JSON.stringify(bindings) !== activeKey;
+  const dirty = JSON.stringify(document2) !== JSON.stringify(savedDocument) || JSON.stringify(resourceRules) !== JSON.stringify(savedResourceRules);
+  (0, import_react.useEffect)(() => {
+    onDirty?.(dirty);
+  }, [dirty, onDirty]);
+  const load = async (targetBindings = activeBindings) => {
+    const ticket = ++loadGeneration.current;
+    setBusy(true);
+    try {
+      const [next, nextResourceRules] = await Promise.all([
+        getRegexDocument(client),
+        activeResourceRegexRules(client, targetBindings)
+      ]);
+      if (ticket !== loadGeneration.current) return;
+      setBindings(targetBindings);
+      const staged = stageLegacyScopedRegexRules(next, nextResourceRules, targetBindings);
+      setDocument(staged.document);
+      setSavedDocument(next);
+      setResourceRules(staged.resourceRules);
+      setSavedResourceRules(nextResourceRules);
+      const count = staged.document.rules.length + staged.resourceRules.preset.length + staged.resourceRules.character.length;
+      setStatus({
+        text: staged.migrated > 0 ? uiMessage("regex.legacyMigrationPending", { count: staged.migrated }) : uiMessage("regex.loaded", { count }),
+        error: false
+      });
+    } catch (reason) {
+      if (ticket === loadGeneration.current) setStatus({ text: rawText(reason instanceof Error ? reason.message : String(reason)), error: true });
+    } finally {
+      if (ticket === loadGeneration.current) setBusy(false);
+    }
+  };
+  (0, import_react.useEffect)(() => {
+    if (dirty) {
+      setBusy(false);
+      setStatus({ text: uiMessage("rendering.bindingChanged"), error: true });
+    } else load(activeBindings);
+    return () => {
+      loadGeneration.current++;
+    };
+  }, [client, activeKey]);
+  const persist = async (next, nextResourceRules = resourceRules, { rethrow = false } = {}) => {
+    if (JSON.stringify(bindings) !== activeKeyRef.current) {
+      setStatus({ text: uiMessage("rendering.bindingChanged"), error: true });
+      if (rethrow) throw Error("Regex binding changed");
+      return;
+    }
+    setBusy(true);
+    try {
+      const [saved, savedPresetRules, savedCharacterRules] = await Promise.all([
+        JSON.stringify(next) === JSON.stringify(savedDocument) ? next : putRegexDocument(client, next),
+        JSON.stringify(nextResourceRules.preset) === JSON.stringify(savedResourceRules.preset) ? nextResourceRules.preset : putActiveResourceRegexRules(client, "preset", bindings.presetId, nextResourceRules.preset),
+        JSON.stringify(nextResourceRules.character) === JSON.stringify(savedResourceRules.character) ? nextResourceRules.character : putActiveResourceRegexRules(client, "character", bindings.characterId, nextResourceRules.character)
+      ]);
+      const savedResources = { preset: savedPresetRules, character: savedCharacterRules };
+      setDocument(saved);
+      setSavedDocument(saved);
+      setResourceRules(savedResources);
+      setSavedResourceRules(savedResources);
+      const count = saved.rules.length + savedPresetRules.length + savedCharacterRules.length;
+      setStatus({ text: uiMessage("regex.saved", { count }), error: false });
+      window.dispatchEvent(new Event(CLIENT_REFRESH_EVENT));
+    } catch (reason) {
+      setStatus({ text: rawText(reason instanceof Error ? reason.message : String(reason)), error: true });
+      if (rethrow) throw reason;
+    } finally {
+      setBusy(false);
+    }
+  };
+  const guardedLoad = () => {
+    if (dirty && !window.confirm(unwrapText(uiMessage("regex.confirmReload")))) return;
+    load();
+  };
+  const guardedClose = () => {
+    if (dirty && !window.confirm(unwrapText(uiMessage("regex.confirmClose")))) return;
+    close2();
+  };
+  const addRule = (kind) => {
+    const rule = normalizeRegexRule({
+      name: unwrapText(uiMessage("regex.newRule")),
+      enabled: true,
+      find: "",
+      replace: "",
+      flags: "g",
+      target: "assistant"
+    }, { scope: scopeFor(kind, bindings) });
+    if (kind === "global") {
+      setDocument((current4) => ({ ...current4, rules: [...current4.rules, rule] }));
+      return;
+    }
+    setResourceRules((current4) => ({
+      ...current4,
+      [kind]: [...current4[kind], resourceEditableRule(rule)]
+    }));
+  };
+  const updateRule = (next) => setDocument((current4) => ({
+    ...current4,
+    rules: current4.rules.map((rule) => rule.id === next.id ? next : rule)
+  }));
+  const removeRule = (id) => setDocument((current4) => ({
+    ...current4,
+    rules: current4.rules.filter((rule) => rule.id !== id)
+  }));
+  const updateSourceRule = (kind, index, next) => setResourceRules((current4) => ({
+    ...current4,
+    [kind]: current4[kind].map((rule, ruleIndex) => ruleIndex === index ? next : rule)
+  }));
+  const removeSourceRule = (kind, index) => setResourceRules((current4) => ({
+    ...current4,
+    [kind]: current4[kind].filter((_rule, ruleIndex) => ruleIndex !== index)
+  }));
+  const moveRule = (kind, fromIndex, boundary) => {
+    if (kind === "global") {
+      setDocument((current4) => ({
+        ...current4,
+        rules: reorderRegexScopeAtBoundary(current4.rules, kind, fromIndex, boundary)
+      }));
+      return;
+    }
+    setResourceRules((current4) => ({
+      ...current4,
+      [kind]: reorderRegexRulesAtBoundary(current4[kind], fromIndex, boundary)
+    }));
+  };
+  const importFile = async (event) => {
+    const file = event.target.files?.[0];
+    event.target.value = "";
+    if (!file) return;
+    setBusy(true);
+    try {
+      const imported = importRegexDocument(JSON.parse(await file.text()), {
+        scope: scopeFor(importScope.current, bindings)
+      });
+      if (importScope.current === "global") {
+        await persist(
+          { ...document2, rules: [...document2.rules, ...imported] },
+          resourceRules,
+          { rethrow: true }
+        );
+      } else {
+        const nextResourceRules = {
+          ...resourceRules,
+          [importScope.current]: [
+            ...resourceRules[importScope.current],
+            ...imported.map(resourceEditableRule)
+          ]
+        };
+        await persist(document2, nextResourceRules, { rethrow: true });
+      }
+      setStatus({ text: uiMessage("regex.imported", { count: imported.length }), error: false });
+    } catch (reason) {
+      announceImportFailure(reason);
+      setStatus({ text: rawText(reason instanceof Error ? reason.message : String(reason)), error: true });
+      setBusy(false);
+    }
+  };
+  const title = uiMessage("regex.title");
+  const closeLabel = uiMessage("panel.close", { title: unwrapText(title) });
+  return h(
+    "div",
+    { className: embedded ? "dtv-regex-panel" : "dtv-panel dtv-regex-panel" },
+    embedded ? null : h(
+      "div",
+      { className: "dtv-header" },
+      h("div", { className: "dtv-title" }, title),
+      h("button", { className: "dtv-close", type: "button", title: closeLabel, "aria-label": closeLabel, onClick: guardedClose }, "\u2715")
+    ),
+    h(
+      "div",
+      { className: "dtv-body" },
+      h("p", { className: "dtv-note" }, uiMessage("regex.displayOnlyNote")),
+      h("input", { ref: fileInput, type: "file", accept: "application/json,.json", hidden: true, onChange: importFile }),
+      ...SCOPE_KINDS.map((kind) => h(RegexScopeSection, {
+        key: kind,
+        kind,
+        bindings,
+        editableRules: kind === "global" ? document2.rules.filter((rule) => rule.scope.kind === "global") : [],
+        sourceRules: kind === "preset" ? resourceRules.preset : kind === "character" ? resourceRules.character : [],
+        busy,
+        add: () => addRule(kind),
+        importJson: () => {
+          importScope.current = kind;
+          fileInput.current?.click();
+        },
+        exportJson: (rules) => downloadRegexScripts(rules, kind),
+        update: updateRule,
+        remove: removeRule,
+        updateSource: (index, next) => updateSourceRule(kind, index, next),
+        removeSource: (index) => removeSourceRule(kind, index),
+        move: (fromIndex, toIndex) => moveRule(kind, fromIndex, toIndex),
+        dragFrom,
+        dropIndex,
+        setDragFrom,
+        setDropIndex
+      })),
+      h("div", { className: "dtv-status", "data-error": status.error }, status.text),
+      h(
+        "div",
+        { className: "dtv-regex-footer" },
+        h("button", { className: "dtv-button", type: "button", disabled: busy, onClick: guardedLoad }, uiMessage("common.reload")),
+        h("button", { className: "dtv-button dtv-primary", type: "button", disabled: busy || !dirty || bindingsChanged, onClick: () => persist(document2) }, busy ? uiMessage("common.working") : uiMessage("common.saveChanges"))
+      )
+    )
+  );
+}
+
+// packages/client/src/play/rendering-trust.js
+function createRenderingTrust() {
+  const records = /* @__PURE__ */ new Map(), intentions = /* @__PURE__ */ new Map(), listeners = /* @__PURE__ */ new Set();
+  let revision = 0, generation = 0;
+  const emit = () => {
+    revision++;
+    for (const listener of listeners) listener();
+  };
+  const keyFor = (owner, source) => JSON.stringify([owner, source]);
+  return {
+    revision: () => revision,
+    subscribe(listener) {
+      listeners.add(listener);
+      return () => listeners.delete(listener);
+    },
+    isEnabled(owner, source, fallback = true) {
+      return intentions.get(keyFor(owner, source)) ?? fallback;
+    },
+    setEnablement(value) {
+      const next = value?.entries ?? [];
+      if (JSON.stringify([...intentions]) === JSON.stringify(next.map((item) => [keyFor(item.owner, item.key), item.enabled]))) return;
+      intentions.clear();
+      for (const item of next) intentions.set(keyFor(item.owner, item.key), item.enabled);
+      emit();
+    },
+    async stage(owner, source, content) {
+      if (typeof owner !== "string" || owner.length > 300 || typeof source !== "string" || source.length > 2048 || typeof content !== "string" || content.length > MAX_RENDER_SOURCE) throw Error("Rendering source exceeds limit");
+      if (source.startsWith("https:") && externalUrl(source) !== source) throw Error("Unsupported dependency URL");
+      const key2 = keyFor(owner, source), ticket = {}, epoch = generation;
+      if (!records.has(key2) && records.size >= 64) throw Error("Rendering source count exceeds limit");
+      const bytes = new TextEncoder().encode(content).byteLength;
+      if (bytes > MAX_RENDER_SOURCE || [...records.entries()].reduce((sum, [id, value]) => sum + (id === key2 ? 0 : new TextEncoder().encode(value.content).byteLength), bytes) > 64 * 1024 * 1024) throw Error("Rendering cache exceeds limit");
+      records.set(key2, { ticket, owner, source, content, approved: false, digest: null });
+      emit();
+      const digest = [...new Uint8Array(await crypto.subtle.digest("SHA-256", new TextEncoder().encode(content)))].map((byte) => byte.toString(16).padStart(2, "0")).join("");
+      if (generation !== epoch || records.get(key2)?.ticket !== ticket) throw Error("Rendering review was cancelled");
+      records.set(key2, { owner, source, content, digest, approved: false });
+      emit();
+      return digest;
+    },
+    inspect(owner, source) {
+      const value = records.get(keyFor(owner, source));
+      return value ? { ...value, ticket: void 0 } : null;
+    },
+    approve(owner, source, digest) {
+      const value = records.get(keyFor(owner, source));
+      if (!value?.digest || digest !== value.digest) throw Error("Rendering content changed; review again");
+      records.set(keyFor(owner, source), { ...value, approved: true });
+      emit();
+    },
+    setBuiltin(owner, source, enabled) {
+      const key2 = keyFor(owner, source), record = records.get(key2);
+      if (!record?.approved || !mvuBuiltin(source, record.digest)) throw Error("Built-in adapter requires reviewed exact supported bytes");
+      records.set(key2, { ...record, builtin: enabled === true });
+      emit();
+    },
+    revoke(owner, source) {
+      records.delete(keyFor(owner, source));
+      emit();
+    },
+    read(owner, source) {
+      const value = records.get(keyFor(owner, source));
+      if (source.startsWith("https:") && intentions.get(keyFor(owner, source)) === false) throw Error("Rendering source is disabled");
+      if (!value?.approved) throw Error("Rendering dependency requires content review");
+      return value.content;
+    },
+    clear() {
+      generation++;
+      records.clear();
+      emit();
+    }
+  };
+}
+var renderingTrust = createRenderingTrust();
+
+// packages/client/src/rendering-settings.js
+var HostTooltip;
+function configureRenderingTooltip(Tooltip2) {
+  HostTooltip = Tooltip2;
+}
+function RenderingSettings({ client, activeSnapshot, settings = {}, update, busy = false, status }) {
+  const [sources, setSources] = (0, import_react2.useState)([]), [error, setError] = (0, import_react2.useState)(""), [version3, setVersion] = (0, import_react2.useState)(0);
+  const [revision, setRevision] = (0, import_react2.useState)(renderingTrust.revision), [selected, setSelected] = (0, import_react2.useState)(null);
+  const generation = (0, import_react2.useRef)(0), input = (0, import_react2.useRef)(null), downloading = (0, import_react2.useRef)(null);
+  const [downloadKey, setDownloadKey] = (0, import_react2.useState)(null);
+  const [, setWriteRevision] = (0, import_react2.useState)(0);
+  (0, import_react2.useEffect)(() => renderingWriteRequests.subscribe(() => setWriteRevision((v2) => v2 + 1)), []);
+  const bindings = activeRegexBindings(activeSnapshot);
+  (0, import_react2.useEffect)(() => renderingTrust.subscribe(() => setRevision(renderingTrust.revision())), []);
+  (0, import_react2.useEffect)(() => {
+    const refresh = () => setVersion((v2) => v2 + 1);
+    window.addEventListener(CLIENT_REFRESH_EVENT, refresh);
+    return () => window.removeEventListener(CLIENT_REFRESH_EVENT, refresh);
+  }, []);
+  (0, import_react2.useEffect)(() => {
+    const ticket = ++generation.current;
+    downloading.current?.abort();
+    setDownloadKey(null);
+    setSources([]);
+    setError("");
+    setSelected(null);
+    Promise.all([
+      bindings.characterId ? client.getCharacter(bindings.characterId) : null,
+      bindings.presetId ? client.getPreset(bindings.presetId) : null,
+      readRenderingWorkspace(client, () => getRegexDocument(client).catch((error2) => {
+        if (ticket === generation.current) setError(error2.message);
+        return { rules: [] };
+      }))
+    ]).then(async ([character, preset, { owner: globalOwner, resource: regex }]) => {
+      if (ticket !== generation.current) return;
+      const inventory = await identifyRenderingSources([
+        ...renderingInventory(character?.character ?? character, { kind: "character", resourceId: bindings.characterId }),
+        ...renderingInventory(preset?.preset ?? preset, { kind: "preset", resourceId: bindings.presetId }),
+        ...globalOwner ? renderingInventory({ regex_scripts: regex.rules.filter((rule) => rule.scope.kind === "global") }, { kind: "global", resourceId: globalOwner.slice(7) }) : []
+      ]);
+      if (ticket === generation.current) setSources(inventory);
+    }).catch((error2) => {
+      if (ticket === generation.current) setError(error2.message);
+    });
+    return () => {
+      generation.current++;
+      downloading.current?.abort();
+    };
+  }, [client, bindings.characterId, bindings.presetId, version3]);
+  const entries2 = renderingEntries(sources, renderingTrust);
+  const run = async (callback) => {
+    try {
+      setError("");
+      await callback();
+    } catch (error2) {
+      setError(error2.message);
+    }
+  };
+  const help = (label, text3) => (0, import_react2.createElement)(HostTooltip ?? "span", HostTooltip ? { label: text3, portal: true, maxWidth: 320, side: "bottom", openOnClick: true } : { title: text3 }, (0, import_react2.createElement)("button", { type: "button", className: "dtv-script-info", "aria-label": label }, "\u24D8"));
+  const sourceView = (content) => (0, import_react2.createElement)("textarea", { className: "dtv-script-source", readOnly: true, value: content, spellCheck: false, wrap: "off", "aria-label": translate("rendering.source") });
+  const changeEnabled = (entry, enabled) => run(() => update?.({ ...settings, scriptEnablement: updateScriptEnablement(settings.scriptEnablement, entry.owner, entry.preferenceKey ?? entry.key, enabled) }));
+  const renderEntry = (entry) => {
+    const review = renderingTrust.inspect(entry.owner, entry.key);
+    const changed = entry.kind === "helper" && review?.content !== entry.content;
+    const approved = review?.approved && !changed;
+    const enabled = renderingTrust.isEnabled(entry.owner, entry.preferenceKey ?? entry.key, entry.enabled);
+    const overridden = (settings.scriptEnablement?.entries ?? []).some((item) => item.owner === entry.owner && item.key === (entry.preferenceKey ?? entry.key));
+    const displayName = entry.kind === "helper" || !entry.url ? entry.name : new URL(entry.url).hostname + " /\u2026/" + entry.url.split("/").at(-1).slice(-32);
+    const state = entry.blocked ? "rendering.blocked" : !enabled ? "rendering.disabled" : approved ? "rendering.approved" : review && !changed ? "rendering.staged" : entry.kind === "helper" ? "rendering.needsReview" : "rendering.waiting";
+    return (0, import_react2.createElement)(
+      "details",
+      { key: JSON.stringify([entry.owner, entry.key]), className: "dtv-entry dtv-script-entry", "data-enabled": enabled },
+      (0, import_react2.createElement)(
+        "summary",
+        null,
+        (0, import_react2.createElement)("input", { type: "checkbox", checked: enabled, disabled: busy || !update || entry.blocked, "aria-label": translate("rendering.enableEntry", { name: entry.name }), onClick: (event) => event.stopPropagation(), onChange: (event) => changeEnabled(entry, event.target.checked) }),
+        (0, import_react2.createElement)("span", { className: "dtv-entry-name", title: entry.name }, displayName),
+        (0, import_react2.createElement)("span", { className: "dtv-entry-state" }, translate(state))
+      ),
+      (0, import_react2.createElement)(
+        "div",
+        { className: "dtv-entry-body" },
+        (0, import_react2.createElement)("p", { className: "dtv-script-meta" }, entry.owner, " \xB7 ", (entry.origins ?? [entry.path]).filter(Boolean).join(" \u2192 ")),
+        entry.kind === "helper" ? sourceView(entry.content) : (0, import_react2.createElement)("p", { className: "dtv-script-meta" }, entry.key),
+        entry.kind !== "helper" && review ? sourceView(review.content) : null,
+        entry.kind !== "helper" && !review ? (0, import_react2.createElement)("p", { className: "dtv-script-meta" }, translate("rendering.importToRead")) : null,
+        (0, import_react2.createElement)(
+          "div",
+          { className: "dtv-script-actions" },
+          entry.blocked || entry.kind === "helper" ? null : (0, import_react2.createElement)("button", { type: "button", className: "dtv-button", disabled: downloadKey === entry.key, onClick: () => run(async () => {
+            downloading.current?.abort();
+            const controller2 = new AbortController();
+            downloading.current = controller2;
+            setDownloadKey(entry.key);
+            const ticket = generation.current;
+            const timer = setTimeout(() => controller2.abort(), 15e3);
+            try {
+              const content = await downloadRenderingSource(entry.url, { signal: controller2.signal });
+              if (ticket === generation.current && !controller2.signal.aborted) await renderingTrust.stage(entry.owner, entry.key, content);
+            } finally {
+              clearTimeout(timer);
+              if (downloading.current === controller2) {
+                downloading.current = null;
+                setDownloadKey(null);
+              }
+            }
+          }) }, translate("rendering.download")),
+          downloadKey === entry.key ? (0, import_react2.createElement)("button", { type: "button", className: "dtv-button", onClick: () => downloading.current?.abort() }, translate("rendering.cancel")) : null,
+          entry.blocked ? null : (0, import_react2.createElement)("button", { type: "button", className: "dtv-button", onClick: () => entry.kind === "helper" ? run(() => renderingTrust.stage(entry.owner, entry.key, entry.content)) : (setSelected(entry), input.current.click()) }, translate(entry.kind === "helper" ? "rendering.reviewInline" : "rendering.import")),
+          overridden ? (0, import_react2.createElement)("button", { type: "button", className: "dtv-button", disabled: busy, onClick: () => changeEnabled(entry, void 0) }, translate("rendering.resetEntry")) : null
+        ),
+        review ? (0, import_react2.createElement)(
+          "div",
+          { className: "dtv-script-group" },
+          changed ? (0, import_react2.createElement)("p", { className: "dtv-script-meta" }, translate("rendering.changed")) : null,
+          approved && mvuBuiltin(entry.url, review.digest) ? (0, import_react2.createElement)(
+            "label",
+            { className: "dtv-check" },
+            (0, import_react2.createElement)("input", { type: "checkbox", checked: review.builtin === true, onChange: (event) => run(() => renderingTrust.setBuiltin(entry.owner, entry.key, event.target.checked)) }),
+            translate("rendering.builtinMvu")
+          ) : null,
+          (0, import_react2.createElement)("div", { className: "dtv-script-actions" }, help(translate("rendering.sourceDetails"), "SHA-256: " + (review.digest ?? translate("common.loading")))),
+          (0, import_react2.createElement)(
+            "div",
+            { className: "dtv-script-actions" },
+            (0, import_react2.createElement)("button", { type: "button", className: "dtv-button", disabled: !review.digest || approved || changed || entry.blocked || !enabled, onClick: () => run(() => renderingTrust.approve(entry.owner, entry.key, review.digest)) }, translate("rendering.approve")),
+            (0, import_react2.createElement)("button", { type: "button", className: "dtv-button", onClick: () => {
+              if (downloadKey === entry.key) downloading.current?.abort();
+              renderingTrust.revoke(entry.owner, entry.key);
+            } }, translate("rendering.revoke"))
+          )
+        ) : null
+      )
+    );
+  };
+  return (0, import_react2.createElement)(
+    "section",
+    { className: "dtv-rendering-settings", "data-revision": revision },
+    (0, import_react2.createElement)("style", null, renderingSettingsStyles),
+    (0, import_react2.createElement)("h3", null, translate("rendering.title")),
+    (0, import_react2.createElement)("label", { className: "dtv-script-control" }, (0, import_react2.createElement)("input", { type: "checkbox", checked: settings.interactiveCards === true, disabled: busy || !update, onChange: (event) => update({ ...settings, interactiveCards: event.target.checked }) }), translate("rendering.master")),
+    (0, import_react2.createElement)("p", { className: "dtv-script-meta" }, translate(settings.interactiveCards === true ? "rendering.masterOn" : "rendering.masterOff")),
+    status?.text ? (0, import_react2.createElement)("p", { className: "dtv-script-meta", role: status.error ? "alert" : "status" }, status.text) : null,
+    (0, import_react2.createElement)("input", { type: "file", hidden: true, ref: input, accept: ".js,.mjs,.html,.txt", onChange: (event) => {
+      const file = event.target.files?.[0], target = selected, ticket = generation.current;
+      event.target.value = "";
+      if (!file || !target) return;
+      run(async () => {
+        if (file.size > 8 * 1024 * 1024) throw Error("Source exceeds 8 MiB");
+        const content = await file.text();
+        if (ticket !== generation.current) return;
+        await renderingTrust.stage(target.owner, target.key, content);
+      });
+    } }),
+    ...["helper", "dependency"].map((group) => (0, import_react2.createElement)(
+      "section",
+      { key: group, className: "dtv-script-group", "aria-label": translate(group === "helper" ? "rendering.cardScripts" : "rendering.dependencies") },
+      (0, import_react2.createElement)("div", { className: "dtv-script-actions" }, (0, import_react2.createElement)("h4", null, translate(group === "helper" ? "rendering.cardScripts" : "rendering.dependencies")), help(translate("rendering.safetyDetails"), translate(group === "helper" ? "rendering.enablementHelp" : "rendering.boundary"))),
+      ...entries2.filter((entry) => entry.kind === "helper" === (group === "helper")).map(renderEntry),
+      !entries2.some((entry) => entry.kind === "helper" === (group === "helper")) ? (0, import_react2.createElement)("p", { className: "dtv-script-meta" }, translate("rendering.none")) : null
+    )),
+    (0, import_react2.createElement)(
+      "section",
+      { className: "dtv-script-group dtv-script-operations" },
+      (0, import_react2.createElement)("div", { className: "dtv-script-actions" }, (0, import_react2.createElement)("h4", null, translate("rendering.operations")), help(translate("rendering.safetyDetails"), translate("rendering.lifetime"))),
+      (0, import_react2.createElement)("div", { className: "dtv-script-actions" }, (0, import_react2.createElement)("button", { type: "button", className: "dtv-button", onClick: () => {
+        downloading.current?.abort();
+        renderingTrust.clear();
+      } }, translate("rendering.revokeAll"))),
+      ...renderingWriteRequests.listRevocations().map((item) => (0, import_react2.createElement)(
+        "div",
+        { key: item.id, role: "alert" },
+        (0, import_react2.createElement)("p", null, translate("rendering.revokePending"), item.error ? " \xB7 " + item.error : ""),
+        (0, import_react2.createElement)("button", { type: "button", disabled: item.pending, onClick: () => run(() => renderingWriteRequests.retryRevocation(item.id)) }, translate("rendering.retryRevoke"))
+      )),
+      (0, import_react2.createElement)(
+        "details",
+        { className: "dtv-script-group dtv-write-permissions" },
+        (0, import_react2.createElement)("summary", null, translate("rendering.writeTitle"), " \xB7 ", translate(renderingWriteRequests.list().some((entry) => entry.granted) ? "rendering.writeGranted" : "rendering.writeOff")),
+        (0, import_react2.createElement)("div", { className: "dtv-script-actions" }, help(translate("rendering.writeTitle"), translate("rendering.writeBoundary"))),
+        ...renderingWriteRequests.list().map((entry) => (0, import_react2.createElement)(
+          "details",
+          { key: entry.id, className: "dtv-write-review" },
+          (0, import_react2.createElement)("summary", null, entry.sourceIdentity?.scope?.nodeId ?? entry.id, " \xB7 ", translate(entry.granted ? "rendering.writeGranted" : "rendering.writeOff")),
+          (0, import_react2.createElement)("p", { className: "dtv-script-meta" }, "SHA-256: ", entry.sourceIdentity?.sha256 ?? translate("common.loading")),
+          sourceView(entry.source),
+          (0, import_react2.createElement)(
+            "div",
+            { className: "dtv-script-actions" },
+            (0, import_react2.createElement)("button", { type: "button", className: "dtv-button", disabled: !entry.sourceIdentity || entry.reviewed, onClick: () => run(() => renderingWriteRequests.review(entry.id)) }, translate("rendering.reviewBundle")),
+            (0, import_react2.createElement)("button", { type: "button", className: "dtv-button", disabled: !entry.reviewed || entry.granted, onClick: () => run(() => renderingWriteRequests.authorize(entry.id)) }, translate("rendering.allowWrites")),
+            (0, import_react2.createElement)("button", { type: "button", className: "dtv-button", onClick: () => renderingWriteRequests.revoke(entry.id) }, translate("rendering.revokeWrites"))
+          ),
+          entry.error ? (0, import_react2.createElement)("p", { role: "alert" }, entry.error) : null
+        ))
+      )
+    ),
+    error ? (0, import_react2.createElement)("p", { role: "alert" }, error) : null
+  );
+}
+
+// packages/client/src/entry.js
+var import_dsh_client_ui_conversation = require("@deepseek-ai/dsh-client-ui-conversation");
+
+// packages/client/src/conversation-panel.js
+var import_react6 = require("react");
+
 // packages/client/src/bubble-editor.js
-var import_react3 = require("react");
+var import_react5 = require("react");
 
 // packages/presentation/bubble-style.js
 var role = (background, text3, border) => ({ background, text: text3, border });
@@ -16165,7 +17399,7 @@ function bubbleCss(style, role2 = "assistant") {
 }
 
 // packages/client/src/play/turn-actions.js
-var import_react = require("react");
+var import_react3 = require("react");
 
 // packages/client/src/play/pending-swipe.js
 var clients = /* @__PURE__ */ new WeakMap();
@@ -16243,7 +17477,7 @@ function isArchiveTimestamp(value) {
 var CHROME_MODES = /* @__PURE__ */ new Set(["native", "play"]);
 var MESSAGE_ROLES = /* @__PURE__ */ new Set(["user", "assistant", "system", "developer", "tool"]);
 var MESSAGE_ORIGIN_KINDS = /* @__PURE__ */ new Set(["user", "context", "steering", "assistant", "system"]);
-function isRecord2(value) {
+function isRecord3(value) {
   return value !== null && typeof value === "object" && !Array.isArray(value);
 }
 function fail(label, detail) {
@@ -16259,11 +17493,11 @@ function eventSeq(value, label) {
 }
 function extRecord(value, label) {
   if (value === void 0) return void 0;
-  if (!isRecord2(value)) fail(label, "must be an object");
+  if (!isRecord3(value)) fail(label, "must be an object");
   return value;
 }
 function normalizeChrome(value, label = "chrome") {
-  if (!isRecord2(value)) fail(label, "must be an object");
+  if (!isRecord3(value)) fail(label, "must be an object");
   if (!CHROME_MODES.has(value.mode)) fail(label, "mode must be native or play");
   if (value.revision !== void 0 && value.revision !== null && (typeof value.revision !== "string" || value.revision === "")) {
     fail(label, "revision must be a non-empty string or null");
@@ -16271,7 +17505,7 @@ function normalizeChrome(value, label = "chrome") {
   return { mode: value.mode, revision: value.revision ?? null };
 }
 function normalizeWorkspace(value, label = "workspace") {
-  if (!isRecord2(value)) fail(label, "must be an object");
+  if (!isRecord3(value)) fail(label, "must be an object");
   if (typeof value.selected !== "boolean") fail(label, "selected must be a boolean");
   if (value.rootPath !== null && value.rootPath !== void 0 && typeof value.rootPath !== "string") {
     fail(label, "rootPath must be a string or null");
@@ -16279,7 +17513,7 @@ function normalizeWorkspace(value, label = "workspace") {
   if (!Number.isSafeInteger(value.contractVersion) || value.contractVersion < 1) {
     fail(label, "contractVersion must be a positive integer");
   }
-  const warnings = Array.isArray(value.warnings) ? value.warnings.filter(isRecord2).map((item) => ({
+  const warnings = Array.isArray(value.warnings) ? value.warnings.filter(isRecord3).map((item) => ({
     code: typeof item.code === "string" ? item.code : "",
     message: typeof item.message === "string" ? item.message : ""
   })) : [];
@@ -16294,7 +17528,7 @@ function normalizeWorkspace(value, label = "workspace") {
   };
 }
 function normalizeTimelineVariant(value, label = "variant") {
-  if (!isRecord2(value)) fail(label, "must be an object");
+  if (!isRecord3(value)) fail(label, "must be an object");
   const startEventId = eventSeq(value.startEventId, `${label}.startEventId`);
   const endEventId = eventSeq(value.endEventId, `${label}.endEventId`);
   if (startEventId > endEventId) fail(label, "startEventId must not exceed endEventId");
@@ -16308,7 +17542,7 @@ function normalizeTimelineVariant(value, label = "variant") {
   };
 }
 function normalizeTimelineNode(value, label = "node") {
-  if (!isRecord2(value)) fail(label, "must be an object");
+  if (!isRecord3(value)) fail(label, "must be an object");
   if (value.kind !== "qa") fail(label, "kind must be qa");
   if (!Array.isArray(value.variants) || value.variants.length === 0) {
     fail(label, "variants must be a non-empty array");
@@ -16333,7 +17567,7 @@ function normalizeTimelineNode(value, label = "node") {
   };
 }
 function normalizeTimeline(value, label = "timeline") {
-  if (!isRecord2(value)) fail(label, "must be an object");
+  if (!isRecord3(value)) fail(label, "must be an object");
   if (!Array.isArray(value.nodes)) fail(label, "nodes must be an array");
   const nodes = value.nodes.map((item, index) => normalizeTimelineNode(item, `${label}.nodes[${index}]`));
   const ids = /* @__PURE__ */ new Set();
@@ -16355,7 +17589,7 @@ function normalizeTimeline(value, label = "timeline") {
   }
   let head;
   if (value.head !== void 0) {
-    if (!isRecord2(value.head)) fail(`${label}.head`, "must be an object");
+    if (!isRecord3(value.head)) fail(`${label}.head`, "must be an object");
     head = {
       sessionId: stringId(value.head.sessionId, `${label}.head.sessionId`),
       nodeId: stringId(value.head.nodeId, `${label}.head.nodeId`),
@@ -16367,11 +17601,11 @@ function normalizeTimeline(value, label = "timeline") {
   return { nodes, ...head === void 0 ? {} : { head }, ...ext === void 0 ? {} : { ext } };
 }
 function normalizeCatalog(value, label = "catalog") {
-  if (!isRecord2(value)) fail(label, "must be an object");
+  if (!isRecord3(value)) fail(label, "must be an object");
   if (!Array.isArray(value.playthroughs)) fail(label, "playthroughs must be an array");
   const playthroughs = value.playthroughs.map((item, index) => {
     const itemLabel = `${label}.playthroughs[${index}]`;
-    if (!isRecord2(item)) fail(itemLabel, "must be an object");
+    if (!isRecord3(item)) fail(itemLabel, "must be an object");
     const ext2 = extRecord(item.ext, `${itemLabel}.ext`);
     const archivedAt = ext2?.pmpDshTavern?.archivedAt;
     if (archivedAt !== void 0 && !isArchiveTimestamp(archivedAt)) {
@@ -16401,24 +17635,24 @@ function parseJsonDocument(content, normalize, label) {
 function projectContentText(content) {
   if (!Array.isArray(content)) return "";
   return content.map((part) => {
-    if (!isRecord2(part)) return "";
+    if (!isRecord3(part)) return "";
     if (typeof part.text === "string") return part.text;
     return typeof part.type === "string" && part.type !== "text" ? `\u27E6${part.type}\u27E7` : "";
   }).join("");
 }
 function normalizeSessionMessages(value, label = "messages") {
-  if (!isRecord2(value)) fail(label, "must be an object");
+  if (!isRecord3(value)) fail(label, "must be an object");
   if (!Array.isArray(value.messages)) fail(label, "messages must be an array");
   if (typeof value.incompleteTurn !== "boolean") fail(label, "incompleteTurn must be a boolean");
   const messages = value.messages.map((item, index) => {
     const itemLabel = `${label}.messages[${index}]`;
-    if (!isRecord2(item)) fail(itemLabel, "must be an object");
+    if (!isRecord3(item)) fail(itemLabel, "must be an object");
     if (!MESSAGE_ROLES.has(item.role)) fail(itemLabel, "role is invalid");
     if (!Array.isArray(item.content)) fail(itemLabel, "content must be an array");
     if (item.seq !== null && (!Number.isSafeInteger(item.seq) || item.seq < 0)) fail(itemLabel, "seq must be a non-negative integer or null");
     const fallbackKind = item.role === "tool" || item.role === "developer" ? "context" : item.role;
     const origin = item.origin === void 0 ? { kind: fallbackKind } : (() => {
-      if (!isRecord2(item.origin) || !MESSAGE_ORIGIN_KINDS.has(item.origin.kind)) fail(`${itemLabel}.origin`, "kind is invalid");
+      if (!isRecord3(item.origin) || !MESSAGE_ORIGIN_KINDS.has(item.origin.kind)) fail(`${itemLabel}.origin`, "kind is invalid");
       if (item.origin.kind !== "context") return { kind: item.origin.kind };
       const optional = (field, maximum) => {
         const fieldValue = item.origin[field];
@@ -16450,7 +17684,7 @@ function normalizeSessionMessages(value, label = "messages") {
   };
 }
 function normalizeFocus(value, label = "focus") {
-  if (!isRecord2(value)) fail(label, "must be an object");
+  if (!isRecord3(value)) fail(label, "must be an object");
   const nullableId = (field, fieldLabel) => {
     if (value[field] !== null && (typeof value[field] !== "string" || value[field].trim() === "")) {
       fail(label, `${fieldLabel} must be a non-empty string or null`);
@@ -17737,7 +18971,7 @@ function peekSwipeTransition(sessionId) {
 }
 
 // packages/client/src/play/turn-actions.js
-var h = createLocalizedElement(import_react.createElement);
+var h3 = createLocalizedElement(import_react3.createElement);
 var controllers = /* @__PURE__ */ new WeakMap();
 var css = `
 .dtv-play-turn-actions{display:flex;flex-wrap:wrap;align-items:center;gap:calc(2px * var(--dtv-rp-action-scale,1));min-height:calc(28px * var(--dtv-rp-action-scale,1))}.dtv-play-turn-action{flex-shrink:0;width:calc(28px * var(--dtv-rp-action-scale,1));height:calc(28px * var(--dtv-rp-action-scale,1));border:0;border-radius:calc(8px * var(--dtv-rp-action-scale,1));background:transparent;color:var(--dsw-alias-label-tertiary);font:inherit;font-size:calc(14px * var(--dtv-rp-action-scale,1));cursor:pointer;display:grid;place-items:center}.dtv-play-turn-action:hover{background:var(--dsw-alias-interactive-bg-hover);color:var(--dsw-alias-label-primary)}.dtv-play-turn-action:disabled{cursor:default;opacity:.38}.dtv-play-turn-position{padding:0 calc(5px * var(--dtv-rp-action-scale,1));color:var(--dsw-alias-label-tertiary);font-size:calc(10px * var(--dtv-rp-action-scale,1))}
@@ -17759,7 +18993,7 @@ function controller(client) {
   return value;
 }
 function Action({ icon, label, disabled = false, disabledLabel, onClick }) {
-  return h("button", {
+  return h3("button", {
     type: "button",
     className: "dtv-play-turn-action",
     disabled,
@@ -17770,16 +19004,16 @@ function Action({ icon, label, disabled = false, disabledLabel, onClick }) {
 }
 function PlayTurnActionsPreview({ scale = 1 }) {
   installStyles();
-  return h(
+  return h3(
     "div",
     { className: "dtv-play-turn-actions", role: "group", "aria-label": uiMessage("appearance.actionPreview"), style: { "--dtv-rp-action-scale": scale } },
-    h(Action, { icon: "\u29C9", label: uiMessage("play.chat.copy") }),
-    h(Action, { icon: "\u2039", label: uiMessage("play.chat.previousReply") }),
-    h("span", { className: "dtv-play-turn-position" }, "1/2"),
-    h(Action, { icon: "\u203A", label: uiMessage("play.chat.nextReply") }),
-    h(Action, { icon: "\u2442", label: uiMessage("play.chat.forkPlaythrough") }),
-    h(Action, { icon: "\u21A9", label: uiMessage("play.chat.rollbackPlaythrough") }),
-    h(Action, { icon: "\u270E", label: uiMessage("play.chat.editDisplay") })
+    h3(Action, { icon: "\u29C9", label: uiMessage("play.chat.copy") }),
+    h3(Action, { icon: "\u2039", label: uiMessage("play.chat.previousReply") }),
+    h3("span", { className: "dtv-play-turn-position" }, "1/2"),
+    h3(Action, { icon: "\u203A", label: uiMessage("play.chat.nextReply") }),
+    h3(Action, { icon: "\u2442", label: uiMessage("play.chat.forkPlaythrough") }),
+    h3(Action, { icon: "\u21A9", label: uiMessage("play.chat.rollbackPlaythrough") }),
+    h3(Action, { icon: "\u270E", label: uiMessage("play.chat.editDisplay") })
   );
 }
 function turnActionCapabilities(turn) {
@@ -17804,9 +19038,9 @@ function PlayTurnActions({
   pendingVariant = false
 }) {
   installStyles();
-  const [busy, setBusy] = (0, import_react.useState)(false);
-  const [editor, setEditor] = (0, import_react.useState)(null);
-  const [generating, setGenerating] = (0, import_react.useState)(false);
+  const [busy, setBusy] = (0, import_react3.useState)(false);
+  const [editor, setEditor] = (0, import_react3.useState)(null);
+  const [generating, setGenerating] = (0, import_react3.useState)(false);
   const pending2 = pendingSwipe(playClient, playthrough);
   const pathLocked = running || generating || pending2 !== null && pending2.error === null;
   const displayDisabled = readOnly || busy;
@@ -17817,7 +19051,7 @@ function PlayTurnActions({
   const capabilities = turnActionCapabilities(turn);
   const hasPreviousVariant = position > 0;
   const hasNextVariant = position + 1 < turn.variants.length;
-  (0, import_react.useEffect)(() => setEditor(null), [turn.id, turn.variant.id]);
+  (0, import_react3.useEffect)(() => setEditor(null), [turn.id, turn.variant.id]);
   const mutate = async (operation, displayOnly = false) => {
     if (displayOnly ? displayDisabled : disabled) return;
     setBusy(true);
@@ -17868,7 +19102,7 @@ function PlayTurnActions({
     }
   };
   if (editor !== null) {
-    return h(
+    return h3(
       "form",
       {
         className: "dtv-play-display-editor",
@@ -17881,7 +19115,7 @@ function PlayTurnActions({
           }, true);
         }
       },
-      h("textarea", {
+      h3("textarea", {
         value: editor,
         autoFocus: true,
         disabled: displayDisabled,
@@ -17891,16 +19125,16 @@ function PlayTurnActions({
           if (event.key === "Escape" && !displayDisabled) setEditor(null);
         }
       }),
-      h(
+      h3(
         "div",
         { className: "dtv-play-display-editor-actions" },
-        h("button", {
+        h3("button", {
           type: "button",
           className: "dtv-play-display-editor-button",
           disabled: displayDisabled,
           onClick: () => setEditor(null)
         }, uiMessage("common.cancel")),
-        h("button", {
+        h3("button", {
           type: "submit",
           className: "dtv-play-display-editor-button",
           "data-primary": true,
@@ -17909,25 +19143,25 @@ function PlayTurnActions({
       )
     );
   }
-  return h(
+  return h3(
     "div",
     { className: "dtv-play-turn-actions" },
-    h(Action, { icon: "\u29C9", label: uiMessage("play.chat.copy"), onClick: copy2 }),
-    !capabilities.variants ? null : h(Action, {
+    h3(Action, { icon: "\u29C9", label: uiMessage("play.chat.copy"), onClick: copy2 }),
+    !capabilities.variants ? null : h3(Action, {
       icon: "\u2039",
       label: uiMessage("play.chat.previousReply"),
       disabled: disabled || !hasPreviousVariant,
       disabledLabel: !pathLocked && !hasPreviousVariant ? uiMessage("play.chat.noOtherReply") : void 0,
       onClick: () => adopt(position - 1)
     }),
-    !capabilities.variants ? null : h("span", { className: "dtv-play-turn-position" }, `${displayedPosition + 1}/${displayedVariantCount}`),
-    !capabilities.variants ? null : h(Action, {
+    !capabilities.variants ? null : h3("span", { className: "dtv-play-turn-position" }, `${displayedPosition + 1}/${displayedVariantCount}`),
+    !capabilities.variants ? null : h3(Action, {
       icon: "\u203A",
       label: uiMessage(hasNextVariant ? "play.chat.nextReply" : "play.chat.generateReply"),
       disabled,
       onClick: hasNextVariant ? () => adopt(position + 1) : generate
     }),
-    h(Action, {
+    h3(Action, {
       icon: "\u2442",
       label: uiMessage("play.chat.forkPlaythrough"),
       disabled,
@@ -17937,7 +19171,7 @@ function PlayTurnActions({
         openSession(result.sessionId, result.playthrough);
       })
     }),
-    h(Action, {
+    h3(Action, {
       icon: "\u21A9",
       label: uiMessage("play.chat.rollbackPlaythrough"),
       disabled,
@@ -17946,13 +19180,13 @@ function PlayTurnActions({
         openSession(result.sessionId, playthrough);
       })
     }),
-    h(Action, {
+    h3(Action, {
       icon: "\u270E",
       label: uiMessage("play.chat.editDisplay"),
       disabled: displayDisabled,
       onClick: () => setEditor(turn.assistantText)
     }),
-    turn.displayOverridden ? h(Action, {
+    turn.displayOverridden ? h3(Action, {
       icon: "\u21BA",
       label: uiMessage("play.chat.restoreOriginal"),
       disabled: displayDisabled,
@@ -17962,7 +19196,7 @@ function PlayTurnActions({
 }
 
 // packages/client/src/play/message-layout.js
-var import_react2 = require("react");
+var import_react4 = require("react");
 function messageBubbleStyle(style, role2 = "assistant") {
   return {
     ...bubbleCss(style, role2),
@@ -17987,26 +19221,26 @@ var messageAvatarStyle = {
   boxSizing: "border-box"
 };
 function MessageRow({ role: role2 = "assistant", avatar, className, children }) {
-  return (0, import_react2.createElement)(
+  return (0, import_react4.createElement)(
     "div",
     { className, style: { display: "grid", gridTemplateColumns: "42px minmax(0,1fr) 42px", columnGap: 10, alignItems: "start", width: "100%", minWidth: 0 } },
-    avatar ? (0, import_react2.createElement)("div", { className: "dtv-message-avatar-slot", style: { gridColumn: role2 === "user" ? 3 : 1, gridRow: 1 } }, avatar) : null,
-    (0, import_react2.createElement)("div", { className: "dtv-message-content", style: { gridColumn: 2, gridRow: 1, minWidth: 0 } }, children)
+    avatar ? (0, import_react4.createElement)("div", { className: "dtv-message-avatar-slot", style: { gridColumn: role2 === "user" ? 3 : 1, gridRow: 1 } }, avatar) : null,
+    (0, import_react4.createElement)("div", { className: "dtv-message-content", style: { gridColumn: 2, gridRow: 1, minWidth: 0 } }, children)
   );
 }
 
 // packages/client/src/bubble-editor.js
 function BubbleEditor({ settings, update, busy, status, onDirty }) {
   const selected = settings.bubbleStyle ?? BUBBLE_STYLES[0];
-  const fileRef = (0, import_react3.useRef)(null);
+  const fileRef = (0, import_react5.useRef)(null);
   const withSize = (style) => ({ ...style, fontSize: style.fontSize ?? Math.round(14 * settings.textScale) });
   const selectedJson = JSON.stringify(withSize(selected), null, 2);
-  const [draft, setDraft] = (0, import_react3.useState)(selectedJson);
-  (0, import_react3.useEffect)(() => setDraft(selectedJson), [selectedJson]);
-  const [actionScale, setActionScale] = (0, import_react3.useState)(settings.actionScale);
-  (0, import_react3.useEffect)(() => setActionScale(settings.actionScale), [settings.actionScale]);
-  const [error, setError] = (0, import_react3.useState)("");
-  (0, import_react3.useEffect)(() => {
+  const [draft, setDraft] = (0, import_react5.useState)(selectedJson);
+  (0, import_react5.useEffect)(() => setDraft(selectedJson), [selectedJson]);
+  const [actionScale, setActionScale] = (0, import_react5.useState)(settings.actionScale);
+  (0, import_react5.useEffect)(() => setActionScale(settings.actionScale), [settings.actionScale]);
+  const [error, setError] = (0, import_react5.useState)("");
+  (0, import_react5.useEffect)(() => {
     onDirty?.(draft !== selectedJson || actionScale !== settings.actionScale);
   }, [draft, selectedJson, actionScale, settings.actionScale, onDirty]);
   let preview, parsed;
@@ -18019,14 +19253,14 @@ function BubbleEditor({ settings, update, busy, status, onDirty }) {
     setDraft(JSON.stringify(value, null, 2));
     setError("");
   };
-  return (0, import_react3.createElement)(
+  return (0, import_react5.createElement)(
     "section",
     { className: "dtv-bubble-editor" },
-    (0, import_react3.createElement)(
+    (0, import_react5.createElement)(
       "div",
       { className: "dtv-style-toolbar" },
-      (0, import_react3.createElement)("button", { type: "button", className: "dtv-button", disabled: busy, onClick: () => fileRef.current?.click() }, translate("common.importJson")),
-      (0, import_react3.createElement)("button", { type: "button", className: "dtv-button", disabled: !preview || busy, onClick: () => {
+      (0, import_react5.createElement)("button", { type: "button", className: "dtv-button", disabled: busy, onClick: () => fileRef.current?.click() }, translate("common.importJson")),
+      (0, import_react5.createElement)("button", { type: "button", className: "dtv-button", disabled: !preview || busy, onClick: () => {
         const url = URL.createObjectURL(new Blob([JSON.stringify(preview, null, 2)], { type: "application/json" }));
         const link = document.createElement("a");
         link.href = url;
@@ -18034,9 +19268,9 @@ function BubbleEditor({ settings, update, busy, status, onDirty }) {
         link.click();
         setTimeout(() => URL.revokeObjectURL(url), 1e3);
       } }, translate("common.exportJson")),
-      (0, import_react3.createElement)("button", { type: "button", className: "dtv-button", disabled: busy, onClick: () => choose({ ...BUBBLE_STYLES[0], fontSize: preview?.fontSize ?? 14, name: translate("appearance.newStyle") }) }, translate("appearance.createStyle"))
+      (0, import_react5.createElement)("button", { type: "button", className: "dtv-button", disabled: busy, onClick: () => choose({ ...BUBBLE_STYLES[0], fontSize: preview?.fontSize ?? 14, name: translate("appearance.newStyle") }) }, translate("appearance.createStyle"))
     ),
-    (0, import_react3.createElement)("input", { ref: fileRef, hidden: true, "aria-label": translate("appearance.styleFile"), type: "file", accept: ".json,application/json", onChange: async (event) => {
+    (0, import_react5.createElement)("input", { ref: fileRef, hidden: true, "aria-label": translate("appearance.styleFile"), type: "file", accept: ".json,application/json", onChange: async (event) => {
       const file = event.target.files?.[0];
       event.target.value = "";
       if (!file) return;
@@ -18047,1125 +19281,62 @@ function BubbleEditor({ settings, update, busy, status, onDirty }) {
         setError(error2.message);
       }
     } }),
-    status?.text ? (0, import_react3.createElement)("div", { className: "dtv-status", "data-error": status.error || void 0, role: "status" }, status.text) : null,
-    (0, import_react3.createElement)("p", null, translate("appearance.styleHint")),
-    (0, import_react3.createElement)("label", null, translate("appearance.presets"), (0, import_react3.createElement)(
+    status?.text ? (0, import_react5.createElement)("div", { className: "dtv-status", "data-error": status.error || void 0, role: "status" }, status.text) : null,
+    (0, import_react5.createElement)("p", null, translate("appearance.styleHint")),
+    (0, import_react5.createElement)("label", null, translate("appearance.presets"), (0, import_react5.createElement)(
       "select",
       { value: BUBBLE_STYLES.findIndex((style) => JSON.stringify(normalizeBubbleStyle({ ...style, fontSize: preview?.fontSize })) === JSON.stringify(preview)), onChange: (event) => choose({ ...BUBBLE_STYLES[Number(event.target.value)], fontSize: preview?.fontSize ?? 14 }) },
-      (0, import_react3.createElement)("option", { value: -1, disabled: true }, translate("appearance.custom")),
-      ...BUBBLE_STYLES.map((style, index) => (0, import_react3.createElement)("option", { key: style.name, value: index }, style.name))
+      (0, import_react5.createElement)("option", { value: -1, disabled: true }, translate("appearance.custom")),
+      ...BUBBLE_STYLES.map((style, index) => (0, import_react5.createElement)("option", { key: style.name, value: index }, style.name))
     )),
-    typeof parsed?.name === "string" ? (0, import_react3.createElement)("label", null, translate("appearance.styleName"), (0, import_react3.createElement)("input", { value: parsed.name, maxLength: 80, onChange: (event) => choose({ ...parsed, name: event.target.value }) })) : null,
-    preview ? (0, import_react3.createElement)(
+    typeof parsed?.name === "string" ? (0, import_react5.createElement)("label", null, translate("appearance.styleName"), (0, import_react5.createElement)("input", { value: parsed.name, maxLength: 80, onChange: (event) => choose({ ...parsed, name: event.target.value }) })) : null,
+    preview ? (0, import_react5.createElement)(
       "div",
       { style: { display: "grid", gap: 8, marginTop: 12 } },
-      (0, import_react3.createElement)(
+      (0, import_react5.createElement)(
         "label",
         null,
         translate("appearance.fontSize"),
-        (0, import_react3.createElement)(
+        (0, import_react5.createElement)(
           "div",
           { className: "dtv-size-control" },
-          (0, import_react3.createElement)("input", { type: "range", min: 8, max: 48, step: 1, value: preview.fontSize, "aria-label": translate("appearance.fontSizeSlider"), onChange: (event) => choose({ ...preview, fontSize: Number(event.target.value) }) }),
-          (0, import_react3.createElement)("input", { type: "number", min: 8, max: 48, step: 1, value: preview.fontSize, "aria-label": translate("appearance.fontSize"), onChange: (event) => {
+          (0, import_react5.createElement)("input", { type: "range", min: 8, max: 48, step: 1, value: preview.fontSize, "aria-label": translate("appearance.fontSizeSlider"), onChange: (event) => choose({ ...preview, fontSize: Number(event.target.value) }) }),
+          (0, import_react5.createElement)("input", { type: "number", min: 8, max: 48, step: 1, value: preview.fontSize, "aria-label": translate("appearance.fontSize"), onChange: (event) => {
             const value = Number(event.target.value);
             if (Number.isInteger(value) && value >= 8 && value <= 48) choose({ ...preview, fontSize: value });
           } }),
-          (0, import_react3.createElement)("span", null, "px")
+          (0, import_react5.createElement)("span", null, "px")
         )
       ),
-      (0, import_react3.createElement)(
+      (0, import_react5.createElement)(
         "label",
         null,
         translate("conversationSettings.actionScale"),
         `: ${Math.round(actionScale * 100)}%`,
-        (0, import_react3.createElement)("input", { type: "range", min: 0.75, max: 1.5, step: 0.05, value: actionScale, "aria-label": translate("conversationSettings.actionScale"), "aria-valuetext": `${Math.round(actionScale * 100)}%`, onChange: (event) => setActionScale(Number(event.target.value)) })
+        (0, import_react5.createElement)("input", { type: "range", min: 0.75, max: 1.5, step: 0.05, value: actionScale, "aria-label": translate("conversationSettings.actionScale"), "aria-valuetext": `${Math.round(actionScale * 100)}%`, onChange: (event) => setActionScale(Number(event.target.value)) })
       ),
-      (0, import_react3.createElement)("p", null, translate("conversationSettings.actionScale.help")),
-      ...["radius", "padding", "borderWidth"].map((token) => (0, import_react3.createElement)("label", { key: token }, translate(`appearance.${token}`), `: ${preview[token]} px`, (0, import_react3.createElement)("input", { type: "range", min: token === "padding" ? 8 : 0, max: token === "radius" ? 32 : token === "padding" ? 24 : 3, value: preview[token], onChange: (event) => choose({ ...preview, [token]: Number(event.target.value) }) }))),
-      (0, import_react3.createElement)("label", null, translate("appearance.font"), (0, import_react3.createElement)("select", { value: preview.font, onChange: (event) => choose({ ...preview, font: event.target.value }) }, ...["sans", "serif", "mono"].map((font) => (0, import_react3.createElement)("option", { key: font, value: font }, font)))),
-      ...["user", "assistant"].map((role2) => (0, import_react3.createElement)("fieldset", { key: role2 }, (0, import_react3.createElement)("legend", null, translate(`appearance.${role2}`)), ...["background", "text", "border"].map((token) => (0, import_react3.createElement)("label", { key: token, style: { display: "inline-flex", alignItems: "center", gap: 4, marginRight: 8 } }, translate(`appearance.${token}`), (0, import_react3.createElement)("input", { type: "color", value: preview[role2][token], onChange: (event) => choose({ ...preview, [role2]: { ...preview[role2], [token]: event.target.value } }) })))))
+      (0, import_react5.createElement)("p", null, translate("conversationSettings.actionScale.help")),
+      ...["radius", "padding", "borderWidth"].map((token) => (0, import_react5.createElement)("label", { key: token }, translate(`appearance.${token}`), `: ${preview[token]} px`, (0, import_react5.createElement)("input", { type: "range", min: token === "padding" ? 8 : 0, max: token === "radius" ? 32 : token === "padding" ? 24 : 3, value: preview[token], onChange: (event) => choose({ ...preview, [token]: Number(event.target.value) }) }))),
+      (0, import_react5.createElement)("label", null, translate("appearance.font"), (0, import_react5.createElement)("select", { value: preview.font, onChange: (event) => choose({ ...preview, font: event.target.value }) }, ...["sans", "serif", "mono"].map((font) => (0, import_react5.createElement)("option", { key: font, value: font }, font)))),
+      ...["user", "assistant"].map((role2) => (0, import_react5.createElement)("fieldset", { key: role2 }, (0, import_react5.createElement)("legend", null, translate(`appearance.${role2}`)), ...["background", "text", "border"].map((token) => (0, import_react5.createElement)("label", { key: token, style: { display: "inline-flex", alignItems: "center", gap: 4, marginRight: 8 } }, translate(`appearance.${token}`), (0, import_react5.createElement)("input", { type: "color", value: preview[role2][token], onChange: (event) => choose({ ...preview, [role2]: { ...preview[role2], [token]: event.target.value } }) })))))
     ) : null,
-    (0, import_react3.createElement)("details", null, (0, import_react3.createElement)("summary", null, translate("appearance.editJson")), (0, import_react3.createElement)("textarea", { "aria-label": translate("appearance.editJson"), value: draft, onChange: (event) => setDraft(event.target.value), spellCheck: false, rows: 14, style: { width: "100%", boxSizing: "border-box", fontFamily: "monospace" } })),
-    preview ? (0, import_react3.createElement)(
+    (0, import_react5.createElement)("details", null, (0, import_react5.createElement)("summary", null, translate("appearance.editJson")), (0, import_react5.createElement)("textarea", { "aria-label": translate("appearance.editJson"), value: draft, onChange: (event) => setDraft(event.target.value), spellCheck: false, rows: 14, style: { width: "100%", boxSizing: "border-box", fontFamily: "monospace" } })),
+    preview ? (0, import_react5.createElement)(
       "div",
       { "aria-label": translate("appearance.preview"), style: { display: "grid", gap: 8, margin: "12px 0" } },
-      ...["user", "assistant"].map((role2) => (0, import_react3.createElement)(MessageRow, {
+      ...["user", "assistant"].map((role2) => (0, import_react5.createElement)(MessageRow, {
         key: role2,
         role: role2,
-        avatar: (0, import_react3.createElement)("div", { "aria-label": translate(`appearance.${role2}`), style: { ...messageAvatarStyle, display: "grid", placeItems: "center" } }, translate(`appearance.${role2}`).slice(0, 1))
-      }, (0, import_react3.createElement)(
+        avatar: (0, import_react5.createElement)("div", { "aria-label": translate(`appearance.${role2}`), style: { ...messageAvatarStyle, display: "grid", placeItems: "center" } }, translate(`appearance.${role2}`).slice(0, 1))
+      }, (0, import_react5.createElement)(
         "div",
         { style: messageBubbleStyle(preview, role2) },
-        (0, import_react3.createElement)("div", { style: { textAlign: role2 === "user" ? "right" : "left", font: "600 11px system-ui", opacity: 0.65, marginBottom: 6 } }, translate(`appearance.${role2}`)),
+        (0, import_react5.createElement)("div", { style: { textAlign: role2 === "user" ? "right" : "left", font: "600 11px system-ui", opacity: 0.65, marginBottom: 6 } }, translate(`appearance.${role2}`)),
         translate(role2 === "user" ? "appearance.previewUser" : "appearance.previewAssistant")
       ))),
-      (0, import_react3.createElement)(MessageRow, null, (0, import_react3.createElement)(PlayTurnActionsPreview, { scale: actionScale }))
-    ) : (0, import_react3.createElement)("p", { role: "alert" }, translate("appearance.invalidStyle")),
-    (0, import_react3.createElement)("button", { type: "button", className: "dtv-button dtv-primary", disabled: busy || !preview, onClick: () => update({ ...settings, textScale: 1, actionScale, bubbleStyle: preview }) }, translate("appearance.apply")),
-    error ? (0, import_react3.createElement)("p", { role: "alert" }, error) : null,
-    (0, import_react3.createElement)("label", { className: "dtv-check", style: { marginTop: 18 } }, (0, import_react3.createElement)("input", { type: "checkbox", checked: settings.interactiveCards === true, disabled: busy, onChange: (event) => update({ ...settings, interactiveCards: event.target.checked }) }), translate("appearance.scripts")),
-    (0, import_react3.createElement)("p", null, translate("appearance.scriptHint"))
-  );
-}
-
-// packages/client/src/play/regex-panel.js
-var import_react4 = require("react");
-
-// packages/client/src/play/regex.js
-var REGEX_PATH = "ui/regex.json";
-function isRecord3(value) {
-  return value !== null && typeof value === "object" && !Array.isArray(value);
-}
-function stringValue(...values) {
-  return values.find((value) => typeof value === "string") ?? "";
-}
-function importedEnabled(value) {
-  if (typeof value.enabled === "boolean") return value.enabled;
-  if (typeof value.disabled === "boolean") return !value.disabled;
-  return true;
-}
-function finiteDepth(value) {
-  if (value === null || value === void 0 || value === "") return null;
-  const number2 = Number(value);
-  return Number.isFinite(number2) ? number2 : null;
-}
-function stringList(value) {
-  return Array.isArray(value) ? value.filter((item) => typeof item === "string") : [];
-}
-function nativePlacement(value) {
-  const placement = Array.isArray(value.placement) ? [...value.placement] : typeof value.placement === "number" ? [value.placement] : [];
-  let markdownOnly = value.markdownOnly === true || value.markdown_only === true;
-  let promptOnly = value.promptOnly === true || value.prompt_only === true;
-  if (placement.includes(0)) {
-    placement.splice(0, placement.length, ...placement.length === 1 ? [1, 2, 3, 5, 6] : placement.filter((item) => item !== 0));
-    markdownOnly = true;
-    promptOnly = true;
-  }
-  if (placement.includes(4)) {
-    placement.splice(0, placement.length, ...placement.length === 1 ? [3] : placement.filter((item) => item !== 4));
-  }
-  return { placement, markdownOnly, promptOnly };
-}
-function normalizeScope(value, fallback = { kind: "global", resourceId: null }) {
-  const source = isRecord3(value) ? value : fallback;
-  const kind = ["global", "preset", "character"].includes(source.kind) ? source.kind : fallback.kind;
-  const resourceId = kind === "global" ? null : stringValue(source.resourceId, fallback.resourceId);
-  return { kind, resourceId: resourceId || null };
-}
-function normalizeTarget(value) {
-  return ["user", "assistant", "both"].includes(value) ? value : "assistant";
-}
-function importedTarget(value) {
-  if (typeof value.target === "string") return normalizeTarget(value.target);
-  if (typeof value.placement === "string") return normalizeTarget(value.placement);
-  const { placement } = nativePlacement(value);
-  if (placement.length === 0) return "assistant";
-  const user = placement.some((item) => item === 1 || item === "user" || item === "user_input");
-  const assistant = placement.some((item) => item === 2 || item === "assistant" || item === "ai_output");
-  if (user && assistant) return "both";
-  if (user) return "user";
-  return "assistant";
-}
-function displayImportCandidate(value) {
-  if (!isRecord3(value)) return false;
-  const native = nativePlacement(value);
-  if (native.promptOnly && !native.markdownOnly) return false;
-  if (native.placement.length === 0) return true;
-  return native.placement.some((item) => item === 1 || item === 2 || item === "user" || item === "assistant" || item === "user_input" || item === "ai_output");
-}
-function regexCandidates(value) {
-  if (Array.isArray(value)) return value;
-  if (isRecord3(value) && [value.find, value.findRegex, value.find_regex, value.regex].some((item) => typeof item === "string")) {
-    return [value];
-  }
-  const candidates = [
-    value?.rules,
-    value?.regex_scripts,
-    value?.extensions?.regex_scripts,
-    value?.data?.extensions?.regex_scripts,
-    value?.source?.raw?.regex_scripts,
-    value?.source?.raw?.extensions?.regex_scripts,
-    value?.source?.raw?.data?.extensions?.regex_scripts
-  ];
-  return candidates.find(Array.isArray) ?? null;
-}
-function generatedId() {
-  return `regex-${globalThis.crypto?.randomUUID?.() ?? `${Date.now()}-${Math.random()}`}`;
-}
-function normalizeRegexRule(value, { scope } = {}) {
-  if (!isRecord3(value)) throw new TypeError("regex rule must be an object");
-  const source = stringValue(value.find, value.findRegex, value.find_regex, value.regex);
-  const native = nativePlacement(value);
-  return {
-    id: stringValue(value.id) || generatedId(),
-    name: stringValue(value.name, value.script_name, value.scriptName) || "Regex",
-    enabled: importedEnabled(value),
-    find: source,
-    replace: stringValue(value.replace, value.replaceString, value.replace_string, value.replacement),
-    flags: stringValue(value.flags),
-    target: importedTarget(value),
-    scope: normalizeScope(value.scope, scope),
-    placement: native.placement,
-    trimStrings: stringList(value.trimStrings ?? value.trim_strings),
-    markdownOnly: native.markdownOnly || value.markdown_only === true,
-    promptOnly: native.promptOnly || value.prompt_only === true,
-    runOnEdit: value.runOnEdit === true || value.run_on_edit === true,
-    substituteRegex: [0, 1, 2].includes(Number(value.substituteRegex ?? value.substitute_regex)) ? Number(value.substituteRegex ?? value.substitute_regex) : 0,
-    minDepth: finiteDepth(value.minDepth ?? value.min_depth),
-    maxDepth: finiteDepth(value.maxDepth ?? value.max_depth),
-    ext: isRecord3(value.ext) ? structuredClone(value.ext) : {}
-  };
-}
-function normalizeRegexDocument(value) {
-  if (!isRecord3(value)) throw new TypeError("regex document must be an object");
-  const rules = Array.isArray(value.rules) ? value.rules : [];
-  return { schemaVersion: 1, rules: rules.map((rule) => normalizeRegexRule(rule)) };
-}
-function importRegexDocument(value, { scope = { kind: "global", resourceId: null } } = {}) {
-  const candidates = regexCandidates(value);
-  if (candidates === null) throw new TypeError("No regex rules were found");
-  return candidates.filter(displayImportCandidate).map((rule) => normalizeRegexRule(rule, { scope }));
-}
-function resourceRegexInventory(value, scope) {
-  const candidates = regexCandidates(value);
-  if (candidates === null) return [];
-  return candidates.map((rule, sourceIndex) => ({
-    ...normalizeRegexRule(rule, { scope }),
-    sourceDisplayEligible: displayImportCandidate(rule),
-    sourceIndex,
-    sourceRaw: structuredClone(rule)
-  }));
-}
-function writeNativeField(target, aliases, canonical, value) {
-  const existing = aliases.filter((key2) => Object.hasOwn(target, key2));
-  for (const key2 of existing.length === 0 ? [canonical] : existing) target[key2] = structuredClone(value);
-}
-function nativePlacementFor(rule) {
-  const placement = Array.isArray(rule.placement) ? rule.placement : [];
-  const retained = placement.filter((item) => ![1, 2, "user", "assistant", "user_input", "ai_output"].includes(item));
-  if (rule.target === "user" || rule.target === "both") retained.push(1);
-  if (rule.target === "assistant" || rule.target === "both") retained.push(2);
-  return retained;
-}
-function findWithFlags(source, flags) {
-  if (!source.startsWith("/") || flags === "") return source;
-  const closing = source.lastIndexOf("/");
-  if (closing <= 0 || !/^[dgimsuvy]*$/.test(flags)) return source;
-  return `${source.slice(0, closing + 1)}${flags}`;
-}
-function nativeRegexScript(rule) {
-  const source = isRecord3(rule?.sourceRaw) ? structuredClone(rule.sourceRaw) : {};
-  const original = isRecord3(rule?.sourceRaw) ? normalizeRegexRule(rule.sourceRaw, { scope: rule.scope }) : null;
-  if (original === null) source.id = rule.id;
-  if (original === null || rule.name !== original.name) {
-    writeNativeField(source, ["scriptName", "script_name", "name"], "scriptName", rule.name);
-  }
-  if (original === null || rule.find !== original.find || rule.flags !== original.flags) {
-    writeNativeField(source, ["findRegex", "find_regex", "find", "regex"], "findRegex", findWithFlags(rule.find, rule.flags));
-  }
-  if (original === null || rule.replace !== original.replace) {
-    writeNativeField(source, ["replaceString", "replace_string", "replace", "replacement"], "replaceString", rule.replace);
-  }
-  if (original === null || rule.enabled !== original.enabled) {
-    writeNativeField(source, ["disabled"], "disabled", !rule.enabled);
-    if (Object.hasOwn(source, "enabled")) source.enabled = rule.enabled;
-  }
-  if (original === null || rule.target !== original.target) {
-    writeNativeField(source, ["placement"], "placement", nativePlacementFor(rule));
-  }
-  if (original === null) {
-    source.trimStrings = structuredClone(rule.trimStrings);
-    source.markdownOnly = rule.markdownOnly;
-    source.promptOnly = rule.promptOnly;
-    source.runOnEdit = rule.runOnEdit;
-    source.substituteRegex = rule.substituteRegex;
-    source.minDepth = rule.minDepth;
-    source.maxDepth = rule.maxDepth;
-  }
-  return source;
-}
-function exportNativeRegexScripts(rules) {
-  if (!Array.isArray(rules)) throw new TypeError("regex rules must be an array");
-  return rules.map(nativeRegexScript);
-}
-function resourceRegexRules(value, scope) {
-  try {
-    return importRegexDocument(value, { scope });
-  } catch (error) {
-    if (error instanceof TypeError && error.message === "No regex rules were found") return [];
-    throw error;
-  }
-}
-async function getRegexDocument(client) {
-  try {
-    const file = await client.getFile(REGEX_PATH);
-    return normalizeRegexDocument(JSON.parse(file.content));
-  } catch (error) {
-    if (error?.status === 404 || error?.code === "PLAY_FILE_NOT_FOUND") {
-      return { schemaVersion: 1, rules: [] };
-    }
-    throw error;
-  }
-}
-async function putRegexDocument(client, document2) {
-  const normalized = normalizeRegexDocument(document2);
-  await client.createDirs("ui");
-  await client.putFile(REGEX_PATH, JSON.stringify(normalized, null, 2));
-  return normalized;
-}
-function expression(rule, context) {
-  const source = rule.substituteRegex !== 0 && typeof context?.substituteRegex === "function" ? context.substituteRegex(rule.find, { escaped: rule.substituteRegex === 2 }) : rule.find;
-  if (source.startsWith("/")) {
-    const closing = source.lastIndexOf("/");
-    if (closing > 0) {
-      const pattern = source.slice(1, closing);
-      const flags = rule.flags || source.slice(closing + 1);
-      return new RegExp(pattern, flags);
-    }
-  }
-  return new RegExp(source, rule.flags || "g");
-}
-function applies(rule, bindings, target, context) {
-  if (!rule.enabled || rule.target !== "both" && rule.target !== target) return false;
-  if (typeof context?.depth === "number") {
-    if (rule.minDepth !== null && rule.minDepth >= -1 && context.depth < rule.minDepth) return false;
-    if (rule.maxDepth !== null && rule.maxDepth >= 0 && context.depth > rule.maxDepth) return false;
-  }
-  if (rule.scope.kind === "global") return true;
-  if (rule.scope.kind === "preset") return rule.scope.resourceId === bindings?.presetId;
-  return rule.scope.resourceId === bindings?.characterId;
-}
-function replacement(rule, context) {
-  return function replaceMatch(match, ...args) {
-    const groups = isRecord3(args.at(-1)) ? args.at(-1) : null;
-    let value = rule.replace.replace(/\{\{match\}\}/gi, "$0");
-    value = value.replaceAll(/\$(\d+)|\$<([^>]+)>/g, (_token, number2, groupName) => {
-      const captureIndex = Number(number2);
-      const captured = groupName === void 0 ? captureIndex === 0 ? match : args[captureIndex - 1] : groups?.[groupName];
-      if (!captured) return "";
-      return rule.trimStrings.reduce(
-        (result, trim) => result.replaceAll(trim, ""),
-        String(captured)
-      );
-    });
-    return typeof context?.substituteReplacement === "function" ? context.substituteReplacement(value) : value;
-  };
-}
-function applyDisplayRegex(text3, rules, bindings, target = "assistant", context = {}) {
-  let output = String(text3 ?? "");
-  const diagnostics = [];
-  for (const rule of rules ?? []) {
-    if (!applies(rule, bindings, target, context)) continue;
-    try {
-      output = output.replace(expression(rule, context), replacement(rule, context));
-    } catch (error) {
-      diagnostics.push({ ruleId: rule.id, message: error instanceof Error ? error.message : String(error) });
-    }
-  }
-  return { text: output, diagnostics };
-}
-function applyGreetingDisplayRegex(text3, rules, bindings, context = {}) {
-  const source = String(text3 ?? "");
-  if (source.trim() === "") return { text: source, diagnostics: [] };
-  const result = applyDisplayRegex(source, rules, bindings, "assistant", context);
-  return { ...result, text: result.text.trim() === "" ? source : result.text };
-}
-
-// packages/preset/src/client-state.js
-function reorder(items, from, to) {
-  if (!Array.isArray(items)) throw new TypeError("items must be an array");
-  if (!Number.isSafeInteger(from) || !Number.isSafeInteger(to)) return items;
-  if (from === to || from < 0 || to < 0 || from >= items.length || to >= items.length) return items;
-  const result = [...items];
-  const [moved] = result.splice(from, 1);
-  result.splice(to, 0, moved);
-  return result;
-}
-function reorderAtBoundary(items, from, boundary) {
-  if (!Number.isSafeInteger(boundary) || boundary < 0 || boundary > items.length) return items;
-  const destination = boundary > from ? boundary - 1 : boundary;
-  return reorder(items, from, destination);
-}
-
-// packages/client/src/import-failure.js
-function importFailureMessage(reason) {
-  if (typeof reason?.message === "string" && reason.message.trim() !== "") return reason.message.trim().slice(0, 1e3);
-  const value = String(reason ?? "").trim();
-  return value === "" ? "Unknown import error" : value.slice(0, 1e3);
-}
-function announceImportFailure(reason, target = globalThis.window) {
-  const message = importFailureMessage(reason);
-  target?.dispatchEvent?.(new CustomEvent(CLIENT_IMPORT_FAILURE_EVENT, {
-    detail: { message }
-  }));
-  return message;
-}
-
-// packages/client/src/play/regex-panel.js
-var h4 = createLocalizedElement(import_react4.createElement);
-var EMPTY_DOCUMENT = Object.freeze({ schemaVersion: 1, rules: Object.freeze([]) });
-var SCOPE_KINDS = Object.freeze(["global", "preset", "character"]);
-function reorderRegexRulesAtBoundary(rules, fromIndex, boundary) {
-  return reorderAtBoundary(rules, fromIndex, boundary);
-}
-function reorderRegexScopeAtBoundary(rules, kind, fromIndex, boundary) {
-  const indexes = rules.map((rule, index) => rule?.scope?.kind === kind ? index : -1).filter((index) => index >= 0);
-  const reordered = reorderRegexRulesAtBoundary(indexes.map((index) => rules[index]), fromIndex, boundary);
-  if (reordered === indexes) return rules;
-  const next = [...rules];
-  indexes.forEach((index, orderedIndex) => {
-    next[index] = reordered[orderedIndex];
-  });
-  return next;
-}
-function activeRegexBindings(snapshot) {
-  return {
-    presetId: typeof snapshot?.selection?.presetId === "string" ? snapshot.selection.presetId : null,
-    characterId: typeof snapshot?.selection?.characterCardId === "string" ? snapshot.selection.characterCardId : typeof snapshot?.selection?.characterId === "string" ? snapshot.selection.characterId : null
-  };
-}
-function scopeFor(kind, bindings) {
-  return {
-    kind,
-    resourceId: kind === "global" ? null : kind === "preset" ? bindings.presetId : bindings.characterId
-  };
-}
-function downloadRegexScripts(rules, kind) {
-  const scripts = exportNativeRegexScripts(rules);
-  const blob = new Blob([JSON.stringify(scripts, null, 2)], { type: "application/json" });
-  const url = URL.createObjectURL(blob);
-  const anchor = window.document.createElement("a");
-  anchor.href = url;
-  anchor.download = `regex-${kind}.json`;
-  anchor.click();
-  URL.revokeObjectURL(url);
-}
-function Field({ labelKey, children }) {
-  return h4(
-    "label",
-    { className: "dtv-field" },
-    h4("span", { className: "dtv-label" }, uiMessage(labelKey)),
-    children
-  );
-}
-async function activeResourceRegexRules(client, bindings) {
-  const [presetResponse, characterResponse] = await Promise.all([
-    typeof bindings.presetId === "string" && typeof client.getPresetRegexScripts === "function" ? client.getPresetRegexScripts(bindings.presetId) : typeof bindings.presetId === "string" && typeof client.getPreset === "function" ? client.getPreset(bindings.presetId) : null,
-    typeof bindings.characterId === "string" && typeof client.getCharacterRegexScripts === "function" ? client.getCharacterRegexScripts(bindings.characterId) : typeof bindings.characterId === "string" && typeof client.getCharacter === "function" ? client.getCharacter(bindings.characterId) : null
-  ]);
-  return {
-    preset: resourceRegexInventory(presetResponse?.regexScripts ?? presetResponse?.preset ?? presetResponse, {
-      kind: "preset",
-      resourceId: bindings.presetId
-    }),
-    character: resourceRegexInventory(characterResponse?.regexScripts ?? characterResponse?.character ?? characterResponse, {
-      kind: "character",
-      resourceId: bindings.characterId
-    })
-  };
-}
-async function putActiveResourceRegexRules(client, kind, resourceId, rules) {
-  if (typeof resourceId !== "string") throw new TypeError(`${kind} regex resource is not bound`);
-  const method = kind === "preset" ? client.putPresetRegexScripts : client.putCharacterRegexScripts;
-  if (typeof method !== "function") throw new TypeError(`${kind} regex resource API is unavailable`);
-  const response = await method.call(client, resourceId, rules.map(nativeRegexScript));
-  return resourceRegexInventory(response?.regexScripts ?? [], { kind, resourceId });
-}
-function resourceEditableRule(rule) {
-  return {
-    ...rule,
-    sourceDisplayEligible: true
-  };
-}
-function stageLegacyScopedRegexRules(document2, resourceRules, bindings) {
-  const nextDocument = {
-    ...document2,
-    rules: [...document2.rules]
-  };
-  const nextResourceRules = {
-    preset: [...resourceRules.preset],
-    character: [...resourceRules.character]
-  };
-  let migrated = 0;
-  for (const [kind, resourceId] of [
-    ["preset", bindings.presetId],
-    ["character", bindings.characterId]
-  ]) {
-    if (typeof resourceId !== "string") continue;
-    const local = nextDocument.rules.filter((rule) => rule.scope.kind === kind && rule.scope.resourceId === resourceId);
-    if (local.length === 0) continue;
-    const existingIds = new Set(nextResourceRules[kind].map((rule) => rule.id));
-    for (const rule of local) {
-      if (!existingIds.has(rule.id)) {
-        nextResourceRules[kind].push(resourceEditableRule(rule));
-        existingIds.add(rule.id);
-      }
-    }
-    nextDocument.rules = nextDocument.rules.filter((rule) => !(rule.scope.kind === kind && rule.scope.resourceId === resourceId));
-    migrated += local.length;
-  }
-  return { document: nextDocument, resourceRules: nextResourceRules, migrated };
-}
-function RuleEditor({
-  rule,
-  busy,
-  update,
-  remove,
-  sourceOwned = false,
-  dragKind,
-  dragIndex,
-  dragging,
-  onPointerDown,
-  onPointerMove,
-  onPointerUp,
-  onPointerCancel
-}) {
-  const set = (patch) => update({ ...rule, ...patch });
-  const setScope = (patch) => set({ scope: { ...rule.scope, ...patch } });
-  const stateLabel = uiMessage(rule.enabled ? "common.enabled" : "common.disabled");
-  return h4(
-    "details",
-    {
-      className: "dtv-entry dtv-regex-rule",
-      "data-enabled": rule.enabled,
-      "data-regex-kind": dragKind,
-      "data-regex-index": dragIndex,
-      "data-dragging": dragging || void 0
-    },
-    h4(
-      "summary",
-      null,
-      h4("button", {
-        className: "dtv-regex-drag",
-        type: "button",
-        disabled: busy,
-        title: uiMessage("regex.dragToReorder"),
-        "aria-label": uiMessage("regex.dragToReorder"),
-        "aria-pressed": dragging,
-        onClick: (event) => {
-          event.preventDefault();
-          event.stopPropagation();
-        },
-        onPointerDown,
-        onPointerMove,
-        onPointerUp,
-        onPointerCancel
-      }, "\u283F"),
-      h4("input", {
-        type: "checkbox",
-        checked: rule.enabled,
-        disabled: busy,
-        title: stateLabel,
-        "aria-label": stateLabel,
-        onClick: (event) => event.stopPropagation(),
-        onChange: (event) => set({ enabled: event.target.checked })
-      }),
-      h4("span", { className: "dtv-entry-name" }, rawText(rule.name || unwrapText(uiMessage("regex.unnamed")))),
-      h4("span", { className: "dtv-entry-state" }, stateLabel)
-    ),
-    h4(
-      "div",
-      { className: "dtv-entry-body" },
-      h4(Field, { labelKey: "regex.name" }, h4("input", {
-        className: "dtv-input",
-        value: rule.name,
-        disabled: busy,
-        onChange: (event) => set({ name: event.target.value })
-      })),
-      h4(Field, { labelKey: "regex.find" }, h4("textarea", {
-        className: "dtv-textarea dtv-regex-expression",
-        value: rule.find,
-        disabled: busy,
-        spellCheck: false,
-        onChange: (event) => set({ find: event.target.value })
-      })),
-      h4(Field, { labelKey: "regex.replace" }, h4("textarea", {
-        className: "dtv-textarea dtv-regex-expression",
-        value: rule.replace,
-        disabled: busy,
-        spellCheck: false,
-        onChange: (event) => set({ replace: event.target.value })
-      })),
-      h4(
-        "div",
-        { className: "dtv-entry-grid" },
-        h4(Field, { labelKey: "regex.flags" }, h4("input", {
-          className: "dtv-input",
-          value: rule.flags,
-          disabled: busy,
-          spellCheck: false,
-          onChange: (event) => set({ flags: event.target.value })
-        })),
-        h4(Field, { labelKey: "regex.target" }, h4(
-          "select",
-          {
-            className: "dtv-select",
-            value: rule.target,
-            disabled: busy,
-            onChange: (event) => set({ target: event.target.value })
-          },
-          h4("option", { value: "assistant" }, uiMessage("regex.target.assistant")),
-          h4("option", { value: "user" }, uiMessage("regex.target.user")),
-          h4("option", { value: "both" }, uiMessage("regex.target.both"))
-        ))
-      ),
-      h4(
-        "div",
-        { className: "dtv-entry-grid" },
-        h4(Field, { labelKey: "regex.scope" }, h4(
-          "select",
-          {
-            className: "dtv-select",
-            value: rule.scope.kind,
-            disabled: true,
-            onChange: (event) => setScope({
-              kind: event.target.value,
-              resourceId: event.target.value === "global" ? null : rule.scope.resourceId
-            })
-          },
-          ...SCOPE_KINDS.map((kind) => h4("option", { key: kind, value: kind }, uiMessage(`regex.scope.${kind}`)))
-        )),
-        rule.scope.kind === "global" ? null : h4(Field, { labelKey: "regex.resourceId" }, h4("input", {
-          className: "dtv-input",
-          value: rule.scope.resourceId ?? "",
-          disabled: true,
-          onChange: (event) => setScope({ resourceId: event.target.value || null })
-        }))
-      ),
-      sourceOwned ? h4("p", { className: "dtv-note" }, uiMessage(rule.sourceDisplayEligible ? "regex.sourceOwnedDisplay" : "regex.sourceOwnedPromptOnly")) : null,
-      h4("div", { className: "dtv-entry-actions" }, h4("button", {
-        className: "dtv-button dtv-danger",
-        type: "button",
-        disabled: busy,
-        onClick: remove
-      }, uiMessage("common.delete")))
-    )
-  );
-}
-function RegexDropPlaceholder() {
-  return h4("div", {
-    className: "dtv-regex-drop-placeholder",
-    "aria-hidden": true
-  }, uiMessage("preset.dropHere"));
-}
-function regexInsertionBoundary(event, kind) {
-  const target = document.elementFromPoint(event.clientX, event.clientY)?.closest("[data-regex-index]");
-  if (target === null || target.dataset.regexKind !== kind) return null;
-  const index = Number(target.dataset.regexIndex);
-  const bounds = target.getBoundingClientRect();
-  return event.clientY < bounds.top + bounds.height / 2 ? index : index + 1;
-}
-function RegexScopeSection({
-  kind,
-  bindings,
-  editableRules,
-  sourceRules,
-  busy,
-  add,
-  importJson,
-  exportJson,
-  update,
-  remove,
-  updateSource,
-  removeSource,
-  move,
-  dragFrom,
-  dropIndex,
-  setDragFrom,
-  setDropIndex
-}) {
-  const rules = [...editableRules, ...sourceRules];
-  const unbound = kind === "preset" && bindings.presetId === null ? uiMessage("regex.noPreset") : kind === "character" && bindings.characterId === null ? uiMessage("regex.noCharacter") : null;
-  const actionsDisabled = busy || unbound !== null;
-  return h4(
-    "section",
-    { className: "dtv-resource dtv-regex-section", "data-scope": kind },
-    h4(
-      "div",
-      { className: "dtv-regex-section-title" },
-      h4("div", { className: "dtv-resource-title" }, uiMessage(`regex.scope.${kind}`)),
-      h4("span", { className: "dtv-item-count" }, rawText(String(rules.length)))
-    ),
-    unbound === null ? null : h4("p", { className: "dtv-note" }, unbound),
-    h4(
-      "div",
-      { className: "dtv-book-toolbar" },
-      h4("button", { className: "dtv-button", type: "button", disabled: actionsDisabled, onClick: importJson }, uiMessage("common.importJson")),
-      h4("button", { className: "dtv-button", type: "button", disabled: busy, onClick: () => exportJson(rules) }, uiMessage("common.exportJson")),
-      h4("button", { className: "dtv-button", type: "button", disabled: actionsDisabled, onClick: add }, uiMessage("regex.add"))
-    ),
-    rules.length === 0 ? h4("p", { className: "dtv-note" }, uiMessage("regex.emptyScope")) : [
-      ...rules.flatMap((rule, index) => {
-        const sourceIndex = index - editableRules.length;
-        const sourceOwned = sourceIndex >= 0;
-        return [
-          dragFrom?.kind === kind && dropIndex === index ? h4(RegexDropPlaceholder, { key: `${kind}-drop-${index}` }) : null,
-          h4(RuleEditor, {
-            key: `${kind}-${sourceOwned ? "source" : "editable"}-${rule.id}-${index}`,
-            rule,
-            busy,
-            sourceOwned,
-            dragKind: kind,
-            dragIndex: index,
-            dragging: dragFrom?.kind === kind && dragFrom.index === index,
-            update: sourceOwned ? (next) => updateSource(sourceIndex, next) : update,
-            remove: sourceOwned ? () => removeSource(sourceIndex) : () => remove(rule.id),
-            onPointerDown: (event) => {
-              if (busy) return;
-              event.preventDefault();
-              event.stopPropagation();
-              event.currentTarget.setPointerCapture(event.pointerId);
-              setDragFrom({ kind, index });
-              setDropIndex(index + 1);
-            },
-            onPointerMove: (event) => {
-              if (!event.currentTarget.hasPointerCapture(event.pointerId)) return;
-              const boundary = regexInsertionBoundary(event, kind);
-              if (boundary !== null) setDropIndex(boundary);
-            },
-            onPointerUp: (event) => {
-              event.preventDefault();
-              const boundary = regexInsertionBoundary(event, kind) ?? dropIndex ?? index + 1;
-              if (event.currentTarget.hasPointerCapture(event.pointerId)) {
-                event.currentTarget.releasePointerCapture(event.pointerId);
-              }
-              move(index, boundary);
-              setDragFrom(null);
-              setDropIndex(null);
-            },
-            onPointerCancel: () => {
-              setDragFrom(null);
-              setDropIndex(null);
-            }
-          })
-        ];
-      }),
-      dragFrom?.kind === kind && dropIndex === rules.length ? h4(RegexDropPlaceholder, { key: `${kind}-drop-end` }) : null
-    ]
-  );
-}
-function RegexPanel({ client, activeSnapshot, close: close2, embedded = false, onDirty }) {
-  const [document2, setDocument] = (0, import_react4.useState)(EMPTY_DOCUMENT);
-  const [savedDocument, setSavedDocument] = (0, import_react4.useState)(EMPTY_DOCUMENT);
-  const [resourceRules, setResourceRules] = (0, import_react4.useState)({ preset: [], character: [] });
-  const [savedResourceRules, setSavedResourceRules] = (0, import_react4.useState)({ preset: [], character: [] });
-  const [busy, setBusy] = (0, import_react4.useState)(false);
-  const [status, setStatus] = (0, import_react4.useState)({ text: uiMessage("common.loading"), error: false });
-  const [dragFrom, setDragFrom] = (0, import_react4.useState)(null);
-  const [dropIndex, setDropIndex] = (0, import_react4.useState)(null);
-  const fileInput = (0, import_react4.useRef)(null);
-  const importScope = (0, import_react4.useRef)("global");
-  const activeBindings = activeRegexBindings(activeSnapshot);
-  const [bindings, setBindings] = (0, import_react4.useState)(activeBindings);
-  const loadGeneration = (0, import_react4.useRef)(0);
-  const activeKey = JSON.stringify(activeBindings);
-  const activeKeyRef = (0, import_react4.useRef)(activeKey);
-  activeKeyRef.current = activeKey;
-  const bindingsChanged = JSON.stringify(bindings) !== activeKey;
-  const dirty = JSON.stringify(document2) !== JSON.stringify(savedDocument) || JSON.stringify(resourceRules) !== JSON.stringify(savedResourceRules);
-  (0, import_react4.useEffect)(() => {
-    onDirty?.(dirty);
-  }, [dirty, onDirty]);
-  const load = async (targetBindings = activeBindings) => {
-    const ticket = ++loadGeneration.current;
-    setBusy(true);
-    try {
-      const [next, nextResourceRules] = await Promise.all([
-        getRegexDocument(client),
-        activeResourceRegexRules(client, targetBindings)
-      ]);
-      if (ticket !== loadGeneration.current) return;
-      setBindings(targetBindings);
-      const staged = stageLegacyScopedRegexRules(next, nextResourceRules, targetBindings);
-      setDocument(staged.document);
-      setSavedDocument(next);
-      setResourceRules(staged.resourceRules);
-      setSavedResourceRules(nextResourceRules);
-      const count = staged.document.rules.length + staged.resourceRules.preset.length + staged.resourceRules.character.length;
-      setStatus({
-        text: staged.migrated > 0 ? uiMessage("regex.legacyMigrationPending", { count: staged.migrated }) : uiMessage("regex.loaded", { count }),
-        error: false
-      });
-    } catch (reason) {
-      if (ticket === loadGeneration.current) setStatus({ text: rawText(reason instanceof Error ? reason.message : String(reason)), error: true });
-    } finally {
-      if (ticket === loadGeneration.current) setBusy(false);
-    }
-  };
-  (0, import_react4.useEffect)(() => {
-    if (dirty) {
-      setBusy(false);
-      setStatus({ text: uiMessage("rendering.bindingChanged"), error: true });
-    } else load(activeBindings);
-    return () => {
-      loadGeneration.current++;
-    };
-  }, [client, activeKey]);
-  const persist = async (next, nextResourceRules = resourceRules, { rethrow = false } = {}) => {
-    if (JSON.stringify(bindings) !== activeKeyRef.current) {
-      setStatus({ text: uiMessage("rendering.bindingChanged"), error: true });
-      if (rethrow) throw Error("Regex binding changed");
-      return;
-    }
-    setBusy(true);
-    try {
-      const [saved, savedPresetRules, savedCharacterRules] = await Promise.all([
-        JSON.stringify(next) === JSON.stringify(savedDocument) ? next : putRegexDocument(client, next),
-        JSON.stringify(nextResourceRules.preset) === JSON.stringify(savedResourceRules.preset) ? nextResourceRules.preset : putActiveResourceRegexRules(client, "preset", bindings.presetId, nextResourceRules.preset),
-        JSON.stringify(nextResourceRules.character) === JSON.stringify(savedResourceRules.character) ? nextResourceRules.character : putActiveResourceRegexRules(client, "character", bindings.characterId, nextResourceRules.character)
-      ]);
-      const savedResources = { preset: savedPresetRules, character: savedCharacterRules };
-      setDocument(saved);
-      setSavedDocument(saved);
-      setResourceRules(savedResources);
-      setSavedResourceRules(savedResources);
-      const count = saved.rules.length + savedPresetRules.length + savedCharacterRules.length;
-      setStatus({ text: uiMessage("regex.saved", { count }), error: false });
-      window.dispatchEvent(new Event(CLIENT_REFRESH_EVENT));
-    } catch (reason) {
-      setStatus({ text: rawText(reason instanceof Error ? reason.message : String(reason)), error: true });
-      if (rethrow) throw reason;
-    } finally {
-      setBusy(false);
-    }
-  };
-  const guardedLoad = () => {
-    if (dirty && !window.confirm(unwrapText(uiMessage("regex.confirmReload")))) return;
-    load();
-  };
-  const guardedClose = () => {
-    if (dirty && !window.confirm(unwrapText(uiMessage("regex.confirmClose")))) return;
-    close2();
-  };
-  const addRule = (kind) => {
-    const rule = normalizeRegexRule({
-      name: unwrapText(uiMessage("regex.newRule")),
-      enabled: true,
-      find: "",
-      replace: "",
-      flags: "g",
-      target: "assistant"
-    }, { scope: scopeFor(kind, bindings) });
-    if (kind === "global") {
-      setDocument((current4) => ({ ...current4, rules: [...current4.rules, rule] }));
-      return;
-    }
-    setResourceRules((current4) => ({
-      ...current4,
-      [kind]: [...current4[kind], resourceEditableRule(rule)]
-    }));
-  };
-  const updateRule = (next) => setDocument((current4) => ({
-    ...current4,
-    rules: current4.rules.map((rule) => rule.id === next.id ? next : rule)
-  }));
-  const removeRule = (id) => setDocument((current4) => ({
-    ...current4,
-    rules: current4.rules.filter((rule) => rule.id !== id)
-  }));
-  const updateSourceRule = (kind, index, next) => setResourceRules((current4) => ({
-    ...current4,
-    [kind]: current4[kind].map((rule, ruleIndex) => ruleIndex === index ? next : rule)
-  }));
-  const removeSourceRule = (kind, index) => setResourceRules((current4) => ({
-    ...current4,
-    [kind]: current4[kind].filter((_rule, ruleIndex) => ruleIndex !== index)
-  }));
-  const moveRule = (kind, fromIndex, boundary) => {
-    if (kind === "global") {
-      setDocument((current4) => ({
-        ...current4,
-        rules: reorderRegexScopeAtBoundary(current4.rules, kind, fromIndex, boundary)
-      }));
-      return;
-    }
-    setResourceRules((current4) => ({
-      ...current4,
-      [kind]: reorderRegexRulesAtBoundary(current4[kind], fromIndex, boundary)
-    }));
-  };
-  const importFile = async (event) => {
-    const file = event.target.files?.[0];
-    event.target.value = "";
-    if (!file) return;
-    setBusy(true);
-    try {
-      const imported = importRegexDocument(JSON.parse(await file.text()), {
-        scope: scopeFor(importScope.current, bindings)
-      });
-      if (importScope.current === "global") {
-        await persist(
-          { ...document2, rules: [...document2.rules, ...imported] },
-          resourceRules,
-          { rethrow: true }
-        );
-      } else {
-        const nextResourceRules = {
-          ...resourceRules,
-          [importScope.current]: [
-            ...resourceRules[importScope.current],
-            ...imported.map(resourceEditableRule)
-          ]
-        };
-        await persist(document2, nextResourceRules, { rethrow: true });
-      }
-      setStatus({ text: uiMessage("regex.imported", { count: imported.length }), error: false });
-    } catch (reason) {
-      announceImportFailure(reason);
-      setStatus({ text: rawText(reason instanceof Error ? reason.message : String(reason)), error: true });
-      setBusy(false);
-    }
-  };
-  const title = uiMessage("regex.title");
-  const closeLabel = uiMessage("panel.close", { title: unwrapText(title) });
-  return h4(
-    "div",
-    { className: embedded ? "dtv-regex-panel" : "dtv-panel dtv-regex-panel" },
-    embedded ? null : h4(
-      "div",
-      { className: "dtv-header" },
-      h4("div", { className: "dtv-title" }, title),
-      h4("button", { className: "dtv-close", type: "button", title: closeLabel, "aria-label": closeLabel, onClick: guardedClose }, "\u2715")
-    ),
-    h4(
-      "div",
-      { className: "dtv-body" },
-      h4("p", { className: "dtv-note" }, uiMessage("regex.displayOnlyNote")),
-      h4("input", { ref: fileInput, type: "file", accept: "application/json,.json", hidden: true, onChange: importFile }),
-      ...SCOPE_KINDS.map((kind) => h4(RegexScopeSection, {
-        key: kind,
-        kind,
-        bindings,
-        editableRules: kind === "global" ? document2.rules.filter((rule) => rule.scope.kind === "global") : [],
-        sourceRules: kind === "preset" ? resourceRules.preset : kind === "character" ? resourceRules.character : [],
-        busy,
-        add: () => addRule(kind),
-        importJson: () => {
-          importScope.current = kind;
-          fileInput.current?.click();
-        },
-        exportJson: (rules) => downloadRegexScripts(rules, kind),
-        update: updateRule,
-        remove: removeRule,
-        updateSource: (index, next) => updateSourceRule(kind, index, next),
-        removeSource: (index) => removeSourceRule(kind, index),
-        move: (fromIndex, toIndex) => moveRule(kind, fromIndex, toIndex),
-        dragFrom,
-        dropIndex,
-        setDragFrom,
-        setDropIndex
-      })),
-      h4("div", { className: "dtv-status", "data-error": status.error }, status.text),
-      h4(
-        "div",
-        { className: "dtv-regex-footer" },
-        h4("button", { className: "dtv-button", type: "button", disabled: busy, onClick: guardedLoad }, uiMessage("common.reload")),
-        h4("button", { className: "dtv-button dtv-primary", type: "button", disabled: busy || !dirty || bindingsChanged, onClick: () => persist(document2) }, busy ? uiMessage("common.working") : uiMessage("common.saveChanges"))
-      )
-    )
-  );
-}
-
-// packages/client/src/play/rendering-download.js
-async function downloadRenderingSource(source, { signal, fetch: request2 = globalThis.fetch } = {}) {
-  const url = externalUrl(source);
-  if (!url || url !== source) throw Error("Blocked dependency URL");
-  signal?.throwIfAborted();
-  const response = await request2(url, { signal, mode: "cors", credentials: "omit", redirect: "error", referrerPolicy: "no-referrer", cache: "no-store" });
-  if (!response.ok || response.type === "opaque" || response.redirected) throw Error("Source download failed; import a reviewed local file instead");
-  const length = Number(response.headers.get("content-length"));
-  if (Number.isFinite(length) && length > MAX_RENDER_SOURCE) throw Error("Source exceeds 8 MiB");
-  if (!response.body) throw Error("Source response has no readable body");
-  const reader = response.body.getReader(), chunks = [];
-  let size = 0;
-  try {
-    while (true) {
-      signal?.throwIfAborted();
-      const { value, done } = await reader.read();
-      if (done) break;
-      size += value.byteLength;
-      if (size > MAX_RENDER_SOURCE) throw Error("Source exceeds 8 MiB");
-      chunks.push(value);
-    }
-  } catch (error) {
-    await reader.cancel().catch(() => {
-    });
-    throw error;
-  } finally {
-    reader.releaseLock();
-  }
-  signal?.throwIfAborted();
-  const bytes = new Uint8Array(size);
-  let offset2 = 0;
-  for (const chunk of chunks) {
-    bytes.set(chunk, offset2);
-    offset2 += chunk.byteLength;
-  }
-  return new TextDecoder("utf-8", { fatal: true }).decode(bytes);
-}
-
-// packages/client/src/rendering-settings.js
-var import_react5 = require("react");
-function RenderingSettings({ client, activeSnapshot }) {
-  const [sources, setSources] = (0, import_react5.useState)([]), [error, setError] = (0, import_react5.useState)(""), [version3, setVersion] = (0, import_react5.useState)(0);
-  const [revision, setRevision] = (0, import_react5.useState)(renderingTrust.revision), [selected, setSelected] = (0, import_react5.useState)(null);
-  const generation = (0, import_react5.useRef)(0), input = (0, import_react5.useRef)(null), downloading = (0, import_react5.useRef)(null);
-  const [downloadKey, setDownloadKey] = (0, import_react5.useState)(null);
-  const [, setWriteRevision] = (0, import_react5.useState)(0);
-  (0, import_react5.useEffect)(() => renderingWriteRequests.subscribe(() => setWriteRevision((v2) => v2 + 1)), []);
-  const bindings = activeRegexBindings(activeSnapshot);
-  (0, import_react5.useEffect)(() => renderingTrust.subscribe(() => setRevision(renderingTrust.revision())), []);
-  (0, import_react5.useEffect)(() => {
-    const refresh = () => setVersion((v2) => v2 + 1);
-    window.addEventListener(CLIENT_REFRESH_EVENT, refresh);
-    return () => window.removeEventListener(CLIENT_REFRESH_EVENT, refresh);
-  }, []);
-  (0, import_react5.useEffect)(() => {
-    const ticket = ++generation.current;
-    downloading.current?.abort();
-    setDownloadKey(null);
-    setSources([]);
-    setError("");
-    setSelected(null);
-    Promise.all([
-      bindings.characterId ? client.getCharacter(bindings.characterId) : null,
-      bindings.presetId ? client.getPreset(bindings.presetId) : null,
-      getRegexDocument(client).catch((error2) => {
-        if (ticket === generation.current) setError(error2.message);
-        return { rules: [] };
-      })
-    ]).then(([character, preset, regex]) => {
-      if (ticket !== generation.current) return;
-      setSources([
-        ...renderingInventory(character?.character ?? character, { kind: "character", resourceId: bindings.characterId }),
-        ...renderingInventory(preset?.preset ?? preset, { kind: "preset", resourceId: bindings.presetId }),
-        ...renderingInventory({ regex_scripts: regex.rules.filter((rule) => rule.scope.kind === "global") }, { kind: "global", resourceId: "global" })
-      ]);
-    }).catch((error2) => {
-      if (ticket === generation.current) setError(error2.message);
-    });
-    return () => {
-      generation.current++;
-      downloading.current?.abort();
-    };
-  }, [client, bindings.characterId, bindings.presetId, version3]);
-  const entries2 = [];
-  function add(entry, depth = 0) {
-    const existing = entries2.find((item) => item.owner === entry.owner && item.key === entry.key);
-    if (existing) {
-      existing.origins = [.../* @__PURE__ */ new Set([...existing.origins ?? [], ...entry.origins ?? []])];
-      return;
-    }
-    if (entries2.length >= 128) return;
-    entries2.push(entry);
-    const staged = renderingTrust.inspect(entry.owner, entry.key);
-    if (staged && depth < 8) for (const dependency of discoverDependencies(staged.content, entry.url)) add({ ...dependency, owner: entry.owner, key: dependency.url ?? dependency.raw, name: dependency.raw, kind: dependency.kind, enabled: true, origins: [...entry.origins ?? [], entry.key] }, depth + 1);
-  }
-  for (const source of sources) {
-    if (source.kind === "helper") add(source);
-    for (const dependency of source.dependencies) add({ ...dependency, owner: source.owner, key: dependency.url ?? dependency.raw, name: dependency.raw, kind: dependency.kind, enabled: source.enabled, origins: [source.path] });
-  }
-  const run = async (callback) => {
-    try {
-      setError("");
-      await callback();
-    } catch (error2) {
-      setError(error2.message);
-    }
-  };
-  return (0, import_react5.createElement)(
-    "section",
-    { className: "dtv-rendering-settings", "data-revision": revision },
-    (0, import_react5.createElement)("h3", null, translate("rendering.title")),
-    (0, import_react5.createElement)("p", null, translate("rendering.boundary")),
-    (0, import_react5.createElement)("p", null, translate("rendering.lifetime")),
-    (0, import_react5.createElement)("button", { type: "button", className: "dtv-button", onClick: () => {
-      downloading.current?.abort();
-      renderingTrust.clear();
-    } }, translate("rendering.revokeAll")),
-    (0, import_react5.createElement)("input", { type: "file", hidden: true, ref: input, accept: ".js,.mjs,.html,.txt", onChange: (event) => {
-      const file = event.target.files?.[0], target = selected, ticket = generation.current;
-      event.target.value = "";
-      if (!file || !target) return;
-      run(async () => {
-        if (file.size > 8 * 1024 * 1024) throw Error("Source exceeds 8 MiB");
-        const content = await file.text();
-        if (ticket !== generation.current) return;
-        await renderingTrust.stage(target.owner, target.key, content);
-      });
-    } }),
-    !entries2.length ? (0, import_react5.createElement)("p", null, translate("rendering.empty")) : null,
-    ...entries2.map((entry) => {
-      const review = renderingTrust.inspect(entry.owner, entry.key);
-      const changed = entry.kind === "helper" && review?.content !== entry.content;
-      const approved = review?.approved && !changed;
-      return (0, import_react5.createElement)(
-        "details",
-        { key: JSON.stringify([entry.owner, entry.key]), className: "dtv-entry" },
-        (0, import_react5.createElement)("summary", null, entry.name, " \xB7 ", translate(entry.blocked ? "rendering.blocked" : approved ? "rendering.approved" : review && !changed ? "rendering.staged" : "rendering.waiting")),
-        (0, import_react5.createElement)("p", null, entry.owner, " \xB7 ", entry.kind),
-        (0, import_react5.createElement)("p", null, (entry.origins ?? [entry.path]).filter(Boolean).join(" \u2192 ")),
-        !entry.enabled ? (0, import_react5.createElement)("p", null, translate("rendering.sourceDisabled")) : null,
-        (0, import_react5.createElement)("p", null, entry.key),
-        entry.blocked || entry.kind === "helper" ? null : (0, import_react5.createElement)("button", { type: "button", className: "dtv-button", disabled: downloadKey === entry.key, onClick: () => run(async () => {
-          downloading.current?.abort();
-          const controller2 = new AbortController();
-          downloading.current = controller2;
-          setDownloadKey(entry.key);
-          const ticket = generation.current;
-          const timer = setTimeout(() => controller2.abort(), 15e3);
-          try {
-            const content = await downloadRenderingSource(entry.url, { signal: controller2.signal });
-            if (ticket === generation.current && !controller2.signal.aborted) await renderingTrust.stage(entry.owner, entry.key, content);
-          } finally {
-            clearTimeout(timer);
-            if (downloading.current === controller2) {
-              downloading.current = null;
-              setDownloadKey(null);
-            }
-          }
-        }) }, translate("rendering.download")),
-        downloadKey === entry.key ? (0, import_react5.createElement)("button", { type: "button", className: "dtv-button", onClick: () => downloading.current?.abort() }, translate("rendering.cancel")) : null,
-        entry.blocked ? null : (0, import_react5.createElement)("button", { type: "button", className: "dtv-button", onClick: () => entry.kind === "helper" ? run(() => renderingTrust.stage(entry.owner, entry.key, entry.content)) : (setSelected(entry), input.current.click()) }, translate(entry.kind === "helper" ? "rendering.reviewInline" : "rendering.import")),
-        review ? (0, import_react5.createElement)(
-          "div",
-          null,
-          approved && mvuBuiltin(entry.url, review.digest) ? (0, import_react5.createElement)(
-            "label",
-            null,
-            (0, import_react5.createElement)("input", { type: "checkbox", checked: review.builtin === true, onChange: (event) => run(() => renderingTrust.setBuiltin(entry.owner, entry.key, event.target.checked)) }),
-            translate("rendering.builtinMvu")
-          ) : null,
-          (0, import_react5.createElement)("p", null, "SHA-256: ", review.digest ?? translate("common.loading")),
-          (0, import_react5.createElement)("textarea", { readOnly: true, value: review.content, rows: 8, "aria-label": translate("rendering.source"), style: { width: "100%", boxSizing: "border-box" } }),
-          (0, import_react5.createElement)("button", { type: "button", className: "dtv-button", disabled: !review.digest || approved || changed || entry.blocked || !entry.enabled, onClick: () => run(() => renderingTrust.approve(entry.owner, entry.key, review.digest)) }, translate("rendering.approve")),
-          (0, import_react5.createElement)("button", { type: "button", className: "dtv-button", onClick: () => {
-            if (downloadKey === entry.key) downloading.current?.abort();
-            renderingTrust.revoke(entry.owner, entry.key);
-          } }, translate("rendering.revoke"))
-        ) : null
-      );
-    }),
-    (0, import_react5.createElement)("h3", null, translate("rendering.writeTitle")),
-    (0, import_react5.createElement)("p", null, translate("rendering.writeBoundary")),
-    ...renderingWriteRequests.listRevocations().map((item) => (0, import_react5.createElement)(
-      "div",
-      { key: item.id, role: "alert" },
-      (0, import_react5.createElement)("p", null, translate("rendering.revokePending"), item.error ? " \xB7 " + item.error : ""),
-      (0, import_react5.createElement)("button", { type: "button", disabled: item.pending, onClick: () => run(() => renderingWriteRequests.retryRevocation(item.id)) }, translate("rendering.retryRevoke"))
-    )),
-    ...renderingWriteRequests.list().map((entry) => (0, import_react5.createElement)(
-      "details",
-      { key: entry.id, className: "dtv-write-review" },
-      (0, import_react5.createElement)("summary", null, entry.sourceIdentity?.scope?.nodeId ?? entry.id, " \xB7 ", translate(entry.granted ? "rendering.writeGranted" : "rendering.writeOff")),
-      (0, import_react5.createElement)("p", null, "SHA-256: ", entry.sourceIdentity?.sha256 ?? translate("common.loading")),
-      (0, import_react5.createElement)("textarea", { readOnly: true, value: entry.source, rows: 12, "aria-label": translate("rendering.source"), style: { width: "100%" } }),
-      (0, import_react5.createElement)("button", { type: "button", disabled: !entry.sourceIdentity || entry.reviewed, onClick: () => run(() => renderingWriteRequests.review(entry.id)) }, translate("rendering.reviewBundle")),
-      (0, import_react5.createElement)("button", { type: "button", disabled: !entry.reviewed || entry.granted, onClick: () => run(() => renderingWriteRequests.authorize(entry.id)) }, translate("rendering.allowWrites")),
-      (0, import_react5.createElement)("button", { type: "button", onClick: () => renderingWriteRequests.revoke(entry.id) }, translate("rendering.revokeWrites")),
-      entry.error ? (0, import_react5.createElement)("p", { role: "alert" }, entry.error) : null
-    )),
+      (0, import_react5.createElement)(MessageRow, null, (0, import_react5.createElement)(PlayTurnActionsPreview, { scale: actionScale }))
+    ) : (0, import_react5.createElement)("p", { role: "alert" }, translate("appearance.invalidStyle")),
+    (0, import_react5.createElement)("button", { type: "button", className: "dtv-button dtv-primary", disabled: busy || !preview, onClick: () => update({ ...settings, textScale: 1, actionScale, bubbleStyle: preview }) }, translate("appearance.apply")),
     error ? (0, import_react5.createElement)("p", { role: "alert" }, error) : null
   );
 }
@@ -23457,13 +23628,18 @@ function boundedScale(value, fallback) {
 function getClientConversationSettings() {
   return structuredClone(current3);
 }
-function setClientConversationSettings(value, { announce = true } = {}) {
-  current3 = {
+function normalizeClientConversationSettings(value) {
+  return {
+    ...value?.scriptEnablement === void 0 ? {} : { scriptEnablement: normalizeScriptEnablement(value.scriptEnablement) },
     ...value?.bubbleStyle ? { bubbleStyle: normalizeBubbleStyle(value.bubbleStyle) } : {},
     ...value?.interactiveCards === void 0 ? {} : { interactiveCards: value.interactiveCards === true },
     textScale: boundedScale(value?.textScale, DEFAULT_CONVERSATION_SETTINGS.textScale),
     actionScale: boundedScale(value?.actionScale, DEFAULT_CONVERSATION_SETTINGS.actionScale)
   };
+}
+function setClientConversationSettings(value, { announce = true } = {}) {
+  current3 = normalizeClientConversationSettings(value);
+  renderingTrust.setEnablement(current3.scriptEnablement);
   if (announce && typeof window !== "undefined") {
     window.dispatchEvent(new CustomEvent(CLIENT_CONVERSATION_SETTINGS_EVENT, {
       detail: getClientConversationSettings()
@@ -42217,7 +42393,7 @@ function prepareCardDocument(source, owners = [], helpers = [], trust = renderin
   if (source.length > 1024 * 1024) throw Error("Card HTML exceeds 1 MiB");
   const template = document.createElement("template");
   template.innerHTML = source;
-  for (const helper of helpers.filter((item) => item.enabled)) {
+  for (const helper of helpers.filter((item) => trust.isEnabled(item.owner, item.preferenceKey ?? item.key, item.enabled))) {
     virtual = true;
     const content = trust.read(helper.owner, helper.key);
     if (content !== helper.content) throw Error("Helper changed; review again");
@@ -42755,7 +42931,7 @@ function MessageBubble({ text: text3, role: role2 = "assistant", messageKey, edi
       "div",
       { className: `dtv-play-chat-bubble dtv-play-chat-${role2}`, style: messageBubbleStyle(settings.bubbleStyle, role2) },
       (0, import_react18.createElement)("div", { style: { textAlign: role2 === "user" ? "right" : "left", font: "600 11px system-ui", opacity: 0.65, marginBottom: 6 } }, name2),
-      (0, import_react18.createElement)(MessageContent, { text: text3, writeScope: boundScope, createBinding: boundScope ? (signal, writeGrant) => createMvuCardBinding({ client: context.playClient, scope: boundScope, signal, writeGrant }) : void 0, owners: ["global:global", ...Object.entries(context?.state?.display?.bindings ?? {}).filter(([, id]) => typeof id === "string" && id).map(([kind, id]) => `${kind === "characterId" ? "character" : "preset"}:${id}`)], helpers: (context?.state?.display?.renderingSources ?? []).filter((item) => item.kind === "helper"), enabled: settings.interactiveCards === true && !context?.disabled && !streaming, scopeKey: JSON.stringify([context?.playthrough?.id, context?.sessionId, messageKey, boundScope]), context: { version: 1, role: role2, userName: context?.state?.display?.macros?.user ?? "User", characterName: context?.state?.display?.macros?.character ?? "Assistant" }, onSend: disabled || context?.busy ? void 0 : async (text4) => {
+      (0, import_react18.createElement)(MessageContent, { text: text3, writeScope: boundScope, createBinding: boundScope ? (signal, writeGrant) => createMvuCardBinding({ client: context.playClient, scope: boundScope, signal, writeGrant }) : void 0, owners: [context?.state?.display?.globalRenderingOwner, ...Object.entries(context?.state?.display?.bindings ?? {}).filter(([, id]) => typeof id === "string" && id).map(([kind, id]) => `${kind === "characterId" ? "character" : "preset"}:${id}`)].filter(Boolean), helpers: (context?.state?.display?.renderingSources ?? []).filter((item) => item.kind === "helper"), enabled: settings.interactiveCards === true && !context?.disabled && !streaming, scopeKey: JSON.stringify([context?.playthrough?.id, context?.sessionId, messageKey, boundScope]), context: { version: 1, role: role2, userName: context?.state?.display?.macros?.user ?? "User", characterName: context?.state?.display?.macros?.character ?? "Assistant" }, onSend: disabled || context?.busy ? void 0 : async (text4) => {
         await context.playClient.postUserMessage(context.sessionId, text4);
         context.changed?.();
       } })
@@ -43361,8 +43537,8 @@ async function loadChatState(client, sessionId, playthrough) {
   const selectionResponse = await client.getCharacterSelection(sessionId);
   const characterId = selectionResponse?.selection?.characterCardId;
   const characterResponse = typeof characterId === "string" && characterId !== "" ? await client.getCharacter(characterId) : null;
-  const [regexDocument, active2] = await Promise.all([
-    typeof client.getFile === "function" ? getRegexDocument(client) : { schemaVersion: 1, rules: [] },
+  const [{ resource: regexDocument, owner: globalOwner }, active2] = await Promise.all([
+    typeof client.getFile === "function" ? readRenderingWorkspace(client, () => getRegexDocument(client)) : { resource: { schemaVersion: 1, rules: [] }, owner: null },
     typeof client.getActive === "function" ? client.getActive(sessionId) : null
   ]);
   const bindings = {
@@ -43463,7 +43639,7 @@ async function loadChatState(client, sessionId, playthrough) {
     importMutable,
     greeting: displayGreeting,
     regexDiagnostics,
-    display: { rules, bindings, macros: macros2, renderingSources: [...renderingInventory(characterResponse?.character ?? characterResponse, { kind: "character", resourceId: bindings.characterId }), ...renderingInventory(presetResponse?.preset ?? presetResponse, { kind: "preset", resourceId: bindings.presetId })] }
+    display: { rules, bindings, macros: macros2, globalRenderingOwner: globalOwner, renderingSources: await identifyRenderingSources([...renderingInventory(characterResponse?.character ?? characterResponse, { kind: "character", resourceId: bindings.characterId }), ...renderingInventory(presetResponse?.preset ?? presetResponse, { kind: "preset", resourceId: bindings.presetId })]) }
   };
 }
 function applyTurnDisplayRegex(turn, display, { userDepth, assistantDepth } = {}) {
@@ -45873,7 +46049,7 @@ function PlaySessionDock({ session, useSessions, useConversation, conversationPh
       createBinding: content.initialScope ? (signal, writeGrant) => createMvuCardBinding({ client: playClient, scope: content.initialScope, signal, writeGrant }) : void 0,
       enabled: displaySettings.interactiveCards === true,
       scopeKey: JSON.stringify([sessionId, content.playthrough.id, "greeting", greeting.index, content.initialScope]),
-      owners: ["global:global", ...Object.entries(content.display?.bindings ?? {}).filter(([, id]) => typeof id === "string" && id).map(([kind, id]) => `${kind === "characterId" ? "character" : "preset"}:${id}`)],
+      owners: [content.display?.globalRenderingOwner, ...Object.entries(content.display?.bindings ?? {}).filter(([, id]) => typeof id === "string" && id).map(([kind, id]) => `${kind === "characterId" ? "character" : "preset"}:${id}`)].filter(Boolean),
       helpers: (content.display?.renderingSources ?? []).filter((item) => item.kind === "helper"),
       context: { version: 1, role: "assistant", userName: content.display?.macros?.user ?? "User", characterName: content.display?.macros?.character ?? "Assistant" },
       onSend: async (text3) => {
@@ -47443,8 +47619,7 @@ function TavernShell({ useSessions, useWorkspaces, createCleanSession, createCon
   };
   const persistConversationSettings = async (next) => {
     const previous = conversationSettings;
-    const normalized = setClientConversationSettings(next);
-    setConversationSettings(normalized);
+    const normalized = normalizeClientConversationSettings(next);
     setConversationSettingsBusy(true);
     setConversationSettingsStatus({ text: translate("conversationSettings.saving"), error: false });
     try {
@@ -48037,6 +48212,7 @@ function apply3(ctx, { conversationPhase: conversationPhase2 }) {
 
 // packages/client/src/entry.js
 function apply4(ctx) {
+  configureRenderingTooltip(import_dsh_client_ui_primitives.Tooltip);
   return apply3(ctx, { conversationPhase: import_dsh_client_ui_conversation.conversationPhase });
 }
 /*! Bundled license information:
