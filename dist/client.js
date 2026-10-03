@@ -24299,7 +24299,8 @@ globalThis.__view=()=>{
  const alive=new Set();
  for(const node of nodes){if(!__ids.has(node))__ids.set(node,++__nodeId);const id=__ids.get(node);alive.add(id);__nodes.set(id,node);node.setAttribute('data-dtv-node',String(id))}
  for(const id of __nodes.keys())if(!alive.has(id))__nodes.delete(id);
- return JSON.stringify({bodyId:__ids.get(document.body),html:document.body.innerHTML,styles:[...document.head.querySelectorAll('style')].map(node=>node.textContent).join('\\\\n')});
+ const controls=nodes.filter(node=>node.localName==='input'&&['radio','checkbox'].includes(node.type)).map(node=>({id:__ids.get(node),checked:node.checked===undefined?node.hasAttribute('checked'):node.checked===true}));if(controls.length>512)throw Error('Card control state limit exceeded');
+ return JSON.stringify({bodyId:__ids.get(document.body),controls,html:document.body.innerHTML,styles:[...document.head.querySelectorAll('style')].map(node=>node.textContent).join('\\\\n')});
 };
 // Synchronous-looking getters suspend only this interpreter. The host measures
 // the current sanitized view in this card's script-disabled iframe.
@@ -43191,6 +43192,20 @@ function createIdentityOpeningBridge({ sourceIdentity, identitySource, onProposa
   });
 }
 
+// packages/client/src/play/card-control-state.js
+function projectCardControlState(controls = [], nodes) {
+  if (!Array.isArray(controls) || controls.length > 512) throw Error("Invalid card control state");
+  const seen = /* @__PURE__ */ new Set(), pending2 = [];
+  for (const value of controls) {
+    if (!value || Array.isArray(value) || Object.keys(value).length !== 2 || !Object.hasOwn(value, "id") || !Object.hasOwn(value, "checked") || !Number.isSafeInteger(value.id) || value.id < 1 || typeof value.checked !== "boolean" || seen.has(value.id)) throw Error("Invalid card control state");
+    const node = nodes.get(value.id);
+    if (!node || node.localName !== "input" || !["radio", "checkbox"].includes(node.type)) throw Error("Card control is outside this view");
+    seen.add(value.id);
+    pending2.push([node, value.checked]);
+  }
+  for (const [node, checked] of pending2) node.checked = checked;
+}
+
 // packages/client/src/play/scripted-content.js
 var TAGS = "div span p br hr section article header footer main aside h1 h2 h3 h4 h5 h6 ul ol li dl dt dd b strong i em small pre code blockquote table thead tbody tr th td details summary button label input textarea select option output progress meter img style svg g path circle ellipse rect line polyline polygon defs linearGradient radialGradient stop clipPath title desc".split(" ");
 var ATTRS = "id class title style type value min max step checked disabled placeholder name rows cols open width height alt src for selected data-action data-dtv-node viewBox preserveAspectRatio d x y x1 y1 x2 y2 cx cy r rx ry points fill fill-rule fill-opacity stroke stroke-width stroke-linecap stroke-linejoin stroke-opacity transform opacity offset stop-color stop-opacity gradientUnits gradientTransform clip-path".split(" ");
@@ -43615,7 +43630,8 @@ var InteractiveCard = (0, import_react17.memo)(function InteractiveCard2({ sourc
         const displayView = (view, targetId) => {
           if (cleaned || current4 !== generation.current) throw Error("Card view generation expired");
           if (!view || Array.isArray(view) || typeof view.html !== "string" || typeof view.styles !== "string" || !Number.isSafeInteger(view.bodyId) || view.bodyId <= 0 || JSON.stringify(view).length > 1024 * 1024) throw Error("Invalid card view");
-          if (acceptedView?.html === view.html && acceptedView.styles === view.styles && acceptedView.bodyId === view.bodyId) {
+          const controlsKey = JSON.stringify(view.controls ?? []);
+          if (acceptedView?.html === view.html && acceptedView.styles === view.styles && acceptedView.bodyId === view.bodyId && acceptedView.controlsKey === controlsKey) {
             if (targetId !== void 0 && !acceptedView.nodes.has(targetId)) throw Error("Layout target is not in this card");
             return acceptedView.nodes;
           }
@@ -43634,12 +43650,13 @@ var InteractiveCard = (0, import_react17.memo)(function InteractiveCard2({ sourc
             nodes.set(id2, node);
           }
           if (targetId !== void 0 && !nodes.has(targetId)) throw Error("Layout target is not in this card");
+          projectCardControlState(view.controls, nodes);
           const style = doc.createElement("style");
           style.textContent = view.styles;
           const focused = doc.activeElement, id = focused?.dataset?.dtvNode, selection = [focused?.selectionStart, focused?.selectionEnd], scroll = [doc.documentElement.scrollLeft, doc.documentElement.scrollTop];
           doc.body.replaceChildren(template.content, style);
           doc.body.setAttribute("data-dtv-node", String(view.bodyId));
-          acceptedView = { html: view.html, styles: view.styles, bodyId: view.bodyId, nodes };
+          acceptedView = { html: view.html, styles: view.styles, bodyId: view.bodyId, controlsKey, nodes };
           if (id) {
             const restored = nodes.get(Number(id));
             restored?.focus();

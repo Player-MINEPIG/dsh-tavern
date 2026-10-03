@@ -10,6 +10,7 @@ import { discoverDependencies, isSideEffectModuleReference, externalUrl, loadWra
 import {adaptIdentityHtml,identityLoaderBootstrap} from './html-loader-adapters.js'
 import {createCardScopedStorage} from './card-scoped-storage.js'
 import {createIdentityOpeningBridge} from './identity-opening-bridge.js'
+import {projectCardControlState} from './card-control-state.js'
 import { renderingTrust } from './rendering-trust.js'
 
 const TAGS = 'div span p br hr section article header footer main aside h1 h2 h3 h4 h5 h6 ul ol li dl dt dd b strong i em small pre code blockquote table thead tbody tr th td details summary button label input textarea select option output progress meter img style svg g path circle ellipse rect line polyline polygon defs linearGradient radialGradient stop clipPath title desc'.split(' ')
@@ -262,7 +263,8 @@ const InteractiveCard = memo(function InteractiveCard({ source, enabled, scopeKe
         const displayView=(view,targetId)=>{
             if(cleaned||current!==generation.current)throw Error('Card view generation expired')
             if(!view||Array.isArray(view)||typeof view.html!=='string'||typeof view.styles!=='string'||!Number.isSafeInteger(view.bodyId)||view.bodyId<=0||JSON.stringify(view).length>1024*1024)throw Error('Invalid card view')
-            if(acceptedView?.html===view.html&&acceptedView.styles===view.styles&&acceptedView.bodyId===view.bodyId){
+            const controlsKey=JSON.stringify(view.controls??[])
+            if(acceptedView?.html===view.html&&acceptedView.styles===view.styles&&acceptedView.bodyId===view.bodyId&&acceptedView.controlsKey===controlsKey){
               if(targetId!==undefined&&!acceptedView.nodes.has(targetId))throw Error('Layout target is not in this card')
               return acceptedView.nodes
             }
@@ -281,11 +283,12 @@ const InteractiveCard = memo(function InteractiveCard({ source, enabled, scopeKe
               nodes.set(id,node)
             }
             if(targetId!==undefined&&!nodes.has(targetId))throw Error('Layout target is not in this card')
+            projectCardControlState(view.controls,nodes)
             const style=doc.createElement('style');style.textContent=view.styles
             const focused=doc.activeElement,id=focused?.dataset?.dtvNode,selection=[focused?.selectionStart,focused?.selectionEnd],scroll=[doc.documentElement.scrollLeft,doc.documentElement.scrollTop]
             doc.body.replaceChildren(template.content,style)
             doc.body.setAttribute('data-dtv-node',String(view.bodyId))
-            acceptedView={html:view.html,styles:view.styles,bodyId:view.bodyId,nodes}
+            acceptedView={html:view.html,styles:view.styles,bodyId:view.bodyId,controlsKey,nodes}
             if(id){const restored=nodes.get(Number(id));restored?.focus();if(typeof selection[0]==='number')try{restored.setSelectionRange(...selection)}catch{}}
             doc.documentElement.scrollLeft=scroll[0];doc.documentElement.scrollTop=scroll[1];resize()
             return nodes

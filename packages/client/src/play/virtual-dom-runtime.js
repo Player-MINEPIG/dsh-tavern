@@ -40,7 +40,8 @@ globalThis.__view=()=>{
  const alive=new Set();
  for(const node of nodes){if(!__ids.has(node))__ids.set(node,++__nodeId);const id=__ids.get(node);alive.add(id);__nodes.set(id,node);node.setAttribute('data-dtv-node',String(id))}
  for(const id of __nodes.keys())if(!alive.has(id))__nodes.delete(id);
- return JSON.stringify({bodyId:__ids.get(document.body),html:document.body.innerHTML,styles:[...document.head.querySelectorAll('style')].map(node=>node.textContent).join('\\n')});
+ const controls=nodes.filter(node=>node.localName==='input'&&['radio','checkbox'].includes(node.type)).map(node=>({id:__ids.get(node),checked:node.checked===undefined?node.hasAttribute('checked'):node.checked===true}));if(controls.length>512)throw Error('Card control state limit exceeded');
+ return JSON.stringify({bodyId:__ids.get(document.body),controls,html:document.body.innerHTML,styles:[...document.head.querySelectorAll('style')].map(node=>node.textContent).join('\\n')});
 };
 // Synchronous-looking getters suspend only this interpreter. The host measures
 // the current sanitized view in this card's script-disabled iframe.
