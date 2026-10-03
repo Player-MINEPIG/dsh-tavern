@@ -24,7 +24,7 @@ message coordinates, branch inputs, and unmigrated timeline references.
 <a id="impact-on-third-party-consumers-in-240"></a>
 ## Impact on third-party consumers in the current version
 
-Version 2.5.1 targets DSH `0.2.0-rc.2` and only adds math presentation to the bundled RP view and static HTML exports. Compared with 2.5.0, it adds no routes, fields, setting toggles or persistent formats. HTTP message responses retain source text; third-party clients choose their own rendering. Persistent operation logs, the desktop request token, avatars and presentation settings retain their 2.5.0 contracts, together with the following contracts introduced in the 2.4 series.
+The current contract targets DSH `0.2.0-rc.2`, including the optional Host services and session opening world-book routes below. HTTP message responses retain source text; third-party clients choose their own rendering. Persistent operation logs, the desktop request token, avatars and presentation settings retain their existing contracts.
 
 Compared with `v2.3.2`, the API root, v1/v2/v3 prefixes and existing routes remain.
 This does not mean that every accepted input, historical reference or Host integration behavior is unchanged.
@@ -96,6 +96,16 @@ Audit evidence: [Trace API handler](../packages/tavern-loader/src/prompt-trace-a
 For public contracts and read timing, see [consumer read paths and compatibility boundaries](PROMPT_API_V3_en.md#consumer-read-paths-and-compatibility-boundaries).
 An assembled section is not necessarily an original source field; current resources, historical sections,
 and runtime assembly are not interchangeable.
+
+## Session opening world books
+
+The optional Host service `tavernOpeningWorldBooks` exposes `prepare` and `commit`; types are exported by `pmp-dsh-tavern/opening-worldbook`. HTTP uses `POST /pmp-dsh-tavern/api/v1/sessions/:sessionId/opening-worldbook/prepare` and `/commit`, retaining local peer, Host, Origin/desktop token, JSON and official DSH admission checks.
+
+`prepare({sourceIdentity,openingId,identitySource,source?})` reads data and returns `{ok:true,proposalId,expectedRevision,entriesHash,entries,openingId,entryCount,expiresAt,sourceIdentity,resourceId}`. `sourceIdentity` is `{version:1,owner:'pmp-dsh-tavern',sessionId,characterId,greetingIndex,greetingSha256,identitySha256}`: the index is zero based, 0 is first_mes, and greetingSha256 covers the original before regex/macros. The Host verifies the official session, selected original card and selection generation. `identitySource` and `source:{url,sha256,content}` accept only the fixed public snapshots in `opening-worldbook/manifest`; their scripts are never executed. Either sibling contains both full families. default/alisa_party skip, while police_done/hospital_done/pool contain 7/8/15 entries. Bounded literals and fixed data mappings preserve full content; missing data, unsupported expressions or hash mismatches reject.
+
+After showing the proposal and obtaining separate world-book write confirmation, the trusted parent UI calls `commit({proposalId,expectedRevision,operationId,sourceIdentity,reviewed:true,write:true})`. This does not reuse MVU variable grants. The guest VM can request a controlled opening ID and await a receipt; it receives no confirmation primitive, source reading, fetch or arbitrary Host calls. At most 64 proposals remain valid for 10 minutes. Source, selection ABA, session instance or unload changes revoke them. CAS precedes atomic persistence. Repeating a resource operationId returns its original receipt; conflicting reuse rejects. Empty skips create no resource, and their receipts can be retried only within the current Host lifetime.
+
+Receipts are `{ok:true,inserted,existing,updated,targetWorldbook,method:'session-local',receiptId,resourceId,revision}`; empty choices also return `skipped:true` and `resourceId:null`. Only plugin-owned session storage changes. Original cards, global books and global bindings retain their values. Resource IDs are `world-book:session-opening-<digest>`, readable/listable under the world-book `tavernMemorySources` adapter only within their session scope. A matching current selection uses existing keyword, enabled, probability, budget and placement activation. Managed ownership requires the existing current manager retrieve policy; absent managers and denies suppress assembly. A commit receipt grants no prompt usage and establishes no model delivery or provider receipt.
 
 ## Desktop request token
 

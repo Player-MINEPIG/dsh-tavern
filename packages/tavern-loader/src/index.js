@@ -78,6 +78,7 @@ import { AssemblyPresetStore } from '../../request-assembler/store.js'
 import { RequestAssembler } from '../../request-assembler/runtime.js'
 import { createDefaultRegistry } from '../../request-assembler/builtin-sources.js'
 import { createMemorySources, installMemorySources } from '../../memory-sources/index.js'
+import { OpeningWorldBookService, OPENING_WORLD_BOOK_SERVICE, createOpeningWorldBookHandler, isOpeningWorldBookPath } from '../../opening-worldbook/index.js'
 import { ASSEMBLY_SERVICE } from '../../request-assembler/registry.js'
 import { createAssemblyApi, isAssemblyApiPath } from '../../request-assembler/server.js'
 
@@ -317,6 +318,11 @@ export function apply(ctx, config = {}) {
     defaultSelection: () => ({ presetId: store.state.selectedId }),
   })
   migrateCharacterSelections(characterStore, selections)
+  const openingWorldBooks = new OpeningWorldBookService({ storageDir, characters: characterStore,
+    getSelection: id => selections.get(id), getSelectionRevision: id => selections.selectionRevision(id),
+    getSession: id => ctx.get('sessions')?.get?.(id), onChange: () => ctx.emit('system-prompt/change') })
+  ctx.provide(OPENING_WORLD_BOOK_SERVICE, openingWorldBooks)
+  ctx.effect(() => () => openingWorldBooks.dispose())
   const rpMode = new RpModeController({
     selections,
     uiSettings: uiSettingsStore,
@@ -360,6 +366,7 @@ export function apply(ctx, config = {}) {
     selections,
     userWorldBooks,
     resourceWorldBooks,
+    sessionWorldBooks: openingWorldBooks,
     maxProfileBytes: config.limits?.maxProfileBytes,
   })
   const pendingInput = new PendingInputProjection({
@@ -369,15 +376,15 @@ export function apply(ctx, config = {}) {
     maxQueuedMessages: config.pendingInput?.maxQueuedMessages,
   })
   const assemblyPresets = new AssemblyPresetStore(storageDir, { mode: () => chromeStore.get().mode })
-  const memorySources = createMemorySources({ storageDir, store: worldBookStore, characters: characterStore, resources: config.promptTemplates?.resources ?? [],
+  const memorySources = createMemorySources({ storageDir, store: worldBookStore, characters: characterStore, sessionBooks: openingWorldBooks, resources: config.promptTemplates?.resources ?? [],
     resolveVariables: args => ctx.get('tavernMvu')?.resolvePromptDependency?.(args),
     getSelection: sessionId => {
       const selected = selections.get(sessionId)
-      const worldBookIds = composeWorldBookSelection(selected.worldBookIds,
+      const worldBookIds = composeWorldBookSelection([...selected.worldBookIds, ...openingWorldBooks.selectedIds(sessionId, selected)],
         selected.userId ? userWorldBooks.get(selected.userId) : [],
         selected.presetId ? resourceWorldBooks.get('preset', selected.presetId) : [],
         selected.characterCardId ? resourceWorldBooks.get('character', selected.characterCardId) : []).effectiveIds
-      return { worldBookIds, characterId: selected.characterCardId, selectionRevision: selections.selectionRevision(sessionId) }
+      return { worldBookIds, characterId: selected.characterCardId, selectionRevision: `${selections.selectionRevision(sessionId)}:${openingWorldBooks.revision()}` }
     } })
   const registry = createDefaultRegistry({ worldbookPolicy: (context, output) => memorySources.worldBooks.filter(context, output), worldbookValidateResolved: memorySources.worldBooks.validateResolved })
   const requestAssembler = new RequestAssembler({ ctx, store: assemblyPresets, resources: runtime, registry })
@@ -417,7 +424,9 @@ export function apply(ctx, config = {}) {
   const assemblyRecorder = new AssemblyRecorder(assemblyStore, { requiresRequestAssembly: () => requestAssembler.available() })
   runtime.registerCharacterAdapter(createCharacterAdapter(characterStore))
   runtime.registerUserAdapter(createUserAdapter(userStore))
-  runtime.registerWorldBookAdapter(createWorldBookAdapter(worldBookStore, { ...config.worldBook, allowResource: (id, context) => memorySources.worldBooks.allowNative(id, context.requestAssembly) }))
+  runtime.registerWorldBookAdapter(createWorldBookAdapter(worldBookStore, { ...config.worldBook,
+    resolveDocument: (id, { sessionId }) => id.startsWith('session-opening-') ? openingWorldBooks.get(id, sessionId) : worldBookStore.get(id),
+    allowResource: (id, context) => memorySources.worldBooks.allowNative(id, context.requestAssembly) }))
   const notifyChange = () => ctx.emit('system-prompt/change')
   const traceSafely = (callback) => {
     try {
@@ -727,8 +736,11 @@ export function apply(ctx, config = {}) {
         if (typeof sessionId !== 'string' || typeof active !== 'boolean') return
       },
     })
+    const openingWorldBookApi = createOpeningWorldBookHandler(openingWorldBooks, { getConnection: () => ctx.get('connection') })
     const api = secureTavernApi(
-      (req, res) => isRenderingAuthorityPath(req.url)
+      (req, res) => isOpeningWorldBookPath(req.url)
+        ? openingWorldBookApi(req, res)
+        : isRenderingAuthorityPath(req.url)
         ? renderingAuthorityApi(req, res)
         : isMvuApiPath(req.url)
         ? mvuApi(req, res)

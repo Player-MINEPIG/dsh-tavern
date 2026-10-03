@@ -21,7 +21,9 @@
     "./request-assembler": "./packages/request-assembler/index.js",
     "./mvu": "./packages/mvu-adapter/src/index.js",
     "./prompt-template": "./packages/prompt-template/index.js",
-    "./memory-sources": "./packages/memory-sources/index.js"
+    "./memory-sources": "./packages/memory-sources/index.js",
+    "./opening-worldbook": "./packages/opening-worldbook/index.js",
+    "./opening-worldbook/manifest": "./packages/opening-worldbook/manifest.js"
   },
   "files": [
     "screenshots.json",

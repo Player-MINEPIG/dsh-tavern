@@ -118,12 +118,14 @@ export class TavernProfileLoader {
     selections,
     userWorldBooks = null,
     resourceWorldBooks = null,
+    sessionWorldBooks = null,
     maxProfileBytes,
   }) {
     this.presetStore = presetStore
     this.selections = selections
     this.userWorldBooks = userWorldBooks
     this.resourceWorldBooks = resourceWorldBooks
+    this.sessionWorldBooks = sessionWorldBooks
     this.maxProfileBytes = profileByteLimit(maxProfileBytes)
     this.characterAdapter = null
     this.userAdapter = null
@@ -202,7 +204,7 @@ export class TavernProfileLoader {
       ? []
       : this.resourceWorldBooks.get('character', characterResult.character.id)
     const worldBookSelection = composeWorldBookSelection(
-      selection.worldBookIds,
+      [...selection.worldBookIds, ...(this.sessionWorldBooks?.selectedIds(shared.sessionId, selection) ?? [])],
       userBoundIds,
       presetBoundIds,
       characterBoundIds,

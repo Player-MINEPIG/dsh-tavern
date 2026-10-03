@@ -22,7 +22,7 @@ timeline 的拒绝行为。
 <a id="240-对第三方调用方的影响"></a>
 ## 当前版本对第三方调用方的影响
 
-2.5.1 面向 DSH `0.2.0-rc.2`，只增加内置 RP 与静态 HTML 导出的公式显示能力。与 2.5.0 相比没有新增路由、字段、设置开关或持久格式；HTTP 返回的消息仍是原文，第三方客户端自行决定如何渲染。持久操作日志、桌面请求令牌、头像与显示设置沿用 2.5.0 的合同，并保留以下自 2.4 系列引入的接入合同。
+当前合同面向 DSH `0.2.0-rc.2`，包含下文的可选 Host 服务与会话开场世界书路由。HTTP 返回的消息仍是原文，第三方客户端自行决定如何渲染。持久操作日志、桌面请求令牌、头像与显示设置沿用原有合同。
 
 与 `v2.3.2` 相比，API 根路径、v1/v2/v3 版本前缀和既有路由保持；这不代表所有输入、
 历史引用或宿主接入行为完全不变。运行环境仅支持 DSH `0.2.0-rc.2`，其他版本不在支持范围内。
@@ -81,6 +81,16 @@ DSH 历史以及 v2 `/sessions/:id/messages` 提供权威消息读取；v3 详�
 
 公开合同与读取时机的速查见 [v3 消费方读取路径与兼容边界](PROMPT_API_V3.md#消费方读取路径与兼容边界)。
 官方装配段的正文不等于某个来源字段的原文；当前资源、历史段落和运行期装配不能互相替代。
+
+## 会话开场世界书
+
+Host 可选服务 `tavernOpeningWorldBooks` 提供 `prepare` 与 `commit`，类型见包入口 `pmp-dsh-tavern/opening-worldbook`。HTTP 为 `POST /pmp-dsh-tavern/api/v1/sessions/:sessionId/opening-worldbook/prepare` 与 `/commit`，沿用本机、Host、Origin/桌面 token、JSON 与官方 DSH admission 检查。
+
+`prepare({sourceIdentity,openingId,identitySource,source?})` 只读取数据，返回 `{ok:true,proposalId,expectedRevision,entriesHash,entries,openingId,entryCount,expiresAt,sourceIdentity,resourceId}`。`sourceIdentity` 为 `{version:1,owner:'pmp-dsh-tavern',sessionId,characterId,greetingIndex,greetingSha256,identitySha256}`：index 为零基，0 对应 first_mes；greetingSha256 是 regex/macros 展开前原文哈希。Host 验证官方会话、当前选择、原卡与选择代际。`identitySource` 和 `source:{url,sha256,content}` 只接受 `opening-worldbook/manifest` 的固定公开快照，不执行其脚本。单个 sibling 同时含两组完整数据；default/alisa_party 是空跳过，police_done/hospital_done/pool 分别为 7/8/15 条。Host 从有限字面量与固定数据映射读取完整内容，缺失、不支持的表达式或 hash 不符即拒绝。
+
+可信父界面显示提案并单独取得世界书写入确认后，调用 `commit({proposalId,expectedRevision,operationId,sourceIdentity,reviewed:true,write:true})`。这不复用 MVU 变量授权；guest VM 只能请求受控 opening ID 和等待回执，不能获得确认动作、来源文本读取、fetch 或任意 Host 调用。提案最多 64 项、10 分钟有效，来源/选择 ABA/会话实例/卸载变化撤销。变更经 CAS 后原子保存，会话资源的 operationId 重试返回原回执，冲突重用拒绝；空跳过不创建资源，空回执仅在本次 Host 生命周期内可重试。
+
+回执为 `{ok:true,inserted,existing,updated,targetWorldbook,method:'session-local',receiptId,resourceId,revision}`，空选择另有 `skipped:true` 与 `resourceId:null`。书仅写入插件的会话专属存储，原卡、全局书和全局绑定保持原值。资源 ID 为 `world-book:session-opening-<digest>`，在 `tavernMemorySources` 世界书 adapter 下仅对该 session scope 可读/列出。当前选择匹配时由原生世界书激活链处理关键词、启用、概率、预算和位置；转为 managed 后需要原有当前 manager retrieve 策略，缺 manager/deny 拒绝装配，不因写入回执自动授权 prompt 使用。回执证明本地提交，不证明模型发送或 provider 接收。
 
 ## 桌面请求令牌
 

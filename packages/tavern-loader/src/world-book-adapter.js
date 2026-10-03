@@ -66,7 +66,8 @@ function projectBook(document, context, options) {
     resource: {
       id: document.id,
       name: document.name,
-      kind: 'standalone-world-book',
+      kind: document.ownerSessionId ? 'session-opening-book' : 'standalone-world-book',
+      ...(document.ownerSessionId ? { ownerSessionId: document.ownerSessionId, ownerCharacterId: document.ownerCharacterId } : {}),
       updatedAt: document.updatedAt,
       revision: createHash('sha256').update(JSON.stringify(document)).digest('hex'),
       bindingSources: Array.isArray(context.bindingSources) ? [...context.bindingSources] : ['session'],
@@ -104,6 +105,7 @@ export function createWorldBookAdapter(storeOrOptions = {}, maybeOptions = {}) {
       activationContext = null,
       requestAssembly = false,
       agent,
+      sessionId = agent?.id ?? null,
     } = {}) {
       const results = []
       const diagnostics = []
@@ -146,7 +148,7 @@ export function createWorldBookAdapter(storeOrOptions = {}, maybeOptions = {}) {
               diagnostics.push({ code: 'WORLD_BOOK_MANAGED_REQUIRES_ASSEMBLY', severity: 'warning', resourceId: id, message: 'Managed world book requires request assembly and a current manager policy.' })
               continue
             }
-            const document = store.get(id)
+            const document = options.resolveDocument ? options.resolveDocument(id, { sessionId }) : store.get(id)
             if (!reserve(document.book, id)) continue
             const bindingSources = [
               ...(worldBookSelection?.explicitIds?.includes(id) ? ['session'] : []),
