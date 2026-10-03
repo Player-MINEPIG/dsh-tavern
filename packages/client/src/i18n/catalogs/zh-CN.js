@@ -89,6 +89,8 @@ export default Object.freeze({
   "appearance.resetPlaythrough": "此周目全部恢复资源默认图",
   "appearance.close": "关闭",
   "appearance.card": "受限交互卡",
+  "appearance.imageUnavailable": "图片暂不可用",
+  "appearance.imageStatus": "图片：可见 {visible} · 已显示 {loaded} · 加载中 {loading} · 不可用 {failed}",
   "appearance.scriptsOff": "脚本尚未启用，或消息仍在生成。当前显示静态内容。",
   "rendering.writeTitle": "变量写入权限",
   "rendering.writeBoundary": "默认不允许写入。先核对当前卡片完整执行代码，再单独授权此绑定。历史作用域仍只读，每次写入还须通过 MVU 和 manager 策略。撤销、重挂或代码变化均丢弃此权限。",

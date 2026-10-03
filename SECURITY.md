@@ -21,7 +21,7 @@
 - 请求体、资源、结构、Trace、持久状态和扮演工作区文件均有明确上限。
 - LaTeX 在本地用 KaTeX 转为 MathML，再经 DOMPurify 净化；`trust: false` 禁用公式中需要显式授权的外部资源和 HTML 扩展命令（如 `\includegraphics`、`\href`、`\htmlStyle`），拒绝 `annotation-xml`，宏定义不跨公式共享。限制公式长度、宏展开与用户指定尺寸，错误回退为转义源码；这些上限不能消除浏览器布局或依赖漏洞的风险。公式不加载远程字体或脚本，也不执行 LaTeX 文件/系统命令。
 - 扮演工作区使用安全相对路径、逐段链接/reparse 检查、根目录复核、排他临时文件、原子替换和 revision/CAS。
-- 静态富文本经过 DOMPurify 与 Shadow DOM/绘制隔离；禁止自动外部资源，栅格图片限有界 data URI，外部链接需点击且带 `noopener noreferrer`。可选交互卡片在禁脚本 iframe 呈现净化 HTML，在有配额的 QuickJS 中执行 JS，仅开放卡片局部 JSON DOM 桥和卡片外的消息确认。见[边界与限制](docs/CONVERSATION_PRESENTATION.md)。
+- 静态富文本经过 DOMPurify 与 Shadow DOM/绘制隔离；实时图片由可信父页按可见性、CORS/无凭据/禁重定向及栅格预算获取，静态导出不加载远程图片；URL 检查不验证 DNS，图片服务器仍可见 IP/URL。iframe 与 QuickJS 不开放任意网络；外部链接需点击且带 `noopener noreferrer`。可选交互卡片在禁脚本 iframe 呈现净化 HTML，在有配额的 QuickJS 中执行 JS，仅开放卡片局部 JSON DOM 桥和卡片外的消息确认。见[边界与限制](docs/CONVERSATION_PRESENTATION.md)。
 - 生命周期日志输出到 Host `ctx.logger` 及 Tavern 的有界 `operation-logs/` journal（最多 4 MiB，可通过 `operationLogs.enabled=false` 禁用持久层）。字段使用白名单和长度上限；持久层还排除路径，不记录提示词、用户消息、模型回复、资源正文、正文长度、摘要或异常 message/stack/cause。查询和分页导出继承 Tavern API 安全边界；无浏览器日志上报。会话与操作标识仍可能敏感，公开前须检查。
 - 正式仓库与发布包不得包含真实开发机路径、用户名、临时下载路径、私有 fixture、导入资源或密钥。文档中的路径只能使用明确的通用占位符。
 

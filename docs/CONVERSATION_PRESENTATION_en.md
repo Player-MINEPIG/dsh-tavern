@@ -64,7 +64,7 @@ Name: 1–80 characters. Colors: six-digit `#RRGGBB`. Integer pixels: radius 0�
 
 ## Three boundaries and implementation choice
 
-1. **Static content:** Markdown passes DOMPurify, with Shadow DOM and paint containment for styles. Automatic external resources are disabled: images require bounded raster data URIs; srcset/poster and similar attributes are removed. CSS blocks/inline styles containing resource functions (url/image/image-set/src), `@import`, or escapes are dropped entirely. Layout, colors, gradients, variables, media queries and animations work. External links require an explicit user click and use `noopener noreferrer`.
+1. **Static content:** Markdown passes DOMPurify, with Shadow DOM and paint containment for styles. Live `img` and CSS `background` / `background-image` (including image custom properties) use the demand media controller below. Importing does not download galleries; static HTML exports do not load remote images. srcset/poster are removed. Fonts, other external CSS resources, `@import`, image/image-set/src functions and escapes remain blocked. Layout, colors, gradients, variables, media queries and animations work. External links require a click and use `noopener noreferrer`.
 2. **Script execution:** closed `html` fences, unlabelled fences beginning with `<body>`/`<html>`, and complete `<html>…</html>`/`<body>…</body>` documents containing controls/scripts are recognized. Static DOM is presented in an iframe with `sandbox="allow-same-origin"` and no `allow-scripts`. CSP denies connections, external images, scripts, child frames and form submissions. Card JS runs in a separate QuickJS WASM interpreter, never in the iframe or parent browser realm. Neither iframe nor Shadow DOM alone is the full security boundary.
 3. **Capabilities:** a bounded JSON bridge permits card-local DOM operations, copied display names, and message proposals. There is no generic RPC, Host API, credential, filesystem, network, parent-page or native eval handle. Modules resolve only from resource-scoped downloaded content maps. Only an explicit click on the Tavern button outside the card sends a proposal through the existing user-message API.
 
@@ -81,7 +81,21 @@ flowchart LR
   D --> E[Display names]
   D --> F[Proposal outside card]
   F -->|User click| G[Existing Tavern API / DSH history]
+  A --> H[Inert image sources]
+  H --> I[Trusted visible fetch / validation / cache]
+  I --> B
 ```
+
+### Remote images on demand
+
+Media is separate from the script/import/`.loadHTML` dependency graph and its download progress. The trusted parent fetches images according to the actual viewport, collapsed/hidden content, iframe and document visibility. Media status separately counts visible, ready, loading and unavailable images. Closing, pausing, variant/session switching and unmounting release DOM images and cancel unused queued/in-flight requests; old generations cannot update a new view. URLs are deduplicated in a page-local LRU memory cache, without Host/resource writes, persistent browser storage or image URL logs.
+
+Static PNG/JPEG/WebP/GIF and bounded data URIs are supported. SVG, APNG/animated WebP/multiframe GIF, audio/video, fonts and file-input uploads are unsupported. Remote sources require absolute HTTPS named URLs without credentials or nondefault ports; IPs, local/private hostname forms, relative URLs and other protocols are rejected. URL checks do not verify DNS resolution and cannot guarantee protection against DNS rebinding. Browser CORS, `credentials: omit`, `referrerPolicy: no-referrer`, `redirect: error` and `cache: no-store` remain enabled. Login-dependent, redirecting or non-CORS image services produce placeholders. Servers can still see the client's IP and full requested URL, including query parameters.
+
+The page shares limits of 4 concurrent requests, 32 visible image leases, 64 cache entries and 32 MiB charged for data strings plus decoded pixels. Each image is limited to 2 MiB, 4194304 pixels, 8192 per edge and 15 seconds. Streamed bytes and headers/dimensions are checked before decoding; decoded dimensions are verified and pixels are reencoded as PNG. Limit/format/network failures show placeholders; visible images waiting for the global quota retry when it is released. img elements without dimensions use a 160×90 placeholder layout. These budgets do not fully cover temporary browser decoding, layout or engine vulnerabilities.
+
+Cards can express displayed images through their limited DOM, but cannot call generic fetch or read HTTP responses. The iframe retains `img-src data:` and `connect-src 'none'`; QuickJS/Worker receives no arbitrary network, Host or credential authority. Only the trusted parent injects validated raster pixels into the view. CSS image URLs become inert placeholders and fetch only when used in an actual background; unused custom properties do not download. Inert templates may retain sanitized SUOT data markers, which are unwrapped outside templates; template scripts/event attributes never execute.
+
 
 ## Supported interfaces and limitations
 

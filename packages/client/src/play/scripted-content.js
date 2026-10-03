@@ -1,4 +1,5 @@
 import {cardViewport,cardRootPresentation,usesCardViewport} from './card-viewport.js'
+import { imageSource, stageImages, observeImages, imageCss, IMAGE_SOURCE_ATTRIBUTE } from './card-images.js'
 import {mvuBuiltin,confirmMvuSchemas} from './mvu-builtins.js'
 import {renderingWriteRequests} from './rendering-write-requests.js'
 import { createVirtualCardRuntime } from './card-worker-client.js'
@@ -14,14 +15,24 @@ import {createIdentityOpeningBridge} from './identity-opening-bridge.js'
 import {projectCardControlState} from './card-control-state.js'
 import { renderingTrust } from './rendering-trust.js'
 
-const TAGS = 'div span p br hr section article header footer main aside h1 h2 h3 h4 h5 h6 ul ol li dl dt dd b strong i em small pre code blockquote table thead tbody tr th td details summary button label input textarea select option output progress meter img style svg g path circle ellipse rect line polyline polygon defs linearGradient radialGradient stop clipPath title desc'.split(' ')
-const ATTRS = 'id class title style type value min max step checked disabled placeholder name rows cols open width height alt src for selected data-action data-dtv-node viewBox preserveAspectRatio d x y x1 y1 x2 y2 cx cy r rx ry points fill fill-rule fill-opacity stroke stroke-width stroke-linecap stroke-linejoin stroke-opacity transform opacity offset stop-color stop-opacity gradientUnits gradientTransform clip-path'.split(' ')
+const TAGS = 'template suot div span p br hr section article header footer main aside h1 h2 h3 h4 h5 h6 ul ol li dl dt dd b strong i em small pre code blockquote table thead tbody tr th td details summary button label input textarea select option output progress meter img style svg g path circle ellipse rect line polyline polygon defs linearGradient radialGradient stop clipPath title desc'.split(' ')
+const ATTRS = 'id class title style type value min max step checked disabled placeholder name rows cols open width height alt src for selected data-action data-dtv-node data-dtv-image-source viewBox preserveAspectRatio d x y x1 y1 x2 y2 cx cy r rx ry points fill fill-rule fill-opacity stroke stroke-width stroke-linecap stroke-linejoin stroke-opacity transform opacity offset stop-color stop-opacity gradientUnits gradientTransform clip-path'.split(' ')
 export const CARD_CSP = "default-src 'none'; script-src 'none'; style-src 'unsafe-inline'; img-src data:; font-src 'none'; connect-src 'none'; media-src 'none'; frame-src 'none'; object-src 'none'; base-uri 'none'; form-action 'none'"
-export function cleanCardHtml(html) {
+export function cleanCardHtml(html, { inertImages = false } = {}) {
   const template = document.createElement('template')
   template.innerHTML = DOMPurify.sanitize(html, { ALLOWED_TAGS: TAGS, ALLOWED_ATTR: ATTRS, ALLOW_DATA_ATTR: false, FORCE_BODY: true })
+  // SUOT is a data marker only inside inert template content. Templates keep
+  // their sanitized data for the virtual DOM; their scripts never become runs.
+  for (const marker of template.content.querySelectorAll('suot')) marker.replaceWith(...marker.childNodes)
   for (const input of template.content.querySelectorAll('input')) if (!['text','number','range','checkbox','radio','color','button'].includes(input.type)) input.setAttribute('type','text')
-  for (const image of template.content.querySelectorAll('img')) if (!/^data:image\/(png|jpeg|webp);base64,[A-Za-z0-9+/]+=*$/.test(image.getAttribute('src') ?? '')) image.removeAttribute('src')
+  for (const image of template.content.querySelectorAll('img')) {
+    const source = imageSource(image.getAttribute('src') ?? image.getAttribute(IMAGE_SOURCE_ATTRIBUTE))
+    image.removeAttribute('src'); image.removeAttribute(IMAGE_SOURCE_ATTRIBUTE)
+    if (source) image.setAttribute('src', source)
+  }
+  for (const element of template.content.querySelectorAll('[style]')) element.setAttribute('style',imageCss(element.getAttribute('style')))
+  for (const style of template.content.querySelectorAll('style')) style.textContent=imageCss(style.textContent)
+  if (inertImages) stageImages(template.content)
   return template.innerHTML
 }
 export function splitCards(text) {
@@ -178,7 +189,7 @@ export function createDomBridge(doc, context, onProposal, onError, helperBinding
     if (op === 'context') return structuredClone(context)
     if (op === 'propose') { onProposal(bounded(args[0], 4000)); return }
     if (op === 'byId') return nodeId([...doc.body.querySelectorAll('[id]')].find(el => el.id === bounded(args[0])))
-    if (op === 'create') { const tag = bounded(args[0]); if (!TAGS.includes(tag) || ['style','img','input'].includes(tag)) throw new Error('Unsupported element'); return nodeId(doc.createElement(tag)) }
+    if (op === 'create') { const tag = bounded(args[0]); if (!TAGS.includes(tag) || ['style','img','input','template','suot'].includes(tag)) throw new Error('Unsupported element'); return nodeId(doc.createElement(tag)) }
     const el = node(args[0])
     switch (op) {
       case 'query': return nodeId(el.querySelector(bounded(args[1])))
@@ -187,7 +198,7 @@ export function createDomBridge(doc, context, onProposal, onError, helperBinding
       case 'set': {
         if (!['textContent','innerHTML','value','checked'].includes(args[1])) break
         const value = args[1] === 'checked' ? args[2] === true : bounded(args[2], 64 * 1024)
-        el[args[1]] = args[1] === 'innerHTML' ? cleanCardHtml(value) : value
+        el[args[1]] = args[1] === 'innerHTML' ? cleanCardHtml(value, {inertImages:true}) : value
         if (doc.body.querySelectorAll('*').length > 2048) throw new Error('Card DOM limit exceeded')
         return
       }
@@ -195,7 +206,7 @@ export function createDomBridge(doc, context, onProposal, onError, helperBinding
       case 'getAttribute': return el.getAttribute(bounded(args[1]))
       case 'append': el.appendChild(node(args[1])); return
       case 'remove': if (el === doc.body) throw new Error('Cannot remove card root'); el.remove(); return
-      case 'style': el.style.setProperty(bounded(args[1]),bounded(args[2],1000)); return
+      case 'style': {const property=bounded(args[1]),value=imageCss(`${property}:${bounded(args[2],1000)}`);el.style.setProperty(property,value?value.slice(value.indexOf(':')+1):'');return}
       case 'class': if (!['add','remove','toggle'].includes(args[1])) break; return el.classList[args[1]](bounded(args[2]))
       case 'listen': {
         if (!['click','input','change'].includes(args[1]) || !Number.isInteger(args[2]) || disposers.length >= 256) throw new Error('Unsupported event or listener limit exceeded')
@@ -214,6 +225,7 @@ const InteractiveCard = memo(function InteractiveCard({ source, enabled, scopeKe
   const [trustRevision,setTrustRevision]=useState(renderingTrust.revision)
   useEffect(()=>renderingTrust.subscribe(()=>{generation.current++;cleanup.current();setTrustRevision(renderingTrust.revision())}),[])
   const [audit,setAudit]=useState(null),[paused,setPaused]=useState(false),[restart,setRestart]=useState(0),[viewportLayout,setViewportLayout]=useState(false)
+  const [media,setMedia]=useState(null)
   const [error,setError]=useState(''), [proposal,setProposal]=useState(''), [sending,setSending]=useState(false)
   const [openingProposal,setOpeningProposal]=useState(null),[openingProgress,setOpeningProgress]=useState('')
   const openingBridge=useRef(null)
@@ -221,19 +233,19 @@ const InteractiveCard = memo(function InteractiveCard({ source, enabled, scopeKe
     if (source.length > 128 * 1024) return { html: '', scripts: [], unsupported: ['Card exceeds 128K characters'] }
     try { return enabled?prepareCardDocument(source,owners,helpers):cardDocument(source) } catch(error) { try{return {...cardDocument(source),unsupported:[error.message]}}catch{return {html:'',scripts:[],unsupported:[error.message]}} }
   }, [source,enabled,trustRevision,JSON.stringify(owners),JSON.stringify(helpers)])
-  const srcDoc = `<!doctype html><html><head><meta http-equiv="Content-Security-Policy" content="${CARD_CSP}"><style>body{margin:12px;font:14px system-ui;color:#243042;background:#fff}*{box-sizing:border-box}img{max-width:100%}button,input,select,textarea{font:inherit}button{cursor:pointer}</style></head><body>${data.html}</body></html>`
-  useLayoutEffect(()=>{setProposal('');setError('');setAudit(null);setOpeningProposal(null);setOpeningProgress('');return()=>{generation.current++;cleanup.current()}},[source,enabled,scopeKey,trustRevision,data,paused,restart,JSON.stringify(openingBinding)])
+  const srcDoc = `<!doctype html><html><head><meta http-equiv="Content-Security-Policy" content="${CARD_CSP}"><style>body{margin:12px;font:14px system-ui;color:#243042;background:#fff}*{box-sizing:border-box}img{max-width:100%}button,input,select,textarea{font:inherit}button{cursor:pointer}</style></head><body>${cleanCardHtml(data.html,{inertImages:true})}</body></html>`
+  useLayoutEffect(()=>{setProposal('');setError('');setAudit(null);setMedia(null);setOpeningProposal(null);setOpeningProgress('');return()=>{generation.current++;cleanup.current()}},[source,enabled,scopeKey,trustRevision,data,paused,restart,JSON.stringify(openingBinding)])
   async function load() {
     const current=++generation.current; cleanup.current(); setError(''); setProposal('')
     const doc=frame.current?.contentDocument
     if (!doc) { setError('Card document unavailable'); return }
     const ownFrame=frame.current
     const initialRoot=cardRootPresentation(data.root)
-    const projectRoot=root=>{for(const [key,node] of [['html',doc.documentElement],['body',doc.body]]){node.setAttribute('class',root[key].className);node.setAttribute('style',root[key].style)}}
+    const projectRoot=root=>{for(const [key,node] of [['html',doc.documentElement],['body',doc.body]]){node.setAttribute('class',root[key].className);node.setAttribute('style',imageCss(root[key].style))}}
     projectRoot(initialRoot)
     let viewportMode=usesCardViewport(data.html,'',initialRoot),viewportFrame=0,lastViewport
     const controller=new AbortController()
-    let dom, binding, virtualRuntime, stopVariables, removeEvents=()=>{},writeRequest,writeBinding,writeLoading,writeController,writeEpoch=0,cardStorage
+    let images, dom, binding, virtualRuntime, stopVariables, removeEvents=()=>{},writeRequest,writeBinding,writeLoading,writeController,writeEpoch=0,cardStorage
     const applyViewportMode=()=>{ownFrame.parentElement.setAttribute('data-dtv-viewport',String(viewportMode));setViewportLayout(viewportMode)}
     applyViewportMode()
     const readViewport=()=>cardViewport({width:ownFrame.clientWidth,height:ownFrame.clientHeight})
@@ -260,7 +272,8 @@ const InteractiveCard = memo(function InteractiveCard({ source, enabled, scopeKe
       }).catch(()=>{})
     }
     let cleaned=false
-    cleanup.current=()=>{if(cleaned)return;cleaned=true;controller.abort();openingBridge.current?.dispose();openingBridge.current=null;observer.disconnect();cancelAnimationFrame(viewportFrame);viewportFrame=0;dom?.destroy();virtualRuntime?.dispose();cardStorage?.dispose();stopVariables?.();removeEvents();binding?.dispose();writeRequest?.dispose();revokeWrites()}
+    cleanup.current=()=>{if(cleaned)return;cleaned=true;controller.abort();openingBridge.current?.dispose();openingBridge.current=null;observer.disconnect();images?.dispose();cancelAnimationFrame(viewportFrame);viewportFrame=0;dom?.destroy();virtualRuntime?.dispose();cardStorage?.dispose();stopVariables?.();removeEvents();binding?.dispose();writeRequest?.dispose();revokeWrites()}
+    if (!paused) images=observeImages(doc.body,{frame:frame.current,unavailable:translate('appearance.imageUnavailable'),onStatus:value=>{if(!cleaned&&current===generation.current)setMedia(value)}})
     if (!enabled || paused || data.unsupported.length) return
     if (doc.body.querySelectorAll('*').length > 2048) { setError('Card DOM limit exceeded'); return }
     try {
@@ -296,7 +309,7 @@ const InteractiveCard = memo(function InteractiveCard({ source, enabled, scopeKe
             }
             // Parse inertly under the byte limit. The trusted receiver counts the
             // sanitized structure before adopting anything into the layout DOM.
-            const template=doc.createElement('template');template.innerHTML=cleanCardHtml(view.html)
+            const template=doc.createElement('template');template.innerHTML=cleanCardHtml(view.html,{inertImages:true})
             const nodes=new Map([[0,doc.documentElement],[view.bodyId,doc.body]])
             const walker=doc.createTreeWalker(template.content,0xffffffff);let count=1,node
             while((node=walker.nextNode())){
@@ -310,11 +323,12 @@ const InteractiveCard = memo(function InteractiveCard({ source, enabled, scopeKe
             }
             if(targetId!==undefined&&!nodes.has(targetId))throw Error('Layout target is not in this card')
             projectCardControlState(view.controls,nodes)
-            const style=doc.createElement('style');style.textContent=view.styles
+            const style=doc.createElement('style');style.textContent=imageCss(view.styles)
             const focused=doc.activeElement,id=focused?.dataset?.dtvNode,selection=[focused?.selectionStart,focused?.selectionEnd],scroll=[doc.documentElement.scrollLeft,doc.documentElement.scrollTop]
-            projectRoot(root);viewportMode=usesCardViewport(view.html,view.styles,root);applyViewportMode()
+            projectRoot(root);images?.refresh();viewportMode=usesCardViewport(view.html,view.styles,root);applyViewportMode()
             doc.body.replaceChildren(template.content,style)
             doc.body.setAttribute('data-dtv-node',String(view.bodyId))
+            images?.refresh()
             acceptedView={html:view.html,styles:view.styles,bodyId:view.bodyId,rootKey,controlsKey,nodes}
             if(id){const restored=nodes.get(Number(id));restored?.focus();if(typeof selection[0]==='number')try{restored.setSelectionRange(...selection)}catch{}}
             doc.documentElement.scrollLeft=scroll[0];doc.documentElement.scrollTop=scroll[1];resize()
@@ -376,6 +390,7 @@ const InteractiveCard = memo(function InteractiveCard({ source, enabled, scopeKe
     !enabled && data.scripts.length ? h('small',null,translate('appearance.scriptsOff')):null,
     data.unsupported.length ? h('p',{role:'alert'},data.unsupported.map(reason => reason.startsWith('appearance.') ? translate(reason) : reason).join(' ') + ' ' + translate('appearance.cardStaticFallback')):null,
     error ? h('p',{role:'alert'},error):null,
+    media?.total ? h('small',{className:'dtv-card-media',role:'status'},translate('appearance.imageStatus',{visible:media.visible,loaded:media.loaded,loading:media.loading+media.queued,failed:media.failed})):null,
     audit ? h('details',{className:'dtv-card-audit'},h('summary',null,translate('appearance.runtimeEvidence')),h('pre',{style:{whiteSpace:'pre-wrap',overflowWrap:'anywhere'}},JSON.stringify(audit,null,2))):null,
     openingProgress?h('p',{role:'status'},translate('appearance.openingProgress')):null,
     openingProposal?h('section',{className:'dtv-card-opening-proposal',style:{border:'1px solid currentColor',padding:10,marginTop:8}},

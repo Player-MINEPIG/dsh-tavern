@@ -89,6 +89,8 @@ export default Object.freeze({
   "appearance.resetPlaythrough": "Restore resource defaults for this role throughout this playthrough",
   "appearance.close": "Close",
   "appearance.card": "Restricted interactive card",
+  "appearance.imageUnavailable": "Image unavailable",
+  "appearance.imageStatus": "Images: {visible} visible · {loaded} ready · {loading} loading · {failed} unavailable",
   "appearance.scriptsOff": "Scripts are disabled or the message is still streaming. Showing static content.",
   "rendering.writeTitle": "Variable write permissions",
   "rendering.writeBoundary": "Writes default off. Review the complete active card bundle, then separately authorize this exact binding. Historical scopes remain read-only; MVU and manager policies must also allow each write. Revoking, remounting or changing code discards this permission.",

@@ -61,7 +61,7 @@ flowchart LR
 
 ## 三种边界与方案选择
 
-1. **静态内容**：Markdown → DOMPurify；样式在 Shadow DOM 与绘制边界内隔离。外部自动资源不开放：图片只接受有界 PNG/JPEG/WebP data URI，移除 srcset、poster 等；含 URL、image/image-set/src 函数、`@import` 或转义的 CSS 块/内联样式整体丢弃。正常布局、颜色、渐变、变量、媒体查询和动画可用。外链需用户主动点击，带 `noopener noreferrer`。
+1. **静态内容**：Markdown → DOMPurify；样式在 Shadow DOM 与绘制边界内隔离。实时视图的 `img` 与 CSS `background` / `background-image`（包括图片自定义变量）经过下述按需媒体控制器；导入不下载图库，静态 HTML 导出不加载远程图片。移除 srcset、poster 等；字体、其他 CSS 外部资源、`@import`、image/image-set/src 函数和转义仍拒绝。正常布局、颜色、渐变、变量、媒体查询和动画可用。外链需用户主动点击，带 `noopener noreferrer`。
 2. **脚本环境**：识别已闭合 `html` 围栏、无语言但以 `<body>`/`<html>` 开头的围栏，以及完整 `<html>…</html>`/`<body>…</body>` 中的控件或脚本。静态 DOM 在 `sandbox="allow-same-origin"`、无 `allow-scripts` 的 iframe 内呈现，CSP 禁止连接、外部图片、脚本、子 frame、表单提交等。卡片 JS 在独立 QuickJS WASM 中运行，不在 iframe 或父页面执行。iframe/Shadow DOM 本身不承担完整权限保证。
 3. **能力接口**：唯一的 JSON bridge 白名单提供卡片内部 DOM 与只读姓名上下文，以及“建议消息”。没有通用 RPC、Host API、凭据、文件、网络、父页面或 native eval 入口；模块仅从资源限定的已下载内容映射解析。建议只在卡片外显示，必须经用户点击 Tavern 按钮才调用已有 `user-message` API。
 
@@ -78,7 +78,21 @@ flowchart LR
   D --> E[姓名上下文]
   D --> F[卡片外消息建议]
   F -->|用户点击| G[已有 Tavern API / DSH 历史]
+  A --> H[惰性图片来源]
+  H --> I[可信宿主按可见性获取 / 校验 / 缓存]
+  I --> B
 ```
+
+### 远程图片按需加载
+
+媒体不计入代码的 script/import/`.loadHTML` 依赖图或下载进度。可信父页根据实际视口、折叠、隐藏、iframe 和页面可见性获取图片；图片状态单独显示可见、已显示、加载中与不可用数量。关闭、暂停、变体/会话切换及卸载会释放 DOM 图片并取消无人使用的队列/请求，旧代次结果不能覆盖新界面。同一 URL 去重；页面内存缓存采用 LRU，不写 Host、资源文件、浏览器持久存储或图片 URL 日志。
+
+支持静态 PNG/JPEG/WebP/GIF，以及同类有界 data URI；拒绝 SVG、APNG/动画 WebP/多帧 GIF、音视频、字体与文件输入上传。远程来源必须为无凭据、无非默认端口的绝对 HTTPS 命名 URL；拒绝 IP、本机/私网形式的主机名、相对 URL及其他协议。URL 形式检查不核验 DNS 结果，不能保证阻止 DNS 重绑定。浏览器 CORS、`credentials: omit`、`referrerPolicy: no-referrer`、`redirect: error`、`cache: no-store` 保持生效；不支持需要登录、重定向或缺少 CORS 的图片服务。图片服务器仍可看到客户端 IP 和 URL，URL 中的查询参数也会发送给该服务器。
+
+页面共享最多 4 个并发请求、32 个可见图片租约、64 个缓存项与 32 MiB（数据字符串和解码像素合计）；单图最多 2 MiB、4194304 像素、边长 8192 与 15 秒。先校验流式字节与文件头/尺寸，再解码、复核并重编码为 PNG；超限/格式/网络错误显示占位，等待全局额度的可见图片会在额度释放后重试。尚无尺寸声明的 img 使用 160×90 占位布局。浏览器临时解码、布局及引擎漏洞不由这些预算完全约束。
+
+卡片可以通过受限 DOM 表达要显示的图片，不能调用通用 fetch 或读取 HTTP 响应。iframe 仍仅允许 `img-src data:`、`connect-src 'none'`，QuickJS/Worker 没有任意网络、Host 或凭据权限；只有可信宿主把校验后的栅格注入实际视图。CSS 图片 URL 转为惰性占位，只有在实际背景中使用才获取；未使用的自定义变量不会下载。惰性 `template` 可保留净化后的 SUOT 数据标记，标记在模板外会被展开为内容；模板脚本和事件属性不执行。
+
 
 ## 支持接口与限制
 

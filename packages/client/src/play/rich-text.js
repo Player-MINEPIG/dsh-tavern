@@ -1,7 +1,9 @@
+import { translate } from '../i18n.js'
+import { stageImages, observeImages } from './card-images.js'
 import { restrictStaticResources } from './static-resources.js'
 import DOMPurifyFactory from 'dompurify'
 import { Marked } from 'marked'
-import { createElement, memo } from 'react'
+import { createElement, memo, useLayoutEffect, useRef } from 'react'
 import { isolateHtmlDocuments, isolateStyledHtml, mountStyledHtml } from './rich-text-styles.js'
 import { mathExtension } from './math.js'
 
@@ -200,6 +202,7 @@ export function sanitizeRenderedHtml(html, {
   purifier = browserPurifier(),
   documentObject = globalThis.document,
   isolateStyles = false,
+  liveImages = false,
 } = {}) {
   if (purifier === null || typeof purifier?.sanitize !== 'function') return escapeHtml(html)
   const canIsolate = isolateStyles && typeof documentObject?.createElement === 'function'
@@ -218,7 +221,8 @@ export function sanitizeRenderedHtml(html, {
     element.removeAttribute('data-dtv-style-boundary')
     element.removeAttribute('data-dtv-style-root')
   }
-  restrictStaticResources(template.content)
+  if (liveImages) stageImages(template.content)
+  restrictStaticResources(template.content,{liveImages})
   for (const link of template.content.querySelectorAll('a[href]')) {
     const href = link.getAttribute('href') ?? ''
     if (href.startsWith('#')) continue
@@ -239,10 +243,12 @@ export function renderRichTextHtml(text, options) {
 // Stream updates rerender the conversation; unchanged messages must not repeat
 // Markdown parsing, sanitization, or shadow-template traversal on every chunk.
 export const RichText = memo(function RichText({ text, className }) {
+  const element = useRef(null)
+  useLayoutEffect(()=>{mountStyledHtml(element.current);const media=observeImages(element.current,{unavailable:translate('appearance.imageUnavailable')});return()=>media.dispose()},[text])
   return createElement('div', {
     className,
     'data-dtv-rich-text': '',
-    ref: element => mountStyledHtml(element),
-    dangerouslySetInnerHTML: { __html: renderRichTextHtml(text) },
+    ref: element,
+    dangerouslySetInnerHTML: { __html: renderRichTextHtml(text,{liveImages:true}) },
   })
 })

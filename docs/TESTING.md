@@ -138,3 +138,5 @@ Worker 框架验证使用 `node scripts/verify-card-worker-browser.mjs`，`TAVER
 变量写桥使用 `TAVERN_WORKER_FIXTURE=scripts/fixtures/card-write-browser.js node scripts/verify-card-worker-browser.mjs`。该夹具通过 CDP 实际鼠标输入验证 isTrusted cause，并以合成事务验证默认拒绝、完整代码审核/独立授权、patch/replace、CAS、事件、伪造 scope、撤销/卸载和 interval。`test/rendering-authority.test.mjs` 验证 Host 摘要/作用域/期限/撤销及安全路由；真实 MVU source+manager 持久提交链仍需在整合环境验收。
 
 脚本列表启用选择使用 `node --test test/script-enablement.test.mjs` 检查原卡默认、稳定身份、持久化、恢复默认、工作区隔离和惰性规范化。`node scripts/verify-script-list-browser.mjs` 在独立 Chrome 配置中只运行自写合成源码，验证启用与审核分离、禁用销毁、撤销、源码变化和作用域重挂。在隔离 Host 中另验完整源码有界滚动、窄屏布局、保存失败、刷新、外观重置保留脚本选择，以及 Host 提示的键盘/触屏行为。
+
+按需媒体运行 `node --test test/card-images.test.mjs` 和 `TAVERN_BROWSER_TOOLS_ROOT=<含 playwright 的工具目录> node scripts/verify-card-images-browser.mjs`。独立 Chrome 使用自写 6000 URL 与模拟栅格响应，验证导入/折叠零请求、实际滚动/移动视口、四并发、缓存复用、CSS 背景自定义变量、错误占位、代次取消、卸载、CSP 与惰性模板净化；像素截图和报告默认存于 `.local/card-images-browser/`。它不下载真实图库。完整隔离 Host 中继续检查实际 RP 开场白、媒体状态、原生切换及目标桌面应用；移动视口不是实体移动设备或官方桌面发行包验收。
