@@ -10,6 +10,7 @@ export function createRenderingTrust({builtin=mvuBuiltin,candidates=MVU_BUILTINS
   const installs = new Map(), records = new Map(), intentions = new Map(), adapters = new Map(), listeners = new Set()
   let revision = 0, generation = 0
   let inactiveBytes=()=>0
+  let cacheReady=async()=>{}
   const emit = () => { revision++; for (const listener of listeners) listener() }
   const keyFor = (owner, source) => JSON.stringify([owner,source])
   const reserveRecords=values=>{
@@ -26,7 +27,7 @@ export function createRenderingTrust({builtin=mvuBuiltin,candidates=MVU_BUILTINS
   }
   return {
     cacheBudget:budget,
-    accountInactive(callback){const previous=inactiveBytes;inactiveBytes=callback??(()=>0);try{reserveRecords([...records.values()])}catch(error){inactiveBytes=previous;throw error}},
+    accountInactive(callback,ready){const previous=inactiveBytes,previousReady=cacheReady;inactiveBytes=callback??(()=>0);cacheReady=ready??(async()=>{});try{reserveRecords([...records.values()])}catch(error){inactiveBytes=previous;cacheReady=previousReady;throw error}},
     reaccount(){reserveRecords([...records.values()])},
     revision: () => revision,
     subscribe(listener) { listeners.add(listener); return () => listeners.delete(listener) },
@@ -65,6 +66,7 @@ export function createRenderingTrust({builtin=mvuBuiltin,candidates=MVU_BUILTINS
       if (source.startsWith('https:') && externalUrl(source) !== source) throw Error('Unsupported dependency URL')
       const key = keyFor(owner,source), ticket = {}, epoch = generation
       const ownerTicket=installs.get(owner)
+      await cacheReady()
       await budget.ready()
       if(generation!==epoch||installs.get(owner)!==ownerTicket)throw Error('Rendering review was cancelled')
       if (!records.has(key) && records.size >= RENDERING_CACHE_LIMITS.count) throw Error('Rendering source count exceeds limit')
@@ -82,6 +84,7 @@ export function createRenderingTrust({builtin=mvuBuiltin,candidates=MVU_BUILTINS
     async prepare(owner, items) {
       if(!Array.isArray(items)||items.length>DEPENDENCY_LIMITS.count||items.reduce((sum,item)=>sum+new TextEncoder().encode(item.content??'').byteLength,0)>DEPENDENCY_LIMITS.bytes)throw Error('Rendering dependency graph exceeds limit')
       const epoch=generation,ticket={};installs.set(owner,ticket)
+      await cacheReady()
       await budget.ready()
       if(epoch!==generation||installs.get(owner)!==ticket)throw Error('Dependency installation cancelled')
       const next=await Promise.all(items.map(async item=>{

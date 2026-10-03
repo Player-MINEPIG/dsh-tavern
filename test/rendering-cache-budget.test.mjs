@@ -23,5 +23,7 @@ test('cold-cache accounting waits for registered initialization without retainin
  await Promise.resolve();assert.equal(settled,false)
  finish();await ready;assert.equal(budget.snapshot().total,95)
  budget.trackInitialization('failed-cold-read',Promise.reject(Error('fixture unavailable')))
+ await assert.rejects(()=>budget.ready(),/fixture unavailable/);assert.equal(budget.snapshot().total,95)
+ budget.trackInitialization('failed-cold-read',Promise.resolve())
  await budget.ready();assert.equal(budget.snapshot().total,95)
 })

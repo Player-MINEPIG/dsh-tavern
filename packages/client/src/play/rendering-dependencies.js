@@ -146,7 +146,7 @@ export function dependencyStore(indexedDB = globalThis.indexedDB) {
 
 export function createRenderingDependencies({trust=renderingTrust,store=dependencyStore(),download=downloadRenderingSource,limits=DEPENDENCY_LIMITS,timeout=15000,channelFactory=()=>typeof window!=='undefined'&&typeof BroadcastChannel!=='undefined'?new BroadcastChannel('dtv-rendering-dependencies'):null}={}) {
   const states=new Map(),listeners=new Set(),cachedOwners=new Map(),cacheGenerations=new Map()
-  let channel,disposed=false
+  let channel,disposed=false,accounted=false,initializing=null
   const account=records=>{
     let bytes=0
     for(const [owner,items] of cachedOwners)for(const item of items){
@@ -154,7 +154,7 @@ export function createRenderingDependencies({trust=renderingTrust,store=dependen
     }
     return bytes
   }
-  trust.accountInactive?.(account)
+  trust.accountInactive?.(account,ensureCacheAccounted)
   const cacheItems=graph=>{
     if(!graph)return []
     if(!Array.isArray(graph.items)||graph.items.length>MAX_DEPENDENCY_IDENTITIES||graph.retained!==undefined&&(!Array.isArray(graph.retained)||graph.retained.length>RENDERING_CACHE_LIMITS.count))throw Error('Invalid dependency cache size')
@@ -174,9 +174,32 @@ export function createRenderingDependencies({trust=renderingTrust,store=dependen
     const previous=cachedOwners.get(owner);cachedOwners.set(owner,cacheItems(graph))
     try{trust.reaccount?.();cacheGenerations.set(owner,generation)}catch(error){if(previous)cachedOwners.set(owner,previous);else cachedOwners.delete(owner);throw error}
   }
-  const initialCache=store.list?store.list().then(async saved=>{await trust.cacheBudget?.ready();if(disposed)return;for(const entry of saved)remember(entry.owner,entry.graph,entry.generation)}):Promise.resolve()
-  // Do not leave an unhandled rejection before the first inventory sync.
-  initialCache.catch(()=>{})
+  async function ensureCacheAccounted() {
+    await trust.cacheBudget?.ready()
+    if(disposed)throw Error('Dependency cache manager disposed')
+    if(accounted)return
+    if(!initializing)initializing=(async()=>{
+      const saved=store.list?await store.list():[]
+      await trust.cacheBudget?.ready()
+      if(disposed)throw Error('Dependency cache manager disposed')
+      const nextOwners=new Map(cachedOwners),nextGenerations=new Map(cacheGenerations)
+      for(const entry of saved){
+        if((entry.generation??0)<(nextGenerations.get(entry.owner)??0))continue
+        nextOwners.set(entry.owner,cacheItems(entry.graph));nextGenerations.set(entry.owner,entry.generation??0)
+      }
+      // Admit the whole persisted inventory atomically. A rejected owner must
+      // never disappear into a successful prefix and permit later execution.
+      const previous=new Map(cachedOwners)
+      cachedOwners.clear();for(const [owner,items] of nextOwners)cachedOwners.set(owner,items)
+      try{trust.reaccount?.()}catch(error){cachedOwners.clear();for(const [owner,items] of previous)cachedOwners.set(owner,items);throw error}
+      cacheGenerations.clear();for(const [owner,generation] of nextGenerations)cacheGenerations.set(owner,generation)
+      accounted=true
+    })().finally(()=>{initializing=null})
+    return initializing
+  }
+  // Eager reads are optional; every executable consumer awaits this retryable
+  // producer precondition. It is not registered with the barrier it awaits.
+  void ensureCacheAccounted().catch(()=>{})
   const emit=()=>{for(const listener of listeners)listener()}
   const current=state=>states.get(state.owner)===state
   const snapshot=state=>state?{...state,sources:undefined,controller:undefined,ready:undefined,cacheItems:undefined,items:state.items.map(item=>({...item}))}:null
@@ -257,13 +280,13 @@ export function createRenderingDependencies({trust=renderingTrust,store=dependen
     await Promise.all([...groups].map(async([owner,sources])=>{
       const signature=JSON.stringify([sources.map(source=>[source.key,source.content,source.enabled!==false,source.preferenceKey??null,source.enablementAmbiguous===true,source.kind??null]).sort((a,b)=>a[0].localeCompare(b[0])),trust.selection?.(owner)??{}])
       const previous=states.get(owner)
-      if(previous?.signature===signature)return previous.ready
+      if(previous?.signature===signature&&previous.status!=='failed')return previous.ready
       previous?.controller?.abort();trust.removeOwner(owner)
       const state={owner,signature,sources,status:'loading',...directGraph(sources,limits,trust),retained:[],cacheItems:previous?.cacheItems??[],fingerprint:null,error:null,cacheGeneration:0}
       states.set(owner,state);emit()
       state.ready=(async()=>{
         try{
-          await initialCache
+          await ensureCacheAccounted()
           state.fingerprint=await digest(signature)
           if(!current(state))return
           await restore(state,await store.get(owner))
@@ -273,6 +296,7 @@ export function createRenderingDependencies({trust=renderingTrust,store=dependen
     }))
   }
   async function acquire(owner) {
+    await ensureCacheAccounted()
     const previous=states.get(owner)
     if(previous)await sync(previous.sources,[owner])
     const original=states.get(owner)
@@ -350,6 +374,7 @@ export function createRenderingDependencies({trust=renderingTrust,store=dependen
     trust.removeOwner(owner);emit()
     try{
       const generation=await store.remove(owner)
+      accounted=false
       remember(owner,null,generation)
       if(state&&current(state)){state.cacheGeneration=generation;state.starting=false;if(state.refreshPending){state.refreshPending=false;await refresh(owner)}}
       broadcast(owner)
