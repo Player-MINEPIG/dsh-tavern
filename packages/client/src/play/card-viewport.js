@@ -17,3 +17,16 @@ export function usesCardViewport(html,styles,root) {
  const css=styles+' '+html+' '+root.html.style+' '+root.body.style
  return /(?:\d|\.)\s*(?:d|s|l)?v[wh]\b|\bposition\s*:\s*fixed\b/i.test(css)
 }
+
+// Only an explicitly marked Tavern opening pane with one viewport card opts in.
+// The frame's grid area, rather than a second independent vh height, owns sizing.
+export const OPENING_CARD_VIEWPORT_CSS = `
+.dtv-play-opening-body[data-dtv-card-viewport-boundary]:has(> .dtv-play-rich > .dtv-interactive-card[data-dtv-viewport="true"]:only-child){height:clamp(392px,75dvh,800px);max-height:none;min-height:0;padding:0;overflow:hidden;display:flex;flex-direction:column}
+.dtv-play-opening-body[data-dtv-card-viewport-boundary]:has(> .dtv-play-rich > .dtv-interactive-card[data-dtv-viewport="true"]:only-child)> .dtv-play-rich{flex:1;min-height:0;display:flex;flex-direction:column}
+.dtv-play-opening-body[data-dtv-card-viewport-boundary] > .dtv-play-rich > .dtv-interactive-card[data-dtv-viewport="true"]:only-child{flex:1;min-height:0;display:grid;grid-template-columns:minmax(0,auto) minmax(0,1fr) minmax(0,auto);grid-template-rows:minmax(0,1fr) auto;gap:4px;align-items:start}
+.dtv-play-opening-body[data-dtv-card-viewport-boundary] > .dtv-play-rich > .dtv-interactive-card[data-dtv-viewport="true"]:only-child > iframe{grid-row:1;grid-column:1/-1;min-height:0;min-width:0!important;height:100%;max-height:none;align-self:stretch;display:block}
+.dtv-play-opening-body[data-dtv-card-viewport-boundary] > .dtv-play-rich > .dtv-interactive-card[data-dtv-viewport="true"]:only-child > .dtv-card-runtime-controls{grid-row:2;grid-column:1;display:flex;flex-wrap:wrap;gap:4px}
+.dtv-play-opening-body[data-dtv-card-viewport-boundary] > .dtv-play-rich > .dtv-interactive-card[data-dtv-viewport="true"]:only-child > .dtv-card-media{grid-row:2;grid-column:2;min-width:0;font-size:11px;overflow-wrap:anywhere}
+.dtv-play-opening-body[data-dtv-card-viewport-boundary] > .dtv-play-rich > .dtv-interactive-card[data-dtv-viewport="true"]:only-child > .dtv-card-audit{grid-row:2;grid-column:3;min-width:0;max-width:180px;max-height:25dvh;overflow:auto;font-size:11px}
+.dtv-play-opening-body[data-dtv-card-viewport-boundary] > .dtv-play-rich > .dtv-interactive-card[data-dtv-viewport="true"]:only-child > :is([role="alert"],.dtv-card-proposal){grid-column:1/-1;max-height:25dvh;overflow:auto}
+`

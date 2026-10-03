@@ -176,3 +176,5 @@ click/input/change/key/pointer 事件复制为虚拟事件，输出净化后展�
 `quickjs-async-jobs.js` 是固定版本的内部 API 兼容层。0.31.0 的公开同步作业入口不适用于挂起的 Asyncify job；兼容层使用明确异步 C 包装，等待作业返回后才释放输出指针和值句柄。构建检查 core/variant 版本一致且均为 0.31.0，运行时检查所需符号；未知版本或缺失符号关闭该能力，不回退至同步 wrapper。升级 QuickJS 必须重新验证此处内部 API 耦合、嵌套 Promise、异常、取消、截止和恰一次释放。
 
 卡片 viewport 只提供只读的 `innerWidth/innerHeight`（同名全局属性亦可读），取自本卡 iframe 的实际内容尺寸，不提供 Host DOM、screen 或任意 Window API。宿主观察本卡尺寸变化，合并连续更新后在原串行解释器队列派发 `window` 的 `resize` 事件；该事件属于 script 原因，不提升为用户点击。切换、暂停、撤销与卸载会断开观察和待执行回调。html/body 的 class、内联样式（包括 CSS 变量）作为有界展示数据投影，其他根属性不在此接口内。包含固定定位或 viewport 单位的页面使用 `clamp(362px,75dvh,800px)` 卡片面板（含边框，内容高度至少 360px），iframe 内的 `dvh/vh` 与脚本尺寸都针对该面板；普通流式页面继续按内容高度展示，避免固定内容无法撑高 body 而缩到 100px。
+
+开场 dock 中，只有显式标记容器内的单张 viewport 卡会使用嵌入式布局：面板高 `clamp(392px,75dvh,800px)`，控制项位于紧凑栏，iframe 填满剩余网格区域。脚本仍读取 iframe 的实际尺寸；不再在 `45dvh` 的外层滚动窗口里独立放入更高的 iframe。普通开场文本、多卡布局与原生 Host 窗口保持原布局。窄屏时，源页面可在自己的滚动区域内响应较小尺寸；此接口不重写源页面的最小高度或响应式规则。

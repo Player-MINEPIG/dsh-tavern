@@ -213,7 +213,7 @@ const InteractiveCard = memo(function InteractiveCard({ source, enabled, scopeKe
   const frame = useRef(null), cleanup = useRef(()=>{}), generation=useRef(0)
   const [trustRevision,setTrustRevision]=useState(renderingTrust.revision)
   useEffect(()=>renderingTrust.subscribe(()=>{generation.current++;cleanup.current();setTrustRevision(renderingTrust.revision())}),[])
-  const [audit,setAudit]=useState(null),[paused,setPaused]=useState(false),[restart,setRestart]=useState(0)
+  const [audit,setAudit]=useState(null),[paused,setPaused]=useState(false),[restart,setRestart]=useState(0),[viewportLayout,setViewportLayout]=useState(false)
   const [error,setError]=useState(''), [proposal,setProposal]=useState(''), [sending,setSending]=useState(false)
   const [openingProposal,setOpeningProposal]=useState(null),[openingProgress,setOpeningProgress]=useState('')
   const openingBridge=useRef(null)
@@ -234,10 +234,14 @@ const InteractiveCard = memo(function InteractiveCard({ source, enabled, scopeKe
     let viewportMode=usesCardViewport(data.html,'',initialRoot),viewportFrame=0,lastViewport
     const controller=new AbortController()
     let dom, binding, virtualRuntime, stopVariables, removeEvents=()=>{},writeRequest,writeBinding,writeLoading,writeController,writeEpoch=0,cardStorage
+    const applyViewportMode=()=>{ownFrame.parentElement.setAttribute('data-dtv-viewport',String(viewportMode));setViewportLayout(viewportMode)}
+    applyViewportMode()
     const readViewport=()=>cardViewport({width:ownFrame.clientWidth,height:ownFrame.clientHeight})
     const resize=()=>{
       if(current!==generation.current||frame.current!==ownFrame||!ownFrame.isConnected)return
-      ownFrame.style.height=viewportMode?'clamp(362px,75dvh,800px)':`${Math.max(100,Math.min(800,doc.body.scrollHeight+24))}px`
+      const content=ownFrame.parentElement.parentElement,boundary=content.parentElement
+      const fillsOpening=viewportMode&&content.classList.contains('dtv-play-rich')&&content.children.length===1&&boundary?.matches('.dtv-play-opening-body[data-dtv-card-viewport-boundary]')
+      ownFrame.style.height=viewportMode?(fillsOpening?'100%':'clamp(362px,75dvh,800px)'):`${Math.max(100,Math.min(800,doc.body.scrollHeight+24))}px`
       if(!viewportFrame)viewportFrame=requestAnimationFrame(()=>{
         viewportFrame=0
         if(current!==generation.current||frame.current!==ownFrame||!ownFrame.isConnected||controller.signal.aborted)return
@@ -308,7 +312,7 @@ const InteractiveCard = memo(function InteractiveCard({ source, enabled, scopeKe
             projectCardControlState(view.controls,nodes)
             const style=doc.createElement('style');style.textContent=view.styles
             const focused=doc.activeElement,id=focused?.dataset?.dtvNode,selection=[focused?.selectionStart,focused?.selectionEnd],scroll=[doc.documentElement.scrollLeft,doc.documentElement.scrollTop]
-            projectRoot(root);viewportMode=usesCardViewport(view.html,view.styles,root)
+            projectRoot(root);viewportMode=usesCardViewport(view.html,view.styles,root);applyViewportMode()
             doc.body.replaceChildren(template.content,style)
             doc.body.setAttribute('data-dtv-node',String(view.bodyId))
             acceptedView={html:view.html,styles:view.styles,bodyId:view.bodyId,rootKey,controlsKey,nodes}
@@ -364,9 +368,9 @@ const InteractiveCard = memo(function InteractiveCard({ source, enabled, scopeKe
       resize()
     }catch(error){if(current===generation.current){cleanup.current();setError(error.message)}}
   }
-  return h('section',{className:'dtv-interactive-card'},
+  return h('section',{className:'dtv-interactive-card','data-dtv-viewport':String(viewportLayout)},
     h('iframe',{key:JSON.stringify([scopeKey,enabled,trustRevision,owners,helpers,paused,restart,openingBinding]),ref:frame,title:translate('appearance.card'),sandbox:'allow-same-origin',referrerPolicy:'no-referrer',srcDoc,onLoad:load,style:{width:'100%',boxSizing:'border-box',minWidth:220,height:160,maxHeight:800,border:'1px solid #b9c2cf',borderRadius:8,background:'#fff'}}),
-    enabled?h('div',null,
+    enabled?h('div',{className:'dtv-card-runtime-controls'},
       h('button',{type:'button',disabled:paused,onClick:()=>{generation.current++;cleanup.current();setPaused(true)}},translate('appearance.pauseCard')),
       h('button',{type:'button',onClick:()=>{generation.current++;cleanup.current();setPaused(false);setRestart(value=>value+1)}},translate('appearance.restartCard'))):null,
     !enabled && data.scripts.length ? h('small',null,translate('appearance.scriptsOff')):null,

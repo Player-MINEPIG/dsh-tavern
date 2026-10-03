@@ -1,3 +1,4 @@
+import {OPENING_CARD_VIEWPORT_CSS} from './card-viewport.js'
 import {createMvuCardBinding} from './mvu-bridge.js'
 import {openingSourceIdentity} from './identity-opening-bridge.js'
 import {initialCardScope,greetingCardScope} from './mvu-scope.js'
@@ -30,6 +31,7 @@ import { useClientUiSettings } from '../i18n/use-ui-settings.js'
 const h = createLocalizedElement(createElement)
 
 const css = `
+${OPENING_CARD_VIEWPORT_CSS}
 .dtv-play-unbound-notice{box-sizing:border-box;width:100%;max-width:var(--dsh-composer-card-max-width,100%);align-self:center;margin:0;padding:7px 10px;border:1px solid color-mix(in srgb,var(--dsw-alias-state-warning,#d79921) 34%,transparent);border-radius:10px;background:color-mix(in srgb,var(--dsw-alias-state-warning,#d79921) 8%,transparent);color:var(--dsw-alias-label-secondary);font-size:11px;line-height:1.45}
 .dtv-play-opening-dock{box-sizing:border-box;width:100%;min-width:0;flex:none;display:flex;flex-direction:column;overflow:hidden;border:1px solid var(--dsw-alias-border-l2);border-radius:14px;background:var(--dsw-alias-bg-layer-2,var(--dsw-specific-block));color:var(--dsw-alias-label-primary);box-shadow:0 4px 18px color-mix(in srgb,var(--dsw-alias-label-primary) 7%,transparent)}
 .dtv-play-opening-header{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:9px 12px;border-bottom:1px solid var(--dsw-alias-border-l2);font-size:12px}.dtv-play-opening-name{min-width:0;overflow:hidden;font-weight:650;text-overflow:ellipsis;white-space:nowrap}.dtv-play-opening-index{flex:none;color:var(--dsw-alias-label-tertiary);font-size:11px}
@@ -177,7 +179,7 @@ export function PlaySessionDock({ session, useSessions, useConversation, convers
     )
     : greeting === null
       ? h('div', { className: 'dtv-play-opening-body dtv-play-opening-body-empty', 'aria-hidden': true })
-      : h('div',{className:'dtv-play-opening-body'},h(MessageContent,{
+      : h('div',{className:'dtv-play-opening-body','data-dtv-card-viewport-boundary':'opening'},h(MessageContent,{
         text:greeting.text,
         openingBinding:openingSourceIdentity({sessionId,greeting}),
         writeScope:content.initialScope,
