@@ -118,12 +118,17 @@ initial 写入仍经过独立 grant、使用策略租约、CAS、幂等与 schem
 | 初始化 | 有界 YAML/JSON5、拒绝 tag/alias、顺序合并；支持显式配置与卡源自动发现，发现不等于启用 |
 | 命令 | set/add/insert/assign/remove/unset/delete；JSONPatch replace/delta/insert/add/remove/move；安全 dot/bracket/JSON pointer 路径 |
 | 原生元数据 | extensible/recursiveExtensible/required、对象/数组模板、arrayMeta、扩展标记；按值/索引删除；严格/兼容 VWD 设置 |
-| schema 声明 | object/array/record/enum/literal/union、number/string/boolean/any/unknown、coerce、default/prefault/optional/nullable、min/max/int、strict/passthrough、transform |
+| schema 声明 | object/array/record/enum/literal/union、number/string/boolean/any/unknown、coerce、default/prefault/optional/nullable、min/max/int、strict/passthrough/strip、transform、custom superRefine、有限 regex |
+| 声明函数 | 同步箭头或 function 表达式、标识符及默认参数、只读词法捕获、可选成员链；注册包装可使用单一调用的表达式或语句块 |
 | 纯表达式 | 算术、比较、条件、对象 spread、常量/局部变量、输入字段赋值、clamp、有限 Math 函数；静态节点白名单与执行预算 |
 | 隔离 | 私有能力标记；schema 以声明源和 interpreterVersion 保存，每次隔离构建；数组 length 写入、对象隐式数字/属性转换、动态原型路径拒绝 |
 | 尚未等价实现 | 完整 mathjs（矩阵/单位等）、Date 构造及日期加法、上游路径修正、全部容错解析、旧 display_data/delta_data 文本格式、除上述实际调用形状外的 Helper 写 API/可变事件 hook、MVU 额外模型调用 |
 
 支持所列声明不等于任意 Zod JavaScript 兼容，方法组合也须经过测试；对象型 coerce 明确拒绝。当前 display_data 为结果值副本，delta_data 为内部变化记录。不能将这些字段宣称为旧 UI 的完整格式兼容。默认指令只要求 literal JSONPatch，复杂生成策略须有独立公开扩展合同。
+
+`superRefine` 在验证后的冻结 JSON 副本上运行，仅允许 `ctx.addIssue({code:'custom',path?,message?})`；任何 issue 拒绝候选，不提交状态。`Object.prototype.hasOwnProperty.call(data,key)` 是显式 own-property 检查原语，不开放 Object 或原型。声明可用 `for (const item of array)` 遍历最多 1000 个数组项，和函数/约束共享计算预算；其余循环、this、arguments、异步/生成器、rest/解构参数、外部能力仍拒绝。这些是受限的 [Zod 语义适配](https://zod.dev/api#superrefine)，不会执行原声明脚本。
+
+字符串 `regex` 仅接受无 flags、`^...$` 全锚定的有限模式：字面字符、`\d`、字符范围、分组内选择、`?` 和 `{m,n}`（最大 64 次）。模式最多 256 字符、16 层分组及 2048 个自动机状态；建图、声明图冻结和匹配均消耗共享计算预算，不能通过循环复制模式绕过总量限制。匹配使用状态集合，不调用原生 RegExp 匹配。无界重复、通配点、回溯引用、环视均拒绝。解释器函数、schema、参数绑定和 AST 保持不透明，不能作为 JSON 内容读写。原始完整声明仍保存在 schema 描述符中；兼容扩展不重置已有资源、不更换 ID、不自动启用 managed 策略。
 
 `test/mvu-*.test.mjs` 覆盖合成卡结构、固定上游文字 fixture、CAS、fork、历史、故障恢复、预算反例、管理卸载和桥接取消。真实 Host 测试通过 `DSH_TAVERN_PROMPT_COMPAT_ROOT` 指向具备请求装配扩展的 DSH runtime，运行 `node --test test/mvu-host.test.mjs`；它使用临时目录及合成 provider，不操作真实 profile。完整卡片、渲染依赖与管理器最终联测需要另行验证，不能用解释器 fixture 代替。
 
