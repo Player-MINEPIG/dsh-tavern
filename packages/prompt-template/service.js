@@ -6,7 +6,7 @@ export const TEMPLATE_SOURCE = 'pmp-dsh-tavern/prompt-template'
 const idPattern = /^prompt-template:[a-zA-Z0-9_.-]{1,100}$/
 function normalize(resource) {
   if (!resource || !idPattern.test(resource.id) || typeof resource.name !== 'string' || resource.name.length > 200 || typeof resource.content !== 'string' || resource.content.length > 131072) fail('VALIDATION_FAILED', 'Template requires stable prompt-template ID, name and bounded content')
-  if (resource.enabled === true && !inspectTemplateMetadata(resource).supported) fail('UNSUPPORTED_EVENT', 'Template title requests an unsupported lifecycle')
+  if (resource.enabled === true && !inspectTemplateMetadata(resource).supported) fail('UNSUPPORTED_EVENT', 'Template metadata requests unsupported semantics')
   if (!Array.isArray(resource.sessionIds) || !resource.sessionIds.length || resource.sessionIds.some(id => typeof id !== 'string' || !id)) fail('VALIDATION_FAILED', 'Template requires explicit sessionIds (or *)')
   if (resource.variableResourceId !== undefined && (typeof resource.variableResourceId !== 'string' || !resource.variableResourceId.startsWith('mvu:'))) fail('VALIDATION_FAILED', 'Expected MVU variableResourceId')
   return { id: resource.id, name: resource.name, content: resource.content, enabled: resource.enabled === true, sessionIds: [...new Set(resource.sessionIds)], variables: structuredClone(resource.variables ?? {}), ...(resource.variableResourceId ? { variableResourceId: resource.variableResourceId } : {}) }
@@ -15,7 +15,7 @@ export class PromptTemplateService {
   #checks = new WeakMap()
   id = 'tavern.prompt-templates'; name = '提示词模板 / Prompt templates'; authority = 'local'; strategyOwner = 'source'
   optionCatalog = optionCatalog('prompt-template', '隔离只读模板展开 / Isolated read-only expansion', 'tavern.prompt-template')
-  constructor({ storageDir, resources = [], getVariables, worldBooks }) {
+  constructor({ storageDir, resources = [], resolveVariables, worldBooks }) {
     this.path = join(storageDir, 'prompt-templates.json')
     const stored = readJson(this.path, null)
     this.state = stored ?? { version: 1, resources: resources.map(normalize), operations: [] }
@@ -24,7 +24,7 @@ export class PromptTemplateService {
     if (!Array.isArray(this.state.operations)) fail('VALIDATION_FAILED', 'Invalid template operations')
     if (!stored) atomicJson(this.path, this.state)
     this.policy = new SourcePolicy(join(storageDir, 'prompt-template-ownership.json'), 'prompt-template')
-    this.getVariables = getVariables; this.worldBooks = worldBooks
+    this.resolveVariables = resolveVariables; this.worldBooks = worldBooks
   }
   observe = listener => this.policy.observe(listener)
   registerUsage = listener => this.policy.registerUsage(listener)
@@ -39,7 +39,7 @@ export class PromptTemplateService {
   read({ id, scope, signal } = {}) {
     signal?.throwIfAborted()
     const resource = this.#definition(id, scope)
-    return resource ? { id, name: resource.name, type: 'prompt-template', authority: 'local', content: resource.content, revision: this.policy.revision(id, resource), managementMode: this.policy.mode(id), enabled: resource.enabled,
+    return resource ? { id, name: resource.name, type: 'prompt-template', authority: 'local', content: resource.content, revision: this.policy.revision(id, resource), managementMode: this.policy.mode(id), enabled: resource.enabled, metadata: inspectTemplateMetadata({name:resource.name,content:resource.content}),
       execution: { owner: 'source', event: 'before_model_request', sourceId: TEMPLATE_SOURCE, isolation: 'quickjs', sideEffects: false, requiresAssemblySelection: true } } : null
   }
   list({ scope = {}, signal } = {}) {
@@ -84,19 +84,51 @@ export class PromptTemplateService {
       if (!row.enabled) continue
       const definition = structuredClone(this.#definition(row.id)), decision = await this.policy.decision(row, context, () => this.read({ id: row.id })?.revision)
       if (!decision.enabled) { diagnostics.push({ code: 'TEMPLATE_POLICY_SKIPPED', resourceId: row.id }); continue }
-      let variables = definition.variables
-      if (definition.variableResourceId) {
-        const snapshot = await this.getVariables?.({ id: definition.variableResourceId, scope: { authority: 'local', sessionId: context.sessionId }, signal: context.signal })
-        if (!snapshot) fail('TEMPLATE_VARIABLES_UNAVAILABLE', 'Bound variable snapshot unavailable')
-        variables = snapshot.content
+      const dependencies = new Map(), assets = context.assets
+      const event = { preview: context.preview === true, turn: context.turn ?? null, step: context.step ?? null,
+        usage: 'prompt-template-dependency', consumer: { adapterId:this.id, id:row.id } }
+      const selectionCurrent = this.worldBooks?.selectionLease(context) ?? (() => true)
+      const accept = (id, proof) => {
+        if (!decision.checkCurrent() || !selectionCurrent() || [...dependencies.values()].some(p => !p.checkCurrent())) fail('SOURCE_POLICY_CHANGED', 'Template policy changed during dependency lookup')
+        if (!proof || proof.id !== id || proof.adapterId !== (id.startsWith('mvu:') ? 'tavern.mvu' : 'tavern.world-books') || typeof proof.checkCurrent !== 'function') fail('TEMPLATE_DEPENDENCY_UNAVAILABLE', 'Source does not provide a prompt-use lease')
+        if (!proof.checkCurrent()) fail('SOURCE_POLICY_CHANGED', 'Template dependency lease expired')
+        dependencies.set(id, proof)
+        return proof
       }
-      const assets = context.assets, snapshot = { variables, character: assets.character, preset: assets.preset, worldBooks: this.worldBooks?.snapshots(context) ?? [] }
-      const text = await renderTemplate(definition.content, snapshot, { signal: context.signal })
+      const resolveDependency = async ({ kind, args }) => {
+        if (!decision.checkCurrent() || !selectionCurrent() || [...dependencies.values()].some(p => !p.checkCurrent())) fail('SOURCE_POLICY_CHANGED', 'Template dependency changed during expansion')
+        if (kind === 'variables' && args.length === 0) {
+          if (!definition.variableResourceId) return definition.variables
+          const id = definition.variableResourceId
+          const proof = dependencies.get(id) ?? accept(id, await this.resolveVariables?.({ id,
+            scope: { authority:'local', sessionId:context.sessionId }, event, signal:context.signal }))
+          return proof.content
+        }
+        if (kind === 'worldbook-catalog' && args.length === 0) return this.worldBooks?.catalog(context) ?? []
+        if (kind === 'worldbook-entry' && args.length === 2) {
+          const [id, uid] = args
+          const proof = dependencies.get(id) ?? accept(id, await this.worldBooks?.resolvePromptDependency({ id, context, event }))
+          const entry = proof.content.find(e => String(e.uid) === String(uid))
+          if (!entry) fail('TEMPLATE_DEPENDENCY_NOT_ACTIVE', 'World-book dependency entry is not active in this request')
+          return entry.content
+        }
+        // These helpers expose only selected fragments; no card/preset raw document enters the VM.
+        if (kind === 'preset-catalog' && args.length === 0) return (assets.preset?.prompts ?? []).map(p => ({id:p.identifier,name:p.name}))
+        if (kind === 'preset-entry' && args.length === 1) return assets.preset?.prompts?.find(p => p.identifier === args[0])?.content ?? ''
+        if (kind === 'character-catalog' && args.length === 0) return assets.character ? {id:assets.character.id,name:assets.character.name}:null
+        if (kind === 'character-description' && args.length === 1) return assets.character?.id === args[0] ? assets.character.data?.description ?? '' : ''
+        fail('TEMPLATE_DEPENDENCY_INVALID', 'Unsupported template dependency request')
+      }
+      const text = await renderTemplate(definition.content, {}, { signal: context.signal, resolveDependency })
+      const dependencyProofs = [...dependencies.values()]
+      if (!selectionCurrent() || dependencyProofs.some(p => !p.checkCurrent())) fail('SOURCE_POLICY_CHANGED', 'Template dependency changed before provide')
+      checks.push(selectionCurrent, ...dependencyProofs.map(p => p.checkCurrent))
       if (!decision.checkCurrent()) fail('SOURCE_POLICY_CHANGED', 'Template or policy changed before provide')
       checks.push(decision.checkCurrent)
       const blockId = `template-${hash([row.id, row.revision, decision.configRevision])}`
       blocks.push({ type: 'text', id: blockId, name: row.name, text, source: { resourceId: row.id, field: 'content' },
         children: [{ id: `${blockId}:original`, name: 'Template source', text: definition.content, locked: true, source: { resourceId: row.id, field: 'content', representation: 'original' } }] })
+      for (const proof of dependencyProofs) diagnostics.push({ code:'TAVERN_MEMORY_DEPENDENCY_VERSION', adapterId:proof.adapterId, resourceId:proof.id, revision:proof.revision, configRevision:proof.configRevision, consumerId:row.id, sourceId:TEMPLATE_SOURCE, blockId })
       diagnostics.push({ code: 'TAVERN_MEMORY_RESOURCE_VERSION', adapterId: this.id, sourceId: TEMPLATE_SOURCE, resourceId: row.id, blockId, revision: row.revision, configRevision: decision.configRevision })
     }
     context.signal?.throwIfAborted()

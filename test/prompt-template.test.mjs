@@ -72,7 +72,7 @@ test('resource list/read, CAS, idempotency, original text and restart ownership'
 
 test('policy lease is rechecked after async variable reads and every resource', async t => {
   let current = true
-  const service = new PromptTemplateService({ storageDir: temp(t), resources: [{ ...template, variableResourceId: 'mvu:test' }], getVariables: async () => { current = false; return { content: {} } } })
+  const service = new PromptTemplateService({ storageDir: temp(t), resources: [{ ...template, variableResourceId: 'mvu:test' }], resolveVariables: async () => { current = false; return { id:'mvu:test', adapterId:'tavern.mvu', content:{}, revision:1, checkCurrent:()=>true } } })
   const row = service.read({ id: template.id })
   service.setManagementMode({ id: row.id, mode: 'managed', expectedRevision: row.revision, operationId: 'manage' })
   service.registerUsage(() => lease('prompt-template', () => current))

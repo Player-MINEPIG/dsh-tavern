@@ -20,11 +20,11 @@ export function createMemorySources(options) {
       const flatten = nodes => nodes.flatMap(n => [n, ...flatten(n.children ?? [])])
       const nodes = flatten(assembly.nodes ?? [])
       for (const fact of assembly.diagnostics ?? []) {
-        if (fact.code !== 'TAVERN_MEMORY_RESOURCE_VERSION') continue
+        if (!['TAVERN_MEMORY_RESOURCE_VERSION', 'TAVERN_MEMORY_DEPENDENCY_VERSION'].includes(fact.code)) continue
         const source = [worldBooks, templates].find(a => a.id === fact.adapterId)
-        if (!source || !nodes.some(n => n.source?.sourceId === fact.sourceId && n.source?.resourceId === (fact.blockResourceId ?? fact.resourceId) && (n.id?.endsWith(`:${fact.blockId}`) || n.name === fact.blockId))) continue
+        if (!source || !nodes.some(n => n.source?.sourceId === fact.sourceId && n.source?.resourceId === (fact.consumerId ?? fact.blockResourceId ?? fact.resourceId) && (n.id?.endsWith(`:${fact.blockId}`) || n.name === fact.blockId))) continue
         source.policy.emit({ id: fact.resourceId, eventId: `${session.id}:${event.seq}:${fact.blockId}`, requestId: `${session.id}:${event.seq}`, phase: 'applied', sessionId: session.id,
-          turn: event.data.turn, turnKind: 'unknown', revision: fact.revision, configRevision: fact.configRevision, detail: 'Observed in durable DSH request; provider delivery not established' })
+          turn: event.data.turn, turnKind: 'unknown', ...(fact.consumerId ? {consumerId:fact.consumerId} : {}), revision: fact.revision, configRevision: fact.configRevision, detail: 'Observed in durable DSH request; provider delivery not established' })
       }
     } }
 }

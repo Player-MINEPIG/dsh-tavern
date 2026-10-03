@@ -30,7 +30,7 @@ import { PresetParameterFallback } from './preset-parameter-fallback.js'
 import { PresetRuntime } from './preset-runtime.js'
 import { TavernProfileLoader } from './profile-loader.js'
 import { SessionSelectionStore } from './session-policy.js'
-import { UserWorldBookBindingStore } from './user-world-book-policy.js'
+import { UserWorldBookBindingStore, composeWorldBookSelection } from './user-world-book-policy.js'
 import { ResourceWorldBookBindingStore } from './resource-world-book-policy.js'
 import { createWorldBookAdapter } from './world-book-adapter.js'
 import { PendingInputProjection } from './pending-input-projection.js'
@@ -369,7 +369,16 @@ export function apply(ctx, config = {}) {
     maxQueuedMessages: config.pendingInput?.maxQueuedMessages,
   })
   const assemblyPresets = new AssemblyPresetStore(storageDir, { mode: () => chromeStore.get().mode })
-  const memorySources = createMemorySources({ storageDir, store: worldBookStore, resources: config.promptTemplates?.resources ?? [], getVariables: args => ctx.get('tavernMvu')?.read(args) })
+  const memorySources = createMemorySources({ storageDir, store: worldBookStore, characters: characterStore, resources: config.promptTemplates?.resources ?? [],
+    resolveVariables: args => ctx.get('tavernMvu')?.resolvePromptDependency?.(args),
+    getSelection: sessionId => {
+      const selected = selections.get(sessionId)
+      const worldBookIds = composeWorldBookSelection(selected.worldBookIds,
+        selected.userId ? userWorldBooks.get(selected.userId) : [],
+        selected.presetId ? resourceWorldBooks.get('preset', selected.presetId) : [],
+        selected.characterCardId ? resourceWorldBooks.get('character', selected.characterCardId) : []).effectiveIds
+      return { worldBookIds, characterId: selected.characterCardId, selectionRevision: selections.selectionRevision(sessionId) }
+    } })
   const registry = createDefaultRegistry({ worldbookPolicy: (context, output) => memorySources.worldBooks.filter(context, output), worldbookValidateResolved: memorySources.worldBooks.validateResolved })
   const requestAssembler = new RequestAssembler({ ctx, store: assemblyPresets, resources: runtime, registry })
   installMemorySources(ctx, memorySources, registry)

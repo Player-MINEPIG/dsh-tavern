@@ -68,20 +68,21 @@ export class SourcePolicy {
   async decision(row, context, currentRevision) {
     const epoch = this.#epoch, revision = row.revision, mode = row.managementMode
     const current = () => !this.#disposed && epoch === this.#epoch && currentRevision() === revision
-    if (mode !== 'managed') return { enabled: true, configRevision: null, checkCurrent: current }
+    const dependency = context.dependencyEvent?.usage === 'prompt-template-dependency'
+    if (mode !== 'managed' && !dependency) return { enabled: true, configRevision: null, checkCurrent: current }
     const leases = [], revisions = []
     for (const handler of [...this.#usage]) {
       const response = await handler({ id: row.id, on: 'before_model_request', managementMode: mode,
-        scope: { authority: 'local', sessionId: context.sessionId }, event: { preview: context.preview === true, turn: context.turn ?? null, step: context.step ?? null } })
+        scope: { authority: 'local', sessionId: context.sessionId }, event: { ...(context.dependencyEvent ?? {}), preview: context.preview === true, turn: context.turn ?? null, step: context.step ?? null } })
       context.signal?.throwIfAborted()
       if (!current()) fail('SOURCE_POLICY_CHANGED', 'Source changed during policy evaluation')
-      if (response === undefined) continue
+      if (response === undefined) { if (dependency) return {enabled:false,reason:'dependency-lease-required'}; continue }
       if (!response || response.enabled !== true) return { enabled: false, reason: response?.reason ?? 'denied' }
       validateStrategy(this.type, response.strategy)
       if (typeof response.checkCurrent !== 'function') fail('SOURCE_LEASE_REQUIRED', 'Managed execution needs a current policy lease')
       leases.push(response.checkCurrent); revisions.push(response.configRevision ?? null)
     }
-    return { enabled: leases.length > 0, configRevision: revisions, checkCurrent: () => current() && leases.every(check => check() === true) }
+    return { enabled: leases.length > 0 || (mode !== 'managed' && this.#usage.size === 0), configRevision: revisions, checkCurrent: () => current() && leases.every(check => check() === true) }
   }
   dispose() { this.#disposed = true; this.#epoch++; this.#listeners.clear(); this.#usage.clear() }
 }

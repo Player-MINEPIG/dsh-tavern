@@ -14,7 +14,7 @@ Tavern 的 Prompt Template 是独立的、受限的只读请求装配来源，�
 | `<%# … %>`、`-%>`、`_%>`、`<%% … %>` | 注释、换行/空白裁剪、字面标签 |
 | `print(...values)` | 有界文本输出；不修改来源 |
 | `variables`、`getvar(path, {defaults, clone, scope})` | 冻结 JSON 快照；支持点/数字或带引号下标路径，scope 仅 cache；clone 参数不提供可写状态 |
-| `getwi(book, title)` / `getwi(title)` | 读取当前选择的独立世界书快照，按 ID/名称及条目 UID/标题匹配；返回原文，不递归执行读取出的模板 |
+| `getwi(book, title)` / `getwi(title)` | 按 ID/名称及条目 UID/标题匹配当前所选独立或内嵌世界书；经该书的实际使用授权后，只返回本次已激活条目的原文，不递归求值 |
 | `getpreset(name)` | 当前预设中按 identifier/name 读取原文 |
 | `getchar(name?)` | 只读取当前角色的 description；不实现上游完整角色定义默认格式、自定义模板或任意角色检索 |
 | `getWorldInfo`、`getPresetPrompt`、`getChara` | 上述函数的别名 |
@@ -23,7 +23,7 @@ Tavern 的 Prompt Template 是独立的、受限的只读请求装配来源，�
 
 上游[功能说明](https://github.com/zonde306/ST-Prompt-Template/blob/d6f520d149aba146305b0b781ddd691d449c28d2/docs/features.md)和[API 参考](https://github.com/zonde306/ST-Prompt-Template/blob/d6f520d149aba146305b0b781ddd691d449c28d2/docs/reference.md)还包含多作用域变量、生成/渲染注入和写入行为；这些不由当前适配建立兼容性。读取到的 EJS 原文不会自动执行。
 
-`inspectTemplateMetadata({name,content})` 只识别明确标题标签：`[GENERATE:BEFORE]`、`[GENERATE:AFTER]` 提议 `before_model_request`，并要求调用方明确装配位置；不会自动等同于 ST 的前后注入顺序。PRELOAD/RENDER 标签返回不支持诊断，带这些标题的资源不能启用。任意 JS 的分支不会被拆成外层 rule。识别函数本身不导入、不启用资源。
+`inspectTemplateMetadata({name,content})` 识别明确标题标签与正文首行起连续的 `@@` 装饰器：`[GENERATE:BEFORE]`、`[GENERATE:AFTER]` 提议 `before_model_request`，并要求调用方明确装配位置；不会自动等同于 ST 的前后注入顺序。`PRELOAD`、`RENDER`、`InitialVariables`、带索引/正则的 `GENERATE`、`@INJECT` 均返回不支持诊断。官方装饰器（包括 preload/render、generate、initial_variables、if、activate、private、iframe、preprocessing）目前均识别但不执行；未知装饰器也明确拒绝。带这些未实现语义的资源不能启用；`@@@` 为字面转义，不声明装饰器。任意 JS 的分支不会被拆成外层 rule。识别函数本身不导入、不启用资源。
 
 ## 资源配置
 
@@ -44,7 +44,7 @@ Tavern 的 Prompt Template 是独立的、受限的只读请求装配来源，�
 }
 ```
 
-`sessionIds` 必须显式指定；`["*"]` 表示所有会话。无 sessionId 的预览不运行模板。`variableResourceId: "mvu:example"` 可代替静态 variables，调用当前 `tavernMvu.read` 的当前会话只读接口；资源不可访问或缺失时拒绝装配。它不是 ST global/local/message 变量映射，也不会选择一个模糊的 MVU 资源。历史查看使用已记录结果，不重新求值。
+`sessionIds` 必须显式指定；`["*"]` 表示所有会话。无 sessionId 的预览不运行模板。`variableResourceId: "mvu:example"` 可代替静态 variables，在模板实际访问 `getvar` 或 `variables` 时调用 `tavernMvu.resolvePromptDependency`，取得该 MVU 本次模型使用的内容快照及有效租约；服务缺少此能力、资源不可访问或规则拒绝时终止装配。未访问变量不读取 MVU。它不是 ST global/local/message 变量映射，也不会选择一个模糊的 MVU 资源。历史查看使用已记录结果，不重新求值。配置编辑器的 raw read 不能作为提示词使用许可；没有 raw read 回退。
 
 然后在装配策略 JSON 的 `rules` 中显式加入：
 
@@ -63,7 +63,7 @@ Host 服务 `tavernMemorySources` 暴露 `{protocolVersion:1, adapters:[...]}`�
 | `tavern.prompt-templates` | `prompt-template:<id>` | `pmp-dsh-tavern/prompt-template` | `prompt_template.expand` → `prompt_template.emit` |
 | `tavern.world-books` | `world-book:<库 ID>` | `worldbook` | `worldbook.activate` → `worldbook.emit` |
 
-两者提供 `list/read/validateConfig/setManagementMode/registerUsage/observe`，`authority: 'local'`、`strategyOwner: 'source'`。模板另提供 `update/copy`；世界书正文仍用既有世界书资源 API 编辑，manager 不声明正文写入能力。`read` 返回 `content/revision/managementMode/execution`。模板的 content 是字符串，世界书 content 是原始资源文档。
+两者提供 `list/read/validateConfig/setManagementMode/registerUsage/observe`，`authority: 'local'`、`strategyOwner: 'source'`。模板另提供 `update/copy`；世界书正文仍用既有世界书资源 API 编辑，manager 不声明正文写入能力。`read` 返回 `content/revision/managementMode/execution`。模板的 content 是字符串，世界书 content 是资源文档。内嵌书使用 `world-book:character:<角色 ID>:embedded-world-book`，`origin.kind` 为 `embedded-character-book`，包含所属角色身份。此 ID 与原生激活的 `character:<角色 ID>:embedded-world-book` 对齐。
 
 `optionCatalog` 为 JSON：`version/types/events/strategies/presets/modes`。只有 retrieve 的 `before_model_request` 和上述完整固定链可选；store 明确不支持。预设 ID 是 `builtin:prompt-template-retrieve`、`builtin:worldbook-retrieve`，不含身份、白名单或隐式权限。使用方可以自由组合其 scope/rule；新增执行能力仍由受信插件注册，不通过配置文件注入 Host JS。
 
@@ -90,13 +90,21 @@ Host 服务 `tavernMemorySources` 暴露 `{protocolVersion:1, adapters:[...]}`�
 
 ## 世界书管理权
 
-native 沿既有绑定、关键词、概率、预算与位置规则激活；managed 仍只处理已绑定的资源，由 Tavern 激活一次，并在异步来源阶段检查 manager 的外层条件与租约。聚合来源名称不被伪装成单一资源。嵌入角色的世界书保持 native，不由此适配器列出或转移管理权；其完整管理尚未实现。
+native 沿既有绑定、关键词、概率、预算与位置规则激活；managed 仍只处理已绑定的资源，由 Tavern 激活一次，并在异步来源阶段检查 manager 的外层条件与租约。聚合来源名称不被伪装成单一资源。内嵌世界书也逐书列出并可转移管理权；只有当前选中角色的内嵌书参与请求，条目仍使用原生激活一次。manager 不编辑角色内嵌正文，既有角色世界书 API 继续拥有编辑能力。
 
-旧核心/旧 loader 无法执行 managed 策略，明确抑制 managed 独立世界书并诊断，不回退为 native。managed 世界书必须使用 request 保留方式；实际请求发现已保留的 native snapshot 时拒绝装配，要求改为 request，防止旧快照绕过撤销。切换管理模式不会绑定未选资源或自动修改装配策略。现有递归扫描/vector/不支持位置的限制仍然有效，不因 manager 选项而扩展。
+旧核心/旧 loader 无法执行 managed 策略，明确抑制 managed 独立及内嵌世界书并诊断，不回退为 native。managed 世界书必须使用 request 保留方式；实际请求发现已保留的 native snapshot 时拒绝装配，要求改为 request，防止旧快照绕过撤销。切换管理模式不会绑定未选资源或自动修改装配策略。现有递归扫描/vector/不支持位置的限制仍然有效，不因 manager 选项而扩展。
+
+## 模板依赖使用合同
+
+依赖使用由可信 Host 根据实际 helper 读取发起，不能由模板声明权限。目标来源收到 `{id,on:"before_model_request",scope,event,managementMode}`；`event.usage` 为 `prompt-template-dependency`，`event.consumer` 记录真实模板 `{adapterId,id}`。consumer 只用于条件上下文，不继承其白名单或许可；目标资源仍验证自身管理模式、配置、scope、rule 与固定策略。managed 依赖没有 retrieve 配置、被拒或 manager 卸载时失败，不回退 native 或 raw read。native 依赖在无监听器时保留来源许可；已注册监听器必须逐个提供明确 native 许可及可撤销租约，不能用 undefined 代替。此许可不应用 managed 配置、不转移管理权；普通 native 装配行为不变。
+
+来源的 `resolvePromptDependency` 返回 Host 内部 `{id,adapterId,content,revision,configRevision,checkCurrent}`，不把租约暴露给 VM。MVU 使用自身只读请求策略；世界书复用本次原生激活记录并检查正文版本，只提供已激活条目，不另执行概率抽签。因此 `getwi` 不能读取被激活规则排除的条目，与上游任意导入行为存在明确差异。
+
+模板收集实际使用来源的租约；每次 await 后、模板完成后以及所有装配来源完成后同步检查模板自身及所有依赖的版本/策略/选中状态。VM 内捕获读取错误或伪造输出不能跳过外部授权。装配诊断 `TAVERN_MEMORY_DEPENDENCY_VERSION` 记录消费模板与依赖版本；世界书实际使用观察关联最终模板节点。raw 配置编辑读取与提示词求值上下文隔离。
 
 ## 隔离与验证
 
-模板只在单次 QuickJS WASM 实例中运行，输入为分离、冻结 JSON，无 Host 回调、原生模块、文件、网络、定时器或 Agent 句柄。限制模板 128 Ki 字符、输入快照 2 MiB、输出 512 KiB、VM 内存 16 MiB、栈 256 KiB、约 75 ms 执行预算和最多 1,000 次 pending-job 步进。错误使装配失败，原文不被覆盖；同步 VM 预算到期会中断，已取消 signal 在执行边界拒绝。
+模板在独立 QuickJS WASM 实例中运行，无原生模块、文件、网络、定时器或 Agent 句柄。同步 lookup 桥只记录请求或返回已授权 JSON，不做 I/O；新依赖在 VM 外由可信来源决策，然后用新 VM 重放当前只读模板。正文输入分离并冻结；不预载角色/预设原始文档、世界书正文或 MVU raw 快照。限制模板 128 Ki 字符、输入快照 2 MiB、输出 512 KiB、VM 内存 16 MiB、栈 256 KiB、累计约 75 ms VM 执行预算、每轮最多 1,000 次 pending-job 步进、最多 32 次新 lookup 和 512 次桥调用。递归模板求值仍不支持；循环读取及反复构造依赖受预算限制。错误使装配失败，原文不被覆盖；同步 VM 预算到期会中断，已取消 signal 在执行边界拒绝。
 
 ```sh
 node --test test/prompt-template.test.mjs

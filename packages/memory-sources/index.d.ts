@@ -15,10 +15,10 @@ export interface MemorySourceAdapter {
 }
 export interface MemorySources {
   protocolVersion: 1; adapters: MemorySourceAdapter[]; templates: PromptTemplateService;
-  worldBooks: MemorySourceAdapter & { filter(context: SourceContext, output: SourceOutput): Promise<SourceOutput>; validateResolved(context: SourceContext): void };
+  worldBooks: MemorySourceAdapter & { filter(context: SourceContext, output: SourceOutput): Promise<SourceOutput>; validateResolved(context: SourceContext): void; catalog(context:SourceContext): unknown[]; resolvePromptDependency(args:{id:string;context:SourceContext;event:Record<string,unknown>}): Promise<{id:string;adapterId:string;content:unknown;revision:string;configRevision:unknown;checkCurrent:()=>boolean}> };
   validateAssembly(assembly: unknown): void;
   observeRequest(request: unknown, session: unknown): void;
   dispose(): void;
 }
-export function createMemorySources(options: { storageDir: string; store: unknown; resources?: TemplateResource[]; getVariables?: (args: unknown) => unknown }): MemorySources
+export function createMemorySources(options: { storageDir: string; store: unknown; resources?: TemplateResource[]; characters?: unknown; getSelection?: (sessionId:string) => {worldBookIds:string[];characterId:string|null;selectionRevision:number}; resolveVariables?: (args: unknown) => unknown }): MemorySources
 export function installMemorySources(ctx: unknown, service: MemorySources, registry: RequestSourceRegistry): void

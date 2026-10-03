@@ -7,13 +7,15 @@ export const TEMPLATE_SOURCE: 'pmp-dsh-tavern/prompt-template'
 export function compileTemplate(content: string): string
 export function renderTemplate(content: string, snapshot?: Record<string, unknown>, options?: {
   signal?: AbortSignal; timeLimit?: number; memoryLimit?: number; maxOutput?: number;
+  resolveDependency?: (request: {kind:string; args:Array<string|number>}) => unknown | Promise<unknown>;
 }): Promise<string>
 export function inspectTemplateMetadata(input?: { name?: string; content?: string }): {
   language: 'ejs-style' | 'text'; originalTags: string[]; suggestedOn?: 'before_model_request';
+  decorators?: Array<{name:string; arguments:string; recognized:boolean}>;
   placementRequired?: true; supported: boolean; diagnostics: Array<{code: string; stage: string}>; content: string;
 }
 export class PromptTemplateService {
-  constructor(options: { storageDir: string; resources?: TemplateResource[]; getVariables?: (args: unknown) => unknown; worldBooks?: unknown })
+  constructor(options: { storageDir: string; resources?: TemplateResource[]; resolveVariables?: (args: unknown) => unknown; worldBooks?: unknown })
   readonly id: 'tavern.prompt-templates'; readonly authority: 'local'; readonly strategyOwner: 'source';
   readonly optionCatalog: Record<string, unknown>;
   read(args: {id: string; scope?: {sessionId?: string; authority?: 'local'}; signal?: AbortSignal}): Record<string, unknown> | null;
