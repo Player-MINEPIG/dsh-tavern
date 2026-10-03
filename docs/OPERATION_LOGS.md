@@ -73,3 +73,7 @@ Host 适配器也识别官方 `session/workspace-attach-failed` 错误：DSH 可
 浏览器不采集 console、网络正文、输入或点击流水，不写 localStorage 日志，也没有后台轮询。当前工作区问题反映当前读取状态；operation journal 解释后端步骤；Prompt Trace 解释模型装配及官方引用。三者互不替代，日志不能成为 DSH 历史、资源或未来 MVU 状态的权威存储。
 
 内置诊断面板展开时读取最近一页，无需预先知道 operationId。默认按时间显示动作、记录结果与会话／周目编号；不额外读取资源名称。开始、已确认检查点、输入已接受、请求完成与附属诊断失败分开解释，旧记录和未知事件版本保持通用展示。详情可复制后端自动生成的一次请求编号 operationId，用于高级精确筛选；它不是会话编号或跨请求事务 ID。刷新、更早页和当前页 JSONL 导出均由用户主动操作。导出保留当前页原始字段及存储／分页元数据，不额外匿名化会话 ID、周目 ID、操作 ID、插件实例 runId 或记录 id；这些是可关联活动的标识，不是登录凭据。白名单不含正文、路径、密码或 API 密钥字段，分享前仍需检查。
+
+操作日志默认每页 5 条；更早一页沿用同一筛选及游标，导出仍只包含当前已加载页和元数据。详情中的“复制排障定位信息”仅复制已有编号、时间、操作与错误码等白名单字段，将 journal 的 runId 明确标为 pluginInstanceId，并在有 sessionId 时给出既有 v3 Trace 索引 API 相对路径；不读取 Trace 正文，不推导 DSH run/turn/attempt，也不自动配对模型请求。
+
+例如 `session.user-message` 的 `accepted` 只确认 Host 已接受输入，不证明后续装配、适配器编码或模型调用成功。`UNSUPPORTED_CONTENT` 等后续错误可能只出现在官方执行记录及可用的 Trace 失败引用中；原生 DSH 发送也可能没有 Tavern operationId。切回 DSH 原生界面，打开对应会话并选择顶部 Tavern Trace，按时间核对轮次／步骤／尝试、已记录的实际装配和失败引用，再对照原生执行记录。`request-observed` 不证明适配器或 provider 接受；Trace 或失败记录缺失也不证明成功。操作日志仍用于定位后端请求与已确认写入，不收集 DSH 的所有错误或最终 LLM 消息正文。

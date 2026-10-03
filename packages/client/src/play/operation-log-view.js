@@ -1,3 +1,4 @@
+import { API_V3 } from '../../../identity.js'
 import { rawText, uiMessage } from '../i18n.js'
 
 const operations = new Set([
@@ -44,4 +45,17 @@ export function operationObjects(row) {
 export function operationPageJsonl(page) {
   const { records, ...metadata } = page
   return [JSON.stringify({ type: 'metadata', ...metadata }), ...records.map(row => JSON.stringify(row))].join('\n') + '\n'
+}
+
+// No lookup or new collection: only identifiers already present in this record.
+// Journal runId names a plugin instance, not a DSH run/turn/attempt.
+export function operationLocator(row) {
+  const locator = { type: 'tavern-operation-locator', correlation: 'session-and-time-only' }
+  for (const key of ['schemaVersion', 'eventVersion', 'timestamp', 'operationId', 'sessionId', 'playthroughId', 'operation', 'event', 'stage', 'result', 'errorCode', 'status']) {
+    if (row[key] !== undefined) locator[key] = row[key]
+  }
+  if (row.id !== undefined) locator.recordId = row.id
+  if (row.runId !== undefined) locator.pluginInstanceId = row.runId
+  if (row.sessionId) locator.traceIndexApiPath = `${API_V3}/sessions/${encodeURIComponent(row.sessionId)}/assemblies`
+  return JSON.stringify(locator, null, 2)
 }

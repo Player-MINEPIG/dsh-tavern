@@ -1,6 +1,6 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
-import { operationLabel, operationResult, operationObjects, operationPageJsonl } from '../packages/client/src/play/operation-log-view.js'
+import { operationLabel, operationResult, operationObjects, operationPageJsonl, operationLocator } from '../packages/client/src/play/operation-log-view.js'
 import { setClientUiSettings } from '../packages/client/src/i18n.js'
 import { OperationJournal } from '../packages/play/src/operation-journal.js'
 import { mkdtempSync, rmSync } from 'node:fs'
@@ -45,4 +45,26 @@ test('current-page export preserves actual journal IDs and metadata, excludes di
     for (const key of ['path', 'message', 'password', 'apiKey', 'stack']) assert.equal(key in rows[1], false)
     assert.equal(operationPageJsonl({ ...page, records: [] }).trim().split('\n').length, 1)
   } finally { journal.close(); rmSync(dir, { recursive: true, force: true }) }
+})
+
+test('locator copies only existing metadata, separates plugin identity and does not invent a run', () => {
+  const row = { schemaVersion: 1, eventVersion: 1, id: 'plugin-instance:2', stage: 'success', timestamp: '2026-10-03T08:00:00Z', operationId: 'op-1', sessionId: 'session/one?x', runId: 'plugin-instance',
+    operation: 'session.user-message', event: 'operation.completed', status: 200, result: 'accepted',
+    body: 'PRIVATE_PROMPT', message: 'PRIVATE_ERROR', apiKey: 'PRIVATE_KEY', run: 'not-a-public-field' }
+  const locator = JSON.parse(operationLocator(row))
+  assert.equal(locator.schemaVersion, 1)
+  assert.equal(locator.eventVersion, 1)
+  assert.equal(locator.stage, 'success')
+  assert.equal(locator.result, 'accepted')
+  assert.equal(locator.recordId, 'plugin-instance:2')
+  assert.equal(locator.sessionId, row.sessionId)
+  assert.equal(locator.timestamp, row.timestamp)
+  assert.equal(locator.correlation, 'session-and-time-only')
+  assert.equal(locator.pluginInstanceId, 'plugin-instance')
+  assert.equal(locator.traceIndexApiPath, '/pmp-dsh-tavern/api/v3/sessions/session%2Fone%3Fx/assemblies')
+  for (const key of ['body', 'message', 'apiKey', 'run', 'runId', 'turn', 'attempt', 'dshRunId']) assert.equal(key in locator, false)
+  assert.equal(JSON.stringify(locator).includes('PRIVATE_'), false)
+  const unlinked = JSON.parse(operationLocator({ operationId: 'startup' }))
+  assert.equal('traceIndexApiPath' in unlinked, false)
+  assert.equal('sessionId' in unlinked, false)
 })

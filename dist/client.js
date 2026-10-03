@@ -406,9 +406,9 @@ var __toESM = (mod, isNodeMode, target) => (target = mod != null ? __create(__ge
 ));
 var __toCommonJS = (mod) => __copyProps(__defProp({}, "__esModule", { value: true }), mod);
 
-// node_modules/acorn-jsx/xhtml.js
+// ../diagnostics-log-ux/node_modules/acorn-jsx/xhtml.js
 var require_xhtml = __commonJS({
-  "node_modules/acorn-jsx/xhtml.js"(exports, module2) {
+  "../diagnostics-log-ux/node_modules/acorn-jsx/xhtml.js"(exports, module2) {
     module2.exports = {
       quot: '"',
       amp: "&",
@@ -667,9 +667,9 @@ var require_xhtml = __commonJS({
   }
 });
 
-// node_modules/acorn/dist/acorn.js
+// ../diagnostics-log-ux/node_modules/acorn/dist/acorn.js
 var require_acorn = __commonJS({
-  "node_modules/acorn/dist/acorn.js"(exports, module2) {
+  "../diagnostics-log-ux/node_modules/acorn/dist/acorn.js"(exports, module2) {
     (function(global, factory) {
       typeof exports === "object" && typeof module2 !== "undefined" ? factory(exports) : typeof define === "function" && define.amd ? define(["exports"], factory) : (global = typeof globalThis !== "undefined" ? globalThis : global || self, factory(global.acorn = {}));
     })(exports, (function(exports2) {
@@ -6294,9 +6294,9 @@ var require_acorn = __commonJS({
   }
 });
 
-// node_modules/acorn-jsx/index.js
+// ../diagnostics-log-ux/node_modules/acorn-jsx/index.js
 var require_acorn_jsx = __commonJS({
-  "node_modules/acorn-jsx/index.js"(exports, module2) {
+  "../diagnostics-log-ux/node_modules/acorn-jsx/index.js"(exports, module2) {
     "use strict";
     var XHTMLEntities = require_xhtml();
     var hexNumber = /^[\da-fA-F]+$/;
@@ -6717,10 +6717,10 @@ var require_acorn_jsx = __commonJS({
   }
 });
 
-// node_modules/@jitl/quickjs-ffi-types/dist/index.mjs
+// ../diagnostics-log-ux/node_modules/@jitl/quickjs-ffi-types/dist/index.mjs
 var EvalFlags, IntrinsicsFlags, JSPromiseStateEnum, GetOwnPropertyNamesFlags, IsEqualOp;
 var init_dist = __esm({
-  "node_modules/@jitl/quickjs-ffi-types/dist/index.mjs"() {
+  "../diagnostics-log-ux/node_modules/@jitl/quickjs-ffi-types/dist/index.mjs"() {
     EvalFlags = { JS_EVAL_TYPE_GLOBAL: 0, JS_EVAL_TYPE_MODULE: 1, JS_EVAL_TYPE_DIRECT: 2, JS_EVAL_TYPE_INDIRECT: 3, JS_EVAL_TYPE_MASK: 3, JS_EVAL_FLAG_STRICT: 8, JS_EVAL_FLAG_STRIP: 16, JS_EVAL_FLAG_COMPILE_ONLY: 32, JS_EVAL_FLAG_BACKTRACE_BARRIER: 64 };
     IntrinsicsFlags = { BaseObjects: 1, Date: 2, Eval: 4, StringNormalize: 8, RegExp: 16, RegExpCompiler: 32, JSON: 64, Proxy: 128, MapSet: 256, TypedArrays: 512, Promise: 1024, BigInt: 2048, BigFloat: 4096, BigDecimal: 8192, OperatorOverloading: 16384, BignumExt: 32768 };
     JSPromiseStateEnum = { Pending: 0, Fulfilled: 1, Rejected: 2 };
@@ -6729,7 +6729,7 @@ var init_dist = __esm({
   }
 });
 
-// node_modules/quickjs-emscripten-core/dist/chunk-JTKJZQYV.mjs
+// ../diagnostics-log-ux/node_modules/quickjs-emscripten-core/dist/chunk-JTKJZQYV.mjs
 function debugLog(...args) {
   QTS_DEBUG && console.log("quickjs-emscripten:", ...args);
 }
@@ -6813,7 +6813,7 @@ function applyModuleEvalRuntimeOptions(runtime, options) {
 }
 var __defProp2, __export2, QTS_DEBUG, errors_exports, QuickJSUnwrapError, QuickJSWrongOwner, QuickJSUseAfterFree, QuickJSNotImplemented, QuickJSAsyncifyError, QuickJSAsyncifySuspended, QuickJSMemoryLeakDetected, QuickJSEmscriptenModuleError, QuickJSUnknownIntrinsic, QuickJSPromisePending, QuickJSEmptyGetOwnPropertyNames, AwaitYield, UsingDisposable, SymbolDispose, prototypeAsAny, Lifetime, StaticLifetime, WeakLifetime, Scope3, AbstractDisposableResult, DisposableSuccess, DisposableFail, DisposableResult, QuickJSDeferredPromise, ModuleMemory, DefaultIntrinsics, QuickJSIterator, ContextMemory, QuickJSContext, QuickJSRuntime, QuickJSEmscriptenModuleCallbacks, QuickJSModuleCallbacks, QuickJSWASMModule;
 var init_chunk_JTKJZQYV = __esm({
-  "node_modules/quickjs-emscripten-core/dist/chunk-JTKJZQYV.mjs"() {
+  "../diagnostics-log-ux/node_modules/quickjs-emscripten-core/dist/chunk-JTKJZQYV.mjs"() {
     init_dist();
     init_dist();
     __defProp2 = Object.defineProperty;
@@ -7745,7 +7745,7 @@ Attempted to suspend at:`);
   }
 });
 
-// node_modules/quickjs-emscripten-core/dist/module-6F3E5H7Y.mjs
+// ../diagnostics-log-ux/node_modules/quickjs-emscripten-core/dist/module-6F3E5H7Y.mjs
 var module_6F3E5H7Y_exports = {};
 __export(module_6F3E5H7Y_exports, {
   QuickJSModuleCallbacks: () => QuickJSModuleCallbacks,
@@ -7754,19 +7754,19 @@ __export(module_6F3E5H7Y_exports, {
   applyModuleEvalRuntimeOptions: () => applyModuleEvalRuntimeOptions
 });
 var init_module_6F3E5H7Y = __esm({
-  "node_modules/quickjs-emscripten-core/dist/module-6F3E5H7Y.mjs"() {
+  "../diagnostics-log-ux/node_modules/quickjs-emscripten-core/dist/module-6F3E5H7Y.mjs"() {
     init_chunk_JTKJZQYV();
   }
 });
 
-// node_modules/@jitl/quickjs-singlefile-browser-release-sync/dist/ffi.mjs
+// ../diagnostics-log-ux/node_modules/@jitl/quickjs-singlefile-browser-release-sync/dist/ffi.mjs
 var ffi_exports = {};
 __export(ffi_exports, {
   QuickJSFFI: () => QuickJSFFI
 });
 var QuickJSFFI;
 var init_ffi = __esm({
-  "node_modules/@jitl/quickjs-singlefile-browser-release-sync/dist/ffi.mjs"() {
+  "../diagnostics-log-ux/node_modules/@jitl/quickjs-singlefile-browser-release-sync/dist/ffi.mjs"() {
     QuickJSFFI = class {
       constructor(module2) {
         this.module = module2;
@@ -7842,14 +7842,14 @@ var init_ffi = __esm({
   }
 });
 
-// node_modules/@jitl/quickjs-singlefile-browser-release-sync/dist/emscripten-module.browser-VTL2UBYQ.mjs
+// ../diagnostics-log-ux/node_modules/@jitl/quickjs-singlefile-browser-release-sync/dist/emscripten-module.browser-VTL2UBYQ.mjs
 var emscripten_module_browser_VTL2UBYQ_exports = {};
 __export(emscripten_module_browser_VTL2UBYQ_exports, {
   default: () => emscripten_module_browser_default
 });
 var import_meta, QuickJSRaw, emscripten_module_browser_default;
 var init_emscripten_module_browser_VTL2UBYQ = __esm({
-  "node_modules/@jitl/quickjs-singlefile-browser-release-sync/dist/emscripten-module.browser-VTL2UBYQ.mjs"() {
+  "../diagnostics-log-ux/node_modules/@jitl/quickjs-singlefile-browser-release-sync/dist/emscripten-module.browser-VTL2UBYQ.mjs"() {
     import_meta = {};
     QuickJSRaw = (() => {
       var _scriptName = import_meta.url;
@@ -8405,7 +8405,7 @@ function createRenderingWriteRequests({ request: request2 = tavernFetch } = {}) 
 }
 var renderingWriteRequests = createRenderingWriteRequests();
 
-// node_modules/acorn/dist/acorn.mjs
+// ../diagnostics-log-ux/node_modules/acorn/dist/acorn.mjs
 var astralIdentifierCodes = [509, 0, 227, 0, 150, 4, 294, 9, 1368, 2, 2, 1, 6, 3, 41, 2, 5, 0, 166, 1, 574, 3, 9, 9, 7, 9, 32, 4, 318, 1, 80, 3, 71, 10, 50, 3, 123, 2, 54, 14, 32, 10, 3, 1, 11, 3, 46, 10, 8, 0, 46, 9, 7, 2, 37, 13, 2, 9, 6, 1, 45, 0, 13, 2, 49, 13, 9, 3, 2, 11, 83, 11, 7, 0, 3, 0, 158, 11, 6, 9, 7, 3, 56, 1, 2, 6, 3, 1, 3, 2, 10, 0, 11, 1, 3, 6, 4, 4, 68, 8, 2, 0, 3, 0, 2, 3, 2, 4, 2, 0, 15, 1, 83, 17, 10, 9, 5, 0, 82, 19, 13, 9, 214, 6, 3, 8, 28, 1, 83, 16, 16, 9, 82, 12, 9, 9, 7, 19, 58, 14, 5, 9, 243, 14, 166, 9, 71, 5, 2, 1, 3, 3, 2, 0, 2, 1, 13, 9, 120, 6, 3, 6, 4, 0, 29, 9, 41, 6, 2, 3, 9, 0, 10, 10, 47, 15, 343, 9, 54, 7, 2, 7, 17, 9, 57, 21, 2, 13, 123, 5, 4, 0, 2, 1, 2, 6, 2, 0, 9, 9, 49, 4, 2, 1, 2, 4, 9, 9, 330, 3, 10, 1, 2, 0, 49, 6, 4, 4, 14, 10, 5350, 0, 7, 14, 11465, 27, 2343, 9, 87, 9, 39, 4, 60, 6, 26, 9, 535, 9, 470, 0, 2, 54, 8, 3, 82, 0, 12, 1, 19628, 1, 4178, 9, 519, 45, 3, 22, 543, 4, 4, 5, 9, 7, 3, 6, 31, 3, 149, 2, 1418, 49, 513, 54, 5, 49, 9, 0, 15, 0, 23, 4, 2, 14, 1361, 6, 2, 16, 3, 6, 2, 1, 2, 4, 101, 0, 161, 6, 10, 9, 357, 0, 62, 13, 499, 13, 245, 1, 2, 9, 726, 6, 110, 6, 6, 9, 4759, 9, 787719, 239];
 var astralIdentifierStartCodes = [0, 11, 2, 25, 2, 18, 2, 1, 2, 14, 3, 13, 35, 122, 70, 52, 268, 28, 4, 48, 48, 31, 14, 29, 6, 37, 11, 29, 3, 35, 5, 7, 2, 4, 43, 157, 19, 35, 5, 35, 5, 39, 9, 51, 13, 10, 2, 14, 2, 6, 2, 1, 2, 10, 2, 14, 2, 6, 2, 1, 4, 51, 13, 310, 10, 21, 11, 7, 25, 5, 2, 41, 2, 8, 70, 5, 3, 0, 2, 43, 2, 1, 4, 0, 3, 22, 11, 22, 10, 30, 66, 18, 2, 1, 11, 21, 11, 25, 71, 55, 7, 1, 65, 0, 16, 3, 2, 2, 2, 28, 43, 28, 4, 28, 36, 7, 2, 27, 28, 53, 11, 21, 11, 18, 14, 17, 111, 72, 56, 50, 14, 50, 14, 35, 39, 27, 10, 22, 251, 41, 7, 1, 17, 2, 60, 28, 11, 0, 9, 21, 43, 17, 47, 20, 28, 22, 13, 52, 58, 1, 3, 0, 14, 44, 33, 24, 27, 35, 30, 0, 3, 0, 9, 34, 4, 0, 13, 47, 15, 3, 22, 0, 2, 0, 36, 17, 2, 24, 20, 1, 64, 6, 2, 0, 2, 3, 2, 14, 2, 9, 8, 46, 39, 7, 3, 1, 3, 21, 2, 6, 2, 1, 2, 4, 4, 0, 19, 0, 13, 4, 31, 9, 2, 0, 3, 0, 2, 37, 2, 0, 26, 0, 2, 0, 45, 52, 19, 3, 21, 2, 31, 47, 21, 1, 2, 0, 185, 46, 42, 3, 37, 47, 21, 0, 60, 42, 14, 0, 72, 26, 38, 6, 186, 43, 117, 63, 32, 7, 3, 0, 3, 7, 2, 1, 2, 23, 16, 0, 2, 0, 95, 7, 3, 38, 17, 0, 2, 0, 29, 0, 11, 39, 8, 0, 22, 0, 12, 45, 20, 0, 19, 72, 200, 32, 32, 8, 2, 36, 18, 0, 50, 29, 113, 6, 2, 1, 2, 37, 22, 0, 26, 5, 2, 1, 2, 31, 15, 0, 328, 18, 16, 0, 2, 12, 2, 33, 125, 0, 80, 921, 103, 110, 18, 195, 2637, 96, 16, 1071, 18, 5, 26, 3994, 6, 582, 6842, 29, 1763, 568, 8, 30, 18, 78, 18, 29, 19, 47, 17, 3, 32, 20, 6, 18, 433, 44, 212, 63, 129, 74, 6, 0, 67, 12, 65, 1, 2, 0, 29, 6135, 9, 1237, 42, 9, 8936, 3, 2, 6, 2, 1, 2, 290, 16, 0, 30, 2, 3, 0, 15, 3, 9, 395, 2309, 106, 6, 12, 4, 8, 8, 9, 5991, 84, 2, 70, 2, 1, 3, 0, 3, 1, 3, 3, 2, 11, 2, 0, 2, 6, 2, 64, 2, 3, 3, 7, 2, 6, 2, 27, 2, 3, 2, 4, 2, 0, 4, 6, 2, 339, 3, 24, 2, 24, 2, 30, 2, 24, 2, 30, 2, 24, 2, 30, 2, 24, 2, 30, 2, 24, 2, 7, 1845, 30, 7, 5, 262, 61, 147, 44, 11, 6, 17, 0, 322, 29, 19, 43, 485, 27, 229, 29, 3, 0, 496, 6, 2, 3, 2, 1, 2, 14, 2, 196, 60, 67, 8, 0, 1205, 3, 2, 26, 2, 1, 2, 0, 3, 0, 2, 9, 2, 3, 2, 0, 2, 0, 7, 0, 5, 0, 2, 0, 2, 0, 2, 2, 2, 1, 2, 0, 3, 0, 2, 0, 2, 0, 2, 0, 2, 0, 2, 1, 2, 0, 3, 3, 2, 6, 2, 3, 2, 3, 2, 0, 2, 9, 2, 16, 6, 2, 2, 4, 2, 16, 4421, 42719, 33, 4153, 7, 221, 3, 5761, 15, 7472, 16, 621, 2467, 541, 1507, 4938, 6, 4191];
 var nonASCIIidentifierChars = "\u200C\u200D\xB7\u0300-\u036F\u0387\u0483-\u0487\u0591-\u05BD\u05BF\u05C1\u05C2\u05C4\u05C5\u05C7\u0610-\u061A\u064B-\u0669\u0670\u06D6-\u06DC\u06DF-\u06E4\u06E7\u06E8\u06EA-\u06ED\u06F0-\u06F9\u0711\u0730-\u074A\u07A6-\u07B0\u07C0-\u07C9\u07EB-\u07F3\u07FD\u0816-\u0819\u081B-\u0823\u0825-\u0827\u0829-\u082D\u0859-\u085B\u0897-\u089F\u08CA-\u08E1\u08E3-\u0903\u093A-\u093C\u093E-\u094F\u0951-\u0957\u0962\u0963\u0966-\u096F\u0981-\u0983\u09BC\u09BE-\u09C4\u09C7\u09C8\u09CB-\u09CD\u09D7\u09E2\u09E3\u09E6-\u09EF\u09FE\u0A01-\u0A03\u0A3C\u0A3E-\u0A42\u0A47\u0A48\u0A4B-\u0A4D\u0A51\u0A66-\u0A71\u0A75\u0A81-\u0A83\u0ABC\u0ABE-\u0AC5\u0AC7-\u0AC9\u0ACB-\u0ACD\u0AE2\u0AE3\u0AE6-\u0AEF\u0AFA-\u0AFF\u0B01-\u0B03\u0B3C\u0B3E-\u0B44\u0B47\u0B48\u0B4B-\u0B4D\u0B55-\u0B57\u0B62\u0B63\u0B66-\u0B6F\u0B82\u0BBE-\u0BC2\u0BC6-\u0BC8\u0BCA-\u0BCD\u0BD7\u0BE6-\u0BEF\u0C00-\u0C04\u0C3C\u0C3E-\u0C44\u0C46-\u0C48\u0C4A-\u0C4D\u0C55\u0C56\u0C62\u0C63\u0C66-\u0C6F\u0C81-\u0C83\u0CBC\u0CBE-\u0CC4\u0CC6-\u0CC8\u0CCA-\u0CCD\u0CD5\u0CD6\u0CE2\u0CE3\u0CE6-\u0CEF\u0CF3\u0D00-\u0D03\u0D3B\u0D3C\u0D3E-\u0D44\u0D46-\u0D48\u0D4A-\u0D4D\u0D57\u0D62\u0D63\u0D66-\u0D6F\u0D81-\u0D83\u0DCA\u0DCF-\u0DD4\u0DD6\u0DD8-\u0DDF\u0DE6-\u0DEF\u0DF2\u0DF3\u0E31\u0E34-\u0E3A\u0E47-\u0E4E\u0E50-\u0E59\u0EB1\u0EB4-\u0EBC\u0EC8-\u0ECE\u0ED0-\u0ED9\u0F18\u0F19\u0F20-\u0F29\u0F35\u0F37\u0F39\u0F3E\u0F3F\u0F71-\u0F84\u0F86\u0F87\u0F8D-\u0F97\u0F99-\u0FBC\u0FC6\u102B-\u103E\u1040-\u1049\u1056-\u1059\u105E-\u1060\u1062-\u1064\u1067-\u106D\u1071-\u1074\u1082-\u108D\u108F-\u109D\u135D-\u135F\u1369-\u1371\u1712-\u1715\u1732-\u1734\u1752\u1753\u1772\u1773\u17B4-\u17D3\u17DD\u17E0-\u17E9\u180B-\u180D\u180F-\u1819\u18A9\u1920-\u192B\u1930-\u193B\u1946-\u194F\u19D0-\u19DA\u1A17-\u1A1B\u1A55-\u1A5E\u1A60-\u1A7C\u1A7F-\u1A89\u1A90-\u1A99\u1AB0-\u1ABD\u1ABF-\u1ACE\u1B00-\u1B04\u1B34-\u1B44\u1B50-\u1B59\u1B6B-\u1B73\u1B80-\u1B82\u1BA1-\u1BAD\u1BB0-\u1BB9\u1BE6-\u1BF3\u1C24-\u1C37\u1C40-\u1C49\u1C50-\u1C59\u1CD0-\u1CD2\u1CD4-\u1CE8\u1CED\u1CF4\u1CF7-\u1CF9\u1DC0-\u1DFF\u200C\u200D\u203F\u2040\u2054\u20D0-\u20DC\u20E1\u20E5-\u20F0\u2CEF-\u2CF1\u2D7F\u2DE0-\u2DFF\u302A-\u302F\u3099\u309A\u30FB\uA620-\uA629\uA66F\uA674-\uA67D\uA69E\uA69F\uA6F0\uA6F1\uA802\uA806\uA80B\uA823-\uA827\uA82C\uA880\uA881\uA8B4-\uA8C5\uA8D0-\uA8D9\uA8E0-\uA8F1\uA8FF-\uA909\uA926-\uA92D\uA947-\uA953\uA980-\uA983\uA9B3-\uA9C0\uA9D0-\uA9D9\uA9E5\uA9F0-\uA9F9\uAA29-\uAA36\uAA43\uAA4C\uAA4D\uAA50-\uAA59\uAA7B-\uAA7D\uAAB0\uAAB2-\uAAB4\uAAB7\uAAB8\uAABE\uAABF\uAAC1\uAAEB-\uAAEF\uAAF5\uAAF6\uABE3-\uABEA\uABEC\uABED\uABF0-\uABF9\uFB1E\uFE00-\uFE0F\uFE20-\uFE2F\uFE33\uFE34\uFE4D-\uFE4F\uFF10-\uFF19\uFF3F\uFF65";
@@ -14411,7 +14411,7 @@ var zh_CN_default = Object.freeze({
   "diagnostics.dismiss": "\u5173\u95ED\u95EE\u9898\u6458\u8981\uFF08\u4ECD\u53EF\u5728 DT \u2192 \u8BCA\u65AD\u4E2D\u67E5\u770B\uFF09",
   "diagnostics.playthrough": "\u67E5\u770B\u300C{name}\u300D\u7684\u95EE\u9898",
   "diagnostics.logsTitle": "\u64CD\u4F5C\u65E5\u5FD7",
-  "diagnostics.logsScope": "\u6309\u65F6\u95F4\u67E5\u770B\u540E\u7AEF\u64CD\u4F5C\u53CA\u5DF2\u786E\u8BA4\u7684\u7ED3\u679C\uFF0C\u6700\u65B0\u8BB0\u5F55\u5728\u524D\u3002\u5C55\u5F00\u540E\u5373\u53EF\u8BFB\u53D6\uFF0C\u65E0\u9700\u64CD\u4F5C\u7F16\u53F7\u3002\u65E5\u5FD7\u4F1A\u8F6E\u8F6C\uFF0C\u4E0D\u662F\u4E1A\u52A1\u5386\u53F2\uFF0C\u4E0E\u5F53\u524D\u95EE\u9898\u548C Prompt Trace \u5206\u5F00\u3002",
+  "diagnostics.logsScope": "\u6700\u8FD1\u7684\u540E\u7AEF\u64CD\u4F5C\uFF0C\u6BCF\u9875 5 \u6761\uFF0C\u6700\u65B0\u5728\u524D\u3002\u65E5\u5FD7\u4F1A\u8F6E\u8F6C\uFF0C\u4E0D\u662F\u4E1A\u52A1\u5386\u53F2\u6216\u6A21\u578B\u6267\u884C\u7ED3\u679C\u3002",
   "diagnostics.logsFilter": "\u64CD\u4F5C\u7F16\u53F7 operationId\uFF08\u7CBE\u786E\u5339\u914D\uFF0C\u53EF\u7559\u7A7A\uFF09",
   "diagnostics.logsLoad": "\u67E5\u8BE2\uFF0F\u5237\u65B0",
   "diagnostics.logsOlder": "\u66F4\u65E9\u4E00\u9875",
@@ -14472,6 +14472,13 @@ var zh_CN_default = Object.freeze({
   "diagnostics.logsResult.playthrough.timeline.updated": "\u5468\u76EE\u65F6\u95F4\u7EBF\u5DF2\u66F4\u65B0 \xB7 \u6B64\u68C0\u67E5\u70B9\u5DF2\u786E\u8BA4",
   "diagnostics.logsResult.playthrough.catalog.updated": "\u5468\u76EE\u76EE\u5F55\u5DF2\u66F4\u65B0 \xB7 \u6B64\u68C0\u67E5\u70B9\u5DF2\u786E\u8BA4",
   "diagnostics.logsResult.playthrough.catalog.restored": "\u5468\u76EE\u76EE\u5F55\u5DF2\u6062\u590D \xB7 \u6B64\u68C0\u67E5\u70B9\u5DF2\u786E\u8BA4",
+  "diagnostics.logsTroubleshoot": "\u6A21\u578B\u751F\u6210\u5931\u8D25\u65F6\u770B\u54EA\u91CC\uFF1F",
+  "diagnostics.logsBoundary": "\u8FD9\u91CC\u80FD\u786E\u8BA4\u8BF7\u6C42\u5DF2\u8FDB\u5165\u540E\u7AEF\u3001\u8F93\u5165\u5DF2\u88AB\u63A5\u53D7\u6216\u67D0\u4E2A\u5199\u5165\u68C0\u67E5\u70B9\u5DF2\u5B8C\u6210\u3002\u8F93\u5165\u5DF2\u63A5\u53D7\u4E0D\u7B49\u4E8E\u6A21\u578B\u8C03\u7528\u6210\u529F\uFF1B\u540E\u7EED\u5F02\u6B65\u5931\u8D25\u6216\u539F\u751F DSH \u8BF7\u6C42\u53EF\u80FD\u6CA1\u6709\u5BF9\u5E94\u64CD\u4F5C\u65E5\u5FD7\u3002\u6CA1\u6709\u5931\u8D25\u8BB0\u5F55\u4E5F\u4E0D\u8BC1\u660E\u6210\u529F\u3002",
+  "diagnostics.logsTraceGuide": "\u590D\u5236\u8BB0\u5F55\u8BE6\u60C5\u4E2D\u7684\u5B9A\u4F4D\u4FE1\u606F\uFF0C\u5207\u56DE DSH \u539F\u751F\u754C\u9762\uFF0C\u6253\u5F00\u5BF9\u5E94\u4F1A\u8BDD\u5E76\u9009\u62E9\u9876\u90E8 Tavern Trace\uFF0C\u6309\u65F6\u95F4\u6838\u5BF9\u8F6E\u6B21\u3001\u6B65\u9AA4\u548C\u5C1D\u8BD5\uFF1B\u67E5\u770B\u5DF2\u8BB0\u5F55\u7684\u5B9E\u9645\u88C5\u914D\u4E0E\u53EF\u7528\u5931\u8D25\u5F15\u7528\uFF0C\u518D\u5BF9\u7167 DSH \u539F\u751F\u6267\u884C\u8BB0\u5F55\u3002\u8BF7\u6C42\u5DF2\u89C2\u5BDF\u5230\u4E5F\u4E0D\u4EE3\u8868\u9002\u914D\u5668\u6216\u6A21\u578B\u63A5\u53D7\uFF1BTrace \u7F3A\u5931\u65F6\u4EE5\u539F\u751F\u8BB0\u5F55\u4E3A\u51C6\u3002operationId \u4E0D\u662F Trace \u6216 DSH run \u7F16\u53F7\uFF0C\u65E5\u5FD7 runId \u53EA\u662F\u63D2\u4EF6\u5B9E\u4F8B\u7F16\u53F7\u3002",
+  "diagnostics.logsCopyLocator": "\u590D\u5236\u6392\u969C\u5B9A\u4F4D\u4FE1\u606F",
+  "diagnostics.logsLocatorCopied": "\u5DF2\u590D\u5236\u4F1A\u8BDD\uFF0F\u65F6\u95F4\u7B49\u5B9A\u4F4D\u4FE1\u606F\uFF0C\u4E0D\u542B\u6B63\u6587\u3002",
+  "diagnostics.logsLocatorHelp": "\u4EC5\u7528\u4F1A\u8BDD\u4E0E\u65F6\u95F4\u8F85\u52A9\u5B9A\u4F4D\uFF0C\u4E0D\u81EA\u52A8\u5339\u914D\u67D0\u6B21\u6A21\u578B\u8FD0\u884C\uFF0C\u4E5F\u4E0D\u8BFB\u53D6 Trace \u6B63\u6587\u3002\u590D\u5236\u7684 API \u8DEF\u5F84\u7528\u4E8E\u6280\u672F\u6392\u67E5\uFF0C\u4E0D\u662F\u7F51\u9875\u94FE\u63A5\u3002",
+  "diagnostics.logsLocatorNoSession": "\u672C\u6761\u672A\u8BB0\u5F55\u4F1A\u8BDD\u7F16\u53F7\uFF0C\u65E0\u6CD5\u636E\u6B64\u5B9A\u4F4D\u4F1A\u8BDD Trace\u3002",
   "diagnostics.scope": "\u5F53\u524D RP \u5DE5\u4F5C\u533A\u7684\u95EE\u9898\u3002\u4FEE\u590D\u540E\u91CD\u65B0\u68C0\u67E5\u5373\u53EF\u66F4\u65B0\uFF1B\u5173\u95ED\u4FA7\u680F\u6458\u8981\u4E0D\u4F1A\u5220\u9664\u95EE\u9898\u3002",
   "diagnostics.count": "{count} \u4E2A\u95EE\u9898",
   "diagnostics.sessionMissing": "\u6B64\u5468\u76EE\u5F15\u7528\u7684 DSH \u4F1A\u8BDD\u65E5\u5FD7\u7F3A\u5931\u3002",
@@ -15349,7 +15356,7 @@ var en_default = Object.freeze({
   "diagnostics.dismiss": "Dismiss summary (still available in DT \u2192 Diagnostics)",
   "diagnostics.playthrough": "View problems for {name}",
   "diagnostics.logsTitle": "Operation logs",
-  "diagnostics.logsScope": "Browse backend operations and confirmed results, newest first. Opening this panel loads records; no operation ID is needed. Logs rotate and are separate from business history, current issues, and Prompt Trace.",
+  "diagnostics.logsScope": "Recent backend operations, 5 per page, newest first. Logs rotate; they are not business history or model execution results.",
   "diagnostics.logsFilter": "Operation ID / operationId (exact match, optional)",
   "diagnostics.logsLoad": "Load / refresh",
   "diagnostics.logsOlder": "Older page",
@@ -15410,6 +15417,13 @@ var en_default = Object.freeze({
   "diagnostics.logsResult.playthrough.timeline.updated": "Playthrough timeline updated \xB7 checkpoint confirmed",
   "diagnostics.logsResult.playthrough.catalog.updated": "Playthrough catalog updated \xB7 checkpoint confirmed",
   "diagnostics.logsResult.playthrough.catalog.restored": "Playthrough catalog restored \xB7 checkpoint confirmed",
+  "diagnostics.logsTroubleshoot": "Where to look when generation fails",
+  "diagnostics.logsBoundary": "These logs confirm request entry, accepted input, or a completed write checkpoint. Accepted input does not mean a successful model call; later asynchronous failures and native DSH requests may have no operation record. No failure record does not prove success.",
+  "diagnostics.logsTraceGuide": "Copy the locator from record details. Switch to the native DSH interface, open that session and select Tavern Trace at the top. Compare time, turn, step and attempt; inspect any recorded request assembly and available failure reference, then compare with native DSH execution records. Request observed does not mean adapter or model acceptance; use native records when Trace is missing. operationId is not a Trace or DSH run ID, and log runId identifies only a plugin instance.",
+  "diagnostics.logsCopyLocator": "Copy troubleshooting locator",
+  "diagnostics.logsLocatorCopied": "Session/time locator copied, without message content.",
+  "diagnostics.logsLocatorHelp": "Correlates by session and time only, without automatically matching a model run or reading Trace content. The copied API path is for technical diagnosis, not a webpage link.",
+  "diagnostics.logsLocatorNoSession": "This record has no session ID, so it cannot locate a session Trace.",
   "diagnostics.scope": "Problems in the current RP workspace. Recheck after fixing them; dismissing the sidebar summary does not remove problems.",
   "diagnostics.count": "{count} problems",
   "diagnostics.sessionMissing": "DSH session logs referenced by this playthrough are missing.",
@@ -24010,7 +24024,7 @@ globalThis.__ready=()=>{document.dispatchEvent(new __DOM.Event('DOMContentLoaded
   }, notifyVariables: (value) => send("variables", value) };
 }
 
-// node_modules/dompurify/dist/purify.es.mjs
+// ../diagnostics-log-ux/node_modules/dompurify/dist/purify.es.mjs
 function _OverloadYield(e, d2) {
   this.v = e, this.k = d2;
 }
@@ -26008,7 +26022,7 @@ function restrictStaticResources(fragment) {
   }
 }
 
-// node_modules/marked/lib/marked.esm.js
+// ../diagnostics-log-ux/node_modules/marked/lib/marked.esm.js
 function C() {
   return { async: false, breaks: false, extensions: null, gfm: true, hooks: null, pedantic: false, renderer: null, silent: false, tokenizer: null, walkTokens: null };
 }
@@ -27380,7 +27394,7 @@ function mountStyledHtml(element) {
   }
 }
 
-// node_modules/katex/dist/katex.mjs
+// ../diagnostics-log-ux/node_modules/katex/dist/katex.mjs
 var ParseError = class _ParseError extends Error {
   // The underlying error message without any context added.
   constructor(message, token) {
@@ -42180,7 +42194,7 @@ var RichText = (0, import_react16.memo)(function RichText2({ text: text3, classN
   });
 });
 
-// node_modules/quickjs-emscripten-core/dist/index.mjs
+// ../diagnostics-log-ux/node_modules/quickjs-emscripten-core/dist/index.mjs
 init_dist();
 async function newQuickJSWASMModuleFromVariant(variantOrPromise) {
   let variant2 = smartUnwrap(await variantOrPromise), [wasmModuleLoader, QuickJSFFI2, { QuickJSWASMModule: QuickJSWASMModule2 }] = await Promise.all([variant2.importModuleLoader().then(smartUnwrap), variant2.importFFI(), Promise.resolve().then(() => (init_module_6F3E5H7Y(), module_6F3E5H7Y_exports)).then(smartUnwrap)]), wasmModule = await wasmModuleLoader();
@@ -42192,7 +42206,7 @@ function smartUnwrap(val) {
   return val && "default" in val && val.default ? val.default && "default" in val.default && val.default.default ? val.default.default : val.default : val;
 }
 
-// node_modules/@jitl/quickjs-singlefile-browser-release-sync/dist/index.mjs
+// ../diagnostics-log-ux/node_modules/@jitl/quickjs-singlefile-browser-release-sync/dist/index.mjs
 var variant = { type: "sync", importFFI: () => Promise.resolve().then(() => (init_ffi(), ffi_exports)).then((mod) => mod.QuickJSFFI), importModuleLoader: () => Promise.resolve().then(() => (init_emscripten_module_browser_VTL2UBYQ(), emscripten_module_browser_VTL2UBYQ_exports)).then((mod) => mod.default) };
 var src_default = variant;
 
@@ -44487,10 +44501,21 @@ function operationPageJsonl(page) {
   const { records, ...metadata } = page;
   return [JSON.stringify({ type: "metadata", ...metadata }), ...records.map((row) => JSON.stringify(row))].join("\n") + "\n";
 }
+function operationLocator(row) {
+  const locator = { type: "tavern-operation-locator", correlation: "session-and-time-only" };
+  for (const key2 of ["schemaVersion", "eventVersion", "timestamp", "operationId", "sessionId", "playthroughId", "operation", "event", "stage", "result", "errorCode", "status"]) {
+    if (row[key2] !== void 0) locator[key2] = row[key2];
+  }
+  if (row.id !== void 0) locator.recordId = row.id;
+  if (row.runId !== void 0) locator.pluginInstanceId = row.runId;
+  if (row.sessionId) locator.traceIndexApiPath = `${API_V3}/sessions/${encodeURIComponent(row.sessionId)}/assemblies`;
+  return JSON.stringify(locator, null, 2);
+}
 
 // packages/client/src/play/diagnostics.js
 var h18 = createLocalizedElement(import_react21.createElement);
 var diagnosticsCss = `
+.dtv-panel.dtv-diagnostics{z-index:3}
 .dtv-diagnostic-summary{display:flex;align-items:center;gap:4px;margin:4px 8px;padding:5px;border:1px solid var(--dsw-alias-border-l2);border-radius:8px;font-size:11px}
 .dtv-diagnostic-summary button,.dtv-diagnostic-warning{border:0;border-radius:6px;background:transparent;color:var(--dsw-alias-label-secondary);font:inherit;cursor:pointer;padding:5px}
 .dtv-diagnostic-summary button:hover,.dtv-diagnostic-warning:hover{background:var(--dsw-alias-interactive-bg-hover)}
@@ -44624,7 +44649,7 @@ function OperationLogsPanel({ client }) {
         setStatus("diagnostics.logsUnavailable");
         return;
       }
-      const value = await client.getOperationLogs({ operationId: operationId.trim(), before, limit: 100 });
+      const value = await client.getOperationLogs({ operationId: operationId.trim(), before, limit: 5 });
       if (current4 === generation.current) setPage(value);
     } catch (error) {
       if (current4 === generation.current) {
@@ -44643,6 +44668,14 @@ function OperationLogsPanel({ client }) {
     anchor.download = "tavern-operation-logs.jsonl";
     anchor.click();
     setTimeout(() => URL.revokeObjectURL(url), 1e3);
+  };
+  const copyLocator = async (row) => {
+    try {
+      await navigator.clipboard.writeText(operationLocator(row));
+      setCopyStatus("diagnostics.logsLocatorCopied");
+    } catch {
+      setCopyStatus("diagnostics.copyFailed");
+    }
   };
   const copyId = async (id) => {
     try {
@@ -44668,6 +44701,13 @@ function OperationLogsPanel({ client }) {
     },
     h18("summary", null, uiMessage("diagnostics.logsTitle")),
     h18("p", null, uiMessage("diagnostics.logsScope")),
+    h18(
+      "details",
+      { className: "dtv-operation-guide" },
+      h18("summary", null, uiMessage("diagnostics.logsTroubleshoot")),
+      h18("p", null, uiMessage("diagnostics.logsBoundary")),
+      h18("p", null, uiMessage("diagnostics.logsTraceGuide"))
+    ),
     h18(
       "details",
       { className: "dtv-operation-advanced" },
@@ -44735,6 +44775,8 @@ function OperationLogsPanel({ client }) {
               h18("code", { className: "dtv-operation-id" }, rawText(row.operationId)),
               h18("button", { type: "button", className: "dtv-button", onClick: () => copyId(row.operationId), "aria-label": uiMessage("diagnostics.logsCopyIdFor", { id: row.operationId }) }, uiMessage("diagnostics.logsCopyId"))
             ) : null,
+            h18("button", { type: "button", className: "dtv-button", onClick: () => copyLocator(row) }, uiMessage("diagnostics.logsCopyLocator")),
+            h18("p", { className: "dtv-note" }, uiMessage(row.sessionId ? "diagnostics.logsLocatorHelp" : "diagnostics.logsLocatorNoSession")),
             h18("pre", { className: "dtv-operation-raw", tabIndex: 0, "aria-label": uiMessage("diagnostics.logsRawRecord") }, rawText(JSON.stringify(row, null, 2)))
           )
         );

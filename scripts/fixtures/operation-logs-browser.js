@@ -19,12 +19,12 @@ async function run() {
   mount(client); await tick()
   check('panel makes no automatic requests', calls.length === 0)
   await act(async () => { host.querySelector('details').open = true; await new Promise(resolve => setTimeout(resolve, 30)) })
-  check('opening panel loads latest records without an ID', calls.length === 1 && calls[0].operationId === '')
+  check('opening panel loads latest records without an ID', calls.length === 1 && calls[0].operationId === '' && calls[0].limit === 5)
   check('advanced filter starts collapsed with an accessible label and explanation', !host.querySelector('.dtv-operation-advanced').open && host.querySelector('input').labels.length === 1 && document.getElementById(host.querySelector('input').getAttribute('aria-describedby')))
   check('explicit load renders metadata as text', calls.length === 1 && host.textContent.includes('<script>FAIL</script>') && !host.querySelector('script'))
   check('legacy and versioned events render together', host.textContent.includes('operation.completed') && host.textContent.includes('accepted'))
   await click('Older page')
-  check('older page uses returned cursor', calls[1].before === 'cursor')
+  check('older page uses returned cursor', calls[1].before === 'cursor' && calls[1].limit === 5)
   let blob
   const originalCreate = URL.createObjectURL
   const originalClick = HTMLAnchorElement.prototype.click
@@ -77,6 +77,10 @@ async function run() {
   Object.defineProperty(navigator, 'clipboard', { configurable: true, value: { writeText: async value => { copied = value } } })
   await click('Copy operation ID')
   check('copy preserves the complete operation ID and announces status', copied === 'o'.repeat(128) && host.textContent.includes('Operation ID copied'))
+  await click('Copy troubleshooting locator')
+  const locator = JSON.parse(copied)
+  check('locator contains session and time without mislabeling a DSH run', locator.sessionId === 's'.repeat(128) && locator.timestamp === longPage.records[0].timestamp && locator.correlation === 'session-and-time-only' && !('runId' in locator))
+  check('generation guidance is collapsed and explains accepted and native failures', !host.querySelector('.dtv-operation-guide').open && host.textContent.includes('Accepted input does not mean a successful model call') && host.textContent.includes('Tavern Trace at the top'))
   let closeFinish
   mount({ getOperationLogs: () => new Promise(resolve => { closeFinish = resolve }) }); await tick()
   await click('Load / refresh')

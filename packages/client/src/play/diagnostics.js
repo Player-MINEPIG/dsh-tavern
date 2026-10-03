@@ -2,11 +2,12 @@ import { createElement, useEffect, useId, useRef, useState, useSyncExternalStore
 import { createLocalizedElement, rawText, uiMessage } from '../i18n.js'
 import { playthroughDisplayTitle } from './title.js'
 import { workspaceDiagnosticReport } from './diagnostics-state.js'
-import { operationLabel, operationResult, operationObjects, operationPageJsonl } from './operation-log-view.js'
+import { operationLabel, operationResult, operationObjects, operationPageJsonl, operationLocator } from './operation-log-view.js'
 
 const h = createLocalizedElement(createElement)
 
 export const diagnosticsCss = `
+.dtv-panel.dtv-diagnostics{z-index:3}
 .dtv-diagnostic-summary{display:flex;align-items:center;gap:4px;margin:4px 8px;padding:5px;border:1px solid var(--dsw-alias-border-l2);border-radius:8px;font-size:11px}
 .dtv-diagnostic-summary button,.dtv-diagnostic-warning{border:0;border-radius:6px;background:transparent;color:var(--dsw-alias-label-secondary);font:inherit;cursor:pointer;padding:5px}
 .dtv-diagnostic-summary button:hover,.dtv-diagnostic-warning:hover{background:var(--dsw-alias-interactive-bg-hover)}
@@ -116,7 +117,7 @@ export function OperationLogsPanel({ client }) {
     setStatus(null)
     try {
       if (!client?.getOperationLogs) { setStatus('diagnostics.logsUnavailable'); return }
-      const value = await client.getOperationLogs({ operationId: operationId.trim(), before, limit: 100 })
+      const value = await client.getOperationLogs({ operationId: operationId.trim(), before, limit: 5 })
       if (current === generation.current) setPage(value)
     } catch (error) {
       if (current === generation.current) {
@@ -134,6 +135,10 @@ export function OperationLogsPanel({ client }) {
     anchor.click()
     setTimeout(() => URL.revokeObjectURL(url), 1000)
   }
+  const copyLocator = async row => {
+    try { await navigator.clipboard.writeText(operationLocator(row)); setCopyStatus('diagnostics.logsLocatorCopied') }
+    catch { setCopyStatus('diagnostics.copyFailed') }
+  }
   const copyId = async id => {
     try { await navigator.clipboard.writeText(id); setCopyStatus('diagnostics.logsIdCopied') }
     catch { setCopyStatus('diagnostics.copyFailed') }
@@ -148,6 +153,11 @@ export function OperationLogsPanel({ client }) {
   },
     h('summary', null, uiMessage('diagnostics.logsTitle')),
     h('p', null, uiMessage('diagnostics.logsScope')),
+    h('details', { className: 'dtv-operation-guide' },
+      h('summary', null, uiMessage('diagnostics.logsTroubleshoot')),
+      h('p', null, uiMessage('diagnostics.logsBoundary')),
+      h('p', null, uiMessage('diagnostics.logsTraceGuide')),
+    ),
     h('details', { className: 'dtv-operation-advanced' },
       h('summary', null, uiMessage('diagnostics.logsAdvanced')),
       h('p', { id: filterHelpId, className: 'dtv-note' }, uiMessage('diagnostics.logsIdHelp')),
@@ -186,6 +196,8 @@ export function OperationLogsPanel({ client }) {
               h('code', { className: 'dtv-operation-id' }, rawText(row.operationId)),
               h('button', { type: 'button', className: 'dtv-button', onClick: () => copyId(row.operationId), 'aria-label': uiMessage('diagnostics.logsCopyIdFor', { id: row.operationId }) }, uiMessage('diagnostics.logsCopyId')),
             ) : null,
+            h('button', { type: 'button', className: 'dtv-button', onClick: () => copyLocator(row) }, uiMessage('diagnostics.logsCopyLocator')),
+            h('p', { className: 'dtv-note' }, uiMessage(row.sessionId ? 'diagnostics.logsLocatorHelp' : 'diagnostics.logsLocatorNoSession')),
             h('pre', { className: 'dtv-operation-raw', tabIndex: 0, 'aria-label': uiMessage('diagnostics.logsRawRecord') }, rawText(JSON.stringify(row, null, 2))),
           ),
         )
