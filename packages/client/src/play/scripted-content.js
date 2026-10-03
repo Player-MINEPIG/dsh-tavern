@@ -58,7 +58,7 @@ export function prepareCardDocument(source, owners = [], helpers = [], trust = r
   const read = (url, ownerHint) => {
     if (!url) throw Error('Blocked dependency URL')
     const owner = ownerHint ?? owners.find(owner => trust.isEnabled(owner,url) && trust.inspect(owner,url)?.approved)
-    if (!owner) throw Error('Rendering dependency requires content review: ' + url)
+    if (!owner) throw Error('Rendering dependency is not downloaded: ' + url)
     const content = trust.read(owner,url)
     if (!seen.has(url)) { seen.add(url); total += content.length }
     if (seen.size > 24 || total > 24 * 1024 * 1024) throw Error('Rendering dependency graph exceeds limit')
@@ -98,17 +98,16 @@ export function prepareCardDocument(source, owners = [], helpers = [], trust = r
   if (source.length > 1024*1024) throw Error('Card HTML exceeds 1 MiB')
   const template = document.createElement('template'); template.innerHTML = source
   for (const helper of helpers.filter(item => item.enablementAmbiguous ? item.enabled : trust.isEnabled(item.owner,item.preferenceKey??item.key,item.enabled))) {
-    // The helper's exact source must still match what the user reviewed.
+    // Inline scripts follow the card master switch and their saved enablement.
     virtual = true
-    const content = trust.read(helper.owner,helper.key)
-    if (content !== helper.content) throw Error('Helper changed; review again')
+    const content = helper.content
     total += content.length
     if(total > 24 * 1024 * 1024)throw Error('Rendering dependency graph exceeds limit')
     expanded+=content.length;if(expanded>24*1024*1024||runs.length>=128)throw Error('Expanded card input exceeds limit')
     const schemaDependencies=discoverDependencies(content).filter(item=>item.kind==='module').map(item=>({item,record:trust.inspect(helper.owner,item.url)})).filter(({item,record})=>record?.builtin&&mvuBuiltin(item.url,record.digest)?.kind==='backend-schema')
     if(schemaDependencies.length){
       for(const {item,record} of schemaDependencies){trust.read(helper.owner,item.url);adapters.push({...mvuBuiltin(item.url,record.digest),owner:helper.owner,replacement:'Complete schema declaration handled by the backend interpreter'})}
-      schemaDeclarations.push({source:content,owner:helper.owner,key:helper.key,sha256:trust.inspect(helper.owner,helper.key)?.digest})
+      schemaDeclarations.push({source:content,owner:helper.owner,key:helper.key,sha256:helper.contentDigest??trust.inspect(helper.owner,helper.key)?.digest})
       continue
     }
     collect(content,undefined,helper.owner)

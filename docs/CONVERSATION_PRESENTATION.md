@@ -63,7 +63,7 @@ flowchart LR
 
 1. **静态内容**：Markdown → DOMPurify；样式在 Shadow DOM 与绘制边界内隔离。外部自动资源不开放：图片只接受有界 PNG/JPEG/WebP data URI，移除 srcset、poster 等；含 URL、image/image-set/src 函数、`@import` 或转义的 CSS 块/内联样式整体丢弃。正常布局、颜色、渐变、变量、媒体查询和动画可用。外链需用户主动点击，带 `noopener noreferrer`。
 2. **脚本环境**：识别已闭合 `html` 围栏、无语言但以 `<body>`/`<html>` 开头的围栏，以及完整 `<html>…</html>`/`<body>…</body>` 中的控件或脚本。静态 DOM 在 `sandbox="allow-same-origin"`、无 `allow-scripts` 的 iframe 内呈现，CSP 禁止连接、外部图片、脚本、子 frame、表单提交等。卡片 JS 在独立 QuickJS WASM 中运行，不在 iframe 或父页面执行。iframe/Shadow DOM 本身不承担完整权限保证。
-3. **能力接口**：唯一的 JSON bridge 白名单提供卡片内部 DOM 与只读姓名上下文，以及“建议消息”。没有通用 RPC、Host API、凭据、文件、网络、父页面或 native eval 入口；模块仅从逐项审核的本地内容映射解析。建议只在卡片外显示，必须经用户点击 Tavern 按钮才调用已有 `user-message` API。
+3. **能力接口**：唯一的 JSON bridge 白名单提供卡片内部 DOM 与只读姓名上下文，以及“建议消息”。没有通用 RPC、Host API、凭据、文件、网络、父页面或 native eval 入口；模块仅从资源限定的已下载内容映射解析。建议只在卡片外显示，必须经用户点击 Tavern 按钮才调用已有 `user-message` API。
 
 [DSH sandbox 固定版文档](https://github.com/deepseek-ai/deepseek-harness/blob/dsh-v0.2.0-rc.2/packages/sandbox/sandbox/README.md) 隔离的是子进程与文件访问，不能复用为消息 JS 的浏览器隔离。[官方桌面转发](https://github.com/deepseek-ai/deepseek-harness/blob/dsh-v0.2.0-rc.2/apps/desktop/src/web-document.ts) 会剥离 Origin；[桌面请求令牌](API.md#桌面请求令牌) 解决此差异，没有关闭 webSecurity。
 
@@ -94,7 +94,7 @@ flowchart LR
 | `TavernUI.version`, `getContext()` | v1；角色与挂载时复制的 userName/characterName，复制的 JSON，不含 session ID 或凭据 |
 | `TavernUI.proposeMessage(text)` | 最多 4000 字符，生成可见建议；不能自行发送 |
 
-外部 `<script src>` 和 ES 模块必须按下述流程逐项审阅；未授权依赖与内联 on* 会停用整卡脚本。外部来源、Helper 和 JSX 使用专用 Worker 内的 QuickJS 与 linkedom。固定官方 jQuery 3.6.0、React 18.3.1、Vue 3.5.13 夹具覆盖插入 DOM、点击和状态更新；这不代表完整浏览器兼容。提供下述卡片内限定布局读值；可变 CSSOM、canvas、父页面与系统接口仍不可用；本渲染器不提供世界书/聊天/生成接口；写变量走下述单独授权的 MVU 桥。未提供的 API 报错并销毁运行时，不静默成功。静态 HTML 导出不运行卡片脚本，也不导出内存中的交互状态。
+外部 `<script src>` 和 ES 模块使用下述资源依赖获取流程；缺失依赖与内联 on* 会停用整卡脚本。外部来源、Helper 和 JSX 使用专用 Worker 内的 QuickJS 与 linkedom。固定官方 jQuery 3.6.0、React 18.3.1、Vue 3.5.13 夹具覆盖插入 DOM、点击和状态更新；这不代表完整浏览器兼容。提供下述卡片内限定布局读值；可变 CSSOM、canvas、父页面与系统接口仍不可用；本渲染器不提供世界书/聊天/生成接口；写变量走下述单独授权的 MVU 桥。未提供的 API 报错并销毁运行时，不静默成功。静态 HTML 导出不运行卡片脚本，也不导出内存中的交互状态。
 
 上表描述小型内嵌 facade；其每卡源码最多 128K UTF-16 字符单元、解释器 8 MiB/256 KiB 栈；每次执行 60 ms 与 500 次中断检查双重上限、1000 bridge 操作、100 Promise jobs；DOM 最多 2048 handles，最多 256 listeners；高度 100–800 px。超限显示错误。浏览器布局/图片解码、WASM 引擎缺陷和复杂 CSS 的拒绝服务不由解释器配额完全覆盖，不能承诺绝对安全；显示正则仍有既有 RegExp 回溯风险。
 
@@ -104,33 +104,33 @@ flowchart LR
 
 `quickjs-emscripten-core` 与 `@jitl/quickjs-singlefile-browser-release-sync` 固定为 `0.31.0`。浏览器变体把 WASM 嵌入客户端包（嵌入生成客户端包），不使用 CDN 或外部脚本加载器。包装库与引擎的 MIT 声明保留在生成包和[源码声明](../packages/presentation/THIRD_PARTY_NOTICES.txt)中。小型内嵌解释器延迟初始化；外部卡各自使用可终止 Worker 和独立 runtime。Worker 内置 linkedom 0.18.12，并用独立 QuickJS context 运行固定 @babel/standalone 7.26.10，只允许 React preset，不接受卡片编译插件。依赖发现使用 Acorn 8.15.0 与 acorn-jsx 5.3.2。额外声明见[虚拟 DOM 声明](../packages/presentation/VIRTUAL_DOM_NOTICES.txt)。升级依赖需重新验证配额与隔离测试。[上游发布说明](https://github.com/justjake/quickjs-emscripten/releases/tag/v0.31.0)。
 
-样式页顶部为“导入 JSON、导出 JSON、创建样式”。正文字号纳入样式预览，通过滑块或数字输入调节，以可选整数字段 `fontSize` 保存（8–48 px），点击“应用并保存”生效。没有此字段的旧 v1 文件仍可导入，并继承旧的文字缩放；编辑器应用时转换为像素字号。不支持的脚本提示按原因本地化并去重，区分外部文件、模块、其他 script 类型与内联事件属性；脚本总开关不会代替逐来源授权。
+样式页顶部为“导入 JSON、导出 JSON、创建样式”。正文字号纳入样式预览，通过滑块或数字输入调节，以可选整数字段 `fontSize` 保存（8–48 px），点击“应用并保存”生效。没有此字段的旧 v1 文件仍可导入，并继承旧的文字缩放；编辑器应用时转换为像素字号。不支持的脚本提示按原因本地化并去重，区分外部文件、模块、其他 script 类型与内联事件属性；脚本总开关不会下载缺失的外部依赖。
 
 
-## 统一设置与外部源码审核
+## 统一设置与外部依赖
 
-“外部代码”页按当前卡脚本、外部依赖和相关操作分组。唯一的“允许运行卡片脚本”保留原总执行开关语义，包括消息内嵌脚本。左侧勾选通过对话设置保存普通条目选择，首次继承导入的 enabled/disabled 值；“恢复来源默认”删除覆盖。展开可在有界滚动区查看完整惰性源码，长地址不撑宽面板。ⓘ 使用 Host 提示组件，支持悬停、键盘焦点与触屏点击；待审核、暂停和错误状态仍直接显示。内容授权与变量写许可独立于这些保存的选择。身份、重置和持久化规则见[设置 API](API.md)。
+“外部代码”页按当前卡脚本、外部依赖和相关操作分组。唯一的“允许运行卡片脚本”保留原总执行开关语义，包括消息内嵌脚本。左侧勾选通过对话设置保存普通条目选择，首次继承导入的 enabled/disabled 值；“恢复来源默认”删除覆盖。展开可在有界滚动区查看完整惰性源码，长地址不撑宽面板。ⓘ 使用 Host 提示组件，支持悬停、键盘焦点与触屏点击；下载进度、暂停和错误状态仍直接显示。依赖获取与变量写许可独立于这些保存的选择。身份、重置和持久化规则见[设置 API](API.md)。
 
 **DT → 对话设置**包含对话外观、正则替换、外部代码三个页签。切页签保留外观和正则草稿；通过关闭、Esc 或菜单离开时有未保存检查。切换绑定资源时，旧正则草稿保留但停止保存，需先导出或放弃并重新加载。原独立正则菜单合并至此。
 
 清单识别角色卡/预设的 `extensions.tavern_helper` 对象 `{scripts,variables}` 及旧式键值对数组；支持直接脚本和 `type/value`、嵌套 scripts/children 格式。仅读取 scripts，变量语义由 MVU 模块负责。清单同时读取开场白、备选开场白，以及全局、预设和角色正则替换中的 script src、ES import/export/import() 及 `.load()` 字面量，保留来源资源与字段路径。JavaScript 依赖使用 AST 分析，支持多行 import/export 和字面量动态 import，注释和普通字符串不产生依赖。计算型动态 import 与语法错误会明确阻断依赖图。
 
-1. 默认不抓取任何远程代码，不增加 Host 代理。可信设置页可逐 URL 点击下载，使用浏览器 CORS、无凭据、禁止重定向及 no-referrer，流式限制 8 MiB，15 秒超时；取消/切换会中止读取，下载只准备审核、不执行。CORS 失败可导入本地源码。外部依赖仅接受无凭据、无非默认端口的 HTTPS 公共形式地址；HTTP、本机地址、IP 字面量和相对无基准地址明确阻断。本地缓存不发起 DNS 或网络请求。这是 URL 形式检查；浏览器获取不能核验 DNS 实际解析是否为私有地址，不能视为 public-only 网络保证。
-2. 下载或通过文件选择器导入该 URL 对应的源码，或准备审核 Helper 内嵌源码。显示完整内容与 SHA-256；导入本身不授予执行权限。
-3. 点击“已核对内容，允许受限执行”。授权绑定资源身份、精确 URL/字段及内容摘要；替换源码立即撤销旧授权。摘要用于固定所审阅字节，不证明代码来自网络声明的作者。
-4. 嵌套依赖逐项导入并审阅。受限 `$('body').load('https://…')` / `jQuery` 包装由渲染器读取已审阅 HTML，不执行网络请求；HTML 内相对脚本/模块以原 URL 解析。包装不接受请求参数、回调、选择器后缀或嵌套 `.load` 包装。其他网络用法不兼容。
-5. 撤销、替换、全局禁用、会话/variant 切换及卸载会取消旧绑定、销毁解释器和订阅。授权与缓存只在当前页面内存保留，刷新或插件卸载后清空，不从卡片、工作区文件或 localStorage 恢复。未授权时显示静态内容与原因；清单“内容已授权”不等于脚本执行成功，运行错误显示在卡片外。
+1. 导入角色卡或预设后，统一列出直接声明的来源，并询问是否下载完整依赖图。一次同意涵盖这些来源的静态递归依赖；旧资源可在“外部代码”点击“下载资源依赖”。内嵌 Helper 不需要内容审批，按原卡启用值、本地选择与总开关运行。下载同意不授予 Host 或变量写权限。
+2. 可信界面使用浏览器 CORS、无凭据、禁止重定向及 no-referrer 获取 HTTPS 静态文本；单文件上限 8 MiB、15 秒超时。图按 URL 去重并自动收敛，最多 24 个文件、8 层与 24 MiB。循环引用不重复下载，计算型或不能解析的引用、网络失败与超限都有明确状态。URL 形式检查不核验 DNS 结果，不能视为 public-only 网络保证。
+3. 获取状态按资源显示进度与失败项，可展开浏览完整代码、重新下载或卸载。重新下载替换图内容；取消/卸载中止请求并忽略迟到结果。不同 owner 不继承同 URL 的缓存；一张卡同时使用同 URL 不同内容时明确拒绝。
+4. 图与资源来源指纹保存在当前浏览器、当前 Host origin 的专用 IndexedDB 中，刷新仅恢复缓存，不发起网络。来源内容变化会撤销旧运行图并提示一次更新下载。卸载删除该资源缓存，并通知同源标签页销毁旧运行图；插件卸载销毁当前运行时但保留浏览器缓存以便重装。摘要用于身份和完整性，不证明作者身份。卡片不能读取或操作缓存。
+5. 受限 `$('body').load('https://…')` / jQuery 包装读取已下载 HTML；相对脚本/模块以原 URL 解析，不提供请求参数、回调、选择器后缀或嵌套包装，也不为 Worker 开放网络。禁用、图替换、会话/variant 切换及卸载会取消旧绑定、销毁解释器和订阅。缺失依赖保留静态界面与原因；“已下载”不代表执行成功。
 
 ```mermaid
 flowchart LR
-  A[卡片 / 预设 / 正则来源] --> B[只读发现依赖]
-  B --> C[用户导入并核对内容与摘要]
-  C -->|逐资源授权| D[页面内审阅缓存]
-  D --> E[受限 QuickJS 与禁脚本 iframe]
-  F[撤销 / 切换 / 卸载] --> G[取消绑定并销毁运行时]
+  A[卡片 / 预设 / 正则来源] --> B[静态发现依赖]
+  B --> C[一次同意获取资源依赖图]
+  C --> D[有界去重下载与浏览器缓存]
+  D --> E[隔离 QuickJS 与禁脚本 iframe]
+  F[更新 / 禁用 / 卸载] --> G[取消绑定并销毁运行时]
 ```
 
-审核资源最多 8 MiB；缓存最多 64 项/64 MiB；每卡依赖图最多 24 个 URL、24M UTF-16 字符单元和 8 层。每个 owner 都必须审核完整传递闭包；同 URL 不同审核内容会拒绝。输入 HTML 仍限 128K 字符，解析后的远程 HTML 限 1 MiB。卡片不能操作缓存。Helper 在本卡 HTML 脚本之前运行，不提供独立后台任务，也不声称任意 MVU bundle 已兼容。
+运行内存缓存最多 64 项/64 MiB；每卡装载最多 24 个 URL、24M UTF-16 字符单元和 8 层。输入 HTML 仍限 128K 字符，解析后的远程 HTML 限 1 MiB。Helper 在本卡 HTML 脚本之前运行，不提供独立后台任务，也不声称任意 MVU bundle 已兼容。
 
 外部 Worker 最多并发 4 卡，每卡解释器堆 192 MiB、栈 1 MiB（总解释器上限 768 MiB，不含浏览器/Worker 开销）。冷启动外部看门狗为 15 秒，初始单次执行 2 秒，后续入口 120 ms，响应外部看门狗 1.5 秒。每入口最多 200 Promise jobs、10,000 桥接调用；每卡最多 128 定时器、8,192 DOM 节点、1 MiB 输出，每秒最多 256 输出消息和 128 输入事件。定时器范围 16–60,000 ms；动画回调用定时器实现，不等价原生布局时钟。展示 iframe 无脚本权限且 CSP 禁止网络；第三方代码只得到解释器内虚拟 DOM，不获得原生 Worker/浏览器句柄。
 
@@ -158,7 +158,7 @@ click/input/change/key/pointer 事件复制为虚拟事件，输出净化后展�
 主线程识别浏览器 `isTrusted` 输入，原生 Worker 仅在处理该事件期间携带私有 taskId，VM 不接触它。原生定时器单独标记 interval，程序生成点击与初始执行为 script，卡不能选择 cause。Host 服务依赖现有可信 UI dispatcher 提供浏览器事件证据，不能独立或密码学证明人类点击；grant 创建及撤销在读请求体前额外要求 DSH connection admission，并保留本机 Origin/媒体类型/桌面 token 防护；缺少 admission 时关闭写入口。已 admission 的 dispatcher 是受信边界，不等于密码学人类点击证明。grantId 和 MVU capability 从不进入解释器。
 
 
-内置 MVU 适配另行选择，默认关闭。仅 `mvu-builtins.js` 中的精确 URL 与 SHA-256 字节身份在内容审核后提供选项。界面和运行审计明确标注不执行原 bundle，保留原身份及限定作用域的 facade 版本。支持副作用 import 与普通 script 初始化；不冒充具名导出、动态注册或任意运行时 Zod 对象。完整 schema Helper 仅在可用权威快照的 `variables.mvu_schema` 满足 `mvuSchema:1`、`interpreterVersion:1` 且完整 source 精确一致时跳过 VM 执行。显示的 `source-registered` 是快照派生的本地确认，不是注册 API；快照不可用、未知版本及原文不同均明确失败。
+内置 MVU 适配另行选择，默认关闭。仅 `mvu-builtins.js` 中的精确 URL 与 SHA-256 字节身份在下载后提供选项。界面和运行审计明确标注不执行原 bundle，保留原身份及限定作用域的 facade 版本。支持副作用 import 与普通 script 初始化；不冒充具名导出、动态注册或任意运行时 Zod 对象。完整 schema Helper 仅在可用权威快照的 `variables.mvu_schema` 满足 `mvuSchema:1`、`interpreterVersion:1` 且完整 source 精确一致时跳过 VM 执行。显示的 `source-registered` 是快照派生的本地确认，不是注册 API；快照不可用、未知版本及原文不同均明确失败。
 
 传输前及 Worker 内再次限制展开后的初始化：最多 128 个 runs、24 个模块及 24 MiB UTF-8 总量，重复代码仍计费，context/variables 限 256 KiB。早期 timer 的 idle 不取消启动截止。四个运行实例用满时，可用卡片外的暂停和启动/重启按钮释放旧实例。原生待决写入最多 32 项并要求单调 ID；一次可信输入 task 最多归属一次写入。写入等待截止为 30 秒，结果不确定或回传失败会终止运行时并显示 operationId 供回执核查，不自动生成新 ID 重试。本地撤销立即停止写入；服务端撤销失败即使卡片卸载仍保留可见重试项。
 

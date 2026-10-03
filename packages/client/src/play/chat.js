@@ -1,3 +1,4 @@
+import {renderingDependencies} from './rendering-dependencies.js'
 import { readRenderingWorkspace, identifyRenderingSources, renderingInventory } from './rendering-sources.js'
 import { ConversationPresentation, MessageBubble, messageAvatarKey, characterAvatarUrl } from './presentation.js'
 import { finishPendingSwipe, pendingSwipeForSession } from './pending-swipe.js'
@@ -229,6 +230,7 @@ export async function loadChatState(client, sessionId, playthrough) {
     ),
   }
   regexDiagnostics.push(...(displayGreeting?.diagnostics ?? []))
+  const renderingSources=await identifyRenderingSources([...renderingInventory(characterResponse?.character ?? characterResponse,{kind:'character',resourceId:bindings.characterId}),...renderingInventory(presetResponse?.preset ?? presetResponse,{kind:'preset',resourceId:bindings.presetId})])
   return {
     avatars: { user: userSelection?.user?.avatar ?? null, assistant: characterAvatarUrl(characterId) },
     pendingSwipeError: pending?.error ?? null,
@@ -239,7 +241,7 @@ export async function loadChatState(client, sessionId, playthrough) {
     importMutable,
     greeting: displayGreeting,
     regexDiagnostics,
-    display: { rules, bindings, macros, globalRenderingOwner: globalOwner, renderingSources: await identifyRenderingSources([...renderingInventory(characterResponse?.character ?? characterResponse,{kind:'character',resourceId:bindings.characterId}),...renderingInventory(presetResponse?.preset ?? presetResponse,{kind:'preset',resourceId:bindings.presetId})]) },
+    display: { rules, bindings, macros, globalRenderingOwner: globalOwner, renderingSources },
   }
 }
 
@@ -692,7 +694,10 @@ export function MowanChatView({ sessionId, useSession, useChat, playClient, play
       setTransition(null)
     }
     setError('')
-    loadChatState(playClient, sessionId, playthrough).then(next => {
+    loadChatState(playClient, sessionId, playthrough).then(async next => {
+      if (!active) return
+      const {renderingSources,globalRenderingOwner:globalOwner,rules,bindings}=next.display
+      await renderingDependencies.sync([...renderingSources,...(globalOwner?renderingInventory({regex_scripts:rules.filter(rule=>rule.scope.kind==='global')},{kind:'global',resourceId:globalOwner.slice(7)}):[])],[bindings.characterId&&'character:'+bindings.characterId,bindings.presetId&&'preset:'+bindings.presetId,globalOwner])
       if (!active) return
       const incoming = { sessionId, value: next }
       const previous = loadedStateRef.current
