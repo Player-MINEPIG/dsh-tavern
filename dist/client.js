@@ -14326,8 +14326,8 @@ var zh_CN_default = Object.freeze({
   "diagnostics.dismiss": "\u5173\u95ED\u95EE\u9898\u6458\u8981\uFF08\u4ECD\u53EF\u5728 DT \u2192 \u8BCA\u65AD\u4E2D\u67E5\u770B\uFF09",
   "diagnostics.playthrough": "\u67E5\u770B\u300C{name}\u300D\u7684\u95EE\u9898",
   "diagnostics.logsTitle": "\u64CD\u4F5C\u65E5\u5FD7",
-  "diagnostics.logsScope": "\u4EC5\u8BB0\u5F55\u540E\u7AEF\u64CD\u4F5C\u5143\u6570\u636E\uFF0C\u4E0E\u5F53\u524D\u95EE\u9898\u548C Prompt Trace \u5206\u5F00\u3002\u65E5\u5FD7\u4F1A\u8F6E\u8F6C\uFF0C\u4E0D\u662F\u4E1A\u52A1\u5386\u53F2\uFF1B\u5BFC\u51FA\u4EC5\u5305\u542B\u5F53\u524D\u9875\uFF0C\u53EF\u80FD\u5305\u542B\u79C1\u5BC6\u6807\u8BC6\uFF0C\u5206\u4EAB\u524D\u8BF7\u68C0\u67E5\u3002",
-  "diagnostics.logsFilter": "\u6309 operationId \u7B5B\u9009\uFF08\u53EF\u7559\u7A7A\uFF09",
+  "diagnostics.logsScope": "\u6309\u65F6\u95F4\u67E5\u770B\u540E\u7AEF\u64CD\u4F5C\u53CA\u5DF2\u786E\u8BA4\u7684\u7ED3\u679C\uFF0C\u6700\u65B0\u8BB0\u5F55\u5728\u524D\u3002\u5C55\u5F00\u540E\u5373\u53EF\u8BFB\u53D6\uFF0C\u65E0\u9700\u64CD\u4F5C\u7F16\u53F7\u3002\u65E5\u5FD7\u4F1A\u8F6E\u8F6C\uFF0C\u4E0D\u662F\u4E1A\u52A1\u5386\u53F2\uFF0C\u4E0E\u5F53\u524D\u95EE\u9898\u548C Prompt Trace \u5206\u5F00\u3002",
+  "diagnostics.logsFilter": "\u64CD\u4F5C\u7F16\u53F7 operationId\uFF08\u7CBE\u786E\u5339\u914D\uFF0C\u53EF\u7559\u7A7A\uFF09",
   "diagnostics.logsLoad": "\u67E5\u8BE2\uFF0F\u5237\u65B0",
   "diagnostics.logsOlder": "\u66F4\u65E9\u4E00\u9875",
   "diagnostics.logsExport": "\u5BFC\u51FA\u5F53\u524D\u9875",
@@ -14335,7 +14335,58 @@ var zh_CN_default = Object.freeze({
   "diagnostics.logsFailed": "\u65E5\u5FD7\u8BFB\u53D6\u5931\u8D25\uFF0C\u8BF7\u7A0D\u540E\u91CD\u8BD5\u3002",
   "diagnostics.logsExpired": "\u6B64\u9875\u5DF2\u88AB\u8F6E\u8F6C\u79FB\u9664\uFF0C\u8BF7\u5237\u65B0\u67E5\u8BE2\u3002",
   "diagnostics.logsReady": "\u5F53\u524D\u9875 {count} \u6761\u8BB0\u5F55\u3002",
-  "diagnostics.logsDegraded": "\u65E5\u5FD7\u4E0D\u5B8C\u6574\u6216\u5B58\u50A8\u964D\u7EA7\uFF1B\u5F53\u524D\u9875 {count} \u6761\u8BB0\u5F55\u3002\u8BE6\u89C1 storage \u72B6\u6001\u3002",
+  "diagnostics.logsDegraded": "\u65E5\u5FD7\u4E0D\u5B8C\u6574\u6216\u5B58\u50A8\u964D\u7EA7\uFF1B\u5F53\u524D\u9875 {count} \u6761\u8BB0\u5F55\u3002\u8BF7\u67E5\u770B\u4E0B\u65B9\u5B58\u50A8\u72B6\u6001\u4E0E\u5206\u9875\u8BE6\u60C5\u3002",
+  "diagnostics.logsAdvanced": "\u9AD8\u7EA7\u7B5B\u9009\uFF1A\u5B9A\u4F4D\u4E00\u6B21\u64CD\u4F5C",
+  "diagnostics.logsIdHelp": "operationId \u7531\u540E\u7AEF\u4E3A\u4E00\u6B21\u64CD\u4F5C\u8BF7\u6C42\u81EA\u52A8\u751F\u6210\uFF0C\u7528\u6765\u4E32\u8D77\u8BE5\u6B21\u8BF7\u6C42\u7684\u5F00\u59CB\u3001\u68C0\u67E5\u70B9\u548C\u7ED3\u679C\uFF0C\u4E0D\u662F\u4F1A\u8BDD\u7F16\u53F7\u3002\u53EF\u4ECE\u4E0B\u65B9\u8BB0\u5F55\u8BE6\u60C5\u590D\u5236\uFF1B\u5931\u8D25 API \u54CD\u5E94\u4E5F\u53EF\u80FD\u5E26\u6709\u6B64\u7F16\u53F7\u3002\u7559\u7A7A\u67E5\u770B\u5168\u90E8\u6700\u8FD1\u8BB0\u5F55\u3002",
+  "diagnostics.logsIdShort": "\u64CD\u4F5C\u7F16\u53F7\uFF08operationId\uFF09\uFF1A\u7528\u4E8E\u5B9A\u4F4D\u540C\u4E00\u6B21\u8BF7\u6C42\u7684\u8BB0\u5F55\u3002",
+  "diagnostics.logsPrivacy": "\u5BFC\u51FA\u4EC5\u542B\u5F53\u524D\u9875\u53CA\u5B58\u50A8\uFF0F\u5206\u9875\u5143\u6570\u636E\uFF0C\u4E0D\u542B\u6B63\u6587\u3001\u6587\u4EF6\u8DEF\u5F84\u3001\u5BC6\u7801\u6216 API \u5BC6\u94A5\u5B57\u6BB5\u3002\u4F1A\u8BDD ID\u3001\u5468\u76EE ID\u3001\u64CD\u4F5C ID\u3001\u63D2\u4EF6\u5B9E\u4F8B\u548C\u8BB0\u5F55 ID \u4F1A\u539F\u6837\u4FDD\u7559\uFF0C\u53EF\u80FD\u5173\u8054\u4F60\u7684\u6D3B\u52A8\uFF1B\u8FD9\u4E9B\u662F\u6807\u8BC6\uFF0C\u4E0D\u662F\u767B\u5F55\u51ED\u636E\u3002\u5206\u4EAB\u524D\u8BF7\u68C0\u67E5\u3002",
+  "diagnostics.logsFiltered": "\u5F53\u524D\u7B5B\u9009\uFF1A{id}",
+  "diagnostics.logsLoading": "\u6B63\u5728\u8BFB\u53D6\u64CD\u4F5C\u65E5\u5FD7\u2026",
+  "diagnostics.logsEmpty": "\u6682\u65E0\u53EF\u8BFB\u8BB0\u5F55\u3002\u65E5\u5FD7\u53EA\u8986\u76D6\u5DF2\u63A5\u5165\u7684\u540E\u7AEF\u64CD\u4F5C\uFF0C\u8F83\u65E9\u8BB0\u5F55\u53EF\u80FD\u5DF2\u8F6E\u8F6C\u79FB\u9664\u3002",
+  "diagnostics.logsNoMatch": "\u5F53\u524D\u4FDD\u7559\u65E5\u5FD7\u4E2D\u6CA1\u6709\u5339\u914D\u6B64\u64CD\u4F5C\u7F16\u53F7\u7684\u8BB0\u5F55\u3002\u8BF7\u68C0\u67E5\u7F16\u53F7\uFF0C\u6216\u6E05\u7A7A\u9AD8\u7EA7\u7B5B\u9009\u540E\u5237\u65B0\u3002",
+  "diagnostics.logsRecords": "\u540E\u7AEF\u64CD\u4F5C\u8BB0\u5F55",
+  "diagnostics.logsDetails": "\u8BB0\u5F55\u8BE6\u60C5\u4E0E\u64CD\u4F5C\u7F16\u53F7",
+  "diagnostics.logsMetadata": "\u5B58\u50A8\u72B6\u6001\u4E0E\u5206\u9875\u8BE6\u60C5",
+  "diagnostics.logsRawRecord": "\u539F\u59CB\u8BB0\u5F55\u5B57\u6BB5",
+  "diagnostics.logsCopyId": "\u590D\u5236\u64CD\u4F5C\u7F16\u53F7",
+  "diagnostics.logsCopyIdFor": "\u590D\u5236\u64CD\u4F5C\u7F16\u53F7 {id}",
+  "diagnostics.logsIdCopied": "\u5DF2\u590D\u5236\u64CD\u4F5C\u7F16\u53F7\uFF0C\u53EF\u7C98\u8D34\u5230\u9AD8\u7EA7\u7B5B\u9009\u3002",
+  "diagnostics.logsObject.sessionId": "\u4F1A\u8BDD",
+  "diagnostics.logsObject.playthroughId": "\u5468\u76EE",
+  "diagnostics.logsObject.scope": "\u5BF9\u8C61",
+  "diagnostics.logsObject.plugin": "Tavern \u63D2\u4EF6",
+  "diagnostics.logsObject.unspecified": "\u672A\u8BB0\u5F55\u5BF9\u8C61\u7F16\u53F7",
+  "diagnostics.logsResult.raw": "\u539F\u59CB\u72B6\u6001\uFF1A{value}",
+  "diagnostics.logsResult.started": "\u8BF7\u6C42\u5DF2\u5F00\u59CB \xB7 \u672C\u6761\u4E0D\u662F\u6700\u7EC8\u7ED3\u679C",
+  "diagnostics.logsResult.failed": "\u8BF7\u6C42\u5931\u8D25 \xB7 \u5DF2\u5B8C\u6210\u7684\u5199\u5165\u53EF\u80FD\u4FDD\u7559",
+  "diagnostics.logsResult.diagnostic": "\u9644\u5C5E\u8BCA\u65AD\u5931\u8D25 \xB7 \u4E0D\u4EE3\u8868\u7528\u6237\u8BF7\u6C42\u5931\u8D25",
+  "diagnostics.logsResult.accepted": "\u8F93\u5165\u5DF2\u63A5\u53D7 \xB7 \u4E0D\u4EE3\u8868\u6A21\u578B\u751F\u6210\u5B8C\u6210",
+  "diagnostics.logsResult.completed": "\u64CD\u4F5C\u5DF2\u5B8C\u6210 \xB7 \u540E\u7AEF\u5904\u7406\u5DF2\u8FD4\u56DE",
+  "diagnostics.logsOperation.workspace.bind": "\u7ED1\u5B9A\u5DE5\u4F5C\u533A",
+  "diagnostics.logsOperation.workspace.dir.create": "\u521B\u5EFA\u76EE\u5F55",
+  "diagnostics.logsOperation.workspace.file.write": "\u5199\u5165\u6587\u4EF6",
+  "diagnostics.logsOperation.session.create": "\u521B\u5EFA\u4F1A\u8BDD",
+  "diagnostics.logsOperation.session.branch": "\u5206\u652F\u4F1A\u8BDD",
+  "diagnostics.logsOperation.session.user-message": "\u53D1\u9001\u7528\u6237\u6D88\u606F",
+  "diagnostics.logsOperation.session.import-context.bind": "\u7ED1\u5B9A\u5BFC\u5165\u4E0A\u4E0B\u6587",
+  "diagnostics.logsOperation.session.import-context.unbind": "\u89E3\u7ED1\u5BFC\u5165\u4E0A\u4E0B\u6587",
+  "diagnostics.logsOperation.playthrough.session.detach": "\u79FB\u9664\u5468\u76EE\u4F1A\u8BDD\u5173\u8054",
+  "diagnostics.logsOperation.playthrough.character.relink": "\u91CD\u65B0\u5173\u8054\u89D2\u8272",
+  "diagnostics.logsOperation.plugin.start": "\u542F\u52A8 Tavern",
+  "diagnostics.logsOperation.plugin.stop": "\u505C\u6B62 Tavern",
+  "diagnostics.logsOperation.rp.policy": "RP \u7B56\u7565\u8BCA\u65AD",
+  "diagnostics.logsOperation.trace.record": "\u8BB0\u5F55 Prompt Trace",
+  "diagnostics.logsResult.session.created": "\u4F1A\u8BDD\u5DF2\u521B\u5EFA \xB7 \u6B64\u68C0\u67E5\u70B9\u5DF2\u786E\u8BA4",
+  "diagnostics.logsResult.session.selection.copied": "\u9009\u62E9\u5DF2\u590D\u5236 \xB7 \u6B64\u68C0\u67E5\u70B9\u5DF2\u786E\u8BA4",
+  "diagnostics.logsResult.session.import-context.bound": "\u5BFC\u5165\u4E0A\u4E0B\u6587\u5DF2\u7ED1\u5B9A \xB7 \u6B64\u68C0\u67E5\u70B9\u5DF2\u786E\u8BA4",
+  "diagnostics.logsResult.session.import-context.unbound": "\u5BFC\u5165\u4E0A\u4E0B\u6587\u5DF2\u89E3\u7ED1 \xB7 \u6B64\u68C0\u67E5\u70B9\u5DF2\u786E\u8BA4",
+  "diagnostics.logsResult.session.import-lineage.copied": "\u5BFC\u5165\u6765\u6E90\u590D\u5236\u8C03\u7528\u5DF2\u5B8C\u6210 \xB7 \u6B64\u68C0\u67E5\u70B9\u5DF2\u786E\u8BA4",
+  "diagnostics.logsResult.workspace.bound": "\u5DE5\u4F5C\u533A\u5DF2\u7ED1\u5B9A \xB7 \u6B64\u68C0\u67E5\u70B9\u5DF2\u786E\u8BA4",
+  "diagnostics.logsResult.workspace.directory.created": "\u76EE\u5F55\u5DF2\u521B\u5EFA \xB7 \u6B64\u68C0\u67E5\u70B9\u5DF2\u786E\u8BA4",
+  "diagnostics.logsResult.workspace.file.written": "\u6587\u4EF6\u5DF2\u5199\u5165 \xB7 \u6B64\u68C0\u67E5\u70B9\u5DF2\u786E\u8BA4",
+  "diagnostics.logsResult.playthrough.timeline.updated": "\u5468\u76EE\u65F6\u95F4\u7EBF\u5DF2\u66F4\u65B0 \xB7 \u6B64\u68C0\u67E5\u70B9\u5DF2\u786E\u8BA4",
+  "diagnostics.logsResult.playthrough.catalog.updated": "\u5468\u76EE\u76EE\u5F55\u5DF2\u66F4\u65B0 \xB7 \u6B64\u68C0\u67E5\u70B9\u5DF2\u786E\u8BA4",
+  "diagnostics.logsResult.playthrough.catalog.restored": "\u5468\u76EE\u76EE\u5F55\u5DF2\u6062\u590D \xB7 \u6B64\u68C0\u67E5\u70B9\u5DF2\u786E\u8BA4",
   "diagnostics.scope": "\u5F53\u524D RP \u5DE5\u4F5C\u533A\u7684\u95EE\u9898\u3002\u4FEE\u590D\u540E\u91CD\u65B0\u68C0\u67E5\u5373\u53EF\u66F4\u65B0\uFF1B\u5173\u95ED\u4FA7\u680F\u6458\u8981\u4E0D\u4F1A\u5220\u9664\u95EE\u9898\u3002",
   "diagnostics.count": "{count} \u4E2A\u95EE\u9898",
   "diagnostics.sessionMissing": "\u6B64\u5468\u76EE\u5F15\u7528\u7684 DSH \u4F1A\u8BDD\u65E5\u5FD7\u7F3A\u5931\u3002",
@@ -15196,8 +15247,8 @@ var en_default = Object.freeze({
   "diagnostics.dismiss": "Dismiss summary (still available in DT \u2192 Diagnostics)",
   "diagnostics.playthrough": "View problems for {name}",
   "diagnostics.logsTitle": "Operation logs",
-  "diagnostics.logsScope": "Backend operation metadata, separate from current problems and Prompt Trace. Logs rotate and are not business history. Export includes only the current page and may contain private identifiers; review before sharing.",
-  "diagnostics.logsFilter": "Filter by operationId (optional)",
+  "diagnostics.logsScope": "Browse backend operations and confirmed results, newest first. Opening this panel loads records; no operation ID is needed. Logs rotate and are separate from business history, current issues, and Prompt Trace.",
+  "diagnostics.logsFilter": "Operation ID / operationId (exact match, optional)",
   "diagnostics.logsLoad": "Load / refresh",
   "diagnostics.logsOlder": "Older page",
   "diagnostics.logsExport": "Export this page",
@@ -15205,7 +15256,58 @@ var en_default = Object.freeze({
   "diagnostics.logsFailed": "Could not read logs. Try again.",
   "diagnostics.logsExpired": "This page has expired through rotation. Refresh the query.",
   "diagnostics.logsReady": "{count} records on this page.",
-  "diagnostics.logsDegraded": "Logs are incomplete or storage is degraded; this page has {count} records. See storage status.",
+  "diagnostics.logsDegraded": "Logs are incomplete or storage is degraded; {count} records on this page. See storage status and pagination details below.",
+  "diagnostics.logsAdvanced": "Advanced filter: locate one operation",
+  "diagnostics.logsIdHelp": "The backend generates an operationId for one operation request. It links that request\u2019s start, checkpoints, and result; it is not a session ID. Copy it from record details below; failed API responses may also include it. Leave blank for all recent records.",
+  "diagnostics.logsIdShort": "Operation ID (operationId): locates records for the same request.",
+  "diagnostics.logsPrivacy": "Export includes only this page and storage/pagination metadata. It has no fields for message content, file paths, passwords, or API keys. Session, playthrough, operation, plugin instance, and record IDs are preserved and may link your activity; they are identifiers, not login credentials. Review before sharing.",
+  "diagnostics.logsFiltered": "Current filter: {id}",
+  "diagnostics.logsLoading": "Loading operation logs\u2026",
+  "diagnostics.logsEmpty": "No readable records. Logs cover supported backend operations only; older records may have rotated out.",
+  "diagnostics.logsNoMatch": "No retained records match this operation ID. Check the ID, or clear the advanced filter and refresh.",
+  "diagnostics.logsRecords": "Backend operation records",
+  "diagnostics.logsDetails": "Record details and operation ID",
+  "diagnostics.logsMetadata": "Storage status and pagination details",
+  "diagnostics.logsRawRecord": "Raw record fields",
+  "diagnostics.logsCopyId": "Copy operation ID",
+  "diagnostics.logsCopyIdFor": "Copy operation ID {id}",
+  "diagnostics.logsIdCopied": "Operation ID copied. Paste it into the advanced filter.",
+  "diagnostics.logsObject.sessionId": "Session",
+  "diagnostics.logsObject.playthroughId": "Playthrough",
+  "diagnostics.logsObject.scope": "Object",
+  "diagnostics.logsObject.plugin": "Tavern plugin",
+  "diagnostics.logsObject.unspecified": "No object ID recorded",
+  "diagnostics.logsResult.raw": "Raw status: {value}",
+  "diagnostics.logsResult.started": "Request started \xB7 this record is not a final result",
+  "diagnostics.logsResult.failed": "Request failed \xB7 completed writes may remain",
+  "diagnostics.logsResult.diagnostic": "Optional diagnostic failed \xB7 does not establish request failure",
+  "diagnostics.logsResult.accepted": "Input accepted \xB7 model generation is not confirmed complete",
+  "diagnostics.logsResult.completed": "Operation completed \xB7 backend handler returned",
+  "diagnostics.logsOperation.workspace.bind": "Bind workspace",
+  "diagnostics.logsOperation.workspace.dir.create": "Create directory",
+  "diagnostics.logsOperation.workspace.file.write": "Write file",
+  "diagnostics.logsOperation.session.create": "Create session",
+  "diagnostics.logsOperation.session.branch": "Branch session",
+  "diagnostics.logsOperation.session.user-message": "Send user message",
+  "diagnostics.logsOperation.session.import-context.bind": "Bind import context",
+  "diagnostics.logsOperation.session.import-context.unbind": "Unbind import context",
+  "diagnostics.logsOperation.playthrough.session.detach": "Detach playthrough session",
+  "diagnostics.logsOperation.playthrough.character.relink": "Relink character",
+  "diagnostics.logsOperation.plugin.start": "Start Tavern",
+  "diagnostics.logsOperation.plugin.stop": "Stop Tavern",
+  "diagnostics.logsOperation.rp.policy": "RP policy diagnostic",
+  "diagnostics.logsOperation.trace.record": "Record Prompt Trace",
+  "diagnostics.logsResult.session.created": "Session created \xB7 checkpoint confirmed",
+  "diagnostics.logsResult.session.selection.copied": "Selection copied \xB7 checkpoint confirmed",
+  "diagnostics.logsResult.session.import-context.bound": "Import context bound \xB7 checkpoint confirmed",
+  "diagnostics.logsResult.session.import-context.unbound": "Import context unbound \xB7 checkpoint confirmed",
+  "diagnostics.logsResult.session.import-lineage.copied": "Import lineage copy returned \xB7 checkpoint confirmed",
+  "diagnostics.logsResult.workspace.bound": "Workspace bound \xB7 checkpoint confirmed",
+  "diagnostics.logsResult.workspace.directory.created": "Directory created \xB7 checkpoint confirmed",
+  "diagnostics.logsResult.workspace.file.written": "File written \xB7 checkpoint confirmed",
+  "diagnostics.logsResult.playthrough.timeline.updated": "Playthrough timeline updated \xB7 checkpoint confirmed",
+  "diagnostics.logsResult.playthrough.catalog.updated": "Playthrough catalog updated \xB7 checkpoint confirmed",
+  "diagnostics.logsResult.playthrough.catalog.restored": "Playthrough catalog restored \xB7 checkpoint confirmed",
   "diagnostics.scope": "Problems in the current RP workspace. Recheck after fixing them; dismissing the sidebar summary does not remove problems.",
   "diagnostics.count": "{count} problems",
   "diagnostics.sessionMissing": "DSH session logs referenced by this playthrough are missing.",
@@ -17429,7 +17531,7 @@ function createPlayNodeController(client, {
   idFactory = defaultId
 } = {}) {
   if (client == null) throw new TypeError("playClient.required");
-  const operations = /* @__PURE__ */ new Map();
+  const operations2 = /* @__PURE__ */ new Map();
   const writes = /* @__PURE__ */ new Map();
   const key2 = (playthrough) => JSON.stringify([playthrough?.id ?? null, playthrough?.path ?? null]);
   const enqueue = (queue, playthrough, operation) => {
@@ -17442,7 +17544,7 @@ function createPlayNodeController(client, {
     queue.set(id, settled);
     return task;
   };
-  const schedule = (playthrough, operation) => enqueue(operations, playthrough, operation);
+  const schedule = (playthrough, operation) => enqueue(operations2, playthrough, operation);
   const writeTimeline = (playthrough, transform) => enqueue(
     writes,
     playthrough,
@@ -41897,7 +41999,7 @@ async function createCardRuntime(bridge, { memoryLimit = 8 * 1024 * 1024, timeLi
   const runtime = QuickJS.newRuntime();
   runtime.setMemoryLimit(memoryLimit);
   runtime.setMaxStackSize(256 * 1024);
-  let deadline = 0, operations = 0, interrupts = 0, disposed = false;
+  let deadline = 0, operations2 = 0, interrupts = 0, disposed = false;
   runtime.setInterruptHandler(() => ++interrupts > 500 || performance.now() > deadline);
   runtime.setModuleLoader((name2) => {
     if (!Object.hasOwn(modules, name2)) return { error: new Error("Unreviewed module") };
@@ -41911,7 +42013,7 @@ async function createCardRuntime(bridge, { memoryLimit = 8 * 1024 * 1024, timeLi
   });
   const vm = runtime.newContext();
   const native = vm.newFunction("__bridge", (arg) => {
-    if (++operations > 1e3 || performance.now() > deadline) throw new Error("Card operation budget exceeded");
+    if (++operations2 > 1e3 || performance.now() > deadline) throw new Error("Card operation budget exceeded");
     const json = vm.getString(arg);
     if (json.length > 128 * 1024) throw new Error("Card bridge input too large");
     let result;
@@ -41930,7 +42032,7 @@ async function createCardRuntime(bridge, { memoryLimit = 8 * 1024 * 1024, timeLi
     if (disposed) throw new Error("Card is disposed");
     if (code.length > 128 * 1024) throw new Error("Card script too large");
     deadline = performance.now() + timeLimit;
-    operations = 0;
+    operations2 = 0;
     interrupts = 0;
     const result = vm.evalCode(code, name2, { type: module2 ? "module" : "global" });
     if (result.error) {
@@ -44066,6 +44168,58 @@ function workspaceDiagnosticReport(snapshot, issues = snapshot.issues) {
   }, null, 2);
 }
 
+// packages/client/src/play/operation-log-view.js
+var operations = /* @__PURE__ */ new Set([
+  "workspace.bind",
+  "workspace.dir.create",
+  "workspace.file.write",
+  "session.create",
+  "session.branch",
+  "session.user-message",
+  "session.import-context.bind",
+  "session.import-context.unbind",
+  "playthrough.session.detach",
+  "playthrough.character.relink",
+  "plugin.start",
+  "plugin.stop",
+  "rp.policy",
+  "trace.record"
+]);
+var checkpoints = /* @__PURE__ */ new Set([
+  "session.created",
+  "session.selection.copied",
+  "session.import-context.bound",
+  "session.import-context.unbound",
+  "session.import-lineage.copied",
+  "workspace.bound",
+  "workspace.directory.created",
+  "workspace.file.written",
+  "playthrough.timeline.updated",
+  "playthrough.catalog.updated",
+  "playthrough.catalog.restored"
+]);
+function operationLabel(row) {
+  return row.eventVersion === 1 && operations.has(row.operation) ? uiMessage(`diagnostics.logsOperation.${row.operation}`) : rawText(row.operation || row.event || row.stage || "\u2014");
+}
+function operationResult(row) {
+  if (row.eventVersion !== 1) return { tone: "neutral", label: uiMessage("diagnostics.logsResult.raw", { value: [row.event, row.stage, row.result].filter((value) => value !== void 0).join(" \xB7 ") || "\u2014" }) };
+  const event = row.event;
+  const key2 = event === "operation.started" ? "started" : event === "operation.failed" ? "failed" : event === "diagnostic.failed" ? "diagnostic" : event === "operation.completed" ? row.result === "accepted" ? "accepted" : "completed" : checkpoints.has(event) ? event : null;
+  return {
+    tone: event === "operation.failed" || event === "diagnostic.failed" ? "warning" : "neutral",
+    label: key2 ? uiMessage(`diagnostics.logsResult.${key2}`) : rawText([event, row.stage, row.result].filter((value) => value !== void 0).join(" \xB7 ") || "\u2014")
+  };
+}
+function operationObjects(row) {
+  const objects = ["sessionId", "playthroughId"].filter((key2) => row[key2]).map((key2) => ({ key: key2, label: uiMessage(`diagnostics.logsObject.${key2}`), value: row[key2] }));
+  if (!objects.length) objects.push({ key: "scope", label: uiMessage("diagnostics.logsObject.scope"), value: row.operation?.startsWith("plugin.") ? uiMessage("diagnostics.logsObject.plugin") : uiMessage("diagnostics.logsObject.unspecified") });
+  return objects;
+}
+function operationPageJsonl(page) {
+  const { records, ...metadata } = page;
+  return [JSON.stringify({ type: "metadata", ...metadata }), ...records.map((row) => JSON.stringify(row))].join("\n") + "\n";
+}
+
 // packages/client/src/play/diagnostics.js
 var h18 = createLocalizedElement(import_react21.createElement);
 var diagnosticsCss = `
@@ -44077,6 +44231,16 @@ var diagnosticsCss = `
 .dtv-diagnostic-card{border:1px solid var(--dsw-alias-border-l2);border-radius:9px;padding:12px;display:flex;flex-direction:column;gap:10px;overflow-wrap:anywhere}
 .dtv-diagnostic-card h3{font-size:13px;margin:0}.dtv-diagnostic-card p{margin:0;font-size:12px;line-height:1.6}
 .dtv-diagnostic-card details{font-size:11px}.dtv-diagnostic-card summary{cursor:pointer;padding:5px 0}.dtv-diagnostic-card pre{white-space:pre-wrap;overflow-wrap:anywhere;font-size:11px;margin:8px 0;user-select:text}
+.dtv-operation-log{min-width:0}.dtv-operation-log>.dtv-actions{flex-wrap:wrap;margin:10px 0}
+.dtv-operation-advanced{margin:10px 0}.dtv-operation-advanced label{display:flex;flex-direction:column;gap:6px;font-size:12px}
+.dtv-operation-advanced input{box-sizing:border-box;width:100%;min-width:0;padding:8px;border:1px solid var(--dsw-alias-border-l2);border-radius:6px;background:var(--dsw-alias-background-primary,transparent);color:inherit;font:inherit}
+.dtv-operation-list{list-style:none;margin:12px 0 0;padding:0;display:flex;flex-direction:column;gap:8px}
+.dtv-operation-row{min-width:0;padding:10px;border:1px solid var(--dsw-alias-border-l2);border-radius:7px}
+.dtv-operation-heading{display:flex;align-items:baseline;flex-wrap:wrap;gap:6px 12px}.dtv-operation-heading time{font-size:11px;color:var(--dsw-alias-label-secondary)}
+.dtv-operation-result{display:block;margin:5px 0;font-size:12px}.dtv-operation-result[data-tone=warning]{font-weight:600}
+.dtv-operation-object{display:flex;gap:6px;min-width:0;font-size:11px;color:var(--dsw-alias-label-secondary)}.dtv-operation-object span{flex:none}.dtv-operation-object code{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0;user-select:text}
+.dtv-operation-log .dtv-operation-raw{white-space:pre;overflow:auto;overflow-wrap:normal;max-height:240px;padding:8px;border:1px solid var(--dsw-alias-border-l2);border-radius:6px}
+.dtv-operation-id{display:block;overflow:auto;white-space:nowrap;max-width:100%;padding:6px 0;user-select:text}.dtv-operation-row .dtv-actions{flex-wrap:wrap}
 `;
 function WorkspaceDiagnosticSummary({ snapshot, controller: controller2 }) {
   if (snapshot.loading || !snapshot.showSummary) return null;
@@ -44170,12 +44334,15 @@ function OperationLogsPanel({ client }) {
   const [operationId, setOperationId] = (0, import_react21.useState)("");
   const [page, setPage] = (0, import_react21.useState)(null);
   const [status, setStatus] = (0, import_react21.useState)(null);
+  const [copyStatus, setCopyStatus] = (0, import_react21.useState)(null);
   const [busy, setBusy] = (0, import_react21.useState)(false);
   const generation = (0, import_react21.useRef)(0);
+  const filterHelpId = (0, import_react21.useId)();
   (0, import_react21.useEffect)(() => {
     setPage(null);
     setStatus(null);
     setBusy(false);
+    setCopyStatus(null);
     return () => {
       generation.current++;
     };
@@ -44202,32 +44369,64 @@ function OperationLogsPanel({ client }) {
   };
   const download = () => {
     if (!page) return;
-    const { records, ...metadata } = page;
-    const content = [JSON.stringify({ type: "metadata", ...metadata }), ...records.map((row) => JSON.stringify(row))].join("\n") + "\n";
-    const url = URL.createObjectURL(new Blob([content], { type: "application/x-ndjson" }));
+    const url = URL.createObjectURL(new Blob([operationPageJsonl(page)], { type: "application/x-ndjson" }));
     const anchor = document.createElement("a");
     anchor.href = url;
     anchor.download = "tavern-operation-logs.jsonl";
     anchor.click();
     setTimeout(() => URL.revokeObjectURL(url), 1e3);
   };
+  const copyId = async (id) => {
+    try {
+      await navigator.clipboard.writeText(id);
+      setCopyStatus("diagnostics.logsIdCopied");
+    } catch {
+      setCopyStatus("diagnostics.copyFailed");
+    }
+  };
   return h18(
     "details",
-    { className: "dtv-diagnostic-card" },
+    {
+      className: "dtv-diagnostic-card dtv-operation-log",
+      onToggle: (event) => {
+        if (event.target !== event.currentTarget) return;
+        if (event.currentTarget.open) {
+          if (!page && !busy) void load();
+        } else {
+          generation.current++;
+          setBusy(false);
+        }
+      }
+    },
     h18("summary", null, uiMessage("diagnostics.logsTitle")),
     h18("p", null, uiMessage("diagnostics.logsScope")),
-    h18("label", null, uiMessage("diagnostics.logsFilter"), h18("input", {
-      value: operationId,
-      maxLength: 128,
-      placeholder: "operationId",
-      onChange: (event) => {
-        generation.current++;
-        setBusy(false);
-        setPage(null);
-        setStatus(null);
-        setOperationId(event.target.value);
-      }
-    })),
+    h18(
+      "details",
+      { className: "dtv-operation-advanced" },
+      h18("summary", null, uiMessage("diagnostics.logsAdvanced")),
+      h18("p", { id: filterHelpId, className: "dtv-note" }, uiMessage("diagnostics.logsIdHelp")),
+      h18("label", null, uiMessage("diagnostics.logsFilter"), h18("input", {
+        value: operationId,
+        maxLength: 128,
+        placeholder: "operationId",
+        "aria-describedby": filterHelpId,
+        onChange: (event) => {
+          generation.current++;
+          setBusy(false);
+          setPage(null);
+          setStatus(null);
+          setCopyStatus(null);
+          setOperationId(event.target.value);
+        },
+        onKeyDown: (event) => {
+          if (event.key === "Enter" && !busy) {
+            event.preventDefault();
+            void load();
+          }
+        }
+      }))
+    ),
+    operationId.trim() ? h18("p", { className: "dtv-note" }, uiMessage("diagnostics.logsFiltered", { id: operationId.trim() })) : null,
     h18(
       "div",
       { className: "dtv-actions" },
@@ -44235,9 +44434,50 @@ function OperationLogsPanel({ client }) {
       h18("button", { type: "button", className: "dtv-button", disabled: busy || !page?.nextCursor, onClick: () => load(page.nextCursor) }, uiMessage("diagnostics.logsOlder")),
       h18("button", { type: "button", className: "dtv-button", disabled: busy || !page, onClick: download }, uiMessage("diagnostics.logsExport"))
     ),
+    h18("p", { className: "dtv-note" }, uiMessage("diagnostics.logsPrivacy")),
+    busy ? h18("p", { role: "status" }, uiMessage("diagnostics.logsLoading")) : null,
     status ? h18("p", { role: "status" }, uiMessage(status)) : null,
-    page ? h18("p", { role: "status" }, uiMessage(page.storage.available && !page.storage.dropped && !page.storage.skippedRecords ? "diagnostics.logsReady" : "diagnostics.logsDegraded", { count: page.records.length })) : null,
-    page ? h18("pre", null, rawText(JSON.stringify(page, null, 2))) : null
+    copyStatus ? h18("p", { role: "status" }, uiMessage(copyStatus)) : null,
+    page ? h18(
+      "div",
+      { "aria-busy": busy },
+      h18("p", { role: "status" }, uiMessage(page.storage.available && !page.storage.dropped && !page.storage.skippedRecords ? "diagnostics.logsReady" : "diagnostics.logsDegraded", { count: page.records.length })),
+      page.records.length === 0 ? h18("p", { className: "dtv-note" }, uiMessage(operationId.trim() ? "diagnostics.logsNoMatch" : "diagnostics.logsEmpty")) : null,
+      h18("ol", { className: "dtv-operation-list", "aria-label": uiMessage("diagnostics.logsRecords") }, ...page.records.map((row, index) => {
+        const result = operationResult(row);
+        return h18(
+          "li",
+          { className: "dtv-operation-row", key: row.id ?? index },
+          h18(
+            "div",
+            { className: "dtv-operation-heading" },
+            h18("strong", null, operationLabel(row)),
+            row.timestamp ? h18("time", { dateTime: row.timestamp }, rawText(new Date(row.timestamp).toLocaleString())) : null
+          ),
+          h18("span", { className: "dtv-operation-result", "data-tone": result.tone }, result.label),
+          ...operationObjects(row).map((object) => h18("div", { className: "dtv-operation-object", key: object.key }, h18("span", null, object.label), object.key === "scope" ? h18("span", null, object.value) : h18("code", { title: rawText(object.value) }, rawText(object.value)))),
+          h18(
+            "details",
+            null,
+            h18("summary", null, uiMessage("diagnostics.logsDetails")),
+            row.operationId ? h18(
+              "div",
+              null,
+              h18("p", null, uiMessage("diagnostics.logsIdShort")),
+              h18("code", { className: "dtv-operation-id" }, rawText(row.operationId)),
+              h18("button", { type: "button", className: "dtv-button", onClick: () => copyId(row.operationId), "aria-label": uiMessage("diagnostics.logsCopyIdFor", { id: row.operationId }) }, uiMessage("diagnostics.logsCopyId"))
+            ) : null,
+            h18("pre", { className: "dtv-operation-raw", tabIndex: 0, "aria-label": uiMessage("diagnostics.logsRawRecord") }, rawText(JSON.stringify(row, null, 2)))
+          )
+        );
+      })),
+      h18(
+        "details",
+        null,
+        h18("summary", null, uiMessage("diagnostics.logsMetadata")),
+        h18("pre", { className: "dtv-operation-raw", tabIndex: 0, "aria-label": uiMessage("diagnostics.logsMetadata") }, rawText(JSON.stringify(Object.fromEntries(Object.entries(page).filter(([key2]) => key2 !== "records")), null, 2)))
+      )
+    ) : null
   );
 }
 
