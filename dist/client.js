@@ -14090,7 +14090,7 @@ function helperScripts(resource) {
       const value = entry?.value && typeof entry.value === "object" ? entry.value : entry;
       if (!value || typeof value !== "object") return;
       const path2 = `${prefix}[${index}]`, enabled = parentEnabled && value.enabled !== false && value.disabled !== true && entry.enabled !== false && entry.disabled !== true;
-      if (typeof value.content === "string") result.push({ path: path2, id: typeof (value.id ?? entry.id) === "string" ? value.id ?? entry.id : null, name: String(value.name ?? value.id ?? path2).slice(0, 160), content: value.content, enabled });
+      if (typeof value.content === "string") result.push({ path: path2, identityName: typeof value.name === "string" ? value.name : null, id: typeof (value.id ?? entry.id) === "string" ? value.id ?? entry.id : null, name: String(value.name ?? value.id ?? path2).slice(0, 160), content: value.content, enabled });
       visit(value.scripts ?? value.children, path2, depth + 1, enabled);
     });
   }
@@ -14141,11 +14141,17 @@ async function globalRenderingOwner(client) {
 }
 async function identifyRenderingSources(sources) {
   const digests = await Promise.all(sources.map((source) => source.kind === "helper" ? sourceDigest(source.content) : null));
+  const names = await Promise.all(sources.map((source) => source.identityName ? sourceDigest(source.identityName) : null));
   return sources.map((source, index) => {
     if (source.kind !== "helper") return source;
     const uniqueId = source.id && sources.filter((item) => item.owner === source.owner && item.id === source.id).length === 1;
-    const duplicateContent = sources.some((item, i3) => i3 !== index && item.owner === source.owner && digests[i3] === digests[index]);
-    return { ...source, preferenceKey: uniqueId ? `helper:id:${source.id}` : `helper:sha256:${digests[index]}${duplicateContent ? ":" + source.path : ""}` };
+    const duplicates = sources.map((item, i3) => ({ item, i: i3 })).filter(({ item, i: i3 }) => item.owner === source.owner && digests[i3] === digests[index]);
+    if (uniqueId) return { ...source, preferenceKey: `helper:id:${source.id}` };
+    if (duplicates.length === 1) return { ...source, preferenceKey: `helper:sha256:${digests[index]}` };
+    if (names[index] && duplicates.filter(({ i: i3 }) => names[i3] === names[index]).length === 1) {
+      return { ...source, preferenceKey: `helper:sha256:${digests[index]}:name:${names[index]}` };
+    }
+    return { ...source, preferenceKey: null, enablementAmbiguous: true };
   });
 }
 function renderingEntries(sources, trust) {
@@ -14162,10 +14168,10 @@ function renderingEntries(sources, trust) {
       entries2.push(entry);
     }
     const staged = trust.inspect(entry.owner, entry.key);
-    if (staged && depth < 8) for (const dependency of discoverDependencies(staged.content, entry.url)) add({ ...dependency, owner: entry.owner, key: dependency.url ?? dependency.raw, name: dependency.raw, kind: dependency.kind, enabled: entry.enabled && trust.isEnabled(entry.owner, entry.preferenceKey ?? entry.key, true), origins: [...entry.origins ?? [], entry.key] }, depth + 1);
+    if (staged && depth < 8) for (const dependency of discoverDependencies(staged.content, entry.url)) add({ ...dependency, owner: entry.owner, key: dependency.url ?? dependency.raw, name: dependency.raw, kind: dependency.kind, enabled: entry.enabled && (entry.enablementAmbiguous || trust.isEnabled(entry.owner, entry.preferenceKey ?? entry.key, true)), origins: [...entry.origins ?? [], entry.key] }, depth + 1);
   }
   for (const original of sources) {
-    const source = { ...original, enabled: trust.isEnabled(original.owner, original.preferenceKey ?? original.key, original.enabled) };
+    const source = { ...original, enabled: original.enablementAmbiguous ? original.enabled : trust.isEnabled(original.owner, original.preferenceKey ?? original.key, original.enabled) };
     if (source.kind === "helper") add(source);
     for (const dependency of source.dependencies) add({ ...dependency, owner: source.owner, key: dependency.url ?? dependency.raw, name: dependency.raw, kind: dependency.kind, enabled: source.enabled, origins: [source.path] });
   }
@@ -14246,7 +14252,8 @@ var zh_CN_default = Object.freeze({
   "rendering.changed": "\u6E90\u7801\u5DF2\u53D8\u5316\uFF0C\u8BF7\u91CD\u65B0\u51C6\u5907\u5BA1\u6838\u3002",
   "rendering.sourceDetails": "\u6E90\u7801\u8BE6\u60C5",
   "rendering.safetyDetails": "\u542F\u7528\u3001\u5BA1\u6838\u4E0E\u6743\u9650\u8BF4\u660E",
-  "rendering.enablementHelp": "\u52FE\u9009\u53EA\u4FDD\u5B58\u672C\u5730\u542F\u7528\u610F\u56FE\uFF0C\u4E0D\u4FEE\u6539\u539F\u5361\u3001\u4E0D\u6388\u4E88\u4EE3\u7801\u4FE1\u4EFB\u6216\u5199\u6743\u9650\u3002\u4F18\u5148\u6309\u539F\u6761\u76EE ID \u8BC6\u522B\uFF1B\u65E0 ID \u65F6\u6309\u6E90\u7801\u6458\u8981\u8BC6\u522B\uFF0C\u4FEE\u6539\u4EE3\u7801\u540E\u6062\u590D\u6765\u6E90\u9ED8\u8BA4\uFF1B\u91CD\u590D\u6E90\u7801\u6761\u76EE\u7684\u4F4D\u7F6E\u53D8\u5316\u4E5F\u6062\u590D\u9ED8\u8BA4\u3002\u590D\u5236\u6210\u65B0\u8D44\u6E90\u4E0D\u7EE7\u627F\u9009\u62E9\uFF0C\u5BFC\u51FA\u539F\u5361\u4E0D\u643A\u5E26\u672C\u5730\u9009\u62E9\u3002",
+  "rendering.enablementHelp": "\u52FE\u9009\u53EA\u4FDD\u5B58\u672C\u5730\u542F\u7528\u610F\u56FE\uFF0C\u4E0D\u4FEE\u6539\u539F\u5361\u3001\u4E0D\u6388\u4E88\u4EE3\u7801\u4FE1\u4EFB\u6216\u5199\u6743\u9650\u3002\u4F18\u5148\u6309\u539F\u6761\u76EE ID \u8BC6\u522B\uFF1B\u65E0 ID \u65F6\u6309\u6E90\u7801\u6458\u8981\u53CA\u552F\u4E00\u540D\u79F0\u8BC6\u522B\uFF0C\u4FEE\u6539\u4EE3\u7801\u6216\u7528\u4E8E\u8BC6\u522B\u7684\u540D\u79F0\u540E\u6062\u590D\u6765\u6E90\u9ED8\u8BA4\uFF1B\u65E0\u6CD5\u533A\u5206\u7684\u91CD\u590D\u6761\u76EE\u4FDD\u6301\u6765\u6E90\u9ED8\u8BA4\u3002\u590D\u5236\u6210\u65B0\u8D44\u6E90\u4E0D\u7EE7\u627F\u9009\u62E9\uFF0C\u5BFC\u51FA\u539F\u5361\u4E0D\u643A\u5E26\u672C\u5730\u9009\u62E9\u3002",
+  "rendering.ambiguousIdentity": "\u8FD9\u4E9B\u91CD\u590D\u6761\u76EE\u6CA1\u6709\u552F\u4E00 ID \u6216\u540D\u79F0\uFF0C\u6682\u6309\u6765\u6E90\u9ED8\u8BA4\u72B6\u6001\u4F7F\u7528\uFF1B\u8BF7\u4E3A\u539F\u5361\u6761\u76EE\u6DFB\u52A0\u4E0D\u540C ID \u540E\u518D\u4FDD\u5B58\u5404\u81EA\u9009\u62E9\u3002",
   "rendering.cancel": "\u53D6\u6D88\u4E0B\u8F7D",
   "rendering.download": "\u4E0B\u8F7D\u6E90\u7801\u4EE5\u4F9B\u5BA1\u6838\uFF08\u4E0D\u6267\u884C\uFF09",
   "rendering.bindingChanged": "\u7ED1\u5B9A\u8D44\u6E90\u5DF2\u5207\u6362\uFF1B\u65E7\u8349\u7A3F\u4FDD\u7559\u4F46\u4E0D\u53EF\u4FDD\u5B58\u3002\u5BFC\u51FA\u9700\u8981\u4FDD\u7559\u7684\u8349\u7A3F\uFF0C\u7136\u540E\u91CD\u65B0\u52A0\u8F7D\u5F53\u524D\u8D44\u6E90\u3002",
@@ -15183,7 +15190,8 @@ var en_default = Object.freeze({
   "rendering.changed": "Source changed. Stage the current source for review again.",
   "rendering.sourceDetails": "Source details",
   "rendering.safetyDetails": "Enablement, review and permissions",
-  "rendering.enablementHelp": "Checkboxes save local enablement choices, without editing the source card or granting code trust or write permissions. Original entry IDs are preferred; otherwise source digests identify entries. Code changes reset unidentified entries to source defaults; moving duplicate sources also resets them. Copies with new resource IDs and card exports do not carry these choices.",
+  "rendering.enablementHelp": "Checkboxes save local enablement choices, without editing the source card or granting code trust or write permissions. Original entry IDs are preferred; otherwise source digests and unique names identify entries. Unidentified code or name changes restore source defaults. Indistinguishable duplicates retain source defaults until unique IDs are added. Copies with new resource IDs and card exports do not carry these choices.",
+  "rendering.ambiguousIdentity": "These duplicate entries have no unique ID or name. Their source defaults are preserved; add distinct IDs to the source card to save separate choices.",
   "rendering.cancel": "Cancel download",
   "rendering.download": "Download source for review (no execution)",
   "rendering.bindingChanged": "The bound resource changed. The old draft is retained and cannot be saved. Export any draft you need, then reload the current resource.",
@@ -17216,8 +17224,8 @@ function RenderingSettings({ client, activeSnapshot, settings = {}, update, busy
     const review = renderingTrust.inspect(entry.owner, entry.key);
     const changed = entry.kind === "helper" && review?.content !== entry.content;
     const approved = review?.approved && !changed;
-    const enabled = renderingTrust.isEnabled(entry.owner, entry.preferenceKey ?? entry.key, entry.enabled);
-    const overridden = (settings.scriptEnablement?.entries ?? []).some((item) => item.owner === entry.owner && item.key === (entry.preferenceKey ?? entry.key));
+    const enabled = entry.enablementAmbiguous ? entry.enabled : renderingTrust.isEnabled(entry.owner, entry.preferenceKey ?? entry.key, entry.enabled);
+    const overridden = !entry.enablementAmbiguous && (settings.scriptEnablement?.entries ?? []).some((item) => item.owner === entry.owner && item.key === (entry.preferenceKey ?? entry.key));
     const displayName = entry.kind === "helper" || !entry.url ? entry.name : new URL(entry.url).hostname + " /\u2026/" + entry.url.split("/").at(-1).slice(-32);
     const state = entry.blocked ? "rendering.blocked" : !enabled ? "rendering.disabled" : approved ? "rendering.approved" : review && !changed ? "rendering.staged" : entry.kind === "helper" ? "rendering.needsReview" : "rendering.waiting";
     return (0, import_react2.createElement)(
@@ -17226,13 +17234,14 @@ function RenderingSettings({ client, activeSnapshot, settings = {}, update, busy
       (0, import_react2.createElement)(
         "summary",
         null,
-        (0, import_react2.createElement)("input", { type: "checkbox", checked: enabled, disabled: busy || !update || entry.blocked, "aria-label": translate("rendering.enableEntry", { name: entry.name }), onClick: (event) => event.stopPropagation(), onChange: (event) => changeEnabled(entry, event.target.checked) }),
+        (0, import_react2.createElement)("input", { type: "checkbox", checked: enabled, disabled: busy || !update || entry.blocked || entry.enablementAmbiguous, title: entry.enablementAmbiguous ? translate("rendering.ambiguousIdentity") : void 0, "aria-label": translate("rendering.enableEntry", { name: entry.name }), onClick: (event) => event.stopPropagation(), onChange: (event) => changeEnabled(entry, event.target.checked) }),
         (0, import_react2.createElement)("span", { className: "dtv-entry-name", title: entry.name }, displayName),
         (0, import_react2.createElement)("span", { className: "dtv-entry-state" }, translate(state))
       ),
       (0, import_react2.createElement)(
         "div",
         { className: "dtv-entry-body" },
+        entry.enablementAmbiguous ? (0, import_react2.createElement)("p", { className: "dtv-script-meta" }, translate("rendering.ambiguousIdentity")) : null,
         (0, import_react2.createElement)("p", { className: "dtv-script-meta" }, entry.owner, " \xB7 ", (entry.origins ?? [entry.path]).filter(Boolean).join(" \u2192 ")),
         entry.kind === "helper" ? sourceView(entry.content) : (0, import_react2.createElement)("p", { className: "dtv-script-meta" }, entry.key),
         entry.kind !== "helper" && review ? sourceView(review.content) : null,
@@ -23646,6 +23655,42 @@ function setClientConversationSettings(value, { announce = true } = {}) {
     }));
   }
   return getClientConversationSettings();
+}
+function createConversationSettingsPersistence({ request: request2, apply: apply5, status, busy }) {
+  let generation = 0, active2 = true;
+  async function run(method, value) {
+    const ticket = ++generation, writing = method !== "GET";
+    const current4 = () => active2 && ticket === generation;
+    busy(true);
+    if (writing) status("saving");
+    try {
+      const body2 = method === "PUT" ? normalizeClientConversationSettings(value) : void 0;
+      const result = await request2(method, body2);
+      if (!current4()) return;
+      apply5(result);
+      status("saved");
+    } catch (error) {
+      if (current4()) status(writing ? "saveError" : "loadError", error);
+    } finally {
+      if (current4()) busy(false);
+    }
+  }
+  return {
+    load() {
+      active2 = true;
+      return run("GET");
+    },
+    save(value) {
+      return run("PUT", value);
+    },
+    reset() {
+      return run("DELETE");
+    },
+    dispose() {
+      active2 = false;
+      generation++;
+    }
+  };
 }
 
 // packages/client/src/play/display-settings.js
@@ -42338,7 +42383,7 @@ function prepareCardDocument(source, owners = [], helpers = [], trust = renderin
   const analyzed = /* @__PURE__ */ new Map();
   const read = (url, ownerHint) => {
     if (!url) throw Error("Blocked dependency URL");
-    const owner2 = ownerHint ?? owners.find((owner3) => trust.inspect(owner3, url)?.approved);
+    const owner2 = ownerHint ?? owners.find((owner3) => trust.isEnabled(owner3, url) && trust.inspect(owner3, url)?.approved);
     if (!owner2) throw Error("Rendering dependency requires content review: " + url);
     const content = trust.read(owner2, url);
     if (!seen.has(url)) {
@@ -42393,7 +42438,7 @@ function prepareCardDocument(source, owners = [], helpers = [], trust = renderin
   if (source.length > 1024 * 1024) throw Error("Card HTML exceeds 1 MiB");
   const template = document.createElement("template");
   template.innerHTML = source;
-  for (const helper of helpers.filter((item) => trust.isEnabled(item.owner, item.preferenceKey ?? item.key, item.enabled))) {
+  for (const helper of helpers.filter((item) => item.enablementAmbiguous ? item.enabled : trust.isEnabled(item.owner, item.preferenceKey ?? item.key, item.enabled))) {
     virtual = true;
     const content = trust.read(helper.owner, helper.key);
     if (content !== helper.content) throw Error("Helper changed; review again");
@@ -47478,7 +47523,17 @@ function TavernShell({ useSessions, useWorkspaces, createCleanSession, createCon
   const [uiSettings, setUiSettings] = (0, import_react27.useState)(getClientUiSettings);
   const [conversationSettings, setConversationSettings] = (0, import_react27.useState)(getClientConversationSettings);
   const [conversationSettingsStatus, setConversationSettingsStatus] = (0, import_react27.useState)({ text: translate("conversationSettings.saved"), error: false });
-  const [conversationSettingsBusy, setConversationSettingsBusy] = (0, import_react27.useState)(false);
+  const [conversationSettingsBusy, setConversationSettingsBusy] = (0, import_react27.useState)(true);
+  const conversationPersistence = (0, import_react27.useRef)(null);
+  if (!conversationPersistence.current) conversationPersistence.current = createConversationSettingsPersistence({
+    request: conversationSettingsRequest,
+    apply: (next) => setConversationSettings(setClientConversationSettings(next)),
+    busy: setConversationSettingsBusy,
+    status: (key2, reason) => setConversationSettingsStatus({
+      text: translate(`conversationSettings.${key2}`, { message: reason instanceof Error ? reason.message : String(reason ?? "") }),
+      error: key2 === "saveError" || key2 === "loadError"
+    })
+  });
   const [settingsStatus, setSettingsStatus] = (0, import_react27.useState)({ text: translate("settings.saved"), error: false });
   const [settingsBusy, setSettingsBusy] = (0, import_react27.useState)(false);
   const [rpPolicyDraft, setRpPolicyDraft] = (0, import_react27.useState)("");
@@ -47564,22 +47619,9 @@ function TavernShell({ useSessions, useWorkspaces, createCleanSession, createCon
     };
   }, []);
   (0, import_react27.useEffect)(() => {
-    let active2 = true;
-    conversationSettingsRequest().then((next) => {
-      if (!active2) return;
-      const normalized = setClientConversationSettings(next);
-      setConversationSettings(normalized);
-      setConversationSettingsStatus({ text: translate("conversationSettings.saved"), error: false });
-    }).catch((reason) => {
-      if (!active2) return;
-      setConversationSettingsStatus({
-        text: translate("conversationSettings.loadError", { message: reason instanceof Error ? reason.message : String(reason) }),
-        error: true
-      });
-    });
-    return () => {
-      active2 = false;
-    };
+    const persistence = conversationPersistence.current;
+    persistence.load();
+    return () => persistence.dispose();
   }, []);
   const persistSettings = async (next) => {
     const previous = uiSettings;
@@ -47617,47 +47659,8 @@ function TavernShell({ useSessions, useWorkspaces, createCleanSession, createCon
       setSettingsBusy(false);
     }
   };
-  const persistConversationSettings = async (next) => {
-    const previous = conversationSettings;
-    const normalized = normalizeClientConversationSettings(next);
-    setConversationSettingsBusy(true);
-    setConversationSettingsStatus({ text: translate("conversationSettings.saving"), error: false });
-    try {
-      const saved = setClientConversationSettings(await conversationSettingsRequest("PUT", normalized));
-      setConversationSettings(saved);
-      setConversationSettingsStatus({ text: translate("conversationSettings.saved"), error: false });
-    } catch (reason) {
-      setClientConversationSettings(previous);
-      setConversationSettings(previous);
-      setConversationSettingsStatus({
-        text: translate("conversationSettings.saveError", { message: reason instanceof Error ? reason.message : String(reason) }),
-        error: true
-      });
-    } finally {
-      setConversationSettingsBusy(false);
-    }
-  };
-  const resetConversationSettings = async () => {
-    const previous = conversationSettings;
-    const defaults = setClientConversationSettings(DEFAULT_CONVERSATION_SETTINGS);
-    setConversationSettings(defaults);
-    setConversationSettingsBusy(true);
-    setConversationSettingsStatus({ text: translate("conversationSettings.saving"), error: false });
-    try {
-      const saved = setClientConversationSettings(await conversationSettingsRequest("DELETE"));
-      setConversationSettings(saved);
-      setConversationSettingsStatus({ text: translate("conversationSettings.saved"), error: false });
-    } catch (reason) {
-      setClientConversationSettings(previous);
-      setConversationSettings(previous);
-      setConversationSettingsStatus({
-        text: translate("conversationSettings.saveError", { message: reason instanceof Error ? reason.message : String(reason) }),
-        error: true
-      });
-    } finally {
-      setConversationSettingsBusy(false);
-    }
-  };
+  const persistConversationSettings = (next) => conversationPersistence.current.save(next);
+  const resetConversationSettings = () => conversationPersistence.current.reset();
   (0, import_react27.useEffect)(() => {
     if (surface !== "settings") return void 0;
     let active2 = true;
