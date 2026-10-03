@@ -15,7 +15,9 @@ test('a guest veto of a native toggle emits a correcting view even when its snap
  interpreter.newFunction=(_,fn)=>Object.assign(fn,{dispose(){}});interpreter.newAsyncifiedFunction=()=>Object.assign(()=>{},{dispose(){}})
  interpreter.dump=()=>({});const runtime={setMemoryLimit(){},setMaxStackSize(){},setInterruptHandler(){},setModuleLoader(){},newContext:()=>interpreter,hasPendingJob:()=>false,computeMemoryUsage:()=>({dispose(){}})}
  const source=readFileSync(new URL('../packages/client/src/play/card-worker.js',import.meta.url),'utf8').replace(/^import[^\n]*\n/gm,'')
- const worker=vm.createContext({createAsyncJobDrain:()=>async()=>{},newQuickJSAsyncWASMModuleFromVariant:async()=>({newRuntime:()=>runtime}),variant:{},VIRTUAL_DOM_BOOTSTRAP,TAVERN_VIRTUAL_DOM_SOURCE:'',TAVERN_QUICKJS_VERSION:'fixture',crypto:globalThis.crypto,TextEncoder,performance,self:{postMessage:value=>messages.push(value),close(){}},setTimeout,clearTimeout})
+ const limits=source.includes('DEPENDENCY_LIMITS')?(await import('../packages/client/src/play/rendering-limits.js')).DEPENDENCY_LIMITS:undefined
+ const photo=source.includes('CARD_PHOTO_RUNTIME')?(await import('../packages/client/src/play/card-photo-runtime.js')).CARD_PHOTO_RUNTIME:''
+ const worker=vm.createContext({DEPENDENCY_LIMITS:limits,CARD_PHOTO_RUNTIME:photo,createAsyncJobDrain:()=>async()=>{},newQuickJSAsyncWASMModuleFromVariant:async()=>({newRuntime:()=>runtime}),variant:{},VIRTUAL_DOM_BOOTSTRAP,TAVERN_VIRTUAL_DOM_SOURCE:'',TAVERN_QUICKJS_VERSION:'fixture',crypto:globalThis.crypto,TextEncoder,performance,self:{postMessage:value=>messages.push(value),close(){}},setTimeout,clearTimeout})
  vm.runInContext(source,worker)
  worker.self.onmessage({data:{kind:'init',nonce:'fixture',html:'<input type="checkbox" id="veto">',runs:[{code:"document.getElementById('veto').addEventListener('click',event=>{event.target.checked=false})"}]}})
  for(let count=0;count<80&&!messages.some(message=>message.kind==='ready');count++)await new Promise(resolve=>setImmediate(resolve))
@@ -69,11 +71,12 @@ test('a native click/input/change chain synchronizes checked once and independen
  assert.equal(cardControlEventChecked('change',node,phases,20),false)
  assert.equal(cardControlEventChecked('click',node,phases,30),false);node.checked=true;assert.equal(cardControlEventChecked('input',node,phases,2000),true)
 })
-test('control corrections reject stale sequences, foreign generations and duplicates without elevating event authority',()=>{
- const source=readFileSync(new URL('../packages/client/src/play/card-worker-client.js',import.meta.url),'utf8').replace('export function','function')
+test('control corrections reject stale sequences, foreign generations and duplicates without elevating event authority',async()=>{
+ const raw=readFileSync(new URL('../packages/client/src/play/card-worker-client.js',import.meta.url),'utf8'),source=raw.replace(/^import[^\n]*\n/gm,'').replace('export function','function')
+ const limits=raw.includes('DEPENDENCY_LIMITS')?(await import('../packages/client/src/play/rendering-limits.js')).DEPENDENCY_LIMITS:undefined
  let worker;const posts=[],views=[],errors=[]
  class Worker{constructor(){worker=this}postMessage(value){posts.push(value)}terminate(){}}
- const create=new Function('TAVERN_CARD_WORKER_SOURCE','Worker','URL','Blob','crypto','setTimeout','clearTimeout',source+';return createVirtualCardRuntime')('',Worker,{createObjectURL:()=>'',revokeObjectURL(){}},class{},{randomUUID:()=> 'generation'},()=>0,()=>{})
+ const create=new Function('DEPENDENCY_LIMITS','TAVERN_CARD_WORKER_SOURCE','Worker','URL','Blob','crypto','setTimeout','clearTimeout',source+';return createVirtualCardRuntime')(limits,'',Worker,{createObjectURL:()=>'',revokeObjectURL(){}},class{},{randomUUID:()=> 'generation'},()=>0,()=>{})
  const runtime=create({},{onView:view=>views.push(view),onError:error=>errors.push(error.message)}),view=JSON.stringify({html:'<input type="checkbox">',styles:'',controls:[{id:1,checked:false}]})
  const emit=(controlSequence,nonce='generation')=>worker.onmessage({data:{kind:'view',nonce,controlSequence,value:view}})
  emit(0);runtime.dispatch({type:'click',target:1,checked:true},{trusted:false,control:true});emit(0);emit(1,'other-generation');emit(1);emit(1)
