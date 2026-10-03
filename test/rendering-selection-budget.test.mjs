@@ -47,3 +47,30 @@ test('cold inactive cache plus inert data can block a new graph before publicati
  assert.equal(trust.inspect('character:A',root),null);assert.equal(budget.snapshot().total,17)
  manager.dispose()
 })
+
+test('empty inert initialization releases its temporary reservation before near-limit cold recovery or source staging',async()=>{
+ const store=memory(),first=createRenderingDependencies({store,trust:createRenderingTrust(),download:async()=> ' '.repeat(95)})
+ await first.sync([source('preset:other')]);await first.acquire('preset:other');first.dispose()
+ for(const managerFirst of [false,true]){
+  const budget=createRenderingCacheBudget(100),trust=createRenderingTrust({budget})
+  let manager,release
+  if(managerFirst)manager=createRenderingDependencies({store,trust,channelFactory:()=>null})
+  budget.reserve('opening-inert',7)
+  budget.trackInitialization('existing-opening-inert',new Promise(resolve=>{release=()=>{budget.reserve('opening-inert',0);resolve()}}))
+  manager??=createRenderingDependencies({store,trust,channelFactory:()=>null})
+  const pending=manager.sync([source('preset:other')])
+  await new Promise(resolve=>setImmediate(resolve))
+  assert.equal(manager.inspect('preset:other').status,'loading');assert.equal(budget.snapshot().total,7)
+  release();await pending
+  assert.equal(manager.inspect('preset:other').status,'ready');assert.equal(budget.snapshot().total,95)
+  assert.equal(trust.read('preset:other',root),' '.repeat(95));manager.dispose()
+ }
+ const budget=createRenderingCacheBudget(100),trust=createRenderingTrust({budget})
+ let release
+ budget.reserve('opening-inert',7)
+ budget.trackInitialization('existing-opening-inert',new Promise(resolve=>{release=()=>{budget.reserve('opening-inert',0);resolve()}}))
+ const staged=trust.stage('character:A',root,' '.repeat(95))
+ await new Promise(resolve=>setImmediate(resolve));assert.equal(trust.inspect('character:A',root),null)
+ release();await staged
+ assert.equal(budget.snapshot().total,95);assert.equal(trust.inspect('character:A',root).approved,false)
+})
