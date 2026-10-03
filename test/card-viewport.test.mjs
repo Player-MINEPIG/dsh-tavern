@@ -6,7 +6,7 @@ import {VIRTUAL_DOM_BOOTSTRAP} from '../packages/client/src/play/virtual-dom-run
 
 test('viewport reads remain scalar, readonly and current within the guest window',()=>{
  let value={width:320,height:600},events=[]
- const sandbox=vm.createContext({__TavernDOM:{Element:class{},Event:class{constructor(type){this.type=type}},parseHTML:()=>({window:{dispatchEvent:event=>events.push(event.type)},document:{}})},__host:raw=>{assert.equal(JSON.parse(raw).op,'viewport');return JSON.stringify({value})}})
+ const sandbox=vm.createContext({__TavernDOM:{Element:class{},Event:class{constructor(type){this.type=type}},parseHTML:()=>({window:{dispatchEvent:event=>events.push(event.type)},document:{getElementById:()=>null,createElement:()=>null}})},__host:raw=>{assert.equal(JSON.parse(raw).op,'viewport');return JSON.stringify({value})}})
  vm.runInContext(VIRTUAL_DOM_BOOTSTRAP,sandbox)
  assert.deepEqual(JSON.parse(vm.runInContext('JSON.stringify([innerWidth,window.innerWidth,innerHeight,window.innerHeight])',sandbox)),[320,320,600,600])
  vm.runInContext('window.innerWidth=999;innerHeight=999',sandbox)
