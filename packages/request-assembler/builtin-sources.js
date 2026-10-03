@@ -13,7 +13,15 @@ const native = (id, name) => ({ id, pluginId: 'DSH', name, roles: ['preserve'], 
   const messages = context.nativeMessages.filter(m => id === 'native-system' ? m.role === 'system' : m.role !== 'system' && (id === 'input' ? claimed.has(m.id) : !claimed.has(m.id)))
   const children = id === 'native-system' ? (context.assets.officialSections ?? []).map((s, i) => ({ id: `official:${i}`, name: s.name, text: s.text, locked: true, lockReason: 'native-system-section', source: { plugin: s.plugin ?? s.source?.plugin ?? (s.name === 'rp:policy' || s.name?.startsWith('pmp-dsh-tavern:') ? 'pmp-dsh-tavern' : null), providedBy: 'DSH', section: s.name, generationRequiresPlugin: null, recordedContentSurvivesRemoval: true } }))
     : messages.map(m => ({ id: m.id, name: m.role, text: textOf(m), locked: true, lockReason: 'native-message', source: { plugin: m.source?.plugin ?? 'DSH', sourceKind: m.source?.kind ?? 'unknown', generationRequiresPlugin: Boolean(m.source?.plugin), recordedContentSurvivesRemoval: true } }))
-  return { blocks: [{ type: 'native', id, messageIds: messages.map(m => m.id), children }] }
+  if (id !== 'native-system') return { blocks: [{ type: 'native', id, messageIds: messages.map(m => m.id), children }] }
+  const enabled = kind => context.preset.rules.some(rule => rule.kind === kind && rule.enabled)
+  const included = m => m.role !== 'system' && enabled(claimed.has(m.id) ? 'input' : 'history')
+  return { blocks: messages.map((message, index) => ({ type: 'native', id: index === 0 ? id : `${id}:${message.id}`, messageIds: [message.id],
+    // Later complete native snapshots keep their conversation boundary instead
+    // of all moving ahead of history with the initial instruction module.
+    ...(index > 0 ? { depth: context.nativeMessages.slice(context.nativeMessages.indexOf(message) + 1).filter(included).length } : {}),
+    children: index === messages.length - 1 ? children : [],
+  })) }
 } })
 /** No privileged registration path: these descriptors also serve the public UI catalog. */
 export function registerBuiltinSources(registry) {

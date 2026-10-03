@@ -7,8 +7,83 @@ import { tmpdir } from 'node:os'
 import { mkdtempSync, rmSync } from 'node:fs'
 import * as tavern from '../packages/tavern-loader/src/index.js'
 import { createAssemblyBodyReader } from '../packages/tavern-trace/src/body-references.js'
+import { withDeepSeekWire } from './helpers/deepseek-wire.mjs'
+import { defaultAssemblyFailureInput } from './fixtures/default-assembly-failure.mjs'
 
 const runtimeRoot = process.env.DSH_TAVERN_ASSEMBLY_CORE_ROOT
+test('default assembly reaches the official DeepSeek wire through AgentLoop and durable Trace with complete snapshots', { skip: !runtimeRoot, timeout: 30000 }, async () => {
+  const require = createRequire(join(resolve(runtimeRoot), 'package.json'))
+  const load = name => import(pathToFileURL(require.resolve(name)).href)
+  const { Context } = await load('@deepseek-ai/cordis'), { SystemPrompt } = await load('@deepseek-ai/dsh-system-prompt')
+  const llm = await load('@deepseek-ai/dsh-llm'), sessions = await load('@deepseek-ai/dsh-session')
+  const ctx = new Context(), directory = mkdtempSync(join(tmpdir(), 'assembly-deepseek-host-')), requests = [], errors = []
+  let store
+  const text = m => m.content.filter(b => b.type === 'text').map(b => b.text).join('')
+  try {
+    // In-memory Host services cannot create a real profile/workspace.
+    for (const name of ['sessionController', 'workspaceController', 'directoryPickerController']) ctx.provide(name, {})
+    await ctx.plugin(SystemPrompt, { personaPrefix: 'OFFICIAL_ONE' })
+    for (const name of ['session', 'agent', 'session-projection', 'llm', 'tools', 'agent-loop']) await ctx.plugin((await load(`@deepseek-ai/dsh-${name}`)).default, name === 'agent-loop' ? { agents: [] } : {})
+    await ctx.plugin((await load('@deepseek-ai/dsh-invariants')).default, {})
+    await ctx.plugin(await load('@deepseek-ai/dsh-agent-loop/invariant'))
+    ctx.on('agent/error', e => errors.push(e.error))
+    ctx.on('llm/stream', (request, next) => {
+      if (llm.isAgentLoopRequest(request)) {
+        assert.ok(Object.isFrozen(request) && Object.isFrozen(request.messages))
+        const recorded = ctx.sessions.get(request.sessionId).snapshotEvents().findLast(e => e.type === 'request/assembly')
+        assert.deepEqual(recorded.data.messages, request.messages)
+        assert.equal(request.options?.system, undefined)
+        requests.push(structuredClone(request.messages))
+      }
+      return next()
+    })
+    await ctx.plugin({ name: tavern.name, inject: tavern.inject, apply(context) { store = tavern.apply(context, { storageDir: directory }) } })
+    const synthetic = defaultAssemblyFailureInput()
+    const preset = store.create({ name: 'Synthetic default shape' })
+    store.update(preset.id, { prompts: synthetic.assets.preset.prompts }); store.select(preset.id)
+    store.characterStore.import(Buffer.from(JSON.stringify({ spec: 'chara_card_v2', spec_version: '2.0', data: { name: 'Synthetic', first_mes: 'GREETING',
+      character_book: { entries: synthetic.assets.loreEntries.map((e, i) => ({ id: i, keys: [], content: e.content, enabled: true, constant: true,
+        insertion_order: i, position: e.requestedPosition ? 'after_char' : 'before_char', extensions: { position: e.requestedPosition ? 4 : 0, depth: 0 } })) } } })), { id: 'synthetic' })
+    await withDeepSeekWire(runtimeRoot, async ({ adapter, bodies }) => {
+      ctx.llm.registerAdapter(['offline'], adapter)
+      const handle = await ctx.agents.create({ sessionId: 'offline-default-shape', agentOptions: { provider: 'offline', model: 'offline' } }), agent = handle.agent
+      store.sessionSelections.set(agent.id, { characterCardId: 'synthetic' })
+      store.assemblyPresets.apply(agent.id, 'builtin-st')
+      for (const input of ['ONE', 'TWO', 'THREE']) {
+        agent.followup(llm.createUserMessage({ content: [{ type: 'text', text: input }], source: { kind: 'user' } })); await agent.whenIdle()
+        assert.deepEqual(errors, [])
+      }
+      assert.equal(bodies.length, 3)
+      for (let i = 0; i < bodies.length; i++) {
+        const body = bodies[i]
+        assert.match(body.system, /OFFICIAL_ONE\n\nMAIN$/)
+        assert.equal(body.messages.at(-1).role, 'system')
+        const effective = body.messages.at(-1).content[0].text
+        for (const marker of ['OFFICIAL_ONE', 'MAIN', ...synthetic.assets.loreEntries.map(e => e.content)]) assert.equal(effective.split(marker).length - 1, 1)
+        assert.equal(requests[i].filter(m => text(m) === 'GREETING').length, i === 0 ? 1 : 0)
+      }
+      const before = agent.session.deriveMessages()
+      assert.ok(!before.some(m => /MAIN|LORE_|GREETING/.test(text(m))))
+      const section = agent.ctx.systemPrompt.section({ name: 'offline:replacement', order: 0, complete: true, text: 'OFFICIAL_TWO' })
+      agent.followup(llm.createUserMessage({ content: [{ type: 'text', text: 'FOUR' }], source: { kind: 'user' } })); await agent.whenIdle()
+      assert.deepEqual(errors, []); assert.equal(bodies.length, 4)
+      const final = bodies.at(-1).messages.at(-1).content[0].text
+      assert.match(final, /^OFFICIAL_TWO\n\nMAIN\n\n/); assert.ok(!final.includes('OFFICIAL_ONE'))
+      const native = agent.session.deriveMessages()
+      assert.deepEqual(native.slice(0, before.length), before)
+      const restored = sessions.Session.fromRestore(agent.id, structuredClone(agent.session.snapshotEvents()), agent.session.header, sessions.SessionLogOffset(0), 'detached')
+      assert.deepEqual(restored.deriveMessages(), native)
+      const read = createAssemblyBodyReader({ inspect: async () => ({ meta: restored.header, events: restored.snapshotEvents() }) })
+      for (const [i, summary] of store.assemblyStore.list(agent.id).entries()) {
+        const record = await read(store.assemblyStore.get(agent.id, summary.id))
+        assert.deepEqual(record.requestAssembly.messages, requests[i])
+        assert.equal(record.requestContentStatus, 'available')
+      }
+      section(); await handle.dispose()
+    })
+  } finally { await ctx.fiber.dispose(); rmSync(directory, { recursive: true, force: true }) }
+})
+
 test('extended core sends the assembled request, records it, restores native history and unloads without a provider fork', { skip: !runtimeRoot, timeout: 30000 }, async () => {
   const require = createRequire(join(resolve(runtimeRoot), 'package.json'))
   const load = name => import(pathToFileURL(require.resolve(name)).href)
@@ -38,6 +113,7 @@ test('extended core sends the assembled request, records it, restores native his
       requests.push(structuredClone({ messages: request.messages })); return next()
     })
     class Adapter extends llm.LlmAdapter {
+      async resolveModel(provider, id) { return { provider, id, name: id, systemPromptUpdate: 'in-history' } }
       async *stream() {
         yield { type: 'block-start', index: 0, blockType: 'text' }
         yield { type: 'text-delta', index: 0, text: 'ANSWER' }
@@ -71,9 +147,10 @@ test('extended core sends the assembled request, records it, restores native his
     await turn('ONE'); await turn('TWO'); await turn('THREE')
     assert.equal(requests.length, 3)
     const text = msg => msg.content.filter(b => b.type === 'text').map(b => b.text).join('')
-    assert.equal(text(requests[0].messages.at(-1)), 'TAIL')
-    assert.equal(text(requests[2].messages.at(-1)), 'TAIL')
-    assert.equal(requests[2].messages.filter(m => text(m) === 'TAIL').length, 1)
+    const fullSystem = 'You are an AI agent powered by DeepSeek Harness.\n\nOFFICIAL\n\nBODY\n\nTAIL'
+    assert.equal(text(requests[0].messages.at(-1)), fullSystem)
+    assert.equal(text(requests[2].messages.at(-1)), fullSystem)
+    assert.equal(requests[2].messages.filter(m => text(m).endsWith('\n\nTAIL')).length, 1)
     assert.ok(!agent.session.deriveMessages().some(m => ['TAIL', 'BODY'].includes(text(m))))
     const events = structuredClone(agent.session.snapshotEvents())
     const restored = sessions.Session.fromRestore(agent.id, events, agent.session.header, sessions.SessionLogOffset(0), 'detached')
@@ -144,6 +221,7 @@ test('public sources run for tool continuations, steering, child requests and se
     ctx.on('agent/error', e => errors.push(e.error))
     ctx.tools.register({ name: 'probe', description: 'Synthetic probe', parameters: { type: 'object', properties: {} }, output: { schema: { type: 'string' }, render: (_, value) => [{ type: 'text', text: value }] }, execute: async () => 'TOOL RESULT' })
     class Adapter extends llm.LlmAdapter {
+      async resolveModel(provider, id) { return { provider, id, name: id, systemPromptUpdate: 'in-history' } }
       async *stream(request) {
         if (llm.isAgentLoopRequest(request)) {
           requests.push(request)
@@ -173,7 +251,7 @@ test('public sources run for tool continuations, steering, child requests and se
     assert.ok(requests[1].messages.some(m => m.role === 'tool'))
     assert.ok(requests[2].messages.some(m => m.content.some(b => b.text === 'ADDED DURING RUN')))
     assert.ok(requests[3].messages.some(m => m.source?.kind === 'subagent-settled'))
-    for (let i = 0; i < requests.length; i++) assert.equal(requests[i].messages.at(-1).content[0].text, `MEMORY 1/${i + 1}`)
+    for (let i = 0; i < requests.length; i++) assert.equal(requests[i].messages.at(-1).content[0].text, `You are an AI agent powered by DeepSeek Harness.\n\nOFFICIAL\n\nMEMORY 1/${i + 1}`)
     const child = await ctx.agents.create({ sessionId: 'source-child', meta: { parentSession: agent.id }, agentOptions: { provider: 'test', model: 'test' } })
     child.agent.followup(llm.createUserMessage({ content: [{ type: 'text', text: 'CHILD TASK' }], source: { kind: 'user' } })); await child.agent.whenIdle()
     assert.deepEqual(errors, []); assert.equal(calls.at(-1)[0], child.agent.id)
@@ -184,7 +262,7 @@ test('public sources run for tool continuations, steering, child requests and se
     assert.ok(!ctx.get('tavernRequestSources').list().some(s => s.id === 'example.memory'))
     agent.followup(llm.createUserMessage({ content: [{ type: 'text', text: 'AFTER SOURCE UNLOAD' }], source: { kind: 'user' } })); await agent.whenIdle()
     assert.deepEqual(errors, [])
-    assert.ok(!requests.at(-1).messages.some(m => m.content.some(b => b.text?.startsWith('MEMORY'))))
+    assert.ok(!requests.at(-1).messages.some(m => m.content.some(b => b.text?.includes('MEMORY'))))
     await child.dispose(); await handle.dispose()
   } finally { await ctx.fiber.dispose(); rmSync(directory, { recursive: true, force: true }) }
 })

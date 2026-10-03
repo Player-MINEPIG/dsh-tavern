@@ -62,7 +62,7 @@ test('preview rebuilds current native instructions and never duplicates historic
   const runtime = new RequestAssembler({ ctx: { get: key => key === 'systemPrompt' ? { async assemble(context) { previewContext = context; return { sections: [{ name: 'core', text: 'CURRENT {{name}}' }], variables: { name: 'CORE' } } } } : { requestAssemblyVersion: 1 } }, store: {}, resources: { compile: () => ({ assemblyInput: { character: { data: { description: 'CHARACTER' } } } }) } })
   const result = await runtime.preview({ preset: BUILTINS[0], agent: { session: { deriveMessages: () => events } } })
   assert.equal(previewContext.tavernAssemblyPreview, true)
-  assert.deepEqual(result.messages.map(m => m.content[0].text), ['CURRENT CORE', 'CHARACTER', 'hello'])
+  assert.deepEqual(result.messages.map(m => m.content[0].text), ['CURRENT CORE\n\nCHARACTER', 'hello'])
   assert.equal(events[0].content[0].text, 'OLD CHARACTER')
 })
 

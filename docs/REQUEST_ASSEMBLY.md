@@ -24,6 +24,16 @@ ST 兼容不等于运行完整 SillyTavern。支持 character/persona/world-info
 
 未显式设置角色深度时，首轮角色开场白作为请求内的 assistant 引用放在原生对话之前，即使预设的 `chatHistory` marker 已占用本步输入位置，也不会排在输入之后。显式深度保持原值；若开场白位于本步输入之后，装配报告 `GREETING_AFTER_INPUT`，后续 system 更新仍可能被模型适配器拒绝。它不写入原生历史；后置世界书仍保留各自的角色、深度与顺序。
 
+### 系统段落与 DSH 完整快照
+
+来源返回的 system 文本是有序贡献，DSH 的 system 消息则表示完整有效指令。运行时和预览在逻辑装配后、官方请求冻结前统一转换：相邻 system 贡献合成一个完整快照，不跨越 user、assistant、developer 或 tool 消息。每个后续快照包含本次请求到该位置的来源贡献；原生 system 更新只替换原生基础指令，保留基础指令在贡献列表中的位置，不拼接过时的原生正文。后续原生更新保留其原生历史边界；重排历史/输入导致该边界不可保留时，装配明确拒绝。
+
+每次请求从该次原生输入与已解析来源重新计算，不累积上一请求的投影全文。来源的「累积快照」仍按下文保留旧原文、锚点与失效说明，和 DSH 完整指令替换是两种语义。关闭来源、清空原生基础指令或更换为请求型规则，不会从旧投影恢复内容。
+
+只有官方已解析模型能力 `systemPromptUpdate: in-history` 支持非前置 system。缺少该能力时，后置或深度 system 在本地以 `ASSEMBLY_SYSTEM_UPDATES_UNSUPPORTED` 拒绝；不会将其偷偷移到开头或改为 user。预览不准备下一次模型调用，能力标为 `unverified`，遇后置 system 给出 `SYSTEM_UPDATE_CAPABILITY_UNVERIFIED`；实际发送使用本次官方 `request/context` 再检查。
+
+`assembleRequest` / `assembleRequestAsync` 是逻辑段落装配原语；Host 运行时负责上述完整快照转换。最终 `request/assembly.messages` 与实际发送数组一致。metadata 的 `systemProjection` 记录原消息 ID、派生载体 ID、有序贡献与已替换原生 ID；逻辑 nodes 保留来源原文/哈希，并用重算后的 `start/count/requestMessageIds` 指向最终载体，多段可共享一条 system 消息。`maxProfileBytes` 同时限制新增投影展开字节；未修改的原生历史不计入新增开销。
+
 内置默认策略为 ST 兼容，不能改名或删除；编辑内置规则后保存会创建副本。「应用默认装配策略」同时应用并选中 ST 兼容，未保存的修改会先提醒。悬浮球只显示当前策略名称和绑定绿灯；点击进入设置页后选择、关闭或应用策略。预览及实际请求按钮与通用规则并排。
 
 PHI 可来自角色卡的后置指令字段、预设的 Post-History Instructions / jailbreak，以及策略 PHI 模块展开后的追加文本。前两者在对应资产编辑器修改，追加文本只属于该策略。预览优先显示资产条目名称及已知字段的中文名，原始标识仍在展开详情中。
