@@ -19,7 +19,9 @@
     "./identity": "./packages/identity.js",
     "./package.json": "./package.json",
     "./request-assembler": "./packages/request-assembler/index.js",
-    "./mvu": "./packages/mvu-adapter/src/index.js"
+    "./mvu": "./packages/mvu-adapter/src/index.js",
+    "./prompt-template": "./packages/prompt-template/index.js",
+    "./memory-sources": "./packages/memory-sources/index.js"
   },
   "files": [
     "screenshots.json",
@@ -65,7 +67,9 @@
     "docs/REQUEST_ASSEMBLY.md",
     "docs/REQUEST_ASSEMBLY_en.md",
     "docs/MVU.md",
-    "docs/MVU_en.md"
+    "docs/MVU_en.md",
+    "docs/PROMPT_TEMPLATE.md",
+    "docs/PROMPT_TEMPLATE_en.md"
   ],
   "dsh": {
     "bundle": {

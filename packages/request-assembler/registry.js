@@ -27,7 +27,8 @@ export class RequestSourceRegistry {
     }))
     if (!Array.isArray(descriptor.dependencies) || descriptor.dependencies.some(id => !idPattern.test(id)) || !['asset', 'conversation', 'evaluation', 'assembly', 'snapshot'].includes(descriptor.stability)) throw new TypeError('Invalid source descriptor')
     if (!Number.isInteger(descriptor.version) || descriptor.version < 1 || !Array.isArray(descriptor.roles) || !descriptor.roles.length || descriptor.roles.some(r => !['preserve', 'system', 'user', 'assistant'].includes(r)) || !Array.isArray(descriptor.lifetimes) || !descriptor.lifetimes.length || descriptor.lifetimes.some(l => !['request', 'snapshot'].includes(l))) throw new TypeError('Invalid source capabilities')
-    const entry = { descriptor, resolve: source.resolve }
+    if (source.validateResolved !== undefined && typeof source.validateResolved !== 'function') throw new TypeError('validateResolved must be a function')
+    const entry = { descriptor, resolve: source.resolve, validateResolved: source.validateResolved }
     this.#sources.set(source.id, entry)
     return () => { if (this.#sources.get(source.id) === entry) this.#sources.delete(source.id) }
   }
@@ -69,6 +70,12 @@ export class RequestSourceRegistry {
     }
     return freeze({ ...result, rule: job.rule, descriptor: job.descriptor })
   }
+  #validateResolved(request) {
+    for (const job of request.jobs) {
+      const value = job.validateResolved?.(request.context)
+      if (value?.then) { value.catch?.(() => {}); throw new TypeError('validateResolved must be synchronous') }
+    }
+  }
   resolveSync(context) {
     const request = this.#jobs(context), resolved = []
     for (const job of request.jobs) {
@@ -77,6 +84,7 @@ export class RequestSourceRegistry {
       if (output?.then) { output.catch?.(() => {}); throw new TypeError('Async source requires assembleRequestAsync') }
       resolved.push(this.#result(job, output))
     }
+    this.#validateResolved(request)
     return { context: request.context, resolved, diagnostics: request.diagnostics }
   }
   async resolve(context) {
@@ -86,6 +94,7 @@ export class RequestSourceRegistry {
       const output = await abortable(job.resolve(request.context, freeze(structuredClone(job.rule))), context.signal)
       aborted(context.signal); resolved.push(this.#result(job, output))
     }
+    this.#validateResolved(request)
     return { context: request.context, resolved, diagnostics: request.diagnostics }
   }
 }

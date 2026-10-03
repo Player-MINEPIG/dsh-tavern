@@ -16,7 +16,7 @@ const native = (id, name) => ({ id, pluginId: 'DSH', name, roles: ['preserve'], 
   return { blocks: [{ type: 'native', id, messageIds: messages.map(m => m.id), children }] }
 } })
 /** No privileged registration path: these descriptors also serve the public UI catalog. */
-export function registerBuiltinSources(registry) {
+export function registerBuiltinSources(registry, { worldbookPolicy, worldbookValidateResolved } = {}) {
   const dispose = [], register = source => dispose.push(registry.register({ pluginId: 'pmp-dsh-tavern', stability: 'asset', ...source }))
   for (const [id, name] of [['native-system', '官方基础指令'], ['history', '原生历史'], ['input', '本步输入']]) register(native(id, name))
   register({ id: 'character', name: '角色卡', resolve({ assets, preset }) {
@@ -28,10 +28,10 @@ export function registerBuiltinSources(registry) {
     return { blocks, macros: { description: 'description', personality: 'personality', scenario: 'scenario', mesexamples: 'examples', charDescription: 'description', charPersonality: 'personality' } }
   } })
   register({ id: 'persona', name: '用户设定', resolve: ({ assets }) => ({ blocks: [text('persona', assets.user?.description, { source: { resourceId: assets.user?.id, field: 'persona' } })], macros: { persona: 'persona' } }) })
-  register({ id: 'worldbook', name: '世界书', stability: 'conversation', resolve: ({ assets, preset }) => ({ blocks: (assets.loreEntries ?? []).map(e => text(`worldbook:${e.id ?? e.uid}`, e.content, {
+  register({ id: 'worldbook', name: '世界书', stability: 'conversation', validateResolved: worldbookValidateResolved, resolve: context => { const { assets, preset } = context; const output = { blocks: (assets.loreEntries ?? []).map(e => text(`worldbook:${e.id ?? e.uid}`, e.content, {
     name: e.comment || `worldbook:${e.id ?? e.uid}`, group: e.position ?? 'after', stability: e.constant ? 'asset' : 'conversation', role: e.role ?? 'system',
     ...(preset.placement === 'st' && e.requestedPosition === 'at_depth' ? { depth: e.depth ?? 0 } : {}), source: { resourceId: e.resourceId, field: String(e.uid ?? e.id) },
-  })) }) })
+  })) }; return worldbookPolicy ? worldbookPolicy(context, output) : output } })
   register({ id: 'preset', name: '预设正文', lifetimes: ['request'], dependencies: ['character', 'persona', 'history', 'input', 'worldbook'], resolve({ assets, preset }) {
     const blocks = [], diagnostics = [], fields = characterFields(assets)
     const markerFields = { charDescription: ['character', 'description'], charPersonality: ['character', 'personality'], scenario: ['character', 'scenario'], dialogueExamples: ['character', 'examples'], personaDescription: ['persona', 'persona'], userDescription: ['persona', 'persona'], userPersona: ['persona', 'persona'] }
@@ -69,4 +69,4 @@ export function registerBuiltinSources(registry) {
   register({ id: 'custom', name: '自定义内容', roles: ['user', 'system', 'assistant'], multiple: true, dependencies: ['character', 'persona'], resolve: (_, rule) => ({ blocks: [text(rule.name || 'custom', rule.text, { source: { field: rule.id } })] }) })
   return () => dispose.reverse().forEach(fn => fn())
 }
-export function createDefaultRegistry() { const registry = new RequestSourceRegistry(); registerBuiltinSources(registry); return registry }
+export function createDefaultRegistry(options) { const registry = new RequestSourceRegistry(); registerBuiltinSources(registry, options); return registry }

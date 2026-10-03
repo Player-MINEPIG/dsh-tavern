@@ -1,3 +1,4 @@
+import { createHash } from 'node:crypto'
 import {
   WORLD_BOOK_LIMITS,
   computeWorldBookCandidates,
@@ -67,6 +68,7 @@ function projectBook(document, context, options) {
       name: document.name,
       kind: 'standalone-world-book',
       updatedAt: document.updatedAt,
+      revision: createHash('sha256').update(JSON.stringify(document)).digest('hex'),
       bindingSources: Array.isArray(context.bindingSources) ? [...context.bindingSources] : ['session'],
     },
   })
@@ -100,6 +102,7 @@ export function createWorldBookAdapter(storeOrOptions = {}, maybeOptions = {}) {
       character,
       conversationText = '',
       activationContext = null,
+      requestAssembly = false,
       agent,
     } = {}) {
       const results = []
@@ -139,6 +142,10 @@ export function createWorldBookAdapter(storeOrOptions = {}, maybeOptions = {}) {
             break
           }
           try {
+            if (options.allowResource && !options.allowResource(id, { requestAssembly })) {
+              diagnostics.push({ code: 'WORLD_BOOK_MANAGED_REQUIRES_ASSEMBLY', severity: 'warning', resourceId: id, message: 'Managed world book requires request assembly and a current manager policy.' })
+              continue
+            }
             const document = store.get(id)
             if (!reserve(document.book, id)) continue
             const bindingSources = [

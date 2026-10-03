@@ -39,6 +39,8 @@ export interface ReferenceBlock extends BlockBase {
 export interface SourceOutput { blocks: Array<TextBlock | NativeBlock | ReferenceBlock>; macros?: Record<string, string>; diagnostics?: Json[] }
 export type SourceDefinition = Pick<Descriptor, 'id' | 'pluginId' | 'name'> & Partial<Omit<Descriptor, 'id' | 'pluginId' | 'name'>> & {
   resolve(context: SourceContext, rule: Readonly<Rule>): SourceOutput | Promise<SourceOutput>;
+  /** Read-only synchronous lease check after all asynchronous sources have resolved. */
+  validateResolved?(context: SourceContext): void;
 }
 export const ASSEMBLY_SERVICE: 'tavernRequestSources'
 export const SOURCE_PROTOCOL_VERSION: 1
@@ -49,8 +51,9 @@ export class RequestSourceRegistry {
   resolve(context: SourceContext): Promise<unknown>;
   resolveSync(context: SourceContext): unknown;
 }
-export function registerBuiltinSources(registry: RequestSourceRegistry): () => void
-export function createDefaultRegistry(): RequestSourceRegistry
+export interface BuiltinSourceOptions { worldbookPolicy?(context: SourceContext, output: SourceOutput): SourceOutput | Promise<SourceOutput>; worldbookValidateResolved?(context: SourceContext): void }
+export function registerBuiltinSources(registry: RequestSourceRegistry, options?: BuiltinSourceOptions): () => void
+export function createDefaultRegistry(options?: BuiltinSourceOptions): RequestSourceRegistry
 export interface AssemblyOptions {
   preset: Preset; registry?: RequestSourceRegistry; assets?: Record<string, unknown>;
   nativeMessages?: NativeMessage[]; inputIds?: string[]; previous?: AssemblyResult | null;

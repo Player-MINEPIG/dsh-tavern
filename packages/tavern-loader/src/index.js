@@ -76,6 +76,8 @@ import {
 import { prepareStorageDir } from './storage-location.js'
 import { AssemblyPresetStore } from '../../request-assembler/store.js'
 import { RequestAssembler } from '../../request-assembler/runtime.js'
+import { createDefaultRegistry } from '../../request-assembler/builtin-sources.js'
+import { createMemorySources, installMemorySources } from '../../memory-sources/index.js'
 import { ASSEMBLY_SERVICE } from '../../request-assembler/registry.js'
 import { createAssemblyApi, isAssemblyApiPath } from '../../request-assembler/server.js'
 
@@ -367,7 +369,10 @@ export function apply(ctx, config = {}) {
     maxQueuedMessages: config.pendingInput?.maxQueuedMessages,
   })
   const assemblyPresets = new AssemblyPresetStore(storageDir, { mode: () => chromeStore.get().mode })
-  const requestAssembler = new RequestAssembler({ ctx, store: assemblyPresets, resources: runtime })
+  const memorySources = createMemorySources({ storageDir, store: worldBookStore, resources: config.promptTemplates?.resources ?? [], getVariables: args => ctx.get('tavernMvu')?.read(args) })
+  const registry = createDefaultRegistry({ worldbookPolicy: (context, output) => memorySources.worldBooks.filter(context, output), worldbookValidateResolved: memorySources.worldBooks.validateResolved })
+  const requestAssembler = new RequestAssembler({ ctx, store: assemblyPresets, resources: runtime, registry })
+  installMemorySources(ctx, memorySources, registry)
   store.assemblyPresets = assemblyPresets
   store.requestAssembler = requestAssembler
   ctx.provide(ASSEMBLY_SERVICE, requestAssembler.registry)
@@ -388,7 +393,11 @@ export function apply(ctx, config = {}) {
     if (requestAssembler.selected(sessionId)) requestAssembler.requireAvailable()
     return true
   }
-  ctx.on('agent/assemble-request', (payload, next) => requestAssembler.execute(payload, next))
+  ctx.on('agent/assemble-request', async (payload, next) => {
+    const result = await requestAssembler.execute(payload, next)
+    memorySources.validateAssembly(result.metadata?.assembly)
+    return result
+  })
   runtime.registerActivationContextProvider(agent => pendingInput.activationContext(agent))
   const assemblyStore = new AssemblyStore(storageDir, config.traceAssemblies)
   const traceStore = new TavernTraceStore(storageDir, config.trace, assemblyStore)
@@ -399,7 +408,7 @@ export function apply(ctx, config = {}) {
   const assemblyRecorder = new AssemblyRecorder(assemblyStore, { requiresRequestAssembly: () => requestAssembler.available() })
   runtime.registerCharacterAdapter(createCharacterAdapter(characterStore))
   runtime.registerUserAdapter(createUserAdapter(userStore))
-  runtime.registerWorldBookAdapter(createWorldBookAdapter(worldBookStore, config.worldBook))
+  runtime.registerWorldBookAdapter(createWorldBookAdapter(worldBookStore, { ...config.worldBook, allowResource: (id, context) => memorySources.worldBooks.allowNative(id, context.requestAssembly) }))
   const notifyChange = () => ctx.emit('system-prompt/change')
   const traceSafely = (callback) => {
     try {
