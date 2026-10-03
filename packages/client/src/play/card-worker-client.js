@@ -12,17 +12,17 @@ function validateInput(data) {
  if(data.cardStorage){count(JSON.stringify(data.cardStorage),128*1024+1024);if(!/^[a-f0-9]{64}$/.test(data.cardStorage.scope)||!Array.isArray(data.cardStorage.entries))throw Error('Invalid card storage scope')}
  return {...data,runs,modules,html}
 }
-export function createVirtualCardRuntime(input,{onView,onProposal,onError,onAudit=()=>{},onPhotoPick=()=>{throw Error('Photo selection unavailable')},onMeasure=()=>{throw Error('Card layout surface unavailable')},onStorage=()=>{throw Error('Card storage unavailable')},onOpening=async()=>{throw Error('Opening world books are unavailable')},onWrite=async()=>{throw Error('Variable writes are disabled')}}) {
+export function createVirtualCardRuntime(input,{onView,onProposal,onError,onAudit=()=>{},onPhotoPick=()=>{throw Error('Photo selection unavailable')},onMeasure=()=>{throw Error('Card layout surface unavailable')},onStorage=()=>{throw Error('Card storage unavailable')},onIdentityAction=async()=>{throw Error('Identity confirmation unavailable')},onOpening=async()=>{throw Error('Opening world books are unavailable')},onWrite=async()=>{throw Error('Variable writes are disabled')}}) {
  const data=validateInput(input)
  if(typeof TAVERN_CARD_WORKER_SOURCE!=='string')throw Error('Card worker unavailable in this build')
  if(active>=4)throw Error('Four external card runtimes are active. Pause an older card, then retry this card.')
  const nonce=crypto.randomUUID(),url=URL.createObjectURL(new Blob([TAVERN_CARD_WORKER_SOURCE],{type:'text/javascript'}))
  let worker;try{worker=new Worker(url)}finally{URL.revokeObjectURL(url)}active++
- let disposed=false,startupTimer,busyTimer,lastWriteId=0,lastMeasureId=0,lastStorageId=0,measurement=null,lastOpeningId=0,opening=null
+ let disposed=false,startupTimer,busyTimer,lastWriteId=0,lastMeasureId=0,lastStorageId=0,measurement=null,lastOpeningId=0,opening=null,lastIdentityActionId=0,identityAction=null
  const tasks=new Map(),pending=new Map()
  let lastPhotoPickId=0
  let controlSequence=0,lastViewSequence=-1,lastViewString
- const stop=()=>{if(disposed)return;disposed=true;clearTimeout(startupTimer);clearTimeout(busyTimer);if(opening){clearTimeout(opening.timer);opening.controller.abort();opening=null}for(const item of pending.values()){clearTimeout(item.timer);item.controller.abort()}pending.clear();if(measurement){clearTimeout(measurement.timer);measurement.controller.abort();measurement=null}worker.terminate();tasks.clear();active--}
+ const stop=()=>{if(disposed)return;disposed=true;clearTimeout(startupTimer);clearTimeout(busyTimer);if(identityAction){clearTimeout(identityAction.timer);identityAction.controller.abort();identityAction=null}if(opening){clearTimeout(opening.timer);opening.controller.abort();opening=null}for(const item of pending.values()){clearTimeout(item.timer);item.controller.abort()}pending.clear();if(measurement){clearTimeout(measurement.timer);measurement.controller.abort();measurement=null}worker.terminate();tasks.clear();active--}
  const fail=(message,operationId)=>{if(disposed)return;stop();onError(Object.assign(Error(message),operationId?{operationId,outcome:'unknown'}:{}))}
  const replyWrite=(requestId,value,operationId)=>{if(disposed)return;try{if(JSON.stringify(value).length>128*1024)throw Error();worker.postMessage({kind:'writeResult',nonce,requestId,value})}catch{fail('Write result could not be delivered; inspect the operation receipt before retrying',operationId)}}
  worker.onerror=()=>fail('Card worker failed')
@@ -43,6 +43,15 @@ export function createVirtualCardRuntime(input,{onView,onProposal,onError,onAudi
    return
   }
   if(message.kind==='proposal'){if(typeof message.value==='string'&&message.value.length<=4000)onProposal(message.value);else fail('Invalid card proposal');return}
+  if(message.kind==='identityAction'){
+   const value=message.value
+   if(data.identityAction!==true||identityAction||!value||!Number.isSafeInteger(value.requestId)||value.requestId<=lastIdentityActionId||JSON.stringify(value).length>128*1024){fail('Invalid identity action request');return}
+   lastIdentityActionId=value.requestId
+   const controller=new AbortController(),ticket={controller,timer:setTimeout(()=>fail('Identity confirmation expired'),300000)};identityAction=ticket
+   Promise.resolve().then(()=>{if(disposed||identityAction!==ticket)return;return onIdentityAction(value.payload,{signal:controller.signal})}).then(result=>finish({value:result}),error=>finish({error:String(error.message).slice(0,300)}))
+   function finish(result){if(disposed||identityAction!==ticket)return;identityAction=null;clearTimeout(ticket.timer);try{if(JSON.stringify(result).length>128*1024)throw Error();worker.postMessage({kind:'identityActionResult',nonce,requestId:value.requestId,value:result})}catch{fail('Identity result could not be delivered')}}
+   return
+  }
   if(message.kind==='identityOpening'){
    const value=message.value
    if(data.identityOpening!==true||opening||!value||!Number.isSafeInteger(value.requestId)||value.requestId<=lastOpeningId||!['default','police_done','hospital_done','alisa_party','pool'].includes(value.openingId)||JSON.stringify(value).length>1024){fail('Invalid opening selection request');return}

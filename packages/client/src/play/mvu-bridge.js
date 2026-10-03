@@ -51,22 +51,25 @@ export async function createMvuCardBinding({ client, scope, pollMs = 1000, signa
       }
     } finally { polling = false; if (!disposed && listeners.size) timer = setTimeout(poll, Math.max(250, pollMs)) }
   }
+  const submit = async ({ operation, value, expectedRevision, operationId, cause = 'script', signal: writeSignal } = {}) => {
+    if (disposed) throw new Error('MVU binding is disposed')
+    if (!capability) throw Object.assign(new Error('MVU binding is read-only'), { code: 'MVU_WRITE_DENIED' })
+    writeSignal?.throwIfAborted()
+    const pending = new AbortController(), abort = () => pending.abort()
+    controller.signal.addEventListener('abort', abort, { once: true }); writeSignal?.addEventListener('abort', abort, { once: true })
+    try {
+      const next = validate(await post('card-write', { capability, operation, value, expectedRevision, operationId, cause }, pending.signal))
+      const receipt = immutable({ operationId, result: copy(next) })
+      if (disposed || pending.signal.aborted) throw Object.assign(new DOMException('MVU write cancelled', 'AbortError'), { operationReceipt: receipt })
+      if (next.revision >= current.revision) { current = next; generation++ }
+      for (const listener of listeners) { try { listener(copy(current)) } catch {} }
+      return { snapshot: copy(current), receipt }
+    } finally { controller.signal.removeEventListener('abort', abort); writeSignal?.removeEventListener('abort', abort) }
+  }
   return Object.freeze({
     getSnapshot: () => { if (disposed) throw new Error('MVU binding is disposed'); return { ...copy(current), writable: Boolean(capability) } },
-    async write({ operation, value, expectedRevision, operationId, cause = 'script', signal: writeSignal } = {}) {
-      if (disposed) throw new Error('MVU binding is disposed')
-      if (!capability) throw Object.assign(new Error('MVU binding is read-only'), { code: 'MVU_WRITE_DENIED' })
-      writeSignal?.throwIfAborted()
-      const pending = new AbortController(), abort = () => pending.abort()
-      controller.signal.addEventListener('abort', abort, { once: true }); writeSignal?.addEventListener('abort', abort, { once: true })
-      try {
-        const next = validate(await post('card-write', { capability, operation, value, expectedRevision, operationId, cause }, pending.signal))
-        if (disposed || pending.signal.aborted) throw new DOMException('MVU write cancelled', 'AbortError')
-        if (next.revision >= current.revision) { current = next; generation++ }
-        for (const listener of listeners) { try { listener(copy(current)) } catch {} }
-        return copy(current)
-      } finally { controller.signal.removeEventListener('abort', abort); writeSignal?.removeEventListener('abort', abort) }
-    },
+    async write(request) { return (await submit(request)).snapshot },
+    async writeOperation(request) { return (await submit(request)).receipt },
     subscribe(listener) {
       if (disposed) throw new Error('MVU binding is disposed')
       if (typeof listener !== 'function') throw new TypeError('Listener is required')

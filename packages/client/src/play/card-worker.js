@@ -5,6 +5,7 @@ import variant from '@jitl/quickjs-singlefile-browser-release-asyncify'
 import { VIRTUAL_DOM_BOOTSTRAP } from './virtual-dom-runtime.js'
 import {CARD_STORAGE_RUNTIME,validateCardStorage,cardStorageBytes,CARD_STORAGE_VALUE_LIMIT} from './card-scoped-storage.js'
 import {IDENTITY_OPENING_RUNTIME} from './identity-opening-runtime.js'
+import {IDENTITY_ACTION_RUNTIME} from './identity-action-runtime.js'
 import {cardExecutionDiagnostic} from './card-execution-diagnostic.js'
 import {settleCardStorageWait} from './card-storage-wait-budget.js'
 
@@ -24,6 +25,7 @@ function validateInput(data) {
 let compiler, vm, runtime, drainJob, nonce, destroyed=false, deadline=0, operations=0, current, context, viewport, lastView='', ready=false
 const timers=new Map(),pendingMessages=[],pendingWrites=new Set();let lastWriteId=0
 let openingPending=null,lastOpeningId=0
+let identityActionPending=null,lastIdentityActionId=0
 let activeCause='script',activeTask=null,layoutCalls=0,layoutId=0,layoutPending=null,queue=Promise.resolve(),queued=0
 const startupTasks=[]
 let nextViewport,viewportQueued=false
@@ -108,6 +110,11 @@ async function init(input){
    }else if(op==='propose'){
     if(typeof args[0]!=='string'||args[0].length>4000)throw Error('Proposal exceeds limit')
     reply('proposal',args[0])
+   }else if(op==='identityAction'){
+    const [requestId,payload]=args
+    if(data.identityAction!==true||identityActionPending!==null||!Number.isSafeInteger(requestId)||requestId<=lastIdentityActionId||!payload||typeof payload!=='object'||Array.isArray(payload)||Object.hasOwn(payload,'observedRevision')||!Number.isSafeInteger(current?.currentRevision)||current.currentRevision<0)throw Error('Invalid identity action request')
+    lastIdentityActionId=requestId;identityActionPending=requestId
+    reply('identityAction',{requestId,payload:{...payload,observedRevision:current.currentRevision}})
    }else if(op==='identityOpening'){
     const [requestId,openingId]=args
     if(data.identityOpening!==true||openingPending!==null||!Number.isSafeInteger(requestId)||requestId<=lastOpeningId||!['default','police_done','hospital_done','alisa_party','pool'].includes(openingId))throw Error('Invalid opening selection request')
@@ -151,6 +158,7 @@ async function init(input){
  await evaluate(VIRTUAL_DOM_BOOTSTRAP,'card-bootstrap.js',false,true)
  if(data.cardStorage)await evaluate(CARD_STORAGE_RUNTIME,'card-storage.js',false,true)
  if(data.identityOpening===true)await evaluate(IDENTITY_OPENING_RUNTIME,'identity-opening.js',false,true)
+ if(data.identityAction===true)await evaluate(IDENTITY_ACTION_RUNTIME,'identity-action.js',false,true)
  await evaluate(`__setMvuRevision(${Number.isSafeInteger(data.variables?.revision)?data.variables.revision:-1})`,'initial-revision.js',false,true)
  await evaluate(`document.body.innerHTML=${JSON.stringify(data.html)}`,'card-html.js',false,true)
  for(const key of ['html','body']){
@@ -184,7 +192,7 @@ self.onmessage=event=>{
  if(data.kind==='cardStorageResult'){if(!storagePending||data.requestId!==storagePending.requestId)return;const pending=storagePending;if(performance.now()>pending.expiresAt){expireStorage(pending);return}storagePending=null;clearTimeout(pending.timer);pending.resolve(data.value);return}
  if(data.kind==='measurement'){if(!layoutPending||data.requestId!==layoutPending.requestId)return;const pending=layoutPending;layoutPending=null;clearTimeout(pending.timer);if(data.error)pending.reject(Error(String(data.error).slice(0,200)));else pending.resolve(data.value);return}
  if(data.kind==='dispose'){dispose();return}
- if(!ready){if(['writeResult','variables','viewport','identityOpeningResult'].includes(data.kind)){if(data.kind==='viewport'){const index=pendingMessages.findIndex(message=>message.kind==='viewport');if(index>=0)pendingMessages.splice(index,1)}if(pendingMessages.length>=64){fail(Error('Card startup message limit exceeded'));return}pendingMessages.push(data)}return}
+ if(!ready){if(['writeResult','variables','viewport','identityOpeningResult','identityActionResult'].includes(data.kind)){if(data.kind==='viewport'){const index=pendingMessages.findIndex(message=>message.kind==='viewport');if(index>=0)pendingMessages.splice(index,1)}if(pendingMessages.length>=64){fail(Error('Card startup message limit exceeded'));return}pendingMessages.push(data)}return}
  if(data.kind==='viewport'){if(!data.value||!Number.isSafeInteger(data.value.width)||!Number.isSafeInteger(data.value.height)||data.value.width<1||data.value.height<1||data.value.width>16384||data.value.height>16384)return fail(Error('Invalid card viewport'));nextViewport={width:data.value.width,height:data.value.height};if(!viewportQueued){viewportQueued=true;enter(()=>{viewport=nextViewport;nextViewport=null;viewportQueued=false;return evaluate('__viewportChanged()')})}}
  else if(data.kind==='event'){
   const correction=data.controlSequence??0
@@ -194,6 +202,7 @@ self.onmessage=event=>{
  }
  else if(data.kind==='writeResult'){if(!pendingWrites.delete(data.requestId))return;enter(()=>evaluate(`__writeResult(${JSON.stringify(data.requestId)},${JSON.stringify(data.value)})`))}
  else if(data.kind==='identityOpeningResult'){if(openingPending!==data.requestId)return;openingPending=null;enter(()=>evaluate(`__identityOpeningResult(${JSON.stringify(data.requestId)},${JSON.stringify(data.value)})`))}
+ else if(data.kind==='identityActionResult'){if(identityActionPending!==data.requestId)return;identityActionPending=null;enter(()=>evaluate(`__identityActionResult(${JSON.stringify(data.requestId)},${JSON.stringify(data.value)})`))}
  else if(data.kind==='variables')enter(()=>{if(current?.status==='available'&&data.value?.status==='available'&&(data.value.currentRevision??data.value.revision)<(current.currentRevision??current.revision))return;current=data.value;return evaluate(`__notifyVariables(${JSON.stringify(current)})`)})
  else if(data.kind==='dispose')dispose()
 }

@@ -71,6 +71,7 @@ export function createIdentityOpeningBridge({sourceIdentity,identitySource,onPro
   signal?.addEventListener('abort',()=>controller.abort(),{once:true});if(signal?.aborted)controller.abort()
   let pending,disposed=false
   const current=()=>{if(disposed||controller.signal.aborted)throw Error('Opening card generation expired')}
+  const currentTicket=ticket=>{current();if(pending!==ticket)throw Error('Opening selection cancelled')}
   const post=async(operation,body)=>{current();const response=await request(`${API_V1}/sessions/${encodeURIComponent(identity.sessionId)}/opening-worldbook/${operation}`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body),signal:AbortSignal.any([controller.signal,AbortSignal.timeout(15000)])});current();const raw=await response.text();if(raw.length>1024*1024||new TextEncoder().encode(raw).byteLength>1024*1024)throw Error('Opening response exceeds its limit');const value=JSON.parse(raw);if(!response.ok||value?.ok!==true)throw Object.assign(Error(String(value?.error??'Opening operation failed').slice(0,300)),{code:value?.code});return value}
   const end=(ticket,error,result)=>{if(pending!==ticket)return;pending=null;onProposal(null);if(error)ticket.reject(error);else ticket.resolve(result)}
   return Object.freeze({
@@ -80,7 +81,7 @@ export function createIdentityOpeningBridge({sourceIdentity,identitySource,onPro
       try{
         onProgress('preparing')
         const source=counts[openingId]===0?undefined:await loadSource({signal:controller.signal,onProgress})
-        current();const proposal=await post('prepare',{sourceIdentity:identity,openingId,identitySource,...(source?{source}:{})})
+        currentTicket(ticket);const proposal=await post('prepare',{sourceIdentity:identity,openingId,identitySource,...(source?{source}:{})});currentTicket(ticket)
         if(!sameIdentity(proposal.sourceIdentity,identity)||proposal.openingId!==openingId||proposal.entryCount!==counts[openingId]||!Array.isArray(proposal.entries)||proposal.entries.length!==proposal.entryCount||!Number.isSafeInteger(proposal.expectedRevision)||proposal.expectedRevision<0||typeof proposal.proposalId!=='string'||!proposal.proposalId||proposal.proposalId.length>200||!/^[a-f0-9]{64}$/.test(proposal.entriesHash)||sourceSha256(JSON.stringify(proposal.entries))!==proposal.entriesHash||!Number.isFinite(proposal.expiresAt)||proposal.expiresAt<=Date.now())throw Error('Opening proposal does not match this selection')
         if(!proposal.entryCount){pending=null;onProgress('');return {ok:true,skipped:true,inserted:0,existing:0,updated:0,method:'empty-selection'}}
         ticket.proposal=clone(proposal);ticket.operationId=uuid();onProgress('')
@@ -98,7 +99,7 @@ export function createIdentityOpeningBridge({sourceIdentity,identitySource,onPro
         current();end(ticket,null,receipt)
       }catch(error){if(!disposed&&pending===ticket&&!controller.signal.aborted){ticket.busy=false;onProposal({...clone(ticket.proposal),operationId:ticket.operationId,error:error.message,busy:false})}}
     },
-    cancel(){const ticket=pending;if(ticket?.reject)end(ticket,Error('Opening world-book confirmation cancelled'))},
+    cancel(){const ticket=pending;if(ticket?.reject)end(ticket,Error('Opening world-book confirmation cancelled'));else if(ticket){pending=null;onProposal(null);onProgress('')}},
     dispose(){if(disposed)return;disposed=true;controller.abort();const ticket=pending;if(ticket?.reject)end(ticket,Error('Opening card generation expired'));else pending=null},
   })
 }

@@ -14,6 +14,9 @@ import { discoverDependencies, isSideEffectModuleReference, externalUrl, loadWra
 import {adaptIdentityHtml,identityLoaderBootstrap} from './html-loader-adapters.js'
 import {createCardScopedStorage} from './card-scoped-storage.js'
 import {createIdentityOpeningBridge} from './identity-opening-bridge.js'
+import {createFixedIdentityActionModel} from './identity-action-model.js'
+import {createIdentityActionBridge} from './identity-action-bridge.js'
+import {IdentityActionProposal} from './identity-action-view.js'
 import {projectCardControlState,cardControlEventChecked} from './card-control-state.js'
 import { renderingTrust } from './rendering-trust.js'
 
@@ -244,15 +247,17 @@ const InteractiveCard = memo(function InteractiveCard({ source, enabled, scopeKe
   const [photoError,setPhotoError]=useState('')
   const [error,setError]=useState(''), [proposal,setProposal]=useState(''), [sending,setSending]=useState(false)
   const [openingProposal,setOpeningProposal]=useState(null),[openingProgress,setOpeningProgress]=useState('')
-  const openingBridge=useRef(null)
+  const [identityProposal,setIdentityProposal]=useState(null)
+  const openingBridge=useRef(null),identityBridge=useRef(null),proposalVersion=useRef(0)
+  const replaceProposal=value=>{proposalVersion.current++;setProposal(value)}
   const data = useMemo(() => {
     if (source.length > 128 * 1024) return { html: '', scripts: [], unsupported: ['Card exceeds 128K characters'] }
     try { if(!enabled)return cardDocument(source);const prepared=prepareCardDocument(source,owners,helpers);if(/<input\b[^>]*type=["']?file\b/i.test(prepared.html))prepared.virtual=true;return prepared } catch(error) { try{return {...cardDocument(source),unsupported:[error.message]}}catch{return {html:'',scripts:[],unsupported:[error.message]}} }
   }, [source,enabled,trustRevision,JSON.stringify(owners),JSON.stringify(helpers)])
   const srcDoc = `<!doctype html><html><head><meta http-equiv="Content-Security-Policy" content="${CARD_CSP}"><style>body{margin:12px;font:14px system-ui;color:#243042;background:#fff}*{box-sizing:border-box}img{max-width:100%}button,input,select,textarea{font:inherit}button{cursor:pointer}</style></head><body>${cleanCardHtml(data.html,{inertImages:true})}</body></html>`
-  useLayoutEffect(()=>{setProposal('');setError('');setAudit(null);setMedia(null);setPhotoError('');setOpeningProposal(null);setOpeningProgress('');return()=>{generation.current++;cleanup.current()}},[source,enabled,scopeKey,trustRevision,data,paused,restart,JSON.stringify(openingBinding)])
+  useLayoutEffect(()=>{replaceProposal('');setError('');setAudit(null);setMedia(null);setPhotoError('');setOpeningProposal(null);setOpeningProgress('');setIdentityProposal(null);return()=>{generation.current++;cleanup.current()}},[source,enabled,scopeKey,trustRevision,data,paused,restart,JSON.stringify(openingBinding)])
   async function load() {
-    const current=++generation.current; cleanup.current(); setError(''); setProposal('')
+    const current=++generation.current; cleanup.current(); setError(''); replaceProposal('');setIdentityProposal(null)
     const doc=frame.current?.contentDocument
     if (!doc) { setError('Card document unavailable'); return }
     const ownFrame=frame.current
@@ -280,6 +285,7 @@ const InteractiveCard = memo(function InteractiveCard({ source, enabled, scopeKe
     const observer=new ResizeObserver(resize);observer.observe(doc.body);observer.observe(ownFrame);resize()
     let photoController,photoEpoch=0
     const revokeWrites=()=>{
+      identityBridge.current?.invalidate('Variable write permission changed')
       const ticket=++writeEpoch,hadWriteBinding=!!writeBinding
       writeController?.abort();writeController=null;writeBinding?.dispose();writeBinding=null;writeLoading=null
       if(hadWriteBinding){stopVariables?.();stopVariables=null}
@@ -289,7 +295,7 @@ const InteractiveCard = memo(function InteractiveCard({ source, enabled, scopeKe
       }).catch(()=>{})
     }
     let cleaned=false
-    cleanup.current=()=>{if(cleaned)return;cleaned=true;controller.abort();photoEpoch++;photoController?.abort();openingBridge.current?.dispose();openingBridge.current=null;observer.disconnect();images?.dispose();cancelAnimationFrame(viewportFrame);viewportFrame=0;dom?.destroy();virtualRuntime?.dispose();cardStorage?.dispose();stopVariables?.();removeEvents();binding?.dispose();writeRequest?.dispose();revokeWrites()}
+    cleanup.current=()=>{if(cleaned)return;cleaned=true;controller.abort();photoEpoch++;photoController?.abort();identityBridge.current?.dispose();identityBridge.current=null;openingBridge.current?.dispose();openingBridge.current=null;observer.disconnect();images?.dispose();cancelAnimationFrame(viewportFrame);viewportFrame=0;dom?.destroy();virtualRuntime?.dispose();cardStorage?.dispose();stopVariables?.();removeEvents();binding?.dispose();writeRequest?.dispose();revokeWrites()}
     if (!paused) images=observeImages(doc.body,{frame:frame.current,unavailable:translate('appearance.imageUnavailable'),onStatus:value=>{if(!cleaned&&current===generation.current)setMedia(value)}})
     if (!enabled || paused || data.unsupported.length) return
     if (doc.body.querySelectorAll('*').length > 2048) { setError('Card DOM limit exceeded'); return }
@@ -307,6 +313,8 @@ const InteractiveCard = memo(function InteractiveCard({ source, enabled, scopeKe
         const controlPhases=new WeakMap()
         const handler=event=>{
           const target=event.target.closest?.('[data-dtv-node]');if(!target)return
+          const identityEdit=['input','change'].includes(event.type)&&['input','textarea','select'].includes(target.localName)||event.type==='click'&&(target.closest?.('#identityBooks')||['identityBack','identityUpload','identityClearPhoto','identityFillUser','identityReset'].includes(target.id))
+          if(identityEdit&&identityBridge.current){identityBridge.current.invalidate('Identity selection edited');openingBridge.current?.cancel()}
           const value={type:event.type,target:Number(target.dataset.dtvNode)}
           if(target.localName==='input'&&target.type==='file'){
             // The native File and its original metadata stay in this closure.
@@ -329,6 +337,28 @@ const InteractiveCard = memo(function InteractiveCard({ source, enabled, scopeKe
         for(const type of events)doc.body.addEventListener(type,handler)
         removeEvents=()=>{for(const type of events)doc.body.removeEventListener(type,handler)}
         if(writeScope&&createBinding)writeRequest=renderingWriteRequests.register({scope:writeScope,owners,runs:data.runs,modules:data.modules,html:data.html,adapters:data.adapters,schemaDeclarations:data.schemaDeclarations,onRevoke:revokeWrites})
+        const ensureWriteBinding=async()=>{
+          const grant=writeRequest?.getGrant()
+          if(!grant)throw Object.assign(Error('Variable writes require separate authorization in conversation settings'),{code:'MVU_WRITE_DENIED'})
+          if(!writeBinding){
+            if(!writeLoading){const pendingController=new AbortController();writeController=pendingController;writeLoading=createBinding(pendingController.signal,grant).then(next=>{if(pendingController.signal.aborted||cleaned){next.dispose();throw Error('Variable write binding cancelled')}stopVariables?.();binding?.dispose();binding=next;writeBinding=next;stopVariables=next.subscribe(snapshot=>virtualRuntime?.notifyVariables(snapshot));return next}).finally(()=>{if(writeController===pendingController)writeLoading=null})}
+            await writeLoading
+          }
+          return writeBinding
+        }
+        if(data.identitySource&&openingBridge.current)identityBridge.current=createIdentityActionBridge({
+          model:createFixedIdentityActionModel(data.identitySource),
+          prepareBinding:async()=>{
+            const bound=await ensureWriteBinding(),epoch=writeEpoch,grantKey=JSON.stringify(writeRequest.getGrant())
+            return {binding:bound,messageLease:{generation:current,revision:proposalVersion.current},isCurrent:()=>!cleaned&&!controller.signal.aborted&&current===generation.current&&epoch===writeEpoch&&writeBinding===bound&&JSON.stringify(writeRequest?.getGrant())===grantKey}
+          },
+          onState:value=>{if(!cleaned&&current===generation.current)setIdentityProposal(value)},
+          deliverMessage:(message,lease)=>{
+            if(cleaned||current!==generation.current||lease.generation!==current||lease.revision!==proposalVersion.current)throw Error('A newer message proposal belongs to this card')
+            // This separate proposal never edits or clears the native input draft.
+            replaceProposal(message)
+          },
+        })
         let acceptedView
         const displayView=(view,targetId,controlsCurrent=true)=>{
             if(cleaned||current!==generation.current)throw Error('Card view generation expired')
@@ -368,18 +398,23 @@ const InteractiveCard = memo(function InteractiveCard({ source, enabled, scopeKe
             doc.documentElement.scrollLeft=scroll[0];doc.documentElement.scrollTop=scroll[1];resize()
             return nodes
         }
-        virtualRuntime=createVirtualCardRuntime({html:data.html,root:initialRoot,viewport:readViewport(),runs:data.runs,modules:data.modules,context,variables:activeBinding?.getSnapshot(),cardStorage:cardStorage?.initial,identityOpening:!!openingBridge.current},{
-          onOpening:(openingId,{signal})=>{signal.throwIfAborted();if(cleaned||current!==generation.current||!openingBridge.current)throw Error('Opening card generation expired');return openingBridge.current.request(openingId)},
+        virtualRuntime=createVirtualCardRuntime({html:data.html,root:initialRoot,viewport:readViewport(),runs:data.runs,modules:data.modules,context,variables:activeBinding?.getSnapshot(),cardStorage:cardStorage?.initial,identityOpening:!!openingBridge.current,identityAction:!!identityBridge.current},{
+          onOpening:async(openingId,{signal})=>{
+            signal.throwIfAborted();if(cleaned||current!==generation.current||!openingBridge.current||!identityBridge.current)throw Error('Opening card generation expired')
+            const action=identityBridge.current,token=action.beginOpening(openingId)
+            try{const result=await openingBridge.current.request(openingId);signal.throwIfAborted();if(!action.completeOpening(token,result))throw Error('Opening selection changed');return result}catch(error){action.failOpening(token,'Opening did not complete');throw error}
+          },
+          onIdentityAction:(packet,{signal})=>{
+            signal.throwIfAborted();if(cleaned||current!==generation.current||!identityBridge.current)throw Error('Identity card generation expired')
+            const action=identityBridge.current,abort=()=>action.invalidate('Identity request cancelled')
+            signal.addEventListener('abort',abort,{once:true})
+            return action.request(packet).finally(()=>signal.removeEventListener('abort',abort))
+          },
           onStorage:request=>{if(cleaned||current!==generation.current)throw Error('Card storage generation expired');return cardStorage.request(request)},
           onWrite:async({operation,value,options,cause,observedRevision,operationId,signal})=>{
             try{
               signal?.throwIfAborted()
-              const grant=writeRequest?.getGrant()
-              if(!grant)throw Object.assign(Error('Variable writes require separate authorization in conversation settings'),{code:'MVU_WRITE_DENIED'})
-              if(!writeBinding){
-                if(!writeLoading){const pendingController=new AbortController();writeController=pendingController;writeLoading=createBinding(pendingController.signal,grant).then(next=>{if(pendingController.signal.aborted||cleaned){next.dispose();throw Error('Variable write binding cancelled')}stopVariables?.();binding?.dispose();binding=next;writeBinding=next;stopVariables=next.subscribe(snapshot=>virtualRuntime?.notifyVariables(snapshot));return next}).finally(()=>{if(writeController===pendingController)writeLoading=null})}
-                await writeLoading
-              }
+              await ensureWriteBinding()
               signal?.throwIfAborted()
               const snapshot=writeBinding.getSnapshot()
               if(options!==null&&options!==undefined&&(typeof options!=='object'||Array.isArray(options)||Object.keys(options).some(key=>!['type','message_id'].includes(key))||(options.type!==undefined&&options.type!=='message')||(options.message_id!==undefined&&options.message_id!==snapshot.scope?.messageId)))throw Error('Variable scope is bound to this card')
@@ -389,7 +424,7 @@ const InteractiveCard = memo(function InteractiveCard({ source, enabled, scopeKe
             }catch(error){if(!cleaned&&current===generation.current)setError(error.message);throw error}
           },
           onAudit:value=>{if(current===generation.current)setAudit({...value,adapters:data.adapters,schemaEvidence})},
-          onProposal:value=>{if(current===generation.current)setProposal(value)},
+          onProposal:value=>{if(current===generation.current)replaceProposal(value)},
           onError:error=>{if(current===generation.current){setError(error.message+(error.operationId?' · operationId: '+error.operationId:''));cleanup.current()}},
           onView:displayView,
           onPhotoPick:request=>{
@@ -416,7 +451,7 @@ const InteractiveCard = memo(function InteractiveCard({ source, enabled, scopeKe
         if(activeBinding)stopVariables=activeBinding.subscribe(value=>virtualRuntime?.notifyVariables(value))
         return
       }
-      dom=createDomBridge(doc,context,setProposal,e=>{setError(e.message);cleanup.current()},binding??helperBinding)
+      dom=createDomBridge(doc,context,replaceProposal,e=>{setError(e.message);cleanup.current()},binding??helperBinding)
       const runtime=await createCardRuntime(dom.bridge, { modules:data.modules })
       if(current!==generation.current){runtime.dispose();return}
       dom.attach(runtime)
@@ -443,10 +478,11 @@ const InteractiveCard = memo(function InteractiveCard({ source, enabled, scopeKe
       openingProposal.error?h('p',{role:'alert'},openingProposal.error):null,
       h('button',{type:'button',disabled:openingProposal.busy,onClick:event=>{if(event.isTrusted!==true)return;openingBridge.current?.confirm(openingProposal.proposalId,{trusted:true}).catch(error=>setError(error.message))}},translate('appearance.openingConfirm')),
       h('button',{type:'button',disabled:openingProposal.busy,onClick:()=>openingBridge.current?.cancel()},translate('appearance.close'))):null,
+    h(IdentityActionProposal,{proposal:identityProposal,bridge:identityBridge.current,onError:setError}),
     proposal ? h('div',{className:'dtv-card-proposal',style:{border:'1px solid currentColor',padding:10,marginTop:8}},
       h('strong',null,translate('appearance.proposed')),h('p',null,proposal),
-      h('button',{type:'button',disabled:!onSend||sending,onClick:async()=>{setSending(true);try{await onSend(proposal);setProposal('')}catch(e){setError(e.message)}finally{setSending(false)}}},translate('appearance.sendProposal')),
-      h('button',{type:'button',onClick:()=>setProposal('')},translate('appearance.close'))):null,
+      h('button',{type:'button',disabled:!onSend||sending,onClick:async event=>{if(event.isTrusted!==true)return;const revision=proposalVersion.current;setSending(true);try{await onSend(proposal);if(revision===proposalVersion.current)replaceProposal('')}catch(e){setError(e.message)}finally{setSending(false)}}},translate('appearance.sendProposal')),
+      h('button',{type:'button',onClick:()=>replaceProposal('')},translate('appearance.close'))):null,
   )
 })
 export const MessageContent = memo(function MessageContent({text,...props}) {

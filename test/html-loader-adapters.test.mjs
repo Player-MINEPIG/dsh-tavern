@@ -37,16 +37,16 @@ test('only the unbound global jquery selector can be a fixed body loader',()=>{
  assert.equal(inspectHtmlLoader(wrap("(function $(){const remote='https://example.com/x';jQuery('body').load(remote);})();")).raw,'https://example.com/x')
  assert.throws(()=>inspectHtmlLoader(wrap("(()=>{const remote='https://example.com/x';obj.$('body').load(remote);})();")),/Unsupported HTML loader/)
 })
-test('identity snapshot adapter proposes only and binds latest MVU reads to its own scope',()=>{
+test('identity snapshot adapter requests a concrete parent action and binds latest MVU reads to its own scope',()=>{
  const sandbox={window:{},Mvu:{getMvuData:options=>options,replaceMvuData:(_,options)=>options},TavernUI:{getContext:()=>({userName:'Fixture'}),proposeMessage:value=>sandbox.proposal=value},__call:op=>op==='boundScope'?{mode:'initial',messageId:null}:'fixture-scope'}
  runInNewContext(identityLoaderBootstrap(IDENTITY_HTML_LOADER),sandbox)
  assert.equal(sandbox.window.__ST_HYPNOOS_ASSET_BASE__,IDENTITY_HTML_LOADER.assetBase)
  assert.equal(sandbox.window.Mvu.getMvuData({type:'message',message_id:'latest'}),null)
  assert.throws(()=>sandbox.window.Mvu.getMvuData({type:'message',message_id:'other'}),/bound/)
  assert.equal(sandbox.window.getContext().userName,'Fixture')
- const html='<script>function untouched(){}\n  async function insertOpeningWorldbooks(identity) { unknownWorldbookWrite(identity); }\n  function selectedCard() {}\n  function finishIdentitySelection(prompt) { unknownParentAction(prompt); }\n  $("#identitySelect").addEventListener("click",()=>{});</script>'
+ const html='<script>function untouched(){}\n  async function insertOpeningWorldbooks(identity) { unknownWorldbookWrite(identity); }\n  function selectedCard() {}\n  async function writeIdentityVariable(identity) { unknownVariableWrite(identity); }\n  function selectedIdentityPayload() {}\n  function finishIdentitySelection(prompt) { unknownParentAction(prompt); }\n  $("#identitySelect").addEventListener("click",()=>unknownHandler());\n  document.querySelectorAll("[data-opening-perk]").forEach(()=>{});</script>'
  const result=adaptIdentityHtml(html,{kind:'identity-html-loader',htmlSha256:sourceSha256(html)})
- assert.ok(result.includes('__identityPropose(prompt)'));assert.ok(!result.includes('unknownParentAction'))
+ assert.ok(result.includes('__identityAction({version:1'));assert.ok(!result.includes('unknownParentAction'));assert.ok(!result.includes('unknownVariableWrite'));assert.ok(!result.includes('unknownHandler'));assert.ok(!result.includes('__identityPropose'))
  assert.ok(result.includes('__identityOpening('));assert.ok(!result.includes('unknownWorldbookWrite'))
  assert.throws(()=>adaptIdentityHtml(html+'changed',{kind:'identity-html-loader',htmlSha256:sourceSha256(html)}),/source changed/)
 })
