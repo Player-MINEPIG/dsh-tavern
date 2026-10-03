@@ -1,20 +1,22 @@
 import {sourceSha256} from './source-sha256.js'
 export const CARD_STORAGE_LIMIT=128*1024
+export const CARD_STORAGE_VALUE_LIMIT=64*1024
+export const cardStorageBytes=value=>new TextEncoder().encode(value).byteLength
 export function validateCardStorage(entries) {
   if(!Array.isArray(entries)||entries.length>32)throw Error('Card storage entry limit exceeded')
   const keys=new Set()
   for(const row of entries){
-    if(!Array.isArray(row)||row.length!==2||typeof row[0]!=='string'||!row[0]||row[0].length>512||typeof row[1]!=='string'||row[1].length>64*1024||keys.has(row[0]))throw Error('Invalid card storage entry')
+    if(!Array.isArray(row)||row.length!==2||typeof row[0]!=='string'||!row[0]||row[0].length>512||typeof row[1]!=='string'||row[1].length>CARD_STORAGE_VALUE_LIMIT||cardStorageBytes(row[1])>CARD_STORAGE_VALUE_LIMIT||keys.has(row[0]))throw Error('Invalid card storage entry')
     keys.add(row[0])
   }
-  if(new TextEncoder().encode(JSON.stringify(entries)).byteLength>CARD_STORAGE_LIMIT)throw Error('Card storage exceeds 128 KiB')
+  if(cardStorageBytes(JSON.stringify(entries))>CARD_STORAGE_LIMIT)throw Error('Card storage exceeds 128 KiB')
   return entries.map(row=>[...row])
 }
 export function createCardScopedStorage({storage,owners,scopeKey,sourceIdentity}) {
   if(typeof scopeKey!=='string'||!scopeKey||!Array.isArray(owners)||!owners.length||typeof sourceIdentity!=='string'||!sourceIdentity)throw Error('Card storage requires an explicit source and session scope')
   const identity=sourceSha256(JSON.stringify([owners,scopeKey,sourceIdentity])),key='pmp-dsh-tavern:card-storage:v1:'+identity
   let entries=[],disposed=false,revision=0
-  if(storage){const saved=storage.getItem(key);if(saved!==null)entries=validateCardStorage(JSON.parse(saved))}
+  if(storage){const saved=storage.getItem(key);if(saved!==null){if(typeof saved!=='string'||saved.length>CARD_STORAGE_LIMIT||cardStorageBytes(saved)>CARD_STORAGE_LIMIT)throw Error('Card storage exceeds 128 KiB');entries=validateCardStorage(JSON.parse(saved))}}
   return {
     initial:{scope:identity,entries},
     request(request){

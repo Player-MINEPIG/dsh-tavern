@@ -24,6 +24,17 @@ test('loader incidental effects, mutable URLs, extra arguments and changed compa
  assert.throws(()=>loadWrapper(wrap('window.__ST_HYPNOOS_IDENTITY_FRONTEND_URL__="changed";')),/version changed/)
  assert.equal(loadWrapper(wrap("const url='http://localhost/x';$('body').load(url)")).url,null)
 })
+test('only the unbound global jquery selector can be a fixed body loader',()=>{
+ const wrap=code=>`<body><script>${code}</script></body>`
+ // Preserve the three independently reproduced negatives verbatim.
+ for(const code of ["(function $(){const remote='https://example.com/x';$('body').load(remote);})();","(()=>{const $='https://example.com/x';$('body').load($);})();","(function jQuery(){const remote='https://example.com/x';jQuery('body').load(remote);})();"]){
+  assert.throws(()=>inspectHtmlLoader(wrap(code)),/Unsupported HTML loader/)
+  assert.equal(discoverDependencies(wrap(code))[0].blocked,true)
+ }
+ assert.equal(inspectHtmlLoader(wrap("(function named(){const remote='https://example.com/x';$('body').load(remote);})();")).raw,'https://example.com/x')
+ assert.equal(inspectHtmlLoader(wrap("(function $(){const remote='https://example.com/x';jQuery('body').load(remote);})();")).raw,'https://example.com/x')
+ assert.throws(()=>inspectHtmlLoader(wrap("(()=>{const remote='https://example.com/x';obj.$('body').load(remote);})();")),/Unsupported HTML loader/)
+})
 test('identity snapshot adapter proposes only and binds latest MVU reads to its own scope',()=>{
  const sandbox={window:{},Mvu:{getMvuData:options=>options,replaceMvuData:(_,options)=>options},TavernUI:{getContext:()=>({userName:'Fixture'}),proposeMessage:value=>sandbox.proposal=value},__call:op=>op==='boundScope'?{mode:'initial',messageId:null}:'fixture-scope'}
  runInNewContext(identityLoaderBootstrap(IDENTITY_HTML_LOADER),sandbox)
@@ -46,4 +57,17 @@ test('drafts persist by exact source and session, while disposed generations can
  const second=createCardScopedStorage(args)
  assert.throws(()=>second.request({revision:2,operation:'clear'}),/revision/)
  assert.throws(()=>second.request({revision:1,operation:'set',key:'big',value:'x'.repeat(65537)}),/Invalid/)
+})
+test('storage caps UTF-8 bytes per value and bounds raw persisted JSON before parsing',()=>{
+ const values=new Map(),storage={getItem:key=>values.get(key)??null,setItem:(key,value)=>values.set(key,value)}
+ const args={storage,owners:['character:fixture'],scopeKey:'session-A:greeting-1',sourceIdentity:'source'}
+ const scoped=createCardScopedStorage(args)
+ scoped.request({revision:1,operation:'set',key:'value',value:'汉'.repeat(21845)})
+ assert.throws(()=>scoped.request({revision:2,operation:'set',key:'value',value:'汉'.repeat(21846)}),/Invalid/)
+ assert.equal(createCardScopedStorage(args).initial.entries[0][1].length,21845)
+ const key=[...values.keys()][0]
+ values.set(key,'['+' '.repeat(128*1024))
+ assert.throws(()=>createCardScopedStorage(args),/exceeds 128 KiB/)
+ values.set(key,JSON.stringify([['value','汉'.repeat(44000)]]))
+ assert.throws(()=>createCardScopedStorage(args),/exceeds 128 KiB/)
 })

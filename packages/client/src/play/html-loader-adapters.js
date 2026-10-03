@@ -15,10 +15,10 @@ export function htmlLoaderScript(source) {
   return body.match(/^<body\s*>\s*<script\s*>([\s\S]*?)<\/script>\s*<\/body>$/i)?.[1].trim()??null
 }
 const literal=node=>node?.type==='Literal'&&typeof node.value==='string'?node.value:null
-function loadCall(node,name) {
+function loadCall(node,name,localBindings) {
   if(node?.type!=='ExpressionStatement')return false
   const call=node.expression,member=call?.callee,selector=member?.object
-  return call.type==='CallExpression'&&call.arguments.length===1&&member.type==='MemberExpression'&&!member.computed&&member.property.name==='load'&&selector.type==='CallExpression'&&['$','jQuery'].includes(selector.callee.name)&&selector.arguments.length===1&&literal(selector.arguments[0])==='body'&&call.arguments[0].type==='Identifier'&&call.arguments[0].name===name
+  return call.type==='CallExpression'&&call.arguments.length===1&&member.type==='MemberExpression'&&!member.computed&&member.property.name==='load'&&selector.type==='CallExpression'&&selector.callee.type==='Identifier'&&['$','jQuery'].includes(selector.callee.name)&&!localBindings.has(selector.callee.name)&&selector.arguments.length===1&&literal(selector.arguments[0])==='body'&&call.arguments[0].type==='Identifier'&&call.arguments[0].name===name
 }
 export function inspectHtmlLoader(source) {
   const code=htmlLoaderScript(source);if(code===null)return null
@@ -31,7 +31,10 @@ export function inspectHtmlLoader(source) {
   const invocation=tree.body[0].expression,fn=invocation.callee
   if(invocation.type!=='CallExpression'||invocation.arguments.length||!['ArrowFunctionExpression','FunctionExpression'].includes(fn?.type)||fn.async||fn.generator||fn.params.length||fn.body.type!=='BlockStatement')return null
   const statements=fn.body.body,declaration=statements[0],entry=declaration?.declarations?.[0]
-  if(statements.length===2&&declaration.type==='VariableDeclaration'&&declaration.kind==='const'&&declaration.declarations.length===1&&entry.id.type==='Identifier'&&literal(entry.init)!==null&&loadCall(statements[1],entry.id.name))return {kind:'fixed-html-loader',version:1,raw:entry.init.value}
+  // This exact two-statement grammar has only the URL const and named function
+  // self-binding in its local scope. Neither may masquerade as global jQuery.
+  const localBindings=new Set([fn.id?.name,entry?.id?.name].filter(Boolean))
+  if(statements.length===2&&declaration.type==='VariableDeclaration'&&declaration.kind==='const'&&declaration.declarations.length===1&&entry.id.type==='Identifier'&&literal(entry.init)!==null&&loadCall(statements[1],entry.id.name,localBindings))return {kind:'fixed-html-loader',version:1,raw:entry.init.value}
   // Complex loaders need an explicit adapter; incidental effects cannot be lost.
   if(/\.(?:load)\s*\(|\bfetch\s*\(|\.srcdoc\s*=/.test(code))throw Error('Unsupported HTML loader structure; only a fixed URL and body load are supported')
   return null

@@ -2,7 +2,7 @@ import {createAsyncJobDrain} from './quickjs-async-jobs.js'
 import { newQuickJSAsyncWASMModuleFromVariant } from 'quickjs-emscripten-core'
 import variant from '@jitl/quickjs-singlefile-browser-release-asyncify'
 import { VIRTUAL_DOM_BOOTSTRAP } from './virtual-dom-runtime.js'
-import {CARD_STORAGE_RUNTIME,validateCardStorage} from './card-scoped-storage.js'
+import {CARD_STORAGE_RUNTIME,validateCardStorage,cardStorageBytes,CARD_STORAGE_VALUE_LIMIT} from './card-scoped-storage.js'
 
 function validateInput(data) {
  const runs=data.runs??[],modules=data.modules??{},html=data.html??''
@@ -105,7 +105,7 @@ async function init(input){
   if(!data.cardStorage||storagePending||performance.now()>deadline)throw Error('Card storage unavailable')
   const raw=vm.getString(handle);if(raw.length>128*1024)throw Error('Card storage input exceeds limit')
   const value=JSON.parse(raw)
-  if(!['set','remove','clear'].includes(value.operation)||value.operation!=='clear'&&(typeof value.key!=='string'||!value.key||value.key.length>512)||value.operation==='set'&&(typeof value.value!=='string'||value.value.length>64*1024))throw Error('Invalid card storage request')
+  if(!['set','remove','clear'].includes(value.operation)||value.operation!=='clear'&&(typeof value.key!=='string'||!value.key||value.key.length>512)||value.operation==='set'&&(typeof value.value!=='string'||value.value.length>CARD_STORAGE_VALUE_LIMIT||cardStorageBytes(value.value)>CARD_STORAGE_VALUE_LIMIT))throw Error('Invalid card storage request')
   const requestId=++storageRevision
   const result=await new Promise((resolve,reject)=>{const timer=setTimeout(()=>{storagePending=null;reject(Error('Card storage response deadline exceeded'))},1000);storagePending={requestId,resolve,reject,timer};reply('cardStorage',{...value,revision:requestId})})
   if(destroyed)throw Error('Card storage generation expired')
