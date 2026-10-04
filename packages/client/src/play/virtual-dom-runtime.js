@@ -69,5 +69,5 @@ globalThis.__domEvent=data=>{
  for(const name of ['key','code','keyCode','charCode','button','buttons','clientX','clientY','ctrlKey','altKey','shiftKey','metaKey'])if(data[name]!==undefined)event[name]=data[name];
  node.dispatchEvent(event);
 };
-globalThis.__ready=()=>{document.dispatchEvent(new __DOM.Event('DOMContentLoaded'));window.dispatchEvent(new __DOM.Event('load'))};
+globalThis.__ready=()=>{document.dispatchEvent(new __DOM.Event('DOMContentLoaded'));window.dispatchEvent(new __DOM.Event('DOMContentLoaded'));window.dispatchEvent(new __DOM.Event('load'))};
 `

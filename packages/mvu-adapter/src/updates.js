@@ -119,9 +119,32 @@ export function normalizeVariables(input) {
   result.display_data ??= json(result.stat_data); result.delta_data ??= {}
   return json(result)
 }
+// Version 2 Zod commands may create missing paths on a private candidate.
+// Unlike lodash's general setter, this writer still requires dense JSON arrays.
+function optionalAt(root, path) {
+  try { return at(root, path) } catch (error) { if (error.code !== 'MVU_PATH_MISSING') throw error; return undefined }
+}
+function createPath(root, path, value) {
+  if (!path.length) return json(value)
+  if (path.length > 64) fail('MVU_LIMIT', 'Path is too deep')
+  let target = root
+  for (const [index, part] of path.entries()) {
+    const key = safeKey(part)
+    if (!target || typeof target !== 'object') fail('MVU_SCHEMA', 'Path parent must be a collection')
+    if (Array.isArray(target) && (!/^(0|[1-9]\d*)$/.test(key) || Number(key) > target.length)) fail('MVU_PATH', 'Array paths require dense integer indices')
+    if (index === path.length - 1) target[key] = json(value)
+    else {
+      if (!Object.hasOwn(target, key) || !target[key] || typeof target[key] !== 'object') target[key] = /^(0|[1-9]\d*)$/.test(String(path[index + 1])) ? [] : {}
+      target = target[key]
+    }
+  }
+  return root
+}
 function applyCommands(variables, commands) {
   const next = normalizeVariables(variables)
   next.display_data = json(next.stat_data); next.delta_data = {}
+  const zodPaths = next.mvu_schema?.interpreterVersion === 2
+  let schemaApplied = false
   const write = (path, value, remove = false) => {
     if (!path.length) { if (remove) fail('MVU_UNSUPPORTED', 'Cannot delete root'); next.stat_data = value; return }
     const parent = at(next.stat_data, path.slice(0, -1)), key = path.at(-1)
@@ -142,6 +165,27 @@ function applyCommands(variables, commands) {
       target.splice(index, 0, json(value))
     } else target[safeKey(key)] = json(value)
   }
+  const insertZod = command => {
+    const original = optionalAt(next.stat_data, command.path), missing = original == null
+    const kinds = missing ? [{}, []] : [original]
+    let rejected
+    for (const container of kinds) {
+      const candidate = json(next.stat_data)
+      if (missing) createPath(candidate, command.path, container)
+      const target = at(candidate, command.path)
+      if (!target || typeof target !== 'object') fail('MVU_SCHEMA', 'Insert target must be a collection')
+      if (Array.isArray(target)) {
+        const key = command.key === undefined || command.key === '-' ? target.length : Number(command.key)
+        if ((command.key !== undefined && !/^(?:0|[1-9]\d*|-)$/.test(String(command.key))) || !Number.isSafeInteger(key) || key < 0 || key > target.length) fail('MVU_PATH', 'Invalid array index')
+        target.splice(key, 0, json(command.value))
+      } else if (command.key !== undefined) target[safeKey(command.key)] = json(command.value)
+      else for (const [key, value] of Object.entries(command.value ?? {})) target[safeKey(key)] = json(value)
+      try {
+        next.stat_data = applyMvuSchema(candidate, next.mvu_schema); schemaApplied = true; return
+      } catch (error) { if (!missing || error.code !== 'MVU_SCHEMA') throw error; rejected = error }
+    }
+    throw rejected
+  }
   const remove = path => {
     at(next.stat_data, path)
     const parentSchema = schemaAt(next.schema, path.slice(0, -1)), targetSchema = schemaAt(next.schema, path)
@@ -154,14 +198,16 @@ function applyCommands(variables, commands) {
     path.forEach(safeKey)
     const before = json(next.stat_data)
     if (command.op === 'set' || command.op === 'add') {
-      const old = at(next.stat_data, path), described = !next.schema.strictSet && Array.isArray(old) && old.length === 2 && typeof old[1] === 'string' && !Array.isArray(old[0])
+      const old = command.op === 'set' && zodPaths ? optionalAt(next.stat_data, path) : at(next.stat_data, path), described = !zodPaths && !next.schema.strictSet && Array.isArray(old) && old.length === 2 && typeof old[1] === 'string' && !Array.isArray(old[0])
       const previous = described ? old[0] : old
       let value = command.value
       if (command.op === 'add') { if (typeof previous !== 'number' || typeof value !== 'number') fail('MVU_UNSUPPORTED', 'Delta requires numeric values'); value = Number((previous + value).toPrecision(12)) }
-      else if (typeof previous === 'number' && typeof value === 'string') value = Number(value)
-      if (described) write([...path, '0'], value); else write(path, value)
+      else if (!zodPaths && typeof previous === 'number' && typeof value === 'string') value = Number(value)
+      if (command.op === 'set' && zodPaths) next.stat_data = createPath(next.stat_data, path, value)
+      else if (described) write([...path, '0'], value); else write(path, value)
     } else if (command.op === 'insert') {
-      if (command.key !== undefined) insert(path, command.key, command.value)
+      if (zodPaths) insertZod(command)
+      else if (command.key !== undefined) insert(path, command.key, command.value)
       else {
         const target = at(next.stat_data, path)
         if (Array.isArray(target)) insert(path, '-', command.value)
@@ -186,7 +232,7 @@ function applyCommands(variables, commands) {
     if (JSON.stringify(before) !== JSON.stringify(next.stat_data)) next.delta_data[path.join('.')] = { before, after: json(next.stat_data) }
   }
   next.display_data = json(next.stat_data)
-  if (next.mvu_schema) { next.stat_data = applyMvuSchema(next.stat_data, next.mvu_schema); next.display_data = json(next.stat_data) }
+  if (next.mvu_schema && !schemaApplied) { next.stat_data = applyMvuSchema(next.stat_data, next.mvu_schema); next.display_data = json(next.stat_data) }
   return next
 }
 export function applyMvuUpdate(variables, commands) {

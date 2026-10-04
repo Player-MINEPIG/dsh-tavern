@@ -27,6 +27,8 @@ const boundedBinary = (operation, left, right) => {
 }
 const binary = { '+': (a, b) => a + b, '-': (a, b) => a - b, '*': (a, b) => a * b, '/': (a, b) => a / b, '%': (a, b) => a % b, '**': (a, b) => a ** b, '<': (a, b) => a < b, '<=': (a, b) => a <= b, '>': (a, b) => a > b, '>=': (a, b) => a >= b, '===': (a, b) => a === b, '!==': (a, b) => a !== b, '==': (a, b) => a == b, '!=': (a, b) => a != b }
 const RETURN = Symbol('return')
+// This is the fixed, statically reviewed helper identity used by the built-in adapter.
+const fixedZodHelper = 'https://testingcf.jsdelivr.net/gh/StageDog/tavern_resource/dist/util/mvu_zod.js'
 const isFunction = node => ['ArrowFunctionExpression', 'FunctionExpression'].includes(node?.type)
 const parameterName = node => node.type === 'AssignmentPattern' ? node.left.name : node.name
 const ownPropertyCall = node => node?.type === 'MemberExpression' && !node.computed && !node.optional && node.property.name === 'call' && node.object?.type === 'MemberExpression' && !node.object.computed && !node.object.optional && node.object.property.name === 'hasOwnProperty' && node.object.object?.type === 'MemberExpression' && !node.object.object.computed && !node.object.object.optional && node.object.object.property.name === 'prototype' && node.object.object.object?.type === 'Identifier' && node.object.object.object.name === 'Object'
@@ -37,7 +39,7 @@ function freezeData(value, tick, seen = new WeakSet(), depth = 0) {
   for (const child of Object.values(value)) freezeData(child, tick, seen, depth + 1)
   Object.freeze(value)
 }
-function machine() {
+function machine(interpreterVersion = 2) {
   let fuel = 10000, depth = 0
   const tick = () => { if (--fuel < 0 || depth > 64) fail('MVU_LIMIT', 'Schema computation limit exceeded') }
   const copyEnv = env => { for (const _ of Object.keys(env)) tick(); return { ...env } }
@@ -79,7 +81,7 @@ function machine() {
     if (name?.startsWith('z.')) {
       const kind = name.slice(2).replace(/^coerce\./, ''), coerce = name.startsWith('z.coerce.')
       if (['number', 'string', 'boolean', 'any', 'unknown'].includes(kind)) return schema(kind, { coerce })
-      if (kind === 'object') { if (!args[0] || Array.isArray(args[0]) || Object.values(args[0]).some(v => !v?.[SCHEMA])) fail('MVU_SCHEMA_CODE', 'Object requires schema properties'); return schema(kind, { properties: args[0] }) }
+      if (kind === 'object' || (interpreterVersion === 2 && ['looseObject', 'strictObject'].includes(kind))) { if (!args[0] || Array.isArray(args[0]) || Object.values(args[0]).some(v => !v?.[SCHEMA])) fail('MVU_SCHEMA_CODE', 'Object requires schema properties'); return schema('object', { properties: args[0], ...(kind === 'looseObject' ? { passthrough: true } : kind === 'strictObject' ? { strict: true } : {}) }) }
       if (kind === 'array') { if (!args[0]?.[SCHEMA]) fail('MVU_SCHEMA_CODE', 'Array requires item schema'); return schema(kind, { item: args[0] }) }
       if (kind === 'record' && args.some(v => !v?.[SCHEMA])) fail('MVU_SCHEMA_CODE', 'Record requires schemas')
       if (kind === 'record') return schema(kind, { key: args.length === 2 ? args[0] : schema('string'), item: args.at(-1) })
@@ -207,7 +209,7 @@ export function numericExpression(text) {
   return Number(value.toPrecision(12))
 }
 
-function inspectAst(root) {
+function inspectAst(root, interpreterVersion = 2) {
   const allowed = new Set(['Program', 'ImportDeclaration', 'ImportSpecifier', 'ExportNamedDeclaration', 'VariableDeclaration', 'VariableDeclarator', 'Identifier', 'Literal', 'ArrayExpression', 'ObjectExpression', 'Property', 'SpreadElement', 'MemberExpression', 'ArrowFunctionExpression', 'FunctionExpression', 'AssignmentPattern', 'ChainExpression', 'ForOfStatement', 'CallExpression', 'BinaryExpression', 'LogicalExpression', 'ConditionalExpression', 'UnaryExpression', 'AssignmentExpression', 'BlockStatement', 'ReturnStatement', 'IfStatement', 'ExpressionStatement'])
   const declared = new Set(['z', 'Math', 'math', '_', '$', 'registerMvuSchema', 'undefined', ...Object.keys(mathFunctions)])
   for (let entry of root.body ?? []) { if (entry.type === 'ExportNamedDeclaration') entry = entry.declaration; if (entry?.type === 'VariableDeclaration') for (const item of entry.declarations) if (item.id.type === 'Identifier') declared.add(item.id.name) }
@@ -230,7 +232,7 @@ function inspectAst(root) {
     if (node.type === 'CallExpression' && node.callee.type === 'MemberExpression') {
       if (ownPropertyCall(node.callee)) { for (const child of node.arguments) walk(child, depth + 1, locals, node, 'arguments', mutable); return }
       const member = node.callee, name = member.computed ? member.property.value : member.property.name
-      if (!['number','string','boolean','any','unknown','object','array','record','enum','literal','union','describe','prefault','default','optional','nullable','passthrough','strict','strip','min','max','int','or','transform','superRefine','regex','addIssue','clamp',...Object.keys(mathFunctions)].includes(name)) fail('MVU_SCHEMA_CODE', 'Unsupported method')
+      if (!['number','string','boolean','any','unknown','object',...(interpreterVersion === 2 ? ['looseObject','strictObject'] : []),'array','record','enum','literal','union','describe','prefault','default','optional','nullable','passthrough','strict','strip','min','max','int','or','transform','superRefine','regex','addIssue','clamp',...Object.keys(mathFunctions)].includes(name)) fail('MVU_SCHEMA_CODE', 'Unsupported method')
     }
     if (node.type === 'AssignmentExpression') {
       let target = node.left
@@ -246,12 +248,14 @@ function inspectAst(root) {
 }
 
 /** Static schema DSL: imports are recognized but never fetched or executed. */
-function buildSchema(source) {
+function buildSchema(source, interpreterVersion = 2) {
   if (typeof source !== 'string' || source.length > 128 * 1024) fail('MVU_LIMIT', 'Schema source exceeds limit')
   let tree
   try { tree = parse(source, { ecmaVersion: 2022, sourceType: 'module' }) } catch (error) { fail(error instanceof RangeError ? 'MVU_LIMIT' : 'MVU_SCHEMA_CODE', 'Invalid or excessive schema syntax') }
-  inspectAst(tree)
-  const env = {}, vm = machine()
+  inspectAst(tree, interpreterVersion)
+  const env = {}, vm = machine(interpreterVersion)
+  const fixedRegistration = tree.body.some(node => node.type === 'ImportDeclaration' && node.source.value === fixedZodHelper
+    && node.specifiers.some(item => item.imported?.name === 'registerMvuSchema' && item.local?.name === 'registerMvuSchema'))
   vm.declare(tree.body, env)
   let registered
   for (let node of tree.body) {
@@ -275,8 +279,13 @@ function buildSchema(source) {
     }
     fail('MVU_SCHEMA_CODE', 'Only schema declarations and registration are accepted')
   }
-  const result = registered ?? (Object.hasOwn(env, 'Schema') ? vm.evaluate({ type: 'Identifier', name: 'Schema' }, env) : Object.hasOwn(env, 'schema') ? vm.evaluate({ type: 'Identifier', name: 'schema' }, env) : undefined)
+  let result = registered ?? (Object.hasOwn(env, 'Schema') ? vm.evaluate({ type: 'Identifier', name: 'Schema' }, env) : Object.hasOwn(env, 'schema') ? vm.evaluate({ type: 'Identifier', name: 'schema' }, env) : undefined)
   if (!result?.[SCHEMA]) fail('MVU_SCHEMA_CODE', 'Schema declaration missing')
+  // The fixed helper rebuilds only a directly registered root ZodObject from its shape.
+  // Children, wrappers, refinements on non-object roots and unregistered DSLs keep their modes.
+  const registeredObject = node => node?.kind === 'object' ? node : node?.kind === 'refinement' ? registeredObject(node.input) : null
+  const rootObject = registeredObject(registered)
+  if (interpreterVersion === 2 && fixedRegistration && rootObject) result = schema('object', { properties: rootObject.properties, passthrough: true })
   freezeData(result, vm.tick)
   return result
 }
@@ -285,12 +294,12 @@ export function compileMvuSchema(source) {
   buildSchema(source)
   // Persist source instead of expanding a captured environment graph. Rebuilding
   // the bounded DSL gives each application isolated constants and functions.
-  return { mvuSchema: 1, interpreterVersion: 1, source }
+  return { mvuSchema: 1, interpreterVersion: 2, source }
 }
 
 export function applyMvuSchema(value, definition) {
-  if (definition?.mvuSchema !== 1 || definition.interpreterVersion !== 1 || Object.keys(definition).some(key => !['mvuSchema', 'interpreterVersion', 'source'].includes(key))) fail('MVU_SCHEMA_CODE', 'Invalid schema descriptor')
-  const root = buildSchema(definition.source), vm = machine()
+  if (definition?.mvuSchema !== 1 || ![1, 2].includes(definition.interpreterVersion) || Object.keys(definition).some(key => !['mvuSchema', 'interpreterVersion', 'source'].includes(key))) fail('MVU_SCHEMA_CODE', 'Invalid schema descriptor')
+  const root = buildSchema(definition.source, definition.interpreterVersion), vm = machine(definition.interpreterVersion)
   let count = 0
   function apply(value, node, depth = 0) {
     if (++count > 10000 || depth > 64) fail('MVU_LIMIT', 'Schema traversal exceeds limit')

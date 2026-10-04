@@ -112,6 +112,8 @@ renderer 的可信 dispatcher 从原生 isTrusted 事件/计时器任务生成 c
 
 隔离解释器提供有限的 clean-room 显示辅助方法：`_.get`（自身属性的点/简单括号路径）、`_.isEmpty`（JSON 值）、`errorCatched(fn)`（将同步及异步异常交给渲染错误界面），以及 `$` 的 length/ready/text/html/on/val/css/show/hide/addClass/removeClass/empty。它们用于有界的数据显示，不代表完整 Lodash、jQuery 或 Helper 兼容；没有新增 Host、网络或写入权限。
 
+卡片脚本登记监听器后，启动依次向 document 和 window 发送 DOMContentLoaded，再向 window 发送 load；两者在隔离 DOM 中使用独立事件目标。读取变量仍要求 available 绑定快照。依赖 SillyTavern 父页面输入框或生成按钮的脚本不能借此访问 Host DOM。
+
 ## 当前空会话的开场绑定
 
 同一 snapshot/card-binding/card-write API 接受独立 scope `{mode:'initial',playthroughId,sessionId,characterId,sessionFormatVersion?}`。不得同时带 nodeId/variantId/endEventId，也不能将普通 session-only 管理接口当作卡片能力。Host 检查根会话 membership、角色选择、空 timeline，以及唯一可访问且活动的角色资源；开场配置只更新绑定会话的状态实例，同一卡模板的其他实例保持独立。
@@ -122,9 +124,16 @@ initial 写入仍经过独立 grant、使用策略租约、CAS、幂等与 schem
 
 ## 显式内置适配器的 schema 确认
 
-可信渲染 adapter 可读取 available snapshot 的 `variables.mvu_schema:{mvuSchema:1,interpreterVersion:1,source}`，严格比较 source 与准备替代的完整原始声明脚本。匹配表示后端解释器已处理该声明，整段声明不再在 VM 执行，不重复初始化或 transform。缺描述符、版本未知、源码不同均拒绝；不能用空的 registerMvuSchema 函数伪装成功。此合同不提供动态 Zod 对象注册或 schema 热迁移。
+可信渲染 adapter 可读取 available snapshot 的 `variables.mvu_schema:{mvuSchema:1,interpreterVersion:1|2,source}`，严格比较 source 与准备替代的完整原始声明脚本。匹配表示后端解释器已处理该声明，整段声明不再在 VM 执行，不重复初始化或 transform。缺描述符、版本未知、源码不同均拒绝；不能用空的 registerMvuSchema 函数伪装成功。此合同不提供动态 Zod 对象注册或 schema 热迁移。
 
-远程模块标识/hash、默认关闭的替代模式和界面诊断由渲染 adapter 独立核验。后端 descriptor 的解释器版本不能当作上游 bundle 字节身份，也不证明原 bundle 运行过。
+新声明编译为解释器版本 2；持久保存的 v1 描述符继续原解析、根对象模式和命令语义，读取、重启或选择卡片不会转换已有实例，完整声明 source 保持原文。对于静态核验的 `https://testingcf.jsdelivr.net/gh/StageDog/tavern_resource/dist/util/mvu_zod.js` 注册入口（SHA-256 `78c40f52d81022d9d769a923a49e673b8babb562656051a7d0410b6b19f45184`），v2 按固定 helper 从 shape 把直接注册的根 ZodObject 重建为 loose 对象；包含仍保持 ZodObject 类型的对象 refinement，重建不保留根 strict 模式及对象自身检查。嵌套 schema 保持各自规则，transform、default/prefault、nullable/optional、union、record 和 array 根不冒认为直接对象。普通声明和其他 import URL 不自动转换根对象，不获取或执行上游 import。
+
+v2 DSL 支持 `z.looseObject(shape)` 和 `z.strictObject(shape)`：普通 `z.object` 剥除未知键，loose/passthrough 保留，strict 拒绝；字符串键 record 可以增加字典成员并验证每个值，枚举键 record 仍限制键集合。根对象 loose 不递归允许嵌套未知字段。
+
+v2 Zod 命令可在私有候选中通过 set/insert 创建缺失路径。insert 先尝试对象候选，schema 验证拒绝后再尝试数组，仅保留成功解析的候选；对象插入为浅赋值。set 的数字转换由 Zod schema 决定，add 仍要求已有数字。路径创建保留 JSON/prototype、稠密数组和原大小/结构限制；原生元数据及 v1 命令维持原路径规则。CAS、事务收据、来源 schema 所有权、grant 与 usage 策略继续由已有 API 核验。本修复不改变 schema 校验的事件时机，也不提供关闭校验的选项。
+
+
+远程模块标识/hash、默认关闭的替代模式和界面诊断由渲染 adapter 独立核验。上述确切 mvu_zod URL 接纳静态核验的两组 SHA-256：`78c40f52d81022d9d769a923a49e673b8babb562656051a7d0410b6b19f45184` 和 `e540ab99589ad83de1495056a84693bda00af92f8848926bcb9a53b9263a0302`，均映射到同一后端 schema 登记适配器。未知字节或 URL 仍拒绝；这不代表支持上游其他运行回调。后端 descriptor 的解释器版本不能当作上游 bundle 字节身份，也不证明原 bundle 运行过。
 
 ## 兼容边界与验证
 
@@ -143,7 +152,7 @@ initial 写入仍经过独立 grant、使用策略租约、CAS、幂等与 schem
 
 支持所列声明不等于任意 Zod JavaScript 兼容，方法组合也须经过测试；对象型 coerce 明确拒绝。当前 display_data 为结果值副本，delta_data 为内部变化记录。不能将这些字段宣称为旧 UI 的完整格式兼容。默认指令只要求 literal JSONPatch，复杂生成策略须有独立公开扩展合同。
 
-`superRefine` 在验证后的冻结 JSON 副本上运行，仅允许 `ctx.addIssue({code:'custom',path?,message?})`；任何 issue 拒绝候选，不提交状态。`Object.prototype.hasOwnProperty.call(data,key)` 是显式 own-property 检查原语，不开放 Object 或原型。声明可用 `for (const item of array)` 遍历最多 1000 个数组项，和函数/约束共享计算预算；其余循环、this、arguments、异步/生成器、rest/解构参数、外部能力仍拒绝。这些是受限的 [Zod 语义适配](https://zod.dev/api#superrefine)，不会执行原声明脚本。
+有效 schema 中保留的 `superRefine` 在验证后的冻结 JSON 副本上运行，仅允许 `ctx.addIssue({code:'custom',path?,message?})`；任何 issue 拒绝候选，不提交状态。`Object.prototype.hasOwnProperty.call(data,key)` 是显式 own-property 检查原语，不开放 Object 或原型。声明可用 `for (const item of array)` 遍历最多 1000 个数组项，和函数/约束共享计算预算；其余循环、this、arguments、异步/生成器、rest/解构参数、外部能力仍拒绝。这些是受限的 [Zod 语义适配](https://zod.dev/api#superrefine)，不会执行原声明脚本。
 
 字符串 `regex` 仅接受无 flags、`^...$` 全锚定的有限模式：字面字符、`\d`、字符范围、分组内选择、`?` 和 `{m,n}`（最大 64 次）。模式最多 256 字符、16 层分组及 2048 个自动机状态；建图、声明图冻结和匹配均消耗共享计算预算，不能通过循环复制模式绕过总量限制。匹配使用状态集合，不调用原生 RegExp 匹配。无界重复、通配点、回溯引用、环视均拒绝。解释器函数、schema、参数绑定和 AST 保持不透明，不能作为 JSON 内容读写。原始完整声明仍保存在 schema 描述符中；兼容扩展不重置已有资源、不更换 ID、不自动启用 managed 策略。
 
