@@ -28,3 +28,12 @@ test('host viewport and root presentation accept only bounded presentation value
  assert.equal(usesCardViewport('', 'h1{font-size:clamp(20px,3vw,40px)}.surface{width:100vw}',root),false)
  assert.equal(usesCardViewport('<div>Flow</div>', '',root),false)
 })
+test('viewport-height caps keep scrolling flow cards content sized',()=>{
+ const root=cardRootPresentation()
+ assert.equal(usesCardViewport('', '.options{max-height:min(430px,68vh);overflow:auto}',root),false)
+ assert.equal(usesCardViewport('<ol style="max-height:68vh;overflow:auto"></ol>', '',root),false)
+ assert.equal(usesCardViewport('', '',cardRootPresentation({body:{style:'max-height:68vh'}})),false)
+ for(const css of ['.surface{height:100dvh}', '.surface{min-height:calc(100svh - 20px)}', '.surface{max-height:68vh;height:100lvh}', '.surface{max-height:68vh;position:fixed}'])assert.equal(usesCardViewport('',css,root),true,css)
+ assert.equal(usesCardViewport('<div style="max-height:68vh"></div><div style="position:fixed"></div>', '',root),true)
+ assert.equal(usesCardViewport('', '.surface{--max-height:100dvh;height:var(--max-height)}',root),true)
+})

@@ -14,8 +14,8 @@ export function cardRootPresentation(value={}) {
  return root
 }
 export function usesCardViewport(html,styles,root) {
- const css=styles+' '+html+' '+root.html.style+' '+root.body.style
- // Responsive widths and font sizes do not request a viewport-height panel.
+ // A scroll region's height cap does not request a viewport-height panel.
+ const css=[styles,html,root.html.style,root.body.style].join(';').replace(/(^|[;{"'])\s*max-height\s*:[^;}"']*/gi,'$1')
  return /(?:\d|\.)\s*(?:d|s|l)?vh\b|\bposition\s*:\s*fixed\b/i.test(css)
 }
 

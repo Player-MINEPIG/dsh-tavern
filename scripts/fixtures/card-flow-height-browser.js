@@ -5,7 +5,7 @@ import {MessageContent} from '../../packages/client/src/play/scripted-content.js
  const results=[],pause=ms=>new Promise(resolve=>setTimeout(resolve,ms)),mount=document.createElement('main');document.body.append(mount)
  const root=createRoot(mount),check=(name,pass,detail)=>{results.push({name,pass:!!pass,detail});if(!pass)throw Error(name)}
  const until=async fn=>{for(let i=0;i<200&&!fn();i++)await pause(20);if(!fn())throw Error('Timed out')}
- const source=`<body><main id="panel" style="height:120px;overflow:hidden"><button id="shrink" type="button"><span class="option-text">Shrink</span></button></main><script>
+ const source=`<body><style>#options{height:200px;max-height:min(430px,68vh);overflow:auto}</style><main id="panel" style="height:120px;overflow:hidden"><section id="options"><button id="shrink" type="button"><span class="option-text">Shrink</span></button></section></main><script>
  const panel=document.getElementById('panel');
  document.getElementById('shrink').addEventListener('click',()=>{panel.style.height='24px';requestAnimationFrame(()=>window.parent.postMessage({type:'resizeIframe',height:document.body.scrollHeight},'*'))});
  </script></body>`
@@ -13,7 +13,7 @@ import {MessageContent} from '../../packages/client/src/play/scripted-content.js
  try{
   root.render(React.createElement(MessageContent,{text:source,enabled:true,scopeKey:'flow-height',context:{}}))
   await until(()=>doc()?.getElementById('shrink')?.dataset.dtvNode);await pause(200)
-  check('initial ordinary flow has no reserved option placeholder',frame().clientHeight===120&&doc().body.scrollHeight===120,geometry())
+  check('a viewport-height cap keeps ordinary flow content sized without a reserved panel',frame().clientHeight===120&&doc().body.scrollHeight===120,geometry())
   const rect=doc().querySelector('.option-text').getBoundingClientRect(),bounds=frame().getBoundingClientRect();globalThis.__trustedClick={id:'flow-shrink',x:bounds.x+rect.x+rect.width/2,y:bounds.y+rect.y+rect.height/2}
   await until(()=>doc()?.getElementById('panel')?.style.height==='24px');await pause(250)
   check('native click and body measurement resize the same frame to its shorter content',frame().clientHeight===24&&doc().body.scrollHeight===24,geometry())
