@@ -88,6 +88,8 @@ SessionSelectionStore ─────────────────┘
 
 ## Profile safety budget
 
+请求装配沿用下述 `limits.maxProfileBytes` 限制逻辑新增正文；完整 system 快照展开使用独立的固定 2 MiB 物理上限。每条投影载体的新增序列化字节都计入物理开销，不能通过放宽 profile 限制提高该上限；未修改的原生历史不计入新增开销。实际发送和预览都执行两阶段检查，超限拒绝。详见[请求装配契约](REQUEST_ASSEMBLY.md#系统段落与-dsh-完整快照)。
+
 `TavernProfileLoader` 对自己生成的 Tavern profile 合计正文施加默认 512 KiB UTF-8 上限；`limits.maxProfileBytes` 可以收紧或放宽，但实现硬上限为 2 MiB。世界书 parser/store 在 normalize 之前共用流式结构守卫：每资源最多 10,000 条、深度 32、100,000 节点、单字符串 1 MiB、对象键 1,024 字符；adapter 另对本次请求的独立书与内嵌书合计施加 10,000 条硬上限，超出资源跳过并诊断。合计预算按确定性的组合顺序先到先得：session 显式独立书、用户绑定独立书、预设绑定独立书、角色卡绑定独立书（ID 稳定去重），最后角色卡内嵌书；每个资源整体预留，不能完整放入时整本不扫描。因此前面的独立书占满 10,000 条时，内嵌书会被跳过并产生 `WORLD_BOOK_RUNTIME_TOTAL_LIMIT`，这是有意的安全/确定性策略，不是随机遗漏。在这些前置守卫后，装配器最多考虑排名最前的 4,096 个 lore 候选，并在组合 section 正文前将原始 lore 正文限制为 profile budget 的两倍。世界书自身的 `tokenBudget` 与 `ignoreBudget` 只决定 ST 兼容候选，不能改变任何 Host 硬上限。
 
 角色卡编辑内嵌 `character_book` 时会先执行共享结构守卫和 parser；原始 JSON/PNG 导入只在角色格式层确认 `character_book` 是 object，然后无损保留未知字段，不在落盘前执行同一深度/节点/条目守卫。32 MiB 导入上限限制总输入；loader 首次消费时仍会通过 `parseCharacterBook()` 安全失败并报告 `EMBEDDED_WORLD_BOOK_INVALID`，所以不可运行的内嵌书可能进入资源库，但不能进入匹配放大路径。

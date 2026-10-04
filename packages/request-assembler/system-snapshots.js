@@ -1,5 +1,6 @@
 import { createHash } from 'node:crypto'
 
+const HARD_MAX_PROJECTED_BYTES = 2 * 1024 * 1024
 const bytes = value => Buffer.byteLength(JSON.stringify(value))
 function snapshotId(ids, content) {
   const hex = createHash('sha256').update(JSON.stringify([ids, content])).digest('hex')
@@ -11,7 +12,9 @@ function snapshotId(ids, content) {
  * the rest of this request. Only adjacent systems coalesce; no conversation
  * message moves or changes. Logical retention has already been resolved.
  */
-export function projectSystemSnapshots(assembly, nativeMessages, maxBytes = 2 * 1024 * 1024, { systemPromptUpdate, preview = false } = {}) {
+export function projectSystemSnapshots(assembly, nativeMessages, maxBytes = HARD_MAX_PROJECTED_BYTES, { systemPromptUpdate, preview = false } = {}) {
+  if (!Number.isSafeInteger(maxBytes) || maxBytes < 0) throw new RangeError('System snapshot byte limit must be a nonnegative safe integer')
+  maxBytes = Math.min(maxBytes, HARD_MAX_PROJECTED_BYTES)
   const native = new Map(nativeMessages.map(m => [m.id, m]))
   let parts = [], pending = [], extraBytes = 0
   const messages = [], projections = [], indices = new Map()
@@ -47,13 +50,13 @@ export function projectSystemSnapshots(assembly, nativeMessages, maxBytes = 2 * 
   flush()
   const hasUpdates = projections.some(p => p.index > 0)
   if (hasUpdates && !preview && systemPromptUpdate !== 'in-history') throw Object.assign(new Error('The selected model cannot preserve in-history system instructions. Use a model with system prompt updates, or place system contributions before the conversation.'), { code: 'ASSEMBLY_SYSTEM_UPDATES_UNSUPPORTED', status: 409 })
-  return { ...assembly, messages, extraBytes,
+  return { ...assembly, messages, logicalExtraBytes: assembly.extraBytes, extraBytes,
     diagnostics: [...(assembly.diagnostics ?? []), ...(preview && hasUpdates ? [{ code: 'SYSTEM_UPDATE_CAPABILITY_UNVERIFIED' }] : [])],
     nodes: assembly.nodes.map(node => {
       const inputIds = node.requestMessageIds ?? assembly.messages.slice(node.start, node.start + node.count).map(m => m.id)
       const positions = [...new Set(inputIds.map(id => indices.get(id)))].filter(index => index !== undefined)
       return { ...node, inputMessageIds: [...inputIds], start: positions[0] ?? -1, count: positions.length, requestMessageIds: positions.map(index => messages[index].id) }
     }),
-    systemProjection: { version: 1, semantics: 'complete-snapshots', capability: preview ? 'unverified' : systemPromptUpdate ?? 'leading-only', messages: projections },
+    systemProjection: { version: 1, semantics: 'complete-snapshots', capability: preview ? 'unverified' : systemPromptUpdate ?? 'leading-only', maxBytes, messages: projections },
   }
 }

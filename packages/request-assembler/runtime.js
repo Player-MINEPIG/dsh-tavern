@@ -34,7 +34,8 @@ export class RequestAssembler {
     const previous = lastMetadata?.owner === 'pmp-dsh-tavern' ? lastMetadata.assembly : null
     const assets = { ...snapshot.assemblyInput, diagnostics: snapshot.diagnostics, officialSections: snapshot.officialAssembly?.sections ?? [] }
     const logical = await assembleRequestAsync({ registry: this.registry, sessionId: payload.agent.id, turn: payload.turn, step: payload.step, signal: payload.signal, preset, assets, nativeMessages: base.messages, inputIds, previous, snapshots: previous?.snapshots ?? [], maxBytes: this.resources.maxProfileBytes })
-    const assembly = projectSystemSnapshots(logical, base.messages, this.resources.maxProfileBytes, { systemPromptUpdate: payload.agent.session.requestContext?.()?.systemPromptUpdate })
+    // Complete snapshots repeat active instructions; their physical ceiling is independent of logical admission.
+    const assembly = projectSystemSnapshots(logical, base.messages, undefined, { systemPromptUpdate: payload.agent.session.requestContext?.()?.systemPromptUpdate })
     if (!assembly.messages.length) throw Object.assign(new Error('提示词装配结果为空：请启用或填写至少一条内容。The assembled request is empty; enable or fill at least one item.'), { code: 'ASSEMBLY_EMPTY' })
     const { messages, ...metadata } = assembly
     return { messages, metadata: { owner: 'pmp-dsh-tavern', assembly: metadata, upstream: base.metadata ?? null } }
@@ -57,7 +58,7 @@ export class RequestAssembler {
       if (text) nativeMessages.unshift({ id: 'preview-native-system', role: 'system', content: [{ type: 'text', text }], source: { kind: 'system-prompt' } })
     } else diagnostics.push({ code: 'NATIVE_SYSTEM_PREVIEW_UNAVAILABLE' })
     const logical = await assembleRequestAsync({ registry: this.registry, sessionId: sessionId ?? agent?.id ?? '', signal, preset, assets: { ...snapshot.assemblyInput, diagnostics, officialSections }, nativeMessages, preview: true, maxBytes: this.resources.maxProfileBytes })
-    const assembly = projectSystemSnapshots(logical, nativeMessages, this.resources.maxProfileBytes, { preview: true })
+    const assembly = projectSystemSnapshots(logical, nativeMessages, undefined, { preview: true })
     return { ...assembly, capability: this.available(), scope: 'current-resources-and-durable-history', pendingInputsIncluded: false }
   }
 }

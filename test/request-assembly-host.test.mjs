@@ -11,7 +11,7 @@ import { withDeepSeekWire } from './helpers/deepseek-wire.mjs'
 import { defaultAssemblyFailureInput } from './fixtures/default-assembly-failure.mjs'
 
 const runtimeRoot = process.env.DSH_TAVERN_ASSEMBLY_CORE_ROOT
-test('default assembly reaches the official DeepSeek wire through AgentLoop and durable Trace with complete snapshots', { skip: !runtimeRoot, timeout: 30000 }, async () => {
+for (const largeProfile of [false, true]) test(`default assembly reaches the official DeepSeek wire through AgentLoop and durable Trace with ${largeProfile ? 'expanded snapshots through three turns' : 'small complete snapshots'}`, { skip: !runtimeRoot, timeout: 30000 }, async () => {
   const require = createRequire(join(resolve(runtimeRoot), 'package.json'))
   const load = name => import(pathToFileURL(require.resolve(name)).href)
   const { Context } = await load('@deepseek-ai/cordis'), { SystemPrompt } = await load('@deepseek-ai/dsh-system-prompt')
@@ -39,11 +39,15 @@ test('default assembly reaches the official DeepSeek wire through AgentLoop and 
     })
     await ctx.plugin({ name: tavern.name, inject: tavern.inject, apply(context) { store = tavern.apply(context, { storageDir: directory }) } })
     const synthetic = defaultAssemblyFailureInput()
+    if (largeProfile) for (const [i, entry] of synthetic.assets.loreEntries.entries()) {
+      const marker = `SYNTHETIC_LORE_${i}:`
+      entry.content = marker + 'x'.repeat((i < 3 ? 82 : 12) * 1024 - marker.length)
+    }
     const preset = store.create({ name: 'Synthetic default shape' })
     store.update(preset.id, { prompts: synthetic.assets.preset.prompts }); store.select(preset.id)
     store.characterStore.import(Buffer.from(JSON.stringify({ spec: 'chara_card_v2', spec_version: '2.0', data: { name: 'Synthetic', first_mes: 'GREETING',
       character_book: { entries: synthetic.assets.loreEntries.map((e, i) => ({ id: i, keys: [], content: e.content, enabled: true, constant: true,
-        insertion_order: i, position: e.requestedPosition ? 'after_char' : 'before_char', extensions: { position: e.requestedPosition ? 4 : 0, depth: 0 } })) } } })), { id: 'synthetic' })
+        insertion_order: i, position: e.requestedPosition ? 'after_char' : 'before_char', extensions: { position: e.requestedPosition ? 4 : 0, depth: 0, ignore_budget: true } })) } } })), { id: 'synthetic' })
     await withDeepSeekWire(runtimeRoot, async ({ adapter, bodies }) => {
       ctx.llm.registerAdapter(['offline'], adapter)
       const handle = await ctx.agents.create({ sessionId: 'offline-default-shape', agentOptions: { provider: 'offline', model: 'offline' } }), agent = handle.agent
@@ -64,11 +68,14 @@ test('default assembly reaches the official DeepSeek wire through AgentLoop and 
       }
       const before = agent.session.deriveMessages()
       assert.ok(!before.some(m => /MAIN|LORE_|GREETING/.test(text(m))))
-      const section = agent.ctx.systemPrompt.section({ name: 'offline:replacement', order: 0, complete: true, text: 'OFFICIAL_TWO' })
-      agent.followup(llm.createUserMessage({ content: [{ type: 'text', text: 'FOUR' }], source: { kind: 'user' } })); await agent.whenIdle()
-      assert.deepEqual(errors, []); assert.equal(bodies.length, 4)
-      const final = bodies.at(-1).messages.at(-1).content[0].text
-      assert.match(final, /^OFFICIAL_TWO\n\nMAIN\n\n/); assert.ok(!final.includes('OFFICIAL_ONE'))
+      let section = () => {}
+      if (!largeProfile) {
+        section = agent.ctx.systemPrompt.section({ name: 'offline:replacement', order: 0, complete: true, text: 'OFFICIAL_TWO' })
+        agent.followup(llm.createUserMessage({ content: [{ type: 'text', text: 'FOUR' }], source: { kind: 'user' } })); await agent.whenIdle()
+        assert.deepEqual(errors, []); assert.equal(bodies.length, 4)
+        const final = bodies.at(-1).messages.at(-1).content[0].text
+        assert.match(final, /^OFFICIAL_TWO\n\nMAIN\n\n/); assert.ok(!final.includes('OFFICIAL_ONE'))
+      }
       const native = agent.session.deriveMessages()
       assert.deepEqual(native.slice(0, before.length), before)
       const restored = sessions.Session.fromRestore(agent.id, structuredClone(agent.session.snapshotEvents()), agent.session.header, sessions.SessionLogOffset(0), 'detached')
@@ -79,6 +86,11 @@ test('default assembly reaches the official DeepSeek wire through AgentLoop and 
         assert.deepEqual(record.requestAssembly.messages, requests[i])
         assert.equal(record.requestContentStatus, 'available')
         const metadata = record.requestAssembly.metadata.assembly
+        if (largeProfile) {
+          assert.ok(metadata.logicalExtraBytes < 512 * 1024)
+          assert.ok(metadata.extraBytes > 512 * 1024 && metadata.extraBytes < 2 * 1024 * 1024)
+          assert.equal(metadata.systemProjection.maxBytes, 2 * 1024 * 1024)
+        }
         const owners = new Map(metadata.nodes.flatMap(node => node.inputMessageIds.map(id => [id, node])))
         for (const snapshot of metadata.systemProjection.messages) {
           for (const id of snapshot.inputIds) assert.ok(owners.get(id).requestMessageIds.includes(snapshot.messageId))

@@ -32,7 +32,7 @@ ST 兼容不等于运行完整 SillyTavern。支持 character/persona/world-info
 
 只有官方已解析模型能力 `systemPromptUpdate: in-history` 支持非前置 system。缺少该能力时，后置或深度 system 在本地以 `ASSEMBLY_SYSTEM_UPDATES_UNSUPPORTED` 拒绝；不会将其偷偷移到开头或改为 user。预览不准备下一次模型调用，能力标为 `unverified`，遇后置 system 给出 `SYSTEM_UPDATE_CAPABILITY_UNVERIFIED`；实际发送使用本次官方 `request/context` 再检查。
 
-`assembleRequest` / `assembleRequestAsync` 是逻辑段落装配原语；Host 运行时负责上述完整快照转换。最终 `request/assembly.messages` 与实际发送数组一致。metadata 的 `systemProjection` 记录原消息 ID、派生载体 ID、有序贡献与已替换原生 ID。逻辑 nodes 保留来源原文/哈希，`inputMessageIds` 保留投影前的原始消息 ID，`requestMessageIds` 指向最终载体；多段可共享一条 system 消息，原始 ID 可用于关联后续快照重复包含的贡献。旧记录可能缺少 `inputMessageIds`，不得通过正文或私有哈希规则猜测。`start/count` 是位置摘要；保留快照使节点消息不连续时，应使用精确 ID 列表。`maxProfileBytes` 同时限制新增投影展开字节；未修改的原生历史不计入新增开销。
+`assembleRequest` / `assembleRequestAsync` 是逻辑段落装配原语；Host 运行时负责上述完整快照转换。最终 `request/assembly.messages` 与实际发送数组一致。metadata 的 `systemProjection` 记录原消息 ID、派生载体 ID、有序贡献与已替换原生 ID。逻辑 nodes 保留来源原文/哈希，`inputMessageIds` 保留投影前的原始消息 ID，`requestMessageIds` 指向最终载体；多段可共享一条 system 消息，原始 ID 可用于关联后续快照重复包含的贡献。旧记录可能缺少 `inputMessageIds`，不得通过正文或私有哈希规则猜测。`start/count` 是位置摘要；保留快照使节点消息不连续时，应使用精确 ID 列表。`limits.maxProfileBytes` 限制投影前的逻辑新增正文（默认 512 KiB，最高 2 MiB）；完整快照的物理展开另受固定 2 MiB 新增字节上限约束。每条载体都按实际序列化 UTF-8 字节计费，包括后续快照重复携带的有效贡献；未修改的原生历史不计入新增开销。实际发送和预览使用相同的两阶段限制，任一超限都拒绝装配，不截断或去重来源。metadata 的 `logicalExtraBytes` 保留逻辑计费，`extraBytes` 为投影后的物理计费，`systemProjection.maxBytes` 为物理上限；旧记录可能没有新增字段。
 
 内置默认策略为 ST 兼容，不能改名或删除；编辑内置规则后保存会创建副本。「应用默认装配策略」同时应用并选中 ST 兼容，未保存的修改会先提醒。悬浮球只显示当前策略名称和绑定绿灯；点击进入设置页后选择、关闭或应用策略。预览及实际请求按钮与通用规则并排。
 
@@ -64,7 +64,7 @@ flowchart TD
 
 快照保留的是原文，不会自动把旧版本改写为过去式。记忆来源应自行写明时间或当前/历史状态，避免模型把旧位置理解为仍然有效。
 
-所有实际装配结果作为 log-only `request/assembly` 事件进入 DSH 日志。它们不是 `deriveMessages()` 的消息节点；记录轨迹与进入未来模型上下文是两回事。Tavern Trace 只存事件引用与哈希，正文按需从 DSH 读取。随机宏冻结在该事件中，查看历史不会重新运行宏。每次请求都会记录完整消息快照，因此日志体积随请求历史增长；额外装配正文受现有 `maxProfileBytes` 限制。
+所有实际装配结果作为 log-only `request/assembly` 事件进入 DSH 日志。它们不是 `deriveMessages()` 的消息节点；记录轨迹与进入未来模型上下文是两回事。Tavern Trace 只存事件引用与哈希，正文按需从 DSH 读取。随机宏冻结在该事件中，查看历史不会重新运行宏。每次请求都会记录完整消息快照，因此日志体积随请求历史增长；逻辑新增正文受 `limits.maxProfileBytes` 限制，投影后的新增物理正文另受 2 MiB 上限限制。
 
 卸载 Tavern 后，原生用户消息、回复和工具结果仍可继续使用；请求型正文和 Tavern 保留快照不再注入。已记录的正文仍存在日志中。恢复官方核心时，`request/assembly` 的 `ignorable:true` 使其可被旧解析器保留但不参与投影。仅移除核心扩展、却保留已应用的装配规则时会明确报错；先关闭策略即可继续。
 
@@ -142,7 +142,7 @@ export function apply(ctx) {
 
 描述字段：`id/pluginId/name` 必填；`version` 默认 1，`stability` 默认 conversation；`dependencies` 声明解析与引用所需来源，循环依赖拒绝；`multiple` 默认 false；`roles` 默认 preserve/system/user/assistant，`lifetimes` 默认 request/snapshot，`depth` 默认 true。原生来源使用 preserve/request 且禁用深度，预设来源只允许 request；这些限制也通过公开描述声明。规则结构校验与来源能力校验分开：可以保存缺失来源，但装配时必须满足已注册来源的能力。
 
-返回 `{blocks, macros?, diagnostics?}`。单个来源输出上限 8 MiB、10,000 个内容块，最终额外输入仍受 `maxProfileBytes` 限制。块 ID 在本来源的一条规则内必须稳定且唯一：
+返回 `{blocks, macros?, diagnostics?}`。单个来源输出上限 8 MiB、10,000 个内容块，逻辑新增输入仍受 `limits.maxProfileBytes` 限制，完整快照展开另受 2 MiB 物理上限限制。块 ID 在本来源的一条规则内必须稳定且唯一：
 
 | 块类型 | 字段与用途 |
 | --- | --- |
