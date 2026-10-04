@@ -12,7 +12,7 @@ function memory(){
 async function fixture({sizes=[6],inert=4,limit=8}={}){
  const store=memory(),seed=createRenderingDependencies({store,trust:createRenderingTrust(),channelFactory:()=>null,download:async()=> 'x'.repeat(sizes.shift())})
  const owners=Array.from({length:sizes.length},(_,i)=>'preset:old'+i)
- for(const owner of owners){await seed.sync([source(owner)]);await seed.acquire(owner)}
+ for(const owner of owners){await seed.sync([{...source(owner),content:`import 'https://example.com/${owner.replace(':','-')}.js';`}]);await seed.acquire(owner)}
  seed.dispose()
  const budget=createRenderingCacheBudget(limit);budget.reserve('opening-inert',inert)
  const trust=createRenderingTrust({budget});let downloads=0

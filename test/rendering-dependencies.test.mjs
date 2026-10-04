@@ -188,7 +188,7 @@ test('another tab invalidates running bindings when uninstalling a shared persis
  a.dispose();b.dispose()
 })
 
-test('redownload removes old persisted graph before network and refresh cannot restore it mid-flight',async()=>{
+test('redownload suspends the old graph before network and refresh cannot restore it mid-flight',async()=>{
  const store=memory(),trust=createRenderingTrust(),wait=deferred(),entered=deferred();let slow=false
  const manager=createRenderingDependencies({store,trust,download:async()=>{if(slow){entered.resolve();return wait.promise};return 'export const v=1'}})
  await manager.sync([source()]);await manager.acquire('character:A');slow=true

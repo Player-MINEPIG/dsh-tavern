@@ -2,11 +2,13 @@ import {renderingInventory,identifyRenderingSources,externalUrl,MAX_RENDER_SOURC
 import {dependencyReferences} from './rendering-selection.js'
 import {downloadRenderingSource} from './rendering-download.js'
 import {renderingTrust} from './rendering-trust.js'
+import {dependencyStore} from './rendering-dependency-store.js'
+import {uniqueSourceBytes,createSharedSourceDownloads} from './rendering-shared-sources.js'
+export {dependencyStore} from './rendering-dependency-store.js'
 
 import {DEPENDENCY_LIMITS, RENDERING_CACHE_LIMITS, MAX_DEPENDENCY_IDENTITIES} from './rendering-limits.js'
 export {DEPENDENCY_LIMITS} from './rendering-limits.js'
 const digest = async value => [...new Uint8Array(await crypto.subtle.digest('SHA-256',new TextEncoder().encode(value)))].map(v=>v.toString(16).padStart(2,'0')).join('')
-const envelope=value=>value?.fingerprint?{generation:0,graph:value}:value??{generation:0}
 
 function discovery(limits) {
   const identities=new Set(),items=[],excluded=[],byKey=new Map()
@@ -97,63 +99,15 @@ export function dependencyProgress(graph) {
     complete:graph?.complete===true,capped:graph?.discoveryCapped===true}
 }
 
-// Publication and tombstones use the SAME IndexedDB read/write transaction.
-// BroadcastChannel is only a wake-up signal, never the ordering authority.
-export function dependencyStore(indexedDB = globalThis.indexedDB) {
-  let database
-  async function operation(owner, change, read) {
-    if (!indexedDB) throw Error('Persistent dependency cache is unavailable')
-    database ??= new Promise((resolve,reject)=>{
-      const request=indexedDB.open('dtv-rendering-dependencies',1)
-      request.onupgradeneeded=()=>request.result.createObjectStore('graphs')
-      request.onsuccess=()=>resolve(request.result)
-      request.onerror=()=>reject(request.error)
-    })
-    const db=await database
-    return new Promise((resolve,reject)=>{
-      const transaction=db.transaction('graphs',change?'readwrite':'readonly'),store=transaction.objectStore('graphs'),request=owner===undefined?store.openCursor():store.get(owner)
-      let result,callbackError
-      if(owner===undefined)result=[]
-      request.onsuccess=()=>{
-        try{
-          if(owner===undefined){const cursor=request.result;if(cursor){result.push({owner:cursor.key,...envelope(cursor.value)});cursor.continue()};return}
-          const saved=envelope(request.result)
-          if(!change){result=read?read(saved):saved;return}
-          const next=change(saved);result=next.result
-          if(next.record)store.put(next.record,owner)
-        }catch(error){callbackError=error;transaction.abort()}
-      }
-      transaction.oncomplete=()=>resolve(result)
-      transaction.onerror=()=>reject(callbackError??transaction.error)
-      transaction.onabort=()=>reject(callbackError??transaction.error??Error('Dependency cache transaction aborted'))
-    })
-  }
-  const advance=(owner,pending)=>operation(owner,saved=>{
-    const generation=saved.generation+1
-    return {record:{generation,pending},result:generation}
-  })
-  return {
-    list:()=>operation(undefined),
-    get:owner=>operation(owner),
-    // Acceptance runs synchronously while this readonly transaction excludes
-    // a concurrent generation change. Hashing/preparation must happen first.
-    readCurrent:(owner,snapshot,accept)=>operation(owner,null,saved=>saved.generation===snapshot.generation&&saved.pending===snapshot.pending?accept(saved)!==false:false),
-    begin:owner=>advance(owner,true),
-    remove:owner=>advance(owner,false),
-    publish:(owner,generation,graph)=>operation(owner,saved=>saved.generation===generation&&saved.pending?{record:{generation,graph,pending:false},result:true}:{result:false}),
-  }
-}
-
 export function createRenderingDependencies({trust=renderingTrust,store=dependencyStore(),download=downloadRenderingSource,limits=DEPENDENCY_LIMITS,timeout=15000,channelFactory=()=>typeof window!=='undefined'&&typeof BroadcastChannel!=='undefined'?new BroadcastChannel('dtv-rendering-dependencies'):null}={}) {
   const states=new Map(),listeners=new Set(),cachedOwners=new Map(),cacheGenerations=new Map()
   let channel,disposed=false,accounted=false,initializing=null
-  const account=records=>{
-    let bytes=0
-    for(const [owner,items] of cachedOwners)for(const item of items){
-      if(!records.some(record=>record.owner===owner&&record.source===item.url&&record.content===item.content))bytes+=new TextEncoder().encode(item.content).byteLength
-    }
-    return bytes
-  }
+  const account=records=>uniqueSourceBytes([...cachedOwners.values()].flat(),records)
+  const shared=createSharedSourceDownloads({download,lookup:async url=>{
+    if(store.source)return store.source(url)
+    const matches=[...cachedOwners.values()].flat().filter(item=>item.url===url)
+    return matches.sort((a,b)=>(b.downloadedAt??0)-(a.downloadedAt??0))[0]??null
+  }})
   trust.accountInactive?.(account,ensureCacheAccounted)
   const cacheItems=graph=>{
     if(!graph)return []
@@ -164,6 +118,7 @@ export function createRenderingDependencies({trust=renderingTrust,store=dependen
     const values=new Map()
     for(const item of all)if(item.content!==undefined){
       if(externalUrl(item.url)!==item.url||typeof item.content!=='string'||new TextEncoder().encode(item.content).byteLength>MAX_RENDER_SOURCE)throw Error('Invalid dependency cache source')
+      if(values.has(item.url)&&values.get(item.url).content!==item.content)throw Error('Conflicting dependency cache source versions')
       values.set(item.url,item)
     }
     retainedCache([...values.values()].map(item=>({...item,status:'ready'})))
@@ -271,7 +226,7 @@ export function createRenderingDependencies({trust=renderingTrust,store=dependen
   const connect=()=>{
     if(channel)return
     channel=channelFactory()
-    if(channel)channel.onmessage=({data})=>{if(data&&typeof data.owner==='string')void refresh(data.owner)}
+    if(channel)channel.onmessage=({data})=>{if(data&&typeof data.owner==='string'){accounted=false;void refresh(data.owner)}}
   }
   async function sync(sources, owners=[]) {
     connect()
@@ -295,7 +250,7 @@ export function createRenderingDependencies({trust=renderingTrust,store=dependen
       return state.ready
     }))
   }
-  async function acquire(owner) {
+  async function acquire(owner,{refresh:forceDownload}={}) {
     await ensureCacheAccounted()
     const previous=states.get(owner)
     if(previous)await sync(previous.sources,[owner])
@@ -303,11 +258,15 @@ export function createRenderingDependencies({trust=renderingTrust,store=dependen
     if(!original)throw Error('Dependency resource is unavailable')
     await original.ready
     if(!current(original))throw Error('Dependency resource changed')
+    // Existing owners requesting acquisition again are explicitly redownloading.
+    // New owners reuse shared bytes unless the caller asks for a refresh.
+    forceDownload??=original.cacheItems.length>0
     original.controller?.abort()
     const pending=discovery(limits)
     for(const source of original.sources)pending.add(dependencyReferences(source.content,undefined,source,trust),0)
     const state={...original,items:pending.items,excluded:pending.excluded,...pending.metadata(),complete:false,status:'downloading',error:null,starting:true,controller:new AbortController()}
     states.set(owner,state);trust.removeOwner(owner);emit()
+    const leases=[]
     try{
       state.cacheGeneration=await store.begin(owner)
       state.starting=false
@@ -329,7 +288,10 @@ export function createRenderingDependencies({trust=renderingTrust,store=dependen
         state.controller.signal.addEventListener('abort',abort,{once:true})
         const timer=setTimeout(abort,timeout)
         try{
-          const content=await download(item.url,{signal:controller.signal})
+          const source=await shared.acquire(item.url,{signal:controller.signal,refresh:forceDownload});leases.push(source)
+          const content=source.content
+          item.downloadedAt=source.downloadedAt??0
+          if(source.contentDigest)item.contentDigest=source.contentDigest
           controller.signal.throwIfAborted()
           if(!current(state))return
           bytes+=new TextEncoder().encode(content).byteLength
@@ -365,6 +327,7 @@ export function createRenderingDependencies({trust=renderingTrust,store=dependen
       await restore(state,await store.get(owner))
       if(current(state)){emit();broadcast(owner)}
     }catch(error){if(current(state)){state.starting=false;state.controller=null;state.status='failed';state.complete=false;state.error=error.message;emit();broadcast(owner)}}
+    finally{for(const lease of leases)lease.release()}
   }
   async function uninstall(owner) {
     const previous=states.get(owner)
@@ -380,7 +343,7 @@ export function createRenderingDependencies({trust=renderingTrust,store=dependen
       broadcast(owner)
     }catch(error){if(state&&current(state)){state.starting=false;state.status='failed';state.error=error.message;emit()};throw error}
   }
-  return {sync,acquire,uninstall,inspect:owner=>snapshot(states.get(owner)),subscribe(listener){listeners.add(listener);return()=>listeners.delete(listener)},dispose(){disposed=true;for(const state of states.values())state.controller?.abort();states.clear();cachedOwners.clear();cacheGenerations.clear();trust.accountInactive?.(null);channel?.close();channel=null;trust.clear();emit()}}
+  return {sync,acquire,uninstall,inspect:owner=>snapshot(states.get(owner)),subscribe(listener){listeners.add(listener);return()=>listeners.delete(listener)},dispose(){disposed=true;shared.dispose();for(const state of states.values())state.controller?.abort();states.clear();cachedOwners.clear();cacheGenerations.clear();trust.accountInactive?.(null);channel?.close();channel=null;trust.clear();emit()}}
 }
 export const renderingDependencies=createRenderingDependencies()
 

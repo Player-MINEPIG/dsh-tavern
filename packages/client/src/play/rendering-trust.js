@@ -3,6 +3,7 @@ import {mvuBuiltin,MVU_BUILTINS} from './mvu-builtins.js'
 import {normalizeRenderingAdapters} from '../../../presentation/rendering-adapters.js'
 import {createRenderingCacheBudget,renderingCacheBudget} from './rendering-cache-budget.js'
 import { externalUrl, MAX_RENDER_SOURCE } from './rendering-sources.js'
+import {uniqueSourceBytes} from './rendering-shared-sources.js'
 
 // Outside-card executable cache. Only the resource acquisition lifecycle installs
 // downloaded graphs. Script enablement and variable-write grants stay separate.
@@ -15,7 +16,7 @@ export function createRenderingTrust({builtin=mvuBuiltin,candidates=MVU_BUILTINS
   const keyFor = (owner, source) => JSON.stringify([owner,source])
   const reserveRecords=values=>{
     const snapshot=budget.snapshot(),old=new Map(snapshot.entries),next=new Map([
-      ['executable',values.reduce((sum,item)=>sum+new TextEncoder().encode(item.content).byteLength,0)],
+      ['executable',uniqueSourceBytes(values)],
       ['executable-inactive',inactiveBytes(values)],
     ])
     const total=snapshot.total+[...next].reduce((sum,[key,bytes])=>sum+bytes-(old.get(key)??0),0)
@@ -71,7 +72,7 @@ export function createRenderingTrust({builtin=mvuBuiltin,candidates=MVU_BUILTINS
       if(generation!==epoch||installs.get(owner)!==ownerTicket)throw Error('Rendering review was cancelled')
       if (!records.has(key) && records.size >= RENDERING_CACHE_LIMITS.count) throw Error('Rendering source count exceeds limit')
       const bytes=new TextEncoder().encode(content).byteLength
-      if(bytes>MAX_RENDER_SOURCE||[...records.entries()].reduce((sum,[id,value])=>sum+(id===key?0:new TextEncoder().encode(value.content).byteLength),bytes)>RENDERING_CACHE_LIMITS.bytes)throw Error('Rendering cache exceeds limit')
+      if(bytes>MAX_RENDER_SOURCE||uniqueSourceBytes([...records.values()].filter(item=>keyFor(item.owner,item.source)!==key).concat({source,content}))>RENDERING_CACHE_LIMITS.bytes)throw Error('Rendering cache exceeds limit')
       const next={ticket,owner,source,content,approved:false,digest:null}
       reserveRecords([...records.values()].filter(item=>keyFor(item.owner,item.source)!==key).concat(next))
       records.set(key,next); emit()
@@ -90,13 +91,14 @@ export function createRenderingTrust({builtin=mvuBuiltin,candidates=MVU_BUILTINS
       const next=await Promise.all(items.map(async item=>{
         if(externalUrl(item.url)!==item.url||typeof item.content!=='string'||new TextEncoder().encode(item.content).byteLength>MAX_RENDER_SOURCE||item.depth!==undefined&&(!Number.isSafeInteger(item.depth)||item.depth<0||item.depth>DEPENDENCY_LIMITS.depth))throw Error('Invalid cached dependency')
         const digest=[...new Uint8Array(await crypto.subtle.digest('SHA-256',new TextEncoder().encode(item.content)))].map(byte=>byte.toString(16).padStart(2,'0')).join('')
+        if(item.contentDigest&&item.contentDigest!==digest)throw Error('Shared dependency content changed')
         if(item.builtin===true&&(!builtin(item.url,digest)||adapters.get(keyFor(owner,item.url))==='original'))throw Error('Invalid built-in adapter selection')
         return {owner,source:item.url,content:item.content,depth:item.depth,digest,approved:true,...(item.builtin===true?{builtin:true}:{})}
       }))
       return () => {
         if(epoch!==generation||installs.get(owner)!==ticket)throw Error('Dependency installation cancelled')
         const retained=[...records.values()].filter(item=>item.owner!==owner)
-        if(retained.length+next.length>RENDERING_CACHE_LIMITS.count||[...retained,...next].reduce((sum,item)=>sum+new TextEncoder().encode(item.content).byteLength,0)>RENDERING_CACHE_LIMITS.bytes)throw Error('Rendering cache exceeds limit')
+        if(retained.length+next.length>RENDERING_CACHE_LIMITS.count||uniqueSourceBytes([...retained,...next])>RENDERING_CACHE_LIMITS.bytes)throw Error('Rendering cache exceeds limit')
         reserveRecords([...retained,...next])
         for(const [key,value] of records)if(value.owner===owner)records.delete(key)
         for(const item of next)records.set(keyFor(owner,item.source),item)

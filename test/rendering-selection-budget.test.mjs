@@ -22,24 +22,24 @@ test('stage and prepared install atomically preserve old records and reservation
  trust.clear();assert.equal(budget.snapshot().total,3)
 })
 
-test('cold owner caches, active sources and inactive archives share one budget with inert data without double charging',async()=>{
+test('cold owners sharing identical sources count once across active and inactive archives with inert data',async()=>{
  const store=memory(),first=createRenderingDependencies({store,trust:createRenderingTrust(),download:async()=> ' '.repeat(10)})
  await first.sync([source('preset:other')]);await first.acquire('preset:other');first.dispose()
  const budget=createRenderingCacheBudget(30),trust=createRenderingTrust({budget}),manager=createRenderingDependencies({store,trust,download:async()=> ' '.repeat(10)})
  budget.reserve('opening-inert',7)
  await manager.sync([source('character:A')]);assert.equal(budget.snapshot().total,17)
- await manager.acquire('character:A');assert.equal(budget.snapshot().total,27)
+ await manager.acquire('character:A');assert.equal(budget.snapshot().total,17)
  assert.deepEqual(new Map(budget.snapshot().entries).get('executable'),10)
  trust.setEnablement({entries:[{owner:'character:A',key:'helper:id:a',enabled:false}]})
- await manager.sync([source('character:A')]);assert.equal(budget.snapshot().total,27);assert.equal(new Map(budget.snapshot().entries).get('executable'),undefined)
- await manager.acquire('character:A');assert.equal(manager.inspect('character:A').retained.length,1);assert.equal(budget.snapshot().total,27)
+ await manager.sync([source('character:A')]);assert.equal(budget.snapshot().total,17);assert.equal(new Map(budget.snapshot().entries).get('executable'),undefined)
+ await manager.acquire('character:A');assert.equal(manager.inspect('character:A').retained.length,1);assert.equal(budget.snapshot().total,17)
  await manager.uninstall('character:A');assert.equal(budget.snapshot().total,17);assert.ok((await store.get('preset:other')).graph)
  manager.dispose();assert.equal(budget.snapshot().total,7)
 })
 
 test('cold inactive cache plus inert data can block a new graph before publication, without deleting another owner',async()=>{
  const store=memory(),first=createRenderingDependencies({store,trust:createRenderingTrust(),download:async()=> ' '.repeat(10)})
- await first.sync([source('preset:other')]);await first.acquire('preset:other');first.dispose()
+ await first.sync([{...source('preset:other'),content:"import 'https://example.com/other.js';"}]);await first.acquire('preset:other');first.dispose()
  const budget=createRenderingCacheBudget(24),trust=createRenderingTrust({budget}),manager=createRenderingDependencies({store,trust,download:async()=> ' '.repeat(10)})
  budget.reserve('opening-inert',7);await manager.sync([source('character:A')]);await manager.acquire('character:A')
  assert.equal(manager.inspect('character:A').status,'failed');assert.match(manager.inspect('character:A').error,/shared byte budget/)

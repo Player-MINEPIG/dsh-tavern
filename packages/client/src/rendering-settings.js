@@ -80,7 +80,7 @@ export function RenderingSettings({client,activeSnapshot,settings={},update,busy
       progress.omitted?h('p',{role:'alert',className:'dtv-script-meta'},translate('rendering.graph.omitted',{count:progress.omitted+(progress.capped?'+':'')})):null,
       h('p',{className:'dtv-script-meta'},translate('rendering.selectionScope')),
       h('div',{className:'dtv-script-actions'},
-        h('button',{type:'button',className:'dtv-button',disabled:working,onClick:()=>run(()=>renderingDependencies.acquire(owner))},translate(state==='waiting'?'rendering.acquire':state==='changed'?'rendering.acquireUpdate':'rendering.redownload')),
+        h('button',{type:'button',className:'dtv-button',disabled:working,onClick:()=>run(()=>renderingDependencies.acquire(owner,{refresh:state!=='waiting'}))},translate(state==='waiting'?'rendering.acquire':state==='changed'?'rendering.acquireUpdate':'rendering.redownload')),
         h('button',{type:'button',className:'dtv-button',disabled:state==='loading',onClick:()=>run(()=>renderingDependencies.uninstall(owner))},translate(state==='downloading'?'rendering.cancel':'rendering.uninstall'))),
       h('div',{className:'dtv-dependency-items'},...[...items,...(graph?.excluded??[])].map(item=>{
         const enabled=renderingTrust.isEnabled(owner,item.url),selected=item.status!=='disabled',candidate=builtinCandidate(item.url)
