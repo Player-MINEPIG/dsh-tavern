@@ -10,6 +10,7 @@ import { parseMvuData } from './data.js'
 import { compileMvuSchema, applyMvuSchema } from './schema.js'
 import { sessionIdentity, stateInstanceId, inheritedVersion, textFingerprint } from './instances.js'
 import { snapshotMvuSession, cloneMvuVersion, cloneMvuCheckpoint, cloneMvuReceipt } from './history.js'
+import { MvuFacts } from './facts.js'
 import { boundScope, boundSnapshot } from '../../memory-sources/bound-metadata.js'
 
 const MAX_STORE = 32 * 1024 * 1024
@@ -51,13 +52,14 @@ function prepareResource(resource) {
 
 export class MvuService {
   protocolVersion = 1
-  #state; #path; #legacy; #listeners = new Set(); #usage = new Set(); #usageEpoch = 0; #queue = Promise.resolve(); #disposed = false; #fatal; #sessions = new Map(); #hostWork = new Set(); #cardBindings = new Map()
+  #state; #path; #legacy; #facts; #listeners = new Set(); #usage = new Set(); #usageEpoch = 0; #queue = Promise.resolve(); #disposed = false; #fatal; #sessions = new Map(); #hostWork = new Set(); #cardBindings = new Map()
   #cardCreations = new Map(); #processors = new Map()
   constructor({ storageDir, resources = [], inspect, resolveScope, refresh, isActive, authorizeCardWrite, capturePromptScope, waitForHost, captureSessionLease, resolveCommandHook, captureCommandScope } = {}) {
     if (resources.some(resource => resource.instance)) fail('MVU_CONFIG', 'State instance identity is allocated by the Host, not configuration')
     this.inspect = inspect; this.resolveScope = resolveScope; this.refresh = refresh; this.isActive = isActive; this.authorizeCardWrite = authorizeCardWrite; this.capturePromptScope = capturePromptScope
     this.captureCommandScope = captureCommandScope; this.resolveCommandHook = resolveCommandHook; this.waitForHost = waitForHost; this.captureSessionLease = captureSessionLease
     // The previous shared ledger is never rewritten or silently redistributed.
+    this.#facts = new MvuFacts(storageDir)
     const legacyPath = join(storageDir, 'mvu-state.json')
     this.#legacy = existsSync(legacyPath) ? readJsonFile(legacyPath, MAX_STORE) : { version: 1, resources: {} }
     if (this.#legacy?.version !== 1 || !this.#legacy.resources) fail('MVU_VERSION', 'Unsupported legacy MVU storage version')
@@ -309,7 +311,7 @@ export class MvuService {
   }
   #record(id) { return this.#state.resources[id] ?? this.#legacy.resources[id] ?? { revision: 0, versions: [], currentKey: null } }
   #current(resource) { const record = this.#record(resource.id); return record.versions.find(v => v.key === record.currentKey)?.variables ?? resource.initial }
-  #emit(fact) { for (const listener of this.#listeners) { try { listener(json(fact)) } catch {} } }
+  #emit(fact) { this.#facts.append(fact); for (const listener of this.#listeners) { try { listener(json(fact)) } catch {} } }
   observe(listener) { this.#listeners.add(listener); return () => this.#listeners.delete(listener) }
   registerUsage(handler) { if (typeof handler !== 'function') throw new TypeError('Usage handler required'); const registration = { handler }; this.#usage.add(registration); this.#usageEpoch++; return () => { if (this.#usage.delete(registration)) this.#usageEpoch++ } }
   // Trusted Host registration only; no card endpoint or callback crosses into Node.
@@ -366,7 +368,7 @@ export class MvuService {
   async #decision(on, resource, scope, event, variables) {
     if (resource.legacy || resource.sourceError || (resource.discovered && this.isActive && !this.isActive(resource, scope.sessionId))) return { enabled: false, configRevision: null }
     const managementMode = this.#record(resource.id).managementMode ?? resource.managementMode ?? 'native'
-    let enabled = true, decided = false, abstained = false, configRevision = null
+    let enabled = true, decided = false, abstained = false, configRevision = null, reason
     const leases = []
     const usageEpoch = this.#usageEpoch
     for (const registration of [...this.#usage]) {
@@ -380,9 +382,10 @@ export class MvuService {
       if (!answer || typeof answer.enabled !== 'boolean') fail('MVU_USAGE', 'Invalid usage decision')
       validateStrategy(on, answer.strategy)
       enabled &&= answer.enabled
+      if (!answer.enabled) reason = answer.reason ?? reason
       configRevision = answer.configRevision ?? configRevision
     }
-    return { enabled: enabled && ((managementMode !== 'managed' && on !== 'card_variable_update') || decided), configRevision, usageEpoch, decided, abstained, checkCurrent: () => leases.length > 0 && leases.every(check => typeof check === 'function' && check() === true) }
+    return { enabled: enabled && ((managementMode !== 'managed' && on !== 'card_variable_update') || decided), configRevision, usageEpoch, decided, abstained, reason, checkCurrent: () => leases.length > 0 && leases.every(check => typeof check === 'function' && check() === true) }
   }
   #serial(fn) {
     const task = this.#queue.then(() => { if (this.#disposed) fail('MVU_DISPOSED', 'Service disposed'); return fn() })
@@ -548,10 +551,28 @@ export class MvuService {
     const resource = this.#configured(id, scope)
     return resource ? this.#snapshot(resource, scope) : null
   }
-  async history({ id, scope, signal } = {}) {
+  async history({ id, scope, signal, includeBefore = false } = {}) {
     signal?.throwIfAborted(); const resource = this.#configured(id, scope); if (!resource) return []
     await this.#snapshot(resource, scope); signal?.throwIfAborted()
-    return this.#record(id).versions.filter(v => v.source.sessionId === scope.sessionId).map(cloneMvuVersion)
+    const record = this.#record(id)
+    return record.versions.filter(v => v.source.sessionId === scope.sessionId).map(version => {
+      const copy = cloneMvuVersion(version)
+      if (!includeBefore) return copy
+      const parent = record.versions.find(v => v.key === version.parentKey)
+      const checkpoint = !version.source.manual && record.checkpoints?.find(c => c.turn === version.source.turn)
+      const before = version.source.inherited ? undefined : version.error ? version.variables : checkpoint?.variables ?? parent?.variables
+        ?? (!version.source.inherited && (version.parentKey === null || version.sourceRevision === 0 || version.revision === 1) ? resource.initial : undefined)
+      // Missing older provenance stays unknown; do not infer it from current content.
+      return { ...copy, beforeAvailable: before !== undefined, ...(before !== undefined ? { before: json(before.stat_data) } : {}) }
+    })
+  }
+  async facts({ id, scope, signal } = {}) {
+    signal?.throwIfAborted()
+    const resource = this.#configured(id, scope)
+    if (!resource) return { records: [], unavailable: false, maxRecords: 2048 }
+    await this.#snapshot(resource, scope)
+    signal?.throwIfAborted()
+    return this.#facts.list(id, scope.sessionId)
   }
   async update({ id, content, expectedRevision, operationId, scope, signal } = {}) {
     const barrier = this.waitForHost?.(); if (barrier) await barrier
@@ -563,6 +584,9 @@ export class MvuService {
       const lease = await this.#instanceCommitLease(resource, instanceLease)
       if (typeof operationId !== 'string' || !operationId || operationId.length > 200) fail('MVU_OPERATION', 'operationId required')
       if (scope.messageId != null || scope.endEventId != null) fail('MVU_SCOPE', 'Edit current content with a current scope')
+      const observed = scope.sessionId && (this.inspect ? await this.inspect(scope.sessionId) : this.#sessions.get(scope.sessionId))
+      const actionTurn = observed?.events?.findLast(event => ['turn/start', 'turn/end'].includes(event.type))?.data?.turn ?? (observed ? 0 : undefined)
+      const action = { ...(Number.isSafeInteger(actionTurn) ? { turn: actionTurn } : {}) }
       const record = this.#record(id), current = this.#current(resource), variables = normalizeVariables(content)
       // The source owns its schema. An editor cannot remove or replace it.
       if (current.mvu_schema) {
@@ -582,8 +606,8 @@ export class MvuService {
       const result = { id, type: 'mvu-state', content: variables, revision, scope, authority: 'local' }
       signal?.throwIfAborted()
       if (lease && lease() !== true) fail('MVU_READ_ONLY', 'Instance changed before edit')
-      this.#save(id, { ...record, revision, currentKey: key, versions: [...record.versions, { key, source, variables, operationId, fingerprint, ...(resource.instance && previousVersion?.source.messageSeq >= 0 ? { sourceFingerprint: previousVersion.sourceFingerprint ?? previousVersion.fingerprint } : {}), revision, result }] })
-      this.#emit({ id, eventId: key, phase: 'completed', ...(scope.sessionId ? { sessionId: scope.sessionId } : {}), revision, detail: 'manual-update' })
+      this.#save(id, { ...record, revision, currentKey: key, versions: [...record.versions, { key, source, variables, action, operationId, fingerprint, parentKey: record.currentKey, ...(resource.instance && previousVersion?.source.messageSeq >= 0 ? { sourceFingerprint: previousVersion.sourceFingerprint ?? previousVersion.fingerprint } : {}), revision, result }] })
+      this.#emit({ id, eventId: key, phase: 'completed', on: 'manual_update', cause: 'user-interaction', ...(Number.isSafeInteger(action.turn) ? { turn: action.turn } : {}), ...(scope.sessionId ? { sessionId: scope.sessionId } : {}), revision, detail: 'manual-update' })
       return cloneMvuReceipt(result)
     })
   }
@@ -629,7 +653,7 @@ export class MvuService {
         const users = (turnStart ? session.events.filter(e => e.seq > turnStart.seq && e.seq < reply.seq) : turnEvents).filter(e => e.type === 'user/message')
         const user = users.findLast(e => (e.data?.message?.source?.kind ?? e.data?.source?.kind) === 'user')
         const origin = user?.data?.message?.source?.kind ?? user?.data?.source?.kind
-        const fact = { id: resource.id, eventId: key, sessionId: session.id, turn, turnKind: origin === 'user' ? 'human' : 'unknown' }
+        const fact = { id: resource.id, eventId: key, on: 'assistant_message_committed', sessionId: session.id, turn, turnKind: origin === 'user' ? 'human' : 'unknown' }
         this.#emit({ ...fact, phase: 'started' })
         let command, decision, scopeLease, sessionLease
         const commitCurrent = () => {
@@ -652,7 +676,7 @@ export class MvuService {
             command = await this.#processor(resource, scope)
             const commands = command ? await command.processor.process({ variables: baseline, text, userText: textOf(user?.data?.message) }) : parseMvuUpdate(text)
             variables = applyMvuUpdate(baseline, commands)
-          } else this.#emit({ ...fact, phase: 'skipped', configRevision, detail: enabled ? 'no-update' : 'usage-policy' })
+          } else this.#emit({ ...fact, phase: 'skipped', configRevision, reason: decision.reason ?? (enabled ? 'no-update' : 'usage-policy'), detail: enabled ? 'no-update' : 'usage-policy' })
           // No await after these leases: registration, selection, policy and CAS
           // belong to this exact durable turn, never a display VM or focus.
           if (this.#disposed) fail('MVU_DISPOSED', 'Service disposed before commit')
@@ -746,7 +770,7 @@ export class MvuService {
       if (!binding) fail('MVU_WRITE_DENIED', 'Card execution binding stopped')
       if (!['patch', 'replace'].includes(operation) || !['user-interaction', 'interval', 'script'].includes(cause) || typeof operationId !== 'string' || !operationId || operationId.length > 200 || !Number.isSafeInteger(expectedRevision)) fail('MVU_OPERATION', 'Invalid card operation')
       const scope = binding.scope, id = binding.resourceId, resource = this.#configured(id, scope)
-      const fact = { id, eventId: operationId, operationId, on: 'card_variable_update', cause, sessionId: scope.sessionId }
+      const fact = { id, eventId: operationId, operationId, on: 'card_variable_update', cause, sessionId: scope.sessionId, turn: binding.initialSource?.turn ?? this.#record(id).versions.find(v => v.key === this.#record(id).currentKey)?.source.turn ?? 0 }
       this.#emit({ ...fact, phase: 'started' })
       try {
         const sessionLease = await this.#instanceCommitLease(resource, instanceLease)

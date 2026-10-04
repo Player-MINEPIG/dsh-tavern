@@ -49,7 +49,8 @@ Host 发现已导入卡中的 InitVar/schema 时，将卡片登记为初始模�
 | `read({id,scope,signal})` | 不存在为 null；当前记录包含 `id,name,type,authority,scope,content,revision,currentRevision,historical,versionKey,managementMode`；实例还含 `templateId,instance,inheritedFrom?`，旧记录含 `legacy,sourceError,capabilities` |
 | `update({id,content,expectedRevision,operationId,scope,signal})` | 当前内容 CAS 编辑；同 operationId、同请求幂等，异参拒绝；来源 schema 不可被移除或替换，候选只转换一次 |
 | `copy({id,newId,scope,signal})` | 显式新资源，拒绝已有 ID |
-| `history({id,scope,signal})` | 返回该会话来源版本及成功/失败证据 |
+| `history({id,scope,signal,includeBefore?})` | 返回该会话来源版本及成功/失败证据 |
+| `facts({id,scope,signal})` | 返回本会话有界、无正文的来源观察事实；元数据不可用不改变变量状态 |
 | `setManagementMode({id,mode,expectedRevision,operationId,scope,signal})` | 持久切换 `native` / `managed`，CAS 与幂等；配置初始 managed 也持久保存 |
 | `registerCommandProcessor({id,source})` | 可信 Host 注册单个提交前命令来源；异步返回 `{receipt,dispose}`，不是卡片写 API |
 | `registerUsage(handler)` | 注册可信使用决策，返回 disposer；handler 收到 `{on,id,scope,event,variables,managementMode}` |
@@ -82,6 +83,16 @@ Host 发现已导入卡中的 InitVar/schema 时，将卡片登记为初始模�
 预算区分单份状态和历史集合：每份完整 variables（包含派生的 display_data、delta_data、schema 与诊断）仍受 2 MiB 和结构限制约束；历史、checkpoint、分叉种子和事务收据逐份验证状态，不把整个集合套用单状态预算。所有持久状态与历史仍合计受 32 MiB ledger 上限约束，超限拒绝原子保存并保留原文件及 revision，不自动裁剪。Host checkpoint/ingest 只冻结 MVU 消费的会话身份、事件坐标、回合结束原因、用户来源及 assistant 文本/工具/中断标记；请求装配、provider、媒体及用户正文仍保留在 DSH，不复制进这份投影。文本指纹和持久来源审计不变。
 
 装配来源 ID 为 `tavern.mvu/state`。调用者必须在装配策略中显式选择它，使用 `role:'system', lifetime:'request'`。没有选择时不注入。来源输出 stat_data 和更新指令，诊断绑定资源 revision、配置 revision 和策略版本。DSH 原生消息始终权威；卸载不会改写会话。
+
+## Tavern Trace 逐轮表格
+
+每轮 Tavern Trace 的世界书触发区域下直接显示 **MVU 变量与变更**。变量表列出 JSON pointer 路径、实际值、JSON 类型和最近有记录的更新轮次；触发表列出事件/轮次、来源结果、前后值及失败或跳过原因。同一回复的不同执行尝试分开显示，幂等重放不冒充再次提交变量。继承快照明确标注，不视为子会话重新触发。
+
+默认显示该轮已记录的确切版本。缺失历史或前值证据显示为未知，不用当前内容补造。最新 Trace 项可明确进入 **编辑当前变量**：重新读取当前本机会话记录，编辑 JSON 值，以观察到的 revision 和新 operationId 保存，显示来源校验后的实际结果。CAS 冲突保留草稿，需重新读取当前状态；历史视图和运行中的回合不能保存。编辑不切换管理模式、不启用模型/store/retrieve 策略。切换会话或卸载组件会取消待处理读取和写入。
+
+受现有认证保护的 v1 HTTP 传输映射来源原语：`GET /mvu/resources`、`/mvu/resource`、`/mvu/history`、`/mvu/facts` 和 `POST /mvu/update`，前缀为 `/pmp-dsh-tavern/api/v1`。读取使用 JSON `scope` 和所需的 `id`；当前 scope 必须为 `{authority:'local',sessionId}`，仅 `/resource` 接纳历史 `messageId/endEventId`。更新 body 为 `{id,scope,content,expectedRevision,operationId}`；旧账本和错误来源拒绝编辑。这些 Host 界面原语不暴露给卡片 VM，不替代卡片执行绑定。
+
+`history({includeBefore:true})` 可增加 `beforeAvailable` 及从版本父项或回合前 checkpoint 校验得到的 `before` stat_data；继承和缺失来源证据保持未知。原有 history 调用保持数组形状。`mvu-facts.json` 全局最多保存 2,048 条触发元数据、总计 1 MiB，不复制变量或聊天正文；状态/版本仍由原 MVU 账本持有。旧记录或已淘汰观察不能证明未触发。可选触发记录保存失败单独显示，不把已成功的状态提交改判为失败。
 
 ## 气泡只读桥
 

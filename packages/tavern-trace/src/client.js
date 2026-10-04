@@ -1,3 +1,4 @@
+import { MvuRoundSection, mvuStyles } from './mvu-view.js'
 import {
   createElement,
   useCallback,
@@ -19,6 +20,7 @@ const h = createLocalizedElement(createElement)
 const TRACE_API = `${API_V3}/sessions`
 
 const css = `
+${mvuStyles}
 .dttrace-root{height:100%;min-height:0;display:flex;flex-direction:column;overflow:hidden;background:var(--dsw-alias-bg-base);color:var(--dsw-alias-label-primary);font-family:Inter,var(--dsw-font-family),sans-serif}
 .dttrace-toolbar{min-height:48px;box-sizing:border-box;padding:8px 14px;border-bottom:1px solid var(--dsw-alias-border-l2);display:flex;align-items:center;gap:10px;flex:none;zoom:var(--dtv-trace-scale,1);width:calc(100%/var(--dtv-trace-scale,1))}.dttrace-title{font-size:16px;font-weight:680;flex:1}.dttrace-button{border:1px solid var(--dsw-alias-border-l2);border-radius:7px;background:var(--dsw-alias-bg-base);color:inherit;padding:7px 10px;font-size:13px;cursor:pointer}.dttrace-button:hover{background:var(--dsw-alias-interactive-bg-hover)}
 .dttrace-body{flex:1;min-height:0;overflow:auto;padding:12px max(14px,calc((100% - 880px)/2)) 180px}.dttrace-scale{zoom:var(--dtv-trace-scale,1);width:calc(100%/var(--dtv-trace-scale,1));display:flex;flex-direction:column;gap:10px;padding-bottom:8px}.dttrace-note,.dttrace-status{font-size:13px;line-height:1.5;color:var(--dsw-alias-label-tertiary);margin:0}.dttrace-status{padding:9px 10px;border-radius:8px;background:var(--dsw-specific-tip)}.dttrace-status[data-error=true]{color:var(--dsw-alias-state-error)}
@@ -241,7 +243,7 @@ function segments(items, kind, legacySnapshot) {
 }
 
 // Only captured fields are displayed; never resolve old IDs against current resources.
-export function TraceRecordContent({ record }) {
+export function TraceRecordContent({ record, sessionId, turn, latest = false, running = false, lastVisibleSeq }) {
   const audit = record.audit ?? {}
   const resources = audit.resources ?? {}
   const selection = record.selection ?? audit.selection ?? {}
@@ -298,6 +300,7 @@ export function TraceRecordContent({ record }) {
             : h('p', { className: 'dttrace-note' }, uiMessage('trace.noSource')),
       ),
     ),
+    sessionId && Number.isSafeInteger(turn) ? h(MvuRoundSection, { sessionId, turn, latest, running, lastVisibleSeq }) : null,
     h('details', { className: 'dttrace-disclosure' },
       h('summary', null, uiMessage('trace.v3.loaderDetails')),
       h('div', { className: 'dttrace-disclosure-body' },
@@ -325,7 +328,7 @@ export function TraceRecordContent({ record }) {
   )
 }
 
-function AssemblyRecord({ summary, sessionId, latest }) {
+function AssemblyRecord({ summary, sessionId, latest, running, lastVisibleSeq }) {
   const [record, setRecord] = useState(null)
   const [error, setError] = useState('')
   const [opened, setOpened] = useState(latest)
@@ -348,7 +351,7 @@ function AssemblyRecord({ summary, sessionId, latest }) {
     ),
     h('div', { className: 'dttrace-content' },
       error ? h('p', { className: 'dttrace-status', 'data-error': true }, rawText(error)) : null,
-      record ? h(TraceRecordContent, { record }) : h('p', null, uiMessage('trace.reading')),
+      record ? h(TraceRecordContent, { record, sessionId, turn: summary.turn, latest, running, lastVisibleSeq }) : h('p', null, uiMessage('trace.reading')),
     ),
   )
 }
@@ -403,7 +406,7 @@ export function TavernTraceView({ sessionId, useSession, useChat }) {
         error ? h('div', { className: 'dttrace-status', 'data-error': true }, rawText(error)) : null,
         data === null && !error ? h('div', { className: 'dttrace-status' }, uiMessage('trace.reading')) : null,
         records.length === 0 && data !== null ? h('div', { className: 'dttrace-status' }, uiMessage('trace.empty')) : null,
-        ...records.map((record, index) => h(AssemblyRecord, { summary: record, sessionId, latest: index === 0, key: `${sessionId}:${record.id}` })),
+        ...records.map((record, index) => h(AssemblyRecord, { summary: record, sessionId, latest: index === 0, running, lastVisibleSeq, key: `${sessionId}:${record.id}` })),
         data !== null ? h('p', { className: 'dttrace-note' }, storageStatus(data.storage)) : null,
       ),
     ),
