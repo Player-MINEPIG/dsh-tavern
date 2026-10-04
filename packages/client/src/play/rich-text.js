@@ -43,6 +43,15 @@ function withoutHtmlComments(html) {
   return parts.join('')
 }
 
+// Shared format recognition for static documents and interactive card routing.
+export function isCompleteHtmlDocument(html) {
+  const shape = withoutHtmlComments(html).trim().replace(/^<!doctype\s+html[^>]*>\s*/i, '')
+  const document = /^<html(?:\s[^<>]*|)>/i.test(shape) && /<\/html\s*>$/i.test(shape)
+  const headAndBody = /^<head(?:\s[^<>]*|)>/i.test(shape) && /<\/body\s*>$/i.test(shape)
+    && /<\/head\s*>\s*<body(?:\s[^<>]*|)>/i.test(shape)
+  return document || headAndBody
+}
+
 // ST display templates may wrap a whole HTML document in a Markdown fence.
 // Only closed document-shaped blocks opt in; snippets and streaming code retain
 // Markdown semantics. This is format recognition, not a security boundary:
@@ -56,11 +65,7 @@ function fencedHtmlDocument(token) {
     || closing[1].length < opening[1].length) return null
 
   const html = token.text.trim()
-  const shape = withoutHtmlComments(html).trim().replace(/^<!doctype\s+html[^>]*>\s*/i, '')
-  const document = /^<html(?:\s[^<>]*|)>/i.test(shape) && /<\/html\s*>$/i.test(shape)
-  const headAndBody = /^<head(?:\s[^<>]*|)>/i.test(shape) && /<\/body\s*>$/i.test(shape)
-    && /<\/head\s*>\s*<body(?:\s[^<>]*|)>/i.test(shape)
-  return document || headAndBody ? html : null
+  return isCompleteHtmlDocument(html) ? html : null
 }
 
 markdownConverter.use({ renderer: {

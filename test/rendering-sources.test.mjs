@@ -23,6 +23,25 @@ test('body wrappers, unknown languages and interrupted fences are distinguished'
  assert.equal(splitCards('```js\n'+source+'\n```')[0].html,undefined)
  assert.equal(splitCards('```\n'+source)[0].html,undefined)
 })
+test('unlabelled complete head/body documents route scripts to the card runtime',()=>{
+ const source='<head><style>.status{color:green}</style></head>\n<body><output>Loading</output><script>document.querySelector("output").textContent="Ready"</script></body>'
+ for(const document of [source,'<!DOCTYPE html>\n'+source,'<!-- card -->\n<!DOCTYPE html>\n<html>'+source+'</html>']){
+  assert.deepEqual(splitCards('```\n'+document+'\n```'),[{html:document}])
+ }
+ assert.deepEqual(splitCards('Before\n```\n'+source+'\n```\nAfter'),[{text:'Before\n'},{html:source},{text:'\nAfter'}])
+ for(const document of [source.replace('</body>',''),'<head><script>example()</script></head>','<div><script>example()</script></div>']){
+  const text='```\n'+document+'\n```'
+  assert.deepEqual(splitCards(text),[{text}])
+ }
+ for(const marker of ['```js','```text']){
+  const text=marker+'\n'+source+'\n```'
+  assert.deepEqual(splitCards(text),[{text}])
+ }
+ for(const marker of ['````','````text','````js','~~~text'])for(const ending of ['','\n'+marker.replace(/(?:text|js)$/,'')]){
+  const text=marker+'\n```\n'+source+'\n```'+ending
+  assert.deepEqual(splitCards(text),[{text}])
+ }
+})
 test('media tags, CSS and a six-thousand URL catalog are not code dependencies',()=>{
  const images=Array.from({length:6000},(_,i)=>'https://example.com/images/'+i+'.webp')
  const html='<body><img src="https://example.com/a.png" srcset="https://example.com/b.png 2x"><style>@import "https://example.com/style.css"; p{background:url(https://example.com/c.png)}</style><video src="https://example.com/a.mp4"></video><script>const images='+JSON.stringify(images)+';</script></body>'

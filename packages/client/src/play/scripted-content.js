@@ -9,7 +9,7 @@ import {renderingWriteRequests} from './rendering-write-requests.js'
 import { createVirtualCardRuntime } from './card-worker-client.js'
 import DOMPurify from 'dompurify'
 import { createElement as h, memo, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
-import { RichText } from './rich-text.js'
+import { RichText, isCompleteHtmlDocument } from './rich-text.js'
 import { createCardRuntime } from './card-runtime.js'
 import { translate } from '../i18n.js'
 import { discoverDependencies, isSideEffectModuleReference, externalUrl, loadWrapper, MAX_RENDER_SOURCE } from './rendering-sources.js'
@@ -48,12 +48,21 @@ export function cleanCardHtml(html, { inertImages = false } = {}) {
 }
 export function splitCards(text) {
   const source = String(text ?? '')
-  const parts = [], pattern = /^```(?:html)?[\t ]*\n([\s\S]*?)\n```[\t ]*$/gm
-  let offset = 0
-  for (const match of source.matchAll(pattern)) {
-    if (!/<(?:script|button|input|select|textarea)\b/i.test(match[1]) || (!/^```html/i.test(match[0]) && !/^\s*<(?:body|html)\b/i.test(match[1]))) continue
-    if (match.index > offset) parts.push({ text: source.slice(offset, match.index) })
-    parts.push({ html: match[1] }); offset = match.index + match[0].length
+  const parts = []
+  let offset = 0, lineOffset = 0, fence = null
+  for (const line of source.split('\n')) {
+    const marker = line.match(/^ {0,3}(`{3,}|~{3,})(.*)$/)
+    if (!fence && marker) {
+      fence = { marker: marker[1], index: lineOffset, content: lineOffset + line.length + 1, card: /^```(?:html)?[\t ]*$/.test(line), labelled: /^```html/.test(line) }
+    } else if (fence && marker && marker[1][0] === fence.marker[0] && marker[1].length >= fence.marker.length && /^[\t ]*$/.test(marker[2])) {
+      const html = source.slice(fence.content, Math.max(fence.content, lineOffset - 1))
+      if (fence.card && /<(?:script|button|input|select|textarea)\b/i.test(html) && (fence.labelled || /^\s*<(?:body|html)\b/i.test(html) || isCompleteHtmlDocument(html))) {
+        if (fence.index > offset) parts.push({ text: source.slice(offset, fence.index) })
+        parts.push({ html }); offset = lineOffset + line.length
+      }
+      fence = null
+    }
+    lineOffset += line.length + 1
   }
   if (!parts.length && /^\s*(?:<!doctype html[^>]*>\s*)?<(?:html|body)\b/i.test(source) && /<\/(?:html|body)>\s*$/i.test(source) && /<(?:script|button|input|select|textarea)\b/i.test(source)) return [{ html: source }]
   if (offset < source.length || !parts.length) parts.push({ text: source.slice(offset) })

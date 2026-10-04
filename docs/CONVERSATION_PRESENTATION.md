@@ -62,7 +62,7 @@ flowchart LR
 ## 三种边界与方案选择
 
 1. **静态内容**：Markdown → DOMPurify；样式在 Shadow DOM 与绘制边界内隔离。实时视图的 `img` 与 CSS `background` / `background-image`（包括图片自定义变量）经过下述按需媒体控制器；导入不下载图库，静态 HTML 导出不加载远程图片。移除 srcset、poster 等；字体、其他 CSS 外部资源、`@import`、image/image-set/src 函数和转义仍拒绝。正常布局、颜色、渐变、变量、媒体查询和动画可用。外链需用户主动点击，带 `noopener noreferrer`。
-2. **脚本环境**：识别已闭合 `html` 围栏、无语言但以 `<body>`/`<html>` 开头的围栏，以及完整 `<html>…</html>`/`<body>…</body>` 中的控件或脚本。静态 DOM 在 `sandbox="allow-same-origin"`、无 `allow-scripts` 的 iframe 内呈现，CSP 禁止连接、外部图片、脚本、子 frame、表单提交等。卡片 JS 在独立 QuickJS WASM 中运行，不在 iframe 或父页面执行。iframe/Shadow DOM 本身不承担完整权限保证。
+2. **脚本环境**：识别已闭合 `html` 围栏、无语言但以 `<body>`/`<html>` 开头或包含完整 `<head>…</head><body>…</body>` 文档的围栏，以及完整 `<html>…</html>`/`<body>…</body>` 中的控件或脚本。无语言的完整文档可带 HTML doctype 和注释；不完整的 head/body 片段和明确标为其他代码语言的围栏仍按文本呈现。静态 DOM 在 `sandbox="allow-same-origin"`、无 `allow-scripts` 的 iframe 内呈现，CSP 禁止连接、外部图片、脚本、子 frame、表单提交等。卡片 JS 在独立 QuickJS WASM 中运行，不在 iframe 或父页面执行。iframe/Shadow DOM 本身不承担完整权限保证。
 3. **能力接口**：唯一的 JSON bridge 白名单提供卡片内部 DOM 与只读姓名上下文，以及“建议消息”。没有通用 RPC、Host API、凭据、文件、网络、父页面或 native eval 入口；模块仅从资源限定的已下载内容映射解析。建议在卡片外显示，由用户点击 Tavern 按钮提交；下述受控 ST 输入适配也允许直接模式中的卡片内真实用户点击，经既有 `user-message` API 请求提交。
 
 [DSH sandbox 固定版文档](https://github.com/deepseek-ai/deepseek-harness/blob/dsh-v0.2.0-rc.2/packages/sandbox/sandbox/README.md) 隔离的是子进程与文件访问，不能复用为消息 JS 的浏览器隔离。[官方桌面转发](https://github.com/deepseek-ai/deepseek-harness/blob/dsh-v0.2.0-rc.2/apps/desktop/src/web-document.ts) 会剥离 Origin；[桌面请求令牌](API.md#桌面请求令牌) 解决此差异，没有关闭 webSecurity。
